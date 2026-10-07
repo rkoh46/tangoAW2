@@ -15,7 +15,7 @@
 //!   panel, the hit animation;
 //! - at 0 HP it is destroyed as a Black Cannon is (the explosion, [`destroy`]),
 //!   its entry staying in the list with 0 HP, which the game saves with the
-//!   battle; it is drawn as the Black Cannon's ruin ([`ruin`]) and its doors
+//!   battle; it is drawn in the grey of a neutral building ([`ruin`]) and its doors
 //!   spawn nothing any more ([`destroyed`]). The battle goes on.
 
 use mgba::core::Core;
@@ -31,11 +31,9 @@ const DESTROY_BRANCH: u32 = 0x0804_0818;
 /// What a Black Cannon facing down does there: `(entry, proc)`.
 const CANNON_DESTROYED: u32 = 0x0804_026C;
 const STEP_EXIT: u32 = 0x0804_0879;
-/// The factory's sprite: the instruction after the definition is loaded
-/// (r0 x, r1 y, r2 definition, r3 palette).
-const FACTORY_SPRITE: u32 = 0x0803_FD52;
-/// The Black Cannon's ruin (its destroyed sprite definition).
-const RUIN_DEF: u32 = 0x0849_FA3C;
+/// The factory's sprite call (r0 x, r1 y, r2 definition, r3 the owner's army
+/// slot, which picks the building palette).
+const FACTORY_SPRITE: u32 = 0x0803_FD54;
 const INVENTIONS: u32 = 0x0202_8360;
 
 fn in_scope(core: &Core) -> bool {
@@ -100,20 +98,20 @@ fn destroy(core: &mut Core) {
     cpu.set_thumb_pc(CANNON_DESTROYED);
 }
 
-/// A destroyed factory is drawn as the Black Cannon's ruin, on the lower
-/// three rows.
+/// A destroyed factory is drawn as its own picture in the neutral
+/// buildings' (grey) palette: the sprite call's owner argument (r3, the army
+/// slot of the factory's colour) is 0, neutral (a Black Cannon's wreck needs
+/// tiles a map with only a factory never loads).
+const NEUTRAL_OWNER: i32 = 0;
 fn ruin(core: &mut Core) {
     if !in_scope(core) {
         return;
     }
-    let cpu = core.gba().cpu();
-    let (y, entry) = (cpu.gpr(1), cpu.gpr(5) as u32);
+    let entry = core.gba().cpu().gpr(5) as u32;
     if core.raw_read_8(entry + 4, -1) != 0 {
         return;
     }
-    let cpu = core.gba_mut().cpu_mut();
-    cpu.set_gpr(1, y + 1);
-    cpu.set_gpr(2, RUIN_DEF as i32);
+    core.gba_mut().cpu_mut().set_gpr(3, NEUTRAL_OWNER);
 }
 
 // --- The CPU strikes a factory ---------------------------------------------------------

@@ -906,9 +906,11 @@ def compare_run(ctx, coast, table):
         g.open_map_menu()
         g.choose("End", g.MAP_MENU)
         spawned = []
+        waited = 0
         for _ in range(1200):
             e.wait(1)
             if g.current_army() == bh:
+                waited += 1
                 spawned = [u for u in g.units(bh) if u["id"] not in seen]
                 if spawned:
                     for off in (4, 6, 8, 0xA):       # the camera on the map's top left, where the factory is
@@ -917,6 +919,13 @@ def compare_run(ctx, coast, table):
                     e.shot(os.path.join(ctx.out, f"day{e.u16(DAY):02d}"))
                     e.wait(8)        # the rest of the turn's spawns
                     spawned = [u for u in g.units(bh) if u["id"] not in seen]
+                    break
+                if waited > 700:     # nothing spawned this turn: a picture all the same
+                    for off in (4, 6, 8, 0xA):
+                        e.w16(MAP + off, 0)
+                    e.wait(2)
+                    e.shot(os.path.join(ctx.out, f"day{e.u16(DAY):02d}"))
+                    frames.append({"day": e.u16(DAY), "image": f"day{e.u16(DAY):02d}", "spawned": []})
                     break
         d = e.u16(DAY)
         for u in spawned:

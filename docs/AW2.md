@@ -281,8 +281,9 @@ from the ROM table `0x080C1BC4`.
     HP the hit step's destroy branch (`0x08040818`, no case for kind 7)
     runs a Black Cannon's destruction (the explosion), the entry keeps 0 HP
     (the game saves it with the battle, so suspend and continue keep the
-    factory's HP and its destruction) and it is drawn as a Black Cannon's
-    ruin on its lower three rows (`0x0803FD52`); its doors spawn nothing
+    factory's HP and its destruction) and it is drawn in the grey of a neutral
+    building (the sprite call's owner argument 0, `0x0803FD54`; a Black Cannon's
+    wreck needs tiles a map with only a factory never loads); its doors spawn nothing
     for the rest of the battle (the create trap), and the battle does not
     end. The campaigns keep their factory and its pipe seam (nothing here
     runs outside Versus).
