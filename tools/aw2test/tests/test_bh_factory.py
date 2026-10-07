@@ -236,3 +236,126 @@ def netplay_bh_factory_spawns(ctx):
     identical, _, text = ctx.netplay_replay(r.g, [])
     ctx.log("\n".join(l for l in text.splitlines() if not l.startswith("peek")))
     ctx.check(identical, "netplay: both peers and the straight replay identical")
+
+
+# --- Pictures: a properly drawn map, a CPU Black Hole army at the game's own pace ----------------------------
+
+PICS = os.environ.get("AW2TEST_BH_PICS")
+
+
+def drawn_map(ctx, coast):
+    """A 30x20 Versus design map drawn with five/map.py's tiles (real sea edges, reefs, shoals, a Black Factory
+    with its footprint): Black Hole (a CPU) holds the top left, its factory's doors on (4..6, 5); with
+    `coast` the sea washes up to them from the west and south."""
+    import importlib.util
+    five = os.path.join(paths.REPO, "tango-gamesupport-aw2", "five")
+    spec = importlib.util.spec_from_file_location("five_map_py_bh", os.path.join(five, "map.py"))
+    mp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mp)
+    W, H = 30, 20
+    g = [["."] * W for _ in range(H)]
+    for x, y in [(12, 4), (13, 5), (20, 3), (22, 9), (18, 12), (9, 15), (25, 6), (14, 9)]:
+        g[y][x] = "f"
+    for x, y in [(11, 11), (12, 11), (23, 14), (24, 14), (8, 12)]:
+        g[y][x] = "^"
+    for x in range(4, 26):
+        g[10][x] = "R"
+    for y in range(10, 18):
+        g[y][27] = "R"
+    for dy, row in enumerate(["###", "###", "#F#", "###"]):
+        for dx, c in enumerate(row):
+            g[1 + dy][4 + dx] = c
+    if coast:
+        for x in range(0, 9):
+            for y in range(6, 12):
+                g[y][x] = "~"
+        for y in range(3, 6):
+            for x in range(0, 3):
+                g[y][x] = "~"
+        for x in range(1, 8):
+            g[12][x] = ","
+        g[5][7] = "~"
+        g[8][5] = "r"
+        g[8][2] = "r"
+    g[3][12] = "1"
+    g[17][26] = "2"
+    m = {"name": "bh pictures", "units": {}, "rows": ["".join(r) for r in g], "armies": 2, "tab": 3, "colours": [1, 5], "wasteland": False}
+    rom = open(paths.aw2_rom(), "rb").read()
+    tiles = mp.tiles(m, mp.sea_edges(rom))
+    d = ctx.map(hq=())
+    for y in range(H):
+        for x in range(W):
+            d.tiles[y * W + x] = tiles[y][x]
+    d.terrain(12, 3, "hq", 1).terrain(26, 17, "hq", 2)
+    d.colours = [1, 5, 2, 3, 4]
+    d.unit(1, "infantry", 13, 3)
+    for k in range(8):
+        d.unit(2, "infantry", 22 + k % 4, 17 + k // 4)
+    return d
+
+
+def pic(ctx, g, name):
+    ctx.shot(g, name)
+    if PICS:
+        os.makedirs(PICS, exist_ok=True)
+        g.e.shot(os.path.join(PICS, name))
+
+
+def play_pictures(ctx, coast, days, want):
+    """Army 1 (human) ends its turn each day; the CPU Black Hole army's turn runs at the game's pace; a picture is
+    taken the frame its factory has spawned (before its units move away)."""
+    g = ctx.start(drawn_map(ctx, coast), ["andy", "vonbolt"], humans=(2,))
+    e = g.e
+    bh = next(a for a in (1, 2) if e.u8(g.players_base + 0x3C * a + 0x1A) == 5)
+    human = 3 - bh
+    ctx.eq(e.u8(g.players_base + 0x3C * bh + 0x1B), 2, "Black Hole is the CPU")
+    seen = {u["id"] for u in g.units()}
+    got, log = set(), []
+    for day in range(days):
+        if g.current_army() != human:
+            g.wait_for_input()
+        g.goto(0, 0)
+        g.goto(6, 2)  # the cursor (and so the camera) on the factory for the CPU's turn
+        g.open_map_menu()
+        g.choose("End", g.MAP_MENU)
+        spawned = []
+        for _ in range(1200):
+            e.wait(1)
+            if g.current_army() == bh:
+                spawned = [u for u in g.units(bh) if u["id"] not in seen]
+                if spawned:
+                    break
+        d = e.u16(DAY)
+        for u in spawned:
+            seen.add(u["id"])
+            log.append((d, romlib.UNIT_NAMES[u["type"]], u["x"], u["y"]))
+        if spawned:
+            kinds = {u["type"] for u in spawned}
+            tag = "_".join(sorted(romlib.UNIT_NAMES[t].replace(" ", "").lower() for t in kinds))
+            pic(ctx, g, f"{'coast' if coast else 'inland'}_day{d:02d}_{tag}")
+            got |= kinds
+        if not e.wait_until(lambda: g.current_army() == human, 20000, step=30):
+            ctx.log(f"day {d}: the turn did not come back")
+            break
+        ctx.log(f"day {d}: Black Hole at {[(u['type'], u['x'], u['y']) for u in g.units(bh)]}")
+        seen |= {u["id"] for u in g.units()}
+        g.wait_for_input()
+    ctx.log(f"spawns: {log}")
+    return log
+
+
+@test(modes=("ds",))
+def bh_factory_pictures_coast(ctx):
+    """Pictures: a CPU Black Hole's factory by the sea, on a properly drawn map."""
+    log = play_pictures(ctx, True, 40, {MEGATANK, OOZIUM, 18, 21, 22, 23, 24, 26})
+    kinds = {t for _, n, _, _ in log for t in [romlib.UNIT_IDS[n.lower().replace(" ", "").replace("-", "")]]}
+    ctx.check(kinds & SHIPS, f"ships spawned: {sorted(kinds)}")
+    ctx.check(kinds & {MEGATANK, OOZIUM}, "Megatank or Oozium spawned")
+
+
+@test(modes=("ds",))
+def bh_factory_pictures_inland(ctx):
+    """Pictures: the same map without the sea, over several days: land units only."""
+    log = play_pictures(ctx, False, 12, set())
+    kinds = {romlib.UNIT_IDS[n.lower().replace(" ", "").replace("-", "")] for _, n, _, _ in log}
+    ctx.check(kinds and not kinds & SHIPS, f"land units only: {sorted(kinds)}")
