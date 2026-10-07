@@ -44,6 +44,12 @@ docs/AW2.md "Saves").
 which replays a whole battle on this build and the older one and compares all of
 EWRAM and IWRAM (see `tests/test_compat.py` for building an older commit).
 
+`tests/test_bh_factory.py` also has three opt-in sets, off unless their variable is set: `AW2TEST_BH_BALANCE=1`
+(`-k bh_balance`: CPU against CPU on a coast and an inland map, the smart Black Factory against the table's, via the
+development byte `0x0203E3FF`; `AW2TEST_BH_BALANCE_DAYS` caps the days), `AW2TEST_BH_COMPARE=1` (`-k bh_compare`: the
+same battle with each factory, every spawn photographed and logged) and `AW2TEST_BH_PICS=<dir>` (pictures of the
+factory's choices). Each console logs the factory's decisions to `<save>.bhlog` (`Emu.decisions()`).
+
 ## Writing a test
 
 A test is a function in `tests/test_*.py` taking a context:

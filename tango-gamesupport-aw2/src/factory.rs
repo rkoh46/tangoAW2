@@ -101,6 +101,8 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
             Box::new(crate::design_bar::icon_palette),
         ),
     ];
+    traps.extend(crate::bh_factory::traps());
+    traps.extend(crate::factory_hp::traps());
     traps.extend(crate::five::traps());
     traps.extend(crate::obelisk::traps());
     traps.extend(crate::onyx::traps());

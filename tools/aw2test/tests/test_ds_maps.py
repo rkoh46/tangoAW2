@@ -160,10 +160,21 @@ def check_map(ctx, g, name):
     rows = [e.u16(ram.MAP_ROW_OFFSETS + 2 * y) for y in range(h)]
     bad = []
     towers = 0
+    # With the pack in Versus the Black Factory's building is a wall, its pipe end at the top included (class 15 -> 9,
+    # crate::factory_hp); the factory is the invention list's kind 7 at (x - 1, y).
+    factories = set()
+    for k in range(16):
+        a = 0x02028360 + 8 * k
+        if not e.u16(a + 2) & 0x3C0:
+            break
+        if (e.u16(a + 2) >> 6) & 15 == 7:
+            factories.add((e.u8(a) + 1, e.u8(a + 1)))
     for y in range(h):
         for x in range(w):
             want = live[tiles[y * w + x]]
             got = classes[rows[y] + x]
+            if want == 0xF and got == 9 and ctx.ds and (x, y) in factories:
+                continue
             if want != got:
                 bad.append((x, y, hex(want), hex(got)))
             towers += (got & 0x1F) == LAB
