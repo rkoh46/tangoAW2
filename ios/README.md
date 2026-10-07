@@ -56,6 +56,14 @@ All of it is `cfg(target_os = "ios")`; the desktop build is unchanged.
   dragging scrolls.
 - **Audio:** cpal's CoreAudio backend, with an `AVAudioSession` in the
   playback category (plays with the silent switch on) and a 5 ms buffer.
+- **Frame rate:** a display link (`bridge.m`) asks for 60-120 Hz
+  (`CADisableMinimumFrameDurationOnPhone` is set), the swap chain layer is
+  opaque (iced_wgpu patch in `ios/deps.py`; a transparent layer is
+  "Composited" in Apple's Metal HUD), the emulator thread runs at the
+  user-interactive QoS class, and the app declares Game Mode
+  (`LSApplicationCategoryType`, `GCSupportsGameMode`). Every 5 s the log
+  has `fps:` (emulated, UI and redraw rates) and `display:` (refresh rate
+  granted, Low Power Mode, thermal state) lines; `TANGOAW2_FPS_LOG=0` mutes them.
 - **Netplay:** unchanged (WebRTC through libdatachannel, link codes,
   `/host` and `/connect`). `NSLocalNetworkUsageDescription` covers local
   network play; the screen does not lock while the app is open.

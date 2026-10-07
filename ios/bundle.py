@@ -87,6 +87,15 @@ def plist(out, platform, sdk_version, partial=None):
             "including over your local network."
         ),
         "GCSupportsControllerUserInteraction": True,
+        # Game Mode (iOS 18+): the system gives a fullscreen game more CPU
+        # and GPU priority and lowers Bluetooth controller latency. Needs
+        # the games category and this key.
+        "LSApplicationCategoryType": "public.app-category.games",
+        "GCSupportsGameMode": True,
+        # Without this an iPhone with a ProMotion display holds apps to
+        # 60 Hz and may drop the refresh rate under them when it judges
+        # the content idle; the display link in bridge.m asks for 60-120.
+        "CADisableMinimumFrameDurationOnPhone": True,
         "ITSAppUsesNonExemptEncryption": False,
     }
     if partial:

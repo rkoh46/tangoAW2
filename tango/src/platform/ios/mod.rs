@@ -26,7 +26,42 @@ extern "C" {
     fn tango_ios_set_clipboard_png(bytes: *const u8, len: usize);
     fn tango_ios_pick_files(kind: c_int, multiple: c_int, cb: PickCb, ctx: *mut c_void);
     fn tango_ios_pads(out: *mut RawPad, max: c_int) -> c_int;
+    fn tango_ios_display_report(ticks: *mut u64, max_fps: *mut c_int, low_power: *mut c_int, thermal: *mut c_int);
     fn tango_ios_keys(codes: *const u16, held: *mut u8, n: c_int);
+}
+
+/// Run the calling thread at the highest quality-of-service class. The
+/// emulator thread sleeps to a 16.7 ms deadline each frame; at the default
+/// class iOS may wake it late (timer coalescing) or place it on an
+/// efficiency core, and a late frame is a missed 59.73 Hz tick.
+pub fn prioritize_current_thread() {
+    extern "C" {
+        fn pthread_set_qos_class_self_np(qos_class: u32, relative_priority: c_int) -> c_int;
+    }
+    const QOS_CLASS_USER_INTERACTIVE: u32 = 0x21;
+    unsafe { pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0) };
+}
+
+/// What the display is doing, for the frame-rate log: display link
+/// callbacks so far (their rate is the refresh rate granted to the app),
+/// the screen's maximum refresh rate, Low Power Mode, thermal state
+/// (0 nominal, 1 fair, 2 serious, 3 critical).
+pub struct DisplayReport {
+    pub link_ticks: u64,
+    pub max_fps: i32,
+    pub low_power: bool,
+    pub thermal: i32,
+}
+
+pub fn display_report() -> DisplayReport {
+    let (mut ticks, mut max_fps, mut low_power, mut thermal) = (0u64, 0, 0, 0);
+    unsafe { tango_ios_display_report(&mut ticks, &mut max_fps, &mut low_power, &mut thermal) };
+    DisplayReport {
+        link_ticks: ticks,
+        max_fps,
+        low_power: low_power != 0,
+        thermal,
+    }
 }
 
 /// Audio session, screen lock. Called once from `run_app`.

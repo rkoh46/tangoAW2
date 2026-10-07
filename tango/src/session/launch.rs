@@ -68,6 +68,8 @@ pub fn build_playback(
         std::thread::Builder::new()
             .name("tango-sio-replay-drive".to_owned())
             .spawn(move || {
+                #[cfg(target_os = "ios")]
+                crate::platform::ios::prioritize_current_thread();
                 let mut pacer = Pacer::new();
                 let mut drive = drive;
                 loop {

@@ -3,6 +3,7 @@
 // Foundations.
 mod config;
 mod i18n;
+mod perf; // frame-rate counters
 mod library; // tango-library bound to the native filesystem + HTTP, plus desktop-only jobs
 mod platform; // host-machine glue: SDL input, CPAL audio, video, crash capture
 mod ui; // look-and-feel toolkit: widgets, style, theme, animation

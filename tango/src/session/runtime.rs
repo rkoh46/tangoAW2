@@ -248,8 +248,15 @@ fn spawn_drive_thread(
     let rt = tokio::runtime::Handle::current();
     std::thread::Builder::new().name(name.to_owned()).spawn(move || {
         let _guard = rt.enter();
+        #[cfg(target_os = "ios")]
+        crate::platform::ios::prioritize_current_thread();
         let mut pacer = Pacer::new();
-        while driver.tick() {
+        loop {
+            let started = std::time::Instant::now();
+            if !driver.tick() {
+                break;
+            }
+            crate::perf::emu_frame(started.elapsed());
             pacer.wait(driver.fps_target());
         }
         // The session is over: wind it down rather than dropping it, or
