@@ -208,6 +208,13 @@ pub fn cpu_unit(core: &mut Core) {
     core.raw_write_8(BOMBS_DONE, -1, army as u8);
     bombs(core, army);
     crate::oozium::cpu_eats(core, army);
+    // Units in range of an enemy factory hit it (Versus, [`crate::factory_hp`]).
+    for u in crate::factory_hp::cpu_strikers(core, army) {
+        let Some(k) = (0..PENDING_SLOTS).find(|&k| core.raw_read_32(PENDING + 4 * k, -1) == 0) else { break };
+        let f = core.raw_read_8(u + 1, -1);
+        core.raw_write_8(u + 1, -1, f | MOVED);
+        core.raw_write_32(PENDING + 4 * k, -1, u | crate::factory_hp::STRIKE);
+    }
 }
 
 /// The frame's effects pass (`sub_0803550C`, weather in r0, trapped by
@@ -225,6 +232,20 @@ pub fn effects_pass(core: &mut Core) -> bool {
     for k in 0..PENDING_SLOTS {
         let bomb = core.raw_read_32(PENDING + 4 * k, -1);
         if bomb == 0 {
+            continue;
+        }
+        if bomb & crate::factory_hp::STRIKE != 0 {
+            // A strike at an enemy factory, one hit at a time.
+            if crate::factory_hp::busy(core) {
+                return false;
+            }
+            core.raw_write_32(PENDING + 4 * k, -1, 0);
+            let r0 = core.gba().cpu().gpr(0) as u32;
+            if crate::factory_hp::strike(core, bomb & !crate::factory_hp::STRIKE, EFFECTS | 1) {
+                core.raw_write_32(SAVED_R0, -1, r0);
+                core.raw_write_8(CALLED, -1, 1);
+                return true;
+            }
             continue;
         }
         core.raw_write_32(PENDING + 4 * k, -1, 0);

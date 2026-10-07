@@ -185,23 +185,120 @@ from the ROM table `0x080C1BC4`.
   a human Black Hole army's turn through the spawner once; `0x0203FFFC`
   marks the detour so the return passes. A trap handler runs before its
   instruction.
-- **Versus with the pack** (`bh_factory.rs`): a trap at the spawner's
-  create-unit call (`0x08060856`, r0 x, r1 y, r2 type; r5 holds the type for
-  the AI-group call after it) changes what a slot spawns, never whether or
-  how many (the table's zeros and a blocked door tile stay). A hash of day,
-  slot, army, factory square and map picks (RAM only; the RNG the spawner
-  draws for the unit's AI group is untouched): half the time the table's
-  unit, a quarter a land Dual Strike unit (Megatank, Oozium, Piperunner when
-  a pipe tile is on the door row's ends or the row under it), a quarter a
-  ship (Lander, Cruiser, Battleship, Sub, Black Boat, Carrier) if one can be
-  placed, else a land one. A unit is placed only where its movement chart
-  (`oozium::move_cost`) lets it in and the square is empty: ships on a door
-  tile or the squares beside the doors (door row x-1..x+3, the row under the
-  doors), so sea, reef or shoal as that ship allows; land units on their door
-  tile, never on sea or reef (the table's own unit there is dropped, the
-  loop skipped to the next slot). With no free water the table's unit spawns.
-  Outside Versus (`GAME_MODE` `0x030033FC` is 3), without the pack and in the
-  DS Campaign nothing changes (`test_bh_factory.py`).
+- **Versus with the pack** (`bh_factory.rs`, `bh_smart.rs`): a trap at the
+  spawner's create-unit call (`0x08060856`, r0 x, r1 y, r2 type; r5 holds
+  the type for the AI-group call after it) changes what a slot spawns, never
+  whether or how many (the table's zeros and a blocked door tile stay), for
+  a CPU army's turn and a human one's (the detour above) alike: it decides
+  for the army moving now, from that army's own side of the fog. The RNG
+  the spawner draws for the unit's AI group is untouched, and the choice
+  reads emulated RAM and ROM only (no host state, no randomness: rollback,
+  both netplay peers and replays agree; about 0.1-0.3 ms a decision). It
+  runs again for every spawn, so the same factory picks differently as the
+  battle changes (`TANGOAW2_BH_LOG=<file>` on the console logs each
+  decision with its top reasons, the runner-up and what it saw; the aw2test
+  harness sets it per console, `Emu.decisions()`).
+  - *Where*: a unit is placed only where its movement chart
+    (`oozium::move_cost`) lets it in and the square is empty: ships on a
+    door tile or the squares beside the doors (door row x-1..x+3, the row
+    under the doors), so sea, reef or shoal as that ship allows (the one
+    nearest an enemy first); land and air units on their own door tile,
+    never on sea or reef (the table's own unit there is dropped, the loop
+    skipped to the next slot); a Piperunner on a pipe square beside the doors.
+    With no candidate the table's unit spawns.
+  - *The schedule* (Factory Blues' table, `0x08576F23`, which design maps use; the
+    spawner reads row `day & 0x1F`, so day 32 is row 0 and day 33 is row 1; slots are
+    the doors left to right). The smart factory keeps these days, doors and counts: a
+    "none" stays none, a blocked door still blocks its slot, and only the *type*
+    spawned changes (within the cost rule).
+
+    | day | door 1 | door 2 | door 3 | day | door 1 | door 2 | door 3 |
+    |---|---|---|---|---|---|---|---|
+    | 0 (=32) | Tank | none | Tank | 16 | Infantry | none | Missiles |
+    | 1 | none | Mech | none | 17 | none | Tank | none |
+    | 2 | Recon | Recon | Recon | 18 | Mech | Infantry | Tank |
+    | 3 | none | none | none | 19 | none | none | none |
+    | 4 | none | Tank | Artillery | 20 | Neotank | Md Tank | Neotank |
+    | 5 | Mech | Anti-Air | Md Tank | 21 | none | none | none |
+    | 6 | none | none | none | 22 | none | none | Mech |
+    | 7 | none | none | Infantry | 23 | Tank | Anti-Air | none |
+    | 8 | Neotank | Rockets | Infantry | 24 | Infantry | Md Tank | Artillery |
+    | 9 | none | none | none | 25 | none | none | Md Tank |
+    | 10 | none | Md Tank | none | 26 | Infantry | Neotank | none |
+    | 11 | Anti-Air | none | Mech | 27 | Mech | none | Tank |
+    | 12 | Artillery | Mech | none | 28 | none | Tank | Infantry |
+    | 13 | none | none | Missiles | 29 | Anti-Air | Anti-Air | none |
+    | 14 | Rockets | Artillery | none | 30 | none | none | Tank |
+    | 15 | none | Md Tank | none | 31 | Tank | Infantry | Mech |
+
+  - *Candidates*: Infantry, Mech, Md Tank, Megatank, Tank, Recon, Neotank,
+    Piperunner, Artillery, Rockets, Anti-Air, Missiles, Oozium, Fighter,
+    Bomber, B Copter, and the ships (Lander, Cruiser, Battleship, Sub, Black
+    Boat, Carrier).
+  - *Cost rule* (the factory is not a free army): a spawn costs at most the
+    table's unit for that day and slot, so over any stretch of days the
+    factory spawns no more value than AW2's table would (the table's
+    Infantry slot can only be a cheaper unit, its Neotank slot anything up
+    to a Neotank's price). The one exception: Megatank, Battleship, Carrier
+    and Oozium (the heavy ones) may cost up to 30% more than the slot's
+    unit (so only a big slot can bring one: a Neotank's, a Md Tank's for
+    the Oozium), and only one of each may stand on Black Hole's side at a
+    time (a loss is replaced by a later spawn); they also score -20.
+  - *Scoring* (the highest score spawns; ties: the lower unit id):
+    *counter*: what the candidate does to the enemy units Black Hole sees
+    minus 0.6 of what they do to it, by Dual Strike's own damage chart
+    (`roster::chart`, an Oozium eats ground units for 100), each enemy
+    weighted by price x HP bars x nearness (so air answers Anti-Air and
+    Missiles, a fleet Subs, Battleships and Cruisers, infantry Recon, Tanks,
+    Artillery and so on), x1.5 while enemies are within 6 of the factory;
+    *travel*: -5 a turn (up to 10) to get within reach of the nearest enemy
+    unit or enemy/neutral property by the unit's own movement chart over the
+    real map (Dijkstra: rivers, mountains and woods stop treads, the sea
+    stops all but ships and air, a pipe line takes a Piperunner), -45 where
+    it cannot get there; none of it while the factory is threatened, which
+    instead adds price/1500 for sturdiness, +25 for an Oozium at the door and
+    -20 for indirect fire with an enemy at its feet; *army*: -7 for each unit of
+    the type Black Hole already has, -3 for each of the same role, +10 for
+    indirect fire when it has none, +8..16 for Infantry and Mech while
+    properties wait to be captured; *specialists*: -30 Anti-Air with no air
+    in sight, -15 a Sub with no ship in sight, -10 a copter and -25 a
+    Fighter or Bomber for their fuel, a Lander +30 only with land to ferry
+    troops to (else -40), a Black Boat +25 only with two hurt units; *size*:
+    price/2500. An enemy counts only if Black Hole sees it (its units' and
+    properties' vision from the unit table; adjacent only for units in woods,
+    on reefs, dived or hidden; all with fog off). Terrain and properties are
+    always known.
+  - *Destroying it* (`factory_hp.rs`): AW2 keeps the factory in its
+    invention list (kind 7, HP 0) beside the Black Cannons (kinds 3 and 5,
+    HP 99). With the pack, in Versus, a trap before the registration call
+    (`0x0803E348`) gives it 99 HP, and one at `sub_0803DFE0` (the position
+    units aim at, 0 for a kind that cannot be attacked) makes it a target at
+    the middle of its bottom row, as a Black Cannon is: the attack menu, the
+    targeting from adjacent squares and range, the damage (the game's own for
+    a structure, the attacker's chart against a Md Tank-class defender, the
+    CO's modifiers, so the same shot takes the same from a Black Cannon),
+    the HP in the terrain panel and the hit animation are the game's. At 0
+    HP the hit step's destroy branch (`0x08040818`, no case for kind 7)
+    runs a Black Cannon's destruction (the explosion), the entry keeps 0 HP
+    (the game saves it with the battle, so suspend and continue keep the
+    factory's HP and its destruction) and it is drawn as a Black Cannon's
+    ruin on its lower three rows (`0x0803FD52`); its doors spawn nothing
+    for the rest of the battle (the create trap), and the battle does not
+    end. The campaigns keep their factory and its pipe seam (nothing here
+    runs outside Versus).
+  - *The CPU* (`cpu_tactics::cpu_unit`, `factory_hp::cpu_strikers`): an
+    army's CPU unit (not on Black Hole's team) with the factory's aimed
+    square in range from where it stands, a weapon that harms a structure
+    and no enemy unit in range hits it at its turn's start through the
+    game's own structure attack (`sub_08042634`, what the CPU runs for a
+    pipe seam), one hit at a time; otherwise AW2's CPU plays as before. A
+    Black Hole CPU's defence of its factory is its spawns: enemies near
+    the factory make the choice sturdy (above).
+  - Outside Versus (`GAME_MODE` `0x030033FC` is 3), without the pack and in
+    the DS Campaign nothing changes (`test_bh_factory.py`). RAM `0x0203E3FF`
+    non-zero is a development hook for balance runs: the table's units
+    spawn, as AW2's (`AW2TEST_BH_BALANCE=1 run.py -k bh_balance`: CPU against
+    CPU on a coast and an inland map, smart against table).
 - The battle loads the Volcano's colours (`0x080D3FC4`) into sprite
   palette 12 (`0x0803FE0A`), the fourth army's buildings' palette: fine in
   the campaign, but a Versus map with a Volcano and Yellow Comet drew

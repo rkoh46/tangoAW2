@@ -51,6 +51,8 @@ pub mod roster;
 pub mod unit_names;
 pub mod unit_actions;
 pub mod bh_factory;
+pub mod bh_smart;
+pub mod factory_hp;
 pub mod factory;
 pub mod five;
 mod five_art;

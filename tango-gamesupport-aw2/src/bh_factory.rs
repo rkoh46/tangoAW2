@@ -1,5 +1,6 @@
-//! The Black Factory in Versus with the Dual Strike pack: its spawns also
-//! take Dual Strike's units, and ships next to the sea.
+//! The Black Factory in Versus with the Dual Strike pack: what its doors
+//! spawn is chosen from the battle as it is now ([`crate::bh_smart`]), and
+//! it can be destroyed ([`crate::factory_hp`]).
 //!
 //! AW2's factory spawner (`0x080607E8`, see [`crate::factory`]) walks the
 //! three door tiles under the factory (x..x+2, y+4) each turn; for each one
@@ -9,23 +10,26 @@
 //! the AI group call that follows). Which slots spawn something, and how
 //! many, stays the table's: this module only changes what a slot spawns.
 //!
-//! A trap at that create call (Versus, with the pack, not the DS Campaign)
-//! picks, from a hash of the day, the slot, the army and the factory's
-//! square (RAM only: no RNG is touched, so the spawner draws what it drew
-//! before, and rollback and both netplay peers agree):
-//! - half the time the table's own unit;
-//! - a quarter of the time a Dual Strike land unit (Megatank, Oozium, and a
-//!   Piperunner when a pipe is by the door);
-//! - a quarter of the time a ship (Lander, Cruiser, Battleship, Sub, Black
-//!   Boat, Carrier) when one can be placed, else a land unit.
+//! A trap at that create call (Versus, with the pack, not the DS Campaign;
+//! for a human Black Hole army's detour and the CPU's turn alike, whichever
+//! army is moving) lists the units that may be placed now, and
+//! [`crate::bh_smart::choose`] ranks them by what the battle needs (the
+//! scoring is in that module and docs/AW2.md). It reads RAM and ROM only: no
+//! RNG is touched (the spawner draws what it drew before), so rollback and
+//! both netplay peers agree.
 //!
-//! A unit is only placed where its movement chart lets it in and the square
-//! is empty: a ship on a door tile or the square beside a door tile (the
-//! door row's two ends, the row under the doors) that is sea, reef or shoal
-//! as that ship allows; a land unit on its own door tile, never on sea or
-//! reef. When no square is free the table's unit spawns, as before; the
-//! table's unit on sea or reef is dropped. A blocked door tile still blocks
-//! its slot (the spawner checks it before this trap).
+//! What may be placed:
+//! - the candidates are the land units, three air units and the ships;
+//! - the cost rule ([`HEAVY`]);
+//! - a unit is only placed where its movement chart lets it in and the
+//!   square is empty: a ship on a door tile or the square beside a door
+//!   tile (the door row's two ends, the row under the doors) that is sea,
+//!   reef or shoal as that ship allows; a land or air unit on its own door
+//!   tile, never on sea or reef (air units never on a door tile in the
+//!   water). With no candidate the table's unit spawns as before (dropped
+//!   if it would stand on sea or reef). A blocked door tile still blocks its
+//!   slot (the spawner checks it before this trap).
+//! - a destroyed factory spawns nothing.
 
 use mgba::core::Core;
 
@@ -50,6 +54,10 @@ const SHIPS: [u8; 6] = [LANDER, CRUISER, BATTLESHIP, SUB, BLACK_BOAT, CARRIER];
 const SEA: u8 = 7;
 const REEF: u8 = 19;
 const NO_ENTRY: u8 = 0xFF;
+/// A development hook for balance runs (`tools/aw2test`): while this byte of
+/// free RAM is non-zero the factory spawns the table's units, as AW2's does.
+/// It is emulated memory, so it replays and rolls back like the rest.
+const TABLE_ONLY: u32 = 0x0203_E3FF;
 
 fn in_scope(core: &Core) -> bool {
     is_on(core) && crate::pvp::in_versus(core) && !crate::ds_campaign::active(core)
@@ -105,8 +113,43 @@ fn squares(core: &Core, army: u32, t: u8, door_x: i32, x: i32, y: i32) -> Vec<(i
     }
 }
 
+/// What the factory may pick from: land (on the door tile), air (likewise,
+/// but never over water), ships and the Piperunner (squares beside the doors).
+const LAND: [u8; 13] = [1, 2, 3, MEGATANK, 5, 6, 8, PIPERUNNER, 10, 11, 14, 15, OOZIUM];
+const AIR: [u8; 3] = [16, 17, 19];
+
+fn price(core: &Core, t: u8) -> i32 {
+    core.raw_read_16(crate::roster::table(core) + 0x5C * t as u32 + 6, -1) as i32 * 10
+}
+
+/// The cost rule (the factory is not a free army): a spawn is never dearer
+/// than the table's unit for that day and slot, so over any stretch of days
+/// the factory spawns no more value than AW2's table would. The [`HEAVY`]
+/// units (Megatank, Battleship, Carrier, Oozium) may cost up to 30% more
+/// than the slot's unit (in practice they take the place of a big table
+/// unit), and only one of each may stand on Black Hole's side at a time.
+const HEAVY: [u8; 4] = [MEGATANK, 21, CARRIER, OOZIUM];
+
+pub(crate) fn log(line: &str) {
+    use std::io::Write;
+    static PATH: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    if let Some(p) = PATH.get_or_init(|| std::env::var("TANGOAW2_BH_LOG").ok()) {
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(p) {
+            let _ = writeln!(f, "{line}");
+        }
+    }
+}
+
 fn at_create(core: &mut Core) {
     if !in_scope(core) {
+        return;
+    }
+    // A destroyed factory spawns nothing.
+    if crate::factory_hp::destroyed(core) {
+        core.gba_mut().cpu_mut().set_thumb_pc(NEXT_SLOT);
+        return;
+    }
+    if core.raw_read_8(TABLE_ONLY, -1) != 0 {
         return;
     }
     let cpu = core.gba().cpu();
@@ -117,27 +160,48 @@ fn at_create(core: &mut Core) {
     let map = core.raw_read_8(MAP_ID, -1) as u32;
     let h = hash(&[day, slot as u32, army, door_x as u32, y as u32, map]);
 
-    // A type with a square, picked evenly, then one of its squares.
-    let pick = |units: &[u8], h: u32| -> Option<(u8, i32, i32)> {
-        let options: Vec<(u8, Vec<(i32, i32)>)> = units
-            .iter()
-            .map(|&t| (t, squares(core, army, t, door_x, x, y)))
-            .filter(|(_, spots)| !spots.is_empty())
-            .collect();
-        let (t, spots) = options.get((h >> 8) as usize % options.len().max(1))?;
-        let (sx, sy) = spots[(h >> 16) as usize % spots.len()];
-        Some((*t, sx, sy))
+    let cap = price(core, table_unit);
+    let door_water = matches!(terrain(core, x, y), Some(SEA) | Some(REEF));
+    let mut options: Vec<(u8, Vec<(i32, i32)>)> = Vec::new();
+    for &t in LAND.iter().chain(AIR.iter()).chain(SHIPS.iter()) {
+        if AIR.contains(&t) && door_water {
+            continue;
+        }
+        let cost = price(core, t);
+        let allowed = if HEAVY.contains(&t) { cost * 10 <= cap * 13 } else { cost <= cap };
+        if !allowed {
+            continue;
+        }
+        let spots = squares(core, army, t, door_x, x, y);
+        if !spots.is_empty() {
+            options.push((t, spots));
+        }
+    }
+    let started = std::time::Instant::now();
+    let decision = crate::bh_smart::choose(core, army, door_x, y, &options, &HEAVY);
+    let micros = started.elapsed().as_micros();
+    let (t, px, py) = match &decision {
+        Some(d) => {
+            let spots = &options.iter().find(|o| o.0 == d.best.t).unwrap().1;
+            let (sx, sy) = crate::bh_smart::nearest_spot(core, army, door_x, y, spots, h >> 8);
+            (d.best.t, sx, sy)
+        }
+        None => (table_unit, x, y),
     };
-    let land = pick(&[MEGATANK, OOZIUM, PIPERUNNER], h);
-    let ships = pick(&SHIPS, h.rotate_left(7));
-    let chosen = match h & 7 {
-        4 | 5 => land,
-        6 | 7 => ships.or(land),
-        _ => None,
-    };
-    // The table's unit stays unless a Dual Strike one was picked, and it
-    // never stands on sea or reef.
-    let (t, px, py) = chosen.unwrap_or((table_unit, x, y));
+    if let Some(d) = &decision {
+        let why: Vec<String> = d.best.parts.iter().take(3).map(|p| format!("{} {:+}", p.0, p.1)).collect();
+        let next: Vec<String> = d.next.iter().map(|n| format!("{} {}", crate::bh_smart::NAMES[n.0 as usize], n.1)).collect();
+        log(&format!(
+            "day {day} army {army} slot {slot} table {} -> {} at ({px},{py}) score {} | {} | then {} | {} | {micros} us",
+            crate::bh_smart::NAMES[table_unit as usize],
+            crate::bh_smart::NAMES[t as usize],
+            d.best.total,
+            why.join("; "),
+            next.join(", "),
+            d.summary
+        ));
+    }
+    // The table's unit never stands on sea or reef.
     let on_water = !SHIPS.contains(&t) && matches!(terrain(core, px, py), Some(SEA) | Some(REEF));
     let cpu = core.gba_mut().cpu_mut();
     if on_water {

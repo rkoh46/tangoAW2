@@ -28,6 +28,14 @@ class Emu:
             env.pop("TANGOAW2_DS_ROM", None)
         if trace:
             env["AW2_TRACE"] = trace
+        # The Black Factory's decisions (crate::bh_factory), one file per console.
+        self.bh_log = (save + ".bhlog") if save else None
+        if self.bh_log:
+            env["TANGOAW2_BH_LOG"] = self.bh_log
+            try:
+                os.remove(self.bh_log)
+            except OSError:
+                pass
         cmd = [paths.runner("aw2_script"), self.rom, "-"]
         if save:
             cmd += ["--save", save]
@@ -63,6 +71,14 @@ class Emu:
                 continue
             out.append(got)
         return out
+
+    def decisions(self):
+        """The Black Factory's logged decisions so far (lines)."""
+        try:
+            with open(self.bh_log) as f:
+                return f.read().splitlines()
+        except (OSError, TypeError):
+            return []
 
     def close(self):
         if self.proc.poll() is None:

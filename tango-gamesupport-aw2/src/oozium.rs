@@ -376,6 +376,23 @@ pub(crate) fn move_cost(core: &Core, army: u32, t: u8, x: i32, y: i32) -> u8 {
     core.raw_read_8(chart + 32 * movement + terrain, -1)
 }
 
+/// The 32 terrain costs (by terrain class) of `army`'s unit type `t`, as
+/// [`move_cost`] reads them, 0xFF where it cannot enter.
+pub(crate) fn move_row(core: &Core, army: u32, t: u8) -> [u8; 32] {
+    let p = players(core) + 0x3C * army;
+    let row = if core.raw_read_8(0x0300_3FC8, -1) != 0 { core.raw_read_8(p + 0x1D, -1) as u32 } else { 1 };
+    let mode = core.raw_read_8(p + 0x1E, -1) as u32;
+    let weather = core.raw_read_8(crate::ds_weather::WEATHER, -1) as u32;
+    let cos = core.raw_read_32(0x0801_F8E4, -1);
+    let chart = core.raw_read_32(cos + 0x50 + 0x104 * row + 4 * (17 * mode + weather), -1);
+    let movement = core.raw_read_8(crate::roster::table(core) + 0x5C * t as u32 + 0x19, -1) as u32;
+    let mut out = [0xFFu8; 32];
+    for (c, o) in out.iter_mut().enumerate() {
+        *o = core.raw_read_8(chart + 32 * movement + c as u32, -1);
+    }
+    out
+}
+
 fn value(core: &Core, u: u32) -> u32 {
     let t = core.raw_read_8(u, -1) as u32;
     let price = core.raw_read_16(crate::roster::table(core) + 0x5C * t + 6, -1) as u32 * 10;
