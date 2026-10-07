@@ -2316,7 +2316,19 @@ stay out.
   `sub_080424FC`, the player's after the action proc unlocks the map); the
   box's HBlank handler (`0x08017880`) turns sprites off on rows 0..0x2C
   (less the box's slide, `0x030030A8`), which hides AW2's panel (rows
-  3..34) whole, and the strip (to row 64) would stick out below it. On Versus' Teams
+  3..34) whole, and the strip (to row 64) would stick out below it.
+  The strip is left out too while a build menu (a factory, port or
+  airport) or the unit information panel is up (procs `0x0802DA19` and
+  `0x0803A441` in IWRAM, found by their two script pointers: a finished
+  proc keeps its function word): AW2 keeps its panel at the top and starts
+  the list under it (row 34), where the strip would be drawn over the
+  list; and the unit picture's 64x64 sprite (OBJ tiles `0x2E8..0x327`,
+  loaded for each unit) and its Move / Vision / fuel labels (OBJ palette 5)
+  are the very tiles `0x309..0x310` and palette 5 the strip's face
+  borrows: with the strip in, a band of the picture was the partner's
+  face and the labels were in the partner's colours (checked against the
+  same battle with no partner, every unit of all three menus, two and five
+  armies: byte for byte the same). On Versus' Teams
   screen a partner slot (the CO's portrait at 30 pixels, or None) under
   each CO, the columns moved up 16 pixels.
 - **Versus**, as Dual Strike's: there is no tag rule or tag screen. Dual

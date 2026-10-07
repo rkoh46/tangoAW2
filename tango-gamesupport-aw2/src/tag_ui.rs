@@ -24,7 +24,10 @@
 //!   The face's tiles are OBJ tiles 0x309..0x310 and its colours OBJ
 //!   palette 5 (no map sprite uses either while the panel is up;
 //!   crate::heal_effect borrows those tiles while it plays: the face is left
-//!   out then).
+//!   out then). The strip is left out, and nothing written to them, while a
+//!   build menu or the unit information panel is up ([`build_menu_up`]: the
+//!   list starts under AW2's panel, where the strip would cover it, and the
+//!   unit's picture and labels use those very tiles and that palette).
 
 use mgba::core::Core;
 
@@ -583,11 +586,36 @@ fn top_box_rows(core: &Core) -> i32 {
     (SPLIT_ROW + 1 - core.raw_read_16(BOX_SLIDE, -1) as i16 as i32).max(0)
 }
 
+/// The build menu (a factory, port or airport: its list under the CO panel
+/// and the unit's picture on the right) is up: its procs
+/// (`0x0802DA19` the menu, `0x0803A441` the unit picture panel, in IWRAM's
+/// proc area; a finished proc's function word stays, its scripts are 0). AW2 keeps its own CO panel at the top (the list starts under
+/// it, row 34), where the partner's strip would be drawn over the list;
+/// and the unit picture's 64x64 sprite (OBJ tiles 0x2E8..0x327, copied there
+/// for each unit) and its labels (OBJ palette 5) are the very tiles
+/// and palette the strip borrows: the strip is left out, and nothing is
+/// written to them, while it is up.
+fn build_menu_up(core: &Core) -> bool {
+    const AREA: u32 = 0x0300_0C00;
+    const LEN: usize = 0x1300;
+    const PROCS: [u32; 2] = [0x0802_DA19, 0x0803_A441];
+    let mut b = [0u8; LEN];
+    core.raw_read_range(AREA, -1, &mut b);
+    let words: Vec<u32> = b.chunks_exact(4).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]])).collect();
+    // A proc: two script pointers, then the function (a finished proc
+    // keeps its function word but its scripts are cleared).
+    let script = |w: u32| (0x0840_0000..0x0870_0000).contains(&w);
+    words.windows(3).any(|w| script(w[0]) && script(w[1]) && PROCS.contains(&w[2]))
+}
+
 fn panel_flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     if core.raw_read_8(tag::PANEL + 5, -1) != 1 {
         return at;
     }
     core.raw_write_8(tag::PANEL + 5, -1, 0);
+    if build_menu_up(core) {
+        return at;
+    }
     let army = core.raw_read_8(tag::PANEL + 4, -1) as u32;
     let Some(b) = tag::partner(core, army) else { return at };
     let x = core.raw_read_16(tag::PANEL, -1) as i32;
