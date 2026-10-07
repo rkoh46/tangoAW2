@@ -635,7 +635,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Structures | `obelisk.rs`, `heal_effect.rs` | Black Crystal / Obelisk heal with Dual Strike's own animation and sound for each (arm9 0x0213E078 / 0x0213E2A0; SE 175 / 176), the camera visiting each |
 | Music | `ds_music.rs` | The nine new COs' own map themes, Dual Strike's, converted to AW2's sound engine (below) |
 | Maps | `five_map.rs`, `five/design_ds_maps.py` | Eight Versus maps (2P to 5P, a Wasteland set and a sea set) with Com Towers, Piperunner pipes and Black Hole's structures (above) |
-| Survival | `survival.rs`, `survival_maps.rs`, `mode_menu.rs` | Dual Strike's Survival mode (Money, Turn, Time) on its own 33 maps, a seventh entry on Select Mode (below) |
+| Survival | `survival.rs`, `survival_maps.rs`, `survival_ui.rs`, `mode_menu.rs` | Dual Strike's Survival mode (Money, Turn, Time) on its own 33 maps, a seventh entry on Select Mode (below) |
 | DS Campaign | `ds_campaign.rs`, `ds_campaign_data.rs`, `ds_campaign_rules.rs`, `campaign_menu.rs` | Dual Strike's story campaign in AW2's campaign engine, behind a Campaign sub-menu (below) |
 
 Free ROM used: 0x08620000.. (text slots), 0x0862C000.. (new CO text ids 0x6D72..),
@@ -808,7 +808,7 @@ spare it, and the CPU's silo and strike scoring leave it out.
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
 fires every CO's COP and SCOP, and replays netplay runs on two rollback peers.
 
-## Survival (`survival.rs`, `survival_maps.rs`, `mode_menu.rs`)
+## Survival (`survival.rs`, `survival_maps.rs`, `survival_ui.rs`, `mode_menu.rs`)
 
 Dual Strike's Survival mode, with the Dual Strike pack, offline. Everything
 below about Dual Strike was read from its code and data (the USA ROM; overlay
@@ -836,6 +836,15 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
 
 - **Budgets** (arm9 `0x02168D04`, a word per kind): 90000 frames, 500000 G,
   99 days; Champion 108000, 600000, 120.
+- **Which maps there are** (checked by `survival_lists_are_dual_strikes`):
+  these 33, Dual Strike's map ids 0xBC..0xDC and no others. The Champion
+  courses (kinds 3..5) read the same three lists (`sub_020EAC50` returns
+  overlay `0x022F64E4` for Time, `0x022F6544` for Money, `0x022F64CC` for
+  Turn: each is byte for byte the basic course's list), with the larger
+  budgets above; Dual Strike's text ids 406..408 (Time, Turn and Money
+  Champion) sit among its shop's unlocks (Hard Campaign, Sound Room, ...),
+  so a Champion course is bought, not found as more maps. tangoAW2 has the
+  basic courses only (a shop and medals are not in it).
 - **Running out** (`sub_020EA944`, every frame of a battle): Money, the
   player's funds reach 0; Turn, the day passes what is left; Time, the
   player's own clock (it only runs on the player's turns) reaches what is
@@ -865,7 +874,7 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   between War Room and Battle Maps, with labels built at run time from the
   game's own label art (the letters of DESIGN ROOM, VERSUS, BATTLEMAPS,
   CAMPAIGN and LINK, in a teal of Campaign's and Link's colours) and a help
-  line. Hook points (for merging other Select Mode work): every `DivRem(x, 6)`
+  line (Dual Strike's own, its text 1224). Hook points (for merging other Select Mode work): every `DivRem(x, 6)`
   of the wheel's code (`movs r1, #6` before `bl 0x0808AAB0` in
   `0x08080F00..0x08084C00`, found by scanning) becomes 7; the position wraps
   `0x08081DF0`, `0x08081E2C`, `0x0808280C`, `0x08082830`;
@@ -884,17 +893,51 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   game's own with the pack off (every patch put back, nothing traps). One more
   entry would need its own OBJ palette and tiles and the table, wraps and
   `DivRem` sites for eight.
-- **Screens.** Picking it opens the War Room's own screens on Survival's maps:
-  SELECT MAP lists Money, Turn and Time Survival (the highlighted kind's
-  budget and record in a panel under the preview), the War Room's CO screen,
-  LET'S GO, the battle, the War Room's results and its save prompt; back on
-  SELECT MAP only the run's next map is listed (with what is left and the
-  points), until the run is cleared or lost: then the results (kind, CLEAR! or
-  GAME OVER, maps cleared, what is left, bonus, points, rank) cover the
-  preview until A or B. From the second map on, the CO screen offers only the
-  run's CO (one group with that CO, as the campaign's restricted CO screens
-  build theirs: trap `0x0807C588`). B on SELECT MAP leaves Survival (a run in
-  progress is given up).
+- **Screens.** Picking it opens the War Room's own SELECT MAP on Survival's
+  maps (its list: Money, Turn and Time Survival), then the War Room's CO
+  screen, LET'S GO, the battle, the War Room's results and its save prompt.
+  Back on SELECT MAP only the run's next map is listed, until the run is
+  cleared or lost. SELECT MAP itself is drawn as Dual Strike's course screen
+  (`survival_ui.rs`, below); from the second map on, the CO screen offers
+  only the run's CO (one group with that CO, as the campaign's restricted
+  CO screens build theirs: trap `0x0807C588`). B on SELECT MAP leaves
+  Survival (a run in progress is given up).
+- **SELECT MAP in Dual Strike's look** (`survival_ui.rs`). Dual Strike's
+  course screen (its title, the BASIC COURSE panel with the number of maps,
+  the budget and the best, the strip of the course's eleven maps, the map
+  under the cursor, its RECORD box) fitted to 240x160. Converted at run time
+  from the pack: the title font (`ohashi/res_modefont`: glyphs of 16x32
+  pixels, A..Z, the star, the dash; palette in the file's last 64 bytes),
+  the banner (`ohashi/res_survival`: the first LZ stream, four blocks of 4x2
+  tiles side by side = 128x16; palette in the last 770 bytes), the ring
+  wallpaper (`ohashi/res_wall_base`: tiles and the first 32x32 of its map in
+  the first two LZ streams, palette in the last 32 bytes). Its words are the
+  overlay's (`0x0230E718..`: Funds, Spent, Maps, Turn total, Turns used,
+  Total time, Time used, Funds left, Turns left, Time left, Maps clrd.), the
+  rest is AW2's own proportional font (`0x084C32E4`, widths `0x084C36E4`)
+  and window colours (red above, blue below, as Dual Strike's and AW2's own
+  windows). The map's picture is drawn from the converted tiles with the
+  game's own terrain classes (`0x080C1BC4`), a pixel or more per tile in its
+  own palette bank. Pages: the course (the panel, the strip with the cursor's
+  corner brackets on the browsed map, the map's number, name, computer CO and
+  conditions; between maps the cleared ones are dark, the next yellow and the
+  panel says Maps clrd. and what is left), the results (CLEAR or GAME OVER in
+  the title font, maps cleared, what is left, bonus, points, rank in the
+  title font) and the records (R: each course's rank, CO and what it used).
+  How: BG0 (char block and screen as the screen has them, 0 and 14) is
+  written once the list takes the pad (the proc's callback `0x08085F91`)
+  and again when what it shows changes (a hash of the run's state, the
+  browsed map and the record bytes); every colour is index 1..15 of two
+  palette banks (0: the screen, 1: the map picture on 8x5 cells), so the
+  picture is opaque over the other layers; the game's sprites are switched
+  off in the frame's sprite list at the flush; the DISPCNT shadow's window
+  bits are cleared while it is up (the cursor's move turns WIN1 on, which
+  would cut the picture); LEFT and RIGHT browse the maps, R opens the
+  records, B closes them (the game sees none of them), UP and DOWN change
+  the course and A starts it, as the game's own list does. Nothing is put
+  back when the screen goes: the next screen loads its own BG0. The state is
+  `0x0203FA26..0x0203FA33` (shown, browsed map, records open, context,
+  signature; the 32-bit ones on words).
 - **Maps** (`survival_maps.rs`): the 33 maps are read from the pack and
   converted at the first frame with the pack: ids 0xC9..0xCB are the three
   runs' entries (each the run's first map, named after its kind), 0xCC..0xEC
@@ -931,10 +974,13 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   back every frame), and the map's fog (the War Room sets gPlaySt's fog from
   the header of the map it opened with, `sub_080346FC`, before one is
   picked).
-- **The budget in battle**: the map number and what is left (funds, days left
-  today included, or the time as m:ss) at the top of the battle map, in AW2's
-  own glyph font (OBJ tiles 0x3C0.., palette 0, as `PutAsciiGlyphSprite` draws).
-  Out of budget, the player's army yields (`unk31`, as the map menu's Yield
+- **The budget in battle**: two lines centred at the top of the battle
+  map, "Map 3/11" and Dual Strike's "Funds left 412000 G", "Turns left 87"
+  or "Time left 21:10" (what is left now: funds, days left today included, or
+  the time), in AW2's proportional font, white outlined in black as the
+  second front's title is, 8x16 sprites in the OBJ tiles the map leaves
+  free (`two_front::free_tile_pairs`; not while a structure's heal plays in
+  them).   Out of budget, the player's army yields (`unk31`, as the map menu's Yield
   does) and loses at the game's next rules check.
 - **End of a map** (`EndOfGame_Finish`, trap `0x0803832C`): won, the map's
   cost is taken off, its score added, the next map listed; the last map
@@ -979,10 +1025,25 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   armies Dual Strike gives one colour (Single File Isle's allies) get two.
 - Points are AW2's War Room scores (its Speed, Power and Technique), not Dual
   Strike's.
-- The results and records are a panel of AW2's glyph font over SELECT MAP, not
-  a screen of their own.
+- Records are the best of each course (what it used, with the rank and the
+  CO), not Dual Strike's best per map: the profile has ten free bytes, not
+  room for 33 more records. The RECORD box of Dual Strike's map page shows
+  the map's name and its computer CO here (labelled MAP), where Dual Strike
+  shows that map's best.
+- The Champion courses are not included (they are a shop unlock; the maps
+  are the basic courses' own).
+- Dual Strike's course screen spreads over two screens (lion crests, the
+  enemy CO's portrait, a BACK button); the crests and the portrait are left
+  out and the CO's name is written instead.
 
-Tests: `tools/aw2test/tests/test_survival.py` (Select Mode with and without
+Tests: `tools/aw2test/tests/test_survival_screens.py` (the screen read back
+from VRAM against the .nds: the title's pixels from `res_modefont`, the
+banner's from `res_survival`, Dual Strike's words, AW2's font for the rest,
+the game's sprites off, every one of the 33 maps' pages whole and named, the
+browse and record keys unseen by the game, the between-maps and results
+pages, the budget's two lines on the map in each kind, and the lists, order
+and budgets of Dual Strike's 33 maps), and
+`tools/aw2test/tests/test_survival.py` (Select Mode with and without
 the pack, each kind's first map checked tile by tile, unit by unit and for
 fog, weather, look and colours against the .nds directly
 (`aw2test/survival.py`), every one of the 33 maps likewise in battle with its
