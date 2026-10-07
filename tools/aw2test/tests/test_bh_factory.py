@@ -295,6 +295,105 @@ def bh_factory_smart_follows_the_battle(ctx):
     ctx.check(count(late, (ANTI_AIR, MISSILES)) >= count(early, (ANTI_AIR, MISSILES)) + 4, "the air force changes what the factory builds")
 
 
+RNG_AT = 0x03001FD4
+SEEDS = [0x00000001, 0x1234ABCD, 0x7FFFFFFF, 0x2468ACE0, 0xDEADBEEF, 0x0BADF00D, 0x31415926, 0xCAFEBABE, 0x13579BDF, 0x55AA55AA]
+POOL_PRICE = {1: 1000, 2: 3000, 3: 16000, 4: 28000, 5: 7000, 6: 4000, 8: 22000, 10: 6000, 11: 15000, 14: 8000, 15: 12000,
+              16: 20000, 17: 22000, 19: 9000, 21: 28000, 22: 18000, 23: 12000, 24: 20000, 18: 7500, 26: 30000, 27: 18900, 9: 20000}
+
+
+def one_turn_at(ctx, r, cp, seed, table_only=False, day=19):
+    """Back to the checkpoint (the other army to move), the game's RNG set to `seed` (and the day), then Black Hole's
+    turn: returns (spawns of that turn, decision lines it logged, the RNG when the turn began)."""
+    from aw2test import twofront
+    e, g = r.e, r.g
+    twofront.back_to(e, g, cp)
+    e.w32(RNG_AT, seed)
+    e.w16(DAY, day)
+    e.w8(0x0203E3FF, 1 if table_only else 0)
+    first = len(e.decisions())
+    mark = len(r.spawns)
+    g.end_turn(human=r.bh)
+    r.harvest()
+    return r.spawns[mark:], e.decisions()[first:], e.u32(RNG_AT)
+
+
+def parse_pool(line):
+    import re
+    m = re.search(r"\| pool (.*?) \| then", line)
+    return [(n, int(v), int(w)) for n, v, w in re.findall(r"(.+?) (-?\d+) w(\d+)(?:, |$)", m.group(1))] if m else []
+
+
+@test(modes=("ds",))
+def bh_factory_pick_varies_with_the_rng(ctx):
+    """The smart choice is drawn, weighted by score, among the best two or three candidates (within 15% of the best,
+    at least 6 points), from the game's RNG state mixed with the day, door, army and square: the same battle on the same
+    day picks differently from different RNG states, every pick is one of the allowed top candidates and still
+    obeys the cost rule, ships on water and land units on land."""
+    from aw2test import twofront
+    r = start(ctx, factory_map(ctx, blockers=GROUND_ARMY), shots=())
+    g, e = r.g, r.e
+    ctx.check(r.bh == 1, "Black Hole is army 1 (the day set at the checkpoint, 19, becomes 20 at its turn)")
+    to_army(g, 2)
+    cp = twofront.checkpoint(e, ctx, "before_black_holes_turn")
+    rows = []
+    for seed in SEEDS:
+        spawns, lines, _ = one_turn_at(ctx, r, cp, seed)
+        rows.append((seed, spawns, lines))
+        ctx.log(f"RNG {seed:08X}: {names(spawns)}")
+    picks = [tuple((s[1], s[2]) for s in sp) for _, sp, _ in rows]
+    # (The Mech Black Hole spawned on day 1 stands on the middle door, which blocks that slot: two spawn.)
+    ctx.check(all(len(p) == 2 for p in picks) and all(sp[0][0] == 20 for _, sp, _ in rows), "the table's open slots spawn something on day 20")
+    ctx.check(len(set(picks)) >= 4, f"different RNG states give different spawns ({len(set(picks))} different of {len(picks)})")
+    for slot in range(2):
+        kinds = {p[slot][0] for p in picks}
+        ctx.check(len(kinds) >= 2, f"door {slot + 1} does not always spawn the same unit ({sorted(romlib.UNIT_NAMES[k] for k in kinds)})")
+    ctx.check(any(p[0][0] != p[1][0] for p in picks) and any(p[0][0] == p[1][0] for p in picks), "the doors neither always pick alike nor always differ")
+    rom = open(paths.aw2_rom(), "rb").read()
+    pooled = bad = 0
+    best_picked = other_picked = 0
+    for seed, spawns, lines in rows:
+        for line, sp in zip(lines, spawns):
+            pool = parse_pool(line)
+            name = line.split(" -> ")[1].split(" at (")[0]
+            best = pool[0][1]
+            pooled += len(pool) > 1
+            floor = best - max(6, abs(best) * 15 // 100)
+            ok = (name in [p[0] for p in pool] and len(pool) <= 3 and all(p[1] >= floor for p in pool)
+                  and all(pool[i][1] >= pool[i + 1][1] for i in range(len(pool) - 1)))
+            bad += not ok
+            best_picked += name == pool[0][0]
+            other_picked += name != pool[0][0]
+            d, t, x, y, c = sp
+            slot_price = POOL_PRICE.get(table_unit(rom, d, x - 9), 0)
+            heavy = t in HEAVY
+            ok_cost = POOL_PRICE.get(t, 0) * 10 <= slot_price * (13 if heavy else 10)
+            bad += not ok_cost
+            if t in SHIPS:
+                bad += c not in WATER
+            else:
+                bad += c in (SEA, REEF)
+    ctx.log(f"{pooled} of {sum(len(l) for _, _, l in rows)} decisions had a pool of two or three; best picked {best_picked}, another {other_picked}")
+    ctx.check(pooled >= 6, "most decisions have two or three candidates close enough to draw from")
+    ctx.check(other_picked >= 3 and best_picked > other_picked, "the best scorer is picked most often, but not always")
+    ctx.eq(bad, 0, "every pick is one of the allowed top candidates, within the cost rule and its terrain")
+
+
+@test(modes=("ds",))
+def bh_factory_choice_leaves_the_rng_alone(ctx):
+    """The choice only reads the game's RNG: the same turn from the same RNG state with the smart factory and with
+    the table's units (the development byte) leaves the same RNG state, so the battle's luck is the game's own."""
+    from aw2test import twofront
+    r = start(ctx, factory_map(ctx, blockers=GROUND_ARMY), shots=())
+    g, e = r.g, r.e
+    to_army(g, 2)
+    cp = twofront.checkpoint(e, ctx, "before_black_holes_turn")
+    for seed in SEEDS[:5]:
+        smart, lines, rng_smart = one_turn_at(ctx, r, cp, seed)
+        table, _, rng_table = one_turn_at(ctx, r, cp, seed, table_only=True)
+        ctx.log(f"RNG {seed:08X}: after the turn smart {rng_smart:08X} table {rng_table:08X}; smart {names(smart)}; table {names(table)}")
+        ctx.check(lines and rng_smart == rng_table, f"RNG {seed:08X}: the same state after the turn with the smart choice and with the table")
+
+
 @test(modes=("ds",))
 def bh_factory_piperunner_by_a_pipe(ctx):
     """A pipe from the door row to the enemy HQ gets Piperunners; a lone pipe that goes nowhere does not."""
@@ -577,9 +676,10 @@ def attack_map(ctx, units):
 
 @test()
 def bh_factory_hit_points(ctx):
-    """With the pack, in Versus, the factory has 99 hit points (a Black Cannon's); without it, none, as AW2's own."""
+    """With the pack, in Versus, the factory has 200 hit points (twice a Black Cannon's 99); without it, none, as AW2's
+    own."""
     r = start(ctx, factory_map(ctx), shots=())
-    ctx.eq(factory_hp(r.e), 99 if ctx.ds else 0, "the factory's hit points")
+    ctx.eq(factory_hp(r.e), 200 if ctx.ds else 0, "the factory's hit points")
 
 
 @test(modes=("aw2",))
@@ -597,14 +697,14 @@ def bh_factory_not_attackable_without_the_pack(ctx):
 
 @test(modes=("ds",))
 def bh_factory_hit_direct(ctx):
-    """A Tank beside the factory fires at it: it loses hit points, the terrain panel shows them, and a Black Cannon
-    takes the same from the same Tank."""
+    """A Tank beside the factory fires at it: it loses what a Black Cannon would (a Tank's 16), so 200 - 16 = 184 are
+    left, the terrain panel shows the three digits, and a Black Cannon takes the same from the same Tank."""
     r = start(ctx, factory_map(ctx, blockers=[("tank", 10, 12)]), shots=())
     g, e = r.g, r.e
     to_army(g, 2)
     shoot(g, (10, 12), (10, 12))
     hp = factory_hp(e)
-    ctx.check(hp < 99, f"the factory took the Tank's shot: 99 -> {hp}")
+    ctx.check(100 < hp < 200, f"the factory took the Tank's shot: 200 -> {hp}")
     g.goto(*TARGET)
     e.wait(20)
     pic(ctx, g, "factory_attacked")
@@ -623,7 +723,65 @@ def bh_factory_hit_direct(ctx):
     g2.choose("Fire", g2.ACTION_MENU)
     g2.pick_target(tx, ty)
     g2.wait_for_input()
-    ctx.eq(e2.u8(cannon + 4), chp - (99 - hp), "a Black Cannon takes the same damage")
+    ctx.eq(e2.u8(cannon + 4), chp - (200 - hp), "a Black Cannon takes the same damage")
+
+
+def refill(g, x, y):
+    """The unit at (x, y) back to full strength and ammunition (a Tank has only nine shots)."""
+    u = g.unit_at(x, y)
+    g.e.w16(g.unit_addr(u["id"]) + 4, 100 | (9 << 7))
+    g.e.w8(g.unit_addr(u["id"]) + 6, 70)
+
+
+@test(modes=("ds",))
+def bh_factory_takes_twice_the_hits(ctx):
+    """A Tank (at full strength each turn) shoots the factory until it falls: every hit takes the same 16, so the factory
+    shows 200, then 184, 168 ... and is destroyed at 0 after 13 hits, where a Black Cannon's 99 hit points take 7
+    of the same shots; the panel's three digits are photographed on the way."""
+    r = start(ctx, factory_map(ctx, blockers=[("tank", 10, 12)]), shots=())
+    g, e = r.g, r.e
+    seen = [factory_hp(e)]
+    ctx.eq(seen[0], 200, "a fresh factory has 200 hit points")
+    to_army(g, 2)
+    for k in range(20):
+        if k:
+            g.end_turn(human=1)
+            g.end_turn(human=2)
+            refill(g, 10, 12)
+        shoot(g, (10, 12), (10, 12))
+        seen.append(factory_hp(e))
+        if k in (0, 5):
+            g.goto(*TARGET)
+            e.wait(20)
+            pic(ctx, g, f"factory_hp_{seen[-1]}")
+        if seen[-1] == 0 or g.battle_over():
+            break
+    ctx.log(f"hit points after each hit: {seen}")
+    hits = len(seen) - 1
+    d = 200 - seen[1]
+    ctx.eq(d, 16, "a Tank's hit takes 16, as from a Black Cannon")
+    ctx.check(all(a - b == d for a, b in zip(seen[:-2], seen[1:-1])), "every hit takes the same")
+    ctx.eq(seen[-1], 0, "destroyed at 0")
+    ctx.eq(hits, -(-200 // d), f"{hits} hits destroy it ({200} / {d}); a Black Cannon's 99 take {-(-99 // d)}")
+    ctx.check(not g.battle_over(), "the battle goes on")
+
+
+@test(modes=("ds",))
+def bh_factory_panel_shows_three_digits(ctx):
+    """The terrain panel draws the factory's hit points in three digits (it draws two for anything else), the heart
+    shifted left to make room: photographed at 200, 184, 100 and 99 (two digits, the heart where it always is) and
+    10."""
+    r = start(ctx, factory_map(ctx), shots=())
+    g, e = r.g, r.e
+    a = factory_entry(e)
+    for hp in (200, 184, 100, 99, 10, 1):
+        e.w8(a + 4, hp)
+        g.goto(*TARGET)
+        e.wait(14)
+        pic(ctx, g, f"panel_{hp}")
+        e.wait(10)
+        pic(ctx, g, f"panel_{hp}_b")
+    ctx.eq(factory_hp(e), 1, "(the pictures only)")
 
 
 @test(modes=("ds",))
@@ -634,7 +792,7 @@ def bh_factory_hit_indirect(ctx):
     to_army(g, 2)
     shoot(g, (10, 14), (10, 14))
     hp = factory_hp(e)
-    ctx.check(hp < 99, f"the factory took the Artillery's shot: 99 -> {hp}")
+    ctx.check(hp < 200, f"the factory took the Artillery's shot: 200 -> {hp}")
 
 
 def destroy(ctx, r, pictures=True):
@@ -714,7 +872,7 @@ def bh_factory_hit_points_survive_suspend(ctx):
             to_army(g, 2)
             shoot(g, (10, 12), (10, 12))
         hp = factory_hp(e)
-        ctx.check(hp < 99 if not finish else hp == 0, f"{label}: {hp} hit points before the suspend")
+        ctx.check(0 < hp < 200 if not finish else hp == 0, f"{label}: {hp} hit points before the suspend")
         saves.suspend(g)
         img = saves.flash(e, os.path.join(ctx.out, f"suspended_{label}"))
         e.close()
@@ -1156,7 +1314,7 @@ def bh_factory_wreck_in_five_armies(ctx):
     ctx.eq(e.u8(FIVE_ON), 1, "five armies")
     ctx.check(wreck_tiles_in_place(ctx, e), "the wreck's tiles are in VRAM")
     hp0 = factory_hp(e)
-    ctx.eq(hp0, 99, "the factory has its hit points")
+    ctx.eq(hp0, 200, "the factory has its hit points")
     e.w8(factory_entry(e) + 4, 10)
     g.select(10, 12)
     g.move_to(10, 12)

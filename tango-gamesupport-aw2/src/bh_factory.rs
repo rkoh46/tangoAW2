@@ -14,9 +14,10 @@
 //! for a human Black Hole army's detour and the CPU's turn alike, whichever
 //! army is moving) lists the units that may be placed now, and
 //! [`crate::bh_smart::choose`] ranks them by what the battle needs (the
-//! scoring is in that module and docs/AW2.md). It reads RAM and ROM only: no
-//! RNG is touched (the spawner draws what it drew before), so rollback and
-//! both netplay peers agree.
+//! scoring is in that module and docs/AW2.md) and draws one of the best two or
+//! three by AW2's RNG state, which it reads and never advances. It reads RAM
+//! and ROM only: no RNG is consumed (the spawner draws what it drew before),
+//! so battle luck is unchanged and rollback and both netplay peers agree.
 //!
 //! What may be placed:
 //! - the candidates are the land units, three air units and the ships;
@@ -45,6 +46,8 @@ const MAP: u32 = 0x0201_E450;
 const ROWS: u32 = MAP + 0x417A;
 const TERRAIN_PLANE: u32 = MAP + 0x1432;
 const MAP_ID: u32 = 0x0300_3FC2;
+/// AW2's random number generator state (also used by `sandstorm`): only read here.
+const RNG: u32 = 0x0300_1FD4;
 
 const LANDER: u8 = 23;
 const CRUISER: u8 = 22;
@@ -159,6 +162,10 @@ fn at_create(core: &mut Core) {
     let door_x = x - slot;
     let map = core.raw_read_8(MAP_ID, -1) as u32;
     let h = hash(&[day, slot as u32, army, door_x as u32, y as u32, map]);
+    // The pick among the best few: AW2's RNG state, read and left as it is
+    // (the spawner's own draw after this call is unchanged), mixed with the
+    // day, door, army and square so the three doors differ.
+    let seed = hash(&[core.raw_read_32(RNG, -1), h]);
 
     let cap = price(core, table_unit);
     let door_water = matches!(terrain(core, x, y), Some(SEA) | Some(REEF));
@@ -178,7 +185,7 @@ fn at_create(core: &mut Core) {
         }
     }
     let started = std::time::Instant::now();
-    let decision = crate::bh_smart::choose(core, army, door_x, y, &options, &HEAVY);
+    let decision = crate::bh_smart::choose(core, army, door_x, y, &options, &HEAVY, seed);
     let micros = started.elapsed().as_micros();
     let (t, px, py) = match &decision {
         Some(d) => {
@@ -190,13 +197,15 @@ fn at_create(core: &mut Core) {
     };
     if let Some(d) = &decision {
         let why: Vec<String> = d.best.parts.iter().take(3).map(|p| format!("{} {:+}", p.0, p.1)).collect();
+        let pool: Vec<String> = d.pool.iter().map(|p| format!("{} {} w{}", crate::bh_smart::NAMES[p.0 as usize], p.1, p.2)).collect();
         let next: Vec<String> = d.next.iter().map(|n| format!("{} {}", crate::bh_smart::NAMES[n.0 as usize], n.1)).collect();
         log(&format!(
-            "day {day} army {army} slot {slot} table {} -> {} at ({px},{py}) score {} | {} | then {} | {} | {micros} us",
+            "day {day} army {army} slot {slot} table {} -> {} at ({px},{py}) score {} | {} | pool {} | then {} | {} | {micros} us",
             crate::bh_smart::NAMES[table_unit as usize],
             crate::bh_smart::NAMES[t as usize],
             d.best.total,
             why.join("; "),
+            pool.join(", "),
             next.join(", "),
             d.summary
         ));

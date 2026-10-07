@@ -311,14 +311,50 @@ pub struct Scored {
 }
 
 pub struct Decision {
+    /// The pick: one of [`Decision::pool`], not always the top score.
     pub best: Scored,
+    /// The candidates the pick was drawn from (the best and the up to two
+    /// next whose scores are within [`margin`] of it): `(type, score, weight)`.
+    pub pool: Vec<(u8, i32, i32)>,
     pub next: Vec<(u8, i32)>,
     pub summary: String,
 }
 
+/// How far below the best score a candidate may be and still be drawn: 15%
+/// of the best score, at least 6 points.
+pub fn margin(best: i32) -> i32 {
+    (best.abs() * 15 / 100).max(6)
+}
+
+/// The candidates a pick is drawn from, in score order, with their weights:
+/// the top three whose score is within [`margin`] of the best; a weight is
+/// the score above the pool's floor, plus one, so the best weighs most.
+pub fn pool_of(scores: &[(u8, i32)]) -> Vec<(u8, i32, i32)> {
+    let Some(&(_, best)) = scores.first() else { return Vec::new() };
+    let floor = best - margin(best);
+    scores.iter().take(3).take_while(|s| s.1 >= floor).map(|&(t, v)| (t, v, v - floor + 1)).collect()
+}
+
+/// Picks one of `pool` by `seed` (weighted by score).
+pub fn draw(pool: &[(u8, i32, i32)], seed: u32) -> usize {
+    let total: u32 = pool.iter().map(|p| p.2 as u32).sum();
+    let mut r = seed % total.max(1);
+    for (i, p) in pool.iter().enumerate() {
+        if r < p.2 as u32 {
+            return i;
+        }
+        r -= p.2 as u32;
+    }
+    0
+}
+
 /// Ranks `options` (unit types with the squares each may take) for the
 /// factory whose door row starts at `door_x`, row `y`, for `army`.
-pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(i32, i32)>)], heavy: &[u8]) -> Option<Decision> {
+///
+/// The pick is drawn, weighted by score, from the best few (see
+/// [`pool_of`]) by `seed`, which the caller derives from emulated memory
+/// only (AW2's RNG state read, never advanced; day, door, army, square).
+pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(i32, i32)>)], heavy: &[u8], seed: u32) -> Option<Decision> {
     let f = Field::read(core, army);
     let alive = |t: u8| f.own.iter().any(|s| s.t == t);
     let options: Vec<&(u8, Vec<(i32, i32)>)> = options.iter().filter(|o| !(heavy.contains(&o.0) && alive(o.0))).collect();
@@ -487,8 +523,11 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
         scored.push((Scored { t, total, parts }, spots.clone()));
     }
     scored.sort_by_key(|(s, _)| (Reverse(s.total), s.t));
-    let next = scored.iter().skip(1).take(2).map(|(s, _)| (s.t, s.total)).collect();
-    let (mut best, _) = scored.swap_remove(0);
+    let ranked_scores: Vec<(u8, i32)> = scored.iter().map(|(s, _)| (s.t, s.total)).collect();
+    let pool = pool_of(&ranked_scores);
+    let pick = draw(&pool, seed);
+    let next = scored.iter().filter(|(s, _)| s.t != pool[pick].0).take(2).map(|(s, _)| (s.t, s.total)).collect();
+    let (mut best, _) = scored.swap_remove(pick);
     best.parts.sort_by_key(|p| Reverse(p.1.abs()));
     let summary = format!(
         "foes {} (+{} unseen) near {} threat {} | own {} | to target {:?} / foe {:?}",
@@ -501,7 +540,7 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
         foe_target
     );
     let _ = fog_text(&f);
-    Some(Decision { best, next, summary })
+    Some(Decision { best, pool, next, summary })
 }
 
 fn fog_text(f: &Field) -> &'static str {
@@ -524,4 +563,39 @@ pub fn nearest_spot(core: &Core, army: u32, door_x: i32, y: i32, spots: &[(i32, 
         }
     }
     best[tie as usize % best.len()]
+}
+
+#[cfg(test)]
+mod pick_tests {
+    use super::*;
+
+    #[test]
+    fn pool_is_the_top_three_within_the_margin() {
+        // 15% of 100 is 15: 85 and above.
+        let scores = [(5, 100), (3, 90), (8, 85), (10, 84), (1, 10)];
+        let pool = pool_of(&scores);
+        assert_eq!(pool.iter().map(|p| p.0).collect::<Vec<_>>(), [5, 3, 8]);
+        // A clear winner stands alone; the margin is at least 6 points.
+        assert_eq!(pool_of(&[(5, 100), (3, 80)]).len(), 1);
+        assert_eq!(pool_of(&[(5, 10), (3, 4), (8, 3)]).len(), 2);
+        assert_eq!(pool_of(&[(5, -50), (3, -56), (8, -58)]).len(), 2);
+        assert!(pool_of(&[]).is_empty());
+    }
+
+    #[test]
+    fn the_draw_follows_the_weights_and_stays_in_the_pool() {
+        let pool = pool_of(&[(5, 100), (3, 90), (8, 86)]);
+        let mut hits = [0usize; 3];
+        for seed in 0..30_000u32 {
+            hits[draw(&pool, seed.wrapping_mul(0x9E37_79B1) ^ (seed >> 3))] += 1;
+        }
+        assert!(hits.iter().all(|&h| h > 0), "{hits:?}");
+        assert!(hits[0] > hits[1] && hits[1] > hits[2], "{hits:?}");
+        // The weights are the score above the floor (85) plus one: 16, 6, 2.
+        assert_eq!(pool.iter().map(|p| p.2).collect::<Vec<_>>(), [16, 6, 2]);
+        assert_eq!(draw(&pool, 0), 0);
+        assert_eq!(draw(&pool, 16), 1);
+        assert_eq!(draw(&pool, 22), 2);
+        assert_eq!(draw(&pool, 24), 0);
+    }
 }

@@ -244,7 +244,23 @@ from the ROM table `0x080C1BC4`.
     unit (so only a big slot can bring one: a Neotank's, a Md Tank's for
     the Oozium), and only one of each may stand on Black Hole's side at a
     time (a loss is replaced by a later spawn); they also score -20.
-  - *Scoring* (the highest score spawns; ties: the lower unit id):
+  - *The pick* (so a human cannot read the factory's next move): the candidates are scored
+    as below, then one is drawn, weighted by score, from the best two or three whose
+    score is within 15% of the best (at least 6 points); a candidate's weight is its score
+    above that floor plus one, so the best weighs most. The draw's seed is a hash of AW2's RNG
+    state (`0x03001FD4`, a 32-bit word the game's own draws advance; the factory only
+    *reads* it, so the battle's luck, and the spawner's own draw for the unit's AI group
+    after the create call, are unchanged: `bh_factory_choice_leaves_the_rng_alone` plays
+    the same turn with the smart factory and with the table's units and finds the same RNG
+    afterwards) with the day, door, army, door position and map; so the three doors differ
+    and the same situation on another RNG state can pick another unit. The seed is a pure
+    function of emulated memory (rollback, both netplay peers and replays draw the same).
+    Every candidate in the pool has passed the cost rule, the heavy units' one-at-a-time
+    limit and the terrain rules before it is scored, so any pick is fair
+    (`bh_factory_pick_varies_with_the_rng`: ten RNG states on one day give different spawns,
+    each one in the logged pool, within the margin, the cost rule and its terrain). The
+    log line shows the pool (`pool Neotank 89 w14, Megatank 88 w13`).
+  - *Scoring* (each candidate's score; the pick above draws among the best):
     *counter*: what the candidate does to the enemy units Black Hole sees
     minus 0.6 of what they do to it, by Dual Strike's own damage chart
     (`roster::chart`, an Oozium eats ground units for 100), each enemy
@@ -271,13 +287,23 @@ from the ROM table `0x080C1BC4`.
   - *Destroying it* (`factory_hp.rs`): AW2 keeps the factory in its
     invention list (kind 7, HP 0) beside the Black Cannons (kinds 3 and 5,
     HP 99). With the pack, in Versus, a trap before the registration call
-    (`0x0803E348`) gives it 99 HP, and one at `sub_0803DFE0` (the position
+    (`0x0803E348`) gives it 200 HP (twice a Black Cannon's: the HP byte holds up to 255 and
+    the game's hit takes the same damage from it as from a Cannon's 99, so a Tank's 16 leaves
+    184 and it takes 13 such hits, not 7), and one at `sub_0803DFE0` (the position
     units aim at, 0 for a kind that cannot be attacked) makes it a target at
     the middle of its bottom row, as a Black Cannon is: the attack menu, the
     targeting from adjacent squares and range, the damage (the game's own for
     a structure, the attacker's chart against a Md Tank-class defender, the
     CO's modifiers, so the same shot takes the same from a Black Cannon),
-    the HP in the terrain panel and the hit animation are the game's. At 0
+    the hit animation are the game's; the terrain panel's HP row draws two digits
+    (`sub_0802BAFC`, ones and tens, a tens digit of 10 or more is a letter glyph), so from 100
+    up two traps (`factory_hp::panel_heart`, `panel_number`, at the heart's sprite call
+    `0x0802B23A` and the number's call `0x0802B266`) draw three: the heart 3 pixels left (the
+    panel's edge), the digits 2 right (where the star row's number ends), the three digits one
+    `sub_0802BAFC` call each, re-entering the trap on return with the digits' state in a small
+    frame under the stack (nothing in RAM or ROM changes). The panel is 30 pixels wide: 200,
+    184 and 100 fit with no overlap; under 100 the game's own two digits.
+    At 0
     HP the hit step's destroy branch (`0x08040818`, no case for kind 7)
     runs a Black Cannon's destruction (the explosion), the entry keeps 0 HP
     (the game saves it with the battle, so suspend and continue keep the

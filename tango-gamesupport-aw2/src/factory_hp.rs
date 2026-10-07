@@ -8,6 +8,11 @@
 //! (+4) is above 0. In Versus with the pack:
 //! - the factory is registered with [`HP`] hit points (a trap before the
 //!   registration call, `0x0803E348`; the campaign's 0 stays);
+//! - [`HP`] is 200, not the game's 99: the HP byte (+4) holds 200 and the
+//!   game's own hit takes the same damage from it as from a Black Cannon's
+//!   99 (a Tank's 16 leaves 184), so the factory takes twice as many hits;
+//!   the terrain panel, which draws two digits, draws three ([`panel_heart`],
+//!   [`panel_number`]);
 //! - it is a target at the middle of its bottom row, as a Black Cannon is
 //!   (one open square beside it: the middle door), and everything after
 //!   that is the game's own for an invention: the attack menu, the damage
@@ -20,7 +25,8 @@
 
 use mgba::core::Core;
 
-pub const HP: u8 = 99;
+/// Twice what a Black Cannon takes to destroy: a byte has room for it.
+pub const HP: u8 = 200;
 const FACTORY_KIND: u32 = 7;
 
 const REGISTER: u32 = 0x0803_E348;
@@ -68,6 +74,82 @@ fn target_position(core: &mut Core) {
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, 1);
     cpu.set_thumb_pc(lr & !1);
+}
+
+// --- Three digits in the terrain panel ---------------------------------------------------
+
+/// The terrain panel's hit-point row (inside `sub_0802AAxx`'s per-cell
+/// update): the heart's sprite call, then the number's call
+/// `sub_0802BAFC(x, y, value)` (r4 holds the hit points at both), which
+/// draws the ones digit at x and the tens digit 7 pixels left of it, only
+/// when the tens digit is not 0. A value of 100 or more would draw a letter
+/// glyph as the tens digit. The panel is 30 pixels wide (a heart 10, two
+/// digits 15), so three digits need the heart 3 pixels to the left (the
+/// panel's edge) and the digits 2 to the right (the star row's number ends
+/// there), the heart's outline meeting the hundreds digit's as digits' do.
+const HEART_CALL: u32 = 0x0802_B23A;
+const NUMBER_CALL: u32 = 0x0802_B266;
+const NUMBER_AFTER: u32 = 0x0802_B26A;
+const DRAW_NUMBER: u32 = 0x0802_BAFC;
+/// The marker (high half) and step (low half) a digit draw in flight keeps
+/// in its stack frame, 16 bytes under the panel code's stack: x, y, hit
+/// points, marker.
+const DRAWING: u32 = 0x4844_0000;
+const HEART_SHIFT: i32 = 3;
+const NUMBER_SHIFT: i32 = 2;
+const DIGIT_PITCH: i32 = 7;
+
+fn panel_heart(core: &mut Core) {
+    if !in_scope(core) {
+        return;
+    }
+    let cpu = core.gba().cpu();
+    if cpu.gpr(4) < 100 {
+        return;
+    }
+    let x = (cpu.gpr(3) - HEART_SHIFT) & 0x1FF;
+    core.gba_mut().cpu_mut().set_gpr(3, x);
+}
+
+/// 100 or more hit points: three digits, one `sub_0802BAFC` call each (a
+/// value under 10 draws its ones digit alone), the call re-entering this
+/// trap on return until the digits are done.
+fn panel_number(core: &mut Core) {
+    if !in_scope(core) {
+        return;
+    }
+    let sp = core.gba().cpu().gpr(13) as u32;
+    let (step, frame) = if core.raw_read_32(sp + 12, -1) & 0xFFFF_0000 == DRAWING {
+        (core.raw_read_32(sp + 12, -1) & 0xFFFF, sp)
+    } else {
+        let cpu = core.gba().cpu();
+        let (x, y, hp) = (cpu.gpr(0) as u32, cpu.gpr(1) as u32, cpu.gpr(2));
+        if hp < 100 {
+            return;
+        }
+        let frame = sp - 16;
+        core.raw_write_32(frame, -1, x);
+        core.raw_write_32(frame + 4, -1, y);
+        core.raw_write_32(frame + 8, -1, hp as u32);
+        (0, frame)
+    };
+    if step == 3 {
+        core.raw_write_32(frame + 12, -1, 0);
+        let cpu = core.gba_mut().cpu_mut();
+        cpu.set_gpr(13, (frame + 16) as i32);
+        cpu.set_thumb_pc(NUMBER_AFTER);
+        return;
+    }
+    let (x, y, hp) = (core.raw_read_32(frame, -1) as i32, core.raw_read_32(frame + 4, -1), core.raw_read_32(frame + 8, -1));
+    let digit = hp / 10u32.pow(step) % 10;
+    core.raw_write_32(frame + 12, -1, DRAWING | (step + 1));
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(13, frame as i32);
+    cpu.set_gpr(0, (x + NUMBER_SHIFT - DIGIT_PITCH * step as i32) & 0xFFFF);
+    cpu.set_gpr(1, y as i32);
+    cpu.set_gpr(2, digit as i32);
+    cpu.set_gpr(14, (NUMBER_CALL | 1) as i32);
+    cpu.set_thumb_pc(DRAW_NUMBER);
 }
 
 /// The factory's entry in the invention list.
@@ -361,5 +443,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (TARGET_POSITION, Box::new(target_position)),
         (DESTROY_BRANCH, Box::new(destroy)),
         (FACTORY_SPRITE, Box::new(ruin)),
+        (HEART_CALL, Box::new(panel_heart)),
+        (NUMBER_CALL, Box::new(panel_number)),
     ]
 }
