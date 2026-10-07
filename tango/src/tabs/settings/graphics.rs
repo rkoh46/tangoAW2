@@ -96,6 +96,37 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
             toggle(config.fullscreen, Message::ToggleFullscreen),
         ));
     }
+    // iOS only: how the game fills the screen when the phone is sideways.
+    let mut emulator_rows: Vec<Element<'a, Message>> = vec![
+        option_row::<Message>(t!(lang, "settings-video-filter"), {
+            // `value` is the `config.video_filter` key (`""`, `"hq2x"`, …).
+            let options: Vec<Choice<String>> = crate::platform::video::effects::EFFECTS
+                .iter()
+                .map(|effect| Choice::new(effect.id.into(), effect.name))
+                .collect();
+            let selected = options.iter().find(|c| c.value == config.video_filter).cloned();
+            widgets::picker(options, selected, |c: Choice<String>| {
+                Message::VideoFilterChanged(c.value)
+            })
+        }),
+        option_row(
+            t!(lang, "settings-fractional-scaling"),
+            toggle(config.fractional_scaling, Message::ToggleFractionalScaling),
+        ),
+    ];
+    if cfg!(target_os = "ios") {
+        let options = vec![
+            Choice::new(false, t!(lang, "settings-landscape-screen-fit")),
+            Choice::new(true, t!(lang, "settings-landscape-screen-stretch")),
+        ];
+        let selected = options.iter().find(|c| c.value == config.landscape_stretch).cloned();
+        emulator_rows.push(option_row::<Message>(
+            t!(lang, "settings-landscape-screen"),
+            widgets::picker(options, selected, |c: Choice<bool>| {
+                Message::LandscapeStretchChanged(c.value)
+            }),
+        ));
+    }
     let mut groups: Vec<Element<'a, Message>> = vec![
         settings_group(
             t!(lang, "settings-group-window"),
@@ -109,26 +140,7 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                 )])
                 .collect(),
         ),
-        settings_group(
-            t!(lang, "settings-group-emulator"),
-            vec![
-                option_row::<Message>(t!(lang, "settings-video-filter"), {
-                    // `value` is the `config.video_filter` key (`""`, `"hq2x"`, …).
-                    let options: Vec<Choice<String>> = crate::platform::video::effects::EFFECTS
-                        .iter()
-                        .map(|effect| Choice::new(effect.id.into(), effect.name))
-                        .collect();
-                    let selected = options.iter().find(|c| c.value == config.video_filter).cloned();
-                    widgets::picker(options, selected, |c: Choice<String>| {
-                        Message::VideoFilterChanged(c.value)
-                    })
-                }),
-                option_row(
-                    t!(lang, "settings-fractional-scaling"),
-                    toggle(config.fractional_scaling, Message::ToggleFractionalScaling),
-                ),
-            ],
-        ),
+        settings_group(t!(lang, "settings-group-emulator"), emulator_rows),
     ];
     // Only a DS game has a second screen: the group shows once one is
     // registered (a console with X/Y buttons).

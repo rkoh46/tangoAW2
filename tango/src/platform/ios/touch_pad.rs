@@ -14,7 +14,35 @@ use iced::advanced::widget::{tree, Operation, Tree};
 use iced::advanced::{Clipboard, Layout, Renderer as _, Shell, Widget};
 use iced::{mouse, touch, Color, Element, Event, Length, Point, Rectangle, Size, Vector};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tango_session::keys;
+
+/// Whether the game is being stretched over the whole area right now
+/// (landscape with "Stretch" on). Set when [`GameArea`] lays out, just
+/// before the frame does, so the frame's own fit can follow it.
+static STRETCHED: AtomicBool = AtomicBool::new(false);
+
+pub fn stretched() -> bool {
+    STRETCHED.load(Ordering::Relaxed)
+}
+
+/// The safe-area insets (top, left, bottom, right) in logical points the
+/// app is padded by, kept here so the game and controls can reach past the
+/// padding in landscape. Set by `view_in_safe_area` each frame.
+static INSETS: [std::sync::atomic::AtomicU32; 4] = [const { std::sync::atomic::AtomicU32::new(0) }; 4];
+
+pub fn set_insets(insets: [f32; 4]) {
+    if insets != self::insets() {
+        log::info!("safe area insets (top, left, bottom, right): {insets:?}");
+    }
+    for (a, v) in INSETS.iter().zip(insets) {
+        a.store(v.to_bits(), Ordering::Relaxed);
+    }
+}
+
+fn insets() -> [f32; 4] {
+    [0, 1, 2, 3].map(|i| f32::from_bits(INSETS[i].load(Ordering::Relaxed)))
+}
 
 #[derive(Clone, Copy, PartialEq)]
 enum Shape {
@@ -35,17 +63,32 @@ struct Control {
 pub struct Placement {
     /// The game's area; the frame centers in it.
     pub game: Rectangle,
+    /// Where the picture ends up in landscape (3:2 and centered, or all
+    /// of `game` when stretched); controls over it are drawn fainter.
+    picture: Option<Rectangle>,
+    /// Stretching the game over `game`, aspect ignored.
+    pub stretch: bool,
+    /// The whole screen in landscape (the padded area plus the safe-area
+    /// insets), and where its top-left corner is relative to the padded
+    /// area's. Everything in this placement is in the whole screen's
+    /// coordinates. In portrait: the area itself, at the origin.
+    pub full: Size,
+    pub origin: Point,
     controls: Vec<Control>,
 }
 
 const DPAD: u32 = keys::UP | keys::DOWN | keys::LEFT | keys::RIGHT;
 
-pub fn place(size: Size) -> Placement {
+pub fn place(size: Size, stretch: bool) -> Placement {
     let (w, h) = (size.width, size.height);
     let portrait = h > w * 1.1;
     let pad = 12.0;
     let mut controls = Vec::new();
     let game;
+    let mut picture = None;
+    let mut full = size;
+    let mut origin = Point::ORIGIN;
+    let mut shift = Vector::new(0.0, 0.0);
     // Button diameter.
     let u;
     // Vertical center of the D-pad and face buttons, and the bottom row.
@@ -73,20 +116,35 @@ pub fn place(size: Size) -> Placement {
         let top = shoulder_y + 0.7 * u + pad;
         cy = (top + bottom - pad) / 2.0;
     } else {
-        // The game in the middle, the controls in a column each side.
-        u = (h * 0.14).clamp(44.0, 84.0);
-        let side = 2.6 * u + 2.0 * pad;
-        game = Rectangle::new(Point::new(side, 0.0), Size::new((w - 2.0 * side).max(0.0), h));
+        // Fit: the picture as large as fits between the controls' columns
+        // (full screen height at most, under the home indicator); Stretch:
+        // the whole screen. The controls stay inside the safe area.
+        u = (h * 0.11).clamp(40.0, 52.0);
+        // A tall landscape area is an iPad window: its title-bar buttons sit
+        // in the top-left corner, so the shoulder buttons start below them.
+        let top = if h > 600.0 { pad + 28.0 } else { pad };
+        let d = 2.6 * u;
+        let [it, il, ib, ir] = insets();
+        let (fw, fh) = (w + il + ir, h + it + ib);
+        full = Size::new(fw, fh);
+        origin = Point::new(-il, -it);
+        shift = Vector::new(il, it);
+        let margin = il.max(ir) + pad + d + 8.0;
+        let pw = (fw - 2.0 * margin).min(fh * 1.5).max(0.0);
+        let fit = Rectangle::new(Point::new((fw - pw) / 2.0, (fh - pw / 1.5) / 2.0), Size::new(pw, pw / 1.5));
+        let whole = Rectangle::new(Point::ORIGIN, full);
+        game = if stretch { whole } else { fit };
+        picture = Some(game);
         controls.push(Control {
             bits: keys::L,
             label: "L",
-            rect: Rectangle::new(Point::new(pad, pad), Size::new(1.8 * u, 0.7 * u)),
+            rect: Rectangle::new(Point::new(pad, top), Size::new(1.8 * u, 0.7 * u)),
             shape: Shape::Pill,
         });
         controls.push(Control {
             bits: keys::R,
             label: "R",
-            rect: Rectangle::new(Point::new(w - pad - 1.8 * u, pad), Size::new(1.8 * u, 0.7 * u)),
+            rect: Rectangle::new(Point::new(w - pad - 1.8 * u, top), Size::new(1.8 * u, 0.7 * u)),
             shape: Shape::Pill,
         });
         bottom = h - pad - 0.55 * u;
@@ -130,7 +188,17 @@ pub fn place(size: Size) -> Placement {
         rect: Rectangle::new(Point::new(start_x, bottom), pill),
         shape: Shape::Pill,
     });
-    Placement { game, controls }
+    for c in &mut controls {
+        c.rect = c.rect + shift;
+    }
+    Placement {
+        game,
+        picture,
+        stretch: stretch && !portrait,
+        full,
+        origin,
+        controls,
+    }
 }
 
 /// Grow a hit box so a near miss still lands.
@@ -185,12 +253,14 @@ struct State {
 }
 
 pub struct TouchPad<'a, Message> {
+    stretch: bool,
     on_change: Box<dyn Fn(u32) -> Message + 'a>,
 }
 
 impl<'a, Message> TouchPad<'a, Message> {
-    pub fn new(on_change: impl Fn(u32) -> Message + 'a) -> Self {
+    pub fn new(stretch: bool, on_change: impl Fn(u32) -> Message + 'a) -> Self {
         Self {
+            stretch,
             on_change: Box::new(on_change),
         }
     }
@@ -210,7 +280,11 @@ impl<Message> Widget<Message, iced::Theme, iced::Renderer> for TouchPad<'_, Mess
     }
 
     fn layout(&mut self, _tree: &mut Tree, _renderer: &iced::Renderer, limits: &layout::Limits) -> layout::Node {
-        layout::Node::new(limits.max())
+        // The node is the padded area; its child the whole screen the
+        // controls are placed on (see `Placement::full`).
+        let size = limits.max();
+        let p = place(size, self.stretch);
+        layout::Node::with_children(size, vec![layout::Node::new(p.full).move_to(p.origin)])
     }
 
     fn update(
@@ -225,7 +299,7 @@ impl<Message> Widget<Message, iced::Theme, iced::Renderer> for TouchPad<'_, Mess
         _viewport: &Rectangle,
     ) {
         let state = tree.state.downcast_mut::<State>();
-        let bounds = layout.bounds();
+        let bounds = layout.children().next().unwrap().bounds();
         // Stepped aside for a controller or keyboard: any touch brings
         // the controls back (and does nothing else).
         if super::touch_controls_hidden() {
@@ -244,7 +318,7 @@ impl<Message> Widget<Message, iced::Theme, iced::Renderer> for TouchPad<'_, Mess
             }
             return;
         }
-        let placement = place(bounds.size());
+        let placement = place(layout.bounds().size(), self.stretch);
         let local = |p: Point| Point::new(p.x - bounds.x, p.y - bounds.y);
         let on_control = |p: Point| bits_at(&placement, local(p)) != 0;
 
@@ -317,9 +391,9 @@ impl<Message> Widget<Message, iced::Theme, iced::Renderer> for TouchPad<'_, Mess
         if state.fingers.contains_key(&MOUSE) {
             return mouse::Interaction::Grabbing;
         }
-        let bounds = layout.bounds();
+        let bounds = layout.children().next().unwrap().bounds();
         match cursor.position() {
-            Some(p) if bits_at(&place(bounds.size()), Point::new(p.x - bounds.x, p.y - bounds.y)) != 0 => {
+            Some(p) if bits_at(&place(layout.bounds().size(), self.stretch), Point::new(p.x - bounds.x, p.y - bounds.y)) != 0 => {
                 mouse::Interaction::Grab
             }
             _ => mouse::Interaction::None,
@@ -340,26 +414,53 @@ impl<Message> Widget<Message, iced::Theme, iced::Renderer> for TouchPad<'_, Mess
             return;
         }
         let state = tree.state.downcast_ref::<State>();
-        let bounds = layout.bounds();
+        let bounds = layout.children().next().unwrap().bounds();
         // A layer of its own: the game frame is a shader primitive, which
         // iced draws after the quads of its layer — over the controls.
-        renderer.with_layer(bounds, |renderer| draw_controls(state, renderer, bounds));
+        renderer.with_layer(bounds, |renderer| {
+            draw_controls(state, renderer, bounds, place(layout.bounds().size(), self.stretch))
+        });
     }
 }
 
-fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle) {
+fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle, placement: Placement) {
     {
-        let placement = place(bounds.size());
-        let fill = |held: bool| Color::from_rgba(1.0, 1.0, 1.0, if held { 0.45 } else { 0.16 });
-        let edge = Color::from_rgba(1.0, 1.0, 1.0, 0.5);
-        let label_color = Color::from_rgba(1.0, 1.0, 1.0, 0.85);
+        // Over the picture a control gets a dark backing (readable on bright
+        // plains and on dark sea alike), a stronger outline and full white
+        // label; beside it, the plain translucent look.
+        let over = std::cell::Cell::new(false);
+        let fill = |held: bool| match (over.get(), held) {
+            (true, true) => Color::from_rgba(1.0, 1.0, 1.0, 0.6),
+            (true, false) => Color::TRANSPARENT,
+            (false, true) => Color::from_rgba(1.0, 1.0, 1.0, 0.45),
+            (false, false) => Color::from_rgba(1.0, 1.0, 1.0, 0.16),
+        };
+        let edge = || Color::from_rgba(1.0, 1.0, 1.0, if over.get() { 0.95 } else { 0.5 });
+        let label_color = |held: bool| match (over.get(), held) {
+            (true, true) => Color::from_rgba(0.0, 0.0, 0.0, 0.9),
+            (true, false) => Color::WHITE,
+            _ => Color::from_rgba(1.0, 1.0, 1.0, 0.85),
+        };
         let quad = |renderer: &mut iced::Renderer, r: Rectangle, radius: f32, held: bool| {
+            if over.get() {
+                renderer.fill_quad(
+                    renderer::Quad {
+                        bounds: r,
+                        border: iced::Border {
+                            radius: radius.into(),
+                            ..Default::default()
+                        },
+                        ..renderer::Quad::default()
+                    },
+                    Color::from_rgba(0.0, 0.0, 0.0, 0.5),
+                );
+            }
             renderer.fill_quad(
                 renderer::Quad {
                     bounds: r,
                     border: iced::Border {
-                        color: edge,
-                        width: 1.5,
+                        color: edge(),
+                        width: if over.get() { 2.0 } else { 1.5 },
                         radius: radius.into(),
                     },
                     ..renderer::Quad::default()
@@ -368,7 +469,7 @@ fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle
             );
         };
         // Centered in `r`.
-        let label = |renderer: &mut iced::Renderer, text: &str, r: Rectangle, size: f32, font: iced::Font| {
+        let label = |renderer: &mut iced::Renderer, text: &str, r: Rectangle, size: f32, font: iced::Font, held: bool| {
             renderer.fill_text(
                 iced::advanced::Text {
                     content: text.to_string(),
@@ -382,7 +483,7 @@ fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle
                     wrapping: iced::advanced::text::Wrapping::None,
                 },
                 r.center(),
-                label_color,
+                label_color(held),
                 bounds,
             );
         };
@@ -392,17 +493,19 @@ fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle
         };
         let icons = iced::Font::with_name("lucide");
         for c in &placement.controls {
+            let is_over = placement.picture.is_some_and(|p| p.intersects(&c.rect));
+            over.set(is_over);
             let r = c.rect + Vector::new(bounds.x, bounds.y);
             let held = state.bits & c.bits != 0;
             match c.shape {
                 Shape::Round => {
                     quad(renderer, r, r.width / 2.0, held);
-                    label(renderer, c.label, r, r.height * 0.42, bold);
+                    label(renderer, c.label, r, r.height * 0.42, bold, held);
                 }
                 Shape::Pill => {
                     quad(renderer, r, r.height / 2.0, held);
                     let size = r.height * if c.label.len() > 1 { 0.34 } else { 0.5 };
-                    label(renderer, c.label, r, size, bold);
+                    label(renderer, c.label, r, size, bold, held);
                 }
                 Shape::Cross => {
                     // A plus sign of three-by-three cells; each arm lights
@@ -422,7 +525,7 @@ fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle
                     ] {
                         let a = arm(dx, dy);
                         quad(renderer, a, radius, state.bits & bit != 0);
-                        label(renderer, &char::from(icon).to_string(), a, cell * 0.5, icons);
+                        label(renderer, &char::from(icon).to_string(), a, cell * 0.5, icons, state.bits & bit != 0);
                     }
                 }
             }
@@ -439,12 +542,14 @@ impl<'a, Message: 'a> From<TouchPad<'a, Message>> for Element<'a, Message> {
 /// Lays its content out in [`Placement::game`] of its own area: the
 /// game sits above the controls in portrait.
 pub struct GameArea<'a, Message> {
+    stretch: bool,
     content: Element<'a, Message>,
 }
 
 impl<'a, Message> GameArea<'a, Message> {
-    pub fn new(content: impl Into<Element<'a, Message>>) -> Self {
+    pub fn new(content: impl Into<Element<'a, Message>>, stretch: bool) -> Self {
         Self {
+            stretch,
             content: content.into(),
         }
     }
@@ -465,13 +570,18 @@ impl<Message> Widget<Message, iced::Theme, iced::Renderer> for GameArea<'_, Mess
 
     fn layout(&mut self, tree: &mut Tree, renderer: &iced::Renderer, limits: &layout::Limits) -> layout::Node {
         let size = limits.max();
-        let game = place(size).game;
+        let placement = place(size, self.stretch);
+        STRETCHED.store(placement.stretch, Ordering::Relaxed);
+        let game = placement.game;
         let child = self.content.as_widget_mut().layout(
             &mut tree.children[0],
             renderer,
             &layout::Limits::new(Size::ZERO, game.size()),
         );
-        layout::Node::with_children(size, vec![child.move_to(game.position())])
+        layout::Node::with_children(
+            size,
+            vec![child.move_to(Point::new(game.x + placement.origin.x, game.y + placement.origin.y))],
+        )
     }
 
     fn operate(

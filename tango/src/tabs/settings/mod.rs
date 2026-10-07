@@ -160,6 +160,7 @@ pub enum Message {
     ClearBackgroundImage,
     VideoFilterChanged(String),
     ToggleFractionalScaling(bool),
+    LandscapeStretchChanged(bool),
     /// New DS screen arrangement picked. Applied at draw time, so an
     /// active session re-lays out immediately.
     DsScreenStackingChanged(config::DsScreenStacking),
@@ -224,6 +225,7 @@ pub enum ConfigChange {
     BackgroundImage(Option<std::path::PathBuf>),
     VideoFilter(String),
     FractionalScaling(bool),
+    LandscapeStretch(bool),
     DsScreenStacking(config::DsScreenStacking),
     DsPrimaryScreen(config::DsPrimaryScreen),
     Fullscreen(bool),
@@ -313,6 +315,7 @@ impl State {
             Message::ClearBackgroundImage => Some(ConfigChange::BackgroundImage(None)),
             Message::VideoFilterChanged(s) => Some(ConfigChange::VideoFilter(s)),
             Message::ToggleFractionalScaling(b) => Some(ConfigChange::FractionalScaling(b)),
+            Message::LandscapeStretchChanged(b) => Some(ConfigChange::LandscapeStretch(b)),
             Message::DsScreenStackingChanged(s) => Some(ConfigChange::DsScreenStacking(s)),
             Message::DsPrimaryScreenChanged(s) => Some(ConfigChange::DsPrimaryScreen(s)),
             Message::ToggleFullscreen(b) => Some(ConfigChange::Fullscreen(b)),

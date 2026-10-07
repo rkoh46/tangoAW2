@@ -73,6 +73,7 @@ impl App {
                 lang,
                 state: &self.session,
                 fractional_scaling: self.config.fractional_scaling,
+                landscape_stretch: self.config.landscape_stretch,
                 show_replay_inputs: self.config.show_replay_inputs,
                 opponent_view: self.config.opponent_view,
                 ds_screen_stacking: self.config.ds_screen_stacking,

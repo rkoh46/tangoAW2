@@ -88,6 +88,11 @@ impl Presentation {
 /// multiple of `img` (crisp, the default) or, with fractional scaling, a
 /// smooth aspect-fit.
 fn fit(size: iced::Size, (img_w, img_h): (f32, f32), fractional_scaling: bool) -> (f32, f32) {
+    // iOS, sideways, "Stretch": the whole area, whatever its shape.
+    #[cfg(target_os = "ios")]
+    if crate::platform::ios::touch_pad::stretched() {
+        return (size.width.max(1.0), size.height.max(1.0));
+    }
     let raw = (size.width / img_w).min(size.height / img_h);
     let scale = if fractional_scaling {
         raw.max(0.0)

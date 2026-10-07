@@ -46,6 +46,8 @@ pub struct Ctx<'a> {
     pub lang: &'a LanguageIdentifier,
     pub state: &'a State,
     pub fractional_scaling: bool,
+    /// iOS landscape "Stretch" (see `config.landscape_stretch`).
+    pub landscape_stretch: bool,
     pub show_replay_inputs: bool,
     /// How modes with two perspectives present the auxiliary surface.
     /// Read live from config so replay and training switch immediately.
@@ -198,17 +200,22 @@ fn main_frame_alignment(view: crate::config::OpponentView) -> (iced::alignment::
 /// comment on `drawer_slot` below; always `[None, None]` outside PvP.
 /// `touch` asks for the on-screen controller (iOS only; sessions the
 /// player drives, not replays).
-fn emulator_body<'a>(frame: Element<'a, Message>, slots: [Option<f32>; 2], touch: bool) -> Element<'a, Message> {
+fn emulator_body<'a>(
+    frame: Element<'a, Message>,
+    slots: [Option<f32>; 2],
+    touch: bool,
+    stretch: bool,
+) -> Element<'a, Message> {
     let frame_container = container(frame).center(Fill);
     // iOS: the game above the touch controls in portrait.
     #[cfg(target_os = "ios")]
     let frame_container: Element<'a, Message> = if touch {
-        crate::platform::ios::touch_pad::GameArea::new(frame_container).into()
+        crate::platform::ios::touch_pad::GameArea::new(frame_container, stretch).into()
     } else {
         frame_container.into()
     };
     #[cfg(not(target_os = "ios"))]
-    let _ = touch;
+    let _ = (touch, stretch);
     let backdrop: Element<'a, Message> = container(iced::widget::Space::new().width(Fill).height(Fill))
         .style(|_: &iced::Theme| iced::widget::container::Style {
             background: Some(iced::Background::Color(iced::Color::BLACK)),
@@ -242,7 +249,7 @@ fn emulator_body<'a>(frame: Element<'a, Message>, slots: [Option<f32>; 2], touch
     // connected.
     #[cfg(target_os = "ios")]
     if touch {
-        body = body.push(crate::platform::ios::touch_pad::TouchPad::new(|bits| {
+        body = body.push(crate::platform::ios::touch_pad::TouchPad::new(stretch, |bits| {
             Message::Input(crate::platform::input::Event::TouchPad(bits))
         }));
     }

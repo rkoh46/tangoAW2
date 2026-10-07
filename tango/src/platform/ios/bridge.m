@@ -93,20 +93,23 @@ void tango_ios_init(void) {
     const char *orient = getenv("TANGOAW2_ORIENTATION");
     if (orient) {
         BOOL landscape = strcmp(orient, "landscape") == 0;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1500 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-            if (@available(iOS 16.0, *)) {
-                for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-                    if (![scene isKindOfClass:UIWindowScene.class]) continue;
-                    UIWindowSceneGeometryPreferencesIOS *prefs = [[UIWindowSceneGeometryPreferencesIOS alloc]
-                        initWithInterfaceOrientations:landscape ? UIInterfaceOrientationMaskLandscapeRight
-                                                                : UIInterfaceOrientationMaskPortrait];
-                    [(UIWindowScene *)scene requestGeometryUpdateWithPreferences:prefs
-                                                                    errorHandler:^(NSError *e) {
-                                                                        NSLog(@"tangoAW2: rotate: %@", e);
-                                                                    }];
+        // Retried: the scene may not be ready at the first try.
+        for (int i = 1; i <= 6; i++) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * 1500) * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+                if (@available(iOS 16.0, *)) {
+                    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+                        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+                        UIWindowSceneGeometryPreferencesIOS *prefs = [[UIWindowSceneGeometryPreferencesIOS alloc]
+                            initWithInterfaceOrientations:landscape ? UIInterfaceOrientationMaskLandscapeRight
+                                                                    : UIInterfaceOrientationMaskPortrait];
+                        [(UIWindowScene *)scene requestGeometryUpdateWithPreferences:prefs
+                                                                        errorHandler:^(NSError *e) {
+                                                                            NSLog(@"tangoAW2: rotate: %@", e);
+                                                                        }];
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     // Game audio: plays with the silent switch on and over other audio
