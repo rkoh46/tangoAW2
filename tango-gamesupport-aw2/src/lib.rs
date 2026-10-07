@@ -50,6 +50,7 @@ pub mod map_anim;
 pub mod roster;
 pub mod unit_names;
 pub mod unit_actions;
+pub mod bh_factory;
 pub mod factory;
 pub mod five;
 mod five_art;

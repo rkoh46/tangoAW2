@@ -363,7 +363,7 @@ fn eat_next(core: &mut Core) {
 /// The cost for `army`'s unit of type `t` to enter (x, y), as the flood
 /// fill charges it (`CacheUnitMovementCosts`: the CO's chart for its power
 /// and the weather), 0xFF where it cannot.
-fn move_cost(core: &Core, army: u32, t: u8, x: i32, y: i32) -> u8 {
+pub(crate) fn move_cost(core: &Core, army: u32, t: u8, x: i32, y: i32) -> u8 {
     let Some(c) = cell(core, x, y) else { return 0xFF };
     let terrain = core.raw_read_8(TERRAIN_PLANE + c, -1) as u32 & 0x1F;
     let p = players(core) + 0x3C * army;

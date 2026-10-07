@@ -185,6 +185,23 @@ from the ROM table `0x080C1BC4`.
   a human Black Hole army's turn through the spawner once; `0x0203FFFC`
   marks the detour so the return passes. A trap handler runs before its
   instruction.
+- **Versus with the pack** (`bh_factory.rs`): a trap at the spawner's
+  create-unit call (`0x08060856`, r0 x, r1 y, r2 type; r5 holds the type for
+  the AI-group call after it) changes what a slot spawns, never whether or
+  how many (the table's zeros and a blocked door tile stay). A hash of day,
+  slot, army, factory square and map picks (RAM only; the RNG the spawner
+  draws for the unit's AI group is untouched): half the time the table's
+  unit, a quarter a land Dual Strike unit (Megatank, Oozium, Piperunner when
+  a pipe tile is on the door row's ends or the row under it), a quarter a
+  ship (Lander, Cruiser, Battleship, Sub, Black Boat, Carrier) if one can be
+  placed, else a land one. A unit is placed only where its movement chart
+  (`oozium::move_cost`) lets it in and the square is empty: ships on a door
+  tile or the squares beside the doors (door row x-1..x+3, the row under the
+  doors), so sea, reef or shoal as that ship allows; land units on their door
+  tile, never on sea or reef (the table's own unit there is dropped, the
+  loop skipped to the next slot). With no free water the table's unit spawns.
+  Outside Versus (`GAME_MODE` `0x030033FC` is 3), without the pack and in the
+  DS Campaign nothing changes (`test_bh_factory.py`).
 - The battle loads the Volcano's colours (`0x080D3FC4`) into sprite
   palette 12 (`0x0803FE0A`), the fourth army's buildings' palette: fine in
   the campaign, but a Versus map with a Volcano and Yellow Comet drew
