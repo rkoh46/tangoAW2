@@ -274,6 +274,7 @@ pub fn flush(core: &mut Core) {
     crate::mode_menu::remap(core, start, at);
     at = crate::design::flush_sprites(core, at, end);
     at = crate::survival::flush_sprites(core, at, end);
+    at = crate::survival_ui::flush(core, start, at);
     at = crate::campaign_menu::flush(core, start, at, end);
     at = crate::ds_worldmap::flush_sprites(core, at, end);
     at = crate::panel_sprites::under_window(core, start, at, end);

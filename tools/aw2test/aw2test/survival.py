@@ -11,6 +11,7 @@ u16 ids (Time 0x022F64FC, Money 0x022F652C, Turn 0x022F6514), the text table
 import struct
 
 from . import paths
+from . import rom as romlib
 from .rom import DS_OVERLAY0_BASE, DualStrike, lz10
 
 # The structures' pictures in AW2 (Dual Strike's bmap files are the same bytes).
@@ -234,3 +235,243 @@ def records(e):
         if v & 7:
             out[k] = (v & 7, (v >> 3) & 0x7F, (v >> 10) * unit[k])
     return out
+
+
+# --- SELECT MAP in Dual Strike's look (survival_ui.rs) ---------------------------------
+
+UI = STATE + 0x26
+SHOWN, BROWSE, RECORDS = UI, UI + 1, UI + 2
+SELECT_MAP_IDLE = 0x08085F91
+BG0CNT = 0x04000008
+PAL_RAM = 0x05000000
+FONT_GLYPHS, FONT_WIDTHS = 0x084C32E4, 0x084C36E4
+# Where survival_ui.rs puts things (screen pixels).
+PANEL_ROW1, PANEL_ROW2 = 52, 65
+VALUE_RIGHT = 224
+LABEL_X = 108
+BANNER = (56, 34)
+
+_aw2 = None
+
+
+def aw2_image():
+    global _aw2
+    if _aw2 is None:
+        _aw2 = romlib.Image.load()
+    return _aw2
+
+
+def bg0(e):
+    """The picture on BG0 as game_rgb[y][x] (240x160), from VRAM and palette RAM
+    as the PPU reads them (tile 0 clear is never used by the picture)."""
+    cnt = e.u16(BG0CNT)
+    chars = 0x06000000 + 0x4000 * ((cnt >> 2) & 3)
+    screen = 0x06000000 + 0x800 * ((cnt >> 8) & 31)
+    tiles = e.read(chars, 0x4000)
+    smap = e.read(screen, 0x800)
+    pal = e.read(PAL_RAM, 0x40)
+    colours = []
+    for k in range(32):
+        c = struct.unpack_from("<H", pal, 2 * k)[0]
+        colours.append((((c & 31) << 3) | ((c & 31) >> 2), (((c >> 5) & 31) << 3) | (((c >> 5) & 31) >> 2),
+                        (((c >> 10) & 31) << 3) | (((c >> 10) & 31) >> 2)))
+    img = [[None] * 240 for _ in range(160)]
+    for ty in range(20):
+        for tx in range(30):
+            ent = struct.unpack_from("<H", smap, 2 * (32 * ty + tx))[0]
+            t, bank = ent & 0x3FF, ent >> 12
+            for y in range(8):
+                for x in range(8):
+                    v = (tiles[32 * t + 4 * y + x // 2] >> (4 * (x & 1))) & 15
+                    img[8 * ty + y][8 * tx + x] = colours[16 * bank + v]
+    return img
+
+
+def dark(px):
+    """AW2's text ink (and the title's black outline) on the picture."""
+    return sum(px) < 150
+
+
+def font_ink(s, x, y):
+    """The pixels AW2's proportional font inks for `s` at (x, y) (value 0xA of
+    its 4bpp glyphs, 11 rows from the glyph's third): survival_ui's Canvas::text."""
+    img = aw2_image()
+    px = set()
+    for ch in s.encode():
+        w = img.u8(FONT_WIDTHS + ch)
+        at = img.u32(FONT_GLYPHS + 4 * ch)
+        stride = (w + 1) // 2
+        for r in range(11):
+            for cx in range(w):
+                b = img.data[at - 0x08000000 + stride * (3 + r) + cx // 2]
+                if (b >> (4 * (cx & 1))) & 15 == 0xA:
+                    px.add((x + cx, y + r))
+        x += w + 1
+    return px
+
+
+def text_width(s):
+    img = aw2_image()
+    return sum(img.u8(FONT_WIDTHS + c) + 1 for c in s.encode()) - 1
+
+
+def text_on(shot, s, x, y, need=0.97):
+    """Whether `s` is on the picture at (x, y): every inked pixel dark."""
+    ink = font_ink(s, x, y)
+    if not ink:
+        return False
+    got = sum(1 for (px, py) in ink if 0 <= px < 240 and 0 <= py < 160 and dark(shot[py][px]))
+    return got >= need * len(ink)
+
+
+def text_right(shot, s, right, y, need=0.97):
+    return text_on(shot, s, right - text_width(s), y, need)
+
+
+def words(ds=None):
+    """Dual Strike's survival wording: the strings at 0x0230E718 in overlay 0."""
+    ds = ds or DualStrike(paths.ds_rom())
+    o = 0x0230E718 - DS_OVERLAY0_BASE
+    chunk = ds.ov0[o:o + 0xA0]
+    out = []
+    for part in chunk.split(b"\0"):
+        t = bytes(c for c in part if 0x20 <= c < 0x7F).decode()
+        if len(t) >= 2:
+            out.append(t)
+    return out
+
+
+def title_font(ds=None):
+    """res_modefont: 28 glyphs of 16x32 (A..Z, the star, the dash) as
+    {(x, y): colour index} of the non-clear pixels."""
+    ds = ds or DualStrike(paths.ds_rom())
+    d = ds.file("ohashi/res_modefont")
+    out = []
+    for g in range(28):
+        px = {}
+        for t in range(8):
+            for y in range(8):
+                for x in range(8):
+                    v = (d[(8 * g + t) * 32 + 4 * y + x // 2] >> (4 * (x & 1))) & 15
+                    if v:
+                        px[(8 * (t % 2) + x, 8 * (t // 2) + y)] = v
+        out.append(px)
+    return out
+
+
+def title_pixels(text, glyphs, top=1):
+    """Where the title `text` ('MONEY*SURVIVAL') draws its pixels: {(x, y): the
+    font's colour index}, a later glyph over an earlier one, centred, its first
+    row at `top`; glyphs share one column each with the next, the rows trimmed to
+    the font's extent (survival_ui.rs's Art::title)."""
+    gl = [glyphs[26 if c in "* " else 27 if c == "-" else ord(c) - 65] for c in text]
+    rows = [y for g in glyphs for (_, y) in g]
+    y0 = min(rows)
+    spans = [(min(x for x, _ in g), max(x for x, _ in g)) for g in gl]
+    total = sum(r - l for l, r in spans) + 1
+    x = (240 - total) // 2
+    out = {}
+    for g, (l, r) in zip(gl, spans):
+        for (gx, gy), v in g.items():
+            out[(x + gx - l, top + gy - y0)] = v
+        x += r - l
+    return out
+
+
+def title_blue(text, glyphs, ds=None):
+    """The pixels of the title that are blue (not the white outline): the
+    font's colours whose blue exceeds their red by 60 or more."""
+    ds = ds or DualStrike(paths.ds_rom())
+    raw = ds.files["ohashi/res_modefont"]
+    pal = []
+    for k in range(16):
+        c = struct.unpack_from("<H", raw, len(raw) - 64 + 2 * k)[0]
+        pal.append((((c & 31) << 3), ((c >> 5) & 31) << 3, ((c >> 10) & 31) << 3))
+    return {xy for xy, v in title_pixels(text, glyphs).items() if pal[v][2] - pal[v][0] >= 60}
+
+
+def blue_pixels(shot, rows=range(0, 32)):
+    return {(x, y) for y in rows for x in range(240) if shot[y][x][2] - shot[y][x][0] >= 60}
+
+
+def banner_dark(ds=None):
+    """The 'BASIC COURSE' banner's dark pixels (128x16) from res_survival's
+    first stream and its palette: pixels whose colour is dark."""
+    ds = ds or DualStrike(paths.ds_rom())
+    d = ds.file("ohashi/res_survival")
+    raw = ds.files["ohashi/res_survival"]
+    pal = []
+    for k in range(16):
+        c = struct.unpack_from("<H", raw, len(raw) - 770 + 2 * k)[0]
+        pal.append((((c & 31) << 3), ((c >> 5) & 31) << 3, ((c >> 10) & 31) << 3))
+    out = set()
+    for blk in range(4):
+        for t in range(8):
+            for y in range(8):
+                for x in range(8):
+                    v = (d[(blk * 8 + t) * 32 + 4 * y + x // 2] >> (4 * (x & 1))) & 15
+                    if v and sum(pal[v]) < 200:
+                        out.add((32 * blk + 8 * (t % 4) + x, 8 * (t // 4) + y))
+    return out
+
+
+def course_text(kind, budget_text, ds=None):
+    """The three strings of a course's panel rows: (budget label, best label) in Dual Strike's words."""
+    w = words(ds)
+    return {MONEY: ("Funds", "Spent"), TURN: ("Turn total", "Turns used"), TIME: ("Total time", "Time used")}[kind]
+
+
+# The budget on the battle map (survival_ui.rs's hud, as two_front's text is drawn):
+HUD_TILES = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)]
+HUD_WHITE = 6
+FONT_TOP, FONT_ROWS = 2, 14
+
+
+def hud_white(e):
+    """The white pixels of the budget's lines on the screen: {line top y: {(x, y)}}."""
+    oam = e.read(0x07000000, 0x400)
+    lines = {}
+    for i in range(128):
+        a0, a1, a2 = struct.unpack_from("<HHH", oam, 8 * i)
+        if (a0 >> 8) & 3 == 2 or (a0 >> 14) != 2:
+            continue
+        tile = a2 & 0x3FF
+        if not any(lo <= tile < lo + n for lo, n in HUD_TILES):
+            continue
+        y, x = a0 & 0xFF, a1 & 0x1FF
+        if y >= 32:
+            continue
+        data = e.read(0x06010000 + 32 * tile, 64)
+        for row in range(16):
+            for col in range(8):
+                v = (data[32 * (row // 8) + 4 * (row % 8) + col // 2] >> (4 * (col & 1))) & 15
+                if v == HUD_WHITE:
+                    lines.setdefault(y, set()).add((x + col, y + row))
+    return lines
+
+
+def hud_expected(s, y):
+    """The white pixels of `s` as the budget line at top `y` draws them: AW2's
+    font rows FONT_TOP.. of each glyph, one blank column before and after,
+    centred on x = 120 (two_front::outlined)."""
+    img = aw2_image()
+    cols = 1 + sum(img.u8(FONT_WIDTHS + c) + 1 for c in s.encode()) + 1
+    x0 = 120 - cols // 2
+    px = set()
+    cx = 1
+    for ch in s.encode():
+        w = img.u8(FONT_WIDTHS + ch)
+        at = img.u32(FONT_GLYPHS + 4 * ch)
+        stride = (w + 1) // 2
+        for c in range(w):
+            for r in range(FONT_ROWS):
+                b = img.data[at - 0x08000000 + stride * (FONT_TOP + r) + c // 2]
+                if (b >> (4 * (c & 1))) & 15:
+                    px.add((x0 + cx + c, y + r + 1))
+        cx += w + 1
+    return px
+
+
+def clock(frames):
+    s = frames // 60
+    return f"{s // 60}:{s % 60:02d}"

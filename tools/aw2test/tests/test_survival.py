@@ -19,7 +19,8 @@ from aw2test.stitch import stitch
 PLAYERS = 0x020232C0  # army 1's block (four armies)
 P_FUNDS, P_HUMAN, P_YIELD = 0x00, 0x1B, 0x31
 OAM = 0x07000000
-GLYPH_SLASH = 0x3FD
+# The OBJ tiles the budget is drawn in (the map's free pairs).
+HUD_TILES = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)]
 
 
 def player(army):
@@ -96,10 +97,23 @@ def check_map(ctx, e, g, data, m, label):
         taken.append(got)
 
 
-def hud_shown(e):
+def hud_sprites(e):
+    """The budget's sprites on the battle map: 8x16 sprites in the free OBJ
+    tile pairs (survival_ui::hud), at the top of the screen."""
     oam = e.read(OAM, 0x400)
-    return any(struct.unpack_from("<H", oam, 8 * i + 4)[0] & 0x3FF == GLYPH_SLASH
-               and (oam[8 * i + 1] & 3) != 2 for i in range(128))
+    out = []
+    for i in range(128):
+        a0, a1, a2 = struct.unpack_from("<HHH", oam, 8 * i)
+        if (a0 >> 8) & 3 == 2 or (a0 >> 14) != 2:
+            continue
+        tile = a2 & 0x3FF
+        if any(lo <= tile < lo + n for lo, n in HUD_TILES) and (a0 & 0xFF) < 32:
+            out.append((a0 & 0xFF, a1 & 0x1FF, tile))
+    return out
+
+
+def hud_shown(e):
+    return len(hud_sprites(e)) >= 6
 
 
 @test()
@@ -399,4 +413,4 @@ def survival_hidden_without_pack(ctx):
     sv.to_select_mode(e)
     ctx.eq(e.u32(0x080196EC), 0x08650000, "the map table is five_map's")
     ctx.eq(e.u8(0x08090EF2), 7, "the War Room lists its own tab")
-    ctx.eq(e.read(sv.STATE, 0x24), bytes(0x24), "no Survival state")
+    ctx.eq(e.read(sv.STATE, 0x40), bytes(0x40), "no Survival state")

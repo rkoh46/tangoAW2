@@ -44,6 +44,8 @@ const BUDGETS: u32 = 0x0216_8D04;
 /// Each kind's map list (Time, Money, Turn).
 const LISTS: [u32; 3] = [0x022F_64FC, 0x022F_652C, 0x022F_6514];
 pub const MAPS_PER_RUN: usize = 11;
+/// Dual Strike's text for Survival on Select Mode.
+const HELP_TEXT: u16 = 1224;
 
 /// The three Survival kinds, in Dual Strike's order (its kind byte, survival
 /// state +7: 0 Time, 1 Money, 2 Turn).
@@ -161,6 +163,8 @@ pub struct Survival {
     pub maps: Vec<Map>,
     /// Time, Money, Turn (Dual Strike's kind order).
     pub runs: [Run; 3],
+    /// Dual Strike's help line for Survival on Select Mode (its text 1224).
+    pub help: String,
 }
 
 impl Survival {
@@ -322,7 +326,8 @@ fn read(pack: &crate::ds_pack::Pack) -> Option<Survival> {
         }
         Some(Run { kind, budget: budget(kind as u32)?, maps: m })
     };
-    Some(Survival { runs: [run(Kind::Time)?, run(Kind::Money)?, run(Kind::Turn)?], maps })
+    let help = r.text(HELP_TEXT).unwrap_or_else(|| "Fight through a series of maps with three limitations.".into());
+    Some(Survival { runs: [run(Kind::Time)?, run(Kind::Money)?, run(Kind::Turn)?], maps, help })
 }
 
 static SURVIVAL: OnceLock<Option<Survival>> = OnceLock::new();
