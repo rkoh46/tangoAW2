@@ -19,12 +19,13 @@
 //!
 //! Here: a "Survival" entry on the Select Mode wheel ([`crate::mode_menu`])
 //! opens the War Room's own screens with Survival's maps: SELECT MAP lists
-//! Money, Turn and Time Survival (the record of each in a panel), then the
-//! War Room's CO screen, the battle, the War Room's results and save; back
-//! on SELECT MAP the next map of the run is the only one listed (its CO
-//! screen offers only the run's CO), until the run is cleared or lost and
-//! its results are shown there. In battle the budget left is shown at the
-//! top of the screen. AW2 has no tag battles: the run keeps one CO.
+//! Money, Turn and Time Survival and is drawn as Dual Strike's course screen
+//! ([`crate::survival_ui`]), then the War Room's CO screen, the battle, the
+//! War Room's results and save; back on SELECT MAP the next map of the run is
+//! the only one listed (its CO screen offers only the run's CO), until the
+//! run is cleared or lost and its results are shown there. In battle the
+//! budget left is shown at the top of the screen. AW2 has no tag battles:
+//! the run keeps one CO.
 //!
 //! - Maps: ids 0xC9..0xCB are the three runs' entries (the first map of
 //!   each, named after the kind), 0xCC.. the 33 maps; their headers are in
@@ -84,17 +85,17 @@ const RECORD_POOLS: [u32; 5] = [0x0808_759C, 0x0808_7664, 0x0808_7B18, 0x0808_7C
 pub const STATE: u32 = 0x0203_FA00;
 const ON: u32 = STATE; // 1 while Survival's War Room is open
 const KIND: u32 = STATE + 1;
-const STAGE: u32 = STATE + 2; // maps cleared
-const PHASE: u32 = STATE + 3;
-const LEFT: u32 = STATE + 4;
+pub(crate) const STAGE: u32 = STATE + 2; // maps cleared
+pub(crate) const PHASE: u32 = STATE + 3;
+pub(crate) const LEFT: u32 = STATE + 4;
 const BUDGET: u32 = STATE + 8;
-const POINTS: u32 = STATE + 0x0C;
+pub(crate) const POINTS: u32 = STATE + 0x0C;
 const TIME: u32 = STATE + 0x10; // frames of the player's turns on this map
 const FUNDS_CAP: u32 = STATE + 0x14;
 const CO: u32 = STATE + 0x18;
 pub(crate) const MENU_PICKED: u32 = STATE + 0x19;
-const BONUS: u32 = STATE + 0x1C;
-const RANK: u32 = STATE + 0x20;
+pub(crate) const BONUS: u32 = STATE + 0x1C;
+pub(crate) const RANK: u32 = STATE + 0x20;
 const LAST_SCORE: u32 = STATE + 0x22;
 const OUT_SET: u32 = STATE + 0x24;
 /// A zeroed block the War Room's record code reads while Survival is on:
@@ -104,16 +105,16 @@ const ROW: u32 = 0x14;
 const ROWS_LEN: u32 = ROW * 0x24;
 
 /// PHASE: choosing a kind; between maps; in a battle; cleared; lost.
-const CHOOSING: u8 = 0;
-const BETWEEN: u8 = 1;
-const PLAYING: u8 = 2;
-const CLEARED: u8 = 3;
-const LOST: u8 = 4;
+pub(crate) const CHOOSING: u8 = 0;
+pub(crate) const BETWEEN: u8 = 1;
+pub(crate) const PLAYING: u8 = 2;
+pub(crate) const CLEARED: u8 = 3;
+pub(crate) const LOST: u8 = 4;
 
 /// Records: [`RECORD_MAGIC`], then three bytes per kind (Time, Money,
 /// Turn): rank (3 bits), CO (7 bits), what was left (14 bits: frames / 60,
 /// G / 100, days).
-const PROFILE_RECORDS: u32 = 0x0200_C435;
+pub(crate) const PROFILE_RECORDS: u32 = 0x0200_C435;
 const RECORD_MAGIC: u8 = 0xD5;
 
 // --- The game ------------------------------------------------------------
@@ -190,8 +191,6 @@ fn put_text(w: &mut Vec<(u32, Vec<u8>)>, k: u16, s: &str) {
     w.push((text_slot(k), string_at(k).to_le_bytes().to_vec()));
 }
 
-pub const HELP: &str = "Clear 11 maps in a row on one budget.";
-
 fn header(map: &maps::Map, tiles: u32, units: u32, name: u16) -> [u8; 0x5C] {
     let mut h = [0u8; 0x5C];
     let w32 = |h: &mut [u8], at: usize, v: u32| h[at..at + 4].copy_from_slice(&v.to_le_bytes());
@@ -264,7 +263,7 @@ fn build() -> Option<Built> {
     let s = maps::survival()?;
     let mut writes = Vec::new();
     let mut names = Vec::new();
-    put_text(&mut writes, T_HELP, HELP);
+    put_text(&mut writes, T_HELP, &s.help);
     for k in Kind::ALL {
         put_text(&mut writes, T_KINDS + entry_index(k) as u16, k.name());
     }
@@ -300,6 +299,10 @@ fn entry_index(k: Kind) -> usize {
         Kind::Turn => 1,
         Kind::Time => 2,
     }
+}
+
+pub(crate) fn entry_kind_of(id: u8) -> Option<Kind> {
+    entry_kind(id)
 }
 
 fn entry_kind(id: u8) -> Option<Kind> {
@@ -343,6 +346,11 @@ pub fn tick_tables(core: &mut Core, on: bool) {
 }
 
 // --- Per frame ----------------------------------------------------------------
+
+/// The run's kind.
+pub(crate) fn kind_now(core: &Core) -> Kind {
+    kind(core)
+}
 
 fn kind(core: &Core) -> Kind {
     Kind::from_u8(core.raw_read_8(KIND, -1)).unwrap_or(Kind::Money)
@@ -440,6 +448,8 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
         }
     }
     list(core);
+    // SELECT MAP in Dual Strike's look (crate::survival_ui).
+    keys = if on { crate::survival_ui::tick(core, keys, prev) } else { crate::survival_ui::off(core, keys) };
     if !on {
         return keys;
     }
@@ -764,165 +774,19 @@ fn save_record(core: &mut Core, k: Kind, rank: u8, left: u32) {
     core.raw_write_range(at, -1, &[v as u8, (v >> 8) as u8, (v >> 16) as u8]);
 }
 
-// --- Sprites ---------------------------------------------------------------------
-
-/// AW2's own glyph font (`PutAsciiGlyphSprite`): OBJ tiles 0x3C0.. on the
-/// battle map and the War Room's screens, OBJ palette 0.
-fn glyph(c: char) -> Option<u16> {
-    Some(match c {
-        '0'..='9' => 0x3D0 + (c as u16 - '0' as u16),
-        'A'..='Z' => 0x3E0 + (c as u16 - 'A' as u16),
-        'a'..='z' => 0x3E0 + (c as u16 - 'a' as u16),
-        '$' => 0x3DA, // the funds G
-        '!' => 0x3DB,
-        '?' => 0x3DC,
-        '(' => 0x3FA,
-        ')' => 0x3FB,
-        '.' | ',' => 0x3FC,
-        '/' => 0x3FD,
-        '%' => 0x3FE,
-        '-' => 0x3FF,
-        _ => return None,
-    })
-}
-
-struct Sprites {
-    at: u32,
-    end: u32,
-}
-
-impl Sprites {
-    fn put(&mut self, core: &mut Core, x: i32, y: i32, attr2: u16, size_bits: (u16, u16)) {
-        if self.at + 8 > self.end || x <= -64 || x >= 240 || y <= -64 || y >= 160 {
-            return;
-        }
-        core.raw_write_16(self.at, -1, (y as u16 & 0xFF) | size_bits.0);
-        core.raw_write_16(self.at + 2, -1, (x as u16 & 0x1FF) | size_bits.1);
-        core.raw_write_16(self.at + 4, -1, attr2);
-        self.at += 8;
-    }
-    /// Text in the glyph font; ':' is two dots.
-    fn text(&mut self, core: &mut Core, x: i32, y: i32, s: &str) {
-        let mut cx = x;
-        for c in s.chars() {
-            if c == ':' {
-                self.put(core, cx - 2, y - 1, 0x3FC, (0, 0));
-                self.put(core, cx - 2, y - 5, 0x3FC, (0, 0));
-                cx += 4;
-                continue;
-            }
-            if let Some(t) = glyph(c) {
-                self.put(core, cx, y, t, (0, 0));
-            }
-            cx += 8;
-        }
-    }
-}
-
-/// The glyph font in ROM (`LoadGlyphSpriteTiles` copies it to OBJ tile
-/// 0x3C0), for text drawn into tiles of our own.
-const FONT: u32 = 0x080A_1424;
-/// OBJ tiles free on SELECT MAP (0x304..0x39F are unused there): a panel
-/// of 8 lines of 16 glyphs, as four 64x32 sprites.
-const PANEL_TILES: u32 = 0x310;
-const OBJ_VRAM: u32 = 0x0601_0000;
-
-fn glyph_tile(core: &Core, c: char) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    if c == ':' {
-        // Two of the full stop's dots, one above the other.
-        let mut dot = [0u8; 32];
-        core.raw_read_range(FONT + 32 * (0x3FC - 0x3C0), -1, &mut dot);
-        for y in 0..8 {
-            for b in 0..4 {
-                out[4 * y + b] = dot[4 * y + b];
-                if y + 4 < 8 {
-                    let above = dot[4 * (y + 4) + b];
-                    for half in 0..2 {
-                        let nib = (above >> (4 * half)) & 0xF;
-                        if nib != 0 {
-                            out[4 * y + b] = (out[4 * y + b] & !(0xF << (4 * half))) | (nib << (4 * half));
-                        }
-                    }
-                }
-            }
-        }
-    } else if let Some(t) = glyph(c) {
-        core.raw_read_range(FONT + 32 * (t as u32 - 0x3C0), -1, &mut out);
-    }
-    out
-}
-
-/// Up to 8 lines of 16 characters at (x, y), in the glyph font, from
-/// tiles of our own (SELECT MAP has no room for a sprite per glyph).
-/// The panel's plate: OBJ palette 0's colour 14, a dark slate both on
-/// SELECT MAP and in battle (the glyphs are white, outlined in colour 15).
-const PLATE: u8 = 14;
-
-fn panel(core: &mut Core, sp: &mut Sprites, x: i32, y: i32, lines: &[String]) {
-    let mut buf = vec![0u8; 128 * 32];
-    let mut used = [false; 4];
-    let rows = lines.len().min(8);
-    for block in 0..4 {
-        if block / 2 * 4 < rows {
-            used[block] = true;
-        }
-    }
-    for (row, line) in lines.iter().take(8).enumerate() {
-        for (col, c) in line.chars().take(16).enumerate() {
-            if c == ' ' {
-                continue;
-            }
-            let block = (row / 4) * 2 + col / 8;
-            let t = block * 32 + (row % 4) * 8 + col % 8;
-            buf[t * 32..t * 32 + 32].copy_from_slice(&glyph_tile(core, c));
-        }
-    }
-    // The plate under the glyphs: every transparent pixel of the panel.
-    for (block, &u) in used.iter().enumerate() {
-        if !u {
-            continue;
-        }
-        for b in &mut buf[block * 32 * 32..(block + 1) * 32 * 32] {
-            if *b & 0x0F == 0 {
-                *b |= PLATE;
-            }
-            if *b & 0xF0 == 0 {
-                *b |= PLATE << 4;
-            }
-        }
-    }
-    let at = OBJ_VRAM + 32 * PANEL_TILES;
-    let mut now = vec![0u8; buf.len()];
-    core.raw_read_range(at, -1, &mut now);
-    if now != buf {
-        core.raw_write_range(at, -1, &buf);
-    }
-    for (block, &u) in used.iter().enumerate() {
-        if u {
-            let (bx, by) = (x + 64 * (block as i32 % 2), y + 32 * (block as i32 / 2));
-            sp.put(core, bx, by, (PANEL_TILES + 32 * block as u32) as u16, (0x4000, 0xC000));
-        }
-    }
-}
+// --- The budget in battle ------------------------------------------------------------
 
 fn clock(frames: u32) -> String {
     let s = frames / 60;
     format!("{}:{:02}", s / 60, s % 60)
 }
 
-fn left_text(k: Kind, left: u32) -> String {
-    match k {
-        Kind::Money => format!("${}", left),
-        Kind::Turn => format!("{} DAYS", left),
-        Kind::Time => clock(left),
-    }
-}
-
-/// The budget on the battle map: what is left now.
-fn hud(core: &mut Core, sp: &mut Sprites) {
+/// The budget at the top of the battle map: the map's number and what is
+/// left, in Dual Strike's words (Funds left, Turns left, Time left) and
+/// AW2's own font, white outlined in black (crate::survival_ui::hud).
+fn hud(core: &mut Core, at: u32, end: u32) -> u32 {
     if core.raw_read_32(MAIN_CALLBACK, -1) != MAP_CALLBACK {
-        return;
+        return at;
     }
     let k = kind(core);
     let left = core.raw_read_32(LEFT, -1);
@@ -933,82 +797,35 @@ fn hud(core: &mut Core, sp: &mut Sprites) {
         Kind::Time => left.saturating_sub(core.raw_read_32(TIME, -1)),
     };
     let stage = core.raw_read_8(STAGE, -1) as u32 + 1;
-    let line1 = format!("{}/{}", stage, MAPS_PER_RUN);
-    let line2 = left_text(k, now);
-    let w = 8 * line2.chars().filter(|&c| c != ':').count() as i32 + 4 * line2.contains(':') as i32;
-    let x = 120 - w / 2;
-    sp.text(core, 120 - 8 * line1.len() as i32 / 2, 2, &line1);
-    sp.text(core, x, 11, &line2);
-}
-
-/// On SELECT MAP: the run's results (over the map preview), or the
-/// highlighted kind's budget and record (under it), or the run so far.
-fn select_map_panel(core: &mut Core, sp: &mut Sprites) {
-    let phase = core.raw_read_8(PHASE, -1);
-    let k = kind(core);
-    let mut lines: Vec<String> = Vec::new();
-    let (x, y);
-    match phase {
-        CLEARED | LOST => {
-            let stage = core.raw_read_8(STAGE, -1);
-            lines.push(k.name().to_uppercase());
-            lines.push(if phase == CLEARED { "CLEAR!".into() } else { "GAME OVER".into() });
-            lines.push(format!("MAPS {}/{}", stage, MAPS_PER_RUN));
-            if phase == CLEARED {
-                let left = core.raw_read_32(LEFT, -1);
-                lines.push(format!("LEFT {}", left_text(k, left)));
-                lines.push(format!("BONUS {}", core.raw_read_32(BONUS, -1)));
-            }
-            lines.push(format!("POINTS {}", core.raw_read_32(POINTS, -1)));
-            if phase == CLEARED {
-                lines.push(format!("RANK {}", maps::rank_letter(core.raw_read_8(RANK, -1))));
-            }
-            lines.push("PRESS A".into());
-            (x, y) = (112, 36);
-        }
-        BETWEEN => {
-            let left = core.raw_read_32(LEFT, -1);
-            let stage = core.raw_read_8(STAGE, -1) as usize;
-            lines.push(format!("MAP {}/{}", stage + 1, MAPS_PER_RUN));
-            lines.push(format!("LEFT {}", left_text(k, left)));
-            lines.push(format!("POINTS {}", core.raw_read_32(POINTS, -1)));
-            (x, y) = (120, 104);
-        }
-        _ => {
-            let (first, cursor) = (core.raw_read_32(LIST_FIRST, -1), core.raw_read_32(LIST_CURSOR, -1));
-            let id = core.raw_read_8(LIST_IDS + (first + cursor).min(0x31), -1);
-            let Some(k) = entry_kind(id) else { return };
-            let b = maps::survival().map_or(0, |s| s.run(k).budget);
-            lines.push(format!("{} MAPS", MAPS_PER_RUN));
-            lines.push(format!("BUDGET {}", left_text(k, b)));
-            lines.push(match record(core, k) {
-                Some((rank, _co, left)) => format!("BEST {} {}", maps::rank_letter(rank), left_text(k, left)),
-                None => "BEST -".into(),
-            });
-            (x, y) = (120, 104);
-        }
-    }
-    panel(core, sp, x, y, &lines);
+    let label = match k {
+        Kind::Money => "Funds left",
+        Kind::Turn => "Turns left",
+        Kind::Time => "Time left",
+    };
+    let value = match k {
+        Kind::Money => format!("{} G", now),
+        Kind::Turn => format!("{}", now),
+        Kind::Time => clock(now),
+    };
+    let lines = [format!("Map {}/{}", stage, MAPS_PER_RUN), format!("{} {}", label, value)];
+    crate::survival_ui::hud(core, at, end, &lines)
 }
 
 /// SELECT MAP's list: the first entry shown, the cursor's row, the ids.
 const LIST_FIRST: u32 = 0x0300_5900;
 const LIST_CURSOR: u32 = 0x0300_5930;
-const LIST_IDS: u32 = 0x0202_7F78;
 
-/// At the sprite flush ([`crate::branding::flush`]).
+/// At the sprite flush ([`crate::branding::flush`]): the budget on the
+/// battle map.
 pub fn flush_sprites(core: &mut Core, at: u32, end: u32) -> u32 {
     if core.raw_read_8(ON, -1) != 1 || !crate::ds_weather::is_on(core) {
         return at;
     }
-    let mut sp = Sprites { at, end };
     let phase = core.raw_read_8(PHASE, -1);
     if phase == PLAYING && core.raw_read_32(BATTLE_SCENE, -1) != 0 {
-        hud(core, &mut sp);
-    } else if running(core, SELECT_MAP) {
-        select_map_panel(core, &mut sp);
+        return hud(core, at, end);
     }
-    sp.at
+    at
 }
 
 #[cfg(test)]

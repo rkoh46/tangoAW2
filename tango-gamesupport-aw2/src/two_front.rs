@@ -2137,7 +2137,7 @@ fn render_line(core: &Core, s: &str, button: bool) -> Vec<[u8; 16]> {
 }
 
 /// A line in white, outlined in black (on the map itself).
-fn outlined(core: &Core, s: &str) -> Vec<[u8; 16]> {
+pub(crate) fn outlined(core: &Core, s: &str) -> Vec<[u8; 16]> {
     let mut on = vec![[false; 16]; 1];
     for col in render_line(core, s, false) {
         on.push(col.map(|v| v != 0));
@@ -2165,7 +2165,7 @@ fn outlined(core: &Core, s: &str) -> Vec<[u8; 16]> {
 /// OBJ tiles free on the battle map (crate::heal_effect's, which it uses
 /// only while a structure's heal plays at a turn's start): pairs of tiles,
 /// each an 8x16 sprite.
-fn free_tile_pairs() -> Vec<u16> {
+pub(crate) fn free_tile_pairs() -> Vec<u16> {
     const RUNS: [(u16, u16); 7] = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)];
     RUNS.iter().flat_map(|&(t, n)| (0..n / 2).map(move |k| t + 2 * k)).collect()
 }
