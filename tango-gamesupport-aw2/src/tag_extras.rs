@@ -23,6 +23,10 @@
 //!   quote (`GetVictoryQuoteTextId`, `0x0807A3AC`) is the pair's exchange,
 //!   two of its four victory lines (its CO record's list, the active CO's
 //!   entry), the active CO's line then the partner's.
+//! - **The CO page's partner pages.** RIGHT on an army with a partner shows
+//!   the partner (the page swaps the army's two COs while it does), then the
+//!   next army; LEFT the other way ([`page_right`]), as Dual Strike's CO page
+//!   gives each CO of a pair its own tab.
 //! - **The CO page's TAG box.** The CO page (the map menu's CO) gets a page
 //!   after the Super Power's (DOWN from it, UP back): "TAG" and the CO's
 //!   special partners, each with its star rating (Dual Strike's 1..3, in
@@ -53,6 +57,13 @@ const STARS_BORROWED: u32 = STATE + 0x0A;
 /// Change's outgoing and incoming COs.
 const SWAP_FROM: u32 = STATE + 0x0B;
 const SWAP_TO: u32 = STATE + 0x0C;
+/// The CO page shows an army's partner (1): its player block holds the
+/// partner's CO, meter and skills (swapped, [`tag::swap`]) until the page
+/// goes on or closes; the army it is for.
+const PARTNER_VIEW: u32 = STATE + 0x10;
+const VIEW_ARMY: u32 = STATE + 0x11;
+/// LEFT was pressed on the page: the army before is shown next (0, 1).
+const LEFT_PENDING: u32 = STATE + 0x12;
 /// The TAG page's CO.
 const PAGE_CO: u32 = STATE + 0x0D;
 /// The screen's back layer (crate::tag_screens::Ram::back) and its display
@@ -532,6 +543,9 @@ fn victory_quote(core: &mut Core) {
 /// The CO page (`0x080852A8` draws its page `[0x03005940]`; the input at
 /// `0x08084C90`): page 3 (the Super Power) and DOWN shows the TAG page
 /// first; DOWN again goes on (the unit charts), UP back.
+    // A view the page was left in (it never is: the safety net).
+    end_partner_view(core);
+    core.raw_write_8(LEFT_PENDING, -1, 0);
 const PAGE: u32 = 0x0300_5940;
 const PAGE_OPENED: u32 = 0x0808_49BC;
 const PAGE_DOWN: u32 = 0x0808_4D0E;
@@ -558,6 +572,101 @@ fn page_down(core: &mut Core) {
         core.raw_write_8(TAG_PAGE, -1, 1);
         core.gba_mut().cpu_mut().set_thumb_pc(PAGE_REDRAW_DOWN);
     }
+// The CO page walks through the armies with LEFT and RIGHT, one tab an army.
+// Dual Strike's gives each CO of a pair its own tab, the pair side by side (a
+// page and tab a CO, RIGHT: the active CO, the partner, the next army's
+// active CO; checked in melonDS). AW2's page reads its CO from the army's
+// player block, so for a partner the page swaps the army's two COs ([`tag::swap`]:
+// the CO, meter, power count and skills, so the page's own panel and
+// texts show the partner's) and redraws the page as AW2 does for another
+// army; the swap is undone when the page goes on to another army or closes.
+const PAGE_RIGHT: u32 = 0x0808_4DF4;
+const PAGE_LEFT: u32 = 0x0808_4D50;
+/// The LEFT path's tail, shared with RIGHT's (the page redraws from the
+/// army's CO again from `PAGE_ARMY_REDRAW`).
+const PAGE_TAIL: u32 = 0x0808_4E7A;
+const PAGE_ARMY_REDRAW: u32 = 0x0808_4E32;
+const PAGE_CLOSE: u32 = 0x0808_4EE0;
+const PROC_ARMY: u32 = 0x66;
+const PROC_BUSY: u32 = 0x4E;
+
+fn page_proc(core: &Core) -> Option<u32> {
+    let proc = core.gba().cpu().gpr(7) as u32;
+    (0x0200_0000..0x0400_0000).contains(&proc).then_some(proc)
+}
+
+fn page_army(core: &Core, proc: u32) -> u32 {
+    core.raw_read_16(proc + PROC_ARMY, -1) as u32
+}
+
+fn end_partner_view(core: &mut Core) {
+    if core.raw_read_8(PARTNER_VIEW, -1) == 1 {
+        core.raw_write_8(PARTNER_VIEW, -1, 0);
+        tag::swap(core, core.raw_read_8(VIEW_ARMY, -1) as u32);
+    }
+}
+
+fn begin_partner_view(core: &mut Core, army: u32) {
+    tag::swap(core, army);
+    core.raw_write_8(PARTNER_VIEW, -1, 1);
+    core.raw_write_8(VIEW_ARMY, -1, army as u8);
+}
+
+/// Draw the page for the army's CO again, as AW2 does after RIGHT or LEFT.
+fn redraw_army(core: &mut Core, proc: u32) {
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(5, (proc + PROC_BUSY) as i32);
+    cpu.set_gpr(6, (proc + PROC_ARMY) as i32);
+    cpu.set_thumb_pc(PAGE_ARMY_REDRAW);
+}
+
+fn page_right(core: &mut Core) {
+    if !crate::ds_weather::is_on(core) {
+        return;
+    }
+    let Some(proc) = page_proc(core) else { return };
+    let army = page_army(core, proc);
+    if core.raw_read_8(PARTNER_VIEW, -1) == 1 {
+        // On to the next army, its active CO.
+        end_partner_view(core);
+    } else if tag::partner(core, army).is_some() {
+        begin_partner_view(core, army);
+        redraw_army(core, proc);
+    }
+}
+
+fn page_left(core: &mut Core) {
+    if !crate::ds_weather::is_on(core) {
+        return;
+    }
+    let Some(proc) = page_proc(core) else { return };
+    if core.raw_read_8(PARTNER_VIEW, -1) == 1 {
+        // Back to this army's active CO.
+        end_partner_view(core);
+        redraw_army(core, proc);
+    } else {
+        core.raw_write_8(LEFT_PENDING, -1, 1);
+    }
+}
+
+/// The page has gone to the army before: its partner first if it has one.
+fn page_tail(core: &mut Core) {
+    if core.raw_read_8(LEFT_PENDING, -1) != 1 {
+        return;
+    }
+    core.raw_write_8(LEFT_PENDING, -1, 0);
+    let Some(proc) = page_proc(core) else { return };
+    let army = page_army(core, proc);
+    if crate::ds_weather::is_on(core) && tag::partner(core, army).is_some() {
+        begin_partner_view(core, army);
+        redraw_army(core, proc);
+    }
+}
+
+fn page_close(core: &mut Core) {
+    end_partner_view(core);
+}
+
 }
 
 fn page_up(core: &mut Core) {
@@ -718,6 +827,10 @@ pub fn flush(core: &mut Core, at: u32, end: u32) -> u32 {
     at
 }
 
+        (PAGE_RIGHT, Box::new(page_right)),
+        (PAGE_LEFT, Box::new(page_left)),
+        (PAGE_TAIL, Box::new(page_tail)),
+        (PAGE_CLOSE, Box::new(page_close)),
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (WAIT_QUOTE_TEST, Box::new(wait_quote)),

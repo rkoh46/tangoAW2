@@ -2463,7 +2463,16 @@ stay out.
   (`0x080852A8`, its input `0x08084C90`) gets a TAG page between the Super
   Power's and the unit charts: header "TAG", the CO's special partners,
   each with its rating's full stars (1..3, OBJ tile 0x321 and palette 12
-  borrowed). Text ids 0x7305..0x7307, strings at `0x08781000..`; RAM
+  borrowed). **The CO page shows partners**, as Dual Strike's gives each
+  CO of a pair its own tab (RIGHT: the active CO, the partner, the next
+  army's; LEFT the other way; checked in melonDS): AW2's page reads its CO
+  from the army's player block, so RIGHT on an army with a partner swaps
+  its two COs (`tag::swap`: the CO, meter, power count and skills) and
+  redraws the page as AW2 does for another army (traps `0x08084DF4` RIGHT,
+  `0x08084D50` LEFT, `0x08084E7A` where the page's army change ends,
+  jumping to its redraw `0x08084E32`, and `0x08084EE0` the page's close,
+  where the swap is undone; `0x080849BC` the page's start is the safety
+  net); state `PARTNER_VIEW` +0x10. Text ids 0x7305..0x7307, strings at `0x08781000..`; RAM
   `0x0203F500..0x0203F5D7` (0.5.0 had it at `0x0203F300..`, inside the two
   fronts' store, whose tail it could overwrite).
 - **Sturm** (`sturm_pairs.rs`): AW2's Sturm is not in Dual Strike, so
