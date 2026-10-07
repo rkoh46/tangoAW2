@@ -52,6 +52,16 @@ def write_design_map(save, record, slot=1):
         # A fresh sector: the first one that is still erased.
         free = [s for s in range(len(buf) // SECTOR) if set(buf[s * SECTOR:(s + 1) * SECTOR]) == {0xFF}]
         if not free:
+            # A save that has been written many times has no erased sector: the
+            # newest profile's directory says which ones are free (an old copy
+            # of a slot, listed by nobody).
+            from . import saveimg
+            img = saveimg.Image(bytes(buf))
+            d = img.directory()
+            stale = [s for s in range(len(buf) // SECTOR) if d[s] == 0xFF]
+            stale.sort(key=lambda s: img.sectors[s]["gen"] if img.sectors[s] else 0, reverse=True)
+            free = stale
+        if not free:
             raise ValueError("no free sector for the design map")
         s = free[-1]
         base = s * SECTOR

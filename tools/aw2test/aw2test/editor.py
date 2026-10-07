@@ -276,3 +276,24 @@ class Editor:
         if not e.wait_until(lambda: e.u8(STATE) == 1, 900, step=10):
             raise NavError("loading did not return to the map")
         e.wait(60)
+
+    def end(self):
+        """The editor's menu > End > Yes: back on Select Mode's wheel."""
+        from . import saves
+        e = self.e
+        self.close_bar()
+        e.press("SELECT", 8)  # the menu: File Help Intel Fill End, on File
+        if not e.wait_until(lambda: e.u8(STATE) == 3, 90, step=6):
+            raise NavError("the editor's menu did not open")
+        e.wait(30)
+        for _ in range(4):
+            e.press("DOWN", 6)
+            e.wait(20)
+        e.press("A", 8)       # "Exit?" Yes / No (on No)
+        e.wait(60)
+        e.press("LEFT", 6)
+        e.wait(20)
+        e.press("A", 8)
+        if not e.wait_until(lambda: saves.wheel(e) is not None, 900, step=10):
+            raise NavError("Select Mode did not come back")
+        e.wait(120)

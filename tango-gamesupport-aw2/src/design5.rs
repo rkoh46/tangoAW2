@@ -267,8 +267,39 @@ pub fn plain_left(core: &mut Core) {
     }
 }
 
+/// The editor's "is this map playable" test (`sub_0800C9E8`, the "Play OK!"
+/// sign, and the flag Save hands the record writer: a map not playable is
+/// saved with army count 0, and Versus lists no such design map). It looks at
+/// the four armies only: an army with an HQ and something more (a property
+/// or a unit) is counted, one with an HQ and nothing else makes the map not
+/// playable, and fewer than two armies counted make it not playable too. So
+/// Orange Star against Black Hole alone was "not playable" (one army
+/// counted) and never listed. Trapped at its `cmp r5, #1` (r5 the armies
+/// counted, only reached when no army is an HQ with nothing): Black Hole
+/// counts as one more army when it has an HQ and a base, city, airport, port
+/// or unit of its own (AW2's counters leave Labs out). Black Hole with an HQ
+/// alone is left as it was (not counted, the map's verdict unchanged).
+pub const PLAYABLE_COUNT: u32 = 0x0800_CA8E;
+pub fn playable_count(core: &mut Core) {
+    if !editor_active(core) || hq5(core).is_none() {
+        return;
+    }
+    let (w, h) = map_size(core);
+    let more = (0..h).any(|y| {
+        (0..w).any(|x| {
+            let t = tile_at(core, x, y);
+            (0x1B5..=0x1B8).contains(&t)
+        })
+    }) || army5_units(core) > 0;
+    if more {
+        let counted = core.gba().cpu().gpr(5);
+        core.gba_mut().cpu_mut().set_gpr(5, counted + 1);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
+        (PLAYABLE_COUNT, Box::new(playable_count)),
         (LOAD_ARMY, Box::new(load_army)),
         (CREATE_BASE, Box::new(create_base)),
         (UNIT_BLOCK, Box::new(unit_block)),

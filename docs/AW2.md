@@ -105,6 +105,19 @@ from the ROM table `0x080C1BC4`.
   4's (`0x08001750`), so Black Hole's buildings cast the same shadow.
   Maps saved by older versions with Black Hole in slot 4 (mark 4) still
   start that army as Black Hole on the Teams screen.
+  Whether a map is listed in Versus depends on the editor's "Play OK!" test
+  (`sub_0800C9E8`, also the flag Save gives the record writer: playable
+  -> army count = HQs placed, else 0, and Versus lists no design map with
+  count 0). It looks at the four armies only: an army with an HQ and
+  a base, city, airport, port or unit counts, an HQ alone (or with only a Lab)
+  makes the map not playable, and fewer than two armies counted do too.
+  Black Hole did not count, so Orange Star against Black Hole alone was
+  never playable, saved with count 0 and never listed (the pack off too:
+  Black Hole's editor is not part of the pack). `design5::playable_count`
+  (trap `0x0800CA8E`, the `cmp r5, #1`) counts Black Hole as one more army
+  when it has an HQ and a base, city, airport, port or unit. A map
+  saved that way by an older version is listed once loaded in the editor and
+  saved again. Tests: `design_room_*` (`test_design_versus_list.py`).
 - In a tool bar SELECT only swapped bars, like L/R; tangoAW2 turns a SELECT
   press into UP (next army, Black Hole included).
 - Inventions in the terrain bar (`design_bar.rs`): the bar's list is built
