@@ -15,7 +15,12 @@ pub(crate) const COMMON: &str = include_str!("common.wgsl");
 
 /// Nearest pass-through — the "—" / no-filter default and the fallback for
 /// unknown keys.
+#[cfg(not(target_os = "ios"))]
 static PASSTHROUGH_RENDERER: WgslRenderer = WgslRenderer::new(&[COMMON, include_str!("passthrough.wgsl")]);
+/// iOS: the same, with anti-aliased texel borders for the fractional scales
+/// a phone screen needs (identical at whole-number scales).
+#[cfg(target_os = "ios")]
+static PASSTHROUGH_RENDERER: WgslRenderer = WgslRenderer::new(&[COMMON, include_str!("passthrough_ios.wgsl")]);
 pub const PASSTHROUGH: Effect = Effect::new("", "—", 1, &PASSTHROUGH_RENDERER);
 
 /// The registry, in pick-list order. The `&str` is the `config.video_filter`

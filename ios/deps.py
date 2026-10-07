@@ -11,6 +11,10 @@ desktop build never sees them.
   extension, which winit does not provide on iOS. On iOS it takes the
   same path as the browser build (the logical key and the event's text),
   which is what winit's iOS soft keyboard fills in.
+* iced_wgpu: its swap chain prefers a transparent (post-multiplied) layer,
+  which on iOS makes the CAMetalLayer non-opaque, so Core Animation blends
+  it with what is behind it ("Composited" in Apple's Metal HUD, no direct
+  presentation). Nothing here is transparent: ask for an opaque layer.
 * mgba-sys: the build script panics on any target OS it does not name.
   iOS needs no extra system libraries.
 * libdatachannel-sys: CMake's iOS cross-compile mode searches only the
@@ -199,6 +203,24 @@ def main():
     # A crates.io package carries a .cargo_vcs_info / checksum that no
     # longer matches once edited; a path dependency ignores both.
     args.append(f'patch.crates-io.iced_winit.path="{d}"')
+
+    # iced_wgpu (crates.io): an opaque layer on iOS.
+    pkg = find(meta, "iced_wgpu")
+    d = stage(pkg, "iced_wgpu")
+    edit(
+        os.path.join(d, "src", "window", "compositor.rs"),
+        """                let preferred_alpha = if alpha_modes
+                    .contains(&wgpu::CompositeAlphaMode::PostMultiplied)
+                {""",
+        """                let preferred_alpha = if cfg!(target_os = "ios")
+                    && alpha_modes.contains(&wgpu::CompositeAlphaMode::Opaque)
+                {
+                    wgpu::CompositeAlphaMode::Opaque
+                } else if alpha_modes
+                    .contains(&wgpu::CompositeAlphaMode::PostMultiplied)
+                {""",
+    )
+    args.append(f'patch.crates-io.iced_wgpu.path="{d}"')
 
     # mgba-sys (git)
     pkg = find(meta, "mgba-sys")

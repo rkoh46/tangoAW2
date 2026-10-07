@@ -236,6 +236,11 @@ pub struct Config {
     /// letterboxed to a whole multiple.
     #[serde(default = "default_fractional_scaling")]
     pub fractional_scaling: bool,
+    /// iOS, sideways: fill the whole screen with the game, ignoring its
+    /// aspect (controls become translucent overlays). Off (the default)
+    /// is "Fit": full height at 3:2 with the controls in the side margins.
+    #[serde(default)]
+    pub landscape_stretch: bool,
     /// How a DS game's two screens stack in the emulator pane.
     /// Applied at draw time, so switching it mid-session re-lays the
     /// pane out immediately. Ignored for single-screen consoles.
@@ -372,6 +377,7 @@ impl Default for Config {
             accent: AccentColor::default(),
             video_filter: String::new(),
             fractional_scaling: default_fractional_scaling(),
+            landscape_stretch: false,
             ds_screen_stacking: DsScreenStacking::default(),
             ds_primary_screen: DsPrimaryScreen::default(),
             show_replay_inputs: false,

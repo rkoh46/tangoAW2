@@ -170,6 +170,7 @@ where
                 }
             }
             Event::Window(window::Event::RedrawRequested(_)) => {
+                crate::perf::ui_redraw();
                 // Pull the gamepad stream dry (gilrs-style) — one frame's
                 // worth of per-device events, coalesced downstream by
                 // `HeldState`.

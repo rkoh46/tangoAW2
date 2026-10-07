@@ -48,7 +48,14 @@ All of it is `cfg(target_os = "ios")`; the desktop build is unchanged.
 - **Input:** an on-screen GBA controller (`tango/src/platform/ios/touch_pad.rs`)
   in sessions you play (not replays): D-pad, A, B, L, R, Start, Select,
   several fingers at once. Portrait puts the game on top and the controls
-  below; landscape puts the controls in columns beside the game. Game
+  below. Landscape (Settings > Graphics > *Landscape screen*): **Fit**, the
+  default, draws the picture as large as fits between the control columns
+  (D-pad and Select left, A/B and Start right, L/R at the top corners; at
+  most the full screen height, even behind the home indicator) with the
+  buttons clear of it; **Stretch** fills the whole screen, aspect ignored,
+  and the buttons float over the picture on a dark backing. Non-whole
+  scales use nearest-neighbour with anti-aliased texel borders
+  (`passthrough_ios.wgsl`), so pixels stay crisp and do not shimmer. Game
   controllers (MFi, Xbox, PlayStation) and a hardware keyboard are read
   through GameController.framework (`bridge.m`) and go through the normal
   input mapping; the on-screen controls step aside once one is used and
@@ -56,6 +63,14 @@ All of it is `cfg(target_os = "ios")`; the desktop build is unchanged.
   dragging scrolls.
 - **Audio:** cpal's CoreAudio backend, with an `AVAudioSession` in the
   playback category (plays with the silent switch on) and a 5 ms buffer.
+- **Frame rate:** a display link (`bridge.m`) asks for 60-120 Hz
+  (`CADisableMinimumFrameDurationOnPhone` is set), the swap chain layer is
+  opaque (iced_wgpu patch in `ios/deps.py`; a transparent layer is
+  "Composited" in Apple's Metal HUD), the emulator thread runs at the
+  user-interactive QoS class, and the app declares Game Mode
+  (`LSApplicationCategoryType`, `GCSupportsGameMode`). Every 5 s the log
+  has `fps:` (emulated, UI and redraw rates) and `display:` (refresh rate
+  granted, Low Power Mode, thermal state) lines; `TANGOAW2_FPS_LOG=0` mutes them.
 - **Netplay:** unchanged (WebRTC through libdatachannel, link codes,
   `/host` and `/connect`). `NSLocalNetworkUsageDescription` covers local
   network play; the screen does not lock while the app is open.

@@ -3,6 +3,7 @@
 // Foundations.
 mod config;
 mod i18n;
+mod perf; // frame-rate counters
 mod library; // tango-library bound to the native filesystem + HTTP, plus desktop-only jobs
 mod platform; // host-machine glue: SDL input, CPAL audio, video, crash capture
 mod ui; // look-and-feel toolkit: widgets, style, theme, animation
@@ -192,6 +193,9 @@ fn restore_window_size(config: &mut config::Config) -> (f32, f32) {
 #[cfg(target_os = "ios")]
 fn view_in_safe_area(app: &App) -> iced::Element<'_, app::Message> {
     let [top, left, bottom, right] = platform::ios::safe_area();
+    // The game and its controls reach past this padding in landscape.
+    let scale0 = app.scale_factor().max(0.1);
+    platform::ios::touch_pad::set_insets([top / scale0, left / scale0, bottom / scale0, right / scale0]);
     // Lift everything above the on-screen keyboard while it is up.
     let bottom = bottom.max(platform::ios::keyboard_height());
     let scale = app.scale_factor().max(0.1);

@@ -4,9 +4,55 @@
 // Rust side needs no Objective-C runtime crate.
 
 #import <AVFoundation/AVFoundation.h>
+#import <stdatomic.h>
 #import <GameController/GameController.h>
 #import <UIKit/UIKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+
+// ---------------------------------------------------------------------------
+// Display rate
+//
+// The game is drawn on demand (when the emulator finishes a frame), so
+// nothing tells a ProMotion display how fast the app wants it to run, and
+// the system may let the refresh rate sink while the content looks idle.
+// A display link whose callback does nothing states the wish: never below
+// 60 Hz, 120 Hz where the screen has it (each 59.73 fps game frame then
+// holds two refreshes). The link also measures the rate actually granted.
+
+static _Atomic uint64_t g_link_ticks;
+
+@interface TangoDisplayLinkTarget : NSObject
+- (void)tick:(CADisplayLink *)link;
+@end
+
+@implementation TangoDisplayLinkTarget
+- (void)tick:(CADisplayLink *)link {
+    atomic_fetch_add_explicit(&g_link_ticks, 1, memory_order_relaxed);
+}
+@end
+
+static CADisplayLink *g_link;
+static TangoDisplayLinkTarget *g_link_target;
+
+static void start_display_link(void) {
+    g_link_target = [TangoDisplayLinkTarget new];
+    g_link = [CADisplayLink displayLinkWithTarget:g_link_target selector:@selector(tick:)];
+    if (@available(iOS 15.0, *)) {
+        float top = UIScreen.mainScreen.maximumFramesPerSecond >= 120 ? 120 : 60;
+        g_link.preferredFrameRateRange = CAFrameRateRangeMake(60, top, top);
+    }
+    [g_link addToRunLoop:NSRunLoop.mainRunLoop forMode:NSRunLoopCommonModes];
+}
+
+// Display facts for the log: display link callbacks so far, the screen's
+// maximum refresh rate, Low Power Mode (0/1) and the thermal state (0
+// nominal .. 3 critical). Callable from any thread.
+void tango_ios_display_report(uint64_t *ticks, int *max_fps, int *low_power, int *thermal) {
+    *ticks = atomic_load_explicit(&g_link_ticks, memory_order_relaxed);
+    *max_fps = (int)UIScreen.mainScreen.maximumFramesPerSecond;
+    *low_power = NSProcessInfo.processInfo.lowPowerModeEnabled ? 1 : 0;
+    *thermal = (int)NSProcessInfo.processInfo.thermalState;
+}
 
 // ---------------------------------------------------------------------------
 // Process setup
@@ -21,6 +67,7 @@ void tango_ios_init(void) {
         // A match is long stretches of thinking without touching the
         // screen; the screen must not lock under a netplay game.
         UIApplication.sharedApplication.idleTimerDisabled = YES;
+        start_display_link();
     });
 
     // The on-screen keyboard's height, so the UI can lift what is being
@@ -46,20 +93,23 @@ void tango_ios_init(void) {
     const char *orient = getenv("TANGOAW2_ORIENTATION");
     if (orient) {
         BOOL landscape = strcmp(orient, "landscape") == 0;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1500 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-            if (@available(iOS 16.0, *)) {
-                for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-                    if (![scene isKindOfClass:UIWindowScene.class]) continue;
-                    UIWindowSceneGeometryPreferencesIOS *prefs = [[UIWindowSceneGeometryPreferencesIOS alloc]
-                        initWithInterfaceOrientations:landscape ? UIInterfaceOrientationMaskLandscapeRight
-                                                                : UIInterfaceOrientationMaskPortrait];
-                    [(UIWindowScene *)scene requestGeometryUpdateWithPreferences:prefs
-                                                                    errorHandler:^(NSError *e) {
-                                                                        NSLog(@"tangoAW2: rotate: %@", e);
-                                                                    }];
+        // Retried: the scene may not be ready at the first try.
+        for (int i = 1; i <= 6; i++) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * 1500) * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+                if (@available(iOS 16.0, *)) {
+                    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+                        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+                        UIWindowSceneGeometryPreferencesIOS *prefs = [[UIWindowSceneGeometryPreferencesIOS alloc]
+                            initWithInterfaceOrientations:landscape ? UIInterfaceOrientationMaskLandscapeRight
+                                                                    : UIInterfaceOrientationMaskPortrait];
+                        [(UIWindowScene *)scene requestGeometryUpdateWithPreferences:prefs
+                                                                        errorHandler:^(NSError *e) {
+                                                                            NSLog(@"tangoAW2: rotate: %@", e);
+                                                                        }];
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     // Game audio: plays with the silent switch on and over other audio

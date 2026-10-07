@@ -520,6 +520,7 @@ impl State {
                 self.settings.close();
             }
             Message::UpdateFramebuffer => {
+                crate::perf::ui_update();
                 // Keep the user's .sav current while they play — see
                 // `runtime::SaveBackup`. No-op for every other session kind.
                 self.autosave_singleplayer();
