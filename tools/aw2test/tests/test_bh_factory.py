@@ -722,6 +722,11 @@ def bh_factory_hit_points_survive_suspend(ctx):
         saves.to_select_mode(e2)
         saves.versus_continue(g2)
         ctx.eq(factory_hp(e2), hp, f"{label}: the continued battle's factory hit points")
+        if finish:
+            g2.goto(*TARGET)
+            e2.wait(30)
+            ctx.check(wreck_tiles_in_place(ctx, e2), "the continued battle draws the wreck from the game's own tiles")
+            pic(ctx, g2, "factory_wreck_continued")
         g2.end_turn(human=1) if g2.current_army() == 2 else None
         ctx.check(not g2.battle_over(), f"{label}: the continued battle goes on")
         e2.close()
@@ -851,11 +856,34 @@ COMPARE = os.environ.get("AW2TEST_BH_COMPARE")
 COMPARE_DAYS = 22
 
 
+def on_factory(g):
+    """Units standing on the factory's building squares (its 3x4 footprint, the doors' row excluded)."""
+    ent = factory_entry(g.e)
+    if ent is None:
+        return []
+    x0, y0 = g.e.u8(ent), g.e.u8(ent + 1)
+    w, h = g.e.u8(ent + 2) & 7, (g.e.u8(ent + 2) >> 3) & 7
+    return [u for u in g.units() if x0 <= u["x"] < x0 + w and y0 <= u["y"] < y0 + h and not u["flags"] & 0x08]
+
+
 class _Shim:
     """What place_unit needs of a Run."""
 
     def __init__(self, g):
         self.g, self.e, self.base = g, g.e, set()
+
+
+def photograph(e, out, name, n=8):
+    """Pictures over the next frames of the CPU's turn (the camera is the game's own, never moved from here: a moved
+    camera draws the units and the building out of step), each with the scroll it was taken at; returns the names and
+    scrolls, and the sheet picks the one with the factory best in view."""
+    taken = []
+    for k in range(n):
+        shot = f"{name}_{k}"
+        e.shot(os.path.join(out, shot))
+        taken.append((shot, e.u16(MAP + 4), e.u16(MAP + 6)))
+        e.wait(6)
+    return taken
 
 
 def compare_run(ctx, coast, table):
@@ -872,6 +900,7 @@ def compare_run(ctx, coast, table):
     shim = _Shim(g)
     seen = {u["id"] for u in g.units()}
     frames, values, day_seen = [], {}, 0
+    inside = set()
     injected = False
     for _ in range(COMPARE_DAYS):
         if g.current_army() != human:
@@ -913,27 +942,24 @@ def compare_run(ctx, coast, table):
                 waited += 1
                 spawned = [u for u in g.units(bh) if u["id"] not in seen]
                 if spawned:
-                    for off in (4, 6, 8, 0xA):       # the camera on the map's top left, where the factory is
-                        e.w16(MAP + off, 0)
-                    e.wait(2)
-                    e.shot(os.path.join(ctx.out, f"day{e.u16(DAY):02d}"))
                     e.wait(8)        # the rest of the turn's spawns
                     spawned = [u for u in g.units(bh) if u["id"] not in seen]
+                    taken = photograph(e, ctx.out, f"day{e.u16(DAY):02d}")
                     break
                 if waited > 700:     # nothing spawned this turn: a picture all the same
-                    for off in (4, 6, 8, 0xA):
-                        e.w16(MAP + off, 0)
-                    e.wait(2)
-                    e.shot(os.path.join(ctx.out, f"day{e.u16(DAY):02d}"))
-                    frames.append({"day": e.u16(DAY), "image": f"day{e.u16(DAY):02d}", "spawned": []})
+                    taken = photograph(e, ctx.out, f"day{e.u16(DAY):02d}", 1)
+                    frames.append({"day": e.u16(DAY), "shots": taken, "spawned": []})
                     break
         d = e.u16(DAY)
         for u in spawned:
             seen.add(u["id"])
         if spawned:
-            name = f"day{d:02d}"
-            frames.append({"day": d, "image": name, "spawned": [(romlib.UNIT_NAMES[u["type"]], u["x"], u["y"]) for u in spawned]})
-        if not e.wait_until(lambda: g.current_army() == human, 20000, step=30):
+            frames.append({"day": d, "shots": taken, "spawned": [(romlib.UNIT_NAMES[u["type"]], u["x"], u["y"]) for u in spawned]})
+        def back():
+            for u in on_factory(g):
+                inside.add((e.u16(DAY), romlib.UNIT_NAMES[u["type"]], u["army"], u["x"], u["y"]))
+            return g.current_army() == human
+        if not e.wait_until(back, 20000, step=30):
             ctx.shot(g, "stalled")
             ctx.log(f"day {d}: the human's turn did not come back (army {g.current_army()}, battle over {g.battle_over()}; procs {[(hex(a), hex(f)) for a, _, f in g.procs()]}; units {[(u['type'], u['x'], u['y'], u['flags']) for u in g.units(bh)]})")
             break
@@ -941,7 +967,8 @@ def compare_run(ctx, coast, table):
         seen |= {u["id"] for u in g.units()}
         g.wait_for_input()
     lines = e.decisions()
-    result = {"coast": coast, "table": table, "frames": frames, "value_by_day": values, "decisions": lines}
+    result = {"coast": coast, "table": table, "frames": frames, "value_by_day": values, "decisions": lines, "on_factory": sorted(inside)}
+    ctx.log(f"units standing on the factory's building squares: {sorted(inside)}")
     with open(os.path.join(ctx.out, "compare.json"), "w") as f:
         json.dump(result, f)
     ctx.log(f"spawned: {[(f['day'], [s[0] for s in f['spawned']]) for f in frames]}")
@@ -988,3 +1015,161 @@ def bh_factory_pictures_smart(ctx):
         with open(os.path.join(PICS, f"{tag}decisions.txt"), "w") as f:
             f.write("\n".join(lines) + "\n")
         ctx.log(f"{tag}: {names(r.spawns)}")
+
+
+# --- The wreck, and the building as a wall -------------------------------------------------------------------------
+
+OBJ_VRAM = 0x06010000
+WRECK_TILE = 0xC4          # the Black Cannon sheet's first 36 tiles (its wreck), loaded by AW2 on every battle map
+
+
+def lz77(data):
+    """GBA BIOS LZ77 (header 0x10 + size, flag bytes MSB first, 1 = copy 3..18 bytes from 1..4096 back)."""
+    size = int.from_bytes(data[1:4], "little")
+    out, i = bytearray(), 4
+    while len(out) < size:
+        flags = data[i]
+        i += 1
+        for bit in range(7, -1, -1):
+            if len(out) >= size:
+                break
+            if not flags & (1 << bit):
+                out.append(data[i])
+                i += 1
+            else:
+                n, back = (data[i] >> 4) + 3, (((data[i] & 15) << 8) | data[i + 1]) + 1
+                i += 2
+                for _ in range(n):
+                    out.append(out[-back])
+    return bytes(out)
+
+
+def wreck_tiles_in_place(ctx, e):
+    rom = open(paths.aw2_rom(), "rb").read()
+    sheet = lz77(rom[0x0D24E0:0x0D24E0 + 0x2000])[:36 * 32]
+    return e.read(OBJ_VRAM + WRECK_TILE * 32, 36 * 32) == sheet
+
+
+@test(modes=("ds",))
+def bh_factory_wreck_is_the_cannons(ctx):
+    """On a map with no Black Cannon the wreck's tiles are in VRAM all the same (AW2 loads them on every map) and
+    stay as the game's sheet has them while the destroyed factory is drawn as the wreck, in the first frames and later."""
+    r = start(ctx, factory_map(ctx, blockers=[("tank", 10, 12)]), shots=())
+    ctx.check(wreck_tiles_in_place(ctx, r.e), "the wreck's tiles are in VRAM at the start")
+    destroy(ctx, r)
+    ctx.check(wreck_tiles_in_place(ctx, r.e), "and after the factory is destroyed")
+    r.g.end_turn(human=1)
+    r.g.end_turn(human=2)
+    r.g.goto(*TARGET)
+    r.e.wait(30)
+    ctx.check(wreck_tiles_in_place(ctx, r.e), "and two days later")
+    pic(ctx, r.g, "factory_wreck_later")
+
+
+@test(modes=("ds",))
+def bh_factory_wreck_in_fog(ctx):
+    """With fog on, a factory the CPU brings down is drawn as the wreck, its tiles in place."""
+    m = factory_map(ctx, blockers=[("tank", 11, 11)])
+    g = ctx.start(m, ["andy", "vonbolt"], humans=(1,), fog=True)
+    e = g.e
+    e.w8(factory_entry(e) + 4, 10)
+    g.end_turn(human=1)
+    ctx.eq(factory_hp(e), 0, "the CPU's Tank destroyed the factory in the fog")
+    g.goto(*TARGET)
+    e.wait(30)
+    ctx.check(wreck_tiles_in_place(ctx, e), "the wreck's tiles are in VRAM")
+    pic(ctx, g, "factory_wreck_fog")
+    ctx.check(not g.battle_over(), "the battle goes on")
+
+
+@test(modes=("aw2", "ds"))
+def bh_factory_building_is_a_wall(ctx):
+    """With the pack in Versus every square of the factory's building (3x4) is impassable ground (class 9, the
+    factory's own 0x1D), even on a map that carries only the anchor tile; the pipe end at its top included. AW2's rules
+    are untouched without the pack."""
+    r = start(ctx, factory_map(ctx), shots=())
+    g = r.g
+    classes = {(x, y): g.terrain_class(x, y) & 0x1F for x in range(9, 12) for y in range(8, 12)}
+    ctx.log(f"classes {classes}")
+    if ctx.ds:
+        ctx.check(all(c in (9, 0x1D) for c in classes.values()), "every building square is a wall")
+    else:
+        ctx.check(all(c in (1, 0x1D) for c in classes.values()), "without the pack the squares are AW2's own")
+    ctx.check(g.terrain_class(9, 12) & 0x1F == 1, "the doors' row is open ground")
+    m = drawn_map(ctx, False)
+    g2 = ctx.start(m, ["andy", "vonbolt" if ctx.ds else "drake"], humans=(2,))
+    top = g2.terrain_class(5, 1) & 0x1F
+    ctx.eq(top, 9 if ctx.ds else 0xF, "the pipe end at the factory's top")
+
+
+@test(modes=("ds",))
+def bh_factory_nothing_stands_on_the_building(ctx):
+    """A long CPU-against-CPU game on each drawn map (coast and inland): no unit, of either army and of any kind, ever
+    stands on a square of the factory's building, and every spawn is on a door."""
+    from aw2test.emu import Emu
+    from aw2test.game import Game
+    for coast in (True, False):
+        save = os.path.join(ctx.out, f"map_{coast}.sav")
+        drawn_map(ctx, coast, economy=True).write(paths.base_save(), save)
+        e = Emu(save=save, ds=ctx.ds)
+        g = Game(e, ctx.image)
+        ctx.games.append(g)
+        g.boot_to_teams()
+        g.set_teams(["andy", "kanbei"], set())
+        g.teams_to_rules()
+        g.set_rules(fog=False, weather="clear", power=True, visuals="off")
+        g.start_battle()
+        inside, doors, last = set(), set(), 0
+        for _ in range(400):
+            e.wait(60)
+            for u in on_factory(g):
+                inside.add((e.u16(DAY), u["army"], romlib.UNIT_NAMES[u["type"]], u["x"], u["y"]))
+            d = e.u16(DAY)
+            if d != last:
+                last = d
+            if d >= 24 or not g.units(1) or not g.units(2):
+                break
+        ctx.log(f"{'coast' if coast else 'inland'}: {last} days, on the building: {sorted(inside)}")
+        ctx.check(last >= 10, f"{'coast' if coast else 'inland'}: a long game ({last} days)")
+        ctx.check(not inside, f"{'coast' if coast else 'inland'}: nothing stood on the building")
+        for line in e.decisions():
+            if " -> " in line and " at (" in line:
+                pos = line.split(" at (")[1].split(")")[0].split(",")
+                doors.add((int(pos[0]), int(pos[1])))
+        beside = {(x, 5) for x in range(3, 8)} | {(x, 6) for x in range(4, 7)}
+        ctx.check(doors <= beside, f"every spawn on a door square or beside the doors (ships): {sorted(doors)}")
+        e.close()
+
+
+@test(modes=("ds",))
+def bh_factory_wreck_in_five_armies(ctx):
+    """On a five-army map (Black Hole the fifth army) the destroyed factory is the wreck, its tiles in place, and spawns
+    nothing; the battle goes on."""
+    m = ctx.map(hq=((1, 0, 0), (2, 29, 19), (3, 29, 0), (4, 0, 19)))
+    m.terrain(15, 16, 0x1B4)
+    m.colours = [5, 1, 2, 3, 4]
+    m.terrain(10, 10, ANCHOR)
+    m.unit(5, "infantry", 16, 16)
+    m.unit(1, "tank", 10, 12)
+    g = ctx.start(m, None, humans=(1, 5))
+    e = g.e
+    ctx.eq(e.u8(FIVE_ON), 1, "five armies")
+    ctx.check(wreck_tiles_in_place(ctx, e), "the wreck's tiles are in VRAM")
+    hp0 = factory_hp(e)
+    ctx.eq(hp0, 99, "the factory has its hit points")
+    e.w8(factory_entry(e) + 4, 10)
+    g.select(10, 12)
+    g.move_to(10, 12)
+    g.choose("Fire", g.ACTION_MENU)
+    g.pick_target(*TARGET)
+    g.wait_for_input()
+    ctx.eq(factory_hp(e), 0, "destroyed")
+    g.goto(*TARGET)
+    e.wait(30)
+    ctx.check(wreck_tiles_in_place(ctx, e), "the wreck's tiles are still in place")
+    pic(ctx, g, "factory_wreck_five_armies")
+    n0 = len(g.units(5))
+    g.end_turn(human=5)
+    g.end_turn(human=1)
+    g.end_turn(human=5)
+    ctx.eq(len(g.units(5)), n0, "no spawns for Black Hole any more")

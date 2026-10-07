@@ -15,7 +15,7 @@
 //!   panel, the hit animation;
 //! - at 0 HP it is destroyed as a Black Cannon is (the explosion, [`destroy`]),
 //!   its entry staying in the list with 0 HP, which the game saves with the
-//!   battle; it is drawn in the grey of a neutral building ([`ruin`]) and its doors
+//!   battle; it is drawn as the Black Cannon's wreck over its whole footprint ([`ruin`]) and its doors
 //!   spawn nothing any more ([`destroyed`]). The battle goes on.
 
 use mgba::core::Core;
@@ -98,11 +98,83 @@ fn destroy(core: &mut Core) {
     cpu.set_thumb_pc(CANNON_DESTROYED);
 }
 
-/// A destroyed factory is drawn as its own picture in the neutral
-/// buildings' (grey) palette: the sprite call's owner argument (r3, the army
-/// slot of the factory's colour) is 0, neutral (a Black Cannon's wreck needs
-/// tiles a map with only a factory never loads).
+/// The Black Cannon's wreck, drawn over the factory's whole footprint.
+///
+/// AW2's `LoadInventionGraphics` (`0x0803FD80`) loads the Black Cannon sheet
+/// (`0x080D24E0`, LZ77) at OBJ tile `0xC4` for every battle map, cannons or
+/// not: its first 36 tiles are the cannon's wreck (the 48x48 sprite
+/// definition `0x0849FA3C`, four sprites on tiles `0xC4..0xE7`, in the army's
+/// building palette). The wreck is 3x3 and the factory 3x4, so two wrecks are
+/// drawn from one sprite definition of ours: one on the lower three rows, the
+/// other behind it on the upper three, a heap over the whole footprint. No
+/// tile or palette is loaded or changed here, so nothing else's is touched;
+/// should the tiles not be the sheet's (a screen that borrowed them) the
+/// factory is drawn in the neutral grey of a building without an owner.
+const WRECK_DEF: u32 = 0x0864_8000;
+const WRECK_TILES: u32 = 0x0601_0000 + 0xC4 * 32;
+const WRECK_TILE_BYTES: usize = 36 * 32;
+const CANNON_SHEET: u32 = 0x080D_24E0;
+/// The sprite definition: a count, then (attr0, attr1, attr2) a sprite, the
+/// cannon's wreck (`0x0849FA3C`) once 16 pixels down (in front) and once at
+/// the top (behind it).
+const WRECK_WORDS: [u16; 25] = [
+    8, //
+    0x0010, 0x8000, 0x0C7C, 0x8010, 0x8020, 0x0C8C, 0x4030, 0x8000, 0x0C94, 0x0030, 0x4020, 0x0C9C, //
+    0x0000, 0x8000, 0x0C7C, 0x8000, 0x8020, 0x0C8C, 0x4020, 0x8000, 0x0C94, 0x0020, 0x4020, 0x0C9C,
+];
 const NEUTRAL_OWNER: i32 = 0;
+
+/// The wreck's tiles as the game's sheet has them (decoded once).
+fn wreck_tiles(core: &Core) -> &'static [u8] {
+    static TILES: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
+    TILES.get_or_init(|| {
+        // GBA BIOS LZ77: a header (0x10, size), then blocks of a flag byte
+        // (bit 7 first; 1 = a back-reference of 3..18 bytes at 1..4096 back).
+        let header = core.raw_read_32(CANNON_SHEET, -1);
+        let size = (header >> 8) as usize;
+        let (mut src, mut out) = (CANNON_SHEET + 4, Vec::with_capacity(size));
+        while out.len() < size {
+            let flags = core.raw_read_8(src, -1);
+            src += 1;
+            for bit in (0..8).rev() {
+                if out.len() >= size {
+                    break;
+                }
+                if flags & (1 << bit) == 0 {
+                    out.push(core.raw_read_8(src, -1));
+                    src += 1;
+                } else {
+                    let (b0, b1) = (core.raw_read_8(src, -1) as usize, core.raw_read_8(src + 1, -1) as usize);
+                    src += 2;
+                    let (len, back) = ((b0 >> 4) + 3, (((b0 & 15) << 8) | b1) + 1);
+                    for _ in 0..len {
+                        let v = out[out.len() - back];
+                        out.push(v);
+                    }
+                }
+            }
+        }
+        out.truncate(WRECK_TILE_BYTES);
+        out
+    })
+}
+
+/// The wreck's tiles are in place in VRAM.
+fn wreck_loaded(core: &Core) -> bool {
+    let want = wreck_tiles(core);
+    want.len() == WRECK_TILE_BYTES && want.chunks(4).enumerate().all(|(i, w)| core.raw_read_32(WRECK_TILES + 4 * i as u32, -1).to_le_bytes() == *w)
+}
+
+fn put_wreck_definition(core: &mut Core) {
+    for (i, w) in WRECK_WORDS.iter().enumerate() {
+        let at = WRECK_DEF + 2 * i as u32;
+        if core.raw_read_16(at, -1) != *w {
+            core.raw_write_16(at, -1, *w);
+        }
+    }
+}
+
+/// A destroyed factory is drawn as the wreck (above).
 fn ruin(core: &mut Core) {
     if !in_scope(core) {
         return;
@@ -111,7 +183,44 @@ fn ruin(core: &mut Core) {
     if core.raw_read_8(entry + 4, -1) != 0 {
         return;
     }
-    core.gba_mut().cpu_mut().set_gpr(3, NEUTRAL_OWNER);
+    if wreck_loaded(core) {
+        put_wreck_definition(core);
+        core.gba_mut().cpu_mut().set_gpr(2, WRECK_DEF as i32);
+    } else {
+        core.gba_mut().cpu_mut().set_gpr(3, NEUTRAL_OWNER);
+    }
+}
+
+// --- The building is a wall ---------------------------------------------------------------
+
+const MAP: u32 = 0x0201_E450;
+/// The invention underlay's terrain class: no unit enters it.
+const WALL: u8 = 9;
+const FACTORY_CLASS: u8 = 0x1D;
+
+/// Every frame, in Versus with the pack: the factory's building squares (its
+/// footprint but the doors' row below it) are impassable to every unit, as
+/// AW2's own maps make them (underlay class 9, the factory's 0x1D), the pipe
+/// end at its top included (a Piperunner would ride in there) and a map that
+/// carries just the anchor tile too.
+pub fn tick(core: &mut Core, on: bool) {
+    if !on || !in_scope(core) {
+        return;
+    }
+    let Some(a) = entry(core) else { return };
+    let (x0, y0) = (core.raw_read_8(a, -1) as u32, core.raw_read_8(a + 1, -1) as u32);
+    let (w, h) = ((core.raw_read_8(a + 2, -1) & 7) as u32, ((core.raw_read_8(a + 2, -1) >> 3) & 7) as u32);
+    let (mw, mh) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
+    for y in y0..(y0 + h).min(mh) {
+        let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+        for x in x0..(x0 + w).min(mw) {
+            let at = MAP + 0x1432 + row + x;
+            let class = core.raw_read_8(at, -1);
+            if class & 0x1F != WALL && class & 0x1F != FACTORY_CLASS {
+                core.raw_write_8(at, -1, (class & !0x1F) | WALL);
+            }
+        }
+    }
 }
 
 // --- The CPU strikes a factory ---------------------------------------------------------

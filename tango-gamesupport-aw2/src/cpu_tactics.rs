@@ -478,6 +478,7 @@ pub(crate) fn repair_now(core: &mut Core, boat: u32) -> Vec<(i32, i32)> {
 /// Every frame: a CPU army's turn has just ended (the army moving now
 /// changed): its Stealths and Black Boats act.
 pub fn tick(core: &mut Core, on: bool) {
+    crate::factory_hp::tick(core, on);
     if !on {
         return;
     }

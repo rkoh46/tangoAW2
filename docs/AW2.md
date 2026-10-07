@@ -281,12 +281,28 @@ from the ROM table `0x080C1BC4`.
     HP the hit step's destroy branch (`0x08040818`, no case for kind 7)
     runs a Black Cannon's destruction (the explosion), the entry keeps 0 HP
     (the game saves it with the battle, so suspend and continue keep the
-    factory's HP and its destruction) and it is drawn in the grey of a neutral
-    building (the sprite call's owner argument 0, `0x0803FD54`; a Black Cannon's
-    wreck needs tiles a map with only a factory never loads); its doors spawn nothing
+    factory's HP and its destruction) and it is drawn as the Black Cannon's
+    wreck over its whole footprint (the sprite call at `0x0803FD54`; AW2 loads the
+    cannon sheet, whose first 36 tiles are the wreck, at OBJ tile `0xC4` on every map,
+    cannons or not, so nothing is loaded or changed here and nothing else's tiles or
+    palette are touched; our sprite definition at `0x08648000` draws the 3x3 wreck
+    twice, on the lower three rows and behind it on the upper three, for the 3x4
+    footprint. The tiles are checked against the sheet's decoded data each frame; if a
+    screen has borrowed them the factory is drawn in a neutral building's grey instead.
+    The wreck's grey boulder with a broken purple/teal rim is AW2's own art: a
+    destroyed Black Cannon looks the same without the pack); its doors spawn nothing
     for the rest of the battle (the create trap), and the battle does not
     end. The campaigns keep their factory and its pipe seam (nothing here
     runs outside Versus).
+  - *The building is a wall* (`factory_hp::tick`, every frame): every square of the
+    factory's 3x4 footprint (the doors' row below it excluded) is terrain class 9 (the
+    invention underlay: no unit enters it, air and Oozium and Piperunner included)
+    or the factory's own `0x1D`, as AW2's maps and the Design Room's footprint make
+    them; a map that carries only the anchor tile, and the pipe end (class 15) at the
+    factory's top, which a Piperunner would ride into, are made walls too. Spawns
+    stand on the door squares (ships on the squares beside the doors), never on
+    the building. `test_bh_factory.py` plays CPU against CPU on a coast and an
+    inland map and checks that no unit ever stands on the building.
   - *The CPU* (`cpu_tactics::cpu_unit`, `factory_hp::cpu_strikers`): an
     army's CPU unit (not on Black Hole's team) with the factory's aimed
     square in range from where it stands, a weapon that harms a structure
