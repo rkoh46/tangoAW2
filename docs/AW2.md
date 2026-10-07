@@ -350,6 +350,19 @@ Eight Versus maps for the Dual Strike pack, drawn by `five/design_ds_maps.py`
   many beaches and an enemy beach as far from their HQ (`beach_balance`;
   a 3P map's army 3, on the mirror line, is matched to the other two by
   hand; Black Hole in the middle of a 5P map is left out).
+- **Five Seas' beaches** (`design_maps.py`, the first map; listed with or
+  without the pack). Every army's island has beaches (shoals, `,` in
+  `maps.txt`) where a Lander loads and unloads: the four outer
+  armies five each (three or two along the coast facing a neighbour, the
+  rest on the other coasts), Black Hole's island six on its west, east and
+  south coasts, and each of the eight small islands one. Every island's
+  beaches are reached overland from its HQ and bases and sailed to from
+  every other army's. Shoals are tiles `five/map.py` draws as AW2 does (the
+  coast opens round them; `tilecheck.py` passes). Tests:
+  `five_seas_every_army_has_beaches`, and `five_seas_lander_unloads_on_every_beach`,
+  which plays all five armies to sail a Lander onto a beach, board an
+  Infantry and drop it. The map changes the tiles of a map the game sends in
+  netplay by id, so both players need the same version, as always.
 - **Piperunner bases behind seams.** Each army's Piperunner base touches
   its pipe only through a pipe seam (in `five/map.py` a seam's straight
   run may end at a base: `B Z I I`). A base offers the Piperunner only
