@@ -186,12 +186,16 @@ fn pixels(line: &str, widths: &[u8]) -> u32 {
 }
 
 fn wrap_to(paragraphs: &[String], widths: &[u8]) -> Vec<String> {
+    wrap_pixels(paragraphs, widths, PAGE_PIXELS)
+}
+
+fn wrap_pixels(paragraphs: &[String], widths: &[u8], limit: u32) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
     for p in paragraphs.iter().filter(|p| !p.is_empty()) {
         let mut line = String::new();
         for word in p.split(' ') {
             let longer = if line.is_empty() { word.to_string() } else { format!("{line} {word}") };
-            if !line.is_empty() && pixels(&longer, widths) > PAGE_PIXELS {
+            if !line.is_empty() && pixels(&longer, widths) > limit {
                 lines.push(std::mem::replace(&mut line, word.to_string()));
             } else {
                 line = longer;
@@ -200,6 +204,42 @@ fn wrap_to(paragraphs: &[String], widths: &[u8]) -> Vec<String> {
         lines.push(line);
     }
     lines
+}
+
+/// The results screen's quote box (`sub_0807A860`: its text printed from
+/// tile column 16, so 104 pixels to the screen's edge; AW2's text does not
+/// wrap there, a longer line runs on into the next row at the screen's left)
+/// holds at most this many lines, as AW2's own victory quotes.
+pub const QUOTE_PIXELS: u32 = 104;
+pub const QUOTE_LINES: usize = 3;
+
+/// A quote as plain words in single spaces (breaks and pauses dropped).
+pub fn quote_text(t: &[u8]) -> String {
+    let flat: String = t.iter().filter(|&&c| c == b'\r' || (0x20..0x7F).contains(&c)).map(|&c| if c == b'\r' { ' ' } else { c as char }).collect();
+    flat.split(' ').filter(|w| !w.is_empty()).collect::<Vec<_>>().join(" ")
+}
+
+/// Plain words broken into lines of at most [`QUOTE_PIXELS`].
+pub fn quote_lines(text: &str, widths: &[u8]) -> Vec<String> {
+    wrap_pixels(&[text.to_string()], widths, QUOTE_PIXELS)
+}
+
+/// A quote for that box: Dual Strike's line breaks and pauses dropped, the
+/// words broken into lines of at most [`QUOTE_PIXELS`]; if that takes more
+/// than [`QUOTE_LINES`], the last sentences go.
+pub fn wrap_quote(t: &[u8], widths: &[u8]) -> Vec<u8> {
+    let mut text = quote_text(t);
+    loop {
+        let lines = quote_lines(&text, widths);
+        if lines.len() <= QUOTE_LINES {
+            return lines.join("\r").into_bytes();
+        }
+        let body = text.trim_end_matches(['.', '!', '?']);
+        match body.rfind(['.', '!', '?']) {
+            Some(i) => text.truncate(i + 1),
+            None => return lines[..QUOTE_LINES].join("\r").into_bytes(),
+        }
+    }
 }
 
 /// Shorter wordings, tried in turn while a page is too long.
@@ -287,7 +327,16 @@ fn texts(ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
             }
         });
         let page = [T_BIO, T_D2D, T_COP, T_SCOP].contains(&which);
-        out.push((which, if page { wrap_page(&t, widths) } else { t }));
+        out.push((
+            which,
+            if page {
+                wrap_page(&t, widths)
+            } else if which == T_VICTORY {
+                wrap_quote(&t, widths)
+            } else {
+                t
+            },
+        ));
     };
     put(T_NAME, 0x00);
     put(T_BIO, 0x04);

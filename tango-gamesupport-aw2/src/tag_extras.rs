@@ -234,31 +234,6 @@ fn flat(t: &[u8]) -> Vec<u8> {
     out
 }
 
-/// The results screen's quote box: its line's room in pixels.
-const QUOTE_PIXELS: u32 = 104;
-
-/// A line broken (`\r`) at the last space that keeps the first part in
-/// the box's line.
-fn wrap2(core: &Core, t: &[u8]) -> Vec<u8> {
-    if text_width(core, t) <= QUOTE_PIXELS {
-        return t.to_vec();
-    }
-    let cut = (0..t.len()).rev().filter(|&i| t[i] == b' ').find(|&i| text_width(core, &t[..i]) <= QUOTE_PIXELS);
-    match cut {
-        Some(i) => {
-            let mut out = t[..i].to_vec();
-            out.push(b'\r');
-            out.extend_from_slice(&t[i + 1..]);
-            out
-        }
-        None => t.to_vec(),
-    }
-}
-
-fn text_width(core: &Core, s: &[u8]) -> u32 {
-    s.iter().map(|&c| core.raw_read_8(WIDTHS + c as u32, -1) as u32 + 1).sum::<u32>().saturating_sub(1)
-}
-
 /// One of two by the day (Dual Strike picks one of a CO's two tag-in lines
 /// and one of a pair's two exchanges; here the day decides, the same on
 /// every peer).
@@ -497,6 +472,43 @@ pub fn swap_frame(core: &mut Core) {
 
 // --- Victory ---------------------------------------------------------------------------
 
+/// A special pair's exchange for the results screen's quote box
+/// ([`crate::co_new::QUOTE_PIXELS`] wide, [`crate::co_new::QUOTE_LINES`]
+/// lines, AW2's text running past the box's edge otherwise): the active CO's
+/// line, then the partner's after its name. Of Dual Strike's two exchanges
+/// the day's (`first` 0 or 1) or the other, whichever fits in a line each
+/// (two lines); else whichever fits the box's lines broken at the words;
+/// else the active CO's line alone.
+pub fn compose_victory(partner_name: &[u8], lines: &[Vec<u8>; 4], first: usize, widths: &[u8]) -> Vec<u8> {
+    use crate::co_new::{quote_lines, quote_text, wrap_quote, QUOTE_LINES};
+    let exchange = |k: usize| {
+        let a = quote_text(&lines[k]);
+        let b = format!("{}: {}", String::from_utf8_lossy(partner_name), quote_text(&lines[k + 1]));
+        (quote_lines(&a, widths), quote_lines(&b, widths))
+    };
+    let first = 2 * (first % 2);
+    let order = [first, 2 - first];
+    let pick = order
+        .iter()
+        .find(|&&k| {
+            let (a, b) = exchange(k);
+            a.len() == 1 && b.len() == 1
+        })
+        .or_else(|| {
+            order.iter().find(|&&k| {
+                let (a, b) = exchange(k);
+                a.len() + b.len() <= QUOTE_LINES
+            })
+        });
+    match pick {
+        Some(&k) => {
+            let (a, b) = exchange(k);
+            a.into_iter().chain(b).collect::<Vec<_>>().join("\r").into_bytes()
+        }
+        None => wrap_quote(&lines[first], widths),
+    }
+}
+
 /// `GetVictoryQuoteTextId(co, mission)`: a special pair's army that won
 /// says the pair's exchange.
 const VICTORY_QUOTE: u32 = 0x0807_A3AC;
@@ -508,29 +520,8 @@ fn victory_quote(core: &mut Core) {
     let Some(army) = (1..=5u32).find(|&a| tag::army_co_of(core, a) == co && tag::partner(core, a).is_some()) else { return };
     let Some(b) = tag::partner(core, army) else { return };
     let Some((_, lines)) = pair_texts(co, b) else { return };
-    // One box, two lines: the active CO's line, then the partner's after
-    // its name. Of Dual Strike's two exchanges the day's, or the other if
-    // only that one fits AW2's box; neither: the active CO's line alone.
-    let partner_name = co_name(core, b);
-    let fits = |k: usize| {
-        let mut second = partner_name.clone();
-        second.extend_from_slice(b": ");
-        second.extend_from_slice(&flat(&lines[k + 1]));
-        text_width(core, &flat(&lines[k])) <= QUOTE_PIXELS && text_width(core, &second) <= QUOTE_PIXELS
-    };
-    let first = 2 * pick(core);
-    let k = [first, 2 - first].into_iter().find(|&k| fits(k));
-    let mut t = flat(&lines[k.unwrap_or(first)]);
-    if k.is_none() {
-        // The active CO's line alone, over the box's two lines.
-        t = wrap2(core, &t);
-    }
-    if let Some(k) = k {
-        t.push(b'\r');
-        t.extend_from_slice(&partner_name);
-        t.extend_from_slice(b": ");
-        t.extend_from_slice(&flat(&lines[k + 1]));
-    }
+    let widths: Vec<u8> = (0..256u32).map(|c| core.raw_read_8(WIDTHS + c, -1)).collect();
+    let t = compose_victory(&co_name(core, b), &lines, pick(core), &widths);
     set_string(core, VICTORY_AT, &t);
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, TEXT_VICTORY as i32);
@@ -543,9 +534,6 @@ fn victory_quote(core: &mut Core) {
 /// The CO page (`0x080852A8` draws its page `[0x03005940]`; the input at
 /// `0x08084C90`): page 3 (the Super Power) and DOWN shows the TAG page
 /// first; DOWN again goes on (the unit charts), UP back.
-    // A view the page was left in (it never is: the safety net).
-    end_partner_view(core);
-    core.raw_write_8(LEFT_PENDING, -1, 0);
 const PAGE: u32 = 0x0300_5940;
 const PAGE_OPENED: u32 = 0x0808_49BC;
 const PAGE_DOWN: u32 = 0x0808_4D0E;
@@ -555,6 +543,9 @@ const PAGE_REDRAW_DOWN: u32 = 0x0808_4D24;
 const PAGE_TEXT: u32 = 0x0808_52DC;
 
 fn page_opened(core: &mut Core) {
+    // A view the page was left in (it never is: the safety net).
+    end_partner_view(core);
+    core.raw_write_8(LEFT_PENDING, -1, 0);
     if core.raw_read_8(TAG_PAGE, -1) != 0 {
         core.raw_write_8(TAG_PAGE, -1, 0);
     }
@@ -572,6 +563,15 @@ fn page_down(core: &mut Core) {
         core.raw_write_8(TAG_PAGE, -1, 1);
         core.gba_mut().cpu_mut().set_thumb_pc(PAGE_REDRAW_DOWN);
     }
+}
+
+fn page_up(core: &mut Core) {
+    if crate::ds_weather::is_on(core) && core.raw_read_8(TAG_PAGE, -1) == 1 {
+        core.raw_write_8(TAG_PAGE, -1, 0);
+        core.gba_mut().cpu_mut().set_thumb_pc(PAGE_REDRAW_UP);
+    }
+}
+
 // The CO page walks through the armies with LEFT and RIGHT, one tab an army.
 // Dual Strike's gives each CO of a pair its own tab, the pair side by side (a
 // page and tab a CO, RIGHT: the active CO, the partner, the next army's
@@ -665,15 +665,6 @@ fn page_tail(core: &mut Core) {
 
 fn page_close(core: &mut Core) {
     end_partner_view(core);
-}
-
-}
-
-fn page_up(core: &mut Core) {
-    if crate::ds_weather::is_on(core) && core.raw_read_8(TAG_PAGE, -1) == 1 {
-        core.raw_write_8(TAG_PAGE, -1, 0);
-        core.gba_mut().cpu_mut().set_thumb_pc(PAGE_REDRAW_UP);
-    }
 }
 
 /// The CO the page shows (its army: the proc's +0x66).
@@ -827,10 +818,6 @@ pub fn flush(core: &mut Core, at: u32, end: u32) -> u32 {
     at
 }
 
-        (PAGE_RIGHT, Box::new(page_right)),
-        (PAGE_LEFT, Box::new(page_left)),
-        (PAGE_TAIL, Box::new(page_tail)),
-        (PAGE_CLOSE, Box::new(page_close)),
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (WAIT_QUOTE_TEST, Box::new(wait_quote)),
@@ -840,6 +827,10 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (PAGE_UP, Box::new(page_up)),
         (PAGE_TEXT, Box::new(page_text)),
         (PAGE_HEADER, Box::new(page_header)),
+        (PAGE_RIGHT, Box::new(page_right)),
+        (PAGE_LEFT, Box::new(page_left)),
+        (PAGE_TAIL, Box::new(page_tail)),
+        (PAGE_CLOSE, Box::new(page_close)),
     ]
 }
 
@@ -853,5 +844,39 @@ mod tests {
         assert!(STATE >= crate::two_front::STORE_END, "clear of the stored front");
         assert!(SAVED_STAR_PALETTE + 32 <= SCREEN_UP);
         assert!(SAVED_STARS + 64 <= STATE_END);
+    }
+}
+
+#[cfg(test)]
+mod pack_tests {
+    use super::*;
+
+    /// Every special pair's victory exchange (both of Dual Strike's, and
+    /// Sturm's) fits the results screen's quote box as composed: at most
+    /// three lines, none wider than the box's line (needs `TANGOAW2_DS_ROM`
+    /// and `TANGOAW2_AW2_ROM`).
+    #[test]
+    #[ignore]
+    fn victory_exchanges_fit_the_box() {
+        let widths = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").unwrap()).unwrap()[(crate::co_new::FONT_WIDTHS - 0x0800_0000) as usize..][..256].to_vec();
+        let px = |l: &str| l.bytes().map(|c| widths[c as usize] as u32 + 1).sum::<u32>().saturating_sub(1);
+        let mut n = 0;
+        for a in 0..crate::co_new::FIRST + 9 {
+            for b in 0..crate::co_new::FIRST + 9 {
+                let Some((_, lines)) = pair_texts(a, b) else { continue };
+                let name = crate::co_new::ds_name(b).unwrap_or_else(|| b"Sturm".to_vec());
+                for first in 0..2 {
+                    let t = String::from_utf8(compose_victory(&name, &lines, first, &widths)).unwrap();
+                    let ls: Vec<&str> = t.split('\r').collect();
+                    println!("{a}+{b} day {first}: {}", t.replace('\r', " | "));
+                    assert!(ls.len() <= crate::co_new::QUOTE_LINES, "{a}+{b}: {} lines", ls.len());
+                    for l in ls {
+                        assert!(px(l) <= crate::co_new::QUOTE_PIXELS, "{a}+{b}: {l:?} is {} px", px(l));
+                    }
+                    n += 1;
+                }
+            }
+        }
+        assert!(n >= 94, "{n} exchanges checked");
     }
 }

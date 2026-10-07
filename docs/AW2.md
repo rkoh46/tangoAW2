@@ -2471,7 +2471,14 @@ stay out.
   at ROM `0x08790000..0x087A042F` and put back. A special pair's win puts
   the pair's exchange (one of its two by the day, the other if only that
   fits) in the results screen's quote box (`GetVictoryQuoteTextId`
-  `0x0807A3AC`), the active CO's line alone when neither fits; the CO page
+  `0x0807A3AC`), the active CO's line alone when neither fits; the quote
+  box prints from tile column 16 (`sub_0807A860`), 104 pixels to the
+  screen's edge, and AW2's text does not wrap there (a longer line runs on
+  into the next row at the screen's left), so every new CO's own victory
+  line and the pair exchanges are broken at the words into lines of at most
+  104 px and 3 lines, AW2's own longest (`co_new::wrap_quote`,
+  `tag_extras::compose_victory`; a pair's line each when both fit, else the
+  box's lines shared, else the active CO's alone); the CO page
   (`0x080852A8`, its input `0x08084C90`) gets a TAG page between the Super
   Power's and the unit charts: header "TAG", the CO's special partners,
   each with its rating's full stars (1..3, OBJ tile 0x321 and palette 12
