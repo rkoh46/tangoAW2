@@ -328,7 +328,12 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
     ];
-    j.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 4).hold()];
+    j.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 8, 4).hold(),
+        // low on purpose (an APC resupply would win such a mission)
+        UnitDef::new(1, unit::TANK, 2, 2).ammo(2).fuel(30),
+    ];
     j.triggers = vec![Trigger::new(
         When::AfterAction,
         Cond::Not(Box::new(Cond::OwnerAt { x: 5, y: 0, army: 1 })),
@@ -357,6 +362,19 @@ pub fn features_def() -> CampaignDef {
     k.needs = Needs::All(vec!["f01"]);
     k.flag = region::BLACK_HOLE[2];
 
+    // A computer Black Hole army on a map with no Black Factory (it must not
+    // reset the game when the factory spawner runs for it).
+    let mut m = MissionDef::new("f11", "Features No Factory");
+    m.objective = "Test: a computer Black Hole army, no factory.";
+    m.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", ".........2"]);
+    m.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+    ];
+    m.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1).hold(), UnitDef::new(2, unit::INFANTRY, 8, 3).hold()];
+    m.needs = Needs::All(vec!["f01"]);
+    m.flag = region::BLACK_HOLE[1];
+
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
@@ -365,8 +383,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k],
-        final_mission: "f10",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m],
+        final_mission: "f11",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
         secret_mission: "f06",
     }

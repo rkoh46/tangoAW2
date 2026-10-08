@@ -943,3 +943,61 @@ def bh_campaign_bond_quote_on_the_co_page(ctx):
             e.press("DOWN", 4)
             e.wait(60)
         e.close()
+
+
+def stock_check(ctx, e, g, label):
+    """Every live unit, both sides, has its type's full ammo and fuel (the
+    unit table in use: the pack's, `0x08680000`, 0x5C a record: +0x0B ammo,
+    +0x10 fuel)."""
+    per = 51 if e.u8(0x02030206) in (1, 2) else 64
+    raw = e.read(g.units_base, 12 * 256)
+    bad, n = [], 0
+    for uid in range(256):
+        r = raw[12 * uid:12 * uid + 12]
+        if r[0] == 0 or uid % per == 0:
+            continue
+        n += 1
+        stats = e.read(0x08680000 + 0x5C * r[0], 0x5C)
+        ammo, fuel = ((r[4] | r[5] << 8) >> 7) & 0xF, r[6] & 0x7F
+        # (a computer army may have moved a square before the check: fuel burns)
+        if ammo != stats[0x0B] & 0xF or not stats[0x10] & 0x7F >= fuel >= (stats[0x10] & 0x7F) - 9:
+            bad.append((uid // per + 1, r[0], ammo, fuel, stats[0x0B] & 0xF, stats[0x10] & 0x7F))
+    ctx.require(n > 0, f"{label}: units on the map")
+    ctx.check(not bad, f"{label}: every unit starts with full ammo and fuel; wrong (army, type, ammo, fuel, max ammo, max fuel): {bad}")
+
+
+@test(modes=("ds",))
+def bh_campaign_units_start_with_full_ammo_and_fuel(ctx):
+    """Units deployed from data (both sides, a built map's, a named one's, a
+    five-army mission's, a second front's) start with their type's full
+    ammo and fuel; `UnitDef::ammo` / `fuel` ask for less on purpose."""
+    cases = [(0, 0b0), (1, 0b1), (6, 0x3F & ~0), (9, 0x1DF), (10, 0x3FF & ~(1 << 5))]
+    for mission, won in cases:
+        e, g, d = boot_features(ctx)
+        d.picks = {mission: 0, 1: 2}
+        d.start_at(won_mask=won & ((1 << mission) - 1) if mission else 0, unlocked_mask=0b101)
+        d.pick_mission()
+        d.wait_map()
+        g._units_base = g._players_base = None
+        ctx.eq(d.mission(), mission, f"mission {mission + 1}")
+        stock_check(ctx, e, g, f"mission {mission + 1}")
+        e.wait(30)
+        shot(ctx, e, f"start_units_{mission + 1}")
+        e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_unit_ammo_and_fuel_on_purpose(ctx):
+    """`UnitDef::ammo(2).fuel(30)` starts a Tank with 2 rounds and 30 fuel
+    (the mission asks for it; every other unit stays full)."""
+    e, g, d = boot_features(ctx)
+    d.picks = {8: 0}
+    d.start_at(won_mask=0xFF, unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 8, "mission 9")
+    tanks = [u for u in g.units() if u["type"] == 5]
+    ctx.eq([(t["ammo"], t["fuel"]) for t in tanks], [(2, 30)], "the Tank's own ammo and fuel")
+    inf = [u for u in g.units() if u["type"] == 1]
+    ctx.check(all(u["fuel"] == 99 for u in inf), "the soldiers' fuel is full")
