@@ -18,7 +18,7 @@ CHOOSER_ROW = 2                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN
 
 # The campaign's roster (crate::bh_campaign::ROSTER), AW2 CO ids.
 STURM, VON_BOLT, HAWKE, KINDLE, KOAL, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY = 10, 75, 14, 74, 73, 72, 11, 12, 13, 81
-ROSTER = [STURM, VON_BOLT, HAWKE, KINDLE, KOAL, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY]
+ROSTER = [STURM, VON_BOLT, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY]   # (the unlock order: Koal before Kindle)
 # The placeholder missions: the picks the CO screen asks for.
 PICKS = {0: 0, 1: 1}
 FLAG_POINTS = {0: (160, 30), 1: (172, 26)}
@@ -59,9 +59,16 @@ class BhCampaign(DsCampaign):
 
     def unlocked(self):
         """The roster's COs unlocked, as AW2 CO ids."""
-        b = self.e.read(P_UNLOCKED, 3)
-        mask = b[0] | b[1] << 8 | b[2] << 16
+        mask = self.mask() & 0xFFF
         return [co for k, co in enumerate(ROSTER) if mask >> k & 1]
+
+    def mask(self):
+        b = self.e.read(P_UNLOCKED, 3)
+        return b[0] | b[1] << 8 | b[2] << 16
+
+    def bonds(self):
+        """The hidden bonds earned (bit k: bond k)."""
+        return self.mask() >> 12
 
     def won(self):
         return struct.unpack("<I", self.e.read(dc.P_WON, 4))[0]

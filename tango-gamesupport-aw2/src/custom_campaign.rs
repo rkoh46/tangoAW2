@@ -112,7 +112,35 @@ pub struct CampaignDef {
     pub credits: Vec<CreditSection>,
     pub missions: Vec<MissionDef>,
     /// The mission whose win ends the campaign (an index of `missions`).
-    pub final_mission: usize,
+    /// The key of the mission whose win ends the campaign.
+    pub final_mission: &'static str,
+    /// The hidden bonds (at most 12): earned by `Action::EarnBond(k)` in a
+    /// recruit mission; each puts its quote on its CO's page; the secret
+    /// mission's `Needs::Bonds` opens when all are earned.
+    pub bonds: Vec<Bond>,
+}
+
+/// A hidden bond: the CO whose CO page shows the secret quote once the bond
+/// is earned (it replaces that CO's bio page while the BH Campaign's session
+/// is on).
+#[derive(Clone, Copy, Debug)]
+pub struct Bond {
+    pub co: u8,
+    pub quote: &'static str,
+}
+
+/// When a mission opens, by mission key (the order of `CampaignDef::missions`
+/// is only the world map's: a mission names what it needs by key, so acts
+/// can be written apart).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Needs {
+    Start,
+    /// All of these missions won.
+    All(Vec<&'static str>),
+    /// Any of these (a branch).
+    Any(Vec<&'static str>),
+    /// All of these won and every bond earned.
+    Bonds(Vec<&'static str>),
 }
 
 /// A narration page: text in a box with no speaker, over an optional
@@ -335,7 +363,7 @@ pub struct FrontDef {
 }
 
 /// A condition of a trigger. All are evaluated on AW2's live battle state.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum Cond {
     /// The day is this or later.
     DayAtLeast(u16),
@@ -351,6 +379,45 @@ pub enum Cond {
     Not(Box<Cond>),
     /// All of these.
     All(Vec<Cond>),
+    /// Any of these.
+    Any(Vec<Cond>),
+    /// Every `n` days from day `from` (that day included): `Trigger::repeating`.
+    EveryDays { n: u16, from: u16 },
+    /// The player's tag pair (army 1's CO and partner) is this pair, in either order.
+    PlayerPair { a: u8, b: u8 },
+    /// The cell (x, y) belongs to this army (0 neutral).
+    OwnerAt { x: u8, y: u8, army: u8 },
+    /// An army is defeated (its HQ taken or its units gone).
+    ArmyDefeated(u8),
+    /// At least `n` of an army's units stand in the rectangle (the escort and
+    /// evacuation missions' "everyone is out").
+    UnitsIn { army: u8, area: Rect, at_least: u8 },
+    /// The named unit stands in the rectangle.
+    NamedIn { name: &'static str, area: Rect },
+    /// A mission-local flag ([`FLAG_FIRST`]..) is set (a trigger's own once-latch).
+    Flag(u8),
+    /// A predicate written in Rust for a mission with a rule of its own (an
+    /// escort, an evacuation): it gets the live battle; see the helpers
+    /// ([`unit_by_name`], [`units_of`], [`day`]).
+    Custom(fn(&mut Core) -> bool),
+}
+
+/// A rectangle of cells, corners included.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Rect {
+    pub x0: u8,
+    pub y0: u8,
+    pub x1: u8,
+    pub y1: u8,
+}
+
+impl Rect {
+    pub const fn new(x0: u8, y0: u8, x1: u8, y1: u8) -> Rect {
+        Rect { x0, y0, x1, y1 }
+    }
+    pub fn has(&self, x: u8, y: u8) -> bool {
+        (self.x0..=self.x1).contains(&x) && (self.y0..=self.y1).contains(&y)
+    }
 }
 
 /// What a trigger does.
@@ -363,6 +430,23 @@ pub enum Action {
     Lose,
     /// An army's funds are set to this.
     SetFunds { army: u8, funds: u32 },
+    /// Funds are added (negative: taken).
+    AddFunds { army: u8, funds: i32 },
+    /// Hidden bond `k` is earned ([`CampaignDef::bonds`]).
+    EarnBond(u8),
+    /// Reinforcements: these units appear (full HP, ammo and fuel) on their
+    /// cells for their armies, if the cells are free.
+    Spawn(Vec<UnitDef>),
+    /// An army's CO becomes this one (the second stage of a mission: Nell,
+    /// then Andy; keep the power meter as it is).
+    SetCo { army: u8, co: u8 },
+    /// AW2's meteor strike (Von Bolt's Ex Machina) of `hp` on the spot the
+    /// CPU's scorer picks best for the army whose turn it is now (the
+    /// player's, at a turn-start trigger: the Black Onyx turned on the
+    /// enemy), every unit within two cells, never below 1 HP.
+    Strike { hp: u8 },
+    /// A function of the mission's own.
+    Custom(fn(&mut Core)),
 }
 
 /// When a trigger is looked at.
@@ -380,6 +464,19 @@ pub struct Trigger {
     pub when: When,
     pub cond: Cond,
     pub then: Vec<Action>,
+    /// Fires once (the default: a latch flag of its own); `repeating()` fires
+    /// at every look while the condition holds.
+    pub once: bool,
+}
+
+impl Trigger {
+    pub fn new(when: When, cond: Cond, then: Vec<Action>) -> Trigger {
+        Trigger { when, cond, then, once: true }
+    }
+    pub fn repeating(mut self) -> Trigger {
+        self.once = false;
+        self
+    }
 }
 
 /// A mission.
@@ -417,8 +514,8 @@ pub struct MissionDef {
     pub music: Option<u16>,
     /// The COs this mission's win unlocks (indexes of the roster).
     pub recruits: Vec<u8>,
-    /// When the mission opens.
-    pub requires: Requires,
+    /// When the mission opens (by mission key).
+    pub needs: Needs,
     /// Its flag on AW2's world map (map pixels), marker style, stars.
     pub flag: (i16, i16),
     pub style: u8,
@@ -453,7 +550,7 @@ impl MissionDef {
             after: Scene::default(),
             music: None,
             recruits: Vec::new(),
-            requires: Requires::Start,
+            needs: Needs::Start,
             flag: (0, 0),
             style: 0,
             stars: 1,
@@ -571,14 +668,35 @@ fn decorate(w: u8, h: u8, tiles: &mut [u16], props: &[Prop], structures: &[(Stru
 pub struct Rules {
     /// Conditions by predicate code ([`PRED`] | mission << 16 | index).
     pub conds: Vec<(u32, Cond)>,
-    /// The named units: (mission, name) -> (army, slot 1..).
-    pub units: HashMap<(usize, &'static str), (u8, u8)>,
+    /// The named units: (mission, name) -> (army, slot 1.., bit): the unit's
+    /// persistent id is its bit in the death latch ([`LATCH`]).
+    pub units: HashMap<(usize, &'static str), (u8, u8, u8)>,
+    /// The mission's own functions (`Action::Custom`).
+    pub fns: Vec<fn(&mut Core)>,
 }
 
 /// Predicate codes of custom campaigns' conditions.
 pub const PRED: u32 = 0xBC00_0000;
 /// Function codes of actions: [`FUNDS`] | army sets that army's funds.
 pub const FUNDS: u32 = 0xBC10_0000;
+/// [`FUNDS_ADD`] | army adds funds; [`BOND`] | k earns bond k.
+pub const FUNDS_ADD: u32 = 0xBC20_0000;
+pub const BOND: u32 = 0xBC30_0000;
+/// Reinforcements: [`SET_ARMY`] | army makes the army the one moving, each
+/// [`SPAWN`] (x | y << 8 | type << 16) creates a unit for it, [`RESTORE_ARMY`]
+/// puts the army moving back; [`STRIKE`] (a function's address) is a meteor
+/// strike; [`SET_CO`] | army (the CO); [`CUSTOM_FN`] | index.
+pub const SET_ARMY: u32 = 0xBC40_0000;
+pub const SPAWN: u32 = 0xBC50_0000;
+pub const RESTORE_ARMY: u32 = 0xBC60_0000;
+pub const STRIKE: u32 = 0xBC70_0000;
+pub const SET_CO: u32 = 0xBC80_0000;
+pub const CUSTOM_FN: u32 = 0xBC90_0000;
+/// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
+/// (but AW2's Hard flag, [`FLAG_HARD`]).
+pub const FLAG_FIRST: u8 = 0x20;
+pub const FLAG_LAST: u8 = 0x8F;
+pub const FLAG_HARD: u8 = 0x60;
 
 static RULES: [OnceLock<Rules>; 4] = [OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new()];
 
@@ -592,7 +710,10 @@ struct Compiler<'a> {
     magic: HashMap<Magic, u32>,
     widths: &'a [u8],
     conds: Vec<(u32, Cond)>,
-    units: HashMap<(usize, &'static str), (u8, u8)>,
+    units: HashMap<(usize, &'static str), (u8, u8, u8)>,
+    fns: Vec<fn(&mut Core)>,
+    /// The next once-latch flag.
+    next_flag: u8,
 }
 
 fn face(who: Speaker) -> u16 {
@@ -671,7 +792,7 @@ impl<'a> Compiler<'a> {
 /// The units blob (AW2's 12-byte records) of a deployment; named units get
 /// their slot.
 fn deployment(
-    mut names: Option<&mut HashMap<(usize, &'static str), (u8, u8)>>,
+    mut names: Option<&mut HashMap<(usize, &'static str), (u8, u8, u8)>>,
     mission: usize,
     armies: usize,
     units: &[UnitDef],
@@ -683,7 +804,11 @@ fn deployment(
         for u in units.iter().filter(|u| u.army == army) {
             slot += 1;
             if let (Some(n), Some(names)) = (u.name, names.as_deref_mut()) {
-                if names.insert((mission, n), (army, slot)).is_some() {
+                let bit = names.keys().filter(|k| k.0 == mission).count() as u8;
+                if bit >= 24 {
+                    return Err("at most 24 named units in a mission".into());
+                }
+                if names.insert((mission, n), (army, slot, bit)).is_some() {
                     return Err(format!("unit name {n} used twice in mission {mission}"));
                 }
             }
@@ -790,6 +915,8 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         widths: &widths,
         conds: Vec::new(),
         units: HashMap::new(),
+        fns: Vec::new(),
+        next_flag: FLAG_FIRST,
     };
     let n = def.missions.len();
     if n == 0 || n > MAX_MISSIONS {
@@ -855,8 +982,36 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
             .collect();
         crate::ds_credits::build_sections(core, sections, &mut cx.built)
     };
+    // The hidden bonds' quotes, wrapped to a CO page.
+    let mut bonds = Vec::new();
+    for b in &def.bonds {
+        let t = crate::co_new::wrap_page(b.quote.as_bytes(), &widths);
+        let mut z = t;
+        z.push(0);
+        bonds.push((b.co, cx.built.add(&z)));
+    }
+    if def.bonds.len() > 12 {
+        return Err("at most 12 bonds".into());
+    }
+    let index_of = |k: &str| def.missions.iter().position(|m| m.key == k).map(|i| i as u8).ok_or(format!("no mission with the key {k:?}"));
+    let keys = |v: &[&str]| v.iter().map(|k| index_of(k)).collect::<Result<Vec<u8>, String>>();
+    let mut requires = Vec::new();
+    for m in &def.missions {
+        requires.push(match &m.needs {
+            Needs::Start => Requires::Start,
+            Needs::All(v) => Requires::All(keys(v)?),
+            Needs::Any(v) => Requires::Any(keys(v)?),
+            Needs::Bonds(v) => Requires::Bonds(keys(v)?),
+        });
+    }
+    for (i, m) in def.missions.iter().enumerate() {
+        if def.missions[..i].iter().any(|o| o.key == m.key) {
+            return Err(format!("the key {:?} is used twice", m.key));
+        }
+    }
+    let final_mission = index_of(def.final_mission)?;
     let mut built = cx.built;
-    let rules = Rules { conds: cx.conds, units: cx.units };
+    let rules = Rules { conds: cx.conds, units: cx.units, fns: cx.fns };
     let _ = RULES[def.source].set(rules);
     let order: Vec<u8> = (0..n as u8).collect();
     if built.base + (built.blob.len() as u32) >= crate::ds_worldmap::BASE {
@@ -869,10 +1024,11 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
             .iter()
             .map(|m| MapPoint { x: m.flag.0, y: m.flag.1, style: m.style, stars: m.stars })
             .collect(),
-        requires: def.missions.iter().map(|m| m.requires.clone()).collect(),
+        requires,
         roster,
         recruits: def.missions.iter().map(|m| m.recruits.clone()).collect(),
         pools: def.missions.iter().map(|m| m.pool.clone()).collect(),
+        bonds,
     };
     built.unhandled.clear();
     Ok(Model {
@@ -881,7 +1037,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         missions: n,
         order,
         side_missions: Vec::new(),
-        final_mission: def.final_mission as u8,
+        final_mission,
         credits,
         pictures,
         source,
@@ -974,9 +1130,69 @@ fn compile_mission(
     for t in &m.triggers {
         let mut cmds = Vec::new();
         let mut ends = false;
+        // A trigger that fires once latches a flag of its own.
+        let latch = if t.once {
+            let f = cx.next_flag;
+            cx.next_flag += 1;
+            if cx.next_flag == FLAG_HARD {
+                cx.next_flag += 1;
+            }
+            if f > FLAG_LAST {
+                return Err("out of trigger flags (96 per campaign)".into());
+            }
+            cmds.push(cmd(0x44, 0, f as u16, 0, 0));
+            Some(f)
+        } else {
+            None
+        };
         for a in &t.then {
             match a {
+                Action::Spawn(units) => {
+                    for army in 1..=4u8 {
+                        let mine: Vec<&UnitDef> = units.iter().filter(|u| u.army == army).collect();
+                        if mine.is_empty() {
+                            continue;
+                        }
+                        let s = cx.stub(Magic::Call(SET_ARMY | army as u32, 0));
+                        cmds.push(cmd(0x00, s, 0, 0, 0));
+                        for u in mine {
+                            let s = cx.stub(Magic::Call(SPAWN, u.x as u32 | (u.y as u32) << 8 | (u.kind as u32) << 16));
+                            cmds.push(cmd(0x00, s, 0, 0, 0));
+                        }
+                        let s = cx.stub(Magic::Call(RESTORE_ARMY, 0));
+                        cmds.push(cmd(0x00, s, 0, 0, 0));
+                    }
+                }
+                Action::SetCo { army, co } => {
+                    let s = cx.stub(Magic::Call(SET_CO | *army as u32, *co as u32));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                Action::Strike { hp } => {
+                    // (the power's function, but started on the process tree's
+                    // root: `Proc_Start(script, 3)`, not blocking an event
+                    // script's proc, which has no parent to hand it)
+                    let mut f = crate::co_powers::strike_fn(crate::co_powers::METEOR_SCRIPT, *hp as u16 * 10);
+                    f[2..4].copy_from_slice(&0x2103u16.to_le_bytes()); // movs r1, #3
+                    let n = f.len();
+                    f[n - 4..].copy_from_slice(&0x0801_C8F5u32.to_le_bytes());
+                    let at = cx.built.add(&f) | 1;
+                    let s = cx.stub(Magic::Call(STRIKE, at));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                Action::Custom(f) => {
+                    cx.fns.push(*f);
+                    let s = cx.stub(Magic::Call(CUSTOM_FN | (cx.fns.len() as u32 - 1), 0));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
                 Action::Scene(s) => cmds.extend(cx.scene_cmds(s)?),
+                Action::AddFunds { army, funds } => {
+                    let s = cx.stub(Magic::Call(FUNDS_ADD | *army as u32, *funds as u32));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                Action::EarnBond(k) => {
+                    let s = cx.stub(Magic::Call(BOND | *k as u32, 0));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
                 Action::SetFunds { army, funds } => {
                     let s = cx.stub(Magic::Call(FUNDS | *army as u32, *funds));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
@@ -994,7 +1210,11 @@ fn compile_mission(
         }
         let _ = ends;
         let script = cx.script(cmds);
-        let pred = cx.cond(index, &t.cond);
+        let cond = match latch {
+            Some(f) => Cond::All(vec![Cond::Not(Box::new(Cond::Flag(f))), t.cond.clone()]),
+            None => t.cond.clone(),
+        };
+        let pred = cx.cond(index, &cond);
         let group = vec![rec8(5, 0, 0, pred), rec8(7, 0xFF, 0, script)];
         match t.when {
             When::TurnStart => turn_start.push(group),
@@ -1213,38 +1433,115 @@ const UNITS_PTR: u32 = 0x0849_9594;
 const PLAYER: u32 = 0x3C;
 const UNIT: u32 = 12;
 const DAY: u32 = 0x0300_4080;
+const CURRENT_ARMY: u32 = 0x0300_33EC;
+/// `CreateUnitAt(x, y, type)`: a unit of the army moving now.
+const CREATE_UNIT_AT: u32 = 0x0802_5CC8;
 
 fn unit_addr(core: &Core, army: u8, slot: u8) -> u32 {
     core.raw_read_32(UNITS_PTR, -1) + UNIT * ((army as u32 - 1) * 64 + slot as u32)
 }
 
-fn named(core: &Core, name: &'static str) -> Option<(u32, bool)> {
+/// The death latch (one bit per named unit of the mission, set for good once
+/// its record is empty, so a built unit reusing its slot is not it; bits
+/// 24..31 are scratch) lives in the countdown's word (crate::ds_campaign::
+/// COUNTDOWN, which the mission start clears and a mission saved halfway keeps).
+pub const LATCH: u32 = crate::ds_campaign::COUNTDOWN;
+const SCRATCH: u32 = LATCH + 3;
+
+/// The named unit's record, and whether it is alive.
+pub fn unit_by_name(core: &Core, name: &str) -> Option<(u32, bool)> {
     let src = crate::ds_campaign::source(core);
     let rules = RULES.get(src)?.get()?;
     let mission = crate::ds_campaign::mission(core) as usize;
-    let &(army, slot) = rules.units.get(&(mission, name))?;
+    let (_, &(army, slot, bit)) = rules.units.iter().find(|(k, _)| k.0 == mission && k.1 == name)?;
     let a = unit_addr(core, army, slot);
-    Some((a, core.raw_read_8(a, -1) != 0))
+    let dead = core.raw_read_32(LATCH, -1) >> bit & 1 != 0;
+    Some((a, core.raw_read_8(a, -1) != 0 && !dead))
+}
+
+fn named(core: &Core, name: &'static str) -> Option<(u32, bool)> {
+    unit_by_name(core, name)
+}
+
+/// An army's live units: (record, type, x, y).
+pub fn units_of(core: &Core, army: u8) -> Vec<(u32, u8, u8, u8)> {
+    (1..=50u8)
+        .filter_map(|s| {
+            let a = unit_addr(core, army, s);
+            let t = core.raw_read_8(a, -1);
+            (t != 0).then(|| (a, t, core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1)))
+        })
+        .collect()
+}
+
+/// The day.
+pub fn day(core: &Core) -> u16 {
+    core.raw_read_16(DAY, -1)
+}
+
+const MAP: u32 = 0x0201_E450;
+
+/// The owner of the cell (0 neutral, 1..4): the terrain class byte's bits 5..7.
+fn owner_at(core: &Core, x: u8, y: u8) -> u8 {
+    let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+    core.raw_read_8(MAP + 0x1432 + row + x as u32, -1) >> 5
+}
+
+/// Every frame in a custom campaign's battle: the named units that are gone
+/// stay gone ([`LATCH`]).
+pub fn tick(core: &mut Core) {
+    let src = crate::ds_campaign::source(core);
+    let Some(rules) = RULES.get(src).and_then(|r| r.get()) else { return };
+    let mission = crate::ds_campaign::mission(core) as usize;
+    let mut latch = core.raw_read_32(LATCH, -1);
+    let before = latch;
+    for (k, &(army, slot, bit)) in rules.units.iter().filter(|(k, _)| k.0 == mission).map(|(k, v)| (k, v)) {
+        let _ = k;
+        if core.raw_read_8(unit_addr(core, army, slot), -1) == 0 {
+            latch |= 1 << bit;
+        }
+    }
+    if latch != before {
+        core.raw_write_32(LATCH, -1, latch);
+    }
 }
 
 /// Evaluates a condition on the live battle.
 pub fn holds(core: &mut Core, c: &Cond) -> bool {
     match c {
         Cond::DayAtLeast(d) => core.raw_read_16(DAY, -1) >= *d,
+        Cond::EveryDays { n, from } => {
+            let d = core.raw_read_16(DAY, -1);
+            d >= *from && *n > 0 && (d - from) % n == 0
+        }
         Cond::UnitAt { name, x, y } => {
             named(core, name).is_some_and(|(a, alive)| alive && core.raw_read_8(a + 2, -1) == *x && core.raw_read_8(a + 3, -1) == *y)
         }
+        Cond::NamedIn { name, area } => {
+            named(core, name).is_some_and(|(a, alive)| alive && area.has(core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1)))
+        }
         Cond::UnitAlive(n) => named(core, n).is_some_and(|(_, alive)| alive),
         Cond::UnitGone(n) => named(core, n).is_some_and(|(_, alive)| !alive),
-        Cond::ArmyUnitsAtMost { army, n } => {
-            let count = (1..=50u8).filter(|&s| core.raw_read_8(unit_addr(core, *army, s), -1) != 0).count();
-            count <= *n as usize
-        }
+        Cond::ArmyUnitsAtMost { army, n } => units_of(core, *army).len() <= *n as usize,
+        Cond::UnitsIn { army, area, at_least } => units_of(core, *army).iter().filter(|u| area.has(u.2, u.3)).count() >= *at_least as usize,
         Cond::PropertiesAtLeast { army, n } => {
             crate::ds_campaign_rules::predicate(core, crate::ds_campaign_data::PROPERTY_COUNT | (*army as u32) << 8 | *n as u32)
         }
+        Cond::OwnerAt { x, y, army } => owner_at(core, *x, *y) == *army,
+        Cond::ArmyDefeated(army) => {
+            let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * *army as u32;
+            core.raw_read_16(p + 0x14, -1) != 0
+        }
+        Cond::PlayerPair { a, b } => {
+            let lead = crate::tag::army_co_of(core, 1);
+            let partner = crate::tag::partner(core, 1);
+            (lead == *a && partner == Some(*b)) || (lead == *b && partner == Some(*a))
+        }
+        Cond::Flag(f) => crate::ds_campaign::campaign_flag(core, *f as u32),
         Cond::Not(c) => !holds(core, c),
         Cond::All(cs) => cs.iter().all(|c| holds(core, c)),
+        Cond::Any(cs) => cs.iter().any(|c| holds(core, c)),
+        Cond::Custom(f) => f(core),
     }
 }
 
@@ -1260,6 +1557,60 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             let army = (f & 0xF) as u32;
             let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army;
             core.raw_write_32(p, -1, funds);
+            0
+        }
+        Magic::Call(f, delta) if f & 0xFFF0_0000 == FUNDS_ADD => {
+            let army = (f & 0xF) as u32;
+            let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army;
+            let v = (core.raw_read_32(p, -1) as i64 + delta as i32 as i64).clamp(0, 999_999) as u32;
+            core.raw_write_32(p, -1, v);
+            0
+        }
+        Magic::Call(f, _) if f & 0xFFF0_0000 == SET_ARMY => {
+            let army = core.raw_read_16(CURRENT_ARMY, -1) as u8;
+            core.raw_write_8(SCRATCH, -1, army);
+            core.raw_write_16(CURRENT_ARMY, -1, (f & 0xF) as u16);
+            0
+        }
+        Magic::Call(RESTORE_ARMY, _) => {
+            let army = core.raw_read_8(SCRATCH, -1);
+            core.raw_write_16(CURRENT_ARMY, -1, army as u16);
+            core.raw_write_8(SCRATCH, -1, 0);
+            0
+        }
+        Magic::Call(SPAWN, packed) => {
+            let (x, y, kind) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8);
+            let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+            if core.raw_read_8(MAP + 0x12 + row + x as u32, -1) != 0 {
+                return 0;
+            }
+            let cpu = core.gba_mut().cpu_mut();
+            cpu.set_gpr(0, x as i32);
+            cpu.set_gpr(1, y as i32);
+            cpu.set_gpr(2, kind as i32);
+            cpu.set_thumb_pc(CREATE_UNIT_AT);
+            crate::campaign_model::TAIL_CALLED
+        }
+        Magic::Call(STRIKE, at) => {
+            // (the script's proc is r0, as the power's function gets it)
+            core.gba_mut().cpu_mut().set_thumb_pc(at & !1);
+            crate::campaign_model::TAIL_CALLED
+        }
+        Magic::Call(f, co) if f & 0xFFF0_0000 == SET_CO => {
+            let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * (f & 0xF);
+            core.raw_write_8(p + 0x1D, -1, co as u8);
+            0
+        }
+        Magic::Call(f, _) if f & 0xFFF0_0000 == CUSTOM_FN => {
+            let src = crate::ds_campaign::source(core);
+            let func = RULES.get(src).and_then(|r| r.get()).and_then(|r| r.fns.get((f & 0xFFFF) as usize).copied());
+            if let Some(func) = func {
+                func(core);
+            }
+            0
+        }
+        Magic::Call(f, _) if f & 0xFFF0_0000 == BOND => {
+            crate::ds_campaign::earn_bond(core, (f & 0xF) as u8);
             0
         }
         _ => 0,

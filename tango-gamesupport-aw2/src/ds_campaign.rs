@@ -542,6 +542,7 @@ pub fn available(core: &Core) -> Vec<u8> {
                 Requires::Start => true,
                 Requires::All(v) => v.iter().all(|&r| won(core, r)),
                 Requires::Any(v) => v.iter().any(|&r| won(core, r)),
+                Requires::Bonds(v) => v.iter().all(|&r| won(core, r)) && bonds_all(core),
             })
             .collect();
     }
@@ -616,6 +617,9 @@ pub fn tick(core: &mut Core, ds: bool) {
             _ => {}
         }
         custom_co_screen(core);
+        if !is_ds(core) && in_battle(core) {
+            crate::custom_campaign::tick(core);
+        }
         crate::ds_campaign_rules::mte_tick(core);
         // The countdown of Dual Strike's op 0x5A and Crystal Calamity's
         // Black Onyx (crate::onyx).
@@ -624,8 +628,41 @@ pub fn tick(core: &mut Core, ds: bool) {
             sync_mission(core);
         }
     }
+    if on {
+        bond_pages(core, session);
+    }
     let map_script = campaign(core).map_or(AW2_MAP_SCRIPT, |c| c.map_script);
     crate::ds_worldmap::tick(core, on && active(core), AW2_MAP_SCRIPT, map_script);
+}
+
+/// The hidden bonds' secret quotes: while a bond is earned in a custom
+/// campaign's session, its CO's bio page (the CO table's page text, row
+/// +0x2C) reads the quote; the page's own text is put back otherwise.
+fn bond_pages(core: &mut Core, session: bool) {
+    static ORIGINAL: std::sync::Mutex<Vec<(u32, u32)>> = std::sync::Mutex::new(Vec::new());
+    let Some(c) = campaign(core).and_then(|c| c.model.custom.as_ref()) else { return };
+    let earned = bonds_earned(core);
+    let mut originals = ORIGINAL.lock().unwrap();
+    for (k, &(co, quote)) in c.bonds.iter().enumerate() {
+        let row = crate::co_roster::TABLE + 0x104 * co as u32;
+        let id = core.raw_read_16(row + 0x2C, -1) as u32;
+        let slot = data::TEXT_TABLE + 4 * id;
+        let now = core.raw_read_32(slot, -1);
+        let original = match originals.iter().find(|o| o.0 == slot) {
+            Some(o) => o.1,
+            None => {
+                if now == quote {
+                    continue;
+                }
+                originals.push((slot, now));
+                now
+            }
+        };
+        let want = if session && earned >> k & 1 != 0 { quote } else { original };
+        if now != want {
+            core.raw_write_32(slot, -1, want);
+        }
+    }
 }
 
 /// The CO screen (`ProcScr_CoSelect`) of the pool.
@@ -684,6 +721,24 @@ pub fn unlocked_mask(core: &Core) -> u32 {
     (0..3).fold(0u32, |m, k| m | (core.raw_read_8(P_UNLOCKED + k, -1) as u32) << (8 * k))
 }
 
+/// The hidden bonds earned (bit k: bond k; the unlock mask's bits 12..23).
+pub const BOND_SHIFT: u32 = 12;
+pub fn bonds_earned(core: &Core) -> u32 {
+    unlocked_mask(core) >> BOND_SHIFT
+}
+
+/// Every bond of the campaign is earned.
+pub fn bonds_all(core: &Core) -> bool {
+    let n = campaign(core).and_then(|c| c.model.custom.as_ref()).map_or(0, |c| c.bonds.len());
+    n > 0 && bonds_earned(core) & ((1 << n) - 1) == (1 << n) - 1
+}
+
+/// Earns bond `k` (a trigger's action); saved with the record.
+pub fn earn_bond(core: &mut Core, k: u8) {
+    let m = unlocked_mask(core) | 1 << (BOND_SHIFT + k as u32);
+    set_unlocked_mask(core, m);
+}
+
 fn set_unlocked_mask(core: &mut Core, mask: u32) {
     for k in 0..3 {
         core.raw_write_8(P_UNLOCKED + k, -1, (mask >> (8 * k)) as u8);
@@ -694,7 +749,7 @@ fn set_unlocked_mask(core: &mut Core, mask: u32) {
 pub fn unlocked_cos(core: &Core) -> Vec<u8> {
     let (Some(c), mask) = (campaign(core), unlocked_mask(core)) else { return Vec::new() };
     let Some(custom) = &c.model.custom else { return Vec::new() };
-    custom.roster.iter().enumerate().filter(|(k, _)| mask >> k & 1 != 0).map(|(_, r)| r.0).collect()
+    custom.roster.iter().enumerate().filter(|(k, _)| mask >> k & 1 != 0 && (*k as u32) < BOND_SHIFT).map(|(_, r)| r.0).collect()
 }
 
 fn new_progress(core: &mut Core) {

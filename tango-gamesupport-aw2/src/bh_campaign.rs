@@ -10,17 +10,24 @@
 
 use mgba::core::Core;
 
-use crate::campaign_model::{Model, Requires, SendRule};
+use crate::bh_act1;
+use crate::bh_act2;
+use crate::bh_act3;
+use crate::bh_act4;
+use crate::bh_act5;
+use crate::bh_secret;
+use crate::campaign_model::{Model, SendRule};
 use crate::custom_campaign::{co, colour, unit, *};
 
-/// The roster, in unlock order: the entry's index is its bit in the
-/// record. Sturm is open at the start; the recruit missions open the rest.
+/// The roster, in unlock order (Von Bolt, Hawke, Koal, Kindle, Jugger, Flak,
+/// Lash, Adder, Clone Andy): the entry's index is its bit in the record.
+/// Sturm is open at the start; the recruit missions open the rest.
 pub const ROSTER: [(u8, bool); 10] = [
     (co::STURM, true),
     (co::VON_BOLT, false),
     (co::HAWKE, false),
-    (co::KINDLE, false),
     (co::KOAL, false),
+    (co::KINDLE, false),
     (co::JUGGER, false),
     (co::FLAK, false),
     (co::LASH, false),
@@ -33,8 +40,8 @@ pub mod roster {
     pub const STURM: u8 = 0;
     pub const VON_BOLT: u8 = 1;
     pub const HAWKE: u8 = 2;
-    pub const KINDLE: u8 = 3;
-    pub const KOAL: u8 = 4;
+    pub const KOAL: u8 = 3;
+    pub const KINDLE: u8 = 4;
     pub const JUGGER: u8 = 5;
     pub const FLAK: u8 = 6;
     pub const LASH: u8 = 7;
@@ -57,74 +64,6 @@ pub mod region {
     pub const ORANGE_STAR: [(i16, i16); 6] = [(115, 175), (95, 150), (70, 175), (60, 130), (110, 100), (75, 85)];
 }
 
-fn placeholder_one() -> MissionDef {
-    let mut m = MissionDef::new("bh01", "Placeholder One");
-    m.objective = "Rout the Green Earth force.";
-    m.map = MapSrc::Ascii(&[
-        "1...........",
-        ".....ff.....",
-        "..c.....c...",
-        "....mm......",
-        "......mm....",
-        "...c.....c..",
-        ".....ff.....",
-        "...........2",
-    ]);
-    m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
-        // Von Bolt in Green Earth's colours: colour and CO are independent.
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
-    ];
-    m.units = vec![
-        UnitDef::new(1, unit::INFANTRY, 1, 1),
-        UnitDef::new(1, unit::TANK, 2, 0),
-        UnitDef::new(2, unit::INFANTRY, 10, 6),
-        UnitDef::new(2, unit::INFANTRY, 9, 7),
-    ];
-    m.intro = Scene::new(vec![
-        Line::say(co::STURM, "Placeholder scene. Von Bolt's men are ahead."),
-        Line::say(co::VON_BOLT, "Placeholder reply. Come and get us."),
-    ]);
-    m.victory = Scene::new(vec![Line::feel(co::VON_BOLT, Mood::Sad, "Placeholder defeat.")]);
-    m.after = Scene::new(vec![Line::say(co::STURM, "Placeholder: Von Bolt joins us.")]);
-    m.recruits = vec![roster::VON_BOLT];
-    m.flag = region::BLACK_HOLE[0];
-    m.stars = 1;
-    m
-}
-
-fn placeholder_two() -> MissionDef {
-    let mut m = MissionDef::new("bh02", "Placeholder Two");
-    m.objective = "Rout the Yellow Comet force.";
-    m.map = MapSrc::Ascii(&[
-        "1.........",
-        "..ff..c...",
-        "....mm....",
-        "...c..c...",
-        "....mm....",
-        "...ff..c..",
-        ".........2",
-    ]);
-    m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick),
-        // Kindle in Yellow Comet's colours.
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KINDLE)),
-    ];
-    m.units = vec![
-        UnitDef::new(1, unit::INFANTRY, 1, 1),
-        UnitDef::new(1, unit::TANK, 2, 0),
-        UnitDef::new(2, unit::INFANTRY, 8, 5),
-    ];
-    m.pool = vec![co::STURM, co::VON_BOLT];
-    m.intro = Scene::new(vec![Line::say(co::KINDLE, "Placeholder: Kindle holds this ground.")]);
-    m.victory = Scene::new(vec![Line::feel(co::KINDLE, Mood::Sad, "Placeholder defeat.")]);
-    m.after = Scene::new(vec![Line::say(co::STURM, "Placeholder: the road ahead.")]);
-    m.requires = Requires::All(vec![0]);
-    m.flag = region::BLACK_HOLE[1];
-    m.stars = 1;
-    m
-}
-
 /// The campaign.
 pub fn def() -> CampaignDef {
     CampaignDef {
@@ -138,10 +77,26 @@ pub fn def() -> CampaignDef {
             CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"] },
             CreditSection { heading: "THANKS FOR PLAYING", names: vec![] },
         ],
-        missions: vec![placeholder_one(), placeholder_two()],
-        final_mission: 1,
+        missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
+        final_mission: "bh02",
+        bonds: BONDS.to_vec(),
     }
 }
+
+/// The hidden bonds (placeholders): each earned in a recruit mission by
+/// `Action::EarnBond(k)`, its quote on its CO's page; the secret mission
+/// opens when all nine are earned.
+pub const BONDS: [Bond; 9] = [
+    Bond { co: co::VON_BOLT, quote: "Placeholder bond quote." },
+    Bond { co: co::HAWKE, quote: "Placeholder bond quote." },
+    Bond { co: co::KOAL, quote: "Placeholder bond quote." },
+    Bond { co: co::KINDLE, quote: "Placeholder bond quote." },
+    Bond { co: co::JUGGER, quote: "Placeholder bond quote." },
+    Bond { co: co::FLAK, quote: "Placeholder bond quote." },
+    Bond { co: co::LASH, quote: "Placeholder bond quote." },
+    Bond { co: co::ADDER, quote: "Placeholder bond quote." },
+    Bond { co: co::CLONE_ANDY, quote: "Placeholder bond quote." },
+];
 
 /// A campaign that exercises the format's fields (funds, weather, fog, a
 /// day limit, structures, a named unit that must reach a place, triggers,
@@ -170,11 +125,24 @@ pub fn features_def() -> CampaignDef {
     a.fog = true;
     a.day_limit = 6;
     a.structures = vec![(Structure::BlackFactory, 6, 4), (Structure::BlackCrystal, 3, 3), (Structure::BlackObelisk, 9, 2), (Structure::Laser, 1, 6)];
-    a.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 10, 7)];
+    a.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 10, 7).hold(),
+        UnitDef::new(2, unit::INFANTRY, 9, 7).hold(),
+        UnitDef::new(2, unit::INFANTRY, 10, 6).hold(),
+        UnitDef::new(2, unit::INFANTRY, 9, 6).hold(),
+    ];
     a.triggers = vec![Trigger {
+        once: true,
         when: When::TurnStart,
         cond: Cond::DayAtLeast(2),
-        then: vec![Action::SetFunds { army: 1, funds: 9900 }, Action::Scene(Scene::new(vec![Line::say(co::STURM, "Day two.")]))],
+        then: vec![
+            Action::SetFunds { army: 1, funds: 9900 },
+            Action::AddFunds { army: 1, funds: 100 },
+            Action::EarnBond(0),
+            Action::Strike { hp: 3 },
+            Action::Scene(Scene::new(vec![Line::say(co::STURM, "Day two.")])),
+        ],
     }];
     a.recruits = vec![roster::HAWKE];
     a.flag = region::BLACK_HOLE[0];
@@ -202,18 +170,31 @@ pub fn features_def() -> CampaignDef {
     ];
     b.triggers = vec![
         Trigger {
+            once: true,
             when: When::AfterAction,
             cond: Cond::UnitAt { name: "courier", x: 10, y: 5 },
             then: vec![Action::Scene(Scene::new(vec![Line::say(co::STURM, "The courier is out.")])), Action::Win],
         },
         Trigger {
+            once: true,
             when: When::TurnStart,
             cond: Cond::All(vec![Cond::DayAtLeast(4), Cond::Not(Box::new(Cond::UnitAt { name: "courier", x: 10, y: 5 }))]),
             then: vec![Action::Lose],
         },
     ];
+    b.triggers.push(Trigger::new(
+        When::AfterAction,
+        Cond::PlayerPair { a: co::STURM, b: co::HAWKE },
+        vec![Action::Scene(Scene::new(vec![Line::say(co::HAWKE, "Together.")]))],
+    ));
+    b.triggers.push(Trigger::new(
+        When::AfterAction,
+        Cond::UnitAt { name: "courier", x: 5, y: 5 },
+        vec![Action::Spawn(vec![UnitDef::new(1, unit::INFANTRY, 3, 3)]), Action::AddFunds { army: 1, funds: 500 }],
+    ));
+    b.triggers.push(Trigger::new(When::TurnStart, Cond::UnitGone("courier"), vec![Action::Lose]));
     b.victory = Scene::new(vec![Line::say(co::STURM, "Extracted.")]);
-    b.requires = Requires::All(vec![0]);
+    b.needs = Needs::All(vec!["f01"]);
     b.pool = vec![co::STURM, co::VON_BOLT, co::HAWKE];
     b.flag = region::BLACK_HOLE[1];
 
@@ -238,7 +219,7 @@ pub fn features_def() -> CampaignDef {
         weather: Weather::Clear,
         fog: false,
     });
-    c.requires = Requires::All(vec![1]);
+    c.needs = Needs::All(vec!["f02"]);
     c.pool = vec![co::STURM, co::VON_BOLT, co::HAWKE];
     c.flag = region::BLACK_HOLE[2];
 
@@ -250,7 +231,25 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::LASH)),
     ];
-    d.requires = Requires::All(vec![2]);
+    d.needs = Needs::All(vec!["f03"]);
+    // (compiled, not played: the stage-2 pattern, a repeating strike, a rectangle, a function of its own)
+    d.triggers = vec![
+        Trigger::new(
+            When::AfterAction,
+            Cond::ArmyDefeated(2),
+            vec![Action::SetCo { army: 3, co: co::HAWKE }, Action::Spawn(vec![UnitDef::new(3, unit::TANK, 0, 0)])],
+        ),
+        Trigger::new(When::TurnStart, Cond::EveryDays { n: 5, from: 5 }, vec![Action::Strike { hp: 8 }]).repeating(),
+        Trigger::new(
+            When::AfterAction,
+            Cond::Any(vec![
+                Cond::UnitsIn { army: 1, area: Rect::new(0, 0, 3, 3), at_least: 2 },
+                Cond::OwnerAt { x: 1, y: 1, army: 1 },
+                Cond::Custom(|core| day(core) > 99),
+            ]),
+            vec![Action::Custom(|_core| {})],
+        ),
+    ];
     d.flag = region::BLACK_HOLE[3];
     let mut f = MissionDef::new("f05", "Features Five");
     f.objective = "Test: Dual Strike's first campaign map.";
@@ -259,16 +258,27 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::ADDER)),
     ];
-    f.requires = Requires::All(vec![3]);
+    f.needs = Needs::All(vec!["f04"]);
     f.flag = region::BLACK_HOLE[4];
+
+    let mut g = MissionDef::new("f06", "Features Secret");
+    g.objective = "Test: opens when every bond is earned.";
+    g.map = MapSrc::Ascii(&["1.....", "......", ".....2"]);
+    g.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+    ];
+    g.needs = Needs::Bonds(vec!["f01"]);
+    g.flag = region::BLACK_HOLE[5];
 
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: vec![Page { text: "Features.", picture: None, who: None }],
         credits: vec![CreditSection { heading: "FEATURES", names: vec!["TEST"] }],
-        missions: vec![a, b, c, d, f],
-        final_mission: 4,
+        missions: vec![a, b, c, d, f, g],
+        final_mission: "f05",
+        bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
     }
 }
 
@@ -305,6 +315,6 @@ mod tests {
                 assert!((*r as usize) < d.roster.len());
             }
         }
-        assert!(d.final_mission < d.missions.len());
+        assert!(d.missions.iter().any(|m| m.key == d.final_mission));
     }
 }

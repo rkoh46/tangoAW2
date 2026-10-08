@@ -74,6 +74,9 @@ pub struct Custom {
     /// Per mission: the COs the player may pick from (AW2 ids; the
     /// unlocked ones among them are offered). Empty: the whole roster.
     pub pools: Vec<Vec<u8>>,
+    /// The hidden bonds: each names the CO whose page shows its quote once
+    /// earned, and the quote's address (the CO page's bio is replaced).
+    pub bonds: Vec<(u8, u32)>,
 }
 
 /// A mission's flag on AW2's world map (map pixels).
@@ -96,6 +99,9 @@ pub enum Requires {
     All(Vec<u8>),
     /// Opens once any of these missions is won (a branch).
     Any(Vec<u8>),
+    /// Opens once all of these are won and every bond is earned (a secret
+    /// mission, [`crate::custom_campaign::Bond`]).
+    Bonds(Vec<u8>),
 }
 
 /// Which art the campaign's world map is drawn on.

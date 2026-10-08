@@ -52,7 +52,7 @@ const URBAN_BLIGHT_FN: u32 = DATA + 0x280;
 const SENTINEL: u32 = DATA + 0x3FC;
 const MAGIC: u32 = 0x3843_5344; // "DSC8"
 
-const METEOR_SCRIPT: u32 = 0x084A_0858;
+pub(crate) const METEOR_SCRIPT: u32 = 0x084A_0858;
 /// The meteor script's commands: 3 to start, 7 for one strike (pick the
 /// target, move there, draw, animate, hit, redraw), 5 to end.
 const METEOR_START: u32 = 3;
@@ -77,7 +77,7 @@ fn halfwords(h: &[u16]) -> Vec<u8> {
 /// `proc = Proc_StartBlocking(script, parent); proc->damage = dmg`, as
 /// AW2's `sub_08044A88` but for a far call (a `bl` does not reach from
 /// here).
-fn strike_fn(script: u32, damage: u16) -> Vec<u8> {
+pub(crate) fn strike_fn(script: u32, damage: u16) -> Vec<u8> {
     let mut b = halfwords(&[
         0xB500, // push {lr}
         0x1C01, // adds r1, r0, #0

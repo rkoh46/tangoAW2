@@ -323,11 +323,23 @@ def bh_campaign_mission_data_fields(ctx):
     g._units_base = g._players_base = None
     d.wait_control()
     ctx.eq(e.u16(DAY), 2, "day 2")
-    ctx.eq(e.u32(g.player(1)["addr"]), 9900, "the trigger set army 1's funds")
+    ctx.eq(e.u32(g.player(1)["addr"]), 10000, "the trigger set army 1's funds (9900) and added 100")
+    ctx.eq(d.bonds(), 1, "bond 0 earned by the trigger")
+    hawke_page = e.u32(0x08610A38 + 4 * e.u16(0x086A0000 + 0x104 * bh.HAWKE + 0x2C))
+    ctx.eq(e.read(hawke_page, 40).split(b"\0")[0], b"Bond test: Hawke's\rsecret page.", "Hawke's CO page shows the secret quote, wrapped to the page")
+    e.wait(600)
+    hit = [(u["army"], u["hp"]) for u in g.units() if u["hp"] < 100]
+    ctx.log(f"units after the strike: {[(u['army'], u['type'], u['hp']) for u in g.units()]}")
+    ctx.check(any(a == 2 for a, _ in hit), f"the strike (3 HP) hit the enemy cluster ({hit})")
     # The win unlocks Hawke (the data's recruit).
     from aw2test import campaigns as cp
     cp.win_here(e, d)
     ctx.eq(d.unlocked(), [bh.STURM, bh.HAWKE], "Hawke unlocked by mission 1's recruit entry")
+    ctx.eq(d.map_flags()[5], 1, "the secret mission's flag: every bond earned (the one the test has)")
+    e.close()
+    e, g, d = boot_features(ctx)
+    d.start_at(won_mask=1, unlocked_mask=0b1)
+    ctx.eq(d.map_flags()[5], 0, "the secret mission's flag stays hidden without the bond")
 
 
 def courier(g):
@@ -338,10 +350,26 @@ def courier(g):
 def bh_campaign_named_unit_must_reach_a_place(ctx):
     """A named 1 HP unit ("courier") must reach (10, 5): when it stands there
     after an action the mission is won (its scene first); at day 4 without
-    that it is lost. The mission has a tag pair for the player (two picks)
-    against Hawke and Koal in Orange Star's colours."""
+    that it is lost; a named unit that has gone stays gone (a unit built in
+    its slot is not it: the death latch). The mission has a tag pair for the
+    player (two picks) against Hawke and Koal in Orange Star's colours; the
+    pair has its own scene; the courier at (5, 5) calls reinforcements and
+    funds."""
     from aw2test import campaigns as cp
-    for outcome in ("win", "lose"):
+
+    def settle(e, d, until, frames=900):
+        seen = []
+        for _ in range(frames):
+            t = d.text_shown()
+            if t and (not seen or seen[-1] != t):
+                seen.append(t.replace("\x0f", "").replace("\r", " "))
+            if until():
+                break
+            e.press("A", 4)
+            e.wait(6)
+        return seen
+
+    for outcome in ("win", "lose", "gone"):
         e, g, d = boot_features(ctx)
         d.start_at(won_mask=1, unlocked_mask=0b101)
         d.pick_mission()
@@ -355,33 +383,41 @@ def bh_campaign_named_unit_must_reach_a_place(ctx):
         ps = [g.player(1), g.player(2)]
         ctx.eq((ps[0]["colour"], ps[1]["colour"], ps[1]["co"]), (5, 1, bh.HAWKE), "Hawke leads army 2 in Orange Star's colours")
         shot(ctx, e, f"courier_{outcome}")
+        tank = next(u for u in g.units(1) if u["type"] == 5)
         if outcome == "win":
-            d.place_unit(c, 10, 5)
-            e.wait(4)
-            tank = next(u for u in g.units(1) if u["type"] == 5)
+            funds = e.u32(g.player(1)["addr"])
+            d.place_unit(c, 5, 5)
+            e.wait(40)
             g.select(tank["x"], tank["y"])
             g.move_to(tank["x"], tank["y"])
             g.choose("Wait", g.ACTION_MENU)
-            seen = []
-            for _ in range(900):
-                t = d.text_shown()
-                if t and (not seen or seen[-1] != t):
-                    seen.append(t.replace("\x0f", "").replace("\r", " "))
-                if d.last_result()["result"] == 1:
-                    break
-                e.press("A", 4)
-                e.wait(6)
+            seen = settle(e, d, lambda: e.u32(g.player(1)["addr"]) == funds + 500 and not d.scripts_running(), 600)
+            ctx.check("Together." in seen, f"the pair's scene (Sturm and Hawke) ({seen})")
+            ctx.eq(e.u32(g.player(1)["addr"]), funds + 500, "the courier at (5, 5): funds added")
+            ctx.check(g.unit_at(3, 3) is not None, "the courier at (5, 5): a unit reinforces (3, 3)")
+            d.place_unit(c, 10, 5)
+            e.wait(4)
+            fresh = g.unit_at(3, 3)
+            g.select(3, 3)
+            g.move_to(3, 3)
+            g.choose("Wait", g.ACTION_MENU)
+            seen = settle(e, d, lambda: d.last_result()["result"] == 1)
             ctx.check("The courier is out." in seen, f"the trigger's scene ({seen})")
             ctx.eq(d.last_result()["result"], 1, "won by the named unit's arrival")
-        else:
+        elif outcome == "lose":
             e.w16(DAY, 3)
             d.end_turn()
-            for _ in range(900):
-                if d.last_result()["result"] == 2:
-                    break
-                e.press("A", 4)
-                e.wait(6)
+            settle(e, d, lambda: d.last_result()["result"] == 2)
             ctx.eq(d.last_result()["result"], 2, "lost: day 4 and the courier not out")
+        else:
+            a = g.unit_addr(c["id"])
+            e.w8(a, 0)          # the courier is gone ...
+            e.wait(10)
+            e.w8(a, 5)          # ... and a new unit takes its slot
+            e.wait(4)
+            d.end_turn()
+            settle(e, d, lambda: d.last_result()["result"] == 2)
+            ctx.eq(d.last_result()["result"], 2, "the courier gone stays gone, whoever has its slot: lost")
         e.close()
 
 
