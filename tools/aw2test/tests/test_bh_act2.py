@@ -693,3 +693,59 @@ def bh_act2_m8_two_fronts(ctx):
             a2.pic(ctx, e, "m8_after_round_1")
     ctx.check(any(s[0] == 1 for s in seen), f"the second front was on the screen during the round ({seen})")
     e.close()
+
+
+# --- save and continue ----------------------------------------------------------------------------------------
+def save_continue(ctx, n, cos=None, two_fronts=False):
+    """The mission saved halfway from its map menu and brought back by BH CAMPAIGN's Continue as it was."""
+    from aw2test import saves
+    from aw2test.emu import Emu
+    from aw2test.game import Game
+    e, g, d, texts = ready(ctx, n, cos)
+    names = saves.suspend(g)
+    ctx.check("Save" in names, f"M{n}: Save on the map menu ({names})")
+    snap = saves.snapshot(g)
+    saved = saves.flash(e, os.path.join(ctx.out, f"m{n}_saved"))
+    e.close()
+    e2 = Emu(save=saved.path, ds=ctx.ds)
+    g2 = Game(e2, ctx.image)
+    ctx.games.append(g2)
+    d2 = bh.BhCampaign(g2)
+    d2.start_bh(new=False, pick=False)
+    ctx.require(e2.wait_until(lambda: e2.u32(0x03000000) == 0x08022049, 1800, step=10), f"M{n}: Continue brings the battle back")
+    g2._units_base = g2._players_base = None
+    g2.wait_for_input()
+    ctx.eq((d2.mission(), e2.u8(bh.SOURCE)), (a2.M[n], bh.BH), f"M{n}: the mission, the BH Campaign's session")
+    saves.compare_snapshots(ctx, snap, saves.snapshot(g2), f"M{n} after a reboot")
+    a2.pic(ctx, e2, f"m{n}_continued")
+    if n == 9:
+        ctx.eq(sorted(u["type"] for u in g2.units(1) if u["type"] == 7), [7, 7, 7], "M9: the three Vault APCs are back")
+    e2.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m4_save_and_continue(ctx):
+    save_continue(ctx, 4)
+
+
+@test(modes=("ds",))
+def bh_act2_m9_save_and_continue(ctx):
+    save_continue(ctx, 9)
+
+
+@test(modes=("ds",))
+def bh_act2_m8_save_and_continue(ctx):
+    save_continue(ctx, 8, [bh.STURM, bh.HAWKE], two_fronts=True)
+
+
+@test(modes=("ds",))
+def bh_act2_m4_von_bolt_pitch_and_bond(ctx):
+    """Von Bolt picked: his pitch (not Sturm's), Hawke joins, the bond (bit 1) is earned and the
+    world-map panel of M4 shows its star; the win is by leaving Hawke one unit."""
+    e, g, d, texts = ready(ctx, 4, [bh.VON_BOLT])
+    ctx.check("Flattery! Does it come with a fee?" in texts and "I did not come to be praised." not in texts, "Von Bolt's opening exchange")
+    victory, mapscene = a2.win_by_attrition(ctx, e, g, d, "m4_vb", shots=(0,))
+    ctx.check("Marshal, the pay is the world. In writing." in victory and "You will not serve. You will command beside me." not in victory, f"Von Bolt's pitch ({victory})")
+    ctx.eq(d.bonds(), 2, "Hawke's bond earned")
+    ctx.eq(d.unlocked(), [bh.STURM, bh.VON_BOLT, bh.HAWKE], "Hawke unlocked")
+    e.close()

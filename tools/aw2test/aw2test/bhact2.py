@@ -72,9 +72,10 @@ def intro(ctx, e, d, label, shots=(0,), max_frames=40000):
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 5 and (not texts or texts[-1] != t):
-            texts.append(t)
+        if t and stable == 5 and (not texts or texts[-1] != clean(t)):
+            texts.append(clean(t))
             if len(texts) - 1 in shots:
+                e.wait(60)
                 pic(ctx, e, f"{label}_dialogue{len(texts)}")
         if d.scripts_running() and stable >= 8:
             e.press("A", 4)
