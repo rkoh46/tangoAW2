@@ -154,6 +154,10 @@ fn tile_at(core: &Core, x: u32, y: u32) -> u16 {
     core.raw_read_16(MAP + 0xA22 + 2 * (row + x), -1)
 }
 
+pub fn events_running_pub(core: &Core) -> bool {
+    events_running(core)
+}
+
 fn events_running(core: &Core) -> bool {
     (0..11).any(|k| core.raw_read_32(0x0200_C510 + 0x18 * k, -1) != 0)
 }

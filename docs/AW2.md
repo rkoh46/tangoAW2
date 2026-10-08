@@ -2175,17 +2175,16 @@ exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
   bond is earned, in the BH session); `Action::EarnBond(k)` earns bond k
   (saved in the record); `Needs::Bonds(vec![..])` opens the secret mission when
   every bond is earned (`bh_campaign_mission_data_fields`).
-  **Bond badge and legend** (`bond_ui.rs`): nothing shows on the world map
-  until a bond is earned. A recruit mission (one whose trigger earns a bond,
-  `Custom::marks`) carries a small badge at the corner of its open panel
-  once its bond is earned (default: a Black Hole roundel with a gold star;
-  `TANGOAW2_BOND_BADGE=1` a drawn star, `2` AW2's small tag star, ROM
-  `0x08102C64`), and from the first earned bond on a legend sits in the map's
-  bottom-left corner (a framed box, hidden while the panel is open): the badge, "RECRUIT WON OVER" and "BONDS n/m", in AW2's own
-  font (`TANGOAW2_BOND_LEGEND=key` shows it only while SELECT is held). They
-  are sprites in OBJ tiles 735.., 772.. and 848.. and palette 14, which the
-  world map leaves free. The CO page keeps only the secret quote
-  (`bh_campaign_bond_badge_and_legend_on_the_world_map`,
+  **Bond legend** (`bond_ui.rs`): nothing shows on the world map until a
+  bond is earned; from the first earned bond on a small legend sits at the
+  map's top left: a gold star, "RECRUIT WON OVER" and "BONDS n/m", in AW2's
+  font with its outline, below the "CAMPAIGN" title while that shows (its
+  letters are tall sprites along the top edge) and at the very top without
+  it (the mission panel open); hidden while a dialogue runs. Sprites in OBJ
+  tiles 735.., 772.. and 848.. and an OBJ palette bank no sprite of the
+  frame uses (the title's own bank, 14, must not be written: that once turned
+  the title brown). The CO page keeps only the secret quote
+  (`bh_campaign_bond_legend_on_the_world_map`,
   `bh_campaign_bond_quote_on_the_co_page`).
 
 Limits and notes: a campaign has at most 32 missions (progress bits; 30 +

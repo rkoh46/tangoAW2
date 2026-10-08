@@ -868,37 +868,58 @@ def obj_sprites(e):
     out = []
     for k in range(128):
         a0, a1, a2, _ = struct.unpack_from("<HHHH", oam, 8 * k)
-        if (a0 >> 8) & 3 != 2:
+        if (a0 >> 8) & 3 != 2 and (a0 & 0xFF) < 160:
             out.append((a2 & 0x3FF, a1 & 0x1FF, a0 & 0xFF))
     return out
 
 
-BADGE_TILE, LEGEND_TILE = 848, 735
+LEGEND_TILE = 735
+
+
+def title_palette(e):
+    """The OBJ palette of the sprites at the map's top left (the "CAMPAIGN"
+    title), legend sprites left out."""
+    import struct
+    oam = e.read(0x07000000, 0x400)
+    banks = set()
+    for k in range(128):
+        a0, a1, a2, _ = struct.unpack_from("<HHHH", oam, 8 * k)
+        if (a0 >> 8) & 3 != 2 and (a0 & 0xFF) < 30 and (a1 & 0x1FF) < 110 and (a2 & 0x3FF) != LEGEND_TILE and not 735 <= (a2 & 0x3FF) < 800:
+            banks.add(a2 >> 12)
+    return {b: e.read(0x05000200 + 32 * b, 32) for b in banks}
 
 
 @test(modes=("ds",))
-def bh_campaign_bond_badge_and_legend_on_the_world_map(ctx):
-    """Nothing about bonds shows on the world map until one is earned. Then
-    the recruit mission's panel carries the bond badge (a sprite at its
-    corner), and a legend (the badge, "RECRUIT WON OVER", "BONDS n/9" in
-    AW2's font) shows in the map's corner, from the first bond on."""
+def bh_campaign_bond_legend_on_the_world_map(ctx):
+    """Nothing about bonds shows on the world map until one is earned. From
+    the first bond on a legend (a gold star, "RECRUIT WON OVER", "BONDS n/9",
+    AW2's font) sits at the top left: below the "CAMPAIGN" title while that
+    shows, at the very top with the mission panel open (the title gone). The
+    title keeps its colours (the legend takes an OBJ palette no sprite of the
+    frame uses)."""
+    titles = {}
     for bonds in (0, 1):
         e, g, d = boot_features(ctx)
         d.start_at(won_mask=0, unlocked_mask=1 | (bonds << 12))
         d.wait_world_map()
         e.wait(30)
-        sp = obj_sprites(e)
-        legend = [s for s in sp if s[0] == LEGEND_TILE]
+        legend = [s for s in obj_sprites(e) if s[0] == LEGEND_TILE]
         ctx.eq(bool(legend), bonds > 0, f"the legend with {bonds} bonds")
-        ctx.eq(any(s[0] == BADGE_TILE and s[1] > 200 for s in sp), False, "no badge on the map without the panel open")
+        if bonds:
+            ctx.require(legend, "the legend")
+            ctx.check(all(s[2] >= 30 for s in legend), f"below the title ({legend})")
+        titles[bonds] = title_palette(e)
         shot(ctx, e, f"bond_legend_{bonds}")
         e.press("A", 6)
         e.wait(240)
-        sp = obj_sprites(e)
-        ctx.eq(any(s[0] == BADGE_TILE and s[1] == 219 for s in sp), bonds > 0, f"the badge on the open panel with {bonds} bonds")
-        ctx.eq(any(s[0] == LEGEND_TILE for s in sp), False, "no legend while the panel is open (the ENEMY strip)")
+        legend = [s for s in obj_sprites(e) if s[0] == LEGEND_TILE]
+        ctx.eq(bool(legend), bonds > 0, f"the legend with the panel open, {bonds} bonds")
+        if bonds:
+            ctx.check(all(s[2] < 20 for s in legend), f"at the very top with the title gone ({legend})")
         shot(ctx, e, f"bond_panel_{bonds}")
         e.close()
+    ctx.check(titles[0], "the title's palette found")
+    ctx.eq(titles[0], titles[1], "the title's colours are the same with and without the legend")
 
 
 @test(modes=("ds",))
