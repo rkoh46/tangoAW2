@@ -40,6 +40,13 @@ wget -O tango_macos_workdir/ffmpeg-arm64 "https://github.com/tangobattle/ffmpeg-
 cp tango_macos_workdir/ffmpeg-arm64 TangoAW2.app/Contents/MacOS/ffmpeg
 chmod a+x TangoAW2.app/Contents/MacOS/ffmpeg
 
+# Sign last, once the bundle is complete: the linker's own ad-hoc signature
+# on the binary records no Info.plist or resources, so the finished app
+# failed `codesign -v` ("code has no resources but signature indicates they
+# must be present"). An ad-hoc signature over the whole bundle passes.
+codesign --force --deep --sign - TangoAW2.app
+codesign --verify --deep --strict TangoAW2.app
+
 # Build zip.
 mkdir -p dist
 python3 -m dmgbuild -s "$(dirname "${BASH_SOURCE[0]}")/dmgbuild.settings.py" TangoAW2 dist/tangoaw2-macos.dmg

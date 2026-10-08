@@ -23,8 +23,9 @@ Apple Silicon (`.dmg`, not signed: right-click the app and choose Open the
 first time), Linux (`.AppImage`), or iPhone and iPad (`.ipa`, iOS 16 or
 later: install it with [AltStore](https://altstore.io),
 [SideStore](https://sidestore.io) or [Sideloadly](https://sideloadly.io);
-it plays with on-screen buttons or a controller, and online with desktop
-players).
+it plays with on-screen buttons or a controller at 60 to 120 Hz, sideways
+fitted between the buttons or stretched (Settings > Graphics), and online with
+desktop players).
 
 ## First run
 
@@ -75,7 +76,9 @@ changes, and online both players need it):
   Crystal and Obelisk, Black Hole's structures as Dual Strike draws them;
   eight new Versus maps.
 - **Survival:** Money, Turn and Time, eleven maps each, with ranks and
-  records.
+  records, on screens like Dual Strike's.
+- **Black Factory (Versus):** same schedule and cost, but it picks what the
+  battle needs; 200 hit points, destructible; human Black Hole armies too.
 - **DS Campaign:** all 28 missions on Dual Strike's world map:
   - missions open as you advance, with LEVEL stars for each; Hard
     campaign once Normal is cleared;
@@ -135,6 +138,8 @@ with **SELECT → File → Save**; play it from **Versus → Design Maps**.
 - The mini maps show Black Hole's buildings in neutral grey.
 - Dual Strike's top-screen pictures (the Black Onyx's Earth view) are left
   out, and tag powers play AW2's power music.
+- The computer strikes an enemy Black Factory only in range; Survival's
+  records are per course, not per map; no Champion courses.
 
 ## How it's tested
 

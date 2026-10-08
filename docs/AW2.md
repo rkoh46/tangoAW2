@@ -822,7 +822,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | DS Campaign | `ds_campaign.rs`, `ds_campaign_data.rs`, `ds_campaign_rules.rs`, `campaign_menu.rs` | Dual Strike's story campaign in AW2's campaign engine, behind a Campaign sub-menu (below) |
 
 Free ROM used: 0x08620000.. (text slots), 0x0862C000.. (new CO text ids 0x6D72..),
-0x08640000..0x08672FFF (earlier features; the map table and the maps past the tenth at
+0x08640000..0x08672FFF (earlier features, the Black Factory's wreck sprite definition at 0x08648000; the map table and the maps past the tenth at
 0x08650000..0x0865CFFF), 0x08680000..0x08691FFF (units),
 0x086A0000..0x086AFFFF (CO table), 0x08740000..0x0877FFFF (CO pictures, texts,
 powers' code, heal wait), 0x087C0000..0x087C0FFF (power animations),
