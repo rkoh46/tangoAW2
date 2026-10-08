@@ -448,12 +448,12 @@ original instruction against the ROM and writes `src/five_patches.rs`.
   literal-pool pointers (the table, and +0x3C/+0x40 of entry 0) are
   repointed, and the two loops that walk it (`sub_080206B0`, find a map by
   its tiles; the map list builder at `0x08037482`) go up to 0xC0 instead
-  of 0xBF, and to 0xF1 while the Dual Strike maps can be listed (eight more
+  of 0xBF, and to 0xEF while the Dual Strike maps can be listed (eight more
   ids to walk shift the menus' timing by a frame, so without the pack the
   loops stay as they were). Black Rampart is id 0xC0, the Dual Strike maps 0xC1..0xC8 (see
   below). A tab lists its maps by id, so new maps come last. Each map's
   tiles and units take 4 KiB: the first ten at `0x08622000`, the rest at
-  `0x08656000` (after the moved table, which now holds 0xF2 entries).
+  `0x08656000` (after the moved table, which now holds 0xF0 entries).
 - **Terrain in `five/map.py`.** Roads, pipes and pipe seams pick their
   tile from which neighbours connect, as the game's own maps do (learned
   from every built-in map): roads have straights, bends, T-junctions,
@@ -2137,11 +2137,11 @@ pair_texts` and `partners_of`, the pack only). Test:
 
 **The Colonel's Vault** (`five/design_vault_map.py`): a 2-army, 30x20 Versus
 map on the Vs. tab, listed with the pack only (`look pack` in the map file:
-normal colours, pack-only), the BH Campaign's prize map. Its id is `0xF1`
-(`five_map::VAULT_ID`, past Survival's `0xC9..0xEF` and the campaigns' `0xF0`); the map table grew to
-`0xF2` ids (`five_map::MAP_IDS`; the table at `0x08650000..0x08655583`, the
+normal colours, pack-only), the BH Campaign's prize map. Its id is `0xEF`
+(`five_map::VAULT_ID`, past Survival's `0xC9..0xEC`; **it clashes with the Champion courses' `0xED..0xEF` on survival-champion**, and ids from `0xF0` up cannot be used: the Select Map list's order and previews go through the War Room records' row function at `0x08087248`, which compares with `0xF0`, and every entry after such an id gets a stale preview); the map table grew to
+`0xF0` ids (`five_map::MAP_IDS`; the table at `0x08650000..0x08655583`, the
 maps past the tenth now from `0x08656000`), and with the pack the list's walk
-goes to `0xF1` (always: it is listed from the start, not only after the
+goes to `0xEF` (always: it is listed from the start, not only after the
 secret mission). Survival's copy of the table includes it. The apostrophe
 in a map's name is AW2's `~`. Test: `ds_map_the_colonel's_vault` (opened from
 its tab, preview and tiles, every unit; the CPU plays six days).

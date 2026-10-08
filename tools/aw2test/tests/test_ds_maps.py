@@ -37,7 +37,7 @@ MAPS = {
     "Rust Basin": (0xC1, 3), "Dune Fork": (0xC2, 5), "Cinder Flats": (0xC3, 6), "Black Wastes": (0xC4, 9),
     "Coral Strait": (0xC5, 3), "Trident Isles": (0xC6, 5), "Harbor Cross": (0xC7, 6), "Coral Crown": (0xC8, 9),
     # the BH Campaign's prize map (crate::five_map::VAULT_ID): normal colours, pack only
-    "The Colonel's Vault": (0xF1, 3),
+    "The Colonel's Vault": (0xEF, 3),
 }
 # tangoAW2's own maps (crate::five_map::IDS, in five/maps.txt's order).
 OWN = {
@@ -135,6 +135,8 @@ def select_map(ctx, name, save=None):
             break
         e.press("DOWN", 8)
         e.wait(24)
+    if not found:
+        found = e.wait_until(previewed, 400, step=10)
     return g, found
 
 
