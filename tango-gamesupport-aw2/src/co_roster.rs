@@ -85,6 +85,12 @@ pub fn ds_co(co: u8) -> Option<u8> {
     DS_IDS.get(co as usize).copied().flatten().or_else(|| crate::co_new::ds_id(co))
 }
 
+/// The Dual Strike record a CO's table row is filled from (Crumb's: Andy's,
+/// for what his own numbers do not set).
+fn row_base(co: u8) -> Option<u8> {
+    ds_co(co).or_else(|| crate::co_new::all().find(|n| n.0 == co).map(|n| n.1))
+}
+
 // --- Dual Strike's CO records (arm9) ---------------------------------------
 
 const DS_RECORDS: u32 = 0x0215_360C;
@@ -156,15 +162,20 @@ pub fn stat(co: u8, mode: u8, t: u8, field: usize) -> Option<i32> {
     if t == crate::roster::OOZIUM {
         return Some(0);
     }
-    let b = block(ds_co(co)?, mode)?;
-    let unit = crate::roster::ds_record(t)?;
-    let (class, combat) = (unit[0x1C], unit[0x20]);
     let mut v = 0i32;
-    if class < CLASS_SLOTS {
-        v += class_stat(b, class as usize)[field] as i32;
-    }
-    if let Some(k) = combat_slot(combat) {
-        v += class_stat(b, k)[field] as i32;
+    if co == crate::co_new::CRUMB {
+        // His numbers are his own (crate::crumb): no Dual Strike block.
+        v += crate::crumb::bonus(mode, t, field);
+    } else {
+        let b = block(ds_co(co)?, mode)?;
+        let unit = crate::roster::ds_record(t)?;
+        let (class, combat) = (unit[0x1C], unit[0x20]);
+        if class < CLASS_SLOTS {
+            v += class_stat(b, class as usize)[field] as i32;
+        }
+        if let Some(k) = combat_slot(combat) {
+            v += class_stat(b, k)[field] as i32;
+        }
     }
     if field == FIREPOWER && mode > 0 {
         v += POWER_FIREPOWER;
@@ -258,9 +269,9 @@ fn build(core: &Core) -> Option<Vec<u8>> {
     let mut out: Vec<u8> = rows.concat();
     for co in AW2_COS as u32..ROOM {
         let co = co as u8;
-        match crate::co_new::ds_id(co) {
-            Some(ds) => out.extend_from_slice(&new_row(&rows, &andy, co, ds)?),
-            None => out.extend_from_slice(&andy),
+        match row_base(co) {
+            Some(ds) if crate::co_new::is_new(co) => out.extend_from_slice(&new_row(&rows, &andy, co, ds)?),
+            _ => out.extend_from_slice(&andy),
         }
     }
     Some(out)
@@ -301,7 +312,7 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     row[0x14] = 1;
     row[0x15] = r[0x25].min(4); // property and unit style
     row[0x16] = r[0x26].clamp(1, 5); // army colour
-    if co == crate::co_new::CLONE_ANDY {
+    if crate::co_new::is_own(co) {
         // Black Hole's, not Andy's Orange Star.
         row[0x15] = 4;
         row[0x16] = 5;
@@ -339,6 +350,10 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         // Upgrade, the row Dual Strike's record names for them)
         let power = if co == crate::co_new::CLONE_ANDY {
             u32::from_le_bytes(andy[at + 4..at + 8].try_into().unwrap())
+        } else if co == crate::co_new::CRUMB {
+            // (AW2's usual power procedure: the sparkle; the effect on the
+            // units is the presentation row's, crate::crumb)
+            DEFAULT_POWER
         } else {
             crate::co_powers::power_assembly(co, mode).unwrap_or(DEFAULT_POWER)
         };
@@ -355,6 +370,17 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         }
         row[at + 0x18..at + 0x24].copy_from_slice(&charts);
         row[at + 0x24..at + 0x44].copy_from_slice(&neutral_stats);
+        if co == crate::co_new::CRUMB {
+            // His luck (Gerald's Blessing: up to 20%, no bad luck).
+            row[at + 0x0E..at + 0x10].copy_from_slice(&crate::crumb::LUCK[mode as usize].to_le_bytes());
+            row[at + 0x10..at + 0x12].copy_from_slice(&crate::crumb::BAD_LUCK[mode as usize].to_le_bytes());
+        }
+    }
+    if co == crate::co_new::CRUMB {
+        // His meters: 3 stars for the CO Power, 6 in all for the Super Power.
+        row[0x0C..0x10].copy_from_slice(&crate::crumb::STARS.0.to_le_bytes());
+        row[0x10..0x14].copy_from_slice(&crate::crumb::STARS.1.to_le_bytes());
+        // Black Hole's power usage by the CPU: AW2's usual.
     }
     Some(row)
 }

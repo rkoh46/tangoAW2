@@ -22,7 +22,7 @@ use crate::custom_campaign::{co, colour, unit, *};
 /// The roster, in unlock order (Von Bolt, Hawke, Koal, Kindle, Jugger, Flak,
 /// Lash, Adder, Clone Andy, then Sonja after the secret mission): the entry's index is its bit in the record.
 /// Sturm is open at the start; the recruit missions open the rest.
-pub const ROSTER: [(u8, bool); 11] = [
+pub const ROSTER: [(u8, bool); 12] = [
     (co::STURM, true),
     (co::VON_BOLT, false),
     (co::HAWKE, false),
@@ -34,6 +34,7 @@ pub const ROSTER: [(u8, bool); 11] = [
     (co::ADDER, false),
     (co::CLONE_ANDY, false),
     (co::SONJA, false),
+    (co::CRUMB, false),
 ];
 
 /// Roster indexes by name, for `recruits`.
@@ -50,6 +51,11 @@ pub mod roster {
     pub const CLONE_ANDY: u8 = 9;
     /// Joins after the secret mission (its `recruits`), Free Play only in effect.
     pub const SONJA: u8 = 10;
+    /// Crumb, promoted at the end of M28 and offered from M29 on: M28's
+    /// builder puts `roster::CRUMB` in the mission's `recruits` (the win
+    /// unlocks him) or, to unlock him in the middle of the mission (the
+    /// promotion scene), ends a trigger's `then` with [`super::unlock_crumb`].
+    pub const CRUMB: u8 = 11;
 }
 
 /// The world map's regions on AW2's own map (map pixels; its picture is
@@ -87,10 +93,27 @@ pub fn def() -> CampaignDef {
     }
 }
 
+/// The action of Crumb's promotion: he is unlocked at once (the roster's
+/// index [`roster::CRUMB`], `Action::Unlock`; saved with the record, nothing in
+/// a replay). Use it in M28's win trigger (or give the mission
+/// `recruits = vec![roster::CRUMB]`: the same, at the win).
+pub fn unlock_crumb() -> Action {
+    Action::Unlock(roster::CRUMB)
+}
+
+/// The bond index of Crumb's secret quote (flag 0xA9 of the design: earned by
+/// winning M14 on day 12 or sooner, `Action::EarnBond(bond::CRUMB_QUOTE)`).
+/// It is the tenth bond and does not count for the secret mission, which
+/// opens when the first nine are earned.
+pub mod bond {
+    pub const CRUMB_QUOTE: u8 = 9;
+}
+
 /// The hidden bonds (placeholders): each earned in a recruit mission by
 /// `Action::EarnBond(k)`, its quote on its CO's page; the secret mission
-/// opens when all nine are earned.
-pub const BONDS: [Bond; 9] = [
+/// opens when all nine are earned (and the tenth, Crumb's page quote, is its
+/// own: [`bond::CRUMB_QUOTE`]).
+pub const BONDS: [Bond; 10] = [
     Bond { co: co::VON_BOLT, quote: "Placeholder bond quote." },
     Bond { co: co::HAWKE, quote: "Placeholder bond quote." },
     Bond { co: co::KOAL, quote: "Placeholder bond quote." },
@@ -100,6 +123,7 @@ pub const BONDS: [Bond; 9] = [
     Bond { co: co::LASH, quote: "Placeholder bond quote." },
     Bond { co: co::ADDER, quote: "Placeholder bond quote." },
     Bond { co: co::CLONE_ANDY, quote: "Placeholder bond quote." },
+    Bond { co: co::CRUMB, quote: crate::crumb::SECRET_QUOTE },
 ];
 
 /// A campaign that exercises the format's fields (funds, weather, fog, a
@@ -144,6 +168,7 @@ pub fn features_def() -> CampaignDef {
             Action::SetFunds { army: 1, funds: 9900 },
             Action::AddFunds { army: 1, funds: 100 },
             Action::EarnBond(0),
+            unlock_crumb(),
             Action::Strike { hp: 3 },
             Action::Scene(Scene::new(vec![Line::say(co::STURM, "Day two.")])),
         ],
@@ -437,6 +462,9 @@ mod tests {
         assert_eq!(ROSTER[0], (co::STURM, true));
         assert!(ROSTER[1..].iter().all(|r| !r.1));
         assert_eq!(ROSTER[roster::CLONE_ANDY as usize].0, co::CLONE_ANDY);
+        assert_eq!(ROSTER[roster::CRUMB as usize].0, co::CRUMB);
+        assert_eq!(BONDS[bond::CRUMB_QUOTE as usize].co, co::CRUMB);
+        assert!(ROSTER.len() as u32 <= crate::ds_campaign::BOND_SHIFT, "the roster's bits stay under the bonds'");
     }
 
     #[test]

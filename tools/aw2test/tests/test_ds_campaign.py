@@ -471,10 +471,10 @@ def ds_campaign_grand_bolt_blocks(ctx):
     e.wait(30)
     ctx.eq(e.u8(0x0203_0207), 4, "on a weak point: G Bolt")
     shot(ctx, e, "panel_part")
-    ctx.eq(e.u8(0x0203E3C0), 1, "its picture in OBJ palette 15, the Grand Bolt's colours")
+    ctx.eq(e.u8(0x0203E3C8), 1, "its picture in OBJ palette 15, the Grand Bolt's colours")
     g.goto(5, 14)
     e.wait(30)
-    ctx.eq(e.u8(0x0203E3C0), 0, "off the Grand Bolt: palette 15 put back")
+    ctx.eq(e.u8(0x0203E3C8), 0, "off the Grand Bolt: palette 15 put back")
 
 
 # Dual Strike's tiles tangoAW2 converts (Com Towers, tall woods, Black

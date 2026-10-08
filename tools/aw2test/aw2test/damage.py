@@ -33,6 +33,22 @@ def div(a, b):
     return q if (a >= 0) == (b > 0) else -q
 
 
+CRUMB = 82
+CRUMB_LUCK = (10, 10, 20)
+
+
+def crumb_bonus(mode, unit_type, which):
+    """Crumb's own firepower (0), defence (1), move (2) and range (3) for a
+    unit type (crate::crumb::bonus), with the +10% firepower every power adds
+    in Dual Strike."""
+    v = 0
+    if unit_type in (1, 2):                 # Infantry and Mech
+        v = {0: 10 + (30 if mode == 2 else 0), 1: 10, 2: 1 if mode == 1 else 0}.get(which, 0)
+    if which == 0 and mode > 0:
+        v += 10
+    return v
+
+
 def hp_bars(hp):
     return div(hp - 1, 10) + 1 if hp > 0 else 0
 
@@ -68,6 +84,8 @@ class Rules:
     def co_bonus(self, co, mode, unit_type, which):
         if self.chart is not None and unit_type == OOZIUM:
             return 0  # no CO changes an Oozium (Dual Strike: its class, 6, gets 0)
+        if self.chart is not None and co == CRUMB:
+            return crumb_bonus(mode, unit_type, which)
         if self.chart is not None:
             v = self.chart.co_stat(co, mode, unit_type, which)
             if v is not None:
@@ -78,6 +96,12 @@ class Rules:
         """AW2's CoModeData; with the pack, Dual Strike's luck and counter."""
         # A new CO (72..) has Andy's row but for what Dual Strike gives it.
         m = dict(self.image.co_mode(co if co < 19 else 1, mode))
+        if co == CRUMB and self.chart is not None:
+            # Crumb (crate::crumb): his own luck; Andy's counter; no skills.
+            m["luck"], m["neg_luck"] = CRUMB_LUCK[min(mode, 2)], 0
+            m["counter"] = self.chart.co_field(81, mode, 0x20)
+            m["abilities"] = 0
+            return m
         if co >= 19 and self.chart is not None:
             b = self.chart.co_block(co, mode)
             skills = [(0, 0x01, 0x01), (0, 0x02, 0x02), (0, 0x04, 0x04), (0, 0x08, 0x08), (0, 0x10, 0x20),

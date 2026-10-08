@@ -459,6 +459,7 @@ fn activate(core: &mut Core) {
     if !is_on(core) {
         return;
     }
+
     let cpu = core.gba().cpu();
     let (army, mode) = (cpu.gpr(0) as u32, cpu.gpr(1) as u8);
     let (co, _) = army_co(core, army);

@@ -15,6 +15,7 @@
 //! | Sturm + Flak | 110 | 1 | Iron Fist |
 //! | Sturm + Adder | 110 | 1 | Viper's Nest |
 //! | Sturm + Clone Andy | 118 | 2 | Perfect Copy |
+//! | Sturm + Crumb | 115 | 2 | No One Left Behind |
 //! | Sturm + Kindle, Jugger, Koal | 105 | - | - |
 //! | Sturm + anyone else | 95 | - | - |
 //!
@@ -42,7 +43,7 @@ pub struct Pair {
 }
 
 /// Sturm's special pairs, in his TAG box's order.
-pub const PAIRS: [Pair; 6] = [
+pub const PAIRS: [Pair; 7] = [
     Pair {
         partner: 75, // Von Bolt
         compatibility: 125,
@@ -90,6 +91,14 @@ pub const PAIRS: [Pair; 6] = [
         name: "Perfect Copy",
         sturm_first: [("Flawless. As built.", "Orders done!"), ("Hold nothing back.", "Yes, sir!")],
         partner_first: [("Mission complete!", "Acceptable."), ("Who's next, sir?", "Anyone.")],
+    },
+    Pair {
+        partner: crate::co_new::CRUMB,
+        compatibility: 115,
+        stars: 2,
+        name: "No One Left Behind",
+        sturm_first: [("Kneel. It is mine.", "Sir! Gerald agrees!"), ("Nothing is left behind.", "Not one boot, sir!")],
+        partner_first: [("We did it, sir!", "Silence. It is mine."), ("Gerald won it, sir!", "The biscuit serves me.")],
     },
 ];
 
@@ -194,7 +203,7 @@ mod tests {
 
     #[test]
     fn table() {
-        assert_eq!(PAIRS.len(), 6);
+        assert_eq!(PAIRS.len(), 7);
         for p in &PAIRS {
             assert!((1..=3).contains(&p.stars));
             assert!(p.name.bytes().all(|c| c.is_ascii_alphabetic() || c == b' ' || c == b'\''));

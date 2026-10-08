@@ -811,7 +811,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Part | Module | What it changes |
 |---|---|---|
 | Units | `roster.rs`, `ds_units.rs`, `unit_actions.rs`, `oozium.rs`, `unit_names.rs`, `ds_unit_art.rs`, `ds_unit_pictures.rs`, `ds_battle.rs`, `ds_backdrop.rs`, `map_anim.rs` | Unit table grown to 64 rows (0x08680000), 7 new units (ids 4, 9, 12, 13, 18, 26, 27), Dual Strike's stats and damage chart, their actions (Hide, Explode, Repair, Carrier; the Oozium eats: no weapon, moving onto a unit of another team next to it destroys that unit with the game's own destruction, and no CO, power, silo or Black Bomb touches it), map art, their own information pictures (build menu panel, R on a unit) in each army's colours, every unit in the Intel unit list, battle scenes with Dual Strike's figures, effects and volleys, Dual Strike's battle backgrounds (a Piperunner on its pipe; every battle on a Wasteland map; a Com Tower's city), and Dual Strike's map animations played through AW2's own map effects (a Black Bomb's explosion, a Stealth hiding and appearing, a Black Boat's REPAIR label, Oozium's death in its army's colours; for the CPU at its turn's end, before the turn passes) |
-| COs | `co_roster.rs`, `co_new.rs`, `co_powers.rs`, `ds_co_art.rs`, `ds_power_art.rs`, `power_anim.rs` | CO table grown to 96 rows (0x086A0000), Dual Strike's numbers for AW2's COs (and its 200% defence cap), 10 new COs at ids 72..81 (Dual Strike's nine and Clone Andy, "Clone Andy" below; face ids stay unambiguous), their pictures, texts, powers and Dual Strike's power animations (Ex Machina, Covering Fire, Urban Blight), and Dual Strike's choice of power effect on their units |
+| COs | `co_roster.rs`, `co_new.rs`, `co_powers.rs`, `crumb.rs`, `crumb_art.rs`, `ds_co_art.rs`, `ds_power_art.rs`, `power_anim.rs` | CO table grown to 96 rows (0x086A0000), Dual Strike's numbers for AW2's COs (and its 200% defence cap), 11 new COs at ids 72..82 (Dual Strike's nine, Clone Andy and Crumb, "Clone Andy" and "Crumb" below; face ids stay unambiguous), their pictures, texts, powers and Dual Strike's power animations (Ex Machina, Covering Fire, Urban Blight), and Dual Strike's choice of power effect on their units |
 | CO screen | `co_grid.rs` | The unit grid (map menu > CO, its last page) gets a second page: ground units, then air and naval units, in the build menus' order, every unit with its icon in the viewed army's colours (the new units in the map sheet's slots for other countries' Infantry and Mech) and its firepower bar (Dual Strike's bonuses take the nearest of AW2's 13 bars) and move / range change |
 | CPU | `cpu_tactics.rs` | The CPU buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls), explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
 | Terrain | `com_tower.rs`, `wasteland.rs`, `ds_look.rs`, `sandstorm.rs` | Com Tower (the Versus Lab), Dual Strike's Wasteland, Desert and Snow looks drawn with its own terrain (below), the Sandstorm weather (Dual Strike's sand, `bmap/0b2`) |
@@ -840,7 +840,7 @@ table with room for 0x100 ids, its maps, strings, the Select Mode wheel's data),
 0x08E70000..0x08E73FFF (two fronts: stubs, swap scripts, the menus' copies, labels; text ids 0x7FFD, 0x7FFE),
 0x08E74000..0x08E743FF (the DS Campaign's Setup phase: stubs, script, menu, label; text id 0x7FFC),
 0x08E75000..0x08E753FF (Crystal Calamity's Black Onyx: `onyx.rs`; its RAM 0x0203FFC8..0x0203FFE3).
-Free RAM used: 0x0203FD57 (the chosen campaign, `ds_campaign::SOURCE`), 0x0203E3A8..0x0203E3B5 (the skills panel; the skill data now ends at 0x0203E3A5), 0x0203E400..0x0203F3FF (two fronts: their state, the front off the screen), 0x0203FA00..0x0203FD0F (Survival), 0x0203FD10..0x0203FD5F (DS Campaign), 0x0203F600..0x0203F6FF (the DS
+Free RAM used: 0x0203FD57 (the chosen campaign, `ds_campaign::SOURCE`), 0x0203E3F0..0x0203E3FD (the skills panel; the skill data now ends at 0x0203E3C5 with Crumb's slot, the Grand Bolt's borrowed palette follows at 0x0203E3C8..0x0203E3EB), 0x0203F4D0..0x0203F4D2 (Crumb's Tag Power rule and the power being paid for) and 0x0203F5D8..0x0203F5FF (the units it healed: a bit a unit slot), 0x0203E400..0x0203F3FF (two fronts: their state, the front off the screen), 0x0203FA00..0x0203FD0F (Survival), 0x0203FD10..0x0203FD5F (DS Campaign), 0x0203F600..0x0203F6FF (the DS
 Campaign's records; 0x0203E000..0x0203F73F was found unwritten at the title, Select Mode, in AW2 and DS battles), 0x0203F740..0x0203F79F
 (map animations), 0x0203F7A0..0x0203F7DF (power animations), 0x0203F800..0x0203F9FF (battle
 scenes), 0x0203FD60..0x0203FEFF (CPU tactics, heal effect, the Oozium's eat
@@ -2007,8 +2007,10 @@ that are not won, and the reveal flow shows the ones a win opens.
 
 **Roster and unlocks.** `CampaignDef::roster` lists (AW2 CO id, open at the
 start) in unlock order: Sturm (open), Von Bolt, Hawke, Kindle, Koal,
-Jugger, Flak, Lash, Adder, Clone Andy, Sonja (the secret mission's recruit; Free Play only in effect). A mission's `recruits` are roster
-indexes its win unlocks (`bh_campaign::roster::HAWKE` ...). The record keeps
+Jugger, Flak, Lash, Adder, Clone Andy, Sonja (the secret mission's recruit; Free Play only in effect), Crumb (index 11, the last of
+the twelve the unlock mask holds under the bonds' bits: promoted at the end of M28). A mission's `recruits` are roster
+indexes its win unlocks (`bh_campaign::roster::HAWKE` ...); `Action::Unlock(index)` unlocks one in the middle of a
+mission (`bh_campaign::unlock_crumb()`). The record keeps
 the unlocked set as a 24-bit mask of roster indexes at progress +0x0D..0x0F
 (`ds_campaign::unlocked_mask`). Army colour and CO are independent in the
 data (`ArmyDef { colour, co }`: Von Bolt can lead a Green Earth army, Kindle
@@ -2046,8 +2048,8 @@ the profile but AW2's counters and the Battle Maps points a win earns;
 `stage_slot` (the DS slot, written when the skills change in any mode) stages
 the DS record from RAM only when it is the loaded one, else from Flash, so a
 BH record in RAM never lands in slot 15. The DS slot's skill data grew
-(`co_skills::COS` 29 for Clone Andy: 32 bytes more; a shorter saved record
-reads the rest as zeros) and `skills_panel`'s RAM moved to `0x0203E3A8`.
+(`co_skills::COS` 30 for Crumb after Clone Andy's 29: 32 bytes more each; a shorter saved record
+reads the rest as zeros) and `skills_panel`'s RAM moved to `0x0203E3F0` (Crumb: `grand_bolt`'s too, to `0x0203E3C8`).
 Tests: `save_bh_campaign_beside_aw2_and_ds` (record, win, mission saved
 halfway and continued, AW2's and the DS Campaign's saved missions and the
 DS record byte for byte as they were, the profile as expected),
@@ -2087,7 +2089,7 @@ texts; an error names the mission.
 | `props`, `structures` | owned properties; Black Hole's structures stamped on the map (`Structure::{MiniCannon*, Laser, BlackCannon*, BlackFactory, Volcano, Deathray, BlackCrystal, BlackObelisk}`, the Design Room's footprints) | tested: factory, crystal, obelisk, laser |
 | `front2` | a battle on two fronts: its map, props, structures, deployment, `cos` per army (`Pick` for the player's own), `send`, `sky`, weather, fog (`crate::two_front` plays it) | tested: tag pair on the main front, a pick for the second, round change |
 | `day_limit`, `rank_days` | the days the player has (the header's counter; exceeding it loses) and the S rank's days | day limit tested in the header |
-| `triggers` | `Trigger::new(when, cond, vec![actions])` (`.repeating()`; by default a trigger fires once: it latches a campaign flag of its own, 96 per campaign): `when` is `TurnStart` (the start of the player's turn: army 1's, army 5's in a five-army mission) or `AfterAction` (after each action). Conditions: `DayAtLeast`, `EveryDays{n, from}`, `UnitAt`, `NamedIn{name, area}`, `UnitAlive`, `UnitGone`, `UnitsIn{army, area, at_least}`, `ArmyUnitsAtMost`, `PropertiesAtLeast`, `OwnerAt{x, y, army}`, `ArmyDefeated(army)`, `PlayerPair{a, b}`, `OnyxHitsAtMost(n)`, `OnyxDestroyed`, `Flag`, `Not`, `All`, `Any`, `Custom(fn)`. Actions: `Scene`, `Win`, `Lose`, `SetFunds`, `AddFunds`, `Spawn(units)`, `SetCo`, `Strike{hp}`, `EarnBond(k)`, `Custom(fn)`. Win and lose also by AW2's own rules (rout, HQ) | tested: day, every days, named unit, funds, add funds, scene, win, lose, pair, spawn, strike, second stage, bond; compiled: the rest |
+| `triggers` | `Trigger::new(when, cond, vec![actions])` (`.repeating()`; by default a trigger fires once: it latches a campaign flag of its own, 96 per campaign): `when` is `TurnStart` (the start of the player's turn: army 1's, army 5's in a five-army mission) or `AfterAction` (after each action). Conditions: `DayAtLeast`, `EveryDays{n, from}`, `UnitAt`, `NamedIn{name, area}`, `UnitAlive`, `UnitGone`, `UnitsIn{army, area, at_least}`, `ArmyUnitsAtMost`, `PropertiesAtLeast`, `OwnerAt{x, y, army}`, `ArmyDefeated(army)`, `PlayerPair{a, b}`, `OnyxHitsAtMost(n)`, `OnyxDestroyed`, `Flag`, `Not`, `All`, `Any`, `Custom(fn)`. Actions: `Scene`, `Win`, `Lose`, `SetFunds`, `AddFunds`, `Spawn(units)`, `SetCo`, `Strike{hp}`, `EarnBond(k)`, `Unlock(roster index)`, `Custom(fn)`. Win and lose also by AW2's own rules (rout, HQ) | tested: day, every days, named unit, funds, add funds, scene, win, lose, pair, spawn, strike, second stage, bond; compiled: the rest |
 | special units | `UnitDef::named("courier")` (with `.hp(10)` for 1 HP): a named unit has a **persistent id**: its bit of the mission's death latch (`custom_campaign::LATCH`, the countdown word, kept by a mission saved halfway), set for good when its record empties, so a unit built into its slot is not it. "Must reach the extraction point within 15 days" is `AfterAction` `UnitAt` -> `Win` and `TurnStart` `All[DayAtLeast(16), Not(UnitAt)]` -> `Lose`; an evacuation is `UnitsIn` / `NamedIn` over a rectangle | tested |
 | `intro`, `victory`, `after` | scenes: in the battle before day 1's first turn, before the winning end (inside `Action::Win`), and on the world map after the win (before the next mission's flag shows); between-mission scenes are `after` | tested |
 | `music` | an AW2 song id: while the battle is on every CO's theme in the CO table is that song (put back after) | tested |
@@ -2289,6 +2291,95 @@ Sturm's TAG page lists Clone Andy last. Test: `tag_clone_andy` (compatibility
 in the damage calculator both ways round, Andy's value with the others, no
 special pairs, both TAG pages, the Tag Power screen's name and 118%, the
 exchange in battle).
+
+## Crumb (`crumb.rs`, `crumb_art.rs`)
+
+The BH Campaign's last new CO ("Pip Hobb", a Black Hole soldier promoted to
+Commander; design in `docs/BH_CAMPAIGN.md` 3.9 and 4.7c): tangoAW2's eleventh
+(id 82, `co_new::CRUMB`), **pack only**, **everything of his tangoAW2's own**.
+Unlike Clone Andy he has no Dual Strike twin at all (no entry in
+`co_new::NEW`, `co_new::ds_id` is `None`, as for AW2's Sturm): Dual Strike's
+music, pictures, texts and tag data are not behind him, so he plays Adder's
+AW2 theme (his `like`), his tag compatibility with every CO but Sturm is the
+neutral 100 (no row, no column; `tag::compatibility`), and the tag screens
+draw his figure as AW2's own path does for a CO without one (`tag_screens::
+aw2_figure`: the CO page's body). On the Versus, War Room and Teams lists
+after Clone Andy (Black Hole's group), Black Hole's battle style and army
+colour, Adder's CPU profile (`like`), a Select-skills data slot
+(`co_skills::COS` 30), and in the BH Campaign's roster (index 11).
+
+**Rules** (`crumb::bonus`, called by `co_roster::stat` in place of a Dual
+Strike block; the tests' calculator is `damage.crumb_bonus`):
+
+| | |
+|---|---|
+| Day to day, **Rank and File** | Infantry and Mech +10% attack and +10% defence; his units on his cities and bases are fully resupplied (ammo and fuel) at the start of each of his turns. AW2's own turn-start property pass resupplies (and repairs) the units a property takes care of; a trap in it (`0x0802A08E`: the pass's "this property repairs this unit" test failed) fills ammo and fuel of the others (an aircraft on a city or base, a ship on a base), for his city (class 6) and base (14) only |
+| CO Power, **Ration Run** (3 stars) | every unit: ammo and fuel to full and 1 HP healed, as a function the power's presentation row calls for each unit (Thumb in free ROM at `0x08749C00`: AW2's own `sub_08029978` / `sub_08029A48` / `RepairUnit(unit, 1, 0)` called through r3); Infantry and Mech +1 move (the power level's move bonus) |
+| Super Power, **Gerald's Blessing** (6 stars) | every unit healed 2 HP (Andy's own unit effect, `0x080444ED`); Infantry and Mech +30% attack on top of Rank and File (and the +10% every power adds in Dual Strike's rules: 50 in all); luck 0..19% for every unit and no bad luck (his CO table row: luck 10 day to day and in the CO Power, 20 in the Super Power, bad luck 0; AW2's Nell has 20, 60, 100) |
+| Tag with Sturm, **No One Left Behind** | 115%, 2 stars (`sturm_pairs::PAIRS`: made up for tangoAW2 like Sturm's others), victory exchanges from the design. The Tag Power fires both Super Powers; the second one's end (the army's power level 2 in its second half: `crumb::tick`) heals every unit of the army at 3 HP or below (internal 30) to 6 HP (60) and gives each one more move this turn |
+
+**Why those star costs.** Dual Strike's most common meter is 3 stars for the
+CO Power and 6 for the Super Power (Andy, Max, Jess, Javier, Kindle, Rachel;
+Hachi 3 and 5, Koal 3 and 5): a support CO whose powers heal and resupply
+without hitting anything charges no faster than Hachi's, no slower than Max's.
+His powers need no more than the common 3 / 6 because neither deals damage
+and his own battle numbers (+10% on two foot units) are weak.
+
+**The extra move.** Per-unit move is not a thing the game's movement function
+knows (it is called with an army and a type); the units healed by the rule are
+bits in RAM (`0x0203F5D8`, 40 bytes: the unit slot is the bit), and
+`GetUnitMovementWithCoBonus`'s trap (`co_skills::move_done`, which calls
+`crumb::move_bonus`) adds one when the unit being selected (`0x030040D8`) has
+its bit and the army is the pair's. The bits and the rule's state
+(`tag::STATE + 0xD0`: the army, the rule's phase) go with the army's turn; they
+are in emulated RAM, so rollback and netplay keep them.
+
+**The power's quote.** AW2 picks one of a CO's six quotes at random for every
+power; his are Ration Run's, Gerald's Blessing's and the Tag Power's, twice
+over, and a trap at the pick (`0x080398E0`) takes the one of the power being
+paid for (`PayForPower`'s entry, `0x0804438C`, writes it to `tag::STATE +
+0xD2`). The defeat quote is kept in text slot 14 (`co_new::T_DEFEAT`): AW2's
+results screen has no defeat quote.
+
+**Pictures** (`crumb_art.rs`, nothing stored: cut from the player's AW2 at the
+start, like Clone Andy's name). The Black Hole trooper of the campaigns'
+dialogue (CO presentation row 23: three alike 48x48 faces, a 32x24 mini
+portrait, a palette; no HUD face, body or name) is every graphic:
+
+| Graphic | Made of |
+|---|---|
+| CO select face (the Teams screen) | the trooper's face, as it is |
+| Teams portrait | the trooper's mini portrait, as it is |
+| HUD face (32x16) | a 32x16 cut of the face round the red lens (x 13, y 17), 1:1 |
+| CO page figure, power and tag screens (128x160) | the face grown three times with nearest neighbour (144 x 144), the 126 columns holding the helmet and the mask, framed with a one-pixel outline in the palette's darkest colour (corners cut), at y 12 (`Body::Big`); the last two rows stay empty (the tag screens carry a figure's last row down to the screen's foot: an outline there would be a bar). `Body::Small` (2x, 98x98 centred) and `Body::Bust` (3x, the upper 126 rows) are the other two composed; `Big` is used |
+| Name "Crumb" | C of Colin's name graphic, then r, u, m of Sturm's and b of Kanbei's, outlines shared as in a name |
+| Palette | the trooper's in all eight schemes |
+
+**BH Campaign.** `roster::CRUMB` (index 11) is in the roster; he is promoted
+at the end of M28 and offered from M29 on: M28's builder gives the mission
+`recruits = vec![roster::CRUMB]` (the win unlocks him) or ends a trigger's
+`then` with `bh_campaign::unlock_crumb()` (`Action::Unlock(roster::CRUMB)`:
+unlocks him at once, saved with the record, nothing in a replay). His
+secret quote (earned by winning M14 on day 12 or sooner) is bond 9
+(`bond::CRUMB_QUOTE`, `Action::EarnBond(9)`): the tenth bond-style CO page
+quote (`crumb::SECRET_QUOTE`), which does not count for the secret mission
+(opens with the first nine; `ds_campaign::bonds_all`) nor for the BONDS legend.
+
+**CO page text.** The page holds six lines of 103 pixels: the bio is cut to
+what fits ("Pip Hobb carried a flag and a biscuit named Gerald across five
+nations." with "Hit: Gerald, seconds" and "Miss: Being left behind"); the
+design's longer bio, Hit and Miss are in `crumb.rs`'s doc.
+
+Tests (`test_crumb.py`, `tag_crumb*` in `test_tag.py`, `all_powers_crumb_*`,
+`netplay_powers_crumb_*`): `crumb_is_pickable_in_versus`,
+`crumb_absent_without_the_pack`, `crumb_rank_and_file` (the calculator both
+ways), `crumb_ration_run`, `crumb_geralds_blessing` (heal, +50%, luck),
+`crumb_resupplies_on_cities_and_bases`, `crumb_power_quotes`,
+`tag_crumb` (compatibility, neutral 100, TAG pages, the screen's name and
+115%, the exchange), `tag_crumb_no_one_left_behind` (both orders, the heal
+rule, the extra move, gone with the turn), `crumb_netplay_is_deterministic`,
+`crumb_tag_power_netplay_is_deterministic`, `bh_campaign_mission_data_fields`
+(the unlock action), `crumb_screens` (pictures).
 
 ## Two fronts (`two_front.rs`)
 
