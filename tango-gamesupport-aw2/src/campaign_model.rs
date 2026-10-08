@@ -30,7 +30,7 @@ pub const MAX_MISSIONS: usize = 32;
 /// The AW2 map id a DS mission is played on: its header is written into
 /// the map table's entry for it when the mission starts (tangoAW2's map
 /// table with room for 0x100 ids, [`crate::survival::TABLE`]; Survival
-/// uses 0xC9..0xEC).
+/// uses 0xC9..0xEF, the Colonel's Vault 0xF1).
 pub const MAP_ID: u8 = 0xF0;
 
 /// A campaign as the engine plays it.

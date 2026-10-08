@@ -448,12 +448,12 @@ original instruction against the ROM and writes `src/five_patches.rs`.
   literal-pool pointers (the table, and +0x3C/+0x40 of entry 0) are
   repointed, and the two loops that walk it (`sub_080206B0`, find a map by
   its tiles; the map list builder at `0x08037482`) go up to 0xC0 instead
-  of 0xBF, and to 0xC8 while the Dual Strike maps can be listed (eight more
+  of 0xBF, and to 0xF1 while the Dual Strike maps can be listed (eight more
   ids to walk shift the menus' timing by a frame, so without the pack the
   loops stay as they were). Black Rampart is id 0xC0, the Dual Strike maps 0xC1..0xC8 (see
   below). A tab lists its maps by id, so new maps come last. Each map's
   tiles and units take 4 KiB: the first ten at `0x08622000`, the rest at
-  `0x08655000` (after the moved table).
+  `0x08656000` (after the moved table, which now holds 0xF2 entries).
 - **Terrain in `five/map.py`.** Roads, pipes and pipe seams pick their
   tile from which neighbours connect, as the game's own maps do (learned
   from every built-in map): roads have straights, bends, T-junctions,
@@ -820,11 +820,11 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Maps | `five_map.rs`, `five/design_ds_maps.py` | Eight Versus maps (2P to 5P, a Wasteland set and a sea set) with Com Towers, Piperunner pipes and Black Hole's structures (above) |
 | Survival | `survival.rs`, `survival_maps.rs`, `survival_ui.rs`, `mode_menu.rs` | Dual Strike's Survival mode (Money, Turn, Time) on its own 33 maps, a seventh entry on Select Mode (below) |
 | DS Campaign | `ds_campaign.rs`, `ds_campaign_data.rs`, `ds_campaign_rules.rs`, `campaign_menu.rs` | Dual Strike's story campaign in AW2's campaign engine, behind a Campaign sub-menu (below) |
-| BH Campaign | `bh_campaign.rs`, `custom_campaign.rs` | A campaign defined as data (Black Hole's thirty missions: two placeholders so far), in the same engine, on AW2's own world map, with its own record and unlockable COs (below) |
+| BH Campaign | `bh_campaign.rs`, `custom_campaign.rs` | A campaign defined as data (Black Hole's thirty missions: two placeholders so far; Free Play, a reversed Black Onyx, Sonja), in the same engine, on AW2's own world map, with its own record and unlockable COs (below) |
 
 Free ROM used: 0x08620000.. (text slots), 0x0862C000.. (new CO text ids 0x6D72..),
 0x08640000..0x08672FFF (earlier features, the Black Factory's wreck sprite definition at 0x08648000; the map table and the maps past the tenth at
-0x08650000..0x0865CFFF), 0x08680000..0x08691FFF (units),
+0x08650000..0x0865EFFF), 0x08680000..0x08691FFF (units),
 0x086A0000..0x086AFFFF (CO table), 0x08740000..0x0877FFFF (CO pictures, texts,
 powers' code, heal wait), 0x087C0000..0x087C0FFF (power animations),
 0x087C1000..0x087C3FFF (map animations), 0x087D0000..0x087DFFFF (unit pictures),
@@ -1927,7 +1927,7 @@ that are not won, and the reveal flow shows the ones a win opens.
 
 **Roster and unlocks.** `CampaignDef::roster` lists (AW2 CO id, open at the
 start) in unlock order: Sturm (open), Von Bolt, Hawke, Kindle, Koal,
-Jugger, Flak, Lash, Adder, Clone Andy. A mission's `recruits` are roster
+Jugger, Flak, Lash, Adder, Clone Andy, Sonja (the secret mission's recruit; Free Play only in effect). A mission's `recruits` are roster
 indexes its win unlocks (`bh_campaign::roster::HAWKE` ...). The record keeps
 the unlocked set as a 24-bit mask of roster indexes at progress +0x0D..0x0F
 (`ds_campaign::unlocked_mask`). Army colour and CO are independent in the
@@ -2007,12 +2007,13 @@ texts; an error names the mission.
 | `props`, `structures` | owned properties; Black Hole's structures stamped on the map (`Structure::{MiniCannon*, Laser, BlackCannon*, BlackFactory, Volcano, Deathray, BlackCrystal, BlackObelisk}`, the Design Room's footprints) | tested: factory, crystal, obelisk, laser |
 | `front2` | a battle on two fronts: its map, props, structures, deployment, `cos` per army (`Pick` for the player's own), `send`, `sky`, weather, fog (`crate::two_front` plays it) | tested: tag pair on the main front, a pick for the second, round change |
 | `day_limit`, `rank_days` | the days the player has (the header's counter; exceeding it loses) and the S rank's days | day limit tested in the header |
-| `triggers` | `Trigger::new(when, cond, vec![actions])` (`.repeating()`; by default a trigger fires once: it latches a campaign flag of its own, 96 per campaign): `when` is `TurnStart` (the start of the player's turn: army 1's, army 5's in a five-army mission) or `AfterAction` (after each action). Conditions: `DayAtLeast`, `EveryDays{n, from}`, `UnitAt`, `NamedIn{name, area}`, `UnitAlive`, `UnitGone`, `UnitsIn{army, area, at_least}`, `ArmyUnitsAtMost`, `PropertiesAtLeast`, `OwnerAt{x, y, army}`, `ArmyDefeated(army)`, `PlayerPair{a, b}`, `Flag`, `Not`, `All`, `Any`, `Custom(fn)`. Actions: `Scene`, `Win`, `Lose`, `SetFunds`, `AddFunds`, `Spawn(units)`, `SetCo`, `Strike{hp}`, `EarnBond(k)`, `Custom(fn)`. Win and lose also by AW2's own rules (rout, HQ) | tested: day, every days, named unit, funds, add funds, scene, win, lose, pair, spawn, strike, second stage, bond; compiled: the rest |
+| `triggers` | `Trigger::new(when, cond, vec![actions])` (`.repeating()`; by default a trigger fires once: it latches a campaign flag of its own, 96 per campaign): `when` is `TurnStart` (the start of the player's turn: army 1's, army 5's in a five-army mission) or `AfterAction` (after each action). Conditions: `DayAtLeast`, `EveryDays{n, from}`, `UnitAt`, `NamedIn{name, area}`, `UnitAlive`, `UnitGone`, `UnitsIn{army, area, at_least}`, `ArmyUnitsAtMost`, `PropertiesAtLeast`, `OwnerAt{x, y, army}`, `ArmyDefeated(army)`, `PlayerPair{a, b}`, `OnyxHitsAtMost(n)`, `OnyxDestroyed`, `Flag`, `Not`, `All`, `Any`, `Custom(fn)`. Actions: `Scene`, `Win`, `Lose`, `SetFunds`, `AddFunds`, `Spawn(units)`, `SetCo`, `Strike{hp}`, `EarnBond(k)`, `Custom(fn)`. Win and lose also by AW2's own rules (rout, HQ) | tested: day, every days, named unit, funds, add funds, scene, win, lose, pair, spawn, strike, second stage, bond; compiled: the rest |
 | special units | `UnitDef::named("courier")` (with `.hp(10)` for 1 HP): a named unit has a **persistent id**: its bit of the mission's death latch (`custom_campaign::LATCH`, the countdown word, kept by a mission saved halfway), set for good when its record empties, so a unit built into its slot is not it. "Must reach the extraction point within 15 days" is `AfterAction` `UnitAt` -> `Win` and `TurnStart` `All[DayAtLeast(16), Not(UnitAt)]` -> `Lose`; an evacuation is `UnitsIn` / `NamedIn` over a rectangle | tested |
 | `intro`, `victory`, `after` | scenes: in the battle before day 1's first turn, before the winning end (inside `Action::Win`), and on the world map after the win (before the next mission's flag shows); between-mission scenes are `after` | tested |
 | `music` | an AW2 song id: while the battle is on every CO's theme in the CO table is that song (put back after) | tested |
 | `recruits`, `needs`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked; what opens it **by mission key** (`Needs::Start`, `All(vec!["bh01"])`, `Any(..)`, `Bonds(..)`: those won and every hidden bond earned); its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
 | five armies | `armies` is 2..=5. In a **five-army mission the player is army 5, Black Hole** (the fifth army of `five.rs`; its colour must be Black Hole's), armies 1..4 are the header's four, units name armies 1..5, a map has five HQs (`1`..`5`); the player's CO is `Fixed` or `Pair` (a tag pair; no pick yet). The patched game (`five::set_campaign`, switched on at `ResetRulesAfterCampaignMap`) is on for the battle only; no mid-mission Save (as a Versus five-army game); no second front. `five.rs`' patched unit ids (51 an army) are handled by `custom_campaign`'s helpers (`unit_by_name`, `units_of`) | tested (`bh_campaign_five_armies`) |
+| `onyx` | **The reversed Black Onyx**: `onyx: Some(OnyxDef::new((x, y)))` (the Obelisk's top-left cell; `hits` 4, `first` 5, `period` 5, `radius` 4, `debris_hp` 3, `offline_turns` 3, `meters` 30 are the design's numbers). Black Hole's satellite on a day cycle, `onyx.rs` (`ON_REV`, RAM `0x0203FFC8`: hits left +1, phase +2, last shot's day +0x17, the Obelisk's offline turns +0x18, this turn's flag +0x19): on Black Hole's turn on day `first` and every `period` days, when the map waits for the cursor, it fires AW2's meteor strike (8 HP, radius 2, never below 1 HP, the spot the computer scores best for the player's army; the panel's beam as Crystal Calamity's); a foot soldier (Infantry or Mech) of **another team** on an unspent silo (tile `0x180`) launches at it (AW2's launch at the silo: camera, missile, the silo spent, the missile on the panel) - found each frame the map waits, on the computer's turn between two of its units too, so the computer's own walk onto a silo counts and a silo holding a Black Hole unit cannot launch; its own Launch action fires nothing; `hits` hits destroy it: every unit of the player's army within `radius` cells of the Obelisk's 3x3 loses `debris_hp` HP (never below 1 HP), the Obelisk and its heal effect are off for `offline_turns` Black Hole turns (`obelisk::heal`, `heal_turn`), the player's active CO and its tag partner lose `meters` % of their Super Power's cost (`tag::cut_meters`), the shots stop for good. Panel: the satellite (Dual Strike's picture), "NEXT SHOT" and the days to it ("4 DAYS", "1 DAY", "TODAY"), "HITS LEFT" with a diamond a hit still needed, the cycle's bar; from the day before a shot the satellite throws pink sparks and the line, diamonds and bar blink pink; the panel's tiny 3x5 letters are `onyx::glyph`; it hides once the satellite has fallen. A mission saved halfway keeps it (`saved` / `restore`, mark `R`). Scenes by the hits left: triggers `Cond::OnyxHitsAtMost(3)` ... `OnyxDestroyed` at `AfterAction` (once each). `five/bh/five_onyx.txt` is a test map: silos are `M` in the map tool | tested (`bh_campaign_reversed_onyx`: the warning, the day-5 shot, four silo hits, the scenes, the fall) |
 
 Scenes: `Scene::new(vec![Line::say(co::STURM, "..."), Line::feel(co::VON_BOLT,
 Mood::Sad, "..."), Line::soldier(colour::BLACK_HOLE, "...")])`; text is
@@ -2077,10 +2078,16 @@ exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
   `unit_by_name`, `units_of`, `day`; a death is `UnitGone`.
 - *A CO pair in the player's pair triggers a scene.* `Cond::PlayerPair {
   a, b }` (either order) at `AfterAction` with a `Scene`.
-- *The Black Onyx turned on the enemy.* `Trigger::new(TurnStart,
-  EveryDays { n: 5, from: 5 }, vec![Action::Strike { hp: 8 }]).repeating()`:
-  AW2's meteor strike (every unit within two cells, never below 1 HP) on the
-  spot the CPU's scorer picks best for the player; no satellite is drawn.
+- *A strike alone.* `Trigger::new(TurnStart, EveryDays { n: 5, from: 5 },
+  vec![Action::Strike { hp: 8 }]).repeating()`: AW2's meteor strike (every
+  unit within two cells, never below 1 HP) on the spot the CPU's scorer
+  picks best for the player; no satellite is drawn. The satellite itself is
+  `MissionDef::onyx` (table above).
+- *Lose when a named city is captured.* The map marks the city as army 1's
+  (Ascii `A`..`D`, or a built map's `C` near the player's HQ), then `Trigger::new(
+  AfterAction, Cond::Not(Box::new(Cond::OwnerAt { x, y, army: 1 })),
+  vec![Scene.., Action::Lose])` (`bh_campaign_lose_when_the_gate_city_is_captured`;
+  in a five-army mission the player's army is 5).
 - *Reinforcements.* `Action::Spawn(vec![UnitDef::new(army, kind, x, y)])`
   (full HP; a cell in use is skipped).
 - *Hidden bonds.* `CampaignDef::bonds` (at most 12) lists the CO whose CO
@@ -2103,6 +2110,41 @@ without the pack; New, the prologue and the world map with one flag; mission
 credits; every data field; a named unit's extraction and death latch; two
 fronts; five armies; the second stage; a built map; both campaigns in one
 boot), `test_bh_map_tool.py` and the save tests above.
+
+**Free Play.** Once the final mission is won (`ds_campaign::free_play`) the
+map offers every mission again, the won ones cleared and open to replay. A
+replay's win changes nothing of the progress (`end_of_battle`: the won bits,
+the progress step and the recruits stay, the flags go back to the record, no
+new records or bonds: `earn_bond` and the records ignore a won mission, no
+staff roll), so the roster, the bonds and the records are the campaign's as
+they were; the CO screen offers the whole unlocked roster. A mission not
+yet won (the secret one, opened by its bonds) is played for real, wins
+included. Test: `bh_campaign_free_play_replays_change_nothing`.
+
+**The secret mission's extras.** `CampaignDef::secret_mission` (a key) names
+the 31st mission; its win (`ds_campaign::secret_won`) adds the roll's
+**secret sections**: a `CreditSection { secret: true, .. }` is in
+`ds_credits::Credits::secret_list` and not in the plain `page_list`
+(`ds_credits::tick` switches the pool words); the secret epilogue is such
+sections (names of at most 21 letters a line: the roll's pages are text
+only, so the epilogue is shown after the staff names as roll pages, not as
+speaker boxes). The mission's `recruits` is Sonja (`roster::SONJA`, AW2 CO
+7): she joins the roster and, with Von Bolt, the made-up pair **Vault
+Breakers** (`sturm_pairs::DUOS`: compatibility 115, 2 stars, four victory
+lines; wired through `tag::compatibility`, `special_pair`, `tag_extras::
+pair_texts` and `partners_of`, the pack only). Test:
+`bh_campaign_secret_mission_credits_and_sonja`, `tag_vault_breakers`.
+
+**The Colonel's Vault** (`five/design_vault_map.py`): a 2-army, 30x20 Versus
+map on the Vs. tab, listed with the pack only (`look pack` in the map file:
+normal colours, pack-only), the BH Campaign's prize map. Its id is `0xF1`
+(`five_map::VAULT_ID`, past Survival's `0xC9..0xEF` and the campaigns' `0xF0`); the map table grew to
+`0xF2` ids (`five_map::MAP_IDS`; the table at `0x08650000..0x08655583`, the
+maps past the tenth now from `0x08656000`), and with the pack the list's walk
+goes to `0xF1` (always: it is listed from the start, not only after the
+secret mission). Survival's copy of the table includes it. The apostrophe
+in a map's name is AW2's `~`. Test: `ds_map_the_colonel's_vault` (opened from
+its tab, preview and tiles, every unit; the CPU plays six days).
 
 **The Campaign chooser** shows all three entries at once (AW2 CAMPAIGN, DS
 CAMPAIGN, BH CAMPAIGN): the game's box has two label sprites, the third is
