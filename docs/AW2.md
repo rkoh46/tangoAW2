@@ -1951,9 +1951,10 @@ the pack).
 
 The BH Campaign is thirty missions played as Black Hole, defined **as data**
 and played by the DS Campaign's engine (`ds_campaign.rs`): it needs the Dual
-Strike pack (its COs, units and looks come from it). Today it holds two
-placeholder missions that prove the pipeline end to end; the thirty are
-added to `bh_campaign.rs` as `MissionDef`s, no engine code needed. A sequel
+Strike pack (its COs, units and looks come from it). Act I (M1 Storm Landing,
+M2 The Sleeping Foundry, M3 Blockade Runner, `bh_act1.rs`, "Act I" below) is
+built and the prologue is the design's; the rest are added as `MissionDef`s
+in their acts' files, no engine code needed. A sequel
 ("BH2") or any other campaign is another `CampaignDef` and another entry of
 `campaign_model::SOURCES`.
 
@@ -2091,16 +2092,49 @@ texts; an error names the mission.
 | special units | `UnitDef::named("courier")` (with `.hp(10)` for 1 HP): a named unit has a **persistent id**: its bit of the mission's death latch (`custom_campaign::LATCH`, the countdown word, kept by a mission saved halfway), set for good when its record empties, so a unit built into its slot is not it. "Must reach the extraction point within 15 days" is `AfterAction` `UnitAt` -> `Win` and `TurnStart` `All[DayAtLeast(16), Not(UnitAt)]` -> `Lose`; an evacuation is `UnitsIn` / `NamedIn` over a rectangle | tested |
 | `intro`, `victory`, `after` | scenes: in the battle before day 1's first turn, before the winning end (inside `Action::Win`), and on the world map after the win (before the next mission's flag shows); between-mission scenes are `after` | tested |
 | `music` | an AW2 song id: while the battle is on every CO's theme in the CO table is that song (put back after) | tested |
+| `factory` | The Black Factory's own schedule: `(day, [door 1, door 2, door 3])` unit types (0 none; days not listed spawn nothing; the spawner reads row `day & 0x1F`); empty: Factory Blues' table. `factory::table_for` writes it to the spawner's table pointer (`0x030046B4`) at the AI turn setup and at a human Black Hole army's turn (the detour) | tested (`bh_act1_m2_foundry_waves_and_flow`) |
+| `on_win` | Actions (`EarnBond`, `Custom`) run, then the `victory` scene, in the match-end list when the player's team wins by AW2's own rules (the enemy routed or its HQ taken: AW2 ends the match before an after-action trigger could look, so a trigger on `ArmyDefeated` never shows the scene); not used when the mission has a `Win` action of its own | tested (Act I's wins) |
 | `recruits`, `needs`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked; what opens it **by mission key** (`Needs::Start`, `All(vec!["bh01"])`, `Any(..)`, `Bonds(..)`: those won and every hidden bond earned); its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
 | five armies | `armies` is 2..=5. In a **five-army mission the player is army 5, Black Hole** (the fifth army of `five.rs`; its colour must be Black Hole's), armies 1..4 are the header's four, units name armies 1..5, a map has five HQs (`1`..`5`); the player's CO is `Fixed` or `Pair` (a tag pair; no pick yet). The patched game (`five::set_campaign`, switched on at `ResetRulesAfterCampaignMap`) is on for the battle only; no mid-mission Save (as a Versus five-army game); no second front. `five.rs`' patched unit ids (51 an army) are handled by `custom_campaign`'s helpers (`unit_by_name`, `units_of`) | tested (`bh_campaign_five_armies`) |
 | `onyx` | **The reversed Black Onyx**: `onyx: Some(OnyxDef::new((x, y)))` (the Obelisk's top-left cell; `hits` 4, `first` 5, `period` 5, `radius` 4, `debris_hp` 3, `offline_turns` 3, `meters` 30 are the design's numbers). Black Hole's satellite on a day cycle, `onyx.rs` (`ON_REV`, RAM `0x0203FFC8`: hits left +1, phase +2, last shot's day +0x17, the Obelisk's offline turns +0x18, this turn's flag +0x19): on Black Hole's turn on day `first` and every `period` days, when the map waits for the cursor, it fires AW2's meteor strike (8 HP, radius 2, never below 1 HP, the spot the computer scores best for the player's army; the panel's beam as Crystal Calamity's); a foot soldier (Infantry or Mech) of **another team** on an unspent silo (tile `0x180`) launches at it (AW2's launch at the silo: camera, missile, the silo spent, the missile on the panel) - found each frame the map waits, on the computer's turn between two of its units too, so the computer's own walk onto a silo counts and a silo holding a Black Hole unit cannot launch; its own Launch action fires nothing; `hits` hits destroy it: every unit of the player's army within `radius` cells of the Obelisk's 3x3 loses `debris_hp` HP (never below 1 HP), the Obelisk and its heal effect are off for `offline_turns` Black Hole turns (`obelisk::heal`, `heal_turn`), the player's active CO and its tag partner lose `meters` % of their Super Power's cost (`tag::cut_meters`), the shots stop for good. Panel: the satellite (Dual Strike's picture), "NEXT SHOT" and the days to it ("4 DAYS", "1 DAY", "TODAY"), "HITS LEFT" with a diamond a hit still needed, the cycle's bar; from the day before a shot the satellite throws pink sparks and the line, diamonds and bar blink pink; the panel's tiny 3x5 letters are `onyx::glyph`; it hides once the satellite has fallen. A mission saved halfway keeps it (`saved` / `restore`, mark `R`). Scenes by the hits left: triggers `Cond::OnyxHitsAtMost(3)` ... `OnyxDestroyed` at `AfterAction` (once each). `five/bh/five_onyx.txt` is a test map: silos are `M` in the map tool | tested (`bh_campaign_reversed_onyx`: the warning, the day-5 shot, four silo hits, the scenes, the fall) |
 
 Scenes: `Scene::new(vec![Line::say(co::STURM, "..."), Line::feel(co::VON_BOLT,
-Mood::Sad, "..."), Line::soldier(colour::BLACK_HOLE, "...")])`; text is
-plain, wrapped to AW2's box (two lines of 176 pixels; a box that needs
-more spreads evenly); `\x0f` forces a new box. A scene compiles to AW2's
+Mood::Sad, "..."), Line::soldier(colour::BLACK_HOLE, "..."), Line::narrate("...")])`;
+`narrate` is a box with Black Hole's soldier face (AW2's speaker-less `0x1A` text is drawn
+bare on the map in a battle: unreadable). A soldier with a mood is
+`Line::feel(23, Mood::Happy, ..)` (faces are `co + 24 * mood`; 23 is Black Hole's
+trooper). Text is plain; **a text written with its own `\r` line breaks keeps them**
+when it is at most two lines that each fit AW2's box (176 pixels), else it is wrapped
+(two lines of 176 pixels; a box that needs more spreads evenly); `\x0f` forces a new box. A scene compiles to AW2's
 dialogue commands (`0x17` open with the first face, `0x38` a speaker,
 `0x19` a text, `0x18` close).
+
+### Act I (`bh_act1.rs`, `five/bh/bh01.txt` .. `bh03.txt`)
+
+The design is docs/BH_CAMPAIGN.md (3.5, 4.1, 4.2, 4.11); the scenes are its text line for line, with its
+own line breaks (`Compiler::dialogue` keeps a text's `\r` when each box is at most two lines that fit),
+and the tests read the scenes out of `bh_act1.rs` and compare them with what the game shows
+(`bh_act1_dialogue_is_the_designs_and_fits_its_boxes`). The flags sit on the Black Hole island (`region::
+BLACK_HOLE[0]`, `[4]`, `[5]`: the north-west tip, the south, the south-east bulge). The prologue is the
+design's eight pages (soldier boxes on AW2's map; no pictures or music there). A mission's win scene is
+its `on_win` / `victory`; the days run out as `Cond::DayAtLeast(limit + 1)` -> `Lose` (AW2 only ranks
+by days).
+
+| | M1 Storm Landing | M2 The Sleeping Foundry | M3 Blockade Runner |
+| --- | --- | --- | --- |
+| Map | 22x15: a crater lake with two bridges over the river that cuts the map (every vehicle crosses at (7,7) or (14,7); foot wades), a south-west beach, Von Bolt's walled hall (west gate (16,3), south gate (19,5)), an Obelisk at (5,9), Crystals beside the bridge ends at (6,6) and (15,8) | 18x20: the Foundry (8..10, 3..6, doors on row 7) fed by a pipe from the HQ (9,1), a ring road round it, a Crystal at (6,7), a river with the road bridge (9,12) and a west-track bridge (3,12), a village, a ridge, Green Earth's south coast | 26x16: three islands, two straits, two-wide channels; Black Cannon at (12,6) on the middle isle with its ring road; ten beaches (shoals), four ports |
+| Armies | Sturm (6000): HQ, 2 bases, 4 cities; Von Bolt in Green Earth's colours (10000): HQ, 3 bases, 3 cities, 5 neutral cities | Sturm or Von Bolt (pick; no bases, no funds), against Jess (8000) | Sturm + Von Bolt (a fixed tag pair, 12000) against Drake + Eagle (14000) |
+| Rules | day 3 scene when a Black Hole unit is within 2 of a Crystal; day 4 two Md Tanks if Von Bolt owns 6+ properties; day 7 scene; the win earns Von Bolt's bond (`on_win`) and unlocks him; 20 days | the Foundry's own table (`factory`, from day 3), Green Earth's waves on days 3, 6 and 9 (day 9 with Jess's power charged), +3000 for Jess on days 4, 8, 12; the last line of the opening is Sturm's or the leader's; 14 days | day 4 and day 8 scenes (the latter once two of the isle's three cities are held); 25 days |
+
+Tests (`test_bh_act1.py`, `-k bh_act1`): every mission loads as its sheet says; each mission's
+opening, forced win with its scenes, unlocks, bond and next flag; M1's turn-start rules; M2's Foundry
+(none before day 3, a Tank on the middle door on day 3, the wave); M3's pair and scenes; every mission
+lost three ways (days, routed, HQ taken); the maps' reachability (the map tool plus foot, tires and treads
+across the bridges, ships and Landers across M3's lanes); `bh_act1_m3_lander_unloads_on_every_beach`
+(each army's Lander loads and unloads on all seven beaches it can use); a campaign chain saved halfway
+and continued in each mission; pictures (`AW2TEST_PICS=<dir>`). `AW2TEST_BH_ACT1_BALANCE=1` adds
+`bh_act1_balance_m{1,2,3}_{cpu,bot}` (the computer on both sides, and the test player of
+`aw2test/bot.py` against it; `AW2TEST_BH_ACT1_BOT='{"stance":"defend"}'` changes the bot's options).
 
 ### Adding a mission (for whoever builds the thirty)
 
