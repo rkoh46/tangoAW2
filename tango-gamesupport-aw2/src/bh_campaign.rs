@@ -354,6 +354,16 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::HAWKE)),
     ];
+    // (the allies' Tanks have no ammo and stay put: the test turns them into soldiers
+    // for the silos and must not lose the mission to them)
+    k.units = vec![
+        UnitDef::new(1, unit::TANK, 4, 4).hold().ammo(0),
+        UnitDef::new(2, unit::TANK, 11, 4).hold().ammo(0),
+        UnitDef::new(3, unit::TANK, 4, 10).hold().ammo(0),
+        UnitDef::new(4, unit::TANK, 11, 10).hold().ammo(0),
+        UnitDef::new(5, unit::INFANTRY, 7, 5),
+        UnitDef::new(5, unit::TANK, 8, 6),
+    ];
     k.onyx = Some(OnyxDef::new((5, 7)));
     k.triggers = vec![
         Trigger::new(When::AfterAction, Cond::OnyxHitsAtMost(3), vec![Action::Scene(Scene::new(vec![Line::say(co::EAGLE, "One down.")]))]),
