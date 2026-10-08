@@ -371,9 +371,35 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
     ];
-    m.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1).hold(), UnitDef::new(2, unit::INFANTRY, 8, 3).hold()];
+    // (a Md Tank on the player's HQ: the computer's soldier cannot capture it)
+    m.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 3).hold()];
     m.needs = Needs::All(vec!["f01"]);
     m.flag = region::BLACK_HOLE[1];
+
+    // Two fronts, a Black Factory on the main front only; the player's Black Hole army on the
+    // second front is the computer's (Auto CO) and must not trip over the missing factory.
+    let mut n = MissionDef::new("f12", "Features Two Fronts No Factory");
+    n.objective = "Test: a second front without a factory.";
+    n.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", ".........2"]);
+    n.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JUGGER)),
+    ];
+    n.structures = vec![(Structure::BlackFactory, 5, 2)];
+    n.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::MD_TANK, 8, 3).hold()];
+    n.front2 = Some(FrontDef {
+        map: MapSrc::Ascii(&["1......", ".......", "......2"]),
+        props: Vec::new(),
+        structures: Vec::new(),
+        units: vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::MD_TANK, 5, 1).hold()],
+        cos: [CoSpec::Fixed(co::HAWKE), CoSpec::Fixed(co::KOAL), CoSpec::None, CoSpec::None],
+        send: SendRule::Ground,
+        sky: false,
+        weather: Weather::Clear,
+        fog: false,
+    });
+    n.needs = Needs::All(vec!["f01"]);
+    n.flag = region::BLACK_HOLE[3];
 
     CampaignDef {
         source: 1,
@@ -383,8 +409,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m],
-        final_mission: "f11",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n],
+        final_mission: "f12",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
         secret_mission: "f06",
     }

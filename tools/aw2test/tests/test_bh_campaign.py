@@ -945,7 +945,7 @@ def bh_campaign_bond_quote_on_the_co_page(ctx):
         e.close()
 
 
-def stock_check(ctx, e, g, label):
+def stock_check(ctx, e, g, label, hurt=()):
     """Every live unit, both sides, has its type's full ammo and fuel (the
     unit table in use: the pack's, `0x08680000`, 0x5C a record: +0x0B ammo,
     +0x10 fuel)."""
@@ -958,12 +958,14 @@ def stock_check(ctx, e, g, label):
             continue
         n += 1
         stats = e.read(0x08680000 + 0x5C * r[0], 0x5C)
-        ammo, fuel = ((r[4] | r[5] << 8) >> 7) & 0xF, r[6] & 0x7F
+        ammo, fuel, hp = ((r[4] | r[5] << 8) >> 7) & 0xF, r[6] & 0x7F, r[4] & 0x7F
+        if hp != 100 and (r[0], hp) not in hurt:
+            bad.append(("hp", uid // per + 1, r[0], hp))
         # (a computer army may have moved a square before the check: fuel burns)
         if ammo != stats[0x0B] & 0xF or not stats[0x10] & 0x7F >= fuel >= (stats[0x10] & 0x7F) - 9:
             bad.append((uid // per + 1, r[0], ammo, fuel, stats[0x0B] & 0xF, stats[0x10] & 0x7F))
     ctx.require(n > 0, f"{label}: units on the map")
-    ctx.check(not bad, f"{label}: every unit starts with full ammo and fuel; wrong (army, type, ammo, fuel, max ammo, max fuel): {bad}")
+    ctx.check(not bad, f"{label}: every unit starts with 10 HP (100) and full ammo and fuel; wrong ((army, type, ammo, fuel, max ammo, max fuel) or (hp, army, type, hp)): {bad}")
 
 
 @test(modes=("ds",))
@@ -980,7 +982,7 @@ def bh_campaign_units_start_with_full_ammo_and_fuel(ctx):
         d.wait_map()
         g._units_base = g._players_base = None
         ctx.eq(d.mission(), mission, f"mission {mission + 1}")
-        stock_check(ctx, e, g, f"mission {mission + 1}")
+        stock_check(ctx, e, g, f"mission {mission + 1}", hurt=((1, 10),) if mission == 1 else ())
         e.wait(30)
         shot(ctx, e, f"start_units_{mission + 1}")
         e.close()
