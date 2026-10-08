@@ -177,6 +177,7 @@ pub static MAPS: &[BuiltMap] = &[
             BuiltUnit { army: 1, kind: 1, x: 5, y: 7, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 1, kind: 1, x: 5, y: 9, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 1, kind: 19, x: 3, y: 7, hp: 100, hold: false, name: "" },
+            BuiltUnit { army: 1, kind: 16, x: 2, y: 9, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 2, kind: 21, x: 17, y: 3, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 2, kind: 22, x: 18, y: 4, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 2, kind: 22, x: 17, y: 8, hp: 100, hold: false, name: "" },
