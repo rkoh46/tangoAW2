@@ -2,7 +2,10 @@
 //! pack (offline): what Dual Strike's Survival course screen shows (the
 //! mode's title in its title font, the "BASIC COURSE" panel with the maps,
 //! the budget and the best, the strip of the course's eleven maps, the map
-//! under the cursor with its RECORD box) fitted to one GBA screen.
+//! under the cursor with its RECORD box) fitted to one GBA screen. The
+//! Champion courses (open once the basic course is cleared) have the same
+//! screen with Dual Strike's "CHAMPION COURSE" banner, "Infinite" for the
+//! maps, the larger budget and the maps cleared as the best, with its rank.
 //!
 //! Dual Strike's own art, converted at run time from the pack (nothing of
 //! it is in the repository):
@@ -11,7 +14,7 @@
 //!   of 16x32 pixels, 2x4 tiles, its palette in the file's last 64 bytes),
 //! - the "BASIC COURSE" banner (`ohashi/res_survival`: its first LZ stream,
 //!   four sprite blocks of 4x2 tiles = 128x16; the palette bank in the last
-//!   770 bytes),
+//!   770 bytes) and the "CHAMPION COURSE" one (the next four blocks),
 //! - the ring wallpaper (`ohashi/res_wall_base`: tiles and a 512x256
 //!   tilemap in the first two LZ streams, one palette in the last 32 bytes).
 //!
@@ -284,8 +287,9 @@ struct Art {
     /// Rows of the title font that carry pixels (the glyphs' common extent).
     title_top: usize,
     title_rows: usize,
-    /// The banner, 128x16, 0 clear.
+    /// The banners, 128x16, 0 clear: BASIC COURSE, CHAMPION COURSE.
     banner: Vec<u8>,
+    champion_banner: Vec<u8>,
     banner_pal: [u16; 16],
     /// The ring wallpaper cropped to the screen, as bank 0's indexes.
     wall: Vec<u8>,
@@ -375,19 +379,25 @@ fn build_art() -> Option<Art> {
     let f = pack.file("ohashi/res_survival")?;
     let (tiles, _) = lz10_stream(f, 0)?;
     let banner_pal = palette(f, f.len().checked_sub(770)?)?;
-    if tiles.len() < 32 * 32 {
+    if tiles.len() < 64 * 32 {
         return None;
     }
-    let mut banner = vec![0u8; 128 * 16];
-    for blk in 0..4 {
-        for t in 0..8 {
-            for y in 0..8 {
-                for x in 0..8 {
-                    banner[128 * (8 * (t / 4) + y) + 32 * blk + 8 * (t % 4) + x] = tile_px(&tiles, blk * 8 + t, x, y);
+    let banner_at = |first: usize| {
+        let mut banner = vec![0u8; 128 * 16];
+        for blk in 0..4 {
+            for t in 0..8 {
+                for y in 0..8 {
+                    for x in 0..8 {
+                        banner[128 * (8 * (t / 4) + y) + 32 * blk + 8 * (t % 4) + x] =
+                            tile_px(&tiles, (first + blk) * 8 + t, x, y);
+                    }
                 }
             }
         }
-    }
+        banner
+    };
+    let banner = banner_at(0);
+    let champion_banner = banner_at(4);
     // The wallpaper: its tiles, the first screen of its map, its palette.
     let f = pack.file("ohashi/res_wall_base")?;
     let (tiles, next) = lz10_stream(f, 0)?;
@@ -416,6 +426,7 @@ fn build_art() -> Option<Art> {
         title_top: top,
         title_rows: bottom - top + 1,
         banner,
+        champion_banner,
         banner_pal,
         wall,
     })
@@ -468,10 +479,11 @@ impl Art {
         }
         x + (g.right - g.left) as i32 + 1
     }
-    fn banner(&self, cv: &mut Canvas, x: i32, y: i32) {
+    fn banner(&self, cv: &mut Canvas, x: i32, y: i32, champion: bool) {
+        let pixels = if champion { &self.champion_banner } else { &self.banner };
         for by in 0..16 {
             for bx in 0..128 {
-                let v = self.banner[128 * by + bx];
+                let v = pixels[128 * by + bx];
                 let c = if v == 0 {
                     WHITE
                 } else {
@@ -501,6 +513,7 @@ struct Words {
     turns_left: String,
     time_left: String,
     maps_cleared: String,
+    infinite: String,
 }
 
 fn words() -> &'static Words {
@@ -538,6 +551,7 @@ fn words() -> &'static Words {
             turns_left: find("Turns left", "Turns left"),
             time_left: find("Time left", "Time left"),
             maps_cleared: find("Maps clrd.", "Maps clrd."),
+            infinite: find("Infinite", "Infinite"),
         }
     })
 }
@@ -622,16 +636,41 @@ fn hint(cv: &mut Canvas, core: &Core, lines: &[&str]) {
     cv.text(core, (W as i32 - w) / 2, 149, s, INK, SHADE);
 }
 
-/// One course's panel at `y`: the banner, the rows.
-fn course_panel(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, between: Option<(u32, u32, u32)>) {
+/// A rank in a small box (Dual Strike's badge by the Champion course's best).
+fn rank_badge(cv: &mut Canvas, core: &Core, x: i32, y: i32, rank: u8) {
+    cv.rect(x, y, 12, 12, BLUE);
+    let s = maps::rank_letter(rank).to_string();
+    let w = text_width(core, &s);
+    cv.text(core, x + 6 - w / 2, y + 1, &s, WHITE, LIGHT_BLUE);
+}
+
+/// One course's panel at `y`: the banner, the rows. `between`: a run in
+/// progress (maps cleared, what is left, points).
+fn course_panel(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, champion: bool, between: Option<(u32, u32, u32)>) {
     let (x, y, w, h) = (8, 31, 224, 48);
     cv.window(x, y, w, h);
-    a.banner(cv, 56, y + 3);
+    a.banner(cv, 56, y + 3, champion);
     let run = maps::survival().map(|s| s.run(k));
-    let budget = run.map_or(0, |r| r.budget);
+    let budget = run.map_or(0, |r| if champion { r.champion_budget } else { r.budget });
     let right = x + w - 8;
     let (row1, row2) = (y + 21, y + 34);
     match between {
+        None if champion => {
+            // Dual Strike's Champion panel: Infinite, the budget, the maps
+            // cleared (and the rank) of the best run.
+            cv.text(core, x + 8, row1, &words().infinite, INK, SHADE);
+            let (l1, _) = row_labels(k);
+            cv.text(core, 108, row1, l1, INK, SHADE);
+            right_text(cv, core, right, row1, &amount(k, budget));
+            cv.text(core, 108, row2, &words().maps_cleared, INK, SHADE);
+            match sv::champion_record(core, k) {
+                Some(n) => {
+                    rank_badge(cv, core, right - 11, row2 - 1, maps::champion_rank(n));
+                    right_text(cv, core, right - 15, row2, &format!("{} {}", n, words().maps));
+                }
+                None => right_text(cv, core, right, row2, "----"),
+            }
+        }
         None => {
             let n = format!("{}", MAPS_PER_RUN);
             let nx = cv.text(core, x + 8, row1, &n, INK, SHADE);
@@ -646,6 +685,11 @@ fn course_panel(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, between: Option<
             let n = format!("{}", stage);
             let nx = cv.text(core, x + 8, row1, &n, INK, SHADE);
             cv.text(core, nx + 3, row1, &words().maps_cleared, INK, SHADE);
+            if champion {
+                // The list starts over after eleven maps: each round a wave.
+                let wave = format!("Wave {}", stage / MAPS_PER_RUN as u32 + 1);
+                cv.text(core, x + 8, row2, &wave, INK, SHADE);
+            }
             cv.text(core, 108, row1, left_label(k), INK, SHADE);
             right_text(cv, core, right, row1, &amount(k, left));
             cv.text(core, 108, row2, "Points", INK, SHADE);
@@ -793,7 +837,7 @@ fn arrow(cv: &mut Canvas, x: i32, y: i32, up: bool) {
     }
 }
 
-fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, phase: u8, browsed: usize) {
+fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, champion: bool, phase: u8, browsed: usize) {
     let Some(s) = maps::survival() else { return };
     let run = s.run(k);
     a.title(cv, 1, title_of(k));
@@ -811,9 +855,15 @@ fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, phase: u8, browse
             core.raw_read_32(sv::POINTS, -1),
         )
     });
-    course_panel(cv, core, a, k, between);
+    course_panel(cv, core, a, k, champion, between);
+    // The strip: cleared maps dark, the next yellow. A Champion course goes
+    // round again after eleven maps: the strip is the round's; before a run
+    // the maps its best run reached are dark.
     let (cleared, next) = if phase == sv::BETWEEN {
-        (stage, Some(stage))
+        let n = if champion { stage % MAPS_PER_RUN } else { stage };
+        (n, Some(n))
+    } else if champion {
+        (sv::champion_record(core, k).map_or(0, |n| (n as usize).min(MAPS_PER_RUN)), None)
     } else {
         (0, None)
     };
@@ -842,53 +892,77 @@ fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, phase: u8, browse
     }
 }
 
-fn result_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, phase: u8) {
+fn result_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, champion: bool, phase: u8) {
     let cleared = phase == sv::CLEARED;
     a.title(cv, 1, if cleared { "CLEAR" } else { "GAME*OVER" });
     let (x, y, w, h) = (8, 36, 224, 108);
     cv.window(x, y, w, h);
-    a.banner(cv, 56, y + 3);
+    a.banner(cv, 56, y + 3, champion);
     let stage = core.raw_read_8(sv::STAGE, -1) as u32;
     let points = core.raw_read_32(sv::POINTS, -1);
-    let mut rows = vec![(words().maps_cleared.clone(), format!("{} / {}", stage, MAPS_PER_RUN))];
+    let mut rows = if champion {
+        // An endless course: the maps cleared, no "of".
+        vec![(words().maps_cleared.clone(), format!("{}", stage))]
+    } else {
+        vec![(words().maps_cleared.clone(), format!("{} / {}", stage, MAPS_PER_RUN))]
+    };
     if cleared {
         rows.push((left_label(k).to_string(), amount(k, core.raw_read_32(sv::LEFT, -1))));
+    }
+    if cleared || champion {
         rows.push(("Bonus".to_string(), format!("{}", core.raw_read_32(sv::BONUS, -1))));
     }
     rows.push(("Points".to_string(), format!("{}", points)));
     // Rows left, the rank in the title font at the right.
-    let right = if cleared { x + w - 52 } else { x + w - 10 };
+    let ranked = cleared || champion;
+    let right = if ranked { x + w - 52 } else { x + w - 10 };
     for (i, (l, v)) in rows.iter().enumerate() {
         let ry = y + 24 + 15 * i as i32;
         cv.text(core, x + 10, ry, l, INK, SHADE);
         right_text(cv, core, right, ry, v);
         cv.rect(x + 10, ry + 13, right - x - 10, 1, LIGHT_GRAY);
     }
-    if cleared {
+    if ranked {
         cv.text(core, x + w - 44, y + 24, "Rank", GRAY_INK, SHADE);
         let r = maps::rank_letter(core.raw_read_8(sv::RANK, -1));
         a.letter(cv, x + w - 36, y + 40, r);
     }
-    cv.text(core, x + 10, y + h - 15, k.name(), GRAY_INK, SHADE);
+    let name = if champion { k.champion_name() } else { k.name() };
+    cv.text(core, x + 10, y + h - 15, name, GRAY_INK, SHADE);
     hint(cv, core, &["A Continue"]);
 }
 
 fn records_page(cv: &mut Canvas, core: &Core, a: &Art) {
     a.title(cv, 1, "RECORD");
-    let (x, y, w, h) = (8, 36, 224, 100);
+    let (x, y, w, h) = (8, 34, 224, 112);
     cv.window(x, y, w, h);
-    a.banner(cv, 56, y + 3);
+    a.banner(cv, 56, y + 3, false);
     let heads = [("Course", x + 10), ("Rank", x + 100), ("CO", x + 130)];
     for (s, hx) in heads {
-        cv.text(core, hx, y + 22, s, GRAY_INK, SHADE);
+        cv.text(core, hx, y + 20, s, GRAY_INK, SHADE);
     }
-    right_text(cv, core, x + w - 10, y + 22, "Used");
-    for (i, k) in Kind::ALL.iter().enumerate() {
-        let ry = y + 38 + 18 * i as i32;
-        cv.rect(x + 10, ry - 3, w - 20, 1, LIGHT_GRAY);
-        cv.text(core, x + 10, ry, k.name(), INK, SHADE);
-        let budget = maps::survival().map_or(0, |s| s.run(*k).budget);
-        let rec = sv::record(core, *k);
+    right_text(cv, core, x + w - 10, y + 20, "Used");
+    // The three basic courses, then the three Champion courses.
+    for (i, (k, champion)) in Kind::ALL.iter().map(|&k| (k, false)).chain(Kind::ALL.iter().map(|&k| (k, true))).enumerate() {
+        let ry = y + 36 + 12 * i as i32;
+        cv.rect(x + 10, ry - 2, w - 20, 1, LIGHT_GRAY);
+        cv.text(core, x + 10, ry, if champion { k.champion_name() } else { k.name() }, INK, SHADE);
+        if champion {
+            match sv::champion_record(core, k) {
+                Some(n) => {
+                    cv.text(core, x + 100, ry, &format!("{}", maps::rank_letter(maps::champion_rank(n))), INK, SHADE);
+                    right_text(cv, core, x + w - 10, ry, &format!("{} {}", n, words().maps));
+                }
+                None => {
+                    cv.text(core, x + 100, ry, "-", INK, SHADE);
+                    let used = if sv::champion_open(core, k) { "----" } else { "Locked" };
+                    right_text(cv, core, x + w - 10, ry, used);
+                }
+            }
+            continue;
+        }
+        let budget = maps::survival().map_or(0, |s| s.run(k).budget);
+        let rec = sv::record(core, k);
         match rec {
             Some((rank, co, _)) => {
                 cv.text(core, x + 100, ry, &format!("{}", maps::rank_letter(rank)), INK, SHADE);
@@ -898,7 +972,7 @@ fn records_page(cv: &mut Canvas, core: &Core, a: &Art) {
                 cv.text(core, x + 100, ry, "-", INK, SHADE);
             }
         }
-        right_text(cv, core, x + w - 10, ry, &best_used(*k, budget, rec));
+        right_text(cv, core, x + w - 10, ry, &best_used(k, budget, rec));
     }
     hint(cv, core, &["B Back"]);
 }
@@ -965,7 +1039,7 @@ fn write_if_changed(core: &mut Core, at: u32, b: &[u8]) {
     }
 }
 
-fn kind_on_list(core: &Core) -> Option<Kind> {
+fn kind_on_list(core: &Core) -> Option<(Kind, bool)> {
     let (first, cursor) = (core.raw_read_32(LIST_FIRST, -1), core.raw_read_32(LIST_CURSOR, -1));
     let id = core.raw_read_8(LIST_IDS + (first + cursor).min(0x31), -1);
     sv::entry_kind_of(id)
@@ -979,23 +1053,24 @@ fn hash(bytes: &[u8]) -> u32 {
 
 /// Which page the state asks for, and its signature (a hash of everything
 /// the picture is drawn from).
-fn page(core: &Core) -> Option<(Kind, u8, u8, u32)> {
+fn page(core: &Core) -> Option<(Kind, bool, u8, u8, u32)> {
     let phase = core.raw_read_8(sv::PHASE, -1);
-    let k = if phase == sv::CHOOSING {
+    let (k, champion) = if phase == sv::CHOOSING {
         kind_on_list(core)?
     } else {
-        sv::kind_now(core)
+        (sv::kind_now(core), sv::champion_now(core))
     };
     let mut b = vec![0u8; (UI - sv::STATE) as usize];
     core.raw_read_range(sv::STATE, -1, &mut b);
-    let mut rec = [0u8; 10];
+    let mut rec = [0u8; sv::PROFILE_RECORDS_LEN];
     core.raw_read_range(PROFILE_RECORDS, -1, &mut rec);
     b.extend_from_slice(&rec);
     b.push(k as u8);
+    b.push(champion as u8);
     b.push(core.raw_read_8(BROWSE, -1));
     let records = core.raw_read_8(RECORDS, -1);
     b.push(records);
-    Some((k, phase, records, hash(&b)))
+    Some((k, champion, phase, records, hash(&b)))
 }
 
 /// Survival's War Room is closed: nothing is up.
@@ -1025,19 +1100,20 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
         return keys;
     }
     let pressed = keys & !prev;
-    let Some((k, phase, recs, _)) = page(core) else {
+    let Some((k, champion, phase, recs, _)) = page(core) else {
         return keys;
     };
     // A fresh page when the course, the phase or the run's progress changes.
     let stage = core.raw_read_8(sv::STAGE, -1);
-    let ctx = (k as u32) | (phase as u32) << 4 | (stage as u32) << 8 | 1 << 16;
+    let ctx = (k as u32) | (champion as u32) << 3 | (phase as u32) << 4 | (stage as u32) << 8 | 1 << 16;
     if core.raw_read_32(CONTEXT, -1) != ctx {
         core.raw_write_32(CONTEXT, -1, ctx);
         core.raw_write_8(
             BROWSE,
             -1,
             if phase == sv::BETWEEN {
-                stage.min(MAPS_PER_RUN as u8 - 1)
+                // A Champion course starts its list over every eleven maps.
+                if champion { stage % MAPS_PER_RUN as u8 } else { stage.min(MAPS_PER_RUN as u8 - 1) }
             } else {
                 0
             },
@@ -1068,7 +1144,7 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
             keys &= !(KEY_R | KEY_L | KEY_LEFT | KEY_RIGHT);
         }
     }
-    let Some((k, phase, recs, sig)) = page(core) else {
+    let Some((k, champion, phase, recs, sig)) = page(core) else {
         return keys;
     };
     if core.raw_read_8(SHOWN, -1) == 1 {
@@ -1080,20 +1156,20 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
     if core.raw_read_8(SHOWN, -1) == 1 && core.raw_read_32(SIGNATURE, -1) == sig {
         return keys;
     }
-    draw(core, a, k, phase, recs == 1, browse);
+    draw(core, a, k, champion, phase, recs == 1, browse);
     core.raw_write_32(SIGNATURE, -1, sig);
     core.raw_write_8(SHOWN, -1, 1);
     keys
 }
 
-fn draw(core: &mut Core, a: &Art, k: Kind, phase: u8, records: bool, browse: usize) {
+fn draw(core: &mut Core, a: &Art, k: Kind, champion: bool, phase: u8, records: bool, browse: usize) {
     let mut cv = Canvas::new(a);
     if records {
         records_page(&mut cv, core, a);
     } else if phase == sv::CLEARED || phase == sv::LOST {
-        result_page(&mut cv, core, a, k, phase);
+        result_page(&mut cv, core, a, k, champion, phase);
     } else {
-        course_page(&mut cv, core, a, k, phase, browse);
+        course_page(&mut cv, core, a, k, champion, phase, browse);
     }
     let (tiles, map) = tiles_of(&cv);
     let (chars, screen) = bg0(core);
@@ -1203,6 +1279,8 @@ mod tests {
         assert!(a.title_rows >= 20 && a.title_rows <= 32, "{}", a.title_rows);
         assert_eq!(a.banner.len(), 128 * 16);
         assert!(a.banner.iter().any(|&p| p != 0));
+        assert!(a.champion_banner.iter().any(|&p| p != 0));
+        assert_ne!(a.banner, a.champion_banner);
         assert_eq!(a.wall.len(), W * H);
         assert!(a.wall.iter().all(|&p| WALL_COLOURS.contains(&p)));
         // A title: its glyphs all exist.
@@ -1221,6 +1299,7 @@ mod tests {
         assert_eq!(w.turns_left, "Turns left");
         assert_eq!(w.time_left, "Time left");
         assert_eq!(w.maps_cleared, "Maps clrd.");
+        assert_eq!(w.infinite, "Infinite");
         // Every Survival tile set fits the 512 tiles of BG0's char block
         // on every page (the tests render them; this one the first).
         assert!(maps::survival().is_some());

@@ -73,6 +73,15 @@ impl Kind {
             Kind::Turn => "Turn Survival",
         }
     }
+    /// Dual Strike's names for the Champion courses (its text ids 406..408,
+    /// the shop's items).
+    pub fn champion_name(self) -> &'static str {
+        match self {
+            Kind::Time => "Time Champion",
+            Kind::Money => "Money Champion",
+            Kind::Turn => "Turn Champion",
+        }
+    }
 }
 
 /// A unit placed on a map: army 1.., position, tangoAW2 unit type, HP
@@ -153,6 +162,9 @@ pub struct Run {
     pub kind: Kind,
     /// Funds, days, or frames (60 a second).
     pub budget: u32,
+    /// The Champion course's budget (the same lists, endless: arm9
+    /// `0x02168D04`'s kinds 3..5).
+    pub champion_budget: u32,
     /// Indexes into [`Survival::maps`].
     pub maps: [usize; MAPS_PER_RUN],
 }
@@ -324,7 +336,7 @@ fn read(pack: &crate::ds_pack::Pack) -> Option<Survival> {
         for (k, id) in l.iter().enumerate() {
             m[k] = ids.iter().position(|x| x == id)?;
         }
-        Some(Run { kind, budget: budget(kind as u32)?, maps: m })
+        Some(Run { kind, budget: budget(kind as u32)?, champion_budget: budget(3 + kind as u32)?, maps: m })
     };
     let help = r.text(HELP_TEXT).unwrap_or_else(|| "Fight through a series of maps with three limitations.".into());
     Some(Survival { runs: [run(Kind::Time)?, run(Kind::Money)?, run(Kind::Turn)?], maps, help })
@@ -382,6 +394,28 @@ pub fn leftover_points(kind: Kind, left: u32) -> u32 {
 /// Dual Strike caps a run's points at 9999.
 pub const MAX_POINTS: u32 = 9999;
 
+/// The rank of a Champion run (`sub_020EAD98`, kinds 3..5: it goes by the
+/// maps cleared, whatever the budget): 5 S from 20, 4 A from 15, 3 B from 10,
+/// else 2 C.
+pub fn champion_rank(maps: u32) -> u8 {
+    if maps >= 20 {
+        5
+    } else if maps >= 15 {
+        4
+    } else if maps >= 10 {
+        3
+    } else {
+        2
+    }
+}
+
+/// The bonus points of a Champion run (`sub_020EB024`, kinds 3..5): 5 for
+/// the first map cleared, 10 more for the second, and so on (5 x n x
+/// (n + 1) / 2), at most 9999.
+pub fn champion_bonus(maps: u32) -> u32 {
+    (5 * maps * (maps + 1) / 2).min(MAX_POINTS)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -407,6 +441,14 @@ mod tests {
     }
 
     #[test]
+    fn champion_rules() {
+        assert_eq!((champion_rank(0), champion_rank(9), champion_rank(10)), (2, 2, 3));
+        assert_eq!((champion_rank(14), champion_rank(15), champion_rank(19), champion_rank(20)), (3, 4, 4, 5));
+        assert_eq!((champion_bonus(0), champion_bonus(1), champion_bonus(2), champion_bonus(11)), (0, 5, 15, 330));
+        assert_eq!(champion_bonus(255), 9999);
+    }
+
+    #[test]
     fn cos_convert() {
         assert_eq!(convert_co(2), Some(1)); // Andy
         assert_eq!(convert_co(10), Some(9)); // Drake
@@ -425,6 +467,9 @@ mod tests {
         assert_eq!(s.run(Kind::Money).budget, 500000);
         assert_eq!(s.run(Kind::Turn).budget, 99);
         assert_eq!(s.run(Kind::Time).budget, 90000);
+        assert_eq!(s.run(Kind::Money).champion_budget, 600000);
+        assert_eq!(s.run(Kind::Turn).champion_budget, 120);
+        assert_eq!(s.run(Kind::Time).champion_budget, 108000);
         let first = |k| &s.maps[s.run(k).maps[0]].name;
         assert_eq!(first(Kind::Money), "Silo Sweep");
         assert_eq!(first(Kind::Turn), "Convoy Cape");

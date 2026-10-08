@@ -448,12 +448,12 @@ original instruction against the ROM and writes `src/five_patches.rs`.
   literal-pool pointers (the table, and +0x3C/+0x40 of entry 0) are
   repointed, and the two loops that walk it (`sub_080206B0`, find a map by
   its tiles; the map list builder at `0x08037482`) go up to 0xC0 instead
-  of 0xBF, and to 0xEF while the Dual Strike maps can be listed (eight more
+  of 0xBF, and to 0xF1 while the Dual Strike maps can be listed (eight more
   ids to walk shift the menus' timing by a frame, so without the pack the
   loops stay as they were). Black Rampart is id 0xC0, the Dual Strike maps 0xC1..0xC8 (see
   below). A tab lists its maps by id, so new maps come last. Each map's
   tiles and units take 4 KiB: the first ten at `0x08622000`, the rest at
-  `0x08656000` (after the moved table, which now holds 0xF0 entries).
+  `0x08656000` (after the moved table, which now holds 0xF2 entries).
 - **Terrain in `five/map.py`.** Roads, pipes and pipe seams pick their
   tile from which neighbours connect, as the game's own maps do (learned
   from every built-in map): roads have straights, bends, T-junctions,
@@ -1022,13 +1022,49 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   99 days; Champion 108000, 600000, 120.
 - **Which maps there are** (checked by `survival_lists_are_dual_strikes`):
   these 33, Dual Strike's map ids 0xBC..0xDC and no others. The Champion
-  courses (kinds 3..5) read the same three lists (`sub_020EAC50` returns
-  overlay `0x022F64E4` for Time, `0x022F6544` for Money, `0x022F64CC` for
-  Turn: each is byte for byte the basic course's list), with the larger
-  budgets above; Dual Strike's text ids 406..408 (Time, Turn and Money
-  Champion) sit among its shop's unlocks (Hard Campaign, Sound Room, ...),
-  so a Champion course is bought, not found as more maps. tangoAW2 has the
-  basic courses only (a shop and medals are not in it).
+  courses add none (below).
+- **The Champion courses, as found** (kinds 3..5 of the state's kind byte;
+  the .nds read statically and played in melonDS with `ds_script`, the
+  unlock bits poked into the save RAM, `0x022A7F50`'s bits, to see them):
+  - *Maps*: the same three lists (`sub_020EAC50` returns overlay
+    `0x022F64E4` for Time, `0x022F6544` for Money, `0x022F64CC` for Turn:
+    each byte for byte the basic course's list), but **endless**: the map
+    of index n is `list[n mod 11]` (`sub_020EAAD8` takes the remainder of
+    the hardware divider), the run never counts as cleared, and the
+    results come only when it is lost. The info page calls each pass of
+    the list a wave ("2 Wave").
+  - *Budgets* (arm9 `0x02168D04`, words 3..5): Time 108000 frames (30:00),
+    Money 600,000 G, Turn 120 days. Nothing else differs: every rule that
+    tests the kind (`sub_020EA944` running out, the Money no-income rules at
+    `0x020C0DB8`, `0x020C4F64`, `0x020C8414`, Turn's `0x020B973C`) takes 3
+    with 0, 4 with 1 and 5 with 2; the enemy's funds, strength and COs are
+    the map's own (the same maps).
+  - *Record and rank*: the record is the number of maps cleared (the map
+    index `state + 6`), kept when larger (`sub_020EAE84`'s second half, 8
+    bytes a kind from `0x02291554`: the CO pair and the count) and saved when
+    the run is **lost** (`0x020D6010`; a win on a Champion map saves
+    nothing: `0x020D5F5C`). The rank goes by that count alone
+    (`sub_020EAD98`'s last branch): S from 20 maps, A from 15, B from 10,
+    else C. The bonus (`sub_020EB024`) is 5 + 10 + .. + 5n for n maps
+    cleared, at most 9999, added to the points; the budget left counts for
+    nothing.
+  - *How they open*: Dual Strike's **shop** sells each for 1000 medals (item
+    records at `0x0216CC78`.., text ids 406..408 "Time/Turn/Money Champion",
+    the purchase's text "You can now play the Champion Course in ..."). An
+    item shows once its basic course has been cleared (its availability
+    function, `0x02101EF4`/`EB0`/`E6C`, reads the clear bit 0x2C Time, 0x2D
+    Turn, 0x2E Money, set by `0x020D5F2C`.. when the last map of a basic
+    course is won) and the course opens once bought (bit 0x2F Time, 0x30 Turn,
+    0x31 Money, tested by `0x02047960`). Before that the course screen
+    shows the BASIC COURSE panel only.
+  - *How they look*: the course screen gets a second panel under the BASIC
+    COURSE one, headed by the CHAMPION COURSE banner (`ohashi/res_survival`'s
+    stream 0, blocks 4..7 after the basic course's 0..3): "Infinite" for
+    the maps, the budget under its label (Funds, Turn total, Total time),
+    and "Maps clrd." with the best count, the two COs of that run, and a
+    rank badge; the INFO page's strip shows as many map boxes as the best run
+    cleared (at most 11, then "2 Wave" and so on). A on the panel goes
+    straight to the CO screen.
 - **Running out** (`sub_020EA944`, every frame of a battle): Money, the
   player's funds reach 0; Turn, the day passes what is left; Time, the
   player's own clock (it only runs on the player's turns) reaches what is
@@ -1182,26 +1218,61 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   halfway survives a Survival run (until this, the first Survival map ended
   took it away; `save_survival_keeps_war_room_suspend`).
 - **Records** in the profile the game saves (so the save's own checksum covers
-  them): `0x0200C435..0x0200C43E`, ten of the eleven bytes between
+  them): `0x0200C435..=0x0200C43F`, the eleven bytes between
   `0x0200C420`'s +0x14 and +0x20 that no code of the game reads or writes
   (`PackProfileRecord` saves 0xE0 bytes from `0x0200C420`; a test checked the
-  bytes stay untouched through boot and battles): a mark (0xD5), then three
-  bytes per kind (Time, Money, Turn): rank (3 bits), CO (7), what was left (14:
-  seconds, hundreds of G, days). Kept when a run is cleared with more left than
-  the record.
+  bytes stay untouched through boot and battles): each basic course's best
+  (kept when a run is cleared with more left than the record) and each
+  Champion course's most maps cleared; the layout is under "Where the
+  records live" below.
 - **RAM**: `0x0203FA00..0x0203FA3F` (the run: on, kind, maps cleared, phase,
   left, budget, points, the map's time, the funds cap, CO, the menu's pick,
-  bonus, rank), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
+  bonus, rank, `+0x21` the Champion course flag), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
   reads). **ROM**: `0x08E00000..0x08E05BFF` (map table), `0x08E08000..`
   (map data, 0x800 per map), `0x08E30000..` (strings), `0x08E40000..0x08E40FFF`
   (the wheel's data and labels); text ids 0x7172.. (pointers at `0x0862D000`).
+- **The Champion courses** (kind byte unchanged, a Champion byte at
+  `0x0203FA21`; Dual Strike's kinds 3..5). Each is a list entry of its own
+  after the three basic courses, ids `0xED..0xEF` (Money, Turn, Time; the
+  header is the course's first map's, named "Money Champion" and so on, text
+  ids 0x7172 + 38..40), shown only once open; the list loops walk to 0xEF.
+  **Unlock: tangoAW2 has no shop, so a Champion course opens when its basic
+  course has been cleared** (Dual Strike: cleared, then bought for 1000
+  medals); a basic course's record exists exactly then, so the unlock needs
+  no bit of its own, and a profile with basic records already (0.5.x) has
+  the courses open. Played as Dual Strike has them (above): the larger
+  budget, the list round again after the eleventh map (the HUD reads "Map
+  14", no "/11"), lost when the budget runs out or a map is lost. The lost
+  run's page is GAME OVER with the maps cleared, the bonus and the rank in
+  the title font; the record is the maps cleared. The course screen is the
+  basic one with the CHAMPION COURSE banner, Infinite, the Champion budget,
+  Maps clrd. (the best, "14 Maps", with a rank box) and the strip's maps
+  dark up to the best (the strip stays eleven maps so every map can still
+  be browsed); between maps the panel says "Wave n" under the count. R's
+  page lists the six courses, a Champion course Locked until its basic
+  course is cleared.
+- **Where the records live** (the profile the game saves, so its own
+  checksum covers them; `survival.rs`'s `Records`): the eleven bytes
+  `0x0200C435..=0x0200C43F` of the options block, which no code of the
+  game reads or writes (`PackProfileRecord` saves 0xE0 bytes from
+  `0x0200C420`; a test checks the neighbours stay untouched). Layout 2,
+  written since 0.5.3: `0xD6`, then 76 bits, least significant first: per
+  basic course (Time, Money, Turn) the best clear's CO (7 bits, 0 for none)
+  and what was left (11 bits of seconds, 13 of hundreds of G, 7 of days:
+  each field is the budget's own limit); then each Champion course's maps
+  cleared (8 bits, 0 for none). The rank is worked out from what was left.
+  Layout 1 (0.5.0..0.5.2: `0xD5`, three bytes a kind: rank 3 bits, CO 7,
+  left 14) is still read, and replaced by layout 2 at the next record, the
+  basic records as they were. The profile has no room for a Champion CO
+  (the 88 bits are 8 for the mark, 52 for the basic courses, 24 for the
+  counts), so a Champion record is the count alone where Dual Strike keeps
+  the CO pair too. (Flag bits in AW2's unlock block `0x02028030` are no
+  safer: its campaign flags are rewritten by a new campaign.)
 
 **Compromises.**
 
 - AW2 has no tag battles: the run keeps one CO (the one picked for the first
   map) where Dual Strike keeps a pair; the record keeps that CO.
-- The Champion courses (endless, unlocked by clearing the basic ones) are not
-  included.
 - A run cannot be suspended mid-map, and turning the console off loses a run
   in progress (Dual Strike saves its survival state); records are saved.
 - The War Room's CO screen colours the player's army by its CO's country and
@@ -1210,12 +1281,14 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
 - Points are AW2's War Room scores (its Speed, Power and Technique), not Dual
   Strike's.
 - Records are the best of each course (what it used, with the rank and the
-  CO), not Dual Strike's best per map: the profile has ten free bytes, not
+  CO), not Dual Strike's best per map: the profile has eleven free bytes, not
   room for 33 more records. The RECORD box of Dual Strike's map page shows
   the map's name and its computer CO here (labelled MAP), where Dual Strike
   shows that map's best.
-- The Champion courses are not included (they are a shop unlock; the maps
-  are the basic courses' own).
+- The Champion courses open when their basic course is cleared, not
+  bought in a shop for medals; their record is the maps cleared without the
+  CO pair; the strip stays the course's eleven maps (Dual Strike's shows
+  the maps the best run reached, with its wave count).
 - Dual Strike's course screen spreads over two screens (lion crests, the
   enemy CO's portrait, a BACK button); the crests and the portrait are left
   out and the CO's name is written instead.
@@ -1234,7 +1307,14 @@ fog, weather, look and colours against the .nds directly
 structure's picture named in its header and loaded into OBJ VRAM, the budget carried to map 2 and the CO kept, losing
 each kind by running out, a cleared run's rank, bonus and record, saved and
 read back after a reboot, every army a CPU for days on six maps, nothing of it
-without the pack).
+without the pack). `tests/test_survival_champion.py`: the Champion courses as
+the .nds has them (lists, budgets, rank and bonus code, the shop's bits),
+locked at first and open after a real basic clear (only that kind's), each
+course screen against the .nds's banner, the budgets and the HUD, the list
+going round after the eleventh map, the results (maps cleared, bonus, rank),
+records that only improve, the six-course record page, the eleven profile
+bytes saved (nothing else of Survival's changed) and read after a reboot, and
+a save from 0.5.2 read and rewritten.
 
 ## DS Campaign (`ds_campaign.rs`, `ds_campaign_data.rs`, `ds_campaign_rules.rs`, `campaign_menu.rs`)
 
@@ -2002,7 +2082,7 @@ texts; an error names the mission.
 | `armies` | 2..=4 `ArmyDef { colour, team, co, funds }` in army order, army 1 the player's; `colour` (1 Orange Star .. 5 Black Hole) and `co` independent | tested |
 | `co` | `CoSpec` as above | tested: Fixed, Pick, PickPair, Pair, a second front's Pick |
 | `weather`, `fog`, `look` | `Weather::{Clear, Snow, Rain, Sandstorm}`, fog on at the start, Dual Strike's look (0 normal, 1 snow, 2 desert, 3 wasteland) | tested: rain, fog |
-| deployment | `units: Vec<UnitDef>` (`UnitDef::new(army, kind, x, y).hp(1..100).hold().named("..")`); empty keeps an AW2 / Dual Strike map's own; a mission with none for an army starts it with no units (the player builds: pre-deployed or not is what `units` holds) | tested |
+| deployment | `units: Vec<UnitDef>` (`UnitDef::new(army, kind, x, y).hp(1..100).hold().named("..")`; every unit starts with full ammo and fuel, `FULL` = 99 capped to its type's maximum by the loader, unless `.ammo(n)` / `.fuel(n)` ask for less: a Tank `.ammo(2).fuel(30)`; the deployment once wrote 0 ammo, which showed the low-ammo icon on every Tank, Md Tank, Artillery ... and kept them from firing); empty keeps an AW2 / Dual Strike map's own; a mission with none for an army starts it with no units (the player builds: pre-deployed or not is what `units` holds) | tested |
 | `armies[].funds` | starting funds, set on day 1 (a stub run in Rust) | tested |
 | `props`, `structures` | owned properties; Black Hole's structures stamped on the map (`Structure::{MiniCannon*, Laser, BlackCannon*, BlackFactory, Volcano, Deathray, BlackCrystal, BlackObelisk}`, the Design Room's footprints) | tested: factory, crystal, obelisk, laser |
 | `front2` | a battle on two fronts: its map, props, structures, deployment, `cos` per army (`Pick` for the player's own), `send`, `sky`, weather, fog (`crate::two_front` plays it) | tested: tag pair on the main front, a pick for the second, round change |
@@ -2013,6 +2093,10 @@ texts; an error names the mission.
 | `music` | an AW2 song id: while the battle is on every CO's theme in the CO table is that song (put back after) | tested |
 | `recruits`, `needs`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked; what opens it **by mission key** (`Needs::Start`, `All(vec!["bh01"])`, `Any(..)`, `Bonds(..)`: those won and every hidden bond earned); its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
 | five armies | `armies` is 2..=5. In a **five-army mission the player is army 5, Black Hole** (the fifth army of `five.rs`; its colour must be Black Hole's), armies 1..4 are the header's four, units name armies 1..5, a map has five HQs (`1`..`5`); the player's CO is `Fixed` or `Pair` (a tag pair; no pick yet). The patched game (`five::set_campaign`, switched on at `ResetRulesAfterCampaignMap`) is on for the battle only; no mid-mission Save (as a Versus five-army game); no second front. `five.rs`' patched unit ids (51 an army) are handled by `custom_campaign`'s helpers (`unit_by_name`, `units_of`) | tested (`bh_campaign_five_armies`) |
+| `volcano` | **A volcano as a neutral hazard**: `volcano: Some(VolcanoDef::new(first, interval, damage_hp, &[(x, y), ..]))` with a `Structure::Volcano` on the map (AW2's own Volcano: its turn-start show runs, AW2's eruption call at `0x0803EE3C` is hooked, `hazard.rs`): from day `first`, every `interval` days, on Black Hole's turn, the unit of **any army** on one of the (at most 12) cells loses `damage_hp` HP (AW2's queued impact: a unit is left on 1 internal HP, never destroyed); the cells are marked with orange-yellow diamonds all the day before (sprites, OBJ tiles 772.., palette bank 4). The DS Campaign's Volcano (Ring of Fire) and AW2's own are unchanged (this applies to a custom campaign only). The Volcano's show also moves the cursor: it ends where it last looked, so tests reset `CURSOR_X/Y` | tested (`bh_campaign_volcano_hazard`: the day before nothing, the eruption on the cells for own and enemy units, a 2 HP unit left on 1, a unit beside untouched, nothing on the day between) |
+| human Black Hole structures | A Laser and minicannons owned by a human Black Hole army fire on its turn start as the computer's do (the game's own turn-start loop): the Laser every enemy in its row and column, a minicannon its line (about three squares) | tested (`bh_campaign_human_black_hole_laser_and_minicannon_fire`, enemy Tanks with `.fuel(0)` that cannot walk out of the lines) |
+| the player's Black Factory | the smart spawner of the Versus pack (`bh_factory.rs`, `bh_smart.rs`) picks what the battle needs for the player's Black Hole factory, the table's schedule and cost caps kept (`in_scope`: Versus with the pack, and a custom campaign's missions; not the DS Campaign nor AW2's own) | tested (`bh_campaign_factory_counters_the_enemy`: against six Bombers it builds Missiles, against six Md Tanks an Oozium) |
+| factory spawner | `factory::spawner_guard`: the spawner does nothing on a campaign or design map with no Black Factory in the invention list (the game's own lookup runs on past a list without an end entry) | tested: a computer Black Hole army with no factory plays 13 days on one front, 12 rounds on two fronts |
 | `onyx` | **The reversed Black Onyx**: `onyx: Some(OnyxDef::new((x, y)))` (the Obelisk's top-left cell; `hits` 4, `first` 5, `period` 5, `radius` 4, `debris_hp` 3, `offline_turns` 3, `meters` 30 are the design's numbers). Black Hole's satellite on a day cycle, `onyx.rs` (`ON_REV`, RAM `0x0203FFC8`: hits left +1, phase +2, last shot's day +0x17, the Obelisk's offline turns +0x18, this turn's flag +0x19): on Black Hole's turn on day `first` and every `period` days, when the map waits for the cursor, it fires AW2's meteor strike (8 HP, radius 2, never below 1 HP, the spot the computer scores best for the player's army; the panel's beam as Crystal Calamity's); a foot soldier (Infantry or Mech) of **another team** on an unspent silo (tile `0x180`) launches at it (AW2's launch at the silo: camera, missile, the silo spent, the missile on the panel) - found each frame the map waits, on the computer's turn between two of its units too, so the computer's own walk onto a silo counts and a silo holding a Black Hole unit cannot launch; its own Launch action fires nothing; `hits` hits destroy it: every unit of the player's army within `radius` cells of the Obelisk's 3x3 loses `debris_hp` HP (never below 1 HP), the Obelisk and its heal effect are off for `offline_turns` Black Hole turns (`obelisk::heal`, `heal_turn`), the player's active CO and its tag partner lose `meters` % of their Super Power's cost (`tag::cut_meters`), the shots stop for good. Panel: the satellite (Dual Strike's picture), "NEXT SHOT" and the days to it ("4 DAYS", "1 DAY", "TODAY"), "HITS LEFT" with a diamond a hit still needed, the cycle's bar; from the day before a shot the satellite throws pink sparks and the line, diamonds and bar blink pink; the panel's tiny 3x5 letters are `onyx::glyph`; it hides once the satellite has fallen. A mission saved halfway keeps it (`saved` / `restore`, mark `R`). Scenes by the hits left: triggers `Cond::OnyxHitsAtMost(3)` ... `OnyxDestroyed` at `AfterAction` (once each). `five/bh/five_onyx.txt` is a test map: silos are `M` in the map tool | tested (`bh_campaign_reversed_onyx`: the warning, the day-5 shot, four silo hits, the scenes, the fall) |
 
 Scenes: `Scene::new(vec![Line::say(co::STURM, "..."), Line::feel(co::VON_BOLT,
@@ -2095,11 +2179,17 @@ exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
   bond is earned, in the BH session); `Action::EarnBond(k)` earns bond k
   (saved in the record); `Needs::Bonds(vec![..])` opens the secret mission when
   every bond is earned (`bh_campaign_mission_data_fields`).
-  A recruit mission (one whose trigger earns a bond) shows a small star
-  (AW2's own `*` glyph) at the end of its world-map panel's objective once
-  its bond is earned: nothing before, nothing on the CO page but the quote
-  (`Custom::marks`, swapped in `ds_campaign::bond_pages`;
-  `bh_campaign_bond_mark_on_the_world_map_panel`, `bh_campaign_bond_quote_on_the_co_page`).
+  **Bond legend** (`bond_ui.rs`): nothing shows on the world map until a
+  bond is earned; from the first earned bond on a small legend sits at the
+  map's top left: a gold star, "RECRUIT WON OVER" and "BONDS n/m", in AW2's
+  font with its outline, below the "CAMPAIGN" title while that shows (its
+  letters are tall sprites along the top edge) and at the very top without
+  it (the mission panel open); hidden while a dialogue runs. Sprites in OBJ
+  tiles 735.., 772.. and 848.. and an OBJ palette bank no sprite of the
+  frame uses (the title's own bank, 14, must not be written: that once turned
+  the title brown). The CO page keeps only the secret quote
+  (`bh_campaign_bond_legend_on_the_world_map`,
+  `bh_campaign_bond_quote_on_the_co_page`).
 
 Limits and notes: a campaign has at most 32 missions (progress bits; 30 +
 the secret one), the unlock mask has 12 roster bits and 12 bond bits, and
@@ -2175,11 +2265,10 @@ pair_texts` and `partners_of`, the pack only). Test:
 
 **The Colonel's Vault** (`five/design_vault_map.py`): a 2-army, 30x20 Versus
 map on the Vs. tab, listed with the pack only (`look pack` in the map file:
-normal colours, pack-only), the BH Campaign's prize map. Its id is `0xEF`
-(`five_map::VAULT_ID`, past Survival's `0xC9..0xEC`; **it clashes with the Champion courses' `0xED..0xEF` on survival-champion**, and ids from `0xF0` up cannot be used: the Select Map list's order and previews go through the War Room records' row function at `0x08087248`, which compares with `0xF0`, and every entry after such an id gets a stale preview); the map table grew to
+normal colours, pack-only), the BH Campaign's prize map. Its id is `0xF1` (`five_map::VAULT_ID`, past Survival's `0xC9..0xEF` with the Champion courses and the campaigns' `0xF0`). The list's "may this map be shown" test (`0x0803CA54`) reads a bit of the unlock block, `0x02028042 + id / 8`, which has no bits for ids from `0xF0` up (so the list had no cursor entry for them); `five_map::traps` answers yes for them while the larger map table is in use; the map table grew to
 `0xF0` ids (`five_map::MAP_IDS`; the table at `0x08650000..0x08655583`, the
 maps past the tenth now from `0x08656000`), and with the pack the list's walk
-goes to `0xEF` (always: it is listed from the start, not only after the
+goes to `0xF1` (always: it is listed from the start, not only after the
 secret mission). Survival's copy of the table includes it. The apostrophe
 in a map's name is AW2's `~`. Test: `ds_map_the_colonel's_vault` (opened from
 its tab, preview and tiles, every unit; the CPU plays six days).

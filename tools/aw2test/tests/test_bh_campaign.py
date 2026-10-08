@@ -398,6 +398,9 @@ def bh_campaign_named_unit_must_reach_a_place(ctx):
             ctx.check("Together." in seen, f"the pair's scene (Sturm and Hawke) ({seen})")
             ctx.eq(e.u32(g.player(1)["addr"]), funds + 500, "the courier at (5, 5): funds added")
             ctx.check(g.unit_at(3, 3) is not None, "the courier at (5, 5): a unit reinforces (3, 3)")
+            spawned = g.unit_at(4, 3)
+            ctx.require(spawned is not None and spawned["type"] == 5, "the reinforcement Tank at (4, 3)")
+            ctx.eq((spawned["ammo"], spawned["fuel"], spawned["hp"]), (9, 70, 100), "a spawned Tank has full ammo, fuel and HP")
             d.place_unit(c, 10, 5)
             e.wait(4)
             fresh = g.unit_at(3, 3)
@@ -861,41 +864,65 @@ def bh_campaign_reversed_onyx(ctx):
     ctx.check("One down." in seen and "The Onyx falls." in seen, f"the scenes by the hits left ({seen})")
 
 
-TEXT_TABLE = 0x08000000 + 0  # (set below)
-
-
-def objective_texts(e, start):
-    """Every campaign text in the table that starts with `start`: (id, text)."""
+def obj_sprites(e):
+    """(tile, x, y) of every visible sprite."""
+    import struct
+    oam = e.read(0x07000000, 0x400)
     out = []
-    for tid in range(0x7400, 0x7FF6):
-        p = e.u32(0x080F0000 * 0 + 0x08610A38 + 4 * tid)
-        if 0x08F00000 <= p < 0x08FC0000:
-            b = e.read(p, 80)
-            t = b[:b.index(0)] if 0 in b else b
-            if t.startswith(start):
-                out.append((tid, t.replace(b"\r", b" ").decode("latin-1")))
+    for k in range(128):
+        a0, a1, a2, _ = struct.unpack_from("<HHHH", oam, 8 * k)
+        if (a0 >> 8) & 3 != 2 and (a0 & 0xFF) < 160:
+            out.append((a2 & 0x3FF, a1 & 0x1FF, a0 & 0xFF))
     return out
 
 
+LEGEND_TILE = 735
+
+
+def title_palette(e):
+    """The OBJ palette of the sprites at the map's top left (the "CAMPAIGN"
+    title), legend sprites left out."""
+    import struct
+    oam = e.read(0x07000000, 0x400)
+    banks = set()
+    for k in range(128):
+        a0, a1, a2, _ = struct.unpack_from("<HHHH", oam, 8 * k)
+        if (a0 >> 8) & 3 != 2 and (a0 & 0xFF) < 30 and (a1 & 0x1FF) < 110 and (a2 & 0x3FF) != LEGEND_TILE and not 735 <= (a2 & 0x3FF) < 800:
+            banks.add(a2 >> 12)
+    return {b: e.read(0x05000200 + 32 * b, 32) for b in banks}
+
+
 @test(modes=("ds",))
-def bh_campaign_bond_mark_on_the_world_map_panel(ctx):
-    """A recruit mission's world-map panel shows a small star at the end of its
-    objective exactly when its bond is earned (nothing before): the bond bit
-    of the record decides. The CO page keeps only the secret quote."""
-    for earned in (False, True):
+def bh_campaign_bond_legend_on_the_world_map(ctx):
+    """Nothing about bonds shows on the world map until one is earned. From
+    the first bond on a legend (a gold star, "RECRUIT WON OVER", "BONDS n/9",
+    AW2's font) sits at the top left: below the "CAMPAIGN" title while that
+    shows, at the very top with the mission panel open (the title gone). The
+    title keeps its colours (the legend takes an OBJ palette no sprite of the
+    frame uses)."""
+    titles = {}
+    for bonds in (0, 1):
         e, g, d = boot_features(ctx)
-        d.start_at(won_mask=0, unlocked_mask=1 | (1 << 12 if earned else 0))
+        d.start_at(won_mask=0, unlocked_mask=1 | (bonds << 12))
         d.wait_world_map()
         e.wait(30)
-        found = objective_texts(e, b"Test: funds")
-        ctx.require(found, "the first mission's objective text")
-        ctx.log(f"found {found}")
-        t = found[1][1].replace("\x0f", "")
-        ctx.eq(t.rstrip().endswith("*"), earned, f"the mark on the panel's text: {t!r}")
+        legend = [s for s in obj_sprites(e) if s[0] == LEGEND_TILE]
+        ctx.eq(bool(legend), bonds > 0, f"the legend with {bonds} bonds")
+        if bonds:
+            ctx.require(legend, "the legend")
+            ctx.check(all(s[2] >= 30 for s in legend), f"below the title ({legend})")
+        titles[bonds] = title_palette(e)
+        shot(ctx, e, f"bond_legend_{bonds}")
         e.press("A", 6)
         e.wait(240)
-        shot(ctx, e, "bond_panel_marked" if earned else "bond_panel_plain")
+        legend = [s for s in obj_sprites(e) if s[0] == LEGEND_TILE]
+        ctx.eq(bool(legend), bonds > 0, f"the legend with the panel open, {bonds} bonds")
+        if bonds:
+            ctx.check(all(s[2] < 20 for s in legend), f"at the very top with the title gone ({legend})")
+        shot(ctx, e, f"bond_panel_{bonds}")
         e.close()
+    ctx.check(titles[0], "the title's palette found")
+    ctx.eq(titles[0], titles[1], "the title's colours are the same with and without the legend")
 
 
 @test(modes=("ds",))
@@ -919,3 +946,63 @@ def bh_campaign_bond_quote_on_the_co_page(ctx):
             e.press("DOWN", 4)
             e.wait(60)
         e.close()
+
+
+def stock_check(ctx, e, g, label, hurt=()):
+    """Every live unit, both sides, has its type's full ammo and fuel (the
+    unit table in use: the pack's, `0x08680000`, 0x5C a record: +0x0B ammo,
+    +0x10 fuel)."""
+    per = 51 if e.u8(0x02030206) in (1, 2) else 64
+    raw = e.read(g.units_base, 12 * 256)
+    bad, n = [], 0
+    for uid in range(256):
+        r = raw[12 * uid:12 * uid + 12]
+        if r[0] == 0 or uid % per == 0:
+            continue
+        n += 1
+        stats = e.read(0x08680000 + 0x5C * r[0], 0x5C)
+        ammo, fuel, hp = ((r[4] | r[5] << 8) >> 7) & 0xF, r[6] & 0x7F, r[4] & 0x7F
+        if hp != 100 and (r[0], hp) not in hurt:
+            bad.append(("hp", uid // per + 1, r[0], hp))
+        # (a computer army may have moved a square before the check: fuel burns)
+        if ammo != stats[0x0B] & 0xF or not stats[0x10] & 0x7F >= fuel >= (stats[0x10] & 0x7F) - 9:
+            bad.append((uid // per + 1, r[0], ammo, fuel, stats[0x0B] & 0xF, stats[0x10] & 0x7F))
+    ctx.require(n > 0, f"{label}: units on the map")
+    ctx.check(not bad, f"{label}: every unit starts with 10 HP (100) and full ammo and fuel; wrong ((army, type, ammo, fuel, max ammo, max fuel) or (hp, army, type, hp)): {bad}")
+
+
+@test(modes=("ds",))
+def bh_campaign_units_start_with_full_ammo_and_fuel(ctx):
+    """Units deployed from data (both sides, a built map's, a named one's, a
+    five-army mission's, a second front's) start with their type's full
+    ammo and fuel; `UnitDef::ammo` / `fuel` ask for less on purpose."""
+    cases = [(0, 0b0), (1, 0b1), (6, 0x3F & ~0), (9, 0x1DF), (10, 0x3FF & ~(1 << 5))]
+    for mission, won in cases:
+        e, g, d = boot_features(ctx)
+        d.picks = {mission: 0, 1: 2}
+        d.start_at(won_mask=won & ((1 << mission) - 1) if mission else 0, unlocked_mask=0b101)
+        d.pick_mission()
+        d.wait_map()
+        g._units_base = g._players_base = None
+        ctx.eq(d.mission(), mission, f"mission {mission + 1}")
+        stock_check(ctx, e, g, f"mission {mission + 1}", hurt=((1, 10),) if mission == 1 else ())
+        e.wait(30)
+        shot(ctx, e, f"start_units_{mission + 1}")
+        e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_unit_ammo_and_fuel_on_purpose(ctx):
+    """`UnitDef::ammo(2).fuel(30)` starts a Tank with 2 rounds and 30 fuel
+    (the mission asks for it; every other unit stays full)."""
+    e, g, d = boot_features(ctx)
+    d.picks = {8: 0}
+    d.start_at(won_mask=0xFF, unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 8, "mission 9")
+    tanks = [u for u in g.units() if u["type"] == 5]
+    ctx.eq([(t["ammo"], t["fuel"]) for t in tanks], [(2, 30)], "the Tank's own ammo and fuel")
+    inf = [u for u in g.units() if u["type"] == 1]
+    ctx.check(all(u["fuel"] == 99 for u in inf), "the soldiers' fuel is full")
