@@ -23,7 +23,7 @@ pub(crate) const ENTRY: u32 = 0x5C;
 /// loops that walk it (`sub_080206B0`, find a map by its tiles, and the
 /// map list builder at `0x08037482`), which stop after id 0xBF.
 pub(crate) const MAP_TABLE: u32 = 0x0865_0000;
-pub(crate) const MAP_IDS: u32 = 0xF0;
+pub(crate) const MAP_IDS: u32 = 0xF2;
 pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
     (0x0801_96EC, 0x00),
     (0x0802_06E0, 0x00),
@@ -70,7 +70,7 @@ pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
 /// there, and without the pack everything runs as before
 /// ([`show_maps`]).
 const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
-    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29EF), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CEF)];
+    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29F1), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CF1)];
 /// Each map's tiles and units: 4 KiB apiece, the first ten from here (up to
 /// the CO texts at 0x0862C000), the rest after the moved map table.
 const MAP_DATA: u32 = 0x0862_2000;
@@ -118,11 +118,10 @@ pub const IDS: [u8; 19] = [
     0, 0xBC, 0xBD, 0xBE, 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, VAULT_ID,
 ];
 /// The Colonel's Vault (the BH Campaign's prize map), past Survival's ids
-/// (0xC9..0xEC; the Champion courses on survival-champion take 0xED..0xEF too, which
-/// clashes: ids from 0xF0 up break the Select Map list, whose order and previews go through
-/// the War Room records' row function `0x08087248`, `cmp #0xF0`; the campaigns' mission map is 0xF0; [`crate::survival`]); the walk of the map list reaches it
-/// with the pack on ([`show_maps`]).
-pub const VAULT_ID: u8 = 0xEF;
+/// (0xC9..0xEF, with the Champion courses) and the campaigns' mission map
+/// (0xF0); the walk of the map list reaches it with the pack on
+/// ([`show_maps`]) and [`MAP_SHOWN`] lets it list.
+pub const VAULT_ID: u8 = 0xF1;
 
 /// Map ids 0xB4..0xBF are design maps to the game. These make 0xB8..0xBF
 /// ordinary maps (header blob, name, unit list, preview): (address,
@@ -275,6 +274,25 @@ pub fn install(core: &mut Core) {
         core.raw_write_8(TERRAIN_TABLE + tile, -1, terrain);
         core.raw_write_range(METATILES + tile * 8, -1, &quad);
     }
+}
+
+/// The list's "may this map be shown" test (a bit of the unlock block,
+/// `0x02028042 + id / 8`: 26 bytes for the Battle Maps, then the COs' bits,
+/// which pvp.rs sets): the ids from 0xF0 up have no bit there (the byte past
+/// it is something else), so with the larger map table in use they are all
+/// shown. The map list then lists and previews the Colonel's Vault (0xF1).
+const MAP_SHOWN: u32 = 0x0803_CA54;
+
+pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
+    vec![(MAP_SHOWN, Box::new(|core: &mut Core| {
+        let id = core.gba().cpu().gpr(0) as u32;
+        if id >= 0xF0 && table(core) == crate::survival::TABLE {
+            let cpu = core.gba_mut().cpu_mut();
+            cpu.set_gpr(0, 1);
+            let lr = cpu.gpr(14) as u32;
+            cpu.set_thumb_pc(lr & !1);
+        }
+    }))]
 }
 
 /// A Versus tab no map list shows: where a map goes to be hidden.

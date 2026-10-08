@@ -1389,39 +1389,32 @@ fn satellite_now(core: &Core, art: &Art) -> Vec<u8> {
     px
 }
 
-/// 3x5 letters and digits of the reversed Onyx's panel (rows of three bits).
-fn glyph(c: u8) -> [u8; 5] {
-    match c {
-        b'A' => [0b010, 0b101, 0b111, 0b101, 0b101],
-        b'D' => [0b110, 0b101, 0b101, 0b101, 0b110],
-        b'E' => [0b111, 0b100, 0b110, 0b100, 0b111],
-        b'F' => [0b111, 0b100, 0b110, 0b100, 0b100],
-        b'H' => [0b101, 0b101, 0b111, 0b101, 0b101],
-        b'I' => [0b111, 0b010, 0b010, 0b010, 0b111],
-        b'L' => [0b100, 0b100, 0b100, 0b100, 0b111],
-        b'N' => [0b101, 0b111, 0b111, 0b101, 0b101],
-        b'O' => [0b111, 0b101, 0b101, 0b101, 0b111],
-        b'S' => [0b111, 0b100, 0b111, 0b001, 0b111],
-        b'T' => [0b111, 0b010, 0b010, 0b010, 0b010],
-        b'X' => [0b101, 0b101, 0b010, 0b101, 0b101],
-        b'Y' => [0b101, 0b101, 0b010, 0b010, 0b010],
-        b'0' => [0b111, 0b101, 0b101, 0b101, 0b111],
-        b'1' => [0b010, 0b110, 0b010, 0b010, 0b111],
-        b'2' => [0b111, 0b001, 0b111, 0b100, 0b111],
-        b'3' => [0b111, 0b001, 0b111, 0b001, 0b111],
-        b'4' => [0b101, 0b101, 0b111, 0b001, 0b001],
-        b'5' => [0b111, 0b100, 0b111, 0b001, 0b111],
-        b'6' => [0b111, 0b100, 0b111, 0b101, 0b111],
-        b'7' => [0b111, 0b001, 0b001, 0b010, 0b010],
-        b'8' => [0b111, 0b101, 0b111, 0b101, 0b111],
-        b'9' => [0b111, 0b101, 0b111, 0b001, 0b111],
-        _ => [0; 5],
+/// A string in AW2's own font (the terrain and funds panels'), its pixels
+/// set in `on` (columns of rows) from (x, y); returns the width.
+fn font_draw(core: &Core, on: &mut [Vec<bool>], s: &str, x0: usize, y0: usize) -> usize {
+    let mut x = x0;
+    for c in s.bytes() {
+        let cw = core.raw_read_8(FONT_WIDTHS + c as u32, -1) as usize;
+        let at = core.raw_read_32(FONT_GLYPHS + 4 * c as u32, -1);
+        if (0x0800_0000..0x0A00_0000).contains(&at) {
+            let stride = cw.div_ceil(2);
+            for cx in 0..cw {
+                for r in 0..FONT_ROWS {
+                    let b = core.raw_read_8(at + (stride * (FONT_TOP + r) + cx / 2) as u32, -1);
+                    if (b >> (4 * (cx & 1))) & 15 != 0 && x + cx < on.len() && y0 + r < on[0].len() {
+                        on[x + cx][y0 + r] = true;
+                    }
+                }
+            }
+        }
+        x += cw + 1;
     }
+    x - x0
 }
 
-/// The reversed Onyx's panel text, 40x32 in palette 15: "NEXT SHOT", the days
-/// to it, "HITS LEFT" with a diamond for each hit still needed, and the
-/// cycle's bar; pink and blinking from the day before a shot.
+/// The reversed Onyx's panel text, 40x32 in palette 15, in AW2's font: "SHOT
+/// 3D" (days to the next shot), "HITS" and a diamond for each hit still
+/// needed, and the cycle's bar; pink and blinking from the day before a shot.
 fn rev_text(core: &Core) -> Vec<u8> {
     let (w, h) = (8 * TEXT_TILES.len(), 32);
     let mut px = vec![0u8; w * h];
@@ -1430,36 +1423,18 @@ fn rev_text(core: &Core) -> Vec<u8> {
     let t = core.raw_read_16(ANIM, -1);
     let alarm = n <= 1 && hits_left(core) > 0;
     let blink_pink = alarm && (t / 8) % 2 == 1;
-    let mut on = vec![vec![false; 24]; w];
-    let text = |s: &str, y: usize, on: &mut Vec<Vec<bool>>| {
-        let mut x = 1;
-        for c in s.bytes() {
-            for (r, row) in glyph(c).iter().enumerate() {
-                for cx in 0..3 {
-                    if row >> (2 - cx) & 1 != 0 && x + cx < w {
-                        on[x + cx][y + r] = true;
-                    }
-                }
-            }
-            x += 4;
-        }
-    };
-    let days = match n {
-        0 => "TODAY".to_string(),
-        1 => "1 DAY".to_string(),
-        n => format!("{n} DAYS"),
-    };
-    text("NEXT SHOT", 1, &mut on);
-    text(&days, 7, &mut on);
-    text("HITS LEFT", 13, &mut on);
+    let mut on = vec![vec![false; 27]; w];
+    let days = format!("SHOT {n}D");
+    font_draw(core, &mut on, &days, 0, 0);
+    let hits_w = font_draw(core, &mut on, "HITS", 0, 11);
     for xx in 0..w {
-        for yy in 0..24 {
-            let line2 = (7..12).contains(&yy);
+        for yy in 0..27 {
+            let line1 = yy < 11;
             if on[xx][yy] {
-                px[yy * w + xx] = if line2 && blink_pink { PINK } else { WHITE };
+                px[yy * w + xx] = if line1 && blink_pink { PINK } else { WHITE };
             } else if [(-1i32, 0i32), (1, 0), (0, -1), (0, 1)].iter().any(|&(dx, dy)| {
                 let (nx, ny) = (xx as i32 + dx, yy as i32 + dy);
-                (0..w as i32).contains(&nx) && (0..24).contains(&ny) && on[nx as usize][ny as usize]
+                (0..w as i32).contains(&nx) && (0..27).contains(&ny) && on[nx as usize][ny as usize]
             }) {
                 px[yy * w + xx] = BLACK;
             }
@@ -1468,11 +1443,11 @@ fn rev_text(core: &Core) -> Vec<u8> {
     // A diamond for each hit still needed (outlined; filled while it is).
     let left = hits_left(core) as usize;
     for k in 0..spec.hits as usize {
-        let cx = 3 + 6 * k as i32;
+        let cx = hits_w as i32 + 4 + 4 * k as i32;
         for dy in -2i32..=2 {
             for dx in -2i32..=2 {
                 let d = dx.abs() + dy.abs();
-                let (xx, yy) = (cx + dx, 21 + dy);
+                let (xx, yy) = (cx + dx, 17 + dy);
                 if !(0..w as i32).contains(&xx) {
                     continue;
                 }
@@ -1486,9 +1461,9 @@ fn rev_text(core: &Core) -> Vec<u8> {
     // The cycle's bar, filling to the next shot.
     let period = spec.period.max(1) as usize;
     let fill = (period - n.min(period)) * (w - 4) / period;
-    for yy in 26..31 {
+    for yy in 27..32 {
         for xx in 1..w - 1 {
-            let edge = yy == 26 || yy == 30 || xx == 1 || xx == w - 2;
+            let edge = yy == 27 || yy == 31 || xx == 1 || xx == w - 2;
             px[yy * w + xx] = if edge {
                 BLACK
             } else if xx - 2 < fill {

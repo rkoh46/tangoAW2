@@ -728,6 +728,10 @@ pub fn flush_sprites(core: &mut Core, mut at: u32, end: u32) -> u32 {
 /// screen (its rows from an HBlank switch, BG1 the face, 0x1C08), so the
 /// register at the end of a frame holds the box's, and the map's BG1 (whose
 /// tilemap block is the map's last tiles) would be turned back on.
+pub fn map_screen_up(core: &Core) -> bool {
+    installed(core) && map_screen(core)
+}
+
 fn map_screen(core: &Core) -> bool {
     core.raw_read_16(BG3CNT, -1) == WORLD_MAP_BG3
         && (core.raw_read_16(BG1CNT_SHADOW, -1) == WORLD_MAP_BG1 || core.raw_read_16(BG1CNT, -1) == WORLD_MAP_BG1)

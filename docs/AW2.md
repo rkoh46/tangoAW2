@@ -448,12 +448,12 @@ original instruction against the ROM and writes `src/five_patches.rs`.
   literal-pool pointers (the table, and +0x3C/+0x40 of entry 0) are
   repointed, and the two loops that walk it (`sub_080206B0`, find a map by
   its tiles; the map list builder at `0x08037482`) go up to 0xC0 instead
-  of 0xBF, and to 0xEF while the Dual Strike maps can be listed (eight more
+  of 0xBF, and to 0xF1 while the Dual Strike maps can be listed (eight more
   ids to walk shift the menus' timing by a frame, so without the pack the
   loops stay as they were). Black Rampart is id 0xC0, the Dual Strike maps 0xC1..0xC8 (see
   below). A tab lists its maps by id, so new maps come last. Each map's
   tiles and units take 4 KiB: the first ten at `0x08622000`, the rest at
-  `0x08656000` (after the moved table, which now holds 0xF0 entries).
+  `0x08656000` (after the moved table, which now holds 0xF2 entries).
 - **Terrain in `five/map.py`.** Roads, pipes and pipe seams pick their
   tile from which neighbours connect, as the game's own maps do (learned
   from every built-in map): roads have straights, bends, T-junctions,
@@ -2175,11 +2175,18 @@ exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
   bond is earned, in the BH session); `Action::EarnBond(k)` earns bond k
   (saved in the record); `Needs::Bonds(vec![..])` opens the secret mission when
   every bond is earned (`bh_campaign_mission_data_fields`).
-  A recruit mission (one whose trigger earns a bond) shows a small star
-  (AW2's own `*` glyph) at the end of its world-map panel's objective once
-  its bond is earned: nothing before, nothing on the CO page but the quote
-  (`Custom::marks`, swapped in `ds_campaign::bond_pages`;
-  `bh_campaign_bond_mark_on_the_world_map_panel`, `bh_campaign_bond_quote_on_the_co_page`).
+  **Bond badge and legend** (`bond_ui.rs`): nothing shows on the world map
+  until a bond is earned. A recruit mission (one whose trigger earns a bond,
+  `Custom::marks`) carries a small badge at the corner of its open panel
+  once its bond is earned (default: a Black Hole roundel with a gold star;
+  `TANGOAW2_BOND_BADGE=1` a drawn star, `2` AW2's small tag star, ROM
+  `0x08102C64`), and from the first earned bond on a legend sits in the map's
+  top-left corner: the badge, "RECRUIT WON OVER" and "BONDS n/m", in AW2's own
+  font (`TANGOAW2_BOND_LEGEND=key` shows it only while SELECT is held). They
+  are sprites in OBJ tiles 735.., 772.. and 848.. and palette 14, which the
+  world map leaves free. The CO page keeps only the secret quote
+  (`bh_campaign_bond_badge_and_legend_on_the_world_map`,
+  `bh_campaign_bond_quote_on_the_co_page`).
 
 Limits and notes: a campaign has at most 32 missions (progress bits; 30 +
 the secret one), the unlock mask has 12 roster bits and 12 bond bits, and
@@ -2222,11 +2229,10 @@ pair_texts` and `partners_of`, the pack only). Test:
 
 **The Colonel's Vault** (`five/design_vault_map.py`): a 2-army, 30x20 Versus
 map on the Vs. tab, listed with the pack only (`look pack` in the map file:
-normal colours, pack-only), the BH Campaign's prize map. Its id is `0xEF`
-(`five_map::VAULT_ID`, past Survival's `0xC9..0xEC`; **it clashes with the Champion courses' `0xED..0xEF` on survival-champion**, and ids from `0xF0` up cannot be used: the Select Map list's order and previews go through the War Room records' row function at `0x08087248`, which compares with `0xF0`, and every entry after such an id gets a stale preview); the map table grew to
+normal colours, pack-only), the BH Campaign's prize map. Its id is `0xF1` (`five_map::VAULT_ID`, past Survival's `0xC9..0xEF` with the Champion courses and the campaigns' `0xF0`). The list's "may this map be shown" test (`0x0803CA54`) reads a bit of the unlock block, `0x02028042 + id / 8`, which has no bits for ids from `0xF0` up (so the list had no cursor entry for them); `five_map::traps` answers yes for them while the larger map table is in use; the map table grew to
 `0xF0` ids (`five_map::MAP_IDS`; the table at `0x08650000..0x08655583`, the
 maps past the tenth now from `0x08656000`), and with the pack the list's walk
-goes to `0xEF` (always: it is listed from the start, not only after the
+goes to `0xF1` (always: it is listed from the start, not only after the
 secret mission). Survival's copy of the table includes it. The apostrophe
 in a map's name is AW2's `~`. Test: `ds_map_the_colonel's_vault` (opened from
 its tab, preview and tiles, every unit; the CPU plays six days).

@@ -707,14 +707,6 @@ fn bond_pages(core: &mut Core, session: bool) {
     static ORIGINAL: std::sync::Mutex<Vec<(u32, u32)>> = std::sync::Mutex::new(Vec::new());
     let Some(c) = campaign(core).and_then(|c| c.model.custom.as_ref()) else { return };
     let earned = bonds_earned(core);
-    // The recruit missions' world-map panels: a star once the bond is earned.
-    for &(id, plain, marked, k) in &c.marks {
-        let want = if session && earned >> k & 1 != 0 { marked } else { plain };
-        let slot = data::TEXT_TABLE + 4 * id as u32;
-        if want != 0 && core.raw_read_32(slot, -1) != want && matches!(core.raw_read_32(slot, -1), x if x == plain || x == marked) {
-            core.raw_write_32(slot, -1, want);
-        }
-    }
     let mut originals = ORIGINAL.lock().unwrap();
     for (k, &(co, quote)) in c.bonds.iter().enumerate() {
         let row = crate::co_roster::TABLE + 0x104 * co as u32;

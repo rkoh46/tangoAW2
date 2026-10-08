@@ -80,9 +80,9 @@ pub struct Custom {
     /// Per mission: the battle's song (an AW2 song id) in place of the COs'
     /// themes.
     pub music: Vec<Option<u16>>,
-    /// The recruit missions' panels (text id, plain text, text with a star, bond):
-    /// the star shows once the bond is earned.
-    pub marks: Vec<(u16, u32, u32, u8)>,
+    /// The recruit missions (mission, bond): the world-map panel shows the
+    /// bond badge once the bond is earned ([`crate::bond_ui`]).
+    pub marks: Vec<(u8, u8)>,
     /// Per mission: a reversed Black Onyx.
     pub onyx: Vec<Option<OnyxDef>>,
     /// The secret mission (index): its win shows the staff roll's secret

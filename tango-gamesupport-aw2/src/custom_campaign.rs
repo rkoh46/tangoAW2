@@ -773,8 +773,8 @@ struct Compiler<'a> {
     art: WorldArt,
     built: Built,
     next_text: u16,
-    /// (text id, plain text, text with the earned-bond mark, bond) of the recruit missions' panels.
-    marks: Vec<(u16, u32, u32, u8)>,
+    /// (mission, bond) of the recruit missions.
+    marks: Vec<(u8, u8)>,
     magic: HashMap<Magic, u32>,
     widths: &'a [u8],
     conds: Vec<(u32, Cond)>,
@@ -1331,14 +1331,12 @@ fn compile_mission(
     let units = cx.built.add(&units_bytes);
     let name_id = cx.text(crate::ds_campaign_data::plain(m.title.as_bytes()))?;
     let info_text = cx.text(crate::ds_campaign_data::two_lines(m.objective.as_bytes(), cx.widths))?;
-    // A recruit mission's panel shows a small star once its bond is earned.
+    // A recruit mission's panel shows the bond badge once its bond is earned
+    // (crate::bond_ui).
     for t in &m.triggers {
         for a in &t.then {
             if let Action::EarnBond(k) = a {
-                let plain = cx.built.texts.last().map_or(0, |t| t.1);
-                let marked_id = cx.text(crate::ds_campaign_data::two_lines(format!("{} *", m.objective).as_bytes(), cx.widths))?;
-                let marked = cx.built.texts.iter().find(|t| t.0 == marked_id).map_or(0, |t| t.1);
-                cx.marks.push((info_text, plain, marked, *k));
+                cx.marks.push((index as u8, *k));
             }
         }
     }

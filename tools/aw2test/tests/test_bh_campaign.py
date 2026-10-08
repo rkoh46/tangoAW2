@@ -861,40 +861,42 @@ def bh_campaign_reversed_onyx(ctx):
     ctx.check("One down." in seen and "The Onyx falls." in seen, f"the scenes by the hits left ({seen})")
 
 
-TEXT_TABLE = 0x08000000 + 0  # (set below)
-
-
-def objective_texts(e, start):
-    """Every campaign text in the table that starts with `start`: (id, text)."""
+def obj_sprites(e):
+    """(tile, x, y) of every visible sprite."""
+    import struct
+    oam = e.read(0x07000000, 0x400)
     out = []
-    for tid in range(0x7400, 0x7FF6):
-        p = e.u32(0x080F0000 * 0 + 0x08610A38 + 4 * tid)
-        if 0x08F00000 <= p < 0x08FC0000:
-            b = e.read(p, 80)
-            t = b[:b.index(0)] if 0 in b else b
-            if t.startswith(start):
-                out.append((tid, t.replace(b"\r", b" ").decode("latin-1")))
+    for k in range(128):
+        a0, a1, a2, _ = struct.unpack_from("<HHHH", oam, 8 * k)
+        if (a0 >> 8) & 3 != 2:
+            out.append((a2 & 0x3FF, a1 & 0x1FF, a0 & 0xFF))
     return out
 
 
+BADGE_TILE, LEGEND_TILE = 848, 735
+
+
 @test(modes=("ds",))
-def bh_campaign_bond_mark_on_the_world_map_panel(ctx):
-    """A recruit mission's world-map panel shows a small star at the end of its
-    objective exactly when its bond is earned (nothing before): the bond bit
-    of the record decides. The CO page keeps only the secret quote."""
-    for earned in (False, True):
+def bh_campaign_bond_badge_and_legend_on_the_world_map(ctx):
+    """Nothing about bonds shows on the world map until one is earned. Then
+    the recruit mission's panel carries the bond badge (a sprite at its
+    corner), and a legend (the badge, "RECRUIT WON OVER", "BONDS n/9" in
+    AW2's font) shows in the map's corner, from the first bond on."""
+    for bonds in (0, 1):
         e, g, d = boot_features(ctx)
-        d.start_at(won_mask=0, unlocked_mask=1 | (1 << 12 if earned else 0))
+        d.start_at(won_mask=0, unlocked_mask=1 | (bonds << 12))
         d.wait_world_map()
         e.wait(30)
-        found = objective_texts(e, b"Test: funds")
-        ctx.require(found, "the first mission's objective text")
-        ctx.log(f"found {found}")
-        t = found[1][1].replace("\x0f", "")
-        ctx.eq(t.rstrip().endswith("*"), earned, f"the mark on the panel's text: {t!r}")
+        sp = obj_sprites(e)
+        legend = [s for s in sp if s[0] == LEGEND_TILE]
+        ctx.eq(bool(legend), bonds > 0, f"the legend with {bonds} bonds")
+        ctx.eq(any(s[0] == BADGE_TILE and s[1] > 200 for s in sp), False, "no badge on the map without the panel open")
+        shot(ctx, e, f"bond_legend_{bonds}")
         e.press("A", 6)
         e.wait(240)
-        shot(ctx, e, "bond_panel_marked" if earned else "bond_panel_plain")
+        sp = obj_sprites(e)
+        ctx.eq(any(s[0] == BADGE_TILE and s[1] == 219 for s in sp), bonds > 0, f"the badge on the open panel with {bonds} bonds")
+        shot(ctx, e, f"bond_panel_{bonds}")
         e.close()
 
 
