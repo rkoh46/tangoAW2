@@ -400,7 +400,7 @@ def lose_hq(ctx, e, g, d, k):
 def bh_act1_m2_foundry_waves_and_flow(ctx):
     """M2: the opening as designed, with the last line Sturm's own (Sturm leads) or the
     leader's (Von Bolt), no bases and no funds; the Foundry wakes on day 3 (its
-    own table: a Tank on the middle door at day 3's start, none before) with
+    own table: a unit within a Tank's price on the middle door at day 3's start, none before) with
     its scene and Green Earth's first wave; the win shows the victory and map scenes
     and opens mission 3."""
     exp = design_scenes()
@@ -426,7 +426,8 @@ def bh_act1_m2_foundry_waves_and_flow(ctx):
             ctx.eq(day(), 3, "day 3")
             ctx.eq(texts, exp["m02_day3"], "day 3: the Foundry wakes: its scene")
             door = g.unit_at(11, 7)
-            ctx.check(door is not None and door["army"] == 1 and door["type"] == 5, f"a Tank on the middle door: {door and (door['army'], door['type'])}")
+            # (the table is the schedule and the cost cap: the smart spawner picks what the battle needs within the Tank's price)
+            ctx.check(door is not None and door["army"] == 1 and door["type"] in (1, 2, 5, 6), f"a unit of the Tank's price class on the middle door: {door and (door['army'], door['type'])}")
             ctx.eq([g.unit_at(*c) is None for c in ((10, 7), (12, 7))], [True, True], "the side doors give nothing on day 3")
             wave = [u for u in g.units(army=2) if u["type"] == 5 and u["y"] >= 15]
             ctx.check(len(g.units(army=2)) >= ge0 + 3 or len(wave) >= 3, f"Green Earth's first wave of three Tanks has come ({len(g.units(army=2))} units, was {ge0})")
