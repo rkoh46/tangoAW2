@@ -896,6 +896,7 @@ def bh_campaign_bond_badge_and_legend_on_the_world_map(ctx):
         e.wait(240)
         sp = obj_sprites(e)
         ctx.eq(any(s[0] == BADGE_TILE and s[1] == 219 for s in sp), bonds > 0, f"the badge on the open panel with {bonds} bonds")
+        ctx.eq(any(s[0] == LEGEND_TILE for s in sp), False, "no legend while the panel is open (the ENEMY strip)")
         shot(ctx, e, f"bond_panel_{bonds}")
         e.close()
 

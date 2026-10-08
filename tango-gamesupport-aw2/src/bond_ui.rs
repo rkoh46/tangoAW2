@@ -2,7 +2,7 @@
 //! bond is earned): a small badge on the recruit mission's panel once its
 //! bond is earned, and a legend that explains it, from the first earned bond
 //! on: the badge, "RECRUIT WON OVER" and "BONDS n/m" (the count of the
-//! campaign's bonds), in AW2's own font, in a corner of the map (or, with
+//! campaign's bonds), in AW2's own font, in a framed box at the map's bottom left (or, with
 //! `TANGOAW2_BOND_LEGEND=key`, only while SELECT is held). The badge's art
 //! is `TANGOAW2_BOND_BADGE` 1 a drawn gold star, 2 AW2's own small tag star
 //! (ROM `0x08102C64`), 3 a Black Hole roundel with a star (default 3).
@@ -31,12 +31,12 @@ const SELECT: u16 = 1 << 2;
 const LEGEND_W: usize = 128;
 const LEGEND_H: usize = 24;
 /// The legend's place and the badge's on the mission panel.
-const LEGEND_AT: (i32, i32) = (4, 3);
+const LEGEND_AT: (i32, i32) = (4, 128);
 const BADGE_AT: (i32, i32) = (219, 47);
 
 /// Palette entries: 1 black, 2 white, 3 gold, 4 dark gold, 5 highlight, 6
 /// purple, 7 light purple; 9..15 the tag star's.
-const COLOURS: [(usize, u16); 14] = [
+const COLOURS: [(usize, u16); 15] = [
     (1, 0x0000),
     (2, 0x7FFF),
     (3, 0x0B5F),
@@ -44,6 +44,7 @@ const COLOURS: [(usize, u16); 14] = [
     (5, 0x43FF),
     (6, 0x50D0),
     (7, 0x71D8),
+    (8, 0x77DF),
     (9, 0x0000),
     (10, 0x5FFF),
     (11, 0x027F),
@@ -182,19 +183,19 @@ fn font_draw(core: &Core, on: &mut [Vec<bool>], s: &str, x0: usize, y0: usize) -
 /// The legend's bitmap: the badge's room, "RECRUIT WON OVER", "BONDS n/m".
 fn legend_pixels(core: &Core, n: u32, total: usize) -> Vec<u8> {
     let mut on = vec![vec![false; LEGEND_H]; LEGEND_W];
-    font_draw(core, &mut on, "RECRUIT WON OVER", 20, 1);
-    font_draw(core, &mut on, &format!("BONDS {n}/{total}"), 1, 12);
-    let mut px = vec![0u8; LEGEND_W * LEGEND_H];
+    font_draw(core, &mut on, "RECRUIT WON OVER", 22, 2);
+    font_draw(core, &mut on, &format!("BONDS {n}/{total}"), 22, 11);
+    // A framed box in the panels' style: cream, a purple frame.
+    let mut px = vec![8u8; LEGEND_W * LEGEND_H];
     for x in 0..LEGEND_W {
         for y in 0..LEGEND_H {
-            if on[x][y] {
-                px[y * LEGEND_W + x] = 2;
-            } else if [(-1i32, 0i32), (1, 0), (0, -1), (0, 1)].iter().any(|&(dx, dy)| {
-                let (nx, ny) = (x as i32 + dx, y as i32 + dy);
-                (0..LEGEND_W as i32).contains(&nx) && (0..LEGEND_H as i32).contains(&ny) && on[nx as usize][ny as usize]
-            }) {
-                px[y * LEGEND_W + x] = 1;
-            }
+            let edge = x.min(LEGEND_W - 1 - x).min(y).min(LEGEND_H - 1 - y);
+            px[y * LEGEND_W + x] = match edge {
+                0 => 6,
+                1 => 7,
+                _ if on[x][y] => 1,
+                _ => 8,
+            };
         }
     }
     px
@@ -230,7 +231,8 @@ pub fn flush(core: &mut Core, mut at: u32, end: u32) -> u32 {
     }
     let mission = core.raw_read_32(crate::ds_worldmap::S_MISSION, -1) as u8;
     let on_panel = info_open(core) && custom.marks.iter().any(|&(m, k)| m == mission && earned >> k & 1 != 0);
-    let legend = !key_legend() || core.raw_read_16(KEYINPUT, -1) & SELECT == 0;
+    // (the open panel brings the ENEMY strip along the bottom: no legend then)
+    let legend = !info_open(core) && (!key_legend() || core.raw_read_16(KEYINPUT, -1) & SELECT == 0);
     let total = custom.bonds.len();
     // Palette 14 and the badge's tiles.
     let mut pal = [0u8; 32];
@@ -271,13 +273,14 @@ pub fn flush(core: &mut Core, mut at: u32, end: u32) -> u32 {
             }
             write_if_changed(core, OBJ_TILES + 32 * (LEGEND_B + 4 * s as u32), &to_tiles(&sub, 32, 8));
         }
+        // (the badge first: an earlier sprite draws over a later one)
+        // The badge itself beside the legend's first line.
+        sprite(core, &mut at, end, LEGEND_AT.0 + 4, LEGEND_AT.1 + 4, badge_shape.0, badge_shape.1, BADGE);
         for s in 0..4i32 {
             // 32x16: wide (shape 1), size 2; 32x8: wide, size 1.
             sprite(core, &mut at, end, LEGEND_AT.0 + 32 * s, LEGEND_AT.1, 1, 2, LEGEND_A + 8 * s as u32);
             sprite(core, &mut at, end, LEGEND_AT.0 + 32 * s, LEGEND_AT.1 + 16, 1, 1, LEGEND_B + 4 * s as u32);
         }
-        // The badge itself beside the legend's first line.
-        sprite(core, &mut at, end, LEGEND_AT.0 + 1, LEGEND_AT.1 - 1, badge_shape.0, badge_shape.1, BADGE);
     }
     at
 }

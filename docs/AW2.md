@@ -2181,7 +2181,7 @@ exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
   once its bond is earned (default: a Black Hole roundel with a gold star;
   `TANGOAW2_BOND_BADGE=1` a drawn star, `2` AW2's small tag star, ROM
   `0x08102C64`), and from the first earned bond on a legend sits in the map's
-  top-left corner: the badge, "RECRUIT WON OVER" and "BONDS n/m", in AW2's own
+  bottom-left corner (a framed box, hidden while the panel is open): the badge, "RECRUIT WON OVER" and "BONDS n/m", in AW2's own
   font (`TANGOAW2_BOND_LEGEND=key` shows it only while SELECT is held). They
   are sprites in OBJ tiles 735.., 772.. and 848.. and palette 14, which the
   world map leaves free. The CO page keeps only the secret quote
