@@ -2095,6 +2095,11 @@ exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
   bond is earned, in the BH session); `Action::EarnBond(k)` earns bond k
   (saved in the record); `Needs::Bonds(vec![..])` opens the secret mission when
   every bond is earned (`bh_campaign_mission_data_fields`).
+  A recruit mission (one whose trigger earns a bond) shows a small star
+  (AW2's own `*` glyph) at the end of its world-map panel's objective once
+  its bond is earned: nothing before, nothing on the CO page but the quote
+  (`Custom::marks`, swapped in `ds_campaign::bond_pages`;
+  `bh_campaign_bond_mark_on_the_world_map_panel`, `bh_campaign_bond_quote_on_the_co_page`).
 
 Limits and notes: a campaign has at most 32 missions (progress bits; 30 +
 the secret one), the unlock mask has 12 roster bits and 12 bond bits, and

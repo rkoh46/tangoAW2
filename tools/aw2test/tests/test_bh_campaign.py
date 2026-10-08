@@ -859,3 +859,63 @@ def bh_campaign_reversed_onyx(ctx):
             e.press("A", 4)
         e.wait(20)
     ctx.check("One down." in seen and "The Onyx falls." in seen, f"the scenes by the hits left ({seen})")
+
+
+TEXT_TABLE = 0x08000000 + 0  # (set below)
+
+
+def objective_texts(e, start):
+    """Every campaign text in the table that starts with `start`: (id, text)."""
+    out = []
+    for tid in range(0x7400, 0x7FF6):
+        p = e.u32(0x080F0000 * 0 + 0x08610A38 + 4 * tid)
+        if 0x08F00000 <= p < 0x08FC0000:
+            b = e.read(p, 80)
+            t = b[:b.index(0)] if 0 in b else b
+            if t.startswith(start):
+                out.append((tid, t.replace(b"\r", b" ").decode("latin-1")))
+    return out
+
+
+@test(modes=("ds",))
+def bh_campaign_bond_mark_on_the_world_map_panel(ctx):
+    """A recruit mission's world-map panel shows a small star at the end of its
+    objective exactly when its bond is earned (nothing before): the bond bit
+    of the record decides. The CO page keeps only the secret quote."""
+    for earned in (False, True):
+        e, g, d = boot_features(ctx)
+        d.start_at(won_mask=0, unlocked_mask=1 | (1 << 12 if earned else 0))
+        d.wait_world_map()
+        e.wait(30)
+        found = objective_texts(e, b"Test: funds")
+        ctx.require(found, "the first mission's objective text")
+        ctx.log(f"found {found}")
+        t = found[1][1].replace("\x0f", "")
+        ctx.eq(t.rstrip().endswith("*"), earned, f"the mark on the panel's text: {t!r}")
+        e.press("A", 6)
+        e.wait(240)
+        shot(ctx, e, "bond_panel_marked" if earned else "bond_panel_plain")
+        e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_bond_quote_on_the_co_page(ctx):
+    """With the bond earned Hawke's CO page (in a BH mission) reads the secret
+    quote; without it the page's own text. Pictures of the page, both ways."""
+    for earned in (False, True):
+        e, g, d = boot_features(ctx)
+        d.picks = {1: 2}
+        d.start_at(won_mask=1, unlocked_mask=0b101 | (1 << 12 if earned else 0))
+        d.pick_mission()
+        d.choose_cos(2, prefs=[bh.HAWKE, bh.STURM])
+        g._units_base = g._players_base = None
+        d.wait_control()
+        ctx.eq(d.mission(), 1, "mission 2")
+        g.open_map_menu()
+        g.choose("CO", g.MAP_MENU)
+        e.wait(120)
+        for page in range(3):
+            shot(ctx, e, f"co_page_{'bond' if earned else 'plain'}_{page}")
+            e.press("DOWN", 4)
+            e.wait(60)
+        e.close()

@@ -773,6 +773,8 @@ struct Compiler<'a> {
     art: WorldArt,
     built: Built,
     next_text: u16,
+    /// (text id, plain text, text with the earned-bond mark, bond) of the recruit missions' panels.
+    marks: Vec<(u16, u32, u32, u8)>,
     magic: HashMap<Magic, u32>,
     widths: &'a [u8],
     conds: Vec<(u32, Cond)>,
@@ -981,6 +983,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         art: source.art,
         built,
         next_text: TEXT_FIRST,
+        marks: Vec::new(),
         magic: HashMap::new(),
         widths: &widths,
         conds: Vec::new(),
@@ -1099,6 +1102,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         recruits: def.missions.iter().map(|m| m.recruits.clone()).collect(),
         pools: def.missions.iter().map(|m| m.pool.clone()).collect(),
         bonds,
+        marks: cx.marks.clone(),
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
@@ -1327,6 +1331,17 @@ fn compile_mission(
     let units = cx.built.add(&units_bytes);
     let name_id = cx.text(crate::ds_campaign_data::plain(m.title.as_bytes()))?;
     let info_text = cx.text(crate::ds_campaign_data::two_lines(m.objective.as_bytes(), cx.widths))?;
+    // A recruit mission's panel shows a small star once its bond is earned.
+    for t in &m.triggers {
+        for a in &t.then {
+            if let Action::EarnBond(k) = a {
+                let plain = cx.built.texts.last().map_or(0, |t| t.1);
+                let marked_id = cx.text(crate::ds_campaign_data::two_lines(format!("{} *", m.objective).as_bytes(), cx.widths))?;
+                let marked = cx.built.texts.iter().find(|t| t.0 == marked_id).map_or(0, |t| t.1);
+                cx.marks.push((info_text, plain, marked, *k));
+            }
+        }
+    }
     let mut hd = [0u8; 0x5C];
     let w32 = |hd: &mut [u8; 0x5C], o: usize, v: u32| hd[o..o + 4].copy_from_slice(&v.to_le_bytes());
     let w16 = |hd: &mut [u8; 0x5C], o: usize, v: u16| hd[o..o + 2].copy_from_slice(&v.to_le_bytes());
