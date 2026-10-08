@@ -118,6 +118,9 @@ pub struct CampaignDef {
     /// recruit mission; each puts its quote on its CO's page; the secret
     /// mission's `Needs::Bonds` opens when all are earned.
     pub bonds: Vec<Bond>,
+    /// The key of the secret mission ("" none): the staff roll's `secret`
+    /// sections are shown once it is won.
+    pub secret_mission: &'static str,
 }
 
 /// A hidden bond: the CO whose CO page shows the secret quote once the bond
@@ -161,6 +164,9 @@ pub struct Page {
 pub struct CreditSection {
     pub heading: &'static str,
     pub names: Vec<&'static str>,
+    /// Shown only after the campaign's secret mission is won (a credits
+    /// line, or the secret epilogue's pages: names of at most 21 letters).
+    pub secret: bool,
 }
 
 /// Who a scene line is spoken by: a CO (AW2 id) in a mood, or an army's
@@ -633,7 +639,7 @@ fn tile_of_class(core: &Core, class: u8) -> u16 {
 
 /// A text picture of terrain as tiles: `.` plain, `f` forest, `m`
 /// mountain, `=` road, `r` river, `~` sea, `s` shoal, `:` reef, `c` a
-/// neutral city, `b` base, `a` airport, `p` port, `1`..`4` army n's HQ.
+/// neutral city, `A`..`D` army n's city, `b` base, `a` airport, `p` port, `1`..`4` army n's HQ.
 /// Roads, rivers and the sea are the first tile of their class (they do
 /// not join up): use `MapSrc::Tiles` or an AW2 / Dual Strike map for
 /// finished terrain.
@@ -657,6 +663,7 @@ pub fn ascii_tiles(core: &Core, rows: &[&str]) -> (u8, u8, Vec<u16>) {
                 'a' => property_tile(PropKind::Airport, 0),
                 'p' => property_tile(PropKind::Port, 0),
                 d @ '1'..='4' => property_tile(PropKind::Hq, d as u8 - b'0'),
+                d @ 'A'..='D' => property_tile(PropKind::City, d as u8 - b'A' + 1),
                 _ => PLAIN,
             };
             tiles.push(t);
@@ -1027,16 +1034,16 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     let credits = if def.credits.is_empty() {
         None
     } else {
-        let sections: Vec<(Vec<crate::ds_credits::Line>, u32)> = def
+        let sections: Vec<(Vec<crate::ds_credits::Line>, u32, bool)> = def
             .credits
             .iter()
             .map(|s| {
                 let mut lines = vec![crate::ds_credits::Line::Heading(s.heading.to_string())];
                 lines.extend(s.names.iter().map(|n| crate::ds_credits::Line::Name(n.to_string())));
-                (lines, 120)
+                (lines, 120, s.secret)
             })
             .collect();
-        crate::ds_credits::build_sections(core, sections, &mut cx.built)
+        crate::ds_credits::build_sections_secret(core, sections, &mut cx.built)
     };
     // The hidden bonds' quotes, wrapped to a CO page.
     let mut bonds = Vec::new();
@@ -1086,6 +1093,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         pools: def.missions.iter().map(|m| m.pool.clone()).collect(),
         bonds,
         music: def.missions.iter().map(|m| m.music).collect(),
+        secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
     };
     built.unhandled.clear();
     Ok(Model {

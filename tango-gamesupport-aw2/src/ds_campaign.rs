@@ -566,8 +566,9 @@ pub fn available(core: &Core) -> Vec<u8> {
     if let Some(custom) = &c.model.custom {
         // A custom campaign: each mission names what opens it.
         use crate::campaign_model::Requires;
+        let free = free_play(core);
         return (0..c.model.missions as u8)
-            .filter(|&m| !won(core, m))
+            .filter(|&m| free || !won(core, m))
             .filter(|&m| match &custom.requires[m as usize] {
                 Requires::Start => true,
                 Requires::All(v) => v.iter().all(|&r| won(core, r)),
@@ -587,6 +588,26 @@ pub fn available(core: &Core) -> Vec<u8> {
         }
     }
     out
+}
+
+/// Free Play: a custom campaign's last mission is won, so the map offers
+/// every mission again, the won ones for replay (a replay changes neither
+/// the progress, nor the bonds, nor the records: [`end_of_battle`]).
+pub fn free_play(core: &Core) -> bool {
+    let Some(c) = campaign(core) else { return false };
+    c.model.custom.is_some() && progress_valid(core) && won(core, c.model.final_mission)
+}
+
+/// The campaign's secret mission is won (the staff roll shows its secret
+/// sections).
+pub fn secret_won(core: &Core) -> bool {
+    let Some(i) = campaign(core).and_then(|c| c.model.custom.as_ref()).and_then(|c| c.secret) else { return false };
+    progress_valid(core) && won(core, i)
+}
+
+/// The mission being played is a replay of one already won.
+pub fn replaying(core: &Core) -> bool {
+    active(core) && won(core, mission(core))
 }
 
 /// The missions won so far.
@@ -628,7 +649,8 @@ pub fn tick(core: &mut Core, ds: bool) {
     if !session {
         crate::five::set_campaign(core, false, 0, 0);
     }
-    crate::ds_credits::tick(core, session, campaign(core).and_then(|c| c.model.credits.as_ref()));
+    let secret = secret_won(core);
+    crate::ds_credits::tick(core, session, campaign(core).and_then(|c| c.model.credits.as_ref()), secret);
     {
         // The map menu's Save item: AW2's own, a session's too (a DS
         // mission is saved in its own slot, crate::suspend).
@@ -769,6 +791,10 @@ pub fn bonds_all(core: &Core) -> bool {
 
 /// Earns bond `k` (a trigger's action); saved with the record.
 pub fn earn_bond(core: &mut Core, k: u8) {
+    // (a replay earns nothing)
+    if replaying(core) {
+        return;
+    }
     let m = unlocked_mask(core) | 1 << (BOND_SHIFT + k as u32);
     set_unlocked_mask(core, m);
 }
@@ -1079,6 +1105,8 @@ fn end_of_battle(core: &mut Core) {
     }
     let index = core.raw_read_8(MISSION, -1);
     let won = battle_won(core);
+    // A replay (Free Play) changes nothing of the progress.
+    let replay = self::won(core, index);
     // (the patched five-army game is for the battle only)
     crate::five::set_campaign(core, false, 0, 0);
     // A save of this mission made halfway is over with it.
@@ -1087,7 +1115,9 @@ fn end_of_battle(core: &mut Core) {
     core.raw_write_8(LAST_RESULT, -1, if won { 1 } else { 2 });
     core.raw_write_8(LAST_RESULT + 1, -1, index);
     core.raw_write_16(LAST_RESULT + 2, -1, core.raw_read_16(0x0300_4080, -1));
-    if won {
+    if replay {
+        flags_from_record(core);
+    } else if won {
         let w = core.raw_read_32(P_WON, -1) | (1 << index);
         core.raw_write_32(P_WON, -1, w);
         flags_to_record(core);
@@ -1115,10 +1145,12 @@ fn end_of_battle(core: &mut Core) {
     // The progress's step: the next story mission (or, when every mission
     // is won, the campaign is over).
     let (order, last) = campaign(core).map_or((Vec::new(), u8::MAX), |c| (c.model.order.clone(), c.model.final_mission));
-    let next = after.iter().filter_map(|m| order.iter().position(|o| o == m)).min();
-    match next {
-        Some(s) => core.raw_write_8(P_NEXT, -1, s as u8),
-        None => core.raw_write_8(P_NEXT + 1, -1, 1),
+    let next = after.iter().filter(|&&m| !self::won(core, m)).filter_map(|m| order.iter().position(|o| o == m)).min();
+    if !replay {
+        match next {
+            Some(s) => core.raw_write_8(P_NEXT, -1, s as u8),
+            None => core.raw_write_8(P_NEXT + 1, -1, 1),
+        }
     }
     crate::ds_worldmap::write_reveal(core, index, &newly);
     // Back on the map, the cursor waits on the mission just opened (else
@@ -1130,7 +1162,7 @@ fn end_of_battle(core: &mut Core) {
     core.raw_write_8(crate::ds_worldmap::S_WON, -1, won as u8);
     // Means to an End won: its ending scenes on the map, then the credits;
     // the campaign (Normal or Hard) cleared (Normal opens Hard).
-    if won && index == last {
+    if won && index == last && !replay {
         core.raw_write_8(CREDITS, -1, 1);
         let c = core.raw_read_8(P_CLEARS, -1) | if hard(core) { 2 } else { 1 };
         core.raw_write_8(P_CLEARS, -1, c);
@@ -1153,7 +1185,7 @@ fn best_score(core: &mut Core) {
         let cpu = core.gba().cpu();
         let (co, score, days) = (cpu.gpr(0) as u32 & 0xFF, cpu.gpr(2) as u32 & 0xFFF, cpu.gpr(3) as u32 & 0xFFF);
         let index = core.raw_read_8(MISSION, -1) as u32;
-        if (index as usize) < campaign(core).map_or(0, |c| c.model.missions) {
+        if (index as usize) < campaign(core).map_or(0, |c| c.model.missions) && !won(core, index as u8) {
             let at = RECORDS + 8 * index + 4 * hard(core) as u32;
             let old = core.raw_read_32(at, -1);
             if score >= old >> 20 {

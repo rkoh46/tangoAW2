@@ -176,6 +176,9 @@ pub fn pages(lines: &[Line], time: u32) -> Vec<(Vec<(u32, String)>, u32)> {
 /// What the session needs: the page list and the staff roll's copy.
 pub struct Credits {
     pub page_list: u32,
+    /// The pages with the secret sections too (the same as `page_list`
+    /// when there are none): shown once the campaign's secret mission is won.
+    pub secret_list: u32,
     pub staff_roll: u32,
 }
 
@@ -187,9 +190,14 @@ pub fn build(core: &Core, ds: &Ds, built: &mut Built) -> Option<Credits> {
 
 /// The same from sections given (a custom campaign's staff roll).
 pub fn build_sections(core: &Core, sections: Vec<(Vec<Line>, u32)>, built: &mut Built) -> Option<Credits> {
+    build_sections_secret(core, sections.into_iter().map(|(l, t)| (l, t, false)).collect(), built)
+}
+
+/// The same, a section marked secret shown only in the secret list.
+pub fn build_sections_secret(core: &Core, sections: Vec<(Vec<Line>, u32, bool)>, built: &mut Built) -> Option<Credits> {
     let mut texts: Vec<(String, u32)> = Vec::new();
-    let mut page_at = Vec::new();
-    for (lines, time) in sections {
+    let mut page_at: Vec<(u32, bool)> = Vec::new();
+    for (lines, time, secret) in sections {
         for (slots, t) in pages(&lines, time) {
             let mut b = Vec::with_capacity(4 * (2 * SLOTS + 1));
             for (kind, s) in slots {
@@ -208,12 +216,19 @@ pub fn build_sections(core: &Core, sections: Vec<(Vec<Line>, u32)>, built: &mut 
                 b.extend_from_slice(&ptr.to_le_bytes());
             }
             b.extend_from_slice(&t.to_le_bytes());
-            page_at.push(built.add(&b));
+            page_at.push((built.add(&b), secret));
         }
     }
-    let mut list: Vec<u8> = page_at.iter().flat_map(|a| a.to_le_bytes()).collect();
+    let mut list: Vec<u8> = page_at.iter().filter(|a| !a.1).flat_map(|a| a.0.to_le_bytes()).collect();
     list.extend_from_slice(&0u32.to_le_bytes());
     let page_list = built.add(&list);
+    let secret_list = if page_at.iter().any(|a| a.1) {
+        let mut list: Vec<u8> = page_at.iter().flat_map(|a| a.0.to_le_bytes()).collect();
+        list.extend_from_slice(&0u32.to_le_bytes());
+        built.add(&list)
+    } else {
+        page_list
+    };
     // The staff roll's copy: AW2's setup and music, the roll to the
     // copyright screen's fade, then the end; Dual Strike's music.
     // (the map has faded out: the roll's own screen setup and fade-in come
@@ -232,7 +247,7 @@ pub fn build_sections(core: &Core, sections: Vec<(Vec<Line>, u32)>, built: &mut 
     }
     script.extend_from_slice(&[0u8; 8]);
     let staff_roll = built.add(&script);
-    Some(Credits { page_list, staff_roll })
+    Some(Credits { page_list, secret_list, staff_roll })
 }
 
 /// The roll's setup (`0x0806BB08`) starts its music, AW2's song 416, here
@@ -250,14 +265,14 @@ pub fn roll_song(core: &mut Core, session: bool) {
 
 /// Every frame: the page list words point at Dual Strike's pages during a
 /// session, at AW2's otherwise.
-pub fn tick(core: &mut Core, session: bool, credits: Option<&Credits>) {
+pub fn tick(core: &mut Core, session: bool, credits: Option<&Credits>, secret: bool) {
     let want = match (session, credits) {
-        (true, Some(c)) => c.page_list,
+        (true, Some(c)) => if secret { c.secret_list } else { c.page_list },
         _ => AW2_PAGES,
     };
     for at in PAGE_POOLS {
         let now = core.raw_read_32(at, -1);
-        if now != want && (now == AW2_PAGES || credits.is_some_and(|c| now == c.page_list)) {
+        if now != want && (now == AW2_PAGES || credits.is_some_and(|c| now == c.page_list || now == c.secret_list)) {
             core.raw_write_32(at, -1, want);
         }
     }

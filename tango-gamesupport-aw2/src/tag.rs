@@ -274,6 +274,9 @@ pub fn compatibility(a: u8, b: u8) -> u8 {
         if let Some(c) = crate::sturm_pairs::compatibility(a, b) {
             return c;
         }
+        if let Some(d) = crate::sturm_pairs::duo(a, b) {
+            return d.compatibility;
+        }
     }
     let (Some(da), Some(db)) = (ds_id(a), ds_id(b)) else { return 100 };
     crate::ds_pack::pack()
@@ -292,6 +295,9 @@ pub fn special_pair(a: u8, b: u8) -> Option<(u8, u32)> {
     let pack = crate::ds_pack::pack()?;
     if let Some(p) = crate::sturm_pairs::special(a, b) {
         return Some((p.stars, 0));
+    }
+    if let Some(d) = crate::sturm_pairs::duo(a, b) {
+        return Some((d.stars, 0));
     }
     // Clone Andy has none of Andy's special pairs (crate::sturm_pairs).
     if a == crate::co_new::CLONE_ANDY || b == crate::co_new::CLONE_ANDY {

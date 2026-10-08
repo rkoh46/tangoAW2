@@ -65,12 +65,19 @@ def sturm_compatibility(a, b):
     return 105 if o in [romlib.co_id(n) for n in STURM_TEAMMATES] else 95
 
 
+# A made-up pair of two other COs (crate::sturm_pairs::DUOS): Von Bolt and
+# Sonja, "Vault Breakers" (the BH Campaign's prize).
+VAULT_BREAKERS = (romlib.co_id("vonbolt"), romlib.co_id("sonja"), 115, 2, b"Vault Breakers")
+
+
 def compatibility(ds, a, b):
     """Dual Strike's compatibility of the pair (CO record +0x84 + partner's
     id); with Sturm, tangoAW2's own (STURM_PAIRS)."""
     s = sturm_compatibility(a, b)
     if s is not None:
         return s
+    if {a, b} == {VAULT_BREAKERS[0], VAULT_BREAKERS[1]}:
+        return VAULT_BREAKERS[2]
     ra = romlib.DS_CO_IDS.get(a)
     rb = romlib.DS_CO_IDS.get(b)
     if ra is None or rb is None:

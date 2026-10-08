@@ -199,6 +199,10 @@ pub fn pair_texts(a: u8, b: u8) -> Option<(Vec<u8>, [Vec<u8>; 4])> {
         crate::ds_pack::pack()?;
         return crate::sturm_pairs::texts(a, b);
     }
+    if crate::sturm_pairs::duo(a, b).is_some() {
+        crate::ds_pack::pack()?;
+        return crate::sturm_pairs::duo_texts(a, b);
+    }
     let (_, ptr) = tag::special_pair(a, b)?;
     let pack = crate::ds_pack::pack()?;
     let w = pack.arm9_at(ptr, 20)?;
@@ -689,6 +693,10 @@ pub fn partners_of(core: &Core, co: u8) -> Vec<(u8, u8)> {
     }
     // (Clone Andy has none of Andy's special pairs, crate::sturm_pairs)
     let mut out = if co == crate::co_new::CLONE_ANDY { Vec::new() } else { ds_partners(co) };
+    for (p, stars) in crate::sturm_pairs::duo_partners(co) {
+        out.retain(|e| e.0 != p);
+        out.push((p, stars));
+    }
     if let Some(p) = crate::sturm_pairs::special(co, crate::sturm_pairs::STURM) {
         out.push((crate::sturm_pairs::STURM, p.stars));
     }

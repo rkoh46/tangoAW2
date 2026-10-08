@@ -80,6 +80,9 @@ pub struct Custom {
     /// Per mission: the battle's song (an AW2 song id) in place of the COs'
     /// themes.
     pub music: Vec<Option<u16>>,
+    /// The secret mission (index): its win shows the staff roll's secret
+    /// sections.
+    pub secret: Option<u8>,
 }
 
 /// A mission's flag on AW2's world map (map pixels).

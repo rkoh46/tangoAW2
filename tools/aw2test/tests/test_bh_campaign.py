@@ -518,7 +518,7 @@ def bh_campaign_built_map(ctx):
     only with every bond."""
     e, g, d = boot_features(ctx)
     d.picks = {5: 0}
-    d.start_at(won_mask=0b011111, unlocked_mask=1 | 1 << 12)
+    d.start_at(won_mask=0xDF, unlocked_mask=1 | 1 << 12)
     ctx.eq(d.map_flags()[5], 1, "the secret mission is open with the bond earned")
     d.pick_mission()
     d.wait_map()
@@ -610,3 +610,101 @@ def bh_campaign_second_stage(ctx):
     ctx.log(f"units: {[(u['army'], u['type'], u['x'], u['y']) for u in g.units()]}")
     ctx.eq(len(g.units(3)), 3, f"army 3: the token and two reinforcements ({len(g.units(3))})")
     shot(ctx, e, "second_stage")
+
+
+@test(modes=("ds",))
+def bh_campaign_free_play_replays_change_nothing(ctx):
+    """With the last mission won (Free Play) the map offers every mission
+    again, the won ones too; a replay's win changes neither the won missions,
+    nor the roster, nor the bonds, nor the progress step, nor the best score,
+    and starts no staff roll; a campaign still being played offers only its
+    open missions."""
+    from aw2test import campaigns as cp
+    e, g, d = boot(ctx)
+    d.start_at(won_mask=0b01, unlocked_mask=1)
+    d.wait_world_map()
+    ctx.eq(d.map_flags()[:2], [2, 1], "before the end: mission 1 cleared, mission 2 open")
+    e.close()
+    e, g, d = boot(ctx)
+    d.start_at(won_mask=0b11, unlocked_mask=1)
+    d.wait_world_map()
+    flags = d.map_flags()
+    ctx.eq(flags[:2], [2, 2], "Free Play: both missions cleared (a cleared flag is still on the map)")
+    shot(ctx, e, "free_play_map")
+    step, records = e.u8(dc.P_NEXT), e.read(dc.RECORDS, 16)
+    d.pick_mission()
+    d.choose_cos(1, prefs=[bh.STURM])
+    g._units_base = g._players_base = None
+    d.wait_control()
+    ctx.eq(d.mission(), 0, "mission 1 replayed")
+    cp.win_here(e, d)
+    e.wait(120)
+    ctx.eq(d.won(), 0b11, "the won missions as they were")
+    ctx.eq(d.unlocked(), [bh.STURM], "Von Bolt not unlocked again by the replay")
+    ctx.eq(e.u8(dc.P_NEXT), step, "the progress step as it was")
+    ctx.eq(e.read(dc.RECORDS, 16), records, "the records as they were")
+    ctx.eq(e.u8(CREDITS), 0, "no staff roll for a replay")
+    ctx.eq(d.last_result()["result"], 1, "the replay was won")
+
+
+@test(modes=("ds",))
+def bh_campaign_lose_when_the_gate_city_is_captured(ctx):
+    """A named city (a city of army 1 at (5, 0)) is lost with the mission once
+    an enemy owns it: a trigger on the city's owner."""
+    e, g, d = boot_features(ctx)
+    d.picks = {8: 0}
+    d.start_at(won_mask=0xFF, unlocked_mask=0b1)
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 8, "mission 9")
+    row = e.u16(GMAP + 0x417A)
+    at = GMAP + 0x1432 + row + 5
+    ctx.eq(e.u8(at) >> 5, 1, "the Gate city starts as army 1's")
+    ctx.eq(d.last_result()["result"], 0, "not lost")
+    e.w8(at, (e.u8(at) & 0x1F) | 2 << 5)       # army 2 captures it (test aid)
+    e.wait(10)
+    g.select(1, 1)
+    g.move_to(1, 1)
+    g.choose("Wait", g.ACTION_MENU)
+    seen = []
+    for _ in range(600):
+        t = d.text_shown()
+        if t and (not seen or seen[-1] != t):
+            seen.append(t.replace("\x0f", ""))
+        if d.last_result()["result"]:
+            break
+        e.press("A", 4)
+        e.wait(8)
+    ctx.check("The Gate has fallen." in seen, f"the scene ({seen})")
+    ctx.eq(d.last_result()["result"], 2, "lost")
+
+
+@test(modes=("ds",))
+def bh_campaign_secret_mission_credits_and_sonja(ctx):
+    """The secret mission (f06, open with every bond earned and the campaign
+    played) recruits Sonja when won, and its win adds the secret sections to
+    the staff roll (a credits line); before it the roll has the plain
+    sections only."""
+    from aw2test import campaigns as cp
+    e, g, d = boot_features(ctx)
+    d.picks = {5: 0}
+    d.start_at(won_mask=0xDF, unlocked_mask=1 | 1 << 12)
+    d.wait_world_map()
+    e.wait(30)
+    pages = e.u32(PAGE_POOLS[0])
+    ctx.check(pages != AW2_PAGES, "the campaign's pages are installed")
+    texts = [t for _, t in roll_lines(e, pages)]
+    ctx.check("*SECRET LINE*" not in texts, f"no secret line before the secret mission ({texts})")
+    ctx.check(bh.SONJA not in d.unlocked(), "Sonja not in the roster yet")
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 5, "the secret mission")
+    cp.win_here(e, d)
+    e.wait(120)
+    ctx.check(bh.SONJA in d.unlocked(), f"Sonja recruited by the secret mission ({d.unlocked()})")
+    ctx.eq(d.won() >> 5 & 1, 1, "won")
+    pages = e.u32(PAGE_POOLS[0])
+    texts = [t for _, t in roll_lines(e, pages)]
+    ctx.check("*SECRET LINE*" in texts and "THE AUDITOR" in texts, f"the secret section is in the roll ({texts})")

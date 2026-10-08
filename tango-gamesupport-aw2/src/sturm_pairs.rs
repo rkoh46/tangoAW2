@@ -139,6 +139,55 @@ pub fn partners() -> Vec<(u8, u8)> {
     PAIRS.iter().map(|p| (p.partner, p.stars)).collect()
 }
 
+/// A made-up pair between two COs other than Sturm (tangoAW2's own, with the
+/// pack only): "Vault Breakers", Von Bolt and Sonja, unlocked as a prize of
+/// the BH Campaign's secret mission. It replaces whatever Dual Strike has
+/// for the pair.
+pub struct Duo {
+    pub a: u8,
+    pub b: u8,
+    pub compatibility: u8,
+    pub stars: u8,
+    pub name: &'static str,
+    /// `a` winning: two exchanges, a's line then b's.
+    pub a_first: [(&'static str, &'static str); 2],
+    /// `b` winning: two exchanges, b's line then a's.
+    pub b_first: [(&'static str, &'static str); 2],
+}
+
+/// AW2's Sonja.
+pub const SONJA: u8 = 7;
+/// AW2's Von Bolt.
+pub const VON_BOLT: u8 = 75;
+
+pub const DUOS: [Duo; 1] = [Duo {
+    a: VON_BOLT,
+    b: SONJA,
+    compatibility: 115,
+    stars: 2,
+    name: "Vault Breakers",
+    a_first: [("Kehh! Count it twice!", "Counted. Twice."), ("Everything is mine!", "Fifty-fifty, Colonel.")],
+    b_first: [("Overdrawn, dears.", "Kehh! Exquisite."), ("Audit complete.", "Keep the change.")],
+}];
+
+/// The made-up pair of two COs, in either order.
+pub fn duo(a: u8, b: u8) -> Option<&'static Duo> {
+    DUOS.iter().find(|d| (d.a == a && d.b == b) || (d.a == b && d.b == a))
+}
+
+/// A duo's texts for `a`'s record (a's line, b's, a's, b's).
+pub fn duo_texts(a: u8, b: u8) -> Option<(Vec<u8>, [Vec<u8>; 4])> {
+    let d = duo(a, b)?;
+    let ex = if a == d.a { &d.a_first } else { &d.b_first };
+    let v = |s: &str| s.as_bytes().to_vec();
+    Some((v(d.name), [v(ex[0].0), v(ex[0].1), v(ex[1].0), v(ex[1].1)]))
+}
+
+/// The duo partners of a CO with their stars (TAG box).
+pub fn duo_partners(co: u8) -> Vec<(u8, u8)> {
+    DUOS.iter().filter_map(|d| if d.a == co { Some((d.b, d.stars)) } else if d.b == co { Some((d.a, d.stars)) } else { None }).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -153,5 +202,7 @@ mod tests {
         // Symmetric, and Sturm with himself or a stranger: 95.
         assert_eq!(compatibility(STURM, STURM), Some(95));
         assert_eq!(compatibility(1, 2), None);
+        assert_eq!(duo(SONJA, VON_BOLT).unwrap().name, "Vault Breakers");
+        assert!(duo(SONJA, 1).is_none());
     }
 }

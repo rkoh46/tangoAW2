@@ -20,9 +20,9 @@ use crate::campaign_model::{Model, SendRule};
 use crate::custom_campaign::{co, colour, unit, *};
 
 /// The roster, in unlock order (Von Bolt, Hawke, Koal, Kindle, Jugger, Flak,
-/// Lash, Adder, Clone Andy): the entry's index is its bit in the record.
+/// Lash, Adder, Clone Andy, then Sonja after the secret mission): the entry's index is its bit in the record.
 /// Sturm is open at the start; the recruit missions open the rest.
-pub const ROSTER: [(u8, bool); 10] = [
+pub const ROSTER: [(u8, bool); 11] = [
     (co::STURM, true),
     (co::VON_BOLT, false),
     (co::HAWKE, false),
@@ -33,6 +33,7 @@ pub const ROSTER: [(u8, bool); 10] = [
     (co::LASH, false),
     (co::ADDER, false),
     (co::CLONE_ANDY, false),
+    (co::SONJA, false),
 ];
 
 /// Roster indexes by name, for `recruits`.
@@ -47,6 +48,8 @@ pub mod roster {
     pub const LASH: u8 = 7;
     pub const ADDER: u8 = 8;
     pub const CLONE_ANDY: u8 = 9;
+    /// Joins after the secret mission (its `recruits`), Free Play only in effect.
+    pub const SONJA: u8 = 10;
 }
 
 /// The world map's regions on AW2's own map (map pixels; its picture is
@@ -74,12 +77,13 @@ pub fn def() -> CampaignDef {
             Page { text: "Placeholder prologue, page two. Sturm leads the way.", picture: None, who: None },
         ],
         credits: vec![
-            CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"] },
-            CreditSection { heading: "THANKS FOR PLAYING", names: vec![] },
+            CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"], secret: false },
+            CreditSection { heading: "THANKS FOR PLAYING", names: vec![], secret: false },
         ],
         missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
         final_mission: "bh02",
         bonds: BONDS.to_vec(),
+        secret_mission: "",
     }
 }
 
@@ -270,6 +274,7 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
     ];
     g.needs = Needs::Bonds(vec!["f01"]);
+    g.recruits = vec![roster::SONJA];
     g.flag = region::BLACK_HOLE[5];
 
     // Five armies: the player is the fifth (Black Hole), a tag pair.
@@ -314,14 +319,36 @@ pub fn features_def() -> CampaignDef {
     i.needs = Needs::All(vec!["f01"]);
     i.flag = region::BLACK_HOLE[5];
 
+    // A lose trigger on a city: the Gate ('A': a city of army 1) is lost
+    // when an enemy takes it.
+    let mut j = MissionDef::new("f09", "Features Gate");
+    j.objective = "Test: lose when the Gate city is captured.";
+    j.map = MapSrc::Ascii(&["1....A....", "..........", "..........", "..........", "..2......."]);
+    j.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+    ];
+    j.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 4).hold()];
+    j.triggers = vec![Trigger::new(
+        When::AfterAction,
+        Cond::Not(Box::new(Cond::OwnerAt { x: 5, y: 0, army: 1 })),
+        vec![Action::Scene(Scene::new(vec![Line::say(co::STURM, "The Gate has fallen.")])), Action::Lose],
+    )];
+    j.needs = Needs::All(vec!["f01"]);
+    j.flag = region::BLACK_HOLE[4];
+
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: vec![Page { text: "Features.", picture: None, who: None }],
-        credits: vec![CreditSection { heading: "FEATURES", names: vec!["TEST"] }],
-        missions: vec![a, b, c, d, f, g, h, i],
-        final_mission: "f05",
+        credits: vec![
+            CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
+            CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
+        ],
+        missions: vec![a, b, c, d, f, g, h, i, j],
+        final_mission: "f09",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
+        secret_mission: "f06",
     }
 }
 
