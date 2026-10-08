@@ -35,8 +35,19 @@
 //!   on (the War Room's tab byte, `0x08090EF2`).
 //! - The War Room keeps its records by `id - 0x6C`; while Survival is on its
 //!   record readers and writer look at a zeroed block of ours ([`ROWS`]).
-//! - State: [`STATE`] in EWRAM; records in three bytes each of the profile
-//!   the game saves (`0x0200C435..`, bytes no code of the game touches).
+//! - State: [`STATE`] in EWRAM; records in the profile the game saves
+//!   (`0x0200C435..0x0200C43F`, eleven bytes no code of the game touches:
+//!   see [`Records`]).
+//! - The Champion courses (Dual Strike's kinds 3..5): the same three lists
+//!   of eleven maps, endless (the list starts over after the eleventh map),
+//!   on a larger budget (30:00, 600,000 G, 120 days), over when the budget
+//!   is out or a map is lost; their record is the maps cleared, their rank
+//!   goes by that count too (`sub_020EAD98`), their bonus is
+//!   [`maps::champion_bonus`]. Dual Strike sells them in its shop (1000
+//!   medals each once the basic course is cleared); tangoAW2 has no shop, so
+//!   a Champion course is open once its basic course has been cleared (a
+//!   record of the basic course exists). Each is a list entry of its own
+//!   ([`CHAMPION_IDS`]) after the three basic ones, shown only when open.
 
 use mgba::core::Core;
 use std::sync::OnceLock;
@@ -59,6 +70,10 @@ const MAGIC: u32 = 0x3256_5344; // "DSV2": headers with the structures' pictures
 /// Map ids: the three entries (Money, Turn, Time), then the maps.
 pub const FIRST_ID: u8 = 0xC9;
 const ENTRY_IDS: [u8; 3] = [0xC9, 0xCA, 0xCB];
+/// The Champion courses' entries (Money, Turn, Time), listed after the
+/// three basic ones once the basic course has been cleared. 0xF0 and up
+/// belong to the campaigns' maps ([`crate::campaign_model::MAP_ID`]).
+pub const CHAMPION_IDS: [u8; 3] = [0xED, 0xEE, 0xEF];
 const MAPS_FROM: u8 = 0xCC;
 /// The tab Survival's maps are listed on.
 pub const TAB: u16 = 0x0A;
@@ -74,6 +89,7 @@ pub const T_HELP: u16 = 0;
 const T_KINDS: u16 = 1; // three
 // 4: spare
 const T_MAPS: u16 = 5; // 33
+const T_CHAMPIONS: u16 = 38; // three
 
 /// The War Room record table (`id - 0x6C` rows of 0x14) and the
 /// literal-pool words of its readers and writer.
@@ -85,6 +101,8 @@ const RECORD_POOLS: [u32; 5] = [0x0808_759C, 0x0808_7664, 0x0808_7B18, 0x0808_7C
 pub const STATE: u32 = 0x0203_FA00;
 const ON: u32 = STATE; // 1 while Survival's War Room is open
 const KIND: u32 = STATE + 1;
+/// 1 on a Champion course (the kind byte stays the basic course's kind).
+pub(crate) const CHAMPION: u32 = STATE + 0x21;
 pub(crate) const STAGE: u32 = STATE + 2; // maps cleared
 pub(crate) const PHASE: u32 = STATE + 3;
 pub(crate) const LEFT: u32 = STATE + 4;
@@ -111,11 +129,15 @@ pub(crate) const PLAYING: u8 = 2;
 pub(crate) const CLEARED: u8 = 3;
 pub(crate) const LOST: u8 = 4;
 
-/// Records: [`RECORD_MAGIC`], then three bytes per kind (Time, Money,
-/// Turn): rank (3 bits), CO (7 bits), what was left (14 bits: frames / 60,
-/// G / 100, days).
+/// Records, in the profile the game saves (see [`Records`]): the eleven
+/// bytes `0x0200C435..=0x0200C43F`.
 pub(crate) const PROFILE_RECORDS: u32 = 0x0200_C435;
-const RECORD_MAGIC: u8 = 0xD5;
+pub(crate) const PROFILE_RECORDS_LEN: usize = 11;
+/// The first byte of the first layout (0.5.0..0.5.2): three bytes per kind
+/// (Time, Money, Turn), 10 bytes in all.
+const MAGIC_V1: u8 = 0xD5;
+/// The first byte of the layout with the Champion courses.
+const MAGIC_V2: u8 = 0xD6;
 
 // --- The game ------------------------------------------------------------
 
@@ -266,6 +288,7 @@ fn build() -> Option<Built> {
     put_text(&mut writes, T_HELP, &s.help);
     for k in Kind::ALL {
         put_text(&mut writes, T_KINDS + entry_index(k) as u16, k.name());
+        put_text(&mut writes, T_CHAMPIONS + entry_index(k) as u16, k.champion_name());
     }
     for (k, map) in s.maps.iter().enumerate() {
         put_text(&mut writes, T_MAPS + k as u16, &map.name);
@@ -288,6 +311,11 @@ fn build() -> Option<Built> {
         let name = T_KINDS + entry_index(k) as u16;
         writes.push((TABLE + 0x5C * id as u32, header(&s.maps[first], at, units_at, name).to_vec()));
         names.push((id, name));
+        // The Champion course starts on the same map.
+        let id = CHAMPION_IDS[entry_index(k)];
+        let name = T_CHAMPIONS + entry_index(k) as u16;
+        writes.push((TABLE + 0x5C * id as u32, header(&s.maps[first], at, units_at, name).to_vec()));
+        names.push((id, name));
     }
     Some(Built { writes, names })
 }
@@ -301,18 +329,24 @@ fn entry_index(k: Kind) -> usize {
     }
 }
 
-pub(crate) fn entry_kind_of(id: u8) -> Option<Kind> {
+pub(crate) fn entry_kind_of(id: u8) -> Option<(Kind, bool)> {
     entry_kind(id)
 }
 
-fn entry_kind(id: u8) -> Option<Kind> {
-    ENTRY_IDS.iter().position(|&e| e == id).map(|i| Kind::ALL[i])
+/// The course an entry id starts: its kind and whether it is the Champion
+/// course.
+fn entry_kind(id: u8) -> Option<(Kind, bool)> {
+    if let Some(i) = ENTRY_IDS.iter().position(|&e| e == id) {
+        return Some((Kind::ALL[i], false));
+    }
+    CHAMPION_IDS.iter().position(|&e| e == id).map(|i| (Kind::ALL[i], true))
 }
 
-/// The last id the map list should walk to while Survival is on.
+/// The last id the map list should walk to while Survival is on (the
+/// Champion entries come after the maps).
 pub fn last_listed_id(core: &Core) -> Option<u8> {
     let n = maps::survival()?.maps.len() as u8;
-    (core.raw_read_8(ON, -1) == 1).then_some(MAPS_FROM + n - 1)
+    (core.raw_read_8(ON, -1) == 1).then_some((MAPS_FROM + n - 1).max(CHAMPION_IDS[2]))
 }
 
 fn installed(core: &Core) -> bool {
@@ -356,19 +390,27 @@ fn kind(core: &Core) -> Kind {
     Kind::from_u8(core.raw_read_8(KIND, -1)).unwrap_or(Kind::Money)
 }
 
-/// The map id of map `k` of the run.
-fn run_map_id(kind: Kind, k: usize) -> Option<u8> {
+/// The run is on a Champion course.
+pub(crate) fn champion_now(core: &Core) -> bool {
+    core.raw_read_8(CHAMPION, -1) == 1
+}
+
+/// The map id of map `k` of the run (a Champion course's list starts over
+/// after its eleventh map).
+fn run_map_id(kind: Kind, champion: bool, k: usize) -> Option<u8> {
     let s = maps::survival()?;
     if k == 0 {
-        return Some(ENTRY_IDS[entry_index(kind)]);
+        let ids = if champion { &CHAMPION_IDS } else { &ENTRY_IDS };
+        return Some(ids[entry_index(kind)]);
     }
+    let k = if champion { k % MAPS_PER_RUN } else { k };
     Some(MAPS_FROM + *s.run(kind).maps.get(k)? as u8)
 }
 
 /// The run's map for map id `id`, if it is one of ours.
 fn map_of(id: u8) -> Option<&'static maps::Map> {
     let s = maps::survival()?;
-    if let Some(k) = entry_kind(id) {
+    if let Some((k, _)) = entry_kind(id) {
         return s.maps.get(s.run(k).maps[0]);
     }
     s.maps.get(id.checked_sub(MAPS_FROM)? as usize)
@@ -396,12 +438,16 @@ fn list(core: &mut Core) {
     let on = core.raw_read_8(ON, -1) == 1;
     let phase = core.raw_read_8(PHASE, -1);
     let stage = core.raw_read_8(STAGE, -1) as usize;
-    let next = (on && (phase == BETWEEN || phase == PLAYING)).then(|| run_map_id(kind(core), stage)).flatten();
+    let next = (on && (phase == BETWEEN || phase == PLAYING))
+        .then(|| run_map_id(kind(core), champion_now(core), stage))
+        .flatten();
+    let records = read_records(core);
     for &(id, name) in &built.names {
         let shown = if !on {
             false
         } else if phase == CHOOSING || phase == CLEARED || phase == LOST {
-            entry_kind(id).is_some()
+            // A Champion course only once its basic course is cleared.
+            entry_kind(id).is_some_and(|(k, champion)| !champion || records.basic[k as usize].is_some())
         } else {
             Some(id) == next
         };
@@ -524,18 +570,22 @@ pub fn map_start(core: &mut Core) {
     let id = core.raw_read_8(MAP_ID, -1);
     let Some(map) = map_of(id) else { return };
     let phase = core.raw_read_8(PHASE, -1);
-    if let Some(k) = entry_kind(id) {
+    if let Some((k, champion)) = entry_kind(id) {
         if phase != CHOOSING && phase != CLEARED && phase != LOST {
             return;
         }
         let Some(s) = maps::survival() else { return };
+        let budget = if champion { s.run(k).champion_budget } else { s.run(k).budget };
         core.raw_write_8(KIND, -1, k as u8);
+        core.raw_write_8(CHAMPION, -1, champion as u8);
         core.raw_write_8(STAGE, -1, 0);
-        core.raw_write_32(BUDGET, -1, s.run(k).budget);
-        core.raw_write_32(LEFT, -1, s.run(k).budget);
+        core.raw_write_32(BUDGET, -1, budget);
+        core.raw_write_32(LEFT, -1, budget);
         core.raw_write_32(POINTS, -1, 0);
         core.raw_write_8(CO, -1, core.raw_read_8(PLAYST_CO + 1, -1));
-    } else if phase != BETWEEN || run_map_id(kind(core), core.raw_read_8(STAGE, -1) as usize) != Some(id) {
+    } else if phase != BETWEEN
+        || run_map_id(kind(core), champion_now(core), core.raw_read_8(STAGE, -1) as usize) != Some(id)
+    {
         return;
     }
     core.raw_write_8(PHASE, -1, PLAYING);
@@ -585,12 +635,25 @@ fn end_of_game(core: &mut Core) {
     let p1 = player(core, 1);
     let won = core.raw_read_16(p1 + P_DEFEATED, -1) == 0 && core.raw_read_8(p1 + P_YIELD, -1) == 0;
     let k = kind(core);
+    let champion = champion_now(core);
     let left = core.raw_read_32(LEFT, -1);
     if !won {
         core.raw_write_8(PHASE, -1, LOST);
         core.raw_write_32(LEFT, -1, 0);
         core.raw_write_32(BONUS, -1, 0);
         core.raw_write_8(RANK, -1, 0);
+        if champion {
+            // A Champion run only ends this way: its record, rank and bonus
+            // are for the maps cleared (`sub_020D5E58` saves it as the run is
+            // lost, `sub_020EB024` works the bonus out).
+            let cleared = core.raw_read_8(STAGE, -1) as u32;
+            let bonus = maps::champion_bonus(cleared);
+            core.raw_write_32(BONUS, -1, bonus);
+            let points = (core.raw_read_32(POINTS, -1) + bonus).min(maps::MAX_POINTS);
+            core.raw_write_32(POINTS, -1, points);
+            core.raw_write_8(RANK, -1, maps::champion_rank(cleared));
+            save_champion(core, k, cleared);
+        }
         return;
     }
     let cost = match k {
@@ -604,15 +667,15 @@ fn end_of_game(core: &mut Core) {
     core.raw_write_16(LAST_SCORE, -1, score as u16);
     let points = (core.raw_read_32(POINTS, -1) + score).min(maps::MAX_POINTS);
     core.raw_write_32(POINTS, -1, points);
-    let stage = core.raw_read_8(STAGE, -1) + 1;
+    let stage = core.raw_read_8(STAGE, -1).saturating_add(1);
     core.raw_write_8(STAGE, -1, stage);
-    if stage as usize >= MAPS_PER_RUN {
+    if !champion && stage as usize >= MAPS_PER_RUN {
         let bonus = maps::leftover_points(k, left);
         core.raw_write_32(BONUS, -1, bonus);
         core.raw_write_32(POINTS, -1, (points + bonus).min(maps::MAX_POINTS));
         let rank = maps::rank(k, left);
         core.raw_write_8(RANK, -1, rank);
-        save_record(core, k, rank, left);
+        save_record(core, k, left);
         core.raw_write_8(PHASE, -1, CLEARED);
     } else {
         core.raw_write_8(PHASE, -1, BETWEEN);
@@ -736,10 +799,122 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 
 // --- Records -------------------------------------------------------------------
 
-fn record_slot(k: Kind) -> u32 {
-    PROFILE_RECORDS + 1 + 3 * k as u32
+/// What the profile keeps of Survival: each basic course's best clear and
+/// each Champion course's best run.
+///
+/// The profile is AW2's, saved with its checksum; its options block
+/// (`0x0200C420`, 0xE0 bytes) has eleven bytes no code of the game reads or
+/// writes, `+0x15..=+0x1F`. They hold, from the first byte:
+///
+/// - [`MAGIC_V2`] (`0xD6`; `0xD5` is the first layout, three bytes a kind,
+///   which is read and rewritten as this one at the next record),
+/// - then 76 bits, least significant bit first, the bytes in order:
+///   Time, Money, Turn: the best clear's CO (7 bits, 0 for none) and what
+///   was left (11 bits of seconds, 13 of hundreds of G, 7 of days: the
+///   budgets' own limits); then the maps cleared on the Champion course of
+///   Time, Money, Turn (8 bits each, 0 for none).
+///
+/// The rank is not stored: it is worked out from what was left. A Champion
+/// course is open when its basic course has a record (a basic course can
+/// only be cleared once for that), so it needs no bit of its own.
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
+pub(crate) struct Records {
+    /// By [`Kind`] as a number (Time 0, Money 1, Turn 2): (CO, what was left
+    /// in the kind's unit, [`record_unit`]).
+    pub basic: [Option<(u8, u32)>; 3],
+    /// The maps cleared on each Champion course.
+    pub champion: [u8; 3],
 }
 
+/// The bits of each basic course's "left" field (Time, Money, Turn).
+const LEFT_BITS: [usize; 3] = [11, 13, 7];
+
+struct BitStream<'a> {
+    bytes: &'a mut [u8],
+    at: usize,
+}
+
+impl BitStream<'_> {
+    fn put(&mut self, v: u32, n: usize) {
+        for i in 0..n {
+            if (v >> i) & 1 == 1 {
+                self.bytes[self.at / 8] |= 1 << (self.at % 8);
+            }
+            self.at += 1;
+        }
+    }
+    fn get(&mut self, n: usize) -> u32 {
+        let mut v = 0;
+        for i in 0..n {
+            v |= (((self.bytes[self.at / 8] >> (self.at % 8)) & 1) as u32) << i;
+            self.at += 1;
+        }
+        v
+    }
+}
+
+impl Records {
+    pub fn decode(b: &[u8; PROFILE_RECORDS_LEN]) -> Records {
+        let mut r = Records::default();
+        match b[0] {
+            MAGIC_V1 => {
+                // rank (3 bits), CO (7), what was left (14), per kind; the
+                // rank is 0 for none.
+                for k in 0..3 {
+                    let v = b[1 + 3 * k] as u32 | (b[2 + 3 * k] as u32) << 8 | (b[3 + 3 * k] as u32) << 16;
+                    if v & 7 != 0 {
+                        let co = ((v >> 3) & 0x7F) as u8;
+                        r.basic[k] = Some((co.max(1), (v >> 10).min((1 << LEFT_BITS[k]) - 1)));
+                    }
+                }
+            }
+            MAGIC_V2 => {
+                let mut bytes = [0u8; PROFILE_RECORDS_LEN - 1];
+                bytes.copy_from_slice(&b[1..]);
+                let mut s = BitStream { bytes: &mut bytes, at: 0 };
+                for k in 0..3 {
+                    let co = s.get(7) as u8;
+                    let left = s.get(LEFT_BITS[k]);
+                    if co != 0 {
+                        r.basic[k] = Some((co, left));
+                    }
+                }
+                for k in 0..3 {
+                    r.champion[k] = s.get(8) as u8;
+                }
+            }
+            _ => {}
+        }
+        r
+    }
+
+    pub fn encode(&self) -> [u8; PROFILE_RECORDS_LEN] {
+        let mut out = [0u8; PROFILE_RECORDS_LEN];
+        out[0] = MAGIC_V2;
+        let mut s = BitStream { bytes: &mut out[1..], at: 0 };
+        for k in 0..3 {
+            let (co, left) = self.basic[k].unwrap_or((0, 0));
+            s.put(co as u32 & 0x7F, 7);
+            s.put(left.min((1 << LEFT_BITS[k]) - 1), LEFT_BITS[k]);
+        }
+        for k in 0..3 {
+            s.put(self.champion[k] as u32, 8);
+        }
+        out
+    }
+}
+
+fn read_records(core: &Core) -> Records {
+    let mut b = [0u8; PROFILE_RECORDS_LEN];
+    core.raw_read_range(PROFILE_RECORDS, -1, &mut b);
+    Records::decode(&b)
+}
+
+fn write_records(core: &mut Core, r: &Records) {
+    core.raw_write_range(PROFILE_RECORDS, -1, &r.encode());
+}
+
+/// What a kind's record counts in (seconds, hundreds of G, days).
 fn record_unit(k: Kind) -> u32 {
     match k {
         Kind::Time => 60,
@@ -750,28 +925,45 @@ fn record_unit(k: Kind) -> u32 {
 
 /// A kind's best clear: (rank, CO, what was left).
 pub fn record(core: &Core, k: Kind) -> Option<(u8, u8, u32)> {
-    if core.raw_read_8(PROFILE_RECORDS, -1) != RECORD_MAGIC {
-        return None;
-    }
-    let at = record_slot(k);
-    let v = core.raw_read_8(at, -1) as u32 | (core.raw_read_8(at + 1, -1) as u32) << 8 | (core.raw_read_8(at + 2, -1) as u32) << 16;
-    let rank = (v & 7) as u8;
-    (rank != 0).then(|| (rank, ((v >> 3) & 0x7F) as u8, (v >> 10) * record_unit(k)))
+    let (co, units) = read_records(core).basic[k as usize]?;
+    let left = units * record_unit(k);
+    Some((maps::rank(k, left), co, left))
 }
 
-fn save_record(core: &mut Core, k: Kind, rank: u8, left: u32) {
-    if let Some((_, _, best)) = record(core, k) {
-        if best / record_unit(k) >= left / record_unit(k) {
+/// The most maps a Champion course has been taken through (None: not yet).
+pub fn champion_record(core: &Core, k: Kind) -> Option<u32> {
+    let n = read_records(core).champion[k as usize];
+    (n != 0).then_some(n as u32)
+}
+
+/// A Champion course is open once its basic course has been cleared (Dual
+/// Strike: once it has, the shop sells the Champion course).
+pub fn champion_open(core: &Core, k: Kind) -> bool {
+    read_records(core).basic[k as usize].is_some()
+}
+
+fn save_record(core: &mut Core, k: Kind, left: u32) {
+    let mut r = read_records(core);
+    let units = left / record_unit(k);
+    if let Some((_, best)) = r.basic[k as usize] {
+        if best >= units {
             return;
         }
     }
-    if core.raw_read_8(PROFILE_RECORDS, -1) != RECORD_MAGIC {
-        core.raw_write_range(PROFILE_RECORDS, -1, &[RECORD_MAGIC, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    // A CO of 0 would read as no record.
+    let co = (core.raw_read_8(CO, -1) & 0x7F).max(1);
+    r.basic[k as usize] = Some((co, units));
+    write_records(core, &r);
+}
+
+fn save_champion(core: &mut Core, k: Kind, maps_cleared: u32) {
+    let n = maps_cleared.min(255) as u8;
+    let mut r = read_records(core);
+    if n == 0 || n <= r.champion[k as usize] {
+        return;
     }
-    let co = core.raw_read_8(CO, -1) as u32 & 0x7F;
-    let v = rank as u32 & 7 | co << 3 | ((left / record_unit(k)).min(0x3FFF)) << 10;
-    let at = record_slot(k);
-    core.raw_write_range(at, -1, &[v as u8, (v >> 8) as u8, (v >> 16) as u8]);
+    r.champion[k as usize] = n;
+    write_records(core, &r);
 }
 
 // --- The budget in battle ------------------------------------------------------------
@@ -807,7 +999,9 @@ fn hud(core: &mut Core, at: u32, end: u32) -> u32 {
         Kind::Turn => format!("{}", now),
         Kind::Time => clock(now),
     };
-    let lines = [format!("Map {}/{}", stage, MAPS_PER_RUN), format!("{} {}", label, value)];
+    // A Champion course has no last map: the count only.
+    let first = if champion_now(core) { format!("Map {}", stage) } else { format!("Map {}/{}", stage, MAPS_PER_RUN) };
+    let lines = [first, format!("{} {}", label, value)];
     crate::survival_ui::hud(core, at, end, &lines)
 }
 
@@ -839,6 +1033,82 @@ mod tests {
         assert!((MAPS_FROM as u32 + 33) <= TABLE_IDS);
         assert!(MAP_DATA + MAP_DATA_SIZE * 33 <= STRINGS);
         assert!(text_slot(T_MAPS + 33) < 0x0862_E000);
+        assert!(text_slot(T_CHAMPIONS + 3) < 0x0862_E000);
+        assert!(T_CHAMPIONS >= T_MAPS + 33);
+        assert!(STRINGS + STRING_SIZE * (T_CHAMPIONS as u32 + 3) <= 0x08E4_0000, "strings end before the wheel's data");
+        // The Champion entries sit after the 33 maps, below the campaigns'.
+        assert_eq!(CHAMPION_IDS[0], MAPS_FROM + 33);
+        assert_eq!(CHAMPION_IDS[2] + 1, crate::campaign_model::MAP_ID);
+        assert!(CHAMPION > STATE + 0x20 && CHAMPION < STATE + 0x22);
         assert_eq!(clock(90000), "25:00");
+    }
+
+    #[test]
+    fn entries_are_one_course_each() {
+        for (i, &id) in ENTRY_IDS.iter().enumerate() {
+            assert_eq!(entry_kind(id), Some((Kind::ALL[i], false)));
+            assert_eq!(entry_kind(CHAMPION_IDS[i]), Some((Kind::ALL[i], true)));
+        }
+        assert_eq!(entry_kind(MAPS_FROM), None);
+        assert_eq!(entry_kind(0xF0), None);
+    }
+
+    fn sample() -> Records {
+        let mut r = Records::default();
+        r.basic[Kind::Time as usize] = Some((73, 1499));
+        r.basic[Kind::Money as usize] = Some((1, 4999));
+        r.basic[Kind::Turn as usize] = Some((127, 99));
+        r.champion = [255, 1, 22];
+        r
+    }
+
+    #[test]
+    fn records_round_trip() {
+        let r = sample();
+        let b = r.encode();
+        assert_eq!(b[0], MAGIC_V2);
+        assert_eq!(Records::decode(&b), r);
+        // Nothing, and an empty profile.
+        assert_eq!(Records::decode(&Records::default().encode()), Records::default());
+        assert_eq!(Records::decode(&[0; PROFILE_RECORDS_LEN]), Records::default());
+        // Too large a value is kept to its field, no field spills into another.
+        let mut big = Records::default();
+        big.basic[Kind::Turn as usize] = Some((5, 100_000));
+        big.champion[0] = 9;
+        let d = Records::decode(&big.encode());
+        assert_eq!(d.basic[Kind::Turn as usize], Some((5, 127)));
+        assert_eq!(d.champion, [9, 0, 0]);
+        assert_eq!(d.basic[Kind::Time as usize], None);
+    }
+
+    #[test]
+    fn the_first_layout_is_still_read() {
+        // 0.5.0..0.5.2: [0xD5, 3 bytes per kind: rank 3 bits, CO 7, left 14].
+        let mut b = [0u8; PROFILE_RECORDS_LEN];
+        b[0] = MAGIC_V1;
+        let v = |rank: u32, co: u32, left: u32| rank | co << 3 | left << 10;
+        let put = |b: &mut [u8], k: usize, v: u32| b[1 + 3 * k..4 + 3 * k].copy_from_slice(&v.to_le_bytes()[..3]);
+        put(&mut b, Kind::Time as usize, v(4, 73, 400));
+        put(&mut b, Kind::Money as usize, v(5, 9, 1234));
+        // Turn has no record (rank 0).
+        let r = Records::decode(&b);
+        assert_eq!(r.basic[Kind::Time as usize], Some((73, 400)));
+        assert_eq!(r.basic[Kind::Money as usize], Some((9, 1234)));
+        assert_eq!(r.basic[Kind::Turn as usize], None);
+        assert_eq!(r.champion, [0; 3]);
+        // Rewritten, it reads the same.
+        assert_eq!(Records::decode(&r.encode()), r);
+    }
+
+    #[test]
+    fn the_layout_uses_its_bytes_and_no_more() {
+        // 8 magic bits + 76: the eleven free bytes of the profile's options.
+        let widths: usize = (0..3).map(|k| 7 + LEFT_BITS[k]).sum::<usize>() + 3 * 8;
+        assert_eq!(widths, 76);
+        assert!(8 + widths <= 8 * PROFILE_RECORDS_LEN);
+        // Each limit is the budget's own: 25 minutes, 500,000 G, 99 days.
+        assert!(90000 / 60 < 1 << LEFT_BITS[Kind::Time as usize]);
+        assert!(500000 / 100 < 1 << LEFT_BITS[Kind::Money as usize]);
+        assert!(99 < 1 << LEFT_BITS[Kind::Turn as usize]);
     }
 }

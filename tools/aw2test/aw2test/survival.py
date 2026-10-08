@@ -24,13 +24,19 @@ LEFT, BUDGET, POINTS, FRAMES = STATE + 4, STATE + 8, STATE + 0x0C, STATE + 0x10
 CO, MENU_PICKED, BONUS, RANK = STATE + 0x18, STATE + 0x19, STATE + 0x1C, STATE + 0x20
 CHOOSING, BETWEEN, PLAYING, CLEARED, LOST = range(5)
 PROFILE_RECORDS = 0x0200C435
-RECORD_MAGIC = 0xD5
+PROFILE_RECORDS_LEN = 11
+RECORD_MAGIC_V1 = 0xD5      # 0.5.0..0.5.2: three bytes a kind
+RECORD_MAGIC = 0xD6         # with the Champion courses (survival.rs's Records)
 
 # Kinds in Dual Strike's order (its kind byte), and their list order.
 TIME, MONEY, TURN = 0, 1, 2
 LIST_ORDER = (MONEY, TURN, TIME)
 NAMES = {TIME: "Time Survival", MONEY: "Money Survival", TURN: "Turn Survival"}
 ENTRY_IDS = {MONEY: 0xC9, TURN: 0xCA, TIME: 0xCB}
+CHAMPION_IDS = {MONEY: 0xED, TURN: 0xEE, TIME: 0xEF}
+CHAMPION_NAMES = {TIME: "Time Champion", MONEY: "Money Champion", TURN: "Turn Champion"}
+# Dual Strike's Champion budgets (arm9 0x02168D04, kinds 3..5): frames, G, days.
+CHAMPION_BUDGETS = {TIME: 108000, MONEY: 600000, TURN: 120}
 MAPS_FROM = 0xCC
 
 SELECT_MODE_CURSOR = 0x0300591C
@@ -90,8 +96,8 @@ class Survival:
     def run(self, kind):
         return [self.u16(LISTS[kind] + 2 * k) for k in range(11)]
 
-    def budget(self, kind):
-        return struct.unpack_from("<I", self.arm9, BUDGETS - 0x02000000 + 4 * kind)[0]
+    def budget(self, kind, champion=False):
+        return struct.unpack_from("<I", self.arm9, BUDGETS - 0x02000000 + 4 * (kind + (3 if champion else 0)))[0]
 
     def all_ids(self):
         return sorted({i for k in (TIME, MONEY, TURN) for i in self.run(k)})
@@ -127,11 +133,12 @@ class Survival:
         o = p - DS_OVERLAY0_BASE
         return self.ov0[o:self.ov0.index(b"\0", o)].decode()
 
-    def map_id(self, kind, stage):
-        """tangoAW2's map id of a run's map `stage`."""
+    def map_id(self, kind, stage, champion=False):
+        """tangoAW2's map id of a run's map `stage` (a Champion course's list
+        starts over after the eleventh)."""
         if stage == 0:
-            return ENTRY_IDS[kind]
-        return MAPS_FROM + self.all_ids().index(self.run(kind)[stage])
+            return (CHAMPION_IDS if champion else ENTRY_IDS)[kind]
+        return MAPS_FROM + self.all_ids().index(self.run(kind)[stage % 11 if champion else stage])
 
 
 def running(e, script):
@@ -144,7 +151,8 @@ def state(e):
     b = e.read(STATE, 0x24)
     u = lambda o: struct.unpack_from("<I", b, o)[0]
     return {"on": b[0], "kind": b[1], "stage": b[2], "phase": b[3], "left": u(4), "budget": u(8),
-            "points": u(0x0C), "time": u(0x10), "co": b[0x18], "bonus": u(0x1C), "rank": b[0x20]}
+            "points": u(0x0C), "time": u(0x10), "co": b[0x18], "bonus": u(0x1C), "rank": b[0x20],
+            "champion": e.u8(STATE + 0x21)}
 
 
 def to_select_mode(e):
@@ -164,9 +172,13 @@ def wheel_to(e, position, tries=10):
     return e.u8(SELECT_MODE_CURSOR) == position
 
 
-def open_survival(e):
-    """Select Mode -> Survival: its SELECT MAP. True once the list is up."""
+def open_survival(e, before=None):
+    """Select Mode -> Survival: its SELECT MAP. True once the list is up.
+    `before(e)`: run on Select Mode, before Survival is picked (a profile as
+    a past session left it: the game has loaded it by then)."""
     to_select_mode(e)
+    if before:
+        before(e)
     if not wheel_to(e, SURVIVAL_POSITION):
         return False
     e.press("A", 8)
@@ -223,18 +235,96 @@ def to_select_map(e, max_steps=80):
     return False
 
 
-def records(e):
-    """The three kinds' records in the profile: {kind: (rank, co, left)}."""
-    b = e.read(PROFILE_RECORDS, 10)
-    if b[0] != RECORD_MAGIC:
-        return {}
-    unit = {TIME: 60, MONEY: 100, TURN: 1}
-    out = {}
+UNIT = {TIME: 60, MONEY: 100, TURN: 1}
+LEFT_BITS = {TIME: 11, MONEY: 13, TURN: 7}
+
+
+def decode_records(b):
+    """The profile's eleven record bytes (survival.rs's Records) as
+    ({kind: (rank, co, left)}, {kind: maps cleared on its Champion course}).
+    Both layouts: 0xD5 (three bytes a kind, rank stored) and 0xD6 (bit
+    fields, rank worked out)."""
+    basic, champion = {}, {}
+    if b[0] == RECORD_MAGIC_V1:
+        for k in (TIME, MONEY, TURN):
+            v = b[1 + 3 * k] | b[2 + 3 * k] << 8 | b[3 + 3 * k] << 16
+            if v & 7:
+                basic[k] = (v & 7, (v >> 3) & 0x7F, (v >> 10) * UNIT[k])
+    elif b[0] == RECORD_MAGIC:
+        bits = int.from_bytes(bytes(b[1:]), "little")
+        at = 0
+
+        def take(n):
+            nonlocal at, bits
+            v = (bits >> at) & ((1 << n) - 1)
+            at += n
+            return v
+        for k in (TIME, MONEY, TURN):
+            co, units = take(7), take(LEFT_BITS[k])
+            if co:
+                basic[k] = (rank(k, units * UNIT[k]), co, units * UNIT[k])
+        for k in (TIME, MONEY, TURN):
+            n = take(8)
+            if n:
+                champion[k] = n
+    return basic, champion
+
+
+def encode_records(basic, champion=None, v1=False):
+    """The eleven bytes for {kind: (co, left)} and {kind: maps}. `v1` writes the
+    first layout (what 0.5.0..0.5.2 wrote)."""
+    champion = champion or {}
+    out = bytearray(PROFILE_RECORDS_LEN)
+    if v1:
+        out[0] = RECORD_MAGIC_V1
+        for k, (co, left) in basic.items():
+            v = rank(k, left) | co << 3 | (left // UNIT[k]) << 10
+            out[1 + 3 * k:4 + 3 * k] = v.to_bytes(4, "little")[:3]
+        return bytes(out)
+    out[0] = RECORD_MAGIC
+    bits, at = 0, 0
     for k in (TIME, MONEY, TURN):
-        v = b[1 + 3 * k] | b[2 + 3 * k] << 8 | b[3 + 3 * k] << 16
-        if v & 7:
-            out[k] = (v & 7, (v >> 3) & 0x7F, (v >> 10) * unit[k])
-    return out
+        co, left = basic.get(k, (0, 0))
+        bits |= co << at
+        at += 7
+        bits |= min(left // UNIT[k], (1 << LEFT_BITS[k]) - 1) << at
+        at += LEFT_BITS[k]
+    for k in (TIME, MONEY, TURN):
+        bits |= champion.get(k, 0) << at
+        at += 8
+    out[1:] = bits.to_bytes(PROFILE_RECORDS_LEN - 1, "little")
+    return bytes(out)
+
+
+def rank(kind, left):
+    """The rank of a basic clear (maps.rs `rank`): 5 S, 4 A, 3 B, 2 C."""
+    t = {TIME: (32400, 21600, 10800), MONEY: (50000, 25000, 10000), TURN: (25, 15, 5)}[kind]
+    return 5 if left >= t[0] else 4 if left >= t[1] else 3 if left >= t[2] else 2
+
+
+def champion_rank(n):
+    """The rank of a Champion run by its maps cleared (`sub_020EAD98`)."""
+    return 5 if n >= 20 else 4 if n >= 15 else 3 if n >= 10 else 2
+
+
+def champion_bonus(n):
+    """A Champion run's bonus (`sub_020EB024`): 5 + 10 + .. + 5n, at most 9999."""
+    return min(5 * n * (n + 1) // 2, 9999)
+
+
+def records(e):
+    """The three kinds' basic records in the profile: {kind: (rank, co, left)}."""
+    return decode_records(e.read(PROFILE_RECORDS, PROFILE_RECORDS_LEN))[0]
+
+
+def champion_records(e):
+    """Each Champion course's best: {kind: maps cleared}."""
+    return decode_records(e.read(PROFILE_RECORDS, PROFILE_RECORDS_LEN))[1]
+
+
+def set_records(e, basic, champion=None, v1=False):
+    """Write the records into the console's profile (as a past session left them)."""
+    e.write(PROFILE_RECORDS, encode_records(basic, champion, v1))
 
 
 # --- SELECT MAP in Dual Strike's look (survival_ui.rs) ---------------------------------
@@ -394,9 +484,10 @@ def blue_pixels(shot, rows=range(0, 32)):
     return {(x, y) for y in rows for x in range(240) if shot[y][x][2] - shot[y][x][0] >= 60}
 
 
-def banner_dark(ds=None):
+def banner_dark(ds=None, champion=False):
     """The 'BASIC COURSE' banner's dark pixels (128x16) from res_survival's
-    first stream and its palette: pixels whose colour is dark."""
+    first stream and its palette: pixels whose colour is dark ('CHAMPION
+    COURSE': the next four blocks)."""
     ds = ds or DualStrike(paths.ds_rom())
     d = ds.file("ohashi/res_survival")
     raw = ds.files["ohashi/res_survival"]
@@ -409,7 +500,7 @@ def banner_dark(ds=None):
         for t in range(8):
             for y in range(8):
                 for x in range(8):
-                    v = (d[(blk * 8 + t) * 32 + 4 * y + x // 2] >> (4 * (x & 1))) & 15
+                    v = (d[((blk + (4 if champion else 0)) * 8 + t) * 32 + 4 * y + x // 2] >> (4 * (x & 1))) & 15
                     if v and sum(pal[v]) < 200:
                         out.add((32 * blk + 8 * (t % 4) + x, 8 * (t // 4) + y))
     return out
