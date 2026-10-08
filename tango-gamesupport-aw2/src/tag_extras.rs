@@ -687,7 +687,8 @@ pub fn partners_of(core: &Core, co: u8) -> Vec<(u8, u8)> {
     if co == crate::sturm_pairs::STURM {
         return crate::sturm_pairs::partners();
     }
-    let mut out = ds_partners(co);
+    // (Clone Andy has none of Andy's special pairs, crate::sturm_pairs)
+    let mut out = if co == crate::co_new::CLONE_ANDY { Vec::new() } else { ds_partners(co) };
     if let Some(p) = crate::sturm_pairs::special(co, crate::sturm_pairs::STURM) {
         out.push((crate::sturm_pairs::STURM, p.stars));
     }
@@ -861,8 +862,8 @@ mod pack_tests {
         let widths = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").unwrap()).unwrap()[(crate::co_new::FONT_WIDTHS - 0x0800_0000) as usize..][..256].to_vec();
         let px = |l: &str| l.bytes().map(|c| widths[c as usize] as u32 + 1).sum::<u32>().saturating_sub(1);
         let mut n = 0;
-        for a in 0..crate::co_new::FIRST + 9 {
-            for b in 0..crate::co_new::FIRST + 9 {
+        for a in 0..crate::co_new::FIRST + 10 {
+            for b in 0..crate::co_new::FIRST + 10 {
                 let Some((_, lines)) = pair_texts(a, b) else { continue };
                 let name = crate::co_new::ds_name(b).unwrap_or_else(|| b"Sturm".to_vec());
                 for first in 0..2 {

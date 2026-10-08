@@ -236,7 +236,7 @@ pub fn predicate(core: &mut Core, f: u32) -> bool {
         0x0235_10FC => inventions(core, 4).iter().filter(|(hp, _)| *hp >= 99).count() != 4,
         // (Means to an End: once per crystal shattered, its dialogue each
         // time, as Dual Strike's second front)
-        0x0235_1C58 if crate::ds_campaign::mission(core) == MEANS_TO_AN_END as u8 => {
+        0x0235_1C58 if crate::ds_campaign::ds_mission(core) == MEANS_TO_AN_END as u8 => {
             let gone = (0..3).filter(|&k| !crystal_alive(core, k)).count() as u8;
             let told = core.raw_read_8(MTE_TOLD, -1);
             if gone > told {
@@ -381,7 +381,7 @@ fn crystal_alive_here(core: &Core, k: usize) -> bool {
 /// Every frame of a two-front battle (crate::two_front): Means to an End's
 /// crystals as they stand on its second front, while it is on the screen.
 pub fn mte_crystals_tick(core: &mut Core) {
-    if crate::ds_campaign::mission(core) != MEANS_TO_AN_END as u8 || !crate::two_front::second_live(core) || crate::two_front::swapping(core) {
+    if crate::ds_campaign::ds_mission(core) != MEANS_TO_AN_END as u8 || !crate::two_front::second_live(core) || crate::two_front::swapping(core) {
         return;
     }
     let down = (0..3).filter(|&k| !crystal_alive_here(core, k)).fold(0u8, |m, k| m | 1 << k);
@@ -421,7 +421,7 @@ fn fortress(core: &Core) -> Vec<u32> {
 /// lands (its events see it: "Hey! What gives? We can't seem to damage
 /// it.") and is undone once the action and its events are over.
 pub fn omens_barrier_tick(core: &mut Core) {
-    if crate::ds_campaign::mission(core) != OMENS_AND_SIGNS || crate::two_front::live(core) != Some(0) || crate::two_front::swapping(core) {
+    if crate::ds_campaign::ds_mission(core) != OMENS_AND_SIGNS || crate::two_front::live(core) != Some(0) || crate::two_front::swapping(core) {
         return;
     }
     let up = !crate::two_front::second_front_result(core).is_some_and(|r| r.0);
@@ -442,7 +442,7 @@ pub fn omens_barrier_tick(core: &mut Core) {
 
 /// Means to an End in a session.
 fn means_to_an_end(core: &Core) -> bool {
-    crate::ds_campaign::active(core) && crate::ds_campaign::mission(core) == MEANS_TO_AN_END as u8 && crate::ds_campaign::in_battle(core)
+    crate::ds_campaign::active(core) && crate::ds_campaign::ds_mission(core) == MEANS_TO_AN_END as u8 && crate::ds_campaign::in_battle(core)
 }
 
 /// Every frame in Means to an End: the Grand Bolt (crate::grand_bolt: its

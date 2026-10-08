@@ -53,6 +53,11 @@ const CONDITION_IDS: u32 = BASE + 0xB230;
 const ZEROS: u32 = BASE + 0xB400;
 const AW2_STATE_BACKUP: u32 = BASE + 0xB800;
 const BACKUP_MARK: u32 = BASE + 0xB900;
+/// Whose mission table is in place: the source's index + 1.
+const TABLE_OWNER: u32 = BASE + 0xB904;
+/// Omega Land's art is in place (a custom campaign's session writes only
+/// the tables).
+const ART_MARK: u32 = BASE + 0xB908;
 #[cfg(test)]
 const END: u32 = BASE + 0x10000;
 
@@ -105,15 +110,21 @@ const CURSOR_X_LIMIT: u32 = 0x0807_6CD4;
 const CAMERA_X_TEST: (u32, u32, u32) = (0x0807_6D02, 0x0807_6D06, 0x0807_6D1A);
 const CURSOR_Y_TEST: (u32, u32, u32) = (0x0807_6D8E, 0x0807_6D92, 0x0807_6DF2);
 const CAMERA_Y_TEST: (u32, u32, u32) = (0x0807_6DBA, 0x0807_6DBE, 0x0807_6DD2);
+/// The session is on Dual Strike's Omega Land (the art and the camera
+/// limits below are its; AW2's own map keeps AW2's).
+pub fn omega(core: &Core) -> bool {
+    crate::ds_campaign::active(core) && crate::ds_campaign::art(core) == crate::campaign_model::WorldArt::OmegaLand
+}
+
 fn cursor_x_limit(core: &mut Core) {
-    if crate::ds_campaign::active(core) {
+    if omega(core) {
         core.gba_mut().cpu_mut().set_gpr(0, MAP_WIDTH - 17);
     }
 }
 /// `cmp r1, #limit` then a branch when r1 is past it (`bgt` signed, `bhi`
 /// unsigned): with the DS map's limit instead.
 fn limit_test(core: &mut Core, (_, within, past): (u32, u32, u32), limit: i32, unsigned: bool) {
-    if !crate::ds_campaign::active(core) {
+    if !omega(core) {
         return;
     }
     let cpu = core.gba_mut().cpu_mut();
@@ -123,7 +134,7 @@ fn limit_test(core: &mut Core, (_, within, past): (u32, u32, u32), limit: i32, u
 }
 
 fn camera_clamp(core: &mut Core, past: u32, reg: usize, max: i32) {
-    if !crate::ds_campaign::active(core) {
+    if !omega(core) {
         return;
     }
     let cpu = core.gba_mut().cpu_mut();
@@ -528,26 +539,37 @@ fn installed(core: &Core) -> bool {
 }
 
 /// Writes the world map's art and tables into the ROM image (once).
-pub fn install(core: &mut Core, cos_pick: &[bool], co_setup: u32, info_texts: &[u16], after_win: &[(usize, u32)]) -> bool {
-    if installed(core) {
+pub fn install(core: &mut Core, source: usize, model: &crate::campaign_model::Model, cos_pick: &[bool], co_setup: u32, info_texts: &[u16]) -> bool {
+    let after_win = &model.built.story.after_win;
+    let omega_art = model.source.art == crate::campaign_model::WorldArt::OmegaLand;
+    if installed(core) && core.raw_read_8(TABLE_OWNER, -1) == source as u8 + 1 {
         return true;
     }
-    let Some(w) = world_map() else { return false };
-    let tiles = crate::lz77::compress(&w.tiles);
-    let map = crate::lz77::compress(&w.tilemap);
-    assert!(TILES + tiles.len() as u32 <= TILEMAP && TILEMAP + map.len() as u32 <= PALETTE);
-    core.raw_write_range(TILES, -1, &tiles);
-    core.raw_write_range(TILEMAP, -1, &map);
-    core.raw_write_range(PALETTE, -1, &w.palette);
+    if omega_art && core.raw_read_32(ART_MARK, -1) != MAGIC {
+        let Some(w) = world_map() else { return false };
+        let tiles = crate::lz77::compress(&w.tiles);
+        let map = crate::lz77::compress(&w.tilemap);
+        assert!(TILES + tiles.len() as u32 <= TILEMAP && TILEMAP + map.len() as u32 <= PALETTE);
+        core.raw_write_range(TILES, -1, &tiles);
+        core.raw_write_range(TILEMAP, -1, &map);
+        core.raw_write_range(PALETTE, -1, &w.palette);
+        core.raw_write_32(ART_MARK, -1, MAGIC);
+    }
     // The missions.
+    let points: Vec<(i16, i16, u16, u8, u8)> = if omega_art {
+        let Some(w) = world_map() else { return false };
+        w.points.iter().enumerate().map(|(i, &(x, y, f))| (x, y, f, stars(i).0, stars(i).1)).collect()
+    } else {
+        let Some(c) = model.custom.as_ref() else { return false };
+        c.points.iter().map(|p| (p.x, p.y, if p.style & 8 != 0 { 2 } else if p.style & 4 != 0 { 1 } else { 0 }, p.stars, p.stars)).collect()
+    };
     let mut table = vec![0u8; (MISSION_RECORD * AW2_MISSIONS) as usize];
-    for (i, &(x, y, flags)) in w.points.iter().enumerate() {
+    for (i, &(x, y, flags, normal, hard)) in points.iter().enumerate().take(AW2_MISSIONS as usize) {
         let r = &mut table[i * MISSION_RECORD as usize..(i + 1) * MISSION_RECORD as usize];
         r[0..2].copy_from_slice(&(crate::ds_campaign_data::MAP_ID as u16).to_le_bytes());
         // Marker style: Dual Strike's lab missions and its last stand out.
         r[2] = if flags & 2 != 0 { 8 } else if flags & 1 != 0 { 4 } else { 0 };
         // The stars beside LEVEL (Normal, Hard): [`stars`].
-        let (normal, hard) = stars(i);
         r[3] = normal;
         r[4] = hard;
         r[6..8].copy_from_slice(&x.to_le_bytes());
@@ -576,6 +598,7 @@ pub fn install(core: &mut Core, cos_pick: &[bool], co_setup: u32, info_texts: &[
     core.raw_write_range(CONDITION, -1, &[0; 16]);
     core.raw_write_range(ZEROS, -1, &[0; 0x400]);
     core.raw_write_32(BASE, -1, MAGIC);
+    core.raw_write_8(TABLE_OWNER, -1, source as u8 + 1);
     true
 }
 
@@ -607,14 +630,17 @@ pub fn tick(core: &mut Core, session: bool, aw2_map_script: u32, ds_map_script: 
         return;
     }
     let pick = |ds: u32, aw2: u32| if session { ds } else { aw2 };
+    // (the art: Omega Land's in a DS Campaign session, AW2's otherwise)
+    let omega_art = session && crate::ds_campaign::art(core) == crate::campaign_model::WorldArt::OmegaLand;
+    let art = |ds: u32, aw2: u32| if omega_art { ds } else { aw2 };
     for at in TILES_POOLS {
-        set32(core, at, pick(TILES, AW2_TILES));
+        set32(core, at, art(TILES, AW2_TILES));
     }
     for at in TILEMAP_POOLS {
-        set32(core, at, pick(TILEMAP, AW2_TILEMAP));
+        set32(core, at, art(TILEMAP, AW2_TILEMAP));
     }
     for at in PALETTE_POOLS {
-        set32(core, at, pick(PALETTE, AW2_PALETTE));
+        set32(core, at, art(PALETTE, AW2_PALETTE));
     }
     for at in MISSION_POOLS {
         set32(core, at, pick(MISSION_TABLE, AW2_MISSION_TABLE));
@@ -635,7 +661,7 @@ pub fn tick(core: &mut Core, session: bool, aw2_map_script: u32, ds_map_script: 
     }
     // AW2's sea and grid layer (BG1, blended over the map) is AW2's art:
     // on the DS map it is left off (the map layer, BG3, is its own sea).
-    let on_map = session && map_screen(core);
+    let on_map = session && omega(core) && map_screen(core);
     let d = core.raw_read_16(DISP_CT, -1);
     if on_map {
         if d & BG1_ON != 0 {
@@ -678,9 +704,9 @@ pub fn flush_sprites(core: &mut Core, mut at: u32, end: u32) -> u32 {
     if !installed(core) || !crate::ds_campaign::active(core) || !map_screen(core) {
         return at;
     }
-    let Some(w) = world_map() else { return at };
+    let points = points(core);
     let (cam_x, cam_y) = (core.raw_read_16(S_CAMERA_X, -1) as i16 as i32, core.raw_read_16(S_CAMERA_Y, -1) as i16 as i32);
-    for (m, &(px, py, _)) in w.points.iter().enumerate() {
+    for (m, &(px, py)) in points.iter().enumerate() {
         if core.raw_read_8(S_FLAGS + m as u32, -1) & CLEARED == 0 || at + 8 > end {
             continue;
         }
@@ -760,6 +786,12 @@ pub fn show_picture(core: &mut Core, p: &crate::ds_story_art::Picture) {
 /// The map back on its layer after a picture (tiles, tilemap, palettes,
 /// the camera's scroll, the sprites).
 pub fn restore_map(core: &mut Core) {
+    if !omega(core) {
+        // AW2's own map: its screen is rebuilt by the game (the picture
+        // was drawn over BG3's tiles; the map's own come back with the
+        // screen's setup below).
+        return restore_aw2_map(core);
+    }
     let Some(w) = world_map() else { return };
     core.raw_write_range(BG3_CHARS, -1, &w.tiles);
     core.raw_write_range(BG3_MAP, -1, &w.tilemap);
@@ -792,7 +824,6 @@ fn restore_aw2_state(core: &mut Core) {
 /// The DS session's map state: `available` missions shown (with markers),
 /// `won` ones cleared, the cursor on `focus`.
 pub fn write_state(core: &mut Core, available: &[u8], won: &[u8], focus: u8) {
-    let Some(w) = world_map() else { return };
     core.raw_write_range(STATE, -1, &[0u8; STATE_SIZE as usize]);
     for &m in won {
         let v = core.raw_read_8(S_FLAGS + m as u32, -1);
@@ -804,7 +835,6 @@ pub fn write_state(core: &mut Core, available: &[u8], won: &[u8], focus: u8) {
     }
     // The marker list starts empty (the map rebuilds it from the flags).
     core.raw_write_16(S_MARKERS, -1, 0xFFFF);
-    let _ = w;
     point_at(core, focus);
     core.raw_write_32(S_MISSION, -1, focus as u32);
     core.raw_write_8(S_SNAPPED, -1, 0);
@@ -812,14 +842,34 @@ pub fn write_state(core: &mut Core, available: &[u8], won: &[u8], focus: u8) {
 
 /// The camera and cursor on mission `m`'s point.
 pub fn point_at(core: &mut Core, m: u8) {
-    let Some(w) = world_map() else { return };
-    let (x, y, _) = w.points.get(m as usize).copied().unwrap_or((240, 120, 0));
-    let cam_x = (x as i32 - 120).clamp(0, MAP_WIDTH - 240);
-    let cam_y = (y as i32 - 80).clamp(0, MAP_HEIGHT - 160);
+    let (x, y) = points(core).get(m as usize).copied().unwrap_or((240, 120));
+    // (AW2's picture is 432 x 256: its camera stops at 192 x 96)
+    let (max_x, max_y) = if omega(core) { (MAP_WIDTH - 240, MAP_HEIGHT - 160) } else { (192, 96) };
+    let cam_x = (x as i32 - 120).clamp(0, max_x);
+    let cam_y = (y as i32 - 80).clamp(0, max_y);
     core.raw_write_16(S_CAMERA_X, -1, cam_x as u16);
     core.raw_write_16(S_CAMERA_Y, -1, cam_y as u16);
     core.raw_write_16(S_CURSOR_X, -1, (x as i32 - cam_x) as u16);
     core.raw_write_16(S_CURSOR_Y, -1, (y as i32 - cam_y) as u16);
+}
+
+/// The mission points of the campaign (map pixels), Omega Land's or the
+/// custom campaign's on AW2's map.
+fn points(core: &Core) -> Vec<(i16, i16)> {
+    match crate::ds_campaign::campaign(core) {
+        Some(c) => match &c.model.custom {
+            Some(custom) => custom.points.iter().map(|p| (p.x, p.y)).collect(),
+            None => world_map().map(|w| w.points.iter().map(|p| (p.0, p.1)).collect()).unwrap_or_default(),
+        },
+        None => Vec::new(),
+    }
+}
+
+/// A picture on AW2's own map layer is taken off by the game's redraw; a
+/// narration over AW2's map restores nothing of ours.
+fn restore_aw2_map(core: &mut Core) {
+    let d = core.raw_read_16(DISP_CT, -1);
+    core.raw_write_16(DISP_CT, -1, d | OBJ_ON);
 }
 
 /// Before the map returns after mission `mission`: the missions to reveal

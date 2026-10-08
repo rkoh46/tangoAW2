@@ -9,7 +9,7 @@ import os
 from aw2test import rom as romlib
 from aw2test.harness import test
 
-NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel"]
+NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
 SONG = 0x030005CA  # the song id the game last started (sub_0803B524)
 BGM = 0x03005AE0  # the CO themes' music player: song header, status
 CO_TABLE = 0x086A0000  # tangoAW2's CO table with the pack (co_roster.rs)
@@ -60,7 +60,7 @@ def new_cos_have_their_own_songs(ctx):
     e = g.e
     songs = [row_song(e, co) for co in NEW]
     ctx.log(f"songs: {dict(zip(NEW, songs))}")
-    ctx.eq(sorted(songs), list(range(FIRST_SONG, FIRST_SONG + 9)), "nine songs of their own, from 505")
+    ctx.eq(sorted(songs), list(range(FIRST_SONG, FIRST_SONG + 10)), "ten songs of their own, from 505 (Clone Andy plays Andy's Dual Strike theme)")
     for co, s in zip(NEW, songs):
         h = header_of(e, s)
         ctx.check(0x08800000 <= h < 0x0A000000, f"{co}: song {s} header {h:08x} after the cartridge")

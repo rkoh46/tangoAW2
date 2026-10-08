@@ -145,8 +145,15 @@ fn applied(core: &mut Core) {
 // --- A DS Campaign mission saved halfway ---------------------------------------
 
 /// The Flash slot (save tag) of a DS mission saved halfway (AW2: 0 profile,
-/// 2..4 suspends, 5..8 design maps; tangoAW2: 15 the DS Campaign's record).
+/// 2..4 suspends, 5..8 design maps; tangoAW2: 15 the DS Campaign's record,
+/// 14 its mission saved halfway). A custom campaign's is its source's
+/// `mid_slot` ([`crate::campaign_model::Source`]): the BH Campaign's, 12.
 pub const DS_SLOT: u8 = 14;
+
+/// The slot a session's mission is saved in.
+fn session_slot(core: &Core) -> u8 {
+    crate::campaign_model::SOURCES[crate::ds_campaign::source(core)].mid_slot
+}
 const CAMPAIGN_SLOT: u32 = 2;
 /// The session's state in the block's tail, after the "TAW2" part: +0
 /// [`DS_MARK`], +2 the mission, +3 version, +4 the countdown (u32), +8 the
@@ -189,6 +196,7 @@ fn save_write(core: &mut Core) {
         return;
     }
     core.raw_write_8(DS_SAVING, -1, 0);
+    let slot = session_slot(core);
     core.raw_write_8(CAMPAIGN_MARK, -1, saving & 0x7F);
     let mut b = vec![0u8; DS_LEN as usize];
     b[0..2].copy_from_slice(&DS_MARK.to_le_bytes());
@@ -199,7 +207,7 @@ fn save_write(core: &mut Core) {
     core.raw_read_range(crate::ds_campaign_rules::MTE_TOLD, -1, &mut b[24..24 + DS_MTE_LEN as usize]);
     b[24 + DS_MTE_LEN as usize..].copy_from_slice(&crate::onyx::saved(core));
     core.raw_write_range(DS_AT, -1, &b);
-    core.gba_mut().cpu_mut().set_gpr(0, DS_SLOT as i32);
+    core.gba_mut().cpu_mut().set_gpr(0, slot as i32);
     // A battle on two fronts (crate::two_front): the front not on the
     // screen and the battle's state follow the block (the slot takes more
     // than one sector: AW2's writer splits a record in 0xFAD-byte parts).
@@ -239,27 +247,27 @@ fn applied_ds(core: &mut Core) {
 
 /// The sector holding the DS mission saved halfway, if AW2's directory
 /// lists one.
-fn ds_sector(core: &Core) -> Option<u32> {
+fn mid_sector(core: &Core, slot: u8) -> Option<u32> {
     // (its first part: a two-front battle's takes two sectors; the sector's
     // +0x0C is part << 4 | parts - 1)
-    (0..16).find(|&i| core.raw_read_8(DIRECTORY + i, -1) == DS_SLOT && core.raw_read_8(FLASH + 0x1000 * i + 0x0C, -1) >> 4 == 0)
+    (0..16).find(|&i| core.raw_read_8(DIRECTORY + i, -1) == slot && core.raw_read_8(FLASH + 0x1000 * i + 0x0C, -1) >> 4 == 0)
 }
 
 /// The DS mission saved halfway (its index), read from Flash.
-pub fn ds_saved_mission(core: &Core) -> Option<u8> {
-    let at = FLASH + 0x1000 * ds_sector(core)? + 0x52 + (DS_AT - BLOCK);
+pub fn saved_mission(core: &Core, slot: u8) -> Option<u8> {
+    let at = FLASH + 0x1000 * mid_sector(core, slot)? + 0x52 + (DS_AT - BLOCK);
     (core.raw_read_16(at, -1) == DS_MARK).then(|| core.raw_read_8(at + 2, -1))
 }
 
 /// DS CAMPAIGN's Continue over a mission saved halfway (the session set
 /// up): AW2's own resume of [`DS_SLOT`], tail-called from the trapped
 /// Continue handler's first instruction (it returns to its caller).
-pub fn resume_ds(core: &mut Core) {
+pub fn resume_mid(core: &mut Core, slot: u8) {
     // A two-front battle saved on its second front (a player's turn there,
     // crate::two_front): that front's map header in place before AW2's
     // resume loads the map (its state comes back after the block,
     // [`applied_ds`]).
-    if let Some(i) = ds_sector(core) {
+    if let Some(i) = mid_sector(core, slot) {
         // (bytes: the mark is not word-aligned in Flash)
         let at = FLASH + 0x1000 * i + 0x52 + BLOCK_SIZE;
         let mut mark = [0u8; 4];
@@ -270,16 +278,16 @@ pub fn resume_ds(core: &mut Core) {
         }
     }
     let cpu = core.gba_mut().cpu_mut();
-    cpu.set_gpr(0, DS_SLOT as i32);
+    cpu.set_gpr(0, slot as i32);
     cpu.set_thumb_pc(RESUME);
 }
 
 /// The DS mission saved halfway is over (won or lost) or a new DS Campaign
 /// is started: its slot leaves AW2's directory as AW2's delete does it
 /// (`sub_0801ABF8`), to be written with the next save.
-pub fn drop_ds(core: &mut Core) {
+pub fn drop_mid(core: &mut Core, slot: u8) {
     for i in 0..16 {
-        if core.raw_read_8(DIRECTORY + i, -1) == DS_SLOT {
+        if core.raw_read_8(DIRECTORY + i, -1) == slot {
             core.raw_write_8(DIRECTORY + i, -1, 0xFF);
             core.raw_write_8(DIRECTORY + 0x10 + i, -1, 0xFF);
         }

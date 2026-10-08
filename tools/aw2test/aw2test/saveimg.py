@@ -14,8 +14,9 @@ new profile, which is serialized from RAM every time (sub_08016B2C).
 
 Tags: 0 profile (0x5CC bytes), 2 / 3 / 4 the Campaign / War Room / Versus
 suspend (0xE28), 5..7 design maps 1..3 (0x724), 8 the design map a
-suspended Versus game is played on (0x724), 15 tangoAW2's DS Campaign
-record (crate::ds_campaign::SAVE_SLOT).
+suspended Versus game is played on (0x724), tangoAW2's 12 BH Campaign mission
+saved halfway, 13 BH Campaign record, 14 DS mission saved halfway, 15 DS
+Campaign record and CO skill data (crate::ds_campaign::SAVE_SLOT, docs/AW2.md "Saves").
 """
 
 import struct
@@ -24,7 +25,8 @@ SECTOR = 0x1000
 MAGIC = 0x73726132
 
 TAG_NAMES = {0: "profile", 2: "campaign suspend", 3: "war room suspend", 4: "versus suspend",
-             5: "design 1", 6: "design 2", 7: "design 3", 8: "suspended design map", 15: "DS Campaign"}
+             5: "design 1", 6: "design 2", 7: "design 3", 8: "suspended design map", 12: "BH mission saved halfway", 13: "BH Campaign",
+             14: "DS mission saved halfway", 15: "DS Campaign"}
 
 # The profile (sub_08016B2C): where each part comes from.
 PROFILE_PARTS = (

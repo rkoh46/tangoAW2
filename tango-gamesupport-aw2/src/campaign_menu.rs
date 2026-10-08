@@ -124,6 +124,12 @@ pub fn entries(core: &Core) -> Vec<&'static str> {
     v
 }
 
+/// The source (an index of `SOURCES`) the chooser's entry `choice` is
+/// (entry 0 is AW2's own campaign).
+fn source_of(core: &Core, choice: usize) -> Option<usize> {
+    crate::campaign_model::SOURCES.iter().enumerate().filter(|(_, s)| (s.available)(core)).nth(choice.checked_sub(1)?).map(|(i, _)| i)
+}
+
 /// The chooser's first entry shown (EWRAM, crate::ds_campaign's block).
 const TOP: u32 = 0x0203_FD56;
 
@@ -191,6 +197,9 @@ fn tick_menu(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
             core.raw_write_8(TOP, -1, top as u8);
             core.raw_write_16(p + W_CURSOR, -1, ROW0 + row as u16);
             if pressed & KEY_A != 0 {
+                if let Some(s) = source_of(core, choice) {
+                    core.raw_write_8(crate::ds_campaign::SOURCE, -1, s as u8);
+                }
                 core.raw_write_8(LEVEL, -1, if choice == 0 { 1 } else { 2 });
                 let has = if choice == 0 { core.raw_read_8(0x0300_3F31, -1) != 0 } else { crate::ds_campaign::has_save(core) };
                 core.raw_write_16(p + W_CURSOR, -1, if has { ROW0 } else { ROW0 + 1 });
@@ -271,6 +280,7 @@ pub fn save_flag(core: &mut Core) {
 fn glyph(c: char) -> &'static [&'static str] {
     match c {
         'A' => &[".###.", "#####", "##.##", "##.##", "##.##", "#####", "#####", "##.##", "##.##", "##.##"],
+        'B' => &["####.", "#####", "##.##", "##.##", "####.", "#####", "##.##", "##.##", "#####", "####."],
         'W' => &["#...#", "#...#", "#...#", "#.#.#", "#.#.#", "#.#.#", "#####", "#####", "##.##", "#...#"],
         '2' => &[".###.", "#####", "##.##", "...##", "..###", ".###.", "###..", "##...", "#####", "#####"],
         'C' => &[".###.", "#####", "##.##", "##...", "##...", "##...", "##...", "##.##", "#####", ".###."],

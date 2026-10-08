@@ -301,6 +301,11 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     row[0x14] = 1;
     row[0x15] = r[0x25].min(4); // property and unit style
     row[0x16] = r[0x26].clamp(1, 5); // army colour
+    if co == crate::co_new::CLONE_ANDY {
+        // Black Hole's, not Andy's Orange Star.
+        row[0x15] = 4;
+        row[0x16] = 5;
+    }
     // The CPU's power settings: AW2's usual (a CO Power once the meter is
     // within 25% of it, 95% of the time), or none for a CO without one
     // (Von Bolt, as Sturm).
@@ -330,7 +335,13 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
             _ => text_id(co, T_SCOP_NAME) as u32,
         };
         row[at..at + 4].copy_from_slice(&name.to_le_bytes());
-        let power = crate::co_powers::power_assembly(co, mode).unwrap_or(DEFAULT_POWER);
+        // (Clone Andy's powers are Andy's: AW2's own Hyper Repair and Hyper
+        // Upgrade, the row Dual Strike's record names for them)
+        let power = if co == crate::co_new::CLONE_ANDY {
+            u32::from_le_bytes(andy[at + 4..at + 8].try_into().unwrap())
+        } else {
+            crate::co_powers::power_assembly(co, mode).unwrap_or(DEFAULT_POWER)
+        };
         row[at + 4..at + 8].copy_from_slice(&power.to_le_bytes());
         let mut abilities = 0u32;
         for (byte, bit, aw2) in SKILLS {

@@ -24,7 +24,7 @@ use crate::ds_weather::is_on;
 
 /// (Dual Strike id, the AW2 CO whose presentation, music, CPU profile and
 /// place in the Teams list it takes after).
-pub const NEW: [(u8, u8); 9] = [
+pub const NEW: [(u8, u8); 10] = [
     (12, 11), // Jugger, after Flak
     (14, 13), // Koal, after Adder
     (25, 12), // Kindle, after Lash
@@ -34,8 +34,24 @@ pub const NEW: [(u8, u8); 9] = [
     (22, 16), // Sasha, after Colin
     (20, 15), // Jake, after Hachi
     (21, 15), // Rachel, after Hachi (after Jake)
+    // Clone Andy: Dual Strike has no CO record of his own. Its clones (Olaf,
+    // Drake, Kanbei and Andy's) are the original's CO id with bit 7 set in
+    // the mission record (Surrounded!: "(25, 0x82)", Kindle with Andy's
+    // clone as her partner), drawn as the original; they play with the
+    // original's data. So he takes Dual Strike's Andy (2) for everything
+    // (art, powers, stats, quotes, tag compatibility) and Adder's place
+    // among Black Hole's COs (music, CPU profile, Teams list). His name and
+    // bio are tangoAW2's own ([`CLONE_ANDY_BIO`]).
+    (2, 13),
 ];
 pub const FIRST: u8 = 72;
+/// Clone Andy: tangoAW2's tenth new CO (see `docs/AW2.md`, "Clone Andy").
+pub const CLONE_ANDY: u8 = FIRST + 9;
+/// His name, tangoAW2's own (Dual Strike writes the clone as "Andy").
+pub const CLONE_ANDY_NAME: &[u8] = b"Clone Andy";
+/// His CO page's bio, **tangoAW2's own**, in AW2's terse voice (Dual Strike
+/// has none for the clone): wrapped to the page like Dual Strike's.
+pub const CLONE_ANDY_BIO: &[u8] = b"Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up";
 
 pub fn is_new(co: u8) -> bool {
     (FIRST..FIRST + NEW.len() as u8).contains(&co)
@@ -166,6 +182,15 @@ fn ds_text(r: u32) -> Option<Vec<u8>> {
         }
     }
     Some(out)
+}
+
+/// A text of Clone Andy's that is tangoAW2's own, not Dual Strike's.
+fn clone_text(which: u16, _name: &[u8]) -> Option<Vec<u8>> {
+    match which {
+        T_NAME => Some(CLONE_ANDY_NAME.to_vec()),
+        T_BIO => Some(CLONE_ANDY_BIO.to_vec()),
+        _ => None,
+    }
 }
 
 fn record_ref(ds: u8, off: u32) -> u32 {
@@ -307,17 +332,22 @@ pub fn wrap_page(t: &[u8], widths: &[u8]) -> Vec<u8> {
 /// A CO's name as Dual Strike writes it (AW2's ids and the new COs), from
 /// the pack.
 pub fn ds_name(co: u8) -> Option<Vec<u8>> {
+    if co == CLONE_ANDY {
+        return Some(CLONE_ANDY_NAME.to_vec());
+    }
     ds_text(record_ref(crate::co_roster::ds_co(co)?, 0x00)).filter(|t| !t.is_empty())
 }
 
 /// A new CO's texts, by [`text_id`] slot.
-fn texts(ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
+fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
     let mut out = Vec::new();
-    let name = ds_text(record_ref(ds, 0x00)).unwrap_or_default();
+    let clone = co == CLONE_ANDY;
+    let name = if clone { CLONE_ANDY_NAME.to_vec() } else { ds_text(record_ref(ds, 0x00)).unwrap_or_default() };
     // Every slot gets a text: one the game reads but Dual Strike leaves
     // empty (Von Bolt has no CO Power) would otherwise point at nothing.
     let mut put = |which: u16, off: u32| {
-        let t = ds_text(record_ref(ds, off)).filter(|t| !t.is_empty()).unwrap_or_else(|| {
+        let own = if clone { clone_text(which, &name) } else { None };
+        let t = own.or_else(|| ds_text(record_ref(ds, off))).filter(|t| !t.is_empty()).unwrap_or_else(|| {
             if which == T_COP {
                 // As AW2 says of Sturm, who has none either.
                 let n = String::from_utf8_lossy(&name);
@@ -484,8 +514,9 @@ fn build(core: &Core) -> Option<Built> {
             dossier[o..o + 2].copy_from_slice(&text_id(co, *page).to_le_bytes());
         }
         let ds_style = crate::ds_pack::pack()?.arm9_at(0x0215_360C + 0x220 * ds as u32 + 0x25, 1)?[0];
-        style[co as usize] = ds_style.min(BLACK_HOLE_STYLE);
-        for (which, text) in texts(ds, &widths) {
+        // (Clone Andy fights in Black Hole's style)
+        style[co as usize] = if co == CLONE_ANDY { BLACK_HOLE_STYLE } else { ds_style.min(BLACK_HOLE_STYLE) };
+        for (which, text) in texts(co, ds, &widths) {
             let at = STRINGS + strings.len() as u32;
             strings.extend_from_slice(&text);
             strings.push(0);
@@ -686,9 +717,11 @@ mod tests {
     fn ids_and_room() {
         assert_eq!(ds_id(72), Some(12));
         assert_eq!(ds_id(80), Some(21));
-        assert_eq!(ds_id(81), None);
+        assert_eq!(ds_id(81), Some(2), "Clone Andy takes Dual Strike's Andy");
+        assert_eq!(ds_id(82), None);
+        assert_eq!(CLONE_ANDY, 81);
         assert!((FIRST as u32 + NEW.len() as u32) <= ROOM);
-        assert!(TEXT_TABLE + 4 * text_id(80, TEXTS_PER_CO) as u32 <= 0x0863_0000);
+        assert!(TEXT_TABLE + 4 * text_id(81, TEXTS_PER_CO) as u32 <= 0x0863_0000);
         assert!(HUD + HUD_FACE * ROOM <= DOSSIER && PRESENTATION + PRESENTATION_ROW * ROOM <= BODY_PAIRS);
     }
 }
@@ -701,11 +734,12 @@ mod pack_tests {
     #[test]
     #[ignore]
     fn pages_fit() {
-        for &(ds, _) in NEW.iter() {
+        for (k, &(ds, _)) in NEW.iter().enumerate() {
+            let co = FIRST + k as u8;
             let widths = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").unwrap()).unwrap()
                 [(FONT_WIDTHS - 0x0800_0000) as usize..][..256]
                 .to_vec();
-            for (which, t) in texts(ds, &widths) {
+            for (which, t) in texts(co, ds, &widths) {
                 if [T_BIO, T_D2D, T_COP, T_SCOP].contains(&which) {
                     let t = String::from_utf8(t).unwrap();
                     println!("{ds} {which}: {}", t.replace('\r', " | "));

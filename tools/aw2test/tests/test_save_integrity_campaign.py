@@ -448,3 +448,137 @@ def save_ds_campaign_hard_and_records(ctx):
     cp.ds_start(e, d, new=False)
     ctx.eq((hard_flag(e), e.u8(dc.P_HARD)), (1, 1), "after a reboot: Continue is Hard")
     ctx.check(e.read(dc.RECORDS, 8 * 32) == rec2[0x20:0x20 + 8 * 32], "the records loaded")
+
+
+# -- the BH Campaign (custom campaigns: slots 13 record, 12 mission saved halfway) ----------
+from aw2test import bhcampaign as bh   # noqa: E402
+
+BH_RECORD, BH_SUSPEND = bh.BH_SLOT, bh.BH_MID_SLOT
+
+
+def bh_boot(ctx, save):
+    e = Emu(save=save, ds=ctx.ds)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    return e, g, bh.BhCampaign(g)
+
+
+def same_slots(ctx, a, b, tags, label):
+    for t in tags:
+        ctx.check(a.slot(t) == b.slot(t), f"{label}: {saveimg.TAG_NAMES.get(t, t)} byte for byte as it was")
+
+
+@test(modes=("ds",))
+def save_bh_campaign_beside_aw2_and_ds(ctx):
+    """The BH Campaign over an AW2 campaign mission saved halfway (slot 2) and
+    a DS Campaign with a DS mission saved halfway (slots 15, 14): New writes
+    its record in slot 13 only; mission 1 won (Von Bolt unlocked) slot 13
+    only; mission 2 saved from its map menu, slot 12 only (AW2's mark in the
+    profile and slots 2, 14 and 15 byte for byte as they were; the profile
+    the same but its counters and the points a win earns). Rebooted: BH
+    CAMPAIGN's Continue brings mission 2's battle back as saved; won, its
+    save is dropped and the record has both missions won; DS CAMPAIGN's and
+    AW2 CAMPAIGN's Continue still bring their own saved missions back."""
+    c = aw2_campaign_image(ctx, True)
+    e, g, d = boot(ctx, c["suspended"].path)
+    cp.ds_start(e, d, new=True)
+    d.pick_mission()
+    d.wait_map()
+    saves.suspend(g)
+    ds_snap = saves.snapshot(g)
+    base = saves.flash(e, os.path.join(ctx.out, "base"))
+    ctx.eq(sorted(base.tags()), [0, 2, 14, 15], "the starting slots: the profile, AW2's mission, the DS mission and record")
+    ds_rec = base.slot(DS_RECORD)[:saves.DS_RECORD_HEAD]
+    e.close()
+
+    e, g, d = bh_boot(ctx, base.path)
+    d.start_bh(new=True, pick=False)
+    d.wait_world_map()
+    img = saves.flash(e, os.path.join(ctx.out, "bh_new"))
+    saves.expect_slots(ctx, base, img, [BH_RECORD], "BH Campaign New", profile_allow=[saves.MODE_BYTE])
+    rec = img.slot(BH_RECORD)
+    ctx.eq(rec[:4], b"AWBC", "the BH record in slot 13")
+    ctx.eq(rec[0x0D] | rec[0x0E] << 8 | rec[0x0F] << 16, 1, "Sturm unlocked, nobody else")
+    before = img
+    d.pick_mission()
+    d.wait_map()
+    cp.win_here(e, d)
+    img = saves.flash(e, os.path.join(ctx.out, "bh_won1"))
+    saves.expect_slots(ctx, before, img, [BH_RECORD], "BH mission 1 won", profile_allow=list(POINTS) + [saves.MODE_BYTE])
+    rec = img.slot(BH_RECORD)
+    ctx.eq(int.from_bytes(rec[8:12], "little"), 1, "mission 1 won, saved")
+    ctx.eq(rec[0x0D], 0b11, "Von Bolt unlocked, saved")
+    ctx.check(int.from_bytes(rec[0x20:0x24], "little") != 0, "mission 1's record (CO, days, score) kept")
+    # Mission 2, saved from its map menu.
+    before = img
+    d.pick_mission()
+    d.choose_cos(1, prefs=[bh.VON_BOLT])
+    g._units_base = g._players_base = None
+    d.wait_control()
+    names = saves.suspend(g)
+    ctx.check("Save" in names, f"Save on a BH mission's map menu ({names})")
+    snap = saves.snapshot(g)
+    saved = saves.flash(e, os.path.join(ctx.out, "bh_saved"))
+    saves.expect_slots(ctx, before, saved, [BH_SUSPEND], "a BH mission saved halfway",
+                       profile_allow=list(saves.OPTIONS) + [saves.MODE_BYTE])
+    same_slots(ctx, base, saved, [CAMPAIGN_SUSPEND, DS_SUSPEND], "after the BH save")
+    ctx.check(saved.slot(DS_RECORD)[:saves.DS_RECORD_HEAD] == ds_rec, "the DS record (progress, records) as it was")
+    ctx.eq(saved.slot(0)[saveimg.P_C420 + saveimg.C420_SUSPEND[2]], 1, "AW2's mark in the profile kept")
+    ctx.eq(sorted(saved.tags()), [0, 2, 12, 13, 14, 15], "the slots: the profile, 2, 12, 13, 14, 15")
+    ctx.check(saved.slot(0)[0:0x48] == base.slot(0)[0:0x48], "AW2's flags and unlocks as they were")
+    ctx.check(saved.slot(0)[WM_PROFILE[0]:WM_PROFILE[1]] == base.slot(0)[WM_PROFILE[0]:WM_PROFILE[1]], "AW2's world map state as it was")
+    e.close()
+
+    # Rebooted: BH CAMPAIGN's Continue brings mission 2 back.
+    e, g, d = bh_boot(ctx, saved.path)
+    d.start_bh(new=False, pick=False)
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1200, step=10), "BH CAMPAIGN's Continue: the battle")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    ctx.eq((d.mission(), e.u8(bh.SOURCE)), (1, bh.BH), "mission 2, the BH Campaign's session")
+    saves.compare_snapshots(ctx, snap, saves.snapshot(g), "after a reboot, BH Continue")
+    ctx.eq(d.unlocked(), [bh.STURM, bh.VON_BOLT], "the unlocked COs from the record")
+    ctx.shot(g, "bh_resumed")
+    ctx.require(d.force_win(), "mission 2 won (test aid)")
+    for f in range(80000):
+        if e.u8(0x0203FD17) >= 3:
+            break
+        if f % 20 == 0:
+            e.press("A", 4)
+        e.wait(1)
+    for k in range(200):
+        e.wait(60)
+        if any(e.u32(0x0200D610 + 0x6C * j) in dc.WHEELS for j in range(32)):
+            break
+    e.wait(60)
+    after = saves.flash(e, os.path.join(ctx.out, "bh_won2"))
+    ctx.check(BH_SUSPEND not in after.tags(), f"the halfway save dropped with the win ({after.tags()})")
+    ctx.check(not after.problems(), f"every slot passes AW2's check {after.problems()}")
+    ctx.eq(int.from_bytes(after.slot(BH_RECORD)[8:12], "little"), 0b11, "both missions won, saved")
+    same_slots(ctx, base, after, [CAMPAIGN_SUSPEND, DS_SUSPEND], "after the BH campaign's end")
+    ctx.check(after.slot(DS_RECORD)[:saves.DS_RECORD_HEAD] == ds_rec, "the DS record still as it was")
+    e.close()
+
+    # DS CAMPAIGN's and AW2 CAMPAIGN's saved missions still come back.
+    e, g, d = boot(ctx, after.path)
+    d.open_campaign_box()
+    d.chooser_row(1)
+    e.press("A", 8)
+    e.wait(30)
+    d.box_row(0)
+    e.press("A", 8)
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1200, step=10), "DS CAMPAIGN's Continue: its battle")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    ctx.eq(e.u8(bh.SOURCE), 0, "the DS Campaign's session")
+    saves.compare_snapshots(ctx, ds_snap, saves.snapshot(g), "the DS mission after the BH Campaign")
+    e.close()
+    e, g, d = boot(ctx, after.path)
+    cp.aw2_box(e, d, True)
+    d.box_row(0)
+    e.press("A", 8)
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 900, step=10), "AW2's Continue: its battle")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    saves.compare_snapshots(ctx, c["snap"], saves.snapshot(g), "AW2's mission after the BH Campaign")
+    e.close()

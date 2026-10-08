@@ -19,6 +19,8 @@ pub mod ds_art;
 pub mod ds_backdrop;
 pub mod ds_battle;
 pub mod ds_campaign;
+pub mod bh_campaign;
+pub mod custom_campaign;
 pub mod ds_campaign_data;
 pub mod ds_campaign_rules;
 pub mod campaign_model;

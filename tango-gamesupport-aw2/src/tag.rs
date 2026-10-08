@@ -293,6 +293,10 @@ pub fn special_pair(a: u8, b: u8) -> Option<(u8, u32)> {
     if let Some(p) = crate::sturm_pairs::special(a, b) {
         return Some((p.stars, 0));
     }
+    // Clone Andy has none of Andy's special pairs (crate::sturm_pairs).
+    if a == crate::co_new::CLONE_ANDY || b == crate::co_new::CLONE_ANDY {
+        return None;
+    }
     let (da, db) = (ds_id(a)?, ds_id(b)?);
     let rec = 0x0215_360C + 0x220 * da as u32;
     let list = pack.arm9_at(rec + 0x6C, 0x18)?;

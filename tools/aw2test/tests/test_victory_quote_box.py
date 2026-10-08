@@ -15,7 +15,7 @@ TEXT_TABLE = 0x08610A38
 FONT_WIDTHS = 0x084C36E4
 QUOTE_PIXELS = 104        # the box's line: from x = 128 to the screen's right edge
 QUOTE_LINES = 3           # AW2's own longest victory quotes
-NEW_COS = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel"]
+NEW_COS = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
 
 
 def text_at(e, tid):

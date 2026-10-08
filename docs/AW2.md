@@ -811,7 +811,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Part | Module | What it changes |
 |---|---|---|
 | Units | `roster.rs`, `ds_units.rs`, `unit_actions.rs`, `oozium.rs`, `unit_names.rs`, `ds_unit_art.rs`, `ds_unit_pictures.rs`, `ds_battle.rs`, `ds_backdrop.rs`, `map_anim.rs` | Unit table grown to 64 rows (0x08680000), 7 new units (ids 4, 9, 12, 13, 18, 26, 27), Dual Strike's stats and damage chart, their actions (Hide, Explode, Repair, Carrier; the Oozium eats: no weapon, moving onto a unit of another team next to it destroys that unit with the game's own destruction, and no CO, power, silo or Black Bomb touches it), map art, their own information pictures (build menu panel, R on a unit) in each army's colours, every unit in the Intel unit list, battle scenes with Dual Strike's figures, effects and volleys, Dual Strike's battle backgrounds (a Piperunner on its pipe; every battle on a Wasteland map; a Com Tower's city), and Dual Strike's map animations played through AW2's own map effects (a Black Bomb's explosion, a Stealth hiding and appearing, a Black Boat's REPAIR label, Oozium's death in its army's colours; for the CPU at its turn's end, before the turn passes) |
-| COs | `co_roster.rs`, `co_new.rs`, `co_powers.rs`, `ds_co_art.rs`, `ds_power_art.rs`, `power_anim.rs` | CO table grown to 96 rows (0x086A0000), Dual Strike's numbers for AW2's COs (and its 200% defence cap), 9 new COs at ids 72..80 (face ids stay unambiguous), their pictures, texts, powers and Dual Strike's power animations (Ex Machina, Covering Fire, Urban Blight), and Dual Strike's choice of power effect on their units |
+| COs | `co_roster.rs`, `co_new.rs`, `co_powers.rs`, `ds_co_art.rs`, `ds_power_art.rs`, `power_anim.rs` | CO table grown to 96 rows (0x086A0000), Dual Strike's numbers for AW2's COs (and its 200% defence cap), 10 new COs at ids 72..81 (Dual Strike's nine and Clone Andy, "Clone Andy" below; face ids stay unambiguous), their pictures, texts, powers and Dual Strike's power animations (Ex Machina, Covering Fire, Urban Blight), and Dual Strike's choice of power effect on their units |
 | CO screen | `co_grid.rs` | The unit grid (map menu > CO, its last page) gets a second page: ground units, then air and naval units, in the build menus' order, every unit with its icon in the viewed army's colours (the new units in the map sheet's slots for other countries' Infantry and Mech) and its firepower bar (Dual Strike's bonuses take the nearest of AW2's 13 bars) and move / range change |
 | CPU | `cpu_tactics.rs` | The CPU buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls), explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
 | Terrain | `com_tower.rs`, `wasteland.rs`, `ds_look.rs`, `sandstorm.rs` | Com Tower (the Versus Lab), Dual Strike's Wasteland, Desert and Snow looks drawn with its own terrain (below), the Sandstorm weather (Dual Strike's sand, `bmap/0b2`) |
@@ -820,6 +820,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Maps | `five_map.rs`, `five/design_ds_maps.py` | Eight Versus maps (2P to 5P, a Wasteland set and a sea set) with Com Towers, Piperunner pipes and Black Hole's structures (above) |
 | Survival | `survival.rs`, `survival_maps.rs`, `survival_ui.rs`, `mode_menu.rs` | Dual Strike's Survival mode (Money, Turn, Time) on its own 33 maps, a seventh entry on Select Mode (below) |
 | DS Campaign | `ds_campaign.rs`, `ds_campaign_data.rs`, `ds_campaign_rules.rs`, `campaign_menu.rs` | Dual Strike's story campaign in AW2's campaign engine, behind a Campaign sub-menu (below) |
+| BH Campaign | `bh_campaign.rs`, `custom_campaign.rs` | A campaign defined as data (Black Hole's thirty missions: two placeholders so far), in the same engine, on AW2's own world map, with its own record and unlockable COs (below) |
 
 Free ROM used: 0x08620000.. (text slots), 0x0862C000.. (new CO text ids 0x6D72..),
 0x08640000..0x08672FFF (earlier features, the Black Factory's wreck sprite definition at 0x08648000; the map table and the maps past the tenth at
@@ -839,7 +840,7 @@ table with room for 0x100 ids, its maps, strings, the Select Mode wheel's data),
 0x08E70000..0x08E73FFF (two fronts: stubs, swap scripts, the menus' copies, labels; text ids 0x7FFD, 0x7FFE),
 0x08E74000..0x08E743FF (the DS Campaign's Setup phase: stubs, script, menu, label; text id 0x7FFC),
 0x08E75000..0x08E753FF (Crystal Calamity's Black Onyx: `onyx.rs`; its RAM 0x0203FFC8..0x0203FFE3).
-Free RAM used: 0x0203E400..0x0203F3FF (two fronts: their state, the front off the screen), 0x0203FA00..0x0203FD0F (Survival), 0x0203FD10..0x0203FD5F (DS Campaign), 0x0203F600..0x0203F6FF (the DS
+Free RAM used: 0x0203FD57 (the chosen campaign, `ds_campaign::SOURCE`), 0x0203E3A8..0x0203E3B5 (the skills panel; the skill data now ends at 0x0203E3A5), 0x0203E400..0x0203F3FF (two fronts: their state, the front off the screen), 0x0203FA00..0x0203FD0F (Survival), 0x0203FD10..0x0203FD5F (DS Campaign), 0x0203F600..0x0203F6FF (the DS
 Campaign's records; 0x0203E000..0x0203F73F was found unwritten at the title, Select Mode, in AW2 and DS battles), 0x0203F740..0x0203F79F
 (map animations), 0x0203F7A0..0x0203F7DF (power animations), 0x0203F800..0x0203F9FF (battle
 scenes), 0x0203FD60..0x0203FEFF (CPU tactics, heal effect, the Oozium's eat
@@ -1307,11 +1308,12 @@ overlay 1, the campaign's code, at `0x02350560`).
 **In tangoAW2.**
 
 - **Select Mode** (`campaign_menu.rs`): Campaign opens a small sub-menu in
-  the box Campaign's Continue / New use, AW2 CAMPAIGN and DS CAMPAIGN (80x16
+  the box Campaign's Continue / New use, AW2 CAMPAIGN, DS CAMPAIGN and BH CAMPAIGN (80x16
   labels in the game's style, OBJ tiles 832..903, palettes 8 and 10, put in
   place of the box's own label sprites at the sprite flush). AW2 CAMPAIGN
   then shows AW2's own Continue / New, unchanged; DS CAMPAIGN shows them for
-  the DS Campaign (Continue when a DS Campaign is saved); B goes back. It
+  the DS Campaign (Continue when a DS Campaign is saved); BH CAMPAIGN's are the BH
+Campaign's ("BH Campaign" below); B goes back. It
   works on both wheel procs (`0x08616A08` on entering Select Mode,
   `0x08616A40` when coming back from a mode) and on Survival's seven-entry
   wheel (`mode_menu::item` reads the item at a position). Without the pack
@@ -1864,6 +1866,238 @@ buffer gets it from there, so the profile in Flash stays AW2's
 (`aw2_campaign_kept_by_ds_session`: the profile byte for byte, Continue
 and New's notice in the same boot and after a reboot, with and without
 the pack).
+
+## BH Campaign (`bh_campaign.rs`, `custom_campaign.rs`)
+
+The BH Campaign is thirty missions played as Black Hole, defined **as data**
+and played by the DS Campaign's engine (`ds_campaign.rs`): it needs the Dual
+Strike pack (its COs, units and looks come from it). Today it holds two
+placeholder missions that prove the pipeline end to end; the thirty are
+added to `bh_campaign.rs` as `MissionDef`s, no engine code needed. A sequel
+("BH2") or any other campaign is another `CampaignDef` and another entry of
+`campaign_model::SOURCES`.
+
+**What changed in the engine.** The engine plays a `Model`
+(`campaign_model.rs`), and there can now be several: `SOURCES` has the DS
+Campaign (0) and the BH Campaign (1), at most four. The chooser's choice is
+kept in `ds_campaign::SOURCE` (RAM `0x0203FD57`; `source(core)`), and
+everything that was the DS Campaign's alone is per source: the loaded
+campaign (`BUILT[source]`), the record's magic ("AWDC" DS, "AWBC" BH), the
+Flash slots (below), the world map's art (`WorldArt::OmegaLand` or
+`WorldArt::Aw2`), whether it has a Hard Campaign (`has_hard`; the BH
+Campaign has none: New starts at once), and its rules (`Source::rules`; a
+custom campaign's are `custom_campaign::rules`). The data blob is written
+into the same ROM range as the DS Campaign's (`0x08F00000..0x08FBFFFF`; the
+word at its start says whose is in: `magic_of(source)`), and rewritten when
+the other campaign is chosen, so a campaign has the whole range and the text
+ids `0x7400..` to itself; the world map's mission table is rewritten the
+same way (`ds_worldmap::TABLE_OWNER`). Code that belongs to Dual Strike's own
+missions (Means to an End's Grand Bolt and look, Crystal Calamity's Onyx,
+Reclaim the Skies' clock, Omens and Signs' barrier) asks
+`ds_campaign::ds_mission(core)` (0xFF in another campaign).
+
+**Menu.** Select Mode > Campaign: AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN
+(`campaign_menu.rs`; the labels are the chooser's 5x10 letters, two shown at
+a time, UP/DOWN through all three). It is listed only with the pack (a
+source's `available`); without it the chooser does not exist and the box is
+AW2's own (`bh_campaign_menu_entry`). Its box is Continue / New as the DS
+Campaign's, with no Normal / Hard choice. A on its entry sets
+`ds_campaign::SOURCE`.
+
+**World map: AW2's own Wars World.** The campaign uses AW2's campaign map
+screen on AW2's own art (nothing replaced: the tile, tilemap and palette
+words keep pointing at AW2's), with a mission table of ours: each mission's
+flag at the place its data gives, marker style and LEVEL stars, the same
+panel (title, objective) and reveal flow as the DS Campaign's. AW2's map
+does have Black Hole's land: the small island at the top, where AW2 puts its
+own last two missions (map ids `0xAA`, `0xAB`, at about (191, 37) and (166,
+21)). The campaign starts there and goes round the world as AW2's own lands
+lie: **Black Hole** (the island, top centre, x 150..195, y 20..60), **Green
+Earth** (the east land, x 300..390, y 85..230), **Yellow Comet** (the centre
+land, x 225..300, y 50..180), **Blue Moon** (the south, x 85..220, y
+150..235), **Orange Star** (the west, x 35..150, y 60..195). (The picture is `0x081CC5F0` / `0x081D0BAC` / `0x081D1504`, 432 x 256; AW2's mission
+table is `0x08615194`; the camera stops at 192 x 96.) Six flag places
+inside each land are listed in `bh_campaign::region` (map pixels; checked
+against the picture in `tools/aw2test`'s world map shot). A flag's position
+is the mission's `flag`; a won mission keeps a starred flag (AW2 paints its
+region on its own mission ids only). Progression: each mission's `requires`
+(`Requires::Start`, `All([..])` all of them won, `Any([..])` a branch);
+`ds_campaign::available` returns the missions whose requirement holds and
+that are not won, and the reveal flow shows the ones a win opens.
+
+**Roster and unlocks.** `CampaignDef::roster` lists (AW2 CO id, open at the
+start) in unlock order: Sturm (open), Von Bolt, Hawke, Kindle, Koal,
+Jugger, Flak, Lash, Adder, Clone Andy. A mission's `recruits` are roster
+indexes its win unlocks (`bh_campaign::roster::HAWKE` ...). The record keeps
+the unlocked set as a 24-bit mask of roster indexes at progress +0x0D..0x0F
+(`ds_campaign::unlocked_mask`). Army colour and CO are independent in the
+data (`ArmyDef { colour, co }`: Von Bolt can lead a Green Earth army, Kindle
+a Yellow Comet one, as `placeholder_one` / `placeholder_two` do).
+
+**CO screen.** `CoSpec` per army: `Fixed(co)` (no screen), `Pair(a, b)` (a
+tag pair for the computer), `Pick` (the player picks one), `PickPair` (the
+player picks two, a tag pair), and a second front's own `Pick` (one CO per
+front: the main front's pick, then the second front's, with `PickPair` on
+the main army as Dual Strike's `(0x1C, 0x1C)`). The CO screen offers the
+mission's `pool` (else the roster) **among the unlocked ones**
+(`ds_campaign::co_setup`), grouped by country (Black Hole's COs all in its
+tab; Clone Andy is placed there). A custom campaign's picks lock no country
+(`custom_co_screen`: AW2 locks a country per pick, which Dual Strike's
+mixed countries suit but a roster of one country does not).
+
+**Saves.** Flash is 16 sectors; each slot takes one sector for the payloads
+here (a mission saved halfway on two fronts takes two). The layout:
+
+| Slot | What | Written by |
+| --- | --- | --- |
+| 12 | a BH mission saved halfway (the block as slot 14's, with the session tail "DS" and, on two fronts, the other front) | map menu Save in a BH mission |
+| 13 | the BH Campaign's record, 0x120 bytes: progress (0x20: "AWBC", next step, over, missions won (bits), flags 0x20..0x9F, unlocked COs at +0x0D) and the records (8 bytes a mission: CO, days << 8, score << 20; the best rank is the score's, AW2's thresholds) | BH New, mission start, after a win |
+| 14 | a DS mission saved halfway | as before |
+| 15 | the DS record and the CO skills (global to every mode) | as before |
+
+AW2 uses 0 (profile), 2..4 (suspends), 5..7 (design maps), 8 (the design
+map a suspended Versus game is on). With every slot in use at once (twelve
+slots, `save_every_slot_at_once`) twelve sectors are held and four are free;
+a write needs one free sector for the slot's new copy (two for a two-front
+mission) and one for the new profile, so two-front missions saved halfway in
+both campaigns at once leave exactly the two a write of either needs.
+The BH Campaign never writes slots 2..8, 14, 15's progress and records, or
+the profile but AW2's counters and the Battle Maps points a win earns;
+`stage_slot` (the DS slot, written when the skills change in any mode) stages
+the DS record from RAM only when it is the loaded one, else from Flash, so a
+BH record in RAM never lands in slot 15. The DS slot's skill data grew
+(`co_skills::COS` 29 for Clone Andy: 32 bytes more; a shorter saved record
+reads the rest as zeros) and `skills_panel`'s RAM moved to `0x0203E3A8`.
+Tests: `save_bh_campaign_beside_aw2_and_ds` (record, win, mission saved
+halfway and continued, AW2's and the DS Campaign's saved missions and the
+DS record byte for byte as they were, the profile as expected),
+`save_every_slot_at_once` (twelve slots).
+
+**Prologue and credits.** Same mechanism as the DS Campaign's: the prologue
+is a script run from the session's copy of AW2's world map script before the
+map takes the pad (once, flag 0x9E of the record); the credits flow starts
+when the final mission's win is recorded (`CampaignDef::final_mission`): its
+`after` scene on the map, then the map is left, the staff roll runs from a
+copy of AW2's roll reading **the campaign's sections**
+(`CampaignDef::credits`: heading and names, 120 frames a page; `ds_credits::
+build_sections`), then Select Mode. `CampaignDef::prologue` pages are text
+(`Page { text, picture, who }`): on AW2's map each is a dialogue box (a
+Black Hole soldier unless `who` names a speaker); `picture` (an index of
+`ds_story_art::NARRATION`) is Dual Strike's story picture, drawn over
+Omega Land's map layer only: AW2's own map layer is not rebuilt after one,
+so on AW2's map it is not used (a picture for the prologue needs a layer of
+its own: not done).
+
+### The mission data format
+
+A `MissionDef` (build one with `MissionDef::new(key, title)` and set what the
+mission has; `custom_campaign.rs` has the types, the comments are the
+reference). `compile` turns it into the engine's `MissionInfo`, a map header
+(0x5C bytes), a map, a deployment, AW2 event scripts and trigger lists and
+texts; an error names the mission.
+
+| Field | What | Status |
+| --- | --- | --- |
+| `map` | `MapSrc::Aw2 { id }` (one of AW2's maps: terrain and, unless `units` is set, deployment), `Ds { record }` (a Dual Strike campaign map, read from the player's ROM), `Tiles { width, height, tiles }` (AW2 tile ids), `Ascii(rows)` (text terrain: `. f m = r ~ s : c b a p 1..4`; roads, rivers and sea are the first tile of their class and do not join up: placeholder terrain) | tested: Ascii, Aw2 (map 0x8A) and Ds (Jake's Trial); Tiles compile-checked |
+| `armies` | 2..=4 `ArmyDef { colour, team, co, funds }` in army order, army 1 the player's; `colour` (1 Orange Star .. 5 Black Hole) and `co` independent | tested |
+| `co` | `CoSpec` as above | tested: Fixed, Pick, PickPair, Pair, a second front's Pick |
+| `weather`, `fog`, `look` | `Weather::{Clear, Snow, Rain, Sandstorm}`, fog on at the start, Dual Strike's look (0 normal, 1 snow, 2 desert, 3 wasteland) | tested: rain, fog |
+| deployment | `units: Vec<UnitDef>` (`UnitDef::new(army, kind, x, y).hp(1..100).hold().named("..")`); empty keeps an AW2 / Dual Strike map's own; a mission with none for an army starts it with no units (the player builds: pre-deployed or not is what `units` holds) | tested |
+| `armies[].funds` | starting funds, set on day 1 (a stub run in Rust) | tested |
+| `props`, `structures` | owned properties; Black Hole's structures stamped on the map (`Structure::{MiniCannon*, Laser, BlackCannon*, BlackFactory, Volcano, Deathray, BlackCrystal, BlackObelisk}`, the Design Room's footprints) | tested: factory, crystal, obelisk, laser |
+| `front2` | a battle on two fronts: its map, props, structures, deployment, `cos` per army (`Pick` for the player's own), `send`, `sky`, weather, fog (`crate::two_front` plays it) | tested: tag pair on the main front, a pick for the second, round change |
+| `day_limit`, `rank_days` | the days the player has (the header's counter; exceeding it loses) and the S rank's days | day limit tested in the header |
+| `triggers` | `Trigger { when: TurnStart / AfterAction, cond, then }`; `Cond::{DayAtLeast, UnitAt{name,x,y}, UnitAlive, UnitGone, ArmyUnitsAtMost, PropertiesAtLeast, Not, All}`; `Action::{Scene, Win, Lose, SetFunds}`; win and lose also by AW2's own rules (rout, HQ) | tested: day, named unit, funds, scene, win, lose |
+| special units | `UnitDef::named("courier")` (with `.hp(10)` for 1 HP); a condition refers to it by name: it is the army's n-th unit of the deployment (its slot), alive while its record's type is non-zero. "Must reach the extraction point within 15 days" is `AfterAction` `UnitAt` -> `Win` and `TurnStart` `All[DayAtLeast(16), Not(UnitAt)]` -> `Lose` | tested |
+| `intro`, `victory`, `after` | scenes: in the battle before day 1's first turn, before the winning end (inside `Action::Win`), and on the world map after the win (before the next mission's flag shows); between-mission scenes are `after` | tested |
+| `music` | an AW2 song id | declared, not played yet |
+| `recruits`, `requires`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked, what opens it, its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
+| five-army maps | `armies` is 2..=4: a mission with five armies is an error today (`five.rs` plays Versus', not the campaign's) | not supported |
+
+Scenes: `Scene::new(vec![Line::say(co::STURM, "..."), Line::feel(co::VON_BOLT,
+Mood::Sad, "..."), Line::soldier(colour::BLACK_HOLE, "...")])`; text is
+plain, wrapped to AW2's box (two lines of 176 pixels; a box that needs
+more spreads evenly); `\x0f` forces a new box. A scene compiles to AW2's
+dialogue commands (`0x17` open with the first face, `0x38` a speaker,
+`0x19` a text, `0x18` close).
+
+### Adding a mission (for whoever builds the thirty)
+
+1. In `bh_campaign.rs` write a `fn mission_n() -> MissionDef` with
+   `MissionDef::new("bh03", "Title")`; give it a map (`MapSrc::Aw2 { id }`,
+   `MapSrc::Ds { record }` for a Dual Strike map, or tiles), `armies`, `units`
+   and what its rules need.
+2. Pick its flag from `region::*` (or any point of the 432 x 256 picture),
+   its `requires` (the missions that open it; a branch is `Requires::Any`),
+   its `stars`, and `recruits` if it unlocks a CO.
+3. Add it to `def().missions` (the index is its place: `requires`,
+   `recruits` and `final_mission` use indexes), set `final_mission`, add the
+   prologue and credits text.
+4. `cargo test --release -p tango-gamesupport-aw2 --lib` (the compile checks:
+   `bh_campaign::tests`), then `python3 tools/aw2test/run.py -k bh_campaign`.
+   `TANGOAW2_BH_FEATURES=1` plays `features_def()` (every field once) instead.
+5. In a test: `bhcampaign.BhCampaign(g)`: `start_bh`, `pick_mission`,
+   `wait_map`, `cp.win_here`; its `picks` dict says how many picks the CO
+   screen asks per mission (`PICKS` in `aw2test/bhcampaign.py`).
+
+Limits and notes: a campaign has at most 32 missions (progress bits) and
+its blob must fit `0x08F00000..0x08FBFFFF` (checked at load; Dual Strike's
+is about 360 KB); texts use ids `0x7400..0x7FF5`. The first mission opens at
+`Requires::Start`, and at least one mission must be open at any time or the
+map is empty. Mission ranks use AW2's results screen. A mission's start
+CO screen and Setup phase need `bhcampaign.PICKS` in tests.
+
+Tests: `tools/aw2test/tests/test_bh_campaign.py` (menu entry with and
+without the pack; New, the prologue and the world map with one flag; mission
+1 and Von Bolt unlocked; the CO screen offering only unlocked COs; the
+credits; every data field; a named unit's extraction; two fronts) and the
+save tests above.
+
+## Clone Andy (`co_new.rs`)
+
+The BH Campaign's last recruit. **What Dual Strike has for him**, found in
+the .nds: no CO record of his own (CO records are ids 1..27, no 28th) and
+no portraits, powers, quotes or tag data of a clone's. Dual Strike's clones
+(Olaf, Drake, Kanbei and Andy; "Cloned COs, requiring massive amounts of
+energy ...") are the original's CO id with bit 7 set in a mission record's
+CO bytes, as a Black Hole army's tag partner: Dark Ambition has Kindle with
+the Olaf clone `(25, 0x84)`, Pincer Strike Lash with the Drake clone
+`(12, 0x8A)`, Ring of Fire Koal with the Kanbei clone `(14, 0x87)` and
+Surrounded! Kindle with the Andy clone `(25, 0x82)` (Andy, id 2, | 0x80).
+The story speaks of "an Andy clone"; the clone is drawn and plays as the
+original, in Black Hole's army colours.
+
+So Clone Andy is tangoAW2's tenth new CO (id 81, `co_new::CLONE_ANDY`), on
+**Dual Strike's Andy's data** for everything it has: portraits, face, HUD,
+mini portrait and name graphic (all read as Andy's: his name graphic reads
+"ANDY"), CO Power and Super CO Power (Hyper Repair / Hyper Upgrade, AW2's
+own power code, the names and texts from Dual Strike's record 2), numbers,
+quotes, victory quote, map theme (Andy's Dual Strike theme, converted like
+the others'), tag compatibility row and column. **tangoAW2's own**, made up,
+marked in code: his name "Clone Andy" and his CO page bio
+(`CLONE_ANDY_NAME`, `CLONE_ANDY_BIO`), his place (Black Hole's Teams
+group after Koal, Black Hole's battle style and army colour, Adder's CPU
+profile and Black Hole power music: the `like` of his `NEW` entry), and
+his pair with Sturm (below). With the pack only: he is on the Versus and
+War Room CO lists and the Teams screen (`Teams list: 29 COs`), pickable
+(`clone_andy_is_pickable_in_versus`), absent without the pack
+(`clone_andy_absent_without_the_pack`), in the BH Campaign's roster, and the
+Select-skills data (`co_skills::COS` 29).
+
+**Tag.** Dual Strike has no tag data for a clone, so with any CO but Sturm
+his compatibility is Andy's own (his row and column of Dual Strike's table,
+`tag::compatibility`) and he has none of Andy's special pairs (`tag::
+special_pair`, `tag_extras::partners_of`); his TAG page lists Sturm alone.
+**Sturm + Clone Andy** (tangoAW2's own, in `sturm_pairs.rs` with Sturm's
+other pairs, partners now named by AW2 CO id): compatibility 118, two stars,
+Tag Power "Perfect Copy", victory exchanges ("Flawless. As built." /
+"Orders done!", "Hold nothing back." / "Yes, sir!", and Clone Andy winning:
+"Mission complete!" / "Acceptable.", "Who's next, sir?" / "Anyone."; measured
+to fit the results box by `tag_extras`' `victory_exchanges_fit_the_box`).
+Sturm's TAG page lists Clone Andy last. Test: `tag_clone_andy` (compatibility
+in the damage calculator both ways round, Andy's value with the others, no
+special pairs, both TAG pages, the Tag Power screen's name and 118%, the
+exchange in battle).
 
 ## Two fronts (`two_front.rs`)
 
@@ -2426,7 +2660,7 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   campaign as the DS Campaign's but only once the player has set skills
   for some CO (until then it stays AW2's own); Versus none. Dual Strike's
   few extra points for its battle counters are left out.
-- **Save.** Per CO (AW2's 19 and the nine new): EXP and seven sets
+- **Save.** Per CO (AW2's 19 and the ten new): EXP and seven sets
   (Campaign, Survival, War Room, four Versus), 32 bytes, at `0x0203E000`
   after a magic word; saved in Flash slot 15 after the DS Campaign's
   progress and records (one 0x4A4-byte record). The DS Campaign's save
@@ -2809,10 +3043,12 @@ from the directory.
 | 2 / 3 / 4 | Campaign / War Room / Versus game saved halfway, 0xE28 (tangoAW2's tail: `suspend.rs`) | map menu Save |
 | 5..7 | design maps 1..3, 0x724 (tangoAW2: +0x4C4 the five-army mark, +0x723 the look) | Design Room Save |
 | 8 | the design map a saved Versus game is on (its current terrain and units) | map menu Save on a design map |
+| 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14) | map menu Save in a BH mission |
+| 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign") | BH Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state follow the block (two sectors) | map menu Save in a DS mission |
-| 15 | the DS Campaign's record, 0x20 (tangoAW2) | DS Campaign New, mission start, after a win |
+| 15 | the DS Campaign's record, 0x20 (tangoAW2), its records and the CO skills' data | DS Campaign New, mission start, after a win, a skills change |
 
-Ten slots at most; a write needs two free sectors. The Design Room has no
+Twelve slots at most (AW2's ten and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
 delete for one map: saving over a slot replaces it. The Battle Maps points
 (options +0x00, +0x04) grow with every map won, a DS mission's and a
 Survival map's too (as the War Room's). A netplay match runs

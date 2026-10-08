@@ -446,7 +446,7 @@ def save_survival_keeps_war_room_suspend(ctx):
 
 # -- every slot in use at once ------------------------------------------------------------------
 
-ALL_SLOTS = [0, 2, 3, 4, 5, 6, 7, 8, 14, 15]
+ALL_SLOTS = [0, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15]
 
 
 def two_army_design(name, x):
@@ -460,7 +460,8 @@ def two_army_design(name, x):
 def save_every_slot_at_once(ctx):
     """Every slot in use at once: three designs, an AW2 mission, a War Room
     map and a Versus game (on design 1) saved halfway, the DS Campaign with
-    a mission saved halfway: ten slots of Flash's sixteen sectors. Each save
+    a mission saved halfway, the BH Campaign with a mission saved halfway:
+    twelve slots of Flash's sixteen sectors. Each save
     keeps the others; rebooted, every slot passes AW2's check and its own
     boot, and each saved game continues (and can be saved again)."""
     path = os.path.join(ctx.out, "designs.sav")
@@ -516,8 +517,18 @@ def save_every_slot_at_once(ctx):
     snaps[14] = saves.snapshot(g)
     saved("ds_mission", [14, 15], [])
     e.close()
+    # The BH Campaign: New, its first mission saved halfway.
+    from aw2test import bhcampaign as bh
+    e, g = boot(ctx, img.path)
+    b = bh.BhCampaign(g)
+    b.start_bh(new=True)
+    b.wait_map()
+    saves.suspend(g)
+    snaps[12] = saves.snapshot(g)
+    saved("bh_mission", [12, 13], [])
+    e.close()
 
-    ctx.eq(img.tags(), ALL_SLOTS, "ten slots in use")
+    ctx.eq(img.tags(), ALL_SLOTS, "twelve slots in use")
     ctx.check(not img.problems(), f"every slot passes AW2's check {img.problems()}")
     e, g = boot(ctx, img.path)
     saves.to_select_mode(e)
@@ -554,6 +565,12 @@ def save_every_slot_at_once(ctx):
     resumed(14, "the DS mission continued")
     e.close()
     e, g = boot(ctx, img.path)
+    b = bh.BhCampaign(g)
+    b.start_bh(new=False, pick=False)
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1200, step=10), "BH CAMPAIGN's Continue")
+    resumed(12, "the BH mission continued")
+    e.close()
+    e, g = boot(ctx, img.path)
     saves.to_select_mode(e)
     saves.versus_continue(g)
     resumed(4, "the Versus game continued")
@@ -561,7 +578,7 @@ def save_every_slot_at_once(ctx):
     g.end_turn(human=1)
     saves.suspend(g)
     saved("versus_again", [4, 8], [saves.c420(saveimg.C420_SUSPEND[4])])
-    ctx.eq(img.tags(), ALL_SLOTS, "still ten slots")
+    ctx.eq(img.tags(), ALL_SLOTS, "still twelve slots")
 
 
 @test(modes=("ds",))

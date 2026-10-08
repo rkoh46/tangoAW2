@@ -1080,7 +1080,7 @@ def tag_sturm_pairs(ctx):
     special pairs (aw2test.tag.STURM_PAIRS; Von Bolt 125 and 3 stars ..
     Kindle 105, anyone else 95). In battle the Tag Power's firepower is
     compatibility - 100 against the damage calculator; Sturm's TAG page
-    lists his five partners with their stars, Von Bolt's lists Sturm last;
+    lists his six partners with their stars, Von Bolt's lists Sturm last;
     the Teams slot's badge shows 3 stars for Sturm + Von Bolt; the Tag
     Power screen shows "Black Apocalypse" (POWER 125%)."""
     for a, b, want in STURM_BOOST:
@@ -1110,8 +1110,8 @@ def tag_sturm_pairs(ctx):
 
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
-    ctx.eq(names, b"Von Bolt\rHawke\rLash\rFlak\rAdder", "Sturm's partners, tangoAW2's order (Kindle, Jugger, Koal: 105, no special pair, not listed)")
-    ctx.eq(stars, 3 + 2 + 2 + 1 + 1, "their stars")
+    ctx.eq(names, b"Von Bolt\rHawke\rLash\rFlak\rAdder\rClone Andy", "Sturm's partners, tangoAW2's order (Kindle, Jugger, Koal: 105, no special pair, not listed)")
+    ctx.eq(stars, 3 + 2 + 2 + 1 + 1 + 2, "their stars")
     ctx.shot(g, "sturm_tag_page")
     g = tag_battle(ctx, ["vonbolt", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
@@ -1205,3 +1205,105 @@ def tag_sturm_words(ctx):
               f"Sturm and Von Bolt's exchange ({t!r})")
     e.wait(200)  # both lines typed
     ctx.shot(g, "sturm_victory_quote")
+
+
+CLONE_BOOST = [("sturm", "cloneandy", 18), ("cloneandy", "sturm", 18)]
+
+
+@test(modes=("ds",))
+def tag_clone_andy(ctx):
+    """Clone Andy (crate::co_new, tangoAW2's own CO on Dual Strike's Andy's
+    data; his pair with Sturm made up for tangoAW2, crate::sturm_pairs, 118
+    and 2 stars, "Perfect Copy"): with Sturm the compatibility is the table's
+    (118: the Tag Power's firepower is +18% against the damage calculator,
+    both ways round); with every other CO it is Andy's own (Dual Strike's
+    table, his row and column), and he has none of Andy's special pairs
+    (Andy and Max have one; Clone Andy and Max do not); his TAG page lists
+    Sturm alone, Sturm's lists him last; the Tag Power screen shows 118%."""
+    ds = romlib.DualStrike()
+    for a, b, want in CLONE_BOOST:
+        ctx.eq(tag.compatibility(ds, romlib.co_id(a), romlib.co_id(b)) - 100, want, f"{a}+{b}: tangoAW2's table")
+        units = [(1, "tank", 10, 10), (2, "tank", 11, 10), (1, "tank", 10, 12), (2, "tank", 11, 12)]
+        g = tag_battle(ctx, [a, "olaf"], [b, "max"], units=units)
+        e = g.e
+        e.w8(tag.rec(1) + 1, 1)
+        e.w8(tag.rec(2) + 1, 1)
+        ctx.eq(ctx.tag_firepower(g, 1, g.player(1)["co"]), want, f"{a}+{b}: the calculator's tag firepower in the game")
+        ctx.attack(g, (10, 10), (10, 10), (11, 10))
+        e.w8(tag.rec(1) + 1, 0)
+        e.w8(tag.rec(2) + 1, 0)
+        ctx.attack(g, (10, 12), (10, 12), (11, 12))
+    # Any other CO: Andy's compatibility, as Dual Strike's table gives it.
+    for other in ("kindle", "vonbolt", "max", "olaf", "hawke"):
+        andy = tag.compatibility(ds, romlib.co_id("andy"), romlib.co_id(other))
+        ctx.eq(tag.compatibility(ds, romlib.co_id("cloneandy"), romlib.co_id(other)), andy, f"Clone Andy + {other}: Andy's own compatibility ({andy})")
+        ctx.eq(tag.compatibility(ds, romlib.co_id(other), romlib.co_id("cloneandy")), tag.compatibility(ds, romlib.co_id(other), romlib.co_id("andy")), f"{other} + Clone Andy: as with Andy")
+
+    def tag_page(g):
+        e = g.e
+        g.open_map_menu()
+        g.choose("CO", g.MAP_MENU)
+        e.wait(90)
+        for _ in range(4):
+            e.press("DOWN", 4)
+            e.wait(40)
+        ctx.eq((e.u32(0x03005940), e.u8(EXTRAS + 5)), (3, 1), "the TAG page")
+        stars = [s for s in oam(e) if (s[2] & 0x3FF) == 0x321 and s[2] >> 12 == 12]
+        return rom_string(e, STRINGS + 0x300), len(stars)
+
+    g = tag_battle(ctx, ["cloneandy", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
+    names, stars = tag_page(g)
+    ctx.eq(names, b"Sturm", "Clone Andy's TAG page: Sturm alone (none of Andy's special pairs)")
+    ctx.eq(stars, 2, "its two stars")
+    ctx.shot(g, "clone_andy_tag_page")
+    g = tag_battle(ctx, ["andy", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
+    names, stars = tag_page(g)
+    ctx.check(b"Max" in names and b"Clone" not in names, f"Andy's own TAG page is Andy's ({names!r})")
+    g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
+    names, _ = tag_page(g)
+    ctx.eq(names.split(b"\r")[-1], b"Clone Andy", "Sturm's TAG page lists Clone Andy last")
+
+    # The Tag Power screen: the name's text and the 118%.
+    g = tag_battle(ctx, ["sturm", "olaf"], ["cloneandy", None], units=[(1, "tank", 10, 4), (2, "tank", 20, 10)])
+    e = g.e
+    fill(g, 1)
+    g.open_map_menu()
+    g.choose("Tag", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: e.u8(EXTRAS) == 1, 1200, step=4), "the tag screen shows")
+    ctx.require(screen_at(e, 310 - TAG_START), "sliding")
+    full_screen_shown(ctx, e, "Sturm + Clone Andy")
+    ctx.require(screen_at(e, 600 - TAG_START), "done")
+    ctx.check(13 in palettes_of(bg_map(e, 0)), "the name (Perfect Copy) on BG0")
+    ctx.shot(g, "sturm_clone_andy_tag_screen")
+    power_digits(ctx, os.path.join(ctx.out, "sturm_clone_andy_tag_screen.bmp"), 118, "Sturm + Clone Andy")
+    ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the Super Power follows")
+
+    # Their victory exchange (the exchange's lines are tangoAW2's own).
+    m = ctx.map(spare=False)
+    m.unit(1, "tank", 10, 10).unit(2, "infantry", 11, 10)
+    g = ctx.boot_teams(m)
+    e = g.e
+    tag.set_teams_partner(e, 1, "cloneandy")
+    g.set_teams(["sturm", "olaf"], {1})
+    g.teams_to_rules()
+    g.set_rules()
+    g.start_battle()
+    g.wait_for_input()
+    inf = g.unit_at(11, 10)
+    a = g.unit_addr(inf["id"])
+    e.w16(a + 4, (e.u16(a + 4) & ~0x7F) | 1)
+    g.select(10, 10)
+    g.move_to(10, 10)
+    g.choose("Fire", g.ACTION_MENU)
+    g.pick_target(11, 10)
+    for _ in range(60):
+        if rom_string(e, STRINGS + 0x100) != b"":
+            break
+        e.wait(40)
+        e.press("A", 2)
+    t = rom_string(e, STRINGS + 0x100)
+    ctx.log(f"victory quote {t!r}")
+    ctx.check(t in (b"Flawless. As built.\rClone Andy: Orders done!", b"Hold nothing back.\rClone Andy: Yes, sir!"),
+              f"Sturm and Clone Andy's exchange ({t!r})")
+    e.wait(200)
+    ctx.shot(g, "sturm_clone_andy_victory_quote")

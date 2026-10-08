@@ -47,6 +47,12 @@ const ENTRY: u32 = 0x5C;
 const MAGIC_WORD: u32 = 0x4443_5344; // "DSCD"
 const MAGIC_AT: u32 = DATA;
 
+/// The word marking which campaign's blob is installed (+0x10000 a
+/// source's index).
+fn magic_of(source: usize) -> u32 {
+    MAGIC_WORD + 0x1_0000 * source as u32
+}
+
 // --- RAM (EWRAM the game never touches; 0x0203FD10..0x0203FD5F) ------------------
 
 /// 1 while a DS Campaign session is on (from its start to the menu).
@@ -58,6 +64,9 @@ pub const MISSION: u32 = 0x0203_FD12;
 /// The Select Mode sub-menu's level and row ([`crate::campaign_menu`]).
 pub const MENU_LEVEL: u32 = 0x0203_FD13;
 pub const MENU_CHOICE: u32 = 0x0203_FD14;
+/// The campaign being played or chosen in the menu: an index of
+/// [`crate::campaign_model::SOURCES`] (0 the DS Campaign).
+pub const SOURCE: u32 = 0x0203_FD57;
 /// Real-time countdown (frames), Dual Strike's op 0x5A; 0 off.
 pub(crate) const COUNTDOWN: u32 = 0x0203_FD18;
 /// The staff credits after Means to an End: 0 none; 1 due (its ending
@@ -113,11 +122,50 @@ const P_WON: u32 = PROGRESS + 8;
 /// XOR General: 0 is General), which the next two-front battle starts with
 /// (Dual Strike keeps it in its save data, `0x02290718` +0x16 / +0x17).
 const P_POSTURE: u32 = PROGRESS + 0x0C;
+/// A custom campaign's unlocked COs: bit k is its roster entry k (24 bits,
+/// +0x0D..+0x0F; the DS Campaign's stay 0).
+const P_UNLOCKED: u32 = PROGRESS + 0x0D;
 const P_FLAGS: u32 = PROGRESS + 0x10;
+/// The DS Campaign's record magic and Flash slot (AW2 uses 0 profile,
+/// 2..4 suspends, 5..8 design maps; tangoAW2: 12 the BH Campaign's mission
+/// saved halfway, 13 its record, 14 the DS Campaign's mission saved
+/// halfway, 15 its record and the CO skills).
 const PROGRESS_MAGIC: u32 = 0x4344_5741; // "AWDC"
-/// AW2's save slot for the progress (AW2 uses 0 profile, 2..4 suspends,
-/// 5..7 design maps).
 pub const SAVE_SLOT: u8 = 15;
+
+/// The campaign (an index of [`crate::campaign_model::SOURCES`]) the
+/// session or the menu is on.
+pub fn source(core: &Core) -> usize {
+    let s = core.raw_read_8(SOURCE, -1) as usize;
+    if s < crate::campaign_model::SOURCES.len() {
+        s
+    } else {
+        0
+    }
+}
+
+fn spec(core: &Core) -> &'static crate::campaign_model::Source {
+    &crate::campaign_model::SOURCES[source(core)]
+}
+
+/// The session is the DS Campaign's.
+pub fn art(core: &Core) -> crate::campaign_model::WorldArt {
+    spec(core).art
+}
+
+pub fn is_ds(core: &Core) -> bool {
+    source(core) == 0
+}
+
+/// The DS Campaign's mission being played (Dual Strike's own missions have
+/// rules of their own); 0xFF in another campaign.
+pub fn ds_mission(core: &Core) -> u8 {
+    if is_ds(core) {
+        mission(core)
+    } else {
+        0xFF
+    }
+}
 
 // --- AW2 ------------------------------------------------------------------------
 
@@ -244,7 +292,7 @@ const STAGING: u32 = 0x0200_0000;
 /// writer, `sub_0801A7D8(SAVE_SLOT, buffer, SAVE_SIZE)`, which returns to
 /// the proc.
 fn save(core: &mut Core) {
-    let (slot, buffer, len) = stage_slot(core);
+    let (slot, buffer, len) = if is_ds(core) { stage_slot(core) } else { stage_custom(core) };
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, slot as i32);
     cpu.set_gpr(1, buffer as i32);
@@ -252,21 +300,41 @@ fn save(core: &mut Core) {
     cpu.set_thumb_pc(SLOT_WRITER);
 }
 
-/// The slot's record in the staging buffer: the progress (as saved: the
-/// one in Flash when no campaign is in RAM), the records, the COs' skill
-/// data. (slot, buffer, length) for AW2's slot writer.
+/// The DS Campaign's slot in the staging buffer: the progress, the records
+/// and the COs' skill data. (slot, buffer, length) for AW2's slot writer.
+///
+/// The skill data is global (every mode uses it) and lives in the DS
+/// Campaign's slot, so this stages *that* slot whenever the skills are
+/// written, with the DS Campaign's progress and records: the ones in RAM
+/// when the DS Campaign is the one loaded, else the saved ones (a custom
+/// campaign's progress in RAM never lands in the DS slot). A custom
+/// campaign's own save is [`stage_custom`].
 pub fn stage_slot(core: &mut Core) -> (u8, u32, u32) {
     skills_loaded(core);
-    if !progress_valid(core) {
-        load_from_flash(core);
-    }
     let mut b = vec![0u8; (SAVE_SIZE + RECORDS_SIZE) as usize];
-    core.raw_read_range(PROGRESS, -1, &mut b[..SAVE_SIZE as usize]);
-    core.raw_read_range(RECORDS, -1, &mut b[SAVE_SIZE as usize..]);
+    if core.raw_read_32(P_MAGIC, -1) == PROGRESS_MAGIC {
+        core.raw_read_range(PROGRESS, -1, &mut b[..SAVE_SIZE as usize]);
+        core.raw_read_range(RECORDS, -1, &mut b[SAVE_SIZE as usize..]);
+    } else if let Some(saved) = read_slot(core, SAVE_SLOT) {
+        let n = saved.len().min(b.len());
+        b[..n].copy_from_slice(&saved[..n]);
+    }
+    // (else no DS Campaign is saved: the slot carries the skill data alone,
+    // its progress empty, so DS CAMPAIGN offers no Continue)
     b.extend_from_slice(&crate::co_skills::bytes(core));
     core.raw_write_range(STAGING, -1, &b);
     crate::co_skills::written(core);
     (SAVE_SLOT, STAGING, b.len() as u32)
+}
+
+/// A custom campaign's record in the staging buffer: its progress and
+/// records (no skill data). (slot, buffer, length).
+pub fn stage_custom(core: &mut Core) -> (u8, u32, u32) {
+    let mut b = vec![0u8; (SAVE_SIZE + RECORDS_SIZE) as usize];
+    core.raw_read_range(PROGRESS, -1, &mut b[..SAVE_SIZE as usize]);
+    core.raw_read_range(RECORDS, -1, &mut b[SAVE_SIZE as usize..]);
+    core.raw_write_range(STAGING, -1, &b);
+    (spec(core).save_slot, STAGING, b.len() as u32)
 }
 
 /// Empties the BG0 tilemap buffer, then tail-calls `BG_EnableSyncBG0`
@@ -377,14 +445,19 @@ fn proc_running(core: &Core, script: u32) -> bool {
     (0..32).any(|k| core.raw_read_32(0x0200_D610 + 0x6C * k, -1) == script)
 }
 
-static BUILT: OnceLock<Option<Campaign>> = OnceLock::new();
+static BUILT: [OnceLock<Option<Campaign>>; 4] = [OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new()];
 
-/// The campaign (loaded once by its source, [`crate::campaign_model`];
-/// then the engine's own procs and stubs added).
+/// The campaign chosen ([`source`]; loaded once by its source,
+/// [`crate::campaign_model`]; then the engine's own procs and stubs added).
 pub fn campaign(core: &Core) -> Option<&'static Campaign> {
-    BUILT
+    let idx = source(core);
+    BUILT[idx]
         .get_or_init(|| {
-            let mut model = crate::campaign_model::SOURCES.iter().find(|s| (s.available)(core)).and_then(|s| (s.load)(core))?;
+            let src = &crate::campaign_model::SOURCES[idx];
+            if !(src.available)(core) {
+                return None;
+            }
+            let mut model = (src.load)(core)?;
             let built = &mut model.built;
             let save = built.add_magic(data::Magic::Flow(FLOW_SAVE)) & !1;
             let co_setup = built.add_magic(data::Magic::Flow(FLOW_CO_SETUP));
@@ -404,13 +477,19 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
         .as_ref()
 }
 
+/// Some campaign's data is in the ROM image.
 fn installed(core: &Core) -> bool {
-    core.raw_read_32(MAGIC_AT, -1) == MAGIC_WORD
+    core.raw_read_32(MAGIC_AT, -1) & 0xFFFF == MAGIC_WORD & 0xFFFF
+}
+
+/// The chosen campaign's is.
+fn installed_chosen(core: &Core) -> bool {
+    core.raw_read_32(MAGIC_AT, -1) == magic_of(source(core))
 }
 
 /// Writes the campaign into the ROM image (once).
 fn install(core: &mut Core) -> bool {
-    if installed(core) {
+    if installed_chosen(core) {
         return true;
     }
     let Some(c) = campaign(core) else { return false };
@@ -419,7 +498,7 @@ fn install(core: &mut Core) -> bool {
     for &(id, at) in &b.texts {
         core.raw_write_32(data::TEXT_TABLE + 4 * id as u32, -1, at);
     }
-    core.raw_write_32(MAGIC_AT, -1, MAGIC_WORD);
+    core.raw_write_32(MAGIC_AT, -1, magic_of(source(core)));
     true
 }
 
@@ -429,7 +508,7 @@ fn install_world_map(core: &mut Core) -> bool {
     let n = c.model.missions;
     let picks: Vec<bool> = c.model.built.missions.iter().take(n).map(player_picks).collect();
     let texts: Vec<u16> = c.model.built.missions.iter().take(n).map(|m| m.info_text).collect();
-    crate::ds_worldmap::install(core, &picks, c.co_setup, &texts, &c.model.built.story.after_win)
+    crate::ds_worldmap::install(core, source(core), &c.model, &picks, c.co_setup, &texts)
 }
 
 /// On the world map, the mission under the cursor is the one played: its
@@ -454,6 +533,18 @@ fn sync_mission(core: &mut Core) {
 /// which is not won.
 pub fn available(core: &Core) -> Vec<u8> {
     let Some(c) = campaign(core) else { return Vec::new() };
+    if let Some(custom) = &c.model.custom {
+        // A custom campaign: each mission names what opens it.
+        use crate::campaign_model::Requires;
+        return (0..c.model.missions as u8)
+            .filter(|&m| !won(core, m))
+            .filter(|&m| match &custom.requires[m as usize] {
+                Requires::Start => true,
+                Requires::All(v) => v.iter().all(|&r| won(core, r)),
+                Requires::Any(v) => v.iter().any(|&r| won(core, r)),
+            })
+            .collect();
+    }
     let (order, side) = (&c.model.order, &c.model.side_missions);
     let mut out = Vec::new();
     if let Some(&m) = order.iter().find(|&&m| !side.iter().any(|s| s.0 == m) && !won(core, m)) {
@@ -524,6 +615,7 @@ pub fn tick(core: &mut Core, ds: bool) {
             2 if menu => core.raw_write_8(ACTIVE, -1, 0),
             _ => {}
         }
+        custom_co_screen(core);
         crate::ds_campaign_rules::mte_tick(core);
         // The countdown of Dual Strike's op 0x5A and Crystal Calamity's
         // Black Onyx (crate::onyx).
@@ -534,6 +626,32 @@ pub fn tick(core: &mut Core, ds: bool) {
     }
     let map_script = campaign(core).map_or(AW2_MAP_SCRIPT, |c| c.map_script);
     crate::ds_worldmap::tick(core, on && active(core), AW2_MAP_SCRIPT, map_script);
+}
+
+/// The CO screen (`ProcScr_CoSelect`) of the pool.
+const CO_SCREEN_SCRIPT: u32 = 0x0861_6638;
+/// `gUnknown_03005910`: the countries locked by the picks so far; and each
+/// pick's "locks its country" word (`gUnknown_030059C0`, [`CO_GROUP_SWITCH`]).
+const COUNTRY_LOCKED: u32 = 0x0300_5910;
+
+/// A custom campaign's CO screen: AW2 gives every army of a campaign map its
+/// own country (each pick locks its country for the next), which suits Dual
+/// Strike's player (Orange Star, then another country's CO) but not a
+/// campaign whose COs are all Black Hole's: no pick locks any country.
+fn custom_co_screen(core: &mut Core) {
+    if is_ds(core) || !(0..32).any(|k| core.raw_read_32(0x0200_D610 + 0x6C * k, -1) == CO_SCREEN_SCRIPT) {
+        return;
+    }
+    for c in 0..5 {
+        if core.raw_read_8(COUNTRY_LOCKED + c, -1) != 0 {
+            core.raw_write_8(COUNTRY_LOCKED + c, -1, 0);
+        }
+    }
+    for i in 0..5 {
+        if core.raw_read_32(CO_GROUP_SWITCH + 4 * i, -1) != 1 {
+            core.raw_write_32(CO_GROUP_SWITCH + 4 * i, -1, 1);
+        }
+    }
 }
 
 pub fn in_battle(core: &Core) -> bool {
@@ -555,23 +673,52 @@ fn mission_number(core: &mut Core) {
 // --- Progress --------------------------------------------------------------------
 
 fn progress_valid(core: &Core) -> bool {
-    core.raw_read_32(P_MAGIC, -1) == PROGRESS_MAGIC
+    core.raw_read_32(P_MAGIC, -1) == spec(core).progress_magic
+}
+
+/// The unlocked COs of the custom campaign (a mask of its roster).
+pub fn unlocked_mask(core: &Core) -> u32 {
+    if !progress_valid(core) {
+        return 0;
+    }
+    (0..3).fold(0u32, |m, k| m | (core.raw_read_8(P_UNLOCKED + k, -1) as u32) << (8 * k))
+}
+
+fn set_unlocked_mask(core: &mut Core, mask: u32) {
+    for k in 0..3 {
+        core.raw_write_8(P_UNLOCKED + k, -1, (mask >> (8 * k)) as u8);
+    }
+}
+
+/// The roster's COs unlocked (AW2 ids), in roster order.
+pub fn unlocked_cos(core: &Core) -> Vec<u8> {
+    let (Some(c), mask) = (campaign(core), unlocked_mask(core)) else { return Vec::new() };
+    let Some(custom) = &c.model.custom else { return Vec::new() };
+    custom.roster.iter().enumerate().filter(|(k, _)| mask >> k & 1 != 0).map(|(_, r)| r.0).collect()
 }
 
 fn new_progress(core: &mut Core) {
-    crate::suspend::drop_ds(core);
+    crate::suspend::drop_mid(core, spec(core).mid_slot);
     let clears = if progress_valid(core) { core.raw_read_8(P_CLEARS, -1) } else { 0 };
     for a in (PROGRESS..PROGRESS + SAVE_SIZE).step_by(4) {
         core.raw_write_32(a, -1, 0);
     }
-    core.raw_write_32(P_MAGIC, -1, PROGRESS_MAGIC);
+    core.raw_write_32(P_MAGIC, -1, spec(core).progress_magic);
     core.raw_write_8(P_NEXT, -1, 0);
     core.raw_write_8(P_CLEARS, -1, clears);
+    // A custom campaign starts with its open COs; its records are new.
+    if let Some(custom) = campaign(core).and_then(|c| c.model.custom.as_ref()) {
+        let open = custom.roster.iter().enumerate().filter(|(_, r)| r.1).fold(0u32, |m, (k, _)| m | 1 << k);
+        set_unlocked_mask(core, open);
+        for a in (RECORDS..RECORDS + RECORDS_SIZE).step_by(4) {
+            core.raw_write_32(a, -1, 0);
+        }
+    }
 }
 
 /// Hard is open: a Normal campaign has been cleared (the saved record's).
 pub fn hard_open(core: &mut Core) -> bool {
-    has_save(core) && core.raw_read_8(P_CLEARS, -1) & 1 != 0
+    spec(core).has_hard && has_save(core) && core.raw_read_8(P_CLEARS, -1) & 1 != 0
 }
 
 /// The session's campaign is Hard.
@@ -647,13 +794,13 @@ const FLASH: u32 = 0x0E00_0000;
 const SECTOR: u32 = 0x1000;
 const SECTOR_MAGIC: u32 = 0x7372_6132;
 
-/// The payload of the newest sector of [`SAVE_SLOT`] (progress, records,
-/// the COs' skill data), if one is saved.
-fn read_slot(core: &Core) -> Option<Vec<u8>> {
+/// The payload of the newest sector of a slot (progress, records, and in
+/// the DS Campaign's the COs' skill data), if one is saved.
+fn read_slot(core: &Core, slot: u8) -> Option<Vec<u8>> {
     let mut best: Option<(u32, u32)> = None;
-    for s in 0..16 {
-        let at = FLASH + SECTOR * s;
-        if core.raw_read_32(at, -1) != SECTOR_MAGIC || core.raw_read_8(at + 0x0D, -1) != SAVE_SLOT {
+    for sector in 0..16 {
+        let at = FLASH + SECTOR * sector;
+        if core.raw_read_32(at, -1) != SECTOR_MAGIC || core.raw_read_8(at + 0x0D, -1) != slot {
             continue;
         }
         let generation = core.raw_read_32(at + 8, -1);
@@ -668,13 +815,13 @@ fn read_slot(core: &Core) -> Option<Vec<u8>> {
     Some(b)
 }
 
-/// The COs' skill data in RAM (crate::co_skills), from the saved record the
-/// first time it is needed.
+/// The COs' skill data in RAM (crate::co_skills), from the DS Campaign's
+/// saved record the first time it is needed.
 pub fn skills_loaded(core: &mut Core) {
     if crate::co_skills::data_valid(core) {
         return;
     }
-    let saved = read_slot(core).filter(|b| b.len() > (SAVE_SIZE + RECORDS_SIZE) as usize);
+    let saved = read_slot(core, SAVE_SLOT).filter(|b| b.len() > (SAVE_SIZE + RECORDS_SIZE) as usize);
     let part = saved.as_ref().map(|b| &b[(SAVE_SIZE + RECORDS_SIZE) as usize..]);
     crate::co_skills::load(core, part);
 }
@@ -684,31 +831,20 @@ pub fn cleared(core: &mut Core, hard: bool) -> bool {
     has_save(core) && core.raw_read_8(P_CLEARS, -1) & if hard { 2 } else { 1 } != 0
 }
 
-/// Reads the progress record from the newest sector of [`SAVE_SLOT`].
+/// Reads the chosen campaign's progress record from the newest sector of
+/// its slot (the records with it).
 fn load_from_flash(core: &mut Core) {
-    let mut best: Option<(u32, u32)> = None;
-    for s in 0..16 {
-        let at = FLASH + SECTOR * s;
-        if core.raw_read_32(at, -1) != SECTOR_MAGIC || core.raw_read_8(at + 0x0D, -1) != SAVE_SLOT {
-            continue;
-        }
-        let generation = core.raw_read_32(at + 8, -1);
-        if best.is_none_or(|(g, _)| generation >= g) {
-            best = Some((generation, at));
-        }
-    }
-    let Some((_, at)) = best else { return };
-    let len = (core.raw_read_16(at + 0x50, -1) as u32).min(SAVE_SIZE + RECORDS_SIZE);
-    let mut b = vec![0u8; len as usize];
-    for (k, v) in b.iter_mut().enumerate() {
-        *v = core.raw_read_8(at + 0x52 + k as u32, -1);
-    }
-    if b.len() >= 4 && u32::from_le_bytes(b[0..4].try_into().unwrap()) == PROGRESS_MAGIC {
+    let Some(b) = read_slot(core, spec(core).save_slot) else { return };
+    if b.len() >= 4 && u32::from_le_bytes(b[0..4].try_into().unwrap()) == spec(core).progress_magic {
+        // (the other campaign's records in RAM are not this one's)
+        core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
+        core.raw_write_range(PROGRESS, -1, &[0u8; SAVE_SIZE as usize]);
         let n = b.len().min(SAVE_SIZE as usize);
         core.raw_write_range(PROGRESS, -1, &b[..n]);
         // The records (a record saved before them has none).
         if b.len() > SAVE_SIZE as usize {
-            core.raw_write_range(RECORDS, -1, &b[SAVE_SIZE as usize..]);
+            let end = b.len().min((SAVE_SIZE + RECORDS_SIZE) as usize);
+            core.raw_write_range(RECORDS, -1, &b[SAVE_SIZE as usize..end]);
         }
     }
 }
@@ -807,7 +943,7 @@ fn start(core: &mut Core, new: bool) {
     // Continue over a mission saved halfway: that mission, resumed
     // ([`crate::suspend`]).
     let missions = campaign(core).map_or(0, |c| c.model.missions);
-    let resume = if req == 2 { crate::suspend::ds_saved_mission(core).filter(|&m| (m as usize) < missions) } else { None };
+    let resume = if req == 2 { crate::suspend::saved_mission(core, spec(core).mid_slot).filter(|&m| (m as usize) < missions) } else { None };
     // A record saved by 0.4.0 kept the lab missions' flags at 0x60..0x62
     // (AW2's Hard Campaign flag among them): they move to 0x90..0x92.
     for k in 0..3u32 {
@@ -836,7 +972,7 @@ fn start(core: &mut Core, new: bool) {
     core.raw_write_8(MAP_ID, -1, data::MAP_ID);
     sync_mission(core);
     if resume.is_some() {
-        return crate::suspend::resume_ds(core);
+        return crate::suspend::resume_mid(core, spec(core).mid_slot);
     }
     let Some(c) = campaign(core) else { return };
     proc_start_instead(core, c.start_proc);
@@ -854,7 +990,7 @@ fn end_of_battle(core: &mut Core) {
     let index = core.raw_read_8(MISSION, -1);
     let won = battle_won(core);
     // A save of this mission made halfway is over with it.
-    crate::suspend::drop_ds(core);
+    crate::suspend::drop_mid(core, spec(core).mid_slot);
     // The outcome, for the tests and logs: 1 won, 2 lost, and the day.
     core.raw_write_8(LAST_RESULT, -1, if won { 1 } else { 2 });
     core.raw_write_8(LAST_RESULT + 1, -1, index);
@@ -863,6 +999,14 @@ fn end_of_battle(core: &mut Core) {
         let w = core.raw_read_32(P_WON, -1) | (1 << index);
         core.raw_write_32(P_WON, -1, w);
         flags_to_record(core);
+        // A custom campaign's recruit missions: the COs the win unlocks.
+        if let Some(custom) = campaign(core).and_then(|c| c.model.custom.as_ref()) {
+            let mut mask = unlocked_mask(core);
+            for &r in custom.recruits.get(index as usize).into_iter().flatten() {
+                mask |= 1 << r;
+            }
+            set_unlocked_mask(core, mask);
+        }
     } else {
         // A lost mission leaves the flags as they were before it.
         flags_from_record(core);
@@ -1004,7 +1148,7 @@ pub fn map_start(core: &mut Core) {
     set_look(core, m);
     set_controllers(core, m);
     // Dual Strike's Setup phase before day 1 (crate::setup_phase).
-    crate::setup_phase::map_start(core, player_picks(main));
+    crate::setup_phase::map_start(core, player_picks(main) && main.native.as_ref().is_none_or(|n| n.setup));
     crate::two_front::map_start(core);
     crate::onyx::map_start(core);
 }
@@ -1013,7 +1157,7 @@ pub fn map_start(core: &mut Core) {
 /// (crate::two_front sets it at every swap, before the map's graphics are
 /// loaded).
 pub fn set_look(core: &mut Core, m: &data::MissionInfo) {
-    if m.index == data::MEANS_TO_AN_END {
+    if is_ds(core) && m.index == data::MEANS_TO_AN_END {
         // Dual Strike's own palette for this map (its palette function
         // 0x020F92B8 gives the main front of map 0xF8 bmap/00b).
         crate::wasteland::set_biome(core, crate::wasteland::GRAND_BOLT_LOOK);
@@ -1041,6 +1185,13 @@ pub fn tag_pairs(core: &Core) -> Vec<(u32, u8, u8)> {
     let mut out = Vec::new();
     for k in 0..(m.armies as usize).min(4) {
         let (a, b) = m.cos[k];
+        if let Some(n) = &m.native {
+            let (ca, cb) = n.cos[k];
+            if a != 0x1C && ca != crate::campaign_model::NO_CO && cb != crate::campaign_model::NO_CO && ca != cb {
+                out.push((k as u32 + 1, ca, cb));
+            }
+            continue;
+        }
         if a == 0x1C || b == 0 || b == 0x1C {
             continue;
         }
@@ -1090,7 +1241,7 @@ fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
 
 /// The player picks a CO for the mission: for an army (Dual Strike's
 /// 0x1C), or for a second front (crate::two_front).
-fn player_picks(m: &data::MissionInfo) -> bool {
+pub fn player_picks(m: &data::MissionInfo) -> bool {
     m.cos.iter().take(m.armies as usize).any(|&(co, _)| co == 0x1C)
         || m.two_front.as_ref().is_some_and(|t| t.cos.contains(&crate::campaign_model::PICK))
 }
@@ -1108,13 +1259,27 @@ fn co_setup(core: &mut Core) -> u32 {
     // Dual Strike's pool, by country (AW2's tabs: Orange Star, Blue Moon,
     // Green Earth, Yellow Comet, then Black Hole).
     let mut groups: Vec<(u8, Vec<u8>)> = Vec::new();
-    let pool: Vec<u8> = if m.pool.is_empty() { vec![0x14, 0x15, 0x03] } else { m.pool.clone() };
-    for &ds in &pool {
-        let Some(co) = data::aw2_co(ds) else { continue };
-        let country = crate::ds_campaign_rules::country(ds);
-        match groups.iter_mut().find(|g| g.0 == country) {
-            Some(g) => g.1.push(co),
-            None => groups.push((country, vec![co])),
+    if c.model.custom.is_some() {
+        // A custom campaign: the mission's pool (else the roster) among the
+        // COs unlocked so far.
+        let unlocked = unlocked_cos(core);
+        let pool = c.model.custom.as_ref().and_then(|x| x.pools.get(index)).cloned().unwrap_or_default();
+        for co in unlocked.into_iter().filter(|c| pool.is_empty() || pool.contains(c)) {
+            let country = crate::custom_campaign::country(co);
+            match groups.iter_mut().find(|g| g.0 == country) {
+                Some(g) => g.1.push(co),
+                None => groups.push((country, vec![co])),
+            }
+        }
+    } else {
+        let pool: Vec<u8> = if m.pool.is_empty() { vec![0x14, 0x15, 0x03] } else { m.pool.clone() };
+        for &ds in &pool {
+            let Some(co) = data::aw2_co(ds) else { continue };
+            let country = crate::ds_campaign_rules::country(ds);
+            match groups.iter_mut().find(|g| g.0 == country) {
+                Some(g) => g.1.push(co),
+                None => groups.push((country, vec![co])),
+            }
         }
     }
     groups.sort_by_key(|g| g.0);

@@ -19,8 +19,9 @@ class EmuError(RuntimeError):
 
 
 class Emu:
-    def __init__(self, save=None, rom=None, ds=False, log=None, trace=None):
+    def __init__(self, save=None, rom=None, ds=False, log=None, trace=None, env=None):
         self.rom = rom or paths.aw2_rom()
+        self_env = env
         env = dict(os.environ)
         if ds:
             env["TANGOAW2_DS_ROM"] = paths.ds_rom()
@@ -28,6 +29,8 @@ class Emu:
             env.pop("TANGOAW2_DS_ROM", None)
         if trace:
             env["AW2_TRACE"] = trace
+        # (one console's own variables: tests run in parallel in one process)
+        env.update(self_env or {})
         # The Black Factory's decisions (crate::bh_factory), one file per console.
         self.bh_log = (save + ".bhlog") if save else None
         if self.bh_log:

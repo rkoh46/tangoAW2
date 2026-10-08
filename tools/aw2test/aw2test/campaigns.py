@@ -131,6 +131,24 @@ def leave_map(e, d, close=False):
         e.wait(40)
 
 
+def win_here(e, d):
+    """In a campaign mission under the player's control: won (a test aid:
+    `force_win`), the results and the scenes, back on the world map."""
+    index = d.mission()
+    if not d.force_win():
+        raise NavError(f"mission {index} not won")
+    for _ in range(400):
+        e.wait(30)
+        if d.world_map_up() and e.u8(dc.WM_STATE + 0x10):
+            break
+        if d.scripts_running() or not d.in_battle():
+            e.press("A", 4)
+    if not d.world_map_up():
+        raise NavError("not back on the world map")
+    e.wait(60)
+    return index
+
+
 def win_ds_mission(e, d, lab_flag=False):
     """On the DS world map: the mission under the cursor picked, won (a
     test aid: `force_win`), the results and back on the map. With

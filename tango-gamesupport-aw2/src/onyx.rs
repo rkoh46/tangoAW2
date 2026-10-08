@@ -427,7 +427,7 @@ fn timed_mission(core: &Core) -> Option<(usize, u8)> {
     if !crate::ds_campaign::active(core) || crate::two_front::second_live(core) {
         return None;
     }
-    match crate::ds_campaign::mission(core) as usize {
+    match crate::ds_campaign::ds_mission(core) as usize {
         crate::ds_campaign_data::CRYSTAL_CALAMITY => Some((crate::ds_campaign_data::CRYSTAL_CALAMITY, ON_ONYX)),
         crate::ds_campaign_data::RECLAIM_THE_SKIES => Some((crate::ds_campaign_data::RECLAIM_THE_SKIES, ON_CLOCK)),
         _ => None,

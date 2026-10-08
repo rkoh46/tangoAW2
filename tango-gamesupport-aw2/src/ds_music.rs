@@ -1708,7 +1708,7 @@ mod pack_tests {
         let pack = crate::ds_pack::pack().unwrap();
         assert_eq!(heal_se_ids(&pack.arm9), Some([175, 176]));
         let m = music().expect("music");
-        assert_eq!(m.heal_se, [FIRST_SONG + 9, FIRST_SONG + 10]);
+        assert_eq!(m.heal_se, [FIRST_SONG + crate::co_new::NEW.len() as u16, FIRST_SONG + crate::co_new::NEW.len() as u16 + 1]);
         eprintln!("heal sounds: music ends at {:#010x}", BASE + m.blob.len() as u32);
         assert!(BASE + m.blob.len() as u32 <= 0x08D3_0000, "inside the music's ROM range (docs/AW2.md)");
         for (i, song) in m.heal_se.iter().enumerate() {

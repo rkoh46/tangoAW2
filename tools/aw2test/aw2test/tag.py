@@ -49,7 +49,8 @@ def star_cost(uses):
 # (crate::sturm_pairs, made up for tangoAW2): (partner, compatibility,
 # stars, Tag Power name); Kindle, Jugger and Koal 105, anyone else 95.
 STURM_PAIRS = [("vonbolt", 125, 3, b"Black Apocalypse"), ("hawke", 120, 2, b"Storm Front"),
-               ("lash", 115, 2, b"Mad Genius"), ("flak", 110, 1, b"Iron Fist"), ("adder", 110, 1, b"Viper's Nest")]
+               ("lash", 115, 2, b"Mad Genius"), ("flak", 110, 1, b"Iron Fist"), ("adder", 110, 1, b"Viper's Nest"),
+               ("cloneandy", 118, 2, b"Perfect Copy")]
 STURM_TEAMMATES = ("kindle", "jugger", "koal")
 
 

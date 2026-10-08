@@ -14,15 +14,23 @@
 //! | Sturm + Lash | 115 | 2 | Mad Genius |
 //! | Sturm + Flak | 110 | 1 | Iron Fist |
 //! | Sturm + Adder | 110 | 1 | Viper's Nest |
+//! | Sturm + Clone Andy | 118 | 2 | Perfect Copy |
 //! | Sturm + Kindle, Jugger, Koal | 105 | - | - |
 //! | Sturm + anyone else | 95 | - | - |
+//!
+//! Clone Andy is tangoAW2's own CO too (crate::co_new: Dual Strike's Andy's
+//! data under another name). Dual Strike has no tag data for a clone, so
+//! with every CO but Sturm his compatibility is Andy's own (his row and
+//! column of Dual Strike's table) and he has none of Andy's special pairs;
+//! his pair with Sturm is made up here, like Sturm's others: the partner
+//! is named by its AW2 CO id.
 
 /// AW2's Sturm.
 pub const STURM: u8 = 10;
 
 /// A special pair of Sturm's (tangoAW2's own).
 pub struct Pair {
-    /// The partner's Dual Strike id.
+    /// The partner's AW2 CO id.
     pub partner: u8,
     pub compatibility: u8,
     pub stars: u8,
@@ -34,9 +42,9 @@ pub struct Pair {
 }
 
 /// Sturm's special pairs, in his TAG box's order.
-pub const PAIRS: [Pair; 5] = [
+pub const PAIRS: [Pair; 6] = [
     Pair {
-        partner: 11, // Von Bolt
+        partner: 75, // Von Bolt
         compatibility: 125,
         stars: 3,
         name: "Black Apocalypse",
@@ -44,7 +52,7 @@ pub const PAIRS: [Pair; 5] = [
         partner_first: [("Hhhh... your despair...", "Delicious."), ("The world withers.", "As it should.")],
     },
     Pair {
-        partner: 15, // Hawke
+        partner: 14, // Hawke
         compatibility: 120,
         stars: 2,
         name: "Storm Front",
@@ -52,7 +60,7 @@ pub const PAIRS: [Pair; 5] = [
         partner_first: [("A fitting end.", "Ha! Worms."), ("Black Hole prevails.", "Naturally.")],
     },
     Pair {
-        partner: 13, // Lash
+        partner: 12, // Lash
         compatibility: 115,
         stars: 2,
         name: "Mad Genius",
@@ -60,7 +68,7 @@ pub const PAIRS: [Pair; 5] = [
         partner_first: [("Ha! Too easy!", "Of course."), ("Genius, right?", "Hmph. Yes.")],
     },
     Pair {
-        partner: 26, // Flak
+        partner: 11, // Flak
         compatibility: 110,
         stars: 1,
         name: "Iron Fist",
@@ -68,17 +76,25 @@ pub const PAIRS: [Pair; 5] = [
         partner_first: [("Har! Smashed 'em!", "Good."), ("Who's next, boss?", "Everyone.")],
     },
     Pair {
-        partner: 27, // Adder
+        partner: 13, // Adder
         compatibility: 110,
         stars: 1,
         name: "Viper's Nest",
         sturm_first: [("Black Hole is eternal!", "Sss... slow."), ("Grovel before me!", "Hssss!")],
         partner_first: [("Sss... too slow.", "Pathetic."), ("Such fragile prey.", "Crush them.")],
     },
+    Pair {
+        partner: crate::co_new::CLONE_ANDY,
+        compatibility: 118,
+        stars: 2,
+        name: "Perfect Copy",
+        sturm_first: [("Flawless. As built.", "Orders done!"), ("Hold nothing back.", "Yes, sir!")],
+        partner_first: [("Mission complete!", "Acceptable."), ("Who's next, sir?", "Anyone.")],
+    },
 ];
 
-/// Black Hole's other COs (Dual Strike ids: Kindle, Jugger, Koal): 105.
-const TEAMMATES: [u8; 3] = [25, 12, 14];
+/// Black Hole's other COs (AW2 ids: Kindle, Jugger, Koal): 105.
+const TEAMMATES: [u8; 3] = [74, 72, 73];
 const TEAMMATE_COMPATIBILITY: u8 = 105;
 const OTHER_COMPATIBILITY: u8 = 95;
 
@@ -96,21 +112,17 @@ fn other(a: u8, b: u8) -> Option<u8> {
 /// A pair's compatibility if Sturm is in it.
 pub fn compatibility(a: u8, b: u8) -> Option<u8> {
     let o = other(a, b)?;
-    let d = crate::tag::ds_id(o);
-    Some(match d {
-        Some(d) => match PAIRS.iter().find(|p| p.partner == d) {
-            Some(p) => p.compatibility,
-            None if TEAMMATES.contains(&d) => TEAMMATE_COMPATIBILITY,
-            None => OTHER_COMPATIBILITY,
-        },
+    Some(match PAIRS.iter().find(|p| p.partner == o) {
+        Some(p) => p.compatibility,
+        None if TEAMMATES.contains(&o) => TEAMMATE_COMPATIBILITY,
         None => OTHER_COMPATIBILITY,
     })
 }
 
 /// Sturm's special pair with the other CO, if they are one.
 pub fn special(a: u8, b: u8) -> Option<&'static Pair> {
-    let d = crate::tag::ds_id(other(a, b)?)?;
-    PAIRS.iter().find(|p| p.partner == d)
+    let o = other(a, b)?;
+    PAIRS.iter().find(|p| p.partner == o)
 }
 
 /// The pair's Tag Power name and four victory lines in Dual Strike's order
@@ -124,7 +136,7 @@ pub fn texts(a: u8, b: u8) -> Option<(Vec<u8>, [Vec<u8>; 4])> {
 
 /// Sturm's partners and stars, his TAG box's order (AW2 CO ids).
 pub fn partners() -> Vec<(u8, u8)> {
-    PAIRS.iter().filter_map(|p| Some((crate::tag::aw2_co(p.partner)?, p.stars))).collect()
+    PAIRS.iter().map(|p| (p.partner, p.stars)).collect()
 }
 
 #[cfg(test)]
@@ -133,7 +145,7 @@ mod tests {
 
     #[test]
     fn table() {
-        assert_eq!(PAIRS.len(), 5);
+        assert_eq!(PAIRS.len(), 6);
         for p in &PAIRS {
             assert!((1..=3).contains(&p.stars));
             assert!(p.name.bytes().all(|c| c.is_ascii_alphabetic() || c == b' ' || c == b'\''));

@@ -54,6 +54,57 @@ pub struct Model {
     pub pictures: Vec<Option<crate::ds_story_art::Picture>>,
     /// Its rules.
     pub source: &'static Source,
+    /// A data-defined campaign's extras ([`crate::custom_campaign`]); None
+    /// for Dual Strike's, which is converted from the pack.
+    pub custom: Option<Custom>,
+}
+
+/// What a custom (data-defined) campaign adds to the model.
+pub struct Custom {
+    /// Each mission's flag on AW2's own world map: place, marker style,
+    /// difficulty stars (LEVEL), by mission index.
+    pub points: Vec<MapPoint>,
+    /// Which missions must be won before each opens (by mission index).
+    pub requires: Vec<Requires>,
+    /// The COs the player can use, in unlock order: (AW2 CO id, open at
+    /// the start). Bit k of the record's unlock mask is entry k.
+    pub roster: Vec<(u8, bool)>,
+    /// Per mission: the roster entries (indexes) a win unlocks.
+    pub recruits: Vec<Vec<u8>>,
+    /// Per mission: the COs the player may pick from (AW2 ids; the
+    /// unlocked ones among them are offered). Empty: the whole roster.
+    pub pools: Vec<Vec<u8>>,
+}
+
+/// A mission's flag on AW2's world map (map pixels).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MapPoint {
+    pub x: i16,
+    pub y: i16,
+    /// AW2's marker style (0 plain, 4 a lab's, 8 the last).
+    pub style: u8,
+    /// The stars beside LEVEL.
+    pub stars: u8,
+}
+
+/// When a mission opens on the world map.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Requires {
+    /// Open from the start.
+    Start,
+    /// Opens once all of these missions are won.
+    All(Vec<u8>),
+    /// Opens once any of these missions is won (a branch).
+    Any(Vec<u8>),
+}
+
+/// Which art the campaign's world map is drawn on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WorldArt {
+    /// Dual Strike's Omega Land (converted from the pack).
+    OmegaLand,
+    /// AW2's own Wars World map.
+    Aw2,
 }
 
 /// Where campaigns come from.
@@ -67,18 +118,45 @@ pub struct Source {
     /// Runs a magic function of its own (a predicate's answer, a call's
     /// result); [`TAIL_CALLED`] when it has jumped to game code itself.
     pub rules: fn(&mut Core, &Magic) -> u32,
+    /// The Flash slot of its record, and of a mission saved halfway (the
+    /// layout is in docs/AW2.md "Saves").
+    pub save_slot: u8,
+    pub mid_slot: u8,
+    /// The record's first word ("AWDC" is the DS Campaign's).
+    pub progress_magic: u32,
+    pub art: WorldArt,
+    /// It has a Hard Campaign (Normal / Hard on New).
+    pub has_hard: bool,
 }
 
 /// A rule that jumped to game code itself (the caller returns nothing).
 pub const TAIL_CALLED: u32 = u32::MAX;
 
 /// The sources, in the sub-menu's order (after AW2's own campaign).
-pub static SOURCES: [Source; 1] = [Source {
-    label: "DS CAMPAIGN",
-    available: crate::ds_weather::is_on,
-    load: crate::ds_campaign_data::load,
-    rules: crate::ds_campaign_rules::run,
-}];
+pub static SOURCES: [Source; 2] = [
+    Source {
+        label: "DS CAMPAIGN",
+        available: crate::ds_weather::is_on,
+        load: crate::ds_campaign_data::load,
+        rules: crate::ds_campaign_rules::run,
+        save_slot: 15,
+        mid_slot: 14,
+        progress_magic: 0x4344_5741, // "AWDC"
+        art: WorldArt::OmegaLand,
+        has_hard: true,
+    },
+    Source {
+        label: "BH CAMPAIGN",
+        available: crate::ds_weather::is_on,
+        load: crate::bh_campaign::load,
+        rules: crate::custom_campaign::rules,
+        save_slot: 13,
+        mid_slot: 12,
+        progress_magic: 0x4342_5741, // "AWBC"
+        art: WorldArt::Aw2,
+        has_hard: false,
+    },
+];
 
 /// What a magic function stands for: Rust runs it ([`crate::ds_campaign`]'s
 /// own flow, else the campaign's source's rules, [`Source::rules`]). The
@@ -270,7 +348,30 @@ pub struct MissionInfo {
     /// Dual Strike runs with an argument from the game's own code: Crystal
     /// Calamity's CPU Launch (crate::onyx).
     pub unit_event_list: u32,
+    /// A custom campaign's mission ([`crate::custom_campaign`]): its COs
+    /// as AW2 ids. None for Dual Strike's, whose `cos` are its own ids.
+    pub native: Option<Native>,
 }
+
+/// A custom mission's COs in AW2 ids (`MissionInfo::cos` keeps 0x1C for an
+/// army the player picks, so the engine's tests of it still hold).
+#[derive(Clone, Debug, Default)]
+pub struct Native {
+    /// (CO, tag CO) per army slot: AW2 ids, [`NO_CO`] none. An army the
+    /// player picks for reads [`NO_CO`] here and 0x1C in `cos`.
+    pub cos: [(u8, u8); 4],
+    /// The mission's own pool for the player's pick (AW2 ids; empty: the
+    /// campaign's roster).
+    pub pool: Vec<u8>,
+    /// Starting funds per army (None: as the map).
+    pub funds: [Option<u32>; 4],
+    /// The Setup phase (scout the map, then Deploy) before day 1 when the
+    /// player picks a CO ([`crate::setup_phase`]).
+    pub setup: bool,
+}
+
+/// "No CO" in [`Native::cos`].
+pub const NO_CO: u8 = 0xFF;
 
 /// The landing every magic stub jumps to: dead code in `sub_0803CC3C`
 /// (no callers; [`crate::five_map`] made its start a helper), trapped by

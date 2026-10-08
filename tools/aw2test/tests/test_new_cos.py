@@ -5,7 +5,11 @@ numbers (checked against the calculator), and show their pictures."""
 from aw2test import rom as romlib
 from aw2test.harness import test
 
-NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel"]
+NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
+
+
+def order_of(lst, name):
+    return [romlib.co_name(c) for c in lst].index(name)
 
 
 @test(modes=("ds",))
@@ -17,10 +21,42 @@ def new_cos_on_the_teams_list(ctx):
     ctx.log(f"Teams list: {[romlib.co_name(c) for c in lst]}")
     for name in NEW:
         ctx.check(romlib.co_id(name) in lst, f"{name} on the Teams list")
-    ctx.eq(len(lst), 28, "28 COs")
+    ctx.eq(len(lst), 29, "29 COs")
+    ctx.check(order_of(lst, "Clone Andy") > order_of(lst, "Adder"), "Clone Andy after Adder, among Black Hole's")
     order = [romlib.co_name(c) for c in lst]
     ctx.check(order.index("Jake") == order.index("Hachi") + 1, "Jake after Hachi")
     ctx.check(order.index("Grimm") == order.index("Sensei") + 1, "Grimm after Sensei")
+
+
+@test(modes=("aw2",))
+def clone_andy_absent_without_the_pack(ctx):
+    """Without the pack the Teams list is AW2's nineteen: no Clone Andy."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.boot_teams(m)
+    lst = g.teams()["co_list"]
+    ctx.eq(len(lst), 19, "AW2's 19 COs")
+    ctx.check(81 not in lst, "no Clone Andy")
+
+
+@test(modes=("ds",))
+def clone_andy_is_pickable_in_versus(ctx):
+    """With the pack Clone Andy is on the Teams list, can be picked, plays a
+    battle with Dual Strike's Andy's numbers against the damage calculator
+    (his CO table row, checked in the patched image), and the game names him."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.start(m, ["cloneandy", "jugger"])
+    ctx.eq(g.player(1)["co"], 81, "army 1 plays Clone Andy")
+    e = g.e
+    ctx.shot(g, "clone_andy_map")
+    r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
+    ctx.eq(r["first"].base, 55, "his tank's base damage as Andy's (no bonus on a tank)")
+    # his name text (the CO table's row +0x00 is a text id)
+    row = e.u32(0x086A_0000 + 0x104 * 81)
+    p = e.u32(0x08610A38 + 4 * row)
+    raw = e.read(p, 16)
+    ctx.eq(raw[:raw.index(0)], b"Clone Andy", "the game's text for his name")
 
 
 @test(modes=("ds",))

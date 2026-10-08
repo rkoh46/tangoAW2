@@ -182,9 +182,14 @@ pub struct Credits {
 /// Builds the pages, their texts and the staff roll's copy into the
 /// campaign's ROM blob.
 pub fn build(core: &Core, ds: &Ds, built: &mut Built) -> Option<Credits> {
+    build_sections(core, sections(ds)?, built)
+}
+
+/// The same from sections given (a custom campaign's staff roll).
+pub fn build_sections(core: &Core, sections: Vec<(Vec<Line>, u32)>, built: &mut Built) -> Option<Credits> {
     let mut texts: Vec<(String, u32)> = Vec::new();
     let mut page_at = Vec::new();
-    for (lines, time) in sections(ds)? {
+    for (lines, time) in sections {
         for (slots, t) in pages(&lines, time) {
             let mut b = Vec::with_capacity(4 * (2 * SLOTS + 1));
             for (kind, s) in slots {

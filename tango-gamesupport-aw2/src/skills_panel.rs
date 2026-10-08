@@ -50,7 +50,7 @@ use crate::co_skills::{self, Set};
 
 // --- State (EWRAM after the skill data) ------------------------------------------
 
-const STATE: u32 = 0x0203_E3A0;
+const STATE: u32 = 0x0203_E3A8;
 const OPEN: u32 = STATE;
 /// The cursor's column (a rank, 0..9).
 const COL: u32 = STATE + 1;

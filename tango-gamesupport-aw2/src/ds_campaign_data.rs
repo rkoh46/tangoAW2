@@ -861,7 +861,7 @@ fn reachable(ds: &Ds, entries: &[u32]) -> BTreeSet<u32> {
     seen
 }
 
-fn cmd(op: u32, w1: u32, h8: u16, ha: u16, wc: u32) -> [u8; 16] {
+pub fn cmd(op: u32, w1: u32, h8: u16, ha: u16, wc: u32) -> [u8; 16] {
     let mut c = [0u8; 16];
     c[0..4].copy_from_slice(&op.to_le_bytes());
     c[4..8].copy_from_slice(&w1.to_le_bytes());
@@ -1256,6 +1256,7 @@ pub fn load(core: &Core) -> Option<crate::campaign_model::Model> {
         credits,
         pictures: crate::ds_story_art::narration_pictures(),
         source: &crate::campaign_model::SOURCES[0],
+        custom: None,
     })
 }
 
@@ -1509,6 +1510,7 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
             labs: lab_cells(ds, rec.maps.0),
             realtime,
             unit_event_list: table[4],
+            native: None,
         });
     }
     let story = convert_story_scenes(&mut cx, ds);
