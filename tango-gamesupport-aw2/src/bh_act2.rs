@@ -132,12 +132,12 @@ fn bh04() -> MissionDef {
         troop("Green Earth, the northern march. Fog, forest, a Marshal."),
         say(co::HAWKE, "Welcome. You walked my road without tripping."),
         say(co::HAWKE, "That is rarer than you think."),
-        say(co::STURM, "I did not come to be praised.").only(co::STURM),
+        say(co::STURM, "I did not come for praise. I came to take.").only(co::STURM),
         say(co::HAWKE, "Of course not. Praise is for people who need it.").only(co::STURM),
         say(co::VON_BOLT, "Flattery! Does it come with a fee?").only(co::VON_BOLT),
         say(co::HAWKE, "A courtesy, Colonel. Free, this once.").only(co::VON_BOLT),
         say(co::HAWKE, "I serve Green Earth. In name. In green. In habit."),
-        say(co::HAWKE, "But I have waited for someone worth serving."),
+        say(co::HAWKE, "But I have waited for a player worth facing."),
         say(co::HAWKE, "Show me. No wasted orders. No wasted men."),
         say(co::HAWKE, "The fog is mine. I like my odds."),
         troop("Sir, is he allowed to say that out loud?"),
@@ -148,7 +148,7 @@ fn bh04() -> MissionDef {
     m.victory = Scene::new(vec![
         sad(co::HAWKE, "Check. Not mate, but check. I concede the valley."),
         say(co::HAWKE, "Before I fold: why should I serve you?"),
-        say(co::STURM, "You will not serve. You will command beside me.").only(co::STURM),
+        say(co::STURM, "You will not kneel. You will command under my banner.").only(co::STURM),
         say(co::STURM, "Write the doctrine. I will supply the storm.").only(co::STURM),
         say(co::HAWKE, "A storm without a captain wrecks only itself.").only(co::STURM),
         say(co::STURM, "Then be the captain. Not mine. The storm's.").only(co::STURM),
@@ -161,10 +161,10 @@ fn bh04() -> MissionDef {
         say(co::HAWKE, "I accept. But I will correct your orders."),
         say(co::HAWKE, "Every army needs a mind. I volunteer mine."),
         troop("Does the Marshal need a runner, sir?"),
-        say(co::HAWKE, "...Fine. You. Do not run into me."),
+        say(co::HAWKE, "...Very well. You. Do not run into me."),
     ]);
     m.after = Scene::new(vec![
-        troop("Runner Hobb reporting! The Marshal's tea is cold!"),
+        troop("Runner Hobb reporting! The Marshal's coffee is cold!"),
         troop("Why did you tell him?"),
         troop("He asked."),
         troop("He's polite about it."),
@@ -182,7 +182,7 @@ fn bh04() -> MissionDef {
                 UnitDef::new(2, unit::MD_TANK, 16, 10),
             ])],
         ),
-        on_day(5, None, vec![Action::Scene(Scene::new(vec![say(co::HAWKE, "Fog is a curtain. I decide what the audience sees.")]))]),
+        on_day(5, None, vec![Action::Scene(Scene::new(vec![say(co::HAWKE, "Fog is a board with the lights off. I know it.")]))]),
         // Hawke's power is charged by day 6.
         on_day(6, None, vec![Action::Custom(charge_army2_full)]),
         on_day(10, None, vec![Action::Scene(Scene::new(vec![say(co::HAWKE, "Impressive. You have reduced the fog to a rumour.")]))]),
@@ -230,8 +230,8 @@ fn bh05() -> MissionDef {
     let mut v = vec![
         say(co::HAWKE, "Skyhaven by moonlight. Eagle's aircraft sleep."),
         say(co::HAWKE, "Javier's tower hears a mouse sneeze at two miles."),
-        say(co::JAVIER, "This is Javier on all channels. All! You are heard!"),
-        say(co::JAVIER, "Intruders: please be unheard. It is bad manners."),
+        say(co::JAVIER, "Hark! The tower of Javier hears every step. Halt!"),
+        say(co::JAVIER, "A true foe announces his name. Sneaking is unknightly!"),
         say(co::HAWKE, "Eight aircraft on the tarmac. Nine days."),
         say(co::HAWKE, "I picked the night. Do not waste it.").only(co::HAWKE),
         say(co::STURM, "Fire in the dark is quieter than people expect.").only(co::STURM),
@@ -242,8 +242,8 @@ fn bh05() -> MissionDef {
     ];
     m.intro = Scene::new(std::mem::take(&mut v));
     m.victory = Scene::new(vec![
-        sad(co::JAVIER, "The tower's out. I can't hear... why is it quiet?"),
-        say(co::JAVIER, "Eagle will hear of this! Eventually!"),
+        sad(co::JAVIER, "My tower is silent. It is so quiet. Too quiet."),
+        say(co::JAVIER, "Eagle shall hear of this! Once I find a working wire."),
         say(co::HAWKE, "Eight aircraft. No losses of mine. Tidy."),
         troop("Sir, I put the lantern out. Mostly."),
     ]);
@@ -260,7 +260,7 @@ fn bh05() -> MissionDef {
             3,
             None,
             vec![
-                Action::Scene(Scene::new(vec![say(co::JAVIER, "Alarm! Alarm! I like alarms. Everyone, up!")])),
+                Action::Scene(Scene::new(vec![say(co::JAVIER, "Sound the horns! To arms, noble Green Earth!")])),
                 Action::Spawn(vec![
                     UnitDef::new(2, unit::TANK, 23, 8),
                     UnitDef::new(2, unit::TANK, 23, 7),
@@ -268,7 +268,7 @@ fn bh05() -> MissionDef {
                 ]),
             ],
         ),
-        on_day(6, None, vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "Flares! I am extremely bright, you see.")]))]),
+        on_day(6, None, vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "Behold, light! A tower must be seen by every knight!")]))]),
         // Eight aircraft gone and the tower taken.
         after(Cond::All(vec![Cond::Custom(aircraft_destroyed), Cond::OwnerAt { x: 19, y: 3, army: 1 }]), vec![Action::Win]),
     ];
@@ -322,7 +322,7 @@ fn bh06() -> MissionDef {
         on_day(5, None, vec![Action::Scene(Scene::new(vec![say(co::DRAKE, "Fighters off the Carrier! Wave hello!")]))]),
         // The Carrier launches Fighters every third day from day 5 (from its isle's air).
         Trigger::new(When::TurnStart, Cond::EveryDays { n: 3, from: 5 }, vec![Action::Spawn(vec![UnitDef::new(2, unit::FIGHTER, 24, 10)])]).repeating(),
-        on_day(12, None, vec![Action::Scene(Scene::new(vec![say(co::DRAKE, "Hey! Do not sink my sandwich boat!")]))]),
+        on_day(12, None, vec![Action::Scene(Scene::new(vec![say(co::DRAKE, "Hey, easy on the sandwich boat, dude! It's lunch!")]))]),
         after(beaten(2, (28, 14)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh05"]);
@@ -367,7 +367,7 @@ fn bh07() -> MissionDef {
         say(co::EAGLE, "Fly with me, or fall without me!"),
         say(co::HAWKE, "The crane yard hides a second Foundry. Wake it."),
         say(co::HAWKE, "He announces his plans to everyone. Convenient.").only(co::HAWKE),
-        say(co::STURM, "Overhead is not above.").only(co::STURM),
+        say(co::STURM, "Nothing is above me. Not even his sky.").only(co::STURM),
         say(co::VON_BOLT, "A shipyard! Cranes! Gold!").only(co::VON_BOLT),
     ]);
     m.victory = Scene::new(vec![
@@ -441,7 +441,7 @@ fn bh08() -> MissionDef {
     });
     m.intro = Scene::new(vec![
         say(co::JESS, "Two gates, two fronts. Standard procedure!"),
-        say(co::JAVIER, "And I'm on both radios! Hello, both of you!"),
+        say(co::JAVIER, "And my towers speak at both! Greetings, fair friends!"),
         say(co::JESS, "Javier, you needn't announce that."),
         say(co::JAVIER, "It is cheaper than a second Javier."),
         say(co::HAWKE, "One mind, two fronts. Split the sword."),
@@ -456,7 +456,7 @@ fn bh08() -> MissionDef {
         troop("Marshal! The messages from both fronts arrived!"),
         say(co::HAWKE, "At the same time?"),
         troop("Mostly. One of them was a pigeon."),
-        say(co::HAWKE, "...Interesting."),
+        say(co::HAWKE, "A pigeon. Add it to the contingency plan."),
     ]);
     let mut won_lines = Vec::new();
     for c in [co::STURM, co::VON_BOLT, co::HAWKE] {
@@ -467,7 +467,7 @@ fn bh08() -> MissionDef {
         Trigger::new(
             When::TurnStart,
             Cond::Custom(second_front_lost),
-            vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "Static! Sorry! Not sorry! Your gate is mine!")]))],
+            vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "Ha! The dusk gate is held by Javier! Yield, rogues!")]))],
         ),
         after(beaten(2, (22, 9)), vec![Action::Win]),
     ];
@@ -534,7 +534,7 @@ fn bh09() -> MissionDef {
         say(co::VON_BOLT, "Because the bank is closed. I trust only me."),
         troop("Sir, there is a rooster on the lead truck."),
         say(co::VON_BOLT, "His name is Interest."),
-        say(co::JAVIER, "This is Javier. I see trucks. They go east."),
+        say(co::JAVIER, "I see three wagons riding east. Halt, in honour's name!"),
         say(co::DRAKE, "Three trucks, three guys, three problems. Welcome!"),
     ]);
     m.after = Scene::new(vec![
@@ -544,7 +544,7 @@ fn bh09() -> MissionDef {
     ]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(Scene::new(vec![say(co::DRAKE, "Ambush! Ha! I always wanted to say that.")]))]),
-        on_day(9, None, vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "The east road is mine. Turn back, turn back!")]))]),
+        on_day(9, None, vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "The east road is guarded by a knight! Turn back!")]))]),
         // Javier's comms: a truck past the first bridge wakes a pursuit behind it.
         Trigger::new(
             When::AfterAction,
@@ -570,7 +570,7 @@ fn bh09() -> MissionDef {
             vec![
                 Action::Scene(Scene::new(vec![
                     sad(co::VON_BOLT, "One truck gone... ...my coins, my poor coins."),
-                    say(co::HAWKE, "Seventy per cent. Within tolerance."),
+                    say(co::HAWKE, "Two in three. Within tolerance."),
                     say(co::VON_BOLT, "TOLERANCE?!"),
                 ])),
                 Action::Win,
@@ -598,9 +598,10 @@ fn bh10() -> MissionDef {
     m.rank_days = 16;
     let mut intro = vec![
         say(co::JESS, "This is Evergreen. It has never fallen. Never!"),
-        say(co::EAGLE, "Fly, fight, win. That is all we have left!"),
+        say(co::EAGLE, "Fly, fight, win. That's all we've got left!"),
         say(co::HAWKE, "A siege is mathematics. Eagle forgets arithmetic."),
         say(co::JESS, "Why do this? Your army wears our colour!"),
+        say(co::EAGLE, "Marshal Hawke. You wore our green and sold it."),
         say(co::HAWKE, "It was a good colour. It suited the ministry."),
         sad(co::JESS, "...Marshal. I admired you."),
         say(co::HAWKE, "I admired my plan more."),
@@ -609,9 +610,9 @@ fn bh10() -> MissionDef {
     m.intro = Scene::new(intro);
     m.victory = Scene::new(vec![
         sad(co::JESS, "The Citadel... has fallen."),
-        say(co::EAGLE, "Retreat east! To the Comets! Do not stop!"),
+        say(co::EAGLE, "Fall back east! To the Comets! Just this once!"),
         say(co::JESS, "I'm sorry. I could not protect them."),
-        say(co::HAWKE, "You did well. Be proud of that."),
+        say(co::HAWKE, "You held longer than my numbers allowed. Be proud."),
     ]);
     m.after = Scene::new(vec![
         troop("Hobb! The Marshal says you carry the flag."),
@@ -651,12 +652,12 @@ fn bh11() -> MissionDef {
     let mut intro = vec![
         say(co::SENSEI, "Easy there, youngsters. This pass is old as I am."),
         say(co::SENSEI, "Green Earth's refugees asked for a roof. I gave one."),
-        say(co::JAVIER, "And a radio! He gave me a radio! I love him!"),
+        say(co::JAVIER, "And a watchtower! He gave me a tower! A noble elder!"),
         say(co::SENSEI, "Do not love me. Hold the left gap."),
-        say(co::HAWKE, "Sensei. You taught me to read maps.").with(co::HAWKE),
-        say(co::SENSEI, "I taught you maps. You chose the wrong ones.").with(co::HAWKE),
+        say(co::HAWKE, "Sensei. I have read your old files. Paratroops.").with(co::HAWKE),
+        say(co::SENSEI, "Files do not carry the cold. Read the wind, Hawke.").with(co::HAWKE),
         say(co::VON_BOLT, "Another old man! Shall we compare ages?").with(co::VON_BOLT),
-        say(co::SENSEI, "I am older. And I have my own teeth.").with(co::VON_BOLT),
+        say(co::SENSEI, "Older? Maybe not. But I have my own teeth.").with(co::VON_BOLT),
         say(co::VON_BOLT, "...Mine are in a vault.").with(co::VON_BOLT),
         say(co::SENSEI, "And mind Mount Ember. She wakes at noon."),
         say(co::SENSEI, "She is not particular about whose feet."),
@@ -665,7 +666,7 @@ fn bh11() -> MissionDef {
     m.intro = Scene::new(intro);
     m.victory = Scene::new(vec![
         sad(co::SENSEI, "Hmph. Old bones, beaten by a gale."),
-        say(co::JAVIER, "Retreat? Yes! I have a very good one ready!"),
+        say(co::JAVIER, "A knight never retreats! He charges to the rear!"),
         say(co::SENSEI, "Tell Kanbei the storm is faster than gossip."),
     ]);
     m.after = Scene::new(vec![
@@ -697,7 +698,7 @@ fn bh11() -> MissionDef {
             None,
             vec![Action::Scene(Scene::new(vec![
                 troop("Mount Ember coughs. Ash falls on the Rim Track."),
-                say(co::JAVIER, "That was not me! I would like that on record!"),
+                say(co::JAVIER, "That was not my doing! By honour, write it down!"),
             ]))],
         ),
         on_day(

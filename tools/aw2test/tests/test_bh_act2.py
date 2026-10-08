@@ -535,7 +535,7 @@ def bh_act2_m5_win_needs_the_aircraft_and_the_tower(ctx):
     names = g.move_to(mine["x"], mine["y"])["names"]
     g.choose(next(x for x in names if x.lower().startswith("wait")), g.ACTION_MENU)
     victory, mapscene = a2.follow(ctx, e, d, "m5", shots=(0,))
-    ctx.eq(victory[0], "The tower's out. I can't hear... why is it quiet?", "the victory scene")
+    ctx.eq(victory[0], "My tower is silent. It is so quiet. Too quiet.", "the victory scene")
     ctx.check(len(victory) == 4 and len(mapscene) == 5, f"the scenes ({len(victory)}, {len(mapscene)})")
     ctx.eq((d.won() >> 4) & 1, 1, "M5 won")
     ctx.eq([k for k in range(5, 8) if d.map_flags()[k] & 1], [5, 6], "M6 and M7 open (the branch)")
@@ -549,7 +549,7 @@ def bh_act2_m5_alarm_and_flares(ctx):
     before = len(g.units(2))
     seen = a2.to_day(e, g, d, 3)
     ctx.eq(e.u16(DAY), 3, "day 3")
-    ctx.eq(seen[-1:], ["Alarm! Alarm! I like alarms. Everyone, up!"], "Javier's alarm")
+    ctx.eq(seen[-1:], ["Sound the horns! To arms, noble Green Earth!"], "Javier's alarm")
     new = [u for u in g.units(2) if u["x"] >= 22]
     ctx.check(len(g.units(2)) >= before + 3, f"two Tanks and an Anti-Air came ({len(g.units(2))} units, was {before})")
     a2.pic(ctx, e, "m5_alarm")
@@ -641,7 +641,7 @@ def bh_act2_m9_escort_two_home_one_gone(ctx):
     e, g, d, apcs, live = escort_game(ctx, 2, 1, "two home")
     act(ctx, e, g, d)
     victory, mapscene = a2.follow(ctx, e, d, "m9_two", shots=(0,))
-    ctx.eq(victory, ["One truck gone... ...my coins, my poor coins.", "Seventy per cent. Within tolerance.", "TOLERANCE?!"], "the two-trucks scene")
+    ctx.eq(victory, ["One truck gone... ...my coins, my poor coins.", "Two in three. Within tolerance.", "TOLERANCE?!"], "the two-trucks scene")
     ctx.eq((d.won() >> 8) & 1, 1, "M9 won with two of three")
     e.close()
 
@@ -805,9 +805,9 @@ def bh_act2_m4_von_bolt_pitch_and_bond(ctx):
     """Von Bolt picked: his pitch (not Sturm's), Hawke joins, the bond (bit 1) is earned and the
     world-map panel of M4 shows its star; the win is by leaving Hawke one unit."""
     e, g, d, texts = ready(ctx, 4, [bh.VON_BOLT])
-    ctx.check("Flattery! Does it come with a fee?" in texts and "I did not come to be praised." not in texts, "Von Bolt's opening exchange")
+    ctx.check("Flattery! Does it come with a fee?" in texts and "I did not come for praise. I came to take." not in texts, "Von Bolt's opening exchange")
     victory, mapscene = a2.win_by_attrition(ctx, e, g, d, "m4_vb", shots=(0,))
-    ctx.check("Marshal, the pay is the world. In writing." in victory and "You will not serve. You will command beside me." not in victory, f"Von Bolt's pitch ({victory})")
+    ctx.check("Marshal, the pay is the world. In writing." in victory and "You will not kneel. You will command under my banner." not in victory, f"Von Bolt's pitch ({victory})")
     ctx.eq(d.bonds(), 2, "Hawke's bond earned")
     ctx.eq(d.unlocked(), [bh.STURM, bh.VON_BOLT, bh.HAWKE], "Hawke unlocked")
     e.close()
