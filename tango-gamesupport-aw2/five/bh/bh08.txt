@@ -30,8 +30,8 @@ unit 2 3 18 12
 unit 2 3 17 6
 unit 2 3 17 11
 .........-..........^^^^
-.fff.ff..-.fff......^^^^
-.fff.fff.-..fff.fff.^^.^
+.fff.ff..-.fff.~~~..^^^^
+.fff.fff.-..fff~~~f.^^.^
 .....ff..-...ff.fff.^^..
 ......c..-..c....^..^^..
 ...RRRRRR=RRRRRRRRRR^^.C
@@ -44,6 +44,6 @@ unit 2 3 17 11
 ..CRRRRRR=RRRRRRRRRR^^..
 ......c..-..cff..^..^^.C
 .........-....f.fff.^^..
-.fff..ff.-..ff..fff.^^.^
-.fffff.f.-.^ff.fff..^^^^
+.fff~~~f.-..ff..fff.^^.^
+.ffff~.f.-.^ff.fff..^^^^
 .........-..........^^^^

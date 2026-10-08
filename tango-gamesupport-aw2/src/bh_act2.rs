@@ -103,14 +103,14 @@ fn built_units(name: &str) -> Vec<UnitDef> {
 /// Act 2's flags on AW2's Green Earth (the east land, x 300..390, y 85..230), in the design's order
 /// (docs/BH_CAMPAIGN.md 2.2, the grid mirrored onto the picture): M4 .. M11. M6 and M7 are the branch.
 pub const FLAGS: [(i16, i16); 8] = [
-    (350, 95),  // M4 Marshal in Green (north)
+    (365, 92),  // M4 Marshal in Green (north)
     (372, 118), // M5 Night Raid
     (332, 135), // M6 Stepping Stones (west coast, isles)
     (345, 160), // M7 Greenhaven Arsenal (south coast)
     (350, 135), // M8 The Twin Gates (heartland)
     (325, 190), // M9 The Loot Train
     (340, 215), // M10 Evergreen Citadel
-    (310, 100), // M11 Exiles' Last Stand (the pass towards Yellow Comet)
+    (333, 106), // M11 Exiles' Last Stand (the pass towards Yellow Comet)
 ];
 
 // --- M4 Marshal in Green -------------------------------------------------------------
@@ -120,9 +120,9 @@ fn bh04() -> MissionDef {
     m.objective = "Capture Fort Verdant or rout Hawke.";
     m.map = MapSrc::Built("bh04");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(8000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
         // Hawke commands Green Earth's northern army in its colours.
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::HAWKE)).funds(18000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::HAWKE)).funds(8000),
     ];
     m.pool = vec![co::STURM, co::VON_BOLT];
     m.fog = true;
@@ -180,7 +180,6 @@ fn bh04() -> MissionDef {
             vec![Action::Spawn(vec![
                 UnitDef::new(2, unit::MD_TANK, 16, 8),
                 UnitDef::new(2, unit::MD_TANK, 16, 10),
-                UnitDef::new(2, unit::MD_TANK, 17, 7),
             ])],
         ),
         on_day(5, None, vec![Action::Scene(Scene::new(vec![say(co::HAWKE, "Fog is a curtain. I decide what the audience sees.")]))]),
@@ -209,6 +208,17 @@ fn bh05() -> MissionDef {
     let mut m = MissionDef::new("bh05", "Night Raid");
     m.objective = "Destroy 8 aircraft, take the Com Tower. 9 days.";
     m.map = MapSrc::Built("bh05");
+    // The parked aircraft stay parked: AI byte 6 (measured: bytes 1..5 let them fly off and strike; 6 holds them
+    // where they stand; they still answer a counter-attack).
+    m.units = built_units("bh05")
+        .into_iter()
+        .map(|mut u| {
+            if u.army == 2 && (u.kind == unit::FIGHTER || u.kind == unit::BOMBER) {
+                u.ai = 6;
+            }
+            u
+        })
+        .collect();
     // A pre-deployed raid: no bases, no funds, on either side.
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(0),
@@ -232,7 +242,7 @@ fn bh05() -> MissionDef {
     ];
     m.intro = Scene::new(std::mem::take(&mut v));
     m.victory = Scene::new(vec![
-        sad(co::JAVIER, "The tower's out. I can't... why is it quiet?"),
+        sad(co::JAVIER, "The tower's out. I can't hear... why is it quiet?"),
         say(co::JAVIER, "Eagle will hear of this! Eventually!"),
         say(co::HAWKE, "Eight aircraft. No losses of mine. Tidy."),
         troop("Sir, I put the lantern out. Mostly."),
@@ -245,7 +255,7 @@ fn bh05() -> MissionDef {
         troop("Eat something, Crumb."),
     ]);
     m.triggers = vec![
-        // The alarm: three Tanks and two Anti-Air arrive by the east road.
+        // The alarm: two Tanks and an Anti-Air arrive by the east road (the design's three and two, trimmed: measured too strong).
         on_day(
             3,
             None,
@@ -254,9 +264,7 @@ fn bh05() -> MissionDef {
                 Action::Spawn(vec![
                     UnitDef::new(2, unit::TANK, 23, 8),
                     UnitDef::new(2, unit::TANK, 23, 7),
-                    UnitDef::new(2, unit::TANK, 23, 9),
-                    UnitDef::new(2, unit::ANTI_AIR, 23, 6),
-                    UnitDef::new(2, unit::ANTI_AIR, 23, 10),
+                    UnitDef::new(2, unit::ANTI_AIR, 23, 9),
                 ]),
             ],
         ),
@@ -278,7 +286,7 @@ fn bh06() -> MissionDef {
     m.map = MapSrc::Built("bh06");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(12000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).funds(22000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).funds(14000),
     ];
     m.day_limit = 22;
     m.rank_days = 16;
@@ -345,7 +353,7 @@ fn bh07() -> MissionDef {
     m.map = MapSrc::Built("bh07");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(7000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(18000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(12000),
     ];
     m.day_limit = 22;
     m.rank_days = 14;
@@ -409,7 +417,7 @@ fn bh08() -> MissionDef {
     // The player picks two COs: the main front's, then the second front's.
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(8000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(14000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(11000),
     ];
     m.day_limit = 22;
     m.rank_days = 16;
@@ -580,8 +588,8 @@ fn bh10() -> MissionDef {
     m.objective = "Siege the Citadel and capture its HQ.";
     m.map = MapSrc::Built("bh10");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(5000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::EAGLE, co::JESS)).funds(25000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(8000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::EAGLE, co::JESS)).funds(14000),
     ];
     m.day_limit = 24;
     m.rank_days = 16;
@@ -631,8 +639,8 @@ fn bh11() -> MissionDef {
     m.map = MapSrc::Built("bh11");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(9000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(9000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(7000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(7000),
     ];
     m.day_limit = 22;
     m.rank_days = 15;

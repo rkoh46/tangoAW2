@@ -28,18 +28,13 @@ unit 2 1 13 8
 unit 2 1 15 8
 unit 2 1 19 8
 unit 2 1 21 8
-unit 2 1 14 10
-unit 2 1 14 11
 unit 2 2 13 10
 unit 2 2 15 10
 unit 2 2 14 13
 unit 2 3 14 7
 unit 2 3 8 10
-unit 2 3 20 10
-unit 2 3 14 4
 unit 2 14 12 8
 unit 2 14 16 8
-unit 2 14 10 10
 unit 2 15 13 4
 unit 2 15 15 4
 unit 2 16 11 2
@@ -51,7 +46,7 @@ unit 2 16 17 2
 ^^..........B.R.B.........^^
 ...^^^^^^^^^^^R^^^^^^^^^^...
 ..ff^---=-----=-----=--^ff..
-..ff......CB..R..BC.....ff..
+..ff......CC..R..CC.....ff..
 ..ff....RRRRRRRRRRRRR...ff..
 ..^^^S^^R^^S^^R^^S^^R^^S^^..
 ..^^...CR..fc.R.cf..RC..^^..

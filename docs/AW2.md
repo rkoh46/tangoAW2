@@ -2116,6 +2116,39 @@ credits; every data field; a named unit's extraction and death latch; two
 fronts; five armies; the second stage; a built map; both campaigns in one
 boot), `test_bh_map_tool.py` and the save tests above.
 
+**Act II (`bh_act2.rs`, Green Earth: M4 to M11).** Maps `five/bh/bh04.txt` ..
+`bh11.txt` (`bh08b.txt` is M8's second front), dialogue the design bible's
+(section 4.3), tests `tools/aw2test/tests/test_bh_act2.py` (`-k bh_act2`; the
+balance runs, `AW2TEST_ACT2_BALANCE=1 ... -k bh_act2_balance`, play the CPU on
+both sides and `aw2test.bot` against it and write `balance.json`). Things the
+format needed, all in `custom_campaign.rs`:
+- **Conditional lines.** `Line::only(co)` (the design's `@IF CO`: the player's
+  main CO), `.with(co)` (in the player's pair), `.only_partner(co)` (the
+  partner / the second front's CO once joined) compile to a conditional jump
+  (script op 0x1E on `Cond::PlayerCo` / `PlayerHas` / `PartnerCo`, relative
+  until `script` makes it absolute; AW2's own op 0x43 compares the CO id
+  modulo 24, which cannot tell the Dual Strike COs apart). With a tag pair the
+  army's active CO is not the first pick (the pending pair of `tag::set_cos`
+  leaves the other pick as the partner): tests compare the pair as a set.
+- **A victory scene and a bond on a won mission.** AW2's own rout ends the
+  match before any trigger can run, so `Action::Win`'s scene and
+  `EarnBond` are on a trigger that looks one step early (`beaten()`: the
+  enemy has at most one unit left, or its HQ is the player's). The HQ capture
+  path was measured to run its trigger first.
+- **The day limit is only the header's counter** (the HUD shows it); the loss
+  is a trigger on day `limit + 1` (`missions()` adds it).
+- **Black Factory tables.** `MissionDef::factory` (day, three doors' units)
+  is a mission's own table (`Custom::factory`, `ds_campaign::factory_table`,
+  used by `factory.rs` instead of Factory Blues' schedule); M7's is F7.
+- **Once-latch flags** are 96 for the whole campaign: Act II's day events are
+  `EveryDays { n: 1000, from: d }` triggers (`repeating`, which fire once and
+  take no flag).
+- **Auto CO on a second front.** A Black Hole army played by the computer
+  (the player's second-front army) wrote garbage at AW2's factory spawner on
+  a map without a Black Factory (the game reset on day 2) and its AI hung once
+  it could build: M8's dusk gate has a dormant Black Factory (an all-zero
+  table) and the player's army there has no base.
+
 **Free Play.** Once the final mission is won (`ds_campaign::free_play`) the
 map offers every mission again, the won ones cleared and open to replay. A
 replay's win changes nothing of the progress (`end_of_battle`: the won bits,

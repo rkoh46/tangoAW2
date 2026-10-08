@@ -31,20 +31,17 @@ unit 2 1 20 6 hold
 unit 2 2 19 4 hold
 unit 2 2 16 6 hold
 unit 2 14 19 7 hold
-unit 2 14 15 8 hold
 unit 2 5 20 9 hold
-unit 2 5 14 9 hold
-unit 2 2 19 2 hold
 ^^........^^^...........
 ^.........^..ffff....ff.
-.....ffff.^^.ffff.....2.
-.fff.ffff.^^.......T.C..
-.fff.ffff..^.......R....
-.fff.......^..CC.C.RfCc.
+.f~~~~fff.^^.ffff.....2.
+.f~~~~fff.^^.......T.C..
+.ff~~ffff..^.......R....
+.ffff......^..CC.C.RfCc.
 ^.....fff..........R....
-^^............A..A.R.A..
+^^............C..C.R.C..
 ^^...fff.ff.RRRRRRRRRRRR
-^.ff.fff.f...R..A...R.A.
+^.ff.fff.f...R..C...R.C.
 ---------....Rff.C.fR...
 ........-----=------=---
 .............R......R..^
