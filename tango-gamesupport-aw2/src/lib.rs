@@ -73,6 +73,8 @@ pub mod grand_bolt;
 pub mod sky_front;
 pub mod setup_phase;
 pub mod obelisk;
+pub mod bond_ui;
+pub mod hazard;
 pub mod onyx;
 pub mod oozium;
 mod obelisk_art;

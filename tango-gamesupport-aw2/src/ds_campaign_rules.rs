@@ -491,6 +491,10 @@ const ERUPTION_CELLS: u32 = 0x0203_F708;
 /// Twelve cells and the end mark.
 const ERUPTION_CELLS_LEN: u32 = 4 * 13;
 pub fn eruption(core: &mut Core) {
+    // (a custom campaign's volcano: its own schedule and cells)
+    if crate::ds_campaign::active(core) && !crate::ds_campaign::is_ds(core) {
+        return crate::hazard::eruption(core);
+    }
     if !(crate::ds_campaign::active(core) && crate::ds_campaign::in_battle(core)) {
         return;
     }

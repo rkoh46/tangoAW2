@@ -80,14 +80,16 @@ pub struct Custom {
     /// Per mission: the battle's song (an AW2 song id) in place of the COs'
     /// themes.
     pub music: Vec<Option<u16>>,
-    /// The recruit missions' panels (text id, plain text, text with a star, bond):
-    /// the star shows once the bond is earned.
-    pub marks: Vec<(u16, u32, u32, u8)>,
+    /// The recruit missions (mission, bond): the world-map panel shows the
+    /// bond badge once the bond is earned ([`crate::bond_ui`]).
+    pub marks: Vec<(u8, u8)>,
     /// Per mission: a reversed Black Onyx.
     pub onyx: Vec<Option<OnyxDef>>,
     /// Per mission: the address of its Black Factory table (96 bytes, 32
     /// days x 3 doors; 0: Factory Blues').
     pub factory: Vec<u32>,
+    /// Per mission: a volcano hazard.
+    pub volcano: Vec<Option<VolcanoDef>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,
@@ -115,6 +117,30 @@ pub struct OnyxDef {
     pub offline_turns: u8,
     /// ... and the player's COs lose this share (%) of their full meters.
     pub meters: u8,
+}
+
+/// A volcano's eruptions as a neutral hazard ([`crate::hazard`]): from day
+/// `first`, every `interval` days, on the Black Hole turn, every unit of any
+/// army on one of `cells` loses `damage` HP (AW2's own eruption: the queued
+/// impacts; the Volcano structure of the map runs the turn-start loop), the
+/// cells marked from the day before.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VolcanoDef {
+    pub first: u8,
+    pub interval: u8,
+    pub damage: u8,
+    pub cells: Vec<(u8, u8)>,
+}
+
+impl VolcanoDef {
+    pub fn new(first: u8, interval: u8, damage: u8, cells: &[(u8, u8)]) -> VolcanoDef {
+        VolcanoDef { first, interval, damage, cells: cells.to_vec() }
+    }
+
+    /// Day `day` is an eruption's.
+    pub fn erupts(&self, day: u16) -> bool {
+        day >= self.first as u16 && self.interval > 0 && (day - self.first as u16) % self.interval as u16 == 0
+    }
 }
 
 impl OnyxDef {
