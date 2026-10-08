@@ -16,7 +16,7 @@ use crate::bh_act3;
 use crate::bh_act4;
 use crate::bh_act5;
 use crate::bh_secret;
-use crate::campaign_model::{Model, OnyxDef, SendRule};
+use crate::campaign_model::{Model, OnyxDef, SendRule, VolcanoDef};
 use crate::custom_campaign::{co, colour, unit, *};
 
 /// The roster, in unlock order (Von Bolt, Hawke, Koal, Kindle, Jugger, Flak,
@@ -401,6 +401,84 @@ pub fn features_def() -> CampaignDef {
     n.needs = Needs::All(vec!["f01"]);
     n.flag = region::BLACK_HOLE[3];
 
+    // The player's Black Factory in a campaign mission picks what the battle needs
+    // (crate::bh_smart): against many Bombers, and against many Md Tanks.
+    let factory_mission = |key: &'static str, enemy: u8| {
+        let mut q = MissionDef::new(key, "Features Factory");
+        q.objective = "Test: the smart Black Factory.";
+        q.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..........", ".........2"]);
+        q.armies = vec![
+            ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+            ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+        ];
+        q.structures = vec![(Structure::BlackFactory, 5, 2)];
+        let mut units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::INFANTRY, 1, 1)];
+        for k in 0..6u8 {
+            units.push(UnitDef::new(2, enemy, 6 + k % 4, 5 - k / 4).hold());
+        }
+        q.units = units;
+        q.needs = Needs::All(vec!["f01"]);
+        q.flag = region::BLACK_HOLE[0];
+        q
+    };
+    let o = factory_mission("f13", unit::BOMBER);
+    let r = factory_mission("f14", unit::MD_TANK);
+
+    // A human Black Hole army's Laser and minicannon (AW2 only ever gave them to the computer):
+    // they fire at the enemy on the player's turn.
+    let mut u = MissionDef::new("f15", "Features Cannons");
+    u.objective = "Test: the player's Laser and minicannon fire.";
+    u.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..........", "..........", ".........2"]);
+    u.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+    ];
+    u.structures = vec![(Structure::Laser, 2, 4), (Structure::MiniCannonRight, 0, 2)];
+    u.units = vec![
+        UnitDef::new(1, unit::MD_TANK, 0, 0),
+        // (no fuel: the computer's tanks stay where the cannons can find them)
+        UnitDef::new(2, unit::TANK, 7, 4).hold().fuel(0),
+        UnitDef::new(2, unit::TANK, 2, 1).hold().fuel(0),
+        UnitDef::new(2, unit::TANK, 3, 2).hold().fuel(0),
+        UnitDef::new(2, unit::TANK, 9, 6).hold().fuel(0),
+    ];
+    u.needs = Needs::All(vec!["f01"]);
+    u.flag = region::BLACK_HOLE[2];
+
+    // A volcano as a neutral hazard: from day 3, every 2 days, three cells erupt for 3 HP
+    // (any army's units there), marked from the day before.
+    let mut w = MissionDef::new("f16", "Features Volcano");
+    w.objective = "Test: a volcano erupts on a schedule.";
+    w.map = MapSrc::Ascii(&[
+        "1...............",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "..............2.",
+    ]);
+    w.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+    ];
+    w.structures = vec![(Structure::Volcano, 2, 4)];
+    w.volcano = Some(VolcanoDef::new(3, 2, 3, &[(6, 2), (7, 2), (6, 3)]));
+    w.units = vec![
+        UnitDef::new(1, unit::MD_TANK, 0, 0),
+        UnitDef::new(1, unit::TANK, 6, 3).fuel(0),
+        UnitDef::new(2, unit::TANK, 6, 2).hold().fuel(0),
+        UnitDef::new(2, unit::TANK, 7, 2).hold().fuel(0).hp(20),
+        UnitDef::new(2, unit::TANK, 8, 2).hold().fuel(0),
+    ];
+    w.needs = Needs::All(vec!["f01"]);
+    w.flag = region::BLACK_HOLE[3];
+
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
@@ -409,8 +487,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n],
-        final_mission: "f12",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w],
+        final_mission: "f16",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
         secret_mission: "f06",
     }

@@ -607,6 +607,8 @@ pub struct MissionDef {
     pub setup: bool,
     /// A reversed Black Onyx on the mission ([`OnyxDef`]).
     pub onyx: Option<OnyxDef>,
+    /// A neutral volcano hazard (needs a `Structure::Volcano` on the map).
+    pub volcano: Option<VolcanoDef>,
 }
 
 impl MissionDef {
@@ -639,6 +641,7 @@ impl MissionDef {
             pool: Vec::new(),
             setup: true,
             onyx: None,
+            volcano: None,
         }
     }
 }
@@ -1123,6 +1126,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         marks: cx.marks.clone(),
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
+        volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
     };
     built.unhandled.clear();

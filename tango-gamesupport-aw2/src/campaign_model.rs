@@ -85,6 +85,8 @@ pub struct Custom {
     pub marks: Vec<(u8, u8)>,
     /// Per mission: a reversed Black Onyx.
     pub onyx: Vec<Option<OnyxDef>>,
+    /// Per mission: a volcano hazard.
+    pub volcano: Vec<Option<VolcanoDef>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,
@@ -112,6 +114,30 @@ pub struct OnyxDef {
     pub offline_turns: u8,
     /// ... and the player's COs lose this share (%) of their full meters.
     pub meters: u8,
+}
+
+/// A volcano's eruptions as a neutral hazard ([`crate::hazard`]): from day
+/// `first`, every `interval` days, on the Black Hole turn, every unit of any
+/// army on one of `cells` loses `damage` HP (AW2's own eruption: the queued
+/// impacts; the Volcano structure of the map runs the turn-start loop), the
+/// cells marked from the day before.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VolcanoDef {
+    pub first: u8,
+    pub interval: u8,
+    pub damage: u8,
+    pub cells: Vec<(u8, u8)>,
+}
+
+impl VolcanoDef {
+    pub fn new(first: u8, interval: u8, damage: u8, cells: &[(u8, u8)]) -> VolcanoDef {
+        VolcanoDef { first, interval, damage, cells: cells.to_vec() }
+    }
+
+    /// Day `day` is an eruption's.
+    pub fn erupts(&self, day: u16) -> bool {
+        day >= self.first as u16 && self.interval > 0 && (day - self.first as u16) % self.interval as u16 == 0
+    }
 }
 
 impl OnyxDef {
