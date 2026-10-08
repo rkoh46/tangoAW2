@@ -272,12 +272,54 @@ pub fn features_def() -> CampaignDef {
     g.needs = Needs::Bonds(vec!["f01"]);
     g.flag = region::BLACK_HOLE[5];
 
+    // Five armies: the player is the fifth (Black Hole), a tag pair.
+    let mut h = MissionDef::new("f07", "Features Five Armies");
+    h.objective = "Test: five armies, the player the fifth.";
+    h.map = MapSrc::Built("bh_five");
+    h.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::HAWKE)),
+    ];
+    h.needs = Needs::All(vec!["f01"]);
+    h.flag = region::BLACK_HOLE[3];
+
+    // A second stage: Nell's army (2) falls, Andy's (3, on her team, with a token
+    // unit and an HQ of its own) takes over with reinforcements.
+    let mut i = MissionDef::new("f08", "Features Stage Two");
+    i.objective = "Test: when army 2 falls, army 3 takes over.";
+    i.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..2.......", "........3."]);
+    i.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).team(2),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).team(2),
+    ];
+    i.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 5, 4).hold(),
+        UnitDef::new(3, unit::INFANTRY, 9, 5).hold().named("token"),
+    ];
+    i.triggers = vec![Trigger::new(
+        // (the fall is known after the turn starts: after the player's first action)
+        When::AfterAction,
+        Cond::ArmyDefeated(2),
+        vec![
+            Action::Spawn(vec![UnitDef::new(3, unit::TANK, 7, 5), UnitDef::new(3, unit::TANK, 8, 4)]),
+            Action::AddFunds { army: 3, funds: 9000 },
+            Action::Scene(Scene::new(vec![Line::say(co::ANDY, "Stage two.")])),
+        ],
+    )];
+    i.needs = Needs::All(vec!["f01"]);
+    i.flag = region::BLACK_HOLE[5];
+
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: vec![Page { text: "Features.", picture: None, who: None }],
         credits: vec![CreditSection { heading: "FEATURES", names: vec!["TEST"] }],
-        missions: vec![a, b, c, d, f, g],
+        missions: vec![a, b, c, d, f, g, h, i],
         final_mission: "f05",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
     }

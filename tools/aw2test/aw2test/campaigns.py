@@ -131,11 +131,11 @@ def leave_map(e, d, close=False):
         e.wait(40)
 
 
-def win_here(e, d):
+def win_here(e, d, player_team=(1,)):
     """In a campaign mission under the player's control: won (a test aid:
     `force_win`), the results and the scenes, back on the world map."""
     index = d.mission()
-    if not d.force_win():
+    if not d.force_win(player_team):
         raise NavError(f"mission {index} not won")
     for _ in range(400):
         e.wait(30)

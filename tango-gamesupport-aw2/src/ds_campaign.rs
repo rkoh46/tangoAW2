@@ -157,6 +157,16 @@ pub fn is_ds(core: &Core) -> bool {
     source(core) == 0
 }
 
+/// The army the player commands in the mission being played: 1, or 5 in a
+/// custom campaign's five-army mission ([`crate::five`]).
+pub fn player_army(core: &Core) -> u8 {
+    if mission_info(core).and_then(|m| m.native.as_ref()).is_some_and(|n| n.five.is_some()) {
+        5
+    } else {
+        1
+    }
+}
+
 /// The DS Campaign's mission being played (Dual Strike's own missions have
 /// rules of their own); 0xFF in another campaign.
 pub fn ds_mission(core: &Core) -> u8 {
@@ -178,6 +188,26 @@ const MISSION_PROC: u32 = 0x0849_EBFC;
 /// Campaign New / Continue handlers (Select Mode's leaves 1 and 0).
 pub const CAMPAIGN_NEW: u32 = 0x0803_BA4C;
 pub const CAMPAIGN_CONTINUE: u32 = 0x0803_BA88;
+/// `ResetRulesAfterCampaignMap`'s entry: a campaign mission is about to start
+/// (it is also called at a mission's end, in the battle still).
+const RESET_RULES_ENTRY: u32 = 0x0803_46FC;
+
+/// A mission is about to start: a five-army mission switches the patched game
+/// on (crate::five) with the player's CO and team; any other switches it off.
+fn mission_start(core: &mut Core) {
+    // (called from the end of a battle too: `EndOfGame_FinishCampaignMap`)
+    let lr = core.gba().cpu().gpr(14) as u32;
+    if !active(core) || in_battle(core) || (CAMPAIGN_END & !0xFF..=CAMPAIGN_END | 0xFF).contains(&lr) {
+        return;
+    }
+    let index = core.raw_read_8(MISSION, -1) as usize;
+    let five = campaign(core).and_then(|c| c.model.built.missions.get(index)).and_then(|m| m.native.as_ref()).and_then(|n| n.five);
+    match five {
+        Some((co, _, team)) => crate::five::set_campaign(core, true, co, team),
+        None => crate::five::set_campaign(core, false, 0, 0),
+    }
+}
+
 /// The campaign's end-of-battle handler (`EndOfGame_FinishCampaignMap`),
 /// trapped past its prologue (its `bl IsPlayer1TeamAlive`), and its
 /// `bl ResetRulesAfterCampaignMap` (with r4 = 0 it then starts AW2's
@@ -595,6 +625,9 @@ pub fn tick(core: &mut Core, ds: bool) {
     if !session && core.raw_read_8(CREDITS, -1) != 0 {
         core.raw_write_8(CREDITS, -1, 0);
     }
+    if !session {
+        crate::five::set_campaign(core, false, 0, 0);
+    }
     crate::ds_credits::tick(core, session, campaign(core).and_then(|c| c.model.credits.as_ref()));
     {
         // The map menu's Save item: AW2's own, a session's too (a DS
@@ -932,6 +965,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (CAMPAIGN_NEW, Box::new(|core: &mut Core| start(core, true))),
         (CAMPAIGN_CONTINUE, Box::new(|core: &mut Core| start(core, false))),
         (CAMPAIGN_END, Box::new(end_of_battle)),
+        (RESET_RULES_ENTRY, Box::new(mission_start)),
         (SET_FLAG, Box::new(set_flag)),
         (IS_FLAG, Box::new(is_flag)),
         (crate::campaign_menu::SAVE_FLAG, Box::new(crate::campaign_menu::save_flag)),
@@ -1045,6 +1079,8 @@ fn end_of_battle(core: &mut Core) {
     }
     let index = core.raw_read_8(MISSION, -1);
     let won = battle_won(core);
+    // (the patched five-army game is for the battle only)
+    crate::five::set_campaign(core, false, 0, 0);
     // A save of this mission made halfway is over with it.
     crate::suspend::drop_mid(core, spec(core).mid_slot);
     // The outcome, for the tests and logs: 1 won, 2 lost, and the day.
@@ -1257,6 +1293,12 @@ pub fn tag_pairs(core: &Core) -> Vec<(u32, u8, u8)> {
             }
         }
     }
+    // A five-army mission's player (army 5) with a tag pair.
+    if let Some((a, b, _)) = m.native.as_ref().and_then(|n| n.five) {
+        if b != crate::campaign_model::NO_CO && a != b {
+            out.push((5, a, b));
+        }
+    }
     out
 }
 
@@ -1275,17 +1317,18 @@ pub fn mission_info(core: &Core) -> Option<&'static data::MissionInfo> {
 /// not in Black Hole's colours.
 fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
     let players = core.raw_read_32(0x0849_9598, -1);
-    for a in 1..=4u32 {
+    let player = if m.native.as_ref().is_some_and(|n| n.five.is_some()) { 5 } else { 1 };
+    for a in 1..=5u32 {
         let p = players + 0x3C * a + 0x1B;
         if a > m.armies as u32 || core.raw_read_8(p, -1) == 0 {
             continue;
         }
-        let human = a == 1 || m.cos[a as usize - 1].0 == 0x1C;
+        let human = a == player || (a <= 4 && m.cos[a as usize - 1].0 == 0x1C);
         core.raw_write_8(p, -1, if human { 1 } else { 2 });
     }
     // The player's armies: their COs' Campaign sets (crate::co_skills).
     skills_loaded(core);
-    for a in 1..=4u32 {
+    for a in 1..=5u32 {
         let p = players + 0x3C * a;
         if core.raw_read_8(p + 0x1B, -1) == 1 {
             let co = core.raw_read_8(p + 0x1D, -1);
@@ -1309,6 +1352,7 @@ fn co_setup(core: &mut Core) -> u32 {
     let Some(c) = campaign(core) else { return 0 };
     let index = core.raw_read_8(MISSION, -1) as usize;
     let Some(m) = c.model.built.missions.get(index) else { return 0 };
+
     if !player_picks(m) {
         return 0;
     }
@@ -1360,8 +1404,9 @@ fn co_setup(core: &mut Core) -> u32 {
 fn battle_won(core: &Core) -> bool {
     let _ = BATTLE_WON;
     let players = core.raw_read_32(0x0849_9598, -1);
-    let team = core.raw_read_8(players + 0x3C + 0x2A, -1);
-    (1..=4u32).any(|a| {
+    let player = player_army(core) as u32;
+    let team = core.raw_read_8(players + 0x3C * player + 0x2A, -1);
+    (1..=5u32).any(|a| {
         let p = players + 0x3C * a;
         core.raw_read_8(p + 0x1B, -1) != 0 && core.raw_read_16(p + 0x14, -1) == 0 && core.raw_read_8(p + 0x2A, -1) == team
     })

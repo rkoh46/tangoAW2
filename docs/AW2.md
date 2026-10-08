@@ -2007,12 +2007,12 @@ texts; an error names the mission.
 | `props`, `structures` | owned properties; Black Hole's structures stamped on the map (`Structure::{MiniCannon*, Laser, BlackCannon*, BlackFactory, Volcano, Deathray, BlackCrystal, BlackObelisk}`, the Design Room's footprints) | tested: factory, crystal, obelisk, laser |
 | `front2` | a battle on two fronts: its map, props, structures, deployment, `cos` per army (`Pick` for the player's own), `send`, `sky`, weather, fog (`crate::two_front` plays it) | tested: tag pair on the main front, a pick for the second, round change |
 | `day_limit`, `rank_days` | the days the player has (the header's counter; exceeding it loses) and the S rank's days | day limit tested in the header |
-| `triggers` | `Trigger { when: TurnStart / AfterAction, cond, then }`; `Cond::{DayAtLeast, UnitAt{name,x,y}, UnitAlive, UnitGone, ArmyUnitsAtMost, PropertiesAtLeast, Not, All}`; `Action::{Scene, Win, Lose, SetFunds}`; win and lose also by AW2's own rules (rout, HQ) | tested: day, named unit, funds, scene, win, lose |
-| special units | `UnitDef::named("courier")` (with `.hp(10)` for 1 HP); a condition refers to it by name: it is the army's n-th unit of the deployment (its slot), alive while its record's type is non-zero. "Must reach the extraction point within 15 days" is `AfterAction` `UnitAt` -> `Win` and `TurnStart` `All[DayAtLeast(16), Not(UnitAt)]` -> `Lose` | tested |
+| `triggers` | `Trigger::new(when, cond, vec![actions])` (`.repeating()`; by default a trigger fires once: it latches a campaign flag of its own, 96 per campaign): `when` is `TurnStart` (the start of the player's turn: army 1's, army 5's in a five-army mission) or `AfterAction` (after each action). Conditions: `DayAtLeast`, `EveryDays{n, from}`, `UnitAt`, `NamedIn{name, area}`, `UnitAlive`, `UnitGone`, `UnitsIn{army, area, at_least}`, `ArmyUnitsAtMost`, `PropertiesAtLeast`, `OwnerAt{x, y, army}`, `ArmyDefeated(army)`, `PlayerPair{a, b}`, `Flag`, `Not`, `All`, `Any`, `Custom(fn)`. Actions: `Scene`, `Win`, `Lose`, `SetFunds`, `AddFunds`, `Spawn(units)`, `SetCo`, `Strike{hp}`, `EarnBond(k)`, `Custom(fn)`. Win and lose also by AW2's own rules (rout, HQ) | tested: day, every days, named unit, funds, add funds, scene, win, lose, pair, spawn, strike, second stage, bond; compiled: the rest |
+| special units | `UnitDef::named("courier")` (with `.hp(10)` for 1 HP): a named unit has a **persistent id**: its bit of the mission's death latch (`custom_campaign::LATCH`, the countdown word, kept by a mission saved halfway), set for good when its record empties, so a unit built into its slot is not it. "Must reach the extraction point within 15 days" is `AfterAction` `UnitAt` -> `Win` and `TurnStart` `All[DayAtLeast(16), Not(UnitAt)]` -> `Lose`; an evacuation is `UnitsIn` / `NamedIn` over a rectangle | tested |
 | `intro`, `victory`, `after` | scenes: in the battle before day 1's first turn, before the winning end (inside `Action::Win`), and on the world map after the win (before the next mission's flag shows); between-mission scenes are `after` | tested |
-| `music` | an AW2 song id | declared, not played yet |
-| `recruits`, `requires`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked, what opens it, its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
-| five-army maps | `armies` is 2..=4: a mission with five armies is an error today (`five.rs` plays Versus', not the campaign's) | not supported |
+| `music` | an AW2 song id: while the battle is on every CO's theme in the CO table is that song (put back after) | tested |
+| `recruits`, `needs`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked; what opens it **by mission key** (`Needs::Start`, `All(vec!["bh01"])`, `Any(..)`, `Bonds(..)`: those won and every hidden bond earned); its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
+| five armies | `armies` is 2..=5. In a **five-army mission the player is army 5, Black Hole** (the fifth army of `five.rs`; its colour must be Black Hole's), armies 1..4 are the header's four, units name armies 1..5, a map has five HQs (`1`..`5`); the player's CO is `Fixed` or `Pair` (a tag pair; no pick yet). The patched game (`five::set_campaign`, switched on at `ResetRulesAfterCampaignMap`) is on for the battle only; no mid-mission Save (as a Versus five-army game); no second front. `five.rs`' patched unit ids (51 an army) are handled by `custom_campaign`'s helpers (`unit_by_name`, `units_of`) | tested (`bh_campaign_five_armies`) |
 
 Scenes: `Scene::new(vec![Line::say(co::STURM, "..."), Line::feel(co::VON_BOLT,
 Mood::Sad, "..."), Line::soldier(colour::BLACK_HOLE, "...")])`; text is
@@ -2023,24 +2023,74 @@ dialogue commands (`0x17` open with the first face, `0x38` a speaker,
 
 ### Adding a mission (for whoever builds the thirty)
 
-1. In `bh_campaign.rs` write a `fn mission_n() -> MissionDef` with
-   `MissionDef::new("bh03", "Title")`; give it a map (`MapSrc::Aw2 { id }`,
-   `MapSrc::Ds { record }` for a Dual Strike map, or tiles), `armies`, `units`
-   and what its rules need.
-2. Pick its flag from `region::*` (or any point of the 432 x 256 picture),
-   its `requires` (the missions that open it; a branch is `Requires::Any`),
-   its `stars`, and `recruits` if it unlocks a CO.
-3. Add it to `def().missions` (the index is its place: `requires`,
-   `recruits` and `final_mission` use indexes), set `final_mission`, add the
-   prologue and credits text.
-4. `cargo test --release -p tango-gamesupport-aw2 --lib` (the compile checks:
-   `bh_campaign::tests`), then `python3 tools/aw2test/run.py -k bh_campaign`.
-   `TANGOAW2_BH_FEATURES=1` plays `features_def()` (every field once) instead.
-5. In a test: `bhcampaign.BhCampaign(g)`: `start_bh`, `pick_mission`,
-   `wait_map`, `cp.win_here`; its `picks` dict says how many picks the CO
-   screen asks per mission (`PICKS` in `aw2test/bhcampaign.py`).
+**Where.** One file per act: `bh_act1.rs` .. `bh_act5.rs` and `bh_secret.rs`
+(the 31st), each a `pub fn missions() -> Vec<MissionDef>` in world-map order;
+builders of different acts never touch the same file. `bh_campaign.rs` has
+what is shared: the roster (`ROSTER`, `roster::*`), the world map's regions,
+the prologue, the credits, the hidden bonds (`BONDS`) and `def()`, which
+concatenates the acts. A mission names what it needs **by key**
+(`Needs::All(vec!["bh12"])`), so no mission depends on another act's index;
+`final_mission` is a key too.
 
-Limits and notes: a campaign has at most 32 missions (progress bits) and
+1. In your act's file write `fn bh13() -> MissionDef` with
+   `MissionDef::new("bh13", "Title")`; give it a map: build it with the map
+   tool (`MapSrc::Built("bh13")`, below), or `MapSrc::Aw2 { id }`, `Ds { record }`,
+   `Tiles`, or `Ascii` for a placeholder; then `armies`, `units` (or the built
+   map's own), what its rules need, scenes.
+2. Pick its flag from `region::*` (or any point of the 432 x 256 picture),
+   its `needs`, its `stars`, `recruits` if it unlocks a CO (a recruit
+   mission also earns its hidden bond: `Action::EarnBond(k)` in a trigger).
+3. Add it to the act's `missions()`.
+4. `cargo test --release -p tango-gamesupport-aw2 --lib` (`bh_campaign::tests`
+   compile the campaign), then `python3 tools/aw2test/run.py -k bh_campaign`;
+   `TANGOAW2_BH_FEATURES=1` plays `features_def()` (every field once) instead.
+5. In a test: `bhcampaign.BhCampaign(g)`: `start_bh`, `start_at(won_mask,
+   unlocked_mask)`, `pick_mission`, `wait_map`, `cp.win_here`; its `picks`
+   dict says how many picks the CO screen asks per mission.
+
+**The map tool** (`tango-gamesupport-aw2/five/bhmap.py`). Maps are text files
+in `five/bh/*.txt`, in `five/maps.txt`'s format (legend: `five/map.py`: sea,
+reefs, shoals, rivers, bridges, roads, pipes, woods, mountains, properties,
+Black Hole's inventions) with `team`, `objective` and `unit ARMY TYPE X Y
+[hp=N] [hold] [name=id]` lines. `python3 five/bhmap.py <aw2.gba>` joins every
+road, river, pipe, sea edge, coast, shoal and mountain as AW2 draws them
+(the rules learned from the game's own maps, `five/map.py`), checks every
+neighbouring tile pair against the game's maps (`five/tilecheck.py`) and
+writes `src/bh_map_data.rs` (the tiles and units; commit it); `--check` only
+checks. It also checks reachability: the player's army (`objective` names
+more) reaches every enemy HQ by land, or has a Lander or aircraft that can;
+every Lander has a port or beach to load at next to its army's land and a
+beach to unload on next to useful land (an HQ, a property, units) its army
+cannot walk to; no stranded island (land with properties or units that
+nobody reaches); no unit boxed in. A problem prints `PROBLEM ...` and the
+exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
+
+**Recipes.**
+- *Stage two (Nell, then Andy).* Give the stage-2 army its own team-mate slot:
+  army 3 on army 2's team, an HQ of its own and one token unit (`hold`), so
+  the team is alive when army 2 falls. A trigger `AfterAction`,
+  `ArmyDefeated(2)` does `Spawn` (army 3's units), `AddFunds`, `SetCo` and a
+  scene (`bh_campaign_second_stage`). (An army with no units is defeated at
+  once: give it the token.)
+- *Evacuation / escort.* Named units (`.named("crumb")`) and `UnitsIn` /
+  `NamedIn` over the exit's rectangle, or `Cond::Custom(fn)` using
+  `unit_by_name`, `units_of`, `day`; a death is `UnitGone`.
+- *A CO pair in the player's pair triggers a scene.* `Cond::PlayerPair {
+  a, b }` (either order) at `AfterAction` with a `Scene`.
+- *The Black Onyx turned on the enemy.* `Trigger::new(TurnStart,
+  EveryDays { n: 5, from: 5 }, vec![Action::Strike { hp: 8 }]).repeating()`:
+  AW2's meteor strike (every unit within two cells, never below 1 HP) on the
+  spot the CPU's scorer picks best for the player; no satellite is drawn.
+- *Reinforcements.* `Action::Spawn(vec![UnitDef::new(army, kind, x, y)])`
+  (full HP; a cell in use is skipped).
+- *Hidden bonds.* `CampaignDef::bonds` (at most 12) lists the CO whose CO
+  page shows each secret quote (it replaces that CO's bio page while a
+  bond is earned, in the BH session); `Action::EarnBond(k)` earns bond k
+  (saved in the record); `Needs::Bonds(vec![..])` opens the secret mission when
+  every bond is earned (`bh_campaign_mission_data_fields`).
+
+Limits and notes: a campaign has at most 32 missions (progress bits; 30 +
+the secret one), the unlock mask has 12 roster bits and 12 bond bits, and
 its blob must fit `0x08F00000..0x08FBFFFF` (checked at load; Dual Strike's
 is about 360 KB); texts use ids `0x7400..0x7FF5`. The first mission opens at
 `Requires::Start`, and at least one mission must be open at any time or the
@@ -2050,8 +2100,14 @@ CO screen and Setup phase need `bhcampaign.PICKS` in tests.
 Tests: `tools/aw2test/tests/test_bh_campaign.py` (menu entry with and
 without the pack; New, the prologue and the world map with one flag; mission
 1 and Von Bolt unlocked; the CO screen offering only unlocked COs; the
-credits; every data field; a named unit's extraction; two fronts) and the
-save tests above.
+credits; every data field; a named unit's extraction and death latch; two
+fronts; five armies; the second stage; a built map; both campaigns in one
+boot), `test_bh_map_tool.py` and the save tests above.
+
+**The Campaign chooser** shows all three entries at once (AW2 CAMPAIGN, DS
+CAMPAIGN, BH CAMPAIGN): the game's box has two label sprites, the third is
+added at the sprite flush (priority 0, so the girl's sprites do not cover it);
+with more campaigns the three-row window scrolls (`campaign_menu::ROWS`).
 
 ## Clone Andy (`co_new.rs`)
 
@@ -2069,12 +2125,15 @@ original, in Black Hole's army colours.
 
 So Clone Andy is tangoAW2's tenth new CO (id 81, `co_new::CLONE_ANDY`), on
 **Dual Strike's Andy's data** for everything it has: portraits, face, HUD,
-mini portrait and name graphic (all read as Andy's: his name graphic reads
-"ANDY"), CO Power and Super CO Power (Hyper Repair / Hyper Upgrade, AW2's
+mini portrait (all read as Andy's) and CO Power and Super CO Power (Hyper Repair / Hyper Upgrade, AW2's
 own power code, the names and texts from Dual Strike's record 2), numbers,
 quotes, victory quote, map theme (Andy's Dual Strike theme, converted like
 the others'), tag compatibility row and column. **tangoAW2's own**, made up,
-marked in code: his name "Clone Andy" and his CO page bio
+marked in code: his name "Clone Andy", his name graphic "Clone" (the
+six-sprite name picture composed at run time from AW2's own letters: C, o, l, n
+of Colin's and the e of Eagle's, outlines shared as in the game's names:
+`co_new::clone_name`; the test `clone_andy_name_graphic` draws it beside other
+CO names, `clone_andy_name.png`), and his CO page bio
 (`CLONE_ANDY_NAME`, `CLONE_ANDY_BIO`), his place (Black Hole's Teams
 group after Koal, Black Hole's battle style and army colour, Adder's CPU
 profile and Black Hole power music: the `like` of his `NEW` entry), and

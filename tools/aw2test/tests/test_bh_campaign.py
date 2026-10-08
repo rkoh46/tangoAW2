@@ -529,3 +529,84 @@ def bh_campaign_built_map(ctx):
     road = [tile_at(e, 3, y) for y in range(1, 4)]
     ctx.check(all(t in (0x40, 0x41, 0x42, 0x60, 0x61, 0x62, 0xE0, 0xE1, 0xC0, 0xC1, 0x80, 0xA0, 0xA1) for t in road), f"the road is joined road tiles ({[hex(t) for t in road]})")
     shot(ctx, e, "built_map")
+
+
+@test(modes=("ds",))
+def bh_campaign_five_armies(ctx):
+    """A five-army mission in the campaign (crate::five): Orange Star, Blue
+    Moon, Green Earth and Yellow Comet against the player's Black Hole, the
+    game's fifth army, with a tag pair (Sturm and Hawke); a built map with
+    five HQs."""
+    e, g, d = boot_features(ctx)
+    d.picks = {6: 0}
+    d.start_at(won_mask=0b0111111, unlocked_mask=1 | 1 << 12)
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 6, "mission 7")
+    shot(ctx, e, "five_armies")
+    ctx.eq(d.size(), (16, 15), "the map")
+    players = [g.player(a) for a in range(1, 6)]
+    ctx.eq([p["co"] for p in players], [bh.ANDY, bh.OLAF, bh.EAGLE, bh.KANBEI, bh.STURM], "the COs, the player's the fifth army's")
+    ctx.eq([p["colour"] for p in players], [1, 2, 3, 4, 5], "the colours")
+    ps = d.controllers_five()
+    ctx.eq(ps, [2, 2, 2, 2, 1], "the computer commands four armies, the player the fifth")
+    ctx.eq(len(g.units()), 6, "the map's six units")
+    from aw2test import tag
+    ctx.eq(e.u8(tag.rec(5) + tag.P_CO) if e.u8(tag.MAGIC_AT) == 0x7A else None, bh.HAWKE, "the player's tag partner (Hawke) on army 5")
+    ctx.eq(e.u8(0x02030206), 2, "the five-army game is on (crate::five)")
+    from aw2test import campaigns as cp
+    # the four computer armies yield (the player's win by AW2's own rules)
+    for a in range(1, 5):
+        e.w8(g.player(a)["addr"] + 0x31, 1)
+    e.press("START", 4)
+    e.wait(30)
+    for _ in range(900):
+        if d.last_result()["result"] == 1 and d.world_map_up():
+            break
+        e.press("A", 4)
+        e.wait(10)
+    ctx.eq(d.last_result()["result"], 1, "the four enemy armies routed: won")
+    ctx.eq(d.won() >> 6 & 1, 1, "mission 7 won")
+    ctx.eq(e.u8(0x02030206), 0, "back on the world map the patched game is off again")
+
+
+@test(modes=("ds",))
+def bh_campaign_second_stage(ctx):
+    """The second-stage pattern: army 2 (Nell) has an HQ; army 3 (Andy), on her
+    team, holds one token unit. When army 2 is defeated the battle goes on
+    (army 3's team is alive) and the trigger gives army 3 its reinforcements,
+    funds and scene, instead of the player winning."""
+    e, g, d = boot_features(ctx)
+    d.picks = {7: 0}
+    d.start_at(won_mask=0b01111111, unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 7, "mission 8")
+    n0 = len(g.units())
+    e.w8(g.player(2)["addr"] + 0x31, 1)       # army 2 yields at its turn
+    d.end_turn()
+    d.wait_control()
+    ctx.eq(e.u16(0x03004080), 2, "day 2")
+    e.wait(120)
+    g.select(1, 1)
+    g.move_to(1, 1)
+    g.choose("Wait", g.ACTION_MENU)
+    seen = []
+    for _ in range(900):
+        t = d.text_shown()
+        if t and (not seen or seen[-1] != t):
+            seen.append(t.replace("\x0f", ""))
+        if d.last_result()["result"]:
+            break
+        if e.u32(g.player(3)["addr"]) >= 9000 and not d.scripts_running():
+            break
+        e.press("A", 4)
+        e.wait(8)
+    ctx.eq(d.last_result()["result"], 0, "the battle went on (the player did not win)")
+    ctx.check("Stage two." in seen, f"the scene ({seen})")
+    ctx.check(e.u32(g.player(3)["addr"]) >= 9000, "army 3's funds added")
+    ctx.log(f"units: {[(u['army'], u['type'], u['x'], u['y']) for u in g.units()]}")
+    ctx.eq(len(g.units(3)), 3, f"army 3: the token and two reinforcements ({len(g.units(3))})")
+    shot(ctx, e, "second_stage")

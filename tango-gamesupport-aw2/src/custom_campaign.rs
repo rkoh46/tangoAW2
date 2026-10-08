@@ -1160,9 +1160,16 @@ fn compile_mission(
     second: Option<u8>,
 ) -> Result<([u8; 0x5C], MissionInfo), Error> {
     let armies = m.armies.len();
-    if !(2..=4).contains(&armies) {
-        return Err(format!("{}: {armies} armies (2..=4; five-army battles are not supported in the campaign engine yet)", m.key));
+    if !(2..=5).contains(&armies) {
+        return Err(format!("{}: {armies} armies (2..=5)", m.key));
     }
+    // Five armies (crate::five): armies 1..4 are the header's, army 5 is
+    // Black Hole, the player's: set up from `Native::five`.
+    let five = armies == 5;
+    if five && m.armies[4].colour != colour::BLACK_HOLE {
+        return Err(format!("{}: in a five-army mission the player's army (the fifth) is Black Hole's", m.key));
+    }
+    let player = if five { 5usize } else { 1 };
     let (w, h, mut tiles, own_units) = load_map(core, &m.map).map_err(|e| format!("{}: {e}", m.key))?;
     decorate(w, h, &mut tiles, &m.props, &m.structures).map_err(|e| format!("{}: {e}", m.key))?;
     // Scripts and trigger lists.
@@ -1180,10 +1187,11 @@ fn compile_mission(
     intro_cmds.extend(intro_scene);
     if !intro_cmds.is_empty() {
         let s = cx.script(intro_cmds);
-        turn_start.push(vec![rec8(0, 1, 1, 0), rec8(7, 0xFF, 0, s)]);
+        turn_start.push(vec![rec8(0, player as u8, 1, 0), rec8(7, 0xFF, 0, s)]);
     }
-    let player_team = m.armies[0].team.max(1);
-    let enemy = (1..=armies).find(|&a| m.armies[a - 1].team.max(a as u8) != player_team && a != 1).unwrap_or(2) as u16;
+    let team_of = |a: usize| if m.armies[a - 1].team == 0 { a as u8 } else { m.armies[a - 1].team };
+    let player_team = team_of(player);
+    let enemy = (1..=armies).find(|&a| team_of(a) != player_team && a != player).unwrap_or(2) as u16;
     for t in &m.triggers {
         let mut cmds = Vec::new();
         let mut ends = false;
@@ -1314,7 +1322,7 @@ fn compile_mission(
     let structure = crate::survival_maps::Structure::of_tiles(&tiles);
     w32(&mut hd, 0x10, structure.map_or(0, |s| s.aw2_picture()));
     hd[0x17] = m.fog as u8;
-    hd[0x18] = armies as u8;
+    hd[0x18] = armies.min(4) as u8;
     w16(&mut hd, 0x1A, 1);
     w16(&mut hd, 0x1C, 1);
     w16(&mut hd, 0x1E, 1);
@@ -1352,6 +1360,14 @@ fn compile_mission(
     hd[0x58] = colours[0].clamp(1, 4);
     native.pool = m.pool.clone();
     native.setup = m.setup;
+    if five {
+        let (co, partner) = match m.armies[4].co {
+            CoSpec::Fixed(c) => (c, NO_CO),
+            CoSpec::Pair(a, b) => (a, b),
+            _ => return Err(format!("{}: a five-army mission's player has a fixed CO or pair (no pick yet)", m.key)),
+        };
+        native.five = Some((co, partner, team_of(5) - 1));
+    }
     let two_front = match (second, &m.front2) {
         (Some(s), Some(f)) => Some(two_front_of(s, f)?),
         _ => None,
@@ -1497,7 +1513,9 @@ const CURRENT_ARMY: u32 = 0x0300_33EC;
 const CREATE_UNIT_AT: u32 = 0x0802_5CC8;
 
 fn unit_addr(core: &Core, army: u8, slot: u8) -> u32 {
-    core.raw_read_32(UNITS_PTR, -1) + UNIT * ((army as u32 - 1) * 64 + slot as u32)
+    // (a five-army battle gives army a the ids (a - 1) * 51 + 1.., crate::five)
+    let stride = if crate::five::active(core) { 51 } else { 64 };
+    core.raw_read_32(UNITS_PTR, -1) + UNIT * ((army as u32 - 1) * stride + slot as u32)
 }
 
 /// The death latch (one bit per named unit of the mission, set for good once
@@ -1631,8 +1649,9 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
             core.raw_read_16(p + 0x14, -1) != 0
         }
         Cond::PlayerPair { a, b } => {
-            let lead = crate::tag::army_co_of(core, 1);
-            let partner = crate::tag::partner(core, 1);
+            let player = crate::ds_campaign::player_army(core) as u32;
+            let lead = crate::tag::army_co_of(core, player);
+            let partner = crate::tag::partner(core, player);
             (lead == *a && partner == Some(*b)) || (lead == *b && partner == Some(*a))
         }
         Cond::Flag(f) => crate::ds_campaign::campaign_flag(core, *f as u32),
@@ -1641,6 +1660,14 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
         Cond::Any(cs) => cs.iter().any(|c| holds(core, c)),
         Cond::Custom(f) => f(core),
     }
+}
+
+/// The army moving now, and its first unit id (the game keeps both).
+fn set_current_army(core: &mut Core, army: u8) {
+    const CURRENT_BASE: u32 = 0x0300_3F2C;
+    let stride = if crate::five::active(core) { 51 } else { 64 };
+    core.raw_write_16(CURRENT_ARMY, -1, army as u16);
+    core.raw_write_16(CURRENT_BASE, -1, (army.max(1) as u16 - 1) * stride);
 }
 
 /// A custom campaign's magic functions: its conditions and actions.
@@ -1667,12 +1694,12 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
         Magic::Call(f, _) if f & 0xFFF0_0000 == SET_ARMY => {
             let army = core.raw_read_16(CURRENT_ARMY, -1) as u8;
             core.raw_write_8(SCRATCH, -1, army);
-            core.raw_write_16(CURRENT_ARMY, -1, (f & 0xF) as u16);
+            set_current_army(core, (f & 0xF) as u8);
             0
         }
         Magic::Call(RESTORE_ARMY, _) => {
             let army = core.raw_read_8(SCRATCH, -1);
-            core.raw_write_16(CURRENT_ARMY, -1, army as u16);
+            set_current_army(core, army);
             core.raw_write_8(SCRATCH, -1, 0);
             0
         }

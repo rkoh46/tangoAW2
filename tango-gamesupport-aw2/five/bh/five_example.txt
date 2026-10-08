@@ -1,0 +1,26 @@
+# A five-army campaign map (the player is army 5, Black Hole): see five/bhmap.py.
+
+map bh_five
+armies 5 9 1 2 3 4 5
+objective 5
+unit 1 1 3 2
+unit 2 1 12 2
+unit 3 1 3 12
+unit 4 1 12 12
+unit 5 1 7 7
+unit 5 5 8 7
+~~~~~~~~~~~~~~~~
+~1..f....f...2.~
+~..c..^^...c...~
+~.....^..bR....~
+~..f..R.....f..~
+~.b...R..c.....~
+~.....RRRRR..f.~
+~..f.....R.....~
+~...c..5.R..c..~
+~.....f..R.....~
+~..b.....RRRb..~
+~.f..^^..R.....~
+~..c.....R...f.~
+~3.......R....4~
+~~~~~~~~~~~~~~~~

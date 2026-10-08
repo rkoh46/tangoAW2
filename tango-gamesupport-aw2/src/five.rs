@@ -238,9 +238,36 @@ const FIVE_ON: u32 = 0x0203_0206;
 
 pub fn active(core: &Core) -> bool {
     let map = core.raw_read_8(MAP_SELECTED, -1);
-    core.raw_read_8(FIVE_ON, -1) == 1
-        && core.raw_read_8(GAME_MODE, -1) == VERSUS
-        && (is_five_map(map) || DESIGN_IDS.contains(&map))
+    let on = core.raw_read_8(FIVE_ON, -1);
+    (on == 1 && core.raw_read_8(GAME_MODE, -1) == VERSUS && (is_five_map(map) || DESIGN_IDS.contains(&map)))
+        || (on == FIVE_CAMPAIGN && core.raw_read_8(GAME_MODE, -1) == CAMPAIGN && crate::ds_campaign::active(core))
+}
+
+/// [`FIVE_ON`]'s value while a custom campaign's five-army mission is being
+/// played ([`set_campaign`]); the mission is a campaign map (game mode 1).
+const FIVE_CAMPAIGN: u8 = 2;
+const CAMPAIGN: u8 = 1;
+
+/// A custom campaign's mission is five-army (or not): the patches switch on
+/// with the next frame, and army 5 (Black Hole, the player's in the
+/// campaign's five-army missions) is set up as the Teams screen would:
+/// human, this CO, this team (0xFF: its own).
+pub fn set_campaign(core: &mut Core, on: bool, co: u8, team: u8) {
+    if !on {
+        if core.raw_read_8(FIVE_ON, -1) == FIVE_CAMPAIGN {
+            core.raw_write_8(FIVE_ON, -1, 0);
+        }
+        return;
+    }
+    core.raw_write_8(FIVE_ON, -1, FIVE_CAMPAIGN);
+    core.raw_write_8(ARMY5_CONTROL, -1, 1);
+    core.raw_write_8(ARMY5_CO, -1, co.wrapping_add(1));
+    core.raw_write_8(ARMY5_TEAM, -1, team.wrapping_add(1));
+}
+
+/// Whether a custom campaign's five-army mission is on.
+pub fn campaign_on(core: &Core) -> bool {
+    core.raw_read_8(FIVE_ON, -1) == FIVE_CAMPAIGN
 }
 
 /// The Design Room's three map slots (map ids 0xB4..0xB6).

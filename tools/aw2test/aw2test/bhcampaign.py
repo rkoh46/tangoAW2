@@ -17,6 +17,7 @@ BH_SLOT, BH_MID_SLOT = 13, 12
 CHOOSER_ROW = 2                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN
 
 # The campaign's roster (crate::bh_campaign::ROSTER), AW2 CO ids.
+ANDY, OLAF, EAGLE, KANBEI = 1, 3, 8, 6
 STURM, VON_BOLT, HAWKE, KINDLE, KOAL, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY = 10, 75, 14, 74, 73, 72, 11, 12, 13, 81
 ROSTER = [STURM, VON_BOLT, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY]   # (the unlock order: Koal before Kindle)
 # The placeholder missions: the picks the CO screen asks for.
@@ -107,3 +108,12 @@ UNIT_IDS = {"infantry": 1, "mech": 2, "mdtank": 3, "megatank": 4, "tank": 5, "re
 
 def unit_id(name):
     return UNIT_IDS[name]
+
+
+def _controllers_five(self):
+    """Player +0x1B for armies 1..5 (the patched player table, five.rs)."""
+    p = self.players()
+    return [self.e.u8(p + 0x3C * a + 0x1B) for a in range(1, 6)]
+
+
+BhCampaign.controllers_five = _controllers_five

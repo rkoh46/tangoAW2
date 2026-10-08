@@ -374,6 +374,10 @@ pub struct Native {
     pub pool: Vec<u8>,
     /// Starting funds per army (None: as the map).
     pub funds: [Option<u32>; 4],
+    /// A five-army mission ([`crate::five`]): the player is army 5, Black
+    /// Hole, the fifth army the patched game has (armies 1..4 are the header's
+    /// four); its CO, its partner (NO_CO none) and its team (0xFF: its own).
+    pub five: Option<(u8, u8, u8)>,
     /// The Setup phase (scout the map, then Deploy) before day 1 when the
     /// player picks a CO ([`crate::setup_phase`]).
     pub setup: bool,
