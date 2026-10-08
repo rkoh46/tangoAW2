@@ -73,15 +73,21 @@ pub fn def() -> CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: vec![
-            Page { text: "Placeholder prologue, page one. Black Hole rises again.", picture: None, who: None },
-            Page { text: "Placeholder prologue, page two. Sturm leads the way.", picture: None, who: None },
+            Page { text: "Once, one black banner covered half the world.", picture: None, who: None },
+            Page { text: "Then it burned. Its legions scattered like ash.", picture: None, who: None },
+            Page { text: "Its officers took new colours and new names.", picture: None, who: None },
+            Page { text: "Its last lord grew old, counting coins in the ruins.", picture: None, who: None },
+            Page { text: "Then a storm came ashore that no map had foretold.", picture: None, who: None },
+            Page { text: "It carried no flag. It had one name, and one purpose.", picture: None, who: None },
+            Page { text: "Four nations sleep behind their borders, safe and proud.", picture: None, who: None },
+            Page { text: "None of them has heard the thunder yet.", picture: None, who: None },
         ],
         credits: vec![
             CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"], secret: false },
             CreditSection { heading: "THANKS FOR PLAYING", names: vec![], secret: false },
         ],
         missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
-        final_mission: "bh02",
+        final_mission: "bh03", // (Act 1 only so far: the Act V builder moves it to the last mission)
         bonds: BONDS.to_vec(),
         secret_mission: "",
     }
@@ -91,7 +97,7 @@ pub fn def() -> CampaignDef {
 /// `Action::EarnBond(k)`, its quote on its CO's page; the secret mission
 /// opens when all nine are earned.
 pub const BONDS: [Bond; 9] = [
-    Bond { co: co::VON_BOLT, quote: "Placeholder bond quote." },
+    Bond { co: co::VON_BOLT, quote: "I got second pick. Second! Best bargain of my life." },
     Bond { co: co::HAWKE, quote: "Placeholder bond quote." },
     Bond { co: co::KOAL, quote: "Placeholder bond quote." },
     Bond { co: co::KINDLE, quote: "Placeholder bond quote." },

@@ -47,9 +47,15 @@ fn on_design_map(core: &Core) -> bool {
     DESIGN_MAPS.contains(&id) || crate::five::is_five_map(id) || crate::five_map::is_ds_map(id) || crate::ds_campaign::active(core)
 }
 
+/// The table a design map or campaign mission spawns from: a custom
+/// campaign's mission with a schedule of its own has it, else Factory Blues'.
+fn table_for(core: &Core) -> u32 {
+    crate::ds_campaign::active(core).then(|| crate::custom_campaign::factory_table(core)).flatten().unwrap_or(FACTORY_BLUES_TABLE)
+}
+
 fn after_ai_table_stored(core: &mut Core) {
     if on_design_map(core) {
-        core.raw_write_32(SPAWN_TABLE_PTR, -1, FACTORY_BLUES_TABLE);
+        core.raw_write_32(SPAWN_TABLE_PTR, -1, table_for(core));
     }
 }
 
@@ -70,7 +76,7 @@ fn at_turn_start(core: &mut Core) {
     // detour flag lets it through the second time).
     let table = core.raw_read_32(SPAWN_TABLE_PTR, -1);
     if on_design_map(core) || !(0x0800_0000..0x0A00_0000).contains(&table) {
-        core.raw_write_32(SPAWN_TABLE_PTR, -1, FACTORY_BLUES_TABLE);
+        core.raw_write_32(SPAWN_TABLE_PTR, -1, table_for(core));
     }
     core.raw_write_8(DETOUR, -1, 1);
     let cpu = core.gba_mut().cpu_mut();
