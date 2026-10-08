@@ -23,7 +23,7 @@ pub(crate) const ENTRY: u32 = 0x5C;
 /// loops that walk it (`sub_080206B0`, find a map by its tiles, and the
 /// map list builder at `0x08037482`), which stop after id 0xBF.
 pub(crate) const MAP_TABLE: u32 = 0x0865_0000;
-pub(crate) const MAP_IDS: u32 = 0xC9;
+pub(crate) const MAP_IDS: u32 = 0xEE;
 pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
     (0x0801_96EC, 0x00),
     (0x0802_06E0, 0x00),
@@ -70,11 +70,11 @@ pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
 /// there, and without the pack everything runs as before
 /// ([`show_maps`]).
 const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
-    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29C8), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CC8)];
+    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29ED), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CED)];
 /// Each map's tiles and units: 4 KiB apiece, the first ten from here (up to
 /// the CO texts at 0x0862C000), the rest after the moved map table.
 const MAP_DATA: u32 = 0x0862_2000;
-const MAP_DATA_MORE: u32 = 0x0865_5000;
+const MAP_DATA_MORE: u32 = 0x0865_6000;
 const MAP_DATA_SIZE: u32 = 0x1000;
 
 fn map_data(k: usize) -> u32 {
@@ -114,9 +114,13 @@ pub const CATEGORY: u16 = 9;
 /// game never lists), design-map ids 0xB8..0xBF (the Design Room has three
 /// slots, 0xB4..0xB6, and a suspend copy, 0xB7; the rest serve only
 /// multi-cartridge link play), and 0xC0.., past the game's own table.
-pub const IDS: [u8; 18] = [
-    0, 0xBC, 0xBD, 0xBE, 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8,
+pub const IDS: [u8; 19] = [
+    0, 0xBC, 0xBD, 0xBE, 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, VAULT_ID,
 ];
+/// The Colonel's Vault (the BH Campaign's prize map), past Survival's ids
+/// (0xC9..0xEC, [`crate::survival`]); the walk of the map list reaches it
+/// with the pack on ([`show_maps`]).
+pub const VAULT_ID: u8 = 0xED;
 
 /// Map ids 0xB4..0xBF are design maps to the game. These make 0xB8..0xBF
 /// ordinary maps (header blob, name, unit list, preview): (address,
@@ -200,7 +204,8 @@ pub fn install(core: &mut Core) {
     names.extend(MAPS.iter().map(|m| m.name));
     for (k, text) in names.iter().enumerate() {
         let at = STRINGS + 0x20 * k as u32;
-        let mut bytes = text.as_bytes().to_vec();
+        // (AW2's font draws its apostrophe at `~`, as the staff roll's names do)
+        let mut bytes: Vec<u8> = text.bytes().map(|b| if b == b'\'' { b'~' } else { b }).collect();
         bytes.push(0);
         assert!(bytes.len() <= 0x20);
         core.raw_write_range(at, -1, &bytes);
@@ -300,7 +305,7 @@ pub fn show_maps(core: &mut Core, art: bool, pack: bool, last_id: Option<u8>) {
         let now = core.raw_read_16(at, -1);
         let want = match last_id {
             // Dual Strike's Survival maps (crate::survival), past 0xC8.
-            Some(id) if art && pack => (with & 0xFF00) | id as u16,
+            Some(id) if art && pack => (with & 0xFF00) | (id as u16).max(with & 0xFF),
             _ if art && pack => with,
             _ => without,
         };
@@ -351,12 +356,16 @@ mod tests {
         // listed, so every map up to 0xC0 must not need the pack.
         for (m, &id) in MAPS.iter().zip(IDS.iter()) {
             assert_eq!(m.ds, id > 0xC0, "{}", m.name);
+            assert!(id <= VAULT_ID);
         }
         assert_eq!(MAPS.iter().filter(|m| m.wasteland).count(), 4);
         for armies in 2..=5 {
-            assert_eq!(MAPS.iter().filter(|m| m.ds && m.armies == armies).count(), 2);
+            assert_eq!(MAPS.iter().filter(|m| m.ds && m.armies == armies).count(), if armies == 2 { 3 } else { 2 });
         }
         assert!(is_wasteland_map(0xC1) && !is_wasteland_map(0xC5) && !is_wasteland_map(0));
         assert!(is_five_map(0xC4) && is_five_map(0xC8) && !is_five_map(0xC3));
+        // the Colonel's Vault: a 2-army map with the pack's tab, the last id
+        assert!(!is_five_map(VAULT_ID) && is_ds_map(VAULT_ID) && !is_wasteland_map(VAULT_ID));
+        assert_eq!(map_of(VAULT_ID).unwrap().name, "The Colonel's Vault");
     }
 }

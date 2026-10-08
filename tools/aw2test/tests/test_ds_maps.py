@@ -36,6 +36,8 @@ _spec.loader.exec_module(mappy)
 MAPS = {
     "Rust Basin": (0xC1, 3), "Dune Fork": (0xC2, 5), "Cinder Flats": (0xC3, 6), "Black Wastes": (0xC4, 9),
     "Coral Strait": (0xC5, 3), "Trident Isles": (0xC6, 5), "Harbor Cross": (0xC7, 6), "Coral Crown": (0xC8, 9),
+    # the BH Campaign's prize map (crate::five_map::VAULT_ID): normal colours, pack only
+    "The Colonel's Vault": (0xED, 3),
 }
 # tangoAW2's own maps (crate::five_map::IDS, in five/maps.txt's order).
 OWN = {
@@ -47,6 +49,7 @@ ALL = {**MAPS, **OWN}
 # Maps meant to be crossed by air or sea alone in places (Skyreach's walled
 # plateaus, Crystal Isles' islands without beaches).
 AIRBORNE = ("Skyreach", "Crystal Isles")
+NO_PIPES = ("The Colonel's Vault",)   # (a pack-only map without Piperunners)
 WASTELAND = ("Rust Basin", "Dune Fork", "Cinder Flats", "Black Wastes")
 
 # The Select Map screen: the highlighted map's tiles, decompressed for the
@@ -190,7 +193,7 @@ def check_map(ctx, g, name):
     chart = [list(e.read(chart_at + 32 * r, 32)) for r in range(8)]
     grid = traverse.Grid(w, h, [classes[rows[y] + x] for y in range(h) for x in range(w)])
     bad = traverse.check(grid, chart, range(1, m["armies"] + 1),
-                         [(a, x, y) for a, x, y, t in units if t == PIPERUNNER], need_piperunners=name in MAPS)
+                         [(a, x, y) for a, x, y, t in units if t == PIPERUNNER], need_piperunners=name in MAPS and name not in NO_PIPES)
     if name in AIRBORNE:
         ctx.log(f"{name}: by design not every army gets everywhere on the ground ({len(bad)}: {bad[:6]})")
     else:
@@ -328,7 +331,7 @@ def ds_maps_traversal_static(ctx):
         m, w, h, tiles, units = built(name)
         grid = traverse.Grid(w, h, [army5.get(t, rom[romlib.TILE_CLASS - romlib.ROM_BASE + t]) for t in tiles])
         bad = traverse.check(grid, chart, range(1, m["armies"] + 1),
-                             [(a, x, y) for a, x, y, t in units if t == PIPERUNNER], need_piperunners=name in MAPS)
+                             [(a, x, y) for a, x, y, t in units if t == PIPERUNNER], need_piperunners=name in MAPS and name not in NO_PIPES)
         ctx.check(not bad, f"{name}: every army can get everywhere ({len(bad)} failures: {bad[:6]})")
         beach_check(ctx, name, grid, m["armies"])
 

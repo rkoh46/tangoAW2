@@ -29,7 +29,8 @@ then its rows, one character per tile:
   X O     Black Crystal (1 tile) and Black Obelisk (3x3), tangoAW2's healing
           structures (obelisk.rs); they belong to the Black Hole army
 A `look wasteland` line draws the map in Dual Strike's Wasteland colours
-(crate::wasteland); such a map is listed only with the Dual Strike pack on.
+(crate::wasteland); such a map is listed only with the Dual Strike pack on (as is one with
+`look pack`: normal colours, pack only).
 Unit types: 1 Infantry, 2 Mech, 3 Md Tank, 5 Tank, 6 Recon, 7 APC,
 8 Neotank, 10 Artillery, 11 Rockets, 14 Anti-Air, 15 Missiles, 16 Fighter,
 17 Bomber, 19 Battle Copter, 20 Transport Copter, 21 Battleship, 22 Cruiser,
@@ -154,6 +155,7 @@ def parse(path):
             cur['armies'], cur['tab'], cur['colours'] = f[0], f[1], f[2:]
         elif line.startswith('look '):
             cur['wasteland'] = line.split()[1] == 'wasteland'
+            cur['pack'] = line.split()[1] == 'pack'
         elif line.startswith('units '):
             f = line.split()
             cur['units'][int(f[1])] = [int(x) for x in f[2:]]
@@ -350,7 +352,7 @@ def build(m, edge):
 
 def needs_pack(m):
     """Com Towers, Piperunners and the Wasteland look come with the Dual Strike pack."""
-    return (m['wasteland'] or any(c in r for r in m['rows'] for c in 'tT')
+    return (m['wasteland'] or m.get('pack') or any(c in r for r in m['rows'] for c in 'tT')
             or any(PIPERUNNER in u for u in m['units'].values()))
 
 
