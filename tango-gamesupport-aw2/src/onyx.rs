@@ -94,6 +94,12 @@ const SIDE: u32 = STATE + 0x15;
 /// box showed: its window and blend go off on the next frame, with its
 /// tiles ([`box_effects_off`]).
 const BOX_OFF: u32 = STATE + 0x16;
+/// Reversed Onyx: +0x17 the day of the last shot, +0x18 the Black Hole turns
+/// the Obelisk still heals nothing for (after the fall), +0x19 1 while this
+/// turn's healing is off.
+const LAST_SHOT: u32 = STATE + 0x17;
+const OFFLINE: u32 = STATE + 0x18;
+const OFFLINE_NOW: u32 = STATE + 0x19;
 const STATE_END: u32 = STATE + 0x1C;
 
 /// The phases (Dual Strike's states).
@@ -185,8 +191,11 @@ const LAUNCH_SCRIPT: u32 = ROM + 0x188;
 pub const MAGIC: u32 = 0x2D00_0000;
 const MAGIC_SETUP: u32 = MAGIC | 1;
 const LASER_SCRIPT: u32 = ROM + 0x200;
+/// The reversed Onyx's silo launch: a proc that needs no unit.
+const AUTO_FN: u32 = ROM + 0x2A0;
+const AUTO_SCRIPT: u32 = ROM + 0x2D0;
 const ROM_SENTINEL: u32 = ROM + 0x3FC;
-const ROM_MAGIC: u32 = 0x4F59_4E4F; // "ONYO" (bump when the code changes)
+const ROM_MAGIC: u32 = 0x4F59_4E50; // "ONYP" (bump when the code changes)
 
 fn halfwords(h: &[u16]) -> Vec<u8> {
     h.iter().flat_map(|v| v.to_le_bytes()).collect()
@@ -367,6 +376,38 @@ fn launch_script() -> Vec<u8> {
     .concat()
 }
 
+/// `void f(void)`: starts the silo launch's script (no unit's action after).
+fn auto_fn() -> Vec<u8> {
+    let mut b = halfwords(&[
+        0xB500, // push {lr}
+        0x4804, // ldr r0, =AUTO_SCRIPT
+        0x2103, // movs r1, #3
+        0x4B04, // ldr r3, =Proc_Start
+        0x467A, // mov r2, pc
+        0x3205, // adds r2, #5
+        0x4696, // mov lr, r2
+        0x4718, // bx r3
+        0xBC01, // pop {r0}
+        0x4700, // bx r0
+    ]);
+    b.extend(words(&[AUTO_SCRIPT, PROC_START]));
+    b
+}
+
+fn auto_script() -> Vec<u8> {
+    [
+        proc_cmd(0x04, 0, 0x0803_4F8D),
+        proc_cmd(0x02, 0, 0x0803_4F7D),
+        proc_cmd(0x02, 0, SETUP_FN | 1),
+        proc_cmd(0x02, 0, 0x0804_0985),
+        proc_cmd(0x1A, 0, 0x0849_A00C),
+        proc_cmd(0x02, 0, 0x0804_09B5),
+        proc_cmd(0x14, 0, BUSY_FN | 1),
+        proc_cmd(0x00, 0, 0),
+    ]
+    .concat()
+}
+
 /// The meteor script's fade from white (the meteor's), and AW2's proc ops.
 const OP_WHILE: u16 = 0x14;
 const OP_FADE_FROM_WHITE: u16 = 0x26;
@@ -409,6 +450,8 @@ fn install(core: &mut Core) {
     core.raw_write_range(FIRING_FN, -1, &firing_fn());
     core.raw_write_range(CPU_LAUNCH_END, -1, &cpu_launch_end());
     core.raw_write_range(LAUNCH_SCRIPT, -1, &launch_script());
+    core.raw_write_range(AUTO_FN, -1, &auto_fn());
+    core.raw_write_range(AUTO_SCRIPT, -1, &auto_script());
     let laser = laser_script(core);
     core.raw_write_range(LASER_SCRIPT, -1, &laser);
     core.raw_write_32(ROM_SENTINEL, -1, ROM_MAGIC);
@@ -420,12 +463,17 @@ fn install(core: &mut Core) {
 /// Skies' countdown alone.
 const ON_ONYX: u8 = 1;
 const ON_CLOCK: u8 = 2;
+/// A custom campaign's reversed Onyx ([`crate::campaign_model::OnyxDef`]).
+const ON_REV: u8 = 3;
 
 /// The mission in a DS Campaign session (its main front) with a real-time
 /// countdown, and what [`ON`] holds for it.
 fn timed_mission(core: &Core) -> Option<(usize, u8)> {
     if !crate::ds_campaign::active(core) || crate::two_front::second_live(core) {
         return None;
+    }
+    if crate::ds_campaign::onyx_spec(core).is_some() {
+        return Some((crate::ds_campaign::mission(core) as usize, ON_REV));
     }
     match crate::ds_campaign::ds_mission(core) as usize {
         crate::ds_campaign_data::CRYSTAL_CALAMITY => Some((crate::ds_campaign_data::CRYSTAL_CALAMITY, ON_ONYX)),
@@ -455,6 +503,26 @@ fn mission_on(core: &Core) -> bool {
 /// The satellite is in this battle.
 pub fn on(core: &Core) -> bool {
     core.raw_read_8(ON, -1) == ON_ONYX && mission_on(core)
+}
+
+/// A reversed Black Onyx is in this battle.
+pub fn reversed(core: &Core) -> bool {
+    core.raw_read_8(ON, -1) == ON_REV && clock_on(core)
+}
+
+/// The reversed Onyx's hits left (None: there is none).
+pub fn reversed_hits(core: &Core) -> Option<u8> {
+    reversed(core).then(|| hits_left(core))
+}
+
+/// The Obelisk heals nothing this turn (the Onyx has fallen): crate::obelisk.
+pub fn obelisk_offline(core: &Core) -> bool {
+    core.raw_read_8(OFFLINE_NOW, -1) != 0 && reversed(core)
+}
+
+/// A satellite panel shows: Crystal Calamity's or the reversed one.
+fn satellite(core: &Core) -> bool {
+    on(core) || reversed(core)
 }
 
 pub fn hits_left(core: &Core) -> u8 {
@@ -511,6 +579,14 @@ pub fn map_start(core: &mut Core) {
         core.raw_write_8(ON, -1, ON_CLOCK);
         return;
     }
+    if on == ON_REV {
+        let spec = crate::ds_campaign::onyx_spec(core);
+        core.raw_write_8(ON, -1, ON_REV);
+        core.raw_write_8(HITS_LEFT, -1, spec.map_or(4, |o| o.hits));
+        core.raw_write_8(PHASE, -1, CHARGING);
+        note_army(core);
+        return;
+    }
     core.raw_write_8(ON, -1, ON_ONYX);
     core.raw_write_8(HITS_LEFT, -1, HITS);
     core.raw_write_8(PHASE, -1, CHARGING);
@@ -518,6 +594,11 @@ pub fn map_start(core: &mut Core) {
 }
 
 fn note_army(core: &mut Core) {
+    if core.raw_read_8(ON, -1) == ON_REV {
+        // (the player's army: the fifth in a five-army mission)
+        core.raw_write_8(ARMY, -1, crate::ds_campaign::player_army(core));
+        return;
+    }
     let p = crate::five::players(core);
     let army = (1..=4u32).find(|&a| core.raw_read_8(p + PLAYER * a + COLOUR, -1) == BLACK_HOLE).unwrap_or(4);
     core.raw_write_8(ARMY, -1, army as u8);
@@ -562,6 +643,11 @@ pub fn tick(core: &mut Core) {
     if !clock_on(core) {
         return;
     }
+    if core.raw_read_8(ON, -1) == ON_REV {
+        // (the reversed Onyx has no real-time clock: its days are the game's)
+        rev_tick(core);
+        return;
+    }
     let onyx = on(core);
     if clock_runs(core) {
         let clock = core.raw_read_8(CLOCK, -1);
@@ -601,6 +687,9 @@ fn animate(core: &mut Core) {
             core.raw_write_8(HITS_LEFT, -1, h);
             if h == 0 {
                 set_phase(core, DESTROYED);
+                if core.raw_read_8(ON, -1) == ON_REV {
+                    fall(core);
+                }
             }
         }
         HIT if t >= RISE_FRAMES + BLAST_FRAMES => {
@@ -664,6 +753,10 @@ fn map_frame(core: &mut Core) {
     if !clock_on(core) || !map_waits(core) {
         return;
     }
+    if core.raw_read_8(ON, -1) == ON_REV {
+        rev_frame(core);
+        return;
+    }
     let list = realtime_list(core);
     if list == 0 {
         return;
@@ -677,6 +770,132 @@ fn map_frame(core: &mut Core) {
     cpu.set_gpr(2, 0);
     cpu.set_gpr(14, (MAIN_STUB | 1) as i32);
     cpu.set_thumb_pc(RUN_LIST);
+}
+
+// --- The reversed Onyx (a custom campaign's: Black Hole's own satellite) ---------------
+
+/// Whether day `day` is a shot's day.
+fn due(spec: &crate::campaign_model::OnyxDef, day: u16) -> bool {
+    day >= spec.first as u16 && (day - spec.first as u16) % spec.period.max(1) as u16 == 0
+}
+
+/// The days until the next shot: 0 on a shot's day before it has fired.
+fn next_in(core: &Core, spec: &crate::campaign_model::OnyxDef) -> u16 {
+    let day = core.raw_read_16(DAY_ADDR, -1);
+    let fired = core.raw_read_8(LAST_SHOT, -1) as u16 == day && day != 0;
+    let from = if fired { day + 1 } else { day };
+    (from..from + spec.period.max(1) as u16 + 1).find(|&d| due(spec, d)).map_or(0, |d| d - day)
+}
+
+const DAY_ADDR: u32 = 0x0300_4080;
+
+/// Every frame of a reversed Onyx's battle: the animations, and the warning
+/// from the day before a shot.
+fn rev_tick(core: &mut Core) {
+    animate(core);
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return };
+    let p = phase(core);
+    if hits_left(core) > 0 && (p == CHARGING || p == WARNING) {
+        let want = if next_in(core, &spec) <= 1 { WARNING } else { CHARGING };
+        if p != want {
+            let t = core.raw_read_16(ANIM, -1);
+            set_phase(core, want);
+            if want == WARNING {
+                core.raw_write_16(ANIM, -1, t);
+            }
+        }
+    }
+}
+
+/// The map waits (the player's cursor, or the computer between two units):
+/// the satellite fires on Black Hole's turn on a shot's day, and a silo with
+/// one of the other team's foot soldiers on it launches at it.
+fn rev_frame(core: &mut Core) {
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return };
+    if hits_left(core) == 0 || core.raw_read_8(BUSY, -1) != 0 || !matches!(phase(core), CHARGING | WARNING) {
+        return;
+    }
+    let bh = core.raw_read_8(ARMY, -1) as u16;
+    let army = core.raw_read_16(CURRENT_ARMY, -1);
+    let day = core.raw_read_16(DAY_ADDR, -1);
+    if army == bh && due(&spec, day) && core.raw_read_8(LAST_SHOT, -1) as u16 != day {
+        core.raw_write_8(LAST_SHOT, -1, day as u8);
+        set_phase(core, FIRING);
+        core.raw_write_8(STRIKE, -1, 1);
+        start_fn(core, LASER_FN);
+        return;
+    }
+    if let Some((x, y)) = foot_soldier_on_silo(core, bh as u8) {
+        core.raw_write_16(SILO, -1, x as u16);
+        core.raw_write_16(SILO + 2, -1, y as u16);
+        start_fn(core, AUTO_FN);
+    }
+}
+
+const CURRENT_ARMY: u32 = 0x0300_33EC;
+
+/// Runs `f` before the callback itself (as the real-time list is).
+fn start_fn(core: &mut Core, f: u32) {
+    let lr = core.gba().cpu().gpr(14) as u32;
+    core.raw_write_32(SAVED_LR, -1, lr);
+    core.raw_write_8(LIST_RAN, -1, 1);
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(14, (MAIN_STUB | 1) as i32);
+    cpu.set_thumb_pc(f);
+}
+
+/// A foot soldier (Infantry or Mech) of an army on another team than Black
+/// Hole's stands on a silo no one has fired.
+fn foot_soldier_on_silo(core: &Core, bh: u8) -> Option<(u8, u8)> {
+    let players = crate::five::players(core);
+    let team = |a: u32| core.raw_read_8(players + PLAYER * a + 0x2A, -1);
+    for a in 1..=5u32 {
+        if a == bh as u32 || team(a) == team(bh as u32) {
+            continue;
+        }
+        for (_, kind, x, y) in crate::custom_campaign::units_of(core, a as u8) {
+            if (kind == 1 || kind == 2) && tile_at(core, x as u32, y as u32) == SILO_TILE {
+                return Some((x, y));
+            }
+        }
+    }
+    None
+}
+
+/// The last hit lands: the satellite falls on the fortress. Every Black Hole
+/// unit near the Obelisk loses HP (never below 1), the Obelisk heals nothing
+/// for some turns, the player's COs lose a share of their meters.
+fn fall(core: &mut Core) {
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return };
+    let army = core.raw_read_8(ARMY, -1);
+    let (ox, oy) = spec.obelisk;
+    for (a, _, x, y) in crate::custom_campaign::units_of(core, army) {
+        let near = |v: u8, lo: u8| if v < lo { lo - v } else { v.saturating_sub(lo + 2) };
+        if near(x, ox) + near(y, oy) > spec.radius {
+            continue;
+        }
+        let w = core.raw_read_16(a + 4, -1);
+        let hp = w & 0x7F;
+        let new = hp.saturating_sub(spec.debris_hp as u16 * 10).max(hp.min(10));
+        if new != hp {
+            core.raw_write_16(a + 4, -1, (w & !0x7F) | new);
+        }
+    }
+    core.raw_write_8(OFFLINE, -1, spec.offline_turns);
+    crate::tag::cut_meters(core, army as u32, spec.meters as u32);
+}
+
+/// At each Black Hole turn start (crate::obelisk::heal): the Obelisk's
+/// healing is off while the fall's turns last.
+pub fn heal_turn(core: &mut Core) {
+    if core.raw_read_8(ON, -1) != ON_REV {
+        return;
+    }
+    let left = core.raw_read_8(OFFLINE, -1);
+    core.raw_write_8(OFFLINE_NOW, -1, (left > 0) as u8);
+    if left > 0 {
+        core.raw_write_8(OFFLINE, -1, left - 1);
+    }
 }
 
 /// The terrain box's window and blend (window 0 darkening the box, colour
@@ -707,7 +926,7 @@ fn box_effects_off(core: &mut Core) {
 /// crate::power_anim, where AW2's meteor strike draws its meteor: the
 /// laser's strike is starting (Dual Strike's beam plays instead). Once.
 pub fn take_strike(core: &mut Core) -> bool {
-    if core.raw_read_8(STRIKE, -1) == 0 || !on(core) {
+    if core.raw_read_8(STRIKE, -1) == 0 || !satellite(core) {
         return false;
     }
     core.raw_write_8(STRIKE, -1, 0);
@@ -733,6 +952,13 @@ const CPU_LAUNCH_EVENT: i32 = 0x32;
 const CPU_UNIT: u32 = 0x0300_40D8;
 
 fn cpu_launch(core: &mut Core) {
+    if reversed(core) {
+        // (the silos are for the satellite: a soldier's own Launch fires
+        // nothing; [`rev_frame`] launches for it)
+        install(core);
+        core.gba_mut().cpu_mut().set_thumb_pc(CPU_LAUNCH_END);
+        return;
+    }
     if !mission_on(core) {
         return;
     }
@@ -778,7 +1004,7 @@ fn launch_setup(core: &mut Core) {
     let (x, y) = (core.raw_read_16(SILO, -1), core.raw_read_16(SILO + 2, -1));
     core.raw_write_16(proc + 0x64, -1, x);
     core.raw_write_16(proc + 0x66, -1, y);
-    if on(core) {
+    if satellite(core) {
         set_phase(core, HIT);
         core.raw_write_16(CHARGE, -1, 0);
         core.raw_write_8(BUSY, -1, 1);
@@ -793,11 +1019,21 @@ pub const SAVED_LEN: usize = 6;
 const SAVED_MARK: u8 = b'O';
 /// Reclaim the Skies' countdown alone: the mark and the clock (+3).
 const SAVED_CLOCK_MARK: u8 = b'T';
+/// The reversed Onyx: the mark, hits, phase, the last shot's day, the
+/// Obelisk's offline turns.
+const SAVED_REV_MARK: u8 = b'R';
 
 pub fn saved(core: &Core) -> [u8; SAVED_LEN] {
     let mut b = [0u8; SAVED_LEN];
     if core.raw_read_8(ON, -1) == ON_CLOCK {
         b = [SAVED_CLOCK_MARK, 0, 0, core.raw_read_8(CLOCK, -1), 0, 0];
+    }
+    if core.raw_read_8(ON, -1) == ON_REV {
+        let p = match phase(core) {
+            DESTROYED | GONE => GONE,
+            _ => CHARGING,
+        };
+        b = [SAVED_REV_MARK, hits_left(core), p, core.raw_read_8(LAST_SHOT, -1), core.raw_read_8(OFFLINE, -1), 0];
     }
     if core.raw_read_8(ON, -1) == ON_ONYX {
         let c = charge(core).to_le_bytes();
@@ -832,6 +1068,17 @@ pub fn restore(core: &mut Core, b: &[u8]) {
         core.raw_write_8(ON, -1, ON_CLOCK);
         let running = core.raw_read_32(COUNTDOWN, -1) > 0;
         core.raw_write_8(CLOCK, -1, if running { CLOCK_RUNNING } else { 0 });
+        return;
+    }
+    if timed_mission(core).is_some_and(|(_, on)| on == ON_REV) {
+        map_start(core);
+        if b.len() >= SAVED_LEN && b[0] == SAVED_REV_MARK {
+            let spec_hits = crate::ds_campaign::onyx_spec(core).map_or(4, |o| o.hits);
+            core.raw_write_8(HITS_LEFT, -1, b[1].min(spec_hits));
+            core.raw_write_8(PHASE, -1, b[2]);
+            core.raw_write_8(LAST_SHOT, -1, b[3]);
+            core.raw_write_8(OFFLINE, -1, b[4]);
+        }
         return;
     }
     if b.len() < SAVED_LEN || b[0] != SAVED_MARK || !mission_is(core) {
@@ -1142,8 +1389,123 @@ fn satellite_now(core: &Core, art: &Art) -> Vec<u8> {
     px
 }
 
+/// 3x5 letters and digits of the reversed Onyx's panel (rows of three bits).
+fn glyph(c: u8) -> [u8; 5] {
+    match c {
+        b'A' => [0b010, 0b101, 0b111, 0b101, 0b101],
+        b'D' => [0b110, 0b101, 0b101, 0b101, 0b110],
+        b'E' => [0b111, 0b100, 0b110, 0b100, 0b111],
+        b'F' => [0b111, 0b100, 0b110, 0b100, 0b100],
+        b'H' => [0b101, 0b101, 0b111, 0b101, 0b101],
+        b'I' => [0b111, 0b010, 0b010, 0b010, 0b111],
+        b'L' => [0b100, 0b100, 0b100, 0b100, 0b111],
+        b'N' => [0b101, 0b111, 0b111, 0b101, 0b101],
+        b'O' => [0b111, 0b101, 0b101, 0b101, 0b111],
+        b'S' => [0b111, 0b100, 0b111, 0b001, 0b111],
+        b'T' => [0b111, 0b010, 0b010, 0b010, 0b010],
+        b'X' => [0b101, 0b101, 0b010, 0b101, 0b101],
+        b'Y' => [0b101, 0b101, 0b010, 0b010, 0b010],
+        b'0' => [0b111, 0b101, 0b101, 0b101, 0b111],
+        b'1' => [0b010, 0b110, 0b010, 0b010, 0b111],
+        b'2' => [0b111, 0b001, 0b111, 0b100, 0b111],
+        b'3' => [0b111, 0b001, 0b111, 0b001, 0b111],
+        b'4' => [0b101, 0b101, 0b111, 0b001, 0b001],
+        b'5' => [0b111, 0b100, 0b111, 0b001, 0b111],
+        b'6' => [0b111, 0b100, 0b111, 0b101, 0b111],
+        b'7' => [0b111, 0b001, 0b001, 0b010, 0b010],
+        b'8' => [0b111, 0b101, 0b111, 0b101, 0b111],
+        b'9' => [0b111, 0b101, 0b111, 0b001, 0b111],
+        _ => [0; 5],
+    }
+}
+
+/// The reversed Onyx's panel text, 40x32 in palette 15: "NEXT SHOT", the days
+/// to it, "HITS LEFT" with a diamond for each hit still needed, and the
+/// cycle's bar; pink and blinking from the day before a shot.
+fn rev_text(core: &Core) -> Vec<u8> {
+    let (w, h) = (8 * TEXT_TILES.len(), 32);
+    let mut px = vec![0u8; w * h];
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return px };
+    let n = next_in(core, &spec) as usize;
+    let t = core.raw_read_16(ANIM, -1);
+    let alarm = n <= 1 && hits_left(core) > 0;
+    let blink_pink = alarm && (t / 8) % 2 == 1;
+    let mut on = vec![vec![false; 24]; w];
+    let text = |s: &str, y: usize, on: &mut Vec<Vec<bool>>| {
+        let mut x = 1;
+        for c in s.bytes() {
+            for (r, row) in glyph(c).iter().enumerate() {
+                for cx in 0..3 {
+                    if row >> (2 - cx) & 1 != 0 && x + cx < w {
+                        on[x + cx][y + r] = true;
+                    }
+                }
+            }
+            x += 4;
+        }
+    };
+    let days = match n {
+        0 => "TODAY".to_string(),
+        1 => "1 DAY".to_string(),
+        n => format!("{n} DAYS"),
+    };
+    text("NEXT SHOT", 1, &mut on);
+    text(&days, 7, &mut on);
+    text("HITS LEFT", 13, &mut on);
+    for xx in 0..w {
+        for yy in 0..24 {
+            let line2 = (7..12).contains(&yy);
+            if on[xx][yy] {
+                px[yy * w + xx] = if line2 && blink_pink { PINK } else { WHITE };
+            } else if [(-1i32, 0i32), (1, 0), (0, -1), (0, 1)].iter().any(|&(dx, dy)| {
+                let (nx, ny) = (xx as i32 + dx, yy as i32 + dy);
+                (0..w as i32).contains(&nx) && (0..24).contains(&ny) && on[nx as usize][ny as usize]
+            }) {
+                px[yy * w + xx] = BLACK;
+            }
+        }
+    }
+    // A diamond for each hit still needed (outlined; filled while it is).
+    let left = hits_left(core) as usize;
+    for k in 0..spec.hits as usize {
+        let cx = 3 + 6 * k as i32;
+        for dy in -2i32..=2 {
+            for dx in -2i32..=2 {
+                let d = dx.abs() + dy.abs();
+                let (xx, yy) = (cx + dx, 21 + dy);
+                if !(0..w as i32).contains(&xx) {
+                    continue;
+                }
+                let v = if d == 2 { BLACK } else if d < 2 && k < left { if blink_pink { PINK } else { WHITE } } else if d < 2 { 0 } else { continue };
+                if v != 0 {
+                    px[yy as usize * w + xx as usize] = v;
+                }
+            }
+        }
+    }
+    // The cycle's bar, filling to the next shot.
+    let period = spec.period.max(1) as usize;
+    let fill = (period - n.min(period)) * (w - 4) / period;
+    for yy in 26..31 {
+        for xx in 1..w - 1 {
+            let edge = yy == 26 || yy == 30 || xx == 1 || xx == w - 2;
+            px[yy * w + xx] = if edge {
+                BLACK
+            } else if xx - 2 < fill {
+                if alarm { if blink_pink { WHITE } else { PINK } } else { SAT_FIRST }
+            } else {
+                BLACK
+            };
+        }
+    }
+    px
+}
+
 /// The time, the hits and the charge: a 40x32 bitmap in palette 15.
 fn text_now(core: &Core) -> Vec<u8> {
+    if core.raw_read_8(ON, -1) == ON_REV {
+        return rev_text(core);
+    }
     let (w, h) = (8 * TEXT_TILES.len(), 32);
     let mut px = vec![0u8; w * h];
     // The time left (MM:SS, as Dual Strike's top screen: frames / 60).
@@ -1232,6 +1594,9 @@ fn match_over(core: &Core) -> bool {
 }
 
 fn panel_shows(core: &Core) -> bool {
+    if core.raw_read_8(ON, -1) == ON_REV {
+        return shows(core) && phase(core) != GONE && !crate::setup_phase::active(core);
+    }
     shows(core)
         && (phase(core) != GONE || !on(core))
         && core.raw_read_8(CLOCK, -1) & (CLOCK_RUNNING | CLOCK_OUT) != 0
@@ -1300,7 +1665,7 @@ pub fn flush_sprites(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     }
     let mut sprites: Vec<(i32, i32, u16, u16, u16)> = Vec::new();
     {
-        let onyx = on(core);
+        let onyx = satellite(core);
         if onyx {
             let sat = to_tiles(&satellite_now(core, art), 32, 32);
             write_if_changed(core, OBJ_TILES + 32 * SAT_TILE as u32, &sat);
@@ -1371,7 +1736,9 @@ mod tests {
         assert!(STATE >= 0x0203_FFC8 && STATE_END <= 0x0203_FFF0);
         assert!(LAUNCH_FN >= crate::setup_phase::ROM + 0x400);
         assert!(LAUNCH_SCRIPT + launch_script().len() as u32 <= LASER_SCRIPT);
-        assert!(LASER_SCRIPT + 8 * (METEOR_COMMANDS + 1) <= ROM_SENTINEL);
+        assert!(LASER_SCRIPT + 8 * (METEOR_COMMANDS + 1) <= AUTO_FN);
+        assert!(AUTO_FN + auto_fn().len() as u32 <= AUTO_SCRIPT);
+        assert!(AUTO_SCRIPT + auto_script().len() as u32 <= ROM_SENTINEL);
         assert!(LAUNCH_FN + launch_fn().len() as u32 <= LASER_FN);
         assert!(LASER_FN + laser_fn().len() as u32 <= TARGET_FN);
         assert!(TARGET_FN + target_fn().len() as u32 <= SETUP_FN);
@@ -1407,6 +1774,9 @@ mod tests {
         assert_eq!(lit(&t, 0xA), 0x0805_C291);
         assert_eq!(lit(&t, 0x20), 0x0849_9594);
         assert_eq!(lit(&t, 0x30), 0x0802_9089);
+        let a = auto_fn();
+        assert_eq!(lit(&a, 2), AUTO_SCRIPT);
+        assert_eq!(lit(&a, 6), PROC_START);
         let b = busy_fn();
         assert_eq!(lit(&b, 0), BUSY);
         let m = main_stub();

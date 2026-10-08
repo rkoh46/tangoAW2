@@ -708,3 +708,154 @@ def bh_campaign_secret_mission_credits_and_sonja(ctx):
     pages = e.u32(PAGE_POOLS[0])
     texts = [t for _, t in roll_lines(e, pages)]
     ctx.check("*SECRET LINE*" in texts and "THE AUDITOR" in texts, f"the secret section is in the roll ({texts})")
+
+
+ONYX = 0x0203FFC8              # crate::onyx::STATE
+O_ON, O_HITS, O_PHASE, O_LAST, O_OFFLINE = ONYX, ONYX + 1, ONYX + 2, ONYX + 0x17, ONYX + 0x18
+SILOS = [(2, 1), (12, 1), (1, 12), (12, 12)]        # five/bh/five_onyx.txt
+OBELISK = (5, 7)
+
+
+def five_units(e, g):
+    """(id, army, type, x, y, hp) of every live unit, the campaign's five-army ids (51 an army)."""
+    raw = e.read(g.units_base, 12 * 256)
+    out = []
+    for uid in range(256):
+        r = raw[12 * uid:12 * uid + 12]
+        if r[0] == 0 or uid % 51 == 0:
+            continue
+        out.append((uid, uid // 51 + 1, r[0], r[2], r[3], (r[4] | r[5] << 8) & 0x7F))
+    return out
+
+
+def my_turn(e, d, day, frames=6000):
+    """After End: the four computer armies play; then the fifth, the player's (Black Hole), on day `day`."""
+    for _ in range(frames // 20):
+        if e.u16(0x030033EC) == 5 and e.u16(DAY) == day:
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(20)
+    d.wait_control()
+
+
+@test(modes=("ds",))
+def bh_campaign_reversed_onyx(ctx):
+    """The reversed Black Onyx (crate::onyx, MissionDef::onyx): Black Hole's
+    own satellite on a day cycle. It warns the day before a shot, fires on
+    Black Hole's turn every fifth day (the enemy near the target loses 8 HP);
+    a foot soldier of the other team on a silo launches at it once (the
+    silo spent; a scene by the hit left); four hits destroy it: debris hurts
+    Black Hole's units near the Obelisk (never below 1 HP), the Obelisk heals
+    nothing for three turns, the player's meters lose 30%; the shots stop."""
+    e, g, d = boot_features(ctx)
+    d.picks = {9: 0}
+    d.start_at(won_mask=0x1DF, unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 9, "mission 10")
+    ctx.log(f"silo fired at {e.u16(ONYX + 0x10)}, {e.u16(ONYX + 0x12)}; units {five_units(e, g)}")
+    ctx.eq((e.u8(O_ON), e.u8(O_HITS), e.u8(O_PHASE)), (3, 4, 1), "the satellite: reversed, 4 hits, charging")
+    shot(ctx, e, "reversed_onyx_panel_day1")
+    mine = [u for u in five_units(e, g) if u[1] == 5]
+    theirs = [u for u in five_units(e, g) if u[1] != 5]
+    ctx.eq(len(mine), 2, "the player's two units")
+    # Day 4 (the day before a shot): the warning.
+    e.w16(DAY, 3)
+    d.end_turn()
+    my_turn(e, d, 4)
+    ctx.eq(e.u16(DAY), 4, "day 4")
+    e.wait(30)
+    ctx.eq(e.u8(O_PHASE), 2, "day 4: the warning (the day before a shot)")
+    shot(ctx, e, "reversed_onyx_panel_warning")
+    # Day 5, Black Hole's turn: it fires at the spot the computer scores best for Black Hole.
+    before = {u[0]: u[5] for u in five_units(e, g) if u[1] != 5}
+    try:
+        d.end_turn()
+        my_turn(e, d, 5)
+    except Exception:
+        ctx.log(f"state {[hex(e.u8(ONYX + k)) for k in range(0x1C)]} units {five_units(e, g)} procs {[(hex(a), hex(s0), hex(f)) for a, s0, f in g.procs()]} dayword {e.u16(DAY)} army {e.u16(0x030033EC)}")
+        raise
+    ctx.eq(e.u16(DAY), 5, "day 5")
+    for _ in range(400):
+        if e.u8(O_LAST) == 5 and e.u8(O_PHASE) == 1 and not d.scripts_running():
+            break
+        e.press("A", 4)
+        e.wait(10)
+    ctx.eq(e.u8(O_LAST), 5, "the shot of day 5 was fired")
+    ctx.eq(e.u8(O_PHASE), 1, "charging again")
+    after = {u[0]: u[5] for u in five_units(e, g) if u[1] != 5}
+    hurt = [k for k in after if after[k] < before.get(k, 0)]
+    ctx.log(f"hurt by the shot: {[(k, before[k], after[k]) for k in hurt]}")
+    ctx.check(all(before[k] - after[k] <= 80 and after[k] >= 10 for k in hurt), "the shot takes 8 HP at most and never kills")
+    shot(ctx, e, "reversed_onyx_after_shot")
+    # The silos: an enemy foot soldier on each launches once. (The allies' Tanks are turned
+    # into soldiers here: left alone, the computer's soldiers walk onto silos by themselves.)
+    ctx.eq(e.u8(O_HITS), 4, "no hit yet: the allies have no foot soldiers")
+    allies = [u for u in five_units(e, g) if u[1] != 5]
+    ctx.require(len(allies) >= 4, f"four allied units ({len(allies)})")
+    # (a Black Hole unit near the Obelisk, hurt, and the meters full, to see the fall)
+    near = [u for u in five_units(e, g) if u[1] == 5][0]
+    d.place_unit({"id": near[0], "x": near[3], "y": near[4]}, OBELISK[0] + 3, OBELISK[1] + 1)
+    a = g.unit_addr(near[0])
+    e.w16(a + 4, (e.u16(a + 4) & ~0x7F) | 90)
+    meter = g.player(5)["addr"] + 0x20
+    e.w32(meter, 40000)
+    for k, (sx, sy) in enumerate(SILOS):
+        u = allies[k]
+        e.w8(g.unit_addr(u[0]), 1)             # a foot soldier
+        d.place_unit({"id": u[0], "x": u[3], "y": u[4]}, sx, sy)
+        for _ in range(900):
+            if e.u8(O_HITS) == 3 - k:
+                break
+            e.wait(10)
+        ctx.eq(e.u8(O_HITS), 3 - k, f"silo {k + 1}: a hit ({e.u8(O_HITS)} left)")
+        tile = lambda: e.u16(GMAP + 0xA22 + 2 * (e.u16(GMAP + 0x417A + 2 * sy) + sx)) & 0x1FF
+        ctx.check(tile() != 0x180, f"silo {k + 1} is spent (tile {tile():#x})")
+        for _ in range(300):
+            if e.u8(O_PHASE) in (1, 2, 0) and not d.scripts_running() and e.u8(ONYX + 0xA) == 0:
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(10)
+        if k == 0:
+            shot(ctx, e, "reversed_onyx_one_hit")
+    for _ in range(600):
+        if e.u8(O_PHASE) == 0 and not d.scripts_running():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(10)
+    ctx.eq(e.u8(O_HITS), 0, "destroyed")
+    ctx.eq(e.u8(O_PHASE), 0, "the satellite is gone")
+    ctx.eq(e.u8(O_OFFLINE), 3, "the Obelisk is offline for three turns")
+    now = {u[0]: u[5] for u in five_units(e, g)}
+    ctx.eq(now[near[0]], 60, "debris: 3 HP off a Black Hole unit near the Obelisk")
+    ctx.check(e.u32(meter) < 40000, f"the meter lost a share ({e.u32(meter)} of 40000)")
+    shot(ctx, e, "reversed_onyx_destroyed")
+    # The scenes by the hits left (after the next action): one down, and the fall.
+    seen = []
+    for _ in range(300):
+        t = d.text_shown()
+        if t and (not seen or seen[-1] != t):
+            seen.append(t.replace("\x0f", ""))
+        if g.idle():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(10)
+    for _ in range(3):
+        e.press("B", 4)               # (the cursor may have selected a unit)
+        e.wait(10)
+    d.end_turn()                  # the allies' turn: after their actions the scenes play
+    for _ in range(600):
+        t = d.text_shown()
+        if t and (not seen or seen[-1] != t):
+            seen.append(t.replace("\x0f", ""))
+        if "The Onyx falls." in seen and not d.scripts_running():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(20)
+    ctx.check("One down." in seen and "The Onyx falls." in seen, f"the scenes by the hits left ({seen})")

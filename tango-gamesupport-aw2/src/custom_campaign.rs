@@ -452,6 +452,10 @@ pub enum Cond {
     UnitsIn { army: u8, area: Rect, at_least: u8 },
     /// The named unit stands in the rectangle.
     NamedIn { name: &'static str, area: Rect },
+    /// The mission's reversed Black Onyx ([`MissionDef::onyx`]) has at most
+    /// this many hits left / is destroyed.
+    OnyxHitsAtMost(u8),
+    OnyxDestroyed,
     /// A mission-local flag ([`FLAG_FIRST`]..) is set (a trigger's own once-latch).
     Flag(u8),
     /// A predicate written in Rust for a mission with a rule of its own (an
@@ -583,6 +587,8 @@ pub struct MissionDef {
     /// The Setup phase before day 1 when the player picks a CO (scout the
     /// map, open the menu, Deploy). A mission with no pick has none.
     pub setup: bool,
+    /// A reversed Black Onyx on the mission ([`OnyxDef`]).
+    pub onyx: Option<OnyxDef>,
 }
 
 impl MissionDef {
@@ -614,6 +620,7 @@ impl MissionDef {
             stars: 1,
             pool: Vec::new(),
             setup: true,
+            onyx: None,
         }
     }
 }
@@ -1093,6 +1100,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         pools: def.missions.iter().map(|m| m.pool.clone()).collect(),
         bonds,
         music: def.missions.iter().map(|m| m.music).collect(),
+        onyx: def.missions.iter().map(|m| m.onyx).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
     };
     built.unhandled.clear();
@@ -1662,6 +1670,8 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
             let partner = crate::tag::partner(core, player);
             (lead == *a && partner == Some(*b)) || (lead == *b && partner == Some(*a))
         }
+        Cond::OnyxHitsAtMost(n) => crate::onyx::reversed_hits(core).is_some_and(|h| h <= *n),
+        Cond::OnyxDestroyed => crate::onyx::reversed_hits(core) == Some(0),
         Cond::Flag(f) => crate::ds_campaign::campaign_flag(core, *f as u32),
         Cond::Not(c) => !holds(core, c),
         Cond::All(cs) => cs.iter().all(|c| holds(core, c)),

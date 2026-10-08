@@ -26,6 +26,8 @@ then its rows, one character per tile:
   F Black Factory (3x4, anchor on the third row)
   V Volcano (4x4, anchor second column, third row)
   D Deathray (3x3)
+  M       missile silo (one tile; a foot soldier on it launches; the BH
+          Campaign's reversed Black Onyx uses the four in the corners)
   X O     Black Crystal (1 tile) and Black Obelisk (3x3), tangoAW2's healing
           structures (obelisk.rs); they belong to the Black Hole army
 A `look wasteland` line draws the map in Dual Strike's Wasteland colours
@@ -115,6 +117,7 @@ INVENTIONS = {
     'F': ([[UNDERLAY, 0x143, UNDERLAY], [UNDERLAY] * 3, [0x18C, 0x18D, 0x18E], [UNDERLAY] * 3], 1, 2),
     'V': ([[RIM] * 4, [RIM, UNDERLAY, UNDERLAY, RIM], [0x1A6, 0x1A7, 0x1A8, 0x1A9], [UNDERLAY] * 4], 1, 2),
     'D': ([[UNDERLAY] * 3, [0x18F, 0x190, 0x191], [UNDERLAY] * 3], 1, 1),
+    'M': ([[0x180]], 0, 0),   # a missile silo (a foot soldier on it can launch)
     'X': ([[0x192]], 0, 0),
     'O': ([[UNDERLAY] * 3, [UNDERLAY, 0x193, UNDERLAY], [UNDERLAY] * 3], 1, 1),
 }

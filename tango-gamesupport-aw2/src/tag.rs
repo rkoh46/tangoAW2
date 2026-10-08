@@ -146,6 +146,22 @@ pub fn partner(core: &Core, army: u32) -> Option<u8> {
     (co != NONE && core.raw_read_8(STATE + 0xFC, -1) == MAGIC_RAM).then_some(co)
 }
 
+/// The Black Onyx's fall (crate::onyx): army `army`'s CO and its partner
+/// lose `pct` % of their full meters (their Super Power's cost).
+pub fn cut_meters(core: &mut Core, army: u32, pct: u32) {
+    let p = player(core, army);
+    if core.raw_read_8(p + PL_MODE, -1) == 0 {
+        let full = scop_cost(core, army_co(core, army), core.raw_read_8(p + PL_USES, -1));
+        let c = core.raw_read_32(p + PL_CHARGE, -1);
+        core.raw_write_32(p + PL_CHARGE, -1, c.saturating_sub(full * pct / 100));
+    }
+    if let Some(co) = partner(core, army) {
+        let full = scop_cost(core, co, partner_uses(core, army));
+        let c = partner_charge(core, army);
+        core.raw_write_32(rec(army) + P_CHARGE, -1, c.saturating_sub(full * pct / 100));
+    }
+}
+
 /// The partner's meter (AW2's units, as player +0x20).
 pub fn partner_charge(core: &Core, army: u32) -> u32 {
     core.raw_read_32(rec(army) + P_CHARGE, -1)

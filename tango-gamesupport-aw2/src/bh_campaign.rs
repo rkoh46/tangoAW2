@@ -16,7 +16,7 @@ use crate::bh_act3;
 use crate::bh_act4;
 use crate::bh_act5;
 use crate::bh_secret;
-use crate::campaign_model::{Model, SendRule};
+use crate::campaign_model::{Model, OnyxDef, SendRule};
 use crate::custom_campaign::{co, colour, unit, *};
 
 /// The roster, in unlock order (Von Bolt, Hawke, Koal, Kindle, Jugger, Flak,
@@ -337,6 +337,26 @@ pub fn features_def() -> CampaignDef {
     j.needs = Needs::All(vec!["f01"]);
     j.flag = region::BLACK_HOLE[4];
 
+    // A reversed Black Onyx: four allies (one team) against the player, army 5 (Black
+    // Hole); the satellite fires every fifth day, the silos in the corners launch at it.
+    let mut k = MissionDef::new("f10", "Features Onyx");
+    k.objective = "Test: a reversed Black Onyx.";
+    k.map = MapSrc::Built("bh_onyx");
+    k.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).team(1),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(1),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::HAWKE)),
+    ];
+    k.onyx = Some(OnyxDef::new((5, 7)));
+    k.triggers = vec![
+        Trigger::new(When::AfterAction, Cond::OnyxHitsAtMost(3), vec![Action::Scene(Scene::new(vec![Line::say(co::EAGLE, "One down.")]))]),
+        Trigger::new(When::AfterAction, Cond::OnyxDestroyed, vec![Action::Scene(Scene::new(vec![Line::say(co::STURM, "The Onyx falls.")]))]),
+    ];
+    k.needs = Needs::All(vec!["f01"]);
+    k.flag = region::BLACK_HOLE[2];
+
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
@@ -345,8 +365,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j],
-        final_mission: "f09",
+        missions: vec![a, b, c, d, f, g, h, i, j, k],
+        final_mission: "f10",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
         secret_mission: "f06",
     }

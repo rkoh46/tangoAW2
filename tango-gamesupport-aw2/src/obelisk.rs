@@ -360,6 +360,10 @@ fn no_fire(core: &mut Core) {
         return;
     }
     let Some(kind) = structure(core, entry) else { return };
+    if kind == Structure::Obelisk && crate::onyx::obelisk_offline(core) {
+        core.gba_mut().cpu_mut().set_thumb_pc(NEXT_ENTRY);
+        return;
+    }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
     let players = crate::five::players(core);
     let black_hole = (1..=5).contains(&army) && core.raw_read_8(players + 0x3C * army + 0x1A, -1) == 5;
@@ -402,6 +406,9 @@ fn heal(core: &mut Core) {
     if !(1..=5).contains(&army) || core.raw_read_8(players + 0x3C * army + 0x1A, -1) != 5 {
         return;
     }
+    // (the Black Onyx's fall: the Obelisk heals nothing for some turns)
+    crate::onyx::heal_turn(core);
+    let offline = crate::onyx::obelisk_offline(core);
     // (x0, y0, x1, y1, range, hp): the structure's cells and what it gives.
     let mut sources = Vec::new();
     for i in 0..INVENTION_COUNT {
@@ -415,6 +422,7 @@ fn heal(core: &mut Core) {
         let (x, y) = (core.raw_read_8(e, -1) as i32, core.raw_read_8(e + 1, -1) as i32);
         match structure(core, e) {
             Some(Structure::Crystal) => sources.push((x, y, x, y, 2, 20)),
+            Some(Structure::Obelisk) if offline => {}
             Some(Structure::Obelisk) => sources.push((x, y, x + 2, y + 2, 4, 20)),
             Some(Structure::Part) | None => {}
         }

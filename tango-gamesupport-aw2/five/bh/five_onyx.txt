@@ -1,0 +1,28 @@
+# A five-army map with a reversed Black Onyx (the player is army 5, Black Hole): the
+# Obelisk (top-left 5, 7), four silos; each ally has one Tank (the computer's foot
+# soldiers walk onto silos by themselves: a test turns a Tank into a soldier to launch). For the engine's tests (five/bhmap.py).
+
+map bh_onyx
+armies 5 9 1 2 3 4 5
+objective 5
+unit 1 5 4 4 hold
+unit 2 5 11 4 hold
+unit 3 5 4 10 hold
+unit 4 5 11 10 hold
+unit 5 1 7 5
+unit 5 5 8 6
+~~~~~~~~~~~~~~~~
+~1M..f....f.M2.~
+~..c..^^...c...~
+~.....^..bR....~
+~..f..R.....f..~
+~.b...R..c.....~
+~.....RRRRR..f.~
+~..f.###..R....~
+~...c#O#.5R.c..~
+~....###..R....~
+~..b.....RRRb..~
+~.f..^^..R.....~
+~M.c.....R..M.f~
+~3.......R....4~
+~~~~~~~~~~~~~~~~

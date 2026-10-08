@@ -80,9 +80,43 @@ pub struct Custom {
     /// Per mission: the battle's song (an AW2 song id) in place of the COs'
     /// themes.
     pub music: Vec<Option<u16>>,
+    /// Per mission: a reversed Black Onyx.
+    pub onyx: Vec<Option<OnyxDef>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,
+}
+
+/// The Black Onyx turned round: Black Hole's own satellite on a day cycle
+/// ([`crate::onyx`], "reversed"): it fires on Black Hole's turn every
+/// `period` days from day `first`, at the spot the computer scores best for
+/// Black Hole; a silo with a foot soldier of another team on it launches at
+/// it once; `hits` hits destroy it, and its fall hurts the fortress.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct OnyxDef {
+    /// Hits that destroy it.
+    pub hits: u8,
+    /// The first day it fires, and the days between shots.
+    pub first: u8,
+    pub period: u8,
+    /// The Black Obelisk's top-left cell (3x3): the fortress's centre.
+    pub obelisk: (u8, u8),
+    /// When it is destroyed: every Black Hole unit within this many cells of
+    /// the Obelisk loses `debris_hp` HP (never below 1) ...
+    pub radius: u8,
+    pub debris_hp: u8,
+    /// ... the Obelisk heals nothing for this many Black Hole turns ...
+    pub offline_turns: u8,
+    /// ... and the player's COs lose this share (%) of their full meters.
+    pub meters: u8,
+}
+
+impl OnyxDef {
+    /// The design's numbers: 4 hits, day 5 and every 5th day, 4 cells, 3 HP,
+    /// 3 turns, 30%.
+    pub const fn new(obelisk: (u8, u8)) -> OnyxDef {
+        OnyxDef { hits: 4, first: 5, period: 5, obelisk, radius: 4, debris_hp: 3, offline_turns: 3, meters: 30 }
+    }
 }
 
 /// A mission's flag on AW2's world map (map pixels).

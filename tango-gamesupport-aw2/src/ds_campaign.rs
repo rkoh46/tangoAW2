@@ -167,6 +167,15 @@ pub fn player_army(core: &Core) -> u8 {
     }
 }
 
+/// The mission's reversed Black Onyx (a custom campaign's, crate::onyx).
+pub fn onyx_spec(core: &Core) -> Option<crate::campaign_model::OnyxDef> {
+    if !active(core) || is_ds(core) {
+        return None;
+    }
+    let c = campaign(core)?;
+    c.model.custom.as_ref()?.onyx.get(mission(core) as usize).copied().flatten()
+}
+
 /// The DS Campaign's mission being played (Dual Strike's own missions have
 /// rules of their own); 0xFF in another campaign.
 pub fn ds_mission(core: &Core) -> u8 {
