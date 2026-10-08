@@ -18,11 +18,11 @@ MISSIONS = {
     4: ("Marshal in Green", [1, 2, 3], a2.ST | a2.VB, [bh.STURM], [(5, bh.STURM), (3, bh.HAWKE)], (24, 18), True, 20),
     5: ("Night Raid", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.JAVIER)], (24, 16), True, 9),
     6: ("Stepping Stones", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.DRAKE)], (32, 20), False, 22),
-    7: ("Greenhaven Arsenal", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.EAGLE)], (24, 20), False, 22),
+    7: ("Greenhaven Arsenal", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.EAGLE)], (28, 24), False, 26),
     8: ("The Twin Gates", [1, 2, 3, 4, 5, 6, 7], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JESS)], (24, 18), False, 22),
     9: ("The Loot Train", [1, 2, 3, 4, 5, 6, 7, 8], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.JAVIER)], (28, 14), True, 16),
     10: ("Evergreen Citadel", [1, 2, 3, 4, 5, 6, 7, 8, 9], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.EAGLE)], (28, 22), False, 24),
-    11: ("Exiles' Last Stand", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JAVIER), (4, bh.SENSEI)], (26, 18), False, 22),
+    11: ("Ashfall Pass", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JAVIER), (4, bh.SENSEI)], (28, 20), False, 24),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
@@ -115,9 +115,15 @@ def pictures(ctx, n, shots=(0,)):
     stitch.IMAGES = a2.SHOTS or stitch.IMAGES
     w, h = d.size()
     if fog:
+        g.goto(0, 0)
+        stitch.stitch(ctx, g, f"m{n}_fog", w, h)       # the map as the player sees it on day 1
         unfog(g, e)
-    g.goto(0, 0)
-    stitch.stitch(ctx, g, f"m{n}", w, h)
+        g.goto(0, 0)
+        stitch.stitch(ctx, g, f"m{n}_nofog", w, h)     # every unit of both sides
+        stitch.stitch(ctx, g, f"m{n}", w, h)
+    else:
+        g.goto(0, 0)
+        stitch.stitch(ctx, g, f"m{n}", w, h)
     if n == 8:
         # the dusk gate, the second front: Map menu > Front shows it
         from aw2test import twofront as tf
@@ -182,7 +188,7 @@ for _n in MISSIONS:
 # --- balance: the CPU on both sides, and the test player (aw2test.bot) against the CPU --------------------
 # (AW2TEST_ACT2_BALANCE=1; each run writes balance.json in its output: the result and the days)
 BALANCE = os.environ.get("AW2TEST_ACT2_BALANCE")
-BOT_OPTS = {5: dict(garrison=True, goals=[(19, 3)]), 9: dict(goals=[(26, 7)]), 4: dict(goals=[(21, 9)], finish=12), 6: dict(goals=[(28, 14)], finish=14), 7: dict(goals=[(21, 16)], finish=12), 8: dict(goals=[(22, 9)], finish=14), 10: dict(goals=[(14, 3)]), 11: dict(goals=[(23, 3), (23, 15)], finish=14)}   # per mission: aw2test.bot.Bot options (the cells the mission is won on)
+BOT_OPTS = {5: dict(garrison=True, goals=[(19, 3)]), 9: dict(goals=[(26, 7)]), 4: dict(goals=[(21, 9)], finish=12), 6: dict(goals=[(28, 14)], finish=14), 7: dict(goals=[(25, 19)], finish=14), 8: dict(goals=[(22, 9)], finish=14), 10: dict(goals=[(14, 3)]), 11: dict(goals=[(25, 3), (25, 17)], finish=16)}   # per mission: aw2test.bot.Bot options (the cells the mission is won on)
 
 
 def balance(ctx, n, how, cos=None, seed=None):
@@ -464,7 +470,7 @@ def _lose_by_day(n):
 
 _win_by_capture(4, [(21, 9)], [5])
 _win_by_capture(6, [(28, 14)], [7])
-_win_by_capture(7, [(21, 16)], [])
+_win_by_capture(7, [(25, 19)], [])
 _win_by_capture(10, [(14, 3)], [11])
 for _n in MISSIONS:
     if _n != 8:
@@ -558,17 +564,17 @@ def bh_act2_m7_factory_table(ctx):
     before = {(u["x"], u["y"]) for u in g.units(1)}
     a2.to_day(e, g, d, 2)
     ctx.eq(e.u16(DAY), 2, "day 2")
-    spawned = [(u["type"], u["x"], u["y"]) for u in g.units(1) if (u["x"], u["y"]) not in before and u["y"] == 10 and 4 <= u["x"] <= 6]
-    ctx.eq(sorted(spawned), [(5, 4, 10), (5, 6, 10)], "two Tanks at the doors (4, 10) and (6, 10)")
+    spawned = [(u["type"], u["x"], u["y"]) for u in g.units(1) if (u["x"], u["y"]) not in before and u["y"] == 11 and 4 <= u["x"] <= 6]
+    ctx.eq(sorted(spawned), [(5, 4, 11), (5, 6, 11)], "two Tanks at the doors (4, 11) and (6, 11)")
     a2.pic(ctx, e, "m7_factory_day2")
     # day 13 (set day 12 and end the turn): an Oozium on the middle door
     for u in g.units(1):
-        if (u["x"], u["y"]) in ((4, 10), (5, 10), (6, 10)):
+        if (u["x"], u["y"]) in ((4, 11), (5, 11), (6, 11)):
             d.remove_unit(u)
     e.w16(DAY, 12)
     seen = a2.to_day(e, g, d, 13)
     ctx.eq(e.u16(DAY), 13, "day 13")
-    ctx.eq([(u["type"], u["x"], u["y"]) for u in g.units(1) if u["type"] == 27], [(27, 5, 10)], "an Oozium at (5, 10)")
+    ctx.eq([(u["type"], u["x"], u["y"]) for u in g.units(1) if u["type"] == 27], [(27, 5, 11)], "an Oozium at (5, 11)")
     ctx.check("The Foundry made an Oozium! It looks at me!" in seen, f"the day-13 scene ({seen})")
     a2.pic(ctx, e, "m7_factory_day13_oozium")
     e.close()
@@ -823,4 +829,15 @@ def bh_act2_m5_parked_aircraft_stay_parked(ctx):
     now = {u["id"]: (u["x"], u["y"]) for u in g.units(2) if u["type"] in (16, 17)}
     ctx.eq(now, pos0, "every aircraft still where it was parked")
     ctx.eq([u["hp"] for u in g.units(1) if u["id"] == recon["id"]], [100], "the Recon beside a Fighter was not struck")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m10_units_start_at_full_hit_points(ctx):
+    """The deployment's HP is full (the mission data gives no damaged unit); the game's own record says so too."""
+    e, g, d, texts = ready(ctx, 10)
+    low = [(u["army"], u["type"], u["hp"]) for u in g.units() if u["hp"] != 100]
+    ctx.eq(low, [], "every unit of both armies at 100 HP")
+    ctx.log("ammo/fuel of army 1: " + str(sorted({(u["type"], u["ammo"], u["fuel"]) for u in g.units(1)})))
+    a2.pic(ctx, e, "m10_units_hp")
     e.close()

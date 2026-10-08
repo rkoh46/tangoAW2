@@ -334,7 +334,7 @@ fn bh06() -> MissionDef {
 // --- M7 Greenhaven Arsenal -----------------------------------------------------------
 
 /// Factory table F7 (docs/BH_CAMPAIGN.md 3.5): per day the three doors' units (0 none).
-const F7: [(u8, [u8; 3]); 10] = [
+const F7: [(u8, [u8; 3]); 11] = [
     (2, [unit::TANK, 0, unit::TANK]),
     (3, [0, unit::ANTI_AIR, 0]),
     (4, [unit::MD_TANK, 0, 0]),
@@ -345,6 +345,7 @@ const F7: [(u8, [u8; 3]); 10] = [
     (11, [unit::MD_TANK, 0, unit::MD_TANK]),
     (13, [0, unit::OOZIUM, 0]),
     (15, [unit::NEOTANK, 0, unit::ANTI_AIR]),
+    (17, [unit::MD_TANK, 0, unit::MD_TANK]),
 ];
 
 fn bh07() -> MissionDef {
@@ -352,12 +353,14 @@ fn bh07() -> MissionDef {
     m.objective = "Wake the Black Factory, take Eagle's HQ.";
     m.map = MapSrc::Built("bh07");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(7000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(12000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(8000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(26000),
     ];
-    m.day_limit = 22;
-    m.rank_days = 14;
+    m.day_limit = 26;
+    m.rank_days = 16;
     m.factory = F7.to_vec();
+    // The port at (9, 21) is Black Hole's (the map tool owns a property by the nearest HQ).
+    m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 21 }];
     m.intro = Scene::new(vec![
         say(co::EAGLE, "Greenhaven! The Arsenal of the south! My home field!"),
         say(co::EAGLE, "I'm the sky, you're the ground. That's the whole war."),
@@ -381,7 +384,7 @@ fn bh07() -> MissionDef {
         on_day(6, None, vec![Action::Scene(Scene::new(vec![say(co::EAGLE, "Bombers! Show them what weather is!")]))]),
         // Eagle's funds: +5000 on day 10, a second Bomber on day 12.
         on_day(10, None, vec![Action::AddFunds { army: 2, funds: 5000 }]),
-        on_day(12, None, vec![Action::Spawn(vec![UnitDef::new(2, unit::BOMBER, 22, 17)])]),
+        on_day(12, None, vec![Action::Spawn(vec![UnitDef::new(2, unit::BOMBER, 26, 14)])]),
         on_day(
             13,
             None,
@@ -391,7 +394,7 @@ fn bh07() -> MissionDef {
                 troop("...Gerald is hiding."),
             ]))],
         ),
-        after(beaten(2, (21, 16)), vec![Action::Win]),
+        after(beaten(2, (25, 19)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh05"]);
     m.flag = FLAGS[3];
@@ -476,8 +479,8 @@ fn bh08() -> MissionDef {
 
 // --- M9 The Loot Train ---------------------------------------------------------------
 
-/// The yard of the east port (26, 7): where the Vault APCs must arrive.
-const PORT_YARD: Rect = Rect::new(24, 6, 26, 8);
+/// The loading yard at the east end (the rail depot's city at (26, 7)): where the Vault APCs must arrive.
+const PORT_YARD: Rect = Rect::new(24, 6, 27, 8);
 const VAULTS: [&str; 3] = ["vault1", "vault2", "vault3"];
 
 /// (Vault APCs alive, of them in the port's yard).
@@ -516,7 +519,7 @@ fn alarm(core: &mut Core) -> bool {
 
 fn bh09() -> MissionDef {
     let mut m = MissionDef::new("bh09", "The Loot Train");
-    m.objective = "Escort 2 of 3 Vault APCs to the east port.";
+    m.objective = "Escort 2 of 3 Vault APCs to the loading yard.";
     m.map = MapSrc::Built("bh09");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(0),
@@ -634,17 +637,18 @@ fn bh10() -> MissionDef {
 // --- M11 Exiles' Last Stand ----------------------------------------------------------
 
 fn bh11() -> MissionDef {
-    let mut m = MissionDef::new("bh11", "Exiles' Last Stand");
-    m.objective = "Break Green Earth and Yellow Comet at the pass.";
+    let mut m = MissionDef::new("bh11", "Ashfall Pass");
+    m.objective = "Break Green Earth and Yellow Comet under Mount Ember.";
     m.map = MapSrc::Built("bh11");
+    m.look = 3; // the Wasteland look: ash and cinder
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(7000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(7000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(11000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(11000),
     ];
-    m.day_limit = 22;
-    m.rank_days = 15;
-    m.intro = Scene::new(vec![
+    m.day_limit = 24;
+    m.rank_days = 16;
+    let mut intro = vec![
         say(co::SENSEI, "Easy there, youngsters. This pass is old as I am."),
         say(co::SENSEI, "Green Earth's refugees asked for a roof. I gave one."),
         say(co::JAVIER, "And a radio! He gave me a radio! I love him!"),
@@ -654,11 +658,11 @@ fn bh11() -> MissionDef {
         say(co::VON_BOLT, "Another old man! Shall we compare ages?").with(co::VON_BOLT),
         say(co::SENSEI, "I am older. And I have my own teeth.").with(co::VON_BOLT),
         say(co::VON_BOLT, "...Mine are in a vault.").with(co::VON_BOLT),
-    ]);
-    // ([CO]: the lead's line)
-    let mut intro_tail = Vec::new();
-    intro_tail.extend(anyone("Two armies, one pass. Cut them apart."));
-    m.intro.lines.extend(intro_tail);
+        say(co::SENSEI, "And mind Mount Ember. She wakes at noon."),
+        say(co::SENSEI, "She is not particular about whose feet."),
+    ];
+    intro.extend(anyone("Two armies, one pass. Cut them apart."));
+    m.intro = Scene::new(intro);
     m.victory = Scene::new(vec![
         sad(co::SENSEI, "Hmph. Old bones, beaten by a gale."),
         say(co::JAVIER, "Retreat? Yes! I have a very good one ready!"),
@@ -681,14 +685,29 @@ fn bh11() -> MissionDef {
         UnitDef::new(3, unit::INFANTRY, 2, 11),
         UnitDef::new(3, unit::INFANTRY, 3, 6),
     ];
+    let mut day8 = vec![say(co::SENSEI, "The mountain does not take sides, youngsters.")];
+    day8.extend(anyone("Then neither do we."));
     m.triggers = vec![
+        // TODO(engine): from day 3 Mount Ember erupts once a day on 3 marked cells of the Rim Track (the 28 cells
+        // of the road ring round it), marked a turn ahead, hitting any army's units there for 5 HP (never below
+        // 1): hook the eruption call here (`ds_campaign_rules`' volcano) when the engine has it. Today the
+        // volcano is the map's picture and its mountains; the day 3 and day 8 scenes below play on their days.
+        on_day(
+            3,
+            None,
+            vec![Action::Scene(Scene::new(vec![
+                troop("Mount Ember coughs. Ash falls on the Rim Track."),
+                say(co::JAVIER, "That was not me! I would like that on record!"),
+            ]))],
+        ),
         on_day(
             5,
             None,
             vec![Action::Scene(Scene::new(vec![say(co::SENSEI, "Paratroopers! Jump, you lazy sparrows!")])), Action::Spawn(paratroopers.clone())],
         ),
+        on_day(8, None, vec![Action::Scene(Scene::new(day8))]),
         on_day(10, None, vec![Action::Spawn(paratroopers)]),
-        after(Cond::All(vec![beaten(2, (23, 3)), beaten(3, (23, 15))]), vec![Action::Win]),
+        after(Cond::All(vec![beaten(2, (25, 3)), beaten(3, (25, 17))]), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh10"]);
     m.flag = FLAGS[7];
