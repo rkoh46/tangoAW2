@@ -332,11 +332,12 @@ fn bh02() -> MissionDef {
     m.armies = vec![
         // Pre-deployed: no bases, no funds; the Foundry is the factory.
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(0),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(8000),
+        // Jess has real production (3 bases, an airport, income) and 14000 to start.
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(14000),
     ];
     m.pool = vec![co::STURM, co::VON_BOLT];
-    m.day_limit = 14;
-    m.rank_days = 9;
+    m.day_limit = 18;
+    m.rank_days = 11;
     m.intro = m02_pre();
     m.victory = m02_post();
     m.after = m02_map();
@@ -354,6 +355,8 @@ fn bh02() -> MissionDef {
         (11, [0, unit::TANK, 0]),
         (12, [unit::MECH, 0, unit::MECH]),
         (13, [0, unit::MD_TANK, 0]),
+        (14, [unit::TANK, 0, unit::TANK]),
+        (16, [0, unit::MD_TANK, 0]),
     ];
     let wave = |units: Vec<UnitDef>| vec![Action::Spawn(units)];
     m.triggers = vec![
@@ -377,28 +380,22 @@ fn bh02() -> MissionDef {
             When::TurnStart,
             Cond::DayAtLeast(3),
             wave(vec![
-                UnitDef::new(2, unit::TANK, 9, 17),
-                UnitDef::new(2, unit::TANK, 8, 17),
-                UnitDef::new(2, unit::TANK, 10, 17),
+                UnitDef::new(2, unit::TANK, 9, 22),
+                UnitDef::new(2, unit::TANK, 10, 22),
+                UnitDef::new(2, unit::TANK, 12, 22),
             ]),
         ),
-        // Jess's allowance: 3000 on days 4, 8 and 12.
-        Trigger::new(
-            When::TurnStart,
-            Cond::EveryDays { n: 4, from: 4 },
-            vec![Action::AddFunds { army: 2, funds: 3000 }],
-        )
-        .repeating(),
         // Day 6: two Md Tanks and two Infantry.
         Trigger::new(When::TurnStart, Cond::DayAtLeast(6), vec![Action::Scene(m02_day6())]),
         Trigger::new(
             When::TurnStart,
             Cond::DayAtLeast(6),
             wave(vec![
-                UnitDef::new(2, unit::MD_TANK, 9, 17),
-                UnitDef::new(2, unit::INFANTRY, 8, 17),
-                UnitDef::new(2, unit::INFANTRY, 10, 17),
-                UnitDef::new(2, unit::INFANTRY, 7, 18),
+                UnitDef::new(2, unit::MD_TANK, 9, 22),
+                UnitDef::new(2, unit::MD_TANK, 10, 22),
+                UnitDef::new(2, unit::INFANTRY, 12, 22),
+                UnitDef::new(2, unit::INFANTRY, 13, 22),
+                UnitDef::new(2, unit::B_COPTER, 17, 22),
             ]),
         ),
         // Day 9: Jess arrives with her first power charged.
@@ -408,13 +405,13 @@ fn bh02() -> MissionDef {
             vec![
                 Action::Custom(charge_jess),
                 Action::Spawn(vec![
-                    UnitDef::new(2, unit::TANK, 9, 17),
-                    UnitDef::new(2, unit::MD_TANK, 8, 17),
-                    UnitDef::new(2, unit::MD_TANK, 10, 17),
+                    UnitDef::new(2, unit::MD_TANK, 9, 22),
+                    UnitDef::new(2, unit::MD_TANK, 10, 22),
+                    UnitDef::new(2, unit::ROCKETS, 12, 22),
                 ]),
             ],
         ),
-        time_up(14),
+        time_up(18),
     ];
     m.flag = region::BLACK_HOLE[4];
     m.stars = 1;
