@@ -451,6 +451,125 @@ fn power_effect(core: &Core, ds: u8, power: u32) -> Option<(u8, u8)> {
     Some((a as u8, p as u8))
 }
 
+// --- Clone Andy's name graphic ---------------------------------------------------
+
+/// A name graphic (the CO presentation row's +4: six 8x16 sprites in a row,
+/// tile 2k the top of column k, 2k + 1 its bottom, 4 bits a pixel) as 48 x 16
+/// palette indexes; and back.
+fn name_pixels(tiles: &[u8]) -> Option<[[u8; 48]; 16]> {
+    if tiles.len() < 384 {
+        return None;
+    }
+    let mut px = [[0u8; 48]; 16];
+    for col in 0..6 {
+        for half in 0..2 {
+            let t = &tiles[32 * (2 * col + half)..][..32];
+            for y in 0..8 {
+                for x in 0..8 {
+                    px[8 * half + y][8 * col + x] = t[4 * y + x / 2] >> (4 * (x & 1)) & 15;
+                }
+            }
+        }
+    }
+    Some(px)
+}
+
+fn name_tiles(px: &[[u8; 48]; 16]) -> Vec<u8> {
+    let mut out = vec![0u8; 384];
+    for col in 0..6 {
+        for half in 0..2 {
+            for y in 0..8 {
+                for x in (0..8).step_by(2) {
+                    let (a, b) = (px[8 * half + y][8 * col + x], px[8 * half + y][8 * col + x + 1]);
+                    out[32 * (2 * col + half) + 4 * y + x / 2] = a | b << 4;
+                }
+            }
+        }
+    }
+    out
+}
+
+/// The letters of a name graphic: the columns of each letter's fill (palette
+/// index 1), (first, last); a letter's outline is the column either side,
+/// shared with its neighbour.
+fn letters(px: &[[u8; 48]; 16]) -> Vec<(usize, usize)> {
+    let fill: Vec<bool> = (0..48).map(|x| (0..16).any(|y| px[y][x] == 1)).collect();
+    let mut out = Vec::new();
+    let mut start = None;
+    for x in 0..=48 {
+        let on = x < 48 && fill[x];
+        match (on, start) {
+            (true, None) => start = Some(x),
+            (false, Some(s)) => {
+                out.push((s, x - 1));
+                start = None;
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// "Clone" in the style of the game's name graphics, from AW2's own letters
+/// (**tangoAW2's own composition**, no new art): C, o, l and n of "Colin"
+/// (AW2's CO 16), e of "Eagle" (8), set side by side as they are in a name:
+/// each letter's outline column shared with the next (where two letters'
+/// outlines differ in height, the taller shows), centred in the six sprites.
+fn clone_name(core: &Core) -> Option<Vec<u8>> {
+    let name_of = |co: u32| -> Option<[[u8; 48]; 16]> {
+        let row = read(core, AW2_PRESENTATION + PRESENTATION_ROW * co, 8);
+        let at = u32::from_le_bytes(row[4..8].try_into().ok()?);
+        let raw = read(core, at, 0x300);
+        name_pixels(&crate::ds_art::lz10(&raw)?)
+    };
+    let colin = name_of(16)?;
+    let eagle = name_of(8)?;
+    let (lc, le) = (letters(&colin), letters(&eagle));
+    // Colin: C o l i n; Eagle: E a g l e.
+    if lc.len() != 5 || le.len() != 5 {
+        return None;
+    }
+    let pick = [(&colin, lc[0]), (&colin, lc[2]), (&colin, lc[1]), (&colin, lc[4]), (&eagle, le[4])];
+    // The glyph columns left to right: the first letter's left outline, then
+    // each letter's fill and its right outline (merged with the next
+    // letter's left outline, the taller showing).
+    let mut cols: Vec<[u8; 16]> = Vec::new();
+    let column = |img: &[[u8; 48]; 16], x: usize| -> [u8; 16] {
+        let mut c = [0u8; 16];
+        for y in 0..16 {
+            c[y] = img[y][x];
+        }
+        c
+    };
+    cols.push(column(pick[0].0, pick[0].1 .0 - 1));
+    for (k, &(img, (s, e))) in pick.iter().enumerate() {
+        for x in s..=e {
+            cols.push(column(img, x));
+        }
+        let mut sep = column(img, e + 1);
+        if let Some(&(next, (ns, _))) = pick.get(k + 1) {
+            let other = column(next, ns - 1);
+            for y in 0..16 {
+                if sep[y] == 0 {
+                    sep[y] = other[y];
+                }
+            }
+        }
+        cols.push(sep);
+    }
+    if cols.len() > 48 {
+        return None;
+    }
+    let mut out = [[0u8; 48]; 16];
+    let x0 = (48 - cols.len()) / 2;
+    for (i, c) in cols.iter().enumerate() {
+        for y in 0..16 {
+            out[y][x0 + i] = c[y];
+        }
+    }
+    Some(name_tiles(&out))
+}
+
 fn put32(t: &mut [u8], o: usize, v: u32) {
     t[o..o + 4].copy_from_slice(&v.to_le_bytes());
 }
@@ -481,7 +600,13 @@ fn build(core: &Core) -> Option<Built> {
     let mut slots: Vec<(u32, u32)> = Vec::new();
     for (k, &(ds, like)) in NEW.iter().enumerate() {
         let co = FIRST + k as u8;
-        let art = crate::ds_co_art::co_art(ds)?;
+        let mut art = crate::ds_co_art::co_art(ds)?;
+        if co == CLONE_ANDY {
+            // His name graphic reads "Clone", cut from AW2's own letters.
+            if let Some(n) = clone_name(core) {
+                art.name = n;
+            }
+        }
         let row = PRESENTATION_ROW as usize * co as usize;
         let template = PRESENTATION_ROW as usize * like as usize;
         let t = pres[template..template + PRESENTATION_ROW as usize].to_vec();

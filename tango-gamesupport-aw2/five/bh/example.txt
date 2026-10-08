@@ -1,0 +1,17 @@
+# An example BH Campaign map (the format: five/bhmap.py, the legend: five/map.py).
+
+map bh_example
+armies 2 3 5 3
+team 1 2
+unit 1 1 2 1
+unit 1 5 3 1
+unit 2 1 11 6
+unit 2 1 10 6 name=guard
+~~~~~~~~~~~~~~
+~1.R...f.....~
+~..R.^^f..Cc.~
+~..RRRRRR.^..~
+~..b...f..R..~
+~..-...f..RRB~
+~..-.......2~~
+~~~~~~~~~~~~~~

@@ -135,27 +135,32 @@ const TOP: u32 = 0x0203_FD56;
 
 /// The chooser's window: the first entry shown, the cursor's row in it.
 pub fn window(choice: usize, top: usize, n: usize) -> (usize, usize) {
-    let last = n.saturating_sub(2);
+    let last = n.saturating_sub(ROWS);
     let mut top = top.min(last);
     if choice < top {
         top = choice;
-    } else if choice > top + 1 {
-        top = choice - 1;
+    } else if choice > top + ROWS - 1 {
+        top = choice + 1 - ROWS;
     }
     (top, choice - top)
 }
 
+/// The labels the chooser shows at once: AW2's own campaign, the DS Campaign
+/// and the BH Campaign (the game's box has two label sprites; the third is
+/// added at the sprite flush).
+pub const ROWS: usize = 3;
+
 /// The labels showing and the highlighted row.
-fn shown(core: &Core) -> ([&'static str; 2], usize) {
+fn shown(core: &Core) -> ([&'static str; ROWS], usize) {
     if core.raw_read_8(LEVEL, -1) == 3 {
-        return (DIFFICULTY_LABELS, core.raw_read_8(DIFFICULTY, -1) as usize & 1);
+        return ([DIFFICULTY_LABELS[0], DIFFICULTY_LABELS[1], ""], core.raw_read_8(DIFFICULTY, -1) as usize & 1);
     }
     let all = entries(core);
     let n = all.len();
     let choice = (core.raw_read_8(CHOICE, -1) as usize).min(n.saturating_sub(1));
     let (top, row) = window(choice, core.raw_read_8(TOP, -1) as usize, n);
     let label = |k: usize| all.get(k).copied().unwrap_or("");
-    ([label(top), label(top + 1)], row)
+    ([label(top), label(top + 1), label(top + 2)], row)
 }
 
 /// Every frame, before the game runs: the keys the game gets.
@@ -195,7 +200,7 @@ fn tick_menu(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
             let (top, row) = window(choice, core.raw_read_8(TOP, -1) as usize, n);
             core.raw_write_8(CHOICE, -1, choice as u8);
             core.raw_write_8(TOP, -1, top as u8);
-            core.raw_write_16(p + W_CURSOR, -1, ROW0 + row as u16);
+            core.raw_write_16(p + W_CURSOR, -1, ROW0 + (row as u16).min(1));
             if pressed & KEY_A != 0 {
                 if let Some(s) = source_of(core, choice) {
                     core.raw_write_8(crate::ds_campaign::SOURCE, -1, s as u8);
@@ -213,7 +218,7 @@ fn tick_menu(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
                 row ^= 1;
                 core.raw_write_8(DIFFICULTY, -1, row);
             }
-            core.raw_write_16(p + W_CURSOR, -1, ROW0 + row as u16);
+            core.raw_write_16(p + W_CURSOR, -1, ROW0 + (row as u16).min(1));
             if pressed & KEY_B != 0 {
                 core.raw_write_8(LEVEL, -1, 2);
                 core.raw_write_16(p + W_CURSOR, -1, ROW0 + 1);
@@ -237,7 +242,7 @@ fn tick_menu(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
                 let (top, row) = window(choice, core.raw_read_8(TOP, -1) as usize, n);
                 core.raw_write_8(LEVEL, -1, 0);
                 core.raw_write_8(TOP, -1, top as u8);
-                core.raw_write_16(p + W_CURSOR, -1, ROW0 + row as u16);
+                core.raw_write_16(p + W_CURSOR, -1, ROW0 + (row as u16).min(1));
                 core.raw_write_8(crate::ds_campaign::REQUEST, -1, 0);
                 keys &= !KEY_B;
             } else if level == 2 {
@@ -375,10 +380,10 @@ pub fn draw(core: &mut Core) {
 /// place, palette and drawing order (the same sprite slots). Returns the
 /// end of the sprite list.
 pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
-    let _ = end;
     if !chooser(core) {
         return at;
     }
+    let mut second = None;
     for (k, &first) in GAME_LABEL_TILES.iter().enumerate() {
         let (mut wide, mut square) = (None, None);
         let mut s = start;
@@ -410,6 +415,33 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         core.raw_write_16(q, -1, y);
         core.raw_write_16(q + 2, -1, ((x + 64) as u16 & 0x1FF) | (1 << 14));
         core.raw_write_16(q + 4, -1, (tile + 32) | style);
+        if k == 1 {
+            second = Some((x, y, a2));
+        }
+    }
+    // The third label: two sprites more, a row below the second's.
+    let mut at = at;
+    if let (Some((x, y, a2)), Some(third)) = (second, shown(core).0.get(2).copied().filter(|t| !t.is_empty())) {
+        let _ = third;
+        if at + 16 <= end {
+            let (_, row) = shown(core);
+            let pal = if row == 2 { SELECTED_PALETTE } else { PLAIN_PALETTE };
+            // (priority 0: the girl's sprites, drawn before this one in the list,
+            // would cover a label of the same priority)
+            let _ = a2;
+            let style = pal << 12;
+            let tile = (TILES + LABEL_TILES * 2) as u16;
+            let y = (y + 16) & 0xFF;
+            core.raw_write_16(at, -1, y | (1 << 14));
+            core.raw_write_16(at + 2, -1, (x as u16 & 0x1FF) | (3 << 14));
+            core.raw_write_16(at + 4, -1, tile | style);
+            core.raw_write_16(at + 6, -1, 0);
+            core.raw_write_16(at + 8, -1, y);
+            core.raw_write_16(at + 10, -1, ((x + 64) as u16 & 0x1FF) | (1 << 14));
+            core.raw_write_16(at + 12, -1, (tile + 32) | style);
+            core.raw_write_16(at + 14, -1, 0);
+            at += 16;
+        }
     }
     // The box's right-hand cursor arrow (OBJ tile 768) moves out past the
     // wider labels, next to the highlighted row.
@@ -442,11 +474,13 @@ mod tests {
         // Two entries: both shown, the cursor's row its entry.
         assert_eq!(window(0, 0, 2), (0, 0));
         assert_eq!(window(1, 0, 2), (0, 1));
-        // Four: the window moves down and back up with the cursor.
-        assert_eq!(window(2, 0, 4), (1, 1));
-        assert_eq!(window(3, 1, 4), (2, 1));
-        assert_eq!(window(1, 2, 4), (1, 0));
-        assert_eq!(window(0, 3, 4), (0, 0));
+        // Three: all shown.
+        assert_eq!(window(2, 0, 3), (0, 2));
+        // Five: the window moves down and back up with the cursor.
+        assert_eq!(window(3, 0, 5), (1, 2));
+        assert_eq!(window(4, 1, 5), (2, 2));
+        assert_eq!(window(1, 2, 5), (1, 0));
+        assert_eq!(window(0, 3, 5), (0, 0));
     }
 
     #[test]

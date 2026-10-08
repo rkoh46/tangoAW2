@@ -145,6 +145,7 @@ pub fn features_def() -> CampaignDef {
         ],
     }];
     a.recruits = vec![roster::HAWKE];
+    a.music = Some(220); // (AW2's song at Sturm's citadel)
     a.flag = region::BLACK_HOLE[0];
 
     let mut b = MissionDef::new("f02", "Features Two");
@@ -263,7 +264,7 @@ pub fn features_def() -> CampaignDef {
 
     let mut g = MissionDef::new("f06", "Features Secret");
     g.objective = "Test: opens when every bond is earned.";
-    g.map = MapSrc::Ascii(&["1.....", "......", ".....2"]);
+    g.map = MapSrc::Built("bh_example"); // (five/bh/example.txt: its tiles and units)
     g.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),

@@ -308,6 +308,8 @@ def bh_campaign_mission_data_fields(ctx):
                                ((9, 2), 0x193, "the Black Obelisk"), ((1, 6), 0x181, "the laser")):
         ctx.eq(tile_at(e, x, y), tile, f"{what} stamped at ({x}, {y})")
     shot(ctx, e, "features_one")
+    ctx.eq(e.u16(0x086A0000 + 0x104 * bh.STURM + 4), 220, "the mission's song is in the CO table (every army's turn plays it)")
+    ctx.eq(e.u16(0x030005CA), 220, "the game started the mission's song")
     ctx.eq(d.size(), (12, 9), "the map's size")
     # Day 2: the trigger sets army 1's funds and plays its scene.
     d.end_turn()
@@ -335,6 +337,7 @@ def bh_campaign_mission_data_fields(ctx):
     from aw2test import campaigns as cp
     cp.win_here(e, d)
     ctx.eq(d.unlocked(), [bh.STURM, bh.HAWKE], "Hawke unlocked by mission 1's recruit entry")
+    ctx.check(e.u16(0x086A0000 + 0x104 * bh.STURM + 4) != 220, "back on the world map: the COs' own themes are put back")
     ctx.eq(d.map_flags()[5], 1, "the secret mission's flag: every bond earned (the one the test has)")
     e.close()
     e, g, d = boot_features(ctx)
@@ -505,3 +508,24 @@ def bh_campaign_and_ds_campaign_in_one_boot(ctx):
     ctx.eq(e.u32(TILES_POOL), 0x081CC5F0, "AW2's map art again")
     ctx.eq(e.u32(dc.P_MAGIC), bh.BH_MAGIC, "its record")
     ctx.eq(d.map_flags()[:2], [1, 0], "its flag")
+
+
+@test(modes=("ds",))
+def bh_campaign_built_map(ctx):
+    """A map built by the map tool (five/bhmap.py, five/bh/example.txt) plays as
+    built: its size, its joined tiles (the road, the river, the shoal) and its
+    own units, one of them named; the secret mission it is used for opens
+    only with every bond."""
+    e, g, d = boot_features(ctx)
+    d.picks = {5: 0}
+    d.start_at(won_mask=0b011111, unlocked_mask=1 | 1 << 12)
+    ctx.eq(d.map_flags()[5], 1, "the secret mission is open with the bond earned")
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 5, "mission 6")
+    ctx.eq(d.size(), (14, 8), "the built map's size")
+    ctx.eq(len(g.units()), 4, "its four units")
+    road = [tile_at(e, 3, y) for y in range(1, 4)]
+    ctx.check(all(t in (0x40, 0x41, 0x42, 0x60, 0x61, 0x62, 0xE0, 0xE1, 0xC0, 0xC1, 0x80, 0xA0, 0xA1) for t in road), f"the road is joined road tiles ({[hex(t) for t in road]})")
+    shot(ctx, e, "built_map")

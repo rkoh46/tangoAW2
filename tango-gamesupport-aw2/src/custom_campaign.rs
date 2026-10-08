@@ -237,6 +237,58 @@ pub enum MapSrc {
     Tiles { width: u8, height: u8, tiles: Vec<u16> },
     /// A text picture of terrain (see [`ascii_tiles`]).
     Ascii(&'static [&'static str]),
+    /// A map built by `five/bhmap.py` from `five/bh/*.txt` (every road, river,
+    /// pipe, coast and shoal joined as AW2 draws them, checked for
+    /// reachability), by its name; its units are the mission's unless it
+    /// lists its own.
+    Built(&'static str),
+}
+
+/// A map built by `five/bhmap.py` (`bh_map_data.rs`).
+pub struct BuiltMap {
+    pub name: &'static str,
+    pub width: u8,
+    pub height: u8,
+    pub armies: u8,
+    pub tiles: &'static [u16],
+    pub units: &'static [BuiltUnit],
+}
+
+/// A unit of a built map (`name` empty: none).
+pub struct BuiltUnit {
+    pub army: u8,
+    pub kind: u8,
+    pub x: u8,
+    pub y: u8,
+    pub hp: u8,
+    pub hold: bool,
+    pub name: &'static str,
+}
+
+fn built_map(name: &str) -> Option<&'static BuiltMap> {
+    crate::bh_map_data::MAPS.iter().find(|m| m.name == name)
+}
+
+/// A built map's units as the mission's.
+fn built_units(src: &MapSrc) -> Vec<UnitDef> {
+    let MapSrc::Built(n) = src else { return Vec::new() };
+    built_map(n)
+        .map(|m| {
+            m.units
+                .iter()
+                .map(|u| {
+                    let mut d = UnitDef::new(u.army, u.kind, u.x, u.y).hp(u.hp);
+                    if u.hold {
+                        d = d.hold();
+                    }
+                    if !u.name.is_empty() {
+                        d = d.named(u.name);
+                    }
+                    d
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// A property on the map: kind and owner (0 neutral, 1..4 an army).
@@ -832,6 +884,10 @@ fn load_map(core: &Core, src: &MapSrc) -> Result<(u8, u8, Vec<u16>, Option<Vec<u
             }
             Ok((*width, *height, tiles.clone(), None))
         }
+        MapSrc::Built(n) => {
+            let m = built_map(n).ok_or(format!("no built map {n:?} (five/bhmap.py)"))?;
+            Ok((m.width, m.height, m.tiles.to_vec(), None))
+        }
         MapSrc::Ascii(rows) => {
             if rows.is_empty() {
                 return Err("an empty map".into());
@@ -1029,6 +1085,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         recruits: def.missions.iter().map(|m| m.recruits.clone()).collect(),
         pools: def.missions.iter().map(|m| m.pool.clone()).collect(),
         bonds,
+        music: def.missions.iter().map(|m| m.music).collect(),
     };
     built.unhandled.clear();
     Ok(Model {
@@ -1233,7 +1290,9 @@ fn compile_mission(
     let obj_id = cx.dialogue(m.objective)?;
     let obj = cx.script(vec![cmd(0x17, 0, 19, 0, 0), cmd(0x38, 0, 19, 0, 0), cmd(0x19, 0, obj_id, 0, 0), cmd(0x18, 0, 0, 0, 0)]);
     let map = cx.built.add(&crate::ds_campaign_data::map_blob(w, h, &tiles));
-    let units_bytes = if m.units.is_empty() {
+    let units_bytes = if m.units.is_empty() && matches!(m.map, MapSrc::Built(_)) {
+        deployment(Some(&mut cx.units), index, armies, &built_units(&m.map))?
+    } else if m.units.is_empty() {
         match own_units {
             Some(u) => u,
             None => deployment(None, index, armies, &[])?,
@@ -1503,6 +1562,45 @@ pub fn tick(core: &mut Core) {
     }
     if latch != before {
         core.raw_write_32(LATCH, -1, latch);
+    }
+}
+
+/// The mission's own battle song: while a session is on and the selected
+/// mission declares one, every CO's theme in the CO table (the pack's copy,
+/// [`crate::co_roster::TABLE`], row +4) is that song, so every army's turn
+/// plays it; the themes are put back when the session is over or the mission
+/// has none.
+pub fn music_tick(core: &mut Core, session: bool) {
+    static SAVED: std::sync::Mutex<Vec<u16>> = std::sync::Mutex::new(Vec::new());
+    let want = if session {
+        crate::ds_campaign::campaign(core)
+            .and_then(|c| c.model.custom.as_ref())
+            .and_then(|c| c.music.get(crate::ds_campaign::mission(core) as usize).copied().flatten())
+    } else {
+        None
+    };
+    let mut saved = SAVED.lock().unwrap();
+    let rows = crate::co_roster::ROOM;
+    let at = |co: u32| crate::co_roster::TABLE + crate::co_roster::ROW * co + 4;
+    match want {
+        Some(song) => {
+            if saved.is_empty() {
+                *saved = (0..rows).map(|co| core.raw_read_16(at(co), -1)).collect();
+            }
+            for co in 0..rows {
+                if core.raw_read_16(at(co), -1) != song {
+                    core.raw_write_16(at(co), -1, song);
+                }
+            }
+        }
+        None => {
+            if !saved.is_empty() {
+                for (co, &s) in saved.iter().enumerate() {
+                    core.raw_write_16(at(co as u32), -1, s);
+                }
+                saved.clear();
+            }
+        }
     }
 }
 

@@ -630,6 +630,7 @@ pub fn tick(core: &mut Core, ds: bool) {
     }
     if on {
         bond_pages(core, session);
+        crate::custom_campaign::music_tick(core, session && !is_ds(core) && in_battle(core));
     }
     let map_script = campaign(core).map_or(AW2_MAP_SCRIPT, |c| c.map_script);
     crate::ds_worldmap::tick(core, on && active(core), AW2_MAP_SCRIPT, map_script);
