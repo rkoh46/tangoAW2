@@ -49,6 +49,7 @@ pub mod com_tower;
 pub mod co_grid;
 pub mod co_new;
 pub mod cpu_tactics;
+pub mod cpu_inventions;
 pub mod co_powers;
 pub mod co_skills;
 pub mod skills_panel;

@@ -138,6 +138,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     traps.extend(crate::ds_worldmap::traps());
     traps.extend(crate::two_front::traps());
     traps.extend(crate::ally_posture::traps());
+    traps.extend(crate::cpu_inventions::traps());
     traps.extend(crate::setup_phase::traps());
     traps.extend(crate::tag::traps());
     traps.extend(crate::tag_extras::traps());
