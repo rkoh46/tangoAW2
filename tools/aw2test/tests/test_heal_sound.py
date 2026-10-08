@@ -1,6 +1,6 @@
 """The Black Crystal's and Black Obelisk's heal animations (heal_effect.rs) play
 Dual Strike's heal sounds (SE_BLACKSTONE, SE_BLACKCRYSTAL, converted by
-ds_music.rs to songs 514 and 515 on AW2's sound-effect player 2) as they start,
+ds_music.rs to songs 515 and 516 on AW2's sound-effect player 2) as they start,
 and change nothing on screen but the effect: every other sprite palette and the
 tiles of every other sprite stay as they were (the effect once used OBJ palette
 8, the neutral and fogged buildings' colours, and turned them dark).
@@ -19,7 +19,7 @@ SE_PLAYER = 0x03005B20  # MusicPlayerInfo of player 2 (AW2's cannon shot plays t
 BGM_PLAYER = 0x03005AE0
 MAP_POINTER = 0x08499590  # the map's state; its scroll at +4
 SONG_TABLE_POOL = 0x080704A0
-HEAL_SONGS = {1: 514, 2: 515}
+HEAL_SONGS = {1: 515, 2: 516}   # (505 + the ten new COs' themes)
 EFFECT_PALETTE = 15
 RUNS = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)]
 SIZES = [[(8, 8), (16, 16), (32, 32), (64, 64)], [(16, 8), (32, 8), (32, 16), (64, 32)], [(8, 16), (8, 32), (16, 32), (32, 64)]]
