@@ -352,14 +352,32 @@ pub struct UnitDef {
     pub ai: u8,
     /// A name the mission's rules can refer to ([`Cond::UnitAt`], ...).
     pub name: Option<&'static str>,
+    /// Starting ammo and fuel as the map record gives them: [`FULL`] (99,
+    /// capped to the type's own maximum when the map loads) unless a mission
+    /// asks for less ([`UnitDef::ammo`], [`UnitDef::fuel`]).
+    pub ammo: u8,
+    pub fuel: u8,
 }
+
+/// "Full": more than any type holds, so the loader caps it to the type's maximum.
+pub const FULL: u8 = 99;
 
 impl UnitDef {
     pub const fn new(army: u8, kind: u8, x: u8, y: u8) -> UnitDef {
-        UnitDef { army, kind, x, y, hp: 100, ai: 0, name: None }
+        UnitDef { army, kind, x, y, hp: 100, ai: 0, name: None, ammo: FULL, fuel: FULL }
     }
     pub const fn hp(mut self, hp: u8) -> UnitDef {
         self.hp = hp;
+        self
+    }
+    /// Starts with this much ammo (0 .. the type's maximum) instead of a full load.
+    pub const fn ammo(mut self, ammo: u8) -> UnitDef {
+        self.ammo = ammo;
+        self
+    }
+    /// Starts with this much fuel instead of a full tank.
+    pub const fn fuel(mut self, fuel: u8) -> UnitDef {
+        self.fuel = fuel;
         self
     }
     pub const fn hold(mut self) -> UnitDef {
@@ -605,6 +623,8 @@ pub struct MissionDef {
     /// `victory` scene, in the match-end list. A mission with a `Win` action of
     /// its own shows `victory` there instead and has no match-end list.
     pub on_win: Vec<Action>,
+    /// A neutral volcano hazard (needs a `Structure::Volcano` on the map).
+    pub volcano: Option<VolcanoDef>,
 }
 
 impl MissionDef {
@@ -639,6 +659,7 @@ impl MissionDef {
             onyx: None,
             factory: Vec::new(),
             on_win: Vec::new(),
+            volcano: None,
         }
     }
 }
@@ -917,8 +938,8 @@ fn deployment(
             if u.hp == 0 || u.hp > 100 {
                 return Err(format!("unit hp {} out of 1..=100", u.hp));
             }
-            let fuel = 99;
-            out.extend_from_slice(&[u.x, u.y, u.kind, 0, u.hp, 0, fuel, 0, 0, u.ai, 0, 0]);
+            // (the map record: +4 HP, +5 ammo, +6 fuel, as five/map.py writes it)
+            out.extend_from_slice(&[u.x, u.y, u.kind, 0, u.hp, u.ammo, u.fuel, 0, 0, u.ai, 0, 0]);
         }
     }
     out.extend_from_slice(&[0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
@@ -1141,6 +1162,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
         factory: (0..n).map(|i| cx.factory.iter().find(|f| f.0 == i).map_or(0, |f| f.1)).collect(),
+        volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
     };
     built.unhandled.clear();

@@ -63,7 +63,9 @@ const NO_ENTRY: u8 = 0xFF;
 const TABLE_ONLY: u32 = 0x0203_E3FF;
 
 fn in_scope(core: &Core) -> bool {
-    is_on(core) && crate::pvp::in_versus(core) && !crate::ds_campaign::active(core)
+    // Versus with the pack, and a custom campaign's missions (the BH
+    // Campaign): not the DS Campaign nor AW2's own campaign.
+    is_on(core) && ((crate::pvp::in_versus(core) && !crate::ds_campaign::active(core)) || (crate::ds_campaign::active(core) && !crate::ds_campaign::is_ds(core)))
 }
 
 fn hash(parts: &[u32]) -> u32 {

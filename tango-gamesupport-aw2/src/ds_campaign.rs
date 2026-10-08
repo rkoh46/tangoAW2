@@ -176,6 +176,15 @@ pub fn onyx_spec(core: &Core) -> Option<crate::campaign_model::OnyxDef> {
     c.model.custom.as_ref()?.onyx.get(mission(core) as usize).copied().flatten()
 }
 
+/// The mission's volcano hazard (a custom campaign's, crate::hazard).
+pub fn volcano_spec(core: &Core) -> Option<crate::campaign_model::VolcanoDef> {
+    if !active(core) || is_ds(core) || !in_battle(core) {
+        return None;
+    }
+    let c = campaign(core)?;
+    c.model.custom.as_ref()?.volcano.get(mission(core) as usize).cloned().flatten()
+}
+
 /// The DS Campaign's mission being played (Dual Strike's own missions have
 /// rules of their own); 0xFF in another campaign.
 pub fn ds_mission(core: &Core) -> u8 {

@@ -84,10 +84,37 @@ fn at_turn_start(core: &mut Core) {
     cpu.set_thumb_pc(SPAWNER);
 }
 
+/// The invention list (16 entries of 8 bytes; an entry whose kind bits, 6..9
+/// of the halfword at +2, are 0 ends it) and the Black Factory's kind.
+const INVENTIONS: u32 = 0x0202_8360;
+const INVENTION_COUNT: u32 = 16;
+const FACTORY_KIND: u16 = 7;
+
+/// Entry of the spawner on a campaign or design map: with no Black Factory
+/// in the invention list it does nothing, for any army and controller (the
+/// game's own lookup runs on past a list that has no end entry, 16 full, and
+/// would hand the spawner whatever follows).
+fn spawner_guard(core: &mut Core) {
+    if !on_design_map(core) {
+        return;
+    }
+    let has = (0..INVENTION_COUNT)
+        .map(|k| core.raw_read_16(INVENTIONS + 8 * k + 2, -1))
+        .take_while(|hw| hw & 0x3C0 != 0)
+        .any(|hw| (hw >> 6) & 0xF == FACTORY_KIND);
+    if !has {
+        let cpu = core.gba_mut().cpu_mut();
+        cpu.set_gpr(0, 0);
+        let lr = cpu.gpr(14) as u32;
+        cpu.set_thumb_pc(lr & !1);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     let mut traps: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![
         (AI_TABLE_STORED, Box::new(after_ai_table_stored)),
         (TURN_START, Box::new(at_turn_start)),
+        (SPAWNER, Box::new(spawner_guard)),
         (crate::branding::SPRITE_FLUSH, Box::new(crate::branding::flush)),
         (crate::volcano::STRUCTURES, Box::new(crate::volcano::structures)),
         (

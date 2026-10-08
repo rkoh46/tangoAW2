@@ -278,6 +278,7 @@ pub fn flush(core: &mut Core) {
     at = crate::campaign_menu::flush(core, start, at, end);
     at = crate::ds_worldmap::flush_sprites(core, at, end);
     at = crate::bond_ui::flush(core, start, at, end);
+    at = crate::hazard::flush_sprites(core, at, end);
     at = crate::panel_sprites::under_window(core, start, at, end);
     if !crate::panel_sprites::tiles_taken(core, start, at) {
         at = crate::two_front::flush_sprites(core, at, end);
