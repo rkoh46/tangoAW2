@@ -1710,7 +1710,7 @@ mod pack_tests {
         let m = music().expect("music");
         assert_eq!(m.heal_se, [FIRST_SONG + crate::co_new::NEW.len() as u16, FIRST_SONG + crate::co_new::NEW.len() as u16 + 1]);
         eprintln!("heal sounds: music ends at {:#010x}", BASE + m.blob.len() as u32);
-        assert!(BASE + m.blob.len() as u32 <= 0x08D3_0000, "inside the music's ROM range (docs/AW2.md)");
+        assert!(BASE + m.blob.len() as u32 <= 0x08E0_0000, "inside the music's ROM range, before Survival's (docs/AW2.md)");
         for (i, song) in m.heal_se.iter().enumerate() {
             let e = (TABLE - BASE) as usize + 8 * *song as usize;
             let header = u32_at(&m.blob, e).unwrap();

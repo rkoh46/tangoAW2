@@ -250,8 +250,10 @@ def bh_campaign_credits_after_the_last_mission(ctx):
         fns = {e.u32(0x0200D610 + 0x6C * j + 0x10) for j in range(32)}
         if fns & set(ROLL_FNS):
             if not rolled:
-                e.wait(120)
+                e.wait(70)
                 shot(ctx, e, "credits")
+                e.wait(200)
+                shot(ctx, e, "credits_page_2")
             rolled = True
         if rolled and any(e.u32(0x0200D610 + 0x6C * j) in dc.WHEELS for j in range(32)):
             break

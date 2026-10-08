@@ -829,7 +829,7 @@ Free ROM used: 0x08620000.. (text slots), 0x0862C000.. (new CO text ids 0x6D72..
 powers' code, heal wait), 0x087C0000..0x087C0FFF (power animations),
 0x087C1000..0x087C3FFF (map animations), 0x087D0000..0x087DFFFF (unit pictures),
 0x087F0000..0x087F4FFF (CO screen grid: the map sheet per country, the page lists),
-0x08800000..0x08D2FFFF (music, past the 8 MB cartridge: mGBA grows the image when it is written),
+0x08800000..0x08DFFFFF (music, past the 8 MB cartridge: mGBA grows the image when it is written; the ten new COs' themes, Clone Andy's Andy theme included, end at about 0x08DA4400),
 0x09000000.. (the DS Campaign's story songs, their own range so the music above never runs into the
 Survival and campaign data),
 0x0862D000..0x0862D0FF (Survival's text ids 0x7172..), 0x08E00000..0x08E4FFFF (Survival: the map
