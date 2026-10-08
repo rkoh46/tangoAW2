@@ -76,7 +76,8 @@ changes, and online both players need it):
   Crystal and Obelisk, Black Hole's structures as Dual Strike draws them;
   eight new Versus maps.
 - **Survival:** Money, Turn and Time, eleven maps each, with ranks and
-  records, on screens like Dual Strike's.
+  records, on screens like Dual Strike's; clear a course to open its endless
+  Champion course.
 - **Black Factory (Versus):** same schedule and cost, but it picks what the
   battle needs; 200 hit points, destructible; human Black Hole armies too.
 - **DS Campaign:** all 28 missions on Dual Strike's world map:
@@ -139,7 +140,8 @@ with **SELECT → File → Save**; play it from **Versus → Design Maps**.
 - Dual Strike's top-screen pictures (the Black Onyx's Earth view) are left
   out, and tag powers play AW2's power music.
 - The computer strikes an enemy Black Factory only in range; Survival's
-  records are per course, not per map; no Champion courses.
+  records are per course, not per map; Champion courses open when their
+  basic course is cleared (Dual Strike sells them in its shop).
 
 ## How it's tested
 

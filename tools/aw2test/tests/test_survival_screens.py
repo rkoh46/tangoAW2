@@ -172,8 +172,10 @@ def survival_record_page(ctx):
     want = sv.title_blue("RECORD", glyphs)
     ctx.check(want == sv.blue_pixels(shot, range(0, 32)), "the page's title is RECORD in Dual Strike's font")
     for i, kind in enumerate(sv.LIST_ORDER):
-        ctx.check(sv.text_on(shot, sv.NAMES[kind], 18, 74 + 18 * i), f"{sv.NAMES[kind]} is listed")
-        ctx.check(sv.text_right(shot, "----", 222, 74 + 18 * i), f"{sv.NAMES[kind]}: nothing used yet")
+        ctx.check(sv.text_on(shot, sv.NAMES[kind], 18, 70 + 12 * i), f"{sv.NAMES[kind]} is listed")
+        ctx.check(sv.text_right(shot, "----", 222, 70 + 12 * i), f"{sv.NAMES[kind]}: nothing used yet")
+        ctx.check(sv.text_on(shot, sv.CHAMPION_NAMES[kind], 18, 70 + 12 * (i + 3)), f"{sv.CHAMPION_NAMES[kind]} is listed")
+        ctx.check(sv.text_right(shot, "Locked", 222, 70 + 12 * (i + 3)), f"{sv.CHAMPION_NAMES[kind]}: locked")
     e.shot(f"{ctx.out}/records")
     e.press("B", 8)
     e.wait(20)
@@ -213,8 +215,8 @@ def survival_record_shown(ctx):
     e.press("R", 8)
     e.wait(20)
     shot = sv.bg0(e)
-    ctx.check(sv.text_right(shot, "376600 G", 222, 74), "the record page: 376600 G used")
-    ctx.check(sv.text_on(shot, "S", 108, 74), "the record page: rank S")
+    ctx.check(sv.text_right(shot, "376600 G", 222, 70), "the record page: 376600 G used")
+    ctx.check(sv.text_on(shot, "S", 108, 70), "the record page: rank S")
     e.shot(f"{ctx.out}/records_with_one")
 
 
@@ -346,12 +348,13 @@ def survival_lists_are_dual_strikes(ctx):
         ids |= set(run)
     ctx.eq(sorted(ids), list(range(0xBC, 0xDD)), "33 maps, 0xBC..0xDC")
     # The Champion courses (kinds 3..5) read the same three lists
-    # (arm9 0x020EAC50's table, overlay 0x022F64CC/0x22F64E4/0x22F6544).
-    for champion, base in ((3, 0x022F64E4), (4, 0x022F6544), (5, 0x022F64CC)):
+    # (arm9 0x020EAC50's table, overlay 0x022F64E4/0x22F6544/0x22F64CC) and
+    # add no maps; they are in test_survival_champion.py.
+    for kind, base in ((sv.TIME, 0x022F64E4), (sv.MONEY, 0x022F6544), (sv.TURN, 0x022F64CC)):
         mine = [data.u16(base + 2 * k) for k in range(11)]
-        ctx.check(mine in [data.run(k) for k in (sv.MONEY, sv.TURN, sv.TIME)], f"Champion course {champion - 2}: the basic course's maps")
+        ctx.eq(mine, data.run(kind), f"{sv.CHAMPION_NAMES[kind]}: the basic course's maps")
     ctx.eq([struct.unpack_from("<I", data.arm9, sv.BUDGETS - 0x02000000 + 4 * k)[0] for k in (3, 4, 5)],
-           [108000, 600000, 120], "the Champion budgets (not in tangoAW2: they are a shop unlock)")
+           [108000, 600000, 120], "the Champion budgets")
 
 
 @test(modes=("ds",))

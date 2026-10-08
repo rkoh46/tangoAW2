@@ -26,7 +26,7 @@ P_FUNDS, P_YIELD = 0x00, 0x31
 WAR_ROOM_ROWS = (0x48, 0x2A0)       # the profile's War Room table: 30 maps x 0x14
 PLAYED_BITS = (0x30, 0x48)          # the profile's played bits (unlocks +0x30)
 POINTS = (saves.c420(0x00, 4), saves.c420(0x04, 4))
-SURVIVAL_RECORDS = saves.c420(0x15, 10)
+SURVIVAL_RECORDS = saves.c420(0x15, 11)
 # RAM AW2's score code writes: the War Room table, the campaign's and the
 # options block; then the event script slots (10 x 0x18 from 0x0200C528),
 # where a score row past the War Room's table would land (as a DS
@@ -567,8 +567,10 @@ def save_every_slot_at_once(ctx):
 @test(modes=("ds",))
 def save_survival_records_each_kind(ctx):
     """A run of each kind cleared in one boot (Money, Turn, Time): each
-    saves its own record's three bytes (and the records' mark), the other
-    kinds' records untouched; after a reboot all three are shown."""
+    saves its own record (the records are one bit field in eleven bytes of
+    the profile, survival.rs's Records: only those bytes change, and the
+    other kinds' records read as they did); after a reboot all three are
+    shown."""
     e, g = boot(ctx)
     ctx.require(sv.open_survival(e), "Survival's SELECT MAP")
     img = saves.flash(e, os.path.join(ctx.out, "start"))
@@ -584,12 +586,13 @@ def save_survival_records_each_kind(ctx):
         e.press("A", 8)
         e.wait(30)
         new = saves.flash(e, os.path.join(ctx.out, f"cleared_{kind}"))
-        rec = SURVIVAL_RECORDS[0] + 1 + 3 * kind
         saves.expect_slots(ctx, img, new, [], f"{sv.NAMES[kind]} cleared, saved",
-                           profile_allow=[(SURVIVAL_RECORDS[0], SURVIVAL_RECORDS[0] + 1), (rec, rec + 3)]
-                           + list(POINTS) + list(saves.OPTIONS) + [saves.MODE_BYTE])
+                           profile_allow=[SURVIVAL_RECORDS] + list(POINTS) + list(saves.OPTIONS) + [saves.MODE_BYTE])
+        saved = sv.decode_records(new.slot(0)[SURVIVAL_RECORDS[0]:SURVIVAL_RECORDS[1]])[0]
+        ctx.eq({k: v for k, v in saved.items() if k != kind}, dict(want), "the other kinds' records as they were")
         want[kind] = sv.records(e).get(kind)
         ctx.check(want[kind] is not None, f"{sv.NAMES[kind]}'s record {want[kind]}")
+        ctx.eq(saved.get(kind), want[kind], f"{sv.NAMES[kind]}'s record is the one saved")
         img = new
     e.close()
     e, g = boot(ctx, img.path)

@@ -38,7 +38,7 @@ P_C420 = 0x3F0
 # Bytes of 0x0200C420 (profile + 0x3F0 + offset).
 C420_SAVE_COUNT = 0x08         # bumped by sub_08016A14 before each save while even
 C420_SUSPEND = {2: 0x09, 3: 0x0A, 4: 0x0B}   # a suspended game per mode (sub_08016C9C)
-C420_SURVIVAL = range(0x15, 0x1F)            # tangoAW2's Survival records (0x0200C435..)
+C420_SURVIVAL = range(0x15, 0x20)            # tangoAW2's Survival records (0x0200C435..)
 
 
 def valid(sec):
