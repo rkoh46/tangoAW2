@@ -195,7 +195,7 @@ pub fn features_def() -> CampaignDef {
     b.triggers.push(Trigger::new(
         When::AfterAction,
         Cond::UnitAt { name: "courier", x: 5, y: 5 },
-        vec![Action::Spawn(vec![UnitDef::new(1, unit::INFANTRY, 3, 3)]), Action::AddFunds { army: 1, funds: 500 }],
+        vec![Action::Spawn(vec![UnitDef::new(1, unit::INFANTRY, 3, 3), UnitDef::new(1, unit::TANK, 4, 3)]), Action::AddFunds { army: 1, funds: 500 }],
     ));
     b.triggers.push(Trigger::new(When::TurnStart, Cond::UnitGone("courier"), vec![Action::Lose]));
     b.victory = Scene::new(vec![Line::say(co::STURM, "Extracted.")]);
