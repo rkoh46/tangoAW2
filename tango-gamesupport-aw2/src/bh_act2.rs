@@ -413,6 +413,10 @@ fn bh08() -> MissionDef {
     ];
     m.day_limit = 22;
     m.rank_days = 16;
+    // The dusk gate's Black Factory is dormant (an all-zero table): AW2's computer-Black-Hole turn calls
+    // the factory spawner, which on a map without a factory wrote garbage and reset the game on day 2 (the
+    // player's army there is played by Auto CO).
+    m.factory = vec![(0, [0, 0, 0])];
     m.front2 = Some(FrontDef {
         map: MapSrc::Built("bh08b"),
         props: Vec::new(),
@@ -535,9 +539,9 @@ fn bh09() -> MissionDef {
             When::AfterAction,
             Cond::Custom(alarm),
             vec![Action::Spawn(vec![
-                UnitDef::new(2, unit::TANK, 1, 6),
-                UnitDef::new(2, unit::TANK, 1, 8),
-                UnitDef::new(2, unit::RECON, 2, 7),
+                UnitDef::new(2, unit::TANK, 0, 6),
+                UnitDef::new(2, unit::TANK, 0, 8),
+                UnitDef::new(2, unit::RECON, 0, 7),
             ])],
         ),
         after(
@@ -663,11 +667,11 @@ fn bh11() -> MissionDef {
         troop("Roads and orders, he said. I wrote it on my sleeve."),
     ]);
     let paratroopers = vec![
-        UnitDef::new(3, unit::INFANTRY, 5, 6),
-        UnitDef::new(3, unit::INFANTRY, 5, 7),
-        UnitDef::new(3, unit::INFANTRY, 5, 11),
-        UnitDef::new(3, unit::INFANTRY, 5, 12),
-        UnitDef::new(3, unit::INFANTRY, 6, 9),
+        UnitDef::new(3, unit::INFANTRY, 1, 6),
+        UnitDef::new(3, unit::INFANTRY, 1, 12),
+        UnitDef::new(3, unit::INFANTRY, 2, 7),
+        UnitDef::new(3, unit::INFANTRY, 2, 11),
+        UnitDef::new(3, unit::INFANTRY, 3, 6),
     ];
     m.triggers = vec![
         on_day(

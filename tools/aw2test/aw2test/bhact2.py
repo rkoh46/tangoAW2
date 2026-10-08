@@ -136,10 +136,10 @@ def follow(ctx, e, d, label, shots=(0,), max_frames=30000):
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 5 and (not texts or texts[-1] != t):
+        if t and stable == 5 and (not texts or texts[-1] != clean(t)):
             if d.in_battle():
                 in_battle_texts += 1
-            texts.append(t)
+            texts.append(clean(t))
             if len(texts) - 1 in shots:
                 e.wait(60)
                 pic(ctx, e, f"{label}_{'victory' if d.in_battle() else 'map_scene'}{len(texts)}")
@@ -182,3 +182,100 @@ def win_by_attrition(ctx, e, g, d, label, shots=(0,), keep=1, hostile=None):
     names = g.menu()["names"]
     g.choose(next(n for n in names if n.lower().startswith("wait")), g.ACTION_MENU)
     return follow(ctx, e, d, label, shots)
+
+
+def calm(e, g, d, max_frames=6000):
+    """Until the map is idle (A through any dialogue box on the way): an action's end."""
+    n, run = 0, 0
+    while n < max_frames:
+        if d.scripts_running():
+            e.press("A", 4)
+            run = 0
+        elif g.idle():
+            run += 1
+            if run >= 6:
+                return True
+        else:
+            run = 0
+        e.wait(4)
+        n += 4
+    raise NavError("the map did not settle")
+
+
+def end_turn(e, g, d):
+    """Map menu > End from the first empty cell the cursor reaches (on a fogged map some cells refuse it)."""
+    g.wait_idle()
+    for x, y in g.empty_cells()[:30]:
+        try:
+            g.goto(x, y)
+        except NavError:
+            continue
+        e.press("A", 4)
+        try:
+            g.wait_menu(g.MAP_MENU, max_frames=90)
+        except NavError:
+            e.press("B", 4)
+            e.wait(20)
+            g.wait_idle()
+            continue
+        g.choose("End", g.MAP_MENU)
+        return
+    e.shot("/tmp/act2_no_cell")
+    raise NavError(f"no cell opened the map menu (cursor {g.cursor()}, scripts {d.scripts_running()}, day {e.u16(0x03004080)})")
+
+
+def next_turn(e, g, d):
+    """End the turn and wait for the player's next (A through dialogue and the other armies' turns)."""
+    d0 = e.u16(0x03004080)
+    army = g.current_army()
+    end_turn(e, g, d)
+    for _ in range(4000):
+        if e.u16(0x03004080) > d0 or g.current_army() != army or e.u8(dc.LAST_RESULT):
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(20)
+    boxes(e, d, 2000)
+    d.wait_control()
+
+
+def to_day(e, g, d, day, max_turns=40):
+    """End turns (A through dialogue) until the player's turn of day `day`; the dialogue shown on the way."""
+    seen = []
+    for _ in range(max_turns):
+        if e.u16(0x03004080) >= day:
+            break
+        d0 = e.u16(0x03004080)
+        end_turn(e, g, d)
+        for _ in range(4000):
+            if e.u16(0x03004080) > d0 or e.u8(dc.LAST_RESULT):
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(20)
+        seen += boxes(e, d, 4000)
+        d.wait_control()
+    g._units_base = g._players_base = None
+    return seen
+
+
+def boxes(e, d, frames=1500):
+    """Dialogue boxes shown until none for a while (A through them), cleaned."""
+    texts, last, stable, quiet = [], None, 0, 0
+    for _ in range(frames // 4):
+        t = d.text_shown()
+        stable = stable + 1 if t and t == last else 0
+        last = t
+        if t and stable == 5 and (not texts or texts[-1] != clean(t)):
+            texts.append(clean(t))
+        if d.scripts_running():
+            quiet = 0
+            if stable >= 8:
+                e.press("A", 4)
+                stable = 0
+        else:
+            quiet += 1
+            if quiet > 40:
+                break
+        e.wait(4)
+    return texts

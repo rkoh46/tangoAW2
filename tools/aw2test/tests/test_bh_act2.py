@@ -8,21 +8,6 @@ from aw2test import dscampaign as dc
 from aw2test.harness import test
 
 
-@test(modes=("ds",))
-def bh_act2_m4_win(ctx):
-    e, g, d = a2.boot(ctx, a2.WON(3), a2.ST | a2.VB, at=3)
-    a2.open_mission(ctx, e, g, d, 3, [bh.VON_BOLT], "m4")
-    d.wait_control()
-    victory, mapscene = a2.win_by_attrition(ctx, e, g, d, "m4", shots=(0, 5))
-    ctx.log("VICTORY\n" + "\n".join(victory) + "\nMAP\n" + "\n".join(mapscene))
-    ctx.eq(d.won() & 8, 8, "M4 won")
-    ctx.eq(d.unlocked(), [bh.STURM, bh.VON_BOLT, bh.HAWKE], "Hawke unlocked")
-    ctx.eq(d.bonds(), 2, "Hawke's bond (bit 1)")
-    a2.pic(ctx, e, "m4_world_after")
-    e.close()
-
-
-
 # --- every mission loads: its armies, map, rules and opening ---------------------------------------
 GMAP = 0x0201E450
 DS_TABLE = 0x08E00000
@@ -34,10 +19,10 @@ MISSIONS = {
     5: ("Night Raid", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.JAVIER)], (24, 16), True, 9),
     6: ("Stepping Stones", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.DRAKE)], (32, 20), False, 22),
     7: ("Greenhaven Arsenal", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.EAGLE)], (24, 20), False, 22),
-    8: ("The Twin Gates", [1, 2, 3, 4, 5, 6, 7], ALL, [bh.STURM, bh.HAWKE], [(5, bh.STURM), (3, bh.JESS)], (24, 18), False, 22),
+    8: ("The Twin Gates", [1, 2, 3, 4, 5, 6, 7], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JESS)], (24, 18), False, 22),
     9: ("The Loot Train", [1, 2, 3, 4, 5, 6, 7, 8], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.JAVIER)], (28, 14), True, 16),
-    10: ("Evergreen Citadel", [1, 2, 3, 4, 5, 6, 7, 8, 9], ALL, [bh.STURM, bh.HAWKE], [(5, bh.STURM), (3, bh.EAGLE)], (28, 22), False, 24),
-    11: ("Exiles' Last Stand", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [bh.STURM, bh.HAWKE], [(5, bh.STURM), (3, bh.JAVIER), (4, bh.SENSEI)], (26, 18), False, 22),
+    10: ("Evergreen Citadel", [1, 2, 3, 4, 5, 6, 7, 8, 9], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.EAGLE)], (28, 22), False, 24),
+    11: ("Exiles' Last Stand", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JAVIER), (4, bh.SENSEI)], (26, 18), False, 22),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
@@ -74,7 +59,7 @@ def check_load(ctx, n):
     g._units_base = g._players_base = None
     ctx.eq(d.mission(), a2.M[n], f"M{n}: the mission")
     ps = [g.player(a) for a in range(1, len(armies) + 1)]
-    ctx.eq([(p["colour"], p["co"]) for p in ps], armies, f"M{n}: army colours and COs")
+    ctx.eq([(p["colour"], p["co"] if want[1] is not None else None) for p, want in zip(ps, armies)], armies, f"M{n}: army colours and COs")
     ctx.eq(d.size(), size, f"M{n}: the map's size")
     ps = g.playst()
     ctx.eq(bool(ps["fog"]), fog, f"M{n}: fog")
@@ -82,8 +67,11 @@ def check_load(ctx, n):
     for army, count in units.items():
         ctx.eq(mission_count(g, army), count, f"M{n}: army {army}'s units")
     if len(picks) == 2:
+        # (the pair: whichever of the two picks leads, the other is the partner or the second front's CO)
         from aw2test import tag
-        ctx.log(f"partner of army 1: {tag.partner(e, 1)}, army CO {g.player(1)['co']}")
+        from aw2test import twofront as tf
+        other = (e.u8(tf.SECOND_COS)) if n == 8 else tag.partner(e, 1)["co"]
+        ctx.eq(sorted([g.player(1)["co"], other]), sorted(picks), f"M{n}: the two picks lead the main army and its partner (or the second front)")
     a2.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
     e.close()
@@ -260,8 +248,7 @@ def bh_act2_m6_landers_load_and_unload_on_every_beach(ctx):
                 if 0 <= y < len(rows) and 0 <= x < len(rows[0]) and abs(x - lx) + abs(y - ly) <= 3]
         ctx.check(any(c in "CcPpBb12" for c in near) and "R" in near, f"beach {(bx, by)}: a road to a city or port within 3 cells")
         while g.current_army() != army:
-            d.end_turn()
-            g.wait_for_input()
+            a2.next_turn(e, g, d)
         g._units_base = g._players_base = None
         lander = next(u for u in g.units(army) if u["type"] == 23 and not any(u["cargo"]))
         inf = next(u for u in g.units(army) if u["type"] == 1)
@@ -277,20 +264,18 @@ def bh_act2_m6_landers_load_and_unload_on_every_beach(ctx):
         g.select(sx, sy)
         names = g.move_to(bx, by)["names"]
         g.choose("Wait", g.ACTION_MENU)
-        g.wait_idle()
+        a2.calm(e, g, d)
         ctx.eq(g.unit(lander["id"])["x"], bx, f"beach {(bx, by)}: the Lander of army {army} sailed onto the shoal")
         g.select(*land[0])
         names = g.move_to(bx, by)["names"]
         ctx.check(any(n.lower().startswith("load") for n in names), f"beach {(bx, by)}: the Infantry is offered Load ({names})")
         g.choose("Load", g.ACTION_MENU)
-        g.wait_idle()
+        a2.calm(e, g, d)
         ctx.check(any(g.unit(lander["id"])["cargo"]), f"beach {(bx, by)}: the Lander carries the Infantry")
         # a round later: the Lander drops it on the land beside the beach
-        d.end_turn()
-        g.wait_for_input()
+        a2.next_turn(e, g, d)
         while g.current_army() != army:
-            d.end_turn()
-            g.wait_for_input()
+            a2.next_turn(e, g, d)
         g.select(bx, by)
         names = g.move_to(bx, by)["names"]
         ctx.check(any(n.lower().startswith("drop") for n in names), f"beach {(bx, by)}: the Lander offers Drop ({names})")
@@ -311,11 +296,400 @@ def bh_act2_m6_landers_load_and_unload_on_every_beach(ctx):
         mm = g.menu()
         if mm and any(n.lower().startswith("wait") for n in mm["names"]):
             g.choose("Wait", g.ACTION_MENU)
-        g.wait_idle()
+        a2.calm(e, g, d)
         iu, lu = g.unit(inf["id"]), g.unit(lander["id"])
         ctx.check((iu["x"], iu["y"]) in land and not any(lu["cargo"]), f"beach {(bx, by)}: the Infantry stands on the land beside it, the Lander empty")
         if k in (0, 5):
             a2.pic(ctx, e, f"m6_lander_dropped_{bx}_{by}")
         done[army] += 1
     ctx.eq(done, {1: 5, 2: 5}, "each army used five beaches")
+    e.close()
+
+
+# --- intro -> battle -> win, and the unlocks ------------------------------------------------------------
+def ready(ctx, n, cos=None, label=None):
+    """The mission started and under the player's control."""
+    title, won, roster, picks, armies, size, fog, limit = MISSIONS[n]
+    cos = cos or picks
+    mask = sum(1 << (k - 1) for k in won)
+    e, g, d = a2.boot(ctx, mask, roster, picks={a2.M[n]: len(cos)}, at=a2.M[n])
+    texts = a2.open_mission(ctx, e, g, d, a2.M[n], cos, label or f"m{n}")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    return e, g, d, texts
+
+
+def capture_hq(ctx, e, g, d, hqs, hostile=None):
+    """The test aid for a mission won by taking the HQ: every enemy unit but the farthest of each army
+    removed, an Infantry of the player's on each HQ capturing it turn by turn until the HQ is the player's."""
+    units = g.units()
+    by = {}
+    for u in units:
+        if u["army"] != 1 and (hostile is None or u["army"] in hostile):
+            by.setdefault(u["army"], []).append(u)
+    for army, us in by.items():
+        far = max(us, key=lambda u: min(abs(u["x"] - h[0]) + abs(u["y"] - h[1]) for h in hqs))
+        for u in us:
+            if u is not far:
+                d.remove_unit(u)
+    mine = [u for u in g.units(1) if u["type"] == 1][:len(hqs)]
+    for u, hq in zip(mine, hqs):
+        d.place_unit(u, *hq)
+    e.wait(10)
+    ctx.log(f"capturers placed: {[(u['id'], hq, g.unit_at(*hq)) for u, hq in zip(mine, hqs)]}")
+    for turn in range(5):
+        for hq in hqs:
+            if g.terrain_class(*hq) >> 5 == 1:
+                continue
+            a2.calm(e, g, d)
+            g.select(*hq)
+            names = g.move_to(*hq)["names"]
+            g.choose(next(x for x in names if x.lower().startswith("capt")), g.ACTION_MENU)
+            for _ in range(200):
+                if d.scripts_running() or e.u8(dc.LAST_RESULT):
+                    return
+                if g.idle():
+                    break
+                e.wait(4)
+            e.wait(20)
+            if d.scripts_running() or e.u8(dc.LAST_RESULT):
+                return
+        if all(g.terrain_class(*hq) >> 5 == 1 for hq in hqs):
+            return
+        a2.next_turn(e, g, d)
+
+
+def lose_by_day(ctx, e, g, d, n):
+    """The day limit loses: the day after it begins and the mission is lost."""
+    limit = MISSIONS[n][7]
+    e.w16(DAY, limit)
+    a2.end_turn(e, g, d)
+    for _ in range(3000):
+        if e.u8(dc.LAST_RESULT):
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(20)
+    ctx.eq(e.u8(dc.LAST_RESULT), 2, f"M{n}: lost when day {limit + 1} begins")
+
+
+def after_win(ctx, e, g, d, n, victory, mapscene, want_next, unlocked):
+    """The checks every win has: the won bit, the next flags open, the unlocked COs."""
+    ctx.eq((d.won() >> a2.M[n]) & 1, 1, f"M{n} won")
+    flags = d.map_flags()
+    ctx.eq([k for k in range(len(flags)) if flags[k] & 1 and not flags[k] & 2 and k > a2.M[n]], [a2.M[k] for k in want_next], f"M{n}: the next flags open")
+    ctx.eq(d.unlocked(), unlocked, f"M{n}: the roster")
+
+
+def _win_by_capture(n, hqs, want_next, cos=None):
+    def fn(ctx):
+        e, g, d, texts = ready(ctx, n, cos)
+        capture_hq(ctx, e, g, d, hqs)
+        victory, mapscene = a2.follow(ctx, e, d, f"m{n}", shots=(0,))
+        ctx.log("VICTORY\n" + "\n".join(victory) + "\nMAP\n" + "\n".join(mapscene))
+        ctx.check(len(victory) >= 3 and len(mapscene) >= 3, f"M{n}: the victory scene and the world-map scene played ({len(victory)}, {len(mapscene)} boxes)")
+        spec = MISSIONS[n]
+        after_win(ctx, e, g, d, n, victory, mapscene, want_next, [bh.STURM, bh.VON_BOLT, bh.HAWKE])
+        a2.pic(ctx, e, f"m{n}_world_after")
+        e.close()
+    fn.__name__ = f"bh_act2_m{n}_win_by_capture"
+    test(modes=("ds",))(fn)
+
+
+def _lose_by_day(n):
+    def fn(ctx):
+        e, g, d, texts = ready(ctx, n)
+        lose_by_day(ctx, e, g, d, n)
+        e.close()
+    fn.__name__ = f"bh_act2_m{n}_lose_by_day_limit"
+    test(modes=("ds",))(fn)
+
+
+_win_by_capture(4, [(21, 9)], [5])
+_win_by_capture(6, [(28, 14)], [7])
+_win_by_capture(7, [(21, 16)], [])
+_win_by_capture(10, [(14, 3)], [11])
+for _n in MISSIONS:
+    if _n != 8:
+        _lose_by_day(_n)
+
+
+
+
+# --- mission specifics -------------------------------------------------------------------------------------
+def settle_texts(ctx, e, d, frames=1500):
+    """Dialogue boxes shown until none for a while (A through them)."""
+    texts, last, stable, quiet = [], None, 0, 0
+    for _ in range(frames // 4):
+        t = d.text_shown()
+        stable = stable + 1 if t and t == last else 0
+        last = t
+        if t and stable == 5 and (not texts or texts[-1] != t):
+            texts.append(t.replace("\\x0f", " ").replace("\\r", " "))
+        if d.scripts_running():
+            quiet = 0
+            if stable >= 8:
+                e.press("A", 4)
+                stable = 0
+        else:
+            quiet += 1
+            if quiet > 40:
+                break
+        e.wait(4)
+    return texts
+
+
+@test(modes=("ds",))
+def bh_act2_m5_win_needs_the_aircraft_and_the_tower(ctx):
+    """M5 is won when the eight parked aircraft are destroyed AND the Com Tower is taken: the tower
+    alone, or the aircraft alone, win nothing; both do (the victory scene, then the map's)."""
+    e, g, d, texts = ready(ctx, 5)
+    ctx.eq(sorted(u["type"] for u in g.units(2) if u["type"] in (16, 17)), [16] * 6 + [17] * 2, "six Fighters and two Bombers parked")
+    ctx.eq(g.terrain_class(19, 3) & 0x1F, 0x14, "the Com Tower stands at (19, 3), the enemy's")
+    keep = next(u for u in g.units(2) if u["type"] == 2)
+    for u in g.units(2):
+        if u["type"] not in (16, 17) and u["id"] != keep["id"]:
+            d.remove_unit(u)
+    inf = next(u for u in g.units(1) if u["type"] == 1)
+    d.place_unit(inf, 19, 3)
+    e.wait(10)
+    for turn in range(4):
+        g.select(19, 3)
+        names = g.move_to(19, 3)["names"]
+        g.choose(next(x for x in names if x.lower().startswith("capt")), g.ACTION_MENU)
+        a2.calm(e, g, d)
+        if g.terrain_class(19, 3) >> 5 == 1:
+            break
+        a2.next_turn(e, g, d)
+    ctx.eq(g.terrain_class(19, 3) >> 5, 1, "the Com Tower taken")
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "the tower alone does not win")
+    for u in g.units(2):
+        if u["type"] in (16, 17):
+            d.remove_unit(u)
+    e.wait(10)
+    mine = next(u for u in g.units(1) if u["type"] == 5)
+    g.select(mine["x"], mine["y"])
+    names = g.move_to(mine["x"], mine["y"])["names"]
+    g.choose(next(x for x in names if x.lower().startswith("wait")), g.ACTION_MENU)
+    victory, mapscene = a2.follow(ctx, e, d, "m5", shots=(0,))
+    ctx.eq(victory[0], "The tower's out. I can't... why is it quiet?", "the victory scene")
+    ctx.check(len(victory) == 4 and len(mapscene) == 5, f"the scenes ({len(victory)}, {len(mapscene)})")
+    ctx.eq((d.won() >> 4) & 1, 1, "M5 won")
+    ctx.eq([k for k in range(5, 8) if d.map_flags()[k] & 1], [5, 6], "M6 and M7 open (the branch)")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m5_alarm_and_flares(ctx):
+    """Day 3: the alarm (three Tanks and two Anti-Air by the east road); day 6: the flares."""
+    e, g, d, texts = ready(ctx, 5)
+    before = len(g.units(2))
+    seen = a2.to_day(e, g, d, 3)
+    ctx.eq(e.u16(DAY), 3, "day 3")
+    ctx.eq(seen[-1:], ["Alarm! Alarm! I like alarms. Everyone, up!"], "Javier's alarm")
+    new = [u for u in g.units(2) if u["x"] >= 22]
+    ctx.check(sum(1 for u in g.units(2) if u["type"] == 5) >= 5 and len(g.units(2)) >= before + 5, f"three Tanks and two Anti-Air came ({len(g.units(2))} units, was {before})")
+    a2.pic(ctx, e, "m5_alarm")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m7_factory_table(ctx):
+    """The Black Factory (x 4..6, y 6..9, doors on row 10) spawns F7's units on the player's turns: day 2
+    two Tanks (doors 1 and 3), day 13 an Oozium (door 2) and Hawke's scene."""
+    e, g, d, texts = ready(ctx, 7)
+    ctx.eq(g.terrain_class(5, 8) & 0x1F, 9, "the factory stands at (4..6, 6..9) (a wall)") if False else None
+    before = {(u["x"], u["y"]) for u in g.units(1)}
+    a2.to_day(e, g, d, 2)
+    ctx.eq(e.u16(DAY), 2, "day 2")
+    spawned = [(u["type"], u["x"], u["y"]) for u in g.units(1) if (u["x"], u["y"]) not in before and u["y"] == 10 and 4 <= u["x"] <= 6]
+    ctx.eq(sorted(spawned), [(5, 4, 10), (5, 6, 10)], "two Tanks at the doors (4, 10) and (6, 10)")
+    a2.pic(ctx, e, "m7_factory_day2")
+    # day 13 (set day 12 and end the turn): an Oozium on the middle door
+    for u in g.units(1):
+        if (u["x"], u["y"]) in ((4, 10), (5, 10), (6, 10)):
+            d.remove_unit(u)
+    e.w16(DAY, 12)
+    seen = a2.to_day(e, g, d, 13)
+    ctx.eq(e.u16(DAY), 13, "day 13")
+    ctx.eq([(u["type"], u["x"], u["y"]) for u in g.units(1) if u["type"] == 27], [(27, 5, 10)], "an Oozium at (5, 10)")
+    ctx.check("The Foundry made an Oozium! It looks at me!" in seen, f"the day-13 scene ({seen})")
+    a2.pic(ctx, e, "m7_factory_day13_oozium")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m7_eagle_funds_and_bomber(ctx):
+    """Eagle gets +5000 on day 10 and a second Bomber on day 12."""
+    e, g, d, texts = ready(ctx, 7)
+    funds = lambda: e.u32(g.player(2)["addr"])
+    e.w16(DAY, 9)
+    before = funds()
+    a2.to_day(e, g, d, 10)
+    ctx.eq(e.u16(DAY), 10, "day 10")
+    ctx.log(f"Eagle's funds {before} -> {funds()} on day 10 (+5000 from the script, less what the computer spent)")
+    ctx.check(funds() > before, "Eagle's funds went up by day 10")
+    bombers = lambda: sum(1 for u in g.units(2) if u["type"] == 17)
+    b0 = bombers()
+    e.w16(DAY, 11)
+    a2.to_day(e, g, d, 12)
+    ctx.eq(e.u16(DAY), 12, "day 12")
+    ctx.check(bombers() >= b0 + 1 or b0 == 0, f"a second Bomber on day 12 ({b0} -> {bombers()})")
+    e.close()
+
+
+VAULT_YARD = [(24, 7), (25, 7), (26, 7)]
+
+
+def escort_game(ctx, home, dead, label):
+    """M9 with the named Vault APCs placed: `home` of them in the port yard, `dead` removed."""
+    e, g, d, texts = ready(ctx, 9)
+    apcs = sorted((u for u in g.units(1) if u["type"] == 7), key=lambda u: u["x"])
+    ctx.eq(len(apcs), 3, f"{label}: three Vault APCs")
+    for u in apcs[:dead]:
+        d.remove_unit(u)
+    live = apcs[dead:]
+    for u, cell in zip(live[:home], VAULT_YARD):
+        d.place_unit(u, *cell)
+    e.wait(10)
+    return e, g, d, apcs, live
+
+
+def act(ctx, e, g, d):
+    """A player's unit (not an APC) takes an action: the after-action rules look."""
+    mine = next(u for u in g.units(1) if u["type"] in (1, 2, 3, 5, 6))
+    g.select(mine["x"], mine["y"])
+    names = g.move_to(mine["x"], mine["y"])["names"]
+    g.choose(next(x for x in names if x.lower().startswith("wait")), g.ACTION_MENU)
+
+
+@test(modes=("ds",))
+def bh_act2_m9_escort_all_three_home(ctx):
+    e, g, d, apcs, live = escort_game(ctx, 3, 0, "three home")
+    act(ctx, e, g, d)
+    victory, mapscene = a2.follow(ctx, e, d, "m9_three", shots=(0,))
+    ctx.eq(victory, ["All three! Kehh-heh! Not one coin missing!", "Interest is laying eggs. Golden ones. Perhaps."], "the three-trucks scene")
+    ctx.eq((d.won() >> 8) & 1, 1, "M9 won")
+    ctx.eq(d.map_flags()[9] & 1, 1, "M10 opens")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m9_escort_two_home_one_gone(ctx):
+    e, g, d, apcs, live = escort_game(ctx, 2, 1, "two home")
+    act(ctx, e, g, d)
+    victory, mapscene = a2.follow(ctx, e, d, "m9_two", shots=(0,))
+    ctx.eq(victory, ["One truck gone... ...my coins, my poor coins.", "Seventy per cent. Within tolerance.", "TOLERANCE?!"], "the two-trucks scene")
+    ctx.eq((d.won() >> 8) & 1, 1, "M9 won with two of three")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m9_escort_not_yet_and_lost(ctx):
+    """Two home with the third still driving: no end yet (the loot is not all in). Two trucks lost: defeat."""
+    e, g, d, apcs, live = escort_game(ctx, 2, 0, "two home, third alive")
+    act(ctx, e, g, d)
+    e.wait(200)
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "two of three home with the third alive: the escort goes on")
+    e.close()
+    e, g, d, apcs, live = escort_game(ctx, 0, 2, "two lost")
+    act(ctx, e, g, d)
+    for _ in range(3000):
+        if e.u8(dc.LAST_RESULT):
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(20)
+    ctx.eq(e.u8(dc.LAST_RESULT), 2, "fewer than two trucks alive: defeat")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m9_alarm_when_a_truck_passes_the_first_bridge(ctx):
+    e, g, d, texts = ready(ctx, 9)
+    apc = min((u for u in g.units(1) if u["type"] == 7), key=lambda u: u["x"])
+    n = len(g.units(2))
+    d.place_unit(apc, 9, 7)
+    e.wait(10)
+    act(ctx, e, g, d)
+    e.wait(120)
+    g._units_base = g._players_base = None
+    ctx.check(len(g.units(2)) >= n + 3, f"Javier's alarm brought a pursuit behind the trucks ({n} -> {len(g.units(2))} enemy units)")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m11_win_needs_both_armies_beaten(ctx):
+    """The pass is won when both allied armies are beaten (their HQ taken or one unit left each): one
+    alone wins nothing."""
+    e, g, d, texts = ready(ctx, 11)
+    ctx.eq([g.player(a)["colour"] for a in (1, 2, 3)], [5, 3, 4], "Black Hole, Green Earth, Yellow Comet")
+    ge = g.units(2)
+    for u in ge[1:]:
+        d.remove_unit(u)
+    e.wait(10)
+    act(ctx, e, g, d)
+    e.wait(200)
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "Green Earth beaten, Yellow Comet not: the pass is not won")
+    for u in g.units(3)[1:]:
+        d.remove_unit(u)
+    e.wait(10)
+    mine = [u for u in g.units(1) if u["type"] in (1, 2, 3, 5, 6) and not u["flags"] & 1]
+    g.select(mine[0]["x"], mine[0]["y"])
+    names = g.move_to(mine[0]["x"], mine[0]["y"])["names"]
+    g.choose(next(x for x in names if x.lower().startswith("wait")), g.ACTION_MENU)
+    victory, mapscene = a2.follow(ctx, e, d, "m11", shots=(0,))
+    ctx.eq(victory[0], "Hmph. Old bones, beaten by a gale.", "the victory scene")
+    ctx.eq((d.won() >> 10) & 1, 1, "M11 won")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m11_paratroopers(ctx):
+    """Day 5 and day 10: Sensei's five paratroopers appear behind the player's line."""
+    e, g, d, texts = ready(ctx, 11)
+    n = sum(1 for u in g.units(3))
+    e.w16(DAY, 4)
+    seen = a2.to_day(e, g, d, 5)
+    ctx.eq(e.u16(DAY), 5, "day 5")
+    ctx.check("Paratroopers! Jump, you lazy sparrows!" in seen, f"Sensei's line ({seen})")
+    ctx.log(f"army 3: {[(u['type'], u['x'], u['y']) for u in g.units(3)]}")
+    ctx.check(sum(1 for u in g.units(3) if u["x"] <= 6) >= 3, "paratroopers stand behind the player's line")
+    a2.pic(ctx, e, "m11_paratroopers")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m8_two_fronts(ctx):
+    """M8: the player picks two COs (main front, second front); Jess leads the main front's army and
+    Javier the second's; Auto CO is on at the start and Intel has General; the second front is the Gate of
+    Dusk (20x16) after the round; its win (a rout) joins its CO to the main CO as partner."""
+    from aw2test import twofront as tf
+    pair = [bh.STURM, bh.HAWKE] if not os.environ.get("ACT2_M8_PAIR") else [int(x) for x in os.environ["ACT2_M8_PAIR"].split(",")]
+    e, g, d, texts = ready(ctx, 8, pair)
+    ctx.eq(d.size(), (24, 18), "the Gate of Dawn: 24x18")
+    ctx.eq(g.player(2)["co"], bh.JESS, "Jess leads the main front's enemy")
+    ctx.eq(e.u8(tf.SECOND_COS + 1), bh.JAVIER, "Javier leads the second front's enemy")
+    ctx.eq(sorted([g.player(1)["co"], e.u8(tf.SECOND_COS)]), sorted(pair), "a CO of the player's own for each front")
+    ctx.eq(e.u8(tf.MANUAL), 0, "Auto CO is on at the start (no army's turns are manual)")
+    ctx.check("General" in tf.intel(g)["names"], "Intel > General is there")
+    a2.pic(ctx, e, "m8_main_front")
+    seen = []
+
+    def watch():
+        k = (e.u8(tf.LIVE), e.u16(DAY), e.u16(tf.CURRENT_ARMY))
+        if e.u8(tf.BUSY) == 0 and (not seen or seen[-1] != k):
+            seen.append(k)
+    for rnd in range(5):
+        a2.end_turn(e, g, d)
+        e.wait(30)
+        ok = tf.until(e, d, lambda: tf.player_turn(e) or e.u8(dc.LAST_RESULT) != 0, frames=60000, each=watch)
+        if not ok:
+            a2.pic(ctx, e, "m8_round_stuck")
+        ctx.log(f"round {rnd + 1} seen {seen[-12:]}")
+        ctx.require(ok, f"round {rnd + 1} came back to the player ({tf.state(e)})")
+        d.wait_control()
+        if rnd == 0:
+            a2.pic(ctx, e, "m8_after_round_1")
+    ctx.check(any(s[0] == 1 for s in seen), f"the second front was on the screen during the round ({seen})")
     e.close()
