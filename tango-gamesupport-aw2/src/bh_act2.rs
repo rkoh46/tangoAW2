@@ -733,7 +733,8 @@ fn dev_stub_bh03() -> MissionDef {
     m.map = MapSrc::Ascii(&["1.........", "..ff..c...", "....mm....", "...c..c...", ".........2"]);
     m.armies = vec![ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)), ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE))];
     m.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 3)];
-    m.needs = Needs::All(vec!["bh02"]);
+    // (locked behind the bonds: with the placeholder campaign's last mission "bh02" won the campaign is over)
+    m.needs = Needs::Bonds(vec!["bh02"]);
     m.flag = region::BLACK_HOLE[2];
     m
 }
