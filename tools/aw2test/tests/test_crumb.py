@@ -107,7 +107,15 @@ def crumb_screens(ctx):
     for i in range(12):
         g2.e.wait(20)
         ctx.shot(g2, f"power{i}")
-        ctx.log(f"frame {i}: player bytes {g2.e.read(g2.player(1)['addr'] + 0x1C, 8).hex()} mode {g2.e.u8(0x0203F4D2)}")
+    # The Super Power's screen and the Tag Power's (Sturm), for the pictures.
+    g3 = tag_pair_battle(ctx, None)
+    e = g3.e
+    g3.open_map_menu()
+    g3.choose("Tag", g3.MAP_MENU)
+    ctx.require(e.wait_until(lambda: e.u8(0x0203F500) == 1, 1200, step=4), "the tag screen shows")
+    for i, frames in enumerate((200, 120, 160, 120)):
+        e.wait(frames)
+        ctx.shot(g3, f"tag{i}")
 
 
 @test(modes=("ds",))
@@ -394,3 +402,64 @@ def tag_pair_battle(ctx, trace):
     e.w32(g.player(1)["addr"] + ram.P_CHARGE, tag.star_cost(0) * g.co_stars(CRUMB)[1])
     e.w32(tag.rec(1) + tag.P_CHARGE, tag.star_cost(0) * g.co_stars(romlib.co_id("sturm"))[1])
     return g
+
+
+NAME_PALETTE = 0x080F6164        # the name graphics' fixed palette (sub_08043B44)
+PRESENTATION = 0x08740000        # crate::co_new: 0x44 a CO, +4 the name graphic (LZ77)
+AW2_PRESENTATION = 0x084A0090
+
+
+def name_pixels(e, co):
+    """The CO's name graphic as the game reads it: 16 rows of 48 palette indexes."""
+    row = (PRESENTATION if co >= 19 else AW2_PRESENTATION) + 0x44 * co
+    data = romlib.lz10(e.read(e.u32(row + 4), 0x300))
+    px = [[0] * 48 for _ in range(16)]
+    for col in range(6):
+        for half in range(2):
+            t = data[32 * (2 * col + half):32 * (2 * col + half) + 32]
+            for y in range(8):
+                for x in range(8):
+                    px[8 * half + y][8 * col + x] = (t[4 * y + x // 2] >> (4 * (x & 1))) & 15
+    return px
+
+
+@test(modes=("ds",))
+def crumb_name_graphic(ctx):
+    """Crumb's name graphic reads "Crumb": five letters (C of Colin's, u, r, m of
+    Sturm's and b of Kanbei's, AW2's own, composed by crate::crumb_art), in the
+    six sprites and the game's name palette, drawn beside other CO names for
+    comparison (crumb_name.png) and on his CO page in the game."""
+    from aw2test import png
+    m = ctx.map()
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.start(m, ["crumb", "jugger"])
+    e = g.e
+    pal_raw = e.read(NAME_PALETTE, 32)
+    pal = [((c & 31) * 255 // 31, ((c >> 5) & 31) * 255 // 31, ((c >> 10) & 31) * 255 // 31) for c in (pal_raw[2 * i] | pal_raw[2 * i + 1] << 8 for i in range(16))]
+    order = [("Colin", 16), ("Crumb", CRUMB), ("Sturm", 10), ("Kanbei", 6), ("Clone Andy", 81), ("Andy", 1), ("Adder", 13), ("Jugger", 72)]
+    rows = []
+    for name, co in order:
+        px = name_pixels(e, co)
+        rows += [[pal[v] for v in r] for r in px] + [[pal[0]] * 48]
+    png.write(os.path.join(ctx.out, "crumb_name.png"), rows, 6)
+    px = name_pixels(e, CRUMB)
+    cols = [any(px[y][x] == 1 for y in range(16)) for x in range(48)]
+    runs, s = [], None
+    for x, c in enumerate(cols + [False]):
+        if c and s is None:
+            s = x
+        if not c and s is not None:
+            runs.append((s, x - 1))
+            s = None
+    ctx.eq(len(runs), 5, f"five letters ({runs})")
+    ctx.check(runs[0][0] >= 3 and runs[-1][1] <= 44, "inside the six sprites, centred")
+    used = {v for r in px for v in r}
+    aw2 = {v for co in (16, 10, 6) for r in name_pixels(e, co) for v in r}
+    ctx.check(used <= aw2, "only the colours of AW2's own name graphics")
+    ctx.check(px not in (name_pixels(e, 10), name_pixels(e, 16)), "not Sturm's or Colin's")
+    # The first letter is Colin's C, the fourth Sturm's m.
+    ctx.check(all(px[y][runs[0][0]:runs[0][1] + 1] == name_pixels(e, 16)[y][9:17] for y in range(16)), "the C is Colin's")
+    g.open_map_menu()
+    g.choose("CO", g.MAP_MENU)
+    e.wait(120)
+    ctx.shot(g, "crumb_co_page")

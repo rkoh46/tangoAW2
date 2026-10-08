@@ -2373,7 +2373,7 @@ design's longer bio, Hit and Miss are in `crumb.rs`'s doc.
 Tests (`test_crumb.py`, `tag_crumb*` in `test_tag.py`, `all_powers_crumb_*`,
 `netplay_powers_crumb_*`): `crumb_is_pickable_in_versus`,
 `crumb_absent_without_the_pack`, `crumb_rank_and_file` (the calculator both
-ways), `crumb_ration_run`, `crumb_geralds_blessing` (heal, +50%, luck),
+ways), `crumb_ration_run`, `crumb_geralds_blessing` (heal, +50%, luck), `crumb_name_graphic`,
 `crumb_resupplies_on_cities_and_bases`, `crumb_power_quotes`,
 `tag_crumb` (compatibility, neutral 100, TAG pages, the screen's name and
 115%, the exchange), `tag_crumb_no_one_left_behind` (both orders, the heal

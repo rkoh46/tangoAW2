@@ -1,7 +1,8 @@
 //! Dual Strike's nine new COs, with the Dual Strike pack: Jugger, Koal,
 //! Kindle and Von Bolt (Black Hole), Grimm (Yellow Comet), Javier (Green
 //! Earth), Sasha (Blue Moon), Jake and Rachel (Orange Star), as AW2 COs
-//! 72..80, added after AW2's 19 (nobody is replaced).
+//! 72..80, added after AW2's 19 (nobody is replaced); then tangoAW2's own
+//! Clone Andy (81, on Andy's data) and Crumb (82, [`crate::crumb`]).
 //!
 //! Why 72: AW2 names a face `co + 24 * expression` (normal, happy, sad)
 //! and 19..23 are the troopers' faces, so ids up to 71 would read as
