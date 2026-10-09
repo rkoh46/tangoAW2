@@ -59,7 +59,7 @@ unit 2 17 28 17
 ........R...ff.-.fff..C.RC....ff
 ..C..B..R...X..-.fff.^^CR.....ff
 ff...I..Rf.....-.....^..R..BRB^^
-ff..###.Rf..c..-.IIIIIIIR...R..^
+ff..###.Rf..c..-........R...R..^
 ....###.R....E.-..c.^ff.R.B.R.C.
 ..1.#F#.RRRRRRR=RRRRRRRRRRRRR2..
 ....###.R....E.-.fff^...R...R.C.

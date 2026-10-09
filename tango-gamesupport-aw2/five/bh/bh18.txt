@@ -41,7 +41,7 @@ unit 2 3 11 3
 unit 2 3 10 3
 unit 2 8 8 2
 unit 2 8 12 2
-fff..fC...R..Cf..fff
+fff..fC......Cf..fff
 fffC.f....2...f.Cfff
 fff....B..R..B...fff
 ...f^^^^^.R.^^^^f...
@@ -60,4 +60,4 @@ ff.^^.RRRRRRRR.^^.ff
 ...f^^^^^.R.^^^^f...
 fff....B..R..C...fff
 fffC.f....1...f.Cfff
-fff..f....R...f..fff
+fff..f........f..fff
