@@ -360,7 +360,7 @@ fn bh30() -> MissionDef {
     // tile) and Andy leads it (`Action::TakeOver`); `held_hq` makes the Great Hall's capture defeat nobody.
     m.held_hq = Some((18, 3));
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(20000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(co::STURM)).funds(20000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(20000),
     ];
     m.day_limit = 34;

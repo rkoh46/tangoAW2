@@ -451,6 +451,9 @@ pub enum CoSpec {
     Pick,
     /// The player picks two, a tag pair.
     PickPair,
+    /// The player leads with this CO (always) and picks the tag partner: the pick screen asks for one CO, who
+    /// is never the lead, and the pair is (lead, pick).
+    PickPartner(u8),
 }
 
 /// An army in a mission: colour and CO are independent (Von Bolt can lead
@@ -1289,6 +1292,7 @@ fn co_ids(spec: CoSpec) -> ((u8, u8), (u8, u8)) {
         CoSpec::Pair(a, b) => ((a, b), (1, 1)),
         CoSpec::Pick => ((NO_CO, NO_CO), (0x1C, 0)),
         CoSpec::PickPair => ((NO_CO, NO_CO), (0x1C, 0x1C)),
+        CoSpec::PickPartner(_) => ((NO_CO, NO_CO), (0x1C, 0)),
     }
 }
 
@@ -1796,6 +1800,10 @@ fn compile_mission(
     }
     hd[0x58] = colours[0].clamp(1, 4);
     native.pool = m.pool.clone();
+    native.lead_lock = match m.armies.first().map(|a| a.co) {
+        Some(CoSpec::PickPartner(lead)) => Some(lead),
+        _ => None,
+    };
     native.setup = m.setup;
     if five {
         let (co, partner) = match m.armies[4].co {
@@ -1854,7 +1862,7 @@ fn two_front_of(second: u8, f: &FrontDef) -> Result<TwoFront, Error> {
             CoSpec::Fixed(c) => *c,
             CoSpec::Pair(a, _) => *a,
             CoSpec::None => NO_CO,
-            CoSpec::PickPair => return Err("a second front picks one CO per army".into()),
+            CoSpec::PickPair | CoSpec::PickPartner(_) => return Err("a second front picks one CO per army".into()),
         };
     }
     Ok(TwoFront {
