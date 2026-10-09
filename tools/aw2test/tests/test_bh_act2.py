@@ -124,6 +124,8 @@ def pictures(ctx, n, shots=(0,)):
     else:
         g.goto(0, 0)
         stitch.stitch(ctx, g, f"m{n}", w, h)
+    low = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] != 100]
+    ctx.eq(low, [], f"M{n}: every unit still at 100 HP after the picture was taken")
     if n == 8:
         # the dusk gate, the second front: Map menu > Front shows it
         from aw2test import twofront as tf
@@ -833,8 +835,10 @@ def _full_hp(n):
         """Every unit of both armies starts at full hit points (the Lasers and minicannons fire on Black Hole's turn
         at every unit on their lines, ours included: nobody of ours starts there)."""
         e, g, d, texts = ready(ctx, n)
-        low = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] != 100]
-        ctx.eq(low, [], f"M{n}: every unit at 100 HP at the first turn")
+        for t in range(6):
+            low = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] != 100]
+            ctx.eq(low, [], f"M{n}: every unit at 100 HP at the first turn (+{t * 100} frames)")
+            e.wait(100)
         e.close()
     fn.__name__ = f"bh_act2_m{n}_units_start_at_full_hit_points"
     test(modes=("ds",))(fn)
