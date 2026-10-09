@@ -926,6 +926,36 @@ const NATION_PANEL: u32 = 0x0807_639C;
 /// `SaveScreenCampaign_StartMessage`: AW2's "save?" after a mission.
 pub const SAVE_PROMPT: u32 = 0x0803_D92C;
 
+/// The mission panel's loop over the mission's armies (`WorldMapMissionInfo`'s init, `0x08077408`):
+/// `ldrb r0, [r0]` reads army r5's colour byte, and an army in Black Hole's colour (5) has its CO's
+/// small face (`0x08043FA8`: OBJ tiles 152.., palette 2) drawn under ENEMY. In a campaign session
+/// the lead enemy ([`crate::ds_campaign::panel_enemy`]) is the army that counts instead; with no
+/// enemy CO the portrait's tiles are cleared (they hold whatever the last battle left there).
+const PANEL_ARMY_COLOUR: u32 = 0x0807_7416;
+/// The face call's first instruction (`adds r0, r2, #0`: the CO from r2) and the loop's next army.
+const PANEL_ARMY_DRAW: u32 = 0x0807_7420;
+const PANEL_ARMY_NEXT: u32 = 0x0807_742A;
+const PANEL_FACE_TILES: u32 = 0x0601_0000 + 152 * 32;
+
+fn panel_army(core: &mut Core) {
+    if !crate::ds_campaign::active(core) {
+        return;
+    }
+    let army = core.gba().cpu().gpr(5) as u8;
+    let enemy = crate::ds_campaign::panel_enemy(core);
+    if enemy.is_none() && army == 0 {
+        core.raw_write_range(PANEL_FACE_TILES, -1, &[0u8; 12 * 32]);
+    }
+    let cpu = core.gba_mut().cpu_mut();
+    match enemy {
+        Some((a, co)) if a == army => {
+            cpu.set_gpr(2, co as i32);
+            cpu.set_thumb_pc(PANEL_ARMY_DRAW);
+        }
+        _ => cpu.set_thumb_pc(PANEL_ARMY_NEXT),
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![
         (
@@ -940,6 +970,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (ALTERNATIVES, Box::new(|core: &mut Core| if crate::ds_campaign::active(core) { ret(core) })),
         (NATION_PANEL, Box::new(|core: &mut Core| if crate::ds_campaign::active(core) { ret(core) })),
         (PROFILE_SERIALIZED, Box::new(profile_serialized)),
+        (PANEL_ARMY_COLOUR, Box::new(panel_army)),
     ];
     for (at, past, reg, max) in CAMERA_CLAMPS {
         t.push((at, Box::new(move |core: &mut Core| camera_clamp(core, past, reg, max))));
