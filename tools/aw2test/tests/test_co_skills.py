@@ -393,7 +393,7 @@ def skills_war_room_exp(ctx):
 
 
 PANEL = 0x0203E3F0          # crate::skills_panel: open, slot, CO, set, ids[4], on Teams
-VERSUS_RULE = DATA + 4 + CO_LEN * 29 + 1
+VERSUS_RULE = DATA + 4 + CO_LEN * 30 + 1
 CO_SELECT = 0x08616638
 CO_SELECT_IDLE = 0x0807CE5D
 

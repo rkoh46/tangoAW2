@@ -1080,7 +1080,7 @@ def tag_sturm_pairs(ctx):
     special pairs (aw2test.tag.STURM_PAIRS; Von Bolt 125 and 3 stars ..
     Kindle 105, anyone else 95). In battle the Tag Power's firepower is
     compatibility - 100 against the damage calculator; Sturm's TAG page
-    lists his six partners with their stars, Von Bolt's lists Sturm last;
+    lists his seven partners with their stars, Von Bolt's lists Sturm last;
     the Teams slot's badge shows 3 stars for Sturm + Von Bolt; the Tag
     Power screen shows "Black Apocalypse" (POWER 125%)."""
     for a, b, want in STURM_BOOST:
@@ -1111,7 +1111,7 @@ def tag_sturm_pairs(ctx):
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
     ctx.eq(names, b"Von Bolt\rHawke\rLash\rFlak\rAdder\rClone Andy\rCrumb", "Sturm's partners, tangoAW2's order (Kindle, Jugger, Koal: 105, no special pair, not listed)")
-    ctx.eq(stars, 3 + 2 + 2 + 1 + 1 + 2, "their stars")
+    ctx.eq(stars, 3 + 2 + 2 + 1 + 1 + 2 + 2, "their stars")
     ctx.shot(g, "sturm_tag_page")
     g = tag_battle(ctx, ["vonbolt", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
