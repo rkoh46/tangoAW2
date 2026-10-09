@@ -393,3 +393,56 @@ def bh_campaign_own_cannons_spare_the_players_units(ctx):
             d.wait_control()
             ctx.eq({k: v for k, v in mine().items() if v < before.get(k, 0)}, {}, f"mission {mission + 1}, day {day}: no unit of the player lost HP ({mine()} from {before})")
         e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_march_named_spawn_and_jammed_cannon(ctx):
+    """MissionDef::marches: a named unit goes two cells a day along its path
+    on its own army's turn and stops at an occupied cell, retrying the next
+    day; a unit spawned with a name (Action::Spawn) is found by it and marches
+    at its full speed (move points, real terrain costs); MissionDef::jams: a minicannon fires no shot until its condition
+    holds (day 4), then fires."""
+    e, g, d = boot_features(ctx)
+    d.picks = {20: 0}
+    d.start_at(won_mask=0xFFFFF & ~(1 << 5), unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 20, "mission 21")
+
+    def cells(army, t):
+        return sorted((u["x"], u["y"]) for u in g.units(army) if u["type"] == t)
+
+    tank_hp = lambda: [u["hp"] for u in g.units(2) if (u["x"], u["y"]) == (3, 2)]
+    ctx.eq(cells(2, 5), [(3, 2), (4, 0)], "the Tanks (the walker, the target) start in place")
+    hist = {}
+    for day in range(2, 7):
+        d.end_turn()
+        for _ in range(900):
+            if e.u16(DAY) == day and not d.scripts_running():
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(10)
+        d.wait_control()
+        hist[day] = (cells(2, 5), cells(2, 7), tank_hp())
+        ctx.log(f"day {day} all: {[(u['army'], u['type'], u['x'], u['y'], u['hp']) for u in g.units()]}")
+        ctx.log(f"day {day} inventions: {[e.read(0x02028360 + 8 * k, 8).hex() for k in range(3)]}")
+        ctx.log(f"day {day}: tanks {hist[day][0]} APCs {hist[day][1]} target hp {hist[day][2]}")
+        if day == 3:
+            # the blocker leaves (test aid): the walker goes on the next day
+            b = next(u for u in g.units(2) if u["type"] == 1 and (u["x"], u["y"]) == (7, 0))
+            e.w8(g.unit_addr(b["id"]), 0)
+            e.w8(d.layer_cell(7, 0), 0)
+    walker = lambda day: [c for c in hist[day][0] if c[1] == 0]
+    ctx.eq(walker(2), [(6, 0)], "day 2: the walker went two cells and stopped before the blocker")
+    ctx.eq(walker(3), [(6, 0)], "day 3: still blocked")
+    ctx.eq(walker(4), [(8, 0)], "day 4: the blocker gone, two cells on")
+    ctx.eq(walker(5), [(10, 0)], "day 5: two cells on")
+    ctx.eq(hist[2][1], [(4, 1)], "day 2: the truck is spawned (named)")
+    ctx.eq(hist[3][1], [(9, 1)], "day 3: six move points on its army's turn: four plains and a forest (two)")
+    ctx.eq(hist[4][1], [(11, 1)], "day 4: the path's end")
+    ctx.eq(hist[4][2], [100], "the jammed minicannon had not fired by day 4")
+    ctx.eq(hist[3][2], [100], "the jammed minicannon had not fired by day 3")
+    ctx.check(hist[6][2] and hist[6][2][0] < 100, f"restored on day 4, it has fired by day 6 ({hist[6][2]})")
+    e.close()

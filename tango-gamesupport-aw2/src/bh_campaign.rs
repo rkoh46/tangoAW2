@@ -572,6 +572,31 @@ pub fn features_def() -> CampaignDef {
     z.volcano = Some(VolcanoDef::new(3, 1, 5, &[(25, 15), (27, 15), (29, 15)]));
     z.needs = Needs::All(vec!["f01"]);
     z.flag = region::BLACK_HOLE[4];
+    // Marches, a named spawn and a jammed minicannon: the walker (a Tank on row 0, a blocker
+    // ahead of it) goes two cells a day, a named truck spawned on day 2 six move points (a forest cell costs two), the minicannon
+    // (0,2) is jammed until day 4.
+    let mut v = MissionDef::new("f21", "Features March");
+    v.objective = "Test: marches, a named spawn, a jammed cannon.";
+    v.map = MapSrc::Ascii(&["1...........", "......f.....", "............", "............", "..........2."]);
+    v.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+    ];
+    v.structures = vec![(Structure::MiniCannonRight, 0, 2)];
+    v.units = vec![
+        UnitDef::new(1, unit::MD_TANK, 0, 0),
+        UnitDef::new(2, unit::TANK, 4, 0).hold().fuel(0).named("walker"),
+        UnitDef::new(2, unit::INFANTRY, 7, 0).hold().fuel(0).named("blocker"),
+        UnitDef::new(2, unit::TANK, 3, 2).hold().fuel(0),
+    ];
+    v.triggers = vec![on_day_spawn(2, vec![UnitDef::new(2, unit::APC, 4, 1).hold().fuel(0).named("truck")])];
+    v.marches = vec![
+        MarchDef::new("walker", &[(4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0)], 2),
+        MarchDef::speed("truck", &[(4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1), (10, 1), (11, 1)], 6),
+    ];
+    v.jams = vec![JamDef { at: (0, 2), until: Cond::DayAtLeast(4) }];
+    v.needs = Needs::All(vec!["f01"]);
+    v.flag = region::BLACK_HOLE[3];
     let own2 = own_cannons("f18", false);
     let own5 = own_cannons("f19", true);
 
@@ -583,12 +608,17 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z],
-        final_mission: "f20",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v],
+        final_mission: "f21",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }, Bond { co: co::KOAL, quote: "Bond test: an extra." }],
         extra_bonds: 1,
         secret_mission: "f06",
     }
+}
+
+/// A trigger that spawns units at the start of the player's turn on day `d`.
+fn on_day_spawn(d: u16, units: Vec<UnitDef>) -> Trigger {
+    Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, vec![Action::Spawn(units)]).repeating()
 }
 
 /// The campaign's source `load`.

@@ -619,6 +619,56 @@ pub struct MissionDef {
     pub onyx: Option<OnyxDef>,
     /// A neutral volcano hazard (needs a `Structure::Volcano` on the map).
     pub volcano: Option<VolcanoDef>,
+    /// Named units that walk a fixed path ([`MarchDef`]).
+    pub marches: Vec<MarchDef>,
+    /// Black Hole structures that are jammed until something happens ([`JamDef`]).
+    pub jams: Vec<JamDef>,
+}
+
+/// A named unit (of the mission's deployment, or spawned with a name by an
+/// [`Action::Spawn`]) that walks a fixed path: on its own army's turn, from day
+/// `from`, it goes `per_day` cells along `path` (the cell it stands on is on
+/// the path; it goes to the next ones) and stops at the first cell that is
+/// occupied, to try again on its next turn. It moves only the computer's turns
+/// (AW2's own dispatch of the army), its position is the unit's record: nothing
+/// is kept outside the emulated RAM.
+#[derive(Clone, Debug)]
+pub struct MarchDef {
+    pub name: &'static str,
+    pub path: Vec<(u8, u8)>,
+    pub per_day: u8,
+    /// Move points a day instead of `per_day` cells: each cell of the path costs
+    /// what the unit's own type pays for its terrain (AW2's movement chart, as
+    /// its flood fill charges it); a cell it cannot afford ends the day's march.
+    /// 0: `per_day` cells.
+    pub points: u8,
+    pub from: u16,
+}
+
+impl MarchDef {
+    pub fn new(name: &'static str, path: &[(u8, u8)], per_day: u8) -> MarchDef {
+        MarchDef { name, path: path.to_vec(), per_day, points: 0, from: 1 }
+    }
+    /// A march at a unit's full speed: `points` move points a day (an APC's 6).
+    pub fn speed(name: &'static str, path: &[(u8, u8)], points: u8) -> MarchDef {
+        MarchDef { name, path: path.to_vec(), per_day: 0, points, from: 1 }
+    }
+    pub fn from(mut self, day: u16) -> MarchDef {
+        self.from = day;
+        self
+    }
+}
+
+/// A Black Hole structure (Laser, Deathray, Black Cannon, minicannon) of the
+/// mission, on its inventions-list cell `at` (the cell the map's structure
+/// stands on), that cannot fire while `until` does not hold ("jammed": its
+/// counter is held: AW2 fires an entry whose counter is 0); once `until` holds
+/// (any [`Cond`]: a day, a captured property, `Any` of them) it is restored and
+/// fires from the next Black Hole turn start.
+#[derive(Clone, Debug)]
+pub struct JamDef {
+    pub at: (u8, u8),
+    pub until: Cond,
 }
 
 impl MissionDef {
@@ -654,6 +704,8 @@ impl MissionDef {
             setup: true,
             onyx: None,
             volcano: None,
+            marches: Vec::new(),
+            jams: Vec::new(),
         }
     }
 }
@@ -791,6 +843,19 @@ pub const RESTORE_ARMY: u32 = 0xBC60_0000;
 pub const STRIKE: u32 = 0xBC70_0000;
 pub const SET_CO: u32 = 0xBC80_0000;
 pub const CUSTOM_FN: u32 = 0xBC90_0000;
+/// [`TAG_UNIT`] | army (x | y << 8 | tag << 16): the unit just spawned on (x, y)
+/// gets its name's tag ([`TAG_AT`] of its record).
+pub const TAG_UNIT: u32 = 0xBCA0_0000;
+/// A unit record's spare bytes (never written by AW2 or the pack): +7 the tag of
+/// a unit a trigger spawned with a name, +8 the last day a march moved it.
+const TAG_AT: u32 = 7;
+/// [`FIELDS_UNIT`] | hp (x | y << 8 | fuel << 16 | ammo << 24): what a spawned
+/// unit's [`UnitDef`] sets beyond the full-strength default (HP, ammo, fuel).
+pub const FIELDS_UNIT: u32 = 0xBCB0_0000;
+const MARCH_DAY_AT: u32 = 8;
+/// A named unit's `Rules::units` slot of 100 + n is the n-th unit its mission
+/// spawns (tag n): found by its tag, not by a slot.
+const SPAWNED: u8 = 100;
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
 /// (but AW2's Hard flag, [`FLAG_HARD`]).
 pub const FLAG_FIRST: u8 = 0x20;
@@ -1140,6 +1205,8 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
         volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
+        marches: def.missions.iter().map(|m| m.marches.clone()).collect(),
+        jams: def.missions.iter().map(|m| m.jams.clone()).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
     };
     built.unhandled.clear();
@@ -1278,6 +1345,29 @@ fn compile_mission(
                         for u in mine {
                             let s = cx.stub(Magic::Call(SPAWN, u.x as u32 | (u.y as u32) << 8 | (u.kind as u32) << 16));
                             cmds.push(cmd(0x00, s, 0, 0, 0));
+                            if u.hp != 100 || u.ammo != FULL || u.fuel != FULL {
+                                let s = cx.stub(Magic::Call(FIELDS_UNIT | u.hp as u32, u.x as u32 | (u.y as u32) << 8 | (u.fuel as u32) << 16 | (u.ammo as u32) << 24));
+                                cmds.push(cmd(0x00, s, 0, 0, 0));
+                            }
+                            if u.name.is_none() && u.ai != 0 {
+                                let s = cx.stub(Magic::Call(TAG_UNIT | army as u32, u.x as u32 | (u.y as u32) << 8 | (u.ai as u32) << 24));
+                                cmds.push(cmd(0x00, s, 0, 0, 0));
+                            }
+                            if let Some(n) = u.name {
+                                // (a name for the spawned unit: its tag, written into its record)
+                                let tag = cx.units.iter().filter(|(k, v)| k.0 == index && v.1 >= SPAWNED).count() as u8 + 1;
+                                let bit = cx.units.keys().filter(|k| k.0 == index).count() as u8;
+                                if bit >= 23 || tag > 100 {
+                                    return Err(format!("{}: too many named units", m.key));
+                                }
+                                if cx.units.insert((index, n), (army, SPAWNED + tag, bit)).is_some() {
+                                    return Err(format!("unit name {n} used twice in mission {index}"));
+                                }
+                                // (its bit is "seen", the next "gone": a placeholder takes the second)
+                                cx.units.insert((index, Box::leak(format!("{n}#gone").into_boxed_str())), (army, 0, bit + 1));
+                                let s = cx.stub(Magic::Call(TAG_UNIT | army as u32, u.x as u32 | (u.y as u32) << 8 | (tag as u32) << 16 | (u.ai as u32) << 24));
+                                cmds.push(cmd(0x00, s, 0, 0, 0));
+                            }
                         }
                         let s = cx.stub(Magic::Call(RESTORE_ARMY, 0));
                         cmds.push(cmd(0x00, s, 0, 0, 0));
@@ -1567,10 +1657,38 @@ const SCRATCH: u32 = LATCH + 3;
 
 /// The named unit's record, and whether it is alive.
 pub fn unit_by_name(core: &Core, name: &str) -> Option<(u32, bool)> {
+    unit_info(core, name).map(|(a, alive, _)| (a, alive))
+}
+
+/// The unit standing for a spawned name: the record carrying its tag.
+fn tagged(core: &Core, army: u8, tag: u8) -> Option<u32> {
+    (1..=50u8).map(|s| unit_addr(core, army, s)).find(|&a| core.raw_read_8(a, -1) != 0 && core.raw_read_8(a + TAG_AT, -1) == tag)
+}
+
+/// The record of the unit standing on (x, y).
+fn unit_on(core: &Core, x: u8, y: u8) -> Option<u32> {
+    let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+    let id = core.raw_read_8(MAP + 0x12 + row + x as u32, -1) as u32;
+    let a = core.raw_read_32(UNITS_PTR, -1) + UNIT * id;
+    (id != 0 && core.raw_read_8(a, -1) != 0).then_some(a)
+}
+
+/// The named unit's record, whether it is alive and its army. A unit a trigger
+/// spawns is not there before it is (None), then alive, then gone for good
+/// (record 0).
+pub fn unit_info(core: &Core, name: &str) -> Option<(u32, bool, u8)> {
     let src = crate::ds_campaign::source(core);
     let rules = RULES.get(src)?.get()?;
     let mission = crate::ds_campaign::mission(core) as usize;
     let (_, &(army, slot, bit)) = rules.units.iter().find(|(k, _)| k.0 == mission && k.1 == name)?;
+    if slot >= SPAWNED {
+        let latch = core.raw_read_32(LATCH, -1);
+        return match tagged(core, army, slot - SPAWNED) {
+            Some(a) => Some((a, true, army)),
+            None if latch >> (bit + 1) & 1 != 0 => Some((0, false, army)),
+            None => None,
+        };
+    }
     // (a named unit of the front that is not on the screen: its slot holds another front's unit)
     if (bit & SECOND_FRONT != 0) != crate::two_front::second_live(core) {
         return None;
@@ -1578,7 +1696,7 @@ pub fn unit_by_name(core: &Core, name: &str) -> Option<(u32, bool)> {
     let bit = bit & !SECOND_FRONT;
     let a = unit_addr(core, army, slot);
     let dead = core.raw_read_32(LATCH, -1) >> bit & 1 != 0;
-    Some((a, core.raw_read_8(a, -1) != 0 && !dead))
+    Some((a, core.raw_read_8(a, -1) != 0 && !dead, army))
 }
 
 fn named(core: &Core, name: &'static str) -> Option<(u32, bool)> {
@@ -1626,12 +1744,112 @@ pub fn tick(core: &mut Core) {
         if (bit & SECOND_FRONT != 0) != crate::two_front::second_live(core) {
             continue;
         }
-        if core.raw_read_8(unit_addr(core, army, slot), -1) == 0 {
-            latch |= 1 << (bit & !SECOND_FRONT);
+        let b = bit & !SECOND_FRONT;
+        if slot == 0 {
+            continue;
+        }
+        if slot >= SPAWNED {
+            // (a spawned unit: seen once, gone when it was seen and its tag is not found)
+            if tagged(core, army, slot - SPAWNED).is_some() {
+                latch |= 1 << b;
+            } else if latch >> b & 1 != 0 {
+                latch |= 1 << (b + 1);
+            }
+        } else if core.raw_read_8(unit_addr(core, army, slot), -1) == 0 {
+            latch |= 1 << b;
         }
     }
     if latch != before {
         core.raw_write_32(LATCH, -1, latch);
+    }
+    marches(core);
+    jams(core);
+}
+
+const MAP_STATE: u32 = 0x0300_32D8;
+const STATE_DISPATCH: u16 = 0xC;
+const INVENTIONS: u32 = 0x0202_8360;
+/// A jammed structure's held counter.
+const JAM_HOLD: u8 = 9;
+/// A restored structure's counter: AW2 counts it down at each Black Hole turn
+/// start and fires from 0.
+const RESTORE_COUNTER: u8 = 1;
+
+fn custom_of(core: &Core) -> Option<&crate::campaign_model::Custom> {
+    crate::ds_campaign::campaign(core)?.model.custom.as_ref()
+}
+
+/// The mission's marches ([`MarchDef`]): at the start of a march's army's turn
+/// (the computer's dispatch), once a day, its unit goes along the path.
+fn marches(core: &mut Core) {
+    let mission = crate::ds_campaign::mission(core) as usize;
+    let list = match custom_of(core).and_then(|c| c.marches.get(mission)) {
+        Some(l) if !l.is_empty() => l.clone(),
+        _ => return,
+    };
+    if core.raw_read_16(MAP_STATE, -1) != STATE_DISPATCH {
+        return;
+    }
+    let (day, army) = (day(core), core.raw_read_16(CURRENT_ARMY, -1) as u8);
+    for m in list {
+        let Some((a, alive, owner)) = unit_info(core, m.name) else { continue };
+        if !alive || owner != army || day < m.from || core.raw_read_8(a + MARCH_DAY_AT, -1) == day as u8 {
+            continue;
+        }
+        core.raw_write_8(a + MARCH_DAY_AT, -1, day as u8);
+        let at = (core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1));
+        let Some(i) = m.path.iter().position(|&p| p == at) else { continue };
+        let id = ((a - core.raw_read_32(UNITS_PTR, -1)) / UNIT) as u8;
+        let plane = |core: &Core, (x, y): (u8, u8)| MAP + 0x12 + core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32 + x as u32;
+        let mut here = at;
+        let kind = core.raw_read_8(a, -1);
+        let mut left = m.points;
+        let mut steps = 0u8;
+        for &next in m.path[i + 1..].iter() {
+            if m.points == 0 && steps >= m.per_day {
+                break;
+            }
+            if core.raw_read_8(plane(core, next), -1) != 0 {
+                break;
+            }
+            if m.points != 0 {
+                let cost = crate::oozium::move_cost(core, army as u32, kind, next.0 as i32, next.1 as i32);
+                if cost == 0xFF || cost > left {
+                    break;
+                }
+                left -= cost;
+            }
+            steps += 1;
+            core.raw_write_8(plane(core, here), -1, 0);
+            core.raw_write_8(plane(core, next), -1, id);
+            core.raw_write_8(a + 2, -1, next.0);
+            core.raw_write_8(a + 3, -1, next.1);
+            here = next;
+        }
+    }
+}
+
+/// The mission's jams ([`JamDef`]): the structure's counter is held while its
+/// condition does not hold, and set to fire soon once it does.
+fn jams(core: &mut Core) {
+    let mission = crate::ds_campaign::mission(core) as usize;
+    let list = match custom_of(core).and_then(|c| c.jams.get(mission)) {
+        Some(l) if !l.is_empty() => l.clone(),
+        _ => return,
+    };
+    for j in list {
+        let Some(e) = (0..16u32).map(|k| INVENTIONS + 8 * k).find(|&e| {
+            core.raw_read_16(e + 2, -1) >> 6 & 15 != 0 && core.raw_read_8(e, -1) == j.at.0 && core.raw_read_8(e + 1, -1) == j.at.1
+        }) else {
+            continue;
+        };
+        if holds(core, &j.until) {
+            if core.raw_read_8(e + 6, -1) == JAM_HOLD {
+                core.raw_write_8(e + 6, -1, RESTORE_COUNTER);
+            }
+        } else {
+            core.raw_write_8(e + 6, -1, JAM_HOLD);
+        }
     }
 }
 
@@ -1769,6 +1987,32 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             cpu.set_gpr(2, kind as i32);
             cpu.set_thumb_pc(CREATE_UNIT_AT);
             crate::campaign_model::TAIL_CALLED
+        }
+        Magic::Call(f, packed) if f & 0xFFF0_0000 == TAG_UNIT => {
+            let (x, y, tag, ai) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8, (packed >> 24) as u8);
+            if let Some(a) = unit_on(core, x, y) {
+                if tag != 0 {
+                    core.raw_write_8(a + TAG_AT, -1, tag);
+                }
+                if ai != 0 {
+                    core.raw_write_8(a + 9, -1, ai);
+                }
+            }
+            0
+        }
+        Magic::Call(f, packed) if f & 0xFFF0_0000 == FIELDS_UNIT => {
+            let (x, y, fuel, ammo) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8, (packed >> 24) as u8);
+            if let Some(a) = unit_on(core, x, y) {
+                let hp = (f & 0xFF) as u16;
+                let w = core.raw_read_16(a + 4, -1);
+                let w = if hp != 0 && hp != 100 { (w & !0x7F) | hp } else { w };
+                let w = if ammo != FULL { (w & !0x780) | (ammo.min(15) as u16) << 7 } else { w };
+                core.raw_write_16(a + 4, -1, w);
+                if fuel != FULL {
+                    core.raw_write_8(a + 6, -1, fuel);
+                }
+            }
+            0
         }
         Magic::Call(STRIKE, at) => {
             // (the script's proc is r0, as the power's function gets it)

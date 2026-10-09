@@ -89,6 +89,9 @@ pub struct Custom {
     pub onyx: Vec<Option<OnyxDef>>,
     /// Per mission: a volcano hazard.
     pub volcano: Vec<Option<VolcanoDef>>,
+    /// Per mission: named units that march, structures that are jammed.
+    pub marches: Vec<Vec<crate::custom_campaign::MarchDef>>,
+    pub jams: Vec<Vec<crate::custom_campaign::JamDef>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,
