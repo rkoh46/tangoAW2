@@ -86,6 +86,33 @@ pub(crate) fn roles(units: Vec<UnitDef>, player: u8, holders: &[(u8, u8)]) -> Ve
         .collect()
 }
 
+/// The computer's orders for M23 to M28 (the shared rule of AW2's roles, docs/AW2.md "AI roles"): Infantry and Mechs capture
+/// (3, the nearest properties, bases first), Artillery, Rockets, Missiles, tanks, Recon, Anti-Air, aircraft and warships attack
+/// units (4); a transport (an APC, a Lander, a Black Boat) keeps role 0, its own loading logic moves it; only `holders` hold
+/// (HQ guards and the guns that cover them). The player's own units keep role 0.
+pub(crate) fn orders(units: Vec<UnitDef>, player: u8, holders: &[(u8, u8)]) -> Vec<UnitDef> {
+    let still = still();
+    units
+        .into_iter()
+        .map(|mut u| {
+            if let Some(r) = std::env::var("TANGOAW2_BH_ROLE").ok().and_then(|v| v.parse::<u8>().ok()) {
+                u.ai = if u.army == player { 0 } else { r };
+                return u;
+            }
+            u.ai = if still || u.army == player || holders.contains(&(u.x, u.y)) {
+                0
+            } else {
+                match u.kind {
+                    unit::INFANTRY | unit::MECH => 3,
+                    unit::APC | unit::LANDER | unit::BLACK_BOAT => 0,
+                    _ => 4,
+                }
+            };
+            u
+        })
+        .collect()
+}
+
 /// The units of a built map's text file, for a second front (whose deployment is the front's own).
 pub(crate) fn built_units(name: &str) -> Vec<UnitDef> {
     let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else { return Vec::new() };
@@ -116,7 +143,7 @@ fn bh23() -> MissionDef {
     m.objective = "Capture Lash's HQ in the fog.";
     m.map = MapSrc::Built("bh23");
     // Lash's HQ guard (the two Infantry beside the HQ) holds; her toys and the rest advance.
-    m.units = roles(built_units("bh23"), 1, &[(18, 8), (18, 10)]);
+    m.units = orders(built_units("bh23"), 1, &[(18, 8), (18, 10)]);
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(8000),
         // Lash commands Orange Star's lab army in its colours, with Max (the lab's guard) beside her.
@@ -154,7 +181,7 @@ fn bh24() -> MissionDef {
     m.map = MapSrc::Built("bh24");
     m.look = 2; // the Desert look: an airfield in the sand
     // The aircraft and the Missiles advance; the HQ's Anti-Air and Infantry hold the HQ and the apron.
-    m.units = roles(built_units("bh24"), 1, &[(18, 7), (18, 9), (18, 8), (18, 5), (18, 10)]);
+    m.units = orders(built_units("bh24"), 1, &[(18, 7), (18, 9), (18, 8), (18, 5), (18, 10)]);
     // A pre-deployed dogfight: one airport each way, no bases.
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(6000),
@@ -202,7 +229,7 @@ fn bh25() -> MissionDef {
     m.objective = "Take Port Orange and the Market Atoll.";
     m.map = MapSrc::Built("bh25");
     // Sami's HQ Infantry and her three Landers (nothing to carry until the player lands) hold; the rest advance.
-    m.units = roles(built_units("bh25"), 1, &[(28, 9), (28, 11), (22, 7), (22, 14), (21, 10)]);
+    m.units = orders(built_units("bh25"), 1, &[(28, 9), (28, 11), (22, 7), (22, 14), (21, 10)]);
     // The player picks two COs: the main front's, then the second front's.
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
@@ -215,7 +242,7 @@ fn bh25() -> MissionDef {
         props: Vec::new(),
         structures: Vec::new(),
         // (Hachi's two HQ Infantry and his two Landers hold; the rest advance)
-        units: roles(built_units("bh25b"), 1, &[(20, 7), (20, 9), (17, 5), (17, 11)]),
+        units: orders(built_units("bh25b"), 1, &[(20, 7), (20, 9), (17, 5), (17, 11)]),
         cos: [CoSpec::Pick, CoSpec::Fixed(co::HACHI), CoSpec::None, CoSpec::None],
         send: SendRule::Ground,
         sky: false,
@@ -246,7 +273,7 @@ fn bh26() -> MissionDef {
     m.objective = "Break Jake, Colin and Grimm.";
     m.map = MapSrc::Built("bh26");
     // Each ally's Infantry beside its HQ holds it (and Grimm's Fighters fly); the rest advance on BH.
-    m.units = roles(built_units("bh26"), 1, &[(3, 3), (5, 3), (3, 21), (5, 22), (32, 13), (32, 15)]);
+    m.units = orders(built_units("bh26"), 1, &[(3, 3), (5, 3), (3, 21), (5, 22), (32, 13), (32, 15)]);
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(20000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(5000),
@@ -275,7 +302,7 @@ fn bh27() -> MissionDef {
     m.objective = "Capture the Orange Star base at (21, 9).";
     m.map = MapSrc::Built("bh27");
     // The Orange Star base is held by its two Artillery and the Infantry about the HQ; the rest advance.
-    m.units = roles(built_units("bh27"), 1, &[(21, 8), (21, 10), (22, 9), (20, 8), (20, 10)]);
+    m.units = orders(built_units("bh27"), 1, &[(21, 8), (21, 10), (22, 9), (20, 8), (20, 10)]);
     m.armies = vec![
         // Lash leads (her lab made him: the Clone Andy bond is automatic); no pick.
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::LASH)).funds(5000),
@@ -317,7 +344,7 @@ fn bh28() -> MissionDef {
     m.map = MapSrc::Built("bh28");
     // Each ally's two Infantry beside its HQ hold it and the Rockets cover them; the rest of the four armies advance
     // on the fortress (the coalition attacks).
-    m.units = roles(built_units("bh28"), 5, &[(2, 3), (4, 3), (32, 3), (30, 3), (2, 27), (4, 27), (32, 27), (30, 27), (8, 3), (28, 3), (8, 27), (29, 28)]);
+    m.units = orders(built_units("bh28"), 5, &[(2, 3), (4, 3), (32, 3), (30, 3), (2, 27), (4, 27), (32, 27), (30, 27), (8, 3), (28, 3), (8, 27), (29, 28)]);
     m.look = 2; // the Desert look (the Wasteland look paints water as lava: Blue Moon's river and coast stay water)
     let ally_funds = if still() { 0 } else { 12000 };
     // Five armies: the player is the fifth (Black Hole) and picks a tag pair on the CO screen (any two
