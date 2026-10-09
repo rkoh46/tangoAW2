@@ -1,1 +1,518 @@
-# BH dialogue, act5 (format: README.txt)
+# BH dialogue, act5: M29 The Orange Gate, M30 Nell's Stand, the epilogue, the Allied war room (format: README.txt)
+
+# ---------------------------------------------------------------------------------------------
+# M29 The Orange Gate (FREE: any CO leads; Nell leads Orange Star with Max)
+# ---------------------------------------------------------------------------------------------
+
+== m29_pre
+NARRATION: The Orange Gate. Two towers, a / canal, and a woman on the wall.
+NELL: This is the Orange Gate. I'd / rather you turned back, dears.
+NELL: You won't. I know. So I'll ask / you to be careful with each other.
+STURM: Kneel, Nell. This gate is mine / by nightfall.
+NELL: It's Orange Star's, Sturm. And / I'm standing on it.
+STURM: Then you will stand on it until / I take it.
+NELL: I signed the Accord with my own / hand. It was never meant as a wall.
+NELL: It was a promise between four / families. We kept it thirty years.
+STURM: You fenced a coast and split its / iron. You called that peace.
+NELL: And what do you call this?
+STURM: Collecting.
+NELL: ...Where do you come from, / Sturm? I've always wondered.
+STURM: Where the map ends.
+NELL: That's a long way to come, to / be so alone.
+STURM: Keep your pity. I have no use / for it.
+MAX: Nell! I'm right here! Nobody / touches her! You hear me?!
+SAMI: Max! The wall is mine! You're / the hammer! Get to the bridge!
+MAX: Whatever! Waiting's the worst / part! Charge!
+SAMI: Roger. You hate everything / with a clock on it. Move!
+NELL: Boys. Mind the canal. And eat / something first.
+MAX: We ate, Nell!
+NELL: Then eat again, dear. It's going / to be a long day.
+STURM: Behind her wall stands a castle. / This gate is only her first line.
+STURM: Take the gate. Then the castle. / Then her.
+WICK: Sergeant, is it all right if I ask / which of the beams are ours?
+MORTAR: The Laser at the south ford is / nobody's. Stay out of its row.
+WICK: If it's nobody's, who feeds it?
+MORTAR: Wick.
+WICK: Yes, Sergeant. Out of its row.
+@IF STURM
+MAX: Hey, Sturm! I'll hit you so hard / your storm falls out!
+STURM: Weather does not fall out.
+MAX: ...Is that a joke?
+STURM: No.
+SAMI: Max, he means it. That's the / worst part. Hold the bridge.
+@IF VON BOLT
+VON BOLT: A castle behind it? With a / vault? Kehh... does it?
+NELL: It has a nursery, Colonel. A / school. And a vault, for seeds.
+VON BOLT: Seeds! Worth nothing! ...What / do they fetch a sack?
+NELL: They aren't for sale.
+VON BOLT: Everything is for sale, / madam. That is the whole sad joke.
+@IF HAWKE
+HAWKE: Nell herself, at the gate. She / is counting us as we arrive.
+HAWKE: She smiles. I assume the count / favours her.
+MAX: What's he saying about me?!
+HAWKE: That you are a fine hammer, / Mr Max. Hammers are predictable.
+MAX: ...Is that an insult?! Sami!
+SAMI: It's a tactic, Max. Ignore him.
+@IF KOAL
+KOAL: Two lanes on the bridge. No / shoulder. A hammer will block it.
+MAX: Who's he calling a hammer?! / ...I am a hammer.
+KOAL: Then mind the lane.
+@IF KINDLE
+KINDLE: A woman on a wall, lit by the / sunrise. Darling, what an entrance!
+NELL: There are children's drawings / pinned up behind that gate, dear.
+KINDLE: Ugh. Fine. I shall burn it / artistically. With restraint.
+MAX: Is that a promise?
+KINDLE: It's a review, darling.
+@IF JUGGER
+JUGGER: GATE: ONE BRIDGE, TWO FORDS. / ORANGE STAR: 50 UNITS. ODDS: POOR.
+MAX: Hey! Is that robot talking at me?
+JUGGER: AFFIRMATIVE. STATUS: HAMMER. / LOGGED.
+MAX: Hey, I like this guy!
+JUGGER: QUERY: WHY.
+@IF FLAK
+FLAK: Big man! Flak wants the big man!
+MAX: Hah! Come on, big man!
+FLAK: Flak smash big man. Then eat!
+MAX: You've got nerve! I'll feed you / a knuckle sandwich!
+FLAK: Sandwich! Flak hungry!
+@IF LASH
+LASH: Ooh! The Gate! Is the wall / load-bearing? Can I lean on it?
+LASH: I brought my Wallbiter Mark Three! / It's mostly glitter! Heehee!
+SAMI: Max. Don't. Touch. Anything.
+MAX: I wasn't gonna!
+@IF ADDER
+ADDER: Lovely wall. Dreadful lighting. / Shall we fix that?
+ADDER: And you, big man, have wonderful / shoulders. Pity about the face.
+MAX: Hey!
+SAMI: Don't answer him, Max. He's / warming you up.
+@IF SONJA
+SONJA: Fifty units on the wall, and / four hundred on her books. A ledger.
+NELL: Sonja, dear. Does your father / know where you are?
+SONJA: He knows. He's writing back. / Eat well, wear a scarf.
+NELL: Then listen to him, dear.
+@IF CLONE ANDY
+CLONE ANDY: Andy's friends. They know / me. They won't talk to me.
+SAMI: ...That's not Andy.
+MAX: What did they do to him?!
+CLONE ANDY: Nothing. I chose.
+CLONE ANDY: Max cries at dog movies. / Sami keeps chocolate in her left pocket.
+SAMI: ...How do you know that?
+CLONE ANDY: Andy knows. It's all I knew / about anyone, before Nell.
+NELL: Oh, dear one. You have his eyes. / Eat something, too.
+CLONE ANDY(s): Nobody ever told me to / eat something.
+NELL: Then I'll tell you twice.
+@IF CRUMB CO
+CRUMB CO: Ma'am Nell! It's Pip Hobb! / I... I'm so sorry about all this.
+NELL: Pip? You're very young to be / commanding armies, dear.
+CRUMB CO: I'm very new, ma'am. I have / a biscuit. Gerald, say hello.
+NELL: Hello, Gerald. And how old are / you?
+CRUMB CO: Older than the Obelisk, ma'am. / Sergeant Mortar says.
+NELL: Hobb... I know that name from / somewhere. I can't think where.
+NELL: How strange. Eat your breakfast, / both of you.
+@END
+
+== m29_day5
+NELL: I was born lucky, boys. I'll / spend it on the bridge today.
+MAX: Nell's doing the luck thing! / Everybody hold your hats!
+SAMI: Hats, helmets, anything! The / bridge is lit up!
+NELL: Mind your step, Black Hole. Luck / goes both ways. I've been saving mine.
+STURM: Luck is a debt. It comes due.
+NELL: Then I'll pay it gladly.
+
+== m29_day8
+MAX: Tanks! Everyone! Tanks!
+SAMI: Max, that's not a plan!
+MAX: It's the BEST plan! It has tanks / in it!
+SAMI: ...Roger. Tanks. Nell, he's / going for the bridge.
+NELL: Then give him the bridge, / Sami. Just not all of it.
+
+== m29_day10
+SAMI: Infantry, forward! The gate / stays ours! Move out!
+MAX: Sami's got grunts?!
+SAMI: Six squads, Max. They carry / the gate. You carry them.
+WICK: Sergeant, they're running at us! / Is it all right if we run too?
+MORTAR: In which direction?
+WICK: ...Their direction, Sergeant.
+MORTAR: Wick.
+
+== m29_day16
+SAMI: Orange Star! For Nell!
+NELL: For yourselves, dears. For the / kids behind the wall.
+MAX: And for dinner! Everyone eats / tonight!
+SAMI: That too. Roger.
+
+== m29_post
+NELL(s): The Gate holds no longer. Max, / Sami: fall back. Now.
+MAX: Nell! I'm staying with you! I'm / not leaving you on the wall!
+NELL: Max. Look at me. It isn't a / request.
+MAX: ...Nell.
+SAMI: Max. We obey. Come on. I'll / carry you if I have to.
+MAX: You couldn't lift me!
+SAMI: Try me.
+NELL: Sturm. You took the gate. You / have not taken my castle.
+STURM: I will have the castle. And you.
+NELL: Then come to it. Whole streets / sleep behind those walls.
+NELL: Bakers, teachers, a school. I / will not move. Remember that.
+STURM: You will move when I say.
+NELL: Come and meet what I've kept / for you. I'd rather have kept you out.
+MAX: Sturm! Don't you lay a hand on / her! I swear I'll...!
+STURM: I promise nothing. Her castle / is mine tomorrow.
+MAX: This isn't over, big man!
+SAMI: Max. Fall. Back.
+WICK: Sergeant, is it all right if I / feel bad about the lady?
+MORTAR: No.
+WICK: ...Is it all right if I feel it / quietly?
+MORTAR: ...Quietly.
+@IF HAWKE
+HAWKE: She withdraws on purpose. She / draws us in, a tempo ahead.
+HAWKE: Everything she has is in that / castle. All of it.
+@IF VON BOLT
+VON BOLT: All of it? Everything she / owns, behind one set of walls?
+VON BOLT: Kehh... Sturm. Take it / slowly. I want to count.
+@IF CRUMB CO
+CRUMB CO: She said she'd rather have / kept us out. That's sad, sir.
+STURM: It is a tactic.
+CRUMB CO: Gerald says it's both.
+@IF CLONE ANDY
+CLONE ANDY: She told us to eat. Right / after we took her gate.
+CLONE ANDY: Sir? ...I'd like to be / there when we take the kitchen.
+@IF JUGGER
+JUGGER: GATE: CAPTURED. ENEMY: WITHDRAWN / IN ORDER. SUSPICIOUS: AFFIRMATIVE.
+@OTHER
+[CO]: She gave up the Gate on purpose. / Nobody gives a gate away for free.
+[CO]: Her castle is behind it, and / she has had thirty years to fill it.
+@END
+STURM: Then we empty it.
+
+== m29_map
+NARRATION: The Orange Gate, after dark. / A radio somewhere is still on.
+CRUMB: Sir. May I ask something?
+STURM: Ask.
+CRUMB: Are you scared, sir?
+STURM: No.
+CRUMB: Gerald is. A bit.
+STURM: Tell Gerald fear is a tool. / I use it.
+CRUMB(h): He says thank you, sir!
+CRUMB: Sir, what happens to Ma'am / Nell?
+STURM: She kneels, or she does not.
+CRUMB: And if she doesn't?
+STURM: Then I take what she guards, / and keep her where I can see her.
+CRUMB: That's... nearly nice, sir.
+STURM: It is not.
+CRUMB: Gerald says it's nearly nice.
+STURM: Gerald is a biscuit.
+NELL: To the black army: please eat / and sleep.
+NELL: Tomorrow is hard for everyone. / Mine and yours.
+NELL: If you have a mother, write to / her tonight. I'm writing to mine.
+WICK: Sergeant, is it all right if / I write one too?
+MORTAR: ...Write two.
+STURM: Turn that off.
+CRUMB: Sir? ...Yes, sir.
+STURM: ...Leave it on.
+
+== m29_warroom
+NARRATION: A relay from the Orange Castle. / Allied channel, badly scrambled.
+JAKE: Bad news, Nell. Blue Moon pulled / its last tanks out of the line.
+JAKE: Olaf says the iron tariff ain't / worth Orange Star's war. Phat thanks.
+RACHEL: By the book, Article Nine says / no member leaves a besieged signatory.
+NELL: It's a bad night, Rachel. Not a / breach. Olaf lost a fleet.
+NELL: A man who's lost a fleet counts / his iron. Let him count.
+MAX: Then I'll go ask him nice! / With my fists!
+SAMI: Max. Sit.
+ANDY: Everybody's pointing at everybody! / Eagle says it's Kanbei's turn!
+ANDY: Kanbei says it's Eagle's! And / the fence is a hole anyway!
+NELL: The Accord was a table with four / legs, dears. Three got kicked out.
+NELL: So we make it stand on one leg / and a promise. It's been done.
+ANDY: I'm done sitting in a room, Nell! / Every hour here's another mile for him!
+NELL: You aren't sitting. You're / listening. It's the harder job.
+NELL: I need you to leave last, Andy. / Not first.
+HACHI: Evening, youngsters. Tea? First / cup's free. I closed the shop.
+HACHI: Sign says "Back Soon". A good / merchant plans for the rematch.
+NELL: Then plan it with me, Hachi. The / last train leaves the Rail Yard.
+NELL: Children, medics, the Accord's / seal and maps. All that must
+NELL: outlast the castle. It goes east.
+HACHI: Past the end of the line? That's / a long ride for a shopkeeper.
+NELL: Past the end of the maps. Open / your shop at the end of it.
+ANDY: What do I do?
+NELL: You hold the platform until the / whistle. Then you follow.
+NELL: And if I'm not there to say it, / you call them all. Every colour.
+ANDY: Even the ones who walked out?
+NELL: Especially. A fence is a thing / you build alone. A table isn't.
+
+# ---------------------------------------------------------------------------------------------
+# M30 Nell's Stand (STURM + a free partner; written for Sturm leading; other leads read through @OTHER)
+# ---------------------------------------------------------------------------------------------
+
+== m30_pre
+NARRATION: The Orange Castle. Three walls, / a moat, and the last light on.
+NELL: Black Hole. You took the Gate. I / didn't stop you. Not really.
+NELL: I held it long enough for the / roads to empty. You know that.
+STURM: I know.
+NELL: You've taken four nations. You / took them kindly, mostly.
+NELL: I won't hate you. I can't. But I / will stop you, Sturm.
+NELL: Behind me are ten thousand / people. Bakers. Teachers. Children.
+STURM: You hold them with a wall.
+NELL: A wall is what a big sister is, / when it counts.
+NELL: Look at it. Look at what I've / kept. All of it, for this day.
+SOLDIER: Scouts report forty-eight units, / eight bases, four airports, sir.
+SOLDIER: And a moat. With a very large / bridge. And two Lasers, sir.
+@WITH HAWKE
+HAWKE: Forty-eight units, eight bases, / four airports. Tell me this is a bluff.
+@END
+NELL: It isn't a bluff, dear. It's my / family.
+ANDY: Nell! I'm with you! Always!
+NELL: Andy. Thank you.
+ANDY: I tuned the whole castle, Nell! / Every gate, every winch! She purrs!
+NELL: I'd rather you ran, you know. / But I know you won't.
+ANDY: Running's not in my toolbox.
+@WITH CLONE ANDY
+CLONE ANDY: Andy. Please. I'm not your / enemy.
+ANDY: I know. That's what hurts.
+NELL: You're welcome at my table, / dear. Whatever happens. That stays.
+CLONE ANDY(s): ...I kept the mug, Nell. / I'd like to keep it.
+@WITH CRUMB CO
+CRUMB CO: Ma'am Nell? Did you eat?
+NELL: I did, Pip. Did you?
+CRUMB CO: Gerald did. He had most / of a crumb.
+NELL: Then look after him. And / yourself.
+@END
+NELL: Sturm. If you win, be kind / to them.
+STURM: Kindness is for the kneeling. The / conquered are kept.
+NELL: Kept is a start. People grow in / the dark, Sturm. Give them a window.
+STURM: I will give them a flag.
+NELL: Then a window with a flag in it. / Let it learn.
+@IF STURM
+STURM: Cross the moat at the Great / Bridge. I want her castle whole.
+STURM: Whole things are worth more / than ashes. Remember that.
+@WITH HAWKE
+HAWKE: Begin. Hold the moat. Let her / come to us first. Her kind always does.
+HAWKE: Keep clear of the Lasers' lines. / They do not ask whose side you are on.
+@WITH VON BOLT
+VON BOLT: She has gold. Let me count... / a great deal of gold. Kehh...
+VON BOLT: And a bridge! Who built / that bridge? Does it have a toll?
+@OTHER
+[CO]: Camp Dawn is ours. The moat has / three crossings. Mind the Lasers.
+[CO]: They do not ask whose side we / are on.
+@END
+STURM: Begin.
+
+== m30_day1_sturm_clone
+STURM: Together.
+CLONE ANDY: Always, sir.
+CLONE ANDY: Sir? Those are Andy's / colours up there.
+STURM: They are Orange Star's.
+CLONE ANDY: Nell gave me a mug. It's / still in the castle. In the kitchen.
+STURM: Then we take the kitchen.
+CLONE ANDY(h): ...You'd take a kitchen / for a mug?
+STURM: I take the kitchen. The mug / is in it.
+CLONE ANDY: Okay. Okay! That's a / good reason.
+
+== m30_day5
+NELL: I was born lucky. I'll spend it / today, boys. Every bit of it.
+ANDY: Lucky Star! She's lit! Don't / waste a spark, Orange Star!
+STURM: Luck is borrowed. She spends it. / I wait.
+NELL: Nobody's hurt who stays behind / the wall, Sturm. Think about that.
+STURM: I think about walls. They / fall.
+@WITH HAWKE
+HAWKE: Hold the camp. Do not cross this / turn. Her luck burns out on stone.
+@END
+
+== m30_evac
+NARRATION: In the east, a whistle. / Trains leave the castle's rail yard.
+NELL: Evacuation trains. The city's / children are aboard, and teachers.
+NELL: I'm asking nothing of you, / Sturm. Only time. Twelve more days.
+NELL: I was born lucky. Watch me.
+@WITH HAWKE
+HAWKE: She is buying time with the / civilians. A fine trade, if one can pay.
+@END
+STURM: ...I see the trains.
+STURM: Leave them. They carry my / subjects.
+[CO]: We do not attack the trains.
+@WITH CRUMB CO
+CRUMB CO: Sir? ...Thank you, sir.
+STURM: Thank me for nothing. Subjects / are an asset.
+CRUMB CO: Gerald says that's the / nicest thing you said all week.
+STURM: Gerald is a biscuit.
+@END
+
+== m30_day9
+NELL: For everyone I love: stand with / me! Orange Star, shine!
+ANDY: Shine! Shine! All together, / Orange Star!
+STURM: She shines. Let her. Light is / expensive.
+
+== m30_day15
+NELL: Now! I'm not done! Orange Star, / with me!
+ANDY: Nell, you're glowing! Don't / overdo it!
+NELL: I've one more in me, dear. Just / one. Let me spend it well.
+
+== m30_duel_clone
+NARRATION: In the Centre Bailey, two figures / stop on the same spot. Same boots.
+ANDY: You. Standing there with my / face on.
+CLONE ANDY: Andy. I didn't choose the / face.
+ANDY: I know. I know! But you chose / the side.
+CLONE ANDY: And you chose yours. We're / both right. Awful, that.
+CLONE ANDY: I know every bolt in that / tank behind you.
+ANDY: Because I built it?
+CLONE ANDY: Lab 7 had your manual. / You scribbled on the back of it.
+ANDY: I never wrote a manual!
+CLONE ANDY: "Check the left tread first." / You underlined it twice.
+ANDY: ...Okay, that's mine.
+ANDY: A duel. Right now. Your best / against mine.
+CLONE ANDY: Okay. Wrench or fists?
+ANDY(h): Wrench!
+NARRATION: Two wrenches clash. Neither / gives an inch.
+ANDY(s): ...Same grip. Same swing.
+CLONE ANDY: Same joke after it.
+ANDY: Tell me it was never a joke.
+CLONE ANDY: It was never a joke.
+ANDY: Then I'll keep fighting you. / Fair?
+CLONE ANDY(h): Fair. And Andy? I'm / glad it was you.
+ANDY: Me too. ...Dang it. Me too.
+STURM: Finish it.
+CLONE ANDY: Ten seconds, sir. I'm / saying goodbye.
+STURM: ...Ten.
+
+== m30_duel_plain
+ANDY: Hey, Black Hole! I'm not done! / I never am!
+ANDY: Orange Star's being asked to / leave home. Not today.
+ANDY: Nell's behind me. I'll patch / every hole you make!
+STURM: You fix a wall that has already / fallen.
+ANDY: A wall's just a big tool, / Sturm. Tools can be fixed.
+ANDY: You don't get that, do you? / You just take things.
+STURM: Yes.
+ANDY(s): ...I just wish someone I knew / was on my side.
+
+== m30_stage1_post
+NELL(s): The Great Hall is yours. / Sturm, I yield the castle.
+NELL: Stand down, everyone. Stand / down. Please.
+STURM: You yield. Then you are mine, / and so is the roof you stood under.
+NELL: I yield a castle, Sturm. Not / my people.
+STURM: They are the same thing.
+NELL: They never were.
+ANDY(s): No.
+NELL: Andy.
+ANDY: The last train hasn't left. Not / while I'm standing.
+NELL: Andy, listen to me.
+ANDY: I know the order. Let me break / it. Just this once.
+NELL(s): ...Andy.
+ANDY: Rail Yard! Orange Star, with me! / One more hour!
+STURM: Let him run. I take it all in / the end.
+@WITH HAWKE
+HAWKE: A second headquarters. The Rail / Yard. A last train.
+@WITH VON BOLT
+VON BOLT: She yielded! Where is my / receipt?!
+@WITH CLONE ANDY
+CLONE ANDY: He'll hold. I know how. / I would.
+STURM: Then we know where to aim.
+@END
+STURM: Then I take it properly.
+NARRATION: Nell lays down her command. / Andy takes it up.
+
+== m30_s2_first
+ANDY: Orange Star! The platform is / behind us! Do not move!
+ANDY: Nobody passes the signal tower! / She's tuned, I tuned her myself!
+NELL: Andy, dear. Eat something / between orders.
+ANDY: Yes, Nell! ...Later!
+
+== m30_post
+ANDY(s): The whistle. ...The train / is gone. They're safe.
+ANDY: That's enough. That's more than / enough.
+SOLDIER: Sir, the last train cleared / the east signal.
+SOLDIER: It was heavy, sir. Heavier / than children.
+STURM: Let it go.
+@WITH HAWKE
+HAWKE: Eleven cars. The manifest says / children. The weight says more.
+HAWKE: I did not say follow. I / said I counted.
+@WITH CLONE ANDY
+CLONE ANDY: Andy. You did it right. / Better than I would have.
+ANDY: Don't be kind. ...Thank you.
+@END
+NELL: Andy. Come here. It's all right. / It's done.
+NELL: Sturm. You held your hand at / the trains.
+STURM: They are mine now. I do not / burn what I own.
+NELL: No. You don't. I think that's / the part of you I'd have liked.
+NELL: The flag is yours. Take it / gently.
+STURM: The flag is a trophy. It hangs / in my hall.
+NELL: You learned.
+STURM: I learned nothing. I took. Do / not say otherwise.
+NELL: I won't.
+NELL: Eat something, Sturm. Even / storms get hungry.
+STURM: You will be kept in the east / tower. It has a window.
+STURM: It faces my flag. Do not / mistake it for a gift.
+NELL(h): A window with a flag in it. / Thank you, dear.
+STURM: I said it was no gift.
+
+== m30_map
+NARRATION: The flags came down, one by / one. Not in fire.
+CRUMB: Orange flag. Folded. Three / corners, four. Done!
+NARRATION: The storm settled. It did not / leave.
+VON BOLT: Everything accounted! Kehh-heh! / In the black!
+HAWKE: The doctrine is written. Chapter / one is "Patience".
+KOAL: One road. Four borders removed. / One camber.
+KINDLE: Statues by the harbour. Three. / Gold. Mine.
+JUGGER: WAR: CONCLUDED. PURPOSE: / PENDING. QUERY?
+FLAK: Flak is full. Flak is sleepy. / Good war.
+LASH: Next project! Ooh, ooh! Anyone / have a volcano?
+ADDER: Photographed from every angle. / All of them mine.
+CLONE ANDY: Clone Andy. That's me. / ...Still sounds great.
+@BOND VON BOLT
+VON BOLT: To the ledger, closed in black! / And to second pick! Best bargain ever!
+STURM: Second pick is still mine.
+VON BOLT: Sturm says "mine" to ME! / Put it in writing! Kehh-heh!
+@BOND HAWKE
+HAWKE: To tempo. And to those who / earned it.
+CRUMB: Marshal? What do you toast / when you win?
+HAWKE: The next board, Quartermaster.
+@BOND KOAL
+KOAL: To the road. May it never need / a sign.
+KINDLE: Darling, every road needs a sign. / Mine, in neon.
+KOAL: No sign. That is the point.
+@BOND KINDLE
+KINDLE: To me. And to the audience, / I suppose.
+JUGGER: AUDIENCE SIZE: ONE. EGO: / OVERFLOW. LOGGED.
+KINDLE: One, darling! The best crowd! / It never leaves!
+@BOND JUGGER
+JUGGER: TOAST: CALCULATED. SENTIMENT: / DETECTED.
+CRUMB: Jugger? Are you crying?
+JUGGER: NEGATIVE. COOLANT LEAK.
+@BOND FLAK
+FLAK: To food! And hitting! And Crumb!
+CRUMB(h): Flak! You remembered my / name!
+FLAK: Crumb is a food name. Flak / remembers food.
+@BOND LASH
+LASH: To progress! And to whatever hums / in the crate!
+HAWKE: That crate is not a toast, / Doctor.
+LASH: Everything is a toast if you hold / it up and shout! Heehee!
+@BOND ADDER
+ADDER: To style. Mine, mostly. Okay: / yours a little.
+CLONE ANDY: You look great, Adder!
+ADDER: I know, darling. Say it twice.
+@BOND CLONE ANDY
+CLONE ANDY: To names. Pick one and keep / it.
+CRUMB: Three in the morning, sir?
+CLONE ANDY(h): Every time. Clone Andy.
+@END
+CRUMB(h): Sir! I'm Commander AND / Quartermaster! Both!
+CRUMB: And Gerald has a medal! Look! A / little ribbon!
+STURM: Quartermaster.
+CRUMB: Yes, sir!
+STURM: Do not eat the supplies.
+CRUMB(s): ...Define "supplies".
+CRUMB: Sir, the Obelisk lit up the night / the last flag fell.
+CRUMB: Sergeant Mortar says it's a / lighthouse. I don't think so.
+STURM: It is not a lighthouse.
+CRUMB: Then what is it, sir?
+STURM: Mine.
+CRUMB: Sir, are you happy?
+STURM: The world is mine. The storm / rests.
+STURM: ...Do not read into it.
+HAWKE: Marshal's note. Chapter two of / the doctrine: "Succession".
+HAWKE: A good army outlives its founder. / I am merely tidy.
+STURM: Noted.
+NARRATION: In the depot, a crate hums. / Nobody ordered it.
+NARRATION: The stencil reads "HOBB, P." / and a symbol no map has.
+CRUMB: Gerald? That's me. That crate / is for ME.
+MORTAR: Crumb. Do not open it.
+CRUMB: Gerald wants to, Sergeant.
+MORTAR: ...Gerald is a biscuit.
+NARRATION: Somewhere past the maps, a / door has opened.

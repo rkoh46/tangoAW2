@@ -1,1 +1,446 @@
 # BH dialogue, act4b (format: README.txt)
+# M20 Moonlit Harbours, M21 Running Dry, M22 Whiteout
+
+== m20_pre
+NARRATION: Snow Harbour, Blue Moon. / Midnight, and the sea has frozen.
+NARRATION: Every ton of Blue Moon iron / leaves the world from this quay.
+CRUMB(s): Sergeant? My toes have / stopped reporting for duty.
+MORTAR: Crumb. Toes do not / report. Stamp them.
+CRUMB: I stamped, Sergeant. One / boot stayed in the snow.
+MORTAR: You have four spare pairs.
+CRUMB(h): Three now! Gerald says / that is still a lot of boots.
+OLAF: Behold Snow Harbour! Behold / OLAF, the pride of Blue Moon!
+OLAF: A cold front, a cold fleet, / and a hot heart! Come and freeze!
+STURM: Blue Moon sells iron to the / four nations that fenced me.
+OLAF: Sells! It is TRADE, sir! A / noble, quiet, profitable trade!
+OLAF: And you are making a most / unprofitable racket on my quay!
+STURM: Every nail in their fence / left from your docks.
+STURM: I take the docks. Then the / fence has no nails.
+OLAF: Hah! He talks of nails! I / shall tell this at dinner!
+COLIN: H-hi! I'm Colin! My sister / got me a navy! A big one!
+COLIN: It's, um, very big. ...Is it / big?
+OLAF: Colin, my boy, it is HUGE! / Leave the rest to Olaf!
+COLIN: Sis said, um, do not sink / anything we have not insured.
+OLAF: The sea is insured, my boy! / The sea is OURS!
+[CO]: Two fronts. I take the quay / and the town behind it.
+[CO2]: Then the sea is mine. I will / sink whatever floats.
+[CO]: Do not trust the harbour's / ice. It is thin.
+[CO2]: So is their fleet's courage. / Wait for my signal.
+@IF STURM
+STURM: Blue Moon has sold for / thirty years. Today it is bought.
+@END
+@IF VON BOLT
+VON BOLT: Kehh-heh! A harbour of / iron! Every crate has a price!
+VON BOLT: Take the quay whole. I do / not pay for broken cranes.
+@END
+@IF HAWKE
+HAWKE: A frozen harbour and a / navy with a tidy sister. Charming.
+HAWKE: Take the quay at tempo. / Every move on this ice counts.
+@END
+@IF KOAL
+KOAL: Quay road, two lanes. Ice / on the shoulder. Mind the lane.
+@END
+@IF KINDLE
+KINDLE: Darlings, a frozen stage / under the moon! How dull to fight
+KINDLE: in anything but my lights! / Ahaha! Ignite the cranes!
+@END
+@IF JUGGER
+JUGGER: LOCATION: SNOW HARBOUR. / TEMPERATURE: BELOW FREEZING.
+JUGGER: OBJECTIVE: QUAY. FLEET: / TO BE DELETED. LOGGED.
+@END
+@IF FLAK
+FLAK: Big water! Hard water! Flak / smashes the ice! Then the boats!
+@END
+@IF LASH
+LASH: Ooh, ooh, frozen boats! I / have a Hot Foot Mk 2 for this!
+LASH: It is a kettle. On a stick. / Heehee! It is very advanced!
+@END
+@IF ADDER
+ADDER: Snow, moonlight, my left / profile. The harbour is mine.
+ADDER: Mind the cape. Salt ruins / silk, and I will not forgive it.
+@END
+@IF CLONE ANDY
+CLONE ANDY: Okay. Okay! Ice, a / harbour... I can fix any--
+CLONE ANDY: ...a bridge. Maybe. I / will fix a bridge, sir. Okay!
+@END
+@IF SONJA
+SONJA: Harbour fees, forty years / unaudited. A tidy place to start.
+@END
+@IF CRUMB CO
+CRUMB CO: Quay by dawn, ma'am! / ...Sorry. I forgot I was in charge.
+@END
+
+== m20_day8
+COLIN: Whoa! They sank my / Cruiser! That was a gift!
+COLIN: Sis is going to, um, / invoice me for it.
+OLAF: Courage, Colin! A sunk / Cruiser is a lesson in ice!
+COLIN: A very expensive lesson. / ...I'm learning a lot.
+
+== m20_front2_post
+[CO2]: The sea is ours. Reporting / to the harbour.
+COLIN(s): My navy! It's... um. It's / at the bottom.
+OLAF: Colin! A fleet on the bottom / is a fleet that cannot be taken!
+COLIN: ...That does not make it / feel better, Olaf.
+[CO]: Good. Now there is nothing / between Olaf and the quay.
+@PARTNER STURM
+STURM: The water is mine. Say it / to the quay.
+@END
+@PARTNER VON BOLT
+VON BOLT: Kehh! Every wreck on the / bottom is salvage. Salvage is mine!
+@END
+@PARTNER HAWKE
+HAWKE: The sea front is closed. / Attend the harbour. Tempo.
+@END
+@PARTNER KINDLE
+KINDLE: The waves applauded, / darlings. Standing, of course.
+@END
+@PARTNER JUGGER
+JUGGER: SEA FRONT: CLEARED. SHIPS / REMAINING: ZERO. HUMOR: NOT FOUND.
+@END
+@PARTNER FLAK
+FLAK: Flak sank big boat! Big boat / was loud! Now it is quiet!
+@END
+@PARTNER LASH
+LASH: Ooh, the Kettle Mk 2 works! / Please do not ask how.
+@END
+
+== m20_post
+OLAF(s): Gnn! The harbour freezes / and a hero thaws...
+OLAF: This is an outrage! A quay / cannot simply be ... taken!
+STURM: It was taken. You are / standing on it.
+OLAF: Hmph! Blue Moon never / stoops! We are a nation of iron!
+STURM: Iron that fed the fence. / Now it feeds the storm.
+OLAF: The fence kept the peace! It / kept MY peace, at any rate!
+COLIN: Olaf? Um. The ice is / cracking. ...Not that I'm scared.
+OLAF: Colin, retreat! I have a / sled. We go to the Moon Palace.
+COLIN: A s-sled? Great! Go, go!
+SASHA: Olaf. Colin. I heard it all / on the wire. Come home.
+SASHA: The iron fleet is gone. / The strongboxes are not.
+SASHA: Do try to arrive before the / palace is invoiced to the snow.
+OLAF: Sasha! Never fear! Olaf will / hold the palace till it melts!
+SASHA: It is on a frozen lake, Olaf. / It will not melt.
+OLAF: Then I shall hold it / forever! A promise!
+[CO]: Blue Moon's strongboxes are / in the palace. We follow them.
+[CO2]: The quay is secure. The sea / is quiet. We are ready.
+@IF STURM
+STURM: They will fight for the / palace. Let them. It is mine next.
+@END
+@IF VON BOLT
+VON BOLT: Strongboxes! Kehh-heh! / Second pick. First pick. Any pick!
+@END
+@IF HAWKE
+HAWKE: The iron trade is cut. / Four nations have a nail shortage.
+@END
+@IF KOAL
+KOAL: The quay road runs to the / palace. Two lanes. Straight.
+@END
+@IF KINDLE
+KINDLE: A frozen palace. Oh, I / simply must see how it looks lit.
+@END
+@IF JUGGER
+JUGGER: NEXT OBJECTIVE: PALACE. / ESTIMATED RESISTANCE: LOUD.
+@END
+@IF FLAK
+FLAK: Palace has food? Palace / has soup? Flak goes!
+@END
+CRUMB(h): Sir! We took a quay! / Does that make me a sailor?
+MORTAR: Crumb. You get seasick / in the bath.
+CRUMB: Gerald does not mind, / Sergeant. He floats.
+
+== m20_map
+NARRATION: Snow Harbour, dawn. / The frozen bay turns to rose.
+CRUMB: Sergeant! There's a flag on / the horizon. Orange!
+MORTAR: Orange Star. Look sharp.
+WICK(s): Is it all right if I ask / why Orange is coming to Blue Moon?
+STURM: Orange Star chairs the / Accord. Nell keeps its promise.
+STURM: One nation falls. The / chair visits the next.
+WICK: Is that... a threat, sir?
+STURM: It is a flag.
+CRUMB: Is it a good flag or a bad / flag, sir?
+STURM: It is the last flag that / has not knelt.
+CRUMB(s): Oh. Gerald says it looks / very orange.
+MORTAR: Gerald has a lot of / opinions today.
+CRUMB: It's cold, Sergeant. / Everyone has opinions.
+
+== m21_pre
+NARRATION: Blue Moon, the river valley. / Far from supply. Fog on the water.
+CRUMB(s): Sir... my canteen is / empty. So are the Tanks'.
+MORTAR: Everything is empty, / Crumb. The convoy is late.
+WICK(s): Is it all right if I say / the guns are making odd noises?
+MORTAR: They are making no noise. / That is the odd noise.
+[CO]: Report ammunition.
+CRUMB: Artillery, none. Rockets, / none. Tanks, two shots each.
+MORTAR: Missiles, none. The copter / has a prayer. Not a shell.
+CRUMB: Gerald has seven crumbs left, / Sergeant. He is sharing.
+MAX: Hey! Black Hole! You look / thirsty!
+GRIT: Easy there, Max. They're near / out of shells. Make it count.
+MAX: That's the best news all day! / Charge, charge, charge!
+GRIT: Reckon the last time I saw / this country I was on a leash.
+GRIT: Babysat a robot with a tin / ear. Blue Moon's whole idea.
+MAX: Nell sent me! She said keep / Blue Moon in the Accord!
+MAX: And the Accord is: nobody / gets stormed alone! Right, Grit?
+GRIT: Right as rain, Max. Ayup. / The valley's ours, son.
+[CO]: Fall back across the river. / Hold the west bank.
+[CO]: The convoy will come. Until / then, we stand on what we have.
+@IF STURM
+STURM: We retreat. We do not run. / There is a difference.
+MAX: What is it?
+STURM: I come back.
+@END
+@IF VON BOLT
+VON BOLT: Every shell is a coin / and I counted ours. All spent.
+VON BOLT: Kehh... who bills the / convoy for being late?
+@END
+@IF HAWKE
+HAWKE: The convoy left port on / time. The road did not.
+HAWKE: Ammunition is a promise. / We have not kept ours. Yet.
+@END
+@IF KOAL
+KOAL: The convoy is on my road. I / laid that road. It is late.
+KOAL: Someone cut the shoulder. / Mind the lane, Max.
+MAX: What lane?!
+@END
+@IF KINDLE
+KINDLE: No shells, darlings? How / terribly unfashionable. Hide.
+KINDLE: Even the best stage runs / out of fireworks. Ahaha!
+@END
+@IF JUGGER
+GRIT: Well, I'll be. The robot / got a better outfit.
+JUGGER: AMMUNITION: 11 PERCENT. / OUTLOOK: UNFAVOURABLE.
+JUGGER: BLUE MOON CALLED ME TOO / LITERAL. THEY HAD NO SHELLS.
+GRIT: Fair point, partner. Fair / point.
+@END
+@IF FLAK
+FLAK: Flak out of bullets. Flak / still has fists.
+MAX: Ha! A big man! Come on!
+FLAK: Big man! Flak likes you! / Flak will hit you gently!
+@END
+@IF LASH
+LASH: No shells! Ooh, ooh, my / Spud Gun Mk 4 uses potatoes!
+LASH: They are not on the list of / ammunition. That is its charm!
+@END
+@IF ADDER
+ADDER: No ammunition and a dreadful / fog. My complexion will suffer.
+ADDER: Fall back, gentlemen. In / good order. And good lighting.
+@END
+@IF CLONE ANDY
+MAX: Andy?! No... you have the / face. But you are not Andy.
+CLONE ANDY: Okay. Okay! I'm not / him. I can fix any--
+CLONE ANDY: ...a retreat. I can fix / a retreat. Please do not hit me.
+@END
+@IF SONJA
+GRIT: Ain't you Kanbei's girl? / What are you doing in black?
+SONJA: Counting, Mr Grit. Your / shells are the thing I count.
+SONJA: Yours are nearly full. / Ours are nearly empty. S.
+@END
+@IF CRUMB CO
+MAX: Hey, a CO with a trooper's / face! Is this a joke?
+CRUMB CO: No, sir! I mean, I hope / not. Gerald thinks not.
+@END
+
+== m21_day3
+CRUMB(h): Sir! Biscuit delivery! / One APC, two tanks, me!
+CRUMB: Gerald rode on the bumper! / He says the road is bumpy.
+MORTAR: Crumb. Supply the / Artillery first.
+CRUMB: Yes, Sergeant! The guns / first, then the biscuit.
+[CO]: Park the APC next to the / guns. They need shells.
+
+== m21_day4
+GRIT: Their supply truck's on the / south road. Cut it off.
+MAX: Raiders, go! Hit the / truck!
+GRIT: Do not just charge it, Max. / It's got escorts.
+MAX: Escorts are just more targets! / Grit, you worry too much!
+
+== m21_day6
+CRUMB: Second convoy, sir! Two / more APCs, full of shells!
+CRUMB(h): I am driving the second / one! Gerald's Taxi!
+WICK: Is it all right if I ride / in the back? It is... bumpy.
+MORTAR: Wick. Sit. Hold the / shells. Do not hum.
+
+== m21_resupplied
+[CO]: Now we cross.
+GRIT: Well, now. They've got shells / again!
+MAX: So? We have tanks!
+GRIT: Tanks run on gas, son. / Their guns run on pride. Careful.
+
+== m21_supply_cut
+CRUMB(s): No more trucks, sir. No / more shells.
+CRUMB: Gerald is very quiet. / ...I'm sorry, sir.
+
+== m21_day9
+MAX: More tanks! Everybody, / push! Push!
+GRIT: Rockets on the ridge. Hold / fire until I say.
+MAX: I never hold fire, Grit! / It is the principle!
+
+== m21_post
+MAX(s): You ran out of ammo and / still beat me?!
+GRIT: They ran dry, and they got / stubborn. That does it.
+MAX: Argh! That's not fair! / We had them at the bridge!
+GRIT: Max. They counted every / shell. We counted every tank.
+GRIT: Reckon they won on the / counting. Ayup. That's the way.
+MAX: Treachery! Hiding all your / shells in a truck?
+GRIT: It ain't treachery, Max. / It's logistics.
+MAX: ...I hate logistics.
+GRIT: Everyone does. That's why / they win.
+MAX: Argh! Tell Nell I did my / best!
+GRIT: She knows, son. Reckon we / eat our hats. Fall back.
+GRIT: Blue Moon's not done, though. / Olaf's on a lake, up the road.
+GRIT: And that palace has more / snow than sense. Be careful.
+[CO]: Their river held four days. / The rest of the map will not.
+@IF STURM
+STURM: Four days. Remember the / number. It was the best they had.
+@END
+@IF HAWKE
+HAWKE: A good lesson. The best / supply is a promise kept.
+@END
+CRUMB(h): Sir! I kept one! A / promise! And a biscuit!
+MORTAR: Crumb. Eat the biscuit / after the debrief.
+CRUMB: Gerald does not do / debriefs, Sergeant.
+WICK: Is it all right if I say / we nearly lost the guns?
+MORTAR: It is. Say it again / tomorrow. Quietly.
+
+== m21_map
+NARRATION: A captured radio. Orange / Star's frequency. Open.
+NELL: This is Nell, Orange Star. / To every nation listening:
+NELL: Blue Moon, Yellow Comet, / Green Earth: not alone.
+NELL: I have called every one / of you home.
+NELL: There is room inside the / Orange Star gate. Bring your children.
+NELL: Bring the ones who cannot / run. We will find a place.
+NELL: The Accord was never meant / to be a fence, dear ones.
+NELL: It was a promise: nobody / faces a storm alone.
+NELL: Hold on a little longer. / Please.
+CRUMB(s): She sounds like my mum.
+CRUMB: My mum with a general's / hat.
+MORTAR: Crumb. Your mum does / not own a hat.
+CRUMB: She would if she knew / Nell, Sergeant.
+WICK: Is it all right if I say / she sounds... brave?
+STURM: Turn it off.
+CRUMB: Sir? I... yes, sir.
+STURM: Leave it on. I will hear / what I must break.
+
+== m22_pre
+NARRATION: The Moon Palace. A white / blizzard on a frozen lake.
+CRUMB: Sir! Flak shared his soup. / It was ... mostly snow.
+FLAK: Soup! Hot soup! Flak's / blanket is hot soup!
+JUGGER: SOUP: 97 PERCENT SNOW. / ADEQUATE. HUMOR: NOT FOUND.
+STURM: Weather obeys. So will / you. Take the palace.
+OLAF: This is my palace! Come / at me in the blizzard!
+OLAF: And you! The tin one! The / big one! You were OURS!
+OLAF: Blue Moon hired you! Blue / Moon housed you! Blue Moon FED you!
+FLAK: Blue Moon fed Flak soup. / Thin soup. Water. One pea.
+SASHA: That was a good pea. It / was imported.
+FLAK: Flak fought four hundred / fights. Got coins. Ate one.
+SASHA: You ate a coin?
+FLAK: Hard coin. Flak's tummy / hurt. Sturm gives food!
+SASHA: Understood, Flak. I shall / invoice it as a medical expense.
+JUGGER: STATUS: DECOMMISSIONED BY / MEMO 0412. READ: TOO LITERAL.
+JUGGER: I HAVE KEPT THE MEMO. IT / WAS THE ONLY THING ISSUED TO ME.
+SASHA: Jugger, the memo was a / formality. Contracts expire.
+JUGGER: AFFIRMATIVE. MINE DOES / NOT. THAT IS THE DIFFERENCE.
+SASHA: Then you are not unhappy, / Colonel? You merely moved?
+JUGGER: QUERY: UNHAPPY. DEFINITION / UNKNOWN. PREFERENCE: THIS ONE.
+OLAF: Ungrateful machines! Soup / is a kind of loyalty!
+OLAF: Colin! Where are you? / Colin! Come and watch Olaf!
+COLIN: I-I'm here! Is that... um... / is that the big one from the Pit?
+COLIN: Sis, he is SO big. He / ate the whole table once.
+SASHA: Colin. Go downstairs with / the children. Now, please.
+COLIN: But I am supposed to be / brave, Sis! You said so!
+SASHA: Then be brave downstairs. / Where it is warm.
+COLIN: ...Okay. I'll be brave / in the cellar. Quietly.
+CRUMB(h): Sir! That's a good plan! / I have done that on purpose.
+FLAK: Small man! Small man's / friend is Flak! Smash palace!
+JUGGER: PALACE: LOCATED. GATE: / ONE. GUARD: TEN INFANTRY. QUERY?
+STURM: Answer the gate.
+
+== m22_day6
+OLAF: Whiteout! Everyone loses / their way!
+JUGGER: VISIBILITY: ZERO. NAVIGATION: / ADEQUATE. I AM NOT "EVERYONE".
+FLAK: Flak cannot see! Flak hits / everything! Is that bad?
+JUGGER: NEGATIVE. ALSO: THE / PALACE IS NORTH. NOT EAST.
+
+== m22_day12
+SASHA: Reinforcements! Pay them / triple!
+JUGGER: TRIPLE: LOGGED. COST: / THEIRS. HER FUNDS: FINITE.
+FLAK: Triple is three! Three / more to smash!
+OLAF: Sasha! You bought the / enemies a snack!
+
+== m22_post
+OLAF(s): My palace... my snow... / my poor fish.
+SASHA: Take it. But spare the / children in the lower hall.
+SASHA: And my brother. Colin. Is / he safe?
+JUGGER: SUBJECT: COLIN. LOCATION: / CELLAR. STATUS: UNHARMED.
+JUGGER: SOUP: PRESENT. BLANKET: / PRESENT. SENTIMENT: DETECTED.
+COLIN: I-I'm fine, Sis! The big / man gave me a spoon!
+FLAK: Flak is not big man today! / Flak is soup man!
+SASHA: ...Then I can breathe.
+STURM: Those children are mine / now. Touch them and answer.
+SASHA: ...Thank you. I did not / expect that, Mr Sturm.
+STURM: Do not thank me. Pay / for the soup you owe Flak.
+SASHA: Itemised. Delightful. I / shall not forget it.
+OLAF: Black Hole... you are not / as cold as the snow.
+OLAF: But you took my Flak and / my Jugger for your cause!
+OLAF: Blue Moon made them! Blue / Moon FED them! How dare you!
+JUGGER: HAND: NOT BITTEN. HAND: / NEVER ISSUED. CONTRACT: NONE.
+OLAF: What?!
+JUGGER: CORRECTION: I DID NOT / BITE. I WAS PAID TO WAIT.
+FLAK: Flak bit one coin! Only / one! It was bad coin!
+SASHA: Olaf. That is enough. They / are right. We did waste them.
+SASHA: Thirty years of iron. All / sold to people who fenced us.
+OLAF: Sasha...
+SASHA: Blue Moon has three / harbours less and one palace less.
+SASHA: I have counted the cost. / Do not make me count it again.
+STURM: Three flags. One remains. / Orange Star does not sell.
+SASHA: No. Nell does not sell. / She gives. It is worse.
+CRUMB(h): Sir! Colin waved at me / from the cellar!
+MORTAR: Crumb. Wave back.
+CRUMB: I did, Sergeant. Gerald / waved too.
+
+== m22_map
+CRUMB: Sir, the Blue Moon people / gave us blankets.
+MORTAR: They are prisoners, / Crumb.
+CRUMB(s): Then it's very polite / of them.
+WICK: Is it all right if I say / the blankets are too warm?
+WICK: I do not like that. Warm / blankets mean someone cares.
+MORTAR: Wick. Enjoy the blanket.
+JUGGER: PALACE LEDGER: THIRTY / YEARS OF IRON. DESTINATION: A LINE.
+JUGGER: LINE: NOT REGISTERED. / CONSIGNEE: A SYMBOL. NO NAME.
+JUGGER: SYMBOL MATCHES: BISCUIT. / QUERY: WHY.
+CRUMB: That's Gerald's maker's / mark! Isn't it, Gerald?
+MORTAR: Crumb. Put the biscuit / away. Do not read the ledger.
+JUGGER: LOGGED. NOT SOLVED. / FILE: OPEN. HUMOR: NOT FOUND.
+CRUMB(s): Why would iron go to a / line that's not there, Sergeant?
+MORTAR: Crumb. Because someone / wanted it to.
+
+== m22_warroom
+NARRATION: Black Hole's relay tent. / Crumb on the dial. A voice breaks in.
+CRUMB: Sir! The relay's caught / Accord Band Three. By accident!
+WICK: Is it all right if we / listen? ... It is not polite.
+MORTAR: Listen. Politeness is for / peace.
+NELL: ...so Blue Moon's capital is / gone. I will not pretend.
+NELL: Three flags have fallen. We / hold the fourth. Together.
+MAX: I want the storm in a chair / by sundown! I'll make it sit!
+SAMI: Roger that, Max. But a / chair needs a plan, grunts.
+SAMI: Where is the line? I want / a line. A real one.
+GRIT: Reckon the line melted, Sami. / And the robot I babysat took the gate.
+GRIT: Should've kept him on the / leash. Ayup. My own fault.
+SENSEI: Back in my day we had a / fence that stayed put. Youngsters.
+SENSEI: Comet Keep's walls are / paving now. They are good paving.
+GRIMM: Har! And who pays for the / fence, pencil necks? Hm?
+GRIMM: Yellow Comet paid. Blue Moon / paid. Green Earth just glared.
+JAVIER: Hark! By my honour, Green / Earth's towers did not glare!
+JAVIER: They were taken. I, Javier, / swear to retake every spire!
+OLAF: BLUE MOON demands its / palace back! It is an OUTRAGE!
+SASHA: Olaf. Sit. The fence cost / eleven harbours. I am counting.
+COLIN: Um... they were ours. The / big robot. The big man. They left.
+COLIN: Do... do they stop? Does / anything stop them?
+ANDY: Nell, let me go east. I can / hit them before the gate!
+NELL: Andy. We hold Orange Star's / gate first. Then, together.
+ANDY: Nell! We cannot just sit!
+NELL: We do not sit, dear one. We / gather. Every colour, every nation.
+NELL: The Accord was a fence. Now / it must be a table.
+CRUMB: Sir, the lady in yellow / isn't saying anything.
+CRUMB: She is writing. In a little / black book.
+SONJA: ...Page one hundred and / twelve. S.
+STURM: Let them talk. Their fence / has three holes.
+CRUMB: Sir? Is it just me, or / does the relay... hum?
+STURM: It does. Leave it.

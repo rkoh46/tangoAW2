@@ -296,7 +296,7 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
     let mut key: Option<(String, Vec<u8>, usize)> = None;
     let mut rows: Vec<(Group, Row)> = Vec::new();
     let mut group = Group::Always;
-    let mut finish = |b: &mut Book, key: &mut Option<(String, Vec<u8>, usize)>, rows: &mut Vec<(Group, Row)>| -> Result<(), String> {
+    let finish = |b: &mut Book, key: &mut Option<(String, Vec<u8>, usize)>, rows: &mut Vec<(Group, Row)>| -> Result<(), String> {
         if let Some((k, pool, _)) = key.take() {
             if b.scenes.contains_key(&k) {
                 return Err(format!("scene {k:?} is defined twice"));

@@ -79,26 +79,44 @@ pub fn def() -> CampaignDef {
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
-        prologue: vec![
-            Page { text: "Once, one black banner covered half the world.", picture: None, who: None },
-            Page { text: "Then it burned. Its legions scattered like ash.", picture: None, who: None },
-            Page { text: "Its officers took new colours and new names.", picture: None, who: None },
-            Page { text: "Its last lord grew old, counting coins in the ruins.", picture: None, who: None },
-            Page { text: "Then a storm came ashore that no map had foretold.", picture: None, who: None },
-            Page { text: "It carried no flag. It had one name, and one purpose.", picture: None, who: None },
-            Page { text: "Four nations sleep behind their borders, safe and proud.", picture: None, who: None },
-            Page { text: "None of them has heard the thunder yet.", picture: None, who: None },
-        ],
-        credits: vec![
-            CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"], secret: false },
-            CreditSection { heading: "THANKS FOR PLAYING", names: vec![], secret: false },
-        ],
+        prologue: crate::bh_text::pages("prologue"),
+        credits: credits(),
         missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5b::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
         final_mission: "bh30", // the finale (the secret M31 follows the nine bonds)
         bonds: BONDS.to_vec(),
         extra_bonds: 1,
-        secret_mission: "",
+        secret_mission: "bh31",
     }
+}
+
+/// The staff roll: the cast with their one-line epithets, the nations, the original games, thanks. Lines
+/// are at most 21 characters (the page's width, stars included); the secret sections show once the
+/// secret mission is won.
+fn credits() -> Vec<CreditSection> {
+    let sec = |heading: &'static str, names: &[&'static str], secret: bool| CreditSection { heading, names: names.to_vec(), secret };
+    vec![
+        sec("BH CAMPAIGN", &["A tangoAW2 story", "The storm came ashore"], false),
+        sec("THE CAST", &["STURM", "The Storm", "VON BOLT", "The Ledger"], false),
+        sec("THE CAST", &["HAWKE", "The Marshal", "KOAL", "The Road"], false),
+        sec("THE CAST", &["KINDLE", "The Flame", "JUGGER", "The Directive"], false),
+        sec("THE CAST", &["FLAK", "The Appetite", "LASH", "The Experiment"], false),
+        sec("THE CAST", &["ADDER", "The Profile", "CLONE ANDY", "The Name"], false),
+        sec("THE CAST", &["NELL", "The Gate", "ANDY", "The Wrench"], false),
+        sec("ALSO STARRING", &["CMDR. PIP \"CRUMB\"", "HOBB", "GERALD", "The Biscuit"], false),
+        sec("ALSO STARRING", &["SGT. MORTAR", "PVT. WICK", "DENNIS THE TANK", "INTEREST THE ROOSTER"], false),
+        sec("THE AUDITOR", &["SONJA", "Who read every ledger", "S."], true),
+        sec("THE ACCORD", &["MAX, SAMI, GRIT", "KANBEI, SENSEI", "GRIMM, JAVIER", "JESS, EAGLE, DRAKE"], false),
+        sec("THE ACCORD", &["OLAF, SASHA, COLIN", "JAKE, RACHEL, HACHI"], false),
+        sec("THE NATIONS", &["Orange Star", "Blue Moon", "Green Earth", "Yellow Comet"], false),
+        sec("ORIGINAL GAMES", &["Intelligent Systems", "Nintendo", "Advance Wars 2:", "Black Hole Rising", "Advance Wars:", "Dual Strike"], false),
+        sec("WITH THANKS", &["With thanks and", "respect."], false),
+        sec("RESEARCH", &["Xenesis and the", "Wars World News", "community"], false),
+        sec("RESEARCH", &["The aw2bhr", "decompilation:", "Eebit, npiriou,", "Mad-Man-Dan,", "Veslyquix"], false),
+        sec("EMULATION", &["endrift (mGBA)", "Arisotura (melonDS)", "weenie, GreigaMaster", "and everyone in the", "Tango credits"], false),
+        sec("SPECIAL THANKS", &["Playtesting:", "the tangoAW2", "players"], false),
+        sec("NOTICE", &["Advance Wars is a", "trademark of", "Nintendo. tangoAW2", "is not affiliated", "with Nintendo or", "Intelligent Systems."], false),
+        sec("THE END", &["The storm is calm.", "For now."], false),
+    ]
 }
 
 /// The action of Crumb's promotion: he is unlocked at once (the roster's
@@ -123,14 +141,14 @@ pub mod bond {
 /// own: [`bond::CRUMB_QUOTE`]).
 pub const BONDS: [Bond; 10] = [
     Bond { co: co::VON_BOLT, quote: "I got second pick. Second! Best bargain of my life." },
-    Bond { co: co::HAWKE, quote: "Placeholder bond quote." },
-    Bond { co: co::KOAL, quote: "Placeholder bond quote." },
-    Bond { co: co::KINDLE, quote: "Placeholder bond quote." },
-    Bond { co: co::JUGGER, quote: "Placeholder bond quote." },
-    Bond { co: co::FLAK, quote: "Placeholder bond quote." },
-    Bond { co: co::LASH, quote: "Placeholder bond quote." },
-    Bond { co: co::ADDER, quote: "Placeholder bond quote." },
-    Bond { co: co::CLONE_ANDY, quote: "Placeholder bond quote." },
+    Bond { co: co::HAWKE, quote: "I advise. He listens. ...Mostly. I count it." },
+    Bond { co: co::KOAL, quote: "He said the road has no end. I believe him." },
+    Bond { co: co::KINDLE, quote: "He gave me a stage. I will be gracious. Once." },
+    Bond { co: co::JUGGER, quote: "PURPOSE: ASSIGNED. FEELING: UNCATALOGUED." },
+    Bond { co: co::FLAK, quote: "Boss feeds Flak. Boss good. Flak stays." },
+    Bond { co: co::LASH, quote: "No board! No limits! Just me, my toys and Gerald." },
+    Bond { co: co::ADDER, quote: "My cape fits the dark side perfectly. Obviously." },
+    Bond { co: co::CLONE_ANDY, quote: "I'm Clone Andy. I picked it myself. That counts." },
     // Crumb's: an extra (M14, a win by day 12), not one of the nine of the secret mission.
     Bond { co: co::CRUMB, quote: crate::crumb::SECRET_QUOTE },
 ];

@@ -1,1 +1,313 @@
-# BH dialogue, act1 (format: README.txt)
+# BH dialogue, act1: M1 Storm Landing, M2 The Sleeping Foundry, M3 Blockade Runner (format: README.txt)
+
+# ---------------------------------------------------------------- M1 Storm Landing (Sturm fixed; enemy Von Bolt)
+
+== m01_pre
+NARRATION: Cinder Coast. Dawn. / The first storm in years.
+NARRATION: Thirty years ago, this / shore was a war's front door.
+CRUMB(h): Landing complete, sir! / Lost two boots. Only two!
+MORTAR: Crumb. You packed spares.
+CRUMB: Four pairs, Sergeant! / And Gerald. And soup.
+STURM: Boots are replaceable. / Report.
+CRUMB: Green tanks on the ridge, / green flags on the walls.
+CRUMB(s): Even the cook's apron / was green, sir. I checked.
+MORTAR: Accord wardens, sir. Green / Earth sits on our ruins.
+WICK(s): Is it all right if I ask? / Is sitting on ruins allowed?
+STURM: Thirty years ago, four / nations signed the Accord.
+STURM: They fenced this continent. / Then they divided the contents.
+STURM: Crystal. Iron. Salvage. / They call it peace.
+WICK: It sounds peaceful, sir.
+STURM: A fence is not peace. / A fence is a claim.
+STURM: I have come to answer it. / One nation at a time.
+STURM: Look at the flags. New / cloth on old poles.
+CRUMB: And the tanks are green all / the way down, sir.
+WICK(s): I crept up to one, sir. It / was green under the green.
+STURM: Wardens park their tanks. / They do not repaint them.
+STURM: Someone bought this ridge. / Someone hides behind a flag.
+VON BOLT: Kehh-heh! Who walks / my beach unannounced?
+VON BOLT: A storm in a coat! The / rumours were true. Kehh...
+STURM: Von Bolt. You are older / than the rumours.
+VON BOLT: Older than the Accord! / When I was young, the sea
+VON BOLT: was a puddle. Kehh... I was / old even then. Remember that.
+VON BOLT: Black Hole's last / colonel! Its whole army! Me.
+VON BOLT: And richer than four / nations' pockets put together!
+VON BOLT: They fenced my coast. / So I charge the fence rent.
+VON BOLT: Every warden. Every / digger. Every salvage crew.
+STURM: You sell Black Hole to the / nations that robbed it.
+VON BOLT: I sell what I own! And / I own the ridge, the paint,
+VON BOLT: the tanks! Bought a whole / bankrupt surplus dealer. Cheap!
+VON BOLT: Green, but cheap. A / colour is a colour, little storm.
+STURM: I will have what you / guard. And what you know.
+VON BOLT: Everything I know is / for sale. Everything.
+STURM: Then name your price.
+VON BOLT: Defeat me. Then we / talk numbers. Kehh-heh!
+VON BOLT: And that boy! Those / boots! Genuine army leather!
+CRUMB: Sir... may I keep my / remaining boots?
+STURM: Fight in them.
+STURM: Three crystals on the plain. / Hold them. The ridge falls after.
+STURM: He has kept this coast / thirty years. I take it today.
+
+== m01_day3
+VON BOLT: Those crystals! Mine! / They hum for ME!
+STURM: They hum for whoever / holds them. I hold them.
+VON BOLT: Kehh... no. They hum / in YOUR pitch. Strange.
+STURM: Explain.
+VON BOLT: ...Nothing. Old man's / ears. Forget I spoke.
+STURM: Noted.
+
+== m01_day7
+VON BOLT: Kehh... send them all in. / It hurts me more than them!
+VON BOLT: Every shell is a coin / thrown at the sky. Kehh...
+VON BOLT: Charge! ...And collect / the brass casings after.
+
+== m01_post
+VON BOLT(s): My coast... my paint... / my lovely, cheap tanks...
+VON BOLT: Thirty years I kept it. / Thirty years, nobody took it.
+STURM: Nobody wanted it. I do.
+VON BOLT: Kehh... then finish me. / Be quick. I am tired.
+STURM: Von Bolt. You are not / finished. You are priced.
+VON BOLT: Hm?
+STURM: Four nations took your / continent and left you the rent.
+STURM: You have counted it for / thirty years. It never grew.
+VON BOLT(s): ...No. It never did. / The number just sat there.
+VON BOLT: I count so I need not / count what years are left.
+STURM: Join me. The world is a / ledger. I will write it.
+STURM: Four columns. Four nations. / Every figure under one hand.
+VON BOLT: The whole world... / in the black?
+STURM: In mine. You may share it.
+VON BOLT: Kehh... heh heh heh... / Gloriously greedy.
+VON BOLT: Terms! First pick of / every vault we open.
+STURM: You may pick second.
+VON BOLT: ...Second pick. It / is still a pick.
+VON BOLT: Done! Kehh-heh! You / drive a hard bargain.
+STURM: I do not bargain. I allow.
+VON BOLT: Allow! Even arrogance / has a price. I shall find yours.
+STURM: You may try.
+VON BOLT: Where do you come from, / storm? Nobody sails from nowhere.
+STURM: From where the map ends.
+VON BOLT: Hm. The old charts say / that about the Obelisk.
+STURM: Then the charts and I / agree.
+CRUMB(h): Does this mean I keep / my boots, sir?
+VON BOLT: Hm. Perhaps. For now.
+VON BOLT: Boot boy! Your name. I / like to know my debts.
+CRUMB: Pip Hobb, Colonel! But / everybody says Crumb.
+VON BOLT: Hobb... Hobb. That name / is in a ledger. Somewhere.
+VON BOLT: No matter. Old ledgers / are full of names. Kehh.
+
+== m01_map
+CRUMB(h): Sergeant! The old man / says second pick is a pick!
+MORTAR: Crumb. Second pick of / vaults. Not of boots.
+CRUMB: Gerald says boots count.
+MORTAR: Who is Gerald?
+CRUMB(h): My biscuit, Sergeant! / Basic training issue.
+MORTAR: That thing is older than / the Obelisk.
+CRUMB: Gerald says that's rude.
+WICK(s): Is it all right if I ask / why he has a little stamp?
+WICK: Like a door. Or a keyhole. / It is... odd.
+CRUMB: Maker's mark, Wick! Every / biscuit has one.
+MORTAR: Mine does not.
+CRUMB(s): ...Huh. I never thought / about that before.
+WICK(s): Is... is anyone else worried / our tanks are still green?
+VON BOLT: Paint costs money.
+VON BOLT: And I do not spend it / on a coast I have lost. Kehh.
+
+# ---------------------------------------------------------------- M2 The Sleeping Foundry (FREE, pool Sturm / Von Bolt; enemy Jess)
+
+== m02_pre | STURM, VON BOLT
+NARRATION: The Sleeping Foundry. / A hill of black iron and dust.
+VON BOLT: Behold! The Foundry. / Asleep since the Accord.
+VON BOLT: Thirty years of dust, and / not one warden dared knock.
+STURM: It sleeps still.
+VON BOLT: Kehh... it wakes when / the ledger balances. Three days.
+STURM: Three days.
+CRUMB: Sir, it's making a noise / like a cough.
+VON BOLT: It is clearing its / throat. Kehh!
+MORTAR: Crumb. Do not pet it.
+CRUMB(s): I only said hello, / Sergeant. Gerald said hello too.
+WICK(s): Is it all right if it / coughs at me? I did not agree.
+VON BOLT: It coughs at everyone. / Equal treatment. Very fair.
+JESS: Halt! Green Earth Coastal / Watch! Hands where I see them!
+JESS: That Foundry is Accord / salvage. Nobody wakes it.
+JESS: By order of Green Earth: / stand down. Last warning.
+STURM: Your orders end here. This / soil is mine.
+JESS: Orders say hold the line. / Command wants that Foundry shut.
+JESS: So do I. Tanks first. / Paperwork after.
+JESS: And I do not apologise for / the paperwork.
+VON BOLT: Kehh! She threatens / politely. Delightful.
+VON BOLT: Her tanks are the same / shade as mine. Cheap, too.
+JESS: Green Earth Quartermaster / stock. Sold by a dealer.
+JESS: A dealer who went bankrupt / very suddenly. Funny, that.
+VON BOLT: Never met him. Bankrupt / men have such poor memories.
+STURM: Enough. Hold the road and / the doors until it wakes.
+STURM: Then let it answer for me.
+
+== m02_pre_sturm | STURM
+STURM: Hold the Foundry. Three / days. Then it speaks.
+STURM: Whatever she sends, she / sends it into my storm.
+VON BOLT: And what do I do, / little storm?
+STURM: You count. It is what you / are for.
+VON BOLT: Kehh-heh! My favourite / duty!
+
+== m02_pre_other | VON BOLT
+VON BOLT: Hold the Foundry for / three days. It will answer.
+VON BOLT: Every shell she spends is / a coin I do not have to spend.
+STURM: Do not lose what is mine.
+VON BOLT: Mine, he says. I am only / renting the lease. Kehh...
+STURM: Failure is a debt, Von / Bolt. I collect.
+
+== m02_day3
+NARRATION: The Foundry shudders, / coughs, and breathes fire.
+CRUMB(h): It sneezed a Tank! / I'm calling him Dennis!
+MORTAR: Crumb. It is a tank. / Not a stray dog.
+CRUMB: Dennis says he is both, / Sergeant.
+VON BOLT: Free tanks! Free! / Kehh-heh! Beautiful!
+VON BOLT: Only the wiring cost / anything. Mark it down.
+STURM: Hold your line.
+
+== m02_day6
+JESS: More tanks are coming. Hold / the line, Green Earth!
+JESS: Foundry or no Foundry, they / bleed like everyone else.
+VON BOLT: Kehh... she believes / in bleeding. How quaint.
+
+== m02_post
+JESS(s): Fall back to the coast. / Fall back!
+JESS: Green Earth will hear of / this. We will return.
+STURM: Return with more. The / Foundry is always hungry.
+VON BOLT: She will tell everyone! / Free advertising! Kehh-heh!
+STURM: Let them hear the storm / before it arrives.
+JESS: Hear it? The wardens will / bring a navy, Black Hole.
+JESS: Drake holds the Ember Strait. / Eagle holds the clouds above it.
+JESS: You will not cross. You will / drown. I say that as a courtesy.
+VON BOLT: Drown? On the sea? / Kehh... Sturm. Sturm. Sturm.
+STURM: She is right that the / sea is next.
+JESS: Brave, for a man with no / flag. Stupid, too. Good luck.
+CRUMB: Sir? Dennis is fine. / Can he have a hat?
+STURM: Fine. The tank still / answers to me.
+CRUMB(h): Thank you, sir! He'll / wear it with honour!
+MORTAR: Crumb. It is a tank.
+CRUMB: Honour is not size-specific, / Sergeant.
+WICK(s): Is it all right if I / say that was a good point?
+MORTAR: ...Fine. It was a good / point.
+VON BOLT: Kehh... the Foundry / has paid for itself. Nearly.
+VON BOLT: Its next breath is / mine. Second pick. Remember.
+STURM: Remember who owns / the Foundry.
+VON BOLT: Kehh... a lease. / Only a long lease.
+
+== m02_map
+CRUMB(h): Dennis has a hat, Sergeant! / It's a bucket!
+MORTAR: Crumb, that bucket is / Colonel Von Bolt's coin pail.
+VON BOLT: My PAIL?!
+CRUMB(s): Gerald, run.
+VON BOLT: That pail has been / with me for fifty years!
+VON BOLT: Do you know what I kept / in it? Dust and optimism!
+CRUMB: Then Dennis will keep / them safe, Colonel!
+VON BOLT: Kehh... boot boy... / return it. Rental begins now.
+MORTAR: He's naming the tanks now.
+MORTAR: Let him. It keeps him / out of the ammo.
+WICK(s): Is it all right if I / name the other one?
+MORTAR: Name it Not Dennis. / Then leave.
+WICK(h): ...Thank you, Sergeant. / Not Dennis it is.
+
+# ---------------------------------------------------------------- M3 Blockade Runner (Sturm + Von Bolt fixed pair; enemy Drake + Eagle)
+
+== m03_pre
+NARRATION: Ember Strait. Green / Earth's sea, patrolled and wired.
+DRAKE: Ahoy, strangers! Welcome / to the Ember Strait!
+DRAKE: Population: me, and a few / hundred ships. Great place.
+EAGLE: Don't get comfy. Green / Earth owns sea and sky.
+EAGLE: Wardens signed the Accord. / We keep the lanes. You pay.
+EAGLE: Turn around, or I'll make / you walk home. On water.
+STURM: We do not turn.
+VON BOLT: Sturm, I am an old man. / I am seasick already.
+STURM: Endure it.
+DRAKE: Seasick? Heh, dude. A / pirate of the dry land?
+VON BOLT: Pirate?! I am a / CREDITOR!
+VON BOLT: Thirty years I paid you / a tenth of every crate!
+DRAKE: Toll's the toll, old man. / Salvage rights. Lane upkeep.
+DRAKE: Somebody has to scrub the / reefs. It's not cheap.
+VON BOLT: Scrub the reefs! You / never scrubbed one reef!
+EAGLE: Enough. The Accord does / not argue with salvage thieves.
+EAGLE: You are not an army. You / are an invoice with legs.
+VON BOLT: Kehh! Eagle, I have / never been so flattered!
+STURM: Von Bolt. The sea.
+VON BOLT: ...The sea. Yes. I am / hating it now, little storm.
+STURM: The Strait is the lane / that feeds the Accord's fence.
+STURM: Cut it, and every warden / on the coast starves of salvage.
+STURM: Break the blockade. Their / sea will be mine by dusk.
+DRAKE: Dude. Ambitious. Let's go, / Eagle. Show them how it's done.
+EAGLE: Gladly. Stay out of my / sky, Drake. And my way.
+
+== m03_day4
+EAGLE: My Fighters own the / clouds! Dodge, sailors!
+EAGLE: Keep your eyes up! The / ground is where you die.
+VON BOLT: Kehh... boy. Hold my / hat. They are shooting at it.
+
+== m03_day8
+DRAKE: Not bad, dude. You've got / some wave in you after all.
+EAGLE: Don't compliment them! / Sink them, Drake!
+DRAKE: Dude, it's a good sea. Even / enemies deserve nice words.
+
+== m03_post
+DRAKE(s): ...I've been sunk more / gently by a bathtub.
+EAGLE: Drake, pull out! Fall back / and regroup!
+EAGLE: This isn't over. The / mainland has real pilots.
+EAGLE: You think this was a war? / This was a warm-up lap.
+STURM: The mainland is next.
+VON BOLT: Gah... my stomach... no / more boats. Ever.
+VON BOLT: I shall buy a mountain / and live on it. Kehh...
+HAWKE: Admirable crossing. I have / been watching.
+STURM: Hawke.
+HAWKE: Marshal Hawke, officially. / Green Earth's marshal.
+HAWKE: I have read your landing / and your Foundry. Interesting.
+HAWKE: Rare, to meet a general who / treats the sea as a ledger.
+VON BOLT: A Marshal! Of Green / Earth! On our radio! Kehh!
+VON BOLT: Does he pay? Does he / owe? I shall inspect him.
+HAWKE: I do not owe, Colonel. / I audit.
+STURM: What do you want, Hawke.
+HAWKE: A board worth commanding. / Fort Verdant has a road.
+HAWKE: If you can walk it, do / come. I keep coffee for rivals.
+STURM: I will walk it.
+HAWKE: Splendid. Then I shall / see what you are made of.
+
+== m03_map
+CRUMB(s): I gave Gerald to a / seagull. Then took him back.
+CRUMB: The seagull is upset. I'm / upset. We're all upset.
+WICK(s): Is it all right if I / admit I was sick twice?
+MORTAR: Wick. Everybody was sick.
+MORTAR: The Colonel was sick in / a helmet. Not his.
+CRUMB: Sergeant, do you think / the COs ever get scared?
+MORTAR: The tall one doesn't know / how.
+MORTAR: The old one's scared of / the sea. That counts.
+STURM: Private.
+CRUMB: Sir!
+STURM: You carried your pack ashore / through three waves. Why.
+CRUMB: Gerald is in it, sir. And / the soup. And the spare boots.
+CRUMB: I did not want to leave / anything behind. Ever.
+STURM: Black Hole does not leave / what is its own behind.
+CRUMB(h): Yes, sir! I know, sir!
+STURM: Noted.
+VON BOLT: Sturm. A word. Alone. / Kehh... walk with an old man.
+VON BOLT: When the war is done, come / to my vault. Last shelf.
+VON BOLT: There is a crate I never / could price. First in my life.
+STURM: Why not.
+VON BOLT: Because every time I / pick it up, it hums. At you.
+STURM: Then I will see it.
+
+== m03_warroom
+CRUMB(s): Sergeant, Wick says it's / the Accord. All of them. Talking.
+NELL: Order, please, everyone. / Thank you. Drake, report.
+DRAKE: Strait's lost, Nell. They / came through like weather.
+MAX: A fleet, a Foundry, and one / old man? Pathetic, big man!
+SAMI: Roger. Pathetic and / dangerous. Who guards the fence?
+GRIT: Blue Moon ain't paying for / Green Earth's leaky fence again.
+KANBEI: Kanbei guards Yellow Comet's / borders. Sealed. Always sealed.
+JAVIER: Hark! My towers shall / keep their crystals safe!
+SENSEI: Back in my day, youngsters, / a fence was a fence.
+GRIMM: Har! I charge triple to / protect it, pencil necks!
+NELL: Please. The Accord stands / because we agreed to stand.
+ANDY: Nell, send me! I can fix / this! Just give me a front!
+NELL: No, Andy. You go when we / all go. Not one minute before.
+SONJA: Their invoices are well / organised. Too organised.
+SONJA: The Strait's toll ledger / names a line I cannot trace.
+SONJA: A shipping line that does / not exist. S.
+CRUMB: Sergeant... they sound a / lot like us. Only louder.

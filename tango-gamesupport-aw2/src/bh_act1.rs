@@ -16,205 +16,6 @@ use mgba::core::Core;
 use crate::bh_campaign::{region, roster};
 use crate::custom_campaign::{co, colour, unit, *};
 
-/// Black Hole's trooper face (Crumb, Sgt. Mortar, Pvt. Wick): AW2's soldier
-/// portraits are faces 19..23, Black Hole's is 23, with the happy and sad
-/// expressions as for a CO (`co + 24 * mood`).
-const TROOPER: u8 = 23;
-
-// --- Scenes (docs/BH_CAMPAIGN.md 4.2 and 4.11, line for line) -----------------------
-
-fn m01_pre() -> Scene {
-    Scene::new(vec![
-        Line::narrate("Cinder Coast. Dawn.\rThe first storm in years."),
-        Line::feel(TROOPER, Mood::Happy, "Landing complete, sir!\rLost two boots. Only two!"),
-        Line::say(co::STURM, "Boots are replaceable.\rReport."),
-        Line::say(TROOPER, "Green tanks on the ridge,\rgreen flags on the walls."),
-        Line::feel(TROOPER, Mood::Sad, "Even the cook's apron\rwas green, sir. I checked."),
-        Line::say(co::STURM, "Green Earth holds nothing\rhere. This coast is mine."),
-        Line::say(TROOPER, "Then why do they fly\rtheir flag over our ruins?"),
-        Line::say(co::VON_BOLT, "Kehh-heh! Who walks\rmy beach unannounced?"),
-        Line::say(co::VON_BOLT, "A storm in a coat!\rThe rumours were true."),
-        Line::say(co::STURM, "Von Bolt. You are older\rthan the rumours."),
-        Line::say(co::VON_BOLT, "And richer! Tanks, paint,\rall bought cheap!"),
-        Line::say(co::VON_BOLT, "Want my coast? Then\ryou want my paint, too."),
-        Line::say(co::STURM, "I will have what you guard.\rAnd what you know."),
-        Line::say(co::VON_BOLT, "Everything I know is\rfor sale. Everything."),
-        Line::say(co::STURM, "Then name your price."),
-        Line::say(co::VON_BOLT, "Defeat me, little\rstorm. Then we talk numbers."),
-        Line::say(TROOPER, "Sir... may I keep my\rremaining boots?"),
-        Line::say(co::STURM, "Fight in them."),
-    ])
-}
-
-fn m01_day3() -> Scene {
-    Scene::new(vec![
-        Line::say(co::VON_BOLT, "Those crystals! Mine!\rThey hum for ME!"),
-        Line::say(co::STURM, "They hum for whoever\rholds them. I hold them."),
-    ])
-}
-
-fn m01_day7() -> Scene {
-    Scene::new(vec![
-        Line::say(co::VON_BOLT, "Kehh... send them all in.\rIt hurts me more than them!"),
-    ])
-}
-
-fn m01_post() -> Scene {
-    Scene::new(vec![
-        Line::feel(co::VON_BOLT, Mood::Sad, "My coast... my paint...\rmy lovely, cheap tanks..."),
-        Line::say(co::STURM, "Von Bolt. You are not\rfinished. You are priced."),
-        Line::say(co::VON_BOLT, "Hm?"),
-        Line::say(co::STURM, "Join me. The world is a\rledger. I will write it."),
-        Line::say(co::VON_BOLT, "The whole world...\rin the black?"),
-        Line::say(co::STURM, "In mine. You may share it."),
-        Line::say(co::VON_BOLT, "Kehh... heh heh heh...\rGloriously greedy."),
-        Line::say(co::VON_BOLT, "I accept. First pick\rof every vault we open."),
-        Line::say(co::STURM, "You may pick second."),
-        Line::say(co::VON_BOLT, "...Second pick. It\ris still a pick."),
-        Line::feel(TROOPER, Mood::Happy, "Does this mean I keep\rmy boots, sir?"),
-        Line::say(co::VON_BOLT, "Hm. Perhaps. For now."),
-    ])
-}
-
-fn m01_map() -> Scene {
-    Scene::new(vec![
-        Line::feel(TROOPER, Mood::Happy, "Sergeant! The old man\rsays second pick is a pick!"),
-        Line::say(TROOPER, "Crumb. Second pick of\rvaults. Not of boots."),
-        Line::say(TROOPER, "Gerald says boots count."),
-        Line::say(TROOPER, "Who is Gerald?"),
-        Line::feel(TROOPER, Mood::Happy, "My biscuit, Sergeant!\rBasic training issue."),
-        Line::say(TROOPER, "That thing is older than\rthe Obelisk."),
-        Line::say(TROOPER, "Gerald says that's rude."),
-        Line::feel(TROOPER, Mood::Sad, "Is... is anyone else worried\rour tanks are still green?"),
-        Line::say(co::VON_BOLT, "Paint costs money."),
-    ])
-}
-
-fn m02_pre() -> Scene {
-    Scene::new(vec![
-        Line::say(co::VON_BOLT, "Behold! The Foundry.\rAsleep for forty years."),
-        Line::say(co::STURM, "It sleeps still."),
-        Line::say(co::VON_BOLT, "It wakes when the\rledger balances. Three days."),
-        Line::say(co::STURM, "Three days."),
-        Line::say(TROOPER, "Sir, it's making a noise\rlike a cough."),
-        Line::say(co::VON_BOLT, "It's clearing its\rthroat. Kehh!"),
-        Line::say(co::JESS, "Halt! Green Earth Coastal\rWatch! Hands where I see them!"),
-        Line::say(co::JESS, "By order of Green Earth:\rstand down. Last warning."),
-        Line::say(co::STURM, "Your orders end here. This\rsoil is mine."),
-        Line::feel(co::JESS, Mood::Sad, "I know. But Command wants\rthat Foundry. And so do I."),
-        Line::say(co::JESS, "Nothing personal. Tanks\rfirst. Paperwork after."),
-        Line::say(co::VON_BOLT, "She threatens politely!\rDelightful. Crush her gently."),
-    ])
-}
-
-// conditional: Co(co::STURM)
-fn m02_pre_sturm() -> Scene {
-    Scene::new(vec![
-        Line::say(co::STURM, "Hold the Foundry. Three\rdays. Then it speaks."),
-    ])
-}
-
-// conditional: NotCo(co::STURM)
-fn m02_pre_other() -> Scene {
-    Scene::new(vec![
-        Line::say(co::VON_BOLT, "Hold the Foundry for\rthree days. It will answer."),
-    ])
-}
-
-fn m02_day3() -> Scene {
-    Scene::new(vec![
-        Line::narrate("The Foundry shudders,\rcoughs, and breathes fire."),
-        Line::feel(TROOPER, Mood::Happy, "It sneezed a Tank!\rI'm calling him Dennis!"),
-        Line::say(co::VON_BOLT, "Free tanks! Free!\rKehh-heh! Beautiful!"),
-    ])
-}
-
-fn m02_day6() -> Scene {
-    Scene::new(vec![
-        Line::say(co::JESS, "More tanks are coming. Hold\rthe line, Green Earth!"),
-    ])
-}
-
-fn m02_post() -> Scene {
-    Scene::new(vec![
-        Line::feel(co::JESS, Mood::Sad, "Fall back to the coast.\rFall back!"),
-        Line::say(co::JESS, "Green Earth will hear of\rthis. We will return."),
-        Line::say(co::STURM, "Return with more. The\rFoundry is always hungry."),
-        Line::say(co::VON_BOLT, "She'll tell everyone!\rFree advertising!"),
-        Line::say(co::STURM, "Let them hear the storm\rbefore it arrives."),
-        Line::say(TROOPER, "Sir? Dennis is fine.\rCan he have a hat?"),
-        Line::say(co::STURM, "Fine. The tank still\ranswers to me."),
-    ])
-}
-
-fn m02_map() -> Scene {
-    Scene::new(vec![
-        Line::feel(TROOPER, Mood::Happy, "Dennis has a hat, Sergeant!\rIt's a bucket!"),
-        Line::say(TROOPER, "Crumb, that bucket is\rColonel Von Bolt's coin pail."),
-        Line::say(co::VON_BOLT, "My PAIL?!"),
-        Line::feel(TROOPER, Mood::Sad, "Gerald, run."),
-        Line::say(TROOPER, "He's naming the tanks now."),
-        Line::say(TROOPER, "Let him. It keeps him\rout of the ammo."),
-    ])
-}
-
-fn m03_pre() -> Scene {
-    Scene::new(vec![
-        Line::say(co::DRAKE, "Ahoy, strangers! Welcome\rto the Ember Strait!"),
-        Line::say(co::DRAKE, "Population: me, and a few\rhundred ships."),
-        Line::say(co::EAGLE, "Don't get comfy. Green\rEarth owns sea and sky."),
-        Line::say(co::EAGLE, "Turn around, or I'll make\ryou walk home. On water."),
-        Line::say(co::STURM, "We do not turn."),
-        Line::say(co::VON_BOLT, "Sturm, I am an old man.\rI am seasick already."),
-        Line::say(co::STURM, "Endure it."),
-        Line::say(co::DRAKE, "Seasick? Heh, dude. A\rpirate of the dry land?"),
-        Line::say(co::VON_BOLT, "Pirate?! I am a\rCREDITOR!"),
-        Line::say(co::EAGLE, "Enough. Clear the lanes,\rDrake. I'll cover the sky."),
-        Line::say(co::STURM, "Break the blockade. Their\rsea will be mine by dusk."),
-    ])
-}
-
-fn m03_day4() -> Scene {
-    Scene::new(vec![
-        Line::say(co::EAGLE, "My Fighters own the\rclouds! Dodge, sailors!"),
-    ])
-}
-
-fn m03_day8() -> Scene {
-    Scene::new(vec![
-        Line::say(co::DRAKE, "Not bad, dude. You've got\rsome wave in you after all."),
-    ])
-}
-
-fn m03_post() -> Scene {
-    Scene::new(vec![
-        Line::feel(co::DRAKE, Mood::Sad, "...I've been sunk more\rgently by a bathtub."),
-        Line::say(co::EAGLE, "Drake, pull out! Fall back\rand regroup!"),
-        Line::say(co::EAGLE, "The mainland has real\rpilots. You'll see."),
-        Line::say(co::STURM, "The mainland is next."),
-        Line::say(co::VON_BOLT, "Gah... my stomach... no\rmore boats. Ever."),
-        Line::say(co::HAWKE, "Admirable crossing. I have\rbeen watching."),
-        Line::say(co::STURM, "Hawke."),
-        Line::say(co::HAWKE, "Marshal Hawke, officially.\rFort Verdant has a road."),
-        Line::say(co::HAWKE, "If you can walk it. Do come."),
-    ])
-}
-
-fn m03_map() -> Scene {
-    Scene::new(vec![
-        Line::feel(TROOPER, Mood::Sad, "I gave Gerald to a\rseagull. Then took him back."),
-        Line::say(TROOPER, "The seagull is upset. I'm\rupset. We're all upset."),
-        Line::say(TROOPER, "Sergeant, do you think\rthe COs ever get scared?"),
-        Line::say(TROOPER, "The tall one doesn't know\rhow."),
-        Line::say(TROOPER, "The old one's scared of\rthe sea. That counts."),
-        Line::say(co::STURM, "Private."),
-        Line::say(TROOPER, "Sir!"),
-        Line::say(co::STURM, "Your name. I keep count\rof what is mine."),
-        Line::feel(TROOPER, Mood::Happy, "Hobb, sir! Pip Hobb!\rThey call me Crumb!"),
-        Line::say(co::STURM, "Noted."),
-    ])
-}
-
 // --- Rules written in Rust --------------------------------------------------------
 
 /// The player's army (army 1) is led by Sturm.
@@ -253,9 +54,9 @@ fn bh01() -> MissionDef {
     ];
     m.day_limit = 20;
     m.rank_days = 10;
-    m.intro = m01_pre();
-    m.victory = m01_post();
-    m.after = m01_map();
+    m.intro = crate::bh_text::scene("m01_pre");
+    m.victory = crate::bh_text::scene("m01_post");
+    m.after = crate::bh_text::scene("m01_map");
     m.recruits = vec![roster::VON_BOLT];
     // The win (Von Bolt routed or his HQ taken): the bond is earned (Sturm is fixed
     // in this mission, so it is automatic), then the victory scene.
@@ -279,7 +80,7 @@ fn bh01() -> MissionDef {
                     },
                 ]),
             ]),
-            vec![Action::Scene(m01_day3())],
+            vec![Action::Scene(crate::bh_text::scene("m01_day3"))],
         ),
         // Day 4: the loot sale: with six properties Von Bolt buys two Md Tanks.
         Trigger::new(
@@ -291,7 +92,7 @@ fn bh01() -> MissionDef {
             ])],
         ),
         // Day 7: everything must go.
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(7), vec![Action::Scene(m01_day7())]),
+        Trigger::new(When::TurnStart, Cond::DayAtLeast(7), vec![Action::Scene(crate::bh_text::scene("m01_day7"))]),
         time_up(20),
     ];
     m.flag = region::BLACK_HOLE[0];
@@ -314,9 +115,9 @@ fn bh02() -> MissionDef {
     m.pool = vec![co::STURM, co::VON_BOLT];
     m.day_limit = 18;
     m.rank_days = 11;
-    m.intro = m02_pre();
-    m.victory = m02_post();
-    m.after = m02_map();
+    m.intro = crate::bh_text::scene("m02_pre");
+    m.victory = crate::bh_text::scene("m02_post");
+    m.after = crate::bh_text::scene("m02_map");
     // The Foundry wakes on day 3 (table F2, docs/BH_CAMPAIGN.md 3.5): the
     // three doors, left to right.
     m.factory = vec![
@@ -340,7 +141,7 @@ fn bh02() -> MissionDef {
         Trigger::new(
             When::TurnStart,
             Cond::All(vec![Cond::DayAtLeast(1), Cond::Custom(player_is_sturm)]),
-            vec![Action::Scene(m02_pre_sturm())],
+            vec![Action::Scene(crate::bh_text::scene("m02_pre_sturm"))],
         ),
         Trigger::new(
             When::TurnStart,
@@ -348,10 +149,10 @@ fn bh02() -> MissionDef {
                 Cond::DayAtLeast(1),
                 Cond::Not(Box::new(Cond::Custom(player_is_sturm))),
             ]),
-            vec![Action::Scene(m02_pre_other())],
+            vec![Action::Scene(crate::bh_text::scene("m02_pre_other"))],
         ),
         // Day 3: the Foundry wakes; Green Earth's first wave comes up the road.
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(3), vec![Action::Scene(m02_day3())]),
+        Trigger::new(When::TurnStart, Cond::DayAtLeast(3), vec![Action::Scene(crate::bh_text::scene("m02_day3"))]),
         Trigger::new(
             When::TurnStart,
             Cond::DayAtLeast(3),
@@ -362,7 +163,7 @@ fn bh02() -> MissionDef {
             ]),
         ),
         // Day 6: two Md Tanks and two Infantry.
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(6), vec![Action::Scene(m02_day6())]),
+        Trigger::new(When::TurnStart, Cond::DayAtLeast(6), vec![Action::Scene(crate::bh_text::scene("m02_day6"))]),
         Trigger::new(
             When::TurnStart,
             Cond::DayAtLeast(6),
@@ -417,15 +218,19 @@ fn bh03() -> MissionDef {
     ];
     m.day_limit = 25;
     m.rank_days = 14;
-    m.intro = m03_pre();
-    m.victory = m03_post();
-    m.after = m03_map();
+    m.intro = crate::bh_text::scene("m03_pre");
+    m.victory = crate::bh_text::scene("m03_post");
+    m.after = Scene::new({
+        let mut v = crate::bh_text::lines("m03_map");
+        v.extend(crate::bh_text::lines("m03_warroom"));
+        v
+    });
     m.triggers = vec![
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(4), vec![Action::Scene(m03_day4())]),
+        Trigger::new(When::TurnStart, Cond::DayAtLeast(4), vec![Action::Scene(crate::bh_text::scene("m03_day4"))]),
         Trigger::new(
             When::TurnStart,
             Cond::All(vec![Cond::DayAtLeast(8), holds_the_isle()]),
-            vec![Action::Scene(m03_day8())],
+            vec![Action::Scene(crate::bh_text::scene("m03_day8"))],
         ),
         time_up(25),
     ];

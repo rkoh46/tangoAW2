@@ -1,1 +1,20 @@
-# BH dialogue, story (format: README.txt)
+# BH dialogue: the prologue and other story pages (format: README.txt)
+
+== prologue
+NARRATION: Once, one black banner / covered half the world.
+NARRATION: It was not loved. It was / obeyed. That was enough.
+NARRATION: Then it burned. Its legions / scattered like ash.
+NARRATION: Its officers took new / colours, and new names.
+NARRATION: Four nations rose from the / smoke and signed the Accord.
+NARRATION: They fenced the Cinder / Coast. And shared what was in it.
+NARRATION: Crystal. Iron. Salvage. / They called it peace.
+NARRATION: Black Hole's last colonel / grew old counting coins there.
+NARRATION: Thirty years, the Obelisk / stood dark on the shore.
+NARRATION: Nobody asked what it / was waiting for.
+NARRATION: Then a storm came ashore / that no map had foretold.
+NARRATION: It carried no flag. It had / one name, and one purpose.
+NARRATION: Four nations sleep behind / their borders, safe and proud.
+NARRATION: Each believes the fence / is the end of the story.
+NARRATION: None of them has heard / the thunder yet.
+NARRATION: On the shore, a private / drops his boots in the surf.
+NARRATION: Nobody notices. Nobody / ever does. Not yet.

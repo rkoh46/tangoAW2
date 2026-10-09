@@ -1,7 +1,6 @@
 //! The secret mission, M31 "The Colonel's Vault" (opens with `Needs::Bonds(..)`: every
 //! hidden bond earned). Its map is `five/bh/bh31.txt` (built by `five/bhmap.py`); the
-//! dialogue is the design bible's
-//! (docs/BH_CAMPAIGN.md 4.7a, converted into `bh_act5b_text.rs`).
+//! dialogue is `src/bh_text/act5bb.txt` (keys `m31_*`).
 
 // (the builders' imports: each act uses what it needs)
 #![allow(unused_imports)]
@@ -9,7 +8,7 @@
 use mgba::core::Core;
 
 use crate::bh_campaign::{region, roster};
-use crate::bh_act5b::{built_units, meter, roles, text};
+use crate::bh_act5b::{built_units, meter, roles};
 use crate::custom_campaign::{co, colour, unit, *};
 
 /// The dock tiles: one truck here and the heist is lost.
@@ -51,12 +50,6 @@ fn on_day(d: u16, then: Vec<Action>) -> Trigger {
     Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, then).repeating()
 }
 
-fn day3_lines() -> Vec<Line> {
-    let mut v = vec![Line::soldier(colour::BLACK_HOLE, "A third truck rolls out of the ford woods.")];
-    v.extend(text::m31_day_3());
-    v
-}
-
 fn bh31() -> MissionDef {
     let mut m = MissionDef::new("bh31", "The Colonel's Vault");
     m.objective = "Destroy the 3 Vault Trucks before one docks. 11 days.";
@@ -96,32 +89,34 @@ fn bh31() -> MissionDef {
     m.fog = true;
     m.day_limit = 11;
     m.rank_days = 8;
-    m.intro = Scene::new(text::m31_pre());
-    m.victory = Scene::new(text::m31_post());
-    // The world map: the MAP scene, Sonja's defection, then the letter at Comet Keep.
-    let mut after_lines = text::m31_map();
-    after_lines.extend(text::m31_defect());
-    after_lines.extend(text::m31_kanbei());
+    m.intro = crate::bh_text::scene("m31_pre");
+    m.victory = crate::bh_text::scene("m31_post");
+    // The world map: Crumb's apology to Gerald, Sonja's defection, the letter at Comet Keep, then the secret epilogue
+    // (the campaign's last scene).
+    let mut after_lines = crate::bh_text::lines("m31_map");
+    after_lines.extend(crate::bh_text::lines("m31_defect"));
+    after_lines.extend(crate::bh_text::lines("m31_kanbei"));
+    after_lines.extend(crate::bh_text::lines("m31_epilogue"));
     m.after = Scene::new(after_lines);
     m.triggers = vec![
-        on_day(2, vec![Action::Scene(Scene::new(text::m31_day_2()))]),
+        on_day(2, vec![Action::Scene(crate::bh_text::scene("m31_day_2"))]),
         // Day 3: the third truck rolls out of the ford woods (it marches from now on).
         Trigger::new(
             When::TurnStart,
             Cond::DayAtLeast(3),
             vec![
-                Action::Scene(Scene::new(day3_lines())),
+                Action::Scene(crate::bh_text::scene("m31_day_3")),
                 Action::Spawn(vec![UnitDef::new(2, unit::APC, TRUCK_C.0, TRUCK_C.1).fuel(0).named("vault3")]),
             ],
         ),
         // Day 4: the cannons are online.
-        on_day(4, vec![Action::Scene(Scene::new(text::m31_cannon_on()))]),
+        on_day(4, vec![Action::Scene(crate::bh_text::scene("m31_day_4"))]),
         // Day 5: Sonja's power (her meter is full: the fog thickens as her vision grows).
-        on_day(5, vec![Action::Scene(Scene::new(text::m31_day_5())), Action::Custom(charge_sonja)]),
+        on_day(5, vec![Action::Scene(crate::bh_text::scene("m31_day_5")), Action::Custom(charge_sonja)]),
         Trigger::new(
             When::AfterAction,
             any_truck(Cond::UnitGone),
-            vec![Action::Scene(Scene::new(text::m31_when_the_first_vault_truck_is_destroyed()))],
+            vec![Action::Scene(crate::bh_text::scene("m31_first_truck"))],
         ),
         // The win: all three trucks destroyed (truck C is not "gone" before it has appeared, so never before day 3).
         Trigger::new(When::AfterAction, Cond::All(TRUCKS.iter().map(|n| Cond::UnitGone(n)).collect()), vec![Action::Win]).repeating(),

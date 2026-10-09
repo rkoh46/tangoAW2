@@ -1,1 +1,412 @@
-# BH dialogue, act2b (format: README.txt)
+# BH dialogue, act2b (format: README.txt): M8 The Twin Gates, M9 The Loot Train, M10 Evergreen Citadel, M11 Ashfall Pass
+
+== m08_pre
+NARRATION: Evergreen Province. Two roads / climb to one capital.
+NARRATION: The Gate of Dawn, above the / river. The Gate of Dusk, by the sea.
+JESS: Two gates, two fronts. / Standard procedure.
+JAVIER: Hark! And my towers speak / at both! Greetings, fair friends!
+JESS: Javier. You do not announce / yourself to the enemy.
+JAVIER: A true knight announces / himself! Only rogues creep.
+JAVIER: Last time you came by night, / like thieves. Today, by day! Progress!
+JESS: They took a Foundry off me / once. They will not take a gate.
+JESS: I hold the dawn road. You / hold the dusk. Nobody blinks.
+JAVIER: By my honour, Dame Jess! / The towers shall not blink!
+HAWKE: One mind, two fronts. A / sword is made to be split.
+HAWKE: Jess holds the dawn road with / armour. Javier's towers speak for her.
+HAWKE: Break the towers' front, and / she fights with half a voice.
+VON BOLT: Two fronts! Two payrolls! / Kehh... two sets of invoices!
+VON BOLT: Take both gates quickly. / And hire nobody. I mean it.
+WICK: Is it all right if I ask / which gate I am posted to?
+MORTAR: Dusk. By the water.
+CRUMB: By the water, Sergeant? I / packed only four spare pairs.
+MORTAR: Crumb.
+HAWKE: Whoever takes the dusk gate / marches to the capital road...
+HAWKE: ...and joins the main front. / One hand finds the other.
+HAWKE: Choose your hands. The dawn / gate, and the dusk gate.
+@IF STURM
+STURM: The dawn gate is mine. Let / the sea gate follow me.
+@IF VON BOLT
+VON BOLT: Dawn. A river means bridges, / and bridges are tolls. Kehh...
+@IF HAWKE
+HAWKE: The dawn gate. Tempo belongs / to whoever opens the line first.
+@IF KOAL
+KOAL: Dawn. Two bridges, good shoulders. / Mind the lane.
+@IF KINDLE
+KINDLE: A gate at dawn, darlings! / Such lighting! I shall burn it nicely.
+@IF JUGGER
+JUGGER: STATUS: TWO GATES. ODDS: / ACCEPTABLE. DAWN GATE ASSIGNED.
+@IF FLAK
+FLAK: Dawn gate. Big gate. Flak / big too. Flak smash, boss!
+@IF LASH
+LASH: Ooh, ooh! Two gates, two tests! / Heehee! Door-Opener Nine, ready!
+@IF ADDER
+ADDER: Dawn, darlings. The gold light / does wonders for my profile.
+@IF CLONE ANDY
+CLONE ANDY: Okay. Okay! Dawn gate. I can / fix any-- I can take a gate, sir!
+@IF SONJA
+SONJA: The dawn road. I have counted / the bridges. There are two. S.
+@IF CRUMB CO
+CRUMB CO: Dawn gate, sir! Gerald says / breakfast first. Then the gate.
+@END
+[CO2]: And I take the dusk gate. Do / not wait for me. I will find you.
+HAWKE: Then the sword is split. / Begin.
+JESS: Tanks forward. All of them.
+JAVIER: Charge! Nobly! And politely!
+
+== m08_front2_post
+[CO2]: The dusk gate is ours. / Reporting to the main front.
+JAVIER(s): Dame Jess! The dusk gate / has fallen! My towers are silent!
+JESS(s): I heard. Half my voice went / quiet at once. Hawke planned it.
+JAVIER: Then I shall plan better! / ...Someone write that down.
+HAWKE: Tempo, gained. The sword is / one hand heavier. Press on.
+CRUMB(h): Sergeant! The dusk gate is / ours! My boots are only a little wet!
+MORTAR: Crumb.
+
+== m08_front2_lost
+JAVIER: Ha! The dusk gate is held / by Javier! Yield, rogues!
+JESS: Good. The towers speak for / me again. Keep talking, Javier.
+HAWKE: A gate lost, and a tempo with / it. The dawn road must finish alone.
+WICK(s): Is it all right if I ask / whether anyone is coming back?
+CRUMB: They will, Wick. Gerald says / the sea is only temporarily rude.
+VON BOLT: Kehh... a lost gate is a / lost invoice! Win the other!
+
+== m08_post
+JESS(s): The dawn gate has fallen. / Javier, fall back. We hold the keep.
+JAVIER: I would like to say I meant / this. I did not. Alas!
+JESS: Back to Evergreen. This was a / delay. It is not a defeat.
+HAWKE: Well held, Commander. Your line / bent exactly where I predicted.
+JESS: That is not a compliment.
+HAWKE: It was a rare one. Spend it / wisely.
+EAGLE: Jess! Javier! The inner wall / is up! Get inside, I will cover you!
+EAGLE: And somebody tell Hawke the / sky is still waiting for him.
+HAWKE: Eagle. I will look up.
+STURM: Two gates. One capital.
+STURM: Green Earth has kept the fence / for thirty years.
+STURM: Evergreen is where its warden / sleeps. We wake it.
+VON BOLT: And where its salvage ministry / stamps every permit! Kehh...
+VON BOLT: Take the harbour ledgers / intact. I choose second!
+HAWKE: Your second pick is on the / record, Colonel.
+WICK(s): Is it all right if I ask / why everyone keeps saying warden?
+CRUMB: It is the one who holds the / fence, Wick. Sergeant told me.
+MORTAR: I did not.
+CRUMB: Gerald told me.
+STURM: A fence needs a warden. / Remove the warden. Keep the fence.
+STURM: A fence is more useful / standing than fallen.
+
+== m08_map
+CRUMB: Marshal! The messages from / both fronts arrived!
+HAWKE: At the same time?
+CRUMB(h): Mostly. One of them was / a pigeon.
+HAWKE: A pigeon.
+CRUMB: A very good pigeon, sir. It / saluted. Possibly.
+HAWKE: Add it to the contingency plan.
+WICK: Is it all right if I ask / what rank the pigeon holds?
+MORTAR: Private. Same as you.
+VON BOLT: Marshal! My trucks roll / east tomorrow. Three of them.
+VON BOLT: Do not ask what is in them. / You would only be tempted.
+HAWKE: I have never asked what is in / your trucks. It keeps us friends.
+VON BOLT: Kehh-heh! It keeps you / employed!
+
+== m09_pre | VON BOLT
+NARRATION: Evergreen Province. A rail / line crosses the fog, east to the port.
+VON BOLT: Kehh-heh! Three trucks! / Three vaults on wheels!
+VON BOLT: Every coin I own, except / the last shelf. That stays home.
+CRUMB: Colonel, sir? There is a / rooster on the lead truck.
+VON BOLT: His name is Interest. He / compounds. Daily. Kehh...
+CRUMB: He looked at me like I / owed him, sir.
+VON BOLT: You do. Boots.
+HAWKE: Colonel. Why is your treasure / crossing enemy country?
+VON BOLT: Because the bank is closed. / The Accord froze my accounts.
+VON BOLT: Thirty years I charged them / rent. Now they want it back.
+VON BOLT: So I trust only me. And / one rooster. Kehh...
+STURM: The port at the east end takes / gold and asks no questions.
+STURM: Ships need coin. This war / needs ships. Bring it.
+VON BOLT: And if the trucks do not / arrive?
+STURM: Then your second pick goes / down with them.
+VON BOLT: ...Second pick is still a pick. / I will not lose it.
+JAVIER: Hark! Three wagons riding / east through the fog! Halt!
+JAVIER: In honour's name, I demand / you halt! I, Javier!
+DRAKE: Dude. Three trucks, three guys, / three problems. Heh.
+DRAKE: Honestly? I did not want a / fight today. Nobody asked me.
+VON BOLT: A retired pirate! I know the / look. Expensive hobby, piracy.
+DRAKE: You can say that again, dude.
+JAVIER: Wealth bled from honest / salvagers! A knight cannot suffer it!
+VON BOLT: Rent! Honest rent! Do you / have an invoice, knight?
+JAVIER: A knight does not read / invoices!
+VON BOLT: Obviously. Kehh. That is why / you are poor.
+DRAKE: Dude, half your tanks are / ours. They are green.
+VON BOLT: Were. Surplus. I kept the / receipt.
+JAVIER: They wear our colour, rogue!
+VON BOLT: Paint costs money.
+HAWKE: Two trucks must reach the yard. / Three, if you are greedy.
+VON BOLT: Three! Two is a LOSS. Count / them all, boot boy!
+CRUMB: Counting, Colonel! Gerald, / you count the rooster.
+
+== m09_day4 | VON BOLT
+DRAKE: Ambush! Ha, dude. I always / wanted to say that.
+JAVIER: I, Javier, hereby announce / this ambush! A noble one!
+VON BOLT: Fog! Where are my trucks? / Count them! Count them again!
+CRUMB: Three, Colonel. Plus a rooster. / Plus a little bit extra.
+VON BOLT: Interest counts as a truck! / Kehh... he is my best account.
+
+== m09_day9 | VON BOLT
+JAVIER: The east road is guarded by / a knight! Turn back, thieves!
+VON BOLT: Knights have fees. How / much for passage?
+JAVIER: A knight cannot be bought!
+VON BOLT: Everybody says that, the / first time. I have all day. Kehh...
+DRAKE: Dude, he really cannot. I / tried once. In my pirate days.
+JAVIER: Drake!
+DRAKE: Sorry, man. It is true.
+
+== m09_all_home | VON BOLT
+VON BOLT: All three! Kehh-heh! Not / one coin missing!
+VON BOLT: Interest! Interest is laying / eggs. Golden ones. Perhaps.
+CRUMB(h): Colonel, roosters do not... / never mind. Gerald agrees.
+JAVIER(s): A thief's train, and not a / coin lost. It was well run.
+DRAKE: Respect, dude. Seriously. I / could not have done it better.
+STURM: Deposited. The ships will be / paid. Evergreen is next.
+VON BOLT: Deposited! Not spent! The / difference is my entire character.
+HAWKE: Colonel, I will say it once. / Three of three was beautiful.
+VON BOLT: Say it again slowly. Kehh... / I will bill you for the praise.
+
+== m09_two_home | VON BOLT
+VON BOLT(s): One truck gone... ...my / coins, my poor, poor coins...
+HAWKE: Two in three. Within / tolerance.
+VON BOLT: TOLERANCE?! Tolerance is / what I charge! I do not feel it!
+VON BOLT: That truck had nine years of / interest on it! And a spare cheque!
+STURM: Two trucks pay for Evergreen. / The third was a lesson.
+VON BOLT: A lesson that cost a third / of my life! Kehh... heh...
+DRAKE: Sorry about the truck, dude.
+VON BOLT: Sorry does not pay interest! / Pay the interest!
+JAVIER: Sir Drake. We did what honour / required.
+DRAKE: Yeah. I feel awful anyway.
+CRUMB: Colonel, Interest laid an egg. / It is small. It counts.
+VON BOLT: ...That is the best news of / the day. Put it in the ledger.
+
+== m09_map | VON BOLT
+CRUMB: Sir, Interest the rooster / pecked the Colonel.
+SOLDIER: Is that a salute?
+CRUMB(h): Hard to tell. I think / he's good with money.
+VON BOLT: He is! He pecked me for / a late fee. Kehh-heh!
+MORTAR: Crumb. Do not feed the rooster.
+CRUMB: He is eating Gerald's crumbs, / Sergeant.
+MORTAR: ...Gerald crumbles?
+CRUMB(s): Gerald says do not look at / him when he's like this.
+WICK: Is it all right if I ask / what is on the last shelf?
+VON BOLT: Dust. Old, expensive dust. / Not for boot boys. Kehh.
+CRUMB: It sounded like humming when / you said shelf, Colonel.
+VON BOLT: ...Old ears. Evergreen is next, / Hawke! Bring the heavy guns.
+
+== m10_pre | STURM
+NARRATION: Evergreen Citadel. Green / Earth's capital, on its plateau.
+NARRATION: Three walls and a river moat. / Never taken.
+JESS: This is Evergreen. It has / never fallen. Not once.
+EAGLE: Fly, fight, win. That's all / we've got left. So we do all three.
+HAWKE: A siege is mathematics. Eagle / forgets arithmetic.
+EAGLE: That voice. Hawke? Hawke!
+EAGLE: You burned my skies at / Greenhaven. Every hangar. Every wing.
+HAWKE: Eagle. I admired your defence. / It held eleven minutes past my estimate.
+HAWKE: Which is why I needed the fire.
+EAGLE: You smug, clipboard-carrying / coward! Come up and say it!
+HAWKE: I am a man with a better plan. / I accept either word.
+EAGLE: I'll ground you for good, / Hawke. Personally. Look up.
+HAWKE: It is the only direction in / which you have ever impressed me.
+JESS: Why do this? Your army / wears our colour!
+JESS: Marshal Hawke. You wore our / green. And you sold it.
+HAWKE: It was a good colour. It suited / the ministry.
+JESS(s): ...Marshal. I admired you. / I studied your Verdant campaigns.
+JESS: Past tense. Tanks, forward.
+HAWKE: I admired my plan more.
+STURM: Evergreen has never fallen.
+STURM: A wall is a promise. Every / wall is broken by someone patient.
+STURM: I need only be standing there / when it happens.
+EAGLE: And who are you supposed to be?
+STURM: The weather.
+EAGLE: Great. Bad weather. We've / flown through worse.
+STURM: You have not.
+VON BOLT: Kehh... the cannon, the / laser, the minicannons. All mine.
+VON BOLT: I want a receipt for every / dent in that wall!
+CRUMB: Sir, the wall is very tall.
+WICK: Is it all right if I ask / who climbs it?
+MORTAR: Nobody climbs. We shoot it.
+STURM: Tonight Green Earth learns / what a storm is.
+
+== m10_day6 | STURM
+JESS: A beam! Of course there / is a beam!
+HAWKE: Row fifteen. The left lane. / It does not forgive hesitation.
+EAGLE: The left lane's gone! Jess, / shift right, I'll cover from the sky!
+VON BOLT: That beam cost eleven / thousand! Hit something expensive!
+JESS: I see it. I see all of it. / Do not tell me where to drive.
+
+== m10_day12 | STURM
+EAGLE: Jess! The wall's cracking! / Hold!
+JESS: I'm holding. Hold your own / airspace.
+EAGLE: Hawke! Come out of your tent! / I'm right here!
+HAWKE: I know. It is why I stay / where I am. Third wall, Sturm.
+STURM: Break it.
+
+== m10_post | STURM
+JESS(s): The Citadel... has fallen. / I did not think I would say it.
+EAGLE: Fall back east! To the / Comets! Just this once!
+JESS: I do not retreat, Eagle. I / relocate with my troops.
+EAGLE: Whatever you call it, move!
+JESS: We held the wall as long as it / could be held. Write that down.
+HAWKE: You held longer than my numbers / allowed. Be proud, Commander.
+JESS: Do not pity me, Marshal.
+HAWKE: It is not pity. It is data.
+EAGLE: Hawke! This isn't over! Next / time I come out of the sun!
+HAWKE: I shall look forward to it. / You are the best opponent I have had.
+EAGLE(s): ...Don't. Don't say that. I / want to hate you cleanly.
+HAWKE: Hatred is cleaner at a distance. / Go. Live.
+STURM: Let them run east.
+HAWKE: A refugee column is a better / messenger than any rider.
+HAWKE: Fear travels at walking pace. / It arrives intact.
+STURM: Green Earth held the fence for / thirty years. Today it has no warden.
+STURM: The first flag is down. / Raise mine.
+VON BOLT: And the salvage ledgers! / Intact! I choose second pick!
+HAWKE: By my count, three nations / remain.
+STURM: Three.
+CRUMB(h): Sir? Do I get to cut the / green flag down?
+MORTAR: Crumb. The Marshal has other / plans for you.
+
+== m10_map | STURM
+SOLDIER: Hobb! The Marshal says / you carry the flag.
+CRUMB: Which flag?
+SOLDIER: Ours.
+CRUMB(h): I'm Standard-Bearer?!
+MORTAR: By accident. Don't drop it.
+CRUMB: Gerald, I'm a Standard- / Bearer! Look!
+WICK: Is it all right if I ask / why the Marshal chose Crumb?
+HAWKE: He has lost boots, rations / and his hat. Never an order.
+HAWKE: And a bearer should be someone / the enemy ignores. Crumb is ideal.
+CRUMB: Thank you, Marshal! ...I / think that was a compliment.
+HAWKE: Take it as one.
+HAWKE: Crumb. My listening post picked / up an Allied relay. Take the headset.
+HAWKE: Write down every word. Do not / interrupt. Do not sneeze.
+CRUMB: Yes sir! Gerald, hush.
+
+== m10_warroom | STURM
+NARRATION: Intercept. Allied Accord, / emergency council. Line open.
+NELL: Evergreen has fallen. Green / Earth's wardens are gone.
+NELL: Nobody leaves this table. We / hold together, boys. All of us.
+GRIT: Ayup. Then let's talk about / who's payin', Nell.
+GRIT: Blue Moon's been footin' the / bill for that fence thirty years.
+SAMI: The wardens held the fence. Now / nobody does. That's a gap.
+MAX: A gap! Big man! Give me a day / and I'll plug it with Black Hole!
+GRIT: Max, you ain't ever plugged a / gap. You fall through 'em.
+MAX: Falling is a kind of plugging!
+SENSEI: Quiet, youngsters. I've got a / pass full of Green Earth's refugees.
+SENSEI: Council voted to shut my gate. / I'm old. I forgot where it is.
+JAVIER: Hark! I, Javier, ride east / with them! We beg shelter at the pass!
+KANBEI: Kanbei honours the Accord. But / the border was sealed with cause.
+GRIMM: Har! Pencil necks! Council, / council! I hired a road man.
+GRIMM: Koal. Cost me a fortune. Roads / win wars!
+ANDY: Nell, send me! I can be at / the front by morning!
+NELL: Andy. Not alone, and not yet. / We go together, or not at all.
+NARRATION: A pen scratches on the open / line. Nobody asks whose.
+NELL: Sonja? You have not said a / word.
+SONJA: I am still counting, Nell. / Green Earth held the sea lanes.
+SONJA: Whoever holds them next / decides what the Accord is.
+NELL: Then we count together. The / Accord holds. It has to.
+CRUMB(s): Sir, they said fence / eleven times.
+HAWKE: Twelve. The Accord is a table / with four legs. One was just sawn off.
+MORTAR: Crumb. Pencil down.
+
+== m11_pre | VON BOLT
+NARRATION: Ashfall Pass. Yellow Comet's / border. Mount Ember smokes.
+SENSEI: Easy there, youngsters. This / pass is old as I am.
+SENSEI: Green Earth's refugees asked / for a roof. I gave them one.
+JAVIER: And a watchtower! He gave me / a tower! A noble elder!
+SENSEI: Do not love me. Hold the / left gap.
+HAWKE: Sensei. Yellow Comet sealed its / border. You opened a pass.
+SENSEI: Council voted to shut the gate. / I'm old. I forgot where it is.
+HAWKE: The Accord is cracking. And it / is cracking in your pass.
+SENSEI: Don't read my gate for gossip, / Hawke. Read the wind.
+HAWKE: I have read your old files. / Paratroops. Very thorough.
+SENSEI: Files do not carry the cold.
+VON BOLT: Another old man! Kehh... / Shall we compare ages?
+SENSEI: I remember your face on a / wanted poster. You were old on it.
+VON BOLT: And I remember yours on a / diaper! Kehh-heh!
+SENSEI: At least I've got my own / teeth.
+VON BOLT: Mine are in a vault. Safe, / and earning interest.
+SENSEI: Teeth don't earn interest.
+VON BOLT: Everything earns interest!
+SENSEI: That's the difference between / us. I retired. You compounded.
+VON BOLT: Name a price for this pass. / Everything is for sale.
+SENSEI: Not my pension. It took me / forty years to be this poor.
+JAVIER: Marshal Hawke! You wore Green / Earth's colours and sold them!
+HAWKE: Sir Javier. I did not sell them. / I rented them to myself.
+JAVIER: By my honour, I will not be / mocked! I charge! At noon!
+HAWKE: Then I shall prepare for noon.
+JAVIER: ...You admit it?
+HAWKE: A man who announces his charge / saves me the scouting. Thank you.
+SENSEI: And mind Mount Ember. She / wakes at noon.
+SENSEI: She is not particular about / whose feet.
+VON BOLT: Can the mountain be hired?
+SENSEI: She's been paid in ash for a / thousand years. Still working.
+CRUMB: Sir, the mountain is smoking. / Gerald is nervous.
+WICK: Is it all right if I ask / what wakes means?
+MORTAR: Crumb.
+HAWKE: Two armies, one pass. Cut / them apart.
+
+== m11_day3 | VON BOLT
+NARRATION: Mount Ember coughs. Ash / falls on the Rim Track.
+JAVIER: That was not my doing! By / honour, write it down!
+SENSEI: She's early. She does that. / Like a nephew.
+HAWKE: The rim is marked a turn ahead. / Whoever steps there pays.
+VON BOLT: Ash! Does anyone pay for ash? / Because I will not.
+CRUMB: My boot is smoking, Colonel.
+VON BOLT: Then it is hot goods! Run!
+
+== m11_day5 | VON BOLT
+SENSEI: Paratroopers! Jump, you / lazy sparrows!
+HAWKE: Behind our line. A fine / tempo, old man.
+SENSEI: Thank you. My knees did not / think so.
+VON BOLT: Sparrows! Kehh... with / teeth! Count them!
+
+== m11_day8 | VON BOLT
+SENSEI: The mountain does not / take sides, youngsters.
+HAWKE: Then neither do we. Whoever / stands on the rim pays.
+JAVIER: She burned my banner! A / noble, honest foe!
+VON BOLT: She burned my receipts too. / I want that mountain's address.
+SENSEI: She's a fine lady. Cranky / before lunch.
+
+== m11_post | VON BOLT
+SENSEI(s): Hmph. Old bones, beaten / by a gale.
+VON BOLT: Kehh-heh! I win on years, / old man! I always do!
+SENSEI: You win on years. I win on / teeth. Call it a draw.
+VON BOLT: Nothing is a draw. Teeth are / priced. I will buy yours.
+SENSEI: Over my retired body.
+JAVIER: A knight never retreats! He / charges to the rear!
+HAWKE: Sir Javier. You may go. A knight / who carries news outlives three.
+JAVIER: By my honour... I did not / expect courtesy from you.
+HAWKE: It is not courtesy. It is tempo. / Fear arrives sooner than armies.
+SENSEI: He's right, and that's what / scares me. Listen, Hawke.
+SENSEI: Everyone signed the Accord. / Nobody read the footnotes.
+SENSEI: Page nine. If one nation falls, / the rest guard the fence.
+SENSEI: Page nine does not say who / pays. That is why you are winning.
+HAWKE: A clean reading of the text.
+SENSEI: Javier, tell Kanbei the storm / is faster than gossip.
+SENSEI: He won't like it. He has a / rule for everything.
+SENSEI: And a daughter who keeps the / rulebook. Mind her.
+VON BOLT: A daughter! With a rulebook! / I like her already.
+HAWKE: Sonja. Yellow Comet's eyes. We / will meet her.
+
+== m11_map | VON BOLT
+HAWKE: Two names turned up on the / old rolls. Koal. Kindle.
+HAWKE: Koal is building Yellow Comet / a road. A very long one.
+VON BOLT: And Kindle! She owes me / fourteen thousand!
+HAWKE: She runs their festival.
+CRUMB: Do they know we're coming, / sir?
+HAWKE: Everyone knows. The / question is who will mind.
+CRUMB: A farmer says Mr Koal / listens to Sturm and Hawke.
+CRUMB(h): Roads and orders, he said. / I wrote it on my sleeve.
+HAWKE: Roads and orders. Of course.
+HAWKE: Kanbei sealed his border to keep / the crystal. It will not stay sealed.
+HAWKE: His daughter runs his spies. / Sonja. She reads more than she writes.
+WICK: Is it all right if I ask / what she writes?
+CRUMB: Marshal, what are you / writing? In the notebook?
+HAWKE: Doctrine. Chapter one is / Patience.
+CRUMB: And chapter two?
+HAWKE: Later.
+STURM: The second nation. Its gate is / already open a little. Push.

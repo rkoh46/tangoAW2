@@ -1,1 +1,584 @@
 # BH dialogue, act3 (format: README.txt)
+# Act III, Yellow Comet: M12 Highway to the Horizon, M13 Festival of Flame, M14 No Soldier Left Behind,
+# M15 The Skybridge, M16 Comet Keep (+ the Allied war room).
+
+# ---------------------------------------------------------------------------------------------------
+# M12 Highway to the Horizon (recruit Koal). The player leads a tag pair of STURM, VON BOLT, HAWKE.
+# Enemy: Koal + Grimm (Grimm hired Koal to build Yellow Comet's roads).
+# ---------------------------------------------------------------------------------------------------
+
+== m12_pre | STURM, VON BOLT, HAWKE
+NARRATION: The Trans-Comet Highway. / Two thousand miles of road.
+KOAL: Stop. Right there. You / stand on my shoulder.
+KOAL: The hard shoulder. Three / metres wide. Move.
+GRIMM: Har! He says that to / everybody. It's his thing!
+GRIMM: Name's Grimm, pencil necks! / I hired the road guy!
+KOAL: Grimm pays me. Grimm has / never read what he pays for.
+GRIMM: I hate reading! I love / roads! Best deal I ever made!
+KOAL: Welcome to the Trans-Comet / Highway. Two thousand miles.
+KOAL: Not one pothole. Not one / border.
+KOAL: Except the ones at the end. / I hate the ones at the end.
+GRIMM: The Council sealed 'em all / last spring. Koal hasn't slept.
+KOAL: Two thousand miles of road, / and a gate bolted across it.
+KOAL: A road that ends in a gate / is a driveway. I built a driveway.
+KOAL: The Council pays me to build / and then to stop.
+KOAL: I wish to build and not / stop. Take it from me. Try.
+@WITH STURM
+STURM: Yellow Comet seals its / borders and calls it safety.
+STURM: Its roads lead to a wall. / Mine will lead through it.
+KOAL: ...Through.
+STURM: Show me the road. Then I / will own the end.
+KOAL: The end is the problem.
+@WITH HAWKE
+HAWKE: One camber the length of / the road. One drainage plan.
+HAWKE: I read your survey of the / northern bank. Twice.
+KOAL: All of it? Including the / culverts?
+HAWKE: Especially the culverts. / Nobody reads the culverts.
+KOAL: Nobody. ...Continue.
+@WITH VON BOLT
+VON BOLT: A toll road! Koal, think / of the tolls!
+KOAL: NO TOLLS.
+VON BOLT: ...Small tolls?
+KOAL: NO.
+VON BOLT: Kehh... Tiny ones. Per / axle. Nobody counts an axle.
+@END
+HAWKE: Beneath that median sleeps / a Black Factory. Three doors.
+HAWKE: Buried when the highway / was poured. Thirty years ago.
+KOAL: There is nothing under my / median. The survey says void.
+HAWKE: The survey says void. The / ledger says Black Hole.
+GRIMM: A factory? Under the road? / Har! Who parks a factory?
+STURM: Take the road. Take the / median. Wake what sleeps.
+CRUMB(h): Sir! I inspected the / shoulder. It is very firm!
+KOAL: ...You touched my shoulder?
+CRUMB: I only measured it, sir! / Gerald held the tape.
+KOAL: I like him.
+GRIMM: WHAT? He gets "I like him"? / I got "stay off the grass"!
+KOAL: You drove on the grass.
+GRIMM: It was a SHORTCUT!
+
+== m12_day5
+KOAL: A Black Factory in my / median? Rude.
+GRIMM: It moved! The road MOVED! / Koal, the road's alive!
+KOAL: The road is not alive. The / road is being trespassed upon.
+
+== m12_day12
+KOAL: The pipeline is mine. Do / not smoke near it.
+GRIMM: Smoke? Me? Never. ...Got a / light, anybody? Kidding! Kidding.
+KOAL: Grimm. I have a map of / every fire you ever started.
+
+== m12_post | STURM, VON BOLT, HAWKE
+KOAL(s): My highway... broken at / the junction. Unforgivable.
+GRIMM: Koal! Up, up! You can't sit / on your own shoulder!
+KOAL: I lost, Grimm. That is a / surface condition, not a verdict.
+GRIMM(s): Yeah. Me too. I lost the / guy who reads the maps.
+GRIMM: Quit staring at them. What / are they saying?
+KOAL: They have not said it yet. / Be quiet and let them.
+KOAL: I will hear you out. Why / take your orders?
+@IF STURM
+STURM: Because borders end where / we arrive.
+STURM: The Council built you a / road, and a wall to end it.
+STURM: I do not build walls. I / own what lies behind them.
+KOAL: No... end?
+STURM: Two thousand miles is a / driveway. Pave me a world.
+STURM: The last mile is mine to / name. I will name it yours.
+KOAL: ...Hm. Send me the survey / maps. All of them.
+STURM: You will not kneel to a / Council again. You will build.
+@IF HAWKE
+HAWKE: Black Hole pays for roads. / Every nation's.
+HAWKE: One standard. One camber. / One drainage plan. One road.
+KOAL: One camber...!
+HAWKE: One camber. I have drawn / it already. Would you see it?
+KOAL: Where do I sign?
+HAWKE: Here. Black coffee? You / will want some. It is a long map.
+@IF VON BOLT
+VON BOLT: Wages, Koal! Not tolls. / WAGES. Quarterly. In coin!
+KOAL: Coin. For roads I build.
+VON BOLT: Every mile priced, every / mile paid. Kehh-heh!
+VON BOLT: The Council wanted you / cheap and stopping.
+VON BOLT: I want you dear and / going. Dear means expensive.
+KOAL: ...Dear and going. I like / the arithmetic.
+VON BOLT: Everybody does, once the / first cheque clears.
+@PARTNER STURM
+STURM: He will sign. A man who / builds wants the road finished.
+@PARTNER HAWKE
+HAWKE: The draft is ready, Koal. / One camber. Save your pen.
+@PARTNER VON BOLT
+VON BOLT: And a bonus per mile! Per / MILE, Koal! Kehh-heh!
+@END
+KOAL: I accept. Mind the lane.
+GRIMM: Aw, c'mon, Koal! I brought / you donuts every Tuesday!
+KOAL: They were stale. I ate them / anyway. That was respect.
+GRIMM(s): ...Respect. Yeah. That's / the nicest thing you ever said.
+GRIMM: Fine! Go pave for the bad / guys! See if I care!
+GRIMM: ...I care a little. Don't / tell the Boss. Or Sensei.
+KOAL: The next road I build will / run past your door, Grimm.
+GRIMM: Then I'll punch it. Har! / ...It'll be a good punch.
+
+== m12_map
+KOAL: Corporal. You. Come here.
+CRUMB: Sir? I'm a Private, sir.
+KOAL: Not on my road. You are / my road inspector now.
+CRUMB(h): Gerald, we got a job!
+MORTAR: The road inspector will / report for duty at dawn.
+MORTAR: Crumb. Do not measure the / Colonel's shoulder.
+CRUMB: A lady at the toll hut / wrote down my name, sir.
+WICK: She wrote down everyone's. / Even the cart horses'.
+MORTAR: Crumb. Wrote it in what?
+CRUMB: A small black book. She / signed the page "S."
+CRUMB: She asked who pays us. And / how the Marshal takes his coffee.
+WICK: Is it all right if that / worries me? A little?
+MORTAR: Worry quietly.
+CRUMB: She said Gerald has a / lovely colour.
+CRUMB(s): ...She looked at his / wrapper a long time, sir.
+CRUMB: A stall-keeper says Lady / Kindle likes gold and manners.
+WICK: Is it all right if we / bring manners? We have gold?
+MORTAR: The Colonel has the gold. / We have manners. In theory.
+
+# ---------------------------------------------------------------------------------------------------
+# M13 Festival of Flame (recruit Kindle). FREE: STURM, VON BOLT, HAWKE, KOAL.
+# ---------------------------------------------------------------------------------------------------
+
+== m13_pre | STURM, VON BOLT, HAWKE, KOAL
+NARRATION: Yellow Comet, the east. / The Flame Festival.
+KINDLE: Darlings! You are late / to my festival!
+KINDLE: The Flame Festival! The / greatest night in the east!
+KINDLE: And I am its patron, its / star, its everything.
+KINDLE: Yellow Comet pays me to / stand here and shine.
+KINDLE: I would shine anyway. The / pay is nice.
+HAWKE: Kindle. You are on the / rolls of Black Hole.
+KINDLE: Rolls! Ha! I am on / posters, darling.
+KINDLE: Two weeks a year the / Council opens the gates.
+KINDLE: Two weeks! The east comes / to look at me. Then it leaves.
+KINDLE: Fifty weeks of sealed / borders. I perform for mirrors.
+KINDLE: Impress me. Take my stage, / and hold three of my four towers.
+KINDLE: Before the last firework. / Fourteen days. I get bored in thirteen.
+@IF STURM
+STURM: Kindle.
+KINDLE: The storm himself! You are / taller than the posters.
+STURM: You are loud. That will be / useful. I want your stage.
+KINDLE: Everybody does, darling. / Say it with fire.
+@IF HAWKE
+HAWKE: A fortnight, a plaza, four / towers. The board is tidy.
+KINDLE: Tidy! He says it like / a compliment.
+HAWKE: It is. I admire a stage that / knows its own geometry.
+KINDLE: ...Keep talking. I do like / being admired by cold men.
+@IF VON BOLT
+VON BOLT: Kindle, you owe me / fourteen thousand!
+KINDLE: Darling, I owe the world. / You are a small part.
+VON BOLT: A small part of the world / is FOURTEEN THOUSAND!
+KINDLE: Then you may queue. Behind / my florist.
+@IF KOAL
+KOAL: Fireworks over a road. Keep / them off the camber.
+KINDLE: Darling, the camber is / not a stage. ...Yet.
+KOAL: The avenue to your plaza. / I laid it.
+KINDLE: THAT avenue! And the gate / at the far end, bolted by Kanbei!
+KOAL: It is the same gate. It / bolted my road too.
+KINDLE: Two gates, one grievance. / Do not spoil my show with it.
+@END
+CRUMB(h): Ma'am Kindle! Are those / real flames? Are they allowed?
+KINDLE: Allowed! Darling, I AM the / permit.
+MORTAR: Crumb. Back from the stage.
+
+== m13_day4
+KINDLE: Fireworks! Clap, peasants, / clap!
+WICK: Is it all right if I / flinch? They are very loud.
+KINDLE: Flinch, darling! It is / applause with the spine!
+
+== m13_day10
+KINDLE: Four days left, darling. / Entertain me. Properly.
+KINDLE: The towers are my / heartbeat. Do not stop it.
+CRUMB: She's counting, sir. Gerald / says so. He counts too.
+
+== m13_post | STURM, VON BOLT, HAWKE, KOAL
+KINDLE(s): My plaza! My lovely / plaza! You... brute.
+KINDLE: The stage is yours and the / towers burn for you. Hm.
+KINDLE: Fine. You impress me. / Slightly. Do continue.
+KINDLE: Why should I join? Yellow / Comet adores me.
+KINDLE(s): ...For two weeks a year. / Then the gates close and they go.
+KINDLE: Nobody can give me what I / want. Go on. Try.
+@IF STURM
+STURM: You want an audience that / does not leave.
+KINDLE: ...Yes. How did you know?
+STURM: Every city I take is a / theatre. The seats are full.
+STURM: Nobody leaves. Nobody / may.
+KINDLE: Ahaha! Oh, he is TERRIFYING. / I adore him.
+STURM: Stand where I place you. / They will look.
+KINDLE: Look, darling? They will / not even blink.
+@IF HAWKE
+HAWKE: Yellow Comet has one / festival. We have a world.
+HAWKE: Every city a stage. Every / night an opening.
+KINDLE: Opening night forever. / ...You flatter well.
+HAWKE: I do it professionally. And / I never flatter a bad house.
+@IF VON BOLT
+VON BOLT: Adoration is a debt, my / dear. We pay it in gold.
+VON BOLT: Statues, Kindle. Gold ones. / Taller each year.
+KINDLE: ...Gold ones.
+VON BOLT: And an audience that never / goes home. I budgeted it.
+KINDLE: Ahaha! Gold ones! Sold!
+VON BOLT: Kehh-heh! Then the / fourteen thousand.
+KINDLE: I shall pay you in applause. / Sold is sold.
+VON BOLT: Applause does not CLEAR!
+@IF KOAL
+KOAL: I build roads without / borders. I will open every gate.
+KOAL: Your east will drive to you / all year. Every lane lit.
+KINDLE: A road, to me. Every lane / lit...
+KOAL: Four metres wide, each.
+KINDLE: Ahaha! The most romantic / thing a man has ever measured!
+KOAL: It was not romantic. It was / a specification.
+KINDLE: Yes, darling. That is what / I said.
+@END
+KINDLE: I accept, darlings. Now. / Where is my seat?
+CRUMB: Ma'am, I kept it warm.
+KINDLE: It is a crate.
+CRUMB(h): A premium crate!
+KINDLE: ...Adorable. Keep him.
+KINDLE: Tell Kanbei his scroll was / lovely. I shall frame it.
+KINDLE: Then I shall burn the / frame. Ahaha!
+
+== m13_map
+CRUMB: Ma'am Kindle gave me / a sash!
+WICK: It says "Audience".
+CRUMB(h): It says "Audience"! I'm / in her audience!
+MORTAR: Don't clap unless asked.
+CRUMB(s): ...I clapped.
+MORTAR: Crumb. The whole row / heard you.
+KINDLE: Darlings, a girl in the / rafters took notes all night.
+KINDLE: Dark coat. Gloomy. Not one / clap. I did not mind. Much.
+CRUMB: Notes, ma'am? On what?
+KINDLE: On us, darling. On the / seats. On who stood up first.
+HAWKE: A spectator who takes notes / is not a spectator.
+CRUMB: Gerald says she counted. / Gerald counts, so he'd know.
+
+# ---------------------------------------------------------------------------------------------------
+# M14 No Soldier Left Behind. FREE; Sturm on the radio as Black Hole's lord whoever leads.
+# ---------------------------------------------------------------------------------------------------
+
+== m14_pre
+NARRATION: Yellow Comet highlands. / Night. The radio crackles.
+CRUMB(s): Sir? Crumb here. I am / slightly surrounded.
+HAWKE: Where.
+CRUMB: Highlands, west of the / highway. Eight of them. Ten.
+CRUMB: Twelve. Some are waving. / I do not think it is friendly.
+HAWKE: How does a runner end up / west of the highway?
+CRUMB: Mr. Koal said stay on the / shoulder, sir. It ran out.
+KOAL: The shoulder ends at the / guardrail. Past it is not a road.
+SONJA: A lost sparrow. And a / radio that sings.
+SONJA: Good evening, Marshal. I / am Sonja of Yellow Comet.
+HAWKE: Kanbei's daughter. You / hold my runner.
+SONJA: I keep him safe. For now. / A courtesy. It has a price.
+SONJA: One general, delivered to / Comet Keep. Any general.
+SONJA: Or in fifteen days my / father's engineers seal the pass.
+SONJA: After that, the highlands / are a winter and a wall.
+HAWKE: One soldier is not worth / a battalion.
+HAWKE: It is a tempo trade, and / a bad one. She wants three
+HAWKE: moves of ours for one of / her pawns. I decline.
+VON BOLT: He owes me for boots! / A debtor must not die!
+VON BOLT: A dead debtor pays / nothing. Fetch him. Kehh!
+KOAL: He inspected my road. Found / a crack I missed. I owe him.
+KINDLE: The cute one? He wore my / sash. "Audience", it said.
+KINDLE: One does not lose the / audience, darlings. Ever.
+STURM: Silence.
+STURM: Marshal. You count pawns. / I count what is mine.
+STURM: Every soldier here holds / one belief.
+STURM: If he falls behind, / someone turns around.
+STURM: Break that once, and I / command a crowd.
+STURM: A crowd can be bought. A / crowd can be sold.
+HAWKE: And if it is a trap?
+STURM: It is a trap. She said / so. She wants to see me choose.
+STURM: I will choose where she / can watch. Fifteen days.
+STURM: Take him back.
+SONJA: Fifteen days. I shall / count them for you.
+SONJA: I hoped you would. Do not / disappoint my book, Sturm.
+
+== m14_day2
+KANBEI: Sonja! Daughter! Have you / eaten? The highlands are cold!
+SONJA: Father. This is an open / line.
+KANBEI: Then Kanbei shall say it / to all: she is his pride!
+KANBEI: Top of her class! A ledger / at six years old!
+SONJA: ...Father.
+KANBEI: And the sparrow on the / radio! Is he fed?
+SONJA: He is bait, Father.
+KANBEI: Bait is a boy with a mother / somewhere. Feed him.
+SONJA: ...I will send a cook. / Close the line.
+HAWKE: Interesting. She obeys him / only where he cannot see.
+
+== m14_day3
+CRUMB(s): They moved, sir. Closer. / I stopped eating.
+CRUMB: That is how serious it / is.
+MORTAR: Crumb. Hold. That is an / order.
+CRUMB: Yes, Sergeant. Where else / would I go?
+
+== m14_day6
+CRUMB: Gerald says hold on. He / is very brave, sir.
+CRUMB(h): He cracked a little. / But he held. We both did.
+
+== m14_day8
+SONJA: The fog hides him from you. / It does not hide you from me.
+SONJA: Eight days, Sturm. You have / not hurried. That tells me more.
+
+== m14_day12
+CRUMB(s): Three days, sir? I can / hear the helicopter.
+CRUMB: It is the loudest thing / I ever heard. I love it.
+
+== m14_post
+CRUMB(s): Is it... is it over?
+STURM: You are extracted.
+CRUMB: Sir, you came for me.
+STURM: He is mine. I take back / what is mine. Nothing more.
+CRUMB(h): Yes, sir! Gerald is / fine. Very fine!
+CRUMB: He has a crack now. Just / one. Like a scar!
+MORTAR: One HP. The medic says / technically alive.
+CRUMB(h): Technically is my best / rank, Sergeant!
+VON BOLT: The boots! Where are / my boots?!
+CRUMB: I still have both, / Colonel!
+VON BOLT: Kehh... I'll collect / them later. Tonight, rest.
+SONJA(s): You took him. Four of your / officers said leave him.
+SONJA: I heard them on the line. / You turned an army round.
+HAWKE: A lapse in judgement.
+SONJA: A data point, Marshal. The / most expensive one I own.
+SONJA: I keep a book of men who / would not. He is not in it.
+STURM: Do not write that down.
+SONJA: Page one, I think.
+SONJA: Private Hobb. My scouts saw / you hold your biscuit up.
+CRUMB: Like a flag, ma'am! He / likes being a flag.
+SONJA: There is a mark on its / wrapper. I have seen it once.
+SONJA: In a ledger. On a shipping / line that does not exist.
+CRUMB: It is the maker's mark, / ma'am.
+SONJA: Whose?
+CRUMB: ...Gerald's?
+STURM: He is mine. So is his / biscuit. Close the line.
+SONJA: Gladly. Good night, Private.
+
+== m14_map
+MORTAR: Medic says one HP is / technically alive.
+CRUMB(h): Technically is my best / rank, Sergeant!
+WICK: I... I was worried. Stupidly / worried. I counted the days.
+CRUMB: It's all right, Wick. / Gerald was worried, too.
+MORTAR: Crumb. Do that again, / I will court-martial you.
+MORTAR: ...Eat your soup.
+SOLDIER: Sir. Thank you. For / Hobb.
+SOLDIER: We would have walked into / that pass ourselves.
+STURM: Then you understand what / this army is.
+STURM: Do not thank me. Win.
+
+# ---------------------------------------------------------------------------------------------------
+# M15 The Skybridge. FREE (+ second-front partner, who fights Grimm in the sky).
+# ---------------------------------------------------------------------------------------------------
+
+== m15_pre | STURM, VON BOLT, HAWKE, KINDLE, KOAL
+NARRATION: The Skybridge. A road of / stone, a mile above the gorge.
+KANBEI: Black Hole! You tread the / Skybridge of Yellow Comet!
+KANBEI: I, Kanbei, will not yield / a step. Honour demands it!
+KANBEI: My teacher crossed this / bridge. His teacher laid it.
+KANBEI: It leads to Comet Keep. / You will not cross it.
+GRIMM: Grimm here! Lemme at 'em! / The sky's got no walls!
+KANBEI: The sky has no walls, Grimm. / That is why the bridge must hold.
+GRIMM: Don't wait, Boss! I'll / punch a cloud!
+KANBEI: Grimm. A cloud cannot be / punched.
+GRIMM: Watch me.
+STURM: Kanbei. You hold a bridge / between your people and me.
+STURM: Step aside, and they keep / their roofs.
+KANBEI: Kanbei steps aside for / no one!
+STURM: Then they keep nothing.
+KANBEI: Kanbei has read his / daughter's report on you, storm.
+KANBEI: She says you turned an army / round for one private.
+KANBEI: She writes it with great / admiration. Kanbei agrees!
+KANBEI: A foe who values his men / is a foe worth defeating!
+GRIMM: Boss, that's not how you / insult a guy.
+KANBEI: It is how Kanbei does it.
+@WITH KOAL
+GRIMM: KOAL?! That's my road guy! / Gimme my road guy!
+KOAL: I am not yours. I was on / retainer.
+GRIMM: Donuts count as a retainer!
+KOAL: They were stale. ...A rail / cutting. Thin shoulders. I will fix them.
+@WITH KINDLE
+KANBEI: Kindle! You sang at the / festival of Kanbei's table!
+KINDLE: Sang! Darling, I BURNED for / you. For eleven years.
+KANBEI: Kanbei applauded!
+KINDLE: Twice. I counted. Do not / do it now.
+@END
+HAWKE: Two fronts. Mountain and / sky. Divide as you see fit.
+
+== m15_day4
+SONJA: Father. A question, if the / line is clear.
+KANBEI: Ask, daughter! Kanbei's ear / is yours!
+SONJA: The code says never yield. / It also says protect the weak.
+SONJA: When both parts collide, / which one gives way?
+KANBEI: Neither gives way! That is / why it is a code!
+SONJA: And if a man is not strong / enough to hold both?
+KANBEI: Then Kanbei trains him / harder. Honour is a muscle!
+SONJA: ...Yes, Father. I will / write that down.
+GRIMM: What's she asking? Is it / a trick question? I hate those.
+KANBEI: She jests. She often jests. / A fine strategist, my Sonja!
+
+== m15_sky_won | STURM, VON BOLT, HAWKE, KINDLE, KOAL
+@PARTNER STURM
+STURM: The sky is mine. I am / moving to the main front.
+@PARTNER VON BOLT
+VON BOLT: Sky's ours, my boy! Kehh! / Count it! I am counting it!
+@PARTNER HAWKE
+HAWKE: The sky is ours. Reporting / to the main front.
+@PARTNER KINDLE
+KINDLE: The sky is ours, darlings! / Applause for the finale!
+@PARTNER KOAL
+KOAL: Sky cleared. Reporting to / the main front. Mind the lane.
+@END
+GRIMM(s): My wings! ...Boss, it's / up to you. Hold the bridge!
+KANBEI: Kanbei holds!
+
+== m15_day8
+GRIMM: A Stealth? Ha! I'll punch / it until it shows up!
+KANBEI: Grimm, it is invisible. / That is its entire point.
+GRIMM: Then it can't hide from / punching! Nobody ever tried!
+
+== m15_post
+KANBEI(s): The mountain falls. / Honour... remains.
+GRIMM(s): I punched a cloud and / it punched back.
+KANBEI: Grimm, you flew well. You / lost well. Both are honour.
+GRIMM: Aw, Boss.
+STURM: Kanbei. The bridge is mine.
+KANBEI: The bridge, yes. Not the / Keep. Not my people.
+STURM: Your daughter's report / was correct.
+KANBEI: Sonja is never wrong!
+STURM: Then she knew how this / ends. Ask her why she let it.
+KANBEI: ...What?
+STURM: Nothing. A storm talks. / Go and pray, Kanbei.
+SONJA: Father. Withdraw to the / Keep. The ground is better.
+KANBEI: Sonja counsels retreat! / Kanbei does not retreat.
+KANBEI: Kanbei REPOSITIONS, with / honour, to better ground!
+SONJA: Yes, Father. That is the / word I would use.
+KANBEI: Yellow Comet will meet / you at Comet Keep!
+
+== m15_map
+CRUMB(s): Sir, the sky bridge / wobbles. Is that normal?
+MORTAR: It is a sky bridge, Crumb.
+CRUMB: Gerald is gripping my / pocket very hard.
+WICK: Is it all right if I don't / look down? Or up? Or around?
+MORTAR: Look at the boots in front / of you. That is the rule.
+CRUMB(h): Those are mine, Sergeant! / I have four spare pairs!
+MORTAR: ...Crumb. Of course you do.
+HAWKE: Kanbei trusts his daughter / entirely. Remember that.
+CRUMB: The Emperor shouted at a / cloud, sir. I liked him.
+
+# ---------------------------------------------------------------------------------------------------
+# M16 Comet Keep. KOAL + KINDLE (fixed pair) against Kanbei + Sensei.
+# ---------------------------------------------------------------------------------------------------
+
+== m16_pre
+NARRATION: Comet Keep. Dusk. The last / gate of Yellow Comet.
+KANBEI: This is Comet Keep. Born / of honour and mountain.
+KANBEI: Come, black storm! Let / honour judge us!
+SENSEI: Easy, Kanbei. You will scare / the pigeons. Again.
+SENSEI: Remember Hachi? Our old / pupil. Sells maps now.
+KANBEI: Kanbei remembers! A fine / blade, wasted on maps.
+KOAL: Kanbei. The south gate. My / highway ends against it.
+KOAL: Two thousand miles, and a / bolt across the last one.
+KANBEI: The gate protects the / people of Yellow Comet!
+KOAL: It protects a wall. A road / protects nobody. It asks nothing.
+KOAL: Open it, or I open it.
+KANBEI: Kanbei opens nothing for / a deserter!
+KOAL: I was a contractor.
+SENSEI: A good one. He paved my / garden path, too.
+KOAL: It was a lane.
+SENSEI: It was a puddle I liked. / Rainy days are sacred, youngster.
+KINDLE: Kanbei! Darling! The Great / Hall! Where I was THANKED!
+KINDLE: Eleven years of fire. And / you gave me a scroll.
+KANBEI: Sealed with the seal of / Kanbei! A great honour!
+KINDLE: "Thank you for your service." / Like a postman, darling!
+KANBEI: Written in the finest brush!
+KINDLE: It was a SCROLL. I wanted / a roar. You applauded twice!
+SENSEI: Kanbei. Did you stand?
+KANBEI: ...Kanbei applauded. Twice.
+SENSEI: Mm. I counted too.
+KANBEI: Sonja guards the rear. No / blade shall touch my daughter.
+SONJA: Father, I am a grown woman.
+KANBEI: And still my daughter!
+SENSEI: He is incorrigible.
+KINDLE: Wait. The rear guard. The / gloomy coat... the RAFTERS!
+SONJA: Good evening, Madam Kindle. / Your fourth firework ran late.
+SONJA: By two seconds. I timed it.
+KINDLE: She DID NOT CLAP.
+KANBEI: Sonja was at the festival? / Reconnaissance! Splendid!
+SONJA: Yes, Father. Reconnaissance.
+
+== m16_day6
+SENSEI: Jump, my paratroopers!
+SENSEI: Mind the washing lines! / The cook hangs socks there!
+KOAL: Behind our line. By the / supply road.
+KINDLE: Parachutes, darlings! A / finale! Somebody clap!
+
+== m16_day12
+KANBEI: Kanbei leads! For honour, / for Yellow Comet! Charge!
+SENSEI: There he goes. Forty years / I taught him to wait.
+SENSEI: Right. Knees, do not fail / me now. Follow the Emperor!
+SONJA: Father, wait for the left / flank.
+KANBEI: Honour does not wait!
+SONJA: ...I know.
+
+== m16_post
+KANBEI(s): Kanbei is beaten. The / Keep is yours.
+KINDLE: Ahaha! Lights! Somebody / bring the lights!
+KANBEI: Spare my people, storm. / That is my only request.
+STURM: They are mine now. Harm / none of what is mine.
+KANBEI: ...Then I will bow.
+SENSEI: Kanbei. Up. A bow is for / the funeral, not the lunch.
+KANBEI: Teacher, Kanbei has lost / the capital of his house!
+SENSEI: You lost a fort. I lost / a hip in worse. Lunch.
+SENSEI: And tell Grimm to stop / punching the furniture.
+KOAL: The south gate.
+KANBEI: ...Open it.
+KOAL: Two thousand miles, and the / last mile at last. Open.
+KINDLE: Darling, are you crying?
+KOAL: Asphalt dust.
+KINDLE: Of course it is. Now. / Kanbei. The scroll.
+KANBEI: The scroll? In the Great / Hall? Under glass!
+KINDLE: I have a better frame. / Fire.
+KANBEI: ...Then Kanbei stands. / He applauds. Thrice!
+KINDLE(s): Three. ...Darling, that is / the best review I ever had.
+SENSEI: Sentimental old fools, the / pair of you.
+SONJA: Information is the last / currency. Buy mine.
+VON BOLT: What do you want for it?
+SONJA: A discount.
+KANBEI: Sonja negotiates! She / bargains for the people!
+KANBEI: Kanbei's daughter, saving / Yellow Comet with a ledger!
+SONJA: ...Yes, Father.
+KANBEI: Sonja! We shall rebuild / the Keep together, you and I!
+SONJA(s): ...Of course, Father.
+
+== m16_map
+SONJA: Blue Moon is rich, and / afraid. Dangerous together.
+VON BOLT: Rich! Tell me more!
+SONJA: That will be extra.
+VON BOLT: Kehh... Everything is / extra with you.
+SONJA: Everything is. One more / thing, Colonel. A sealed note.
+SONJA: Open it later.
+VON BOLT: What does it say?
+SONJA: Instructions. For the day / your vault is empty.
+VON BOLT: My vault is never empty!
+SONJA: Then you will never need it.
+VON BOLT: ...Hmph. Last shelf. In / the vault. With the crate.
+SONJA: Last shelf. Yes. With the / crate. I would have chosen it.
+VON BOLT: How do you know about / the crate?
+SONJA: I read ledgers, Colonel. / Good night.
+CRUMB: It's cold, Gerald. Cold / enough to freeze a biscuit.
+CRUMB(s): ...Not that he'd notice.
+CRUMB: Blue Moon folk whisper that / a tin man hates sloppy talk.
+CRUMB: Mr Koal and the Marshal / are tidy. Just saying, sir.
+
+== m16_warroom
+NARRATION: The listening post, / midnight. A relay hums.
+CRUMB: Sergeant! The relay's got the / Accord! All of them at once!
+NELL: Friends, please. One at a / time. We are on the same side.
+MAX: Same side! Yellow Comet fell / in a month! They had a WALL!
+JAVIER: Hark! The fence still / stands! By my honour, none passes!
+SAMI: Javier. They landed past / your towers. From the sea.
+GRIT: Ayup. And who's payin' for / the next wall? Blue Moon ain't.
+SENSEI: Kanbei held the Keep with / his heart. A heart's no fence.
+GRIMM: Lemme at 'em, Nell! I'll / punch the whole coast!
+ANDY: Nell, I'm going to the front. / Sitting here is killing me.
+NELL: Andy, I need one soldier at / this table who tells the truth.
+NELL: Sonja. Yellow Comet has not / spoken. We would hear you.
+NARRATION: Nobody answers. A pen / scratches, quick and even.
+GRIT: Blue Moon's bought itself a / robot. Reckon I'm to babysit it.
+NELL: If the fence falls, we draw / another. Together. Always.
+MORTAR: They sound like a family. / Write that down too.

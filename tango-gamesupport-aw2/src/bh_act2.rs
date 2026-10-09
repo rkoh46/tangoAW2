@@ -21,23 +21,6 @@ use crate::custom_campaign::{co, colour, unit, *};
 
 // --- Writing helpers ---------------------------------------------------------------
 
-/// Narration and the soldiers (Crumb, Mortar, Wick, "Soldier"): the Black Hole trooper's face.
-fn troop(text: &'static str) -> Line {
-    Line::soldier(colour::BLACK_HOLE, text)
-}
-
-fn say(c: u8, text: &'static str) -> Line {
-    Line::say(c, text)
-}
-
-fn happy(c: u8, text: &'static str) -> Line {
-    Line::feel(c, Mood::Happy, text)
-}
-
-fn sad(c: u8, text: &'static str) -> Line {
-    Line::feel(c, Mood::Sad, text)
-}
-
 /// The mission's rule "on day `d`, at the start of the player's turn, do these": fires once, on that
 /// day (`EveryDays` with a period no mission reaches), without taking one of the campaign's 96
 /// once-latch flags.
@@ -170,72 +153,30 @@ fn bh04() -> MissionDef {
     m.objective = "Capture Fort Verdant or rout Hawke.";
     m.map = MapSrc::Built("bh04");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)).funds(10000),
         // Hawke commands Green Earth's northern army in its colours.
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::HAWKE)).funds(8000),
     ];
-    m.pool = vec![co::STURM, co::VON_BOLT];
     m.fog = true;
     m.day_limit = 20;
     m.rank_days = 12;
-    m.intro = Scene::new(vec![
-        troop("Green Earth, the northern march. Fog, forest, a Marshal."),
-        say(co::HAWKE, "Welcome. You walked my road without tripping."),
-        say(co::HAWKE, "That is rarer than you think."),
-        say(co::STURM, "I did not come for praise. I came to take.").only(co::STURM),
-        say(co::HAWKE, "Of course not. Praise is for people who need it.").only(co::STURM),
-        say(co::VON_BOLT, "Flattery! Does it come with a fee?").only(co::VON_BOLT),
-        say(co::HAWKE, "A courtesy, Colonel. Free, this once.").only(co::VON_BOLT),
-        say(co::HAWKE, "I serve Green Earth. In name. In green. In habit."),
-        say(co::HAWKE, "But I have waited for a player worth facing."),
-        say(co::HAWKE, "Show me. No wasted orders. No wasted men."),
-        say(co::HAWKE, "The fog is mine. I like my odds."),
-        troop("Sir, is he allowed to say that out loud?"),
-        say(co::HAWKE, "Who is this?"),
-        troop("Pip Hobb, sir! Runner!"),
-        say(co::HAWKE, "A runner. How quaint."),
-    ]);
-    m.victory = Scene::new(vec![
-        sad(co::HAWKE, "Check. Not mate, but check. I concede the valley."),
-        say(co::HAWKE, "Before I fold: why should I serve you?"),
-        say(co::STURM, "You will not kneel. You will command under my banner.").only(co::STURM),
-        say(co::STURM, "Write the doctrine. I will supply the storm.").only(co::STURM),
-        say(co::HAWKE, "A storm without a captain wrecks only itself.").only(co::STURM),
-        say(co::STURM, "Then be the captain. Not mine. The storm's.").only(co::STURM),
-        say(co::HAWKE, "...Interesting. That is a different offer.").only(co::STURM),
-        say(co::VON_BOLT, "Marshal, the pay is the world. In writing.").only(co::VON_BOLT),
-        say(co::VON_BOLT, "Every vault and port. You choose the quarter.").only(co::VON_BOLT),
-        say(co::HAWKE, "You sell me an empire by the quarter.").only(co::VON_BOLT),
-        say(co::VON_BOLT, "By the ton!").only(co::VON_BOLT),
-        say(co::HAWKE, "Crude. Effective. I like the ledger.").only(co::VON_BOLT),
-        say(co::HAWKE, "I accept. But I will correct your orders."),
-        say(co::HAWKE, "Every army needs a mind. I volunteer mine."),
-        troop("Does the Marshal need a runner, sir?"),
-        say(co::HAWKE, "...Very well. You. Do not run into me."),
-    ]);
-    m.after = Scene::new(vec![
-        troop("Runner Hobb reporting! The Marshal's coffee is cold!"),
-        troop("Why did you tell him?"),
-        troop("He asked."),
-        troop("He's polite about it."),
-        troop("He said \"adequate\". I think that's a medal."),
-        troop("The radio man liked both bosses, Sergeant. Could tell."),
-        troop("Gerald says either would do for the Marshal."),
-    ]);
+    m.intro = crate::bh_text::scene("m04_pre");
+    m.victory = crate::bh_text::scene("m04_post");
+    m.after = crate::bh_text::scene("m04_map");
     m.triggers = vec![
         // Hawke's Md Tank wedge arrives on day 4 if the Marshal's valley was not scouted.
         on_day(
             4,
             Some(Cond::Not(Box::new(Cond::UnitsIn { army: 1, area: Rect::new(10, 0, 23, 17), at_least: 1 }))),
-            vec![Action::Spawn(vec![
+            vec![Action::Scene(crate::bh_text::scene("m04_wedge")), Action::Spawn(vec![
                 UnitDef::new(2, unit::MD_TANK, 16, 8),
                 UnitDef::new(2, unit::MD_TANK, 16, 10),
             ])],
         ),
-        on_day(5, None, vec![Action::Scene(Scene::new(vec![say(co::HAWKE, "Fog is a board with the lights off. I know it.")]))]),
+        on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m04_day5"))]),
         // Hawke's power is charged by day 6.
         on_day(6, None, vec![Action::Custom(charge_army2_full)]),
-        on_day(10, None, vec![Action::Scene(Scene::new(vec![say(co::HAWKE, "Impressive. You have reduced the fog to a rumour.")]))]),
+        on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m04_day10"))]),
         // The win (the pitch is the victory scene; the bond is earned with it).
         after(beaten(2, (21, 9)), vec![Action::EarnBond(1), Action::Win]),
     ];
@@ -280,40 +221,16 @@ fn bh05() -> MissionDef {
     m.fog = true;
     m.day_limit = 9;
     m.rank_days = 7;
-    let mut v = vec![
-        say(co::HAWKE, "Skyhaven by moonlight. Eagle's aircraft sleep."),
-        say(co::HAWKE, "Javier's tower hears a mouse sneeze at two miles."),
-        say(co::JAVIER, "Hark! The tower of Javier hears every step. Halt!"),
-        say(co::JAVIER, "A true foe announces his name. Sneaking is unknightly!"),
-        say(co::HAWKE, "Eight aircraft on the tarmac. Nine days."),
-        say(co::HAWKE, "I picked the night. Do not waste it.").only(co::HAWKE),
-        say(co::STURM, "Fire in the dark is quieter than people expect.").only(co::STURM),
-        say(co::VON_BOLT, "Eight aircraft! A hundred coins each! Kehh!").only(co::VON_BOLT),
-        troop("I have the lantern, sir!"),
-        say(co::HAWKE, "Put it out."),
-        troop("...Yes, sir."),
-    ];
-    m.intro = Scene::new(std::mem::take(&mut v));
-    m.victory = Scene::new(vec![
-        sad(co::JAVIER, "My tower is silent. It is so quiet. Too quiet."),
-        say(co::JAVIER, "Eagle shall hear of this! Once I find a working wire."),
-        say(co::HAWKE, "Eight aircraft. No losses of mine. Tidy."),
-        troop("Sir, I put the lantern out. Mostly."),
-    ]);
-    m.after = Scene::new(vec![
-        troop("I saw a bomber go up like a firework."),
-        troop("It was a lovely colour, Wick."),
-        troop("Somebody's job was that bomber."),
-        troop("...Yes. Right. Sorry."),
-        troop("Eat something, Crumb."),
-    ]);
+    m.intro = crate::bh_text::scene("m05_pre");
+    m.victory = crate::bh_text::scene("m05_post");
+    m.after = crate::bh_text::scene("m05_map");
     m.triggers = vec![
         // The alarm: two Tanks and an Anti-Air arrive by the east road (the design's three and two, trimmed: measured too strong).
         on_day(
             3,
             None,
             vec![
-                Action::Scene(Scene::new(vec![say(co::JAVIER, "Sound the horns! To arms, noble Green Earth!")])),
+                Action::Scene(crate::bh_text::scene("m05_day3")),
                 Action::Spawn(vec![
                     UnitDef::new(2, unit::TANK, 23, 8),
                     UnitDef::new(2, unit::TANK, 23, 7),
@@ -321,7 +238,7 @@ fn bh05() -> MissionDef {
                 ]),
             ],
         ),
-        on_day(6, None, vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "Behold, light! A tower must be seen by every knight!")]))]),
+        on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m05_day6"))]),
         // Eight aircraft gone and the tower taken.
         after(Cond::All(vec![Cond::Custom(aircraft_destroyed), Cond::OwnerAt { x: 19, y: 3, army: 1 }]), vec![Action::Win]),
     ];
@@ -343,39 +260,14 @@ fn bh06() -> MissionDef {
     ];
     m.day_limit = 22;
     m.rank_days = 16;
-    m.intro = Scene::new(vec![
-        say(co::DRAKE, "Welcome to my pond! Mind the pelicans."),
-        say(co::DRAKE, "Five islands. Five ways to get your feet wet."),
-        say(co::DRAKE, "I always say: the sea is just the long way round."),
-        say(co::VON_BOLT, "No boats. I said no boats!").only(co::VON_BOLT),
-        say(co::HAWKE, "Island chain. Supply is the whole war.").only(co::HAWKE),
-        say(co::STURM, "Tides obey. The rest follows.").only(co::STURM),
-        troop("Sir, the Lander says \"welcome aboard\". Smiling."),
-        troop("...I think that's a wave."),
-    ]);
-    let mut post = vec![
-        sad(co::DRAKE, "Abandon ship! ...Politely."),
-        say(co::DRAKE, "Best loss I've had all year. Come for a drink!"),
-        say(co::STURM, "No.").only(co::STURM),
-        say(co::DRAKE, "Ha! Tough crowd. Next time.").only(co::STURM),
-    ];
-    for c in [co::VON_BOLT, co::HAWKE] {
-        post.push(say(c, "Another time. When the war is over.").only(c));
-        post.push(say(co::DRAKE, "Deal. I'll bring snacks.").only(c));
-    }
-    m.victory = Scene::new(post);
-    m.after = Scene::new(vec![
-        troop("I think the sea is angry at me, Wick."),
-        troop("You were sick on the Lander."),
-        troop("I was sick in solidarity."),
-        troop("With who?"),
-        troop("The fish."),
-    ]);
+    m.intro = crate::bh_text::scene("m06_pre");
+    m.victory = crate::bh_text::scene("m06_post");
+    m.after = crate::bh_text::scene("m06_map");
     m.triggers = vec![
-        on_day(5, None, vec![Action::Scene(Scene::new(vec![say(co::DRAKE, "Fighters off the Carrier! Wave hello!")]))]),
+        on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m06_day5"))]),
         // The Carrier launches Fighters every third day from day 5 (from its isle's air).
         Trigger::new(When::TurnStart, Cond::EveryDays { n: 3, from: 5 }, vec![Action::Spawn(vec![UnitDef::new(2, unit::FIGHTER, 24, 10)])]).repeating(),
-        on_day(12, None, vec![Action::Scene(Scene::new(vec![say(co::DRAKE, "Hey, easy on the sandwich boat, dude! It's lunch!")]))]),
+        on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m06_day12"))]),
         after(beaten(2, (28, 14)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh05"]);
@@ -406,7 +298,7 @@ fn bh07() -> MissionDef {
     m.objective = "Wake the Black Factory, take Eagle's HQ.";
     m.map = MapSrc::Built("bh07");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(8000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::HAWKE)).funds(8000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(26000),
     ];
     m.day_limit = 26;
@@ -414,38 +306,18 @@ fn bh07() -> MissionDef {
     m.factory = F7.to_vec();
     // The port at (9, 20) is Black Hole's (the map tool owns a property by the nearest HQ).
     m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 20 }];
-    m.intro = Scene::new(vec![
-        say(co::EAGLE, "Greenhaven! The Arsenal of the south! My home field!"),
-        say(co::EAGLE, "I'm the sky, you're the ground. That's the whole war."),
-        say(co::EAGLE, "Fly with me, or fall without me!"),
-        say(co::HAWKE, "The crane yard hides a second Foundry. Wake it."),
-        say(co::HAWKE, "He announces his plans to everyone. Convenient.").only(co::HAWKE),
-        say(co::STURM, "Nothing is above me. Not even his sky.").only(co::STURM),
-        say(co::VON_BOLT, "A shipyard! Cranes! Gold!").only(co::VON_BOLT),
-    ]);
-    m.victory = Scene::new(vec![
-        sad(co::EAGLE, "I never lose in the air. This was ground."),
-        say(co::EAGLE, "I'll be back. In a bigger plane."),
-        say(co::HAWKE, "Arsenals do not forgive. Neither do I."),
-    ]);
-    m.after = Scene::new(vec![
-        troop("The Oozium followed me to the latrine, Sergeant."),
-        troop("Then he knows where your biscuit is."),
-        troop("Gerald is NOT a food."),
-    ]);
+    m.intro = crate::bh_text::scene("m07_pre");
+    m.victory = crate::bh_text::scene("m07_post");
+    m.after = crate::bh_text::scene("m07_map");
     m.triggers = vec![
-        on_day(6, None, vec![Action::Scene(Scene::new(vec![say(co::EAGLE, "Bombers! Show them what weather is!")]))]),
+        on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m07_day6"))]),
         // Eagle's funds: +5000 on day 10, a second Bomber on day 12.
-        on_day(10, None, vec![Action::AddFunds { army: 2, funds: 5000 }]),
-        on_day(12, None, vec![Action::Spawn(vec![UnitDef::new(2, unit::BOMBER, 26, 14)])]),
+        on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m07_day10")), Action::AddFunds { army: 2, funds: 5000 }]),
+        on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m07_day12")), Action::Spawn(vec![UnitDef::new(2, unit::BOMBER, 26, 14)])]),
         on_day(
             13,
             None,
-            vec![Action::Scene(Scene::new(vec![
-                troop("The Foundry made an Oozium! It looks at me!"),
-                say(co::HAWKE, "Do not feed it."),
-                troop("...Gerald is hiding."),
-            ]))],
+            vec![Action::Scene(crate::bh_text::scene("m07_day13"))],
         ),
         after(beaten(2, (25, 19)), vec![Action::Win]),
     ];
@@ -492,35 +364,15 @@ fn bh08() -> MissionDef {
         weather: Weather::Clear,
         fog: false,
     });
-    m.intro = Scene::new(vec![
-        say(co::JESS, "Two gates, two fronts. Standard procedure!"),
-        say(co::JAVIER, "And my towers speak at both! Greetings, fair friends!"),
-        say(co::JESS, "Javier, you needn't announce that."),
-        say(co::JAVIER, "It is cheaper than a second Javier."),
-        say(co::HAWKE, "One mind, two fronts. Split the sword."),
-        say(co::HAWKE, "Choose your hands. The dawn gate and the dusk gate."),
-    ]);
-    m.victory = Scene::new(vec![
-        sad(co::JESS, "Javier, fall back. We hold the keep."),
-        say(co::JAVIER, "I would like to say I meant that. I did not."),
-        say(co::HAWKE, "Two gates. Both open. On to the capital."),
-    ]);
-    m.after = Scene::new(vec![
-        troop("Marshal! The messages from both fronts arrived!"),
-        say(co::HAWKE, "At the same time?"),
-        troop("Mostly. One of them was a pigeon."),
-        say(co::HAWKE, "A pigeon. Add it to the contingency plan."),
-    ]);
-    let mut won_lines = Vec::new();
-    for c in [co::STURM, co::VON_BOLT, co::HAWKE] {
-        won_lines.push(say(c, "The dusk gate is ours. Reporting to the main front.").only_partner(c));
-    }
+    m.intro = crate::bh_text::scene("m08_pre");
+    m.victory = crate::bh_text::scene("m08_post");
+    m.after = crate::bh_text::scene("m08_map");
     m.triggers = vec![
-        Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(Scene::new(won_lines))]),
+        Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m08_front2_post"))]),
         Trigger::new(
             When::TurnStart,
             Cond::Custom(second_front_lost),
-            vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "Ha! The dusk gate is held by Javier! Yield, rogues!")]))],
+            vec![Action::Scene(crate::bh_text::scene("m08_front2_lost"))],
         ),
         after(beaten(2, (22, 9)), vec![Action::Win]),
     ];
@@ -575,29 +427,17 @@ fn bh09() -> MissionDef {
     m.objective = "Escort 2 of 3 Vault APCs to the loading yard.";
     m.map = MapSrc::Built("bh09");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::VON_BOLT)).funds(0),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::JAVIER, co::DRAKE)).funds(0),
     ];
     m.fog = true;
     m.day_limit = 16;
     m.rank_days = 12;
-    m.intro = Scene::new(vec![
-        say(co::VON_BOLT, "My vault! My vault trucks! Three, plus bribes."),
-        say(co::HAWKE, "Why are we moving your treasure through enemy land?"),
-        say(co::VON_BOLT, "Because the bank is closed. I trust only me."),
-        troop("Sir, there is a rooster on the lead truck."),
-        say(co::VON_BOLT, "His name is Interest."),
-        say(co::JAVIER, "I see three wagons riding east. Halt, in honour's name!"),
-        say(co::DRAKE, "Three trucks, three guys, three problems. Welcome!"),
-    ]);
-    m.after = Scene::new(vec![
-        troop("Sir, Interest the rooster pecked the Colonel."),
-        troop("Is that a salute?"),
-        troop("Hard to tell. I think he's good with money."),
-    ]);
+    m.intro = crate::bh_text::scene("m09_pre");
+    m.after = crate::bh_text::scene("m09_map");
     m.triggers = vec![
-        on_day(4, None, vec![Action::Scene(Scene::new(vec![say(co::DRAKE, "Ambush! Ha! I always wanted to say that.")]))]),
-        on_day(9, None, vec![Action::Scene(Scene::new(vec![say(co::JAVIER, "The east road is guarded by a knight! Turn back!")]))]),
+        on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m09_day4"))]),
+        on_day(9, None, vec![Action::Scene(crate::bh_text::scene("m09_day9"))]),
         // Javier's comms: a truck past the first bridge wakes a pursuit behind it.
         Trigger::new(
             When::AfterAction,
@@ -611,21 +451,14 @@ fn bh09() -> MissionDef {
         after(
             Cond::Custom(all_three_home),
             vec![
-                Action::Scene(Scene::new(vec![
-                    say(co::VON_BOLT, "All three! Kehh-heh! Not one coin missing!"),
-                    say(co::VON_BOLT, "Interest is laying eggs. Golden ones. Perhaps."),
-                ])),
+                Action::Scene(crate::bh_text::scene("m09_all_home")),
                 Action::Win,
             ],
         ),
         after(
             Cond::Custom(two_home_third_gone),
             vec![
-                Action::Scene(Scene::new(vec![
-                    sad(co::VON_BOLT, "One truck gone... ...my coins, my poor coins."),
-                    say(co::HAWKE, "Two in three. Within tolerance."),
-                    say(co::VON_BOLT, "TOLERANCE?!"),
-                ])),
+                Action::Scene(crate::bh_text::scene("m09_two_home")),
                 Action::Win,
             ],
         ),
@@ -644,42 +477,24 @@ fn bh10() -> MissionDef {
     m.objective = "Siege the Citadel and capture its HQ.";
     m.map = MapSrc::Built("bh10");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(8000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::HAWKE)).funds(8000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::EAGLE, co::JESS)).funds(14000),
     ];
     m.day_limit = 24;
     m.rank_days = 16;
-    let mut intro = vec![
-        say(co::JESS, "This is Evergreen. It has never fallen. Never!"),
-        say(co::EAGLE, "Fly, fight, win. That's all we've got left!"),
-        say(co::HAWKE, "A siege is mathematics. Eagle forgets arithmetic."),
-        say(co::JESS, "Why do this? Your army wears our colour!"),
-        say(co::EAGLE, "Marshal Hawke. You wore our green and sold it."),
-        say(co::HAWKE, "It was a good colour. It suited the ministry."),
-        sad(co::JESS, "...Marshal. I admired you."),
-        say(co::HAWKE, "I admired my plan more."),
-    ];
-    intro.extend(anyone("Tonight Green Earth learns what a storm is."));
-    m.intro = Scene::new(intro);
-    m.victory = Scene::new(vec![
-        sad(co::JESS, "The Citadel... has fallen."),
-        say(co::EAGLE, "Fall back east! To the Comets! Just this once!"),
-        say(co::JESS, "I'm sorry. I could not protect them."),
-        say(co::HAWKE, "You held longer than my numbers allowed. Be proud."),
-    ]);
-    m.after = Scene::new(vec![
-        troop("Hobb! The Marshal says you carry the flag."),
-        troop("Which flag?"),
-        troop("Ours."),
-        troop("I'm Standard-Bearer?!"),
-        troop("By accident. Don't drop it."),
-        troop("Gerald, I'm a Standard-Bearer! Look!"),
-    ]);
+    m.intro = crate::bh_text::scene("m10_pre");
+    m.victory = crate::bh_text::scene("m10_post");
+    // The end of Act II: Crumb's flag, then the Allied council Hawke's listening post intercepts.
+    m.after = Scene::new({
+        let mut v = crate::bh_text::lines("m10_map");
+        v.extend(crate::bh_text::lines("m10_warroom"));
+        v
+    });
     m.triggers = vec![
         // Eagle and Jess start with their powers 60% charged.
         on_day(1, None, vec![Action::Custom(charge_army2_60)]),
-        on_day(6, None, vec![Action::Scene(Scene::new(vec![say(co::JESS, "A beam! Of course there is a beam!")]))]),
-        on_day(12, None, vec![Action::Scene(Scene::new(vec![say(co::EAGLE, "Jess! The wall is cracking! Hold!")]))]),
+        on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m10_day6"))]),
+        on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m10_day12"))]),
         after(beaten(2, (14, 3)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh09"]);
@@ -696,42 +511,15 @@ fn bh11() -> MissionDef {
     m.map = MapSrc::Built("bh11");
     m.look = 3; // the Wasteland look: ash and cinder
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::VON_BOLT, co::HAWKE)).funds(14000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(11000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(11000),
     ];
     m.day_limit = 24;
     m.rank_days = 16;
-    let mut intro = vec![
-        say(co::SENSEI, "Easy there, youngsters. This pass is old as I am."),
-        say(co::SENSEI, "Green Earth's refugees asked for a roof. I gave one."),
-        say(co::JAVIER, "And a watchtower! He gave me a tower! A noble elder!"),
-        say(co::SENSEI, "Do not love me. Hold the left gap."),
-        say(co::HAWKE, "Sensei. I have read your old files. Paratroops.").with(co::HAWKE),
-        say(co::SENSEI, "Files do not carry the cold. Read the wind, Hawke.").with(co::HAWKE),
-        say(co::VON_BOLT, "Another old man! Shall we compare ages?").with(co::VON_BOLT),
-        say(co::SENSEI, "Older? Maybe not. But I have my own teeth.").with(co::VON_BOLT),
-        say(co::VON_BOLT, "...Mine are in a vault.").with(co::VON_BOLT),
-        say(co::SENSEI, "And mind Mount Ember. She wakes at noon."),
-        say(co::SENSEI, "She is not particular about whose feet."),
-    ];
-    intro.extend(anyone("Two armies, one pass. Cut them apart."));
-    m.intro = Scene::new(intro);
-    m.victory = Scene::new(vec![
-        sad(co::SENSEI, "Hmph. Old bones, beaten by a gale."),
-        say(co::JAVIER, "A knight never retreats! He charges to the rear!"),
-        say(co::SENSEI, "Tell Kanbei the storm is faster than gossip."),
-    ]);
-    m.after = Scene::new(vec![
-        say(co::HAWKE, "Two names turned up on the old rolls. Koal. Kindle."),
-        say(co::HAWKE, "Koal is building Yellow Comet a road. A very long one."),
-        say(co::VON_BOLT, "And Kindle! She owes me fourteen thousand!"),
-        say(co::HAWKE, "She runs their festival."),
-        troop("Do they know we're coming, sir?"),
-        say(co::HAWKE, "Everyone knows. The question is who will mind."),
-        troop("A farmer says Mr Koal listens to Sturm and Hawke."),
-        troop("Roads and orders, he said. I wrote it on my sleeve."),
-    ]);
+    m.intro = crate::bh_text::scene("m11_pre");
+    m.victory = crate::bh_text::scene("m11_post");
+    m.after = crate::bh_text::scene("m11_map");
     let paratroopers = vec![
         UnitDef::new(3, unit::INFANTRY, 1, 6),
         UnitDef::new(3, unit::INFANTRY, 1, 12),
@@ -739,8 +527,6 @@ fn bh11() -> MissionDef {
         UnitDef::new(3, unit::INFANTRY, 2, 11),
         UnitDef::new(3, unit::INFANTRY, 3, 6),
     ];
-    let mut day8 = vec![say(co::SENSEI, "The mountain does not take sides, youngsters.")];
-    day8.extend(anyone("Then neither do we."));
     m.triggers = vec![
         // TODO(engine): from day 3 Mount Ember erupts once a day on 3 marked cells of the Rim Track (the 28 cells
         // of the road ring round it), marked a turn ahead, hitting any army's units there for 5 HP (never below
@@ -749,17 +535,10 @@ fn bh11() -> MissionDef {
         on_day(
             3,
             None,
-            vec![Action::Scene(Scene::new(vec![
-                troop("Mount Ember coughs. Ash falls on the Rim Track."),
-                say(co::JAVIER, "That was not my doing! By honour, write it down!"),
-            ]))],
+            vec![Action::Scene(crate::bh_text::scene("m11_day3"))],
         ),
-        on_day(
-            5,
-            None,
-            vec![Action::Scene(Scene::new(vec![say(co::SENSEI, "Paratroopers! Jump, you lazy sparrows!")])), Action::Spawn(paratroopers.clone())],
-        ),
-        on_day(8, None, vec![Action::Scene(Scene::new(day8))]),
+        on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m11_day5")), Action::Spawn(paratroopers.clone())]),
+        on_day(8, None, vec![Action::Scene(crate::bh_text::scene("m11_day8"))]),
         on_day(10, None, vec![Action::Spawn(paratroopers)]),
         after(Cond::All(vec![beaten(2, (25, 3)), beaten(3, (25, 17))]), vec![Action::Win]),
     ];
@@ -767,11 +546,6 @@ fn bh11() -> MissionDef {
     m.flag = FLAGS[7];
     m.stars = 3;
     m
-}
-
-/// A line any of the three COs the player may be ([CO]): one row for each, shown for its own player.
-fn anyone(text: &'static str) -> Vec<Line> {
-    [co::STURM, co::VON_BOLT, co::HAWKE].iter().map(|&c| say(c, text).only(c)).collect()
 }
 
 /// Act 2's missions, in world-map order.

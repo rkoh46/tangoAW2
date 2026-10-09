@@ -1,1 +1,820 @@
-# BH dialogue, act5ba (format: README.txt)
+# BH dialogue, act5ba (format: README.txt): M23 Laboratory 7, M24 Sky Gala, M25 Twin Harbours, M26 The Last Alliance
+
+== m23_pre
+NARRATION: Orange Star. Laboratory 7. / Glass halls and humming walls.
+NARRATION: Nell's Accord pays the power / bill. The Ethics Board keeps the key.
+STURM: Orange Star chairs the Accord. / Its quiet weapons were built here.
+STURM: The board locked the mind that / built them. Unlock her. Keep her.
+CRUMB: Sir, the door says KEEP OUT. / Underneath it says KEEP OUT HARDER.
+MORTAR: Crumb. Read quietly.
+MAX: Halt! Nobody walks into Lab 7! / Not while I'm standing here!
+MAX: Max, Orange Star! Nell herself / said, "Guard the shelves, Max."
+MAX: So I'm guarding the shelves. / It's boring. Now it's fun!
+LASH: Heehee! Maaax! They're real! / Real visitors! Real targets!
+MAX: Doc, quit calling them targets. / They can hear you.
+LASH: That is the point of targets!
+MAX: Look, Black Hole. Nell shut down / seventeen projects in this lab.
+MAX: Seventeen! The glowing one ate / a whole door. I'm not even mad.
+LASH: It was a small door!
+MAX: I don't trust egghead weapons. / Anything with a blinking light
+MAX: has opinions. A fist has none. / A fist just arrives. Ha! That's
+MAX: pretty good. Doc, write that / down.
+LASH: I do not write down your ideas, / Max. They are blunt.
+MAX: Thanks!
+LASH: Not a compliment! Anyway!
+LASH: Welcome to Laboratory Seven! / Meet Oozium! And Black Bomb!
+LASH: And other nouns! Impress me and / I will consider your funding.
+LASH: Lose, and I will consider / your brain. Heehee!
+@IF JUGGER
+JUGGER: SCIENTIFIC SUBJECT: LASH. / STATUS: FASCINATING.
+LASH: Ooh, a talking robot! Can I / open him? Only a little!
+JUGGER: NEGATIVE. YOU FIRST.
+MAX: Hey! No opening the robot! / He has a... robot face!
+JUGGER: QUERY: WHY DOES THE LARGE / HUMAN DEFEND THE SMALL ONE?
+MAX: She's family. A loud kind. / Don't tell her I said so.
+LASH: I heard that! Heehee!
+@IF VON BOLT
+VON BOLT: Funding! Did she say / funding? Kehh... not mine.
+LASH: Old man! You smell like / money! Come, come, come!
+VON BOLT: A lab with seventeen / shut projects. Cheap shelves!
+MAX: Pal, nothing in here is for / sale. Especially the glowing one.
+VON BOLT: Everything is for sale. / Kehh-heh! Even you, big boy.
+@IF HAWKE
+HAWKE: A sealed lab, a guard who / announces himself, a child.
+HAWKE: Splendid. The board did my / work. It isolated the asset.
+MAX: Hey! I'm not an asset. I'm / the big guy. Different thing!
+HAWKE: Of course. Forgive me.
+@IF FLAK
+FLAK: Big man! Flak smash big man!
+MAX: Flak! You're out of jail / again! Come here, you!
+FLAK: Flak hungry. Max big. Good / fight. Good lunch after.
+LASH: Ooh, they like each other!
+@IF KINDLE
+KINDLE: Darlings, a laboratory! / Everything is white. How sad.
+KINDLE: Fire would be so much / more flattering. Ahaha!
+LASH: Fire! Yes! Ooh, ooh, ooh!
+MAX: No! No fire! Nobody said / fire! This room has gas in it!
+@IF KOAL
+KOAL: Floor: polished tile. Camber: / none. Grip: poor. Mind the lane.
+MAX: It's a hallway, pal.
+KOAL: It is a road with a ceiling.
+MAX: ...I'll give you that one.
+@IF STURM
+MAX: You're the storm guy! The one / who knocked over Blue Moon!
+STURM: Stand aside, Max. Nell sent / a wall to stop a storm.
+MAX: Hammer! Sami's the wall! I'm / the hammer! Get it right!
+STURM: A hammer, then. It will do / as well.
+@IF ADDER
+ADDER: White walls, harsh light. / The camera would hate this place.
+LASH: I have eleven mirrors, all / evil! Do you want to see them?
+ADDER: ...Perhaps one. For the / profile.
+@IF LASH
+LASH: Heehee! The other Lash! Is / she me, or am I her?
+MAX: Doc, there are two of you. I / am quitting. I mean it this time.
+LASH: Then I get the whole lab! / Ooh, I win by being there first!
+@IF CLONE
+CLONE: Hello, Doctor Lash. Hello, / sir. I know this hall. Kind of.
+MAX: Do I know you? You've got / Andy's whole chin.
+CLONE: Just the chin, sir. I'm / working on the rest.
+@IF SONJA
+SONJA: Seventeen projects shut. A / board that closes a lab leaves
+SONJA: a paper trail. I would like / to read who signed. S.
+LASH: Ooh, a reader! Scary!
+@IF CRUMB CO
+CRUMB CO: Hello, ma'am. Hello, sir. / Please keep Oozium behind glass.
+LASH: He does not like glass!
+CRUMB CO: He is welcome to dislike / it from over there.
+@OTHER
+[CO]: Laboratory Seven. A guard and / a genius. Stay close together.
+MAX: Aw, they're polite. I hate / polite ones. They plan.
+@END
+@PARTNER JUGGER
+[CO2]: QUERY: WHICH OF THESE ITEMS / EXPLODES? ANSWER: ALL.
+@PARTNER VON BOLT
+[CO2]: Seventeen closed projects. / Kehh... Seventeen invoices?
+@PARTNER HAWKE
+[CO2]: A guard who shouts his name / is a guard who wants to lose.
+@PARTNER FLAK
+[CO2]: Boss! Big man in there! / Flak go first!
+@PARTNER KINDLE
+[CO2]: Darling, if anything glows, / I want it in the front row.
+@END
+CRUMB: Ma'am, is that Oozium looking / at me?
+LASH: Oh yes. He is hungry. He is / always hungry. Heehee!
+CRUMB(s): ...Gerald, behind me.
+WICK(s): Is it all right if I ask / who feeds Oozium?
+MAX: Nobody. That's the problem. / He feeds himself.
+MORTAR: Crumb. Eyes front.
+
+== m23_day5
+LASH: Black Bomb away! Count to / three! Heehee!
+MAX: Doc! It doesn't have a timer!
+LASH: It has a surprise! That is / better!
+MAX: Surprises are my least favorite / thing! Fists are nice!
+@IF JUGGER
+JUGGER: BOMB COUNT: ONE. STATUS: / UNPLEASANT. LOGGED.
+@IF VON BOLT
+VON BOLT: Kehh! Each bomb is / thousands in funding. Hit them!
+@IF FLAK
+FLAK: Boom! Flak like boom!
+@END
+
+== m23_day11
+LASH: Another test! Another / screaming! Perfect!
+MAX: I didn't scream! That was / the lab! Mostly!
+LASH: Heehee! He did, he did!
+@IF HAWKE
+HAWKE: Fascinating. Every minute / the lab costs her more than us.
+@IF KINDLE
+KINDLE: Darling, that scream was / flat. Do it again, with feeling.
+@END
+
+== m23_post
+LASH(s): Oh no! Oh no, oh no... / no, wait. That was excellent!
+LASH: You beat my toys! You beat / MAX! I am so happy! Why?
+MAX(s): Ow. Okay. Fine. We lost. / I'm not saying I'm sorry.
+MAX: Doc, I told you your blinky / stuff would get us beat.
+LASH: And your fists lost, too!
+MAX: ...Yeah. Fair.
+MAX: Look, Black Hole. Nell's / going to come for this lab.
+MAX: She doesn't shout. She asks. / It's worse. You'll see.
+LASH: Why would I join Black Hole? / I have a lab! I have toys!
+LASH: I have Oozium! He ate a door!
+@IF JUGGER
+JUGGER: BECAUSE I AM A TOY YOU / HAVE NOT OPENED.
+JUGGER: FUNDING: UNLIMITED. / ETHICS BOARD: ABSENT.
+LASH: Unlimited?! Absent?! Say / it again!
+JUGGER: UNLIMITED. ABSENT.
+LASH: Eeeeee!
+MAX: Doc! He's a robot! He doesn't / count as a reason!
+JUGGER: ALSO: PROJECT RESULTS WILL / BE LOGGED. NOT DELETED.
+LASH: Not deleted. Oh. Oh, that / one is the best one.
+@IF VON BOLT
+VON BOLT: Funding, child? A loan! / At interest. Show returns.
+LASH: A loan? No board, no rules? / Ooh, yes!
+VON BOLT: I like returns. Show me / a death ray.
+LASH: I will show you ten!
+VON BOLT: Kehh-heh! One at a time. / I am old, not made of money.
+@IF STURM
+STURM: Seventeen projects. The / board shut every one.
+STURM: Black Hole has no board. / No limits. No refusals.
+LASH: No refusals? That is / suspicious. I love it!
+STURM: You will build. I will use.
+LASH: Ooh, I like you! You do not / pretend to be nice!
+@IF HAWKE
+HAWKE: A mind of your quality was / kept in a cupboard. Wasteful.
+HAWKE: I keep a doctrine. It has / a chapter for builders.
+LASH: Do I get a chapter? Is it / big? Does it have pictures?
+HAWKE: Diagrams. Yours.
+LASH: Eeee!
+@IF FLAK
+FLAK: Lash make toys. Flak smash / toys. Good team.
+LASH: Smash my toys?! ...Okay, / maybe once. A little.
+@IF KINDLE
+KINDLE: Darling, we have a stage / big enough for explosions.
+LASH: Explosions with an audience! / Heehee! I accept!
+@IF LASH
+LASH: I beat myself! Heehee! Fine. / I accept me. Funding approved!
+@IF CLONE
+CLONE: We have a lot of room, Doctor. / And nobody tells you to stop.
+LASH: ...Ooh. That is a nice / thing for you to say.
+@IF CRUMB CO
+CRUMB CO: Ma'am, we have a mess / tent. It has soup. You may come.
+LASH: Soup! Ooh, a field test!
+@OTHER
+[CO]: Black Hole has no board. No / limits. No complaints.
+LASH: No complaints? That is / suspicious. I love it!
+@END
+@WITH KOAL
+KOAL: The lab is a building. Black / Hole builds roads from it.
+LASH: Roads out of the lab! Ooh!
+@END
+@PARTNER JUGGER
+JUGGER: BECAUSE I AM A TOY YOU / HAVE NOT OPENED.
+JUGGER: FUNDING: UNLIMITED. / ETHICS BOARD: ABSENT.
+LASH: Unlimited?! Absent?! Say / it again!
+JUGGER: UNLIMITED. ABSENT.
+LASH: Eeeeee!
+JUGGER: RESULTS WILL BE LOGGED. NOT / DELETED.
+LASH: Not deleted. Ooh. That is / the best one.
+@END
+MAX(s): You're going WITH them? Doc! / Nell paid for your lab!
+LASH: Nell closed seventeen of my / projects! Pooh!
+MAX: She closed the ones that / exploded. All seventeen did!
+LASH: Ten! Ten exploded. The rest / were rude to the staff.
+MAX: ...Doc. Please.
+LASH: Tell her I took the lab with / me! It is portable! Heehee!
+MAX(s): It's a building.
+LASH: Oozium says it is portable.
+MAX: ...Oozium says everything is / portable. Oozium ate a door.
+MAX: Fine. Go. But next time, I / bring a bigger fist.
+LASH: I accept! I get a lab. And / Oozium. Keep Oozium!
+CRUMB: Ma'am, may I keep my / biscuit?
+LASH: What biscuit? Ooh. ...Can I / study it?
+CRUMB(s): No.
+LASH: Aww.
+LASH: Oh! Sub-basement four has / someone. A cancelled project.
+LASH: Project Echo. He is very / sad. Nobody visits him.
+LASH: I wrote his first line and / got bored. Heehee... Heehee.
+HAWKE: Remember that. And keep the / toys indoors.
+LASH: Heehee. Never.
+STURM: Corporal. Your biscuit. Is / it armed?
+CRUMB(h): No, sir! Only crumbs.
+STURM: See that it stays so.
+
+== m23_map
+LASH: Corporal Crumb! Your / biscuit's half-life?
+CRUMB: He's a Private biscuit, ma'am.
+LASH: Ooh, a loophole!
+MORTAR: Crumb. Do not give her / the biscuit.
+CRUMB: I would never, Sergeant.
+LASH: I only held it for a second! / With very small tongs!
+WICK(s): Is it all right if I ask / what she found?
+LASH: The mark on it! A keyhole! / A tiny one! Nothing fits it!
+LASH: I tried eleven keys. And a / spoon. Heehee. Mysteries!
+CRUMB: Gerald says that is private.
+MORTAR: ...He is older than the / Obelisk. Leave him alone.
+@IF JUGGER
+JUGGER: SUBJECT'S BISCUIT: STILL / DEFENDED. ADMIRABLE.
+@END
+WICK: Is it all right if I ask / about the posters on the wall?
+CRUMB: A poster says Mr Adder loves / capes and a captain, Wick.
+CRUMB(h): And the Orange Star port / has a sign, "Closing-down sale"!
+MORTAR: Crumb. A sale is a trap.
+WICK: ...Both of those are / worrying.
+
+== m24_pre
+NARRATION: The Orange Star Sky Gala. / Cameras. Banners. Cheering.
+NARRATION: Green Earth's skies burned. / This is the Accord's last air show.
+CRUMB(h): Sir, there are hot dogs! / And a man selling little flags!
+MORTAR: Crumb. Do not buy a flag.
+STURM: Every camera of the Accord is / aimed at this sky. Good.
+STURM: Break it in front of them, / and four nations watch it break.
+ADDER: Ladies and gentlemen! Behold: / the show!
+ADDER: I am Adder. You may admire me. / Left profile. Yes, that one.
+ADDER: Orange Star pays me to look / good in front of planes.
+ADDER: I would like to look good in / front of an audience.
+ADDER: A real one. With stakes. Not / nine photographers and a goat.
+SAMI: Roger, nine photographers! And / I count the goat as security.
+SAMI: Sami, Orange Star! My commandos / run this gala. Rope line, ID check.
+SAMI: Nobody touches a plane. These / are the last fighters the Accord
+SAMI: has over its coast. Green Earth / lost its sky. I'm not losing ours!
+ADDER: Those boots. On my apron. / Sami, darling, must they?
+SAMI: Boots first, pretty boy. Planes / are the show. Grunts keep it alive.
+ADDER: The show keeps itself alive by / being watched.
+SAMI: Tell that to the grunt who / hauled you out of the last fire.
+ADDER: Lovely and on fire. It was / an excellent photograph.
+SAMI: You're on the payroll, Adder, / not in the army. Remember that.
+ADDER: Win in the sky and I shall / consider joining Black Hole.
+SAMI: He's not joining anybody. / Hey! Adder! Say it!
+ADDER: I said consider, darling.
+@IF KINDLE
+KINDLE: Adder, darling. You have put / on weight.
+ADDER: That is CAPE, Kindle!
+KINDLE: Of course it is. Ahaha!
+SAMI: Is she real?
+ADDER: Sadly. She is also the only / person who ever upstaged me.
+KINDLE: Darling, I upstaged you / in my sleep.
+@IF HAWKE
+HAWKE: Pilots are marketing. The / useful ones are rare.
+ADDER: The useful ones are rare. / Flattering!
+SAMI: You! The Marshal who burned / Green Earth's sky!
+HAWKE: I rearranged it. It was / crowded.
+SAMI: Rearranged! Grunts, hold / the line! He talks like that!
+@IF VON BOLT
+VON BOLT: Tickets! Seating! Parking! / Kehh... who owns the concessions?
+SAMI: Nobody. It's free admission. / Free! For the whole public!
+VON BOLT: Free?! Kehh-hh... take / me away. I need to lie down.
+@IF FLAK
+FLAK: Hot dogs! Flak want hot dog!
+SAMI: That's evidence! Hands off / the hot dog stand!
+FLAK: Flak pay. Flak pay with / smash.
+@IF JUGGER
+JUGGER: AIRFRAME COUNT: 31. WIND: / 9 KNOTS. HAIR: IRRELEVANT.
+ADDER: Hair is never irrelevant, / you tin cupboard.
+JUGGER: QUERY: SUBJECT IS HAIR / A WEAPON?
+ADDER: Always.
+@IF LASH
+LASH: Planes! Ooh, shiny planes! / Can I put a bomb in one?
+SAMI: NO.
+LASH: In a small one? A little / bomb? Only a medium one?
+SAMI: NO. Grunts, watch her hands.
+@IF KOAL
+KOAL: Runway: three thousand metres, / no shoulder. A road with wings.
+ADDER: A road. With WINGS. Hm. / It does have a certain poetry.
+KOAL: It has a certain camber. / Mind the lane.
+@IF STURM
+SAMI: You're the storm. You're / shorter than the posters.
+STURM: Posters are paid to flatter.
+ADDER: Ah! A man who understands / the business of lighting!
+STURM: I understand the business / of ownership.
+@IF ADDER
+ADDER: Another Adder. Splendid. We / shall share the cape.
+ADDER: ...No. We shall not. Not / even for the camera.
+SAMI: Great. Two of them.
+@IF CLONE
+CLONE: Hello, ma'am! I... I'm sorry. / I've got Andy's face.
+SAMI: ...Andy? Oh no. Not Andy.
+CLONE: Clone Andy, ma'am. I'm not / him. Just the face.
+SAMI: Roger. Don't make it weird.
+@IF SONJA
+SONJA: A gala is a list of names / under one banner. How helpful.
+SONJA: I would like the guest book, / please. For my files. S.
+ADDER: Oh! A fan!
+@IF CRUMB CO
+CRUMB CO: Ma'am, sir. I'm Crumb. / I'm in charge. It's very odd.
+SAMI: You don't have to say that / out loud, soldier.
+CRUMB CO: Thank you, ma'am.
+@OTHER
+[CO]: A gala is a stage with a / fence round it. We will take both.
+SAMI: Is that a threat? Because / I love those.
+@END
+@PARTNER KINDLE
+[CO2]: Adder, darling, I could / outshine you from the cheap seats.
+@PARTNER HAWKE
+[CO2]: Adder. I recall you in a cape / far too long for the cockpit.
+@PARTNER FLAK
+[CO2]: Boss! Flak smash plane! Flak / eat hot dog after!
+@PARTNER JUGGER
+[CO2]: WIND: ACCEPTABLE. PILOT VANITY: / CONSTANT. ADVISE: STRIKE FIRST.
+@END
+WICK(s): Is it all right if I ask / what happens to the pilots?
+SAMI: They fly and we guard. That's / the Accord. Everybody has a job.
+MORTAR: Crumb. Wick. Stay on the / ground. The sky is for show-offs.
+CRUMB: Yes, Sergeant. Gerald says / he is glad to be a biscuit.
+
+== m24_day4
+ADDER: My profile! Photograph me / from the left! The left!
+SAMI: Adder, you're in a dogfight! / Quit posing!
+ADDER: A dogfight is a pose with / speed, darling.
+@IF KINDLE
+KINDLE: Pose, darling. The cameras / are trying so hard.
+@END
+
+== m24_day9
+ADDER: Do you see the grace? The / line of the dive?
+SAMI: I see smoke! And a cape in / the propeller, you idiot!
+ADDER: A little cape in the propeller / is a signature, Sami.
+@IF HAWKE
+HAWKE: That dive had a tell. Press / the left wing.
+@END
+
+== m24_post
+ADDER(s): My hair. My perfect hair. / You ruined the shot.
+SAMI(s): Medics! Pull the pilot out! / Hold the line, grunts!
+SAMI: Adder! Get out of the plane! / Quit looking at the camera!
+ADDER: There is no camera. They / fled. What an insult.
+ADDER: Well? Why would I join the / dark side? Look at it.
+@IF KINDLE
+KINDLE: Because I outshine you / there. Come and see.
+ADDER: Impossible!
+KINDLE: Join. Try. I will give you / the second-best seat.
+ADDER: The SECOND best?
+KINDLE: Darling, I have to sit / somewhere.
+ADDER: ...Only to prove you wrong.
+@IF HAWKE
+HAWKE: Black Hole has a sky no one / else may fly. Yours.
+HAWKE: And a medal for every sortie.
+ADDER: Every sortie?
+HAWKE: With a cape.
+ADDER: Where do I sign?
+HAWKE: Here. Black ink only.
+@IF STURM
+STURM: Our sky is empty. We need / a star. Be it.
+ADDER: A star. Hm.
+STURM: Orange Star put you on a / payroll. I put you on a poster.
+ADDER: A poster. A POSTER.
+STURM: Larger than this gala. / Seen by four nations.
+ADDER: ...Yes. Yes, that is the / correct size.
+@IF VON BOLT
+VON BOLT: Kehh! A star is an asset, / boy! I shall buy the cape!
+ADDER: The cape is not for sale!
+VON BOLT: Everything is for sale. / Name a number, dear.
+ADDER: ...A very high number.
+VON BOLT: Second pick of the / posters, and a deal. Kehh-heh!
+@IF ADDER
+ADDER: I beat myself. Remarkable. / I accept, of course.
+@IF CLONE
+CLONE: We need pilots. And we've / got a cape budget. Maybe.
+ADDER: ...A maybe cape budget? / How marvellous.
+@IF LASH
+LASH: I have a flying thing! It / has glitter! Join me, join me!
+ADDER: Glitter. ...Is it flattering?
+LASH: It explodes beautifully!
+ADDER: That will do.
+@IF JUGGER
+JUGGER: BLACK HOLE HAS NO AIR FORCE. / SLOT: OPEN. SALARY: UNLIMITED.
+ADDER: Unlimited, you tin cupboard?
+JUGGER: ALSO: LIGHTING: CUSTOM.
+ADDER: Custom! Well. I did say / the villains lacked style.
+@IF SONJA
+SONJA: Stage, cape, applause. A / ledger of three entries.
+SONJA: You will be reasonably paid. / Lightly feared. S.
+ADDER: Lightly feared. Hm. I / shall improve on that.
+@IF CRUMB CO
+CRUMB CO: Mr. Adder, sir, we have / a mess tent. It has a mirror.
+ADDER: A mirror? Where?
+@OTHER
+[CO]: Black Hole has a sky and no / star to fly in it. Be our star.
+ADDER: A star. Hmm. Yes.
+@END
+@PARTNER KINDLE
+[CO2]: Join. Try. I will give you / the second-best seat.
+ADDER: The SECOND best?
+[CO2]: Darling, I have to sit / somewhere.
+ADDER: ...Only to prove you wrong.
+@PARTNER HAWKE
+[CO2]: A sky no one else may fly, / and a medal per sortie.
+ADDER: With a cape?
+[CO2]: With a cape.
+ADDER: Where do I sign?
+@END
+SAMI: Adder! You can't! Orange / Star gave you a hangar!
+ADDER: Orange Star gave me a hangar / and nine photographers.
+SAMI(s): ...You never even liked / us. Not one bit.
+ADDER: I like you, Sami. You are / a wonderful background.
+SAMI: Background!
+SAMI: Fine. Go. Fly for the dark / side, soot and all.
+ADDER: Not one more word / near the cape.
+SAMI: Max will hear about this. / And Nell. And everybody.
+ADDER: I accept. My profile / deserves better.
+ADDER: Let it be known: the villains / finally have style.
+SAMI(s): Move, grunts. We regroup / at the harbour. Radio Max.
+SAMI: Tell him the sky is gone. / Tell him the port is next.
+HAWKE: Thank you for the itinerary, / Sami. Most generous.
+SAMI: ...That was the open channel. / Wasn't it.
+KINDLE: Do not push your luck, / darling.
+
+== m24_map
+CRUMB(h): Mr Adder signed my helmet!
+ADDER: I signed it, "Adder, the / star". You are welcome.
+CRUMB: It's very shiny, sir.
+CRUMB: Gerald asked for one, too.
+ADDER: A biscuit autograph. ...Charming.
+MORTAR: Crumb. Not on Gerald.
+ADDER: Too late, Sergeant. I have / the pen. And the finest nib.
+WICK: Is it all right if I ask / whether a cape counts as armour?
+ADDER: A cape is a lifestyle.
+MORTAR: It is a tripwire.
+HAWKE: Adder. Your cape is too long. / It will catch a propeller.
+ADDER: It already has, Marshal. / Twice. It looked magnificent.
+@IF KINDLE
+KINDLE: Darling, step to the side. / I need the good light.
+@END
+WICK(s): Is it all right if I ask / who gets the second cape?
+
+== m25_pre
+NARRATION: Port Orange and the Market / Atoll. Two harbours, one sale.
+NARRATION: Orange Star's ships sail from / the port. Its supplies, the shop.
+STURM: One navy and one pantry. Take / both. Orange Star eats from them.
+SAMI: Orange Star Port! You won't / pass my soldiers!
+SAMI: Boots first, grunts! Armour is / support! Hold the quay!
+HACHI: Welcome, kid! Hachi's Shop! / Closing-down sale!
+HACHI: Tell young Andy his wrench is / on my shelf. Free rental!
+HACHI: Everything half off! Even / the second front!
+SAMI: Hachi, this is a battle.
+HACHI: Battles have customers! / ...Mostly bad ones.
+SAMI: You commanded Orange Star's / army once! You trained with Kanbei!
+HACHI: And now I sell tea and tanks, / Sami. Nobody loses a customer
+HACHI: by hating him. I sell to both / sides. Always have. Nobody minds.
+SAMI: I mind!
+HACHI: You mind everything, kid. / That's why you're my best customer.
+SAMI(s): ...That's not a compliment.
+HACHI: It's a discount.
+STURM: Two fronts. The harbour is one. / The market is the other.
+STURM: Take the Port and the Atoll / at the same time. Neither may call
+STURM: for the other's help. A shop / cannot feed an army that is sunk.
+@IF HAWKE
+HAWKE: A harbour and a market. / Choose your hands.
+HACHI: The Marshal! Customer! A / pleasure. Black coffee, no sugar?
+HAWKE: ...You remember.
+HACHI: I sold you the beans.
+@IF VON BOLT
+VON BOLT: A shop! A shop with a sale! / Kehh... Who is this man?
+HACHI: Hachi, friend! Come in, come / in! You smell like a good account.
+VON BOLT: Kehh-heh! Half off? I / shall take the half and the rest.
+HACHI: Cash only, no second pick.
+VON BOLT: ...He knows. Kehh. He knows.
+@IF FLAK
+FLAK: Shop! Food shop! Flak hungry!
+HACHI: Soup, kid. Free with a / tank. Sit down.
+SAMI: Don't feed the enemy!
+HACHI: Hungry enemy, angry enemy. / Bad for business.
+@IF LASH
+LASH: A shop! With shelves! Can I / sell my Black Bomb here?
+HACHI: Make it a small one, kid. / I have a clearance rack.
+SAMI: No bombs in the shop!
+@IF JUGGER
+JUGGER: SHOP SUBJECT: HACHI. / STOCK: VAST. PRICES: HALF.
+JUGGER: QUERY: WHY HALF?
+HACHI: Because I'm closing down, kid. / ...Eventually. In the spring.
+@IF KINDLE
+KINDLE: A market, darling! Do they / have silk? I need new gloves.
+HACHI: Silk, silk... aisle three, / lady. On the left. Half off!
+@IF KOAL
+KOAL: Port Road: two lanes, one / crane, no shoulder. Mind the lane.
+SAMI: It's a harbour, Koal.
+KOAL: It is a road that floats.
+@IF STURM
+STURM: Sami. Nell's wall. Nell's / hammer is elsewhere. Stand down.
+SAMI: Never! Orange Star never / quits!
+STURM: Then Orange Star will learn / how a harbour kneels.
+@IF ADDER
+ADDER: Sami, darling! A reunion. / You still have the boots.
+SAMI: And you still have the cape. / Grunts, hold the quay!
+@IF CLONE
+CLONE: Hi, Mr. Hachi! I've got... / Andy's face? I'm sorry.
+HACHI: Andy's face? Kid, you've / got a face. Mind it. It's yours.
+CLONE: ...Thanks, sir. I'll try.
+@IF SONJA
+SONJA: A shop whose ledgers sell to / both sides. I would like to read them.
+HACHI: No, no, no. Trade secrets.
+SONJA: Everything is a trade secret / until someone buys it. S.
+@IF CRUMB CO
+CRUMB CO: Hello, sir. Mr. Hachi. I'm / Crumb. I like your shop already.
+HACHI: A polite one! Rare. Take / a lollipop, kid. On the house!
+@OTHER
+[CO]: A harbour and a shop. Both / will be ours. Mind the tide.
+@END
+@PARTNER VON BOLT
+[CO2]: I take the market, Sturm. / Kehh... Nobody out-haggles me.
+@PARTNER FLAK
+[CO2]: Boss! Flak go to shop! Flak / smash shelves. Eat after!
+@PARTNER JUGGER
+[CO2]: MARKET ASSIGNED. OBJECTIVE: / COUNT THE STOCK. THEN DENY IT.
+@PARTNER HAWKE
+[CO2]: I will take the market. Shops / are won by tempo, not by force.
+@PARTNER LASH
+[CO2]: Ooh, a shop of shiny things! / I take the shop! Alone! Heehee!
+@PARTNER KINDLE
+[CO2]: A market, darling? I shall / hold it. Handsomely.
+@END
+CRUMB(h): Sir, there are three Landers / and one very small pier!
+MORTAR: Crumb. Lander. Pier. Wet.
+WICK(s): Is it all right if I ask / why the shop has a sale on?
+HACHI: Because I'm closing it! / ...Probably. Someday.
+
+== m25_front2_won
+HACHI: Ouch, ouch! Not the till! / Not the till, kid!
+@PARTNER STURM, HAWKE, KOAL, SONJA
+[CO2]: The market is ours. Reporting / to the harbour.
+@PARTNER VON BOLT
+[CO2]: The market is mine. Kehh-heh! / The till is mine. The tea, too.
+@PARTNER FLAK
+[CO2]: Flak win! Flak eat the shelves!
+@PARTNER JUGGER
+[CO2]: MARKET: SECURED. TILL: LOGGED. / REPORTING TO THE HARBOUR.
+@PARTNER LASH
+[CO2]: I have the shop! I have the / shelves! Ooh, I have the till!
+@PARTNER KINDLE
+[CO2]: The market is ours, darling. / They gave us a standing ovation.
+@PARTNER ADDER
+[CO2]: The market is mine. A fine / venue. Wonderful lighting.
+@PARTNER CLONE ANDY, CRUMB CO
+[CO2]: Market's ours! Reporting to / the harbour!
+@END
+HACHI: Closing-down sale, concluded! / All sales final!
+SAMI(s): Hachi! They took the Atoll! / The whole market?
+HACHI: And the tea. I'm sorry, kid. / It was a good tea.
+
+== m25_front2_lost
+HACHI: The market is mine, customer! / No refunds!
+HACHI: Next time, bring a bigger / basket. And a better offer.
+SAMI: Good old Hachi. Keep the / market. We hold the quay.
+HACHI: Customer's right, Sami. / I always sell. I never lose.
+
+== m25_day6
+HACHI: Special offer! Buy two tanks, / get a third angry!
+SAMI: Hachi! Which side is that / for?
+HACHI: The side with money, Sami. / The side with money.
+@IF VON BOLT
+VON BOLT: Kehh... he undercuts me. / I may weep.
+@IF FLAK
+FLAK: Flak want angry tank. Free?
+@END
+
+== m25_post
+SAMI(s): Retreat to the Gate! I will / stand there myself!
+HACHI: Sorry, sorry! The shop is / closed! Permanently!
+SAMI: Hachi!
+HACHI: I mean... for today.
+HACHI: Sami, kid. Listen to an old / man.
+HACHI: The Accord is a shop with one / customer. Peace. And peace
+HACHI: is a customer who leaves / when the music stops.
+SAMI: Don't talk like that. The / Accord isn't a shop.
+HACHI: Everything's a shop, Sami. / Even a fence. Someone sells it.
+SAMI: Who sold the Accord?
+HACHI: ...Thirty years ago, / everyone. And they all got paid.
+STURM: Sami. Tell Nell her harbour / is mine. Her pantry, mine.
+SAMI: She'll tell you what she / thinks herself. She doesn't shout.
+SAMI: She asks. You'll hate it.
+STURM: I have heard that before.
+HAWKE: Orange Star has one gate / left. And a Last Alliance forming.
+HAWKE: Three flags. Three boys. We / shall meet them in the field.
+HACHI: Boys? What boys? Sami, / what boys?
+SAMI: Ask Nell! Move out, grunts! / We regroup at the Gate!
+@IF HAWKE
+HACHI: Marshal! One question. The / coffee. Did you like the beans?
+HAWKE: ...They were adequate.
+HACHI: Adequate! Ha! That's a / compliment from him!
+@END
+
+== m25_map
+CRUMB(h): Sir! I found a hat in the / shop! For Dennis the tank!
+MORTAR: Crumb. That is a colander.
+CRUMB: It's a fancy hat, Sergeant.
+MORTAR: It has holes.
+CRUMB: For ventilation. Dennis gets / warm.
+WICK(s): Is it all right if I ask / whether we are keeping the wrench?
+CRUMB: Free rental, Wick! Mr Hachi / said so. For young Andy.
+MORTAR: ...Return it. Wrenches / are not hats.
+CRUMB: Yes, Sergeant. Gerald / says return it politely.
+WICK: Is it all right if I ask / who Andy is?
+MORTAR: An enemy. A mechanic. Don't / ask. Just return the wrench.
+
+== m26_pre
+NARRATION: The Tri-Border Plains. Three / flags in one field.
+NARRATION: Orange Star. Blue Moon. Yellow / Comet. Thirty years of Accord,
+NARRATION: and their armies have never / stood this close. They do today.
+STURM: Green Earth's sky is ash. / Yellow Comet's keep is mine.
+STURM: Blue Moon's capital is mine. / The nations send what they have left.
+STURM: A fence is only as strong as / its posts. Three posts. One field.
+JAKE: Yo! Jake's in the house! / Hottest CO in Orange Star!
+JAKE: Nell said, "Boys, make a line." / So here's the line. I'm the line.
+COLIN: I-I'm Colin! I've got, um, / lots of money! Hi!
+COLIN: Sis says hold the middle. I / hold the middle. Right? Jake?
+JAKE: Right! I mean, left! I mean / ...we'll see! I'm doing the plan!
+GRIMM: Grimm's here! Hit first, ask / later! Or never! Har!
+GRIMM: The Kanbei man said guard the / ridge. I said hit the ridge.
+JAKE: Together we're unbeatable! / Right? Guys? ...Guys?
+COLIN: Y-yeah! ...Was that a threat?
+GRIMM: Ha! Black Hole is afraid!
+JAKE: Okay. Rule one. Nobody quits / first. Rule two. No yelling.
+JAKE: Rule three. Grimm, quit / eating the map.
+GRIMM: It had a cow on it! It was / dinner!
+COLIN: Sis said nobody fights alone / anymore. The fence is gone.
+COLIN: Our capital's... we lost it, / Jake. All of it. Even the docks.
+JAKE: Hey. Hey, we're here, man. / We're a line. A phat one.
+GRIMM: Pencil neck. You cry, I / punch Black Hole. Fair?
+COLIN: ...F-fair.
+JAKE: They call us the Last / Alliance. Cool name, right?
+GRIMM: Ha! Last! Sounds like we / finish first!
+JAKE: Exactly! That's the spirit!
+@IF HAWKE
+HAWKE: Three boys. Three flags. They / share a field, not a command.
+HAWKE: Three radios. Three plans. / Find the seam, and pull.
+JAKE: Hey! I heard that!
+HAWKE: You were meant to. It is / courtesy.
+@IF STURM
+STURM: Nations that could not share / a table share a trench. How long.
+JAKE: As long as it takes, storm / guy! Yo!
+STURM: Then I will measure it.
+@IF VON BOLT
+VON BOLT: Three flags! Three banks! / Kehh... Three accounts to settle!
+COLIN: I-I have money! It's / in a very safe vault!
+VON BOLT: Safe? Boy, I own the / locks! Kehh-heh!
+@IF KINDLE
+KINDLE: Three little boys in a / field. How precious. I could weep.
+GRIMM: Hey! Who are you calling / little?
+KINDLE: Darling, you are in a / puddle. Of course I mean you.
+@IF FLAK
+FLAK: Small ones! Small ones brave!
+JAKE: Hey! Who's small?
+FLAK: Flak small. You small. Fight / anyway.
+JAKE: ...Okay. I like him.
+@IF KOAL
+KOAL: Three borders meeting in the / mud. A badly-drained junction.
+JAKE: It's a field, man.
+KOAL: A field with three speed / limits. Mind the lane.
+@IF JUGGER
+JUGGER: ENEMY: THREE ARMIES. / COMMAND: THREE. COORDINATION: LOW.
+JUGGER: RECOMMENDATION: SPLIT THEM. / ODDS OF SUCCESS: FAVOURABLE.
+COLIN: Um, is the robot... talking / about us?
+@IF LASH
+LASH: Three armies! Three of / everything! Ooh, an experiment!
+JAKE: Experiment?! Is she serious?
+LASH: Always! Heehee! I'll mark / you down as variable one!
+@IF ADDER
+ADDER: Children. A shame to hit / them.
+JAKE: Hey! I heard that, old man!
+ADDER: I am a gentleman, thank you. / And hardly old.
+@IF CLONE
+CLONE: Sirs! Hi! I'm... on the / other side. It's confusing.
+JAKE: Wait, you look like Andy! / Why do you look like Andy?
+CLONE: I'm Clone Andy, sir. It's... / I'll explain at three in the morning.
+@IF SONJA
+SONJA: Jake, Colin, Grimm. Three / names on a list. I've read them.
+SONJA: Orange Star's pride, Blue / Moon's heir, my father's fool.
+GRIMM: Hey! The fool is my / friend!
+SONJA: That is what I wrote. S.
+@IF CRUMB CO
+CRUMB CO: Hello, sirs! I'm Crumb. / This is Gerald. We're on the...
+CRUMB CO: ...other side, I think. / Please don't hit Gerald.
+JAKE: ...Okay. I won't hit the / biscuit.
+@OTHER
+[CO]: Three armies. One field. If / they hold, they hold together.
+JAKE: Ha! We'll hold! You watch!
+@END
+@PARTNER HAWKE
+[CO2]: Their command is a table of / three. Find the seam.
+@PARTNER VON BOLT
+[CO2]: Kehh... I take the youngest. / He smells like money.
+@PARTNER FLAK
+[CO2]: Flak take loud one! Hit / first! Eat after!
+@PARTNER KINDLE
+[CO2]: Darling, the little one is / mine. I want to see him cry.
+@PARTNER ADDER
+[CO2]: Do try to shoot the one / with the hat, Hawke. He is shiny.
+@END
+CRUMB: Sir, the Orange Star one / waved at me.
+MORTAR: Crumb. Do not wave back.
+CRUMB(h): He's just saying hi, Sergeant!
+WICK(s): Is it all right if I ask / why they're all so young?
+MORTAR: Because the old ones are / either beaten or buried, Wick.
+STURM: Break the posts. Then the / fence falls.
+
+== m26_day8
+JAKE: This is my plan! It's amazing!
+COLIN: Whoa, it is!
+GRIMM: It's just "charge".
+JAKE: It's AMAZING charge!
+COLIN: Jake, um, my flank is / moving. A lot.
+JAKE: That's the plan! Totally the / plan! ...Is it the plan?
+@IF HAWKE
+HAWKE: There. Colin's flank. A / tempo gap you could drive through.
+@IF JUGGER
+JUGGER: SEAM LOCATED. COLIN, / FLANK, EASTERN SIDE. LOGGED.
+@END
+
+== m26_post
+JAKE(s): Fall back! Fall back, guys! / Strategic fall back!
+COLIN: We all fall back? T-together?
+GRIMM: One more punch first! Then / I retreat. Maybe!
+JAKE: No more punches, Grimm! / The line holds if we hold!
+COLIN: It held for a while. Didn't / it? Three flags. One field.
+COLIN: That's never happened. Not / in thirty years. Sis would...
+COLIN(s): ...Sis would be proud of / us. Even if we lost.
+GRIMM: Pencil neck. Quit crying. / Pride is for the next fight.
+JAKE: He's right. We lost a field. / We didn't lose us.
+NELL: Boys. Come home. ...Please / come home.
+JAKE: ...Yes, ma'am.
+NELL: Colin, dear, Sasha is safe. / She asked about you.
+COLIN(s): She did? Really?
+NELL: She said you were brave. / She said it twice.
+GRIMM: And me?
+NELL: She said you were loud, / Grimm. She meant it kindly.
+GRIMM: Har! That's the same / thing!
+NELL: Jake. The Orange Gate. All / of you. I need every one of you.
+JAKE: We'll be there. All three / flags. We're the Last Alliance.
+NELL: No. You're the first, dear. / The first of the new fence.
+@IF HAWKE
+HAWKE: She calls them boys. It is / effective.
+HAWKE: Mark it. A coalition that / loses a field and keeps its line
+HAWKE: is a coalition worth a / second chapter.
+@IF STURM
+STURM: They stood in one field. They / will stand at one gate.
+STURM: I prefer my enemies in one / place. Nell has made that easy.
+@IF VON BOLT
+VON BOLT: Kehh... three nations / holding hands. Heh. How quaint.
+VON BOLT: Alliances are loans, boy. / Everyone calls them in at once.
+@IF KINDLE
+KINDLE: What a touching little / finale. I cried. Not really.
+@IF KOAL
+KOAL: Junction cleared. Traffic: / three flags, one direction. Gate.
+@IF JUGGER
+JUGGER: ALLIED COORDINATION: / INCREASING. LOGGED. CONCERN: MILD.
+@IF FLAK
+FLAK: Small ones brave. Flak like.
+@IF LASH
+LASH: Ooh, they held hands! A / team! Teams are my favourite lab.
+@IF ADDER
+ADDER: Children and their blankets. / How moving. How very, very short.
+@IF CLONE
+CLONE: ...They held together. I / didn't know you could. Wow.
+@IF SONJA
+SONJA: A ledger of three nations, / one line. Worth a page. S.
+@IF CRUMB CO
+CRUMB CO: They held on, sir. I think / that counts. Gerald agrees.
+@OTHER
+[CO]: They fell back, but they / fell back together. Remember it.
+@END
+STURM: The Orange Gate. Nell stands / there. Take it.
+
+== m26_map
+CRUMB(s): Sir, that Nell lady scares / me.
+MORTAR: Why?
+CRUMB: She didn't shout. She asked.
+MORTAR: ...Yes. That is worse.
+WICK(s): Is it all right if I ask / whether she meant "please"?
+CRUMB: She did, Wick. I think she / really, really did.
+CRUMB: Sir, the clone fellow likes / anyone who was made.
+CRUMB: Sir Sturm. And Doctor Lash, / who made him, I think.
+MORTAR: Crumb. You are not meant / to know about the clone fellow.
+CRUMB(h): Gerald told me, Sergeant. / He listens to the walls.
+@IF LASH
+LASH: Heehee! The Last Alliance! / Ooh, I want to dissect the name!
+@IF ADDER
+ADDER: Last Alliance. What a poor / title. I shall suggest "Finale".
+@END
+MORTAR: Crumb. Gerald does not / listen to walls.
+CRUMB: He listens a little, / Sergeant.
