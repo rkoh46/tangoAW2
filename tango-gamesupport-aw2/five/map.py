@@ -178,6 +178,14 @@ def water_tile(c, around):
         wet = lambda n: n in '~r-'
         return BRIDGE_ACROSS if wet(around[0]) or wet(around[2]) else BRIDGE_DOWN
     key = ''.join('s' if n in '~r' else 'h' if n == ',' else 'l' for n in around)
+    if key not in SHOAL:
+        # A strip of shoal wider than one cell (a ford across a moat): the cell is drawn as the beach it
+        # would be with the neighbouring shoal as land, the one opposite the sea first.
+        for j in sorted((j for j in range(4) if key[j] == 'h'), key=lambda j: key[(j + 2) % 4] != 's'):
+            alt = key[:j] + 'l' + key[j + 1:]
+            if alt in SHOAL:
+                key = alt
+                break
     assert key in SHOAL, ('shoal', key)
     return SHOAL[key]
 
@@ -196,8 +204,12 @@ def grid(m):
     n = m['armies']
     assert sorted(hqs) == list(range(1, n + 1)) and len(m['colours']) == n, (m['name'], hqs)
 
+    # (a map may name the armies that own properties by distance: `owners 1 2` in the BH maps, so a
+    # second-stage HQ of a team-mate does not take its neighbour's properties)
+    owning = m.get('owners') or sorted(hqs)
+
     def owner(x, y):
-        return min(hqs, key=lambda a: (abs(hqs[a][0] - x) + abs(hqs[a][1] - y), a))
+        return min(owning, key=lambda a: (abs(hqs[a][0] - x) + abs(hqs[a][1] - y), a))
 
     return W, H, ch, hqs, owner
 
