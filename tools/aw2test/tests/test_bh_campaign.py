@@ -773,6 +773,7 @@ def bh_campaign_reversed_onyx(ctx):
     d.pick_mission()
     d.wait_map()
     g._units_base = g._players_base = None
+    e.w8(0x0203FE6E, 0xA5)      # (the computer's attack on the player's inventions off: this test is the satellite's and the silos', tested in test_cpu_inventions)
     ctx.eq(d.mission(), 9, "mission 10")
     ctx.log(f"silo fired at {e.u16(ONYX + 0x10)}, {e.u16(ONYX + 0x12)}; units {five_units(e, g)}")
     ctx.eq((e.u8(O_ON), e.u8(O_HITS), e.u8(O_PHASE)), (3, 4, 1), "the satellite: reversed, 4 hits, charging")

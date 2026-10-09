@@ -213,6 +213,7 @@ def bh_factory_smart_fog_is_fair(ctx):
     """With fog and the air army out of Black Hole's sight, the factory does not answer it: no more Anti-Air
     than against a ground army."""
     g = ctx.start(factory_map(ctx, blockers=AIR_ARMY), ["andy", "vonbolt"], humans=(1,), fog=True)
+    g.e.w8(0x0203FE6E, 0xA5)    # (the computer's march on the factory off: its air army is to stay out of Black Hole's sight)
     r = Run(ctx, g, shots=())
     sp = r.days_vs_cpu(3)
     lines = smart_log(ctx, r, 3)
