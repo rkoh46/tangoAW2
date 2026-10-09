@@ -20,12 +20,12 @@ ALL = a2.ST | a2.VB | a2.HK | KOAL | KINDLE | JUGGER
 # number: (title, won before (mission numbers), roster bits, CO picks, armies: (colour, CO), map size, fog, day limit)
 # (bh01, bh02 and the bh16 stand-in come first in this tree: the won mask is every earlier mission)
 MISSIONS = {
-    17: ("Cold Iron", [1, 2, 3], ALL & ~JUGGER, [bh.STURM, bh.VON_BOLT], [(5, bh.STURM), (2, bh.JUGGER)], (24, 18), True, 22),
+    17: ("Cold Iron", [1, 2, 3], ALL & ~JUGGER, [bh.STURM, bh.VON_BOLT], [(5, bh.STURM), (2, bh.JUGGER)], (24, 18), True, 0),
     18: ("The Pit", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (2, bh.FLAK)], (20, 20), False, 12),
-    19: ("The Assembly Line", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (2, SASHA)], (32, 26), False, 28),
-    20: ("Moonlit Harbours", [1, 2, 3, 4, 5, 6], a2.ST | a2.VB | a2.HK, [bh.STURM, bh.HAWKE], [(5, None), (2, bh.OLAF)], (26, 18), False, 24),
-    21: ("Running Dry", [1, 2, 3, 4, 5, 6, 7], ALL | FLAK, [bh.STURM], [(5, bh.STURM), (1, 2), (2, GRIT)], (28, 20), True, 26),
-    22: ("Whiteout", [1, 2, 3, 4, 5, 6, 7, 8], a2.ST | a2.VB | a2.HK | JUGGER | FLAK, [], [(5, bh.JUGGER), (2, bh.OLAF)], (28, 22), False, 24),
+    19: ("The Assembly Line", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (2, SASHA)], (32, 26), False, 0),
+    20: ("Moonlit Harbours", [1, 2, 3, 4, 5, 6], a2.ST | a2.VB | a2.HK, [bh.STURM, bh.HAWKE], [(5, None), (2, bh.OLAF)], (26, 18), False, 0),
+    21: ("Running Dry", [1, 2, 3, 4, 5, 6, 7], ALL | FLAK, [bh.STURM], [(5, bh.STURM), (1, 2), (2, GRIT)], (28, 20), True, 0),
+    22: ("Whiteout", [1, 2, 3, 4, 5, 6, 7, 8], a2.ST | a2.VB | a2.HK | JUGGER | FLAK, [], [(5, bh.JUGGER), (2, bh.OLAF)], (28, 22), False, 0),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
@@ -310,9 +310,7 @@ _win_by_capture(17, [(21, 9)], [18, 19], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KO
 _win_by_capture(18, [(10, 1)], [19], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER, bh.FLAK], cos=None)
 _win_by_capture(19, [(29, 12)], [20], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER])
 _win_by_capture(22, [(14, 3)], [23], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.JUGGER, bh.FLAK])   # (the fixed pair Jugger + Flak: both were recruited)
-for _n in MISSIONS:
-    if _n != 20:
-        _lose_by_day(_n)
+_lose_by_day(18)         # (The Pit, the one mission here whose clock is the mission; the others have no day limit)
 
 
 # --- mission specifics -------------------------------------------------------------------------------------

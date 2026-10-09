@@ -113,7 +113,7 @@ const BOND_CLONE: u8 = 8;
 
 fn bh23() -> MissionDef {
     let mut m = MissionDef::new("bh23", "Laboratory 7");
-    m.objective = "Capture Lash's HQ in the fog. 22 days.";
+    m.objective = "Capture Lash's HQ in the fog.";
     m.map = MapSrc::Built("bh23");
     // Lash's HQ guard (the two Infantry beside the HQ) holds; her toys and the rest advance.
     m.units = roles(built_units("bh23"), 1, &[(18, 8), (18, 10)]);
@@ -123,7 +123,7 @@ fn bh23() -> MissionDef {
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::LASH, co::MAX)).funds(20000),
     ];
     m.fog = true;
-    m.day_limit = 22;
+    m.day_limit = 0;
     m.rank_days = 15;
     m.intro = crate::bh_text::scene("m23_pre");
     m.victory = crate::bh_text::scene("m23_post");
@@ -199,7 +199,7 @@ fn on_second_front(core: &mut Core) -> bool {
 
 fn bh25() -> MissionDef {
     let mut m = MissionDef::new("bh25", "Twin Harbours");
-    m.objective = "Take Port Orange and the Market Atoll. 24 days.";
+    m.objective = "Take Port Orange and the Market Atoll.";
     m.map = MapSrc::Built("bh25");
     // Sami's HQ Infantry and her three Landers (nothing to carry until the player lands) hold; the rest advance.
     m.units = roles(built_units("bh25"), 1, &[(28, 9), (28, 11), (22, 7), (22, 14), (21, 10)]);
@@ -208,7 +208,7 @@ fn bh25() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::SAMI)).funds(16000),
     ];
-    m.day_limit = 24;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.front2 = Some(FrontDef {
         map: MapSrc::Built("bh25b"),
@@ -243,7 +243,7 @@ fn bh25() -> MissionDef {
 
 fn bh26() -> MissionDef {
     let mut m = MissionDef::new("bh26", "The Last Alliance");
-    m.objective = "Break Jake, Colin and Grimm. 30 days, par 20.";
+    m.objective = "Break Jake, Colin and Grimm.";
     m.map = MapSrc::Built("bh26");
     // Each ally's Infantry beside its HQ holds it (and Grimm's Fighters fly); the rest advance on BH.
     m.units = roles(built_units("bh26"), 1, &[(3, 3), (5, 3), (3, 21), (5, 22), (32, 13), (32, 15)]);
@@ -253,7 +253,7 @@ fn bh26() -> MissionDef {
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(5000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::GRIMM)).team(2).funds(5000),
     ];
-    m.day_limit = 30;
+    m.day_limit = 0;
     m.rank_days = 20;
     m.intro = crate::bh_text::scene("m26_pre");
     m.victory = crate::bh_text::scene("m26_post");
@@ -272,7 +272,7 @@ fn bh26() -> MissionDef {
 
 fn bh27() -> MissionDef {
     let mut m = MissionDef::new("bh27", "Echo");
-    m.objective = "Capture the Orange Star base at (21, 9). 20 days.";
+    m.objective = "Capture the Orange Star base at (21, 9).";
     m.map = MapSrc::Built("bh27");
     // The Orange Star base is held by its two Artillery and the Infantry about the HQ; the rest advance.
     m.units = roles(built_units("bh27"), 1, &[(21, 8), (21, 10), (22, 9), (20, 8), (20, 10)]);
@@ -283,7 +283,7 @@ fn bh27() -> MissionDef {
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::CLONE_ANDY, co::ANDY)).funds(14000),
     ];
     m.fog = true;
-    m.day_limit = 20;
+    m.day_limit = 0;
     m.rank_days = 13;
     m.intro = crate::bh_text::scene("m27_pre");
     m.victory = crate::bh_text::scene("m27_post");
@@ -313,7 +313,7 @@ fn gate_lost(core: &mut Core) -> bool {
 
 fn bh28() -> MissionDef {
     let mut m = MissionDef::new("bh28", "Home Is Where The Black Is");
-    m.objective = "Hold the Obelisk Gate, break all four armies. 36 days.";
+    m.objective = "Hold the Obelisk Gate, break all four armies.";
     m.map = MapSrc::Built("bh28");
     // Each ally's two Infantry beside its HQ hold it and the Rockets cover them; the rest of the four armies advance
     // on the fortress (the coalition attacks).
@@ -329,7 +329,7 @@ fn bh28() -> MissionDef {
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1).funds(ally_funds),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(16000),
     ];
-    m.day_limit = 36;
+    m.day_limit = 0;
     m.rank_days = 24;
     // The Black Onyx is ours, on a five-day cycle; the four corner silos can bring it down.
     m.onyx = Some(OnyxDef::new((16, 14)));

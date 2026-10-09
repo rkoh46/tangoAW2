@@ -12,8 +12,8 @@ DS_TABLE = 0x08E00000
 ALL = (1 << 10) - 1   # every roster CO but Sonja (the secret mission's recruit: with her the CO screen has a second country tab and the partner pick cannot reach the Black Hole tab)
 # number: (title, won mask, CO picks (M30: only the tag partner is picked, Sturm always leads), armies: (colour, CO), map size, day limit)
 MISSIONS = {
-    29: ("The Orange Gate", a5.WON(28), [bh.STURM], [(5, bh.STURM), (1, None)], (34, 28), 32),
-    30: ("Nell's Stand", a5.WON(29), [bh.CLONE_ANDY], [(5, None), (1, None)], (36, 28), 34),
+    29: ("The Orange Gate", a5.WON(28), [bh.STURM], [(5, bh.STURM), (1, None)], (34, 28), 0),
+    30: ("Nell's Stand", a5.WON(29), [bh.CLONE_ANDY], [(5, None), (1, None)], (36, 28), 0),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
@@ -42,6 +42,7 @@ def check_load(ctx, n):
     g._units_base = g._players_base = None
     ctx.eq(d.mission(), a5.M[n], f"M{n}: the mission")
     ctx.eq(d.size(), size, f"M{n}: the map's size")
+    ctx.eq(e.u16(0x08E00000 + 0x5C * dc.DS_MAP_ID + 0x24), limit, f"M{n}: the day limit (none)")
     for army, count in units.items():
         ctx.eq(len(g.units(army)), count, f"M{n}: army {army}'s units")
     a5.pic(ctx, e, f"m{n}_opening")

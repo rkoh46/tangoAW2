@@ -2199,7 +2199,7 @@ by days).
 | --- | --- | --- | --- |
 | Map | 22x15: a crater lake with two bridges over the river that cuts the map (every vehicle crosses at (7,7) or (14,7); foot wades), a south-west beach, Von Bolt's walled hall (west gate (16,3), south gate (19,5)), an Obelisk at (5,9), Crystals beside the bridge ends at (6,6) and (15,8) | 18x20: the Foundry (8..10, 3..6, doors on row 7) fed by a pipe from the HQ (9,1), a ring road round it, a Crystal at (6,7), a river with the road bridge (9,12) and a west-track bridge (3,12), a village, a ridge, Green Earth's south coast | 26x16: three islands, two straits, two-wide channels; Black Cannon at (12,6) on the middle isle with its ring road; ten beaches (shoals), four ports |
 | Armies | Sturm (6000): HQ, 2 bases, 4 cities; Von Bolt in Green Earth's colours (10000): HQ, 3 bases, 3 cities, 5 neutral cities | Sturm or Von Bolt (pick; no bases, no funds), against Jess (8000) | Sturm + Von Bolt (a fixed tag pair, 12000) against Drake + Eagle (14000) |
-| Rules | day 3 scene when a Black Hole unit is within 2 of a Crystal; day 4 two Md Tanks if Von Bolt owns 6+ properties; day 7 scene; the win earns Von Bolt's bond (`on_win`) and unlocks him; 20 days | the Foundry's own table (`factory`, from day 3), Green Earth's waves on days 3, 6 and 9 (day 9 with Jess's power charged), +3000 for Jess on days 4, 8, 12; the last line of the opening is Sturm's or the leader's; 14 days | day 4 and day 8 scenes (the latter once two of the isle's three cities are held); 25 days |
+| Rules | day 3 scene when a Black Hole unit is within 2 of a Crystal; day 4 two Md Tanks if Von Bolt owns 6+ properties; day 7 scene; the win earns Von Bolt's bond (`on_win`) and unlocks him; no day limit | the Foundry's own table (`factory`, from day 3), Green Earth's waves on days 3, 6 and 9 (day 9 with Jess's power charged), +3000 for Jess on days 4, 8, 12; the last line of the opening is Sturm's or the leader's; no day limit | day 4 and day 8 scenes (the latter once two of the isle's three cities are held); no day limit |
 
 Tests (`test_bh_act1.py`, `-k bh_act1`): every mission loads as its sheet says; each mission's
 opening, forced win with its scenes, unlocks, bond and next flag; M1's turn-start rules; M2's Foundry
@@ -2341,7 +2341,10 @@ format needed, all in `custom_campaign.rs`:
   enemy has at most one unit left, or its HQ is the player's). The HQ capture
   path was measured to run its trigger first.
 - **The day limit is only the header's counter** (the HUD shows it); the loss
-  is a trigger on day `limit + 1` (`missions()` adds it).
+  is a trigger on day `limit + 1` (`missions()` adds it). A limit of 0 is no
+  limit: no counter, no trigger, and the rank still comes from `rank_days`.
+  Only the seven missions whose clock is the mission keep one (M5, M9, M13,
+  M14, M18, M24, M31).
 - **Black Factory tables.** `MissionDef::factory` (day, three doors' units)
   is a mission's own table (`Custom::factory`, `ds_campaign::factory_table`,
   used by `factory.rs` instead of Factory Blues' schedule); M7's is F7.

@@ -135,7 +135,7 @@ fn bh29() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(14000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::NELL, co::MAX)).funds(60000),
     ];
-    m.day_limit = 32;
+    m.day_limit = 0;
     m.rank_days = 20;
     m.intro = crate::bh_text::scene("m29_pre");
     m.victory = crate::bh_text::scene("m29_post");
@@ -363,7 +363,7 @@ fn bh30() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(co::STURM)).funds(20000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(20000),
     ];
-    m.day_limit = 34;
+    m.day_limit = 0;
     m.rank_days = 24;
     m.intro = crate::bh_text::scene("m30_pre");
     m.victory = crate::bh_text::scene("m30_post");

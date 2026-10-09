@@ -18,11 +18,11 @@ ALL = a3.ST | a3.VB | a3.HK | a3.KO | a3.KI
 # number: (title, won before (mission numbers; M11 is the tree's stub), roster bits, CO picks (M12: the pair, lead first;
 # M16: a fixed pair, no pick screen), size, fog, day limit)
 MISSIONS = {
-    12: ("Highway to the Horizon", list(range(1, 12)), a3.ST | a3.VB | a3.HK, [bh.STURM, bh.HAWKE], (36, 18), False, 28),
+    12: ("Highway to the Horizon", list(range(1, 12)), a3.ST | a3.VB | a3.HK, [bh.STURM, bh.HAWKE], (36, 18), False, 0),
     13: ("Festival of Flame", list(range(1, 13)), a3.ST | a3.VB | a3.HK | a3.KO, [bh.STURM], (22, 16), False, 14),
     14: ("No Soldier Left Behind", list(range(1, 14)), ALL, [bh.STURM], (22, 22), True, 15),
-    15: ("The Skybridge", list(range(1, 15)), ALL, [bh.STURM, bh.HAWKE], (24, 20), False, 24),
-    16: ("Comet Keep", list(range(1, 16)), ALL, [], (26, 22), False, 24),
+    15: ("The Skybridge", list(range(1, 15)), ALL, [bh.STURM, bh.HAWKE], (24, 20), False, 0),
+    16: ("Comet Keep", list(range(1, 16)), ALL, [], (26, 22), False, 0),
 }
 
 
@@ -223,9 +223,8 @@ def _lose_by_day(n):
     test(modes=("ds",))(fn)
 
 
-for _n in MISSIONS:
-    if _n != 15:      # (two fronts: the day limit is the main front's, as M8's)
-        _lose_by_day(_n)
+for _n in (13, 14):      # (the missions whose clock is the mission; the others have no day limit)
+    _lose_by_day(_n)
 
 
 # --- wins ------------------------------------------------------------------------------------------------------

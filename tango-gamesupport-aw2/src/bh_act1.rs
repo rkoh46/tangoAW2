@@ -35,12 +35,6 @@ fn charge_jess(core: &mut Core) {
     }
 }
 
-/// The days run out: the mission is lost when the day after the limit begins
-/// (the game itself only ranks by days).
-fn time_up(limit: u16) -> Trigger {
-    Trigger::new(When::TurnStart, Cond::DayAtLeast(limit + 1), vec![Action::Lose])
-}
-
 // --- M1 Storm Landing --------------------------------------------------------------
 
 fn bh01() -> MissionDef {
@@ -52,7 +46,7 @@ fn bh01() -> MissionDef {
         // Von Bolt in Green Earth's colours (his stolen surplus).
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)).funds(20000),
     ];
-    m.day_limit = 20;
+    m.day_limit = 0;
     m.rank_days = 10;
     m.intro = crate::bh_text::scene("m01_pre");
     m.victory = crate::bh_text::scene("m01_post");
@@ -93,7 +87,6 @@ fn bh01() -> MissionDef {
         ),
         // Day 7: everything must go.
         Trigger::new(When::TurnStart, Cond::DayAtLeast(7), vec![Action::Scene(crate::bh_text::scene("m01_day7"))]),
-        time_up(20),
     ];
     m.flag = region::BLACK_HOLE[0];
     m.stars = 1;
@@ -113,7 +106,7 @@ fn bh02() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(14000),
     ];
     m.pool = vec![co::STURM, co::VON_BOLT];
-    m.day_limit = 18;
+    m.day_limit = 0;
     m.rank_days = 11;
     m.intro = crate::bh_text::scene("m02_pre");
     m.victory = crate::bh_text::scene("m02_post");
@@ -188,7 +181,6 @@ fn bh02() -> MissionDef {
                 ]),
             ],
         ),
-        time_up(18),
     ];
     m.flag = region::BLACK_HOLE[4];
     m.stars = 1;
@@ -216,7 +208,7 @@ fn bh03() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::VON_BOLT)).funds(12000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::DRAKE, co::EAGLE)).funds(14000),
     ];
-    m.day_limit = 25;
+    m.day_limit = 0;
     m.rank_days = 14;
     // The isle's Black Cannon (inventions-list cell (11,5): its top left) and two minicannons are ours, and would
     // shoot the first enemy in reach at the first Black Hole turn start (a Submarine at (17,13) lost half its HP before
@@ -240,7 +232,6 @@ fn bh03() -> MissionDef {
             Cond::All(vec![Cond::DayAtLeast(8), holds_the_isle()]),
             vec![Action::Scene(crate::bh_text::scene("m03_day8"))],
         ),
-        time_up(25),
     ];
     m.flag = region::BLACK_HOLE[5];
     m.stars = 2;

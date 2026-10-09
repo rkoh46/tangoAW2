@@ -150,7 +150,7 @@ fn bh12() -> MissionDef {
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Pair(co::KOAL, co::GRIMM)).funds(30000),
     ];
     m.pool = POOL12.to_vec();
-    m.day_limit = 28;
+    m.day_limit = 0;
     m.rank_days = 17;
     m.factory = F12.to_vec();
     m.units = roles(built_units("bh12"), |u| u.kind == unit::ANTI_AIR);
@@ -314,7 +314,7 @@ fn bh15() -> MissionDef {
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).funds(16000),
     ];
     m.pool = POOL15.to_vec();
-    m.day_limit = 24;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.units = roles(built_units("bh15"), |u| u.kind == unit::ANTI_AIR || u.kind == unit::ROCKETS);
     // The sky front's Black Factory table is dormant (there is none; AW2's turn calls the spawner all the same).
@@ -357,7 +357,7 @@ fn bh16() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::KOAL, co::KINDLE)).funds(6000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Pair(co::KANBEI, co::SENSEI)).funds(18000),
     ];
-    m.day_limit = 24;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.units = roles(built_units("bh16"), |u| u.y <= 5);
     m.intro = crate::bh_text::scene("m16_pre");

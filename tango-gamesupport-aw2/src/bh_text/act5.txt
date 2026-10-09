@@ -315,7 +315,7 @@ HAWKE: Hold the camp. Do not cross this / turn. Her luck burns out on stone.
 == m30_evac
 NARRATION: In the east, a whistle. / Trains leave the castle's rail yard.
 NELL: Evacuation trains. The city's / children are aboard, and teachers.
-NELL: I'm asking nothing of you, / Sturm. Only time. Twelve more days.
+NELL: I'm asking nothing of you, / Sturm. Only time. A few more days.
 NELL: I was born lucky. Watch me.
 @WITH HAWKE
 HAWKE: She is buying time with the / civilians. A fine trade, if one can pay.

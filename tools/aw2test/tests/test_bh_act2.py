@@ -17,14 +17,14 @@ ALL = a2.ST | a2.VB | a2.HK
 # number: (title, won before (mission numbers), roster bits, CO picks the CO screen asks for ([] = fixed, no screen),
 #          armies: (colour, CO), map size, fog, day limit)
 MISSIONS = {
-    4: ("Marshal in Green", [1, 2, 3], a2.ST | a2.VB, [], [(5, bh.STURM), (3, bh.HAWKE)], (24, 18), True, 20),
+    4: ("Marshal in Green", [1, 2, 3], a2.ST | a2.VB, [], [(5, bh.STURM), (3, bh.HAWKE)], (24, 18), True, 0),
     5: ("Night Raid", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.JAVIER)], (24, 16), True, 9),
-    6: ("Stepping Stones", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.DRAKE)], (32, 20), False, 22),
-    7: ("Greenhaven Arsenal", [1, 2, 3, 4, 5], ALL, [], [(5, bh.HAWKE), (3, bh.EAGLE)], (28, 24), False, 26),
-    8: ("The Twin Gates", [1, 2, 3, 4, 5, 6, 7], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JESS)], (24, 18), False, 22),
+    6: ("Stepping Stones", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.DRAKE)], (32, 20), False, 0),
+    7: ("Greenhaven Arsenal", [1, 2, 3, 4, 5], ALL, [], [(5, bh.HAWKE), (3, bh.EAGLE)], (28, 24), False, 0),
+    8: ("The Twin Gates", [1, 2, 3, 4, 5, 6, 7], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JESS)], (24, 18), False, 0),
     9: ("The Loot Train", [1, 2, 3, 4, 5, 6, 7, 8], ALL, [], [(5, bh.VON_BOLT), (3, None)], (28, 14), True, 16),
-    10: ("Evergreen Citadel", [1, 2, 3, 4, 5, 6, 7, 8, 9], ALL, [], [(5, None), (3, None)], (28, 22), False, 24),
-    11: ("Ashfall Pass", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [], [(5, None), (3, bh.JAVIER), (4, bh.SENSEI)], (28, 20), False, 24),
+    10: ("Evergreen Citadel", [1, 2, 3, 4, 5, 6, 7, 8, 9], ALL, [], [(5, None), (3, None)], (28, 22), False, 0),
+    11: ("Ashfall Pass", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [], [(5, None), (3, bh.JAVIER), (4, bh.SENSEI)], (28, 20), False, 0),
 }
 # fixed pairs (the CO matrix): the player's two COs, and the enemy pairs (army: its two COs)
 LEADS = {10: [bh.STURM, bh.HAWKE], 11: [bh.VON_BOLT, bh.HAWKE]}
@@ -502,9 +502,8 @@ _win_by_capture(4, [(21, 9)], [5])
 _win_by_capture(6, [(28, 14)], [7])
 _win_by_capture(7, [(25, 19)], [])
 _win_by_capture(10, [(14, 3)], [11])
-for _n in MISSIONS:
-    if _n != 8:
-        _lose_by_day(_n)
+for _n in (5, 9):        # (the missions whose clock is the mission; every other one has no day limit)
+    _lose_by_day(_n)
 
 
 

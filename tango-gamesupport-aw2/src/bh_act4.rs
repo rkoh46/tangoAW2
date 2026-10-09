@@ -123,7 +123,7 @@ fn bh17() -> MissionDef {
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(co::JUGGER, co::GRIT)).funds(18000),
     ];
     m.fog = true;
-    m.day_limit = 22;
+    m.day_limit = 0;
     m.rank_days = 14;
     m.intro = crate::bh_text::scene("m17_pre");
     m.victory = crate::bh_text::scene("m17_post");
@@ -201,7 +201,7 @@ fn bh19() -> MissionDef {
         // Sasha, with real production: 5 bases, 2 airports, 9 cities.
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).funds(45000),
     ];
-    m.day_limit = 28;
+    m.day_limit = 0;
     m.rank_days = 18;
     m.factory = F19.to_vec();
     m.intro = crate::bh_text::scene("m19_pre");
@@ -239,7 +239,7 @@ fn bh20() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).funds(18000),
     ];
-    m.day_limit = 24;
+    m.day_limit = 0;
     m.rank_days = 16;
     // (no Black Factory on either front: the engine's spawner guard keeps the computer's quiet)
     // Colin's fleet: Cruisers and Subs hunt; the Battleships and the Carrier hold the line off his shelf, the
@@ -323,7 +323,7 @@ fn bh21() -> MissionDef {
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT)).team(2).funds(9000),
     ];
     m.fog = true;
-    m.day_limit = 26;
+    m.day_limit = 0;
     m.rank_days = 18;
     // The column: low ammunition and fuel for the types listed in COLUMN.
     // Max's army charges (all advance); Grit's Artillery and Missiles hold their ridge to shell the bridges.
@@ -428,7 +428,7 @@ fn bh22() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::JUGGER, co::FLAK)).funds(12000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(co::OLAF, co::SASHA)).funds(28000),
     ];
-    m.day_limit = 24;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.intro = crate::bh_text::scene("m22_pre");
     m.victory = crate::bh_text::scene("m22_post");

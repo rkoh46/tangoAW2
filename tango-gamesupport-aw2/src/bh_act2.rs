@@ -175,7 +175,7 @@ fn bh04() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::HAWKE)).funds(8000),
     ];
     m.fog = true;
-    m.day_limit = 20;
+    m.day_limit = 0;
     m.rank_days = 12;
     m.intro = crate::bh_text::scene("m04_pre");
     m.victory = crate::bh_text::scene("m04_post");
@@ -275,7 +275,7 @@ fn bh06() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(12000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).funds(14000),
     ];
-    m.day_limit = 22;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.intro = crate::bh_text::scene("m06_pre");
     m.victory = crate::bh_text::scene("m06_post");
@@ -318,7 +318,7 @@ fn bh07() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::HAWKE)).funds(8000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(26000),
     ];
-    m.day_limit = 26;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.factory = F7.to_vec();
     // The port at (9, 20) is Black Hole's (the map tool owns a property by the nearest HQ).
@@ -364,7 +364,7 @@ fn bh08() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(8000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(11000),
     ];
-    m.day_limit = 22;
+    m.day_limit = 0;
     m.rank_days = 16;
     // The dusk gate's Black Factory is dormant (an all-zero table): AW2's computer-Black-Hole turn calls
     // the factory spawner, which on a map without a factory wrote garbage and reset the game on day 2 (the
@@ -500,7 +500,7 @@ fn bh10() -> MissionDef {
         // Black Hole owns a base, an airport and its Fighter.
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::EAGLE, co::JESS)).funds(4000),
     ];
-    m.day_limit = 24;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.intro = crate::bh_text::scene("m10_pre");
     m.victory = crate::bh_text::scene("m10_post");
@@ -535,7 +535,7 @@ fn bh11() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(11000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(11000),
     ];
-    m.day_limit = 24;
+    m.day_limit = 0;
     m.rank_days = 16;
     m.intro = crate::bh_text::scene("m11_pre");
     m.victory = crate::bh_text::scene("m11_post");

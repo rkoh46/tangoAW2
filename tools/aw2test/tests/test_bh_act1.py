@@ -100,7 +100,7 @@ SIZE = {0: (22, 15), 1: (22, 24), 2: (26, 16)}
 PLAYER_CO = {0: bh.STURM, 1: bh.STURM, 2: bh.STURM}
 ENEMY_CO = {0: bh.VON_BOLT, 1: 17, 2: 9}          # Von Bolt, Jess, Drake (Eagle his partner)
 FUNDS = {0: (6000, 20000), 1: (0, 8000), 2: (12000, 20000)}
-DAY_LIMIT = {0: 20, 1: 18, 2: 25}
+OLD_DAY_LIMIT = {0: 20, 1: 18, 2: 25}      # (the limits the missions had: none of the three has a day limit now)
 HQS = {0: ((2, 12), (19, 2)), 1: ((11, 1), (11, 22)), 2: ((2, 8), (24, 8))}
 CLASS_HQ, CLASS_CITY, CLASS_BASE, CLASS_AIRPORT, CLASS_PORT, CLASS_SHOAL = 8, 6, 0xE, 0xA, 0xB, 13
 
@@ -320,15 +320,12 @@ def bh_act1_m1_crystal_scene_loot_sale_and_day_seven(ctx):
 
 @test(modes=("ds",))
 def bh_act1_m1_lose_conditions(ctx):
-    """M1 is lost when the days run out (the day after the 20th begins), when the
-    army is routed, and when Sturm's HQ is taken."""
+    """M1 is lost when the army is routed and when Sturm's HQ is taken (the days
+    do not run out: bh_act1_no_day_limit)."""
     from aw2test import campaigns as cp
-    for how in ("days", "routed", "hq"):
+    for how in ("routed", "hq"):
         e, g, d = enter(ctx, 0)
-        if how == "days":
-            e.w16(0x03004080, DAY_LIMIT[0])
-            pass_turn_to_result(e, g, d)
-        elif how == "routed":
+        if how == "routed":
             for u in g.units(army=1):
                 d.remove_unit(u)
             pass_turn_to_result(e, g, d)
@@ -336,6 +333,31 @@ def bh_act1_m1_lose_conditions(ctx):
             lose_hq(ctx, e, g, d, 0)
         r = d.last_result()
         ctx.eq(r["result"], 2, f"M1 lost: {how}")
+        e.close()
+
+
+@test(modes=("ds",))
+def bh_act1_no_day_limit(ctx):
+    """M1 to M3 have no day limit: the map's header counter is 0 (no "Days Left" on the battle HUD), and the
+    day after the old limit begins without a loss."""
+    for k in (0, 1, 2):
+        e, g, d = enter(ctx, k, cos=[bh.STURM])
+        ctx.eq(e.u16(0x08E00000 + 0x5C * dc.DS_MAP_ID + 0x24), 0, f"M{k + 1}: no day limit in the map's header")
+        e.w16(0x03004080, OLD_DAY_LIMIT[k])
+        try:
+            g.open_map_menu()
+            g.choose("End", g.MAP_MENU)
+        except Exception:
+            pass
+        for _ in range(1500):
+            if e.u16(0x03004080) > OLD_DAY_LIMIT[k] or e.u8(dc.LAST_RESULT):
+                break
+            if d.scripts_running() or not d.in_battle():
+                e.press("A", 4)
+            e.wait(20)
+        e.wait(200)
+        ctx.check(e.u16(0x03004080) > OLD_DAY_LIMIT[k], f"M{k + 1}: day {OLD_DAY_LIMIT[k] + 1} began")
+        ctx.eq(e.u8(dc.LAST_RESULT), 0, f"M{k + 1}: not lost when the old limit passes")
         e.close()
 
 
@@ -730,15 +752,12 @@ def bh_act1_maps_are_reachable(ctx):
 
 @test(modes=("ds",))
 def bh_act1_m2_m3_lose_conditions(ctx):
-    """M2 and M3 are lost when the days run out, when the army is routed, and when Black Hole's HQ is
-    taken (M2's HQ sits behind the Foundry)."""
+    """M2 and M3 are lost when the army is routed and when Black Hole's HQ is
+    taken (M2's HQ sits behind the Foundry); the days do not run out."""
     for k in (1, 2):
-        for how in ("days", "routed", "hq"):
+        for how in ("routed", "hq"):
             e, g, d = enter(ctx, k, cos=[bh.STURM])
-            if how == "days":
-                e.w16(0x03004080, DAY_LIMIT[k])
-                pass_turn_to_result(e, g, d)
-            elif how == "routed":
+            if how == "routed":
                 for u in g.units(army=1):
                     d.remove_unit(u)
                 pass_turn_to_result(e, g, d)
