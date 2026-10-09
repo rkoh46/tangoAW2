@@ -575,7 +575,19 @@ class DsCampaign:
             e.wait(30)
         if self.co_cursor()["co"] != want:
             raise NavError(f"CO {want} not reached ({self.co_cursor()})")
-        e.press("A", 6)
+        # (a screen that has only just opened ignores A until its opening is over, the cursor already on the CO
+        # being the usual case: the pick is pressed again until the screen's count of picks moves)
+        def picks_made():
+            for k in range(32):
+                if e.u32(0x0200D610 + 0x6C * k) == 0x08616638:
+                    return e.u16(0x0200D610 + 0x6C * k + 0x64)
+            return None
+        before = picks_made()
+        for _ in range(10):
+            e.press("A", 6)
+            e.wait(30)
+            if before is None or picks_made() != before or not self.on_co_select():
+                break
         return want
 
     def choose_cos(self, count, prefs=None, max_frames=6000):

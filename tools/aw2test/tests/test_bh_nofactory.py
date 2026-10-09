@@ -222,8 +222,10 @@ def bh_campaign_pair_pick_matches_every_partner(ctx):
         lead = g.player(1)["co"]
         got = e.u8(tag.rec(1) + tag.P_CO)
         ctx.log(f"asked {lead_co} + {partner}: picks {picks}, battle lead {lead}, partner {got}")
-        # (a Yellow Comet CO picked first, Sonja, does not lead a Black Hole army: the pair is the same, the other leads)
-        want = (partner, lead_co) if lead_co == bh.SONJA else (lead_co, partner)
+        # (Sonja leads like any other recruited CO: the game has no rule against a Yellow Comet CO leading a Black Hole army.
+        # An earlier version of this test expected her to end up as the partner: that was the harness pressing A on the CO
+        # screen before it accepted input, so her pick was lost and the next A took her from the cursor as the partner)
+        want = (lead_co, partner)
         ctx.eq((picks, (lead, got)), ([lead_co, partner], want), f"CO {lead_co} + CO {partner}")
         e.close()
 
@@ -524,9 +526,7 @@ def bh_campaign_five_army_pick_reaches_every_co_and_tags(ctx):
         g._units_base = g._players_base = None
         d.wait_control()
         ctx.eq(picks, [lead_co, partner], "the picks")
-        # (Sonja picked first does not lead a Black Hole army: the same pair, the other leads)
-        if lead_co == bh.SONJA:
-            lead_co, partner = partner, lead_co
+        # (Sonja picked first leads: the pair is as picked)
         ctx.eq((g.player(5)["co"], e.u8(tag.rec(5) + tag.P_CO)), (lead_co, partner), f"army 5 has {lead_co} + {partner}")
         ctx.eq(g.player(1)["co"], bh.ANDY, "army 1 keeps its fixed CO")
         if n != 0 and n != 3:
