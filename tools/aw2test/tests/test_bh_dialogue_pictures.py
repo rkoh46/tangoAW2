@@ -114,7 +114,7 @@ def bh_dialogue_pictures_m31_defection_and_secret_epilogue(ctx):
     g._units_base = g._players_base = None
     act()
     paths = boxshots.shoot(ctx, e, d, "m31", patience=900, max_boxes=220, wait_map=True)
-    check(ctx, "m31_post_to_epilogue", paths, 120)
+    check(ctx, "m31_post_to_epilogue", paths, 80)
     e.close()
 
 
@@ -134,4 +134,21 @@ def bh_dialogue_pictures_m10_post_and_warroom(ctx):
     after_intro(ctx, e, g, d, "m10")
     ctx.require(d.force_win(), "M10: a forced win")
     check(ctx, "m10_post", boxshots.shoot(ctx, e, d, "m10_post", patience=600, wait_map=True), 10)
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_dialogue_pictures_m3_map_and_warroom(ctx):
+    """M3's world-map scene and the Allied war room that follows it (trimmed between-mission scenes). M3 is entered the way
+    test_bh_act1 enters it (its opening read through, then the forced win)."""
+    import importlib.util
+    import os
+    spec = importlib.util.spec_from_file_location("_act1_for_pictures", os.path.join(os.path.dirname(__file__), "test_bh_act1.py"))
+    act1 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(act1)
+    e, g, d = act1.enter(ctx, 2, wait=False)
+    act1.intro_texts(ctx, e, g, d)
+    act1.pass_turn(e, g, d, [])                      # (a turn passes first: as test_bh_act1 does before its forced win)
+    ctx.require(d.force_win(), "M3: the enemy routed")
+    check(ctx, "m3_post_map_warroom", boxshots.shoot(ctx, e, d, "m3", patience=600, wait_map=True), 25)
     e.close()

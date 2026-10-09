@@ -98,18 +98,13 @@ VON BOLT: No matter. Old ledgers / are full of names. Kehh.
 CRUMB(h): Sergeant! The old man / says second pick is a pick!
 MORTAR: Crumb. Second pick of / vaults. Not of boots.
 CRUMB: Gerald says boots count.
-MORTAR: Who is Gerald?
-CRUMB(h): My biscuit, Sergeant! / Basic training issue.
-MORTAR: That thing is older than / the Obelisk.
-CRUMB: Gerald says that's rude.
+MORTAR: That biscuit is older than / the Obelisk.
 WICK(s): Is it all right if I ask / why he has a little stamp?
-WICK: Like a door. Or a keyhole. / It is... odd.
+WICK: Like a keyhole. It is... odd.
 CRUMB: Maker's mark, Wick! Every / biscuit has one.
 MORTAR: Mine does not.
 CRUMB(s): ...Huh. I never thought / about that before.
-WICK(s): Is... is anyone else worried / our tanks are still green?
-VON BOLT: Paint costs money.
-VON BOLT: And I do not spend it / on a coast I have lost. Kehh.
+VON BOLT: Paint costs money. Your / tanks stay green. Kehh.
 
 # ---------------------------------------------------------------- M2 The Sleeping Foundry (FREE, pool Sturm / Von Bolt; enemy Jess)
 
@@ -157,15 +152,15 @@ STURM: Failure is a debt, Von / Bolt. I collect.
 
 == m02_day3
 NARRATION: The Foundry shudders, / coughs, and breathes fire.
-CRUMB(h): It sneezed a Tank! / I'm calling him Dennis!
-MORTAR: Crumb. It is a tank. / Not a stray dog.
-CRUMB: Dennis says he is both, / Sergeant.
-VON BOLT: Free tanks! Free! / Kehh-heh! Beautiful!
+CRUMB(h): It sneezed a Black Hole / unit! I'm calling it Dennis!
+MORTAR: Crumb. It is a war machine. / Not a stray dog.
+CRUMB: Dennis says it's both, / Sergeant.
+VON BOLT: Free units! Free! / Kehh-heh! Beautiful!
 VON BOLT: Only the wiring cost / anything. Mark it down.
 STURM: Hold your line.
 
 == m02_day6
-JESS: More tanks are coming. Hold / the line, Green Earth!
+JESS: More of them are coming. Hold / the line, Green Earth!
 JESS: Foundry or no Foundry, they / bleed like everyone else.
 VON BOLT: Kehh... she believes / in bleeding. How quaint.
 
@@ -182,9 +177,9 @@ VON BOLT: Drown? On the sea? / Kehh... Sturm. Sturm. Sturm.
 STURM: She is right that the / sea is next.
 JESS: Brave, for a man with no / flag. Stupid, too. Good luck.
 CRUMB: Sir? Dennis is fine. / Can he have a hat?
-STURM: Fine. The tank still / answers to me.
+STURM: Fine. The machine still / answers to me.
 CRUMB(h): Thank you, sir! He'll / wear it with honour!
-MORTAR: Crumb. It is a tank.
+MORTAR: Crumb. It is a machine.
 CRUMB: Honour is not size-specific, / Sergeant.
 WICK(s): Is it all right if I / say that was a good point?
 MORTAR: ...Fine. It was a good / point.
@@ -196,17 +191,13 @@ VON BOLT: Kehh... a lease. / Only a long lease.
 == m02_map
 CRUMB(h): Dennis has a hat, Sergeant! / It's a bucket!
 MORTAR: Crumb, that bucket is / Colonel Von Bolt's coin pail.
-VON BOLT: My PAIL?!
-CRUMB(s): Gerald, run.
-VON BOLT: That pail has been / with me for fifty years!
-VON BOLT: Do you know what I kept / in it? Dust and optimism!
+VON BOLT: My PAIL?! Fifty years / with me! Dust and optimism!
 CRUMB: Then Dennis will keep / them safe, Colonel!
 VON BOLT: Kehh... boot boy... / return it. Rental begins now.
-MORTAR: He's naming the tanks now.
-MORTAR: Let him. It keeps him / out of the ammo.
+MORTAR: He's naming the machines now. / Let him. It keeps him from the ammo.
 WICK(s): Is it all right if I / name the other one?
 MORTAR: Name it Not Dennis. / Then leave.
-WICK(h): ...Thank you, Sergeant. / Not Dennis it is.
+WICK(h): ...Thank you, Sergeant.
 
 # ---------------------------------------------------------------- M3 Blockade Runner (Sturm + Von Bolt fixed pair; enemy Drake + Eagle)
 
@@ -271,26 +262,17 @@ HAWKE: Splendid. Then I shall / see what you are made of.
 
 == m03_map
 CRUMB(s): I gave Gerald to a / seagull. Then took him back.
-CRUMB: The seagull is upset. I'm / upset. We're all upset.
 WICK(s): Is it all right if I / admit I was sick twice?
-MORTAR: Wick. Everybody was sick.
-MORTAR: The Colonel was sick in / a helmet. Not his.
+MORTAR: Wick. Everybody was sick. / The Colonel, in a helmet. Not his.
 CRUMB: Sergeant, do you think / the COs ever get scared?
-MORTAR: The tall one doesn't know / how.
-MORTAR: The old one's scared of / the sea. That counts.
-STURM: Private.
-CRUMB: Sir!
-STURM: You carried your pack ashore / through three waves. Why.
-CRUMB: Gerald is in it, sir. And / the soup. And the spare boots.
-CRUMB: I did not want to leave / anything behind. Ever.
+MORTAR: The tall one doesn't know / how. The old one fears the sea.
+STURM: Private. You carried your / pack through three waves. Why.
+CRUMB: Gerald is in it, sir. And / the soup. I do not leave things.
 STURM: Black Hole does not leave / what is its own behind.
 CRUMB(h): Yes, sir! I know, sir!
-STURM: Noted.
-VON BOLT: Sturm. A word. Alone. / Kehh... walk with an old man.
+VON BOLT: Sturm. A word. Walk with / an old man. Kehh...
 VON BOLT: When the war is done, come / to my vault. Last shelf.
-VON BOLT: There is a crate I never / could price. First in my life.
-STURM: Why not.
-VON BOLT: Because every time I / pick it up, it hums. At you.
+VON BOLT: A crate I never could / price. Every time I lift it, it hums. At you.
 STURM: Then I will see it.
 
 == m03_warroom
@@ -307,7 +289,6 @@ GRIMM: Har! I charge triple to / protect it, pencil necks!
 NELL: Please. The Accord stands / because we agreed to stand.
 ANDY: Nell, send me! I can fix / this! Just give me a front!
 NELL: No, Andy. You go when we / all go. Not one minute before.
-SONJA: Their invoices are well / organised. Too organised.
 SONJA: The Strait's toll ledger / names a line I cannot trace.
 SONJA: A shipping line that does / not exist. S.
 CRUMB: Sergeant... they sound a / lot like us. Only louder.

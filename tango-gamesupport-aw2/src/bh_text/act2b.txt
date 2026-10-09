@@ -77,16 +77,13 @@ STURM: A fence is more useful / standing than fallen.
 
 == m08_map
 CRUMB: Marshal! The messages from / both fronts arrived!
-HAWKE: At the same time?
-CRUMB(h): Mostly. One of them was / a pigeon.
-HAWKE: A pigeon.
-CRUMB: A very good pigeon, sir. It / saluted. Possibly.
+CRUMB(h): One of them was a pigeon. / It saluted. Possibly.
 HAWKE: Add it to the contingency plan.
 WICK: Is it all right if I ask / what rank the pigeon holds?
 MORTAR: Private. Same as you.
 VON BOLT: Marshal! My trucks roll / east tomorrow. Three of them.
 VON BOLT: Do not ask what is in them. / You would only be tempted.
-HAWKE: I have never asked what is in / your trucks. It keeps us friends.
+HAWKE: I have never asked. It keeps / us friends.
 VON BOLT: Kehh-heh! It keeps you / employed!
 
 == m09_pre | VON BOLT
@@ -167,13 +164,10 @@ VON BOLT: ...That is the best news of / the day. Put it in the ledger.
 
 == m09_map | VON BOLT
 CRUMB: Sir, Interest the rooster / pecked the Colonel.
-SOLDIER: Is that a salute?
-CRUMB(h): Hard to tell. I think / he's good with money.
-VON BOLT: He is! He pecked me for / a late fee. Kehh-heh!
+VON BOLT: For a late fee! He is / good with money. Kehh-heh!
 MORTAR: Crumb. Do not feed the rooster.
-CRUMB: He is eating Gerald's crumbs, / Sergeant.
+CRUMB: It is only Gerald's crumbs, / Sergeant.
 MORTAR: ...Gerald crumbles?
-CRUMB(s): Gerald says do not look at / him when he's like this.
 WICK: Is it all right if I ask / what is on the last shelf?
 VON BOLT: Dust. Old, expensive dust. / Not for boot boys. Kehh.
 CRUMB: It sounded like humming when / you said shelf, Colonel.
@@ -253,17 +247,12 @@ MORTAR: Crumb. The Marshal has other / plans for you.
 
 == m10_map | STURM
 SOLDIER: Hobb! The Marshal says / you carry the flag.
-CRUMB: Which flag?
-SOLDIER: Ours.
-CRUMB(h): I'm Standard-Bearer?!
+CRUMB(h): I'm Standard-Bearer?! Gerald, / look!
 MORTAR: By accident. Don't drop it.
-CRUMB: Gerald, I'm a Standard- / Bearer! Look!
-WICK: Is it all right if I ask / why the Marshal chose Crumb?
 HAWKE: He has lost boots, rations / and his hat. Never an order.
 HAWKE: And a bearer should be someone / the enemy ignores. Crumb is ideal.
 CRUMB: Thank you, Marshal! ...I / think that was a compliment.
-HAWKE: Take it as one.
-HAWKE: Crumb. My listening post picked / up an Allied relay. Take the headset.
+HAWKE: Take it as one. Now take the / headset. An Allied relay is live.
 HAWKE: Write down every word. Do not / interrupt. Do not sneeze.
 CRUMB: Yes sir! Gerald, hush.
 
@@ -272,24 +261,16 @@ NARRATION: Intercept. Allied Accord, / emergency council. Line open.
 NELL: Evergreen has fallen. Green / Earth's wardens are gone.
 NELL: Nobody leaves this table. We / hold together, boys. All of us.
 GRIT: Ayup. Then let's talk about / who's payin', Nell.
-GRIT: Blue Moon's been footin' the / bill for that fence thirty years.
-SAMI: The wardens held the fence. Now / nobody does. That's a gap.
 MAX: A gap! Big man! Give me a day / and I'll plug it with Black Hole!
-GRIT: Max, you ain't ever plugged a / gap. You fall through 'em.
-MAX: Falling is a kind of plugging!
-SENSEI: Quiet, youngsters. I've got a / pass full of Green Earth's refugees.
-SENSEI: Council voted to shut my gate. / I'm old. I forgot where it is.
+SAMI: Max, you fall through gaps. / You don't plug them.
+SENSEI: Quiet, youngsters. Council shut / my gate on Green Earth's refugees.
 JAVIER: Hark! I, Javier, ride east / with them! We beg shelter at the pass!
-KANBEI: Kanbei honours the Accord. But / the border was sealed with cause.
-GRIMM: Har! Pencil necks! Council, / council! I hired a road man.
-GRIMM: Koal. Cost me a fortune. Roads / win wars!
+GRIMM: Har! Pencil necks! I hired / a road man. Koal! Cost a fortune!
 ANDY: Nell, send me! I can be at / the front by morning!
 NELL: Andy. Not alone, and not yet. / We go together, or not at all.
 NARRATION: A pen scratches on the open / line. Nobody asks whose.
-NELL: Sonja? You have not said a / word.
-SONJA: I am still counting, Nell. / Green Earth held the sea lanes.
-SONJA: Whoever holds them next / decides what the Accord is.
-NELL: Then we count together. The / Accord holds. It has to.
+SONJA: I am still counting, Nell. / Whoever holds the sea lanes next
+SONJA: decides what the Accord is.
 CRUMB(s): Sir, they said fence / eleven times.
 HAWKE: Twelve. The Accord is a table / with four legs. One was just sawn off.
 MORTAR: Crumb. Pencil down.
@@ -375,18 +356,13 @@ VON BOLT: A daughter! With a rulebook! / I like her already.
 HAWKE: Sonja. Yellow Comet's eyes. We / will meet her.
 
 == m11_map | VON BOLT
-HAWKE: Two names turned up on the / old rolls. Koal. Kindle.
-HAWKE: Koal is building Yellow Comet / a road. A very long one.
+HAWKE: Two names on the old rolls. / Koal builds Yellow Comet a road.
 VON BOLT: And Kindle! She owes me / fourteen thousand!
-HAWKE: She runs their festival.
-CRUMB: Do they know we're coming, / sir?
-HAWKE: Everyone knows. The / question is who will mind.
 CRUMB: A farmer says Mr Koal / listens to Sturm and Hawke.
 CRUMB(h): Roads and orders, he said. / I wrote it on my sleeve.
-HAWKE: Roads and orders. Of course.
-HAWKE: Kanbei sealed his border to keep / the crystal. It will not stay sealed.
-HAWKE: His daughter runs his spies. / Sonja. She reads more than she writes.
-WICK: Is it all right if I ask / what she writes?
+HAWKE: Roads and orders. Of course. / Kanbei sealed his border to keep
+HAWKE: the crystal. It will not stay / sealed. His daughter runs his spies.
+HAWKE: Sonja. She reads more than / she writes.
 CRUMB: Marshal, what are you / writing? In the notebook?
 HAWKE: Doctrine. Chapter one is / Patience.
 CRUMB: And chapter two?

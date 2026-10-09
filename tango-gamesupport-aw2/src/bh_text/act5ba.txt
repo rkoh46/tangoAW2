@@ -197,21 +197,15 @@ STURM: See that it stays so.
 == m23_map
 LASH: Corporal Crumb! Your / biscuit's half-life?
 CRUMB: He's a Private biscuit, ma'am.
-LASH: Ooh, a loophole!
-MORTAR: Crumb. Do not give her / the biscuit.
-CRUMB: I would never, Sergeant.
-LASH: I only held it for a second! / With very small tongs!
-WICK(s): Is it all right if I ask / what she found?
+LASH: Ooh, a loophole! I only held / it a second! With very small tongs!
 LASH: The mark on it! A keyhole! / A tiny one! Nothing fits it!
 LASH: I tried eleven keys. And a / spoon. Heehee. Mysteries!
-CRUMB: Gerald says that is private.
 MORTAR: ...He is older than the / Obelisk. Leave him alone.
 @IF JUGGER
 JUGGER: SUBJECT'S BISCUIT: STILL / DEFENDED. ADMIRABLE.
 @END
-WICK: Is it all right if I ask / about the posters on the wall?
-CRUMB: A poster says Mr Adder loves / capes and a captain, Wick.
-CRUMB(h): And the Orange Star port / has a sign, "Closing-down sale"!
+CRUMB(h): A poster says Mr Adder loves / capes and a captain, Wick.
+CRUMB: And the Orange Star port has / a sign. "Closing-down sale"!
 MORTAR: Crumb. A sale is a trap.
 WICK: ...Both of those are / worrying.
 
@@ -391,9 +385,7 @@ KINDLE: Do not push your luck, / darling.
 == m24_map
 CRUMB(h): Mr Adder signed my helmet!
 ADDER: I signed it, "Adder, the / star". You are welcome.
-CRUMB: It's very shiny, sir.
 CRUMB: Gerald asked for one, too.
-ADDER: A biscuit autograph. ...Charming.
 MORTAR: Crumb. Not on Gerald.
 ADDER: Too late, Sergeant. I have / the pen. And the finest nib.
 WICK: Is it all right if I ask / whether a cape counts as armour?
@@ -404,7 +396,6 @@ ADDER: It already has, Marshal. / Twice. It looked magnificent.
 @IF KINDLE
 KINDLE: Darling, step to the side. / I need the good light.
 @END
-WICK(s): Is it all right if I ask / who gets the second cape?
 
 == m25_pre
 NARRATION: Port Orange and the Market / Atoll. Two harbours, one sale.
@@ -550,15 +541,11 @@ HACHI: Adequate! Ha! That's a / compliment from him!
 @END
 
 == m25_map
-CRUMB(h): Sir! I found a hat in the / shop! For Dennis the tank!
+CRUMB(h): Sir! I found a hat in the / shop! For Dennis!
 MORTAR: Crumb. That is a colander.
-CRUMB: It's a fancy hat, Sergeant.
-MORTAR: It has holes.
-CRUMB: For ventilation. Dennis gets / warm.
-WICK(s): Is it all right if I ask / whether we are keeping the wrench?
-CRUMB: Free rental, Wick! Mr Hachi / said so. For young Andy.
+CRUMB: It's a fancy hat, Sergeant. / For ventilation. Dennis gets warm.
+CRUMB: Mr Hachi lent me a wrench. / Free rental! For young Andy.
 MORTAR: ...Return it. Wrenches / are not hats.
-CRUMB: Yes, Sergeant. Gerald / says return it politely.
 WICK: Is it all right if I ask / who Andy is?
 MORTAR: An enemy. A mechanic. Don't / ask. Just return the wrench.
 
@@ -716,8 +703,6 @@ CRUMB(s): Sir, that Nell lady scares / me.
 MORTAR: Why?
 CRUMB: She didn't shout. She asked.
 MORTAR: ...Yes. That is worse.
-WICK(s): Is it all right if I ask / whether she meant "please"?
-CRUMB: She did, Wick. I think she / really, really did.
 CRUMB: Sir, the clone fellow likes / anyone who was made.
 CRUMB: Sir Sturm. And Doctor Lash, / who made him, I think.
 MORTAR: Crumb. You are not meant / to know about the clone fellow.

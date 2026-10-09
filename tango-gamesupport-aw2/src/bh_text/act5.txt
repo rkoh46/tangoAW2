@@ -181,58 +181,33 @@ STURM: Then we empty it.
 
 == m29_map
 NARRATION: The Orange Gate, after dark. / A radio somewhere is still on.
-CRUMB: Sir. May I ask something?
-STURM: Ask.
-CRUMB: Are you scared, sir?
-STURM: No.
-CRUMB: Gerald is. A bit.
-STURM: Tell Gerald fear is a tool. / I use it.
-CRUMB(h): He says thank you, sir!
-CRUMB: Sir, what happens to Ma'am / Nell?
-STURM: She kneels, or she does not.
-CRUMB: And if she doesn't?
-STURM: Then I take what she guards, / and keep her where I can see her.
-CRUMB: That's... nearly nice, sir.
+CRUMB: Sir? Are you scared, sir? / Gerald is. A bit.
+STURM: No. Tell Gerald fear is a / tool. I use it.
+CRUMB: Sir, what happens to Nell?
+STURM: She kneels, or she does not. / Then I keep her where I can see her.
+CRUMB: That's... nearly nice, sir. / Gerald says so.
 STURM: It is not.
-CRUMB: Gerald says it's nearly nice.
-STURM: Gerald is a biscuit.
-NELL: To the black army: please eat / and sleep.
-NELL: Tomorrow is hard for everyone. / Mine and yours.
-NELL: If you have a mother, write to / her tonight. I'm writing to mine.
-WICK: Sergeant, is it all right if / I write one too?
-MORTAR: ...Write two.
+NELL: To the black army: please eat / and sleep. Write to your mothers.
 STURM: Turn that off.
-CRUMB: Sir? ...Yes, sir.
 STURM: ...Leave it on.
 
 == m29_warroom
 NARRATION: A relay from the Orange Castle. / Allied channel, badly scrambled.
 JAKE: Bad news, Nell. Blue Moon pulled / its last tanks out of the line.
-JAKE: Olaf says the iron tariff ain't / worth Orange Star's war. Phat thanks.
-RACHEL: By the book, Article Nine says / no member leaves a besieged signatory.
-NELL: It's a bad night, Rachel. Not a / breach. Olaf lost a fleet.
 NELL: A man who's lost a fleet counts / his iron. Let him count.
 MAX: Then I'll go ask him nice! / With my fists!
 SAMI: Max. Sit.
-ANDY: Everybody's pointing at everybody! / Eagle says it's Kanbei's turn!
-ANDY: Kanbei says it's Eagle's! And / the fence is a hole anyway!
-NELL: The Accord was a table with four / legs, dears. Three got kicked out.
-NELL: So we make it stand on one leg / and a promise. It's been done.
 ANDY: I'm done sitting in a room, Nell! / Every hour here's another mile for him!
-NELL: You aren't sitting. You're / listening. It's the harder job.
-NELL: I need you to leave last, Andy. / Not first.
-HACHI: Evening, youngsters. Tea? First / cup's free. I closed the shop.
-HACHI: Sign says "Back Soon". A good / merchant plans for the rematch.
-NELL: Then plan it with me, Hachi. The / last train leaves the Rail Yard.
-NELL: Children, medics, the Accord's / seal and maps. All that must
-NELL: outlast the castle. It goes east.
-HACHI: Past the end of the line? That's / a long ride for a shopkeeper.
-NELL: Past the end of the maps. Open / your shop at the end of it.
+NELL: You're listening. It's the harder / job. Leave last, Andy. Not first.
+NELL: The Accord was a table with four / legs, dears. Three got kicked out.
+HACHI: Evening, youngsters. I closed the / shop. Sign says "Back Soon".
+NELL: Then plan the rematch with me. / The last train leaves the Rail Yard.
+NELL: Children, medics, the Accord's seal / and maps. It goes east. Past the maps.
 ANDY: What do I do?
-NELL: You hold the platform until the / whistle. Then you follow.
+NELL: Hold the platform until the / whistle. Then follow.
 NELL: And if I'm not there to say it, / you call them all. Every colour.
 ANDY: Even the ones who walked out?
-NELL: Especially. A fence is a thing / you build alone. A table isn't.
+NELL: Especially. A fence you build / alone. A table isn't.
 
 # ---------------------------------------------------------------------------------------------
 # M30 Nell's Stand (STURM + a free partner; written for Sturm leading; other leads read through @OTHER)
@@ -442,72 +417,53 @@ NARRATION: The flags came down, one by / one. Not in fire.
 CRUMB: Orange flag. Folded. Three / corners, four. Done!
 NARRATION: The storm settled. It did not / leave.
 VON BOLT: Everything accounted! Kehh-heh! / In the black!
-HAWKE: The doctrine is written. Chapter / one is "Patience".
 KOAL: One road. Four borders removed. / One camber.
-KINDLE: Statues by the harbour. Three. / Gold. Mine.
 JUGGER: WAR: CONCLUDED. PURPOSE: / PENDING. QUERY?
 FLAK: Flak is full. Flak is sleepy. / Good war.
 LASH: Next project! Ooh, ooh! Anyone / have a volcano?
 ADDER: Photographed from every angle. / All of them mine.
 CLONE ANDY: Clone Andy. That's me. / ...Still sounds great.
 @BOND VON BOLT
-VON BOLT: To the ledger, closed in black! / And to second pick! Best bargain ever!
+VON BOLT: To the ledger, closed in black! / And to second pick!
 STURM: Second pick is still mine.
-VON BOLT: Sturm says "mine" to ME! / Put it in writing! Kehh-heh!
 @BOND HAWKE
-HAWKE: To tempo. And to those who / earned it.
 CRUMB: Marshal? What do you toast / when you win?
 HAWKE: The next board, Quartermaster.
 @BOND KOAL
 KOAL: To the road. May it never need / a sign.
-KINDLE: Darling, every road needs a sign. / Mine, in neon.
-KOAL: No sign. That is the point.
+KINDLE: Darling, every road needs a sign.
 @BOND KINDLE
 KINDLE: To me. And to the audience, / I suppose.
 JUGGER: AUDIENCE SIZE: ONE. EGO: / OVERFLOW. LOGGED.
-KINDLE: One, darling! The best crowd! / It never leaves!
 @BOND JUGGER
-JUGGER: TOAST: CALCULATED. SENTIMENT: / DETECTED.
 CRUMB: Jugger? Are you crying?
 JUGGER: NEGATIVE. COOLANT LEAK.
 @BOND FLAK
-FLAK: To food! And hitting! And Crumb!
-CRUMB(h): Flak! You remembered my / name!
-FLAK: Crumb is a food name. Flak / remembers food.
+FLAK: To food! Hitting! Crumb! Crumb / is a food name. Flak remembers.
+CRUMB(h): Flak remembered my name!
 @BOND LASH
 LASH: To progress! And to whatever hums / in the crate!
 HAWKE: That crate is not a toast, / Doctor.
-LASH: Everything is a toast if you hold / it up and shout! Heehee!
 @BOND ADDER
-ADDER: To style. Mine, mostly. Okay: / yours a little.
-CLONE ANDY: You look great, Adder!
+CLONE ANDY: To Adder! You look great!
 ADDER: I know, darling. Say it twice.
 @BOND CLONE ANDY
-CLONE ANDY: To names. Pick one and keep / it.
-CRUMB: Three in the morning, sir?
-CLONE ANDY(h): Every time. Clone Andy.
+CRUMB: Three in the morning, sir? Still / Clone Andy?
+CLONE ANDY(h): Every time. To names. / Pick one and keep it.
 @END
-CRUMB(h): Sir! I'm Commander AND / Quartermaster! Both!
-CRUMB: And Gerald has a medal! Look! A / little ribbon!
-STURM: Quartermaster.
-CRUMB: Yes, sir!
-STURM: Do not eat the supplies.
+CRUMB(h): Sir! I'm Commander AND / Quartermaster! Gerald has a medal!
+STURM: Quartermaster. Do not eat the / supplies.
 CRUMB(s): ...Define "supplies".
-CRUMB: Sir, the Obelisk lit up the night / the last flag fell.
-CRUMB: Sergeant Mortar says it's a / lighthouse. I don't think so.
+CRUMB: Sir, the Obelisk lit up the night / the last flag fell. Is it a lighthouse?
 STURM: It is not a lighthouse.
 CRUMB: Then what is it, sir?
 STURM: Mine.
 CRUMB: Sir, are you happy?
-STURM: The world is mine. The storm / rests.
-STURM: ...Do not read into it.
+STURM: The world is mine. The storm / rests. ...Do not read into it.
 HAWKE: Marshal's note. Chapter two of / the doctrine: "Succession".
 HAWKE: A good army outlives its founder. / I am merely tidy.
 STURM: Noted.
-NARRATION: In the depot, a crate hums. / Nobody ordered it.
-NARRATION: The stencil reads "HOBB, P." / and a symbol no map has.
-CRUMB: Gerald? That's me. That crate / is for ME.
+NARRATION: In the depot, a crate hums. / Stencilled "HOBB, P." and no-map mark.
+CRUMB: Gerald? That crate is for ME.
 MORTAR: Crumb. Do not open it.
-CRUMB: Gerald wants to, Sergeant.
-MORTAR: ...Gerald is a biscuit.
 NARRATION: Somewhere past the maps, a / door has opened.
