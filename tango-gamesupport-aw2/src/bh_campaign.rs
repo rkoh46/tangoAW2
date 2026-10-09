@@ -83,6 +83,7 @@ pub fn def() -> CampaignDef {
         missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
         final_mission: "bh02",
         bonds: BONDS.to_vec(),
+        extra_bonds: 1,
         secret_mission: "",
     }
 }
@@ -90,7 +91,7 @@ pub fn def() -> CampaignDef {
 /// The hidden bonds (placeholders): each earned in a recruit mission by
 /// `Action::EarnBond(k)`, its quote on its CO's page; the secret mission
 /// opens when all nine are earned.
-pub const BONDS: [Bond; 9] = [
+pub const BONDS: [Bond; 10] = [
     Bond { co: co::VON_BOLT, quote: "Placeholder bond quote." },
     Bond { co: co::HAWKE, quote: "Placeholder bond quote." },
     Bond { co: co::KOAL, quote: "Placeholder bond quote." },
@@ -100,6 +101,8 @@ pub const BONDS: [Bond; 9] = [
     Bond { co: co::LASH, quote: "Placeholder bond quote." },
     Bond { co: co::ADDER, quote: "Placeholder bond quote." },
     Bond { co: co::CLONE_ANDY, quote: "Placeholder bond quote." },
+    // Crumb's: an extra (M14, a win by day 12), not one of the nine of the secret mission.
+    Bond { co: co::CRUMB, quote: "Placeholder bond quote." },
 ];
 
 /// A campaign that exercises the format's fields (funds, weather, fog, a
@@ -518,7 +521,8 @@ pub fn features_def() -> CampaignDef {
         ],
         missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y],
         final_mission: "f17",
-        bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
+        bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }, Bond { co: co::KOAL, quote: "Bond test: an extra." }],
+        extra_bonds: 1,
         secret_mission: "f06",
     }
 }

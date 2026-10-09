@@ -55,6 +55,8 @@ pub mod co {
     pub const JAKE: u8 = 79;
     pub const RACHEL: u8 = 80;
     pub const CLONE_ANDY: u8 = crate::co_new::CLONE_ANDY;
+    /// Crumb (tangoAW2's own CO of the crumb-co branch, the CO after Clone Andy).
+    pub const CRUMB: u8 = crate::co_new::CLONE_ANDY + 1;
 }
 
 /// Army colours (the header's colour bytes).
@@ -118,6 +120,9 @@ pub struct CampaignDef {
     /// recruit mission; each puts its quote on its CO's page; the secret
     /// mission's `Needs::Bonds` opens when all are earned.
     pub bonds: Vec<Bond>,
+    /// The last this many bonds are extras: they show their quote but do not count
+    /// toward the secret mission's bonds (nor the legend's count).
+    pub extra_bonds: usize,
     /// The key of the secret mission ("" none): the staff roll's `secret`
     /// sections are shown once it is won.
     pub secret_mission: &'static str,
@@ -1131,6 +1136,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         pools: def.missions.iter().map(|m| m.pool.clone()).collect(),
         bonds,
         marks: cx.marks.clone(),
+        counted: def.bonds.len().saturating_sub(def.extra_bonds),
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
         volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),

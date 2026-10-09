@@ -191,7 +191,7 @@ pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
     }
     let Some(c) = crate::ds_campaign::campaign(core) else { return at };
     let Some(custom) = c.model.custom.as_ref() else { return at };
-    let total = custom.bonds.len();
+    let total = custom.counted;
     let n = (crate::ds_campaign::bonds_earned(core) & ((1u32 << total) - 1)).count_ones();
     if n == 0 {
         return at;

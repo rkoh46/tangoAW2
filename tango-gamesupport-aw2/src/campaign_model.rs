@@ -77,6 +77,8 @@ pub struct Custom {
     /// The hidden bonds: each names the CO whose page shows its quote once
     /// earned, and the quote's address (the CO page's bio is replaced).
     pub bonds: Vec<(u8, u32)>,
+    /// How many of them count toward the secret mission (the rest are extras).
+    pub counted: usize,
     /// Per mission: the battle's song (an AW2 song id) in place of the COs'
     /// themes.
     pub music: Vec<Option<u16>>,
