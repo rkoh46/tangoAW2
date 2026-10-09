@@ -785,6 +785,7 @@ pub fn inventions_def() -> CampaignDef {
         missions: vec![a, b],
         final_mission: "i02",
         bonds: Vec::new(),
+        extra_bonds: 0,
         secret_mission: "",
     }
 }
