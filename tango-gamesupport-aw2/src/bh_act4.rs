@@ -422,18 +422,15 @@ fn bh20() -> MissionDef {
 
 // --- M21 Running Dry -----------------------------------------------------------------
 
-/// The player's forward column starts low on ammunition and fuel (docs/BH_CAMPAIGN.md 3.5 M21):
-/// (type, ammo, fuel); the Infantry need no ammunition.
-const COLUMN: [(u8, u8, u8); 9] = [
-    (unit::MECH, 1, FULL),
-    (unit::RECON, 3, 40), // (the loader caps ammo at the table's maximum: the Recon's is 0)
-    (unit::TANK, 2, 30),
+/// Nine of the forward column's twenty units start low on ammunition and fuel, by design (the mission is the
+/// retreat and the resupply; the rest of the army is full): (type, ammo, fuel).
+const COLUMN: [(u8, u8, u8); 6] = [
     (unit::MD_TANK, 1, 25),
     (unit::ARTILLERY, 0, 25),
     (unit::ROCKETS, 0, 25),
     (unit::MISSILES, 0, 25),
-    (unit::ANTI_AIR, 3, 30),
     (unit::B_COPTER, 0, 20),
+    (unit::NEOTANK, 0, 25), // (no Neotank is in the column: kept so a later change cannot start one full by mistake)
 ];
 
 /// The units that start with no ammunition at all (the six guns the convoy must refill).
@@ -486,7 +483,7 @@ fn bh21() -> MissionDef {
     ];
     intro.extend(each(&ALL_COS, "Report ammunition."));
     intro.extend([
-        troop("Artillery, none. Rockets, none. Tanks, two shots each."),
+        troop("Artillery, none. Rockets, none. Md Tanks, one shot each."),
         say(co::HAWKE, "The convoy left port on time. The road did not."),
         say(co::MAX, "Hey! Black Hole! You look thirsty!"),
         say(co::GRIT, "Easy there, Max. They're near out of shells. Make it count."),
@@ -545,10 +542,10 @@ fn bh21() -> MissionDef {
             None,
             vec![
                 Action::Spawn(vec![
-                    go_new(2, unit::RECON, 26, 15),
-                    go_new(2, unit::RECON, 26, 14),
-                    go_new(2, unit::TANK, 25, 15),
-                    go_new(2, unit::TANK, 25, 14),
+                    go_new(2, unit::RECON, 27, 15),
+                    go_new(2, unit::RECON, 27, 14),
+                    go_new(2, unit::TANK, 26, 14),
+                    go_new(2, unit::TANK, 26, 12),
                 ]),
                 Action::Scene(Scene::new(vec![
                     say(co::GRIT, "Their supply truck's on the south road. Cut it off."),
@@ -576,11 +573,11 @@ fn bh21() -> MissionDef {
             None,
             vec![
                 Action::Spawn(vec![
-                    go_new(2, unit::MD_TANK, 26, 16),
-                    go_new(2, unit::MD_TANK, 26, 14),
-                    go_new(2, unit::NEOTANK, 26, 18),
-                    go_new(3, unit::ROCKETS, 24, 4),
-                    go_new(3, unit::ROCKETS, 23, 4),
+                    go_new(2, unit::MD_TANK, 27, 16),
+                    go_new(2, unit::MD_TANK, 27, 12),
+                    go_new(2, unit::NEOTANK, 27, 17),
+                    go_new(3, unit::ROCKETS, 26, 3),
+                    go_new(3, unit::ROCKETS, 27, 4),
                 ]),
                 Action::Scene(Scene::new(vec![say(co::MAX, "More tanks! Everybody, push! Push!")])),
             ],

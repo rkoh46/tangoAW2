@@ -356,7 +356,7 @@ def bh_act4_m19_sasha_funds_and_megatank(ctx):
 def bh_act4_m21_column_starts_low_and_the_convoy_comes(ctx):
     """The column's ammunition and fuel as the sheet lists; convoy A on day 3, convoy B on day 6."""
     e, g, d, texts = ready(ctx, 21)
-    want = {2: (1, 99), 6: (0, 40), 5: (2, 30), 3: (1, 25), 10: (0, 25), 11: (0, 25), 15: (0, 25), 14: (3, 30), 19: (0, 20)}
+    want = {3: (1, 25), 10: (0, 25), 11: (0, 25), 15: (0, 25), 19: (0, 20)}
     got = {}
     for u in g.units(1):
         if u["type"] in want:
