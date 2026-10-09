@@ -1,9 +1,15 @@
 # bh31: M31 The Colonel's Vault (secret, fog): three trucks, three roads
 map bh31
 armies 2 3 5 4
-unit 2 7 7 7 name=vault1
-unit 2 7 7 13 name=vault2
-unit 2 7 4 9 name=vault3
+unit 2 7 11 6 name=vault1
+unit 2 7 11 14 name=vault2
+unit 2 7 5 8 name=vault3
+unit 2 1 12 6
+unit 2 2 11 5
+unit 2 1 12 14
+unit 2 2 11 15
+unit 2 5 11 10
+unit 2 1 12 10
 unit 2 1 16 6
 unit 2 1 19 6
 unit 2 1 16 14
@@ -19,24 +25,24 @@ unit 2 20 23 14
 unit 2 23 27 9
 unit 2 22 27 13
 unit 1 1 2 12
-unit 1 1 4 12
-unit 1 2 5 13
+unit 1 1 4 11
+unit 1 3 4 12
 unit 1 6 1 13
-unit 1 6 2 13
-unit 1 6 4 13
-unit 1 6 5 12
-unit 1 5 2 14
-unit 1 5 4 14
-unit 1 5 1 14
-unit 1 3 3 12
 unit 1 8 3 13
+unit 1 2 5 13
+unit 1 5 1 14
+unit 1 5 4 14
+unit 1 5 6 12
 unit 1 10 5 14
 unit 1 10 4 15
-unit 1 14 2 15
-unit 1 15 1 15
-unit 1 19 4 11
-unit 1 19 5 11
-unit 1 20 3 11
+unit 1 14 1 15
+unit 1 15 2 15
+unit 1 20 3 15
+unit 1 6 7 6
+unit 1 19 6 5
+unit 1 6 7 14
+unit 1 19 7 15
+unit 1 6 7 11
 unit 1 23 5 16
 unit 1 22 7 17
 ^^^^.....^^..-..^^.^^^~c..~~~~

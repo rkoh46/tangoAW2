@@ -14,7 +14,7 @@ use crate::custom_campaign::{co, colour, unit, *};
 
 /// Sonja's three Vault Trucks (the map's named APCs).
 const TRUCKS: [&str; 3] = ["vault1", "vault2", "vault3"];
-/// The dock tiles: two trucks here and the heist is lost.
+/// The dock tiles: a truck here and the heist is lost.
 const DOCK: Rect = Rect::new(25, 9, 27, 11);   // (the dock's land is x 25..26; x 27 is the sea beside it)
 
 fn truck_cells(core: &mut Core) -> Vec<(u8, u8)> {
@@ -30,8 +30,8 @@ fn all_trucks_gone(core: &mut Core) -> bool {
     truck_cells(core).is_empty()
 }
 
-fn two_trucks_docked(core: &mut Core) -> bool {
-    truck_cells(core).iter().filter(|(x, y)| DOCK.has(*x, *y)).count() >= 2
+fn a_truck_docked(core: &mut Core) -> bool {
+    truck_cells(core).iter().any(|(x, y)| DOCK.has(*x, *y))
 }
 
 fn charge_sonja(core: &mut Core) {
@@ -49,7 +49,7 @@ fn on_day(d: u16, then: Vec<Action>) -> Trigger {
 
 fn bh31() -> MissionDef {
     let mut m = MissionDef::new("bh31", "The Colonel's Vault");
-    m.objective = "Destroy the 3 Vault Trucks or take the Safe House. 8 days.";
+    m.objective = "Destroy the 3 Vault Trucks before one docks. 8 days.";
     m.map = MapSrc::Built("bh31");
     // The Vault Trucks hold (TODO(engine): a march-to-the-dock action; no AW2 role drives a unit to a cell of
     // the mission's choosing), as do the vault's guard Infantry, the Rockets, the Anti-Air, the Transport
@@ -59,7 +59,7 @@ fn bh31() -> MissionDef {
         1,
         // the trucks, the road-block Infantry, the Anti-Air and Missiles, the Transport Copters and the ships hold;
         // the Tank, Md Tank and Neotank counter-attack
-        &[(7, 7), (7, 13), (4, 9), (16, 6), (19, 6), (16, 14), (19, 14), (21, 10), (22, 8), (22, 12), (23, 4), (23, 14), (27, 9), (27, 13)],
+        &[(11, 6), (11, 14), (5, 8), (12, 6), (11, 5), (12, 14), (11, 15), (11, 10), (12, 10), (16, 6), (19, 6), (16, 14), (19, 14), (21, 10), (22, 8), (22, 12), (23, 4), (23, 14), (27, 9), (27, 13)],
     );
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
@@ -87,7 +87,9 @@ fn bh31() -> MissionDef {
         on_day(5, vec![Action::Scene(Scene::new(text::m31_day_5())), Action::Custom(charge_sonja)]),
         Trigger::new(When::AfterAction, Cond::Custom(a_truck_lost), vec![Action::Scene(Scene::new(text::m31_when_the_first_vault_truck_is_destroyed()))]),
         Trigger::new(When::AfterAction, Cond::Custom(all_trucks_gone), vec![Action::Win]).repeating(),
-        Trigger::new(When::AfterAction, Cond::Custom(two_trucks_docked), vec![Action::Lose]).repeating(),
+        Trigger::new(When::AfterAction, Cond::Custom(a_truck_docked), vec![Action::Lose]).repeating(),
+        // the Black Hole HQ captured loses (AW2's own rule too)
+        Trigger::new(When::AfterAction, Cond::Not(Box::new(Cond::OwnerAt { x: 3, y: 14, army: 1 })), vec![Action::Lose]).repeating(),
         Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: 9 }, vec![Action::Lose]).repeating(),
     ];
     m.needs = Needs::Bonds(vec!["bh28"]);
