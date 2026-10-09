@@ -1,6 +1,7 @@
 """Where the ROMs, runners and scratch output live (all overridable by env)."""
 
 import os
+import shutil
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOL = os.path.dirname(HERE)
@@ -53,6 +54,18 @@ def base_save():
             data = f.read()
         with open(pinned, "wb") as f:
             f.write(_profile_only(data))
+    return pinned
+
+
+def full_save():
+    """A copy of the player's whole save (campaign progress included), for the few tests that need
+    AW2's own campaign opened. $AW2TEST_FULL_SAVE overrides; pinned as `base-full.sav`."""
+    p = os.environ.get("AW2TEST_FULL_SAVE")
+    if p:
+        return p
+    pinned = os.path.join(out_dir(), "base-full.sav")
+    if not os.path.exists(pinned):
+        shutil.copyfile(LIVE_SAVE, pinned)
     return pinned
 
 

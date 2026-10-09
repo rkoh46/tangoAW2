@@ -440,8 +440,8 @@ def compat_cpu_inv_aw2_campaign_missions(ctx):
     from aw2test import campaigns as cp
     pristine = os.path.join(ctx.out, "aw2_pristine.sav")
     live = os.path.join(ctx.out, "aw2_live.sav")
-    shutil.copyfile(paths.base_save(), pristine)
-    shutil.copyfile(paths.base_save(), live)
+    shutil.copyfile(paths.full_save(), pristine)
+    shutil.copyfile(paths.full_save(), live)
     e = Emu(save=live, ds=ctx.ds)
     g = Game(e, ctx.image)
     ctx.games.append(g)
