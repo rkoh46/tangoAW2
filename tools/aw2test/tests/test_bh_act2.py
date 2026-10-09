@@ -145,7 +145,7 @@ def pictures(ctx, n, shots=(0,)):
 
             def check(self, ok, msg):
                 return None
-        clean = stitch.stitch(Quiet(ctx), g, "m8_second_front", w2, h2, reject=lambda c: (c.min(axis=2) > 225).sum() > 60)
+        clean = stitch.stitch(Quiet(ctx), g, "m8_second_front", w2, h2, reject=lambda c: (c.min(axis=2) > 225).sum() > 60 or (((abs(c - (139, 131, 131)).sum(axis=2) < 6) | (abs(c - (106, 131, 139)).sum(axis=2) < 6)).sum() > 30))   # (the view's grey terrain window too)
         try:
             from PIL import Image
             import numpy as np
@@ -910,5 +910,7 @@ def bh_act2_m8_send_to_the_second_front(ctx):
     ctx.log(f"army 1 on the second front: {own}")
     ctx.eq(len(got), base + 1, f"the second front has its own {base} of that type and the one sent ({got})")
     ctx.require(tf.look_at_other_front(e, g), "the other front is shown")
+    a2.pic(ctx, e, "m8_send_arrival_early")     # (the swap's wipe is still on the screen: diagonal black wedges at the edges)
+    e.wait(240)
     a2.pic(ctx, e, "m8_send_arrival")
     e.close()
