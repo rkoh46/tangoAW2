@@ -153,7 +153,7 @@ fn bh12() -> MissionDef {
     m.day_limit = 0;
     m.rank_days = 17;
     m.factory = F12.to_vec();
-    m.units = roles(built_units("bh12"), |u| u.kind == unit::ANTI_AIR);
+    m.units = roles(built_units("bh12"), |u| matches!((u.x, u.y), (33, 7) | (33, 11) | (29, 12)));
     m.recruits = vec![roster::KOAL];
     m.intro = crate::bh_text::scene("m12_pre");
     m.victory = crate::bh_text::scene("m12_post");

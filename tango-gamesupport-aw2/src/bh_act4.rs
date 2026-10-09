@@ -116,7 +116,7 @@ fn bh17() -> MissionDef {
     m.map = MapSrc::Built("bh17");
     // Jugger's roles: his Md Tanks, Mech and field Infantry advance by the odds; the Missiles (fire from
     // behind), the Neotank (the HQ's anchor) and the two Infantry at the HQ hold.
-    m.units = roles(built_units("bh17"), |u| matches!(u.kind, unit::MISSILES | unit::NEOTANK) || (u.kind == unit::INFANTRY && u.x >= 21));
+    m.units = roles(built_units("bh17"), |u| matches!(u.kind, unit::ARTILLERY | unit::ROCKETS | unit::NEOTANK) || (u.kind == unit::INFANTRY && u.x >= 21));
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(9000),
         // Jugger in Blue Moon's colours; Grit, the sniper, babysits him.
@@ -195,7 +195,7 @@ fn bh19() -> MissionDef {
     m.map = MapSrc::Built("bh19");
     // Sasha's roles: the line (Infantry, Mech, treads, the Megatank, the aircraft) advances; the Artillery,
     // Missiles and Anti-Air screen hold their ground, as do the Infantry round her HQ.
-    m.units = roles(built_units("bh19"), |u| matches!(u.kind, unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR) || (u.kind == unit::INFANTRY && u.x >= 26));
+    m.units = roles(built_units("bh19"), |u| matches!(u.kind, unit::ARTILLERY | unit::ROCKETS) || matches!((u.x, u.y), (24, 10) | (24, 14)) || (u.kind == unit::INFANTRY && u.x >= 26));
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(7000),
         // Sasha, with real production: 5 bases, 2 airports, 9 cities.
@@ -279,7 +279,7 @@ fn bh20() -> MissionDef {
 
 /// Fourteen of the forward column's twenty units start low, by design (the mission is the retreat and the
 /// resupply): nine with no ammunition at all (Artillery, Rockets, Missiles, the B Copter, the Md Tanks) and five
-/// with one shot (Tanks, Mech). The Infantry, the Recon and the Anti-Air (the cover) are full. The B Copter's
+/// with one shot (Tanks, Mech). The Infantry and the Recon (the cover) are full. The B Copter's
 /// fuel is low but safe (28: an air unit crashes at 0 fuel). (type, ammo, fuel)
 const COLUMN: [(u8, u8, u8); 7] = [
     (unit::MD_TANK, 0, 25),

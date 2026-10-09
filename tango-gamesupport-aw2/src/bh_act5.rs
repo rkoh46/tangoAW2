@@ -110,6 +110,7 @@ fn role29(army: u8, kind: u8, x: u8, y: u8) -> u8 {
     let gate_guard = kind == unit::INFANTRY && matches!((x, y), (16, 17) | (17, 17) | (18, 17) | (17, 21));
     match kind {
         unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR => 0,
+        unit::ROCKETS if matches!((x, y), (12, 22) | (22, 22)) => 0,
         unit::INFANTRY if gate_guard => 0,
         unit::INFANTRY | unit::MECH => 3,
         unit::NEOTANK | unit::MEGATANK => 1,
