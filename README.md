@@ -80,6 +80,10 @@ changes, and online both players need it):
   Champion course.
 - **Black Factory (Versus):** same schedule and cost, but it picks what the
   battle needs; 200 hit points, destructible; human Black Hole armies too.
+- **The computer goes for your inventions** when you are Black Hole (the BH
+  Campaign, and Versus against a computer): it marches on your Black
+  Cannons, Obelisks, Crystals and Black Factory, artillery setting up in
+  range and tanks coming in from the side of a cannon's line, and hits them.
 - **DS Campaign:** all 28 missions on Dual Strike's world map:
   - missions open as you advance, with LEVEL stars for each; Hard
     campaign once Normal is cleared;
@@ -139,7 +143,7 @@ with **SELECT → File → Save**; play it from **Versus → Design Maps**.
 - The mini maps show Black Hole's buildings in neutral grey.
 - Dual Strike's top-screen pictures (the Black Onyx's Earth view) are left
   out, and tag powers play AW2's power music.
-- The computer strikes an enemy Black Factory only in range; Survival's
+- Where a computer owns the Black Factory it strikes an enemy one only in range; Survival's
   records are per course, not per map; Champion courses open when their
   basic course is cleared (Dual Strike sells them in its shop).
 

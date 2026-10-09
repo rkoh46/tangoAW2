@@ -366,6 +366,56 @@ from the ROM table `0x080C1BC4`.
   until a byte changes and prints the last instructions, `steplog N`
   prints every function entry for N instructions.
 
+### The computer attacks a human's inventions (`cpu_inventions.rs`)
+
+AW2's CPU knows nothing of an invention: its attack check looks at units (and pipe seams), its role moves
+at HQs, properties and units. Black Hole's inventions belong to the army in Black Hole's colour, which in AW2's
+campaign and in Dual Strike's is the computer, so nothing needed to attack them. `cpu_inventions::owner` is
+that army where a **human** has it, and only in two places: the **BH Campaign** (the campaign source is
+tangoAW2's, the player is Black Hole) and **Versus with the pack** when a human army is in Black Hole's colour.
+Everywhere else (`owner` is `None`: AW2's campaign, the DS Campaign, Survival, the War Room, Versus without the
+pack, Versus where Black Hole is a computer) the module does nothing, writes no RAM, and the factory's older
+strike (`factory_hp::cpu_strikers`, a computer's factory hit by a unit already in range) is as it was. RAM
+`0x0203FE6E` = `0xA5` (a development byte, `OFF`) switches it off too, for before/after runs.
+
+- **Targets** (`targets`): the invention list's entries with hit points that the game lets a unit attack
+  (`sub_0803DFE0`: kinds 1, 3, 4, 5, and the factory's 7 where it can be destroyed), told apart as the Black Cannon (3),
+  the Obelisk (a kind 3 on tangoAW2's tile `0x193`), the minicannon (4), the Crystal (a 4 on tile `0x192`), the Laser (1)
+  and the Deathray (5); the Grand Bolt's weak points and the Volcano are not. The square units aim at is the game's
+  (`x + 1, y + 2` for a 3x3, the entry's corner for a 1x1, the middle of the factory's bottom row).
+- **The Black Factory in the BH Campaign** now has 200 hit points as in Versus (`factory_hp::in_scope` takes in the BH
+  Campaign), so the computer can destroy it: the game's hit and destroy steps, the wreck, doors that spawn nothing
+  after. The player's own units cannot hit it (`target_position` gives the factory no square on the player's team's turn;
+  AW2 lets any army hit a Black Cannon, Crystal or Obelisk, as in Versus, and this is unchanged).
+- **Worth** (`worth`, funds): Black Cannon 16000, Deathray 24000, Laser 14000, Obelisk 11000, Factory 13000,
+  minicannon 6000, Crystal 5000, plus half the price (by bars) of every computer unit in the firing zone of
+  a firing one, plus, for each hurt Black Hole unit within reach of an Obelisk (4) or a Crystal (2), the share of its price that the
+  hit points it would heal are (up to 20), plus half of the share of the invention's hit points already lost (low: sooner gone). A hit is worth
+  its share of the invention's hit points of that, and when it destroys it a third more (`gain_of`).
+- **Firing zones** (`zone`, the game's `sub_0801FAC4` cone, checked by `cpu_inv_firing_zones_are_the_games`): a Black
+  Cannon fires a cone of ten rows widening by one cell a side from the middle of its facing edge (facing down: from
+  `(x + 1, y + 2)`), a minicannon one of four from the cell in front of it, a Laser along its row and column, the
+  Deathray in the three columns below it; a cannon hits some units in it (about five of ten bars) at the start of Black Hole's turn.
+- **Strikes** (`plan`, at the start of a computer army's turn, from `cpu_tactics::cpu_unit`): a unit with a target's square
+  in its range from where it stands (its weapon's range: a Tank beside it, an Artillery 2 or 3 squares off) and a weapon that harms a
+  structure (the game's damage chart column 3, the secondary weapon without ammunition) hits the best target in reach through the game's own
+  structure attack (`sub_08042634`, as for a pipe seam) when the hit is worth at least what its best unit target in range is worth (and
+  always when it has none); at most eight a turn (the second half of the queue is `EXTRA`, RAM `0x0203FE58`), the strongest hitters first,
+  never more hits than a target has hit points for. The damage is the chart's value by the unit's hit points (Artillery 45, Tank 15).
+- **Goals** (`role_move`, through `AiRunRoleMove`, `0x0805F4CC`, shared with `ally_posture`): a unit whose role (record +0x0B, the
+  deployment's AI byte or what the CPU's production gave it) advances, 1 to 6 (not 0, which holds, and 7, by the HQ), with no
+  capture under way and a weapon that harms a structure, is moved by AW2's own "go to a place": the role 1 code, tail-called, whose
+  place (`sub_08058F90`, the enemy HQ) is replaced by the goal (`GOAL_HOOK`, `0x0805ED2A`, writing the two halfwords at `r4`). The goal is
+  the best square to attack a target from (inside the weapon's range of the target's square: artillery and rockets stop in range,
+  tanks and infantry beside it) by `gain` / (1 + 0.6 turns), the path a Dijkstra over AW2's own movement costs
+  (`oozium::move_cost`: the CO's chart, the weather) with other teams' units in the way, the inventions' walls out, eight turns at most.
+  A square in the line of a firing invention (the target's own too) costs the unit 60% of its worth for each (it is hit at Black
+  Hole's next turn and again after), so tanks do not walk into a Black Cannon's cone for nothing and come in from its side or
+  back to the others, while artillery and rockets set up outside it; a unit already where it can attack holds. At most half of
+  the army's advancing units are sent a turn (`SENT`).
+- Deterministic: only emulated RAM is read (the invention list, the units, the players, the map), ties broken by position;
+  the queue and three bytes are the module's state. `test_cpu_inventions.py`.
+
 ## CO panel on design maps
 
 - The CO panel's palettes are loaded at the start of each turn from the
@@ -813,7 +863,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Units | `roster.rs`, `ds_units.rs`, `unit_actions.rs`, `oozium.rs`, `unit_names.rs`, `ds_unit_art.rs`, `ds_unit_pictures.rs`, `ds_battle.rs`, `ds_backdrop.rs`, `map_anim.rs` | Unit table grown to 64 rows (0x08680000), 7 new units (ids 4, 9, 12, 13, 18, 26, 27), Dual Strike's stats and damage chart, their actions (Hide, Explode, Repair, Carrier; the Oozium eats: no weapon, moving onto a unit of another team next to it destroys that unit with the game's own destruction, and no CO, power, silo or Black Bomb touches it), map art, their own information pictures (build menu panel, R on a unit) in each army's colours, every unit in the Intel unit list, battle scenes with Dual Strike's figures, effects and volleys, Dual Strike's battle backgrounds (a Piperunner on its pipe; every battle on a Wasteland map; a Com Tower's city), and Dual Strike's map animations played through AW2's own map effects (a Black Bomb's explosion, a Stealth hiding and appearing, a Black Boat's REPAIR label, Oozium's death in its army's colours; for the CPU at its turn's end, before the turn passes) |
 | COs | `co_roster.rs`, `co_new.rs`, `co_powers.rs`, `ds_co_art.rs`, `ds_power_art.rs`, `power_anim.rs` | CO table grown to 96 rows (0x086A0000), Dual Strike's numbers for AW2's COs (and its 200% defence cap), 10 new COs at ids 72..81 (Dual Strike's nine and Clone Andy, "Clone Andy" below; face ids stay unambiguous), their pictures, texts, powers and Dual Strike's power animations (Ex Machina, Covering Fire, Urban Blight), and Dual Strike's choice of power effect on their units |
 | CO screen | `co_grid.rs` | The unit grid (map menu > CO, its last page) gets a second page: ground units, then air and naval units, in the build menus' order, every unit with its icon in the viewed army's colours (the new units in the map sheet's slots for other countries' Infantry and Mech) and its firepower bar (Dual Strike's bonuses take the nearest of AW2's 13 bars) and move / range change |
-| CPU | `cpu_tactics.rs` | The CPU buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls), explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
+| CPU | `cpu_tactics.rs`, `cpu_inventions.rs` | The CPU buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls), explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
 | Terrain | `com_tower.rs`, `wasteland.rs`, `ds_look.rs`, `sandstorm.rs` | Com Tower (the Versus Lab), Dual Strike's Wasteland, Desert and Snow looks drawn with its own terrain (below), the Sandstorm weather (Dual Strike's sand, `bmap/0b2`) |
 | Structures | `obelisk.rs`, `heal_effect.rs` | Black Crystal / Obelisk heal with Dual Strike's own animation and sound for each (arm9 0x0213E078 / 0x0213E2A0; SE 175 / 176), the camera visiting each |
 | Music | `ds_music.rs` | The nine new COs' own map themes, Dual Strike's, converted to AW2's sound engine (below) |
