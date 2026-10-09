@@ -160,8 +160,8 @@ mod tests {
                     let Action::Spawn(v) = a else { continue };
                     for u in v.iter().filter(|u| u.army != player && u.name.is_none() && !u.freeze) {
                         match u.kind {
-                            unit::INFANTRY | unit::MECH => assert_eq!(u.ai, CAPTURE, "{}: a spawned foot soldier", m.key),
-                            unit::ARTILLERY | unit::ROCKETS | unit::MISSILES => assert_eq!(u.ai, ATTACK, "{}: spawned indirect fire", m.key),
+                            unit::INFANTRY | unit::MECH => assert!(u.ai == CAPTURE || u.ai == STAND, "{}: a spawned foot soldier has orders (or stands until its stage), got {}", m.key, u.ai),
+                            unit::ARTILLERY | unit::ROCKETS | unit::MISSILES => assert!(u.ai == ATTACK || u.ai == STAND, "{}: spawned indirect fire has orders (or stands until its stage), got {}", m.key, u.ai),
                             _ => {}
                         }
                     }
