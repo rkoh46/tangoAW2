@@ -65,30 +65,30 @@ def _pictures(n):
         from aw2test import stitch
         e, g, d, spec = load_mission(ctx, n)
         title, won, picks, armies, size, limit = spec
-        texts = a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}")
+        # the full map in the Setup phase: the deployment as designed, before any structure fires
+        a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}", setup_only=True)
+        g._units_base = g._players_base = None
+        ctx.check(all(u["hp"] == 100 for a_ in (1, 2) for u in g.units(a_)), "every unit starts at full HP (Setup phase)")
+        stitch.IMAGES = a5.SHOTS or stitch.IMAGES
+        w, h = d.size()
+        g.goto(0, 0)
+        stitch.stitch(ctx, g, f"m{n}", w, h, exclude=lambda tx, ty: ty == 0 and 5 <= tx <= 10)   # (the Setup banner sits on the screen's top)
+        d.leave_setup()
+        texts = a5.intro(ctx, e, d, f"m{n}", (0,))
         d.wait_control()
         g._units_base = g._players_base = None
         a5.pic(ctx, e, f"m{n}_opening")
-        stitch.IMAGES = a5.SHOTS or stitch.IMAGES
-        w, h = d.size()
-        ctx.log(f"state: scripts {d.scripts_running()} idle {g.idle()} cursor {g.cursor()} day {e.u16(0x03004080)} army {g.current_army()}")
         for _ in range(6):
             a5.calm(e, g, d)
             e.wait(150)
-        FRONT = {29: (13, 13), 30: (18, 17)}[n]
+        FRONT = {29: (17, 13), 30: (18, 17)}[n]
         g.goto(*FRONT)
         e.wait(40)
         a5.pic(ctx, e, f"m{n}_opening_front")
-        ctx.log(f"state2: scripts {d.scripts_running()} idle {g.idle()} cursor {g.cursor()}")
-        for _ in range(8):
-            try:
-                g.goto(0, 0)
-                break
-            except Exception as ex:
-                ctx.log(f"retry: {ex}")
-                a5.calm(e, g, d)
-                e.wait(150)
-        stitch.stitch(ctx, g, f"m{n}", w, h)
+        g._units_base = g._players_base = None
+        hurt = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for a_ in (1, 2) for u in g.units(a_) if u["hp"] < 100]
+        ctx.log(f"units under full HP after the first turn start: {hurt}")
+        ctx.check(not hurt, "nothing is hit at the first turn start")
         e.close()
     fn.__name__ = f"bh_act5_m{n}_pictures"
     test(modes=("ds",))(fn)
@@ -171,7 +171,7 @@ def bh_act5_m30_nell_pushes_and_uses_her_powers(ctx):
         e.wait(100)
     start = {u["id"]: (u["x"], u["y"]) for u in g.units(2)}
     log = []
-    for day in range(2, 9):
+    for day in range(2, 11):
         a5.to_day(e, g, d, day)
         a5.calm(e, g, d)
         g._units_base = g._players_base = None
@@ -183,7 +183,7 @@ def bh_act5_m30_nell_pushes_and_uses_her_powers(ctx):
         ctx.log(f"day {day}: orange {len(us)} units ({moved} moved from their start, {south} south of the moat), black hole {len(g.units(1))}, "
                 f"Nell uses {p2['powers_used']} charge {p2['charge']} mode {p2['co_mode']}")
     ctx.check(any(r[3] > 10 for r in log), "Nell's army leaves its start cells (more than ten units moved)")
-    ctx.check(log[-1][6] >= 2, "Nell has used both a power and a Super by day 8")
+    ctx.check(log[-1][6] >= 2, "Nell has used both a power and a Super by day 10")
     e.close()
 
 
@@ -217,10 +217,12 @@ def bh_act5_m30_balance_run(ctx):
     g._units_base = g._players_base = None
     a5.calm(e, g, d)
     bot = Bot(d, log=lambda s: None, stance="defend", garrison=True)
-    play(ctx, e, g, d, bot, 8, "defend")
+    play(ctx, e, g, d, bot, 10, "defend")
     bot2 = Bot(d, log=lambda s: None, stance="attack", garrison=True, goals=[(18, 3)])
-    play(ctx, e, g, d, bot2, 30, "push")
+    play(ctx, e, g, d, bot2, 24, "push")
     ctx.log(f"result {e.u8(dc.LAST_RESULT)} day {e.u16(0x03004080)}")
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "the camp still stands on day 24 (the bot does not win; a human has to)")
+    ctx.check(len(g.units(1)) >= 6, f"Black Hole still has an army ({len(g.units(1))} units) at the end")
     e.close()
 
 
@@ -379,6 +381,37 @@ def bh_act5_m30_balance_turtle(ctx):
     a5.calm(e, g, d)
     start = len(g.units(1))
     bot = Bot(d, log=lambda s: None, stance="defend", garrison=True, hold=set(range(1, 30)))
-    play(ctx, e, g, d, bot, 11, "turtle")
+    play(ctx, e, g, d, bot, 16, "turtle")
     ctx.log(f"result {e.u8(dc.LAST_RESULT)} day {e.u16(0x03004080)}")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act5_m30_cannon_reach_probe(ctx):
+    """How far the Black Cannons (6,22), (30,22) reach at the first turn start: one Orange Megatank at (X, Y) (the environment's PROBE_X, PROBE_Y),
+    every other Orange unit far in the north (on the Inner Bailey's top rows), is hit or not."""
+    px, py = int(os.environ.get("PROBE_X", "18")), int(os.environ.get("PROBE_Y", "13"))
+    e, g, d, spec = load_mission(ctx, 30)
+    a5.open_mission(ctx, e, g, d, a5.M[30], spec[2], "m30", setup_only=True)
+    g._units_base = g._players_base = None
+    us = g.units(2)
+    far = [(x, 1) for x in range(3, 31)] + [(x, 2) for x in range(3, 31)]
+    mega = next(u for u in us if u["type"] == 4)
+    i = 0
+    for u in us:
+        if u["id"] == mega["id"]:
+            d.place_unit(u, px, py)
+        else:
+            d.place_unit(u, *far[i]); i += 1
+    for u in g.units(1):
+        pass
+    d.leave_setup()
+    a5.intro(ctx, e, d, "m30")
+    d.wait_control()
+    for _ in range(6):
+        a5.calm(e, g, d)
+        e.wait(150)
+    g._units_base = g._players_base = None
+    hurt = [(u["type"], u["x"], u["y"], u["hp"]) for u in g.units(2) if u["hp"] < 100]
+    ctx.log(f"probe ({px},{py}): orange hurt {hurt}; black hole hurt {[(u['x'], u['y'], u['hp']) for u in g.units(1) if u['hp'] < 100]}")
     e.close()

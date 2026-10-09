@@ -243,15 +243,67 @@ fn role30(army: u8, kind: u8, x: u8, y: u8) -> u8 {
     }
     // The minority that holds: the infantry on the wall tops beside the three gates and two in the Centre
     // Bailey (the keep's guard), a Neotank before the Inner gate, and the guns and Anti-Air.
-    let wall_top = kind == unit::INFANTRY && y == 15;
-    let keep_guard = (kind == unit::INFANTRY && matches!((x, y), (11, 10) | (25, 10))) || (kind == unit::NEOTANK && (x, y) == (18, 8));
+    let wall_top = kind == unit::INFANTRY && y == 11;
+    let keep_guard = (kind == unit::INFANTRY && matches!((x, y), (13, 8) | (23, 8))) || (kind == unit::NEOTANK && (x, y) == (16, 8));
     match kind {
         unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR => 0,
         _ if wall_top || keep_guard => 0,
+        // the heavy armour waits (role 0) from day 7 on ([`release`]): the first wave is foot soldiers Tanks,
+        // Rockets and aircraft
+        unit::MD_TANK | unit::NEOTANK | unit::MEGATANK => 0,
         unit::INFANTRY | unit::MECH => 3,
-        unit::MEGATANK => 1,
         _ => 4,
     }
+}
+
+/// Nell's heavy armour leaves its posts in turn (the roles are in the units' records, +0x0B): Md Tanks on day 7, Neotanks on
+/// day 9, Megatanks on day 11 (each for the nearest enemy; the Megatanks for the HQ).
+fn release(core: &mut Core, kind: u8, role: u8) {
+    for (a, k, _, _) in units_of(core, 2) {
+        if k == kind {
+            core.raw_write_8(a + 0x0B, -1, role);
+        }
+    }
+}
+
+fn release_md_tanks(core: &mut Core) {
+    release(core, unit::MD_TANK, 4);
+}
+
+fn release_neotanks(core: &mut Core) {
+    release(core, unit::NEOTANK, 4);
+}
+
+fn release_megatanks(core: &mut Core) {
+    release(core, unit::MEGATANK, 1);
+}
+
+/// Orange Star's treasury is capped each morning (its income is cut to what the CPU may spend: about two Tanks' worth a base).
+const TREASURY_CAP: u32 = 6000;
+fn cap_treasury(core: &mut Core) {
+    let p = crate::tag::player(core, 2);
+    if core.raw_read_32(p, -1) > TREASURY_CAP {
+        core.raw_write_32(p, -1, TREASURY_CAP);
+    }
+}
+
+/// Nell's power days are the script's: her meter is held under her first power's bar except on days 5, 9 and 15, so
+/// the computer cannot use one earlier on what it charges in a fight.
+fn clamp_nell(core: &mut Core) {
+    if !nell_leads(core) || matches!(day(core), 5 | 9 | 15) {
+        return;
+    }
+    let p = crate::tag::player(core, 2);
+    let co = crate::tag::army_co_of(core, 2);
+    let uses = core.raw_read_8(p + 0x25, -1);
+    let top = crate::tag::cop_cost(core, co, uses).saturating_sub(1);
+    if core.raw_read_32(p + 0x20, -1) > top {
+        core.raw_write_32(p + 0x20, -1, top);
+    }
+}
+
+fn always(_: &mut Core) -> bool {
+    true
 }
 
 fn clone_in_pair(core: &mut Core) -> bool {
@@ -273,7 +325,7 @@ fn reset_vars(core: &mut Core) {
 
 fn charge_nell_60(core: &mut Core) {
     reset_vars(core);
-    meter(core, 2, 60);
+    meter(core, 2, 20);
 }
 
 fn nell_cop(core: &mut Core) {
@@ -384,7 +436,7 @@ fn bh30() -> MissionDef {
     m.held_hq = Some((18, 3));
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(20000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(90000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(20000),
     ];
     m.day_limit = 34;
     m.rank_days = 24;
@@ -461,10 +513,13 @@ fn bh30() -> MissionDef {
     evac.extend(anyone("We do not attack the trains.", &pair));
     m.triggers = vec![
         on_day(1, None, vec![Action::Custom(charge_nell_60)]),
+        // Her meter stays under her first power's bar except on the power days; the treasury is capped each morning.
+        Trigger::new(When::AfterAction, Cond::Custom(always), vec![Action::Custom(clamp_nell)]).repeating(),
+        Trigger::new(When::TurnStart, Cond::EveryDays { n: 1, from: 2 }, vec![Action::Custom(cap_treasury)]).repeating(),
         on_day(1, Some(Cond::PlayerPair { a: co::STURM, b: co::CLONE_ANDY }), vec![Action::Scene(Scene::new(vec![say(co::STURM, "Together."), say(co::CLONE_ANDY, "Always, sir.")]))]),
-        // Day 3: Nell's first power, her Lucky Star.
+        // Day 5: Nell's first power, her Lucky Star.
         on_day(
-            3,
+            5,
             None,
             vec![
                 Action::Custom(nell_cop),
@@ -475,10 +530,12 @@ fn bh30() -> MissionDef {
             ],
         ),
         on_day(6, None, vec![Action::Scene(Scene::new(evac))]),
-        // Day 7: her Super Power. Day 14: the second, if she still leads.
-        on_day(7, None, vec![Action::Custom(nell_super), Action::Scene(Scene::new(vec![say(co::NELL, "For everyone I love: stand with me! Orange Star, shine!")]))]),
+        // Days 7, 9, 11: the Md Tanks, the Neotanks and the Megatanks leave their posts. Day 9: her Super Power. Day 15: the second, if she still leads.
+        on_day(7, None, vec![Action::Custom(release_md_tanks)]),
+        on_day(11, None, vec![Action::Custom(release_megatanks)]),
+        on_day(9, None, vec![Action::Custom(release_neotanks), Action::Custom(nell_super), Action::Scene(Scene::new(vec![say(co::NELL, "For everyone I love: stand with me! Orange Star, shine!")]))]),
         on_day(
-            14,
+            15,
             Some(Cond::Custom(nell_leads)),
             vec![Action::Custom(nell_super_again), Action::Scene(Scene::new(vec![say(co::NELL, "Now! I am not done! Orange Star, with me!")]))],
         ),

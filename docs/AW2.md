@@ -3336,7 +3336,15 @@ a game saved over netplay the same on both peers.
 - **AI roles of Orange's units** (`UnitDef::ai`: 0 stays and fires, 1 the enemy HQ, 3 enemy properties, 4 nearest
   enemy units; `.hold()` is role 1): the army pushes; the minority that holds is the guns, Anti-Air and the gate
   guards (documented in the file's header). A CPU run shows 37 of 50 units leave their start cells by day 2.
-- **Balance (test bot).** `bh_act5_m30_balance_run` (dig in, then push) and `..._balance_turtle` (nothing moves, the
-  structures cover the crossings): Black Hole falls from 40 to about 10 units by day 11 against Orange's steady 50
-  (it rebuilds every loss). The simple bot does not win; a human with the kill zone might, but the numbers say the
-  first wave is too strong for the camp: tune Orange's start funds or pushers before release.
+- **Start of the battle.** Nothing may be hit before the player moves: a unit starts out of every structure's reach. Measured (M30,
+  `bh_act5_m30_cannon_reach_probe`): a Black Cannon reaches roughly nine columns either side of itself and twelve rows up from
+  its row; a Laser takes its whole row and column; a minicannon its line. M30's Orange army therefore starts on rows 9 and up
+  or in columns 16..20 (checked when the map is painted and by the picture test: every unit at full HP in the Setup phase and
+  after the first turn start). The pictures are taken in the Setup phase, before any structure fires.
+- **Balance (test bot, `bh_act5_m30_balance_run` and `..._balance_turtle`).** Tuned: Orange starts with 20000 funds and its treasury is
+  capped at 6000 each morning (a CPU army rebuilds a few units a day, not to the cap); its heavy armour holds (role 0) until
+  day 7 (Md Tanks), 9 (Neotanks) and 11 (Megatanks); its meter is held under the first power's bar except on the power days
+  (COP day 5, Super days 9 and 15, `clamp_nell`). Result of the dig-in-then-push bot: Orange 50 to 23 units by day 10, Black Hole
+  40 to 16, then 11 on day 15 and 8 on day 24 (Orange 17): the camp holds, the bot cannot push the Great Hall (a human has to).
+  Earlier rounds: funds 90000 and no caps (Black Hole 7 units on day 8), 45000/20000 (14 on day 10, lost on day 18), 30000/10000
+  (11 on day 10), releasing the Tanks only on day 3 made it worse (14 on day 11).
