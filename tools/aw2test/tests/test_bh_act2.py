@@ -601,7 +601,7 @@ def bh_act2_m7_factory_table(ctx):
     seen = a2.to_day(e, g, d, 13)
     ctx.eq(e.u16(DAY), 13, "day 13")
     ctx.check(g.unit_at(5, 11) is not None and g.unit_at(5, 11)["army"] == 1, "day 13: a unit on the middle door (5, 11), the heavy slot")
-    ctx.check("The Foundry made an Oozium! It looks at me!" in seen, f"the day-13 scene ({seen})")
+    ctx.check("The Foundry made a... thing! It looks at me!" in seen, f"the day-13 scene ({seen})")
     a2.pic(ctx, e, "m7_factory_day13_oozium")
     e.close()
 

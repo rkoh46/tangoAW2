@@ -123,10 +123,8 @@ LASH: Wait, wait! One thing! I / built you something!
 CLONE: ...It's a drawer.
 LASH: It has a WINDOW. Don't look / at me like that!
 CLONE(h): ...It has a window.
-LASH: Ooh, he's doing the face. / Stop doing the face!
 CRUMB: Gerald says that's the / start of a tag team.
 MORTAR: Gerald says a lot of / things.
-CRUMB: He's usually right, / Sergeant.
 
 # ----------------------------------------------------------------------------------------------
 # M28 Home Is Where The Black Is. The player is STURM + CLONE ANDY (fixed pair).
@@ -137,23 +135,15 @@ CRUMB: He's usually right, / Sergeant.
 SOLDIER: Sir! Alarm from home! / The depot is surrounded!
 SOLDIER: Four armies at once! / Orange, blue, green, yellow!
 HAWKE: Nell. She sent them the / moment we left.
-HAWKE: A diversion, and a test. She / wants us home. And tired.
 HAWKE: Four nations never march / together. Today they do.
-HAWKE: That is not courage. That is / the Accord, signing in blood.
-VON BOLT: My vault! They are next / to my VAULT!
-VON BOLT: Do they know what a vault / costs to keep?! Kehh...
+VON BOLT: My vault! They are next / to my VAULT?! Kehh...
 CRUMB: Sir! I left the flag at / the depot!
 MORTAR: Crumb. It's a flag.
 CRUMB: It's OUR flag, Sergeant. / It's the only one we have.
-LASH: Ooh! Someone's in my lab? / The third door is rigged!
-CLONE: Which door is the third?
-LASH: All of them! Heehee!
 HAWKE: If I were choosing the pair: / Sturm and Clone Andy.
-HAWKE: Three of the four armies / were drilled beside Andy.
-HAWKE: His double knows how they / move before they do.
-CLONE: ...I know Andy. I know / Andy's moves. Okay!
-STURM: Then we take it back.
-STURM: Prepare my continent for / visitors.
+HAWKE: His double knows how Andy's / armies move before they do.
+CLONE: ...I know Andy's moves. / Okay!
+STURM: Then we take it back. / Prepare my continent for visitors.
 
 == m28_pre
 NARRATION: The Black Hole continent. / The Black Wastes. Home.
@@ -287,18 +277,15 @@ STURM: The Gate held.
 @WITH CLONE ANDY
 CLONE: Sir? That was my first / home defence.
 STURM: It will not be the last.
-CLONE: ...Good. I like it here.
-CLONE: It's loud. It's dusty. But / it's not anybody's drawer.
+CLONE: ...Good. I like it here. It's / loud and dusty. Not a drawer.
 STURM: Stand where you like. It is / mine and you walk on it.
 CLONE(h): That's the nicest thing / anyone ever said to me.
 STURM: It was not meant kindly.
 CLONE: Okay! That's even better!
-LASH: Ooh, my clone has a / continent! Heehee!
 LASH: Don't lose him, Sturm! He's / a prototype! ...Please?
 @WITHOUT CLONE ANDY
 CRUMB: Sir? That was a proper home / defence. Gerald counted every gun.
 STURM: It will not be the last.
-CRUMB: No, sir. I will bring more / biscuit. Gerald insists.
 STURM: Stand where you like, Hobb. / It is mine and you walk on it.
 CRUMB(h): That's the nicest thing / anyone ever said to me, sir!
 STURM: It was not meant kindly.
@@ -310,54 +297,35 @@ LASH: Don't break it, Sturm! It's / the only one we've got!
 == m28_promotion
 NARRATION: The Obelisk, at dusk. The / flag still stands. So does he.
 STURM: Hobb. Step forward.
-CRUMB: Sir! Yes, sir! Is it about / the flag, sir? I can explain!
-STURM: You held it at the Obelisk / against four armies.
-CRUMB(s): I was holding it so it / wouldn't blow away, sir...
-STURM: You held what is mine. Black / Hole does not forget its own.
-CRUMB: Nobody forgot, sir. I / counted. Everyone came home.
-CRUMB: I keep count. Of who comes / back. Gerald helps.
+CRUMB: Sir! Is it about the flag, / sir? I can explain!
+STURM: You held my flag against four / armies. Black Hole keeps its own.
+CRUMB: I keep count, sir. Of who comes / back. Everyone did. Gerald helps.
 STURM: And yourself?
 CRUMB(s): I'm usually the one I / forget, sir.
-STURM: Then I will remember you.
-STURM: I do not give ranks. I take / them. Today I take you one.
-STURM: Kneel.
-CRUMB: Sir?!
+STURM: Then I will remember you. I do / not give ranks. I take them.
 STURM: Kneel, Commander Hobb.
 MORTAR: ...Commander?
-WICK: Is it all right if I... / faint? Just a little?
-MORTAR: Wick. Stand up. This is / history.
 WICK: Is it all right if I watch / history from the floor?
-HAWKE: The commission exists. I / wrote it during the siege.
-HAWKE: I also searched the registry / for a birth. A Pip Hobb.
+HAWKE: The commission is drawn. I also / searched the registry for Pip Hobb.
 HAWKE: There is none. No error, no / gap. No page that ever existed.
-STURM: It does not matter where a / thing was made.
-STURM: It matters whose it is.
-HAWKE: Quite. I merely note that / the file is clean. Very clean.
+STURM: Where a thing was made does / not matter. Whose it is does.
 VON BOLT: Another mouth on the / payroll. Kehh. Prorated.
 LASH: Ooh, can I take Gerald / apart? That mark is a keyhole!
-LASH: Where's the key? Is there / a key? Heehee!
-CRUMB: He doesn't say, ma'am.
 STURM: Lash.
 LASH: Moving on! Moving on!
 JUGGER: LOGGED. COMMANDER HOBB. / BISCUIT GERALD: STILL UNRANKED.
-JUGGER: SENTIMENT: DETECTED. HUMOR: / NOT FOUND.
-CRUMB: C-Commander? Me? But I'm a / Private! Gerald, did you hear?
 STURM: You will command. Your men / will not run dry.
 STURM: I promote what I can use. / You are useful.
-CRUMB CO(h): Yes, sir! I mean, yes, / Commander sir! I mean...!
-CRUMB CO: Gerald, we're a CO!
+CRUMB CO(h): Yes, sir! I mean, yes, / Commander sir! Gerald, we're a CO!
 @WITH CLONE ANDY
 CLONE(h): Welcome to the table, / Commander! There's a chair!
 CLONE: It wobbles, but I can fix / any-- ...any chair! Any chair!
-LASH(h): He finished it! He / FINISHED it! Mark the calendar!
 @WITHOUT CLONE ANDY
 MORTAR: ...Welcome to the table, / Commander. The chair wobbles.
 WICK: Is it all right if I fix it? I / have a screwdriver. A small one.
-LASH(h): Ooh, a new CO! Does he / come with the biscuit? Heehee!
 @END
 STURM: The biscuit does not outrank / you.
 CRUMB CO: He outranks everybody, sir. / It's the age.
-STURM: ...Noted.
 
 # ----------------------------------------------------------------------------------------------
 # M31 The Colonel's Vault (secret). FREE: any recruited CO. Enemy: Sonja.
@@ -472,8 +440,6 @@ HAWKE: Interesting. And unwelcome.
 
 == m31_map
 CRUMB CO(s): Gerald? I was bribed by / a better biscuit. Forgive me.
-WICK: Is it all right if I point / out he is a biscuit?
-CRUMB CO: He's a very forgiving / biscuit, Private Wick.
 MORTAR: Crumb. The vault was your / post.
 CRUMB CO(s): I know, Sergeant. I'm / writing it up myself.
 MORTAR: Don't. I already did. Wrote / "Not his fault."
@@ -485,38 +451,22 @@ CRUMB CO: Gerald, she was lying. It / was only ALMOST better.
 == m31_defect
 NARRATION: Von Bolt's Hall. Dawn. The / trucks are cold. So is the tea.
 SONJA: I did not come to rob you. / I came to be recruited.
-HAWKE: Recruited. After you / emptied the vault.
-SONJA: I borrowed it. The receipts / are in your drawer, Colonel.
+SONJA: I only borrowed your vault. The / receipts are in your drawer, Colonel.
 VON BOLT: ...I did find them. Third / drawer. With a bookmark. Kehh.
-SONJA: My father's code is a wall. / I have counted its bricks.
-SONJA: Yours is a storm. I have / not found its edge.
-SONJA: I wish to see the edge. / That is all I will say.
+SONJA: My father's code is a wall. I / counted its bricks. Yours is a storm.
 STURM: You are not Black Hole.
 SONJA: Not yet. Test me.
 STURM: Why.
 SONJA: Because something under / your voice answers that crate.
 SONJA: I want to hear what it / says.
-STURM: Be careful what you wish / to hear.
-SONJA: I am always careful. It is / most of what I am.
-HAWKE: A spy asks to join the / house she robbed.
-SONJA: A spy who has read every / ledger in it.
-HAWKE: I do not trust her.
+HAWKE: A spy joins the house she / robbed. I do not trust her.
 STURM: Nor do I. Keep her close. / What I own, I watch.
-SONJA: I will not lie to you. I / will withhold. They differ.
-STURM: Withhold what you like. I / will take it later.
-SONJA: Then we understand each / other.
 VON BOLT: She held my keys. She / will audit me. I feel it.
 SONJA: Fifteen per cent, Colonel, / of everything you find.
 VON BOLT: Ten!
 SONJA: Fifteen. And I keep the / receipts. All of them.
 VON BOLT: ...Fifteen.
-KINDLE: Darlings, a spy in the / troupe! Do give her a solo.
-LASH: Ooh, can I read the little / black book? What's in the book?
-SONJA: Nothing that concerns you.
-LASH: That's what everyone says / about the best pages!
-KOAL: Her trucks held the shoulder / on the south road. Clean. I respect it.
 JUGGER: LOGGED. SONJA: ASSET OR / THREAT. QUERY: BOTH.
-SONJA: Both, Jugger. It is the / most efficient answer.
 CRUMB CO(h): Welcome, ma'am. Gerald / forgives you. He does that.
 SONJA: ...Thank you, Private.
 CRUMB CO: Commander, ma'am. Since / the siege.
@@ -524,84 +474,51 @@ SONJA: ...Thank you, Commander.
 NARRATION: Sonja joins the roll / (Free Play): Vault Breakers.
 STURM: What does the crate say?
 SONJA: Not yet. It speaks when / you stop being afraid.
-STURM: I am not afraid.
-SONJA: Then it will speak soon.
 NARRATION: Far below the vault, / the humming changes pitch.
 
 == m31_kanbei
-NARRATION: Comet Keep. A courier / brings a sealed letter.
-SOLDIER YC: A letter for the Emperor. / Marked "S." By hand.
+NARRATION: Comet Keep. A courier brings / a letter marked "S." by hand.
 KANBEI(h): From Sonja! She writes so / rarely. Sensei, listen!
 KANBEI: "Father. I have joined / Black Hole. Do not follow."
 KANBEI(s): Joined. Black. Hole.
-SENSEI: Kanbei...
-KANBEI: A feint! She tests me! / It is strategy!
 SENSEI: She signed it, Kanbei. The / ledger room is empty.
 SENSEI: She took the receipts.
 KANBEI(s): ...Sonja. You took the / receipts?
 KANBEI: Kanbei taught her honour. / She learned the audit.
-SENSEI: You taught her to read / everything. Everything.
-KANBEI: ...Yes. Kanbei did.
-SENSEI: Back in my day, a girl who / leaves a note has a plan.
-SENSEI: A girl who leaves no note / has a worse one.
 KANBEI: "Do not follow." Not "do / not worry." Not "do not love."
 KANBEI: Then Kanbei shall write / back. Eat well. Wear a scarf.
 SENSEI: She is the enemy.
 KANBEI(s): She is my daughter. Both / are true, old friend.
 KANBEI: Set a place at the table. / She will want her seat.
-SENSEI: And the honour of the / Keep?
 KANBEI: Honour has no manual for / this. Then Kanbei writes one.
 
 # The secret epilogue: the last scene of the campaign (the hook toward BH2).
 == m31_epilogue
 NARRATION: Von Bolt's Hall. Midnight. / The lamps are still lit.
 SONJA: A reply from Father. "Wear / a scarf." ...I will.
-SONJA: He also writes that he set / a place for me at table.
-SONJA: I did not expect that to / weigh anything. It weighs.
+SONJA: He set a place for me at / table. It weighs more than I thought.
 VON BOLT: Sentiment! In MY hall! / Pay the toll, girl.
 SONJA: Forty-one tons, Colonel. / Forty you thought stolen. One interest.
 VON BOLT: Forty-ONE?! You refilled / my vault WITH interest?!
 SONJA: Two and a half per cent. / The audit was a pleasure.
 VON BOLT: I should be furious. / ...I am extremely pleased.
-SONJA: Do not tell the others I / was generous. Bad business.
-CRUMB CO(h): Ma'am Sonja, will you / stay? Gerald says yes.
-SONJA: Your biscuit has good / instincts, Commander.
-VON BOLT: She audits. I count. / Kehh-heh! A perfect firm.
-SONJA: I read every ledger, / Colonel. There is one gap.
-SONJA: Thirty years of shipments / to one consignee. HOBB.
+SONJA: I read every ledger. One gap: / thirty years to one consignee. HOBB.
 SONJA: No address. No port. A / shipping line that does not exist.
 SONJA: Delivered to the last shelf. / Signed for in your hand.
-VON BOLT: ...I inherited that / shelf. I never asked.
-VON BOLT: A man who asks about a / free shelf is a fool.
-SONJA: I have followed that line for / three years, Colonel.
-SONJA: It led me to your door. And / to a crate with a name on it.
+VON BOLT: ...I inherited that shelf. I / never asked. Only fools ask.
 CRUMB CO: Quartermaster's log. The / crate still hums.
-SONJA: Last shelf. Never opened. / Never even dusted.
-VON BOLT: Leave. It. Alone.
 CRUMB CO(s): Ma'am, it has my name / on it. HOBB, P.
-SONJA: So it does. ...How / curious.
-SONJA: I intend to be in the room / when it speaks.
+SONJA: So it does. How curious. I / intend to be in the room.
 STURM: You will be in the room. At / my side, where I can see you.
-HAWKE: Forgive the hour. I came / to check the locks.
-HAWKE: Chapter two of my doctrine / is almost done, Colonel.
+HAWKE: Forgive the hour. Chapter two / of my doctrine is almost done.
 VON BOLT: "Succession"? Of WHOM?
 HAWKE: Of whoever stands when / the storm finally rests.
-HAWKE: Good night. Do keep the / vault locked. From everyone.
-JUGGER: ALERT. SIGNAL ON THE / ALLIED BAND. ENCRYPTED.
-JUGGER: SOURCE: ORANGE STAR RAIL / YARD. THE LAST TRAIN.
+JUGGER: ALERT. ALLIED BAND SIGNAL. / SOURCE: RAIL YARD. LAST TRAIN.
 JUGGER: VOICE MATCH: ANDY. / CONFIDENCE: 87 PERCENT.
 JUGGER: TEXT: "ALL COLOURS EAST. / THE FENCE IS DOWN. BUILD ANEW."
-VON BOLT: Build with WHAT money? / Who is PAYING for this?!
-SONJA: Four nations, regrouping. / Under a mechanic.
-SONJA: Father will answer that / call. I would have.
-HAWKE: A new fence, drawn by the / people the old one hurt.
-HAWKE: Do tell me when they set / the first piece.
-NARRATION: The lid trembles. A / voice, thin as a wire:
-NARRATION: "...Hobb. Are you / receiving? The door is open."
+SONJA: Four nations, regrouping. / Under a mechanic. I would answer.
+NARRATION: The lid trembles. A voice, / thin as wire: "...Hobb. Door's open."
 CRUMB CO: Gerald? Did you hear / that?
-STURM: I heard it from the / corridor.
-STURM: Whatever it is, it is / mine. It stays on the shelf.
-NARRATION: "...The storm was only / the first knock."
-NARRATION: In Crumb's pocket, Gerald's / maker's mark turns warm.
-NARRATION: Far to the east, a train / answers. And in the dark,
-NARRATION: the Obelisk glows once, and / waits for the second knock.
+STURM: I heard it from the corridor. / Whatever it is, it is mine.
+NARRATION: "...The storm was only the / first knock." Gerald's mark warms.
+NARRATION: Far east, a train answers. The / Obelisk glows once, and waits.

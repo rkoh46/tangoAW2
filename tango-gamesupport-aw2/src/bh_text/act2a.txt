@@ -102,17 +102,13 @@ HAWKE: ...Very well. You. Do not / run into me.
 CRUMB: Runner Hobb reporting! The / Marshal's coffee is cold!
 MORTAR: Why did you tell him?
 CRUMB(s): He asked.
-WICK: He is polite about it. Is / it all right that I like that?
 CRUMB(h): He said "adequate". I / think that's a medal.
-MORTAR: It is not a medal. It is a / grade.
-CRUMB: He read my file, Sergeant. / It took him no time at all.
-CRUMB(s): Then he read it twice. And / put it away very quietly.
-WICK: What did it say?
-CRUMB: He would not tell me. He / said, "Tidy. Very tidy."
+MORTAR: It is a grade.
+CRUMB: He read my file, Sergeant. / Then he read it twice.
+CRUMB(s): He said, "Tidy. Very tidy." / And put it away very quietly.
 MORTAR: A man who thanks the fog / is a man to watch.
-VON BOLT: Pay him, I say. Pay him / well. Never pay him early.
+VON BOLT: Pay him well. Never / pay him early. Kehh.
 CRUMB(h): Gerald says either boss / would do for the Marshal.
-MORTAR: Gerald has a lot to say / for a biscuit.
 
 # ===================================================================================================
 # M5 Night Raid (FREE; Javier defends Skyhaven)
@@ -197,14 +193,11 @@ WICK: I saw a bomber go up like / a firework.
 CRUMB(h): It was a lovely colour, / Wick.
 WICK(s): Somebody's job was that / bomber.
 CRUMB: ...Yes. Right. Sorry.
-MORTAR: Eat something, Crumb.
 MORTAR: It was somebody's job. / That is the point, son.
 MORTAR: You do it fast. You do it / clean. That is all we get.
 CRUMB(s): What do we get after, / Sergeant?
 MORTAR: Soup. Eat your soup.
-HAWKE: Hobb. Coffee. Black.
-CRUMB: I do not like coffee, sir.
-HAWKE: It is not for liking. It / is for the long night.
+HAWKE: Hobb. Coffee. Black. It is / for the long night.
 CRUMB(h): Gerald says yes please.
 
 # ===================================================================================================
@@ -341,7 +334,7 @@ EAGLE: I put a bow on her, even. / You'll love her!
 HAWKE: A gift. Hobb, find me a / long pole.
 
 == m07_day13 | HAWKE
-CRUMB(h): The Foundry made an / Oozium! It looks at me!
+CRUMB(h): The Foundry made a... / thing! It looks at me!
 HAWKE: Do not feed it.
 CRUMB(s): ...Gerald is hiding.
 MORTAR: Crumb. Back away, slowly.
@@ -370,16 +363,13 @@ HAWKE: The cranes, Colonel, were / always going to be yours.
 HAWKE: The Foundry is Sturm's. The / board is mine.
 
 == m07_map | HAWKE
-CRUMB: The Oozium followed me to / the latrine, Sergeant.
+CRUMB: The thing the Foundry made / followed me to the latrine.
 MORTAR: Then he knows where / your biscuit is.
 CRUMB(s): Gerald is NOT a food.
 WICK: Is it all right if I ask / why it likes you?
 CRUMB: I fed it a button. By / accident. Now we are friends.
-MORTAR: Crumb.
-CRUMB: He is shy, Sergeant. He / just looks scary.
 CRUMB: Sir? ...The Marshal is / writing in his book.
 CRUMB(s): Lucky. Dottie. Big Gus. / Why are those names in it?
 HAWKE: Someone should keep the / record. Eagle will not.
 CRUMB: Sir... are you sad?
 HAWKE: I am correct, Hobb. It is / a very similar feeling.
-HAWKE: Black coffee. Then bed.

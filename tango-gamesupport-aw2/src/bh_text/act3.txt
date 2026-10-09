@@ -119,20 +119,13 @@ KOAL: Corporal. You. Come here.
 CRUMB: Sir? I'm a Private, sir.
 KOAL: Not on my road. You are / my road inspector now.
 CRUMB(h): Gerald, we got a job!
-MORTAR: The road inspector will / report for duty at dawn.
 MORTAR: Crumb. Do not measure the / Colonel's shoulder.
 CRUMB: A lady at the toll hut / wrote down my name, sir.
-WICK: She wrote down everyone's. / Even the cart horses'.
-MORTAR: Crumb. Wrote it in what?
-CRUMB: A small black book. She / signed the page "S."
+CRUMB: In a small black book. She / signed the page "S."
 CRUMB: She asked who pays us. And / how the Marshal takes his coffee.
 WICK: Is it all right if that / worries me? A little?
 MORTAR: Worry quietly.
-CRUMB: She said Gerald has a / lovely colour.
-CRUMB(s): ...She looked at his / wrapper a long time, sir.
-CRUMB: A stall-keeper says Lady / Kindle likes gold and manners.
-WICK: Is it all right if we / bring manners? We have gold?
-MORTAR: The Colonel has the gold. / We have manners. In theory.
+CRUMB(s): She looked at Gerald's / wrapper a long time, sir.
 
 # ---------------------------------------------------------------------------------------------------
 # M13 Festival of Flame (recruit Kindle). FREE: STURM, VON BOLT, HAWKE, KOAL.
@@ -236,16 +229,12 @@ KINDLE: Tell Kanbei his scroll was / lovely. I shall frame it.
 KINDLE: Then I shall burn the / frame. Ahaha!
 
 == m13_map
-CRUMB: Ma'am Kindle gave me / a sash!
-WICK: It says "Audience".
-CRUMB(h): It says "Audience"! I'm / in her audience!
+CRUMB(h): Ma'am Kindle gave me a / sash! It says "Audience"!
 MORTAR: Don't clap unless asked.
 CRUMB(s): ...I clapped.
 MORTAR: Crumb. The whole row / heard you.
 KINDLE: Darlings, a girl in the / rafters took notes all night.
 KINDLE: Dark coat. Gloomy. Not one / clap. I did not mind. Much.
-CRUMB: Notes, ma'am? On what?
-KINDLE: On us, darling. On the / seats. On who stood up first.
 HAWKE: A spectator who takes notes / is not a spectator.
 CRUMB: Gerald says she counted. / Gerald counts, so he'd know.
 
@@ -548,22 +537,16 @@ SONJA(s): ...Of course, Father.
 == m16_map
 SONJA: Blue Moon is rich, and / afraid. Dangerous together.
 VON BOLT: Rich! Tell me more!
-SONJA: That will be extra.
-VON BOLT: Kehh... Everything is / extra with you.
-SONJA: Everything is. One more / thing, Colonel. A sealed note.
-SONJA: Open it later.
-VON BOLT: What does it say?
-SONJA: Instructions. For the day / your vault is empty.
+SONJA: That will be extra. And one / more thing, Colonel. A sealed note.
+SONJA: Open it later. Instructions. / For the day your vault is empty.
 VON BOLT: My vault is never empty!
 SONJA: Then you will never need it.
 VON BOLT: ...Hmph. Last shelf. In / the vault. With the crate.
-SONJA: Last shelf. Yes. With the / crate. I would have chosen it.
+SONJA: Last shelf. Yes. I would / have chosen it.
 VON BOLT: How do you know about / the crate?
 SONJA: I read ledgers, Colonel. / Good night.
 CRUMB: It's cold, Gerald. Cold / enough to freeze a biscuit.
-CRUMB(s): ...Not that he'd notice.
 CRUMB: Blue Moon folk whisper that / a tin man hates sloppy talk.
-CRUMB: Mr Koal and the Marshal / are tidy. Just saying, sir.
 
 == m16_warroom
 NARRATION: The listening post, / midnight. A relay hums.
@@ -579,6 +562,5 @@ ANDY: Nell, I'm going to the front. / Sitting here is killing me.
 NELL: Andy, I need one soldier at / this table who tells the truth.
 NELL: Sonja. Yellow Comet has not / spoken. We would hear you.
 NARRATION: Nobody answers. A pen / scratches, quick and even.
-GRIT: Blue Moon's bought itself a / robot. Reckon I'm to babysit it.
 NELL: If the fence falls, we draw / another. Together. Always.
 MORTAR: They sound like a family. / Write that down too.

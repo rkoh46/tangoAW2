@@ -135,17 +135,12 @@ CRUMB: Gerald does not mind, / Sergeant. He floats.
 == m20_map
 NARRATION: Snow Harbour, dawn. / The frozen bay turns to rose.
 CRUMB: Sergeant! There's a flag on / the horizon. Orange!
-MORTAR: Orange Star. Look sharp.
-WICK(s): Is it all right if I ask / why Orange is coming to Blue Moon?
 STURM: Orange Star chairs the / Accord. Nell keeps its promise.
 STURM: One nation falls. The / chair visits the next.
-WICK: Is that... a threat, sir?
-STURM: It is a flag.
 CRUMB: Is it a good flag or a bad / flag, sir?
 STURM: It is the last flag that / has not knelt.
 CRUMB(s): Oh. Gerald says it looks / very orange.
 MORTAR: Gerald has a lot of / opinions today.
-CRUMB: It's cold, Sergeant. / Everyone has opinions.
 
 == m21_pre
 NARRATION: Blue Moon, the river valley. / Far from supply. Fog on the water.
@@ -269,21 +264,13 @@ MORTAR: It is. Say it again / tomorrow. Quietly.
 
 == m21_map
 NARRATION: A captured radio. Orange / Star's frequency. Open.
-NELL: This is Nell, Orange Star. / To every nation listening:
-NELL: Blue Moon, Yellow Comet, / Green Earth: not alone.
-NELL: I have called every one / of you home.
+NELL: This is Nell, Orange Star. / To every nation listening: not alone.
 NELL: There is room inside the / Orange Star gate. Bring your children.
-NELL: Bring the ones who cannot / run. We will find a place.
-NELL: The Accord was never meant / to be a fence, dear ones.
-NELL: It was a promise: nobody / faces a storm alone.
+NELL: The Accord was never a fence, / dear ones. It was a promise.
 NELL: Hold on a little longer. / Please.
-CRUMB(s): She sounds like my mum.
-CRUMB: My mum with a general's / hat.
+CRUMB(s): She sounds like my mum, sir. / My mum with a general's hat.
 MORTAR: Crumb. Your mum does / not own a hat.
 CRUMB: She would if she knew / Nell, Sergeant.
-WICK: Is it all right if I say / she sounds... brave?
-STURM: Turn it off.
-CRUMB: Sir? I... yes, sir.
 STURM: Leave it on. I will hear / what I must break.
 
 == m22_pre
@@ -367,48 +354,28 @@ CRUMB: I did, Sergeant. Gerald / waved too.
 CRUMB: Sir, the Blue Moon people / gave us blankets.
 MORTAR: They are prisoners, / Crumb.
 CRUMB(s): Then it's very polite / of them.
-WICK: Is it all right if I say / the blankets are too warm?
-WICK: I do not like that. Warm / blankets mean someone cares.
-MORTAR: Wick. Enjoy the blanket.
 JUGGER: PALACE LEDGER: THIRTY / YEARS OF IRON. DESTINATION: A LINE.
 JUGGER: LINE: NOT REGISTERED. / CONSIGNEE: A SYMBOL. NO NAME.
 JUGGER: SYMBOL MATCHES: BISCUIT. / QUERY: WHY.
 CRUMB: That's Gerald's maker's / mark! Isn't it, Gerald?
-MORTAR: Crumb. Put the biscuit / away. Do not read the ledger.
-JUGGER: LOGGED. NOT SOLVED. / FILE: OPEN. HUMOR: NOT FOUND.
 CRUMB(s): Why would iron go to a / line that's not there, Sergeant?
 MORTAR: Crumb. Because someone / wanted it to.
 
 == m22_warroom
-NARRATION: Black Hole's relay tent. / Crumb on the dial. A voice breaks in.
-CRUMB: Sir! The relay's caught / Accord Band Three. By accident!
-WICK: Is it all right if we / listen? ... It is not polite.
-MORTAR: Listen. Politeness is for / peace.
-NELL: ...so Blue Moon's capital is / gone. I will not pretend.
+NARRATION: Black Hole's relay tent. Crumb / caught Accord Band Three by accident.
 NELL: Three flags have fallen. We / hold the fourth. Together.
 MAX: I want the storm in a chair / by sundown! I'll make it sit!
-SAMI: Roger that, Max. But a / chair needs a plan, grunts.
-SAMI: Where is the line? I want / a line. A real one.
-GRIT: Reckon the line melted, Sami. / And the robot I babysat took the gate.
-GRIT: Should've kept him on the / leash. Ayup. My own fault.
+SAMI: Roger, Max. But a chair needs / a plan. Where is the line, grunts?
+GRIT: Reckon the line melted, Sami. / The robot I babysat took the gate.
 SENSEI: Back in my day we had a / fence that stayed put. Youngsters.
-SENSEI: Comet Keep's walls are / paving now. They are good paving.
-GRIMM: Har! And who pays for the / fence, pencil necks? Hm?
-GRIMM: Yellow Comet paid. Blue Moon / paid. Green Earth just glared.
+GRIMM: Har! And who pays for the / fence, pencil necks? Not Green Earth.
 JAVIER: Hark! By my honour, Green / Earth's towers did not glare!
-JAVIER: They were taken. I, Javier, / swear to retake every spire!
 OLAF: BLUE MOON demands its / palace back! It is an OUTRAGE!
 SASHA: Olaf. Sit. The fence cost / eleven harbours. I am counting.
-COLIN: Um... they were ours. The / big robot. The big man. They left.
-COLIN: Do... do they stop? Does / anything stop them?
+COLIN: Um... they were ours. The / big robot. Does anything stop them?
 ANDY: Nell, let me go east. I can / hit them before the gate!
-NELL: Andy. We hold Orange Star's / gate first. Then, together.
-ANDY: Nell! We cannot just sit!
 NELL: We do not sit, dear one. We / gather. Every colour, every nation.
 NELL: The Accord was a fence. Now / it must be a table.
-CRUMB: Sir, the lady in yellow / isn't saying anything.
-CRUMB: She is writing. In a little / black book.
 SONJA: ...Page one hundred and / twelve. S.
-STURM: Let them talk. Their fence / has three holes.
-CRUMB: Sir? Is it just me, or / does the relay... hum?
+CRUMB: Sir, the lady in yellow only / writes. And the relay... hums.
 STURM: It does. Leave it.
