@@ -49,29 +49,11 @@ def bh_world_map_all31(ctx):
     for y in range(256):
         for x in range(432):
             arr[y, x] = np.median(np.array(stack[y][x]), axis=0)
-    # The map draws 30 flags at most: in Free Play (every mission offered) M31's, the 31st, is left out. Its flag is
-    # taken from the map with M1..M29 won (M30 and M31 open), where it is drawn (a white pennant), and pasted in.
-    e.close()
-    e, g, d = a2.boot(ctx, (1 << 29) - 1, 0xFFF | (0x1FF << 12), picks={}, at=30)
-    d.wait_world_map()
-    e.wait(120)
-    ctx.log(f"flags with M1..M29 won {d.map_flags()}")
-    X0, Y0, X1, Y1 = 182, 28, 200, 54
-    best, bestn = None, -1
-    for _ in range(12):
-        e.w16(WM, 0)
-        e.w16(WM + 2, 0)
-        e.w16(WM + 4, 700)             # (the cross-hair's cursor off the screen)
-        e.w16(WM + 6, 700)
-        e.wait(7)
-        stitch.hide_hud(e)
-        im = np.asarray(Image.open(e.shot(os.path.join(ctx.out, "wm_open"))).convert("RGB"))
-        patch = im[Y0:Y1, X0:X1].copy()
-        n = int((patch.min(axis=2) > 235).sum())
-        if n > bestn:
-            best, bestn = patch, n
-    ctx.log(f"M31's flag: {bestn} white pixels in the best frame")
-    arr[Y0:Y1, X0:X1] = best
+    # M31 is the one open flag in Free Play: it must be drawn (nothing is pasted in)
+    patch = arr[28:54, 182:200]
+    n = int((patch.max(axis=2) < 70).sum())
+    ctx.log(f"dark pixels (the pole and outline) on M31's flag: {n}")
+    ctx.check(n >= 8, f"M31's open flag is drawn in Free Play ({n} dark pixels)")
     full = Image.fromarray(arr)
     full.save(os.path.join(ctx.out, "world_map_all31.png"))
     if out:

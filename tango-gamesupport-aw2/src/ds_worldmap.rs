@@ -691,6 +691,8 @@ pub fn tick(core: &mut Core, session: bool, aw2_map_script: u32, ds_map_script: 
 /// screen's own sprites, palette 0), 16x16, drawn where AW2 draws a
 /// mission's flag.
 const CLEARED_FLAG_TILE: u16 = 40;
+/// The open mission's flag (the white pennant AW2 draws from its marker list).
+const OPEN_FLAG_TILE: u16 = 24;
 const FLAG_DX: i32 = -5;
 const FLAG_DY: i32 = -5;
 
@@ -706,8 +708,22 @@ pub fn flush_sprites(core: &mut Core, mut at: u32, end: u32) -> u32 {
     }
     let points = points(core);
     let (cam_x, cam_y) = (core.raw_read_16(S_CAMERA_X, -1) as i16 as i32, core.raw_read_16(S_CAMERA_Y, -1) as i16 as i32);
+    // AW2's own marker list holds 16 missions: in Free Play every mission is shown, so the open ones past the
+    // sixteenth (the secret M31) get no marker of the game's: their flag is drawn here too.
+    let listed: Vec<u16> = (0..16u32)
+        .map(|i| core.raw_read_16(S_MARKERS + 12 * i, -1))
+        .take_while(|&id| id != 0xFFFF)
+        .collect();
     for (m, &(px, py)) in points.iter().enumerate() {
-        if core.raw_read_8(S_FLAGS + m as u32, -1) & CLEARED == 0 || at + 8 > end {
+        let flags = core.raw_read_8(S_FLAGS + m as u32, -1);
+        let tile = if flags & CLEARED != 0 {
+            CLEARED_FLAG_TILE
+        } else if flags & SHOWN != 0 && !listed.contains(&(m as u16)) {
+            OPEN_FLAG_TILE
+        } else {
+            continue;
+        };
+        if at + 8 > end {
             continue;
         }
         let (x, y) = (px as i32 - cam_x + FLAG_DX, py as i32 - cam_y + FLAG_DY);
@@ -716,7 +732,7 @@ pub fn flush_sprites(core: &mut Core, mut at: u32, end: u32) -> u32 {
         }
         core.raw_write_16(at, -1, (y as u16) & 0xFF);
         core.raw_write_16(at + 2, -1, ((x as u16) & 0x1FF) | (1 << 14));
-        core.raw_write_16(at + 4, -1, CLEARED_FLAG_TILE | (3 << 10));
+        core.raw_write_16(at + 4, -1, tile | (3 << 10));
         core.raw_write_16(at + 6, -1, 0);
         at += 8;
     }
