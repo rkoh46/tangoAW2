@@ -12,14 +12,14 @@ FOG = 0x03003FCD
 BONDS = 0x1FF << 12
 # the roster (bits) unlocked when each mission opens: Lash after M23, Adder after M24, Clone Andy after M27, Sonja and Crumb later
 ROSTER_AT = {23: 0x7F, 24: 0xFF, 25: 0xFF, 26: 0x1FF, 27: 0x1FF, 28: 0x3FF, 31: 0xFFF}
-# number: (title, won (mission numbers incl. the 22 stub), CO picks (M23, M24, M26: lead and partner; M27, M28: none), fog, size)
+# number: (title, won (mission numbers incl. the 22 stub), CO picks (M23, M24, M26, M28: lead and partner; M27: none), fog, size)
 MISSIONS = {
     23: ("Laboratory 7", [22], [bh.STURM, bh.HAWKE], True, (22, 18)),
     24: ("Sky Gala", [22, 23], [bh.STURM, bh.HAWKE], False, (24, 16)),
     25: ("Twin Harbours", [22, 23], [bh.STURM, bh.HAWKE], False, (32, 22)),
     26: ("The Last Alliance", [22, 23, 24, 25], [bh.STURM, bh.VON_BOLT], False, (38, 28)),
     27: ("Echo", [22, 23, 24, 25, 26], [], True, (24, 18)),   # (Lash is fixed: no CO screen)
-    28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [], False, (35, 31)),
+    28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [bh.STURM, bh.CLONE_ANDY], False, (35, 31)),
     31: ("The Colonel's Vault", [22, 23, 24, 25, 26, 27, 28], [bh.STURM], True, (43, 29)),
 }
 
@@ -302,3 +302,48 @@ def bh_act5b_m31_gate_needs_the_finale_and_all_nine_bonds(ctx):
         flags = d.map_flags()
         ctx.eq(flags[a5.M[31]] & 1, want, f"{name}: M31 is {'open' if want else 'not open'} on the map (flag {flags[a5.M[31]]})")
         e.close()
+
+
+def _m28_free_pair(ctx, pair, label):
+    """M28 is a free pair: the opening is the files' m28_pre for that pair (Clone Andy's own lines only when he is in it)."""
+    from aw2test import tag
+    e, g, d = a5.boot(ctx, won_mask(28), ROSTER_AT[28], picks={a5.M[28]: 2}, at=a5.M[28], env={"TANGOAW2_BH_STILL": "1"})
+    d.pick_mission()
+    picked = a5.pick_cos(d, list(pair))
+    ctx.eq(picked, list(pair), f"M28 {label}: the CO screen's picks")
+    d.leave_setup()
+    texts, last, calm = [], None, 0
+    for i in range(3000):                                # (the opening plays when the player's army, the fifth, first moves)
+        t = d.text_shown()
+        if t and t != last:
+            texts.append(a5.clean(t))
+            last = t
+        if d.scripts_running():
+            calm = 0
+            if t:
+                e.press("A", 4)
+        elif g.current_army() == 5:
+            calm += 1
+            if calm > 25 and texts:
+                break
+        e.wait(8)
+    g._units_base = g._players_base = None
+    p = tag.partner(e, 5)
+    ctx.eq((g.player(5)["co"], p["co"] if p else None), tuple(pair), f"M28 {label}: the first pick leads, the second is the partner (army 5)")
+    a5.scene_seen(ctx, texts, "m28_pre", pair[0], pair[1], f"M28 {label}: the opening")
+    flat = a5._flat(texts)
+    clone_line = a5._flat(["What's that sound? A hum? Like a fridge. A big one."])
+    soldier_line = a5._flat(["Sir, what is that sound? A hum. Like a very big engine."])
+    ctx.check((clone_line in flat) == (bh.CLONE_ANDY in pair) and (soldier_line in flat) == (bh.CLONE_ANDY not in pair),
+              f"M28 {label}: Clone Andy's hum line only with Clone Andy in the pair, the soldier's without him")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act5b_m28_free_pair_with_clone_andy(ctx):
+    _m28_free_pair(ctx, [bh.STURM, bh.CLONE_ANDY], "sturm_clone")
+
+
+@test(modes=("ds",))
+def bh_act5b_m28_free_pair_without_clone_andy(ctx):
+    _m28_free_pair(ctx, [bh.HAWKE, bh.KOAL], "hawke_koal")
