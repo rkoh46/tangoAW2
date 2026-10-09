@@ -21,6 +21,7 @@ pub mod ds_battle;
 pub mod ds_campaign;
 pub mod bh_campaign;
 pub mod bh_act1;
+pub mod bh_text;
 pub mod bh_act2;
 pub mod bh_act3;
 pub mod bh_act4;

@@ -834,4 +834,28 @@ mod tests {
         }
         assert!(d.missions.iter().any(|m| m.key == d.final_mission));
     }
+
+    /// The campaign's text ids: 0x7400..=0x7FFF, 3,072 in all. The scenes (runs of boxes by one
+    /// speaker merged, equal texts shared) and the missions' names and objectives must leave room
+    /// for the texts the engine makes besides (the prologue, the credits' pages): see
+    /// [`crate::custom_campaign::text_ids_used`].
+    #[test]
+    fn text_ids_stay_inside_the_budget() {
+        let d = def();
+        let used = text_ids_used(&d);
+        let all = (crate::campaign_model::TEXT_LAST - crate::campaign_model::TEXT_FIRST + 1) as usize;
+        const RESERVE: usize = 150;
+        eprintln!("text ids used by the scenes: {used} of {all} ({RESERVE} kept in reserve)");
+        assert!(used + RESERVE <= all, "the BH Campaign's scenes use {used} of {all} text ids (reserve {RESERVE}): pack or trim");
+    }
+
+    /// Every scene of the text files is asked for by the code, and every scene the code asks for exists
+    /// (the second is a panic in `def()`).
+    #[test]
+    fn every_dialogue_scene_is_used() {
+        let _ = def();
+        let used = crate::bh_text::keys_used();
+        let unused: Vec<String> = crate::bh_text::keys().into_iter().filter(|k| !used.contains(k)).collect();
+        assert!(unused.is_empty(), "scenes in src/bh_text/*.txt that no mission asks for: {unused:?}");
+    }
 }

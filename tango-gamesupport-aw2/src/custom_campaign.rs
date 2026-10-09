@@ -985,6 +985,8 @@ struct Compiler<'a> {
     conds: Vec<(u32, Cond)>,
     units: HashMap<(usize, &'static str), (u8, u8, u8)>,
     fns: Vec<fn(&mut Core)>,
+    /// The texts already made (equal texts share an id: every CO says "Report." with the same one).
+    shared: HashMap<Vec<u8>, u16>,
     /// The next once-latch flag.
     next_flag: u8,
     /// The player's army and the index of the mission being compiled (for `Line::only`).
@@ -1003,17 +1005,83 @@ fn face(who: Speaker) -> u16 {
     }
 }
 
+/// The most boxes one text holds when the boxes of a run by one speaker are merged.
+pub const MERGE_BOXES: usize = 6;
+
+/// A scene line after merging.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Merged {
+    pub who: Speaker,
+    pub text: String,
+    pub only: Option<u8>,
+    pub partner: Option<u8>,
+    pub with: Option<u8>,
+}
+
+/// A scene's lines with every run of boxes by one speaker (same face, same conditions) made one
+/// text of up to [`MERGE_BOXES`] boxes (`\x0f` between them): the game shows them one after
+/// the other all the same, and the campaign's 3,072 text ids go further.
+pub fn merged(lines: &[Line]) -> Vec<Merged> {
+    let mut out: Vec<Merged> = Vec::new();
+    let mut boxes = 0usize;
+    for l in lines {
+        let n = l.text.split('\x0f').filter(|b| !b.is_empty()).count().max(1);
+        if let Some(m) = out.last_mut() {
+            if m.who == l.who && m.only == l.only && m.partner == l.partner && m.with == l.with && boxes + n <= MERGE_BOXES {
+                m.text.push('\x0f');
+                m.text.push_str(l.text);
+                boxes += n;
+                continue;
+            }
+        }
+        out.push(Merged { who: l.who, text: l.text.to_string(), only: l.only, partner: l.partner, with: l.with });
+        boxes = n;
+    }
+    out
+}
+
+/// How many of the campaign's text ids its scenes use (equal texts share one), and the
+/// mission names and objectives (two a mission): the number the compiler will use for them.
+pub fn text_ids_used(def: &CampaignDef) -> usize {
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut scene = |s: &Scene| {
+        for m in merged(&s.lines) {
+            seen.insert(m.text);
+        }
+    };
+    for m in &def.missions {
+        scene(&m.intro);
+        scene(&m.victory);
+        scene(&m.after);
+        scene(&m.front2_victory);
+        for t in m.triggers.iter().chain(m.front2_triggers.iter()) {
+            for a in &t.then {
+                if let Action::Scene(s) = a {
+                    scene(s);
+                }
+            }
+        }
+    }
+    let prologue: Vec<Line> = def.prologue.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None }).collect();
+    scene(&Scene::new(prologue));
+    seen.len() + 2 * def.missions.len()
+}
+
 impl<'a> Compiler<'a> {
     fn text(&mut self, bytes: Vec<u8>) -> Result<u16, Error> {
+        if let Some(&id) = self.shared.get(&bytes) {
+            return Ok(id);
+        }
         let id = self.next_text;
         if id > TEXT_LAST {
             return Err("out of text ids".into());
         }
         self.next_text += 1;
-        let mut z = bytes;
+        let mut z = bytes.clone();
         z.push(0);
         let at = self.built.add(&z);
         self.built.texts.push((id, at));
+        self.shared.insert(bytes, id);
         Ok(id)
     }
 
@@ -1054,7 +1122,7 @@ impl<'a> Compiler<'a> {
             out.push(cmd(0x41, 0, s, 0, 0));
         }
         out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, 0));
-        for l in &scene.lines {
+        for l in &merged(&scene.lines) {
             if let Some(co) = l.only {
                 // (jumps over the two commands below unless the player's CO is `co`: a relative
                 // jump, made absolute by `script`)
@@ -1070,7 +1138,7 @@ impl<'a> Compiler<'a> {
                 out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
             }
             out.push(cmd(0x38, 0, face(l.who), 0, 0));
-            let id = self.dialogue(l.text)?;
+            let id = self.dialogue(&l.text)?;
             out.push(cmd(0x19, 0, id, 0, 0));
         }
         if scene.song.is_some() {
@@ -1236,6 +1304,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         conds: Vec::new(),
         units: HashMap::new(),
         fns: Vec::new(),
+        shared: HashMap::new(),
         next_flag: FLAG_FIRST,
         player: 1,
         mission: 0,
