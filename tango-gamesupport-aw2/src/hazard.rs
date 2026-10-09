@@ -122,37 +122,3 @@ pub fn flush_sprites(core: &mut Core, at: u32, end: u32) -> u32 {
     }
     at
 }
-
-/// The impact queue (`0x0803E560(x, y, unit, damage)`): Black Hole's structures
-/// (Laser, Deathray, Black Cannon and minicannon: the code between
-/// `0x0803E594` and `0x0803EA00`, not the Volcano's list) queue a hit for every
-/// unit they find that AW2 takes for an enemy. In AW2's campaigns Black Hole
-/// is the computer and the structures are its own; in the BH Campaign they are
-/// the player's, and a blast must spare the units of Black Hole's colour
-/// (the owner's: it is the player's army, army 5 in a five-army mission; the
-/// game's own test decodes the army from the unit id of a 64-slot army, and
-/// the Black Cannon's picks even a unit of its own side). Skipped here.
-pub const IMPACT: u32 = 0x0803_E560;
-const BLAST_CODE: [(u32, u32); 2] = [(0x0803_E594, 0x0803_E764), (0x0803_E808, 0x0803_EA00)];
-
-pub fn impact(core: &mut Core) {
-    if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
-        return;
-    }
-    let cpu = core.gba().cpu();
-    let (lr, unit) = (cpu.gpr(14) as u32 & !1, cpu.gpr(2) as u32);
-    if !BLAST_CODE.iter().any(|&(a, b)| (a..b).contains(&lr)) || unit == 0 {
-        return;
-    }
-    let stride = if crate::five::active(core) { 51 } else { 64 };
-    let army = unit / stride + 1;
-    let colour = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1A, -1);
-    if colour == 5 {
-        let cpu = core.gba_mut().cpu_mut();
-        cpu.set_thumb_pc(lr);
-    }
-}
-
-pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(IMPACT, Box::new(impact))]
-}

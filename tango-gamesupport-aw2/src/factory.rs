@@ -134,7 +134,6 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     traps.extend(crate::obelisk::traps());
     traps.extend(crate::onyx::traps());
     traps.extend(crate::five_map::traps());
-    traps.extend(crate::hazard::traps());
     traps.extend(crate::design5::traps());
     traps.extend(crate::ds_weather::traps());
     traps.extend(crate::sandstorm::traps());
