@@ -583,17 +583,17 @@ def bh_act2_m5_alarm_and_flares(ctx):
 @test(modes=("ds",))
 def bh_act2_m7_factory_table(ctx):
     """The Black Factory (x 4..6, y 6..9, doors on row 10) spawns F7's units on the player's turns: day 2
-    two Tanks (doors 1 and 3), day 13 an Oozium (door 2) and Hawke's scene."""
+    two Tanks (doors 1 and 3), day 13 a Md Tank (door 2; the factory never builds an Oozium) and Hawke's scene."""
     e, g, d, texts = ready(ctx, 7)
     before = {(u["x"], u["y"]) for u in g.units(1)}
     a2.to_day(e, g, d, 2)
     ctx.eq(e.u16(DAY), 2, "day 2")
     spawned = [(u["type"], u["x"], u["y"]) for u in g.units(1) if (u["x"], u["y"]) not in before and u["y"] == 11 and 4 <= u["x"] <= 6]
-    # (the table is the schedule and the cost cap; the smart spawner picks what the battle needs within a Tank's price)
+    # (the table is the schedule and the cost cap; the smart spawner picks what the battle needs within a Tank's price, units costing 75%)
     ctx.eq(sorted((x, y) for _, x, y in spawned), [(4, 11), (6, 11)], "a unit at each of the doors (4, 11) and (6, 11), none at the middle door")
-    ctx.check(all(t in (1, 2, 5, 6, 7, 10) for t, _, _ in spawned), f"each within a Tank's price ({spawned})")
+    ctx.check(all(t in (1, 2, 5, 6, 7, 10, 14) for t, _, _ in spawned), f"each within a Tank's price at the factory's 75% prices (Anti-Air included) ({spawned})")
     a2.pic(ctx, e, "m7_factory_day2")
-    # day 13 (set day 12 and end the turn): an Oozium on the middle door
+    # day 13 (set day 12 and end the turn): a unit on the middle door
     for u in g.units(1):
         if (u["x"], u["y"]) in ((4, 11), (5, 11), (6, 11)):
             d.remove_unit(u)
