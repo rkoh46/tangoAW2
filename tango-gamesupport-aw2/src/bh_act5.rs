@@ -11,10 +11,10 @@
 //! **Roles of Orange Star's units** (the AI byte, [`UnitDef::ai`]: 0 stays and still fires, 1 goes for
 //! the enemy HQ, 3 for the enemy's properties, 4 at the nearest enemy units). The army pushes: its
 //! foot soldiers take the camp's properties (3), its armour and air strike at the nearest enemy (4),
-//! its Megatanks and, in M29, Neotanks drive for the HQ (1), and the indirects (Artillery, Rockets, Missiles) and
+//! its Megatanks and, in M29, Neotanks drive for the HQ (1), and the indirects (M29: Artillery, Rockets, Missiles) and
 //! Anti-Air follow the nearest enemy (4). M29 holds nobody. M30's deliberate minority holds (0): the infantry on the
-//! wall tops beside the gates, the keep's guard (a Neotank and two Infantry in the Centre Bailey) and the heavy
-//! armour until its release day.
+//! wall tops beside the gates, the keep's guard (a Neotank and two Infantry in the Centre Bailey), the guns on the
+//! walls (Artillery, Missiles: role 0 still fires at what comes into reach; the Rockets advance: holding them too let the test bot win on day 15) and the heavy armour until its release day.
 //! What the CPU builds, and the stage-two reserves (Andy's wall), get the CPU's own roles.
 
 // (the builders' imports: each act uses what it needs)
@@ -186,6 +186,8 @@ fn role30(army: u8, kind: u8, x: u8, y: u8) -> u8 {
     let keep_guard = (kind == unit::INFANTRY && matches!((x, y), (13, 8) | (23, 8))) || (kind == unit::NEOTANK && (x, y) == (16, 8));
     match kind {
         _ if wall_top || keep_guard => 0,
+        // Artillery and Missiles stay on the walls (role 0 still fires at what comes into reach); Anti-Air and Rockets follow the nearest enemy
+        unit::ARTILLERY | unit::MISSILES => 0,
         // the heavy armour waits (role 0) from day 7 on ([`release`]): the first wave is foot soldiers Tanks,
         // Rockets and aircraft
         unit::MD_TANK | unit::NEOTANK | unit::MEGATANK => 0,
@@ -328,24 +330,32 @@ fn duel_plain_lines() -> Vec<Line> {
 }
 
 /// Andy's wall on the platform and the reserves, all of the army that was Nell's: the Rail Yard (the
-/// second HQ) is now the one that matters. They hold their places (role 0: the platform is behind them).
+/// second HQ) is now the one that matters. Andy's wall holds its places (role 0: the platform is behind it); the reserves
+/// act from the first turn of stage two (foot soldiers capture, the rest attack the nearest enemy).
 fn rail_yard_reserves() -> Vec<UnitDef> {
     let mut v = Vec::new();
-    let mut add = |kind: u8, cells: &[(u8, u8)]| {
+    let mut add = |kind: u8, cells: &[(u8, u8)], wall: bool| {
         for &(x, y) in cells {
-            v.push(UnitDef::new(2, kind, x, y));
+            let u = UnitDef::new(2, kind, x, y);
+            v.push(if wall {
+                u.stand()
+            } else if matches!(kind, unit::INFANTRY | unit::MECH) {
+                UnitDef { ai: 3, ..u }
+            } else {
+                UnitDef { ai: 4, ..u }
+            });
         }
     };
     // Andy's wall: 4 Inf, 2 Md Tank, 2 Anti-Air
-    add(unit::INFANTRY, &[(32, 5), (32, 7), (34, 5), (34, 7)]);
-    add(unit::MD_TANK, &[(33, 5), (33, 7)]);
-    add(unit::ANTI_AIR, &[(32, 4), (34, 4)]);
+    add(unit::INFANTRY, &[(32, 5), (32, 7), (34, 5), (34, 7)], true);
+    add(unit::MD_TANK, &[(33, 5), (33, 7)], true);
+    add(unit::ANTI_AIR, &[(32, 4), (34, 4)], true);
     // The reserves (as many as the army's cap allows): 2 Neotank, 2 Md Tank, 2 Rockets, 2 Inf, 2 Fighter
-    add(unit::NEOTANK, &[(32, 6), (34, 6)]);
-    add(unit::MD_TANK, &[(32, 8), (34, 8)]);
-    add(unit::ROCKETS, &[(35, 5), (35, 7)]);
-    add(unit::INFANTRY, &[(35, 4), (35, 8)]);
-    add(unit::FIGHTER, &[(35, 6), (34, 2)]);
+    add(unit::NEOTANK, &[(32, 6), (34, 6)], false);
+    add(unit::MD_TANK, &[(32, 8), (34, 8)], false);
+    add(unit::ROCKETS, &[(35, 5), (35, 7)], false);
+    add(unit::INFANTRY, &[(35, 4), (35, 8)], false);
+    add(unit::FIGHTER, &[(35, 6), (34, 2)], false);
     v
 }
 

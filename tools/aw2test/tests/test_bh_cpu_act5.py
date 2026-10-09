@@ -101,3 +101,41 @@ def bh_cpu_m31_the_enemy_acts(ctx):
     ctx.log(f"totals {tot}")
     ctx.check(tot["moved"] >= 15, f"Yellow Comet's units move ({tot['moved']} moves in 5 days)")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_cpu_m30_held_guns_fire_without_moving(ctx):
+    """Nell's Artillery and Missiles hold (role 0) on the walls: a Black Hole unit set down in range of one is fired on
+    (its ammo drops) and none of the guns leaves its cell over three CPU turns."""
+    e, g, d = a5.boot(ctx, a5.WON(29), ALL, picks={a5.M[30]: 1}, at=a5.M[30])
+    a5.open_mission(ctx, e, g, d, a5.M[30], [bh.CLONE_ANDY], "m30")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    guns = {u["id"]: (u["x"], u["y"]) for u in g.units(2) if u["type"] in (10, 15)}
+    ctx.check(len(guns) >= 5, f"Orange has {len(guns)} guns")
+    art = next(u for u in g.units(2) if u["type"] == 10)
+    occ = {(u["x"], u["y"]) for u in g.units()}
+    mine = next(u for u in g.units(1) if u["type"] == 5)
+    cell = next((art["x"] + dx, art["y"] + dy) for dx, dy in ((0, 2), (2, 0), (0, -2), (-2, 0), (1, 1), (-1, -1), (1, -1), (-1, 1))
+                if (art["x"] + dx, art["y"] + dy) not in occ and g.terrain_class(art["x"] + dx, art["y"] + dy) & 0x1F in (1, 2, 3, 4, 5, 6, 8, 0xE))
+    ammo0 = art["ammo"]
+    ctx.log(f"artillery {art['id']} at {(art['x'], art['y'])} ammo {ammo0}, my Tank {mine['id']} moved to {cell}")
+    a = g.unit_addr(mine["id"])
+    e.w8(a + 2, cell[0]); e.w8(a + 3, cell[1])
+    fired = False
+    ammo_start = {u["id"]: u["ammo"] for u in g.units(2)}
+    for k in range(3):
+        a5.next_turn(e, g, d)
+        g._units_base = g._players_base = None
+        now = {u["id"]: u for u in g.units(2)}
+        t = g.unit(mine["id"])
+        ctx.log(f"turn {k}: tank hp {t['hp']}, artillery ammo {now[art['id']]['ammo'] if art['id'] in now else None}")
+        spent = [(i, u["type"]) for i, u in now.items() if u["ammo"] < ammo_start.get(i, 99)]
+        ctx.log(f"  units whose ammo dropped: {spent}")
+        if any(t in (10, 15) for _, t in spent):
+            fired = True
+    moved = [i for i, p in guns.items() if i in now and (now[i]["x"], now[i]["y"]) != p]
+    ctx.log(f"guns that moved: {moved}")
+    ctx.check(fired, "the held Artillery fired at the Tank in reach")
+    ctx.check(not moved, "no held gun left its cell")
+    e.close()
