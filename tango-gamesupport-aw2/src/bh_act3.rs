@@ -87,26 +87,11 @@ fn built_units(name: &str) -> Vec<UnitDef> {
         .collect()
 }
 
-/// Gives the enemy army's units their orders (the computer's role byte): the units `holds` picks stay
-/// where they stand (role 0: they still fire at what comes into reach), foot soldiers go for the
-/// player's properties (3, `Assault`), everything else toward the nearest enemy (4, `Strike`).
-/// (The map files' `hold` flag is AW2's role 1, "go for the HQ": not used here.)
+/// Gives the enemy army's units their orders (`bh_ai`: Infantry and Mechs capture, the rest attacks units): the units
+/// `holds` picks are the mission's deliberate garrison and stay where they stand (role 0: they still fire at what
+/// comes into reach). (The map files' `hold` flag is AW2's role 1, "go for the HQ": not used here.)
 fn roles(units: Vec<UnitDef>, holds: impl Fn(&UnitDef) -> bool) -> Vec<UnitDef> {
-    units
-        .into_iter()
-        .map(|mut u| {
-            if u.army == 2 {
-                u.ai = if holds(&u) {
-                    0
-                } else if u.kind == unit::INFANTRY || u.kind == unit::MECH {
-                    3
-                } else {
-                    4
-                };
-            }
-            u
-        })
-        .collect()
+    crate::bh_ai::orders(units, 1, crate::bh_ai::ATTACK, holds)
 }
 
 // --- World map ---------------------------------------------------------------------
@@ -153,7 +138,7 @@ fn bh12() -> MissionDef {
     m.day_limit = 28;
     m.rank_days = 17;
     m.factory = F12.to_vec();
-    m.units = roles(built_units("bh12"), |u| u.kind == unit::ANTI_AIR);
+    m.units = roles(built_units("bh12"), |u| (u.x, u.y) == (33, 8));
     m.recruits = vec![roster::KOAL];
     m.intro = crate::bh_text::scene("m12_pre");
     m.victory = crate::bh_text::scene("m12_post");
@@ -188,6 +173,9 @@ fn stage_and_towers() -> Cond {
     Cond::All(vec![owns(STAGE), Cond::Any(triples)])
 }
 
+/// The stage's guard: two Infantry beside the city at (10, 3) and the Neotank in front of it.
+const STAGE_GUARD: [(u8, u8); 3] = [(9, 4), (11, 4), (10, 5)];
+
 fn bh13() -> MissionDef {
     let mut m = MissionDef::new("bh13", "Festival of Flame");
     m.objective = "Take the stage and hold 3 of 4 towers. 14 days.";
@@ -201,7 +189,7 @@ fn bh13() -> MissionDef {
     m.props = vec![Prop { kind: PropKind::City, owner: 2, x: STAGE.0, y: STAGE.1 }];
     m.day_limit = 14;
     m.rank_days = 10;
-    m.units = roles(built_units("bh13"), |u| (8..=13).contains(&u.x) && u.y <= 5);
+    m.units = roles(built_units("bh13"), |u| STAGE_GUARD.contains(&(u.x, u.y)));
     m.recruits = vec![roster::KINDLE];
     m.intro = crate::bh_text::scene("m13_pre");
     m.victory = crate::bh_text::scene("m13_post");
@@ -268,7 +256,8 @@ fn bh14() -> MissionDef {
     ];
     // Yellow Comet's post in the north-east is a city, not an HQ: the only win is the evacuation.
     m.props = vec![Prop { kind: PropKind::City, owner: 2, x: SONJA_POST.0, y: SONJA_POST.1 }];
-    // The ring round Crumb and the gap guards hold (the ring is released on day 3), the rest hunts the column.
+    // The ring round Crumb, the gap guards and the Anti-Air (a machine gun kills Crumb, who has 1 HP) hold (the ring is released on day 3),
+    // the rest hunts the column.
     const GUARDS: [(u8, u8); 9] = [(7, 3), (3, 9), (8, 9), (9, 7), (8, 5), (9, 5), (9, 4), (11, 6), (11, 7)];
     // (the ring is frozen with full tanks until day 3: the computer's own moves skip every one of them, Recon and tanks
     // included, unless an enemy is next to it; a plain role 0 lets a Recon sally and kill Crumb, who has 1 HP;
@@ -316,7 +305,7 @@ fn bh15() -> MissionDef {
     m.pool = POOL15.to_vec();
     m.day_limit = 24;
     m.rank_days = 16;
-    m.units = roles(built_units("bh15"), |u| u.kind == unit::ANTI_AIR || u.kind == unit::ROCKETS);
+    m.units = roles(built_units("bh15"), |u| (u.x, u.y) == (21, 11));
     // The sky front's Black Factory table is dormant (there is none; AW2's turn calls the spawner all the same).
     m.factory = vec![(0, [0, 0, 0])];
     m.front2 = Some(FrontDef {
@@ -349,6 +338,9 @@ fn bh15() -> MissionDef {
 
 // --- M16 Comet Keep -------------------------------------------------------------------
 
+/// The Keep's garrison round the courtyard HQ at (13, 2): the Md Tank and two Neotanks, two Infantry and two Anti-Air.
+const KEEP_GUARD: [(u8, u8); 7] = [(13, 4), (12, 3), (14, 3), (12, 5), (14, 5), (11, 3), (15, 3)];
+
 fn bh16() -> MissionDef {
     let mut m = MissionDef::new("bh16", "Comet Keep");
     m.objective = "Storm the Keep and capture the courtyard HQ.";
@@ -359,7 +351,7 @@ fn bh16() -> MissionDef {
     ];
     m.day_limit = 24;
     m.rank_days = 16;
-    m.units = roles(built_units("bh16"), |u| u.y <= 5);
+    m.units = roles(built_units("bh16"), |u| KEEP_GUARD.contains(&(u.x, u.y)));
     m.intro = crate::bh_text::scene("m16_pre");
     m.victory = crate::bh_text::scene("m16_post");
     // The Accord's war room closes the act.

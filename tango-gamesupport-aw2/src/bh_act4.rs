@@ -77,19 +77,11 @@ fn win_with_bond(done: Cond, affinity: fn(&mut Core) -> bool, bond: u8) -> Vec<T
     ]
 }
 
-/// The computer's roles (UnitDef::ai: 0 holds its ground, 1 goes for the enemy HQ): every enemy unit
-/// advances except those `holds` names (indirect fire, HQ guards and a few anchors: each mission says
-/// which and why). The player's own units keep the default.
+/// The computer's roles (`bh_ai`): Act IV's armies charge, so vehicles, ships and aircraft go for the enemy HQ (role 1), Infantry
+/// and Mechs capture (3) and indirect fire follows (4); the units `holds` names stay where they stand (HQ guards, a few anchors:
+/// each mission says which and why). The player's own units keep the default.
 fn roles(units: Vec<UnitDef>, holds: impl Fn(&UnitDef) -> bool) -> Vec<UnitDef> {
-    units
-        .into_iter()
-        .map(|mut u| {
-            if u.army != 1 {
-                u.ai = if holds(&u) { 0 } else { 1 };
-            }
-            u
-        })
-        .collect()
+    crate::bh_ai::orders(units, 1, crate::bh_ai::HQ, holds)
 }
 
 /// A new reinforcement that advances on the enemy HQ.
@@ -97,9 +89,13 @@ fn go_new(army: u8, kind: u8, x: u8, y: u8) -> UnitDef {
     go(UnitDef::new(army, kind, x, y))
 }
 
-/// A reinforcement that advances on the enemy HQ.
+/// A reinforcement that advances like the rest of the army (`roles`: vehicles for the enemy HQ, foot soldiers on the properties,
+/// indirect fire behind them).
 fn go(mut u: UnitDef) -> UnitDef {
-    u.ai = 1;
+    u.ai = match crate::bh_ai::role_of(u.kind, crate::bh_ai::HQ) {
+        0 => 1,
+        r => r,
+    };
     u
 }
 
@@ -114,9 +110,9 @@ fn bh17() -> MissionDef {
     let mut m = MissionDef::new("bh17", "Cold Iron");
     m.objective = "Capture Jugger's foundry HQ.";
     m.map = MapSrc::Built("bh17");
-    // Jugger's roles: his Md Tanks, Mech and field Infantry advance by the odds; the Missiles (fire from
-    // behind), the Neotank (the HQ's anchor) and the two Infantry at the HQ hold.
-    m.units = roles(built_units("bh17"), |u| matches!(u.kind, unit::MISSILES | unit::NEOTANK) || (u.kind == unit::INFANTRY && u.x >= 21));
+    // Jugger's roles: his Md Tanks, Mechs and field Infantry advance and the Missiles follow; the Neotank (the HQ's
+    // anchor) and the two Infantry at the HQ hold.
+    m.units = roles(built_units("bh17"), |u| u.kind == unit::NEOTANK || (u.kind == unit::INFANTRY && u.x >= 21));
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(9000),
         // Jugger in Blue Moon's colours; Grit, the sniper, babysits him.
@@ -193,9 +189,9 @@ fn bh19() -> MissionDef {
     let mut m = MissionDef::new("bh19", "The Assembly Line");
     m.objective = "Wake the Black Factory, hold the river, take Sasha's HQ.";
     m.map = MapSrc::Built("bh19");
-    // Sasha's roles: the line (Infantry, Mech, treads, the Megatank, the aircraft) advances; the Artillery,
-    // Missiles and Anti-Air screen hold their ground, as do the Infantry round her HQ.
-    m.units = roles(built_units("bh19"), |u| matches!(u.kind, unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR) || (u.kind == unit::INFANTRY && u.x >= 26));
+    // Sasha's roles: the line (Infantry, Mech, treads, the Megatank, the aircraft) advances with the Artillery, Missiles and
+    // Anti-Air behind it; two of the Infantry round her HQ hold it.
+    m.units = roles(built_units("bh19"), |u| matches!((u.x, u.y), (27, 12) | (26, 10)));
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(7000),
         // Sasha, with real production: 5 bases, 2 airports, 9 cities.
@@ -230,8 +226,8 @@ fn bh20() -> MissionDef {
     let mut m = MissionDef::new("bh20", "Moonlit Harbours");
     m.objective = "Take Olaf's HQ; win the sea front for a partner.";
     m.map = MapSrc::Built("bh20");
-    // Olaf advances, but his Artillery and the Infantry on his HQ hold.
-    m.units = roles(built_units("bh20"), |u| u.kind == unit::ARTILLERY || (u.kind == unit::INFANTRY && u.x >= 21));
+    // Olaf advances (his Artillery with the line); the Infantry on his HQ holds.
+    m.units = roles(built_units("bh20"), |u| u.kind == unit::INFANTRY && u.x >= 21);
     m.look = 1; // Snow
     m.weather = Weather::Snow;
     // The player picks two COs: the main front's, then the second front's.
@@ -419,9 +415,8 @@ fn bh22() -> MissionDef {
     let mut m = MissionDef::new("bh22", "Whiteout");
     m.objective = "Cross the frozen lake and take the Moon Palace.";
     m.map = MapSrc::Built("bh22");
-    // Olaf and Sasha: the line and the Fighters advance; Artillery, Missiles and the four palace-gate
-    // Infantry (row 3) hold.
-    m.units = roles(built_units("bh22"), |u| matches!(u.kind, unit::ARTILLERY | unit::MISSILES) || (u.kind == unit::INFANTRY && u.y <= 3));
+    // Olaf and Sasha: the line, the guns and the Fighters advance; the two palace-gate Infantry beside the HQ (14, 3) hold.
+    m.units = roles(built_units("bh22"), |u| matches!((u.x, u.y), (12, 3) | (16, 3)));
     m.look = 1; // Snow
     m.weather = Weather::Snow;
     m.armies = vec![
