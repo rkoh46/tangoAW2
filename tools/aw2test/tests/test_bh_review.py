@@ -48,7 +48,7 @@ M = {
     25: ("Twin Harbours", 0xFF | BONDS, [S, HK], False, True),
     26: ("The Last Alliance", 0x1FF | BONDS, [S, VB], False, False),
     27: ("Echo", 0x1FF | BONDS, [S], True, False),
-    28: ("Home Is Where The Black Is", 0x3FF | BONDS, [], False, False),
+    28: ("Home Is Where The Black Is", 0x3FF | BONDS, [S, bh.CLONE_ANDY], False, False),
     29: ("The Orange Gate", 0x3FF, [S], False, False),
     30: ("Nell's Stand", 0x3FF, [S, bh.CLONE_ANDY], False, False),
     31: ("The Colonel's Vault", 0xFFF | BONDS, [S], True, False),

@@ -19,7 +19,7 @@ MISSIONS = {
     25: ("Twin Harbours", [22, 23], [bh.STURM, bh.HAWKE], False, (32, 22)),
     26: ("The Last Alliance", [22, 23, 24, 25], [bh.STURM, bh.VON_BOLT], False, (38, 28)),
     27: ("Echo", [22, 23, 24, 25, 26], [bh.STURM], True, (24, 18)),
-    28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [], False, (35, 31)),
+    28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [bh.STURM, bh.CLONE_ANDY], False, (35, 31)),
     31: ("The Colonel's Vault", [22, 23, 24, 25, 26, 27, 28], [bh.STURM], True, (43, 29)),
 }
 

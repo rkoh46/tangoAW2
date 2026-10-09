@@ -513,11 +513,12 @@ def bh_campaign_five_army_pick_reaches_every_co_and_tags(ctx):
     the pair picked, and its Tag Power works (offered with both meters full: the
     active CO's Super Power, then the partner's)."""
     from aw2test import tag, ram
-    pairs = [(bh.SONJA, bh.CLONE_ANDY), (bh.CLONE_ANDY, bh.SONJA), (bh.KOAL, bh.VON_BOLT), (bh.STURM, bh.CLONE_ANDY)]
+    pairs = [(bh.SONJA, bh.CLONE_ANDY), (bh.CLONE_ANDY, bh.SONJA), (bh.KOAL, bh.VON_BOLT), (bh.STURM, bh.CLONE_ANDY),
+             (bh.STURM, bh.CRUMB), (bh.CRUMB, bh.KOAL)]
     for n, (lead_co, partner) in enumerate(pairs):
         e, g, d = boot_features(ctx)
         d.picks = {21: 2}
-        d.start_at(won_mask=0x3FFFFF & ~(1 << 5) & ~(1 << 21), unlocked_mask=0x7FF)
+        d.start_at(won_mask=0x3FFFFF & ~(1 << 5) & ~(1 << 21), unlocked_mask=0xFFF)
         d.pick_mission()
         picks = d.choose_cos(2, prefs=[lead_co, partner])
         g._units_base = g._players_base = None
