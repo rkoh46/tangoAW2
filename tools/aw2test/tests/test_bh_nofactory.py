@@ -227,6 +227,52 @@ def bh_campaign_pair_pick_matches_every_partner(ctx):
 
 
 @test(modes=("ds",))
+def bh_campaign_second_front_view_has_no_junk_units(ctx):
+    """The second front looked at (Map menu > Front) for the first time: its
+    unit table holds only its own units (none of the text the front's start
+    decoded: boxes of letters on the map) and every cell of its unit plane
+    names a unit standing there."""
+    from aw2test import twofront as tf
+    e, g, d = boot_features(ctx)
+    d.picks = {11: 0}
+    d.start_at(won_mask=0x7FF & ~(1 << 5), unlocked_mask=0b101)
+    d.pick_mission()
+    d.wait_map()
+    ctx.require(tf.look_at_other_front(e, g), "the other front is shown")
+    g._units_base = g._players_base = None
+    M = 0x0201E450
+    w, h = e.u16(M), e.u16(M + 2)
+    r = e.read(g.units_base, 12 * 256)
+    at = {}
+    for y in range(h):
+        row = e.u16(M + 0x417A + 2 * y)
+        for x in range(w):
+            pid = e.u8(M + 0x12 + row + x)
+            if pid:
+                at[pid] = (x, y)
+    live = {u: (r[12 * u + 2], r[12 * u + 3]) for u in range(256) if r[12 * u]}
+    ctx.eq(live, at, "the unit table's units are the plane's (no junk record, no stale id)")
+    ctx.check(all(r[12 * u + 4] <= 100 for u in live), "every unit's HP is sane")
+    ctx.eq(len(live), 3, "the second front's three units")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_pair_pick_with_a_partial_roster(ctx):
+    """Only Sturm and Sonja unlocked (Sonja is the one Yellow Comet CO among
+    Black Hole's): either leads and the other is reachable for the second pick
+    (the Black Hole tab is open after Sonja)."""
+    for lead_co, partner in ((bh.SONJA, bh.STURM), (bh.STURM, bh.SONJA)):
+        e, g, d = boot_features(ctx)
+        d.picks = {16: 2}
+        d.start_at(won_mask=0xFFFF & ~(1 << 5) & ~(1 << 16), unlocked_mask=1 | (1 << 10))
+        d.pick_mission()
+        picks = d.choose_cos(2, prefs=[lead_co, partner])
+        ctx.eq(sorted(picks), sorted([lead_co, partner]), f"both picked ({picks})")
+        e.close()
+
+
+@test(modes=("ds",))
 def bh_campaign_second_front_has_its_own_rules(ctx):
     """A second front's own triggers (MissionDef::front2_triggers) run while it
     is on the screen, on its own named units: the named unit (a Tank of the
