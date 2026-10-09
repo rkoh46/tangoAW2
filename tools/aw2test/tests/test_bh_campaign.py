@@ -894,7 +894,7 @@ def title_palette(e):
 @test(modes=("ds",))
 def bh_campaign_bond_legend_on_the_world_map(ctx):
     """Nothing about bonds shows on the world map until one is earned. From
-    the first bond on a legend (a gold star, "RECRUIT WON OVER", "BONDS n/9",
+    the first bond on a legend (a gold star, "RECRUIT WON OVER", "BONDS n/m", m the campaign's bonds (ten with Crumb's),
     AW2's font) sits at the top left: below the "CAMPAIGN" title while that
     shows, at the very top with the mission panel open (the title gone). The
     title keeps its colours (the legend takes an OBJ palette no sprite of the
@@ -1014,9 +1014,10 @@ def bh_campaign_unit_ammo_and_fuel_on_purpose(ctx):
 @test(modes=("ds",))
 def bh_campaign_an_extra_bond_does_not_count(ctx):
     """The last bond of the features campaign is an extra (as Crumb's): earned
-    alone it opens no secret mission and shows no legend; with the counted one
-    the secret mission is open and the legend counts 1 of 1."""
-    for mask, want_secret, want_legend in ((1 << 13, 0, False), (1 << 12, 1, True), (3 << 12, 1, True)):
+    alone it opens no secret mission (the legend shows it: it counts every bond,
+    "BONDS 1/2" here, "1/10" in the BH Campaign); with the counted one the
+    secret mission is open."""
+    for mask, want_secret, want_legend in ((1 << 13, 0, True), (1 << 12, 1, True), (3 << 12, 1, True)):
         e, g, d = boot_features(ctx)
         d.start_at(won_mask=1, unlocked_mask=1 | mask)
         d.wait_world_map()
@@ -1024,3 +1025,42 @@ def bh_campaign_an_extra_bond_does_not_count(ctx):
         ctx.eq(d.map_flags()[5], want_secret, f"bond bits {mask >> 12:02b}: the secret mission's flag")
         ctx.eq(any(s[0] == LEGEND_TILE for s in obj_sprites(e)), want_legend, f"bond bits {mask >> 12:02b}: the legend")
         e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_legend_counts_crumbs_bond(ctx):
+    """The BH Campaign has ten bonds: the nine recruits' and Crumb's (earned by
+    winning M14 on day 12 or sooner). The world map's legend counts all ten
+    ("BONDS n/10"): Crumb's bond alone reads like any one bond, and the nine
+    recruits' make 9 of 10. Crumb's secret CO-page quote is in the campaign's
+    text (wrapped to the page by pixel width). Pictures
+    of the legend."""
+    def legend_bitmap(e):
+        return bytes(e.read(0x06010000 + 32 * LEGEND_TILE, 32 * 32))
+    maps = {}
+    for name, bonds in (("recruit0", 1), ("crumb", 1 << 9), ("nine", 0x1FF), ("ten", 0x3FF)):
+        e = Emu(save=paths.base_save(), ds=ctx.ds, env={})
+        g = Game(e, ctx.image)
+        ctx.games.append(g)
+        d = bh.BhCampaign(g)
+        d.start_at(won_mask=0, unlocked_mask=1 | (bonds << 12))
+        d.wait_world_map()
+        e.wait(30)
+        ctx.require([s for s in obj_sprites(e) if s[0] == LEGEND_TILE], f"the legend with bonds {bonds:#x}")
+        maps[name] = legend_bitmap(e)
+        shot(ctx, e, f"legend_{name}")
+        if name == "crumb":
+            want = b"Nobody left me behind. Not once. I'm keeping count."
+            found = None
+            for lo in range(0x08600000, 0x09000000, 0x100000):
+                text = bytes(e.read(lo, 0x100100))
+                at = text.find(b"Nobody left me behind.")
+                if at >= 0:
+                    found = text[at:at + 64].split(b"\0")[0]
+                    break
+            # (the page wraps by pixel width: three lines in AW2's font, "...behind.\rNot once. I'm keeping\rcount.")
+            ctx.eq((found or b"").replace(b"\r", b" "), want, f"Crumb's quote is in the campaign's text, wrapped to the page ({found})")
+        e.close()
+    ctx.check(any(maps["crumb"]), "the legend's tiles are drawn")
+    ctx.eq(maps["crumb"], maps["recruit0"], "Crumb's bond alone reads \"1/10\" like the first recruit's")
+    ctx.check(maps["nine"] != maps["ten"] and maps["nine"] != maps["crumb"], "9/10 and 10/10 read differently")

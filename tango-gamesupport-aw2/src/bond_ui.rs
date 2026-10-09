@@ -1,8 +1,8 @@
 //! The hidden bonds on the BH Campaign's world map: nothing shows until a
 //! bond is earned; from the first earned bond on a small legend sits at the
 //! map's top left (below the "CAMPAIGN" title while that shows, at the very
-//! top left otherwise): a gold star, "RECRUIT WON OVER" and "BONDS n/m" (the
-//! campaign's bonds), in AW2's own font with its outline. Sprites in OBJ
+//! top left otherwise): a gold star, "RECRUIT WON OVER" and "BONDS n/m" (all
+//! the campaign's bonds: the BH Campaign's ten, the nine recruits and Crumb's), in AW2's own font with its outline. Sprites in OBJ
 //! tiles the world map leaves free, in an OBJ palette bank no sprite of the
 //! frame uses (the title's is one the game uses itself).
 
@@ -183,6 +183,11 @@ pub fn legend_y(title: bool) -> i32 {
     }
 }
 
+/// The legend's count: the bonds earned among the campaign's `total`.
+fn bonds_shown(earned: u32, total: usize) -> u32 {
+    (earned & ((1u32 << total) - 1)).count_ones()
+}
+
 /// At the sprite flush on the world map: the legend, from the first earned
 /// bond on, while no dialogue runs.
 pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
@@ -191,8 +196,10 @@ pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
     }
     let Some(c) = crate::ds_campaign::campaign(core) else { return at };
     let Some(custom) = c.model.custom.as_ref() else { return at };
-    let total = custom.counted;
-    let n = (crate::ds_campaign::bonds_earned(core) & ((1u32 << total) - 1)).count_ones();
+    // (every bond shows, the extras too: the secret mission counts only the
+    // first `counted`, `ds_campaign::bonds_all`)
+    let total = custom.bonds.len();
+    let n = bonds_shown(crate::ds_campaign::bonds_earned(core), total);
     if n == 0 {
         return at;
     }
@@ -227,4 +234,19 @@ pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
         sprite(core, &mut at, end, LEGEND_X + 32 * s, y + 16, 1, 1, LEGEND_B + 4 * s as u32, bank);
     }
     at
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bonds_shown;
+
+    #[test]
+    fn every_bond_counts_in_the_legend() {
+        // The nine recruits (bits 0..8) and Crumb's (bit 9).
+        assert_eq!(bonds_shown(0x1FF, 10), 9);
+        assert_eq!(bonds_shown(1 << 9, 10), 1);
+        assert_eq!(bonds_shown(0x3FF, 10), 10);
+        // (bits past the campaign's bonds are not its)
+        assert_eq!(bonds_shown(0xC00 | 0x3FF, 10), 10);
+    }
 }

@@ -2187,10 +2187,18 @@ exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
   page shows each secret quote (it replaces that CO's bio page while a
   bond is earned, in the BH session); `Action::EarnBond(k)` earns bond k
   (saved in the record); `Needs::Bonds(vec![..])` opens the secret mission when
-  every bond is earned (`bh_campaign_mission_data_fields`).
+  every bond is earned (`bh_campaign_mission_data_fields`); the last
+  `CampaignDef::extra_bonds` bonds are extras: they show their quote and are
+  in the legend's count but not among those the secret mission needs. The BH
+  Campaign has ten: the nine recruits' (the secret mission M31 opens with
+  these nine, design 2.2) and Crumb's, `bh_campaign::bond::CRUMB_QUOTE` (9),
+  earned by winning M14 on day 12 or sooner, whose CO page quote is "Nobody
+  left me behind. Not once. I'm keeping count." (4.7b; AW2's page wraps it by
+  pixel width, three lines).
   **Bond legend** (`bond_ui.rs`): nothing shows on the world map until a
   bond is earned; from the first earned bond on a small legend sits at the
-  map's top left: a gold star, "RECRUIT WON OVER" and "BONDS n/m", in AW2's
+  map's top left: a gold star, "RECRUIT WON OVER" and "BONDS n/m" (m: all the campaign's bonds, ten in the
+  BH Campaign: `bh_campaign_legend_counts_crumbs_bond`), in AW2's
   font with its outline, below the "CAMPAIGN" title while that shows (its
   letters are tall sprites along the top edge) and at the very top without
   it (the mission panel open); hidden while a dialogue runs. Sprites in OBJ

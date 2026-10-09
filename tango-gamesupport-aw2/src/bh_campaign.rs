@@ -88,9 +88,22 @@ pub fn def() -> CampaignDef {
     }
 }
 
+/// Crumb's secret CO-page quote (design 4.7b), wrapped by the page's width.
+const CRUMB_SECRET_QUOTE: &str = "Nobody left me behind. Not once. I'm keeping count.";
+
+/// The bond index of Crumb's secret quote (flag 0xA9 of the design: earned by
+/// winning M14 on day 12 or sooner, `Action::EarnBond(bond::CRUMB_QUOTE)`).
+/// It is the tenth bond and does not count for the secret mission, which
+/// opens when the first nine are earned (`CampaignDef::extra_bonds`); the
+/// world map's legend counts all ten ("BONDS n/10").
+pub mod bond {
+    pub const CRUMB_QUOTE: u8 = 9;
+}
+
 /// The hidden bonds (placeholders): each earned in a recruit mission by
 /// `Action::EarnBond(k)`, its quote on its CO's page; the secret mission
-/// opens when all nine are earned.
+/// opens when all nine are earned (and the tenth, Crumb's page quote, is its
+/// own: [`bond::CRUMB_QUOTE`]).
 pub const BONDS: [Bond; 10] = [
     Bond { co: co::VON_BOLT, quote: "Placeholder bond quote." },
     Bond { co: co::HAWKE, quote: "Placeholder bond quote." },
@@ -102,7 +115,7 @@ pub const BONDS: [Bond; 10] = [
     Bond { co: co::ADDER, quote: "Placeholder bond quote." },
     Bond { co: co::CLONE_ANDY, quote: "Placeholder bond quote." },
     // Crumb's: an extra (M14, a win by day 12), not one of the nine of the secret mission.
-    Bond { co: co::CRUMB, quote: "Placeholder bond quote." },
+    Bond { co: co::CRUMB, quote: CRUMB_SECRET_QUOTE },
 ];
 
 /// A campaign that exercises the format's fields (funds, weather, fog, a
