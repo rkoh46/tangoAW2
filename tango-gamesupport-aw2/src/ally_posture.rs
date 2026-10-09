@@ -54,6 +54,10 @@ pub fn role(posture: u8) -> Option<u32> {
 /// `AiRunRoleMove`, trapped: in a two-front battle, the army's posture's
 /// role instead of the unit's (a tail call into that role's move).
 fn role_move(core: &mut Core) {
+    // (the BH Campaign's and Versus' computer going for a human's inventions)
+    if crate::cpu_inventions::role_move(core) {
+        return;
+    }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
     let Some(r) = role(crate::two_front::cpu_posture(core, army)) else {
         return;

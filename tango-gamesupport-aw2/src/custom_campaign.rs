@@ -175,6 +175,9 @@ pub struct CreditSection {
 pub enum Speaker {
     Co(u8, Mood),
     Trooper(u8),
+    /// No speaker: narration, in a box with a Black Hole soldier's face (AW2's
+    /// `0x1A` text is drawn bare on the map in a battle: unreadable).
+    Narrator,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -226,6 +229,10 @@ impl Line {
     pub const fn only_partner(mut self, co: u8) -> Line {
         self.partner = Some(co);
         self
+    }
+    /// A narration box with no speaker.
+    pub const fn narrate(text: &'static str) -> Line {
+        Line { who: Speaker::Narrator, text, only: None, partner: None, with: None }
     }
 }
 
@@ -637,9 +644,15 @@ pub struct MissionDef {
     pub setup: bool,
     /// A reversed Black Onyx on the mission ([`OnyxDef`]).
     pub onyx: Option<OnyxDef>,
-    /// The Black Factory's unit table: (day 0..=31, the three door slots' unit types, 0 none),
-    /// else Factory Blues' schedule (the factory spawns on Black Hole's turns: the player's).
+    /// The Black Factory's schedule: (day, the three doors' unit types, 0
+    /// none), left to right; days not listed spawn nothing. Empty: Factory
+    /// Blues' table (`factory.rs`). The spawner reads row `day & 0x1F`.
     pub factory: Vec<(u8, [u8; 3])>,
+    /// What happens when the player's team wins by AW2's own rules (the enemy
+    /// routed or its HQ taken): these actions (`EarnBond`, `Custom`), then the
+    /// `victory` scene, in the match-end list. A mission with a `Win` action of
+    /// its own shows `victory` there instead and has no match-end list.
+    pub on_win: Vec<Action>,
     /// A neutral volcano hazard (needs a `Structure::Volcano` on the map).
     pub volcano: Option<VolcanoDef>,
 }
@@ -675,6 +688,7 @@ impl MissionDef {
             setup: true,
             onyx: None,
             factory: Vec::new(),
+            on_win: Vec::new(),
             volcano: None,
         }
     }
@@ -842,6 +856,8 @@ struct Compiler<'a> {
     /// The player's army and the index of the mission being compiled (for `Line::only`).
     player: u8,
     mission: usize,
+    /// Each mission's Black Factory table (mission, address; 0 none).
+    factory: Vec<(usize, u32)>,
 }
 
 fn face(who: Speaker) -> u16 {
@@ -849,6 +865,7 @@ fn face(who: Speaker) -> u16 {
         Speaker::Co(c, m) => c as u16 + 24 * m as u16,
         // AW2's troopers: faces 19..23 by colour.
         Speaker::Trooper(col) => 19 + (col.clamp(1, 5) as u16 - 1),
+        Speaker::Narrator => 19 + 4,
     }
 }
 
@@ -867,7 +884,20 @@ impl<'a> Compiler<'a> {
     }
 
     fn dialogue(&mut self, s: &str) -> Result<u16, Error> {
-        let t = wrap_dialogue(s.replace("\\x0f", "\x0f").as_bytes(), self.widths);
+        let raw = s.replace("\\x0f", "\x0f");
+        // A text written with its own line breaks (`\r`) keeps them when every
+        // box is at most two lines that fit AW2's box; else it is wrapped.
+        let boxes: Vec<&[u8]> = raw.as_bytes().split(|&c| c == 0x0F).filter(|b| !b.is_empty()).collect();
+        let as_written = raw.contains('\r')
+            && boxes.iter().all(|b| {
+                let lines: Vec<&[u8]> = b.split(|&c| c == b'\r').collect();
+                lines.len() <= 2 && lines.iter().all(|l| crate::ds_campaign_data::width(self.widths, l) <= crate::ds_campaign_data::LINE_PIXELS)
+            });
+        let t = if as_written {
+            boxes.iter().flat_map(|b| b.iter().copied().chain(std::iter::once(0x0F))).collect()
+        } else {
+            wrap_dialogue(raw.as_bytes(), self.widths)
+        };
         self.text(t)
     }
 
@@ -1075,6 +1105,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         next_flag: FLAG_FIRST,
         player: 1,
         mission: 0,
+        factory: Vec::new(),
     };
     let n = def.missions.len();
     if n == 0 || n > MAX_MISSIONS {
@@ -1168,22 +1199,6 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         }
     }
     let final_mission = index_of(def.final_mission)?;
-    // Black Factory tables (32 days x 3 doors), one per mission that has its own.
-    let mut factory_tables = Vec::new();
-    for m in &def.missions {
-        if m.factory.is_empty() {
-            factory_tables.push(0);
-            continue;
-        }
-        let mut t = [0u8; 96];
-        for &(d, slots) in &m.factory {
-            if d > 31 {
-                return Err(format!("{}: a Black Factory table covers days 0..=31", m.key));
-            }
-            t[3 * d as usize..3 * d as usize + 3].copy_from_slice(&slots);
-        }
-        factory_tables.push(cx.built.add(&t));
-    }
     let mut built = cx.built;
     let rules = Rules { conds: cx.conds, units: cx.units, fns: cx.fns };
     let _ = RULES[def.source].set(rules);
@@ -1206,9 +1221,9 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         marks: cx.marks.clone(),
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
+        factory: (0..n).map(|i| cx.factory.iter().find(|f| f.0 == i).map_or(0, |f| f.1)).collect(),
         volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
-        factory: factory_tables,
     };
     built.unhandled.clear();
     Ok(Model {
@@ -1414,8 +1429,33 @@ fn compile_mission(
     let ev = |cx: &mut Compiler, groups: Vec<Vec<[u8; 8]>>| if groups.is_empty() { 0 } else { cx.built.add(&list(groups)) };
     let l0 = ev(cx, turn_start);
     let l3 = ev(cx, after_action);
+    // The match-end list: the player's team has won by AW2's rules.
+    let has_win = m.triggers.iter().any(|t| t.then.iter().any(|a| matches!(a, Action::Win)));
+    let l5 = if !has_win && (!m.victory.is_empty() || !m.on_win.is_empty()) {
+        let mut cmds = Vec::new();
+        for a in &m.on_win {
+            match a {
+                Action::EarnBond(k) => {
+                    let s = cx.stub(Magic::Call(BOND | *k as u32, 0));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                Action::Custom(f) => {
+                    cx.fns.push(*f);
+                    let s = cx.stub(Magic::Call(CUSTOM_FN | (cx.fns.len() as u32 - 1), 0));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                _ => return Err(format!("{}: on_win takes EarnBond and Custom actions", m.key)),
+            }
+        }
+        cmds.extend(cx.scene_cmds(&m.victory)?);
+        let script = cx.script(cmds);
+        let won = cx.stub(Magic::Predicate(0x020D_5D2C));
+        ev(cx, vec![vec![rec8(5, 0, 0, won), rec8(7, 0xFF, 0, script)]])
+    } else {
+        0
+    };
     let mut hdr6 = Vec::new();
-    for t in [l0, 0, 0, l3, 0, 0] {
+    for t in [l0, 0, 0, l3, 0, l5] {
         hdr6.extend_from_slice(&t.to_le_bytes());
     }
     let events = cx.built.add(&hdr6);
@@ -1423,6 +1463,18 @@ fn compile_mission(
     let obj_id = cx.dialogue(m.objective)?;
     let obj = cx.script(vec![cmd(0x17, 0, 19, 0, 0), cmd(0x38, 0, 19, 0, 0), cmd(0x19, 0, obj_id, 0, 0), cmd(0x18, 0, 0, 0, 0)]);
     let map = cx.built.add(&crate::ds_campaign_data::map_blob(w, h, &tiles));
+    // The Black Factory's own schedule (32 days x 3 doors).
+    let table = if m.factory.is_empty() {
+        0
+    } else {
+        let mut t = vec![0u8; 96];
+        for &(day, doors) in &m.factory {
+            let row = (day & 0x1F) as usize;
+            t[row * 3..row * 3 + 3].copy_from_slice(&doors);
+        }
+        cx.built.add(&t)
+    };
+    cx.factory.push((index, table));
     let units_bytes = if m.units.is_empty() && matches!(m.map, MapSrc::Built(_)) {
         deployment(Some(&mut cx.units), index, armies, &built_units(&m.map))?
     } else if m.units.is_empty() {
@@ -1436,10 +1488,9 @@ fn compile_mission(
     let units = cx.built.add(&units_bytes);
     let name_id = cx.text(crate::ds_campaign_data::plain(m.title.as_bytes()))?;
     let info_text = cx.text(crate::ds_campaign_data::two_lines(m.objective.as_bytes(), cx.widths))?;
-    // A recruit mission's panel shows the bond badge once its bond is earned
-    // (crate::bond_ui).
-    for t in &m.triggers {
-        for a in &t.then {
+    // A recruit mission's panel shows the bond badge once its bond is earned (crate::bond_ui).
+    for a in m.triggers.iter().flat_map(|t| t.then.iter()).chain(m.on_win.iter()) {
+        {
             if let Action::EarnBond(k) = a {
                 cx.marks.push((index as u8, *k));
             }
@@ -1756,6 +1807,13 @@ pub fn music_tick(core: &mut Core, session: bool) {
     }
 }
 
+/// The Black Factory's table of the custom mission being played (its own
+/// schedule, [`MissionDef::factory`]), if it has one.
+pub fn factory_table(core: &Core) -> Option<u32> {
+    let c = crate::ds_campaign::campaign(core)?.model.custom.as_ref()?;
+    c.factory.get(crate::ds_campaign::mission(core) as usize).copied().filter(|&a| a != 0)
+}
+
 /// Evaluates a condition on the live battle.
 pub fn holds(core: &mut Core, c: &Cond) -> bool {
     match c {
@@ -1820,6 +1878,8 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             let cond = RULES.get(src).and_then(|r| r.get()).and_then(|r| r.conds.iter().find(|c| c.0 == code)).map(|c| c.1.clone());
             cond.is_some_and(|c| holds(core, &c)) as u32
         }
+        // The match-end list's "the player's team has won" (a mission's `on_win`).
+        Magic::Predicate(0x020D_5D2C) => crate::ds_campaign_rules::player_won(core) as u32,
         Magic::Call(f, funds) if f & 0xFFF0_0000 == FUNDS => {
             let army = (f & 0xF) as u32;
             let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army;

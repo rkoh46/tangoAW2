@@ -22,8 +22,8 @@ DRAKE, JESS, SENSEI, JAVIER, GRIT, COLIN, SASHA = 9, 17, 18, 77, 5, 16, 78
 STURM, VON_BOLT, HAWKE, KINDLE, KOAL, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY, SONJA = 10, 75, 14, 74, 73, 72, 11, 12, 13, 81, 7
 ROSTER = [STURM, VON_BOLT, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY, SONJA]   # (the unlock order: Koal before Kindle)
 # The placeholder missions: the picks the CO screen asks for.
-PICKS = {0: 0, 1: 1}
-FLAG_POINTS = {0: (160, 30), 1: (172, 26)}
+PICKS = {0: 0, 1: 1, 2: 0}
+FLAG_POINTS = {0: (160, 30), 1: (180, 46), 2: (188, 54)}
 
 
 FEATURES = {"TANGOAW2_BH_FEATURES": "1"}   # crate::bh_campaign::features_def: the format's fields

@@ -42,8 +42,12 @@ const STEP_EXIT: u32 = 0x0804_0879;
 const FACTORY_SPRITE: u32 = 0x0803_FD54;
 const INVENTIONS: u32 = 0x0202_8360;
 
-fn in_scope(core: &Core) -> bool {
-    crate::ds_weather::is_on(core) && crate::pvp::in_versus(core) && !crate::ds_campaign::active(core)
+/// Where the factory can be destroyed: Versus with the pack, and the BH
+/// Campaign (where the player is Black Hole and the computer attacks the
+/// factory, [`crate::cpu_inventions`]).
+pub(crate) fn in_scope(core: &Core) -> bool {
+    crate::ds_weather::is_on(core)
+        && ((crate::pvp::in_versus(core) && !crate::ds_campaign::active(core)) || crate::cpu_inventions::in_bh_campaign(core))
 }
 
 /// The factory's registration: its HP argument (`[sp + 4]`) is [`HP`].
@@ -65,6 +69,11 @@ fn target_position(core: &mut Core) {
     let cpu = core.gba().cpu();
     let (entry, out, lr) = (cpu.gpr(0) as u32, cpu.gpr(1) as u32, cpu.gpr(14) as u32);
     if (core.raw_read_16(entry + 2, -1) as u32 >> 6) & 15 != FACTORY_KIND {
+        return;
+    }
+    // In the BH Campaign the player's own units cannot hit their factory:
+    // only the computer's armies (the other teams) can.
+    if crate::cpu_inventions::in_bh_campaign(core) && crate::cpu_inventions::moving_army_owns(core) {
         return;
     }
     let (x, y) = (core.raw_read_8(entry, -1) as u32, core.raw_read_8(entry + 1, -1) as u32);

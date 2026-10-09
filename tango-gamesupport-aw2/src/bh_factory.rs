@@ -135,6 +135,12 @@ fn price(core: &Core, t: u8) -> i32 {
 /// unit), and only one of each may stand on Black Hole's side at a time.
 const HEAVY: [u8; 4] = [MEGATANK, 21, CARRIER, OOZIUM];
 
+/// A log file is set (`TANGOAW2_BH_LOG`): callers build their lines only then.
+pub(crate) fn logging() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("TANGOAW2_BH_LOG").is_some())
+}
+
 pub(crate) fn log(line: &str) {
     use std::io::Write;
     static PATH: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
