@@ -2341,7 +2341,7 @@ paid for (`PayForPower`'s entry, `0x0804438C`, writes it to `tag::STATE +
 0xD2`). The defeat quote is kept in text slot 14 (`co_new::T_DEFEAT`): AW2's
 results screen has no defeat quote.
 
-**Pictures** (`crumb_art.rs`, nothing stored: cut from the player's AW2 at the
+**Pictures** (`crumb_art.rs`; the only stored art is the author's drawing, the rest is cut from the player's AW2 at the
 start, like Clone Andy's name). The Black Hole trooper of the campaigns'
 dialogue (CO presentation row 23: three alike 48x48 faces, a 32x24 mini
 portrait, a palette; no HUD face, body or name) is every graphic:
@@ -2351,7 +2351,7 @@ portrait, a palette; no HUD face, body or name) is every graphic:
 | CO select face (the Teams screen) | the trooper's face, as it is |
 | Teams portrait | the trooper's mini portrait, as it is |
 | HUD face (32x16) | a 32x16 cut of the face round the red lens (x 13, y 17), 1:1 |
-| CO page figure, power and tag screens (128x160) | the face grown twice with nearest neighbour (96 x 96), framed with a one-pixel outline in the palette's darkest colour (corners cut, 98 x 98) and centred at y 24 (the user's choice among three: a 3x figure cut to 126 columns and a 3x head were the others); the last rows stay empty (the tag screens carry a figure's last row down to the screen's foot: an outline there would be a bar) |
+| CO page figure, power and tag screens (128x160) | **the author's own drawing** (`art/crumb/crumb_user.png`, 104x118, 14 colours + transparency, a side view mirrored to look left as stored; `tools/crumb_art/reconstruct.py` rebuilt the native pixels from the upscaled JPG: grid detection, cell sampling, colour clustering and snapping, transparent background; a native PNG takes the same path), at its own size, centred and bottom aligned with the last two rows empty (the tag screens carry a figure's last row down). Its palette is the CO's, and the small faces below are moved to its nearest colours. If it fails to load: the face grown twice with nearest neighbour, framed (98 x 98, centred at y 24), the trooper's own palette |
 | Name "Crumb" | C of Colin's name graphic, then r, u, m of Sturm's and b of Kanbei's, outlines shared as in a name |
 | Palette | the trooper's in all eight schemes |
 

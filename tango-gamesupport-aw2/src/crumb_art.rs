@@ -1,4 +1,10 @@
-//! Crumb's pictures, converted at run time from Advance Wars 2's own Black
+//! Crumb's large art (the CO page, power and tag screens' figure) is **the
+//! tangoAW2 author's own drawing** (`art/crumb/crumb_user.png`, [`user`]); the
+//! small faces (CO select, the Teams mini, the HUD face) are converted at run
+//! time from Advance Wars 2's own Black Hole trooper, their colours moved to
+//! the drawing's palette. If the drawing does not load, everything is derived
+//! from the trooper ([`derived`]). The rest of this note is the derived path:
+//! pictures converted at run time from Advance Wars 2's own Black
 //! Hole trooper (CO presentation row 23: the face used for the soldiers'
 //! lines in the campaigns) and the letters of AW2's own name graphics. No
 //! art is stored: every picture is cut from the ROM the player owns when the
@@ -264,8 +270,108 @@ pub fn hud(face: &Px) -> Vec<u8> {
     face.cut(13, 17, 32, 16).to_tiles(4, 2, |k| (k % 4, k / 4))
 }
 
-/// Crumb's pictures in AW2's formats (all of them cut from the trooper's).
+/// Crumb's pictures in AW2's formats: the user's drawing ([`user`]) for the
+/// figure, the trooper's for the small faces; if the drawing does not load,
+/// everything cut from the trooper ([`derived`]).
 pub fn art(core: &Core) -> Option<CoArt> {
+    user(core).or_else(|| derived(core))
+}
+
+/// An indexed PNG as palette indexes and its palette (BGR555).
+pub fn decode(bytes: &[u8]) -> Option<(Px, Vec<u16>)> {
+    let mut reader = png::Decoder::new(std::io::Cursor::new(bytes)).read_info().ok()?;
+    let mut buf = vec![0u8; reader.output_buffer_size()?];
+    let info = reader.next_frame(&mut buf).ok()?;
+    if info.color_type != png::ColorType::Indexed {
+        return None;
+    }
+    let bits = info.bit_depth as usize;
+    let (w, h) = (info.width as usize, info.height as usize);
+    let mut p = Px::new(w, h);
+    for y in 0..h {
+        let row = &buf[y * info.line_size..][..info.line_size];
+        for x in 0..w {
+            let bit = x * bits;
+            p.set(x, y, (row[bit / 8] >> (8 - bits - bit % 8)) & ((1u16 << bits) - 1) as u8);
+        }
+    }
+    let pal = reader.info().palette.as_ref()?;
+    let colours = pal.chunks(3).map(|c| (c[0] as u16 >> 3) | (c[1] as u16 >> 3) << 5 | (c[2] as u16 >> 3) << 10).collect();
+    Some((p, colours))
+}
+
+/// The user's drawing of Crumb (a side view, mirrored to look left as the
+/// figures are stored): 104 x 118 at its own size, 14 colours and
+/// transparency; `tools/crumb_art/reconstruct.py` made it from the author's
+/// picture. See `art/crumb/README.md`.
+const USER_PNG: &[u8] = include_bytes!("../art/crumb/crumb_user.png");
+
+/// A BGR555 colour's three 5-bit channels.
+fn rgb5(c: u16) -> [i32; 3] {
+    [(c & 31) as i32, (c >> 5 & 31) as i32, (c >> 10 & 31) as i32]
+}
+
+/// Crumb's pictures with the drawing as the figure (CO page, power and tag
+/// screens: at its own size, bottom aligned, the last two rows empty), its
+/// palette the CO's; the small faces, the Teams mini and the HUD face are
+/// AW2's trooper's, their colours moved to the nearest of the drawing's.
+pub fn user(core: &Core) -> Option<CoArt> {
+    let (sprite, pal) = decode(USER_PNG)?;
+    if sprite.w > 128 || sprite.h > 158 || pal.len() > 16 || sprite.v.iter().any(|&v| v as usize >= pal.len().max(1)) {
+        return None;
+    }
+    let row = AW2_PRESENTATION + ROW * TROOPER;
+    let face_tiles = |k: u32| lz10(&read(core, word(core, row + 0x0C + 4 * k), 0x600));
+    let faces = [face_tiles(0)?, face_tiles(1)?, face_tiles(2)?];
+    if faces.iter().any(|f| f.len() < crate::ds_co_art::FACE_LEN) {
+        return None;
+    }
+    // the trooper's palette to the drawing's
+    let trooper: Vec<u16> = read(core, word(core, row + 0x08), 0x20).chunks(2).map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
+    let map: Vec<u8> = (0..16)
+        .map(|k| {
+            if k == 0 {
+                return 0;
+            }
+            let t = rgb5(trooper[k]);
+            (1..pal.len())
+                .min_by_key(|&j| {
+                    let c = rgb5(pal[j]);
+                    (0..3).map(|i| (t[i] - c[i]).pow(2)).sum::<i32>()
+                })
+                .unwrap_or(0) as u8
+        })
+        .collect();
+    let remap = |mut p: Px| {
+        p.v.iter_mut().for_each(|v| *v = map[*v as usize & 15]);
+        p
+    };
+    let px = |t: &[u8]| remap(Px::from_tiles(t, 6, 6, face_place));
+    let face = px(&faces[0]);
+    let mini = remap(Px::from_tiles(&read(core, word(core, row + 0x18), crate::ds_co_art::MINI_LEN), 4, 3, mini_place));
+    let mut body = Px::new(128, 160);
+    body.put(&sprite, (128 - sprite.w) / 2, 158 - sprite.h);
+    let (body_top, body_bottom) = body_files(&body);
+    let mut palette = Vec::new();
+    for _ in 0..8 {
+        for k in 0..16 {
+            palette.extend_from_slice(&pal.get(k).copied().unwrap_or(0).to_le_bytes());
+        }
+    }
+    Some(CoArt {
+        face: [face.to_tiles(6, 6, face_place), px(&faces[1]).to_tiles(6, 6, face_place), px(&faces[2]).to_tiles(6, 6, face_place)],
+        mini: mini.to_tiles(4, 3, mini_place),
+        hud: hud(&face),
+        body_top,
+        body_bottom,
+        name: name(core)?,
+        palette,
+    })
+}
+
+/// Crumb's pictures cut from AW2's Black Hole trooper (the fallback): the
+/// figure is the face grown twice, framed and centred ("Small").
+pub fn derived(core: &Core) -> Option<CoArt> {
     let row = AW2_PRESENTATION + ROW * TROOPER;
     let face_tiles = |k: u32| lz10(&read(core, word(core, row + 0x0C + 4 * k), 0x600));
     let faces = [face_tiles(0)?, face_tiles(1)?, face_tiles(2)?];
@@ -298,6 +404,20 @@ pub fn art(core: &Core) -> Option<CoArt> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_drawing_loads() {
+        let (p, pal) = decode(USER_PNG).expect("crumb_user.png");
+        assert!(p.w <= 128 && p.h <= 158 && pal.len() <= 16);
+        assert!(p.v.iter().all(|&v| (v as usize) < pal.len()));
+        assert!(p.v.iter().any(|&v| v == 0) && p.v.iter().any(|&v| v != 0));
+        // the last rows of the figure stay empty
+        let mut body = Px::new(128, 160);
+        body.put(&p, (128 - p.w) / 2, 158 - p.h);
+        assert!((0..128).all(|x| body.at(x, 158) == 0 && body.at(x, 159) == 0));
+        let (top, bottom) = body_files(&body);
+        assert_eq!((top.len(), bottom.len()), (crate::ds_co_art::BODY_TOP_LEN, crate::ds_co_art::BODY_BOTTOM_LEN));
+    }
 
     #[test]
     fn framed_and_cut() {
