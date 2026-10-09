@@ -198,22 +198,46 @@ pub enum Mood {
 pub struct Line {
     pub who: Speaker,
     pub text: &'static str,
+    /// Shown only when the player's (main) CO is this one (a conditional jump over
+    /// the line's two commands on [`Cond::PlayerCo`]; AW2's own op 0x43 compares the
+    /// CO id modulo 24, which cannot tell the Dual Strike COs apart): the design's
+    /// `@IF CO` rows.
+    pub only: Option<u8>,
+    /// Shown only when the player's tag partner (the second front's CO once it has joined) is this CO.
+    pub partner: Option<u8>,
+    /// Shown only when this CO is in the player's pair (the main CO or the partner).
+    pub with: Option<u8>,
 }
 
 /// `Line::say(co::STURM, "...")`.
 impl Line {
     pub const fn say(co: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, Mood::Normal), text }
+        Line { who: Speaker::Co(co, Mood::Normal), text, only: None, partner: None, with: None }
     }
     pub const fn feel(co: u8, mood: Mood, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, mood), text }
+        Line { who: Speaker::Co(co, mood), text, only: None, partner: None, with: None }
     }
     pub const fn soldier(colour: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Trooper(colour), text }
+        Line { who: Speaker::Trooper(colour), text, only: None, partner: None, with: None }
+    }
+    /// The line is shown only when the player's CO is `co`.
+    pub const fn only(mut self, co: u8) -> Line {
+        self.only = Some(co);
+        self
+    }
+    /// The line is shown only when `co` is in the player's pair (leading it or as its partner).
+    pub const fn with(mut self, co: u8) -> Line {
+        self.with = Some(co);
+        self
+    }
+    /// The line is shown only when the player's partner is `co`.
+    pub const fn only_partner(mut self, co: u8) -> Line {
+        self.partner = Some(co);
+        self
     }
     /// A narration box with no speaker.
     pub const fn narrate(text: &'static str) -> Line {
-        Line { who: Speaker::Narrator, text }
+        Line { who: Speaker::Narrator, text, only: None, partner: None, with: None }
     }
 }
 
@@ -473,6 +497,12 @@ pub enum Cond {
     EveryDays { n: u16, from: u16 },
     /// The player's tag pair (army 1's CO and partner) is this pair, in either order.
     PlayerPair { a: u8, b: u8 },
+    /// The player's (main) CO is this one.
+    PlayerCo(u8),
+    /// The player's tag partner is this CO.
+    PartnerCo(u8),
+    /// This CO is the player's main CO or its tag partner.
+    PlayerHas(u8),
     /// The cell (x, y) belongs to this army (0 neutral).
     OwnerAt { x: u8, y: u8, army: u8 },
     /// An army is defeated (its HQ taken or its units gone).
@@ -885,6 +915,8 @@ const MARCH_DAY_AT: u32 = 8;
 /// A named unit's `Rules::units` slot of 100 + n is the n-th unit its mission
 /// spawns (tag n): found by its tag, not by a slot.
 const SPAWNED: u8 = 100;
+/// A jump's relative marker (script op 0x1E whose target word is `REL_JUMP | n`: n commands on).
+const REL_JUMP: u32 = 0xFFFE_0000;
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
 /// (but AW2's Hard flag, [`FLAG_HARD`]).
 pub const FLAG_FIRST: u8 = 0x20;
@@ -909,6 +941,9 @@ struct Compiler<'a> {
     fns: Vec<fn(&mut Core)>,
     /// The next once-latch flag.
     next_flag: u8,
+    /// The player's army and the index of the mission being compiled (for `Line::only`).
+    player: u8,
+    mission: usize,
     /// Each mission's Black Factory table (mission, address; 0 none).
     factory: Vec<(usize, u32)>,
 }
@@ -974,6 +1009,20 @@ impl<'a> Compiler<'a> {
         }
         out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, 0));
         for l in &scene.lines {
+            if let Some(co) = l.only {
+                // (jumps over the two commands below unless the player's CO is `co`: a relative
+                // jump, made absolute by `script`)
+                let stub = self.cond(self.mission, &Cond::Not(Box::new(Cond::PlayerCo(co))));
+                out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
+            }
+            if let Some(co) = l.with {
+                let stub = self.cond(self.mission, &Cond::Not(Box::new(Cond::PlayerHas(co))));
+                out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
+            }
+            if let Some(co) = l.partner {
+                let stub = self.cond(self.mission, &Cond::Not(Box::new(Cond::PartnerCo(co))));
+                out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
+            }
             out.push(cmd(0x38, 0, face(l.who), 0, 0));
             let id = self.dialogue(l.text)?;
             out.push(cmd(0x19, 0, id, 0, 0));
@@ -985,7 +1034,16 @@ impl<'a> Compiler<'a> {
         Ok(out)
     }
 
-    fn script(&mut self, cmds: Vec<[u8; 16]>) -> u32 {
+    fn script(&mut self, mut cmds: Vec<[u8; 16]>) -> u32 {
+        // Relative jumps (a scene's conditional lines) become the address of the command n on.
+        let at = self.built.base + ((self.built.blob.len() + 3) & !3) as u32;
+        for i in 0..cmds.len() {
+            let w1 = u32::from_le_bytes(cmds[i][4..8].try_into().unwrap());
+            if cmds[i][0] == 0x1E && w1 & 0xFFFF_0000 == REL_JUMP {
+                let target = at + 16 * (i as u32 + 1 + (w1 & 0xFFFF));
+                cmds[i][4..8].copy_from_slice(&target.to_le_bytes());
+            }
+        }
         let mut b: Vec<u8> = cmds.iter().flatten().copied().collect();
         b.extend_from_slice(&cmd(0x04, 0, 0, 0, 0));
         self.built.add(&b)
@@ -1133,6 +1191,8 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         units: HashMap::new(),
         fns: Vec::new(),
         next_flag: FLAG_FIRST,
+        player: 1,
+        mission: 0,
         factory: Vec::new(),
     };
     let n = def.missions.len();
@@ -1283,7 +1343,7 @@ fn prologue_script(cx: &mut Compiler, pages: &[Page]) -> Result<u32, Error> {
     if cx.art != WorldArt::OmegaLand {
         // AW2's own map: the pages are dialogue boxes (a picture is drawn
         // over Omega Land's map layer only: AW2's is not rebuilt after one).
-        let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text }).collect();
+        let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None }).collect();
         let cmds = cx.scene_cmds(&Scene { lines, song: None })?;
         return Ok(cx.script(cmds));
     }
@@ -1339,6 +1399,8 @@ fn compile_mission(
         return Err(format!("{}: in a five-army mission the player's army (the fifth) is Black Hole's", m.key));
     }
     let player = if five { 5usize } else { 1 };
+    cx.player = player as u8;
+    cx.mission = index;
     let (w, h, mut tiles, own_units) = load_map(core, &m.map).map_err(|e| format!("{}: {e}", m.key))?;
     decorate(w, h, &mut tiles, &m.props, &m.structures).map_err(|e| format!("{}: {e}", m.key))?;
     // Scripts and trigger lists.
@@ -2056,6 +2118,12 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
         Cond::PropertiesAtLeast { army, n } => {
             crate::ds_campaign_rules::predicate(core, crate::ds_campaign_data::PROPERTY_COUNT | (*army as u32) << 8 | *n as u32)
         }
+        Cond::PlayerHas(c) => {
+            let army = crate::ds_campaign::player_army(core) as u32;
+            crate::tag::army_co_of(core, army) == *c || crate::tag::partner(core, army) == Some(*c)
+        }
+        Cond::PartnerCo(c) => crate::tag::partner(core, crate::ds_campaign::player_army(core) as u32) == Some(*c),
+        Cond::PlayerCo(c) => crate::tag::army_co_of(core, crate::ds_campaign::player_army(core) as u32) == *c,
         Cond::OwnerAt { x, y, army } => owner_at(core, *x, *y) == *army,
         Cond::ArmyDefeated(army) => {
             let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * *army as u32;

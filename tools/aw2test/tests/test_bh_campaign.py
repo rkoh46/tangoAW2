@@ -967,7 +967,7 @@ def bh_campaign_bond_quote_on_the_co_page(ctx):
         e.close()
 
 
-def stock_check(ctx, e, g, label, hurt=(), empty_armies=()):
+def stock_check(ctx, e, g, label, hurt=(), empty_armies=(), dry=()):
     """Every live unit, both sides, has its type's full ammo and fuel (the
     unit table in use: the pack's, `0x08680000`, 0x5C a record: +0x0B ammo,
     +0x10 fuel)."""
@@ -988,6 +988,8 @@ def stock_check(ctx, e, g, label, hurt=(), empty_armies=()):
             if ammo != 0:
                 bad.append(("ammo", uid // per + 1, r[0], ammo))
             continue
+        if ammo == 0 and (uid // per + 1, r[0]) in dry:
+            continue        # (asked for on purpose: UnitDef::ammo(0))
         if ammo != stats[0x0B] & 0xF or not stats[0x10] & 0x7F >= fuel >= (stats[0x10] & 0x7F) - 9:
             bad.append((uid // per + 1, r[0], ammo, fuel, stats[0x0B] & 0xF, stats[0x10] & 0x7F))
     ctx.require(n > 0, f"{label}: units on the map")
@@ -1008,7 +1010,8 @@ def bh_campaign_units_start_with_full_ammo_and_fuel(ctx):
         d.wait_map()
         g._units_base = g._players_base = None
         ctx.eq(d.mission(), mission, f"mission {mission + 1}")
-        stock_check(ctx, e, g, f"mission {mission + 1}", hurt=((1, 10),) if mission == 1 else (), empty_armies=(1, 2, 3, 4) if mission == 9 else ())
+        stock_check(ctx, e, g, f"mission {mission + 1}", hurt=((1, 10),) if mission == 1 else (), empty_armies=(1, 2, 3, 4) if mission == 9 else (),
+                    dry=((1, 5), (2, 5), (3, 5), (4, 5)) if mission == 9 else ())
         e.wait(30)
         shot(ctx, e, f"start_units_{mission + 1}")
         e.close()
