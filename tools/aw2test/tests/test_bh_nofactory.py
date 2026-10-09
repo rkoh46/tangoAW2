@@ -473,3 +473,26 @@ def bh_campaign_five_army_player_picks_a_pair(ctx):
         ctx.eq(g.player(1)["co"], bh.ANDY, "army 1 keeps its fixed CO (Andy)")
         ctx.eq(e.u8(g.player(1)["addr"] + 0x1B), 2, "army 1 is the computer's")
         e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_factory_and_volcano_on_one_map(ctx):
+    """A Black Factory and a Volcano on one map (AW2's graphics loader has one
+    picture slot for them, the Volcano's winning): the Factory's picture is put
+    in OBJ tiles 0x176.. and its sprites drawn from there, so it is not drawn
+    from the Volcano's tiles."""
+    from aw2test.rom import lz10
+    e, g, d = boot_features(ctx)
+    d.picks = {22: 0}
+    d.start_at(won_mask=0xFFFFFF & ~(1 << 5) & ~(1 << 22), unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    ctx.eq(d.mission(), 22, "mission 23")
+    e.wait(60)
+    pic = lz10(bytes(e.read(0x080D22C4, 0x700)))
+    have = bytes(e.read(0x06010000 + 0x176 * 32, 48 * 32))
+    ctx.check(have == bytes(pic[:48 * 32]), "the Factory's picture is in OBJ tiles 0x176..0x1A5")
+    oam = e.read(0x07000000, 0x400)
+    tiles = {(oam[8 * i + 4] | oam[8 * i + 5] << 8) & 0x3FF for i in range(128) if (oam[8 * i + 1] >> 1) & 0x7F != 0 or True}
+    ctx.check({0x176, 0x196, 0x19E} <= tiles, f"its three sprites draw from there ({sorted(t for t in tiles if t > 0x100)})")
+    e.close()

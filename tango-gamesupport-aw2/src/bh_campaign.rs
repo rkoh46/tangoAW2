@@ -617,6 +617,18 @@ pub fn features_def() -> CampaignDef {
     ];
     pp.needs = Needs::All(vec!["f01"]);
     pp.flag = region::BLACK_HOLE[4];
+    let mut fv = MissionDef::new("f23", "Features Factory Volcano");
+    fv.objective = "Test: a Black Factory and a Volcano on one map.";
+    fv.map = MapSrc::Ascii(&["1...........", "............", "............", "............", "............", "............", "............", "............", "............", ".........2.."]);
+    fv.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+    ];
+    fv.structures = vec![(Structure::BlackFactory, 3, 4), (Structure::Volcano, 8, 5)];
+    fv.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(2, unit::TANK, 11, 8).hold().fuel(0)];
+    fv.volcano = Some(VolcanoDef::new(3, 1, 5, &[(8, 4), (9, 4)]));
+    fv.needs = Needs::All(vec!["f01"]);
+    fv.flag = region::BLACK_HOLE[5];
     let own2 = own_cannons("f18", false);
     let own5 = own_cannons("f19", true);
 
@@ -628,8 +640,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v, pp],
-        final_mission: "f22",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v, pp, fv],
+        final_mission: "f23",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }, Bond { co: co::KOAL, quote: "Bond test: an extra." }],
         extra_bonds: 1,
         secret_mission: "f06",
