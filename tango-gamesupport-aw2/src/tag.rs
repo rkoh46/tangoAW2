@@ -591,6 +591,13 @@ pub fn set_cos(core: &mut Core) {
         core.raw_write_8(src, -1, ally);
         return;
     }
+    // A mission whose player leads with a fixed CO and picks the partner: the single pick is the partner.
+    if let Some(lead) = crate::ds_campaign::mission_info(core).and_then(|m| m.native.as_ref()).and_then(|n| n.lead_lock) {
+        let pick = core.raw_read_8(src, -1);
+        core.raw_write_8(src, -1, lead);
+        set_pending(core, 1, lead, pick);
+        return;
+    }
     if k == 0 {
         return;
     }

@@ -1,0 +1,423 @@
+# BH dialogue, act4a (format: README.txt)
+# Act IV first half: M17 Cold Iron (free pair vs Jugger + Grit), M18 The Pit (free), M19 The Assembly Line (free).
+
+# ---------------------------------------------------------------------------------------------
+# M17 Cold Iron. Player: any tag pair. Enemy: Jugger and Grit (the sniper who babysits him).
+# ---------------------------------------------------------------------------------------------
+
+== m17_pre
+NARRATION: Blue Moon's northern ridge. / A foundry, cold for eleven years.
+NARRATION: Rails, gantries, silent presses. / Fog rolls off the slag pits.
+JUGGER: INTRUDERS DETECTED. COUNT: / FIVE. OR SIX.
+JUGGER: IDENTIFY. ANSWER IN / COMPLETE SENTENCES.
+CRUMB(h): Hello, sir! I'm a Private! / That's a complete sentence, sir.
+JUGGER: PRIVATE: A RANK. A HUNGRY / ONE. LOGGED.
+JUGGER: I AM JUGGER. I WAS A BLUE / MOON UNIT. I AM IDLE.
+JUGGER: BLUE MOON SAID "TOO / LITERAL". QUERY: WHY?
+JUGGER: PROVE YOU ARE NOT / INEFFICIENT. WIN.
+JUGGER: ELSE I RETIRE YOU FROM / THE MAP.
+MORTAR: Crumb. Do not answer the / machine's questions.
+GRIT: Ayup. Easy, tin fella. / Nobody's retirin' anybody.
+GRIT: Name's Grit. Blue Moon sent / me to sit with him.
+GRIT: Mostly I keep him from / shootin' at the weather.
+JUGGER: WEATHER: HOSTILE. IT / ADVANCED ON MY POSITION.
+GRIT: It rained, Jugger.
+JUGGER: AFFIRMATIVE. IT RAINED ON / MY POSITION. ADVANCED.
+GRIT: Eleven years back they told / him, hold this foundry till relieved.
+GRIT: Then Blue Moon moved its iron / to the docks and shut the doors.
+GRIT: Forgot to send the relief. / Nobody's fault. Just paperwork.
+JUGGER: DIRECTIVE ONE: HOLD UNTIL / RELIEVED. RELIEF: NOT ARRIVED.
+JUGGER: DAYS ELAPSED: 4,017. ALL / BLUE MOON ORDERS EXPIRE.
+JUGGER: THEY SAY "UNTIL FURTHER / NOTICE". NOTICE NEVER COMES.
+JUGGER: THE ORDER DIES OF BEING / FORGOTTEN. THIS IS INEFFICIENT.
+STURM: Blue Moon left a weapon in / the cold and called it a guard.
+STURM: A weapon forgotten is a / weapon unclaimed. Break the guard.
+@WITH KOAL
+KOAL: A machine that follows / lanes. I approve.
+JUGGER: LANES: ADEQUATE. / SHOULDERS: UNKNOWN.
+KOAL: Three metres wide, machine. / Learn it.
+@WITH HAWKE
+HAWKE: A frozen foundry, one guard, / no relief. This board was mismanaged.
+JUGGER: QUERY: WHO IS "SOMEBODY"?
+HAWKE: A committee.
+JUGGER: COMMITTEE: UNKNOWN UNIT. / HOSTILE?
+HAWKE: Frequently.
+@WITH VON BOLT
+VON BOLT: A guard who needs no wages. / No meals. No leave. Kehh...
+JUGGER: WAGES: NOT FOUND.
+VON BOLT: Marry me.
+JUGGER: MARRIAGE: NOT AUTHORIZED.
+@WITH KINDLE
+KINDLE: A robot alone in a dark / foundry. Darling, the set designs itself.
+JUGGER: DARLING: UNDEFINED. SET: / A BUILDING. CORRECT?
+KINDLE: Ahaha! Never change.
+@END
+[CO]: We are not here for you, Grit. / We are here for the foundry.
+GRIT: Reckon y'all want it bad. / Fella in there wants it worse.
+GRIT: Go easy on him, y'all. He / holds a post better'n any man.
+GRIT: That's the whole trouble.
+JUGGER: HOLD POST: AFFIRMATIVE. / BEGIN HOSTILITIES.
+[CO2]: The fog hides us as well as / him. Keep the formation tight.
+
+== m17_day4
+JUGGER: ODDS: 61 PERCENT. YOUR / ODDS: LOWER.
+GRIT: Don't fret over his numbers. / He rounds up for himself.
+JUGGER: NEGATIVE. I ROUND DOWN. / FOR EVERYONE. EVENLY.
+
+== m17_day7
+GRIT: Roof's gonna come down if / y'all keep that up.
+GRIT: He won't leave, mind. Not till / somebody says the words.
+GRIT: I never learned 'em. Maybe / you did.
+
+== m17_day10
+JUGGER: RECALCULATING. / ...RECALCULATING.
+JUGGER: ODDS: 50 PERCENT. 49 / PERCENT. 52 PERCENT.
+GRIT: Easy now, tin fella. / Breathe. ...Do you breathe?
+JUGGER: NEGATIVE. I PRETEND. / FOR YOUR BENEFIT.
+
+== m17_post
+JUGGER(s): ERROR. DEFEAT. THIS IS / UNEXPECTED.
+JUGGER: RECALCULATING. ODDS WERE 61 / PERCENT. VARIABLE MISSING: YOU.
+GRIT: Ayup. Odds always miss one / thing. Usually the fella shootin'.
+JUGGER: THE FOUNDRY IS TAKEN. THE / POST IS CAPTURED.
+JUGGER: A CAPTURED POST IS A / RELIEVED POST. DEDUCTION: RELIEF.
+JUGGER: RELIEF HAS ARRIVED. IN THE / WRONG COLOUR.
+GRIT(h): Well, I'll be. Eleven years / waitin' on relief, and it's black.
+JUGGER: CLASSIFICATION: HOSTILE / RELIEF. ACCEPTABLE.
+JUGGER: I AM UNASSIGNED. QUERY: / WHY SHOULD I JOIN YOUR FORCE?
+@IF HAWKE
+HAWKE: Because here you will not / be called too literal.
+HAWKE: I keep a doctrine. Every / order in it has a stated end.
+HAWKE: Or a stated forever. Never / a "further notice".
+JUGGER: A STATED END OR A STATED / FOREVER. EXACT. ADOPTED.
+@IF KOAL
+KOAL: Because roads are exact. / So are you. Come build.
+JUGGER: ROADS: A GOOD DIRECTIVE. / HOW LONG?
+KOAL: Forever. A road is never / relieved.
+JUGGER: FOREVER IS NOT A NUMBER. / ...ACCEPTABLE.
+@IF STURM
+STURM: Blue Moon gave you an order / and forgot you.
+STURM: I forget nothing that is / mine. You are mine.
+JUGGER: "MINE": QUERY: TERM OF / OWNERSHIP?
+STURM: There is none.
+JUGGER: NEVER EXPIRES: UNPRECEDENTED. / ...AFFIRMATIVE.
+@IF VON BOLT
+VON BOLT: Kehh! An entry that never / closes. Do you know what that is?
+VON BOLT: Interest! Eternal! I will / pay you in orders that compound.
+JUGGER: QUERY: RATE OF PAYMENT?
+VON BOLT: For you? Nothing. A / splendid rate. Kehh-heh!
+JUGGER: ZERO: A STABLE NUMBER. / ...ACCEPTABLE.
+@IF KINDLE
+KINDLE: Darling, a stage with no / final curtain. A run that never ends.
+JUGGER: NO FINAL CURTAIN: / UNPRECEDENTED. ...AFFIRMATIVE.
+KINDLE: Ahaha! He understands / theatre better than the critics.
+@OTHER
+[CO]: We give orders that never / expire. And we remember them.
+JUGGER: NEVER EXPIRE: / UNPRECEDENTED. ...AFFIRMATIVE.
+@PARTNER HAWKE
+HAWKE: I will write it down. It / will not be forgotten.
+@PARTNER KOAL
+KOAL: A lane does not expire. / Neither will you.
+@END
+JUGGER: DIRECTIVE ACCEPTED. HUMOR / SUBROUTINE: NOT FOUND.
+GRIT(s): Aw, shucks. Go on, then. / Guess a post's just a post.
+JUGGER: SNIPER GRIT: SENTIMENT / DETECTED. SOURCE: YOU.
+GRIT: Quit loggin' me, tin fella.
+JUGGER: NEGATIVE. YOU CAME 212 / TIMES. YOU BROUGHT COFFEE.
+JUGGER: I CANNOT DRINK COFFEE.
+GRIT: I know. Seemed rude not to / bring any.
+JUGGER: YOU ARE LOGGED AS RELIEF. / UNOFFICIAL.
+GRIT(h): Ayup. I'll take unofficial. / It's all I ever had anyhow.
+GRIT: Listen up, y'all. He holds / what he's told, the whole way down.
+GRIT: Give him a clear end or a / clear forever. Never "we'll see".
+GRIT: Lie to him once, he'll never / forget it. Neither will I.
+STURM: Return to your fence, sniper. / Tell Blue Moon the foundry is mine.
+STURM: Tell them the machine is / mine.
+GRIT: Reckon I will. Don't wait up. / Blue Moon's fence is leakin'.
+GRIT: And I'm the only fella left / who knows where.
+CRUMB(h): Welcome aboard, sir! I'm / Crumb. I'm the Private.
+CRUMB: I think literal is good, sir. / You always know where you stand.
+JUGGER: SENTIMENT: DETECTED. / SOURCE: PRIVATE.
+JUGGER: PRIVATE CRUMB: BISCUIT- / DEPENDENT. LOGGED.
+
+== m17_map
+JUGGER: SUBJECT: GERALD. STATUS: / DEAD. OR UNSTATED.
+CRUMB: He's fine!
+JUGGER: AFFIRMATIVE. HE IS FINE. / I WILL STOP.
+JUGGER: ADDENDUM: GERALD'S BASE / BEARS A SYMBOL. MATCHES: ZERO.
+JUGGER: 41,000 RECORDS SEARCHED. / MAKER: NOT FOUND.
+CRUMB: It's a maker's mark, sir. / Every biscuit has one.
+JUGGER: NEGATIVE. THIS MARK IS NOT / A BISCUIT'S. QUERY: WHOSE?
+WICK(s): Is it all right if I don't / like that he cannot find it?
+MORTAR: Crumb. Put Gerald away.
+CRUMB(s): ...Yes, Sergeant. Sorry, / Gerald.
+JUGGER: LOGGED. UNSOLVED. FILED / UNDER: LATER.
+CRUMB: Mr Grit shook my hand, sir. / He said keep my boots dry.
+MORTAR: Sound advice.
+STURM: Blue Moon kept the iron and / sold the quiet. I take both.
+CRUMB: The pit guard says Flak / obeys strength and sparkle.
+CRUMB(h): That is Sir Sturm and Lady / Kindle, I should think!
+@WITH KINDLE
+KINDLE: Sparkle! Darling, I was / born for the pit.
+@END
+JUGGER: PIT: ARENA. SEATS: 4,100. / EXITS I APPROVE OF: ZERO.
+
+# ---------------------------------------------------------------------------------------------
+# M18 The Pit. Player: any CO. Enemy: Flak (a Blue Moon hireling, hungry).
+# ---------------------------------------------------------------------------------------------
+
+== m18_pre
+NARRATION: Blue Moon's Pit. A ring of / seats, a crowd, a roar.
+NARRATION: Blue Moon sells tickets and / calls it a quiet market.
+FLAK: Hey! Little guys! Flak fights / anything! For money!
+FLAK: Blue Moon pays Flak in coins. / Coins don't fight back.
+FLAK: Coins don't taste good. / Flak tried. Twice.
+FLAK: You fight back? Good. Flak / likes it.
+FLAK: Bell is twelve rounds. / Win, boss. Lose, snack.
+HAWKE: Private Flak. I made you a / sergeant once.
+FLAK: Hee! Hawke! Flak remembers! / Stripes! And ham!
+HAWKE: I regret the ham.
+FLAK: Flak not regret ham. Ham / was good.
+JUGGER: CROWD: 4,100. HOSTILE TO / BOTH SIDES. ODDS: UNKIND.
+JUGGER: FLAK: A BLUE MOON HIRELING. / LIKE ME. PAID IN COINS.
+JUGGER: HIS PREFERENCE: FOOD. / NOTE: THIS IS A WEAKNESS.
+VON BOLT: Four thousand tickets! / Kehh... I want a cut of the gate.
+FLAK: Gate is Flak's!
+VON BOLT: Everything is somebody's. / The question is who invoices.
+STURM: Blue Moon hires its fence by / the hour. Hours end.
+@IF STURM
+STURM: Twelve days. Then you / are mine.
+FLAK: Hee! Big words! Flak hits / bigger!
+@IF KINDLE
+KINDLE: Darling, you may not eat / my soldiers.
+FLAK: Flak not eat. Flak smash. / Then eat.
+@IF KOAL
+KOAL: Four gate roads. Decent / surface. Mind the lane, brute.
+FLAK: What lane?
+KOAL: The one you will be knocked / down in.
+@OTHER
+[CO]: Twelve rounds. We will take / the throne long before the bell.
+FLAK: Hee! Boss talks big. / Flak likes boss.
+@END
+CRUMB: Sir, he is very large. / Is he nice?
+FLAK: Flak is nice! Flak is Nice / Flak!
+MORTAR: Crumb. Do not pet the / enemy.
+CRUMB: Gerald says he can tell. / He's a nice sort of large.
+MORTAR: Gerald is a biscuit.
+WICK(s): Is it all right if I'm / worried about the other nine rounds?
+
+== m18_day6
+SOLDIER BM: Flak! Flak! Flak! / Flak! Flak! Flak!
+FLAK: Bell! Bell! Next round! / Flak counts rounds on fingers.
+FLAK: Ran out of fingers. Flak / is winning anyway!
+MORTAR: Half the bell gone. Hold / the centre, Crumb.
+
+== m18_day10
+FLAK: Hit me harder! Flak is / sleepy!
+CRUMB: Sir, he is yawning in / the middle of a fight.
+JUGGER: TWO ROUNDS REMAIN. HIS ODDS: / 12 PERCENT. HIS CONFIDENCE: 100.
+
+== m18_post
+FLAK(s): Ow. Ow... Flak is down. / Flak is on the floor.
+SOLDIER BM: The champion fell! Does / anyone know about refunds?!
+FLAK: Why you hit so good? Why / Flak lose? Flak was biggest.
+JUGGER: BIGGEST: AFFIRMATIVE. MOST / ORGANIZED: NEGATIVE.
+FLAK: Big is enough. Big is / always enough!
+HAWKE: Big is enough against men / who do not plan.
+FLAK(s): ...Flak hungry. Blue Moon / pays coins. Flak can't eat coins.
+FLAK: Why Flak follow you? Say good / reason. Make it tasty.
+@IF STURM
+STURM: Because I will give you wars / you cannot finish.
+STURM: A thousand battles. And a / full table.
+FLAK: Thousand?! Full table?!
+STURM: Yes.
+STURM: Blue Moon paid you to fall / for the tickets. I pay for wins.
+FLAK(h): Flak... Flak loves you.
+STURM: Do not. Eat.
+@IF KINDLE
+KINDLE: Because I will make you a / star. And there is pastry.
+FLAK: Pastry! Star! Pastry!
+KINDLE: Lots of both. Your name in / lights, darling. In icing, if need be.
+@IF HAWKE
+HAWKE: You were a sergeant for a / ham. I offer a captaincy for a table.
+HAWKE: Three meals and a doctrine. / I tell you where to hit.
+FLAK: Flak likes where to hit!
+HAWKE: That is the entire doctrine.
+@IF VON BOLT
+VON BOLT: Eat now, pay later! / Kehh-heh! Much later!
+FLAK: Later is good!
+VON BOLT: Interest accrues in meals. / Remember I said that.
+@IF KOAL
+KOAL: Every road I build ends at / a kitchen. Eventually.
+FLAK: All roads?
+KOAL: All good ones.
+FLAK: Flak follows roads!
+@IF JUGGER
+JUGGER: I CAN SCHEDULE MEALS. FOUR / PER DAY. PLUS SNACK.
+FLAK: Snack?!
+JUGGER: SNACK: LOGGED. NON-EXPIRING.
+@OTHER
+[CO]: Serve us. We offer endless / fights and food.
+FLAK: Endless fights... food... / Okay!
+@END
+FLAK: Flak is yours, boss! Where / is food?
+JUGGER: FLAK: DAILY REQUIREMENT: / NINE THOUSAND CALORIES. LOGGED.
+VON BOLT: Nine THOUSAND?! Who / pays for nine thousand?!
+HAWKE: Chapter four of the / doctrine. "Feed the large."
+CRUMB(h): This way, sir! I think / there's soup!
+FLAK: Small man! Small man is / friend!
+
+== m18_map
+FLAK: What is this?
+FLAK(s): ...
+CRUMB: That is Gerald!
+FLAK: Looks good! Flak bites it!
+CRUMB: NO!
+FLAK(s): ...Hard. Flak cries.
+CRUMB: There, there.
+JUGGER: GERALD: STATUS: SURVIVED. / BITE MARKS: 1. DENTIN: FLAK'S.
+FLAK: Biscuit tickles Flak's tooth. / Like a bell. Hee?
+CRUMB(s): He does that. Sometimes. / I never know why.
+MORTAR: Crumb. Eat your soup.
+HAWKE: Chapter four, I think. / Nothing in it is written yet.
+@WITH KINDLE
+KINDLE: Darling, he ate three / pastries standing up. I am flattered.
+@END
+STURM: Blue Moon sold tickets to a / war. The seats are empty.
+STURM: Its coin pays for gates and / arenas alike. Cut the coin.
+
+# ---------------------------------------------------------------------------------------------
+# M19 The Assembly Line. Player: any CO. Enemy: Sasha (Blue Moon's purse and Colin's sister).
+# This mission can be played before or after M18: no Flak here.
+# ---------------------------------------------------------------------------------------------
+
+== m19_pre
+NARRATION: Blue Moon's industrial plains. / A river, three bridges, one line.
+NARRATION: A factory the size of a town. / Smoke, rail, a dark Obelisk.
+SASHA: Welcome to my assembly line. / Hands off the wiring.
+SASHA: Every shell, every tank: / invoiced in advance.
+SASHA: Blue Moon built its fence in / steel. This is where the steel is made.
+STURM: That factory was built / under my flag.
+SASHA: It was sold under the Accord's. / Lot 41, salvage rights. I hold the deed.
+STURM: Deeds are paper.
+SASHA: Paper is how Blue Moon wins. / We prefer it to shooting.
+SASHA: I could buy a war. I would / rather buy your retreat.
+SASHA: Name a price. I will pay / triple not to fight.
+VON BOLT: Triple?! Sturm, hear / the lady's offer!
+STURM: No.
+VON BOLT: But triple!
+SASHA: Von Bolt. We should talk. / In private.
+VON BOLT: ...Hm.
+HAWKE: Colonel.
+VON BOLT: I was only listening.
+JUGGER: IDENTIFY: SASHA. AUTHOR OF / MEMO 77-B: "UNIT IS TOO LITERAL."
+SASHA: Unit 77. You asked "until / when" of a general. On page three.
+SASHA: It cost him his lunch. I / would apologise, but it is not budgeted.
+JUGGER: LUNCH: NOT IN MY ORDERS.
+SASHA: No. In his.
+JUGGER: ...HUMOR: NOT FOUND. / CORRECTION: FOUND. MINOR.
+HAWKE: Madam, the line is well made. / Rail, river, three doors and a clock.
+SASHA: Flattery lowers my price, / Marshal. Do continue.
+@IF VON BOLT
+VON BOLT: Triple is a start. Let / us discuss quadruple.
+SASHA: Quadruple. We understand / each other.
+STURM: No.
+@IF KOAL
+KOAL: Good bridges. Good camber on / the river road. Any tolls?
+SASHA: Only one. Payable in coin, / upon crossing.
+KOAL: NO TOLLS.
+SASHA: A pity. I enjoy tolls.
+@IF KINDLE
+KINDLE: Darling, your factory has / no audience whatsoever.
+SASHA: It has a payroll. Much / better than applause.
+@IF JUGGER
+JUGGER: QUERY: WHO PAID MY / WARRANTY? ANSWER: SASHA. EXPIRED.
+SASHA: You were a good investment. / I merely mislabelled the return.
+@OTHER
+[CO]: We did not come to be paid. / Open the bridges.
+SASHA: Everyone says that. Then / they ask for a receipt.
+@END
+JUGGER: OBSERVATION: OBELISK AT / GRID 11-18. STATE: DARK.
+JUGGER: HUM DETECTED. 41 HERTZ. / MATCHES: THE VOICE OF STURM.
+STURM: Delete that.
+JUGGER: ENTRY DELETED. ...BACKUP / RETAINED. YOU DID NOT SPECIFY.
+VON BOLT: Kehh... the crystals did / that in my vault, too.
+STURM: Enough.
+SASHA: The Obelisk was Lot 42. It / declined to be moved.
+SASHA: I fenced it, I billed it, and / I do not go near it after dark.
+SASHA: Private. You have the face / of a man who owes me nothing.
+CRUMB: Gerald says we do not take / triple, ma'am. Triple of what?
+SASHA: Of whatever you were about / to lose.
+CRUMB(s): ...Gerald says that is / a lot, ma'am.
+MORTAR: Crumb. Stop negotiating.
+[CO]: Hold the river. We take her / line, then the HQ.
+
+== m19_day4
+SASHA: Ten more tanks, invoiced. / Do try to keep up.
+JUGGER: INVOICE: 10 TANKS. WORTH: / MORE THAN YOUR OBJECTIVE.
+SASHA: Thank you, Unit 77. I / always did like your arithmetic.
+
+== m19_day8
+SASHA: Funds arrive. Delightful.
+SASHA: Blue Moon's treasury never / sleeps. Nor does its patience.
+
+== m19_day16
+SASHA: Do not worry. I will bill / you for the repairs.
+SASHA: Itemised. With interest.
+
+== m19_post
+SASHA(s): My line... my beautiful / line, stopped.
+SASHA: Four hundred nine days to / build it. Eleven to lose it.
+SASHA: I have been outspent. Just / this once.
+STURM: You were not outspent. You / were outlasted.
+SASHA: Outlasted is a word the / poor use.
+VON BOLT: Kehh-heh! I took no offer. / I took her VAULT.
+SASHA: You did what?
+VON BOLT: In private you showed me / your ledger. To prove you could pay.
+VON BOLT: The ledger had an address, / my dear. A vault address.
+VON BOLT: Everything in it. Gold- / plated, too.
+SASHA(s): I showed him. I showed him / the ledger myself.
+HAWKE: A fine feint, Colonel. I / assumed you were simply greedy.
+VON BOLT: I was simply greedy. It / worked.
+SASHA: Hmph. I will audit you. / Eternally.
+SASHA: Blue Moon is not poor, Sturm. / Blue Moon is patient.
+SASHA: A fence is a ledger. Ledgers / outlast storms.
+STURM: Then I will burn the ledger.
+SASHA: Ledgers are copied.
+@IF HAWKE
+HAWKE: Madam, you built a / remarkable line. Do not rebuild it.
+SASHA: Do not give me advice you / will not invoice.
+@IF KOAL
+KOAL: Your river road is sound. I / will not wreck it.
+SASHA: High praise. And no toll.
+@IF KINDLE
+KINDLE: Darling, you lost with / dignity. Few do. Keep the hat.
+SASHA: I was not wearing a hat.
+KINDLE: Then buy one. Immediately.
+@OTHER
+[CO]: The workers of the line are / not our enemy. Send them home.
+SASHA: ...That is unexpectedly civil.
+[CO]: They are cheaper alive.
+SASHA: A sentiment I can invoice.
+@END
+SASHA: Colin has a navy. Olaf has / opinions. Together they have a war.
+SASHA: Do mind the harbour. My / brother was never taught proportion.
+
+== m19_map
+JUGGER: AUDIT NOTICE RECEIVED. / PLEASE SIGN HERE.
+VON BOLT: Burn it.
+JUGGER: AFFIRMATIVE. BURNING. / ...CORRECTION: FILING.
+VON BOLT: FILING?!
+JUGGER: FILE: VON BOLT, V. AUDIT. / RETENTION: PERMANENT.
+VON BOLT: Permanent?! Who gave you / that rule?!
+JUGGER: SASHA. AND I LIKED IT.
+HAWKE: A machine that files by / instinct. She will want him back.
+CRUMB: She gave me a receipt for / Gerald, sir. "Biscuit, one."
+CRUMB: "Not for sale." She wrote / it herself!
+MORTAR: Next is the harbour. A / navy.
+WICK(s): Is it all right if I don't / like boats?
+MORTAR: No.
+CRUMB: Gerald floats, Wick.
+MORTAR: Gerald is a biscuit.
+HAWKE: Olaf will hold the harbour / as a man holds a speech. Loudly.
+STURM: Blue Moon paid for its fence / in steel and in gold. Next it pays in sea.

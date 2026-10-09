@@ -23,6 +23,7 @@ STURM, VON_BOLT, HAWKE, KINDLE, KOAL, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY, SON
 ROSTER = [STURM, VON_BOLT, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY, SONJA, CRUMB]   # (the unlock order: Koal before Kindle)
 # The placeholder missions: the picks the CO screen asks for.
 PICKS = {0: 0, 1: 1, 2: 0}
+M31_FLAG = (184, 32)                # (crate::bh_campaign::region::BLACK_HOLE[2])
 FLAG_POINTS = {0: (160, 30), 1: (180, 46), 2: (188, 54)}
 
 
@@ -31,6 +32,22 @@ FEATURES = {"TANGOAW2_BH_FEATURES": "1"}   # crate::bh_campaign::features_def: t
 
 class BhCampaign(DsCampaign):
     picks = PICKS
+
+    def pick_mission(self):
+        """DsCampaign.pick_mission, with the world map's cursor on M31 first when the finale is won (Free Play: the map
+        starts the cursor on the first mission, and M31, "after the war", is the one the test asked for)."""
+        self.wait_world_map()
+        if 30 in self.picks and self.won() & (1 << 29):
+            e = self.e
+            x, y = M31_FLAG
+            cam_x, cam_y = min(max(x - 120, 0), 192), min(max(y - 80, 0), 96)
+            e.w16(dc.WM_STATE, cam_x)
+            e.w16(dc.WM_STATE + 2, cam_y)
+            e.w16(dc.WM_STATE + 4, x - cam_x)
+            e.w16(dc.WM_STATE + 6, y - cam_y)
+            e.w32(dc.WM_STATE + 0x0C, 30)
+            e.wait(30)
+        super().pick_mission()
 
     def total_picks(self):
         return self.picks.get(self.mission(), 1)

@@ -25,30 +25,6 @@ use mgba::core::Core;
 use crate::bh_campaign::{region, roster};
 use crate::custom_campaign::{co, colour, unit, *};
 
-// --- Writing helpers ---------------------------------------------------------------
-
-fn say(c: u8, text: &'static str) -> Line {
-    Line::say(c, text)
-}
-
-fn happy(c: u8, text: &'static str) -> Line {
-    Line::feel(c, Mood::Happy, text)
-}
-
-fn sad(c: u8, text: &'static str) -> Line {
-    Line::feel(c, Mood::Sad, text)
-}
-
-/// Narration and the soldiers: the Black Hole trooper's face.
-fn troop(text: &'static str) -> Line {
-    Line::soldier(colour::BLACK_HOLE, text)
-}
-
-/// A line any of the player's COs may be ([CO]): one row for each, shown for its own player.
-fn anyone(text: &'static str, cos: &[u8]) -> Vec<Line> {
-    cos.iter().map(|&c| say(c, text).only(c)).collect()
-}
-
 /// "On day `d`, at the start of the player's turn": fires once, on that day.
 fn on_day(d: u16, cond: Option<Cond>, then: Vec<Action>) -> Trigger {
     let day = Cond::EveryDays { n: 1000, from: d };
@@ -161,51 +137,14 @@ fn bh29() -> MissionDef {
     ];
     m.day_limit = 32;
     m.rank_days = 20;
-    let mut intro = vec![
-        troop("The Orange Gate. Walls, a canal, a woman on the wall."),
-        say(co::NELL, "This is the Orange Gate. I would rather you turned back."),
-        say(co::NELL, "You will not. I know. So I will ask you to be careful."),
-        say(co::STURM, "Kneel, Nell. This gate is mine by nightfall."),
-        say(co::NELL, "It is Orange Star's, dear. And I am standing on it."),
-        say(co::MAX, "Nell! I'm right here! Nobody touches you!"),
-        say(co::SAMI, "Max! The wall's mine! You are the hammer! Move!"),
-        say(co::MAX, "Whatever! Charge!"),
-        say(co::NELL, "Boys. Mind the canal. And eat something first."),
-        say(co::HAWKE, "Nell herself, at the gate. She is counting us."),
-        say(co::HAWKE, "Her castle lies behind. This is only her first line."),
-        say(co::VON_BOLT, "She has a castle? With a vault? Kehh... does it?"),
-        say(co::STURM, "Take the gate. Then the castle. Then her."),
-        say(co::HAWKE, "And mind the beams. The Deathray and the Laser do not ask whose side you are on."),
-        say(co::FLAK, "Big man! Flak wants the big man!").only(co::FLAK),
-        say(co::MAX, "Hah! Come on, big man!").only(co::FLAK),
-        say(co::CLONE_ANDY, "Andy's friends. They know me. They won't talk to me.").only(co::CLONE_ANDY),
-        say(co::SAMI, "...That's not Andy.").only(co::CLONE_ANDY),
-        say(co::MAX, "What did they do to him?").only(co::CLONE_ANDY),
-        say(co::CLONE_ANDY, "Nothing. I chose.").only(co::CLONE_ANDY),
-        say(co::NELL, "Oh, dear one. You have his eyes. Eat something, too.").only(co::CLONE_ANDY),
-    ];
-    // (Crumb's lines join when the campaign has him: `@IF CRUMB`.)
-    m.intro = Scene::new(std::mem::take(&mut intro));
-    m.victory = Scene::new(vec![
-        say(co::NELL, "The Gate holds no longer. Max, Sami: fall back. Now."),
-        say(co::MAX, "Nell! I'm staying with you!"),
-        say(co::SAMI, "Max. We obey. Come on."),
-        say(co::NELL, "Sturm. You took the gate. You have not taken my castle."),
-        say(co::STURM, "I will have the castle. And you."),
-        say(co::NELL, "Then come to it, and meet what I have kept for you."),
-        say(co::NELL, "Whole streets sleep behind those walls. I will not move."),
-        say(co::MAX, "Sturm! Don't you lay a hand on her!"),
-        say(co::STURM, "I promise nothing. Her castle is mine tomorrow."),
-        say(co::HAWKE, "She withdraws on purpose. She is drawing us in."),
-        say(co::HAWKE, "Everything she has is in that castle. All of it."),
-        say(co::VON_BOLT, "All of it? Kehh... all of it!"),
-    ]);
-    m.after = Scene::new(vec![
-        say(co::NELL, "To the black army: please eat and sleep."),
-        say(co::NELL, "Tomorrow is hard for everyone. Mine and yours."),
-        say(co::STURM, "Turn that off."),
-        say(co::STURM, "...Leave it on."),
-    ]);
+    m.intro = crate::bh_text::scene("m29_pre");
+    m.victory = crate::bh_text::scene("m29_post");
+    // The night before the Castle: Crumb and Sturm, Nell's broadcast, then the Allied war room (Black Hole's intercept).
+    m.after = Scene::new({
+        let mut v = crate::bh_text::lines("m29_map");
+        v.extend(crate::bh_text::lines("m29_warroom"));
+        v
+    });
     let wave: Vec<UnitDef> = [(21, 22), (22, 22), (23, 22), (24, 22), (25, 22), (26, 22)]
         .iter()
         .map(|&(x, y)| {
@@ -221,13 +160,13 @@ fn bh29() -> MissionDef {
         on_day(
             5,
             None,
-            vec![Action::Custom(nell_power_day5), Action::Scene(Scene::new(vec![say(co::NELL, "I was born lucky. I'll spend it on the bridge today.")]))],
+            vec![Action::Custom(nell_power_day5), Action::Scene(crate::bh_text::scene("m29_day5"))],
         ),
         // Day 8: Max's turn to hit.
-        on_day(8, None, vec![Action::Custom(nell_power_day5), Action::Scene(Scene::new(vec![say(co::MAX, "Tanks! Everyone! Tanks!")]))]),
+        on_day(8, None, vec![Action::Custom(nell_power_day5), Action::Scene(crate::bh_text::scene("m29_day8"))]),
         // Day 10: Sami's infantry wave.
-        on_day(10, None, vec![Action::Scene(Scene::new(vec![say(co::SAMI, "Infantry, forward! The gate stays ours! Move out!")])), Action::Spawn(wave)]),
-        on_day(16, None, vec![Action::Scene(Scene::new(vec![say(co::SAMI, "Orange Star! For Nell!")]))]),
+        on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m29_day10")), Action::Spawn(wave)]),
+        on_day(16, None, vec![Action::Scene(crate::bh_text::scene("m29_day16"))]),
         after(beaten(2, (29, 25)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh28"]);
@@ -383,31 +322,11 @@ fn duel_not_done(core: &mut Core) -> bool {
 }
 
 fn duel_clone_lines() -> Vec<Line> {
-    vec![
-        say(co::ANDY, "You. Standing there with my face on."),
-        say(co::CLONE_ANDY, "Andy. I didn't choose the face."),
-        say(co::ANDY, "I know. I know! But you chose the side."),
-        say(co::CLONE_ANDY, "And you chose yours. We are both right. Awful, that."),
-        say(co::ANDY, "...A duel. Right now. Your best against mine."),
-        say(co::CLONE_ANDY, "Okay. Wrench or fists?"),
-        happy(co::ANDY, "Wrench!"),
-        troop("Two wrenches clash. Neither gives an inch."),
-        sad(co::ANDY, "...Same grip. Same swing."),
-        say(co::CLONE_ANDY, "Same joke after it."),
-        say(co::ANDY, "Tell me it was never a joke."),
-        say(co::CLONE_ANDY, "It was never a joke."),
-        say(co::ANDY, "Then I will keep fighting you. Fair?"),
-        happy(co::CLONE_ANDY, "Fair. And Andy? I am glad it was you."),
-    ]
+    crate::bh_text::lines("m30_duel_clone")
 }
 
 fn duel_plain_lines() -> Vec<Line> {
-    vec![
-        say(co::ANDY, "Hey, Black Hole! I'm not done! I never am!"),
-        say(co::ANDY, "Orange Star is being asked to leave home. Not today."),
-        say(co::ANDY, "Nell is behind me. I will patch every hole you make!"),
-        sad(co::ANDY, "...I just wish someone I knew was on my side."),
-    ]
+    crate::bh_text::lines("m30_duel_plain")
 }
 
 /// Andy's wall on the platform and the reserves, all of the army that was Nell's: the Rail Yard (the
@@ -441,110 +360,40 @@ fn bh30() -> MissionDef {
     // tile) and Andy leads it (`Action::TakeOver`); `held_hq` makes the Great Hall's capture defeat nobody.
     m.held_hq = Some((18, 3));
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(20000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(co::STURM)).funds(20000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(20000),
     ];
     m.day_limit = 34;
     m.rank_days = 24;
-    let pair = [co::STURM, co::VON_BOLT, co::HAWKE];
-    m.intro = Scene::new(vec![
-        troop("The Orange Castle. The last gate. The last light."),
-        say(co::NELL, "Black Hole. You took the Gate. I did not stop you."),
-        say(co::NELL, "You took four nations. You took them kindly. Mostly."),
-        say(co::NELL, "I will not hate you. I cannot. But I will stop you."),
-        say(co::NELL, "Behind me are ten thousand people. I will hold."),
-        say(co::STURM, "You hold with a wall."),
-        say(co::NELL, "A wall is what a big sister is, when it counts."),
-        say(co::NELL, "Look at my walls. Look at what I have kept. All of it."),
-        say(co::HAWKE, "Forty-eight units, eight bases, four airports."),
-        say(co::HAWKE, "Tell me this is a bluff."),
-        say(co::NELL, "It is not a bluff, dear. It is my family."),
-        say(co::ANDY, "Nell! I'm with you! Always!"),
-        say(co::NELL, "Andy. Thank you."),
-        say(co::NELL, "I would rather you ran. But I know you won't."),
-        say(co::CLONE_ANDY, "Andy. Please. I'm not your enemy.").with(co::CLONE_ANDY),
-        say(co::ANDY, "I know. That's what hurts.").with(co::CLONE_ANDY),
-        say(co::NELL, "Sturm. If you win, be kind to them."),
-        say(co::STURM, "Kindness is for the kneeling. The conquered are kept."),
-        say(co::NELL, "Then let it learn."),
-        say(co::HAWKE, "Begin. Hold the moat. Let her come to us first."),
-        say(co::HAWKE, "Keep clear of the Lasers' lines. They do not ask whose side you are on."),
-        say(co::VON_BOLT, "She has gold. Let me count... a great deal of gold."),
-    ]);
-    m.victory = Scene::new({
-        let mut v = vec![
-            sad(co::ANDY, "The whistle. ...The train is gone. They are safe."),
-            say(co::ANDY, "That is enough. That is more than enough."),
-            say(co::CLONE_ANDY, "Andy. You did it right. Better than I would have.").with(co::CLONE_ANDY),
-            say(co::ANDY, "Don't be kind. ...Thank you.").with(co::CLONE_ANDY),
-            say(co::NELL, "Andy. Come here. It is all right. It is done."),
-            say(co::NELL, "Sturm. You held your hand at the trains."),
-            say(co::STURM, "They are mine now. I do not burn what I own."),
-            say(co::NELL, "No. And neither were we. Not really."),
-            say(co::NELL, "The flag is yours. Take it gently."),
-            say(co::STURM, "The flag is a trophy. It hangs in my hall."),
-            say(co::NELL, "You learned."),
-            say(co::STURM, "I learned nothing. I took. Do not say otherwise."),
-            say(co::NELL, "I will not."),
-        ];
-        let _ = &mut v;
-        v
-    });
-    m.after = Scene::new(vec![troop("The Orange flag comes down. The last train is a whisper on the rails.")]);
-    let stage1_post = vec![
-        sad(co::NELL, "The Great Hall is yours. Sturm, I yield the castle."),
-        say(co::NELL, "Stand down, everyone. Stand down. Please."),
-        sad(co::ANDY, "No."),
-        say(co::NELL, "Andy."),
-        say(co::ANDY, "The last train has not left. Not while I am standing."),
-        say(co::NELL, "Andy, listen to me."),
-        say(co::ANDY, "I know the order. Let me break it. Just this once."),
-        sad(co::NELL, "...Andy."),
-        say(co::ANDY, "Rail Yard! Orange Star, with me! One more hour!"),
-        say(co::STURM, "Let him run. I take it all in the end."),
-        say(co::HAWKE, "A second headquarters. The Rail Yard. A last train."),
-        say(co::STURM, "Then I take it properly."),
-        say(co::VON_BOLT, "She yielded! Where is my receipt?!"),
-        say(co::CLONE_ANDY, "He will hold. I know how. I would.").with(co::CLONE_ANDY),
-        say(co::STURM, "Then we know where to aim.").with(co::CLONE_ANDY),
-        troop("Nell lays down her command. Andy takes it up."),
-    ];
-    let mut evac = vec![
-        troop("In the east, trains leave the castle's rail yard."),
-        say(co::NELL, "Evacuation trains. The city's children are on board."),
-        say(co::NELL, "Give me twelve more days. I was born lucky. Watch me."),
-        say(co::HAWKE, "She is buying time. For civilians."),
-        say(co::STURM, "...I see. Leave the trains. They carry my subjects."),
-    ];
-    evac.extend(anyone("We do not attack the trains.", &pair));
+    m.intro = crate::bh_text::scene("m30_pre");
+    m.victory = crate::bh_text::scene("m30_post");
+    // The world-map scene after the win: the epilogue, then the staff roll.
+    m.after = crate::bh_text::scene("m30_map");
     m.triggers = vec![
         on_day(1, None, vec![Action::Custom(charge_nell_60)]),
         // Her meter stays under her first power's bar except on the power days; the treasury is capped each morning.
         Trigger::new(When::AfterAction, Cond::Custom(always), vec![Action::Custom(clamp_nell)]).repeating(),
         Trigger::new(When::TurnStart, Cond::EveryDays { n: 1, from: 2 }, vec![Action::Custom(cap_treasury)]).repeating(),
-        on_day(1, Some(Cond::PlayerPair { a: co::STURM, b: co::CLONE_ANDY }), vec![Action::Scene(Scene::new(vec![say(co::STURM, "Together."), say(co::CLONE_ANDY, "Always, sir.")]))]),
+        on_day(1, Some(Cond::PlayerPair { a: co::STURM, b: co::CLONE_ANDY }), vec![Action::Scene(crate::bh_text::scene("m30_day1_sturm_clone"))]),
         // Day 5: Nell's first power, her Lucky Star (if she still leads).
         on_day(
             5,
             Some(Cond::Custom(nell_leads)),
             vec![
                 Action::Custom(nell_cop),
-                Action::Scene(Scene::new(vec![
-                    say(co::NELL, "I was born lucky. I'll spend it today. Every bit of it."),
-                    say(co::HAWKE, "Hold the camp. Do not cross this turn."),
-                ])),
+                Action::Scene(crate::bh_text::scene("m30_day5")),
             ],
         ),
-        on_day(6, None, vec![Action::Scene(Scene::new(evac))]),
+        on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m30_evac"))]),
         // Days 7, 9, 11: the Md Tanks, the Neotanks and the Megatanks leave their posts. Day 9: her Super Power. Day 15: the second, if she still leads.
         on_day(7, None, vec![Action::Custom(release_md_tanks)]),
         on_day(11, None, vec![Action::Custom(release_megatanks)]),
         on_day(9, None, vec![Action::Custom(release_neotanks)]),
-        on_day(9, Some(Cond::Custom(nell_leads)), vec![Action::Custom(nell_super), Action::Scene(Scene::new(vec![say(co::NELL, "For everyone I love: stand with me! Orange Star, shine!")]))]),
+        on_day(9, Some(Cond::Custom(nell_leads)), vec![Action::Custom(nell_super), Action::Scene(crate::bh_text::scene("m30_day9"))]),
         on_day(
             15,
             Some(Cond::Custom(nell_leads)),
-            vec![Action::Custom(nell_super_again), Action::Scene(Scene::new(vec![say(co::NELL, "Now! I am not done! Orange Star, with me!")]))],
+            vec![Action::Custom(nell_super_again), Action::Scene(crate::bh_text::scene("m30_day15"))],
         ),
         // The duel (once): day 10 in stage one, else the third day of stage two.
         on_day(
@@ -566,13 +415,13 @@ fn bh30() -> MissionDef {
             Cond::OwnerAt { x: 18, y: 3, army: 1 },
             vec![
                 Action::Custom(record_fall),
-                Action::Scene(Scene::new(stage1_post)),
+                Action::Scene(crate::bh_text::scene("m30_stage1_post")),
                 Action::TakeOver { army: 2, co: co::ANDY, meter_pct: 30 },
                 Action::Spawn(rail_yard_reserves()),
                 Action::AddFunds { army: 2, funds: 10000 },
             ],
         ),
-        Trigger::new(When::TurnStart, Cond::Custom(s2_first_turn), vec![Action::Custom(first_turn_done), Action::Scene(Scene::new(vec![say(co::ANDY, "Orange Star! The platform is behind us! Do not move!")]))]).repeating(),
+        Trigger::new(When::TurnStart, Cond::Custom(s2_first_turn), vec![Action::Custom(first_turn_done), Action::Scene(crate::bh_text::scene("m30_s2_first"))]).repeating(),
         // The match is won on the Rail Yard (its capture defeats the army) or by routing the army.
         after(beaten(2, (33, 6)), vec![Action::Win]),
     ];

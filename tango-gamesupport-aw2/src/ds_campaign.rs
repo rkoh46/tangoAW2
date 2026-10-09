@@ -1443,7 +1443,8 @@ fn co_setup(core: &mut Core) -> u32 {
         // COs unlocked so far.
         let unlocked = unlocked_cos(core);
         let pool = c.model.custom.as_ref().and_then(|x| x.pools.get(index)).cloned().unwrap_or_default();
-        for co in unlocked.into_iter().filter(|c| pool.is_empty() || pool.contains(c)) {
+        let lock = m.native.as_ref().and_then(|n| n.lead_lock);
+        for co in unlocked.into_iter().filter(|c| (pool.is_empty() || pool.contains(c)) && Some(*c) != lock) {
             let country = crate::custom_campaign::country(co);
             match groups.iter_mut().find(|g| g.0 == country) {
                 Some(g) => g.1.push(co),

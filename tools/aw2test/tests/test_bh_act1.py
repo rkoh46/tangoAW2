@@ -9,6 +9,7 @@ import os
 import shutil
 
 from aw2test import bhcampaign as bh
+from aw2test import bhtext
 from aw2test import dscampaign as dc
 from aw2test import paths
 from aw2test.emu import Emu
@@ -18,7 +19,6 @@ from aw2test.stitch import stitch
 
 PICS = os.environ.get("AW2TEST_PICS")
 MAP = 0x0201E450
-PROLOGUE_PAGES = ["Once, one black banner covered half the world.", "Then it burned. Its legions scattered like ash.", "Its officers took new colours and new names.", "Its last lord grew old, counting coins in the ruins.", "Then a storm came ashore that no map had foretold.", "It carried no flag. It had one name, and one purpose.", "Four nations sleep behind their borders, safe and proud.", "None of them has heard the thunder yet."]
 # The picks the CO screen asks for: M1 fixed, M2 one, M3 a fixed pair.
 PICKS = {0: 0, 1: 1, 2: 0}
 M = {1: "storm_landing", 2: "sleeping_foundry", 3: "blockade_runner"}
@@ -156,16 +156,9 @@ def bh_act1_missions_load(ctx):
 
 
 
-# The scenes, as the design has them (docs/BH_CAMPAIGN.md 4.2 / 4.11): the texts the
-# game shows, box by box (a box's two lines joined by a space).
-def design_scenes(raw=False):
-    """{name: [text, ...]} read from bh_act1.rs's own scene functions (one text a Line)."""
-    import re
-    src = open(os.path.join(paths.REPO, "tango-gamesupport-aw2", "src", "bh_act1.rs")).read()
-    out = {}
-    for m in re.finditer(r"fn (m0\d_\w+)\(\) -> Scene \{(.*?)\n\}", src, re.S):
-        out[m.group(1)] = [t.replace("\\r", "\r" if raw else " ").replace('\\"', '"') for t in re.findall(r'Line::\w+\(\s*(?:[^,"]+,\s*(?:Mood::\w+,\s*)?)?"((?:[^"\\]|\\.)*)"\s*,?\s*\)', m.group(2))]
-    return out
+def scenes(lead="STURM", partner=None):
+    """{scene key: [cleaned text, ...]} of the dialogue files for a player leading `lead` (names as bhtext's)."""
+    return {k: bhtext.shown(k, lead, partner) for k in bhtext.keys() if k.startswith("m0")}
 
 
 def collect_texts(e, d, until, max_frames=40000, seen=None, snap=None, tick=None):
@@ -179,7 +172,7 @@ def collect_texts(e, d, until, max_frames=40000, seen=None, snap=None, tick=None
         stable = stable + 1 if t and t == last else 0
         last = t
         if t and stable == 12:
-            t1 = t.replace("\x0f", "").replace("\r", " ")
+            t1 = bhtext.clean(t)
             if not texts or texts[-1] != t1:
                 texts.append(t1)
                 if snap:
@@ -276,7 +269,7 @@ def bh_act1_m1_intro_win_bond_unlocks(ctx):
     fixed), a picture of the first frame and of a dialogue box; a forced win shows the
     victory scene and the world-map scene as designed; Von Bolt is unlocked, his bond
     earned, mission 2's flag open."""
-    exp = design_scenes()
+    exp = scenes()
     e, g, d = enter(ctx, 0, wait=False)
     texts = intro_texts(ctx, e, g, d, label="m1", snap_at=5)
     ctx.eq(texts, exp["m01_pre"], "the opening scene, box by box")
@@ -297,7 +290,7 @@ def bh_act1_m1_crystal_scene_loot_sale_and_day_seven(ctx):
     """M1's turn-start rules: day 3's scene needs a Black Hole unit in a Crystal's light
     (within 2 of it); day 4: Von Bolt, with six or more properties, gets two Md Tanks;
     day 7: his charge scene."""
-    exp = design_scenes()
+    exp = scenes()
     e, g, d = enter(ctx, 0)
     day = lambda: e.u16(0x03004080)
     # (a test aid: Sturm's Recon stands by the west Crystal at (6, 6))
@@ -374,7 +367,7 @@ def lose_hq(ctx, e, g, d, k):
     a = g.unit_addr(foe["id"])
     e.w8(a, 1)                                         # an Infantry
     e.w16(a + 4, (e.u16(a + 4) & ~0x7F) | 100)
-    e.w8(a + 0x0B, 1)                                  # (role 1, not a held role 0: the engine leaves held foot soldiers where they stand)
+    e.w8(a + 0x0B, 1)                                  # (the AI role 1: goes for the enemy HQ; the map's soldiers have role 0 and stand, custom_campaign::ai_unit)
     for u in g.units(army=1):
         if (u["x"], u["y"]) == (hx, hy):
             d.place_unit(u, hx + 1, hy)
@@ -404,8 +397,8 @@ def bh_act1_m2_foundry_waves_and_flow(ctx):
     own table: a unit within a Tank's price on the middle door at day 3's start, none before) with
     its scene and Green Earth's first wave; the win shows the victory and map scenes
     and opens mission 3."""
-    exp = design_scenes()
-    for lead, last in ((bh.STURM, "m02_pre_sturm"), (bh.VON_BOLT, "m02_pre_other")):
+    for lead, last, name in ((bh.STURM, "m02_pre_sturm", "STURM"), (bh.VON_BOLT, "m02_pre_other", "VON BOLT")):
+        exp = scenes(name)
         e, g, d = enter(ctx, 1, cos=[lead], wait=False)
         texts = intro_texts(ctx, e, g, d, label="m2" if lead == bh.STURM else None, snap_at=7)
         ctx.eq(texts, exp["m02_pre"] + exp[last], f"M2 led by CO {lead}: the opening scene, box by box")
@@ -446,7 +439,7 @@ def bh_act1_m3_blockade_flow(ctx):
     """M3: the tag pair Sturm + Von Bolt fixed against Drake + Eagle (no CO screen); the
     opening as designed; day 4's scene; day 8's scene once the middle isle's cities are held;
     the win shows the victory and map scenes."""
-    exp = design_scenes()
+    exp = scenes("STURM", "VON BOLT")
     e, g, d = enter(ctx, 2, wait=False)
     texts = intro_texts(ctx, e, g, d, label="m3", snap_at=10)
     ctx.eq(texts, exp["m03_pre"], "the opening scene, box by box")
@@ -473,9 +466,9 @@ def bh_act1_m3_blockade_flow(ctx):
     pass_turn(e, g, d, texts)
     ctx.eq(day(), 8, "day 8")
     ctx.eq(texts, exp["m03_day8"], "day 8: Drake, once the isle is held")
-    post = exp["m03_post"] + exp["m03_map"]
+    post = exp["m03_post"] + exp["m03_map"] + exp["m03_warroom"]
     texts = win_and_collect(ctx, e, g, d, count=len(post))
-    ctx.eq(texts, post, "the victory scene, then the world-map scene")
+    ctx.eq(texts, post, "the victory scene, the world-map scene, then the war room")
     ctx.eq(d.won() & 4, 4, "mission 3 won")
     ctx.eq(d.unlocked(), [bh.STURM, bh.VON_BOLT], "no new CO")
     e.close()
@@ -756,41 +749,50 @@ def bh_act1_m2_m3_lose_conditions(ctx):
 
 
 def campaign_texts(e):
-    """Every text of the campaign's id range (0x7400..) as the game has it: {id: bytes}."""
+    """Every text of the campaign's id range (0x7400..) as the game has it: {id: bytes} (a text holds up to six boxes joined by 0x0F)."""
     out = {}
-    for tid in range(0x7400, 0x7FF6):
+    for tid in range(0x7400, 0x8000):
         p = e.u32(0x08610A38 + 4 * tid)
         if 0x08F00000 <= p < 0x08FC0000:
-            b = e.read(p, 160)
+            b = e.read(p, 1024)
             out[tid] = b[:b.index(0)] if 0 in b else b
     return out
 
 
 @test(modes=("ds",))
 def bh_act1_dialogue_is_the_designs_and_fits_its_boxes(ctx):
-    """Every line of Act I's scenes (docs/BH_CAMPAIGN.md 4.2 / 4.11, the Hawke rumour of 4.7b more) is in
-    the game with the design's own line breaks, as one box of at most two lines (so no line is cut or
-    spilled into a second box); the prologue's eight pages likewise (one box each, wrapped to the box)."""
+    """Every text of Act I's scenes (tango-gamesupport-aw2/src/bh_text/act1.txt, as each CO the scene offers sees it)
+    is in the game exactly (several boxes of one speaker merged into one text, joined by 0x0F, lines by 0x0D); no
+    box of any campaign text has more than two lines (so no line is cut or spilled into a second box), and no text
+    has more than six boxes."""
     e, g, d = boot(ctx)
     d.start_at(won_mask=0, unlocked_mask=1)
     d.wait_world_map()
     have = campaign_texts(e)
-    boxes = {}
-    tall = []
+    held = {b.decode("latin-1").rstrip("\x0f") for b in have.values()}
+    tall, long_, cut = [], [], []
     for tid, b in have.items():
-        parts = [x for x in b.split(b"\x0f") if x]
-        boxes[b.replace(b"\x0f", b"").decode("latin-1")] = parts
+        parts = [x for x in b.split(b"\x0f") if x]      # (every box ends with 0x0F)
         tall += [(tid, part) for part in parts if part.count(b"\r") > 1]
+        if len(parts) > bhtext.MERGE_BOXES:
+            long_.append(tid)
+        if len(b) >= 1023:
+            cut.append(tid)
     ctx.eq(tall, [], "no box of the campaign has more than two lines")
-    n = 0
-    for name, lines in design_scenes(raw=True).items():
-        for t in lines:
-            n += 1
-            ctx.check(t in boxes and len(boxes[t]) == 1, f"{name}: {t!r} is one box, line breaks as designed")
-    ctx.check(n >= 100, f"{n} scene lines checked")
-    for page in PROLOGUE_PAGES:
-        ok = any(" ".join(k.replace("\r", " ").split()) == page and len(v) == 1 for k, v in boxes.items())
-        ctx.check(ok, f"prologue page {page!r} is one box")
+    ctx.eq(long_, [], "no text of the campaign has more than six boxes")
+    ctx.eq(cut, [], "no text is longer than the 1024 bytes the test reads")
+    n, missing = 0, []
+    keys = [k for k in bhtext.keys() if k.startswith(("m01", "m02", "m03"))]
+    for key in keys:
+        pool = bhtext.book()[key][0]
+        for lead in pool:
+            for partner in ([None] if key != "m03_pre" else [None]):
+                for t in bhtext.scene(key, lead, partner):
+                    n += 1
+                    if t not in held:
+                        missing.append((key, lead, t[:60]))
+    ctx.eq(missing, [], "every scene text is a text of the game")
+    ctx.check(n >= 100, f"{n} scene texts checked")
     e.close()
 
 

@@ -1,0 +1,385 @@
+# BH dialogue, act2a (format: README.txt)
+# Act II first half: M4 Marshal in Green, M5 Night Raid, M6 Stepping Stones, M7 Greenhaven Arsenal.
+
+# ===================================================================================================
+# M4 Marshal in Green (Sturm fixed; he recruits Hawke himself)
+# ===================================================================================================
+
+== m04_pre | STURM
+NARRATION: Green Earth, the northern / march. Fog, forest, a Marshal.
+NARRATION: Fort Verdant holds the one / road that runs through the fog.
+CRUMB(s): Sir, I cannot see Sergeant / Mortar. He is right here.
+MORTAR: Crumb. I am over here.
+WICK(s): Is it all right if I say / the fog is eating the map?
+STURM: Fog hides a march. It hides / a trap better. Report.
+MORTAR: Empty roads, sir. Tidy / ridges. Too tidy.
+MORTAR: Somebody swept this valley / before we came.
+HAWKE: Welcome. You walked my / road without tripping.
+HAWKE: That is rarer than you think. / Two columns before you did not.
+STURM: I did not come for praise. / I came to take.
+HAWKE: Of course not. Praise is / for people who need it.
+HAWKE: Marshal Hawke, warden of / the northern march.
+HAWKE: Green Earth holds the sea / lanes and the salvage rights.
+HAWKE: I hold the fog that lets / the ministry sleep.
+STURM: Wardens guard a fence. / A fence is a claim.
+HAWKE: A neat line. I admire neat / lines. I draw them for a living.
+VON BOLT: Kehh-heh! A Marshal! / What does he cost, Sturm?
+HAWKE: Colonel Von Bolt. I have / read your rent notices.
+HAWKE: Excellent penmanship. I paid / them from the ministry's purse.
+VON BOLT: You paid ME? Kehh... then / you are a customer. Lovely.
+HAWKE: I serve Green Earth. In / name. In green. In habit.
+HAWKE: But I have waited a long / time for a player worth facing.
+HAWKE: Show me. No wasted orders. / No wasted men.
+HAWKE: The fog is mine. I like / my odds.
+CRUMB: Sir, is he allowed to say / that out loud?
+HAWKE: Who is this?
+CRUMB(h): Pip Hobb, sir! Runner! / Crumb, if you like.
+HAWKE: A runner. How quaint.
+HAWKE: Hobb. I will have your file / pulled. I like a complete board.
+CRUMB(h): I have a file?! Gerald, / I have a FILE!
+HAWKE: Gerald?
+CRUMB: My biscuit, sir. Basic / training issue.
+HAWKE: ...Of course he is.
+
+== m04_wedge | STURM
+HAWKE: You did not scout the east / valley. A pity. Two tanks.
+HAWKE: They were going to be there / anyway. I merely lit the road.
+MORTAR: Sir, that is a Marshal who / reads his own mail.
+STURM: Then he reads this. I do not / retreat from a valley.
+
+== m04_day5 | STURM
+HAWKE: Fog is a board with the / lights off. I know it.
+HAWKE: Every square, every shadow. / You are playing blind. I am not.
+CRUMB(s): Sir, he is right. I just / walked into a tree.
+MORTAR: Crumb. It was a nice tree.
+STURM: Then learn the tree. The fog / belongs to whoever stays in it.
+
+== m04_day10 | STURM
+HAWKE: Impressive. You have / reduced the fog to a rumour.
+HAWKE: I do not mind losing a / square. I mind losing it dull.
+HAWKE: You are not dull. Please / continue.
+VON BOLT: He enjoys losing! Kehh... / that is a rare and cheap vice.
+
+== m04_post | STURM
+HAWKE(s): Check. Not mate, but / check. I concede the valley.
+HAWKE: Before I fold: why should / I serve you?
+CRUMB: Sir, is the Marshal giving / up? He looks fine.
+MORTAR: Crumb. He is a gentleman. / It is worse.
+STURM: You will not kneel. You will / command under my banner.
+STURM: Write the doctrine. I / will supply the storm.
+HAWKE: A storm without a captain / wrecks only itself.
+STURM: Then be the captain. Not / mine. The storm's.
+HAWKE: ...Interesting. That is / a different offer.
+HAWKE: Let me be exact. Green Earth / gave me a desk and a fence.
+HAWKE: Thirty years I inspected / a border and called it duty.
+HAWKE: The Accord froze the board. / I cannot stand a frozen board.
+HAWKE: I wrote Black Hole's manual / in the margins of the audits.
+CRUMB: The margins, sir? Of the / audits?
+HAWKE: Chapter one is finished. / It is called Patience.
+VON BOLT: Marginal work! Kehh-heh! / Marshal, what is the pay?
+VON BOLT: Every vault and port. You / choose the quarter. In writing.
+HAWKE: You sell me an empire by / the quarter.
+VON BOLT: By the ton!
+HAWKE: Crude. Effective. I like / the ledger.
+HAWKE: I accept. But I will / correct your orders.
+STURM: My orders are not corrected.
+HAWKE: Then they will be so good / that I have nothing to correct.
+HAWKE: Every army needs a mind. / I volunteer mine.
+STURM: There is a second folder / under your arm.
+HAWKE: Chapter two. It is not / finished. It will keep.
+STURM: What is in it.
+HAWKE: Nothing you need today.
+STURM: Noted.
+HAWKE: I am loyal to the plan, / Lord Sturm. Always the plan.
+STURM: It is my plan.
+HAWKE: Of course. Until a better / one is drawn. Shall we begin?
+HAWKE: A gift first. Skyhaven. / Eagle's aircraft sleep there.
+HAWKE: Eight on the tarmac. Nine / days. By moonlight.
+CRUMB: Does the Marshal need a / runner, sir?
+HAWKE: ...Very well. You. Do not / run into me.
+
+== m04_map | STURM
+CRUMB: Runner Hobb reporting! The / Marshal's coffee is cold!
+MORTAR: Why did you tell him?
+CRUMB(s): He asked.
+WICK: He is polite about it. Is / it all right that I like that?
+CRUMB(h): He said "adequate". I / think that's a medal.
+MORTAR: It is not a medal. It is a / grade.
+CRUMB: He read my file, Sergeant. / It took him no time at all.
+CRUMB(s): Then he read it twice. And / put it away very quietly.
+WICK: What did it say?
+CRUMB: He would not tell me. He / said, "Tidy. Very tidy."
+MORTAR: A man who thanks the fog / is a man to watch.
+VON BOLT: Pay him, I say. Pay him / well. Never pay him early.
+CRUMB(h): Gerald says either boss / would do for the Marshal.
+MORTAR: Gerald has a lot to say / for a biscuit.
+
+# ===================================================================================================
+# M5 Night Raid (FREE; Javier defends Skyhaven)
+# ===================================================================================================
+
+== m05_pre
+NARRATION: Skyhaven. Midnight. Eagle's / airfield sleeps under a moon.
+NARRATION: No bases. No funds. A raid / is only what you carry in.
+HAWKE: Skyhaven by moonlight. / Eagle's aircraft sleep.
+HAWKE: Eight aircraft on the tarmac. / Nine days. Not one more.
+HAWKE: This field guards Green / Earth's sea lanes from above.
+HAWKE: Ground the wing, and the / lanes belong to whoever sails.
+MORTAR: Sleeping planes, sir. And / sleeping men.
+WICK: Is it all right if I ask / if the men are in the planes?
+HAWKE: The crews sleep in the / barracks. The tanks are empty.
+HAWKE: I do not burn men. I burn / tempo.
+MORTAR: Tell that to the bomber, / Marshal.
+HAWKE: I did not say it was kind. / I said it was tidy.
+HAWKE: Javier's tower hears a / mouse sneeze at two miles.
+JAVIER: Hark! The tower of Javier / hears every step. Halt!
+JAVIER: A true foe announces his / name. Sneaking is unknightly!
+HAWKE: He is announcing himself to / us, in a loud voice.
+@IF STURM
+STURM: Fire in the dark is quieter / than people expect.
+STURM: Leave the barracks. A man who / wakes to ash remembers my flag.
+@IF VON BOLT
+VON BOLT: Eight aircraft! A hundred / coins each! Kehh!
+VON BOLT: Salvage rights, Marshal! / Burnt metal is still metal.
+HAWKE: I will send the invoice to / the ministry, Colonel.
+@IF HAWKE
+HAWKE: I picked the night. Do / not waste it.
+HAWKE: Eight pieces. Nine moves. / The board is already ours.
+@OTHER
+[CO]: Eight aircraft. Nine days. / One tower. Begin at the runway.
+@END
+CRUMB(h): I have the lantern, sir!
+HAWKE: Put it out.
+CRUMB(s): ...Yes, sir.
+JAVIER: A lantern! At last, one / honest light in the dark!
+HAWKE: Crumb.
+CRUMB: It is out, sir. Mostly / out.
+
+== m05_day3
+JAVIER: Sound the horns! To arms, / noble Green Earth!
+MORTAR: They woke up, sir.
+WICK: Is it all right to be / terrified in advance?
+HAWKE: Two tanks and an anti-air by / the east road. As modelled.
+HAWKE: Do not argue with a horn. / Flank it.
+
+== m05_day6
+JAVIER: Behold, light! A tower must / be seen by every knight!
+JAVIER: Let no foe say Javier hid / his beacon from a fair fight!
+HAWKE: A beacon. Visible for miles. / Helpful, since so are you.
+CRUMB(h): Marshal, he lit it for / us. Is that polite?
+HAWKE: Very. I shall return the / favour.
+
+== m05_post
+JAVIER(s): My tower is silent. It is / so quiet. Too quiet.
+JAVIER: Eagle shall hear of this! / Once I find a working wire.
+HAWKE: Eight aircraft. No losses / of mine. Tidy.
+CRUMB: Sir, I put the lantern / out. Mostly.
+HAWKE: Hobb. The card. Pin it to / the tower door.
+CRUMB: It says, "With the Marshal's / compliments." Sir, that's cold.
+HAWKE: It is courteous. Cold is / merely an effect.
+JAVIER: Marshal Hawke!? You dined / in my tower! You ate my pie!
+HAWKE: It was an excellent pie, / Sir Javier. I took notes.
+JAVIER: A knight would blush to / answer such a guest!
+HAWKE: Then do not answer. Rest.
+EAGLE: Javier! Javier, report! / Something rang on the field!
+JAVIER: My lord... your aircraft / are... on fire.
+EAGLE: ALL of them?! Who did this?!
+JAVIER: A man with excellent / manners.
+EAGLE: ...Hawke. HAWKE?!
+@IF VON BOLT
+VON BOLT: Burnt metal! Kehh-heh! / Send the scrap men at dawn.
+@END
+STURM: The sky above the north / is open. Two coasts remain.
+STURM: Take the sea. Then take the / shipyard. Neither will wait.
+
+== m05_map
+WICK: I saw a bomber go up like / a firework.
+CRUMB(h): It was a lovely colour, / Wick.
+WICK(s): Somebody's job was that / bomber.
+CRUMB: ...Yes. Right. Sorry.
+MORTAR: Eat something, Crumb.
+MORTAR: It was somebody's job. / That is the point, son.
+MORTAR: You do it fast. You do it / clean. That is all we get.
+CRUMB(s): What do we get after, / Sergeant?
+MORTAR: Soup. Eat your soup.
+HAWKE: Hobb. Coffee. Black.
+CRUMB: I do not like coffee, sir.
+HAWKE: It is not for liking. It / is for the long night.
+CRUMB(h): Gerald says yes please.
+
+# ===================================================================================================
+# M6 Stepping Stones (FREE; Drake)
+# ===================================================================================================
+
+== m06_pre
+NARRATION: The Pelican Isles. Five / islands. A great deal of sea.
+DRAKE: Welcome to my pond! / Mind the pelicans.
+DRAKE: Five islands. Five ways / to get your feet wet.
+DRAKE: I always say: the sea is / just the long way round.
+HAWKE: Every crate for the fence / sails through this chain.
+HAWKE: That is what the Accord / calls "the sea lanes". Drake.
+DRAKE: Hey, dude! Marshal! Man, / you switched colours on us.
+HAWKE: I went where the board moves.
+DRAKE: That's cold! Pelicans, hide / the snacks! He'll tidy 'em!
+HAWKE: Island chain. Supply is / the whole war.
+HAWKE: Take the stones one at a / time. Do not skip a stone.
+STURM: Tides obey. The rest / follows.
+STURM: The coast needs a bridge. / Build it from his isles.
+VON BOLT: No boats. I said no boats. / Boats are wet, and they sink.
+MORTAR: Sir, we have a Lander.
+VON BOLT: A Lander is a boat with / ideas!
+@OTHER
+[CO]: Five islands. We take them / in order. Nothing is skipped.
+@END
+CRUMB: Sir, the Lander says / "welcome aboard". Smiling.
+CRUMB(s): ...I think that's a wave.
+WICK: Is it all right if I look / away from the water?
+MORTAR: No.
+
+== m06_day5
+DRAKE: Fighters off the Carrier! / Wave hello!
+DRAKE: Hey, they're real polite. / They only strafe on Tuesdays!
+CRUMB: Sir, it is not Tuesday.
+HAWKE: Then they have broken their / own rule. Good. Remember it.
+
+== m06_day12
+DRAKE: Hey, easy on the sandwich / boat, dude! It's lunch!
+DRAKE: Man, I make the best ham / and pickle. Don't sink my lunch!
+WICK: Is it all right that I'm / sorry about the sandwiches?
+MORTAR: No. Shoot the sandwiches.
+
+== m06_post
+DRAKE(s): Abandon ship! ...Politely.
+DRAKE: Best loss I've had all / year. Come for a drink!
+DRAKE: Hey, kid. You look green. / Not Green Earth green. Sick.
+CRUMB: Yes, sir. Sorry, sir. Do / you have a ginger biscuit?
+DRAKE: Always! Here, take two.
+CRUMB(h): Gerald, he gave us two! / You may have the other one.
+HAWKE: Drake, the lanes are ours. / Your fleet is gone.
+DRAKE: Yeah, I know. Heck of a / thing, losing the pond.
+DRAKE: But hey, you get Jess next. / She doesn't do snacks.
+DRAKE: Nell's gonna hear about this. / You really don't want that.
+@IF STURM
+STURM: No.
+DRAKE: Ha! Tough crowd. Next / time.
+@OTHER
+[CO]: Another time. When the war / is over.
+DRAKE: Deal. I'll bring snacks.
+@END
+STURM: The chain is a bridge. Cross / it. Greenhaven is next.
+
+== m06_map
+CRUMB(s): I think the sea is / angry at me, Wick.
+WICK: You were sick on the Lander.
+CRUMB: I was sick in solidarity.
+WICK: With who?
+CRUMB: The fish.
+MORTAR: Crumb.
+CRUMB(h): The Lander and I are / not friends, Sergeant.
+HAWKE: Green Earth has lost its / pond. Two pillars remain.
+HAWKE: The Arsenal at Greenhaven. / And the Twin Gates behind it.
+WICK: Is it all right if we go / by road?
+HAWKE: By road. Yes. For you, / Private, I will find one.
+
+# ===================================================================================================
+# M7 Greenhaven Arsenal (Hawke fixed against Eagle)
+# ===================================================================================================
+
+== m07_pre | HAWKE
+NARRATION: Greenhaven. The Arsenal / of the south. Cranes, slipways.
+NARRATION: And one very loud pilot.
+EAGLE: Greenhaven! The Arsenal / of the south! My home field!
+EAGLE: I'm the sky, you're the / ground. That's the whole war.
+EAGLE: Fly with me, or fall / without me!
+HAWKE: Captain Eagle. You have / grown louder.
+EAGLE: ...Marshal?! Marshal Hawke. / Of course it's you.
+EAGLE: Eight planes! Eight! Lucky, / Dottie, Big Gus... I NAMED them!
+HAWKE: I know. I read the registry / first. The names are touching.
+EAGLE: You read the-- you TAUGHT / me to fly, and you burned my wing!
+HAWKE: I taught you tempo. You / chose volume.
+EAGLE: You're not even sorry!
+HAWKE: I am extremely sorry. I am / also ahead of schedule.
+HAWKE: Both things are true. It is / a skill to hold both.
+EAGLE: I'll ground you, Hawke. Not / for a day. For GOOD.
+EAGLE: A hole in the tarmac and a / little sign. That's my plan.
+HAWKE: A hole. How tidy. I had a / similar thought about your wing.
+EAGLE: Everybody trusted you! Jess / did. The whole ministry did!
+HAWKE: They trusted a fence. I / merely inspected it.
+EAGLE: We kept the lanes open! We / kept the Accord alive!
+HAWKE: You kept it still. A sky / that never leaves is a roof.
+CRUMB: Marshal, he is very angry.
+HAWKE: He is always angry. Today / he is also correct.
+EAGLE: Who's the kid?
+CRUMB: Runner Hobb, sir! Sorry. / Other-side sir!
+EAGLE: ...He has manners. Where do / you find a kid with manners?
+HAWKE: On a beach.
+STURM: Hawke. The crane yard hides / a second Foundry. Wake it.
+STURM: Nothing is above me. Not / even his sky.
+VON BOLT: A shipyard! Cranes! Gold! / Kehh... the cranes are mine!
+HAWKE: Second pick, Colonel. After / the Foundry.
+MORTAR: Sir, he has twenty-six / thousand. We have eight.
+WICK: Is it all right if that / frightens me?
+HAWKE: It should. That is why I / am on the board.
+HAWKE: The Foundry builds at three / doors on its own clock.
+HAWKE: It makes what it makes. Do / not feed it.
+
+== m07_day6 | HAWKE
+EAGLE: Bombers! Show them what / weather is!
+HAWKE: Weather is a forecast, / Captain. Yours is wrong.
+EAGLE: Stop being poetic at me!
+MORTAR: Sir, they are bombing us.
+HAWKE: Yes. Please be somewhere / else.
+
+== m07_day10 | HAWKE
+EAGLE: The ministry doubled my / budget, Marshal!
+EAGLE: Know why? They're scared / of you! Ha!
+HAWKE: Excellent. Fear is cheaper / than arithmetic.
+
+== m07_day12 | HAWKE
+EAGLE: Second bomber, Marshal! / Dottie the Second!
+EAGLE: I put a bow on her, even. / You'll love her!
+HAWKE: A gift. Hobb, find me a / long pole.
+
+== m07_day13 | HAWKE
+CRUMB(h): The Foundry made an / Oozium! It looks at me!
+HAWKE: Do not feed it.
+CRUMB(s): ...Gerald is hiding.
+MORTAR: Crumb. Back away, slowly.
+CRUMB: I am. It is not. It's / following the biscuit.
+HAWKE: Then do not run. Predictable / things are safe things.
+
+== m07_post | HAWKE
+EAGLE(s): I never lose in the / air. This was ground.
+EAGLE: I'll be back. In a bigger / plane.
+HAWKE: Arsenals do not forgive. / Neither do I.
+EAGLE: Why'd you do it, Hawke? You / made me believe in this.
+EAGLE: The wings, the lanes, the / Accord. All of it.
+HAWKE: I believed in the board. The / Accord froze it.
+EAGLE: That's it? That's the / reason?
+HAWKE: It is always a small reason, / Captain. It is rarely a grand one.
+EAGLE: ...I'm telling Jess.
+HAWKE: Do. She keeps a better ledger / than you. She will understand.
+HAWKE: She will not forgive me. That / is also in the numbers.
+CRUMB(s): Sir, he looks like he's / about to cry.
+HAWKE: Hobb. Do not look at him. / It is the only courtesy left.
+EAGLE: Death from above, Marshal. / Next time, from higher.
+HAWKE: I will bring a longer pole.
+STURM: The Arsenal is mine. And the / second Foundry beneath it.
+VON BOLT: And the cranes! Second / pick! Kehh-heh!
+HAWKE: The cranes, Colonel, were / always going to be yours.
+HAWKE: The Foundry is Sturm's. The / board is mine.
+
+== m07_map | HAWKE
+CRUMB: The Oozium followed me to / the latrine, Sergeant.
+MORTAR: Then he knows where / your biscuit is.
+CRUMB(s): Gerald is NOT a food.
+WICK: Is it all right if I ask / why it likes you?
+CRUMB: I fed it a button. By / accident. Now we are friends.
+MORTAR: Crumb.
+CRUMB: He is shy, Sergeant. He / just looks scary.
+CRUMB: Sir? ...The Marshal is / writing in his book.
+CRUMB(s): Lucky. Dottie. Big Gus. / Why are those names in it?
+HAWKE: Someone should keep the / record. Eagle will not.
+CRUMB: Sir... are you sad?
+HAWKE: I am correct, Hobb. It is / a very similar feeling.
+HAWKE: Black coffee. Then bed.

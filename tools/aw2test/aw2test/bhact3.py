@@ -5,6 +5,7 @@ reading the intro's boxes, forcing the win, taking the pictures."""
 import os
 
 from . import bhcampaign as bh
+from . import bhtext
 from . import dscampaign as dc
 from . import paths
 from .emu import Emu
@@ -55,7 +56,20 @@ def start_at(e, d, won, unlocked, at=None, from_title=True):
 
 
 def clean(t):
-    return t.replace("\x0f", " ").replace("\r", " ").replace("  ", " ").strip() if t else t
+    """As bhtext.clean (boxes and line breaks as spaces, pauses dropped)."""
+    return bhtext.clean(t) if t else t
+
+
+NAMES = {bh.STURM: "STURM", bh.VON_BOLT: "VON BOLT", bh.HAWKE: "HAWKE", bh.KOAL: "KOAL", bh.KINDLE: "KINDLE"}
+
+
+def co_name(co):
+    return NAMES.get(co)
+
+
+def played(key, lead, partner=None, bonds=()):
+    """The texts the game shows for the scene `key` to a player leading `lead` with `partner` (AW2 CO ids; None for none)."""
+    return bhtext.shown(key, co_name(lead), co_name(partner) if partner is not None else None, bonds)
 
 
 def intro(ctx, e, d, label, shots=(0,), max_frames=40000):
@@ -104,6 +118,13 @@ def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False):
     CO screens answered with `cos`, Setup left with Deploy, the intro read.
     Returns the intro's boxes."""
     d.pick_mission()
+    if cos:
+        # (the CO screen takes a moment before it answers: an A at once on the cursor's first CO is lost)
+        for _ in range(200):
+            if d.on_co_select() and d.co_cursor():
+                break
+            e.wait(10)
+        e.wait(90)
     picked = d.choose_cos(len(cos), prefs=list(cos)) if cos else []
     for _ in range(600):
         if d.in_battle() and e.u32(0x0849_9598) != 0:
@@ -122,6 +143,9 @@ def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False):
             e.press("A", 4) if d.scripts_running() else None
             e.wait(10)
         return []
+    if not cos:
+        # (a fixed pair has no CO screen to wait on: the battle is up before its opening scene starts)
+        e.wait_until(lambda: d.scripts_running() or d.in_setup(), 600, step=5)
     d.leave_setup()
     return intro(ctx, e, d, label, shots)
 

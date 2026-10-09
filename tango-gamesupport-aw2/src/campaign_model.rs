@@ -463,6 +463,8 @@ pub struct Native {
     /// made for the header's army 1 (the CO screen's own) and given to army 5;
     /// army 1, an ally, has this CO (AW2 id) instead.
     pub five_pick: Option<u8>,
+    /// The player's army leads with this CO and picks only its tag partner ([`crate::custom_campaign::CoSpec::PickPartner`]).
+    pub lead_lock: Option<u8>,
     /// The Setup phase (scout the map, then Deploy) before day 1 when the
     /// player picks a CO ([`crate::setup_phase`]).
     pub setup: bool,

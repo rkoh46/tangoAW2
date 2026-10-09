@@ -206,18 +206,22 @@ pub struct Line {
     pub partner: Option<u8>,
     /// Shown only when this CO is in the player's pair (the main CO or the partner).
     pub with: Option<u8>,
+    /// Shown only when this hidden bond ([`CampaignDef::bonds`]) is earned (the epilogue's toasts).
+    pub bond: Option<u8>,
+    /// Shown only when this CO is NOT in the player's pair (the rows for a pair without Clone Andy).
+    pub without: Option<u8>,
 }
 
 /// `Line::say(co::STURM, "...")`.
 impl Line {
     pub const fn say(co: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, Mood::Normal), text, only: None, partner: None, with: None }
+        Line { who: Speaker::Co(co, Mood::Normal), text, only: None, partner: None, with: None, bond: None, without: None }
     }
     pub const fn feel(co: u8, mood: Mood, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, mood), text, only: None, partner: None, with: None }
+        Line { who: Speaker::Co(co, mood), text, only: None, partner: None, with: None, bond: None, without: None }
     }
     pub const fn soldier(colour: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Trooper(colour), text, only: None, partner: None, with: None }
+        Line { who: Speaker::Trooper(colour), text, only: None, partner: None, with: None, bond: None, without: None }
     }
     /// The line is shown only when the player's CO is `co`.
     pub const fn only(mut self, co: u8) -> Line {
@@ -234,9 +238,19 @@ impl Line {
         self.partner = Some(co);
         self
     }
+    /// The line is shown only when `co` is not in the player's pair.
+    pub const fn without(mut self, co: u8) -> Line {
+        self.without = Some(co);
+        self
+    }
+    /// The line is shown only when hidden bond `k` is earned.
+    pub const fn bond(mut self, k: u8) -> Line {
+        self.bond = Some(k);
+        self
+    }
     /// A narration box with no speaker.
     pub const fn narrate(text: &'static str) -> Line {
-        Line { who: Speaker::Narrator, text, only: None, partner: None, with: None }
+        Line { who: Speaker::Narrator, text, only: None, partner: None, with: None, bond: None, without: None }
     }
 }
 
@@ -455,6 +469,9 @@ pub enum CoSpec {
     Pick,
     /// The player picks two, a tag pair.
     PickPair,
+    /// The player leads with this CO (always) and picks the tag partner: the pick screen asks for one CO, who
+    /// is never the lead, and the pair is (lead, pick).
+    PickPartner(u8),
 }
 
 /// An army in a mission: colour and CO are independent (Von Bolt can lead
@@ -527,6 +544,8 @@ pub enum Cond {
     PartnerCo(u8),
     /// This CO is the player's main CO or its tag partner.
     PlayerHas(u8),
+    /// Hidden bond `k` is earned.
+    BondEarned(u8),
     /// The cell (x, y) belongs to this army (0 neutral).
     OwnerAt { x: u8, y: u8, army: u8 },
     /// An army is defeated (its HQ taken or its units gone).
@@ -998,6 +1017,8 @@ struct Compiler<'a> {
     conds: Vec<(u32, Cond)>,
     units: HashMap<(usize, &'static str), (u8, u8, u8)>,
     fns: Vec<fn(&mut Core)>,
+    /// The texts already made (equal texts share an id: every CO says "Report." with the same one).
+    shared: HashMap<Vec<u8>, u16>,
     /// The next once-latch flag.
     next_flag: u8,
     /// The player's army and the index of the mission being compiled (for `Line::only`).
@@ -1012,21 +1033,90 @@ fn face(who: Speaker) -> u16 {
         Speaker::Co(c, m) => c as u16 + 24 * m as u16,
         // AW2's troopers: faces 19..23 by colour.
         Speaker::Trooper(col) => 19 + (col.clamp(1, 5) as u16 - 1),
-        Speaker::Narrator => 19 + 4,
+        // (a blank portrait: the box with no face)
+        Speaker::Narrator => crate::co_new::NARRATOR_FACE as u16,
     }
+}
+
+/// The most boxes one text holds when the boxes of a run by one speaker are merged.
+pub const MERGE_BOXES: usize = 6;
+
+/// A scene line after merging.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Merged {
+    pub who: Speaker,
+    pub text: String,
+    pub only: Option<u8>,
+    pub partner: Option<u8>,
+    pub with: Option<u8>,
+    pub bond: Option<u8>,
+    pub without: Option<u8>,
+}
+
+/// A scene's lines with every run of boxes by one speaker (same face, same conditions) made one
+/// text of up to [`MERGE_BOXES`] boxes (`\x0f` between them): the game shows them one after
+/// the other all the same, and the campaign's 3,072 text ids go further.
+pub fn merged(lines: &[Line]) -> Vec<Merged> {
+    let mut out: Vec<Merged> = Vec::new();
+    let mut boxes = 0usize;
+    for l in lines {
+        let n = l.text.split('\x0f').filter(|b| !b.is_empty()).count().max(1);
+        if let Some(m) = out.last_mut() {
+            if m.who == l.who && m.only == l.only && m.partner == l.partner && m.with == l.with && m.bond == l.bond && m.without == l.without && boxes + n <= MERGE_BOXES {
+                m.text.push('\x0f');
+                m.text.push_str(l.text);
+                boxes += n;
+                continue;
+            }
+        }
+        out.push(Merged { who: l.who, text: l.text.to_string(), only: l.only, partner: l.partner, with: l.with, bond: l.bond, without: l.without });
+        boxes = n;
+    }
+    out
+}
+
+/// How many of the campaign's text ids its scenes use (equal texts share one), and the
+/// mission names and objectives (two a mission): the number the compiler will use for them.
+pub fn text_ids_used(def: &CampaignDef) -> usize {
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut scene = |s: &Scene| {
+        for m in merged(&s.lines) {
+            seen.insert(m.text);
+        }
+    };
+    for m in &def.missions {
+        scene(&m.intro);
+        scene(&m.victory);
+        scene(&m.after);
+        scene(&m.front2_victory);
+        for t in m.triggers.iter().chain(m.front2_triggers.iter()) {
+            for a in &t.then {
+                if let Action::Scene(s) = a {
+                    scene(s);
+                }
+            }
+        }
+    }
+    let prologue: Vec<Line> = def.prologue.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None, without: None }).collect();
+    scene(&Scene::new(prologue));
+    seen.len() + 2 * def.missions.len()
 }
 
 impl<'a> Compiler<'a> {
     fn text(&mut self, bytes: Vec<u8>) -> Result<u16, Error> {
+        if let Some(&id) = self.shared.get(&bytes) {
+            return Ok(id);
+        }
         let id = self.next_text;
         if id > TEXT_LAST {
             return Err("out of text ids".into());
         }
         self.next_text += 1;
-        let mut z = bytes;
+        let mut z = bytes.clone();
         z.push(0);
         let at = self.built.add(&z);
         self.built.texts.push((id, at));
+        self.shared.insert(bytes, id);
         Ok(id)
     }
 
@@ -1067,7 +1157,7 @@ impl<'a> Compiler<'a> {
             out.push(cmd(0x41, 0, s, 0, 0));
         }
         out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, 0));
-        for l in &scene.lines {
+        for l in &merged(&scene.lines) {
             if let Some(co) = l.only {
                 // (jumps over the two commands below unless the player's CO is `co`: a relative
                 // jump, made absolute by `script`)
@@ -1082,8 +1172,16 @@ impl<'a> Compiler<'a> {
                 let stub = self.cond(self.mission, &Cond::Not(Box::new(Cond::PartnerCo(co))));
                 out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
             }
+            if let Some(k) = l.bond {
+                let stub = self.cond(self.mission, &Cond::Not(Box::new(Cond::BondEarned(k))));
+                out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
+            }
+            if let Some(co) = l.without {
+                let stub = self.cond(self.mission, &Cond::PlayerHas(co));
+                out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
+            }
             out.push(cmd(0x38, 0, face(l.who), 0, 0));
-            let id = self.dialogue(l.text)?;
+            let id = self.dialogue(&l.text)?;
             out.push(cmd(0x19, 0, id, 0, 0));
         }
         if scene.song.is_some() {
@@ -1220,6 +1318,7 @@ fn co_ids(spec: CoSpec) -> ((u8, u8), (u8, u8)) {
         CoSpec::Pair(a, b) => ((a, b), (1, 1)),
         CoSpec::Pick => ((NO_CO, NO_CO), (0x1C, 0)),
         CoSpec::PickPair => ((NO_CO, NO_CO), (0x1C, 0x1C)),
+        CoSpec::PickPartner(_) => ((NO_CO, NO_CO), (0x1C, 0)),
     }
 }
 
@@ -1249,6 +1348,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         conds: Vec::new(),
         units: HashMap::new(),
         fns: Vec::new(),
+        shared: HashMap::new(),
         next_flag: FLAG_FIRST,
         player: 1,
         mission: 0,
@@ -1404,7 +1504,7 @@ fn prologue_script(cx: &mut Compiler, pages: &[Page]) -> Result<u32, Error> {
     if cx.art != WorldArt::OmegaLand {
         // AW2's own map: the pages are dialogue boxes (a picture is drawn
         // over Omega Land's map layer only: AW2's is not rebuilt after one).
-        let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None }).collect();
+        let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None, without: None }).collect();
         let cmds = cx.scene_cmds(&Scene { lines, song: None })?;
         return Ok(cx.script(cmds));
     }
@@ -1737,6 +1837,10 @@ fn compile_mission(
     }
     hd[0x58] = colours[0].clamp(1, 4);
     native.pool = m.pool.clone();
+    native.lead_lock = match m.armies.first().map(|a| a.co) {
+        Some(CoSpec::PickPartner(lead)) => Some(lead),
+        _ => None,
+    };
     native.setup = m.setup;
     if five {
         let (co, partner) = match m.armies[4].co {
@@ -1795,7 +1899,7 @@ fn two_front_of(second: u8, f: &FrontDef) -> Result<TwoFront, Error> {
             CoSpec::Fixed(c) => *c,
             CoSpec::Pair(a, _) => *a,
             CoSpec::None => NO_CO,
-            CoSpec::PickPair => return Err("a second front picks one CO per army".into()),
+            CoSpec::PickPair | CoSpec::PickPartner(_) => return Err("a second front picks one CO per army".into()),
         };
     }
     Ok(TwoFront {
@@ -2319,9 +2423,13 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
         }
         Cond::PlayerHas(c) => {
             let army = crate::ds_campaign::player_army(core) as u32;
-            crate::tag::army_co_of(core, army) == *c || crate::tag::partner(core, army) == Some(*c)
+            crate::tag::army_co_of(core, army) == *c || crate::tag::partner(core, army) == Some(*c) || crate::two_front::second_front_co(core, army) == Some(*c)
         }
-        Cond::PartnerCo(c) => crate::tag::partner(core, crate::ds_campaign::player_army(core) as u32) == Some(*c),
+        Cond::BondEarned(k) => crate::ds_campaign::bonds_earned(core) >> *k & 1 != 0,
+        Cond::PartnerCo(c) => {
+            let army = crate::ds_campaign::player_army(core) as u32;
+            crate::tag::partner(core, army) == Some(*c) || crate::two_front::second_front_co(core, army) == Some(*c)
+        }
         Cond::PlayerCo(c) => crate::tag::army_co_of(core, crate::ds_campaign::player_army(core) as u32) == *c,
         Cond::OwnerAt { x, y, army } => owner_at(core, *x, *y) == *army,
         Cond::ArmyDefeated(army) => {

@@ -214,7 +214,7 @@ def bh_campaign_pair_pick_matches_every_partner(ctx):
     for lead_co, partner in pairs:
         e, g, d = boot_features(ctx)
         d.picks = {16: 2}
-        d.start_at(won_mask=0xFFFF & ~(1 << 5) & ~(1 << 16), unlocked_mask=0xFFF)
+        d.start_at(won_mask=0xFFFF & ~(1 << 5) & ~(1 << 16), unlocked_mask=0xFFF)     # (all twelve of the roster, Crumb too)
         d.pick_mission()
         picks = d.choose_cos(2, prefs=[lead_co, partner])
         g._units_base = g._players_base = None
