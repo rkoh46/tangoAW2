@@ -870,8 +870,8 @@ mod pack_tests {
         let widths = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").unwrap()).unwrap()[(crate::co_new::FONT_WIDTHS - 0x0800_0000) as usize..][..256].to_vec();
         let px = |l: &str| l.bytes().map(|c| widths[c as usize] as u32 + 1).sum::<u32>().saturating_sub(1);
         let mut n = 0;
-        for a in 0..crate::co_new::FIRST + 10 {
-            for b in 0..crate::co_new::FIRST + 10 {
+        for a in 0..crate::co_new::FIRST + 11 {
+            for b in 0..crate::co_new::FIRST + 11 {
                 let Some((_, lines)) = pair_texts(a, b) else { continue };
                 let name = crate::co_new::ds_name(b).unwrap_or_else(|| b"Sturm".to_vec());
                 for first in 0..2 {

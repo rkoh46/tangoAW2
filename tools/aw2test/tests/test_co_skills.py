@@ -133,7 +133,7 @@ def skills_off_change_nothing(ctx):
 DATA = 0x0203E000      # crate::co_skills::DATA: "SKL1", then 32 bytes per CO
 CO_LEN = 32
 PLAYERS = 0x08499598
-CO_SLOTS = list(range(19)) + list(range(72, 81))
+CO_SLOTS = list(range(19)) + list(range(72, 83))
 
 
 def co_slot(co):
@@ -392,8 +392,8 @@ def skills_war_room_exp(ctx):
     ctx.eq(int.from_bytes(rec[off:off + 4], "little"), 3000 + score * 2, "the EXP in Flash")
 
 
-PANEL = 0x0203E3A8          # crate::skills_panel: open, slot, CO, set, ids[4], on Teams
-VERSUS_RULE = DATA + 4 + CO_LEN * 29 + 1
+PANEL = 0x0203E3F0          # crate::skills_panel: open, slot, CO, set, ids[4], on Teams
+VERSUS_RULE = DATA + 4 + CO_LEN * 30 + 1
 CO_SELECT = 0x08616638
 CO_SELECT_IDLE = 0x0807CE5D
 

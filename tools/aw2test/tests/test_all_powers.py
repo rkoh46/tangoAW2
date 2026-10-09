@@ -10,7 +10,7 @@ from aw2test import rom as romlib
 from aw2test.harness import test
 
 AW2_COS = [n.lower() for n in romlib.CO_NAMES]
-NEW_COS = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
+NEW_COS = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy", "crumb"]
 NO_COP = {"sturm", "vonbolt"}
 
 

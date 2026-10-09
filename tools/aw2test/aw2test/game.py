@@ -255,7 +255,7 @@ class Game:
     # Dual Strike pack): the row the cursor is on (0 none, 1 Skills; the
     # game's own cursor stays on Visuals) and the rule's byte.
     VRULE_CURSOR = 0x0203F4C8
-    SKILLS_RULE = 0x0203E3A5
+    SKILLS_RULE = 0x0203E3C5
 
     def set_extra_rules(self, skills=None):
         """On the Rules screen, with the pad: Skills ON (True) or OFF (False);

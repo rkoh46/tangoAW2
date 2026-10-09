@@ -55,6 +55,7 @@ pub mod co {
     pub const JAKE: u8 = 79;
     pub const RACHEL: u8 = 80;
     pub const CLONE_ANDY: u8 = crate::co_new::CLONE_ANDY;
+    pub const CRUMB: u8 = crate::co_new::CRUMB;
 }
 
 /// Army colours (the header's colour bytes).
@@ -544,6 +545,11 @@ pub enum Action {
     AddFunds { army: u8, funds: i32 },
     /// Hidden bond `k` is earned ([`CampaignDef::bonds`]).
     EarnBond(u8),
+    /// The CO with this roster index is unlocked now, in the middle of a
+    /// mission (a promotion scene: Crumb, `bh_campaign::roster::CRUMB`,
+    /// after M28); a mission's win unlocks its `recruits` as well. Nothing
+    /// happens in a replay (Free Play), as with a recruit.
+    Unlock(u8),
     /// Reinforcements: these units appear (full HP, ammo and fuel) on their
     /// cells for their armies, if the cells are free.
     Spawn(Vec<UnitDef>),
@@ -815,6 +821,8 @@ pub const SET_CO: u32 = 0xBC80_0000;
 pub const CUSTOM_FN: u32 = 0xBC90_0000;
 /// A jump's relative marker (script op 0x1E whose target word is `REL_JUMP | n`: n commands on).
 const REL_JUMP: u32 = 0xFFFE_0000;
+/// [`UNLOCK`] | k unlocks the CO of roster index k.
+pub const UNLOCK: u32 = 0xBCA0_0000;
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
 /// (but AW2's Hard flag, [`FLAG_HARD`]).
 pub const FLAG_FIRST: u8 = 0x20;
@@ -1383,6 +1391,10 @@ fn compile_mission(
                     let s = cx.stub(Magic::Call(BOND | *k as u32, 0));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
+                Action::Unlock(k) => {
+                    let s = cx.stub(Magic::Call(UNLOCK | *k as u32, 0));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
                 Action::SetFunds { army, funds } => {
                     let s = cx.stub(Magic::Call(FUNDS | *army as u32, *funds));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
@@ -1880,6 +1892,10 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             crate::ds_campaign::earn_bond(core, (f & 0xF) as u8);
             0
         }
+        Magic::Call(f, _) if f & 0xFFF0_0000 == UNLOCK => {
+            crate::ds_campaign::unlock_co(core, (f & 0xF) as u8);
+            0
+        }
         _ => 0,
     }
 }
@@ -1892,7 +1908,7 @@ pub fn roster_index(model: &Model, co: u8) -> Option<usize> {
 /// A CO's country as the CO screen's tabs number them (0 Orange Star, 1
 /// Blue Moon, 2 Green Earth, 3 Yellow Comet, 4 Black Hole).
 pub fn country(co: u8) -> u8 {
-    if co == crate::co_new::CLONE_ANDY {
+    if crate::co_new::is_own(co) {
         return 4;
     }
     match crate::co_roster::ds_co(co) {

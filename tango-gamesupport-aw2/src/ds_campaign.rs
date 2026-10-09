@@ -813,8 +813,11 @@ pub fn bonds_earned(core: &Core) -> u32 {
 
 /// Every bond of the campaign is earned.
 pub fn bonds_all(core: &Core) -> bool {
-    let n = campaign(core).and_then(|c| c.model.custom.as_ref()).map_or(0, |c| c.bonds.len());
-    n > 0 && bonds_earned(core) & ((1 << n) - 1) == (1 << n) - 1
+    // (Crumb's page quote is a bond of its own kind: it does not count)
+    let counted: u32 = campaign(core)
+        .and_then(|c| c.model.custom.as_ref())
+        .map_or(0, |c| c.bonds.iter().enumerate().filter(|(_, b)| b.0 != crate::co_new::CRUMB).fold(0, |m, (k, _)| m | 1 << k));
+    counted != 0 && bonds_earned(core) & counted == counted
 }
 
 /// Earns bond `k` (a trigger's action); saved with the record.
@@ -824,6 +827,16 @@ pub fn earn_bond(core: &mut Core, k: u8) {
         return;
     }
     let m = unlocked_mask(core) | 1 << (BOND_SHIFT + k as u32);
+    set_unlocked_mask(core, m);
+}
+
+/// Unlocks the roster's CO `k` (a trigger's action, `Action::Unlock`); saved
+/// with the record. (A replay unlocks nothing.)
+pub fn unlock_co(core: &mut Core, k: u8) {
+    if replaying(core) || k as u32 >= BOND_SHIFT {
+        return;
+    }
+    let m = unlocked_mask(core) | 1 << k;
     set_unlocked_mask(core, m);
 }
 
