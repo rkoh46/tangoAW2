@@ -252,7 +252,7 @@ fn bh26() -> MissionDef {
     m.objective = "Break Jake, Colin and Grimm. 30 days, par 20.";
     m.map = MapSrc::Built("bh26");
     // Each ally's Infantry beside its HQ holds it (and Grimm's Fighters fly); the rest advance on BH.
-    m.units = roles(built_units("bh26"), 1, &[(2, 3), (4, 3), (25, 2), (27, 3), (24, 21), (25, 20)]);
+    m.units = roles(built_units("bh26"), 1, &[(3, 3), (5, 3), (3, 21), (5, 22), (32, 13), (32, 15)]);
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(8000),
@@ -265,7 +265,7 @@ fn bh26() -> MissionDef {
     m.victory = scene(text::m26_post());
     m.after = scene(text::m26_map());
     m.triggers = vec![on_day(8, None, vec![Action::Scene(scene(text::m26_day_8()))]), after(
-        Cond::All(vec![beaten(2, (3, 2), 1), beaten(3, (26, 2), 1), beaten(4, (26, 21), 1)]),
+        Cond::All(vec![beaten(2, (4, 4), 1), beaten(3, (4, 23), 1), beaten(4, (33, 14), 1)]),
         vec![Action::Win],
     )];
     m.needs = Needs::All(vec!["bh24", "bh25"]);
@@ -314,7 +314,7 @@ fn bh27() -> MissionDef {
 
 /// The Obelisk Gate (the city north of the Obelisk) is in the coalition's hands.
 fn gate_lost(core: &mut Core) -> bool {
-    !holds(core, &Cond::OwnerAt { x: 14, y: 12, army: 5 })
+    !holds(core, &Cond::OwnerAt { x: 17, y: 13, army: 5 })
 }
 
 fn bh28() -> MissionDef {
@@ -323,7 +323,7 @@ fn bh28() -> MissionDef {
     m.map = MapSrc::Built("bh28");
     // Each ally's two Infantry beside its HQ hold it and the Rockets cover them; the rest of the four armies advance
     // on the fortress (the coalition attacks).
-    m.units = roles(built_units("bh28"), 5, &[(2, 4), (3, 5), (25, 5), (26, 4), (2, 24), (3, 23), (26, 24), (25, 23), (7, 3), (21, 3), (7, 25), (21, 25)]);
+    m.units = roles(built_units("bh28"), 5, &[(2, 3), (4, 3), (32, 3), (30, 3), (2, 27), (4, 27), (32, 27), (30, 27), (8, 3), (28, 3), (8, 27), (29, 28)]);
     m.look = if std::env::var_os("TANGOAW2_BH_LOOK0").is_some() { 0 } else { 3 }; // the Wasteland look
     let ally_funds = if still() { 0 } else { 12000 };
     // Five armies: the player is the fifth (Black Hole), a tag pair (the natural one: Sturm and
@@ -338,9 +338,9 @@ fn bh28() -> MissionDef {
     m.day_limit = 36;
     m.rank_days = 24;
     // The Black Onyx is ours, on a five-day cycle; the four corner silos can bring it down.
-    m.onyx = Some(OnyxDef::new((13, 13)));
-    // Mount Ember's rim track: from day 3, every day, three marked cells erupt for 5 HP (any army).
-    m.volcano = Some(VolcanoDef::new(3, 1, 5, &[(20, 12), (24, 8), (24, 15)]));
+    m.onyx = Some(OnyxDef::new((16, 14)));
+    // Mount Ember's rim: from day 3, every day, three marked cells of the east gate road erupt for 5 HP (any army).
+    m.volcano = Some(VolcanoDef::new(3, 1, 5, &[(25, 15), (27, 15), (29, 15)]));
     m.intro = scene(text::m28_pre());
     m.victory = scene(text::m28_post());
     // The world map: the MAP scene, then Crumb's promotion at dusk (he is a CO from the win: `recruits`).
@@ -358,7 +358,7 @@ fn bh28() -> MissionDef {
         Trigger::new(When::AfterAction, Cond::OnyxHitsAtMost(1), vec![Action::Scene(scene(text::m28_onyx_hit3()))]),
         Trigger::new(When::AfterAction, Cond::OnyxDestroyed, vec![Action::Scene(scene(text::m28_onyx_destroyed()))]),
         after(
-            Cond::All(vec![beaten(1, (4, 4), 5), beaten(2, (24, 4), 5), beaten(3, (4, 24), 5), beaten(4, (24, 24), 5)]),
+            Cond::All(vec![beaten(1, (3, 3), 5), beaten(2, (31, 3), 5), beaten(3, (3, 27), 5), beaten(4, (31, 27), 5)]),
             vec![Action::Win],
         ),
         after(Cond::Custom(gate_lost), vec![Action::Lose]),

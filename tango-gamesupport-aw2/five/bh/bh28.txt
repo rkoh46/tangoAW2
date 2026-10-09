@@ -1,98 +1,100 @@
-# bh28: M28 Home Is Where The Black Is (5 armies, tag)
+# bh28: M28 Home Is Where The Black Is (5 armies, tag): the fortress
 map bh28
 armies 5 9 1 2 3 4 5
 team 1 1 1 1 2
 objective 5
-unit 5 1 16 13
-unit 5 1 16 15
-unit 5 1 17 13
-unit 5 1 17 15
-unit 5 2 16 12
-unit 5 2 16 16
+unit 5 1 19 14
+unit 5 1 21 14
+unit 5 1 19 16
+unit 5 1 21 16
 unit 5 2 19 13
-unit 5 5 12 13
-unit 5 5 12 15
-unit 5 5 19 15
-unit 5 3 12 11
-unit 5 3 12 19
-unit 5 3 16 19
-unit 5 10 17 12
-unit 5 10 17 16
-unit 5 11 11 14
-unit 5 11 9 15
-unit 5 15 11 13
-unit 5 15 11 15
-unit 5 14 12 9
-unit 5 14 16 17
-unit 5 9 6 12
-unit 5 13 8 13
-unit 5 27 8 15
-unit 5 27 19 17
-unit 1 1 3 5
-unit 1 1 5 5
-unit 1 1 2 4
-unit 1 2 6 4
-unit 1 5 5 3
-unit 1 5 3 3
-unit 1 3 4 5
-unit 1 8 5 4
-unit 1 11 7 3
-unit 2 1 25 5
-unit 2 1 23 5
-unit 2 1 26 4
-unit 2 2 22 4
-unit 2 5 23 3
-unit 2 5 25 3
-unit 2 3 24 7
-unit 2 8 23 4
-unit 2 11 21 3
-unit 3 1 3 23
-unit 3 1 5 23
-unit 3 1 2 24
-unit 3 2 6 24
-unit 3 5 5 25
-unit 3 5 3 25
-unit 3 3 5 21
-unit 3 8 5 24
-unit 3 11 7 25
-unit 3 16 6 25
-unit 3 16 2 26
-unit 3 16 4 26
-unit 4 1 25 23
-unit 4 1 23 23
-unit 4 1 26 24
-unit 4 2 22 24
-unit 4 5 23 25
-unit 4 5 25 25
-unit 4 3 24 21
-unit 4 8 23 24
-unit 4 11 21 25
-.............................
-.M...f.......###..^....f.f.M.
-...C..B..^^.^#D#^..^..B..C...
-..Cf....ff.t.###...ff.f...C..
-....1RRR.C...fRf...CRRRR2....
-......CR^...f.R.f...R.C.R....
-.......R..L...R.....R..fR....
-..B....R...c..R..c..R.c.R.B..
-..f...BRRRRRRRRRRRRRRRRRRRRR.
-^..f.^IRf.f.R###R..fR^^^^^^R^
-^^....IR....B#n#B...R^####^R^
-...^c.ZRC..NR###RE..R^####^R.
-.ff...IR.^XRRRCRRRX^R^#V##^R.
-......IR....R###R...R^####^R.
-..t...BRRCRRR#O#R5RCR^^^^^^R.
-.......R....R###R...RRRRRRRR.
-.f....fR.^XRRRRRRRX^R...Rf.t.
-..fRRRRR...WR###RS..R...R.f..
-^^.^R..R....B#v#B...R.c.R..^^
-^...R^cRf.f.R###R..fR..^R...^
-...fR.fRRRRRRRRRRRRRR...R....
-..B.R..R...c.....c..R.f.R.B..
-....R..R.....f.f..L.R..fR....
-....R.CR^...f...f...R.C.R....
-....3RRR.C.........CRRRR4....
-..Cf.....ff...t........f..C..
-...C..B..^^.....^..^..B..C...
-.M...f.A....^..^..^......f.M.
-.............................
+unit 5 2 20 13
+unit 5 2 22 15
+unit 5 5 14 13
+unit 5 5 14 14
+unit 5 5 14 16
+unit 5 3 14 15
+unit 5 3 15 13
+unit 5 3 15 17
+unit 5 10 13 14
+unit 5 10 13 16
+unit 5 11 14 18
+unit 5 11 20 18
+unit 5 15 12 15
+unit 5 15 12 13
+unit 5 14 19 17
+unit 5 14 15 19
+unit 5 9 9 17
+unit 5 13 12 16
+unit 5 27 22 13
+unit 5 27 22 17
+unit 1 1 2 3
+unit 1 1 4 3
+unit 1 1 5 2
+unit 1 2 3 5
+unit 1 5 5 4
+unit 1 5 1 5
+unit 1 3 6 4
+unit 1 8 4 5
+unit 1 11 8 3
+unit 2 1 32 3
+unit 2 1 30 3
+unit 2 1 32 5
+unit 2 2 31 5
+unit 2 5 29 4
+unit 2 5 32 2
+unit 2 3 28 4
+unit 2 8 30 5
+unit 2 11 28 3
+unit 3 1 2 27
+unit 3 1 4 27
+unit 3 1 5 28
+unit 3 2 3 25
+unit 3 5 5 26
+unit 3 5 2 25
+unit 3 3 6 26
+unit 3 8 4 25
+unit 3 11 8 27
+unit 3 16 2 29
+unit 3 16 4 29
+unit 3 16 5 29
+unit 4 1 32 27
+unit 4 1 30 27
+unit 4 1 33 26
+unit 4 2 31 25
+unit 4 5 29 26
+unit 4 5 32 25
+unit 4 3 28 26
+unit 4 8 30 25
+unit 4 11 29 28
+.............^^.....^^..~~~~~~~....
+.M......f.......###...f.~~~~~~~..M.
+......B...t...f.#D#.f.....-.PB.....
+...1..C..B.C....###...C...-....2...
+...RRRRRRRRRRRRRRRRRRRRRRR-RRRRR..f
+..CR.....C.......R......C.-..C.R.B.
+...R.f.L..f.f.fc.R..f..f..-f...R...
+..BR......^......R.c....^.-.B.CRC..
+...R.C.......RRRRRRRRR...f-....R..f
+^f.R...f...^^R^^^^^^^R^^..-..ffRf.^
+^..R.......^....###....^.....^^R^^^
+f.fR.......^.N..#n#..N.^......^R.^^
+.ffR....c..^.XC.###C.X.^..c..c.R^.^
+fffR.......^.....C...B.^.....^^R^^.
+ff.R.c.....^....###....^......^R.^^
+.t.RRRRRRRRR....#O#.5..RRRRRRRRR^t^
+.ffR.......^....###....^.....^^R^^.
+fffR.IIIIIIIB........B.^^^^^^.^R.^^
+ff.R.I..c..^.X..###C.X.^####^c.R^.^
+f.fRfIfff.f^.S..#v#..S.^####^^^R^^.
+.ffR.Zff.ff^....###....^#V##^.^R.^^
+fffRfIf.fff^^R^^^^^^^R^^####^B.R...
+ffBRfICfff...RRRRRRRRR.^^^^^^^CR^^.
+f.fRfBfff.f....c.R.c....^^.^^.^R.B^
+.CfR.fff.ff^.....R.......^^L^^.R^.^
+f..R.Cf.fCf......R....C.^.^^.C.R.C.
+...RRRRRRRRRRRRRRRRRRRRRRRRRRRRR..^
+...3.....B.C............C^^.^..4..^
+......Bf.fff.....t......^.^^B......
+fM....A.fff.f...........^^.^^....M^
+ff.ff..fff.ff^^.....^^...^^.^^.^^.^

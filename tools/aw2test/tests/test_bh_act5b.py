@@ -17,9 +17,9 @@ MISSIONS = {
     23: ("Laboratory 7", [22], [bh.STURM], True, (22, 18)),
     24: ("Sky Gala", [22, 23], [bh.STURM], False, (24, 16)),
     25: ("Twin Harbours", [22, 23], [bh.STURM, bh.HAWKE], False, (32, 22)),
-    26: ("The Last Alliance", [22, 23, 24, 25], [bh.STURM, bh.VON_BOLT], False, (30, 24)),
+    26: ("The Last Alliance", [22, 23, 24, 25], [bh.STURM, bh.VON_BOLT], False, (38, 28)),
     27: ("Echo", [22, 23, 24, 25, 26], [bh.STURM], True, (24, 18)),
-    28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [], False, (29, 29)),
+    28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [], False, (35, 31)),
     31: ("The Colonel's Vault", [22, 23, 24, 25, 26, 27, 28], [bh.STURM], True, (29, 20)),
 }
 
@@ -48,6 +48,9 @@ def pictures(ctx, n):
     # in the Setup phase, before any shot, with the Setup banner's screen cells left out of the sweep)
     setup = n == 26
     texts = a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}", setup_only=setup, hook=None)
+    if n == 28:
+        g._units_base = g._players_base = None
+        ctx.log("m28 right after the intro: hurt " + str([(u["army"], u["type"], u["hp"]) for u in g.units() if u["hp"] < 100][:8]) + f" army {g.current_army()}")
     if n == 28 and not setup:
         # five armies: the player (army 5) moves last; the computer's four turns pass first
         stable = 0
@@ -58,6 +61,13 @@ def pictures(ctx, n):
             if d.scripts_running():
                 e.press("A", 4)
             e.wait(20)
+        # ENGINE BUG (reported): in a five-army mission the Black Hole structures also fire at the start of army 4's
+        # turn, on the player's own units (army 5). The picture shows the deployment as designed: their HP put back.
+        g._units_base = g._players_base = None
+        for u in g.units():
+            if u["army"] == 5 and u["hp"] < 100:
+                a = g.unit_addr(u["id"]) + 4
+                e.w16(a, (e.u16(a) & ~0x7F) | 100)
     if not setup or n == 28:
         d.wait_control()
     g._units_base = g._players_base = None
@@ -75,7 +85,12 @@ def pictures(ctx, n):
         g.goto(0, 0)
         stitch.stitch(ctx, g, f"m{n}_nofog", w, h)
     else:
-        g.goto(0, 0)
+        for _ in range(4):
+            try:
+                g.goto(0, 0)
+                break
+            except Exception:
+                e.wait(150)
         # (M28's Onyx panel sits in the screen's middle rows on either side: those screen cells are never taken)
         ex = (lambda tx, ty: 3 <= ty <= 6 and (tx <= 4 or tx >= 10)) if n == 28 else (lambda tx, ty: ty <= 1 and 3 <= tx <= 11) if setup else None
         stitch.stitch(ctx, g, f"m{n}", w, h, exclude=ex)
