@@ -12,7 +12,7 @@ from .game import Game, NavError
 
 # Roster bits (crate::bh_campaign::roster) and the mission indexes (world-map order).
 ST, VB, HK, KO, KI = 1, 2, 4, 8, 16
-M = {n: n - 9 for n in range(11, 31)}   # (this tree: act 1 has two placeholder missions, then the stub M11 is index 2)
+M = {n: n - 1 for n in range(1, 31)}   # (act 1: two placeholders, act 2: a stub M3 and M4..M11)
 WON = lambda upto: (1 << upto) - 1            # missions 1..upto won (their bits)
 SHOTS = os.environ.get("AW2TEST_ACT3_SHOTS")   # a folder the pictures are also copied to
 

@@ -20,17 +20,17 @@ unit 1 14 6 10
 unit 1 15 7 8
 unit 2 1 33 8
 unit 2 1 33 10
-unit 2 1 31 8
 unit 2 1 31 10
-unit 2 1 24 15
-unit 2 1 30 11
+unit 2 1 26 10
+unit 2 1 21 4
+unit 2 1 20 16
 unit 2 2 32 8
-unit 2 2 32 10
-unit 2 2 24 2
-unit 2 5 28 8
+unit 2 2 26 8
+unit 2 2 16 1
+unit 2 5 26 9
 unit 2 5 28 10
-unit 2 5 27 9
 unit 2 5 28 14
+unit 2 5 20 11
 unit 2 3 30 8
 unit 2 3 30 10
 unit 2 3 26 12
@@ -41,13 +41,13 @@ unit 2 14 33 11
 unit 2 14 29 12
 unit 2 11 32 11
 unit 2 11 32 7
+unit 2 9 24 6
 unit 2 9 30 6
-unit 2 9 31 6
 unit 2 15 29 7
 unit 2 19 34 4
-unit 2 19 34 2
+unit 2 19 31 2
 ^^^^......^^^^........^^^^^.....^^^^
-^^^^......^^^^........^^^^^.....^^^^
+^^^^......^^^^.cc.....^^^^^.....^^^^
 fff........................fffC.....
 fff.....fC..L..fffff....C..fff..RA..
 fff....RRRRRRRRRRRRRRCRRRRRRRRRRR...
@@ -62,5 +62,5 @@ I.C#F#R.R.....R.....R.fff.R....RB.C.
 I..###RRRRRRRRRRRRRRRRRRRRRRRRRR....
 III.............ffff........R.....ff
 ..B......ffff...ffff....C...B.....ff
-^^............^^^^^.....^^^^.....C^^
+^^............^^^^^cc...^^^^.....C^^
 ^^............^^^^^.....^^^^......^^

@@ -6,6 +6,7 @@ objective 1
 unit 1 1 3 4 hp=10 name=crumb
 unit 1 20 19 18
 unit 1 20 20 18
+unit 1 20 3 3
 unit 1 7 18 19
 unit 1 7 19 19
 unit 1 5 17 16
@@ -23,14 +24,14 @@ unit 1 1 17 19
 unit 1 1 20 19
 unit 1 2 16 18
 unit 1 11 17 20
-unit 2 1 3 2 hold
-unit 2 1 5 4 hold
-unit 2 1 2 5 hold
-unit 2 2 1 4 hold
-unit 2 5 4 2 hold
-unit 2 5 5 5 hold
-unit 2 6 4 5 hold
-unit 2 3 3 6 hold
+unit 2 1 2 2
+unit 2 1 5 4
+unit 2 1 2 5
+unit 2 2 1 4
+unit 2 5 4 2
+unit 2 5 5 5
+unit 2 6 4 5
+unit 2 3 3 6
 unit 2 1 7 3
 unit 2 1 9 5
 unit 2 1 3 9
