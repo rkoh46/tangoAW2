@@ -1606,6 +1606,10 @@ fn owner_at(core: &Core, x: u8, y: u8) -> u8 {
 /// Every frame in a custom campaign's battle: the named units that are gone
 /// stay gone ([`LATCH`]).
 pub fn tick(core: &mut Core) {
+    // (a swap of the fronts empties the slots for a moment: no death is told then)
+    if crate::two_front::swapping(core) {
+        return;
+    }
     let src = crate::ds_campaign::source(core);
     let Some(rules) = RULES.get(src).and_then(|r| r.get()) else { return };
     let mission = crate::ds_campaign::mission(core) as usize;

@@ -260,3 +260,24 @@ def bh_campaign_second_front_has_its_own_rules(ctx):
     ctx.check(state["killed"], "the second front's named unit was destroyed there")
     ctx.check("The carrier is down." in seen, f"the second front's scene ({seen})")
     ctx.eq(e.u8(tf.SECOND), 2, "the second front is won")
+
+
+@test(modes=("ds",))
+def bh_campaign_second_front_named_unit_alive_at_the_start(ctx):
+    """The swap of the fronts empties the unit slots for a moment: the second
+    front's named unit is not told dead then (its rules wait for a real death)."""
+    from aw2test import twofront as tf
+    e, g, d = boot_features(ctx)
+    d.picks = {11: 0}
+    d.start_at(won_mask=0x7FF & ~(1 << 5), unlocked_mask=0b101)
+    d.pick_mission()
+    d.wait_map()
+    seen = []
+
+    def each():
+        t = d.text_shown()
+        if t and (not seen or seen[-1] != t):
+            seen.append(t.replace("\x0f", ""))
+    tf.end_round(e, d, each=each)
+    ctx.check("The carrier is down." not in seen, f"no victory scene without a death ({seen})")
+    ctx.check(e.u8(tf.SECOND) in (1, 2), "the second front was fought (it may be won by AW2's own rout, without the scene)")
