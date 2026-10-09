@@ -162,3 +162,40 @@ def title_card_number_first_play(ctx):
         if ctx.check(settle(e, d, k), f"BH mission {k + 1}: the card came up"):
             ctx.eq(card_number(e), k + 1, f"BH mission {k + 1}: first play says MISSION {k + 1}")
         e.close()
+
+
+def ds_card(ctx, step, replay_of=None):
+    """The DS Campaign's card number: from the record with `step` missions won; `replay_of` moves the map's cursor to that
+    won mission first."""
+    from aw2test.game import Game
+    from aw2test.emu import Emu
+    e = Emu(save=paths.base_save(), ds=ctx.ds)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = dc.DsCampaign(g)
+    d.start(step=step, pick=False)
+    d.wait_world_map()
+    if replay_of is not None:
+        e.w32(dc.WM_STATE + 0x0C, replay_of)
+        e.wait(30)
+    d.pick_mission()
+    for _ in range(3000):
+        if MISSION_TITLE in procs(e):
+            break
+        e.press("A", 4)
+        e.wait(14)
+    else:
+        return None
+    e.wait(200)
+    n = card_number(e)
+    e.close()
+    return n
+
+
+@test(modes=("ds",))
+def title_card_number_ds(ctx):
+    """The DS Campaign's card: a first play says the missions won plus one; replaying a won mission says its own number."""
+    first = ds_card(ctx, 2)
+    ctx.eq(first, 3, "DS first play with 2 won: MISSION 3")
+    replay = ds_card(ctx, 10, replay_of=dc.ORDER[2])
+    ctx.eq(replay, dc.ORDER[2] + 1, f"DS replay of mission {dc.ORDER[2] + 1} with 10 won: its own number")
