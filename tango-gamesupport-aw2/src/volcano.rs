@@ -57,7 +57,7 @@ pub fn volcano_palette(core: &mut Core) {
     if core.gba().cpu().gpr(1) as u32 != 0x200 + GAME_PALETTE * 32 {
         return;
     }
-    if crate::ds_campaign::active(core) {
+    if crate::ds_campaign::active(core) && crate::ds_campaign::is_ds(core) {
         if let Some(colours) = ds_colours() {
             // The copy's source made its destination, which holds Dual
             // Strike's colours (palette RAM too, until the next upload).
@@ -69,7 +69,7 @@ pub fn volcano_palette(core: &mut Core) {
         }
         return;
     }
-    if !crate::pvp::in_versus(core) {
+    if !(crate::pvp::in_versus(core) || crate::ds_campaign::active(core)) {
         return;
     }
     let base = (core.gba().cpu().gpr(7) as u32 + 0xE8) & 0x3FF;
@@ -100,6 +100,11 @@ pub fn recolour(core: &mut Core, start: u32, at: u32) {
     if drawn {
         let mut pal = [0u8; 32];
         core.raw_read_range(COLOURS, -1, &mut pal);
+        if crate::ds_campaign::active(core) {
+            if let Some(colours) = ds_colours() {
+                pal = *colours;
+            }
+        }
         for base in [PAL_BUFFER, PAL_RAM] {
             core.raw_write_range(base + 0x200 + PALETTE * 32, -1, &pal);
         }

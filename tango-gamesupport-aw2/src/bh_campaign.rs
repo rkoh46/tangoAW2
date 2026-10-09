@@ -112,7 +112,8 @@ pub fn unlock_crumb() -> Action {
 /// The bond index of Crumb's secret quote (flag 0xA9 of the design: earned by
 /// winning M14 on day 12 or sooner, `Action::EarnBond(bond::CRUMB_QUOTE)`).
 /// It is the tenth bond and does not count for the secret mission, which
-/// opens when the first nine are earned.
+/// opens when the first nine are earned (`CampaignDef::extra_bonds`); the
+/// world map's legend counts all ten ("BONDS n/10").
 pub mod bond {
     pub const CRUMB_QUOTE: u8 = 9;
 }
@@ -652,16 +653,45 @@ pub fn features_def() -> CampaignDef {
     ];
     pp.needs = Needs::All(vec!["f01"]);
     pp.flag = region::BLACK_HOLE[4];
+    // A Factory, a Volcano, an Obelisk and a Crystal on one map (each with art of its own: AW2 loads one
+    // structure picture), and Yellow Comet (the fourth army) with a city beside the Volcano (its buildings and
+    // the Volcano's colours must not clash).
     let mut fv = MissionDef::new("f23", "Features Factory Volcano");
-    fv.objective = "Test: a Black Factory and a Volcano on one map.";
-    fv.map = MapSrc::Ascii(&["1...........", "............", "............", "............", "............", "............", "............", "............", "............", ".........2.."]);
+    fv.objective = "Test: a Black Factory, a Volcano, an Obelisk and a Crystal on one map.";
+    fv.map = MapSrc::Ascii(&[
+        "1..............3",
+        "................",
+        "................",
+        "................",
+        "................",
+        ".............D..",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "4..............2",
+    ]);
     fv.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)),
     ];
-    fv.structures = vec![(Structure::BlackFactory, 3, 4), (Structure::Volcano, 8, 5)];
-    fv.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(2, unit::TANK, 11, 8).hold().fuel(0)];
-    fv.volcano = Some(VolcanoDef::new(3, 1, 5, &[(8, 4), (9, 4)]));
+    fv.structures = vec![
+        (Structure::BlackFactory, 3, 4),
+        (Structure::Volcano, 9, 6),
+        (Structure::BlackObelisk, 12, 2),
+        (Structure::BlackCrystal, 6, 9),
+    ];
+    fv.units = vec![
+        UnitDef::new(1, unit::MD_TANK, 0, 0),
+        UnitDef::new(2, unit::TANK, 10, 4).hold().fuel(0),
+        UnitDef::new(3, unit::TANK, 14, 1).hold().fuel(0),
+        UnitDef::new(4, unit::TANK, 1, 10).hold().fuel(0),
+        UnitDef::new(2, unit::TANK, 13, 8).hold().fuel(0),
+    ];
+    fv.volcano = Some(VolcanoDef::new(3, 1, 5, &[(9, 4), (10, 4), (13, 8)]));
     fv.needs = Needs::All(vec!["f01"]);
     fv.flag = region::BLACK_HOLE[5];
     let own2 = own_cannons("f18", false);

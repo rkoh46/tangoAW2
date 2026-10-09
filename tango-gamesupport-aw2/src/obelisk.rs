@@ -66,12 +66,20 @@ pub const OBELISK_NAME_AT: u32 = DATA + 0x200;
 const CRYSTAL_PICTURE_AT: u32 = DATA + 0x300;
 const OBELISK_PICTURE_AT: u32 = DATA + 0x400;
 const DATA_SENTINEL: u32 = DATA + 0xFFC;
-const DATA_MAGIC: u32 = 0x394B_4C42; // "BLK9" (bump when the data changes)
+const DATA_MAGIC: u32 = 0x414B_4C42; // "BLKA" (bump when the data changes)
 
 /// OBJ tiles for the sprites in battle (no screen of the battle map writes
 /// 0x176..0x1A5): the Obelisk's 36 tiles, then the Crystal's 8.
 pub const OBELISK_OBJ_TILE: u32 = 0x176;
 pub const CRYSTAL_OBJ_TILE: u32 = 0x19A;
+/// The Black Factory's own 48 OBJ tiles when the map also stands a Volcano
+/// (see [`factory_with_volcano`]): 832..879, above the Hazard's marks
+/// (772..799, [`crate::hazard`]) and the Survival menu's label (800..831,
+/// [`crate::mode_menu`]), below the battle scenes' effect tiles (880..).
+/// Nothing loads or writes them on the battle map (checked by watching the
+/// OBJ tiles the map's load writes and the ones play touches), so a map with
+/// an Obelisk and Crystals (their tiles above) can have the Factory as well.
+pub const FACTORY_OBJ_TILE: u32 = 786;
 /// A map's second 4x4 structure picture (64 tiles from 0xC4: the start of
 /// the invention sheet `LoadInventionGraphics` puts at 0xC4..0x12F, whose
 /// sprites a map with only 4x4 pictures never draws).
@@ -128,13 +136,13 @@ pub fn install(core: &mut Core) {
         0x0003,
         0x8000,
         0xC000,
-        tile(OBELISK_OBJ_TILE),
+        tile(FACTORY_OBJ_TILE),
         0x8000,
         0x8020,
-        tile(OBELISK_OBJ_TILE + 0x20),
+        tile(FACTORY_OBJ_TILE + 0x20),
         0x8020,
         0x8020,
-        tile(OBELISK_OBJ_TILE + 0x28),
+        tile(FACTORY_OBJ_TILE + 0x28),
     ];
     for (at, def) in [
         (OBELISK_DEF, obelisk_def),
@@ -373,8 +381,8 @@ fn second_picture(core: &mut Core, x: u32, y: u32) -> Option<u32> {
 /// (`0x0803FD80`) has one slot for a structure's own picture (`r6`: the header's
 /// 4x4, the Factory's, then the Volcano's, the last present winning), so the
 /// Factory would be drawn from the Volcano's tiles. Its picture is put in
-/// [`OBELISK_OBJ_TILE`]'s 48 tiles (a map with an Obelisk keeps AW2's
-/// drawing) and it is drawn with [`FACTORY_DEF2`].
+/// [`FACTORY_OBJ_TILE`]'s 48 tiles (apart from the Obelisk's and the
+/// Crystal's) and it is drawn with [`FACTORY_DEF2`].
 fn factory_with_volcano(core: &mut Core) -> Option<u32> {
     if crate::design::in_map_editor(core) {
         return None;
@@ -399,7 +407,7 @@ fn factory_with_volcano(core: &mut Core) -> Option<u32> {
     core.raw_read_range(FACTORY_PICTURE, -1, &mut comp);
     let pic = crate::ds_art::lz10(&comp)?;
     let n = pic.len().min(48 * 32);
-    let at = 0x0601_0000 + OBELISK_OBJ_TILE * 32;
+    let at = 0x0601_0000 + FACTORY_OBJ_TILE * 32;
     let mut now = vec![0u8; n];
     core.raw_read_range(at, -1, &mut now);
     if now[..] != pic[..n] {

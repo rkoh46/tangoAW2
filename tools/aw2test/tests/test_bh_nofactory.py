@@ -485,13 +485,34 @@ def bh_campaign_five_army_player_picks_a_pair(ctx):
         e.close()
 
 
+SHOTS = os.environ.get("AW2TEST_SHOTS")
+
+
+def oam_tiles(e):
+    """The (first tile, palette bank) of every sprite the OAM draws."""
+    oam = e.read(0x07000000, 0x400)
+    out = set()
+    for i in range(128):
+        a0 = oam[8 * i] | oam[8 * i + 1] << 8
+        a2 = oam[8 * i + 4] | oam[8 * i + 5] << 8
+        if (a0 >> 8) & 3 != 2:
+            out.add((a2 & 0x3FF, a2 >> 12))
+    return out
+
+
 @test(modes=("ds",))
 def bh_campaign_factory_and_volcano_on_one_map(ctx):
-    """A Black Factory and a Volcano on one map (AW2's graphics loader has one
-    picture slot for them, the Volcano's winning): the Factory's picture is put
-    in OBJ tiles 0x176.. and its sprites drawn from there, so it is not drawn
-    from the Volcano's tiles."""
+    """A Black Factory and a Volcano on one map, with an Obelisk, a Crystal and
+    Yellow Comet as the fourth army (AW2's graphics loader has one picture
+    slot for the Factory and the Volcano, the Volcano's winning, and the
+    Volcano's colours went to the fourth army's buildings' palette): each
+    has tiles of its own (the Volcano's at 0x130, the Obelisk's at 0x176, the
+    Crystal's at 0x19A, the Factory's at 786..833) and is drawn from them,
+    the Volcano in a palette of its own; the Factory still produces on the
+    player's turns and the Volcano still erupts. AW2TEST_SHOTS=<dir> keeps
+    pictures."""
     from aw2test.rom import lz10
+    from aw2test import ram
     e, g, d = boot_features(ctx)
     d.picks = {22: 0}
     d.start_at(won_mask=0xFFFFFF & ~(1 << 5) & ~(1 << 22), unlocked_mask=1)
@@ -499,12 +520,96 @@ def bh_campaign_factory_and_volcano_on_one_map(ctx):
     d.wait_map()
     ctx.eq(d.mission(), 22, "mission 23")
     e.wait(60)
-    pic = lz10(bytes(e.read(0x080D22C4, 0x700)))
-    have = bytes(e.read(0x06010000 + 0x176 * 32, 48 * 32))
-    ctx.check(have == bytes(pic[:48 * 32]), "the Factory's picture is in OBJ tiles 0x176..0x1A5")
-    oam = e.read(0x07000000, 0x400)
-    tiles = {(oam[8 * i + 4] | oam[8 * i + 5] << 8) & 0x3FF for i in range(128) if (oam[8 * i + 1] >> 1) & 0x7F != 0 or True}
-    ctx.check({0x176, 0x196, 0x19E} <= tiles, f"its three sprites draw from there ({sorted(t for t in tiles if t > 0x100)})")
+    tiles = lambda t, n: bytes(e.read(0x06010000 + t * 32, n * 32))
+    fac = lz10(bytes(e.read(0x080D22C4, 0x700)))
+    vol = lz10(bytes(e.read(0x080D3268, 0x900)))
+    # (a few of the Volcano's tiles are the crater's smoke, which Dual Strike's look animates)
+    same = lambda: sum(tiles(0x130 + t, 1) == bytes(vol[32 * t:32 * t + 32]) for t in range(64))
+    ctx.check(tiles(786, 48) == bytes(fac[:48 * 32]), "the Factory's picture is in OBJ tiles 786..833")
+    ctx.check(same() >= 56, f"the Volcano's picture is in its own slot (OBJ tiles 0x130..0x16F): {same()} of 64 tiles")
+    obelisk_art, crystal_art = tiles(0x176, 36), tiles(0x19A, 8)
+    ctx.check(any(obelisk_art) and any(crystal_art), "the Obelisk's and the Crystal's pictures are loaded")
+    seen = set()
+    for name, (x, y) in (("factory", (3, 5)), ("obelisk", (12, 2)), ("volcano", (9, 6)), ("crystal", (6, 9))):
+        g.goto(x, y)
+        e.wait(40)
+        seen |= oam_tiles(e)
+        if SHOTS:
+            e.shot(os.path.join(SHOTS, f"factory_volcano_{name}"))
+    tile_set = {t for t, _ in seen}
+    ctx.check({786, 818, 826} <= tile_set, f"the Factory's three sprites draw from tiles 786, 818 and 826 ({sorted(t for t in tile_set if t > 0x100)})")
+    ctx.check(0x130 in tile_set, "the Volcano draws from its slot")
+    ctx.check(0x176 in tile_set and 0x19A in tile_set, "the Obelisk and the Crystal draw from theirs")
+    ctx.check(tiles(786, 48) == bytes(fac[:48 * 32]) and tiles(0x176, 36) == obelisk_art and tiles(0x19A, 8) == crystal_art, "no picture was disturbed by another")
+    banks = {b for t, b in seen if t in (786, 818, 826)}
+    vbanks = {b for t, b in seen if t == 0x130}
+    ctx.check(banks.isdisjoint(vbanks), f"the Factory ({banks}) and the Volcano ({vbanks}) use palette banks of their own")
+    ctx.check(12 not in vbanks, "the Volcano leaves palette 12 (Yellow Comet's buildings, the fourth army's) alone")
+
+    def next_day(day):
+        e.w8(ram.CURSOR_X, 0)
+        e.w8(ram.CURSOR_Y, 0)
+        e.wait(60)
+        d.end_turn()
+        for _ in range(900):
+            if e.u16(DAY) == day and not d.scripts_running():
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(10)
+        for _ in range(60):
+            if not d.scripts_running():
+                break
+            e.press("A", 4)
+            e.wait(10)
+        e.wait(600)               # (the structures' turn-start shows, the Volcano's eruption)
+        e.w8(ram.CURSOR_X, 0)
+        e.w8(ram.CURSOR_Y, 0)
+        d.wait_control()
+        e.wait(60)
+
+    start = {u["id"]: (u["army"], u["x"], u["y"], u["hp"]) for u in g.units()}
+    e.wait(600)
+    next_day(2)
+    mine = [u for u in g.units() if u["army"] == 1 and u["id"] not in start]
+    ctx.check(1 <= len(mine) and all(u["y"] == 6 and 2 <= u["x"] <= 4 for u in mine), f"the Factory produced on its door row on day 2 ({[(u['type'], u['x'], u['y']) for u in mine]})")
+    on_rim = [i for i, (a, x, y, hp) in start.items() if a == 2 and (x, y) in ((10, 4), (13, 8))]
+    ctx.eq(len(on_rim), 2, "two Tanks on the eruption's cells")
+    now = {u["id"]: u["hp"] for u in g.units()}
+    ctx.eq([now[i] for i in on_rim], [start[i][3] for i in on_rim], "day 2: the Volcano has not erupted")
+    next_day(3)
+    now = {u["id"]: u["hp"] for u in g.units()}
+    ctx.eq([now.get(i) for i in on_rim], [start[i][3] - 50 for i in on_rim], "day 3: the Volcano erupted on its marked cells (5 HP)")
+    if SHOTS:
+        e.shot(os.path.join(SHOTS, "factory_volcano_day3"))
+    ctx.check(tiles(786, 48) == bytes(fac[:48 * 32]) and same() >= 56, "the pictures still hold after the days")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_fortress_draws_factory_volcano_obelisk_and_crystals(ctx):
+    """Mission 28's map (f20: its five armies, the Obelisk and Crystals, the
+    Volcano, and the Black Factory on the west side) draws each structure from
+    tiles of its own: the Factory from 786.., the Volcano in palette 2 (Yellow
+    Comet, the fourth army, keeps palette 12)."""
+    e, g, d = boot_features(ctx)
+    d.picks = {19: 0}
+    d.start_at(won_mask=((1 << 19) - 1) & ~(1 << 5), unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    ctx.eq(d.mission(), 19, "mission 20 (the fortress)")
+    e.wait(60)
+    seen = set()
+    for name, (x, y) in (("factory", (5, 12)), ("volcano", (25, 19)), ("obelisk", (14, 14)), ("yc", (30, 27))):
+        g.goto(x, y)
+        e.wait(40)
+        seen |= oam_tiles(e)
+        if SHOTS:
+            e.shot(os.path.join(SHOTS, f"m28_{name}"))
+    tile_set = {t for t, _ in seen}
+    ctx.check({786, 818, 826} <= tile_set, "the Factory draws from tiles 786, 818 and 826")
+    ctx.check(0x130 in tile_set and 0x176 in tile_set and 0x19A in tile_set, "the Volcano, the Obelisk and a Crystal draw from theirs")
+    ctx.check({b for t, b in seen if t == 0x130} == {2}, "the Volcano is in palette 2")
     e.close()
 
 
