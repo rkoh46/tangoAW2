@@ -1457,6 +1457,14 @@ Campaign's ("BH Campaign" below); B goes back. It
   BG0 emptied (AW2's own campaign reaches its mission card through screens
   that clear it), `ResetRulesAfterCampaignMap`, then AW2's mission proc
   (`0x0849EBFC`: mission card, battle).
+- **Long mission titles** (`title_card.rs`): AW2's mission card sets the name's glyph sprites (16x32, the font at
+  `0x08616194`: character, glyph, width; a glyph advances width + 1) right-aligned at x = 224, y = 24 (`0x0807C278` once
+  typed, `0x0807C034`'s loop while typing, the pop-in sprite at `0x0807C1CA`), and keeps their offsets in bytes at
+  `0x0202FF78`, which wrap past 255 px. A name wider than 216 px (8 px kept at the left; the right margin is 16) breaks
+  at the space that balances two lines (the second 30 px lower, typed after the first, the underline's four draw calls
+  moved down with it); the offsets are worked out again in Rust. Of the BH Campaign's 31 names five break (M2, M7, M12,
+  M14, M28); Dual Strike's 28 all fit. `tests/test_title_cards.py` plays every BH card and fails when a glyph pixel
+  leaves the screen or the 8 px margin (`AW2TEST_TITLE_DIR` saves the cards for a contact sheet).
 - **Conversion** (`ds_campaign_data.rs`, at the first frame with the pack,
   into ROM `0x08F00000..`, about 360 KB): every mission's map, deployment
   (AI behaviours 0, 1 and 5 kept, others hold), header, trigger lists and

@@ -45,6 +45,7 @@ pub mod ds_unit_pictures;
 pub mod ds_units;
 pub mod ds_weather;
 pub mod sandstorm;
+pub mod title_card;
 pub mod wasteland;
 pub mod ds_look;
 pub mod com_tower;
