@@ -126,3 +126,12 @@ def bh_dialogue_pictures_m1_post_and_map(ctx):
     ctx.require(d.force_win(), "M1: the enemy routed")
     check(ctx, "m1_post_map", boxshots.shoot(ctx, e, d, "m1_post_map", patience=600, wait_map=True), 40)
     e.close()
+
+
+@test(modes=("ds",))
+def bh_dialogue_pictures_m10_post_and_warroom(ctx):
+    e, g, d = go(ctx, 10, FULL, [])
+    after_intro(ctx, e, g, d, "m10")
+    ctx.require(d.force_win(), "M10: a forced win")
+    check(ctx, "m10_post", boxshots.shoot(ctx, e, d, "m10_post", patience=600, wait_map=True), 10)
+    e.close()

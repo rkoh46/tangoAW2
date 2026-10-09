@@ -200,10 +200,9 @@ def review(ctx, n):
         a2.intro(ctx, e, d, f"m{n}", (0,))
         d.wait_control()
         g._units_base = g._players_base = None
-        post = sweeps(ctx, e, g, d, n, "post_", None)
+        post = sweeps(ctx, e, g, d, n, "post_", None, front_too=False)
         for view, p in pre.items():
-            if view in post:
-                fill_blank(p, post[view])
+            fill_blank(p, post.get(view))
     for view, p in pre.items():
         save(ctx, p, n, view)
     e.close()
@@ -216,17 +215,29 @@ def blank_cells(path):
     return [(x, y) for y in range(a.shape[0] // 16) for x in range(a.shape[1] // 16) if not a[16 * y:16 * y + 16, 16 * x:16 * x + 16].any()]
 
 
-def fill_blank(path, donor):
+def fill_blank(path, donor=None):
+    """The blank cells (under the Setup banner or the other-front window) filled from the same picture taken after Deploy; a
+    second front's (whose window is still there after Deploy) from the terrain beside them, which repeats."""
     import numpy as np
     from PIL import Image
     a = np.asarray(Image.open(path).convert("RGB")).copy()
-    d = np.asarray(Image.open(donor).convert("RGB"))
+    d = np.asarray(Image.open(donor).convert("RGB")) if donor else None
+    cell = lambda arr, x, y: arr[16 * y:16 * y + 16, 16 * x:16 * x + 16]
     for x, y in blank_cells(path):
-        a[16 * y:16 * y + 16, 16 * x:16 * x + 16] = d[16 * y:16 * y + 16, 16 * x:16 * x + 16]
+        if d is not None:
+            c = cell(d, x, y).copy()
+        else:
+            c = None
+            for dx in (2, -2, 4, -4, 1, -1, 3, -3, 6, -6):
+                if 0 <= x + dx < a.shape[1] // 16 and cell(a, x + dx, y).any() and (x + dx, y) not in blank_cells(path):
+                    c = cell(a, x + dx, y).copy()
+                    break
+        if c is not None:
+            a[16 * y:16 * y + 16, 16 * x:16 * x + 16] = c
     Image.fromarray(a).save(path)
 
 
-def sweeps(ctx, e, g, d, n, tag, exclude):
+def sweeps(ctx, e, g, d, n, tag, exclude, front_too=True):
     """The mission's whole-map pictures (fog on and off, the second front): {view: path}."""
     from aw2test import stitch
     title, roster, picks, fog, front = M[n]
@@ -248,7 +259,7 @@ def sweeps(ctx, e, g, d, n, tag, exclude):
         out["fogoff"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}fogoff", w, h, exclude=exclude)
     else:
         out["full"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}full", w, h, exclude=exclude)
-    if front:
+    if front and front_too:
         from aw2test import twofront as tf
         try:
             ctx.require(tf.look_at_other_front(e, g), f"M{n}: the other front is shown")
