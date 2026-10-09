@@ -599,6 +599,16 @@ def bh_campaign_fortress_draws_factory_volcano_obelisk_and_crystals(ctx):
     d.wait_map()
     ctx.eq(d.mission(), 19, "mission 20 (the fortress)")
     e.wait(60)
+    # (five armies: the computer's four turns pass before the player's, the cursor is the game's meanwhile)
+    stable = 0
+    for _ in range(3000):
+        stable = stable + 1 if g.current_army() == 5 and not d.scripts_running() else 0
+        if stable >= 5:
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(20)
+    d.wait_control()
     seen = set()
     for name, (x, y) in (("factory", (5, 12)), ("volcano", (25, 19)), ("obelisk", (14, 14)), ("yc", (30, 27))):
         g.goto(x, y)
