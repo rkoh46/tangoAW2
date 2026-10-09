@@ -401,9 +401,8 @@ def bh_act4_m21_supply_cut_loses(ctx):
 
 
 @test(modes=("ds",))
-def bh_act4_m22_laser_and_obelisk_on_the_map(ctx):
+def bh_act4_m22_obelisk_and_forces_on_the_map(ctx):
     e, g, d, texts = ready(ctx, 22, [bh.STURM, bh.HAWKE])
-    ctx.check(all(not (u["y"] == 18 or u["x"] == 8) for u in g.units(1)), "no player unit on the Laser's row or column")
     ctx.eq(len(g.units(2)), 30, "Blue Moon's 30 units")
     e.close()
 

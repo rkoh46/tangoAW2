@@ -369,10 +369,11 @@ fn bh20() -> MissionDef {
     m.day_limit = 24;
     m.rank_days = 16;
     // (no Black Factory on either front: the engine's spawner guard keeps the computer's quiet)
-    // Colin's fleet: Cruisers and Subs hunt; the Battleships and the Carrier hold the line off his shelf.
+    // Colin's fleet: Cruisers and Subs hunt; the Battleships and the Carrier hold the line off his shelf, the
+    // Landers and the Infantry waiting on his ports hold until the computer ships them over.
     let mut sea = built_units("bh20b");
-    sea.push(UnitDef::new(2, unit::CARRIER, 16, 8));
-    let sea = roles(sea, |u| matches!(u.kind, unit::BATTLESHIP | unit::CARRIER));
+    sea.push(UnitDef::new(2, unit::CARRIER, 17, 8));
+    let sea = roles(sea, |u| matches!(u.kind, unit::BATTLESHIP | unit::CARRIER | unit::LANDER | unit::INFANTRY));
     // The sea front is won as AW2's rules decide it (the enemy routed, or its east shelf's HQ taken
     // by the Lander: the east port (18, 5), (18, 11) are the way in; `two_front` has no per-front triggers).
     m.front2 = Some(FrontDef {
