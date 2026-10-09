@@ -1,18 +1,29 @@
-//! Crumb's pictures. **Drawn art**: original tangoAW2 pixel art
-//! (`tango-gamesupport-aw2/art/crumb/<A|B|C>/*.png`, drawn by `tools/crumb_art/`,
-//! the only art stored in the repository), loaded by [`drawn`]: the CO page /
-//! power / tag figure (128x160), three faces (48x48), the Teams mini portrait
-//! (32x24) and the HUD face (32x16), one 16-colour palette. If a piece fails to
-//! load the pictures **derived** at run time from Advance Wars 2's own Black
-//! Hole trooper (CO presentation row 23: three alike faces, a mini portrait, a
-//! palette) and the letters of AW2's name graphics are used ([`derived`]); the
-//! name graphic "Crumb" is composed from those letters in both cases (C of
-//! Colin's, u, r, m of Sturm's, b of Kanbei's).
+//! Crumb's pictures, converted at run time from Advance Wars 2's own Black
+//! Hole trooper (CO presentation row 23: the face used for the soldiers'
+//! lines in the campaigns) and the letters of AW2's own name graphics. No
+//! art is stored: every picture is cut from the ROM the player owns when the
+//! game starts, as the Dual Strike COs' are ([`crate::ds_co_art`]).
 //!
-//! The derived fallback: the face and mini as AW2 has them, a HUD crop round
-//! the red lens, the CO page figure the face grown twice with nearest
-//! neighbour, framed and centred (the last two rows empty: the tag screens
-//! carry a figure's last row down to the screen's foot).
+//! What AW2 has for the trooper (row 23 of the presentation table, 0x44 a
+//! row): three 48x48 faces (alike), a 32x24 mini portrait and a palette; no
+//! HUD face, no full body and no name. What each CO graphic is made of:
+//!
+//! | Graphic | Made of |
+//! |---|---|
+//! | CO select face (3, as the game has them) | the trooper's face, as it is |
+//! | Teams portrait (mini) | the trooper's own mini portrait |
+//! | HUD face (32x16, the eyes) | a 32x16 cut of the face round the red lens, 1:1 |
+//! | CO page figure (128x160) | the face grown with nearest-neighbour, framed |
+//! | Power and tag screen figures | the same figure (AW2's own path for a CO without a Dual Strike figure) |
+//! | Name "Crumb" (48x16) | C of "Colin", u, r, m of "Sturm", b of "Kanbei", set side by side as in a name |
+//! | Palette | the trooper's, in all eight colour schemes |
+//!
+//! **The figure.** AW2 has no full body for a trooper, so the CO page's
+//! 128x160 picture is composed: the face grown twice with nearest neighbour
+//! (96 x 96), framed with a one-pixel outline in the palette's darkest colour
+//! (corners cut) and centred. The two bottom rows stay empty: the tag screens
+//! carry a figure's last row down to the screen's foot
+//! ([`crate::tag_screens`]) and an outline there would become a bar.
 
 use mgba::core::Core;
 
@@ -253,111 +264,8 @@ pub fn hud(face: &Px) -> Vec<u8> {
     face.cut(13, 17, 32, 16).to_tiles(4, 2, |k| (k % 4, k / 4))
 }
 
-// --- Crumb's own drawn art (tango-gamesupport-aw2/art/crumb) ---------------------------
-
-/// The pieces of a version in `art/crumb/<version>/`: indexed PNGs (16
-/// colours, index 0 transparent, one palette for all), drawn for tangoAW2 by
-/// `tools/crumb_art/` (original art, not from any game): the figure
-/// (128x160), the three faces (48x48), the mini portrait (32x24) and the HUD
-/// face (32x16).
-macro_rules! version {
-    ($v:literal) => {
-        [
-            include_bytes!(concat!("../art/crumb/", $v, "/body.png")).as_slice(),
-            include_bytes!(concat!("../art/crumb/", $v, "/face_normal.png")).as_slice(),
-            include_bytes!(concat!("../art/crumb/", $v, "/face_happy.png")).as_slice(),
-            include_bytes!(concat!("../art/crumb/", $v, "/face_sad.png")).as_slice(),
-            include_bytes!(concat!("../art/crumb/", $v, "/mini.png")).as_slice(),
-            include_bytes!(concat!("../art/crumb/", $v, "/hud.png")).as_slice(),
-        ]
-    };
-}
-
-pub const VERSIONS: [(&str, [&[u8]; 6]); 3] = [("A", version!("A")), ("B", version!("B")), ("C", version!("C"))];
-/// The version the game uses (index into [`VERSIONS`]); the environment
-/// variable `TANGOAW2_CRUMB_ART` (A, B, C, or `derived` for the trooper-derived
-/// pictures) overrides it, for taking the approval pictures.
-pub const DEFAULT_VERSION: usize = 2;
-
-/// An indexed PNG as palette indexes and its palette (BGR555).
-pub fn decode(bytes: &[u8]) -> Option<(Px, Vec<u16>)> {
-    let mut reader = png::Decoder::new(std::io::Cursor::new(bytes)).read_info().ok()?;
-    let mut buf = vec![0u8; reader.output_buffer_size()?];
-    let info = reader.next_frame(&mut buf).ok()?;
-    if info.color_type != png::ColorType::Indexed {
-        return None;
-    }
-    let bits = info.bit_depth as usize;
-    let (w, h) = (info.width as usize, info.height as usize);
-    let mut p = Px::new(w, h);
-    for y in 0..h {
-        let row = &buf[y * info.line_size..][..info.line_size];
-        for x in 0..w {
-            let bit = x * bits;
-            p.set(x, y, (row[bit / 8] >> (8 - bits - bit % 8)) & ((1u16 << bits) - 1) as u8);
-        }
-    }
-    let pal = reader.info().palette.as_ref()?;
-    let colours = pal.chunks(3).map(|c| (c[0] as u16 >> 3) | (c[1] as u16 >> 3) << 5 | (c[2] as u16 >> 3) << 10).collect();
-    Some((p, colours))
-}
-
-/// Crumb's drawn pictures of a version in AW2's formats, or `None` if any
-/// piece is not what it should be (sizes, palette indexes under 16, one
-/// palette for all).
-pub fn drawn(version: usize) -> Option<CoArt> {
-    let (_, pieces) = VERSIONS.get(version)?;
-    let mut all = Vec::new();
-    for (bytes, (w, h)) in pieces.iter().zip([(128, 160), (48, 48), (48, 48), (48, 48), (32, 24), (32, 16)]) {
-        let (p, pal) = decode(bytes)?;
-        if (p.w, p.h) != (w, h) || p.v.iter().any(|&v| v > 15) || pal.len() > 16 {
-            return None;
-        }
-        all.push((p, pal));
-    }
-    if all.iter().any(|(_, pal)| *pal != all[0].1) {
-        return None;
-    }
-    let mut palette = Vec::new();
-    for _ in 0..8 {
-        for k in 0..16 {
-            palette.extend_from_slice(&all[0].1.get(k).copied().unwrap_or(0).to_le_bytes());
-        }
-    }
-    let (body_top, body_bottom) = body_files(&all[0].0);
-    let face = |k: usize| all[k].0.to_tiles(6, 6, face_place);
-    Some(CoArt {
-        face: [face(1), face(2), face(3)],
-        mini: all[4].0.to_tiles(4, 3, mini_place),
-        hud: all[5].0.to_tiles(4, 2, |k| (k % 4, k / 4)),
-        body_top,
-        body_bottom,
-        name: Vec::new(),
-        palette,
-    })
-}
-
-/// Crumb's pictures in AW2's formats: the drawn art, else (if a piece fails
-/// to load) the pictures cut from AW2's trooper ([`derived`]). The name
-/// graphic is composed from AW2's letters in both.
+/// Crumb's pictures in AW2's formats (all of them cut from the trooper's).
 pub fn art(core: &Core) -> Option<CoArt> {
-    let choice = std::env::var("TANGOAW2_CRUMB_ART").ok();
-    let derived_only = choice.as_deref() == Some("derived");
-    let version = match choice.as_deref() {
-        Some(c) => VERSIONS.iter().position(|v| v.0 == c).unwrap_or(DEFAULT_VERSION),
-        None => DEFAULT_VERSION,
-    };
-    match drawn(version).filter(|_| !derived_only) {
-        Some(mut art) => {
-            art.name = name(core)?;
-            Some(art)
-        }
-        None => derived(core),
-    }
-}
-
-/// Crumb's pictures cut from AW2's Black Hole trooper (the fallback).
-pub fn derived(core: &Core) -> Option<CoArt> {
     let row = AW2_PRESENTATION + ROW * TROOPER;
     let face_tiles = |k: u32| lz10(&read(core, word(core, row + 0x0C + 4 * k), 0x600));
     let faces = [face_tiles(0)?, face_tiles(1)?, face_tiles(2)?];
@@ -390,19 +298,6 @@ pub fn derived(core: &Core) -> Option<CoArt> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn drawn_art_loads() {
-        for (k, (name, _)) in VERSIONS.iter().enumerate() {
-            let a = drawn(k).unwrap_or_else(|| panic!("version {name}"));
-            assert_eq!(a.body_top.len(), crate::ds_co_art::BODY_TOP_LEN);
-            assert_eq!(a.body_bottom.len(), crate::ds_co_art::BODY_BOTTOM_LEN);
-            assert!(a.face.iter().all(|f| f.len() == crate::ds_co_art::FACE_LEN));
-            assert_eq!((a.mini.len(), a.hud.len(), a.palette.len()), (crate::ds_co_art::MINI_LEN, crate::ds_co_art::HUD_LEN, 0x100));
-            assert!(a.body_top.iter().any(|&b| b != 0) && a.face[0].iter().any(|&b| b != 0));
-        }
-        assert!(drawn(3).is_none());
-    }
 
     #[test]
     fn framed_and_cut() {

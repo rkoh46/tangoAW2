@@ -6012,7 +6012,6 @@ name = "tango-gamesupport-aw2"
 version = "0.1.0"
 dependencies = [
  "mgba",
- "png",
  "tango-backend-mgba",
  "tango-gamesupport",
  "tango-gamesupport-common-dataview",
