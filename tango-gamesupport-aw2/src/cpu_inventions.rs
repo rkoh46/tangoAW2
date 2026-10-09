@@ -231,7 +231,7 @@ pub fn targets(core: &Core) -> Vec<Target> {
             break;
         }
         let hp = core.raw_read_8(e + 4, -1) as u32;
-        if hp == 0 {
+        if hp == 0 || crate::custom_campaign::is_jammed(core, e) {
             continue;
         }
         let (x, y) = (core.raw_read_8(e, -1) as i32, core.raw_read_8(e + 1, -1) as i32);
