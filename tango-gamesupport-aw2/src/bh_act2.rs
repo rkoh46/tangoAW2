@@ -98,6 +98,56 @@ fn built_units(name: &str) -> Vec<UnitDef> {
         .collect()
 }
 
+// --- The enemy's AI roles ----------------------------------------------------------
+//
+// A unit's deployment AI byte is its role (docs/AW2.md, "Goals"): 0 holds where it stands, 1 goes for the enemy HQ,
+// 3 for the enemy's properties, 4 for its units, 6 does not move at all (M5's parked aircraft). The map files
+// carry no roles; the missions give them here: foot soldiers go for properties, armour, recon, aircraft and ships
+// for units, and the indirect fire and Anti-Air hold (they fire from where they stand), plus a deliberate
+// garrison at each mission's chokepoints, gates, hold-points and HQ (the map files' `hold` flag marks them).
+
+fn role_of(kind: u8) -> u8 {
+    match kind {
+        unit::INFANTRY | unit::MECH => 3,
+        unit::ARTILLERY | unit::ROCKETS | unit::MISSILES | unit::ANTI_AIR | unit::LANDER | unit::APC | unit::BLACK_BOAT => 0,
+        _ => 4,
+    }
+}
+
+/// Roles for the enemy's deployment (army 1, the player's, and units with a role other than the map's `hold` flag,
+/// are left alone): a unit the map marks `hold` (ai 1 here) is a garrison and stands (0); the rest advance by kind.
+fn roles(units: Vec<UnitDef>) -> Vec<UnitDef> {
+    units
+        .into_iter()
+        .map(|mut u| {
+            if u.army != 1 && (u.ai == 0 || u.ai == 1) {
+                u.ai = if u.ai == 1 { 0 } else { role_of(u.kind) };
+            }
+            u
+        })
+        .collect()
+}
+
+const ROLE_MISSIONS: [&str; 8] = ["bh04", "bh05", "bh06", "bh07", "bh08", "bh09", "bh10", "bh11"];
+
+fn apply_roles(v: &mut [MissionDef]) {
+    for key in ROLE_MISSIONS {
+        let Some(m) = v.iter_mut().find(|m| m.key == key) else { continue };
+        let base = if m.units.is_empty() {
+            match &m.map {
+                MapSrc::Built(n) => built_units(n),
+                _ => Vec::new(),
+            }
+        } else {
+            std::mem::take(&mut m.units)
+        };
+        m.units = roles(base);
+        if let Some(f) = &mut m.front2 {
+            f.units = roles(std::mem::take(&mut f.units));
+        }
+    }
+}
+
 // --- World map ---------------------------------------------------------------------
 
 /// Act 2's flags on AW2's Green Earth (the east land, x 300..390, y 85..230), in the design's order
@@ -362,8 +412,8 @@ fn bh07() -> MissionDef {
     m.day_limit = 26;
     m.rank_days = 16;
     m.factory = F7.to_vec();
-    // The port at (9, 21) is Black Hole's (the map tool owns a property by the nearest HQ).
-    m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 21 }];
+    // The port at (9, 20) is Black Hole's (the map tool owns a property by the nearest HQ).
+    m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 20 }];
     m.intro = Scene::new(vec![
         say(co::EAGLE, "Greenhaven! The Arsenal of the south! My home field!"),
         say(co::EAGLE, "I'm the sky, you're the ground. That's the whole war."),
@@ -739,6 +789,7 @@ pub fn missions() -> Vec<MissionDef> {
     v.push(bh09());
     v.push(bh10());
     v.push(bh11());
+    apply_roles(&mut v);
     // The day limit loses: the day after the last is the defeat (the header's counter only shows it).
     for m in v.iter_mut().filter(|m| m.key >= "bh04") {
         if m.day_limit > 0 {

@@ -10,7 +10,7 @@ unit 1 2 4 12
 unit 1 6 4 5
 unit 1 6 4 11
 unit 1 5 5 8
-unit 1 10 3 5
+unit 1 10 2 7
 unit 2 1 16 7
 unit 2 1 16 9
 unit 2 1 15 8
@@ -23,19 +23,22 @@ unit 2 2 14 8
 unit 2 2 16 10
 unit 2 6 15 4
 unit 2 6 15 12
-unit 2 6 13 8
-unit 2 6 13 3
+unit 2 3 13 8
+unit 2 3 13 3
+unit 2 3 14 5
+unit 2 11 14 11
+unit 2 11 13 12
 unit 2 5 14 7
 unit 2 5 14 9
 unit 2 10 16 6
 unit 2 10 16 11
-..I.....^^^^........
-.###f.ff^^^.ffffff..
+........^^^^........
+.fIff.ff^^^.ffffff..
 .###f.ff.^^^ffffff..
-.#F#RRRRRRRRRRRRR...
-.###R....^^.....R...
-..CRRf..^^^...ffR...
-...RCf...^^^..ffR...
+.###RRRRRRRRRRRRR...
+.#F#R....^^.....R...
+.###Rf..^^^...ffR...
+...RRf...^^^..ffR...
 ...R.....^^.....R...
 ..1RRRRRRRRRRRRRR2..
 .ffR.C..^^^.....R...

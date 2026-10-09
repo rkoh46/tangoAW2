@@ -208,6 +208,18 @@ pub fn cpu_unit(core: &mut Core) {
     core.raw_write_8(BOMBS_DONE, -1, army as u8);
     bombs(core, army);
     crate::oozium::cpu_eats(core, army);
+    if crate::cpu_inventions::owner(core).is_some() {
+        // A human owns the inventions (the BH Campaign, Versus): the computer
+        // hits those in reach of its units ([`crate::cpu_inventions`]).
+        crate::cpu_inventions::turn_begins(core, army);
+        for (u, aim) in crate::cpu_inventions::plan(core, army) {
+            let Some(k) = (0..crate::cpu_inventions::SLOTS).find(|&k| core.raw_read_32(slot(k), -1) == 0) else { break };
+            let f = core.raw_read_8(u + 1, -1);
+            core.raw_write_8(u + 1, -1, f | MOVED);
+            core.raw_write_32(slot(k), -1, crate::cpu_inventions::encode(core, u, aim));
+        }
+        return;
+    }
     // Units in range of an enemy factory hit it (Versus, [`crate::factory_hp`]).
     for u in crate::factory_hp::cpu_strikers(core, army) {
         let Some(k) = (0..PENDING_SLOTS).find(|&k| core.raw_read_32(PENDING + 4 * k, -1) == 0) else { break };
@@ -215,6 +227,12 @@ pub fn cpu_unit(core: &mut Core) {
         core.raw_write_8(u + 1, -1, f | MOVED);
         core.raw_write_32(PENDING + 4 * k, -1, u | crate::factory_hp::STRIKE);
     }
+}
+
+/// Pending slot `k`: the first [`PENDING_SLOTS`] are [`PENDING`], the rest
+/// [`crate::cpu_inventions::EXTRA`].
+fn slot(k: u32) -> u32 {
+    if k < PENDING_SLOTS { PENDING + 4 * k } else { crate::cpu_inventions::EXTRA + 4 * (k - PENDING_SLOTS) }
 }
 
 /// The frame's effects pass (`sub_0803550C`, weather in r0, trapped by
@@ -229,9 +247,25 @@ pub fn effects_pass(core: &mut Core) -> bool {
         core.gba_mut().cpu_mut().set_gpr(0, r0 as i32);
         return false;
     }
-    for k in 0..PENDING_SLOTS {
-        let bomb = core.raw_read_32(PENDING + 4 * k, -1);
+    // (the second half of the queue exists where a human owns inventions)
+    let slots = if crate::cpu_inventions::owner(core).is_some() { crate::cpu_inventions::SLOTS } else { PENDING_SLOTS };
+    for k in 0..slots {
+        let bomb = core.raw_read_32(slot(k), -1);
         if bomb == 0 {
+            continue;
+        }
+        if bomb & crate::cpu_inventions::QUEUED != 0 {
+            // A strike at one of a human's inventions, one hit at a time.
+            if crate::factory_hp::busy(core) {
+                return false;
+            }
+            core.raw_write_32(slot(k), -1, 0);
+            let r0 = core.gba().cpu().gpr(0) as u32;
+            if crate::cpu_inventions::strike(core, bomb, EFFECTS | 1) {
+                core.raw_write_32(SAVED_R0, -1, r0);
+                core.raw_write_8(CALLED, -1, 1);
+                return true;
+            }
             continue;
         }
         if bomb & crate::factory_hp::STRIKE != 0 {
@@ -239,7 +273,7 @@ pub fn effects_pass(core: &mut Core) -> bool {
             if crate::factory_hp::busy(core) {
                 return false;
             }
-            core.raw_write_32(PENDING + 4 * k, -1, 0);
+            core.raw_write_32(slot(k), -1, 0);
             let r0 = core.gba().cpu().gpr(0) as u32;
             if crate::factory_hp::strike(core, bomb & !crate::factory_hp::STRIKE, EFFECTS | 1) {
                 core.raw_write_32(SAVED_R0, -1, r0);
@@ -248,7 +282,7 @@ pub fn effects_pass(core: &mut Core) -> bool {
             }
             continue;
         }
-        core.raw_write_32(PENDING + 4 * k, -1, 0);
+        core.raw_write_32(slot(k), -1, 0);
         let r0 = core.gba().cpu().gpr(0) as u32;
         core.raw_write_32(SAVED_R0, -1, r0);
         core.raw_write_8(CALLED, -1, 1);

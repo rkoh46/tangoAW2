@@ -85,6 +85,9 @@ pub struct Custom {
     pub marks: Vec<(u8, u8)>,
     /// Per mission: a reversed Black Onyx.
     pub onyx: Vec<Option<OnyxDef>>,
+    /// Per mission: the address of its Black Factory table (96 bytes, 32
+    /// days x 3 doors; 0: Factory Blues').
+    pub factory: Vec<u32>,
     /// Per mission: a volcano hazard.
     pub volcano: Vec<Option<VolcanoDef>>,
     /// Per mission: an HQ whose capture does not defeat its army (the army has another HQ).
@@ -92,10 +95,6 @@ pub struct Custom {
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,
-    /// Per mission: the address of the Black Factory's unit table in the
-    /// campaign's data (32 days x 3 door slots, AW2 unit ids, 0 none), or 0:
-    /// Factory Blues' schedule ([`crate::factory`]).
-    pub factory: Vec<u32>,
 }
 
 /// The Black Onyx turned round: Black Hole's own satellite on a day cycle

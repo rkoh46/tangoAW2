@@ -1,0 +1,42 @@
+# M3 Blockade Runner (Act I): see docs/BH_CAMPAIGN.md 3.5
+
+map bh03
+armies 2 3 5 3
+team 1 2
+unit 1 22 8 4
+unit 1 22 8 12
+unit 1 24 8 13
+unit 1 23 7 6
+unit 1 23 7 10
+unit 1 18 7 8
+unit 1 1 5 5
+unit 1 1 5 7
+unit 1 1 5 9
+unit 1 19 3 7
+unit 1 16 2 9
+unit 2 21 17 3
+unit 2 22 18 4
+unit 2 22 17 8
+unit 2 24 17 13
+unit 2 18 18 8
+unit 2 16 22 5
+unit 2 16 24 7
+unit 2 19 22 7
+unit 2 23 18 6
+unit 2 23 18 10
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~r~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~^...~~~~r~~~~~~~~~~~.f.^~
+^.ff.f~~~~RRRRR~~~~~..C..^
+^f.CR.,~~~R###cf~~~PRff..^
+....RRP~~,R#v#R.,~~.R..Aff
+..f.R..~~~R###R^~~~,R..R..
+..1ARR,~~~RRRRcf~~~RRCRR2.
+.f..R..~~,.cE.E.,~~,R.C..f
+.f.BRRP~~~f...f~~~~.RfRBf.
+f..CR.,~~~~~~~~~~~~PRfR..^
+^.f.ff~~~~~~~~~~~~~,..Cf^^
+^^..~~~~~~~~~r~~r~~~~...^~
+~~~~~~~~r~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~

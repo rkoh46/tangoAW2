@@ -24,12 +24,13 @@ def hide_hud(e):
 IMAGES = os.environ.get("AW2TEST_MAP_IMAGES")
 
 
-def stitch(ctx, g, name, w, h, each=None, exclude=None):
+def stitch(ctx, g, name, w, h, each=None, exclude=None, reject=None):
     """The whole map as one picture: the cursor sweeps it and a screenshot is
     taken every two cells, the panels and cursor hidden ([`hide_hud`]). Each
     cell is then the medoid of its views (the view nearest all the others).
     `each()` is called at every view; `exclude(tx, ty)` names screen cells
-    never taken (a banner fixed on the screen). Needs PIL and numpy (else
+    never taken (a banner fixed on the screen); `reject(cell)` drops a view of a cell by its pixels (a window that
+    moves with the cursor). Needs PIL and numpy (else
     skipped)."""
     try:
         import numpy as np
@@ -65,7 +66,10 @@ def stitch(ctx, g, name, w, h, each=None, exclude=None):
                         continue
                     if 0 <= mx < w and 0 <= my < h and max(abs(mx - cx), abs(my - cy)) > 1:
                         same = (tx < 7.5) == ((cx * 16 - camx) < 120)
-                        views[my][mx].append((same, img[16 * ty:16 * ty + 16, 16 * tx:16 * tx + 16]))
+                        cellimg = img[16 * ty:16 * ty + 16, 16 * tx:16 * tx + 16]
+                        if reject and reject(cellimg):
+                            continue
+                        views[my][mx].append((same, cellimg))
     full = np.zeros((16 * h, 16 * w, 3), dtype=np.uint8)
     missing = 0
     for my in range(h):

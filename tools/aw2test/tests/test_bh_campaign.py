@@ -19,6 +19,16 @@ OAM = 0x07000000
 LABEL_TILES = (832, 868)          # campaign_menu::TILES, one label each
 
 
+# The campaign as it stands: the mission whose win ends it (its index) and the staff roll's
+# sections (bh_campaign::def). Act I only so far: the Act V builder moves both.
+FINAL_MISSION = 2
+CREDITS_PAGES = [(1, "*BH CAMPAIGN*"), (2, "PLACEHOLDER"), (1, "*THANKS FOR PLAYING*")]
+PROLOGUE = ["Once, one black banner covered half the world.", "Then it burned. Its legions scattered like ash.",
+            "Its officers took new colours and new names.", "Its last lord grew old, counting coins in the ruins.",
+            "Then a storm came ashore that no map had foretold.", "It carried no flag. It had one name, and one purpose.",
+            "Four nations sleep behind their borders, safe and proud.", "None of them has heard the thunder yet."]
+
+
 def boot(ctx, save=None):
     e = Emu(save=save or paths.base_save(), ds=ctx.ds)
     g = Game(e, ctx.image)
@@ -100,18 +110,17 @@ def follow_prologue(ctx, e, d, label):
 
 @test(modes=("ds",))
 def bh_campaign_new_prologue_world_map(ctx):
-    """New: the prologue (placeholder pages from data), then AW2's own world
-    map with one flag, on the Black Hole land."""
+    """New: the prologue (the design's eight pages, from data), then AW2's own world
+    map with the first flag, on the Black Hole land."""
     e, g, d = boot(ctx)
     d.start_bh(new=True, pick=False)
     ctx.eq(e.u8(bh.SOURCE), bh.BH, "the BH Campaign's session")
     texts = follow_prologue(ctx, e, d, "prologue")
-    ctx.eq(texts, ["Placeholder prologue, page one. Black Hole rises again.",
-                   "Placeholder prologue, page two. Sturm leads the way."], "the prologue's pages, from data")
+    ctx.eq(texts, PROLOGUE, "the prologue's pages, from data")
     ctx.require(d.world_map_up(), "the world map is up")
     e.wait(60)
     flags = d.map_flags()
-    ctx.eq(flags[:2], [1, 0], "one flag: mission 1 open, mission 2 not yet")
+    ctx.eq(flags[:3], [1, 0, 0], "one flag: mission 1 open, mission 2 not yet")
     ctx.eq(d.map_mission(), 0, "the cursor on mission 1")
     shot(ctx, e, "world_map")
     # AW2's own picture, not Omega Land's (its tile pool words are AW2's)
@@ -133,7 +142,8 @@ def first_mission(ctx, e, d):
 @test(modes=("ds",))
 def bh_campaign_mission_one_unlocks_von_bolt(ctx):
     """Mission 1 (Sturm against Von Bolt in Green Earth's colours): the armies
-    are as the data says, the win unlocks Von Bolt and opens mission 2's flag."""
+    are as the data says, the win unlocks Von Bolt and opens mission 2's flag
+    (Act I's own tests: test_bh_act1.py)."""
     from aw2test import campaigns as cp
     e, g, d = boot(ctx)
     first_mission(ctx, e, d)
@@ -143,7 +153,7 @@ def bh_campaign_mission_one_unlocks_von_bolt(ctx):
     shot(ctx, e, "mission1")
     ctx.eq((ps[0]["co"], ps[1]["co"]), (bh.STURM, bh.VON_BOLT), "Sturm leads army 1, Von Bolt army 2")
     ctx.eq((ps[0]["colour"], ps[1]["colour"]), (5, 3), "army 1 in Black Hole's colours, army 2 in Green Earth's")
-    ctx.eq(d.size(), (12, 8), "the data's map")
+    ctx.eq(d.size(), (22, 15), "the data's map")
     ctx.eq(d.controllers()[:2], [1, 2], "the player and the computer")
     cp.win_here(e, d)
     ctx.eq(d.won(), 1, "mission 1 won")
@@ -185,8 +195,8 @@ def bh_campaign_co_select_only_unlocked(ctx):
     d.wait_control()
     ctx.eq(d.mission(), 1, "mission 2")
     ps = [g.player(1), g.player(2)]
-    ctx.eq((ps[0]["co"], ps[1]["co"]), (bh.VON_BOLT, bh.KINDLE), "the pick leads army 1; Kindle holds the Yellow Comet colours")
-    ctx.eq((ps[0]["colour"], ps[1]["colour"]), (5, 4), "colour and CO are independent")
+    ctx.eq((ps[0]["co"], ps[1]["co"]), (bh.VON_BOLT, 17), "the pick leads army 1; Jess holds Green Earth's colours")
+    ctx.eq((ps[0]["colour"], ps[1]["colour"]), (5, 3), "the picked CO leads Black Hole's colours")
     shot(ctx, e, "mission2")
     e.close()
     # Only Sturm unlocked (mission 1 won, no recruit), Hawke unlocked too.
@@ -222,17 +232,24 @@ def roll_lines(e, pages):
 
 @test(modes=("ds",))
 def bh_campaign_credits_after_the_last_mission(ctx):
-    """Mission 2 is the placeholder campaign's last: its win plays the scene on
+    """The campaign's last mission (FINAL_MISSION): its win plays the scene on
     the map, then the staff roll from data (headings and names), then Select
     Mode with the session over and AW2's own pages back."""
     e, g, d = boot(ctx)
-    d.start_at(won_mask=1, unlocked_mask=0b11)
+    d.start_at(won_mask=(1 << FINAL_MISSION) - 1, unlocked_mask=0b11)
     d.pick_mission()
-    d.choose_cos(1, prefs=[bh.STURM])
+    if d.picks.get(FINAL_MISSION):
+        d.choose_cos(d.picks[FINAL_MISSION], prefs=[bh.STURM])
     g._units_base = g._players_base = None
     d.wait_control()
-    ctx.eq(d.mission(), 1, "mission 2")
-    ctx.require(d.force_win(), "mission 2 won (test aid)")
+    ctx.eq(d.mission(), FINAL_MISSION, "the last mission")
+    # (a naval mission has no foot soldier to rout: the enemy's Fighter is made an Infantry, a test aid)
+    foe = next((u for u in g.units(army=2) if u["type"] == 16), None)
+    if foe and not any(u["type"] in dc.DIRECT for u in g.units(army=2)):
+        at = g.unit_addr(foe["id"])
+        e.w8(at, 1)
+        e.w16(at + 4, (e.u16(at + 4) & ~0x7F) | 100)
+    ctx.require(d.force_win(), "the last mission won (test aid)")
     for f in range(80000):
         if e.u8(CREDITS) >= 3:
             break
@@ -243,7 +260,7 @@ def bh_campaign_credits_after_the_last_mission(ctx):
     pages = e.u32(PAGE_POOLS[0])
     ctx.check(pages != AW2_PAGES and all(e.u32(a) == pages for a in PAGE_POOLS), f"the roll reads the campaign's pages ({pages:#x})")
     got = roll_lines(e, pages)
-    ctx.eq(got, [(1, "*BH CAMPAIGN*"), (2, "PLACEHOLDER"), (1, "*THANKS FOR PLAYING*")], "the pages are the data's sections")
+    ctx.eq(got, CREDITS_PAGES, "the pages are the data's sections")
     rolled = False
     for k in range(200):
         e.wait(60)
@@ -262,7 +279,7 @@ def bh_campaign_credits_after_the_last_mission(ctx):
     ctx.eq(e.u8(dc.ACTIVE), 0, "back on Select Mode: the session is over")
     ctx.check(all(e.u32(a) == AW2_PAGES for a in PAGE_POOLS), "AW2's own pages back")
     ctx.eq(e.u8(dc.P_NEXT + 1), 1, "the campaign recorded as over")
-    ctx.eq(d.won(), 0b11, "both missions won")
+    ctx.eq(d.won(), 1 << FINAL_MISSION | ((1 << FINAL_MISSION) - 1), "every mission won")
 
 
 # -- the data format's fields (bh_campaign::features_def, played with TANGOAW2_BH_FEATURES) ----------
@@ -629,20 +646,22 @@ def bh_campaign_free_play_replays_change_nothing(ctx):
     ctx.eq(d.map_flags()[:2], [2, 1], "before the end: mission 1 cleared, mission 2 open")
     e.close()
     e, g, d = boot(ctx)
-    d.start_at(won_mask=0b11, unlocked_mask=1)
+    every = (1 << (FINAL_MISSION + 1)) - 1
+    d.start_at(won_mask=every, unlocked_mask=1)
     d.wait_world_map()
     flags = d.map_flags()
-    ctx.eq(flags[:2], [2, 2], "Free Play: both missions cleared (a cleared flag is still on the map)")
+    ctx.eq(flags[:FINAL_MISSION + 1], [2] * (FINAL_MISSION + 1), "Free Play: every mission cleared (a cleared flag is still on the map)")
     shot(ctx, e, "free_play_map")
     step, records = e.u8(dc.P_NEXT), e.read(dc.RECORDS, 16)
     d.pick_mission()
-    d.choose_cos(1, prefs=[bh.STURM])
+    if d.picks.get(0):
+        d.choose_cos(d.picks[0], prefs=[bh.STURM])
     g._units_base = g._players_base = None
     d.wait_control()
     ctx.eq(d.mission(), 0, "mission 1 replayed")
     cp.win_here(e, d)
     e.wait(120)
-    ctx.eq(d.won(), 0b11, "the won missions as they were")
+    ctx.eq(d.won(), every, "the won missions as they were")
     ctx.eq(d.unlocked(), [bh.STURM], "Von Bolt not unlocked again by the replay")
     ctx.eq(e.u8(dc.P_NEXT), step, "the progress step as it was")
     ctx.eq(e.read(dc.RECORDS, 16), records, "the records as they were")

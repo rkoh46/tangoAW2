@@ -16,8 +16,9 @@ unit 1 14 2 10
 unit 1 15 10 3
 unit 1 11 8 8
 unit 1 6 10 10
-unit 1 22 8 22
-unit 1 24 10 22
+unit 1 22 8 21
+unit 1 24 10 21
+unit 1 23 11 21
 unit 2 1 24 18
 unit 2 1 26 19
 unit 2 1 23 17
@@ -28,27 +29,28 @@ unit 2 2 24 15
 unit 2 2 20 17
 unit 2 5 21 16
 unit 2 5 23 19
-unit 2 5 19 14
-unit 2 3 22 14
+unit 2 5 19 15
+unit 2 3 22 13
 unit 2 3 20 15
 unit 2 3 24 17
 unit 2 14 21 17
 unit 2 14 25 13
 unit 2 15 23 16
 unit 2 16 22 17
-unit 2 16 25 14
-unit 2 16 23 14
+unit 2 16 26 13
+unit 2 16 24 12
 unit 2 17 21 11
 unit 2 17 26 13
 unit 2 19 26 16
 unit 2 22 19 22
 unit 2 22 21 22
 unit 2 24 22 23
-^^...I....^^-.^^^.........^^
-^....I..ff^.-.............^^
-.ff..I..fff.-.ff.ff..ff....^
-.ff1.IBRff..-.ff.fR..ff..ff.
-.....I.Rff..-.c.c.R.c.c..ff.
+unit 2 23 20 22
+^^........^^-.^^^.........^^
+^.......ff^.-.............^^
+.ff.....fff.-.ff.ff..ff....^
+.ff1..BRff..-.ff.fR..ff..ff.
+.......Rff..-.c.c.R.c.c..ff.
 .C...I.R....-.....R.........
 ...B.I.RRRRR=RRRRRRRRRRRR...
 ....###R.ff.-......ff...R...
@@ -64,7 +66,7 @@ unit 2 24 22 23
 .ffffffR..E.-###.ffC..A.R.C.
 ^^...ffRffff-#n#.ff.....R...
 ^^.....Rffff-###....CCB.R2..
-^fff...R....-...............
-.RRRRRRRRpRRRRRRRRRRPRRRRRR.
-~~~~~~~~~~~~~,~~,~~~~~~~~~~~
+^RRRRRRRRpRR=RRRRRRR........
+~~~~~~~~~~~~~,~~,~,RPRRRRRR.
+~~~~,.c.,~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

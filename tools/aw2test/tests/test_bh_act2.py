@@ -132,8 +132,8 @@ def pictures(ctx, n, shots=(0,)):
         ctx.eq((w2, h2), (20, 16), "the second front's map: the Gate of Dusk, 20x16")
         a2.pic(ctx, e, "m8_second_front_view")
         g.goto(0, 0)
-        # (the view's "Second front" banner sits on the screen's top: a sweep without the cells it covers, the
-        # few cells only it can show stand in the row below's)
+        # (the view's "Second front / R Back" window sits at the screen's top or bottom, away from the cursor:
+        # views of a cell with the window over it are dropped)
         class Quiet:
             def __init__(self, c):
                 self.c = c
@@ -143,7 +143,7 @@ def pictures(ctx, n, shots=(0,)):
 
             def check(self, ok, msg):
                 return None
-        clean = stitch.stitch(Quiet(ctx), g, "m8_second_front", w2, h2, exclude=lambda tx, ty: ty <= 2 and 5 <= tx <= 10)
+        clean = stitch.stitch(Quiet(ctx), g, "m8_second_front", w2, h2, reject=lambda c: (c.min(axis=2) > 225).sum() > 60)
         try:
             from PIL import Image
             import numpy as np
@@ -828,12 +828,17 @@ def bh_act2_m5_parked_aircraft_stay_parked(ctx):
     e.close()
 
 
-@test(modes=("ds",))
-def bh_act2_m10_units_start_at_full_hit_points(ctx):
-    """The deployment's HP is full (the mission data gives no damaged unit); the game's own record says so too."""
-    e, g, d, texts = ready(ctx, 10)
-    low = [(u["army"], u["type"], u["hp"]) for u in g.units() if u["hp"] != 100]
-    ctx.eq(low, [], "every unit of both armies at 100 HP")
-    ctx.log("ammo/fuel of army 1: " + str(sorted({(u["type"], u["ammo"], u["fuel"]) for u in g.units(1)})))
-    a2.pic(ctx, e, "m10_units_hp")
-    e.close()
+def _full_hp(n):
+    def fn(ctx):
+        """Every unit of both armies starts at full hit points (the Lasers and minicannons fire on Black Hole's turn
+        at every unit on their lines, ours included: nobody of ours starts there)."""
+        e, g, d, texts = ready(ctx, n)
+        low = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] != 100]
+        ctx.eq(low, [], f"M{n}: every unit at 100 HP at the first turn")
+        e.close()
+    fn.__name__ = f"bh_act2_m{n}_units_start_at_full_hit_points"
+    test(modes=("ds",))(fn)
+
+
+for _n in MISSIONS:
+    _full_hp(_n)

@@ -650,16 +650,6 @@ fn big_table(core: &Core) -> Option<u32> {
     (t == crate::survival::TABLE).then_some(t)
 }
 
-/// The running custom campaign's Black Factory table for the mission being played
-/// (its address in the campaign's data), if the mission has one of its own.
-pub fn factory_table(core: &Core) -> Option<u32> {
-    if !active(core) {
-        return None;
-    }
-    let c = campaign(core)?.model.custom.as_ref()?;
-    c.factory.get(mission(core) as usize).copied().filter(|&a| a != 0)
-}
-
 /// The mission being played (its index).
 pub fn mission(core: &Core) -> u8 {
     core.raw_read_8(MISSION, -1)
