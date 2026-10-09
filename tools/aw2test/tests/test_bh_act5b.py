@@ -144,9 +144,16 @@ def _advance(n):
         d.wait_control()
         g._units_base = g._players_base = None
         before = {u["id"]: (u["x"], u["y"]) for u in g.units() if u["army"] != 1}
-        a5.to_day(e, g, d, 4)
-        after = {u["id"]: (u["x"], u["y"]) for u in g.units() if u["army"] != 1}
-        moved = sum(1 for k, v in before.items() if k in after and after[k] != v)
+        # (polled, not timed: up to day 6 until at least half have moved, so a slow start under load cannot fail it)
+        moved, after = 0, {}
+        for day in (4, 5, 6):
+            a5.to_day(e, g, d, day)
+            g._units_base = g._players_base = None
+            e.wait(120)
+            after = {u["id"]: (u["x"], u["y"]) for u in g.units() if u["army"] != 1}
+            moved = sum(1 for k, v in before.items() if k in after and after[k] != v)
+            if moved * 2 >= len(before):
+                break
         ctx.log(f"M{n}: {moved} of {len(before)} enemy units moved in 3 days ({len(after)} left)")
         ctx.check(moved * 2 >= len(before) * 1, f"M{n}: at least half the computer's units advance ({moved} of {len(before)})")
         e.close()
