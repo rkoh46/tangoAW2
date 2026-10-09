@@ -566,7 +566,8 @@ pub fn role_move(core: &mut Core) -> bool {
         return false;
     }
     let u = core.raw_read_32(CURRENT_UNIT, -1);
-    if u == 0 {
+    // (a campaign mission's driven march goes to a place of its own)
+    if u == 0 || crate::custom_campaign::driven_goal(core, u).is_some() {
         return false;
     }
     let Some(goal) = goal_for(core, army, owner, u) else {

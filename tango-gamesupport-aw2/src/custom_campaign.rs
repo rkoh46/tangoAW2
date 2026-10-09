@@ -1989,25 +1989,29 @@ const CURRENT_UNIT: u32 = 0x0300_40D8;
 /// the out pointer in r4 (two halfwords), r0 the answer (-1: none).
 pub const GOAL_HOOK: u32 = 0x0805_ED2A;
 
-/// A driven march's unit is the one moving: its goal is the path's end.
-pub fn goal_hook(core: &mut Core) {
+/// The path's end of the driven march (a [`MarchDef`] with a role) whose unit is `unit`, if it is one.
+pub fn driven_goal(core: &Core, unit: u32) -> Option<(u8, u8)> {
     if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
-        return;
+        return None;
     }
     let mission = crate::ds_campaign::mission(core) as usize;
-    let Some(list) = custom_of(core).and_then(|c| c.marches.get(mission)) else { return };
-    let list: Vec<MarchDef> = list.iter().filter(|m| m.role != 0).cloned().collect();
-    let unit = core.raw_read_32(CURRENT_UNIT, -1);
-    for m in list {
+    let list = custom_of(core).and_then(|c| c.marches.get(mission))?;
+    for m in list.iter().filter(|m| m.role != 0) {
         if unit_info(core, m.name).is_some_and(|(a, alive, _)| alive && a == unit) {
-            if let Some(&(x, y)) = m.path.last() {
-                let out = core.gba().cpu().gpr(4) as u32;
-                core.raw_write_16(out, -1, x as u16);
-                core.raw_write_16(out + 2, -1, y as u16);
-                core.gba_mut().cpu_mut().set_gpr(0, 0);
-            }
-            return;
+            return m.path.last().copied();
         }
+    }
+    None
+}
+
+/// A driven march's unit is the one moving: its goal is the path's end.
+pub fn goal_hook(core: &mut Core) {
+    let unit = core.raw_read_32(CURRENT_UNIT, -1);
+    if let Some((x, y)) = driven_goal(core, unit) {
+        let out = core.gba().cpu().gpr(4) as u32;
+        core.raw_write_16(out, -1, x as u16);
+        core.raw_write_16(out + 2, -1, y as u16);
+        core.gba_mut().cpu_mut().set_gpr(0, 0);
     }
 }
 

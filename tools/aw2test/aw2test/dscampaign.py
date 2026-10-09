@@ -274,7 +274,7 @@ class DsCampaign:
 
     def map_flags(self):
         """Per mission: 1 shown (selectable), 2 cleared."""
-        return list(self.e.read(WM_STATE + 0x12, 28))
+        return list(self.e.read(WM_STATE + 0x12, 32))
 
     def wait_world_map(self, max_frames=6000):
         e = self.e

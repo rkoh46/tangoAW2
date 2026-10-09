@@ -21,7 +21,7 @@ LABEL_TILES = (832, 868)          # campaign_menu::TILES, one label each
 
 # The campaign as it stands: the mission whose win ends it (its index) and the staff roll's
 # sections (bh_campaign::def). Act I only so far: the Act V builder moves both.
-FINAL_MISSION = 2
+FINAL_MISSION = 29      # (the merged tree's last mission: bh30 Nell's Stand; Sturm and Clone Andy are picked on its CO screens)
 CREDITS_PAGES = [(1, "*BH CAMPAIGN*"), (2, "PLACEHOLDER"), (1, "*THANKS FOR PLAYING*")]
 PROLOGUE = ["Once, one black banner covered half the world.", "Then it burned. Its legions scattered like ash.",
             "Its officers took new colours and new names.", "Its last lord grew old, counting coins in the ruins.",
@@ -236,11 +236,12 @@ def bh_campaign_credits_after_the_last_mission(ctx):
     the map, then the staff roll from data (headings and names), then Select
     Mode with the session over and AW2's own pages back."""
     e, g, d = boot(ctx)
-    d.start_at(won_mask=(1 << FINAL_MISSION) - 1, unlocked_mask=0b11)
+    d.picks = {FINAL_MISSION: 2}
+    d.start_at(won_mask=(1 << FINAL_MISSION) - 1, unlocked_mask=0x3FF)
     d.pick_mission()
-    if d.picks.get(FINAL_MISSION):
-        d.choose_cos(d.picks[FINAL_MISSION], prefs=[bh.STURM])
+    d.choose_cos(2, prefs=[bh.STURM, bh.CLONE_ANDY])
     g._units_base = g._players_base = None
+    d.leave_setup()
     d.wait_control()
     ctx.eq(d.mission(), FINAL_MISSION, "the last mission")
     # (a naval mission has no foot soldier to rout: the enemy's Fighter is made an Infantry, a test aid)
