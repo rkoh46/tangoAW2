@@ -233,6 +233,7 @@ def sweeps(ctx, e, g, d, n, tag, exclude):
             a2.pic(ctx, e, f"m{n}_{tag}front2_view")
             g.goto(0, 0)
             out["front2"] = stitch.stitch(Quiet(ctx), g, f"m{n}_{tag}front2", w2, h2, exclude=exclude)
+            ctx.require(tf.come_back(e, g), f"M{n}: back from the other front")
         except Exception as ex:
             if not tag:
                 raise
