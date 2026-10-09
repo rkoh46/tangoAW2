@@ -574,7 +574,9 @@ const COUNTRY_LOCKED: u32 = 0x0300_5910;
 const CO_SELECT_SCRIPT: u32 = 0x0861_6638;
 const PROC_POOL: (u32, u32) = (0x0200_D610, 0x0200_E418);
 fn co_screen_partners(core: &mut Core) {
-    if !crate::ds_campaign::active(core) {
+    // (a custom campaign's partner may be of any country: its roster mixes
+    // them, and its screen keeps every tab open, crate::ds_campaign)
+    if !crate::ds_campaign::active(core) || !crate::ds_campaign::is_ds(core) {
         return;
     }
     let Some(proc) = (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT) else {

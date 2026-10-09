@@ -77,6 +77,8 @@ pub struct Custom {
     /// The hidden bonds: each names the CO whose page shows its quote once
     /// earned, and the quote's address (the CO page's bio is replaced).
     pub bonds: Vec<(u8, u32)>,
+    /// How many of them count toward the secret mission (the rest are extras).
+    pub counted: usize,
     /// Per mission: the battle's song (an AW2 song id) in place of the COs'
     /// themes.
     pub music: Vec<Option<u16>>,
@@ -87,6 +89,9 @@ pub struct Custom {
     pub onyx: Vec<Option<OnyxDef>>,
     /// Per mission: a volcano hazard.
     pub volcano: Vec<Option<VolcanoDef>>,
+    /// Per mission: named units that march, structures that are jammed.
+    pub marches: Vec<Vec<crate::custom_campaign::MarchDef>>,
+    pub jams: Vec<Vec<crate::custom_campaign::JamDef>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,
@@ -108,6 +113,9 @@ pub struct OnyxDef {
     /// The first day it fires, and the days between shots.
     pub first: u8,
     pub period: u8,
+    /// The first day a soldier on a silo may launch at it (a silo is two
+    /// turns from the allies' HQs: not before day 3).
+    pub silo_day: u8,
     /// The Black Obelisk's top-left cell (3x3): the fortress's centre.
     pub obelisk: (u8, u8),
     /// When it is destroyed: every Black Hole unit within this many cells of
@@ -148,7 +156,7 @@ impl OnyxDef {
     /// The design's numbers: 4 hits, day 5 and every 5th day, 4 cells, 3 HP,
     /// 3 turns, 30%.
     pub const fn new(obelisk: (u8, u8)) -> OnyxDef {
-        OnyxDef { hits: 4, first: 5, period: 5, obelisk, radius: 4, debris_hp: 3, offline_turns: 3, meters: 30 }
+        OnyxDef { hits: 4, first: 5, period: 5, silo_day: 3, obelisk, radius: 4, debris_hp: 3, offline_turns: 3, meters: 30 }
     }
 }
 

@@ -191,10 +191,8 @@ pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
     }
     let Some(c) = crate::ds_campaign::campaign(core) else { return at };
     let Some(custom) = c.model.custom.as_ref() else { return at };
-    // (Crumb's page quote is no recruit's bond: not counted)
-    let counted: u32 = custom.bonds.iter().enumerate().filter(|(_, b)| b.0 != crate::co_new::CRUMB).fold(0, |m, (k, _)| m | 1 << k);
-    let total = counted.count_ones() as usize;
-    let n = (crate::ds_campaign::bonds_earned(core) & counted).count_ones();
+    let total = custom.counted;
+    let n = (crate::ds_campaign::bonds_earned(core) & ((1u32 << total) - 1)).count_ones();
     if n == 0 {
         return at;
     }
