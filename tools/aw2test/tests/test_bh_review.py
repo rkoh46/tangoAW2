@@ -111,9 +111,12 @@ def enter(ctx, n):
     title, roster, picks, fog, front = M[n]
     if n == 28:
         os.environ["TANGOAW2_BH_STILL"] = "1"
-    mask = (1 << (n - 1)) - 1
+    # (M31, the secret, opens with M28 won; with M30 won too the campaign is over and Free Play puts the cursor on M2)
+    mask = (1 << (29 if n == 31 else n - 1)) - 1
     e, g, d = a2.boot(ctx, mask, roster, picks={n - 1: len(picks)}, at=n - 1)
     ctx.log(f"M{n}: record before entering: won {d.won():#x} unlocked {d.unlocked()} bonds {d.bonds():#x} flags {d.map_flags()}")
+    d.wait_world_map()
+    ctx.log(f"M{n}: world map mission under cursor {e.u32(0x0202FDFC + 0x0C)}, cursor {e.u16(0x0202FDFC + 0x4):#x} {e.u16(0x0202FDFC + 0x6):#x}")
     if picks:
         a2.open_mission(ctx, e, g, d, n - 1, picks, f"m{n}", setup_only=True)
         ctx.require(d.in_setup(), f"M{n}: in the Setup phase")
@@ -129,7 +132,7 @@ def enter(ctx, n):
                 e.press("A", 4)
             e.wait(20)
         d.wait_control()
-    ctx.log(f"M{n}: entered mission index {d.mission()}")
+    ctx.eq(d.mission(), n - 1, f"M{n}: its own mission was entered")
     g._units_base = g._players_base = None
     e.wait(30)
     return e, g, d
@@ -185,3 +188,23 @@ def _review(n):
 
 for _n in M:
     _review(_n)
+
+
+# --- every world-map flag opens its own mission ------------------------------------------------------
+def _flag(n):
+    def fn(ctx):
+        title, roster, picks, fog, front = M[n]
+        mask = (1 << (29 if n == 31 else n - 1)) - 1
+        e, g, d = a2.boot(ctx, mask, roster, picks={n - 1: len(picks)}, at=n - 1)
+        d.wait_world_map()
+        flags = d.map_flags()
+        ctx.eq(flags[n - 1], 1, f"M{n}: its flag is open")
+        ctx.eq(e.u32(0x0202FDFC + 0x0C), n - 1, f"M{n}: the cursor is on its own flag")
+        ctx.eq(sorted(set(f for f in flags if f & 1 and not f & 2)) in ([1], []), True, "open flags are plain")
+        e.close()
+    fn.__name__ = f"bh_review_flag_m{n}"
+    test(modes=("ds",))(fn)
+
+
+for _n in M:
+    _flag(_n)

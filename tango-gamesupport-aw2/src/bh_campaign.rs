@@ -823,6 +823,17 @@ mod tests {
     }
 
     #[test]
+    fn every_mission_has_its_own_world_map_flag() {
+        let d = def();
+        let mut seen = std::collections::BTreeMap::new();
+        for m in &d.missions {
+            if let Some(other) = seen.insert(m.flag, m.key) {
+                panic!("{} and {} share the flag {:?}", other, m.key, m.flag);
+            }
+        }
+    }
+
+    #[test]
     fn missions_are_consistent() {
         let d = def();
         assert!(d.missions.len() <= crate::campaign_model::MAX_MISSIONS);

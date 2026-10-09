@@ -13,7 +13,7 @@ from aw2test.harness import test
 APC = 7
 DOCK = (38, 10)            # a dock tile (the dock's land is x 38..39, y 9..11)
 BH_HQ = (3, 20)
-WON = list(range(1, 31))
+WON = list(range(1, 30))   # (M30 not won: with it the campaign is over and Free Play puts the cursor elsewhere)
 ROSTER = 0xFFF | (0x1FF << 12)
 
 

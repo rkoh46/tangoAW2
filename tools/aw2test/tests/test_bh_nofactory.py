@@ -201,6 +201,7 @@ def bh_campaign_volcano_hazard(ctx):
 
 @test(modes=("ds",))
 def bh_campaign_pair_pick_matches_every_partner(ctx):
+    # (the roster is twelve COs with Crumb: bits 0..11 unlocked; 0x7FF left Crumb locked, so he could not be picked)
     """On the CO screen with a pair pick (the whole roster unlocked) the
     second pick is the CO asked for, for every possible partner: picked with
     the pad, the battle's pair (army 1's CO and its tag partner) is what was
@@ -213,7 +214,7 @@ def bh_campaign_pair_pick_matches_every_partner(ctx):
     for lead_co, partner in pairs:
         e, g, d = boot_features(ctx)
         d.picks = {16: 2}
-        d.start_at(won_mask=0xFFFF & ~(1 << 5) & ~(1 << 16), unlocked_mask=0x7FF)
+        d.start_at(won_mask=0xFFFF & ~(1 << 5) & ~(1 << 16), unlocked_mask=0xFFF)
         d.pick_mission()
         picks = d.choose_cos(2, prefs=[lead_co, partner])
         g._units_base = g._players_base = None

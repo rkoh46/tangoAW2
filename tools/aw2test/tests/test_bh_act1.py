@@ -374,6 +374,7 @@ def lose_hq(ctx, e, g, d, k):
     a = g.unit_addr(foe["id"])
     e.w8(a, 1)                                         # an Infantry
     e.w16(a + 4, (e.u16(a + 4) & ~0x7F) | 100)
+    e.w8(a + 0x0B, 1)                                  # (role 1, not a held role 0: the engine leaves held foot soldiers where they stand)
     for u in g.units(army=1):
         if (u["x"], u["y"]) == (hx, hy):
             d.place_unit(u, hx + 1, hy)

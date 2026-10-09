@@ -417,6 +417,14 @@ fn bh03() -> MissionDef {
     ];
     m.day_limit = 25;
     m.rank_days = 14;
+    // The isle's Black Cannon (inventions-list cell (11,5): its top left) and two minicannons are ours, and would
+    // shoot the first enemy in reach at the first Black Hole turn start (a Submarine at (17,13) lost half its HP before
+    // the player could act): jammed until day 2, they fire from day 3.
+    m.jams = vec![
+        JamDef { at: (11, 5), until: Cond::DayAtLeast(2) },
+        JamDef { at: (12, 9), until: Cond::DayAtLeast(2) },
+        JamDef { at: (14, 9), until: Cond::DayAtLeast(2) },
+    ];
     m.intro = m03_pre();
     m.victory = m03_post();
     m.after = m03_map();
