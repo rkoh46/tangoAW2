@@ -9,8 +9,9 @@ No game is included: you need your own dump of the USA cartridge.
 
 <table>
 <tr>
-<td><img src="docs/screenshots/menu-title-tangoaw2.png" width="360" alt="The title screen with the tangoAW2 badge"></td>
-<td><img src="docs/screenshots/black-hole-versus.png" width="360" alt="A Versus battle"></td>
+<td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 badge, version 0.6.0"></td>
+<td><img src="docs/screenshots/bh-story.png" width="240" alt="Sturm offering Von Bolt a place at his side in the BH Campaign"></td>
+<td><img src="docs/screenshots/black-hole-versus.png" width="240" alt="A Versus battle"></td>
 </tr>
 </table>
 
@@ -144,7 +145,7 @@ changes, and online both players need it):
 <tr>
 <td><img src="docs/screenshots/bh-fortress.png" width="240" alt="Mission 28's fortress: Black Hole's army round the Obelisk, with the Volcano beyond"></td>
 <td><img src="docs/screenshots/bh-takeover.png" width="240" alt="Andy rallying Orange Star after the takeover in Nell's Stand"></td>
-<td><img src="docs/screenshots/bh-vault.png" width="240" alt="Von Bolt's Black Cannons waking up in the secret mission, The Colonel's Vault"></td>
+<td><img src="docs/screenshots/bh-vault.png" width="240" alt="The secret mission, The Colonel's Vault: a Vault Truck and its escort beside a Black Hole Recon, under a Black Cannon"></td>
 </tr>
 </table>
 
