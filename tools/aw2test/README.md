@@ -50,6 +50,8 @@ development byte `0x0203E3FF`; `AW2TEST_BH_BALANCE_DAYS` caps the days), `AW2TES
 same battle with each factory, every spawn photographed and logged) and `AW2TEST_BH_PICS=<dir>` (pictures of the
 factory's choices). Each console logs the factory's decisions to `<save>.bhlog` (`Emu.decisions()`).
 
+`AW2TEST_OBJ_SURVEY=<dir>` (tests that start a battle through `ctx.start`, and the Tag ones) fills every unused OBJ tile with a marker once the battle is up and writes, per console, the tiles that changed and the tiles the OAM named (`survey_arm` in `aw2test/emu.py`): a tile in no file is free for new art. It pokes VRAM, so not together with the netplay tests.
+
 ## Writing a test
 
 A test is a function in `tests/test_*.py` taking a context:

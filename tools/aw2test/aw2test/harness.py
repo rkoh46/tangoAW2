@@ -89,6 +89,7 @@ class Ctx:
         g.setup(cos, humans=humans, fog=fog, weather=weather, power=power, visuals=visuals, capt=capt)
         st = g.playst()
         self.log(f"battle started at frame {e.frame}: {st}")
+        e.survey_arm(self.name)
         self.eq(st["map"], 0xB4, "Versus map is design map 1")
         # With the Dual Strike pack rain brings fog (ds_weather.rs).
         want_fog = fog or (self.ds and weather == "rain")

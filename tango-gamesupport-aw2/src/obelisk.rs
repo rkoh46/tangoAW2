@@ -83,10 +83,17 @@ pub const CRYSTAL_OBJ_TILE: u32 = 0x19A;
 /// an Obelisk and Crystals (their tiles above) can have the Factory as well.
 pub const FACTORY_OBJ_TILE: u32 = 786;
 /// The Black Cannon facing north's 36 tiles (Dual Strike's picture of it, so it
-/// is not mistaken for the Deathray, which the game draws with the same dish):
-/// 0x1A6..0x1C9, between ours and the map effects (0x1CA..); nothing in battle
-/// writes them.
-pub const NORTH_OBJ_TILE: u32 = 0x1A6;
+/// is not mistaken for the Deathray, which the game draws with the same dish),
+/// in its four sprites' pieces: 16 (32x32), 8 (16x32), 8 (32x16) and 4 (16x16)
+/// tiles. They are NOT in 0x1A6..0x1C9: that is the damage forecast box's own
+/// picture (the percentage's digits and frame, 422..457), which the battle's
+/// sheet loads once and AW2 never writes again, so a watch of the tiles the game
+/// writes saw nothing there. These are the tiles no sprite of the battle map,
+/// Tag or power animation, menu, panel or popup draws from and no screen of a
+/// battle writes (found by filling every unused tile with a marker, playing
+/// every screen and listing which marker survived, and which tiles the OAM
+/// ever named): 989..1004, 1007..1022 and 914..917.
+pub const NORTH_OBJ_TILES: [u32; 4] = [989, 1007, 1015, 914];
 /// The middle tile of a Black Cannon facing north (its 3x3 rect's centre).
 const NORTH_CANNON_TILE: u16 = 0x18A;
 /// A map's second 4x4 structure picture (64 tiles from 0xC4: the start of
@@ -142,16 +149,16 @@ pub fn install(core: &mut Core) {
         0x0004,
         0x0000,
         0x8000,
-        tile(NORTH_OBJ_TILE),
+        tile(NORTH_OBJ_TILES[0]),
         0x8000,
         0x8020,
-        tile(NORTH_OBJ_TILE + 16),
+        tile(NORTH_OBJ_TILES[1]),
         0x4020,
         0x8000,
-        tile(NORTH_OBJ_TILE + 24),
+        tile(NORTH_OBJ_TILES[2]),
         0x0020,
         0x4020,
-        tile(NORTH_OBJ_TILE + 32),
+        tile(NORTH_OBJ_TILES[3]),
     ];
     let crystal_def: &[u16] = &[0x0001, 0x80F0, 0x8000, tile(CRYSTAL_OBJ_TILE)];
     let empty_def: &[u16] = &[0x0000];
@@ -282,7 +289,11 @@ fn load_tiles(core: &mut Core) {
         art.map_or(&blank[..256], |a| &a.crystal),
     );
     if let Some(a) = art.filter(|a| a.cannon_north.len() == 36 * 32) {
-        core.raw_write_range(0x0601_0000 + NORTH_OBJ_TILE * 32, -1, &a.cannon_north);
+        let mut at = 0;
+        for (tile, n) in NORTH_OBJ_TILES.iter().zip([16usize, 8, 8, 4]) {
+            core.raw_write_range(0x0601_0000 + tile * 32, -1, &a.cannon_north[at * 32..(at + n) * 32]);
+            at += n;
+        }
     }
     crate::com_tower::after_sheet(core);
 }
