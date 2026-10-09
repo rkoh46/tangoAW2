@@ -362,8 +362,8 @@ fn bh07() -> MissionDef {
     m.day_limit = 26;
     m.rank_days = 16;
     m.factory = F7.to_vec();
-    // The port at (9, 21) is Black Hole's (the map tool owns a property by the nearest HQ).
-    m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 21 }];
+    // The port at (9, 20) is Black Hole's (the map tool owns a property by the nearest HQ).
+    m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 20 }];
     m.intro = Scene::new(vec![
         say(co::EAGLE, "Greenhaven! The Arsenal of the south! My home field!"),
         say(co::EAGLE, "I'm the sky, you're the ground. That's the whole war."),
