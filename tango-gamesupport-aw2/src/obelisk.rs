@@ -49,6 +49,8 @@ const EMPTY_DEF: u32 = DATA + 0x40;
 /// A 4x4 structure's sprite (AW2's own, `0x0849FA56`: one 64x64 sprite)
 /// drawn from [`SECOND_PICTURE_TILE`] (see [`second_picture`]).
 const SECOND_DEF: u32 = DATA + 0x60;
+/// The north-facing Black Cannon's sprites (the Obelisk's layout).
+const NORTH_DEF: u32 = DATA + 0x80;
 pub const CRYSTAL_NAME_AT: u32 = DATA + 0x100;
 const PART_NAME_AT: u32 = DATA + 0x500;
 /// The weak point's terrain-panel picture: none (the panel shows the name).
@@ -59,12 +61,19 @@ pub const OBELISK_NAME_AT: u32 = DATA + 0x200;
 const CRYSTAL_PICTURE_AT: u32 = DATA + 0x300;
 const OBELISK_PICTURE_AT: u32 = DATA + 0x400;
 const DATA_SENTINEL: u32 = DATA + 0xFFC;
-const DATA_MAGIC: u32 = 0x384B_4C42; // "BLK8" (bump when the data changes)
+const DATA_MAGIC: u32 = 0x394B_4C42; // "BLK9" (bump when the data changes)
 
 /// OBJ tiles for the sprites in battle (no screen of the battle map writes
 /// 0x176..0x1A5): the Obelisk's 36 tiles, then the Crystal's 8.
 pub const OBELISK_OBJ_TILE: u32 = 0x176;
 pub const CRYSTAL_OBJ_TILE: u32 = 0x19A;
+/// The Black Cannon facing north's 36 tiles (Dual Strike's picture of it, so it
+/// is not mistaken for the Deathray, which the game draws with the same dish):
+/// 0x1A6..0x1C9, between ours and the map effects (0x1CA..); nothing in battle
+/// writes them.
+pub const NORTH_OBJ_TILE: u32 = 0x1A6;
+/// The middle tile of a Black Cannon facing north (its 3x3 rect's centre).
+const NORTH_CANNON_TILE: u16 = 0x18A;
 /// A map's second 4x4 structure picture (64 tiles from 0xC4: the start of
 /// the invention sheet `LoadInventionGraphics` puts at 0xC4..0x12F, whose
 /// sprites a map with only 4x4 pictures never draws).
@@ -114,6 +123,21 @@ pub fn install(core: &mut Core) {
         0x4020,
         tile(OBELISK_OBJ_TILE + 32),
     ];
+    let north_def: &[u16] = &[
+        0x0004,
+        0x0000,
+        0x8000,
+        tile(NORTH_OBJ_TILE),
+        0x8000,
+        0x8020,
+        tile(NORTH_OBJ_TILE + 16),
+        0x4020,
+        0x8000,
+        tile(NORTH_OBJ_TILE + 24),
+        0x0020,
+        0x4020,
+        tile(NORTH_OBJ_TILE + 32),
+    ];
     let crystal_def: &[u16] = &[0x0001, 0x80F0, 0x8000, tile(CRYSTAL_OBJ_TILE)];
     let empty_def: &[u16] = &[0x0000];
     let second_def: &[u16] = &[0x0001, 0x0000, 0xC000, tile(SECOND_PICTURE_TILE)];
@@ -122,6 +146,7 @@ pub fn install(core: &mut Core) {
         (CRYSTAL_DEF, crystal_def),
         (EMPTY_DEF, empty_def),
         (SECOND_DEF, second_def),
+        (NORTH_DEF, north_def),
     ] {
         for (i, h) in def.iter().enumerate() {
             core.raw_write_16(at + 2 * i as u32, -1, *h);
@@ -228,6 +253,9 @@ fn load_tiles(core: &mut Core) {
         -1,
         art.map_or(&blank[..256], |a| &a.crystal),
     );
+    if let Some(a) = art.filter(|a| a.cannon_north.len() == 36 * 32) {
+        core.raw_write_range(0x0601_0000 + NORTH_OBJ_TILE * 32, -1, &a.cannon_north);
+    }
     crate::com_tower::after_sheet(core);
 }
 
@@ -276,6 +304,14 @@ fn sprite(core: &mut Core) {
         },
         0x0803_FD09 if matches!(def, 0x0849_FA22 | 0x0849_FA08) && tile_at(core, x + 1, y + 1) == OBELISK_TILE => {
             OBELISK_DEF
+        }
+        0x0803_FD09
+            if matches!(def, 0x0849_FA22 | 0x0849_FA08)
+                && tile_at(core, x + 1, y + 1) == NORTH_CANNON_TILE
+                && !crate::design::in_map_editor(core)
+                && crate::ds_art::art().is_some_and(|a| a.cannon_north.len() == 36 * 32) =>
+        {
+            NORTH_DEF
         }
         _ => return,
     };
