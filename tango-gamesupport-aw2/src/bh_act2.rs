@@ -305,7 +305,7 @@ const F7: [(u8, [u8; 3]); 11] = [
     (7, [unit::INFANTRY, unit::INFANTRY, unit::INFANTRY]),
     (9, [0, unit::RECON, unit::ANTI_AIR]),
     (11, [unit::MD_TANK, 0, unit::MD_TANK]),
-    (13, [0, unit::OOZIUM, 0]),
+    (13, [0, unit::MD_TANK, 0]),
     (15, [unit::NEOTANK, 0, unit::ANTI_AIR]),
     (17, [unit::MD_TANK, 0, unit::MD_TANK]),
 ];

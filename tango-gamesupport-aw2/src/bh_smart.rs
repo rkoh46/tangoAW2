@@ -118,6 +118,9 @@ struct Field {
     targets: Vec<(i32, i32)>,
     hidden_foes: usize,
     fog: bool,
+    /// Airports owned by the enemy, and Black Hole's own HQ.
+    foe_airports: Vec<(i32, i32)>,
+    own_hq: Vec<(i32, i32)>,
 }
 
 fn players(core: &Core) -> u32 {
@@ -159,7 +162,7 @@ impl Field {
                 colour_team[c] = Some(team(core, a));
             }
         }
-        let mut f = Field { w, h, terrain: Vec::new(), foes: Vec::new(), own: Vec::new(), props: Vec::new(), targets: Vec::new(), hidden_foes: 0, fog };
+        let mut f = Field { w, h, terrain: Vec::new(), foes: Vec::new(), own: Vec::new(), props: Vec::new(), targets: Vec::new(), hidden_foes: 0, fog, foe_airports: Vec::new(), own_hq: Vec::new() };
         let mut mine: Vec<(i32, i32, i32)> = Vec::new(); // vision sources
         let mut every: Vec<(Seen, bool, i32)> = Vec::new(); // (unit, enemy, wood-or-reef)
         for y in 0..h {
@@ -181,8 +184,18 @@ impl Field {
                     let tile = core.raw_read_16(TILES + 2 * c, -1) & 0x1FF;
                     let owner = PROPERTY_TILES[k].iter().position(|&t| t == tile).unwrap_or(0);
                     match colour_team[owner] {
-                        Some(tm) if owner != 0 && tm == my_team => mine.push((x, y, 1)),
-                        _ => f.props.push((x, y)),
+                        Some(tm) if owner != 0 && tm == my_team => {
+                            mine.push((x, y, 1));
+                            if k == 0 {
+                                f.own_hq.push((x, y));
+                            }
+                        }
+                        other => {
+                            if k == 3 && owner != 0 && other.is_some() {
+                                f.foe_airports.push((x, y));
+                            }
+                            f.props.push((x, y))
+                        }
                     }
                 }
                 let id = core.raw_read_8(UNIT_PLANE + c, -1) as u32;
@@ -275,6 +288,10 @@ impl Field {
     }
 }
 
+fn own_types_aa(f: &Field) -> i32 {
+    f.own.iter().filter(|s| matches!(s.t, 14 | 15)).count() as i32
+}
+
 fn soft(d: i32) -> i32 {
     if d <= 100 { d } else { 100 + (d - 100) / 4 }
 }
@@ -317,6 +334,10 @@ pub struct Decision {
     /// next whose scores are within [`margin`] of it): `(type, score, weight)`.
     pub pool: Vec<(u8, i32, i32)>,
     pub next: Vec<(u8, i32)>,
+    /// Every candidate, best first, with its top reasons (for the audit log).
+    pub all: Vec<(u8, i32, String)>,
+    /// The pick is a foot soldier with nothing to capture and no enemy at the doors: the slot should save its value.
+    pub skip: bool,
     pub summary: String,
 }
 
@@ -354,7 +375,7 @@ pub fn draw(pool: &[(u8, i32, i32)], seed: u32) -> usize {
 /// The pick is drawn, weighted by score, from the best few (see
 /// [`pool_of`]) by `seed`, which the caller derives from emulated memory
 /// only (AW2's RNG state read, never advanced; day, door, army, square).
-pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(i32, i32)>)], heavy: &[u8], seed: u32) -> Option<Decision> {
+pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(i32, i32)>)], heavy: &[u8], recent: &[u8], seed: u32) -> Option<Decision> {
     let f = Field::read(core, army);
     let alive = |t: u8| f.own.iter().any(|s| s.t == t);
     let options: Vec<&(u8, Vec<(i32, i32)>)> = options.iter().filter(|o| !(heavy.contains(&o.0) && alive(o.0))).collect();
@@ -393,6 +414,70 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
     }
     let threatened = threat >= 6;
 
+    // What the enemy is made of near the doors, and what could hit a unit placed there next turn.
+    let doors: Vec<(i32, i32)> = (door_x..door_x + 3).map(|x| (x, y)).collect();
+    let (mut air_w, mut armour_w) = (0, 0);
+    for (s, w) in &weights {
+        if AIR.contains(&s.t) {
+            air_w += *w;
+        }
+        if matches!(role(s.t), Role::Heavy) {
+            armour_w += *w;
+        }
+    }
+    let air_share = if total_w > 0 { air_w * 100 / total_w } else { 0 };
+    let armour_share = if total_w > 0 { armour_w * 100 / total_w } else { 0 };
+    let (mut reach_n, mut adjacent) = (0, 0);
+    for s in &f.foes {
+        let d = doors.iter().map(|&c| manhattan((s.x, s.y), c)).min().unwrap_or(99);
+        let rmax = stat(core, s.t, 0x0F).max(1);
+        let reach = if stat(core, s.t, 0x0E) > 1 { rmax } else { stat(core, s.t, 0x0A) + rmax };
+        if d <= reach {
+            reach_n += 1;
+        }
+        if d <= 2 && stat(core, s.t, 0x0E) <= 1 {
+            adjacent += 1;
+        }
+    }
+    let pressed = reach_n >= 1;
+    let hot = adjacent >= 1 || reach_n >= 3;
+    let airport_near = f.foe_airports.iter().any(|&a| manhattan(a, mid) <= 12);
+    let hq_threat = f.own_hq.iter().any(|&h| f.foes.iter().any(|s| manhattan((s.x, s.y), h) <= 7));
+    let campaign = crate::ds_campaign::active(core);
+    let air_n = f.foes.iter().filter(|s| matches!(s.t, 16 | 17 | 19 | 12)).count() as i32;
+    let own_aa = own_types_aa(&f);
+    let air_deficit = (air_n > 0 || (airport_near && own_aa == 0 && f.foes.len() > 0)) && own_aa * 2 < air_n.max(1);
+    let capture_adjacent = f.props.iter().any(|&(px, py)| manhattan((px, py), mid) <= 3);
+
+    // Air only when it fits: Fighters need enemy air on the field now; Bombers and B Copters stay away from enemy
+    // Anti-Air, Missiles, Cruisers and Fighters near the doors (or two anywhere).
+    let aa_all = f.foes.iter().filter(|s| matches!(s.t, 14 | 15 | 16 | 22)).count();
+    let aa_near = f.foes.iter().filter(|s| matches!(s.t, 14 | 15 | 16 | 22) && manhattan((s.x, s.y), mid) <= 10).count();
+    let aa_hard_near = f.foes.iter().filter(|s| matches!(s.t, 14 | 15 | 22) && manhattan((s.x, s.y), mid) <= 10).count();
+    let options: Vec<&(u8, Vec<(i32, i32)>)> = options
+        .into_iter()
+        .filter(|o| match o.0 {
+            16 => air_w > 0 && aa_hard_near < 2,
+            17 | 19 => aa_near == 0 && aa_all < 2,
+            _ => true,
+        })
+        .collect();
+    if options.is_empty() {
+        return None;
+    }
+    let mut juicy_w = 0;
+    let mut soft_w = 0;
+    for (s, w) in &weights {
+        if matches!(role(s.t), Role::Heavy | Role::Indirect) {
+            juicy_w += *w;
+        }
+        if matches!(s.t, 1 | 2 | 6 | 10 | 11) {
+            soft_w += *w;
+        }
+    }
+    let juicy_share = if total_w > 0 { juicy_w * 100 / total_w } else { 0 };
+    let soft_share = if total_w > 0 { soft_w * 100 / total_w } else { 0 };
+
     // Black Hole's own army.
     let mut own_types = [0i32; 28];
     let mut own_roles = [0i32; 8];
@@ -406,6 +491,7 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
     }
     let own_total = f.own.len() as i32;
     let foot_count = own_roles[Role::Foot as usize];
+    let frontline = own_roles[Role::Foot as usize] + own_roles[Role::Light as usize] + own_roles[Role::Heavy as usize];
     let indirect_count = own_roles[Role::Indirect as usize] + own_roles[Role::AntiAir as usize].min(own_types[15]);
 
     let nearest_target = f.targets.iter().map(|&t| manhattan(t, mid)).min();
@@ -449,21 +535,72 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
             }
         }
 
-        // Threat to the factory.
-        if threatened {
-            parts.push(("enemies at the factory: sturdy".to_string(), price(core, t) / 1500));
-            if t == OOZIUM && nearest <= 3 {
-                parts.push(("Oozium eats what is at the door".to_string(), 25));
+        // Door safety: what could hit a unit standing on the doors next turn.
+        let indirect = matches!(role(t), Role::Indirect) || t == 15;
+        if pressed {
+            if indirect {
+                parts.push(("fragile at a door the enemy can reach".to_string(), if hot { -70 } else { -40 }));
             }
-            if matches!(role(t), Role::Indirect) && nearest <= 2 && stat(core, t, 0x0E) > 1 {
-                parts.push(("indirect fire with the enemy at its feet".to_string(), -20));
+            if hot && matches!(role(t), Role::Heavy) {
+                parts.push(("enemies at the doors: the sturdiest direct unit".to_string(), (price(core, t) / 400).min(55)));
+            } else if hot && matches!(role(t), Role::Foot) {
+                parts.push(("enemies at the doors: a foot soldier".to_string(), if capture_adjacent { -8 } else { -25 }));
+            } else if hot && matches!(role(t), Role::Light) {
+                parts.push(("enemies at the doors: a thin unit".to_string(), -8));
+            } else if hot && t == 19 {
+                parts.push(("enemies at the doors: a copter is soft".to_string(), -20));
             }
+        }
+
+        // Counters by kind of threat.
+        if matches!(role(t), Role::Heavy) && t != 5 && armour_share > 0 {
+            parts.push((format!("armour is {armour_share}% of the threat"), (armour_share * 2 / 5).min(40)));
+        } else if t == 5 && armour_share > 0 {
+            parts.push((format!("armour is {armour_share}% of the threat"), (armour_share / 4).min(25)));
+        }
+        if role(t) == Role::AntiAir && air_w > 0 {
+            parts.push((format!("air is {air_share}% of the threat"), (air_share * 3 / 5 + 10).min(60)));
+            if own_types[14] + own_types[15] == 0 {
+                parts.push(("no anti-air yet".to_string(), 15));
+            }
+        }
+        // Fewer than one Anti-Air per two enemy combat air units (at least one wanted): Anti-Air takes the slot.
+        if t == 14 && air_deficit {
+            parts.push((format!("{air_n} enemy air, {} Anti-Air: one more", own_types[14] + own_types[15]), 35));
+        }
+
+        // Indirect fire needs a protected backline and targets within 2-3 turns.
+        if matches!(role(t), Role::Indirect) && !pressed {
+            let guards = f.own.iter().filter(|s| matches!(role(s.t), Role::Foot | Role::Light | Role::Heavy) && manhattan((s.x, s.y), mid) <= 6).count();
+            let turns = f.engage(&cost, &f.targets).map(|d| d.saturating_sub(rmax - 1).div_ceil(mv));
+            if guards >= 2 && turns.is_some_and(|n| n <= 3) {
+                parts.push(("protected backline, targets within 3 turns".to_string(), 10));
+            } else {
+                parts.push(("no protected backline or targets too far".to_string(), -35));
+            }
+        }
+
+        // Fill the gaps: a thin front line.
+        if frontline < 3 && matches!(role(t), Role::Heavy | Role::Light | Role::Foot) {
+            parts.push(("too few front-line units".to_string(), if role(t) == Role::Heavy { 10 } else { 5 }));
+        }
+
+        // Objectives: the HQ under threat wants units that get back in two turns; a few distant foes want speed.
+        if hq_threat && !indirect && !f.own_hq.is_empty() {
+            if let Some(d) = f.engage(&cost, &f.own_hq) {
+                if d.div_ceil(mv) <= 2 {
+                    parts.push(("can defend the HQ in two turns".to_string(), 12));
+                }
+            }
+        }
+        if campaign && !pressed && f.foes.len() <= 3 && !f.foes.is_empty() && !indirect && mv >= 6 {
+            parts.push(("few distant foes: speed to chase".to_string(), 6));
         }
 
         // Black Hole's army.
         let same = own_types[t as usize].min(8);
         if same > 0 {
-            parts.push((format!("already has {} {}", own_types[t as usize], NAMES[t as usize]), -7 * same));
+            parts.push((format!("already has {} {}", own_types[t as usize], NAMES[t as usize]), -10 * same));
         }
         let kin = own_roles[role(t) as usize].min(8);
         if kin > 0 {
@@ -480,9 +617,41 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
             }
         }
 
+        // Air: a real reason each.
+        if t == 17 {
+            parts.push(if juicy_share >= 25 { (format!("juicy ground targets ({juicy_share}%), AA thin"), (juicy_share * 2 / 3).min(45)) } else { ("no armour or artillery to bomb".to_string(), -40) });
+        }
+        if t == 19 {
+            parts.push(if soft_share >= 20 { (format!("soft targets ({soft_share}%), AA light"), (soft_share * 2 / 5).min(30)) } else { ("nothing soft to harass".to_string(), -20) });
+        }
+        if t == 16 {
+            parts.push((format!("enemy air {air_share}%"), (air_share / 3).min(30)));
+        }
+        if matches!(t, 21 | 22 | 24) && f.engage(&cost, &f.targets).is_none() {
+            parts.push(("no naval target to reach".to_string(), -25));
+        }
+
+        // Foot soldiers only to capture something nobody is capturing.
+        if matches!(t, INFANTRY | MECH) {
+            let free = f.props.iter().any(|&(px, py)| {
+                f.at(px, py).is_some_and(|i| cost[i] != INF && cost[i] <= 24) && !f.own.iter().any(|u| matches!(role(u.t), Role::Foot) && manhattan((u.x, u.y), (px, py)) <= 1)
+            });
+            if !free {
+                parts.push(("nothing to capture".to_string(), -30));
+            }
+        }
+
+        // Variety: the last picks count against a repeat.
+        for (k, &r) in recent.iter().take(4).enumerate() {
+            if r == t {
+                parts.push((format!("picked {} turns of spawns ago", k + 1), if k == 0 { -20 } else { -12 }));
+            }
+        }
+
         // Specialists with nothing to shoot at.
-        if role(t) == Role::AntiAir && !f.foes.iter().any(|s| AIR.contains(&s.t)) {
-            parts.push(("anti-air with no air in sight".to_string(), -30));
+        if role(t) == Role::AntiAir && air_w == 0 {
+            // (an enemy airport near can build air: a little forethought, never a habit)
+            parts.push(if airport_near { ("anti-air, no air yet but an airport near".to_string(), if air_deficit { 0 } else { -22 }) } else { ("anti-air with no air in sight".to_string(), -50) });
         }
         if t == SUB && !f.foes.iter().any(|s| SEA_UNITS.contains(&s.t)) {
             parts.push(("no ships in sight".to_string(), -15));
@@ -522,20 +691,33 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
     let pool = pool_of(&ranked_scores);
     let pick = draw(&pool, seed);
     let next = scored.iter().filter(|(s, _)| s.t != pool[pick].0).take(2).map(|(s, _)| (s.t, s.total)).collect();
+    let all = scored
+        .iter()
+        .map(|(s, _)| {
+            let mut p: Vec<&(String, i32)> = s.parts.iter().collect();
+            p.sort_by_key(|p| Reverse(p.1.abs()));
+            (s.t, s.total, p.iter().take(3).map(|p| format!("{} {:+}", p.0, p.1)).collect::<Vec<_>>().join("; "))
+        })
+        .collect();
     let (mut best, _) = scored.swap_remove(pick);
     best.parts.sort_by_key(|p| Reverse(p.1.abs()));
     let summary = format!(
-        "foes {} (+{} unseen) near {} threat {} | own {} | to target {:?} / foe {:?}",
+        "foes {} (+{} unseen) near {} threat {} air {}% armour {}% reach {} adj {} | own {} | to target {:?} / foe {:?}",
         f.foes.len(),
         f.hidden_foes,
         nearest,
         threat,
+        air_share,
+        armour_share,
+        reach_n,
+        adjacent,
         own_total,
         nearest_target,
         foe_target
     );
     let _ = fog_text(&f);
-    Some(Decision { best, pool, next, summary })
+    let skip = matches!(best.t, INFANTRY | MECH) && !hot && best.parts.iter().any(|p| p.0 == "nothing to capture");
+    Some(Decision { best, pool, next, all, skip, summary })
 }
 
 fn fog_text(f: &Field) -> &'static str {

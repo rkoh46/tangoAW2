@@ -36,8 +36,8 @@ NEAR = [(x, 12) for x in range(8, 13)] + [(x, 13) for x in range(9, 12)]
 COAST = [(8, 12), (12, 12)] + [(x, 13) for x in range(8, 14)] + [(x, y) for x in range(8, 14) for y in (14, 15)]
 
 
-def factory_map(ctx, sea=(), shoal=(), reef=(), pipes=(), blockers=()):
-    m = ctx.map()
+def factory_map(ctx, sea=(), shoal=(), reef=(), pipes=(), blockers=(), hq=None):
+    m = ctx.map(hq=hq) if hq else ctx.map()
     m.colours = [1, 5, 2, 3, 4]
     m.terrain(10, 10, ANCHOR)
     for x, y in sea:
@@ -273,10 +273,11 @@ def bh_factory_smart_cost_rule(ctx):
         slot_price = price.get(table_unit(rom, d, x - 9), 0)
         spawned += price.get(t, 0)
         table += slot_price
-        ok &= price.get(t, 0) * 10 <= slot_price * (13 if t in HEAVY else 10)
+        # (the factory's units cost 75% of the list price; a slot saved by a skipped foot soldier adds to the next: up to one Md Tank's value)
+        ok &= price.get(t, 0) * 3 * 10 <= (slot_price + 16000) * 4 * (13 if t in HEAVY else 10)
     ctx.log(f"value spawned {spawned}, the table's units for the same slots {table}")
-    ctx.check(ok, "no spawn dearer than its slot's table unit (heavy ones 30% more)")
-    ctx.check(spawned <= table * 1.2, f"the value spawned ({spawned}) stays near the table's ({table})")
+    ctx.check(ok, "no spawn dearer than its slot's table unit plus the saved slots (heavy ones 30% more)")
+    ctx.check(spawned <= table * 4 / 3 * 1.05, f"the list value spawned ({spawned}) is within the table's ({table}) at the factory's 75% prices")
 
 
 @test(modes=("ds",))
@@ -348,7 +349,7 @@ def bh_factory_pick_varies_with_the_rng(ctx):
     for slot in range(2):
         kinds = {p[slot][0] for p in picks}
         ctx.check(len(kinds) >= 2, f"door {slot + 1} does not always spawn the same unit ({sorted(romlib.UNIT_NAMES[k] for k in kinds)})")
-    ctx.check(any(p[0][0] != p[1][0] for p in picks) and any(p[0][0] == p[1][0] for p in picks), "the doors neither always pick alike nor always differ")
+    ctx.check(all(p[0][0] != p[1][0] for p in picks), "the two doors of a turn do not pick alike (the variety rule: the last pick counts against a repeat)")
     rom = open(paths.aw2_rom(), "rb").read()
     pooled = bad = 0
     best_picked = other_picked = 0
@@ -450,7 +451,7 @@ def bh_factory_ships_by_the_sea(ctx):
     ctx.check(all(c in WATER for *_, c in ships), "ships are only on sea, shoal or reef")
     land = [s for s in spawns if s[1] not in SHIPS]
     ctx.check(all((x, y) in DOORS and c not in (SEA, REEF) for _, _, x, y, c in land), "land units on door tiles, none on water")
-    ctx.check({s[1] for s in ships if (s[2], s[3]) == (11, 13)} <= {LANDER}, "the shoal takes only a Lander")
+    ctx.check({s[1] for s in ships if (s[2], s[3]) == (11, 13)} <= {LANDER, 18}, "the shoal takes only a Lander or a Black Boat")
 
 
 @test(modes=("ds",))
@@ -1359,3 +1360,204 @@ def bh_factory_wreck_in_five_armies(ctx):
     g.end_turn(human=1)
     g.end_turn(human=5)
     ctx.eq(len(g.units(5)), n0, "no spawns for Black Hole any more")
+
+
+# --- the situation-aware choice (bh_smart.rs: threat and counter, door safety, gaps, variety, air rules) ------------------------------
+
+INDIRECT = (ARTILLERY, ROCKETS, MISSILES)
+STEALTH_T, BLACK_BOMB = 12, 13
+AA_UNITS = (ANTI_AIR, MISSILES)
+ARMOUR_AT_DOORS = [("tank", 10, 14), ("mdtank", 8, 14), ("tank", 12, 14), ("mdtank", 9, 15), ("tank", 11, 15)]
+CLUSTER = [("mdtank", 14, 4), ("neotank", 15, 4), ("artillery", 16, 4), ("rockets", 15, 5), ("tank", 14, 5), ("tank", 16, 5)]
+SOFT = [("infantry", 14, 4), ("infantry", 15, 4), ("artillery", 16, 4), ("recon", 15, 5), ("mech", 14, 5), ("rockets", 16, 5)]
+GUARDS = [("tank", 7, 11), ("mdtank", 13, 11), ("infantry", 8, 9), ("mech", 12, 9)]
+
+
+def guarded(r, guards=GUARDS):
+    for kind, x, y in guards:
+        place_unit(r, r.bh, kind, x, y)
+    return r
+
+
+FAR_HQ = ((1, 29, 0), (2, 29, 19))     # (out of a foot soldier's reach: nothing to capture)
+
+
+def run_days(ctx, blockers, n=40, guards=(), extra=None, hq=None):
+    m = factory_map(ctx, blockers=blockers, hq=hq)
+    if extra:
+        extra(m)
+    r = start(ctx, m, shots=())
+    guarded(r, guards)
+    sp = r.days(n)
+    smart_log(ctx, r, 2)
+    ctx.log(f"{len(sp)} spawns: {names(sp)}")
+    return r, sp
+
+
+@test(modes=("ds",))
+def bh_factory_situation_no_air_means_no_anti_air_or_fighter(ctx):
+    """No enemy air in sight: no Anti-Air, no Missiles, no Fighter (even with an enemy airport on the map)."""
+    r, sp = run_days(ctx, GROUND_ARMY + [], extra=lambda m: m.terrain(20, 3, "airport"))
+    ctx.check(len(sp) > 15, "the factory spawns")
+    ctx.check(not count(sp, AA_UNITS + (FIGHTER,)), f"no AA, Missiles or Fighter: {sorted(r.types())}")
+
+
+@test(modes=("ds",))
+def bh_factory_situation_air_means_anti_air(ctx):
+    """Enemy air near: Anti-Air or Missiles are built, and only air units get the Fighter."""
+    r, sp = run_days(ctx, AIR_ARMY)
+    ctx.check(count(sp, AA_UNITS + (FIGHTER,)) >= 6, f"answers to air ({count(sp, AA_UNITS + (FIGHTER,))} of {len(sp)})")
+
+
+@test(modes=("ds",))
+def bh_factory_situation_armour_at_the_doors(ctx):
+    """Armour pushing the doors: a Md Tank, Neotank or Tank (the sturdiest the slot affords), never Artillery, Rockets or
+    Missiles at a door the enemy reaches."""
+    r, sp = run_days(ctx, ARMOUR_AT_DOORS)
+    ctx.check(len(sp) > 15, "the factory spawns")
+    ctx.check(not count(sp, INDIRECT), f"no indirect unit at the doors: {sorted(r.types())}")
+    rom = open(paths.aw2_rom(), "rb").read()
+    big = [s for s in sp if POOL_PRICE.get(table_unit(rom, s[0], s[2] - 9), 0) >= 7000]
+    tanks = count(big, (MD_TANK, NEOTANK, MEGATANK, TANK))
+    ctx.log(f"tanks on the slots that afford one: {tanks} of {len(big)}")
+    ctx.check(big and tanks >= 0.8 * len(big), f"tanks answer armour on the slots that afford them ({tanks} of {len(big)})")
+
+
+@test(modes=("ds",))
+def bh_factory_situation_backline_allows_indirect(ctx):
+    """Nothing near, a guarded backline and enemies two or three turns off: Artillery or Rockets are built."""
+    r, sp = run_days(ctx, [("tank", 14, 4), ("infantry", 15, 5), ("mdtank", 16, 4)], guards=GUARDS)
+    ctx.check(count(sp, (ARTILLERY, ROCKETS)) >= 1, f"an indirect unit is allowed: {sorted(r.types())}")
+
+
+@test(modes=("ds",))
+def bh_factory_situation_infantry_only_to_capture(ctx):
+    """Infantry and Mech where a combat unit is affordable need something to capture: none on a map without properties,
+    some with a free city in reach."""
+    rom = open(paths.aw2_rom(), "rb").read()
+    price = {1: 1000, 2: 3000, 3: 16000, 5: 7000, 6: 4000, 8: 22000, 10: 6000, 11: 15000, 14: 8000, 15: 12000, 16: 20000, 17: 22000, 19: 9000}
+    def big(sp):
+        return [s for s in sp if price.get(table_unit(rom, s[0], s[2] - 9), 0) >= 7000]
+    r, sp = run_days(ctx, GROUND_ARMY)
+    foot_none = count(big(sp), (INFANTRY, MECH))
+    r2, sp2 = run_days(ctx, GROUND_ARMY, extra=lambda m: [m.terrain(x, y, "city") for x, y in ((14, 13), (6, 14), (13, 15))])
+    foot_city = count(big(sp2), (INFANTRY, MECH))
+    ctx.log(f"foot soldiers on big slots: {foot_none} with nothing to capture, {foot_city} with cities in reach")
+    ctx.check(foot_none == 0, f"nothing to capture, no foot soldier where a combat unit is affordable ({foot_none})")
+    ctx.check(foot_city >= foot_none, "with cities in reach foot soldiers are allowed")
+
+
+@test(modes=("ds",))
+def bh_factory_situation_variety(ctx):
+    """A mixed situation over ten days: no type more than twice in a row on slots that can afford something better."""
+    rom = open(paths.aw2_rom(), "rb").read()
+    r, sp = run_days(ctx, SOFT + [("tank", 15, 3), ("mdtank", 17, 5)], n=10 + 8, guards=GUARDS)
+    seq = [s[1] for s in sp]
+    streak = best = 1
+    for a, b in zip(seq, seq[1:]):
+        streak = streak + 1 if a == b else 1
+        best = max(best, streak)
+    ctx.log(f"order: {[romlib.UNIT_NAMES[t] for t in seq]}; longest streak {best}; kinds {len(set(seq))}")
+    ctx.check(best <= 2, f"no type three times running ({best})")
+    ctx.check(len(set(seq)) >= 4, f"a mixture ({len(set(seq))} kinds)")
+
+
+@test(modes=("ds",))
+def bh_factory_situation_air_units(ctx):
+    """Each air type needs its reason: a Fighter only against enemy air; a Bomber against armour and artillery with no
+    enemy AA, Missiles or Fighters near; a B Copter against soft targets with the enemy AA light; none with Anti-Air or
+    Missiles near; never a Stealth or Black Bomb."""
+    r, sp = run_days(ctx, GROUND_ARMY)
+    ctx.check(not count(sp, (FIGHTER,)), "no Fighter against a ground army")
+    r, bomb = run_days(ctx, CLUSTER)
+    ctx.check(count(bomb, (BOMBER,)) >= 1, f"a Bomber against armour and artillery without AA: {sorted(r.types())}")
+    r, cop = run_days(ctx, SOFT)
+    ctx.check(count(cop, (BCOPTER,)) >= 1, f"a B Copter against soft targets without AA: {sorted(r.types())}")
+    r, sam = run_days(ctx, CLUSTER + [("antiair", 12, 8), ("missiles", 13, 7)])
+    ctx.check(not count(sam, (BOMBER, BCOPTER, FIGHTER)), f"no air with Anti-Air and Missiles near: {sorted(r.types())}")
+    r, fight = run_days(ctx, AIR_ARMY)
+    ctx.check(not (r.types() & {STEALTH_T, BLACK_BOMB}), "no Stealth or Black Bomb")
+
+
+@test(modes=("ds",))
+def bh_factory_never_an_oozium(ctx):
+    """The Black Factory never builds an Oozium (like the Piperunner), in the situations that used to favour it and over
+    many days, RNG states and table slots."""
+    from aw2test import twofront
+    for army in (INFANTRY_ARMY, ARMOUR_AT_DOORS, GROUND_ARMY):
+        r = start(ctx, factory_map(ctx, blockers=army), shots=())
+        sp = r.days(40)
+        ctx.check(OOZIUM not in r.types() and len(sp) > 10, f"no Oozium in {len(sp)} spawns")
+    to_army(r.g, 2)
+    cp = twofront.checkpoint(r.e, ctx, "before_black_holes_turn")
+    seen = set()
+    for seed in SEEDS[:5]:
+        for day in (5, 8, 13, 20, 24, 29):
+            sp, _, _ = one_turn_at(ctx, r, cp, seed, day=day)
+            seen |= {s[1] for s in sp}
+    ctx.check(seen and OOZIUM not in seen, f"no Oozium in 30 seeded turns ({sorted(seen)})")
+
+
+@test(modes=("ds",))
+def bh_factory_m2_leans_on_anti_air_and_armour(ctx):
+    """BH Campaign M2 (the Foundry, Green Earth's airport and armour): over days 1-10 the factory builds Anti-Air only
+    while enemy air is in sight, never an indirect unit at a door the enemy reaches, no Oozium; its log shows the picks."""
+    import re
+    from aw2test import bhact5 as a5
+    import shutil
+    save = os.path.join(ctx.out, "m2.sav")
+    shutil.copy(paths.base_save(), save)
+    e, g, d = a5.boot(ctx, a5.WON(1), 0xFFF, picks={a5.M[2]: 0}, at=a5.M[2], save=save, env={"TANGOAW2_BH_LOG_ALL": "1"})
+    d.pick_mission()
+    for _ in range(4):
+        if not e.wait_until(d.on_co_select, 120, step=5):
+            break
+        d.choose_cos(1)
+    d.wait_map()
+    g._units_base = g._players_base = None
+    d.play(max_days=10, log=ctx.log)
+    lines = [l for l in e.decisions() if l.startswith("day ")]
+    ctx.log("\n".join(l[:300] for l in lines))
+    ctx.require(lines, "the Foundry decided")
+    for l in lines:
+        pick = re.search(r"-> (.+?) at", l).group(1)
+        air = int(re.search(r" air (\d+)%", l).group(1))
+        reach = int(re.search(r" reach (\d+)", l).group(1))
+        ctx.check(pick != "Oozium", f"no Oozium: {l[:60]}")
+        if pick in ("Anti-Air", "Missiles"):
+            ctx.check(air > 0, f"{pick} only with enemy air in sight (air {air}%)")
+        if pick in ("Infantry", "Mech"):
+            slot = re.search(r"day (\d+) army \d slot (\d)", l).groups()
+            cand = [c for c in e.decisions() if c.startswith(f"    cand day {slot[0]} slot {slot[1]} {pick} ")]
+            ctx.check(cand and all("nothing to capture" not in c for c in cand), f"{pick} only with something to capture (day {slot[0]} slot {slot[1]})")
+        if pick in ("Artillery", "Rockets", "Missiles", "Battleship"):
+            ctx.check(reach == 0, f"{pick} not at a door the enemy reaches (reach {reach})")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_factory_no_forced_infantry_the_slot_is_saved(ctx):
+    """A slot too cheap for anything but a foot soldier, with nothing to capture and nobody at the doors, spawns nothing
+    and adds its value to the next slot (up to a Md Tank's): no Infantry or Mech on a map without properties, a log line
+    for each saved slot, and the factory never spends more than the table's total."""
+    rom = open(paths.aw2_rom(), "rb").read()
+    r, sp = run_days(ctx, GROUND_ARMY, hq=FAR_HQ)
+    saved = [l for l in r.e.decisions() if "no foot soldier needed" in l]
+    ctx.log("\n".join(saved[:6]))
+    ctx.check(saved, f"slots were saved ({len(saved)})")
+    ctx.check(not count(sp, (INFANTRY, MECH)), f"no Infantry or Mech with nothing to capture ({count(sp, (INFANTRY, MECH))})")
+    spent = sum(POOL_PRICE.get(s[1], 0) for s in sp)
+    table = sum(POOL_PRICE.get(table_unit(rom, d, k), 0) for d in range(2, 41) for k in range(3))
+    ctx.check(spent * 3 <= table * 4, f"spent ({spent} at list prices) is within the table's total ({table}) at 75% prices")
+    ctx.check(any(POOL_PRICE.get(s[1], 0) > POOL_PRICE.get(table_unit(rom, s[0], s[2] - 9), 0) for s in sp), "a saved slot buys something dearer than the next slot's table unit")
+
+
+@test(modes=("ds",))
+def bh_factory_anti_air_fits_a_tank_slot_at_75_percent(ctx):
+    """The factory's units cost 75% of their list price: against enemy air an Anti-Air (8000, 6000 here) is built on a
+    Tank-priced (7000) slot, with no saved slots needed."""
+    rom = open(paths.aw2_rom(), "rb").read()
+    r, sp = run_days(ctx, AIR_ARMY, hq=FAR_HQ)
+    on_tank = [s for s in sp if s[1] in AA_UNITS + (FIGHTER,) and POOL_PRICE.get(table_unit(rom, s[0], s[2] - 9), 0) == 7000]
+    ctx.log(f"air answers on Tank-priced slots: {names(on_tank)}")
+    ctx.check(on_tank, "an Anti-Air or Fighter answer on a Tank-priced slot")

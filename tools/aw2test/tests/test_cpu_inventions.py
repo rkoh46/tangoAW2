@@ -531,6 +531,9 @@ def compat_cpu_inv_versus_computer_owns_the_inventions(ctx):
     for x, y, kind in [(24, 14, 5), (25, 15, 5), (24, 16, 5), (26, 14, 10), (26, 16, 10), (27, 15, 11), (23, 15, 3)]:
         m.unit(1, kind, x, y)
     g = ctx.start(m, ["andy", "vonbolt"], humans=(1,))
+    # (what this protects is the computer's handling of the inventions, not the smart factory's choice, which changes
+    # on purpose between builds: the factory spawns the table's units, as AW2's does, via the development byte)
+    g.e.w8(0x0203E3FF, 1)
     pristine = os.path.join(ctx.out, "versus_pristine.sav")
     shutil.copyfile(os.path.join(ctx.out, "map.sav"), pristine)
     for _ in range(12):

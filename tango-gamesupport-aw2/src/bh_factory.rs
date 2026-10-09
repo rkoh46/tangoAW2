@@ -60,6 +60,15 @@ const NO_ENTRY: u8 = 0xFF;
 /// A development hook for balance runs (`tools/aw2test`): while this byte of
 /// free RAM is non-zero the factory spawns the table's units, as AW2's does.
 /// It is emulated memory, so it replays and rolls back like the rest.
+/// The last four picks of each of three armies (4 bytes each, newest first, 0 = none): the variety rule's memory
+/// (free EWRAM between crate::grand_bolt's and crate::skills_panel's); the two armies' savings follow (a byte each, in
+/// [`BANK_UNIT`]s): the value of slots that spawned nothing, spendable on the next slot, up to [`BANK_MAX`].
+/// Armies 1, 3, 5 share the first slot of each, armies 2 and 4 the second.
+const HISTORY: u32 = 0x0203_E3E4;
+const BANK: u32 = HISTORY + 8;
+const BANK_UNIT: i32 = 500;
+/// One Md Tank-level slot, so a saved factory stays within a fair stretch of the table.
+const BANK_MAX: i32 = 16000;
 const TABLE_ONLY: u32 = 0x0203_E3FF;
 
 fn in_scope(core: &Core) -> bool {
@@ -121,7 +130,7 @@ fn squares(core: &Core, army: u32, t: u8, door_x: i32, x: i32, y: i32) -> Vec<(i
 /// What the factory may pick from: land (on the door tile), air (likewise,
 /// but never over water) and ships (squares beside the doors). The factory
 /// never builds a Piperunner, in any mode.
-const LAND: [u8; 12] = [1, 2, 3, MEGATANK, 5, 6, 8, 10, 11, 14, 15, OOZIUM];
+const LAND: [u8; 11] = [1, 2, 3, MEGATANK, 5, 6, 8, 10, 11, 14, 15];
 const AIR: [u8; 3] = [16, 17, 19];
 
 fn price(core: &Core, t: u8) -> i32 {
@@ -134,7 +143,7 @@ fn price(core: &Core, t: u8) -> i32 {
 /// units (Megatank, Battleship, Carrier, Oozium) may cost up to 30% more
 /// than the slot's unit (in practice they take the place of a big table
 /// unit), and only one of each may stand on Black Hole's side at a time.
-const HEAVY: [u8; 4] = [MEGATANK, 21, CARRIER, OOZIUM];
+const HEAVY: [u8; 3] = [MEGATANK, 21, CARRIER];
 
 /// A log file is set (`TANGOAW2_BH_LOG`): callers build their lines only then.
 pub(crate) fn logging() -> bool {
@@ -176,7 +185,17 @@ fn at_create(core: &mut Core) {
     // day, door, army and square so the three doors differ.
     let seed = hash(&[core.raw_read_32(RNG, -1), h]);
 
-    let cap = price(core, table_unit);
+    let idx = ((army.max(1) - 1) % 2) as u32;
+    let hist = HISTORY + 4 * idx;
+    let bank_at = BANK + idx;
+    if day <= 1 {
+        core.raw_write_32(hist, -1, 0);
+        core.raw_write_8(bank_at, -1, 0);
+    }
+    let bank = core.raw_read_8(bank_at, -1) as i32 * BANK_UNIT;
+    let slot_price = price(core, table_unit);
+    // (a table slot naming an Oozium or a Piperunner is a price cap only)
+    let cap = slot_price + bank;
     let door_water = matches!(terrain(core, x, y), Some(SEA) | Some(REEF));
     let mut options: Vec<(u8, Vec<(i32, i32)>)> = Vec::new();
     for &t in LAND.iter().chain(AIR.iter()).chain(SHIPS.iter()) {
@@ -184,7 +203,8 @@ fn at_create(core: &mut Core) {
             continue;
         }
         let cost = price(core, t);
-        let allowed = if HEAVY.contains(&t) { cost * 10 <= cap * 13 } else { cost <= cap };
+        // (the factory's units cost a quarter less than the list price: a slot buys what costs 4/3 of it)
+        let allowed = if HEAVY.contains(&t) { cost * 3 * 10 <= cap * 4 * 13 } else { cost * 3 <= cap * 4 };
         if !allowed {
             continue;
         }
@@ -193,8 +213,9 @@ fn at_create(core: &mut Core) {
             options.push((t, spots));
         }
     }
+    let recent: Vec<u8> = (0..4).map(|k| core.raw_read_8(hist + k, -1)).take_while(|&t| t != 0).collect();
     let started = std::time::Instant::now();
-    let decision = crate::bh_smart::choose(core, army, door_x, y, &options, &HEAVY, seed);
+    let decision = crate::bh_smart::choose(core, army, door_x, y, &options, &HEAVY, &recent, seed);
     let micros = started.elapsed().as_micros();
     let (t, px, py) = match &decision {
         Some(d) => {
@@ -219,11 +240,37 @@ fn at_create(core: &mut Core) {
             d.summary
         ));
     }
+    if let Some(d) = &decision {
+        if std::env::var_os("TANGOAW2_BH_LOG_ALL").is_some() {
+            for (t, v, why) in &d.all {
+                log(&format!("    cand day {day} slot {slot} {} {v} | {why}", crate::bh_smart::NAMES[*t as usize]));
+            }
+        }
+    }
+    let set_bank = |core: &mut Core, v: i32| core.raw_write_8(bank_at, -1, (v.clamp(0, BANK_MAX) / BANK_UNIT) as u8);
+    if decision.as_ref().is_some_and(|d| d.skip) {
+        // No foot soldier where nothing needs capturing: the slot's value is saved for the next slot.
+        set_bank(core, bank + slot_price);
+        log(&format!("day {day} army {army} slot {slot}: no foot soldier needed, {slot_price} saved (bank {})", (bank + slot_price).min(BANK_MAX)));
+        core.gba_mut().cpu_mut().set_thumb_pc(NEXT_SLOT);
+        return;
+    }
+    if decision.is_some() {
+        set_bank(core, bank - (price(core, t) * 3 / 4 - slot_price).max(0));
+        // (newest first)
+        let mut h = [t, 0, 0, 0];
+        for k in 0..3 {
+            h[k + 1] = core.raw_read_8(hist + k as u32, -1);
+        }
+        for (k, v) in h.iter().enumerate() {
+            core.raw_write_8(hist + k as u32, -1, *v);
+        }
+    }
     // Nothing is placed where it cannot stand: the table's unit not on sea or
     // reef, a ship (the table's too) only where its chart lets it in. A
     // Piperunner (never the factory's) is dropped as well.
     let on_water = (!SHIPS.contains(&t) && matches!(terrain(core, px, py), Some(SEA) | Some(REEF)))
-        || (decision.is_none() && (t == crate::roster::PIPERUNNER || (SHIPS.contains(&t) && crate::oozium::move_cost(core, army, t, px, py) == NO_ENTRY)));
+        || (decision.is_none() && (t == crate::roster::PIPERUNNER || t == OOZIUM || (SHIPS.contains(&t) && crate::oozium::move_cost(core, army, t, px, py) == NO_ENTRY)));
     let cpu = core.gba_mut().cpu_mut();
     if on_water {
         cpu.set_thumb_pc(NEXT_SLOT);
