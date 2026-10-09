@@ -50,6 +50,17 @@ fn on_day(d: u16, then: Vec<Action>) -> Trigger {
     Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, then).repeating()
 }
 
+/// Sonja's production (a Lander at the dock port when her treasury allows) is given the CPU's "go for the nearest enemy" role
+/// instead of "go for the HQ", so it leaves the port and the port builds again. Every deployed unit's role is 0 or 4 (see `roles`),
+/// so a unit with role 1 is a freshly built one.
+fn sail_new_builds(core: &mut Core) {
+    for (a, _, _, _) in units_of(core, 2) {
+        if core.raw_read_8(a + 0x0B, -1) == 1 {
+            core.raw_write_8(a + 0x0B, -1, 4);
+        }
+    }
+}
+
 fn bh31() -> MissionDef {
     let mut m = MissionDef::new("bh31", "The Colonel's Vault");
     m.objective = "Destroy the 3 Vault Trucks before one docks. 11 days.";
@@ -106,6 +117,8 @@ fn bh31() -> MissionDef {
                 Action::Spawn(vec![UnitDef::new(2, unit::APC, TRUCK_C.0, TRUCK_C.1).named("vault3")]),
             ],
         ),
+        // Every morning from day 2: what Sonja's army built yesterday gets the attack role.
+        Trigger::new(When::TurnStart, Cond::EveryDays { n: 1, from: 2 }, vec![Action::Custom(sail_new_builds)]).repeating(),
         // Day 4: the cannons are online.
         on_day(4, vec![Action::Scene(crate::bh_text::scene("m31_day_4"))]),
         // Day 5: Sonja's power (her meter is full: the fog thickens as her vision grows).
