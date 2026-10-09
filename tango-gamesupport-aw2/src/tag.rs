@@ -920,6 +920,7 @@ fn second_half(core: &mut Core, army: u32) {
     swap(core, army);
     ready_units(core);
     set_phase(core, army, 2);
+    crate::crumb::tag_second_half(core, army);
     core.raw_write_8(rec(army) + P_SHOW, -1, 3);
 }
 

@@ -71,6 +71,15 @@ def new_cos_have_their_own_songs(ctx):
         ctx.eq(header_of(e, s), e.u32(0x0824238C + 8 * s), f"song {s} is AW2's")
 
 
+@test(modes=("ds",))
+def crumb_plays_adders_theme(ctx):
+    """Crumb has no Dual Strike theme (no twin): his row takes Adder's (AW2's
+    own song), so the music blob holds no song for him."""
+    g = two_armies(ctx, ["crumb", "sami"], (1,))
+    e = g.e
+    ctx.eq(row_song(e, "crumb"), row_song(e, "adder", AW2_CO_TABLE), "Adder's AW2 song")
+
+
 @test(modes=("aw2",))
 def co_music_without_the_pack(ctx):
     g = two_armies(ctx, ["andy", "sturm"], (1,))

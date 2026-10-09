@@ -1,7 +1,8 @@
 //! Dual Strike's nine new COs, with the Dual Strike pack: Jugger, Koal,
 //! Kindle and Von Bolt (Black Hole), Grimm (Yellow Comet), Javier (Green
 //! Earth), Sasha (Blue Moon), Jake and Rachel (Orange Star), as AW2 COs
-//! 72..80, added after AW2's 19 (nobody is replaced).
+//! 72..80, added after AW2's 19 (nobody is replaced); then tangoAW2's own
+//! Clone Andy (81, on Andy's data) and Crumb (82, [`crate::crumb`]).
 //!
 //! Why 72: AW2 names a face `co + 24 * expression` (normal, happy, sad)
 //! and 19..23 are the troopers' faces, so ids up to 71 would read as
@@ -47,6 +48,16 @@ pub const NEW: [(u8, u8); 10] = [
 pub const FIRST: u8 = 72;
 /// Clone Andy: tangoAW2's tenth new CO (see `docs/AW2.md`, "Clone Andy").
 pub const CLONE_ANDY: u8 = FIRST + 9;
+/// Crumb: tangoAW2's eleventh new CO (see `docs/AW2.md`, "Crumb"). He has no
+/// Dual Strike twin at all (no entry in [`NEW`], [`ds_id`] is `None` as for
+/// AW2's Sturm): his art is derived from the Black Hole trooper's
+/// ([`crate::crumb_art`]), his texts, numbers and powers are tangoAW2's own
+/// ([`crate::crumb`]); Adder's place, music and CPU profile are his
+/// [`like`].
+pub const CRUMB: u8 = FIRST + 10;
+/// The Dual Strike CO whose record fills the fields of Crumb's row nothing
+/// of his own is set for (Andy's neutral numbers, as Clone Andy's).
+const CRUMB_BASE: u8 = 2;
 /// His name, tangoAW2's own (Dual Strike writes the clone as "Andy").
 pub const CLONE_ANDY_NAME: &[u8] = b"Clone Andy";
 /// His CO page's bio, **tangoAW2's own**, in AW2's terse voice (Dual Strike
@@ -54,21 +65,37 @@ pub const CLONE_ANDY_NAME: &[u8] = b"Clone Andy";
 pub const CLONE_ANDY_BIO: &[u8] = b"Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up";
 
 pub fn is_new(co: u8) -> bool {
-    (FIRST..FIRST + NEW.len() as u8).contains(&co)
+    (FIRST..=CRUMB).contains(&co)
 }
 
-/// A new CO's Dual Strike id.
+/// A new CO's Dual Strike id (Crumb has none).
 pub fn ds_id(co: u8) -> Option<u8> {
-    is_new(co).then(|| NEW[(co - FIRST) as usize].0)
+    NEW.get((co.checked_sub(FIRST)?) as usize).map(|n| n.0)
 }
 
 /// The AW2 CO a new one takes after.
 pub fn like(co: u8) -> u8 {
-    if is_new(co) {
-        NEW[(co - FIRST) as usize].1
-    } else {
-        co
+    match co {
+        CRUMB => CRUMB_LIKE,
+        _ if is_new(co) => NEW[(co - FIRST) as usize].1,
+        _ => co,
     }
+}
+
+/// Adder, as Clone Andy: Black Hole's place in the Teams list, its power
+/// music, a CPU profile.
+const CRUMB_LIKE: u8 = 13;
+
+/// The new COs as (CO id, the Dual Strike record its row is filled from,
+/// the AW2 CO it takes after): [`NEW`]'s ten, then Crumb.
+pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
+    NEW.iter().enumerate().map(|(k, &(ds, like))| (FIRST + k as u8, ds, like)).chain([(CRUMB, CRUMB_BASE, CRUMB_LIKE)])
+}
+
+/// A CO of tangoAW2's own, with no Dual Strike record behind its pictures
+/// and texts (Clone Andy's are Andy's but for his name, bio and pair).
+pub fn is_own(co: u8) -> bool {
+    co == CLONE_ANDY || co == CRUMB
 }
 
 const BLACK_HOLE_STYLE: u8 = 4;
@@ -140,6 +167,8 @@ pub const T_COP_NAME: u16 = 5;
 pub const T_SCOP_NAME: u16 = 6;
 pub const T_QUOTES: u16 = 7; // six
 pub const T_VICTORY: u16 = 13;
+/// A defeat quote (AW2's results screen has none; Crumb's is kept here).
+pub const T_DEFEAT: u16 = 14;
 
 pub fn text_id(co: u8, which: u16) -> u16 {
     TEXT_BASE + TEXTS_PER_CO * (co - FIRST) as u16 + which
@@ -335,6 +364,9 @@ pub fn ds_name(co: u8) -> Option<Vec<u8>> {
     if co == CLONE_ANDY {
         return Some(CLONE_ANDY_NAME.to_vec());
     }
+    if co == CRUMB {
+        return Some(crate::crumb::NAME.to_vec());
+    }
     ds_text(record_ref(crate::co_roster::ds_co(co)?, 0x00)).filter(|t| !t.is_empty())
 }
 
@@ -342,11 +374,24 @@ pub fn ds_name(co: u8) -> Option<Vec<u8>> {
 fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
     let mut out = Vec::new();
     let clone = co == CLONE_ANDY;
-    let name = if clone { CLONE_ANDY_NAME.to_vec() } else { ds_text(record_ref(ds, 0x00)).unwrap_or_default() };
+    let crumb = co == CRUMB;
+    let name = if clone {
+        CLONE_ANDY_NAME.to_vec()
+    } else if crumb {
+        crate::crumb::NAME.to_vec()
+    } else {
+        ds_text(record_ref(ds, 0x00)).unwrap_or_default()
+    };
     // Every slot gets a text: one the game reads but Dual Strike leaves
     // empty (Von Bolt has no CO Power) would otherwise point at nothing.
     let mut put = |which: u16, off: u32| {
-        let own = if clone { clone_text(which, &name) } else { None };
+        let own = if clone {
+            clone_text(which, &name)
+        } else if crumb {
+            crate::crumb::text(which)
+        } else {
+            None
+        };
         let t = own.or_else(|| ds_text(record_ref(ds, off))).filter(|t| !t.is_empty()).unwrap_or_else(|| {
             if which == T_COP {
                 // As AW2 says of Sturm, who has none either.
@@ -379,6 +424,9 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
         put(T_QUOTES + q, 0x3C + 4 * q as u32);
     }
     put(T_VICTORY, 0x28);
+    if crumb {
+        put(T_DEFEAT, 0x28);
+    }
     out
 }
 
@@ -598,9 +646,8 @@ fn build(core: &Core) -> Option<Built> {
     let mut pairs = vec![0u8; (8 * ROOM) as usize];
     let mut strings: Vec<u8> = Vec::new();
     let mut slots: Vec<(u32, u32)> = Vec::new();
-    for (k, &(ds, like)) in NEW.iter().enumerate() {
-        let co = FIRST + k as u8;
-        let mut art = crate::ds_co_art::co_art(ds)?;
+    for (co, ds, like) in all() {
+        let mut art = if co == CRUMB { crate::crumb_art::art(core)? } else { crate::ds_co_art::co_art(ds)? };
         if co == CLONE_ANDY {
             // His name graphic reads "Clone", cut from AW2's own letters.
             if let Some(n) = clone_name(core) {
@@ -627,7 +674,15 @@ fn build(core: &Core) -> Option<Built> {
             put32(&mut pres, o + 4, COND_ALWAYS);
             put32(&mut pres, o + 8, EACH_NOTHING);
             put32(&mut pres, o + 12, ON_ACTIVATE);
-            if let Some((anim, pal)) = power_effect(core, ds, p as u32) {
+            if co == CRUMB {
+                // His powers' sparkle is Andy's (AW2's repair effect), the
+                // unit effect his own ([`crate::crumb::each_unit`]).
+                let andy = PRESENTATION_ROW as usize * ANDY as usize + 0x1C + 0x14 * p;
+                let (anim, pal) = (pres[andy], pres[andy + 1]);
+                pres[o] = anim;
+                pres[o + 1] = pal;
+                put32(&mut pres, o + 8, crate::crumb::each_unit(p as u8));
+            } else if let Some((anim, pal)) = power_effect(core, ds, p as u32) {
                 pres[o] = anim;
                 pres[o + 1] = pal;
             }
@@ -639,8 +694,8 @@ fn build(core: &Core) -> Option<Built> {
             dossier[o..o + 2].copy_from_slice(&text_id(co, *page).to_le_bytes());
         }
         let ds_style = crate::ds_pack::pack()?.arm9_at(0x0215_360C + 0x220 * ds as u32 + 0x25, 1)?[0];
-        // (Clone Andy fights in Black Hole's style)
-        style[co as usize] = if co == CLONE_ANDY { BLACK_HOLE_STYLE } else { ds_style.min(BLACK_HOLE_STYLE) };
+        // (Clone Andy and Crumb fight in Black Hole's style)
+        style[co as usize] = if is_own(co) { BLACK_HOLE_STYLE } else { ds_style.min(BLACK_HOLE_STYLE) };
         for (which, text) in texts(co, ds, &widths) {
             let at = STRINGS + strings.len() as u32;
             strings.extend_from_slice(&text);
@@ -654,8 +709,7 @@ fn build(core: &Core) -> Option<Built> {
     // The Teams list's order: AW2's, each new CO after the one it takes
     // after (in NEW's order).
     let mut order = read(core, AW2_ORDER, AW2_COS);
-    for (k, &(_, like)) in NEW.iter().enumerate() {
-        let co = FIRST + k as u8;
+    for (co, _, like) in all() {
         let mut at = order.iter().position(|&c| c == like).map(|p| p + 1).unwrap_or(order.len());
         while at < order.len() && is_new(order[at]) {
             at += 1;
@@ -845,8 +899,12 @@ mod tests {
         assert_eq!(ds_id(81), Some(2), "Clone Andy takes Dual Strike's Andy");
         assert_eq!(ds_id(82), None);
         assert_eq!(CLONE_ANDY, 81);
-        assert!((FIRST as u32 + NEW.len() as u32) <= ROOM);
-        assert!(TEXT_TABLE + 4 * text_id(81, TEXTS_PER_CO) as u32 <= 0x0863_0000);
+        assert!((FIRST as u32 + NEW.len() as u32 + 1) <= ROOM);
+        assert_eq!(CRUMB, 82);
+        assert_eq!(ds_id(CRUMB), None, "Crumb has no Dual Strike twin");
+        assert_eq!(like(CRUMB), 13);
+        assert!(is_new(CRUMB) && !is_new(CRUMB + 1));
+        assert!(TEXT_TABLE + 4 * text_id(CRUMB, TEXTS_PER_CO) as u32 <= 0x0863_0000);
         assert!(HUD + HUD_FACE * ROOM <= DOSSIER && PRESENTATION + PRESENTATION_ROW * ROOM <= BODY_PAIRS);
     }
 }
@@ -859,8 +917,7 @@ mod pack_tests {
     #[test]
     #[ignore]
     fn pages_fit() {
-        for (k, &(ds, _)) in NEW.iter().enumerate() {
-            let co = FIRST + k as u8;
+        for (co, ds, _) in all() {
             let widths = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").unwrap()).unwrap()
                 [(FONT_WIDTHS - 0x0800_0000) as usize..][..256]
                 .to_vec();

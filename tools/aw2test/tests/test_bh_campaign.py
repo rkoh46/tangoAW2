@@ -344,6 +344,7 @@ def bh_campaign_mission_data_fields(ctx):
     ctx.eq(e.u16(DAY), 2, "day 2")
     ctx.eq(e.u32(g.player(1)["addr"]), 10000, "the trigger set army 1's funds (9900) and added 100")
     ctx.eq(d.bonds(), 1, "bond 0 earned by the trigger")
+    ctx.eq(d.unlocked(), [bh.STURM, bh.CRUMB], "Crumb unlocked in the middle of the mission by the trigger's Action::Unlock (the promotion)")
     hawke_page = e.u32(0x08610A38 + 4 * e.u16(0x086A0000 + 0x104 * bh.HAWKE + 0x2C))
     ctx.eq(e.read(hawke_page, 40).split(b"\0")[0], b"Bond test: Hawke's\rsecret page.", "Hawke's CO page shows the secret quote, wrapped to the page")
     e.wait(600)
@@ -353,7 +354,7 @@ def bh_campaign_mission_data_fields(ctx):
     # The win unlocks Hawke (the data's recruit).
     from aw2test import campaigns as cp
     cp.win_here(e, d)
-    ctx.eq(d.unlocked(), [bh.STURM, bh.HAWKE], "Hawke unlocked by mission 1's recruit entry")
+    ctx.eq(d.unlocked(), [bh.STURM, bh.HAWKE, bh.CRUMB], "Hawke unlocked by mission 1's recruit entry (and Crumb, kept, by the trigger)")
     ctx.check(e.u16(0x086A0000 + 0x104 * bh.STURM + 4) != 220, "back on the world map: the COs' own themes are put back")
     ctx.eq(d.map_flags()[5], 1, "the secret mission's flag: every bond earned (the one the test has)")
     e.close()

@@ -830,6 +830,16 @@ pub fn earn_bond(core: &mut Core, k: u8) {
     set_unlocked_mask(core, m);
 }
 
+/// Unlocks the roster's CO `k` (a trigger's action, `Action::Unlock`); saved
+/// with the record. (A replay unlocks nothing.)
+pub fn unlock_co(core: &mut Core, k: u8) {
+    if replaying(core) || k as u32 >= BOND_SHIFT {
+        return;
+    }
+    let m = unlocked_mask(core) | 1 << k;
+    set_unlocked_mask(core, m);
+}
+
 fn set_unlocked_mask(core: &mut Core, mask: u32) {
     for k in 0..3 {
         core.raw_write_8(P_UNLOCKED + k, -1, (mask >> (8 * k)) as u8);

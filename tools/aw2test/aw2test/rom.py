@@ -39,8 +39,8 @@ CO_NAMES = [
     "Sturm", "Flak", "Lash", "Adder", "Hawke", "Hachi", "Colin", "Jess", "Sensei",
 ]
 # Dual Strike's new COs, tangoAW2's ids 72.. with the pack (crate::co_new).
-NEW_CO_NAMES = ["Jugger", "Koal", "Kindle", "Von Bolt", "Grimm", "Javier", "Sasha", "Jake", "Rachel", "Clone Andy"]
-NEW_CO_DS_IDS = [12, 14, 25, 11, 24, 23, 22, 20, 21, 2]   # (Clone Andy: Dual Strike's Andy)
+NEW_CO_NAMES = ["Jugger", "Koal", "Kindle", "Von Bolt", "Grimm", "Javier", "Sasha", "Jake", "Rachel", "Clone Andy", "Crumb"]
+NEW_CO_DS_IDS = [12, 14, 25, 11, 24, 23, 22, 20, 21, 2]   # (Clone Andy: Dual Strike's Andy; Crumb has none)
 CO_IDS = {n.lower(): i for i, n in enumerate(CO_NAMES)}
 CO_IDS.update({n.lower().replace(" ", ""): 72 + k for k, n in enumerate(NEW_CO_NAMES)})
 

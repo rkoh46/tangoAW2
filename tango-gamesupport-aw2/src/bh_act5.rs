@@ -586,7 +586,9 @@ fn bh30() -> MissionDef {
 pub fn missions() -> Vec<MissionDef> {
     let mut v = Vec::new();
     // (until M28 is in the tree, a locked placeholder keeps the finale's `needs` valid)
-    v.push(dev_stub_bh28());
+    if !crate::bh_act5b::missions().iter().any(|m| m.key == "bh28") {
+        v.push(dev_stub_bh28());
+    }
     v.push(bh29());
     v.push(bh30());
     // The day limit loses: the day after the last is the defeat.

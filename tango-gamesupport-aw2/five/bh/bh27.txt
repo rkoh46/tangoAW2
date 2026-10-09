@@ -1,0 +1,61 @@
+# bh27: M27 Echo (fog, pre-deployed): forest tunnels, radar clearings
+map bh27
+armies 2 3 5 1
+unit 1 1 3 8
+unit 1 1 3 10
+unit 1 1 4 9
+unit 1 1 4 10
+unit 1 2 4 6
+unit 1 2 4 12
+unit 1 2 5 9
+unit 1 5 6 9
+unit 1 5 5 5
+unit 1 5 5 13
+unit 1 3 7 9
+unit 1 3 6 3
+unit 1 3 6 14
+unit 1 10 3 7
+unit 1 10 3 12
+unit 1 6 5 6
+unit 1 6 5 12
+unit 1 14 4 8
+unit 2 1 20 8
+unit 2 1 20 10
+unit 2 1 19 9
+unit 2 1 15 8
+unit 2 1 15 10
+unit 2 1 22 9
+unit 2 2 14 7
+unit 2 2 14 11
+unit 2 2 18 9
+unit 2 5 17 7
+unit 2 5 17 11
+unit 2 5 18 4
+unit 2 5 18 13
+unit 2 3 16 9
+unit 2 3 18 6
+unit 2 3 18 12
+unit 2 8 19 8
+unit 2 10 21 8
+unit 2 10 21 10
+unit 2 6 16 3
+unit 2 6 17 15
+unit 2 20 22 10
+^^..^^..^^.-..^^..^^..^^
+^^..^^..^^.-..^^..^^..^^
+.......c..c-..c.........
+..RRRRRRRRR=RRRRRRRRRR..
+....CR.fff.-.fff.R..C...
+.fff.R.ftf^-.fff.R..fff.
+.fff.Rffff^-^ffffR..fBf.
+.fffBRffff.-.ffffR.Bfff.
+.....Rffff.-.ffffR......
+..1RRRRRcRR=RRcRRRRRR2..
+.....Rffff.-.ffffR......
+.ffC.Rffff.-.ffffR.Bfff.
+.fff.Rffff^-^fftfR..ffC.
+.fff.R.....-^....R..fff.
+..RRRRRcRRR=RRcRcRRRRR..
+.......fff.-.fff........
+^^..C^^fff.-.fff..^C..^^
+^^...^^....-......^^..^^

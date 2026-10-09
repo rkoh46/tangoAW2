@@ -249,6 +249,8 @@ impl NonZero for Core {
 /// a transport's move +1 (every move range, the CPU's too).
 const MOVE_DONE: u32 = 0x0804_2D42;
 fn move_done(core: &mut Core) {
+    // (crate::crumb's Tag Power: a healed unit moves one more)
+    crate::crumb::move_bonus(core);
     if !any_on(core) {
         return;
     }
@@ -696,9 +698,10 @@ pub fn ids() -> impl Iterator<Item = u8> {
 pub const DATA: u32 = 0x0203_E000;
 const DATA_MAGIC: u32 = 0x314C_4B53; // "SKL1"
 const CO_LEN: u32 = 32;
-/// AW2's 19 COs (0..18) and the new ten (72..81: Dual Strike's nine and
-/// Clone Andy). (A record saved with fewer reads the rest as zeros.)
-pub const COS: u32 = 29;
+/// AW2's 19 COs (0..18) and the new eleven (72..82: Dual Strike's nine,
+/// Clone Andy and Crumb). (A record saved with fewer reads the rest as
+/// zeros.)
+pub const COS: u32 = 30;
 pub const DATA_LEN: u32 = 4 + CO_LEN * COS;
 /// EXP stops at Dual Strike's cap.
 pub const MAX_EXP: u32 = 100_000;
@@ -727,7 +730,7 @@ impl Set {
 pub fn co_slot(co: u8) -> Option<u32> {
     match co {
         0..=18 => Some(co as u32),
-        72..=81 => Some(19 + (co - 72) as u32),
+        72..=82 => Some(19 + (co - 72) as u32),
         _ => None,
     }
 }

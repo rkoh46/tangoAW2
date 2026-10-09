@@ -591,6 +591,20 @@ class DsCampaign:
                 picks.append(self.choose_co([c for c in prefs if c not in picks]))
                 e.wait(60)
                 n += 60
+                # (a second pick's screen comes after the first's has closed: wait for it to go, so the
+                # next choice never reads the old screen's cursor)
+                for _ in range(40):
+                    if not self.on_co_select():
+                        break
+                    e.wait(10)
+                    n += 10
+                if len(picks) < count:
+                    for _ in range(60):
+                        if self.on_co_select() and self.co_cursor():
+                            break
+                        e.wait(10)
+                        n += 10
+                    e.wait(30)
             elif self.on_co_select():
                 self.co_screen_a()
             elif self.scripts_running():

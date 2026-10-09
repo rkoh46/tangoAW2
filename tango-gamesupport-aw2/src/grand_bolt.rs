@@ -197,8 +197,8 @@ pub fn panel_picture(core: &Core, x: u32, y: u32) -> Option<[u8; 256]> {
 const PICTURE_TILE: u16 = 0x1E6;
 const OBJ_PALETTE: u32 = 15;
 /// 1 while palette 15 holds the Grand Bolt's colours, then palette 15 as
-/// it was (32 bytes). EWRAM the game never writes (after crate::skills_panel's).
-const BORROWED: u32 = 0x0203_E3C0;
+/// it was (32 bytes). EWRAM the game never writes (after crate::co_skills's data).
+const BORROWED: u32 = 0x0203_E3C8;
 const SAVED: u32 = BORROWED + 4;
 
 /// At the sprite flush (crate::branding::flush): while the terrain panel

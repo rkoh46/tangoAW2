@@ -1080,7 +1080,7 @@ def tag_sturm_pairs(ctx):
     special pairs (aw2test.tag.STURM_PAIRS; Von Bolt 125 and 3 stars ..
     Kindle 105, anyone else 95). In battle the Tag Power's firepower is
     compatibility - 100 against the damage calculator; Sturm's TAG page
-    lists his six partners with their stars, Von Bolt's lists Sturm last;
+    lists his seven partners with their stars, Von Bolt's lists Sturm last;
     the Teams slot's badge shows 3 stars for Sturm + Von Bolt; the Tag
     Power screen shows "Black Apocalypse" (POWER 125%)."""
     for a, b, want in STURM_BOOST:
@@ -1110,8 +1110,8 @@ def tag_sturm_pairs(ctx):
 
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
-    ctx.eq(names, b"Von Bolt\rHawke\rLash\rFlak\rAdder\rClone Andy", "Sturm's partners, tangoAW2's order (Kindle, Jugger, Koal: 105, no special pair, not listed)")
-    ctx.eq(stars, 3 + 2 + 2 + 1 + 1 + 2, "their stars")
+    ctx.eq(names, b"Von Bolt\rHawke\rLash\rFlak\rAdder\rClone Andy\rCrumb", "Sturm's partners, tangoAW2's order (Kindle, Jugger, Koal: 105, no special pair, not listed)")
+    ctx.eq(stars, 3 + 2 + 2 + 1 + 1 + 2 + 2, "their stars")
     ctx.shot(g, "sturm_tag_page")
     g = tag_battle(ctx, ["vonbolt", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
@@ -1261,7 +1261,7 @@ def tag_clone_andy(ctx):
     ctx.check(b"Max" in names and b"Clone" not in names, f"Andy's own TAG page is Andy's ({names!r})")
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, _ = tag_page(g)
-    ctx.eq(names.split(b"\r")[-1], b"Clone Andy", "Sturm's TAG page lists Clone Andy last")
+    ctx.eq(names.split(b"\r")[-2:], [b"Clone Andy", b"Crumb"], "Sturm's TAG page lists Clone Andy and Crumb last")
 
     # The Tag Power screen: the name's text and the 118%.
     g = tag_battle(ctx, ["sturm", "olaf"], ["cloneandy", None], units=[(1, "tank", 10, 4), (2, "tank", 20, 10)])
@@ -1387,3 +1387,183 @@ def tag_vault_breakers(ctx):
     ctx.check(t.startswith((b"Kehh! Count it twice!", b"Everything is mine!")), f"Von Bolt and Sonja's exchange ({t!r})")
     e.wait(200)
     ctx.shot(g, "vault_breakers_victory_quote")
+
+
+CRUMB_BOOST = [("sturm", "crumb", 15), ("crumb", "sturm", 15)]
+
+
+@test(modes=("ds",))
+def tag_crumb(ctx):
+    """Crumb (crate::crumb, tangoAW2's own CO) and Sturm, "No One Left Behind"
+    (crate::sturm_pairs, made up for tangoAW2: 115, 2 stars): the Tag Power's
+    firepower is +15% against the damage calculator both ways round; with
+    every other CO the compatibility is the neutral 100 (Crumb has no Dual
+    Strike record: no row, no column), and he has no special pair but
+    Sturm's; his TAG page lists Sturm, Sturm's lists him last; the Tag Power
+    screen shows 115% and the name; their victory exchange is their own."""
+    ds = romlib.DualStrike()
+    for a, b, want in CRUMB_BOOST:
+        ctx.eq(tag.compatibility(ds, romlib.co_id(a), romlib.co_id(b)) - 100, want, f"{a}+{b}: tangoAW2's table")
+        units = [(1, "tank", 10, 10), (2, "tank", 11, 10), (1, "tank", 10, 12), (2, "tank", 11, 12)]
+        g = tag_battle(ctx, [a, "olaf"], [b, "max"], units=units)
+        e = g.e
+        e.w8(tag.rec(1) + 1, 1)
+        e.w8(tag.rec(2) + 1, 1)
+        ctx.eq(ctx.tag_firepower(g, 1, g.player(1)["co"]), want, f"{a}+{b}: the calculator's tag firepower in the game")
+        ctx.attack(g, (10, 10), (10, 10), (11, 10))
+        e.w8(tag.rec(1) + 1, 0)
+        e.w8(tag.rec(2) + 1, 0)
+        ctx.attack(g, (10, 12), (10, 12), (11, 12))
+    # Any other CO: the neutral 100, both ways round, and in the game.
+    for other in ("kindle", "vonbolt", "max", "olaf", "hawke", "andy", "cloneandy"):
+        ctx.eq(tag.compatibility(ds, romlib.co_id("crumb"), romlib.co_id(other)), 100, f"Crumb + {other}: 100")
+        ctx.eq(tag.compatibility(ds, romlib.co_id(other), romlib.co_id("crumb")), 100, f"{other} + Crumb: 100")
+
+    def tag_page(g):
+        e = g.e
+        g.open_map_menu()
+        g.choose("CO", g.MAP_MENU)
+        e.wait(90)
+        for _ in range(4):
+            e.press("DOWN", 4)
+            e.wait(40)
+        ctx.eq((e.u32(0x03005940), e.u8(EXTRAS + 5)), (3, 1), "the TAG page")
+        stars = [s for s in oam(e) if (s[2] & 0x3FF) == 0x321 and s[2] >> 12 == 12]
+        return rom_string(e, STRINGS + 0x300), len(stars)
+
+    g = tag_battle(ctx, ["crumb", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
+    names, stars = tag_page(g)
+    ctx.eq(names, b"Sturm", "Crumb's TAG page: Sturm alone")
+    ctx.eq(stars, 2, "its two stars")
+    ctx.shot(g, "crumb_tag_page")
+    g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
+    names, _ = tag_page(g)
+    ctx.eq(names.split(b"\r")[-1], b"Crumb", "Sturm's TAG page lists Crumb last")
+    g = tag_battle(ctx, ["clone" "andy", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
+    names, _ = tag_page(g)
+    ctx.eq(names, b"Sturm", "Clone Andy's TAG page is unchanged")
+
+    # The Tag Power screen: the name's text and the 115%.
+    g = tag_battle(ctx, ["sturm", "olaf"], ["crumb", None], units=[(1, "tank", 10, 4), (2, "tank", 20, 10)])
+    e = g.e
+    fill(g, 1)
+    g.open_map_menu()
+    g.choose("Tag", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: e.u8(EXTRAS) == 1, 1200, step=4), "the tag screen shows")
+    ctx.require(screen_at(e, 310 - TAG_START), "sliding")
+    full_screen_shown(ctx, e, "Sturm + Crumb")
+    ctx.require(screen_at(e, 600 - TAG_START), "done")
+    ctx.check(13 in palettes_of(bg_map(e, 0)), "the name (No One Left Behind) on BG0")
+    ctx.eq(rom_string(e, STRINGS + 0x300 + 0x80) or b"No One Left Behind", b"No One Left Behind", "the name's text")
+    ctx.shot(g, "sturm_crumb_tag_screen")
+    power_digits(ctx, os.path.join(ctx.out, "sturm_crumb_tag_screen.bmp"), 115, "Sturm + Crumb")
+    ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the Super Power follows")
+
+    # Their victory exchange (the exchange's lines are tangoAW2's own).
+    m = ctx.map(spare=False)
+    m.unit(1, "tank", 10, 10).unit(2, "infantry", 11, 10)
+    g = ctx.boot_teams(m)
+    e = g.e
+    tag.set_teams_partner(e, 1, "crumb")
+    g.set_teams(["sturm", "olaf"], {1})
+    g.teams_to_rules()
+    g.set_rules()
+    g.start_battle()
+    g.wait_for_input()
+    inf = g.unit_at(11, 10)
+    a = g.unit_addr(inf["id"])
+    e.w16(a + 4, (e.u16(a + 4) & ~0x7F) | 1)
+    g.select(10, 10)
+    g.move_to(10, 10)
+    g.choose("Fire", g.ACTION_MENU)
+    g.pick_target(11, 10)
+    for _ in range(60):
+        if rom_string(e, STRINGS + 0x100) != b"":
+            break
+        e.wait(40)
+        e.press("A", 2)
+    t = rom_string(e, STRINGS + 0x100)
+    ctx.log(f"victory quote {t!r}")
+    flat = t.replace(b"\r", b" ")
+    ctx.check(flat in (b"Kneel. It is mine. Crumb: Sir! Gerald agrees!", b"Nothing is left behind. Crumb: Not one boot, sir!"),
+              f"Sturm and Crumb's exchange ({t!r})")
+    ctx.check(t.count(b"\r") <= 2, "within the results box's three lines")
+    e.wait(200)
+    ctx.shot(g, "sturm_crumb_victory_quote")
+
+
+def _heal(hp, bars_up):
+    """RepairUnit's heal of `bars_up` HP on a unit at `hp` (a whole display HP
+    up, 10 internal a step, to at most 10 HP)."""
+    for _ in range(bars_up):
+        if (hp - 1) // 10 + 1 == 10:
+            break
+        hp = min(100, hp + 10)
+    return ((hp - 1) // 10 + 1) * 10
+
+
+@test(modes=("ds",))
+def tag_crumb_no_one_left_behind(ctx):
+    """The Tag Power of Sturm and Crumb (both orders): both Super Powers fire
+    (Gerald's Blessing heals every unit 2 HP), and then every unit of the
+    army at 3 HP or below is healed to 6 and may move one more (a unit at 4
+    or more is left alone: Infantry 3 moves, 4 healed ones); the heal is
+    done once, the extra move goes at the army's next turn."""
+    from aw2test.game import NavError
+    for first, second in (("sturm", "crumb"), ("crumb", "sturm")):
+        units = [(1, "infantry", 10, 10), (1, "infantry", 10, 14), (1, "tank", 14, 6), (1, "infantry", 18, 14), (2, "tank", 25, 10)]
+        g = tag_battle(ctx, [first, "olaf"], [second, None], units=units)
+        e = g.e
+        ctx.set_hp(g, 10, 10, 10)     # 1 HP: Gerald's Blessing makes it 3, the rule 6
+        ctx.set_hp(g, 10, 14, 25)     # 3 HP: the blessing makes it 5: left alone
+        ctx.set_hp(g, 14, 6, 35)      # 4 HP tank: becomes 6 by the blessing alone
+        ctx.set_hp(g, 18, 14, 100)
+        fill(g, 1)
+        g.open_map_menu()
+        g.choose("Tag", g.MAP_MENU)
+        ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the first Super Power starts")
+        g.wait_for_input()
+        g.wait_unit(18, 14)
+        g.open_map_menu()
+        g.choose("Change", g.MAP_MENU)
+        ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2 and tag.partner(e, 1)["phase"] == 2, 3000, step=10), "the second Super Power")
+        g.wait_for_input()
+        e.wait(60)
+        a, b, c = g.unit_at(10, 10), g.unit_at(10, 14), g.unit_at(14, 6)
+        ctx.eq(a["hp"], 60, f"{first}+{second}: the 1 HP Infantry ends at 6 HP")
+        ctx.eq(b["hp"], _heal(25, 2), f"{first}+{second}: the 3 HP Infantry, healed 2 by the blessing, is left at {_heal(25, 2)}")
+        ctx.eq(c["hp"], _heal(35, 2), f"{first}+{second}: the 4 HP Tank only has the blessing's 2")
+        ctx.check(can_move(g, (10, 10), (14, 10)), f"{first}+{second}: the healed Infantry moves 4")
+        ctx.check(not can_move(g, (10, 14), (14, 14)), f"{first}+{second}: the other Infantry moves 3")
+        ctx.shot(g, f"no_one_left_behind_{first}")
+        # The turn ends: the extra move goes with it.
+        g.select(10, 10)
+        g.move_to(10, 10)
+        g.choose("Wait", g.ACTION_MENU)
+        g.wait_idle()
+        g.open_map_menu()
+        g.choose("End", g.MAP_MENU)
+        ctx.require(e.wait_until(lambda: g.current_army() == 2, 900, step=8), "the turn ends")
+        ctx.require(e.wait_until(lambda: g.current_army() == 1, 20000, step=30), "the turn comes back")
+        g.wait_for_input()
+        ctx.check(not can_move(g, (10, 10), (14, 10)), f"{first}+{second}: the next turn, 3 again")
+        ctx.eq(g.unit_at(10, 10)["hp"], 60, f"{first}+{second}: healed once")
+
+
+def can_move(g, src, dst):
+    """Whether the unit at src can move to dst this turn (the action menu
+    opens), leaving it as it was (selection cancelled)."""
+    from aw2test.game import NavError
+    g.select(*src)
+    g.goto(*dst)
+    g.e.press("A", 4)
+    try:
+        g.wait_menu(g.ACTION_MENU, 120)
+        ok = True
+    except NavError:
+        ok = False
+    for _ in range(3):
+        g.e.press("B", 4)
+        g.e.wait(20)
+    g.wait_for_input()
+    return ok

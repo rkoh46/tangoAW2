@@ -50,7 +50,7 @@ def star_cost(uses):
 # stars, Tag Power name); Kindle, Jugger and Koal 105, anyone else 95.
 STURM_PAIRS = [("vonbolt", 125, 3, b"Black Apocalypse"), ("hawke", 120, 2, b"Storm Front"),
                ("lash", 115, 2, b"Mad Genius"), ("flak", 110, 1, b"Iron Fist"), ("adder", 110, 1, b"Viper's Nest"),
-               ("cloneandy", 118, 2, b"Perfect Copy")]
+               ("cloneandy", 118, 2, b"Perfect Copy"), ("crumb", 115, 2, b"No One Left Behind")]
 STURM_TEAMMATES = ("kindle", "jugger", "koal")
 
 
