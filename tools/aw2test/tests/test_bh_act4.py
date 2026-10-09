@@ -44,7 +44,7 @@ def pair_of(n, cos):
     """(lead, partner) CO ids the dialogue files key on, for the picks made."""
     if n == 22:
         return bh.JUGGER, bh.FLAK
-    if n == 17:
+    if n in (17, 20):             # (M20's second pick leads the second front: the scenes count it as the partner)
         return cos[0], cos[1]
     return cos[0], None
 

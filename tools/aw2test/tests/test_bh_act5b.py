@@ -85,7 +85,7 @@ def pictures(ctx, n):
     a5.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
     if not setup and n in (23, 24, 25, 27, 31):
-        a5.scene_seen(ctx, texts, f"m{n}_pre", picks[0] if picks else bh.LASH, picks[1] if len(picks) > 1 and n != 25 else None, f"M{n}: the opening")
+        a5.scene_seen(ctx, texts, f"m{n}_pre", picks[0] if picks else bh.LASH, picks[1] if len(picks) > 1 else None, f"M{n}: the opening")
     stitch.IMAGES = a5.SHOTS or stitch.IMAGES
     w, h = d.size()
     ctx.eq((w, h), size, f"M{n}: map size")

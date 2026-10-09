@@ -419,22 +419,25 @@ def bh_act5_m30_cannon_reach_probe(ctx):
 
 
 def scene_shots(ctx, e, g, d, prefix, max_frames=6000, patience=60):
-    """A real screenshot of every dialogue box shown (A through them): prefix_1, prefix_2 ..."""
-    texts, last, stable, n = [], None, 0, 0
+    """A real screenshot of every dialogue box shown, one for each box of a merged text (A through them):
+    prefix_1, prefix_2 ... Returns the distinct texts."""
+    texts, last, stable, n, boxno = [], None, 0, 0, 0
     quiet = 0
     while n < max_frames:
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 5 and (not texts or texts[-1] != a5.clean(t)):
-            texts.append(a5.clean(t))
-            e.wait(100)           # (the box types its text out)
-            a5.pic(ctx, e, f"{prefix}_{len(texts)}")
         if d.scripts_running():
             quiet = 0
-            if stable >= 8:
+            if t and stable >= 5:
+                if not texts or texts[-1] != a5.clean(t):
+                    texts.append(a5.clean(t))
+                e.wait(120)           # (the box types its text out)
+                boxno += 1
+                a5.pic(ctx, e, f"{prefix}_{boxno:02d}")
                 e.press("A", 4)
-                stable = 0
+                e.wait(20)
+                stable, last = 0, None
         else:
             quiet += 1
             if quiet > patience:
