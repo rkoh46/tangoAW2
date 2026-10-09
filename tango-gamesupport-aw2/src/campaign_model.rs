@@ -106,6 +106,9 @@ pub struct OnyxDef {
     /// The first day it fires, and the days between shots.
     pub first: u8,
     pub period: u8,
+    /// The first day a soldier on a silo may launch at it (a silo is two
+    /// turns from the allies' HQs: not before day 3).
+    pub silo_day: u8,
     /// The Black Obelisk's top-left cell (3x3): the fortress's centre.
     pub obelisk: (u8, u8),
     /// When it is destroyed: every Black Hole unit within this many cells of
@@ -146,7 +149,7 @@ impl OnyxDef {
     /// The design's numbers: 4 hits, day 5 and every 5th day, 4 cells, 3 HP,
     /// 3 turns, 30%.
     pub const fn new(obelisk: (u8, u8)) -> OnyxDef {
-        OnyxDef { hits: 4, first: 5, period: 5, obelisk, radius: 4, debris_hp: 3, offline_turns: 3, meters: 30 }
+        OnyxDef { hits: 4, first: 5, period: 5, silo_day: 3, obelisk, radius: 4, debris_hp: 3, offline_turns: 3, meters: 30 }
     }
 }
 

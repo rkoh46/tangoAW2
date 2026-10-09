@@ -281,3 +281,69 @@ def bh_campaign_second_front_named_unit_alive_at_the_start(ctx):
     tf.end_round(e, d, each=each)
     ctx.check("The carrier is down." not in seen, f"no victory scene without a death ({seen})")
     ctx.check(e.u8(tf.SECOND) in (1, 2), "the second front was fought (it may be won by AW2's own rout, without the scene)")
+
+
+@test(modes=("ds",))
+def bh_campaign_own_cannons_spare_the_players_units(ctx):
+    """Black Hole's minicannons and Laser owned by the player (army 1 in a
+    two-army mission, army 5 in a five-army one) never hurt the player's own
+    units: over three days no unit of the player's army loses HP (a Tank with
+    no ammo of each computer army stands still, so nothing else hurts them).
+    (The Laser hits every unit on its row and column, the owner's too, by design: the
+    player's units stand off its lines.)"""
+    for mission, five in ((17, False), (18, True), (19, True)):  # (missions 18-20: f18, f19, f20 the fortress)
+        e, g, d = boot_features(ctx)
+        d.picks = {mission: 0}
+        d.start_at(won_mask=((1 << mission) - 1) & ~(1 << 5), unlocked_mask=1)
+        d.pick_mission()
+        d.wait_map()
+        g._units_base = g._players_base = None
+        ctx.eq(d.mission(), mission, f"mission {mission + 1}")
+        per = 51 if five else 64
+        raw = lambda: e.read(g.units_base, 12 * 256)
+
+        def mine():
+            r = raw()
+            out = {}
+            for uid in range(256):
+                rec = r[12 * uid:12 * uid + 12]
+                if rec[0] and uid % per and uid // per + 1 == (5 if five else 1):
+                    out[uid] = (rec[4] | rec[5] << 8) & 0x7F
+            return out
+        before = mine()
+        ctx.require(before, "the player's units")
+        if five:
+            # (the allies' four turns come first: day 1)
+            for _ in range(900):
+                if e.u16(DAY) == 1 and e.u16(0x030033EC) == 5 and not d.scripts_running():
+                    break
+                if d.scripts_running():
+                    e.press("A", 4)
+                e.wait(10)
+            d.wait_control()
+            ctx.eq({k: v for k, v in mine().items() if v < before.get(k, 0)}, {}, f"mission {mission + 1}, day 1: no unit of the player lost HP ({mine()} from {before})")
+        if mission == 19:
+            # The fortress (the player's Onyx, silos with the allies' foot
+            # soldiers): their first turns bring no launch before day 3, so
+            # the satellite is whole and the debris has not fallen on anyone.
+            for _ in range(130):
+                if d.scripts_running():
+                    e.press("A", 4)
+                e.wait(30)
+            ctx.eq(e.u8(0x0203FFC9), 4, "the Onyx has all its hits on day 1")
+            ctx.eq({k: v for k, v in mine().items() if v < before.get(k, 0)}, {}, "no unit of the fortress lost HP on day 1")
+            e.close()
+            continue
+        for day in range(2, 5):
+            e.press("B", 4)
+            d.end_turn()
+            for _ in range(900):
+                if e.u16(DAY) == day and not d.scripts_running() and e.u16(0x030033EC) == (5 if five else 1):
+                    break
+                if d.scripts_running():
+                    e.press("A", 4)
+                e.wait(10)
+            e.w8(0x0200D4A0, e.u8(0x0200D4A0))
+            d.wait_control()
+            ctx.eq({k: v for k, v in mine().items() if v < before.get(k, 0)}, {}, f"mission {mission + 1}, day {day}: no unit of the player lost HP ({mine()} from {before})")
+        e.close()

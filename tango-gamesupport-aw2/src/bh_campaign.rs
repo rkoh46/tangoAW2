@@ -511,6 +511,70 @@ pub fn features_def() -> CampaignDef {
     y.needs = Needs::All(vec!["f01"]);
     y.flag = region::BLACK_HOLE[1];
 
+    // Black Hole's cannons owned by the player (army 5 in a five-army mission, army 1 in a
+    // two-army one) must never hurt the player's own units.
+    let own_cannons = |key: &'static str, five: bool| {
+        let mut q = MissionDef::new(key, "Features Own Cannons");
+        q.objective = "Test: the player's cannons spare the player's units.";
+        if five {
+            q.map = MapSrc::Built("bh_five");
+            q.armies = vec![
+                ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)),
+                ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)),
+                ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)),
+                ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)),
+                ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+            ];
+            q.structures = vec![(Structure::MiniCannonRight, 5, 7), (Structure::MiniCannonLeft, 9, 9), (Structure::Laser, 3, 5), (Structure::BlackCannonDown, 7, 3), (Structure::BlackCannonUp, 8, 12), (Structure::Deathray, 13, 8), (Structure::Volcano, 12, 4)];
+            q.units = vec![
+                // (APCs: no weapon at all; a Tank's machine gun needs no ammo)
+                UnitDef::new(1, unit::APC, 3, 2).hold(),
+                UnitDef::new(2, unit::APC, 12, 2).hold(),
+                UnitDef::new(3, unit::APC, 3, 12).hold(),
+                UnitDef::new(4, unit::APC, 12, 12).hold(),
+                UnitDef::new(5, unit::TANK, 6, 7),
+                UnitDef::new(5, unit::TANK, 8, 9),
+                UnitDef::new(5, unit::INFANTRY, 7, 8),
+                UnitDef::new(5, unit::INFANTRY, 4, 7),
+            ];
+        } else {
+            q.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..........", "..........", ".........2"]);
+            q.armies = vec![
+                ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+                ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+            ];
+            q.structures = vec![(Structure::MiniCannonRight, 0, 2), (Structure::Laser, 2, 4), (Structure::BlackCannonDown, 6, 1), (Structure::Deathray, 8, 3)];
+            q.units = vec![
+                UnitDef::new(1, unit::MD_TANK, 0, 0),
+                UnitDef::new(1, unit::TANK, 1, 1),
+                UnitDef::new(1, unit::INFANTRY, 1, 3),
+                UnitDef::new(1, unit::TANK, 3, 3),
+                UnitDef::new(2, unit::APC, 9, 5).hold(),
+            ];
+        }
+        q.needs = Needs::All(vec!["f01"]);
+        q.flag = region::BLACK_HOLE[2];
+        q
+    };
+    // Mission 28 of the design, as the act V builder has it (its map file, five armies, teams, Onyx, Volcano).
+    let mut z = MissionDef::new("f20", "Features Fortress");
+    z.objective = "Test: the fortress of five armies.";
+    z.map = MapSrc::Built("bh28");
+    z.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::RACHEL)).team(1).funds(12000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1).funds(12000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(1).funds(12000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1).funds(12000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::CLONE_ANDY)).funds(16000),
+    ];
+    z.look = 2;
+    z.onyx = Some(OnyxDef::new((16, 14)));
+    z.volcano = Some(VolcanoDef::new(3, 1, 5, &[(25, 15), (27, 15), (29, 15)]));
+    z.needs = Needs::All(vec!["f01"]);
+    z.flag = region::BLACK_HOLE[4];
+    let own2 = own_cannons("f18", false);
+    let own5 = own_cannons("f19", true);
+
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
@@ -519,8 +583,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y],
-        final_mission: "f17",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z],
+        final_mission: "f20",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }, Bond { co: co::KOAL, quote: "Bond test: an extra." }],
         extra_bonds: 1,
         secret_mission: "f06",
