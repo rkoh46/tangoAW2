@@ -103,7 +103,7 @@ fn credits() -> Vec<CreditSection> {
         sec("THE CAST", &["ADDER", "The Profile", "CLONE ANDY", "The Name"], false),
         sec("THE CAST", &["NELL", "The Gate", "ANDY", "The Wrench"], false),
         sec("ALSO STARRING", &["CMDR. PIP \"CRUMB\"", "HOBB", "GERALD", "The Biscuit"], false),
-        sec("ALSO STARRING", &["SGT. MORTAR", "PVT. WICK", "DENNIS THE TANK", "INTEREST THE ROOSTER"], false),
+        sec("ALSO STARRING", &["SGT. MORTAR", "PVT. WICK", "DENNIS", "INTEREST THE ROOSTER"], false),
         sec("THE AUDITOR", &["SONJA", "Who read every ledger", "S."], true),
         sec("THE ACCORD", &["MAX, SAMI, GRIT", "KANBEI, SENSEI", "GRIMM, JAVIER", "JESS, EAGLE, DRAKE"], false),
         sec("THE ACCORD", &["OLAF, SASHA, COLIN", "JAKE, RACHEL, HACHI"], false),
