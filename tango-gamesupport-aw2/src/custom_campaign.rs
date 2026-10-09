@@ -389,6 +389,10 @@ pub struct UnitDef {
     pub fuel: u8,
 }
 
+/// [`UnitDef::ai`] of a unit that stands still ([`UnitDef::stand`]): role 0 (0 itself means
+/// "no order": a spawned unit keeps the default role).
+pub const STAND: u8 = 0xFE;
+
 /// "Full": more than any type holds, so the loader caps it to the type's maximum.
 pub const FULL: u8 = 99;
 
@@ -412,6 +416,14 @@ impl UnitDef {
     }
     pub const fn hold(mut self) -> UnitDef {
         self.ai = 1;
+        self
+    }
+    /// Stands still: role 0, AW2's hold (a deployed unit with no order is role 0 as well, and
+    /// a unit a trigger spawns would otherwise have the default role 1, which goes for the
+    /// enemy HQ). Foot soldiers with role 0 are held by the engine ([`ai_unit`]); no fuel
+    /// trick is needed.
+    pub const fn stand(mut self) -> UnitDef {
+        self.ai = STAND;
         self
     }
     pub const fn named(mut self, name: &'static str) -> UnitDef {
@@ -924,13 +936,27 @@ pub const UNLOCK: u32 = 0xBCD0_0000;
 /// [`TAG_UNIT`] | army (x | y << 8 | tag << 16): the unit just spawned on (x, y)
 /// gets its name's tag ([`TAG_AT`] of its record).
 pub const TAG_UNIT: u32 = 0xBCA0_0000;
-/// A unit record's spare bytes (never written by AW2 or the pack): +7 the tag of
-/// a unit a trigger spawned with a name, +8 the last day a march moved it.
-const TAG_AT: u32 = 7;
+/// A side table in emulated RAM (EWRAM the game and the other modules never touch,
+/// `0x0203F3A0..0x0203F400`): the unit record has no byte free for every type (+7 and
+/// +8 are an APC's cargo). Per spawned name (its tag 1..=24): the unit's id, its type;
+/// per march of the mission (0..32): the last day it moved. Cleared when a mission is
+/// chosen ([`reset_side`]); a mission saved halfway does not keep it (a resumed
+/// battle's spawned names are not found again).
+const SIDE: u32 = 0x0203_F3A0;
+const SIDE_SLOT: u32 = SIDE;
+const SIDE_KIND: u32 = SIDE + 24;
+const SIDE_MARCH: u32 = SIDE + 48;
+const SIDE_END: u32 = SIDE + 80;
+
+/// A mission is chosen: the side table is empty.
+pub fn reset_side(core: &mut Core) {
+    for a in (SIDE..SIDE_END).step_by(2) {
+        core.raw_write_16(a, -1, 0);
+    }
+}
 /// [`FIELDS_UNIT`] | hp (x | y << 8 | fuel << 16 | ammo << 24): what a spawned
 /// unit's [`UnitDef`] sets beyond the full-strength default (HP, ammo, fuel).
 pub const FIELDS_UNIT: u32 = 0xBCB0_0000;
-const MARCH_DAY_AT: u32 = 8;
 /// A named unit's `Rules::units` slot of 100 + n is the n-th unit its mission
 /// spawns (tag n): found by its tag, not by a slot.
 const SPAWNED: u8 = 100;
@@ -1105,7 +1131,7 @@ fn deployment(
                 return Err(format!("unit hp {} out of 1..=100", u.hp));
             }
             // (the map record: +4 HP, +5 ammo, +6 fuel, as five/map.py writes it)
-            out.extend_from_slice(&[u.x, u.y, u.kind, 0, u.hp, u.ammo, u.fuel, 0, 0, u.ai, 0, 0]);
+            out.extend_from_slice(&[u.x, u.y, u.kind, 0, u.hp, u.ammo, u.fuel, 0, 0, if u.ai == STAND { 0 } else { u.ai }, 0, 0]);
         }
     }
     out.extend_from_slice(&[0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
@@ -1846,8 +1872,10 @@ pub fn unit_by_name(core: &Core, name: &str) -> Option<(u32, bool)> {
 }
 
 /// The unit standing for a spawned name: the record carrying its tag.
-fn tagged(core: &Core, army: u8, tag: u8) -> Option<u32> {
-    (1..=50u8).map(|s| unit_addr(core, army, s)).find(|&a| core.raw_read_8(a, -1) != 0 && core.raw_read_8(a + TAG_AT, -1) == tag)
+fn tagged(core: &Core, _army: u8, tag: u8) -> Option<u32> {
+    let slot = core.raw_read_8(SIDE_SLOT + tag as u32 - 1, -1) as u32;
+    let a = core.raw_read_32(UNITS_PTR, -1) + UNIT * slot;
+    (slot != 0 && core.raw_read_8(a, -1) == core.raw_read_8(SIDE_KIND + tag as u32 - 1, -1)).then_some(a)
 }
 
 /// The record of the unit standing on (x, y).
@@ -1939,6 +1967,7 @@ pub fn tick(core: &mut Core) {
                 latch |= 1 << b;
             } else if latch >> b & 1 != 0 {
                 latch |= 1 << (b + 1);
+                core.raw_write_8(SIDE_SLOT + (slot - SPAWNED) as u32 - 1, -1, 0);
             }
         } else if core.raw_read_8(unit_addr(core, army, slot), -1) == 0 {
             latch |= 1 << b;
@@ -1951,10 +1980,9 @@ pub fn tick(core: &mut Core) {
     jams(core);
 }
 
-/// A unit record's role byte (every unit starts with role 1: advance on the enemy HQ) and
-/// its hold byte (+9: the deployment's AI byte, 1 stays put).
+/// A unit record's role byte (+0x0B: the deployment's AI byte; 0 holds, 1 goes for the enemy HQ)
+/// and +9 (set by the game for a unit that has no fuel).
 const ROLE_AT: u32 = 0x0B;
-const AI_AT: u32 = 0x09;
 /// The AI's current unit (a pointer to its record).
 const CURRENT_UNIT: u32 = 0x0300_40D8;
 /// After role 1's call that finds the place to go (`sub_08058F90`): the place is at
@@ -1985,6 +2013,69 @@ pub fn goal_hook(core: &mut Core) {
 
 /// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
 /// is the one trap, and calls this first.)
+
+/// The computer's turn per unit (`sub_0805D438`), just after the unit's record is
+/// in r4 and before its flag test: AW2's role 0 / hold byte leaves Infantry and
+/// Mechs free to walk off and capture neutral cities, and its own logic moves a
+/// marching unit (an APC loads soldiers and drives off its route).
+///   - a foot soldier with role 0 (the deployment's AI byte 0, AW2's hold: its role
+///     code does nothing) is skipped while no enemy is next to it (zeroing its fuel
+///     does not stop it); with one next to it AW2 plays it as it does;
+///   - a unit a scripted march moves ([`MarchDef::role`] 0) is skipped (AW2's
+///     own skip of a unit that has acted).
+/// (trapped by [`crate::unit_actions`]'s behaviour row, one trap an address, which calls [`ai_unit`])
+const AI_SKIP: u32 = 0x0805_D4A6;
+
+pub fn ai_unit(core: &mut Core) {
+    if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
+        return;
+    }
+    let u = core.gba().cpu().gpr(4) as u32;
+    if u < 0x0200_0000 || core.raw_read_8(u, -1) == 0 {
+        return;
+    }
+    let mission = crate::ds_campaign::mission(core) as usize;
+    if let Some(list) = custom_of(core).and_then(|c| c.marches.get(mission)) {
+        let names: Vec<&'static str> = list.iter().filter(|m| m.role == 0).map(|m| m.name).collect();
+        if names.iter().any(|n| unit_info(core, n).is_some_and(|(a, alive, _)| alive && a == u)) {
+            core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
+            return;
+        }
+    }
+    let kind = core.raw_read_8(u, -1);
+    if !army_out(core) && (kind == 1 || kind == 2) && core.raw_read_8(u + ROLE_AT, -1) == 0 && !enemy_adjacent(core, u) {
+        core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
+    }
+}
+
+/// The army moving has given up or is defeated (its flags +0x31 / +0x14: AW2 then ends its
+/// units' turns its own way, which no skip may get in the way of).
+fn army_out(core: &Core) -> bool {
+    let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+    let p = crate::five::players(core) + PLAYER * army;
+    core.raw_read_8(p + 0x31, -1) != 0 || core.raw_read_16(p + 0x14, -1) != 0
+}
+
+/// An enemy unit (another team's) stands on a cell next to the unit.
+fn enemy_adjacent(core: &Core, u: u32) -> bool {
+    let base = core.raw_read_32(UNITS_PTR, -1);
+    let stride = if crate::five::active(core) { 51 } else { 64 };
+    let players = crate::five::players(core);
+    let team = |a: u32| core.raw_read_8(players + PLAYER * a + 0x2A, -1);
+    let mine = (u - base) / UNIT / stride + 1;
+    let (x, y) = (core.raw_read_8(u + 2, -1) as i32, core.raw_read_8(u + 3, -1) as i32);
+    let (w, h) = (core.raw_read_16(MAP, -1) as i32, core.raw_read_16(MAP + 2, -1) as i32);
+    [(1, 0), (-1, 0), (0, 1), (0, -1)].iter().any(|&(dx, dy)| {
+        let (nx, ny) = (x + dx, y + dy);
+        if nx < 0 || ny < 0 || nx >= w || ny >= h {
+            return false;
+        }
+        let row = core.raw_read_16(MAP + 0x417A + 2 * ny as u32, -1) as u32;
+        let id = core.raw_read_8(MAP + 0x12 + row + nx as u32, -1) as u32;
+        id != 0 && (1..=5).contains(&(id / stride + 1)) && id / stride + 1 != mine && team(id / stride + 1) != team(mine)
+    })
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     Vec::new()
 }
@@ -2014,18 +2105,19 @@ fn marches(core: &mut Core) {
         return;
     }
     let (day, army) = (day(core), core.raw_read_16(CURRENT_ARMY, -1) as u8);
-    for m in list {
+    for (k, m) in list.into_iter().enumerate().take(32) {
         let Some((a, alive, owner)) = unit_info(core, m.name) else { continue };
+        let day_at = SIDE_MARCH + k as u32;
         if m.role != 0 {
             if alive && a != 0 && core.raw_read_8(a + ROLE_AT, -1) != m.role {
                 core.raw_write_8(a + ROLE_AT, -1, m.role);
             }
             continue;
         }
-        if !alive || owner != army || day < m.from || core.raw_read_8(a + MARCH_DAY_AT, -1) == day as u8 {
+        if !alive || owner != army || day < m.from || core.raw_read_8(day_at, -1) == day as u8 {
             continue;
         }
-        core.raw_write_8(a + MARCH_DAY_AT, -1, day as u8);
+        core.raw_write_8(day_at, -1, day as u8);
         let at = (core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1));
         let Some(i) = m.path.iter().position(|&p| p == at) else { continue };
         let id = ((a - core.raw_read_32(UNITS_PTR, -1)) / UNIT) as u8;
@@ -2236,10 +2328,12 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             let (x, y, tag, ai) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8, (packed >> 24) as u8);
             if let Some(a) = unit_on(core, x, y) {
                 if tag != 0 {
-                    core.raw_write_8(a + TAG_AT, -1, tag);
+                    let slot = (a - core.raw_read_32(UNITS_PTR, -1)) / UNIT;
+                    core.raw_write_8(SIDE_SLOT + tag as u32 - 1, -1, slot as u8);
+                    core.raw_write_8(SIDE_KIND + tag as u32 - 1, -1, core.raw_read_8(a, -1));
                 }
                 if ai != 0 {
-                    core.raw_write_8(a + AI_AT, -1, ai);
+                    core.raw_write_8(a + ROLE_AT, -1, if ai == STAND { 0 } else { ai });
                 }
             }
             0

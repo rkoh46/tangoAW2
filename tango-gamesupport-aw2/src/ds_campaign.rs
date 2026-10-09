@@ -582,6 +582,7 @@ fn sync_mission(core: &mut Core) {
     core.raw_write_8(MISSION, -1, m as u8);
     core.raw_write_8(MISSION_SET, -1, 1);
     core.raw_write_32(COUNTDOWN, -1, 0);
+    crate::custom_campaign::reset_side(core);
     crate::ds_campaign_rules::mte_start(core);
 }
 
@@ -1316,6 +1317,10 @@ pub fn map_start(core: &mut Core) {
     crate::setup_phase::map_start(core, player_picks(main) && main.native.as_ref().is_none_or(|n| n.setup));
     crate::two_front::map_start(core);
     crate::onyx::map_start(core);
+    // (a battle's first day, the main front: the custom campaign's side table starts empty)
+    if core.raw_read_16(0x0300_4080, -1) <= 1 && !crate::two_front::second_live(core) {
+        crate::custom_campaign::reset_side(core);
+    }
 }
 
 /// The map's look (crate::wasteland): the mission's, or a second front's

@@ -608,7 +608,7 @@ pub fn features_def() -> CampaignDef {
     // (0,2) is jammed until day 4.
     let mut v = MissionDef::new("f21", "Features March");
     v.objective = "Test: marches, a named spawn, a jammed cannon.";
-    v.map = MapSrc::Ascii(&["1...........", "......f.....", "............", "............", "..........2."]);
+    v.map = MapSrc::Ascii(&["1........c..", "......f.....", "............", "........c...", "..........2."]);
     v.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
@@ -617,11 +617,13 @@ pub fn features_def() -> CampaignDef {
     v.units = vec![
         UnitDef::new(1, unit::MD_TANK, 0, 0),
         UnitDef::new(2, unit::TANK, 4, 0).hold().fuel(0).named("walker"),
-        UnitDef::new(2, unit::INFANTRY, 7, 0).hold().fuel(0).named("blocker"),
+        UnitDef::new(2, unit::INFANTRY, 7, 0).named("blocker"),
         UnitDef::new(2, unit::TANK, 3, 2).hold().fuel(0),
         UnitDef::new(2, unit::RECON, 1, 4).named("driven"),
+        // (held foot soldiers with a neutral city in reach: they stay, with full fuel)
+        UnitDef::new(2, unit::MECH, 6, 3),
     ];
-    v.triggers = vec![on_day_spawn(2, vec![UnitDef::new(2, unit::APC, 4, 1).hold().fuel(0).named("truck")])];
+    v.triggers = vec![on_day_spawn(2, vec![UnitDef::new(2, unit::APC, 4, 1).named("truck"), UnitDef::new(2, unit::INFANTRY, 7, 3).stand()])];
     v.marches = vec![
         MarchDef::new("walker", &[(4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0)], 2),
         MarchDef::speed("truck", &[(4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1), (10, 1), (11, 1)], 6),
