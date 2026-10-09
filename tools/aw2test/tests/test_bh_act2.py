@@ -948,3 +948,117 @@ def bh_act2_m8_send_to_the_second_front(ctx):
     e.wait(240)
     a2.pic(ctx, e, "m8_send_arrival")
     e.close()
+
+
+# --- what the CPU does, day by day (opt-in probe: AW2TEST_ACT2_PROBE=1) -------------------------------
+PROBE = os.environ.get("AW2TEST_ACT2_PROBE")
+PROD = (10, 11, 14)      # airport, port, base (terrain kinds)
+
+
+def census(g, d):
+    """Per enemy army: units, funds, properties by kind; production tiles under a unit."""
+    import struct
+    w, h = d.size()
+    out = {}
+    for army in range(2, 5):
+        us = g.units(army)
+        if not us:
+            continue
+        props = {}
+        occupied = 0
+        for y in range(h):
+            for x in range(w):
+                c = g.terrain_class(x, y)
+                if c >> 5 == army and c & 0x1F in (6, 8, 10, 11, 14, 20):
+                    props[c & 0x1F] = props.get(c & 0x1F, 0) + 1
+                    if c & 0x1F in PROD and (g.unit_at(x, y) or {}).get("army") == army:
+                        occupied += 1
+        funds = struct.unpack_from("<I", g.player(army)["raw"], 0)[0]
+        out[army] = {"units": {u["id"]: (u["x"], u["y"], u["type"], u["hp"]) for u in us}, "funds": funds, "props": props, "blocked": occupied}
+    return out
+
+
+def _probe(n):
+    def fn(ctx):
+        from aw2test.harness import Skip
+        if not PROBE:
+            raise Skip("AW2TEST_ACT2_PROBE not set")
+        e, g, d, _ = ready(ctx, n)
+        prev = census(g, d)
+        start = {a: dict(v["units"]) for a, v in prev.items()}
+        a2.pic(ctx, e, f"m{n}_day1")
+        for day in range(2, 7):
+            a2.to_day(e, g, d, day)
+            cur = census(g, d)
+            for a, v in cur.items():
+                p = prev.get(a, {"units": {}, "props": {}})
+                moved = sum(1 for i, u in v["units"].items() if i in p["units"] and u[:2] != p["units"][i][:2])
+                built = len([i for i in v["units"] if i not in p["units"]])
+                lost = len([i for i in p["units"] if i not in v["units"]])
+                hurt = sum(1 for i, u in v["units"].items() if i in p["units"] and u[3] < p["units"][i][3])
+                still = {}
+                for i, u in v["units"].items():
+                    if i in p["units"] and u[:2] == p["units"][i][:2]:
+                        still[u[2]] = still.get(u[2], 0) + 1
+                ctx.log(f"PROBE M{n} day{day} army{a} still {still}: units {len(v['units'])} moved {moved} new {built} lost {lost} hurt {hurt} funds {v['funds']} props {v['props']} blocked {v['blocked']}")
+            prev = cur
+            if day == 4:
+                a2.pic(ctx, e, f"m{n}_day4")
+        a2.pic(ctx, e, f"m{n}_day6")
+        e.close()
+    fn.__name__ = f"bh_act2_probe_m{n}"
+    test(modes=("ds",))(fn)
+
+
+for _n in MISSIONS:
+    _probe(_n)
+
+
+# --- the enemy acts: every mission, over days 2 to 5 -------------------------------------------------------------
+# (builds: the missions where an enemy army has a base, airport or port; M5 and M9 are pre-deployed, with none)
+BUILDS = {4, 6, 7, 8, 10, 11}
+
+
+def _acts(n):
+    def fn(ctx):
+        """The CPU moves most of its units, strikes or captures, and (where it has a base) buys: units moved on day 2,
+        units hurt, properties gained and new units over days 2 to 5; the garrison (M5's two guards and the parked
+        aircraft, M9's four yard guards) is not counted."""
+        e, g, d, _ = ready(ctx, n)
+        prev = census(g, d)
+        start = prev
+        moved = built = hurt = gained = 0
+        first = None
+        for day in range(2, 6):
+            try:
+                a2.to_day(e, g, d, day)
+            except Exception as ex:      # (an idle player can lose on the way: M8's HQ, M9's trucks)
+                ctx.log(f"M{n}: ended on day {day - 1}: {ex}")
+                break
+            cur = census(g, d)
+            for a, v in cur.items():
+                p = prev.get(a)
+                if not p:
+                    continue
+                m = sum(1 for i, u in v["units"].items() if i in p["units"] and u[:2] != p["units"][i][:2])
+                moved += m
+                if first is None:
+                    first = (m, len(p["units"]))
+                built += len([i for i in v["units"] if i not in p["units"]])
+                hurt += sum(1 for i, u in v["units"].items() if i in p["units"] and u[3] < p["units"][i][3])
+                gained += max(0, sum(v["props"].values()) - sum(p["props"].values()))
+            prev = cur
+        a2.pic(ctx, e, f"m{n}_enemy_day5")
+        free = first[1] - {5: 10, 9: 4}.get(n, 0)      # (the units that are not a garrison or parked)
+        ctx.log(f"M{n}: day 2 moved {first[0]} of {first[1]}; days 2-5: new units {built}, units hurt {hurt}, properties gained {gained}")
+        ctx.check(first[0] >= free // 2, f"M{n}: at least half of the free units moved on day 2 ({first[0]} of {free})")
+        ctx.check(built + hurt + gained > 0, f"M{n}: the enemy built, struck or captured")
+        if n in BUILDS:
+            ctx.check(built > 0, f"M{n}: the enemy bought units ({built})")
+        e.close()
+    fn.__name__ = f"bh_act2_m{n}_the_enemy_acts"
+    test(modes=("ds",))(fn)
+
+
+for _n in MISSIONS:
+    _acts(_n)

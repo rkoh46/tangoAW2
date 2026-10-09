@@ -86,13 +86,13 @@ fn built_units(name: &str) -> Vec<UnitDef> {
 // A unit's deployment AI byte is its role (docs/AW2.md, "Goals"): 0 holds where it stands, 1 goes for the enemy HQ,
 // 3 for the enemy's properties, 4 for its units, 6 does not move at all (M5's parked aircraft). The map files
 // carry no roles; the missions give them here: foot soldiers go for properties, armour, recon, aircraft and ships
-// for units, and the indirect fire and Anti-Air hold (they fire from where they stand), plus a deliberate
-// garrison at each mission's chokepoints, gates, hold-points and HQ (the map files' `hold` flag marks them).
+// for units (indirect fire and Anti-Air too: they follow the front); the only garrisons are M5's HQ and Com Tower
+// guards and M9's yard guard (`garrison`). Transports keep role 0 (their own loading logic).
 
 fn role_of(kind: u8) -> u8 {
     match kind {
         unit::INFANTRY | unit::MECH => 3,
-        unit::ARTILLERY | unit::ROCKETS | unit::MISSILES | unit::ANTI_AIR | unit::LANDER | unit::APC | unit::BLACK_BOAT => 0,
+        unit::LANDER | unit::APC | unit::BLACK_BOAT => 0, // (transports keep their own loading logic)
         _ => 4,
     }
 }
@@ -106,10 +106,8 @@ fn roles(units: Vec<UnitDef>, garrison: Option<&[(u8, u8)]>) -> Vec<UnitDef> {
         .into_iter()
         .map(|mut u| {
             if u.army != 1 && (u.ai == 0 || u.ai == 1) {
-                let holds = match garrison {
-                    Some(g) => g.contains(&(u.x, u.y)),
-                    None => u.ai == 1,
-                };
+                // (the map files' `hold` flag is not a garrison: only the cells a mission names hold)
+                let holds = garrison.is_some_and(|g| g.contains(&(u.x, u.y)));
                 u.ai = if holds { 0 } else { role_of(u.kind) };
             }
             u
