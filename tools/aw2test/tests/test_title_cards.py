@@ -67,6 +67,17 @@ def title_pixels(e):
 PAIRS = {11: [bh.STURM, bh.HAWKE], 14: [bh.STURM, bh.HAWKE]}
 
 
+def card_number(e):
+    """The number on the card ("MISSION n"): its digit sprites (y=8, x past 196; a digit's tile is 28 + 4 x digit), tens first."""
+    oam = e.read(OAM, 0x400)
+    digits = []
+    for k in range(128):
+        a0, a1, a2 = struct.unpack_from("<HHH", oam, 8 * k)
+        if a0 & 255 == 8 and (a0 >> 8) & 3 != 2 and (a1 & 511) >= 196 and (a1 & 511) < 240 and 28 <= (a2 & 1023) <= 64:
+            digits.append((a1 & 511, ((a2 & 1023) - 28) // 4))
+    return int("".join(str(d) for _, d in sorted(digits)) or "-1")
+
+
 def settle(e, d, k):
     """Plays the mission pick up to the card and until its name has typed out."""
     d.pick_mission()
@@ -99,6 +110,7 @@ def card_check(ctx, k, label):
     e, g, d = a2.boot(ctx, (1 << 30) - 1, 0xFFF | (0x1FF << 12), picks={}, at=k)
     if not ctx.check(settle(e, d, k), f"{label}: the mission card came up"):
         return
+    ctx.eq(card_number(e), k + 1, f"{label}: the card says MISSION {k + 1} (Free Play, every mission won)")
     pix = title_pixels(e)
     ctx.require(pix, f"{label}: the name's glyphs are on the card")
     xs, ys = [p[0] for p in pix], [p[1] for p in pix]
@@ -140,3 +152,13 @@ def title_card_ds_names_fit(ctx):
         w = sum(widths[c] + 1 for c in name if c in widths)
         ctx.check(w <= 224 - MARGIN, f"DS mission {i} {name!r}: {w} px of {224 - MARGIN}")
     ctx.check(n >= 28, f"{n} Dual Strike names read")
+
+
+@test(modes=("ds",))
+def title_card_number_first_play(ctx):
+    """A first play (only the missions before it won) says its own number too."""
+    for k in (1, 2):
+        e, g, d = a2.boot(ctx, (1 << k) - 1, 0xFFF, picks={}, at=k)
+        if ctx.check(settle(e, d, k), f"BH mission {k + 1}: the card came up"):
+            ctx.eq(card_number(e), k + 1, f"BH mission {k + 1}: first play says MISSION {k + 1}")
+        e.close()

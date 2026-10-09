@@ -791,7 +791,10 @@ fn mission_number(core: &mut Core) {
     }
     let mission = core.raw_read_8(MISSION, -1);
     let won = core.raw_read_32(P_WON, -1) & !(1 << mission);
-    return_to(core, won.count_ones() + 1);
+    // The BH Campaign's card says the mission's own number whenever it is played (Free Play, a replay, the secret
+    // M31); the DS Campaign's counts the missions won on a first play and is the mission's number on a replay.
+    let own = source(core) != 0 || core.raw_read_32(P_WON, -1) & (1 << mission) != 0;
+    return_to(core, if own { mission as u32 + 1 } else { won.count_ones() + 1 });
 }
 
 
