@@ -2351,7 +2351,7 @@ portrait, a palette; no HUD face, body or name) is every graphic:
 | CO select face (the Teams screen) | the trooper's face, as it is |
 | Teams portrait | the trooper's mini portrait, as it is |
 | HUD face (32x16) | a 32x16 cut of the face round the red lens (x 13, y 17), 1:1 |
-| CO page figure, power and tag screens (128x160) | the face grown three times with nearest neighbour (144 x 144), the 126 columns holding the helmet and the mask, framed with a one-pixel outline in the palette's darkest colour (corners cut), at y 12 (`Body::Big`); the last two rows stay empty (the tag screens carry a figure's last row down to the screen's foot: an outline there would be a bar). `Body::Small` (2x, 98x98 centred) and `Body::Bust` (3x, the upper 126 rows) are the other two composed; `Big` is used |
+| CO page figure, power and tag screens (128x160) | the face grown twice with nearest neighbour (96 x 96), framed with a one-pixel outline in the palette's darkest colour (corners cut, 98 x 98) and centred at y 24 (the user's choice among three: a 3x figure cut to 126 columns and a 3x head were the others); the last rows stay empty (the tag screens carry a figure's last row down to the screen's foot: an outline there would be a bar) |
 | Name "Crumb" | C of Colin's name graphic, then r, u, m of Sturm's and b of Kanbei's, outlines shared as in a name |
 | Palette | the trooper's in all eight schemes |
 

@@ -13,20 +13,17 @@
 //! | CO select face (3, as the game has them) | the trooper's face, as it is |
 //! | Teams portrait (mini) | the trooper's own mini portrait |
 //! | HUD face (32x16, the eyes) | a 32x16 cut of the face round the red lens, 1:1 |
-//! | CO page figure (128x160) | the face grown with nearest-neighbour ([`Body`]), framed |
+//! | CO page figure (128x160) | the face grown with nearest-neighbour, framed |
 //! | Power and tag screen figures | the same figure (AW2's own path for a CO without a Dual Strike figure) |
 //! | Name "Crumb" (48x16) | C of "Colin", u, r, m of "Sturm", b of "Kanbei", set side by side as in a name |
 //! | Palette | the trooper's, in all eight colour schemes |
 //!
 //! **The figure.** AW2 has no full body for a trooper, so the CO page's
-//! 128x160 picture is composed: [`Body::Big`] grows the face three times
-//! (144 x 144), cuts the 126 columns that hold the helmet and the mask, and
-//! frames it with a one-pixel outline in the palette's darkest colour with
-//! cut corners; [`Body::Small`] grows it twice (96 x 96) and frames that,
-//! centred; [`Body::Bust`] is the big one cut to the head and lower
-//! (126 x 126). The two bottom rows stay empty: the tag screens carry a
-//! figure's last row down to the screen's foot ([`crate::tag_screens`]) and
-//! an outline there would become a bar.
+//! 128x160 picture is composed: the face grown twice with nearest neighbour
+//! (96 x 96), framed with a one-pixel outline in the palette's darkest colour
+//! (corners cut) and centred. The two bottom rows stay empty: the tag screens
+//! carry a figure's last row down to the screen's foot
+//! ([`crate::tag_screens`]) and an outline there would become a bar.
 
 use mgba::core::Core;
 
@@ -45,20 +42,10 @@ const KANBEI: u32 = 6;
 /// The palette index of the outline: the darkest colour of every CO palette.
 const OUTLINE: u8 = 15;
 
-/// How the CO page's figure is composed from the face.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Body {
-    /// The face three times as large, 126 x 144 cut, framed (128 x 146).
-    Big,
-    /// The face twice as large, framed (98 x 98), centred.
-    Small,
-    /// Three times as large, the upper 126 rows, framed.
-    Bust,
-}
-
-/// The figure the game uses.
-pub const BODY: Body = Body::Big;
-
+/// The CO page's figure (also the power and tag screens'): the face twice as
+/// large (96 x 96), framed (98 x 98) and centred. (The user chose this over
+/// a three-times figure cut to 126 columns and a three-times head: the large
+/// ones filled the figure area but read as a cropped block.)
 /// A picture of palette indexes, 0 transparent.
 #[derive(Clone)]
 pub struct Px {
@@ -250,23 +237,11 @@ pub fn name(core: &Core) -> Option<Vec<u8>> {
     Some(out.to_tiles(6, 2, name_place))
 }
 
-/// The CO page's picture (128 x 160) for a way of composing it.
-pub fn figure(face: &Px, how: Body) -> Px {
+/// The CO page's picture (128 x 160): the face grown twice, framed, centred.
+pub fn figure(face: &Px) -> Px {
     let mut body = Px::new(128, 160);
-    match how {
-        Body::Big => {
-            let f = face.grown(3).cut(9, 0, 126, 144).framed();
-            body.put(&f, 0, 12);
-        }
-        Body::Small => {
-            let f = face.grown(2).framed();
-            body.put(&f, (128 - f.w) / 2, 24);
-        }
-        Body::Bust => {
-            let f = face.grown(3).cut(9, 0, 126, 126).framed();
-            body.put(&f, 0, 28);
-        }
-    }
+    let f = face.grown(2).framed();
+    body.put(&f, (128 - f.w) / 2, 24);
     body
 }
 
@@ -290,7 +265,7 @@ pub fn hud(face: &Px) -> Vec<u8> {
 }
 
 /// Crumb's pictures in AW2's formats (all of them cut from the trooper's).
-pub fn art_with(core: &Core, how: Body) -> Option<CoArt> {
+pub fn art(core: &Core) -> Option<CoArt> {
     let row = AW2_PRESENTATION + ROW * TROOPER;
     let face_tiles = |k: u32| lz10(&read(core, word(core, row + 0x0C + 4 * k), 0x600));
     let faces = [face_tiles(0)?, face_tiles(1)?, face_tiles(2)?];
@@ -304,7 +279,7 @@ pub fn art_with(core: &Core, how: Body) -> Option<CoArt> {
     for _ in 0..8 {
         palette.extend_from_slice(&one);
     }
-    let (body_top, body_bottom) = body_files(&figure(&face, how));
+    let (body_top, body_bottom) = body_files(&figure(&face));
     Some(CoArt {
         face: [
             faces[0][..crate::ds_co_art::FACE_LEN].to_vec(),
@@ -318,10 +293,6 @@ pub fn art_with(core: &Core, how: Body) -> Option<CoArt> {
         name: name(core)?,
         palette,
     })
-}
-
-pub fn art(core: &Core) -> Option<CoArt> {
-    art_with(core, BODY)
 }
 
 #[cfg(test)]
@@ -345,14 +316,14 @@ mod tests {
         for (i, v) in face.v.iter_mut().enumerate() {
             *v = (i * 7 % 15 + 1) as u8;
         }
-        for how in [Body::Big, Body::Small, Body::Bust] {
-            let f = figure(&face, how);
+        {
+            let f = figure(&face);
             let (top, bottom) = body_files(&f);
             assert_eq!(top.len(), crate::ds_co_art::BODY_TOP_LEN);
             assert_eq!(bottom.len(), crate::ds_co_art::BODY_BOTTOM_LEN);
             // The last two rows are empty (the tag screens carry the last
             // row down).
-            assert!((0..128).all(|x| f.at(x, 159) == 0 && f.at(x, 158) == 0), "{how:?}");
+            assert!((0..128).all(|x| f.at(x, 159) == 0 && f.at(x, 158) == 0), "the last rows");
         }
         let t = face.to_tiles(6, 6, face_place);
         assert_eq!(Px::from_tiles(&t, 6, 6, face_place).v, face.v);
