@@ -91,6 +91,7 @@ def bh_campaign_factory_counters_the_enemy(ctx):
         d.pick_mission()
         d.wait_map()
         ctx.eq(d.mission(), mission, f"mission {mission + 1}")
+        e.w8(0x0203FE6E, 0xA5)      # (the computer's march on the player's inventions off: six Bombers would destroy the factory first)
         e.w16(DAY, 7)
         d.end_turn()
         for _ in range(600):
