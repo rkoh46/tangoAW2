@@ -154,3 +154,40 @@ def _advance(n):
 
 for _n in (23, 26, 27):
     _advance(_n)
+
+
+# --- balance (AW2TEST_ACT5B_BALANCE=1): the CPU, or the test player (aw2test.bot), plays the player's side ---------
+BALANCE = os.environ.get("AW2TEST_ACT5B_BALANCE")
+BOT_OPTS = {26: dict(goals=[(4, 4), (4, 23), (33, 14)])}
+
+
+def _balance(n, how, seed=None):
+    def fn(ctx):
+        import json
+        from aw2test.harness import Skip
+        if not BALANCE:
+            raise Skip("AW2TEST_ACT5B_BALANCE not set")
+        title, won, picks, fog, size = MISSIONS[n]
+        mask = 0
+        for k in won:
+            mask |= 1 << a5.M[k]
+        e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
+        d.pick_mission()
+        d.choose_cos(len(picks), prefs=list(picks))
+        g._units_base = g._players_base = None
+        days = []
+        opts = dict(BOT_OPTS.get(n, {}))
+        if seed is not None:
+            opts["seed"] = seed
+        limit = 30
+        r = d.autoplay(limit + 3, log=days.append) if how == "cpu" else d.play(limit + 3, log=days.append, **opts)
+        r["log"] = days[-6:]
+        ctx.log(json.dumps(r, default=str))
+        e.close()
+    fn.__name__ = f"bh_act5b_balance_m{n}_{how}" + (f"_{seed}" if seed is not None else "")
+    test(modes=("ds",))(fn)
+
+
+_balance(26, "cpu")
+_balance(26, "bot")
+_balance(26, "bot", 1)

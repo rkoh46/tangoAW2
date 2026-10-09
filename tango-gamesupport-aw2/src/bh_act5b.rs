@@ -254,10 +254,10 @@ fn bh26() -> MissionDef {
     // Each ally's Infantry beside its HQ holds it (and Grimm's Fighters fly); the rest advance on BH.
     m.units = roles(built_units("bh26"), 1, &[(3, 3), (5, 3), (3, 21), (5, 22), (32, 13), (32, 15)]);
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(8000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(8000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::GRIMM)).team(2).funds(8000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(20000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(5000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(5000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::GRIMM)).team(2).funds(5000),
     ];
     m.day_limit = 30;
     m.rank_days = 20;

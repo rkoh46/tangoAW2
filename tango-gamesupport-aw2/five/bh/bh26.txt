@@ -24,6 +24,9 @@ unit 1 8 17 12
 unit 1 8 19 12
 unit 1 14 20 12
 unit 1 14 16 12
+unit 1 3 19 18
+unit 1 3 21 17
+unit 1 8 16 19
 unit 2 1 3 3
 unit 2 1 5 3
 unit 2 1 2 5
@@ -35,12 +38,6 @@ unit 2 11 2 4
 unit 2 10 4 6
 unit 2 1 9 5
 unit 2 2 9 6
-unit 2 5 10 4
-unit 2 1 11 4
-unit 2 3 12 6
-unit 2 14 10 2
-unit 2 5 8 8
-unit 2 8 12 4
 unit 3 1 3 21
 unit 3 1 5 22
 unit 3 2 4 20
@@ -51,13 +48,6 @@ unit 3 3 8 22
 unit 3 14 2 21
 unit 3 1 9 22
 unit 3 2 10 21
-unit 3 5 11 22
-unit 3 1 12 22
-unit 3 3 12 24
-unit 3 15 10 24
-unit 3 8 8 16
-unit 3 1 8 17
-unit 3 11 8 19
 unit 3 22 10 26
 unit 4 1 32 13
 unit 4 1 32 15
@@ -70,17 +60,8 @@ unit 4 10 33 16
 unit 4 14 34 15
 unit 4 1 28 9
 unit 4 2 28 11
-unit 4 5 28 12
-unit 4 1 28 16
-unit 4 3 28 17
-unit 4 5 27 15
-unit 4 8 30 6
-unit 4 1 30 21
-unit 4 2 28 22
 unit 4 16 34 14
 unit 4 16 35 15
-unit 4 16 34 11
-unit 4 17 35 13
 ..........^^....^^....^^....^^^^^^^^^^
 .ff....f.f..f...............^.^^.^^.^^
 ..RC..B.C.f..f...............^^.^^.^^.
