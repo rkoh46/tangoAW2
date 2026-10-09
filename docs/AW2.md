@@ -383,6 +383,13 @@ strike (`factory_hp::cpu_strikers`, a computer's factory hit by a unit already i
   the Obelisk (a kind 3 on tangoAW2's tile `0x193`), the minicannon (4), the Crystal (a 4 on tile `0x192`), the Laser (1)
   and the Deathray (5); the Grand Bolt's weak points and the Volcano are not. The square units aim at is the game's
   (`x + 1, y + 2` for a 3x3, the entry's corner for a 1x1, the middle of the factory's bottom row).
+- **Never your own side's** (`own_not_a_target`, a trap at `0x0803DF84` inside `sub_0803DF54`, the invention lookup, after it
+  found one): when the army moving is on the team of the army in Black Hole's colour (itself, a Versus team-mate, the BH
+  Campaign's allied armies) and the call comes from the attack menu, the cursor's targets or the attack itself
+  (`0x08020C2A`, `0x08041434`, `0x0804182E`), the lookup finds nothing, so no Fire and no red target square for any kind
+  (human or computer; the terrain panel's call stays, the hit points still show). AW2 itself offers Fire at an own
+  cannon, crystal or obelisk (the development byte `OFF` shows it: before this, a BH Campaign player's Artillery could
+  shoot its own Black Cannon); an enemy army's structures are as before. `test_own_inventions.py`.
 - **The Black Factory in the BH Campaign** now has 200 hit points as in Versus (`factory_hp::in_scope` takes in the BH
   Campaign), so the computer can destroy it: the game's hit and destroy steps, the wreck, doors that spawn nothing
   after. The player's own units cannot hit it (`target_position` gives the factory no square on the player's team's turn;

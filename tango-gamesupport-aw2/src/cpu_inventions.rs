@@ -787,8 +787,35 @@ fn goal_for(core: &mut Core, army: u32, owner: u32, u: u32) -> Option<(i32, i32)
     Some(goal)
 }
 
+/// Black Hole's inventions belong to the army in Black Hole's colour. The army moving now is on that army's
+/// team (itself, or an ally: a Versus team, the BH Campaign's allied armies).
+pub fn moving_army_is_inventions_team(core: &Core) -> bool {
+    let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+    (1..=5).contains(&army) && (1..=5u32).any(|a| colour(core, a) == BLACK_HOLE && team(core, a) == team(core, army))
+}
+
+/// `sub_0803DF54(x, y)`, the invention at an aimed-at square, after it found one (`ldrb r0, [r4, #4]`).
+const FIND_FOUND: u32 = 0x0803_DF84;
+const FIND_NONE: u32 = 0x0803_DF8E;
+/// The calls that collect what a unit may attack (the attack menu, the cursor's targets, the attack itself);
+/// the terrain panel's call (`0x0802B1CC`) stays, so an own structure's hit points still show.
+const FIND_CALLERS: [u32; 3] = [0x0802_0C2B, 0x0804_1435, 0x0804_182F];
+
+/// An army never targets its own or an allied army's invention: the lookup finds none for it.
+fn own_not_a_target(core: &mut Core) {
+    if !crate::ds_weather::is_on(core) || core.raw_read_8(DEV_OFF, -1) == OFF {
+        return;
+    }
+    let sp = core.gba().cpu().gpr(13) as u32;
+    let lr = core.raw_read_32(sp + 20, -1);
+    if !FIND_CALLERS.contains(&lr) || !moving_army_is_inventions_team(core) {
+        return;
+    }
+    core.gba_mut().cpu_mut().set_thumb_pc(FIND_NONE);
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(GOAL_HOOK, Box::new(goal_hook))]
+    vec![(GOAL_HOOK, Box::new(goal_hook)), (FIND_FOUND, Box::new(own_not_a_target))]
 }
 
 #[cfg(test)]
