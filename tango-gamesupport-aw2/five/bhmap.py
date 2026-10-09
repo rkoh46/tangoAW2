@@ -12,6 +12,10 @@ mountain is drawn by the rules learned from the game's own maps) with these
 lines more, before a map's rows:
 
     team 1 2 1 1 2          the armies' teams (default: every army its own)
+    split y 14              two-army maps: the first HQ's army owns the properties up to row 14, the second's the rest
+    owners 1 2              the armies whose HQs decide who owns each property (the nearest;
+                            default: every HQ), so a team-mate's second-stage HQ takes none
+    nohq                    open ground with no HQ at all (a sky front)
     objective 1 3           the armies that must reach every enemy HQ (default: army 1,
                             the player's; an army the computer holds back needs not)
     unit ARMY TYPE X Y [hp=1..100] [hold] [name=courier]
@@ -34,7 +38,8 @@ Checks (every problem is printed; the exit status is 1 if there is one):
     not reach;
   - no stranded island: land with properties or units that no army's
     ground units, and no Lander, can reach;
-  - no unit boxed in (every neighbour cell closed to it).
+  - no unit boxed in (every neighbour cell closed to it);
+  - every bridge end meets land a unit can cross (not a mountain, wood, structure, pipe or water).
 """
 import collections
 import os
@@ -55,7 +60,7 @@ UNIT_NAMES = {1: 'Infantry', 2: 'Mech', 3: 'Md Tank', 4: 'Megatank', 5: 'Tank', 
               15: 'Missiles', 16: 'Fighter', 17: 'Bomber', 18: 'Black Boat', 19: 'B Copter', 20: 'T Copter',
               21: 'Battleship', 22: 'Cruiser', 23: 'Lander', 24: 'Submarine', 26: 'Carrier', 27: 'Oozium'}
 STRUCTURE = set('SNWELvnFVDXO#')
-LAND_PROPS = set('HBCAPbcapTt12345')
+LAND_PROPS = set('HBCAPbcapTt12345Q')
 
 
 def passable(c, cls, around=''):
@@ -90,8 +95,18 @@ def parse(paths):
             if s.startswith('map '):
                 cur = s[4:].strip()
                 extra[cur] = {'units': [], 'team': None, 'objective': [1]}
+            if cur and s.strip() == 'nohq':
+                extra[cur]['nohq'] = True
+                continue
             if cur and s.startswith('objective '):
                 extra[cur]['objective'] = [int(x) for x in s.split()[1:]]
+                continue
+            if cur and s.startswith('split '):
+                f = s.split()
+                extra[cur]['split'] = (f[1], int(f[2]))
+                continue
+            if cur and s.startswith('owners '):
+                extra[cur]['owners'] = [int(x) for x in s.split()[1:]]
                 continue
             if cur and s.startswith('team '):
                 extra[cur]['team'] = [int(x) for x in s.split()[1:]]
@@ -239,6 +254,51 @@ def check_reach(m):
     return problems
 
 
+BRIDGE_BLOCKS = set('^f') | STRUCTURE | set('IZ')
+WATER = set('~r-,')
+
+
+def check_bridges(m):
+    """Every bridge end meets land a unit can cross: not a mountain, wood, structure, pipe or water (a bridge into the sea or
+    into a cliff is a bridge nobody can use). A bridge is a connected run of `=`; it crosses on the axis (columns or rows) whose
+    ends meet more land; each of its lanes (a column or row of it) has two ends, each of which must be crossable."""
+    rows = m['rows']
+    h, w = len(rows), len(rows[0])
+    inside = lambda x, y: 0 <= x < w and 0 <= y < h
+    ch = lambda x, y: rows[y][x] if inside(x, y) else '~'
+    seen, problems = set(), []
+    for y0 in range(h):
+        for x0 in range(w):
+            if rows[y0][x0] != '=' or (x0, y0) in seen:
+                continue
+            comp, todo = {(x0, y0)}, [(x0, y0)]
+            while todo:
+                x, y = todo.pop()
+                for X, Y in ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)):
+                    if inside(X, Y) and rows[Y][X] == '=' and (X, Y) not in comp:
+                        comp.add((X, Y))
+                        todo.append((X, Y))
+            seen |= comp
+
+            def lane_ends(vertical):
+                out = []
+                for k in {(c[0] if vertical else c[1]) for c in comp}:
+                    cells = sorted(c for c in comp if (c[0] if vertical else c[1]) == k)
+                    first, last = cells[0], cells[-1]
+                    if vertical:
+                        out += [(first, (k, first[1] - 1)), (last, (k, last[1] + 1))]
+                    else:
+                        out += [(first, (first[0] - 1, k)), (last, (last[0] + 1, k))]
+                return out
+            best = max((lane_ends(True), lane_ends(False)), key=lambda ends: sum(1 for _, e in ends if ch(*e) not in WATER))
+            for (bx, by), (ex, ey) in best:
+                c = ch(ex, ey)
+                if c in BRIDGE_BLOCKS or c in WATER or not inside(ex, ey):
+                    kind = 'a mountain' if c == '^' else 'a wood' if c == 'f' else 'water' if (c in WATER or not inside(ex, ey)) else f'{c!r}'
+                    problems.append(f'{m["name"]}: the bridge at ({bx}, {by}) ends at ({ex}, {ey}) in {kind}')
+    return problems
+
+
 def check_tiles(m, rom, edge, learned, rules):
     rows = mappy.tiles(m, edge)
     vs = tilecheck.violations(rows, learned, tilecheck.structure_cells(rows) | tilecheck.editor_sea(rows, rom)) + tilecheck.mountain_violations(rows, rules)
@@ -275,7 +335,7 @@ def main():
     out, problems = [], []
     for m in maps:
         rows, tp = check_tiles(m, rom, edge, learned, rules)
-        problems += tp + check_reach(m)
+        problems += tp + check_reach(m) + check_bridges(m)
         out.append((m, rows))
         print(f'{m["name"]}: {len(rows[0])}x{len(rows)}, {len(m["units"])} units')
     for p in problems:
