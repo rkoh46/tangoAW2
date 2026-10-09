@@ -320,14 +320,14 @@ fn bh28() -> MissionDef {
     m.units = roles(built_units("bh28"), 5, &[(2, 3), (4, 3), (32, 3), (30, 3), (2, 27), (4, 27), (32, 27), (30, 27), (8, 3), (28, 3), (8, 27), (29, 28)]);
     m.look = 2; // the Desert look (the Wasteland look paints water as lava: Blue Moon's river and coast stay water)
     let ally_funds = if still() { 0 } else { 12000 };
-    // Five armies: the player is the fifth (Black Hole), a tag pair (the natural one: Sturm and
-    // Clone Andy; the engine has no pick yet in five-army missions).
+    // Five armies: the player is the fifth (Black Hole) and picks a tag pair on the CO screen (any two
+    // recruited COs: the engine's five-army pair pick; Hawke suggests Sturm and Clone Andy).
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::RACHEL)).team(1).funds(ally_funds),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1).funds(ally_funds),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(1).funds(ally_funds),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1).funds(ally_funds),
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::CLONE_ANDY)).funds(16000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(16000),
     ];
     m.day_limit = 36;
     m.rank_days = 24;

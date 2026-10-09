@@ -145,7 +145,9 @@ enum Who {
 fn who_by_name(n: &str) -> Option<Who> {
     Some(match n {
         "NARRATION" => Who::Narrator,
-        "CRUMB" | "MORTAR" | "WICK" | "SOLDIER" => Who::Trooper,
+        "CRUMB" | "SOLDIER" => Who::Trooper,
+        "MORTAR" => Who::Co(crate::co_new::MORTAR_FACE),
+        "WICK" => Who::Co(crate::co_new::WICK_FACE),
         "SOLDIER OS" => Who::Soldier(colour::ORANGE_STAR),
         "SOLDIER BM" => Who::Soldier(colour::BLUE_MOON),
         "SOLDIER GE" => Who::Soldier(colour::GREEN_EARTH),
@@ -178,6 +180,8 @@ enum Group {
     Partner(Vec<u8>),
     /// Shown when the bond of this recruit (an index of [`BONDS`]) is earned.
     Bond(Vec<u8>),
+    /// Shown when this CO is not in the player's pair (`[CO]` and `[CO2]` are the pair's, as outside a group).
+    Without(u8),
 }
 
 fn leak(s: String) -> &'static str {
@@ -272,6 +276,23 @@ fn build(rows: &[(Group, Row)], pool: &[u8]) -> Result<Vec<Line>, String> {
                     }
                 }
             }
+            Group::Without(c) => {
+                for (_, r) in run {
+                    match r.who {
+                        Who::Player => {
+                            for &p in pool {
+                                out.push(one(r, Some(p), None).only(p).without(*c));
+                            }
+                        }
+                        Who::Partner => {
+                            for &p in pool {
+                                out.push(one(r, None, Some(p)).only_partner(p).without(*c));
+                            }
+                        }
+                        _ => out.push(one(r, None, None).without(*c)),
+                    }
+                }
+            }
             Group::Bond(ks) => {
                 for &k in ks {
                     for (_, r) in run {
@@ -337,6 +358,13 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
                 "OTHER" => Group::Other,
                 "WITH" => Group::With(parse_cos(rest).map_err(at)?),
                 "PARTNER" => Group::Partner(parse_cos(rest).map_err(at)?),
+                "WITHOUT" => {
+                    let v = parse_cos(rest).map_err(at)?;
+                    if v.len() != 1 {
+                        return Err(at("@WITHOUT takes exactly one CO".into()));
+                    }
+                    Group::Without(v[0])
+                }
                 "BOND" => Group::Bond(parse_cos(rest).map_err(at)?.into_iter().map(|c| BONDS.iter().position(|b| b.co == c).map(|k| k as u8).ok_or(at(format!("{c} has no bond")))).collect::<Result<_, _>>()?),
                 "END" => Group::Always,
                 w => return Err(at(format!("unknown directive @{w}"))),

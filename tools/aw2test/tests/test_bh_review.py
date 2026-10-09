@@ -134,7 +134,7 @@ def enter(ctx, n):
     # (M28: the computer holds and has no funds, see bh_act5b::still; this console's variable, not the process's:
     # tests run in parallel in one process)
     env = {"TANGOAW2_BH_STILL": "1"} if n == 28 else None
-    mask = (1 << (min(n, 30) - 1)) - 1       # (M31 with M30 unwon: a finished campaign is in Free Play and the cursor starts on M1)
+    mask = (1 << (n - 1)) - 1                # (M31: the finale, M30, won and all nine bonds)
     e, g, d = boot(ctx, mask, roster, {n - 1: len(picks)}, n - 1, env)
     ctx.log(f"M{n}: record before entering: won {d.won():#x} unlocked {d.unlocked()} bonds {d.bonds():#x} flags {d.map_flags()}")
     if picks:

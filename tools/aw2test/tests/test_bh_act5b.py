@@ -25,10 +25,10 @@ MISSIONS = {
 
 
 def won_mask(n):
-    """The missions won before M<n>. M31 opens with the nine bonds, M30 still unwon: with the finale won the campaign is in
-    Free Play and the world map's cursor starts on the first mission instead of the record's step."""
+    """The missions won before M<n> (M31 opens after the finale, M30, is won and all nine bonds are earned: the campaign is then
+    in Free Play, the record's step is M31 and the cursor waits on it)."""
     mask = 0
-    for k in range(1, 30 if n == 31 else n):
+    for k in range(1, n):
         mask |= 1 << a5.M[k]
     return mask
 
@@ -283,3 +283,22 @@ def bh_act5b_m27_lash_fixed_and_clone_andys_bond_is_unconditional(ctx):
     ctx.eq((d.bonds() >> 8) & 1, 1, "Clone Andy's bond is earned")
     ctx.check(bh.CLONE_ANDY in d.unlocked(), "Clone Andy joins")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_act5b_m31_gate_needs_the_finale_and_all_nine_bonds(ctx):
+    """M31 (after the war) is on the world map only when M30 is won AND all nine recruit bonds are earned: not after M28 alone,
+    not with a bond missing, not with M30 unwon."""
+    cases = [
+        ("M30 won, nine bonds", range(1, 31), 0xFFF | BONDS, 1),
+        ("M30 won, eight bonds", range(1, 31), 0xFFF | (0xFF << 12), 0),
+        ("M30 unwon, nine bonds", range(1, 30), 0xFFF | BONDS, 0),
+        ("M28 won only, nine bonds", range(1, 29), 0xFFF | BONDS, 0),
+    ]
+    for name, won, unlocked, want in cases:
+        mask = sum(1 << a5.M[k] for k in won)
+        e, g, d = a5.boot(ctx, mask, unlocked, picks={}, at=None)
+        d.wait_world_map()
+        flags = d.map_flags()
+        ctx.eq(flags[a5.M[31]] & 1, want, f"{name}: M31 is {'open' if want else 'not open'} on the map (flag {flags[a5.M[31]]})")
+        e.close()

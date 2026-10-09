@@ -13,7 +13,7 @@ from aw2test.harness import test
 APC = 7
 DOCK = (38, 10)            # a dock tile (the dock's land is x 38..39, y 9..11)
 BH_HQ = (3, 20)
-WON = list(range(1, 30))   # (M30 unwon: with the finale won the campaign is Free Play and the world map's cursor starts on M1)
+WON = list(range(1, 31))   # (M31 opens after the finale, M30, is won and all nine bonds are earned)
 ROSTER = 0xFFF | (0x1FF << 12)
 
 

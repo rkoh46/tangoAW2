@@ -51,23 +51,10 @@ JUGGER: OBJECTIVE: QUAY. FLEET: / TO BE DELETED. LOGGED.
 @IF FLAK
 FLAK: Big water! Hard water! Flak / smashes the ice! Then the boats!
 @END
-@IF LASH
-LASH: Ooh, ooh, frozen boats! I / have a Hot Foot Mk 2 for this!
-LASH: It is a kettle. On a stick. / Heehee! It is very advanced!
 @END
-@IF ADDER
-ADDER: Snow, moonlight, my left / profile. The harbour is mine.
-ADDER: Mind the cape. Salt ruins / silk, and I will not forgive it.
 @END
-@IF CLONE ANDY
-CLONE ANDY: Okay. Okay! Ice, a / harbour... I can fix any--
-CLONE ANDY: ...a bridge. Maybe. I / will fix a bridge, sir. Okay!
 @END
-@IF SONJA
-SONJA: Harbour fees, forty years / unaudited. A tidy place to start.
 @END
-@IF CRUMB CO
-CRUMB CO: Quay by dawn, ma'am! / ...Sorry. I forgot I was in charge.
 @END
 
 == m20_day8
@@ -100,8 +87,6 @@ JUGGER: SEA FRONT: CLEARED. SHIPS / REMAINING: ZERO. HUMOR: NOT FOUND.
 @PARTNER FLAK
 FLAK: Flak sank big boat! Big boat / was loud! Now it is quiet!
 @END
-@PARTNER LASH
-LASH: Ooh, the Kettle Mk 2 works! / Please do not ask how.
 @END
 
 == m20_post
@@ -215,27 +200,10 @@ FLAK: Flak out of bullets. Flak / still has fists.
 MAX: Ha! A big man! Come on!
 FLAK: Big man! Flak likes you! / Flak will hit you gently!
 @END
-@IF LASH
-LASH: No shells! Ooh, ooh, my / Spud Gun Mk 4 uses potatoes!
-LASH: They are not on the list of / ammunition. That is its charm!
 @END
-@IF ADDER
-ADDER: No ammunition and a dreadful / fog. My complexion will suffer.
-ADDER: Fall back, gentlemen. In / good order. And good lighting.
 @END
-@IF CLONE ANDY
-MAX: Andy?! No... you have the / face. But you are not Andy.
-CLONE ANDY: Okay. Okay! I'm not / him. I can fix any--
-CLONE ANDY: ...a retreat. I can fix / a retreat. Please do not hit me.
 @END
-@IF SONJA
-GRIT: Ain't you Kanbei's girl? / What are you doing in black?
-SONJA: Counting, Mr Grit. Your / shells are the thing I count.
-SONJA: Yours are nearly full. / Ours are nearly empty. S.
 @END
-@IF CRUMB CO
-MAX: Hey, a CO with a trooper's / face! Is this a joke?
-CRUMB CO: No, sir! I mean, I hope / not. Gerald thinks not.
 @END
 
 == m21_day3

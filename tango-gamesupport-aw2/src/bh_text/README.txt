@@ -16,6 +16,7 @@ Groups:       @IF STURM, HAWKE       rows shown only when the player leads Sturm
               @WITH HAWKE            rows shown when Hawke is in the player's pair (lead or partner)
               @PARTNER HAWKE         rows shown when the player's tag partner is Hawke ([CO2] inside means Hawke)
               @BOND HAWKE, KOAL      rows shown when the bond of Hawke / Koal / ... (their recruitment bond) is earned (the epilogue's toasts)
+              @WITHOUT CLONE ANDY    rows shown when that CO is NOT in the player's pair ([CO] and [CO2] are the pair's lead and partner; one CO only)
               @END                   back to rows everybody sees
               [CO] outside a group is said, for each CO of the pool, by that CO.
 Runs of boxes by one speaker are merged into one text by the compiler and equal texts share an id (budget: 3,072 text ids).

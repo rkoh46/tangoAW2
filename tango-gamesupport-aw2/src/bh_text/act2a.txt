@@ -145,27 +145,6 @@ HAWKE: I will send the invoice to / the ministry, Colonel.
 @IF HAWKE
 HAWKE: I picked the night. Do / not waste it.
 HAWKE: Eight pieces. Nine moves. / The board is already ours.
-@IF KINDLE
-KINDLE: Moonlight, darlings! A / bonfire needs a dark theatre.
-KINDLE: Eight planes, eight curtains. / Ahaha! Let them burn on cue!
-@IF JUGGER
-JUGGER: STATUS: NIGHT. TARGETS: 8. / FUEL: NEGLIGIBLE.
-JUGGER: ODDS: ACCEPTABLE. QUERY: IS / THE LANTERN A TARGET.
-@IF FLAK
-FLAK: Planes asleep. Flak smash / sleepy planes. Easy.
-FLAK: Flak not wake them first. / Flak not stupid. Much.
-@IF LASH
-LASH: Heehee! Sleepy planes! Ooh, / ooh, I brought the Boom-o-Matic!
-LASH: It makes the tarmac dance. / Nobody ask what it costs!
-@IF ADDER
-ADDER: A midnight raid. Moonlight / is so flattering to a profile.
-ADDER: Do mind my cape near the / fuel, darling. It is silk.
-@IF CLONE ANDY
-CLONE: Okay. Okay! Eight planes. / I can fix any--
-CLONE: ...Sorry. Habit. Breaking / them is new. I will manage.
-@IF SONJA
-SONJA: S. Eight aircraft, nine days. / Seven suffice if the tower falls.
-SONJA: A tower that hears at two miles / hears worse at three. I noted it.
 @OTHER
 [CO]: Eight aircraft. Nine days. / One tower. Begin at the runway.
 @END
@@ -207,16 +186,8 @@ JAVIER: My lord... your aircraft / are... on fire.
 EAGLE: ALL of them?! Who did this?!
 JAVIER: A man with excellent / manners.
 EAGLE: ...Hawke. HAWKE?!
-@IF KINDLE
-KINDLE: Ahaha! Did you hear him? / A performance! Encore, darlings!
 @IF VON BOLT
 VON BOLT: Burnt metal! Kehh-heh! / Send the scrap men at dawn.
-@IF JUGGER
-JUGGER: STATUS: 8 AIRCRAFT / DESTROYED. LOGGED.
-@IF CLONE ANDY
-CLONE: Did anybody get hurt, / ma'am? Sir? Anybody?
-HAWKE: Nobody who was awake.
-CLONE: ...Okay. Okay.
 @END
 STURM: The sky above the north / is open. Two coasts remain.
 STURM: Take the sea. Then take the / shipyard. Neither will wait.
@@ -257,30 +228,6 @@ STURM: The coast needs a bridge. / Build it from his isles.
 VON BOLT: No boats. I said no boats. / Boats are wet, and they sink.
 MORTAR: Sir, we have a Lander.
 VON BOLT: A Lander is a boat with / ideas!
-@IF KOAL
-KOAL: Five islands. No road. / I will lay the road in my mind.
-KOAL: Shoulders soft. Camber / wrong. Mind the lane, whoever it is.
-@IF KINDLE
-KINDLE: Salt air, darlings! It ruins / hair and spoils a good fire.
-KINDLE: Still, a burning Carrier / has such lovely light. Ahaha!
-@IF JUGGER
-JUGGER: STATUS: ISLANDS 5. ROUTE: / UNKNOWN. QUERY: IS WATER WET.
-JUGGER: ANSWER: AFFIRMATIVE. / LOGGED. CONTINUING.
-@IF FLAK
-FLAK: Flak not like boats. Boats / go up and down. Flak hungry.
-FLAK: Pelican look tasty. Flak / smash, then eat. Okay?
-@IF LASH
-LASH: Ooh, ooh, a fish gun! I / built a fish gun last week!
-LASH: It shoots the fish at the / boat. The fish is not consulted!
-@IF ADDER
-ADDER: Sea breeze in the cape. / It does flatter the line, no?
-ADDER: Pelican, move. You are in my / good light.
-@IF CLONE ANDY
-CLONE: Okay! Islands! I like / islands. I can fix any--
-CLONE: ...ships. Probably. Maybe? / I'll keep the wrench handy.
-@IF SONJA
-SONJA: S. Five stones, one current. / The odds favour whoever moves first.
-SONJA: I have charted the tides. / Drake has not. He will drown.
 @OTHER
 [CO]: Five islands. We take them / in order. Nothing is skipped.
 @END

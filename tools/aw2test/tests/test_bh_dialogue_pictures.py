@@ -77,9 +77,52 @@ def bh_dialogue_pictures_m27_post(ctx):
 
 @test(modes=("ds",))
 def bh_dialogue_pictures_m31_defection_and_secret_epilogue(ctx):
-    e, g, d = go(ctx, 31, FULL, [bh.STURM], wons=[22, 23, 24, 25, 26, 27, 28])
+    e, g, d = go(ctx, 31, FULL, [bh.STURM], wons=range(1, 31))
     after_intro(ctx, e, g, d, "m31")
-    ctx.require(d.force_win(), "M31: a forced win")
+    # (M31 is won when all three Vault Trucks are gone, by the mission's own rule: two destroyed on day 1 (their scene is
+    # clicked through), truck C appears on day 3, it is destroyed too, and an action lets the rule look)
+    def trucks():
+        g._units_base = g._players_base = None
+        return [u for u in g.units() if u["army"] == 2 and u["type"] == 7]
+
+    def act():
+        mine = next(u for u in g.units() if u["army"] == 1 and u["type"] == 1)
+        g.select(mine["x"], mine["y"])
+        g.goto(mine["x"], mine["y"])
+        e.press("A", 6)
+        g.wait_menu(g.ACTION_MENU)
+        names = g.menu()["names"]
+        g.choose(next(n for n in names if n.lower().startswith("wait")), g.ACTION_MENU)
+        e.wait(20)
+
+    ctx.log(f"mission {d.mission()} size {d.size()} armies {[len(g.units(a)) for a in (1,2)]} types2 {sorted(set(u['type'] for u in g.units(2)))}")
+    ts = trucks()
+    d.remove_unit(ts[0])
+    d.remove_unit(ts[1])
+    act()
+    for _ in range(100):
+        if not d.scripts_running():
+            break
+        e.press("A", 4)
+        e.wait(20)
+    a5.to_day(e, g, d, 3)
+    ts = trucks()
+    ctx.require(len(ts) == 1, "truck C appears on day 3")
+    e.wait(120)
+    d.remove_unit(ts[0])
+    e.wait(120)
+    g._units_base = g._players_base = None
+    act()
     paths = boxshots.shoot(ctx, e, d, "m31", patience=900, max_boxes=220, wait_map=True)
     check(ctx, "m31_post_to_epilogue", paths, 120)
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_dialogue_pictures_m1_post_and_map(ctx):
+    """M1's win (on_win: the rout shows its victory scene) and the camp scene with Crumb, Mortar and Wick (their own faces)."""
+    e, g, d = go(ctx, 1, 1, [])
+    after_intro(ctx, e, g, d, "m1")
+    ctx.require(d.force_win(), "M1: the enemy routed")
+    check(ctx, "m1_post_map", boxshots.shoot(ctx, e, d, "m1_post_map", patience=600, wait_map=True), 40)
     e.close()

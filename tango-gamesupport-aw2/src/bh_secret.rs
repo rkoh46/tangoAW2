@@ -128,7 +128,8 @@ fn bh31() -> MissionDef {
         Trigger::new(When::AfterAction, Cond::Not(Box::new(Cond::OwnerAt { x: 3, y: 20, army: 1 })), vec![Action::Lose]).repeating(),
         Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: 12 }, vec![Action::Lose]).repeating(),
     ];
-    m.needs = Needs::Bonds(vec!["bh28"]);
+    // After the war: the finale (M30) won and all nine recruit bonds earned.
+    m.needs = Needs::Bonds(vec!["bh30"]);
     m.recruits = vec![roster::SONJA];
     m.flag = region::BLACK_HOLE[2];
     m.stars = 4;

@@ -95,6 +95,9 @@ def rows(key, lead=None, partner=None, bonds=()):
         elif kind == "BOND":
             ok = any(BOND_ORDER.index(n) in bonds for n in names if n in BOND_ORDER)
             speaker = None
+        elif kind == "WITHOUT":
+            ok = names[0] not in (lead, partner)
+            speaker = lead
         else:
             raise ValueError(kind)
         if not ok:
@@ -108,7 +111,7 @@ def rows(key, lead=None, partner=None, bonds=()):
     return out
 
 
-TROOPERS = ("CRUMB", "MORTAR", "WICK", "SOLDIER")
+TROOPERS = ("CRUMB", "SOLDIER")      # (Mortar, Wick and the narration have faces of their own)
 
 
 def _face(who, mood):
@@ -144,6 +147,15 @@ def _lines(key):
                     out += [(_face(c, mood), ("partner", c), text) for c in pool]
                 else:
                     out.append((_face(who, mood), None, text))
+        elif kind == "WITHOUT":
+            w = names[0]
+            for _, who, mood, text in run:
+                if who == "[CO]":
+                    out += [(_face(c, mood), ("only_without", (c, w)), text) for c in pool]
+                elif who == "[CO2]":
+                    out += [(_face(c, mood), ("partner_without", (c, w)), text) for c in pool]
+                else:
+                    out.append((_face(who, mood), ("without", w), text))
         else:
             if kind == "OTHER":
                 cos = [c for c in pool if c not in named]
@@ -178,6 +190,12 @@ def scene(key, lead=None, partner=None, bonds=()):
             if kind == "partner" and c != partner:
                 continue
             if kind == "with" and c not in (lead, partner):
+                continue
+            if kind == "without" and c in (lead, partner):
+                continue
+            if kind == "only_without" and (c[0] != lead or c[1] in (lead, partner)):
+                continue
+            if kind == "partner_without" and (c[0] != partner or c[1] in (lead, partner)):
                 continue
             if kind == "bond" and not (c in BOND_ORDER and BOND_ORDER.index(c) in bonds):
                 continue

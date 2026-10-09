@@ -55,6 +55,43 @@ pub const CLONE_ANDY: u8 = FIRST + 9;
 /// ([`crate::crumb`]); Adder's place, music and CPU profile are his
 /// [`like`].
 pub const CRUMB: u8 = FIRST + 10;
+/// Face-only portraits for the BH Campaign's dialogue (not COs: no name, page or power): ids in the
+/// room after Crumb that the face tables have rows for. Mortar and Wick are the Black Hole
+/// trooper's face with its colours turned (Mortar's an olive green, Wick's an amber), and the
+/// narrator's is a blank portrait (the box with no face). Dialogue names them as faces of
+/// `co + 24 * expression` like any CO's.
+pub const MORTAR_FACE: u8 = FIRST + 11;
+pub const WICK_FACE: u8 = FIRST + 12;
+pub const NARRATOR_FACE: u8 = FIRST + 13;
+/// (face id, the hue the trooper's blue goes to in degrees, `None` for the blank face)
+const FACE_ONLY: [(u8, Option<f32>); 3] = [(MORTAR_FACE, Some(110.0)), (WICK_FACE, Some(38.0)), (NARRATOR_FACE, None)];
+
+/// A BGR555 colour with its hue moved so that the trooper's blue (about 220 degrees) lands on `to`.
+fn turn_hue(c: u16, to: f32) -> u16 {
+    let (b, g, r) = (((c >> 10) & 31) as f32 / 31.0, ((c >> 5) & 31) as f32 / 31.0, (c & 31) as f32 / 31.0);
+    let (mx, mn) = (r.max(g).max(b), r.min(g).min(b));
+    let d = mx - mn;
+    if d < 0.02 {
+        return c;
+    }
+    let mut h = if mx == r {
+        60.0 * (((g - b) / d) % 6.0)
+    } else if mx == g {
+        60.0 * ((b - r) / d + 2.0)
+    } else {
+        60.0 * ((r - g) / d + 4.0)
+    };
+    h = (h + (to - 220.0)).rem_euclid(360.0);
+    let (s, v) = (d / mx, mx);
+    let k = |n: f32| {
+        let t = (n + h / 60.0) % 6.0;
+        v - v * s * (t.min(4.0 - t)).clamp(0.0, 1.0)
+    };
+    let (r2, g2, b2) = (k(5.0), k(3.0), k(1.0));
+    let q = |x: f32| (x * 31.0 + 0.5).clamp(0.0, 31.0) as u16;
+    q(r2) | q(g2) << 5 | q(b2) << 10
+}
+
 /// The Dual Strike CO whose record fills the fields of Crumb's row nothing
 /// of his own is set for (Andy's neutral numbers, as Clone Andy's).
 const CRUMB_BASE: u8 = 2;
@@ -701,6 +738,30 @@ fn build(core: &Core) -> Option<Built> {
             strings.extend_from_slice(&text);
             strings.push(0);
             slots.push((TEXT_TABLE + 4 * text_id(co, which) as u32, at));
+        }
+    }
+    // The dialogue's face-only portraits: the Black Hole trooper's row, its palette turned (or its faces blanked).
+    let trooper = PRESENTATION_ROW as usize * 23;
+    for (id, hue) in FACE_ONLY {
+        let row = PRESENTATION_ROW as usize * id as usize;
+        let t = pres[trooper..trooper + PRESENTATION_ROW as usize].to_vec();
+        pres[row..row + PRESENTATION_ROW as usize].copy_from_slice(&t);
+        match hue {
+            Some(to) => {
+                let pal_at = u32::from_le_bytes(t[8..12].try_into().unwrap());
+                let mut pal = read(core, pal_at, crate::ds_co_art::PALETTE_LEN as u32);
+                for c in pal.chunks_exact_mut(2) {
+                    let v = turn_hue(u16::from_le_bytes([c[0], c[1]]), to);
+                    c.copy_from_slice(&v.to_le_bytes());
+                }
+                put32(&mut pres, row + 0x08, picture(&pal, false));
+            }
+            None => {
+                for f in 0..3 {
+                    put32(&mut pres, row + 0x0C + 4 * f, picture(&vec![0u8; crate::ds_co_art::FACE_LEN], true));
+                }
+                put32(&mut pres, row + 0x18, picture(&vec![0u8; crate::ds_co_art::MINI_LEN], false));
+            }
         }
     }
     if PICTURES + pictures.len() as u32 > STRINGS || STRINGS + strings.len() as u32 > SENTINEL {

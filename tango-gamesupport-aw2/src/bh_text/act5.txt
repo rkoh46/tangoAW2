@@ -85,11 +85,6 @@ ADDER: Lovely wall. Dreadful lighting. / Shall we fix that?
 ADDER: And you, big man, have wonderful / shoulders. Pity about the face.
 MAX: Hey!
 SAMI: Don't answer him, Max. He's / warming you up.
-@IF SONJA
-SONJA: Fifty units on the wall, and / four hundred on her books. A ledger.
-NELL: Sonja, dear. Does your father / know where you are?
-SONJA: He knows. He's writing back. / Eat well, wear a scarf.
-NELL: Then listen to him, dear.
 @IF CLONE ANDY
 CLONE ANDY: Andy's friends. They know / me. They won't talk to me.
 SAMI: ...That's not Andy.

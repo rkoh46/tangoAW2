@@ -3,6 +3,7 @@
 import os
 
 from aw2test import bhact3 as a3
+from aw2test import bhact4 as a4
 from aw2test import bhcampaign as bh
 from aw2test import dscampaign as dc
 from aw2test import ram
@@ -327,8 +328,8 @@ def bh_act3_m12_no_bond_without_an_affinity_co(ctx):
 
 @test(modes=("ds",))
 def bh_act3_m12_pair_pick_screen(ctx):
-    """M12 is a free pair: the CO screen asks twice (the pool is Sturm, Von Bolt, Hawke), the pair seats by CO id
-    (the higher id leads, whatever the pick order); the enemy is Koal + Grimm; the opening is the file's m12_pre for that pair."""
+    """M12 is a free pair: the CO screen asks twice (the pool is Sturm, Von Bolt, Hawke), the first pick leads and the
+    second is the partner (see test_bh_pair_seating.py); the enemy is Koal + Grimm; the opening is the file's m12_pre for that pair."""
     for pair in ([bh.STURM, bh.HAWKE], [bh.HAWKE, bh.STURM], [bh.VON_BOLT, bh.STURM], [bh.VON_BOLT, bh.HAWKE]):
         label = "+".join(a3.co_name(c) for c in pair)
         e, g, d, spec = load_mission(ctx, 12)
@@ -337,7 +338,7 @@ def bh_act3_m12_pair_pick_screen(ctx):
         ctx.require(e.wait_until(lambda: d.co_cursor() is not None, 300, step=10), f"{label}: the CO screen's cursor")
         offered = d.offered()
         ctx.eq(sorted(offered), sorted([bh.STURM, bh.VON_BOLT, bh.HAWKE]), f"{label}: the pool the screen offers (no Koal yet)")
-        got = d.choose_cos(2, prefs=list(pair))
+        got = a4.pick_cos(d, e, 2, list(pair))
         ctx.eq(got, pair, f"{label}: two screens, answered in order")
         for _ in range(600):
             if d.in_battle() and e.u32(0x0849_9598) != 0:
@@ -348,9 +349,7 @@ def bh_act3_m12_pair_pick_screen(ctx):
         d.wait_control()
         g._units_base = g._players_base = None
         lead, partner = lead_and_partner(g, e, 12)
-        # (the engine seats the pair by CO id, not by pick order: the higher id leads, so Sturm+Hawke and
-        # Hawke+Sturm give the same army)
-        ctx.eq((lead, partner), (max(pair), min(pair)), f"{label}: the two picks are the lead and the partner, whatever the pick order")
+        ctx.eq((lead, partner), tuple(pair), f"{label}: the first pick leads, the second is the partner")
         ctx.eq((g.player(2)["co"], tag.partner(e, 2)["co"]), (bh.KOAL, GRIMM), f"{label}: the enemy is Koal + Grimm")
         ctx.eq(texts, a3.played("m12_pre", lead, partner), f"{label}: the opening scene for this pair")
         e.close()

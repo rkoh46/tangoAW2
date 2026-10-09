@@ -51,13 +51,6 @@ JUGGER: MARRIAGE: NOT AUTHORIZED.
 KINDLE: A robot alone in a dark / foundry. Darling, the set designs itself.
 JUGGER: DARLING: UNDEFINED. SET: / A BUILDING. CORRECT?
 KINDLE: Ahaha! Never change.
-@WITH LASH
-LASH: Ooh, ooh! A walking / calculator! Can I open him up?
-JUGGER: NEGATIVE.
-LASH: Heehee! That is what they / all say, right up until they say yes.
-@WITH SONJA
-SONJA: A post never relieved. That / is a ledger line someone abandoned.
-SONJA: I should like to know / who signed it.
 @END
 [CO]: We are not here for you, Grit. / We are here for the foundry.
 GRIT: Reckon y'all want it bad. / Fella in there wants it worse.
@@ -118,10 +111,6 @@ JUGGER: ZERO: A STABLE NUMBER. / ...ACCEPTABLE.
 KINDLE: Darling, a stage with no / final curtain. A run that never ends.
 JUGGER: NO FINAL CURTAIN: / UNPRECEDENTED. ...AFFIRMATIVE.
 KINDLE: Ahaha! He understands / theatre better than the critics.
-@IF LASH
-LASH: Because I will take you apart / and put you back better! Heehee!
-JUGGER: PARTIAL DISASSEMBLY: / NEGATIVE. TOOLS: ...QUERY: WHICH?
-LASH: Ooh, ooh. All of them. Join / us before I change my mind!
 @OTHER
 [CO]: We give orders that never / expire. And we remember them.
 JUGGER: NEVER EXPIRE: / UNPRECEDENTED. ...AFFIRMATIVE.
@@ -206,19 +195,6 @@ FLAK: Flak not eat. Flak smash. / Then eat.
 KOAL: Four gate roads. Decent / surface. Mind the lane, brute.
 FLAK: What lane?
 KOAL: The one you will be knocked / down in.
-@IF LASH
-LASH: Ooh, ooh! The biggest arms I / ever saw! Can I measure them?
-FLAK: Tiny girl wants arms? / Flak shows!
-LASH: For science! And fun! Heehee!
-@IF ADDER
-ADDER: Not the face, darling. I / mean it. The face is the show.
-FLAK: Flak hits face LAST. Face / is pretty.
-ADDER: ...I am almost flattered.
-@IF CLONE ANDY
-CLONE: Okay. Okay! He's really, / really big. I can fix any--
-CLONE: ...Nope. Nothing about / this needs fixing. Okay.
-FLAK: Small man scared?
-CLONE: A little, sir. But I'm / doing it anyway.
 @OTHER
 [CO]: Twelve rounds. We will take / the throne long before the bell.
 FLAK: Hee! Boss talks big. / Flak likes boss.
@@ -280,18 +256,6 @@ FLAK: Flak follows roads!
 JUGGER: I CAN SCHEDULE MEALS. FOUR / PER DAY. PLUS SNACK.
 FLAK: Snack?!
 JUGGER: SNACK: LOGGED. NON-EXPIRING.
-@IF LASH
-LASH: Ooh, ooh! I will build you a / spoon! Eleven feet long! Heehee!
-FLAK: Spoon BIG?
-LASH: The biggest thing I ever / made! Well. Second biggest.
-@IF ADDER
-ADDER: Join us, darling. We have an / excellent buffet and flattering light.
-FLAK: Light good for eating?
-ADDER: Light is good for everything.
-@IF CLONE ANDY
-CLONE: Okay! There's a kitchen, / and a stove, and a chair for you.
-FLAK: Chair for Flak?
-CLONE: Reinforced! I checked. / Twice. I fixed it myself.
 @OTHER
 [CO]: Serve us. We offer endless / fights and food.
 FLAK: Endless fights... food... / Okay!

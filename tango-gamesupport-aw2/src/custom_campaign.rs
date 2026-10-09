@@ -208,18 +208,20 @@ pub struct Line {
     pub with: Option<u8>,
     /// Shown only when this hidden bond ([`CampaignDef::bonds`]) is earned (the epilogue's toasts).
     pub bond: Option<u8>,
+    /// Shown only when this CO is NOT in the player's pair (the rows for a pair without Clone Andy).
+    pub without: Option<u8>,
 }
 
 /// `Line::say(co::STURM, "...")`.
 impl Line {
     pub const fn say(co: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, Mood::Normal), text, only: None, partner: None, with: None, bond: None }
+        Line { who: Speaker::Co(co, Mood::Normal), text, only: None, partner: None, with: None, bond: None, without: None }
     }
     pub const fn feel(co: u8, mood: Mood, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, mood), text, only: None, partner: None, with: None, bond: None }
+        Line { who: Speaker::Co(co, mood), text, only: None, partner: None, with: None, bond: None, without: None }
     }
     pub const fn soldier(colour: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Trooper(colour), text, only: None, partner: None, with: None, bond: None }
+        Line { who: Speaker::Trooper(colour), text, only: None, partner: None, with: None, bond: None, without: None }
     }
     /// The line is shown only when the player's CO is `co`.
     pub const fn only(mut self, co: u8) -> Line {
@@ -236,6 +238,11 @@ impl Line {
         self.partner = Some(co);
         self
     }
+    /// The line is shown only when `co` is not in the player's pair.
+    pub const fn without(mut self, co: u8) -> Line {
+        self.without = Some(co);
+        self
+    }
     /// The line is shown only when hidden bond `k` is earned.
     pub const fn bond(mut self, k: u8) -> Line {
         self.bond = Some(k);
@@ -243,7 +250,7 @@ impl Line {
     }
     /// A narration box with no speaker.
     pub const fn narrate(text: &'static str) -> Line {
-        Line { who: Speaker::Narrator, text, only: None, partner: None, with: None, bond: None }
+        Line { who: Speaker::Narrator, text, only: None, partner: None, with: None, bond: None, without: None }
     }
 }
 
@@ -1013,7 +1020,8 @@ fn face(who: Speaker) -> u16 {
         Speaker::Co(c, m) => c as u16 + 24 * m as u16,
         // AW2's troopers: faces 19..23 by colour.
         Speaker::Trooper(col) => 19 + (col.clamp(1, 5) as u16 - 1),
-        Speaker::Narrator => 19 + 4,
+        // (a blank portrait: the box with no face)
+        Speaker::Narrator => crate::co_new::NARRATOR_FACE as u16,
     }
 }
 
@@ -1029,6 +1037,7 @@ pub struct Merged {
     pub partner: Option<u8>,
     pub with: Option<u8>,
     pub bond: Option<u8>,
+    pub without: Option<u8>,
 }
 
 /// A scene's lines with every run of boxes by one speaker (same face, same conditions) made one
@@ -1040,14 +1049,14 @@ pub fn merged(lines: &[Line]) -> Vec<Merged> {
     for l in lines {
         let n = l.text.split('\x0f').filter(|b| !b.is_empty()).count().max(1);
         if let Some(m) = out.last_mut() {
-            if m.who == l.who && m.only == l.only && m.partner == l.partner && m.with == l.with && m.bond == l.bond && boxes + n <= MERGE_BOXES {
+            if m.who == l.who && m.only == l.only && m.partner == l.partner && m.with == l.with && m.bond == l.bond && m.without == l.without && boxes + n <= MERGE_BOXES {
                 m.text.push('\x0f');
                 m.text.push_str(l.text);
                 boxes += n;
                 continue;
             }
         }
-        out.push(Merged { who: l.who, text: l.text.to_string(), only: l.only, partner: l.partner, with: l.with, bond: l.bond });
+        out.push(Merged { who: l.who, text: l.text.to_string(), only: l.only, partner: l.partner, with: l.with, bond: l.bond, without: l.without });
         boxes = n;
     }
     out
@@ -1075,7 +1084,7 @@ pub fn text_ids_used(def: &CampaignDef) -> usize {
             }
         }
     }
-    let prologue: Vec<Line> = def.prologue.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None }).collect();
+    let prologue: Vec<Line> = def.prologue.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None, without: None }).collect();
     scene(&Scene::new(prologue));
     seen.len() + 2 * def.missions.len()
 }
@@ -1152,6 +1161,10 @@ impl<'a> Compiler<'a> {
             }
             if let Some(k) = l.bond {
                 let stub = self.cond(self.mission, &Cond::Not(Box::new(Cond::BondEarned(k))));
+                out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
+            }
+            if let Some(co) = l.without {
+                let stub = self.cond(self.mission, &Cond::PlayerHas(co));
                 out.push(cmd(0x1E, REL_JUMP | 2, 0, 0, stub));
             }
             out.push(cmd(0x38, 0, face(l.who), 0, 0));
@@ -1477,7 +1490,7 @@ fn prologue_script(cx: &mut Compiler, pages: &[Page]) -> Result<u32, Error> {
     if cx.art != WorldArt::OmegaLand {
         // AW2's own map: the pages are dialogue boxes (a picture is drawn
         // over Omega Land's map layer only: AW2's is not rebuilt after one).
-        let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None }).collect();
+        let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None, without: None }).collect();
         let cmds = cx.scene_cmds(&Scene { lines, song: None })?;
         return Ok(cx.script(cmds));
     }

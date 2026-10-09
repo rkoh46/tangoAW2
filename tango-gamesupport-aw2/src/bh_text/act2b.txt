@@ -29,24 +29,6 @@ STURM: The dawn gate is mine. Let / the sea gate follow me.
 VON BOLT: Dawn. A river means bridges, / and bridges are tolls. Kehh...
 @IF HAWKE
 HAWKE: The dawn gate. Tempo belongs / to whoever opens the line first.
-@IF KOAL
-KOAL: Dawn. Two bridges, good shoulders. / Mind the lane.
-@IF KINDLE
-KINDLE: A gate at dawn, darlings! / Such lighting! I shall burn it nicely.
-@IF JUGGER
-JUGGER: STATUS: TWO GATES. ODDS: / ACCEPTABLE. DAWN GATE ASSIGNED.
-@IF FLAK
-FLAK: Dawn gate. Big gate. Flak / big too. Flak smash, boss!
-@IF LASH
-LASH: Ooh, ooh! Two gates, two tests! / Heehee! Door-Opener Nine, ready!
-@IF ADDER
-ADDER: Dawn, darlings. The gold light / does wonders for my profile.
-@IF CLONE ANDY
-CLONE ANDY: Okay. Okay! Dawn gate. I can / fix any-- I can take a gate, sir!
-@IF SONJA
-SONJA: The dawn road. I have counted / the bridges. There are two. S.
-@IF CRUMB CO
-CRUMB CO: Dawn gate, sir! Gerald says / breakfast first. Then the gate.
 @END
 [CO2]: And I take the dusk gate. Do / not wait for me. I will find you.
 HAWKE: Then the sword is split. / Begin.

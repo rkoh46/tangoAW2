@@ -155,7 +155,7 @@ CLONE: ...I know Andy. I know / Andy's moves. Okay!
 STURM: Then we take it back.
 STURM: Prepare my continent for / visitors.
 
-== m28_pre | STURM
+== m28_pre
 NARRATION: The Black Hole continent. / The Black Wastes. Home.
 NARRATION: Thirty years dark. A fence / of four banners, one at each shore.
 RACHEL: By the book: surround the / fortress. No gaps. No excuses.
@@ -174,55 +174,75 @@ HAWKE: The Onyx fires every fifth / day. Their silos are aimed at it.
 HAWKE: Four hits and it falls. And / hold the Obelisk Gate.
 HAWKE: If the Gate falls, so does / the war. Mount Ember wakes
 HAWKE: on the third day. Do not / stand on the east road.
+@WITH CLONE ANDY
 CLONE: What's that sound? A hum? / Like a fridge. A big one.
+@WITHOUT CLONE ANDY
+SOLDIER: Sir, what is that sound? A hum. / Like a very big engine.
+@END
 HAWKE: The Obelisk. It has done that / for thirty years.
 VON BOLT: Louder today. It knows / the little storm is home. Kehh...
 STURM: Von Bolt.
 VON BOLT: Just saying, Sturm. Just / saying. Prorated.
 STURM: This is my continent. Mine.
+@WITH CLONE ANDY
 CLONE: Is this where you're from? / It's... cosy.
+@WITHOUT CLONE ANDY
+SOLDIER: Is this where you're from, sir? / It's very... black.
+@END
 STURM: It is where I stand.
+@WITH CLONE ANDY
 CLONE: Okay. Okay! Cosy it is.
+@WITHOUT CLONE ANDY
+SOLDIER: Black it is, sir. Cosy enough.
+@END
 VON BOLT: Who is near my vault? / Kehh... who is NEAR my vault?
 CRUMB: Sir! I hold the flag at / the Obelisk!
 MORTAR: Crumb. Come back from / the Obelisk.
 CRUMB: Can't, Sergeant. I said I'd / hold it. Gerald's holding too.
 WICK: Is it all right if I hold / it from the bunker?
 
-== m28_day_5 | STURM
+== m28_day_5
 NARRATION: The Onyx fires. A white / column falls on the ridge.
 RACHEL: That's the satellite! The / book has no chapter on those!
 RACHEL: Rule four: do not lose! / ...Rule four is not helping!
 HAWKE: Five days. The Onyx keeps / excellent time.
 
-== m28_day_10 | STURM
+== m28_day_10
 OLAF: The Onyx! The sky is / watching! Fire at it!
 NARRATION: The Onyx fires again. / The ridge goes white.
 OLAF: It missed! ...It hit a hill! / Blue Moon takes that hill!
+@WITH CLONE ANDY
 CLONE: That was a big hill, sir.
+@WITHOUT CLONE ANDY
+SOLDIER: That was a big hill, sir.
+@END
 STURM: It was.
 
-== m28_day_15 | STURM
+== m28_day_15
 EAGLE: Silos! Launch! Take that / satellite down!
 EAGLE: Death from above--from / below! Up! Both!
 HAWKE: At last Captain Eagle flies / at something slower than himself.
 
-== m28_onyx_hit1 | STURM
+== m28_onyx_hit1
 EAGLE: Direct hit! One down! Keep / launching!
 VON BOLT: My lovely satellite is / bleeding! Who pays for that?!
 STURM: One.
 
-== m28_onyx_hit2 | STURM
+== m28_onyx_hit2
 OLAF: Two! The sky is cracking!
 HAWKE: The uplink thins. Watch the / Obelisk, Sturm.
 STURM: I am watching.
 
-== m28_onyx_hit3 | STURM
+== m28_onyx_hit3
 KANBEI: Three. Honour demands the / fourth.
+@WITH CLONE ANDY
 CLONE: They never stop, huh?
+@WITHOUT CLONE ANDY
+SOLDIER: They never stop, sir.
+@END
 STURM: Neither do we.
 
-== m28_onyx_destroyed | STURM
+== m28_onyx_destroyed
 NARRATION: The Onyx breaks apart / and falls in white fire.
 HAWKE: The uplink is gone. The / Obelisk is flickering.
 HAWKE: It does not like being cut / off. I would not stand near it.
@@ -231,13 +251,13 @@ OLAF: Ha! Down she goes!
 RACHEL: We did it! Rule... a rule! / Some rule! We did it!
 STURM: Hold the Gate.
 
-== m28_day_20 | STURM
+== m28_day_20
 KANBEI: Hold! Hold the line! / Honour is not ammunition!
 OLAF: Then what do we shoot?!
 KANBEI: Kanbei is working on that.
 EAGLE: Work faster, old man!
 
-== m28_post | STURM
+== m28_post
 RACHEL(s): Rule five. When / outnumbered... retreat.
 RACHEL(s): Rule five is a bad rule. / I wrote it myself.
 RACHEL(s): Sister... I tried. I / really tried.
@@ -256,10 +276,15 @@ HAWKE: how we fight at home. Every / one of them took notes.
 STURM: Let them. They will need / more than notes.
 VON BOLT: Is the vault safe? ...Is / the VAULT safe?!
 CRUMB(h): The flag is up, sir! / Gerald is safe!
+@WITH CLONE ANDY
 CLONE(h): And the Gate held, sir! / My first Gate!
+@WITHOUT CLONE ANDY
+SOLDIER(h): And the Gate held, sir! / The Obelisk too!
+@END
 STURM: The Gate held.
 
-== m28_map | STURM
+== m28_map
+@WITH CLONE ANDY
 CLONE: Sir? That was my first / home defence.
 STURM: It will not be the last.
 CLONE: ...Good. I like it here.
@@ -270,8 +295,19 @@ STURM: It was not meant kindly.
 CLONE: Okay! That's even better!
 LASH: Ooh, my clone has a / continent! Heehee!
 LASH: Don't lose him, Sturm! He's / a prototype! ...Please?
+@WITHOUT CLONE ANDY
+CRUMB: Sir? That was a proper home / defence. Gerald counted every gun.
+STURM: It will not be the last.
+CRUMB: No, sir. I will bring more / biscuit. Gerald insists.
+STURM: Stand where you like, Hobb. / It is mine and you walk on it.
+CRUMB(h): That's the nicest thing / anyone ever said to me, sir!
+STURM: It was not meant kindly.
+CRUMB: Even better, sir! Gerald / says so too!
+LASH: Ooh, a whole continent! Does / it have volcanoes? Heehee!
+LASH: Don't break it, Sturm! It's / the only one we've got!
+@END
 
-== m28_promotion | STURM
+== m28_promotion
 NARRATION: The Obelisk, at dusk. The / flag still stands. So does he.
 STURM: Hobb. Step forward.
 CRUMB: Sir! Yes, sir! Is it about / the flag, sir? I can explain!
@@ -310,9 +346,15 @@ STURM: You will command. Your men / will not run dry.
 STURM: I promote what I can use. / You are useful.
 CRUMB CO(h): Yes, sir! I mean, yes, / Commander sir! I mean...!
 CRUMB CO: Gerald, we're a CO!
+@WITH CLONE ANDY
 CLONE(h): Welcome to the table, / Commander! There's a chair!
 CLONE: It wobbles, but I can fix / any-- ...any chair! Any chair!
 LASH(h): He finished it! He / FINISHED it! Mark the calendar!
+@WITHOUT CLONE ANDY
+MORTAR: ...Welcome to the table, / Commander. The chair wobbles.
+WICK: Is it all right if I fix it? I / have a screwdriver. A small one.
+LASH(h): Ooh, a new CO! Does he / come with the biscuit? Heehee!
+@END
 STURM: The biscuit does not outrank / you.
 CRUMB CO: He outranks everybody, sir. / It's the age.
 STURM: ...Noted.

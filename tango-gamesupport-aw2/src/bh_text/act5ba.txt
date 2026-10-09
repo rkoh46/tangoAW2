@@ -64,26 +64,6 @@ MAX: You're the storm guy! The one / who knocked over Blue Moon!
 STURM: Stand aside, Max. Nell sent / a wall to stop a storm.
 MAX: Hammer! Sami's the wall! I'm / the hammer! Get it right!
 STURM: A hammer, then. It will do / as well.
-@IF ADDER
-ADDER: White walls, harsh light. / The camera would hate this place.
-LASH: I have eleven mirrors, all / evil! Do you want to see them?
-ADDER: ...Perhaps one. For the / profile.
-@IF LASH
-LASH: Heehee! The other Lash! Is / she me, or am I her?
-MAX: Doc, there are two of you. I / am quitting. I mean it this time.
-LASH: Then I get the whole lab! / Ooh, I win by being there first!
-@IF CLONE
-CLONE: Hello, Doctor Lash. Hello, / sir. I know this hall. Kind of.
-MAX: Do I know you? You've got / Andy's whole chin.
-CLONE: Just the chin, sir. I'm / working on the rest.
-@IF SONJA
-SONJA: Seventeen projects shut. A / board that closes a lab leaves
-SONJA: a paper trail. I would like / to read who signed. S.
-LASH: Ooh, a reader! Scary!
-@IF CRUMB CO
-CRUMB CO: Hello, ma'am. Hello, sir. / Please keep Oozium behind glass.
-LASH: He does not like glass!
-CRUMB CO: He is welcome to dislike / it from over there.
 @OTHER
 [CO]: Laboratory Seven. A guard and / a genius. Stay close together.
 MAX: Aw, they're polite. I hate / polite ones. They plan.
@@ -173,14 +153,6 @@ LASH: Smash my toys?! ...Okay, / maybe once. A little.
 @IF KINDLE
 KINDLE: Darling, we have a stage / big enough for explosions.
 LASH: Explosions with an audience! / Heehee! I accept!
-@IF LASH
-LASH: I beat myself! Heehee! Fine. / I accept me. Funding approved!
-@IF CLONE
-CLONE: We have a lot of room, Doctor. / And nobody tells you to stop.
-LASH: ...Ooh. That is a nice / thing for you to say.
-@IF CRUMB CO
-CRUMB CO: Ma'am, we have a mess / tent. It has soup. You may come.
-LASH: Soup! Ooh, a field test!
 @OTHER
 [CO]: Black Hole has no board. No / limits. No complaints.
 LASH: No complaints? That is / suspicious. I love it!
@@ -308,23 +280,6 @@ SAMI: You're the storm. You're / shorter than the posters.
 STURM: Posters are paid to flatter.
 ADDER: Ah! A man who understands / the business of lighting!
 STURM: I understand the business / of ownership.
-@IF ADDER
-ADDER: Another Adder. Splendid. We / shall share the cape.
-ADDER: ...No. We shall not. Not / even for the camera.
-SAMI: Great. Two of them.
-@IF CLONE
-CLONE: Hello, ma'am! I... I'm sorry. / I've got Andy's face.
-SAMI: ...Andy? Oh no. Not Andy.
-CLONE: Clone Andy, ma'am. I'm not / him. Just the face.
-SAMI: Roger. Don't make it weird.
-@IF SONJA
-SONJA: A gala is a list of names / under one banner. How helpful.
-SONJA: I would like the guest book, / please. For my files. S.
-ADDER: Oh! A fan!
-@IF CRUMB CO
-CRUMB CO: Ma'am, sir. I'm Crumb. / I'm in charge. It's very odd.
-SAMI: You don't have to say that / out loud, soldier.
-CRUMB CO: Thank you, ma'am.
 @OTHER
 [CO]: A gala is a stage with a / fence round it. We will take both.
 SAMI: Is that a threat? Because / I love those.
@@ -392,11 +347,6 @@ ADDER: The cape is not for sale!
 VON BOLT: Everything is for sale. / Name a number, dear.
 ADDER: ...A very high number.
 VON BOLT: Second pick of the / posters, and a deal. Kehh-heh!
-@IF ADDER
-ADDER: I beat myself. Remarkable. / I accept, of course.
-@IF CLONE
-CLONE: We need pilots. And we've / got a cape budget. Maybe.
-ADDER: ...A maybe cape budget? / How marvellous.
 @IF LASH
 LASH: I have a flying thing! It / has glitter! Join me, join me!
 ADDER: Glitter. ...Is it flattering?
@@ -407,13 +357,6 @@ JUGGER: BLACK HOLE HAS NO AIR FORCE. / SLOT: OPEN. SALARY: UNLIMITED.
 ADDER: Unlimited, you tin cupboard?
 JUGGER: ALSO: LIGHTING: CUSTOM.
 ADDER: Custom! Well. I did say / the villains lacked style.
-@IF SONJA
-SONJA: Stage, cape, applause. A / ledger of three entries.
-SONJA: You will be reasonably paid. / Lightly feared. S.
-ADDER: Lightly feared. Hm. I / shall improve on that.
-@IF CRUMB CO
-CRUMB CO: Mr. Adder, sir, we have / a mess tent. It has a mirror.
-ADDER: A mirror? Where?
 @OTHER
 [CO]: Black Hole has a sky and no / star to fly in it. Be our star.
 ADDER: A star. Hmm. Yes.
@@ -522,17 +465,6 @@ STURM: Then Orange Star will learn / how a harbour kneels.
 @IF ADDER
 ADDER: Sami, darling! A reunion. / You still have the boots.
 SAMI: And you still have the cape. / Grunts, hold the quay!
-@IF CLONE
-CLONE: Hi, Mr. Hachi! I've got... / Andy's face? I'm sorry.
-HACHI: Andy's face? Kid, you've / got a face. Mind it. It's yours.
-CLONE: ...Thanks, sir. I'll try.
-@IF SONJA
-SONJA: A shop whose ledgers sell to / both sides. I would like to read them.
-HACHI: No, no, no. Trade secrets.
-SONJA: Everything is a trade secret / until someone buys it. S.
-@IF CRUMB CO
-CRUMB CO: Hello, sir. Mr. Hachi. I'm / Crumb. I like your shop already.
-HACHI: A polite one! Rare. Take / a lollipop, kid. On the house!
 @OTHER
 [CO]: A harbour and a shop. Both / will be ours. Mind the tide.
 @END
@@ -556,7 +488,7 @@ HACHI: Because I'm closing it! / ...Probably. Someday.
 
 == m25_front2_won
 HACHI: Ouch, ouch! Not the till! / Not the till, kid!
-@PARTNER STURM, HAWKE, KOAL, SONJA
+@PARTNER STURM, HAWKE, KOAL
 [CO2]: The market is ours. Reporting / to the harbour.
 @PARTNER VON BOLT
 [CO2]: The market is mine. Kehh-heh! / The till is mine. The tea, too.
@@ -570,8 +502,6 @@ HACHI: Ouch, ouch! Not the till! / Not the till, kid!
 [CO2]: The market is ours, darling. / They gave us a standing ovation.
 @PARTNER ADDER
 [CO2]: The market is mine. A fine / venue. Wonderful lighting.
-@PARTNER CLONE ANDY, CRUMB CO
-[CO2]: Market's ours! Reporting to / the harbour!
 @END
 HACHI: Closing-down sale, concluded! / All sales final!
 SAMI(s): Hachi! They took the Atoll! / The whole market?
@@ -698,19 +628,6 @@ LASH: Always! Heehee! I'll mark / you down as variable one!
 ADDER: Children. A shame to hit / them.
 JAKE: Hey! I heard that, old man!
 ADDER: I am a gentleman, thank you. / And hardly old.
-@IF CLONE
-CLONE: Sirs! Hi! I'm... on the / other side. It's confusing.
-JAKE: Wait, you look like Andy! / Why do you look like Andy?
-CLONE: I'm Clone Andy, sir. It's... / I'll explain at three in the morning.
-@IF SONJA
-SONJA: Jake, Colin, Grimm. Three / names on a list. I've read them.
-SONJA: Orange Star's pride, Blue / Moon's heir, my father's fool.
-GRIMM: Hey! The fool is my / friend!
-SONJA: That is what I wrote. S.
-@IF CRUMB CO
-CRUMB CO: Hello, sirs! I'm Crumb. / This is Gerald. We're on the...
-CRUMB CO: ...other side, I think. / Please don't hit Gerald.
-JAKE: ...Okay. I won't hit the / biscuit.
 @OTHER
 [CO]: Three armies. One field. If / they hold, they hold together.
 JAKE: Ha! We'll hold! You watch!
@@ -789,12 +706,6 @@ FLAK: Small ones brave. Flak like.
 LASH: Ooh, they held hands! A / team! Teams are my favourite lab.
 @IF ADDER
 ADDER: Children and their blankets. / How moving. How very, very short.
-@IF CLONE
-CLONE: ...They held together. I / didn't know you could. Wow.
-@IF SONJA
-SONJA: A ledger of three nations, / one line. Worth a page. S.
-@IF CRUMB CO
-CRUMB CO: They held on, sir. I think / that counts. Gerald agrees.
 @OTHER
 [CO]: They fell back, but they / fell back together. Remember it.
 @END
