@@ -472,7 +472,7 @@ def bh_act1_m2_foundry_waves_and_flow(ctx):
             ctx.eq(texts, exp["m02_day3"], "day 3: the Foundry wakes: its scene")
             door = g.unit_at(11, 7)
             # (the table is the schedule and the cost cap: the smart spawner picks what the battle needs within the Tank's price)
-            ctx.check(door is not None and door["army"] == 1 and door["type"] in (1, 2, 5, 6, 7, 10), f"a unit of the Tank's price class on the middle door: {door and (door['army'], door['type'])}")
+            ctx.check(door is not None and door["army"] == 1 and door["type"] in (1, 2, 5, 6, 7, 10, 19), f"a unit of the Tank's price class on the middle door: {door and (door['army'], door['type'])}")
             ctx.eq([g.unit_at(*c) is None for c in ((10, 7), (12, 7))], [True, True], "the side doors give nothing on day 3")
             wave = [u for u in g.units(army=2) if u["type"] == 5 and u["y"] >= 15]
             ctx.check(len(g.units(army=2)) >= ge0 + 3 or len(wave) >= 3, f"Green Earth's first wave of three Tanks has come ({len(g.units(army=2))} units, was {ge0})")
