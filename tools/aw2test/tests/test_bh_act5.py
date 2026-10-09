@@ -580,6 +580,8 @@ def bh_act5_m30_takeover_proof(ctx):
     g._units_base = g._players_base = None
     mine = next(u for u in g.units(1) if u["type"] in (1, 2))
     d.place_unit(mine, 33, 7)
+    at = g.unit_addr(mine["id"]) + 4
+    e.w16(at, (e.u16(at) & ~0x7F) | 100)      # (full strength: a hurt capturer's two turns would not take a 20-point HQ)
     e.wait(10)
     g._units_base = g._players_base = None
     g.select(33, 7)
