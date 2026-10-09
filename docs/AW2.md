@@ -2341,19 +2341,33 @@ paid for (`PayForPower`'s entry, `0x0804438C`, writes it to `tag::STATE +
 0xD2`). The defeat quote is kept in text slot 14 (`co_new::T_DEFEAT`): AW2's
 results screen has no defeat quote.
 
-**Pictures** (`crumb_art.rs`, nothing stored: cut from the player's AW2 at the
-start, like Clone Andy's name). The Black Hole trooper of the campaigns'
-dialogue (CO presentation row 23: three alike 48x48 faces, a 32x24 mini
-portrait, a palette; no HUD face, body or name) is every graphic:
+**Pictures** (`crumb_art.rs`). Crumb's art is **original tangoAW2 art, drawn
+for him** and stored in the repository (`tango-gamesupport-aw2/art/crumb/<A|B|C>/`,
+4-bit indexed PNGs, one 16-colour palette with 0 transparent; the only art in
+the repo; drawn by `tools/crumb_art/`: `draw.py` the shape and shading helpers
+and the head, `bodies.py` the three figures, `build.py` writes the files and
+`TANGOAW2_CRUMB_ART=A|B|C|derived` picks another at run time, for pictures).
+A black-hole trooper in AW2's style: a dark helmet a size too big with a rank
+patch, a Black Hole emblem and a strip of tape, a gas mask with one round red
+lens, a purple-trimmed uniform, the Black Hole flag and Gerald (a biscuit with
+a face) in his breast pocket. A saluting with the flag on his shoulder, B
+arms crossed with the flag on his back, C a cheerful thumbs-up with Gerald
+big in the pocket (**C is used**, `crumb_art::DEFAULT_VERSION`). Pieces:
+`body.png` 128x160 (CO page, Power and Super Power screens, tag screens: the
+last rows are empty, the tag screens carry the last row down), `face_normal /
+happy / sad.png` 48x48, `mini.png` 32x24 (Teams), `hud.png` 32x16 (HUD); all
+pieces share the palette ([`crumb_art::drawn`] checks sizes, indexes and the
+palette, and falls back otherwise).
 
-| Graphic | Made of |
-|---|---|
-| CO select face (the Teams screen) | the trooper's face, as it is |
-| Teams portrait | the trooper's mini portrait, as it is |
-| HUD face (32x16) | a 32x16 cut of the face round the red lens (x 13, y 17), 1:1 |
-| CO page figure, power and tag screens (128x160) | the face grown twice with nearest neighbour (96 x 96), framed with a one-pixel outline in the palette's darkest colour (corners cut, 98 x 98) and centred at y 24 (the user's choice among three: a 3x figure cut to 126 columns and a 3x head were the others); the last rows stay empty (the tag screens carry a figure's last row down to the screen's foot: an outline there would be a bar) |
-| Name "Crumb" | C of Colin's name graphic, then r, u, m of Sturm's and b of Kanbei's, outlines shared as in a name |
-| Palette | the trooper's in all eight schemes |
+**Fallback** (`crumb_art::derived`): the pictures cut at run time from AW2's
+own Black Hole trooper (CO presentation row 23: three alike 48x48 faces, a
+32x24 mini, a palette; no HUD face, body or name): the face and mini as they
+are, the HUD a 32x16 cut round the red lens (x 13, y 17), the figure the face
+grown twice with nearest neighbour and framed with a one-pixel outline
+(98 x 98, centred at y 24).
+
+**Name "Crumb"** (both): C of Colin's name graphic, then r, u, m of Sturm's and b
+of Kanbei's, outlines shared as in a name.
 
 **BH Campaign.** `roster::CRUMB` (index 11) is in the roster; he is promoted
 at the end of M28 and offered from M29 on: M28's builder gives the mission
