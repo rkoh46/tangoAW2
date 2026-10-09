@@ -168,32 +168,76 @@ def review(ctx, n):
     w, h = d.size()
     ctx.log(f"M{n}: map {w}x{h}, other front {front}, fog {fog}")
     a2.pic(ctx, e, f"m{n}_setup")
-    for _ in range(6):
-        try:
-            g.goto(0, 0)
-            break
-        except Exception:
-            e.wait(150)
+    setup = bool(picks)                       # (the Setup banner is on the screen: its cells are left out of the sweeps)
+    pre = sweeps(ctx, e, g, d, n, "", BANNER if setup else None)
+    if setup and any(blank_cells(p) for p in pre.values()):
+        # The cells under the banner are filled from the same views after Deploy (the banner gone; terrain is fixed, and nothing
+        # has moved before the player's first move).
+        d.leave_setup()
+        a2.intro(ctx, e, d, f"m{n}", (0,))
+        d.wait_control()
+        g._units_base = g._players_base = None
+        post = sweeps(ctx, e, g, d, n, "post_", None)
+        for view, p in pre.items():
+            if view in post:
+                fill_blank(p, post[view])
+    for view, p in pre.items():
+        save(ctx, p, n, view)
+    e.close()
+
+
+def blank_cells(path):
+    import numpy as np
+    from PIL import Image
+    a = np.asarray(Image.open(path).convert("RGB"))
+    return [(x, y) for y in range(a.shape[0] // 16) for x in range(a.shape[1] // 16) if not a[16 * y:16 * y + 16, 16 * x:16 * x + 16].any()]
+
+
+def fill_blank(path, donor):
+    import numpy as np
+    from PIL import Image
+    a = np.asarray(Image.open(path).convert("RGB")).copy()
+    d = np.asarray(Image.open(donor).convert("RGB"))
+    for x, y in blank_cells(path):
+        a[16 * y:16 * y + 16, 16 * x:16 * x + 16] = d[16 * y:16 * y + 16, 16 * x:16 * x + 16]
+    Image.fromarray(a).save(path)
+
+
+def sweeps(ctx, e, g, d, n, tag, exclude):
+    """The mission's whole-map pictures (fog on and off, the second front): {view: path}."""
+    from aw2test import stitch
+    title, roster, picks, fog, front = M[n]
+    w, h = d.size()
+    out = {}
+
+    def home():
+        for _ in range(6):
+            try:
+                g.goto(0, 0)
+                return
+            except Exception:
+                e.wait(150)
+    home()
     if fog:
-        p = stitch.stitch(Sweep(ctx), g, f"m{n}_fogon", w, h, exclude=BANNER)
-        save(ctx, p, n, "fogon")
+        out["fogon"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}fogon", w, h, exclude=exclude)
         unfog(g, e)
-        g.goto(0, 0)
-        p = stitch.stitch(Sweep(ctx), g, f"m{n}_fogoff", w, h, exclude=BANNER)
-        save(ctx, p, n, "fogoff")
+        home()
+        out["fogoff"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}fogoff", w, h, exclude=exclude)
     else:
-        p = stitch.stitch(Sweep(ctx), g, f"m{n}", w, h, exclude=BANNER)
-        save(ctx, p, n, "full")
+        out["full"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}full", w, h, exclude=exclude)
     if front:
         from aw2test import twofront as tf
-        ctx.require(tf.look_at_other_front(e, g), f"M{n}: the other front is shown")
-        w2, h2 = d.size()
-        ctx.log(f"M{n}: second front {w2}x{h2}")
-        a2.pic(ctx, e, f"m{n}_front2_view")
-        g.goto(0, 0)
-        p = stitch.stitch(Quiet(ctx), g, f"m{n}_front2", w2, h2, exclude=BANNER)
-        save(ctx, p, n, "front2")
-    e.close()
+        try:
+            ctx.require(tf.look_at_other_front(e, g), f"M{n}: the other front is shown")
+            w2, h2 = d.size()
+            a2.pic(ctx, e, f"m{n}_{tag}front2_view")
+            g.goto(0, 0)
+            out["front2"] = stitch.stitch(Quiet(ctx), g, f"m{n}_{tag}front2", w2, h2, exclude=exclude)
+        except Exception as ex:
+            if not tag:
+                raise
+            ctx.log(f"M{n}: the second front after Deploy could not be shown ({ex}): its banner cells stay blank")
+    return out
 
 
 def _review(n):
