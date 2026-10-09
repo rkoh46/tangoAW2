@@ -196,3 +196,67 @@ def bh_campaign_volcano_hazard(ctx):
     ctx.eq(now[e4], start[e4][1], "a Tank beside the cells: untouched")
     next_day(4)
     ctx.eq(hp_now(), now, "day 4: nothing erupted")
+
+
+@test(modes=("ds",))
+def bh_campaign_pair_pick_matches_every_partner(ctx):
+    """On the CO screen with a pair pick (the whole roster unlocked) the
+    second pick is the CO asked for, for every possible partner: picked with
+    the pad, the battle's pair (army 1's CO and its tag partner) is what was
+    picked."""
+    from aw2test import tag
+    roster = bh.ROSTER
+    # (Sonja is a Yellow Comet CO among Black Hole's: every roster CO is a partner of Sturm,
+    # and Sonja, Von Bolt and Clone Andy lead with each of the others)
+    pairs = [(bh.STURM, p) for p in roster[1:]] + [(lead, p) for lead in (bh.SONJA, bh.CLONE_ANDY) for p in roster if p != lead]
+    for lead_co, partner in pairs:
+        e, g, d = boot_features(ctx)
+        d.picks = {16: 2}
+        d.start_at(won_mask=0xFFFF & ~(1 << 5) & ~(1 << 16), unlocked_mask=0x7FF)
+        d.pick_mission()
+        picks = d.choose_cos(2, prefs=[lead_co, partner])
+        g._units_base = g._players_base = None
+        d.wait_control()
+        lead = g.player(1)["co"]
+        got = e.u8(tag.rec(1) + tag.P_CO)
+        ctx.log(f"asked {lead_co} + {partner}: picks {picks}, battle lead {lead}, partner {got}")
+        # (a Yellow Comet CO picked first, Sonja, does not lead a Black Hole army: the pair is the same, the other leads)
+        want = (partner, lead_co) if lead_co == bh.SONJA else (lead_co, partner)
+        ctx.eq((picks, (lead, got)), ([lead_co, partner], want), f"CO {lead_co} + CO {partner}")
+        e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_second_front_has_its_own_rules(ctx):
+    """A second front's own triggers (MissionDef::front2_triggers) run while it
+    is on the screen, on its own named units: the named unit (a Tank of the
+    second front) destroyed there plays a scene and wins the second front
+    (`UnitGone` with a name: the "unit destroyed" condition); the main front's
+    units of the same slots do not trip it."""
+    from aw2test import twofront as tf
+    e, g, d = boot_features(ctx)
+    d.picks = {11: 0}
+    d.start_at(won_mask=0x7FF & ~(1 << 5), unlocked_mask=0b101)
+    d.pick_mission()
+    d.wait_map()
+    ctx.eq(d.mission(), 11, "mission 12")
+    state = {"killed": False}
+    seen = []
+
+    def each():
+        t = d.text_shown()
+        if t and (not seen or seen[-1] != t):
+            seen.append(t.replace("\x0f", ""))
+        if e.u8(tf.LIVE) == 1 and not e.u8(tf.BUSY) and not state["killed"]:
+            tank = next((u for u in g.units() if u["army"] == 2 and u["type"] == 3 and (u["x"], u["y"]) == (5, 1)), None)
+            if tank:
+                e.w8(g.unit_addr(tank["id"]), 0)         # destroyed (test aid)
+                e.w8(d.layer_cell(tank["x"], tank["y"]), 0)
+                state["killed"] = True
+        if state["killed"] and state.setdefault("n", 0) < 6:
+            state["n"] += 1
+            ctx.log(f"latch {e.u32(0x0203FD18):#x} live {e.u8(tf.LIVE)} cb {e.u32(0x03000000):#x} scripts {d.scripts_running()}")
+    tf.end_round(e, d, each=each)
+    ctx.check(state["killed"], "the second front's named unit was destroyed there")
+    ctx.check("The carrier is down." in seen, f"the second front's scene ({seen})")
+    ctx.eq(e.u8(tf.SECOND), 2, "the second front is won")

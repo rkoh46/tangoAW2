@@ -585,6 +585,11 @@ pub struct MissionDef {
     pub triggers: Vec<Trigger>,
     /// A battle on two fronts.
     pub front2: Option<FrontDef>,
+    /// The second front's own rules (they run while it is on the screen, on
+    /// its own units: a named unit of `front2.units` is the second front's;
+    /// a `Win` there ends the second front, showing `front2_victory`).
+    pub front2_triggers: Vec<Trigger>,
+    pub front2_victory: Scene,
     /// Before the first turn / after the win, in the battle.
     pub intro: Scene,
     pub victory: Scene,
@@ -629,6 +634,8 @@ impl MissionDef {
             rank_days: 0,
             triggers: Vec::new(),
             front2: None,
+            front2_triggers: Vec::new(),
+            front2_victory: Scene::default(),
             intro: Scene::default(),
             victory: Scene::default(),
             after: Scene::default(),
@@ -1480,77 +1487,53 @@ fn compile_second(
     m: &MissionDef,
     f: &FrontDef,
 ) -> Result<([u8; 0x5C], MissionInfo), Error> {
-    let armies = m.armies.len();
-    let (w, h, mut tiles, own_units) = load_map(core, &f.map).map_err(|e| format!("{} (second front): {e}", m.key))?;
-    decorate(w, h, &mut tiles, &f.props, &f.structures).map_err(|e| format!("{} (second front): {e}", m.key))?;
-    let map = cx.built.add(&crate::ds_campaign_data::map_blob(w, h, &tiles));
-    let units_bytes = if f.units.is_empty() {
-        own_units.unwrap_or(deployment(None, index, armies, &[])?)
-    } else {
-        // (named units are the main front's)
-        deployment(None, index, armies, &f.units)?
-    };
-    let units = cx.built.add(&units_bytes);
-    let events = cx.built.add(&[0u8; 24]);
-    let mut hd = [0u8; 0x5C];
-    hd[0..4].copy_from_slice(&map.to_le_bytes());
-    hd[4..8].copy_from_slice(&events.to_le_bytes());
-    hd[0x16] = 2;
-    hd[0x17] = f.fog as u8;
-    hd[0x18] = armies as u8;
-    hd[0x1A] = 1;
-    hd[0x1C] = 1;
-    hd[0x1E] = 1;
-    hd[0x26] = 0xFF;
-    hd[0x28] = 1;
-    hd[0x2C..0x30].copy_from_slice(&map.to_le_bytes());
-    hd[0x30..0x34].copy_from_slice(&map.to_le_bytes());
-    hd[0x34..0x38].copy_from_slice(&units.to_le_bytes());
-    hd[0x38..0x3C].copy_from_slice(&units.to_le_bytes());
-    let mut native = Native::default();
-    let mut cos = [(0u8, 0u8); 4];
-    let mut colours = [1u8, 2, 3, 4];
-    let mut teams = [1u8, 2, 3, 4];
-    for k in 0..4 {
-        let a = m.armies.get(k);
-        let spec = f.cos[k];
-        let (nat, rec) = co_ids(spec);
-        native.cos[k] = nat;
-        cos[k] = (rec.0, 0);
-        hd[0x3C + k] = nat.0;
-        colours[k] = a.map_or(k as u8 + 1, |a| a.colour).clamp(1, 5);
-        hd[0x40 + k] = colours[k];
-        teams[k] = a.map_or(k as u8 + 1, |a| if a.team == 0 { k as u8 + 1 } else { a.team });
-        hd[0x44 + k] = teams[k];
-        hd[0x48 + 4 * k] = 0xFF;
-        hd[0x49 + 4 * k] = 0xFF;
+    // The second front is compiled as a mission of its own (its map,
+    // deployment, rules and scenes), with the armies of the main one and the
+    // COs its front gives.
+    let mut s = MissionDef::new(m.key, m.title);
+    s.objective = m.objective;
+    s.map = f.map.clone();
+    s.props = f.props.clone();
+    s.structures = f.structures.clone();
+    s.units = f.units.clone();
+    s.fog = f.fog;
+    s.weather = f.weather;
+    s.triggers = m.front2_triggers.clone();
+    s.victory = m.front2_victory.clone();
+    s.armies = m
+        .armies
+        .iter()
+        .enumerate()
+        .map(|(k, a)| {
+            let mut a = a.clone();
+            a.co = f.cos.get(k).copied().unwrap_or(CoSpec::None);
+            a.funds = None;
+            a
+        })
+        .collect();
+    // (the names of its units are its own: told apart by the high bit of the latch's bit)
+    let before: Vec<(usize, &'static str)> = cx.units.keys().copied().collect();
+    let (hd, mut info) = compile_mission(cx, core, def, index, rec_index, &s, None)?;
+    for (k, v) in cx.units.iter_mut() {
+        if !before.contains(k) {
+            v.2 |= SECOND_FRONT;
+        }
     }
-    hd[0x58] = colours[0].clamp(1, 4);
-    let _ = (def, rec_index);
-    let info = MissionInfo {
-        index: rec_index,
-        name: format!("{} (second front)", m.title),
-        info_text: 0,
-        two_front: None,
-        number: index as u8 + 1,
-        cos,
-        colours,
-        teams,
-        armies: armies as u8,
-        pool: Vec::new(),
-        day_limit: 0,
-        width: w,
-        height: h,
-        look: 0,
-        weather: f.weather as u8,
-        fog: f.fog,
-        labs: Vec::new(),
-        realtime: 0,
-        unit_event_list: 0,
-        native: Some(native),
-    };
+    info.name = format!("{} (second front)", m.title);
+    info.info_text = 0;
+    info.day_limit = 0;
+    info.two_front = None;
+    info.pool = Vec::new();
+    if let Some(n) = info.native.as_mut() {
+        n.pool = Vec::new();
+        n.setup = false;
+    }
+    let _ = two_front_of;
     Ok((hd, info))
 }
+
+/// A named unit of a second front: [`Rules::units`]' bit has this flag.
+const SECOND_FRONT: u8 = 0x80;
 
 // --- Rules at run time -----------------------------------------------------------
 
@@ -1582,6 +1565,11 @@ pub fn unit_by_name(core: &Core, name: &str) -> Option<(u32, bool)> {
     let rules = RULES.get(src)?.get()?;
     let mission = crate::ds_campaign::mission(core) as usize;
     let (_, &(army, slot, bit)) = rules.units.iter().find(|(k, _)| k.0 == mission && k.1 == name)?;
+    // (a named unit of the front that is not on the screen: its slot holds another front's unit)
+    if (bit & SECOND_FRONT != 0) != crate::two_front::second_live(core) {
+        return None;
+    }
+    let bit = bit & !SECOND_FRONT;
     let a = unit_addr(core, army, slot);
     let dead = core.raw_read_32(LATCH, -1) >> bit & 1 != 0;
     Some((a, core.raw_read_8(a, -1) != 0 && !dead))
@@ -1625,8 +1613,11 @@ pub fn tick(core: &mut Core) {
     let before = latch;
     for (k, &(army, slot, bit)) in rules.units.iter().filter(|(k, _)| k.0 == mission).map(|(k, v)| (k, v)) {
         let _ = k;
+        if (bit & SECOND_FRONT != 0) != crate::two_front::second_live(core) {
+            continue;
+        }
         if core.raw_read_8(unit_addr(core, army, slot), -1) == 0 {
-            latch |= 1 << bit;
+            latch |= 1 << (bit & !SECOND_FRONT);
         }
     }
     if latch != before {

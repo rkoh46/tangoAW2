@@ -401,13 +401,20 @@ pub fn features_def() -> CampaignDef {
         map: MapSrc::Ascii(&["1......", ".......", "......2"]),
         props: Vec::new(),
         structures: Vec::new(),
-        units: vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::MD_TANK, 5, 1).hold()],
+        units: vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::MD_TANK, 5, 1).hold().named("carrier")],
         cos: [CoSpec::Fixed(co::HAWKE), CoSpec::Fixed(co::KOAL), CoSpec::None, CoSpec::None],
         send: SendRule::Ground,
         sky: false,
         weather: Weather::Clear,
         fog: false,
     });
+    // The second front's own rules: its named unit destroyed is a scene and the front's win.
+    n.front2_triggers = vec![Trigger::new(
+        When::TurnStart,
+        Cond::UnitGone("carrier"),
+        vec![Action::Scene(Scene::new(vec![Line::say(co::HAWKE, "The carrier is down.")])), Action::Win],
+    )];
+    n.front2_victory = Scene::new(vec![Line::say(co::HAWKE, "The east is ours.")]);
     n.needs = Needs::All(vec!["f01"]);
     n.flag = region::BLACK_HOLE[3];
 
@@ -489,6 +496,18 @@ pub fn features_def() -> CampaignDef {
     w.needs = Needs::All(vec!["f01"]);
     w.flag = region::BLACK_HOLE[3];
 
+    // A tag pair of the player's own pick from the whole roster.
+    let mut y = MissionDef::new("f17", "Features Pair");
+    y.objective = "Test: the player's pair from every CO.";
+    y.map = MapSrc::Ascii(&["1.........", "..........", "..........", ".........2"]);
+    y.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
+    ];
+    y.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(2, unit::TANK, 9, 3).hold().ammo(0)];
+    y.needs = Needs::All(vec!["f01"]);
+    y.flag = region::BLACK_HOLE[1];
+
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
@@ -497,8 +516,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w],
-        final_mission: "f16",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y],
+        final_mission: "f17",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }],
         secret_mission: "f06",
     }
