@@ -288,6 +288,10 @@ impl Field {
     }
 }
 
+fn own_types_aa(f: &Field) -> i32 {
+    f.own.iter().filter(|s| matches!(s.t, 14 | 15)).count() as i32
+}
+
 fn soft(d: i32) -> i32 {
     if d <= 100 { d } else { 100 + (d - 100) / 4 }
 }
@@ -440,6 +444,10 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
     let airport_near = f.foe_airports.iter().any(|&a| manhattan(a, mid) <= 12);
     let hq_threat = f.own_hq.iter().any(|&h| f.foes.iter().any(|s| manhattan((s.x, s.y), h) <= 7));
     let campaign = crate::ds_campaign::active(core);
+    let air_n = f.foes.iter().filter(|s| matches!(s.t, 16 | 17 | 19 | 12)).count() as i32;
+    let own_aa = own_types_aa(&f);
+    let air_deficit = (air_n > 0 || (airport_near && own_aa == 0 && f.foes.len() > 0)) && own_aa * 2 < air_n.max(1);
+    let capture_adjacent = f.props.iter().any(|&(px, py)| manhattan((px, py), mid) <= 3);
 
     // Air only when it fits: Fighters need enemy air on the field now; Bombers and B Copters stay away from enemy
     // Anti-Air, Missiles, Cruisers and Fighters near the doors (or two anywhere).
@@ -535,7 +543,9 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
             }
             if hot && matches!(role(t), Role::Heavy) {
                 parts.push(("enemies at the doors: the sturdiest direct unit".to_string(), (price(core, t) / 400).min(55)));
-            } else if hot && matches!(role(t), Role::Light | Role::Foot) {
+            } else if hot && matches!(role(t), Role::Foot) {
+                parts.push(("enemies at the doors: a foot soldier".to_string(), if capture_adjacent { -8 } else { -25 }));
+            } else if hot && matches!(role(t), Role::Light) {
                 parts.push(("enemies at the doors: a thin unit".to_string(), -8));
             } else if hot && t == 19 {
                 parts.push(("enemies at the doors: a copter is soft".to_string(), -20));
@@ -553,6 +563,10 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
             if own_types[14] + own_types[15] == 0 {
                 parts.push(("no anti-air yet".to_string(), 15));
             }
+        }
+        // Fewer than one Anti-Air per two enemy combat air units (at least one wanted): Anti-Air takes the slot.
+        if t == 14 && air_deficit {
+            parts.push((format!("{air_n} enemy air, {} Anti-Air: one more", own_types[14] + own_types[15]), 35));
         }
 
         // Indirect fire needs a protected backline and targets within 2-3 turns.
@@ -637,7 +651,7 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
         // Specialists with nothing to shoot at.
         if role(t) == Role::AntiAir && air_w == 0 {
             // (an enemy airport near can build air: a little forethought, never a habit)
-            parts.push(if airport_near { ("anti-air, no air yet but an airport near".to_string(), -22) } else { ("anti-air with no air in sight".to_string(), -50) });
+            parts.push(if airport_near { ("anti-air, no air yet but an airport near".to_string(), if air_deficit { 0 } else { -22 }) } else { ("anti-air with no air in sight".to_string(), -50) });
         }
         if t == SUB && !f.foes.iter().any(|s| SEA_UNITS.contains(&s.t)) {
             parts.push(("no ships in sight".to_string(), -15));

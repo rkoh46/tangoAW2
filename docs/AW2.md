@@ -274,12 +274,13 @@ from the ROM table `0x080C1BC4`.
       soft targets (infantry, artillery, rockets, recon) and the same quiet sky; air is dropped from the pool when those
       fail; ships need a naval or reachable target.
     - door safety: with an enemy able to reach the doors, Artillery, Rockets, Missiles take -40 (-70 if one is
-      adjacent or three reach); with the enemy at the doors the sturdiest direct unit gets up to +55 and thin ones lose.
+      adjacent or three reach); with the enemy at the doors the sturdiest direct unit gets up to +55, thin ones lose, and a foot soldier -25 unless a property is within 3 squares.
     - indirect fire needs a protected backline (two own direct units within 6 squares), nobody reaching the doors and
       targets within 3 turns, else -35.
     - foot soldiers (Infantry, Mech) score -30 unless an enemy/neutral property is in reach that none of Black Hole's
       foot units is on or next to; only a slot too cheap for anything else forces one.
-    - gaps: no anti-air while enemy air is in sight (+15), a thin front line (+10 for armour), no indirect yet.
+    - gaps: fewer than one Anti-Air per two enemy combat air units (or an enemy airport within 12 squares and no Anti-Air
+      yet): Anti-Air +35, enough to beat a plain Tank once; no anti-air while enemy air is in sight (+15), a thin front line (+10 for armour), no indirect yet.
     - objectives: units that reach the HQ in two turns when enemies are within 7 squares of it (+12); a few distant
       foes in a campaign mission favour fast units (+6).
     - variety: the last four picks of the army (4 bytes per army at `0x0203E3E4`, newest first, cleared on day 1)
