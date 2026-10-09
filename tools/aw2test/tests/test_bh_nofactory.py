@@ -502,3 +502,49 @@ def bh_campaign_factory_and_volcano_on_one_map(ctx):
     tiles = {(oam[8 * i + 4] | oam[8 * i + 5] << 8) & 0x3FF for i in range(128) if (oam[8 * i + 1] >> 1) & 0x7F != 0 or True}
     ctx.check({0x176, 0x196, 0x19E} <= tiles, f"its three sprites draw from there ({sorted(t for t in tiles if t > 0x100)})")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_five_army_pick_reaches_every_co_and_tags(ctx):
+    """The five-army pair pick (f22) reaches the whole recruited roster, Sonja
+    (a Yellow Comet CO among Black Hole's) and Clone Andy included: army 5 gets
+    the pair picked, and its Tag Power works (offered with both meters full: the
+    active CO's Super Power, then the partner's)."""
+    from aw2test import tag, ram
+    pairs = [(bh.SONJA, bh.CLONE_ANDY), (bh.CLONE_ANDY, bh.SONJA), (bh.KOAL, bh.VON_BOLT), (bh.STURM, bh.CLONE_ANDY)]
+    for n, (lead_co, partner) in enumerate(pairs):
+        e, g, d = boot_features(ctx)
+        d.picks = {21: 2}
+        d.start_at(won_mask=0x3FFFFF & ~(1 << 5) & ~(1 << 21), unlocked_mask=0x7FF)
+        d.pick_mission()
+        picks = d.choose_cos(2, prefs=[lead_co, partner])
+        g._units_base = g._players_base = None
+        d.wait_control()
+        ctx.eq(picks, [lead_co, partner], "the picks")
+        # (Sonja picked first does not lead a Black Hole army: the same pair, the other leads)
+        if lead_co == bh.SONJA:
+            lead_co, partner = partner, lead_co
+        ctx.eq((g.player(5)["co"], e.u8(tag.rec(5) + tag.P_CO)), (lead_co, partner), f"army 5 has {lead_co} + {partner}")
+        ctx.eq(g.player(1)["co"], bh.ANDY, "army 1 keeps its fixed CO")
+        if n != 0 and n != 3:
+            e.close()
+            continue
+        # (army 5 plays last: the four allies' turns first)
+        ctx.require(e.wait_until(lambda: g.current_army() == 5, 30000, step=30), "army 5's turn comes")
+        g.wait_for_input()
+        p = g.player(5)
+        e.w32(p["addr"] + ram.P_CHARGE, tag.star_cost(p["powers_used"]) * g.co_stars(p["co"])[1])
+        t = tag.partner(e, 5)
+        e.w32(tag.rec(5) + tag.P_CHARGE, tag.star_cost(t["uses"]) * g.co_stars(t["co"])[1])
+        names = g.open_map_menu()["names"]
+        ctx.check("Tag" in names, f"Tag Power offered ({names})")
+        g.choose("Tag", g.MAP_MENU)
+        ctx.require(e.wait_until(lambda: g.player(5)["co_mode"] == 2, 3000, step=10), "the first Super Power starts")
+        g.wait_for_input()
+        p = g.player(5)
+        ctx.eq((p["co"], p["co_mode"], tag.partner(e, 5)["phase"]), (lead_co, 2, 1), "the lead's Super Power, the first half")
+        g.open_map_menu()
+        g.choose("Change", g.MAP_MENU)
+        ctx.require(e.wait_until(lambda: g.player(5)["co"] == partner and g.player(5)["co_mode"] == 2, 3000, step=10),
+                    "the second half: the partner's Super Power")
+        e.close()
