@@ -47,8 +47,37 @@ def base_save():
     p = os.environ.get("AW2TEST_BASE_SAVE")
     if p:
         return p
-    pinned = os.path.join(out_dir(), "base.sav")
+    pinned = os.path.join(out_dir(), "base-clean.sav")
     if not os.path.exists(pinned):
-        import shutil
-        shutil.copyfile(LIVE_SAVE, pinned)
+        with open(LIVE_SAVE, "rb") as f:
+            data = f.read()
+        with open(pinned, "wb") as f:
+            f.write(_profile_only(data))
     return pinned
+
+
+def _profile_only(data):
+    """The save with only its profile: every other slot (design maps, suspended
+    games, the BH and DS Campaign records and their latch flags) erased, and the
+    profile's suspend marks cleared. The player's own save changes as they play
+    (a BH record with its once-triggers already latched kept scenes and day
+    events from firing in the tests), the tests want a save with nothing beside
+    the profile."""
+    import struct
+    from . import saveimg
+    data = bytearray(data)
+    img = saveimg.Image(bytes(data))
+    keep = {img.newest_profile()["sector"]}
+    for i in range(16):
+        if i not in keep:
+            data[i * 0x1000:(i + 1) * 0x1000] = b"\xff" * 0x1000
+    for i in sorted(keep):
+        sec = data[i * 0x1000:(i + 1) * 0x1000]
+        sec[0xFEF:0xFFF] = bytes(0 if j == i else 0xFF for j in range(16))
+        for k in saveimg.C420_SUSPEND.values():
+            sec[0x52 + saveimg.P_C420 + k] = 0
+        sec[6] = sec[7] = 0
+        t = (sum(sec) + 255) & 0xFF
+        sec[6], sec[7] = t, (~t) & 0xFF
+        data[i * 0x1000:(i + 1) * 0x1000] = sec
+    return bytes(data)
