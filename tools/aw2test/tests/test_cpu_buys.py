@@ -10,14 +10,14 @@ NAMES = {4: "Megatank", 9: "Piperunner", 12: "Stealth", 13: "Black Bomb", 18: "B
 FACTORY = {4: 14, 9: 14, 27: 14, 12: 10, 13: 10, 18: 11, 26: 11}
 
 
-def big_map(ctx):
+def big_map(ctx, pipes=7):
     m = ctx.map()
     for x in range(14, 30):
         for y in range(12, 20):
             m.terrain(x, y, "sea")
     for x, y in ((20, 4), (22, 4), (24, 4), (26, 4)):
         m.terrain(x, y, "base", 2)
-    for x in range(20, 27):
+    for x in range(20, 20 + pipes):
         m.terrain(x, 5, "pipe")
     for x, y in ((20, 8), (23, 8)):
         m.terrain(x, y, "airport", 2)
@@ -32,9 +32,9 @@ def big_map(ctx):
     return m
 
 
-def play(ctx, funds, bought, seen_all):
-    g = ctx.start(big_map(ctx), ["andy", "andy"])
-    for day in range(10):
+def play(ctx, funds, bought, seen_all, pipes=7, days=10):
+    g = ctx.start(big_map(ctx, pipes), ["andy", "andy"])
+    for day in range(days):
         g.e.w32(g.player(2)["addr"] + ram.P_FUNDS, funds)
         try:
             g.end_turn()
@@ -65,3 +65,21 @@ def cpu_buys_every_new_unit(ctx):
         ctx.check(t in got, f"the CPU bought a {name}")
         for cls, day in got.get(t, []):
             ctx.check(cls == FACTORY[t], f"{name} bought at terrain {cls} (want {FACTORY[t]}) on day {day}")
+
+
+def piperunners(ctx, pipes, days=14):
+    bought, seen_all = {}, {}
+    for funds in (60000, 100000):
+        play(ctx, funds, bought, seen_all, pipes=pipes, days=days)
+    return [v for v in bought.values() if v[0] == 9]
+
+
+@test(modes=("ds",))
+def cpu_piperunner_needs_a_pipe_network_of_six(ctx):
+    """The CPU builds a Piperunner only at a base touching a connected pipe network of 6 or more cells: none
+    with no pipe, none with a network of 5, some with 6 (the bases beside it)."""
+    for pipes, want in ((0, False), (5, False), (6, True)):
+        got = piperunners(ctx, pipes)
+        ctx.log(f"{pipes} pipe cells: Piperunners {got}")
+        ctx.check(bool(got) == want, f"{pipes} pipe cells: the CPU {'builds' if want else 'builds no'} Piperunner")
+        ctx.check(all(cls == 14 for _, cls, _ in got), "bought at bases")

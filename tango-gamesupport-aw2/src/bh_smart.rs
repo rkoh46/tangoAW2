@@ -30,7 +30,7 @@ use mgba::core::Core;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
-use crate::roster::{chart, BLACK_BOAT, CARRIER, OOZIUM, PIPERUNNER, STEALTH};
+use crate::roster::{chart, BLACK_BOAT, CARRIER, OOZIUM, STEALTH};
 
 pub const NAMES: [&str; 28] = [
     "-", "Infantry", "Mech", "Md Tank", "Megatank", "Tank", "Recon", "APC", "Neotank", "Piperunner", "Artillery",
@@ -489,11 +489,6 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
         }
 
         // Special units.
-        if t == PIPERUNNER {
-            if f.engage(&cost, &f.targets).is_some() {
-                parts.push(("a pipe leads to the enemy".to_string(), 12));
-            }
-        }
         if t == LANDER {
             let beach = f
                 .terrain
