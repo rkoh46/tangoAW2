@@ -52,6 +52,8 @@ fn bh01() -> MissionDef {
         // Von Bolt in Green Earth's colours (his stolen surplus).
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)).funds(20000),
     ];
+    // Von Bolt's army advances (Infantry and Mechs capture, the rest attacks); one Infantry guards his HQ at (19, 2).
+    m.units = crate::bh_ai::orders_at(crate::bh_ai::built_units("bh01"), 1, crate::bh_ai::ATTACK, &[(18, 3)]);
     m.day_limit = 20;
     m.rank_days = 10;
     m.intro = crate::bh_text::scene("m01_pre");
@@ -113,6 +115,11 @@ fn bh02() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(14000),
     ];
     m.pool = vec![co::STURM, co::VON_BOLT];
+    // Green Earth pushes: Infantry and Mechs take the bases and cities, the rest attacks; one Infantry guards the HQ at (11, 22).
+    m.units = crate::bh_ai::orders_at(crate::bh_ai::built_units("bh02"), 1, crate::bh_ai::ATTACK, &[(10, 20)]);
+    // Three of Green Earth's cities in the front lines start unclaimed: its Infantry and Mechs take them on days 2 to 4 (the
+    // neutral cities in the middle are five days off), then march on.
+    m.props = [(12, 14), (6, 20), (16, 20)].iter().map(|&(x, y)| Prop { kind: PropKind::City, owner: 0, x, y }).collect();
     m.day_limit = 18;
     m.rank_days = 11;
     m.intro = crate::bh_text::scene("m02_pre");
@@ -216,6 +223,8 @@ fn bh03() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::VON_BOLT)).funds(12000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::DRAKE, co::EAGLE)).funds(14000),
     ];
+    // The fleet and the air wings attack (the Landers load and unload as the computer does).
+    m.units = crate::bh_ai::orders_at(crate::bh_ai::built_units("bh03"), 1, crate::bh_ai::ATTACK, &[]);
     m.day_limit = 25;
     m.rank_days = 14;
     // The isle's Black Cannon (inventions-list cell (11,5): its top left) and two minicannons are ours, and would
