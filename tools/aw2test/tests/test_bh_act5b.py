@@ -12,16 +12,25 @@ FOG = 0x03003FCD
 BONDS = 0x1FF << 12
 # the roster (bits) unlocked when each mission opens: Lash after M23, Adder after M24, Clone Andy after M27, Sonja and Crumb later
 ROSTER_AT = {23: 0x7F, 24: 0xFF, 25: 0xFF, 26: 0x1FF, 27: 0x1FF, 28: 0x3FF, 31: 0xFFF}
-# number: (title, won (mission numbers incl. the 22 stub), CO picks, fog, size)
+# number: (title, won (mission numbers incl. the 22 stub), CO picks (M23, M24, M26: lead and partner; M27, M28: none), fog, size)
 MISSIONS = {
-    23: ("Laboratory 7", [22], [bh.STURM], True, (22, 18)),
-    24: ("Sky Gala", [22, 23], [bh.STURM], False, (24, 16)),
+    23: ("Laboratory 7", [22], [bh.STURM, bh.HAWKE], True, (22, 18)),
+    24: ("Sky Gala", [22, 23], [bh.STURM, bh.HAWKE], False, (24, 16)),
     25: ("Twin Harbours", [22, 23], [bh.STURM, bh.HAWKE], False, (32, 22)),
     26: ("The Last Alliance", [22, 23, 24, 25], [bh.STURM, bh.VON_BOLT], False, (38, 28)),
-    27: ("Echo", [22, 23, 24, 25, 26], [bh.STURM], True, (24, 18)),
+    27: ("Echo", [22, 23, 24, 25, 26], [], True, (24, 18)),   # (Lash is fixed: no CO screen)
     28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [], False, (35, 31)),
     31: ("The Colonel's Vault", [22, 23, 24, 25, 26, 27, 28], [bh.STURM], True, (43, 29)),
 }
+
+
+def won_mask(n):
+    """The missions won before M<n>. M31 opens with the nine bonds, M30 still unwon: with the finale won the campaign is in
+    Free Play and the world map's cursor starts on the first mission instead of the record's step."""
+    mask = 0
+    for k in range(1, 30 if n == 31 else n):
+        mask |= 1 << a5.M[k]
+    return mask
 
 
 def unfog(g, e):
@@ -36,12 +45,11 @@ def unfog(g, e):
 def pictures(ctx, n):
     from aw2test import stitch
     title, won, picks, fog, size = MISSIONS[n]
-    if n == 28:
-        os.environ["TANGOAW2_BH_STILL"] = "1"   # (see bh_act5b::still: the computer holds and has no funds)
-    mask = 0
-    for k in range(1, n):
-        mask |= 1 << a5.M[k]
-    e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
+    # (M28: the computer holds and has no funds, see bh_act5b::still; this console's variable, not the process's:
+    # tests run in parallel in one process)
+    env = {"TANGOAW2_BH_STILL": "1"} if n == 28 else None
+    mask = won_mask(n)
+    e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n], env=env)
     # (a mission that is not fogged is photographed in its Setup phase: the deployment as it stands before
     # any computer turn, and no Onyx panel; a fogged one after Deploy, for the day-1 fog view)
     # (M26's Black Cannon fires at the player's first turn start on the nearest enemy: the review picture is taken
@@ -76,6 +84,8 @@ def pictures(ctx, n):
     ctx.log(f"m{n}: units below full HP at the start: {hurt}")
     a5.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
+    if not setup and n in (23, 24, 25, 27, 31):
+        a5.scene_seen(ctx, texts, f"m{n}_pre", picks[0] if picks else bh.LASH, picks[1] if len(picks) > 1 and n != 25 else None, f"M{n}: the opening")
     stitch.IMAGES = a5.SHOTS or stitch.IMAGES
     w, h = d.size()
     ctx.eq((w, h), size, f"M{n}: map size")
@@ -136,9 +146,7 @@ for _n in MISSIONS:
 def _advance(n):
     def fn(ctx):
         title, won, picks, fog, size = MISSIONS[n]
-        mask = 0
-        for k in range(1, n):
-            mask |= 1 << a5.M[k]
+        mask = won_mask(n)
         e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
         a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}")
         d.wait_control()
@@ -170,9 +178,7 @@ def _balance(n, how, seed=None):
         if not BALANCE:
             raise Skip("AW2TEST_ACT5B_BALANCE not set")
         title, won, picks, fog, size = MISSIONS[n]
-        mask = 0
-        for k in range(1, n):
-            mask |= 1 << a5.M[k]
+        mask = won_mask(n)
         e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
         d.pick_mission()
         d.choose_cos(len(picks), prefs=list(picks))
@@ -193,3 +199,87 @@ def _balance(n, how, seed=None):
 _balance(26, "cpu")
 _balance(26, "bot")
 _balance(26, "bot", 1)
+
+
+# --- the pair pick screens of M23 and M24 and their bonds (CoSpec::PickPair) --------------------------------------
+MAX, SAMI = 2, 4
+AIRCRAFT = (12, 13, 16, 17, 19, 20)       # (Stealth, Black Bomb, Fighter, Bomber, B Copter, T Copter: Adder's air force)
+# number: (the enemy's lead and partner, the bond's bit, the CO whose pitch earns it, the pair's scenes before and after)
+PAIRS = {
+    23: (bh.LASH, MAX, 6, bh.JUGGER, "m23_pre", ["m23_post", "m23_map"]),
+    24: (bh.ADDER, SAMI, 7, bh.KINDLE, "m24_pre", ["m24_post", "m24_map"]),
+}
+
+
+def _pair_case(n, name, cos, bond):
+    """M<n> with the pair `cos` (lead, partner) on the pair pick screen: the lead leads and the partner is the tag partner, the
+    enemy is the recruit with her partner, the opening is the files' scene for that pair; then the win: the recruit's bond is
+    earned exactly when its CO (Jugger in M23, Kindle in M24) is anywhere in the pair, and the recruit joins whoever the pair is."""
+    def fn(ctx):
+        from aw2test import tag
+        enemy, enemy_partner, bit, bonder, pre, post = PAIRS[n]
+        title, won, picks, fog, size = MISSIONS[n]
+        e, g, d = a5.boot(ctx, won_mask(n), ROSTER_AT[n], picks={a5.M[n]: 2}, at=a5.M[n])    # (no bonds earned yet)
+        texts = a5.open_mission(ctx, e, g, d, a5.M[n], cos, f"m{n}_{name}")
+        d.wait_control()
+        g._units_base = g._players_base = None
+        ctx.eq(g.player(1)["co"], cos[0], f"M{n} {name}: the lead")
+        p = tag.partner(e, 1)
+        ctx.eq(p["co"] if p else None, cos[1], f"M{n} {name}: the partner")
+        ctx.eq(g.player(2)["co"], enemy, f"M{n} {name}: the enemy's lead")
+        p2 = tag.partner(e, 2)
+        ctx.eq(p2["co"] if p2 else None, enemy_partner, f"M{n} {name}: the enemy's partner")
+        a5.expect_scene(ctx, texts, pre, cos[0], cos[1], f"M{n} {name}: the opening")
+        # the win (the test aid: Adder's air force gone / Lash's army routed), the scenes for that pair
+        if n == 24:
+            for u in g.units(2):
+                if u["type"] in AIRCRAFT:
+                    d.remove_unit(u)
+            e.wait(10)
+            g._units_base = g._players_base = None
+            mine = next(u for u in g.units(1) if u["type"] in (1, 2, 3, 5, 6))
+            g.select(mine["x"], mine["y"])
+            g.move_to(mine["x"], mine["y"])
+            g.choose(next(x for x in g.menu()["names"] if x.lower().startswith("wait")), g.ACTION_MENU)
+            victory, mapscene = a5.follow(ctx, e, d, f"m{n}_{name}")
+        else:
+            victory, mapscene = a5.win_by_attrition(ctx, e, g, d, f"m{n}_{name}")
+        a5.expect_scene(ctx, victory + mapscene, post, cos[0], cos[1], f"M{n} {name}: the victory and the map scene", bonds=([bit] if bond else []))
+        ctx.eq((d.bonds() >> bit) & 1, bond, f"M{n} {name}: the bond (bit {bit})")
+        ctx.check(bh.LASH in d.unlocked() if n == 23 else bh.ADDER in d.unlocked(), "the recruit joins")
+        e.close()
+    fn.__name__ = f"bh_act5b_m{n}_pair_{name}"
+    fn.__doc__ = f"M{n}: the pair {cos} on the pair pick screen; the bond is earned: {bool(bond)}."
+    test(modes=("ds",))(fn)
+
+
+for _name, _cos, _bond in (("sturm_hawke", [bh.STURM, bh.HAWKE], 0), ("jugger_leads", [bh.JUGGER, bh.STURM], 1),
+                           ("jugger_partner", [bh.STURM, bh.JUGGER], 1), ("koal_kindle", [bh.KOAL, bh.KINDLE], 0)):
+    _pair_case(23, _name, _cos, _bond)
+for _name, _cos, _bond in (("sturm_hawke", [bh.STURM, bh.HAWKE], 0), ("kindle_leads", [bh.KINDLE, bh.STURM], 1),
+                           ("kindle_partner", [bh.STURM, bh.KINDLE], 1), ("koal_jugger", [bh.KOAL, bh.JUGGER], 0)):
+    _pair_case(24, _name, _cos, _bond)
+
+
+@test(modes=("ds",))
+def bh_act5b_m27_lash_fixed_and_clone_andys_bond_is_unconditional(ctx):
+    """M27: no CO screen (Lash leads), the enemy is Clone Andy + Andy, the opening is the files' scene for Lash, and winning
+    earns Clone Andy's bond (bit 8) whoever the player is, with Clone Andy joining."""
+    from aw2test import tag
+    e, g, d = a5.boot(ctx, won_mask(27), ROSTER_AT[27], picks={a5.M[27]: 0}, at=a5.M[27])
+    # (no CO screen: with one, open_mission would wait for a battle that never loads)
+    texts = a5.open_mission(ctx, e, g, d, a5.M[27], [], "m27_fixed", shots=())
+    d.wait_control()
+    g._units_base = g._players_base = None
+    ctx.eq(g.player(1)["co"], bh.LASH, "Lash leads")
+    ctx.check(tag.partner(e, 1) is None, "Lash has no partner")
+    ctx.eq(g.player(2)["co"], bh.CLONE_ANDY, "the enemy's lead is Clone Andy")
+    p2 = tag.partner(e, 2)
+    ctx.eq(p2["co"] if p2 else None, 1, "the enemy's partner is Andy")
+    a5.expect_scene(ctx, texts, "m27_pre", bh.LASH, None, "M27: the opening")
+    ctx.eq((d.bonds() >> 8) & 1, 0, "no bond before the win")
+    victory, mapscene = a5.win_by_attrition(ctx, e, g, d, "m27_fixed")
+    a5.expect_scene(ctx, victory + mapscene, ["m27_post", "m27_map", "m28_alarm"], bh.LASH, None, "M27: the victory and the map scene", bonds=[8])
+    ctx.eq((d.bonds() >> 8) & 1, 1, "Clone Andy's bond is earned")
+    ctx.check(bh.CLONE_ANDY in d.unlocked(), "Clone Andy joins")
+    e.close()

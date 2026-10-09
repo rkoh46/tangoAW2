@@ -15,15 +15,17 @@ DAY = 0x03004080
 KOAL, KINDLE, JUGGER, FLAK = 8, 16, 32, 64
 SASHA, GRIT = 78, 5
 ALL = a2.ST | a2.VB | a2.HK | KOAL | KINDLE | JUGGER
+# (M17 is a free pair: the two picks lead and partner; M22 is the fixed pair Jugger + Flak, no pick screen;
+# M20 has one pick and a second-front partner; M18, M19, M21 are single picks)
 # number: (title, won before (mission numbers), roster bits, CO picks, armies: (colour, CO), map size, fog, day limit)
 # (bh01, bh02 and the bh16 stand-in come first in this tree: the won mask is every earlier mission)
 MISSIONS = {
-    17: ("Cold Iron", [1, 2, 3], ALL & ~JUGGER, [bh.STURM], [(5, bh.STURM), (2, bh.JUGGER)], (24, 18), True, 22),
+    17: ("Cold Iron", [1, 2, 3], ALL & ~JUGGER, [bh.STURM, bh.VON_BOLT], [(5, bh.STURM), (2, bh.JUGGER)], (24, 18), True, 22),
     18: ("The Pit", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (2, bh.FLAK)], (20, 20), False, 12),
     19: ("The Assembly Line", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (2, SASHA)], (32, 26), False, 28),
     20: ("Moonlit Harbours", [1, 2, 3, 4, 5, 6], a2.ST | a2.VB | a2.HK, [bh.STURM, bh.HAWKE], [(5, None), (2, bh.OLAF)], (26, 18), False, 24),
     21: ("Running Dry", [1, 2, 3, 4, 5, 6, 7], ALL | FLAK, [bh.STURM], [(5, bh.STURM), (1, 2), (2, GRIT)], (28, 20), True, 26),
-    22: ("Whiteout", [1, 2, 3, 4, 5, 6, 7, 8], a2.ST | a2.VB | a2.HK, [bh.STURM, bh.HAWKE], [(5, None), (2, bh.OLAF)], (28, 22), False, 24),
+    22: ("Whiteout", [1, 2, 3, 4, 5, 6, 7, 8], a2.ST | a2.VB | a2.HK | JUGGER | FLAK, [], [(5, bh.JUGGER), (2, bh.OLAF)], (28, 22), False, 24),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
@@ -36,6 +38,15 @@ def map_units(name):
         if f and f[0] == "unit":
             out[int(f[1])] = out.get(int(f[1]), 0) + 1
     return out
+
+
+def pair_of(n, cos):
+    """(lead, partner) CO ids the dialogue files key on, for the picks made."""
+    if n == 22:
+        return bh.JUGGER, bh.FLAK
+    if n == 17:
+        return cos[0], cos[1]
+    return cos[0], None
 
 
 def mission_count(g, army):
@@ -65,7 +76,17 @@ def check_load(ctx, n):
     ctx.eq(e.u16(DS_TABLE + 0x5C * dc.DS_MAP_ID + 0x24), limit, f"M{n}: the day limit")
     for army, count in units.items():
         ctx.eq(mission_count(g, army), count, f"M{n}: army {army}'s units")
-    if len(picks) == 2:
+    if n == 22:
+        from aw2test import tag
+        ctx.eq(tag.partner(e, 1)["co"], bh.FLAK, "M22: Flak is Jugger's partner (a fixed pair, no pick screen)")
+    if n in (17, 22):
+        from aw2test import tag
+        pe = tag.partner(e, 2)
+        ctx.eq(pe["co"] if pe else None, GRIT if n == 17 else SASHA, f"M{n}: the enemy's partner")
+    if len(picks) == 2 and n == 17:
+        from aw2test import tag
+        ctx.eq(tag.partner(e, 1)["co"], picks[1], "M17: the second pick is the partner, the first leads")
+    elif len(picks) == 2:
         # (the pair: whichever of the two picks leads, the other is the partner or the second front's CO)
         from aw2test import tag
         from aw2test import twofront as tf
@@ -73,6 +94,8 @@ def check_load(ctx, n):
         ctx.eq(sorted([g.player(1)["co"], other]), sorted(picks), f"M{n}: the two picks lead the main army and its partner (or the second front)")
     a2.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
+    lead, partner = pair_of(n, picks)
+    a2.expect_scene(ctx, texts, f"m{n}_pre", lead, partner, f"M{n}: the opening")
     e.close()
 
 
@@ -264,6 +287,8 @@ def _win_by_capture(n, hqs, want_next, unlocked, cos=None):
         ctx.log("VICTORY\n" + "\n".join(victory) + "\nMAP\n" + "\n".join(mapscene))
         ctx.check(len(victory) >= 3 and len(mapscene) >= 3, f"M{n}: the victory scene and the world-map scene played ({len(victory)}, {len(mapscene)} boxes)")
         spec = MISSIONS[n]
+        lead, partner = pair_of(n, cos or spec[3])
+        a2.expect_scene(ctx, victory + mapscene, [f"m{n}_post", f"m{n}_map"] + (["m22_warroom"] if n == 22 else []), lead, partner, f"M{n}: the victory and the map scene")
         after_win(ctx, e, g, d, n, victory, mapscene, want_next, unlocked)
         a2.pic(ctx, e, f"m{n}_world_after")
         e.close()
@@ -284,31 +309,58 @@ def _lose_by_day(n):
 _win_by_capture(17, [(21, 9)], [18, 19], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER])
 _win_by_capture(18, [(10, 1)], [19], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER, bh.FLAK], cos=None)
 _win_by_capture(19, [(29, 12)], [20], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER])
-_win_by_capture(22, [(14, 3)], [23], [bh.STURM, bh.VON_BOLT, bh.HAWKE])
+_win_by_capture(22, [(14, 3)], [23], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.JUGGER, bh.FLAK])   # (the fixed pair Jugger + Flak: both were recruited)
 for _n in MISSIONS:
     if _n != 20:
         _lose_by_day(_n)
 
 
 # --- mission specifics -------------------------------------------------------------------------------------
-@test(modes=("ds",))
-def bh_act4_m17_hawke_pitch_bond_and_jugger_joins(ctx):
-    """Hawke leads: his pitch, Jugger joins and the bond (bit 4) is earned."""
-    e, g, d, texts = ready(ctx, 17, [bh.HAWKE])
-    victory, mapscene = a2.win_by_attrition(ctx, e, g, d, "m17_hk", shots=(0,))
-    ctx.check("Because here you will not be called too literal." in " ".join(victory), f"Hawke's pitch ({victory})")
-    ctx.eq((d.bonds() >> 4) & 1, 1, "Jugger's bond earned")
-    ctx.check(bh.JUGGER in d.unlocked(), "Jugger unlocked")
-    e.close()
+def _m17_bond(name, cos, bond, doc):
+    """Wins M17 with the pair `cos` (lead, partner): the victory scene is the files' for that pair, Jugger joins whoever
+    the pair is, and the Hawke bond (bit 4) is earned exactly when Hawke is in the pair."""
+    def fn(ctx):
+        e, g, d, texts = ready(ctx, 17, cos)
+        victory, mapscene = a2.win_by_attrition(ctx, e, g, d, "m17_" + name, shots=(0,))
+        a2.expect_scene(ctx, victory + mapscene, ["m17_post", "m17_map"], cos[0], cos[1], f"M17 {name}: the victory and the map scene", bonds=([4] if bond else []))
+        if bh.HAWKE == cos[0]:
+            ctx.check("Because here you will not be called too literal." in " ".join(victory), f"Hawke's pitch ({victory})")
+        ctx.eq((d.bonds() >> 4) & 1, bond, f"M17 {name}: Jugger's bond")
+        ctx.check(bh.JUGGER in d.unlocked(), "Jugger unlocked")
+        e.close()
+    fn.__name__ = f"bh_act4_m17_{name}"
+    fn.__doc__ = doc
+    test(modes=("ds",))(fn)
 
 
-@test(modes=("ds",))
-def bh_act4_m17_other_co_no_bond(ctx):
-    e, g, d, texts = ready(ctx, 17, [bh.VON_BOLT])
-    a2.win_by_attrition(ctx, e, g, d, "m17_vb", shots=(0,))
-    ctx.eq((d.bonds() >> 4) & 1, 0, "no bond for Von Bolt's default pitch")
-    ctx.check(bh.JUGGER in d.unlocked(), "Jugger still joins")
-    e.close()
+_m17_bond("hawke_pitch_bond_and_jugger_joins", [bh.HAWKE, bh.STURM], 1, "Hawke leads: his pitch, Jugger joins and the bond (bit 4) is earned.")
+_m17_bond("hawke_as_partner_bond_and_jugger_joins", [bh.STURM, bh.HAWKE], 1, "Hawke is the partner: the bond (bit 4) is earned all the same.")
+_m17_bond("other_co_no_bond", [bh.STURM, bh.VON_BOLT], 0, "Hawke is not in the pair: Jugger joins, no bond.")
+_m17_bond("other_pair_with_koal_no_bond", [bh.KOAL, bh.KINDLE], 0, "Another pair of recruits (neither Sturm nor Hawke): Jugger joins, no bond.")
+
+
+def _m17_pair_screen(name, cos):
+    def fn(ctx):
+        """The pair pick screen: the first pick leads, the second is the partner, the enemy is Jugger + Grit, the opening
+        scene is the files' for that pair, and an army-1 pair can be any two recruits."""
+        from aw2test import tag
+        e, g, d, texts = ready(ctx, 17, cos)
+        ctx.eq(g.player(1)["co"], cos[0], f"M17 {name}: the lead")
+        p = tag.partner(e, 1)
+        ctx.eq(p["co"] if p else None, cos[1], f"M17 {name}: the partner")
+        ctx.eq(g.player(2)["co"], bh.JUGGER, f"M17 {name}: the enemy's lead")
+        p2 = tag.partner(e, 2)
+        ctx.eq(p2["co"] if p2 else None, GRIT, f"M17 {name}: the enemy's partner")
+        a2.expect_scene(ctx, texts, "m17_pre", cos[0], cos[1], f"M17 {name}: the opening")
+        e.close()
+    fn.__name__ = f"bh_act4_m17_pair_pick_{name}"
+    test(modes=("ds",))(fn)
+
+
+_m17_pair_screen("sturm_vonbolt", [bh.STURM, bh.VON_BOLT])   # (Sturm's cursor is on the screen already: the A lost to the screen opening)
+_m17_pair_screen("hawke_lead", [bh.HAWKE, bh.STURM])
+_m17_pair_screen("hawke_partner", [bh.KOAL, bh.HAWKE])
+_m17_pair_screen("neither", [bh.KINDLE, bh.KOAL])
 
 
 @test(modes=("ds",))
@@ -402,7 +454,10 @@ def bh_act4_m21_supply_cut_loses(ctx):
 
 @test(modes=("ds",))
 def bh_act4_m22_obelisk_and_forces_on_the_map(ctx):
-    e, g, d, texts = ready(ctx, 22, [bh.STURM, bh.HAWKE])
+    e, g, d, texts = ready(ctx, 22)
+    ctx.eq(g.player(1)["co"], bh.JUGGER, "Jugger leads (a fixed pair: no CO screen)")
+    from aw2test import tag
+    ctx.eq((tag.partner(e, 1) or {}).get("co"), bh.FLAK, "Flak is his partner")
     ctx.eq(len(g.units(2)), 30, "Blue Moon's 30 units")
     e.close()
 

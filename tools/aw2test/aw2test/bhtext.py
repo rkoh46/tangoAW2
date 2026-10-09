@@ -108,18 +108,81 @@ def rows(key, lead=None, partner=None, bonds=()):
     return out
 
 
-def scene(key, lead=None, partner=None, bonds=()):
-    """The texts the game holds for the scene: runs of rows by one speaker (and expression) merged, boxes joined with \\x0f."""
-    texts, last, n = [], None, 0
-    for who, mood, text in rows(key, lead, partner, bonds):
-        face = (who, mood)
-        if texts and face == last and n + 1 <= MERGE_BOXES:
-            texts[-1] += "\x0f" + text
-            n += 1
+TROOPERS = ("CRUMB", "MORTAR", "WICK", "SOLDIER")
+
+
+def _face(who, mood):
+    """The Speaker the compiler compares: a CO and expression; the trooper face (Crumb, Mortar, Wick, SOLDIER share it;
+    expression kept); a soldier of another colour (no expression); the narration."""
+    if who in TROOPERS:
+        return ("T", mood)
+    if who.startswith("SOLDIER "):
+        return ("S", who)
+    if who == "NARRATION":
+        return ("N",)
+    return ("C", who, mood)
+
+
+def _lines(key):
+    """The scene's lines as bh_text.rs builds them, for every CO at once: (face, condition, text), the condition one of
+    None, ("only", co), ("partner", co), ("with", co), ("bond", name)."""
+    pool, rs = book()[key]
+    named = {n for (g, _, _, _) in rs if g[0] == "IF" for n in g[1]}
+    out, i = [], 0
+    while i < len(rs):
+        g = rs[i][0]
+        j = i
+        while j < len(rs) and rs[j][0] == g:
+            j += 1
+        run = rs[i:j]
+        kind, names = g
+        if kind is None:
+            for _, who, mood, text in run:
+                if who == "[CO]":
+                    out += [(_face(c, mood), ("only", c), text) for c in pool]
+                elif who == "[CO2]":
+                    out += [(_face(c, mood), ("partner", c), text) for c in pool]
+                else:
+                    out.append((_face(who, mood), None, text))
         else:
-            texts.append(text)
-            last, n = face, 1
-    return texts
+            if kind == "OTHER":
+                cos = [c for c in pool if c not in named]
+            else:
+                cos = names
+            cond = {"IF": "only", "OTHER": "only", "WITH": "with", "PARTNER": "partner", "BOND": "bond"}[kind]
+            for c in cos:
+                for _, who, mood, text in run:
+                    speaker = c if who in ("[CO]", "[CO2]") else who
+                    out.append((_face(speaker, mood), (cond, c), text))
+        i = j
+    return out
+
+
+def scene(key, lead=None, partner=None, bonds=()):
+    """The texts the game shows for the scene: the compiler merges runs of lines (same face, same condition, up to six
+    boxes) before the lines are filtered for the player's CO, so a text never joins lines of different groups; boxes are
+    joined with \\x0f."""
+    merged = []
+    for face, cond, text in _lines(key):
+        if merged and merged[-1][0] == face and merged[-1][1] == cond and merged[-1][3] < MERGE_BOXES:
+            merged[-1][2].append(text)
+            merged[-1][3] += 1
+        else:
+            merged.append([face, cond, [text], 1])
+    out = []
+    for face, cond, texts, _ in merged:
+        if cond is not None:
+            kind, c = cond
+            if kind == "only" and c != lead:
+                continue
+            if kind == "partner" and c != partner:
+                continue
+            if kind == "with" and c not in (lead, partner):
+                continue
+            if kind == "bond" and not (c in BOND_ORDER and BOND_ORDER.index(c) in bonds):
+                continue
+        out.append("\x0f".join(texts))
+    return out
 
 
 def clean(t):

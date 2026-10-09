@@ -134,7 +134,7 @@ class DsCampaign:
                 continue
             tid = e.u16(c + 8)
             p = e.u32(0x08610A38 + 4 * tid)
-            raw = e.read(p, 400)
+            raw = e.read(p, 1024)
             return raw[:raw.index(b"\0")].decode("latin-1") if b"\0" in raw else None
         return None
 

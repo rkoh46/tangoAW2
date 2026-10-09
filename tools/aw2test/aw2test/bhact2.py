@@ -104,6 +104,9 @@ def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False):
     CO screens answered with `cos`, Setup left with Deploy, the intro read.
     Returns the intro's boxes."""
     d.pick_mission()
+    if not cos and not setup_only:
+        # a fixed mission (no CO screen): the battle loads and the opening plays around the Setup phase
+        return fixed_intro(ctx, e, g, d, label, shots)
     picked = d.choose_cos(len(cos), prefs=list(cos)) if cos else []
     for _ in range(600):
         if d.in_battle() and e.u32(0x0849_9598) != 0:
@@ -124,6 +127,38 @@ def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False):
         return []
     d.leave_setup()
     return intro(ctx, e, d, label, shots)
+
+
+def fixed_intro(ctx, e, g, d, label, shots=(0,), max_frames=40000):
+    """A mission without a CO screen: from the battle's loading, Deploy chosen when the Setup phase is up, every
+    box of the opening (A through them) until the player has control. Returns the boxes' texts."""
+    texts, last, stable, n, quiet = [], None, 0, 0, 0
+    while n < max_frames:
+        if d.in_setup():
+            d.deploy()
+            quiet = 0
+        t = d.text_shown()
+        stable = stable + 1 if t and t == last else 0
+        last = t
+        if t and stable == 5 and (not texts or texts[-1] != clean(t)):
+            texts.append(clean(t))
+            if len(texts) - 1 in shots:
+                e.wait(60)
+                pic(ctx, e, f"{label}_dialogue{len(texts)}")
+        if d.scripts_running():
+            quiet = 0
+            if stable >= 8:
+                e.press("A", 4)
+                stable = 0
+        elif d.in_battle() and e.u32(0x0849_9598) != 0 and not d.in_setup():
+            quiet += 1
+            if quiet > 40 and (texts or n > 600):
+                break
+        e.wait(4)
+        n += 4
+    ctx.require(d.in_battle(), f"{label}: the battle loaded")
+    g._units_base = g._players_base = None
+    return texts
 
 
 def follow(ctx, e, d, label, shots=(0,), max_frames=30000):

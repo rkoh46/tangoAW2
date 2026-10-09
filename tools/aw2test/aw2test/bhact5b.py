@@ -8,6 +8,7 @@ from . import bhcampaign as bh
 from . import dscampaign as dc
 from . import paths
 from .emu import Emu
+from .bhact4 import CO_NAMES, expect_scene, _flat   # (the dialogue files against what the screen showed; see bhtext.py)
 from .game import Game, NavError
 
 # Roster bits (crate::bh_campaign::roster) and the mission indexes (world-map order).
@@ -17,10 +18,11 @@ WON = lambda upto: (1 << upto) - 1            # missions 1..upto won (their bits
 SHOTS = os.environ.get("AW2TEST_ACT5B_SHOTS")   # a folder the pictures are also copied to
 
 
-def boot(ctx, won, unlocked, picks=None, at=None, save=None):
+def boot(ctx, won, unlocked, picks=None, at=None, save=None, env=None):
     """Continue with the record set: missions won (bits), COs unlocked (roster
-    bits), the map's cursor at mission index `at`."""
-    e = Emu(save=save or paths.base_save(), ds=ctx.ds)
+    bits), the map's cursor at mission index `at`. `env`: variables of this console only (tests run in
+    parallel in one process: never set os.environ for one test)."""
+    e = Emu(save=save or paths.base_save(), ds=ctx.ds, env=env)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = bh.BhCampaign(g)
@@ -104,7 +106,10 @@ def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False, 
     CO screens answered with `cos`, Setup left with Deploy, the intro read.
     Returns the intro's boxes."""
     d.pick_mission()
-    picked = d.choose_cos(len(cos), prefs=list(cos)) if cos else []
+    if not cos and not setup_only:
+        # a fixed mission (no CO screen): the battle loads and the opening plays around the Setup phase
+        return fixed_intro(ctx, e, g, d, label, shots)
+    picked = (pick_cos(d, list(cos)) if len(cos) > 1 else d.choose_cos(len(cos), prefs=list(cos))) if cos else []
     for _ in range(600):
         if d.in_battle() and e.u32(0x0849_9598) != 0:
             break
@@ -132,6 +137,64 @@ def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False, 
         return []
     d.leave_setup()
     return intro(ctx, e, d, label, shots)
+
+
+def fixed_intro(ctx, e, g, d, label, shots=(0,), max_frames=40000):
+    """A mission without a CO screen: from the battle's loading, Deploy chosen when the Setup phase is up, every
+    box of the opening (A through them) until the player has control. Returns the boxes' texts."""
+    texts, last, stable, n, quiet = [], None, 0, 0, 0
+    while n < max_frames:
+        if d.in_setup():
+            d.deploy()
+            quiet = 0
+        t = d.text_shown()
+        stable = stable + 1 if t and t == last else 0
+        last = t
+        if t and stable == 5 and (not texts or texts[-1] != clean(t)):
+            texts.append(clean(t))
+            if len(texts) - 1 in shots:
+                e.wait(60)
+                pic(ctx, e, f"{label}_dialogue{len(texts)}")
+        if d.scripts_running():
+            quiet = 0
+            if stable >= 8:
+                e.press("A", 4)
+                stable = 0
+        elif d.in_battle() and e.u32(0x0849_9598) != 0 and not d.in_setup():
+            quiet += 1
+            if quiet > 40 and (texts or n > 600):
+                break
+        e.wait(4)
+        n += 4
+    ctx.require(d.in_battle(), f"{label}: the battle loaded")
+    g._units_base = g._players_base = None
+    return texts
+
+
+def pick_cos(d, cos, max_frames=8000):
+    """The CO screens answered with `cos` one pick at a time, each pick checked on the screen's own count of picks: the A
+    that follows the screen's opening can be lost (Sturm's cursor is on it already), and the next screen would then be
+    answered for a CO that was never picked. Returns the COs picked, in order."""
+    e = d.e
+    n = 0
+    last = 0
+    while not d.in_battle() and n < max_frames:
+        if d.on_co_select() and d.co_cursor():
+            k = len(d.picked())
+            if k >= len(cos):
+                e.press("A", 6)         # (every pick made: the screen asks for the last confirmation)
+                e.wait(60)
+                n += 60
+                continue
+            d.choose_co([cos[k]])
+            last = max(last, k + 1)
+            e.wait(60)
+            n += 60
+        elif d.scripts_running():
+            e.press("A", 6)
+        e.wait(10)
+        n += 16
+    return list(cos[:last])
 
 
 def follow(ctx, e, d, label, shots=(0,), max_frames=30000):
@@ -288,3 +351,17 @@ def boxes(e, d, frames=1500):
                 break
         e.wait(4)
     return texts
+
+
+def scene_seen(ctx, seen, keys, lead, partner, label, bonds=(), absent=()):
+    """The scene(s) `keys` of the dialogue files (for this lead and partner, CO ids) appear whole and in order among the
+    texts read from the screen (`seen`: a longer run of boxes than the scene); `absent` are scenes that must not appear."""
+    from . import bhtext
+    if isinstance(keys, str):
+        keys = [keys]
+    flat = _flat(seen)
+    want = _flat([t for k in keys for t in bhtext.shown(k, CO_NAMES.get(lead), CO_NAMES.get(partner), bonds)])
+    ctx.check(bool(want) and want in flat, f"{label}: the dialogue shows {'+'.join(keys)} (the files have {len(want)} characters; seen {len(flat)})")
+    for k in ([absent] if isinstance(absent, str) else absent):
+        other = _flat(bhtext.shown(k, CO_NAMES.get(lead), CO_NAMES.get(partner), bonds))
+        ctx.check(not other or other not in flat, f"{label}: the dialogue does not show {k}")

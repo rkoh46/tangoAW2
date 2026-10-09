@@ -5,6 +5,8 @@ import os
 from aw2test import bhact3 as a3
 from aw2test import bhcampaign as bh
 from aw2test import dscampaign as dc
+from aw2test import ram
+from aw2test import tag
 from aw2test.harness import test
 
 GMAP = 0x0201E450
@@ -12,13 +14,14 @@ DS_TABLE = 0x08E00000
 DAY = 0x03004080
 FOG = 0x03003FCD
 ALL = a3.ST | a3.VB | a3.HK | a3.KO | a3.KI
-# number: (title, won before (mission numbers; M11 is the tree's stub), roster bits, CO picks, size, fog, day limit)
+# number: (title, won before (mission numbers; M11 is the tree's stub), roster bits, CO picks (M12: the pair, lead first;
+# M16: a fixed pair, no pick screen), size, fog, day limit)
 MISSIONS = {
-    12: ("Highway to the Horizon", list(range(1, 12)), a3.ST | a3.VB | a3.HK, [bh.STURM], (36, 18), False, 28),
+    12: ("Highway to the Horizon", list(range(1, 12)), a3.ST | a3.VB | a3.HK, [bh.STURM, bh.HAWKE], (36, 18), False, 28),
     13: ("Festival of Flame", list(range(1, 13)), a3.ST | a3.VB | a3.HK | a3.KO, [bh.STURM], (22, 16), False, 14),
     14: ("No Soldier Left Behind", list(range(1, 14)), ALL, [bh.STURM], (22, 22), True, 15),
     15: ("The Skybridge", list(range(1, 15)), ALL, [bh.STURM, bh.HAWKE], (24, 20), False, 24),
-    16: ("Comet Keep", list(range(1, 16)), ALL, [bh.STURM, bh.HAWKE], (26, 22), False, 24),
+    16: ("Comet Keep", list(range(1, 16)), ALL, [], (26, 22), False, 24),
 }
 
 
@@ -99,13 +102,24 @@ for _n in MISSIONS:
 # --- loads: every mission's armies, map, rules and opening ------------------------------------------------
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 # number: (armies: (colour, CO) (None: the player's pick), funds)
+GRIMM = 76
 ARMIES = {
     12: [(5, None), (4, bh.KOAL)],
     13: [(5, None), (4, bh.KINDLE)],
     14: [(5, None), (4, bh.SONJA)],
     15: [(5, None), (4, bh.KANBEI)],
-    16: [(5, None), (4, bh.KANBEI)],
+    16: [(5, bh.KOAL), (4, bh.KANBEI)],
 }
+# the enemy army's tag partner (None: it has none)
+ENEMY_PARTNER = {12: GRIMM, 16: bh.SENSEI}
+# the player's army: the fixed pair of M16 (lead, partner)
+FIXED_PAIR = {16: (bh.KOAL, bh.KINDLE)}
+
+
+def lead_and_partner(g, e, n):
+    """(the player's lead CO, its tag partner's CO or None) as the battle holds them."""
+    p = tag.partner(e, 1)
+    return g.player(1)["co"], (p["co"] if p else None)
 
 
 def map_units(name):
@@ -128,6 +142,21 @@ def check_load(ctx, n):
     ps = [g.player(a) for a in range(1, 3)]
     ctx.eq([p["colour"] for p in ps], [c for c, _ in ARMIES[n]], f"M{n}: army colours")
     ctx.eq(ps[1]["co"], ARMIES[n][1][1], f"M{n}: the enemy CO")
+    foe = tag.partner(e, 2)
+    ctx.eq(foe["co"] if foe else None, ENEMY_PARTNER.get(n), f"M{n}: the enemy's partner")
+    lead, partner = lead_and_partner(g, e, n)
+    if n in FIXED_PAIR:
+        ctx.eq((lead, partner), FIXED_PAIR[n], f"M{n}: the fixed pair leads and partners the player's army")
+    elif n == 12:
+        ctx.eq(sorted([lead, partner]), sorted(picks), "M12: the picked pair is the player's lead and partner")
+    elif n == 15:
+        # (a two-front mission: the first pick leads the main front, the second leads the sky front -- not a tag partner,
+        # so the dialogue's @WITH/@PARTNER rows see the main front's lead only)
+        from aw2test import twofront as tf
+        ctx.eq((lead, e.u8(tf.SECOND_COS)), tuple(picks), "M15: the first pick leads the main front, the second the sky front")
+        ctx.eq(partner, None, "M15: no tag partner")
+    else:
+        ctx.eq(lead, picks[0], f"M{n}: the picked CO leads")
     ctx.eq(d.size(), size, f"M{n}: the map's size")
     ctx.eq(bool(g.playst()["fog"]), fog, f"M{n}: fog")
     ctx.eq(e.u16(DS_TABLE + 0x5C * dc.DS_MAP_ID + 0x24), limit, f"M{n}: the day limit")
@@ -141,7 +170,7 @@ def check_load(ctx, n):
             ctx.eq(u["hp"], 10, "Crumb: 1 HP")
             continue
         ctx.check(u["hp"] == 100, f"M{n}: unit {u['id']} (type {u['type']}) at full HP ({u['hp']})")
-    ctx.check(len(texts) >= 4, f"M{n}: the opening scene played ({len(texts)} boxes)")
+    ctx.eq(texts, a3.played(f"m{n}_pre", lead, partner), f"M{n}: the opening scene is the dialogue file's m{n}_pre for this pair")
     a3.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
     e.close()
@@ -253,10 +282,13 @@ def set_owner(e, x, y, army):
 def _win_by_capture(n, hqs, bond=None, recruit=None, cos=None):
     def fn(ctx):
         e, g, d, texts = ready(ctx, n, cos)
+        lead, partner = lead_and_partner(g, e, n)
         capture_hq(ctx, e, g, d, hqs)
         victory, mapscene = a3.follow(ctx, e, d, f"m{n}", shots=(0,))
         ctx.log("VICTORY\n" + "\n".join(victory) + "\nMAP\n" + "\n".join(mapscene))
-        ctx.check(len(victory) >= 3 and len(mapscene) >= 3, f"M{n}: the victory scene and the world-map scene played ({len(victory)}, {len(mapscene)} boxes)")
+        ctx.eq(victory, a3.played(f"m{n}_post", lead, partner), f"M{n}: the victory scene is the dialogue file's m{n}_post")
+        ctx.eq(mapscene[:len(a3.played(f"m{n}_map", lead, partner))], a3.played(f"m{n}_map", lead, partner),
+               f"M{n}: the world-map scene starts with the dialogue file's m{n}_map")
         ctx.eq((d.won() >> a3.M[n]) & 1, 1, f"M{n} won")
         flags = d.map_flags()
         ctx.eq(flags[a3.M[n] + 1] & 1, 1 if n < 16 else flags[a3.M[n] + 1] & 1, f"M{n}: the next flag opens")
@@ -265,24 +297,63 @@ def _win_by_capture(n, hqs, bond=None, recruit=None, cos=None):
         if bond is not None:
             ctx.eq((d.bonds() >> bond) & 1, 1, f"M{n}: bond {bond} earned")
         e.close()
-    fn.__name__ = f"bh_act3_m{n}_win_by_capture" + (f"_{cos[0]}" if cos else "")
+    fn.__name__ = f"bh_act3_m{n}_win_by_capture" + (f"_{'_'.join(a3.co_name(c).lower().replace(' ', '') for c in cos)}" if cos else "")
     test(modes=("ds",))(fn)
 
 
-_win_by_capture(12, [(34, 9)], bond=2, recruit=bh.KOAL)                      # (Sturm leads: the affinity)
-_win_by_capture(12, [(34, 9)], bond=None, recruit=bh.KOAL, cos=[bh.VON_BOLT])  # (Von Bolt: Koal joins, no bond)
+_win_by_capture(12, [(34, 9)], bond=2, recruit=bh.KOAL)                                            # (Sturm + Hawke: the affinity)
+_win_by_capture(12, [(34, 9)], bond=2, recruit=bh.KOAL, cos=[bh.VON_BOLT, bh.STURM])               # (Sturm as the partner counts)
+_win_by_capture(12, [(34, 9)], bond=2, recruit=bh.KOAL, cos=[bh.VON_BOLT, bh.HAWKE])               # (Hawke without Sturm counts)
 _win_by_capture(15, [(22, 10)])
 _win_by_capture(16, [(13, 2)])
 
 
 @test(modes=("ds",))
 def bh_act3_m12_no_bond_without_an_affinity_co(ctx):
-    e, g, d, texts = ready(ctx, 12, cos=[bh.VON_BOLT])
+    """No pair of the pool (Sturm, Von Bolt, Hawke) lacks both Sturm and Hawke, so the no-bond branch cannot be
+    reached through the pick screens; the pair is rewritten in RAM (Von Bolt leading, Kindle as the partner), then
+    Koal's HQ is taken: he joins, no bond."""
+    e, g, d, texts = ready(ctx, 12, cos=[bh.VON_BOLT, bh.HAWKE])
+    e.w8(g.player(1)["addr"] + ram.P_CO, bh.VON_BOLT)
+    e.w8(tag.rec(1) + tag.P_CO, bh.KINDLE)
+    ctx.eq((g.player(1)["co"], tag.partner(e, 1)["co"]), (bh.VON_BOLT, bh.KINDLE), "the pair is Von Bolt + Kindle (no Sturm, no Hawke)")
     capture_hq(ctx, e, g, d, [(34, 9)])
     a3.follow(ctx, e, d, "m12v", shots=())
-    ctx.eq((d.bonds() >> 2) & 1, 0, "Von Bolt leading: Koal joins reluctantly, no bond")
+    ctx.eq((d.won() >> a3.M[12]) & 1, 1, "M12 won")
+    ctx.eq((d.bonds() >> 2) & 1, 0, "neither Sturm nor Hawke in the pair: Koal joins reluctantly, no bond")
     ctx.check(bh.KOAL in d.unlocked(), "Koal joins")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_act3_m12_pair_pick_screen(ctx):
+    """M12 is a free pair: the CO screen asks twice (the pool is Sturm, Von Bolt, Hawke), the pair seats by CO id
+    (the higher id leads, whatever the pick order); the enemy is Koal + Grimm; the opening is the file's m12_pre for that pair."""
+    for pair in ([bh.STURM, bh.HAWKE], [bh.HAWKE, bh.STURM], [bh.VON_BOLT, bh.STURM], [bh.VON_BOLT, bh.HAWKE]):
+        label = "+".join(a3.co_name(c) for c in pair)
+        e, g, d, spec = load_mission(ctx, 12)
+        d.pick_mission()
+        ctx.require(e.wait_until(d.on_co_select, 600, step=10), f"{label}: the CO screen opens")
+        ctx.require(e.wait_until(lambda: d.co_cursor() is not None, 300, step=10), f"{label}: the CO screen's cursor")
+        offered = d.offered()
+        ctx.eq(sorted(offered), sorted([bh.STURM, bh.VON_BOLT, bh.HAWKE]), f"{label}: the pool the screen offers (no Koal yet)")
+        got = d.choose_cos(2, prefs=list(pair))
+        ctx.eq(got, pair, f"{label}: two screens, answered in order")
+        for _ in range(600):
+            if d.in_battle() and e.u32(0x0849_9598) != 0:
+                break
+            e.wait(10)
+        d.leave_setup()
+        texts = a3.intro(ctx, e, d, f"m12_{label}", shots=())
+        d.wait_control()
+        g._units_base = g._players_base = None
+        lead, partner = lead_and_partner(g, e, 12)
+        # (the engine seats the pair by CO id, not by pick order: the higher id leads, so Sturm+Hawke and
+        # Hawke+Sturm give the same army)
+        ctx.eq((lead, partner), (max(pair), min(pair)), f"{label}: the two picks are the lead and the partner, whatever the pick order")
+        ctx.eq((g.player(2)["co"], tag.partner(e, 2)["co"]), (bh.KOAL, GRIMM), f"{label}: the enemy is Koal + Grimm")
+        ctx.eq(texts, a3.played("m12_pre", lead, partner), f"{label}: the opening scene for this pair")
+        e.close()
 
 
 @test(modes=("ds",))
@@ -408,7 +479,9 @@ def bh_act3_m16_paratroopers_on_day_6_and_charged_first_power(ctx):
     n0 = len(g.units(2))
     seen = a3.to_day(e, g, d, 6)
     ctx.eq(e.u16(DAY), 6, "day 6")
-    ctx.check("Jump, my paratroopers!" in seen, f"Sensei's line ({seen})")
+    want = a3.played("m16_day6", bh.KOAL, bh.KINDLE)
+    ctx.check(all(t in seen for t in want), f"the day-6 scene m16_day6 ({want}) was shown ({seen})")
+    ctx.check("Jump, my paratroopers!" in want[0], "(Sensei jumps first)")
     ctx.check(len(g.units(2)) >= n0 + 5, f"nine Infantry dropped in the rear ({n0} -> {len(g.units(2))} units, less losses)")
     a3.pic(ctx, e, "m16_paratroopers")
     e.close()
@@ -419,7 +492,8 @@ def bh_act3_m14_open_line_on_day_2(ctx):
     e, g, d, texts = ready(ctx, 14)
     seen = a3.to_day(e, g, d, 2)
     ctx.eq(e.u16(DAY), 2, "day 2")
-    ctx.check("Sonja! Daughter! Have you eaten? The highlands are cold!" in seen, f"Kanbei's open line ({seen})")
+    want = a3.played("m14_day2", bh.STURM)
+    ctx.check(len(want) >= 5 and all(t in seen for t in want), f"Kanbei's open line, the whole m14_day2 scene ({want}) was shown ({seen})")
     e.close()
 
 

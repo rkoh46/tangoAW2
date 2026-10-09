@@ -2337,10 +2337,13 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
         }
         Cond::PlayerHas(c) => {
             let army = crate::ds_campaign::player_army(core) as u32;
-            crate::tag::army_co_of(core, army) == *c || crate::tag::partner(core, army) == Some(*c)
+            crate::tag::army_co_of(core, army) == *c || crate::tag::partner(core, army) == Some(*c) || crate::two_front::second_front_co(core, army) == Some(*c)
         }
         Cond::BondEarned(k) => crate::ds_campaign::bonds_earned(core) >> *k & 1 != 0,
-        Cond::PartnerCo(c) => crate::tag::partner(core, crate::ds_campaign::player_army(core) as u32) == Some(*c),
+        Cond::PartnerCo(c) => {
+            let army = crate::ds_campaign::player_army(core) as u32;
+            crate::tag::partner(core, army) == Some(*c) || crate::two_front::second_front_co(core, army) == Some(*c)
+        }
         Cond::PlayerCo(c) => crate::tag::army_co_of(core, crate::ds_campaign::player_army(core) as u32) == *c,
         Cond::OwnerAt { x, y, army } => owner_at(core, *x, *y) == *army,
         Cond::ArmyDefeated(army) => {

@@ -9,6 +9,7 @@ player picks Sturm or Von Bolt), the staff roll."""
 import os
 
 from aw2test import bhcampaign as bh
+from aw2test import bhtext
 from aw2test import dscampaign as dc
 from aw2test import paths
 from aw2test.emu import Emu
@@ -22,11 +23,50 @@ LABEL_TILES = (832, 868)          # campaign_menu::TILES, one label each
 # The campaign as it stands: the mission whose win ends it (its index) and the staff roll's
 # sections (bh_campaign::def). Act I only so far: the Act V builder moves both.
 FINAL_MISSION = 29      # (the merged tree's last mission: bh30 Nell's Stand; Sturm and Clone Andy are picked on its CO screens)
-CREDITS_PAGES = [(1, "*BH CAMPAIGN*"), (2, "PLACEHOLDER"), (1, "*THANKS FOR PLAYING*")]
-PROLOGUE = ["Once, one black banner covered half the world.", "Then it burned. Its legions scattered like ash.",
-            "Its officers took new colours and new names.", "Its last lord grew old, counting coins in the ruins.",
-            "Then a storm came ashore that no map had foretold.", "It carried no flag. It had one name, and one purpose.",
-            "Four nations sleep behind their borders, safe and proud.", "None of them has heard the thunder yet."]
+ROLL_WIDTH, ROLL_SLOTS = 21, 6     # ds_credits.rs: a heading's width, the slots of a page
+
+
+def credit_sections():
+    """[(heading, [names], secret)] of bh_campaign.rs `credits()`."""
+    import re
+    src = open(os.path.join(paths.REPO, "tango-gamesupport-aw2", "src", "bh_campaign.rs")).read()
+    body = src[src.index("fn credits()"):]
+    body = body[:body.index("\n}\n")]
+    q = r'"((?:[^"\\]|\\.)*)"'
+    out = []
+    for m in re.finditer(r'sec\(' + q + r',\s*&\[(.*?)\],\s*(true|false)\)', body, re.S):
+        names = [n.replace('\\"', '"') for n in re.findall(q, m.group(2))]
+        out.append((m.group(1), names, m.group(3) == "true"))
+    return out
+
+
+def roll_pages(secret=False):
+    """The (kind, text) slots of the roll's pages as ds_credits.rs `pages` lays them out (1 heading, 2 name), blank slots dropped."""
+    out = []
+    for heading, names, sec in credit_sections():
+        if sec and not secret:
+            continue
+        t = heading.replace("'", "~")
+        if len(t) + 2 <= ROLL_WIDTH or " " not in t:
+            heads = ["*" + t + "*"]
+        else:
+            mid = len(t) // 2
+            i = min((i for i, c in enumerate(t) if c == " "), key=lambda i: abs(i - mid))
+            heads = ["*" + t[:i] + "*", "*" + t[i + 1:] + "*"]
+        rows = [(1, h) for h in heads] + [(2, n.replace("'", "~")) for n in names]
+        if len(rows) <= ROLL_SLOTS:
+            out += rows
+        else:
+            room = max(ROLL_SLOTS - len(heads), 1)
+            body = rows[len(heads):]
+            for k in range(0, len(body), room):
+                out += ([(1, h) for h in heads] + body[k:k + room])[:ROLL_SLOTS]
+    return out
+
+
+CREDITS_PAGES = roll_pages()
+PROLOGUE = bhtext.shown("prologue")        # (17 narration boxes, merged into texts of up to six)
+
 
 
 def boot(ctx, save=None):
@@ -97,7 +137,7 @@ def follow_prologue(ctx, e, d, label):
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        t = t.replace("\x0f", "").replace("\r", " ") if t else t
+        t = bhtext.clean(t) if t else t
         if t and stable == 6 and (not texts or texts[-1] != t):
             texts.append(t)
             shot(ctx, e, f"{label}{len(texts)}")
@@ -110,7 +150,7 @@ def follow_prologue(ctx, e, d, label):
 
 @test(modes=("ds",))
 def bh_campaign_new_prologue_world_map(ctx):
-    """New: the prologue (the design's eight pages, from data), then AW2's own world
+    """New: the prologue (17 narration boxes in three texts, from the text file), then AW2's own world
     map with the first flag, on the Black Hole land."""
     e, g, d = boot(ctx)
     d.start_bh(new=True, pick=False)

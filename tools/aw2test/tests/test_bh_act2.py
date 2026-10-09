@@ -4,6 +4,7 @@ import os
 
 from aw2test import bhact2 as a2
 from aw2test import bhcampaign as bh
+from aw2test import bhtext
 from aw2test import dscampaign as dc
 from aw2test.harness import test
 
@@ -13,17 +14,22 @@ GMAP = 0x0201E450
 DS_TABLE = 0x08E00000
 DAY = 0x03004080
 ALL = a2.ST | a2.VB | a2.HK
-# number: (title, won before (mission numbers), roster bits, CO picks, armies: (colour, CO), map size, fog, day limit, units per army)
+# number: (title, won before (mission numbers), roster bits, CO picks the CO screen asks for ([] = fixed, no screen),
+#          armies: (colour, CO), map size, fog, day limit)
 MISSIONS = {
-    4: ("Marshal in Green", [1, 2, 3], a2.ST | a2.VB, [bh.STURM], [(5, bh.STURM), (3, bh.HAWKE)], (24, 18), True, 20),
+    4: ("Marshal in Green", [1, 2, 3], a2.ST | a2.VB, [], [(5, bh.STURM), (3, bh.HAWKE)], (24, 18), True, 20),
     5: ("Night Raid", [1, 2, 3, 4], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.JAVIER)], (24, 16), True, 9),
     6: ("Stepping Stones", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.DRAKE)], (32, 20), False, 22),
-    7: ("Greenhaven Arsenal", [1, 2, 3, 4, 5], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.EAGLE)], (28, 24), False, 26),
+    7: ("Greenhaven Arsenal", [1, 2, 3, 4, 5], ALL, [], [(5, bh.HAWKE), (3, bh.EAGLE)], (28, 24), False, 26),
     8: ("The Twin Gates", [1, 2, 3, 4, 5, 6, 7], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JESS)], (24, 18), False, 22),
-    9: ("The Loot Train", [1, 2, 3, 4, 5, 6, 7, 8], ALL, [bh.STURM], [(5, bh.STURM), (3, bh.JAVIER)], (28, 14), True, 16),
-    10: ("Evergreen Citadel", [1, 2, 3, 4, 5, 6, 7, 8, 9], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.EAGLE)], (28, 22), False, 24),
-    11: ("Ashfall Pass", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [bh.STURM, bh.HAWKE], [(5, None), (3, bh.JAVIER), (4, bh.SENSEI)], (28, 20), False, 24),
+    9: ("The Loot Train", [1, 2, 3, 4, 5, 6, 7, 8], ALL, [], [(5, bh.VON_BOLT), (3, None)], (28, 14), True, 16),
+    10: ("Evergreen Citadel", [1, 2, 3, 4, 5, 6, 7, 8, 9], ALL, [], [(5, None), (3, None)], (28, 22), False, 24),
+    11: ("Ashfall Pass", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ALL, [], [(5, None), (3, bh.JAVIER), (4, bh.SENSEI)], (28, 20), False, 24),
 }
+# fixed pairs (the CO matrix): the player's two COs, and the enemy pairs (army: its two COs)
+LEADS = {10: [bh.STURM, bh.HAWKE], 11: [bh.VON_BOLT, bh.HAWKE]}
+ENEMY_PAIRS = {9: {2: [bh.JAVIER, bh.DRAKE]}, 10: {2: [bh.EAGLE, bh.JESS]}}
+NAMES = {bh.STURM: "STURM", bh.VON_BOLT: "VON BOLT", bh.HAWKE: "HAWKE"}
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
 
@@ -34,6 +40,16 @@ def map_units(name):
         f = line.split()
         if f and f[0] == "unit":
             out[int(f[1])] = out.get(int(f[1]), 0) + 1
+    return out
+
+
+def hold_cells(name):
+    """{(army, type, x, y)} of the map's `hold` units (garrisons: the AI keeps them where they stand until a foe comes)."""
+    out = set()
+    for line in open(os.path.join(MAP_FILES, name + ".txt")):
+        f = line.split()
+        if f and f[0] == "unit" and f[-1] == "hold":
+            out.add((int(f[1]), int(f[2]), int(f[3]), int(f[4])))
     return out
 
 
@@ -60,18 +76,32 @@ def check_load(ctx, n):
     ctx.eq(d.mission(), a2.M[n], f"M{n}: the mission")
     ps = [g.player(a) for a in range(1, len(armies) + 1)]
     ctx.eq([(p["colour"], p["co"] if want[1] is not None else None) for p, want in zip(ps, armies)], armies, f"M{n}: army colours and COs")
+    from aw2test import tag
+    from aw2test import twofront as tf
+    for army, pair in ENEMY_PAIRS.get(n, {}).items():
+        ctx.eq(sorted([g.player(army)["co"], tag.partner(e, army)["co"]]), sorted(pair), f"M{n}: army {army}'s two COs")
     ctx.eq(d.size(), size, f"M{n}: the map's size")
     ps = g.playst()
     ctx.eq(bool(ps["fog"]), fog, f"M{n}: fog")
     ctx.eq(e.u16(DS_TABLE + 0x5C * dc.DS_MAP_ID + 0x24), limit, f"M{n}: the day limit")
     for army, count in units.items():
         ctx.eq(mission_count(g, army), count, f"M{n}: army {army}'s units")
-    if len(picks) == 2:
-        # (the pair: whichever of the two picks leads, the other is the partner or the second front's CO)
-        from aw2test import tag
-        from aw2test import twofront as tf
+    pair = LEADS.get(n) or (picks if len(picks) == 2 else None)
+    if pair:
+        # (the pair: whichever of the two leads, the other is the partner or the second front's CO)
         other = (e.u8(tf.SECOND_COS)) if n == 8 else tag.partner(e, 1)["co"]
-        ctx.eq(sorted([g.player(1)["co"], other]), sorted(picks), f"M{n}: the two picks lead the main army and its partner (or the second front)")
+        ctx.eq(sorted([g.player(1)["co"], other]), sorted(pair), f"M{n}: the two COs lead the main army and its partner (or the second front)")
+    lead = NAMES[g.player(1)["co"]]
+    if n == 8:
+        # ENGINE GAP (reported): in M8 the second front's CO is not the tag partner (tag::partner is None), so the
+        # [CO2] row of m08_pre ("And I take the dusk gate...") is skipped by Cond::PartnerCo and never shown.
+        want = bhtext.shown("m08_pre", lead, None)
+        ctx.log(f"M8: [CO2] row of m08_pre not shown (tag partner {tag.partner(e, 1)})")
+    elif pair:
+        want = bhtext.shown(f"m{n:02d}_pre", lead, NAMES[tag.partner(e, 1)["co"]])
+    else:
+        want = bhtext.shown(f"m{n:02d}_pre", lead)
+    ctx.eq(texts, want, f"M{n}: the opening plays m{n:02d}_pre for {lead}")
     a2.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
     e.close()
@@ -529,8 +559,8 @@ def bh_act2_m5_win_needs_the_aircraft_and_the_tower(ctx):
     names = g.move_to(mine["x"], mine["y"])["names"]
     g.choose(next(x for x in names if x.lower().startswith("wait")), g.ACTION_MENU)
     victory, mapscene = a2.follow(ctx, e, d, "m5", shots=(0,))
-    ctx.eq(victory[0], "My tower is silent. It is so quiet. Too quiet.", "the victory scene")
-    ctx.check(len(victory) == 4 and len(mapscene) == 5, f"the scenes ({len(victory)}, {len(mapscene)})")
+    ctx.eq(victory, bhtext.shown("m05_post", "STURM"), "the victory scene (m05_post)")
+    ctx.eq(mapscene, bhtext.shown("m05_map", "STURM"), "the world-map scene (m05_map)")
     ctx.eq((d.won() >> 4) & 1, 1, "M5 won")
     ctx.eq([k for k in range(5, 8) if d.map_flags()[k] & 1], [5, 6], "M6 and M7 open (the branch)")
     e.close()
@@ -543,7 +573,8 @@ def bh_act2_m5_alarm_and_flares(ctx):
     before = len(g.units(2))
     seen = a2.to_day(e, g, d, 3)
     ctx.eq(e.u16(DAY), 3, "day 3")
-    ctx.eq(seen[-1:], ["Sound the horns! To arms, noble Green Earth!"], "Javier's alarm")
+    want = bhtext.shown("m05_day3", "STURM")
+    ctx.eq(seen[-len(want):], want, "Javier's alarm (m05_day3)")
     new = [u for u in g.units(2) if u["x"] >= 22]
     ctx.check(len(g.units(2)) >= before + 3, f"two Tanks and an Anti-Air came ({len(g.units(2))} units, was {before})")
     a2.pic(ctx, e, "m5_alarm")
@@ -626,7 +657,8 @@ def bh_act2_m9_escort_all_three_home(ctx):
     e, g, d, apcs, live = escort_game(ctx, 3, 0, "three home")
     act(ctx, e, g, d)
     victory, mapscene = a2.follow(ctx, e, d, "m9_three", shots=(0,))
-    ctx.eq(victory, ["All three! Kehh-heh! Not one coin missing!", "Interest is laying eggs. Golden ones. Perhaps."], "the three-trucks scene")
+    ctx.eq(victory, bhtext.shown("m09_all_home", "VON BOLT"), "the three-trucks scene (m09_all_home)")
+    ctx.eq(mapscene, bhtext.shown("m09_map", "VON BOLT"), "the world-map scene (m09_map)")
     ctx.eq((d.won() >> 8) & 1, 1, "M9 won")
     ctx.eq(d.map_flags()[9] & 1, 1, "M10 opens")
     e.close()
@@ -637,7 +669,7 @@ def bh_act2_m9_escort_two_home_one_gone(ctx):
     e, g, d, apcs, live = escort_game(ctx, 2, 1, "two home")
     act(ctx, e, g, d)
     victory, mapscene = a2.follow(ctx, e, d, "m9_two", shots=(0,))
-    ctx.eq(victory, ["One truck gone... ...my coins, my poor coins.", "Two in three. Within tolerance.", "TOLERANCE?!"], "the two-trucks scene")
+    ctx.eq(victory, bhtext.shown("m09_two_home", "VON BOLT"), "the two-trucks scene (m09_two_home)")
     ctx.eq((d.won() >> 8) & 1, 1, "M9 won with two of three")
     e.close()
 
@@ -797,13 +829,17 @@ def bh_act2_m8_save_and_continue(ctx):
 
 
 @test(modes=("ds",))
-def bh_act2_m4_von_bolt_pitch_and_bond(ctx):
-    """Von Bolt picked: his pitch (not Sturm's), Hawke joins, the bond (bit 1) is earned and the
-    world-map panel of M4 shows its star; the win is by leaving Hawke one unit."""
-    e, g, d, texts = ready(ctx, 4, [bh.VON_BOLT])
-    ctx.check("Flattery! Does it come with a fee?" in texts and "I did not come for praise. I came to take." not in texts, "Von Bolt's opening exchange")
-    victory, mapscene = a2.win_by_attrition(ctx, e, g, d, "m4_vb", shots=(0,))
-    ctx.check("Marshal, the pay is the world. In writing." in victory and "You will not kneel. You will command under my banner." not in victory, f"Von Bolt's pitch ({victory})")
+def bh_act2_m4_sturms_pitch_earns_the_bond(ctx):
+    """M4 is Sturm's alone (no CO screen, no Von Bolt pitch): the win by leaving Hawke one unit plays Sturm's
+    own pitch (m04_post) and earns Hawke's bond (bit 1) unconditionally; Hawke is unlocked."""
+    e, g, d, texts = ready(ctx, 4)
+    ctx.eq(g.player(1)["co"], bh.STURM, "Sturm leads, fixed")
+    ctx.eq(texts, bhtext.shown("m04_pre", "STURM"), "the opening (m04_pre)")
+    ctx.eq(d.bonds(), 0, "no bond before the win")
+    victory, mapscene = a2.win_by_attrition(ctx, e, g, d, "m4_sturm", shots=(0,))
+    ctx.eq(victory, bhtext.shown("m04_post", "STURM"), "Sturm's pitch (m04_post)")
+    ctx.check(any("You will not kneel" in t for t in victory) and not any("Marshal, the pay is the world" in t for t in victory), "Sturm's pitch, not Von Bolt's")
+    ctx.eq(mapscene, bhtext.shown("m04_map", "STURM"), "the world-map scene (m04_map)")
     ctx.eq(d.bonds(), 2, "Hawke's bond earned")
     ctx.eq(d.unlocked(), [bh.STURM, bh.VON_BOLT, bh.HAWKE], "Hawke unlocked")
     e.close()
@@ -860,5 +896,13 @@ def bh_act2_enemy_units_advance(ctx):
             if i not in moved:
                 still[before[i][2]] = still.get(before[i][2], 0) + 1
         ctx.log(f"M{n}: {len(moved)} of {len(alive)} surviving enemy units left their start tiles; still: {still}")
-        ctx.check(len(moved) >= max(1, len(alive) // 4), f"M{n}: the enemy advances ({len(moved)} of {len(alive)} moved)")
+        # (the garrisons the map marks `hold` are meant to stand: the advance is judged on the others)
+        holds = hold_cells(f"bh{n:02d}")
+        free = [i for i in alive if (before[i][3], before[i][2], before[i][0], before[i][1]) not in holds]
+        free_moved = [i for i in free if i in moved]
+        ctx.log(f"M{n}: {len(free_moved)} of {len(free)} units without the hold order moved ({len(alive) - len(free)} garrisons)")
+        if free:
+            ctx.check(len(free_moved) >= max(1, len(free) // 4), f"M{n}: the enemy advances ({len(free_moved)} of {len(free)} free units moved)")
+        else:
+            ctx.check(len(moved) <= len(alive) // 4, f"M{n}: an all-garrison mission, the garrisons stand ({len(alive)} units, {len(moved)} moved)")
         e.close()

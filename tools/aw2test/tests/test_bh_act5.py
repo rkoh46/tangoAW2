@@ -10,10 +10,10 @@ from aw2test.harness import test
 GMAP = 0x0201E450
 DS_TABLE = 0x08E00000
 ALL = (1 << 10) - 1   # every roster CO but Sonja (the secret mission's recruit: with her the CO screen has a second country tab and the partner pick cannot reach the Black Hole tab)
-# number: (title, won mask, CO picks, armies: (colour, CO), map size, day limit)
+# number: (title, won mask, CO picks (M30: only the tag partner is picked, Sturm always leads), armies: (colour, CO), map size, day limit)
 MISSIONS = {
     29: ("The Orange Gate", a5.WON(28), [bh.STURM], [(5, bh.STURM), (1, None)], (34, 28), 32),
-    30: ("Nell's Stand", a5.WON(29), [bh.STURM, bh.CLONE_ANDY], [(5, None), (1, None)], (36, 28), 34),
+    30: ("Nell's Stand", a5.WON(29), [bh.CLONE_ANDY], [(5, None), (1, None)], (36, 28), 34),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
@@ -46,6 +46,7 @@ def check_load(ctx, n):
         ctx.eq(len(g.units(army)), count, f"M{n}: army {army}'s units")
     a5.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
+    a5.scene_seen(ctx, texts, f"m{n}_pre", bh.STURM, picks[-1] if n == 30 else None, f"M{n}: the opening")
     e.close()
 
 
@@ -582,6 +583,7 @@ def bh_act5_m30_takeover_proof(ctx):
     d.place_unit(mine, 33, 7)
     e.wait(10)
     g._units_base = g._players_base = None
+    ctx.set_hp(g, 33, 7, 100)           # (a capture of 20 points takes two full-HP actions: the unit's wounds from the long fight are healed)
     g.select(33, 7)
     g.move_to(33, 6)
     g.choose("Capt", g.ACTION_MENU)
@@ -608,3 +610,72 @@ def bh_act5_m30_takeover_proof(ctx):
         e.wait(60)
     ctx.eq(e.u8(dc.LAST_RESULT), 1, "capturing the Rail Yard gives the Victory screen")
     e.close()
+
+
+# --- M30: Sturm always leads, the player picks only the tag partner (CoSpec::PickPartner) -----------------------------
+DAY = 0x03004080
+
+
+def _partner_pick(name, partner, duel):
+    """M30 with the partner `partner`: the pick screen asks for one CO and does not offer Sturm, no second screen follows, the
+    battle starts with Sturm leading and the pick as partner against Nell, the opening is the files' scene for that pair, and the
+    day-10 duel is the `duel` scene (Clone Andy's version only when he is in the pair)."""
+    def fn(ctx):
+        from aw2test import tag
+        title, won, picks, armies, size, limit = MISSIONS[30]
+        e, g, d = a5.boot(ctx, won, ALL, picks={a5.M[30]: 1}, at=a5.M[30])
+        d.pick_mission()
+        up = False
+        for _ in range(60):
+            if d.on_co_select() and d.co_cursor():
+                up = True
+                break
+            e.wait(10)
+        ctx.require(up, "M30: the pick screen is up")
+        offered = d.offered()
+        want = [c for c in bh.ROSTER[1:10]]           # every unlocked CO but Sturm (Sonja and Crumb are not recruited)
+        ctx.check(bh.STURM not in offered, f"Sturm is not offered ({offered})")
+        ctx.eq(sorted(offered), sorted(want), "the screen offers every unlocked CO but Sturm")
+        picked = d.choose_co([partner])
+        ctx.eq(d.picked(), [partner], "the screen has the one pick, Sturm not asked for")
+        ctx.eq(picked, partner, "the partner picked")
+        # one pick completes the screen: only A (the confirmation) is pressed from here on, and the game itself puts Sturm first in the
+        # screen's list (his pick is not asked: the list ends as [Sturm, the pick])
+        final = d.picked()
+        for _ in range(600):
+            if d.in_battle() and e.u32(0x0849_9598) != 0:
+                break
+            if d.on_co_select() and d.co_cursor():
+                final = d.picked() or final
+                e.press("A", 6)
+            elif d.scripts_running():
+                e.press("A", 4)
+            e.wait(30)
+        ctx.eq(list(final), [bh.STURM, partner], "one pick was asked: the screen ends with Sturm (the game's own) and the pick")
+        ctx.require(d.in_battle(), "M30: the battle loaded")
+        g._units_base = g._players_base = None
+        d.leave_setup()
+        texts = a5.intro(ctx, e, d, f"m30_{name}", ())
+        d.wait_control()
+        g._units_base = g._players_base = None
+        ctx.eq(g.player(1)["co"], bh.STURM, "Sturm leads")
+        p = tag.partner(e, 1)
+        ctx.eq(p["co"] if p else None, partner, "the pick is the partner")
+        ctx.eq(g.player(2)["co"], 0, "Nell leads Orange Star")
+        a5.scene_seen(ctx, texts, "m30_pre", bh.STURM, partner, f"M30 {name}: the opening",
+                      absent=[] if partner == bh.CLONE_ANDY else ["m30_day1_sturm_clone"])
+        if partner == bh.CLONE_ANDY:
+            a5.scene_seen(ctx, texts, "m30_day1_sturm_clone", bh.STURM, partner, f"M30 {name}: the day-1 scene of the pair")
+        # the day-10 duel: day 9 poked, one turn passed
+        a5.calm(e, g, d)
+        e.w16(DAY, 9)
+        seen = a5.to_day(e, g, d, 10)
+        other = "m30_duel_plain" if duel == "m30_duel_clone" else "m30_duel_clone"
+        a5.scene_seen(ctx, seen, duel, bh.STURM, partner, f"M30 {name}: the duel", absent=[other])
+        e.close()
+    fn.__name__ = f"bh_act5_m30_partner_pick_{name}"
+    test(modes=("ds",))(fn)
+
+
+_partner_pick("clone_andy", bh.CLONE_ANDY, "m30_duel_clone")
+_partner_pick("hawke", bh.HAWKE, "m30_duel_plain")

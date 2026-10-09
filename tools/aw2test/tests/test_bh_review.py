@@ -13,49 +13,60 @@ import shutil
 
 from aw2test import bhact2 as a2
 from aw2test import bhcampaign as bh
+from aw2test import paths
+from aw2test.emu import Emu
+from aw2test.game import Game
 from aw2test.harness import test
 
 OUT = os.environ.get("AW2TEST_REVIEW_DIR")
 FOG = 0x03003FCD
 BONDS = 0x1FF << 12
 S, VB, HK, KO, KI, JU, FL = bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER, bh.FLAK
-# number: (title, roster bits unlocked, CO picks, fog, other front)
+# number: (title, roster bits unlocked, CO picks, fog, other front). Picks follow the CO matrix (tools/bhtext/BIBLE.md): none for a fixed
+# army (M1, M3, M4, M7, M9, M10, M11, M16, M22, M27, M28); one for a free single pick; the lead and the partner for a free pair (M12, M17,
+# M23, M24, M26) or for a pick with a second-front partner (M8, M15, M20, M25); M30: only the tag partner (Sturm always leads).
 M = {
     1: ("Storm Landing", 0b1, [], False, False),
     2: ("The Sleeping Foundry", 0b11, [S], False, False),
     3: ("Blockade Runner", 0b11, [], False, False),
-    4: ("Marshal in Green", 0b11, [S], True, False),
+    4: ("Marshal in Green", 0b11, [], True, False),
     5: ("Night Raid", 0b111, [S], True, False),
     6: ("Stepping Stones", 0b111, [S], False, False),
-    7: ("Greenhaven Arsenal", 0b111, [S], False, False),
+    7: ("Greenhaven Arsenal", 0b111, [], False, False),
     8: ("The Twin Gates", 0b111, [S, HK], False, True),
-    9: ("The Loot Train", 0b111, [S], True, False),
-    10: ("Evergreen Citadel", 0b111, [S, HK], False, False),
-    11: ("Ashfall Pass", 0b111, [S, HK], False, False),
-    12: ("Highway to the Horizon", 0b111, [S], False, False),
+    9: ("The Loot Train", 0b111, [], True, False),
+    10: ("Evergreen Citadel", 0b111, [], False, False),
+    11: ("Ashfall Pass", 0b111, [], False, False),
+    12: ("Highway to the Horizon", 0b111, [S, HK], False, False),
     13: ("Festival of Flame", 0b1111, [S], False, False),
     14: ("No Soldier Left Behind", 0b11111, [S], True, False),
     15: ("The Skybridge", 0b11111, [S, HK], False, True),
-    16: ("Comet Keep", 0b11111, [S, HK], False, False),
-    17: ("Cold Iron", 0b11111, [S], True, False),
+    16: ("Comet Keep", 0b11111, [], False, False),
+    17: ("Cold Iron", 0b11111, [S, HK], True, False),
     18: ("The Pit", 0b111111, [S], False, False),
     19: ("The Assembly Line", 0b111111, [S], False, False),
     20: ("Moonlit Harbours", 0b111, [S, HK], False, True),
     21: ("Running Dry", 0b1111111, [S], True, False),
-    22: ("Whiteout", 0b111, [S, HK], False, False),
-    23: ("Laboratory 7", 0x7F | BONDS, [S], True, False),
-    24: ("Sky Gala", 0xFF | BONDS, [S], False, False),
+    22: ("Whiteout", 0b111, [], False, False),
+    23: ("Laboratory 7", 0x7F | BONDS, [S, HK], True, False),
+    24: ("Sky Gala", 0xFF | BONDS, [S, HK], False, False),
     25: ("Twin Harbours", 0xFF | BONDS, [S, HK], False, True),
     26: ("The Last Alliance", 0x1FF | BONDS, [S, VB], False, False),
-    27: ("Echo", 0x1FF | BONDS, [S], True, False),
+    27: ("Echo", 0x1FF | BONDS, [], True, False),
     28: ("Home Is Where The Black Is", 0x3FF | BONDS, [], False, False),
     29: ("The Orange Gate", 0x3FF, [S], False, False),
-    30: ("Nell's Stand", 0x3FF, [S, bh.CLONE_ANDY], False, False),
+    30: ("Nell's Stand", 0x3FF, [bh.CLONE_ANDY], False, False),
     31: ("The Colonel's Vault", 0xFFF | BONDS, [S], True, False),
 }
 # units that do not start at full HP, ammo or fuel by design: mission -> what is allowed
-EXCEPT = {5: "parked aircraft", 21: "the low-ammo column", 31: "the trucks"}
-BANNER = lambda tx, ty: ty <= 2 and 3 <= tx <= 11      # (the Setup banner and the other-front window sit at the screen's top)
+EXCEPT = {3: "the minicannons' first shots at the first turn start (a fixed mission has no Setup phase to photograph before them)",
+          5: "parked aircraft",
+          10: "the minicannons' first shots at the first turn start (a fixed mission has no Setup phase)", 14: "Crumb at 1 HP and the stranded ring (no fuel until the ring is released)", 21: "the low-ammo column",
+          28: "an ally's Rockets that fired in the allies' first turn", 31: "the trucks"}
+# (the Setup banner sits on the screen's top row; the other-front window over its top three rows. A wider band would leave cells 10 and 11
+# of rows 0..2 unseen on a map 22 cells wide, which no camera position brings to the screen's sides)
+BANNER = lambda tx, ty: ty == 0 and 5 <= tx <= 10
+FRONT_WINDOW = lambda tx, ty: ty <= 2 and 5 <= tx <= 10
 
 
 def save(ctx, path, n, view):
@@ -107,12 +118,24 @@ def unfog(g, e):
     e.wait(40)
 
 
+def boot(ctx, won, unlocked, picks, at, env):
+    """bhact2.boot with the console's own environment."""
+    e = Emu(save=paths.base_save(), ds=ctx.ds, env=env)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = bh.BhCampaign(g)
+    d.picks = dict(picks)
+    a2.start_at(e, d, won, unlocked, at)
+    return e, g, d
+
+
 def enter(ctx, n):
     title, roster, picks, fog, front = M[n]
-    if n == 28:
-        os.environ["TANGOAW2_BH_STILL"] = "1"
-    mask = (1 << (n - 1)) - 1
-    e, g, d = a2.boot(ctx, mask, roster, picks={n - 1: len(picks)}, at=n - 1)
+    # (M28: the computer holds and has no funds, see bh_act5b::still; this console's variable, not the process's:
+    # tests run in parallel in one process)
+    env = {"TANGOAW2_BH_STILL": "1"} if n == 28 else None
+    mask = (1 << (min(n, 30) - 1)) - 1       # (M31 with M30 unwon: a finished campaign is in Free Play and the cursor starts on M1)
+    e, g, d = boot(ctx, mask, roster, {n - 1: len(picks)}, n - 1, env)
     ctx.log(f"M{n}: record before entering: won {d.won():#x} unlocked {d.unlocked()} bonds {d.bonds():#x} flags {d.map_flags()}")
     if picks:
         a2.open_mission(ctx, e, g, d, n - 1, picks, f"m{n}", setup_only=True)
@@ -129,6 +152,11 @@ def enter(ctx, n):
                 e.press("A", 4)
             e.wait(20)
         d.wait_control()
+        # (the structures fire at the first turn start and a script follows: let it all play out before the picture)
+        for _ in range(6):
+            e.wait(150)
+            if d.scripts_running():
+                d.wait_control()
     ctx.log(f"M{n}: entered mission index {d.mission()}")
     g._units_base = g._players_base = None
     e.wait(30)
@@ -146,6 +174,8 @@ def review(ctx, n):
     else:
         ctx.check(not bad, f"M{n}: every unit starts at full HP, ammo and fuel: {bad}")
     w, h = d.size()
+    # (a mission with a CO screen is photographed in its Setup phase, with the banner; a fixed one has no Setup phase and is photographed after its opening)
+    banner = BANNER if picks else ((lambda tx, ty: ty <= 2 and 3 <= tx <= 11) if n == 28 else None)
     ctx.log(f"M{n}: map {w}x{h}, other front {front}, fog {fog}")
     a2.pic(ctx, e, f"m{n}_setup")
     for _ in range(6):
@@ -155,14 +185,14 @@ def review(ctx, n):
         except Exception:
             e.wait(150)
     if fog:
-        p = stitch.stitch(ctx, g, f"m{n}_fogon", w, h, exclude=BANNER)
+        p = stitch.stitch(ctx, g, f"m{n}_fogon", w, h, exclude=banner)
         save(ctx, p, n, "fogon")
         unfog(g, e)
         g.goto(0, 0)
-        p = stitch.stitch(ctx, g, f"m{n}_fogoff", w, h, exclude=BANNER)
+        p = stitch.stitch(ctx, g, f"m{n}_fogoff", w, h, exclude=banner)
         save(ctx, p, n, "fogoff")
     else:
-        p = stitch.stitch(ctx, g, f"m{n}", w, h, exclude=BANNER)
+        p = stitch.stitch(ctx, g, f"m{n}", w, h, exclude=banner)
         save(ctx, p, n, "full")
     if front:
         from aw2test import twofront as tf
@@ -171,7 +201,7 @@ def review(ctx, n):
         ctx.log(f"M{n}: second front {w2}x{h2}")
         a2.pic(ctx, e, f"m{n}_front2_view")
         g.goto(0, 0)
-        p = stitch.stitch(Quiet(ctx), g, f"m{n}_front2", w2, h2, exclude=BANNER)
+        p = stitch.stitch(Quiet(ctx), g, f"m{n}_front2", w2, h2, exclude=FRONT_WINDOW)
         save(ctx, p, n, "front2")
     e.close()
 

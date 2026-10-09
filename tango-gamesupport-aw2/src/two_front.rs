@@ -593,6 +593,18 @@ pub fn live(core: &Core) -> Option<u8> {
 }
 
 /// The second front is on the screen.
+/// The CO the player's army leads the second front with (the CO screen's second pick), when the mission
+/// has a second front and the pick is made: for the scenes, it is the player's partner in all but name.
+pub fn second_front_co(core: &Core, army: u32) -> Option<u8> {
+    let m = crate::ds_campaign::mission_info(core)?;
+    m.two_front.as_ref()?;
+    if army == 0 || army > 4 || core.raw_read_8(PICKED_FOR, -1) != m.index as u8 + 1 {
+        return None;
+    }
+    let v = core.raw_read_8(SECOND_COS + army - 1, -1);
+    (v != 0xFF).then_some(v)
+}
+
 pub fn second_live(core: &Core) -> bool {
     live(core) == Some(1)
 }
