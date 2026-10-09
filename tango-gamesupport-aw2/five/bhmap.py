@@ -51,11 +51,11 @@ import tilecheck           # noqa: E402
 FOOT, TIRES, TREADS, SEA, LANDER, AIR, PIPE = 'foot', 'tires', 'treads', 'sea', 'lander', 'air', 'pipe'
 CLASS = {1: FOOT, 2: FOOT, 3: TREADS, 4: TREADS, 5: TREADS, 6: TIRES, 7: TREADS, 8: TREADS, 9: PIPE, 10: TREADS,
          11: TIRES, 12: AIR, 13: AIR, 14: TREADS, 15: TIRES, 16: AIR, 17: AIR, 18: SEA, 19: AIR, 20: AIR,
-         21: SEA, 22: SEA, 23: LANDER, 24: SEA}
+         21: SEA, 22: SEA, 23: LANDER, 24: SEA, 26: SEA, 27: FOOT}
 UNIT_NAMES = {1: 'Infantry', 2: 'Mech', 3: 'Md Tank', 4: 'Megatank', 5: 'Tank', 6: 'Recon', 7: 'APC', 8: 'Neotank',
               9: 'Piperunner', 10: 'Artillery', 11: 'Rockets', 12: 'Stealth', 13: 'Black Bomb', 14: 'Anti-Air',
               15: 'Missiles', 16: 'Fighter', 17: 'Bomber', 18: 'Black Boat', 19: 'B Copter', 20: 'T Copter',
-              21: 'Battleship', 22: 'Cruiser', 23: 'Lander', 24: 'Submarine'}
+              21: 'Battleship', 22: 'Cruiser', 23: 'Lander', 24: 'Submarine', 26: 'Carrier', 27: 'Oozium'}
 STRUCTURE = set('SNWELvnFVDXO#')
 LAND_PROPS = set('HBCAPbcapTt12345Q')
 

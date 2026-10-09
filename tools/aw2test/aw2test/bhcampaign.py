@@ -18,6 +18,7 @@ CHOOSER_ROW = 2                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN
 
 # The campaign's roster (crate::bh_campaign::ROSTER), AW2 CO ids.
 ANDY, OLAF, EAGLE, KANBEI = 1, 3, 8, 6
+DRAKE, JESS, SENSEI, JAVIER, GRIT, COLIN, SASHA = 9, 17, 18, 77, 5, 16, 78
 STURM, VON_BOLT, HAWKE, KINDLE, KOAL, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY, SONJA = 10, 75, 14, 74, 73, 72, 11, 12, 13, 81, 7
 ROSTER = [STURM, VON_BOLT, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, CLONE_ANDY, SONJA]   # (the unlock order: Koal before Kindle)
 # The placeholder missions: the picks the CO screen asks for.
