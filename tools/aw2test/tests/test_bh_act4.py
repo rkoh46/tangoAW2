@@ -356,7 +356,7 @@ def bh_act4_m19_sasha_funds_and_megatank(ctx):
 def bh_act4_m21_column_starts_low_and_the_convoy_comes(ctx):
     """The column's ammunition and fuel as the sheet lists; convoy A on day 3, convoy B on day 6."""
     e, g, d, texts = ready(ctx, 21)
-    want = {3: (1, 25), 10: (0, 25), 11: (0, 25), 15: (0, 25), 19: (0, 20)}
+    want = {3: (0, 25), 10: (0, 25), 11: (0, 25), 15: (0, 25), 19: (0, 28), 5: (1, 30)}
     got = {}
     for u in g.units(1):
         if u["type"] in want:
@@ -423,3 +423,20 @@ def _advances(n, army, cos=None):
 _advances(17, 2)
 _advances(18, 2)
 _advances(21, 2)
+
+
+@test(modes=("ds",))
+def bh_act4_m21_nobody_is_lost_to_fuel_on_days_1_to_3(ctx):
+    """The B Copter (air units crash at 0 fuel at turn start) and every other unit of the column survive days 1-3 with fuel left."""
+    e, g, d, texts = ready(ctx, 21)
+    start = {(u["type"], u["x"], u["y"]) for u in g.units(1)}
+    copter = [u for u in g.units(1) if u["type"] == 19]
+    ctx.eq(len(copter), 1, "one B Copter")
+    ctx.check(copter[0]["fuel"] >= 25, f"its fuel is low but safe ({copter[0]['fuel']})")
+    for day in (2, 3):
+        a2.to_day(e, g, d, day)
+        mine = g.units(1)
+        cp = [u for u in mine if u["type"] == 19]
+        ctx.check(len(cp) == 1 and cp[0]["fuel"] > 0, f"day {day}: the B Copter is alive with fuel ({[u['fuel'] for u in cp]})")
+        ctx.check(all(u["fuel"] > 0 for u in mine if u["type"] != 7), f"day {day}: no unit is out of fuel ({sorted(u['fuel'] for u in mine)[:3]})")
+    e.close()

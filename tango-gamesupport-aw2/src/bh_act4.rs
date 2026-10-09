@@ -422,15 +422,18 @@ fn bh20() -> MissionDef {
 
 // --- M21 Running Dry -----------------------------------------------------------------
 
-/// Nine of the forward column's twenty units start low on ammunition and fuel, by design (the mission is the
-/// retreat and the resupply; the rest of the army is full): (type, ammo, fuel).
-const COLUMN: [(u8, u8, u8); 6] = [
-    (unit::MD_TANK, 1, 25),
+/// Fourteen of the forward column's twenty units start low, by design (the mission is the retreat and the
+/// resupply): nine with no ammunition at all (Artillery, Rockets, Missiles, the B Copter, the Md Tanks) and five
+/// with one shot (Tanks, Mech). The Infantry, the Recon and the Anti-Air (the cover) are full. The B Copter's
+/// fuel is low but safe (28: an air unit crashes at 0 fuel). (type, ammo, fuel)
+const COLUMN: [(u8, u8, u8); 7] = [
+    (unit::MD_TANK, 0, 25),
     (unit::ARTILLERY, 0, 25),
     (unit::ROCKETS, 0, 25),
     (unit::MISSILES, 0, 25),
-    (unit::B_COPTER, 0, 20),
-    (unit::NEOTANK, 0, 25), // (no Neotank is in the column: kept so a later change cannot start one full by mistake)
+    (unit::B_COPTER, 0, 28),
+    (unit::TANK, 1, 30),
+    (unit::MECH, 1, FULL),
 ];
 
 /// The units that start with no ammunition at all (the six guns the convoy must refill).
@@ -483,7 +486,7 @@ fn bh21() -> MissionDef {
     ];
     intro.extend(each(&ALL_COS, "Report ammunition."));
     intro.extend([
-        troop("Artillery, none. Rockets, none. Md Tanks, one shot each."),
+        troop("Artillery, none. Rockets, none. Md Tanks, none either."),
         say(co::HAWKE, "The convoy left port on time. The road did not."),
         say(co::MAX, "Hey! Black Hole! You look thirsty!"),
         say(co::GRIT, "Easy there, Max. They're near out of shells. Make it count."),

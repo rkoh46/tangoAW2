@@ -60,11 +60,11 @@ fff^......^^^-^^RRRRRRR..3..
 ...^^^^^^.^c^-^.RfcfffR.....
 ..C^^^^^^.c.RRRRR^^^^^RC^^C.
 ff......RRRRR-ffR^^^^^R^^^..
-ff.B..ffR...^-..R^^^^^R..ff.
-......cfR...^-c.R.....Rc.ff.
+ff.B.cffRc..^-..R^^^^^R..ff.
+......ccR...^-c.R.....Rc.ff.
 RR1RRRRcRRRRR=RRRRRRRRR.....
-........R....-c.R.~~~~R..ff.
-fffB.~~.R....-..R.~~~~R..ff.
+......ccR....-c.R.~~~~R..ff.
+fffB.~~.Rc...-..R.~~~~R..ff.
 fffff~c^RRRRR-RRR.~~.~R...C.
 ..Cff~.^R.ff.-..R.~..~RC....
 ff.ff~~.RRRRR=RRRRRRRRRRRR..
