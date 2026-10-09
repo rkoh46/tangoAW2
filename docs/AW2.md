@@ -1573,7 +1573,13 @@ Campaign's ("BH Campaign" below); B goes back. It
   Normal 1 + step x 7 / 28 (1..7), Hard Normal + 1 + step x 3 / 28 (2..10)
   (`ds_worldmap::stars`, `ds_campaign_world_map_stars`). Open missions have
   AW2's flag; A opens the mission's panel (its objective, AW2's info window),
-  A again starts it (the CO screen when the player picks). Back on the map
+  A again starts it (the CO screen when the player picks). The panel's ENEMY
+  portrait (OBJ tiles 152.., palette 2) is AW2's small face of the army in
+  Black Hole's colour (5), which is the player's own army in the BH Campaign
+  (CO 0xFF's row, stripes, where the player picks) and no army in some DS
+  missions (whatever a battle left in the tiles); `ds_worldmap::panel_army`
+  makes the lead enemy (`ds_campaign::panel_enemy`) the army drawn (tests
+  `bh_panel_portraits`, `bh_panel_after_battle`, `ds_panel_portraits`). Back on the map
   after a win the mission is cleared and the missions it opens are revealed
   as AW2 reveals its own; a won mission's point keeps AW2's starred flag
   (OBJ tiles 40..43, added at the sprite flush: AW2 paints a won mission's

@@ -586,6 +586,34 @@ fn sync_mission(core: &mut Core) {
     crate::ds_campaign_rules::mte_start(core);
 }
 
+/// The army whose CO the world map's mission panel shows under ENEMY, and that CO (AW2 id):
+/// the lead enemy, the first army (not the player's) on another team than the player's.
+/// AW2's panel shows the CO of the army whose colour byte is 5 (Black Hole), which in these
+/// campaigns is the player's own army (the BH Campaign) or no army at all (Dual Strike's
+/// Green Earth, Yellow Comet or Blue Moon enemies), so it showed the player's face, a CO the
+/// player has yet to pick (CO 0xFF's row: stripes) or whatever the sprites held (after a
+/// battle). `None`: no enemy with a CO (the portrait is left blank).
+pub fn panel_enemy(core: &Core) -> Option<(u8, u8)> {
+    let c = campaign(core)?;
+    let m = c.model.built.missions.get(core.raw_read_8(MISSION, -1) as usize)?;
+    let header = big_table(core)? + ENTRY * data::MAP_ID as u32;
+    // (the player: army 1, or the fifth army of a five-army mission, whose team 0xFF is its own)
+    let native = m.native.as_ref();
+    let five = native.and_then(|n| n.five);
+    let enemy = |k: usize| match five {
+        Some((_, _, team)) => team == 0xFF || m.teams[k] != team,
+        None => k != 0 && m.teams[k] != m.teams[0],
+    };
+    (0..(m.armies as usize).min(4))
+        .filter(|&k| enemy(k))
+        .map(|k| {
+            // (a five-army mission whose player picks: the header's army 1 is the CO screen's slot, its real CO is kept apart)
+            let co = native.and_then(|n| n.five_pick).filter(|_| k == 0).unwrap_or_else(|| core.raw_read_8(header + 0x3C + k as u32, -1));
+            (k as u8, co)
+        })
+        .find(|&(_, co)| co <= crate::co_new::CRUMB)
+}
+
 /// The missions open on the world map: the first story mission not won
 /// (in the model's order), and each side mission whose flag is set and
 /// which is not won.
