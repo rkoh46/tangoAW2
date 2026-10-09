@@ -563,7 +563,9 @@ def bh_act3_m14_the_ring_holds_until_day_three(ctx):
     low = [(i, raw[12 * i + 6] & 0x7F) for i in ring if (raw[12 * i + 6] & 0x7F) == 0]
     ctx.check(not low, f"every ring unit has a tank ({low})")
 
-    ctx.eq(sorted(raw[12 * i + 8] for i in ring), [255] * len(ring), "every ring unit is marked frozen")
+    pairs = {e.u8(0x0203F3F0 + 2 * k): e.u8(0x0203F3F0 + 2 * k + 1) for k in range(8)}
+    ctx.eq(sorted(i for i in pairs if i), sorted(ring), "every ring unit (and only those) is in the side table's freeze pairs")
+    ctx.eq([raw[12 * i + 8] for i in ring], [0] * len(ring), "no ring unit has a mark in its record (+8 is a cargo slot)")
     a3.to_day(e, g, d, 2)
     g._units_base = g._players_base = None
     crumb = next((u for u in g.units(1) if (u["x"], u["y"]) == (3, 4)), None)
@@ -575,7 +577,6 @@ def bh_act3_m14_the_ring_holds_until_day_three(ctx):
     g._units_base = g._players_base = None
     raw = e.read(g.units_base, 12 * 256)
     roles = {i: raw[12 * i + 11] for i in ring if raw[12 * i]}
-    marks = {i: raw[12 * i + 8] for i in ring if raw[12 * i]}
     ctx.check(all(r in (3, 4) for r in roles.values()) and len(roles) >= len(ring) - 2, f"released on day 3: roles 3 or 4 ({roles})")
-    ctx.check(all(m == 0 for m in marks.values()), f"the marks are cleared on release ({marks})")
+    ctx.eq([e.u8(0x0203F3F0 + 2 * k) for k in range(8)], [0] * 8, "the freeze pairs are cleared on release")
     e.close()

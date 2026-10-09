@@ -369,7 +369,7 @@ fn release_ring(core: &mut Core) {
         if in_basin(x, y) {
             let role = if kind == unit::INFANTRY || kind == unit::MECH { 3 } else { 4 };
             core.raw_write_8(addr + 0x0B, -1, role);
-            core.raw_write_8(addr + crate::custom_campaign::FROZEN_AT, -1, 0);
+            crate::custom_campaign::unfreeze(core, addr);
         }
     }
 }

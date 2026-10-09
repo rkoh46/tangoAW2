@@ -694,6 +694,23 @@ pub fn features_def() -> CampaignDef {
     fv.volcano = Some(VolcanoDef::new(3, 1, 5, &[(9, 4), (10, 4), (13, 8)]));
     fv.needs = Needs::All(vec!["f01"]);
     fv.flag = region::BLACK_HOLE[5];
+    // Frozen transports: an APC and a Transport Copter held by `UnitDef::freeze` (the side table, not the record's cargo bytes), an
+    // Infantry beside the APC for it to load if it ever moved.
+    let mut fz = MissionDef::new("f24", "Features Freeze");
+    fz.objective = "Test: frozen transports keep no phantom cargo and stay.";
+    fz.map = MapSrc::Ascii(&["1...........", "............", "............", "............", "...........2"]);
+    fz.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)),
+    ];
+    fz.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 0, 1),
+        UnitDef::new(2, unit::APC, 5, 2).freeze(),
+        UnitDef::new(2, unit::INFANTRY, 6, 2),
+        UnitDef::new(2, unit::T_COPTER, 7, 3).freeze(),
+    ];
+    fz.needs = Needs::All(vec!["f01"]);
+    fz.flag = region::GREEN_EARTH[0];
     let own2 = own_cannons("f18", false);
     let own5 = own_cannons("f19", true);
 
@@ -705,8 +722,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v, pp, fv],
-        final_mission: "f23",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v, pp, fv, fz],
+        final_mission: "f24",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }, Bond { co: co::KOAL, quote: "Bond test: an extra." }],
         extra_bonds: 1,
         secret_mission: "f06",

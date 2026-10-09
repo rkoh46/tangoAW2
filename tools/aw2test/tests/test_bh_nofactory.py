@@ -666,3 +666,36 @@ def bh_campaign_five_army_pick_reaches_every_co_and_tags(ctx):
         ctx.require(e.wait_until(lambda: g.player(5)["co"] == partner and g.player(5)["co_mode"] == 2, 3000, step=10),
                     "the second half: the partner's Super Power")
         e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_frozen_transports_have_no_phantom_cargo_and_stay(ctx):
+    """`UnitDef::freeze` on an APC and a Transport Copter (f24): they are listed in the side table, their records' bytes +7 and +8
+    (a transport's cargo slots) stay 0, and they stay where they are while the computer plays, an Infantry beside the APC not
+    loaded."""
+    e, g, d = boot_features(ctx)
+    d.picks = {23: 0}
+    d.start_at(won_mask=0x7FFFFF & ~(1 << 5), unlocked_mask=1)
+    d.pick_mission()
+    d.wait_map()
+    ctx.eq(d.mission(), 23, "f24")
+    g._units_base = g._players_base = None
+    frozen = {u["id"]: (u["type"], u["x"], u["y"]) for u in g.units(2) if u["type"] in (7, 20)}
+    ctx.eq(sorted(t for t, _, _ in frozen.values()), [7, 20], "an APC and a Transport Copter")
+    for _ in range(3):
+        d.end_turn()
+        for _ in range(400):
+            if g.current_army() == 1 and not d.scripts_running():
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(20)
+        d.wait_control()
+    g._units_base = g._players_base = None
+    raw = e.read(g.units_base, 12 * 256)
+    pairs = {e.u8(0x0203F3F0 + 2 * k): e.u8(0x0203F3F0 + 2 * k + 1) for k in range(8) if e.u8(0x0203F3F0 + 2 * k)}
+    ctx.eq(sorted(pairs), sorted(frozen), "both are in the side table's freeze pairs")
+    ctx.eq([(raw[12 * i + 7], raw[12 * i + 8]) for i in frozen], [(0, 0)] * 2, "no cargo bytes in either record")
+    now = {u["id"]: (u["type"], u["x"], u["y"]) for u in g.units(2)}
+    ctx.eq({i: now.get(i) for i in frozen}, frozen, "both stayed through three computer turns")
+    e.close()

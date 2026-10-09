@@ -428,9 +428,9 @@ impl UnitDef {
         self.ai = STAND;
         self
     }
-    /// Frozen: role 0 and, at the mission's first turn, marked in its record's spare byte [`FROZEN_AT`]: the computer's own
-    /// moves skip it (a Recon, a tank or an indirect as well as a foot soldier, which role 0 alone holds) unless an enemy is next
-    /// to it. A trigger frees it by clearing the mark (`core.raw_write_8(unit + FROZEN_AT, -1, 0)`). Unfrozen role-0 units
+    /// Frozen: role 0 and, at the mission's first turn, marked in the side table ([`is_frozen`], at most 8 a mission): the
+    /// computer's own moves skip it (a Recon, a tank or an indirect as well as a foot soldier, which role 0 alone holds) unless an enemy is next
+    /// to it. A trigger frees it with [`unfreeze`]. Unfrozen role-0 units
     /// keep AW2's behaviour (they sally to attack what they can reach).
     pub const fn freeze(mut self) -> UnitDef {
         self.ai = 0;
@@ -949,15 +949,18 @@ pub const UNLOCK: u32 = 0xBCD0_0000;
 pub const TAG_UNIT: u32 = 0xBCA0_0000;
 /// A side table in emulated RAM (EWRAM the game and the other modules never touch,
 /// `0x0203F3A0..0x0203F400`): the unit record has no byte free for every type (+7 and
-/// +8 are an APC's cargo). Per spawned name (its tag 1..=24): the unit's id, its type;
-/// per march of the mission (0..32): the last day it moved. Cleared when a mission is
+/// +8 are an APC's cargo, so a mark there would bring phantom cargo back). Per spawned name (its tag 1..=24): the unit's id, its type;
+/// per march of the mission (0..32): the last day it moved; per frozen unit (8): its id and type. Cleared when a mission is
 /// chosen ([`reset_side`]); a mission saved halfway does not keep it (a resumed
 /// battle's spawned names are not found again).
 const SIDE: u32 = 0x0203_F3A0;
 const SIDE_SLOT: u32 = SIDE;
 const SIDE_KIND: u32 = SIDE + 24;
 const SIDE_MARCH: u32 = SIDE + 48;
-const SIDE_END: u32 = SIDE + 80;
+/// The frozen units ([`UnitDef::freeze`]): 8 pairs (the unit's id, its type; id 0 is a free pair).
+const SIDE_FREEZE: u32 = SIDE + 80;
+const FREEZE_SLOTS: u32 = 8;
+const SIDE_END: u32 = SIDE + 96;
 
 /// A mission is chosen: the side table is empty.
 pub fn reset_side(core: &mut Core) {
@@ -2055,7 +2058,7 @@ pub fn ai_unit(core: &mut Core) {
             return;
         }
     }
-    if core.raw_read_8(u + FROZEN_AT, -1) == FROZEN && !army_out(core) && !enemy_adjacent(core, u) {
+    if is_frozen(core, u) && !army_out(core) && !enemy_adjacent(core, u) {
         core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
         return;
     }
@@ -2112,12 +2115,26 @@ fn custom_of(core: &Core) -> Option<&crate::campaign_model::Custom> {
     crate::ds_campaign::campaign(core)?.model.custom.as_ref()
 }
 
-/// A frozen unit's mark: this byte of its record (the march-day byte, which only a marching unit uses) is [`FROZEN`].
-pub const FROZEN_AT: u32 = 8;
-pub const FROZEN: u8 = 0xFF;
+/// Whether the unit record at `a` is frozen: its id and type are in the side table's freeze pairs.
+pub fn is_frozen(core: &Core, a: u32) -> bool {
+    let id = (a.wrapping_sub(core.raw_read_32(UNITS_PTR, -1)) / UNIT) as u8;
+    let kind = core.raw_read_8(a, -1);
+    id != 0 && (0..FREEZE_SLOTS).any(|k| core.raw_read_8(SIDE_FREEZE + 2 * k, -1) == id && core.raw_read_8(SIDE_FREEZE + 2 * k + 1, -1) == kind)
+}
 
-/// Day 1, the first dispatch: the units deployed with [`UnitDef::freeze`] are marked (their cells are the mission's
-/// `frozen` list); the mark lives in the emulated RAM, so saves and rollback carry it.
+/// Frees the unit record at `a` (a trigger's: the ring round Crumb on day 3).
+pub fn unfreeze(core: &mut Core, a: u32) {
+    let id = (a.wrapping_sub(core.raw_read_32(UNITS_PTR, -1)) / UNIT) as u8;
+    for k in 0..FREEZE_SLOTS {
+        if core.raw_read_8(SIDE_FREEZE + 2 * k, -1) == id {
+            core.raw_write_16(SIDE_FREEZE + 2 * k, -1, 0);
+        }
+    }
+}
+
+/// Day 1, the first dispatch: the units deployed with [`UnitDef::freeze`] (the mission's `frozen` cells) are entered in the
+/// side table (8 at most); it lives in emulated RAM, so saves and rollback carry it, and no unit record byte is used
+/// (an APC's cargo slots are +7 and +8).
 fn freezes(core: &mut Core) {
     if day(core) != 1 || core.raw_read_16(MAP_STATE, -1) != STATE_DISPATCH {
         return;
@@ -2131,10 +2148,13 @@ fn freezes(core: &mut Core) {
     for (x, y) in cells {
         // (found by the records' own cells: the map's unit layer can lack an entry for a deployed unit)
         let found = (1..256u32).map(|id| base + UNIT * id).find(|&a| core.raw_read_8(a, -1) != 0 && core.raw_read_8(a + 2, -1) == x && core.raw_read_8(a + 3, -1) == y);
-        if let Some(a) = found {
-            if core.raw_read_8(a + FROZEN_AT, -1) == 0 {
-                core.raw_write_8(a + FROZEN_AT, -1, FROZEN);
-            }
+        let Some(a) = found else { continue };
+        if is_frozen(core, a) {
+            continue;
+        }
+        if let Some(k) = (0..FREEZE_SLOTS).find(|&k| core.raw_read_8(SIDE_FREEZE + 2 * k, -1) == 0) {
+            core.raw_write_8(SIDE_FREEZE + 2 * k, -1, ((a - base) / UNIT) as u8);
+            core.raw_write_8(SIDE_FREEZE + 2 * k + 1, -1, core.raw_read_8(a, -1));
         }
     }
 }
