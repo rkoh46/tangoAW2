@@ -81,6 +81,10 @@ pub(crate) fn roles(units: Vec<UnitDef>, player: u8, holders: &[(u8, u8)]) -> Ve
     units
         .into_iter()
         .map(|mut u| {
+            if let Some(r) = std::env::var("TANGOAW2_BH_ROLE").ok().and_then(|v| v.parse::<u8>().ok()) {
+                u.ai = if u.army == player { 0 } else { r };
+                return u;
+            }
             u.ai = if still || u.army == player || holders.contains(&(u.x, u.y)) {
                 0
             } else if matches!(u.kind, unit::INFANTRY | unit::MECH) {
