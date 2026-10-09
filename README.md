@@ -92,8 +92,8 @@ changes, and online both players need it):
   - each mission opens with Dual Strike's Setup phase: look around, then
     **Deploy**.
 - **BH Campaign:** a second campaign of 31 missions where you lead Black Hole
-  across the four nations (the 31st is a secret, opened by recruiting every
-  CO): recruits, hidden bonds and Crumb as a CO of his own, the Black
+  across the four nations (the 31st is a secret, opened by the finale and
+  all nine recruit bonds): recruits, hidden bonds and Crumb as a CO of his own, the Black
   Factory, Laser, Black Cannons and Volcano as the missions' set pieces,
   and the computer fighting back (pick it in the Campaign menu).
 - **Two-front missions** are fought on both fronts, taking turns each round:
