@@ -154,7 +154,7 @@ const F12: [(u8, [u8; 3]); 9] = [
     (2, [unit::RECON, 0, unit::RECON]),
     (3, [0, unit::TANK, 0]),
     (5, [unit::MD_TANK, unit::MECH, 0]),
-    (7, [0, unit::PIPERUNNER, 0]),
+    (7, [0, unit::MD_TANK, 0]), // (the factory never builds a Piperunner: the table no longer asks for one)
     (8, [unit::TANK, 0, unit::TANK]),
     (10, [unit::MD_TANK, 0, unit::MD_TANK]),
     (12, [0, unit::NEOTANK, 0]),

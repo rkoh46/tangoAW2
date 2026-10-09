@@ -1,6 +1,6 @@
 """Unit production in the BH Campaign's M12 "Highway to the Horizon" (needs the act 3 tree: skipped without it).
 Yellow Comet's base at (32, 6) touches a long pipe, so the CPU can build a Piperunner there; Black Hole's
-factory (table F12 has a Piperunner on day 7) never does."""
+factory never does (its table F12 has a Md Tank where it once had a Piperunner)."""
 
 from aw2test import ram
 from aw2test.game import NavError
@@ -53,5 +53,5 @@ def bh_act3_m12_cpu_piperunner_by_the_highway_factory_never(ctx):
                 seen_cpu.append(day)
     ctx.log(f"Yellow Comet Piperunners on days {sorted(set(seen_cpu))} at {sorted(bases)}; Black Hole's: {seen_bh}")
     ctx.check(seen_cpu, "the CPU builds a Piperunner at Yellow Comet's base by the highway pipe")
-    ctx.check(not seen_bh, "the Black Hole factory never builds a Piperunner (F12 asks for one on day 7)")
+    ctx.check(not seen_bh, "the Black Hole factory never builds a Piperunner (F12 once asked for one on day 7; its slot is now a Md Tank)")
     e.close()
