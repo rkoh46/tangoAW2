@@ -83,11 +83,37 @@ fn built_units(name: &str) -> Vec<UnitDef> {
 
 // --- The enemy's AI roles ----------------------------------------------------------
 //
-// The roles are `bh_ai`'s (Infantry and Mechs capture, vehicles, indirect fire, aircraft and ships attack units, a
-// transport keeps its own logic); the map files' `hold` flag (AW2's role 1) is not used. What holds is each mission's
-// deliberate garrison, by cell: the HQ guard (one soldier beside the HQ), M5's HQ and Com Tower crew (the raiders'
-// target; the rest of the night crew scrambles, the aircraft stay parked), M9's yard guard at the port and M10's
-// Citadel guns.
+// A unit's deployment AI byte is its role (docs/AW2.md, "Goals"): 0 holds where it stands, 1 goes for the enemy HQ,
+// 3 for the enemy's properties, 4 for its units, 6 does not move at all (M5's parked aircraft). The map files
+// carry no roles; the missions give them here: foot soldiers go for properties, armour, recon, aircraft and ships
+// for units (indirect fire and Anti-Air too: they follow the front); the only garrisons are M5's HQ and Com Tower
+// guards and M9's yard guard (`garrison`). Transports keep role 0 (their own loading logic).
+
+fn role_of(kind: u8) -> u8 {
+    match kind {
+        unit::INFANTRY | unit::MECH => 3,
+        unit::LANDER | unit::APC | unit::BLACK_BOAT => 0, // (transports keep their own loading logic)
+        _ => 4,
+    }
+}
+
+/// Roles for the enemy's deployment (army 1, the player's, and units with a role other than the map's `hold` flag,
+/// are left alone). A unit the map marks `hold` (ai 1 here) is a garrison and stands (0), unless the mission names
+/// its real garrison (`GARRISONS`: M5 and M9 flag every unit on the map, but only the cells listed there hold);
+/// the rest advance by kind (foot soldiers to properties, the others to units, indirect fire and Anti-Air hold).
+fn roles(units: Vec<UnitDef>, garrison: Option<&[(u8, u8)]>) -> Vec<UnitDef> {
+    units
+        .into_iter()
+        .map(|mut u| {
+            if u.army != 1 && (u.ai == 0 || u.ai == 1) {
+                // (the map files' `hold` flag is not a garrison: only the cells a mission names hold)
+                let holds = garrison.is_some_and(|g| g.contains(&(u.x, u.y)));
+                u.ai = if holds { 0 } else { role_of(u.kind) };
+            }
+            u
+        })
+        .collect()
+}
 
 const ROLE_MISSIONS: [&str; 8] = ["bh04", "bh05", "bh06", "bh07", "bh08", "bh09", "bh10", "bh11"];
 
