@@ -2262,6 +2262,41 @@ and continued in each mission; pictures (`AW2TEST_PICS=<dir>`). `AW2TEST_BH_ACT1
 `bh_act1_balance_m{1,2,3}_{cpu,bot}` (the computer on both sides, and the test player of
 `aw2test/bot.py` against it; `AW2TEST_BH_ACT1_BOT='{"stance":"defend"}'` changes the bot's options).
 
+### The enemy's orders (`bh_ai.rs`)
+
+Every enemy unit's deployment AI byte is its role (+0x0B at run time: 0 holds, 1 the enemy HQ, 3 the enemy's properties, 4 the
+nearest enemy units, 6 parked, 7 by the HQ; see "Goals" and "held foot soldiers" above). `five/bh/*.txt` carry no roles (their `hold`
+flag is AW2's role 1, which `bh_ai::orders` replaces); each mission gives them through one rule, `bh_ai::orders` /
+`orders_at(units, player, armour, holders)`:
+
+- Infantry and Mechs capture (3): the nearest neutral and player properties, bases first (the engine's own pick);
+- vehicles, recon, indirect fire, Anti-Air, aircraft and warships attack units (4), or go for the HQ (1) in Act IV, whose armies
+  charge (`armour` = `HQ`); indirect fire is role 4 as well, so it follows the line and stops in range;
+- transports (APC, Lander, Black Boat) keep role 0: the engine's own load and unload logic moves them;
+- only the deliberate garrisons hold (0): one or two soldiers beside each enemy HQ, and what a mission's design calls for
+  (M5's HQ and Com Tower crew, M9's yard guard, M10's Citadel guns, M13's stage guard, M14's gap guards and its frozen ring until day 3,
+  M16's Keep, M17/M18's HQ anchors, M20's sea line, M21's Grit ridge, M25's Landers at the ports, M28's corner HQ guards, M29/M30's camp
+  and M31's trucks and road blocks). Each mission's holders are a list of cells next to its deployment (`garrison()` in `bh_act2.rs`,
+  `KEEP_GUARD`, `STAGE_GUARD`, the closures of `bh_act3.rs`/`bh_act4.rs`, the `holders` of `bh_act5b.rs`);
+- reinforcements a trigger spawns have the default role 1 (the HQ); `bh_ai::spawn_orders` (run over every mission by
+  `bh_campaign::def`) gives the foot soldiers and indirect fire among them roles 3 and 4, and `UnitDef::attack()` gives a spawn role 4
+  (M9's pursuit, which would otherwise stop at Von Bolt's HQ beside it).
+
+Missiles and Fighters hit aircraft only: with no aircraft against them role 4 has no target and they stay (that is the engine's logic,
+not a hold). The CPU's purchases are the engine's own (`cpu_tactics.rs`, the Black Hole factory aside): it buys at every free base,
+airport and port when it has the funds, saves up on the naval and air maps (M6, M24: funds rise for two or three days before one big purchase), and stops at 50 units (M29: 55000 unspent by day 6, 50 units). A property's owner can be set in a mission
+(`m.props`): M2 starts three of Green Earth's front-line cities neutral so that its Infantry and Mechs capture on days 2 to 4.
+
+Audit and tests (`test_bh_cpuai.py`): `-k bh_cpuai_probe` runs each of the 31 missions with the player passive for five CPU days and
+writes `probe.json` (the enemy's units with their roles, who moved, captures, new units by cell, funds by day, the player's units; the
+second front's too by Map menu > Front) and, for M2, whole-map pictures of days 1 to 5 (`AW2TEST_CPUAI_SHOTS=<dir>`);
+`-k bh_cpuai_acts` asserts per mission that at least two thirds of the advancing units (not Missiles and Fighters) left their cells by
+day 4, that the Infantry and Mechs capture something within five days (M14, M28 and M30 are excepted, each with its reason in
+`NO_CAPTURE`), and that the enemy builds on a base, airport or port when it has the funds (`NO_BUILD`: M5, M9, M14, M31); the other
+front's advancing units are checked the same way. `AW2TEST_CPUAI_BOT=1 -k bh_cpuai_bot` plays each mission with the test bot of
+`aw2test/bot.py` to its day limit + 3 (balance: units by day, result). The Rust test `bh_ai::tests` checks every mission's deployment
+(a minority holds except the designed camps; every foot soldier captures or holds) and every spawn.
+
 ### Adding a mission (for whoever builds the thirty)
 
 **Where.** One file per act: `bh_act1.rs` .. `bh_act5.rs` and `bh_secret.rs`
