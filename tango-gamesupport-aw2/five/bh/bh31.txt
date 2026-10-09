@@ -1,6 +1,7 @@
 # bh31: M31 The Colonel's Vault (secret, fog): three trucks, three roads
 map bh31
 armies 2 3 5 4
+unit 2 1 15 5
 unit 2 7 11 6
 unit 2 7 11 14
 unit 2 1 12 6
@@ -45,20 +46,20 @@ unit 1 6 7 11
 unit 1 23 5 16
 unit 1 22 7 17
 ^^^^.....^^..-..^^.^^^~c..~~~~
-^....^.^..^^.-^..^^.^.~.,,~~~~
-.....^.^.....-^.......~~~~~~~~
-...c....f..c.-...c.f....R,~~~~
-.ff.....f....-.ff.f..c..R,~~~~
+^....^.^..^^.-^.###.^.~.,,~~~~
+.....^.^.....-^.#v#...~~~~~~~~
+...c....f..c.-..###f....R,~~~~
+.ff.....f....-.Cf.f..c..R,~~~~
 .f.......f.f.-......f...R.~~~~
 ..c...cRRRRRR=RRRRRRRRRRR.~~~~
 .......R...ff-fffff...f.R,~~~~
 ^f..c..R..cff-fffff..c..R,~~~~
 ^f.....R...ff-ffcff.....RCP~~~
 ..c...cRRRRRRRRRRRRRRRRRRR2~~~
-.......R###ff-fffff...f.RC.~~~
-.c..f..R#v#ff-fffff..c..R,~~~~
-......BR###ff-fffffc..f.R,~~~~
-.f.1RRRRCRRRR=RRRRRRRRRRR,~~~~
+.......R...ff-fffff...f.RC.~~~
+.c..f..R...ff-fffff..c..R,~~~~
+......BR...ff-fffffc..f.R,~~~~
+.f.1RRRRRRRRR=RRRRRRRRRRR,~~~~
 ^....P.,,,,,.-.,,,,,,,,,R.~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

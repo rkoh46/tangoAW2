@@ -72,7 +72,7 @@ fn bh31() -> MissionDef {
         1,
         // the trucks, the road-block Infantry, the Anti-Air and Missiles, the Transport Copters and the ships hold;
         // the Tank, Md Tank and Neotank counter-attack
-        &[(11, 6), (11, 14), (12, 6), (11, 5), (12, 14), (11, 15), (11, 10), (12, 10), (16, 6), (19, 6), (16, 14), (19, 14), (21, 10), (22, 8), (22, 12), (23, 4), (23, 14), (27, 9), (27, 13)],
+        &[(15, 5), (11, 6), (11, 14), (12, 6), (11, 5), (12, 14), (11, 15), (11, 10), (12, 10), (16, 6), (19, 6), (16, 14), (19, 14), (21, 10), (22, 8), (22, 12), (23, 4), (23, 14), (27, 9), (27, 13)],
     );
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
@@ -94,13 +94,21 @@ fn bh31() -> MissionDef {
         // Day 3: the third truck rolls out of the ford woods (spawned east of the ford; no name, see `truck_cells`).
         // TODO(engine): the "march" action that moves a named unit along a fixed path each day (the three trucks reach
         // the docks around day 8: A the North Road y 6, B the South Road y 14, C the ford road y 10 from day 3), and
-        // the Black Cannon's "disable / restore" (jammed at the start, restored by capturing the Control Room (8,14)).
+        // the Black Cannon's "disable / restore" (jammed at the start, restored by capturing the Control Room (15,4)).
         on_day(
             3,
             vec![Action::Scene(Scene::new(day3_lines())), Action::Spawn(vec![UnitDef::new(2, unit::APC, TRUCK_C.0, TRUCK_C.1)])],
         ),
         // Day 5: Sonja's power (her meter is full: the fog thickens as her vision grows).
         on_day(5, vec![Action::Scene(Scene::new(text::m31_day_5())), Action::Custom(charge_sonja)]),
+        // The Black Cannon (north-centre, (16..18, 1..3), facing south): off until day 5, or until the Control Room
+        // (15,4) is taken (guarded by one Infantry). TODO(engine): the disable / restore action (a day or a capture
+        // condition); today the Cannon is on from the start.
+        Trigger::new(
+            When::TurnStart,
+            Cond::Any(vec![Cond::DayAtLeast(5), Cond::OwnerAt { x: 15, y: 4, army: 1 }]),
+            vec![Action::Scene(Scene::new(text::m31_cannon_on()))],
+        ),
         Trigger::new(When::AfterAction, Cond::Custom(a_truck_lost), vec![Action::Scene(Scene::new(text::m31_when_the_first_vault_truck_is_destroyed()))]),
         Trigger::new(When::AfterAction, Cond::Custom(all_trucks_gone), vec![Action::Win]).repeating(),
         Trigger::new(When::AfterAction, Cond::Custom(a_truck_docked), vec![Action::Lose]).repeating(),

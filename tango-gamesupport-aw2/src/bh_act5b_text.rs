@@ -623,3 +623,9 @@ pub fn m31_kanbei() -> Vec<Line> {
         say(co::KANBEI, "Honour has no manual for this. Then we write one."),
     ]
 }
+
+pub fn m31_cannon_on() -> Vec<Line> {
+    vec![
+        say(co::VON_BOLT, "My cannon! Back online! Heh heh heh!"),
+    ]
+}

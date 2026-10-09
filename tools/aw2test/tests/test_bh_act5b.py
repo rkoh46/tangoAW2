@@ -95,6 +95,8 @@ def pictures(ctx, n):
         # (M28's Onyx panel sits in the screen's middle rows on either side: those screen cells are never taken)
         ex = (lambda tx, ty: 3 <= ty <= 6 and (tx <= 4 or tx >= 10)) if n == 28 else (lambda tx, ty: ty <= 1 and 3 <= tx <= 11) if setup else None
         stitch.stitch(ctx, g, f"m{n}", w, h, exclude=ex)
+    g._units_base = g._players_base = None
+    ctx.log(f"m{n}: units below full HP after the sweeps: {[(u['army'], u['type'], u['x'], u['y'], u['hp']) for u in g.units() if u['hp'] < 100]}")
     if n == 25:
         from aw2test import twofront as tf
         ctx.require(tf.look_at_other_front(e, g), "the other front is shown")
