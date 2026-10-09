@@ -562,8 +562,7 @@ def bh_campaign_five_armies(ctx):
     # the four computer armies yield (the player's win by AW2's own rules)
     for a in range(1, 5):
         e.w8(g.player(a)["addr"] + 0x31, 1)
-    e.press("START", 4)
-    e.wait(30)
+    d.end_turn()
     for _ in range(900):
         if d.last_result()["result"] == 1 and d.world_map_up():
             break
