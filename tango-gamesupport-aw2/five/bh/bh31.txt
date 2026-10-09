@@ -1,65 +1,61 @@
-# bh31: M31 The Colonel's Vault (secret, fog)
+# bh31: M31 The Colonel's Vault (secret, fog): three trucks, three roads
 map bh31
 armies 2 3 5 4
-unit 2 7 3 8 name=vault1
-unit 2 7 5 8 name=vault2
+unit 2 7 7 7 name=vault1
+unit 2 7 7 13 name=vault2
 unit 2 7 4 9 name=vault3
-unit 2 1 3 7
-unit 2 1 5 7
-unit 2 1 8 7
-unit 2 1 8 9
-unit 2 2 9 6
-unit 2 2 9 8
-unit 2 6 10 6
-unit 2 6 12 6
-unit 2 6 12 14
-unit 2 5 10 7
-unit 2 5 11 6
-unit 2 5 10 14
-unit 2 3 11 14
-unit 2 3 9 10
-unit 2 11 8 6
-unit 2 14 9 9
-unit 2 20 8 5
-unit 2 20 8 15
+unit 2 1 16 6
+unit 2 1 19 6
+unit 2 1 16 14
+unit 2 1 19 14
+unit 2 1 21 10
+unit 2 5 18 6
+unit 2 3 18 14
+unit 2 8 20 10
+unit 2 14 22 8
+unit 2 15 22 12
+unit 2 20 23 4
+unit 2 20 23 14
 unit 2 23 27 9
-unit 1 1 2 16
-unit 1 1 3 16
-unit 1 1 4 16
-unit 1 2 2 17
-unit 1 2 3 17
-unit 1 6 4 17
-unit 1 6 5 16
-unit 1 6 1 16
-unit 1 5 2 18
-unit 1 5 3 18
-unit 1 5 4 18
-unit 1 3 5 17
-unit 1 3 5 18
-unit 1 8 6 17
-unit 1 14 1 17
-unit 1 15 1 18
-unit 1 20 6 18
-unit 1 23 24 17
-unit 1 22 25 18
-unit 1 19 23 16
-^^^^.....^^..-..^^.^^^~c..~~~
-^......^..^^.-...^^.^.~.,,~~~
-.......^.....-....f...~~~~~~~
-.............-.f.f.ff...R,~~~
-.ff.....f..c.-..f....c..R.~~~
-.f......f....-........f.R.~~~
-..c...cRRRRRR=RRRRRRRRRRR.~~~
-.......R...f.-fffff.....R.~~~
-^...c..R....f-fffff..cf.R,~~~
-^......R..c..-fffff.....RCP~~
-..c...cR...f..fffff.c...RR2~~
-.......R###..-fffff..f..RC.~~
-.ff....R#v#ff-fffff..cf.R,~~~
-.f.....R###..-fffff...f.R.~~~
-...1RRRRCRRRR=RRRRRRRRRRR.~~~
-^............-........f.R.~~~
-^.....B..f.c.-..f....c..R,~~~
-.........ff..-.f.f.ff..p~~~~~
-.....ff......-..........~~~~~
-^^^.....^^.^^-^^^..^^...~~~~~
+unit 2 22 27 13
+unit 1 1 2 12
+unit 1 1 4 12
+unit 1 2 5 13
+unit 1 6 1 13
+unit 1 6 2 13
+unit 1 6 4 13
+unit 1 6 5 12
+unit 1 5 2 14
+unit 1 5 4 14
+unit 1 5 1 14
+unit 1 3 3 12
+unit 1 8 3 13
+unit 1 10 5 14
+unit 1 10 4 15
+unit 1 14 2 15
+unit 1 15 1 15
+unit 1 19 4 11
+unit 1 19 5 11
+unit 1 20 3 11
+unit 1 23 5 16
+unit 1 22 7 17
+^^^^.....^^..-..^^.^^^~c..~~~~
+^....^.^..^^.-^..^^.^.~.,,~~~~
+.....^.^.....-^.......~~~~~~~~
+...c....f..c.-...c.f....R,~~~~
+.ff.....f....-.ff.f..c..R,~~~~
+.f.......f.f.-......f...R.~~~~
+..c...cRRRRRR=RRRRRRRRRRR.~~~~
+.......R...ff-fffff...f.R,~~~~
+^f..c..R..cff-fffff..c..R,~~~~
+^f.....R...ff-ffcff.....RCP~~~
+..c...cRRRRRRRRRRRRRRRRRRR2~~~
+.......R###ff-fffff...f.RC.~~~
+.c..f..R#v#ff-fffff..c..R,~~~~
+......BR###ff-fffffc..f.R,~~~~
+.f.1RRRRCRRRR=RRRRRRRRRRR,~~~~
+^....P.,,,,,.-.,,,,,,,,,R.~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

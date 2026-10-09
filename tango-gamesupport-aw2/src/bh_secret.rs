@@ -15,7 +15,7 @@ use crate::custom_campaign::{co, colour, unit, *};
 /// Sonja's three Vault Trucks (the map's named APCs).
 const TRUCKS: [&str; 3] = ["vault1", "vault2", "vault3"];
 /// The dock tiles: two trucks here and the heist is lost.
-const DOCK: Rect = Rect::new(25, 9, 27, 11);
+const DOCK: Rect = Rect::new(25, 9, 27, 11);   // (the dock's land is x 25..26; x 27 is the sea beside it)
 
 fn truck_cells(core: &mut Core) -> Vec<(u8, u8)> {
     TRUCKS
@@ -57,7 +57,9 @@ fn bh31() -> MissionDef {
     m.units = roles(
         built_units("bh31"),
         1,
-        &[(3, 8), (5, 8), (4, 9), (3, 7), (5, 7), (8, 6), (9, 9), (8, 5), (8, 15), (27, 9)],
+        // the trucks, the road-block Infantry, the Anti-Air and Missiles, the Transport Copters and the ships hold;
+        // the Tank, Md Tank and Neotank counter-attack
+        &[(7, 7), (7, 13), (4, 9), (16, 6), (19, 6), (16, 14), (19, 14), (21, 10), (22, 8), (22, 12), (23, 4), (23, 14), (27, 9), (27, 13)],
     );
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
@@ -76,14 +78,11 @@ fn bh31() -> MissionDef {
     m.after = Scene::new(after_lines);
     m.triggers = vec![
         on_day(2, vec![Action::Scene(Scene::new(text::m31_day_2()))]),
-        // Day 3: two decoys (empty APCs) leave on the other road.
-        on_day(
-            3,
-            vec![
-                Action::Scene(Scene::new(text::m31_day_3())),
-                Action::Spawn(vec![UnitDef::new(2, unit::APC, 9, 6), UnitDef::new(2, unit::APC, 9, 14)]),
-            ],
-        ),
+        // Day 3: the third truck (vault3) leaves the vault by the ford road (y 10).
+        // TODO(engine): the "march" action that moves a named unit along a fixed path each day (the three trucks reach
+        // the docks around day 8: A the North Road y 6, B the South Road y 14, C the ford road y 10 from day 3), and
+        // the Black Cannon's "disable / restore" (jammed at the start, restored by capturing the Control Room (8,14)).
+        on_day(3, vec![Action::Scene(Scene::new(text::m31_day_3()))]),
         // Day 5: Sonja's power (her meter is full: the fog thickens as her vision grows).
         on_day(5, vec![Action::Scene(Scene::new(text::m31_day_5())), Action::Custom(charge_sonja)]),
         Trigger::new(When::AfterAction, Cond::Custom(a_truck_lost), vec![Action::Scene(Scene::new(text::m31_when_the_first_vault_truck_is_destroyed()))]),

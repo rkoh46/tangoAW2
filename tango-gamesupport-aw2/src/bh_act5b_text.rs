@@ -521,7 +521,7 @@ pub fn m31_day_2() -> Vec<Line> {
 
 pub fn m31_day_3() -> Vec<Line> {
     vec![
-        say(co::SONJA, "Two roads, two trucks. Only one is real. Place your bets."),
+        say(co::SONJA, "A third truck, by the ford. Count them, Colonel."),
     ]
 }
 
