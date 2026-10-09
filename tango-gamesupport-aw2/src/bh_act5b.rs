@@ -368,7 +368,7 @@ fn bh28() -> MissionDef {
         after(Cond::Custom(gate_lost), vec![Action::Lose]),
     ];
     m.needs = Needs::All(vec!["bh27"]);
-    m.flag = region::BLACK_HOLE[4];
+    m.flag = region::BLACK_HOLE[3];
     m.stars = 4;
     m
 }

@@ -284,7 +284,7 @@ def _lose_by_day(n):
 _win_by_capture(17, [(21, 9)], [18, 19], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER])
 _win_by_capture(18, [(10, 1)], [19], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER, bh.FLAK], cos=None)
 _win_by_capture(19, [(29, 12)], [20], [bh.STURM, bh.VON_BOLT, bh.HAWKE, bh.KOAL, bh.KINDLE, bh.JUGGER])
-_win_by_capture(22, [(14, 3)], [], [bh.STURM, bh.VON_BOLT, bh.HAWKE])
+_win_by_capture(22, [(14, 3)], [23], [bh.STURM, bh.VON_BOLT, bh.HAWKE])
 for _n in MISSIONS:
     if _n != 20:
         _lose_by_day(_n)

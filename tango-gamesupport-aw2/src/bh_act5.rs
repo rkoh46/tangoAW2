@@ -231,7 +231,7 @@ fn bh29() -> MissionDef {
         after(beaten(2, (29, 25)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh28"]);
-    m.flag = region::ORANGE_STAR[4];
+    m.flag = (88, 108); // (Orange Star[4] is M27's)
     m.stars = 3;
     m
 }

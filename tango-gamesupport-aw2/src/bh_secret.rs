@@ -133,7 +133,7 @@ fn bh31() -> MissionDef {
     ];
     m.needs = Needs::Bonds(vec!["bh28"]);
     m.recruits = vec![roster::SONJA];
-    m.flag = region::BLACK_HOLE[5];
+    m.flag = region::BLACK_HOLE[2];
     m.stars = 4;
     m
 }
