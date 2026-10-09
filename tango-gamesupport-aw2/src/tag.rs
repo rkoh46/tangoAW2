@@ -553,7 +553,22 @@ pub fn set_cos(core: &mut Core) {
     }
     let (n, k) = ds_partner_picks(core);
     let src = core.gba().cpu().gpr(0) as u32;
-    if k == 0 || !(0x0200_0000..0x0400_0000).contains(&src) {
+    if !(0x0200_0000..0x0400_0000).contains(&src) {
+        return;
+    }
+    // A five-army mission whose player picks: the pick of army 1's place is army 5's (and its
+    // partner's); army 1 keeps its own, fixed CO.
+    if let Some(ally) = crate::ds_campaign::mission_info(core).and_then(|m| m.native.as_ref()).and_then(|n| n.five_pick) {
+        let main = core.raw_read_8(src, -1);
+        let partner = if k > 0 { core.raw_read_8(src + n, -1) } else { 0xFF };
+        crate::five::set_army5_co(core, main);
+        if partner != 0xFF {
+            set_pending(core, 5, main, partner);
+        }
+        core.raw_write_8(src, -1, ally);
+        return;
+    }
+    if k == 0 {
         return;
     }
     for i in 0..k {
@@ -574,7 +589,9 @@ const COUNTRY_LOCKED: u32 = 0x0300_5910;
 const CO_SELECT_SCRIPT: u32 = 0x0861_6638;
 const PROC_POOL: (u32, u32) = (0x0200_D610, 0x0200_E418);
 fn co_screen_partners(core: &mut Core) {
-    if !crate::ds_campaign::active(core) {
+    // (a custom campaign's partner may be of any country: its roster mixes
+    // them, and its screen keeps every tab open, crate::ds_campaign)
+    if !crate::ds_campaign::active(core) || !crate::ds_campaign::is_ds(core) {
         return;
     }
     let Some(proc) = (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT) else {
