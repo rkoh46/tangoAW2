@@ -2333,7 +2333,7 @@ fn marches(core: &mut Core) {
 /// Whether the structure of the inventions-list entry at `e` is jammed ([`JamDef`]) and still held: nothing
 /// (the computer's attack on a human's inventions included) is to wreck a structure that has not come online yet.
 pub fn is_jammed(core: &Core, e: u32) -> bool {
-    if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) || core.raw_read_8(e + 6, -1) != JAM_HOLD {
+    if core.raw_read_8(e + 6, -1) != JAM_HOLD || !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
         return false;
     }
     let mission = crate::ds_campaign::mission(core) as usize;
