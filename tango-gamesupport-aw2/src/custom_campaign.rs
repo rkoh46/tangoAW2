@@ -1440,6 +1440,15 @@ fn list(groups: Vec<Vec<[u8; 8]>>) -> Vec<u8> {
     b
 }
 
+/// A mission freezes at most [`FREEZE_SLOTS`] units (the side table's pairs): a ninth would silently stay unfrozen.
+fn check_frozen(m: &MissionDef) -> Result<(), Error> {
+    let frozen = m.units.iter().filter(|u| u.freeze).count();
+    if frozen > FREEZE_SLOTS as usize {
+        return Err(format!("{}: {frozen} frozen units (at most {FREEZE_SLOTS}: the side table's pairs)", m.key));
+    }
+    Ok(())
+}
+
 fn compile_mission(
     cx: &mut Compiler,
     core: &Core,
@@ -1453,6 +1462,7 @@ fn compile_mission(
     if !(2..=5).contains(&armies) {
         return Err(format!("{}: {armies} armies (2..=5)", m.key));
     }
+    check_frozen(m)?;
     // Five armies (crate::five): armies 1..4 are the header's, army 5 is
     // Black Hole, the player's: set up from `Native::five`.
     let five = armies == 5;
@@ -2474,6 +2484,17 @@ pub fn country(co: u8) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn freezing_more_than_the_side_table_holds_is_an_error() {
+        let mut m = MissionDef::new("t01", "Freeze");
+        m.armies = vec![ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)), ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE))];
+        m.units = (0..9).map(|k| UnitDef::new(2, unit::TANK, k, 1).freeze()).collect();
+        assert!(check_frozen(&m).unwrap_err().contains("9 frozen units"), "nine frozen units are refused");
+        m.units.pop();
+        assert!(check_frozen(&m).is_ok(), "eight are fine");
+    }
+
 
     #[test]
     fn property_tiles() {
