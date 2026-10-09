@@ -682,8 +682,9 @@ class DsCampaign:
             return False
         w, h = self.size()
         victim = spot = None
+        # (a unit with flag 0x08, one just delivered, can't be fired on: not the victim)
         # Ground targets first: a Tank can't hit planes or submarines.
-        for v in sorted(enemy, key=lambda u: u["type"] not in DIRECT):
+        for v in sorted((u for u in enemy if not u["flags"] & 0x08), key=lambda u: u["type"] not in DIRECT):
             for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                 x, y = v["x"] + dx, v["y"] + dy
                 if 0 <= x < w and 0 <= y < h and e.u8(self.layer_cell(x, y)) == 0 and g.terrain_class(x, y) & 0x1F in LAND:
