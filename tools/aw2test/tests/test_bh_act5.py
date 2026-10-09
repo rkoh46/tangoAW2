@@ -415,3 +415,196 @@ def bh_act5_m30_cannon_reach_probe(ctx):
     hurt = [(u["type"], u["x"], u["y"], u["hp"]) for u in g.units(2) if u["hp"] < 100]
     ctx.log(f"probe ({px},{py}): orange hurt {hurt}; black hole hurt {[(u['x'], u['y'], u['hp']) for u in g.units(1) if u['hp'] < 100]}")
     e.close()
+
+
+def scene_shots(ctx, e, g, d, prefix, max_frames=6000, patience=60):
+    """A real screenshot of every dialogue box shown (A through them): prefix_1, prefix_2 ..."""
+    texts, last, stable, n = [], None, 0, 0
+    quiet = 0
+    while n < max_frames:
+        t = d.text_shown()
+        stable = stable + 1 if t and t == last else 0
+        last = t
+        if t and stable == 5 and (not texts or texts[-1] != a5.clean(t)):
+            texts.append(a5.clean(t))
+            e.wait(100)           # (the box types its text out)
+            a5.pic(ctx, e, f"{prefix}_{len(texts)}")
+        if d.scripts_running():
+            quiet = 0
+            if stable >= 8:
+                e.press("A", 4)
+                stable = 0
+        else:
+            quiet += 1
+            if quiet > patience:
+                break
+        e.wait(4)
+        n += 4
+    return texts
+
+
+@test(modes=("ds",))
+def bh_act5_m30_takeover_proof(ctx):
+    """Real screenshots of the stage-two takeover (Sturm + Clone Andy): the capture, no Victory, the dialogue, Andy's CO panel, the
+    Rail Yard HQ, the reserves, Nell's survivors, Andy's turn, the duel, and the Rail Yard's capture winning."""
+    e, g, d, spec = load_mission(ctx, 30)
+    a5.open_mission(ctx, e, g, d, a5.M[30], spec[2], "m30")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    for _ in range(4):
+        a5.calm(e, g, d)
+        e.wait(100)
+    # Nell's army as it stands mid-battle: about half, none near the keep
+    keepers = [u for u in g.units(2) if abs(u["x"] - 18) + abs(u["y"] - 3) > 9]
+    keepers = keepers[::2]
+    ids = {k["id"] for k in keepers}
+    for u in g.units(2):
+        if u["id"] not in ids:
+            d.remove_unit(u)
+    g._units_base = g._players_base = None
+    n_before = len(g.units(2))
+    mine = next(u for u in g.units(1) if u["type"] == 1)
+    d.place_unit(mine, 18, 4)
+    e.wait(10)
+    g._units_base = g._players_base = None
+    # (the first of the two capture actions: stand on the Great Hall and capture)
+    g.select(18, 4)
+    g.move_to(18, 3)
+    g.goto(18, 3)
+    a5.pic(ctx, e, "m30_s1_a_before_capture")
+    g.choose("Capt", g.ACTION_MENU)
+    a5.calm(e, g, d)
+    my_turn(e, g, d)
+    ctx.eq(g.player(2)["co"], 0, "stage one: Nell leads Orange Star")
+    a5.pic(ctx, e, "m30_s4_a_nell_panel_stage_one")
+    g.goto(18, 3)
+    a5.pic(ctx, e, "m30_s1_b_capturing_second_action")
+    g.select(18, 3)
+    g.move_to(18, 3)
+    g.choose("Capt", g.ACTION_MENU)
+    texts = []
+    for i in range(12):                      # the capture completes: the HQ flips, the scene plays
+        e.wait(45)
+        a5.pic(ctx, e, f"m30_s1_c_flip{i}")
+        if d.scripts_running():
+            break
+    texts = scene_shots(ctx, e, g, d, "m30_s3_line")
+    ctx.log("takeover dialogue: " + " | ".join(texts))
+    a5.calm(e, g, d)
+    g._units_base = g._players_base = None
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "no Victory: the battle goes on")
+    a5.pic(ctx, e, "m30_s2_no_victory")
+    ctx.eq(g.player(2)["co"], 1, "Andy leads Orange Star")
+    ctx.log(f"fall day var {e.u8(0x0203FD7C)}, now day {e.u16(0x03004080)}")
+    # the Rail Yard and the reserves, Nell's survivors
+    g.goto(33, 6)
+    e.wait(60)
+    a5.pic(ctx, e, "m30_s5_rail_yard_hq")
+    g.goto(33, 8)
+    e.wait(60)
+    a5.pic(ctx, e, "m30_s5_b_reserves")
+    surv = next((u for u in g.units(2) if u["x"] < 31 and u["id"] in ids), None)
+    if surv:
+        g.goto(surv["x"], surv["y"])
+        e.wait(60)
+        a5.pic(ctx, e, "m30_s6_nells_survivor")
+    ctx.log(f"orange units {n_before} -> {len(g.units(2))}")
+    # the CO info page (map menu > CO): ours first, then RIGHT to the other armies' pages
+    try:
+        g.open_map_menu()
+        e.wait(30)
+        g.choose("CO", g.MAP_MENU)
+        e.wait(120)
+        a5.pic(ctx, e, "m30_s4_c_co_page_ours")
+        for k in range(3):
+            e.press("RIGHT", 6)
+            e.wait(120)
+            a5.pic(ctx, e, f"m30_s4_d_co_page_right{k}")
+        for _ in range(4):
+            e.press("B", 4)
+            e.wait(40)
+        a5.calm(e, g, d)
+    except Exception as ex:
+        ctx.log(f"CO page: {ex}")
+    # Andy's first turn: end the turn and shoot the computer's turn
+    d0 = e.u16(0x03004080)
+    a5.end_turn(e, g, d)
+    shot = 0
+    first_lines = []
+    for it in range(900):
+        if e.u8(dc.LAST_RESULT):
+            break
+        t = d.text_shown()
+        if t and a5.clean(t) not in first_lines:
+            e.wait(100)
+            first_lines.append(a5.clean(t))
+            a5.pic(ctx, e, f"m30_s7_first_turn_line_{len(first_lines)}")
+        if d.scripts_running():
+            e.press("A", 4)
+        elif g.current_army() == 2 and shot < 8 and it % 25 == 0:
+            a5.pic(ctx, e, f"m30_s7_andy_turn{shot}")
+            shot += 1
+        if g.current_army() == 1 and e.u16(0x03004080) > d0 and not d.scripts_running() and it > 40:
+            quiet_turn = locals().get("quiet_turn", 0) + 1
+            if quiet_turn > 120:
+                break
+        e.wait(8)
+    ctx.log("Andy's turn-start lines: " + " | ".join(first_lines))
+    for _ in range(4):
+        a5.calm(e, g, d)
+        e.wait(100)
+    a5.pic(ctx, e, "m30_s7_z_back_to_us")
+    # the scene at the start of our turn after Andy's (his first-turn line), then the next turn's (the duel)
+    ctx.log(f"vars: fall {e.u8(0x0203FD7C)} duel {e.u8(0x0203FD7D)} first {e.u8(0x0203FD7E)}")
+    ctx.log(f"after Andy's turn: day {e.u16(0x03004080)} army {g.current_army()}")
+    for k in range(2):
+        d0 = e.u16(0x03004080)
+        a5.calm(e, g, d)
+        a5.end_turn(e, g, d)
+        for _ in range(300):
+            if e.u8(dc.LAST_RESULT) or (g.current_army() == 1 and e.u16(0x03004080) > d0):
+                break
+            if d.scripts_running():
+                scene_shots(ctx, e, g, d, f"m30_s9_turn{k}_cpu_line")
+            e.wait(60)
+        texts = scene_shots(ctx, e, g, d, f"m30_s9_turn{k}_line", max_frames=6000, patience=700)
+        ctx.log(f"turn {k} scenes: " + " | ".join(texts))
+    for _ in range(4):
+        a5.calm(e, g, d)
+        e.wait(100)
+    # the Rail Yard falls
+    g._units_base = g._players_base = None
+    for u in g.units(2):
+        if abs(u["x"] - 33) + abs(u["y"] - 6) <= 14:
+            d.remove_unit(u)
+    g._units_base = g._players_base = None
+    mine = next(u for u in g.units(1) if u["type"] in (1, 2))
+    d.place_unit(mine, 33, 7)
+    e.wait(10)
+    g._units_base = g._players_base = None
+    g.select(33, 7)
+    g.move_to(33, 6)
+    g.choose("Capt", g.ACTION_MENU)
+    a5.calm(e, g, d)
+    my_turn(e, g, d)
+    g.select(33, 6)
+    g.move_to(33, 6)
+    g.choose("Capt", g.ACTION_MENU)
+    for i in range(60):
+        e.wait(40)
+        if i % 4 == 0:
+            a5.pic(ctx, e, f"m30_s8_win{i // 4:02d}")
+        if d.scripts_running():
+            e.press("A", 4)
+        if e.u8(dc.LAST_RESULT):
+            break
+    for k in range(4):
+        e.wait(120)
+        a5.pic(ctx, e, f"m30_s8_victory{k}")
+    for _ in range(40):                  # (A through the results to the world map: the result is then recorded)
+        if e.u8(dc.LAST_RESULT):
+            break
+        e.press("A", 4)
+        e.wait(60)
+    ctx.eq(e.u8(dc.LAST_RESULT), 1, "capturing the Rail Yard gives the Victory screen")
+    e.close()

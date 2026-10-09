@@ -95,6 +95,7 @@ fn charge_cop(core: &mut Core, army: u32) {
 /// 0x0203FD5F; cpu_tactics uses 0x0203FD60..0x0203FD79).
 const VAR_FALL_DAY: u32 = 0x0203_FD7C;
 const VAR_DUEL_DONE: u32 = 0x0203_FD7D;
+const VAR_FIRST_TURN_DONE: u32 = 0x0203_FD7E;
 
 /// The units of a built map, with the AI role `role(army, kind, x, y)` gives each (see the module doc).
 fn deploy(name: &str, role: fn(u8, u8, u8, u8) -> u8) -> Vec<UnitDef> {
@@ -321,6 +322,7 @@ fn nell_leads(core: &mut Core) -> bool {
 fn reset_vars(core: &mut Core) {
     core.raw_write_8(VAR_FALL_DAY, -1, 0);
     core.raw_write_8(VAR_DUEL_DONE, -1, 0);
+    core.raw_write_8(VAR_FIRST_TURN_DONE, -1, 0);
 }
 
 fn charge_nell_60(core: &mut Core) {
@@ -357,7 +359,11 @@ fn stage2_after(core: &mut Core, n: u16) -> bool {
 }
 
 fn s2_first_turn(core: &mut Core) -> bool {
-    stage2_after(core, 1)
+    core.raw_read_8(VAR_FIRST_TURN_DONE, -1) == 0 && stage2_after(core, 1)
+}
+
+fn first_turn_done(core: &mut Core) {
+    core.raw_write_8(VAR_FIRST_TURN_DONE, -1, 1);
 }
 
 fn duel_due_in_stage2(core: &mut Core) -> bool {
@@ -517,10 +523,10 @@ fn bh30() -> MissionDef {
         Trigger::new(When::AfterAction, Cond::Custom(always), vec![Action::Custom(clamp_nell)]).repeating(),
         Trigger::new(When::TurnStart, Cond::EveryDays { n: 1, from: 2 }, vec![Action::Custom(cap_treasury)]).repeating(),
         on_day(1, Some(Cond::PlayerPair { a: co::STURM, b: co::CLONE_ANDY }), vec![Action::Scene(Scene::new(vec![say(co::STURM, "Together."), say(co::CLONE_ANDY, "Always, sir.")]))]),
-        // Day 5: Nell's first power, her Lucky Star.
+        // Day 5: Nell's first power, her Lucky Star (if she still leads).
         on_day(
             5,
-            None,
+            Some(Cond::Custom(nell_leads)),
             vec![
                 Action::Custom(nell_cop),
                 Action::Scene(Scene::new(vec![
@@ -533,7 +539,8 @@ fn bh30() -> MissionDef {
         // Days 7, 9, 11: the Md Tanks, the Neotanks and the Megatanks leave their posts. Day 9: her Super Power. Day 15: the second, if she still leads.
         on_day(7, None, vec![Action::Custom(release_md_tanks)]),
         on_day(11, None, vec![Action::Custom(release_megatanks)]),
-        on_day(9, None, vec![Action::Custom(release_neotanks), Action::Custom(nell_super), Action::Scene(Scene::new(vec![say(co::NELL, "For everyone I love: stand with me! Orange Star, shine!")]))]),
+        on_day(9, None, vec![Action::Custom(release_neotanks)]),
+        on_day(9, Some(Cond::Custom(nell_leads)), vec![Action::Custom(nell_super), Action::Scene(Scene::new(vec![say(co::NELL, "For everyone I love: stand with me! Orange Star, shine!")]))]),
         on_day(
             15,
             Some(Cond::Custom(nell_leads)),
@@ -565,7 +572,7 @@ fn bh30() -> MissionDef {
                 Action::AddFunds { army: 2, funds: 10000 },
             ],
         ),
-        Trigger::new(When::TurnStart, Cond::Custom(s2_first_turn), vec![Action::Scene(Scene::new(vec![say(co::ANDY, "Orange Star! The platform is behind us! Do not move!")]))]),
+        Trigger::new(When::TurnStart, Cond::Custom(s2_first_turn), vec![Action::Custom(first_turn_done), Action::Scene(Scene::new(vec![say(co::ANDY, "Orange Star! The platform is behind us! Do not move!")]))]).repeating(),
         // The match is won on the Rail Yard (its capture defeats the army) or by routing the army.
         after(beaten(2, (33, 6)), vec![Action::Win]),
     ];
