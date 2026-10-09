@@ -13,6 +13,7 @@ tango-gamesupport = { path = "../tango-gamesupport" }
 tango-gamesupport-common-dataview = { path = "../tango-gamesupport-common-dataview" }
 tango-backend-mgba = { path = "../tango-backend-mgba" }
 mgba.workspace = true
+png = { version = "0.18", default-features = false }
 
 tango-gamesupport-common-ui = { path = "../tango-gamesupport-common-ui", optional = true }
 

@@ -175,3 +175,7 @@ in one and `/connect 127.0.0.1` in the other. The iPhone/iPad build
 GPL-3.0-or-later, like Tango. See [LICENSE](LICENSE) and
 [CREDITS.md](CREDITS.md). Advance Wars is a trademark of Nintendo.
 tangoAW2 is not affiliated with Nintendo or Intelligent Systems.
+
+Crumb art by the tangoAW2 author (rkoh), original: `tango-gamesupport-aw2/art/crumb/`.
+It is the only art in the repository; every other picture is converted at
+run time from the player's own ROMs.

@@ -65,16 +65,15 @@ pub fn bonus(mode: u8, t: u8, field: usize) -> i32 {
 // --- Texts ----------------------------------------------------------------------------
 
 pub const NAME: &[u8] = b"Crumb";
-/// The CO page's bio, with Hit and Miss: the page has six lines of 103
-/// pixels (`docs/BH_CAMPAIGN.md` 4.7c's bio is longer: "...across five
-/// nations and was promoted for not dropping either. He cannot plan a siege,
-/// but nobody who fights beside him goes hungry or alone." and "Hit: Gerald,
-/// second helpings, being useful." / "Miss: Being left behind, empty
-/// canteens, mean sergeants."; it is cut to what the page holds).
-pub const BIO: &[u8] = b"Pip Hobb carried a flag and a biscuit named Gerald across five nations.\rHit: Gerald, seconds\rMiss: Being left behind";
+/// The CO page's bio, with Hit and Miss, in AW2's bio style for a Versus
+/// player who has not played the campaign (who he is, what his strength is);
+/// the page has six lines of 103 pixels. (The design's longer bio, `docs/
+/// BH_CAMPAIGN.md` 4.7c, is the campaign's story and did not read as a CO
+/// description.)
+pub const BIO: &[u8] = b"A Black Hole soldier promoted by Sturm. Keeps his troops fed and supplied.\rHit: Biscuits\rMiss: Being left behind";
 pub const DAY_TO_DAY: &[u8] = b"My foot soldiers are sturdy, and anyone on a city or base gets fed.";
 pub const COP_PAGE: &[u8] = b"Restores 1 HP to all units and fully resupplies them. Infantry and Mech move 1 space more.";
-pub const SCOP_PAGE: &[u8] = b"Restores 2 HP to all units. Infantry and Mech firepower rises sharply, and luck rises for all units.";
+pub const SCOP_PAGE: &[u8] = b"Restores 2 HP to all units. Infantry and Mech firepower rises by 30%, and luck improves for all units.";
 pub const COP_NAME: &[u8] = b"Ration Run";
 pub const SCOP_NAME: &[u8] = b"Gerald's Blessing";
 /// The six power quotes the game picks from ([`crate::co_new::T_QUOTES`]):
