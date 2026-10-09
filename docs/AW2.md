@@ -2228,8 +2228,8 @@ concatenates the acts. A mission names what it needs **by key**
 **The map tool** (`tango-gamesupport-aw2/five/bhmap.py`). Maps are text files
 in `five/bh/*.txt`, in `five/maps.txt`'s format (legend: `five/map.py`: sea,
 reefs, shoals, rivers, bridges, roads, pipes, woods, mountains, properties,
-Black Hole's inventions) with `team`, `objective` and `unit ARMY TYPE X Y
-[hp=N] [hold] [name=id]` lines. `python3 five/bhmap.py <aw2.gba>` joins every
+Black Hole's inventions) with `team`, `objective`, `owners`, `split` and `unit ARMY TYPE X Y
+[hp=N] [hold] [name=id]` lines (`owners 1 2`: only those HQs decide who owns a property, the nearest; `split y 14`: the first HQ's army owns the properties up to row 14, the second's the rest; `Q` is a second HQ tile; a shoal strip wider than one cell and a sea moat are drawn, a river wider than one cell is not: AW2's maps have no such tile pairs). `python3 five/bhmap.py <aw2.gba>` joins every
 road, river, pipe, sea edge, coast, shoal and mountain as AW2 draws them
 (the rules learned from the game's own maps, `five/map.py`), checks every
 neighbouring tile pair against the game's maps (`five/tilecheck.py`) and
@@ -2243,12 +2243,14 @@ nobody reaches); no unit boxed in. A problem prints `PROBLEM ...` and the
 exit status is 1 (`bh_map_tool_checks` runs it on good and bad maps).
 
 **Recipes.**
-- *Stage two (Nell, then Andy).* Give the stage-2 army its own team-mate slot:
-  army 3 on army 2's team, an HQ of its own and one token unit (`hold`), so
-  the team is alive when army 2 falls. A trigger `AfterAction`,
-  `ArmyDefeated(2)` does `Spawn` (army 3's units), `AddFunds`, `SetCo` and a
-  scene (`bh_campaign_second_stage`). (An army with no units is defeated at
-  once: give it the token.)
+- *Stage two (Nell, then Andy): the same army goes on.* The army has two HQ tiles on the map (`Q`: a second
+  HQ of the army whose HQ is nearest, the Rail Yard), `MissionDef::held_hq = Some((x, y))` names the first one (the
+  Great Hall): its capture defeats nobody (a trap at the HQ-mark instruction `0x08042822` skips the mark; whoever
+  captures it, it only changes hands). A trigger `AfterAction` on `OwnerAt { x, y, army: 1 }` then plays the scene and
+  does `Action::TakeOver { army: 2, co: ANDY, meter_pct: 30 }` (the same army, a new CO with its own meter at 30% of
+  its first power's bar, no power in effect, its skills: `tag::replace_co`, deterministic, with or without a tag pair),
+  `Spawn` (the reserves, as many as the 50-unit cap allows) and `AddFunds`. Capturing the other HQ defeats the army and
+  wins. A mission's own variables live in EWRAM `0x0203FD7C..0x0203FD7F` (M30: the fall's day, "duel played").
 - *Evacuation / escort.* Named units (`.named("crumb")`) and `UnitsIn` /
   `NamedIn` over the exit's rectangle, or `Cond::Custom(fn)` using
   `unit_by_name`, `units_of`, `day`; a death is `UnitGone`.
@@ -3414,3 +3416,27 @@ a game saved over netplay the same on both peers.
   (its 60-property limit) nor on its Intel screen (cities, bases, airports
   and ports only); the overview map shows them in their army's colour
   (Black Hole's dark).
+
+
+### M29 and M30 (`bh_act5.rs`, maps `bh29.txt`, `bh30.txt`)
+
+- **Beams hit friends.** The Laser and the Deathray hit up to four units, nearest first, of *any* army (measured by
+  `bh_act5_m29_laser_probe` and `..._deathray_probe`: three Orange and one own unit on the Laser's row lost HP). The
+  Deathray (one per map, always at the top) covers columns x..x+2 (x the footprint's left column) from the row
+  under its footprint to the map's bottom edge, 8 HP each. Starting layouts keep every friendly off every beam, and
+  the intros warn the player (Hawke).
+- **AI roles of Orange's units** (`UnitDef::ai`: 0 stays and fires, 1 the enemy HQ, 3 enemy properties, 4 nearest
+  enemy units; `.hold()` is role 1): the army pushes; the minority that holds is the guns, Anti-Air and the gate
+  guards (documented in the file's header). A CPU run shows 37 of 50 units leave their start cells by day 2.
+- **Start of the battle.** Nothing may be hit before the player moves: a unit starts out of every structure's reach. Measured (M30,
+  `bh_act5_m30_cannon_reach_probe`): a Black Cannon reaches roughly nine columns either side of itself and twelve rows up from
+  its row; a Laser takes its whole row and column; a minicannon its line. M30's Orange army therefore starts on rows 9 and up
+  or in columns 16..20 (checked when the map is painted and by the picture test: every unit at full HP in the Setup phase and
+  after the first turn start). The pictures are taken in the Setup phase, before any structure fires.
+- **Balance (test bot, `bh_act5_m30_balance_run` and `..._balance_turtle`).** Tuned: Orange starts with 20000 funds and its treasury is
+  capped at 6000 each morning (a CPU army rebuilds a few units a day, not to the cap); its heavy armour holds (role 0) until
+  day 7 (Md Tanks), 9 (Neotanks) and 11 (Megatanks); its meter is held under the first power's bar except on the power days
+  (COP day 5, Super days 9 and 15, `clamp_nell`). Result of the dig-in-then-push bot: Orange 50 to 23 units by day 10, Black Hole
+  40 to 16, then 11 on day 15 and 8 on day 24 (Orange 17): the camp holds, the bot cannot push the Great Hall (a human has to).
+  Earlier rounds: funds 90000 and no caps (Black Hole 7 units on day 8), 45000/20000 (14 on day 10, lost on day 18), 30000/10000
+  (11 on day 10), releasing the Tanks only on day 3 made it worse (14 on day 11).

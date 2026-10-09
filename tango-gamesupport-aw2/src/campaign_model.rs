@@ -95,6 +95,8 @@ pub struct Custom {
     /// Per mission: named units that march, structures that are jammed.
     pub marches: Vec<Vec<crate::custom_campaign::MarchDef>>,
     pub jams: Vec<Vec<crate::custom_campaign::JamDef>>,
+    /// Per mission: an HQ whose capture does not defeat its army (the army has another HQ).
+    pub held_hq: Vec<Option<(u8, u8)>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,

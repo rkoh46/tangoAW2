@@ -18,6 +18,7 @@ then its rows, one character per tile:
   1..5    the HQ of army 1..5 (Orange Star, Blue Moon, Green Earth,
           Yellow Comet, Black Hole)
   B C A P base, city, airport, port of the army whose HQ is nearest
+  Q       a second HQ of the army whose HQ is nearest (the BH Campaign's Rail Yard)
   b c a p neutral base, city, airport, port
   Black Hole's inventions (theirs by the game's rules), each at its anchor,
   with # over the rest of its footprint:
@@ -178,6 +179,14 @@ def water_tile(c, around):
         wet = lambda n: n in '~r-'
         return BRIDGE_ACROSS if wet(around[0]) or wet(around[2]) else BRIDGE_DOWN
     key = ''.join('s' if n in '~r' else 'h' if n == ',' else 'l' for n in around)
+    if key not in SHOAL:
+        # A strip of shoal wider than one cell (a ford across a moat): the cell is drawn as the beach it
+        # would be with the neighbouring shoal as land, the one opposite the sea first.
+        for j in sorted((j for j in range(4) if key[j] == 'h'), key=lambda j: key[(j + 2) % 4] != 's'):
+            alt = key[:j] + 'l' + key[j + 1:]
+            if alt in SHOAL:
+                key = alt
+                break
     assert key in SHOAL, ('shoal', key)
     return SHOAL[key]
 
@@ -196,8 +205,18 @@ def grid(m):
     n = m['armies']
     assert sorted(hqs) == list(range(1, n + 1)) and len(m['colours']) == n, (m['name'], hqs)
 
+    # (a map may name the armies that own properties by distance: `owners 1 2` in the BH maps, so a
+    # second-stage HQ of a team-mate does not take its neighbour's properties)
+    owning = m.get('owners') or sorted(hqs)
+
+    split = m.get('split')
+
     def owner(x, y):
-        return min(hqs, key=lambda a: (abs(hqs[a][0] - x) + abs(hqs[a][1] - y), a))
+        if split:
+            # `split y 14` / `split x 20`: the first HQ's army owns what lies up to that row (column), the second's the rest
+            first, second = sorted(hqs)[:2]
+            return first if (y if split[0] == 'y' else x) <= split[1] else second
+        return min(owning, key=lambda a: (abs(hqs[a][0] - x) + abs(hqs[a][1] - y), a))
 
     return W, H, ch, hqs, owner
 
@@ -275,9 +294,10 @@ def lay(m, edge):
             elif c in '12345':
                 tiles[y][x] = PROPS['H'][int(c)]
                 counts[int(c)] += 1
-            elif c in 'BCAPT':
+            elif c in 'BCAPTQ':
+                # (Q: a second HQ tile of the army whose HQ is nearest: the BH campaign's Rail Yard)
                 o = owner(x, y)
-                tiles[y][x] = PROPS[c][o]
+                tiles[y][x] = (PROPS['H'][o] if c == 'Q' else PROPS[c][o])
                 counts[o] += 1
             elif c in 'bcapt':
                 tiles[y][x] = PROPS[c.upper()][0]

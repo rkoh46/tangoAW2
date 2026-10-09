@@ -377,7 +377,9 @@ pub struct UnitDef {
     pub y: u8,
     /// Hit points 1..100 (internal; the display is HP / 10).
     pub hp: u8,
-    /// The computer's order for it: 0 attack, 1 hold, 5 (as Dual Strike's).
+    /// The computer's role for it (AW2's AI byte): 0 stays where it is (still fires at what comes into
+    /// reach), 1 goes for the enemy HQ, 3 for the enemy's properties, 4 at the nearest enemy units, 7 by
+    /// its HQ. [`UnitDef::hold`] is role 1.
     pub ai: u8,
     /// A name the mission's rules can refer to ([`Cond::UnitAt`], ...).
     pub name: Option<&'static str>,
@@ -562,6 +564,10 @@ pub enum Action {
     /// An army's CO becomes this one (the second stage of a mission: Nell,
     /// then Andy; keep the power meter as it is).
     SetCo { army: u8, co: u8 },
+    /// The same army goes on under another CO (the second stage: Nell, then Andy): no power in
+    /// effect, `co`'s own meter at `meter_pct` percent of its first power's bar, no power used
+    /// ([`crate::tag::replace_co`]; works with or without a tag pair, deterministic).
+    TakeOver { army: u8, co: u8, meter_pct: u8 },
     /// AW2's meteor strike (Von Bolt's Ex Machina) of `hp` on the spot the
     /// CPU's scorer picks best for the army whose turn it is now (the
     /// player's, at a turn-start trigger: the Black Onyx turned on the
@@ -669,6 +675,10 @@ pub struct MissionDef {
     pub marches: Vec<MarchDef>,
     /// Black Hole structures that are jammed until something happens ([`JamDef`]).
     pub jams: Vec<JamDef>,
+    /// An HQ whose capture does not defeat its army: the army has a second HQ (the map's `Q` tile),
+    /// and the capture is the mission's first stage (a trigger on `OwnerAt` plays the second: the
+    /// same army, a new CO, reserves). Whoever captures it, it only changes hands.
+    pub held_hq: Option<(u8, u8)>,
 }
 
 /// A named unit (of the mission's deployment, or spawned with a name by an
@@ -765,6 +775,7 @@ impl MissionDef {
             volcano: None,
             marches: Vec::new(),
             jams: Vec::new(),
+            held_hq: None,
         }
     }
 }
@@ -915,6 +926,8 @@ const MARCH_DAY_AT: u32 = 8;
 /// A named unit's `Rules::units` slot of 100 + n is the n-th unit its mission
 /// spawns (tag n): found by its tag, not by a slot.
 const SPAWNED: u8 = 100;
+/// [`TAKE_OVER`] | army: the army's CO is replaced (arg: CO | meter percent << 8).
+pub const TAKE_OVER: u32 = 0xBCC0_0000;
 /// A jump's relative marker (script op 0x1E whose target word is `REL_JUMP | n`: n commands on).
 const REL_JUMP: u32 = 0xFFFE_0000;
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
@@ -1314,6 +1327,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
         marches: def.missions.iter().map(|m| m.marches.clone()).collect(),
         jams: def.missions.iter().map(|m| m.jams.clone()).collect(),
+        held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
     };
     built.unhandled.clear();
@@ -1484,6 +1498,10 @@ fn compile_mission(
                 }
                 Action::SetCo { army, co } => {
                     let s = cx.stub(Magic::Call(SET_CO | *army as u32, *co as u32));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                Action::TakeOver { army, co, meter_pct } => {
+                    let s = cx.stub(Magic::Call(TAKE_OVER | *army as u32, *co as u32 | (*meter_pct as u32) << 8));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
                 Action::Strike { hp } => {
@@ -2235,6 +2253,12 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
         Magic::Call(f, co) if f & 0xFFF0_0000 == SET_CO => {
             let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * (f & 0xF);
             core.raw_write_8(p + 0x1D, -1, co as u8);
+            0
+        }
+        Magic::Call(f, arg) if f & 0xFFF0_0000 == TAKE_OVER => {
+            let (army, co, pct) = (f & 0xF, (arg & 0xFF) as u8, arg >> 8);
+            let charge = crate::tag::cop_cost(core, co, 0) * pct / 100;
+            crate::tag::replace_co(core, army, co, charge);
             0
         }
         Magic::Call(f, _) if f & 0xFFF0_0000 == CUSTOM_FN => {
