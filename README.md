@@ -91,11 +91,16 @@ changes, and online both players need it):
   - mission records, and saving mid-mission;
   - each mission opens with Dual Strike's Setup phase: look around, then
     **Deploy**.
-- **BH Campaign:** a second campaign of 31 missions where you lead Black Hole
-  across the four nations (the 31st is a secret, opened by the finale and
-  all nine recruit bonds): recruits, hidden bonds and Crumb as a CO of his own, the Black
-  Factory, Laser, Black Cannons and Volcano as the missions' set pieces,
-  and the computer fighting back (pick it in the Campaign menu).
+- **BH Campaign:** a second campaign where you lead Black Hole:
+  - 31 missions in five acts across the four nations, plus a secret 31st
+    that opens once every recruit's bond is earned;
+  - recruits (Von Bolt, Hawke, Koal, Kindle and more) with hidden bonds,
+    and **Crumb**, a CO of his own;
+  - set rivalries and free picks: your CO or tag pair on the CO screen
+    changes who you fight and what is said;
+  - two fronts, fog, a five-army fortress with Obelisk, Volcano and
+    Factory, and a finale where Andy takes Orange Star over;
+  - every scene is written for it (pick it in the Campaign menu).
 - **Two-front missions** are fought on both fronts, taking turns each round:
   - **Front** on the map menu looks at the other front; **Send** moves
     units over;
@@ -127,6 +132,19 @@ changes, and online both players need it):
 <td><img src="docs/screenshots/ds-black-onyx-laser.png" width="240" alt="The Black Onyx's laser striking Crystal Calamity"></td>
 <td><img src="docs/screenshots/ds-teams-five-pairs.png" width="240" alt="Five armies with tag partners on Versus' Teams screen"></td>
 <td><img src="docs/screenshots/ds-set-skills.png" width="240" alt="Choosing CO skills on SET SKILLS"></td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td><img src="docs/screenshots/bh-world-map.png" width="240" alt="The BH Campaign's world map with its flags and the BONDS legend"></td>
+<td><img src="docs/screenshots/bh-story.png" width="240" alt="Sturm offering Von Bolt a place at his side after Storm Landing"></td>
+<td><img src="docs/screenshots/bh-crumb.png" width="240" alt="Crumb's CO page with his large picture and biography"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/bh-fortress.png" width="240" alt="Mission 28's fortress: Black Hole's army round the Obelisk, with the Volcano beyond"></td>
+<td><img src="docs/screenshots/bh-takeover.png" width="240" alt="Andy rallying Orange Star after the takeover in Nell's Stand"></td>
+<td><img src="docs/screenshots/bh-vault.png" width="240" alt="Von Bolt's Black Cannons waking up in the secret mission, The Colonel's Vault"></td>
 </tr>
 </table>
 
