@@ -33,6 +33,7 @@ def tag_battle(ctx, cos, partners, humans=(1,), units=(), fog=False):
     g.set_rules(fog=fog)
     g.start_battle()
     g.wait_for_input()
+    g.e.survey_arm(ctx.name)
     return g
 
 

@@ -83,7 +83,74 @@ class Emu:
         except (OSError, TypeError):
             return []
 
+    # -- OBJ tile survey (AW2TEST_OBJ_SURVEY=<dir>) -----------------------
+    # `survey_arm()` fills every unused (all-zero) OBJ tile with a marker; after
+    # that every wait/press/hold compares OBJ VRAM with the last look, and the
+    # tiles that changed are written to <dir>/<pid>-<n>.txt when the console
+    # closes: the OBJ tiles the game (or tangoAW2) writes while the screens
+    # under test are used. A tile not listed in any file is free for new art.
+    def survey_arm(self, label=""):
+        d = os.environ.get("AW2TEST_OBJ_SURVEY")
+        if not d or getattr(self, "_sv", None) is not None:
+            return
+        os.makedirs(d, exist_ok=True)
+        vram = self.read(0x06010000, 0x8000)
+        marker = bytes([0x77]) * 32
+        blank = bytes(32)
+        poison = bytearray(vram)
+        for t in range(1024):
+            if vram[32 * t:32 * t + 32] == blank:
+                poison[32 * t:32 * t + 32] = marker
+        self.write(0x06010000, bytes(poison))
+        zero = [t for t in range(1024) if vram[32 * t:32 * t + 32] == blank]
+        self._sv = {"last": bytes(poison), "frame": self.frame, "changed": set(), "label": label, "zero": zero, "ref": set()}
+
+    def _survey_look(self, force=False):
+        sv = getattr(self, "_sv", None)
+        if sv is None or getattr(self, "_sv_busy", False):
+            return
+        if not force and self.frame - sv["frame"] < 6:
+            return
+        self._sv_busy = True
+        try:
+            cur = self.read(0x06010000, 0x8000)
+            last = sv["last"]
+            if cur != last:
+                for t in range(1024):
+                    if cur[32 * t:32 * t + 32] != last[32 * t:32 * t + 32]:
+                        sv["changed"].add(t)
+            oam = self.read(0x07000000, 0x400)
+            SZ = {(0, 0): (1, 1), (0, 1): (2, 2), (0, 2): (4, 4), (0, 3): (8, 8), (1, 0): (2, 1), (1, 1): (4, 1),
+                  (1, 2): (4, 2), (1, 3): (8, 4), (2, 0): (1, 2), (2, 1): (1, 4), (2, 2): (2, 4), (2, 3): (4, 8)}
+            for i in range(128):
+                a0 = oam[8 * i] | oam[8 * i + 1] << 8
+                a1 = oam[8 * i + 2] | oam[8 * i + 3] << 8
+                a2 = oam[8 * i + 4] | oam[8 * i + 5] << 8
+                if (a0 >> 8) & 3 == 2 or (a0 & 0xFF) >= 160 and (a0 & 0xFF) < 240:
+                    continue
+                w, h = SZ.get((a0 >> 14, a1 >> 14), (1, 1))
+                t = a2 & 0x3FF
+                sv["ref"].update(range(t, min(t + w * h, 1024)))
+            sv["last"], sv["frame"] = cur, self.frame
+        finally:
+            self._sv_busy = False
+
+    def _survey_save(self):
+        sv = getattr(self, "_sv", None)
+        if sv is None:
+            return
+        try:
+            self._survey_look(True)
+        except Exception:
+            pass
+        d = os.environ["AW2TEST_OBJ_SURVEY"]
+        with open(os.path.join(d, f"{os.getpid()}-{id(self) % 100000}.txt"), "w") as f:
+            f.write(sv["label"] + "\n" + " ".join(map(str, sorted(sv["changed"]))) + "\n" + " ".join(map(str, sv["zero"])) + "\n" + " ".join(map(str, sorted(sv["ref"]))) + "\n")
+        self._sv = None
+
     def close(self):
+        if getattr(self, "_sv", None) is not None and self.proc.poll() is None:
+            self._survey_save()
         if self.proc.poll() is None:
             try:
                 self.proc.stdin.write("quit\n")
@@ -107,15 +174,18 @@ class Emu:
                 self.timeline[-1] = f"wait {int(self.timeline[-1][5:]) + n}"
             else:
                 self.timeline.append(f"wait {n}")
+            self._survey_look()
 
     def press(self, keys, n=2):
         """Hold KEYS for n frames, then release for 6."""
         self.cmd(f"press {keys} {n}")
         self.timeline.append(f"press {keys} {n}")
+        self._survey_look()
 
     def hold(self, keys, n):
         self.cmd(f"hold {keys} {n}")
         self.timeline.append(f"hold {keys} {n}")
+        self._survey_look()
 
     # -- memory -----------------------------------------------------------
     def read(self, addr, n):
