@@ -150,7 +150,8 @@ def enter(ctx, n):
         d.wait_control()
     ctx.eq(d.mission(), n - 1, f"M{n}: its own mission was entered")
     g._units_base = g._players_base = None
-    e.wait(30)
+    e.wait(500)          # (held for 500 frames: nothing may hit anyone while the player has control)
+    g._units_base = g._players_base = None
     return e, g, d
 
 
