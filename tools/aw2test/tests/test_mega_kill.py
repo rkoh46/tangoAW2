@@ -102,3 +102,69 @@ def survives(ctx):
     ctx.eq(diff_rows(pal, control), [], "palettes after a battle both sides survive are as with no scene")
     ctx.eq(run(ctx, "megatank_kills_antiair_off", "megatank", "antiair", 1, ("plain", "plain"), visuals="off")[2], 0,
            "animations off: no scene")
+
+
+import os
+CASES = [tuple(int(v) for v in c.split("/")) for c in os.environ.get("M1CASES", "100/100,30/100,5/100,100/66").split(",")]
+
+
+@test(modes=("ds",), name="bh_m1_megatank_kills_antiair_no_counter")
+def bh_m1(ctx):
+    """BH Campaign M1 (Sturm against Von Bolt): a Megatank next to an enemy
+    Anti-Air, animations on; the AW2 destroyed AA fires nothing; an AA left
+    on 1..9 internal HP (shown as 1) counters as AW2 does."""
+    from aw2test import bhcampaign as bh
+    from tests.test_bh_act1 import enter
+
+    from aw2test import ram
+    rows = []
+    for aa_hp, mega_hp in CASES:
+        e, g, d = enter(ctx, 0, cos=[bh.STURM])
+        e.w8(ram.ANIM_OPTS, 1)
+        mine = [u for u in g.units(army=1) if u["type"] not in (0,)]
+        pu = mine[0]
+        enemy = [u for u in g.units(army=2) if u["type"] not in (0,)]
+        eu = enemy[0]
+        x, y = pu["x"], pu["y"]
+        free = None
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if g.unit_at(x + dx, y + dy) is None:
+                free = (x + dx, y + dy)
+                break
+        pa = g.unit_addr(pu["id"])
+        ea = g.unit_addr(eu["id"])
+        e.w8(pa, 4)
+        e.w8(ea, 2 if False else __import__("aw2test.rom", fromlist=["unit_id"]).unit_id("antiair"))
+        d.place_unit(eu, *free)
+        e.w16(pa + 4, (e.u16(pa + 4) & ~0x7FF) | mega_hp | (9 << 7))
+        e.w16(ea + 4, (e.u16(ea + 4) & ~0x7FF) | aa_hp | (9 << 7))
+        e.wait(30)
+        fire(g, (x, y), free)
+        frames, shots = 0, [0, 0]
+        for _ in range(600):
+            e.wait(3)
+            if e.u32(MAIN_CALLBACK) == 0:
+                frames += 1
+                for side in (0, 1):
+                    shots[side] = max(shots[side], e.u16(SHOTS + 0x28 * side))
+                if frames % 6 == 1 and frames < 120:
+                    ctx.shot(g, f"m1_aa{aa_hp}_mega{mega_hp}_f{frames:03d}")
+            elif frames:
+                break
+        try:
+            g.wait_for_input()
+        except Exception as ex:
+            ctx.shot(g, f"m1_aa{aa_hp}_mega{mega_hp}_STUCK")
+            ctx.log(f"M1 mega hp{mega_hp} vs AA hp{aa_hp}: map not idle: {ex}; cb {e.u32(MAIN_CALLBACK):08x}")
+            e.close()
+            continue
+        e.wait(60)
+        ctx.shot(g, f"m1_aa{aa_hp}_mega{mega_hp}_map")
+        after = {u["id"]: u for u in g.units()}
+        aa_left = after.get(eu["id"])
+        ctx.log(f"M1 mega hp{mega_hp} vs AA hp{aa_hp}: scene {frames} frames, shots {shots}, AA after {aa_left and (aa_left['type'], aa_left['hp'])}, mega after {after[pu['id']]['hp']}")
+        if aa_left is None or aa_left["type"] == 0:
+            ctx.eq(shots[1], 0, f"mega hp{mega_hp} destroys the AA at hp{aa_hp}: no counter")
+        else:
+            ctx.check(0 < aa_left["hp"] < 100, f"mega hp{mega_hp} leaves the AA alive ({aa_left['hp']} internal HP): it may counter, as AW2's")
+        e.close()
