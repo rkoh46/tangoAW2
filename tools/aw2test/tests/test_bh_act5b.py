@@ -44,7 +44,9 @@ def pictures(ctx, n):
     e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
     # (a mission that is not fogged is photographed in its Setup phase: the deployment as it stands before
     # any computer turn, and no Onyx panel; a fogged one after Deploy, for the day-1 fog view)
-    setup = False
+    # (M26's Black Cannon fires at the player's first turn start on the nearest enemy: the review picture is taken
+    # in the Setup phase, before any shot, with the Setup banner's screen cells left out of the sweep)
+    setup = n == 26
     texts = a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}", setup_only=setup, hook=None)
     if n == 28 and not setup:
         # five armies: the player (army 5) moves last; the computer's four turns pass first
@@ -75,7 +77,7 @@ def pictures(ctx, n):
     else:
         g.goto(0, 0)
         # (M28's Onyx panel sits in the screen's middle rows on either side: those screen cells are never taken)
-        ex = (lambda tx, ty: 3 <= ty <= 6 and (tx <= 4 or tx >= 10)) if n == 28 else None
+        ex = (lambda tx, ty: 3 <= ty <= 6 and (tx <= 4 or tx >= 10)) if n == 28 else (lambda tx, ty: ty <= 1 and 3 <= tx <= 11) if setup else None
         stitch.stitch(ctx, g, f"m{n}", w, h, exclude=ex)
     if n == 25:
         from aw2test import twofront as tf
@@ -94,6 +96,10 @@ def pictures(ctx, n):
             def check(self, ok, msg):
                 return None
         stitch.stitch(Quiet(ctx), g, "m25_second_front", w2, h2, exclude=lambda tx, ty: ty <= 2 and 5 <= tx <= 10)
+        # (a second sweep from the other corner: the view's cursor leaves a grey box on a cell in one sweep; the
+        # picture takes each cell from the sweep that has no box)
+        g.goto(w2 - 1, h2 - 1)
+        stitch.stitch(Quiet(ctx), g, "m25_second_front_b", w2, h2, exclude=lambda tx, ty: ty <= 2 and 5 <= tx <= 10)
     e.close()
 
 
