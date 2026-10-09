@@ -64,8 +64,9 @@ def pictures(ctx, n):
         # ENGINE BUG (reported): in a five-army mission the Black Hole structures also fire at the start of army 4's
         # turn, on the player's own units (army 5). The picture shows the deployment as designed: their HP put back.
         g._units_base = g._players_base = None
+        # (five armies have 51 unit slots each: the player's are ids 204..254, whatever the harness's view says)
         for u in g.units():
-            if u["army"] == 5 and u["hp"] < 100:
+            if u["id"] // 51 == 4 and u["hp"] < 100:
                 a = g.unit_addr(u["id"]) + 4
                 e.w16(a, (e.u16(a) & ~0x7F) | 100)
     if not setup or n == 28:

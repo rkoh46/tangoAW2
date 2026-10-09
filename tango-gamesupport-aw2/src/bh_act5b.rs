@@ -324,7 +324,7 @@ fn bh28() -> MissionDef {
     // Each ally's two Infantry beside its HQ hold it and the Rockets cover them; the rest of the four armies advance
     // on the fortress (the coalition attacks).
     m.units = roles(built_units("bh28"), 5, &[(2, 3), (4, 3), (32, 3), (30, 3), (2, 27), (4, 27), (32, 27), (30, 27), (8, 3), (28, 3), (8, 27), (29, 28)]);
-    m.look = if std::env::var_os("TANGOAW2_BH_LOOK0").is_some() { 0 } else { 3 }; // the Wasteland look
+    m.look = 2; // the Desert look (the Wasteland look paints water as lava: Blue Moon's river and coast stay water)
     let ally_funds = if still() { 0 } else { 12000 };
     // Five armies: the player is the fifth (Black Hole), a tag pair (the natural one: Sturm and
     // Clone Andy; the engine has no pick yet in five-army missions).
