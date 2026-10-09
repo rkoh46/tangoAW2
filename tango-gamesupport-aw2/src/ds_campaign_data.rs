@@ -471,7 +471,7 @@ pub const LINE_PIXELS: u32 = 176;
 pub const PANEL_PIXELS: u32 = 168;
 const BOX_LINES: usize = 2;
 
-fn width(widths: &[u8], s: &[u8]) -> u32 {
+pub(crate) fn width(widths: &[u8], s: &[u8]) -> u32 {
     let w: u32 = s.iter().filter(|&&c| c >= 0x20).map(|&c| *widths.get(c as usize).unwrap_or(&6) as u32).sum();
     w + s.iter().filter(|&&c| c >= 0x20).count().saturating_sub(1) as u32
 }

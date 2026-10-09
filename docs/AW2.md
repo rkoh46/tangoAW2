@@ -366,6 +366,56 @@ from the ROM table `0x080C1BC4`.
   until a byte changes and prints the last instructions, `steplog N`
   prints every function entry for N instructions.
 
+### The computer attacks a human's inventions (`cpu_inventions.rs`)
+
+AW2's CPU knows nothing of an invention: its attack check looks at units (and pipe seams), its role moves
+at HQs, properties and units. Black Hole's inventions belong to the army in Black Hole's colour, which in AW2's
+campaign and in Dual Strike's is the computer, so nothing needed to attack them. `cpu_inventions::owner` is
+that army where a **human** has it, and only in two places: the **BH Campaign** (the campaign source is
+tangoAW2's, the player is Black Hole) and **Versus with the pack** when a human army is in Black Hole's colour.
+Everywhere else (`owner` is `None`: AW2's campaign, the DS Campaign, Survival, the War Room, Versus without the
+pack, Versus where Black Hole is a computer) the module does nothing, writes no RAM, and the factory's older
+strike (`factory_hp::cpu_strikers`, a computer's factory hit by a unit already in range) is as it was. RAM
+`0x0203FE6E` = `0xA5` (a development byte, `OFF`) switches it off too, for before/after runs.
+
+- **Targets** (`targets`): the invention list's entries with hit points that the game lets a unit attack
+  (`sub_0803DFE0`: kinds 1, 3, 4, 5, and the factory's 7 where it can be destroyed), told apart as the Black Cannon (3),
+  the Obelisk (a kind 3 on tangoAW2's tile `0x193`), the minicannon (4), the Crystal (a 4 on tile `0x192`), the Laser (1)
+  and the Deathray (5); the Grand Bolt's weak points and the Volcano are not. The square units aim at is the game's
+  (`x + 1, y + 2` for a 3x3, the entry's corner for a 1x1, the middle of the factory's bottom row).
+- **The Black Factory in the BH Campaign** now has 200 hit points as in Versus (`factory_hp::in_scope` takes in the BH
+  Campaign), so the computer can destroy it: the game's hit and destroy steps, the wreck, doors that spawn nothing
+  after. The player's own units cannot hit it (`target_position` gives the factory no square on the player's team's turn;
+  AW2 lets any army hit a Black Cannon, Crystal or Obelisk, as in Versus, and this is unchanged).
+- **Worth** (`worth`, funds): Black Cannon 16000, Deathray 24000, Laser 14000, Obelisk 11000, Factory 13000,
+  minicannon 6000, Crystal 5000, plus half the price (by bars) of every computer unit in the firing zone of
+  a firing one, plus, for each hurt Black Hole unit within reach of an Obelisk (4) or a Crystal (2), the share of its price that the
+  hit points it would heal are (up to 20), plus half of the share of the invention's hit points already lost (low: sooner gone). A hit is worth
+  its share of the invention's hit points of that, and when it destroys it a third more (`gain_of`).
+- **Firing zones** (`zone`, the game's `sub_0801FAC4` cone, checked by `cpu_inv_firing_zones_are_the_games`): a Black
+  Cannon fires a cone of ten rows widening by one cell a side from the middle of its facing edge (facing down: from
+  `(x + 1, y + 2)`), a minicannon one of four from the cell in front of it, a Laser along its row and column, the
+  Deathray in the three columns below it; a cannon hits some units in it (about five of ten bars) at the start of Black Hole's turn.
+- **Strikes** (`plan`, at the start of a computer army's turn, from `cpu_tactics::cpu_unit`): a unit with a target's square
+  in its range from where it stands (its weapon's range: a Tank beside it, an Artillery 2 or 3 squares off) and a weapon that harms a
+  structure (the game's damage chart column 3, the secondary weapon without ammunition) hits the best target in reach through the game's own
+  structure attack (`sub_08042634`, as for a pipe seam) when the hit is worth at least what its best unit target in range is worth (and
+  always when it has none); at most eight a turn (the second half of the queue is `EXTRA`, RAM `0x0203FE58`), the strongest hitters first,
+  never more hits than a target has hit points for. The damage is the chart's value by the unit's hit points (Artillery 45, Tank 15).
+- **Goals** (`role_move`, through `AiRunRoleMove`, `0x0805F4CC`, shared with `ally_posture`): a unit whose role (record +0x0B, the
+  deployment's AI byte or what the CPU's production gave it) advances, 1 to 6 (not 0, which holds, and 7, by the HQ), with no
+  capture under way and a weapon that harms a structure, is moved by AW2's own "go to a place": the role 1 code, tail-called, whose
+  place (`sub_08058F90`, the enemy HQ) is replaced by the goal (`GOAL_HOOK`, `0x0805ED2A`, writing the two halfwords at `r4`). The goal is
+  the best square to attack a target from (inside the weapon's range of the target's square: artillery and rockets stop in range,
+  tanks and infantry beside it) by `gain` / (1 + 0.6 turns), the path a Dijkstra over AW2's own movement costs
+  (`oozium::move_cost`: the CO's chart, the weather) with other teams' units in the way, the inventions' walls out, eight turns at most.
+  A square in the line of a firing invention (the target's own too) costs the unit 60% of its worth for each (it is hit at Black
+  Hole's next turn and again after), so tanks do not walk into a Black Cannon's cone for nothing and come in from its side or
+  back to the others, while artillery and rockets set up outside it; a unit already where it can attack holds. At most half of
+  the army's advancing units are sent a turn (`SENT`).
+- Deterministic: only emulated RAM is read (the invention list, the units, the players, the map), ties broken by position;
+  the queue and three bytes are the module's state. `test_cpu_inventions.py`.
+
 ## CO panel on design maps
 
 - The CO panel's palettes are loaded at the start of each turn from the
@@ -813,7 +863,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Units | `roster.rs`, `ds_units.rs`, `unit_actions.rs`, `oozium.rs`, `unit_names.rs`, `ds_unit_art.rs`, `ds_unit_pictures.rs`, `ds_battle.rs`, `ds_backdrop.rs`, `map_anim.rs` | Unit table grown to 64 rows (0x08680000), 7 new units (ids 4, 9, 12, 13, 18, 26, 27), Dual Strike's stats and damage chart, their actions (Hide, Explode, Repair, Carrier; the Oozium eats: no weapon, moving onto a unit of another team next to it destroys that unit with the game's own destruction, and no CO, power, silo or Black Bomb touches it), map art, their own information pictures (build menu panel, R on a unit) in each army's colours, every unit in the Intel unit list, battle scenes with Dual Strike's figures, effects and volleys, Dual Strike's battle backgrounds (a Piperunner on its pipe; every battle on a Wasteland map; a Com Tower's city), and Dual Strike's map animations played through AW2's own map effects (a Black Bomb's explosion, a Stealth hiding and appearing, a Black Boat's REPAIR label, Oozium's death in its army's colours; for the CPU at its turn's end, before the turn passes) |
 | COs | `co_roster.rs`, `co_new.rs`, `co_powers.rs`, `ds_co_art.rs`, `ds_power_art.rs`, `power_anim.rs` | CO table grown to 96 rows (0x086A0000), Dual Strike's numbers for AW2's COs (and its 200% defence cap), 10 new COs at ids 72..81 (Dual Strike's nine and Clone Andy, "Clone Andy" below; face ids stay unambiguous), their pictures, texts, powers and Dual Strike's power animations (Ex Machina, Covering Fire, Urban Blight), and Dual Strike's choice of power effect on their units |
 | CO screen | `co_grid.rs` | The unit grid (map menu > CO, its last page) gets a second page: ground units, then air and naval units, in the build menus' order, every unit with its icon in the viewed army's colours (the new units in the map sheet's slots for other countries' Infantry and Mech) and its firepower bar (Dual Strike's bonuses take the nearest of AW2's 13 bars) and move / range change |
-| CPU | `cpu_tactics.rs` | The CPU buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls), explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
+| CPU | `cpu_tactics.rs`, `cpu_inventions.rs` | The CPU buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls), explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
 | Terrain | `com_tower.rs`, `wasteland.rs`, `ds_look.rs`, `sandstorm.rs` | Com Tower (the Versus Lab), Dual Strike's Wasteland, Desert and Snow looks drawn with its own terrain (below), the Sandstorm weather (Dual Strike's sand, `bmap/0b2`) |
 | Structures | `obelisk.rs`, `heal_effect.rs` | Black Crystal / Obelisk heal with Dual Strike's own animation and sound for each (arm9 0x0213E078 / 0x0213E2A0; SE 175 / 176), the camera visiting each |
 | Music | `ds_music.rs` | The nine new COs' own map themes, Dual Strike's, converted to AW2's sound engine (below) |
@@ -1951,9 +2001,10 @@ the pack).
 
 The BH Campaign is thirty missions played as Black Hole, defined **as data**
 and played by the DS Campaign's engine (`ds_campaign.rs`): it needs the Dual
-Strike pack (its COs, units and looks come from it). Today it holds two
-placeholder missions that prove the pipeline end to end; the thirty are
-added to `bh_campaign.rs` as `MissionDef`s, no engine code needed. A sequel
+Strike pack (its COs, units and looks come from it). Act I (M1 Storm Landing,
+M2 The Sleeping Foundry, M3 Blockade Runner, `bh_act1.rs`, "Act I" below) is
+built and the prologue is the design's; the rest are added as `MissionDef`s
+in their acts' files, no engine code needed. A sequel
 ("BH2") or any other campaign is another `CampaignDef` and another entry of
 `campaign_model::SOURCES`.
 
@@ -2091,6 +2142,8 @@ texts; an error names the mission.
 | special units | `UnitDef::named("courier")` (with `.hp(10)` for 1 HP): a named unit has a **persistent id**: its bit of the mission's death latch (`custom_campaign::LATCH`, the countdown word, kept by a mission saved halfway), set for good when its record empties, so a unit built into its slot is not it. "Must reach the extraction point within 15 days" is `AfterAction` `UnitAt` -> `Win` and `TurnStart` `All[DayAtLeast(16), Not(UnitAt)]` -> `Lose`; an evacuation is `UnitsIn` / `NamedIn` over a rectangle | tested |
 | `intro`, `victory`, `after` | scenes: in the battle before day 1's first turn, before the winning end (inside `Action::Win`), and on the world map after the win (before the next mission's flag shows); between-mission scenes are `after` | tested |
 | `music` | an AW2 song id: while the battle is on every CO's theme in the CO table is that song (put back after) | tested |
+| `factory` | The Black Factory's own schedule: `(day, [door 1, door 2, door 3])` unit types (0 none; days not listed spawn nothing; the spawner reads row `day & 0x1F`); empty: Factory Blues' table. `factory::table_for` writes it to the spawner's table pointer (`0x030046B4`) at the AI turn setup and at a human Black Hole army's turn (the detour) | tested (`bh_act1_m2_foundry_waves_and_flow`) |
+| `on_win` | Actions (`EarnBond`, `Custom`) run, then the `victory` scene, in the match-end list when the player's team wins by AW2's own rules (the enemy routed or its HQ taken: AW2 ends the match before an after-action trigger could look, so a trigger on `ArmyDefeated` never shows the scene); not used when the mission has a `Win` action of its own | tested (Act I's wins) |
 | `recruits`, `needs`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked; what opens it **by mission key** (`Needs::Start`, `All(vec!["bh01"])`, `Any(..)`, `Bonds(..)`: those won and every hidden bond earned); its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
 | five armies | `armies` is 2..=5. In a **five-army mission the player is army 5, Black Hole** (the fifth army of `five.rs`; its colour must be Black Hole's), armies 1..4 are the header's four, units name armies 1..5, a map has five HQs (`1`..`5`); the player's CO is `Fixed` or `Pair` (a tag pair; no pick yet). The patched game (`five::set_campaign`, switched on at `ResetRulesAfterCampaignMap`) is on for the battle only; no mid-mission Save (as a Versus five-army game); no second front. `five.rs`' patched unit ids (51 an army) are handled by `custom_campaign`'s helpers (`unit_by_name`, `units_of`) | tested (`bh_campaign_five_armies`) |
 | two fronts: own rules | `front2_triggers` / `front2_victory` on a `MissionDef`: the second front is compiled as a mission of its own (`compile_second` builds a synthetic `MissionDef` with the front's map, deployment, structures and these triggers), so its rules run while it is on the screen, on its own units; **a named unit of `front2.units` is the second front's** (`custom_campaign::SECOND_FRONT` flag on its latch bit: it is judged only while its front is live, so the other front's units in the same slots never trip it); `Cond::UnitGone("name")` is the "unit destroyed" condition for both fronts (the death latch keeps it true). The second front is played by the computer, whose actions do not run the after-action lists: use `When::TurnStart` triggers there. `Action::Win` on it wins the second front (its `front2_victory` scene) | tested (`bh_campaign_second_front_has_its_own_rules`) |
@@ -2108,11 +2161,42 @@ texts; an error names the mission.
 | `onyx` | **The reversed Black Onyx**: `onyx: Some(OnyxDef::new((x, y)))` (the Obelisk's top-left cell; `hits` 4, `first` 5, `period` 5, `radius` 4, `debris_hp` 3, `offline_turns` 3, `meters` 30 are the design's numbers). Black Hole's satellite on a day cycle, `onyx.rs` (`ON_REV`, RAM `0x0203FFC8`: hits left +1, phase +2, last shot's day +0x17, the Obelisk's offline turns +0x18, this turn's flag +0x19): on Black Hole's turn on day `first` and every `period` days, when the map waits for the cursor, it fires AW2's meteor strike (8 HP, radius 2, never below 1 HP, the spot the computer scores best for the player's army; the panel's beam as Crystal Calamity's); a foot soldier (Infantry or Mech) of **another team** on an unspent silo (tile `0x180`) launches at it (AW2's launch at the silo: camera, missile, the silo spent, the missile on the panel) - found each frame the map waits, on the computer's turn between two of its units too, so the computer's own walk onto a silo counts and a silo holding a Black Hole unit cannot launch; its own Launch action fires nothing; `hits` hits destroy it: every unit of the player's army within `radius` cells of the Obelisk's 3x3 loses `debris_hp` HP (never below 1 HP), the Obelisk and its heal effect are off for `offline_turns` Black Hole turns (`obelisk::heal`, `heal_turn`), the player's active CO and its tag partner lose `meters` % of their Super Power's cost (`tag::cut_meters`), the shots stop for good. Panel: the satellite (Dual Strike's picture), "NEXT SHOT" and the days to it ("4 DAYS", "1 DAY", "TODAY"), "HITS LEFT" with a diamond a hit still needed, the cycle's bar; from the day before a shot the satellite throws pink sparks and the line, diamonds and bar blink pink; the panel's tiny 3x5 letters are `onyx::glyph`; it hides once the satellite has fallen. A mission saved halfway keeps it (`saved` / `restore`, mark `R`). Scenes by the hits left: triggers `Cond::OnyxHitsAtMost(3)` ... `OnyxDestroyed` at `AfterAction` (once each). `five/bh/five_onyx.txt` is a test map: silos are `M` in the map tool | tested (`bh_campaign_reversed_onyx`: the warning, the day-5 shot, four silo hits, the scenes, the fall) |
 
 Scenes: `Scene::new(vec![Line::say(co::STURM, "..."), Line::feel(co::VON_BOLT,
-Mood::Sad, "..."), Line::soldier(colour::BLACK_HOLE, "...")])`; text is
-plain, wrapped to AW2's box (two lines of 176 pixels; a box that needs
-more spreads evenly); `\x0f` forces a new box. A scene compiles to AW2's
+Mood::Sad, "..."), Line::soldier(colour::BLACK_HOLE, "..."), Line::narrate("...")])`;
+`narrate` is a box with Black Hole's soldier face (AW2's speaker-less `0x1A` text is drawn
+bare on the map in a battle: unreadable). A soldier with a mood is
+`Line::feel(23, Mood::Happy, ..)` (faces are `co + 24 * mood`; 23 is Black Hole's
+trooper). Text is plain; **a text written with its own `\r` line breaks keeps them**
+when it is at most two lines that each fit AW2's box (176 pixels), else it is wrapped
+(two lines of 176 pixels; a box that needs more spreads evenly); `\x0f` forces a new box. A scene compiles to AW2's
 dialogue commands (`0x17` open with the first face, `0x38` a speaker,
 `0x19` a text, `0x18` close).
+
+### Act I (`bh_act1.rs`, `five/bh/bh01.txt` .. `bh03.txt`)
+
+The design is docs/BH_CAMPAIGN.md (3.5, 4.1, 4.2, 4.11); the scenes are its text line for line, with its
+own line breaks (`Compiler::dialogue` keeps a text's `\r` when each box is at most two lines that fit),
+and the tests read the scenes out of `bh_act1.rs` and compare them with what the game shows
+(`bh_act1_dialogue_is_the_designs_and_fits_its_boxes`). The flags sit on the Black Hole island (`region::
+BLACK_HOLE[0]`, `[4]`, `[5]`: the north-west tip, the south, the south-east bulge). The prologue is the
+design's eight pages (soldier boxes on AW2's map; no pictures or music there). A mission's win scene is
+its `on_win` / `victory`; the days run out as `Cond::DayAtLeast(limit + 1)` -> `Lose` (AW2 only ranks
+by days).
+
+| | M1 Storm Landing | M2 The Sleeping Foundry | M3 Blockade Runner |
+| --- | --- | --- | --- |
+| Map | 22x15: a crater lake with two bridges over the river that cuts the map (every vehicle crosses at (7,7) or (14,7); foot wades), a south-west beach, Von Bolt's walled hall (west gate (16,3), south gate (19,5)), an Obelisk at (5,9), Crystals beside the bridge ends at (6,6) and (15,8) | 18x20: the Foundry (8..10, 3..6, doors on row 7) fed by a pipe from the HQ (9,1), a ring road round it, a Crystal at (6,7), a river with the road bridge (9,12) and a west-track bridge (3,12), a village, a ridge, Green Earth's south coast | 26x16: three islands, two straits, two-wide channels; Black Cannon at (12,6) on the middle isle with its ring road; ten beaches (shoals), four ports |
+| Armies | Sturm (6000): HQ, 2 bases, 4 cities; Von Bolt in Green Earth's colours (10000): HQ, 3 bases, 3 cities, 5 neutral cities | Sturm or Von Bolt (pick; no bases, no funds), against Jess (8000) | Sturm + Von Bolt (a fixed tag pair, 12000) against Drake + Eagle (14000) |
+| Rules | day 3 scene when a Black Hole unit is within 2 of a Crystal; day 4 two Md Tanks if Von Bolt owns 6+ properties; day 7 scene; the win earns Von Bolt's bond (`on_win`) and unlocks him; 20 days | the Foundry's own table (`factory`, from day 3), Green Earth's waves on days 3, 6 and 9 (day 9 with Jess's power charged), +3000 for Jess on days 4, 8, 12; the last line of the opening is Sturm's or the leader's; 14 days | day 4 and day 8 scenes (the latter once two of the isle's three cities are held); 25 days |
+
+Tests (`test_bh_act1.py`, `-k bh_act1`): every mission loads as its sheet says; each mission's
+opening, forced win with its scenes, unlocks, bond and next flag; M1's turn-start rules; M2's Foundry
+(none before day 3, a Tank on the middle door on day 3, the wave); M3's pair and scenes; every mission
+lost three ways (days, routed, HQ taken); the maps' reachability (the map tool plus foot, tires and treads
+across the bridges, ships and Landers across M3's lanes); `bh_act1_m3_lander_unloads_on_every_beach`
+(each army's Lander loads and unloads on all seven beaches it can use); a campaign chain saved halfway
+and continued in each mission; pictures (`AW2TEST_PICS=<dir>`). `AW2TEST_BH_ACT1_BALANCE=1` adds
+`bh_act1_balance_m{1,2,3}_{cpu,bot}` (the computer on both sides, and the test player of
+`aw2test/bot.py` against it; `AW2TEST_BH_ACT1_BOT='{"stance":"defend"}'` changes the bot's options).
 
 ### Adding a mission (for whoever builds the thirty)
 

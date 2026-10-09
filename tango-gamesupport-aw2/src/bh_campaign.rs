@@ -73,15 +73,21 @@ pub fn def() -> CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: vec![
-            Page { text: "Placeholder prologue, page one. Black Hole rises again.", picture: None, who: None },
-            Page { text: "Placeholder prologue, page two. Sturm leads the way.", picture: None, who: None },
+            Page { text: "Once, one black banner covered half the world.", picture: None, who: None },
+            Page { text: "Then it burned. Its legions scattered like ash.", picture: None, who: None },
+            Page { text: "Its officers took new colours and new names.", picture: None, who: None },
+            Page { text: "Its last lord grew old, counting coins in the ruins.", picture: None, who: None },
+            Page { text: "Then a storm came ashore that no map had foretold.", picture: None, who: None },
+            Page { text: "It carried no flag. It had one name, and one purpose.", picture: None, who: None },
+            Page { text: "Four nations sleep behind their borders, safe and proud.", picture: None, who: None },
+            Page { text: "None of them has heard the thunder yet.", picture: None, who: None },
         ],
         credits: vec![
             CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"], secret: false },
             CreditSection { heading: "THANKS FOR PLAYING", names: vec![], secret: false },
         ],
         missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
-        final_mission: "bh02",
+        final_mission: "bh03", // (Act 1 only so far: the Act V builder moves it to the last mission)
         bonds: BONDS.to_vec(),
         extra_bonds: 1,
         secret_mission: "",
@@ -92,7 +98,7 @@ pub fn def() -> CampaignDef {
 /// `Action::EarnBond(k)`, its quote on its CO's page; the secret mission
 /// opens when all nine are earned.
 pub const BONDS: [Bond; 10] = [
-    Bond { co: co::VON_BOLT, quote: "Placeholder bond quote." },
+    Bond { co: co::VON_BOLT, quote: "I got second pick. Second! Best bargain of my life." },
     Bond { co: co::HAWKE, quote: "Placeholder bond quote." },
     Bond { co: co::KOAL, quote: "Placeholder bond quote." },
     Bond { co: co::KINDLE, quote: "Placeholder bond quote." },
@@ -655,9 +661,116 @@ fn on_day_spawn(d: u16, units: Vec<UnitDef>) -> Trigger {
     Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, vec![Action::Spawn(units)]).repeating()
 }
 
+/// A test mission for the computer's attack on a human's inventions
+/// ([`crate::cpu_inventions`]; played with `TANGOAW2_BH_FEATURES=inventions`):
+/// the player (Black Hole) holds a Black Cannon, an Obelisk, a Crystal, a
+/// minicannon and a Black Factory at the south west; Green Earth's computer
+/// comes from the north east with tanks, artillery, rockets and infantry.
+pub fn inventions_def() -> CampaignDef {
+    let mut a = MissionDef::new("i01", "Inventions");
+    a.objective = "Test: the computer attacks the inventions.";
+    a.map = MapSrc::Ascii(&[
+        "..............f....f......",
+        "..............f.......2...",
+        "....ff....................",
+        "..........................",
+        "..........................",
+        "..f.....f..............f..",
+        "..........................",
+        "..........................",
+        "..........................",
+        "...............f..........",
+        "..........................",
+        "..........................",
+        "..f.......................",
+        "..1.......................",
+        "..........................",
+        "..........................",
+    ]);
+    a.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)).funds(0),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(0),
+    ];
+    a.day_limit = 40;
+    a.structures = vec![
+        (Structure::BlackCannonDown, 12, 6),
+        (Structure::BlackObelisk, 5, 6),
+        (Structure::BlackFactory, 7, 12),
+        (Structure::BlackCrystal, 9, 9),
+        (Structure::MiniCannonDown, 16, 9),
+    ];
+    a.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 3, 13),
+        UnitDef::new(1, unit::INFANTRY, 3, 14),
+        UnitDef { ai: 4, ..UnitDef::new(2, unit::TANK, 19, 2) },
+        UnitDef { ai: 4, ..UnitDef::new(2, unit::TANK, 20, 3) },
+        UnitDef { ai: 1, ..UnitDef::new(2, unit::TANK, 21, 4) },
+        UnitDef { ai: 3, ..UnitDef::new(2, unit::MD_TANK, 22, 3) },
+        UnitDef { ai: 5, ..UnitDef::new(2, unit::ARTILLERY, 20, 1) },
+        UnitDef { ai: 6, ..UnitDef::new(2, unit::ARTILLERY, 21, 2) },
+        UnitDef { ai: 2, ..UnitDef::new(2, unit::ROCKETS, 23, 4) },
+        UnitDef { ai: 4, ..UnitDef::new(2, unit::INFANTRY, 18, 3) },
+        UnitDef { ai: 7, ..UnitDef::new(2, unit::INFANTRY, 19, 4) },
+    ];
+    a.flag = region::BLACK_HOLE[0];
+
+    // A Black Cannon far from the computer's way to the player's HQ: a tank sent for the HQ
+    // and an artillery that AW2's computer would march south with go west for the cannon.
+    let mut b = MissionDef::new("i02", "Inventions Two");
+    b.objective = "Test: the computer leaves its way for a cannon.";
+    b.map = MapSrc::Ascii(&[
+        "......................",
+        "..................2...",
+        "......................",
+        "......................",
+        "......................",
+        "......................",
+        "......................",
+        "......................",
+        "......................",
+        "......................",
+        "......................",
+        "......................",
+        "..................1...",
+        "......................",
+    ]);
+    b.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)).funds(0),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).funds(0),
+    ];
+    b.day_limit = 40;
+    b.structures = vec![(Structure::BlackCannonDown, 3, 5)];
+    b.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 18, 13),
+        UnitDef::new(1, unit::MD_TANK, 17, 12),
+        UnitDef::new(1, unit::MD_TANK, 19, 12),
+        UnitDef::new(1, unit::MD_TANK, 18, 11),
+        UnitDef { ai: 1, ..UnitDef::new(2, unit::TANK, 14, 2) },
+        UnitDef { ai: 1, ..UnitDef::new(2, unit::TANK, 15, 3) },
+        UnitDef { ai: 5, ..UnitDef::new(2, unit::ARTILLERY, 13, 2) },
+    ];
+    b.needs = Needs::All(vec!["i01"]);
+    b.flag = region::BLACK_HOLE[1];
+
+    CampaignDef {
+        source: 1,
+        roster: ROSTER.to_vec(),
+        prologue: vec![Page { text: "Inventions.", picture: None, who: None }],
+        credits: vec![CreditSection { heading: "TEST", names: vec!["TEST"], secret: false }],
+        missions: vec![a, b],
+        final_mission: "i02",
+        bonds: Vec::new(),
+        secret_mission: "",
+    }
+}
+
 /// The campaign's source `load`.
 pub fn load(core: &Core) -> Option<Model> {
-    let def = if std::env::var_os("TANGOAW2_BH_FEATURES").is_some() { features_def() } else { def() };
+    let def = match std::env::var("TANGOAW2_BH_FEATURES").ok().as_deref() {
+        Some("inventions") => inventions_def(),
+        Some(_) => features_def(),
+        None => def(),
+    };
     match compile(core, &def) {
         Ok(m) => Some(m),
         Err(e) => {

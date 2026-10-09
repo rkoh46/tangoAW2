@@ -87,6 +87,9 @@ pub struct Custom {
     pub marks: Vec<(u8, u8)>,
     /// Per mission: a reversed Black Onyx.
     pub onyx: Vec<Option<OnyxDef>>,
+    /// Per mission: the address of its Black Factory table (96 bytes, 32
+    /// days x 3 doors; 0: Factory Blues').
+    pub factory: Vec<u32>,
     /// Per mission: a volcano hazard.
     pub volcano: Vec<Option<VolcanoDef>>,
     /// Per mission: named units that march, structures that are jammed.
