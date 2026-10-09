@@ -20,6 +20,7 @@ pub mod ds_backdrop;
 pub mod ds_battle;
 pub mod ds_campaign;
 pub mod bh_campaign;
+pub mod bh_ai;
 pub mod bh_act1;
 pub mod bh_text;
 pub mod bh_act2;

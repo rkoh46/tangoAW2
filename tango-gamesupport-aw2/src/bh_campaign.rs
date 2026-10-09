@@ -76,12 +76,14 @@ pub mod region {
 
 /// The campaign.
 pub fn def() -> CampaignDef {
+    let mut missions = [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5b::missions(), bh_act5::missions(), bh_secret::missions()].concat();
+    missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: crate::bh_text::pages("prologue"),
         credits: credits(),
-        missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5b::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
+        missions,
         final_mission: "bh30", // the finale (the secret M31 follows the nine bonds)
         bonds: BONDS.to_vec(),
         extra_bonds: 1,

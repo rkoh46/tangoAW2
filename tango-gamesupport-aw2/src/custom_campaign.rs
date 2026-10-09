@@ -434,6 +434,11 @@ impl UnitDef {
         self.ai = 1;
         self
     }
+    /// Attacks the nearest enemy units: role 4 (a reinforcement would otherwise go for the HQ).
+    pub const fn attack(mut self) -> UnitDef {
+        self.ai = 4;
+        self
+    }
     /// Stands still: role 0, AW2's hold (a deployed unit with no order is role 0 as well, and
     /// a unit a trigger spawns would otherwise have the default role 1, which goes for the
     /// enemy HQ). Foot soldiers with role 0 are held by the engine ([`ai_unit`]); no fuel
