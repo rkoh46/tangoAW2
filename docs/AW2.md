@@ -2365,10 +2365,10 @@ secret quote (earned by winning M14 on day 12 or sooner) is bond 9
 quote (`crumb::SECRET_QUOTE`), which does not count for the secret mission
 (opens with the first nine; `ds_campaign::bonds_all`) nor for the BONDS legend.
 
-**CO page text.** The page holds six lines of 103 pixels: the bio is cut to
-what fits ("Pip Hobb carried a flag and a biscuit named Gerald across five
-nations." with "Hit: Gerald, seconds" and "Miss: Being left behind"); the
-design's longer bio, Hit and Miss are in `crumb.rs`'s doc.
+**CO page text.** The page holds six lines of 103 pixels. The bio is in AW2's
+bio style for a Versus player: "A Black Hole soldier promoted by Sturm. Keeps
+his troops fed and supplied." with "Hit: Biscuits" and "Miss: Being left
+behind" (the design's story bio did not read as a CO description).
 
 Tests (`test_crumb.py`, `tag_crumb*` in `test_tag.py`, `all_powers_crumb_*`,
 `netplay_powers_crumb_*`): `crumb_is_pickable_in_versus`,
