@@ -452,6 +452,10 @@ pub struct Native {
     /// Hole, the fifth army the patched game has (armies 1..4 are the header's
     /// four); its CO, its partner (NO_CO none) and its team (0xFF: its own).
     pub five: Option<(u8, u8, u8)>,
+    /// A five-army mission whose player picks the CO (and partner): the pick is
+    /// made for the header's army 1 (the CO screen's own) and given to army 5;
+    /// army 1, an ally, has this CO (AW2 id) instead.
+    pub five_pick: Option<u8>,
     /// The Setup phase (scout the map, then Deploy) before day 1 when the
     /// player picks a CO ([`crate::setup_phase`]).
     pub setup: bool,

@@ -1377,7 +1377,8 @@ fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
         if a > m.armies as u32 || core.raw_read_8(p, -1) == 0 {
             continue;
         }
-        let human = a == player || (a <= 4 && m.cos[a as usize - 1].0 == 0x1C);
+        let five = m.native.as_ref().is_some_and(|n| n.five.is_some());
+        let human = a == player || (!five && a <= 4 && m.cos[a as usize - 1].0 == 0x1C);
         core.raw_write_8(p, -1, if human { 1 } else { 2 });
     }
     // The player's armies: their COs' Campaign sets (crate::co_skills).

@@ -597,6 +597,26 @@ pub fn features_def() -> CampaignDef {
     v.jams = vec![JamDef { at: (0, 2), until: Cond::DayAtLeast(4) }];
     v.needs = Needs::All(vec!["f01"]);
     v.flag = region::BLACK_HOLE[3];
+    // A five-army mission whose player (army 5, Black Hole) picks a pair on the CO screen.
+    let mut pp = MissionDef::new("f22", "Features Five Pick");
+    pp.objective = "Test: a five-army mission's player picks a pair.";
+    pp.map = MapSrc::Built("bh_five");
+    pp.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair),
+    ];
+    pp.units = vec![
+        UnitDef::new(1, unit::APC, 3, 2).hold(),
+        UnitDef::new(2, unit::APC, 12, 2).hold(),
+        UnitDef::new(3, unit::APC, 3, 12).hold(),
+        UnitDef::new(4, unit::APC, 12, 12).hold(),
+        UnitDef::new(5, unit::TANK, 6, 7),
+    ];
+    pp.needs = Needs::All(vec!["f01"]);
+    pp.flag = region::BLACK_HOLE[4];
     let own2 = own_cannons("f18", false);
     let own5 = own_cannons("f19", true);
 
@@ -608,8 +628,8 @@ pub fn features_def() -> CampaignDef {
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v],
-        final_mission: "f21",
+        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v, pp],
+        final_mission: "f22",
         bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }, Bond { co: co::KOAL, quote: "Bond test: an extra." }],
         extra_bonds: 1,
         secret_mission: "f06",

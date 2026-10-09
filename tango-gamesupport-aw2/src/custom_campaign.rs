@@ -1518,7 +1518,18 @@ fn compile_mission(
         let (co, partner) = match m.armies[4].co {
             CoSpec::Fixed(c) => (c, NO_CO),
             CoSpec::Pair(a, b) => (a, b),
-            _ => return Err(format!("{}: a five-army mission's player has a fixed CO or pair (no pick yet)", m.key)),
+            CoSpec::Pick | CoSpec::PickPair => {
+                // (the player picks on the CO screen's army 1 pick; army 1 is a fixed ally)
+                let CoSpec::Fixed(ally) = m.armies[0].co else {
+                    return Err(format!("{}: a five-army mission whose player picks has a fixed CO for army 1", m.key));
+                };
+                native.five_pick = Some(ally);
+                native.cos[0] = (NO_CO, NO_CO);
+                hd[0x3C] = NO_CO;
+                cos[0] = if m.armies[4].co == CoSpec::PickPair { (0x1C, 0x1C) } else { (0x1C, 0) };
+                (NO_CO, NO_CO)
+            }
+            _ => return Err(format!("{}: a five-army mission's player has a CO, a pair or a pick", m.key)),
         };
         native.five = Some((co, partner, team_of(5) - 1));
     }

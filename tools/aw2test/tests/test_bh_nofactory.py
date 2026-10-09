@@ -446,3 +446,30 @@ def bh_campaign_march_named_spawn_and_jammed_cannon(ctx):
     ctx.eq(hist[3][2], [100], "the jammed minicannon had not fired by day 3")
     ctx.check(hist[6][2] and hist[6][2][0] < 100, f"restored on day 4, it has fired by day 6 ({hist[6][2]})")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_campaign_five_army_player_picks_a_pair(ctx):
+    """A five-army mission whose player (army 5) is a PickPair: the CO screen
+    picks the lead and the partner, army 5 gets them, and army 1 (an ally) keeps
+    its fixed CO and is the computer's."""
+    from aw2test import tag
+    for lead_co, partner in ((bh.STURM, bh.HAWKE), (bh.HAWKE, bh.STURM)):
+        e, g, d = boot_features(ctx)
+        d.picks = {21: 2}
+        d.start_at(won_mask=0x3FFFFF & ~(1 << 5) & ~(1 << 21), unlocked_mask=0x7FF)
+        d.pick_mission()
+        try:
+            picks = d.choose_cos(2, prefs=[lead_co, partner])
+        except Exception:
+            e.shot(ctx.out + "/five_pick_fail")
+            raise
+        g._units_base = g._players_base = None
+        d.wait_control()
+        ctx.eq(d.mission(), 21, "mission 22")
+        ctx.eq(picks, [lead_co, partner], "the picks")
+        ctx.eq(g.player(5)["co"], lead_co, "army 5 has the lead pick")
+        ctx.eq(e.u8(tag.rec(5) + tag.P_CO), partner, "army 5's partner is the second pick")
+        ctx.eq(g.player(1)["co"], bh.ANDY, "army 1 keeps its fixed CO (Andy)")
+        ctx.eq(e.u8(g.player(1)["addr"] + 0x1B), 2, "army 1 is the computer's")
+        e.close()
