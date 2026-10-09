@@ -494,7 +494,7 @@ fn bh10() -> MissionDef {
     m.objective = "Siege the Citadel and capture its HQ.";
     m.map = MapSrc::Built("bh10");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(8000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::HAWKE)).funds(8000),
         // Production is deliberate: Green Earth owns two bases and an airport (all kept clear of units) and starts
         // with 4000, so the garrison is reinforced by a couple of units early and then only by city income;
         // Black Hole owns a base, an airport and its Fighter.

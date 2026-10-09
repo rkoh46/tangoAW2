@@ -279,7 +279,7 @@ for _n in M:
 def _flag(n):
     def fn(ctx):
         title, roster, picks, fog, front = M[n]
-        mask = (1 << (29 if n == 31 else n - 1)) - 1
+        mask = (1 << (n - 1)) - 1                # (M31: the finale, M30, won and all nine bonds: Free Play with the cursor on M31)
         e, g, d = a2.boot(ctx, mask, roster, picks={n - 1: len(picks)}, at=n - 1)
         d.wait_world_map()
         flags = d.map_flags()

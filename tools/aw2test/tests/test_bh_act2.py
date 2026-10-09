@@ -898,15 +898,7 @@ def bh_act2_enemy_units_advance(ctx):
             if i not in moved:
                 still[before[i][2]] = still.get(before[i][2], 0) + 1
         ctx.log(f"M{n}: {len(moved)} of {len(alive)} surviving enemy units left their start tiles; still: {still}")
-        # (the garrisons the map marks `hold` are meant to stand: the advance is judged on the others)
-        holds = hold_cells(f"bh{n:02d}")
-        free = [i for i in alive if (before[i][3], before[i][2], before[i][0], before[i][1]) not in holds]
-        free_moved = [i for i in free if i in moved]
-        ctx.log(f"M{n}: {len(free_moved)} of {len(free)} units without the hold order moved ({len(alive) - len(free)} garrisons)")
-        if free:
-            ctx.check(len(free_moved) >= max(1, len(free) // 4), f"M{n}: the enemy advances ({len(free_moved)} of {len(free)} free units moved)")
-        else:
-            ctx.check(len(moved) <= len(alive) // 4, f"M{n}: an all-garrison mission, the garrisons stand ({len(alive)} units, {len(moved)} moved)")
+        ctx.check(len(moved) >= max(1, len(alive) // 4), f"M{n}: the enemy advances ({len(moved)} of {len(alive)} moved)")
         e.close()
 
 
