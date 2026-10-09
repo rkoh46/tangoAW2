@@ -842,3 +842,23 @@ def _full_hp(n):
 
 for _n in MISSIONS:
     _full_hp(_n)
+
+
+@test(modes=("ds",))
+def bh_act2_enemy_units_advance(ctx):
+    """The AI roles: over three days the enemy's units leave their start tiles (all but the hold garrisons
+    and the indirect fire, which stand); the counts are logged per mission."""
+    for n in range(4, 12):
+        e, g, d, _ = ready(ctx, n)
+        before = {u["id"]: (u["x"], u["y"], u["type"], u["army"]) for u in g.units() if u["army"] >= 2}
+        a2.to_day(e, g, d, 4)
+        after = {u["id"]: (u["x"], u["y"]) for u in g.units() if u["army"] >= 2}
+        alive = [i for i in before if i in after and after[i][:2] != (0, 0)]
+        moved = [i for i in alive if after[i] != before[i][:2]]
+        still = {}
+        for i in alive:
+            if i not in moved:
+                still[before[i][2]] = still.get(before[i][2], 0) + 1
+        ctx.log(f"M{n}: {len(moved)} of {len(alive)} surviving enemy units left their start tiles; still: {still}")
+        ctx.check(len(moved) >= max(1, len(alive) // 4), f"M{n}: the enemy advances ({len(moved)} of {len(alive)} moved)")
+        e.close()
