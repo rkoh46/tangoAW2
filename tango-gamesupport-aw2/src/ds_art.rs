@@ -164,7 +164,15 @@ fn extract<'a>(file: &dyn Fn(&str) -> Option<&'a [u8]>) -> Option<Art> {
     };
     let crystal_bmp = recolour(data.get(0x1600..0x1700)?);
     let obelisk_bmp = recolour(data.get(0x3F00..0x4700)?);
-    let north_bmp = recolour(data.get(0x3700..0x3F00)?);
+    // The cannon is drawn with Black Hole's own indices, the ones Advance Wars 2's Black Cannon uses (the two
+    // cannons facing south match pixel for pixel under this table), not recoloured from a palette: it takes the
+    // owner's colours as the game's own cannons do.
+    const CANNON_INDICES: [u8; 16] = [0, 2, 3, 3, 4, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let north_bmp: Vec<u8> = data
+        .get(0x3700..0x3F00)?
+        .iter()
+        .map(|&x| CANNON_INDICES[(x & 15) as usize] | CANNON_INDICES[(x >> 4) as usize] << 4)
+        .collect();
     let (crystal_bmp, obelisk_bmp) = (&crystal_bmp[..], &obelisk_bmp[..]);
     let crystal = tiles(crystal_bmp, 16, &[(0, 0, 16, 32)]);
     // The footprint: x 8..56, y 0..48 of the 64x64 picture.
