@@ -284,6 +284,7 @@ def _difficulty(how, seed=None):
             g._units_base = g._players_base = None
         else:
             e, g, d = start(ctx)
+        gone = {}
         seen = {}                                           # unit id -> [first day, last day, last cell]
         bhn = {}
         fast = {}
@@ -294,10 +295,15 @@ def _difficulty(how, seed=None):
         def sample(msg=None):
             g._units_base = g._players_base = None
             day = e.u16(0x03004080)
+            now = set()
             for u in g.units():
                 if u["army"] == 2 and u["type"] == APC:
                     s = seen.setdefault(u["id"], [day, day, (u["x"], u["y"])])
                     s[1], s[2] = day, (u["x"], u["y"])
+                    now.add(u["id"])
+            for i in seen:
+                if i not in now and i not in gone:
+                    gone[i] = day                                # the first look at which the truck was no longer there
             bhn[day] = sum(1 for u in g.units() if u["army"] == 1)      # (the last look of the day)
             fast[day] = sorted((u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["army"] == 1 and u["type"] in (6, 5, 19, 3, 8))
             hurt[day] = sum(1 for u in g.units() if u["army"] == 2 and u["hp"] < 100 and (abs(u["x"] - 27) <= 9 and (3 <= u["y"] <= 15 or 11 <= u["y"] <= 23)))
@@ -330,11 +336,29 @@ def _difficulty(how, seed=None):
                 def goals_for(self, u, army):
                     cells = [(t["x"], t["y"]) for t in self.g.units() if t["army"] == 2 and t["type"] == APC]
                     return cells or super().goals_for(u, army)
+
+                def plan(self, u, army, cells):
+                    """The air units (B Copters, the Bomber, Fighters) go straight for the nearest truck: a hit from any cell
+                    next to one, else the cell that gets closest (no thought for danger)."""
+                    if u["type"] in (19, 17, 16) and not self.hold_air:
+                        trucks = [f for f in self.enemies(army) if f["type"] == APC]
+                        if trucks:
+                            here = (u["x"], u["y"])
+                            occ = self.occupied()
+                            free = [c for c in cells if c == here or c not in occ]
+                            hits = [(cells[c], c, t) for c in free for t in trucks if abs(c[0] - t["x"]) + abs(c[1] - t["y"]) == 1]
+                            if hits:
+                                _, c, t = min(hits, key=lambda h: h[0])
+                                return ("fire", c, (t["x"], t["y"]))
+                            best = min(free, key=lambda c: (min(abs(c[0] - t["x"]) + abs(c[1] - t["y"]) for t in trucks), cells[c]))
+                            return ("wait", best, None)
+                    return super().plan(u, army, cells)
+                hold_air = os.environ.get("AW2TEST_CHASE_NO_AIR") == "1"
             opts = {"stance": "attack", "seed": seed}
             if how == "chase":
                 botmod.Bot = ChaseBot
             r = d.autoplay(14, log=sample) if how == "cpu" else d.play(14, log=sample, **opts)
-        r["trucks"] = {k: {"first_day": v[0], "last_day": v[1], "last_cell": v[2], "docked": 38 <= v[2][0] <= 40 and 11 <= v[2][1] <= 13} for k, v in seen.items()}
+        r["trucks"] = {k: {"first_day": v[0], "last_day": v[1], "last_cell": v[2], "docked": 38 <= v[2][0] <= 40 and 9 <= v[2][1] <= 11, "gone_by_day": gone.get(k)} for k, v in seen.items()}
         r["bh_units_by_day"] = bhn
         r["sonja_hurt_in_cannon_reach"] = hurt
         r["sonja_advancers"] = {k: v for k, v in adv.items() if k in (1, 3, 5, 8)}

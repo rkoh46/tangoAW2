@@ -181,7 +181,7 @@ def _balance(n, how, seed=None):
         opts = dict(BOT_OPTS.get(n, {}))
         if seed is not None:
             opts["seed"] = seed
-        limit = 30
+        limit = int(os.environ.get("AW2TEST_ACT5B_DAYS", 30))
         r = d.autoplay(limit + 3, log=days.append) if how == "cpu" else d.play(limit + 3, log=days.append, **opts)
         r["log"] = days[-6:]
         ctx.log(json.dumps(r, default=str))
@@ -193,3 +193,4 @@ def _balance(n, how, seed=None):
 _balance(26, "cpu")
 _balance(26, "bot")
 _balance(26, "bot", 1)
+_balance(28, "cpu")

@@ -32,6 +32,11 @@ pub struct Art {
     pub obelisk: Vec<u8>,
     /// 16x32 for the terrain panel and the Design Room's bar.
     pub obelisk_small: Vec<u8>,
+    /// The Black Cannon facing north, 48x48 as the Obelisk's four sprites
+    /// (`bmap/015` at 0x3700: the cannon seen from behind, a rounded back with
+    /// its control panel). Empty in an import saved by 0.2, which then has no
+    /// picture for it (the game's own dish, shared with the Deathray, stays).
+    pub cannon_north: Vec<u8>,
 }
 
 /// Tile ranges of the Obelisk's four sprites within [`Art::obelisk`].
@@ -136,6 +141,7 @@ fn saved_by_0_2(buf: &[u8]) -> Option<Art> {
         crystal: c.to_vec(),
         obelisk: o.to_vec(),
         obelisk_small: s.to_vec(),
+        cannon_north: Vec::new(),
     })
 }
 
@@ -158,6 +164,15 @@ fn extract<'a>(file: &dyn Fn(&str) -> Option<&'a [u8]>) -> Option<Art> {
     };
     let crystal_bmp = recolour(data.get(0x1600..0x1700)?);
     let obelisk_bmp = recolour(data.get(0x3F00..0x4700)?);
+    // The cannon is drawn with Black Hole's own indices, the ones Advance Wars 2's Black Cannon uses (the two
+    // cannons facing south match pixel for pixel under this table), not recoloured from a palette: it takes the
+    // owner's colours as the game's own cannons do.
+    const CANNON_INDICES: [u8; 16] = [0, 2, 3, 3, 4, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let north_bmp: Vec<u8> = data
+        .get(0x3700..0x3F00)?
+        .iter()
+        .map(|&x| CANNON_INDICES[(x & 15) as usize] | CANNON_INDICES[(x >> 4) as usize] << 4)
+        .collect();
     let (crystal_bmp, obelisk_bmp) = (&crystal_bmp[..], &obelisk_bmp[..]);
     let crystal = tiles(crystal_bmp, 16, &[(0, 0, 16, 32)]);
     // The footprint: x 8..56, y 0..48 of the 64x64 picture.
@@ -179,10 +194,12 @@ fn extract<'a>(file: &dyn Fn(&str) -> Option<&'a [u8]>) -> Option<Art> {
         }
     }
     let obelisk_small = tiles(&small, 16, &[(0, 0, 16, 32)]);
+    let cannon_north = tiles(&north_bmp, 64, &[(8, 0, 32, 32), (40, 0, 16, 32), (8, 32, 32, 16), (40, 32, 16, 16)]);
     Some(Art {
         crystal,
         obelisk,
         obelisk_small,
+        cannon_north,
     })
 }
 
