@@ -114,9 +114,22 @@ def enter(ctx, n):
     mask = (1 << (n - 1)) - 1
     e, g, d = a2.boot(ctx, mask, roster, picks={n - 1: len(picks)}, at=n - 1)
     ctx.log(f"M{n}: record before entering: won {d.won():#x} unlocked {d.unlocked()} bonds {d.bonds():#x} flags {d.map_flags()}")
-    a2.open_mission(ctx, e, g, d, n - 1, picks, f"m{n}", setup_only=True)
+    if picks:
+        a2.open_mission(ctx, e, g, d, n - 1, picks, f"m{n}", setup_only=True)
+        ctx.require(d.in_setup(), f"M{n}: in the Setup phase")
+    else:
+        # (fixed COs: the mission has no Setup phase; it is photographed once the opening is over)
+        a2.open_mission(ctx, e, g, d, n - 1, picks, f"m{n}")
+        stable = 0
+        for _ in range(3000):          # (a five-army mission: the computer's turns pass before the player's)
+            stable = stable + 1 if g.current_army() == (5 if n == 28 else 1) and not d.scripts_running() else 0
+            if stable >= 5:
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(20)
+        d.wait_control()
     ctx.log(f"M{n}: entered mission index {d.mission()}")
-    ctx.require(d.in_setup(), f"M{n}: in the Setup phase")
     g._units_base = g._players_base = None
     e.wait(30)
     return e, g, d
@@ -135,7 +148,12 @@ def review(ctx, n):
     w, h = d.size()
     ctx.log(f"M{n}: map {w}x{h}, other front {front}, fog {fog}")
     a2.pic(ctx, e, f"m{n}_setup")
-    g.goto(0, 0)
+    for _ in range(6):
+        try:
+            g.goto(0, 0)
+            break
+        except Exception:
+            e.wait(150)
     if fog:
         p = stitch.stitch(ctx, g, f"m{n}_fogon", w, h, exclude=BANNER)
         save(ctx, p, n, "fogon")
