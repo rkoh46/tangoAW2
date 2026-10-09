@@ -1983,8 +1983,10 @@ pub fn goal_hook(core: &mut Core) {
     }
 }
 
+/// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
+/// is the one trap, and calls this first.)
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(GOAL_HOOK, Box::new(goal_hook))]
+    Vec::new()
 }
 
 const MAP_STATE: u32 = 0x0300_32D8;

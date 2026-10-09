@@ -597,6 +597,8 @@ const ROLE_MOVES: u32 = 0x0857_68E0;
 pub const GOAL_HOOK: u32 = 0x0805_ED2A;
 
 pub fn goal_hook(core: &mut Core) {
+    // (a campaign mission's driven march goes to a place of its own)
+    crate::custom_campaign::goal_hook(core);
     // (only for the unit the goal was made for, where this module is on)
     if core.raw_read_8(GOAL, -1) == 0 || owner(core).is_none() || core.raw_read_32(CURRENT_UNIT, -1) != core.raw_read_32(GOAL_UNIT, -1) {
         return;
