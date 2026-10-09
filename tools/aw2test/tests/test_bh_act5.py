@@ -224,7 +224,23 @@ def bh_act5_m30_balance_run(ctx):
     e.close()
 
 
+def my_turn(e, g, d):
+    """End the turn and wait until it is the player's again (through the other army's whole turn and its dialogue)."""
+    a5.next_turn(e, g, d)
+    for _ in range(400):
+        if e.u8(dc.LAST_RESULT) or (g.current_army() == 1 and not d.scripts_running()):
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(30)
+    for _ in range(5):                 # (the structures fire at the turn start, a script after it)
+        a5.calm(e, g, d)
+        e.wait(150)
+    g._units_base = g._players_base = None
+
+
 def capture(e, g, d, x, y):
+    a5.calm(e, g, d)
     g.select(x, y)
     g.move_to(x, y)
     g.choose("Capt", g.ACTION_MENU)
@@ -261,9 +277,7 @@ def bh_act5_m30_stage_two_is_the_same_army_under_andy(ctx):
     g._units_base = g._players_base = None
     capture(e, g, d, 18, 3)
     ctx.eq(e.u8(dc.LAST_RESULT), 0, "the first capture action: the battle goes on")
-    a5.next_turn(e, g, d)
-    a5.calm(e, g, d)
-    g._units_base = g._players_base = None
+    my_turn(e, g, d)
     ctx.eq(g.player(2)["co"], bh.NELL_ID if hasattr(bh, "NELL_ID") else 0, "stage one: Nell leads Orange Star")
     capture(e, g, d, 18, 3)
     a5.calm(e, g, d)
@@ -291,17 +305,23 @@ def bh_act5_m30_stage_two_is_the_same_army_under_andy(ctx):
     # the Rail Yard falls: a win
     g._units_base = g._players_base = None
     for u in g.units(2):
-        if (u["x"], u["y"]) == (33, 6):
+        if abs(u["x"] - 33) + abs(u["y"] - 6) <= 14:     # (nothing near to shoot the capturer in the test)
             d.remove_unit(u)
     g._units_base = g._players_base = None
+    a5.calm(e, g, d)
     mine = next(u for u in g.units(1) if u["type"] in (1, 2) and (u["x"], u["y"]) != (18, 3))
-    d.place_unit(mine, 33, 6)
+    d.place_unit(mine, 33, 7)
     e.wait(10)
     g._units_base = g._players_base = None
+    u0 = g.unit_at(33, 7)
+    ctx.log(f"unit_at(33,6): {u0}; cursor {g.cursor()}; army {g.current_army()}; day {e.u16(0x03004080)}")
     ctx.log("at the Rail Yard: " + str([(u["army"], u["type"]) for a_ in (1, 2) for u in g.units(a_) if (u["x"], u["y"]) == (33, 6)]))
-    capture(e, g, d, 33, 6)
-    a5.next_turn(e, g, d)
+    g.select(33, 7)
+    g.move_to(33, 6)
+    g.choose("Capt", g.ACTION_MENU)
     a5.calm(e, g, d)
+    my_turn(e, g, d)
+    ctx.log(f"before the second capture: {g.unit_at(33, 6)} army {g.current_army()} day {e.u16(0x03004080)}")
     capture(e, g, d, 33, 6)
     for _ in range(30):
         if e.u8(dc.LAST_RESULT):
@@ -344,4 +364,21 @@ def bh_act5_m29_laser_probe(ctx):
     for a_ in (1, 2):
         hurt = [(u["x"], u["y"], u["hp"]) for u in g.units(a_) if snap.get((a_, u["id"]), 0) > u["hp"]]
         ctx.log(f"army {a_} hurt: {sorted(hurt)}")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act5_m30_balance_turtle(ctx):
+    """The kill-zone version of the intended strategy: every unit stays where it was deployed (the camp behind the moat, the structures
+    covering the crossings) and fires at what comes into reach, to day 10."""
+    from aw2test.bot import Bot
+    e, g, d, spec = load_mission(ctx, 30)
+    a5.open_mission(ctx, e, g, d, a5.M[30], spec[2], "m30")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    a5.calm(e, g, d)
+    start = len(g.units(1))
+    bot = Bot(d, log=lambda s: None, stance="defend", garrison=True, hold=set(range(1, 30)))
+    play(ctx, e, g, d, bot, 11, "turtle")
+    ctx.log(f"result {e.u8(dc.LAST_RESULT)} day {e.u16(0x03004080)}")
     e.close()

@@ -174,6 +174,7 @@ fn bh29() -> MissionDef {
         say(co::HAWKE, "Her castle lies behind. This is only her first line."),
         say(co::VON_BOLT, "She has a castle? With a vault? Kehh... does it?"),
         say(co::STURM, "Take the gate. Then the castle. Then her."),
+        say(co::HAWKE, "And mind the beams. The Deathray and the Laser do not ask whose side you are on."),
         say(co::FLAK, "Big man! Flak wants the big man!").only(co::FLAK),
         say(co::MAX, "Hah! Come on, big man!").only(co::FLAK),
         say(co::CLONE_ANDY, "Andy's friends. They know me. They won't talk to me.").only(co::CLONE_ANDY),
@@ -409,6 +410,7 @@ fn bh30() -> MissionDef {
         say(co::STURM, "Kindness is for the kneeling. The conquered are kept."),
         say(co::NELL, "Then let it learn."),
         say(co::HAWKE, "Begin. Hold the moat. Let her come to us first."),
+        say(co::HAWKE, "Keep clear of the Lasers' lines. They do not ask whose side you are on."),
         say(co::VON_BOLT, "She has gold. Let me count... a great deal of gold."),
     ]);
     m.victory = Scene::new({
