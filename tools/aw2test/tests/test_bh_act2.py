@@ -738,7 +738,7 @@ def bh_act2_m8_two_fronts(ctx):
         k = (e.u8(tf.LIVE), e.u16(DAY), e.u16(tf.CURRENT_ARMY))
         if e.u8(tf.BUSY) == 0 and (not seen or seen[-1] != k):
             seen.append(k)
-    for rnd in range(5):
+    for rnd in range(4):   # (the enemy advances now: an idle player is routed on the fifth day)
         a2.end_turn(e, g, d)
         e.wait(30)
         ok = tf.until(e, d, lambda: tf.player_turn(e) or e.u8(dc.LAST_RESULT) != 0, frames=60000, each=watch)
