@@ -962,7 +962,6 @@ pub const FIELDS_UNIT: u32 = 0xBCB0_0000;
 const SPAWNED: u8 = 100;
 /// [`TAKE_OVER`] | army: the army's CO is replaced (arg: CO | meter percent << 8).
 pub const TAKE_OVER: u32 = 0xBCC0_0000;
-/// A jump's relative marker (script op 0x1E whose target word is `REL_JUMP | n`: n commands on).
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
 /// (but AW2's Hard flag, [`FLAG_HARD`]).
 pub const FLAG_FIRST: u8 = 0x20;

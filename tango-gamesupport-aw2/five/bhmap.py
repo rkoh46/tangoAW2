@@ -15,6 +15,7 @@ lines more, before a map's rows:
     split y 14              two-army maps: the first HQ's army owns the properties up to row 14, the second's the rest
     owners 1 2              the armies whose HQs decide who owns each property (the nearest;
                             default: every HQ), so a team-mate's second-stage HQ takes none
+    nohq                    open ground with no HQ at all (a sky front)
     objective 1 3           the armies that must reach every enemy HQ (default: army 1,
                             the player's; an army the computer holds back needs not)
     unit ARMY TYPE X Y [hp=1..100] [hold] [name=courier]
@@ -94,6 +95,9 @@ def parse(paths):
             if s.startswith('map '):
                 cur = s[4:].strip()
                 extra[cur] = {'units': [], 'team': None, 'objective': [1]}
+            if cur and s.strip() == 'nohq':
+                extra[cur]['nohq'] = True
+                continue
             if cur and s.startswith('objective '):
                 extra[cur]['objective'] = [int(x) for x in s.split()[1:]]
                 continue

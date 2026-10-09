@@ -501,3 +501,52 @@ def bh_act3_m14_the_copter_at_crumbs_side_flies_him_out(ctx):
     ctx.eq((d.won() >> a3.M[14]) & 1, 1, "M14 won by the copter's flight")
     ctx.check(e.u16(DAY) <= 12, f"by day 12 (day {e.u16(DAY)}): Crumb's secret quote")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_act3_m15_sky_front_has_no_hq_and_is_won_by_rout(ctx):
+    """M15's sky front is open sky with no HQ: it starts and rotates, a unit sent from the main front arrives by its
+    army's units, and destroying every enemy unit there wins it (AW2's rout); the mission goes on on the main front."""
+    from aw2test import twofront as tf
+    e, g, d, spec = load_mission(ctx, 15)
+    title, won, roster, picks, size, fog, limit = spec
+    a3.open_mission(ctx, e, g, d, a3.M[15], picks, "m15")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    # Send needs an air unit of the player's: a Fighter made on the main front, then sent before the round.
+    free = tf.free_land(d)
+    uid = tf.make_unit(d, 1, 16, free[0], free[1])
+    e.wait(4)
+    f = next(u for u in g.units(1) if u["id"] == uid)
+    names = tf.command(e, g, d, f["x"], f["y"], "Send")
+    ctx.check("Send" in names, f"Send for a Fighter ({names})")
+    ctx.eq(e.u8(tf.QUEUED), 1, "on its way to the sky front")
+    seen = tf.end_round(e, d)
+    ctx.check(e.u8(tf.STARTED) == 1, f"the sky front played its round ({seen})")
+    ctx.check(any(s[0] == 1 for s in seen), "its armies took turns on the live front")
+    units = tf.store_units(e)
+    mine = [u for u in units if u[0] == 1]
+    foes = [u for u in units if u[0] == 2]
+    # (the round was played: the role-4 units flew at each other, so some are hurt or gone; none stayed home looking for an HQ)
+    ctx.check(0 < len(mine) <= 12 and 0 < len(foes) <= 11, f"both sides still fly ({len(mine)} / {len(foes)})")
+    ctx.check(len(mine) < 12 or len(foes) < 11 or any(u[4] < 100 for u in units), "the first round was a fight")
+    ctx.check(all(u[1] in (16, 19, 12) for u in units), "only Fighters, B Copters and Stealths")
+    # Rout: at the start of army 1's turn on the sky front, the enemy has one unit left, next to a Fighter of ours.
+    d.end_turn()
+    ok = tf.until(e, d, lambda: e.u8(tf.LIVE) == 1 and e.u8(tf.BUSY) == 0 and e.u16(tf.CURRENT_ARMY) == 1 and e.u16(tf.MAP_STATE) in (4, 5, 6, 7, 8, 9, 10, 11, 12))
+    ctx.require(ok, "the sky front's round (army 1)")
+    foes = g.units(2)
+    killer = next(u for u in g.units(1) if u["type"] == 16)
+    for u in foes[1:]:
+        d.remove_unit(u)
+    w, h = d.size()
+    spot = next((killer["x"] + dx, killer["y"] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                if 0 <= killer["x"] + dx < w and 0 <= killer["y"] + dy < h and e.u8(d.layer_cell(killer["x"] + dx, killer["y"] + dy)) == 0)
+    d.place_unit(foes[0], *spot)
+    a = g.unit_addr(foes[0]["id"])
+    e.w8(a, 16)
+    e.w16(a + 4, (e.u16(a + 4) & ~0x7F) | 1)
+    tf.until(e, d, lambda: tf.player_turn(e) or e.u8(dc.LAST_RESULT) != 0)
+    ctx.eq(e.u8(tf.SECOND), tf.SECOND_WON, "the sky front won by the rout")
+    ctx.check(e.u8(tf.LIVE) == 0 and e.u8(dc.LAST_RESULT) == 0 and d.in_battle(), "the mission goes on, on the main front")
+    e.close()

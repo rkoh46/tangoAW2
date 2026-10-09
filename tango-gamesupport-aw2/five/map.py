@@ -203,7 +203,14 @@ def grid(m):
     ch = lambda x, y: rows[y][x] if 0 <= x < W and 0 <= y < H else '~'
     hqs = {int(c): (x, y) for y in range(H) for x in range(W) for c in [ch(x, y)] if c in '12345'}
     n = m['armies']
-    assert sorted(hqs) == list(range(1, n + 1)) and len(m['colours']) == n, (m['name'], hqs)
+    # (`nohq` in a BH map file: open ground with no HQ at all, a sky front)
+    assert (sorted(hqs) == list(range(1, n + 1)) or (m.get('nohq') and not hqs)) and len(m['colours']) == n, (m['name'], hqs)
+
+    # (a map may name the armies that own properties by distance: `owners 1 2` in the BH maps, so a
+    # second-stage HQ of a team-mate does not take its neighbour's properties)
+    owning = m.get('owners') or sorted(hqs)
+
+    split = m.get('split')
 
     # (a map may name the armies that own properties by distance: `owners 1 2` in the BH maps, so a
     # second-stage HQ of a team-mate does not take its neighbour's properties)

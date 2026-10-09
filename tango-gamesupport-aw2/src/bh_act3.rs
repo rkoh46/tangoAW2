@@ -523,14 +523,11 @@ fn bh15() -> MissionDef {
     m.factory = vec![(0, [0, 0, 0])];
     m.front2 = Some(FrontDef {
         map: MapSrc::Built("bh15b"),
-        // The sky front has no HQ and no airport: the HQ cells are cities (nothing to capture); it is won by routing the
-        // enemy's air force (AW2's own rout rule).
-        props: vec![
-            Prop { kind: PropKind::City, owner: 1, x: 2, y: 7 },
-            Prop { kind: PropKind::City, owner: 2, x: 18, y: 7 },
-        ],
+        // The sky front is open sky and the units: no HQ, no city, no airport. It is won (and lost) by AW2's own rout rule,
+        // every unit of one side destroyed; its air units all take AI role 4 (attack units), none goes for an HQ.
+        props: Vec::new(),
         structures: Vec::new(),
-        units: roles(built_units("bh15b"), |_| false),
+        units: built_units("bh15b").into_iter().map(|mut u| { u.ai = 4; u }).collect(),
         cos: [CoSpec::Pick, CoSpec::Fixed(co::GRIMM), CoSpec::None, CoSpec::None],
         send: SendRule::Air,
         sky: true,
