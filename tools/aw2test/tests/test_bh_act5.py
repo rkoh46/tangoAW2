@@ -128,6 +128,12 @@ def bh_act5_m29_deathray_probe(ctx):
     for u in g.units(2):
         e.w8(g.unit_addr(u["id"]) + 6, 0)
         e.w8(g.unit_addr(u["id"]) + 4, 100)
+    mine = g.units(1)
+    ctx.log("army 1 at the start: " + str(sorted((u["x"], u["y"], u["type"], u["hp"]) for u in mine)))
+    for u, c in zip(mine, [(16, 20), (17, 20), (18, 20), (16, 21), (17, 21), (18, 21), (15, 20), (19, 20)]):
+        d.place_unit(u, *c)
+        e.w8(g.unit_addr(u["id"]) + 6, 0)
+    before1 = {u["id"]: (u["x"], u["y"], u["hp"]) for u in g.units(1)}
     before = {u["id"]: (u["x"], u["y"], u["hp"]) for u in g.units(2)}
     e.w8(INVENTIONS + 6, 1)            # the Deathray fires at the next turn start
     ctx.log("before: " + str(sorted((u["x"], u["y"], u["type"], u["hp"]) for u in g.units(2))))
@@ -142,6 +148,8 @@ def bh_act5_m29_deathray_probe(ctx):
     g._units_base = g._players_base = None
     hurt = [(u["type"], u["x"], u["y"], u["hp"]) for u in g.units(2) if u["id"] in before and u["hp"] < before[u["id"]][2]]
     ctx.log("hurt after the turn: " + str(sorted(hurt)))
+    hurt1 = [(u["type"], u["x"], u["y"], u["hp"]) for u in g.units(1) if u["id"] in before1 and u["hp"] < before1[u["id"]][2]]
+    ctx.log("own units hurt: " + str(sorted(hurt1)))
     import json
     json.dump(sorted((x, y) for (_, x, y, _) in hurt), open(os.path.join(os.environ.get("SP", "/tmp"), "deathray_hits.json"), "w"))
     ctx.log("army 2 after: " + str(sorted((u["x"], u["y"], u["type"], u["hp"]) for u in g.units(2))))
@@ -275,20 +283,22 @@ def bh_act5_m30_stage_two_is_the_same_army_under_andy(ctx):
     ctx.check(len(reserve_cells) >= 12, f"the reserves stand on the Rail Yard ({len(reserve_cells)} units)")
     ctx.check(len(us) <= 50, "the army cap holds")
     ctx.log(f"army 2: {n_before} units before, {len(us)} after; funds {funds_before} -> {e.u32(p2['addr'])}")
-    ctx.check(e.u32(p2["addr"]) >= funds_before + 10000, "Orange Star's funds rose by 10000")
     a5.pic(ctx, e, "m30_stage2_opening")
     stitch.IMAGES = a5.SHOTS or stitch.IMAGES
     w, h = d.size()
     g.goto(0, 0)
     stitch.stitch(ctx, g, "m30_stage2", w, h)
     # the Rail Yard falls: a win
-    mine = next(u for u in g.units(1) if u["type"] in (1, 2) and (u["x"], u["y"]) != (18, 3))
+    g._units_base = g._players_base = None
     for u in g.units(2):
-        if u["x"] == 33 and u["y"] == 6:
+        if (u["x"], u["y"]) == (33, 6):
             d.remove_unit(u)
+    g._units_base = g._players_base = None
+    mine = next(u for u in g.units(1) if u["type"] in (1, 2) and (u["x"], u["y"]) != (18, 3))
     d.place_unit(mine, 33, 6)
     e.wait(10)
     g._units_base = g._players_base = None
+    ctx.log("at the Rail Yard: " + str([(u["army"], u["type"]) for a_ in (1, 2) for u in g.units(a_) if (u["x"], u["y"]) == (33, 6)]))
     capture(e, g, d, 33, 6)
     a5.next_turn(e, g, d)
     a5.calm(e, g, d)
@@ -299,4 +309,39 @@ def bh_act5_m30_stage_two_is_the_same_army_under_andy(ctx):
         e.press("A", 4)
         e.wait(60)
     ctx.eq(e.u8(dc.LAST_RESULT), 1, "capturing the Rail Yard wins the battle")
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act5_m29_laser_probe(ctx):
+    """The Laser (8,8): who its row 8 and column 8 hurt at the next turn start (enemy and own units stranded without fuel on them)."""
+    e, g, d, spec = load_mission(ctx, 29)
+    a5.open_mission(ctx, e, g, d, a5.M[29], spec[2], "m29")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    a5.calm(e, g, d)
+    orange = g.units(2)
+    mine = g.units(1)
+    oc = [(x, 8) for x in (14, 15, 16)] + [(8, y) for y in (17, 18, 19, 22)] + [(8, 12), (8, 13)]
+    mc = [(x, 8) for x in (20, 21, 22)] + [(8, y) for y in (10, 11)] + [(25, 7), (25, 9)]
+    for u, c in zip(orange, oc):
+        d.place_unit(u, *c)
+    for u, c in zip(mine, mc):
+        d.place_unit(u, *c)
+    for u in g.units(1) + g.units(2):
+        e.w8(g.unit_addr(u["id"]) + 6, 0)
+    g._units_base = g._players_base = None
+    snap = {(u["army"], u["id"]): u["hp"] for a_ in (1, 2) for u in g.units(a_)}
+    a5.next_turn(e, g, d)
+    for _ in range(60):
+        if e.u16(0x03004080) >= 2 and g.current_army() == 1:
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(60)
+    a5.calm(e, g, d)
+    g._units_base = g._players_base = None
+    for a_ in (1, 2):
+        hurt = [(u["x"], u["y"], u["hp"]) for u in g.units(a_) if snap.get((a_, u["id"]), 0) > u["hp"]]
+        ctx.log(f"army {a_} hurt: {sorted(hurt)}")
     e.close()

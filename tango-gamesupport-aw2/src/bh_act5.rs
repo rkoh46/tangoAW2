@@ -130,7 +130,7 @@ fn role29(army: u8, kind: u8, x: u8, y: u8) -> u8 {
         return 0;
     }
     // The Gate's foot guard holds the gateway; guns and Anti-Air stay behind the wall.
-    let gate_guard = kind == unit::INFANTRY && matches!((x, y), (16, 17) | (17, 17) | (18, 17) | (17, 22) | (7, 17));
+    let gate_guard = kind == unit::INFANTRY && matches!((x, y), (16, 17) | (17, 17) | (18, 17) | (17, 21));
     match kind {
         unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR => 0,
         unit::INFANTRY if gate_guard => 0,

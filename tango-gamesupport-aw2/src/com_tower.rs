@@ -147,13 +147,18 @@ const CAPTURED: u32 = 0x0804_281E;
 const CAPTURED_DONE: u32 = 0x0804_2834;
 /// The cell being captured (`gUnknown_03003100`: x, y as s16).
 const CAPTURE_CELL: u32 = 0x0300_3100;
+/// The same completion for an HQ (class 8 jumps past the Lab test to here, `0x08042822`, where the previous
+/// owner is marked to be defeated): a custom mission's held HQ (the BH Campaign's Great Hall) defeats nobody.
+const HQ_MARK: u32 = 0x0804_2822;
+fn held_hq_capture(core: &mut Core) {
+    let (x, y) = (core.raw_read_16(CAPTURE_CELL, -1) as u8, core.raw_read_16(CAPTURE_CELL + 2, -1) as u8);
+    if crate::ds_campaign::held_hq(core) == Some((x, y)) {
+        core.gba_mut().cpu_mut().set_thumb_pc(CAPTURED_DONE);
+    }
+}
+
 fn captured(core: &mut Core) {
     let (x, y) = (core.raw_read_16(CAPTURE_CELL, -1) as u32, core.raw_read_16(CAPTURE_CELL + 2, -1) as u32);
-    // A custom mission's held HQ (the BH Campaign's Great Hall): its capture defeats nobody.
-    if crate::ds_campaign::held_hq(core) == Some((x as u8, y as u8)) {
-        core.gba_mut().cpu_mut().set_thumb_pc(CAPTURED_DONE);
-        return;
-    }
     // A DS Campaign mission's research lab is a Lab (crate::ds_campaign).
     if active(core) && core.gba().cpu().gpr(0) as u8 == LAB && !crate::ds_campaign::is_lab_cell(core, x, y) {
         core.gba_mut().cpu_mut().set_thumb_pc(CAPTURED_DONE);
@@ -434,6 +439,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (INCOME, Box::new(income)),
         (KEY_PROPERTY, Box::new(key_property)),
         (CAPTURED, Box::new(captured)),
+        (HQ_MARK, Box::new(held_hq_capture)),
         (BAR_ARMY, Box::new(bar_army)),
         (BAR_BONUS, Box::new(bar_bonus)),
     ]
