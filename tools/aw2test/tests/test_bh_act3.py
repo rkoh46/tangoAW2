@@ -554,21 +554,28 @@ def bh_act3_m15_sky_front_has_no_hq_and_is_won_by_rout(ctx):
 
 @test(modes=("ds",))
 def bh_act3_m14_the_ring_holds_until_day_three(ctx):
-    """The ring round Crumb (Yellow Comet units in x 1..5, y 1..6) holds its ground and spares Crumb through days 1 and 2, and is
-    released on day 3 (it then moves). (It is held with empty tanks: with full tanks and role 0 the adjacent ring fires on
-    Crumb, who has 1 HP, at the first Yellow Comet turn: a real hold does not stop a unit shooting what is in reach.)"""
+    """The ring round Crumb (Yellow Comet units in x 1..5, y 1..6) has full tanks, is frozen (a unit-record mark: the computer's own
+    moves skip it, Recon and tanks too) through days 1 and 2 so it stays and spares Crumb, and is released on day 3."""
     e, g, d, _ = ready(ctx, 14)
     ring = {u["id"]: (u["x"], u["y"]) for u in g.units(2) if 1 <= u["x"] <= 5 and 1 <= u["y"] <= 6}
     ctx.check(len(ring) >= 8, f"the ring: {len(ring)} units")
+    raw = e.read(g.units_base, 12 * 256)
+    low = [(i, raw[12 * i + 6] & 0x7F) for i in ring if (raw[12 * i + 6] & 0x7F) == 0]
+    ctx.check(not low, f"every ring unit has a tank ({low})")
+
+    ctx.eq(sorted(raw[12 * i + 8] for i in ring), [255] * len(ring), "every ring unit is marked frozen")
     a3.to_day(e, g, d, 2)
     g._units_base = g._players_base = None
+    crumb = next((u for u in g.units(1) if (u["x"], u["y"]) == (3, 4)), None)
+    ctx.check(crumb is not None and crumb["hp"] > 0, f"Crumb is alive on day 2 ({crumb})")
     now = {u["id"]: (u["x"], u["y"]) for u in g.units(2)}
     held = [i for i, p in ring.items() if i in now and now[i] == p]
-    ctx.log(f"after day 2: {len(held)} of {len(ring)} ring units where they started")
-    ctx.check(len(held) >= len(ring) - 2, f"the ring held through days 1 and 2 ({len(held)} of {len(ring)})")
+    ctx.check(len(held) == len(ring), f"the ring held through day 1 ({len(held)} of {len(ring)})")
     a3.to_day(e, g, d, 3)
     g._units_base = g._players_base = None
-    roles = {u["id"]: u["raw"][11] for u in g.units(2) if u["id"] in ring}
-    ctx.log(f"roles on day 3: {roles}")
-    ctx.check(all(r in (3, 4) for r in roles.values()) and len(roles) >= len(ring) - 2, f"released on day 3: the ring's roles are 3 or 4 ({roles})")
+    raw = e.read(g.units_base, 12 * 256)
+    roles = {i: raw[12 * i + 11] for i in ring if raw[12 * i]}
+    marks = {i: raw[12 * i + 8] for i in ring if raw[12 * i]}
+    ctx.check(all(r in (3, 4) for r in roles.values()) and len(roles) >= len(ring) - 2, f"released on day 3: roles 3 or 4 ({roles})")
+    ctx.check(all(m == 0 for m in marks.values()), f"the marks are cleared on release ({marks})")
     e.close()

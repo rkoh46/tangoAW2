@@ -369,15 +369,7 @@ fn release_ring(core: &mut Core) {
         if in_basin(x, y) {
             let role = if kind == unit::INFANTRY || kind == unit::MECH { 3 } else { 4 };
             core.raw_write_8(addr + 0x0B, -1, role);
-            // refuelled: the type's full tank
-            let tank = match kind {
-                unit::MD_TANK => 50,
-                unit::MECH | unit::TANK => 70,
-                unit::RECON => 80,
-                _ => 99,
-            };
-            let old = core.raw_read_8(addr + 6, -1);
-            core.raw_write_8(addr + 6, -1, (old & 0x80) | tank);
+            core.raw_write_8(addr + crate::custom_campaign::FROZEN_AT, -1, 0);
         }
     }
 }
@@ -409,11 +401,12 @@ fn bh14() -> MissionDef {
     m.props = vec![Prop { kind: PropKind::City, owner: 2, x: SONJA_POST.0, y: SONJA_POST.1 }];
     // The ring round Crumb and the gap guards hold (the ring is released on day 3), the rest hunts the column.
     const GUARDS: [(u8, u8); 9] = [(7, 3), (3, 9), (8, 9), (9, 7), (8, 5), (9, 5), (9, 4), (11, 6), (11, 7)];
-    // (the ring's tanks and soldiers stand with empty tanks until day 3: held units still strike what is in
-    // reach, and Crumb has 1 HP; they are refuelled by `release_ring`)
+    // (the ring is frozen with full tanks until day 3: the computer's own moves skip every one of them, Recon and tanks
+    // included, unless an enemy is next to it; a plain role 0 lets a Recon sally and kill Crumb, who has 1 HP;
+    // `release_ring` frees them)
     m.units = roles(built_units("bh14"), |u| u.kind == unit::ANTI_AIR || in_basin(u.x, u.y) || GUARDS.contains(&(u.x, u.y)))
         .into_iter()
-        .map(|u| if u.army == 2 && in_basin(u.x, u.y) { u.fuel(0) } else { u })
+        .map(|u| if u.army == 2 && in_basin(u.x, u.y) { u.freeze() } else { u })
         .collect();
     m.fog = true;
     m.day_limit = 15;

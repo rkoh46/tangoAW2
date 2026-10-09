@@ -382,6 +382,8 @@ pub struct UnitDef {
     pub ai: u8,
     /// A name the mission's rules can refer to ([`Cond::UnitAt`], ...).
     pub name: Option<&'static str>,
+    /// Frozen ([`UnitDef::freeze`]): the computer's own moves skip the unit, of any type, until a trigger frees it.
+    pub freeze: bool,
     /// Starting ammo and fuel as the map record gives them: [`FULL`] (99,
     /// capped to the type's own maximum when the map loads) unless a mission
     /// asks for less ([`UnitDef::ammo`], [`UnitDef::fuel`]).
@@ -398,7 +400,7 @@ pub const FULL: u8 = 99;
 
 impl UnitDef {
     pub const fn new(army: u8, kind: u8, x: u8, y: u8) -> UnitDef {
-        UnitDef { army, kind, x, y, hp: 100, ai: 0, name: None, ammo: FULL, fuel: FULL }
+        UnitDef { army, kind, x, y, hp: 100, ai: 0, name: None, ammo: FULL, fuel: FULL, freeze: false }
     }
     pub const fn hp(mut self, hp: u8) -> UnitDef {
         self.hp = hp;
@@ -424,6 +426,15 @@ impl UnitDef {
     /// trick is needed.
     pub const fn stand(mut self) -> UnitDef {
         self.ai = STAND;
+        self
+    }
+    /// Frozen: role 0 and, at the mission's first turn, marked in its record's spare byte [`FROZEN_AT`]: the computer's own
+    /// moves skip it (a Recon, a tank or an indirect as well as a foot soldier, which role 0 alone holds) unless an enemy is next
+    /// to it. A trigger frees it by clearing the mark (`core.raw_write_8(unit + FROZEN_AT, -1, 0)`). Unfrozen role-0 units
+    /// keep AW2's behaviour (they sally to attack what they can reach).
+    pub const fn freeze(mut self) -> UnitDef {
+        self.ai = 0;
+        self.freeze = true;
         self
     }
     pub const fn named(mut self, name: &'static str) -> UnitDef {
@@ -1358,6 +1369,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         factory: (0..n).map(|i| cx.factory.iter().find(|f| f.0 == i).map_or(0, |f| f.1)).collect(),
         volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
         marches: def.missions.iter().map(|m| m.marches.clone()).collect(),
+        frozen: def.missions.iter().map(|m| m.units.iter().filter(|u| u.freeze).map(|u| (u.x, u.y)).collect()).collect(),
         jams: def.missions.iter().map(|m| m.jams.clone()).collect(),
         held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
@@ -1975,6 +1987,7 @@ pub fn tick(core: &mut Core) {
     if latch != before {
         core.raw_write_32(LATCH, -1, latch);
     }
+    freezes(core);
     marches(core);
     jams(core);
 }
@@ -2042,6 +2055,10 @@ pub fn ai_unit(core: &mut Core) {
             return;
         }
     }
+    if core.raw_read_8(u + FROZEN_AT, -1) == FROZEN && !army_out(core) && !enemy_adjacent(core, u) {
+        core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
+        return;
+    }
     let kind = core.raw_read_8(u, -1);
     if !army_out(core) && (kind == 1 || kind == 2) && core.raw_read_8(u + ROLE_AT, -1) == 0 && !enemy_adjacent(core, u) {
         core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
@@ -2093,6 +2110,33 @@ const RESTORE_COUNTER: u8 = 1;
 
 fn custom_of(core: &Core) -> Option<&crate::campaign_model::Custom> {
     crate::ds_campaign::campaign(core)?.model.custom.as_ref()
+}
+
+/// A frozen unit's mark: this byte of its record (the march-day byte, which only a marching unit uses) is [`FROZEN`].
+pub const FROZEN_AT: u32 = 8;
+pub const FROZEN: u8 = 0xFF;
+
+/// Day 1, the first dispatch: the units deployed with [`UnitDef::freeze`] are marked (their cells are the mission's
+/// `frozen` list); the mark lives in the emulated RAM, so saves and rollback carry it.
+fn freezes(core: &mut Core) {
+    if day(core) != 1 || core.raw_read_16(MAP_STATE, -1) != STATE_DISPATCH {
+        return;
+    }
+    let mission = crate::ds_campaign::mission(core) as usize;
+    let cells = match custom_of(core).and_then(|c| c.frozen.get(mission)) {
+        Some(l) if !l.is_empty() => l.clone(),
+        _ => return,
+    };
+    let base = core.raw_read_32(UNITS_PTR, -1);
+    for (x, y) in cells {
+        // (found by the records' own cells: the map's unit layer can lack an entry for a deployed unit)
+        let found = (1..256u32).map(|id| base + UNIT * id).find(|&a| core.raw_read_8(a, -1) != 0 && core.raw_read_8(a + 2, -1) == x && core.raw_read_8(a + 3, -1) == y);
+        if let Some(a) = found {
+            if core.raw_read_8(a + FROZEN_AT, -1) == 0 {
+                core.raw_write_8(a + FROZEN_AT, -1, FROZEN);
+            }
+        }
+    }
 }
 
 /// The mission's marches ([`MarchDef`]): at the start of a march's army's turn

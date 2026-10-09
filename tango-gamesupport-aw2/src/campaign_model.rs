@@ -94,6 +94,8 @@ pub struct Custom {
     pub volcano: Vec<Option<VolcanoDef>>,
     /// Per mission: named units that march, structures that are jammed.
     pub marches: Vec<Vec<crate::custom_campaign::MarchDef>>,
+    /// Per mission: the cells of the units deployed frozen ([`crate::custom_campaign::UnitDef::freeze`]).
+    pub frozen: Vec<Vec<(u8, u8)>>,
     pub jams: Vec<Vec<crate::custom_campaign::JamDef>>,
     /// Per mission: an HQ whose capture does not defeat its army (the army has another HQ).
     pub held_hq: Vec<Option<(u8, u8)>>,
