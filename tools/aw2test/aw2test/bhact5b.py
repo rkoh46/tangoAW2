@@ -12,7 +12,7 @@ from .game import Game, NavError
 
 # Roster bits (crate::bh_campaign::roster) and the mission indexes (world-map order).
 ST, VB, HK = 1, 2, 4
-M = {22: 2, 23: 3, 24: 4, 25: 5, 26: 6, 27: 7, 28: 8, 31: 9}   # mission number -> index in the campaign's list (bh01, bh02, the bh22 stub, bh23 ..)
+M = {22: 11, 23: 12, 24: 13, 25: 14, 26: 15, 27: 16, 28: 17, 31: 18}   # mission number -> index in the campaign's list (bh01, bh02, act 2's bh03 stub and bh04..bh11, the bh22 stub, bh23 ..; shifts when other acts merge)
 WON = lambda upto: (1 << upto) - 1            # missions 1..upto won (their bits)
 SHOTS = os.environ.get("AW2TEST_ACT5B_SHOTS")   # a folder the pictures are also copied to
 
@@ -99,7 +99,7 @@ def pic(ctx, e, name):
     return p
 
 
-def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False):
+def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False, hook=None):
     """On the world map (the cursor on the mission): the mission picked, its
     CO screens answered with `cos`, Setup left with Deploy, the intro read.
     Returns the intro's boxes."""
@@ -114,6 +114,14 @@ def open_mission(ctx, e, g, d, index, cos, label, shots=(0,), setup_only=False):
     if cos:
         ctx.eq(picked, list(cos), f"{label}: the CO screen's picks")
     g._units_base = g._players_base = None
+    if hook:
+        from . import ram
+        for _ in range(300):
+            if e.u8(ram.FIVE_ON) == 1:
+                break
+            e.wait(4)
+        g._units_base = g._players_base = None
+        hook(e, g)
     if setup_only:
         d.leave_setup  # (the caller works in the Setup phase, then deploys)
         for _ in range(200):

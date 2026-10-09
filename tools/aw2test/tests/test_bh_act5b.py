@@ -9,13 +9,15 @@ from aw2test import dscampaign as dc
 from aw2test.harness import test
 
 FOG = 0x03003FCD
-ALL_ROSTER = 0x7FF | (0x1FF << 12)
+BONDS = 0x1FF << 12
+# the roster (bits) unlocked when each mission opens: Lash after M23, Adder after M24, Clone Andy after M27, Sonja and Crumb later
+ROSTER_AT = {23: 0x7F, 24: 0xFF, 25: 0xFF, 26: 0x1FF, 27: 0x1FF, 28: 0x3FF, 31: 0xFFF}
 # number: (title, won (mission numbers incl. the 22 stub), CO picks, fog, size)
 MISSIONS = {
     23: ("Laboratory 7", [22], [bh.STURM], True, (22, 18)),
-    24: ("Sky Gala", [22, 23], [bh.STURM], False, (22, 16)),
-    25: ("Twin Harbours", [22, 23], [bh.STURM, bh.HAWKE], False, (26, 18)),
-    26: ("The Last Alliance", [22, 23, 24, 25], [bh.STURM, bh.SONJA], False, (30, 24)),
+    24: ("Sky Gala", [22, 23], [bh.STURM], False, (24, 16)),
+    25: ("Twin Harbours", [22, 23], [bh.STURM, bh.HAWKE], False, (32, 22)),
+    26: ("The Last Alliance", [22, 23, 24, 25], [bh.STURM, bh.VON_BOLT], False, (30, 24)),
     27: ("Echo", [22, 23, 24, 25, 26], [bh.STURM], True, (24, 18)),
     28: ("Home Is Where The Black Is", [22, 23, 24, 25, 26, 27], [], False, (29, 29)),
     31: ("The Colonel's Vault", [22, 23, 24, 25, 26, 27, 28], [bh.STURM], True, (29, 20)),
@@ -34,21 +36,31 @@ def unfog(g, e):
 def pictures(ctx, n):
     from aw2test import stitch
     title, won, picks, fog, size = MISSIONS[n]
+    if n == 28:
+        os.environ["TANGOAW2_BH_STILL"] = "1"   # (see bh_act5b::still: the computer holds and has no funds)
     mask = 0
     for k in won:
         mask |= 1 << a5.M[k]
-    e, g, d = a5.boot(ctx, mask, ALL_ROSTER, picks={a5.M[n]: len(picks)}, at=a5.M[n])
-    texts = a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}")
-    if n == 28:
+    e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
+    # (a mission that is not fogged is photographed in its Setup phase: the deployment as it stands before
+    # any computer turn, and no Onyx panel; a fogged one after Deploy, for the day-1 fog view)
+    setup = False
+    texts = a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}", setup_only=setup, hook=None)
+    if n == 28 and not setup:
         # five armies: the player (army 5) moves last; the computer's four turns pass first
+        stable = 0
         for _ in range(3000):
-            if g.current_army() == 5 and not d.scripts_running():
+            stable = stable + 1 if g.current_army() == 5 and not d.scripts_running() else 0
+            if stable >= 5:
                 break
             if d.scripts_running():
                 e.press("A", 4)
             e.wait(20)
-    d.wait_control()
+    if not setup or n == 28:
+        d.wait_control()
     g._units_base = g._players_base = None
+    hurt = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] < 100]
+    ctx.log(f"m{n}: units below full HP at the start: {hurt}")
     a5.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
     stitch.IMAGES = a5.SHOTS or stitch.IMAGES
@@ -62,7 +74,9 @@ def pictures(ctx, n):
         stitch.stitch(ctx, g, f"m{n}_nofog", w, h)
     else:
         g.goto(0, 0)
-        stitch.stitch(ctx, g, f"m{n}", w, h)
+        # (M28's Onyx panel sits in the screen's middle rows on either side: those screen cells are never taken)
+        ex = (lambda tx, ty: 3 <= ty <= 6 and (tx <= 4 or tx >= 10)) if n == 28 else None
+        stitch.stitch(ctx, g, f"m{n}", w, h, exclude=ex)
     if n == 25:
         from aw2test import twofront as tf
         ctx.require(tf.look_at_other_front(e, g), "the other front is shown")
@@ -92,3 +106,29 @@ def _pictures(n):
 
 for _n in MISSIONS:
     _pictures(_n)
+
+
+# --- the computer's units advance (docs: bh_act5b::roles) -------------------------------------------------
+def _advance(n):
+    def fn(ctx):
+        title, won, picks, fog, size = MISSIONS[n]
+        mask = 0
+        for k in won:
+            mask |= 1 << a5.M[k]
+        e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
+        a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}")
+        d.wait_control()
+        g._units_base = g._players_base = None
+        before = {u["id"]: (u["x"], u["y"]) for u in g.units() if u["army"] != 1}
+        a5.to_day(e, g, d, 4)
+        after = {u["id"]: (u["x"], u["y"]) for u in g.units() if u["army"] != 1}
+        moved = sum(1 for k, v in before.items() if k in after and after[k] != v)
+        ctx.log(f"M{n}: {moved} of {len(before)} enemy units moved in 3 days ({len(after)} left)")
+        ctx.check(moved * 2 >= len(before) * 1, f"M{n}: at least half the computer's units advance ({moved} of {len(before)})")
+        e.close()
+    fn.__name__ = f"bh_act5b_enemy_advances_m{n}"
+    test(modes=("ds",))(fn)
+
+
+for _n in (23, 26, 27):
+    _advance(_n)
