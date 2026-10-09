@@ -1,0 +1,58 @@
+# bh25: M25 Twin Harbours, main front
+map bh25
+armies 2 3 5 1
+unit 1 1 3 5
+unit 1 1 3 7
+unit 1 1 5 6
+unit 1 1 5 10
+unit 1 2 4 4
+unit 1 2 4 8
+unit 1 5 5 5
+unit 1 5 5 7
+unit 1 5 6 6
+unit 1 3 7 6
+unit 1 3 7 10
+unit 1 3 8 10
+unit 1 10 2 7
+unit 1 10 2 5
+unit 1 14 6 7
+unit 1 22 7 13
+unit 1 24 8 14
+unit 1 23 7 11
+unit 2 1 24 5
+unit 2 1 24 7
+unit 2 1 22 6
+unit 2 1 20 10
+unit 2 1 19 6
+unit 2 1 21 9
+unit 2 2 21 5
+unit 2 2 21 7
+unit 2 2 20 7
+unit 2 5 20 5
+unit 2 5 18 6
+unit 2 5 19 10
+unit 2 3 18 10
+unit 2 3 17 6
+unit 2 3 20 9
+unit 2 8 19 5
+unit 2 22 18 13
+unit 2 24 17 14
+unit 2 23 18 11
+^^....f...^-...-^.......^^
+^.......f..-.f.-.f.......^
+....RRRRRRR=RRR=RRRRRR....
+..C.R......-...-.....R.C.^
+...BR.C..c.-.c.-.c.C.RB..^
+.f..R......-...-.....R..f.
+f.1RRRRRRRR=RRR=RRRRRRR2.f
+....R...R.f-fRf-f.R..R....
+.f.BR.C.Rc.-.c.-.cRC.RB.f.
+..C.R...R.f-fRf-f.R..R.C..
+...RRRRRRRR=RRR=RRRRRRR...
+....R..P.,.-.,.-.,P.......
+.f..R.~~~~~~~~~~~~~~..c...
+^^.fR.~~~~~~~~~~~~~~....c.
+^.C.Rf~~~~~,c.,~~~~~~~~~~~
+......~~~~~~.c~~~~~~~~~~~~
+f.f.C.~~~~~~~~~~~~~~~~~~~~
+......~~~~~~~~~~~~~~~~~~~~

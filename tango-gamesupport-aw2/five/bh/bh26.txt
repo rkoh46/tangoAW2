@@ -1,0 +1,73 @@
+# bh26: M26 The Last Alliance (tag, 1v3)
+map bh26
+armies 4 6 5 1 2 4
+team 1 2 2 2
+objective 1
+unit 1 1 3 11
+unit 1 1 3 13
+unit 1 1 4 12
+unit 1 1 5 9
+unit 1 2 5 15
+unit 1 2 4 11
+unit 1 2 5 11
+unit 1 5 7 13
+unit 1 5 5 13
+unit 1 5 7 15
+unit 1 3 7 9
+unit 1 3 8 9
+unit 1 3 8 16
+unit 1 10 3 10
+unit 1 10 3 14
+unit 1 11 5 14
+unit 1 11 5 10
+unit 1 8 9 12
+unit 1 8 10 10
+unit 1 14 2 11
+unit 1 14 2 13
+unit 2 1 2 3
+unit 2 1 4 3
+unit 2 2 4 4
+unit 2 5 5 2
+unit 2 3 3 4
+unit 2 8 7 2
+unit 2 11 2 4
+unit 3 1 25 2
+unit 3 1 27 3
+unit 3 2 25 3
+unit 3 5 24 3
+unit 3 5 27 1
+unit 3 8 25 5
+unit 3 10 26 3
+unit 4 1 25 21
+unit 4 1 27 20
+unit 4 2 25 20
+unit 4 3 24 21
+unit 4 8 25 19
+unit 4 11 27 22
+unit 4 5 26 19
+unit 4 16 27 21
+unit 4 16 28 21
+^^........^^....^^..........^^
+^ff....ff...f..........B.....^
+...2.....f.f..............3...
+.f.R..B.C........RRRRRCRRRR...
+...R........c.f..R...f..B.....
+..CR.B....f..f...R.f........C^
+...R..L..c......cR^.c..f.....^
+.f.RRRRRRRRRRRR..R.......f....
+.f..C...c.X...R.fRf..cf....f..
+..CRRRRRRRRcRcR..R..f...f.....
+...RB.###.....RRRRRRR......^^f
+...R.f#O#N.###R.R^ffR.........
+..1R.f###..#v#R.Rf^fRRRRR.....
+...R.f...S.###R.Rff^R.f....f..
+...RBRRRCRRRRRRRRRRRRc.ff...f.
+..CR..f..f.f..R....R......R...
+...RC.....X..cR....RRRRRRRR...
+...R.B......f.Rc........f.R...
+...RRRRRRRRRRRR......f.c..R...
+........^.....f..f........R.B.
+.f...C....f..c......f...B.R...
+..f......c.....f.c...f....4...
+^..ff.ff......^.f.....C.....A^
+^^............^^^...........C^

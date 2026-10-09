@@ -1,0 +1,61 @@
+# bh27: M27 Echo (fog, pre-deployed)
+map bh27
+armies 2 3 5 1
+unit 1 1 3 8
+unit 1 1 3 10
+unit 1 1 4 9
+unit 1 1 4 10
+unit 1 2 4 6
+unit 1 2 4 12
+unit 1 2 5 9
+unit 1 5 6 8
+unit 1 5 6 10
+unit 1 5 5 4
+unit 1 3 7 9
+unit 1 3 6 13
+unit 1 3 6 4
+unit 1 10 3 7
+unit 1 10 3 12
+unit 1 6 5 6
+unit 1 6 5 12
+unit 1 14 4 8
+unit 2 1 20 8
+unit 2 1 20 10
+unit 2 1 19 9
+unit 2 1 18 8
+unit 2 1 18 10
+unit 2 1 22 9
+unit 2 2 20 6
+unit 2 2 20 12
+unit 2 2 18 9
+unit 2 5 17 7
+unit 2 5 17 11
+unit 2 5 18 4
+unit 2 5 18 13
+unit 2 3 16 9
+unit 2 3 18 6
+unit 2 3 18 12
+unit 2 8 19 8
+unit 2 10 21 8
+unit 2 10 21 10
+unit 2 6 16 4
+unit 2 6 16 14
+unit 2 20 22 10
+^^.........-..........^^
+.ff......f.-..f......ff.
+.f.....c...-....c.....f.
+..RRRRRRRRR=RRRRRRRRRR..
+....CR..f..-.f...R..C...
+^....R.^^.c-..^^.R......
+.....R^^^^.-.^^^^R...B..
+....BR.....-f....R.B....
+...f.R.f.c.-...f.R..f..^
+..1RRRRRRRR=RRRRRRRRR2..
+.....R.f...-..cf.R..f...
+...C.R^^.^.-f^.^^R.B....
+.....R.^^.f-..^^.R....C.
+.....R.....-c....R......
+..RRRRRRRRR=RRRRRRRRRR..
+.f.....c...-..c.......f.
+.ff.C....f.-..f....C.ff.
+^^.........-..........^^

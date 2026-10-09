@@ -1,0 +1,49 @@
+# bh23: M23 Laboratory 7 (fog)
+map bh23
+armies 2 3 5 1
+unit 1 1 3 8
+unit 1 1 3 10
+unit 1 1 4 9
+unit 1 2 6 4
+unit 1 2 6 14
+unit 1 6 6 9
+unit 1 6 5 8
+unit 1 5 5 5
+unit 1 5 5 13
+unit 1 5 7 8
+unit 1 10 2 7
+unit 1 10 2 11
+unit 1 14 5 9
+unit 1 15 5 10
+unit 2 1 18 8
+unit 2 1 18 10
+unit 2 1 17 9
+unit 2 2 15 4
+unit 2 2 15 14
+unit 2 13 16 8
+unit 2 13 16 10
+unit 2 27 14 10
+unit 2 27 15 7
+unit 2 3 15 9
+unit 2 3 14 8
+unit 2 8 17 5
+unit 2 20 19 7
+unit 2 1 17 13
+......................
+.^.ff.^..^^^^..^.ff.^.
+........ff..ff........
+...C...c......c...C...
+..RRRRRRRRRRRRRRRRRR..
+.fR..R.ff.R..ff.R..Rf.
+..RC.Rf...R....fRBCR..
+..R.BRf.c.R..c.fRB.R..
+..R..R....R.....R..R..
+..1RRRRcRRRTRRcRRRR2..
+..R..R....R.....R..R..
+..R.BRf.c.R..c.fRB.R..
+..RC.Rf...R....fR.CR..
+.fR..R.ff.R..ff.R..Rf.
+..RRRRRRRRRRRRRRRRRR..
+...C...c......c...C...
+.^.ff...ff^^ff...ff.^.
+.........^..^.........

@@ -25,6 +25,7 @@ pub mod bh_act2;
 pub mod bh_act3;
 pub mod bh_act4;
 pub mod bh_act5;
+pub mod bh_act5b;
 pub mod bh_secret;
 pub mod bh_map_data;
 pub mod custom_campaign;

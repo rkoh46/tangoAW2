@@ -15,6 +15,7 @@ use crate::bh_act2;
 use crate::bh_act3;
 use crate::bh_act4;
 use crate::bh_act5;
+use crate::bh_act5b;
 use crate::bh_secret;
 use crate::campaign_model::{Model, OnyxDef, SendRule, VolcanoDef};
 use crate::custom_campaign::{co, colour, unit, *};
@@ -80,7 +81,7 @@ pub fn def() -> CampaignDef {
             CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"], secret: false },
             CreditSection { heading: "THANKS FOR PLAYING", names: vec![], secret: false },
         ],
-        missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
+        missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_act5b::missions(), bh_secret::missions()].concat(),
         final_mission: "bh02",
         bonds: BONDS.to_vec(),
         secret_mission: "",
