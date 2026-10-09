@@ -9,7 +9,7 @@ No game is included: you need your own dump of the USA cartridge.
 
 <table>
 <tr>
-<td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 badge, version 0.6.0"></td>
+<td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 version badge"></td>
 <td><img src="docs/screenshots/bh-story.png" width="240" alt="Sturm offering Von Bolt a place at his side in the BH Campaign"></td>
 <td><img src="docs/screenshots/black-hole-versus.png" width="240" alt="A Versus battle"></td>
 </tr>
