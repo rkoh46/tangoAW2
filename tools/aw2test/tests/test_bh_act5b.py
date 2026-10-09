@@ -383,3 +383,126 @@ def bh_act5b_m28_free_pair_with_clone_andy(ctx):
 @test(modes=("ds",))
 def bh_act5b_m28_free_pair_without_clone_andy(ctx):
     _m28_free_pair(ctx, [bh.HAWKE, bh.KOAL], "hawke_koal")
+
+
+# --- the enemy acts (cpuai3): over five CPU days with the player passive, the computer's units move, capture, attack and build ---------
+def _all_units(e, g):
+    """Every live unit (a five-army battle has 51 slots an army)."""
+    from aw2test import ram
+    from aw2test.game import parse_unit
+    per = 51 if e.u8(0x02030206) in (1, 2) else 64
+    raw = e.read(g.units_base, ram.UNIT_SIZE * 256)
+    return [parse_unit(uid, raw[ram.UNIT_SIZE * uid:ram.UNIT_SIZE * (uid + 1)], per) for uid in range(256)
+            if raw[ram.UNIT_SIZE * uid] != 0 and uid % per != 0]
+
+
+def _snapshot(g, e):
+    from aw2test import bot as B
+    base = e.u32(B.PLAYERS_PTR)
+    w, h = e.u16(B.MAP), e.u16(B.MAP + 2)
+    props = {}
+    for y in range(h):
+        row = e.read(B.CLASSES + e.u16(B.ROWS + 2 * y), w)
+        for x in range(w):
+            if row[x] & 0x1F in B.PROPERTIES:
+                props[(x, y)] = (row[x] & 0x1F, row[x] >> 5)
+    return {"funds": {a: e.u32(base + 0x3C * a) for a in range(1, 6)}, "props": props, "units": {u["id"]: u for u in _all_units(e, g)}}
+
+
+def _enter(ctx, n):
+    from aw2test import bhact2 as a2
+    title, won, picks, fog, size = MISSIONS[n]
+    e, g, d = a5.boot(ctx, won_mask(n), ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
+    if picks:
+        a2.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}", setup_only=True)
+        d.leave_setup()
+        a2.intro(ctx, e, d, f"m{n}", ())
+        d.wait_control()
+    else:
+        a2.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}")
+        for _ in range(3000):
+            if g.current_army() == (5 if n == 28 else 1) and not d.scripts_running():
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(20)
+        d.wait_control()
+    g._units_base = g._players_base = None
+    return e, g, d
+
+
+def enemy_acts(ctx, n, days=6):
+    """The player passive: a snapshot at the player's turn of each day. Returns the per-army record."""
+    from aw2test import bot as B
+    from aw2test import bhact2 as a2
+    from aw2test import dscampaign as dc
+    player = 5 if n == 28 else 1
+    e, g, d = _enter(ctx, n)
+    snaps = [_snapshot(g, e)]
+    for day in range(2, days + 1):
+        if e.u8(dc.LAST_RESULT):
+            break
+        ok = False
+        for attempt in range(6):
+            try:
+                a2.to_day(e, g, d, day)
+                ok = True
+                break
+            except Exception as ex:
+                if e.u8(dc.LAST_RESULT):
+                    break
+                a2.boxes(e, d, 1500)
+                try:
+                    d.wait_control()
+                except Exception:
+                    pass
+        if not ok or e.u8(dc.LAST_RESULT):
+            break
+        g._units_base = g._players_base = None
+        snaps.append(_snapshot(g, e))
+    e.close()
+    armies = sorted({u["army"] for u in snaps[0]["units"].values()} - {player})
+    out = {"armies": armies, "days": len(snaps), "player": player}
+    for a in armies:
+        rec = {"moved": 0, "built": 0, "captured": 0, "sat": 0, "idle_cash": 0, "attacks": 0, "units0": 0}
+        s0 = snaps[0]
+        rec["units0"] = sum(1 for u in s0["units"].values() if u["army"] == a)
+        rec["roles"] = {}
+        for u in s0["units"].values():
+            if u["army"] == a:
+                k = "foot" if u["type"] in (1, 2) else "other"
+                rec["roles"][f"{k}{u['raw'][11]}"] = rec["roles"].get(f"{k}{u['raw'][11]}", 0) + 1
+        for p, q in zip(snaps, snaps[1:]):
+            old = {i: u for i, u in p["units"].items() if u["army"] == a}
+            new = {i: u for i, u in q["units"].items() if u["army"] == a}
+            rec["moved"] += sum(1 for i, u in new.items() if i in old and (old[i]["x"], old[i]["y"]) != (u["x"], u["y"]))
+            rec["built"] += sum(1 for i in new if i not in old)
+            prod = {c for c, (k, o) in q["props"].items() if o == a and k in (B.BASE, B.AIRPORT, B.PORT)}
+            rec["sat"] += sum(1 for u in new.values() if (u["x"], u["y"]) in prod)
+            rec["max_funds"] = max(rec.get("max_funds", 0), q["funds"][a])
+            rec["producers"] = len(prod)
+        rec["captured"] = sum(1 for c, (k, o) in snaps[-1]["props"].items() if o == a) - sum(1 for c, (k, o) in snaps[0]["props"].items() if o == a)
+        rec["lost_player_hp"] = sum(u["hp"] for u in snaps[0]["units"].values() if u["army"] == player) - sum(u["hp"] for u in snaps[-1]["units"].values() if u["army"] == player)
+        out[a] = rec
+    return out
+
+
+def _enemy_acts(n):
+    def fn(ctx):
+        import json
+        r = enemy_acts(ctx, n)
+        ctx.log(json.dumps(r, default=str))
+        ctx.check(r["days"] >= 4, f"M{n}: the passive player lasted to day 4")
+        for a in r["armies"]:
+            rec = r[a]
+            ctx.check(rec["moved"] * 4 >= rec["units0"] * 3, f"M{n} army {a}: its units move ({rec['moved']} moves, {rec['units0']} units)")
+            # (M28's coalition marches 15 cells across a 34 x 30 map to the fortress: its first captures come after day 6)
+            ctx.check(rec["captured"] >= 1 or rec["roles"].get("foot3", 0) == 0 or n == 28, f"M{n} army {a}: it captures property ({rec['captured']} net)")
+            if rec["producers"]:
+                ctx.check(rec["built"] >= 1 or rec["max_funds"] < 1000, f"M{n} army {a}: it builds (new {rec['built']}, funds {rec['max_funds']})")
+    fn.__name__ = f"bh_act5b_enemy_acts_m{n}"
+    test(modes=("ds",))(fn)
+
+
+for _n in (23, 24, 25, 26, 27, 28):
+    _enemy_acts(_n)
