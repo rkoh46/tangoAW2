@@ -2011,9 +2011,6 @@ pub fn goal_hook(core: &mut Core) {
     }
 }
 
-/// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
-/// is the one trap, and calls this first.)
-
 /// The computer's turn per unit (`sub_0805D438`), just after the unit's record is
 /// in r4 and before its flag test: AW2's role 0 / hold byte leaves Infantry and
 /// Mechs free to walk off and capture neutral cities, and its own logic moves a
@@ -2076,6 +2073,8 @@ fn enemy_adjacent(core: &Core, u: u32) -> bool {
     })
 }
 
+/// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
+/// is the one trap, and calls this first.)
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     Vec::new()
 }
