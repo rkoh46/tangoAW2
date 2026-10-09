@@ -102,7 +102,7 @@ def bh_campaign_factory_counters_the_enemy(ctx):
             e.wait(10)
         d.wait_control()
         e.wait(60)
-        built = [u for u in g.units(1) if u["type"] not in (3, 1)]
+        built = [u for u in g.units(1) if u["y"] == 4 and 4 <= u["x"] <= 8]    # (on the doors: the starting units stay out of it)
         log = e.decisions()
         ctx.log(f"{key}: built {[(u['type'], u['x'], u['y']) for u in built]}; decisions {log[-3:]}")
         ctx.require(built, f"{key}: the factory built units on day 8")

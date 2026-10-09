@@ -590,9 +590,9 @@ def bh_act2_m7_factory_table(ctx):
     a2.to_day(e, g, d, 2)
     ctx.eq(e.u16(DAY), 2, "day 2")
     spawned = [(u["type"], u["x"], u["y"]) for u in g.units(1) if (u["x"], u["y"]) not in before and u["y"] == 11 and 4 <= u["x"] <= 6]
-    # (the table is the schedule and the cost cap; the smart spawner picks what the battle needs within a Tank's price)
+    # (the table is the schedule and the cost cap; the smart spawner picks what the battle needs within a Tank's price, units costing 75%)
     ctx.eq(sorted((x, y) for _, x, y in spawned), [(4, 11), (6, 11)], "a unit at each of the doors (4, 11) and (6, 11), none at the middle door")
-    ctx.check(all(t in (1, 2, 5, 6, 7, 10) for t, _, _ in spawned), f"each within a Tank's price ({spawned})")
+    ctx.check(all(t in (1, 2, 5, 6, 7, 10, 14) for t, _, _ in spawned), f"each within a Tank's price at the factory's 75% prices (Anti-Air included) ({spawned})")
     a2.pic(ctx, e, "m7_factory_day2")
     # day 13 (set day 12 and end the turn): a unit on the middle door
     for u in g.units(1):

@@ -247,7 +247,12 @@ from the ROM table `0x080C1BC4`.
   - *Candidates*: Infantry, Mech, Md Tank, Megatank, Tank, Recon, Neotank,
     Artillery, Rockets, Anti-Air, Missiles, Fighter, Bomber, B Copter, and the ships (Lander, Cruiser, Battleship, Sub, Black
     Boat, Carrier).
-  - *Cost rule* (the factory is not a free army): a spawn costs at most the
+  - *Prices and saving*: the factory's units cost 75% of their list price, so a slot buys what costs up to 4/3 of
+    it (a Tank slot, 7000, affords up to 9333: Anti-Air at 8000, not a Md Tank at 16000). When the pick would be an
+    Infantry or Mech with nothing to capture (no free enemy/neutral property in reach) and no enemy at the doors, the
+    slot spawns nothing and its value is saved (one byte per army at `0x0203E3EC`, 500 per step, at most 16000, cleared on
+    day 1); the next slots may spend it, again at 75% prices. The spend never exceeds the table's value.
+  - *Cost rule* (the factory is not a free army, with the 75% prices above): a spawn costs at most the
     table's unit for that day and slot, so over any stretch of days the
     factory spawns no more value than AW2's table would (the table's
     Infantry slot can only be a cheaper unit, its Neotank slot anything up

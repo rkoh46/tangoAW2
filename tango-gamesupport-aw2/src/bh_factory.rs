@@ -61,8 +61,14 @@ const NO_ENTRY: u8 = 0xFF;
 /// free RAM is non-zero the factory spawns the table's units, as AW2's does.
 /// It is emulated memory, so it replays and rolls back like the rest.
 /// The last four picks of each of three armies (4 bytes each, newest first, 0 = none): the variety rule's memory
-/// (free EWRAM between crate::grand_bolt's and crate::skills_panel's).
+/// (free EWRAM between crate::grand_bolt's and crate::skills_panel's); the two armies' savings follow (a byte each, in
+/// [`BANK_UNIT`]s): the value of slots that spawned nothing, spendable on the next slot, up to [`BANK_MAX`].
+/// Armies 1, 3, 5 share the first slot of each, armies 2 and 4 the second.
 const HISTORY: u32 = 0x0203_E3E4;
+const BANK: u32 = HISTORY + 8;
+const BANK_UNIT: i32 = 500;
+/// One Md Tank-level slot, so a saved factory stays within a fair stretch of the table.
+const BANK_MAX: i32 = 16000;
 const TABLE_ONLY: u32 = 0x0203_E3FF;
 
 fn in_scope(core: &Core) -> bool {
@@ -179,7 +185,17 @@ fn at_create(core: &mut Core) {
     // day, door, army and square so the three doors differ.
     let seed = hash(&[core.raw_read_32(RNG, -1), h]);
 
-    let cap = price(core, table_unit);
+    let idx = ((army.max(1) - 1) % 2) as u32;
+    let hist = HISTORY + 4 * idx;
+    let bank_at = BANK + idx;
+    if day <= 1 {
+        core.raw_write_32(hist, -1, 0);
+        core.raw_write_8(bank_at, -1, 0);
+    }
+    let bank = core.raw_read_8(bank_at, -1) as i32 * BANK_UNIT;
+    let slot_price = price(core, table_unit);
+    // (a table slot naming an Oozium or a Piperunner is a price cap only)
+    let cap = slot_price + bank;
     let door_water = matches!(terrain(core, x, y), Some(SEA) | Some(REEF));
     let mut options: Vec<(u8, Vec<(i32, i32)>)> = Vec::new();
     for &t in LAND.iter().chain(AIR.iter()).chain(SHIPS.iter()) {
@@ -187,7 +203,8 @@ fn at_create(core: &mut Core) {
             continue;
         }
         let cost = price(core, t);
-        let allowed = if HEAVY.contains(&t) { cost * 10 <= cap * 13 } else { cost <= cap };
+        // (the factory's units cost a quarter less than the list price: a slot buys what costs 4/3 of it)
+        let allowed = if HEAVY.contains(&t) { cost * 3 * 10 <= cap * 4 * 13 } else { cost * 3 <= cap * 4 };
         if !allowed {
             continue;
         }
@@ -195,10 +212,6 @@ fn at_create(core: &mut Core) {
         if !spots.is_empty() {
             options.push((t, spots));
         }
-    }
-    let hist = HISTORY + 4 * (army.max(1) - 1) % 12;
-    if day <= 1 {
-        core.raw_write_32(hist, -1, 0);
     }
     let recent: Vec<u8> = (0..4).map(|k| core.raw_read_8(hist + k, -1)).take_while(|&t| t != 0).collect();
     let started = std::time::Instant::now();
@@ -234,7 +247,16 @@ fn at_create(core: &mut Core) {
             }
         }
     }
+    let set_bank = |core: &mut Core, v: i32| core.raw_write_8(bank_at, -1, (v.clamp(0, BANK_MAX) / BANK_UNIT) as u8);
+    if decision.as_ref().is_some_and(|d| d.skip) {
+        // No foot soldier where nothing needs capturing: the slot's value is saved for the next slot.
+        set_bank(core, bank + slot_price);
+        log(&format!("day {day} army {army} slot {slot}: no foot soldier needed, {slot_price} saved (bank {})", (bank + slot_price).min(BANK_MAX)));
+        core.gba_mut().cpu_mut().set_thumb_pc(NEXT_SLOT);
+        return;
+    }
     if decision.is_some() {
+        set_bank(core, bank - (price(core, t) * 3 / 4 - slot_price).max(0));
         // (newest first)
         let mut h = [t, 0, 0, 0];
         for k in 0..3 {

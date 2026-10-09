@@ -332,6 +332,8 @@ pub struct Decision {
     pub next: Vec<(u8, i32)>,
     /// Every candidate, best first, with its top reasons (for the audit log).
     pub all: Vec<(u8, i32, String)>,
+    /// The pick is a foot soldier with nothing to capture and no enemy at the doors: the slot should save its value.
+    pub skip: bool,
     pub summary: String,
 }
 
@@ -700,7 +702,8 @@ pub fn choose(core: &Core, army: u32, door_x: i32, y: i32, options: &[(u8, Vec<(
         foe_target
     );
     let _ = fog_text(&f);
-    Some(Decision { best, pool, next, all, summary })
+    let skip = matches!(best.t, INFANTRY | MECH) && !hot && best.parts.iter().any(|p| p.0 == "nothing to capture");
+    Some(Decision { best, pool, next, all, skip, summary })
 }
 
 fn fog_text(f: &Field) -> &'static str {

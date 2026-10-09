@@ -36,8 +36,8 @@ NEAR = [(x, 12) for x in range(8, 13)] + [(x, 13) for x in range(9, 12)]
 COAST = [(8, 12), (12, 12)] + [(x, 13) for x in range(8, 14)] + [(x, y) for x in range(8, 14) for y in (14, 15)]
 
 
-def factory_map(ctx, sea=(), shoal=(), reef=(), pipes=(), blockers=()):
-    m = ctx.map()
+def factory_map(ctx, sea=(), shoal=(), reef=(), pipes=(), blockers=(), hq=None):
+    m = ctx.map(hq=hq) if hq else ctx.map()
     m.colours = [1, 5, 2, 3, 4]
     m.terrain(10, 10, ANCHOR)
     for x, y in sea:
@@ -273,10 +273,11 @@ def bh_factory_smart_cost_rule(ctx):
         slot_price = price.get(table_unit(rom, d, x - 9), 0)
         spawned += price.get(t, 0)
         table += slot_price
-        ok &= price.get(t, 0) * 10 <= slot_price * (13 if t in HEAVY else 10)
+        # (the factory's units cost 75% of the list price; a slot saved by a skipped foot soldier adds to the next: up to one Md Tank's value)
+        ok &= price.get(t, 0) * 3 * 10 <= (slot_price + 16000) * 4 * (13 if t in HEAVY else 10)
     ctx.log(f"value spawned {spawned}, the table's units for the same slots {table}")
-    ctx.check(ok, "no spawn dearer than its slot's table unit (heavy ones 30% more)")
-    ctx.check(spawned <= table * 1.2, f"the value spawned ({spawned}) stays near the table's ({table})")
+    ctx.check(ok, "no spawn dearer than its slot's table unit plus the saved slots (heavy ones 30% more)")
+    ctx.check(spawned <= table * 4 / 3 * 1.05, f"the list value spawned ({spawned}) is within the table's ({table}) at the factory's 75% prices")
 
 
 @test(modes=("ds",))
@@ -450,7 +451,7 @@ def bh_factory_ships_by_the_sea(ctx):
     ctx.check(all(c in WATER for *_, c in ships), "ships are only on sea, shoal or reef")
     land = [s for s in spawns if s[1] not in SHIPS]
     ctx.check(all((x, y) in DOORS and c not in (SEA, REEF) for _, _, x, y, c in land), "land units on door tiles, none on water")
-    ctx.check({s[1] for s in ships if (s[2], s[3]) == (11, 13)} <= {LANDER}, "the shoal takes only a Lander")
+    ctx.check({s[1] for s in ships if (s[2], s[3]) == (11, 13)} <= {LANDER, 18}, "the shoal takes only a Lander or a Black Boat")
 
 
 @test(modes=("ds",))
@@ -1378,8 +1379,11 @@ def guarded(r, guards=GUARDS):
     return r
 
 
-def run_days(ctx, blockers, n=40, guards=(), extra=None):
-    m = factory_map(ctx, blockers=blockers)
+FAR_HQ = ((1, 29, 0), (2, 29, 19))     # (out of a foot soldier's reach: nothing to capture)
+
+
+def run_days(ctx, blockers, n=40, guards=(), extra=None, hq=None):
+    m = factory_map(ctx, blockers=blockers, hq=hq)
     if extra:
         extra(m)
     r = start(ctx, m, shots=())
@@ -1522,6 +1526,38 @@ def bh_factory_m2_leans_on_anti_air_and_armour(ctx):
         ctx.check(pick != "Oozium", f"no Oozium: {l[:60]}")
         if pick in ("Anti-Air", "Missiles"):
             ctx.check(air > 0, f"{pick} only with enemy air in sight (air {air}%)")
+        if pick in ("Infantry", "Mech"):
+            slot = re.search(r"day (\d+) army \d slot (\d)", l).groups()
+            cand = [c for c in e.decisions() if c.startswith(f"    cand day {slot[0]} slot {slot[1]} {pick} ")]
+            ctx.check(cand and all("nothing to capture" not in c for c in cand), f"{pick} only with something to capture (day {slot[0]} slot {slot[1]})")
         if pick in ("Artillery", "Rockets", "Missiles", "Battleship"):
             ctx.check(reach == 0, f"{pick} not at a door the enemy reaches (reach {reach})")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_factory_no_forced_infantry_the_slot_is_saved(ctx):
+    """A slot too cheap for anything but a foot soldier, with nothing to capture and nobody at the doors, spawns nothing
+    and adds its value to the next slot (up to a Md Tank's): no Infantry or Mech on a map without properties, a log line
+    for each saved slot, and the factory never spends more than the table's total."""
+    rom = open(paths.aw2_rom(), "rb").read()
+    r, sp = run_days(ctx, GROUND_ARMY, hq=FAR_HQ)
+    saved = [l for l in r.e.decisions() if "no foot soldier needed" in l]
+    ctx.log("\n".join(saved[:6]))
+    ctx.check(saved, f"slots were saved ({len(saved)})")
+    ctx.check(not count(sp, (INFANTRY, MECH)), f"no Infantry or Mech with nothing to capture ({count(sp, (INFANTRY, MECH))})")
+    spent = sum(POOL_PRICE.get(s[1], 0) for s in sp)
+    table = sum(POOL_PRICE.get(table_unit(rom, d, k), 0) for d in range(2, 41) for k in range(3))
+    ctx.check(spent * 3 <= table * 4, f"spent ({spent} at list prices) is within the table's total ({table}) at 75% prices")
+    ctx.check(any(POOL_PRICE.get(s[1], 0) > POOL_PRICE.get(table_unit(rom, s[0], s[2] - 9), 0) for s in sp), "a saved slot buys something dearer than the next slot's table unit")
+
+
+@test(modes=("ds",))
+def bh_factory_anti_air_fits_a_tank_slot_at_75_percent(ctx):
+    """The factory's units cost 75% of their list price: against enemy air an Anti-Air (8000, 6000 here) is built on a
+    Tank-priced (7000) slot, with no saved slots needed."""
+    rom = open(paths.aw2_rom(), "rb").read()
+    r, sp = run_days(ctx, AIR_ARMY, hq=FAR_HQ)
+    on_tank = [s for s in sp if s[1] in AA_UNITS + (FIGHTER,) and POOL_PRICE.get(table_unit(rom, s[0], s[2] - 9), 0) == 7000]
+    ctx.log(f"air answers on Tank-priced slots: {names(on_tank)}")
+    ctx.check(on_tank, "an Anti-Air or Fighter answer on a Tank-priced slot")
