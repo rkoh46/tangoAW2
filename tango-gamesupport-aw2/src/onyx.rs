@@ -829,6 +829,11 @@ fn rev_frame(core: &mut Core) {
         start_fn(core, LASER_FN);
         return;
     }
+    // (no launch before the design's first day: the allies' foot soldiers
+    // reach the silos on day 1 and would bring the satellite down at once)
+    if day < spec.silo_day as u16 {
+        return;
+    }
     if let Some((x, y)) = foot_soldier_on_silo(core, bh as u8) {
         core.raw_write_16(SILO, -1, x as u16);
         core.raw_write_16(SILO + 2, -1, y as u16);

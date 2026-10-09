@@ -21,10 +21,12 @@ const PAL_RAM: u32 = 0x0500_0000;
 
 /// At the eruption call: the cells it takes now (r0) and its damage (r1).
 pub fn eruption(core: &mut Core) {
-    let Some(v) = crate::ds_campaign::volcano_spec(core) else { return };
+    // (a Volcano on a mission without `volcano` data erupts on no cell: the
+    // game's own list is AW2's own mission's coordinates)
+    let spec = crate::ds_campaign::volcano_spec(core);
     let day = core.raw_read_16(DAY, -1);
     let mut at = CELLS;
-    if v.erupts(day) {
+    if let Some(v) = spec.as_ref().filter(|v| v.erupts(day)) {
         for &(x, y) in v.cells.iter().take(CELLS_LEN) {
             core.raw_write_16(at, -1, x as u16);
             core.raw_write_16(at + 2, -1, y as u16);
@@ -35,7 +37,7 @@ pub fn eruption(core: &mut Core) {
     core.raw_write_16(at + 2, -1, 0);
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, CELLS as i32);
-    cpu.set_gpr(1, v.damage as i32 * 10);
+    cpu.set_gpr(1, spec.as_ref().map_or(0, |v| v.damage as i32 * 10));
 }
 
 /// 16x16 mark: a hollow diamond with a dot, palette indices 1 black, 2 orange, 3 yellow.

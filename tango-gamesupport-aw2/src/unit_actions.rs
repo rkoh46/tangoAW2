@@ -265,6 +265,7 @@ fn behaviour_row(core: &mut Core) {
         return;
     }
     crate::cpu_tactics::cpu_unit(core);
+    crate::custom_campaign::ai_unit(core);
     let u = core.gba().cpu().gpr(4) as u32;
     if let Some(like) = crate::roster::template(core.raw_read_8(u, -1)) {
         let base = core.raw_read_32(CPU_RECORD_POINTER, -1);

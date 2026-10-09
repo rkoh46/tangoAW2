@@ -265,6 +265,11 @@ pub fn set_campaign(core: &mut Core, on: bool, co: u8, team: u8) {
     core.raw_write_8(ARMY5_TEAM, -1, team.wrapping_add(1));
 }
 
+/// The player's pick on the CO screen of a five-army mission (its CO id).
+pub fn set_army5_co(core: &mut Core, co: u8) {
+    core.raw_write_8(ARMY5_CO, -1, co.wrapping_add(1));
+}
+
 /// Whether a custom campaign's five-army mission is on.
 pub fn campaign_on(core: &Core) -> bool {
     core.raw_read_8(FIVE_ON, -1) == FIVE_CAMPAIGN

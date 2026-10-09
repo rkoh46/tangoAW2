@@ -1113,6 +1113,18 @@ fn swap_step(core: &mut Core, s: Stub, b: &Battle) {
             if core.raw_read_8(FRESH, -1) == 1 {
                 // Its deployment, as a battle's start places it (after
                 // `InitMapGameAndGraphics`, the start's script `0x0849D134`).
+                // The unit table and the unit plane start empty: the front
+                // set up leaves text its start decoded (an event's lines) in
+                // the table's first slots (a deployment then skipped them, and
+                // the units drawn from them were boxes of letters) and the
+                // other front's ids in the plane.
+                let base = core.raw_read_32(UNITS_PTR, -1);
+                for i in 0..(12 * 256 / 2) {
+                    core.raw_write_16(base + 2 * i, -1, 0);
+                }
+                for i in 0..0xA10 / 2 {
+                    core.raw_write_16(MAP + 0x12 + 2 * i, -1, 0);
+                }
                 return core.gba_mut().cpu_mut().set_thumb_pc(SPAWN_UNITS);
             }
             core.gba_mut().cpu_mut().set_thumb_pc(RESTORE)

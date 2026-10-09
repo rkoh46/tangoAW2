@@ -562,8 +562,7 @@ def bh_campaign_five_armies(ctx):
     # the four computer armies yield (the player's win by AW2's own rules)
     for a in range(1, 5):
         e.w8(g.player(a)["addr"] + 0x31, 1)
-    e.press("START", 4)
-    e.wait(30)
+    d.end_turn()
     for _ in range(900):
         if d.last_result()["result"] == 1 and d.world_map_up():
             break
@@ -1010,3 +1009,18 @@ def bh_campaign_unit_ammo_and_fuel_on_purpose(ctx):
     ctx.eq([(t["ammo"], t["fuel"]) for t in tanks], [(2, 30)], "the Tank's own ammo and fuel")
     inf = [u for u in g.units() if u["type"] == 1]
     ctx.check(all(u["fuel"] == 99 for u in inf), "the soldiers' fuel is full")
+
+
+@test(modes=("ds",))
+def bh_campaign_an_extra_bond_does_not_count(ctx):
+    """The last bond of the features campaign is an extra (as Crumb's): earned
+    alone it opens no secret mission and shows no legend; with the counted one
+    the secret mission is open and the legend counts 1 of 1."""
+    for mask, want_secret, want_legend in ((1 << 13, 0, False), (1 << 12, 1, True), (3 << 12, 1, True)):
+        e, g, d = boot_features(ctx)
+        d.start_at(won_mask=1, unlocked_mask=1 | mask)
+        d.wait_world_map()
+        e.wait(30)
+        ctx.eq(d.map_flags()[5], want_secret, f"bond bits {mask >> 12:02b}: the secret mission's flag")
+        ctx.eq(any(s[0] == LEGEND_TILE for s in obj_sprites(e)), want_legend, f"bond bits {mask >> 12:02b}: the legend")
+        e.close()

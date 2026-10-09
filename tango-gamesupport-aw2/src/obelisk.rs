@@ -49,6 +49,13 @@ const EMPTY_DEF: u32 = DATA + 0x40;
 /// A 4x4 structure's sprite (AW2's own, `0x0849FA56`: one 64x64 sprite)
 /// drawn from [`SECOND_PICTURE_TILE`] (see [`second_picture`]).
 const SECOND_DEF: u32 = DATA + 0x60;
+/// The Black Factory's sprite when the map also has a Volcano (see
+/// [`factory_with_volcano`]): AW2's own definition (`0x0849FA9A`: three
+/// sprites of the 48-tile picture `0x080D22C4`) drawn from
+/// [`OBELISK_OBJ_TILE`], where the picture is put.
+const FACTORY_DEF2: u32 = DATA + 0x80;
+const FACTORY_DEF: u32 = 0x0849_FA9A;
+const FACTORY_PICTURE: u32 = 0x080D_22C4;
 pub const CRYSTAL_NAME_AT: u32 = DATA + 0x100;
 const PART_NAME_AT: u32 = DATA + 0x500;
 /// The weak point's terrain-panel picture: none (the panel shows the name).
@@ -59,7 +66,7 @@ pub const OBELISK_NAME_AT: u32 = DATA + 0x200;
 const CRYSTAL_PICTURE_AT: u32 = DATA + 0x300;
 const OBELISK_PICTURE_AT: u32 = DATA + 0x400;
 const DATA_SENTINEL: u32 = DATA + 0xFFC;
-const DATA_MAGIC: u32 = 0x384B_4C42; // "BLK8" (bump when the data changes)
+const DATA_MAGIC: u32 = 0x394B_4C42; // "BLK9" (bump when the data changes)
 
 /// OBJ tiles for the sprites in battle (no screen of the battle map writes
 /// 0x176..0x1A5): the Obelisk's 36 tiles, then the Crystal's 8.
@@ -117,11 +124,24 @@ pub fn install(core: &mut Core) {
     let crystal_def: &[u16] = &[0x0001, 0x80F0, 0x8000, tile(CRYSTAL_OBJ_TILE)];
     let empty_def: &[u16] = &[0x0000];
     let second_def: &[u16] = &[0x0001, 0x0000, 0xC000, tile(SECOND_PICTURE_TILE)];
+    let factory_def2: &[u16] = &[
+        0x0003,
+        0x8000,
+        0xC000,
+        tile(OBELISK_OBJ_TILE),
+        0x8000,
+        0x8020,
+        tile(OBELISK_OBJ_TILE + 0x20),
+        0x8020,
+        0x8020,
+        tile(OBELISK_OBJ_TILE + 0x28),
+    ];
     for (at, def) in [
         (OBELISK_DEF, obelisk_def),
         (CRYSTAL_DEF, crystal_def),
         (EMPTY_DEF, empty_def),
         (SECOND_DEF, second_def),
+        (FACTORY_DEF2, factory_def2),
     ] {
         for (i, h) in def.iter().enumerate() {
             core.raw_write_16(at + 2 * i as u32, -1, *h);
@@ -261,6 +281,12 @@ fn sprite(core: &mut Core) {
         cpu.gpr(2) as u32,
         cpu.gpr(14) as u32,
     );
+    if lr == 0x0803_FD5B && def == FACTORY_DEF {
+        if let Some(d) = factory_with_volcano(core) {
+            core.gba_mut().cpu_mut().set_gpr(2, d as i32);
+        }
+        return;
+    }
     if lr == 0x0803_FD27 && def == 0x0849_FA56 {
         if let Some(d) = second_picture(core, x, y) {
             core.gba_mut().cpu_mut().set_gpr(2, d as i32);
@@ -341,6 +367,45 @@ fn second_picture(core: &mut Core, x: u32, y: u32) -> Option<u32> {
         core.raw_write_range(at, -1, &pic[..n]);
     }
     Some(SECOND_DEF)
+}
+
+/// A Black Factory on a map that also stands a Volcano: `LoadInventionGraphics`
+/// (`0x0803FD80`) has one slot for a structure's own picture (`r6`: the header's
+/// 4x4, the Factory's, then the Volcano's, the last present winning), so the
+/// Factory would be drawn from the Volcano's tiles. Its picture is put in
+/// [`OBELISK_OBJ_TILE`]'s 48 tiles (a map with an Obelisk keeps AW2's
+/// drawing) and it is drawn with [`FACTORY_DEF2`].
+fn factory_with_volcano(core: &mut Core) -> Option<u32> {
+    if crate::design::in_map_editor(core) {
+        return None;
+    }
+    let (mut factory, mut volcano) = (false, false);
+    for i in 0..INVENTION_COUNT {
+        let e = INVENTIONS + 8 * i;
+        match (core.raw_read_16(e + 2, -1) >> 6) & 0xF {
+            0 => break,
+            7 => factory = true,
+            2 => volcano = true,
+            _ => {}
+        }
+    }
+    if !(factory && volcano) {
+        return None;
+    }
+    let mut head = [0u8; 4];
+    core.raw_read_range(FACTORY_PICTURE, -1, &mut head);
+    let size = (u32::from_le_bytes(head) >> 8) as usize;
+    let mut comp = vec![0u8; 4 + size * 2];
+    core.raw_read_range(FACTORY_PICTURE, -1, &mut comp);
+    let pic = crate::ds_art::lz10(&comp)?;
+    let n = pic.len().min(48 * 32);
+    let at = 0x0601_0000 + OBELISK_OBJ_TILE * 32;
+    let mut now = vec![0u8; n];
+    core.raw_read_range(at, -1, &mut now);
+    if now[..] != pic[..n] {
+        core.raw_write_range(at, -1, &pic[..n]);
+    }
+    Some(FACTORY_DEF2)
 }
 
 /// The turn-start firing loop (`sub_0803ED60`, the proc in r5), per

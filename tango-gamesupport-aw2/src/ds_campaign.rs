@@ -573,6 +573,7 @@ fn sync_mission(core: &mut Core) {
     core.raw_write_8(MISSION, -1, m as u8);
     core.raw_write_8(MISSION_SET, -1, 1);
     core.raw_write_32(COUNTDOWN, -1, 0);
+    crate::custom_campaign::reset_side(core);
     crate::ds_campaign_rules::mte_start(core);
 }
 
@@ -730,6 +731,10 @@ fn bond_pages(core: &mut Core, session: bool) {
     for (k, &(co, quote)) in c.bonds.iter().enumerate() {
         let row = crate::co_roster::TABLE + 0x104 * co as u32;
         let id = core.raw_read_16(row + 0x2C, -1) as u32;
+        // (a CO the build does not have: no page text to swap)
+        if id == 0 {
+            continue;
+        }
         let slot = data::TEXT_TABLE + 4 * id;
         let now = core.raw_read_32(slot, -1);
         let original = match originals.iter().find(|o| o.0 == slot) {
@@ -813,7 +818,7 @@ pub fn bonds_earned(core: &Core) -> u32 {
 
 /// Every bond of the campaign is earned.
 pub fn bonds_all(core: &Core) -> bool {
-    let n = campaign(core).and_then(|c| c.model.custom.as_ref()).map_or(0, |c| c.bonds.len());
+    let n = campaign(core).and_then(|c| c.model.custom.as_ref()).map_or(0, |c| c.counted);
     n > 0 && bonds_earned(core) & ((1 << n) - 1) == (1 << n) - 1
 }
 
@@ -1303,6 +1308,10 @@ pub fn map_start(core: &mut Core) {
     crate::setup_phase::map_start(core, player_picks(main) && main.native.as_ref().is_none_or(|n| n.setup));
     crate::two_front::map_start(core);
     crate::onyx::map_start(core);
+    // (a battle's first day, the main front: the custom campaign's side table starts empty)
+    if core.raw_read_16(0x0300_4080, -1) <= 1 && !crate::two_front::second_live(core) {
+        crate::custom_campaign::reset_side(core);
+    }
 }
 
 /// The map's look (crate::wasteland): the mission's, or a second front's
@@ -1383,7 +1392,8 @@ fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
         if a > m.armies as u32 || core.raw_read_8(p, -1) == 0 {
             continue;
         }
-        let human = a == player || (a <= 4 && m.cos[a as usize - 1].0 == 0x1C);
+        let five = m.native.as_ref().is_some_and(|n| n.five.is_some());
+        let human = a == player || (!five && a <= 4 && m.cos[a as usize - 1].0 == 0x1C);
         core.raw_write_8(p, -1, if human { 1 } else { 2 });
     }
     // The player's armies: their COs' Campaign sets (crate::co_skills).
