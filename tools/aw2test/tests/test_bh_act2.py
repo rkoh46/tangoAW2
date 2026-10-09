@@ -816,7 +816,7 @@ def bh_act2_m5_parked_aircraft_stay_parked(ctx):
     jets = [u for u in g.units(2) if u["type"] in (16, 17)]
     pos0 = {u["id"]: (u["x"], u["y"]) for u in jets}
     ground = [u for u in g.units(2) if u["type"] not in (16, 17)]
-    for u in ground[1:]:
+    for u in ground:
         d.remove_unit(u)           # (nothing else of Green Earth's to strike the Recon)
     recon = next(u for u in g.units(1) if u["type"] == 6)
     d.place_unit(recon, jets[0]["x"], jets[0]["y"] + 1)
