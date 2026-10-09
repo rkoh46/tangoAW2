@@ -520,6 +520,10 @@ pub enum Action {
     /// An army's CO becomes this one (the second stage of a mission: Nell,
     /// then Andy; keep the power meter as it is).
     SetCo { army: u8, co: u8 },
+    /// The same army goes on under another CO (the second stage: Nell, then Andy): no power in
+    /// effect, `co`'s own meter at `meter_pct` percent of its first power's bar, no power used
+    /// ([`crate::tag::replace_co`]; works with or without a tag pair, deterministic).
+    TakeOver { army: u8, co: u8, meter_pct: u8 },
     /// AW2's meteor strike (Von Bolt's Ex Machina) of `hp` on the spot the
     /// CPU's scorer picks best for the army whose turn it is now (the
     /// player's, at a turn-start trigger: the Black Onyx turned on the
@@ -609,6 +613,10 @@ pub struct MissionDef {
     pub onyx: Option<OnyxDef>,
     /// A neutral volcano hazard (needs a `Structure::Volcano` on the map).
     pub volcano: Option<VolcanoDef>,
+    /// An HQ whose capture does not defeat its army: the army has a second HQ (the map's `Q` tile),
+    /// and the capture is the mission's first stage (a trigger on `OwnerAt` plays the second: the
+    /// same army, a new CO, reserves). Whoever captures it, it only changes hands.
+    pub held_hq: Option<(u8, u8)>,
 }
 
 impl MissionDef {
@@ -642,6 +650,7 @@ impl MissionDef {
             setup: true,
             onyx: None,
             volcano: None,
+            held_hq: None,
         }
     }
 }
@@ -779,6 +788,8 @@ pub const RESTORE_ARMY: u32 = 0xBC60_0000;
 pub const STRIKE: u32 = 0xBC70_0000;
 pub const SET_CO: u32 = 0xBC80_0000;
 pub const CUSTOM_FN: u32 = 0xBC90_0000;
+/// [`TAKE_OVER`] | army: the army's CO is replaced (arg: CO | meter percent << 8).
+pub const TAKE_OVER: u32 = 0xBCA0_0000;
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
 /// (but AW2's Hard flag, [`FLAG_HARD`]).
 pub const FLAG_FIRST: u8 = 0x20;
@@ -1127,6 +1138,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
         volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
+        held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
         secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
     };
     built.unhandled.clear();
@@ -1272,6 +1284,10 @@ fn compile_mission(
                 }
                 Action::SetCo { army, co } => {
                     let s = cx.stub(Magic::Call(SET_CO | *army as u32, *co as u32));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                Action::TakeOver { army, co, meter_pct } => {
+                    let s = cx.stub(Magic::Call(TAKE_OVER | *army as u32, *co as u32 | (*meter_pct as u32) << 8));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
                 Action::Strike { hp } => {
@@ -1777,6 +1793,12 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
         Magic::Call(f, co) if f & 0xFFF0_0000 == SET_CO => {
             let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * (f & 0xF);
             core.raw_write_8(p + 0x1D, -1, co as u8);
+            0
+        }
+        Magic::Call(f, arg) if f & 0xFFF0_0000 == TAKE_OVER => {
+            let (army, co, pct) = (f & 0xF, (arg & 0xFF) as u8, arg >> 8);
+            let charge = crate::tag::cop_cost(core, co, 0) * pct / 100;
+            crate::tag::replace_co(core, army, co, charge);
             0
         }
         Magic::Call(f, _) if f & 0xFFF0_0000 == CUSTOM_FN => {

@@ -9,11 +9,11 @@ from aw2test.harness import test
 
 GMAP = 0x0201E450
 DS_TABLE = 0x08E00000
-ALL = (1 << 11) - 1   # every roster CO unlocked
+ALL = (1 << 10) - 1   # every roster CO but Sonja (the secret mission's recruit: with her the CO screen has a second country tab and the partner pick cannot reach the Black Hole tab)
 # number: (title, won mask, CO picks, armies: (colour, CO), map size, day limit)
 MISSIONS = {
     29: ("The Orange Gate", a5.WON(3), [bh.STURM], [(5, bh.STURM), (1, None)], (34, 28), 32),
-    30: ("Nell's Stand", a5.WON(4), [bh.STURM, bh.SONJA], [(5, None), (1, None), (1, 1)], (36, 28), 34),
+    30: ("Nell's Stand", a5.WON(4), [bh.STURM, bh.CLONE_ANDY], [(5, None), (1, None), (1, 1)], (36, 28), 34),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 

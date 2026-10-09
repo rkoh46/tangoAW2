@@ -149,6 +149,11 @@ const CAPTURED_DONE: u32 = 0x0804_2834;
 const CAPTURE_CELL: u32 = 0x0300_3100;
 fn captured(core: &mut Core) {
     let (x, y) = (core.raw_read_16(CAPTURE_CELL, -1) as u32, core.raw_read_16(CAPTURE_CELL + 2, -1) as u32);
+    // A custom mission's held HQ (the BH Campaign's Great Hall): its capture defeats nobody.
+    if crate::ds_campaign::held_hq(core) == Some((x as u8, y as u8)) {
+        core.gba_mut().cpu_mut().set_thumb_pc(CAPTURED_DONE);
+        return;
+    }
     // A DS Campaign mission's research lab is a Lab (crate::ds_campaign).
     if active(core) && core.gba().cpu().gpr(0) as u8 == LAB && !crate::ds_campaign::is_lab_cell(core, x, y) {
         core.gba_mut().cpu_mut().set_thumb_pc(CAPTURED_DONE);

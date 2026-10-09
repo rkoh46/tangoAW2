@@ -384,6 +384,29 @@ pub fn form_pair(core: &mut Core, army: u32, co: u8, charge: u32) {
     core.raw_write_range(r + P_SKILLS, -1, &bits);
 }
 
+/// Army `army`'s active CO is replaced by `co` (the same army goes on: a mission's second stage,
+/// Nell then Andy): no power in effect, the new CO's own meter (`charge`, AW2's units), no power
+/// used yet, its skills. Works with or without a tag pair.
+pub fn replace_co(core: &mut Core, army: u32, co: u8, charge: u32) {
+    if !valid_army(army) {
+        return;
+    }
+    power_off(core, army);
+    let p = player(core, army);
+    core.raw_write_8(p + PL_CO, -1, co);
+    core.raw_write_32(p + PL_CHARGE, -1, charge.min(scop_cost(core, co, 0)));
+    core.raw_write_8(p + PL_USES, -1, 0);
+    core.raw_write_8(p + PL_ANNOUNCE, -1, 0);
+    let mut bits = [0u8; 6];
+    for id in crate::co_skills::ids_for(core, army, co) {
+        if (crate::co_skills::FIRST..=crate::co_skills::LAST).contains(&id) {
+            let bit = (id - crate::co_skills::FIRST) as usize;
+            bits[bit / 8] |= 1 << (bit % 8);
+        }
+    }
+    core.raw_write_range(crate::co_skills::ACTIVE + 6 * (army - 1), -1, &bits);
+}
+
 /// The army leaves its pair (its active CO stays).
 pub fn break_pair(core: &mut Core, army: u32) {
     if valid_army(army) {

@@ -18,6 +18,7 @@ then its rows, one character per tile:
   1..5    the HQ of army 1..5 (Orange Star, Blue Moon, Green Earth,
           Yellow Comet, Black Hole)
   B C A P base, city, airport, port of the army whose HQ is nearest
+  Q       a second HQ of the army whose HQ is nearest (the BH Campaign's Rail Yard)
   b c a p neutral base, city, airport, port
   Black Hole's inventions (theirs by the game's rules), each at its anchor,
   with # over the rest of its footprint:
@@ -287,9 +288,10 @@ def lay(m, edge):
             elif c in '12345':
                 tiles[y][x] = PROPS['H'][int(c)]
                 counts[int(c)] += 1
-            elif c in 'BCAPT':
+            elif c in 'BCAPTQ':
+                # (Q: a second HQ tile of the army whose HQ is nearest: the BH campaign's Rail Yard)
                 o = owner(x, y)
-                tiles[y][x] = PROPS[c][o]
+                tiles[y][x] = (PROPS['H'][o] if c == 'Q' else PROPS[c][o])
                 counts[o] += 1
             elif c in 'bcapt':
                 tiles[y][x] = PROPS[c.upper()][0]

@@ -87,6 +87,8 @@ pub struct Custom {
     pub onyx: Vec<Option<OnyxDef>>,
     /// Per mission: a volcano hazard.
     pub volcano: Vec<Option<VolcanoDef>>,
+    /// Per mission: an HQ whose capture does not defeat its army (the army has another HQ).
+    pub held_hq: Vec<Option<(u8, u8)>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,

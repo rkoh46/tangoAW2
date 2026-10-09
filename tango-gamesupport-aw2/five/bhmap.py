@@ -57,7 +57,7 @@ UNIT_NAMES = {1: 'Infantry', 2: 'Mech', 3: 'Md Tank', 4: 'Megatank', 5: 'Tank', 
               15: 'Missiles', 16: 'Fighter', 17: 'Bomber', 18: 'Black Boat', 19: 'B Copter', 20: 'T Copter',
               21: 'Battleship', 22: 'Cruiser', 23: 'Lander', 24: 'Submarine'}
 STRUCTURE = set('SNWELvnFVDXO#')
-LAND_PROPS = set('HBCAPbcapTt12345')
+LAND_PROPS = set('HBCAPbcapTt12345Q')
 
 
 def passable(c, cls, around=''):
