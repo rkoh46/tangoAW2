@@ -11,7 +11,7 @@ from aw2test import ram
 from aw2test.harness import test
 
 APC = 7
-DOCK = (38, 12)            # a dock tile (the dock's land is x 38..39, y 11..13)
+DOCK = (38, 10)            # a dock tile (the dock's land is x 38..39, y 9..11)
 BH_HQ = (3, 20)
 WON = list(range(1, 31))
 ROSTER = 0xFFF | (0x1FF << 12)
@@ -49,7 +49,12 @@ def to_sonjas_turn(e, g, d):
 
 def move(e, g, d, frm, to, want="wait"):
     g.select(*frm)
-    g.move_to(*to)
+    if frm == to:                                      # (a unit that stays: the cursor back on it, then A)
+        g.goto(*to)
+        e.press("A", 6)
+        g.wait_menu(g.ACTION_MENU)
+    else:
+        g.move_to(*to)
     names = g.menu()["names"]
     g.choose(next(n for n in names if n.lower().startswith(want)), g.ACTION_MENU)
     e.wait(20)
@@ -79,7 +84,7 @@ def focus_on(e, x, y, w=43, h=29):
 
 def truck_on_dock(g):
     g._units_base = g._players_base = None
-    return next((u for u in g.units() if u["army"] == 2 and u["type"] == APC and DOCK[0] <= u["x"] <= 40 and 11 <= u["y"] <= 13), None)
+    return next((u for u in g.units() if u["army"] == 2 and u["type"] == APC and DOCK[0] <= u["x"] <= 40 and 9 <= u["y"] <= 11), None)
 
 
 def dock_pre(name):
@@ -135,7 +140,7 @@ def dock(ctx, e, g, d, t, near):
     d.place_unit(t, *near)
     g._units_base = g._players_base = None
     scout = next(u for u in g.units() if u["army"] == 1 and u["type"] == 6)        # a Black Hole Recon watches the dock (fog: else the truck is not seen)
-    d.place_unit(scout, 35, 12)
+    d.place_unit(scout, 36, 10)
     a5.end_turn(e, g, d)
 
 
@@ -150,13 +155,13 @@ def case(n, fn):
 
 def lose1a(ctx, e, g, d):
     t = trucks(g)[0]                                   # truck A
-    dock(ctx, e, g, d, t, (37, 9))
+    dock(ctx, e, g, d, t, (37, 8))
     ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1a", pre=dock_pre("m31_lose1a_pre")), 2, "truck A marches onto a dock tile: the mission is lost")
 
 
 def lose1b(ctx, e, g, d):
     t = trucks(g)[1]                                   # truck B
-    dock(ctx, e, g, d, t, (37, 15))
+    dock(ctx, e, g, d, t, (37, 14))
     ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1b", pre=dock_pre("m31_lose1b_pre")), 2, "truck B marches onto a dock tile: the mission is lost")
 
 
@@ -164,8 +169,8 @@ def lose1c(ctx, e, g, d):
     to_day(e, g, d, 3)                                 # truck C is spawned on day 3
     ts = trucks(g)
     ctx.eq(len(ts), 3, "three trucks from day 3")
-    c = next(u for u in ts if (u["x"], u["y"]) == (24, 11))
-    dock(ctx, e, g, d, c, (37, 15))
+    c = next(u for u in ts if (u["x"], u["y"]) == (24, 9))
+    dock(ctx, e, g, d, c, (37, 12))
     ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1c", pre=dock_pre("m31_lose1c_pre")), 2, "truck C marches onto a dock tile: the mission is lost")
 
 
@@ -175,8 +180,8 @@ def lose2(ctx, e, g, d):
     a = g.unit_addr(t["id"]) + 4
     e.w16(a, (e.u16(a) & ~0x7F) | 10)                  # 1 HP
     esc = next(u for u in g.units() if u["army"] == 2 and u["type"] == 1)
-    d.place_unit(esc, 36, 9)                           # an escort beside it
-    dock(ctx, e, g, d, t, (37, 9))
+    d.place_unit(esc, 36, 8)                           # an escort beside it
+    dock(ctx, e, g, d, t, (37, 8))
     ctx.eq(banner_picture(ctx, e, g, d, "m31_lose2", pre=dock_pre("m31_lose2_pre")), 2, "a 1 HP truck with an escort marches onto a dock tile: the mission is lost")
 
 
@@ -186,7 +191,7 @@ def lose3(ctx, e, g, d):
     ctx.eq(len(ts), 3, "three trucks")
     d.remove_unit(ts[0]); d.remove_unit(ts[1])         # two destroyed (a test aid)
     ctx.eq(e.u8(dc.LAST_RESULT), 0, "two trucks gone and one alive: nothing is decided yet (no partial win)")
-    dock(ctx, e, g, d, ts[2], (37, 15))
+    dock(ctx, e, g, d, ts[2], (37, 12))
     ctx.eq(banner_picture(ctx, e, g, d, "m31_lose3", pre=dock_pre("m31_lose3_pre")), 2, "two trucks destroyed, the third docks: still a loss")
 
 
@@ -213,7 +218,7 @@ def win4(ctx, e, g, d):
     ctx.eq(r, 1, "all three trucks destroyed: victory")
 
 
-STARTS = {65: (19, 5), 68: (19, 20), 104: (24, 11)}   # (the trucks' start cells, by unit id)
+STARTS = {65: (9, 2), 68: (16, 16), 104: (24, 9)}   # (the trucks' start cells, by unit id)
 
 
 def lose5(ctx, e, g, d):
@@ -244,15 +249,15 @@ def lose5(ctx, e, g, d):
 
 
 def lose6(ctx, e, g, d):
-    # a Yellow Comet Infantry captures Black Hole's HQ (two turns of capture)
+    # A Yellow Comet Infantry captures Black Hole's HQ: it stands on it with a turn of capture already done (a test aid: the capture
+    # points, bits 11..15 of the record's +4 word, are 10) and takes it with a real Capt.
     inf = next(u for u in g.units() if u["army"] == 2 and u["type"] == 1)
     sonja_from_the_pad(e, g)
     to_sonjas_turn(e, g, d)
     d.place_unit(inf, *BH_HQ)
-    move(e, g, d, BH_HQ, BH_HQ, want="capt")
-    ctx.eq(e.u8(dc.LAST_RESULT), 0, "one turn of capture: not yet")
-    a5.next_turn(e, g, d)
-    to_sonjas_turn(e, g, d)
+    a = g.unit_addr(inf["id"]) + 4
+    e.w16(a, (e.u16(a) & 0x07FF) | (10 << 11))
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "before the last turn of capture: not yet")
     move(e, g, d, BH_HQ, BH_HQ, want="capt")
     ctx.eq(banner_picture(ctx, e, g, d, "m31_lose6"), 2, "Black Hole's HQ captured: defeat")
 
@@ -283,6 +288,7 @@ def _difficulty(how, seed=None):
         bhn = {}
         fast = {}
         adv = {}
+        hurt = {}
         days = []
 
         def sample(msg=None):
@@ -294,6 +300,7 @@ def _difficulty(how, seed=None):
                     s[1], s[2] = day, (u["x"], u["y"])
             bhn[day] = sum(1 for u in g.units() if u["army"] == 1)      # (the last look of the day)
             fast[day] = sorted((u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["army"] == 1 and u["type"] in (6, 5, 19, 3, 8))
+            hurt[day] = sum(1 for u in g.units() if u["army"] == 2 and u["hp"] < 100 and (abs(u["x"] - 27) <= 9 and (3 <= u["y"] <= 15 or 11 <= u["y"] <= 23)))
             adv[day] = sorted((u["type"], u["x"], u["y"]) for u in g.units() if u["army"] == 2 and u["type"] in (8, 5))
             days.append(msg)
         if how == "nothing":
@@ -329,6 +336,7 @@ def _difficulty(how, seed=None):
             r = d.autoplay(14, log=sample) if how == "cpu" else d.play(14, log=sample, **opts)
         r["trucks"] = {k: {"first_day": v[0], "last_day": v[1], "last_cell": v[2], "docked": 38 <= v[2][0] <= 40 and 11 <= v[2][1] <= 13} for k, v in seen.items()}
         r["bh_units_by_day"] = bhn
+        r["sonja_hurt_in_cannon_reach"] = hurt
         r["sonja_advancers"] = {k: v for k, v in adv.items() if k in (1, 3, 5, 8)}
         r["bh_fast_units"] = {k: v for k, v in fast.items() if k in (2, 4, 6, 8)}
         ctx.log("DIFFICULTY " + how + " " + json.dumps(r, default=str))

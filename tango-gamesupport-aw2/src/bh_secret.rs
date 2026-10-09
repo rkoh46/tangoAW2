@@ -13,16 +13,16 @@ use crate::bh_act5b::{built_units, meter, roles, text};
 use crate::custom_campaign::{co, colour, unit, *};
 
 /// The dock tiles: one truck here and the heist is lost.
-const DOCK: Rect = Rect::new(38, 11, 40, 13);   // (the dock's land is x 38..39; x 40 is the sea beside it)
-/// Where truck C appears on day 3: the ford road's east side, behind the blocking Tank at (23,11).
-const TRUCK_C: (u8, u8) = (24, 11);
+const DOCK: Rect = Rect::new(38, 9, 40, 11);   // (the dock's land is x 38..39; x 40 is the sea beside it)
+/// Where truck C appears on day 3: the ford road's east side (C's first leg).
+const TRUCK_C: (u8, u8) = (24, 9);
 const TRUCKS: [&str; 3] = ["vault1", "vault2", "vault3"];
 
-/// The trucks' roads, as corner points (`five/bh/bh31.txt`): A the north switchbacks (52 move points from its start to the
-/// dock), B the south serpentine (55), C the ford road and its two legs (39, from day 3).
-const A_ROAD: [(u8, u8); 11] = [(19, 5), (25, 5), (25, 1), (36, 1), (36, 4), (27, 4), (27, 7), (36, 7), (37, 7), (37, 12), (38, 12)];
-const B_ROAD: [(u8, u8); 8] = [(19, 20), (35, 20), (35, 23), (26, 23), (26, 25), (37, 25), (37, 12), (38, 12)];
-const C_ROAD: [(u8, u8); 9] = [(24, 11), (35, 11), (35, 14), (28, 14), (28, 17), (36, 17), (37, 17), (37, 12), (38, 12)];
+/// The trucks' roads, as corner points (`five/bh/bh31.txt`): A the hill switchbacks and the east leg (55 move points from its start to the
+/// dock), B the south serpentine (56), C the middle zone's three legs (41, from day 3).
+const A_ROAD: [(u8, u8); 9] = [(9, 2), (18, 2), (18, 4), (9, 4), (9, 6), (20, 6), (37, 6), (37, 10), (38, 10)];
+const B_ROAD: [(u8, u8); 9] = [(16, 16), (34, 16), (34, 18), (24, 18), (24, 20), (34, 20), (37, 20), (37, 10), (38, 10)];
+const C_ROAD: [(u8, u8); 9] = [(24, 9), (34, 9), (34, 11), (24, 11), (24, 13), (34, 13), (37, 13), (37, 10), (38, 10)];
 
 /// Every cell of a road given by its corners.
 fn cells(corners: &[(u8, u8)]) -> Vec<(u8, u8)> {
@@ -69,7 +69,7 @@ fn bh31() -> MissionDef {
     m.units = roles(
         built_units("bh31"),
         1,
-        &[(19, 5), (20, 4), (18, 4), (19, 20), (20, 21), (18, 21), (23, 1), (24, 1), (30, 0), (31, 0), (37, 3), (35, 2), (37, 4), (29, 3), (32, 9), (24, 19), (25, 19), (36, 20), (36, 21), (27, 22), (30, 24), (31, 24), (34, 24), (23, 11), (23, 12), (29, 10), (30, 10), (34, 12), (29, 16), (30, 16), (34, 13), (30, 9), (33, 18), (41, 10), (35, 27)],
+        &[(9, 2), (10, 1), (8, 3), (16, 16), (17, 15), (15, 17), (14, 3), (17, 5), (19, 3), (19, 7), (24, 4), (25, 4), (30, 3), (30, 4), (33, 4), (35, 5), (31, 7), (22, 10), (25, 5), (31, 12), (36, 11), (36, 8), (20, 13), (24, 17), (25, 22), (36, 18), (29, 19), (30, 22), (37, 22), (36, 14), (36, 7), (30, 8), (32, 15), (41, 10), (35, 27)],
     )
     .into_iter()
     .map(|u| if u.name.is_some() { u.fuel(0) } else { u })
@@ -80,11 +80,13 @@ fn bh31() -> MissionDef {
         MarchDef::speed("vault2", &cells(&B_ROAD), 6),
         MarchDef::speed("vault3", &cells(&C_ROAD), 6).from(3),
     ];
-    // The two Black Cannons (ours; they reach nine columns either side and twelve rows down, never the dock) are jammed until
-    // day 3: restored on day 3 they fire from day 4.
+    // The two Black Cannons (ours: (27,3) facing south over the east leg and the middle zone, (27,23) facing north over the south
+    // and middle zones; they reach nine columns either side and twelve rows, never the dock) are jammed until
+    // day 4 and fire from day 4's Black Hole turn (measured with the fog off: first hits on day 4; with `DayAtLeast(3)` they
+    // fired on day 3). In the fog a cannon only fires at what Black Hole sees.
     m.jams = vec![
-        JamDef { at: (25, 9), until: Cond::DayAtLeast(3) },
-        JamDef { at: (25, 14), until: Cond::DayAtLeast(3) },
+        JamDef { at: (26, 2), until: Cond::DayAtLeast(4) },
+        JamDef { at: (26, 22), until: Cond::DayAtLeast(4) },
     ];
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
