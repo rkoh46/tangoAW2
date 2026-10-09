@@ -93,10 +93,8 @@ def check_load(ctx, n):
         ctx.eq(sorted([g.player(1)["co"], other]), sorted(pair), f"M{n}: the two COs lead the main army and its partner (or the second front)")
     lead = NAMES[g.player(1)["co"]]
     if n == 8:
-        # ENGINE GAP (reported): in M8 the second front's CO is not the tag partner (tag::partner is None), so the
-        # [CO2] row of m08_pre ("And I take the dusk gate...") is skipped by Cond::PartnerCo and never shown.
-        want = bhtext.shown("m08_pre", lead, None)
-        ctx.log(f"M8: [CO2] row of m08_pre not shown (tag partner {tag.partner(e, 1)})")
+        # (the second front's CO counts as the partner for the scenes: Cond::PartnerCo)
+        want = bhtext.shown("m08_pre", lead, NAMES[e.u8(tf.SECOND_COS)])
     elif pair:
         want = bhtext.shown(f"m{n:02d}_pre", lead, NAMES[tag.partner(e, 1)["co"]])
     else:

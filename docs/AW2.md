@@ -2008,6 +2008,16 @@ in their acts' files, no engine code needed. A sequel
 ("BH2") or any other campaign is another `CampaignDef` and another entry of
 `campaign_model::SOURCES`.
 
+**The dialogue** is not in the Rust: every scene is a keyed block of rows in `tango-gamesupport-aw2/src/bh_text/*.txt`
+(one row is one dialogue box, up to two lines of 176 pixels in AW2's font; format in `bh_text/README.txt`, parsed by
+`bh_text.rs`). `@IF`, `@OTHER`, `@WITH`, `@PARTNER` and `@BOND` groups, `[CO]` and `[CO2]` rows become the `Line`'s
+`only`, `with`, `partner` and `bond` conditions. The compiler merges a run of boxes by one speaker into one text (up to six
+boxes) and shares equal texts, so the 3,072 text ids (`0x7400..=0x7FFF`) go far; `bh_campaign::text_ids_stay_inside_the_budget`
+and the `bh_text_budget` test fail when the ids or the data region (`0x08F00100..0x08FC0000`) run short. `tools/bhtext/lint.py`
+checks every box against the font and the voice rules; `tools/bhtext/BIBLE.md` is the writers' brief. A second front's CO counts
+as the player's partner for the scenes (`two_front::second_front_co`). `CoSpec::PickPartner(lead)` (M30): the lead is fixed and the
+CO screen asks for the partner only.
+
 **What changed in the engine.** The engine plays a `Model`
 (`campaign_model.rs`), and there can now be several: `SOURCES` has the DS
 Campaign (0) and the BH Campaign (1), at most four. The chooser's choice is
