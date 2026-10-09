@@ -228,6 +228,16 @@ fn mission_start(core: &mut Core) {
         return;
     }
     let index = core.raw_read_8(MISSION, -1) as usize;
+    // A replay (Free Play) plays the mission's triggers again: the once-latches
+    // its first win left in the record are lifted for the battle (the end of
+    // the battle puts the record's flags back, `end_of_battle`).
+    if campaign(core).is_some_and(|c| c.model.custom.is_some()) && won(core, index as u8) {
+        for id in crate::custom_campaign::FLAG_FIRST as u32..=crate::custom_campaign::FLAG_LAST as u32 {
+            if id != HARD_FLAG {
+                clear_campaign_flag(core, id);
+            }
+        }
+    }
     let five = campaign(core).and_then(|c| c.model.built.missions.get(index)).and_then(|m| m.native.as_ref()).and_then(|n| n.five);
     match five {
         Some((co, _, team)) => crate::five::set_campaign(core, true, co, team),

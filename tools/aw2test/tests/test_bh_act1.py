@@ -319,6 +319,35 @@ def bh_act1_m1_crystal_scene_loot_sale_and_day_seven(ctx):
 
 
 @test(modes=("ds",))
+def bh_act1_m1_replay_plays_its_triggers_again(ctx):
+    """Free Play: replaying M1 after winning it (its once-latch flags are set in the
+    record) still shows day 3's scene and sends day 4's Md Tanks, and the record's
+    flags are as they were afterwards."""
+    e, g, d = boot(ctx)
+    d.start_at(won_mask=(1 << 30) - 1, unlocked_mask=1)
+    d.wait_world_map()
+    for at in (dc.P_FLAGS, 0x0203FD20):          # (the latches M1's triggers set when it was won)
+        e.w8(at, 0x07)
+    d.pick_mission()
+    d.choose_cos(PICKS[0], prefs=[bh.STURM])
+    d.wait_map()
+    g._units_base = g._players_base = None
+    ctx.eq(d.mission(), 0, "mission 1 replayed")
+    ctx.eq(e.u8(0x0203FD20), 0, "the latches lifted for the replay")
+    exp = scenes()
+    recon = next(u for u in g.units(army=1) if u["type"] == 6)
+    d.place_unit(recon, 6, 5)
+    texts = []
+    pass_turn(e, g, d, texts)
+    pass_turn(e, g, d, texts)
+    ctx.eq(texts, exp["m01_day3"], "day 3's scene shows again in the replay")
+    mds = len([u for u in g.units(army=2) if u["type"] == 3])
+    pass_turn(e, g, d, [])
+    ctx.check(len([u for u in g.units(army=2) if u["type"] == 3]) >= mds + 2, "day 4: the loot sale again")
+    e.close()
+
+
+@test(modes=("ds",))
 def bh_act1_m1_lose_conditions(ctx):
     """M1 is lost when the army is routed and when Sturm's HQ is taken (the days
     do not run out: bh_act1_no_day_limit)."""
