@@ -11,10 +11,10 @@
 //! **Roles of Orange Star's units** (the AI byte, [`UnitDef::ai`]: 0 stays and still fires, 1 goes for
 //! the enemy HQ, 3 for the enemy's properties, 4 at the nearest enemy units). The army pushes: its
 //! foot soldiers take the camp's properties (3), its armour and air strike at the nearest enemy (4),
-//! its Megatanks and, in M29, Neotanks drive for the HQ (1). A deliberate minority holds (0): the
-//! guns behind the walls (Artillery, Missiles, Anti-Air: they fire at whatever crosses but do not walk
-//! into the moat's kill zone), the infantry on the wall tops beside the gates, and the keep's guard
-//! (M30: a Neotank and two Infantry in the Centre Bailey; M29: the Gate's foot guard).
+//! its Megatanks and, in M29, Neotanks drive for the HQ (1), and the indirects (Artillery, Rockets, Missiles) and
+//! Anti-Air follow the nearest enemy (4). M29 holds nobody. M30's deliberate minority holds (0): the infantry on the
+//! wall tops beside the gates, the keep's guard (a Neotank and two Infantry in the Centre Bailey) and the heavy
+//! armour until its release day.
 //! What the CPU builds, and the stage-two reserves (Andy's wall), get the CPU's own roles.
 
 // (the builders' imports: each act uses what it needs)
@@ -106,12 +106,10 @@ fn role29(army: u8, kind: u8, x: u8, y: u8) -> u8 {
     if army != 2 {
         return 0;
     }
-    // The Gate's foot guard holds the gateway; guns and Anti-Air stay behind the wall.
-    let gate_guard = kind == unit::INFANTRY && matches!((x, y), (16, 17) | (17, 17) | (18, 17) | (17, 21));
+    // Nobody holds: the Gate's foot guard and the guns march too (foot soldiers capture, indirects and Anti-Air follow the
+    // nearest enemy), the Neotanks and Megatanks drive for the HQ.
+    let _ = (x, y);
     match kind {
-        unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR => 0,
-        unit::ROCKETS if matches!((x, y), (12, 22) | (22, 22)) => 0,
-        unit::INFANTRY if gate_guard => 0,
         unit::INFANTRY | unit::MECH => 3,
         unit::NEOTANK | unit::MEGATANK => 1,
         _ => 4,
@@ -187,7 +185,6 @@ fn role30(army: u8, kind: u8, x: u8, y: u8) -> u8 {
     let wall_top = kind == unit::INFANTRY && y == 11;
     let keep_guard = (kind == unit::INFANTRY && matches!((x, y), (13, 8) | (23, 8))) || (kind == unit::NEOTANK && (x, y) == (16, 8));
     match kind {
-        unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR => 0,
         _ if wall_top || keep_guard => 0,
         // the heavy armour waits (role 0) from day 7 on ([`release`]): the first wave is foot soldiers Tanks,
         // Rockets and aircraft

@@ -3625,8 +3625,7 @@ a game saved over netplay the same on both peers.
   under its footprint to the map's bottom edge, 8 HP each. Starting layouts keep every friendly off every beam, and
   the intros warn the player (Hawke).
 - **AI roles of Orange's units** (`UnitDef::ai`: 0 stays and fires, 1 the enemy HQ, 3 enemy properties, 4 nearest
-  enemy units; `.hold()` is role 1): the army pushes; the minority that holds is the guns, Anti-Air and the gate
-  guards (documented in the file's header). A CPU run shows 37 of 50 units leave their start cells by day 2.
+  enemy units; `.hold()` is role 1): the army pushes (foot soldiers capture, armour, air, indirects and Anti-Air attack, Neotanks and Megatanks go for the HQ). M29 holds nobody; M30 holds only the wall-top and keep infantry and the heavy armour until its release day. Both armies stop buying at the engine's 50-unit cap (M29's 55000+ unspent funds are that cap, not a bug). M31's units hold or march by design; its one port builds a Lander that sits on the port (nothing else to build with 4000 a day). `bh_cpu_m2x_the_enemy_acts` (test_bh_cpu_act5.py) logs moves, roles, captures and funds per day.
 - **Start of the battle.** Nothing may be hit before the player moves: a unit starts out of every structure's reach. Measured (M30,
   `bh_act5_m30_cannon_reach_probe`): a Black Cannon reaches roughly nine columns either side of itself and twelve rows up from
   its row; a Laser takes its whole row and column; a minicannon its line. M30's Orange army therefore starts on rows 9 and up
