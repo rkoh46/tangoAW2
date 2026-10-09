@@ -367,9 +367,14 @@ def bh_act4_m21_column_starts_low_and_the_convoy_comes(ctx):
         ctx.check(got.get(t) and ok, f"type {t}: ammo {ammo}, fuel {fuel} (got {got.get(t)})")
     a2.pic(ctx, e, "m21_start")
     apcs = lambda: [u for u in g.units(1) if u["type"] == 7]
-    ctx.eq(len(apcs()), 0, "no APC at the start")
+    # the APC on the HQ (2, 10) and the two Infantry beside the base start full (ammo and fuel as the type's own)
+    ctx.eq([(u["x"], u["y"]) for u in apcs()], [(2, 10)], "one APC at the start, on the HQ")
+    home = [u for u in g.units(1) if u["type"] in (1, 7) and u["x"] <= 3]
+    ctx.log(str([(u["type"], u["x"], u["y"], u["hp"], u["ammo"], u["fuel"]) for u in home]))
+    ctx.eq(sorted((u["type"], u["x"], u["y"]) for u in home), [(1, 3, 9), (1, 3, 11), (7, 2, 10)], "the APC and two Infantry at the base")
+    ctx.check(all(u["hp"] == 100 and u["fuel"] in (70, 99) for u in home), "the new units: full HP and fuel")
     a2.to_day(e, g, d, 3)
-    ctx.eq([(u["x"], u["y"]) for u in apcs()][:1] and len(apcs()), 1, "convoy A's APC on day 3")
+    ctx.eq(len(apcs()), 2, "convoy A's APC on day 3 (and the one from the start)")
     a2.to_day(e, g, d, 6)
     ctx.check(len(apcs()) >= 2, f"convoy B's APCs on day 6 ({len(apcs())})")
     e.close()
