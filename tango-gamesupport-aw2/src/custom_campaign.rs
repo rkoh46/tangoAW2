@@ -1426,8 +1426,7 @@ fn compile_mission(
     let units = cx.built.add(&units_bytes);
     let name_id = cx.text(crate::ds_campaign_data::plain(m.title.as_bytes()))?;
     let info_text = cx.text(crate::ds_campaign_data::two_lines(m.objective.as_bytes(), cx.widths))?;
-    // A recruit mission's panel shows the bond badge once its bond is earned
-    // (crate::bond_ui).
+    // A recruit mission's panel shows the bond badge once its bond is earned (crate::bond_ui).
     for a in m.triggers.iter().flat_map(|t| t.then.iter()).chain(m.on_win.iter()) {
         {
             if let Action::EarnBond(k) = a {

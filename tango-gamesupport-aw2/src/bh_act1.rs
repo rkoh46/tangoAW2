@@ -26,22 +26,18 @@ const TROOPER: u8 = 23;
 fn m01_pre() -> Scene {
     Scene::new(vec![
         Line::narrate("Cinder Coast. Dawn.\rThe first storm in years."),
-        Line::feel(
-            TROOPER,
-            Mood::Happy,
-            "Landing complete, sir!\rLost two boots. Only two!",
-        ),
+        Line::feel(TROOPER, Mood::Happy, "Landing complete, sir!\rLost two boots. Only two!"),
         Line::say(co::STURM, "Boots are replaceable.\rReport."),
         Line::say(TROOPER, "Green tanks on the ridge,\rgreen flags on the walls."),
         Line::feel(TROOPER, Mood::Sad, "Even the cook's apron\rwas green, sir. I checked."),
-        Line::say(co::STURM, "Green Earth holds nothing\ron this coast."),
+        Line::say(co::STURM, "Green Earth holds nothing\rhere. This coast is mine."),
         Line::say(TROOPER, "Then why do they fly\rtheir flag over our ruins?"),
         Line::say(co::VON_BOLT, "Kehh-heh! Who walks\rmy beach unannounced?"),
         Line::say(co::VON_BOLT, "A storm in a coat!\rThe rumours were true."),
         Line::say(co::STURM, "Von Bolt. You are older\rthan the rumours."),
         Line::say(co::VON_BOLT, "And richer! Tanks, paint,\rall bought cheap!"),
         Line::say(co::VON_BOLT, "Want my coast? Then\ryou want my paint, too."),
-        Line::say(co::STURM, "I want what you guard.\rAnd what you know."),
+        Line::say(co::STURM, "I will have what you guard.\rAnd what you know."),
         Line::say(co::VON_BOLT, "Everything I know is\rfor sale. Everything."),
         Line::say(co::STURM, "Then name your price."),
         Line::say(co::VON_BOLT, "Defeat me, little\rstorm. Then we talk numbers."),
@@ -53,29 +49,24 @@ fn m01_pre() -> Scene {
 fn m01_day3() -> Scene {
     Scene::new(vec![
         Line::say(co::VON_BOLT, "Those crystals! Mine!\rThey hum for ME!"),
-        Line::say(co::STURM, "They hum for whoever\rstands in their light."),
+        Line::say(co::STURM, "They hum for whoever\rholds them. I hold them."),
     ])
 }
 
 fn m01_day7() -> Scene {
-    Scene::new(vec![Line::say(
-        co::VON_BOLT,
-        "Kehh! A discount!\rEverything must go! Charge!",
-    )])
+    Scene::new(vec![
+        Line::say(co::VON_BOLT, "Kehh... send them all in.\rIt hurts me more than them!"),
+    ])
 }
 
 fn m01_post() -> Scene {
     Scene::new(vec![
-        Line::feel(
-            co::VON_BOLT,
-            Mood::Sad,
-            "My coast... my paint...\rmy lovely, cheap tanks...",
-        ),
+        Line::feel(co::VON_BOLT, Mood::Sad, "My coast... my paint...\rmy lovely, cheap tanks..."),
         Line::say(co::STURM, "Von Bolt. You are not\rfinished. You are priced."),
         Line::say(co::VON_BOLT, "Hm?"),
-        Line::say(co::STURM, "Join me. The world is a\rledger. I hold the pen."),
+        Line::say(co::STURM, "Join me. The world is a\rledger. I will write it."),
         Line::say(co::VON_BOLT, "The whole world...\rin the black?"),
-        Line::say(co::STURM, "In ours."),
+        Line::say(co::STURM, "In mine. You may share it."),
         Line::say(co::VON_BOLT, "Kehh... heh heh heh...\rGloriously greedy."),
         Line::say(co::VON_BOLT, "I accept. First pick\rof every vault we open."),
         Line::say(co::STURM, "You may pick second."),
@@ -87,18 +78,14 @@ fn m01_post() -> Scene {
 
 fn m01_map() -> Scene {
     Scene::new(vec![
-        Line::feel(
-            TROOPER,
-            Mood::Happy,
-            "Sergeant! The old man\rsays second pick is a pick!",
-        ),
+        Line::feel(TROOPER, Mood::Happy, "Sergeant! The old man\rsays second pick is a pick!"),
         Line::say(TROOPER, "Crumb. Second pick of\rvaults. Not of boots."),
         Line::say(TROOPER, "Gerald says boots count."),
         Line::say(TROOPER, "Who is Gerald?"),
         Line::feel(TROOPER, Mood::Happy, "My biscuit, Sergeant!\rBasic training issue."),
         Line::say(TROOPER, "That thing is older than\rthe Obelisk."),
         Line::say(TROOPER, "Gerald says that's rude."),
-        Line::feel(TROOPER, Mood::Sad, "Does anyone know why our\rtanks are still green?"),
+        Line::feel(TROOPER, Mood::Sad, "Is... is anyone else worried\rour tanks are still green?"),
         Line::say(co::VON_BOLT, "Paint costs money."),
     ])
 }
@@ -112,32 +99,26 @@ fn m02_pre() -> Scene {
         Line::say(TROOPER, "Sir, it's making a noise\rlike a cough."),
         Line::say(co::VON_BOLT, "It's clearing its\rthroat. Kehh!"),
         Line::say(co::JESS, "Halt! Green Earth Coastal\rWatch! Hands where I see them!"),
-        Line::say(co::JESS, "By order of... by order.\rOf Green Earth. Stand down!"),
-        Line::say(co::STURM, "Your orders do not reach\rthis soil."),
-        Line::feel(
-            co::JESS,
-            Mood::Sad,
-            "I know. But Command wants\rthe Foundry. And a report.",
-        ),
-        Line::say(co::JESS, "I'm sorry. I have to do\rthis properly."),
-        Line::say(co::VON_BOLT, "She apologises! Delightful.\rCrush her gently."),
+        Line::say(co::JESS, "By order of Green Earth:\rstand down. Last warning."),
+        Line::say(co::STURM, "Your orders end here. This\rsoil is mine."),
+        Line::feel(co::JESS, Mood::Sad, "I know. But Command wants\rthat Foundry. And so do I."),
+        Line::say(co::JESS, "Nothing personal. Tanks\rfirst. Paperwork after."),
+        Line::say(co::VON_BOLT, "She threatens politely!\rDelightful. Crush her gently."),
     ])
 }
 
 // conditional: Co(co::STURM)
 fn m02_pre_sturm() -> Scene {
-    Scene::new(vec![Line::say(
-        co::STURM,
-        "Hold the Foundry. Three\rdays. Then it speaks.",
-    )])
+    Scene::new(vec![
+        Line::say(co::STURM, "Hold the Foundry. Three\rdays. Then it speaks."),
+    ])
 }
 
 // conditional: NotCo(co::STURM)
 fn m02_pre_other() -> Scene {
-    Scene::new(vec![Line::say(
-        co::VON_BOLT,
-        "Hold the Foundry for\rthree days. It will answer.",
-    )])
+    Scene::new(vec![
+        Line::say(co::VON_BOLT, "Hold the Foundry for\rthree days. It will answer."),
+    ])
 }
 
 fn m02_day3() -> Scene {
@@ -149,10 +130,9 @@ fn m02_day3() -> Scene {
 }
 
 fn m02_day6() -> Scene {
-    Scene::new(vec![Line::say(
-        co::JESS,
-        "More tanks are coming. Hold\rthe line, Green Earth!",
-    )])
+    Scene::new(vec![
+        Line::say(co::JESS, "More tanks are coming. Hold\rthe line, Green Earth!"),
+    ])
 }
 
 fn m02_post() -> Scene {
@@ -163,7 +143,7 @@ fn m02_post() -> Scene {
         Line::say(co::VON_BOLT, "She'll tell everyone!\rFree advertising!"),
         Line::say(co::STURM, "Let them hear the storm\rbefore it arrives."),
         Line::say(TROOPER, "Sir? Dennis is fine.\rCan he have a hat?"),
-        Line::say(co::STURM, "...He may have a hat."),
+        Line::say(co::STURM, "Fine. The tank still\ranswers to me."),
     ])
 }
 
@@ -187,25 +167,23 @@ fn m03_pre() -> Scene {
         Line::say(co::STURM, "We do not turn."),
         Line::say(co::VON_BOLT, "Sturm, I am an old man.\rI am seasick already."),
         Line::say(co::STURM, "Endure it."),
-        Line::say(co::DRAKE, "Seasick! Ha! A pirate\rof the dry land!"),
+        Line::say(co::DRAKE, "Seasick? Heh, dude. A\rpirate of the dry land?"),
         Line::say(co::VON_BOLT, "Pirate?! I am a\rCREDITOR!"),
         Line::say(co::EAGLE, "Enough. Clear the lanes,\rDrake. I'll cover the sky."),
-        Line::say(co::STURM, "Break the blockade. Their\rfleet will drown itself."),
+        Line::say(co::STURM, "Break the blockade. Their\rsea will be mine by dusk."),
     ])
 }
 
 fn m03_day4() -> Scene {
-    Scene::new(vec![Line::say(
-        co::EAGLE,
-        "My Fighters own the\rclouds! Dodge, sailors!",
-    )])
+    Scene::new(vec![
+        Line::say(co::EAGLE, "My Fighters own the\rclouds! Dodge, sailors!"),
+    ])
 }
 
 fn m03_day8() -> Scene {
-    Scene::new(vec![Line::say(
-        co::DRAKE,
-        "Fine, fine! You've got\rsome wave in you after all.",
-    )])
+    Scene::new(vec![
+        Line::say(co::DRAKE, "Not bad, dude. You've got\rsome wave in you after all."),
+    ])
 }
 
 fn m03_post() -> Scene {
@@ -225,15 +203,13 @@ fn m03_post() -> Scene {
 fn m03_map() -> Scene {
     Scene::new(vec![
         Line::feel(TROOPER, Mood::Sad, "I gave Gerald to a\rseagull. Then took him back."),
-        Line::say(TROOPER, "The seagull took the news\rbadly."),
+        Line::say(TROOPER, "The seagull is upset. I'm\rupset. We're all upset."),
         Line::say(TROOPER, "Sergeant, do you think\rthe COs ever get scared?"),
         Line::say(TROOPER, "The tall one doesn't know\rhow."),
         Line::say(TROOPER, "The old one's scared of\rthe sea. That counts."),
-        Line::say(TROOPER, "The mess says the Marshal\rtrusts Sturm and Von Bolt."),
-        Line::say(TROOPER, "The mess says a lot. Mostly\rabout the stew."),
         Line::say(co::STURM, "Private."),
         Line::say(TROOPER, "Sir!"),
-        Line::say(co::STURM, "Your name."),
+        Line::say(co::STURM, "Your name. I keep count\rof what is mine."),
         Line::feel(TROOPER, Mood::Happy, "Hobb, sir! Pip Hobb!\rThey call me Crumb!"),
         Line::say(co::STURM, "Noted."),
     ])
@@ -332,11 +308,12 @@ fn bh02() -> MissionDef {
     m.armies = vec![
         // Pre-deployed: no bases, no funds; the Foundry is the factory.
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(0),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(8000),
+        // Jess has real production (3 bases, an airport, income) and 14000 to start.
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(14000),
     ];
     m.pool = vec![co::STURM, co::VON_BOLT];
-    m.day_limit = 14;
-    m.rank_days = 9;
+    m.day_limit = 18;
+    m.rank_days = 11;
     m.intro = m02_pre();
     m.victory = m02_post();
     m.after = m02_map();
@@ -354,6 +331,8 @@ fn bh02() -> MissionDef {
         (11, [0, unit::TANK, 0]),
         (12, [unit::MECH, 0, unit::MECH]),
         (13, [0, unit::MD_TANK, 0]),
+        (14, [unit::TANK, 0, unit::TANK]),
+        (16, [0, unit::MD_TANK, 0]),
     ];
     let wave = |units: Vec<UnitDef>| vec![Action::Spawn(units)];
     m.triggers = vec![
@@ -377,28 +356,22 @@ fn bh02() -> MissionDef {
             When::TurnStart,
             Cond::DayAtLeast(3),
             wave(vec![
-                UnitDef::new(2, unit::TANK, 9, 17),
-                UnitDef::new(2, unit::TANK, 8, 17),
-                UnitDef::new(2, unit::TANK, 10, 17),
+                UnitDef::new(2, unit::TANK, 9, 22),
+                UnitDef::new(2, unit::TANK, 10, 22),
+                UnitDef::new(2, unit::TANK, 12, 22),
             ]),
         ),
-        // Jess's allowance: 3000 on days 4, 8 and 12.
-        Trigger::new(
-            When::TurnStart,
-            Cond::EveryDays { n: 4, from: 4 },
-            vec![Action::AddFunds { army: 2, funds: 3000 }],
-        )
-        .repeating(),
         // Day 6: two Md Tanks and two Infantry.
         Trigger::new(When::TurnStart, Cond::DayAtLeast(6), vec![Action::Scene(m02_day6())]),
         Trigger::new(
             When::TurnStart,
             Cond::DayAtLeast(6),
             wave(vec![
-                UnitDef::new(2, unit::MD_TANK, 9, 17),
-                UnitDef::new(2, unit::INFANTRY, 8, 17),
-                UnitDef::new(2, unit::INFANTRY, 10, 17),
-                UnitDef::new(2, unit::INFANTRY, 7, 18),
+                UnitDef::new(2, unit::MD_TANK, 9, 22),
+                UnitDef::new(2, unit::MD_TANK, 10, 22),
+                UnitDef::new(2, unit::INFANTRY, 12, 22),
+                UnitDef::new(2, unit::INFANTRY, 13, 22),
+                UnitDef::new(2, unit::B_COPTER, 17, 22),
             ]),
         ),
         // Day 9: Jess arrives with her first power charged.
@@ -408,13 +381,13 @@ fn bh02() -> MissionDef {
             vec![
                 Action::Custom(charge_jess),
                 Action::Spawn(vec![
-                    UnitDef::new(2, unit::TANK, 9, 17),
-                    UnitDef::new(2, unit::MD_TANK, 8, 17),
-                    UnitDef::new(2, unit::MD_TANK, 10, 17),
+                    UnitDef::new(2, unit::MD_TANK, 9, 22),
+                    UnitDef::new(2, unit::MD_TANK, 10, 22),
+                    UnitDef::new(2, unit::ROCKETS, 12, 22),
                 ]),
             ],
         ),
-        time_up(14),
+        time_up(18),
     ];
     m.flag = region::BLACK_HOLE[4];
     m.stars = 1;

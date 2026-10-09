@@ -96,12 +96,12 @@ def bh_act1_pictures(ctx):
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BH_MAPS = os.path.join(paths.REPO, "tango-gamesupport-aw2", "five", "bh")
-SIZE = {0: (22, 15), 1: (18, 20), 2: (26, 16)}
+SIZE = {0: (22, 15), 1: (22, 24), 2: (26, 16)}
 PLAYER_CO = {0: bh.STURM, 1: bh.STURM, 2: bh.STURM}
 ENEMY_CO = {0: bh.VON_BOLT, 1: 17, 2: 9}          # Von Bolt, Jess, Drake (Eagle his partner)
 FUNDS = {0: (6000, 20000), 1: (0, 8000), 2: (12000, 20000)}
-DAY_LIMIT = {0: 20, 1: 14, 2: 25}
-HQS = {0: ((2, 12), (19, 2)), 1: ((9, 1), (9, 18)), 2: ((2, 8), (24, 8))}
+DAY_LIMIT = {0: 20, 1: 18, 2: 25}
+HQS = {0: ((2, 12), (19, 2)), 1: ((11, 1), (11, 22)), 2: ((2, 8), (24, 8))}
 CLASS_HQ, CLASS_CITY, CLASS_BASE, CLASS_AIRPORT, CLASS_PORT, CLASS_SHOAL = 8, 6, 0xE, 0xA, 0xB, 13
 
 
@@ -400,7 +400,7 @@ def lose_hq(ctx, e, g, d, k):
 def bh_act1_m2_foundry_waves_and_flow(ctx):
     """M2: the opening as designed, with the last line Sturm's own (Sturm leads) or the
     leader's (Von Bolt), no bases and no funds; the Foundry wakes on day 3 (its
-    own table: a Tank on the middle door at day 3's start, none before) with
+    own table: a unit within a Tank's price on the middle door at day 3's start, none before) with
     its scene and Green Earth's first wave; the win shows the victory and map scenes
     and opens mission 3."""
     exp = design_scenes()
@@ -412,9 +412,9 @@ def bh_act1_m2_foundry_waves_and_flow(ctx):
         if lead == bh.STURM:
             export(ctx, e.shot(os.path.join(ctx.out, "m2_opening")), "m2_opening")
             ctx.eq(funds(g, 1), 0, "no funds")
-            factory = [(x, y) for y in range(20) for x in range(18) if g.terrain_class(x, y) & 0x1F == 0x1D]
+            factory = [(x, y) for y in range(24) for x in range(22) if g.terrain_class(x, y) & 0x1F == 0x1D]
             ctx.check(factory, f"the Black Foundry's tiles are on the map ({factory[:3]})")
-            doors = [(8, 7), (9, 7), (10, 7)]
+            doors = [(10, 7), (11, 7), (12, 7)]
             ctx.eq([g.unit_at(*c) for c in doors], [None, None, None], "the doors are empty on day 1")
             day = lambda: e.u16(0x03004080)
             texts = []
@@ -425,9 +425,10 @@ def bh_act1_m2_foundry_waves_and_flow(ctx):
             pass_turn(e, g, d, texts)   # day 3
             ctx.eq(day(), 3, "day 3")
             ctx.eq(texts, exp["m02_day3"], "day 3: the Foundry wakes: its scene")
-            door = g.unit_at(9, 7)
-            ctx.check(door is not None and door["army"] == 1 and door["type"] == 5, f"a Tank on the middle door: {door and (door['army'], door['type'])}")
-            ctx.eq([g.unit_at(*c) is None for c in ((8, 7), (10, 7))], [True, True], "the side doors give nothing on day 3")
+            door = g.unit_at(11, 7)
+            # (the table is the schedule and the cost cap: the smart spawner picks what the battle needs within the Tank's price)
+            ctx.check(door is not None and door["army"] == 1 and door["type"] in (1, 2, 5, 6, 7, 10), f"a unit of the Tank's price class on the middle door: {door and (door['army'], door['type'])}")
+            ctx.eq([g.unit_at(*c) is None for c in ((10, 7), (12, 7))], [True, True], "the side doors give nothing on day 3")
             wave = [u for u in g.units(army=2) if u["type"] == 5 and u["y"] >= 15]
             ctx.check(len(g.units(army=2)) >= ge0 + 3 or len(wave) >= 3, f"Green Earth's first wave of three Tanks has come ({len(g.units(army=2))} units, was {ge0})")
             export(ctx, e.shot(os.path.join(ctx.out, "m2_day3")), "m2_day3_foundry_wakes")
@@ -796,7 +797,7 @@ BALANCE = os.environ.get("AW2TEST_BH_ACT1_BALANCE")
 
 
 # How the test player plays each mission: the enemy HQ its capturers make for.
-BOT = {0: {"goals": [(19, 2)], "stance": "attack"}, 1: {"goals": [(9, 18)], "stance": "attack"}, 2: {"goals": [(24, 8)], "stance": "attack"}}
+BOT = {0: {"goals": [(19, 2)], "stance": "attack"}, 1: {"goals": [(11, 22)], "stance": "attack"}, 2: {"goals": [(24, 8)], "stance": "attack"}}
 
 
 def play_out(ctx, k, how, cos, max_days, **bot):

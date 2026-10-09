@@ -33,7 +33,7 @@ unit 2 11 21 3
 .^^..fXR~~~~~~RRRRRRRR
 -------=~~~~~~=-------
 .CC.###R~~~~~~RX....^^
-f...#O#R.~~~~.R..ff.C^
+f.N.#O#RE~~~~.R..ff.C^
 .B..###R.ff.ffR.c..f..
 ...B.C.R.C.c.fR...Cf..
 ..1RRRRRRRRRRRR.ff.ff.
