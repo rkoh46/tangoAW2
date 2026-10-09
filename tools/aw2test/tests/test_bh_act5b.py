@@ -39,7 +39,7 @@ def pictures(ctx, n):
     if n == 28:
         os.environ["TANGOAW2_BH_STILL"] = "1"   # (see bh_act5b::still: the computer holds and has no funds)
     mask = 0
-    for k in won:
+    for k in range(1, n):
         mask |= 1 << a5.M[k]
     e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
     # (a mission that is not fogged is photographed in its Setup phase: the deployment as it stands before
@@ -137,7 +137,7 @@ def _advance(n):
     def fn(ctx):
         title, won, picks, fog, size = MISSIONS[n]
         mask = 0
-        for k in won:
+        for k in range(1, n):
             mask |= 1 << a5.M[k]
         e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
         a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}")
@@ -171,7 +171,7 @@ def _balance(n, how, seed=None):
             raise Skip("AW2TEST_ACT5B_BALANCE not set")
         title, won, picks, fog, size = MISSIONS[n]
         mask = 0
-        for k in won:
+        for k in range(1, n):
             mask |= 1 << a5.M[k]
         e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
         d.pick_mission()

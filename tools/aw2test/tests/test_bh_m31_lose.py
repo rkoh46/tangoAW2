@@ -13,7 +13,7 @@ from aw2test.harness import test
 APC = 7
 DOCK = (38, 12)            # a dock tile (the dock's land is x 38..39, y 11..13)
 BH_HQ = (3, 20)
-WON = [22, 23, 24, 25, 26, 27, 28]
+WON = list(range(1, 31))
 ROSTER = 0xFFF | (0x1FF << 12)
 
 

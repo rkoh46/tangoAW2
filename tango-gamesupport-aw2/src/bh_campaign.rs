@@ -93,7 +93,7 @@ pub fn def() -> CampaignDef {
             CreditSection { heading: "BH CAMPAIGN", names: vec!["PLACEHOLDER"], secret: false },
             CreditSection { heading: "THANKS FOR PLAYING", names: vec![], secret: false },
         ],
-        missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5::missions(), bh_act5b::missions(), bh_secret::missions()].concat(),
+        missions: [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5b::missions(), bh_act5::missions(), bh_secret::missions()].concat(),
         final_mission: "bh30", // the finale (the secret M31 follows the nine bonds)
         bonds: BONDS.to_vec(),
         extra_bonds: 1,
