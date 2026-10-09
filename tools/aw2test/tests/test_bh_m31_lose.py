@@ -65,11 +65,42 @@ def result(e, d=None, frames=3000):
     return e.u8(dc.LAST_RESULT)
 
 
-def banner_picture(ctx, e, g, d, name, frames=60000, scene=False):
+GMAP = 0x0201E450
+CURSOR = 0x030033E4
+
+
+def focus_on(e, x, y, w=43, h=29):
+    """The camera and the cursor on cell (x, y) (the game moves them on its own during the computer's turn; poked each frame)."""
+    e.w16(GMAP + 4, max(0, min(w * 16 - 240, x * 16 - 120)))
+    e.w16(GMAP + 6, max(0, min(h * 16 - 160, y * 16 - 80)))
+    e.w16(CURSOR, x)
+    e.w16(CURSOR + 2, y)
+
+
+def truck_on_dock(g):
+    g._units_base = g._players_base = None
+    return next((u for u in g.units() if u["army"] == 2 and u["type"] == APC and DOCK[0] <= u["x"] <= 40 and 11 <= u["y"] <= 13), None)
+
+
+def dock_pre(name):
+    """The frame before DEFEAT: the camera on the dock, the truck on its tile with the info window (its HP) up."""
+    return (name, truck_on_dock, lambda u: (u["x"], u["y"]))
+
+
+def banner_picture(ctx, e, g, d, name, frames=60000, scene=False, pre=None):
     """Runs the end of the mission (A through its boxes) and photographs the DEFEAT or VICTORY banner when it is up. Returns the
     mission's result (1 won, 2 lost)."""
-    n, shot = 0, False
+    n, shot, pre_done = 0, False, pre is None
     while n < frames:
+        if not pre_done and (n % 4 == 0 or (len(pre) > 3 and pre[3])):
+            what = pre[1](g)
+            if what:
+                x, y = pre[2](what)
+                for _ in range(0 if len(pre) > 3 else 24):
+                    focus_on(e, x, y)
+                    e.wait(2)
+                a5.pic(ctx, e, pre[0])
+                pre_done = True
         if not shot and any(f == dc.MATCH_END_BANNER for _, _, f in g.procs()):
             e.wait(40)
             a5.pic(ctx, e, name)
@@ -103,6 +134,8 @@ def dock(ctx, e, g, d, t, near):
     dock tile on Sonja's turn, a real move by the game's own march (the mission is lost when the player's turn starts)."""
     d.place_unit(t, *near)
     g._units_base = g._players_base = None
+    scout = next(u for u in g.units() if u["army"] == 1 and u["type"] == 6)        # a Black Hole Recon watches the dock (fog: else the truck is not seen)
+    d.place_unit(scout, 35, 12)
     a5.end_turn(e, g, d)
 
 
@@ -118,13 +151,13 @@ def case(n, fn):
 def lose1a(ctx, e, g, d):
     t = trucks(g)[0]                                   # truck A
     dock(ctx, e, g, d, t, (37, 9))
-    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1a"), 2, "truck A marches onto a dock tile: the mission is lost")
+    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1a", pre=dock_pre("m31_lose1a_pre")), 2, "truck A marches onto a dock tile: the mission is lost")
 
 
 def lose1b(ctx, e, g, d):
     t = trucks(g)[1]                                   # truck B
     dock(ctx, e, g, d, t, (37, 15))
-    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1b"), 2, "truck B marches onto a dock tile: the mission is lost")
+    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1b", pre=dock_pre("m31_lose1b_pre")), 2, "truck B marches onto a dock tile: the mission is lost")
 
 
 def lose1c(ctx, e, g, d):
@@ -133,7 +166,7 @@ def lose1c(ctx, e, g, d):
     ctx.eq(len(ts), 3, "three trucks from day 3")
     c = next(u for u in ts if (u["x"], u["y"]) == (24, 11))
     dock(ctx, e, g, d, c, (37, 15))
-    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1c"), 2, "truck C marches onto a dock tile: the mission is lost")
+    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose1c", pre=dock_pre("m31_lose1c_pre")), 2, "truck C marches onto a dock tile: the mission is lost")
 
 
 def lose2(ctx, e, g, d):
@@ -144,7 +177,7 @@ def lose2(ctx, e, g, d):
     esc = next(u for u in g.units() if u["army"] == 2 and u["type"] == 1)
     d.place_unit(esc, 36, 9)                           # an escort beside it
     dock(ctx, e, g, d, t, (37, 9))
-    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose2"), 2, "a 1 HP truck with an escort marches onto a dock tile: the mission is lost")
+    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose2", pre=dock_pre("m31_lose2_pre")), 2, "a 1 HP truck with an escort marches onto a dock tile: the mission is lost")
 
 
 def lose3(ctx, e, g, d):
@@ -154,7 +187,7 @@ def lose3(ctx, e, g, d):
     d.remove_unit(ts[0]); d.remove_unit(ts[1])         # two destroyed (a test aid)
     ctx.eq(e.u8(dc.LAST_RESULT), 0, "two trucks gone and one alive: nothing is decided yet (no partial win)")
     dock(ctx, e, g, d, ts[2], (37, 15))
-    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose3"), 2, "two trucks destroyed, the third docks: still a loss")
+    ctx.eq(banner_picture(ctx, e, g, d, "m31_lose3", pre=dock_pre("m31_lose3_pre")), 2, "two trucks destroyed, the third docks: still a loss")
 
 
 def win4(ctx, e, g, d):
@@ -201,6 +234,8 @@ def lose5(ctx, e, g, d):
         d.wait_control()
         g._units_base = g._players_base = None
     ctx.eq(e.u8(dc.LAST_RESULT), 0, "day 11 started: still on")
+    e.wait(60)
+    a5.pic(ctx, e, "m31_lose5_pre")                        # (the day counter: "1 Day(s) Left")
     for t in trucks(g):
         if t["id"] in STARTS:
             d.place_unit(t, *STARTS[t["id"]])
