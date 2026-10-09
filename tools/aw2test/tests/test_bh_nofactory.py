@@ -515,7 +515,7 @@ def bh_campaign_factory_and_volcano_on_one_map(ctx):
     from aw2test import ram
     e, g, d = boot_features(ctx)
     d.picks = {22: 0}
-    d.start_at(won_mask=0xFFFFFF & ~(1 << 5) & ~(1 << 22), unlocked_mask=1)
+    d.start_at(won_mask=0xFFFFFF & ~(1 << 5) & ~(1 << 22) & ~(1 << 23), unlocked_mask=1)
     d.pick_mission()
     d.wait_map()
     ctx.eq(d.mission(), 22, "mission 23")
