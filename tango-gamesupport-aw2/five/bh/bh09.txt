@@ -32,8 +32,8 @@ unit 2 2 23 5 hold
 unit 2 1 23 9 hold
 unit 2 5 24 6 hold
 unit 2 5 24 8 hold
-unit 2 14 13 6 hold
-unit 2 14 19 6 hold
+unit 2 5 13 6 hold
+unit 2 10 19 6 hold
 unit 2 3 13 8 hold
 unit 2 3 22 8 hold
 unit 2 11 16 8 hold

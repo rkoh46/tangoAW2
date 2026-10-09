@@ -20,8 +20,8 @@ unit 1 10 14 8
 unit 1 10 15 8
 unit 1 11 16 13
 unit 1 11 17 13
-unit 1 15 17 11
-unit 1 14 17 12
+unit 1 11 17 11
+unit 1 6 17 12
 unit 1 19 15 12
 unit 1 7 2 10
 unit 1 1 3 9
