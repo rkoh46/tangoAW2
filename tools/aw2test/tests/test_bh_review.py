@@ -54,7 +54,7 @@ M = {
     31: ("The Colonel's Vault", 0xFFF | BONDS, [S], True, False),
 }
 # units that do not start at full HP, ammo or fuel by design: mission -> what is allowed
-EXCEPT = {5: "parked aircraft", 14: "Crumb at 1 HP; the held ring has no fuel until day 3", 21: "the low-ammo column", 28: "photographed after the computer's first turns", 31: "the trucks (and the fuel-less held APCs)"}
+EXCEPT = {5: "parked aircraft", 14: "Crumb at 1 HP; the held ring has empty tanks until day 3 (a real hold does not stop it shooting Crumb)", 21: "the low-ammo column", 28: "photographed after the computer's first turns"}
 BANNER = lambda tx, ty: ty <= 2 and 3 <= tx <= 11      # (the Setup banner and the other-front window sit at the screen's top)
 
 

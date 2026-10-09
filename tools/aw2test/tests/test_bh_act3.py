@@ -550,3 +550,25 @@ def bh_act3_m15_sky_front_has_no_hq_and_is_won_by_rout(ctx):
     ctx.eq(e.u8(tf.SECOND), tf.SECOND_WON, "the sky front won by the rout")
     ctx.check(e.u8(tf.LIVE) == 0 and e.u8(dc.LAST_RESULT) == 0 and d.in_battle(), "the mission goes on, on the main front")
     e.close()
+
+
+@test(modes=("ds",))
+def bh_act3_m14_the_ring_holds_until_day_three(ctx):
+    """The ring round Crumb (Yellow Comet units in x 1..5, y 1..6) holds its ground and spares Crumb through days 1 and 2, and is
+    released on day 3 (it then moves). (It is held with empty tanks: with full tanks and role 0 the adjacent ring fires on
+    Crumb, who has 1 HP, at the first Yellow Comet turn: a real hold does not stop a unit shooting what is in reach.)"""
+    e, g, d, _ = ready(ctx, 14)
+    ring = {u["id"]: (u["x"], u["y"]) for u in g.units(2) if 1 <= u["x"] <= 5 and 1 <= u["y"] <= 6}
+    ctx.check(len(ring) >= 8, f"the ring: {len(ring)} units")
+    a3.to_day(e, g, d, 2)
+    g._units_base = g._players_base = None
+    now = {u["id"]: (u["x"], u["y"]) for u in g.units(2)}
+    held = [i for i, p in ring.items() if i in now and now[i] == p]
+    ctx.log(f"after day 2: {len(held)} of {len(ring)} ring units where they started")
+    ctx.check(len(held) >= len(ring) - 2, f"the ring held through days 1 and 2 ({len(held)} of {len(ring)})")
+    a3.to_day(e, g, d, 3)
+    g._units_base = g._players_base = None
+    roles = {u["id"]: u["raw"][11] for u in g.units(2) if u["id"] in ring}
+    ctx.log(f"roles on day 3: {roles}")
+    ctx.check(all(r in (3, 4) for r in roles.values()) and len(roles) >= len(ring) - 2, f"released on day 3: the ring's roles are 3 or 4 ({roles})")
+    e.close()

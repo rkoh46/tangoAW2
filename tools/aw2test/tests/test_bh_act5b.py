@@ -158,6 +158,34 @@ for _n in (23, 26, 27):
     _advance(_n)
 
 
+# --- the garrisons stand (role 0: the engine keeps held foot soldiers where they stand) -----------------------------
+def _garrison(n):
+    def fn(ctx):
+        title, won, picks, fog, size = MISSIONS[n]
+        mask = 0
+        for k in range(1, 30 if n == 31 else n):
+            mask |= 1 << a5.M[k]
+        e, g, d = a5.boot(ctx, mask, ROSTER_AT[n] | BONDS, picks={a5.M[n]: len(picks)}, at=a5.M[n])
+        a5.open_mission(ctx, e, g, d, a5.M[n], picks, f"m{n}")
+        d.wait_control()
+        g._units_base = g._players_base = None
+        player = 5 if n == 28 else 1
+        held = {u["id"]: (u["x"], u["y"]) for u in g.units() if u["army"] != player and u["type"] in (1, 2) and u["raw"][11] == 0}
+        a5.to_day(e, g, d, 4)
+        g._units_base = g._players_base = None
+        now = {u["id"]: (u["x"], u["y"]) for u in g.units()}
+        moved = [i for i, p in held.items() if i in now and now[i] != p]
+        ctx.log(f"M{n}: {len(held)} held foot soldiers, {len(moved)} moved in 3 days")
+        ctx.check(len(moved) * 4 <= max(len(held), 1), f"M{n}: the garrisons stay put ({len(moved)} of {len(held)} moved)")
+        e.close()
+    fn.__name__ = f"bh_act5b_garrisons_stand_m{n}"
+    test(modes=("ds",))(fn)
+
+
+for _n in (23, 24, 25, 26, 27):          # (M28's five armies need their own turn order: not driven here)
+    _garrison(_n)
+
+
 # --- balance (AW2TEST_ACT5B_BALANCE=1): the CPU, or the test player (aw2test.bot), plays the player's side ---------
 BALANCE = os.environ.get("AW2TEST_ACT5B_BALANCE")
 BOT_OPTS = {26: dict(goals=[(4, 4), (4, 23), (33, 14)])}

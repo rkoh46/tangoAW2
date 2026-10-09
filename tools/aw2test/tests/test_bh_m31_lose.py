@@ -372,3 +372,44 @@ def _difficulty(how, seed=None):
 for _how in ("nothing", "cpu", "chase"):
     _difficulty(_how)
 _difficulty("chase", 1)
+
+
+@test(modes=("ds",))
+def bh_m31_select_and_destroy_a_marching_truck(ctx):
+    """A marching, named truck selected with the pad (its range and info up), then destroyed by a shot: no phantom cargo
+    (no unit appears where it stood, the unit table loses exactly that unit), the mission goes on and nothing crashes."""
+    e, g, d = start(ctx)
+    t = min(trucks(g), key=lambda u: (u["x"], u["y"]))
+    ctx.log(f"truck {t}")
+    g.goto(t["x"], t["y"])
+    e.press("A", 6)                       # (an enemy unit under the cursor: its range and info)
+    e.wait(40)
+    a5.pic(ctx, e, "m31_truck_info")
+    e.press("B", 6)
+    e.wait(30)
+    g._units_base = g._players_base = None
+    mine = next(u for u in g.units(1) if u["type"] in (3, 5, 8))
+    at = (t["x"] + 1, t["y"])
+    ctx.require(g.unit_at(*at) is None, f"the cell beside the truck {at} is free")
+    d.place_unit(mine, *at)
+    a = g.unit_addr(t["id"]) + 4
+    e.w16(a, (e.u16(a) & ~0x7F) | 10)     # (1 HP shown: one shot destroys it)
+    e.wait(10)
+    g._units_base = g._players_base = None
+    before = len(g.units())
+    g.select(*at)
+    g.move_to(*at)
+    g.choose("Fire", g.ACTION_MENU)
+    g.pick_target(t["x"], t["y"])
+    for _ in range(200):                 # (the first truck's destruction plays a scene: A through it)
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(20)
+    g._units_base = g._players_base = None
+    after = g.units()
+    ctx.eq(len(after), before - 1, "exactly the truck is gone (no phantom cargo)")
+    ctx.check(all((u["x"], u["y"]) != (t["x"], t["y"]) for u in after), "nothing stands where the truck was")
+    ctx.eq(len(trucks(g)), 1, "the other truck (the third rolls out on day 3) is alive")
+    ctx.check(d.in_battle(), "the battle goes on")
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "no result yet")
+    e.close()

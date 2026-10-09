@@ -64,16 +64,13 @@ fn bh31() -> MissionDef {
     // Yellow Comet's units: the trucks (which march), their escorts and the road-block groups hold, as do the
     // Anti-Air, Artillery, Rockets, Missiles, Transport Copters and the ships; two Neotanks and two Tanks advance on
     // Black Hole. None of Sonja's units stands on a truck's road (a march stops at an occupied cell).
-    // The Vault Trucks have no fuel for the computer's own dispatch (an APC's AI would load the Infantry beside it and drive
-    // off: the march is what moves them, and does not use fuel).
+    // The Vault Trucks are marched by `MarchDef::speed` (the engine skips a marching unit in the computer's own moves: an APC's
+    // AI would otherwise load the Infantry beside it and drive off its route); they keep a full tank.
     m.units = roles(
         built_units("bh31"),
         1,
         &[(9, 2), (10, 1), (8, 3), (16, 16), (17, 15), (15, 17), (14, 3), (17, 5), (19, 3), (19, 7), (24, 4), (25, 4), (30, 3), (30, 4), (33, 4), (35, 5), (31, 7), (22, 10), (25, 5), (31, 12), (36, 11), (36, 8), (20, 13), (24, 17), (25, 22), (36, 18), (29, 19), (30, 22), (37, 22), (36, 14), (36, 7), (30, 8), (32, 15), (41, 10), (35, 27)],
-    )
-    .into_iter()
-    .map(|u| if u.name.is_some() { u.fuel(0) } else { u })
-    .collect();
+    );
     // The trucks drive their roads at full APC speed (6 move points a day), A and B from day 1, C from day 3.
     m.marches = vec![
         MarchDef::speed("vault1", &cells(&A_ROAD), 6),
@@ -111,7 +108,7 @@ fn bh31() -> MissionDef {
             Cond::DayAtLeast(3),
             vec![
                 Action::Scene(Scene::new(day3_lines())),
-                Action::Spawn(vec![UnitDef::new(2, unit::APC, TRUCK_C.0, TRUCK_C.1).fuel(0).named("vault3")]),
+                Action::Spawn(vec![UnitDef::new(2, unit::APC, TRUCK_C.0, TRUCK_C.1).named("vault3")]),
             ],
         ),
         // Day 4: the cannons are online.
