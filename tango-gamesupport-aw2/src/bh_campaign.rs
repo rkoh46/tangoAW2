@@ -67,7 +67,7 @@ pub mod roster {
 /// (the west). Each region lists flag places inside its land, in play
 /// order; a mission's `flag` is one of them (or any point of the picture).
 pub mod region {
-    pub const BLACK_HOLE: [(i16, i16); 6] = [(160, 30), (172, 26), (184, 32), (168, 42), (180, 46), (188, 54)];
+    pub const BLACK_HOLE: [(i16, i16); 6] = [(160, 30), (172, 26), (186, 34), (178, 20), (172, 46), (188, 54)];
     pub const GREEN_EARTH: [(i16, i16); 6] = [(350, 95), (372, 118), (332, 135), (345, 160), (325, 190), (340, 215)];
     pub const YELLOW_COMET: [(i16, i16); 6] = [(290, 57), (265, 60), (250, 80), (275, 100), (245, 115), (255, 140)];
     pub const BLUE_MOON: [(i16, i16); 6] = [(205, 200), (190, 170), (160, 215), (150, 185), (130, 225), (110, 200)];

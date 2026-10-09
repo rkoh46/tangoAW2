@@ -148,7 +148,7 @@ fn bh23() -> MissionDef {
     ];
     m.needs = Needs::All(vec!["bh22"]);
     m.recruits = vec![roster::LASH];
-    m.flag = region::ORANGE_STAR[0];
+    m.flag = (100, 127); // (Orange Star[0] fell on Blue Moon's land)
     m.stars = 2;
     m
 }
