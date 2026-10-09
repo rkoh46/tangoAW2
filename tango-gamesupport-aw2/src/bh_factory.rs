@@ -35,7 +35,7 @@
 use mgba::core::Core;
 
 use crate::ds_weather::is_on;
-use crate::roster::{BLACK_BOAT, CARRIER, MEGATANK, OOZIUM, PIPERUNNER};
+use crate::roster::{BLACK_BOAT, CARRIER, MEGATANK, OOZIUM};
 
 /// The spawner's create-unit call, and the loop's next slot.
 const CREATE: u32 = 0x0806_0856;
@@ -97,7 +97,7 @@ fn open(core: &Core, army: u32, t: u8, x: i32, y: i32) -> bool {
         && crate::oozium::move_cost(core, army, t, x, y) != NO_ENTRY
 }
 
-/// The squares a ship or Piperunner of the factory with doors at
+/// The squares a ship of the factory with doors at
 /// (door_x.., y) may be placed on, row by row: the door row and its two
 /// ends, then the row under it.
 fn around(door_x: i32, y: i32) -> Vec<(i32, i32)> {
@@ -109,7 +109,7 @@ fn around(door_x: i32, y: i32) -> Vec<(i32, i32)> {
 /// Where a unit of type `t` could be placed for the slot whose door tile is
 /// (x, y).
 fn squares(core: &Core, army: u32, t: u8, door_x: i32, x: i32, y: i32) -> Vec<(i32, i32)> {
-    if SHIPS.contains(&t) || t == PIPERUNNER {
+    if SHIPS.contains(&t) {
         around(door_x, y).into_iter().filter(|&(sx, sy)| open(core, army, t, sx, sy)).collect()
     } else if open(core, army, t, x, y) {
         vec![(x, y)]
@@ -119,8 +119,9 @@ fn squares(core: &Core, army: u32, t: u8, door_x: i32, x: i32, y: i32) -> Vec<(i
 }
 
 /// What the factory may pick from: land (on the door tile), air (likewise,
-/// but never over water), ships and the Piperunner (squares beside the doors).
-const LAND: [u8; 13] = [1, 2, 3, MEGATANK, 5, 6, 8, PIPERUNNER, 10, 11, 14, 15, OOZIUM];
+/// but never over water) and ships (squares beside the doors). The factory
+/// never builds a Piperunner, in any mode.
+const LAND: [u8; 12] = [1, 2, 3, MEGATANK, 5, 6, 8, 10, 11, 14, 15, OOZIUM];
 const AIR: [u8; 3] = [16, 17, 19];
 
 fn price(core: &Core, t: u8) -> i32 {
@@ -212,8 +213,11 @@ fn at_create(core: &mut Core) {
             d.summary
         ));
     }
-    // The table's unit never stands on sea or reef.
-    let on_water = !SHIPS.contains(&t) && matches!(terrain(core, px, py), Some(SEA) | Some(REEF));
+    // Nothing is placed where it cannot stand: the table's unit not on sea or
+    // reef, a ship (the table's too) only where its chart lets it in. A
+    // Piperunner (never the factory's) is dropped as well.
+    let on_water = (!SHIPS.contains(&t) && matches!(terrain(core, px, py), Some(SEA) | Some(REEF)))
+        || (decision.is_none() && (t == crate::roster::PIPERUNNER || (SHIPS.contains(&t) && crate::oozium::move_cost(core, army, t, px, py) == NO_ENTRY)));
     let cpu = core.gba_mut().cpu_mut();
     if on_water {
         cpu.set_thumb_pc(NEXT_SLOT);

@@ -188,7 +188,7 @@ def bh_factory_smart_landlocked(ctx):
     smart_log(ctx, r)
     ctx.log(f"{len(spawns)} spawns: {names(spawns)}")
     ctx.check(len(spawns) > 15, f"spawns ({len(spawns)})")
-    ctx.check(not r.types() & (SHIPS | {PIPERUNNER}), f"no ship, no Piperunner (no pipe): {sorted(r.types())}")
+    ctx.check(not r.types() & (SHIPS | {PIPERUNNER}), f"no ship, no Piperunner: {sorted(r.types())}")
     ctx.check(len(r.types()) >= 4, f"a mix of kinds: {sorted(r.types())}")
     ctx.check(all((x, y) in DOORS for _, _, x, y, _ in spawns), "every spawn is on a door tile")
     ctx.check(all(c not in (SEA, REEF) for *_, c in spawns), "no land unit on water")
@@ -395,18 +395,45 @@ def bh_factory_choice_leaves_the_rng_alone(ctx):
 
 
 @test(modes=("ds",))
-def bh_factory_piperunner_by_a_pipe(ctx):
-    """A pipe from the door row to the enemy HQ gets Piperunners; a lone pipe that goes nowhere does not."""
+def bh_factory_never_a_piperunner(ctx):
+    """The Black Factory never builds a Piperunner: not by a long pipe to the enemy, not by a short one, over many
+    days and several RNG states."""
+    from aw2test import twofront
     line = [(12, 12)] + [(12, y) for y in range(13, 20)] + [(x, 19) for x in range(13, 29)]
-    r = start(ctx, factory_map(ctx, pipes=line, blockers=[("infantry", 14, 4)]), shots=())
+    for pipes in (line, [(12, 12)]):
+        r = start(ctx, factory_map(ctx, pipes=pipes, blockers=[("infantry", 14, 4)]), shots=())
+        sp = r.days(40)
+        ctx.log(f"{len(sp)} spawns by {len(pipes)} pipe cells: {sorted(r.types())}")
+        ctx.check(len(sp) > 10, "the factory spawns")
+        ctx.check(PIPERUNNER not in r.types(), f"no Piperunner ({len(pipes)} pipe cells)")
+    r = start(ctx, factory_map(ctx, pipes=line, blockers=GROUND_ARMY), shots=())
+    to_army(r.g, 2)
+    cp = twofront.checkpoint(r.e, ctx, "before_black_holes_turn")
+    seen = set()
+    for seed in SEEDS[:4]:
+        for day in (6, 7, 13, 21, 27):
+            sp, _, _ = one_turn_at(ctx, r, cp, seed, day=day)
+            seen |= {s[1] for s in sp}
+    ctx.log(f"types over 20 seeded turns: {sorted(seen)}")
+    ctx.check(seen and PIPERUNNER not in seen, "no Piperunner in 20 seeded turns")
+
+
+@test(modes=("ds",))
+def bh_factory_no_ship_without_sea_at_the_doors(ctx):
+    """A factory with sea in the map but none on the squares it spawns onto never builds a naval unit."""
+    from aw2test import twofront
+    far = [(x, y) for x in range(5, 25) for y in range(16, 20)]
+    r = start(ctx, factory_map(ctx, sea=far, blockers=SEA_ARMY), shots=())
     sp = r.days(40)
-    smart_log(ctx, r, 3)
-    pipers = [s for s in sp if s[1] == PIPERUNNER]
-    ctx.log(f"Piperunners: {pipers}")
-    ctx.check(pipers, "Piperunners spawn by a pipe that leads to the enemy")
-    ctx.check(all(c == PIPE for *_, c in pipers), "each stands on a pipe")
-    lone = start(ctx, factory_map(ctx, pipes=[(12, 12)]), shots=())
-    ctx.check(PIPERUNNER not in {s[1] for s in lone.days(30)}, "no Piperunner on a pipe that goes nowhere")
+    ctx.check(len(sp) > 10, "the factory spawns")
+    ctx.check(not r.types() & SHIPS, f"no ship: {sorted(r.types())}")
+    to_army(r.g, 2)
+    cp = twofront.checkpoint(r.e, ctx, "before_black_holes_turn")
+    seen = set()
+    for seed in SEEDS[:4]:
+        for day in (5, 12, 19, 26):
+            seen |= {s[1] for s in one_turn_at(ctx, r, cp, seed, day=day)[0]}
+    ctx.check(seen and not seen & SHIPS, f"no ship in 16 seeded turns: {sorted(seen)}")
 
 
 @test(modes=("ds",))

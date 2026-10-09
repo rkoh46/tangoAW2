@@ -275,7 +275,7 @@ pub fn effects_pass(core: &mut Core) -> bool {
 /// is about to buy one of these at a factory (its three `BuyUnit(x, y,
 /// type)` calls: `sub_080600F0`, `sub_08060110`, `sub_080610D0`), it buys the Dual
 /// Strike unit instead now and then: when it can pay for it, the factory
-/// suits it (a Piperunner needs pipes next to its base) and it has at most
+/// suits it (a Piperunner needs its base to touch a pipe network of 6 or more cells) and it has at most
 /// half as many of it as of the AW2 unit (a Carrier for a Cruiser, a
 /// Battleship or a Sub, an Oozium for a Md Tank, a Piperunner for an Artillery or
 /// Rockets). The unit then plays as the AW2
@@ -314,6 +314,37 @@ fn next_to_pipes(core: &Core, x: i32, y: i32) -> bool {
     })
 }
 
+/// How many cells of pipe (and intact pipe seam) the pipe network touching
+/// the base at (x, y) has, counting every network that borders it once.
+fn pipe_network(core: &Core, x: i32, y: i32) -> usize {
+    let (w, h) = map_size(core);
+    let is_pipe = |x: i32, y: i32| {
+        if x < 0 || y < 0 || x >= w || y >= h {
+            return false;
+        }
+        let row = core.raw_read_16(ROWS + 2 * y as u32, -1) as u32;
+        PIPES.contains(&(core.raw_read_8(MAP + 0x1432 + row + x as u32, -1) & 0x1F))
+    };
+    let mut seen = std::collections::HashSet::new();
+    let mut stack: Vec<(i32, i32)> =
+        [(0, -1), (1, 0), (0, 1), (-1, 0)].iter().map(|&(dx, dy)| (x + dx, y + dy)).filter(|&(a, b)| is_pipe(a, b)).collect();
+    while let Some((a, b)) = stack.pop() {
+        if !seen.insert((a, b)) {
+            continue;
+        }
+        for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
+            if is_pipe(a + dx, b + dy) {
+                stack.push((a + dx, b + dy));
+            }
+        }
+    }
+    seen.len()
+}
+
+/// The CPU builds a Piperunner only at a base touching a connected pipe
+/// network of at least this many cells.
+const MIN_PIPE_NETWORK: usize = 6;
+
 fn buy(core: &mut Core) {
     if !is_on(core) {
         return;
@@ -327,7 +358,7 @@ fn buy(core: &mut Core) {
             continue;
         }
         let cost = core.raw_read_16(crate::roster::table(core) + 0x5C * ds as u32 + 6, -1) as u32 * 10;
-        let fits = ds != crate::roster::PIPERUNNER || next_to_pipes(core, x, y);
+        let fits = ds != crate::roster::PIPERUNNER || pipe_network(core, x, y) >= MIN_PIPE_NETWORK;
         if fits && funds >= cost && 2 * count(core, army, ds) <= count(core, army, aw2) {
             core.gba_mut().cpu_mut().set_gpr(2, ds as i32);
             return;
