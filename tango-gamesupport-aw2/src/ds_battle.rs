@@ -588,6 +588,13 @@ const SIDE_FX_TILES: u32 = 48;
 const FX_PAL: u16 = 12;
 const PAL_BUFFER: u32 = 0x0300_20C0 + 0x200;
 const PAL_RAM: u32 = 0x0500_0200;
+/// The map's OBJ palettes the scene writes over (the figures' 0..7 and the
+/// effects' 12 and 13), kept for the scene's length: +0 whether they are held
+/// ([`HELD`]; cleared when a battle is set up), then the ten rows of 32 bytes from +0x10. The Teams
+/// screen's borrowed-tile buffer (`0x0203E800..0x0203F09F`), idle in a battle.
+const MAP_PALS: u32 = 0x0203_EC00;
+const HELD: u8 = 0xA5;
+const MAP_PAL_ROWS: [u32; 10] = [0, 1, 2, 3, 4, 5, 6, 7, FX_PAL as u32, FX_PAL as u32 + 1];
 /// Each half of the screen, as the scene's windows show it.
 const HALVES: [(i32, i32); 2] = [(0, 119), (121, 240)];
 const SCREEN_H: i32 = 160;
@@ -704,6 +711,39 @@ fn donor(t: u8, class: u8, weapon: u16) -> (u16, u16) {
     }
 }
 
+/// AW2's scene loads its figures' palettes over the map's OBJ palettes 0..7
+/// and the game puts the map's back a few frames before the scene's proc ends,
+/// where this module was still writing its own: the cursor, the panels' text,
+/// the funds and the neutral buildings stayed in the unit's colours (black
+/// where the unit's palette half is empty). Dual Strike's effects also use
+/// palettes 12 and 13, which the game never reloads. So the map's rows are held
+/// when a scene with a new unit starts and put back when it is over.
+fn hold_map_palettes(core: &mut Core) {
+    if core.raw_read_8(MAP_PALS, -1) == HELD {
+        return;
+    }
+    for (i, &row) in MAP_PAL_ROWS.iter().enumerate() {
+        let mut now = [0u8; 32];
+        core.raw_read_range(PAL_BUFFER + 32 * row, -1, &mut now);
+        core.raw_write_range(MAP_PALS + 0x10 + 32 * i as u32, -1, &now);
+    }
+    core.raw_write_8(MAP_PALS, -1, HELD);
+}
+
+fn restore_map_palettes(core: &mut Core) {
+    if core.raw_read_8(MAP_PALS, -1) != HELD {
+        return;
+    }
+    for (i, &row) in MAP_PAL_ROWS.iter().enumerate() {
+        let mut kept = [0u8; 32];
+        core.raw_read_range(MAP_PALS + 0x10 + 32 * i as u32, -1, &mut kept);
+        for base in [PAL_BUFFER, PAL_RAM] {
+            core.raw_write_range(base + 32 * row, -1, &kept);
+        }
+    }
+    core.raw_write_8(MAP_PALS, -1, 0);
+}
+
 /// Trap at [`ROWS_FILLED`]: a new unit's side plays its donor's scene.
 fn rows_filled(core: &mut Core) {
     if !is_on(core) {
@@ -737,6 +777,7 @@ fn figure_count(core: &mut Core) {
         return;
     }
     let state = STATE + SIDE_STATE * side;
+    core.raw_write_8(MAP_PALS, -1, 0);
     core.raw_write_range(state, -1, &[0u8; SIDE_STATE as usize]);
     core.raw_write_range(FX + SIDE_FX * side, -1, &[0u8; SIDE_FX as usize]);
     let t = side_unit_type(core, side);
@@ -1321,6 +1362,7 @@ fn flush(core: &mut Core) {
     }
     // (Each battle's state is set up afresh by [`figure_count`].)
     if !scene_running(core) {
+        restore_map_palettes(core);
         return;
     }
     let mut ours = [None, None];
@@ -1333,6 +1375,7 @@ fn flush(core: &mut Core) {
     if ours.iter().all(|o| o.is_none()) {
         return;
     }
+    hold_map_palettes(core);
     // Where the units stand, for the enemy's hits on them.
     let mut boxes = [None, None];
     for side in 0..2u32 {

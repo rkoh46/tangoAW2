@@ -895,7 +895,7 @@ Campaign's records; 0x0203E000..0x0203F73F was found unwritten at the title, Sel
 (map animations), 0x0203F7A0..0x0203F7DF (power animations), 0x0203F800..0x0203F9FF (battle
 scenes), 0x0203FD60..0x0203FEFF (CPU tactics, heal effect, the Oozium's eat
 0x0203FDC8..0x0203FDFB, stun, battle distance, Teams list),
-0x0203E800..0x0203F09F (the Teams screen's borrowed tiles while partners show), 0x0203F100..0x0203F2FF
+0x0203E800..0x0203F09F (the Teams screen's borrowed tiles while partners show); its first 0x150 bytes from 0x0203EC00 also hold the map's OBJ palettes 0-7, 12 and 13 during a Dual Strike battle scene (`ds_battle.rs`: AW2 puts the map's palettes back a few frames before the scene's proc ends and our figure/effect palettes were still being written over them, leaving the cursor, funds and panel text black or tinted; they are held at the scene's start and restored when it is over), 0x0203F100..0x0203F2FF
 (the Rules screen's borrowed label tiles), 0x0203F400..0x0203F4FF (tag pairs), 0x0203F500..0x0203F5D7 (the tag screens, the CO page's TAG box), 0x0203FF00.. (earlier
 features). Free ROM: 0x08780000..0x0878FFFF (the tag map menu, its stubs and strings, the Rules rows' help
 lines), 0x08790000..0x087A042F (what the tag screens cover, while they show). `factory.rs` has a test that no two traps share
