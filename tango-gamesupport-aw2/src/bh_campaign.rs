@@ -588,12 +588,14 @@ pub fn features_def() -> CampaignDef {
         UnitDef::new(2, unit::TANK, 4, 0).hold().fuel(0).named("walker"),
         UnitDef::new(2, unit::INFANTRY, 7, 0).hold().fuel(0).named("blocker"),
         UnitDef::new(2, unit::TANK, 3, 2).hold().fuel(0),
+        UnitDef::new(2, unit::RECON, 1, 4).named("driven"),
     ];
     v.triggers = vec![on_day_spawn(2, vec![UnitDef::new(2, unit::APC, 4, 1).hold().fuel(0).named("truck")])];
     v.marches = vec![
         MarchDef::new("walker", &[(4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0)], 2),
         MarchDef::speed("truck", &[(4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1), (10, 1), (11, 1)], 6),
     ];
+    v.marches.push(MarchDef::driven("driven", &[(1, 4), (11, 3)], 1));
     v.jams = vec![JamDef { at: (0, 2), until: Cond::DayAtLeast(4) }];
     v.needs = Needs::All(vec!["f01"]);
     v.flag = region::BLACK_HOLE[3];

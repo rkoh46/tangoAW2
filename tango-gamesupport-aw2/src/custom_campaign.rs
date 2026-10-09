@@ -643,15 +643,26 @@ pub struct MarchDef {
     /// 0: `per_day` cells.
     pub points: u8,
     pub from: u16,
+    /// The computer drives the unit itself (AW2's own role code, which goes to a
+    /// place: real speed, pathfinding, move animation) to the path's last cell:
+    /// its role byte is this one while it is alive, and the place the role code
+    /// finds (the enemy HQ) is replaced by the cell ([`goal_hook`]). 0: the
+    /// scripted march above.
+    pub role: u8,
 }
 
 impl MarchDef {
     pub fn new(name: &'static str, path: &[(u8, u8)], per_day: u8) -> MarchDef {
-        MarchDef { name, path: path.to_vec(), per_day, points: 0, from: 1 }
+        MarchDef { name, path: path.to_vec(), per_day, points: 0, from: 1, role: 0 }
+    }
+    /// A march the computer's own movement does (see [`MarchDef::role`]): `role` is
+    /// the AI role byte that goes to a place (1).
+    pub fn driven(name: &'static str, path: &[(u8, u8)], role: u8) -> MarchDef {
+        MarchDef { name, path: path.to_vec(), per_day: 0, points: 0, from: 1, role }
     }
     /// A march at a unit's full speed: `points` move points a day (an APC's 6).
     pub fn speed(name: &'static str, path: &[(u8, u8)], points: u8) -> MarchDef {
-        MarchDef { name, path: path.to_vec(), per_day: 0, points, from: 1 }
+        MarchDef { name, path: path.to_vec(), per_day: 0, points, from: 1, role: 0 }
     }
     pub fn from(mut self, day: u16) -> MarchDef {
         self.from = day;
@@ -1777,6 +1788,42 @@ pub fn tick(core: &mut Core) {
     jams(core);
 }
 
+/// A unit record's role byte (every unit starts with role 1: advance on the enemy HQ) and
+/// its hold byte (+9: the deployment's AI byte, 1 stays put).
+const ROLE_AT: u32 = 0x0B;
+const AI_AT: u32 = 0x09;
+/// The AI's current unit (a pointer to its record).
+const CURRENT_UNIT: u32 = 0x0300_40D8;
+/// After role 1's call that finds the place to go (`sub_08058F90`): the place is at
+/// the out pointer in r4 (two halfwords), r0 the answer (-1: none).
+pub const GOAL_HOOK: u32 = 0x0805_ED2A;
+
+/// A driven march's unit is the one moving: its goal is the path's end.
+pub fn goal_hook(core: &mut Core) {
+    if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
+        return;
+    }
+    let mission = crate::ds_campaign::mission(core) as usize;
+    let Some(list) = custom_of(core).and_then(|c| c.marches.get(mission)) else { return };
+    let list: Vec<MarchDef> = list.iter().filter(|m| m.role != 0).cloned().collect();
+    let unit = core.raw_read_32(CURRENT_UNIT, -1);
+    for m in list {
+        if unit_info(core, m.name).is_some_and(|(a, alive, _)| alive && a == unit) {
+            if let Some(&(x, y)) = m.path.last() {
+                let out = core.gba().cpu().gpr(4) as u32;
+                core.raw_write_16(out, -1, x as u16);
+                core.raw_write_16(out + 2, -1, y as u16);
+                core.gba_mut().cpu_mut().set_gpr(0, 0);
+            }
+            return;
+        }
+    }
+}
+
+pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
+    vec![(GOAL_HOOK, Box::new(goal_hook))]
+}
+
 const MAP_STATE: u32 = 0x0300_32D8;
 const STATE_DISPATCH: u16 = 0xC;
 const INVENTIONS: u32 = 0x0202_8360;
@@ -1804,6 +1851,12 @@ fn marches(core: &mut Core) {
     let (day, army) = (day(core), core.raw_read_16(CURRENT_ARMY, -1) as u8);
     for m in list {
         let Some((a, alive, owner)) = unit_info(core, m.name) else { continue };
+        if m.role != 0 {
+            if alive && a != 0 && core.raw_read_8(a + ROLE_AT, -1) != m.role {
+                core.raw_write_8(a + ROLE_AT, -1, m.role);
+            }
+            continue;
+        }
         if !alive || owner != army || day < m.from || core.raw_read_8(a + MARCH_DAY_AT, -1) == day as u8 {
             continue;
         }
@@ -2006,7 +2059,7 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
                     core.raw_write_8(a + TAG_AT, -1, tag);
                 }
                 if ai != 0 {
-                    core.raw_write_8(a + 9, -1, ai);
+                    core.raw_write_8(a + AI_AT, -1, ai);
                 }
             }
             0
