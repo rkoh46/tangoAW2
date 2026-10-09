@@ -584,7 +584,7 @@ def bh_act2_m5_alarm_and_flares(ctx):
 @test(modes=("ds",))
 def bh_act2_m7_factory_table(ctx):
     """The Black Factory (x 4..6, y 6..9, doors on row 10) spawns F7's units on the player's turns: day 2
-    two Tanks (doors 1 and 3), day 13 an Oozium (door 2) and Hawke's scene."""
+    two Tanks (doors 1 and 3), day 13 a Md Tank (door 2; the factory never builds an Oozium) and Hawke's scene."""
     e, g, d, texts = ready(ctx, 7)
     before = {(u["x"], u["y"]) for u in g.units(1)}
     a2.to_day(e, g, d, 2)
@@ -594,7 +594,7 @@ def bh_act2_m7_factory_table(ctx):
     ctx.eq(sorted((x, y) for _, x, y in spawned), [(4, 11), (6, 11)], "a unit at each of the doors (4, 11) and (6, 11), none at the middle door")
     ctx.check(all(t in (1, 2, 5, 6, 7, 10) for t, _, _ in spawned), f"each within a Tank's price ({spawned})")
     a2.pic(ctx, e, "m7_factory_day2")
-    # day 13 (set day 12 and end the turn): an Oozium on the middle door
+    # day 13 (set day 12 and end the turn): a unit on the middle door
     for u in g.units(1):
         if (u["x"], u["y"]) in ((4, 11), (5, 11), (6, 11)):
             d.remove_unit(u)
@@ -602,8 +602,8 @@ def bh_act2_m7_factory_table(ctx):
     seen = a2.to_day(e, g, d, 13)
     ctx.eq(e.u16(DAY), 13, "day 13")
     ctx.check(g.unit_at(5, 11) is not None and g.unit_at(5, 11)["army"] == 1, "day 13: a unit on the middle door (5, 11), the heavy slot")
-    ctx.check("The Foundry made an Oozium! It looks at me!" in seen, f"the day-13 scene ({seen})")
-    a2.pic(ctx, e, "m7_factory_day13_oozium")
+    ctx.check("The Foundry made a big tank! It looks at me!" in seen, f"the day-13 scene ({seen})")
+    a2.pic(ctx, e, "m7_factory_day13")
     e.close()
 
 

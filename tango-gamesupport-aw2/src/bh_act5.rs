@@ -97,7 +97,7 @@ const F29: [(u8, [u8; 3]); 10] = [
     (7, [unit::MD_TANK, 0, unit::MD_TANK]),
     (9, [unit::MISSILES, unit::ROCKETS, unit::MISSILES]),
     (11, [unit::NEOTANK, 0, unit::NEOTANK]),
-    (13, [0, unit::MEGATANK, unit::OOZIUM]),
+    (13, [0, unit::MEGATANK, unit::MD_TANK]),
     (15, [unit::NEOTANK, unit::NEOTANK, 0]),
     (18, [unit::ROCKETS, unit::NEOTANK, unit::ANTI_AIR]),
 ];

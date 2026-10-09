@@ -341,7 +341,7 @@ EAGLE: I put a bow on her, even. / You'll love her!
 HAWKE: A gift. Hobb, find me a / long pole.
 
 == m07_day13 | HAWKE
-CRUMB(h): The Foundry made an / Oozium! It looks at me!
+CRUMB(h): The Foundry made a big / tank! It looks at me!
 HAWKE: Do not feed it.
 CRUMB(s): ...Gerald is hiding.
 MORTAR: Crumb. Back away, slowly.
@@ -370,7 +370,7 @@ HAWKE: The cranes, Colonel, were / always going to be yours.
 HAWKE: The Foundry is Sturm's. The / board is mine.
 
 == m07_map | HAWKE
-CRUMB: The Oozium followed me to / the latrine, Sergeant.
+CRUMB: The tank followed me to / the latrine, Sergeant.
 MORTAR: Then he knows where / your biscuit is.
 CRUMB(s): Gerald is NOT a food.
 WICK: Is it all right if I ask / why it likes you?

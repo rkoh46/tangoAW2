@@ -245,18 +245,42 @@ from the ROM table `0x080C1BC4`.
     | 15 | none | Md Tank | none | 31 | Tank | Infantry | Mech |
 
   - *Candidates*: Infantry, Mech, Md Tank, Megatank, Tank, Recon, Neotank,
-    Piperunner, Artillery, Rockets, Anti-Air, Missiles, Oozium, Fighter,
-    Bomber, B Copter, and the ships (Lander, Cruiser, Battleship, Sub, Black
+    Artillery, Rockets, Anti-Air, Missiles, Fighter, Bomber, B Copter, and the ships (Lander, Cruiser, Battleship, Sub, Black
     Boat, Carrier).
   - *Cost rule* (the factory is not a free army): a spawn costs at most the
     table's unit for that day and slot, so over any stretch of days the
     factory spawns no more value than AW2's table would (the table's
     Infantry slot can only be a cheaper unit, its Neotank slot anything up
-    to a Neotank's price). The one exception: Megatank, Battleship, Carrier
-    and Oozium (the heavy ones) may cost up to 30% more than the slot's
-    unit (so only a big slot can bring one: a Neotank's, a Md Tank's for
-    the Oozium), and only one of each may stand on Black Hole's side at a
+    to a Neotank's price). The one exception: Megatank, Battleship and Carrier
+    (the heavy ones) may cost up to 30% more than the slot's
+    unit (so only a big slot can bring one: a Neotank's), and only one of each may stand on Black Hole's side at a
     time (a loss is replaced by a later spawn); they also score -20.
+  - *The Black Factory never builds a Piperunner or an Oozium*, in any mode and from any table: a table slot that
+    names an Oozium (it is only a price cap) gets the smart pick instead, and the BH Campaign's two such slots (M7 and
+    M29, day 13) are a Md Tank now.
+  - *Reasons* (`bh_smart.rs`; every unit needs a reason grounded in what Black Hole sees now, fog respected):
+    - threat: enemy units near the doors weighted by price x HP bars x nearness, split into air, armour, soft and
+      indirect shares; which of them could hit a unit on the doors next turn (move + range, indirect by range alone)
+      and whether one is already at the doors ("hot").
+    - counter: the damage chart both ways (deals minus 0.6 x takes); armour share favours Md Tank, Neotank, Megatank
+      (Tank less); Anti-Air/Missiles need enemy air in sight (+, scaled by the air share; -50 with none, -22 if only an
+      enemy airport is near); Fighter only when enemy air is on the field now; Bomber needs armour/artillery to
+      bomb and no enemy Anti-Air, Missiles, Cruiser or Fighter within 10 squares (not two anywhere); B Copter needs
+      soft targets (infantry, artillery, rockets, recon) and the same quiet sky; air is dropped from the pool when those
+      fail; ships need a naval or reachable target.
+    - door safety: with an enemy able to reach the doors, Artillery, Rockets, Missiles take -40 (-70 if one is
+      adjacent or three reach); with the enemy at the doors the sturdiest direct unit gets up to +55 and thin ones lose.
+    - indirect fire needs a protected backline (two own direct units within 6 squares), nobody reaching the doors and
+      targets within 3 turns, else -35.
+    - foot soldiers (Infantry, Mech) score -30 unless an enemy/neutral property is in reach that none of Black Hole's
+      foot units is on or next to; only a slot too cheap for anything else forces one.
+    - gaps: no anti-air while enemy air is in sight (+15), a thin front line (+10 for armour), no indirect yet.
+    - objectives: units that reach the HQ in two turns when enemies are within 7 squares of it (+12); a few distant
+      foes in a campaign mission favour fast units (+6).
+    - variety: the last four picks of the army (4 bytes per army at `0x0203E3E4`, newest first, cleared on day 1)
+      count against a repeat (-20 for the last, -12 each before), and each unit already standing -10.
+    The schedule, doors, counts and the cost rule are unchanged, so the factory spends no more than the table.
+    `TANGOAW2_BH_LOG_ALL=1` also logs every candidate with its reasons (`cand` lines).
   - *The pick* (so a human cannot read the factory's next move): the candidates are scored
     as below, then one is drawn, weighted by score, from the best two or three whose
     score is within 15% of the best (at least 6 points); a candidate's weight is its score
@@ -276,7 +300,7 @@ from the ROM table `0x080C1BC4`.
   - *Scoring* (each candidate's score; the pick above draws among the best):
     *counter*: what the candidate does to the enemy units Black Hole sees
     minus 0.6 of what they do to it, by Dual Strike's own damage chart
-    (`roster::chart`, an Oozium eats ground units for 100), each enemy
+    (`roster::chart`), each enemy
     weighted by price x HP bars x nearness (so air answers Anti-Air and
     Missiles, a fleet Subs, Battleships and Cruisers, infantry Recon, Tanks,
     Artillery and so on), x1.5 while enemies are within 6 of the factory;
@@ -284,12 +308,11 @@ from the ROM table `0x080C1BC4`.
     unit or enemy/neutral property by the unit's own movement chart over the
     real map (Dijkstra: rivers, mountains and woods stop treads, the sea
     stops all but ships and air, a pipe line takes a Piperunner), -45 where
-    it cannot get there; none of it while the factory is threatened, which
-    instead adds price/1500 for sturdiness, +25 for an Oozium at the door and
-    -20 for indirect fire with an enemy at its feet; *army*: -7 for each unit of
+    it cannot get there; none of it while the factory is threatened
+    (the door-safety rules below take over); *army*: -10 for each unit of
     the type Black Hole already has, -3 for each of the same role, +10 for
     indirect fire when it has none, +8..16 for Infantry and Mech while
-    properties wait to be captured; *specialists*: -30 Anti-Air with no air
+    properties wait to be captured; *specialists* (the rules below add to or replace these): -50 Anti-Air with no air
     in sight, -15 a Sub with no ship in sight, -10 a copter and -25 a
     Fighter or Bomber for their fuel, a Lander +30 only with land to ferry
     troops to (else -40), a Black Boat +25 only with two hurt units; *size*:
