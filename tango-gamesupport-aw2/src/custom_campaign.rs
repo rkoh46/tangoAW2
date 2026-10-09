@@ -365,7 +365,9 @@ pub struct UnitDef {
     pub y: u8,
     /// Hit points 1..100 (internal; the display is HP / 10).
     pub hp: u8,
-    /// The computer's order for it: 0 attack, 1 hold, 5 (as Dual Strike's).
+    /// The computer's role for it (AW2's AI byte): 0 stays where it is (still fires at what comes into
+    /// reach), 1 goes for the enemy HQ, 3 for the enemy's properties, 4 at the nearest enemy units, 7 by
+    /// its HQ. [`UnitDef::hold`] is role 1.
     pub ai: u8,
     /// A name the mission's rules can refer to ([`Cond::UnitAt`], ...).
     pub name: Option<&'static str>,

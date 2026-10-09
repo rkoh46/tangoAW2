@@ -12,8 +12,8 @@ DS_TABLE = 0x08E00000
 ALL = (1 << 10) - 1   # every roster CO but Sonja (the secret mission's recruit: with her the CO screen has a second country tab and the partner pick cannot reach the Black Hole tab)
 # number: (title, won mask, CO picks, armies: (colour, CO), map size, day limit)
 MISSIONS = {
-    29: ("The Orange Gate", a5.WON(3), [bh.STURM], [(5, bh.STURM), (1, None)], (34, 28), 32),
-    30: ("Nell's Stand", a5.WON(4), [bh.STURM, bh.CLONE_ANDY], [(5, None), (1, None), (1, 1)], (36, 28), 34),
+    29: ("The Orange Gate", a5.WON(12), [bh.STURM], [(5, bh.STURM), (1, None)], (34, 28), 32),
+    30: ("Nell's Stand", a5.WON(13), [bh.STURM, bh.CLONE_ANDY], [(5, None), (1, None)], (36, 28), 34),
 }
 MAP_FILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh")
 
@@ -43,8 +43,7 @@ def check_load(ctx, n):
     ctx.eq(d.mission(), a5.M[n], f"M{n}: the mission")
     ctx.eq(d.size(), size, f"M{n}: the map's size")
     for army, count in units.items():
-        # (M29's Black Factory puts its first unit on a door tile at once)
-        ctx.eq(len(g.units(army)), count + (1 if (n, army) == (29, 1) else 0), f"M{n}: army {army}'s units")
+        ctx.eq(len(g.units(army)), count, f"M{n}: army {army}'s units")
     a5.pic(ctx, e, f"m{n}_opening")
     ctx.log("\n".join(texts))
     e.close()
@@ -97,3 +96,207 @@ def _pictures(n):
 
 for _n in MISSIONS:
     _pictures(_n)
+
+
+INVENTIONS = 0x02028360
+
+
+def inventions(e):
+    out = []
+    for i in range(24):
+        b = e.read(INVENTIONS + 8 * i, 8)
+        if any(b):
+            out.append((i, list(b)))
+    return out
+
+
+@test(modes=("ds",))
+def bh_act5_m29_deathray_probe(ctx):
+    """The Deathray's real area (docs/AW2.md: columns x..x+2 from row y+3 to the bottom edge, enemies only), measured: enemy
+    Infantry stand in a row of cells; its counter is set to fire at the next turn start; the cells that lost HP are the area."""
+    e, g, d, spec = load_mission(ctx, 29)
+    a5.open_mission(ctx, e, g, d, a5.M[29], spec[2], "m29")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    ctx.log("inventions: " + str(inventions(e)))
+    a5.calm(e, g, d)
+    # every Orange unit stranded without fuel (no moves), a column of them across the map
+    us = g.units(2)
+    cells = [(x, y) for y in range(4, 12) for x in (15, 16, 17, 18, 19)]
+    for u, c in zip(us, cells):
+        d.place_unit(u, *c)
+    for u in g.units(2):
+        e.w8(g.unit_addr(u["id"]) + 6, 0)
+        e.w8(g.unit_addr(u["id"]) + 4, 100)
+    before = {u["id"]: (u["x"], u["y"], u["hp"]) for u in g.units(2)}
+    e.w8(INVENTIONS + 6, 1)            # the Deathray fires at the next turn start
+    ctx.log("before: " + str(sorted((u["x"], u["y"], u["type"], u["hp"]) for u in g.units(2))))
+    a5.next_turn(e, g, d)
+    for _ in range(60):
+        if e.u16(0x03004080) >= 2 and g.current_army() == 1:
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(60)
+    a5.calm(e, g, d)
+    g._units_base = g._players_base = None
+    hurt = [(u["type"], u["x"], u["y"], u["hp"]) for u in g.units(2) if u["id"] in before and u["hp"] < before[u["id"]][2]]
+    ctx.log("hurt after the turn: " + str(sorted(hurt)))
+    import json
+    json.dump(sorted((x, y) for (_, x, y, _) in hurt), open(os.path.join(os.environ.get("SP", "/tmp"), "deathray_hits.json"), "w"))
+    ctx.log("army 2 after: " + str(sorted((u["x"], u["y"], u["type"], u["hp"]) for u in g.units(2))))
+    ctx.log("army 1 after: " + str(sorted((u["x"], u["y"], u["type"], u["hp"]) for u in g.units(1))))
+    ctx.log("day " + str(e.u16(0x03004080)))
+    e.close()
+
+
+@test(modes=("ds",))
+def bh_act5_m30_nell_pushes_and_uses_her_powers(ctx):
+    """With the player passing every turn: Nell's army leaves its walls (the roles in bh_act5.rs's doc), the camp's
+    structures wear it down at the moat, and her powers come on days 3 and 7 (the meter scripts)."""
+    e, g, d, spec = load_mission(ctx, 30)
+    a5.open_mission(ctx, e, g, d, a5.M[30], spec[2], "m30")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    for _ in range(6):
+        a5.calm(e, g, d)
+        e.wait(100)
+    start = {u["id"]: (u["x"], u["y"]) for u in g.units(2)}
+    log = []
+    for day in range(2, 9):
+        a5.to_day(e, g, d, day)
+        a5.calm(e, g, d)
+        g._units_base = g._players_base = None
+        p2 = g.player(2)
+        us = g.units(2)
+        moved = sum(1 for u in us if u["id"] in start and (u["x"], u["y"]) != start[u["id"]])
+        south = sum(1 for u in us if u["y"] >= 16)
+        log.append((day, len(us), len(g.units(1)), moved, south, p2["co"], p2["powers_used"], p2["charge"]))
+        ctx.log(f"day {day}: orange {len(us)} units ({moved} moved from their start, {south} south of the moat), black hole {len(g.units(1))}, "
+                f"Nell uses {p2['powers_used']} charge {p2['charge']} mode {p2['co_mode']}")
+    ctx.check(any(r[3] > 10 for r in log), "Nell's army leaves its start cells (more than ten units moved)")
+    ctx.check(log[-1][6] >= 2, "Nell has used both a power and a Super by day 8")
+    e.close()
+
+
+def play(ctx, e, g, d, bot, day_to, label, army=1):
+    """The bot plays the player's turns until the player's turn of day `day_to` (or the battle ends)."""
+    while e.u16(0x03004080) < day_to and not e.u8(dc.LAST_RESULT):
+        bot.play_turn(army)
+        a5.calm(e, g, d) if not e.u8(dc.LAST_RESULT) else None
+        for _ in range(4000):
+            if e.u8(dc.LAST_RESULT) or g.current_army() == army:
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(20)
+        g._units_base = g._players_base = None
+        if e.u8(dc.LAST_RESULT):
+            break
+        us = g.units(2)
+        ctx.log(f"{label} day {e.u16(0x03004080)}: orange {len(us)} (Great Hall owner {g.terrain_class(18, 3) >> 5}), black hole {len(g.units(1))}, "
+                f"Nell {g.player(2)['co']} uses {g.player(2)['powers_used']}")
+
+
+@test(modes=("ds",))
+def bh_act5_m30_balance_run(ctx):
+    """The intended strategy played by the test bot (docs/BH_CAMPAIGN.md M30): dig in on the South Field behind the structures
+    until Nell's Super on day 7, then counter and push for the Great Hall."""
+    from aw2test.bot import Bot
+    e, g, d, spec = load_mission(ctx, 30)
+    a5.open_mission(ctx, e, g, d, a5.M[30], spec[2], "m30")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    a5.calm(e, g, d)
+    bot = Bot(d, log=lambda s: None, stance="defend", garrison=True)
+    play(ctx, e, g, d, bot, 8, "defend")
+    bot2 = Bot(d, log=lambda s: None, stance="attack", garrison=True, goals=[(18, 3)])
+    play(ctx, e, g, d, bot2, 30, "push")
+    ctx.log(f"result {e.u8(dc.LAST_RESULT)} day {e.u16(0x03004080)}")
+    e.close()
+
+
+def capture(e, g, d, x, y):
+    g.select(x, y)
+    g.move_to(x, y)
+    g.choose("Capt", g.ACTION_MENU)
+    a5.calm(e, g, d)
+
+
+@test(modes=("ds",))
+def bh_act5_m30_stage_two_is_the_same_army_under_andy(ctx):
+    """The Great Hall falls (two captures): Orange Star is not defeated; the same army (2) goes on with Andy as its CO
+    (his own meter), the Rail Yard (the map's second HQ) as its HQ, reserves on the platform and +10000 funds; capturing
+    the Rail Yard then wins. Pictures: the stage-two state."""
+    from aw2test import stitch
+    e, g, d, spec = load_mission(ctx, 30)
+    a5.open_mission(ctx, e, g, d, a5.M[30], spec[2], "m30")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    for _ in range(4):
+        a5.calm(e, g, d)
+        e.wait(100)
+    # Nell's army as it stands at about day 8: some twenty units, held where they are (no fuel), none near the keep
+    keep = [u for u in g.units(2) if u["x"] >= 22 or u["y"] >= 12]
+    keep = keep[::2][:20]
+    for u in g.units(2):
+        if u["id"] not in {k["id"] for k in keep}:
+            d.remove_unit(u)
+    for u in keep:
+        e.w8(g.unit_addr(u["id"]) + 6, 0)
+    g._units_base = g._players_base = None
+    n_before = len(g.units(2))
+    funds_before = e.u32(g.player(2)["addr"])
+    mine = next(u for u in g.units(1) if u["type"] == 1)
+    d.place_unit(mine, 18, 3)
+    e.wait(10)
+    g._units_base = g._players_base = None
+    capture(e, g, d, 18, 3)
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "the first capture action: the battle goes on")
+    a5.next_turn(e, g, d)
+    a5.calm(e, g, d)
+    g._units_base = g._players_base = None
+    ctx.eq(g.player(2)["co"], bh.NELL_ID if hasattr(bh, "NELL_ID") else 0, "stage one: Nell leads Orange Star")
+    capture(e, g, d, 18, 3)
+    a5.calm(e, g, d)
+    for _ in range(6):
+        e.wait(60)
+        a5.calm(e, g, d)
+    g._units_base = g._players_base = None
+    ctx.eq(g.terrain_class(18, 3) >> 5, 1, "the Great Hall is Black Hole's")
+    ctx.eq(e.u8(dc.LAST_RESULT), 0, "the battle goes on: Orange Star is not defeated by the loss of the Great Hall")
+    p2 = g.player(2)
+    ctx.eq(p2["co"], 1, "stage two: Andy leads the same army")
+    ctx.eq(p2["powers_used"], 0, "Andy's own count of powers")
+    cost = e.u32(0x0)  if False else None
+    ctx.check(p2["charge"] > 0, f"Andy's meter is his own and charged ({p2['charge']})")
+    us = g.units(2)
+    reserve_cells = {(u["x"], u["y"]) for u in us if u["x"] >= 32 and u["y"] <= 10}
+    ctx.check(len(reserve_cells) >= 12, f"the reserves stand on the Rail Yard ({len(reserve_cells)} units)")
+    ctx.check(len(us) <= 50, "the army cap holds")
+    ctx.log(f"army 2: {n_before} units before, {len(us)} after; funds {funds_before} -> {e.u32(p2['addr'])}")
+    ctx.check(e.u32(p2["addr"]) >= funds_before + 10000, "Orange Star's funds rose by 10000")
+    a5.pic(ctx, e, "m30_stage2_opening")
+    stitch.IMAGES = a5.SHOTS or stitch.IMAGES
+    w, h = d.size()
+    g.goto(0, 0)
+    stitch.stitch(ctx, g, "m30_stage2", w, h)
+    # the Rail Yard falls: a win
+    mine = next(u for u in g.units(1) if u["type"] in (1, 2) and (u["x"], u["y"]) != (18, 3))
+    for u in g.units(2):
+        if u["x"] == 33 and u["y"] == 6:
+            d.remove_unit(u)
+    d.place_unit(mine, 33, 6)
+    e.wait(10)
+    g._units_base = g._players_base = None
+    capture(e, g, d, 33, 6)
+    a5.next_turn(e, g, d)
+    a5.calm(e, g, d)
+    capture(e, g, d, 33, 6)
+    for _ in range(30):
+        if e.u8(dc.LAST_RESULT):
+            break
+        e.press("A", 4)
+        e.wait(60)
+    ctx.eq(e.u8(dc.LAST_RESULT), 1, "capturing the Rail Yard wins the battle")
+    e.close()

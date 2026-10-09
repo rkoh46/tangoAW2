@@ -2,88 +2,89 @@
 
 map bh29
 armies 2 3 5 1
-unit 2 1 19 13
-unit 2 1 19 10
-unit 2 1 19 16
-unit 2 1 18 12
-unit 2 1 18 14
-unit 2 1 20 11
-unit 2 1 20 15
-unit 2 1 21 5
-unit 2 1 21 22
-unit 2 1 23 11
-unit 2 2 21 12
-unit 2 2 21 14
-unit 2 2 18 5
-unit 2 2 18 22
-unit 2 5 22 13
-unit 2 5 23 13
-unit 2 5 22 9
-unit 2 5 22 17
-unit 2 3 21 13
-unit 2 3 24 13
-unit 2 3 22 7
-unit 2 3 22 19
-unit 2 8 25 13
-unit 2 8 23 12
-unit 2 8 23 14
-unit 2 4 27 13
-unit 2 10 24 11
-unit 2 10 24 15
-unit 2 10 26 10
-unit 2 11 26 16
-unit 2 11 25 12
-unit 2 11 25 14
-unit 2 14 23 10
-unit 2 14 23 16
-unit 2 14 28 13
-unit 2 15 27 12
-unit 2 15 27 14
-unit 2 16 29 7
+split y 14
+unit 2 1 16 17
+unit 2 1 18 17
+unit 2 1 17 17
+unit 2 1 16 19
+unit 2 1 18 19
+unit 2 1 7 17
+unit 2 1 27 17
+unit 2 1 7 19
+unit 2 1 27 19
+unit 2 1 17 22
+unit 2 2 16 18
+unit 2 2 18 18
+unit 2 2 9 19
+unit 2 2 26 19
+unit 2 5 17 18
+unit 2 5 14 19
+unit 2 5 20 19
+unit 2 5 17 19
+unit 2 3 15 19
+unit 2 3 19 19
+unit 2 3 16 23
+unit 2 3 18 23
+unit 2 8 17 24
+unit 2 8 15 23
+unit 2 8 19 23
+unit 2 4 17 25
+unit 2 10 15 24
+unit 2 10 19 24
+unit 2 10 13 23
+unit 2 11 21 23
+unit 2 11 11 23
+unit 2 11 25 23
+unit 2 14 16 24
+unit 2 14 18 24
+unit 2 14 17 23
+unit 2 15 14 23
+unit 2 15 20 23
+unit 2 16 30 23
 unit 1 1 14 12
-unit 1 1 14 14
-unit 1 1 13 13
-unit 1 1 14 16
-unit 1 2 12 12
-unit 1 2 12 14
-unit 1 2 13 15
-unit 1 5 8 15
-unit 1 5 9 14
-unit 1 5 10 13
-unit 1 3 9 13
-unit 1 3 11 14
-unit 1 3 11 12
-unit 1 11 8 14
-unit 1 11 8 12
-unit 1 14 10 12
-unit 1 14 10 15
-unit 1 15 9 15
-unit 1 4 12 13
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-^.......^^..............^^.......^
-^.RRRRRRRRRRRRRRRRRRRRRRRRRRRRR..^
-^fRffffff...fff.~~^^^^^^^^^^^^R^^^
-^fRffffff...fff.~~.^^^.fffffffR..^
-^fR......###fRRRRRRRRRR.......R.^^
-^fR......#O#fRf.~~.^^.RRRRRRRAR.^^
-^fR......###fRf.~~..^.R.B..B..Rff^
-^fR.........cRf.~~ff^.RC....C.Rff^
-^.RRRB...ffffR..~~ff^.R.C..C..Rff^
-^.RC.Z...ffffRE.~~..^.R..C....Rff^
-^.R..I.......R..~~.^^^R.....C.R..^
-^^R.###......R..~~.^^.R...B...R..^
-^^R.###RRRRRRRRR==RRRRRRRRRRRRR2.^
-^^1.#F#R..ffff..~~.^^.R...B...R..^
-^^R.###R..ffff..~~.^^^R.....C.R..^
-^^RRRRRRRRRRRRR.~~..^.R.C.....Rff^
-^.RC.........RE.~~ff^.R..C....Rff^
-^fR.....ffff.R..~~ff^.R....C..Rff^
-^fRB....ffffcR..~~ff^.RC.....CRff^
-^fR.....ffff.Rf.~~..^.R.B..B..R..^
-^fR###.......Rf.~~.^^.RRRRRRRRA.^^
-^fR#D#.......RRRRRRRRRR.......R.^^
-^fR###.......ff.~~.^^^.fffffffR..^
-^fR...fffffffff.~~^^^^^^^^^^^^R^^^
-^fR.....L.......~~...............^
-^.RRRRRRRRRRRRRRRRRRRRRRRRRRRRR..^
+unit 1 1 20 12
+unit 1 1 12 12
+unit 1 1 22 12
+unit 1 2 15 12
+unit 1 2 19 12
+unit 1 2 17 11
+unit 1 5 16 11
+unit 1 5 18 11
+unit 1 5 17 10
+unit 1 3 13 11
+unit 1 3 21 11
+unit 1 3 17 9
+unit 1 11 15 10
+unit 1 11 19 10
+unit 1 14 16 9
+unit 1 14 18 9
+unit 1 15 17 8
+unit 1 4 17 7
+^^^^^^^^^^^^^^^^^^^^^^^^^I^^^^^^^^
+^^Rff^^.fffffff.###f^^ff.I.ff^^R^^
+^^Rfff..fffffff.#D#fffff###ffffR^^
+^^R...1.........###.....###ffffR^^
+^.R..CR..^^..C...R......#F#.^^.R.^
+^.R...R..^.......R......###.^..R.^
+^.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.^
+^.RfB..fffB......R.fff........fR.^
+^.Rf...fff.###ff.R.fff.ffffff.fR.^
+^^RC...fff.#O#ff.R....cffffffcfR^^
+^^Rffff.L..###ff.R.....ffffff.fR^^
+^^Rffff.......S..R..S..ffffff.fR^^
+^.R............................R.^
+^.R~~~~~=~~~~~~~~==~~~~~~~~=~~~R.^
+^.R~~~~~=~~~~~~~~==~~~~~~~~=~~~R.^
+^^R^^^^^R^^^^^^^^R.^^^^^^^^R^^^R^^
+^^R^^^^^R^^^^^^^^R.^^^^^^^^R^^^R^^
+^^RC..^.R.^.C.^^.R.^^.C..^.R.^CR^^
+^^RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR^^
+^.RffBffRfff.C...R...C.ffffR.BfR.^
+^^R^^^^^R^^^^^^^^R.^^^^^^^^R^^^R^^
+^^R^^^^^R^^^^^^^^R.^^^^^^^^R^^^R^^
+^^RAfC..R..C..^^.R.^^......R..AR^^
+^.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.^
+^^R....B..C.B.C..R....B.C.B.CR.R^^
+^^R.ffffffffffff.R.fffffffff.2.R^^
+^.RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.^
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

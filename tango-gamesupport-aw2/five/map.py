@@ -209,7 +209,13 @@ def grid(m):
     # second-stage HQ of a team-mate does not take its neighbour's properties)
     owning = m.get('owners') or sorted(hqs)
 
+    split = m.get('split')
+
     def owner(x, y):
+        if split:
+            # `split y 14` / `split x 20`: the first HQ's army owns what lies up to that row (column), the second's the rest
+            first, second = sorted(hqs)[:2]
+            return first if (y if split[0] == 'y' else x) <= split[1] else second
         return min(owning, key=lambda a: (abs(hqs[a][0] - x) + abs(hqs[a][1] - y), a))
 
     return W, H, ch, hqs, owner

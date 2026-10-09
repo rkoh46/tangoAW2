@@ -12,6 +12,7 @@ mountain is drawn by the rules learned from the game's own maps) with these
 lines more, before a map's rows:
 
     team 1 2 1 1 2          the armies' teams (default: every army its own)
+    split y 14              two-army maps: the first HQ's army owns the properties up to row 14, the second's the rest
     owners 1 2              the armies whose HQs decide who owns each property (the nearest;
                             default: every HQ), so a team-mate's second-stage HQ takes none
     objective 1 3           the armies that must reach every enemy HQ (default: army 1,
@@ -94,6 +95,10 @@ def parse(paths):
                 extra[cur] = {'units': [], 'team': None, 'objective': [1]}
             if cur and s.startswith('objective '):
                 extra[cur]['objective'] = [int(x) for x in s.split()[1:]]
+                continue
+            if cur and s.startswith('split '):
+                f = s.split()
+                extra[cur]['split'] = (f[1], int(f[2]))
                 continue
             if cur and s.startswith('owners '):
                 extra[cur]['owners'] = [int(x) for x in s.split()[1:]]
