@@ -115,13 +115,19 @@ fn role_of(kind: u8) -> u8 {
 }
 
 /// Roles for the enemy's deployment (army 1, the player's, and units with a role other than the map's `hold` flag,
-/// are left alone): a unit the map marks `hold` (ai 1 here) is a garrison and stands (0); the rest advance by kind.
-fn roles(units: Vec<UnitDef>) -> Vec<UnitDef> {
+/// are left alone). A unit the map marks `hold` (ai 1 here) is a garrison and stands (0), unless the mission names
+/// its real garrison (`GARRISONS`: M5 and M9 flag every unit on the map, but only the cells listed there hold);
+/// the rest advance by kind (foot soldiers to properties, the others to units, indirect fire and Anti-Air hold).
+fn roles(units: Vec<UnitDef>, garrison: Option<&[(u8, u8)]>) -> Vec<UnitDef> {
     units
         .into_iter()
         .map(|mut u| {
             if u.army != 1 && (u.ai == 0 || u.ai == 1) {
-                u.ai = if u.ai == 1 { 0 } else { role_of(u.kind) };
+                let holds = match garrison {
+                    Some(g) => g.contains(&(u.x, u.y)),
+                    None => u.ai == 1,
+                };
+                u.ai = if holds { 0 } else { role_of(u.kind) };
             }
             u
         })
@@ -129,6 +135,17 @@ fn roles(units: Vec<UnitDef>) -> Vec<UnitDef> {
 }
 
 const ROLE_MISSIONS: [&str; 8] = ["bh04", "bh05", "bh06", "bh07", "bh08", "bh09", "bh10", "bh11"];
+
+/// The true garrisons where the map flags everything `hold`: M5's HQ and Com Tower guards (a Mech and an Infantry;
+/// the rest of the night crew scrambles at the raiders, the aircraft stay parked); M9's yard guard at the port
+/// (two Tanks, a Mech and an Infantry; the rest of the escort moves out, the Anti-Air and Rockets fire from where they stand).
+fn garrison(key: &str) -> Option<&'static [(u8, u8)]> {
+    match key {
+        "bh05" => Some(&[(19, 4), (20, 6)]),
+        "bh09" => Some(&[(23, 5), (23, 9), (24, 6), (24, 8)]),
+        _ => None,
+    }
+}
 
 fn apply_roles(v: &mut [MissionDef]) {
     for key in ROLE_MISSIONS {
@@ -141,9 +158,9 @@ fn apply_roles(v: &mut [MissionDef]) {
         } else {
             std::mem::take(&mut m.units)
         };
-        m.units = roles(base);
+        m.units = roles(base, garrison(key));
         if let Some(f) = &mut m.front2 {
-            f.units = roles(std::mem::take(&mut f.units));
+            f.units = roles(std::mem::take(&mut f.units), None);
         }
     }
 }
@@ -645,7 +662,10 @@ fn bh10() -> MissionDef {
     m.map = MapSrc::Built("bh10");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(8000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::EAGLE, co::JESS)).funds(14000),
+        // Production is deliberate: Green Earth owns two bases and an airport (all kept clear of units) and starts
+        // with 4000, so the garrison is reinforced by a couple of units early and then only by city income;
+        // Black Hole owns a base, an airport and its Fighter.
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::EAGLE, co::JESS)).funds(4000),
     ];
     m.day_limit = 24;
     m.rank_days = 16;

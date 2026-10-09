@@ -124,6 +124,8 @@ def pictures(ctx, n, shots=(0,)):
     else:
         g.goto(0, 0)
         stitch.stitch(ctx, g, f"m{n}", w, h)
+    low = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] != 100]
+    ctx.eq(low, [], f"M{n}: every unit still at 100 HP after the picture was taken")
     if n == 8:
         # the dusk gate, the second front: Map menu > Front shows it
         from aw2test import twofront as tf
@@ -143,7 +145,7 @@ def pictures(ctx, n, shots=(0,)):
 
             def check(self, ok, msg):
                 return None
-        clean = stitch.stitch(Quiet(ctx), g, "m8_second_front", w2, h2, reject=lambda c: (c.min(axis=2) > 225).sum() > 60)
+        clean = stitch.stitch(Quiet(ctx), g, "m8_second_front", w2, h2, reject=lambda c: (c.min(axis=2) > 225).sum() > 60 or (((abs(c - (139, 131, 131)).sum(axis=2) < 6) | (abs(c - (106, 131, 139)).sum(axis=2) < 6)).sum() > 30))   # (the view's grey terrain window too)
         try:
             from PIL import Image
             import numpy as np
@@ -300,7 +302,7 @@ def bh_act2_m6_landers_load_and_unload_on_every_beach(ctx):
     players = e.u32(0x08499598)
     e.w8(players + 0x3C * 2 + 0x1B, 1)       # (the computer's army is played by hand too)
     bs = beaches("bh06")
-    ctx.eq(len(bs), 10, "ten beaches: two on each island")
+    ctx.eq(len(bs), 12, "twelve beaches: two on each island and four on Black Hole's")
     done = {1: 0, 2: 0}
     for k, ((bx, by), land, sea, rows) in enumerate(bs):
         army = 1 if k % 2 == 0 else 2          # (each army uses five beaches, by turns)
@@ -365,7 +367,7 @@ def bh_act2_m6_landers_load_and_unload_on_every_beach(ctx):
         if k in (0, 5):
             a2.pic(ctx, e, f"m6_lander_dropped_{bx}_{by}")
         done[army] += 1
-    ctx.eq(done, {1: 5, 2: 5}, "each army used five beaches")
+    ctx.eq(done, {1: 6, 2: 6}, "each army used six beaches")
     e.close()
 
 
@@ -833,8 +835,10 @@ def _full_hp(n):
         """Every unit of both armies starts at full hit points (the Lasers and minicannons fire on Black Hole's turn
         at every unit on their lines, ours included: nobody of ours starts there)."""
         e, g, d, texts = ready(ctx, n)
-        low = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] != 100]
-        ctx.eq(low, [], f"M{n}: every unit at 100 HP at the first turn")
+        for t in range(6):
+            low = [(u["army"], u["type"], u["x"], u["y"], u["hp"]) for u in g.units() if u["hp"] != 100]
+            ctx.eq(low, [], f"M{n}: every unit at 100 HP at the first turn (+{t * 100} frames)")
+            e.wait(100)
         e.close()
     fn.__name__ = f"bh_act2_m{n}_units_start_at_full_hit_points"
     test(modes=("ds",))(fn)
@@ -862,3 +866,51 @@ def bh_act2_enemy_units_advance(ctx):
         ctx.log(f"M{n}: {len(moved)} of {len(alive)} surviving enemy units left their start tiles; still: {still}")
         ctx.check(len(moved) >= max(1, len(alive) // 4), f"M{n}: the enemy advances ({len(moved)} of {len(alive)} moved)")
         e.close()
+
+
+@test(modes=("ds",))
+def bh_act2_m8_send_to_the_second_front(ctx):
+    """M8: a Black Hole unit standing on the army's HQ or base gets the Send command, leaves the main
+    front once its move ends and arrives by the army's units on the second front when it starts;
+    a unit off the HQ and bases has no Send."""
+    from aw2test import twofront as tf
+    e, g, d, texts = ready(ctx, 8, [bh.STURM, bh.HAWKE])
+    hq = next((x, y) for y in range(d.size()[1]) for x in range(d.size()[0]) if g.terrain_class(x, y) == 0x08 | 1 << 5)
+    mine = [u for u in g.units(1) if u["type"] in (1, 2, 5)]
+    u = mine[0]
+    if g.unit_at(*hq) is None:
+        d.place_unit(u, *hq)
+    u = g.unit_at(*hq)
+    count = len(g.units(1))
+    tf.select(e, g, d, hq[0], hq[1])
+    names = g.move_to(*hq)["names"]
+    a2.pic(ctx, e, "m8_send_command")
+    ctx.check("Send" in names, f"Send in the command menu of a unit on the HQ ({names})")
+    for _ in range(names.index("Send")):
+        e.press("DOWN", 4)
+        e.wait(6)
+    e.press("A", 4)
+    for _ in range(300):
+        e.wait(10)
+        if d.scripts_running():
+            e.press("A", 4)
+        elif g.idle():
+            break
+    g.wait_for_input()
+    ctx.eq(len(g.units(1)), count - 1, "the unit has left the main front")
+    ctx.eq(e.u8(tf.QUEUED), 1, "on its way to the second front")
+    other = next(v for v in g.units(1) if g.terrain_class(v["x"], v["y"]) & 0x1F not in (0x08, 0x0E, 0x0A, 0x0B))
+    names = tf.command(e, g, d, other["x"], other["y"], "Wait")
+    ctx.check("Send" not in names, f"no Send off the HQ and bases ({names})")
+    tf.end_round(e, d)
+    ctx.eq(e.u8(tf.STARTED), 1, "the second front played its first round")
+    own = [v for v in tf.store_units(e) if v[0] == 1 and v[1] < 28 and v[2] < 20 and v[3] < 16]
+    base = sum(1 for line in open(os.path.join(MAP_FILES, "bh08b.txt")) if line.startswith(f"unit 1 {u['type']} "))
+    got = [v for v in own if v[1] == u["type"]]
+    ctx.log(f"army 1 on the second front: {own}")
+    ctx.eq(len(got), base + 1, f"the second front has its own {base} of that type and the one sent ({got})")
+    ctx.require(tf.look_at_other_front(e, g), "the other front is shown")
+    a2.pic(ctx, e, "m8_send_arrival_early")     # (the swap's wipe is still on the screen: diagonal black wedges at the edges)
+    e.wait(240)
+    a2.pic(ctx, e, "m8_send_arrival")
+    e.close()
