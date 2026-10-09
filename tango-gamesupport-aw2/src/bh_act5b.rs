@@ -442,9 +442,9 @@ mod tests {
             assert!(b.units.len() > 20, "{}: units", m.key);
             assert_eq!(b.armies as usize, m.armies.len(), "{}: armies", m.key);
         }
-        // the Vault Trucks are named on the map
+        // two Vault Trucks (APCs) are on the map; the third is spawned on day 3
         let b = crate::bh_map_data::MAPS.iter().find(|b| b.name == "bh31").unwrap();
-        assert_eq!(b.units.iter().filter(|u| u.name.starts_with("vault")).count(), 3);
+        assert_eq!(b.units.iter().filter(|u| u.army == 2 && u.kind == unit::APC).count(), 2);
     }
 
     /// Every line of every scene fits one box (two lines of AW2's 176 pixels).

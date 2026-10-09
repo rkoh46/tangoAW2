@@ -1550,9 +1550,8 @@ pub static MAPS: &[BuiltMap] = &[
             0x02A, 0x02A, 0x02A, 0x02A, 0x02A, 0x02A, 0x02A, 0x02A, 0x02A, 0x02A, 0x02A, 0x02A,
         ],
         units: &[
-            BuiltUnit { army: 2, kind: 7, x: 11, y: 6, hp: 100, hold: false, name: "vault1" },
-            BuiltUnit { army: 2, kind: 7, x: 11, y: 14, hp: 100, hold: false, name: "vault2" },
-            BuiltUnit { army: 2, kind: 7, x: 5, y: 8, hp: 100, hold: false, name: "vault3" },
+            BuiltUnit { army: 2, kind: 7, x: 11, y: 6, hp: 100, hold: false, name: "" },
+            BuiltUnit { army: 2, kind: 7, x: 11, y: 14, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 2, kind: 1, x: 12, y: 6, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 2, kind: 2, x: 11, y: 5, hp: 100, hold: false, name: "" },
             BuiltUnit { army: 2, kind: 1, x: 12, y: 14, hp: 100, hold: false, name: "" },

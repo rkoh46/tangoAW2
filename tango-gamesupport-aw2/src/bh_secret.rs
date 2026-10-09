@@ -12,22 +12,29 @@ use crate::bh_campaign::{region, roster};
 use crate::bh_act5b::{built_units, meter, roles, text};
 use crate::custom_campaign::{co, colour, unit, *};
 
-/// Sonja's three Vault Trucks (the map's named APCs).
-const TRUCKS: [&str; 3] = ["vault1", "vault2", "vault3"];
-/// The dock tiles: a truck here and the heist is lost.
+/// The dock tiles: one truck here and the heist is lost.
 const DOCK: Rect = Rect::new(25, 9, 27, 11);   // (the dock's land is x 25..26; x 27 is the sea beside it)
+/// Where truck C appears on day 3: the ford road's east side, behind the blocking Tank.
+const TRUCK_C: (u8, u8) = (14, 10);
 
+/// Sonja's Vault Trucks (her only APCs): where they are. A and B are on the map from the start, C is spawned on
+/// day 3 (a spawned unit has no name, so the trucks are told apart by their type).
 fn truck_cells(core: &mut Core) -> Vec<(u8, u8)> {
-    TRUCKS
-        .iter()
-        .filter_map(|n| unit_by_name(core, n))
-        .filter(|(_, alive)| *alive)
-        .map(|(a, _)| (core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1)))
-        .collect()
+    units_of(core, 2).iter().filter(|u| u.1 == unit::APC).map(|u| (u.2, u.3)).collect()
 }
 
+/// How many trucks there should be by now: two, and three from day 3.
+fn trucks_due(core: &Core) -> usize {
+    if day(core) >= 3 {
+        3
+    } else {
+        2
+    }
+}
+
+/// All three trucks are gone (never before truck C has appeared).
 fn all_trucks_gone(core: &mut Core) -> bool {
-    truck_cells(core).is_empty()
+    day(core) >= 3 && truck_cells(core).is_empty()
 }
 
 fn a_truck_docked(core: &mut Core) -> bool {
@@ -39,12 +46,18 @@ fn charge_sonja(core: &mut Core) {
 }
 
 fn a_truck_lost(core: &mut Core) -> bool {
-    TRUCKS.iter().filter_map(|n| unit_by_name(core, n)).any(|(_, alive)| !alive)
+    truck_cells(core).len() < trucks_due(core)
 }
 
 /// "On day `d`, at the start of the player's turn": fires once, on that day.
 fn on_day(d: u16, then: Vec<Action>) -> Trigger {
     Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, then).repeating()
+}
+
+fn day3_lines() -> Vec<Line> {
+    let mut v = vec![Line::soldier(colour::BLACK_HOLE, "A third truck rolls out of the ford woods.")];
+    v.extend(text::m31_day_3());
+    v
 }
 
 fn bh31() -> MissionDef {
@@ -59,7 +72,7 @@ fn bh31() -> MissionDef {
         1,
         // the trucks, the road-block Infantry, the Anti-Air and Missiles, the Transport Copters and the ships hold;
         // the Tank, Md Tank and Neotank counter-attack
-        &[(11, 6), (11, 14), (5, 8), (12, 6), (11, 5), (12, 14), (11, 15), (11, 10), (12, 10), (16, 6), (19, 6), (16, 14), (19, 14), (21, 10), (22, 8), (22, 12), (23, 4), (23, 14), (27, 9), (27, 13)],
+        &[(11, 6), (11, 14), (12, 6), (11, 5), (12, 14), (11, 15), (11, 10), (12, 10), (16, 6), (19, 6), (16, 14), (19, 14), (21, 10), (22, 8), (22, 12), (23, 4), (23, 14), (27, 9), (27, 13)],
     );
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
@@ -78,11 +91,14 @@ fn bh31() -> MissionDef {
     m.after = Scene::new(after_lines);
     m.triggers = vec![
         on_day(2, vec![Action::Scene(Scene::new(text::m31_day_2()))]),
-        // Day 3: the third truck (vault3) leaves the vault by the ford road (y 10).
+        // Day 3: the third truck rolls out of the ford woods (spawned east of the ford; no name, see `truck_cells`).
         // TODO(engine): the "march" action that moves a named unit along a fixed path each day (the three trucks reach
         // the docks around day 8: A the North Road y 6, B the South Road y 14, C the ford road y 10 from day 3), and
         // the Black Cannon's "disable / restore" (jammed at the start, restored by capturing the Control Room (8,14)).
-        on_day(3, vec![Action::Scene(Scene::new(text::m31_day_3()))]),
+        on_day(
+            3,
+            vec![Action::Scene(Scene::new(day3_lines())), Action::Spawn(vec![UnitDef::new(2, unit::APC, TRUCK_C.0, TRUCK_C.1)])],
+        ),
         // Day 5: Sonja's power (her meter is full: the fog thickens as her vision grows).
         on_day(5, vec![Action::Scene(Scene::new(text::m31_day_5())), Action::Custom(charge_sonja)]),
         Trigger::new(When::AfterAction, Cond::Custom(a_truck_lost), vec![Action::Scene(Scene::new(text::m31_when_the_first_vault_truck_is_destroyed()))]),
