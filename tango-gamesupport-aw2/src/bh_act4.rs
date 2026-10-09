@@ -77,15 +77,28 @@ fn win_with_bond(done: Cond, affinity: fn(&mut Core) -> bool, bond: u8) -> Vec<T
     ]
 }
 
-/// The computer's roles (UnitDef::ai: 0 holds its ground, 1 goes for the enemy HQ): every enemy unit
-/// advances except those `holds` names (indirect fire, HQ guards and a few anchors: each mission says
-/// which and why). The player's own units keep the default.
-fn roles(units: Vec<UnitDef>, holds: impl Fn(&UnitDef) -> bool) -> Vec<UnitDef> {
+/// The computer's roles for an act-4 army (AW2's AI byte): foot soldiers capture (3), every indirect and
+/// most vehicles, aircraft and ships hunt units (4), every third direct-fire vehicle goes for the enemy HQ (1)
+/// so the HQ is always under threat, and only the true garrisons `holds` names stay (0). The player's units
+/// keep the default.
+fn cpu_roles(units: Vec<UnitDef>, holds: impl Fn(&UnitDef) -> bool) -> Vec<UnitDef> {
+    let mut vehicles = 0;
     units
         .into_iter()
         .map(|mut u| {
             if u.army != 1 {
-                u.ai = if holds(&u) { 0 } else { 1 };
+                u.ai = if holds(&u) {
+                    0
+                } else {
+                    match u.kind {
+                        unit::INFANTRY | unit::MECH => 3,
+                        unit::ARTILLERY | unit::ROCKETS | unit::MISSILES => 4,
+                        _ => {
+                            vehicles += 1;
+                            if vehicles % 3 == 0 { 1 } else { 4 }
+                        }
+                    }
+                };
             }
             u
         })
@@ -99,7 +112,11 @@ fn go_new(army: u8, kind: u8, x: u8, y: u8) -> UnitDef {
 
 /// A reinforcement that advances on the enemy HQ.
 fn go(mut u: UnitDef) -> UnitDef {
-    u.ai = 1;
+    u.ai = match u.kind {
+        unit::INFANTRY | unit::MECH => 3,
+        unit::ARTILLERY | unit::ROCKETS | unit::MISSILES => 4,
+        _ => 1,
+    };
     u
 }
 
@@ -116,7 +133,7 @@ fn bh17() -> MissionDef {
     m.map = MapSrc::Built("bh17");
     // Jugger's roles: his Md Tanks, Mech and field Infantry advance by the odds; the Missiles (fire from
     // behind), the Neotank (the HQ's anchor) and the two Infantry at the HQ hold.
-    m.units = roles(built_units("bh17"), |u| matches!(u.kind, unit::MISSILES | unit::NEOTANK) || (u.kind == unit::INFANTRY && u.x >= 21));
+    m.units = cpu_roles(built_units("bh17"), |u| u.kind == unit::NEOTANK || (u.kind == unit::INFANTRY && u.x >= 21));
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(9000),
         // Jugger in Blue Moon's colours; Grit, the sniper, babysits him.
@@ -151,7 +168,7 @@ fn bh18() -> MissionDef {
     m.objective = "Rout Flak or take the arena throne. 12 days.";
     m.map = MapSrc::Built("bh18");
     // Flak just charges: everyone advances on the player's HQ, but the two Neotanks stay by his own.
-    m.units = roles(built_units("bh18"), |u| u.kind == unit::NEOTANK);
+    m.units = cpu_roles(built_units("bh18"), |u| u.kind == unit::NEOTANK);
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::FLAK)).funds(10000),
@@ -195,7 +212,7 @@ fn bh19() -> MissionDef {
     m.map = MapSrc::Built("bh19");
     // Sasha's roles: the line (Infantry, Mech, treads, the Megatank, the aircraft) advances; the Artillery,
     // Missiles and Anti-Air screen hold their ground, as do the Infantry round her HQ.
-    m.units = roles(built_units("bh19"), |u| matches!(u.kind, unit::ARTILLERY | unit::MISSILES | unit::ANTI_AIR) || (u.kind == unit::INFANTRY && u.x >= 26));
+    m.units = cpu_roles(built_units("bh19"), |u| u.kind == unit::INFANTRY && u.x >= 26);
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(7000),
         // Sasha, with real production: 5 bases, 2 airports, 9 cities.
@@ -231,7 +248,7 @@ fn bh20() -> MissionDef {
     m.objective = "Take Olaf's HQ; win the sea front for a partner.";
     m.map = MapSrc::Built("bh20");
     // Olaf advances, but his Artillery and the Infantry on his HQ hold.
-    m.units = roles(built_units("bh20"), |u| u.kind == unit::ARTILLERY || (u.kind == unit::INFANTRY && u.x >= 21));
+    m.units = cpu_roles(built_units("bh20"), |u| u.kind == unit::INFANTRY && u.x >= 21);
     m.look = 1; // Snow
     m.weather = Weather::Snow;
     // The player picks two COs: the main front's, then the second front's.
@@ -246,7 +263,7 @@ fn bh20() -> MissionDef {
     // Landers and the Infantry waiting on his ports hold until the computer ships them over.
     let mut sea = built_units("bh20b");
     sea.push(UnitDef::new(2, unit::CARRIER, 17, 8));
-    let sea = roles(sea, |u| matches!(u.kind, unit::BATTLESHIP | unit::CARRIER | unit::LANDER | unit::INFANTRY));
+    let sea = cpu_roles(sea, |u| matches!(u.kind, unit::LANDER | unit::INFANTRY));
     // The sea front is won as AW2's rules decide it (the enemy routed, or its east shelf's HQ taken
     // by the Lander: the east port (18, 5), (18, 11) are the way in; `two_front` has no per-front triggers).
     m.front2 = Some(FrontDef {
@@ -327,7 +344,7 @@ fn bh21() -> MissionDef {
     m.rank_days = 18;
     // The column: low ammunition and fuel for the types listed in COLUMN.
     // Max's army charges (all advance); Grit's Artillery and Missiles hold their ridge to shell the bridges.
-    m.units = roles(built_units("bh21"), |u| u.army == 3 && matches!(u.kind, unit::ARTILLERY | unit::MISSILES))
+    m.units = cpu_roles(built_units("bh21"), |_| false)
         .into_iter()
         .map(|u| match COLUMN.iter().find(|c| u.army == 1 && c.0 == u.kind) {
             Some(&(_, ammo, fuel)) => u.ammo(ammo).fuel(fuel),
@@ -421,7 +438,7 @@ fn bh22() -> MissionDef {
     m.map = MapSrc::Built("bh22");
     // Olaf and Sasha: the line and the Fighters advance; Artillery, Missiles and the four palace-gate
     // Infantry (row 3) hold.
-    m.units = roles(built_units("bh22"), |u| matches!(u.kind, unit::ARTILLERY | unit::MISSILES) || (u.kind == unit::INFANTRY && u.y <= 3));
+    m.units = cpu_roles(built_units("bh22"), |u| u.kind == unit::INFANTRY && u.y <= 3);
     m.look = 1; // Snow
     m.weather = Weather::Snow;
     m.armies = vec![
