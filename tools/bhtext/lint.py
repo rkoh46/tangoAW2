@@ -79,7 +79,7 @@ def lint_file(name, errors, warns, counts):
             continue
         if l.startswith("@"):
             word, _, rest = l[1:].partition(" ")
-            if word in ("IF", "WITH", "PARTNER"):
+            if word in ("IF", "WITH", "PARTNER", "BOND"):
                 for c in [p.strip() for p in rest.split(",")]:
                     if c not in CO_NAMES:
                         errors.append(f"{where}: unknown CO {c!r}")

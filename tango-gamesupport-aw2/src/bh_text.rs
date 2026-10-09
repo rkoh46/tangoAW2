@@ -12,7 +12,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, OnceLock};
 
-use crate::bh_campaign::ROSTER;
+use crate::bh_campaign::{BONDS, ROSTER};
 use crate::custom_campaign::{co, colour, Line, Mood, Page, Scene, Speaker};
 
 /// The text files, in the order they are read.
@@ -176,6 +176,8 @@ enum Group {
     Other,
     With(Vec<u8>),
     Partner(Vec<u8>),
+    /// Shown when the bond of this recruit (an index of [`BONDS`]) is earned.
+    Bond(Vec<u8>),
 }
 
 fn leak(s: String) -> &'static str {
@@ -270,6 +272,13 @@ fn build(rows: &[(Group, Row)], pool: &[u8]) -> Result<Vec<Line>, String> {
                     }
                 }
             }
+            Group::Bond(ks) => {
+                for &k in ks {
+                    for (_, r) in run {
+                        out.push(one(r, None, None).bond(k));
+                    }
+                }
+            }
             Group::Partner(cos) => {
                 for &c in cos {
                     for (_, r) in run {
@@ -328,6 +337,7 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
                 "OTHER" => Group::Other,
                 "WITH" => Group::With(parse_cos(rest).map_err(at)?),
                 "PARTNER" => Group::Partner(parse_cos(rest).map_err(at)?),
+                "BOND" => Group::Bond(parse_cos(rest).map_err(at)?.into_iter().map(|c| BONDS.iter().position(|b| b.co == c).map(|k| k as u8).ok_or(at(format!("{c} has no bond")))).collect::<Result<_, _>>()?),
                 "END" => Group::Always,
                 w => return Err(at(format!("unknown directive @{w}"))),
             };
