@@ -209,12 +209,15 @@ fn bh05() -> MissionDef {
     m.objective = "Destroy 8 aircraft, take the Com Tower. 9 days.";
     m.map = MapSrc::Built("bh05");
     // The parked aircraft stay parked: AI byte 6 (measured: bytes 1..5 let them fly off and strike; 6 holds them
-    // where they stand; they still answer a counter-attack).
+    // where they stand), with no ammunition (the crews are asleep): grounded targets. The alarm
+    // wave carries the threat; the engine has no rearm action, so they are not scrambled.
     m.units = built_units("bh05")
         .into_iter()
         .map(|mut u| {
             if u.army == 2 && (u.kind == unit::FIGHTER || u.kind == unit::BOMBER) {
+                // Unmanned planes on a night raid: empty guns, held where they stand (a thimble of fuel would crash them on day 2).
                 u.ai = 6;
+                u = u.ammo(0);
             }
             u
         })
