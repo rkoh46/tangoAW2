@@ -49,6 +49,10 @@ class BhCampaign(DsCampaign):
             e.wait(30)
         super().pick_mission()
 
+    def map_flags(self):
+        """Per mission: 1 shown (selectable), 2 cleared: the BH Campaign's 31 missions (the DS Campaign's map has 28 flags)."""
+        return list(self.e.read(dc.WM_STATE + 0x12, 32))
+
     def total_picks(self):
         return self.picks.get(self.mission(), 1)
 
