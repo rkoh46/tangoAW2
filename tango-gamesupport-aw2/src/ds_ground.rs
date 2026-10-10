@@ -60,6 +60,13 @@ impl<'a> Ground<'a> {
         v.ensure(core, char_base(v), 0x8000);
     }
 
+    /// A number that changes when the map does (size and tiles).
+    pub fn signature(&self) -> u64 {
+        self.tiles
+            .iter()
+            .fold(((self.w as u64) << 32) | self.h as u64, |a, &t| a.wrapping_mul(1_000_003).wrapping_add(t as u64))
+    }
+
     /// The metatile id of a cell.
     pub fn tile(&self, x: i32, y: i32) -> u16 {
         self.tiles[(y * self.w + x) as usize]

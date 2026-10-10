@@ -137,6 +137,18 @@ fn main() {
                 solo.side().console().save_state(&mut buf).ok();
                 states.insert(p[1].to_string(), buf);
             }
+            "statefile" => {
+                // `statefile FILE`: the console's state to a file.
+                let mut buf = Vec::new();
+                solo.side().console().save_state(&mut buf).ok();
+                std::fs::write(p[1], buf).ok();
+            }
+            "loadfile" => {
+                // `loadfile FILE`: a state written by `statefile`.
+                if let Ok(buf) = std::fs::read(p[1]) {
+                    solo.side().console().load_state(&buf).ok();
+                }
+            }
             "load" => {
                 if let Some(buf) = states.get(p[1]) {
                     solo.side().console().load_state(buf).ok();

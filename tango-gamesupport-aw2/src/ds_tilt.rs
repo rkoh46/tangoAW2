@@ -88,6 +88,68 @@ const CY: f32 = H as f32 / 2.0;
 /// Dual Strike's units' feet are just below it.
 const FOOT_DROP: f32 = 0.1;
 
+/// Where the fitted camera's principal ray meets the ground, from the cursor
+/// cell's corner (cells).
+const CAM_BIAS: (f32, f32) = (0.03, 0.08);
+/// The table of the steps the selected unit's move costs to each cell (a byte a
+/// cell, rows by the map's row table; 0xFF: out of reach).
+const REACH: u32 = 0x0202_0CA2;
+const CURSOR_X: u32 = 0x0300_33E4;
+const CURSOR_Y: u32 = 0x0300_33E6;
+
+/// What the camera has done so far (display only: it follows what is shown).
+struct Follow {
+    /// Where the dead zone has left it, and where it shows.
+    logical: (f32, f32),
+    shown: (f32, f32),
+    map: (i32, i32),
+}
+static FOLLOW: std::sync::Mutex<Option<Follow>> = std::sync::Mutex::new(None);
+
+/// The camera's centre for a cursor on a `w` x `h` map: it stays while the
+/// cursor's cell is within 5 cells to its left, 6 to its right, 3 above and 4
+/// below (the cell inside +-6 and +-4 by its far edge), never shows beyond the
+/// map's edge (centre at least 8 cells from the sides and 6 from the top and
+/// bottom) and centres a map smaller than that; it glides there.
+fn follow(cursor: (i32, i32), w: i32, h: i32) -> (f32, f32) {
+    let (cx, cy) = (cursor.0 as f32, cursor.1 as f32);
+    let clamp_to_map = |x: f32, y: f32| {
+        (
+            if w >= 16 { x.clamp(8.0, (w - 8) as f32) } else { w as f32 / 2.0 },
+            if h >= 12 { y.clamp(6.0, (h - 6) as f32) } else { h as f32 / 2.0 },
+        )
+    };
+    let mut st = FOLLOW.lock().unwrap();
+    let fresh = st.as_ref().map_or(true, |f| f.map != (w, h));
+    let f = st.get_or_insert(Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h) });
+    if fresh {
+        *f = Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h) };
+        f.logical = (
+            f.logical.0.clamp(cx - 5.0, cx + 6.0),
+            f.logical.1.clamp(cy - 3.0, cy + 4.0),
+        );
+    }
+    f.logical = (
+        f.logical.0.clamp(cx - 5.0, cx + 6.0),
+        f.logical.1.clamp(cy - 3.0, cy + 4.0),
+    );
+    let target = clamp_to_map(f.logical.0, f.logical.1);
+    static SNAP: OnceLock<bool> = OnceLock::new();
+    if fresh || env_on("TANGOAW2_TILT_SNAP", &SNAP) {
+        f.shown = target;
+    } else {
+        f.shown.0 += (target.0 - f.shown.0) * 0.3;
+        f.shown.1 += (target.1 - f.shown.1) * 0.3;
+        if (target.0 - f.shown.0).abs() < 0.02 {
+            f.shown.0 = target.0;
+        }
+        if (target.1 - f.shown.1).abs() < 0.02 {
+            f.shown.1 = target.1;
+        }
+    }
+    f.shown
+}
+
 /// The camera over the ground point (`cu`, `cv`), in cells, that it looks at.
 #[derive(Clone, Copy)]
 struct Cam {
@@ -368,6 +430,10 @@ enum Class {
     Pointer,
     /// Lies on the ground (the cursor's corner brackets, the move arrow).
     Ground,
+    /// One of the nine 8 x 8 pieces at tiles 666-674 (palette 4): the attack
+    /// target's glow beside its crosshair, else the unit that is moving
+    /// ([`resolve_groups`]).
+    Piece,
 }
 
 struct Obj {
@@ -379,11 +445,20 @@ struct Obj {
     idx: usize,
     class: Class,
     pix: Vec<Px>,
+    /// The first tile, palette bank and flips it was drawn with.
+    tile: u16,
+    pal: u8,
+    flip: (bool, bool),
 }
 
 const OBJ_TILES: usize = 0x10000;
-/// The first OBJ tile of the 4 x 4 structure pictures.
-const SHARED_PICTURE: u16 = 304;
+/// OBJ tiles below this number hold the properties' sheet (fixed).
+const STATIC_SHEET: u16 = 200;
+/// What the console drew for each part of a terrain id: its tile, palette and
+/// flips, for the map with this signature.
+type SpriteCache = (u64, std::collections::HashMap<(u16, u8), (u16, u8, (bool, bool))>);
+static SPRITES: std::sync::LazyLock<std::sync::Mutex<SpriteCache>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new((0, std::collections::HashMap::new())));
 
 
 /// The pixels of a sprite picture (0 transparent, else 0x8000 | colour); its
@@ -460,6 +535,56 @@ fn obj_pixels_ro(
     pix
 }
 
+
+/// The nine pieces at tiles 666-674 are a target's glow (flat on the ground)
+/// when the crosshair is up, else the unit that is moving (one upright
+/// picture, drawn where it is as it goes).
+fn resolve_groups(mut objs: Vec<Obj>) -> Vec<Obj> {
+    let targeting = objs.iter().any(|o| o.class == Class::Ground && (884..=895).contains(&o.tile));
+    if targeting {
+        for o in objs.iter_mut().filter(|o| o.class == Class::Piece) {
+            o.class = Class::Ground;
+        }
+        return objs;
+    }
+    let (pieces, mut rest): (Vec<Obj>, Vec<Obj>) = objs.into_iter().partition(|o| o.class == Class::Piece);
+    if pieces.is_empty() {
+        return rest;
+    }
+    let (x0, y0) = (pieces.iter().map(|o| o.x).min().unwrap(), pieces.iter().map(|o| o.y).min().unwrap());
+    let (x1, y1) = (
+        pieces.iter().map(|o| o.x + o.w).max().unwrap(),
+        pieces.iter().map(|o| o.y + o.h).max().unwrap(),
+    );
+    let (w, h) = (x1 - x0, y1 - y0);
+    let mut pix = vec![0u16; (w * h) as usize];
+    for o in pieces.iter().rev() {
+        for y in 0..o.h {
+            for x in 0..o.w {
+                let p = o.pix[(y * o.w + x) as usize];
+                if p != 0 {
+                    pix[((o.y - y0 + y) * w + o.x - x0 + x) as usize] = p;
+                }
+            }
+        }
+    }
+    let first = pieces.iter().min_by_key(|o| o.idx).unwrap();
+    rest.push(Obj {
+        x: x0,
+        y: y0,
+        w,
+        h,
+        pri: first.pri,
+        idx: first.idx,
+        class: Class::Billboard,
+        pix,
+        tile: first.tile,
+        pal: first.pal,
+        flip: first.flip,
+    });
+    rest
+}
+
 fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
     let mode = (a0 >> 10) & 3;
     let pri = (a2 >> 10) & 3;
@@ -473,7 +598,7 @@ fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
         (8, 8, 873) => Class::Ground,
         // The attack target's glow (3 x 3 pieces of 8 x 8, palette 4) and its
         // crosshair (four 16 x 16 pieces).
-        (8, 8, 666..=674) if pal == 4 => Class::Ground,
+        (8, 8, 666..=674) if pal == 4 => Class::Piece,
         (16, 16, 884..=895) if pal == 1 => Class::Ground,
         // The move arrow (palette 3, 16 x 16 pieces).
         (16, 16, _) if pal == 3 && pri == 0 => Class::Ground,
@@ -540,9 +665,12 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             idx,
             class: obj_class(a0, a2, w, h),
             pix,
+            tile: a2 & 0x3ff,
+            pal: (a2 >> 12) as u8,
+            flip: (a1 & 0x1000 != 0, a1 & 0x2000 != 0),
         });
     }
-    Some(out)
+    Some(resolve_groups(out))
 }
 
 // --- Compositing ----------------------------------------------------------------
@@ -950,13 +1078,14 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         core.raw_read_16(MAP + 4, -1) as i16 as i32,
         core.raw_read_16(MAP + 6, -1) as i16 as i32,
     );
-    // The console's window is 15 x 10 cells (a pixel scroll); the camera looks
-    // at its middle, kept inside the map as far as the map is wide enough.
-    let mut cam = Cam::new(cam_px.0 as f32 / 16.0 + 7.5, cam_px.1 as f32 / 16.0 + 5.0);
-    let (rl, rr, rt, rb) = cam.reach();
-    let (mw, mh) = (ground.w as f32, ground.h as f32);
-    cam.cu = if rl + rr <= mw { cam.cu.clamp(rl, mw - rr) } else { mw / 2.0 };
-    cam.cv = if rt + rb <= mh { cam.cv.clamp(rt, mh - rb) } else { mh / 2.0 };
+    // Dual Strike's camera follows the cursor with a dead zone and keeps the
+    // map's edge in view (fitted to melonDS frames, see the module notes).
+    let cursor = (
+        core.raw_read_8(CURSOR_X, -1) as i32,
+        core.raw_read_8(CURSOR_Y, -1) as i32,
+    );
+    let (fx, fy) = follow(cursor, ground.w, ground.h);
+    let cam = Cam::new(fx + CAM_BIAS.0, fy + CAM_BIAS.1);
 
     // What lies on the ground, as the console shows it: BG0's range tint
     // (while it is below the units) and the sprites that lie flat.
@@ -977,6 +1106,20 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         }
     }
     let tint = bg0_ground.then_some(());
+    // The cells the selected unit can reach (the game's own table: the steps
+    // it costs, 0xFF where it cannot): known beyond the console's window,
+    // where BG0 is not drawn.
+    let reach: Vec<u8> = if tint.is_some() {
+        (0..ground.w * ground.h)
+            .map(|i| {
+                let (x, y) = (i % ground.w, i / ground.w);
+                let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+                core.raw_read_8(REACH + row + x as u32, -1)
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
 
     // The ground drawn from the map's RAM must be the console's BG3 (with the
     // peaks over it) where that shows; when it is not (a scroll, a fade or a
@@ -1166,9 +1309,39 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
     // Buildings and structures beyond the console's window, from the map's
     // tile ids and the sprite parts the console draws for each (`ds_plans`).
+    // Where a part sits is the same everywhere; which tiles and palette hold
+    // its picture is, for the structures, the mission's (the console gives them
+    // their slots as it loads the mission), so those are learned from the
+    // console's own sprites whenever one is in its window.
     {
         let one_d = d & 0x40 != 0;
         let (win_x, win_y) = (map_x0..=map_x0 + 15, map_y0..=map_y0 + 10);
+        let mut cache = SPRITES.lock().unwrap();
+        let sig = ground.signature();
+        if cache.0 != sig {
+            *cache = (sig, std::collections::HashMap::new());
+        }
+        // Learn.
+        for my in win_y.clone() {
+            for mx in win_x.clone() {
+                if mx < 0 || my < 0 || mx >= ground.w || my >= ground.h {
+                    continue;
+                }
+                let t = ground.tile(mx, my);
+                let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else {
+                    continue;
+                };
+                for (k, &(dx, dy, w, h, _, _, _, _)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
+                    let (px, py) = (mx * 16 - cam_px.0 + dx as i32, my * 16 - cam_px.1 + dy as i32);
+                    if let Some(o) = objs.iter().find(|o| {
+                        o.class == Class::Billboard && (o.x, o.y, o.w, o.h) == (px, py, w as i32, h as i32)
+                    }) {
+                        cache.1.insert((t, k as u8), (o.tile, o.pal, o.flip));
+                    }
+                }
+            }
+        }
+        // Draw.
         let (rl, rr, rt, rb) = cam.reach();
         let (x_lo, x_hi) = ((cam.cu - rl).floor() as i32 - 4, (cam.cu + rr).ceil() as i32 + 1);
         let (y_lo, y_hi) = ((cam.cv - rt).floor() as i32 - 1, (cam.cv + rb).ceil() as i32 + 4);
@@ -1181,14 +1354,17 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else {
                     continue;
                 };
-                for &(dx, dy, w, h, tile, pal, hf, vf) in crate::ds_plans::PLANS[i].1 {
+                for (k, &(dx, dy, w, h, tile, pal, hf, vf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
                     let (w, h) = (w as i32, h as i32);
-                    // The 4 x 4 pictures (the Black Factory's, the pads') share one
-                    // set of tiles that the console fills for the one it draws:
-                    // beyond its window they would show the wrong picture.
-                    if tile == SHARED_PICTURE && w >= 64 {
+                    // The properties' sheet is fixed; a structure's picture is
+                    // known once the console has drawn one.
+                    let (tile, pal, (hf, vf)) = if tile < STATIC_SHEET {
+                        (tile, pal, (hf, vf))
+                    } else if let Some(&(tl, pl, fl)) = cache.1.get(&(t, k as u8)) {
+                        (tl, pl, fl)
+                    } else {
                         continue;
-                    }
+                    };
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
                     if pix.iter().all(|&p| p == 0) {
                         continue;
@@ -1301,7 +1477,13 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     p = decal[i];
                 }
             } else if tint.is_some() {
-                p = range_look(p, 0);
+                let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
+                let on = cx >= 0
+                    && cy >= 0
+                    && cx < ground.w
+                    && cy < ground.h
+                    && reach[(cy * ground.w + cx) as usize] != 0xff;
+                p = range_look(p, if on { 0x7fff } else { 0 });
             }
             map[y * W + x] = p;
         }
