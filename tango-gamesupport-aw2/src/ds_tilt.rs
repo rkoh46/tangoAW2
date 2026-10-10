@@ -599,37 +599,6 @@ impl Windows {
         xin && yin
     }
 
-    /// Layer-enable bits along a row.
-    fn row(&self, y: i32) -> [u8; W] {
-        let mut out = [self.outside; W];
-        for i in (0..2).rev() {
-            if !self.on[i] {
-                continue;
-            }
-            let r = self.rect[i];
-            let yin = if r[2] <= r[3] {
-                y >= r[2] && y < r[3]
-            } else {
-                y >= r[2] || y < r[3]
-            };
-            if !yin {
-                continue;
-            }
-            for (x, o) in out.iter_mut().enumerate() {
-                let x = x as i32;
-                let xin = if r[0] <= r[1] {
-                    x >= r[0] && x < r[1]
-                } else {
-                    x >= r[0] || x < r[1]
-                };
-                if xin {
-                    *o = self.inside[i];
-                }
-            }
-        }
-        out
-    }
-
     /// Layer-enable bits (BG0-3, OBJ, effects) at a pixel.
     fn bits(&self, x: i32, y: i32) -> u8 {
         if !self.any() {
@@ -644,13 +613,21 @@ impl Windows {
     }
 }
 
-fn blend_alpha(a: Px, b: Px, eva: u32, evb: u32) -> Px {
-    let ch = |s: u32| {
-        let x = (a as u32 >> s) & 31;
-        let y = (b as u32 >> s) & 31;
-        ((x * eva + y * evb) >> 4).min(31)
-    };
-    0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16
+/// Dual Strike's way of showing a range: the cells in it light up (red where
+/// the console's tint is a reddish one: an attack range) and the rest of the
+/// ground dims. `t` is the console's tint pixel there (0: none).
+fn range_look(p: Px, t: Px) -> Px {
+    let ch = |c: Px, s: u32| (c as u32 >> s) & 31;
+    let (mut r, mut g, mut b) = (ch(p, 0), ch(p, 5), ch(p, 10));
+    if t == 0 {
+        (r, g, b) = (r * 8 / 10, g * 8 / 10, b * 8 / 10);
+    } else {
+        let target = if ch(t, 0) > ch(t, 10) + 5 { (31, 14, 14) } else { (31, 31, 31) };
+        r = (r * 9 + target.0 * 11) / 20;
+        g = (g * 9 + target.1 * 11) / 20;
+        b = (b * 9 + target.2 * 11) / 20;
+    }
+    0x8000 | (r | g << 5 | b << 10) as u16
 }
 
 fn brightness(a: Px, mode: u16, evy: u32) -> Px {
@@ -739,7 +716,6 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let bgs = [bgs0, bgs1, bgs2, bgs3];
     let win = Windows::new(&v);
     let bldcnt = v.io[0x28];
-    let bldalpha = v.io[0x29];
     let bldy = v.io[0x2a];
     let bld_mode = (bldcnt >> 6) & 3;
     // A fade over everything is not ours to redo.
@@ -978,14 +954,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             }
         }
     }
-    let tint = if bg0_ground {
-        let first = bldcnt & 1 != 0;
-        let second = bldcnt & 0x0800 != 0;
-        let (eva, evb) = ((bldalpha & 31).min(16) as u32, ((bldalpha >> 8) & 31).min(16) as u32);
-        Some((bld_mode == 1 && first && second, eva, evb))
-    } else {
-        None
-    };
+    let tint = bg0_ground.then_some(());
 
     if debug_check() {
         // The ground drawn from the map's RAM against the console's BG3 (with
@@ -1227,26 +1196,75 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     });
 
     let t_boards = t0.elapsed();
+    // --- Cloud shadows ---
+    // Dual Strike lays soft darker patches (about 5 cells across, 10% darker)
+    // over its ground that drift slowly. Display only: the drift counts the
+    // pictures shown.
+    static CLOCK: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let clock = CLOCK.fetch_add(1, Ordering::Relaxed) as f32;
+    const SHADOW_STEP: f32 = 0.25;
+    let (rl, rr, rt, rb) = cam.reach();
+    let (su0, sv0) = ((cam.cu - rl - 1.0).floor(), (cam.cv - rt - 1.0).floor());
+    let (sw, sh) = (((rl + rr + 2.0) / SHADOW_STEP) as usize + 4, ((rt + rb + 2.0) / SHADOW_STEP) as usize + 4);
+    let mut shadow = vec![0f32; sw * sh];
+    for j in 0..sh {
+        let v = sv0 + j as f32 * SHADOW_STEP;
+        for i in 0..sw {
+            let u = su0 + i as f32 * SHADOW_STEP;
+            let f = 0.5 * ((0.55 * u + 0.8 * (0.31 * v + clock * 0.013).sin() + clock * 0.011).sin()
+                + (0.47 * v - 0.3 * u + clock * 0.007).sin());
+            shadow[j * sw + i] = ((f - 0.2) * 1.6).clamp(0.0, 1.0);
+        }
+    }
+    let shade = |u: f32, v: f32| -> f32 {
+        let (fu, fv) = ((u - su0) / SHADOW_STEP, (v - sv0) / SHADOW_STEP);
+        let (i, j) = (fu.floor().max(0.0) as usize, fv.floor().max(0.0) as usize);
+        if i + 1 >= sw || j + 1 >= sh {
+            return 0.0;
+        }
+        let (a, b) = (fu - i as f32, fv - j as f32);
+        let s = |x: usize, y: usize| shadow[y * sw + x];
+        (s(i, j) * (1.0 - a) + s(i + 1, j) * a) * (1.0 - b) + (s(i, j + 1) * (1.0 - a) + s(i + 1, j + 1) * a) * b
+    };
     // --- The tilted map ---
     let mut map = vec![0u16; W * H];
     for y in 0..H {
+        // (Along a row the ground's v and the scale are constant; u runs on.)
+        let (u_mid, vv) = cam.unproject(CX, y as f32 + 0.5);
+        let (u_edge, _) = cam.unproject(CX + 1.0, y as f32 + 0.5);
+        let du = u_edge - u_mid;
+        let gy = (vv * 16.0).floor() as i32;
+        let sy = gy - cam_px.1;
+        let mut shade_here = 0.0f32;
+        let mut cur = (usize::MAX, [0u16; 256]);
         for x in 0..W {
-            let (u, vv) = cam.unproject(x as f32 + 0.5, y as f32 + 0.5);
-            let (gx, gy) = ((u * 16.0).floor() as i32, (vv * 16.0).floor() as i32);
-            let mut p = ground.px(gx, gy);
+            let u = u_mid + du * (x as f32 + 0.5 - CX);
+            let gx = (u * 16.0).floor() as i32;
+            let (ci, lx, ly) = ground.locate(gx, gy);
+            if cur.0 != ci {
+                cur = (ci, *ground.cell(ci));
+            }
+            let mut p = cur.1[ly * 16 + lx];
+            if x & 1 == 0 {
+                shade_here = shade(u, vv);
+            }
+            if shade_here > 0.0 {
+                let k = 1.0 - 0.10 * shade_here;
+                let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k) as u32;
+                p = 0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16;
+            }
             // The console's overlays, where it drew them.
-            let (sx, sy) = (gx - cam_px.0, gy - cam_px.1);
+            let sx = gx - cam_px.0;
             if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
                 let i = sy as usize * W + sx as usize;
-                if let Some((alpha, eva, evb)) = tint {
-                    let t = layers[0][i];
-                    if t != 0 {
-                        p = if alpha { blend_alpha(t, p, eva, evb) } else { t };
-                    }
+                if tint.is_some() {
+                    p = range_look(p, layers[0][i]);
                 }
                 if decal[i] != 0 {
                     p = decal[i];
                 }
+            } else if tint.is_some() {
+                p = range_look(p, 0);
             }
             map[y * W + x] = p;
         }

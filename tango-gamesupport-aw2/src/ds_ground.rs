@@ -35,7 +35,7 @@ pub struct Ground<'a> {
 
 impl<'a> Ground<'a> {
     /// `v` must already hold BG3's tiles (see [`Ground::load`]).
-    pub fn new(core: &Core, v: &'a Vid) -> Option<Ground<'a>> {
+    pub(crate) fn new(core: &Core, v: &'a Vid) -> Option<Ground<'a>> {
         let biome = crate::wasteland::drawn(core)?;
         let look = crate::wasteland::look(biome)?;
         let (w, h) = (core.raw_read_16(MAP, -1) as i32, core.raw_read_16(MAP + 2, -1) as i32);
@@ -56,7 +56,7 @@ impl<'a> Ground<'a> {
     }
 
     /// Loads what [`Ground::new`] needs into `v`.
-    pub fn load(core: &Core, v: &mut Vid) {
+    pub(crate) fn load(core: &Core, v: &mut Vid) {
         v.ensure(core, char_base(v), 0x8000);
     }
 
@@ -123,6 +123,25 @@ impl<'a> Ground<'a> {
             }
         }
         out
+    }
+
+    /// The cell holding map pixel column `gx` and row `gy` (the map's edge
+    /// repeats beyond it), with the pixel's place in it: (cell, x, y).
+    pub fn locate(&self, gx: i32, gy: i32) -> (usize, usize, usize) {
+        let cx = gx.div_euclid(16).clamp(0, self.w - 1);
+        let cy = gy.div_euclid(16).clamp(0, self.h - 1);
+        let lx = if gx < 0 { 0 } else if gx >= self.w * 16 { 15 } else { gx.rem_euclid(16) };
+        let ly = if gy < 0 { 0 } else if gy >= self.h * 16 { 15 } else { gy.rem_euclid(16) };
+        ((cy * self.w + cx) as usize, lx as usize, ly as usize)
+    }
+
+    /// A cell's 16 x 16 pixels, drawn on first use.
+    pub fn cell(&mut self, i: usize) -> &[u16; 256] {
+        if self.cache[i].is_none() {
+            let (x, y) = (i as i32 % self.w, i as i32 / self.w);
+            self.cache[i] = Some(self.draw(x, y));
+        }
+        self.cache[i].as_ref().unwrap()
     }
 
     /// The ground pixel at map pixel (gx, gy) (16 per cell); the map's edge
