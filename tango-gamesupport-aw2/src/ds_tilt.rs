@@ -704,6 +704,14 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             flip: (a1 & 0x1000 != 0, a1 & 0x2000 != 0),
         });
     }
+    if std::env::var("TANGOAW2_TILT_DUMP_OBJS").is_ok() {
+        for o in &out {
+            if o.w >= 16 && o.h >= 16 {
+                eprintln!("OBJ x{} y{} {}x{} pri{} tile{} pal{} {:?}", o.x, o.y, o.w, o.h, o.pri, o.tile, o.pal, o.class);
+            }
+        }
+        eprintln!("OBJEND");
+    }
     Some(resolve_groups(out))
 }
 
@@ -1164,6 +1172,31 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         }
     }
     let tint = bg0_ground.then_some(());
+    if std::env::var("TANGOAW2_TILT_DUMP_OBJS").is_ok() {
+        let (mut n, mut x0, mut x1, mut y0, mut y1) = (0, 999, -1, 999, -1);
+        for i in 0..W * H {
+            if layers[0][i] != 0 {
+                n += 1;
+                let (x, y) = ((i % W) as i32, (i / W) as i32);
+                x0 = x0.min(x);
+                x1 = x1.max(x);
+                y0 = y0.min(y);
+                y1 = y1.max(y);
+            }
+        }
+        let mut ids = std::collections::BTreeMap::new();
+        let g = &bgs[2];
+        for ty in 0..22 {
+            for tx in 0..32 {
+                let e = g.entry(&v, tx + g.hofs.div_euclid(8), ty + g.vofs.div_euclid(8));
+                if (e & 0x3ff) != 0x360 && (e & 0x3ff) != 0 {
+                    *ids.entry((e & 0x3ff, e >> 12)).or_insert(0) += 1;
+                }
+            }
+        }
+        eprintln!("BG2 ids {:03x?}", ids);
+        eprintln!("BG0 tint {} nonzero {} bbox {} {} {} {} on {} pri {}", tint.is_some(), n, x0, y0, x1, y1, bgs[0].on, bgs[0].pri);
+    }
     // The cells the selected unit can reach (the game's own table: the steps
     // it costs, 0xFF where it cannot): known beyond the console's window,
     // where BG0 is not drawn.
@@ -1453,6 +1486,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             }
         }
         // Draw.
+        let volcano_here = (0..16u32).any(|k| (core.raw_read_16(0x0202_8362 + 8 * k, -1) >> 6) & 0xF == 2);
         let (rl, rr, rt, rb) = cam.reach();
         let (x_lo, x_hi) = ((cam.cu - rl).floor() as i32 - 4, (cam.cu + rr).ceil() as i32 + 1);
         let (y_lo, y_hi) = ((cam.cv - rt).floor() as i32 - 1, (cam.cv + rb).ceil() as i32 + 4);
@@ -1483,8 +1517,18 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         // loader's slots are the same in every mission; the palette may
                         // be another one until the console shows one).
                         let pal = if pal == 13 { STRUCT_PAL.load(Ordering::Relaxed) as u8 } else { pal };
+                        // (With a Volcano in the mission the loader puts the Factory's
+                        // pictures at 786, 818 and 826 instead of 304, 336 and 344.)
+                        let tile = if volcano_here && t == 0x18d {
+                            [786, 818, 826].get(k).copied().unwrap_or(tile)
+                        } else {
+                            tile
+                        };
                         (tile, pal, (hf, vf))
                     };
+                    if std::env::var("TANGOAW2_TILT_DUMP_STRUCT").is_ok() {
+                        eprintln!("STRUCT cell ({},{}) id {:x} part {} tile {} pal {} fog {}", mx, my, t, k, tile, pal, ground.fogged(mx, my));
+                    }
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
                     if pix.iter().all(|&p| p == 0) {
                         continue;
