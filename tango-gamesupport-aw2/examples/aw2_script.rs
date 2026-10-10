@@ -320,6 +320,16 @@ fn main() {
                 parts[2].parse().unwrap(),
             ),
             "shot" => write_rgba_bmp(&format!("{}.bmp", parts[1]), &link.frame()),
+            "bench" => {
+                // `bench N`: time N pictures (the overlay, tilt included when on).
+                let n: u32 = parts[1].parse().unwrap_or(500);
+                let t = std::time::Instant::now();
+                let mut sum = 0u64;
+                for _ in 0..n {
+                    sum += link.frame()[7] as u64;
+                }
+                println!("bench: {} us a picture ({} pictures, {})", t.elapsed().as_micros() / n as u128, n, sum);
+            }
             "ground" => {
                 // `ground NAME`: the whole map's ground from game state (NAME.ppm).
                 match tango_gamesupport_aw2::ds_ground::render_all(link.core(0)) {

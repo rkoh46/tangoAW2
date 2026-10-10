@@ -971,28 +971,29 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
     let tint = bg0_ground.then_some(());
 
-    if debug_check() {
-        // The ground drawn from the map's RAM against the console's BG3 (with
-        // the peaks over it), where it shows.
+    // The ground drawn from the map's RAM must be the console's BG3 (with the
+    // peaks over it) where that shows; when it is not (a scroll, a fade or a
+    // scene change in progress) the frame is left as the console drew it.
+    {
         let mut bad = 0;
         let mut seen = 0;
-        for y in 0..H as i32 {
-            for x in 0..W as i32 {
+        for y in (0..H as i32).step_by(3) {
+            for x in (0..W as i32).step_by(3) {
                 let i = y as usize * W + x as usize;
-                if layers[3][i] == 0 {
+                if layers[3][i] == 0 || layers[2][i] != 0 {
                     continue;
                 }
-                let want = if layers[2][i] != 0 { layers[2][i] } else { layers[3][i] };
-                // (BG2 holds more than peaks only if something else is drawn on it.)
-                let got = ground.px(cam_px.0 + x, cam_px.1 + y);
                 seen += 1;
-                if got != want && layers[2][i] == 0 {
+                if ground.px(cam_px.0 + x, cam_px.1 + y) != layers[3][i] {
                     bad += 1;
                 }
             }
         }
-        if bad > 0 {
-            eprintln!("ds_tilt: ground from RAM differs from BG3 at {} of {} pixels", bad, seen);
+        if debug_check() && bad > 0 {
+            eprintln!("ds_tilt: ground from RAM differs from BG3 at {} of {} sampled pixels", bad, seen);
+        }
+        if bad * 12 > seen {
+            return;
         }
     }
 
