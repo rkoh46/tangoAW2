@@ -45,6 +45,24 @@ pub fn shared_content_flag() -> u8 {
     }
     0
 }
+/// tangoAW2: whether the Dual Strike pack is imported (Dual Strike tilt, a
+/// display setting, is offered only then).
+pub fn ds_pack_present() -> bool {
+    #[cfg(feature = "gamesupport-aw2")]
+    if tango_gamesupport_aw2::ds_pack::pack().is_some() {
+        return true;
+    }
+    false
+}
+
+/// tangoAW2: the Dual Strike tilt display setting (see
+/// `tango_gamesupport_aw2::ds_tilt`).
+pub fn set_ds_tilt(on: bool) {
+    #[cfg(feature = "gamesupport-aw2")]
+    tango_gamesupport_aw2::ds_tilt::set_enabled(on);
+    let _ = on;
+}
+
 /// tangoAW2: the Dual Strike pack in use is a saved one from an older
 /// version and the .nds was not in the ROMs folder to rebuild it (the
 /// play tab says so).

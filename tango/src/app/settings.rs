@@ -100,6 +100,10 @@ impl App {
             }
             C::VideoFilter(s) => self.config.video_filter = s,
             C::FractionalScaling(b) => self.config.fractional_scaling = b,
+            C::DsTilt(b) => {
+                self.config.ds_tilt = b;
+                tango_library::set_ds_tilt(b);
+            }
             C::LandscapeStretch(b) => self.config.landscape_stretch = b,
             C::DsScreenStacking(s) => self.config.ds_screen_stacking = s,
             C::DsPrimaryScreen(s) => self.config.ds_primary_screen = s,

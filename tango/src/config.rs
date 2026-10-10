@@ -236,6 +236,11 @@ pub struct Config {
     /// letterboxed to a whole multiple.
     #[serde(default = "default_fractional_scaling")]
     pub fractional_scaling: bool,
+    /// tangoAW2: draw the battle map tilted away from the viewer, as Dual
+    /// Strike does (display only; needs the Dual Strike pack and the Dual
+    /// Strike graphics mode). Off by default.
+    #[serde(default)]
+    pub ds_tilt: bool,
     /// iOS, sideways: fill the whole screen with the game, ignoring its
     /// aspect (controls become translucent overlays). Off (the default)
     /// is "Fit": full height at 3:2 with the controls in the side margins.
@@ -377,6 +382,7 @@ impl Default for Config {
             accent: AccentColor::default(),
             video_filter: String::new(),
             fractional_scaling: default_fractional_scaling(),
+            ds_tilt: false,
             landscape_stretch: false,
             ds_screen_stacking: DsScreenStacking::default(),
             ds_primary_screen: DsPrimaryScreen::default(),

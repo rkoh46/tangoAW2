@@ -464,10 +464,20 @@ fn picture_tick(core: &mut Core, on: bool) {
     }
 }
 
+fn preview_env() -> bool {
+    static ENV: OnceLock<bool> = OnceLock::new();
+    *ENV.get_or_init(|| std::env::var("TANGOAW2_DS_GRAPHICS").map(|v| v == "1").unwrap_or(false))
+}
+
 /// Every frame with the pack on.
 pub fn tick(core: &mut Core, pack: bool) {
     if !pack {
         return;
+    }
+    // Preview aid: TANGOAW2_DS_GRAPHICS=1 sets the development byte (there is
+    // no setting for the mode yet).
+    if preview_env() && core.raw_read_8(crate::wasteland::DS_GRAPHICS, -1) == 0 {
+        core.raw_write_8(crate::wasteland::DS_GRAPHICS, -1, 1);
     }
     let on = ds_graphics(core);
     if on {

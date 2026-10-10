@@ -436,6 +436,11 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::factory::traps()
     }
 
+    /// Dual Strike tilt (display only, see [`crate::ds_tilt`]).
+    fn overlay(&self, core: &Core, _mode: Option<(u8, u8)>, _seat: usize, rgba: &mut [u8]) {
+        crate::ds_tilt::apply(core, rgba);
+    }
+
     /// On a Versus battlefield only the army whose turn it is moves, so
     /// only its seat's buttons reach the pad; the other seat watches. Anywhere
     /// else (title, map and CO select, results, the hand-off between

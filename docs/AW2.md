@@ -3677,3 +3677,33 @@ before a battle:
   same scroll moves the upper rows 39 pixels and the lower 47) with billboards for
   units, so the "tilt" is not only in the sprites. tangoAW2's grid is flat.
 - Not in Dual Strike, AW2's kept: Laser, Deathray, Black Factory.
+
+### Dual Strike tilt (`ds_tilt.rs`, Settings > Graphics)
+
+Display only: it reads VRAM, palette RAM, OAM and the video registers after
+the tick and rewrites the 240 x 160 RGBA frame in `SharedGame::overlay`, so
+RAM, netplay and rollback are untouched. Off by default; the setting shows
+with the Dual Strike pack, and the look applies in battles that use the
+Dual Strike graphics mode (`TANGOAW2_DS_GRAPHICS=1` sets the development
+byte for the app until the mode has a setting; `TANGOAW2_TILT=1` forces the
+tilt on for `aw2_script`; `TANGOAW2_TILT_CHECK=1` replays the hardware's
+priority rules against the console's picture; `TANGOAW2_TILT_TIME=1` times it).
+
+- Only the battle map main loop (`0x03000000 == 0x08022049`), tile mode 0, no
+  fade, no affine sprites. Anything else is left as drawn.
+- Map: BG3 terrain, BG1 units (with HP digits and icons), BG2 peaks and
+  treetops, BG0 while below the units (range overlay), OBJs of priority 3
+  (buildings), the cursor (tile 869 pointer; 873 brackets), the move arrow
+  (16 x 16, palette 3) and the attack target (tiles 666-674 pal 4, 884-895).
+  HUD: everything else. Which layer is on top per pixel follows the hardware
+  (priority, windows); HUD-topmost pixels keep the console's pixel; where the
+  terrain panel's window darkens the map the tilted map is darkened too.
+- Plane: row pitch 14.1 px (top) to 18 (bottom), width scale 0.97 to 1.10 (a
+  ratio of 1.28 in pitch as measured in Dual Strike; the whole plane is scaled
+  ~10% so the 160 rows are filled). Ground is projected; 16 x 16 unit/peak
+  cells, buildings and the pointer are billboards standing on their cell's
+  front edge, scaled with depth and drawn back to front. Beyond the picture's
+  sides the ground is mirrored.
+- Cost about 0.35 ms a frame (mostly VRAM reads). Not done: the range tint over
+  buildings, the HUD popups stay at their flat screen position, the cursor
+  and arrow tiles are matched by number (other cursor art stays flat).

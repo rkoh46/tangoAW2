@@ -114,6 +114,15 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
             toggle(config.fractional_scaling, Message::ToggleFractionalScaling),
         ),
     ];
+    // tangoAW2: Dual Strike's tilted battle map (display only), offered with
+    // the Dual Strike pack; it shows in battles that use the Dual Strike
+    // graphics mode.
+    if tango_library::ds_pack_present() {
+        emulator_rows.push(option_row(
+            t!(lang, "settings-ds-tilt"),
+            toggle(config.ds_tilt, Message::ToggleDsTilt),
+        ));
+    }
     if cfg!(target_os = "ios") {
         let options = vec![
             Choice::new(false, t!(lang, "settings-landscape-screen-fit")),

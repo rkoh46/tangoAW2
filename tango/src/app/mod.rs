@@ -170,6 +170,7 @@ enum ScreenKey {
 impl App {
     pub fn new() -> (Self, iced::Task<Message>) {
         let config = config::Config::load_or_create();
+        tango_library::set_ds_tilt(config.ds_tilt);
 
         let scanners = Catalog::new();
         // The scan itself runs off-thread from the task below: reading

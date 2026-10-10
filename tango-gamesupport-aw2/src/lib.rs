@@ -43,6 +43,7 @@ pub mod ds_pack;
 pub mod ds_power_art;
 pub mod ds_unit_art;
 pub mod ds_graphics;
+pub mod ds_tilt;
 pub mod ds_unit_pictures;
 pub mod ds_units;
 pub mod ds_weather;
