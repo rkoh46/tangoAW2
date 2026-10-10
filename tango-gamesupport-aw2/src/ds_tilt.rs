@@ -673,6 +673,21 @@ struct Billboard {
 /// Rewrites `rgba` (the console's 240 x 160 picture) as Dual Strike's tilted
 /// battle map, when that is what is on screen. Nothing else changes.
 pub fn apply(core: &Core, rgba: &mut [u8]) {
+    // A picture that goes wrong must never take the game down: the frame is
+    // left as the console drew it and the tilt stays off for the session.
+    static FAILED: AtomicBool = AtomicBool::new(false);
+    if !enabled() || FAILED.load(Ordering::Relaxed) {
+        return;
+    }
+    let before = rgba.to_vec();
+    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| apply_timed(core, rgba))).is_err() {
+        FAILED.store(true, Ordering::Relaxed);
+        rgba.copy_from_slice(&before);
+        eprintln!("ds_tilt: failed; the tilt is off for this session");
+    }
+}
+
+fn apply_timed(core: &Core, rgba: &mut [u8]) {
     static TIME: OnceLock<bool> = OnceLock::new();
     if env_on("TANGOAW2_TILT_TIME", &TIME) {
         let t = std::time::Instant::now();
@@ -1343,10 +1358,11 @@ const FIVE_ON: u32 = 0x0203_0206;
 const CO_TABLE_PTR: u32 = 0x0804_2DDC;
 
 /// First tile of each unit type's picture (the console's, Orange Star's
-/// art): the map sheet's slots.
+/// art): the map sheet's slots. (A submerged Sub, type 25, is never drawn from
+/// its record: who may see it is the game's to say.)
 const UNIT_TILES: [u16; 28] = [
     0, 0x279, 0x27d, 0x235, 0x321, 0x23d, 0x241, 0x245, 0x239, 0x325, 0x249, 0x24d, 0x329, 0x32d, 0x251, 0x255, 0x259,
-    0x25d, 0x331, 0x261, 0x265, 0x269, 0x26d, 0x271, 0x275, 0x275, 0x335, 0x339,
+    0x25d, 0x331, 0x261, 0x265, 0x269, 0x26d, 0x271, 0x275, 0, 0x335, 0x339,
 ];
 
 struct RamUnit {
