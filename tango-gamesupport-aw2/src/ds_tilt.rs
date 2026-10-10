@@ -100,6 +100,41 @@ const FOOT_DROP: f32 = 0.1;
 /// Where the fitted camera's principal ray meets the ground, from the cursor
 /// cell's corner (cells).
 const CAM_BIAS: (f32, f32) = (0.03, 0.08);
+/// The camera's numbers, from the constants above unless `TANGOAW2_TILT_CAM` overrides them
+/// (a development aid for fitting the camera to real Dual Strike frames):
+/// `focal,pitch,height,cx,cy,bias_u,bias_v,foot_drop` (focal in pixels of the 240-wide picture,
+/// pitch in radians; any field may be left empty to keep its default).
+#[derive(Clone, Copy)]
+struct CamParams {
+    focal: f32,
+    pitch: f32,
+    height: f32,
+    cx: f32,
+    cy: f32,
+    bias: (f32, f32),
+    foot_drop: f32,
+}
+
+fn cp() -> &'static CamParams {
+    static P: OnceLock<CamParams> = OnceLock::new();
+    P.get_or_init(|| {
+        let mut p = CamParams { focal: FOCAL, pitch: PITCH, height: HEIGHT, cx: CX, cy: CY, bias: CAM_BIAS, foot_drop: FOOT_DROP };
+        if let Ok(v) = std::env::var("TANGOAW2_TILT_CAM") {
+            let f: Vec<Option<f32>> = v.split(',').map(|t| t.trim().parse::<f32>().ok()).collect();
+            let g = |i: usize| f.get(i).copied().flatten();
+            p.focal = g(0).unwrap_or(p.focal);
+            p.pitch = g(1).unwrap_or(p.pitch);
+            p.height = g(2).unwrap_or(p.height);
+            p.cx = g(3).unwrap_or(p.cx);
+            p.cy = g(4).unwrap_or(p.cy);
+            p.bias.0 = g(5).unwrap_or(p.bias.0);
+            p.bias.1 = g(6).unwrap_or(p.bias.1);
+            p.foot_drop = g(7).unwrap_or(p.foot_drop);
+        }
+        p
+    })
+}
+
 /// The table of the steps the selected unit's move costs to each cell (a byte a
 /// cell, rows by the map's row table; 0xFF: out of reach).
 const REACH: u32 = 0x0202_0CA2;
@@ -171,25 +206,25 @@ struct Cam {
 
 impl Cam {
     fn new(cu: f32, cv: f32) -> Cam {
-        Cam { cu, cv, sin: PITCH.sin(), cos: PITCH.cos(), tan: PITCH.tan() }
+        Cam { cu, cv, sin: cp().pitch.sin(), cos: cp().pitch.cos(), tan: cp().pitch.tan() }
     }
 
     /// The screen position of the ground point (u, v) in cells, and the size
     /// of a cell there in pixels across.
     fn project(&self, u: f32, v: f32) -> (f32, f32, f32) {
         let dx = u - self.cu;
-        let dy = v - self.cv - HEIGHT * self.tan;
-        let depth = HEIGHT * self.cos - dy * self.sin;
-        let up = -dy * self.cos - HEIGHT * self.sin;
-        (CX + FOCAL * dx / depth, CY - FOCAL * up / depth, FOCAL / depth)
+        let dy = v - self.cv - cp().height * self.tan;
+        let depth = cp().height * self.cos - dy * self.sin;
+        let up = -dy * self.cos - cp().height * self.sin;
+        (cp().cx + cp().focal * dx / depth, cp().cy - cp().focal * up / depth, cp().focal / depth)
     }
 
     /// The ground point (cells) under a screen position.
     fn unproject(&self, xs: f32, ys: f32) -> (f32, f32) {
-        let a = (xs - CX) / FOCAL;
-        let b = -(ys - CY) / FOCAL;
-        let lam = -HEIGHT / (b * self.sin - self.cos);
-        (self.cu + lam * a, self.cv + HEIGHT * self.tan + lam * (-b * self.cos - self.sin))
+        let a = (xs - cp().cx) / cp().focal;
+        let b = -(ys - cp().cy) / cp().focal;
+        let lam = -cp().height / (b * self.sin - self.cos);
+        (self.cu + lam * a, self.cv + cp().height * self.tan + lam * (-b * self.cos - self.sin))
     }
 
     /// How far the screen reaches from the looked-at point: left, right, up,
@@ -197,7 +232,7 @@ impl Cam {
     fn reach(&self) -> (f32, f32, f32, f32) {
         let (ul0, vt) = self.unproject(0.0, 0.0);
         let (ur0, _) = self.unproject(W as f32, 0.0);
-        let (_, vb) = self.unproject(CX, H as f32);
+        let (_, vb) = self.unproject(cp().cx, H as f32);
         (self.cu - ul0, ur0 - self.cu, self.cv - vt, vb - self.cv)
     }
 }
@@ -1171,7 +1206,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         core.raw_read_8(CURSOR_Y, -1) as i32,
     );
     let (fx, fy) = follow(cursor, ground.w, ground.h);
-    let cam = Cam::new(fx + CAM_BIAS.0, fy + CAM_BIAS.1);
+    let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
 
     // What lies on the ground, as the console shows it: BG0's range tint
     // (while it is below the units) and the sprites that lie flat.
@@ -1298,7 +1333,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 let foot_y = (my * 16 - cam_px.1 + 16) as f32;
                 // Units stand a little in front of the edge; the peaks and
                 // treetops (BG2) stand on it.
-                let drop = if b == 1 { FOOT_DROP } else { 0.0 };
+                let drop = if b == 1 { cp().foot_drop } else { 0.0 };
                 boards.push(Billboard {
                     pix,
                     w: 16,
@@ -1379,7 +1414,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let seen: std::collections::HashSet<(i32, i32)> = boards
             .iter()
             .filter(|b| !b.last && b.rank == (3 - bgs[1].pri) * 2)
-            .map(|b| ((b.fu - 0.5) as i32, (b.fv - 1.0 - FOOT_DROP).round() as i32 - 0))
+            .map(|b| ((b.fu - 0.5) as i32, (b.fv - 1.0 - cp().foot_drop).round() as i32 - 0))
             .collect();
         let (win_x, win_y) = (map_x0..=map_x0 + 15, map_y0..=map_y0 + 10);
         let bob = {
@@ -1408,7 +1443,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 w: 16,
                 h: 16,
                 fu: ux as f32 + 0.5,
-                fv: uy as f32 + 1.0 + FOOT_DROP,
+                fv: uy as f32 + 1.0 + cp().foot_drop,
                 ox: -8.0,
                 oy: -16.0 - bob as f32,
                 rank: (3 - bgs[1].pri) * 2,
@@ -1512,7 +1547,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         w,
                         h,
                         fu: mx as f32 + (dx as f32 + w as f32 / 2.0) / 16.0,
-                        fv: my as f32 + (dy as f32 + h as f32) / 16.0 + FOOT_DROP,
+                        fv: my as f32 + (dy as f32 + h as f32) / 16.0 + cp().foot_drop,
                         ox: -(w as f32) / 2.0,
                         oy: -(h as f32),
                         rank: 1,
@@ -1534,7 +1569,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             w: o.w,
             h: o.h,
             fu: (cam_px.0 as f32 + fx) / 16.0,
-            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { FOOT_DROP } else { 0.0 },
+            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { cp().foot_drop } else { 0.0 },
             ox: -(o.w as f32) / 2.0,
             oy: -(o.h as f32),
             rank: (3 - o.pri) * 2 + 1,
@@ -1586,15 +1621,15 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let mut map = vec![0u16; W * H];
     for y in 0..H {
         // (Along a row the ground's v and the scale are constant; u runs on.)
-        let (u_mid, vv) = cam.unproject(CX, y as f32 + 0.5);
-        let (u_edge, _) = cam.unproject(CX + 1.0, y as f32 + 0.5);
+        let (u_mid, vv) = cam.unproject(cp().cx, y as f32 + 0.5);
+        let (u_edge, _) = cam.unproject(cp().cx + 1.0, y as f32 + 0.5);
         let du = u_edge - u_mid;
         let gy = (vv * 16.0).floor() as i32;
         let sy = gy - cam_px.1;
         let mut shade_here = 0.0f32;
         let mut cur = (usize::MAX, [0u16; 256]);
         for x in 0..W {
-            let u = u_mid + du * (x as f32 + 0.5 - CX);
+            let u = u_mid + du * (x as f32 + 0.5 - cp().cx);
             let gx = (u * 16.0).floor() as i32;
             let (ci, lx, ly) = ground.locate(gx, gy);
             if cur.0 != ci {
