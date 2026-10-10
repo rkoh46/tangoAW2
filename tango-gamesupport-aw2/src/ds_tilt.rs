@@ -46,6 +46,15 @@ pub fn set_enabled(on: bool) {
     ENABLED.store(on, Ordering::Relaxed);
 }
 
+static TIMING_LOG: AtomicBool = AtomicBool::new(false);
+
+/// The frontend's frame-time log (the hidden `ds_tilt_log` setting in config.json): every 120
+/// tilted pictures one `ds_tilt: ...` log line with the mean and worst time, for checking the cost
+/// on a device.
+pub fn set_timing_log(on: bool) {
+    TIMING_LOG.store(on, Ordering::Relaxed);
+}
+
 fn env_on(name: &str, cache: &'static OnceLock<bool>) -> bool {
     *cache.get_or_init(|| std::env::var(name).map(|v| v == "1").unwrap_or(false))
 }
@@ -478,6 +487,12 @@ struct Obj {
     flip: (bool, bool),
 }
 
+/// The Black Obelisk's picture is a plaza with the tower on it, drawn top-down: standing it up
+/// would put a second plaza beside the real one, so it lies on the ground (as the console draws it).
+fn is_obelisk_part(o: &Obj) -> bool {
+    o.class == Class::Billboard && matches!(o.tile as u32, 374 | 390 | 398 | 406)
+}
+
 const OBJ_TILES: usize = 0x10000;
 /// The tiles of the units' pictures, digits and marks.
 const UNIT_TILES_LO: usize = 0x200;
@@ -704,14 +719,6 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             flip: (a1 & 0x1000 != 0, a1 & 0x2000 != 0),
         });
     }
-    if std::env::var("TANGOAW2_TILT_DUMP_OBJS").is_ok() {
-        for o in &out {
-            if o.w >= 16 && o.h >= 16 {
-                eprintln!("OBJ x{} y{} {}x{} pri{} tile{} pal{} {:?}", o.x, o.y, o.w, o.h, o.pri, o.tile, o.pal, o.class);
-            }
-        }
-        eprintln!("OBJEND");
-    }
     Some(resolve_groups(out))
 }
 
@@ -861,19 +868,24 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
 
 fn apply_timed(core: &Core, rgba: &mut [u8]) {
     static TIME: OnceLock<bool> = OnceLock::new();
-    if env_on("TANGOAW2_TILT_TIME", &TIME) {
+    if TIMING_LOG.load(Ordering::Relaxed) || env_on("TANGOAW2_TILT_TIME", &TIME) {
         let t = std::time::Instant::now();
         apply_inner(core, rgba);
-        static STATS: std::sync::Mutex<(u128, u32)> = std::sync::Mutex::new((0, 0));
+        // (total ns, worst ns, pictures)
+        static STATS: std::sync::Mutex<(u128, u128, u32)> = std::sync::Mutex::new((0, 0, 0));
+        let ns = t.elapsed().as_nanos();
         let mut st = STATS.lock().unwrap();
-        st.0 += t.elapsed().as_nanos();
-        st.1 += 1;
-        if st.1 % 1 == 0 {
-            eprintln!(
-                "ds_tilt: {} us per frame (mean of {})",
-                st.0 / st.1 as u128 / 1000,
-                st.1
+        st.0 += ns;
+        st.1 = st.1.max(ns);
+        st.2 += 1;
+        if st.2 >= 120 {
+            log::info!(
+                "ds_tilt: {} us a picture (worst {} us) over {} pictures",
+                st.0 / st.2 as u128 / 1000,
+                st.1 / 1000,
+                st.2
             );
+            *st = (0, 0, 0);
         }
     } else {
         apply_inner(core, rgba);
@@ -1072,7 +1084,15 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 for x in x0..x1 {
                     let i = y as usize * W + x as usize;
                     if owner[i] == Owner::Map && win.bits(x, y) & 0x20 != 0 {
-                        owner[i] = if bld_mode >= 2 { Owner::MapFx } else { Owner::Hud };
+                        // (Darkening is the terrain panel's; a lightening window is a flash on the console's
+                        // own screen position, which on the tilted map would be a ghost rectangle.)
+                        owner[i] = if bld_mode == 3 {
+                            Owner::MapFx
+                        } else if bld_mode == 2 {
+                            Owner::Map
+                        } else {
+                            Owner::Hud
+                        };
                     }
                 }
             }
@@ -1156,7 +1176,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     // What lies on the ground, as the console shows it: BG0's range tint
     // (while it is below the units) and the sprites that lie flat.
     let mut decal = vec![0u16; W * H];
-    for o in objs.iter().filter(|o| o.class == Class::Ground) {
+    for o in objs.iter().filter(|o| o.class == Class::Ground || is_obelisk_part(o)) {
         for y in 0..o.h {
             let sy = o.y + y;
             if !(0..H as i32).contains(&sy) {
@@ -1172,31 +1192,6 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         }
     }
     let tint = bg0_ground.then_some(());
-    if std::env::var("TANGOAW2_TILT_DUMP_OBJS").is_ok() {
-        let (mut n, mut x0, mut x1, mut y0, mut y1) = (0, 999, -1, 999, -1);
-        for i in 0..W * H {
-            if layers[0][i] != 0 {
-                n += 1;
-                let (x, y) = ((i % W) as i32, (i / W) as i32);
-                x0 = x0.min(x);
-                x1 = x1.max(x);
-                y0 = y0.min(y);
-                y1 = y1.max(y);
-            }
-        }
-        let mut ids = std::collections::BTreeMap::new();
-        let g = &bgs[2];
-        for ty in 0..22 {
-            for tx in 0..32 {
-                let e = g.entry(&v, tx + g.hofs.div_euclid(8), ty + g.vofs.div_euclid(8));
-                if (e & 0x3ff) != 0x360 && (e & 0x3ff) != 0 {
-                    *ids.entry((e & 0x3ff, e >> 12)).or_insert(0) += 1;
-                }
-            }
-        }
-        eprintln!("BG2 ids {:03x?}", ids);
-        eprintln!("BG0 tint {} nonzero {} bbox {} {} {} {} on {} pri {}", tint.is_some(), n, x0, y0, x1, y1, bgs[0].on, bgs[0].pri);
-    }
     // The cells the selected unit can reach (the game's own table: the steps
     // it costs, 0xFF where it cannot): known beyond the console's window,
     // where BG0 is not drawn.
@@ -1350,21 +1345,6 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     .collect();
                 let drawn = got.iter().any(|&e| !bgs[1].tile_blank(&v, (e & 0x3ff) as usize));
                 let want = cells.get(&(mx, my)).filter(|_| !ground.fogged(mx, my)).and_then(|u| u.entries());
-                if std::env::var("TANGOAW2_TILT_DUMP").is_ok() {
-                    if let Some(u) = cells.get(&(mx, my)) {
-                        eprintln!(
-                            "UDUMP drawn {} fog {} five {} army {} colour {} cty {} raw {:02x?} con {:03x?}",
-                            drawn,
-                            ground.fogged(mx, my),
-                            u.five,
-                            u.army,
-                            u.colour,
-                            u.country,
-                            u.raw,
-                            got
-                        );
-                    }
-                }
                 let ok = match (drawn, want) {
                     (false, None) => true,
                     (true, Some(w)) => w.iter().zip(&got).all(|(a, b)| a == b),
@@ -1461,15 +1441,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else {
                     continue;
                 };
-                for (k, &(dx, dy, w, h, pt, pp, phf, pvf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
+                for (k, &(dx, dy, w, h, pt, pp, _phf, _pvf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
                     let (px, py) = (mx * 16 - cam_px.0 + dx as i32, my * 16 - cam_px.1 + dy as i32);
                     if let Some(o) = objs.iter().find(|o| {
                         o.class == Class::Billboard && (o.x, o.y, o.w, o.h) == (px, py, w as i32, h as i32)
                     }) {
-                        if std::env::var("TANGOAW2_DBG_LEARN").is_ok() && pt >= STATIC_SHEET {
-                            eprintln!("LEARN id {} part {} got tile {} pal {} flip {:?} plan tile {} pal {} flip {:?}", t, k, o.tile, o.pal, o.flip, pt, pp, (phf, pvf));
-                        }
-                        if std::env::var("TANGOAW2_TILT_NOLEARN").is_err() {
+                        {
                             cache.1.insert((t, k as u8), (o.tile, o.pal, o.flip));
                             // (the structures share a palette in a mission: 9 in all but the
                             // mission the plans were recorded in)
@@ -1526,9 +1503,6 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         };
                         (tile, pal, (hf, vf))
                     };
-                    if std::env::var("TANGOAW2_TILT_DUMP_STRUCT").is_ok() {
-                        eprintln!("STRUCT cell ({},{}) id {:x} part {} tile {} pal {} fog {}", mx, my, t, k, tile, pal, ground.fogged(mx, my));
-                    }
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
                     if pix.iter().all(|&p| p == 0) {
                         continue;
@@ -1550,12 +1524,13 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
     for o in objs
         .iter()
-        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer))
+        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer) && !is_obelisk_part(o))
     {
         let fx = o.x as f32 + o.w as f32 / 2.0;
         let fy = (o.y + o.h) as f32;
+        let pix = o.pix.clone();
         boards.push(Billboard {
-            pix: o.pix.clone(),
+            pix,
             w: o.w,
             h: o.h,
             fu: (cam_px.0 as f32 + fx) / 16.0,
@@ -1593,7 +1568,8 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 + (0.93 * u + 0.71 * v - clock * 0.009 + (0.4 * u).sin()).sin())
                 / 3.0)
                 * 1.4;
-            shadow[j * sw + i] = ((f - 0.15) * 1.8).clamp(0.0, 1.0);
+            let t = ((f - 0.2) / 1.1).clamp(0.0, 1.0);
+            shadow[j * sw + i] = t * t * (3.0 - 2.0 * t);
         }
     }
     let shade = |u: f32, v: f32| -> f32 {
@@ -1629,7 +1605,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 shade_here = shade(u, vv);
             }
             if shade_here > 0.0 {
-                let k = 1.0 - 0.08 * shade_here;
+                let k = 1.0 - 0.04 * shade_here;
                 let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k) as u32;
                 p = 0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16;
             }
@@ -1655,7 +1631,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             map[y * W + x] = p;
         }
     }
-    for bb in &boards {
+    for bb in boards.iter() {
         let (fx, fy, cell) = cam.project(bb.fu, bb.fv);
         let sc = cell / 16.0;
         let left = fx + bb.ox * sc;

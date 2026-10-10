@@ -524,7 +524,11 @@ def bh_campaign_factory_and_volcano_on_one_map(ctx):
     fac = lz10(bytes(e.read(0x080D22C4, 0x700)))
     vol = lz10(bytes(e.read(0x080D3268, 0x900)))
     # (a few of the Volcano's tiles are the crater's smoke, which Dual Strike's look animates)
-    same = lambda: sum(tiles(0x130 + t, 1) == bytes(vol[32 * t:32 * t + 32]) for t in range(64))
+    # (with "Dual Strike map graphics" on, 0x0203E3FE, the Volcano's picture is Dual Strike's own,
+    # not AW2's: there the slot is checked to hold a picture)
+    ds_art = e.u8(0x0203E3FE) != 0
+    same = lambda: (sum(any(tiles(0x130 + t, 1)) for t in range(64)) if ds_art
+                    else sum(tiles(0x130 + t, 1) == bytes(vol[32 * t:32 * t + 32]) for t in range(64)))
     ctx.check(tiles(786, 48) == bytes(fac[:48 * 32]), "the Factory's picture is in OBJ tiles 786..833")
     ctx.check(same() >= 56, f"the Volcano's picture is in its own slot (OBJ tiles 0x130..0x16F): {same()} of 64 tiles")
     obelisk_art, crystal_art = tiles(0x176, 36), tiles(0x19A, 8)

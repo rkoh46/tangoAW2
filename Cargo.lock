@@ -6011,6 +6011,7 @@ dependencies = [
 name = "tango-gamesupport-aw2"
 version = "0.1.0"
 dependencies = [
+ "log",
  "mgba",
  "png",
  "tango-backend-mgba",

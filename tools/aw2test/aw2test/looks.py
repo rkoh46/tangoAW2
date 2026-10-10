@@ -418,7 +418,9 @@ def terrain_cells(e, look, max_err=MAX_ERROR):
             below = ids.get((x, y + 1))
             fog = not seen[y * w + x]
             fogged += fog
-            want = ref.render_cell(d, below if below in TALL else None, ds_tiles,
+            # (With "Dual Strike map graphics" on, 0x0203E3FE, the part of a tall tile that rises over the
+            # cell above is on BG2, the front layer: BG3 holds plain ground there.)
+            want = ref.render_cell(d, below if below in TALL and not e.u8(0x0203E3FE) else None, ds_tiles,
                                    road=ref.classes[tiles[y * w + x]] == ROAD, fog=fog)
             px, py = ((x - cx) & 15) * 2, ((y - cy) & 15) * 2
             q = [tilemap[(py + dy) * 32 + px + dx] for dy in (0, 1) for dx in (0, 1)]

@@ -241,6 +241,10 @@ pub struct Config {
     /// Strike graphics mode). Off by default.
     #[serde(default)]
     pub ds_tilt: bool,
+    /// tangoAW2: log the tilt's frame cost every 120 pictures (set `"ds_tilt_log": true` in
+    /// config.json; there is no settings row).
+    #[serde(default)]
+    pub ds_tilt_log: bool,
     /// tangoAW2: draw the battle map with Dual Strike's graphics (offline
     /// play, with the Dual Strike pack). Off by default.
     #[serde(default)]
@@ -387,6 +391,7 @@ impl Default for Config {
             video_filter: String::new(),
             fractional_scaling: default_fractional_scaling(),
             ds_tilt: false,
+            ds_tilt_log: false,
             ds_graphics: false,
             landscape_stretch: false,
             ds_screen_stacking: DsScreenStacking::default(),

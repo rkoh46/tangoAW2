@@ -71,6 +71,13 @@ pub fn set_ds_tilt(on: bool) {
     let _ = on;
 }
 
+/// tangoAW2: log the tilt's cost every 120 pictures (hidden `ds_tilt_log` setting).
+pub fn set_ds_tilt_log(on: bool) {
+    #[cfg(feature = "gamesupport-aw2")]
+    tango_gamesupport_aw2::ds_tilt::set_timing_log(on);
+    let _ = on;
+}
+
 /// tangoAW2: the Dual Strike pack in use is a saved one from an older
 /// version and the .nds was not in the ROMs folder to rebuild it (the
 /// play tab says so).

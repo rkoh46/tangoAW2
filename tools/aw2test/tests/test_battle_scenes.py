@@ -368,11 +368,19 @@ def netplay_battle_scene(ctx):
     units = (g.units_base + ram.UNIT_SIZE * 1, ram.UNIT_SIZE * 127)
     state = (STATE, 0x200)
     offline = {a: g.e.read(a, n) for a, n in (units, state)}
+    offline_ds = g.e.u8(0x0203E3FE) != 0
     g.e.wait(60)
     identical, values, text = ctx.netplay_replay(g, [units, state])
     ctx.log("\n".join(l for l in text.splitlines() if not l.startswith("peek")))
     ctx.check(identical, "netplay: all identical: true (both peers and the straight replay)")
-    for a, v in offline.items():
+    if offline_ds:
+        # Dual Strike map graphics (0x0203E3FE) are an offline-only setting: the netplay peers run
+        # without them, so the Dual Strike scene's state is not the offline run's by design.
+        ctx.log("offline run had Dual Strike map graphics on: peers' RAM not compared with it")
+        continue_compare = False
+    else:
+        continue_compare = True
+    for a, v in (offline.items() if continue_compare else ()):
         ctx.eq(values.get(a, b"").hex(), v.hex(), f"netplay peer 0 RAM at {a:08x} equals the offline run")
 
 
@@ -391,12 +399,20 @@ def netplay_cpu_battle_scene(ctx):
     units = (g.units_base + ram.UNIT_SIZE * 1, ram.UNIT_SIZE * 127)
     state = (STATE, 0x200)
     offline = {a: g.e.read(a, n) for a, n in (units, state)}
+    offline_ds = g.e.u8(0x0203E3FE) != 0
     ctx.check(offline[STATE][0x40] != 0 or offline[STATE][0] != 0, "a Dual Strike scene ran")
     g.e.wait(60)
     identical, values, text = ctx.netplay_replay(g, [units, state])
     ctx.log("\n".join(l for l in text.splitlines() if not l.startswith("peek")))
     ctx.check(identical, "netplay: all identical: true (both peers and the straight replay)")
-    for a, v in offline.items():
+    if offline_ds:
+        # Dual Strike map graphics (0x0203E3FE) are an offline-only setting: the netplay peers run
+        # without them, so the Dual Strike scene's state is not the offline run's by design.
+        ctx.log("offline run had Dual Strike map graphics on: peers' RAM not compared with it")
+        continue_compare = False
+    else:
+        continue_compare = True
+    for a, v in (offline.items() if continue_compare else ()):
         ctx.eq(values.get(a, b"").hex(), v.hex(), f"netplay peer 0 RAM at {a:08x} equals the offline run")
 
 
