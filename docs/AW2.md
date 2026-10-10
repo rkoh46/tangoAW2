@@ -3699,24 +3699,32 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   sprites; anything else (menus, dialogue, the world map, battle animations,
   the title) is left as drawn. A panic inside leaves the frame alone and the
   tilt off for the session.
-- **Camera** (fitted to real Dual Strike frames: `tools/aw2test/ds_view_props.py`
-  is the sprite-plan experiment; the fit is described here). melonDS frames of
-  Snow Hunters (five cursor positions), the pipe walls, coasts and trees of the
-  game's own ground registered onto them: a pinhole camera 49.9 cells high,
-  pitched 16.9 degrees from straight down, focal length 758 pixels on the
-  256 x 192 picture (ours 240 x 160, scaled by 240 / 256); a cell is 14.0
-  pixels across at the top of the screen and 15.0 at the bottom, 13.0 high at
-  the top and 14.9 at the bottom. Mean distance between the registered
-  pipe edges 0.94 pixels, 90th percentile 1.0. Dual Strike's camera only
-  translates (the same fit with one tilt and one set of lens parameters and
-  a centre per frame scores as well as a free homography per frame), looks at
-  the cursor's cell corner and keeps the map's edge in view (centre >= 8.0
-  cells from the left, 5.9 from the top and bottom). Ours follows the same rule (see Camera follow).
+- **Camera** (fitted to real Dual Strike frames, melonDS captures of ten missions in all four
+  looks; the fit is in the commit history and `tools/aw2test`). A pinhole camera 21.9 cells
+  high, pitched 13.4 degrees from straight down, focal length 305 pixels on our 240 x 160
+  picture (Dual Strike's is 256 x 192 and ours is scaled by 240 / 256), its principal point at
+  (109.5, 67) and looking 0.72 cells left of and 0.90 above the cursor's cell corner. It was
+  found by decomposing per-scene homographies (real pixel to the game's own ground at 16 pixels
+  a cell, maximum normalised cross-correlation) into pinhole parameters, with the real map
+  edges' slope and position as a constraint (the earlier 49.9-high camera did not converge
+  enough: right edge slope 0.046 against the real 0.114 pixels a row). Over the ten scenes
+  chamfer distance to the real edges is 1.2 (Normal), 2.3 (Desert, Wasteland) and 2.5 (Snow)
+  pixels, down from 1.4, 2.3, 2.4 and 2.8. Units stand 0.135 cells in front of their cell's
+  foot, properties on it, woods and mountains 0.16 behind it (measured by matching each
+  sprite). `TANGOAW2_TILT_CAM=focal,pitch,height,cx,cy,bias_u,bias_v,foot_drop` overrides the
+  numbers for fitting. Dual Strike's picture is 4:3 and ours 3:2: our framing is kept, the map
+  shows a little more at the sides and a little less at the top and bottom than the console's
+  own 15 x 10 window, never less than it.
 - **Ground** (`ds_ground`): any cell of the map from its metatile id (map RAM
   `+0xA22`, rows `+0x417A`), fog flag (`+0x234A`), the look's quadrants, the
   game's tiles (VRAM, as animated now) and palettes (live: fog, weather), and
-  the peak or treetops of the cell below over its bottom half. Equal to
-  BG3 + BG2 on every pixel of every scene tried.
+  the peak or treetops of the cell below over its bottom half. Drawn in Dual Strike's own colours
+  (the look keeps each tile's pixels as the pack has them; AW2's four palettes had merged the
+  five terrain sub-palettes, and fog is the pack's sub-palette 5 index for index), so it is
+  within a few colour steps of BG3 + BG2 rather than equal. Beyond the map's edge Dual Strike
+  shows one flat pale colour (Normal 220/244/124, Desert and Wasteland 252/244/148, Snow
+  252/252/252, mixed with purple where the nearest cell is fogged); the range tint does not reach
+  it.
 - **Units beyond the console's window** from the records (`UNITS_PTR`): the
   picture's first tile by type, Infantry and Mech by the CO's country (CO record
   `+0x15`), mirrored for armies 1 and 3 and for any unit that has moved, army
@@ -3767,5 +3775,14 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   only drawn inside the console's window; low fuel/ammo/capture icons are not
   drawn beyond the window; HUD popups stay where the console puts them;
   Dual Strike's desert and wasteland looks have no real frame to compare with.
+
+- **Weather.** Rain's streaks, snow's flakes and the sandstorm's grains (drawn here: AW2 has none
+  for it, Dual Strike shows fine speckles) are screen-space and stay flat on top of the map; rain's
+  fog is the map's own. A lightening window effect (a flash on the console's own screen) is not
+  carried to the tilted map, the terrain panel's darkening is.
+- **Frame cost.** `"ds_tilt_log": true` in config.json (no settings row) logs
+  `ds_tilt: N us a picture (worst M us)` every 120 pictures. Measured: 1.1 ms a picture on a Mac
+  (busy 4-army map), 2.2 ms in the iOS Simulator, with the emulation step at 1.6 ms (Mac) and
+  2.8 to 3.3 ms (Simulator) of the 16.7 ms frame; 59.8 frames a second in both.
 
 **Driving the real app in tests** (`tango/src/app/debug_aids.rs`): `TANGOAW2_SCREENSHOTS=<s>:<png>,...` saves the app window's own picture (read back from the GPU: no screen-recording permission) at those seconds after launch (`TANGOAW2_SCREENSHOT_EXIT=1` quits after the last), `TANGOAW2_PAD_SCRIPT=<file>` plays the harness's `press`/`hold`/`wait` lines (an `Emu.timeline` dump) into the offline session as the pad, and `TANGOAW2_AUTOSTART=offline|settings|settings:graphics|replays` opens that. With `TANGOAW2_PROFILE=<dir>` (config/config.json with `ds_graphics` and `ds_tilt`, data/roms with the two ROMs, data/saves with the harness's `map.sav`) the app plays a Versus battle by itself and photographs it.
