@@ -404,7 +404,7 @@ const MAP_COLOURS: usize = 128;
 const VRAM_TILES: u32 = 0x0600_8000;
 /// The map (gMap): scroll at +4/+6, camera origin at +0xC/+0xE, tiles at
 /// +0xA22, seen cells at +0x234A, row offsets at +0x417A.
-const MAP: u32 = 0x0201_E450;
+pub const MAP: u32 = 0x0201_E450;
 /// Points at BG3's tilemap buffer.
 const BG3_BUFFER_POINTER: u32 = 0x0849_9584;
 const BG3CNT: u32 = 0x0400_000E;

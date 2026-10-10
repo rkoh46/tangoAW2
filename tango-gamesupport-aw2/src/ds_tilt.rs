@@ -33,6 +33,8 @@
 //!    cursor's pointer) are drawn back to front as billboards standing on their
 //!    cell's front edge, scaled with depth but not squashed.
 
+use crate::ds_ground::Ground;
+use crate::wasteland::MAP;
 use mgba::core::Core;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
@@ -61,55 +63,87 @@ const H: usize = 160;
 const BATTLE_MAIN: u32 = 0x0802_2049;
 const MAIN_LOOP: u32 = 0x0300_0000;
 
-// --- The plane -----------------------------------------------------------------
+// --- The camera ---------------------------------------------------------------
 //
-// Measured on a real Dual Strike frame (melonDS): rows are about 13 pixels per
-// cell near the top and 16.6 near the bottom (a ratio of 1.28) and the columns
-// converge toward the top. A pinhole camera looking down at a plane has
-// horizontal scale s = S0 / (1 - C v) and row pitch proportional to s squared,
-// so the same ratio 1.28 in row pitch is a ratio of sqrt(1.28) = 1.13 in
-// width: 0.885 = (1 - C * 160) below. The plane is scaled up about 10% so the
-// 160 source rows fill the 160 screen rows (the console's picture has no more
-// rows to show than that): cells are 14.1 pixels tall at the top and 18 at
-// the bottom, 15.5 and 17.6 wide.
+// Fitted to real Dual Strike frames (melonDS, Snow Hunters, five cursor
+// positions): the pipe walls, coast lines and trees of the registered
+// ground land within 1 pixel (mean 0.94, 90th percentile 1.0, on 256 x 192
+// pixels). A pinhole camera pitched 16.9 degrees from straight down, 49.9
+// cells high, with a focal length of 758 pixels (a narrow field of view: the
+// map is seen from far away): about 14 pixels a cell across at the top of the
+// screen and 15 at the bottom, 13 pixels a row at the top and 14.9 at the
+// bottom. Its picture is 256 x 192 and ours 240 x 160, so everything is
+// scaled by 240 / 256 to keep the width.
 
-/// Horizontal scale at the top row.
-const S0: f32 = 0.97;
-/// 1 - C * 160 at the bottom row.
-const D_BOT: f32 = 0.885;
-const C: f32 = (1.0 - D_BOT) / H as f32;
-/// Row pitch at the top; chosen so the 160 source rows end on row 160.
-const A: f32 = D_BOT;
+/// Focal length in our pixels.
+const FOCAL: f32 = 757.8 * 240.0 / 256.0;
+/// Pitch from straight down, radians (16.88 degrees).
+const PITCH: f32 = 0.2947;
+/// Camera height over the ground, in cells.
+const HEIGHT: f32 = 49.93;
+/// The screen's centre, where the camera looks.
 const CX: f32 = W as f32 / 2.0;
+const CY: f32 = H as f32 / 2.0;
+/// Billboards stand this far in front of their cell's bottom edge (cells):
+/// Dual Strike's units' feet are just below it.
+const FOOT_DROP: f32 = 0.1;
 
-/// Horizontal scale at source row `v`.
-fn scale(v: f32) -> f32 {
-    S0 / (1.0 - C * v)
+/// The camera over the ground point (`cu`, `cv`), in cells, that it looks at.
+#[derive(Clone, Copy)]
+struct Cam {
+    cu: f32,
+    cv: f32,
+    sin: f32,
+    cos: f32,
+    tan: f32,
 }
 
-/// Screen row of source row `v`.
-fn fwd_y(v: f32) -> f32 {
-    A * v / (1.0 - C * v)
-}
+impl Cam {
+    fn new(cu: f32, cv: f32) -> Cam {
+        Cam { cu, cv, sin: PITCH.sin(), cos: PITCH.cos(), tan: PITCH.tan() }
+    }
 
-/// Source row under screen row `y`.
-fn inv_v(y: f32) -> f32 {
-    y / (A + C * y)
+    /// The screen position of the ground point (u, v) in cells, and the size
+    /// of a cell there in pixels across.
+    fn project(&self, u: f32, v: f32) -> (f32, f32, f32) {
+        let dx = u - self.cu;
+        let dy = v - self.cv - HEIGHT * self.tan;
+        let depth = HEIGHT * self.cos - dy * self.sin;
+        let up = -dy * self.cos - HEIGHT * self.sin;
+        (CX + FOCAL * dx / depth, CY - FOCAL * up / depth, FOCAL / depth)
+    }
+
+    /// The ground point (cells) under a screen position.
+    fn unproject(&self, xs: f32, ys: f32) -> (f32, f32) {
+        let a = (xs - CX) / FOCAL;
+        let b = -(ys - CY) / FOCAL;
+        let lam = -HEIGHT / (b * self.sin - self.cos);
+        (self.cu + lam * a, self.cv + HEIGHT * self.tan + lam * (-b * self.cos - self.sin))
+    }
+
+    /// How far the screen reaches from the looked-at point: left, right, up,
+    /// down, in cells (the widest row for the sides).
+    fn reach(&self) -> (f32, f32, f32, f32) {
+        let (ul0, vt) = self.unproject(0.0, 0.0);
+        let (ur0, _) = self.unproject(W as f32, 0.0);
+        let (_, vb) = self.unproject(CX, H as f32);
+        (self.cu - ul0, ur0 - self.cu, self.cv - vt, vb - self.cv)
+    }
 }
 
 // --- Video memory ---------------------------------------------------------------
 
-struct Vid {
-    io: [u16; 0x30],
-    pal: [u16; 512],
-    oam: [u16; 512],
-    vram: Vec<u8>,
+pub(crate) struct Vid {
+    pub(crate) io: [u16; 0x30],
+    pub(crate) pal: [u16; 512],
+    pub(crate) oam: [u16; 512],
+    pub(crate) vram: Vec<u8>,
     /// 4 KiB pages of `vram` read so far.
     loaded: [bool; 24],
 }
 
 impl Vid {
-    fn read(core: &Core) -> Vid {
+    pub(crate) fn read(core: &Core) -> Vid {
         let mut io = [0u16; 0x30];
         for (i, v) in io.iter_mut().enumerate() {
             *v = core.raw_read_16(0x0400_0000 + 2 * i as u32, -1);
@@ -136,7 +170,7 @@ impl Vid {
     }
 
     /// Makes `[addr, addr + len)` of VRAM available.
-    fn ensure(&mut self, core: &Core, addr: usize, len: usize) {
+    pub(crate) fn ensure(&mut self, core: &Core, addr: usize, len: usize) {
         let end = (addr + len).min(0x18000);
         let mut page = addr / 0x1000;
         while page * 0x1000 < end {
@@ -152,7 +186,7 @@ impl Vid {
         }
     }
 
-    fn u16_at(&self, a: usize) -> u16 {
+    pub(crate) fn u16_at(&self, a: usize) -> u16 {
         u16::from_le_bytes([self.vram[a], self.vram[a + 1]])
     }
 
@@ -235,6 +269,23 @@ impl Bg {
     fn tile_blank(&self, v: &Vid, tile: usize) -> bool {
         let a = self.char_base + 32 * tile;
         a + 32 > 0x18000 || v.vram[a..a + 32].iter().all(|&b| b == 0)
+    }
+
+    /// One pixel of the 8 x 8 tile a tilemap entry names (flips, palette bank).
+    pub(crate) fn tile_px(&self, v: &Vid, e: u16, x: usize, y: usize) -> Px {
+        let sx = if e & 0x400 != 0 { 7 - x } else { x };
+        let sy = if e & 0x800 != 0 { 7 - y } else { y };
+        let a = self.char_base + 32 * (e & 0x3ff) as usize + sy * 4 + sx / 2;
+        if a >= 0x18000 {
+            return 0;
+        }
+        let b = v.vram[a];
+        let c = if sx & 1 == 0 { b & 15 } else { b >> 4 } as usize;
+        if c == 0 {
+            0
+        } else {
+            0x8000 | (v.pal[(e >> 12) as usize * 16 + c] & 0x7fff)
+        }
     }
 
     /// One plane pixel (plane coordinates, wrapping).
@@ -332,6 +383,81 @@ struct Obj {
 
 const OBJ_TILES: usize = 0x10000;
 
+
+/// The pixels of a sprite picture (0 transparent, else 0x8000 | colour); its
+/// tiles are read from the console first.
+#[allow(clippy::too_many_arguments)]
+fn obj_pixels(
+    core: &Core,
+    v: &mut Vid,
+    one_d: bool,
+    tile: usize,
+    pal_bank: usize,
+    w: i32,
+    h: i32,
+    hflip: bool,
+    vflip: bool,
+    color8: bool,
+) -> Vec<Px> {
+    let (tw, th) = ((w / 8) as usize, (h / 8) as usize);
+    for k in 0..tw * th * if color8 { 2 } else { 1 } {
+        let t = if one_d { tile + k } else { tile + (k / tw) * 32 + k % tw } & 0x3ff;
+        v.ensure(core, OBJ_TILES + t * 32, 32);
+    }
+    obj_pixels_ro(v, one_d, tile, pal_bank, w, h, hflip, vflip, color8)
+}
+
+/// [`obj_pixels`] once the tiles are in.
+#[allow(clippy::too_many_arguments)]
+fn obj_pixels_ro(
+    v: &Vid,
+    one_d: bool,
+    tile: usize,
+    pal_bank: usize,
+    w: i32,
+    h: i32,
+    hflip: bool,
+    vflip: bool,
+    color8: bool,
+) -> Vec<Px> {
+    let (tw, th) = ((w / 8) as usize, (h / 8) as usize);
+    let mut pix = vec![0u16; (w * h) as usize];
+    for ty in 0..th {
+        for tx in 0..tw {
+            let src_tx = if hflip { tw - 1 - tx } else { tx };
+            let src_ty = if vflip { th - 1 - ty } else { ty };
+            let step = if color8 { 2 } else { 1 };
+            let mut t = if one_d {
+                tile + src_ty * tw * step + src_tx * step
+            } else {
+                tile + src_ty * 32 + src_tx * step
+            };
+            t &= 0x3ff;
+            let bytes = if color8 { 64 } else { 32 };
+            let addr = OBJ_TILES + t * 32;
+            if addr + bytes > 0x18000 {
+                continue;
+            }
+            for py in 0..8usize {
+                for pxl in 0..8usize {
+                    let (sx, sy) = (if hflip { 7 - pxl } else { pxl }, if vflip { 7 - py } else { py });
+                    let c = if color8 {
+                        v.vram[addr + sy * 8 + sx] as usize
+                    } else {
+                        let b = v.vram[addr + sy * 4 + sx / 2];
+                        (if sx & 1 == 0 { b & 15 } else { b >> 4 }) as usize
+                    };
+                    if c != 0 {
+                        let color = if color8 { v.pal[256 + c] } else { v.pal[256 + pal_bank * 16 + c] };
+                        pix[(ty * 8 + py) * w as usize + tx * 8 + pxl] = 0x8000 | (color & 0x7fff);
+                    }
+                }
+            }
+        }
+    }
+    pix
+}
+
 fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
     let mode = (a0 >> 10) & 3;
     let pri = (a2 >> 10) & 3;
@@ -402,50 +528,7 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             continue;
         }
         let color8 = a0 & 0x2000 != 0;
-        let tile = (a2 & 0x3ff) as usize;
-        let pal_bank = (a2 >> 12) as usize;
-        let (tw, th) = ((w / 8) as usize, (h / 8) as usize);
-        let mut pix = vec![0u16; (w * h) as usize];
-        for ty in 0..th {
-            for tx in 0..tw {
-                let src_tx = if a1 & 0x1000 != 0 { tw - 1 - tx } else { tx };
-                let src_ty = if a1 & 0x2000 != 0 { th - 1 - ty } else { ty };
-                let mut t = if one_d {
-                    tile + src_ty * tw * if color8 { 2 } else { 1 } + src_tx * if color8 { 2 } else { 1 }
-                } else {
-                    tile + src_ty * 32 + src_tx * if color8 { 2 } else { 1 }
-                };
-                t &= 0x3ff;
-                let bytes = if color8 { 64 } else { 32 };
-                let addr = OBJ_TILES + t * 32;
-                if addr + bytes > 0x18000 {
-                    continue;
-                }
-                v.ensure(core, addr, bytes);
-                for py in 0..8usize {
-                    for pxl in 0..8usize {
-                        let (sx, sy) = (
-                            if a1 & 0x1000 != 0 { 7 - pxl } else { pxl },
-                            if a1 & 0x2000 != 0 { 7 - py } else { py },
-                        );
-                        let c = if color8 {
-                            v.vram[addr + sy * 8 + sx] as usize
-                        } else {
-                            let b = v.vram[addr + sy * 4 + sx / 2];
-                            (if sx & 1 == 0 { b & 15 } else { b >> 4 }) as usize
-                        };
-                        if c != 0 {
-                            let color = if color8 {
-                                v.pal[256 + c]
-                            } else {
-                                v.pal[256 + pal_bank * 16 + c]
-                            };
-                            pix[(ty * 8 + py) * w as usize + tx * 8 + pxl] = 0x8000 | (color & 0x7fff);
-                        }
-                    }
-                }
-            }
-        }
+        let pix = obj_pixels(core, v, one_d, (a2 & 0x3ff) as usize, (a2 >> 12) as usize, w, h, a1 & 0x1000 != 0, a1 & 0x2000 != 0, color8);
         out.push(Obj {
             x,
             y,
@@ -582,7 +665,7 @@ fn brightness(a: Px, mode: u16, evy: u32) -> Px {
     0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16
 }
 
-fn rgba_lut() -> &'static Vec<[u8; 4]> {
+pub(crate) fn rgba_lut() -> &'static Vec<[u8; 4]> {
     static LUT: OnceLock<Vec<[u8; 4]>> = OnceLock::new();
     LUT.get_or_init(|| {
         let mut src = vec![0u8; 0x8000 * 2];
@@ -599,10 +682,10 @@ struct Billboard {
     pix: Vec<Px>,
     w: i32,
     h: i32,
-    /// The foot's source position: the point on the ground it stands on.
-    fx: f32,
-    fy: f32,
-    /// Top-left of the picture relative to the foot, in source pixels.
+    /// The ground point it stands on, in cells.
+    fu: f32,
+    fv: f32,
+    /// Top-left of the picture relative to the foot, in source pixels (16 a cell).
     ox: f32,
     oy: f32,
     /// Draw order among equal depths: higher is in front.
@@ -859,28 +942,27 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
 
     let t_owner = t0.elapsed();
-    // --- The flat ground ---
-    let mut ground = vec![backdrop; W * H];
-    for i in 0..W * H {
-        if layers[3][i] != 0 {
-            ground[i] = layers[3][i];
-        }
-    }
-    if bg0_ground {
-        let first = bldcnt & 1 != 0;
-        let second = bldcnt & 0x0800 != 0;
-        let (eva, evb) = ((bldalpha & 31).min(16) as u32, ((bldalpha >> 8) & 31).min(16) as u32);
-        for i in 0..W * H {
-            let p = layers[0][i];
-            if p != 0 {
-                ground[i] = if bld_mode == 1 && first && second {
-                    blend_alpha(p, ground[i], eva, evb)
-                } else {
-                    p
-                };
-            }
-        }
-    }
+    // --- The camera and the ground ---
+    Ground::load(core, &mut v);
+    v.ensure(core, OBJ_TILES, 0x8000);
+    let Some(mut ground) = Ground::new(core, &v) else {
+        return;
+    };
+    let cam_px = (
+        core.raw_read_16(MAP + 4, -1) as i16 as i32,
+        core.raw_read_16(MAP + 6, -1) as i16 as i32,
+    );
+    // The console's window is 15 x 10 cells (a pixel scroll); the camera looks
+    // at its middle, kept inside the map as far as the map is wide enough.
+    let mut cam = Cam::new(cam_px.0 as f32 / 16.0 + 7.5, cam_px.1 as f32 / 16.0 + 5.0);
+    let (rl, rr, rt, rb) = cam.reach();
+    let (mw, mh) = (ground.w as f32, ground.h as f32);
+    cam.cu = if rl + rr <= mw { cam.cu.clamp(rl, mw - rr) } else { mw / 2.0 };
+    cam.cv = if rt + rb <= mh { cam.cv.clamp(rt, mh - rb) } else { mh / 2.0 };
+
+    // What lies on the ground, as the console shows it: BG0's range tint
+    // (while it is below the units) and the sprites that lie flat.
+    let mut decal = vec![0u16; W * H];
     for o in objs.iter().filter(|o| o.class == Class::Ground) {
         for y in 0..o.h {
             let sy = o.y + y;
@@ -891,16 +973,51 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 let sx = o.x + x;
                 let p = o.pix[(y * o.w + x) as usize];
                 if p != 0 && (0..W as i32).contains(&sx) {
-                    ground[sy as usize * W + sx as usize] = p;
+                    decal[sy as usize * W + sx as usize] = p;
                 }
             }
+        }
+    }
+    let tint = if bg0_ground {
+        let first = bldcnt & 1 != 0;
+        let second = bldcnt & 0x0800 != 0;
+        let (eva, evb) = ((bldalpha & 31).min(16) as u32, ((bldalpha >> 8) & 31).min(16) as u32);
+        Some((bld_mode == 1 && first && second, eva, evb))
+    } else {
+        None
+    };
+
+    if debug_check() {
+        // The ground drawn from the map's RAM against the console's BG3 (with
+        // the peaks over it), where it shows.
+        let mut bad = 0;
+        let mut seen = 0;
+        for y in 0..H as i32 {
+            for x in 0..W as i32 {
+                let i = y as usize * W + x as usize;
+                if layers[3][i] == 0 {
+                    continue;
+                }
+                let want = if layers[2][i] != 0 { layers[2][i] } else { layers[3][i] };
+                // (BG2 holds more than peaks only if something else is drawn on it.)
+                let got = ground.px(cam_px.0 + x, cam_px.1 + y);
+                seen += 1;
+                if got != want && layers[2][i] == 0 {
+                    bad += 1;
+                }
+            }
+        }
+        if bad > 0 {
+            eprintln!("ds_tilt: ground from RAM differs from BG3 at {} of {} pixels", bad, seen);
         }
     }
 
     // --- Billboards ---
     let mut boards: Vec<Billboard> = Vec::new();
-    let ground_hofs = bgs[3].hofs;
-    let ground_vofs = bgs[3].vofs;
+    // A cell of the console's plane is map cell (camx / 16 + cell - scroll / 16).
+    let (map_x0, map_y0) = (cam_px.0.div_euclid(16), cam_px.1.div_euclid(16));
+    let ground_cx0 = bgs[3].hofs.div_euclid(16);
+    let ground_cy0 = bgs[3].vofs.div_euclid(16);
     for b in [1usize, 2] {
         let bg = &bgs[b];
         if !bg.on {
@@ -935,19 +1052,153 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 if !any {
                     continue;
                 }
-                let fx = (cx * 16 - ground_hofs + 8) as f32;
-                let fy = (cy * 16 - ground_vofs + 16) as f32;
+                // The map cell it stands in, and where the console draws that cell's foot.
+                let (mx, my) = (map_x0 + cx - ground_cx0, map_y0 + cy - ground_cy0);
+                let foot_x = (mx * 16 - cam_px.0 + 8) as f32;
+                let foot_y = (my * 16 - cam_px.1 + 16) as f32;
+                // Units stand a little in front of the edge; the peaks and
+                // treetops (BG2) stand on it.
+                let drop = if b == 1 { FOOT_DROP } else { 0.0 };
                 boards.push(Billboard {
                     pix,
                     w: 16,
                     h: 16,
-                    fx,
-                    fy,
-                    ox: sx0 as f32 - fx,
-                    oy: sy0 as f32 - fy,
+                    fu: mx as f32 + 0.5,
+                    fv: my as f32 + 1.0 + drop,
+                    ox: sx0 as f32 - foot_x,
+                    oy: sy0 as f32 - foot_y,
                     rank: (3 - bg.pri) * 2,
                     last: false,
                 });
+            }
+        }
+    }
+    // Units beyond the console's window, from the game's own records: the
+    // console draws only the cells it shows. A unit is drawn as the console
+    // draws it (the first tile of its picture by type and country, mirrored
+    // for armies 1 and 3, in its army's palette, greyed once it has moved, the
+    // HP digit or the cargo mark in the corner), where its cell is in view.
+    if debug_check() && bgs[1].on {
+        // The units' records against what the console drew, in its window.
+        let mut cells = std::collections::HashMap::new();
+        for u in ram_units(core) {
+            if u.flags & 0x08 == 0 {
+                cells.insert((u.x as i32, u.y as i32), u);
+            }
+        }
+        let mut bad = 0;
+        for my in map_y0..=map_y0 + 9 {
+            for mx in map_x0..=map_x0 + 14 {
+                if mx < 0 || my < 0 || mx >= ground.w || my >= ground.h {
+                    continue;
+                }
+                let got: Vec<u16> = (0..4)
+                    .map(|k| bgs[1].entry(&v, 2 * (mx & 15) + k % 2, 2 * (my & 15) + k / 2))
+                    .collect();
+                let drawn = got.iter().any(|&e| !bgs[1].tile_blank(&v, (e & 0x3ff) as usize));
+                let want = cells.get(&(mx, my)).filter(|_| !ground.fogged(mx, my)).and_then(|u| u.entries());
+                let ok = match (drawn, want) {
+                    (false, None) => true,
+                    (true, Some(w)) => w.iter().zip(&got).all(|(a, b)| a == b),
+                    _ => false,
+                };
+                if !ok {
+                    bad += 1;
+                    if bad <= 6 {
+                        eprintln!(
+                            "ds_tilt: unit at ({}, {}): console {:03x?} ({}), records {:03x?} (record {}, fog {})",
+                            mx,
+                            my,
+                            got,
+                            drawn,
+                            want,
+                            cells.contains_key(&(mx, my)),
+                            ground.fogged(mx, my)
+                        );
+                    }
+                }
+            }
+        }
+        if bad > 0 {
+            eprintln!("ds_tilt: {} cells where the units' records and the console's picture differ", bad);
+        }
+    }
+    if bgs[1].on {
+        let seen: std::collections::HashSet<(i32, i32)> = boards
+            .iter()
+            .filter(|b| !b.last && b.rank == (3 - bgs[1].pri) * 2)
+            .map(|b| ((b.fu - 0.5) as i32, (b.fv - 1.0 - FOOT_DROP).round() as i32 - 0))
+            .collect();
+        let (win_x, win_y) = (map_x0..=map_x0 + 15, map_y0..=map_y0 + 10);
+        let bob = {
+            let d = (bgs[1].vofs - bgs[3].vofs).rem_euclid(512);
+            if d < 16 { d } else { 0 }
+        };
+        for u in ram_units(core) {
+            let (ux, uy) = (u.x as i32, u.y as i32);
+            if win_x.contains(&ux) && win_y.contains(&uy) || seen.contains(&(ux, uy)) {
+                continue;
+            }
+            if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x08 != 0 {
+                continue;
+            }
+            let Some(entries) = u.entries() else { continue };
+            let mut pix = vec![0u16; 256];
+            for (k, &e) in entries.iter().enumerate() {
+                for py in 0..8usize {
+                    for px in 0..8usize {
+                        pix[((k / 2) * 8 + py) * 16 + (k % 2) * 8 + px] = bgs[1].tile_px(&v, e, px, py);
+                    }
+                }
+            }
+            boards.push(Billboard {
+                pix,
+                w: 16,
+                h: 16,
+                fu: ux as f32 + 0.5,
+                fv: uy as f32 + 1.0 + FOOT_DROP,
+                ox: -8.0,
+                oy: -16.0 - bob as f32,
+                rank: (3 - bgs[1].pri) * 2,
+                last: false,
+            });
+        }
+    }
+    // Buildings and structures beyond the console's window, from the map's
+    // tile ids and the sprite parts the console draws for each (`ds_plans`).
+    {
+        let one_d = d & 0x40 != 0;
+        let (win_x, win_y) = (map_x0..=map_x0 + 15, map_y0..=map_y0 + 10);
+        let (rl, rr, rt, rb) = cam.reach();
+        let (x_lo, x_hi) = ((cam.cu - rl).floor() as i32 - 4, (cam.cu + rr).ceil() as i32 + 1);
+        let (y_lo, y_hi) = ((cam.cv - rt).floor() as i32 - 1, (cam.cv + rb).ceil() as i32 + 4);
+        for my in y_lo.max(0)..y_hi.min(ground.h) {
+            for mx in x_lo.max(0)..x_hi.min(ground.w) {
+                if win_x.contains(&mx) && win_y.contains(&my) {
+                    continue;
+                }
+                let t = ground.tile(mx, my);
+                let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else {
+                    continue;
+                };
+                for &(dx, dy, w, h, tile, pal, hf, vf) in crate::ds_plans::PLANS[i].1 {
+                    let (w, h) = (w as i32, h as i32);
+                    let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
+                    if pix.iter().all(|&p| p == 0) {
+                        continue;
+                    }
+                    boards.push(Billboard {
+                        pix,
+                        w,
+                        h,
+                        fu: mx as f32 + (dx as f32 + w as f32 / 2.0) / 16.0,
+                        fv: my as f32 + (dy as f32 + h as f32) / 16.0 + FOOT_DROP,
+                        ox: -(w as f32) / 2.0,
+                        oy: -(h as f32),
+                        rank: 1,
+                        last: false,
+                    });
+                }
             }
         }
     }
@@ -961,17 +1212,17 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             pix: o.pix.clone(),
             w: o.w,
             h: o.h,
-            fx,
-            fy,
-            ox: o.x as f32 - fx,
-            oy: o.y as f32 - fy,
+            fu: (cam_px.0 as f32 + fx) / 16.0,
+            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { FOOT_DROP } else { 0.0 },
+            ox: -(o.w as f32) / 2.0,
+            oy: -(o.h as f32),
             rank: (3 - o.pri) * 2 + 1,
             last: o.class == Class::Pointer,
         });
     }
     boards.sort_by(|a, b| {
-        (a.last, a.fy, a.rank)
-            .partial_cmp(&(b.last, b.fy, b.rank))
+        (a.last, a.fv, a.rank)
+            .partial_cmp(&(b.last, b.fv, b.rank))
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
@@ -979,40 +1230,43 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     // --- The tilted map ---
     let mut map = vec![0u16; W * H];
     for y in 0..H {
-        let v_src = inv_v(y as f32 + 0.5);
-        let s = scale(v_src);
-        let sy = (v_src.floor() as i32).clamp(0, H as i32 - 1) as usize;
         for x in 0..W {
-            let sx = (CX + ((x as f32 + 0.5) - CX) / s).floor() as i32;
-            // Beyond the picture's sides: mirrored.
-            let sx = if sx < 0 {
-                -sx - 1
-            } else if sx >= W as i32 {
-                2 * W as i32 - sx - 1
-            } else {
-                sx
+            let (u, vv) = cam.unproject(x as f32 + 0.5, y as f32 + 0.5);
+            let (gx, gy) = ((u * 16.0).floor() as i32, (vv * 16.0).floor() as i32);
+            let mut p = ground.px(gx, gy);
+            // The console's overlays, where it drew them.
+            let (sx, sy) = (gx - cam_px.0, gy - cam_px.1);
+            if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
+                let i = sy as usize * W + sx as usize;
+                if let Some((alpha, eva, evb)) = tint {
+                    let t = layers[0][i];
+                    if t != 0 {
+                        p = if alpha { blend_alpha(t, p, eva, evb) } else { t };
+                    }
+                }
+                if decal[i] != 0 {
+                    p = decal[i];
+                }
             }
-            .clamp(0, W as i32 - 1) as usize;
-            map[y * W + x] = ground[sy * W + sx];
+            map[y * W + x] = p;
         }
     }
     for bb in &boards {
-        let s = scale(bb.fy);
-        let dfx = CX + (bb.fx - CX) * s;
-        let dfy = fwd_y(bb.fy);
-        let left = dfx + bb.ox * s;
-        let top = dfy + bb.oy * s;
-        let right = left + bb.w as f32 * s;
-        let bottom = top + bb.h as f32 * s;
+        let (fx, fy, cell) = cam.project(bb.fu, bb.fv);
+        let sc = cell / 16.0;
+        let left = fx + bb.ox * sc;
+        let top = fy + bb.oy * sc;
+        let right = left + bb.w as f32 * sc;
+        let bottom = top + bb.h as f32 * sc;
         let (x0, x1) = ((left.floor() as i32).max(0), (right.ceil() as i32).min(W as i32));
         let (y0, y1) = ((top.floor() as i32).max(0), (bottom.ceil() as i32).min(H as i32));
         for y in y0..y1 {
-            let v = ((y as f32 + 0.5 - top) / s).floor() as i32;
+            let v = ((y as f32 + 0.5 - top) / sc).floor() as i32;
             if !(0..bb.h).contains(&v) {
                 continue;
             }
             for x in x0..x1 {
-                let u = ((x as f32 + 0.5 - left) / s).floor() as i32;
+                let u = ((x as f32 + 0.5 - left) / sc).floor() as i32;
                 if !(0..bb.w).contains(&u) {
                     continue;
                 }
@@ -1060,4 +1314,99 @@ fn debug_time() -> bool {
 fn debug_check() -> bool {
     static ENV: OnceLock<bool> = OnceLock::new();
     env_on("TANGOAW2_TILT_CHECK", &ENV)
+}
+
+/// The units' table (a ROM word names it), the players' (colours), and five
+/// armies' slot count.
+const UNITS_PTR: u32 = 0x0849_9594;
+const PLAYERS_PTR: u32 = 0x0849_9598;
+const FIVE_ON: u32 = 0x0203_0206;
+/// A pool word naming the CO table (0x104 bytes a CO, the country at +0x15).
+const CO_TABLE_PTR: u32 = 0x0804_2DDC;
+
+/// First tile of each unit type's picture (the console's, Orange Star's
+/// art): the map sheet's slots.
+const UNIT_TILES: [u16; 28] = [
+    0, 0x279, 0x27d, 0x235, 0x321, 0x23d, 0x241, 0x245, 0x239, 0x325, 0x249, 0x24d, 0x329, 0x32d, 0x251, 0x255, 0x259,
+    0x25d, 0x331, 0x261, 0x265, 0x269, 0x26d, 0x271, 0x275, 0x275, 0x335, 0x339,
+];
+
+struct RamUnit {
+    kind: u8,
+    flags: u8,
+    x: u8,
+    y: u8,
+    hp: u8,
+    cargo: bool,
+    army: u8,
+    /// The army's CO's country: Infantry and Mech are drawn by it.
+    country: u8,
+}
+
+impl RamUnit {
+    /// The four tilemap entries the console draws the unit with.
+    fn entries(&self) -> Option<[u16; 4]> {
+        let mut base = *UNIT_TILES.get(self.kind as usize)? & 0x3ff;
+        if base == 0 {
+            return None;
+        }
+        // Infantry and Mech have a picture a country.
+        if matches!(self.kind, 1 | 2) {
+            base += 8 * self.country.min(4) as u16;
+        }
+        let bank = if self.flags & 1 != 0 { 11 } else { 12 + (self.army as u16 - 1).min(3) } << 12;
+        let mut e = if self.army % 2 == 1 {
+            [base + 1, base, base + 3, base + 2].map(|t| t | 0x400)
+        } else {
+            [base, base + 1, base + 2, base + 3]
+        }
+        .map(|t| t | bank);
+        // The corner: the HP digit (from 9 down), else the cargo mark.
+        if self.hp <= 90 && self.hp > 0 {
+            e[3] = (0x2a1 + (self.hp as u16 + 9) / 10) | bank;
+        } else if self.cargo {
+            e[3] = 0x2ab | bank;
+        }
+        Some(e)
+    }
+}
+
+/// Every unit on the map.
+fn ram_units(core: &Core) -> Vec<RamUnit> {
+    let base = core.raw_read_32(UNITS_PTR, -1);
+    let players = core.raw_read_32(PLAYERS_PTR, -1);
+    let cos = core.raw_read_32(CO_TABLE_PTR, -1);
+    if !(0x0200_0000..0x0400_0000).contains(&base) {
+        return Vec::new();
+    }
+    let per = if core.raw_read_8(FIVE_ON, -1) == 1 { 51 } else { 64 };
+    let mut out = Vec::new();
+    let mut buf = [0u8; 12];
+    for id in 0..256u32 {
+        if id % per == 0 {
+            continue;
+        }
+        core.raw_read_range(base + 12 * id, -1, &mut buf);
+        if buf[0] == 0 {
+            continue;
+        }
+        let army = (id / per + 1) as u8;
+        let country = if (0x0200_0000..0x0400_0000).contains(&players) && (0x0800_0000..0x0A00_0000).contains(&cos) {
+            let co = core.raw_read_8(players + 0x3C * army as u32 + 0x1D, -1) as u32;
+            core.raw_read_8(cos + 0x104 * co + 0x15, -1)
+        } else {
+            0
+        };
+        out.push(RamUnit {
+            kind: buf[0],
+            flags: buf[1],
+            x: buf[2],
+            y: buf[3],
+            hp: (u16::from_le_bytes([buf[4], buf[5]]) & 0x7f) as u8,
+            cargo: buf[1] & 0x10 != 0,
+            army,
+            country,
+        });
+    }
+    out
 }

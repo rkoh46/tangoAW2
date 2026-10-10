@@ -320,6 +320,17 @@ fn main() {
                 parts[2].parse().unwrap(),
             ),
             "shot" => write_rgba_bmp(&format!("{}.bmp", parts[1]), &link.frame()),
+            "ground" => {
+                // `ground NAME`: the whole map's ground from game state (NAME.ppm).
+                match tango_gamesupport_aw2::ds_ground::render_all(link.core(0)) {
+                    Some((w, h, rgb)) => {
+                        let mut out = format!("P6\n{} {}\n255\n", w, h).into_bytes();
+                        out.extend_from_slice(&rgb);
+                        std::fs::write(format!("{}.ppm", parts[1]), out).unwrap();
+                    }
+                    None => println!("ground: not drawn"),
+                }
+            }
             "dump" => {
                 let core = link.core(0);
                 let mut ew = vec![0u8; 0x40000];

@@ -1,0 +1,159 @@
+//! The battle map's ground, drawn from the game's state rather than from
+//! the console's picture: a cell's four tiles, and the peak or treetops of
+//! the cell below over its bottom half, as `BlitMapRow` and Dual Strike's
+//! upper layer put them in video memory ([`crate::wasteland`]) but for any
+//! cell of the map, on or off the screen the console shows.
+//!
+//! Read-only: map RAM, fog flags, VRAM tiles (as animated now) and palette
+//! RAM; display only (see [`crate::ds_tilt`]).
+
+use mgba::core::Core;
+
+use crate::ds_tilt::Vid;
+use crate::wasteland::MAP;
+
+/// Bytes of map RAM it reads: tiles (u16) at `MAP + 0xA22`, rows at `MAP + 0x417A`.
+const TILES: u32 = MAP + 0xA22;
+const ROWS: u32 = MAP + 0x417A;
+const FOG: u32 = MAP + 0x234A;
+/// BG3's tiles (the terrain): VRAM offset of its character block.
+fn char_base(v: &Vid) -> usize {
+    ((v.io[4 + 3] >> 2) & 3) as usize * 0x4000
+}
+
+pub struct Ground<'a> {
+    look: &'static crate::wasteland::Built,
+    pub w: i32,
+    pub h: i32,
+    v: &'a Vid,
+    base: usize,
+    tiles: Vec<u16>,
+    fog: Vec<u8>,
+    /// 16 x 16 pixels per cell, drawn on first use (0: not yet; else 0x8000 | colour).
+    cache: Vec<Option<Box<[u16; 256]>>>,
+}
+
+impl<'a> Ground<'a> {
+    /// `v` must already hold BG3's tiles (see [`Ground::load`]).
+    pub fn new(core: &Core, v: &'a Vid) -> Option<Ground<'a>> {
+        let biome = crate::wasteland::drawn(core)?;
+        let look = crate::wasteland::look(biome)?;
+        let (w, h) = (core.raw_read_16(MAP, -1) as i32, core.raw_read_16(MAP + 2, -1) as i32);
+        if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
+            return None;
+        }
+        let mut tiles = vec![0u16; (w * h) as usize];
+        let mut fog = vec![1u8; (w * h) as usize];
+        for y in 0..h {
+            let row = core.raw_read_16(ROWS + 2 * y as u32, -1) as u32;
+            for x in 0..w {
+                let cell = row + x as u32;
+                tiles[(y * w + x) as usize] = core.raw_read_16(TILES + 2 * cell, -1);
+                fog[(y * w + x) as usize] = core.raw_read_8(FOG + cell, -1);
+            }
+        }
+        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize] })
+    }
+
+    /// Loads what [`Ground::new`] needs into `v`.
+    pub fn load(core: &Core, v: &mut Vid) {
+        v.ensure(core, char_base(v), 0x8000);
+    }
+
+    /// The metatile id of a cell.
+    pub fn tile(&self, x: i32, y: i32) -> u16 {
+        self.tiles[(y * self.w + x) as usize]
+    }
+
+    /// Whether the cell is hidden by fog.
+    pub fn fogged(&self, x: i32, y: i32) -> bool {
+        self.fog[(y * self.w + x) as usize] == 0
+    }
+
+    fn quad_px(&self, e: u16, x: usize, y: usize) -> u16 {
+        let sx = if e & 0x400 != 0 { 7 - x } else { x };
+        let sy = if e & 0x800 != 0 { 7 - y } else { y };
+        let a = self.base + 32 * (e & 0x3ff) as usize + sy * 4 + sx / 2;
+        if a >= 0x18000 {
+            return 0;
+        }
+        let b = self.v.vram[a];
+        let c = if sx & 1 == 0 { b & 15 } else { b >> 4 } as usize;
+        if c == 0 {
+            0
+        } else {
+            0x8000 | (self.v.pal[(e >> 12) as usize * 16 + c] & 0x7fff)
+        }
+    }
+
+    fn draw(&self, x: i32, y: i32) -> Box<[u16; 256]> {
+        let l = &self.look.look;
+        let fog_add: u16 = if self.fogged(x, y) { 0x4000 } else { 0 };
+        let q = l.entries(self.tile(x, y), x as u32, y as u32).map(|e| e.wrapping_add(fog_add));
+        let mut out = Box::new([0x8000 | (self.v.pal[0] & 0x7fff); 256]);
+        for (k, &e) in q.iter().enumerate() {
+            let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
+            for py in 0..8 {
+                for px in 0..8 {
+                    let c = self.quad_px(e, px, py);
+                    if c != 0 {
+                        out[(qy + py) * 16 + qx + px] = c;
+                    }
+                }
+            }
+        }
+        // The peak or treetops of the cell below, over the bottom half.
+        if y + 1 < self.h {
+            if let Some(o) = l.upper_at(self.tile(x, y + 1), x as u32, (y + 1) as u32) {
+                for side in 0..2usize {
+                    if let Some((tile, bank)) = l.front(o, side as u8) {
+                        let bank = bank + if self.fogged(x, y) { 4 } else { 0 };
+                        for py in 0..8usize {
+                            for px in 0..8usize {
+                                let b = tile[py * 4 + px / 2];
+                                let c = (if px & 1 == 0 { b & 15 } else { b >> 4 }) as usize;
+                                if c != 0 {
+                                    out[(8 + py) * 16 + side * 8 + px] =
+                                        0x8000 | (self.v.pal[bank as usize * 16 + c] & 0x7fff);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// The ground pixel at map pixel (gx, gy) (16 per cell); the map's edge
+    /// repeats beyond it.
+    pub fn px(&mut self, gx: i32, gy: i32) -> u16 {
+        let (cx, cy) = ((gx.div_euclid(16)).clamp(0, self.w - 1), (gy.div_euclid(16)).clamp(0, self.h - 1));
+        let (lx, ly) = (
+            if gx < 0 { 0 } else if gx >= self.w * 16 { 15 } else { gx.rem_euclid(16) },
+            if gy < 0 { 0 } else if gy >= self.h * 16 { 15 } else { gy.rem_euclid(16) },
+        );
+        let i = (cy * self.w + cx) as usize;
+        if self.cache[i].is_none() {
+            self.cache[i] = Some(self.draw(cx, cy));
+        }
+        self.cache[i].as_ref().unwrap()[(ly * 16 + lx) as usize]
+    }
+}
+
+/// The whole map's ground as RGB, 16 x 16 pixels a cell (for tools).
+pub fn render_all(core: &Core) -> Option<(usize, usize, Vec<u8>)> {
+    let mut v = Vid::read(core);
+    Ground::load(core, &mut v);
+    let mut g = Ground::new(core, &v)?;
+    let (w, h) = (g.w as usize * 16, g.h as usize * 16);
+    let lut = crate::ds_tilt::rgba_lut();
+    let mut out = Vec::with_capacity(w * h * 3);
+    for y in 0..h as i32 {
+        for x in 0..w as i32 {
+            let c = lut[(g.px(x, y) & 0x7fff) as usize];
+            out.extend_from_slice(&c[..3]);
+        }
+    }
+    Some((w, h, out))
+}
