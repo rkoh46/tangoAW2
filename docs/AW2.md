@@ -3638,3 +3638,17 @@ a game saved over netplay the same on both peers.
   40 to 16, then 11 on day 15 and 8 on day 24 (Orange 17): the camp holds, the bot cannot push the Great Hall (a human has to).
   Earlier rounds: funds 90000 and no caps (Black Hole 7 units on day 8), 45000/20000 (14 on day 10, lost on day 18), 30000/10000
   (11 on day 10), releasing the Tanks only on day 3 made it worse (14 on day 11).
+
+## Dual Strike graphics preview (`ds_graphics.rs`, development byte `0x0203E3FE`)
+
+Preview only, pack only, off by default (the byte is zero; nothing is written or
+switched). Non-zero before a battle: Normal maps use Dual Strike's Normal look
+(`wasteland::DS_NORMAL`, `bmap/000` + `bmap/006`, ROM `0x09E00000`); every original
+unit's idle sheet (`bmap/01d..01f`, per country) and moving sheets (`mu/*`) replace
+AW2's (pool words `0x08026194`/`0x080266D8`, the moving table in tangoAW2's copy);
+the building sheet (`0x080CFFC4..0x080D22C4`: city, base and its four smoke
+frames, airport, port, five HQs, silo and spent pad, minicannon pods) comes from
+`bmap/015` with `com_tower::SHADES`. Not done: HP digits and status icons
+(`bmap/01c`), Missile pad and Fortress pictures (`bmap/015` `0x1700`/`0x1F00`), the
+Volcano outside the DS Campaign. Not in Dual Strike, AW2's kept: Laser, Deathray,
+Black Factory.
