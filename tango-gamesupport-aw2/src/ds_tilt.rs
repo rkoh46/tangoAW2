@@ -488,6 +488,8 @@ const STATIC_SHEET: u16 = 200;
 /// flips, for the map with this signature.
 type SpriteCache = (u64, std::collections::HashMap<(u16, u8), (u16, u8, (bool, bool))>);
 /// The palette the console draws a fogged property with (once seen).
+/// The palette the structures of this mission are drawn with (9 until the console shows one).
+static STRUCT_PAL: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(9);
 static FOG_PAL: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(u32::MAX);
 static SPRITES: std::sync::LazyLock<std::sync::Mutex<SpriteCache>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new((0, std::collections::HashMap::new())));
@@ -1315,6 +1317,21 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     .collect();
                 let drawn = got.iter().any(|&e| !bgs[1].tile_blank(&v, (e & 0x3ff) as usize));
                 let want = cells.get(&(mx, my)).filter(|_| !ground.fogged(mx, my)).and_then(|u| u.entries());
+                if std::env::var("TANGOAW2_TILT_DUMP").is_ok() {
+                    if let Some(u) = cells.get(&(mx, my)) {
+                        eprintln!(
+                            "UDUMP drawn {} fog {} five {} army {} colour {} cty {} raw {:02x?} con {:03x?}",
+                            drawn,
+                            ground.fogged(mx, my),
+                            u.five,
+                            u.army,
+                            u.colour,
+                            u.country,
+                            u.raw,
+                            got
+                        );
+                    }
+                }
                 let ok = match (drawn, want) {
                     (false, None) => true,
                     (true, Some(w)) => w.iter().zip(&got).all(|(a, b)| a == b),
@@ -1399,6 +1416,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let sig = ground.signature();
         if cache.0 != sig {
             *cache = (sig, std::collections::HashMap::new());
+            STRUCT_PAL.store(9, Ordering::Relaxed);
         }
         // Learn.
         for my in win_y.clone() {
@@ -1410,12 +1428,22 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else {
                     continue;
                 };
-                for (k, &(dx, dy, w, h, _, _, _, _)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
+                for (k, &(dx, dy, w, h, pt, pp, phf, pvf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
                     let (px, py) = (mx * 16 - cam_px.0 + dx as i32, my * 16 - cam_px.1 + dy as i32);
                     if let Some(o) = objs.iter().find(|o| {
                         o.class == Class::Billboard && (o.x, o.y, o.w, o.h) == (px, py, w as i32, h as i32)
                     }) {
-                        cache.1.insert((t, k as u8), (o.tile, o.pal, o.flip));
+                        if std::env::var("TANGOAW2_DBG_LEARN").is_ok() && pt >= STATIC_SHEET {
+                            eprintln!("LEARN id {} part {} got tile {} pal {} flip {:?} plan tile {} pal {} flip {:?}", t, k, o.tile, o.pal, o.flip, pt, pp, (phf, pvf));
+                        }
+                        if std::env::var("TANGOAW2_TILT_NOLEARN").is_err() {
+                            cache.1.insert((t, k as u8), (o.tile, o.pal, o.flip));
+                            // (the structures share a palette in a mission: 9 in all but the
+                            // mission the plans were recorded in)
+                            if pp == 13 && pt >= STATIC_SHEET {
+                                STRUCT_PAL.store(o.pal as u32, Ordering::Relaxed);
+                            }
+                        }
                         // (a fogged property is drawn in another palette: learn it)
                         if ground.fogged(mx, my) && o.tile < STATIC_SHEET as u16 {
                             FOG_PAL.store(o.pal as u32, Ordering::Relaxed);
@@ -1451,7 +1479,11 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     } else if let Some(&(tl, pl, fl)) = cache.1.get(&(t, k as u8)) {
                         (tl, pl, fl)
                     } else {
-                        continue;
+                        // Not drawn by the console yet: the sprite plan's own tiles (the
+                        // loader's slots are the same in every mission; the palette may
+                        // be another one until the console shows one).
+                        let pal = if pal == 13 { STRUCT_PAL.load(Ordering::Relaxed) as u8 } else { pal };
+                        (tile, pal, (hf, vf))
                     };
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
                     if pix.iter().all(|&p| p == 0) {
@@ -1651,21 +1683,12 @@ const PLAYERS_PTR: u32 = 0x0849_9598;
 /// A pool word naming the CO table (0x104 bytes a CO, the country at +0x15).
 const CO_TABLE_PTR: u32 = 0x0804_2DDC;
 
-/// First tile of each unit type's picture (the console's, Orange Star's
-/// art): the map sheet's slots. (A submerged Sub, type 25, is never drawn from
-/// its record: who may see it is the game's to say.)
-const UNIT_TILES: [u16; 28] = [
-    0, 0x279, 0x27d, 0x235, 0x321, 0x23d, 0x241, 0x245, 0x239, 0x325, 0x249, 0x24d, 0x329, 0x32d, 0x251, 0x255, 0x259,
-    0x25d, 0x331, 0x261, 0x265, 0x269, 0x26d, 0x271, 0x275, 0, 0x335, 0x339,
-];
-
 struct RamUnit {
     kind: u8,
     flags: u8,
     x: u8,
     y: u8,
     hp: u8,
-    cargo: bool,
     army: u8,
     /// The army's CO's country: Infantry and Mech are drawn by it.
     country: u8,
@@ -1674,46 +1697,55 @@ struct RamUnit {
     raw: [u8; 12],
     /// A five-army game (a moved unit's palette is another one).
     five: bool,
+    /// The picture is mirrored, in this palette bank and by this army's CO (the
+    /// game draws a moved unit as the army whose turn it is).
+    mirrored: bool,
+    bank: u16,
+    /// The first BG tile of the picture (`0x080261A4`: the game's slot table, a row a
+    /// country, a slot of four tiles from 0x235).
+    base: u16,
+    /// The HP is hidden ("?" in the corner): the unit's army's CO hides it and the
+    /// army the picture is drawn for is not the viewer's side.
+    hide_hp: bool,
+    /// The fourth status icon (0x2AE).
+    icon4: bool,
 }
 
 impl RamUnit {
     /// The four tilemap entries the console draws the unit with.
     fn entries(&self) -> Option<[u16; 4]> {
-        let mut base = *UNIT_TILES.get(self.kind as usize)? & 0x3ff;
-        if base == 0 {
+        if self.kind == 25 {
             return None;
         }
-        // Infantry and Mech have a picture a country.
-        if matches!(self.kind, 1 | 2) {
-            base += 8 * self.country.min(4) as u16;
-        }
-        let bank = if self.flags & 1 != 0 {
-            if self.five { 9 } else { 11 }
-        } else if self.army >= 5 {
-            11
-        } else {
-            12 + (self.army as u16 - 1).min(3)
-        } << 12;
-        // (Facing: odd armies are mirrored; a unit that has moved keeps its army's facing.)
-        let mut e = if self.army % 2 == 1 {
+        let base = self.base;
+        let bank = self.bank << 12;
+        // (`0x0802216C`: armies 1 and 3 are drawn mirrored; a unit that has moved is
+        // drawn as the army whose turn it is.)
+        let mut e = if self.mirrored {
             [base + 1, base, base + 3, base + 2].map(|t| t | 0x400)
         } else {
             [base, base + 1, base + 2, base + 3]
         }
         .map(|t| t | bank);
-        // The corner: army 4's mark, the HP digit (from 9 down), else the cargo mark.
-        if self.hp <= 90 && self.hp > 0 {
-            let digit = (self.hp as u16 + 9) / 10;
-            e[3] = 0x2a1 + digit | bank;
-        }
-        // The capture mark (an infantry or mech taking a property) sits at the third tile.
-        if matches!(self.kind, 1 | 2) && self.raw[5] & 0x40 != 0 {
+        // The bottom-left tile: the fourth icon, the cargo mark, the capture mark, the
+        // hidden mark, in that order of the game's.
+        if self.icon4 {
+            e[2] = 0x2ae | bank;
+        } else if self.raw[7] | self.raw[8] != 0 {
+            e[2] = 0x2ab | bank;
+        } else if self.raw[5] >> 3 != 0 {
             e[2] = 0x2ac | bank;
+        } else if self.flags & 0x20 != 0 {
+            e[2] = 0x2ad | bank;
         }
-        if !(self.hp <= 90 && self.hp > 0) && self.cargo {
-            // (the cargo mark sits at the corner on the side the unit is not facing)
-            let mirrored = self.army % 2 == 1;
-            e[if mirrored { 3 } else { 2 }] = 0x2ab | bank;
+        // The bottom-right tile: "?" when the HP is hidden, else the HP digit (1 to 9).
+        if self.hide_hp {
+            e[3] = 0x2af | bank;
+        } else if self.hp != 0 {
+            let digit = (self.hp as u16 - 1) / 10 + 1;
+            if digit <= 9 {
+                e[3] = 0x2a1 + digit | bank;
+            }
         }
         Some(e)
     }
@@ -1751,18 +1783,51 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
         } else {
             army
         };
+        let moved = buf[1] & 1 != 0;
+        let (mirrored, bank, shown_by) = if five {
+            (army % 2 == 1, if moved { 9 } else if army >= 5 { 11 } else { 12 + (army as u16 - 1).min(3) }, army)
+        } else {
+            let r2 = if moved { core.raw_read_16(0x0300_3F2C, -1) as u32 } else { 64 * (army as u32 - 1) };
+            let idx = (r2 >> 6) & 3;
+            (idx % 2 == 0, if moved { 11 } else { 12 + idx as u16 }, idx as u8 + 1)
+        };
+        // (The game's own tests: `0x08043050` for the CO pair's table, `0x0802706C`.)
+        let player = |a: u8, off: u32| core.raw_read_8(players + 0x3C * a as u32 + off, -1);
+        let have_players = (0x0200_0000..0x0400_0000).contains(&players);
+        let not_ours = have_players && player(shown_by, 0x1C) & 2 == 0;
+        let hide_hp = have_players && not_ours && core.raw_read_8(0x0300_3FC0 + 8, -1) != 0 && {
+            let (c1, c2) = (player(army, 0x1D) as u32, player(army, 0x1E) as u32);
+            core.raw_read_32(cos + 0x40 + 4 * (c1 * 65 + c2 * 17), -1) & 1 != 0
+        };
+        let base = {
+            let slots = core.raw_read_32(0x0802_61C4, -1);
+            let stride = (core.raw_read_16(0x0802_61B2, -1) & 0xFF) as u32;
+            let cty = if (0x0800_0000..0x0A00_0000).contains(&cos) && have_players {
+                core.raw_read_8(cos + 0x104 * player(shown_by, 0x1D) as u32 + 0x15, -1) as u32
+            } else {
+                0
+            };
+            0x235 + 4 * core.raw_read_16(slots + stride * cty + 2 * buf[0] as u32, -1)
+        };
+        let icon4 = not_ours
+            && core.raw_read_8(0x0300_3FC0 + 0xD, -1) != 0
+            && core.raw_read_32(crate::roster::table(core) + 0x5C * buf[0] as u32 + 0x14, -1) != 0;
         out.push(RamUnit {
             kind: buf[0],
             flags: buf[1],
             x: buf[2],
             y: buf[3],
             hp: (u16::from_le_bytes([buf[4], buf[5]]) & 0x7f) as u8,
-            cargo: buf[1] & 0x10 != 0,
             army,
             country,
             colour,
             raw: buf,
             five,
+            mirrored,
+            bank,
+            base,
+            hide_hp,
+            icon4,
         });
     }
     out
