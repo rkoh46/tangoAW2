@@ -487,6 +487,8 @@ const STATIC_SHEET: u16 = 200;
 /// What the console drew for each part of a terrain id: its tile, palette and
 /// flips, for the map with this signature.
 type SpriteCache = (u64, std::collections::HashMap<(u16, u8), (u16, u8, (bool, bool))>);
+/// The palette the console draws a fogged property with (once seen).
+static FOG_PAL: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(u32::MAX);
 static SPRITES: std::sync::LazyLock<std::sync::Mutex<SpriteCache>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new((0, std::collections::HashMap::new())));
 
@@ -1239,6 +1241,10 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     continue;
                 }
                 let (sx0, sy0) = (cx * 16 - bg.hofs, cy * 16 - bg.vofs);
+                if sx0 + 16 <= 0 || sy0 + 16 <= 0 || sx0 >= W as i32 || sy0 >= H as i32 {
+                    // (not in view: the console does not keep that part of its plane current)
+                    continue;
+                }
                 let inside = sx0 >= 0 && sy0 >= 0 && sx0 + 16 <= W as i32 && sy0 + 16 <= H as i32;
                 let mut pix = vec![0u16; 256];
                 let mut any = false;
@@ -1286,7 +1292,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         // The units' records against what the console drew, in its window.
         let mut cells = std::collections::HashMap::new();
         for u in ram_units(core) {
-            if u.flags & 0x08 == 0 {
+            if u.flags & 0x0e == 0 {
                 cells.insert((u.x as i32, u.y as i32), u);
             }
         }
@@ -1318,14 +1324,18 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     bad += 1;
                     if bad <= 6 {
                         eprintln!(
-                            "ds_tilt: unit at ({}, {}): console {:03x?} ({}), records {:03x?} (record {}, fog {})",
+                            "ds_tilt: unit at ({}, {}): console {:03x?} ({}), records {:03x?} (record {}, fog {}) {}",
                             mx,
                             my,
                             got,
                             drawn,
                             want,
                             cells.contains_key(&(mx, my)),
-                            ground.fogged(mx, my)
+                            ground.fogged(mx, my),
+                            cells
+                                .get(&(mx, my))
+                                .map(|u| format!("kind {} flags {:02x} hp {} army {} colour {} country {} raw {:02x?}", u.kind, u.flags, u.hp, u.army, u.colour, u.country, u.raw))
+                                .unwrap_or_default()
                         );
                     }
                 }
@@ -1351,7 +1361,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             if win_x.contains(&ux) && win_y.contains(&uy) || seen.contains(&(ux, uy)) {
                 continue;
             }
-            if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x08 != 0 {
+            if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x0e != 0 {
                 continue;
             }
             let Some(entries) = u.entries() else { continue };
@@ -1406,6 +1416,10 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         o.class == Class::Billboard && (o.x, o.y, o.w, o.h) == (px, py, w as i32, h as i32)
                     }) {
                         cache.1.insert((t, k as u8), (o.tile, o.pal, o.flip));
+                        // (a fogged property is drawn in another palette: learn it)
+                        if ground.fogged(mx, my) && o.tile < STATIC_SHEET as u16 {
+                            FOG_PAL.store(o.pal as u32, Ordering::Relaxed);
+                        }
                     }
                 }
             }
@@ -1428,7 +1442,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     // The properties' sheet is fixed; a structure's picture is
                     // known once the console has drawn one.
                     let (tile, pal, (hf, vf)) = if tile < STATIC_SHEET {
-                        (tile, pal, (hf, vf))
+                        let fp = FOG_PAL.load(Ordering::Relaxed);
+                        if ground.fogged(mx, my) && fp != u32::MAX {
+                            (tile, fp as _, (hf, vf))
+                        } else {
+                            (tile, pal, (hf, vf))
+                        }
                     } else if let Some(&(tl, pl, fl)) = cache.1.get(&(t, k as u8)) {
                         (tl, pl, fl)
                     } else {
@@ -1629,7 +1648,6 @@ fn debug_check() -> bool {
 /// armies' slot count.
 const UNITS_PTR: u32 = 0x0849_9594;
 const PLAYERS_PTR: u32 = 0x0849_9598;
-const FIVE_ON: u32 = 0x0203_0206;
 /// A pool word naming the CO table (0x104 bytes a CO, the country at +0x15).
 const CO_TABLE_PTR: u32 = 0x0804_2DDC;
 
@@ -1653,6 +1671,9 @@ struct RamUnit {
     country: u8,
     /// The army's colour (1 Orange Star .. 5 Black Hole).
     colour: u8,
+    raw: [u8; 12],
+    /// A five-army game (a moved unit's palette is another one).
+    five: bool,
 }
 
 impl RamUnit {
@@ -1666,27 +1687,32 @@ impl RamUnit {
         if matches!(self.kind, 1 | 2) {
             base += 8 * self.country.min(4) as u16;
         }
-        let bank = if self.flags & 1 != 0 { 11 } else { 12 + (self.army as u16 - 1).min(3) } << 12;
-        // (A unit that has moved is mirrored whatever its army.)
-        let mut e = if self.army % 2 == 1 || self.flags & 1 != 0 {
+        let bank = if self.flags & 1 != 0 {
+            if self.five { 9 } else { 11 }
+        } else if self.army >= 5 {
+            11
+        } else {
+            12 + (self.army as u16 - 1).min(3)
+        } << 12;
+        // (Facing: odd armies are mirrored; a unit that has moved keeps its army's facing.)
+        let mut e = if self.army % 2 == 1 {
             [base + 1, base, base + 3, base + 2].map(|t| t | 0x400)
         } else {
             [base, base + 1, base + 2, base + 3]
         }
         .map(|t| t | bank);
         // The corner: army 4's mark, the HP digit (from 9 down), else the cargo mark.
-        // (Yellow's mark: by the army's colour, not its number.)
-        let army4 = self.colour == 4 && self.flags & 1 == 0;
-        if army4 {
-            e[3] = 0x2af | bank;
-        }
         if self.hp <= 90 && self.hp > 0 {
             let digit = (self.hp as u16 + 9) / 10;
-            // (Army 4's digits from 3 up are tiles the console keeps for its mark.)
-            e[3] = if army4 && digit >= 3 { 0x2af } else { 0x2a1 + digit } | bank;
-        } else if self.cargo {
+            e[3] = 0x2a1 + digit | bank;
+        }
+        // The capture mark (an infantry or mech taking a property) sits at the third tile.
+        if matches!(self.kind, 1 | 2) && self.raw[5] & 0x40 != 0 {
+            e[2] = 0x2ac | bank;
+        }
+        if !(self.hp <= 90 && self.hp > 0) && self.cargo {
             // (the cargo mark sits at the corner on the side the unit is not facing)
-            let mirrored = self.army % 2 == 1 || self.flags & 1 != 0;
+            let mirrored = self.army % 2 == 1;
             e[if mirrored { 3 } else { 2 }] = 0x2ab | bank;
         }
         Some(e)
@@ -1701,7 +1727,8 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
     if !(0x0200_0000..0x0400_0000).contains(&base) {
         return Vec::new();
     }
-    let per = if core.raw_read_8(FIVE_ON, -1) == 1 { 51 } else { 64 };
+    let five = crate::five::active(core);
+    let per = if five { 51 } else { 64 };
     let mut out = Vec::new();
     let mut buf = [0u8; 12];
     for id in 0..256u32 {
@@ -1734,6 +1761,8 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
             army,
             country,
             colour,
+            raw: buf,
+            five,
         });
     }
     out
