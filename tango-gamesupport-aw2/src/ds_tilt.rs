@@ -1595,18 +1595,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     {
         let fx = o.x as f32 + o.w as f32 / 2.0;
         let fy = (o.y + o.h) as f32;
-        let mut pix = o.pix.clone();
-        if o.class == Class::Pointer && o.tile == 869 {
-            // Dual Strike's map cursor is a red arrow (the blue dots are the brackets).
-            for p in pix.iter_mut().filter(|p| **p != 0) {
-                let (r, g, b) = ((*p & 31) as u32, ((*p >> 5) & 31) as u32, ((*p >> 10) & 31) as u32);
-                if r >= 28 && g >= 28 && b < 22 {
-                    *p = 0x8000 | 28 | 5 << 5 | 5 << 10;
-                } else if b > r && b > g {
-                    *p = 0x8000 | 18 | 2 << 5 | 3 << 10;
-                }
-            }
-        }
+        let pix = o.pix.clone();
         boards.push(Billboard {
             pix,
             w: o.w,

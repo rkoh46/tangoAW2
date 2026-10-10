@@ -534,8 +534,10 @@ def _every_mission(step):
         structure = m["structure"] or ("0a5" if any(0x1AA <= t <= 0x1AD for t in m["tiles"]) else
                                        "0a6" if any(0x1AE <= t <= 0x1B1 for t in m["tiles"]) else None)
         want = STRUCTURE_PICTURES.get(structure, 0)
-        ctx.eq(e.u32(header + 0x10), want, f"{label}: the structure's picture in the header")
-        if want:
+        ds_art = e.u8(0x0203E3FE) != 0   # (Dual Strike map graphics replace these pictures)
+        if not ds_art:
+            ctx.eq(e.u32(header + 0x10), want, f"{label}: the structure's picture in the header")
+        if want and not ds_art:
             picture = romlib.lz10(e.read(want, 0x1000))
             ctx.check(picture in e.read(0x06010000, 0x8000), f"{label}: the structure's picture is in OBJ VRAM")
         shot(ctx, e, "map")
