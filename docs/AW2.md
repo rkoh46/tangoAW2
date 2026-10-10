@@ -3678,32 +3678,76 @@ before a battle:
   units, so the "tilt" is not only in the sprites. tangoAW2's grid is flat.
 - Not in Dual Strike, AW2's kept: Laser, Deathray, Black Factory.
 
-### Dual Strike tilt (`ds_tilt.rs`, Settings > Graphics)
+### Dual Strike tilt (`ds_tilt.rs`, `ds_ground.rs`, Settings > Graphics)
 
-Display only: it reads VRAM, palette RAM, OAM and the video registers after
-the tick and rewrites the 240 x 160 RGBA frame in `SharedGame::overlay`, so
-RAM, netplay and rollback are untouched. Off by default; the setting shows
-with the Dual Strike pack, and the look applies in battles that use the
-Dual Strike graphics mode (`TANGOAW2_DS_GRAPHICS=1` sets the development
-byte for the app until the mode has a setting; `TANGOAW2_TILT=1` forces the
-tilt on for `aw2_script`; `TANGOAW2_TILT_CHECK=1` replays the hardware's
-priority rules against the console's picture; `TANGOAW2_TILT_TIME=1` times it).
+Display only: it reads VRAM, palette RAM, OAM, the video registers and the
+game's records after the tick and rewrites the 240 x 160 RGBA frame in
+`SharedGame::overlay`, so RAM, netplay and rollback are untouched. Two
+settings, both off: **Dual Strike map graphics** (`config.ds_graphics`, with
+the pack: drives the development byte `0x0203E3FE` from `ds_graphics::tick`,
+for a console played alone only: in a netplay match or a replay the byte is
+state the peers did not agree on) and, under it, **Dual Strike tilt**
+(`config.ds_tilt`, enabled only with the first). `TANGOAW2_DS_GRAPHICS=1`
+sets the byte for tools; `TANGOAW2_TILT=1` forces the tilt on for
+`aw2_script`; `TANGOAW2_TILT_CHECK=1` replays the hardware's priority rules
+and compares the RAM-drawn ground (against BG3) and units (against BG1) with
+the console's picture in its window, printing `ds_tilt:` lines on any
+difference; `TANGOAW2_TILT_TIME=1` times it.
 
-- Only the battle map main loop (`0x03000000 == 0x08022049`), tile mode 0, no
-  fade, no affine sprites. Anything else is left as drawn.
-- Map: BG3 terrain, BG1 units (with HP digits and icons), BG2 peaks and
-  treetops, BG0 while below the units (range overlay), OBJs of priority 3
-  (buildings), the cursor (tile 869 pointer; 873 brackets), the move arrow
-  (16 x 16, palette 3) and the attack target (tiles 666-674 pal 4, 884-895).
-  HUD: everything else. Which layer is on top per pixel follows the hardware
-  (priority, windows); HUD-topmost pixels keep the console's pixel; where the
-  terrain panel's window darkens the map the tilted map is darkened too.
-- Plane: row pitch 14.1 px (top) to 18 (bottom), width scale 0.97 to 1.10 (a
-  ratio of 1.28 in pitch as measured in Dual Strike; the whole plane is scaled
-  ~10% so the 160 rows are filled). Ground is projected; 16 x 16 unit/peak
-  cells, buildings and the pointer are billboards standing on their cell's
-  front edge, scaled with depth and drawn back to front. Beyond the picture's
-  sides the ground is mirrored.
-- Cost about 0.35 ms a frame (mostly VRAM reads). Not done: the range tint over
-  buildings, the HUD popups stay at their flat screen position, the cursor
-  and arrow tiles are matched by number (other cursor art stays flat).
+- **Gate.** The battle map's main loop (`0x03000000 == 0x08022049`), Dual
+  Strike graphics on, tile mode 0, no fade over everything, no affine
+  sprites; anything else (menus, dialogue, the world map, battle animations,
+  the title) is left as drawn. A panic inside leaves the frame alone and the
+  tilt off for the session.
+- **Camera** (fitted to real Dual Strike frames: `tools/aw2test/ds_view_props.py`
+  is the sprite-plan experiment; the fit is described here). melonDS frames of
+  Snow Hunters (five cursor positions), the pipe walls, coasts and trees of the
+  game's own ground registered onto them: a pinhole camera 49.9 cells high,
+  pitched 16.9 degrees from straight down, focal length 758 pixels on the
+  256 x 192 picture (ours 240 x 160, scaled by 240 / 256); a cell is 14.0
+  pixels across at the top of the screen and 15.0 at the bottom, 13.0 high at
+  the top and 14.9 at the bottom. Mean distance between the registered
+  pipe edges 0.94 pixels, 90th percentile 1.0. Dual Strike's camera only
+  translates (the same fit with one tilt and one set of lens parameters and
+  a centre per frame scores as well as a free homography per frame), looks at
+  the cursor's cell corner and keeps the map's edge in view (centre >= 8.0
+  cells from the left, 5.9 from the top and bottom). Ours looks at the middle
+  of the console's window (so the cursor, ranges and arrows, which only the
+  console draws, stay in view), kept inside the map as far as the map is wide
+  enough.
+- **Ground** (`ds_ground`): any cell of the map from its metatile id (map RAM
+  `+0xA22`, rows `+0x417A`), fog flag (`+0x234A`), the look's quadrants, the
+  game's tiles (VRAM, as animated now) and palettes (live: fog, weather), and
+  the peak or treetops of the cell below over its bottom half. Equal to
+  BG3 + BG2 on every pixel of every scene tried.
+- **Units beyond the console's window** from the records (`UNITS_PTR`): the
+  picture's first tile by type, Infantry and Mech by the CO's country (CO record
+  `+0x15`), mirrored for armies 1 and 3 and for any unit that has moved, army
+  palette 12-15 (11 once moved), HP digit tiles `0x2a1 + d`, army 4's mark
+  `0x2af`, the cargo mark `0x2ab`; hidden by fog or inside a transport;
+  a submerged Sub never. Compared with the console cell by cell
+  (`TANGOAW2_TILT_CHECK`): 26 types x 4 armies, every digit, moved, carrying.
+- **Buildings and structures beyond the window** from the terrain id and
+  `ds_plans.rs` (sprite parts the console draws for each id, recorded by
+  `tools/aw2test/ds_view_props.py`). Inside the window the console's own OAM.
+- **What is map and what is HUD.** BG3 ground; BG1 units; BG2 peaks; BG0
+  while below the units (range); OBJs of priority 3 (buildings); the cursor
+  (tile 869 pointer, 873 brackets), the move arrow (16 x 16, palette 3) and the
+  attack target (tiles 666-674 palette 4, 884-895). Everything else is HUD and
+  keeps the console's pixel: the hardware's priority and window rules decide per
+  pixel. Where the terrain panel's window darkens the map the tilted map is
+  darkened the same way.
+- **Look.** Ground projected; units, buildings, treetops and peaks upright
+  billboards (one cell wide at their depth, feet 0.1 cell in front of the cell's
+  front edge; peaks and treetops on it), back to front; nearest-neighbour
+  everywhere (Dual Strike does not filter its textures: its sprite edges are
+  crisp in melonDS frames); soft cloud shadows (about 5 cells across, 10%
+  darker) drift over the ground; a range lights its cells and dims the rest
+  (Dual Strike's way), a reddish tint (attack) lights them red.
+- **Cost** on the Mac: see the commit message of the benchmark; about 0.5 to
+  1 ms a frame (mostly the ground and sprite decode); iOS is the same code.
+- **Not done / approximations.** The camera follows the console's window, not
+  Dual Strike's cursor dead zone; low fuel/ammo/capture icons are not drawn
+  beyond the window; the console's moving-unit sprites are treated as HUD
+  (flat) if it has any; HUD popups stay where the console puts them; the range
+  tint is only known inside the console's window.
