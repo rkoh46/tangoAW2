@@ -488,9 +488,9 @@ pub fn tick(core: &mut Core, pack: bool, allow_setting: bool) {
     }
     // The setting (Settings > Graphics > Dual Strike map graphics) drives the
     // development byte, for a console played alone only: in a netplay match
-    // or a replay it would be state the two peers did not agree on. The
-    // environment variable is a preview aid for tools.
-    let want = (allow_setting && SETTING.load(Ordering::Relaxed)) || preview_env();
+    // or a replay it would be state the two peers did not agree on (the
+    // environment variable, a preview aid for tools, is bound by the same).
+    let want = allow_setting && (SETTING.load(Ordering::Relaxed) || preview_env());
     let have = core.raw_read_8(crate::wasteland::DS_GRAPHICS, -1);
     if want && have == 0 {
         core.raw_write_8(crate::wasteland::DS_GRAPHICS, -1, 1);
