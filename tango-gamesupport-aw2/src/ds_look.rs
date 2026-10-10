@@ -241,6 +241,31 @@ impl Look {
         }
         Some((t, best as u16))
     }
+
+    /// Upper part `o`'s bottom quadrant on its own (side 0 left / 1 right):
+    /// a tile drawing only the part, transparent elsewhere, and its palette
+    /// (the one of the 4 that draws it best). For the Dual Strike graphics
+    /// preview, which draws the part on a layer in front of the units as
+    /// Dual Strike does (its cells are drawn back to front).
+    pub fn front(&self, o: u8, side: u8) -> Option<([u8; TILE], u16)> {
+        let over = self.overlays.get(o as usize)?.get(side as usize)?;
+        if over.iter().all(|&c| c == TRANSPARENT) {
+            return None;
+        }
+        let blocks: Vec<&[u16]> = (0..4).map(|i| &self.colours[16 * i + 1..16 * i + 16]).collect();
+        let mut h: BTreeMap<u16, u64> = BTreeMap::new();
+        for &c in over.iter().filter(|&&c| c != TRANSPARENT) {
+            *h.entry(c).or_default() += 1;
+        }
+        let best = (0..4).min_by_key(|&i| (hist_error(&h, blocks[i]), i))?;
+        let mut t = [0u8; TILE];
+        for (k, &c) in over.iter().enumerate() {
+            if c != TRANSPARENT {
+                set_px(&mut t, k % 8, k / 8, nearest(blocks[best], c) as u8 + 1);
+            }
+        }
+        Some((t, best as u16))
+    }
 }
 
 fn u16s(b: &[u8]) -> Vec<u16> {

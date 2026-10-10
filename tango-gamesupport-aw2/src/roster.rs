@@ -93,6 +93,20 @@ pub fn installed(core: &Core) -> bool {
     core.raw_read_32(DATA_SENTINEL, -1) == DATA_MAGIC
 }
 
+/// The new units: (id, the AW2 unit its moving sheet is laid out like).
+pub fn new_units() -> Vec<(u8, u8)> {
+    NEW.iter().map(|n| (n.id, n.like)).collect()
+}
+
+/// Where new unit `k`'s idle tiles for frame `f` (128 bytes) and its moving
+/// sheet (LZ77) are in the ROM image.
+pub fn art_map_at(f: usize, k: usize) -> u32 {
+    ART_MAP + ART_FRAME * f as u32 + SLOT_BYTES * k as u32
+}
+pub fn art_move_at(k: usize) -> u32 {
+    ART_MOVE + ART_MOVE_SIZE * k as u32
+}
+
 /// The pointer to a unit type's moving sheet for a country in tangoAW2's
 /// copy of the table ([`CLONES`]).
 pub fn move_pointer(unit: u32, country: u32) -> u32 {

@@ -3642,13 +3642,38 @@ a game saved over netplay the same on both peers.
 ## Dual Strike graphics preview (`ds_graphics.rs`, development byte `0x0203E3FE`)
 
 Preview only, pack only, off by default (the byte is zero; nothing is written or
-switched). Non-zero before a battle: Normal maps use Dual Strike's Normal look
-(`wasteland::DS_NORMAL`, `bmap/000` + `bmap/006`, ROM `0x09E00000`); every original
-unit's idle sheet (`bmap/01d..01f`, per country) and moving sheets (`mu/*`) replace
-AW2's (pool words `0x08026194`/`0x080266D8`, the moving table in tangoAW2's copy);
-the building sheet (`0x080CFFC4..0x080D22C4`: city, base and its four smoke
-frames, airport, port, five HQs, silo and spent pad, minicannon pods) comes from
-`bmap/015` with `com_tower::SHADES`. Not done: HP digits and status icons
-(`bmap/01c`), Missile pad and Fortress pictures (`bmap/015` `0x1700`/`0x1F00`), the
-Volcano outside the DS Campaign. Not in Dual Strike, AW2's kept: Laser, Deathray,
-Black Factory.
+switched; each switched word is put back only if it still holds ours). Non-zero
+before a battle:
+
+- **Terrain.** Normal maps use Dual Strike's Normal look (`wasteland::DS_NORMAL`,
+  `bmap/000` + palette `bmap/006`, ROM `0x09E00000`). The palette is Dual Strike's
+  own: the colours of a real melonDS frame (Versus, Normal) are in ours (plain,
+  woods, roads, shores; 75% of its 60 commonest colours within 8 levels, the rest
+  its sea, shading and cloud shadows), and fog's purple-grey too (89% of the 40
+  commonest within 10). Dual Strike's roads and plains are that pale.
+- **Depth order.** Dual Strike draws its cells back to front: the peak or treetops
+  of a cell are in front of the unit in the cell above (checked in a real frame).
+  Upper parts therefore go on BG2 (screenblock 15, priority 1, above the units on
+  BG1; the game scrolls it with the map and leaves it blank), as tiles of their own
+  (`Look::front`) from the look's pool; `wasteland::restore_front` puts the last
+  painted entries back every frame on the battle map (the game blanks the layer
+  after the first paint).
+- **Units.** Every original unit's idle sheet (`bmap/01d..01f`, per country) and
+  moving sheets (`mu/*`), and the seven new units', replace AW2's (pool words
+  `0x08026194`/`0x080266D8`, the moving table in tangoAW2's copy), by
+  `ds_unit_art::map_tiles_ds` / `move_sheet_ds`: a 2x2 block's tie goes to its
+  bottom-right pixel (how Dual Strike samples), and colour 14 (a placeholder magenta
+  in its palettes, used for skin shadow) becomes the skin brown. No native 16x16
+  set exists in the pack (the unit table names 34 bitmaps of 32x32; Dual Strike
+  scales them in 3D). Dual Strike mirrors armies as AW2 does (Orange Star right,
+  Blue Moon left, seen in a real frame), so the flip is kept.
+- **Buildings and overlays.** The property sheet (`0x080CFFC4..0x080D22C4`: city,
+  base and its four smoke frames, airport, port, five HQs, silo and spent pad,
+  minicannon pods) from `bmap/015` with `com_tower::SHADES`; the HP digits and the
+  four status icons (`0x0810E820`, `bmap/01c`, the same colour indices); the Missile
+  pad, Fortress and Volcano pictures (headers' `+0x10` words and `0x0803FE40`).
+- **Is the map 3D?** Yes: the battle screen is the 3D engine (DISPCNT bit 3 on
+  engine A only), the map seen in perspective (edges converge toward the top; the
+  same scroll moves the upper rows 39 pixels and the lower 47) with billboards for
+  units, so the "tilt" is not only in the sprites. tangoAW2's grid is flat.
+- Not in Dual Strike, AW2's kept: Laser, Deathray, Black Factory.

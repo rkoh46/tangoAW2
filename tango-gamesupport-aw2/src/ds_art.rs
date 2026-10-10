@@ -211,7 +211,7 @@ const AW2_PALETTE: [u16; 16] = [
 
 /// Each Dual Strike colour index -> the nearest Advance Wars 2 one (0, the
 /// transparent colour, stays 0).
-fn colour_map(ds: &[u8]) -> [u8; 16] {
+pub(crate) fn colour_map(ds: &[u8]) -> [u8; 16] {
     let rgb = |c: u16| [(c & 31) as i32, ((c >> 5) & 31) as i32, ((c >> 10) & 31) as i32];
     let mut map = [0u8; 16];
     for (i, m) in map.iter_mut().enumerate().skip(1) {

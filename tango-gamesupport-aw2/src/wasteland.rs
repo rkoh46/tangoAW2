@@ -446,13 +446,70 @@ struct Painter<'a> {
     used: Vec<bool>,
     loaded: bool,
     bolt_slots: Option<Vec<usize>>,
+    /// The Dual Strike graphics preview ([`crate::ds_graphics`]): upper
+    /// parts go on BG2, in front of the units, as tiles of their own
+    /// (`front` is the current cell's two, `bg2` its tilemap in VRAM).
+    front_on: bool,
+    front: [u16; 2],
+    bg2: u32,
+}
+
+/// BG2's blank tilemap entry in a battle (the game leaves the layer empty).
+const FRONT_BLANK: u16 = 0x360;
+/// BG2's tilemap (screenblock 15, char base 2 as BG3's): fixed in a battle.
+const FRONT_MAP: u32 = 0x0600_7800;
+static FRONT_DREW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// The entries last painted into BG2 (the game clears the layer after
+/// the map's first paint): put back every frame on the battle map.
+static FRONT_SHADOW: std::sync::Mutex<[u16; 0x400]> = std::sync::Mutex::new([FRONT_BLANK; 0x400]);
+const BATTLE_MAIN: u32 = 0x0802_2049;
+
+/// Every frame with the preview on: BG2 holds what was last painted.
+pub fn restore_front(core: &mut Core) {
+    use std::sync::atomic::Ordering;
+    if !FRONT_DREW.load(Ordering::Relaxed) || core.raw_read_32(0x0300_0000, -1) != BATTLE_MAIN {
+        return;
+    }
+    let shadow = FRONT_SHADOW.lock().unwrap();
+    for (i, &want) in shadow.iter().enumerate() {
+        let at = FRONT_MAP + 2 * i as u32;
+        if core.raw_read_16(at, -1) != want {
+            core.raw_write_16(at, -1, want);
+        }
+    }
+}
+
+/// With the preview off again: the BG2 entries the preview filled go back
+/// to the blank tile.
+pub fn clear_front(core: &mut Core) {
+    use std::sync::atomic::Ordering;
+    if !FRONT_DREW.swap(false, Ordering::Relaxed) {
+        return;
+    }
+    let at = FRONT_MAP;
+    *FRONT_SHADOW.lock().unwrap() = [FRONT_BLANK; 0x400];
+    for i in 0..0x400u32 {
+        if core.raw_read_16(at + 2 * i, -1) != FRONT_BLANK {
+            core.raw_write_16(at + 2 * i, -1, FRONT_BLANK);
+        }
+    }
 }
 
 const TILE: usize = 32;
 
 impl<'a> Painter<'a> {
     fn new(core: &Core, look: Option<&'a crate::ds_look::Look>) -> Self {
-        Painter { look, buf: core.raw_read_32(BG3_BUFFER_POINTER, -1), vram: Vec::new(), used: Vec::new(), loaded: false, bolt_slots: None }
+        Painter {
+            look,
+            buf: core.raw_read_32(BG3_BUFFER_POINTER, -1),
+            vram: Vec::new(),
+            used: Vec::new(),
+            loaded: false,
+            bolt_slots: None,
+            front_on: look.is_some() && ds_graphics(core) && !crate::design::in_map_editor(core),
+            front: [FRONT_BLANK; 2],
+            bg2: FRONT_MAP,
+        }
     }
 
     fn load(&mut self, core: &Core) {
@@ -466,6 +523,15 @@ impl<'a> Painter<'a> {
         self.used = vec![false; 0x400];
         for e in u16s(&map) {
             self.used[(e & 0x3FF) as usize] = true;
+        }
+        if self.front_on {
+            let mut f = vec![0u8; 0x800];
+            core.raw_read_range(self.bg2, -1, &mut f);
+            for e in u16s(&f) {
+                if e != FRONT_BLANK {
+                    self.used[(e & 0x3FF) as usize] = true;
+                }
+            }
         }
         self.loaded = true;
     }
@@ -542,6 +608,7 @@ impl<'a> Painter<'a> {
     /// A cell's four tilemap entries as `BlitMapRow`/`BlitMapColumn` draw
     /// them (fog: palette + 4).
     fn entries(&mut self, core: &mut Core, x: u32, y: u32) -> [u16; 4] {
+        self.front = [FRONT_BLANK; 2];
         let row = |core: &Core, y: u32| core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
         let cell = row(core, y) + x;
         let fog = if core.raw_read_8(MAP + 0x234A + cell, -1) == 0 { 0x4000 } else { 0 };
@@ -575,7 +642,15 @@ impl<'a> Painter<'a> {
                     let tb = core.raw_read_16(MAP + 0xA22 + 2 * (row(core, y + 1) + x), -1);
                     if let Some(o) = l.upper_at(tb, x, y + 1) {
                         for side in 0..2u8 {
-                            q[2 + side as usize] = self.composite(core, l, q[2 + side as usize], o, side);
+                            if self.front_on {
+                                if let Some((tile, b)) = l.front(o, side) {
+                                    if let Some(s) = self.pool_tile(core, l, &tile) {
+                                        self.front[side as usize] = (s as u16 | b << 12).wrapping_add(fog);
+                                    }
+                                }
+                            } else {
+                                q[2 + side as usize] = self.composite(core, l, q[2 + side as usize], o, side);
+                            }
                         }
                     }
                 }
@@ -595,6 +670,16 @@ impl<'a> Painter<'a> {
             if self.loaded {
                 self.used[(q[k] & 0x3FF) as usize] = true;
             }
+        }
+        if self.front_on {
+            for (k, off) in [32u32, 33].into_iter().enumerate() {
+                core.raw_write_16(self.bg2 + 2 * ((index + off) & 0x3FF), -1, self.front[k]);
+            }
+            let mut sh = FRONT_SHADOW.lock().unwrap();
+            for (k, off) in [32u32, 33].into_iter().enumerate() {
+                sh[((index + off) & 0x3FF) as usize] = self.front[k];
+            }
+            FRONT_DREW.store(true, std::sync::atomic::Ordering::Relaxed);
         }
     }
 

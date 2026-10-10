@@ -396,7 +396,7 @@ fn second_picture(core: &mut Core, x: u32, y: u32) -> Option<u32> {
         Picture::MissilePad => Picture::Fortress,
         Picture::Fortress => Picture::MissilePad,
     };
-    if named != other.aw2_picture() {
+    if named != other.aw2_picture() && named != crate::ds_graphics::structure_picture(core, other.aw2_picture()) {
         return None;
     }
     for i in 0..INVENTION_COUNT {
@@ -409,10 +409,11 @@ fn second_picture(core: &mut Core, x: u32, y: u32) -> Option<u32> {
         }
     }
     let mut head = [0u8; 4];
-    core.raw_read_range(mine.aw2_picture(), -1, &mut head);
+    let picture_at = crate::ds_graphics::structure_picture(core, mine.aw2_picture());
+    core.raw_read_range(picture_at, -1, &mut head);
     let size = (u32::from_le_bytes(head) >> 8) as usize;
     let mut comp = vec![0u8; 4 + size * 2];
-    core.raw_read_range(mine.aw2_picture(), -1, &mut comp);
+    core.raw_read_range(picture_at, -1, &mut comp);
     let pic = crate::ds_art::lz10(&comp)?;
     let n = pic.len().min(64 * 32);
     let at = 0x0601_0000 + SECOND_PICTURE_TILE * 32;

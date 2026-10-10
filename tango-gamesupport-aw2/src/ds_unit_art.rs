@@ -158,6 +158,20 @@ pub fn map_tiles(ds_id: u8, frame: usize) -> Option<[u8; 128]> {
 /// [`map_tiles`] for a country 0..4 (Dual Strike draws Infantry and Mech
 /// differently per country).
 pub fn map_tiles_country(ds_id: u8, frame: usize, country: usize) -> Option<[u8; 128]> {
+    map_tiles_impl(ds_id, frame, country, false)
+}
+
+/// The Dual Strike graphics preview's conversion ([`crate::ds_graphics`]):
+/// ties between colours in a 2x2 block go to the block's bottom-right
+/// pixel (Dual Strike samples its textures that way, and it keeps the
+/// hand-edited detail the majority rule smooths away), and Dual Strike's
+/// colour 14, which its units use for skin shadow (the palettes hold a
+/// placeholder magenta there), becomes the skin's brown (9).
+pub fn map_tiles_ds(ds_id: u8, frame: usize, country: usize) -> Option<[u8; 128]> {
+    map_tiles_impl(ds_id, frame, country, true)
+}
+
+fn map_tiles_impl(ds_id: u8, frame: usize, country: usize, preview: bool) -> Option<[u8; 128]> {
     let idle = idle()?;
     let s = sprite_of_country(ds_id, country)?;
     let bmp = idle.frames.get(frame)?.get(s * DS_SPRITE..(s + 1) * DS_SPRITE)?;
@@ -171,8 +185,14 @@ pub fn map_tiles_country(ds_id: u8, frame: usize, country: usize) -> Option<[u8;
                 count[pixel(bmp, DS_SIZE, 2 * x + dx, 2 * y + dy) as usize] += 1;
             }
             let rank = |c: usize| (count[c], if c == 0 { u32::MAX } else { idle.dark[c] });
-            let c = (0..16).max_by_key(|&c| rank(c)).unwrap();
-            *p = MAP_ROLES[c];
+            let mut c = (0..16).max_by_key(|&c| rank(c)).unwrap();
+            if preview {
+                let br = pixel(bmp, DS_SIZE, 2 * x + 1, 2 * y + 1) as usize;
+                if count[br] == count[c] {
+                    c = br;
+                }
+            }
+            *p = if preview && c == 14 { 9 } else { MAP_ROLES[c] };
         }
     }
     let mut out = Vec::with_capacity(128);
@@ -219,6 +239,16 @@ pub fn frames_per_direction(aw2_type: u8) -> Option<usize> {
 /// class plays 0, 1, 0, and one with three given a two-frame class plays
 /// 0, 1.
 pub fn move_sheet(ds_id: u8, like_aw2_type: u8) -> Option<Vec<u8>> {
+    move_sheet_impl(ds_id, like_aw2_type, false)
+}
+
+/// [`move_sheet`] for the Dual Strike graphics preview: colour 14 is the
+/// skin shadow ([`map_tiles_ds`]).
+pub fn move_sheet_ds(ds_id: u8, like_aw2_type: u8) -> Option<Vec<u8>> {
+    move_sheet_impl(ds_id, like_aw2_type, true)
+}
+
+fn move_sheet_impl(ds_id: u8, like_aw2_type: u8, preview: bool) -> Option<Vec<u8>> {
     let want = frames_per_direction(like_aw2_type)?;
     let src = move_file(ds_id)?;
     let have = src.len() / DS_SPRITE / 3;
@@ -236,7 +266,8 @@ pub fn move_sheet(ds_id: u8, like_aw2_type: u8) -> Option<Vec<u8>> {
             let px = |x: usize, y: usize| -> u8 {
                 let t = (y / 8) * 4 + x / 8;
                 let b = frame[t * TILE + (y % 8) * 4 + (x % 8) / 2];
-                MOVE_ROLES[(if x & 1 == 1 { b >> 4 } else { b & 15 }) as usize]
+                let c = (if x & 1 == 1 { b >> 4 } else { b & 15 }) as usize;
+                MOVE_ROLES[if preview && c == 14 { 9 } else { c }]
             };
             for k in 0..9 {
                 let (cx, cy) = (2 - k % 3, 2 - k / 3);
