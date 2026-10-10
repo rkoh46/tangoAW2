@@ -338,6 +338,7 @@ settings-window-size = Window size
 settings-fullscreen = Fullscreen
 settings-ui-scale = UI scale
 settings-video-filter = Video filter
+settings-ds-graphics = Dual Strike map graphics
 settings-ds-tilt = Dual Strike tilt
 settings-fractional-scaling = Fractional scaling
 settings-landscape-screen = Landscape screen

@@ -171,6 +171,7 @@ impl App {
     pub fn new() -> (Self, iced::Task<Message>) {
         let config = config::Config::load_or_create();
         tango_library::set_ds_tilt(config.ds_tilt);
+        tango_library::set_ds_graphics(config.ds_graphics);
 
         let scanners = Catalog::new();
         // The scan itself runs off-thread from the task below: reading

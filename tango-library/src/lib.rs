@@ -55,6 +55,14 @@ pub fn ds_pack_present() -> bool {
     false
 }
 
+/// tangoAW2: the Dual Strike map graphics setting (see
+/// `tango_gamesupport_aw2::ds_graphics`).
+pub fn set_ds_graphics(on: bool) {
+    #[cfg(feature = "gamesupport-aw2")]
+    tango_gamesupport_aw2::ds_graphics::set_enabled(on);
+    let _ = on;
+}
+
 /// tangoAW2: the Dual Strike tilt display setting (see
 /// `tango_gamesupport_aw2::ds_tilt`).
 pub fn set_ds_tilt(on: bool) {

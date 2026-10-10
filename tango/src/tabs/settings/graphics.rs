@@ -119,8 +119,20 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
     // graphics mode.
     if tango_library::ds_pack_present() {
         emulator_rows.push(option_row(
+            t!(lang, "settings-ds-graphics"),
+            toggle(config.ds_graphics, Message::ToggleDsGraphics),
+        ));
+        // The tilt is a way of showing Dual Strike's map: only with it on.
+        emulator_rows.push(option_row(
             t!(lang, "settings-ds-tilt"),
-            toggle(config.ds_tilt, Message::ToggleDsTilt),
+            if config.ds_graphics {
+                toggle(config.ds_tilt, Message::ToggleDsTilt)
+            } else {
+                iced::widget::checkbox(false)
+                    .size(style::TEXT_HEADING)
+                    .style(widgets::chunky_checkbox)
+                    .into()
+            },
         ));
     }
     if cfg!(target_os = "ios") {

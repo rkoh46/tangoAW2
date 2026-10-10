@@ -16,6 +16,7 @@
 //! AW2's own while it is off (every frame, from RAM alone).
 
 use mgba::core::Core;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
 use crate::wasteland::ds_graphics;
@@ -464,20 +465,38 @@ fn picture_tick(core: &mut Core, on: bool) {
     }
 }
 
+/// The player's setting (see [`tick`]).
+static SETTING: AtomicBool = AtomicBool::new(false);
+/// The development byte was set by [`tick`] (so it is cleared by it too, and
+/// a byte a tool poked is left alone).
+static BYTE_IS_OURS: AtomicBool = AtomicBool::new(false);
+
+/// Dual Strike map graphics, the setting.
+pub fn set_enabled(on: bool) {
+    SETTING.store(on, Ordering::Relaxed);
+}
+
 fn preview_env() -> bool {
     static ENV: OnceLock<bool> = OnceLock::new();
     *ENV.get_or_init(|| std::env::var("TANGOAW2_DS_GRAPHICS").map(|v| v == "1").unwrap_or(false))
 }
 
 /// Every frame with the pack on.
-pub fn tick(core: &mut Core, pack: bool) {
+pub fn tick(core: &mut Core, pack: bool, allow_setting: bool) {
     if !pack {
         return;
     }
-    // Preview aid: TANGOAW2_DS_GRAPHICS=1 sets the development byte (there is
-    // no setting for the mode yet).
-    if preview_env() && core.raw_read_8(crate::wasteland::DS_GRAPHICS, -1) == 0 {
+    // The setting (Settings > Graphics > Dual Strike map graphics) drives the
+    // development byte, for a console played alone only: in a netplay match
+    // or a replay it would be state the two peers did not agree on. The
+    // environment variable is a preview aid for tools.
+    let want = (allow_setting && SETTING.load(Ordering::Relaxed)) || preview_env();
+    let have = core.raw_read_8(crate::wasteland::DS_GRAPHICS, -1);
+    if want && have == 0 {
         core.raw_write_8(crate::wasteland::DS_GRAPHICS, -1, 1);
+        BYTE_IS_OURS.store(true, Ordering::Relaxed);
+    } else if !want && have != 0 && BYTE_IS_OURS.swap(false, Ordering::Relaxed) {
+        core.raw_write_8(crate::wasteland::DS_GRAPHICS, -1, 0);
     }
     let on = ds_graphics(core);
     if on {

@@ -161,6 +161,7 @@ pub enum Message {
     VideoFilterChanged(String),
     ToggleFractionalScaling(bool),
     ToggleDsTilt(bool),
+    ToggleDsGraphics(bool),
     LandscapeStretchChanged(bool),
     /// New DS screen arrangement picked. Applied at draw time, so an
     /// active session re-lays out immediately.
@@ -227,6 +228,7 @@ pub enum ConfigChange {
     VideoFilter(String),
     FractionalScaling(bool),
     DsTilt(bool),
+    DsGraphics(bool),
     LandscapeStretch(bool),
     DsScreenStacking(config::DsScreenStacking),
     DsPrimaryScreen(config::DsPrimaryScreen),
@@ -318,6 +320,7 @@ impl State {
             Message::VideoFilterChanged(s) => Some(ConfigChange::VideoFilter(s)),
             Message::ToggleFractionalScaling(b) => Some(ConfigChange::FractionalScaling(b)),
             Message::ToggleDsTilt(b) => Some(ConfigChange::DsTilt(b)),
+            Message::ToggleDsGraphics(b) => Some(ConfigChange::DsGraphics(b)),
             Message::LandscapeStretchChanged(b) => Some(ConfigChange::LandscapeStretch(b)),
             Message::DsScreenStackingChanged(s) => Some(ConfigChange::DsScreenStacking(s)),
             Message::DsPrimaryScreenChanged(s) => Some(ConfigChange::DsPrimaryScreen(s)),

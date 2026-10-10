@@ -100,6 +100,10 @@ impl App {
             }
             C::VideoFilter(s) => self.config.video_filter = s,
             C::FractionalScaling(b) => self.config.fractional_scaling = b,
+            C::DsGraphics(b) => {
+                self.config.ds_graphics = b;
+                tango_library::set_ds_graphics(b);
+            }
             C::DsTilt(b) => {
                 self.config.ds_tilt = b;
                 tango_library::set_ds_tilt(b);
