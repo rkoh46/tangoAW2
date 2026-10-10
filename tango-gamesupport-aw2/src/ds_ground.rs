@@ -31,6 +31,8 @@ pub struct Ground<'a> {
     fog: Vec<u8>,
     /// 16 x 16 pixels per cell, drawn on first use (0: not yet; else 0x8000 | colour).
     cache: Vec<Option<Box<[u16; 256]>>>,
+    /// Means to an End's Grand Bolt: the picture's cell for each cell it covers.
+    bolt: std::collections::HashMap<(i32, i32), (usize, bool, bool)>,
 }
 
 impl<'a> Ground<'a> {
@@ -52,7 +54,17 @@ impl<'a> Ground<'a> {
                 fog[(y * w + x) as usize] = core.raw_read_8(FOG + cell, -1);
             }
         }
-        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize] })
+        let mut bolt = std::collections::HashMap::new();
+        if crate::grand_bolt::on(core) {
+            for y in 0..h {
+                for x in 0..w {
+                    if let Some(c) = crate::grand_bolt::cell_at(core, x as u32, y as u32) {
+                        bolt.insert((x, y), c);
+                    }
+                }
+            }
+        }
+        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize], bolt })
     }
 
     /// Loads what [`Ground::new`] needs into `v`.
@@ -96,8 +108,28 @@ impl<'a> Ground<'a> {
     fn draw(&self, x: i32, y: i32) -> Box<[u16; 256]> {
         let l = &self.look.look;
         let fog_add: u16 = if self.fogged(x, y) { 0x4000 } else { 0 };
-        let q = l.entries(self.tile(x, y), x as u32, y as u32).map(|e| e.wrapping_add(fog_add));
         let mut out = Box::new([0x8000 | (self.v.pal[0] & 0x7fff); 256]);
+        // Means to an End's Grand Bolt has a picture of its own.
+        if let (Some(&c), Some(b)) = (self.bolt.get(&(x, y)), crate::grand_bolt::bolt()) {
+            let bank = (crate::grand_bolt::PALETTE + if self.fogged(x, y) { 4 } else { 0 }) as usize;
+            for k in 0..4usize {
+                let (tile, flips) = b.tile(c, k);
+                let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
+                for py in 0..8usize {
+                    for px in 0..8usize {
+                        let sx = if flips & 0x400 != 0 { 7 - px } else { px };
+                        let sy = if flips & 0x800 != 0 { 7 - py } else { py };
+                        let byte = tile[sy * 4 + sx / 2];
+                        let ci = (if sx & 1 == 0 { byte & 15 } else { byte >> 4 }) as usize;
+                        if ci != 0 {
+                            out[(qy + py) * 16 + qx + px] = 0x8000 | (self.v.pal[bank * 16 + ci] & 0x7fff);
+                        }
+                    }
+                }
+            }
+            return out;
+        }
+        let q = l.entries(self.tile(x, y), x as u32, y as u32).map(|e| e.wrapping_add(fog_add));
         for (k, &e) in q.iter().enumerate() {
             let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
             for py in 0..8 {
@@ -135,10 +167,19 @@ impl<'a> Ground<'a> {
     /// The cell holding map pixel column `gx` and row `gy` (the map's edge
     /// repeats beyond it), with the pixel's place in it: (cell, x, y).
     pub fn locate(&self, gx: i32, gy: i32) -> (usize, usize, usize) {
-        let cx = gx.div_euclid(16).clamp(0, self.w - 1);
-        let cy = gy.div_euclid(16).clamp(0, self.h - 1);
-        let lx = if gx < 0 { 0 } else if gx >= self.w * 16 { 15 } else { gx.rem_euclid(16) };
-        let ly = if gy < 0 { 0 } else if gy >= self.h * 16 { 15 } else { gy.rem_euclid(16) };
+        // Beyond the map the ground is mirrored (a repeated edge would streak).
+        let reflect = |g: i32, n: i32| {
+            let c = g.div_euclid(16);
+            let l = g.rem_euclid(16);
+            if c < 0 {
+                ((-c - 1).min(n - 1), 15 - l)
+            } else if c >= n {
+                ((2 * n - 1 - c).max(0), 15 - l)
+            } else {
+                (c, l)
+            }
+        };
+        let ((cx, lx), (cy, ly)) = (reflect(gx, self.w), reflect(gy, self.h));
         ((cy * self.w + cx) as usize, lx as usize, ly as usize)
     }
 

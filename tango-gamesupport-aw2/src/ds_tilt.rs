@@ -1582,6 +1582,8 @@ struct RamUnit {
     army: u8,
     /// The army's CO's country: Infantry and Mech are drawn by it.
     country: u8,
+    /// The army's colour (1 Orange Star .. 5 Black Hole).
+    colour: u8,
 }
 
 impl RamUnit {
@@ -1604,7 +1606,8 @@ impl RamUnit {
         }
         .map(|t| t | bank);
         // The corner: army 4's mark, the HP digit (from 9 down), else the cargo mark.
-        let army4 = self.army == 4 && self.flags & 1 == 0;
+        // (Yellow's mark: by the army's colour, not its number.)
+        let army4 = self.colour == 4 && self.flags & 1 == 0;
         if army4 {
             e[3] = 0x2af | bank;
         }
@@ -1613,7 +1616,9 @@ impl RamUnit {
             // (Army 4's digits from 3 up are tiles the console keeps for its mark.)
             e[3] = if army4 && digit >= 3 { 0x2af } else { 0x2a1 + digit } | bank;
         } else if self.cargo {
-            e[3] = 0x2ab | bank;
+            // (the cargo mark sits at the corner on the side the unit is not facing)
+            let mirrored = self.army % 2 == 1 || self.flags & 1 != 0;
+            e[if mirrored { 3 } else { 2 }] = 0x2ab | bank;
         }
         Some(e)
     }
@@ -1645,6 +1650,11 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
         } else {
             0
         };
+        let colour = if (0x0200_0000..0x0400_0000).contains(&players) {
+            core.raw_read_8(players + 0x3C * army as u32 + 0x1A, -1)
+        } else {
+            army
+        };
         out.push(RamUnit {
             kind: buf[0],
             flags: buf[1],
@@ -1654,6 +1664,7 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
             cargo: buf[1] & 0x10 != 0,
             army,
             country,
+            colour,
         });
     }
     out
