@@ -26,14 +26,14 @@ import struct
 from . import paths
 from .rom import DualStrike, lz10
 
-NORMAL, WASTELAND, DESERT, SNOW, GRAND_BOLT = 0, 1, 2, 3, 4
-NAMES = {WASTELAND: "Wasteland", DESERT: "Desert", SNOW: "Snow", GRAND_BOLT: "Grand Bolt (Means to an End)"}
+NORMAL, WASTELAND, DESERT, SNOW, GRAND_BOLT, DS_NORMAL = 0, 1, 2, 3, 4, 5
+NAMES = {WASTELAND: "Wasteland", DESERT: "Desert", SNOW: "Snow", GRAND_BOLT: "Grand Bolt (Means to an End)", DS_NORMAL: "Dual Strike Normal"}
 SOURCES = {WASTELAND: ("bmap/001", "bmap/009"), DESERT: ("bmap/001", "bmap/008"), SNOW: ("bmap/000", "bmap/00a"),
-           GRAND_BOLT: ("bmap/001", "bmap/00b")}
+           GRAND_BOLT: ("bmap/001", "bmap/00b"), DS_NORMAL: ("bmap/000", "bmap/006")}
 # Dual Strike's building colours (sub-palettes 6-8) per look (arm9 0x02167E24..: one
 # record per look, the sixth word): only for pictures, buildings being sprites in AW2.
 BUILDING_COLOURS = {NORMAL: 0x02147F40, SNOW: 0x02148060, DESERT: 0x02147FA0, WASTELAND: 0x02148000,
-                    GRAND_BOLT: 0x02147FA0}
+                    GRAND_BOLT: 0x02147FA0, DS_NORMAL: 0x02147F40}
 LOOK_DATA, LOOK_SIZE = 0x08E80000, 0x20000
 AT_METATILES, AT_TILES, AT_SEA, AT_RIVER = 0, 0x2000, 0x9000, 0x11000
 AT_CLEAR, AT_RAIN, AT_SNOW, AT_SAND = 0x17000, 0x17100, 0x17200, 0x17300
@@ -76,6 +76,8 @@ def shade(c, k=ROAD_SHADE):
 
 
 def look_rom(b):
+    if b == DS_NORMAL:
+        return 0x09E00000
     return LOOK_DATA + LOOK_SIZE * (b - 1)
 
 

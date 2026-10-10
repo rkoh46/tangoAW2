@@ -53,6 +53,17 @@ pub const SNOW: u8 = 3;
 /// in place of its look's (Wasteland's, `bmap/009`): Desert's colours but
 /// for its terrain palette 2 (the Grand Bolt's greys).
 pub const GRAND_BOLT_LOOK: u8 = 4;
+/// "Dual Strike graphics" preview (development byte [`DS_GRAPHICS`], off by
+/// default, pack only): Normal maps drawn with Dual Strike's Normal look
+/// (`bmap/000`, palette `bmap/006`). Never stored in a map: [`drawn`] picks
+/// it for a Normal map while the byte is set.
+pub const DS_NORMAL: u8 = 5;
+/// The development byte: non-zero turns the preview on (with the pack).
+pub const DS_GRAPHICS: u32 = 0x0203_E3FE;
+
+pub fn ds_graphics(core: &Core) -> bool {
+    is_on(core) && core.raw_read_8(DS_GRAPHICS, -1) != 0
+}
 
 /// The record's biome byte: [`MAGIC`] | biome, anything else Normal (maps
 /// saved before 0.3.0 hold whatever the game left there).
@@ -188,7 +199,14 @@ pub struct Built {
 /// The looks, by biome (index biome - 1), worked out once.
 static LOOKS: OnceLock<Vec<Option<Built>>> = OnceLock::new();
 
+/// The Dual Strike graphics preview's Normal look (built only when asked).
+static NORMAL_LOOK: OnceLock<Option<Built>> = OnceLock::new();
+const NORMAL_SOURCE: crate::ds_look::Source = crate::ds_look::Source { tiles: "bmap/000", palette: "bmap/006" };
+
 pub fn look(b: u8) -> Option<&'static Built> {
+    if b == DS_NORMAL {
+        return NORMAL_LOOK.get()?.as_ref();
+    }
     LOOKS.get()?.get((b as usize).checked_sub(1)?)?.as_ref()
 }
 
@@ -212,7 +230,7 @@ fn read_set(core: &Core, at: u32) -> Vec<u16> {
 
 /// One look, worked out from AW2's ROM image and the pack.
 pub fn derive(core: &Core, b: u8) -> Option<Built> {
-    let (_, src) = SOURCES.iter().find(|(x, _)| *x == b)?;
+    let src = if b == DS_NORMAL { &NORMAL_SOURCE } else { &SOURCES.iter().find(|(x, _)| *x == b)?.1 };
     let aw2 = aw2_terrain(core)?;
     let files = crate::ds_look::from_pack(src)?;
     let look = crate::ds_look::build(&aw2, &files.pack())?;
@@ -258,6 +276,9 @@ const AT_SENTINEL: u32 = 0x1_7FFC;
 const LOOK_MAGIC: u32 = 0x4B4C_5344; // "DSLK"
 
 pub fn look_rom(b: u8) -> u32 {
+    if b == DS_NORMAL {
+        return 0x09E0_0000;
+    }
     LOOK_DATA + LOOK_SIZE * (b as u32 - 1)
 }
 
@@ -286,7 +307,11 @@ pub fn tick(core: &mut Core, on: bool) {
             let looks = SOURCES.iter().map(|(b, _)| derive(core, *b)).collect();
             let _ = LOOKS.set(looks);
         }
-        for (b, _) in SOURCES {
+        if ds_graphics(core) && NORMAL_LOOK.get().is_none() {
+            let _ = NORMAL_LOOK.set(derive(core, DS_NORMAL));
+        }
+        let all = SOURCES.iter().map(|(b, _)| *b).chain(std::iter::once(DS_NORMAL));
+        for b in all {
             let Some(l) = look(b) else { continue };
             let base = look_rom(b);
             if core.raw_read_32(base + AT_SENTINEL, -1) == LOOK_MAGIC {
@@ -313,7 +338,10 @@ pub fn tick(core: &mut Core, on: bool) {
 
 /// The look drawn now, if not AW2's own.
 pub fn drawn(core: &Core) -> Option<u8> {
-    let b = biome(core);
+    let mut b = biome(core);
+    if b == NORMAL && ds_graphics(core) {
+        b = DS_NORMAL;
+    }
     (is_on(core) && b != NORMAL && look(b).is_some()).then_some(b)
 }
 

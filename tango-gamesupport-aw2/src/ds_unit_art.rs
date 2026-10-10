@@ -113,11 +113,17 @@ fn idle() -> Option<&'static Idle> {
 
 /// Dual Strike's idle bitmap for a unit id (Orange Star's row).
 fn sprite_of(ds_id: u8) -> Option<usize> {
-    if !(1..IDS as u8).contains(&ds_id) {
+    sprite_of_country(ds_id, 0)
+}
+
+/// The same for a country 0..4 (Orange Star .. Black Hole): the table is
+/// `[5][27]` u16 and its rows differ only for Infantry and Mech.
+fn sprite_of_country(ds_id: u8, country: usize) -> Option<usize> {
+    if !(1..IDS as u8).contains(&ds_id) || country >= 5 {
         return None;
     }
     let pack = crate::ds_pack::pack()?;
-    let b = pack.overlay_at(0, OV0, SPRITE_TABLE + 2 * ds_id as u32, 2)?;
+    let b = pack.overlay_at(0, OV0, SPRITE_TABLE + 2 * (IDS * country + ds_id as usize) as u32, 2)?;
     let s = u16::from_le_bytes([b[0], b[1]]) as usize;
     (s < SPRITES).then_some(s)
 }
@@ -146,8 +152,14 @@ fn put_tile(out: &mut Vec<u8>, px: impl Fn(usize, usize) -> u8) {
 /// rows), so the game's own palette per army colours it; facing the same
 /// way as AW2's own map units in the sheet. `None` without the pack.
 pub fn map_tiles(ds_id: u8, frame: usize) -> Option<[u8; 128]> {
+    map_tiles_country(ds_id, frame, 0)
+}
+
+/// [`map_tiles`] for a country 0..4 (Dual Strike draws Infantry and Mech
+/// differently per country).
+pub fn map_tiles_country(ds_id: u8, frame: usize, country: usize) -> Option<[u8; 128]> {
     let idle = idle()?;
-    let s = sprite_of(ds_id)?;
+    let s = sprite_of_country(ds_id, country)?;
     let bmp = idle.frames.get(frame)?.get(s * DS_SPRITE..(s + 1) * DS_SPRITE)?;
     // One 16x16 pixel per 2x2 block: the most common colour; ties go to
     // transparent, then to the darker colour.

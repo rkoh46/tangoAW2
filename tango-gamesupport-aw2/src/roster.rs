@@ -88,6 +88,17 @@ const DATA_END: u32 = DATA + 0x12000;
 const DATA_SENTINEL: u32 = DATA + 0x7FFC;
 const DATA_MAGIC: u32 = 0x3755_5344; // "DSU7"
 
+/// Whether tangoAW2's tables are in the ROM image.
+pub fn installed(core: &Core) -> bool {
+    core.raw_read_32(DATA_SENTINEL, -1) == DATA_MAGIC
+}
+
+/// The pointer to a unit type's moving sheet for a country in tangoAW2's
+/// copy of the table ([`CLONES`]).
+pub fn move_pointer(unit: u32, country: u32) -> u32 {
+    clone_at(0) + CLONE[0].stride * unit + 4 * country
+}
+
 /// The unit table's address as the game reads it now.
 pub fn table(core: &Core) -> u32 {
     if core.raw_read_32(TABLE_POINTERS[0], -1) == TABLE {
@@ -594,15 +605,25 @@ static SHEET_FRAMES: OnceLock<Vec<Vec<u8>>> = OnceLock::new();
 /// idle frame (found by comparing its copy with the sheet's frames; on any
 /// other screen those tiles are left alone).
 fn sync_map_art(core: &mut Core) {
-    let frames = SHEET_FRAMES.get_or_init(|| {
+    let base = crate::ds_graphics::unit_sheet(core);
+    let read = |core: &mut Core| -> Vec<Vec<u8>> {
         (0..3)
             .map(|f| {
                 let mut b = vec![0u8; SHEET_FRAME as usize];
-                core.raw_read_range(AW2_SHEET + SHEET_FRAME * f, -1, &mut b);
+                core.raw_read_range(base + SHEET_FRAME * f, -1, &mut b);
                 b
             })
             .collect()
-    });
+    };
+    // The game's own sheet is read once; the Dual Strike graphics preview's
+    // ([`crate::ds_graphics`]) each frame (it can be switched on or off).
+    let fresh;
+    let frames = if base == AW2_SHEET {
+        SHEET_FRAMES.get_or_init(|| read(core))
+    } else {
+        fresh = read(core);
+        &fresh
+    };
     let mut now = vec![0u8; SHEET_FRAME as usize];
     core.raw_read_range(SHEET_VRAM, -1, &mut now);
     let Some(f) = frames.iter().position(|fr| *fr == now) else {
@@ -627,7 +648,7 @@ fn panel_icon(core: &mut Core) {
         return;
     }
     let src = core.gba().cpu().gpr(0) as u32;
-    let first = AW2_SHEET + SLOT_BYTES * FIRST_SLOT as u32;
+    let first = crate::ds_graphics::unit_sheet(core) + SLOT_BYTES * FIRST_SLOT as u32;
     if (first..first + ART_FRAME).contains(&src) {
         core.gba_mut().cpu_mut().set_gpr(0, (ART_MAP + (src - first)) as i32);
     }

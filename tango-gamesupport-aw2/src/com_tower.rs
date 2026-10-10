@@ -215,7 +215,7 @@ const DS_TOWER_CELL: usize = 8;
 /// yellow, 14 cream; AW2's building sprites (OBJ palette 8 + owner) and the
 /// terrain panel (its palette 8 + owner) both have white at 1, the owner
 /// shades at 2-5 (light to darkest), yellow at 6 and cream at 7.
-const SHADES: [u8; 16] = [0, 0, 0, 0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 0];
+pub(crate) const SHADES: [u8; 16] = [0, 0, 0, 0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 0];
 
 static PICTURE: OnceLock<Option<Vec<u8>>> = OnceLock::new();
 

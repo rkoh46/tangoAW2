@@ -499,6 +499,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::unit_actions::tick(core, ds);
         crate::cpu_tactics::tick(core, ds);
         crate::ds_weather::tick(core, ds);
+        crate::ds_graphics::tick(core, ds);
         crate::ds_campaign::tick(core, ds && ds_features && mode.is_none());
         // Battles on two fronts (crate::two_front): the DS Campaign's.
         crate::two_front::tick(core, ds && ds_features && mode.is_none());
