@@ -114,6 +114,25 @@ impl App {
             }
             Message::DiscordTick => {
                 self.handle_discord_tick();
+                match self.debug.due_shot() {
+                    Some((path, exit)) => iced::window::latest()
+                        .and_then(iced::window::screenshot)
+                        .map(move |s| Message::DebugScreenshot(s, path.clone(), exit)),
+                    None => iced::Task::none(),
+                }
+            }
+            Message::DebugScreenshot(shot, path, exit) => {
+                super::debug_aids::save_png(&shot, &path);
+                if exit {
+                    return iced::exit();
+                }
+                iced::Task::none()
+            }
+            Message::PadScriptTick => {
+                let active = self.session.is_active();
+                if let Some(keys) = self.debug.pad_keys(active) {
+                    self.session.set_scripted_keys(keys);
+                }
                 iced::Task::none()
             }
             Message::Window(id, ev) => self.update_window(id, ev),

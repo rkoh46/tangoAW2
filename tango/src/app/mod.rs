@@ -12,6 +12,7 @@ use crate::{config, discord, i18n, netplay, selection, session, tabs, updater, I
 use i18n::t;
 use tabs::replays::ReplaysState;
 
+mod debug_aids;
 mod desktop;
 mod dispatch;
 mod library;
@@ -27,6 +28,8 @@ mod view;
 pub use message::{Message, RescanFollowup, Tab};
 
 pub struct App {
+    /// Test aids (screenshots of the window, a scripted pad): see [`debug_aids`].
+    debug: debug_aids::DebugAids,
     config: config::Config,
     /// Background thread that owns the actual config-file writes; see
     /// [`config::Writer`]. `persist_config` queues snapshots on it.
@@ -242,6 +245,7 @@ impl App {
             netplay: netplay::State::new(),
             discord: discord::Client::new(),
             session_started_at: None,
+            debug: debug_aids::DebugAids::from_env(),
             replay_controller: replay_controller::Controller::default(),
             updater,
             rescans_in_flight: 0,
@@ -315,6 +319,9 @@ impl App {
             // Window events drive the geometry-persistence loop.
             iced::window::events().map(|(id, ev)| Message::Window(id, ev)),
         ];
+        if self.debug.has_pad() {
+            subs.push(iced::time::every(std::time::Duration::from_millis(16)).map(|_| Message::PadScriptTick));
+        }
         // iOS: re-lay the UI out when the on-screen keyboard comes and
         // goes (the root view lifts above it; see `view_in_safe_area`),
         // which nothing in iced's own event stream reports.

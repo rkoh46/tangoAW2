@@ -340,6 +340,7 @@ settings-ui-scale = UI scale
 settings-video-filter = Video filter
 settings-ds-graphics = Dual Strike map graphics
 settings-ds-tilt = Dual Strike tilt
+settings-ds-tilt-needs-graphics = Dual Strike tilt (needs Dual Strike map graphics)
 settings-fractional-scaling = Fractional scaling
 settings-landscape-screen = Landscape screen
 settings-landscape-screen-fit = Fit

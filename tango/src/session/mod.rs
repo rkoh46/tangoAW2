@@ -425,6 +425,13 @@ impl State {
         }
     }
 
+    /// Test aids: the scripted pad's word for this frame, as if held.
+    pub fn set_scripted_keys(&self, keys: u32) {
+        if let Some(s) = self.active.as_ref() {
+            s.set_input(tango_session::HostInput { keys, touch: self.stylus.touch() });
+        }
+    }
+
     /// Push the local player's whole current input — the mapping's
     /// resolution of everything held, plus the stylus — to the active
     /// session. Every input-shaped event ends here, so the session

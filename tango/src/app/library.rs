@@ -181,6 +181,11 @@ impl App {
                         return iced::Task::done(Message::Play(crate::tabs::play::Message::PlayOfflinePressed))
                     }
                     Ok("settings") => return iced::Task::done(Message::TabSelected(super::Tab::Settings)),
+                    // (the Graphics pane, for screenshots)
+                    Ok("settings:graphics") => {
+                        self.settings.active_tab = crate::tabs::settings::SettingsTab::Graphics;
+                        return iced::Task::done(Message::TabSelected(super::Tab::Settings));
+                    }
                     Ok("replays") => return iced::Task::done(Message::TabSelected(super::Tab::Replays)),
                     // `link:<code>` (or `link:/host`, `link:/connect <addr>`)
                     // fills in the link code and presses Fight; the lobby

@@ -58,6 +58,10 @@ pub enum Message {
     /// Discord-initiated join secret into the play link-code
     /// field.
     DiscordTick,
+    /// Test aids: a window picture to save (and whether to quit after it).
+    DebugScreenshot(iced::window::Screenshot, std::path::PathBuf, bool),
+    /// Test aids: the scripted pad's next frame.
+    PadScriptTick,
     /// Raw window event (open, resize, move, etc.). Filtered in the
     /// handler — only Opened / Resized / Moved trigger anything.
     Window(iced::window::Id, iced::window::Event),

@@ -124,7 +124,11 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
         ));
         // The tilt is a way of showing Dual Strike's map: only with it on.
         emulator_rows.push(option_row(
-            t!(lang, "settings-ds-tilt"),
+            if config.ds_graphics {
+                t!(lang, "settings-ds-tilt")
+            } else {
+                t!(lang, "settings-ds-tilt-needs-graphics")
+            },
             if config.ds_graphics {
                 toggle(config.ds_tilt, Message::ToggleDsTilt)
             } else {

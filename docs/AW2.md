@@ -3751,3 +3751,5 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   beyond the window; the console's moving-unit sprites are treated as HUD
   (flat) if it has any; HUD popups stay where the console puts them; the range
   tint is only known inside the console's window.
+
+**Driving the real app in tests** (`tango/src/app/debug_aids.rs`): `TANGOAW2_SCREENSHOTS=<s>:<png>,...` saves the app window's own picture (read back from the GPU: no screen-recording permission) at those seconds after launch (`TANGOAW2_SCREENSHOT_EXIT=1` quits after the last), `TANGOAW2_PAD_SCRIPT=<file>` plays the harness's `press`/`hold`/`wait` lines (an `Emu.timeline` dump) into the offline session as the pad, and `TANGOAW2_AUTOSTART=offline|settings|settings:graphics|replays` opens that. With `TANGOAW2_PROFILE=<dir>` (config/config.json with `ds_graphics` and `ds_tilt`, data/roms with the two ROMs, data/saves with the harness's `map.sav`) the app plays a Versus battle by itself and photographs it.
