@@ -3711,10 +3711,7 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   translates (the same fit with one tilt and one set of lens parameters and
   a centre per frame scores as well as a free homography per frame), looks at
   the cursor's cell corner and keeps the map's edge in view (centre >= 8.0
-  cells from the left, 5.9 from the top and bottom). Ours looks at the middle
-  of the console's window (so the cursor, ranges and arrows, which only the
-  console draws, stay in view), kept inside the map as far as the map is wide
-  enough.
+  cells from the left, 5.9 from the top and bottom). Ours follows the same rule (see Camera follow).
 - **Ground** (`ds_ground`): any cell of the map from its metatile id (map RAM
   `+0xA22`, rows `+0x417A`), fog flag (`+0x234A`), the look's quadrants, the
   game's tiles (VRAM, as animated now) and palettes (live: fog, weather), and
@@ -3746,10 +3743,29 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   (Dual Strike's way), a reddish tint (attack) lights them red.
 - **Cost** on the Mac: see the commit message of the benchmark; about 0.5 to
   1 ms a frame (mostly the ground and sprite decode); iOS is the same code.
-- **Not done / approximations.** The camera follows the console's window, not
-  Dual Strike's cursor dead zone; low fuel/ammo/capture icons are not drawn
-  beyond the window; the console's moving-unit sprites are treated as HUD
-  (flat) if it has any; HUD popups stay where the console puts them; the range
-  tint is only known inside the console's window.
+- **Camera follow.** Dual Strike's rule, from the cursor's cell (`follow()`):
+  the camera only moves when the cursor leaves a dead zone (5 cells left and
+  6 right, 3 up and 4 down of the centre), then keeps the map's edge in view
+  (centre x in [8, w - 8], y in [6, h - 6]; a map smaller than that is
+  centred), eased 0.3 a frame; `TANGOAW2_TILT_SNAP=1` jumps for tools. The
+  console only draws 15 x 10 cells, so everything else beyond is drawn from
+  RAM: ground (`ds_ground`, mirrored beyond the map's edge, Grand Bolt cells and
+  sky-front entries too), units, buildings and structures (a cache
+  `SPRITES` of the console's sprite parts for each terrain id, learned the first
+  time one is on screen, falling back to `ds_plans.rs`).
+- **Range and shadows.** The reach table (`0x02020CA2`) gives the range cells
+  beyond the window; lit as Dual Strike's range look. Moving units (the
+  console's pieces 666-674 palette 4 are a target glow on the ground, or a
+  moving unit drawn upright).
+- **Panels stay flat.** BG1 tiles outside the unit pictures (`0x200..0x360`)
+  and BG2 tiles above `0x360` (the Front view's panel) are HUD, not map.
+- **Modes.** Works wherever the battle map's main loop runs: Campaign (AW2,
+  Dual Strike, Black Hole), Versus, War Room, Survival, Design Room maps in
+  Versus, five-army maps and two-front maps (both fronts, and the Front view).
+  Netplay: off (`tick` only drives the setting while no match runs).
+- **Not done / approximations.** Unload/repair cursors and the move arrow are
+  only drawn inside the console's window; low fuel/ammo/capture icons are not
+  drawn beyond the window; HUD popups stay where the console puts them;
+  Dual Strike's desert and wasteland looks have no real frame to compare with.
 
 **Driving the real app in tests** (`tango/src/app/debug_aids.rs`): `TANGOAW2_SCREENSHOTS=<s>:<png>,...` saves the app window's own picture (read back from the GPU: no screen-recording permission) at those seconds after launch (`TANGOAW2_SCREENSHOT_EXIT=1` quits after the last), `TANGOAW2_PAD_SCRIPT=<file>` plays the harness's `press`/`hold`/`wait` lines (an `Emu.timeline` dump) into the offline session as the pad, and `TANGOAW2_AUTOSTART=offline|settings|settings:graphics|replays` opens that. With `TANGOAW2_PROFILE=<dir>` (config/config.json with `ds_graphics` and `ds_tilt`, data/roms with the two ROMs, data/saves with the harness's `map.sav`) the app plays a Versus battle by itself and photographs it.
