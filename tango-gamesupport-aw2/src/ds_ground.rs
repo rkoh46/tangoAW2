@@ -35,6 +35,8 @@ pub struct Ground<'a> {
     bolt: std::collections::HashMap<(i32, i32), (usize, bool, bool)>,
     /// A second front in the sky: the clouds' entries for each cell.
     sky: Vec<[u16; 4]>,
+    /// The flat colour Dual Strike shows beyond the map's edge in this look, and fogged.
+    outer: [u16; 2],
 }
 
 impl<'a> Ground<'a> {
@@ -74,7 +76,15 @@ impl<'a> Ground<'a> {
                 }
             }
         }
-        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize], bolt, sky })
+        // (measured on real Dual Strike frames: a flat pale colour, not the map repeated)
+        let rgb = match biome {
+            crate::wasteland::SNOW => (252u32, 252u32, 252u32),
+            crate::wasteland::WASTELAND | crate::wasteland::DESERT | crate::wasteland::GRAND_BOLT_LOOK => (252, 244, 148),
+            _ => (220, 244, 124),
+        };
+        let px = |(r, g, b): (u32, u32, u32)| 0x8000 | ((r >> 3) | (g >> 3) << 5 | (b >> 3) << 10) as u16;
+        let fogged = ((rgb.0 + 90) / 2, (rgb.1 + 34) / 2, (rgb.2 + 205) / 2);
+        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize], bolt, sky, outer: [px(rgb), px(fogged)] })
     }
 
     /// Loads what [`Ground::new`] needs into `v`.
@@ -109,10 +119,31 @@ impl<'a> Ground<'a> {
         let b = self.v.vram[a];
         let c = if sx & 1 == 0 { b & 15 } else { b >> 4 } as usize;
         if c == 0 {
-            0
-        } else {
-            0x8000 | (self.v.pal[(e >> 12) as usize * 16 + c] & 0x7fff)
+            return 0;
         }
+        let bank = (e >> 12) as usize;
+        let live = self.v.pal[bank * 16 + c] & 0x7fff;
+        // Dual Strike's own colour of the pixel (the four palettes merged some of them): the live
+        // palette's weather and fog change it only as they change the merged colour.
+        let t = (e & 0x3ff) as usize;
+        let k = 64 * t + sy * 8 + sx;
+        let (full, merged) = if bank < 4 {
+            (self.look.look.full.get(k).copied().unwrap_or(0), self.look.look.colours.get(16 * bank + c).copied().unwrap_or(0))
+        } else {
+            (
+                self.look.look.full_fog.get(k).copied().unwrap_or(0),
+                self.look.look.fog.get(16 * (bank & 3) + c).copied().unwrap_or(crate::ds_look::NO_FOG),
+            )
+        };
+        if full & 0x8000 == 0 || merged == crate::ds_look::NO_FOG {
+            return 0x8000 | live;
+        }
+        let (full, merged) = (full & 0x7fff, merged & 0x7fff);
+        let ch = |s: u32| {
+            let d = ((full >> s) & 31) as i32 - ((merged >> s) & 31) as i32;
+            ((((live >> s) & 31) as i32 + d).clamp(0, 31)) as u16
+        };
+        0x8000 | ch(0) | ch(5) << 5 | ch(10) << 10
     }
 
     fn draw(&self, x: i32, y: i32) -> Box<[u16; 256]> {
@@ -195,6 +226,17 @@ impl<'a> Ground<'a> {
         };
         let ((cx, lx), (cy, ly)) = (reflect(gx, self.w), reflect(gy, self.h));
         ((cy * self.w + cx) as usize, lx as usize, ly as usize)
+    }
+
+    /// The flat colour beyond the map's edge at map pixel (gx, gy), None inside the map. It is the
+    /// fogged one where the nearest cell of the map is.
+    pub fn outside(&self, gx: i32, gy: i32) -> Option<u16> {
+        let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
+        if (0..self.w).contains(&cx) && (0..self.h).contains(&cy) {
+            return None;
+        }
+        let near = (cy.clamp(0, self.h - 1) * self.w + cx.clamp(0, self.w - 1)) as usize;
+        Some(self.outer[(self.fog[near] == 0) as usize])
     }
 
     /// A cell's 16 x 16 pixels, drawn on first use.

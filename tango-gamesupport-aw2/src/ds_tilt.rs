@@ -85,21 +85,25 @@ const MAIN_LOOP: u32 = 0x0300_0000;
 // scaled by 240 / 256 to keep the width.
 
 /// Focal length in our pixels.
-const FOCAL: f32 = 757.8 * 240.0 / 256.0;
+const FOCAL: f32 = 305.417;
 /// Pitch from straight down, radians (16.88 degrees).
-const PITCH: f32 = 0.2947;
+const PITCH: f32 = 0.2345;
 /// Camera height over the ground, in cells.
-const HEIGHT: f32 = 49.93;
+const HEIGHT: f32 = 21.8576;
 /// The screen's centre, where the camera looks.
-const CX: f32 = W as f32 / 2.0;
-const CY: f32 = H as f32 / 2.0;
+const CX: f32 = 109.526;
+const CY: f32 = 66.998;
 /// Billboards stand this far in front of their cell's bottom edge (cells):
 /// Dual Strike's units' feet are just below it.
-const FOOT_DROP: f32 = 0.1;
+const FOOT_DROP: f32 = 0.135;
+/// The properties' (and structures') feet, the woods' and mountains' (BG2), measured against real
+/// frames the same way (cells, from the cell's bottom edge).
+const PROP_DROP: f32 = 0.0;
+const TERRAIN_DROP: f32 = -0.16;
 
 /// Where the fitted camera's principal ray meets the ground, from the cursor
 /// cell's corner (cells).
-const CAM_BIAS: (f32, f32) = (0.03, 0.08);
+const CAM_BIAS: (f32, f32) = (-0.7223, -0.8956);
 /// The camera's numbers, from the constants above unless `TANGOAW2_TILT_CAM` overrides them
 /// (a development aid for fitting the camera to real Dual Strike frames):
 /// `focal,pitch,height,cx,cy,bias_u,bias_v,foot_drop` (focal in pixels of the 240-wide picture,
@@ -844,6 +848,30 @@ fn range_look(p: Px, t: Px) -> Px {
     0x8000 | (r | g << 5 | b << 10) as u16
 }
 
+/// One pixel of the sandstorm: a pale or dark grain here and there, drifting right and down.
+fn sand_grain(p: Px, x: u32, y: u32, t: u32) -> Px {
+    let (gx, gy) = (x.wrapping_sub(t * 3), y.wrapping_sub(t));
+    let mut h = gx.wrapping_mul(0x9E37_79B1) ^ gy.wrapping_mul(0x85EB_CA6B);
+    h ^= h >> 15;
+    h = h.wrapping_mul(0x2C1B_3C6D);
+    h ^= h >> 12;
+    let r = h % 1000;
+    let mix = |a: Px, to: (u32, u32, u32), k: u32| {
+        let m = |s: u32, t: u32| {
+            let v = ((a as u32 >> s) & 31) as i32;
+            (v + ((t as i32 - v) * k as i32 >> 8)).clamp(0, 31) as u32
+        };
+        0x8000 | (m(0, to.0) | m(5, to.1) << 5 | m(10, to.2) << 10) as u16
+    };
+    if r < 45 {
+        mix(p, (31, 31, 28), 190)
+    } else if r < 70 {
+        mix(p, (26, 20, 10), 120)
+    } else {
+        p
+    }
+}
+
 fn brightness(a: Px, mode: u16, evy: u32) -> Px {
     let ch = |s: u32| {
         let x = (a as u32 >> s) & 31;
@@ -1255,7 +1283,11 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     continue;
                 }
                 seen += 1;
-                if ground.px(cam_px.0 + x, cam_px.1 + y) != layers[3][i] {
+                // (the ground is drawn in Dual Strike's own colours, the console's picture in the
+                // four merged palettes: near is the same)
+                let (a, b) = (ground.px(cam_px.0 + x, cam_px.1 + y), layers[3][i]);
+                let near = |s: u32| (((a >> s) & 31) as i32 - ((b >> s) & 31) as i32).abs();
+                if (a ^ b) & 0x8000 != 0 || near(0) + near(5) + near(10) > 14 {
                     bad += 1;
                 }
             }
@@ -1333,7 +1365,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 let foot_y = (my * 16 - cam_px.1 + 16) as f32;
                 // Units stand a little in front of the edge; the peaks and
                 // treetops (BG2) stand on it.
-                let drop = if b == 1 { cp().foot_drop } else { 0.0 };
+                let drop = if b == 1 { cp().foot_drop } else { TERRAIN_DROP };
                 boards.push(Billboard {
                     pix,
                     w: 16,
@@ -1547,7 +1579,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         w,
                         h,
                         fu: mx as f32 + (dx as f32 + w as f32 / 2.0) / 16.0,
-                        fv: my as f32 + (dy as f32 + h as f32) / 16.0 + cp().foot_drop,
+                        fv: my as f32 + (dy as f32 + h as f32) / 16.0 + PROP_DROP,
                         ox: -(w as f32) / 2.0,
                         oy: -(h as f32),
                         rank: 1,
@@ -1563,13 +1595,24 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     {
         let fx = o.x as f32 + o.w as f32 / 2.0;
         let fy = (o.y + o.h) as f32;
-        let pix = o.pix.clone();
+        let mut pix = o.pix.clone();
+        if o.class == Class::Pointer && o.tile == 869 {
+            // Dual Strike's map cursor is a red arrow (the blue dots are the brackets).
+            for p in pix.iter_mut().filter(|p| **p != 0) {
+                let (r, g, b) = ((*p & 31) as u32, ((*p >> 5) & 31) as u32, ((*p >> 10) & 31) as u32);
+                if r >= 28 && g >= 28 && b < 22 {
+                    *p = 0x8000 | 28 | 5 << 5 | 5 << 10;
+                } else if b > r && b > g {
+                    *p = 0x8000 | 18 | 2 << 5 | 3 << 10;
+                }
+            }
+        }
         boards.push(Billboard {
             pix,
             w: o.w,
             h: o.h,
             fu: (cam_px.0 as f32 + fx) / 16.0,
-            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { cp().foot_drop } else { 0.0 },
+            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { PROP_DROP } else { 0.0 },
             ox: -(o.w as f32) / 2.0,
             oy: -(o.h as f32),
             rank: (3 - o.pri) * 2 + 1,
@@ -1631,11 +1674,16 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         for x in 0..W {
             let u = u_mid + du * (x as f32 + 0.5 - cp().cx);
             let gx = (u * 16.0).floor() as i32;
-            let (ci, lx, ly) = ground.locate(gx, gy);
-            if cur.0 != ci {
-                cur = (ci, *ground.cell(ci));
-            }
-            let mut p = cur.1[ly * 16 + lx];
+            let outer = ground.outside(gx, gy);
+            let mut p = if let Some(c) = outer {
+                c
+            } else {
+                let (ci, lx, ly) = ground.locate(gx, gy);
+                if cur.0 != ci {
+                    cur = (ci, *ground.cell(ci));
+                }
+                cur.1[ly * 16 + lx]
+            };
             if x & 1 == 0 {
                 shade_here = shade(u, vv);
             }
@@ -1648,13 +1696,13 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             let sx = gx - cam_px.0;
             if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
                 let i = sy as usize * W + sx as usize;
-                if tint.is_some() {
+                if tint.is_some() && outer.is_none() {
                     p = range_look(p, layers[0][i]);
                 }
                 if decal[i] != 0 {
                     p = decal[i];
                 }
-            } else if tint.is_some() {
+            } else if tint.is_some() && outer.is_none() {
                 let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
                 let on = cx >= 0
                     && cy >= 0
@@ -1693,6 +1741,9 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         }
     }
 
+    // A sandstorm (Dual Strike's fourth weather; AW2 draws no particles for it): drifting grains over
+    // the map, as many fine speckles as Dual Strike shows.
+    let sand = crate::sandstorm::active(core);
     let t_map = t0.elapsed();
     // --- Out ---
     let lut = rgba_lut();
@@ -1700,7 +1751,14 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     for i in 0..W * H {
         let p = match owner[i] {
             Owner::Hud => continue,
-            Owner::Map => map[i],
+            Owner::Map => {
+                let p = map[i];
+                if sand {
+                    sand_grain(p, (i % W) as u32, (i / W) as u32, clock as u32)
+                } else {
+                    p
+                }
+            }
             Owner::MapFx => brightness(map[i], bld_mode, evy),
         };
         rgba[i * 4..i * 4 + 4].copy_from_slice(&lut[(p & 0x7fff) as usize]);

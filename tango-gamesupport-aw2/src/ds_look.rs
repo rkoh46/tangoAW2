@@ -168,6 +168,12 @@ pub struct Look {
     /// The tiles no metatile uses (none animated): where the composites go
     /// while the map is drawn ([`crate::wasteland`]).
     pub pool: Vec<usize>,
+    /// Per tile slot, its 64 pixels as Dual Strike colours (`0x8000 |` colour, 0 where the slot
+    /// is not a Dual Strike tile of the look, is animated, or the pixel is clear), before AW2's
+    /// four palettes merged them: the tilted map draws from these ([`crate::ds_ground`]).
+    pub full: Vec<u16>,
+    /// The same in fog (Dual Strike's sub-palette 5, index for index).
+    pub full_fog: Vec<u16>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -521,6 +527,9 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
     let mut tall = vec![NOT_TALL; METATILES];
     // Shaded roads' colours, with the sub-palette they come from.
     let mut shaded: BTreeMap<u8, BTreeMap<u16, u64>> = BTreeMap::new();
+    // The shaded roads' quadrants, from which Dual Strike tile and sub-palette (the tilted map draws
+    // them unshaded).
+    let mut road_src: BTreeMap<Unit, u16> = BTreeMap::new();
     let mut out: Vec<Option<Vec<Quad>>> = Vec::with_capacity(METATILES + MOUNTAINS);
     for m in 0..METATILES {
         let a = quad(&aw2.metatiles, m);
@@ -550,6 +559,7 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                     for &c in px.iter().filter(|&&c| c != TRANSPARENT) {
                         *shaded.entry((v >> 12) as u8).or_default().entry(c).or_default() += 1;
                     }
+                    road_src.insert(Unit::Px(px.clone()), v);
                     Quad { unit: Unit::Px(px), flips: v & 0xC00 }
                 })
                 .collect();
@@ -728,6 +738,8 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
         t
     };
     let mut pal_of_slot: BTreeMap<usize, u8> = BTreeMap::new();
+    let mut full = vec![0u16; 64 * TILES];
+    let mut full_fog = vec![0u16; 64 * TILES];
     for u in &units {
         if let Unit::Ds(t, p) = u {
             let t = *t as usize;
@@ -736,6 +748,16 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
             }
             let (b, r) = remap(*p)?;
             tiles[TILE * t..TILE * t + TILE].copy_from_slice(&remapped(dt, t, &r));
+            if !(SEA0..SEA0 + SEA_N).contains(&t) && !(RIVER0..RIVER0 + RIVER_N).contains(&t) {
+                for k in 0..64 {
+                    let i = tpx(dt, t, k % 8, k / 8);
+                    if i != 0 {
+                        full[64 * t + k] = 0x8000 | colour((*p as u16) << 12, i);
+                        full_fog[64 * t + k] = 0x8000
+                            | if (*p as usize) < FOG_PALETTE { dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0) } else { colour((*p as u16) << 12, i) };
+                    }
+                }
+            }
             used[t] = true;
             pal_of_slot.insert(t, *p);
             slot.insert(u.clone(), (t, b));
@@ -777,6 +799,27 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
             Unit::Px(px) => (px.clone(), best_block(h)?),
         };
         let s = place(&mut tiles, &px, b)?;
+        if let Some(&v) = road_src.get(u) {
+            let (t, p) = ((v & 0x3FF) as usize, v >> 12);
+            for k in 0..64 {
+                let i = tpx(dt, t, k % 8, k / 8);
+                if i != 0 {
+                    full[64 * s + k] = 0x8000 | colour(p << 12, i);
+                    full_fog[64 * s + k] = 0x8000
+                        | if (p as usize) < FOG_PALETTE { dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0) } else { colour(p << 12, i) };
+                }
+            }
+        }
+        if let Unit::Ds(t, p) = u {
+            for k in 0..64 {
+                let i = tpx(dt, *t as usize, k % 8, k / 8);
+                if i != 0 {
+                    full[64 * s + k] = 0x8000 | colour((*p as u16) << 12, i);
+                    full_fog[64 * s + k] = 0x8000
+                        | if (*p as usize) < FOG_PALETTE { dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0) } else { colour((*p as u16) << 12, i) };
+                }
+            }
+        }
         slot.insert(u.clone(), (s, b));
     }
 
@@ -848,7 +891,7 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
         let id = ds.mountain_pick.get(i).copied().unwrap_or(TALL[0] as u16) as usize;
         *p = TALL[..MOUNTAINS].iter().position(|&d| d == id).unwrap_or(0) as u8;
     }
-    Some(Look { tiles, sea: sea_out, river: river_out, metatiles, colours, fog, kinds, tall, mountains, mountain_pick, overlays, pool })
+    Some(Look { tiles, sea: sea_out, river: river_out, metatiles, colours, fog, kinds, tall, mountains, mountain_pick, overlays, pool, full, full_fog })
 }
 
 #[cfg(test)]

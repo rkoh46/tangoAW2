@@ -1475,13 +1475,19 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
             } else {
                 0xFF
             };
-            hd[0x40 + k] = rec.colours[k].clamp(1, 5);
+            // (The player's army wears its CO's country's colour, as Dual Strike shows it: Fog Rolls
+            // In's Sasha is Blue Moon whatever the record's colour byte says; checked on real frames.)
+            hd[0x40 + k] = if k == 0 && front == 0 && co != 0x1C && co != 0 && co < 0x1C {
+                crate::ds_campaign_rules::country(co) + 1
+            } else {
+                rec.colours[k].clamp(1, 5)
+            };
             hd[0x44 + k] = rec.teams[k].max(1);
             hd[0x48 + 4 * k] = 0xFF;
             hd[0x49 + 4 * k] = 0xFF;
         }
         // The mission title's look and music: the player's country.
-        hd[0x58] = rec.colours[0].clamp(1, 4);
+        hd[0x58] = (hd[0x40]).clamp(1, 4);
         headers.push((rec.index as u8, hd));
         missions.push(MissionInfo {
             index: rec.index,
