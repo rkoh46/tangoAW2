@@ -333,6 +333,33 @@ impl Bg {
         a + 32 > 0x18000 || v.vram[a..a + 32].iter().all(|&b| b == 0)
     }
 
+    /// The screen pixels drawn by tiles outside the unit pictures' range
+    /// (what is not a unit on the units' layer: a panel the Front view puts there).
+    fn foreign(&self, v: &Vid, lo: usize, hi: usize) -> Vec<bool> {
+        let mut out = vec![false; W * H];
+        let tx0 = self.hofs.div_euclid(8);
+        let ty0 = self.vofs.div_euclid(8);
+        for ty in ty0..=ty0 + 20 {
+            let sy0 = ty * 8 - self.vofs;
+            for tx in tx0..=tx0 + 30 {
+                let sx0 = tx * 8 - self.hofs;
+                let tile = (self.entry(v, tx, ty) & 0x3ff) as usize;
+                if (lo..hi).contains(&tile) || self.tile_blank(v, tile) {
+                    continue;
+                }
+                for y in 0..8 {
+                    for x in 0..8 {
+                        let (sx, sy) = (sx0 + x, sy0 + y);
+                        if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
+                            out[sy as usize * W + sx as usize] = true;
+                        }
+                    }
+                }
+            }
+        }
+        out
+    }
+
     /// One pixel of the 8 x 8 tile a tilemap entry names (flips, palette bank).
     pub(crate) fn tile_px(&self, v: &Vid, e: u16, x: usize, y: usize) -> Px {
         let sx = if e & 0x400 != 0 { 7 - x } else { x };
@@ -452,6 +479,9 @@ struct Obj {
 }
 
 const OBJ_TILES: usize = 0x10000;
+/// The tiles of the units' pictures, digits and marks.
+const UNIT_TILES_LO: usize = 0x200;
+const UNIT_TILES_HI: usize = 0x360;
 /// OBJ tiles below this number hold the properties' sheet (fixed).
 const STATIC_SHEET: u16 = 200;
 /// What the console drew for each part of a terrain id: its tile, palette and
@@ -907,6 +937,9 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         }
         layers.push(l);
     }
+    // Anything on the units' layer that is not a unit stays the HUD's.
+    let foreign2 = if bgs[2].on { bgs[2].foreign(&v, 0, 0x361) } else { Vec::new() };
+    let foreign1 = if bgs[1].on { bgs[1].foreign(&v, UNIT_TILES_LO, UNIT_TILES_HI) } else { Vec::new() };
     let t_layers = t0.elapsed();
     // Top sprite per pixel: (priority, index) lowest wins.
     let mut obj_top: Vec<u32> = vec![u32::MAX; W * H];
@@ -989,6 +1022,27 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 owner[i] = Owner::Hud;
             }
         }
+    }
+    for (fb, fm) in [(1usize, &foreign1), (2usize, &foreign2)] {
+    if !fm.is_empty() {
+        for i in 0..W * H {
+            if fm[i] && layers[fb][i] != 0 {
+                let (x, y) = ((i % W) as i32, (i / W) as i32);
+                let bits = bits_at(x, y);
+                if bits & (1 << fb) == 0 {
+                    continue;
+                }
+                let obj = if bits & 0x10 != 0 { obj_top[i] } else { u32::MAX };
+                let sprite_above = obj != u32::MAX && ((obj >> 8) as u8) <= bgs[fb].pri;
+                let bg_above = [0usize, 1, 2, 3].iter().filter(|&&b| b != fb).any(|&b| {
+                    bgs[b].on && bits & (1 << b) != 0 && layers[b][i] != 0 && (bgs[b].pri, b) < (bgs[fb].pri, fb)
+                });
+                if !sprite_above && !bg_above {
+                    owner[i] = Owner::Hud;
+                }
+            }
+        }
+    }
     }
     // A window effect on the pixel.
     if any_win && bld_mode != 0 {
@@ -1162,6 +1216,21 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let cy0 = bg.vofs.div_euclid(16);
         for cy in cy0 - 1..=cy0 + 10 {
             for cx in cx0 - 1..=cx0 + 15 {
+                // A cell with something else on it is not a unit's.
+                if (b == 1 || b == 2) && {
+                    let (sx0, sy0) = (cx * 16 - bg.hofs, cy * 16 - bg.vofs);
+                    let fm = if b == 1 { &foreign1 } else { &foreign2 };
+                    (0..16).any(|k| {
+                        let (x, y) = (sx0 + k, sy0 + k);
+                        (0..W as i32).contains(&x) && (0..H as i32).contains(&y) && fm[y as usize * W + x as usize]
+                    }) || b == 1 && (0..4).any(|k| {
+                        let e = bg.entry(&v, cx * 2 + k % 2, cy * 2 + k / 2);
+                        let t = (e & 0x3ff) as usize;
+                        !bg.tile_blank(&v, t) && !(UNIT_TILES_LO..UNIT_TILES_HI).contains(&t)
+                    })
+                } {
+                    continue;
+                }
                 // Anything in the cell? (Its four tiles.)
                 if (0..4).all(|k| {
                     let e = bg.entry(&v, cx * 2 + k % 2, cy * 2 + k / 2);

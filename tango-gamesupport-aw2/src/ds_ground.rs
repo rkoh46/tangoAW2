@@ -33,6 +33,8 @@ pub struct Ground<'a> {
     cache: Vec<Option<Box<[u16; 256]>>>,
     /// Means to an End's Grand Bolt: the picture's cell for each cell it covers.
     bolt: std::collections::HashMap<(i32, i32), (usize, bool, bool)>,
+    /// A second front in the sky: the clouds' entries for each cell.
+    sky: Vec<[u16; 4]>,
 }
 
 impl<'a> Ground<'a> {
@@ -64,7 +66,15 @@ impl<'a> Ground<'a> {
                 }
             }
         }
-        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize], bolt })
+        let mut sky = Vec::new();
+        if crate::sky_front::on(core) {
+            for y in 0..h {
+                for x in 0..w {
+                    sky.push(crate::sky_front::entries(core, x as u32, y as u32).unwrap_or([0; 4]));
+                }
+            }
+        }
+        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize], bolt, sky })
     }
 
     /// Loads what [`Ground::new`] needs into `v`.
@@ -129,7 +139,11 @@ impl<'a> Ground<'a> {
             }
             return out;
         }
-        let q = l.entries(self.tile(x, y), x as u32, y as u32).map(|e| e.wrapping_add(fog_add));
+        let sky = self.sky.get((y * self.w + x) as usize).copied();
+        let q = match sky {
+            Some(q) => q.map(|e| e.wrapping_add(fog_add)),
+            None => l.entries(self.tile(x, y), x as u32, y as u32).map(|e| e.wrapping_add(fog_add)),
+        };
         for (k, &e) in q.iter().enumerate() {
             let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
             for py in 0..8 {
@@ -142,7 +156,7 @@ impl<'a> Ground<'a> {
             }
         }
         // The peak or treetops of the cell below, over the bottom half.
-        if y + 1 < self.h {
+        if sky.is_none() && y + 1 < self.h {
             if let Some(o) = l.upper_at(self.tile(x, y + 1), x as u32, (y + 1) as u32) {
                 for side in 0..2usize {
                     if let Some((tile, bank)) = l.front(o, side as u8) {
