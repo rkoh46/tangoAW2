@@ -1355,15 +1355,22 @@ impl RamUnit {
             base += 8 * self.country.min(4) as u16;
         }
         let bank = if self.flags & 1 != 0 { 11 } else { 12 + (self.army as u16 - 1).min(3) } << 12;
-        let mut e = if self.army % 2 == 1 {
+        // (A unit that has moved is mirrored whatever its army.)
+        let mut e = if self.army % 2 == 1 || self.flags & 1 != 0 {
             [base + 1, base, base + 3, base + 2].map(|t| t | 0x400)
         } else {
             [base, base + 1, base + 2, base + 3]
         }
         .map(|t| t | bank);
-        // The corner: the HP digit (from 9 down), else the cargo mark.
+        // The corner: army 4's mark, the HP digit (from 9 down), else the cargo mark.
+        let army4 = self.army == 4 && self.flags & 1 == 0;
+        if army4 {
+            e[3] = 0x2af | bank;
+        }
         if self.hp <= 90 && self.hp > 0 {
-            e[3] = (0x2a1 + (self.hp as u16 + 9) / 10) | bank;
+            let digit = (self.hp as u16 + 9) / 10;
+            // (Army 4's digits from 3 up are tiles the console keeps for its mark.)
+            e[3] = if army4 && digit >= 3 { 0x2af } else { 0x2a1 + digit } | bank;
         } else if self.cargo {
             e[3] = 0x2ab | bank;
         }
