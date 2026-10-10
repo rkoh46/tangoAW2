@@ -1424,9 +1424,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let v = sv0 + j as f32 * SHADOW_STEP;
         for i in 0..sw {
             let u = su0 + i as f32 * SHADOW_STEP;
-            let f = 0.5 * ((0.55 * u + 0.8 * (0.31 * v + clock * 0.013).sin() + clock * 0.011).sin()
-                + (0.47 * v - 0.3 * u + clock * 0.007).sin());
-            shadow[j * sw + i] = ((f - 0.2) * 1.6).clamp(0.0, 1.0);
+            let f = (((0.55 * u + 0.8 * (0.31 * v + clock * 0.013).sin() + clock * 0.011).sin()
+                + (0.47 * v - 0.3 * u + clock * 0.007).sin()
+                + (0.93 * u + 0.71 * v - clock * 0.009 + (0.4 * u).sin()).sin())
+                / 3.0)
+                * 1.4;
+            shadow[j * sw + i] = ((f - 0.15) * 1.8).clamp(0.0, 1.0);
         }
     }
     let shade = |u: f32, v: f32| -> f32 {
@@ -1462,7 +1465,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 shade_here = shade(u, vv);
             }
             if shade_here > 0.0 {
-                let k = 1.0 - 0.10 * shade_here;
+                let k = 1.0 - 0.08 * shade_here;
                 let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k) as u32;
                 p = 0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16;
             }
