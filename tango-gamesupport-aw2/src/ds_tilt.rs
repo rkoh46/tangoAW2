@@ -382,6 +382,8 @@ struct Obj {
 }
 
 const OBJ_TILES: usize = 0x10000;
+/// The first OBJ tile of the 4 x 4 structure pictures.
+const SHARED_PICTURE: u16 = 304;
 
 
 /// The pixels of a sprite picture (0 transparent, else 0x8000 | colour); its
@@ -620,7 +622,7 @@ fn range_look(p: Px, t: Px) -> Px {
     let ch = |c: Px, s: u32| (c as u32 >> s) & 31;
     let (mut r, mut g, mut b) = (ch(p, 0), ch(p, 5), ch(p, 10));
     if t == 0 {
-        (r, g, b) = (r * 8 / 10, g * 8 / 10, b * 8 / 10);
+        (r, g, b) = (r * 3 / 4, g * 3 / 4, b * 3 / 4);
     } else {
         let target = if ch(t, 0) > ch(t, 10) + 5 { (31, 14, 14) } else { (31, 31, 31) };
         r = (r * 9 + target.0 * 11) / 20;
@@ -719,6 +721,11 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let mut v = Vid::read(core);
     let t_read = t0.elapsed();
     let d = v.dispcnt();
+    // A picture drawn with changes between its lines (HBlank interrupts on:
+    // the dialogue box over the map's top) is not one this can redo.
+    if v.io[2] & 0x10 != 0 {
+        return;
+    }
     // Tile mode 0, display on, BG1-3 and OBJ on.
     if d & 7 != 0 || d & 0x80 != 0 || d & 0x0e00 != 0x0e00 || d & 0x1000 == 0 {
         return;
@@ -1078,7 +1085,15 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     continue;
                 }
                 let got: Vec<u16> = (0..4)
-                    .map(|k| bgs[1].entry(&v, 2 * (mx & 15) + k % 2, 2 * (my & 15) + k / 2))
+                    // (the console's plane cell of a map cell: its place in the window
+                        // plus where the plane's scroll puts the window)
+                        .map(|k| {
+                            bgs[1].entry(
+                                &v,
+                                2 * ((mx - map_x0 + ground_cx0) & 15) + k % 2,
+                                2 * ((my - map_y0 + ground_cy0) & 15) + k / 2,
+                            )
+                        })
                     .collect();
                 let drawn = got.iter().any(|&e| !bgs[1].tile_blank(&v, (e & 0x3ff) as usize));
                 let want = cells.get(&(mx, my)).filter(|_| !ground.fogged(mx, my)).and_then(|u| u.entries());
@@ -1168,6 +1183,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 };
                 for &(dx, dy, w, h, tile, pal, hf, vf) in crate::ds_plans::PLANS[i].1 {
                     let (w, h) = (w as i32, h as i32);
+                    // The 4 x 4 pictures (the Black Factory's, the pads') share one
+                    // set of tiles that the console fills for the one it draws:
+                    // beyond its window they would show the wrong picture.
+                    if tile == SHARED_PICTURE && w >= 64 {
+                        continue;
+                    }
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
                     if pix.iter().all(|&p| p == 0) {
                         continue;
