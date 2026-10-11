@@ -93,3 +93,37 @@ def ds_hq_off_is_aw2(ctx):
     shown = hq_pictures(ctx, SQUAD[0], "0")
     ctx.eq(sorted(shown), [1, 2, 3, 4], "four HQs on screen")
     ctx.check(not any(v in cells for v in shown.values()), "no Dual Strike HQ cell with the setting off")
+
+
+def five_hq_picture(ctx, graphics):
+    """Black Hole's HQ in a five-army battle: the 256 bytes of tiles of the 16x32 sprite in OBJ palette 13."""
+    m = DesignMap(width=15, height=10, name="dshq5", image=ctx.image)
+    for army, x in enumerate((2, 5, 8, 11), 1):
+        m.terrain(x, 2, "hq", army)
+        m.unit(army, "infantry", x, 3)
+    m.terrain(13, 2, 0x1B4)
+    m.unit(5, "infantry", 13, 3)
+    m.colours = [5, 1, 2, 3, 4]
+    g = ctx.start(m, None, env={"TANGOAW2_DS_GRAPHICS": graphics, "TANGOAW2_TILT": "0"})
+    g.e.wait(60)
+    oam = g.e.read(OAM, 0x400)
+    for k in range(128):
+        a0, a1, a2 = struct.unpack_from("<3H", oam, 8 * k)
+        if a0 & 0x300 == 0x200 or (a0 >> 14, a1 >> 14) != (2, 2):
+            continue
+        if a2 >> 12 == 13 and (a0 & 255) < 160:
+            return g.e.read(OBJ_TILES + 32 * (a2 & 0x3FF), 256)
+    return None
+
+
+@test("ds_hq_black_hole_five_armies", modes=("ds",))
+def ds_hq_black_hole_five_armies(ctx):
+    """In a five-army battle Black Hole's HQ (terrain 0x1B4) is AW2's own picture with the Dual Strike map
+    graphics on, the same tiles as with them off (it was AW2's Lab: the sheet Dual Strike's graphics
+    replace did not hold it)."""
+    off = five_hq_picture(ctx, "0")
+    on = five_hq_picture(ctx, "1")
+    ctx.require(off is not None and on is not None, "Black Hole's HQ sprite found")
+    sprites = DualStrike().file("bmap/015")
+    ctx.eq(on, off, "the same tiles with the graphics on and off")
+    ctx.check(on not in {expected(sprites, c) for c in range(8, 14)}, "none of Dual Strike's cells 8 to 13")

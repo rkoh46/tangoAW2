@@ -3679,6 +3679,10 @@ before a battle:
   are its research Labs (cell 9: the 7/9 checker fortress; the lab missions' goals, and
   the owned Labs of Lash's Test and Spiral Garden), 0x1B9..0x1BD its Com Towers (cell 8).
   Black Hole keeps AW2's own HQ picture (an earlier version drew the Lab's cell 9 as its HQ).
+  In a five-army game (and the Design Room) the picture sits in the sheet's Lab tiles (OBJ 0x90, `five.rs`);
+  Dual Strike's sheet replaces AW2's, so `ds_graphics::building_tick` puts it in the copy's Lab tiles too
+  (before, Black Hole's HQ showed AW2's Lab with the graphics on; `ds_hq_black_hole_five_armies`).
+  Black Hole's HQ is its own terrain: tile 0x1B4, class HQ (8) of owner 5 (`design_bh_hq_*`).
   HQs use `ds_graphics::HQ_SHADES`: Dual
   Strike's index 13 is their dark grey windows (palette 7 to 11 of `bmap/00e`, 7b6a7b,
   seen in the Design Room's real frame), AW2's index 15, not the lit yellow of the other
