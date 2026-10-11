@@ -322,3 +322,112 @@ def ds_coselect_war_room(ctx):
     off = shot(ctx, e2, "war_room_off")
     ctx.check(differs(on, off), "the screen is Dual Strike's with the setting on")
     e2.close()
+
+
+CO_SELECT_PROC = 0x08616638
+CO_LIST = 0x030058E0
+GROUP_SIZES = 0x03005948
+CO_TABLE_POOL = 0x08042DDC
+
+
+def co_screen_proc(e):
+    return next(p for p in range(0x0200D610, 0x0200E418, 0x6C) if e.u32(p) == CO_SELECT_PROC)
+
+
+def under_cursor(e):
+    """(tab, place, CO) the CO screen's cursor is on."""
+    p = co_screen_proc(e)
+    tab, at, off = e.u8(p + 0x58), e.u16(p + 0x52), e.u32(p + 0x5C)
+    size = e.u8(GROUP_SIZES + tab)
+    return tab, at % size, e.u8(CO_LIST + at % size + off)
+
+
+def selectable_by_cycling(e):
+    """With the setting off: every CO the cursor can reach (RIGHT through a country tab's COs, DOWN to the next tab)."""
+    groups = e.u32(0x03005944)
+    seen = []
+    for _ in range(groups):
+        tab, _, co = under_cursor(e)
+        first = co
+        seen.append(co)
+        for _ in range(e.u8(GROUP_SIZES + tab) - 1):
+            e.press("RIGHT", 6)
+            e.wait(20)
+            seen.append(under_cursor(e)[2])
+        e.press("DOWN", 6)
+        e.wait(30)
+    return seen
+
+
+def universe(e):
+    """Every CO the screen draws a cell for, in Dual Strike's way (ds_coselect.rs: by country, then id)."""
+    table = e.u32(CO_TABLE_POOL)
+    ids = list(range(19)) + list(range(72, 83))
+    return sorted(ids, key=lambda c: (e.u8(table + c * 0x104 + 0x15), c))
+
+
+def cell_is_black(rows, x, y):
+    return all(rows[y + dy][x + dx] == (0, 0, 0) for dx in (4, 12, 20, 28) for dy in (4, 8, 11))
+
+
+@test(modes=("ds",))
+def ds_coselect_black_cells_are_unselectable(ctx):
+    """A black cell is a CO the CO screen really cannot pick: the COs the cursor reaches with the setting off (RIGHT through a
+    country's COs, DOWN to the next country) are exactly the cells that are not black with it on, over the screen's whole
+    grid (the War Room's screen, AW2's own single army: Orange Star's colour for the CO under the cursor)."""
+    e, g = war_room_co_screen(ctx, False)
+    listed = [e.u8(CO_LIST + k) for k in range(sum(e.u8(GROUP_SIZES + t) for t in range(e.u32(0x03005944))))]
+    reached = selectable_by_cycling(e)
+    ctx.eq(sorted(reached), sorted(listed), "the cursor reaches the COs the screen lists, no others")
+    ctx.log(f"selectable ({len(reached)}): {sorted(reached)}")
+    uni = universe(e)
+    e.close()
+    e, g = war_room_co_screen(ctx, True)
+    cursor_co = under_cursor(e)[2]
+    cur_row = uni.index(cursor_co) // 4
+    pitch, start = 16, 56            # one army's card is 40 high: the cells touch, from y 56
+    visible = (160 - start) // pitch
+    first = max(0, cur_row - (visible - 1))
+    first = min(first, max(0, (len(uni) + 3) // 4 - visible))
+    rows = shot(ctx, e, "black_cells")
+    wrong = []
+    for k, co in enumerate(uni):
+        r, c = divmod(k, 4)
+        if not first <= r < first + visible:
+            continue
+        black = cell_is_black(rows, 12 + 56 * c, start + pitch * (r - first))
+        if black == (co in reached):
+            wrong.append((co, "black" if black else "open", "selectable" if co in reached else "locked"))
+    ctx.eq(wrong, [], "every visible cell: black exactly when the CO cannot be picked")
+    ctx.check(any(co not in reached for co in uni), "(some COs are locked in this save, so the check has black cells to judge)")
+    e.close()
+
+
+@test(modes=("ds",))
+def ds_coselect_black_cells_campaign(ctx):
+    """The same for the DS Campaign's CO screen (a mission that offers five COs): the cells that are not black are exactly the
+    COs the cursor reaches with the setting off."""
+    e, g, d = to_co_screen(ctx, 10)
+    e.w8(DS_GRAPHICS, 0)
+    e.wait(10)
+    reached = selectable_by_cycling(e)
+    listed = [e.u8(CO_LIST + k) for k in range(sum(e.u8(GROUP_SIZES + t) for t in range(e.u32(0x03005944))))]
+    ctx.eq(sorted(reached), sorted(listed), "the cursor reaches the COs the screen lists, no others")
+    ctx.log(f"selectable: {sorted(reached)}")
+    uni = universe(e)
+    e.w8(DS_GRAPHICS, 1)
+    e.wait(20)
+    cur_row = uni.index(under_cursor(e)[2]) // 4
+    start, pitch = 72, 24              # two plates on a card: the panel from 56, the cells 24 apart from 72
+    visible = (160 - start) // pitch
+    first = min(max(0, cur_row - (visible - 1)), max(0, (len(uni) + 3) // 4 - visible))
+    rows = shot(ctx, e, "black_cells_campaign")
+    wrong = []
+    for k, co in enumerate(uni):
+        r, c = divmod(k, 4)
+        if first <= r < first + visible:
+            black = cell_is_black(rows, 12 + 56 * c, start + pitch * (r - first))
+            if black == (co in reached):
+                wrong.append(co)
+    ctx.eq(wrong, [], "every visible cell is black exactly when the CO cannot be picked")
+    e.close()

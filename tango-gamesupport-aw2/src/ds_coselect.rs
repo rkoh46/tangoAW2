@@ -251,12 +251,21 @@ fn ring_background(tiles: &[u8], map: &[u8], pal: &[u16; 16]) -> Vec<u8> {
 pub struct Mug {
     pub tiles: Vec<u8>,
     pub pal: [u16; 16],
+    /// Where Dual Strike cuts the mug for its two cells: the 24-pixel cell of Versus' cards starts this many pixels from
+    /// the mug's left, the grid's 16-pixel strip this many rows from its top.
+    pub cell_x: usize,
+    pub strip_y: usize,
 }
 
-/// A CO's menu face (a 32 x 16 sprite: 8 tiles, four to a row) and its colours.
-pub struct Face {
-    pub tiles: Vec<u8>,
-    pub pal: [u16; 16],
+/// Where Dual Strike's Versus cell starts in each CO's mug (pixels; measured in melonDS by cycling the P1 card through the
+/// COs and fitting each cell to the mug file): 16 unless listed (Dual Strike ids).
+const CELL_X: [(u8, usize); 14] = [(1, 8), (7, 8), (25, 8), (8, 24), (9, 24), (10, 24), (16, 24), (14, 21), (17, 21), (19, 20), (22, 19), (15, 10), (21, 10), (4, 16)];
+/// The rows its grid strip (the CO screen's cells: 16 rows of the 48-pixel-wide mug) starts at: 16 unless listed.
+const STRIP_Y: [(u8, usize); 7] = [(16, 8), (6, 8), (23, 8), (26, 8), (27, 8), (12, 8), (14, 24)];
+
+fn crop_of(ds: Option<u8>) -> (usize, usize) {
+    let find = |t: &[(u8, usize)]| ds.and_then(|d| t.iter().find(|e| e.0 == d)).map_or(16, |e| e.1);
+    (find(&CELL_X), find(&STRIP_Y))
 }
 
 /// A CO's name (six 8 x 16 columns: each column's top tile then its bottom).
@@ -271,12 +280,8 @@ fn pal_of(b: &[u8]) -> [u16; 16] {
 /// A Dual Strike CO's pictures straight from the pack (previews).
 pub fn art_mug(ds: u8) -> Option<Arc<Mug>> {
     let a = crate::ds_co_art::co_art(ds)?;
-    Some(Arc::new(Mug { tiles: a.face[0].clone(), pal: pal_of(a.palette.get(..32)?) }))
-}
-
-pub fn art_face(ds: u8) -> Option<Arc<Face>> {
-    let a = crate::ds_co_art::co_art(ds)?;
-    Some(Arc::new(Face { tiles: a.hud.clone(), pal: pal_of(a.palette.get(..32)?) }))
+    let (cell_x, strip_y) = crop_of(Some(ds));
+    Some(Arc::new(Mug { tiles: a.face[0].clone(), pal: pal_of(a.palette.get(..32)?), cell_x, strip_y }))
 }
 
 pub fn art_name(ds: u8) -> Option<Arc<Name>> {
@@ -308,7 +313,8 @@ fn mug(core: &Core, co: u8) -> Option<Arc<Mug>> {
     let row = row(core, co)?;
     let mut tiles = crate::invention_art::lz77(core, core.raw_read_32(row + 0x0C, -1));
     tiles.resize(36 * 32, 0);
-    Some(Arc::new(Mug { tiles, pal: pal_of(&crate::tag_ui::co_palette(core, co)) }))
+    let (cell_x, strip_y) = crop_of(None);
+    Some(Arc::new(Mug { tiles, pal: pal_of(&crate::tag_ui::co_palette(core, co)), cell_x, strip_y }))
 }
 
 /// The name: Dual Strike's for a CO it has, the game's own (`+0x04`, LZ77) for the others.
@@ -322,12 +328,6 @@ fn name(core: &Core, co: u8) -> Option<Arc<Name>> {
     Some(Arc::new(Name { tiles }))
 }
 
-/// The menu face: Dual Strike's for a CO it has, the game's HUD face for the others.
-fn face(core: &Core, co: u8) -> Option<Arc<Face>> {
-    row(core, co)?;
-    let (tiles, pal) = crate::ds_hud::menu_face(core, co);
-    Some(Arc::new(Face { tiles: tiles.to_vec(), pal: pal_of(&pal) }))
-}
 
 // --- Versus ---------------------------------------------------------------------------------------------
 
@@ -424,13 +424,22 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
             let cx = x + 24 * k as i32;
             // (a cell is white behind its portrait)
             cv.rect(cx, MUG_Y, 24, 48, rgba_of(pal[1]));
-            if let Some(co) = co {
-                // The cell: the mug's three middle columns.
-                for ty in 0..6usize {
-                    for tx in 2..5usize {
-                        cv.tile(&co.tiles, ty * 6 + tx, cx + 8 * (tx as i32 - 2), MUG_Y + 8 * ty as i32, &co.pal, (false, false), false);
+            match co {
+                Some(co) => {
+                    // The cell: 24 pixels of the mug, from where Dual Strike cuts it.
+                    for y in 0..48usize {
+                        for x in 0..24usize {
+                            let sx = co.cell_x + x;
+                            let v = tile_px(&co.tiles, (y / 8) * 6 + sx / 8, sx % 8, y % 8) as usize;
+                            if v != 0 {
+                                cv.put(cx + x as i32, MUG_Y + y as i32, rgba_of(co.pal[v]));
+                            }
+                        }
                     }
                 }
+                // (no partner: the empty slot's pale colour, the card's lightest)
+                None if k == 1 => cv.rect(cx, MUG_Y, 24, 48, rgba_of(pal[0])),
+                None => {}
             }
             // Dual Strike draws every cell in a thin dark green frame (the ink of its name plates).
             let green = rgba_of(a.name_pal[15]);
@@ -476,7 +485,7 @@ pub struct Card {
 
 pub struct Cell {
     /// None: a locked CO (a black cell).
-    pub face: Option<Arc<Face>>,
+    pub mug: Option<Arc<Mug>>,
     /// The pick's flag: (army colour 0..4, 1 or 2).
     pub flag: Option<(u8, u8)>,
 }
@@ -588,10 +597,17 @@ fn flag(cv: &mut Canvas, a: &Art, x: i32, y: i32, colour: u8, number: u8) {
 
 fn cell(cv: &mut Canvas, a: &Art, x: i32, y: i32, c: &Cell) {
     cv.rect(x, y, 48, 16, [255, 255, 255, 255]);
-    match &c.face {
-        Some(f) => {
-            for t in 0..8usize {
-                cv.tile(&f.tiles, t, x + 8 * (t % 4) as i32, y + 8 * (t / 4) as i32, &f.pal, (false, false), true);
+    match &c.mug {
+        Some(m) => {
+            // The strip: 16 rows of the mug's whole width from where Dual Strike cuts it.
+            for j in 0..16usize {
+                for i in 0..48usize {
+                    let sy = m.strip_y + j;
+                    let v = tile_px(&m.tiles, (sy / 8) * 6 + i / 8, i % 8, sy % 8) as usize;
+                    if v != 0 {
+                        cv.put(x + i as i32, y + j as i32, rgba_of(m.pal[v]));
+                    }
+                }
             }
         }
         None => cv.rect(x, y, 41, 16, [0, 0, 0, 255]),
@@ -623,9 +639,12 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
     let top = if tall { CARD_TWO } else { CARD_ONE };
     let body = (H as i32 - top - 16 + 7) / 8;
     panel(cv, a, PANEL_X, top, body as usize);
-    // The grid scrolls a row at a time, the cursor's row kept in view.
+    // Dual Strike's cells touch (16 rows a cell) on the War Room's screen, where all of them show, and lie 24 rows apart
+    // (a gap between) on the campaigns', which show five rows. The grid scrolls a row at a time, the cursor's row kept in view.
+    let pitch = if v.cards.len() == 1 && !tall { 16 } else { 24 };
     let rows = v.cells.len().div_ceil(CELL_COLUMNS);
-    let visible = ((H as i32 - top - 16 + 7) / 24) as usize;
+    let start = top + 16;
+    let visible = (((H as i32 - start) / pitch) as usize).max(1);
     let cur_row = v.cursor / CELL_COLUMNS;
     let first = cur_row.saturating_sub(visible.saturating_sub(1)).min(rows.saturating_sub(visible));
     for (k, c) in v.cells.iter().enumerate() {
@@ -633,13 +652,12 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
         if r < first || r >= first + visible + 1 {
             continue;
         }
-        let (cx, cy) = (PANEL_X + 8 + 56 * col as i32, top + 16 + 24 * (r - first) as i32);
-        cell(cv, a, cx, cy, c);
+        cell(cv, a, PANEL_X + 8 + 56 * col as i32, start + pitch * (r - first) as i32, c);
     }
     if v.cursor < v.cells.len() {
         let (r, col) = (v.cursor / CELL_COLUMNS, v.cursor % CELL_COLUMNS);
         if r >= first {
-            corners(cv, a, PANEL_X + 8 + 56 * col as i32, top + 16 + 24 * (r - first) as i32, 48, 16);
+            corners(cv, a, PANEL_X + 8 + 56 * col as i32, start + pitch * (r - first) as i32, 48, 16);
         }
     }
 }
@@ -836,7 +854,7 @@ fn pick_view(core: &Core) -> Option<PickView> {
         .iter()
         .map(|&c| {
             let flag = flags.iter().find(|f| f.1 == c).map(|f| (f.0, f.2));
-            Cell { face: offered.contains(&c).then(|| face(core, c)).flatten(), flag }
+            Cell { mug: offered.contains(&c).then(|| mug(core, c)).flatten(), flag }
         })
         .collect();
     let cursor = all.iter().position(|&c| c == cur)?;

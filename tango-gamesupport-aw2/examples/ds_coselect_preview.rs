@@ -3,7 +3,7 @@
 //!
 //! Usage: TANGOAW2_DS_ROM=<Dual Strike ROM or pack> ds_coselect_preview <out dir>
 
-use tango_gamesupport_aw2::ds_coselect::{art_face, art_mug, art_name, render_pick, render_versus, Card, Cell, PickView, Slot, Stop, Tab, VersusArmy, H, W};
+use tango_gamesupport_aw2::ds_coselect::{art_mug, art_name, render_pick, render_versus, Card, Cell, PickView, Slot, Stop, Tab, VersusArmy, H, W};
 
 fn save(path: std::path::PathBuf, rgba: &[u8]) {
     let mut ppm = format!("P6\n{W} {H}\n255\n").into_bytes();
@@ -41,7 +41,7 @@ fn main() {
         let cells: Vec<Cell> = order
             .iter()
             .enumerate()
-            .map(|(k, &d)| Cell { face: if k % 5 == 4 { None } else { art_face(d) }, flag: match k { 0 => Some((0, 1)), 1 => Some((0, 2)), 2 => Some((1, 1)), _ => None } })
+            .map(|(k, &d)| Cell { mug: if k % 5 == 4 { None } else { art_mug(d) }, flag: match k { 0 => Some((0, 1)), 1 => Some((0, 2)), 2 => Some((1, 1)), _ => None } })
             .collect();
         let v = PickView { cards, active: Some((0, false)), cells, cursor: 5 };
         assert!(render_pick(&mut buf, &v));

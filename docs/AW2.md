@@ -3975,15 +3975,18 @@ nothing is written, so the picks, the cursor and the partner choices are AW2's o
 - **Versus (NORMAL BATTLE).** The title (`ohashi/res_modefont` glyphs, the lion crests) over Dual Strike's wall
   (`res_wall_single`), a card for each army (`ohashi/res_versus`: 128 tiles, the five armies' palettes at the file's end in
   the order Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole, and a 2 x 2 emblem each at tiles 21..40), 48 pixels
-  wide with the CO's and the partner's portrait (the three middle columns of the 48 x 48 mug: Dual Strike's cell is 24 x 48;
-  Dual Strike's own mug for every CO it has, the game's for Sturm, Crumb and Clone Andy) and above it the tab, a rounded
+  wide with the CO's and the partner's portrait (24 x 48 pixels of the 48 x 48 mug, from where Dual Strike cuts each CO's:
+  `CELL_X`, measured in melonDS by cycling a card through the COs; Dual Strike's own mug for every CO it has, the game's
+  for Sturm, Crumb and Clone Andy; an empty partner cell is the card's palest colour) and above it the tab, a rounded
   box with P1..P4 or CPU (`icon/res_icon4_cg_E`). Dual Strike's Versus has only two armies: the green, yellow and grey
   cards are the same tiles in the other armies' palettes, Black Hole's emblem is the grey box. Up to five cards of 48 pixels
   fill the 240; the cursor's corner marks are Dual Strike's menu corners, with its arrows on a portrait being picked.
   Reads: the Teams record (armies, colours, controllers, CO indices, `0x0203F4A0` partners), its cursor (`+0x32`).
 - **CO screen (SELECT CO).** The ring wallpaper (`res_wall_base`), the armies' name cards (`res_syogunselect_lang_E`: the CO's
   name graphic on each plate, a card of two plates when the army has a partner), the "COs" panel with the grid of every CO's
-  menu face (the HUD face), four a row, by country; a CO the screen does not offer is a black cell, as Dual Strike's locked
+  face (a 16-row strip of the 48-pixel-wide mug, rows from `STRIP_Y`: 16, or 8 or 24 for some COs, as measured in Dual Strike's
+  grid; not the HUD face), four a row, by country; the cells touch (16 rows a cell) on the War Room's screen and lie 24 apart
+  on the campaigns'; a CO the screen does not offer is a black cell, as Dual Strike's locked
   ones. The grid scrolls a row when the cursor passes its last visible one; the picks carry Dual Strike's flags (`res_syogunselect`:
   1 and 2, in Orange Star's, Blue Moon's, Green Earth's and Yellow Comet's colours; Black Hole's in its grey). The cards are
   the mission's armies (the DS and BH Campaigns: the picked ones filling as the picks are made, the fixed ones named); the War
