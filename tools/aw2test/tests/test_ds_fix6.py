@@ -112,3 +112,71 @@ def ds_fix_funds_digits_on_structure_scenes(ctx):
             ref = vram
         ctx.check(vram == ref, f"{name}: the digit tiles are Dual Strike's, as on a plain cell")
         shot(ctx, g, name)
+
+
+def _bmp(path):
+    import struct
+    d = open(path, "rb").read()
+    off, w, h = struct.unpack_from("<I", d, 10)[0], struct.unpack_from("<i", d, 18)[0], struct.unpack_from("<i", d, 22)[0]
+    bpp = struct.unpack_from("<H", d, 28)[0] // 8
+    row = (w * bpp + 3) & ~3
+    top_down = h < 0
+    h = abs(h)
+    def px(x, y):
+        yy = y if top_down else h - 1 - y
+        b = off + yy * row + x * bpp
+        return d[b + 2], d[b + 1], d[b]
+    return px
+
+
+def _header_scene(ctx, tilt, name):
+    import shutil
+    import struct
+    from aw2test import survival as sv
+    from aw2test.game import Game
+    sav = os.path.join(ctx.out, f"{name}.sav")
+    shutil.copyfile(paths.base_save(), sav)
+    e = Emu(save=sav, ds=True, env={"TANGOAW2_TILT": tilt})
+    g = Game(e, None)
+    assert sv.open_survival(e, None)
+    for _ in range(6):
+        e.press("UP", 8)
+        e.wait(10)
+    e.wait(60)
+    assert sv.pick(e, 0, 0)
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    g.goto(6, 3)
+    e.wait(60)
+    # the header's opaque pixels: the OBJ priority 0 sprites at the top (8 x 16, 4 bits a pixel)
+    oam = e.read(0x07000000, 0x400)
+    mask = []
+    for i in range(128):
+        a0, a1, a2 = struct.unpack_from("<HHH", oam, 8 * i)
+        if (a0 >> 8) & 3 == 2 or (a0 >> 14) != 2 or (a1 >> 14) != 0 or (a2 >> 10) & 3 != 0 or a2 >> 12 != 0:
+            continue
+        y, x, t = a0 & 255, a1 & 511, a2 & 0x3FF
+        if y > 30 or not 40 <= x < 200:
+            continue
+        tiles = e.read(0x06010000 + 32 * t, 64)
+        for ty in range(16):
+            for tx in range(8):
+                byte = tiles[32 * (ty // 8) + 4 * (ty % 8) + tx // 2]
+                if (byte >> (4 * (tx & 1))) & 15:
+                    mask.append((x + tx, y + ty))
+    path = e.shot(os.path.join(ctx.out, name))
+    e.close()
+    return mask, _bmp(path)
+
+
+@test(modes=("ds",))
+def ds_fix_survival_header_is_not_tilted(ctx):
+    """Survival's "Map 1/11" header stays as the console drew it with the tilt on: its pixels equal the flat picture's."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    mask0, flat = _header_scene(ctx, "0", "flat")
+    mask1, tilt = _header_scene(ctx, "1", "tilt")
+    ctx.check(len(mask0) > 20, f"the header's sprites are up ({len(mask0)} pixels)")
+    ctx.eq(sorted(mask0), sorted(mask1), "the same header sprites in both")
+    bad = sum(1 for x, y in mask0 if 0 <= x < 240 and y < 160 and flat(x, y) != tilt(x, y))
+    ctx.check(bad == 0, f"every header pixel is the console's own with the tilt on ({bad} differ)")
