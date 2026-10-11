@@ -18,6 +18,7 @@ from aw2test import survival as sv
 from aw2test.emu import Emu
 from aw2test.game import Game
 from aw2test.harness import Skip, test, TESTS
+from aw2test.rom import DualStrike
 
 # test_ds_maps' helpers (the 5P maps), without registering its tests twice.
 _n = len(TESTS)
@@ -290,3 +291,103 @@ def ds_hud_map_menu_window(ctx):
     ctx.check(not any(sp["pal"] == 1 and sp["tile"] in (850, 862) for sp in sprites(e)) or True, "(panel sprites gone)")
     if GRAPHICS:
         ctx.check(e.u8(WIN_TOP) != 97, f"the window is not the panel's rectangle (top {e.u8(WIN_TOP)}, with the panel {top_with_panel})")
+
+
+# --- The panel's numbers in every state ---------------------------------------------------------------
+
+def panel_digits(e):
+    """The terrain / unit panel's digits as the screen shows them: (x, y, digit) of the semi-transparent 8x8 sprites of
+    palette 1 on the OBJ tiles 32..41 whose tile in VRAM is Dual Strike's digit; and the number of sprites that name a
+    tile 32..41 but whose pixels are not a digit (what the bug showed: stars and dots)."""
+    ds = DualStrike(paths.ds_rom())
+    art = ds.file("icon/res_icon4_cg_E")[21184:21184 + 320]
+    good, bad = [], []
+    for s in sprites(e):
+        if s["pal"] != 1 or (s["a0"] >> 10) & 3 != 1 or not 32 <= s["tile"] < 42:
+            continue
+        if (s["a0"] >> 14) != 0 or (s["a1"] >> 14) != 0:
+            continue
+        vram = bytes(e.read(OBJ + 32 * s["tile"], 32))
+        x, y = s["a1"] & 511, s["a0"] & 255
+        (good if vram == art[32 * (s["tile"] - 32):32 * (s["tile"] - 31)] else bad).append((x, y, s["tile"] - 32))
+    return good, bad
+
+
+def number_at(digits, y):
+    row = sorted((x, d) for x, yy, d in digits if yy == y)
+    return "".join(str(d) for _, d in row)
+
+
+def check_digits(ctx, g, label, want=None):
+    good, bad = panel_digits(g.e)
+    ctx.check(not bad, f"{label}: no panel digit sprite shows another picture's tile ({len(bad)} do)")
+    if want is not None:
+        ctx.eq(sorted({number_at(good, y) for y in {y for _, y, _ in good}}), sorted(want), f"{label}: the panel's numbers")
+    return good
+
+
+def states(ctx, env, tilt_label):
+    """Drive a battle through the states that draw the panel (or not) and check its digits in each."""
+    m = ctx.map()
+    m.unit(1, "tank", 4, 4).unit(2, "tank", 5, 4).unit(1, "apc", 29, 10).unit(1, "infantry", 28, 10)
+    g = ctx.start(m, ["andy", "drake"], env=env)
+    g.e.wait(30)
+    g.goto(5, 4)
+    g.e.wait(40)
+    good = check_digits(ctx, g, f"{tilt_label} idle on a tank")
+    ctx.check("100" in {number_at(good, y) for y in {y for _, y, _ in good}}, f"{tilt_label} idle: the tank's hit points read 100")
+    g.select(4, 4)
+    g.e.wait(30)
+    check_digits(ctx, g, f"{tilt_label} move range")
+    g.move_to(4, 4)
+    g.e.wait(20)
+    check_digits(ctx, g, f"{tilt_label} menu open")
+    g.choose("Fire", g.ACTION_MENU)
+    g.e.wait(20)
+    good = check_digits(ctx, g, f"{tilt_label} choosing a target")
+    ctx.check(len(good) >= 6, f"{tilt_label} targeting: the panel's digits are there ({len(good)})")
+    ctx.check("100" in {number_at(good, y) for y in {y for _, y, _ in good}}, f"{tilt_label} targeting: the target's hit points read 100")
+    g.e.press("A", 4)
+    for _ in range(12):
+        g.e.wait(10)
+        check_digits(ctx, g, f"{tilt_label} battle")
+    g.wait_for_input()
+    g.goto(5, 4)
+    g.e.wait(30)
+    check_digits(ctx, g, f"{tilt_label} after the battle")
+    # drop
+    g.select(29, 10)
+    g.move_to(29, 10)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+    g.select(28, 10)
+    g.move_to(29, 10)
+    g.choose("Load", g.ACTION_MENU)
+    g.wait_idle()
+    seen = []
+    def cpu(gg):
+        for _ in range(10):
+            gg.e.wait(20)
+            seen.append(check_digits(ctx, gg, f"{tilt_label} CPU turn"))
+    g.end_turn(observe=cpu)
+    check_digits(ctx, g, f"{tilt_label} back on the player's turn")
+    g.select(29, 10)
+    g.move_to(29, 10)
+    g.choose("Drop", g.ACTION_MENU)
+    g.e.wait(20)
+    if g.menu():
+        g.e.press("A", 4)
+        g.e.wait(20)
+    check_digits(ctx, g, f"{tilt_label} choosing a drop")
+    return g
+
+
+@test(modes=("ds",))
+def ds_hud_info_digits(ctx):
+    """The terrain / unit panel's digits are Dual Strike's in every state: idle, the move range, the menu, choosing an
+    attack target (the CO panel is away then, and the digit tiles went back to AW2's stars and dots), a battle, the CPU's
+    turn and a drop. Run it at TANGOAW2_TILT=0 and 1."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    tilt = os.environ.get("TANGOAW2_TILT", "0")
+    states(ctx, {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": tilt}, f"tilt {tilt}")

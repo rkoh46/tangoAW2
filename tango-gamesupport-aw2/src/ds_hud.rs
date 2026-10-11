@@ -109,7 +109,7 @@ const T_FUNDS_DIGIT: u16 = T0 + 22; // DS 38..48: 0..9
 /// The terrain panel's digits (Dual Strike's icon sheet), after the sheet.
 const T_DIGIT: u16 = 32;
 const DIGIT_TILES: usize = 10;
-const BORROWED_TILES: usize = 42;
+const BORROWED_TILES: usize = SHEET_TILES;
 const DIGITS_FILE: &str = "icon/res_icon4_cg_E";
 const DIGITS_AT: usize = 21184;
 /// Dual Strike's army palettes for OBJ palette 7 (colour 1..5: Orange Star,
@@ -361,6 +361,29 @@ fn aw2_header_palette(core: &Core) -> Option<[u8; 32]> {
     Some(p)
 }
 
+/// What AW2 had in the panel's digit tiles while ours are in. The digits are the info panel's own, loaded while the
+/// panel shows, whether or not the CO panel is (it is not while an attack target is chosen: the digits once went back
+/// to AW2's stars and dots then).
+static SAVED_DIGITS: Mutex<Option<Vec<u8>>> = Mutex::new(None);
+
+fn digits_borrow(core: &mut Core, a: &Art) {
+    if let Ok(mut s) = SAVED_DIGITS.lock() {
+        if s.is_none() {
+            let mut tiles = vec![0u8; 32 * DIGIT_TILES];
+            core.raw_read_range(OBJ_VRAM + 32 * T_DIGIT as u32, -1, &mut tiles);
+            *s = Some(tiles);
+        }
+    }
+    write_tiles(core, T_DIGIT as u32, &a.digits);
+}
+
+fn digits_restore(core: &mut Core) {
+    let saved = SAVED_DIGITS.lock().ok().and_then(|mut s| s.take());
+    if let Some(t) = saved {
+        write_tiles(core, T_DIGIT as u32, &t);
+    }
+}
+
 /// Put AW2's tiles and palette 7 back (once).
 fn restore(core: &mut Core) {
     let saved = SAVED.lock().ok().and_then(|mut s| s.take());
@@ -383,7 +406,6 @@ fn borrow(core: &mut Core, a: &Art, colour: u8, step: usize) {
         }
     }
     write_tiles(core, T0 as u32, &a.sheet);
-    write_tiles(core, T_DIGIT as u32, &a.digits);
     let mut pal = a.palettes[(colour.clamp(1, 5) - 1) as usize];
     pal[30..32].copy_from_slice(&a.pulse[step % 16].to_le_bytes());
     write_palette(core, 7, &pal);
@@ -640,7 +662,7 @@ fn unit_hp(core: &Core) -> Option<u32> {
 }
 
 fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
-    art()?;
+    let a = art()?;
     // AW2's panel: its semi-transparent sprites in the lower corners.
     let panel: Vec<&Entry> = list.iter().filter(|e| e.mode() == 1 && !e.hidden() && e.y() >= 90 && e.y() < 160).collect();
     if panel.is_empty() {
@@ -658,6 +680,7 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
         return None;
     }
     let first = panel.iter().map(|e| e.at).min()?;
+    digits_borrow(core, a);
     // The side: AW2's window (or, failing that, its sprites).
     let xs = panel.iter().map(|e| e.x()).min()?;
     let left = xs < 120;
@@ -748,6 +771,7 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
 pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     if !on(core) {
         restore(core);
+        digits_restore(core);
         window_release(core);
         PANEL_DRAWN.store(false, Ordering::Relaxed);
         return at;
@@ -762,7 +786,10 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     let list = entries(core, start, at);
     match info_flush(core, &list, at, end) {
         Some(n) => at = n,
-        None => window_release(core),
+        None => {
+            digits_restore(core);
+            window_release(core);
+        }
     }
     at
 }

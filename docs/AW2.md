@@ -3728,6 +3728,11 @@ place. With the setting off nothing is read or written (`compat_aw2_byte_identic
   backing is AW2's window and darkening at Dual Strike's rectangle (78 x 61, 42 wide without a unit; the game's
   window shadows `0x03002B40/4C/44`, `0x03002EFC`, which its VBlank copies into WIN0H / WIN0V: the IO registers
   cannot be written from here). **Names stay AW2's** (Dual Strike draws them from its font).
+- **The digit tiles are the info panel's own** (OBJ tiles 32..41, loaded by `digits_borrow` whenever the panel shows,
+  saved and put back when it goes). They were once loaded with the CO panel's sheet and put back with it, and the CO
+  panel is not drawn while an attack target is chosen (nor in some other states): the panel then showed AW2's star
+  and dot tiles where "100" and "73" belong. Test `ds_hud_info_digits` (idle, move range, menu, target, battle, CPU
+  turn, drop; `TANGOAW2_DS_GRAPHICS=1`, tilt 0 and 1) reads the sprites' pixels in VRAM against the digits.
 - **Low ammunition / low fuel icons** (BG2 tiles `0x33D..0x33F`, the top-right tile of a unit's cell) show on a flat
   Dual Strike map too: `wasteland::restore_front`, which puts BG2's upper parts back every frame, leaves them alone
   (test `ds_flat_low_icons`). On the tilted map `overlay_low_icon` draws them from the records.
