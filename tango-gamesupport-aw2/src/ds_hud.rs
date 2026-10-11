@@ -579,6 +579,11 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     if partner.is_some() && crate::heal_effect::playing(core) {
         rows.truncate(1);
     }
+    // ... and the build menu's unit picture (OBJ tiles 0x2E8..0x327) and labels (palette 5): the
+    // partner's row is left out while the menu is up, as [`crate::tag_ui`]'s strip is.
+    if partner.is_some() && crate::tag_ui::build_menu_up(core) {
+        rows.truncate(1);
+    }
     let left = px < 120;
     // AW2's own pieces of the panel go: the header, the stars, the face and
     // the funds' digits.

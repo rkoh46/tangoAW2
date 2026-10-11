@@ -595,7 +595,7 @@ fn top_box_rows(core: &Core) -> i32 {
 /// for each unit) and its labels (OBJ palette 5) are the very tiles
 /// and palette the strip borrows: the strip is left out, and nothing is
 /// written to them, while it is up.
-fn build_menu_up(core: &Core) -> bool {
+pub(crate) fn build_menu_up(core: &Core) -> bool {
     const AREA: u32 = 0x0300_0C00;
     const LEN: usize = 0x1300;
     const PROCS: [u32; 2] = [0x0802_DA19, 0x0803_A441];
