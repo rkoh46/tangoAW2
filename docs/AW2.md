@@ -3713,10 +3713,26 @@ place. With the setting off nothing is read or written (`compat_aw2_byte_identic
   backing is AW2's window and darkening at Dual Strike's rectangle (78 x 61, 42 wide without a unit; the game's
   window shadows `0x03002B40/4C/44`, `0x03002EFC`, which its VBlank copies into WIN0H / WIN0V: the IO registers
   cannot be written from here). **Names stay AW2's** (Dual Strike draws them from its font).
+- **Low ammunition / low fuel icons** (BG2 tiles `0x33D..0x33F`, the top-right tile of a unit's cell) show on a flat
+  Dual Strike map too: `wasteland::restore_front`, which puts BG2's upper parts back every frame, leaves them alone
+  (test `ds_flat_low_icons`). On the tilted map `overlay_low_icon` draws them from the records.
 - Tilt: the HUD stays flat (sprites over the tilted map; the window's darkening is carried as before).
 - Tests: `tools/aw2test/tests/test_ds_hud.py` (`AW2TEST_HUD_SHOTS=<dir>` keeps pictures; run with
   `TANGOAW2_DS_GRAPHICS=1` for the setting on): CO panels (single, pair, Sturm on Black Hole, both corners),
   info panels, meters and powers, and Five Seas, two fronts, DS Campaign, BH Campaign and Survival.
+
+### Dual Strike's menus (`ds_menus.rs`)
+
+With the pack and the setting (offline), the unit command menu and the map menu are drawn Dual Strike's way over the
+finished picture: AW2 still builds and runs the menu (entries, cursor, choices), but the calls that draw its items,
+frame and hand are skipped (traps), so its own menu never shows. Art from the pack: the frame (`bmap/09f`, colours
+`bmap/0a0`), the icons (`icon/res_icon0_cg_E`, `res_icon_cl`; AW2's icon codes are Dual Strike's, which looks the
+icon up in the arm9 table at `0x0215875C`, so "Unit" is icon 1), the font and the one-line descriptions (overlay 0).
+The **B CANCEL tag** and the **selection's corner marks** are Dual Strike's own sprites: an LZ77 sheet of 80 tiles
+in overlay 0 (`0x022CF9B0`; corners are tiles 8, 10, 12, 14, the tag eight tiles from 56) in the colours at arm9
+`0x02138C68` (the CO page's BACK button uses the same). The **Drop** rows show the passenger's own picture, as in
+Dual Strike and AW2 (page 0x0A codes 0x80 and 0x81 are the selected unit's first and second cargo; the picture is
+the unit's tiles in BG tile RAM in its army's colours: `ds_tilt::unit_picture`). Tests: `test_ds_menus.py`.
 
 ### Dual Strike tilt (`ds_tilt.rs`, `ds_ground.rs`, Settings > Graphics)
 
@@ -3864,6 +3880,9 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
     while what it depends on (type, the army it is drawn for, moved) is as it was; the check
     counts the times it differs from the rule above (none in the tests).
   - `TANGOAW2_TILT_NO_RAM_MOVER=1` leaves the record-drawn moving unit out (a test's control).
+- **Crosshair.** The attack target's crosshair runs through six frames of 16 x 16 pieces (tiles 886, 890, ...,
+  906); all of them lie on the ground (`is_crosshair`), not only the first three. The Design Room's map editor
+  is left flat (it runs the battle loop over records it does not keep).
 - **Not done / approximations.** HUD popups stay where the console puts them; Unload and
   repair candidates are the cursor's pointer and brackets only (the game draws no marker
   on each candidate cell), so there is nothing else to carry; Dual Strike's desert and
@@ -3911,8 +3930,10 @@ at `+0x66`) is drawn Dual Strike's way on the GBA's 240 x 160, over AW2's, whose
   wrapped to the room the picture leaves (the picture is 80x88 at the right under the counter; text
   beside it is limited to its left edge, text below it runs on); 2 the skills the army has on
   (`co_skills`) and the tag partners with their stars; 3 the CO Power and the Super Power with their
-  names; 4 **AW2's own unit chart** (the game draws it: Dual Strike's chart has its own icons and bars
-  and this module does not redraw it). A page that does not fit is laid out again with a smaller
+  names; 4 **AW2's own unit chart** (the game draws it). Dual Strike has a unit chart as its page 4/4
+  (the army's unit pictures, four to a row, each with two gauge frames, one for the units that cannot fire),
+  but this module does not redraw it: the gauges are empty in every reference frame (no CO power on), so what
+  they fill with is not known. A page that does not fit is laid out again with a smaller
   picture, then a tighter line pitch, then shorter wordings, then without its last sentences (the
   test `every_co_page_fits` finds none left with the strip only). AW2's COs' texts are Dual Strike's;
   Sturm's are AW2's own (text ids 2461..2464, his Super Power's name 2311), Clone Andy's bio and
