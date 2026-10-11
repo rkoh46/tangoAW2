@@ -637,6 +637,8 @@ const T_HEART: u16 = 862;
 /// the unit's 862.
 const T_STRUCT_HEART: u16 = 858;
 static LAST_STRUCT_HP: Mutex<Option<u32>> = Mutex::new(None);
+/// AW2's "?" (a hidden hit point number's stand-in).
+const T_QUESTION: u16 = 988;
 const T_AMMO: u16 = 863;
 const T_FUEL: u16 = 864;
 const T_TERRAIN_NAME: u16 = 458;
@@ -696,6 +698,8 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     let icon = |t: u16| panel.iter().find(|e| e.tile() == t && e.pal() == 1).copied();
     let (star, cap, heart, fuel, ammo) = (icon(T_STAR_ICON), icon(T_CAP_ICON), icon(T_HEART), icon(T_FUEL), icon(T_AMMO));
     let struct_heart = icon(T_STRUCT_HEART);
+    // A unit whose hit points AW2 hides (Sonja's) shows a "?" where the number would be.
+    let hidden_hp = panel.iter().find(|e| e.tile() == T_QUESTION && e.pal() == 1 && e.dims() == (8, 8)).copied();
     // (a panel has its terrain's name or picture)
     if terrain_name.is_none() && terrain_pic.is_none() {
         return None;
@@ -783,6 +787,14 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
             let Some(e) = e else { continue };
             let y = y0 + [28, 37, 45][row];
             move_to(core, e, ux + 4, y);
+            if n == "heart" && hidden_hp.is_some() {
+                // (the number is not drawn at all: it is not the player's to read)
+                if let Some(q) = hidden_hp {
+                    move_to(core, &q, ux + 31 - 8, y + 1);
+                }
+                row += 1;
+                continue;
+            }
             let v = if n == "heart" { unit_hp(core).or(value(n).map(|d| d * 10)).unwrap_or(0) } else { value(n).unwrap_or(0) };
             if n == "heart" {
                 number(&mut mine, v, pad, ux + 31, y + 1);
