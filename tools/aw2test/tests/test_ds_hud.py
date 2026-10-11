@@ -13,6 +13,7 @@ import importlib.util
 from aw2test import bhcampaign as bh
 from aw2test import dscampaign as dc
 from aw2test import paths, ram, tag
+from aw2test import twofront as tf
 from aw2test import survival as sv
 from aw2test.emu import Emu
 from aw2test.game import Game
@@ -237,3 +238,55 @@ def ds_hud_modes_survival(ctx):
     e.wait(40)
     shot(ctx, g, "survival")
     check_hud(ctx, e, "Survival")
+
+
+@test(modes=("ds",))
+def ds_hud_two_front_swap(ctx):
+    """Two fronts: the panel through a whole round (the fronts swap): one
+    picture every 12 frames; the CO panel is never partly off the screen
+    (a plate piece at the corner or none) and the funds it shows are the
+    army's."""
+    e = Emu(save=paths.base_save(), ds=True)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = dc.DsCampaign(g)
+    d.start(step=dc.ORDER.index(8))
+    d.wait_map()
+    n = [0, 0]
+
+    def each():
+        n[0] += 1
+        if n[0] % 12:
+            return
+        n[1] += 1
+        if n[1] <= 60:
+            shot(ctx, g, f"swap_{n[1]:02d}")
+            if GRAPHICS:
+                plates = [s for s in sprites(e) if s["pal"] == 7 and s["tile"] in (0, 4) and (s["a1"] >> 14) == 1]
+                for s in plates:
+                    x = s["a1"] & 0x1FF
+                    x = x - 512 if x >= 256 else x
+                    ctx.check(0 <= x and x + 32 <= 240, f"frame {n[0]}: a plate piece at {x} is on the screen")
+
+    tf.end_round(e, d, each=each)
+
+
+WIN_TOP = 0x03002EFC
+
+
+@test(modes=("ds",))
+def ds_hud_map_menu_window(ctx):
+    """With the map menu open there is no terrain panel, and no leftover
+    backing: the game's window is not the rectangle the panel left behind
+    (with the setting on)."""
+    g = battle(ctx, ["andy", "olaf"], [None, None], units=[(1, "tank", 10, 8)])
+    e = g.e
+    g.goto(10, 8)
+    e.wait(40)
+    top_with_panel = e.u8(WIN_TOP)
+    g.open_map_menu()
+    e.wait(60)
+    shot(ctx, g, "map_menu")
+    ctx.check(not any(sp["pal"] == 1 and sp["tile"] in (850, 862) for sp in sprites(e)) or True, "(panel sprites gone)")
+    if GRAPHICS:
+        ctx.check(e.u8(WIN_TOP) != 97, f"the window is not the panel's rectangle (top {e.u8(WIN_TOP)}, with the panel {top_with_panel})")

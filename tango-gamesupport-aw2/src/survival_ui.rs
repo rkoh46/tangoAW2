@@ -1186,7 +1186,10 @@ fn draw(core: &mut Core, a: &Art, k: Kind, champion: bool, phase: u8, records: b
 /// black, centred at the top, as 8x16 sprites in the OBJ tiles the map
 /// leaves free ([`crate::two_front::free_tile_pairs`]). Skipped while a
 /// structure's heal plays in those tiles.
-pub fn hud(core: &mut Core, at: u32, end: u32, lines: &[String]) -> u32 {
+///
+/// `corner`: Dual Strike's CO panel is up in the left (`Some(true)`) or right
+/// corner ([`crate::ds_hud`]): the lines go to the other side of the screen.
+pub fn hud(core: &mut Core, at: u32, end: u32, lines: &[String], corner: Option<bool>) -> u32 {
     if crate::heal_effect::playing(core) {
         return at;
     }
@@ -1194,7 +1197,11 @@ pub fn hud(core: &mut Core, at: u32, end: u32, lines: &[String]) -> u32 {
     let mut pairs = crate::two_front::free_tile_pairs().into_iter();
     for (i, s) in lines.iter().enumerate() {
         let cols = crate::two_front::outlined(core, s);
-        let x = 120 - cols.len() as i32 / 2;
+        let x = match corner {
+            None => 120 - cols.len() as i32 / 2,
+            Some(true) => 237 - cols.len() as i32,
+            Some(false) => 3,
+        };
         let y = 1 + 12 * i as i32;
         for (k, chunk) in cols.chunks(8).enumerate() {
             let Some(t) = pairs.next() else { break };

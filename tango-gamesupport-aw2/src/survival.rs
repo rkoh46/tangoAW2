@@ -1001,8 +1001,15 @@ fn hud(core: &mut Core, at: u32, end: u32) -> u32 {
     };
     // A Champion course has no last map: the count only.
     let first = if champion_now(core) { format!("Map {}", stage) } else { format!("Map {}/{}", stage, MAPS_PER_RUN) };
-    let lines = [first, format!("{} {}", label, value)];
-    crate::survival_ui::hud(core, at, end, &lines)
+    // With Dual Strike's CO panel up its funds are the budget (Money): shown
+    // there, once; the lines keep to the corner it leaves free.
+    let corner = crate::ds_hud::panel_corner(core);
+    let lines: Vec<String> = if corner.is_some() && k == Kind::Money {
+        vec![first]
+    } else {
+        vec![first, format!("{} {}", label, value)]
+    };
+    crate::survival_ui::hud(core, at, end, &lines, corner)
 }
 
 /// SELECT MAP's list: the first entry shown, the cursor's row, the ids.
