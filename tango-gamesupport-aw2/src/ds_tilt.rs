@@ -1131,7 +1131,8 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     if !enabled() || rgba.len() != W * H * 4 {
         return;
     }
-    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) {
+    // (the Design Room's map editor runs the battle map's loop over records it does not keep)
+    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
         return;
     }
     let t0 = std::time::Instant::now();
