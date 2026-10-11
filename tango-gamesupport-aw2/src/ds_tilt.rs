@@ -198,6 +198,20 @@ fn follow(cursor: (i32, i32), w: i32, h: i32) -> (f32, f32) {
     f.shown
 }
 
+/// Where the middle of map cell (`x`, `y`) shows in the tilted picture, in
+/// screen pixels (the picture last drawn: other drawings that must sit by a
+/// unit, [`crate::ds_menus`], ask here). `None` with the tilt off.
+pub fn cell_screen(x: i32, y: i32) -> Option<(i32, i32)> {
+    if !enabled() {
+        return None;
+    }
+    let st = FOLLOW.lock().ok()?;
+    let f = st.as_ref()?;
+    let cam = Cam::new(f.shown.0 + cp().bias.0, f.shown.1 + cp().bias.1);
+    let (sx, sy, _) = cam.project(x as f32 + 0.5, y as f32 + 0.5);
+    Some((sx.round() as i32, sy.round() as i32))
+}
+
 /// The camera over the ground point (`cu`, `cv`), in cells, that it looks at.
 #[derive(Clone, Copy)]
 struct Cam {
