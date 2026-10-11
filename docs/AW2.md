@@ -3733,6 +3733,14 @@ place. With the setting off nothing is read or written (`compat_aw2_byte_identic
   panel is not drawn while an attack target is chosen (nor in some other states): the panel then showed AW2's star
   and dot tiles where "100" and "73" belong. Test `ds_hud_info_digits` (idle, move range, menu, target, battle, CPU
   turn, drop; `TANGOAW2_DS_GRAPHICS=1`, tilt 0 and 1) reads the sprites' pixels in VRAM against the digits.
+- **Damage forecast box** (`box_flush`): Dual Strike's own art, `bmap/02d` (ten digits of 8 x 16, then the 32 x 32 frame:
+  the same 36 tiles in the same order as AW2's at OBJ 422..457, so they are written there and AW2's sprites, its frame
+  and its digits, are moved; palette 1 is already Dual Strike's for the indices the box uses, with AW2's own pulse of the
+  fill). Placement from real frames (fitted pixel for pixel, 782 of 788): the box sits just above the info panel, left
+  from x 34 or right 35 from the screen's edge, 69 / 71 pixels from the top (bottom-aligned 160 against 192). The side
+  is the panel's, which is away from the target (the two real frames, a high target on the right with the box left and a
+  low one on the left with the box right, fit this and the earlier "high: left, low: right" alike; no frame has a high
+  target on the left, so the rule is **not proven** to be horizontal). The number is AW2's. Test `ds_hud_damage_box`.
 - **Low ammunition / low fuel icons** (BG2 tiles `0x33D..0x33F`, the top-right tile of a unit's cell) show on a flat
   Dual Strike map too: `wasteland::restore_front`, which puts BG2's upper parts back every frame, leaves them alone
   (test `ds_flat_low_icons`). On the tilted map `overlay_low_icon` draws them from the records.

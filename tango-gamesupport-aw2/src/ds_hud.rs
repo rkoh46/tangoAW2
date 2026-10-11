@@ -110,6 +110,8 @@ const T_FUNDS_DIGIT: u16 = T0 + 22; // DS 38..48: 0..9
 const T_DIGIT: u16 = 32;
 const DIGIT_TILES: usize = 10;
 const BORROWED_TILES: usize = SHEET_TILES;
+const DAMAGE_FILE: &str = "bmap/02d";
+const DAMAGE_TILES: usize = 36;
 const DIGITS_FILE: &str = "icon/res_icon4_cg_E";
 const DIGITS_AT: usize = 21184;
 /// Dual Strike's army palettes for OBJ palette 7 (colour 1..5: Orange Star,
@@ -126,6 +128,8 @@ struct Art {
     palettes: [[u8; 32]; 5],
     /// Colours the meter's stars' fill (palette index 15) runs through.
     pulse: [u16; 16],
+    /// The damage forecast box's 36 tiles (`bmap/02d`: ten digits of 8 x 16, then the 32 x 32 frame).
+    damage: Vec<u8>,
 }
 
 static ART: OnceLock<Option<Art>> = OnceLock::new();
@@ -144,7 +148,8 @@ fn art() -> Option<&'static Art> {
             let b = pack.arm9_at(STAR_PULSE + 2 * i as u32, 2)?;
             *c = u16::from_le_bytes([b[0], b[1]]);
         }
-        Some(Art { sheet, digits, palettes, pulse })
+        let damage = crate::ds_art::lz10(pack.file(DAMAGE_FILE)?)?.get(..32 * DAMAGE_TILES)?.to_vec();
+        Some(Art { sheet, digits, palettes, pulse, damage })
     })
     .as_ref()
 }
@@ -684,6 +689,7 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     // The side: AW2's window (or, failing that, its sprites).
     let xs = panel.iter().map(|e| e.x()).min()?;
     let left = xs < 120;
+    PANEL_SIDE.store(if left { 1 } else { 2 }, Ordering::Relaxed);
     let with_unit = unit_name.is_some();
     let w = if with_unit { PANEL_W_UNIT } else { PANEL_W_TERRAIN };
     let px = if left { MARGIN } else { 240 - MARGIN - w };
@@ -764,6 +770,59 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     Some(insert(core, first, at, end, &mine))
 }
 
+
+// --- The damage forecast box --------------------------------------------------------------------------
+
+/// AW2's box: ten digits of 8 x 16 (OBJ tiles 422..441) and a 32 x 32 frame (442..457), palette 1. Dual Strike's box is
+/// the same layout in `bmap/02d` (its tiles in the same order), so its tiles go into AW2's and the sprites move.
+const T_BOX_DIGITS: u16 = 422;
+const T_BOX_FRAME: u16 = 442;
+const T_BOX_END: u16 = 458;
+/// Which side the info panel took this frame: 0 none, 1 left, 2 right (set by [`info_flush`]).
+static PANEL_SIDE: AtomicU32 = AtomicU32::new(0);
+static SAVED_BOX: Mutex<Option<Vec<u8>>> = Mutex::new(None);
+
+fn box_restore(core: &mut Core) {
+    let saved = SAVED_BOX.lock().ok().and_then(|mut s| s.take());
+    if let Some(t) = saved {
+        write_tiles(core, T_BOX_DIGITS as u32, &t);
+    }
+}
+
+/// Dual Strike's forecast box: its art in AW2's tiles, put on the info panel's side (away from the target) just
+/// above the panel: left from x 34, right 35 from the screen's edge (Dual Strike's, read from real frames), the
+/// number AW2's.
+fn box_flush(core: &mut Core, list: &[Entry]) -> bool {
+    let Some(a) = art() else { return false };
+    let frame = list.iter().find(|e| e.tile() == T_BOX_FRAME && e.pal() == 1 && e.dims() == (32, 32) && !e.hidden());
+    let Some(frame) = frame else { return false };
+    let side = PANEL_SIDE.load(Ordering::Relaxed);
+    let left = match side {
+        1 => true,
+        2 => false,
+        _ => frame.x() < 120 - 16,
+    };
+    // (the tiles go in once, AW2's kept for the setting going off)
+    if let Ok(mut s) = SAVED_BOX.lock() {
+        if s.is_none() {
+            let mut t = vec![0u8; 32 * DAMAGE_TILES];
+            core.raw_read_range(OBJ_VRAM + 32 * T_BOX_DIGITS as u32, -1, &mut t);
+            *s = Some(t);
+        }
+    }
+    write_tiles(core, T_BOX_DIGITS as u32, &a.damage);
+    let (fx, fy) = if left { (34, TOP - 28) } else { (240 - 35 - 32, TOP - 26) };
+    let (ox, oy) = (fx - frame.x(), fy - frame.y());
+    for e in list {
+        let t = e.tile();
+        let ours = e.pal() == 1 && !e.hidden() && (e.at == frame.at || ((T_BOX_DIGITS..T_BOX_FRAME).contains(&t) && e.dims() == (8, 16)));
+        if ours {
+            move_to(core, e, e.x() + ox, e.y() + oy);
+        }
+    }
+    true
+}
+
 // --- The flush ---------------------------------------------------------------------------------------
 
 /// At the sprite flush ([`crate::branding::flush`]): `start..at` is the
@@ -772,6 +831,7 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     if !on(core) {
         restore(core);
         digits_restore(core);
+        box_restore(core);
         window_release(core);
         PANEL_DRAWN.store(false, Ordering::Relaxed);
         return at;
@@ -789,7 +849,13 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         None => {
             digits_restore(core);
             window_release(core);
+            PANEL_SIDE.store(0, Ordering::Relaxed);
         }
+    }
+    // (the box's sprites sit in the list as the game drew them: the lists' entries moved up are read again)
+    let list = entries(core, start, at);
+    if !box_flush(core, &list) {
+        box_restore(core);
     }
     at
 }

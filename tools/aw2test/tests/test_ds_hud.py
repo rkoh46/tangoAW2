@@ -391,3 +391,99 @@ def ds_hud_info_digits(ctx):
         raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
     tilt = os.environ.get("TANGOAW2_TILT", "0")
     states(ctx, {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": tilt}, f"tilt {tilt}")
+
+
+# --- The damage forecast box ---------------------------------------------------------------------------------
+
+BOX = os.environ.get("AW2TEST_BOX_OUT", "")
+
+
+def box_expected(e, digits):
+    """Dual Strike's box (bmap/02d) as (x, y) -> RGB, its top-left at (0, 0), in the game's own palette 1 (the fill, colour
+    index 4, is left out: it pulses) for a number of `digits`, a list of 1..3 digits."""
+    from aw2test.rom import lz10
+    ds = DualStrike(paths.ds_rom())
+    tex = lz10(ds.files["bmap/02d"])
+    pal = bytes(e.read(0x05000200 + 32, 32))
+    rgb = []
+    for i in range(16):
+        v = pal[2 * i] | pal[2 * i + 1] << 8
+        rgb.append(((v & 31) * 8, ((v >> 5) & 31) * 8, ((v >> 10) & 31) * 8))
+    out = {}
+
+    def put(t, x0, y0):
+        for j in range(8):
+            for i in range(8):
+                k = 8 * j + i
+                v = (tex[32 * t + k // 2] >> (4 * (k % 2))) & 15
+                if v and v != 4:
+                    out[(x0 + i, y0 + j)] = rgb[v]
+    for r in range(4):
+        for c in range(4):
+            put(20 + 4 * r + c, 8 * c, 8 * r)
+    n = len(digits)
+    for k, dg in enumerate(digits):
+        x = 24 - 8 * (n - k)
+        put(2 * dg, x, 8)
+        put(2 * dg + 1, x, 16)
+    return out
+
+
+def box_position(e):
+    """AW2's 32 x 32 frame sprite (tile 442, palette 1): its (x, y), or None."""
+    for s in sprites(e):
+        if s["tile"] == 442 and s["pal"] == 1 and (s["a0"] >> 14) == 0 and (s["a1"] >> 14) == 2:
+            x, y = s["a1"] & 511, s["a0"] & 255
+            return x, y
+    return None
+
+
+def box_digits(e):
+    ds = sorted((s["a1"] & 511, (s["tile"] - 422) // 2) for s in sprites(e) if 422 <= s["tile"] < 442 and s["pal"] == 1 and (s["a0"] >> 14) == 2)
+    return [d for _, d in ds]
+
+
+def box_match(img, at, expect, tol=14):
+    ok = sum(1 for (x, y), c in expect.items() if 0 <= at[0] + x < 240 and 0 <= at[1] + y < 160 and all(abs(a - b) <= tol for a, b in zip(img[at[0] + x, at[1] + y][:3], c)))
+    return ok / len(expect)
+
+
+def forecast_scene(ctx, name, at, target, tilt):
+    from PIL import Image
+    env = {"TANGOAW2_DS_GRAPHICS": "1" if GRAPHICS else "0", "TANGOAW2_TILT": tilt}
+    m = ctx.map()
+    m.unit(1, "tank", *at).unit(2, "tank", *target)
+    g = ctx.start(m, ["andy", "drake"], env=env)
+    g.e.wait(30)
+    g.select(*at)
+    g.move_to(*at)
+    g.choose("Fire", g.ACTION_MENU)
+    g.e.wait(30)
+    for _ in range(4):
+        g.e.shot(os.path.join(ctx.out, "warm"))
+    img = Image.open(ctx.shot(g, name)).convert("RGB")
+    if BOX:
+        os.makedirs(BOX, exist_ok=True)
+        img.resize((img.width * 3, img.height * 3), Image.NEAREST).save(os.path.join(BOX, f"{name}.png"))
+    return g, img
+
+
+@test(modes=("ds",))
+def ds_hud_damage_box(ctx):
+    """The damage forecast box is Dual Strike's: its art (bmap/02d), on the side of the info panel (away from the target),
+    just above the panel, the number AW2's. Needs TANGOAW2_DS_GRAPHICS=1."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    tilt = os.environ.get("TANGOAW2_TILT", "0")
+    for name, at, target, left in (("left_target", (4, 4), (5, 4), False), ("right_target", (24, 10), (25, 10), True)):
+        g, img = forecast_scene(ctx, f"box_{name}_t{tilt}", at, target, tilt)
+        pos = box_position(g.e)
+        ctx.require(pos is not None, f"{name}: the game shows its forecast box")
+        digs = box_digits(g.e)
+        ctx.log(f"{name}: frame at {pos}, digits {digs}")
+        ctx.check(1 <= len(digs) <= 3, f"{name}: the box has its number ({digs})")
+        want = (34, 69) if left else (173, 71)
+        ctx.eq(pos, want, f"{name}: the box is {'left' if left else 'right'}, above the info panel (Dual Strike's place)")
+        expect = box_expected(g.e, digs)
+        r = box_match(img.load(), pos, expect)
+        ctx.check(r >= 0.97, f"{name}: the box's pixels are Dual Strike's ({r:.0%})")
