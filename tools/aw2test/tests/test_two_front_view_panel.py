@@ -14,7 +14,7 @@ import os
 import struct
 
 from aw2test import dscampaign as dc
-from aw2test import paths
+from aw2test import paths, setting
 from aw2test import twofront as tf
 from aw2test.emu import Emu
 from aw2test.game import Game
@@ -103,6 +103,21 @@ def two_front_help_panel(ctx):
             e.wait(6)
         e.wait(60)
         e.shot(os.path.join(ctx.out, f"help_{mission}"))
+        if setting.graphics():
+            # Dual Strike's menu draws the help line in its own box (crate::ds_menus owns it, the
+            # Front window's AW2 line is not drawn): the box at the bottom right, its red top and blue
+            # bottom edges, holds the text.
+            from PIL import Image
+            im = Image.open(os.path.join(ctx.out, f"help_{mission}.bmp")).convert("RGB")
+            box = [im.getpixel((x, y)) for y in range(128, 160) for x in range(132, 236)]
+            red = sum(1 for r, g, b in box if r > 200 and g < 90 and b < 90)
+            blue = sum(1 for r, g, b in box if b > 200 and r < 90 and g < 120)
+            dark = sum(1 for r, g, b in box if r < 70 and g < 70 and b < 70)
+            ctx.eq(e.u8(PANEL), 0, f"mission {mission}: AW2's own help window is not drawn")
+            ctx.check(red >= 60 and blue >= 60 and dark >= 40,
+                      f"mission {mission}: Dual Strike's help box with its text is up (red {red}, blue {blue}, text {dark})")
+            e.close()
+            continue
         ctx.eq(e.u8(PANEL), 1, f"mission {mission}: the help line is up")
         bg2 = e.u16(0x0400000C) & 3
         sp = sprites(e)

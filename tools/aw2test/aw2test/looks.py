@@ -332,7 +332,7 @@ def check_data(ctx, e, look, max_err=MAX_ERROR):
     return data
 
 
-def check_screen(ctx, g, look, label=""):
+def check_screen(ctx, g, look, label="", editor=False):
     """The map on screen is drawn from the look: the terrain tiles in VRAM
     (those never animated exactly, the sea's and river's one of the look's
     frames) and the map colours; then cell by cell (`check_terrain`)."""
@@ -350,7 +350,7 @@ def check_screen(ctx, g, look, label=""):
     ctx.check(vram[0x4000:0x4C00] in rivers, f"{name}: the river is one of the look's frames")
     ctx.check(e.read(PAL_BUFFER, 128) in (data.clear[:128], data.rain[:128], data.snow[:128], data.sand[:128]),
               f"{name}: BG palettes 0-3 are the look's")
-    check_terrain(ctx, g, look, label)
+    check_terrain(ctx, g, look, label, editor)
 
 
 _REFS = {}
@@ -362,7 +362,7 @@ def reference(look):
     return _REFS[look]
 
 
-def terrain_cells(e, look, max_err=MAX_ERROR):
+def terrain_cells(e, look, max_err=MAX_ERROR, editor=False):
     """The visible cells of the terrain layer (BG3 as VRAM has it: tilemap,
     tiles, palette RAM) against Dual Strike's drawing of the same map (its
     mountain for the cell's position, the upper part of the cell below over
@@ -419,8 +419,9 @@ def terrain_cells(e, look, max_err=MAX_ERROR):
             fog = not seen[y * w + x]
             fogged += fog
             # (With "Dual Strike map graphics" on, 0x0203E3FE, the part of a tall tile that rises over the
-            # cell above is on BG2, the front layer: BG3 holds plain ground there.)
-            want = ref.render_cell(d, below if below in TALL and not e.u8(0x0203E3FE) else None, ds_tiles,
+            # cell above is on BG2, the front layer, in a battle: BG3 holds plain ground there. The
+            # Design Room has no front layer: its composites stay on BG3.)
+            want = ref.render_cell(d, below if below in TALL and (editor or not e.u8(0x0203E3FE)) else None, ds_tiles,
                                    road=ref.classes[tiles[y * w + x]] == ROAD, fog=fog)
             px, py = ((x - cx) & 15) * 2, ((y - cy) & 15) * 2
             q = [tilemap[(py + dy) * 32 + px + dx] for dy in (0, 1) for dx in (0, 1)]
@@ -431,10 +432,10 @@ def terrain_cells(e, look, max_err=MAX_ERROR):
     return checked, bad, fogged, aw2
 
 
-def check_terrain(ctx, g, look, label=""):
+def check_terrain(ctx, g, look, label="", editor=False):
     """`terrain_cells` on the view now: every cell within the tolerance."""
     name = f"{label}{NAMES[look]}"
-    r = terrain_cells(g.e, look)
+    r = terrain_cells(g.e, look, editor=editor)
     if r is None:
         ctx.log(f"{name}: the colours are none of the look's sets: cells not compared")
         return

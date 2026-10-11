@@ -1238,7 +1238,16 @@ fn draw(core: &mut Core, st: &mut State, army: u32, co: u8) {
     let key = hash(&[&[co, st.page as u8], &ids, &partner, &pair]);
     if st.built.as_ref().map(|b| b.0) != Some(key) {
         let view = view_for(Some(core), Some(army), co);
+        let before = fallbacks();
         let Some(cv) = compose(&view, st.page) else { return };
+        // (a test's view of what the page lists: `TANGOAW2_CO_PAGE_LOG` names a file it appends to)
+        if let Ok(path) = std::env::var("TANGOAW2_CO_PAGE_LOG") {
+            use std::io::Write;
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                let partners: Vec<String> = view.partners.iter().map(|(n, s)| format!("{n}={s}")).collect();
+                let _ = writeln!(f, "ds_co_page: co {co} page {} fitted {} partners {}", st.page + 1, fallbacks() == before, partners.join(","));
+            }
+        }
         let (tiles, tilemap, pal) = layer_of(&cv);
         st.built = Some((key, tiles, tilemap, pal));
     }

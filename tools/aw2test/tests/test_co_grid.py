@@ -18,6 +18,7 @@ import os
 
 from aw2test.harness import test
 from aw2test import rom as romlib
+from aw2test import setting
 
 PAGE = 0x03005940
 AW2_LIST = 0x08616B22
@@ -146,6 +147,11 @@ def check_page(ctx, g, army, slots, want_types, label):
         got = g.e.read(SHEET_VRAM + 128 * slot, 128)
         want = (g.e.read(NEW_ART + 128 * NEW_UNITS.index(t), 128) if t in NEW_UNITS
                 else g.e.read(AW2_SHEET + 128 * slot, 128))
+        if t in NEW_UNITS and setting.graphics():
+            # With the Dual Strike map graphics the new units' pictures in the map's art table
+            # (NEW_ART) are Dual Strike's; the game's own chart keeps the pictures its country
+            # sheet was built with: the page copies those.
+            want = g.e.read(SHEETS + SHEET_SIZE * (c - 1) + 128 * slot, 128)
         ctx.check(got == want, f"{label}: {romlib.UNIT_NAMES[t]}'s picture is in its slot {slot}")
     ctx.check(len(set(new_tiles)) == len(new_tiles) and not any(t // 4 in own for t in new_tiles),
               f"{label}: new units use their own slots, not {COLOURS.get(c, c)}'s Infantry/Mech")

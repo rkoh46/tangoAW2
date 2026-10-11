@@ -16,7 +16,7 @@ neighbours), the rank and bonus (sub_020EAD98, sub_020EB024), the banner
 
 import os
 
-from aw2test import paths, ram
+from aw2test import paths, ram, setting
 from aw2test import survival as sv
 from aw2test import saveimg, saves
 from aw2test.emu import Emu
@@ -314,10 +314,7 @@ def _budget(kind):
         value = {sv.MONEY: "600000 G", sv.TURN: "120", sv.TIME: sv.clock(now["left"] - now["time"])}[kind]
         if kind == sv.TIME:
             ctx.check(108000 - 900 <= now["left"] - now["time"] <= 108000, f"Time: a few seconds into 30:00 ({value})")
-        lines = sv.hud_white(e)
-        ctx.eq(sorted(lines), [1, 13], "two lines at the top")
-        ctx.eq(lines.get(1), sv.hud_expected("Map 1", 1), "line 1: Map 1")
-        ctx.eq(lines.get(13), sv.hud_expected(f"{LEFT_LABELS[kind]} {value}", 13), f"line 2: {LEFT_LABELS[kind]} {value}")
+        sv.hud_check(ctx, e, [("Map 1", 1), (f"{LEFT_LABELS[kind]} {value}", 13)], money=kind == sv.MONEY)
         e.shot(f"{ctx.out}/hud_{kind}")
     fn.__name__ = "survival_champion_budget_" + sv.NAMES[kind].split()[0].lower()
     test(modes=("ds",))(fn)
@@ -359,7 +356,8 @@ def survival_champion_goes_round_again(ctx):
     ctx.eq(e.u8(ram.VS_MAP), data.map_id(sv.TURN, 11, champion=True), "the first map of the course again")
     e.wait(4)
     lines = sv.hud_white(e)
-    ctx.eq(lines.get(1), sv.hud_expected("Map 12", 1), "line 1: Map 12")
+    ctx.check(any(lines.get(1) == sv.hud_expected("Map 12", 1, side) for side in (("left", "right") if setting.graphics() else (None,))),
+              "line 1: Map 12")
     # And once more round: map 13 is the second.
     e.w8(sv.STAGE, 11)
     finish_map(ctx, e, g, data.map(data.run(sv.TURN)[0])["armies"])

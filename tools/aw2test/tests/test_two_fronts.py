@@ -279,6 +279,7 @@ def two_front_looks_and_deployments(ctx):
         # crate::sky_front borrows them on a front in the sky).
         structures = lambda: (e.read(0x06010000 + 32 * 0x130, 0x800), e.read(0x05000200 + 32 * 10, 32))
         before = structures()
+        shot(ctx, e, f"structures_before_{m}")
         g.wait_for_input()
         tf.look_at_other_front(e, g)
         ctx.eq(look(e), 0, f"mission {m}: the second front looked at: Normal")
@@ -302,7 +303,10 @@ def two_front_looks_and_deployments(ctx):
         # (after a front in the sky: its colours, and the picture where the
         # main front draws one: Omens and Signs' fortress)
         now = structures()
-        ctx.check(not sky or (now[1] == before[1] and (m != OMENS_AND_SIGNS or now[0] == before[0])), f"mission {m}: the main front's structures as they were")
+        gone = [k for k in range(0x800 // 32) if now[0][32 * k:32 * k + 32] != before[0][32 * k:32 * k + 32]]
+        ctx.check(not sky or (now[1] == before[1] and (m != OMENS_AND_SIGNS or now[0] == before[0])),
+                  f"mission {m}: the main front's structures as they were (palette same {now[1] == before[1]}, tiles differing {[hex(0x130 + k) for k in gone]})")
+        shot(ctx, e, f"structures_after_{m}")
         e.close()
 
 

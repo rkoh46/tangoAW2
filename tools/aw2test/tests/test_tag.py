@@ -10,7 +10,7 @@ import os
 
 from aw2test.harness import Skip, test
 from aw2test import dscampaign as dc
-from aw2test import paths, ram, saves, tag
+from aw2test import paths, ram, saves, setting, tag
 from aw2test import rom as romlib
 from aw2test.emu import Emu
 from aw2test.game import Game
@@ -19,13 +19,54 @@ TEAMS = ram.TEAMS
 TEAMS_CURSOR = TEAMS + 0x32
 
 
+def co_page_log(ctx):
+    """The file the console logs what Dual Strike's CO page lays out in (TANGOAW2_CO_PAGE_LOG)."""
+    p = os.path.join(ctx.out, "co_page.log")
+    if os.path.exists(p):
+        os.remove(p)
+    return p
+
+
+def page2_partners(ctx):
+    """What Dual Strike's CO page 2 last laid out (the console's log): (the partner names one a
+    line, their stars together); the page must have fitted (not a frame with no text)."""
+    lines = [l for l in open(os.path.join(ctx.out, "co_page.log")).read().splitlines() if " page 2 " in l]
+    ctx.require(lines, "Dual Strike's page 2 laid out")
+    fitted, _, listed = lines[-1].partition(" fitted ")[2].partition(" partners ")
+    ctx.check(fitted.startswith("true"), "the partners fit Dual Strike's page 2 (no fallback frame)")
+    pairs = [x.rsplit("=", 1) for x in listed.split(",") if x]
+    return b"\r".join(n.encode() for n, _ in pairs), sum(int(k) for _, k in pairs)
+
+
+def tag_page_of(ctx, g):
+    """Map menu > CO to where the page lists the army's tag partners: (the names, one a line as the
+    TAG page's box has them, the stars drawn). AW2's page: four DOWNs, the TAG page
+    (crate::tag_extras). The Dual Strike CO page (setting.graphics) lists them on its second page,
+    under the skills ("TAG partners", the stars after each name): one DOWN, and what the page laid
+    out is read from the console's log."""
+    e = g.e
+    g.open_map_menu()
+    g.choose("CO", g.MAP_MENU)
+    e.wait(90)
+    if setting.graphics():
+        e.press("DOWN", 6)
+        e.wait(45)
+        return page2_partners(ctx)
+    for _ in range(4):
+        e.press("DOWN", 4)
+        e.wait(40)
+    ctx.eq((e.u32(0x03005940), e.u8(EXTRAS + 5)), (3, 1), "the TAG page")
+    stars = [s for s in oam(e) if (s[2] & 0x3FF) == 0x321 and s[2] >> 12 == 12]
+    return rom_string(e, STRINGS + 0x300), len(stars)
+
+
 def tag_battle(ctx, cos, partners, humans=(1,), units=(), fog=False):
     """A Versus battle on the harness's plains with the partners set in RAM
     (None: single; the Teams screen's picks are tag_teams_screen's)."""
     m = ctx.map()
     for u in units:
         m.unit(*u)
-    g = ctx.boot_teams(m)
+    g = ctx.boot_teams(m, env={"TANGOAW2_CO_PAGE_LOG": co_page_log(ctx)})
     for a, p in enumerate(partners, 1):
         tag.set_teams_partner(g.e, a, p)
     g.set_teams(cos, set(humans))
@@ -203,6 +244,12 @@ def tag_teams_screen(ctx):
     ctx.eq(g.player(1)["co"], main1, "army 1's CO")
     ctx.eq((tag.partner(e, 1) or {}).get("co"), others[2], "army 1's partner")
     ctx.eq((tag.partner(e, 2) or {}).get("co"), want2, "army 2's (the computer's) partner")
+    if setting.graphics():
+        # Dual Strike's own two-row CO panel (crate::ds_hud) draws the partner's face in its second
+        # row: the AW2 panel's tiles and strip sprites checked below are not there (tests/test_ds_hud.py
+        # checks the Dual Strike panel).
+        ctx.shot(g, "battle_panel")
+        return
     # The CO panel: the partner's HUD face in its tiles.
     face = e.read(e.u32(0x080437EC) + 0x100 * others[2], 0x100)
     ctx.eq(e.read(0x06010000 + 32 * 0x309, 0x100), face, "the CO panel shows the partner's face (OBJ tiles 0x309..)")
@@ -1046,6 +1093,32 @@ def tag_co_page(ctx):
     back to the Super Power."""
     g = tag_battle(ctx, ["sami", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     e = g.e
+    if setting.graphics():
+        # Dual Strike's CO page (crate::ds_co_page): the partners are on its second page, under the
+        # skills; its third is the powers, then AW2's unit charts (the game stays on its Super
+        # Power's page under Dual Strike's, 3, until the charts, 4); UP goes back through them.
+        names, stars = tag_page_of(ctx, g)
+        ctx.eq(names, b"Sonja\rEagle", "page 2 lists the partners, as Dual Strike's box does")
+        ctx.eq(stars, 4, "the ratings: 1 + 3 stars")
+        ctx.shot(g, "co_page_tag")
+        e.press("DOWN", 6)
+        e.wait(45)
+        ctx.eq(e.u32(0x03005940), 3, "DOWN: the powers' page")
+        e.press("DOWN", 6)
+        e.wait(60)
+        ctx.eq(e.u32(0x03005940), 4, "DOWN again: the unit charts")
+        e.press("UP", 6)
+        e.wait(60)
+        ctx.eq(e.u32(0x03005940), 3, "UP: back to the powers' page")
+        e.press("UP", 6)
+        e.wait(45)
+        e.press("UP", 6)
+        e.wait(45)
+        e.press("DOWN", 6)
+        e.wait(45)
+        names, _ = page2_partners(ctx)
+        ctx.eq(names, b"Sonja\rEagle", "UP, UP, DOWN: page 2 again")
+        return
     g.open_map_menu()
     g.choose("CO", g.MAP_MENU)
     e.wait(90)
@@ -1098,16 +1171,7 @@ def tag_sturm_pairs(ctx):
         ctx.attack(g, (10, 12), (10, 12), (11, 12))
 
     def tag_page(g):
-        e = g.e
-        g.open_map_menu()
-        g.choose("CO", g.MAP_MENU)
-        e.wait(90)
-        for _ in range(4):
-            e.press("DOWN", 4)
-            e.wait(40)
-        ctx.eq((e.u32(0x03005940), e.u8(EXTRAS + 5)), (3, 1), "the TAG page")
-        stars = [s for s in oam(e) if (s[2] & 0x3FF) == 0x321 and s[2] >> 12 == 12]
-        return rom_string(e, STRINGS + 0x300), len(stars)
+        return tag_page_of(ctx, g)
 
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
@@ -1241,16 +1305,7 @@ def tag_clone_andy(ctx):
         ctx.eq(tag.compatibility(ds, romlib.co_id(other), romlib.co_id("cloneandy")), tag.compatibility(ds, romlib.co_id(other), romlib.co_id("andy")), f"{other} + Clone Andy: as with Andy")
 
     def tag_page(g):
-        e = g.e
-        g.open_map_menu()
-        g.choose("CO", g.MAP_MENU)
-        e.wait(90)
-        for _ in range(4):
-            e.press("DOWN", 4)
-            e.wait(40)
-        ctx.eq((e.u32(0x03005940), e.u8(EXTRAS + 5)), (3, 1), "the TAG page")
-        stars = [s for s in oam(e) if (s[2] & 0x3FF) == 0x321 and s[2] >> 12 == 12]
-        return rom_string(e, STRINGS + 0x300), len(stars)
+        return tag_page_of(ctx, g)
 
     g = tag_battle(ctx, ["cloneandy", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
@@ -1332,15 +1387,7 @@ def tag_vault_breakers(ctx):
         ctx.attack(g, (10, 12), (10, 12), (11, 12))
 
     def tag_page(g):
-        e = g.e
-        g.open_map_menu()
-        g.choose("CO", g.MAP_MENU)
-        e.wait(90)
-        for _ in range(4):
-            e.press("DOWN", 4)
-            e.wait(40)
-        ctx.eq((e.u32(0x03005940), e.u8(EXTRAS + 5)), (3, 1), "the TAG page")
-        return rom_string(e, STRINGS + 0x300)
+        return tag_page_of(ctx, g)[0]
 
     g = tag_battle(ctx, ["vonbolt", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names = tag_page(g)
@@ -1421,16 +1468,7 @@ def tag_crumb(ctx):
         ctx.eq(tag.compatibility(ds, romlib.co_id(other), romlib.co_id("crumb")), 100, f"{other} + Crumb: 100")
 
     def tag_page(g):
-        e = g.e
-        g.open_map_menu()
-        g.choose("CO", g.MAP_MENU)
-        e.wait(90)
-        for _ in range(4):
-            e.press("DOWN", 4)
-            e.wait(40)
-        ctx.eq((e.u32(0x03005940), e.u8(EXTRAS + 5)), (3, 1), "the TAG page")
-        stars = [s for s in oam(e) if (s[2] & 0x3FF) == 0x321 and s[2] >> 12 == 12]
-        return rom_string(e, STRINGS + 0x300), len(stars)
+        return tag_page_of(ctx, g)
 
     g = tag_battle(ctx, ["crumb", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)

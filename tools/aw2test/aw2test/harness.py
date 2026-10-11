@@ -69,11 +69,11 @@ class Ctx:
                 m.unit(army, "infantry", x + (1 if x < 15 else -1), y + (1 if y < 10 else -1))
         return m
 
-    def boot_teams(self, m):
-        """Boot with map `m` and stop on the Teams screen."""
+    def boot_teams(self, m, env=None):
+        """Boot with map `m` and stop on the Teams screen (`env`: environment variables for this console alone)."""
         save = os.path.join(self.out, "map.sav")
         m.write(paths.base_save(), save)
-        e = Emu(save=save, ds=self.ds)
+        e = Emu(save=save, ds=self.ds, env=env)
         g = Game(e, self.image)
         self.games.append(g)
         g.boot_to_teams()

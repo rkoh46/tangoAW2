@@ -7,6 +7,9 @@ army that moved without eating), the victim goes with its own destruction,
 and a power's effect passes over an Oozium leaving it as it was.
 Screenshots: before / during / after of each."""
 
+import os
+
+from aw2test import setting
 from aw2test.harness import test
 
 DS = ("ds",)
@@ -21,6 +24,88 @@ APPROACH = (8, 7)
 EMPTY = (7, 5)
 
 
+def start(ctx, m, cos, **kw):
+    """ctx.start; on the tilted map the console also logs where each unit's picture stands on the
+    screen (TANGOAW2_TILT_CHECK), which `cell_pixels` reads (the map is not a flat grid then)."""
+    if setting.tilt():
+        log = os.path.join(ctx.out, "tilt.log")
+        if os.path.exists(log):
+            os.remove(log)
+        kw["env"] = {"TANGOAW2_TILT_CHECK": "1", "TANGOAW2_TILT_LOG": log, "TANGOAW2_TILT_SNAP": "1"}
+    return ctx.start(m, cos, **kw)
+
+
+class Sig:
+    """What a unit's picture is drawn in on the tilted map: its main colours with their shares.
+    Two are equal when each main colour of one is (within the scaling's blending) among the other's."""
+
+    def __init__(self, hist):
+        total = sum(hist.values())
+        self.all = list(hist)
+        self.main = [c for c, n in hist.items() if n * 12 >= total]
+
+    @staticmethod
+    def near(a, b):
+        return sum(abs(p - q) for p, q in zip(a, b)) <= 36
+
+    def __eq__(self, other):
+        return (bool(self.main) and bool(other.main)
+                and all(any(self.near(c, d) for d in other.all) for c in self.main)
+                and all(any(self.near(c, d) for d in self.all) for c in other.main))
+
+    def __repr__(self):
+        return f"Sig({sorted(self.main)})"
+
+
+def tilt_boards(ctx):
+    """The latest box (left, top, right, bottom) the tilted map drew for each (foot u, foot v) of a
+    unit's picture: from the console's check log."""
+    boxes = {}
+    try:
+        lines = open(os.path.join(ctx.out, "tilt.log")).read().splitlines()
+    except OSError:
+        return boxes
+    for line in lines:
+        if not line.startswith("ds_tilt: board "):
+            continue
+        t = line.replace("(", " ").replace(")", " ").replace(",", " ").split()
+        # board fu fv WxH at l t to r b
+        fu, fv = float(t[2]), float(t[3])
+        boxes[(fu, fv)] = tuple(float(v) for v in (t[6], t[7], t[9], t[10]))
+    return boxes
+
+
+def tilt_cell(ctx, im, name, x, y):
+    """The colours drawn for the unit on cell (x, y) of the tilted map: the pixels of its picture's
+    boxes (the logged ones whose foot is on the cell) that are not the ground's."""
+    boxes = tilt_boards(ctx)
+    mine = [b for (fu, fv), b in boxes.items() if abs(fu - (x + 0.5)) < 0.01 and y + 0.5 < fv < y + 1.5]
+    if not mine:
+        ctx.log(f"{name}: no picture logged on square {(x, y)}")
+        return None
+    box = (min(b[0] for b in mine), min(b[1] for b in mine), max(b[2] for b in mine), max(b[3] for b in mine))
+    px = im.load()
+
+    def inside(bx, ex=0):
+        return bx[0] - ex <= X < bx[2] + ex and bx[1] - ex <= Y < bx[3] + ex
+
+    ground = set()
+    for Y in range(36, 160):
+        for X in range(0, 240):
+            if not any(inside(b, 3) for b in boxes.values()) and not (X < 110 and Y > 85) and not (X > 170 and Y > 90):
+                ground.add(px[X, Y])
+    hist = {}
+    for Y in range(max(0, int(box[1])), min(160, int(box[3]) + 1)):
+        for X in range(max(0, int(box[0])), min(240, int(box[2]) + 1)):
+            c = px[X, Y]
+            if c not in ground:
+                hist[c] = hist.get(c, 0) + 1
+    # (a ground shade the sample missed is a few stray pixels: drop colours drawn on under 3)
+    hist = {c: n for c, n in hist.items() if n >= 3}
+    ctx.log(f"{name}: square {(x, y)} box {tuple(round(v) for v in box)}: {sum(hist.values())} sprite pixels, main colours {Sig(hist).main}")
+    return Sig(hist) if sum(hist.values()) >= 15 else None
+
+
 def cell_pixels(ctx, g, name, x, y):
     """Screenshot `name` (the map cursor out of the way) and return the
     colours drawn on square (x, y) (its 16x16 pixels less the plain's own
@@ -33,6 +118,8 @@ def cell_pixels(ctx, g, name, x, y):
     path = ctx.shot(g, name)
     from PIL import Image
     im = Image.open(path).convert("RGB")
+    if setting.tilt():
+        return tilt_cell(ctx, im, name, x, y)
     sx, sy = g.e.u16(MAP + 4), g.e.u16(MAP + 6)
 
     def cell(cx, cy):
@@ -77,7 +164,7 @@ def five_army(ctx):
 def human_eat(ctx, m, army, cos, label):
     """Army `army` (human) eats with its Oozium at (10, 10) the unit at (11, 10);
     its second Oozium at (10, 13) moves to (10, 14) without eating (the control)."""
-    g = ctx.start(m, cos, humans=(army,))
+    g = start(ctx, m, cos, humans=(army,))
     before = cell_pixels(ctx, g, f"{label}_before", 10, 10)
     control0 = cell_pixels(ctx, g, f"{label}_control0", 10, 13)
     ctx.check(before is not None and before == control0, f"{label}: the eater looks like its army's other Oozium before")
@@ -123,7 +210,7 @@ def make_cpu(colour):
     def fn(ctx):
         m = two_army(ctx, 1 if colour != 1 else 2, colour)
         m.unit(1, "tank", 10, 10).unit(2, OOZIUM, 11, 10).unit(2, OOZIUM, 13, 12)
-        g = ctx.start(m, ["andy", "max"], visuals="off")
+        g = start(ctx, m, ["andy", "max"], visuals="off")
         before = cell_pixels(ctx, g, "cpu_before", 11, 10)
         control0 = cell_pixels(ctx, g, "cpu_control0", 13, 12)
 
@@ -178,7 +265,7 @@ def make_immune(colour):
         m = two_army(ctx, 1 if colour != 1 else 2, colour)
         m.unit(1, "tank", 2, 2)
         m.unit(2, OOZIUM, 12, 10).unit(2, "tank", 13, 10).unit(2, OOZIUM, 15, 8)
-        g = ctx.start(m, ["vonbolt", "max"], humans=(1, 2))
+        g = start(ctx, m, ["vonbolt", "max"], humans=(1, 2))
         before = cell_pixels(ctx, g, "immune_before", 12, 10)
         control0 = cell_pixels(ctx, g, "immune_control0", 15, 8)
         g.charge_power(1, "super")
@@ -209,7 +296,7 @@ def oozium_immune_five_armies(ctx):
     m.unit(1, "tank", 2, 2)
     m.unit(5, OOZIUM, 12, 10).unit(5, "tank", 13, 10).unit(5, "infantry", 16, 15).unit(5, OOZIUM, 15, 8)
     cos = None
-    g = ctx.start(m, cos)
+    g = start(ctx, m, cos)
     p = g.player(1)["addr"]
     g.e.w8(p + 0x1D, 75)  # army 1 plays Von Bolt
     g.charge_power(1, "super")

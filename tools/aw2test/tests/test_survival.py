@@ -308,6 +308,11 @@ def _every_map(kind, stage):
         check_map(ctx, e, g, data, m, m["name"])
         header = e.u32(0x080196EC) + 0x5C * e.u8(ram.VS_MAP)
         want = sv.STRUCTURE_PICTURES.get(m["structure"], 0)
+        if want and e.u8(0x0203E3FE) != 0:
+            # Dual Strike map graphics: the header names the preview's own picture of the structure
+            # (crate::ds_graphics: slot 0x1000 * the AW2 picture's index, from 0x09EE2000).
+            slot = [0x080D2DA8, 0x080D38AC, 0x080D3268].index(want)
+            want = 0x09EE2000 + 0x1000 * slot
         ctx.eq(e.u32(header + 0x10), want, f"{m['name']}: the structure's picture in the header")
         if want:
             picture = romlib.lz10(e.read(want, 0x1000))

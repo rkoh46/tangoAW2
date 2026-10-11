@@ -2276,6 +2276,13 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let bottom = top + bb.h as f32 * ssc;
         let (x0, x1) = ((left.floor() as i32).max(0), (right.ceil() as i32).min(W as i32));
         let (y0, y1) = ((top.floor() as i32).max(0), (bottom.ceil() as i32).min(H as i32));
+        if debug_check() && bb.tag.is_none() {
+            // (a test finds a unit's picture on the screen by its cell: `fu`, `fv` are its foot)
+            dbg_line(&format!(
+                "ds_tilt: board {:.2} {:.2} {}x{} at ({:.0}, {:.0}) to ({:.0}, {:.0})",
+                bb.fu, bb.fv, bb.w, bb.h, left, top, right, bottom
+            ));
+        }
         if let (true, Some((cx, cy, low))) = (debug_check(), bb.tag) {
             dbg_line(&format!(
                 "ds_tilt: record-drawn {} ({}, {}) low {} at ({:.0}, {:.0}) to ({:.0}, {:.0})",

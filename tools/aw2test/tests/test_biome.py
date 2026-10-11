@@ -13,7 +13,7 @@ import json
 import os
 import shutil
 
-from aw2test import looks, paths
+from aw2test import looks, paths, setting
 from aw2test.editor import Editor
 from aw2test.emu import Emu
 from aw2test.game import Game
@@ -124,11 +124,15 @@ def design_room_looks(ctx):
     rom = open(paths.aw2_rom(), "rb").read()
     aw2_tiles = lz10(rom[looks.AW2_TILES - 0x08000000:][:0x8000])
     ctx.shot(g, "editor_normal")
-    ctx.check(e.read(looks.VRAM_TILES, 0x2000) == aw2_tiles[:0x2000], "Normal: AW2's tiles")
+    if setting.graphics():
+        # (the Dual Strike map graphics draw a Normal map in Dual Strike's Normal look, not AW2's tiles)
+        looks.check_screen(ctx, g, looks.DS_NORMAL, "editor: ", editor=True)
+    else:
+        ctx.check(e.read(looks.VRAM_TILES, 0x2000) == aw2_tiles[:0x2000], "Normal: AW2's tiles")
     ed.set_wasteland(True)
     e.wait(10)
     ctx.shot(g, "editor_wasteland")
-    looks.check_screen(ctx, g, looks.WASTELAND, "editor: ")
+    looks.check_screen(ctx, g, looks.WASTELAND, "editor: ", editor=True)
     # The map as cells (for a Dual Strike reference picture of the view).
     rows = [e.u16(looks.GMAP + 0x417A + 2 * y) for y in range(h)]
     with open(os.path.join(ctx.out, "editor_map.json"), "w") as f:
@@ -137,13 +141,16 @@ def design_room_looks(ctx):
     # Scroll away and back: the cells drawn as they come in are the look's.
     ed.goto(min(w - 1, 25), min(h - 1, 15))
     ctx.shot(g, "editor_wasteland_far")
-    looks.check_screen(ctx, g, looks.WASTELAND, "editor, scrolled away: ")
+    looks.check_screen(ctx, g, looks.WASTELAND, "editor, scrolled away: ", editor=True)
     ed.goto(7, 5)
     e.wait(20)
-    looks.check_screen(ctx, g, looks.WASTELAND, "editor, scrolled back: ")
+    looks.check_screen(ctx, g, looks.WASTELAND, "editor, scrolled back: ", editor=True)
     ed.set_wasteland(False)
     e.wait(10)
     ctx.shot(g, "editor_normal_again")
-    ctx.check(e.read(looks.VRAM_TILES, 0x2000) == aw2_tiles[:0x2000], "Normal again: AW2's tiles")
-    ctx.eq(e.read(PAL_BUFFER, 128), e.read(AW2_CLEAR, 128), "Normal again: AW2's colours")
+    if setting.graphics():
+        looks.check_screen(ctx, g, looks.DS_NORMAL, "editor, Normal again: ", editor=True)
+    else:
+        ctx.check(e.read(looks.VRAM_TILES, 0x2000) == aw2_tiles[:0x2000], "Normal again: AW2's tiles")
+        ctx.eq(e.read(PAL_BUFFER, 128), e.read(AW2_CLEAR, 128), "Normal again: AW2's colours")
     e.close()

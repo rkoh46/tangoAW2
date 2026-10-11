@@ -541,13 +541,14 @@ def hud_white(e):
     return lines
 
 
-def hud_expected(s, y):
+def hud_expected(s, y, side=None):
     """The white pixels of `s` as the budget line at top `y` draws them: AW2's
     font rows FONT_TOP.. of each glyph, one blank column before and after,
-    centred on x = 120 (two_front::outlined)."""
+    centred on x = 120 (two_front::outlined); with `side` "left" or "right" at that corner
+    (x = 3 or ending at 237: survival_ui::hud, where Dual Strike's CO panel is in the other)."""
     img = aw2_image()
     cols = 1 + sum(img.u8(FONT_WIDTHS + c) + 1 for c in s.encode()) + 1
-    x0 = 120 - cols // 2
+    x0 = {None: 120 - cols // 2, "left": 3, "right": 237 - cols}[side]
     px = set()
     cx = 1
     for ch in s.encode():
@@ -566,3 +567,21 @@ def hud_expected(s, y):
 def clock(frames):
     s = frames // 60
     return f"{s // 60}:{s % 60:02d}"
+
+
+def hud_check(ctx, e, rows, label="", money=False):
+    """The budget's lines at the top of the map: `rows` is [(text, line top y)]. With AW2's HUD the
+    lines are centred; with the Dual Strike HUD (setting.graphics) they stand in the corner its CO
+    panel leaves free, and Money's funds are the panel's own, so its second line is not drawn."""
+    from . import setting
+    got = hud_white(e)
+    if setting.graphics():
+        if money:
+            rows = rows[:1]
+        sides = ("left", "right")
+    else:
+        sides = (None,)
+    ctx.eq(sorted(got), [y for _, y in rows], f"{label}the budget's lines at the top")
+    for text, y in rows:
+        ok = any(got.get(y) == hud_expected(text, y, side) for side in sides)
+        ctx.check(ok, f"{label}line at {y}: {text}")

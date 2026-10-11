@@ -297,11 +297,7 @@ def survival_budget_on_the_map(ctx):
     e.wait(4)
     st = sv.state(e)
     left = st["left"] - st["time"]
-    lines = sv.hud_white(e)
-    ctx.eq(sorted(lines), [1, 13], "two lines at the top")
-    ctx.eq(lines.get(1), sv.hud_expected("Map 1/11", 1), "line 1: Map 1/11")
-    want = f"Time left {sv.clock(left)}"
-    ctx.eq(lines.get(13), sv.hud_expected(want, 13), f"line 2: {want}")
+    sv.hud_check(ctx, e, [("Map 1/11", 1), (f"Time left {sv.clock(left)}", 13)])
     e.shot(f"{ctx.out}/hud_time")
 
 
@@ -315,9 +311,7 @@ def survival_budget_turn_and_money(ctx):
         ctx.require(sv.pick(e, row), f"{sv.NAMES[kind]} starts")
         g.wait_for_input()
         e.wait(4)
-        lines = sv.hud_white(e)
-        ctx.eq(lines.get(1), sv.hud_expected("Map 1/11", 1), f"{sv.NAMES[kind]}: Map 1/11")
-        ctx.eq(lines.get(13), sv.hud_expected(f"{label} {value}", 13), f"{sv.NAMES[kind]}: {label} {value}")
+        sv.hud_check(ctx, e, [("Map 1/11", 1), (f"{label} {value}", 13)], f"{sv.NAMES[kind]}: ", money=kind == sv.MONEY)
         e.shot(f"{ctx.out}/hud_{kind}")
 
 
