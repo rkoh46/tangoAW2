@@ -509,6 +509,8 @@ enum Class {
     /// target's glow beside its crosshair, else the unit that is moving
     /// ([`resolve_groups`]).
     Piece,
+    /// The nine pieces put together: the unit that is moving, upright.
+    Mover,
 }
 
 struct Obj {
@@ -624,6 +626,43 @@ fn obj_pixels_ro(
 }
 
 
+/// The moving unit's sprite as the console last showed it: the nine pieces' places and flips
+/// (its facing) relative to the picture's corner, and where that corner was against the
+/// unit's place in the game's own record of the move ([`find_mover`]).
+struct MoverSeen {
+    /// (tile, x, y, hflip, vflip) of each piece.
+    pieces: Vec<(u16, i32, i32, bool, bool)>,
+    w: i32,
+    h: i32,
+    delta: Option<(i32, i32)>,
+}
+static MOVER_SEEN: std::sync::Mutex<Option<MoverSeen>> = std::sync::Mutex::new(None);
+
+/// The proc that holds the selected or moving unit's sprite (function `0x080363D1`): the
+/// unit's place in map pixels at +0x3E and +0x40, as the game moves it along its path (a
+/// cell's 16 pixels in four frames for a vehicle). The sprite's pieces are at that place
+/// minus the camera, less (10, 8): they are parked when it is off the console's picture.
+fn find_mover(core: &Core) -> Option<(i32, i32)> {
+    const MOVER_FN: u32 = 0x0803_63D1;
+    for (base, len) in [(0x0300_0C00u32, 0x1300usize), (0x0200_C000, 0x2000)] {
+        let mut b = vec![0u8; len];
+        core.raw_read_range(base, -1, &mut b);
+        let word = |i: usize| u32::from_le_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]]);
+        let mut i = 0;
+        while i + 0x44 <= len {
+            if word(i + 8) == MOVER_FN
+                && (0x0840_0000..0x0870_0000).contains(&word(i))
+                && (0x0840_0000..0x0870_0000).contains(&word(i + 4))
+            {
+                let at = |o: usize| i16::from_le_bytes([b[i + o], b[i + o + 1]]) as i32;
+                return Some((at(0x3E), at(0x40)));
+            }
+            i += 4;
+        }
+    }
+    None
+}
+
 /// The nine pieces at tiles 666-674 are a target's glow (flat on the ground)
 /// when the crosshair is up, else the unit that is moving (one upright
 /// picture, drawn where it is as it goes).
@@ -656,6 +695,14 @@ fn resolve_groups(mut objs: Vec<Obj>) -> Vec<Obj> {
             }
         }
     }
+    if pieces.len() == 9 {
+        // The picture's layout and facing (the pieces' flips), kept for when the game
+        // parks the sprites (the unit is off the console's picture).
+        let mut seen: Vec<(u16, i32, i32, bool, bool)> =
+            pieces.iter().map(|o| (o.tile, o.x - x0, o.y - y0, o.flip.0, o.flip.1)).collect();
+        seen.sort();
+        *MOVER_SEEN.lock().unwrap() = Some(MoverSeen { pieces: seen, w, h, delta: None });
+    }
     let first = pieces.iter().min_by_key(|o| o.idx).unwrap();
     rest.push(Obj {
         x: x0,
@@ -664,7 +711,7 @@ fn resolve_groups(mut objs: Vec<Obj>) -> Vec<Obj> {
         h,
         pri: first.pri,
         idx: first.idx,
-        class: Class::Billboard,
+        class: Class::Mover,
         pix,
         tile: first.tile,
         pal: first.pal,
@@ -735,8 +782,26 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
         if x >= 240 {
             x -= 512;
         }
+        let class = obj_class(a0, a2, w, h);
         if x + w <= 0 || y + h <= 0 || x >= W as i32 || y >= H as i32 {
-            continue;
+            // Off the console's picture. The tilted view shows a little more than that, so the
+            // sprites that lie on the map (the cursor, its brackets, the move arrow, the target
+            // glow, the moving unit) are kept where the game put them, unless the game has
+            // parked them (x 0, y 160) or they are far away.
+            let parked = (a1 & 511) == 0 && (a0 & 255) == 160;
+            let near_x = if (a1 & 511) >= 256 { (a1 & 511) as i32 - 512 } else { (a1 & 511) as i32 };
+            let near_y = if (a0 & 255) >= 224 { (a0 & 255) as i32 - 256 } else { (a0 & 255) as i32 };
+            let wanted = matches!(class, Class::Piece | Class::Ground | Class::Pointer)
+                && !parked
+                && near_x + w > -48
+                && near_y + h > -48
+                && near_x < W as i32 + 48
+                && near_y < H as i32 + 48;
+            if !wanted {
+                continue;
+            }
+            x = near_x;
+            y = near_y;
         }
         if (a0 >> 10) & 3 == 2 {
             // OBJ window: no picture.
@@ -751,7 +816,7 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             h,
             pri: ((a2 >> 10) & 3) as u8,
             idx,
-            class: obj_class(a0, a2, w, h),
+            class,
             pix,
             tile: a2 & 0x3ff,
             pal: (a2 >> 12) as u8,
@@ -910,6 +975,71 @@ struct Billboard {
     /// Draw order among equal depths: higher is in front.
     rank: u8,
     last: bool,
+    /// A unit drawn from its record, for the debug log: its cell and low-ammunition / fuel icon.
+    tag: Option<(i32, i32, u8)>,
+}
+
+/// Keeps the facing the console drew a unit with (its picture's mirror flag), and in the check
+/// mode counts the times it differs from the rule the records give.
+fn note_facing(u: &RamUnit, mirrored: bool, map: u64) {
+    let mut f = FACING.lock().unwrap();
+    if f.0 != map {
+        *f = (map, std::collections::HashMap::new());
+    }
+    if mirrored != u.mirrored && debug_check() {
+        dbg_line(&format!(
+            "ds_tilt: facing: unit {} drawn {} by the console, {} by the rule",
+            u.id,
+            if mirrored { "mirrored" } else { "as stored" },
+            if u.mirrored { "mirrored" } else { "as stored" }
+        ));
+    }
+    f.1.insert(u.id, (u.facing_key(), mirrored));
+}
+
+/// The unit as it is drawn beyond the console's window: its remembered facing, if what it
+/// depends on has not changed since the console showed the unit.
+fn with_facing(u: &RamUnit, map: u64) -> RamUnit {
+    let mut u = u.clone();
+    let f = FACING.lock().unwrap();
+    if f.0 == map {
+        if let Some(&(key, mirrored)) = f.1.get(&u.id) {
+            if key == u.facing_key() {
+                u.mirrored = mirrored;
+                if debug_check() {
+                    dbg_line(&format!(
+                        "ds_tilt: facing: unit {} at ({}, {}) beyond the window kept the console's ({})",
+                        u.id,
+                        u.x,
+                        u.y,
+                        if mirrored { "mirrored" } else { "as stored" }
+                    ));
+                }
+            }
+        }
+    }
+    u
+}
+
+/// The low ammunition / fuel icon over a unit's 16 x 16 picture, in the top-right tile. The
+/// game draws it on BG2 (in front of the units' BG1 here), but with Dual Strike map graphics
+/// BG2 holds the terrain's upper parts and is rewritten every frame, so the console never
+/// shows it: it is drawn here from the unit's record, for every unit.
+fn overlay_low_icon(pix: &mut [Px], u: &RamUnit, bg2: &Bg, bg1_pri: u8, v: &Vid) {
+    let Some(icon) = u.low_icon() else { return };
+    if !bg2.on {
+        return;
+    }
+    let front = bg2.pri < bg1_pri;
+    for py in 0..8usize {
+        for px in 0..8usize {
+            let p = bg2.tile_px(v, icon, px, py);
+            let at = py * 16 + 8 + px;
+            if p != 0 && (front || pix[at] == 0) {
+                pix[at] = p;
+            }
+        }
+    }
 }
 
 /// Rewrites `rgba` (the console's 240 x 160 picture) as Dual Strike's tilted
@@ -1238,18 +1368,22 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
 
     // What lies on the ground, as the console shows it: BG0's range tint
     // (while it is below the units) and the sprites that lie flat.
-    let mut decal = vec![0u16; W * H];
+    // (with a margin: the tilted view shows ground the console's picture does not, and the
+    // sprites that lie on it (the cursor's brackets, the move arrow, a target's glow) go there too)
+    const DM: i32 = 48;
+    const DW: usize = W + 2 * DM as usize;
+    let mut decal = vec![0u16; DW * (H + 2 * DM as usize)];
     for o in objs.iter().filter(|o| o.class == Class::Ground || is_obelisk_part(o)) {
         for y in 0..o.h {
             let sy = o.y + y;
-            if !(0..H as i32).contains(&sy) {
+            if !(-DM..H as i32 + DM).contains(&sy) {
                 continue;
             }
             for x in 0..o.w {
                 let sx = o.x + x;
                 let p = o.pix[(y * o.w + x) as usize];
-                if p != 0 && (0..W as i32).contains(&sx) {
-                    decal[sy as usize * W + sx as usize] = p;
+                if p != 0 && (-DM..W as i32 + DM).contains(&sx) {
+                    decal[(sy + DM) as usize * DW + (sx + DM) as usize] = p;
                 }
             }
         }
@@ -1302,6 +1436,13 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
 
     // --- Billboards ---
     let mut boards: Vec<Billboard> = Vec::new();
+    // Every unit on the map, from the game's records.
+    let records = ram_units(core);
+    let unit_in: std::collections::HashMap<(i32, i32), &RamUnit> = records
+        .iter()
+        .filter(|u| u.flags & 0x0e == 0)
+        .map(|u| ((u.x as i32, u.y as i32), u))
+        .collect();
     // A cell of the console's plane is map cell (camx / 16 + cell - scroll / 16).
     let (map_x0, map_y0) = (cam_px.0.div_euclid(16), cam_px.1.div_euclid(16));
     let ground_cx0 = bgs[3].hofs.div_euclid(16);
@@ -1361,6 +1502,19 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 }
                 // The map cell it stands in, and where the console draws that cell's foot.
                 let (mx, my) = (map_x0 + cx - ground_cx0, map_y0 + cy - ground_cy0);
+                if b == 1 {
+                    if let Some(u) = unit_in.get(&(mx, my)) {
+                        // (the console's picture of the unit: whether it is mirrored)
+                        let e0 = bg.entry(&v, cx * 2, cy * 2);
+                        // (only where it is this unit's picture: the plane may hold another's, not yet
+                        // redrawn)
+                        let mirrored = e0 & 0x400 != 0;
+                        if (e0 & 0x3ff) == u.base + mirrored as u16 {
+                            note_facing(u, mirrored, ground.signature());
+                        }
+                        overlay_low_icon(&mut pix, u, &bgs[2], bgs[1].pri, &v);
+                    }
+                }
                 let foot_x = (mx * 16 - cam_px.0 + 8) as f32;
                 let foot_y = (my * 16 - cam_px.1 + 16) as f32;
                 // Units stand a little in front of the edge; the peaks and
@@ -1376,6 +1530,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     oy: sy0 as f32 - foot_y,
                     rank: (3 - bg.pri) * 2,
                     last: false,
+                    tag: None,
                 });
             }
         }
@@ -1394,6 +1549,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             }
         }
         let mut bad = 0;
+        let mut checked = 0;
         for my in map_y0..=map_y0 + 9 {
             for mx in map_x0..=map_x0 + 14 {
                 if mx < 0 || my < 0 || mx >= ground.w || my >= ground.h {
@@ -1412,6 +1568,9 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     .collect();
                 let drawn = got.iter().any(|&e| !bgs[1].tile_blank(&v, (e & 0x3ff) as usize));
                 let want = cells.get(&(mx, my)).filter(|_| !ground.fogged(mx, my)).and_then(|u| u.entries());
+                if drawn || want.is_some() {
+                    checked += 1;
+                }
                 let ok = match (drawn, want) {
                     (false, None) => true,
                     (true, Some(w)) => w.iter().zip(&got).all(|(a, b)| a == b),
@@ -1420,7 +1579,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 if !ok {
                     bad += 1;
                     if bad <= 6 {
-                        eprintln!(
+                        dbg_line(&format!(
                             "ds_tilt: unit at ({}, {}): console {:03x?} ({}), records {:03x?} (record {}, fog {}) {}",
                             mx,
                             my,
@@ -1433,14 +1592,15 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                                 .get(&(mx, my))
                                 .map(|u| format!("kind {} flags {:02x} hp {} army {} colour {} country {} raw {:02x?}", u.kind, u.flags, u.hp, u.army, u.colour, u.country, u.raw))
                                 .unwrap_or_default()
-                        );
+                        ));
                     }
                 }
             }
         }
-        if bad > 0 {
-            eprintln!("ds_tilt: {} cells where the units' records and the console's picture differ", bad);
-        }
+        dbg_line(&format!(
+            "ds_tilt: units check: {} units in the console's window, {} cells where the records and the console's picture differ",
+            checked, bad
+        ));
     }
     if bgs[1].on {
         let seen: std::collections::HashSet<(i32, i32)> = boards
@@ -1448,19 +1608,33 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             .filter(|b| !b.last && b.rank == (3 - bgs[1].pri) * 2)
             .map(|b| ((b.fu - 0.5) as i32, (b.fv - 1.0 - cp().foot_drop).round() as i32 - 0))
             .collect();
-        let (win_x, win_y) = (map_x0..=map_x0 + 15, map_y0..=map_y0 + 10);
+        // The cells the console's picture shows (those the plane loop above drew a billboard
+        // for, empty or not): its plane is 16 x 16 cells but only 15 x 10 and the edge
+        // pixels of the next are on the screen.
+        let console_shows = |mx: i32, my: i32| {
+            let (cx, cy) = (mx - map_x0 + ground_cx0, my - map_y0 + ground_cy0);
+            let (cx0, cy0) = (bgs[1].hofs.div_euclid(16), bgs[1].vofs.div_euclid(16));
+            let (sx0, sy0) = (cx * 16 - bgs[1].hofs, cy * 16 - bgs[1].vofs);
+            (cx0 - 1..=cx0 + 15).contains(&cx)
+                && (cy0 - 1..=cy0 + 10).contains(&cy)
+                && sx0 + 16 > 0
+                && sy0 + 16 > 0
+                && sx0 < W as i32
+                && sy0 < H as i32
+        };
         let bob = {
             let d = (bgs[1].vofs - bgs[3].vofs).rem_euclid(512);
             if d < 16 { d } else { 0 }
         };
-        for u in ram_units(core) {
+        for u in records.iter() {
             let (ux, uy) = (u.x as i32, u.y as i32);
-            if win_x.contains(&ux) && win_y.contains(&uy) || seen.contains(&(ux, uy)) {
+            if console_shows(ux, uy) || seen.contains(&(ux, uy)) {
                 continue;
             }
             if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x0e != 0 {
                 continue;
             }
+            let u = with_facing(u, ground.signature());
             let Some(entries) = u.entries() else { continue };
             let mut pix = vec![0u16; 256];
             for (k, &e) in entries.iter().enumerate() {
@@ -1470,6 +1644,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     }
                 }
             }
+            overlay_low_icon(&mut pix, &u, &bgs[2], bgs[1].pri, &v);
             boards.push(Billboard {
                 pix,
                 w: 16,
@@ -1480,6 +1655,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 oy: -16.0 - bob as f32,
                 rank: (3 - bgs[1].pri) * 2,
                 last: false,
+                tag: Some((ux, uy, u.low)),
             });
         }
     }
@@ -1584,6 +1760,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         oy: -(h as f32),
                         rank: 1,
                         last: false,
+                        tag: None,
                     });
                 }
             }
@@ -1591,7 +1768,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
     for o in objs
         .iter()
-        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer) && !is_obelisk_part(o))
+        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer | Class::Mover) && !is_obelisk_part(o))
     {
         let fx = o.x as f32 + o.w as f32 / 2.0;
         let fy = (o.y + o.h) as f32;
@@ -1601,12 +1778,62 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             w: o.w,
             h: o.h,
             fu: (cam_px.0 as f32 + fx) / 16.0,
-            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { PROP_DROP } else { 0.0 },
+            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Pointer { 0.0 } else { PROP_DROP },
             ox: -(o.w as f32) / 2.0,
             oy: -(o.h as f32),
             rank: (3 - o.pri) * 2 + 1,
             last: o.class == Class::Pointer,
+            tag: None,
         });
+    }
+    // The moving unit where the console has no picture of it: its sprite is parked while the
+    // unit is off the console's screen (the tilted view shows more), so it is drawn from the
+    // game's record of the move, with the pieces and facing the console last showed.
+    // (`TANGOAW2_TILT_NO_RAM_MOVER=1` leaves it out, for a test's comparison)
+    static NO_RAM_MOVER: OnceLock<bool> = OnceLock::new();
+    let mover = if env_on("TANGOAW2_TILT_NO_RAM_MOVER", &NO_RAM_MOVER) { None } else { find_mover(core) };
+    {
+        let mut seen = MOVER_SEEN.lock().unwrap();
+        if let (Some(sn), Some((mx, my))) = (seen.as_mut(), mover) {
+            if let Some(o) = objs.iter().find(|o| o.class == Class::Mover) {
+                // (the picture's corner against the record's place, learned while it shows)
+                sn.delta = Some((o.x - (mx - cam_px.0 - 10), o.y - (my - cam_px.1 - 8)));
+            } else if let Some((dx, dy)) = sn.delta {
+                let (left, top) = (mx - 10 + dx, my - 8 + dy);
+                let (cx, cy) = ((mx + 8).div_euclid(16), (my + 8).div_euclid(16));
+                if (0..ground.w).contains(&cx)
+                    && (0..ground.h).contains(&cy)
+                    && !ground.fogged(cx, cy)
+                    && !objs.iter().any(|o| o.class == Class::Ground && (884..=895).contains(&o.tile))
+                {
+                    let mut pix = vec![0u16; (sn.w * sn.h) as usize];
+                    let one_d = v.dispcnt() & 0x40 != 0;
+                    for &(tile, px, py, hf, vf) in sn.pieces.iter() {
+                        let piece = obj_pixels_ro(&v, one_d, tile as usize, 4, 8, 8, hf, vf, false);
+                        for y in 0..8 {
+                            for x in 0..8 {
+                                let p = piece[y * 8 + x];
+                                if p != 0 {
+                                    pix[((py + y as i32) * sn.w + px + x as i32) as usize] = p;
+                                }
+                            }
+                        }
+                    }
+                    boards.push(Billboard {
+                        pix,
+                        w: sn.w,
+                        h: sn.h,
+                        fu: (left as f32 + sn.w as f32 / 2.0) / 16.0,
+                        fv: (top as f32 + sn.h as f32) / 16.0 + PROP_DROP,
+                        ox: -(sn.w as f32) / 2.0,
+                        oy: -(sn.h as f32),
+                        rank: 1,
+                        last: false,
+                        tag: Some((-1, -1, 0)),
+                    });
+                }
+            }
+        }
     }
     boards.sort_by(|a, b| {
         (a.last, a.fv, a.rank)
@@ -1688,9 +1915,6 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 if tint.is_some() && outer.is_none() {
                     p = range_look(p, layers[0][i]);
                 }
-                if decal[i] != 0 {
-                    p = decal[i];
-                }
             } else if tint.is_some() && outer.is_none() {
                 let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
                 let on = cx >= 0
@@ -1699,6 +1923,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     && cy < ground.h
                     && reach[(cy * ground.w + cx) as usize] != 0xff;
                 p = range_look(p, if on { 0x7fff } else { 0 });
+            }
+            if (-DM..W as i32 + DM).contains(&sx) && (-DM..H as i32 + DM).contains(&sy) {
+                let d = decal[(sy + DM) as usize * DW + (sx + DM) as usize];
+                if d != 0 {
+                    p = d;
+                }
             }
             map[y * W + x] = p;
         }
@@ -1712,6 +1942,19 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let bottom = top + bb.h as f32 * sc;
         let (x0, x1) = ((left.floor() as i32).max(0), (right.ceil() as i32).min(W as i32));
         let (y0, y1) = ((top.floor() as i32).max(0), (bottom.ceil() as i32).min(H as i32));
+        if let (true, Some((cx, cy, low))) = (debug_check(), bb.tag) {
+            dbg_line(&format!(
+                "ds_tilt: record-drawn {} ({}, {}) low {} at ({:.0}, {:.0}) to ({:.0}, {:.0})",
+                if cx < 0 { "moving unit" } else { "unit" },
+                cx,
+                cy,
+                low,
+                left,
+                top,
+                right,
+                bottom
+            ));
+        }
         for y in y0..y1 {
             let v = ((y as f32 + 0.5 - top) / sc).floor() as i32;
             if !(0..bb.h).contains(&v) {
@@ -1778,6 +2021,18 @@ fn debug_check() -> bool {
     env_on("TANGOAW2_TILT_CHECK", &ENV)
 }
 
+/// A line of the check's output: stderr, and the end of the file `TANGOAW2_TILT_LOG` names
+/// (so a test can read what its console printed).
+fn dbg_line(s: &str) {
+    eprintln!("{s}");
+    if let Ok(path) = std::env::var("TANGOAW2_TILT_LOG") {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+            let _ = writeln!(f, "{s}");
+        }
+    }
+}
+
 /// The units' table (a ROM word names it), the players' (colours), and five
 /// armies' slot count.
 const UNITS_PTR: u32 = 0x0849_9594;
@@ -1785,7 +2040,10 @@ const PLAYERS_PTR: u32 = 0x0849_9598;
 /// A pool word naming the CO table (0x104 bytes a CO, the country at +0x15).
 const CO_TABLE_PTR: u32 = 0x0804_2DDC;
 
+#[derive(Clone)]
 struct RamUnit {
+    /// The record's number (the army's slots in turn).
+    id: u8,
     kind: u8,
     flags: u8,
     x: u8,
@@ -1811,9 +2069,34 @@ struct RamUnit {
     hide_hp: bool,
     /// The fourth status icon (0x2AE).
     icon4: bool,
+    /// The army the picture is drawn for, and whether the unit has moved: what its facing and
+    /// palette depend on (see [`note_facing`]).
+    shown_by: u8,
+    moved: bool,
+    /// Low ammunition (1) and low fuel (2): at most a third of the type's own (the game's
+    /// `0x08022618`, which puts the icon in the top-right tile of the cell on BG2).
+    low: u8,
 }
 
+/// The facing the console drew a unit with while it was in its window (the picture's mirror
+/// flag), kept for when the unit is beyond it: the console draws only its own window, and the
+/// unit's picture then comes from the record. It applies while what the facing depends on (the
+/// army the picture is drawn for, whether the unit has moved, its type) is as it was.
+type FacingKey = (u8, u8, bool);
+static FACING: std::sync::LazyLock<std::sync::Mutex<(u64, std::collections::HashMap<u8, (FacingKey, bool)>)>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new((0, std::collections::HashMap::new())));
+
 impl RamUnit {
+    fn facing_key(&self) -> FacingKey {
+        (self.kind, self.shown_by, self.moved)
+    }
+
+    /// The BG2 tilemap entry the console draws in the top-right of the unit's cell: the
+    /// low ammunition / low fuel icon (tiles 0x33D to 0x33F, palette 10), if any.
+    fn low_icon(&self) -> Option<u16> {
+        (self.low != 0).then(|| 0xA33C + self.low as u16)
+    }
+
     /// The four tilemap entries the console draws the unit with.
     fn entries(&self) -> Option<[u16; 4]> {
         if self.kind == 25 {
@@ -1914,7 +2197,19 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
         let icon4 = not_ours
             && core.raw_read_8(0x0300_3FC0 + 0xD, -1) != 0
             && core.raw_read_32(crate::roster::table(core) + 0x5C * buf[0] as u32 + 0x14, -1) != 0;
+        // (`0x08022618`: ammunition and fuel at most a third of the type's; the table's +0xB
+        // and +0x10 are the types' own, 0 for none.)
+        let low = {
+            let t = crate::roster::table(core) + 0x5C * buf[0] as u32;
+            let (max_ammo, max_fuel) = (core.raw_read_8(t + 0xB, -1) as i32, core.raw_read_8(t + 0x10, -1) as i32);
+            let ammo = ((u16::from_le_bytes([buf[4], buf[5]]) >> 7) & 0xF) as i32;
+            let fuel = (buf[6] & 0x7f) as i32;
+            (max_ammo != 0 && ammo <= max_ammo / 3) as u8 + 2 * (max_fuel != 0 && fuel <= max_fuel / 3) as u8
+        };
         out.push(RamUnit {
+            id: id as u8,
+            shown_by,
+            moved,
             kind: buf[0],
             flags: buf[1],
             x: buf[2],
@@ -1930,6 +2225,7 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
             base,
             hide_hp,
             icon4,
+            low,
         });
     }
     out

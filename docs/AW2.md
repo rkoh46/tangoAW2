@@ -3771,10 +3771,42 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   Dual Strike, Black Hole), Versus, War Room, Survival, Design Room maps in
   Versus, five-army maps and two-front maps (both fronts, and the Front view).
   Netplay: off (`tick` only drives the setting while no match runs).
-- **Not done / approximations.** Unload/repair cursors and the move arrow are
-  only drawn inside the console's window; low fuel/ammo/capture icons are not
-  drawn beyond the window; HUD popups stay where the console puts them;
-  Dual Strike's desert and wasteland looks have no real frame to compare with.
+- **Beyond the window, in detail** (`tools/aw2test/tests/test_ds_tilt_beyond.py`; the check's
+  lines go to the file `TANGOAW2_TILT_LOG` names as well as stderr).
+  - *Which cells are the console's.* Its plane is 16 x 16 cells but its picture shows 15 x 10
+    and the edge pixels of the next column and row: a cell is the console's when a pixel of
+    it is on its screen (`console_shows`), whatever else the plane holds; every other unit is
+    drawn from its record (before, the whole 16 x 11 block was taken as the console's, which
+    left the unit in the column or row just past its picture out of both).
+  - *Low ammunition and low fuel* (`0x08022618`): ammunition and fuel at most a third of the
+    unit table's own (+0x0B, +0x10) put BG2 tile `0x33C` + 1 (ammunition), + 2 (fuel) or + 3
+    (both), palette 10, in the top-right of the unit's cell. The tiles blink in VRAM. With the
+    Dual Strike map graphics BG2 is the terrain's upper-parts layer and is rewritten every
+    frame (`wasteland::restore_front`), so the console never shows these icons: the tilt
+    draws them from the record over every unit, inside the window and beyond it (`overlay_
+    low_icon`). The capture (`0x2AC`), cargo (`0x2AB`), hidden (`0x2AD`) and fourth (`0x2AE`)
+    marks are BG1's, the unit's own bottom-left tile, and were drawn beyond the window already.
+  - *The moving unit.* The game's camera follows a unit as it moves, so in play its sprite (nine
+    8 x 8 pieces, tiles 666 to 674, palette 4) stays on the console's picture; the game parks the
+    pieces (x 0, y 160) when it is off it. The unit is then drawn from the proc that holds the
+    sprite (function `0x080363D1`; the unit's place in map pixels at +0x3E and +0x40, a cell's
+    16 pixels in four frames for a vehicle), with the pieces and flips (its facing) the
+    console last showed (`MoverSeen`), at the offset between the sprite and that place learned
+    while it was showing; not in fog. Sprites that lie on the map (the cursor's pointer and
+    brackets, the move arrow, a target's glow, the moving unit) that are past the console's
+    picture but not parked are kept where the game put them, and the ground decals have a
+    margin, so none is cut off at the console's edge.
+  - *Facing.* The mirror flag the console drew a unit with (BG1's top-left entry of its cell) is
+    remembered per unit record while the unit is on the console's picture, and used beyond it
+    while what it depends on (type, the army it is drawn for, moved) is as it was; the check
+    counts the times it differs from the rule above (none in the tests).
+  - `TANGOAW2_TILT_NO_RAM_MOVER=1` leaves the record-drawn moving unit out (a test's control).
+- **Not done / approximations.** HUD popups stay where the console puts them; Unload and
+  repair candidates are the cursor's pointer and brackets only (the game draws no marker
+  on each candidate cell), so there is nothing else to carry; Dual Strike's desert and
+  wasteland looks have no real frame to compare with. In play the moving unit never leaves
+  the console's picture (the camera follows it), so the record-drawn mover is exercised in the
+  tests by parking the pieces the way the game does.
 
 - **Weather.** Rain's streaks, snow's flakes and the sandstorm's grains (drawn here: AW2 has none
   for it, Dual Strike shows fine speckles) are screen-space and stay flat on top of the map; rain's
