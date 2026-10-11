@@ -3672,14 +3672,17 @@ before a battle:
   minicannon pods) from `bmap/015` with `com_tower::SHADES`; the HP digits and the
   four status icons (`0x0810E820`, `bmap/01c`, the same colour indices); the Missile
   pad, Fortress and Volcano pictures (headers' `+0x10` words and `0x0803FE40`).
-  The five HQs are cells 10 (Orange Star), 11 (Blue Moon), 12 (Green Earth), 13 (Yellow
-  Comet) and 9 (Black Hole), picked by the army's CO's country: read off Dual Strike's
-  Design Room (the four colours it offers draw cells 10, 11, 12 and 13; poking the fifth HQ
-  terrain, 0x1D9, into a placed HQ draws cell 9). HQs use `ds_graphics::HQ_SHADES`: Dual
+  The four HQs are cells 10 (Orange Star), 11 (Blue Moon), 12 (Green Earth) and 13 (Yellow
+  Comet), picked by the army's CO's country: read off Dual Strike's Design Room (the four
+  colours it offers draw cells 10, 11, 12 and 13). Dual Strike has no Black Hole HQ picture:
+  it draws a property by its terrain id, the colour from the owner. The ids 0x1D9..0x1DD
+  are its research Labs (cell 9: the 7/9 checker fortress; the lab missions' goals, and
+  the owned Labs of Lash's Test and Spiral Garden), 0x1B9..0x1BD its Com Towers (cell 8).
+  Black Hole keeps AW2's own HQ picture (an earlier version drew the Lab's cell 9 as its HQ).
+  HQs use `ds_graphics::HQ_SHADES`: Dual
   Strike's index 13 is their dark grey windows (palette 7 to 11 of `bmap/00e`, 7b6a7b,
   seen in the Design Room's real frame), AW2's index 15, not the lit yellow of the other
-  buildings (`tests/test_ds_hq.py`). Black Hole's cell 9 has a 7/9 checker of Dual Strike's
-  own (light grey cdc5bd and purple b452c5 in its palette 11): it is drawn as it is.
+  buildings (`tests/test_ds_hq.py`).
 - **Is the map 3D?** Yes: the battle screen is the 3D engine (DISPCNT bit 3 on
   engine A only), the map seen in perspective (edges converge toward the top; the
   same scroll moves the upper rows 39 pixels and the lower 47) with billboards for
