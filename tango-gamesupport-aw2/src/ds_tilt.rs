@@ -1146,7 +1146,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
 /// picture is kept, AW2's pointer and corner brackets (tiles 869 and 873) are taken out of it (the
 /// pixels they cover are redone from what lies under them) and Dual Strike's own cursor
 /// ([`crate::ds_cursor`]) is drawn flat, 16 pixels a cell, in their place. Whatever else the game
-/// draws there (the attack crosshair, the drop cursor, the move arrow, the menus) is left as it is.
+/// draws there (the drop cursor, the move arrow, the menus) is left as it is; the attack crosshair is Dual Strike's ring.
 pub fn apply_flat_cursor(core: &Core, rgba: &mut [u8]) {
     static FAILED: AtomicBool = AtomicBool::new(false);
     if enabled() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
@@ -1182,10 +1182,11 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
     };
     let bgs = [b0, b1, b2, b3];
     let Some(objs) = read_objs(core, &mut v) else { return };
-    let is_cursor_piece = |o: &Obj| o.class == Class::Pointer || (o.class == Class::Ground && o.tile == 873);
+    let is_cursor_piece = |o: &Obj| o.class == Class::Pointer || (o.class == Class::Ground && (o.tile == 873 || is_crosshair(o.tile)));
     if !objs.iter().any(|o| is_cursor_piece(o)) {
         return;
     }
+    let targeting = objs.iter().any(|o| o.class == Class::Ground && is_crosshair(o.tile));
     for bg in &bgs {
         if bg.on {
             bg.load(core, &mut v);
@@ -1264,7 +1265,13 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
     let cam = (core.raw_read_16(MAP + 4, -1) as i16 as f32, core.raw_read_16(MAP + 6, -1) as i16 as f32);
     let cursor = (core.raw_read_8(CURSOR_X, -1) as i32, core.raw_read_8(CURSOR_Y, -1) as i32);
     let mut map = vec![0u16; W * H];
-    crate::ds_cursor::draw(&mut map, W, H, art, cursor, |u, v| (u * 16.0 - cam.0, v * 16.0 - cam.1, 16.0));
+    let flat = |u: f32, v: f32| (u * 16.0 - cam.0, v * 16.0 - cam.1, 16.0);
+    if targeting {
+        // (Dual Strike's ring is 30 pixels across where its cell is 15)
+        crate::ds_cursor::draw_crosshair(&mut map, W, H, art, cursor, Some(30.0), crate::ds_cursor::next_tick(), flat);
+    } else {
+        crate::ds_cursor::draw(&mut map, W, H, art, cursor, flat);
+    }
     let lut3 = rgba_lut_3d();
     for (i, &p) in map.iter().enumerate() {
         if p != 0 {
@@ -1598,6 +1605,9 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let ds_cursor = crate::ds_cursor::art();
     let is_cursor_piece = |o: &Obj| o.class == Class::Pointer || (o.class == Class::Ground && o.tile == 873);
     let cursor_shown = ds_cursor.is_some() && objs.iter().any(|o| is_cursor_piece(o));
+    // The attack target's ring (four crosshair pieces) is Dual Strike's as well.
+    let is_ring_piece = |o: &Obj| o.class == Class::Ground && is_crosshair(o.tile);
+    let ring_shown = ds_cursor.is_some() && objs.iter().any(|o| is_ring_piece(o));
     // (with a margin: the tilted view shows ground the console's picture does not, and the
     // sprites that lie on it (the cursor's brackets, the move arrow, a target's glow) go there too)
     const DM: i32 = 48;
@@ -1605,7 +1615,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let mut decal = vec![0u16; DW * (H + 2 * DM as usize)];
     for o in objs
         .iter()
-        .filter(|o| (o.class == Class::Ground || is_obelisk_part(o)) && !(cursor_shown && is_cursor_piece(o)))
+        .filter(|o| (o.class == Class::Ground || is_obelisk_part(o)) && !(cursor_shown && is_cursor_piece(o)) && !(ring_shown && is_ring_piece(o)))
     {
         for y in 0..o.h {
             let sy = o.y + y;
@@ -2299,6 +2309,9 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
 
     if let (Some(art), true) = (ds_cursor, cursor_shown) {
         crate::ds_cursor::draw(&mut map, W, H, art, cursor, |u, v| cam.project(u, v));
+    }
+    if let (Some(art), true) = (ds_cursor, ring_shown) {
+        crate::ds_cursor::draw_crosshair(&mut map, W, H, art, cursor, None, crate::ds_cursor::next_tick(), |u, v| cam.project(u, v));
     }
 
     // A sandstorm (Dual Strike's fourth weather; AW2 draws no particles for it): drifting grains over

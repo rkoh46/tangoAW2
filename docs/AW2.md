@@ -3829,6 +3829,17 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   texture pixel for pixel); the arrow is a quad about a cell across off the cell's bottom-right
   corner, mirrored to the other side near the picture's right and bottom edges (`arrow_side`:
   right of 200 px, below 135 px; five of 46 real frames disagree, the real rule is not found).
+  **The attack target's ring** is Dual Strike's too (`draw_crosshair`, flat and tilted): four 16 x 16
+  textures in `bmap/027` after the dot, from byte 544 (arc, pointer quarter, three times, 128 bytes
+  each; palette `bmap/028`). The arc is drawn mirrored for the top-right and bottom-left, the
+  pointer quarter is the bottom-right; the three pictures show 7, 2, 8 and 1 frames of a turn of 18
+  (read from 120 melonDS frames; AW2's own ring is the same art at 32 pixels with its own six-frame
+  turn). Real frames: the ring is a screen-facing quad 30 pixels across on a 14.5 pixel cell (2.07
+  cells; 28 at the top of the picture, 32 low), centred on the target's cell like the dots
+  (+0.064 cell right). Flat it is 30 pixels (AW2's is 32). The game's own crosshair pieces
+  (tiles 884..909) are hidden the way the pointer is. Dual Strike puts its damage forecast box away
+  from the target (low left when the target is high, right when it is low) and its red looks paler at first;
+  AW2's stays as it is.
 - **What is map and what is HUD.** BG3 ground; BG1 units; BG2 peaks; BG0
   while below the units (range); OBJs of priority 3 (buildings); the cursor
   (tile 869 pointer, 873 brackets), the move arrow (16 x 16, palette 3) and the
