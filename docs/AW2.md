@@ -3678,6 +3678,46 @@ before a battle:
   units, so the "tilt" is not only in the sprites. tangoAW2's grid is flat.
 - Not in Dual Strike, AW2's kept: Laser, Deathray, Black Factory.
 
+### Dual Strike HUD (`ds_hud.rs`)
+
+With "Dual Strike map graphics" on (the pack, offline: `wasteland::ds_graphics`), the battle map's CO panel and
+its terrain / unit information panel are Dual Strike's, drawn by the GBA's sprite hardware at the sprite flush
+(`branding::flush`, after `tag_ui`): AW2 still runs its panels (logic, flips, slides, the dialogue box's HBlank
+that hides sprites), and the pieces that are AW2's art are hidden (OAM disable bit) and Dual Strike's put in their
+place. With the setting off nothing is read or written (`compat_aw2_byte_identical` passes).
+
+- **CO panel** (`DrawArmyCoPanel`, `0x080436DC`; `tag::draw_panel`'s trap calls `ds_hud::note_panel` for its x, y
+  and army). Dual Strike's layout read from melonDS' OAM: a row a CO (plate: two 32x8 pieces, the lower pair
+  flipped; the face, 32x16, at the corner end; small stars then big ones, 6 pixels apart, away from the face), the
+  funds between ("G." and right-aligned digits at the screen's edge), the active CO over its partner (a single
+  CO's panel is its row and the funds). The right-hand panel is the left one mirrored (plate, face and stars;
+  the funds are not). Flush to the screen's top corner AW2 chose (`x < 120`: left). Art, all from the pack:
+  the HUD sheet (overlay 0 `0x214F0`: OBJ tile 16 of Dual Strike's battle screen; its tiles 16..48 are the plate,
+  the stars in four states, "G." and the digits), the army's palette 7 (arm9 `0x0213FD2C`, 0x20 an army colour:
+  Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole), the stars' fill colour (palette index 15, run
+  through the 16 colours at `0x0213FDEC` one step every two frames), the faces (`ds_co_art::co_art(..).hud`:
+  Dual Strike's menu mugs, 8 tiles, and the CO's palette; AW2's own HUD face for Sturm and Crumb, who are not in
+  Dual Strike). The sheet goes into OBJ tiles 0..41 (AW2's header and stars, saved the first time and put back
+  the moment no such panel is drawn: the CO page's) and palette 7; the active face into tiles 58..65 and palette
+  14 (the game reloads them every call, so after it), the partner's into `tag_ui`'s 0x309 and palette 5 (left
+  out while the heal effect plays). The meter is the power meter as AW2 reads it (CO Power stars small, the rest
+  of the Super Power big; a star's four states from its share); a power on, or a Tag Power, shows all stars full.
+  **Not done:** Dual Strike's "CO POWER" / "SUPER POWER" label (its letters are packed into the HUD sheet in
+  an order not worked out), nor its funds counting animation.
+- **Terrain / unit panel** (`0x0802A8DC`, sprites of AW2's semi-transparent mode 1 in the lower corner). AW2's
+  names, the terrain picture, the unit picture and the icons (pixel for pixel Dual Strike's: OBJ tiles 850 star,
+  854 capture, 862 heart, 863 ammo, 864 fuel, palette 1 is Dual Strike's too) are moved to Dual Strike's layout
+  (a column each: terrain, unit; the unit's first when the panel is on the right, as AW2's); the numbers are Dual
+  Strike's style (the digits of `icon/res_icon4_cg_E`, borrowed OBJ tiles 32..41: defence stars, capture points,
+  fuel and ammo with a leading zero to two digits, the hit points out of 100 from the unit's record) and the
+  backing is AW2's window and darkening at Dual Strike's rectangle (78 x 61, 42 wide without a unit; the game's
+  window shadows `0x03002B40/4C/44`, `0x03002EFC`, which its VBlank copies into WIN0H / WIN0V: the IO registers
+  cannot be written from here). **Names stay AW2's** (Dual Strike draws them from its font).
+- Tilt: the HUD stays flat (sprites over the tilted map; the window's darkening is carried as before).
+- Tests: `tools/aw2test/tests/test_ds_hud.py` (`AW2TEST_HUD_SHOTS=<dir>` keeps pictures; run with
+  `TANGOAW2_DS_GRAPHICS=1` for the setting on): CO panels (single, pair, Sturm on Black Hole, both corners),
+  info panels, meters and powers, and Five Seas, two fronts, DS Campaign, BH Campaign and Survival.
+
 ### Dual Strike tilt (`ds_tilt.rs`, `ds_ground.rs`, Settings > Graphics)
 
 Display only: it reads VRAM, palette RAM, OAM, the video registers and the

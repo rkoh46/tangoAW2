@@ -46,13 +46,13 @@ const HUD_POOL: u32 = 0x0804_37EC;
 const PRESENTATION_POOL: u32 = 0x0803_9B7C;
 const PRESENTATION_ROW: u32 = 0x44;
 
-fn hud_face(core: &Core, co: u8) -> [u8; 256] {
+pub(crate) fn hud_face(core: &Core, co: u8) -> [u8; 256] {
     let mut b = [0u8; 256];
     core.raw_read_range(core.raw_read_32(HUD_POOL, -1) + 0x100 * co as u32, -1, &mut b);
     b
 }
 
-fn co_palette(core: &Core, co: u8) -> [u8; 32] {
+pub(crate) fn co_palette(core: &Core, co: u8) -> [u8; 32] {
     let row = core.raw_read_32(PRESENTATION_POOL, -1) + PRESENTATION_ROW * co as u32;
     let mut b = [0u8; 32];
     core.raw_read_range(core.raw_read_32(row + 0x08, -1), -1, &mut b);
@@ -613,6 +613,10 @@ fn panel_flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         return at;
     }
     core.raw_write_8(tag::PANEL + 5, -1, 0);
+    // Dual Strike's own two-row panel ([`crate::ds_hud`]) has the partner.
+    if crate::ds_hud::draws_co_panel(core) {
+        return at;
+    }
     if build_menu_up(core) {
         return at;
     }
