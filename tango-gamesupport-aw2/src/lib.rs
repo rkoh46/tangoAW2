@@ -47,6 +47,7 @@ pub mod ds_unit_art;
 pub mod ds_graphics;
 pub mod ds_cursor;
 pub mod ds_menus;
+pub mod ds_coselect;
 pub mod ds_hud;
 pub mod ds_tilt;
 pub mod ds_ground;

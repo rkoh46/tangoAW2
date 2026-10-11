@@ -102,7 +102,7 @@ const CO_COUNT_AT: u32 = 0x17;
 const CO_LIST_AT: u32 = 0x18;
 const CURSOR_AT: u32 = 0x32;
 
-fn record(core: &Core) -> u32 {
+pub(crate) fn record(core: &Core) -> u32 {
     if crate::five::active(core) {
         TEAMS_FIVE
     } else {
@@ -118,9 +118,17 @@ fn co_index_at(core: &Core) -> u32 {
     }
 }
 
-fn armies(core: &Core) -> u32 {
+pub(crate) fn armies(core: &Core) -> u32 {
     let max = if crate::five::active(core) { 5 } else { 4 };
     (core.raw_read_8(record(core) + ARMIES_AT, -1) as u32).clamp(1, max)
+}
+
+/// The army whose partner the D-pad is editing on the Teams screen.
+pub(crate) fn editing(core: &Core) -> Option<u32> {
+    match core.raw_read_8(EDITING, -1) {
+        NONE => None,
+        a => Some(a as u32),
+    }
 }
 
 /// UI state ([`tag::UI`]): the army whose partner the D-pad edits (0xFF
@@ -181,7 +189,7 @@ fn teams_list(core: &Core) -> Vec<u8> {
     (0..n.min(64)).map(|k| core.raw_read_8(at + k, -1)).collect()
 }
 
-fn army_main(core: &Core, army: u32) -> Option<u8> {
+pub(crate) fn army_main(core: &Core, army: u32) -> Option<u8> {
     let list = teams_list(core);
     list.get(core.raw_read_8(co_index_at(core) + army, -1) as usize).copied()
 }

@@ -465,6 +465,11 @@ fn build_art() -> Option<Art> {
     })
 }
 
+/// The selection's corner marks (TL, TR, BL, BR; 8 x 8 RGBA), for [`crate::ds_coselect`]'s cursors.
+pub(crate) fn corner_marks() -> Option<[[[u8; 4]; 64]; 4]> {
+    art().map(|a| a.corners)
+}
+
 fn art() -> Option<&'static Art> {
     static ART: OnceLock<Option<Art>> = OnceLock::new();
     ART.get_or_init(|| {
