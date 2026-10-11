@@ -160,6 +160,9 @@ struct Follow {
     logical: (f32, f32),
     shown: (f32, f32),
     map: (i32, i32),
+    /// The console's frame counter at the last picture (the glide runs on console frames, not on pictures: a picture
+    /// is not made for every frame, as in a test that waits before a shot).
+    at: u32,
 }
 static FOLLOW: std::sync::Mutex<Option<Follow>> = std::sync::Mutex::new(None);
 
@@ -168,7 +171,7 @@ static FOLLOW: std::sync::Mutex<Option<Follow>> = std::sync::Mutex::new(None);
 /// below (the cell inside +-6 and +-4 by its far edge), never shows beyond the
 /// map's edge (centre at least 8 cells from the sides and 6 from the top and
 /// bottom) and centres a map smaller than that; it glides there.
-fn follow(cursor: (i32, i32), w: i32, h: i32) -> (f32, f32) {
+fn follow(cursor: (i32, i32), w: i32, h: i32, now: u32) -> (f32, f32) {
     let (cx, cy) = (cursor.0 as f32, cursor.1 as f32);
     let clamp_to_map = |x: f32, y: f32| {
         (
@@ -178,9 +181,9 @@ fn follow(cursor: (i32, i32), w: i32, h: i32) -> (f32, f32) {
     };
     let mut st = FOLLOW.lock().unwrap();
     let fresh = st.as_ref().map_or(true, |f| f.map != (w, h));
-    let f = st.get_or_insert(Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h) });
+    let f = st.get_or_insert(Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h), at: now });
     if fresh {
-        *f = Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h) };
+        *f = Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h), at: now };
         f.logical = (
             f.logical.0.clamp(cx - 5.0, cx + 6.0),
             f.logical.1.clamp(cy - 3.0, cy + 4.0),
@@ -195,8 +198,11 @@ fn follow(cursor: (i32, i32), w: i32, h: i32) -> (f32, f32) {
     if fresh || env_on("TANGOAW2_TILT_SNAP", &SNAP) {
         f.shown = target;
     } else {
-        f.shown.0 += (target.0 - f.shown.0) * 0.3;
-        f.shown.1 += (target.1 - f.shown.1) * 0.3;
+        // 0.3 of the way a frame, for the frames since the last picture (a counter that went back: one).
+        let n = if now >= f.at { (now - f.at).min(60) } else { 1 };
+        let k = 1.0 - 0.7f32.powi(n as i32);
+        f.shown.0 += (target.0 - f.shown.0) * k;
+        f.shown.1 += (target.1 - f.shown.1) * k;
         if (target.0 - f.shown.0).abs() < 0.02 {
             f.shown.0 = target.0;
         }
@@ -204,6 +210,7 @@ fn follow(cursor: (i32, i32), w: i32, h: i32) -> (f32, f32) {
             f.shown.1 = target.1;
         }
     }
+    f.at = now;
     f.shown
 }
 
@@ -1872,7 +1879,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         core.raw_read_8(CURSOR_X, -1) as i32,
         core.raw_read_8(CURSOR_Y, -1) as i32,
     );
-    let (fx, fy) = follow(cursor, ground.w, ground.h);
+    let (fx, fy) = follow(cursor, ground.w, ground.h, core.frame_counter());
     let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
 
     // What lies on the ground, as the console shows it: BG0's range tint
