@@ -9,7 +9,7 @@
 //!   Mech differ) and moving sheets from `bmap/01d..01f` and `mu/*`, through
 //!   [`crate::ds_unit_art`].
 //! - Buildings: the property sheet's pictures (city, base and its smoke,
-//!   airport, port, the five HQs, silo, minicannon pods) from `bmap/015`.
+//!   airport, port, the four HQs (Black Hole keeps AW2's), silo, minicannon pods) from `bmap/015`.
 //!
 //! Where the game reads a table through a literal-pool word the word is
 //! pointed at a converted copy in free ROM while the mode is on and back at
@@ -67,12 +67,14 @@ fn at(tile: usize) -> usize {
 /// Minicannon pods use Black Hole's own indices, as [`crate::ds_art`]'s
 /// cannon does; everything else the building shades.
 const POD_INDICES: [u8; 16] = [0, 2, 3, 3, 4, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-/// The HQ picture of each country (AW2's slot order: Orange Star, Blue Moon, Green Earth, Yellow
-/// Comet, Black Hole), cells of `bmap/015`. Read off Dual Strike's own Design Room: its HQ of
-/// each colour has the shape of cells 10 (Orange Star: the tall tower), 12 (Green Earth: the
-/// dome), 13 (Yellow Comet: the horns) and 11 (Blue Moon: the spire), and terrain 0x1D9, the
-/// fifth HQ, Black Hole's, is cell 9 (the squat fortress with the antenna).
-const HQ_CELLS: [usize; 5] = [10, 11, 12, 13, 9];
+/// The HQ picture of the first four countries (AW2's slot order: Orange Star, Blue Moon, Green
+/// Earth, Yellow Comet), cells of `bmap/015`: the tall tower, the spire, the dome and the horns,
+/// read off Dual Strike's own Design Room. Dual Strike has no Black Hole HQ picture: it draws an
+/// HQ by its terrain id (a Black Hole army's HQ in its Dark Ambition mission, terrain 0x1D4, is
+/// the fourth army's picture in Black Hole's colours, and poking 0x1C5 over it draws the first
+/// army's tower in purple), and 0x1D9, once taken for Black Hole's HQ, is its Lab (cell 9;
+/// the Com Tower is cell 8). So Black Hole keeps AW2's own HQ picture.
+const HQ_CELLS: [usize; 4] = [10, 11, 12, 13];
 /// The colours of an HQ: [`crate::com_tower::SHADES`] except the windows. Dual Strike's index 13
 /// is the HQs' dark grey windows (palette 7 to 11 of `bmap/00e`: 7b6a7b; the city's and port's
 /// lit windows are the same index drawn pale in the game, so only these pictures change); AW2's

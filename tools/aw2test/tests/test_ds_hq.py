@@ -1,14 +1,16 @@
-"""Each country's HQ with Dual Strike graphics is Dual Strike's picture for that country.
+"""Each country's HQ with Dual Strike graphics is Dual Strike's picture for that country; Black Hole's is AW2's.
 
-Dual Strike's `bmap/015` holds the five HQs as cells 9 to 13. Which cell is whose was read off
-Dual Strike itself (its Design Room draws the HQ of each colour: Orange Star the tall tower, Blue
-Moon the spire, Green Earth the dome, Yellow Comet the horns; terrain 0x1D9, the fifth HQ, is the
-squat fortress with the antenna, Black Hole's), and the game picks the picture by the country of
-the army's CO (Andy Orange Star, Olaf Blue Moon, Eagle Green Earth, Sonja Yellow Comet, Sturm
-Black Hole), not by the army's colour. Here the four HQs of a four-army map are photographed from
-the console's object memory: each one's 16x32 tiles are the cell for the CO's country, in the
-colours `crate::ds_graphics` gives an HQ (the owner shades of `com_tower::SHADES`; the windows
-Dual Strike's dark grey, AW2's index 15). Settings off, the same HQs are AW2's own pictures."""
+Dual Strike's `bmap/015` holds the HQs as cells 10 to 13 (its Design Room draws the HQ of each
+colour: Orange Star the tall tower, Blue Moon the spire, Green Earth the dome, Yellow Comet the
+horns). It has no Black Hole HQ: it draws an HQ by terrain id (a Black Hole army's HQ in the Dark
+Ambition mission is the fourth army's picture in Black Hole's colours), and terrain 0x1D9, once
+read as Black Hole's HQ, is its Lab (cell 9; the Com Tower is cell 8). The game picks the picture
+by the country of the army's CO (Andy Orange Star, Olaf Blue Moon, Eagle Green Earth, Sonja
+Yellow Comet, Sturm Black Hole). Here the four HQs of a four-army map are photographed from the
+console's object memory: each one's 16x32 tiles are the cell for the CO's country, in the colours
+`crate::ds_graphics` gives an HQ (the owner shades of `com_tower::SHADES`; the windows Dual
+Strike's dark grey, AW2's index 15); Sturm's is AW2's own picture (the same tiles as with the
+setting off). Settings off, the same HQs are AW2's own pictures."""
 
 import os
 import struct
@@ -19,7 +21,7 @@ from aw2test.rom import DualStrike
 from aw2test.save import DesignMap
 
 # Dual Strike's cell for each country (bmap/015), by the CO's country.
-CELLS = {"andy": 10, "olaf": 11, "eagle": 12, "sonja": 13, "sturm": 9}
+CELLS = {"andy": 10, "olaf": 11, "eagle": 12, "sonja": 13}
 # crate::com_tower::SHADES, and the HQs' windows (crate::ds_graphics::HQ_SHADES).
 SHADES = [0, 0, 0, 0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 0]
 HQ_SHADES = SHADES[:13] + [15] + SHADES[14:]
@@ -63,16 +65,23 @@ def hq_pictures(ctx, cos, graphics):
 
 @test("ds_hq_pictures", modes=("ds",))
 def ds_hq_pictures(ctx):
-    """Every country's HQ is Dual Strike's cell for it."""
+    """Every country's HQ is Dual Strike's cell for it (Black Hole's is AW2's)."""
     ds = DualStrike()
     sprites = ds.file("bmap/015")
+    aw2 = hq_pictures(ctx, SQUAD[1], "0")
     for cos in SQUAD:
         shown = hq_pictures(ctx, cos, "1")
         ctx.eq(sorted(shown), [1, 2, 3, 4], f"{cos}: four HQs on screen")
         for army, co in enumerate(cos, 1):
-            ctx.check(shown.get(army) == expected(sprites, CELLS[co]),
-                      f"army {army} ({co}) draws Dual Strike's HQ cell {CELLS[co]}")
-    ctx.check(len({expected(sprites, c) for c in CELLS.values()}) == 5, "the five cells differ")
+            if co == "sturm":
+                ctx.check(shown.get(army) == aw2.get(army),
+                          "Sturm's (Black Hole's) HQ is AW2's own picture: Dual Strike has none")
+                ctx.check(shown.get(army) not in {expected(sprites, c) for c in range(8, 14)},
+                          "Black Hole's HQ is none of Dual Strike's cells 8 to 13 (cell 9 is the Lab)")
+            else:
+                ctx.check(shown.get(army) == expected(sprites, CELLS[co]),
+                          f"army {army} ({co}) draws Dual Strike's HQ cell {CELLS[co]}")
+    ctx.check(len({expected(sprites, c) for c in CELLS.values()}) == 4, "the four cells differ")
 
 
 @test("ds_hq_off_is_aw2", modes=("ds",))
