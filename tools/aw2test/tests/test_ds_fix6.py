@@ -54,3 +54,20 @@ def ds_fix_hidden_hp_is_a_question_mark(ctx):
     e.wait(50)
     good, bad = panel_digits(e)
     ctx.check(any(number_at(good, y) == "100" for y in {y for _, y, _ in good}), "an ordinary unit shows its 100")
+
+
+@test(modes=("ds",))
+def ds_fix_map_menu_leaves_no_dark_box(ctx):
+    """With the map menu open (flat and tilted) the game's darkening (BLDCNT, window) is off: no empty dark box where
+    the info panel was."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    g = battle(ctx, ["andy", "olaf"], [None, None], units=[(1, "tank", 10, 8)])
+    e = g.e
+    g.goto(10, 8)
+    e.wait(40)
+    ctx.check(e.u16(0x030030E0) >> 6 & 3 == 3, "(the panel's darkening is on while the panel shows)")
+    g.open_map_menu()
+    e.wait(60)
+    ctx.eq(e.u16(0x030030E0), 0, "BLDCNT is off with the map menu open")
+    shot(ctx, g, "map_menu")

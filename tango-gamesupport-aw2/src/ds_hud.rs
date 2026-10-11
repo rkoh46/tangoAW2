@@ -46,6 +46,11 @@ const WIN_LEFT: u32 = 0x0300_2B40;
 const WIN_RIGHT: u32 = 0x0300_2B4C;
 const WIN_TOP: u32 = 0x0300_2EFC;
 const WIN_BOTTOM: u32 = 0x0300_2B44;
+/// The game's blend shadows (`sub_08012358` clears them).
+const BLD_CNT: u32 = 0x0300_30E0;
+const BLD_EVA: u32 = 0x0300_2020;
+const BLD_EVB: u32 = 0x0300_2B28;
+const BLD_Y: u32 = 0x0300_1FFC;
 
 /// The window shadows (left, right, top, bottom) as the game left them and as
 /// we wrote them, while they are ours.
@@ -82,6 +87,14 @@ fn window_release(core: &mut Core) {
     if let Some((ours, aw2)) = state {
         if window_now(core) == ours {
             window_set(core, aw2);
+        }
+        // The panel is gone (the map menu, a dialogue ...): the game's own darkening goes with it (`sub_08012358`:
+        // BLDCNT, EVA, EVB, BLDY off). With the backing window ours the game leaves it on, an empty dark box on the
+        // map where the panel was (on the left or the right).
+        if (core.raw_read_16(BLD_CNT, -1) >> 6) & 3 == 3 {
+            for a in [BLD_CNT, BLD_EVA, BLD_EVB, BLD_Y] {
+                core.raw_write_16(a, -1, 0);
+            }
         }
     }
 }
