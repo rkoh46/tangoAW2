@@ -1095,8 +1095,8 @@ def tag_co_page(ctx):
     e = g.e
     if setting.graphics():
         # Dual Strike's CO page (crate::ds_co_page): the partners are on its second page, under the
-        # skills; its third is the powers, then AW2's unit charts (the game stays on its Super
-        # Power's page under Dual Strike's, 3, until the charts, 4); UP goes back through them.
+        # skills; its third is the powers, then its unit chart (the game stays on its Super
+        # Power's page under Dual Strike's, 3); UP goes back through them.
         names, stars = tag_page_of(ctx, g)
         ctx.eq(names, b"Sonja\rEagle", "page 2 lists the partners, as Dual Strike's box does")
         ctx.eq(stars, 4, "the ratings: 1 + 3 stars")
@@ -1106,7 +1106,7 @@ def tag_co_page(ctx):
         ctx.eq(e.u32(0x03005940), 3, "DOWN: the powers' page")
         e.press("DOWN", 6)
         e.wait(60)
-        ctx.eq(e.u32(0x03005940), 4, "DOWN again: the unit charts")
+        ctx.eq(e.u32(0x03005940), 3, "DOWN again: Dual Strike's unit chart (the game stays on its Super Power's page)")
         e.press("UP", 6)
         e.wait(60)
         ctx.eq(e.u32(0x03005940), 3, "UP: back to the powers' page")

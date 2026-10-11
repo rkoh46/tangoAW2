@@ -3992,10 +3992,19 @@ at `+0x66`) is drawn Dual Strike's way on the GBA's 240 x 160, over AW2's, whose
   wrapped to the room the picture leaves (the picture is 80x88 at the right under the counter; text
   beside it is limited to its left edge, text below it runs on); 2 the skills the army has on
   (`co_skills`) and the tag partners with their stars; 3 the CO Power and the Super Power with their
-  names; 4 **AW2's own unit chart** (the game draws it). Dual Strike has a unit chart as its page 4/4
-  (the army's unit pictures, four to a row, each with two gauge frames, one for the units that cannot fire),
-  but this module does not redraw it: the gauges are empty in every reference frame (no CO power on), so what
-  they fill with is not known. A page that does not fit is laid out again with a smaller
+  names; 4 **the unit chart**, Dual Strike's: the army's unit pictures (arm9 `0x021406F8`, four tiles each, the army's
+  palette from `0x021405B8`) four to a row, each with two gauges beside it (an attack gauge over a defence gauge; a unit
+  with no weapon has the second only) and, under them, a note when the CO changes the unit's range (an arrow and the
+  change). A gauge is `res_icon4_cg`'s tiles 522 on, three to a gauge: 41 steps, the white gauge in the middle, a run
+  of pink to the full gauge (the stat is above normal) and a run of blue (below: the white that is left is what the
+  CO leaves), a step 5 % of the stat (Max's +20 % on direct vehicles is four pink pixels); the stats are the CO's
+  ([`crate::co_roster::stat`]: firepower, defence, range) at the army's power. Dual Strike has the units by class, six
+  rows; the page is 120 pixels tall, so the 19 original units go five rows of four in Dual Strike's order. The INFO button
+  is `res_tpicon_lang_E`'s first 16 tiles above BACK. **The wall** ([`crate::ds_co_wall`]) is on every page: Dual Strike's
+  page is BG3 (`ohashi/res_wall_single`, the watermark of crests and title bands) under BG2 (`ohashi/res_syoguninfo`,
+  a white sheet with the arc cut out) blended in at 12/16; this redoes the blend once and puts the result, fitted to eight
+  15-colour banks, on the game's BG2 (the page's clear pixels are transparent now, except in the strip at the top, which
+  keeps its own white). A page that does not fit is laid out again with a smaller
   picture, then a tighter line pitch, then shorter wordings, then without its last sentences (the
   test `every_co_page_fits` finds none left with the strip only). AW2's COs' texts are Dual Strike's;
   Sturm's are AW2's own (text ids 2461..2464, his Super Power's name 2311), Clone Andy's bio and

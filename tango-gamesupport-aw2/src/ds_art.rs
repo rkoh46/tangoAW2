@@ -244,6 +244,36 @@ pub(crate) fn tiles(bmp: &[u8], width: usize, rects: &[(usize, usize, usize, usi
     out
 }
 
+/// Where the LZ77 stream at the start of `b` ends (the offset of its last byte read, plus one): files that hold several
+/// streams one after another, each starting on a four-byte boundary.
+pub fn lz10_end(b: &[u8]) -> Option<usize> {
+    if b.first() != Some(&0x10) || b.len() < 4 {
+        return None;
+    }
+    let size = u32::from_le_bytes([b[1], b[2], b[3], 0]) as usize;
+    let (mut out, mut p) = (0usize, 4usize);
+    while out < size {
+        let flags = *b.get(p)?;
+        p += 1;
+        for bit in 0..8 {
+            if out >= size {
+                break;
+            }
+            if flags & (0x80 >> bit) != 0 {
+                let b1 = *b.get(p)? as usize;
+                b.get(p + 1)?;
+                p += 2;
+                out += (b1 >> 4) + 3;
+            } else {
+                b.get(p)?;
+                p += 1;
+                out += 1;
+            }
+        }
+    }
+    Some(p)
+}
+
 /// A file of the DS ROM's file system by path.
 /// LZ77 (type 0x10) as the GBA/DS BIOS decompresses it.
 pub fn lz10(b: &[u8]) -> Option<Vec<u8>> {

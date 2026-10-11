@@ -11,9 +11,17 @@ fn main() {
     std::fs::create_dir_all(out).unwrap();
     tango_gamesupport_aw2::ds_pack::pack().expect("TANGOAW2_DS_ROM");
     let cos: Vec<u8> = if args.len() > 2 { args[2..].iter().map(|a| a.parse().unwrap()).collect() } else { (0..19u8).chain(72..81).collect() };
+    if let Some(w) = tango_gamesupport_aw2::ds_co_wall::wall() {
+        let mut ppm = b"P6\n240 160\n255\n".to_vec();
+        for c in &w.pix {
+            ppm.extend_from_slice(&[((c & 31) * 255 / 31) as u8, (((c >> 5) & 31) * 255 / 31) as u8, (((c >> 10) & 31) * 255 / 31) as u8]);
+        }
+        std::fs::write(out.join("wall.ppm"), ppm).unwrap();
+        eprintln!("wall: {} tiles", w.chars.len() / 32);
+    }
     for co in cos {
         let v = view_for(None, None, co);
-        for page in 0..3 {
+        for page in 0..4 {
             let cv = compose(&v, page).expect("font and art");
             let mut ppm = format!("P6\n240 160\n255\n").into_bytes();
             for px in rgba(&cv).chunks(4) {

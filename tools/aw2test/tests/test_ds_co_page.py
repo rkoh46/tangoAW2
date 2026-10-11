@@ -10,7 +10,7 @@ from aw2test.harness import test
 DS_GRAPHICS = 0x0203E3FE
 DISPCNT = 0x04000000
 LAYERS = 0x1F00
-BG0_ONLY = 0x0100
+BG0_ONLY = 0x0500  # (BG0, the page, and BG2, the wall behind it)
 MAIN_LOOP = 0x03000000
 CO_PAGE_LOOP = 0x08043591
 GAME_PAGE = 0x03005940
@@ -48,8 +48,8 @@ def visible_sprites(e):
 @test(modes=("ds",))
 def ds_co_page_pages(ctx):
     """Down through the pages and back, then to the other army's page and
-    closed. On: BG0 only on pages 1 to 3 (the game stays on its Super
-    Power's page under them), the game's own unit chart as page 4, UP back;
+    closed. On: BG0 and the wall on all four pages (the game stays on its Super
+    Power's page under them), the unit chart as page 4, UP back;
     off: the game's own pages, layers untouched."""
     g = open_page(ctx, ["andy", "sami"])
     e = g.e
@@ -74,12 +74,11 @@ def ds_co_page_pages(ctx):
     e.wait(90)
     ctx.shot(g, "p4")
     if on:
-        ctx.check(layers(e) != BG0_ONLY, "page 4 is the game's own unit chart (its layers back)")
-        ctx.eq(e.u32(GAME_PAGE), 4, "the game is on its unit chart")
+        ctx.eq(layers(e), BG0_ONLY, "page 4 is Dual Strike's unit chart")
+        ctx.eq(e.u32(GAME_PAGE), 3, "the game waits on its Super Power's page")
         e.press("UP", 6)
-        e.wait(90)
+        e.wait(45)
         ctx.eq(layers(e), BG0_ONLY, "UP: Dual Strike's page 3 again")
-        ctx.eq(e.u32(GAME_PAGE), 3, "the game is back on its Super Power's page")
         ctx.shot(g, "p3b")
     e.press("RIGHT", 6)
     e.wait(80)
@@ -113,3 +112,28 @@ def ds_co_page_every_kind_of_co(ctx):
         e.press("B", 6)
         e.wait(120)
         ctx.check(e.u32(MAIN_LOOP) != CO_PAGE_LOOP, f"{co}: closed")
+
+
+@test(modes=("ds",))
+def ds_co_page_unit_chart_and_wall(ctx):
+    """Page 4 is Dual Strike's unit chart: four units to a row, two gauges each, filled with the CO's stats (Max's direct
+    vehicles +20 %: a few pink pixels in their attack gauges; Andy's gauges are plain), and the page has the wall behind
+    it (Dual Strike's watermark: the page is not plain white)."""
+    from PIL import Image
+    pink = {}
+    for co in ("max", "andy"):
+        g = open_page(ctx, [co, "sami"])
+        e = g.e
+        for _ in range(3):
+            e.press("DOWN", 6)
+            e.wait(45)
+        p = Image.open(ctx.shot(g, f"chart_{co}")).convert("RGB")
+        px = p.load()
+        pink[co] = sum(1 for y in range(40, 160) for x in range(0, 200) if px[x, y][0] > 240 and 160 < px[x, y][1] < 185 and 160 < px[x, y][2] < 185)
+        white = sum(1 for y in range(40, 160) for x in range(200) if px[x, y] in ((248, 248, 248), (255, 255, 255)))
+        ctx.check(white < 120 * 200 * 0.9, f"{co}: the page has the wall behind it ({white} plain white pixels)")
+        e.press("B", 6)
+        e.wait(120)
+    ctx.log(f"pink pixels: {pink}")
+    ctx.check(pink["max"] >= 20, f"Max's chart has pink gauge fill ({pink['max']})")
+    ctx.eq(pink["andy"], 0, "Andy's gauges are plain")

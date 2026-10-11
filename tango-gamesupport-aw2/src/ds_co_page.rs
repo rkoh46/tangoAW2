@@ -58,8 +58,6 @@ const PROC_ARMY: u32 = 0x66;
 const GAME_PAGE: u32 = 0x0300_5940;
 /// Its Super Power's page: where the game stays under this module's pages.
 const GAME_SCOP_PAGE: u32 = 3;
-/// Its unit chart's (first) page.
-const GAME_CHART_PAGE: u32 = 4;
 /// The CO page's ROM presentation rows (see [`crate::ds_co_art`]).
 const PRESENTATION_POOL: u32 = 0x0803_9B7C;
 const PRESENTATION_ROW: u32 = 0x44;
@@ -69,7 +67,6 @@ const KEY_UP: u32 = 1 << 6;
 
 /// How many pages Dual Strike's CO page has.
 pub const PAGES: usize = 4;
-const CHART: usize = 3;
 
 fn page_proc(core: &Core) -> Option<u32> {
     if core.raw_read_32(MAIN_LOOP, -1) != CO_PAGE_LOOP {
@@ -90,15 +87,16 @@ struct State {
     built: Option<(u64, Vec<u8>, Vec<u8>, Vec<u8>)>,
     /// The page's layer bits of DISPCNT as they were, while only BG0 shows.
     layers: Option<u16>,
-    /// The game's own BG palettes when the page opened (the unit chart, which is the game's, gets
-    /// them back).
+    /// The game's own BG palettes when the page opened (put back when it closes).
     pal: Vec<u8>,
+    /// What BG2's tiles and tilemap held under the wall, as (address, bytes).
+    wall_saved: Vec<(u32, Vec<u8>)>,
 }
 
-static STATE: Mutex<State> = Mutex::new(State { open: false, page: 0, saved: Vec::new(), built: None, layers: None, pal: Vec::new() });
+static STATE: Mutex<State> = Mutex::new(State { open: false, page: 0, saved: Vec::new(), built: None, layers: None, pal: Vec::new(), wall_saved: Vec::new() });
 
 pub fn is_open() -> bool {
-    STATE.lock().map(|s| s.open && s.page != CHART).unwrap_or(false)
+    STATE.lock().map(|s| s.open).unwrap_or(false)
 }
 
 // --- Dual Strike's font -----------------------------------------------------------
@@ -167,6 +165,8 @@ const CO: u8 = 1;
 const TAB: u8 = 2;
 const DIGITS: u8 = 3;
 const BACK: u8 = 4;
+/// The unit chart's pictures (the army's colours).
+const UNIT: u8 = 5;
 const INK: u8 = 10;
 const EDGE: u8 = 14;
 const WHITE: u16 = 0x7FFF;
@@ -291,6 +291,60 @@ pub struct View {
     /// Tag partners: (name, stars).
     pub partners: Vec<(String, u8)>,
     pub portrait: Option<Portrait>,
+    /// The unit chart: the army's colour (0 Orange Star .. 4 Black Hole) and a row for each unit.
+    pub colour: usize,
+    pub chart: Vec<ChartUnit>,
+}
+
+/// A unit of the chart: its picture, and the CO's stats for it in gauge steps of 5 %.
+#[derive(Clone, Copy)]
+pub struct ChartUnit {
+    pub icon: usize,
+    /// The attack gauge's steps (`None`: the unit has no weapon, so no gauge).
+    pub attack: Option<i32>,
+    pub defence: i32,
+    pub range: i32,
+}
+
+/// The units the chart lists, in Dual Strike's order (its rows are four to a line): (our unit type, Dual Strike's picture,
+/// whether it carries a weapon).
+const CHART_UNITS: [(u8, usize, bool); 19] = [
+    (1, 24, true),
+    (2, 26, true),
+    (6, 2, true),
+    (7, 3, false),
+    (14, 6, true),
+    (5, 1, true),
+    (3, 0, true),
+    (8, 16, true),
+    (10, 4, true),
+    (11, 5, true),
+    (15, 7, true),
+    (16, 8, true),
+    (17, 9, true),
+    (19, 10, true),
+    (20, 11, false),
+    (21, 12, true),
+    (22, 13, true),
+    (24, 15, true),
+    (23, 14, false),
+];
+
+/// The chart's rows for `co` at power level `mode`.
+fn chart_for(co: u8, mode: u8) -> Vec<ChartUnit> {
+    use crate::co_roster::{stat, DEFENCE, FIREPOWER, RANGE};
+    CHART_UNITS
+        .iter()
+        .map(|&(t, icon, armed)| {
+            let steps = |field: usize| (stat(co, mode, t, field).unwrap_or(0) as f32 / 5.0).round() as i32;
+            ChartUnit {
+                icon,
+                attack: armed.then(|| steps(FIREPOWER)),
+                defence: steps(DEFENCE),
+                range: stat(co, mode, t, RANGE).unwrap_or(0),
+            }
+        })
+        .collect()
 }
 
 /// A text as plain ASCII words in single spaces.
@@ -422,7 +476,15 @@ struct Art {
     /// res_tpicon_lang_E's tiles and the button's palette.
     pad: Vec<u8>,
     back_pal: [u16; 16],
+    /// The unit chart's pictures (arm9: 16 x 16 as four tiles each) and the five armies' palettes.
+    units: Vec<u8>,
+    unit_pals: Vec<[u16; 16]>,
 }
+
+/// Dual Strike's unit pictures for the chart (arm9) and the five armies' palettes before them.
+const UNIT_ICONS: u32 = 0x0214_06F8;
+const UNIT_ICON_COUNT: usize = 32;
+const UNIT_PALETTES: u32 = 0x0214_05B8;
 
 fn pal16(b: &[u8]) -> [u16; 16] {
     let mut p = [0u16; 16];
@@ -447,6 +509,8 @@ fn build_art() -> Option<Art> {
         digit_pal: pal16(pack.arm9_at(0x0213_9288, 32)?),
         pad,
         back_pal: pal16(pack.arm9_at(0x0213_8C68, 32)?),
+        units: pack.arm9_at(UNIT_ICONS, 128 * UNIT_ICON_COUNT)?.to_vec(),
+        unit_pals: (0..5).map(|k| Some(pal16(pack.arm9_at(UNIT_PALETTES + 32 * k, 32)?))).collect::<Option<Vec<_>>>()?,
     })
 }
 
@@ -470,7 +534,40 @@ impl Art {
         };
         &self.digits[0x1500 + 32 * slot..0x1500 + 32 * slot + 32]
     }
+    /// One of the chart's unit pictures (`k` the picture's number in the table), 16 x 16 as four tiles.
+    fn unit_icon(&self, k: usize) -> &[u8] {
+        &self.units[128 * k..128 * k + 128]
+    }
+    /// The chart's gauge for a stat `px` pixels from the middle (a pixel is 5 %): 24 x 8, three tiles. The sheet holds
+    /// one for each step, a run of blue (the stat is below 0: the white is what is left of the gauge), the plain white
+    /// gauge, then a run of pink (above 0), 20 steps each way.
+    fn bar(&self, px: i32) -> &[u8] {
+        let first = BAR_FIRST + 3 * (BAR_ZERO + px.clamp(-BAR_STEPS, BAR_STEPS) as usize);
+        &self.digits[32 * first..32 * first + 96]
+    }
+    /// The chart's "range" note for a change of `delta` cells (an arrow, the sign, the digit): 24 x 8, three tiles.
+    fn range_note(&self, delta: i32) -> Option<Vec<u8>> {
+        let (sign, digit) = match delta {
+            -1 => (194, 197),
+            -2 => (194, 195),
+            1 => (198, 199),
+            2 => (198, 201),
+            3 => (198, 203),
+            _ => return None,
+        };
+        let mut v = Vec::with_capacity(96);
+        for t in [RANGE_ARROW, sign, digit] {
+            v.extend_from_slice(self.digits.get(32 * t..32 * t + 32)?);
+        }
+        Some(v)
+    }
 }
+
+/// res_icon4_cg's gauges: three tiles each from this tile, the one for no change at `BAR_ZERO` steps on.
+const BAR_FIRST: usize = 522;
+const BAR_ZERO: usize = 21;
+const BAR_STEPS: i32 = 20;
+const RANGE_ARROW: usize = 193;
 
 /// Dual Strike's red star (Orange Star) .. grey box icons by country; the
 /// grey box also stands for a tab nobody is on.
@@ -515,7 +612,9 @@ fn frame(cv: &mut Canvas, a: &Art, v: &View, page: usize) {
             let tile = a.tile(t);
             for y in 0..8 {
                 for x in 0..8 {
-                    cv.put(8 + 8 * c as i32 + x, 8 * r as i32 + y, UI, (tile[4 * y as usize + x as usize / 2] >> (4 * (x & 1))) & 15);
+                    let v = (tile[4 * y as usize + x as usize / 2] >> (4 * (x & 1))) & 15;
+                    // (the strip's own white: the wall shows around the strip, not through it)
+                    cv.put(8 + 8 * c as i32 + x, 8 * r as i32 + y, UI, if v == 0 && (1..27).contains(&c) { 1 } else { v });
                 }
             }
         }
@@ -849,12 +948,41 @@ fn page_powers(f: &Font, a: &Art, v: &View) -> Canvas {
 }
 
 /// Page `page` (0..3) of the CO page for `v`; `None` without the pack.
+/// The INFO button (Dual Strike's, res_tpicon_lang_E's first 16 tiles) above BACK.
+const INFO_BOX: Obstacle = Obstacle { x: 208, y: 96, w: 32, h: 32 };
+
+fn info_button(cv: &mut Canvas, a: &Art) {
+    cv.tiles(INFO_BOX.x, INFO_BOX.y, &a.pad[..32 * 16], 32, 32, BACK);
+}
+
+/// Page 4: the unit chart. Dual Strike's: each unit's picture with two gauges beside it, the attack gauge over the
+/// defence gauge (a unit with no weapon has the second only), each showing the CO's change to that stat; a note under
+/// them when the unit's range changes. Four to a row.
+fn page_chart(_f: &Font, a: &Art, v: &View) -> Canvas {
+    let mut cv = Canvas::new();
+    frame(&mut cv, a, v, 3);
+    info_button(&mut cv, a);
+    for (i, u) in v.chart.iter().enumerate() {
+        let (x, y) = (8 + 48 * (i % 4) as i32, 40 + 24 * (i / 4) as i32);
+        cv.tiles(x, y, a.unit_icon(u.icon), 16, 16, UNIT);
+        if let Some(px) = u.attack {
+            cv.tiles(x + 16, y, a.bar(px), 24, 8, DIGITS);
+        }
+        cv.tiles(x + 16, y + 8, a.bar(u.defence), 24, 8, DIGITS);
+        if let Some(note) = a.range_note(u.range) {
+            cv.tiles(x + 16, y + 16, &note, 24, 8, DIGITS);
+        }
+    }
+    cv
+}
+
 pub fn compose(v: &View, page: usize) -> Option<Canvas> {
     let (f, a) = (font()?, art()?);
     let mut cv = match page {
         0 => page_description(f, a, v),
         1 => page_skills(f, a, v),
-        _ => page_powers(f, a, v),
+        2 => page_powers(f, a, v),
+        _ => page_chart(f, a, v),
     };
     cv.pals = bank_palettes(a, v);
     Some(cv)
@@ -867,7 +995,11 @@ pub fn rgba(cv: &Canvas) -> Vec<u8> {
     for y in 0..160 {
         for x in 0..240 {
             let b = cv.bank[30 * (y / 8) + x / 8] as usize;
-            let c = pals[b][(cv.px[240 * y + x] & 15) as usize];
+            let i = (cv.px[240 * y + x] & 15) as usize;
+            let c = match crate::ds_co_wall::wall() {
+                Some(w) if i == 0 && y >= 32 => w.pix[240 * y + x],
+                _ => pals[b][i],
+            };
             out.extend_from_slice(&[((c & 31) * 255 / 31) as u8, (((c >> 5) & 31) * 255 / 31) as u8, (((c >> 10) & 31) * 255 / 31) as u8, 255]);
         }
     }
@@ -883,6 +1015,7 @@ fn bank_palettes(a: &Art, v: &View) -> Vec<[u16; 16]> {
     p[TAB as usize] = a.icon_pal;
     p[DIGITS as usize] = a.digit_pal;
     p[BACK as usize] = a.back_pal;
+    p[UNIT as usize] = a.unit_pals.get(v.colour).copied().unwrap_or(a.unit_pals[0]);
     for b in p.iter_mut().skip(1) {
         b[0] = WHITE;
     }
@@ -1042,6 +1175,15 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         Some(d) if !co_new::is_own(co) || co == CLONE_ANDY => crate::ds_co_art::co_art(d),
         _ => core.and_then(|c| game_art(c, co)),
     };
+    // (the army's colour, and the power the page's CO is in: a partner's page shows its day to day numbers)
+    let (mut colour, mut mode) = (0usize, 0u8);
+    if let (Some(c), Some(army)) = (core, army) {
+        colour = (c.raw_read_8(crate::five::players(c) + 0x3C * army + 0x1A, -1).clamp(1, 5) - 1) as usize;
+        let (active, m) = crate::co_roster::army_co(c, army);
+        if active == co {
+            mode = m;
+        }
+    }
     let own = Some(crate::custom_campaign::country(co));
     let mut tabs = [own, None];
     let mut tab = 0;
@@ -1069,6 +1211,8 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         skills,
         partners,
         portrait: art.as_ref().map(portrait_of),
+        colour,
+        chart: chart_for(co, mode),
     }
 }
 
@@ -1137,8 +1281,10 @@ fn layer_of(cv: &Canvas) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
             let mut t = [0u8; 32];
             for y in 0..8 {
                 for x in 0..8 {
+                    // A clear pixel shows the wall behind the page (BG2), except in the strip at the top, which has its own white.
                     let v = match cv.px[240 * (8 * ty + y) + 8 * tx + x] & 15 {
-                        0 => white[bank],
+                        0 if ty < 4 || crate::ds_co_wall::wall().is_none() => white[bank],
+                        0 => 0,
                         v => remap[bank][v as usize],
                     };
                     t[4 * y + x / 2] |= v << (4 * (x & 1));
@@ -1256,11 +1402,48 @@ fn draw(core: &mut Core, st: &mut State, army: u32, co: u8) {
     write_if_changed(core, map, tilemap);
     write_if_changed(core, PAL_BUFFER, pal);
     write_if_changed(core, PAL_RAM, pal);
+    draw_wall(core, st);
+}
+
+const BG2CNT: u32 = 0x0400_000C;
+
+/// The wall ([`crate::ds_co_wall`]) on BG2, under the page: its tiles and map where the game's BG2 has its own (hidden
+/// while the page is up; what was there is kept and put back), its palette banks after the page's eight.
+fn draw_wall(core: &mut Core, st: &mut State) {
+    let Some(w) = crate::ds_co_wall::wall() else { return };
+    let c = core.raw_read_16(BG2CNT, -1) as u32;
+    // (a 4bpp, 256 x 256 text layer: the game's page layer)
+    if c & 0x80 != 0 || c >> 14 != 0 {
+        return;
+    }
+    let chars = VRAM + 0x4000 * ((c >> 2) & 3);
+    let map = VRAM + 0x800 * ((c >> 8) & 31);
+    if st.wall_saved.is_empty() {
+        for (at, len) in [(chars, w.chars.len()), (map, w.map.len())] {
+            let mut b = vec![0u8; len];
+            core.raw_read_range(at, -1, &mut b);
+            st.wall_saved.push((at, b));
+        }
+    }
+    write_if_changed(core, chars, &w.chars);
+    write_if_changed(core, map, &w.map);
+    write_if_changed(core, PAL_BUFFER + 0x100, &w.pal);
+    write_if_changed(core, PAL_RAM + 0x100, &w.pal);
 }
 
 const DISP_CT: u32 = 0x0300_30CC;
 const LAYERS: u16 = 0x1F00;
 const BG0_ONLY: u16 = 0x0100;
+const BG0_BG2: u16 = 0x0500;
+
+/// The layers the page shows: BG0 (the page), and BG2 (the wall) when there is one.
+fn shown() -> u16 {
+    if crate::ds_co_wall::wall().is_some() {
+        BG0_BG2
+    } else {
+        BG0_ONLY
+    }
+}
 
 /// Only BG0 shows (the page's other layers and the sprites are covered).
 fn hide_layers(core: &mut Core, st: &mut State) {
@@ -1268,8 +1451,8 @@ fn hide_layers(core: &mut Core, st: &mut State) {
     if st.layers.is_none() {
         st.layers = Some(d & LAYERS);
     }
-    if d & LAYERS != BG0_ONLY {
-        core.raw_write_16(DISP_CT, -1, (d & !LAYERS) | BG0_ONLY);
+    if d & LAYERS != shown() {
+        core.raw_write_16(DISP_CT, -1, (d & !LAYERS) | shown());
     }
 }
 
@@ -1278,7 +1461,7 @@ fn hide_layers(core: &mut Core, st: &mut State) {
 fn show_layers(core: &mut Core, st: &mut State) {
     if let Some(l) = st.layers.take() {
         let d = core.raw_read_16(DISP_CT, -1);
-        if d & LAYERS == BG0_ONLY {
+        if d & LAYERS == shown() {
             core.raw_write_16(DISP_CT, -1, (d & !LAYERS) | l);
         }
     }
@@ -1301,6 +1484,9 @@ fn close(core: &mut Core, st: &mut State) {
     if st.open && !st.saved.is_empty() {
         let saved = std::mem::take(&mut st.saved);
         core.raw_write_range(VRAM + SPARE_FROM, -1, &saved);
+    }
+    for (at, b) in std::mem::take(&mut st.wall_saved) {
+        core.raw_write_range(at, -1, &b);
     }
     st.open = false;
     st.built = None;
@@ -1340,36 +1526,13 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
     let co = crate::tag::army_co_of(core, army);
     let pressed = keys & !prev;
     let mut out = keys;
-    let mut pass = false;
-    if st.page == CHART {
-        // The game's own unit chart; UP goes back to this module's pages
-        // (the game goes back a page too, to the Super Power's).
-        if pressed & KEY_UP == 0 {
-            return keys;
-        }
-        // (the chart's second page, tangoAW2's, is the game's own too: UP goes to its first)
-        if core.raw_read_32(GAME_PAGE, -1) > GAME_CHART_PAGE {
-            return keys;
-        }
-        st.page = CHART - 1;
-        st.built = None;
-        pass = true;
-    } else if pressed & KEY_DOWN != 0 && st.page + 1 < PAGES {
+    if pressed & KEY_DOWN != 0 && st.page + 1 < PAGES {
         st.page += 1;
-        if st.page == CHART {
-            // The game is on its Super Power's page under this one; its DOWN
-            // goes to the chart (not to the TAG page it would show first).
-            show_layers(core, &mut st);
-            restore_palette(core, &mut st);
-            core.raw_write_8(crate::tag_extras::STATE + 5, -1, 1);
-            return keys;
-        }
     } else if pressed & KEY_UP != 0 && st.page > 0 {
         st.page -= 1;
     }
-    if !pass {
-        out &= !(KEY_DOWN | KEY_UP);
-    }
+    // (the game stays on its Super Power's page under these: DOWN and UP are this module's)
+    out &= !(KEY_DOWN | KEY_UP);
     core.raw_write_32(GAME_PAGE, -1, GAME_SCOP_PAGE);
     hide_layers(core, &mut st);
     draw(core, &mut st, army, co);
@@ -1425,6 +1588,26 @@ mod tests {
         for c in CFGS {
             assert!(c.pw % 8 == 0 && c.ph % 8 == 0 && 240 - c.pw as i32 >= 120);
         }
+    }
+
+    /// With `TANGOAW2_DS_ROM`: the unit chart's gauges are the CO's stats in steps of 5 %: Max's direct vehicles
+    /// +20 % attack (4 steps), his indirect ones' range -1; Grit's direct ones -20 %, his indirect +20 % and +1 range;
+    /// Andy's nothing. And the wall behind the pages builds within BG2's tiles.
+    #[test]
+    #[ignore]
+    fn the_chart_shows_the_cos_stats() {
+        crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
+        let unit = |c: &[ChartUnit], icon: usize| *c.iter().find(|u| u.icon == icon).unwrap();
+        // (icons: 24 Infantry, 1 Tank, 4 Artillery, 3 APC)
+        let max = chart_for(2, 0);
+        assert_eq!((unit(&max, 24).attack, unit(&max, 1).attack, unit(&max, 4).range), (Some(0), Some(4), -1));
+        assert_eq!(unit(&max, 3).attack, None, "an APC has no attack gauge");
+        let grit = chart_for(5, 0);
+        assert_eq!((unit(&grit, 1).attack, unit(&grit, 4).attack, unit(&grit, 4).range), (Some(-4), Some(4), 1));
+        let andy = chart_for(1, 0);
+        assert!(andy.iter().all(|u| u.attack.unwrap_or(0) == 0 && u.defence == 0 && u.range == 0));
+        let wall = crate::ds_co_wall::wall().expect("the wall");
+        assert!(wall.chars.len() / 32 <= crate::ds_co_wall::MAX_TILES);
     }
 
     /// With `TANGOAW2_DS_ROM`: Dual Strike's font reads (A is 5 wide, I and i
