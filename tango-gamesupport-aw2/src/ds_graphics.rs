@@ -67,7 +67,22 @@ fn at(tile: usize) -> usize {
 /// Minicannon pods use Black Hole's own indices, as [`crate::ds_art`]'s
 /// cannon does; everything else the building shades.
 const POD_INDICES: [u8; 16] = [0, 2, 3, 3, 4, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+/// The HQ picture of each country (AW2's slot order: Orange Star, Blue Moon, Green Earth, Yellow
+/// Comet, Black Hole), cells of `bmap/015`. Read off Dual Strike's own Design Room: its HQ of
+/// each colour has the shape of cells 10 (Orange Star: the tall tower), 12 (Green Earth: the
+/// dome), 13 (Yellow Comet: the horns) and 11 (Blue Moon: the spire), and terrain 0x1D9, the
+/// fifth HQ, Black Hole's, is cell 9 (the squat fortress with the antenna).
 const HQ_CELLS: [usize; 5] = [10, 11, 12, 13, 9];
+/// The colours of an HQ: [`crate::com_tower::SHADES`] except the windows. Dual Strike's index 13
+/// is the HQs' dark grey windows (palette 7 to 11 of `bmap/00e`: 7b6a7b; the city's and port's
+/// lit windows are the same index drawn pale in the game, so only these pictures change); AW2's
+/// owner palettes have no grey but 15, the dark grey-brown AW2's own HQ windows use. Left as
+/// the yellow of SHADES the windows lit up like a laboratory's.
+const HQ_SHADES: [u8; 16] = {
+    let mut s = crate::com_tower::SHADES;
+    s[13] = 15;
+    s
+};
 
 fn cell(sprites: &[u8], n: usize, map: &[u8; 16]) -> Vec<u8> {
     let bmp: Vec<u8> = sprites[256 * n..256 * (n + 1)]
@@ -98,7 +113,7 @@ fn buildings(aw2: &[u8]) -> Option<Vec<u8>> {
     }
     for base in [HQ, HQ_SNOW] {
         for (k, d) in HQ_CELLS.iter().enumerate() {
-            out[base + 256 * k..base + 256 * (k + 1)].copy_from_slice(&cell(&sprites, *d, sh));
+            out[base + 256 * k..base + 256 * (k + 1)].copy_from_slice(&cell(&sprites, *d, &HQ_SHADES));
         }
     }
     for k in 0..4 {
