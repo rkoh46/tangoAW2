@@ -925,19 +925,37 @@ impl Windows {
     }
 }
 
-/// Dual Strike's way of showing a range: the cells in it light up (red where
-/// the console's tint is a reddish one: an attack range) and the rest of the
-/// ground dims. `t` is the console's tint pixel there (0: none).
-fn range_look(p: Px, t: Px) -> Px {
+/// What the pictures shown so far count (display only: it drives the clouds' drift and the range's glow).
+static CLOCK: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// Dual Strike's way of showing a range, measured on its frames (a range shown and the same
+/// picture with it off): the ground outside the range is dimmed to 3/4 exactly, and each cell in it
+/// is lit by a soft gradient screened over the ground (white in the cell's bottom left corner, a
+/// fraction of that, warm, toward its top right) that breathes slowly. `t` is the console's
+/// tint pixel there (0: none; a reddish one is an attack range: the same glow, redder), `(lx, ly)`
+/// the pixel's place in its 16 x 16 cell. Upright things (peaks and treetops) are lit the way
+/// Dual Strike shows them: brightened by a factor (1.3 at the cell's top right, up to 1.8) instead.
+fn range_look(p: Px, t: Px, lx: i32, ly: i32, upright: bool) -> Px {
     let ch = |c: Px, s: u32| (c as u32 >> s) & 31;
     let (mut r, mut g, mut b) = (ch(p, 0), ch(p, 5), ch(p, 10));
     if t == 0 {
         (r, g, b) = (r * 3 / 4, g * 3 / 4, b * 3 / 4);
     } else {
-        let target = if ch(t, 0) > ch(t, 10) + 5 { (31, 14, 14) } else { (31, 31, 31) };
-        r = (r * 9 + target.0 * 11) / 20;
-        g = (g * 9 + target.1 * 11) / 20;
-        b = (b * 9 + target.2 * 11) / 20;
+        let attack = ch(t, 0) > ch(t, 10) + 5;
+        let breath = (CLOCK.load(Ordering::Relaxed) as f32 * 0.07).sin() * 0.12;
+        // 0 at the bottom left corner, 1 at the top right
+        let k = (((lx as f32 + 0.5) / 16.0 + (1.0 - (ly as f32 + 0.5) / 16.0)) * 0.5 + breath).clamp(0.0, 1.0);
+        if upright {
+            let f = 1.3 + 0.5 * (1.0 - k);
+            let lift = |c: u32| ((c as f32 * f + 0.5) as u32).min(31);
+            return 0x8000 | (lift(r) | lift(g) << 5 | lift(b) << 10) as u16;
+        }
+        let far = if attack { (20.0, 5.0, 5.0) } else { (10.0, 12.0, 5.0) };
+        let screen = |c: u32, far: f32| {
+            let glow = 31.0 + (far - 31.0) * k;
+            31 - ((31 - c) as f32 * (31.0 - glow) / 31.0 + 0.5) as u32
+        };
+        (r, g, b) = (screen(r, far.0), screen(g, far.1), screen(b, far.2));
     }
     0x8000 | (r | g << 5 | b << 10) as u16
 }
@@ -1200,6 +1218,7 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
         }
         layers.push(l);
     }
+    let fr = FlatRange::new(core, &bgs, &layers);
     // The top sprite per pixel without the cursor's pieces.
     let mut obj_top: Vec<u32> = vec![u32::MAX; W * H];
     let mut obj_color: Vec<Px> = vec![0; W * H];
@@ -1246,13 +1265,17 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
         let mut color = backdrop;
         let mut found = false;
         for &b in &order {
-            if bits & (1 << b) == 0 || layers[b][i] == 0 {
+            if bits & (1 << b) == 0 || layers[b][i] == 0 || (b == 0 && fr.is_some()) {
                 continue;
             }
             if obj_pri <= bgs[b].pri {
                 break;
             }
             color = layers[b][i];
+            // (a range: the ground under the cursor's pieces has Dual Strike's look as well)
+            if let (Some(fr), 2 | 3) = (&fr, b) {
+                color = fr.look(i, color, b == 2);
+            }
             found = true;
             break;
         }
@@ -1276,6 +1299,144 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
     for (i, &p) in map.iter().enumerate() {
         if p != 0 {
             rgba[i * 4..i * 4 + 4].copy_from_slice(&lut3[(p & 0x7fff) as usize]);
+        }
+    }
+}
+
+/// Dual Strike's range look on the flat map ([`range_look`]): which cells the console's range
+/// overlay (BG0, while it is below the units) tints, and the map's scroll.
+struct FlatRange {
+    cam: (i32, i32),
+    /// The tint pixel of each cell of the picture's grid (cell column, row at the scroll's offset), 0: none.
+    cells: std::collections::HashMap<(i32, i32), Px>,
+}
+
+impl FlatRange {
+    fn new(core: &Core, bgs: &[Bg; 4], layers: &[Vec<Px>]) -> Option<FlatRange> {
+        if !(bgs[0].on && bgs[0].pri > bgs[1].pri) {
+            return None;
+        }
+        let cam = (core.raw_read_16(MAP + 4, -1) as i16 as i32, core.raw_read_16(MAP + 6, -1) as i16 as i32);
+        let mut cells = std::collections::HashMap::new();
+        for (i, &t) in layers[0].iter().enumerate() {
+            if t != 0 {
+                let (gx, gy) = ((i % W) as i32 + cam.0, (i / W) as i32 + cam.1);
+                cells.entry((gx.div_euclid(16), gy.div_euclid(16))).or_insert(t);
+            }
+        }
+        // (no tinted cell: BG0 is not a range, say the cursor's glow or text)
+        if cells.is_empty() {
+            return None;
+        }
+        Some(FlatRange { cam, cells })
+    }
+
+    fn look(&self, i: usize, p: Px, upright: bool) -> Px {
+        let (gx, gy) = ((i % W) as i32 + self.cam.0, (i / W) as i32 + self.cam.1);
+        let t = self.cells.get(&(gx.div_euclid(16), gy.div_euclid(16))).copied().unwrap_or(0);
+        range_look(p, t, gx.rem_euclid(16), gy.rem_euclid(16), upright)
+    }
+}
+
+/// Dual Strike's range on the flat map (the tilt off, "Dual Strike map graphics" on): the console's
+/// picture is kept and its ground (terrain and the peaks and treetops over it; not the units, the
+/// arrow or the panels) is redone without the console's own striped tint, in Dual Strike's look
+/// ([`range_look`]). Run before [`apply_flat_cursor`], which keeps the look under the cursor's pieces.
+pub fn apply_flat_range(core: &Core, rgba: &mut [u8]) {
+    static FAILED: AtomicBool = AtomicBool::new(false);
+    if enabled() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
+        return;
+    }
+    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
+        return;
+    }
+    let before = rgba.to_vec();
+    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| flat_range(core, rgba))).is_err() {
+        FAILED.store(true, Ordering::Relaxed);
+        rgba.copy_from_slice(&before);
+        eprintln!("ds_tilt: the flat range failed; it is off for this session");
+    }
+}
+
+fn flat_range(core: &Core, rgba: &mut [u8]) {
+    let mut v = Vid::read(core);
+    let d = v.dispcnt();
+    if v.io[2] & 0x10 != 0 || d & 7 != 0 || d & 0x80 != 0 || d & 0x1000 == 0 || d & 0x0e00 != 0x0e00 {
+        return;
+    }
+    let win = Windows::new(&v);
+    let bldcnt = v.io[0x28];
+    if (((bldcnt >> 6) & 3) >= 2 && (!win.any() || win.outside & 0x20 != 0)) || v.io[0x26] & 0xff != 0 {
+        return;
+    }
+    let (Some(b0), Some(b1), Some(b2), Some(b3)) = (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3)) else {
+        return;
+    };
+    let bgs = [b0, b1, b2, b3];
+    if !(bgs[0].on && bgs[0].pri > bgs[1].pri) {
+        return;
+    }
+    let Some(objs) = read_objs(core, &mut v) else { return };
+    for bg in &bgs {
+        if bg.on {
+            bg.load(core, &mut v);
+        }
+    }
+    let mut layers: Vec<Vec<Px>> = Vec::with_capacity(4);
+    for bg in &bgs {
+        let mut l = vec![0u16; W * H];
+        if bg.on {
+            bg.render(&v, &mut l);
+        }
+        layers.push(l);
+    }
+    let Some(fr) = FlatRange::new(core, &bgs, &layers) else { return };
+    // The top sprite per pixel.
+    let mut obj_top: Vec<u32> = vec![u32::MAX; W * H];
+    for o in &objs {
+        let key = (o.pri as u32) << 8 | o.idx as u32;
+        for y in 0..o.h {
+            let sy = o.y + y;
+            if !(0..H as i32).contains(&sy) {
+                continue;
+            }
+            for x in 0..o.w {
+                let sx = o.x + x;
+                if !(0..W as i32).contains(&sx) || o.pix[(y * o.w + x) as usize] == 0 {
+                    continue;
+                }
+                let i = sy as usize * W + sx as usize;
+                if key < obj_top[i] {
+                    obj_top[i] = key;
+                }
+            }
+        }
+    }
+    let mut order: Vec<usize> = (1..4).filter(|&b| bgs[b].on).collect();
+    order.sort_by_key(|&b| (bgs[b].pri, b));
+    let any_win = win.any();
+    let lut = rgba_lut();
+    for i in 0..W * H {
+        let bits = if any_win { win.bits((i % W) as i32, (i / W) as i32) } else { 0x3f };
+        // (a window with the colour effects off is a panel's: it keeps the console's picture)
+        if any_win && bits & 0x20 == 0 {
+            continue;
+        }
+        let obj = if bits & 0x10 != 0 { obj_top[i] } else { u32::MAX };
+        let obj_pri = if obj == u32::MAX { 9 } else { (obj >> 8) as u8 };
+        for &b in &order {
+            if bits & (1 << b) == 0 || layers[b][i] == 0 {
+                continue;
+            }
+            if obj_pri <= bgs[b].pri {
+                break;
+            }
+            // BG1 holds the units, BG2 the peaks and treetops, BG3 the terrain (the units are not dimmed)
+            if b != 1 {
+                let c = fr.look(i, layers[b][i], b == 2);
+                rgba[i * 4..i * 4 + 4].copy_from_slice(&lut[(c & 0x7fff) as usize]);
+            }
+            break;
         }
     }
 }
@@ -1787,8 +1948,8 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         let on = reach[(my * ground.w + mx) as usize] != 0xff;
                         let sample = layers[0].get(((sy0 + 8).max(0) as usize) * W + (sx0 + 8).max(0) as usize).copied().unwrap_or(0);
                         let t = if on { if sample != 0 { sample } else { 0x7fff } } else { 0 };
-                        for p in pix.iter_mut().filter(|p| **p != 0) {
-                            *p = range_look(*p, t);
+                        for (i, p) in pix.iter_mut().enumerate().filter(|(_, p)| **p != 0) {
+                            *p = range_look(*p, t, i as i32 % 16, i as i32 / 16, true);
                         }
                     }
                 }
@@ -2173,9 +2334,10 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     // Dual Strike lays soft darker patches (about 5 cells across, 10% darker)
     // over its ground that drift slowly. Display only: the drift counts the
     // pictures shown.
-    static CLOCK: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
     let clock = CLOCK.fetch_add(1, Ordering::Relaxed) as f32;
     const SHADOW_STEP: f32 = 0.25;
+    // (measured on Dual Strike's frames: the water's darkest cloud shadow is 12% darker than its clear water)
+    const SHADOW_DARK: f32 = 0.12;
     let (rl, rr, rt, rb) = cam.reach();
     let (su0, sv0) = ((cam.cu - rl - 1.0).floor(), (cam.cv - rt - 1.0).floor());
     let (sw, sh) = (((rl + rr + 2.0) / SHADOW_STEP) as usize + 4, ((rt + rb + 2.0) / SHADOW_STEP) as usize + 4);
@@ -2237,7 +2399,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 shade_here = shade(u, vv);
             }
             if shade_here > 0.0 {
-                let k = 1.0 - 0.04 * shade_here;
+                let k = 1.0 - SHADOW_DARK * shade_here;
                 let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k + 0.5) as u32;
                 p = 0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16;
             }
@@ -2246,7 +2408,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
                 let i = sy as usize * W + sx as usize;
                 if tint.is_some() && outer.is_none() {
-                    p = range_look(p, layers[0][i]);
+                    p = range_look(p, layers[0][i], gx.rem_euclid(16), gy.rem_euclid(16), false);
                 }
             } else if tint.is_some() && outer.is_none() {
                 let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
@@ -2255,7 +2417,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     && cx < ground.w
                     && cy < ground.h
                     && reach[(cy * ground.w + cx) as usize] != 0xff;
-                p = range_look(p, if on { 0x7fff } else { 0 });
+                p = range_look(p, if on { 0x7fff } else { 0 }, gx.rem_euclid(16), gy.rem_euclid(16), false);
             }
             if (-DM..W as i32 + DM).contains(&sx) && (-DM..H as i32 + DM).contains(&sy) {
                 let d = decal[(sy + DM) as usize * DW + (sx + DM) as usize];
