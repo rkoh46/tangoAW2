@@ -3728,6 +3728,12 @@ place. With the setting off nothing is read or written (`compat_aw2_byte_identic
   backing is AW2's window and darkening at Dual Strike's rectangle (78 x 61, 42 wide without a unit; the game's
   window shadows `0x03002B40/4C/44`, `0x03002EFC`, which its VBlank copies into WIN0H / WIN0V: the IO registers
   cannot be written from here). **Names stay AW2's** (Dual Strike draws them from its font).
+- **A structure's hit points** (a Black Crystal's or Cannon's 99, the Black Factory's 200, the Deathray's...): AW2 draws a
+  heart (OBJ tile 858, not the unit's 862) with the number under the defence row. It goes where a property's capture
+  points are (the number right-aligned, three digits wide); the heart's digits were once counted as the defence row's
+  ("909", "2000" and an empty heart). AW2 blinks those digits off for a few frames, so the last number stands in
+  (`LAST_STRUCT_HP`). Not captured from a real Dual Strike frame (the melonDS cursor never reached a crystal's cell);
+  the layout is Dual Strike's terrain box with the heart row where the capture row is. Test `ds_hud_structure_hit_points`.
 - **The digit tiles are the info panel's own** (OBJ tiles 32..41, loaded by `digits_borrow` whenever the panel shows,
   saved and put back when it goes). They were once loaded with the CO panel's sheet and put back with it, and the CO
   panel is not drawn while an attack target is chosen (nor in some other states): the panel then showed AW2's star

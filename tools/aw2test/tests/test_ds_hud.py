@@ -487,3 +487,95 @@ def ds_hud_damage_box(ctx):
         expect = box_expected(g.e, digs)
         r = box_match(img.load(), pos, expect)
         ctx.check(r >= 0.97, f"{name}: the box's pixels are Dual Strike's ({r:.0%})")
+
+
+# --- Structures with hit points in the terrain box ------------------------------------------------------
+
+# The Design Room's structures (anchor tiles, crate::design_bar): AW2's box shows a defence row ("star 0") and, under it, a
+# heart (OBJ tile 858) with the structure's hit points (the Black Factory's 200, a Cannon's or Crystal's 99). The Dual
+# Strike box keeps the two rows apart: star "00" over the heart and its number.
+STRUCTURES = [
+    ("minicannon", 0x182), ("laser", 0x181), ("cannon", 0x187), ("cannon_up", 0x18A), ("factory", 0x18D),
+    ("deathray", 0x190), ("crystal", 0x192), ("obelisk", 0x193),
+]
+T_STRUCT_HEART = 858
+
+
+def panel_sprites(e):
+    """The terrain / unit panel's sprites: (x, y, tile, palette) of the semi-transparent ones in the lower half."""
+    out = []
+    for s in sprites(e):
+        if (s["a0"] >> 10) & 3 == 1 and (s["a0"] & 255) >= 90:
+            out.append((s["a1"] & 511, s["a0"] & 255, s["tile"], s["pal"]))
+    return sorted(out)
+
+
+@test(modes=("ds",))
+def ds_hud_structure_hit_points(ctx):
+    """The terrain box of a structure with hit points reads Dual Strike's way: the defence "00" on its row and, on the row
+    under it, the heart with the hit points (99, the Factory's 200) as their own number, not run together with the
+    defence's digits ("909", "2000") nor missing. Every structure in the Design Room's bar."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    from tests.test_obelisk_breakable import entries
+    for name, tile in STRUCTURES:
+        m = ctx.map()
+        m.terrain(10, 6, tile)
+        g = ctx.start(m, ["andy", "andy"])
+        inv = entries(g.e)
+        if not inv:
+            ctx.log(f"{name}: not an invention in this build, skipped")
+            continue
+        x, y, kind, a = inv[0]
+        hp = g.e.u8(a + 4)
+        found = None
+        for cy in range(y, y + 5):
+            for cx in range(x, x + 5):
+                g.goto(cx, cy)
+                g.e.wait(50)
+                if any(sp[2] == T_STRUCT_HEART for sp in panel_sprites(g.e)):
+                    found = (cx, cy)
+                    break
+            if found:
+                break
+        ctx.check(found, f"{name}: a cell of the structure shows its hit points")
+        if not found:
+            continue
+        for k in range(8):
+            # (AW2 blinks the hit points' digits off now and then; the box keeps the number)
+            g.e.wait(9)
+            good, bad = panel_digits(g.e)
+            ctx.eq(number_at(good, 141), str(hp), f"{name}: the hit points at frame +{k * 9}")
+        shot(ctx, g, f"struct_{name}")
+        ctx.log(f"{name} at {found}: hp {hp}, sprites {panel_sprites(g.e)}")
+        good, bad = panel_digits(g.e)
+        ctx.check(not bad, f"{name}: every digit sprite is a digit ({len(bad)} are not)")
+        rows = sorted({yy for _, yy, _ in good})
+        ctx.eq(len(rows), 2, f"{name}: two rows of numbers (defence, hit points)")
+        if len(rows) == 2:
+            ctx.eq(number_at(good, rows[0]), "00", f"{name}: the defence row")
+            ctx.eq(number_at(good, rows[1]), str(hp), f"{name}: the hit points row")
+            heart = next(sp for sp in panel_sprites(g.e) if sp[2] == T_STRUCT_HEART)
+            ctx.check(abs(heart[1] + 4 - rows[1]) <= 1 and rows[1] > rows[0] + 6, f"{name}: the heart sits with its number, under the defence row")
+
+
+@test(modes=("ds",))
+def ds_hud_terrain_without_hit_points(ctx):
+    """Terrain with no hit points (a pipe, a Com Tower, a Black Hole volcano's cell) keeps one number row: the defence
+    stars, two digits, and no heart."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    m = ctx.map()
+    m.terrain(10, 6, "pipe").terrain(12, 6, "lab").terrain(14, 6, "mountain")
+    g = ctx.start(m, ["andy", "andy"])
+    for cell, want in (((10, 6), "00"), ((12, 6), "03"), ((14, 6), "04")):
+        g.goto(*cell)
+        g.e.wait(50)
+        ps = panel_sprites(g.e)
+        ctx.check(not any(sp[2] == T_STRUCT_HEART for sp in ps), f"{cell}: no hit points heart")
+        good, bad = panel_digits(g.e)
+        ctx.check(not bad, f"{cell}: every digit sprite is a digit")
+        ctx.log(f"{cell}: {ps}")
+        rows = sorted({yy for _, yy, _ in good})
+        ctx.check(len(rows) <= 2, f"{cell}: the numbers are the defence row and, for a property, the capture row ({rows})")
+        ctx.eq(number_at(good, rows[0]), want, f"{cell}: the defence stars")
