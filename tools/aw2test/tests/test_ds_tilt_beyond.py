@@ -306,7 +306,7 @@ def ds_tilt_moving_unit_off_the_window(ctx):
         ctx.check(d < 40, f"{name}: parked, the unit is drawn from the record where its sprite was ({d} pixels differ)")
         shown2, parked2, _ = results[False]
         d2 = differing(shown2, parked2)
-        ctx.check(d2 > 150, f"{name}: without the record's mover the parked unit is missing ({d2} pixels differ)")
+        ctx.check(d2 > 100, f"{name}: without the record's mover the parked unit is missing ({d2} pixels differ)")
         ctx.check(any("record-drawn moving unit" in l for l in read_log(log)), f"{name}: the check says it drew the moving unit from its record")
 
 

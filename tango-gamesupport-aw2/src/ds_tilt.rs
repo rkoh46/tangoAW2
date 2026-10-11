@@ -690,7 +690,7 @@ fn find_mover(core: &Core) -> Option<(i32, i32)> {
 /// when the crosshair is up, else the unit that is moving (one upright
 /// picture, drawn where it is as it goes).
 fn resolve_groups(mut objs: Vec<Obj>) -> Vec<Obj> {
-    let targeting = objs.iter().any(|o| o.class == Class::Ground && (884..=895).contains(&o.tile));
+    let targeting = objs.iter().any(|o| o.class == Class::Ground && is_crosshair(o.tile));
     if targeting {
         for o in objs.iter_mut().filter(|o| o.class == Class::Piece) {
             o.class = Class::Ground;
@@ -743,6 +743,12 @@ fn resolve_groups(mut objs: Vec<Obj>) -> Vec<Obj> {
     rest
 }
 
+/// The attack target's crosshair: four 16 x 16 pieces whose tiles run through six frames, 886, 890, 894, 898,
+/// 902 and 906 (the menu's hand, 910, comes after them).
+fn is_crosshair(tile: u16) -> bool {
+    (884..=909).contains(&tile)
+}
+
 fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
     let mode = (a0 >> 10) & 3;
     let pri = (a2 >> 10) & 3;
@@ -757,7 +763,7 @@ fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
         // The attack target's glow (3 x 3 pieces of 8 x 8, palette 4) and its
         // crosshair (four 16 x 16 pieces).
         (8, 8, 666..=674) if pal == 4 => Class::Piece,
-        (16, 16, 884..=895) if pal == 1 => Class::Ground,
+        (16, 16, 884..=909) if pal == 1 => Class::Ground,
         // The move arrow (palette 3, 16 x 16 pieces).
         (16, 16, _) if pal == 3 && pri == 0 => Class::Ground,
         _ if pri == 3 => Class::Billboard,
@@ -1859,7 +1865,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 if (0..ground.w).contains(&cx)
                     && (0..ground.h).contains(&cy)
                     && !ground.fogged(cx, cy)
-                    && !objs.iter().any(|o| o.class == Class::Ground && (884..=895).contains(&o.tile))
+                    && !objs.iter().any(|o| o.class == Class::Ground && is_crosshair(o.tile))
                 {
                     let mut pix = vec![0u16; (sn.w * sn.h) as usize];
                     let one_d = v.dispcnt() & 0x40 != 0;
@@ -2202,6 +2208,31 @@ impl RamUnit {
 }
 
 /// Every unit on the map.
+/// The 16 x 16 picture of unit record `id` as the console draws it (its four tiles in BG tile
+/// RAM, the army's palette bank, mirrored as the army is), 0 transparent, else 0x8000 | RGB555.
+/// For the menus' Drop icon (the cargo's picture); no HP digit or marks.
+pub(crate) fn unit_picture(core: &Core, id: u8) -> Option<Vec<u16>> {
+    let u = ram_units(core).into_iter().find(|u| u.id == id)?;
+    let tiles = if u.mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
+    let mut out = vec![0u16; 256];
+    for (k, &t) in tiles.iter().enumerate() {
+        let mut data = [0u8; 32];
+        core.raw_read_range(0x0600_8000 + 32 * t as u32, -1, &mut data);
+        for y in 0..8usize {
+            for x in 0..8usize {
+                let sx = if u.mirrored { 7 - x } else { x };
+                let b = data[y * 4 + sx / 2];
+                let c = (if sx & 1 == 0 { b & 15 } else { b >> 4 }) as u32;
+                if c != 0 {
+                    let rgb = core.raw_read_16(0x0500_0000 + 2 * (u.bank as u32 * 16 + c), -1);
+                    out[((k / 2) * 8 + y) * 16 + (k % 2) * 8 + x] = 0x8000 | (rgb & 0x7FFF);
+                }
+            }
+        }
+    }
+    Some(out)
+}
+
 fn ram_units(core: &Core) -> Vec<RamUnit> {
     let base = core.raw_read_32(UNITS_PTR, -1);
     let players = core.raw_read_32(PLAYERS_PTR, -1);
