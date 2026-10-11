@@ -28,3 +28,46 @@ def ds_tilt_camera_settles_without_pictures(ctx):
     diff = sum(1 for y in range(160) for x in range(240) if sum(abs(p - q) for p, q in zip(a[x, y], b[x, y])) > 24)
     ctx.log(f"{diff} pixels differ from the snapped camera")
     ctx.check(diff < 400, f"after 50 frames the camera is where it settles ({diff} pixels differ)")
+
+
+def menu_dialogue_picture(ctx, tilt):
+    from aw2test import campaigns as cp
+    from aw2test import dscampaign as dc
+    from aw2test import paths
+    from aw2test.emu import Emu
+    from aw2test.game import Game
+    os.environ.update({"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"})
+    e = Emu(save=paths.base_save(), ds=True)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = dc.DsCampaign(g)
+    cp.aw2_new(e, d, True)
+    if d.scripts_running():
+        d.wait_control()
+    g._units_base = g._players_base = None
+    m = g.open_map_menu()
+    for _ in range(len(m["names"]) + 2):
+        if e.u8(m["cursor_addr"]) == len(m["names"]) - 1:
+            break
+        e.press("DOWN", 4)
+        e.wait(8)
+    e.press("A", 4)
+    ctx.require(e.wait_until(d.scripts_running, 300, step=5), "the tutorial dialogue comes up over the map menu")
+    e.wait(120)
+    for _ in range(12):
+        e.shot(os.path.join(ctx.out, "warm"))
+    return e.shot(os.path.join(ctx.out, f"menu_box_{'tilt' if tilt else 'flat'}"))
+
+
+@test(modes=("ds",))
+def ds_tilt_under_the_bottom_dialogue_box(ctx):
+    """The dialogue box at the bottom with the map menu open (a handler that switches the registers at the box's
+    line): the box's rows keep the console's picture and the map above them stays tilted (it fell back to flat)."""
+    from PIL import Image
+    a = Image.open(menu_dialogue_picture(ctx, False)).convert("RGB").load()
+    b = Image.open(menu_dialogue_picture(ctx, True)).convert("RGB").load()
+    top = sum(1 for y in range(0, 100) for x in range(240) if sum(abs(p - q) for p, q in zip(a[x, y], b[x, y])) > 24)
+    box = sum(1 for y in range(116, 160) for x in range(240) if sum(abs(p - q) for p, q in zip(a[x, y], b[x, y])) > 24)
+    ctx.log(f"{top} pixels differ above the box, {box} inside it")
+    ctx.check(top > 3000, f"the map above the box is tilted ({top} pixels differ from the flat one)")
+    ctx.check(box < 200, f"the box keeps the console's picture ({box} pixels differ)")

@@ -1601,22 +1601,45 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let t0 = std::time::Instant::now();
     let mut v = Vid::read(core);
     let t_read = t0.elapsed();
-    let d = v.dispcnt();
     // A picture drawn with changes between its lines (HBlank interrupts on:
     // the dialogue box over the map's top) is not one this can redo.
     // The campaign dialogue box at the top is the one such effect we can carry: its rows (0x2D less the box's slide)
     // keep the console's picture and the map is tilted below them.
     let mut keep_rows = 0usize;
+    // The bottom dialogue box (a handler in IWRAM that switches the background registers at the line the box's top is
+    // on, `0x6F` plus the box's slide `0x030030A8`, and back in the vertical blank): its rows from there keep the
+    // console's picture too.
+    let mut keep_from = H;
     if v.io[2] & 0x10 != 0 {
-        if core.raw_read_32(0x0300_2FE4, -1) != 0x0801_7881 {
-            return;
+        match core.raw_read_32(0x0300_2FE4, -1) {
+            0x0801_7881 => {
+                keep_rows = if core.raw_read_16(0x0300_2EDC, -1) & 0x1000 != 0 {
+                    0
+                } else {
+                    (0x2D - core.raw_read_16(0x0300_30A8, -1) as i16 as i32).clamp(0, H as i32) as usize
+                };
+            }
+            0x0300_5DC1 => {
+                keep_from = (core.raw_read_16(0x0300_30A8, -1) as i16 as i32 + 0x6F).clamp(0, H as i32) as usize;
+                // (the registers read now are the box's, which the handler wrote at its line: the map's are the
+                // values it puts back in the vertical blank, in these shadows)
+                let r16 = |a: u32| core.raw_read_16(a, -1);
+                let r32 = |a: u32| core.raw_read_32(a, -1);
+                v.io[0] = r16(0x0300_2F38);
+                v.io[4] = r32(0x0300_2010) as u16;
+                v.io[5] = (r32(0x0300_2010) >> 16) as u16;
+                v.io[8] = r32(0x0300_3030) as u16;
+                v.io[9] = (r32(0x0300_3030) >> 16) as u16;
+                v.io[10] = r32(0x0300_2B3C) as u16;
+                v.io[11] = (r32(0x0300_2B3C) >> 16) as u16;
+                v.io[0x28] = r16(0x0300_2014);
+                v.io[0x29] = r16(0x0300_30C0).wrapping_add(r16(0x0300_1FEC) << 8);
+                v.io[0x2a] = r16(0x0300_1FB4);
+            }
+            _ => return,
         }
-        keep_rows = if core.raw_read_16(0x0300_2EDC, -1) & 0x1000 != 0 {
-            0
-        } else {
-            (0x2D - core.raw_read_16(0x0300_30A8, -1) as i16 as i32).clamp(0, H as i32) as usize
-        };
     }
+    let d = v.dispcnt();
     // Tile mode 0, display on, BG1-3 and OBJ on.
     if d & 7 != 0 || d & 0x80 != 0 || d & 0x0e00 != 0x0e00 || d & 0x1000 == 0 {
         return;
@@ -2637,7 +2660,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let evy = (bldy & 31).min(16) as u32;
     for i in 0..W * H {
         let p = match owner[i] {
-            _ if i / W < keep_rows => continue,
+            _ if i / W < keep_rows || i / W >= keep_from => continue,
             Owner::Hud => continue,
             Owner::Map => {
                 let p = map[i];
