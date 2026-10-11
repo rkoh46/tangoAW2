@@ -796,7 +796,9 @@ pub fn editor_tick(core: &mut Core) {
     core.raw_read_range(PAL_BUFFER, -1, &mut now);
     let mut aw2 = vec![0u8; 2 * MAP_COLOURS];
     core.raw_read_range(CLEAR, -1, &mut aw2);
-    let sets: Vec<Vec<u8>> = SOURCES.iter().filter_map(|(b, _)| look(*b)).map(|l| bytes(&l.colours.clear)).collect();
+    // (Dual Strike's Normal look too: with the Dual Strike map graphics the editor starts in it)
+    let all_looks = || SOURCES.iter().map(|(b, _)| *b).chain(std::iter::once(DS_NORMAL)).filter_map(look);
+    let sets: Vec<Vec<u8>> = all_looks().map(|l| bytes(&l.colours.clear)).collect();
     let want = drawn.and_then(look).map_or(aw2.clone(), |l| bytes(&l.colours.clear));
     if now != want && (now == aw2 || sets.contains(&now)) {
         core.raw_write_range(PAL_BUFFER, -1, &want);
@@ -818,7 +820,7 @@ pub fn editor_tick(core: &mut Core) {
     if is(want, pool) {
         return;
     }
-    let known = is(aw2_tiles, &[]) || SOURCES.iter().filter_map(|(b, _)| look(*b)).any(|l| is(&l.look.tiles, &l.look.pool));
+    let known = is(aw2_tiles, &[]) || all_looks().any(|l| is(&l.look.tiles, &l.look.pool));
     if known {
         core.raw_write_range(VRAM_TILES, -1, want);
         render_map(core);
