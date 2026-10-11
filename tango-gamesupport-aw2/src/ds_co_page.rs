@@ -745,40 +745,53 @@ fn page_description(f: &Font, a: &Art, v: &View) -> Canvas {
     cv
 }
 
-/// Page 2: the skills the army has on, then the tag partners.
+/// Page 2: the skills the army has on, then the tag partners (one a line, or in two columns when
+/// one column leaves them no room: Sturm has seven).
 fn page_skills(f: &Font, a: &Art, v: &View) -> Canvas {
-    for pitch in [14, 13] {
-        for with_desc in [true, false] {
-            let mut cv = Canvas::new();
-            frame(&mut cv, a, v, 1);
-            let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: TEXT_TOP, pitch, overflow: false };
-            let mut ok = fl.para(&mut cv, "Existing skills", 0);
-            if v.skills.is_empty() {
-                ok &= fl.para(&mut cv, "None set.", 0);
-            }
-            for (name, desc) in &v.skills {
-                ok &= fl.para(&mut cv, name, 0);
-                if with_desc && !desc.is_empty() {
-                    ok &= fl.para(&mut cv, desc, 6);
+    for cols in [1usize, 2] {
+        if cols == 2 && v.partners.len() < 2 {
+            break;
+        }
+        for pitch in [14, 13] {
+            for with_desc in [true, false] {
+                let mut cv = Canvas::new();
+                frame(&mut cv, a, v, 1);
+                let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: TEXT_TOP, pitch, overflow: false };
+                let mut ok = fl.para(&mut cv, "Existing skills", 0);
+                if v.skills.is_empty() {
+                    ok &= fl.para(&mut cv, "None set.", 0);
                 }
-            }
-            if !v.partners.is_empty() {
-                fl.y += 3;
-                ok &= fl.para(&mut cv, "TAG partners", 0);
-                for (name, stars) in &v.partners {
-                    if fl.y + INK_ROWS as i32 > BOTTOM {
-                        ok = false;
-                        break;
+                for (name, desc) in &v.skills {
+                    ok &= fl.para(&mut cv, name, 0);
+                    if with_desc && !desc.is_empty() {
+                        ok &= fl.para(&mut cv, desc, 6);
                     }
-                    let x = cv.text(f, LEFT + 6, fl.y, name);
-                    for s in 0..*stars as i32 {
-                        star(&mut cv, x + 5 + 9 * s, fl.y + 3);
-                    }
-                    fl.y += pitch;
                 }
-            }
-            if ok {
-                return cv;
+                if !v.partners.is_empty() {
+                    fl.y += 3;
+                    ok &= fl.para(&mut cv, "TAG partners", 0);
+                    let rows = v.partners.len().div_ceil(cols);
+                    let span = (RIGHT - LEFT) / cols as i32;
+                    for (i, (name, stars)) in v.partners.iter().enumerate() {
+                        let (col, row) = ((i / rows) as i32, (i % rows) as i32);
+                        let y = fl.y + row * pitch;
+                        let x0 = LEFT + 6 + span * col;
+                        let limit = if col as usize + 1 == cols { RIGHT } else { LEFT + span * (col + 1) - 3 };
+                        let w = f.width(name) + 5 + 9 * *stars as i32;
+                        if y + INK_ROWS as i32 > BOTTOM || x0 + w > limit {
+                            ok = false;
+                            break;
+                        }
+                        let x = cv.text(f, x0, y, name);
+                        for s in 0..*stars as i32 {
+                            star(&mut cv, x + 5 + 9 * s, y + 3);
+                        }
+                    }
+                    fl.y += rows as i32 * pitch;
+                }
+                if ok {
+                    return cv;
+                }
             }
         }
     }
