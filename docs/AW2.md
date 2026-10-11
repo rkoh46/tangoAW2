@@ -3833,11 +3833,28 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   it.
 - **Units beyond the console's window** from the records (`UNITS_PTR`): the
   picture's first tile by type, Infantry and Mech by the CO's country (CO record
-  `+0x15`), mirrored for armies 1 and 3 and for any unit that has moved, army
+  `+0x15`), mirrored for armies 1 and 3 whether or not the unit has moved (Dual Strike's
+  rule, below), army
   palette 12-15 (11 once moved), HP digit tiles `0x2a1 + d`, army 4's mark
   `0x2af`, the cargo mark `0x2ab`; hidden by fog or inside a transport;
   a submerged Sub never. Compared with the console cell by cell
   (`TANGOAW2_TILT_CHECK`): 26 types x 4 armies, every digit, moved, carrying.
+- **Which way units face** (`dual_strike_mirrored`), read from the clean Dual Strike with a melonDS
+  that dumps its ITCM and lists a frame's 3D polygons: a unit is drawn mirrored (facing right; the
+  art faces left) when its own army is the first or the third, as stored for the second and the
+  fourth. The unit-drawing routine (ITCM `0x01FFC890`, called for every unit from `0x01FFCC58`)
+  takes the army from the unit's record number, `id & 0xC0`, and picks the draw routine with the
+  picture's texture coordinates reversed (`0x020128B0`) for 0 and `0x80`. The team of the army
+  (`+0x2C` of its player record: the unit drawing never reads it, the same-team tests at `0x020C8FB0`
+  and `0x020C09B8` do), its colour, its side of the map, human or computer, whose turn it is and whether the unit
+  has moved play no part: a moved unit is drawn greyed, facing as its army does. Checked by
+  putting a unit of each army, unmoved and moved, on an empty cell of nine missions' maps and a
+  Versus game, and reading the polygon: armies 1 and 3 mirrored, 2 and 4 as stored, every time
+  (missions whose armies 1 and 2 are on one team included: the facing does not follow it). The
+  HP digit and the marks are separate pieces, never mirrored. With four armies this is AW2's
+  own rule (`0x0802216C`, which takes the key of the army whose turn it is for a moved unit, the
+  one place they part); a fifth army, which Dual Strike does not have, goes on alternating. The
+  tilted view draws every unit, in the window and beyond it, by the rule from its record.
 - **Buildings and structures beyond the window** from the terrain id and
   `ds_plans.rs` (sprite parts the console draws for each id, recorded by
   `tools/aw2test/ds_view_props.py`). Inside the window the console's own OAM.

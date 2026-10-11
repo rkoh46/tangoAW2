@@ -369,12 +369,13 @@ def facing_scene(ctx):
 
 @test(modes=("ds",))
 def ds_tilt_facing_kept_beyond_the_window(ctx):
-    """Units the console drew, then left behind by its window (still in the tilted view), keep
-    the facing the console drew them with."""
+    """Units the console drew, then left behind by its window (still in the tilted view), face
+    as Dual Strike's rule has it (by their army: tests/test_ds_facing.py), which is the facing
+    the console drew them with."""
     (_, flat, _), (g, tilt, log) = pair(ctx, "facing", facing_scene)
     lines = read_log(log)
-    kept = [l for l in lines if "kept the console's" in l]
-    differ = [l for l in lines if "by the rule" in l]
-    ctx.check(len(kept) >= 4, f"units beyond the window kept the facing the console drew ({len(kept)} draws)")
+    kept = [l for l in lines if "beyond the window faces by the rule" in l]
+    differ = [l for l in lines if "by the console" in l and "by the rule" in l]
+    ctx.check(len(kept) >= 4, f"units beyond the window face by the rule ({len(kept)} draws)")
     ctx.check(not differ, f"the facing the console drew is the rule's ({len(differ)} differ)")
     ctx.check(len(record_drawn(log)) >= 2, "the units beyond the window are drawn from their records")
