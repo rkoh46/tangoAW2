@@ -414,6 +414,15 @@ fn ds_sand() -> Option<&'static Vec<u8>> {
         .as_ref()
 }
 
+/// The three colours the grains are drawn in (OBJ palette 7, colours 5 to 7: the CO panel's
+/// palette, [`crate::ds_hud`] keeps them while the sand blows).
+pub fn grain_colours() -> [u16; 3] {
+    match ds_sand() {
+        Some(_) => DS_SAND_COLOURS,
+        None => GRAIN_COLOURS,
+    }
+}
+
 fn effects(core: &mut Core) {
     if crate::cpu_tactics::effects_pass(core) {
         return;

@@ -413,6 +413,12 @@ fn borrow(core: &mut Core, a: &Art, colour: u8, step: usize) {
     write_tiles(core, T0 as u32, &a.sheet);
     let mut pal = a.palettes[(colour.clamp(1, 5) - 1) as usize];
     pal[30..32].copy_from_slice(&a.pulse[step % 16].to_le_bytes());
+    // The sandstorm's grains are drawn in this palette's colours 5 to 7 ([`crate::sandstorm`]).
+    if crate::sandstorm::active(core) {
+        for (i, c) in crate::sandstorm::grain_colours().iter().enumerate() {
+            pal[10 + 2 * i..12 + 2 * i].copy_from_slice(&c.to_le_bytes());
+        }
+    }
     write_palette(core, 7, &pal);
 }
 
