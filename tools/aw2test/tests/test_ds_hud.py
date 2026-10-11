@@ -335,7 +335,7 @@ def states(ctx, env, tilt_label):
     g.goto(5, 4)
     g.e.wait(40)
     good = check_digits(ctx, g, f"{tilt_label} idle on a tank")
-    ctx.check("100" in {number_at(good, y) for y in {y for _, y, _ in good}}, f"{tilt_label} idle: the tank's hit points read 100")
+    ctx.check("10" in {number_at(good, y) for y in {y for _, y, _ in good}}, f"{tilt_label} idle: the tank's hit points read 10 (Dual Strike counts 1 to 10)")
     g.select(4, 4)
     g.e.wait(30)
     check_digits(ctx, g, f"{tilt_label} move range")
@@ -346,7 +346,7 @@ def states(ctx, env, tilt_label):
     g.e.wait(20)
     good = check_digits(ctx, g, f"{tilt_label} choosing a target")
     ctx.check(len(good) >= 6, f"{tilt_label} targeting: the panel's digits are there ({len(good)})")
-    ctx.check("100" in {number_at(good, y) for y in {y for _, y, _ in good}}, f"{tilt_label} targeting: the target's hit points read 100")
+    ctx.check("10" in {number_at(good, y) for y in {y for _, y, _ in good}}, f"{tilt_label} targeting: the target's hit points read 10 (Dual Strike counts 1 to 10)")
     g.e.press("A", 4)
     for _ in range(12):
         g.e.wait(10)
@@ -493,7 +493,7 @@ def ds_hud_damage_box(ctx):
 
 # The Design Room's structures (anchor tiles, crate::design_bar): AW2's box shows a defence row ("star 0") and, under it, a
 # heart (OBJ tile 858) with the structure's hit points (the Black Factory's 200, a Cannon's or Crystal's 99). The Dual
-# Strike box keeps the two rows apart: star "00" over the heart and its number.
+# Strike box keeps the two rows apart: star "0" over the heart and its number.
 STRUCTURES = [
     ("minicannon", 0x182), ("laser", 0x181), ("cannon", 0x187), ("cannon_up", 0x18A), ("factory", 0x18D),
     ("deathray", 0x190), ("crystal", 0x192), ("obelisk", 0x193),
@@ -512,7 +512,7 @@ def panel_sprites(e):
 
 @test(modes=("ds",))
 def ds_hud_structure_hit_points(ctx):
-    """The terrain box of a structure with hit points reads Dual Strike's way: the defence "00" on its row and, on the row
+    """The terrain box of a structure with hit points reads Dual Strike's way: the defence "0" on its row and, on the row
     under it, the heart with the hit points (99, the Factory's 200) as their own number, not run together with the
     defence's digits ("909", "2000") nor missing. Every structure in the Design Room's bar."""
     if not GRAPHICS:
@@ -553,7 +553,7 @@ def ds_hud_structure_hit_points(ctx):
         rows = sorted({yy for _, yy, _ in good})
         ctx.eq(len(rows), 2, f"{name}: two rows of numbers (defence, hit points)")
         if len(rows) == 2:
-            ctx.eq(number_at(good, rows[0]), "00", f"{name}: the defence row")
+            ctx.eq(number_at(good, rows[0]), "0", f"{name}: the defence row")
             ctx.eq(number_at(good, rows[1]), str(hp), f"{name}: the hit points row")
             heart = next(sp for sp in panel_sprites(g.e) if sp[2] == T_STRUCT_HEART)
             ctx.check(abs(heart[1] + 4 - rows[1]) <= 1 and rows[1] > rows[0] + 6, f"{name}: the heart sits with its number, under the defence row")
@@ -568,7 +568,7 @@ def ds_hud_terrain_without_hit_points(ctx):
     m = ctx.map()
     m.terrain(10, 6, "pipe").terrain(12, 6, "lab").terrain(14, 6, "mountain")
     g = ctx.start(m, ["andy", "andy"])
-    for cell, want in (((10, 6), "00"), ((12, 6), "03"), ((14, 6), "04")):
+    for cell, want in (((10, 6), "0"), ((12, 6), "3"), ((14, 6), "4")):
         g.goto(*cell)
         g.e.wait(50)
         ps = panel_sprites(g.e)

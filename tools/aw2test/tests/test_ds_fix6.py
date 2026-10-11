@@ -53,7 +53,7 @@ def ds_fix_hidden_hp_is_a_question_mark(ctx):
     g.goto(5, 5)
     e.wait(50)
     good, bad = panel_digits(e)
-    ctx.check(any(number_at(good, y) == "100" for y in {y for _, y, _ in good}), "an ordinary unit shows its 100")
+    ctx.check(any(number_at(good, y) == "10" for y in {y for _, y, _ in good}), "an ordinary unit shows its 10")
 
 
 @test(modes=("ds",))

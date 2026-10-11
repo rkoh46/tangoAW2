@@ -769,11 +769,11 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     }
     if let Some(e) = star {
         move_to(core, e, tx + 4, y0 + 29);
-        number(&mut mine, value("star").unwrap_or(0), 2, tx + 32, y0 + 33);
+        number(&mut mine, value("star").unwrap_or(0), 1, tx + 32, y0 + 33);
     }
     if let Some(e) = cap {
         move_to(core, e, tx + 4, y0 + 40);
-        number(&mut mine, value("cap").unwrap_or(0), 2, tx + 32, y0 + 44);
+        number(&mut mine, value("cap").unwrap_or(0), 1, tx + 32, y0 + 44);
     }
     // A structure with hit points: AW2's heart and number go where a property's capture points are (a structure has none),
     // under the defence row, the number right-aligned in the box (up to three digits: the Black Factory's 200).
@@ -796,7 +796,7 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
             move_to(core, e, ux + 8, y0 + 14);
         }
         let mut row = 0;
-        for (e, n, pad) in [(heart, "heart", 1usize), (fuel, "fuel", 2), (ammo, "ammo", 2)] {
+        for (e, n, pad) in [(heart, "heart", 1usize), (fuel, "fuel", 1), (ammo, "ammo", 1)] {
             let Some(e) = e else { continue };
             let y = y0 + [28, 37, 45][row];
             move_to(core, e, ux + 4, y);
@@ -808,7 +808,8 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
                 row += 1;
                 continue;
             }
-            let v = if n == "heart" { unit_hp(core).or(value(n).map(|d| d * 10)).unwrap_or(0) } else { value(n).unwrap_or(0) };
+            // (Dual Strike shows a unit's hit points as 1 to 10, rounded up, and no number is padded with zeros)
+            let v = if n == "heart" { unit_hp(core).or(value(n).map(|d| d * 10)).unwrap_or(0).div_ceil(10) } else { value(n).unwrap_or(0) };
             if n == "heart" {
                 number(&mut mine, v, pad, ux + 31, y + 1);
             } else {
