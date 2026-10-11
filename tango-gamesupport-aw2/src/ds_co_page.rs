@@ -58,6 +58,8 @@ const PROC_ARMY: u32 = 0x66;
 const GAME_PAGE: u32 = 0x0300_5940;
 /// Its Super Power's page: where the game stays under this module's pages.
 const GAME_SCOP_PAGE: u32 = 3;
+/// Its unit chart's (first) page.
+const GAME_CHART_PAGE: u32 = 4;
 /// The CO page's ROM presentation rows (see [`crate::ds_co_art`]).
 const PRESENTATION_POOL: u32 = 0x0803_9B7C;
 const PRESENTATION_ROW: u32 = 0x44;
@@ -1304,6 +1306,10 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
         // The game's own unit chart; UP goes back to this module's pages
         // (the game goes back a page too, to the Super Power's).
         if pressed & KEY_UP == 0 {
+            return keys;
+        }
+        // (the chart's second page, tangoAW2's, is the game's own too: UP goes to its first)
+        if core.raw_read_32(GAME_PAGE, -1) > GAME_CHART_PAGE {
             return keys;
         }
         st.page = CHART - 1;
