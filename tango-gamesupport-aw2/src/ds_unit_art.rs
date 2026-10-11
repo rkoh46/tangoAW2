@@ -111,6 +111,24 @@ fn idle() -> Option<&'static Idle> {
     IDLE.get()
 }
 
+/// Dual Strike's own 32 x 32 idle picture of a unit (frame 0..2, country 0..4 for Infantry and
+/// Mech), as indices into AW2's map-unit palette layout (0 clear; colour 14, Dual Strike's skin
+/// shadow, is the skin's brown as [`map_tiles_ds`] has it). The tilt draws it at half size, as
+/// Dual Strike's 3D engine scales it, instead of the 16 x 16 conversion.
+pub fn idle_bitmap(ds_id: u8, frame: usize, country: usize) -> Option<Vec<u8>> {
+    let idle = idle()?;
+    let s = sprite_of_country(ds_id, country)?;
+    let bmp = idle.frames.get(frame)?.get(s * DS_SPRITE..(s + 1) * DS_SPRITE)?;
+    let mut out = vec![0u8; DS_SIZE * DS_SIZE];
+    for y in 0..DS_SIZE {
+        for x in 0..DS_SIZE {
+            let c = pixel(bmp, DS_SIZE, x, y) as usize;
+            out[y * DS_SIZE + x] = if c == 14 { 9 } else { MAP_ROLES[c] };
+        }
+    }
+    Some(out)
+}
+
 /// Dual Strike's idle bitmap for a unit id (Orange Star's row).
 fn sprite_of(ds_id: u8) -> Option<usize> {
     sprite_of_country(ds_id, 0)

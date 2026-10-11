@@ -132,3 +132,20 @@ def ds_tilt_cursor_moves(ctx):
         ring.append((len(white), same))
     ctx.log(("ring pixels flat/same in tilt", ring))
     ctx.check(all(n >= 20 and same * 10 < n * 6 for n, same in ring), f"the crosshair is on the ground in every frame ({ring})")
+
+
+@test(modes=("ds",))
+def ds_tilt_units_wear_dual_strikes_pictures(ctx):
+    """On the tilted map every unit is Dual Strike's own 32 x 32 picture (drawn at half size, as its 3D
+    engine scales it), in the window and from the records beyond it, not the 16 x 16 conversion."""
+    def build(m):
+        for i, k in enumerate(("tank", "infantry", "bcopter", "artillery", "apc", "fighter")):
+            m.unit(1 + i % 2, k, 3 + 2 * i, 4)
+            m.unit(1 + i % 2, k, 3 + 2 * i, 14)
+    g, p = scene(ctx, "u_art", (6, 4), build=build)
+    lines = open(os.path.join(ctx.out, "u_art.log")).read().splitlines()
+    inside = [l for l in lines if "unit art" in l and "record" not in l]
+    beyond = [l for l in lines if "unit art" in l and "record" in l]
+    ctx.log(f"{len(inside)} in the window, {len(beyond)} from records")
+    ctx.check(len(inside) >= 6, f"units in the window are Dual Strike's pictures ({len(inside)} draws)")
+    ctx.check(len(beyond) >= 6, f"and so are the ones beyond it ({len(beyond)} draws)")

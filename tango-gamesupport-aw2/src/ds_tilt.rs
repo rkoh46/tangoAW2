@@ -1017,6 +1017,8 @@ struct Billboard {
     /// Draw order among equal depths: higher is in front.
     rank: u8,
     last: bool,
+    /// Source pixels per 1/16 cell: 1 for the console's pictures, 1/2 for Dual Strike's 32 x 32 ones.
+    scale: f32,
     /// A unit drawn from its record, for the debug log: its cell and low-ammunition / fuel icon.
     tag: Option<(i32, i32, u8)>,
 }
@@ -1061,6 +1063,45 @@ fn with_facing(u: &RamUnit, map: u64) -> RamUnit {
         }
     }
     u
+}
+
+/// Zeroes tile `k` (0 TL, 1 TR, 2 BL, 3 BR) of a 16 x 16 picture.
+fn clear_quarter(pix: &mut [Px], k: usize) {
+    for y in 0..8 {
+        for x in 0..8 {
+            pix[((k / 2) * 8 + y) * 16 + (k % 2) * 8 + x] = 0;
+        }
+    }
+}
+
+/// Dual Strike's 16 x 16 unit tiles by (Dual Strike id, frame, country), as the unit art conversion makes them.
+fn ds_tiles(ds: u8, frame: usize, country: usize) -> Option<[u8; 128]> {
+    static CACHE: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<(u8, usize, usize), Option<[u8; 128]>>>> =
+        std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+    *CACHE.lock().unwrap().entry((ds, frame, country)).or_insert_with(|| crate::ds_unit_art::map_tiles_ds(ds, frame, country))
+}
+
+/// Dual Strike's own 32 x 32 picture of a unit the console draws from the four tiles at `base`
+/// (BG1's tile RAM holds the conversion of Dual Strike's art, one of its three idle frames), in the
+/// palette bank the console used and mirrored as it was: found by matching the tiles to the
+/// conversion of each frame and country. `None` when the tiles are not Dual Strike's.
+fn ds_unit_art(v: &Vid, bg: &Bg, kind: u8, base: u16, mirrored: bool, bank: u16) -> Option<Vec<Px>> {
+    let ds = crate::roster::ds_id(kind)?;
+    let at = bg.char_base + 32 * base as usize;
+    let have = v.vram.get(at..at + 128)?;
+    let found = (0..3).flat_map(|f| (0..5).map(move |c| (f, c))).find(|&(f, c)| ds_tiles(ds, f, c).map_or(false, |t| t[..] == *have));
+    let (frame, country) = found?;
+    let bmp = crate::ds_unit_art::idle_bitmap(ds, frame, country)?;
+    let mut out = vec![0u16; 1024];
+    for y in 0..32usize {
+        for x in 0..32usize {
+            let c = bmp[y * 32 + if mirrored { 31 - x } else { x }] as usize;
+            if c != 0 {
+                out[y * 32 + x] = 0x8000 | (v.pal[bank as usize * 16 + c] & 0x7fff);
+            }
+        }
+    }
+    Some(out)
 }
 
 /// The low ammunition / fuel icon over a unit's 16 x 16 picture, in the top-right tile. The
@@ -1563,6 +1604,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 }
                 // The map cell it stands in, and where the console draws that cell's foot.
                 let (mx, my) = (map_x0 + cx - ground_cx0, map_y0 + cy - ground_cy0);
+                let mut art_board: Option<Vec<Px>> = None;
                 if b == 1 {
                     if let Some(u) = unit_in.get(&(mx, my)) {
                         // (the console's picture of the unit: whether it is mirrored)
@@ -1572,6 +1614,18 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         let mirrored = e0 & 0x400 != 0;
                         if (e0 & 0x3ff) == u.base + mirrored as u16 {
                             note_facing(u, mirrored, ground.signature());
+                            // Dual Strike's own 32 x 32 picture instead of the 16 x 16 conversion;
+                            // what is left of the console's cell is the HP digit and the marks.
+                            if let Some(a) = ds_unit_art(&v, bg, u.kind, u.base, mirrored, (e0 >> 12) & 15) {
+                                let tiles = if mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
+                                for (k, &t) in tiles.iter().enumerate() {
+                                    let e = bg.entry(&v, cx * 2 + (k as i32 % 2), cy * 2 + (k as i32 / 2));
+                                    if e & 0x3ff == t {
+                                        clear_quarter(&mut pix, k);
+                                    }
+                                }
+                                art_board = Some(a);
+                            }
                         }
                         overlay_low_icon(&mut pix, u, &bgs[2], bgs[1].pri, &v);
                     }
@@ -1592,6 +1646,24 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 // Units stand a little in front of the edge; the peaks and
                 // treetops (BG2) stand on it.
                 let drop = if b == 1 { cp().foot_drop } else { cp().terrain_drop };
+                if let Some(a) = art_board {
+                    if debug_check() {
+                        dbg_line(&format!("ds_tilt: unit art: Dual Strike's 32 x 32 at ({mx}, {my})"));
+                    }
+                    boards.push(Billboard {
+                        pix: a,
+                        w: 32,
+                        h: 32,
+                        fu: mx as f32 + 0.5,
+                        fv: my as f32 + 1.0 + drop,
+                        ox: sx0 as f32 - foot_x,
+                        oy: sy0 as f32 - foot_y,
+                        rank: (3 - bg.pri) * 2,
+                        last: false,
+                        scale: 0.5,
+                        tag: None,
+                    });
+                }
                 boards.push(Billboard {
                     pix,
                     w: 16,
@@ -1602,6 +1674,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     oy: sy0 as f32 - foot_y,
                     rank: (3 - bg.pri) * 2,
                     last: false,
+                    scale: 1.0,
                     tag: None,
                 });
             }
@@ -1716,7 +1789,34 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     }
                 }
             }
+            let art = ds_unit_art(&v, &bgs[1], u.kind, u.base, u.mirrored, u.bank);
+            if art.is_some() {
+                let tiles = if u.mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
+                for (k, &t) in tiles.iter().enumerate() {
+                    if entries[k] & 0x3ff == t {
+                        clear_quarter(&mut pix, k);
+                    }
+                }
+            }
             overlay_low_icon(&mut pix, &u, &bgs[2], bgs[1].pri, &v);
+            if let Some(a) = art {
+                if debug_check() {
+                    dbg_line(&format!("ds_tilt: unit art: Dual Strike's 32 x 32 at ({ux}, {uy}) from its record"));
+                }
+                boards.push(Billboard {
+                    pix: a,
+                    w: 32,
+                    h: 32,
+                    fu: ux as f32 + 0.5,
+                    fv: uy as f32 + 1.0 + cp().foot_drop,
+                    ox: -8.0,
+                    oy: -16.0 - bob as f32,
+                    rank: (3 - bgs[1].pri) * 2,
+                    last: false,
+                    scale: 0.5,
+                    tag: None,
+                });
+            }
             boards.push(Billboard {
                 pix,
                 w: 16,
@@ -1727,6 +1827,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 oy: -16.0 - bob as f32,
                 rank: (3 - bgs[1].pri) * 2,
                 last: false,
+                scale: 1.0,
                 tag: Some((ux, uy, u.low)),
             });
         }
@@ -1832,6 +1933,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         oy: -(h as f32),
                         rank: 1,
                         last: false,
+                        scale: 1.0,
                         tag: None,
                     });
                 }
@@ -1855,6 +1957,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             oy: -(o.h as f32),
             rank: (3 - o.pri) * 2 + 1,
             last: o.class == Class::Pointer,
+            scale: 1.0,
             tag: None,
         });
     }
@@ -1901,6 +2004,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         oy: -(sn.h as f32),
                         rank: 1,
                         last: false,
+                        scale: 1.0,
                         tag: Some((-1, -1, 0)),
                     });
                 }
@@ -2016,8 +2120,9 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let sc = cell / 16.0;
         let left = fx + bb.ox * sc;
         let top = fy + bb.oy * sc;
-        let right = left + bb.w as f32 * sc;
-        let bottom = top + bb.h as f32 * sc;
+        let ssc = sc * bb.scale;
+        let right = left + bb.w as f32 * ssc;
+        let bottom = top + bb.h as f32 * ssc;
         let (x0, x1) = ((left.floor() as i32).max(0), (right.ceil() as i32).min(W as i32));
         let (y0, y1) = ((top.floor() as i32).max(0), (bottom.ceil() as i32).min(H as i32));
         if let (true, Some((cx, cy, low))) = (debug_check(), bb.tag) {
@@ -2034,12 +2139,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             ));
         }
         for y in y0..y1 {
-            let v = ((y as f32 + 0.5 - top) / sc).floor() as i32;
+            let v = ((y as f32 + 0.5 - top) / ssc).floor() as i32;
             if !(0..bb.h).contains(&v) {
                 continue;
             }
             for x in x0..x1 {
-                let u = ((x as f32 + 0.5 - left) / sc).floor() as i32;
+                let u = ((x as f32 + 0.5 - left) / ssc).floor() as i32;
                 if !(0..bb.w).contains(&u) {
                     continue;
                 }
