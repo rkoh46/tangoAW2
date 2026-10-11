@@ -215,12 +215,17 @@ def set_mode(g, army, mode):
     g.e.w8(g.player(army)["addr"] + 0x1E, mode)
 
 
+# (with Dual Strike's map graphics the CO page's unit chart is Dual Strike's, drawn by crate::ds_co_page; the game's own grid, which
+# these tests read while it is drawn, shows with the setting off)
+GRID_ENV = {"TANGOAW2_DS_GRAPHICS": "0"}
+
+
 @test()
 def co_grid_aw2_cos(ctx):
     """Kanbei (every unit up) and Drake (naval up, air down; a CPU)."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.start(m, ["kanbei", "drake"], trace=trace_file(ctx))
+    g = ctx.start(m, ["kanbei", "drake"], trace=trace_file(ctx), env=GRID_ENV)
     seen = view_all(ctx, g)
     ctx.eq([a for a, _ in seen], [1, 2], "both armies viewed")
 
@@ -230,7 +235,7 @@ def co_grid_powers(ctx):
     """Eagle's COP (air) as a human, Grit's SCOP (indirects, range) as a CPU."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.start(m, ["eagle", "grit"], trace=trace_file(ctx))
+    g = ctx.start(m, ["eagle", "grit"], trace=trace_file(ctx), env=GRID_ENV)
     set_mode(g, 1, 1)
     set_mode(g, 2, 2)
     view_all(ctx, g)
@@ -242,7 +247,7 @@ def co_grid_new_cos(ctx):
     Bolt (all units up) as a CPU in his SCOP."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.start(m, ["javier", "vonbolt"], trace=trace_file(ctx))
+    g = ctx.start(m, ["javier", "vonbolt"], trace=trace_file(ctx), env=GRID_ENV)
     set_mode(g, 1, 2)
     set_mode(g, 2, 2)
     view_all(ctx, g)
@@ -254,7 +259,7 @@ def co_grid_new_cos_day(ctx):
     in his SCOP; Sasha a CPU."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.start(m, ["jake", "grimm"], trace=trace_file(ctx))
+    g = ctx.start(m, ["jake", "grimm"], trace=trace_file(ctx), env=GRID_ENV)
     view_all(ctx, g, "day_")
     g.e.press("B", 6)
     g.wait_for_input()
@@ -270,7 +275,7 @@ def co_grid_four_armies(ctx):
     m = ctx.map(hq=((1, 0, 0), (2, 29, 19), (3, 29, 0), (4, 0, 19)))
     m.colours = [0, 3, 4, 1, 2]
     cos = ["sensei", "hawke", "colin", "sonja"] if not ctx.ds else ["sensei", "koal", "colin", "rachel"]
-    g = ctx.start(m, cos, humans=(1, 3), trace=trace_file(ctx))
+    g = ctx.start(m, cos, humans=(1, 3), trace=trace_file(ctx), env=GRID_ENV)
     set_mode(g, 4, 1)
     seen = view_all(ctx, g)
     ctx.eq(sorted(c for _, c in seen), [1, 2, 3, 4], "every colour viewed")
@@ -282,7 +287,7 @@ def co_grid_black_hole(ctx):
     m = ctx.map()
     m.colours = [0, 5, 4, 2, 3]
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.start(m, ["adder", "kindle" if ctx.ds else "lash"], trace=trace_file(ctx))
+    g = ctx.start(m, ["adder", "kindle" if ctx.ds else "lash"], trace=trace_file(ctx), env=GRID_ENV)
     seen = view_all(ctx, g)
     ctx.eq([c for _, c in seen], [5, 4], "Black Hole and Yellow Comet viewed")
 
@@ -293,7 +298,7 @@ def co_grid_five_armies(ctx):
     m = ctx.map(hq=((1, 0, 0), (2, 29, 19), (3, 29, 0), (4, 0, 19)))
     m.terrain(15, 15, 0x1B4)  # Black Hole's HQ
     m.colours = [5, 1, 2, 3, 4]  # the five-army mark
-    g = ctx.start(m, None, trace=trace_file(ctx))
+    g = ctx.start(m, None, trace=trace_file(ctx), env=GRID_ENV)
     set_mode(g, 5, 1)
     set_mode(g, 2, 2)
     seen = view_all(ctx, g)
