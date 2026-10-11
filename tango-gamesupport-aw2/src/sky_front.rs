@@ -207,6 +207,8 @@ pub fn tick(core: &mut Core) {
     let Some(s) = sky() else { return };
     let obj_pal = |base: u32| base + 0x200 + 32 * OBJ_PALETTE;
     let structure = OBJ_VRAM + 32 * STRUCTURE_TILE;
+    // (with the Dual Strike map graphics the maps draw the preview's Fortress, not AW2's)
+    let preview = crate::ds_graphics::fortress_tiles(core);
     if on(core) {
         write_if(core, VRAM_TILES + 32 * SLOT0 as u32, &s.tiles);
         let bg = palette_bytes(&s.colours);
@@ -215,10 +217,10 @@ pub fn tick(core: &mut Core) {
                 write_if(core, base + 32 * p as u32, &bg);
             }
         }
-        // The fortress's picture (as AW2 loaded it) becomes the Black Arc's.
+        // The fortress's picture (as AW2 loaded it, or the preview's) becomes the Black Arc's.
         let mut now = vec![0u8; 0x800];
         core.raw_read_range(structure, -1, &mut now);
-        if now == s.fortress {
+        if now == s.fortress || preview.is_some_and(|f| now == f[..0x800]) {
             core.raw_write_range(structure, -1, &s.arc);
         }
         if core.raw_read_8(BORROWED, -1) != 1 {
@@ -234,8 +236,10 @@ pub fn tick(core: &mut Core) {
     } else if core.raw_read_8(BORROWED, -1) == 1 && !crate::two_front::swapping(core) {
         let mut now = vec![0u8; 0x800];
         core.raw_read_range(structure, -1, &mut now);
-        if now == s.arc {
-            core.raw_write_range(structure, -1, &s.fortress);
+        // (the game reloads AW2's own fortress picture when the fronts swap back: with the preview
+        // on, the Fortress is the preview's)
+        if now == s.arc || (preview.is_some() && now == s.fortress) {
+            core.raw_write_range(structure, -1, preview.map_or(&s.fortress[..], |f| &f[..0x800]));
         }
         let mut p = [0u8; 32];
         core.raw_read_range(SAVED, -1, &mut p);

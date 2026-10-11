@@ -434,6 +434,21 @@ fn pictures(core: &Core) -> Option<Vec<Vec<u8>>> {
 
 static PICS: OnceLock<Option<Vec<Vec<u8>>>> = OnceLock::new();
 
+/// The Fortress's 64 tiles as the preview draws them (while it is on and has pointed the maps at
+/// its pictures); [`crate::sky_front`] swaps and puts them back.
+pub fn fortress_tiles(core: &Core) -> Option<&'static Vec<u8>> {
+    static FORTRESS: OnceLock<Option<Vec<u8>>> = OnceLock::new();
+    if !ds_graphics(core) || core.raw_read_32(PIC_SENTINEL, -1) != MAGIC {
+        return None;
+    }
+    FORTRESS
+        .get_or_init(|| {
+            let lz = PICS.get()?.as_ref()?.get(1)?;
+            crate::ds_art::lz10(lz).filter(|t| t.len() >= 0x800)
+        })
+        .as_ref()
+}
+
 /// Where the picture AW2 keeps at `aw2` is read now (ours while the
 /// preview is on).
 pub fn structure_picture(core: &Core, aw2: u32) -> u32 {
