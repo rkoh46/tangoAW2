@@ -2215,16 +2215,19 @@ pub(crate) fn unit_picture(core: &Core, id: u8) -> Option<Vec<u16>> {
     let u = ram_units(core).into_iter().find(|u| u.id == id)?;
     let tiles = if u.mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
     let mut out = vec![0u16; 256];
+    // (BG1's tiles; the army's own colours, not the greyed ones a unit that has moved wears)
+    let char_base = 0x0600_0000 + ((core.raw_read_16(0x0400_000A, -1) as u32 >> 2) & 3) * 0x4000;
+    let bank = if u.five { if u.army >= 5 { 11 } else { 12 + (u.army as u32 - 1).min(3) } } else { 12 + ((u.army as u32 - 1) & 3) };
     for (k, &t) in tiles.iter().enumerate() {
         let mut data = [0u8; 32];
-        core.raw_read_range(0x0600_8000 + 32 * t as u32, -1, &mut data);
+        core.raw_read_range(char_base + 32 * t as u32, -1, &mut data);
         for y in 0..8usize {
             for x in 0..8usize {
                 let sx = if u.mirrored { 7 - x } else { x };
                 let b = data[y * 4 + sx / 2];
                 let c = (if sx & 1 == 0 { b & 15 } else { b >> 4 }) as u32;
                 if c != 0 {
-                    let rgb = core.raw_read_16(0x0500_0000 + 2 * (u.bank as u32 * 16 + c), -1);
+                    let rgb = core.raw_read_16(0x0500_0000 + 2 * (bank * 16 + c), -1);
                     out[((k / 2) * 8 + y) * 16 + (k % 2) * 8 + x] = 0x8000 | (rgb & 0x7FFF);
                 }
             }

@@ -106,3 +106,50 @@ def ds_menus_off_is_aw2s(ctx):
     e.wait(40)
     ctx.check(any(bg0_cells(e, 0, 0, 10, 8)), "AW2's menu items are on BG0")
     ctx.check(bool(hand_sprites(e)), "AW2's hand is on screen")
+
+
+@test(modes=("ds",))
+def ds_menus_drop_and_buttons(ctx):
+    """A transport's unit menu: the Drop row carries the cargo's own picture (Dual Strike's, and
+    AW2's, grammar), the B CANCEL tag and the selection's corners are Dual Strike's own sprites
+    (read from overlay 0 of the pack), not tangoAW2's drawing."""
+    from PIL import Image
+    m = ctx.map(hq=((1, 8, 6), (2, 29, 19)))
+    m.unit(1, "apc", 8, 6).unit(1, "infantry", 7, 6)
+    g = ctx.start(m, ["andy", "sami"])
+    g.wait_idle()
+    e = g.e
+    e.w8(DS_GRAPHICS, 1)
+    g.select(7, 6)
+    g.move_to(8, 6)
+    g.choose("Load", g.ACTION_MENU)
+    g.wait_idle()
+    g.select(8, 6)
+    mm = g.move_to(8, 6)
+    e.wait(40)
+    ctx.log(("menu", mm["names"], g.units()))
+    p = ctx.shot(g, "drop_menu")
+    ctx.check("Drop" in mm["names"], f"the APC offers Drop ({mm['names']})")
+    pic = Image.open(p).convert("RGB")
+    # the tag: DS's sheet has a white outlined word on the bottom half; the ball's blue B above
+    tag = [pic.getpixel((104 + x, y)) for y in range(16) for x in range(32)]
+    whites = sum(1 for c in tag if min(c) > 240)
+    ctx.check(whites > 60, f"the B CANCEL tag is drawn ({whites} white pixels)")
+    ctx.check(len({c for c in tag}) >= 5, "and has the sheet's colours")
+    # the Drop row's icon: the cargo's picture (several colours) in the 16 x 16 beside the text
+    if "Drop" in mm["names"]:
+        k = mm["names"].index("Drop")
+        # the list sits beside the APC; its icon column holds the infantry's picture, whose colours
+        # (helmet, skin, uniform) are none of the list's white, black, text greys and red bar
+        plain = {(255, 255, 255), (0, 0, 0), (255, 41, 41), (238, 246, 246), (197, 189, 180), (148, 139, 131), (106, 90, 98)}
+        found = False
+        for y0 in range(10, 120):
+            for x0 in range(100, 200):
+                if all(pic.getpixel((x0 + dx, y0)) == (255, 255, 255) for dx in range(0, 12, 3)):
+                    cols = {pic.getpixel((x0 + dx, y0 + dy)) for dx in range(-8, 40) for dy in range(2, 18) if 0 <= x0 + dx < 240}
+                    if len(cols - plain) >= 8 and (x0 + 40) < 240:
+                        found = True
+                        break
+            if found:
+                break
+        ctx.check(found, "a picture stands in the list beside the Drop text (the cargo's)")

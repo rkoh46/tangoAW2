@@ -10,8 +10,11 @@
 //! bits a pixel, 16 rows, one to four bytes a row; a letter takes the
 //! width of its ink and a pixel more, a space three). The descriptions are
 //! Dual Strike's strings from the same overlay. What the files do not hold
-//! is drawn by tangoAW2: the selection's corner marks and the B CANCEL
-//! tag (Dual Strike builds them in code, no file has their pixels).
+//! is drawn by tangoAW2: nothing now. The selection's corner marks and the B
+//! CANCEL tag are Dual Strike's own sprites, from a compressed sheet in
+//! overlay 0 (`0x022CF9B0`, LZ77, 80 tiles: the corners are tiles 8, 10, 12
+//! and 14, the tag 8 tiles from 56) in the colours at `0x02138C68` in the ARM9
+//! image; the Drop commands show the cargo's picture, as in Dual Strike.
 //!
 //! How it works. AW2 builds a menu in a proc whose script is
 //! [`MENU_SCRIPT`]: the table of entries (`+0x20`), the shown entries
@@ -46,6 +49,8 @@ const ENTRY: u32 = 0x20;
 /// The text table: a pointer per text id.
 const TEXT_TABLE: u32 = 0x0861_0A38;
 const CURSOR_X: u32 = 0x0300_33E4;
+/// The selected unit's record while a unit menu is open.
+const SELECTED_UNIT: u32 = 0x0300_40D8;
 const CURSOR_Y: u32 = 0x0300_33E6;
 const BG3_HOFS: u32 = 0x0400_001C;
 const BG3_VOFS: u32 = 0x0400_001E;
@@ -248,6 +253,9 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 /// Overlay 0: where it loads, the font's pointer table.
 const OV0_BASE: u32 = 0x022A_D560;
 const FONT_TABLE: u32 = 0x022F_67D8;
+/// The button sprites (corner marks, B CANCEL tag): an LZ77 sheet in overlay 0, its colours in the ARM9 image.
+const SPRITE_SHEET: u32 = 0x022C_F9B0;
+const SPRITE_PALETTE: u32 = 0x0213_8C68;
 
 struct Glyph {
     /// 16 rows of `cols` pixels (palette indices of the DS font).
@@ -263,6 +271,9 @@ struct Art {
     glyphs: Vec<Option<Glyph>>,
     /// Icons by DS index: 16x16 RGBA.
     icons: Vec<[[u8; 4]; 256]>,
+    /// The selection's corners (TL, TR, BL, BR; 8 x 8) and the B CANCEL tag (32 x 16), RGBA.
+    corners: [[[u8; 4]; 64]; 4],
+    tag: Vec<[u8; 4]>,
     strings: Strings,
 }
 
@@ -404,6 +415,29 @@ fn build_art() -> Option<Art> {
         }
         icons.push(px);
     }
+    // The button sprites' sheet and colours.
+    let sheet_raw = n(pack.overlay_at(0, OV0_BASE, SPRITE_SHEET, 0x800), "button sheet")?;
+    let sprites = n(crate::ds_art::lz10(sheet_raw), "button sheet")?;
+    let sp_pal = n(pack.arm9_at(SPRITE_PALETTE, 32), "button colours")?;
+    let mut spal = [[0u8; 4]; 16];
+    for (i, p) in spal.iter_mut().enumerate().skip(1) {
+        *p = rgba_of(u16::from_le_bytes([sp_pal[2 * i], sp_pal[2 * i + 1]]));
+    }
+    let sprite_px = |t: usize, x: usize, y: usize| -> [u8; 4] {
+        let b = sprites.get(32 * t + y * 4 + x / 2).copied().unwrap_or(0);
+        spal[((b >> (4 * (x & 1))) & 15) as usize]
+    };
+    let mut corners = [[[0u8; 4]; 64]; 4];
+    for (k, c) in corners.iter_mut().enumerate() {
+        for i in 0..64 {
+            c[i] = sprite_px(8 + 2 * k, i % 8, i / 8);
+        }
+    }
+    let mut tag = vec![[0u8; 4]; 32 * 16];
+    for (i, p) in tag.iter_mut().enumerate() {
+        let (x, y) = (i % 32, i / 32);
+        *p = sprite_px(56 + 4 * (y / 8) + x / 8, x % 8, y % 8);
+    }
     let need = |s: &str| n(find_str(ov, s), s);
     let strings = Strings {
         co: need("View CO info.")?,
@@ -423,6 +457,8 @@ fn build_art() -> Option<Art> {
         pal,
         glyphs,
         icons,
+        corners,
+        tag,
         strings,
     })
 }
@@ -444,9 +480,9 @@ fn art() -> Option<&'static Art> {
 /// Dual Strike's crossed guns, not the flame it shares a code with.
 fn icon_index(page: u8, code: u8, text: &str) -> Option<usize> {
     if page == 0x0A {
-        // The Drop commands show the cargo's picture in AW2; Dual Strike's
-        // arrow out of the box.
-        return Some(89);
+        // The Drop commands show the cargo's picture, in AW2 and in Dual
+        // Strike ([`cargo_picture`]).
+        return None;
     }
     if text == "Fire" {
         return Some(22);
@@ -462,7 +498,7 @@ fn icon_index(page: u8, code: u8, text: &str) -> Option<usize> {
         0x87 => 9,
         0x88 => 27,
         0x89 => 11,
-        0x8A => 25,
+        0x8A => 1,
         0x8B => 12,
         0x8C => 17,
         0x8D => 13,
@@ -553,87 +589,23 @@ fn draw_icon(cv: &mut Canvas, a: &Art, x: i32, y: i32, n: usize) {
     }
 }
 
-/// The selection's corner marks (tangoAW2's drawing: Dual Strike builds
-/// them in code): black triangles with a white inside.
-const CORNER: [&str; 8] = [
-    "fffffff.", "f11111ff", "f1111fff", "f111fff.", "f11fff..", "f1fff...", "ffff....", ".ff.....",
-];
-
-fn draw_corner(cv: &mut Canvas, x: i32, y: i32, flip_x: bool, flip_y: bool) {
-    for (ry, row) in CORNER.iter().enumerate() {
-        for (rx, ch) in row.bytes().enumerate() {
-            let c = match ch {
-                b'f' => [0, 0, 0, 255],
-                b'1' => [255, 255, 255, 255],
-                _ => continue,
-            };
-            let px = if flip_x { 7 - rx } else { rx } as i32;
-            let py = if flip_y { 7 - ry } else { ry } as i32;
-            cv.put(x + px, y + py, c);
-        }
+/// A sprite of the button sheet (`w` x `h`, RGBA, 0 alpha transparent) at (x, y).
+fn draw_sprite(cv: &mut Canvas, x: i32, y: i32, w: usize, px: &[[u8; 4]]) {
+    for (i, p) in px.iter().enumerate() {
+        cv.put(x + (i % w) as i32, y + (i / w) as i32, *p);
     }
 }
 
-/// The B CANCEL tag: a glass ball with a blue B over chunky white letters
-/// (tangoAW2's drawing; the tag is built in code on the DS).
-fn draw_cancel(cv: &mut Canvas, x: i32, y: i32) {
-    const LETTERS: [(&str, [&str; 5]); 5] = [
-        ("C", ["xxxx", "x...", "x...", "x...", "xxxx"]),
-        ("A", [".xx.", "x..x", "xxxx", "x..x", "x..x"]),
-        ("N", ["x..x", "xx.x", "xxxx", "x.xx", "x..x"]),
-        ("E", ["xxxx", "x...", "xxx.", "x...", "xxxx"]),
-        ("L", ["x...", "x...", "x...", "x...", "xxxx"]),
-    ];
-    // The letters: C A N C E L, 5 px a cell, outlined.
-    let word = ['C', 'A', 'N', 'C', 'E', 'L'];
-    let mut mask = vec![false; 40 * 9];
-    for (k, ch) in word.iter().enumerate() {
-        let g = LETTERS.iter().find(|(c, _)| c.starts_with(*ch)).unwrap().1;
-        for (gy, row) in g.iter().enumerate() {
-            for (gx, c) in row.bytes().enumerate() {
-                if c == b'x' {
-                    mask[(gy + 2) * 40 + 1 + k * 5 + gx] = true;
-                }
-            }
-        }
+/// The cargo's picture for a Drop row (page 0x0A: code 0x80 is the first passenger, 0x81 the
+/// second; Dual Strike draws the passenger's own picture there).
+fn cargo_picture(core: &Core, code: u8) -> Option<Vec<[u8; 4]>> {
+    let unit = r32(core, SELECTED_UNIT);
+    if !(0x0200_0000..0x0400_0000).contains(&unit) {
+        return None;
     }
-    let ox = x + 1;
-    let oy = y + 10;
-    for my in 0..9i32 {
-        for mx in 0..40i32 {
-            let on = mask[(my * 40 + mx) as usize];
-            let near = (-1..=1).any(|dy| {
-                (-1..=1).any(|dx| {
-                    let (qx, qy) = (mx + dx, my + dy);
-                    (0..40).contains(&qx) && (0..9).contains(&qy) && mask[(qy * 40 + qx) as usize]
-                })
-            });
-            if on {
-                cv.put(ox + mx, oy + my, [255, 255, 255, 255]);
-            } else if near {
-                cv.put(ox + mx, oy + my, [0, 0, 0, 255]);
-            }
-        }
-    }
-    // The ball: 12 across, a grey-green ring, a blue B.
-    let (cx, cy) = (x + 8, y + 6);
-    for dy in -6i32..=6 {
-        for dx in -6i32..=6 {
-            let d2 = dx * dx + dy * dy;
-            if d2 <= 36 {
-                let c = if d2 > 25 { [0, 0, 0, 255] } else if d2 > 16 { [150, 170, 160, 255] } else { [215, 225, 220, 255] };
-                cv.put(cx + dx, cy + dy, c);
-            }
-        }
-    }
-    const B: [&str; 7] = ["xxx.", "x..x", "x..x", "xxx.", "x..x", "x..x", "xxx."];
-    for (by, row) in B.iter().enumerate() {
-        for (bx, c) in row.bytes().enumerate() {
-            if c == b'x' {
-                cv.put(cx - 2 + bx as i32, cy - 3 + by as i32, [50, 100, 160, 255]);
-            }
-        }
-    }
+    let id = r8(core, unit + 7 + (code & 1) as u32);
+    let pic = crate::ds_tilt::unit_picture(core, id)?;
+    Some(pic.iter().map(|&p| if p == 0 { [0; 4] } else { rgba_of(p) }).collect())
 }
 
 fn description(a: &Art, text: &str) -> Option<String> {
@@ -709,7 +681,11 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     draw_frame(&mut cv, a, bx, by, wt, 2 * n + 2);
     for (i, row) in menu.rows.iter().enumerate() {
         let ry = by + 8 + 16 * i as i32;
-        if let Some(ic) = icon_index(row.page, row.icon, &row.text) {
+        if row.page == 0x0A {
+            if let Some(pic) = cargo_picture(core, row.icon) {
+                draw_sprite(&mut cv, bx + 8, ry, 16, &pic);
+            }
+        } else if let Some(ic) = icon_index(row.page, row.icon, &row.text) {
             draw_icon(&mut cv, a, bx + 8, ry, ic);
         }
         draw_text(&mut cv, a, bx + 24, ry, &row.text, row.grey);
@@ -717,12 +693,12 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     // The selection.
     let ry = by + 8 + 16 * menu.cursor as i32;
     let (x0, x1, y0, y1) = (bx + 4, bx + bw - 4, ry - 4, ry + 20);
-    draw_corner(&mut cv, x0, y0, false, false);
-    draw_corner(&mut cv, x1 - 8, y0, true, false);
-    draw_corner(&mut cv, x0, y1 - 8, false, true);
-    draw_corner(&mut cv, x1 - 8, y1 - 8, true, true);
+    draw_sprite(&mut cv, x0, y0, 8, &a.corners[0]);
+    draw_sprite(&mut cv, x1 - 8, y0, 8, &a.corners[1]);
+    draw_sprite(&mut cv, x0, y1 - 8, 8, &a.corners[2]);
+    draw_sprite(&mut cv, x1 - 8, y1 - 8, 8, &a.corners[3]);
     // The tag, top centre.
-    draw_cancel(&mut cv, 102, 0);
+    draw_sprite(&mut cv, (W as i32 - 32) / 2, 0, 32, &a.tag);
     // The map menu's description, one line, bottom right.
     if menu.kind == Kind::Map {
         if let Some(d) = description(a, &menu.rows[menu.cursor].text) {
