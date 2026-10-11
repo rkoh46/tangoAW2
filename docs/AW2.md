@@ -3880,6 +3880,21 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
     while what it depends on (type, the army it is drawn for, moved) is as it was; the check
     counts the times it differs from the rule above (none in the tests).
   - `TANGOAW2_TILT_NO_RAM_MOVER=1` leaves the record-drawn moving unit out (a test's control).
+- **Units.** A unit whose tiles are Dual Strike's conversion (matched by idle frame and country against
+  `ds_unit_art::map_tiles_ds`) is drawn from the pack's 32 x 32 bitmap (`ds_unit_art::idle_bitmap`) at half size,
+  in the console's palette bank and mirroring, in the window and from the records beyond it (`ds_unit_art` in
+  `ds_tilt.rs`); the HP digit, marks and low-fuel icon stay the console's tiles over it. The 16 x 16 conversion
+  had cut away detail and left stray pale pixels (rotor blades) the real screen lacks. **Facing** is still AW2's
+  (armies 1 and 3 mirrored). Dual Strike's rule, found in melonDS: a player record (0x98 bytes at `0x02189300`)
+  has the team at `+0x2C` (the code that compares two armies' teams reads it) and an army's units are mirrored
+  when it is even (poking it flips that army's units; allies share a facing). Its values in the real states are
+  the mission's team numbers in some missions (1 and 2 in "ma") and one less in others (0 and 1 in "nw", 0 and 0
+  for the allied armies of the three-army missions), so ours differ from the real screen in "ma" and the
+  missions that behave like it; the rule behind the one-less is not found.
+- **Dialogue box.** The campaign dialogue box at the top is drawn with an HBlank effect: its rows (`0x2D` less
+  the box's slide at `0x030030A8`) keep the console's picture and the map is tilted below.
+- **Range.** The ground, and the peaks and treetops of upper cells, light inside a range and dim outside it
+  (`range_look`).
 - **Crosshair.** The attack target's crosshair runs through six frames of 16 x 16 pieces (tiles 886, 890, ...,
   906); all of them lie on the ground (`is_crosshair`), not only the first three. The Design Room's map editor
   is left flat (it runs the battle loop over records it does not keep).
