@@ -1916,7 +1916,10 @@ fn want_panel(core: &Core) -> Option<Panel> {
     if core.raw_read_32(MAIN_CALLBACK, -1) != MAP_CALLBACK {
         return None;
     }
-    if menu_cursor(core, MAP_MENU_COPY) == Some(OPTIONS_AT + 1) {
+    // (Dual Strike's menus draw these help lines in their own description
+    // box, [`crate::ds_menus`])
+    let ds_help = crate::ds_menus::owns_help(core);
+    if menu_cursor(core, MAP_MENU_COPY) == Some(OPTIONS_AT + 1) && !ds_help {
         return Some(Panel::Help);
     }
     match menu_cursor(core, INTEL_MENU_COPY) {
@@ -1925,6 +1928,7 @@ fn want_panel(core: &Core) -> Option<Panel> {
         _ => {}
     }
     match menu_cursor(core, crate::setup_phase::MENU) {
+        Some(_) if ds_help => {}
         Some(crate::setup_phase::FRONT_AT) => return Some(Panel::Help),
         Some(crate::setup_phase::DEPLOY_AT) => return Some(Panel::SetupHelp),
         _ => {}
