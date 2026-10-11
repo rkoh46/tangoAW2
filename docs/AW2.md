@@ -3841,3 +3841,54 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   2.8 to 3.3 ms (Simulator) of the 16.7 ms frame; 59.8 frames a second in both.
 
 **Driving the real app in tests** (`tango/src/app/debug_aids.rs`): `TANGOAW2_SCREENSHOTS=<s>:<png>,...` saves the app window's own picture (read back from the GPU: no screen-recording permission) at those seconds after launch (`TANGOAW2_SCREENSHOT_EXIT=1` quits after the last), `TANGOAW2_PAD_SCRIPT=<file>` plays the harness's `press`/`hold`/`wait` lines (an `Emu.timeline` dump) into the offline session as the pad, and `TANGOAW2_AUTOSTART=offline|settings|settings:graphics|replays` opens that. With `TANGOAW2_PROFILE=<dir>` (config/config.json with `ds_graphics` and `ds_tilt`, data/roms with the two ROMs, data/saves with the harness's `map.sav`) the app plays a Versus battle by itself and photographs it.
+
+### Dual Strike's CO page (`ds_co_page.rs`, Settings > Graphics > Dual Strike map graphics)
+
+With the pack and the setting (development byte `0x0203E3FE`, offline only), the CO page (the map
+menu's CO, and INFO on the CO screens: the same process `0x08616BE4`, main loop `0x08043591`, its army
+at `+0x66`) is drawn Dual Strike's way on the GBA's 240 x 160, over AW2's, whose own LEFT, RIGHT
+(armies, partner tabs) and B it keeps. Off, nothing is written (`compat_aw2_byte_identical`).
+
+- **Art, all from the pack at run time.** The header strip is a nine-patch of `info/000`'s tiles 1..10
+  (28 columns, 4 rows; Dual Strike's BG1 on its bottom screen); the CO's country tab and the empty
+  tab are `icon/res_icon1_cg`'s 16x16 icons 10..14 (red star, blue moon, green circle, yellow arrow,
+  grey box; four tiles each) in `icon/res_icon_cl`'s second palette, in Dual Strike's corner marks; the
+  face at the right is the CO's mug's third and fourth tile rows (`syogun/` mug normal, the eyes), the
+  mug's corner colour made clear; the counter is `res_icon4_cg`'s numeral sprites (0 at byte `0x1500`,
+  32 bytes each, "/" the thirteenth) in the arm9 palette at `0x02139288`; the BACK button is
+  `ohashi/res_tpicon_lang_E`'s label tiles 96..99 and circle tiles 20..31 (the B is two colours of
+  that circle, drawn here: Dual Strike builds it at run time) in the palette at `0x02138C68`. The
+  picture is the CO's body in AW2's own sprite layout (`ds_co_art`; Sturm, Crumb and Clone Andy from
+  the game's presentation table), cut to 48..80 pixels around the figure.
+- **Dual Strike's font** (overlay 0, loaded at `0x022AD560`): 256 glyph pointers at `+0x49278`, widths
+  at `+0x49178`; a glyph is 16 rows of `(width + 1) / 2` bytes of 4bpp (low nibble the left pixel;
+  10 ink, 14 edge), ink on rows 3..15; an advance is the width + 1, a space 2 + 1. Its digits are the
+  bold ones. A CO's text: the record's `+0x04` bio (Hit and Miss in it), `+0x08` day to day, `+0x0C`
+  and `+0x10` the powers, `+0x120` and `+0x1A0` their names. The pack's text is the USA ROM's: some
+  other Dual Strike builds word the day to day text differently ("Attack of all units increases by +10%
+  on Plains").
+- **Pages** (the counter says n/4): 1 the bio (Hit and Miss lines on their own) and the day to day text,
+  wrapped to the room the picture leaves (the picture is 80x88 at the right under the counter; text
+  beside it is limited to its left edge, text below it runs on); 2 the skills the army has on
+  (`co_skills`) and the tag partners with their stars; 3 the CO Power and the Super Power with their
+  names; 4 **AW2's own unit chart** (the game draws it: Dual Strike's chart has its own icons and bars
+  and this module does not redraw it). A page that does not fit is laid out again with a smaller
+  picture, then a tighter line pitch, then shorter wordings, then without its last sentences (the
+  test `every_co_page_fits` finds none left with the strip only). AW2's COs' texts are Dual Strike's;
+  Sturm's are AW2's own (text ids 2461..2464, his Super Power's name 2311), Clone Andy's bio and
+  Crumb's texts tangoAW2's.
+- **How it is drawn.** All on BG0 (char block 0, screen block 14), every tile opaque (clear pixels get
+  a white colour of their own in each palette bank, the least used colour of a picture that uses all
+  fifteen giving way to its nearest), tiles shared up to the 896 below the screen block; the other
+  layers are covered by DISPCNT (BG0 only, put back when the page closes or goes to the chart) and the
+  game's sprites hidden at the VBlank flush. A cell of 8x8 has one palette bank, so the picture, the
+  face, the tabs, the counter and BACK are on cell boundaries and the text wraps around them. The
+  game itself stays on its Super Power's page (`0x03005940` = 3) under pages 1..3, so DOWN into page 4 is
+  the game's own DOWN (the TAG page, which this module shows with the skills, skipped through
+  `tag_extras`'s flag) and UP from it the game's UP. Nothing is in emulated memory but the layer: a
+  Rust-side state (the page, the tiles from 512 the layer borrowed) that exists only offline.
+- Tests: `test_ds_co_page.py` (`ds_co_page_pages`, `ds_co_page_every_kind_of_co`: run with
+  `TANGOAW2_DS_GRAPHICS=1` for the page itself, without it for the unchanged one),
+  `ds_co_page::tests::every_co_page_fits` (`--ignored`, `TANGOAW2_DS_ROM`), and
+  `cargo run --release -p tango-gamesupport-aw2 --example ds_co_page_preview <dir> [CO ids]`
+  (every page as PPMs, from the pack alone).
