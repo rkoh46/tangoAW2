@@ -421,12 +421,26 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
             cv.tile(&a.versus, 4, x + 8 * col, CARD_Y + 64, pal, (false, false), false);
         }
         for (k, co) in [&army.main, &army.partner].into_iter().enumerate() {
-            let Some(co) = co else { continue };
-            // The cell: the mug's three middle columns.
-            for ty in 0..6usize {
-                for tx in 2..5usize {
-                    cv.tile(&co.tiles, ty * 6 + tx, x + 24 * k as i32 + 8 * (tx as i32 - 2), MUG_Y + 8 * ty as i32, &co.pal, (false, false), false);
+            let cx = x + 24 * k as i32;
+            // (a cell is white behind its portrait)
+            cv.rect(cx, MUG_Y, 24, 48, rgba_of(pal[1]));
+            if let Some(co) = co {
+                // The cell: the mug's three middle columns.
+                for ty in 0..6usize {
+                    for tx in 2..5usize {
+                        cv.tile(&co.tiles, ty * 6 + tx, cx + 8 * (tx as i32 - 2), MUG_Y + 8 * ty as i32, &co.pal, (false, false), false);
+                    }
                 }
+            }
+            // Dual Strike draws every cell in a thin dark green frame (the ink of its name plates).
+            let green = rgba_of(a.name_pal[15]);
+            for i in 0..24 {
+                cv.put(cx + i, MUG_Y, green);
+                cv.put(cx + i, MUG_Y + 47, green);
+            }
+            for j in 0..48 {
+                cv.put(cx, MUG_Y + j, green);
+                cv.put(cx + 23, MUG_Y + j, green);
             }
         }
         // The cursor.
@@ -613,7 +627,7 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
     let rows = v.cells.len().div_ceil(CELL_COLUMNS);
     let visible = ((H as i32 - top - 16 + 7) / 24) as usize;
     let cur_row = v.cursor / CELL_COLUMNS;
-    let first = cur_row.saturating_sub(visible.saturating_sub(2)).min(rows.saturating_sub(visible));
+    let first = cur_row.saturating_sub(visible.saturating_sub(1)).min(rows.saturating_sub(visible));
     for (k, c) in v.cells.iter().enumerate() {
         let (r, col) = (k / CELL_COLUMNS, k % CELL_COLUMNS);
         if r < first || r >= first + visible + 1 {

@@ -137,6 +137,9 @@ def ds_coselect_versus_five_armies(ctx):
     ctx.games.append(g)
     to_five_army_teams(ctx, g)
     ctx.eq(g.teams()["armies"], 5, "armies on the Teams screen")
+    e.w8(DS_GRAPHICS, 0)
+    e.wait(10)
+    shot(ctx, e, "versus5_off")
     e.w8(DS_GRAPHICS, 1)
     e.press("RIGHT", 6)
     e.wait(30)
@@ -167,8 +170,8 @@ def pick_partners(ctx, on):
         for _ in range(2 + army):
             e.press("DOWN", 6)
             e.wait(20)
-        if on and army == 0:
-            shot(ctx, e, "partner_pick")
+        if army == 0:
+            shot(ctx, e, "partner_pick" if on else "partner_pick_off")
         e.press("START", 6)
         e.wait(20)
         if army == 0:
@@ -224,20 +227,58 @@ def pick_cos(ctx, on, step, label):
     return first, picked, cos
 
 
+def card_colour(rows, x, w=64):
+    """The colour a card's header is mostly (its top rows, the white of the lions left out): red, blue, green, yellow or grey."""
+    from collections import Counter
+    c = Counter(p for r in rows[0:6] for p in r[x:x + w] if min(p) < 200 or max(p) - min(p) > 40)
+    (R, G, B), _ = c.most_common(1)[0]
+    if R > 200 and G < 90 and B < 90:
+        return "red"
+    if B > 200 and R < 110:
+        return "blue"
+    if G > 120 and R < 120 and B < 140:
+        return "green"
+    if R > 140 and G > 140 and B < 80:
+        return "yellow"
+    if abs(R - G) < 24 and abs(G - B) < 24:
+        return "grey"
+    return f"?{(R, G, B)}"
+
+
 @test(modes=("ds",))
 def ds_coselect_campaign_pick(ctx):
-    """The DS Campaign's CO screen (a mission with two picks and their partners): army cards over the grid; the CO screen
-    still picks what the setting off picks."""
+    """The DS Campaign's CO screen (a mission of three armies, the player picking two COs and their partners: Orange Star's
+    and Blue Moon's, Black Hole's fixed): an army card each in its colour, over the grid; the first pick's CO flagged
+    in the grid; the CO screen still picks what the setting off picks."""
     first_on, picked_on, cos_on = pick_cos(ctx, True, 10, "campaign_pick")
     first_off, picked_off, cos_off = pick_cos(ctx, False, 10, "campaign_pick")
     ctx.check(differs(first_off, first_on), "the CO screen is Dual Strike's with the setting on")
     ctx.eq(picked_on, picked_off, "the COs picked")
     ctx.eq(cos_on, cos_off, "the armies' COs in the battle")
     ctx.check(len(picked_on) >= 2, f"the mission asked for picks ({picked_on})")
-    # Three cards when three armies are in the mission (Dual Strike's cards for the armies, the fixed ones named).
-    rows = first_on
-    reds = sum(1 for p in rows[0][:240] if p[0] > 200 and p[1] < 80)
-    ctx.check(reds > 20, "the first army's red card is at the top")
+    x0 = (240 - (64 * 3 + 16)) // 2
+    ctx.eq([card_colour(first_on, x0 + 72 * i) for i in range(3)], ["red", "blue", "grey"], "three cards: Orange Star, Blue Moon, Black Hole")
+
+
+@test(modes=("ds",))
+def ds_coselect_campaign_flags(ctx):
+    """After a pick its CO's cell carries the army's flag (a 16 x 16 flag at the cell's right end) and the card's name plate
+    shows the CO."""
+    e, g, d = to_co_screen(ctx, 10)
+    e.w8(DS_GRAPHICS, 1)
+    e.wait(30)
+    before = shot(ctx, e, "flags_before")
+    co = d.choose_co(None)
+    for _ in range(60):
+        if d.picked():
+            break
+        e.wait(10)
+    e.wait(60)
+    after = shot(ctx, e, "flags_after")
+    ctx.check(differs(before, after, 0.01), f"the pick of CO {co} changes the picture")
+    # A flag's white outline and red body: red pixels in the panel (the cell flags are the only red there but the frame).
+    reds = sum(1 for r in after[72:150] for (R, G, B) in r[12:230] if R > 200 and 40 < G < 120 and 40 < B < 140)
+    ctx.check(reds > 40, f"the pick's red flag is in the grid ({reds})")
 
 
 def war_room_co_screen(ctx, on):
