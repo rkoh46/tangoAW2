@@ -114,7 +114,7 @@ const ROAD_CLASS: u8 = 5;
 /// darker, as pictures in the palette that draws them best. 0: Dual
 /// Strike's own roads.
 pub const ROAD_SHADE: u16 = 0;
-const TRANSPARENT: u16 = 0x8000;
+pub const TRANSPARENT: u16 = 0x8000;
 /// Dual Strike's fog: a fogged cell's terrain (sub-palettes 0-4) is drawn
 /// with sub-palette 5, colour for colour (the same index); weather changes
 /// no colour (checked in melonDS: Verdant Hills, Crystal Calamity in rain).
@@ -174,6 +174,8 @@ pub struct Look {
     pub full: Vec<u16>,
     /// The same in fog (Dual Strike's sub-palette 5, index for index).
     pub full_fog: Vec<u16>,
+    /// [`Look::overlays`] in fog (the same indexes in sub-palette 5), for the tilted map.
+    pub overlays_fog: Vec<[Vec<u16>; 2]>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -883,6 +885,26 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
             })
         })
         .collect();
+    let overlays_fog: Vec<[Vec<u16>; 2]> = uppers
+        .iter()
+        .map(|up| {
+            [0, 1].map(|side| {
+                let v = up[side];
+                (0..64)
+                    .map(|k| {
+                        let i = if v == EMPTY { 0 } else { quad_px(dt, v, k % 8, k / 8) };
+                        if i == 0 {
+                            TRANSPARENT
+                        } else if ((v >> 12) as usize) < FOG_PALETTE {
+                            dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0)
+                        } else {
+                            colour(v, i)
+                        }
+                    })
+                    .collect()
+            })
+        })
+        .collect();
     let mut pool = free;
     pool.sort();
 
@@ -891,7 +913,7 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
         let id = ds.mountain_pick.get(i).copied().unwrap_or(TALL[0] as u16) as usize;
         *p = TALL[..MOUNTAINS].iter().position(|&d| d == id).unwrap_or(0) as u8;
     }
-    Some(Look { tiles, sea: sea_out, river: river_out, metatiles, colours, fog, kinds, tall, mountains, mountain_pick, overlays, pool, full, full_fog })
+    Some(Look { tiles, sea: sea_out, river: river_out, metatiles, colours, fog, kinds, tall, mountains, mountain_pick, overlays, pool, full, full_fog, overlays_fog })
 }
 
 #[cfg(test)]

@@ -3711,7 +3711,10 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   chamfer distance to the real edges is 1.2 (Normal), 2.3 (Desert, Wasteland) and 2.5 (Snow)
   pixels, down from 1.4, 2.3, 2.4 and 2.8. Units stand 0.135 cells in front of their cell's
   foot, properties on it, woods and mountains 0.16 behind it (measured by matching each
-  sprite). `TANGOAW2_TILT_CAM=focal,pitch,height,cx,cy,bias_u,bias_v,foot_drop` overrides the
+  sprite; over all ten scenes the median residual is 0.0 / 0.0 px for units, 0.2 for buildings,
+  and 0.1 for woods and mountains once their flat pictures are lifted `TALL_LIFT` = 2 source
+  pixels: the console's cell picture of a wood or mountain lies on the ground, Dual Strike's
+  stands, and sat 0.8 to 0.9 px low). `TANGOAW2_TILT_CAM=focal,pitch,height,cx,cy,bias_u,bias_v,foot_drop` overrides the
   numbers for fitting. Dual Strike's picture is 4:3 and ours 3:2: our framing is kept, the map
   shows a little more at the sides and a little less at the top and bottom than the console's
   own 15 x 10 window, never less than it.
@@ -3721,7 +3724,15 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
   the peak or treetops of the cell below over its bottom half. Drawn in Dual Strike's own colours
   (the look keeps each tile's pixels as the pack has them; AW2's four palettes had merged the
   five terrain sub-palettes, and fog is the pack's sub-palette 5 index for index), so it is
-  within a few colour steps of BG3 + BG2 rather than equal. Beyond the map's edge Dual Strike
+  within a few colour steps of BG3 + BG2 rather than equal. The map is shown with Dual Strike's 3D
+  colour expansion (`rgba_lut_3d`: a 5-bit channel `c` is `2c + 1` of 63, black 4, 133 for 16, 246
+  for 30; checked pixel for pixel against melonDS frames) and its cloud shadows round instead of
+  truncating (they darkened every pixel by a whole step, 8 levels, wherever the shadow was
+  faintly present: fog roads, the Desert plain's highlight (252, 244, 140) and the Wasteland
+  pipe's light shade (212, 244, 148) were all one step off; with it the shades are at the real
+  proportions, e.g. 22.5% against 27% for the Desert plain's, mean histogram distance over the
+  ground classes 0.43 down to 0.25). Peaks and treetops use the pack's own colours as well
+  (`Ground::upper_pixels`, `Look::overlays_fog`), not the four palettes' merged ones. Beyond the map's edge Dual Strike
   shows one flat pale colour (Normal 220/244/124, Desert and Wasteland 252/244/148, Snow
   252/252/252, mixed with purple where the nearest cell is fogged); the range tint does not reach
   it.
@@ -3735,6 +3746,18 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
 - **Buildings and structures beyond the window** from the terrain id and
   `ds_plans.rs` (sprite parts the console draws for each id, recorded by
   `tools/aw2test/ds_view_props.py`). Inside the window the console's own OAM.
+- **Dual Strike's own cursor** (`ds_cursor.rs`, with the pack): the red arrow and the four blue
+  dots, imported from the ROM, replace AW2's pointer and corner brackets (the pointer and the
+  tile-873 brackets still say whether the console shows a cursor; without the pack AW2's stay).
+  Dual Strike draws them as 3D quads, so they are textures, not tiles: `bmap/027` is 4-bit
+  textures row by row (the arrow the first 16 x 16 at byte 0, the dot the next 8 x 8 at byte 128),
+  `bmap/028` their palette (found by dumping a melonDS frame's texture and texture-palette VRAM,
+  remapping the banks to LCDC, and matching 16-byte runs to every file, `lz10` or not; the earlier
+  search looked for tiles in `bmap/00c`..`020`). On the ten real scenes the dots sit on the four
+  corners of the cell and are 8 x 8 screen pixels whatever the depth (51 of 51 dots equal the
+  texture pixel for pixel); the arrow is a quad about a cell across off the cell's bottom-right
+  corner, mirrored to the other side near the picture's right and bottom edges (`arrow_side`:
+  right of 200 px, below 135 px; five of 46 real frames disagree, the real rule is not found).
 - **What is map and what is HUD.** BG3 ground; BG1 units; BG2 peaks; BG0
   while below the units (range); OBJs of priority 3 (buildings); the cursor
   (tile 869 pointer, 873 brackets), the move arrow (16 x 16, palette 3) and the

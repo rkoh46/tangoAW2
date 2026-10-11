@@ -104,6 +104,12 @@ impl<'a> Ground<'a> {
         self.tiles[(y * self.w + x) as usize]
     }
 
+    /// Whether the cell (by index, as [`Ground::locate`] gives it) is a wood or a mountain, which
+    /// Dual Strike draws upright.
+    pub fn is_tall(&self, ci: usize) -> bool {
+        self.look.look.tall.get(self.tiles[ci] as usize).copied().unwrap_or(crate::ds_look::NOT_TALL) != crate::ds_look::NOT_TALL
+    }
+
     /// Whether the cell is hidden by fog.
     pub fn fogged(&self, x: i32, y: i32) -> bool {
         self.fog[(y * self.w + x) as usize] == 0
@@ -187,26 +193,43 @@ impl<'a> Ground<'a> {
             }
         }
         // The peak or treetops of the cell below, over the bottom half.
-        if sky.is_none() && y + 1 < self.h {
-            if let Some(o) = l.upper_at(self.tile(x, y + 1), x as u32, (y + 1) as u32) {
-                for side in 0..2usize {
-                    if let Some((tile, bank)) = l.front(o, side as u8) {
-                        let bank = bank + if self.fogged(x, y) { 4 } else { 0 };
-                        for py in 0..8usize {
-                            for px in 0..8usize {
-                                let b = tile[py * 4 + px / 2];
-                                let c = (if px & 1 == 0 { b & 15 } else { b >> 4 }) as usize;
-                                if c != 0 {
-                                    out[(8 + py) * 16 + side * 8 + px] =
-                                        0x8000 | (self.v.pal[bank as usize * 16 + c] & 0x7fff);
-                                }
-                            }
-                        }
+        if sky.is_none() {
+            if let Some(up) = self.upper_pixels(x, y) {
+                for (o, &c) in out.iter_mut().zip(up.iter()) {
+                    if c != 0 {
+                        *o = c;
                     }
                 }
             }
         }
         out
+    }
+
+    /// The peak or treetops of the cell below (x, y + 1) as they cover the bottom half of cell
+    /// (x, y): 16 x 16, 0 where nothing, else `0x8000 | colour`, in Dual Strike's own colours (the
+    /// four palettes' merged ones would lose a shade: a desert mountain's pale highlight is a tenth
+    /// of its pixels). The tilted map draws the same from the console's BG2 inside its window.
+    pub fn upper_pixels(&self, x: i32, y: i32) -> Option<[u16; 256]> {
+        if x < 0 || y < 0 || x >= self.w || y + 1 >= self.h {
+            return None;
+        }
+        let l = &self.look.look;
+        let o = l.upper_at(self.tile(x, y + 1), x as u32, (y + 1) as u32)?;
+        let src = if self.fogged(x, y) { &l.overlays_fog } else { &l.overlays };
+        let mut out = [0u16; 256];
+        for side in 0..2usize {
+            if let Some(over) = src.get(o as usize).and_then(|v| v.get(side)) {
+                for py in 0..8usize {
+                    for px in 0..8usize {
+                        let c = over[py * 8 + px];
+                        if c != crate::ds_look::TRANSPARENT {
+                            out[(8 + py) * 16 + side * 8 + px] = 0x8000 | (c & 0x7fff);
+                        }
+                    }
+                }
+            }
+        }
+        Some(out)
     }
 
     /// The cell holding map pixel column `gx` and row `gy` (the map's edge

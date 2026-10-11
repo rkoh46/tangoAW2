@@ -100,13 +100,16 @@ const FOOT_DROP: f32 = 0.135;
 /// frames the same way (cells, from the cell's bottom edge).
 const PROP_DROP: f32 = 0.0;
 const TERRAIN_DROP: f32 = -0.16;
+/// Woods and mountains' pictures on the flat ground are drawn this many source pixels (16 a cell)
+/// higher (Dual Strike's upright ones stand a little further back than their flat tiles lie).
+const TALL_LIFT: i32 = 2;
 
 /// Where the fitted camera's principal ray meets the ground, from the cursor
 /// cell's corner (cells).
 const CAM_BIAS: (f32, f32) = (-0.7223, -0.8956);
 /// The camera's numbers, from the constants above unless `TANGOAW2_TILT_CAM` overrides them
 /// (a development aid for fitting the camera to real Dual Strike frames):
-/// `focal,pitch,height,cx,cy,bias_u,bias_v,foot_drop` (focal in pixels of the 240-wide picture,
+/// `focal,pitch,height,cx,cy,bias_u,bias_v,foot_drop,terrain_drop,prop_drop,tall_lift` (focal in pixels of the 240-wide picture,
 /// pitch in radians; any field may be left empty to keep its default).
 #[derive(Clone, Copy)]
 struct CamParams {
@@ -117,12 +120,15 @@ struct CamParams {
     cy: f32,
     bias: (f32, f32),
     foot_drop: f32,
+    terrain_drop: f32,
+    prop_drop: f32,
+    tall_lift: i32,
 }
 
 fn cp() -> &'static CamParams {
     static P: OnceLock<CamParams> = OnceLock::new();
     P.get_or_init(|| {
-        let mut p = CamParams { focal: FOCAL, pitch: PITCH, height: HEIGHT, cx: CX, cy: CY, bias: CAM_BIAS, foot_drop: FOOT_DROP };
+        let mut p = CamParams { focal: FOCAL, pitch: PITCH, height: HEIGHT, cx: CX, cy: CY, bias: CAM_BIAS, foot_drop: FOOT_DROP, terrain_drop: TERRAIN_DROP, prop_drop: PROP_DROP, tall_lift: TALL_LIFT };
         if let Ok(v) = std::env::var("TANGOAW2_TILT_CAM") {
             let f: Vec<Option<f32>> = v.split(',').map(|t| t.trim().parse::<f32>().ok()).collect();
             let g = |i: usize| f.get(i).copied().flatten();
@@ -134,6 +140,9 @@ fn cp() -> &'static CamParams {
             p.bias.0 = g(5).unwrap_or(p.bias.0);
             p.bias.1 = g(6).unwrap_or(p.bias.1);
             p.foot_drop = g(7).unwrap_or(p.foot_drop);
+            p.terrain_drop = g(8).unwrap_or(p.terrain_drop);
+            p.prop_drop = g(9).unwrap_or(p.prop_drop);
+            p.tall_lift = g(10).map(|v| v as i32).unwrap_or(p.tall_lift);
         }
         p
     })
@@ -897,6 +906,19 @@ pub(crate) fn rgba_lut() -> &'static Vec<[u8; 4]> {
     })
 }
 
+/// Colours of the tilted map as Dual Strike's 3D engine shows them: a 5-bit
+/// channel `c` is `2c + 1` of 63 (its 2D layers use `2c`; the console's
+/// own picture, which this one keeps for the HUD, `c` of 31), so the map's
+/// black is 4 and its white 255 (checked against melonDS frames: 4, 101,
+/// 133, 165, 246 ...).
+fn rgba_lut_3d() -> &'static Vec<[u8; 4]> {
+    static LUT: OnceLock<Vec<[u8; 4]>> = OnceLock::new();
+    LUT.get_or_init(|| {
+        let ch = |c: usize| (((2 * c + 1) * 255) / 63) as u8;
+        (0..0x8000usize).map(|i| [ch(i & 31), ch((i >> 5) & 31), ch((i >> 10) & 31), 255]).collect()
+    })
+}
+
 struct Billboard {
     pix: Vec<Px>,
     w: i32,
@@ -1238,8 +1260,16 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
 
     // What lies on the ground, as the console shows it: BG0's range tint
     // (while it is below the units) and the sprites that lie flat.
+    // Dual Strike's own cursor art replaces AW2's pointer and corner brackets
+    // (with the pack; without it AW2's stay).
+    let ds_cursor = crate::ds_cursor::art();
+    let is_cursor_piece = |o: &Obj| o.class == Class::Pointer || (o.class == Class::Ground && o.tile == 873);
+    let cursor_shown = ds_cursor.is_some() && objs.iter().any(|o| is_cursor_piece(o));
     let mut decal = vec![0u16; W * H];
-    for o in objs.iter().filter(|o| o.class == Class::Ground || is_obelisk_part(o)) {
+    for o in objs
+        .iter()
+        .filter(|o| (o.class == Class::Ground || is_obelisk_part(o)) && !(cursor_shown && is_cursor_piece(o)))
+    {
         for y in 0..o.h {
             let sy = o.y + y;
             if !(0..H as i32).contains(&sy) {
@@ -1361,11 +1391,22 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 }
                 // The map cell it stands in, and where the console draws that cell's foot.
                 let (mx, my) = (map_x0 + cx - ground_cx0, map_y0 + cy - ground_cy0);
+                // Peaks and treetops (BG2) in Dual Strike's own colours, not the four
+                // palettes' merged ones.
+                if b == 2 {
+                    if let Some(up) = ground.upper_pixels(mx, my) {
+                        for (p, &e) in pix.iter_mut().zip(up.iter()) {
+                            if *p != 0 && e != 0 {
+                                *p = e;
+                            }
+                        }
+                    }
+                }
                 let foot_x = (mx * 16 - cam_px.0 + 8) as f32;
                 let foot_y = (my * 16 - cam_px.1 + 16) as f32;
                 // Units stand a little in front of the edge; the peaks and
                 // treetops (BG2) stand on it.
-                let drop = if b == 1 { cp().foot_drop } else { TERRAIN_DROP };
+                let drop = if b == 1 { cp().foot_drop } else { cp().terrain_drop };
                 boards.push(Billboard {
                     pix,
                     w: 16,
@@ -1579,7 +1620,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         w,
                         h,
                         fu: mx as f32 + (dx as f32 + w as f32 / 2.0) / 16.0,
-                        fv: my as f32 + (dy as f32 + h as f32) / 16.0 + PROP_DROP,
+                        fv: my as f32 + (dy as f32 + h as f32) / 16.0 + cp().prop_drop,
                         ox: -(w as f32) / 2.0,
                         oy: -(h as f32),
                         rank: 1,
@@ -1591,7 +1632,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
     for o in objs
         .iter()
-        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer) && !is_obelisk_part(o))
+        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer) && !is_obelisk_part(o) && !(cursor_shown && is_cursor_piece(o)))
     {
         let fx = o.x as f32 + o.w as f32 / 2.0;
         let fy = (o.y + o.h) as f32;
@@ -1601,7 +1642,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             w: o.w,
             h: o.h,
             fu: (cam_px.0 as f32 + fx) / 16.0,
-            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { PROP_DROP } else { 0.0 },
+            fv: (cam_px.1 as f32 + fy) / 16.0 + if o.class == Class::Billboard { cp().prop_drop } else { 0.0 },
             ox: -(o.w as f32) / 2.0,
             oy: -(o.h as f32),
             rank: (3 - o.pri) * 2 + 1,
@@ -1667,7 +1708,13 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             let mut p = if let Some(c) = outer {
                 c
             } else {
-                let (ci, lx, ly) = ground.locate(gx, gy);
+                let (mut ci, mut lx, mut ly) = ground.locate(gx, gy);
+                if cp().tall_lift != 0 && gy + cp().tall_lift < ground.h * 16 {
+                    let (c2, x2, y2) = ground.locate(gx, gy + cp().tall_lift);
+                    if ground.is_tall(c2) {
+                        (ci, lx, ly) = (c2, x2, y2);
+                    }
+                }
                 if cur.0 != ci {
                     cur = (ci, *ground.cell(ci));
                 }
@@ -1678,7 +1725,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             }
             if shade_here > 0.0 {
                 let k = 1.0 - 0.04 * shade_here;
-                let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k) as u32;
+                let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k + 0.5) as u32;
                 p = 0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16;
             }
             // The console's overlays, where it drew them.
@@ -1730,12 +1777,16 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         }
     }
 
+    if let (Some(art), true) = (ds_cursor, cursor_shown) {
+        crate::ds_cursor::draw(&mut map, W, H, art, cursor, |u, v| cam.project(u, v));
+    }
+
     // A sandstorm (Dual Strike's fourth weather; AW2 draws no particles for it): drifting grains over
     // the map, as many fine speckles as Dual Strike shows.
     let sand = crate::sandstorm::active(core);
     let t_map = t0.elapsed();
     // --- Out ---
-    let lut = rgba_lut();
+    let lut = rgba_lut_3d();
     let evy = (bldy & 31).min(16) as u32;
     for i in 0..W * H {
         let p = match owner[i] {
