@@ -207,6 +207,11 @@ pub fn any(core: &Core) -> bool {
 pub const CO_TABLE_POOL: u32 = 0x0804_2DDC;
 const CO_ROW: u32 = 0x104;
 
+/// A CO's meter: the stars of its CO Power and of its Super Power.
+pub fn co_stars(core: &Core, co: u8) -> (u32, u32) {
+    stars(core, co)
+}
+
 fn stars(core: &Core, co: u8) -> (u32, u32) {
     let row = core.raw_read_32(CO_TABLE_POOL, -1) + CO_ROW * co as u32;
     (core.raw_read_32(row + 0x0C, -1), core.raw_read_32(row + 0x10, -1))
@@ -1089,6 +1094,7 @@ const DRAW_PANEL: u32 = 0x0804_36DC;
 fn draw_panel(core: &mut Core) {
     // (a two-front battle's view of its other front draws no panel)
     crate::two_front::co_panel(core);
+    crate::ds_hud::note_panel(core);
     if !is_on(core) || !any(core) {
         return;
     }
