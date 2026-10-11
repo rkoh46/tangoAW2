@@ -1141,8 +1141,18 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let d = v.dispcnt();
     // A picture drawn with changes between its lines (HBlank interrupts on:
     // the dialogue box over the map's top) is not one this can redo.
+    // The campaign dialogue box at the top is the one such effect we can carry: its rows (0x2D less the box's slide)
+    // keep the console's picture and the map is tilted below them.
+    let mut keep_rows = 0usize;
     if v.io[2] & 0x10 != 0 {
-        return;
+        if core.raw_read_32(0x0300_2FE4, -1) != 0x0801_7881 {
+            return;
+        }
+        keep_rows = if core.raw_read_16(0x0300_2EDC, -1) & 0x1000 != 0 {
+            0
+        } else {
+            (0x2D - core.raw_read_16(0x0300_30A8, -1) as i16 as i32).clamp(0, H as i32) as usize
+        };
     }
     // Tile mode 0, display on, BG1-3 and OBJ on.
     if d & 7 != 0 || d & 0x80 != 0 || d & 0x0e00 != 0x0e00 || d & 0x1000 == 0 {
@@ -2054,6 +2064,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let evy = (bldy & 31).min(16) as u32;
     for i in 0..W * H {
         let p = match owner[i] {
+            _ if i / W < keep_rows => continue,
             Owner::Hud => continue,
             Owner::Map => {
                 let p = map[i];
