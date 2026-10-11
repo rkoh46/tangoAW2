@@ -935,6 +935,12 @@ static CLOCK: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0
 /// tint pixel there (0: none; a reddish one is an attack range: the same glow, redder), `(lx, ly)`
 /// the pixel's place in its 16 x 16 cell. Upright things (peaks and treetops) are lit the way
 /// Dual Strike shows them: brightened by a factor (1.3 at the cell's top right, up to 1.8) instead.
+/// How quickly a lit cell's glow falls from white at its corner to its far colour (an exponent on the 0..1 position).
+const KNEE: f32 = 0.6;
+/// The far colour of an attack-only cell's glow (5-bit channels), Dual Strike's pink.
+const PINK_FAR: (f32, f32, f32) = (31.0, 18.0, 23.0);
+/// How much of the ground the pink covers (0..1).
+const ATTACK_COVER: f32 = 0.85;
 fn range_look(p: Px, t: Px, lx: i32, ly: i32, upright: bool) -> Px {
     let ch = |c: Px, s: u32| (c as u32 >> s) & 31;
     let (mut r, mut g, mut b) = (ch(p, 0), ch(p, 5), ch(p, 10));
@@ -950,7 +956,19 @@ fn range_look(p: Px, t: Px, lx: i32, ly: i32, upright: bool) -> Px {
             let lift = |c: u32| ((c as f32 * f + 0.5) as u32).min(31);
             return 0x8000 | (lift(r) | lift(g) << 5 | lift(b) << 10) as u16;
         }
-        let far = if attack { (20.0, 5.0, 5.0) } else { (10.0, 12.0, 5.0) };
+        // (measured against real frames: the glow falls off sooner than linearly, so less of a cell is white)
+        let k = k.powf(KNEE);
+        if attack {
+            // Dual Strike's pink is nearly the same over any ground (measured on real frames over grass, road and
+            // snow): the ground shows through a little, the glow runs from white to pink.
+            let to = |c: u32, far: f32| {
+                let target = 31.0 + (far - 31.0) * k;
+                (c as f32 + (target - c as f32) * ATTACK_COVER + 0.5) as u32
+            };
+            (r, g, b) = (to(r, PINK_FAR.0).min(31), to(g, PINK_FAR.1).min(31), to(b, PINK_FAR.2).min(31));
+            return 0x8000 | (r | g << 5 | b << 10) as u16;
+        }
+        let far = (10.0, 12.0, 5.0);
         let screen = |c: u32, far: f32| {
             let glow = 31.0 + (far - 31.0) * k;
             31 - ((31 - c) as f32 * (31.0 - glow) / 31.0 + 0.5) as u32
@@ -1303,6 +1321,91 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
     }
 }
 
+
+
+/// The game's reach table at a map cell (0xFF: the selected unit cannot go there).
+fn reach_at(core: &Core, w: i32, h: i32, x: i32, y: i32) -> u8 {
+    if x < 0 || y < 0 || x >= w || y >= h {
+        return 0xff;
+    }
+    let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+    core.raw_read_8(REACH + row + x as u32, -1)
+}
+
+/// The cell the table's costs start from (the selected unit's), if the table has one.
+fn reach_origin(core: &Core, w: i32, h: i32) -> Option<(i32, i32)> {
+    let mut origin = None;
+    for y in 0..h {
+        for x in 0..w {
+            if reach_at(core, w, h, x, y) == 0 {
+                if origin.is_some() {
+                    return None;
+                }
+                origin = Some((x, y));
+            }
+        }
+    }
+    origin
+}
+
+/// The tint pixel the attack-only cells get (a reddish one: [`range_look`] shows it Dual Strike's pink).
+const ATTACK_TINT: Px = 0x801F;
+
+/// Dual Strike shows, with the white cells a selected unit can move to, the cells it can attack beyond
+/// them in pink. AW2 marks only the move cells (BG0) for a unit that has not moved, so the pink ones are
+/// worked out: the selected unit is the one standing on the zero-cost cell of the game's reach table, its
+/// range is AW2's unit table's (Dual Strike's with the pack: [`crate::ds_units`]). A direct unit (range 1)
+/// hits the cells next to the ones it can reach; an indirect one (it cannot move and fire) the cells
+/// from its range's minimum to its maximum around where it stands. Returns the cells' tint (map cells).
+/// Only while the console shows the move range (a target choice shows an attack range, and the table is stale).
+fn attack_cells(core: &Core, w: i32, h: i32) -> std::collections::HashMap<(i32, i32), Px> {
+    let mut out = std::collections::HashMap::new();
+    if w <= 0 || h <= 0 || w > 64 || h > 64 {
+        return out;
+    }
+    let reach = |x: i32, y: i32| reach_at(core, w, h, x, y);
+    let Some((ox, oy)) = reach_origin(core, w, h) else { return out };
+    // (the selected unit: the game's pointer, or the one on the origin cell)
+    let sel = core.raw_read_32(0x0300_40D8, -1);
+    let u = if (0x0200_0000..0x0400_0000).contains(&sel) { sel } else { crate::unit_actions::unit_at(core, ox, oy).unwrap_or(0) };
+    if u == 0 {
+        return out;
+    }
+    let kind = core.raw_read_8(u, -1) as u32;
+    if !(1..=24).contains(&kind) {
+        return out;
+    }
+    let rec = crate::ds_units::UNITS + 0x5C * kind;
+    let (min, max) = (core.raw_read_8(rec + 0x0E, -1) as i32, core.raw_read_8(rec + 0x0F, -1) as i32);
+    if max == 0 {
+        return out;
+    }
+    if max == 1 {
+        for y in 0..h {
+            for x in 0..w {
+                if reach(x, y) == 0xff && [(1, 0), (-1, 0), (0, 1), (0, -1)].iter().any(|(dx, dy)| reach(x + dx, y + dy) != 0xff) {
+                    out.insert((x, y), ATTACK_TINT);
+                }
+            }
+        }
+    } else {
+        for y in 0..h {
+            for x in 0..w {
+                let d = (x - ox).abs() + (y - oy).abs();
+                if (min..=max).contains(&d) {
+                    out.insert((x, y), ATTACK_TINT);
+                }
+            }
+        }
+    }
+    out
+}
+
+/// A tint pixel is an attack range's (reddish).
+fn is_attack_tint(t: Px) -> bool {
+    t != 0 && (t as u32 & 31) > ((t as u32 >> 10) & 31) + 5
+}
+
 /// Dual Strike's range look on the flat map ([`range_look`]): which cells the console's range
 /// overlay (BG0, while it is below the units) tints, and the map's scroll.
 struct FlatRange {
@@ -1327,6 +1430,19 @@ impl FlatRange {
         // (no tinted cell: BG0 is not a range, say the cursor's glow or text)
         if cells.is_empty() {
             return None;
+        }
+        // The cells beyond the move range the unit can attack, pink: the console's own tint on a cell the unit
+        // cannot move to is one too, and the move cells' tint is the move glow's whatever colour the console gave
+        // it. (With no tinted cell reachable the console shows an attack range, a target choice.)
+        let (w, h) = (core.raw_read_16(MAP, -1) as i32, core.raw_read_16(MAP + 2, -1) as i32);
+        if reach_origin(core, w, h).is_some() && cells.keys().any(|&(cx, cy)| reach_at(core, w, h, cx, cy) != 0xff) {
+            for (&(cx, cy), t) in cells.iter_mut() {
+                *t = if reach_at(core, w, h, cx, cy) == 0xff { ATTACK_TINT } else { 0x7fff };
+            }
+            // (a computed cell is pink even where the unit can move: an indirect unit's range lies inside it)
+            for (c, t) in attack_cells(core, w, h) {
+                cells.insert(c, t);
+            }
         }
         Some(FlatRange { cam, cells })
     }
@@ -1807,6 +1923,15 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     } else {
         Vec::new()
     };
+    // The console's tint on the cells the unit can reach is the move range; with none there (a target choice: the
+    // table is stale) the tinted cells are an attack range already.
+    let move_stage = tint.is_some() && reach_origin(core, ground.w, ground.h).is_some()
+        && layers[0].iter().enumerate().any(|(i, &t)| {
+            let (cx, cy) = (((i % W) as i32 + cam_px.0).div_euclid(16), ((i / W) as i32 + cam_px.1).div_euclid(16));
+            t != 0 && cx >= 0 && cy >= 0 && cx < ground.w && cy < ground.h && reach[(cy * ground.w + cx) as usize] != 0xff
+        });
+    // The cells it can attack beyond them, in pink.
+    let pink = if move_stage { attack_cells(core, ground.w, ground.h) } else { std::collections::HashMap::new() };
 
     // The ground drawn from the map's RAM must be the console's BG3 (with the
     // peaks over it) where that shows; when it is not (a scroll, a fade or a
@@ -1947,7 +2072,10 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     if tint.is_some() && mx >= 0 && my >= 0 && mx < ground.w && my < ground.h {
                         let on = reach[(my * ground.w + mx) as usize] != 0xff;
                         let sample = layers[0].get(((sy0 + 8).max(0) as usize) * W + (sx0 + 8).max(0) as usize).copied().unwrap_or(0);
-                        let t = if on { if sample != 0 { sample } else { 0x7fff } } else { 0 };
+                        let t = match pink.get(&(mx, my)) {
+                            Some(&q) => q,
+                            None => if on { if sample != 0 && !move_stage { sample } else { 0x7fff } } else { 0 },
+                        };
                         for (i, p) in pix.iter_mut().enumerate().filter(|(_, p)| **p != 0) {
                             *p = range_look(*p, t, i as i32 % 16, i as i32 / 16, true);
                         }
@@ -2408,7 +2536,16 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
                 let i = sy as usize * W + sx as usize;
                 if tint.is_some() && outer.is_none() {
-                    p = range_look(p, layers[0][i], gx.rem_euclid(16), gy.rem_euclid(16), false);
+                    let mut t = layers[0][i];
+                    let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
+                    if t != 0 && move_stage && cx >= 0 && cy >= 0 && cx < ground.w && cy < ground.h {
+                        // (a move cell's tint is the move glow's whatever colour the console gave it)
+                        t = if reach[(cy * ground.w + cx) as usize] == 0xff { ATTACK_TINT } else { 0x7fff };
+                    }
+                    if let Some(&q) = pink.get(&(cx, cy)) {
+                        t = q;
+                    }
+                    p = range_look(p, t, gx.rem_euclid(16), gy.rem_euclid(16), false);
                 }
             } else if tint.is_some() && outer.is_none() {
                 let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
@@ -2417,7 +2554,8 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     && cx < ground.w
                     && cy < ground.h
                     && reach[(cy * ground.w + cx) as usize] != 0xff;
-                p = range_look(p, if on { 0x7fff } else { 0 }, gx.rem_euclid(16), gy.rem_euclid(16), false);
+                let t = pink.get(&(cx, cy)).copied().unwrap_or(if on { 0x7fff } else { 0 });
+                p = range_look(p, t, gx.rem_euclid(16), gy.rem_euclid(16), false);
             }
             if (-DM..W as i32 + DM).contains(&sx) && (-DM..H as i32 + DM).contains(&sy) {
                 let d = decal[(sy + DM) as usize * DW + (sx + DM) as usize];
