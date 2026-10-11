@@ -217,7 +217,7 @@ const DS_TEXT_GROUPS: u32 = DS_OVERLAY_BASE + 0x49690;
 /// A Dual Strike text by its reference (group << 24 | index), as AW2
 /// text: its line breaks and pauses are AW2's, other characters kept
 /// to plain ASCII.
-fn ds_text(r: u32) -> Option<Vec<u8>> {
+pub(crate) fn ds_text(r: u32) -> Option<Vec<u8>> {
     if r >> 24 == 0 {
         return None;
     }
@@ -259,7 +259,7 @@ fn clone_text(which: u16, _name: &[u8]) -> Option<Vec<u8>> {
     }
 }
 
-fn record_ref(ds: u8, off: u32) -> u32 {
+pub(crate) fn record_ref(ds: u8, off: u32) -> u32 {
     crate::ds_pack::pack()
         .and_then(|p| p.arm9_at(0x0215_360C + 0x220 * ds as u32 + off, 4))
         .map(|b| u32::from_le_bytes(b.try_into().unwrap()))

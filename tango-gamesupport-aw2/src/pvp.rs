@@ -528,6 +528,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
 
         // The Set Skills panel on the CO screens (crate::co_skills).
         keys = crate::skills_panel::tick(core, ds, keys, prev);
+        // Dual Strike's CO page over AW2's (crate::ds_co_page): offline, with
+        // the Dual Strike map graphics setting.
+        keys = crate::ds_co_page::tick(core, ds && mode.is_none(), keys, prev);
         // CO tag pairs: the partners picked on the Teams screen (crate::tag_ui).
         keys = crate::tag_ui::teams_tick(core, ds, keys, prev);
         // The Rules screen's Skills row (crate::versus_rules).

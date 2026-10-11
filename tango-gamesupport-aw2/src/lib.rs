@@ -38,6 +38,7 @@ pub mod ds_credits;
 pub mod ds_story_art;
 pub mod ds_worldmap;
 pub mod ds_co_art;
+pub mod ds_co_page;
 pub mod ds_music;
 pub mod ds_pack;
 pub mod ds_power_art;
