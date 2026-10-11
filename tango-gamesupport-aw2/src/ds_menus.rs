@@ -30,6 +30,8 @@ use std::sync::OnceLock;
 
 use crate::wasteland::ds_graphics;
 
+/// Where AW2's dialogue box at the screen's bottom starts.
+const BOX_BOTTOM_TOP: i32 = 112;
 const W: usize = 240;
 const H: usize = 160;
 
@@ -676,12 +678,17 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     let tw = menu.rows.iter().map(|r| text_width(a, &r.text)).max().unwrap_or(0);
     let wt = 4 + (tw + 7) / 8;
     let (bw, bh) = (8 * wt, 16 * n + 16);
+    // A dialogue box (the campaign's tutorials) takes the screen's top (to row 0x2D) or its bottom (from row 112): the menu
+    // stays clear of it, and Dual Strike's help box (bottom right) is left out under a bottom one.
+    let talking = crate::tag_ui::dialogue_up(core);
+    let top_box = talking && crate::tag_ui::top_box_rows(core) > 0;
+    let (lo, hi) = (if top_box { 46 } else { 0 }, if talking && !top_box { BOX_BOTTOM_TOP } else { H as i32 });
     let (bx, by) = match menu.kind {
-        Kind::Map => (72, within(TAG_H, 0, H as i32 - bh)),
+        Kind::Map => (72, within(TAG_H.max(lo), lo, hi - bh)),
         Kind::Unit => {
             let (ux, uy) = unit_screen(core);
             let x = if ux + 16 + 4 + bw <= W as i32 { ux + 20 } else { ux - bw - 4 };
-            (within(x, 0, W as i32 - bw), within(uy + 8 - bh / 2, TAG_H - 6, H as i32 - bh))
+            (within(x, 0, W as i32 - bw), within(uy + 8 - bh / 2, (TAG_H - 6).max(lo), hi - bh))
         }
     };
     draw_frame(&mut cv, a, bx, by, wt, 2 * n + 2);
@@ -706,7 +713,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     // The tag, top centre.
     draw_sprite(&mut cv, (W as i32 - 32) / 2, 0, 32, &a.tag);
     // The map menu's description, one line, bottom right.
-    if menu.kind == Kind::Map {
+    if menu.kind == Kind::Map && !(talking && !top_box) {
         if let Some(d) = description(a, &menu.rows[menu.cursor].text) {
             let dw = (8 * ((text_width(a, &d) + 16 + 7) / 8)).clamp(64, 232);
             draw_frame(&mut cv, a, W as i32 - dw, 128, dw / 8, 4);

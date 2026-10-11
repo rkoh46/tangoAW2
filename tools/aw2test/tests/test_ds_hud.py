@@ -579,3 +579,45 @@ def ds_hud_terrain_without_hit_points(ctx):
         rows = sorted({yy for _, yy, _ in good})
         ctx.check(len(rows) <= 2, f"{cell}: the numbers are the defence row and, for a property, the capture row ({rows})")
         ctx.eq(number_at(good, rows[0]), want, f"{cell}: the defence stars")
+
+
+# --- Dual Strike's menus under a campaign dialogue box -------------------------------------------------------
+
+@test(modes=("ds",))
+def ds_menus_under_dialogue(ctx):
+    """AW2's campaign tutorial: with the map menu open, choosing End brings a dialogue box up at the bottom. Dual Strike's
+    help box ("End your turn.", bottom right, a red bar on top) is not drawn over it, and the menu stays above it."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    from PIL import Image
+    from aw2test import campaigns as cp
+    e = Emu(save=paths.base_save(), ds=ctx.ds)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = dc.DsCampaign(g)
+    cp.aw2_new(e, d, True)
+    d.wait_control() if d.scripts_running() else None
+    g._units_base = g._players_base = None
+    m = g.open_map_menu()
+    for _ in range(len(m["names"]) + 2):
+        if e.u8(m["cursor_addr"]) == len(m["names"]) - 1:
+            break
+        e.press("DOWN", 4)
+        e.wait(8)
+    e.wait(30)
+
+    def red_bar():
+        px = Image.open(e.shot(os.path.join(ctx.out, "dlg_probe"))).convert("RGB")
+        # the help box's top bar: its row 128, right edge; counts the strongly red pixels of x 190..236
+        return sum(1 for x in range(170, 237) for y in range(128, 136) if px.getpixel((x, y))[0] > 200 and px.getpixel((x, y))[1] < 90)
+    before = red_bar()
+    ctx.check(before > 40, f"the help box is up with the menu alone (red bar pixels {before})")
+    shot(ctx, g, "dialogue_menu_before")
+    e.press("A", 4)
+    ok = e.wait_until(d.scripts_running, 300, step=5)
+    ctx.check(ok, "End brings the tutorial's dialogue box up")
+    e.wait(90)
+    shot(ctx, g, "dialogue_menu_after")
+    after = red_bar()
+    ctx.check(after < 5, f"the help box is not drawn over the dialogue (red bar pixels {after})")
+

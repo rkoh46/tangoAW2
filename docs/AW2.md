@@ -3768,6 +3768,8 @@ in overlay 0 (`0x022CF9B0`; corners are tiles 8, 10, 12, 14, the tag eight tiles
 Dual Strike and AW2 (page 0x0A codes 0x80 and 0x81 are the selected unit's first and second cargo; the picture is
 the unit's tiles in BG tile RAM in its army's colours: `ds_tilt::unit_picture`). In Survival and Champion, which draw a header (map number and budget) at the top centre, the header steps to the top-left corner and keeps to its first line while one of these menus is open, so it never runs under the tag or the frame (`ds_menus::tag_shown`). Tests: `test_ds_menus.py`.
 
+**Under a dialogue box** (`tag_ui::dialogue_up`: the box's proc `0x08014401` live in the proc area): a box at the bottom (from row 112) keeps the help box ("End your turn.") away and the menus above it; a box at the top (`top_box_rows`) keeps them below row 46. Test `ds_menus_under_dialogue`.
+
 ### Dual Strike tilt (`ds_tilt.rs`, `ds_ground.rs`, Settings > Graphics)
 
 Display only: it reads VRAM, palette RAM, OAM, the video registers and the
