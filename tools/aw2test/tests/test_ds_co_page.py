@@ -99,11 +99,11 @@ def ds_co_page_every_kind_of_co(ctx):
     skills on (the page lists them): every page must show text and never
     leave BG0's layer (a page that fitted no layout is left with the strip
     only)."""
-    for co in ("andy", "jake", "sturm", "cloneandy", "crumb", "vonbolt"):
+    for co in ("andy", "jake", "flak", "sturm", "cloneandy", "crumb", "vonbolt"):
         g = open_page(ctx, [co, "sasha"], skills=(0x01, 0x10))
         e = g.e
         on = e.u8(DS_GRAPHICS) != 0
-        for n in (1, 2, 3):
+        for n in (1, 2, 3, 4):
             ctx.shot(g, f"{co}_p{n}")
             if on:
                 ctx.eq(layers(e), BG0_ONLY, f"{co} page {n}: Dual Strike's")
@@ -116,8 +116,8 @@ def ds_co_page_every_kind_of_co(ctx):
 
 @test(modes=("ds",))
 def ds_co_page_unit_chart_and_wall(ctx):
-    """Page 4 is Dual Strike's unit chart: four units to a row, two gauges each, filled with the CO's stats (Max's direct
-    vehicles +20 %: a few pink pixels in their attack gauges; Andy's gauges are plain), and the page has the wall behind
+    """Page 4 is Dual Strike's unit chart: four or five units to a row, one thin attack gauge each, filled with the CO's stats (Max's direct
+    vehicles +20 %: a few pink pixels in their gauges; Andy's gauges are plain), and the page has the wall behind
     it (Dual Strike's watermark: the page is not plain white)."""
     from PIL import Image
     pink = {}

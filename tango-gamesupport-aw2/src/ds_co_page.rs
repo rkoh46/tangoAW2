@@ -167,6 +167,8 @@ const DIGITS: u8 = 3;
 const BACK: u8 = 4;
 /// The unit chart's pictures (the army's colours).
 const UNIT: u8 = 5;
+/// The headings' pictures (Existing skills, the power's stars).
+const HEAD: u8 = 6;
 const INK: u8 = 10;
 const EDGE: u8 = 14;
 const WHITE: u16 = 0x7FFF;
@@ -176,6 +178,36 @@ const WHITE: u16 = 0x7FFF;
 const UI_PALETTE: [u16; 16] = [
     WHITE, WHITE, 0x631F, 0x421F, 0x14BF, 0x7BDD, 0x7F18, 0x7E10, 0x7D08, 0x77BF, 0x0000, 0x4210, 0x779B, 0x6B38, 0x5AF8, 0x3E11,
 ];
+
+const fn rgb15(r: u16, g: u16, b: u16) -> u16 {
+    (r >> 3) | ((g >> 3) << 5) | ((b >> 3) << 10)
+}
+
+/// The colours of the heading pictures (res_icon0_cg's icons 88, 19 and 20), read from real frames.
+const HEAD_PALETTE: [u16; 16] = [
+    WHITE,
+    rgb15(250, 250, 250),
+    WHITE,
+    rgb15(186, 178, 170),
+    rgb15(121, 113, 89),
+    rgb15(250, 153, 113),
+    rgb15(250, 242, 32),
+    WHITE,
+    WHITE,
+    WHITE,
+    rgb15(210, 153, 97),
+    rgb15(121, 145, 250),
+    rgb15(97, 105, 218),
+    rgb15(170, 186, 250),
+    WHITE,
+    rgb15(186, 129, 89),
+];
+/// res_icon0_cg's pictures for the skills heading and the one-star and two-star powers.
+const ICON_SKILLS: usize = 88;
+const ICON_COP: usize = 19;
+const ICON_SCOP: usize = 20;
+/// A heading's picture sits here, its text beside it.
+const HEAD_X: i32 = 72;
 
 pub struct Canvas {
     px: Vec<u8>,
@@ -306,30 +338,37 @@ pub struct ChartUnit {
     pub range: i32,
 }
 
-/// The units the chart lists, in Dual Strike's order (its rows are four to a line): (our unit type, Dual Strike's picture,
-/// whether it carries a weapon).
-const CHART_UNITS: [(u8, usize, bool); 19] = [
-    (1, 24, true),
-    (2, 26, true),
-    (6, 2, true),
-    (7, 3, false),
-    (14, 6, true),
-    (5, 1, true),
-    (3, 0, true),
-    (8, 16, true),
-    (10, 4, true),
-    (11, 5, true),
-    (15, 7, true),
-    (16, 8, true),
-    (17, 9, true),
-    (19, 10, true),
-    (20, 11, false),
-    (21, 12, true),
-    (22, 13, true),
-    (24, 15, true),
-    (23, 14, false),
+/// The units the chart lists, in Dual Strike's order (our unit type, Dual Strike's picture, whether it carries a weapon): the
+/// rows are `CHART_ROWS` long (four, five, five, four, four, four).
+const CHART_UNITS: [(u8, usize, bool); 26] = [
+    (1, 24, true),   // Infantry
+    (2, 26, true),   // Mech
+    (6, 2, true),    // Recon
+    (7, 3, false),   // APC
+    (14, 6, true),   // Anti-Air
+    (5, 1, true),    // Tank
+    (3, 0, true),    // Md Tank
+    (8, 16, true),   // Neotank
+    (4, 17, true),   // Megatank
+    (10, 4, true),   // Artillery
+    (11, 5, true),   // Rockets
+    (15, 7, true),   // Missiles
+    (9, 18, true),   // Piperunner
+    (27, 23, false), // Oozium
+    (16, 8, true),   // Fighter
+    (17, 9, true),   // Bomber
+    (12, 19, true),  // Stealth
+    (13, 20, false), // Black Bomb
+    (19, 10, true),  // B Copter
+    (20, 11, false), // T Copter
+    (21, 12, true),  // Battleship
+    (26, 22, true),  // Carrier
+    (22, 13, true),  // Cruiser
+    (24, 15, true),  // Sub
+    (23, 14, false), // Lander
+    (18, 21, false), // Black Boat
 ];
-
+const CHART_ROWS: [usize; 6] = [4, 5, 5, 4, 4, 4];
 /// The chart's rows for `co` at power level `mode`.
 fn chart_for(co: u8, mode: u8) -> Vec<ChartUnit> {
     use crate::co_roster::{stat, DEFENCE, FIREPOWER, RANGE};
@@ -470,6 +509,8 @@ struct Art {
     /// grey box are icons 10 to 14).
     icons: Vec<u8>,
     icon_pal: [u16; 16],
+    /// res_icon0_cg: the headings' 16x16 pictures.
+    heads: Vec<u8>,
     /// res_icon4_cg's digits.
     digits: Vec<u8>,
     digit_pal: [u16; 16],
@@ -505,6 +546,7 @@ fn build_art() -> Option<Art> {
         strip,
         icons,
         icon_pal: pal16(cl.get(32..64)?),
+        heads: pack.file("icon/res_icon0_cg")?.to_vec(),
         digits,
         digit_pal: pal16(pack.arm9_at(0x0213_9288, 32)?),
         pad,
@@ -526,6 +568,9 @@ impl Art {
     /// A 16x16 icon of res_icon1_cg.
     fn icon(&self, k: usize) -> &[u8] {
         &self.icons[128 * k..128 * k + 128]
+    }
+    fn head(&self, k: usize) -> &[u8] {
+        &self.heads[128 * k..128 * k + 128]
     }
     fn digit(&self, c: char) -> &[u8] {
         let slot = match c {
@@ -722,60 +767,28 @@ fn star(cv: &mut Canvas, x: i32, y: i32) {
     }
 }
 
-/// The CO's body, `pw` x `ph`, cut around the figure.
-fn crop(p: &Portrait, pw: usize, ph: usize) -> Vec<u8> {
-    let (mut lo, mut hi) = (128usize, 0usize);
-    for y in 0..ph.min(160) {
-        for x in 0..128 {
-            if p.body[128 * y + x] != 0 {
-                lo = lo.min(x);
-                hi = hi.max(x);
-            }
-        }
-    }
-    let centre = if hi >= lo { (lo + hi) / 2 } else { 64 };
-    let x0 = centre.saturating_sub(pw / 2).min(128 - pw);
-    let mut out = Vec::with_capacity(pw * ph);
-    for y in 0..ph {
-        out.extend_from_slice(&p.body[128 * y + x0..128 * y + x0 + pw]);
-    }
-    out
-}
-
 /// One way to lay a page out.
 #[derive(Clone, Copy)]
 struct Cfg {
-    pw: usize,
-    ph: usize,
     pitch: i32,
+    /// The space before the day to day text, and before the Hit line (Dual Strike leaves a gap at both).
     gap: i32,
+    lead: i32,
 }
 
-const CFGS: [Cfg; 9] = [
-    Cfg { pw: 80, ph: 88, pitch: 14, gap: 4 },
-    Cfg { pw: 72, ph: 80, pitch: 14, gap: 4 },
-    Cfg { pw: 64, ph: 72, pitch: 14, gap: 3 },
-    Cfg { pw: 64, ph: 64, pitch: 14, gap: 2 },
-    Cfg { pw: 56, ph: 56, pitch: 14, gap: 2 },
-    Cfg { pw: 64, ph: 64, pitch: 13, gap: 2 },
-    Cfg { pw: 56, ph: 56, pitch: 13, gap: 1 },
-    Cfg { pw: 48, ph: 48, pitch: 13, gap: 0 },
-    Cfg { pw: 48, ph: 40, pitch: 12, gap: 0 },
-];
+const CFGS: [Cfg; 4] = [Cfg { pitch: 14, gap: 8, lead: 10 }, Cfg { pitch: 14, gap: 4, lead: 5 }, Cfg { pitch: 13, gap: 2, lead: 0 }, Cfg { pitch: 12, gap: 0, lead: 0 }];
 
-/// Page 1: the bio, Hit and Miss, the day to day text, beside the picture.
+/// Page 1: the bio, Hit and Miss and the day to day text, over the page's full width.
 fn description(f: &Font, a: &Art, v: &View, page: usize, cfg: Cfg, bio: &[String], d2d: &[String]) -> Option<Canvas> {
     let mut cv = Canvas::new();
     frame(&mut cv, a, v, page);
-    let mut obstacles = vec![COUNTER, BACK_BOX];
-    if let Some(p) = &v.portrait {
-        let px = crop(p, cfg.pw, cfg.ph);
-        let x = 240 - cfg.pw as i32;
-        cv.picture(x, 40, &px, cfg.pw, cfg.ph, CO);
-        obstacles.push(Obstacle { x, y: 40, w: cfg.pw as i32, h: cfg.ph as i32 });
-    }
+    // (Dual Strike's page has no picture of the CO in the text: it runs the full width under the strip, whose corner has the face)
+    let obstacles = vec![COUNTER, BACK_BOX];
     let mut fl = Flow { f, obstacles, y: TEXT_TOP, pitch: cfg.pitch, overflow: false };
-    for p in bio {
+    for (k, p) in bio.iter().enumerate() {
+        if k == 1 {
+            fl.y += cfg.lead;
+        }
         if !fl.para(&mut cv, p, 0) {
             return None;
         }
@@ -844,6 +857,13 @@ fn page_description(f: &Font, a: &Art, v: &View) -> Canvas {
     cv
 }
 
+/// A heading: Dual Strike's picture and the text beside it; `y` on a cell boundary. Returns the y the text below starts at.
+fn heading(cv: &mut Canvas, f: &Font, a: &Art, icon: usize, y: i32, text: &str) -> i32 {
+    cv.tiles(HEAD_X, y, a.head(icon), 16, 16, HEAD);
+    cv.text(f, HEAD_X + 17, y + 1, text);
+    y + 18
+}
+
 /// Page 2: the skills the army has on, then the tag partners (one a line, or in two columns when
 /// one column leaves them no room: Sturm has seven).
 fn page_skills(f: &Font, a: &Art, v: &View) -> Canvas {
@@ -855,8 +875,9 @@ fn page_skills(f: &Font, a: &Art, v: &View) -> Canvas {
             for with_desc in [true, false] {
                 let mut cv = Canvas::new();
                 frame(&mut cv, a, v, 1);
-                let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: TEXT_TOP, pitch, overflow: false };
-                let mut ok = fl.para(&mut cv, "Existing skills", 0);
+                let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: 32, pitch, overflow: false };
+                fl.y = heading(&mut cv, f, a, ICON_SKILLS, 32, "Existing skills");
+                let mut ok = true;
                 if v.skills.is_empty() {
                     ok &= fl.para(&mut cv, "None set.", 0);
                 }
@@ -908,16 +929,13 @@ fn page_powers(f: &Font, a: &Art, v: &View) -> Canvas {
         for (pitch, gap) in [(14, 4), (14, 2), (13, 2), (13, 0), (12, 0)] {
             let mut cv = Canvas::new();
             frame(&mut cv, a, v, 2);
-            let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: TEXT_TOP, pitch, overflow: false };
+            let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: 32, pitch, overflow: false };
             let mut ok = true;
             for (k, (name, _, stars)) in blocks.iter().enumerate() {
                 if !name.is_empty() {
-                    for s in 0..*stars as i32 {
-                        star(&mut cv, LEFT + 9 * s, fl.y + 3);
-                    }
-                    let x = LEFT + 9 * *stars as i32 + 3;
-                    cv.text(f, x, fl.y, name);
-                    fl.y += pitch;
+                    // (a heading's picture sits on a cell boundary)
+                    let y = (fl.y + 7) / 8 * 8;
+                    fl.y = heading(&mut cv, f, a, if *stars == 1 { ICON_COP } else { ICON_SCOP }, y, name);
                 }
                 for p in &cops[k] {
                     ok &= fl.para(&mut cv, p, 0);
@@ -955,22 +973,25 @@ fn info_button(cv: &mut Canvas, a: &Art) {
     cv.tiles(INFO_BOX.x, INFO_BOX.y, &a.pad[..32 * 16], 32, 32, BACK);
 }
 
-/// Page 4: the unit chart. Dual Strike's: each unit's picture with two gauges beside it, the attack gauge over the
-/// defence gauge (a unit with no weapon has the second only), each showing the CO's change to that stat; a note under
-/// them when the unit's range changes. Four to a row.
+/// Page 4: the unit chart, Dual Strike's: each unit's picture with one thin gauge beside it (the CO's change to the unit's
+/// attack; a unit with no weapon has none) and, under the gauge, a note when the unit's range changes. Rows of four and
+/// five, as `CHART_ROWS`.
 fn page_chart(_f: &Font, a: &Art, v: &View) -> Canvas {
     let mut cv = Canvas::new();
     frame(&mut cv, a, v, 3);
     info_button(&mut cv, a);
-    for (i, u) in v.chart.iter().enumerate() {
-        let (x, y) = (8 + 48 * (i % 4) as i32, 40 + 24 * (i / 4) as i32);
-        cv.tiles(x, y, a.unit_icon(u.icon), 16, 16, UNIT);
-        if let Some(px) = u.attack {
-            cv.tiles(x + 16, y, a.bar(px), 24, 8, DIGITS);
-        }
-        cv.tiles(x + 16, y + 8, a.bar(u.defence), 24, 8, DIGITS);
-        if let Some(note) = a.range_note(u.range) {
-            cv.tiles(x + 16, y + 16, &note, 24, 8, DIGITS);
+    let mut units = v.chart.iter();
+    for (row, n) in CHART_ROWS.iter().enumerate() {
+        for col in 0..*n {
+            let Some(u) = units.next() else { break };
+            let (x, y) = (8 + 48 * col as i32, 40 + 20 * row as i32);
+            cv.tiles(x, y, a.unit_icon(u.icon), 16, 16, UNIT);
+            if let Some(px) = u.attack {
+                cv.tiles(x + 16, y, a.bar(px), 24, 8, DIGITS);
+            }
+            if let Some(note) = a.range_note(u.range) {
+                cv.tiles(x + 16, y + 8, &note, 24, 8, DIGITS);
+            }
         }
     }
     cv
@@ -1016,6 +1037,7 @@ fn bank_palettes(a: &Art, v: &View) -> Vec<[u16; 16]> {
     p[DIGITS as usize] = a.digit_pal;
     p[BACK as usize] = a.back_pal;
     p[UNIT as usize] = a.unit_pals.get(v.colour).copied().unwrap_or(a.unit_pals[0]);
+    p[HEAD as usize] = HEAD_PALETTE;
     for b in p.iter_mut().skip(1) {
         b[0] = WHITE;
     }
@@ -1585,8 +1607,17 @@ mod tests {
         for o in [COUNTER, BACK_BOX] {
             assert!(o.x % 8 == 0 && o.y % 8 == 0 && o.w % 8 == 0 && o.h % 8 == 0);
         }
-        for c in CFGS {
-            assert!(c.pw % 8 == 0 && c.ph % 8 == 0 && 240 - c.pw as i32 >= 120);
+        // The chart: Dual Strike's rows (four, five, five, four, four, four), within the screen and clear of INFO and BACK.
+        assert_eq!(CHART_ROWS.iter().sum::<usize>(), CHART_UNITS.len());
+        for (row, n) in CHART_ROWS.iter().enumerate() {
+            let y = 40 + 20 * row as i32;
+            assert!(y + 16 <= 160);
+            for col in 0..*n as i32 {
+                let (x0, x1) = (8 + 48 * col, 8 + 48 * col + 40);
+                for o in [INFO_BOX, BACK_BOX] {
+                    assert!(x1 <= o.x || x0 >= o.x + o.w || y + 16 <= o.y || y >= o.y + o.h, "row {row} column {col} under a button");
+                }
+            }
         }
     }
 
