@@ -473,10 +473,21 @@ pub fn restore_front(core: &mut Core) {
     let shadow = FRONT_SHADOW.lock().unwrap();
     for (i, &want) in shadow.iter().enumerate() {
         let at = FRONT_MAP + 2 * i as u32;
-        if core.raw_read_16(at, -1) != want {
+        let have = core.raw_read_16(at, -1);
+        if have != want {
+            // The game's own low ammunition / low fuel icons (`0x08022618`: BG2 tiles 0x33D..0x33F in
+            // the top-right of a unit's cell, which no upper part uses) stay where they are.
+            if want == FRONT_BLANK && is_low_icon(have) {
+                continue;
+            }
             core.raw_write_16(at, -1, want);
         }
     }
+}
+
+/// A BG2 entry that is the game's low ammunition (0x33D), low fuel (0x33E) or both (0x33F) icon.
+pub fn is_low_icon(entry: u16) -> bool {
+    (0x33D..=0x33F).contains(&(entry & 0x3FF))
 }
 
 /// With the preview off again: the BG2 entries the preview filled go back
