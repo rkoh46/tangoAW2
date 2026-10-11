@@ -633,6 +633,10 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
 const T_STAR_ICON: u16 = 850;
 const T_CAP_ICON: u16 = 854;
 const T_HEART: u16 = 862;
+/// The heart of a structure's hit points in the terrain column (a Black Crystal, Cannon, Factory...): AW2's own tile, not
+/// the unit's 862.
+const T_STRUCT_HEART: u16 = 858;
+static LAST_STRUCT_HP: Mutex<Option<u32>> = Mutex::new(None);
 const T_AMMO: u16 = 863;
 const T_FUEL: u16 = 864;
 const T_TERRAIN_NAME: u16 = 458;
@@ -691,6 +695,7 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     let unit_pic = panel.iter().find(|e| e.tile() == T_UNIT_PIC && e.dims() == (16, 16)).copied();
     let icon = |t: u16| panel.iter().find(|e| e.tile() == t && e.pal() == 1).copied();
     let (star, cap, heart, fuel, ammo) = (icon(T_STAR_ICON), icon(T_CAP_ICON), icon(T_HEART), icon(T_FUEL), icon(T_AMMO));
+    let struct_heart = icon(T_STRUCT_HEART);
     // (a panel has its terrain's name or picture)
     if terrain_name.is_none() && terrain_pic.is_none() {
         return None;
@@ -707,7 +712,8 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     // Blocks' origins: the terrain's and the unit's.
     let (tx, ux) = if left { (px, px + 34) } else if with_unit { (px + 41, px + 3) } else { (px + 4, 0) };
     // The numbers AW2 shows, by the icon they follow.
-    let icons: Vec<(&str, &Entry)> = [("star", star), ("cap", cap), ("heart", heart), ("fuel", fuel), ("ammo", ammo)]
+    // (the structure's heart comes after the star: the later icon wins a tie of x, and its row is the lower)
+    let icons: Vec<(&str, &Entry)> = [("star", star), ("cap", cap), ("heart", heart), ("fuel", fuel), ("ammo", ammo), ("shp", struct_heart)]
         .into_iter()
         .filter_map(|(n, e)| e.map(|e| (n, e)))
         .collect();
@@ -751,6 +757,19 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     if let Some(e) = cap {
         move_to(core, e, tx + 4, y0 + 40);
         number(&mut mine, value("cap").unwrap_or(0), 2, tx + 32, y0 + 44);
+    }
+    // A structure with hit points: AW2's heart and number go where a property's capture points are (a structure has none),
+    // under the defence row, the number right-aligned in the box (up to three digits: the Black Factory's 200).
+    if let Some(e) = struct_heart {
+        move_to(core, e, tx + 4, y0 + 40);
+        // AW2 blinks the hit points' digits off for a few frames now and then: the last number stands in for those.
+        let v = value("shp").or_else(|| LAST_STRUCT_HP.lock().ok().and_then(|l| *l)).unwrap_or(0);
+        if let Ok(mut l) = LAST_STRUCT_HP.lock() {
+            *l = Some(v);
+        }
+        number(&mut mine, v, 1, tx + 37, y0 + 44);
+    } else if let Ok(mut l) = LAST_STRUCT_HP.lock() {
+        *l = None;
     }
     if with_unit {
         if let Some(e) = unit_name {

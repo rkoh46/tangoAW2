@@ -568,7 +568,7 @@ const VFLIP: u16 = 1 << 13;
 /// events neither hide nor move it): 32 rows from row 3, inside the rows
 /// the box hides. The rows hidden; 0 with no box up there (a box at the
 /// bottom has its own handler).
-fn top_box_rows(core: &Core) -> i32 {
+pub(crate) fn top_box_rows(core: &Core) -> i32 {
     const HBLANK_HANDLER: u32 = 0x0300_2FE4;
     const BOX_HBLANK: u32 = 0x0801_7881;
     const DISPSTAT_SHADOW: u32 = 0x0300_20B4;
@@ -595,6 +595,19 @@ fn top_box_rows(core: &Core) -> i32 {
 /// for each unit) and its labels (OBJ palette 5) are the very tiles
 /// and palette the strip borrows: the strip is left out, and nothing is
 /// written to them, while it is up.
+/// A campaign dialogue box is up (its proc, `0x08014401`, in IWRAM's proc area: two script pointers then the function; a
+/// finished proc keeps its function word but its scripts are cleared).
+pub(crate) fn dialogue_up(core: &Core) -> bool {
+    const AREA: u32 = 0x0300_0C00;
+    const LEN: usize = 0x1300;
+    const BOX_PROC: u32 = 0x0801_4401;
+    let mut b = [0u8; LEN];
+    core.raw_read_range(AREA, -1, &mut b);
+    let words: Vec<u32> = b.chunks_exact(4).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]])).collect();
+    let script = |w: u32| (0x0840_0000..0x0870_0000).contains(&w);
+    words.windows(3).any(|w| script(w[0]) && script(w[1]) && w[2] == BOX_PROC)
+}
+
 pub(crate) fn build_menu_up(core: &Core) -> bool {
     const AREA: u32 = 0x0300_0C00;
     const LEN: usize = 0x1300;
