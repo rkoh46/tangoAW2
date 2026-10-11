@@ -1168,9 +1168,18 @@ fn overlay_low_icon(pix: &mut [Px], u: &RamUnit, bg2: &Bg, bg1_pri: u8, v: &Vid)
     }
 }
 
+/// Whether the last picture was made tilted. Where the tilt leaves a picture as the console drew it (a screen that is not
+/// the battle map: the other front's view, say) the flat map's Dual Strike cursor and range look are drawn instead.
+static TILTED: AtomicBool = AtomicBool::new(false);
+
+fn tilted() -> bool {
+    enabled() && TILTED.load(Ordering::Relaxed)
+}
+
 /// Rewrites `rgba` (the console's 240 x 160 picture) as Dual Strike's tilted
 /// battle map, when that is what is on screen. Nothing else changes.
 pub fn apply(core: &Core, rgba: &mut [u8]) {
+    TILTED.store(false, Ordering::Relaxed);
     // A picture that goes wrong must never take the game down: the frame is
     // left as the console drew it and the tilt stays off for the session.
     static FAILED: AtomicBool = AtomicBool::new(false);
@@ -1192,7 +1201,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
 /// draws there (the drop cursor, the move arrow, the menus) is left as it is; the attack crosshair is Dual Strike's ring.
 pub fn apply_flat_cursor(core: &Core, rgba: &mut [u8]) {
     static FAILED: AtomicBool = AtomicBool::new(false);
-    if enabled() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
+    if tilted() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
         return;
     }
     if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
@@ -1467,7 +1476,7 @@ impl FlatRange {
 /// ([`range_look`]). Run before [`apply_flat_cursor`], which keeps the look under the cursor's pieces.
 pub fn apply_flat_range(core: &Core, rgba: &mut [u8]) {
     static FAILED: AtomicBool = AtomicBool::new(false);
-    if enabled() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
+    if tilted() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
         return;
     }
     if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
@@ -2656,6 +2665,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let sand = crate::sandstorm::active(core);
     let t_map = t0.elapsed();
     // --- Out ---
+    TILTED.store(true, Ordering::Relaxed);
     let lut = rgba_lut_3d();
     let evy = (bldy & 31).min(16) as u32;
     for i in 0..W * H {
