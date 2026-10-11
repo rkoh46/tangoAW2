@@ -637,6 +637,12 @@ pub fn owns_help(core: &Core) -> bool {
     ds_graphics(core) && art().is_some() && find(core).map_or(false, |(_, m)| m.kind == Kind::Map)
 }
 
+/// Whether one of Dual Strike's menus is open, with its B CANCEL tag at the top
+/// centre ([`crate::survival`] keeps its header clear of it).
+pub fn tag_shown(core: &Core) -> bool {
+    ds_graphics(core) && art().is_some() && find(core).is_some()
+}
+
 /// The cursor's tile on the screen, in pixels (the camera is the terrain
 /// layer's scroll).
 fn unit_screen(core: &Core) -> (i32, i32) {

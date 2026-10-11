@@ -3702,8 +3702,15 @@ place. With the setting off nothing is read or written (`compat_aw2_byte_identic
   14 (the game reloads them every call, so after it), the partner's into `tag_ui`'s 0x309 and palette 5 (left
   out while the heal effect plays). The meter is the power meter as AW2 reads it (CO Power stars small, the rest
   of the Super Power big; a star's four states from its share); a power on, or a Tag Power, shows all stars full.
-  **Not done:** Dual Strike's "CO POWER" / "SUPER POWER" label (its letters are packed into the HUD sheet in
-  an order not worked out), nor its funds counting animation.
+  **Not done:** Dual Strike's "CO POWER" / "SUPER POWER" label, nor its funds counting animation. What is known
+  (melonDS, `vsA` state): the label's letters are 8x8 outlined tiles in the sheet after the digits (our tile 33
+  onward: "co", "POWE", "R", "supe", "R", "POW", "TA", "G", "ER" ...), each word a run of tiles; Dual Strike's
+  meter is the top 11 bits of the CO word at player + 0x6C (+ 4 per partner; the low 7 bits are the CO id), the
+  player records are 0x98 apart from the table at `[[0x020E2B..]+0x48] + 0x5A58` (code at `0x020E2A14`:
+  ready when meter >= cost, cost from the CO table at 0x220 bytes per CO); with the meter full the stars and
+  plate sprites change (plate tile, a one-pixel bob) but no label sprites showed up in any state tried (P1 or
+  P2, meter full, power not active), so where Dual Strike draws the label (probably only with a power
+  active) is still unfound.
 - **Terrain / unit panel** (`0x0802A8DC`, sprites of AW2's semi-transparent mode 1 in the lower corner). AW2's
   names, the terrain picture, the unit picture and the icons (pixel for pixel Dual Strike's: OBJ tiles 850 star,
   854 capture, 862 heart, 863 ammo, 864 fuel, palette 1 is Dual Strike's too) are moved to Dual Strike's layout
@@ -3732,7 +3739,7 @@ The **B CANCEL tag** and the **selection's corner marks** are Dual Strike's own 
 in overlay 0 (`0x022CF9B0`; corners are tiles 8, 10, 12, 14, the tag eight tiles from 56) in the colours at arm9
 `0x02138C68` (the CO page's BACK button uses the same). The **Drop** rows show the passenger's own picture, as in
 Dual Strike and AW2 (page 0x0A codes 0x80 and 0x81 are the selected unit's first and second cargo; the picture is
-the unit's tiles in BG tile RAM in its army's colours: `ds_tilt::unit_picture`). Tests: `test_ds_menus.py`.
+the unit's tiles in BG tile RAM in its army's colours: `ds_tilt::unit_picture`). In Survival and Champion, which draw a header (map number and budget) at the top centre, the header steps to the top-left corner and keeps to its first line while one of these menus is open, so it never runs under the tag or the frame (`ds_menus::tag_shown`). Tests: `test_ds_menus.py`.
 
 ### Dual Strike tilt (`ds_tilt.rs`, `ds_ground.rs`, Settings > Graphics)
 

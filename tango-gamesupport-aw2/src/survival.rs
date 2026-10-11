@@ -1004,12 +1004,17 @@ fn hud(core: &mut Core, at: u32, end: u32) -> u32 {
     // With Dual Strike's CO panel up its funds are the budget (Money): shown
     // there, once; the lines keep to the corner it leaves free.
     let corner = crate::ds_hud::panel_corner(core);
+    // Dual Strike's menu puts its B CANCEL tag at the top centre: the header
+    // steps aside to the left corner while one is open.
+    let side = if corner.is_none() && crate::ds_menus::tag_shown(core) { Some(false) } else { corner };
     let lines: Vec<String> = if corner.is_some() && k == Kind::Money {
         vec![first]
     } else {
         vec![first, format!("{} {}", label, value)]
     };
-    crate::survival_ui::hud(core, at, end, &lines, corner)
+    // (one line: the second would run under the map menu's frame)
+    let lines = if side != corner { &lines[..1] } else { &lines[..] };
+    crate::survival_ui::hud(core, at, end, lines, side)
 }
 
 /// SELECT MAP's list: the first entry shown, the cursor's row, the ids.
