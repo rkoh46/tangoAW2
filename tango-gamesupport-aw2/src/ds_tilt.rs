@@ -1640,6 +1640,16 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                             }
                         }
                     }
+                    // A range lights the peaks and treetops of its cells and dims the others', as
+                    // it does the ground they stand on.
+                    if tint.is_some() && mx >= 0 && my >= 0 && mx < ground.w && my < ground.h {
+                        let on = reach[(my * ground.w + mx) as usize] != 0xff;
+                        let sample = layers[0].get(((sy0 + 8).max(0) as usize) * W + (sx0 + 8).max(0) as usize).copied().unwrap_or(0);
+                        let t = if on { if sample != 0 { sample } else { 0x7fff } } else { 0 };
+                        for p in pix.iter_mut().filter(|p| **p != 0) {
+                            *p = range_look(*p, t);
+                        }
+                    }
                 }
                 let foot_x = (mx * 16 - cam_px.0 + 8) as f32;
                 let foot_y = (my * 16 - cam_px.1 + 16) as f32;
