@@ -47,6 +47,45 @@ const WIN_RIGHT: u32 = 0x0300_2B4C;
 const WIN_TOP: u32 = 0x0300_2EFC;
 const WIN_BOTTOM: u32 = 0x0300_2B44;
 
+/// The window shadows (left, right, top, bottom) as the game left them and as
+/// we wrote them, while they are ours.
+static WINDOW: Mutex<Option<([u8; 4], [u8; 4])>> = Mutex::new(None);
+
+fn window_now(core: &Core) -> [u8; 4] {
+    [WIN_LEFT, WIN_RIGHT, WIN_TOP, WIN_BOTTOM].map(|a| core.raw_read_8(a, -1))
+}
+
+fn window_set(core: &mut Core, w: [u8; 4]) {
+    for (a, v) in [WIN_LEFT, WIN_RIGHT, WIN_TOP, WIN_BOTTOM].into_iter().zip(w) {
+        core.raw_write_8(a, -1, v);
+    }
+}
+
+/// Our rectangle for the backing; what the game had (it writes its window
+/// only when it changes it, so the last of its values is kept, and put back
+/// by [`window_release`] when no panel is drawn this way).
+fn window_take(core: &mut Core, mine: [u8; 4]) {
+    let now = window_now(core);
+    let aw2 = match WINDOW.lock().ok().and_then(|w| *w) {
+        Some((ours, aw2)) if now == ours => aw2,
+        _ => now,
+    };
+    window_set(core, mine);
+    if let Ok(mut w) = WINDOW.lock() {
+        *w = Some((mine, aw2));
+    }
+}
+
+/// The game's window back (once), if it is still ours.
+fn window_release(core: &mut Core) {
+    let state = WINDOW.lock().ok().and_then(|mut w| w.take());
+    if let Some((ours, aw2)) = state {
+        if window_now(core) == ours {
+            window_set(core, aw2);
+        }
+    }
+}
+
 /// Whether the HUD is Dual Strike's now.
 pub fn on(core: &Core) -> bool {
     crate::wasteland::ds_graphics(core)
@@ -540,7 +579,14 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
         write_tiles(core, PARTNER_FACE_TILE as u32, &tiles);
         write_palette(core, PARTNER_FACE_PAL as u32, &pal);
     }
-    let sprites = co_panel(left, &rows, funds, powers);
+    let mut sprites = co_panel(left, &rows, funds, powers);
+    // AW2 slides its panel in and out (its x and y move): ours with it, from
+    // the place AW2's rests at.
+    let (dx, dy) = (px - if left { 3 } else { 173 }, py - 3);
+    for sp in sprites.iter_mut() {
+        sp.x += dx;
+        sp.y += dy;
+    }
     Some(insert(core, header.at, at, end, &sprites))
 }
 
@@ -689,10 +735,7 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     }
     // The backing: AW2's window, at Dual Strike's rectangle.
     let (wx0, wx1) = (px, px + w);
-    core.raw_write_8(WIN_LEFT, -1, wx0 as u8);
-    core.raw_write_8(WIN_RIGHT, -1, wx1 as u8);
-    core.raw_write_8(WIN_TOP, -1, y0 as u8);
-    core.raw_write_8(WIN_BOTTOM, -1, (y0 + PANEL_H) as u8);
+    window_take(core, [wx0 as u8, wx1 as u8, y0 as u8, (y0 + PANEL_H) as u8]);
     // Our digits go in front of the panel's first sprite (the list's order
     // is priority: the map's cursor and units stay behind the panel).
     Some(insert(core, first, at, end, &mine))
@@ -705,6 +748,7 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
 pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     if !on(core) {
         restore(core);
+        window_release(core);
         PANEL_DRAWN.store(false, Ordering::Relaxed);
         return at;
     }
@@ -716,10 +760,21 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     }
     // (the CO panel's insertion moved entries up: read the list again)
     let list = entries(core, start, at);
-    if let Some(n) = info_flush(core, &list, at, end) {
-        at = n;
+    match info_flush(core, &list, at, end) {
+        Some(n) => at = n,
+        None => window_release(core),
     }
     at
+}
+
+/// Where Dual Strike's CO panel is drawn this frame: `Some(true)` the left
+/// corner (for [`crate::survival`]'s budget, which keeps clear of it).
+pub fn panel_corner(core: &Core) -> Option<bool> {
+    if !on(core) || art().is_none() || !PANEL_DRAWN.load(Ordering::Relaxed) {
+        return None;
+    }
+    let (x, y) = (PANEL_X.load(Ordering::Relaxed), PANEL_Y.load(Ordering::Relaxed));
+    (0..64).contains(&y).then_some(x < 120)
 }
 
 /// Whether the HUD is Dual Strike's and drew the CO panel this frame (for
