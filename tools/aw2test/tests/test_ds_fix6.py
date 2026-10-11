@@ -71,3 +71,44 @@ def ds_fix_map_menu_leaves_no_dark_box(ctx):
     e.wait(60)
     ctx.eq(e.u16(0x030030E0), 0, "BLDCNT is off with the map menu open")
     shot(ctx, g, "map_menu")
+
+
+@test(modes=("ds",))
+def ds_fix_funds_digits_on_structure_scenes(ctx):
+    """The CO panel's funds (Dual Strike's "G." and digits, OBJ tiles 22..31) stay whole while the info panel shows a
+    structure's hit points: every digit sprite is there and its tile is the same picture as on a plain cell."""
+    if not GRAPHICS:
+        raise Skip("needs TANGOAW2_DS_GRAPHICS=1")
+    from tests.test_ds_hud import sprites, T_STRUCT_HEART
+    from tests.test_obelisk_breakable import entries
+    ref = None
+    for name, tile in (("plain", None), ("crystal", 0x192), ("minicannon", 0x182), ("laser", 0x181)):
+        m = ctx.map()
+        if tile:
+            m.terrain(10, 6, tile)
+        g = ctx.start(m, ["andy", "andy"])
+        e = g.e
+        e.wait(40)
+        if tile:
+            inv = entries(e)
+            if not inv:
+                continue
+            x, y = inv[0][0], inv[0][1]
+            for cy in range(y, y + 5):
+                for cx in range(x, x + 5):
+                    g.goto(cx, cy)
+                    e.wait(30)
+                    if any(sp[2] == T_STRUCT_HEART for sp in panel_sprites(e)):
+                        break
+                else:
+                    continue
+                break
+            ctx.check(any(sp[2] == T_STRUCT_HEART for sp in panel_sprites(e)), f"{name}: the hit points row shows")
+        e.wait(10)
+        funds = [s for s in sprites(e) if s["pal"] == 7 and (s["a0"] & 255) == 14 and 22 <= s["tile"] < 32]
+        ctx.eq(len(funds), 4, f"{name}: the four digits of 1000")
+        vram = bytes(e.read(0x06010000 + 32 * 22, 32 * 10))
+        if ref is None:
+            ref = vram
+        ctx.check(vram == ref, f"{name}: the digit tiles are Dual Strike's, as on a plain cell")
+        shot(ctx, g, name)
