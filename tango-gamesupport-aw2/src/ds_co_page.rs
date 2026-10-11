@@ -90,9 +90,12 @@ struct State {
     built: Option<(u64, Vec<u8>, Vec<u8>, Vec<u8>)>,
     /// The page's layer bits of DISPCNT as they were, while only BG0 shows.
     layers: Option<u16>,
+    /// The game's own BG palettes when the page opened (the unit chart, which is the game's, gets
+    /// them back).
+    pal: Vec<u8>,
 }
 
-static STATE: Mutex<State> = Mutex::new(State { open: false, page: 0, saved: Vec::new(), built: None, layers: None });
+static STATE: Mutex<State> = Mutex::new(State { open: false, page: 0, saved: Vec::new(), built: None, layers: None, pal: Vec::new() });
 
 pub fn is_open() -> bool {
     STATE.lock().map(|s| s.open && s.page != CHART).unwrap_or(false)
@@ -1259,9 +1262,20 @@ fn show_layers(core: &mut Core, st: &mut State) {
     }
 }
 
+/// The game's BG palettes back (the pages here drew their own over them).
+fn restore_palette(core: &mut Core, st: &mut State) {
+    if st.pal.is_empty() {
+        return;
+    }
+    for base in [PAL_BUFFER, PAL_RAM] {
+        write_if_changed(core, base, &st.pal);
+    }
+}
+
 /// What the layer covered beyond the page's own tiles, put back.
 fn close(core: &mut Core, st: &mut State) {
     show_layers(core, st);
+    restore_palette(core, st);
     if st.open && !st.saved.is_empty() {
         let saved = std::mem::take(&mut st.saved);
         core.raw_write_range(VRAM + SPARE_FROM, -1, &saved);
@@ -1293,6 +1307,9 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
         core.raw_read_range(VRAM + SPARE_FROM, -1, &mut b);
         st.saved = b;
         st.built = None;
+        let mut p = vec![0u8; 0x200];
+        core.raw_read_range(PAL_BUFFER, -1, &mut p);
+        st.pal = p;
     }
     let army = core.raw_read_16(proc + PROC_ARMY, -1) as u32;
     if !(1..=5).contains(&army) {
@@ -1321,6 +1338,7 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
             // The game is on its Super Power's page under this one; its DOWN
             // goes to the chart (not to the TAG page it would show first).
             show_layers(core, &mut st);
+            restore_palette(core, &mut st);
             core.raw_write_8(crate::tag_extras::STATE + 5, -1, 1);
             return keys;
         }
