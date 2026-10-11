@@ -1142,6 +1142,137 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     }
 }
 
+/// Dual Strike's cursor on the flat map (the tilt off, "Dual Strike map graphics" on): the console's
+/// picture is kept, AW2's pointer and corner brackets (tiles 869 and 873) are taken out of it (the
+/// pixels they cover are redone from what lies under them) and Dual Strike's own cursor
+/// ([`crate::ds_cursor`]) is drawn flat, 16 pixels a cell, in their place. Whatever else the game
+/// draws there (the attack crosshair, the drop cursor, the move arrow, the menus) is left as it is.
+pub fn apply_flat_cursor(core: &Core, rgba: &mut [u8]) {
+    static FAILED: AtomicBool = AtomicBool::new(false);
+    if enabled() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
+        return;
+    }
+    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
+        return;
+    }
+    let Some(art) = crate::ds_cursor::art() else { return };
+    let before = rgba.to_vec();
+    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| flat_cursor(core, rgba, art))).is_err() {
+        FAILED.store(true, Ordering::Relaxed);
+        rgba.copy_from_slice(&before);
+        eprintln!("ds_tilt: the flat cursor failed; it is off for this session");
+    }
+}
+
+fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
+    let mut v = Vid::read(core);
+    let d = v.dispcnt();
+    // (the dialogue box's per-line effects, a fade, a mosaic: the console's picture stays)
+    if v.io[2] & 0x10 != 0 || d & 7 != 0 || d & 0x80 != 0 || d & 0x1000 == 0 {
+        return;
+    }
+    let bldcnt = v.io[0x28];
+    let win = Windows::new(&v);
+    // (a fade over everything is not ours; a window's darkening is the terrain panel's)
+    if (((bldcnt >> 6) & 3) >= 2 && (!win.any() || win.outside & 0x20 != 0)) || v.io[0x26] & 0xff != 0 {
+        return;
+    }
+    let (Some(b0), Some(b1), Some(b2), Some(b3)) = (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3)) else {
+        return;
+    };
+    let bgs = [b0, b1, b2, b3];
+    let Some(objs) = read_objs(core, &mut v) else { return };
+    let is_cursor_piece = |o: &Obj| o.class == Class::Pointer || (o.class == Class::Ground && o.tile == 873);
+    if !objs.iter().any(|o| is_cursor_piece(o)) {
+        return;
+    }
+    for bg in &bgs {
+        if bg.on {
+            bg.load(core, &mut v);
+        }
+    }
+    let mut layers: Vec<Vec<Px>> = Vec::with_capacity(4);
+    for bg in &bgs {
+        let mut l = vec![0u16; W * H];
+        if bg.on {
+            bg.render(&v, &mut l);
+        }
+        layers.push(l);
+    }
+    // The top sprite per pixel without the cursor's pieces.
+    let mut obj_top: Vec<u32> = vec![u32::MAX; W * H];
+    let mut obj_color: Vec<Px> = vec![0; W * H];
+    let mut covered = vec![false; W * H];
+    for o in &objs {
+        let cursor = is_cursor_piece(o);
+        let key = (o.pri as u32) << 8 | o.idx as u32;
+        for y in 0..o.h {
+            let sy = o.y + y;
+            if !(0..H as i32).contains(&sy) {
+                continue;
+            }
+            for x in 0..o.w {
+                let sx = o.x + x;
+                if !(0..W as i32).contains(&sx) {
+                    continue;
+                }
+                let p = o.pix[(y * o.w + x) as usize];
+                if p == 0 {
+                    continue;
+                }
+                let i = sy as usize * W + sx as usize;
+                if cursor {
+                    covered[i] = true;
+                } else if key < obj_top[i] {
+                    obj_top[i] = key;
+                    obj_color[i] = p;
+                }
+            }
+        }
+    }
+    let backdrop = 0x8000 | (v.pal[0] & 0x7fff);
+    let mut order: Vec<usize> = (0..4).filter(|&b| bgs[b].on).collect();
+    order.sort_by_key(|&b| (bgs[b].pri, b));
+    let any_win = win.any();
+    let lut = rgba_lut();
+    for i in 0..W * H {
+        if !covered[i] {
+            continue;
+        }
+        let bits = if any_win { win.bits((i % W) as i32, (i / W) as i32) } else { 0x3f };
+        let obj = if bits & 0x10 != 0 { obj_top[i] } else { u32::MAX };
+        let obj_pri = if obj == u32::MAX { 9 } else { (obj >> 8) as u8 };
+        let mut color = backdrop;
+        let mut found = false;
+        for &b in &order {
+            if bits & (1 << b) == 0 || layers[b][i] == 0 {
+                continue;
+            }
+            if obj_pri <= bgs[b].pri {
+                break;
+            }
+            color = layers[b][i];
+            found = true;
+            break;
+        }
+        if !found && obj != u32::MAX {
+            color = obj_color[i];
+        }
+        rgba[i * 4..i * 4 + 4].copy_from_slice(&lut[(color & 0x7fff) as usize]);
+    }
+    // Dual Strike's cursor, flat: a cell is 16 pixels, the map's scroll puts it on the picture.
+    let cam = (core.raw_read_16(MAP + 4, -1) as i16 as f32, core.raw_read_16(MAP + 6, -1) as i16 as f32);
+    let cursor = (core.raw_read_8(CURSOR_X, -1) as i32, core.raw_read_8(CURSOR_Y, -1) as i32);
+    let mut map = vec![0u16; W * H];
+    crate::ds_cursor::draw(&mut map, W, H, art, cursor, |u, v| (u * 16.0 - cam.0, v * 16.0 - cam.1, 16.0));
+    let lut3 = rgba_lut_3d();
+    for (i, &p) in map.iter().enumerate() {
+        if p != 0 {
+            rgba[i * 4..i * 4 + 4].copy_from_slice(&lut3[(p & 0x7fff) as usize]);
+        }
+    }
+}
+
 fn apply_timed(core: &Core, rgba: &mut [u8]) {
     static TIME: OnceLock<bool> = OnceLock::new();
     if TIMING_LOG.load(Ordering::Relaxed) || env_on("TANGOAW2_TILT_TIME", &TIME) {

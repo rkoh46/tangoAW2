@@ -439,6 +439,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// Dual Strike tilt (display only, see [`crate::ds_tilt`]).
     fn overlay(&self, core: &Core, _mode: Option<(u8, u8)>, _seat: usize, rgba: &mut [u8]) {
         crate::ds_tilt::apply(core, rgba);
+        crate::ds_tilt::apply_flat_cursor(core, rgba);
         crate::ds_menus::apply(core, rgba);
     }
 
