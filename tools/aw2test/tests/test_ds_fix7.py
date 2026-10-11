@@ -106,3 +106,35 @@ def ds_two_front_view_has_dual_strikes_cursor_with_the_tilt(ctx):
     diff = sum(1 for y in range(160) for x in range(240) if sum(abs(p - q) for p, q in zip(a[x, y], b[x, y])) > 24)
     ctx.log(f"{diff} pixels differ from the flat picture")
     ctx.check(diff < 150, f"the view is the same with the tilt on ({diff} pixels differ)")
+
+
+def panel_picture(ctx, name, tilt, with_objects):
+    m = ctx.map()
+    if with_objects:
+        for x in range(8, 29):
+            m.terrain(x, 0, "city", 1 + x % 4)
+            m.terrain(x, 1, "base", 1 + x % 4)
+            m.unit(1 + x % 2, "infantry", x, 2)
+    m.unit(1, "tank", 20, 6).unit(2, "tank", 22, 6)
+    env = {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"}
+    g = ctx.start(m, ["andy", "drake"], env=env)
+    g.e.wait(30)
+    g.goto(20, 6)
+    g.e.wait(40)
+    for _ in range(10):
+        g.e.shot(os.path.join(ctx.out, "warm"))
+    return ctx.shot(g, name)
+
+
+@test(modes=("ds",))
+def ds_map_never_draws_over_the_co_panel(ctx):
+    """Buildings and units under the CO panel (flat and tilted) show only through the panel's own clear pixels (the gap
+    between "G." and the digits is open: the map shows through, as in Dual Strike): the panel's face rows
+    (its opaque pixels) are the same with and without them."""
+    from PIL import Image
+    for tilt in (False, True):
+        t = "tilt" if tilt else "flat"
+        a = Image.open(panel_picture(ctx, f"p_{t}_a", tilt, False)).convert("RGB").load()
+        b = Image.open(panel_picture(ctx, f"p_{t}_b", tilt, True)).convert("RGB").load()
+        diff = sum(1 for y in range(0, 14) for x in range(0, 30) if sum(abs(p - q) for p, q in zip(a[x, y], b[x, y])) > 24)
+        ctx.check(diff < 8, f"{t}: the panel's face rows are the same with objects under them ({diff} differ)")
