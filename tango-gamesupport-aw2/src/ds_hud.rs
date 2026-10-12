@@ -111,6 +111,13 @@ pub fn on(core: &Core) -> bool {
 /// the small stars 24..28, the big stars 28..36, "G." 36..38, the digits 38..48).
 const SHEET_AT: usize = 0x214F0;
 const SHEET_TILES: usize = 32;
+/// The power labels' 40 tiles follow the sheet (Dual Strike's tiles 48..88: "CO POWER" 10 tiles, "SUPER CO POWER" 14,
+/// "TAG" 16; each label two lines, 16 pixels high), loaded into [`LABEL_TILE`] one label at a time.
+const LABEL_AT: usize = SHEET_AT + 32 * 32;
+const LABEL_TILES: usize = 40;
+/// OBJ tiles 834..849 (0x342..0x351): free on the battle map (nothing draws or loads them: the heal effect's runs,
+/// the Factory's 786..833 and the cursor's 0x352.. all lie outside).
+const LABEL_TILE: u16 = 834;
 /// Our OBJ tile for Dual Strike's tile 16 (the header's first tile).
 const T0: u16 = 0;
 const T_PLATE_A: u16 = T0; // DS 16: a 32x8 piece
@@ -137,6 +144,7 @@ static FRAME: AtomicU32 = AtomicU32::new(0);
 
 struct Art {
     sheet: Vec<u8>,
+    label: Vec<u8>,
     digits: Vec<u8>,
     palettes: [[u8; 32]; 5],
     /// Colours the meter's stars' fill (palette index 15) runs through.
@@ -151,6 +159,7 @@ fn art() -> Option<&'static Art> {
     ART.get_or_init(|| {
         let pack = crate::ds_pack::pack()?;
         let sheet = pack.overlays.first()?.get(SHEET_AT..SHEET_AT + 32 * SHEET_TILES)?.to_vec();
+        let label = pack.overlays.first()?.get(LABEL_AT..LABEL_AT + 32 * LABEL_TILES)?.to_vec();
         let digits = pack.file(DIGITS_FILE)?.get(DIGITS_AT..DIGITS_AT + 32 * DIGIT_TILES)?.to_vec();
         let mut palettes = [[0u8; 32]; 5];
         for (i, p) in palettes.iter_mut().enumerate() {
@@ -162,7 +171,7 @@ fn art() -> Option<&'static Art> {
             *c = u16::from_le_bytes([b[0], b[1]]);
         }
         let damage = crate::ds_art::lz10(pack.file(DAMAGE_FILE)?)?.get(..32 * DAMAGE_TILES)?.to_vec();
-        Some(Art { sheet, digits, palettes, pulse, damage })
+        Some(Art { sheet, label, digits, palettes, pulse, damage })
     })
     .as_ref()
 }
@@ -480,7 +489,32 @@ fn level(charge: u32, per: u32, k: u32) -> usize {
     }
 }
 
+/// The label Dual Strike puts in an active CO's row in place of its stars while a power is on.
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Label {
+    CoPower,
+    SuperPower,
+    Tag,
+}
+
+impl Label {
+    /// Its tiles in the label art (first, count) and its sprites: (x from the label's left, width, first tile in
+    /// [`LABEL_TILE`]); all 16 high.
+    fn parts(self) -> ((usize, usize), &'static [(i32, i32, u16)]) {
+        match self {
+            Label::CoPower => ((0, 10), &[(0, 32, 0), (32, 8, 8)]),
+            Label::SuperPower => ((10, 14), &[(0, 32, 0), (32, 16, 8), (48, 8, 12)]),
+            Label::Tag => ((24, 16), &[(0, 32, 0), (32, 32, 8)]),
+        }
+    }
+    fn width(self) -> i32 {
+        self.parts().1.iter().map(|p| p.1).sum()
+    }
+}
+
 struct Row {
+    /// Dual Strike's label for a power on (it takes the stars' place).
+    label: Option<Label>,
     co: u8,
     cop: u32,
     scop: u32,
@@ -515,7 +549,14 @@ fn co_panel(left: bool, rows: &[Row], funds: u32, powers: bool) -> Vec<Spr> {
     // plate edge it shares.
     for (r, row) in rows.iter().enumerate().rev() {
         let ry = 20 * r as i32;
-        if powers {
+        if let Some(l) = row.label {
+            // The label's right edge is 32 pixels from the face's edge (the stars' row's, in Dual Strike's
+            // frames: 168 / 184 / 160 on a 256 wide screen), its top the plate's.
+            let base = if left { 32 } else { W - 32 - l.width() };
+            for &(dx, w, t) in l.parts().1 {
+                v.push(Spr::new(base + dx, ry, w, 16, LABEL_TILE + t, 7));
+            }
+        } else if powers {
             let small = row.cop.min(10);
             let total = row.scop.min(10).max(small);
             // Stars: the small ones (the CO Power's) nearest the face, the big
@@ -569,7 +610,15 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     let charge = if mode == 0 { core.raw_read_32(player + PL_CHARGE, -1) } else { 0 };
     let powers = core.raw_read_8(PLAY_ST_POWERS, -1) != 0;
     let (cop, scop) = crate::tag::co_stars(core, co);
+    let tag_phase = crate::tag::phase(core, army);
+    let label = match (tag_phase, mode) {
+        (1..=2, _) => Some(Label::Tag),
+        (_, 1) => Some(Label::CoPower),
+        (_, 2) => Some(Label::SuperPower),
+        _ => None,
+    };
     let mut rows = vec![Row {
+        label,
         co,
         cop,
         scop,
@@ -584,6 +633,7 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
         let (pc, ps) = crate::tag::co_stars(core, p);
         let uses = crate::tag::partner_uses(core, army);
         rows.push(Row {
+            label: None,
             co: p,
             cop: pc,
             scop: ps,
@@ -629,6 +679,10 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
         let (tiles, pal) = face(core, r.co);
         write_tiles(core, PARTNER_FACE_TILE as u32, &tiles);
         write_palette(core, PARTNER_FACE_PAL as u32, &pal);
+    }
+    if let Some(l) = label {
+        let ((first, n), _) = l.parts();
+        write_tiles(core, LABEL_TILE as u32, &a.label[32 * first..32 * (first + n)]);
     }
     let mut sprites = co_panel(left, &rows, funds, powers);
     // AW2 slides its panel in and out (its x and y move): ours with it, from

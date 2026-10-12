@@ -133,6 +133,79 @@ def ds_hud_powers(ctx):
     shot(ctx, g, "power_on")
 
 
+LABEL_TILE = 834
+# (first tile, tiles) of each label in Dual Strike's overlay 0 after the sheet (sheet tiles 32..72), the sprites'
+# widths, and the label's total width.
+LABELS = {"co": (0, 10, [32, 8]), "super": (10, 14, [32, 16, 8]), "tag": (24, 16, [32, 32])}
+
+
+def label_sprites(e):
+    """The label's sprites (palette 7, 16 high, OBJ tiles 834..849) left to right: (x, y, width, tile)."""
+    out = []
+    for sp in sprites(e):
+        if sp["pal"] == 7 and LABEL_TILE <= sp["tile"] < LABEL_TILE + 16 and (sp["a0"] >> 14) in (0, 1, 2):
+            shape, size = sp["a0"] >> 14, sp["a1"] >> 14
+            w, h = {(1, 2): (32, 16), (2, 0): (8, 16), (0, 1): (16, 16)}.get((shape, size), (0, 0))
+            if h == 16:
+                x = sp["a1"] & 511
+                out.append((x, sp["a0"] & 255, w, sp["tile"]))
+    return sorted(out)
+
+
+def check_label(ctx, g, kind, label):
+    """Dual Strike's label is up in `kind` ('co', 'super', 'tag': its pieces, in a row, 16 high, the art's own tiles)
+    or none is (None)."""
+    ls = label_sprites(g.e)
+    if kind is None or not GRAPHICS:
+        ctx.eq(ls, [], f"{label}: no power label")
+        return
+    first, n, widths = LABELS[kind]
+    ctx.eq([w for _, _, w, _ in ls], widths, f"{label}: the {kind} label's pieces")
+    ctx.check(len({y for _, y, _, _ in ls}) == 1, f"{label}: the pieces are on one line")
+    xs = [x for x, _, _, _ in ls]
+    ctx.eq([b - a for a, b in zip(xs, xs[1:])], widths[:-1], f"{label}: the pieces touch")
+    ds = DualStrike(paths.ds_rom())
+    art = ds.ov0[0x214F0 + 32 * 32 + 32 * first:0x214F0 + 32 * 32 + 32 * (first + n)]
+    ctx.check(bytes(g.e.read(OBJ + 32 * LABEL_TILE, 32 * n)) == bytes(art), f"{label}: the label's tiles in VRAM are Dual Strike's")
+
+
+@test(modes=("ds",))
+def ds_hud_power_labels(ctx):
+    """Dual Strike's "CO POWER", "SUPER CO POWER" and "TAG" labels take the active CO's stars' place while a power is
+    on; with the meter only full there is none (the stars light)."""
+    g = battle(ctx, ["andy", "olaf"], ["max", None])
+    e = g.e
+    g.charge_power(1, "super")
+    e.wait(30)
+    check_label(ctx, g, None, "meter full")
+    shot(ctx, g, "label_ready")
+    g.power("power")
+    e.wait(60)
+    check_label(ctx, g, "co", "CO Power")
+    shot(ctx, g, "label_co")
+    g = battle(ctx, ["andy", "olaf"], ["max", None])
+    e = g.e
+    g.charge_power(1, "super")
+    g.power("super")
+    e.wait(60)
+    check_label(ctx, g, "super", "Super Power")
+    shot(ctx, g, "label_super")
+    g = battle(ctx, ["andy", "olaf"], ["max", None])
+    e = g.e
+    p = g.player(1)
+    e.w32(p["addr"] + ram.P_CHARGE, tag.star_cost(p["powers_used"]) * g.co_stars(p["co"])[1])
+    t = tag.partner(e, 1)
+    e.w32(tag.rec(1) + tag.P_CHARGE, tag.star_cost(t["uses"]) * g.co_stars(t["co"])[1])
+    e.wait(30)
+    g.open_map_menu()
+    g.choose("Tag", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the Tag Power starts")
+    g.wait_for_input()
+    e.wait(60)
+    check_label(ctx, g, "tag", "Tag Power")
+    shot(ctx, g, "label_tag")
+
+
 def plate_drawn(e):
     """Dual Strike's CO panel is up: its plate pieces (32x8, our OBJ tile 0 or 4, palette 7) are in the OAM."""
     return any(sp["pal"] == 7 and sp["tile"] in (0, 4) and (sp["a0"] >> 14) == 1 and (sp["a1"] >> 14) == 1 for sp in sprites(e))
