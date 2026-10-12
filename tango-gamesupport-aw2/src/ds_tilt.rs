@@ -938,6 +938,9 @@ enum Owner {
     MapFx,
     /// Keep the console's pixel.
     Hud,
+    /// The HUD layer BG0 alpha-blended over what is under it (the Day banner's band, the Power cut-ins ...): its own colour
+    /// blended with the tilted map's pixel as the console blends it with the flat one.
+    HudAlpha,
 }
 
 struct Windows {
@@ -1835,6 +1838,8 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             }
         }
     }
+    // BG0 as the first target of an alpha blend over the map's layers.
+    let bg0_alpha = bld_mode == 1 && bldcnt & 1 != 0 && (bldcnt >> 8) & 0x1e != 0;
     if bgs[0].on && !bg0_ground {
         for i in 0..W * H {
             if layers[0][i] == 0 {
@@ -1850,7 +1855,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             let bg_above =
                 (1..4).any(|b| bgs[b].on && bits & (1 << b) != 0 && bgs[b].pri < bgs[0].pri && layers[b][i] != 0);
             if !sprite_above && !bg_above {
-                owner[i] = Owner::Hud;
+                owner[i] = if bg0_alpha && bits & 0x20 != 0 { Owner::HudAlpha } else { Owner::Hud };
             }
         }
     }
@@ -2801,6 +2806,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let p = match owner[i] {
             _ if i / W < keep_rows || i / W >= keep_from => continue,
             Owner::Hud => continue,
+            Owner::HudAlpha => {
+                let (a, b) = (layers[0][i], if map[i] != 0 { map[i] } else { backdrop });
+                let (eva, evb) = ((v.io[0x29] & 31).min(16) as u32, ((v.io[0x29] >> 8) & 31).min(16) as u32);
+                let ch = |sh: u32| (((a as u32 >> sh) & 31) * eva + ((b as u32 >> sh) & 31) * evb) / 16;
+                0x8000 | (ch(0).min(31) | ch(5).min(31) << 5 | ch(10).min(31) << 10) as u16
+            }
             Owner::Map => {
                 let p = map[i];
                 if sand {
