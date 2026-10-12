@@ -351,11 +351,14 @@ fn hq5(core: &Core) -> Option<(u32, u32)> {
         .flat_map(|y| (0..w).map(move |x| (x, y)))
         .find(|&(x, y)| tile_at(core, x, y) == HQ5_TILE)
 }
-/// Whether the map has anything of Black Hole's: a property or a unit.
-fn has_army5(core: &Core) -> bool {
-    let (w, h) = map_size(core);
-    let props = (0..h).any(|y| (0..w).any(|x| (0x1B4..=0x1B9).contains(&tile_at(core, x, y))));
-    props || army5_units(core) > 0
+/// The HQ tile of armies 1..5 (bit k of [`hq_owners`] is army k + 1's).
+const HQ_TILES: [u16; 5] = [0x1C5, 0x1CA, 0x1CF, 0x1D4, HQ5_TILE];
+const ALL_HQS: u8 = 0x1F;
+/// Which armies have an HQ among `tiles`. A design map is a five-army map
+/// when all five do (the army count is the HQ count; a Black Hole property
+/// or unit alone does not make one).
+fn hq_owners(tiles: impl Iterator<Item = u16>) -> u8 {
+    tiles.fold(0, |m, t| m | HQ_TILES.iter().position(|&h| h == t).map_or(0, |k| 1 << k))
 }
 
 pub fn editor_tick(core: &mut Core) {
@@ -383,7 +386,9 @@ pub fn editor_tick(core: &mut Core) {
         }
     }
     // The five-army mark goes with the map when it is saved.
-    let mark = if has_army5(core) { crate::five::DESIGN_FIVE } else { 0 };
+    let (w, h) = map_size(core);
+    let owners = hq_owners((0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| tile_at(core, x, y)));
+    let mark = if owners == ALL_HQS { crate::five::DESIGN_FIVE } else { 0 };
     if core.raw_read_8(MARK, -1) != mark {
         core.raw_write_8(MARK, -1, mark);
     }
@@ -521,13 +526,46 @@ pub const SAVE_RECORD: u32 = 0x0803_CF7A;
 const RECORD: u32 = 0x0200_0000;
 pub fn save_record(core: &mut Core) {
     crate::wasteland::save_record(core, RECORD);
-    if core.raw_read_8(RECORD + 0x4C4, -1) != crate::five::DESIGN_FIVE {
-        return;
-    }
     let (w, h) = (
         core.raw_read_8(RECORD, -1) as u32,
         core.raw_read_8(RECORD + 1, -1) as u32,
     );
+    // The mark is worked out from the map's own HQs, whatever the editor's
+    // byte held (a five-army map earlier in the session, a Black Hole
+    // property laid down on a map of fewer armies).
+    let owners = hq_owners((0..w * h).map(|k| core.raw_read_16(RECORD + 2 + 2 * k, -1) & 0x1FF));
+    if owners != ALL_HQS {
+        core.raw_write_8(RECORD + 0x4C4, -1, 0);
+        // Without five-army mode Black Hole has no place on the map: its
+        // properties become neutral ones and its units are taken off.
+        let mut counts = [0u8; 6];
+        let mut changed = false;
+        for k in 0..w * h {
+            let at = RECORD + 2 + 2 * k;
+            let t = core.raw_read_16(at, -1);
+            let tile = t & 0x1FF;
+            if let Some((kind, 5)) = crate::five::property_tile(tile) {
+                core.raw_write_16(at, -1, (t & !0x1FF) | crate::five::neutral_tile(kind));
+                changed = true;
+            }
+            if let Some((_, o)) = crate::five::property_tile(core.raw_read_16(at, -1) & 0x1FF) {
+                counts[o] += 1;
+            }
+            let u = RECORD + 0x4CB + k;
+            if core.raw_read_8(u, -1) & 0xE0 == 0xE0 {
+                core.raw_write_8(u, -1, 0);
+                changed = true;
+            }
+        }
+        if core.raw_read_8(RECORD + 0x4C3, -1) > 4 {
+            core.raw_write_8(RECORD + 0x4C3, -1, 4);
+        }
+        if changed {
+            core.raw_write_8(RECORD + 0x4CA, -1, counts[1..5].iter().copied().max().unwrap_or(0) + 1);
+        }
+        return;
+    }
+    core.raw_write_8(RECORD + 0x4C4, -1, crate::five::DESIGN_FIVE);
     let army5 = (0..w * h)
         .filter(|k| (0x1B4..=0x1B9).contains(&(core.raw_read_16(RECORD + 2 + 2 * k, -1) & 0x1FF)))
         .count() as u8;

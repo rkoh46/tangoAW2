@@ -287,13 +287,19 @@ const DESIGN_CACHE_ENTRY: u32 = 0x1C;
 const DESIGN_CACHE_MARK: u32 = 0x14;
 pub const DESIGN_FIVE: u8 = 5;
 
-/// Whether map `id` is a design map saved with five armies.
+/// The army count the cache holds (+0x13): the game's 2..4, which a
+/// five-army map saves as 4 (`design5::save_record`).
+const DESIGN_CACHE_ARMIES: u32 = 0x13;
+
+/// Whether map `id` is a design map saved with five armies: the mark and
+/// four armies at the game's count (a map with fewer armies and a stale mark
+/// from an older save is an ordinary one).
 pub fn is_five_design(core: &Core, id: u8) -> bool {
-    DESIGN_IDS.contains(&id)
-        && core.raw_read_8(
-            DESIGN_CACHE + DESIGN_CACHE_ENTRY * (id - 0xB4) as u32 + DESIGN_CACHE_MARK,
-            -1,
-        ) == DESIGN_FIVE
+    if !DESIGN_IDS.contains(&id) {
+        return false;
+    }
+    let entry = DESIGN_CACHE + DESIGN_CACHE_ENTRY * (id - 0xB4) as u32;
+    core.raw_read_8(entry + DESIGN_CACHE_MARK, -1) == DESIGN_FIVE && core.raw_read_8(entry + DESIGN_CACHE_ARMIES, -1) == 4
 }
 
 /// The map list stores the picked map (sub_0803BCD0(mapID)): start or end a
@@ -724,6 +730,19 @@ const PROPERTY_TILES: [[u16; 6]; 6] = [
     [0x1D9, 0x1DA, 0x1DB, 0x1DC, 0x1DD, 0x1B9],
 ];
 const PREVIOUS_TILE: u32 = 0x0300_33F8;
+
+/// A property tile's (kind, owner 0..5), or None for any other tile.
+pub fn property_tile(tile: u16) -> Option<(usize, usize)> {
+    PROPERTY_TILES
+        .iter()
+        .enumerate()
+        .find_map(|(kind, row)| row.iter().position(|&t| t == tile).map(|o| (kind, o)))
+}
+
+/// The neutral tile for a property of `kind` (an HQ becomes a city).
+pub fn neutral_tile(kind: usize) -> u16 {
+    PROPERTY_TILES[if kind == 0 { 2 } else { kind }][0]
+}
 
 /// sub_080240B4 (a property changes owner) and sub_0802419C (an HQ becomes
 /// its captor's city), with six owners per kind. Returns the kind's index
