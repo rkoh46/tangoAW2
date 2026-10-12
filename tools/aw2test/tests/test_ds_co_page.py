@@ -5,7 +5,7 @@ screens) is Dual Strike's, drawn on BG0 with every other layer covered and
 the game's sprites hidden. Without the setting the game's own page is as it
 always was. Offline only (the byte is never set in netplay)."""
 
-from aw2test.harness import test
+from aw2test.harness import Skip, test
 
 DS_GRAPHICS = 0x0203E3FE
 DISPCNT = 0x04000000
@@ -124,6 +124,8 @@ def ds_co_page_unit_chart_and_wall(ctx):
     for co in ("max", "andy"):
         g = open_page(ctx, [co, "sami"])
         e = g.e
+        if e.u8(DS_GRAPHICS) == 0:
+            raise Skip("Dual Strike map graphics off: the game's own chart")
         for _ in range(3):
             e.press("DOWN", 6)
             e.wait(45)
