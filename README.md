@@ -78,6 +78,9 @@ changes, and online both players need it):
   weather and fog looks, Wasteland, Desert and Snow terrain, the Black
   Crystal and Obelisk, Black Hole's structures as Dual Strike draws them;
   eight new Versus maps.
+- **Dual Strike's look (optional, Settings > Graphics, offline):** its map
+  graphics and tilted 3D battle map, cursor, menus, CO panel and power
+  labels, info box, CO pages and CO selection screens (five armies too).
 - **Survival:** Money, Turn and Time, eleven maps each, with ranks and
   records, on screens like Dual Strike's; clear a course to open its endless
   Champion course.
