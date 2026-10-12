@@ -2513,7 +2513,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 ox: -8.0,
                 oy: -16.0 - bob as f32,
                 rank: (3 - bgs[1].pri) * 2,
-                last: false,
+                // (with Dual Strike's art the 16 x 16 piece holds the HP digit and the marks alone: drawn after every unit, as Dual Strike
+                // draws its numbers, so a neighbour's picture never covers a unit's digit)
+                last: art_here,
                 scale: 1.0,
                 upright: art_here,
                 tag: Some((ux, uy, u.low)),
