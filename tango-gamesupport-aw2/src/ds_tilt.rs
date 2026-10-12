@@ -1944,6 +1944,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         }
     }
     let backdrop = 0x8000 | (v.pal[0] & 0x7fff);
+    if std::env::var_os("TANGOAW2_TILT_LEAK_LOG").is_some() {
+        // (a debug aid: pixels the console's picture keeps (HUD) although an effect blends them over the map's ground: the flat map
+        // shows through them)
+        let leak = (0..W * H)
+            .filter(|&i| {
+                owner[i] == Owner::Hud && obj_top[i] == u32::MAX && layers[3][i] != 0 && bld_mode != 0 && bits_at((i % W) as i32, (i / W) as i32) & 0x20 != 0
+            })
+            .count();
+        dbg_line(&format!("ds_tilt leak {leak} mode {bld_mode} bldcnt {bldcnt:04x} alpha {:04x} win {} {}", v.io[0x29], win.on[0], win.on[1]));
+    }
 
     if debug_check() {
         // The hardware's rules replayed pixel by pixel, against the console's
