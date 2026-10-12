@@ -794,8 +794,7 @@ fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
     }
 }
 
-/// The sprites that show, or `None` when one is affine (not handled: the
-/// frame is left alone).
+/// The sprites that show (an affine one is drawn rotated and scaled by its parameters).
 fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
     let one_d = v.dispcnt() & 0x40 != 0;
     let mut out = Vec::new();
@@ -804,12 +803,64 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
         let a1 = v.oam[4 * idx + 1];
         let a2 = v.oam[4 * idx + 2];
         if a0 & 0x100 != 0 {
-            // An affine sprite is not handled: the frame is left alone
-            // (unless it is parked off screen).
+            // An affine sprite (the Day banner's turning letters): drawn as the console draws it, rotated and scaled by its
+            // parameter group, and kept as one of the console's own pictures over the tilted map (a HUD piece).
             let y = a0 & 255;
-            if !(160..224).contains(&y) {
-                return None;
+            if (160..224).contains(&y) {
+                continue;
             }
+            let shape = (a0 >> 14) as usize;
+            let size = (a1 >> 14) as usize;
+            if shape == 3 || (a0 >> 10) & 3 == 2 {
+                continue;
+            }
+            const DIMS: [[(i32, i32); 4]; 3] = [
+                [(8, 8), (16, 16), (32, 32), (64, 64)],
+                [(16, 8), (32, 8), (32, 16), (64, 32)],
+                [(8, 16), (8, 32), (16, 32), (32, 64)],
+            ];
+            let (w, h) = DIMS[shape][size];
+            let double = a0 & 0x200 != 0;
+            let (bw, bh) = if double { (2 * w, 2 * h) } else { (w, h) };
+            let mut ay = y as i32;
+            if ay >= 160 {
+                ay -= 256;
+            }
+            let mut ax = (a1 & 511) as i32;
+            if ax >= 240 {
+                ax -= 512;
+            }
+            if ax + bw <= 0 || ay + bh <= 0 || ax >= W as i32 || ay >= H as i32 {
+                continue;
+            }
+            let g = ((a1 >> 9) & 31) as usize;
+            let par = |k: usize| v.oam[16 * g + 4 * k + 3] as i16 as i32;
+            let (pa, pb, pc, pd) = (par(0), par(1), par(2), par(3));
+            let color8 = a0 & 0x2000 != 0;
+            let src = obj_pixels(core, v, one_d, (a2 & 0x3ff) as usize, (a2 >> 12) as usize, w, h, false, false, color8);
+            let mut pix = vec![0u16; (bw * bh) as usize];
+            for dy in 0..bh {
+                for dx in 0..bw {
+                    let (px, py) = (dx - bw / 2, dy - bh / 2);
+                    let (u, vv) = (((pa * px + pb * py) >> 8) + w / 2, ((pc * px + pd * py) >> 8) + h / 2);
+                    if (0..w).contains(&u) && (0..h).contains(&vv) {
+                        pix[(dy * bw + dx) as usize] = src[(vv * w + u) as usize];
+                    }
+                }
+            }
+            out.push(Obj {
+                x: ax,
+                y: ay,
+                w: bw,
+                h: bh,
+                pri: ((a2 >> 10) & 3) as u8,
+                idx,
+                class: Class::Hud,
+                pix,
+                tile: a2 & 0x3ff,
+                pal: (a2 >> 12) as u8,
+                flip: (false, false),
+            });
             continue;
         }
         if a0 & 0x200 != 0 {
@@ -888,6 +939,9 @@ enum Owner {
     MapFx,
     /// Keep the console's pixel.
     Hud,
+    /// The HUD layer BG0 alpha-blended over what is under it (the Day banner's band, the Power cut-ins ...): its own colour
+    /// blended with the tilted map's pixel as the console blends it with the flat one.
+    HudAlpha,
 }
 
 struct Windows {
@@ -1817,6 +1871,8 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     }
+    // BG0 as the first target of an alpha blend over the map's layers.
+    let bg0_alpha = bld_mode == 1 && bldcnt & 1 != 0 && (bldcnt >> 8) & 0x1e != 0;
     if bgs[0].on && !bg0_ground {
         for i in 0..W * H {
             if layers[0][i] == 0 {
@@ -1832,7 +1888,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             let bg_above =
                 (1..4).any(|b| bgs[b].on && bits & (1 << b) != 0 && bgs[b].pri < bgs[0].pri && layers[b][i] != 0);
             if !sprite_above && !bg_above {
-                owner[i] = Owner::Hud;
+                owner[i] = if bg0_alpha && bits & 0x20 != 0 { Owner::HudAlpha } else { Owner::Hud };
             }
         }
     }
@@ -2041,8 +2097,14 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
 
     // The ground drawn from the map's RAM must be the console's BG3 (with the
     // peaks over it) where that shows; when it is not (a scroll, a fade or a
-    // scene change in progress) the frame is left as the console drew it.
-    {
+    // scene change in progress) the frame is left as the console drew it. While the Day banner is up the game parks BG3's scroll
+    // at 0 although the map is where the camera is: BG3 is not the map then, and there is nothing to check (the ground comes from
+    // the map's RAM, the banner is the console's own pixels over it).
+    let bg3_parked = (bgs[3].hofs - cam_px.0).abs() > 16 || (bgs[3].vofs - cam_px.1).abs() > 16;
+    if bg3_parked && std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
+        dbg_line(&format!("ds_tilt bg3 parked cam={:?} bg3=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs));
+    }
+    if !bg3_parked {
         let mut bad = 0;
         let mut seen = 0;
         for y in (0..H as i32).step_by(3) {
@@ -2065,7 +2127,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             eprintln!("ds_tilt: ground from RAM differs from BG3 at {} of {} sampled pixels", bad, seen);
         }
         if std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
-            eprintln!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs);
+            dbg_line(&format!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs));
         }
         if bad * 12 > seen {
             { skip_log(line!()); return None; }
@@ -2831,6 +2893,12 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             let p = match owner[i] {
                 _ if ly < keep_rows || ly >= keep_from => None,
                 Owner::Hud => None,
+                Owner::HudAlpha => {
+                    let (a, b) = (layers[0][i], { let q = map[y * ow + x]; if q != 0 { q } else { backdrop } });
+                    let (eva, evb) = ((v.io[0x29] & 31).min(16) as u32, ((v.io[0x29] >> 8) & 31).min(16) as u32);
+                    let ch = |sh: u32| (((a as u32 >> sh) & 31) * eva + ((b as u32 >> sh) & 31) * evb) / 16;
+                    Some(0x8000 | (ch(0).min(31) | ch(5).min(31) << 5 | ch(10).min(31) << 10) as u16)
+                }
                 Owner::Map => {
                     let p = map[y * ow + x];
                     Some(if sand { sand_grain(p, (i % W) as u32, ly as u32, clock as u32) } else { p })
@@ -3103,6 +3171,10 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
 
 /// Debug aid: `TANGOAW2_TILT_SKIP_LOG=1` prints why a picture was left flat.
 fn skip_log(line: u32) {
+    if std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
+        dbg_line(&format!("ds_tilt skip line {line}"));
+        return;
+    }
     static ON: OnceLock<bool> = OnceLock::new();
     if *ON.get_or_init(|| std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some()) {
         eprintln!("ds_tilt skip line {line}");
