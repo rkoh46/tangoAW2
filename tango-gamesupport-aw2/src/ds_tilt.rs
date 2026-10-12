@@ -772,6 +772,16 @@ fn is_crosshair(tile: u16) -> bool {
     (884..=909).contains(&tile)
 }
 
+/// The attack target's crosshair is on the screen: the unit is choosing its target. The console tints the cells it can attack
+/// then; Dual Strike shows the ring alone, and so do we (no move or pink range under it).
+fn target_ring_up(core: &Core) -> bool {
+    (0..128u32).any(|i| {
+        let a0 = core.raw_read_16(0x0700_0000 + 8 * i, -1);
+        let a2 = core.raw_read_16(0x0700_0000 + 8 * i + 4, -1);
+        a0 & 0x300 != 0x200 && (a0 & 255) < 160 && is_crosshair(a2 & 0x3ff) && a2 >> 12 == 1
+    })
+}
+
 fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
     let mode = (a0 >> 10) & 3;
     let pri = (a2 >> 10) & 3;
@@ -1532,7 +1542,7 @@ struct FlatRange {
 
 impl FlatRange {
     fn new(core: &Core, bgs: &[Bg; 4], layers: &[Vec<Px>]) -> Option<FlatRange> {
-        if !(bgs[0].on && bgs[0].pri > bgs[1].pri) {
+        if !(bgs[0].on && bgs[0].pri > bgs[1].pri) || target_ring_up(core) {
             return None;
         }
         let cam = (core.raw_read_16(MAP + 4, -1) as i16 as i32, core.raw_read_16(MAP + 6, -1) as i16 as i32);
@@ -2086,7 +2096,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     }
-    let tint = bg0_ground.then_some(());
+    let tint = bg0_ground.then_some(()).filter(|_| !ring_shown);
     // The cells the selected unit can reach (the game's own table: the steps
     // it costs, 0xFF where it cannot): known beyond the console's window,
     // where BG0 is not drawn.

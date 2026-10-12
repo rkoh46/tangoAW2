@@ -702,6 +702,8 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 draw_sprite(&mut cv, bx + 8, ry, 16, &pic);
             }
         } else if let Some(ic) = icon_index(row.page, row.icon, &row.text) {
+            // (a Fire with nothing to fire at is greyed, and Dual Strike draws it with the crossed guns, checked on its artillery)
+            let ic = if row.grey && row.text == "Fire" { 22 } else { ic };
             draw_icon(&mut cv, a, bx + 8, ry, ic);
         }
         draw_text(&mut cv, a, bx + 24, ry, &row.text, row.grey);
