@@ -2035,19 +2035,12 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         core.raw_read_16(MAP + 6, -1) as i16 as i32,
     );
     // While the map scrolls the camera word in RAM runs a step (4 px) ahead of what the console shows: BG3's scroll
-    // is the picture's own, so the camera is put back on it (a small difference only; a big one is another screen).
+    // is the picture's own, so the camera is put back on it (a step of 4 pixels at most: on the second army's turn the game leaves BG3's scroll at 0 whatever the camera, a cell or more from it, and the camera in RAM is the right one).
     let cam_px = {
         let near = |ram: i32, shown: i32| {
             let d = (shown - ram).rem_euclid(512);
             let d = if d >= 256 { d - 512 } else { d };
-            if d.abs() <= 16 {
-                ram + d
-            } else {
-                // BG3's plane is not at the map's origin (on the second army's turn it sits some whole cells apart): the cells come
-                // from the camera in RAM, the part of a cell that is scrolled off from the plane the console shows.
-                let phase = (shown - ram).rem_euclid(16);
-                ram + if phase > 8 { phase - 16 } else { phase }
-            }
+            if d.abs() <= 6 { ram + d } else { ram }
         };
         (near(cam_px.0, bgs[3].hofs), near(cam_px.1, bgs[3].vofs))
     };
