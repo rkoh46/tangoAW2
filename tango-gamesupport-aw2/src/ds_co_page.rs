@@ -5,7 +5,7 @@
 //! The map menu's CO entry opens AW2's full-screen CO page (its main loop
 //! `0x08043591`, the page's process `0x08616BE4`); while it is up this module
 //! draws Dual Strike's page over it instead: the page frame's header strip
-//! (`info/000`: nine-patch tiles, the CO's country tab, the partner tab, the
+//! (`info/000`: nine-patch tiles, a pair of country tabs for each army of the battle, the
 //! CO's face cropped in at the right), the page counter (`icon/res_icon4_cg`)
 //! and the BACK button (`ohashi/res_tpicon_lang_E`), Dual Strike's own font
 //! (overlay 0: glyph pointers `0x49278`, widths `0x49178`; 16 rows of 4bpp,
@@ -14,7 +14,8 @@
 //!
 //! 1. **the description**: the CO's bio with Hit and Miss, then the day to
 //!    day text, re-wrapped to the room the picture leaves;
-//! 2. **skills**: the skills the army has on (and its tag partners);
+//! 2. **skills**: the skills the army has on (an icon, the name, the effect), under the "Existing skills" heading, which
+//!    stands alone with none on (Dual Strike's tag partners are on its top screen, not here);
 //! 3. **powers**: the CO Power and the Super Power, name and text;
 //! 4. **the unit chart**, which is AW2's own page (the game draws it; this
 //!    module steps aside for it).
@@ -169,6 +170,13 @@ const BACK: u8 = 4;
 const UNIT: u8 = 5;
 /// The headings' pictures (Existing skills, the power's stars).
 const HEAD: u8 = 6;
+/// The skills' icons (page 2).
+const SKILL: u8 = 7;
+/// Page 2's skill rows: the first icon's top, the name's and the effect's columns, the rows that fit.
+const SKILL_Y: i32 = 48;
+const SKILL_NAME_X: i32 = 16;
+const SKILL_EFFECT_X: i32 = 88;
+const SKILL_ROWS: usize = 4;
 const INK: u8 = 10;
 const EDGE: u8 = 14;
 const WHITE: u16 = 0x7FFF;
@@ -307,10 +315,10 @@ pub struct Portrait {
 
 pub struct View {
     pub name: String,
-    /// The two tabs' countries (0 Orange Star .. 4 Black Hole): the army's
-    /// active CO and its partner (`None` when it has none), and the tab the
-    /// page is on.
-    pub tabs: [Option<u8>; 2],
+    /// The header's tabs, a pair for each army of the battle in order (as Dual Strike's page has them): each CO's country
+    /// (0 Orange Star .. 4 Black Hole; `None` when the army has no partner) ...
+    pub tabs: Vec<[Option<u8>; 2]>,
+    /// ... and the tab the page is on (2 for each army before it, 1 more on a partner's page).
     pub tab: usize,
     pub bio: Vec<u8>,
     pub d2d: Vec<u8>,
@@ -318,10 +326,8 @@ pub struct View {
     pub cop: Vec<u8>,
     pub scop_name: String,
     pub scop: Vec<u8>,
-    /// (name, description) of each skill the army has on.
-    pub skills: Vec<(String, String)>,
-    /// Tag partners: (name, stars).
-    pub partners: Vec<(String, u8)>,
+    /// (id, name, effect) of each skill the army has on.
+    pub skills: Vec<(u8, String, String)>,
     pub portrait: Option<Portrait>,
     /// The unit chart: the army's colour (0 Orange Star .. 4 Black Hole) and a row for each unit.
     pub colour: usize,
@@ -664,15 +670,20 @@ fn frame(cv: &mut Canvas, a: &Art, v: &View, page: usize) {
             }
         }
     }
-    // The tabs: the CO's country (selected, in Dual Strike's corner marks)
-    // and the partner's (or the empty box).
+    // The tabs: Dual Strike's header has a pair for each army of the battle, a tab for each CO (the country's flag, the grey
+    // box for a CO nobody has), the page's own CO in Dual Strike's corner marks. Four armies' pairs lie 40 pixels apart, five
+    // 32 (the last tab ends where the face begins).
     let icon = |c: Option<u8>| match c {
         Some(c) if c < 4 => ICON_FIRST + c as usize,
         _ => ICON_NONE,
     };
-    cv.tiles(24, 8, a.icon(icon(v.tabs[0])), 16, 16, TAB);
-    cv.tiles(64, 8, a.icon(icon(v.tabs[1])), 16, 16, TAB);
-    for (cx, cy) in [(24 + 40 * v.tab as i32, 8)] {
+    let (x0, pitch) = if v.tabs.len() > 4 { (16, 32) } else { (24, 40) };
+    for (k, pair) in v.tabs.iter().enumerate() {
+        for (j, c) in pair.iter().enumerate() {
+            cv.tiles(x0 + pitch * k as i32 + 16 * j as i32, 8, a.icon(icon(*c)), 16, 16, TAB);
+        }
+    }
+    for (cx, cy) in [(x0 + 16 * v.tab as i32 + (pitch - 32) * (v.tab as i32 / 2), 8)] {
         for k in 0..5 {
             for t in 0..2 {
                 for (x, y) in [
@@ -864,60 +875,21 @@ fn heading(cv: &mut Canvas, f: &Font, a: &Art, icon: usize, y: i32, text: &str) 
     y + 18
 }
 
-/// Page 2: the skills the army has on, then the tag partners (one a line, or in two columns when
-/// one column leaves them no room: Sturm has seven).
+/// Page 2: the skills the army has on, as Dual Strike's page lists them under its "Existing skills" heading: a row for each,
+/// its icon, its name and, in a column of its own, its effect on one line. With none on, the heading stands alone. (Dual
+/// Strike's tag partners are on its top screen, not on this page.)
 fn page_skills(f: &Font, a: &Art, v: &View) -> Canvas {
-    for cols in [1usize, 2] {
-        if cols == 2 && v.partners.len() < 2 {
-            break;
-        }
-        for pitch in [14, 13] {
-            for with_desc in [true, false] {
-                let mut cv = Canvas::new();
-                frame(&mut cv, a, v, 1);
-                let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: 32, pitch, overflow: false };
-                fl.y = heading(&mut cv, f, a, ICON_SKILLS, 32, "Existing skills");
-                let mut ok = true;
-                if v.skills.is_empty() {
-                    ok &= fl.para(&mut cv, "None set.", 0);
-                }
-                for (name, desc) in &v.skills {
-                    ok &= fl.para(&mut cv, name, 0);
-                    if with_desc && !desc.is_empty() {
-                        ok &= fl.para(&mut cv, desc, 6);
-                    }
-                }
-                if !v.partners.is_empty() {
-                    fl.y += 3;
-                    ok &= fl.para(&mut cv, "TAG partners", 0);
-                    let rows = v.partners.len().div_ceil(cols);
-                    let span = (RIGHT - LEFT) / cols as i32;
-                    for (i, (name, stars)) in v.partners.iter().enumerate() {
-                        let (col, row) = ((i / rows) as i32, (i % rows) as i32);
-                        let y = fl.y + row * pitch;
-                        let x0 = LEFT + 6 + span * col;
-                        let limit = if col as usize + 1 == cols { RIGHT } else { LEFT + span * (col + 1) - 3 };
-                        let w = f.width(name) + 5 + 9 * *stars as i32;
-                        if y + INK_ROWS as i32 > BOTTOM || x0 + w > limit {
-                            ok = false;
-                            break;
-                        }
-                        let x = cv.text(f, x0, y, name);
-                        for s in 0..*stars as i32 {
-                            star(&mut cv, x + 5 + 9 * s, y + 3);
-                        }
-                    }
-                    fl.y += rows as i32 * pitch;
-                }
-                if ok {
-                    return cv;
-                }
-            }
-        }
-    }
-    FALLBACKS.fetch_add(1, Ordering::Relaxed);
     let mut cv = Canvas::new();
     frame(&mut cv, a, v, 1);
+    heading(&mut cv, f, a, ICON_SKILLS, 32, "Existing skills");
+    for (k, (id, name, effect)) in v.skills.iter().take(SKILL_ROWS).enumerate() {
+        let y = SKILL_Y + 16 * k as i32;
+        if let Some((px, _)) = crate::skills_panel::icon_pixels(*id) {
+            cv.picture(0, y, &px, 16, 16, SKILL);
+        }
+        let x = cv.text(f, SKILL_NAME_X, y + 2, name);
+        cv.text(f, SKILL_EFFECT_X.max(x + 8), y + 2, effect);
+    }
     cv
 }
 
@@ -1038,6 +1010,9 @@ fn bank_palettes(a: &Art, v: &View) -> Vec<[u16; 16]> {
     p[BACK as usize] = a.back_pal;
     p[UNIT as usize] = a.unit_pals.get(v.colour).copied().unwrap_or(a.unit_pals[0]);
     p[HEAD as usize] = HEAD_PALETTE;
+    if let Some((_, pal)) = crate::skills_panel::icon_pixels(0x20) {
+        p[SKILL as usize] = pal;
+    }
     for b in p.iter_mut().skip(1) {
         b[0] = WHITE;
     }
@@ -1177,19 +1152,12 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         cop = format!("{name} has no CO Power. He saves all his energy for his Super CO Power.").into_bytes();
     }
     let mut skills = Vec::new();
-    let mut partners = Vec::new();
     if let (Some(c), Some(army)) = (core, army) {
         for id in crate::co_skills::ids() {
             if crate::co_skills::has(c, army, id) {
                 if let Some((_, n, d)) = crate::co_skills::info(id) {
-                    skills.push((plain(&n), plain(&d)));
+                    skills.push((id, plain(&n), plain(&d)));
                 }
-            }
-        }
-        for (p, stars) in crate::tag_extras::partners_of(c, co) {
-            let pn = co_new::ds_name(p).map(|n| plain(&n)).unwrap_or_else(|| if p == crate::sturm_pairs::STURM { "Sturm".into() } else { String::new() });
-            if !pn.is_empty() {
-                partners.push((pn, stars));
             }
         }
     }
@@ -1206,18 +1174,25 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
             mode = m;
         }
     }
-    let own = Some(crate::custom_campaign::country(co));
-    let mut tabs = [own, None];
+    // The tabs: a pair for each army of the battle, the page's own army's showing which of its COs the page is on (on the
+    // partner's page the army's two COs are swapped: the tabs stay in the pair's order).
+    let mut tabs = vec![[Some(crate::custom_campaign::country(co)), None]];
     let mut tab = 0;
     if let (Some(c), Some(army)) = (core, army) {
-        if let Some(p) = crate::tag::partner(c, army) {
-            tabs[1] = Some(crate::custom_campaign::country(p));
-            // On the partner's page the army's two COs are swapped: the
-            // tabs stay in the pair's order.
-            if c.raw_read_8(crate::tag_extras::STATE + 0x10, -1) == 1 {
-                tabs = [Some(crate::custom_campaign::country(p)), own];
-                tab = 1;
+        tabs.clear();
+        let on_partner = c.raw_read_8(crate::tag_extras::STATE + 0x10, -1) == 1;
+        for k in 1..=(crate::tag_ui::armies(c) as u32).clamp(1, 5) {
+            let (active, partner) = (crate::tag::army_co_of(c, k), crate::tag::partner(c, k));
+            let mut pair = [Some(crate::custom_campaign::country(active)), partner.map(crate::custom_campaign::country)];
+            if k == army {
+                if on_partner && partner.is_some() {
+                    pair.swap(0, 1);
+                    tab = 2 * tabs.len() + 1;
+                } else {
+                    tab = 2 * tabs.len();
+                }
             }
+            tabs.push(pair);
         }
     }
     View {
@@ -1231,7 +1206,6 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         scop_name,
         scop,
         skills,
-        partners,
         portrait: art.as_ref().map(portrait_of),
         colour,
         chart: chart_for(co, mode),
@@ -1397,13 +1371,13 @@ fn draw(core: &mut Core, st: &mut State, army: u32, co: u8) {
             ids.push(id);
         }
     }
-    let partner = crate::tag_extras::partners_of(core, co).iter().flat_map(|p| [p.0, p.1]).collect::<Vec<u8>>();
-    let pair = [
-        crate::tag::partner(core, army).unwrap_or(255),
-        core.raw_read_8(crate::tag_extras::STATE + 0x10, -1),
-        army as u8,
-    ];
-    let key = hash(&[&[co, st.page as u8], &ids, &partner, &pair]);
+    // (the tabs: every army's COs and the partner view)
+    let mut pairs = vec![core.raw_read_8(crate::tag_extras::STATE + 0x10, -1), army as u8];
+    for k in 1..=(crate::tag_ui::armies(core) as u32).clamp(1, 5) {
+        pairs.push(crate::tag::army_co_of(core, k));
+        pairs.push(crate::tag::partner(core, k).unwrap_or(255));
+    }
+    let key = hash(&[&[co, st.page as u8], &ids, &pairs]);
     if st.built.as_ref().map(|b| b.0) != Some(key) {
         let view = view_for(Some(core), Some(army), co);
         let before = fallbacks();
@@ -1412,8 +1386,9 @@ fn draw(core: &mut Core, st: &mut State, army: u32, co: u8) {
         if let Ok(path) = std::env::var("TANGOAW2_CO_PAGE_LOG") {
             use std::io::Write;
             if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
-                let partners: Vec<String> = view.partners.iter().map(|(n, s)| format!("{n}={s}")).collect();
-                let _ = writeln!(f, "ds_co_page: co {co} page {} fitted {} partners {}", st.page + 1, fallbacks() == before, partners.join(","));
+                let skills: Vec<String> = view.skills.iter().map(|(id, n, _)| format!("{id}={n}")).collect();
+                let tabs: Vec<String> = view.tabs.iter().map(|p| p.iter().map(|c| c.map_or("-".to_string(), |c| c.to_string())).collect::<Vec<_>>().join("")).collect();
+                let _ = writeln!(f, "ds_co_page: co {co} page {} fitted {} skills {} tabs {} selected {}", st.page + 1, fallbacks() == before, skills.join(","), tabs.join(","), view.tab);
             }
         }
         let (tiles, tilemap, pal) = layer_of(&cv);
@@ -1635,6 +1610,11 @@ mod tests {
         assert_eq!(unit(&max, 3).attack, None, "an APC has no attack gauge");
         let grit = chart_for(5, 0);
         assert_eq!((unit(&grit, 1).attack, unit(&grit, 4).attack, unit(&grit, 4).range), (Some(-4), Some(4), 1));
+        // Jake (79): no range change on a day to day turn (Dual Strike's own page for him shows no "range" note, checked in the
+        // clean game), +1 on the indirect units under his powers; a note is the CO's range stat, nothing else.
+        let jake = (chart_for(79, 0), chart_for(79, 1));
+        assert!(jake.0.iter().all(|u| u.range == 0), "Jake: no range notes day to day");
+        assert_eq!(unit(&jake.1, 4).range, 1, "Jake's powers: artillery +1");
         let andy = chart_for(1, 0);
         assert!(andy.iter().all(|u| u.attack.unwrap_or(0) == 0 && u.defence == 0 && u.range == 0));
         let wall = crate::ds_co_wall::wall().expect("the wall");

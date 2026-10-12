@@ -382,6 +382,12 @@ fn art() -> Option<&'static Art> {
     ART.get_or_init(build_art).as_ref()
 }
 
+/// Skill `id`'s icon (16 x 16 palette indices) and the icons' palette (Dual Strike's `ohashi/res_skill`).
+pub fn icon_pixels(id: u8) -> Option<([u8; 256], [u16; 16])> {
+    let a = art()?;
+    Some((*a.icons.get(icon_of(id))?, a.icon_pal))
+}
+
 /// res_skill's icons: 0 none, then one per skill by id from 0x20.
 const ICONS: usize = 44;
 

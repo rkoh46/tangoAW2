@@ -5,7 +5,10 @@ screens) is Dual Strike's, drawn on BG0 with every other layer covered and
 the game's sprites hidden. Without the setting the game's own page is as it
 always was. Offline only (the byte is never set in netplay)."""
 
+import os
+
 from aw2test.harness import Skip, test
+from aw2test import ram, tag
 
 DS_GRAPHICS = 0x0203E3FE
 DISPCNT = 0x04000000
@@ -139,3 +142,99 @@ def ds_co_page_unit_chart_and_wall(ctx):
     ctx.log(f"pink pixels: {pink}")
     ctx.check(pink["max"] >= 20, f"Max's chart has pink gauge fill ({pink['max']})")
     ctx.eq(pink["andy"], 0, "Andy's gauges are plain")
+
+
+def page_log(ctx):
+    """What the CO page last laid out, a dict per page (the console's log, TANGOAW2_CO_PAGE_LOG)."""
+    out = {}
+    for line in open(os.path.join(ctx.out, "co_page.log")).read().splitlines():
+        head, _, rest = line.partition(" fitted ")
+        page = int(head.rpartition(" page ")[2])
+        fitted, _, rest = rest.partition(" skills ")
+        skills, _, rest = rest.partition(" tabs ")
+        tabs, _, selected = rest.partition(" selected ")
+        out[page] = {"fitted": fitted.startswith("true"), "skills": skills, "tabs": tabs, "selected": int(selected)}
+    return out
+
+
+def tag_battle3(ctx, cos, partners):
+    """A Versus battle of three armies, each with the partner given (None: none), the CO page logging what it lays out."""
+    log = os.path.join(ctx.out, "co_page.log")
+    if os.path.exists(log):
+        os.remove(log)
+    m = ctx.map(hq=((1, 0, 0), (2, 29, 19), (3, 29, 0)))
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.boot_teams(m, env={"TANGOAW2_CO_PAGE_LOG": log})
+    for a, p in enumerate(partners, 1):
+        tag.set_teams_partner(g.e, a, p)
+    g.set_teams(cos, {1})
+    g.teams_to_rules()
+    g.set_rules()
+    g.start_battle()
+    g.wait_for_input()
+    g.e.wait(30)
+    return g
+
+
+@test(modes=("ds",))
+def ds_co_page_header_tabs_and_skills(ctx):
+    """Dual Strike's CO page header has a pair of tabs for each army of the battle (a tab for each CO: its country's flag,
+    the grey box for none), the page's own CO in the corner marks; RIGHT goes to the partner's tab, then on to the next
+    army's. Page 2 lists the skills set (an icon, the name, the effect on one line) and nothing else: no "None set" and no
+    tag partners (Dual Strike has those on its top screen)."""
+    g = tag_battle3(ctx, ["jake", "sasha", "javier"], ["rachel", "colin", None])
+    e = g.e
+    if e.u8(DS_GRAPHICS) == 0:
+        raise Skip("Dual Strike map graphics off: the game's own page")
+    e.w8(0x0203F7E0 + 1, 0x04)  # army 1: Missile Guard (0x2A)
+    g.open_map_menu()
+    g.choose("CO", g.MAP_MENU)
+    e.wait(90)
+    ctx.shot(g, "tabs_p1")
+    e.press("DOWN", 6)
+    e.wait(45)
+    ctx.shot(g, "tabs_p2")
+    log = page_log(ctx)
+    ctx.eq(log[1]["tabs"], "00,11,2-", "a pair of tabs for each army: Jake and Rachel (Orange Star), Sasha and Colin (Blue Moon), Javier alone")
+    ctx.eq(log[1]["selected"], 0, "the page is on Jake's tab")
+    ctx.eq((log[2]["fitted"], log[2]["skills"]), (True, "42=Missile Guard"), "page 2 lists the skill set, and only that")
+    # (the page lists the skills only: Jake and Rachel's partner lists, Jess's .. are not on it)
+    from PIL import Image
+    px = Image.open(ctx.shot(g, "tabs_p2")).convert("RGB").load()
+    icon = sum(1 for y in range(48, 64) for x in range(0, 16) if px[x, y] != (255, 255, 255) and px[x, y] != (248, 248, 248))
+    ink = sum(1 for y in range(48, 64) for x in range(16, 90) if sum(px[x, y]) < 200)
+    effect = sum(1 for y in range(48, 64) for x in range(88, 200) if sum(px[x, y]) < 200)
+    ctx.check(icon > 40 and ink > 30 and effect > 30, f"the skill's row has its icon, name and effect ({icon}, {ink}, {effect})")
+    below = sum(1 for y in range(70, 160) for x in range(0, 200) if sum(px[x, y]) < 200)
+    ctx.eq(below, 0, "nothing below the skill's row (no TAG partners)")
+    e.press("UP", 6)
+    e.wait(45)
+    e.press("RIGHT", 6)
+    e.wait(80)
+    ctx.shot(g, "tabs_partner")
+    ctx.eq(page_log(ctx)[1]["selected"], 1, "RIGHT: Rachel's tab")
+    ctx.eq(page_log(ctx)[1]["tabs"], "00,11,2-", "the tabs keep the pair's order on the partner's page")
+    e.press("RIGHT", 6)
+    e.wait(80)
+    ctx.shot(g, "tabs_army2")
+    ctx.eq(page_log(ctx)[1]["selected"], 2, "RIGHT again: Sasha's tab, the next army's")
+    e.press("B", 6)
+    e.wait(120)
+
+
+@test(modes=("ds",))
+def ds_co_page_page2_without_skills_is_the_heading(ctx):
+    """A CO with no skills set: Dual Strike's page 2 is its "Existing skills" heading alone, no "None set." under it."""
+    g = open_page(ctx, ["jake", "sasha"])
+    e = g.e
+    if e.u8(DS_GRAPHICS) == 0:
+        raise Skip("Dual Strike map graphics off: the game's own page")
+    e.press("DOWN", 6)
+    e.wait(45)
+    from PIL import Image
+    px = Image.open(ctx.shot(g, "page2_empty")).convert("RGB").load()
+    # (the wall's watermark is pale; text is dark ink)
+    below = sum(1 for y in range(50, 160) for x in range(0, 200) if sum(px[x, y]) < 200)
+    ctx.eq(below, 0, "nothing under the heading")
+    heading = sum(1 for y in range(32, 50) for x in range(72, 200) if sum(px[x, y]) < 200)
+    ctx.check(heading > 30, f"the heading is there ({heading})")

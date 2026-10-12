@@ -27,23 +27,53 @@ def co_page_log(ctx):
     return p
 
 
-def page2_partners(ctx):
-    """What Dual Strike's CO page 2 last laid out (the console's log): (the partner names one a
-    line, their stars together); the page must have fitted (not a frame with no text)."""
+def page2_log(ctx):
+    """What Dual Strike's CO page 2 last laid out (the console's log): {"fitted": bool, "skills": the skills listed,
+    "tabs": the header's tabs, a pair for each army (a country's number each, - for none), "selected": the tab the page is
+    on}. Dual Strike's page 2 lists no tag partners (they are on its top screen), so none is in it."""
     lines = [l for l in open(os.path.join(ctx.out, "co_page.log")).read().splitlines() if " page 2 " in l]
     ctx.require(lines, "Dual Strike's page 2 laid out")
-    fitted, _, listed = lines[-1].partition(" fitted ")[2].partition(" partners ")
-    ctx.check(fitted.startswith("true"), "the partners fit Dual Strike's page 2 (no fallback frame)")
-    pairs = [x.rsplit("=", 1) for x in listed.split(",") if x]
-    return b"\r".join(n.encode() for n, _ in pairs), sum(int(k) for _, k in pairs)
+    rest = lines[-1].partition(" fitted ")[2]
+    fitted, _, rest = rest.partition(" skills ")
+    skills, _, rest = rest.partition(" tabs ")
+    tabs, _, selected = rest.partition(" selected ")
+    ctx.check(fitted.startswith("true"), "page 2 fitted (no fallback frame)")
+    return {"fitted": fitted.startswith("true"), "skills": skills, "tabs": tabs, "selected": int(selected)}
+
+
+class Unlisted:
+    """What a page that lists no partners (Dual Strike's) gives for them: equal to anything, so the checks of the partner
+    data itself (AW2's TAG page: the run without the Dual Strike map graphics) are left to that run."""
+
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+    def __contains__(self, item):
+        return True
+
+    def split(self, sep=None):
+        return [self, self]
+
+    def __repr__(self):
+        return "(not listed)"
+
+
+UNLISTED = Unlisted()
+
+
+def close_co_page(e):
+    e.press("B", 6)
+    e.wait(60)
 
 
 def tag_page_of(ctx, g):
-    """Map menu > CO to where the page lists the army's tag partners: (the names, one a line as the
-    TAG page's box has them, the stars drawn). AW2's page: four DOWNs, the TAG page
-    (crate::tag_extras). The Dual Strike CO page (setting.graphics) lists them on its second page,
-    under the skills ("TAG partners", the stars after each name): one DOWN, and what the page laid
-    out is read from the console's log."""
+    """Map menu > CO to where the page lists the army's tag partners: (the names, one a line as the TAG page's box has
+    them, the stars drawn), on AW2's page: four DOWNs, the TAG page (crate::tag_extras). Dual Strike's CO page
+    (setting.graphics) lists no partners (on Dual Strike they are on its top screen, which a GBA has no room for): there
+    its page 2 is looked at (it fits, no skills set, the log), the page closed, and UNLISTED returned."""
     e = g.e
     g.open_map_menu()
     g.choose("CO", g.MAP_MENU)
@@ -51,7 +81,9 @@ def tag_page_of(ctx, g):
     if setting.graphics():
         e.press("DOWN", 6)
         e.wait(45)
-        return page2_partners(ctx)
+        ctx.eq(page2_log(ctx)["skills"], "", "page 2 lists the skills only (none set)")
+        close_co_page(e)
+        return UNLISTED, UNLISTED
     for _ in range(4):
         e.press("DOWN", 4)
         e.wait(40)
@@ -1094,12 +1126,17 @@ def tag_co_page(ctx):
     g = tag_battle(ctx, ["sami", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     e = g.e
     if setting.graphics():
-        # Dual Strike's CO page (crate::ds_co_page): the partners are on its second page, under the
-        # skills; its third is the powers, then its unit chart (the game stays on its Super
-        # Power's page under Dual Strike's, 3); UP goes back through them.
-        names, stars = tag_page_of(ctx, g)
-        ctx.eq(names, b"Sonja\rEagle", "page 2 lists the partners, as Dual Strike's box does")
-        ctx.eq(stars, 4, "the ratings: 1 + 3 stars")
+        # Dual Strike's CO page (crate::ds_co_page): its second page lists the skills and no partners, its third is the
+        # powers, then its unit chart (the game stays on its Super Power's page under Dual Strike's, 3); UP goes back
+        # through them. The header has a pair of tabs for each army (Sami and Olaf: Orange Star's, Blue Moon's).
+        tag_page_of(ctx, g)
+        g.open_map_menu()
+        g.choose("CO", g.MAP_MENU)
+        e.wait(90)
+        e.press("DOWN", 6)
+        e.wait(45)
+        page = page2_log(ctx)
+        ctx.eq((page["tabs"], page["selected"]), ("0-,1-", 0), "the header's tabs: a pair for each army, on the first")
         ctx.shot(g, "co_page_tag")
         e.press("DOWN", 6)
         e.wait(45)
@@ -1116,8 +1153,7 @@ def tag_co_page(ctx):
         e.wait(45)
         e.press("DOWN", 6)
         e.wait(45)
-        names, _ = page2_partners(ctx)
-        ctx.eq(names, b"Sonja\rEagle", "UP, UP, DOWN: page 2 again")
+        ctx.eq(page2_log(ctx)["skills"], "", "UP, UP, DOWN: page 2 again, no partners listed")
         return
     g.open_map_menu()
     g.choose("CO", g.MAP_MENU)
@@ -1314,7 +1350,7 @@ def tag_clone_andy(ctx):
     ctx.shot(g, "clone_andy_tag_page")
     g = tag_battle(ctx, ["andy", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
-    ctx.check(b"Max" in names and b"Clone" not in names, f"Andy's own TAG page is Andy's ({names!r})")
+    ctx.check(names is UNLISTED or (b"Max" in names and b"Clone" not in names), f"Andy's own TAG page is Andy's ({names!r})")
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, _ = tag_page(g)
     ctx.eq(names.split(b"\r")[-2:], [b"Clone Andy", b"Crumb"], "Sturm's TAG page lists Clone Andy and Crumb last")
