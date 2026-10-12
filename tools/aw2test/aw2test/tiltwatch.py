@@ -14,7 +14,7 @@ def env(ctx, scale="4"):
     except OSError:
         pass
     return {
-        "TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1", "TANGOAW2_TILT_SCALE": scale,
+        "TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": os.environ.get("TILTFX_TILT", "1"), "TANGOAW2_TILT_SCALE": scale,
         "TANGOAW2_TILT_SKIP_LOG": "1", "TANGOAW2_TILT_LEAK_LOG": "1", "TANGOAW2_TILT_LOG": log,
     }
 

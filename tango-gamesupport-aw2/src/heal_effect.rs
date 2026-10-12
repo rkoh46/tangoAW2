@@ -502,6 +502,18 @@ pub fn draw(core: &mut Core) {
     core.raw_write_32(OAM_NEXT, -1, next);
 }
 
+/// While a heal plays: the map pixel (x, y) its pieces are placed from (the structure's anchor), for the tilted view, which puts them
+/// by their cell instead of at their screen places.
+pub fn anchor_world(core: &Core) -> Option<(i32, i32)> {
+    let kind = core.raw_read_8(KIND, -1);
+    if kind == 0 {
+        return None;
+    }
+    let anim = anim(kind)?;
+    let (x, y) = (core.raw_read_8(POS_X, -1) as i32, core.raw_read_8(POS_Y, -1) as i32);
+    Some((16 * x + anim.anchor.0, 16 * y + anim.anchor.1))
+}
+
 /// Sprite-list entries before the map's own sprites, and the y of an entry
 /// nothing uses this frame.
 const RESERVED: u32 = 16;

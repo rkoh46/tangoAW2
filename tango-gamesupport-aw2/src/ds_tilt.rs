@@ -557,6 +557,8 @@ enum Class {
     Piece,
     /// The nine pieces put together: the unit that is moving, upright.
     Mover,
+    /// A piece of a structure's heal effect ([`crate::heal_effect`]): upright at the structure, placed by its cell.
+    Effect,
 }
 
 struct Obj {
@@ -1148,6 +1150,9 @@ struct Billboard {
     upright: bool,
     /// A unit drawn from its record, for the debug log: its cell and low-ammunition / fuel icon.
     tag: Option<(i32, i32, u8)>,
+    /// Sorted this much nearer the camera's far side than its foot (cells): a tall property's upper half, whose cell above holds a
+    /// unit the console draws over it (the units' plane is above the properties' sprites).
+    lift: f32,
 }
 
 /// Which way Dual Strike draws an army's units: mirrored (they face right; the art faces left) for the
@@ -1803,9 +1808,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         }
     }
     let t_load = t0.elapsed();
-    let Some(objs) = read_objs(core, &mut v) else {
+    let Some(mut objs) = read_objs(core, &mut v) else {
         { skip_log(line!()); return None; }
     };
+    // A structure's heal effect: its pieces (OBJ palette 15) stand at the structure, whichever way the console's camera looks.
+    let heal_at = crate::heal_effect::anchor_world(core);
+    if heal_at.is_some() {
+        for o in objs.iter_mut().filter(|o| o.class == Class::Hud && o.pal == 15) {
+            o.class = Class::Effect;
+        }
+    }
     let t_objs = t0.elapsed();
 
     // BG0 is the range overlay while it is below the units.
@@ -1978,6 +1990,19 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     }
+    if let Some(path) = std::env::var_os("TANGOAW2_TILT_OWNER_DUMP") {
+        // (a debug aid: the pixels the console's picture keeps, red, over its picture; written each frame, the last stays)
+        let mut out = format!("P6\n{W} {H}\n255\n").into_bytes();
+        for i in 0..W * H {
+            let c = layers[3][i];
+            let (r, g, b) = (((c & 31) << 3) as u8, (((c >> 5) & 31) << 3) as u8, (((c >> 10) & 31) << 3) as u8);
+            match owner[i] {
+                Owner::Map => out.extend_from_slice(&[r / 2, g / 2, b / 2]),
+                _ => out.extend_from_slice(&[255, 0, 0]),
+            }
+        }
+        let _ = std::fs::write(path, out);
+    }
     let backdrop = 0x8000 | (v.pal[0] & 0x7fff);
     if std::env::var_os("TANGOAW2_TILT_LEAK_LOG").is_some() {
         // (a debug aid: pixels the console's picture keeps (HUD) although an effect blends them over the map's ground: the flat map
@@ -2072,7 +2097,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         core.raw_read_8(CURSOR_X, -1) as i32,
         core.raw_read_8(CURSOR_Y, -1) as i32,
     );
-    let (fx, fy) = follow(cursor, ground.w, ground.h, core.frame_counter());
+    // (When the console's own camera is somewhere the cursor is not (a structure's heal effect, the turn's pan, a scripted camera),
+    // the tilted camera follows the console's: the cell at the middle of its window stands for the cursor.)
+    let in_window = cursor.0 * 16 + 8 >= cam_px.0 && cursor.0 * 16 + 8 < cam_px.0 + 240 && cursor.1 * 16 + 8 >= cam_px.1 && cursor.1 * 16 + 8 < cam_px.1 + 160;
+    let look = if in_window && heal_at.is_none() { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
+    let (fx, fy) = follow(look, ground.w, ground.h, core.frame_counter());
     let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
 
     // What lies on the ground, as the console shows it: BG0's range tint
@@ -2347,6 +2376,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         scale: 0.5,
                         upright: false,
                         tag: None,
+                        lift: 0.0,
                     });
                 }
                 boards.push(Billboard {
@@ -2362,6 +2392,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     scale: 1.0,
                     upright: has_art,
                     tag: None,
+                    lift: 0.0,
                 });
             }
         }
@@ -2514,6 +2545,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     scale: 0.5,
                     upright: false,
                     tag: None,
+                    lift: 0.0,
                 });
             }
             boards.push(Billboard {
@@ -2531,6 +2563,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 scale: 1.0,
                 upright: art_here,
                 tag: Some((ux, uy, u.low)),
+                lift: 0.0,
             });
         }
     }
@@ -2638,6 +2671,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         scale: 1.0,
                         upright: false,
                         tag: None,
+                        lift: 0.0,
                     });
                 }
             }
@@ -2663,7 +2697,31 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             scale: 1.0,
             upright: false,
             tag: None,
+            // (a property's sprite 32 tall reaches into the cell above its own, where a unit may stand: the console draws the unit over
+            // it, so the sprite is drawn before the units of that cell, not after)
+            lift: if o.class == Class::Billboard && o.h >= 32 { 0.9 } else { 0.0 },
         });
+    }
+    if let Some((ax, ay)) = heal_at {
+        // (the pieces' places on the console's screen are from its camera word in RAM: the offset from the anchor is theirs)
+        let ram = (core.raw_read_16(MAP + 4, -1) as i16 as i32, core.raw_read_16(MAP + 6, -1) as i16 as i32);
+        for o in objs.iter().filter(|o| o.class == Class::Effect) {
+            boards.push(Billboard {
+                pix: o.pix.clone(),
+                w: o.w,
+                h: o.h,
+                fu: ax as f32 / 16.0,
+                fv: ay as f32 / 16.0,
+                ox: (o.x - (ax - ram.0)) as f32,
+                oy: (o.y - (ay - ram.1)) as f32,
+                rank: 7,
+                last: true,
+                scale: 1.0,
+                upright: false,
+                tag: None,
+                lift: 0.0,
+            });
+        }
     }
     // The moving unit where the console has no picture of it: its sprite is parked while the
     // unit is off the console's screen (the tilted view shows more), so it is drawn from the
@@ -2711,14 +2769,15 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         scale: 1.0,
                         upright: false,
                         tag: Some((-1, -1, 0)),
+                        lift: 0.0,
                     });
                 }
             }
         }
     }
     boards.sort_by(|a, b| {
-        (a.last, a.fv, a.rank)
-            .partial_cmp(&(b.last, b.fv, b.rank))
+        (a.last, a.fv - a.lift, a.rank)
+            .partial_cmp(&(b.last, b.fv - b.lift, b.rank))
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
@@ -2787,6 +2846,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let t_warm = t0.elapsed();
     let ground = &ground;
     let mut map = vec![0u16; ow * oh];
+    let ground_dark = layers[3].iter().filter(|&&p| p != 0).count() * 10 < W * H;
     let shade_step = if ss == 1 { 2 } else { ss };
     let tall: Vec<bool> = (0..(ground.w * ground.h) as usize).map(|i| ground.is_tall(i)).collect();
     let lift = cp().tall_lift;
@@ -2839,6 +2899,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 }
                 (None, cur.1[ly * 16 + lx])
             };
+            // (the console has put its ground out, as the Laser's firing does, by drawing none of BG3: the backdrop's colour)
+            let mut p = p;
+            if ground_dark && !(inside_row && (0..ground.w).contains(&cx) && ground.is_tall((cy * ground.w + cx) as usize)) {
+                p = backdrop;
+            }
             if x % shade_step == 0 {
                 shade_here = shade(gf / 16.0, vv);
             }
@@ -2920,6 +2985,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 right / sf,
                 bottom / sf
             ));
+        }
+        if std::env::var_os("TANGOAW2_TILT_BOARD_LOG").is_some() {
+            let white = bb.pix.iter().filter(|&&p| p != 0 && ((p >> 10) & 31) >= 24 && ((p >> 5) & 31) >= 22 && (p & 31) >= 22).count();
+            dbg_line(&format!("ds_tilt: bb foot ({:.2}, {:.2}) {}x{} rank {} last {} tag {:?} whitish {} at ({:.0}, {:.0})", bb.fu, bb.fv, bb.w, bb.h, bb.rank, bb.last, bb.tag, white, left / sf, top / sf));
         }
         placed.push((bb, left, top, ssc, x0, x1, y0, y1));
     }
