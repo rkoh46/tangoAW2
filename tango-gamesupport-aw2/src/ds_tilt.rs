@@ -1066,13 +1066,22 @@ struct Billboard {
     tag: Option<(i32, i32, u8)>,
 }
 
-/// Keeps the facing the console drew a unit with (its picture's mirror flag), and in the check
-/// mode counts the times it differs from the rule the records give.
-fn note_facing(u: &RamUnit, mirrored: bool, map: u64) {
-    let mut f = FACING.lock().unwrap();
-    if f.0 != map {
-        *f = (map, std::collections::HashMap::new());
-    }
+/// Which way Dual Strike draws an army's units: mirrored (they face right; the art faces left) for the
+/// armies in slots 1 and 3, as stored (left) for 2 and 4. The unit-drawing routine in Dual Strike's
+/// ITCM (`0x01FFC890`, called for every unit on the map from `0x01FFCC58`) takes the unit's own army
+/// from its record number (`id & 0xC0`) and flips the picture when that is 0 or 0x80, by choosing the
+/// routine at `0x020128B0` (the picture's texture coordinates in reverse order) over the one at
+/// `0x02012978`. Nothing else enters: not the army's team (`+0x2C` of its player record), its colour,
+/// its side of the map, whether a person or the computer plays it, whose turn it is, or whether the
+/// unit has moved (a unit that has moved is drawn greyed, still facing as its army does). A fifth
+/// army (Black Hole beside four, an AW2 extra) goes on alternating.
+pub(crate) fn dual_strike_mirrored(army: u8) -> bool {
+    army % 2 == 1
+}
+
+/// Notes (in the check mode) where the console's own picture of a unit faces another way than
+/// Dual Strike's rule: AW2 draws a unit that has moved as the army whose turn it is.
+fn note_facing(u: &RamUnit, mirrored: bool) {
     if mirrored != u.mirrored && debug_check() {
         dbg_line(&format!(
             "ds_tilt: facing: unit {} drawn {} by the console, {} by the rule",
@@ -1081,31 +1090,21 @@ fn note_facing(u: &RamUnit, mirrored: bool, map: u64) {
             if u.mirrored { "mirrored" } else { "as stored" }
         ));
     }
-    f.1.insert(u.id, (u.facing_key(), mirrored));
 }
 
-/// The unit as it is drawn beyond the console's window: its remembered facing, if what it
-/// depends on has not changed since the console showed the unit.
-fn with_facing(u: &RamUnit, map: u64) -> RamUnit {
-    let mut u = u.clone();
-    let f = FACING.lock().unwrap();
-    if f.0 == map {
-        if let Some(&(key, mirrored)) = f.1.get(&u.id) {
-            if key == u.facing_key() {
-                u.mirrored = mirrored;
-                if debug_check() {
-                    dbg_line(&format!(
-                        "ds_tilt: facing: unit {} at ({}, {}) beyond the window kept the console's ({})",
-                        u.id,
-                        u.x,
-                        u.y,
-                        if mirrored { "mirrored" } else { "as stored" }
-                    ));
-                }
-            }
-        }
+/// The unit as it is drawn beyond the console's window: facing by the rule, from its record.
+fn with_facing(u: &RamUnit) -> RamUnit {
+    if debug_check() {
+        dbg_line(&format!(
+            "ds_tilt: facing: unit {} (army {}) at ({}, {}) beyond the window faces by the rule: {}",
+            u.id,
+            u.army,
+            u.x,
+            u.y,
+            if u.mirrored { "mirrored" } else { "as stored" }
+        ));
     }
-    u
+    u.clone()
 }
 
 /// Zeroes tile `k` (0 TL, 1 TR, 2 BL, 3 BR) of a 16 x 16 picture.
@@ -2079,10 +2078,20 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         // redrawn)
                         let mirrored = e0 & 0x400 != 0;
                         if (e0 & 0x3ff) == u.base + mirrored as u16 {
-                            note_facing(u, mirrored, ground.signature());
-                            // Dual Strike's own 32 x 32 picture instead of the 16 x 16 conversion;
-                            // what is left of the console's cell is the HP digit and the marks.
-                            if let Some(a) = ds_unit_art(&v, bg, u.kind, u.base, mirrored, (e0 >> 12) & 15) {
+                            note_facing(u, mirrored);
+                            // Dual Strike's own 32 x 32 picture instead of the 16 x 16 conversion, facing
+                            // as Dual Strike's rule has it (the console's own flip is not trusted: it
+                            // draws a unit that has moved as the army whose turn it is); what is left
+                            // of the console's cell is the HP digit and the marks.
+                            if let Some(a) = ds_unit_art(&v, bg, u.kind, u.base, u.mirrored, (e0 >> 12) & 15) {
+                                if debug_check() {
+                                    dbg_line(&format!(
+                                        "ds_tilt: facing: unit {} (army {}) in the window faces by the rule: {}",
+                                        u.id,
+                                        u.army,
+                                        if u.mirrored { "mirrored" } else { "as stored" }
+                                    ));
+                                }
                                 let tiles = if mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
                                 for (k, &t) in tiles.iter().enumerate() {
                                     let e = bg.entry(&v, cx * 2 + (k as i32 % 2), cy * 2 + (k as i32 / 2));
@@ -2258,7 +2267,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x0e != 0 {
                 continue;
             }
-            let u = with_facing(u, ground.signature());
+            let u = with_facing(u);
             let Some(entries) = u.entries() else { continue };
             let mut pix = vec![0u16; 256];
             for (k, &e) in entries.iter().enumerate() {
@@ -2746,8 +2755,9 @@ struct RamUnit {
     raw: [u8; 12],
     /// A five-army game (a moved unit's palette is another one).
     five: bool,
-    /// The picture is mirrored, in this palette bank and by this army's CO (the
-    /// game draws a moved unit as the army whose turn it is).
+    /// The picture is mirrored (Dual Strike's rule, by the unit's own army:
+    /// [`dual_strike_mirrored`]), in this palette bank and by this army's CO (the game draws a
+    /// moved unit's palette as the army whose turn it is).
     mirrored: bool,
     bank: u16,
     /// The first BG tile of the picture (`0x080261A4`: the game's slot table, a row a
@@ -2758,8 +2768,8 @@ struct RamUnit {
     hide_hp: bool,
     /// The fourth status icon (0x2AE).
     icon4: bool,
-    /// The army the picture is drawn for, and whether the unit has moved: what its facing and
-    /// palette depend on (see [`note_facing`]).
+    /// The army the picture is drawn for, and whether the unit has moved: what its palette
+    /// depends on (the facing does not: [`dual_strike_mirrored`]).
     shown_by: u8,
     moved: bool,
     /// Low ammunition (1) and low fuel (2): at most a third of the type's own (the game's
@@ -2767,19 +2777,7 @@ struct RamUnit {
     low: u8,
 }
 
-/// The facing the console drew a unit with while it was in its window (the picture's mirror
-/// flag), kept for when the unit is beyond it: the console draws only its own window, and the
-/// unit's picture then comes from the record. It applies while what the facing depends on (the
-/// army the picture is drawn for, whether the unit has moved, its type) is as it was.
-type FacingKey = (u8, u8, bool);
-static FACING: std::sync::LazyLock<std::sync::Mutex<(u64, std::collections::HashMap<u8, (FacingKey, bool)>)>> =
-    std::sync::LazyLock::new(|| std::sync::Mutex::new((0, std::collections::HashMap::new())));
-
 impl RamUnit {
-    fn facing_key(&self) -> FacingKey {
-        (self.kind, self.shown_by, self.moved)
-    }
-
     /// The BG2 tilemap entry the console draws in the top-right of the unit's cell: the
     /// low ammunition / low fuel icon (tiles 0x33D to 0x33F, palette 10), if any.
     fn low_icon(&self) -> Option<u16> {
@@ -2886,13 +2884,14 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
             army
         };
         let moved = buf[1] & 1 != 0;
-        let (mirrored, bank, shown_by) = if five {
-            (army % 2 == 1, if moved { 9 } else if army >= 5 { 11 } else { 12 + (army as u16 - 1).min(3) }, army)
+        let (bank, shown_by) = if five {
+            (if moved { 9 } else if army >= 5 { 11 } else { 12 + (army as u16 - 1).min(3) }, army)
         } else {
             let r2 = if moved { core.raw_read_16(0x0300_3F2C, -1) as u32 } else { 64 * (army as u32 - 1) };
             let idx = (r2 >> 6) & 3;
-            (idx % 2 == 0, if moved { 11 } else { 12 + idx as u16 }, idx as u8 + 1)
+            (if moved { 11 } else { 12 + idx as u16 }, idx as u8 + 1)
         };
+        let mirrored = dual_strike_mirrored(army);
         // (The game's own tests: `0x08043050` for the CO pair's table, `0x0802706C`.)
         let player = |a: u8, off: u32| core.raw_read_8(players + 0x3C * a as u32 + off, -1);
         let have_players = (0x0200_0000..0x0400_0000).contains(&players);
