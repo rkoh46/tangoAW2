@@ -2059,8 +2059,14 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
 
     // The ground drawn from the map's RAM must be the console's BG3 (with the
     // peaks over it) where that shows; when it is not (a scroll, a fade or a
-    // scene change in progress) the frame is left as the console drew it.
-    {
+    // scene change in progress) the frame is left as the console drew it. While the Day banner is up the game parks BG3's scroll
+    // at 0 although the map is where the camera is: BG3 is not the map then, and there is nothing to check (the ground comes from
+    // the map's RAM, the banner is the console's own pixels over it).
+    let bg3_parked = (bgs[3].hofs - cam_px.0).abs() > 16 || (bgs[3].vofs - cam_px.1).abs() > 16;
+    if bg3_parked && std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
+        dbg_line(&format!("ds_tilt bg3 parked cam={:?} bg3=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs));
+    }
+    if !bg3_parked {
         let mut bad = 0;
         let mut seen = 0;
         for y in (0..H as i32).step_by(3) {
@@ -2083,7 +2089,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             eprintln!("ds_tilt: ground from RAM differs from BG3 at {} of {} sampled pixels", bad, seen);
         }
         if std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
-            eprintln!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs);
+            dbg_line(&format!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs));
         }
         if bad * 12 > seen {
             { skip_log(line!()); return; }
@@ -3063,6 +3069,10 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
 
 /// Debug aid: `TANGOAW2_TILT_SKIP_LOG=1` prints why a picture was left flat.
 fn skip_log(line: u32) {
+    if std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
+        dbg_line(&format!("ds_tilt skip line {line}"));
+        return;
+    }
     static ON: OnceLock<bool> = OnceLock::new();
     if *ON.get_or_init(|| std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some()) {
         eprintln!("ds_tilt skip line {line}");
