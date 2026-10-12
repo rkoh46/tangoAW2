@@ -72,6 +72,7 @@ fn key_bits(s: &str) -> u32 {
 
 static FRAME: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 static TILTDIR: std::sync::Mutex<Option<(String, u64)>> = std::sync::Mutex::new(None);
+static OAMLOG: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
 static TILTALL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 /// Sound recorded since `audio` (interleaved stereo).
 static RECORDING: std::sync::Mutex<Option<Vec<i16>>> = std::sync::Mutex::new(None);
@@ -272,6 +273,25 @@ fn main() {
             drain_audio(link.core_mut(0));
             *frame += 1;
             FRAME.store(*frame, std::sync::atomic::Ordering::Relaxed);
+            if let Some(path) = OAMLOG.lock().unwrap().as_ref() {
+                // (`oamlog FILE`: every frame, the sprites shown: idx x y shape size mode tile pal pri affine)
+                use std::io::Write;
+                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                    let _ = writeln!(f, "@frame {}", *frame);
+                    for i in 0..128u32 {
+                        let c = link.core(0);
+                        let a0 = c.raw_read_16(0x0700_0000 + 8 * i, -1);
+                        let a1 = c.raw_read_16(0x0700_0000 + 8 * i + 2, -1);
+                        let a2 = c.raw_read_16(0x0700_0000 + 8 * i + 4, -1);
+                        if a0 & 0x300 == 0x200 || (a0 & 255) >= 160 && (a0 & 255) < 224 && a0 & 0x100 == 0 {
+                            continue;
+                        }
+                        let x = (a1 & 0x1ff) as i32;
+                        let x = if x >= 256 { x - 512 } else { x };
+                        let _ = writeln!(f, "{} {} {} {} {} {} {} {} {} {}", i, x, a0 & 255, a0 >> 14, a1 >> 14, (a0 >> 10) & 3, a2 & 0x3ff, a2 >> 12, (a2 >> 10) & 3, (a0 >> 8) & 1);
+                    }
+                }
+            }
             if TILTALL.load(std::sync::atomic::Ordering::Relaxed) {
                 // (`tiltall 1`: the picture of every frame is made, so the tilt's logs cover the whole effect)
                 if let Ok(path) = std::env::var("TANGOAW2_TILT_LOG") {
@@ -303,6 +323,7 @@ fn main() {
         }
         let parts: Vec<&str> = line.split_whitespace().collect();
         match parts[0] {
+            "oamlog" => *OAMLOG.lock().unwrap() = parts.get(1).map(|p| p.to_string()),
             "tiltall" => {
                 // `tiltall 1 [DIR STRIDE]`: every frame's picture is made (and every STRIDE-th written to DIR)
                 TILTALL.store(parts[1] != "0", std::sync::atomic::Ordering::Relaxed);

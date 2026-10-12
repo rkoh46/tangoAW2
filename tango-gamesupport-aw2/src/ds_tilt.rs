@@ -799,9 +799,14 @@ fn obj_class(a0: u16, a2: u16, w: i32, h: i32) -> Class {
         // crosshair (four 16 x 16 pieces).
         (8, 8, 666..=674) if pal == 4 => Class::Piece,
         (16, 16, 884..=909) if pal == 1 => Class::Ground,
+        // The silo's blast area (the diamond of cells the missile will hit): lies on the ground.
+        (_, _, 956..=958) if pal == 2 && pri == 0 => Class::Ground,
         // The move arrow (palette 3, 16 x 16 pieces).
         (16, 16, _) if pal == 3 && pri == 0 => Class::Ground,
         _ if pri == 3 => Class::Billboard,
+        // The map's own effects (explosions, smoke, fire, a structure's shot, sparkles): palettes 3 to 5 at the top priority. They stand
+        // at the cell they are drawn on, like a unit's picture.
+        _ if matches!(pal, 3 | 4 | 5) && pri == 0 && tile >= 458 => Class::Billboard,
         _ => Class::Hud,
     }
 }
@@ -897,7 +902,11 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
         if x >= 240 {
             x -= 512;
         }
-        let class = obj_class(a0, a2, w, h);
+        let mut class = obj_class(a0, a2, w, h);
+        // (a window on the screen is a banner or a power's band: its letters are palette 3 as well, and stay the console's)
+        if class == Class::Billboard && (a2 >> 10) & 3 == 0 && v.dispcnt() & 0xE000 != 0 {
+            class = Class::Hud;
+        }
         if x + w <= 0 || y + h <= 0 || x >= W as i32 || y >= H as i32 {
             // Off the console's picture. The tilted view shows a little more than that, so the
             // sprites that lie on the map (the cursor, its brackets, the move arrow, the target
@@ -1844,6 +1853,13 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         }
         layers.push(l);
     }
+    // A screen the console lays over the map with BG0 (a CO's power, with its portrait and name drawn by sprites of the same palettes
+    // as the map's effects): those sprites are its own.
+    if (!bg0_ground && layers[0].iter().filter(|&&p| p != 0).count() * 5 > W * H * 2) || (bld_mode == 1 && bldcnt & 1 != 0 && bgs[0].on && !bg0_ground) {
+        for o in objs.iter_mut().filter(|o| o.class == Class::Billboard && o.pri == 0) {
+            o.class = Class::Hud;
+        }
+    }
     // Anything on the units' layer that is not a unit stays the HUD's.
     let foreign2 = if bgs[2].on { bgs[2].foreign(&v, 0, 0x361) } else { Vec::new() };
     let foreign1 = if bgs[1].on { bgs[1].foreign(&v, UNIT_TILES_LO, UNIT_TILES_HI) } else { Vec::new() };
@@ -2100,7 +2116,8 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // (When the console's own camera is somewhere the cursor is not (a structure's heal effect, the turn's pan, a scripted camera),
     // the tilted camera follows the console's: the cell at the middle of its window stands for the cursor.)
     let in_window = cursor.0 * 16 + 8 >= cam_px.0 && cursor.0 * 16 + 8 < cam_px.0 + 240 && cursor.1 * 16 + 8 >= cam_px.1 && cursor.1 * 16 + 8 < cam_px.1 + 160;
-    let look = if in_window && heal_at.is_none() { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
+    let effects_up = objs.iter().any(|o| o.class == Class::Billboard && o.pri == 0);
+    let look = if in_window && heal_at.is_none() && !effects_up { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
     let (fx, fy) = follow(look, ground.w, ground.h, core.frame_counter());
     let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
 
@@ -2699,7 +2716,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             tag: None,
             // (a property's sprite 32 tall reaches into the cell above its own, where a unit may stand: the console draws the unit over
             // it, so the sprite is drawn before the units of that cell, not after)
-            lift: if o.class == Class::Billboard && o.h >= 32 { 0.9 } else { 0.0 },
+            lift: if o.class == Class::Billboard && o.pri == 3 && o.h >= 32 { 0.9 } else { 0.0 },
         });
     }
     if let Some((ax, ay)) = heal_at {
