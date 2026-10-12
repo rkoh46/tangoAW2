@@ -2482,6 +2482,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         clear_quarter(&mut pix, k);
                     }
                 }
+                // What is left of the cell is the HP digit and the marks: sparse. A quarter that is almost entirely filled (a digit never is) is a picture of the
+                // unit's (a tile that is not the one the record names, e.g. a greyed unit's) and would show as a solid box over
+                // Dual Strike's art, which this piece is now drawn after.
+                for k in 0..4usize {
+                    let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
+                    let filled = (0..8usize).flat_map(|y| (0..8usize).map(move |x| (x, y))).filter(|&(x, y)| pix[(qy + y) * 16 + qx + x] != 0).count();
+                    if filled > 58 {
+                        clear_quarter(&mut pix, k);
+                    }
+                }
             }
             overlay_low_icon(&mut pix, &u, &bgs[2], bgs[1].pri, &v);
             let art_here = art.is_some();
@@ -2880,9 +2890,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let up = bb.upright && ss > 1;
         let (osc, ssc) = if up { (sc.max(1.0), sc.max(1.0)) } else { (sc, sc * bb.scale) };
         // (in output pixels from here on)
-        let left = (fx + bb.ox * osc) * sf;
-        let top = (fy + bb.oy * osc) * sf;
-        let ssc = ssc * sf;
+        // (a picture moves by whole output pixels at one scale between its depth's steps, so it translates as a rigid piece and does not
+        // shimmer: with a fractional place and scale each step of the camera duplicated or dropped other rows and columns of it)
+        let left = ((fx + bb.ox * osc) * sf).round();
+        let top = ((fy + bb.oy * osc) * sf).round();
+        let ssc = ((ssc * sf) * 16.0).round() / 16.0;
         let right = left + bb.w as f32 * ssc;
         let bottom = top + bb.h as f32 * ssc;
         let (x0, x1) = ((left.floor() as i32).max(0), (right.ceil() as i32).min(ow as i32));
