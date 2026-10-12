@@ -3367,7 +3367,7 @@ stay out.
   the CO screens (War Room, Survival, campaign picks) the arrows move one
   cell of the drawn grid (wrapping; a locked cell takes the cursor, not A)
   and the game's cursor is walked to that CO (ds_coselect::arrows). Tools
-  set byte 0x0203F4C8 to 1 for AW2's arrows. Humans and the computer alike: the player picks the
+  set byte 0x0203F4E0 to 1 for AW2's arrows. Humans and the computer alike: the player picks the
   computer's partner, as in Dual Strike, and the computer then plays the
   pair (Change, both powers, the Tag Power). Five-army games too (Black
   Hole the fifth: five partner slots, OBJ tiles 0x100..0x14F, the five

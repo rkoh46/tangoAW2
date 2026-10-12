@@ -87,8 +87,12 @@ pub const PANEL: u32 = STATE + 0xAC;
 const PENDING: u32 = STATE + 0xB4;
 /// Teams-screen bookkeeping ([`crate::tag_ui`]): STATE + 0xC0..0xCF.
 pub const UI: u32 = STATE + 0xC0;
-/// 1: AW2's own arrows on the Teams and CO screens although Dual Strike map graphics are on (a development byte, for tools).
-pub const AW2_ARROWS: u32 = UI + 8;
+/// Dual Strike's arrows' state (crate::tag_ui, crate::ds_coselect): STATE + 0xE0..0xEF, free. +0: 1 gives AW2's own arrows on the Teams and CO screens although Dual Strike map graphics are on (a development byte, for tools).
+pub const ARROWS: u32 = STATE + 0xE0;
+pub const AW2_ARROWS: u32 = ARROWS;
+/// The keys the arrows' walks added to this frame's pad (u16, ARROWS + 8; the pad merge keeps them out of the keys it holds back as
+/// claimed, which the player may be holding down).
+pub const INJECTED: u32 = ARROWS + 8;
 pub const STATE_END: u32 = STATE + 0x100;
 
 const NONE: u8 = 0xFF;

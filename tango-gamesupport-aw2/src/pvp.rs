@@ -531,6 +531,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::setup_phase::menus(core, ds && ds_features && mode.is_none());
         crate::design5::sync(core);
 
+        // (the keys the arrows' walks add: crate::tag_ui, crate::ds_coselect)
+        if core.raw_read_16(crate::tag::INJECTED, -1) != 0 {
+            core.raw_write_16(crate::tag::INJECTED, -1, 0);
+        }
         let prev = core.raw_read_16(PREV_KEYS, -1) as u32;
         core.raw_write_16(PREV_KEYS, -1, keys as u16);
         let held = keys;
@@ -621,7 +625,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
 
         let claimed = claimed | (held & !keys);
         core.raw_write_16(CLAIMED_KEYS, -1, claimed as u16);
-        keys & !claimed
+        // The walks' own presses are not the player's: held keys the player has claimed do not hold them back.
+        (keys & !claimed) | core.raw_read_16(crate::tag::INJECTED, -1) as u32
     }
 }
 

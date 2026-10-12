@@ -951,9 +951,9 @@ fn grid(core: &Core) -> Option<Grid> {
 
 /// Dual Strike's arrows on the CO screen (see [`arrows`]): the cell the cursor is on although the game's cannot be (a locked CO:
 /// its cell + 1), the CO the walk of the game's cursor is heading for (+ 1) and the walk's pulse.
-const LOCKED_CELL: u32 = crate::tag::UI + 5;
-const WALK_TO: u32 = crate::tag::UI + 6;
-const WALK_PULSE: u32 = crate::tag::UI + 7;
+const LOCKED_CELL: u32 = crate::tag::ARROWS + 5;
+const WALK_TO: u32 = crate::tag::ARROWS + 6;
+const WALK_PULSE: u32 = crate::tag::ARROWS + 7;
 
 /// The CO screen (the campaigns', the War Room's) while it is up.
 fn pick_view(core: &Core) -> Option<PickView> {
@@ -1019,16 +1019,13 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
         }
         return keys;
     };
-    let (dx, dy) = if pressed & KEY_RIGHT != 0 {
-        (1, 0)
-    } else if pressed & KEY_LEFT != 0 {
-        (-1, 0)
-    } else if pressed & KEY_DOWN != 0 {
-        (0, 1)
-    } else if pressed & KEY_UP != 0 {
-        (0, -1)
-    } else {
-        (0, 0)
+    let fire = crate::tag_ui::repeat(core, keys, pressed, dpad);
+    let (dx, dy) = match fire {
+        KEY_RIGHT => (1, 0),
+        KEY_LEFT => (-1, 0),
+        KEY_DOWN => (0, 1),
+        KEY_UP => (0, -1),
+        _ => (0, 0),
     };
     let locked = core.raw_read_8(LOCKED_CELL, -1) as usize;
     let mut walk = core.raw_read_8(WALK_TO, -1);
@@ -1084,14 +1081,16 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
     if pulse != 0 {
         return keys;
     }
-    keys | if g.group != want {
+    let key = if g.group != want {
         let n = g.sizes.len();
         if (want + n - g.group) % n <= n / 2 { KEY_DOWN } else { KEY_UP }
     } else if (k - first + size - pos) % size <= size / 2 {
         KEY_RIGHT
     } else {
         KEY_LEFT
-    }
+    };
+    core.raw_write_16(crate::tag::INJECTED, -1, key as u16);
+    keys | key
 }
 
 // --- The frame --------------------------------------------------------------------------------------------

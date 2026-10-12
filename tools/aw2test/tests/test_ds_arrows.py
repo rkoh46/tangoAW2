@@ -317,3 +317,88 @@ def ds_coselect_arrows_fast_presses_are_kept(ctx):
         cell = step(len(all_cos), cell, *d)
     e.wait(2 * WALK)
     ctx.eq(under_cursor(e)[2], all_cos[cell], f"five quick arrows end on cell {cell}")
+
+
+def versus_cells(e, five=False):
+    c = cursor(e, five)
+    return ("tab", c // 2) if c % 2 else (("partner" if editing(e) == c // 2 else "co"), c // 2)
+
+
+def virtual_cell(e, armies, five=False):
+    """The Versus cell number (CO, partner, CO ... tabs) the cursor is on."""
+    c = cursor(e, five)
+    return 2 * armies + c // 2 if c % 2 else c + (editing(e) == c // 2)
+
+
+def fresh_versus(ctx):
+    g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
+    g.e.w8(DS_GRAPHICS, 1)
+    g.e.wait(10)
+    return g.e
+
+
+@test(modes=("ds",))
+def ds_coselect_arrows_versus_press_edges(ctx):
+    """As the app delivers input (a key held for as many frames as the player holds it): one cell a press whether it lasts 8,
+    15 or 60 frames' worth of a held key's repeats (Dual Strike's: the first step on the press, then one after 12 frames and
+    one every 4 after that, measured in melonDS), three presses 10 frames apart are three cells, and the pulses that walk the
+    game's cursor are not read back as presses."""
+    # (frames held, cells): the press, then 12, 16, 20 ... 56 for the 60 frames (13 cells; the ring has 6)
+    for frames, cells in ((2, 1), (8, 1), (11, 1), (13, 2), (15, 2), (60, 13)):
+        e = fresh_versus(ctx)
+        e.hold("RIGHT", frames)
+        e.wait(120)
+        ctx.eq(virtual_cell(e, 2), cells % 6, f"RIGHT held {frames} frames: {cells} cells")
+        ctx.eq(e.u8(tag.ARROWS + 1), 0, f"RIGHT held {frames} frames: the walk is over")
+    for gap in (10, 6):
+        e = fresh_versus(ctx)
+        for _ in range(3):
+            e.hold("RIGHT", 4)
+            e.wait(gap - 4)
+        e.wait(120)
+        ctx.eq(virtual_cell(e, 2), 3, f"RIGHT three times, {gap} frames apart")
+    e = fresh_versus(ctx)
+    for _ in range(3):
+        e.hold("RIGHT", 8)
+        e.wait(3)
+    e.hold("LEFT", 8)
+    e.wait(120)
+    ctx.eq(virtual_cell(e, 2), 2, "RIGHT three times, LEFT once, in a hurry")
+
+
+@test(modes=("ds",))
+def ds_coselect_arrows_war_room_press_edges(ctx):
+    """The War Room's grid takes presses the same way: one cell for a short press, a held key repeats after 12 frames."""
+    for frames, cells in ((8, 1), (15, 2)):
+        e, g = war_room_co_screen(ctx, True)
+        e.w8(DS_GRAPHICS, 1)
+        e.wait(30)
+        offered, all_cos = grid_of(e)
+        cell = all_cos.index(under_cursor(e)[2])
+        for _ in range(cells):
+            cell = step(len(all_cos), cell, 1, 0)
+        e.hold("RIGHT", frames)
+        e.wait(3 * WALK)
+        ctx.eq(under_cursor(e)[2], all_cos[cell], f"RIGHT held {frames} frames: {cells} cells")
+        e.close()
+
+
+@test(modes=("ds",))
+def ds_coselect_arrows_survive_the_rules_screen(ctx):
+    """To the Rules screen (its row cursor and flags live in neighbouring state bytes) and back with B: the Teams screen's arrows
+    are still Dual Strike's, one cell a press."""
+    g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
+    e = g.e
+    e.w8(DS_GRAPHICS, 1)
+    e.wait(10)
+    g.teams_to_rules()
+    for _ in range(3):
+        e.press("DOWN", 8)
+        e.wait(20)
+    e.press("B", 8)
+    ctx.require(e.wait_until(g.on_teams, 400, step=10), "back on the Teams screen")
+    e.wait(60)
+    start = virtual_cell(e, 2)
+    e.hold("RIGHT", 8)
+    e.wait(80)
+    ctx.eq(virtual_cell(e, 2), (start + 1) % 6, "RIGHT: one Dual Strike cell")

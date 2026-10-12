@@ -10,7 +10,8 @@ from . import rom as romlib
 
 STATE = 0x0203F400
 UI = STATE + 0xC0  # Teams / CO screen bookkeeping (crate::tag_ui, crate::ds_coselect)
-AW2_ARROWS = UI + 8  # 1: AW2's own arrows on the Teams and CO screens although the Dual Strike map graphics are on
+ARROWS = STATE + 0xE0  # Dual Strike's arrows' state (crate::tag::ARROWS)
+AW2_ARROWS = ARROWS  # 1: AW2's own arrows on the Teams and CO screens although the Dual Strike map graphics are on
 REC = 0x20
 P_CO, P_PHASE, P_USES, P_ANNOUNCE, P_CHARGE, P_SKILLS = 0x00, 0x01, 0x02, 0x03, 0x04, 0x08
 TEAMS_PARTNER = STATE + 0xA0  # armies 1..5

@@ -278,10 +278,43 @@ pub fn teams_tick(core: &mut Core, ds: bool, remap: bool, keys: u32, prev: u32) 
     keys
 }
 
-/// The cell Dual Strike's arrows are walking the game's cursor to (+1; 0 none): the game's cursor stop, bit 7 the partner
-/// cell of that army's CO stop. And the walk's pulse (a press needs a release before the next).
-const CELL_TARGET: u32 = tag::UI + 3;
-const CELL_PULSE: u32 = tag::UI + 4;
+/// The cell Dual Strike's arrows are heading for (+1; 0 none) and the walk's pulse (a press needs a release before the next).
+const CELL_TARGET: u32 = tag::ARROWS + 1;
+const CELL_PULSE: u32 = tag::ARROWS + 2;
+/// The arrows' auto-repeat (see [`repeat`]): frames held, the direction held.
+const REPEAT_HELD: u32 = tag::ARROWS + 3;
+const REPEAT_DIR: u32 = tag::ARROWS + 4;
+
+/// Dual Strike's auto-repeat of the arrows, from the keys held: a press (its edge) is one step, a key held on goes on after 12
+/// frames and then every 4 (measured on clean Dual Strike's Versus screen in melonDS). Returns the direction to step, or 0.
+/// `mask` is the arrows the screen uses.
+pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32) -> u32 {
+    let held = held & mask;
+    let dir = [KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN].into_iter().find(|&d| held & d != 0).unwrap_or(0);
+    let last = core.raw_read_8(REPEAT_DIR, -1) as u32;
+    if dir == 0 {
+        if last != 0 {
+            core.raw_write_8(REPEAT_DIR, -1, 0);
+            core.raw_write_8(REPEAT_HELD, -1, 0);
+        }
+        return 0;
+    }
+    if pressed & dir != 0 || last != dir {
+        core.raw_write_8(REPEAT_DIR, -1, dir as u8);
+        core.raw_write_8(REPEAT_HELD, -1, 0);
+        return dir;
+    }
+    let n = core.raw_read_8(REPEAT_HELD, -1).saturating_add(1);
+    let (fire, n) = if n == 12 {
+        (true, n)
+    } else if n >= 16 {
+        (true, 12)
+    } else {
+        (false, n)
+    };
+    core.raw_write_8(REPEAT_HELD, -1, n);
+    if fire { dir } else { 0 }
+}
 
 /// Dual Strike's cells in order: each army's CO, then its partner, then (after the last army) the P1 / CPU tabs. Returns
 /// (game cursor stop, partner cell) of cell `v` of `3 * armies`.
@@ -294,63 +327,53 @@ fn cell_stop(v: u32, armies: u32) -> (u32, bool) {
 }
 
 /// Dual Strike's Versus (offline, with Dual Strike map graphics): LEFT and RIGHT go cell to cell as Dual Strike's cursor
-/// does (CO, partner, the next army's CO ..., then the tabs, round again), UP and DOWN change what is in the cell
-/// (the CO, the partner, the controller). The game's own cursor does the moving: the walk presses its LEFT or RIGHT, one
-/// press every other frame, until it stands on the cell's stop; the partner cell is START's. Everything is read from and
-/// written to the game's RAM, so a savestate in the middle of a walk goes on with it.
+/// does (CO, partner, the next army's CO ..., then the tabs, round again; a press is one cell, a key held on repeats as Dual
+/// Strike's does), UP and DOWN change what is in the cell (the CO, the partner, the controller). The cell the cursor is
+/// heading for is kept (a press on the way goes on from it), and the game's own cursor does the moving: the walk presses its
+/// LEFT or RIGHT, one press every other frame, until it stands on the cell's stop; the partner cell is START's. The player's
+/// arrows never reach the game, and the walk's own are never read back as presses (the repeat is read from the pad as it
+/// came, before the walk adds to it). Everything is in the game's RAM.
 fn ds_arrows(core: &mut Core, keys: u32, pressed: u32, armies: u32) -> u32 {
-    let dpad = KEY_LEFT | KEY_RIGHT | KEY_UP | KEY_DOWN;
     let rec = record(core);
     let idle = [0x26, 0x2D, 0x24].iter().all(|&o| core.raw_read_8(rec + o, -1) == 0);
     let c = core.raw_read_8(rec + CURSOR_AT, -1) as u32;
     let ring = 2 * armies;
-    let target = core.raw_read_8(CELL_TARGET, -1);
-    if target != 0 {
-        let (t, partner) = (((target - 1) & 0x7F) as u32, (target - 1) & 0x80 != 0);
-        let keys = keys & !dpad;
-        if c == t && idle {
-            core.raw_write_8(EDITING, -1, if partner { (t / 2) as u8 } else { NONE });
-            core.raw_write_8(CELL_TARGET, -1, 0);
-            core.raw_write_8(CELL_PULSE, -1, 0);
-            return keys;
-        }
-        if c >= ring || t >= ring {
-            core.raw_write_8(CELL_TARGET, -1, 0);
-            return keys;
-        }
-        let pulse = core.raw_read_8(CELL_PULSE, -1);
-        core.raw_write_8(CELL_PULSE, -1, 1 - pulse.min(1));
-        return if pulse == 0 && idle {
-            keys | if (t + ring - c) % ring <= armies { KEY_RIGHT } else { KEY_LEFT }
-        } else {
-            keys
-        };
-    }
-    let step: i32 = if pressed & KEY_RIGHT != 0 {
-        1
-    } else if pressed & KEY_LEFT != 0 {
-        -1
-    } else {
-        0
-    };
-    if step == 0 || !idle || c >= ring {
-        return keys;
+    let fire = repeat(core, keys, pressed, KEY_LEFT | KEY_RIGHT);
+    let mut out = keys & !(KEY_LEFT | KEY_RIGHT);
+    if c >= ring {
+        core.raw_write_8(CELL_TARGET, -1, 0);
+        return out;
     }
     let editing = core.raw_read_8(EDITING, -1);
-    let v = if c % 2 == 1 {
-        2 * armies + c / 2
-    } else {
-        c + (editing as u32 == c / 2) as u32
-    };
-    let (t, partner) = cell_stop((v as i32 + step).rem_euclid(3 * armies as i32) as u32, armies);
-    core.raw_write_8(EDITING, -1, NONE);
-    if t == c {
-        core.raw_write_8(EDITING, -1, if partner { (t / 2) as u8 } else { NONE });
-    } else {
-        core.raw_write_8(CELL_TARGET, -1, (t | if partner { 0x80 } else { 0 }) as u8 + 1);
+    let here = if c % 2 == 1 { 2 * armies + c / 2 } else { c + (editing as u32 == c / 2) as u32 };
+    let target = core.raw_read_8(CELL_TARGET, -1) as u32;
+    let mut v = if target != 0 { target - 1 } else { here };
+    if fire != 0 {
+        if !idle && target == 0 {
+            return keys;
+        }
+        v = (v as i32 + if fire == KEY_RIGHT { 1 } else { -1 }).rem_euclid(3 * armies as i32) as u32;
+        core.raw_write_8(EDITING, -1, NONE);
         core.raw_write_8(CELL_PULSE, -1, 1);
+    } else if target == 0 {
+        return out;
     }
-    keys & !dpad
+    let (t, partner) = cell_stop(v, armies);
+    if c == t && idle {
+        core.raw_write_8(EDITING, -1, if partner { (t / 2) as u8 } else { NONE });
+        core.raw_write_8(CELL_TARGET, -1, 0);
+        return out;
+    }
+    core.raw_write_8(CELL_TARGET, -1, v as u8 + 1);
+    out &= !(KEY_UP | KEY_DOWN);
+    let pulse = core.raw_read_8(CELL_PULSE, -1);
+    core.raw_write_8(CELL_PULSE, -1, 1 - pulse.min(1));
+    if pulse == 0 && idle {
+        let key = if (t + ring - c) % ring <= armies { KEY_RIGHT } else { KEY_LEFT };
+        core.raw_write_16(tag::INJECTED, -1, key as u16);
+        out |= key;
+    }
+    out
 }
 
 fn borrow(core: &mut Core) {
