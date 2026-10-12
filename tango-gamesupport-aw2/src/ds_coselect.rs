@@ -880,6 +880,17 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
                     }
                     slot(n + a, colour, true, a < done, &mut flags)
                 });
+                // Dual Strike shows a partner plate on every card of a mission that picks partners; the armies past the
+                // room for picks (four) keep their defaults (Sasha and Colin, Javier and Jess).
+                let partner = partner.or_else(|| {
+                    if k == 0 {
+                        return None;
+                    }
+                    let d = defaults(colour);
+                    let co = *d.get(if a < done { 0 } else { 1 })?;
+                    flags.push((colour, co, 2));
+                    Some(pic(co))
+                });
                 (main, partner)
             };
             out.push(Card { colour, main, partner });

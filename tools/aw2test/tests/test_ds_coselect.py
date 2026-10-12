@@ -285,8 +285,9 @@ def ds_coselect_campaign_plates_are_filled(ctx):
     """Before anything is picked every plate of every card shows a name, as Dual Strike's does (Orange Star's Jake and Rachel,
     Blue Moon's Sasha and Colin, Green Earth's Javier and Jess, the pick's own taking the CO under the cursor): none is
     left empty with only its faint 1 or 2. Two cards (the mission picks two armies) and three, all wholly on the screen."""
-    # (the CO screen has room for four picks: with three armies only the first has a partner's plate)
-    for step, n, partners, colours in ((10, 2, 2, ["red", "blue"]), (21, 3, 1, ["red", "blue", "green"])):
+    # (every card of a mission that picks partners has a partner plate: with three armies the CO screen has room to pick only the
+    # first's, the others keep Dual Strike's defaults)
+    for step, n, partners, colours in ((10, 2, 2, ["red", "blue"]), (21, 3, 3, ["red", "blue", "green"])):
         e, g, d = to_co_screen(ctx, step)
         e.w8(DS_GRAPHICS, 1)
         e.wait(30)
