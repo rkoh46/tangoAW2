@@ -36,6 +36,7 @@
 use crate::ds_ground::Ground;
 use crate::wasteland::MAP;
 use mgba::core::Core;
+use rayon::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
@@ -1077,6 +1078,10 @@ struct Billboard {
     last: bool,
     /// Source pixels per 1/16 cell: 1 for the console's pictures, 1/2 for Dual Strike's 32 x 32 ones.
     scale: f32,
+    /// Drawn upright at the size of the console's pixels (times the output scale), at the foot's place, not shrunk with the
+    /// tilt: the HP digit and the marks of a unit whose picture is Dual Strike's. Only where the output is larger than
+    /// the console's.
+    upright: bool,
     /// A unit drawn from its record, for the debug log: its cell and low-ammunition / fuel icon.
     tag: Option<(i32, i32, u8)>,
 }
@@ -1193,19 +1198,45 @@ fn tilted() -> bool {
 /// Rewrites `rgba` (the console's 240 x 160 picture) as Dual Strike's tilted
 /// battle map, when that is what is on screen. Nothing else changes.
 pub fn apply(core: &Core, rgba: &mut [u8]) {
+    if let Some(out) = apply_scaled(core, rgba, 1) {
+        rgba.copy_from_slice(&out);
+    }
+}
+
+/// The tilted battle map drawn `ss` times the console's size (`ss * 240` x `ss * 160`), from the console's
+/// 240 x 160 picture `rgba`, which stays as it is: what the map does not own (the console's own sprites and
+/// windows, the HUD) is taken from it, each pixel `ss` x `ss` times, nearest. `None` where the tilt leaves
+/// the picture as the console drew it (not the battle map, a fade, a menu over the map ...).
+pub fn apply_scaled(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     TILTED.store(false, Ordering::Relaxed);
     // A picture that goes wrong must never take the game down: the frame is
     // left as the console drew it and the tilt stays off for the session.
     static FAILED: AtomicBool = AtomicBool::new(false);
     if !enabled() || FAILED.load(Ordering::Relaxed) {
-        return;
+        return None;
     }
-    let before = rgba.to_vec();
-    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| apply_timed(core, rgba))).is_err() {
-        FAILED.store(true, Ordering::Relaxed);
-        rgba.copy_from_slice(&before);
-        eprintln!("ds_tilt: failed; the tilt is off for this session");
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| apply_timed(core, rgba, ss.max(1)))) {
+        Ok(out) => out,
+        Err(_) => {
+            FAILED.store(true, Ordering::Relaxed);
+            eprintln!("ds_tilt: failed; the tilt is off for this session");
+            None
+        }
     }
+}
+
+static HIRES: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(1);
+
+/// How many times the console's size the tilted map is drawn (1: its size; the host sets it from the platform).
+/// `TANGOAW2_TILT_SCALE` overrides it.
+pub fn set_hires_scale(n: u8) {
+    HIRES.store(n.clamp(1, 8), Ordering::Relaxed);
+}
+
+pub fn hires_scale() -> usize {
+    static ENV: OnceLock<Option<usize>> = OnceLock::new();
+    ENV.get_or_init(|| std::env::var("TANGOAW2_TILT_SCALE").ok().and_then(|v| v.parse::<usize>().ok()).map(|n| n.clamp(1, 8)))
+        .unwrap_or_else(|| HIRES.load(Ordering::Relaxed) as usize)
 }
 
 /// Dual Strike's cursor on the flat map (the tilt off, "Dual Strike map graphics" on): the console's
@@ -1588,11 +1619,11 @@ fn flat_range(core: &Core, rgba: &mut [u8]) {
     }
 }
 
-fn apply_timed(core: &Core, rgba: &mut [u8]) {
+fn apply_timed(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     static TIME: OnceLock<bool> = OnceLock::new();
     if TIMING_LOG.load(Ordering::Relaxed) || env_on("TANGOAW2_TILT_TIME", &TIME) {
         let t = std::time::Instant::now();
-        apply_inner(core, rgba);
+        let out = apply_inner(core, rgba, ss);
         // (total ns, worst ns, pictures)
         static STATS: std::sync::Mutex<(u128, u128, u32)> = std::sync::Mutex::new((0, 0, 0));
         let ns = t.elapsed().as_nanos();
@@ -1609,18 +1640,20 @@ fn apply_timed(core: &Core, rgba: &mut [u8]) {
             );
             *st = (0, 0, 0);
         }
+        out
     } else {
-        apply_inner(core, rgba);
+        apply_inner(core, rgba, ss)
     }
 }
 
-fn apply_inner(core: &Core, rgba: &mut [u8]) {
+fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
+    let (ow, oh) = (W * ss, H * ss);
     if !enabled() || rgba.len() != W * H * 4 {
-        { skip_log(line!()); return; }
+        { skip_log(line!()); return None; }
     }
     // (the Design Room's map editor runs the battle map's loop over records it does not keep)
     if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
-        { skip_log(line!()); return; }
+        { skip_log(line!()); return None; }
     }
     let t0 = std::time::Instant::now();
     let mut v = Vid::read(core);
@@ -1660,18 +1693,18 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 v.io[0x29] = r16(0x0300_30C0).wrapping_add(r16(0x0300_1FEC) << 8);
                 v.io[0x2a] = r16(0x0300_1FB4);
             }
-            _ => return,
+            _ => return None,
         }
     }
     let d = v.dispcnt();
     // Tile mode 0, display on, BG1-3 and OBJ on.
     if d & 7 != 0 || d & 0x80 != 0 || d & 0x0e00 != 0x0e00 || d & 0x1000 == 0 {
-        { skip_log(line!()); return; }
+        { skip_log(line!()); return None; }
     }
     let (Some(bgs0), Some(bgs1), Some(bgs2), Some(bgs3)) =
         (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3))
     else {
-        { skip_log(line!()); return; }
+        { skip_log(line!()); return None; }
     };
     let bgs = [bgs0, bgs1, bgs2, bgs3];
     let win = Windows::new(&v);
@@ -1680,7 +1713,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let bld_mode = (bldcnt >> 6) & 3;
     // A fade over everything is not ours to redo.
     if (bld_mode >= 2 && (!win.any() || win.outside & 0x20 != 0)) || v.io[0x26] & 0xff != 0 {
-        { skip_log(line!()); return; }
+        { skip_log(line!()); return None; }
     }
     for bg in &bgs {
         if bg.on {
@@ -1689,7 +1722,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
     let t_load = t0.elapsed();
     let Some(objs) = read_objs(core, &mut v) else {
-        { skip_log(line!()); return; }
+        { skip_log(line!()); return None; }
     };
     let t_objs = t0.elapsed();
 
@@ -1914,7 +1947,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     Ground::load(core, &mut v);
     v.ensure(core, OBJ_TILES, 0x8000);
     let Some(mut ground) = Ground::new(core, &v) else {
-        { skip_log(line!()); return; }
+        { skip_log(line!()); return None; }
     };
     let cam_px = (
         core.raw_read_16(MAP + 4, -1) as i16 as i32,
@@ -2002,7 +2035,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     {
         let covered = (0..W * H).filter(|&i| layers[1][i] != 0 || layers[2][i] != 0).count();
         if covered * 5 > W * H * 2 || crate::tag_ui::build_menu_up(core) {
-            { skip_log(line!()); return; }
+            { skip_log(line!()); return None; }
         }
     }
 
@@ -2035,7 +2068,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             eprintln!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs);
         }
         if bad * 12 > seen {
-            { skip_log(line!()); return; }
+            { skip_log(line!()); return None; }
         }
     }
 
@@ -2172,6 +2205,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 // Units stand a little in front of the edge; the peaks and
                 // treetops (BG2) stand on it.
                 let drop = if b == 1 { cp().foot_drop } else { cp().terrain_drop };
+                let has_art = art_board.is_some();
                 if let Some(a) = art_board {
                     if debug_check() {
                         dbg_line(&format!("ds_tilt: unit art: Dual Strike's 32 x 32 at ({mx}, {my})"));
@@ -2187,6 +2221,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         rank: (3 - bg.pri) * 2,
                         last: false,
                         scale: 0.5,
+                        upright: false,
                         tag: None,
                     });
                 }
@@ -2201,6 +2236,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     rank: (3 - bg.pri) * 2,
                     last: false,
                     scale: 1.0,
+                    upright: has_art,
                     tag: None,
                 });
             }
@@ -2325,6 +2361,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 }
             }
             overlay_low_icon(&mut pix, &u, &bgs[2], bgs[1].pri, &v);
+            let art_here = art.is_some();
             if let Some(a) = art {
                 if debug_check() {
                     dbg_line(&format!("ds_tilt: unit art: Dual Strike's 32 x 32 at ({ux}, {uy}) from its record"));
@@ -2340,6 +2377,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     rank: (3 - bgs[1].pri) * 2,
                     last: false,
                     scale: 0.5,
+                    upright: false,
                     tag: None,
                 });
             }
@@ -2354,6 +2392,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 rank: (3 - bgs[1].pri) * 2,
                 last: false,
                 scale: 1.0,
+                upright: art_here,
                 tag: Some((ux, uy, u.low)),
             });
         }
@@ -2460,6 +2499,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         rank: 1,
                         last: false,
                         scale: 1.0,
+                        upright: false,
                         tag: None,
                     });
                 }
@@ -2484,6 +2524,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             rank: (3 - o.pri) * 2 + 1,
             last: o.class == Class::Pointer,
             scale: 1.0,
+            upright: false,
             tag: None,
         });
     }
@@ -2531,6 +2572,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                         rank: 1,
                         last: false,
                         scale: 1.0,
+                        upright: false,
                         tag: Some((-1, -1, 0)),
                     });
                 }
@@ -2579,38 +2621,88 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         let s = |x: usize, y: usize| shadow[y * sw + x];
         (s(i, j) * (1.0 - a) + s(i + 1, j) * a) * (1.0 - b) + (s(i, j + 1) * (1.0 - a) + s(i + 1, j + 1) * a) * b
     };
+    let t_shadow = t0.elapsed();
     // --- The tilted map ---
-    let mut map = vec![0u16; W * H];
+    // Drawn `ss` times the console's size: each output pixel is looked up in the full-resolution source tiles (16 x 16
+    // a cell). The console's own pixel grid shows only where its overlays (the range tint, the decals) are read.
+    let sf = ss as f32;
+    // (the rows below are drawn on all cores, which only read the cells: they are drawn now)
     for y in 0..H {
-        // (Along a row the ground's v and the scale are constant; u runs on.)
         let (u_mid, vv) = cam.unproject(cp().cx, y as f32 + 0.5);
         let (u_edge, _) = cam.unproject(cp().cx + 1.0, y as f32 + 0.5);
         let du = u_edge - u_mid;
         let gy = (vv * 16.0).floor() as i32;
+        for x in 0..W {
+            let gx = ((u_mid + du * (x as f32 + 0.5 - cp().cx)) * 16.0).floor() as i32;
+            if ground.outside(gx, gy).is_some() {
+                continue;
+            }
+            let (mut ci, _, _) = ground.locate(gx, gy);
+            if cp().tall_lift != 0 && gy + cp().tall_lift < ground.h * 16 {
+                let (c2, _, _) = ground.locate(gx, gy + cp().tall_lift);
+                if ground.is_tall(c2) {
+                    ci = c2;
+                }
+            }
+            ground.cell(ci);
+        }
+    }
+    let t_warm = t0.elapsed();
+    let ground = &ground;
+    let mut map = vec![0u16; ow * oh];
+    let shade_step = if ss == 1 { 2 } else { ss };
+    let tall: Vec<bool> = (0..(ground.w * ground.h) as usize).map(|i| ground.is_tall(i)).collect();
+    let lift = cp().tall_lift;
+    map.par_chunks_mut(ow).enumerate().for_each(|(y, row)| {
+        // (Along a row the ground's v and the scale are constant; u runs on.)
+        let yy = (y as f32 + 0.5) / sf;
+        let (u_mid, vv) = cam.unproject(cp().cx, yy);
+        let (u_edge, _) = cam.unproject(cp().cx + 1.0, yy);
+        let du = u_edge - u_mid;
+        let gy = (vv * 16.0).floor() as i32;
         let sy = gy - cam_px.1;
+        // (the ground's pixel column of the row's first output pixel, and how far the next is)
+        let g0 = (u_mid + du * (0.5 / sf - cp().cx)) * 16.0;
+        let gstep = du * 16.0 / sf;
+        let lifted = lift != 0 && gy + lift < ground.h * 16;
+        let (cy, cy2) = (gy >> 4, (gy + lift) >> 4);
+        // (a row wholly inside the map's cells takes the quick way; the rest, the reflected edges, the general one)
+        let inside_row = (0..ground.h).contains(&cy) && (!lifted || (0..ground.h).contains(&cy2));
         let mut shade_here = 0.0f32;
         let mut cur = (usize::MAX, [0u16; 256]);
-        for x in 0..W {
-            let u = u_mid + du * (x as f32 + 0.5 - cp().cx);
-            let gx = (u * 16.0).floor() as i32;
-            let outer = ground.outside(gx, gy);
-            let mut p = if let Some(c) = outer {
-                c
+        for (x, out) in row.iter_mut().enumerate() {
+            let gf = g0 + gstep * x as f32;
+            let gx = gf.floor() as i32;
+            let cx = gx >> 4;
+            let (outer, mut p) = if inside_row && (0..ground.w).contains(&cx) {
+                let (mut ci, mut ly) = ((cy * ground.w + cx) as usize, (gy & 15) as usize);
+                if lifted {
+                    let c2 = (cy2 * ground.w + cx) as usize;
+                    if tall[c2] {
+                        (ci, ly) = (c2, ((gy + lift) & 15) as usize);
+                    }
+                }
+                if cur.0 != ci {
+                    cur = (ci, *ground.cell_ref(ci));
+                }
+                (None, cur.1[ly * 16 + (gx & 15) as usize])
+            } else if let Some(c) = ground.outside(gx, gy) {
+                (Some(c), c)
             } else {
                 let (mut ci, mut lx, mut ly) = ground.locate(gx, gy);
-                if cp().tall_lift != 0 && gy + cp().tall_lift < ground.h * 16 {
-                    let (c2, x2, y2) = ground.locate(gx, gy + cp().tall_lift);
+                if lifted {
+                    let (c2, x2, y2) = ground.locate(gx, gy + lift);
                     if ground.is_tall(c2) {
                         (ci, lx, ly) = (c2, x2, y2);
                     }
                 }
                 if cur.0 != ci {
-                    cur = (ci, *ground.cell(ci));
+                    cur = (ci, *ground.cell_ref(ci));
                 }
-                cur.1[ly * 16 + lx]
+                (None, cur.1[ly * 16 + lx])
             };
-            if x & 1 == 0 {
-                shade_here = shade(u, vv);
+            if x % shade_step == 0 {
+                shade_here = shade(gf / 16.0, vv);
             }
             if shade_here > 0.0 {
                 let k = 1.0 - SHADOW_DARK * shade_here;
@@ -2649,24 +2741,30 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                     p = d;
                 }
             }
-            map[y * W + x] = p;
+            *out = p;
         }
-    }
+    });
+    let t_ground = t0.elapsed();
+    let mut placed = Vec::with_capacity(boards.len());
     for bb in boards.iter() {
         let (fx, fy, cell) = cam.project(bb.fu, bb.fv);
         let sc = cell / 16.0;
-        let left = fx + bb.ox * sc;
-        let top = fy + bb.oy * sc;
-        let ssc = sc * bb.scale;
+        // (an upright mark keeps the console's pixel size, growing only once a cell is bigger than 16 pixels)
+        let up = bb.upright && ss > 1;
+        let (osc, ssc) = if up { (sc.max(1.0), sc.max(1.0)) } else { (sc, sc * bb.scale) };
+        // (in output pixels from here on)
+        let left = (fx + bb.ox * osc) * sf;
+        let top = (fy + bb.oy * osc) * sf;
+        let ssc = ssc * sf;
         let right = left + bb.w as f32 * ssc;
         let bottom = top + bb.h as f32 * ssc;
-        let (x0, x1) = ((left.floor() as i32).max(0), (right.ceil() as i32).min(W as i32));
-        let (y0, y1) = ((top.floor() as i32).max(0), (bottom.ceil() as i32).min(H as i32));
+        let (x0, x1) = ((left.floor() as i32).max(0), (right.ceil() as i32).min(ow as i32));
+        let (y0, y1) = ((top.floor() as i32).max(0), (bottom.ceil() as i32).min(oh as i32));
         if debug_check() && bb.tag.is_none() {
             // (a test finds a unit's picture on the screen by its cell: `fu`, `fv` are its foot)
             dbg_line(&format!(
                 "ds_tilt: board {:.2} {:.2} {}x{} at ({:.0}, {:.0}) to ({:.0}, {:.0})",
-                bb.fu, bb.fv, bb.w, bb.h, left, top, right, bottom
+                bb.fu, bb.fv, bb.w, bb.h, left / sf, top / sf, right / sf, bottom / sf
             ));
         }
         if let (true, Some((cx, cy, low))) = (debug_check(), bb.tag) {
@@ -2676,60 +2774,43 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 cx,
                 cy,
                 low,
-                left,
-                top,
-                right,
-                bottom
+                left / sf,
+                top / sf,
+                right / sf,
+                bottom / sf
             ));
         }
-        for y in y0..y1 {
-            let v = ((y as f32 + 0.5 - top) / ssc).floor() as i32;
-            if !(0..bb.h).contains(&v) {
-                continue;
-            }
-            for x in x0..x1 {
-                let u = ((x as f32 + 0.5 - left) / ssc).floor() as i32;
-                if !(0..bb.w).contains(&u) {
+        placed.push((bb, left, top, ssc, x0, x1, y0, y1));
+    }
+    // (drawn in bands of rows on all cores, each board in order within a band)
+    const BAND: usize = 16;
+    map.par_chunks_mut(ow * BAND).enumerate().for_each(|(band, chunk)| {
+        let (by0, by1) = ((band * BAND) as i32, ((band * BAND) + chunk.len() / ow) as i32);
+        for &(bb, left, top, ssc, x0, x1, y0, y1) in placed.iter() {
+            for y in y0.max(by0)..y1.min(by1) {
+                let v = ((y as f32 + 0.5 - top) / ssc).floor() as i32;
+                if !(0..bb.h).contains(&v) {
                     continue;
                 }
-                let p = if ssc < 1.0 {
-                    // Shrunk: the source pixels the screen pixel covers are averaged (nearest-neighbour sampling drops
-                    // rows and columns of the small digits and icons, and the units' outlines).
-                    let (ua, ub) = (((x as f32 - left) / ssc).floor() as i32, (((x + 1) as f32 - left) / ssc).ceil() as i32);
-                    let (va, vb) = (((y as f32 - top) / ssc).floor() as i32, (((y + 1) as f32 - top) / ssc).ceil() as i32);
-                    let (mut r, mut g, mut b, mut n, mut all) = (0u32, 0u32, 0u32, 0u32, 0u32);
-                    for sv in va.max(0)..vb.min(bb.h) {
-                        for su in ua.max(0)..ub.min(bb.w) {
-                            all += 1;
-                            let q = bb.pix[(sv * bb.w + su) as usize];
-                            if q != 0 {
-                                n += 1;
-                                r += q as u32 & 31;
-                                g += (q as u32 >> 5) & 31;
-                                b += (q as u32 >> 10) & 31;
-                            }
-                        }
+                for x in x0..x1 {
+                    let u = ((x as f32 + 0.5 - left) / ssc).floor() as i32;
+                    if !(0..bb.w).contains(&u) {
+                        continue;
                     }
-                    if n == 0 || n * 2 < all {
-                        0
-                    } else {
-                        ((r / n) | ((g / n) << 5) | ((b / n) << 10) | 0x8000) as Px
+                    let p = bb.pix[(v * bb.w + u) as usize];
+                    if p != 0 {
+                        chunk[(y - by0) as usize * ow + x as usize] = p;
                     }
-                } else {
-                    bb.pix[(v * bb.w + u) as usize]
-                };
-                if p != 0 {
-                    map[y as usize * W + x as usize] = p;
                 }
             }
         }
-    }
+    });
 
     if let (Some(art), true) = (ds_cursor, cursor_shown) {
-        crate::ds_cursor::draw(&mut map, W, H, art, cursor, |u, v| cam.project(u, v));
+        crate::ds_cursor::draw(&mut map, ow, oh, art, cursor, |u, v| cam.project(u, v));
     }
     if let (Some(art), true) = (ds_cursor, ring_shown) {
-        crate::ds_cursor::draw_crosshair(&mut map, W, H, art, cursor, None, crate::ds_cursor::next_tick(), |u, v| cam.project(u, v));
+        crate::ds_cursor::draw_crosshair(&mut map, ow, oh, art, cursor, None, crate::ds_cursor::next_tick(), |u, v| cam.project(u, v));
     }
 
     // A sandstorm (Dual Strike's fourth weather; AW2 draws no particles for it): drifting grains over
@@ -2740,25 +2821,31 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     TILTED.store(true, Ordering::Relaxed);
     let lut = rgba_lut_3d();
     let evy = (bldy & 31).min(16) as u32;
-    for i in 0..W * H {
-        let p = match owner[i] {
-            _ if i / W < keep_rows || i / W >= keep_from => continue,
-            Owner::Hud => continue,
-            Owner::Map => {
-                let p = map[i];
-                if sand {
-                    sand_grain(p, (i % W) as u32, (i / W) as u32, clock as u32)
-                } else {
-                    p
+    // (what the map does not own is the console's picture, each pixel ss x ss times)
+    let mut out = vec![0u8; ow * oh * 4];
+    out.par_chunks_mut(ow * 4).enumerate().for_each(|(y, orow)| {
+        let ly = y / ss;
+        for x in 0..ow {
+            let i = ly * W + x / ss;
+            let px = &mut orow[x * 4..x * 4 + 4];
+            let p = match owner[i] {
+                _ if ly < keep_rows || ly >= keep_from => None,
+                Owner::Hud => None,
+                Owner::Map => {
+                    let p = map[y * ow + x];
+                    Some(if sand { sand_grain(p, (i % W) as u32, ly as u32, clock as u32) } else { p })
                 }
+                Owner::MapFx => Some(brightness(map[y * ow + x], bld_mode, evy)),
+            };
+            match p {
+                Some(p) => px.copy_from_slice(&lut[(p & 0x7fff) as usize]),
+                None => px.copy_from_slice(&rgba[i * 4..i * 4 + 4]),
             }
-            Owner::MapFx => brightness(map[i], bld_mode, evy),
-        };
-        rgba[i * 4..i * 4 + 4].copy_from_slice(&lut[(p & 0x7fff) as usize]);
-    }
+        }
+    });
     if debug_time() {
         eprintln!(
-            "ds_tilt stages us: read {} load {} objs {} layers {} objtop {} owner {} boards {} map {} total {}",
+            "ds_tilt stages us: read {} load {} objs {} layers {} objtop {} owner {} boards {} shadow {} warm {} ground {} map {} total {}",
             t_read.as_micros(),
             t_load.as_micros(),
             t_objs.as_micros(),
@@ -2766,10 +2853,14 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
             t_objtop.as_micros(),
             t_owner.as_micros(),
             t_boards.as_micros(),
+            t_shadow.as_micros(),
+            t_warm.as_micros(),
+            t_ground.as_micros(),
             t_map.as_micros(),
             t0.elapsed().as_micros()
         );
     }
+    Some(out)
 }
 
 fn debug_time() -> bool {

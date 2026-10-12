@@ -71,6 +71,15 @@ pub trait SharedGame: Sync {
         let _ = (core, mode, seat, rgba);
     }
 
+    /// [`overlay`](Self::overlay) for a host that can show a picture larger than the console's: `rgba` is the
+    /// console's 240x160 picture, and on `Some((w, h))` it has been replaced by the finished `w` x `h` one (a whole
+    /// multiple of 240x160), every overlay included. `None` (the default) leaves `rgba` untouched and the host
+    /// calls [`overlay`](Self::overlay) as before. Presentation only, like it.
+    fn overlay_hires(&self, core: &mgba::core::Core, mode: Option<(u8, u8)>, seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {
+        let _ = (core, mode, seat, rgba);
+        None
+    }
+
     /// Traps installed on the console at boot. Like the pair engine's
     /// primer traps they must be pure functions of emulation state.
     fn traps(&self) -> Vec<(u32, Box<dyn Fn(&mut mgba::core::Core)>)> {
@@ -224,6 +233,9 @@ impl Side for SharedSide<'_> {
         let core = self.link.inner.core(0);
         if self.conceal && self.link.game.conceal(core, self.player) {
             return Some(concealed(&frame));
+        }
+        if self.link.game.overlay_hires(core, self.link.mode, self.player, &mut frame).is_some() {
+            return Some(frame);
         }
         self.link.game.overlay(core, self.link.mode, self.player, &mut frame);
         Some(frame)

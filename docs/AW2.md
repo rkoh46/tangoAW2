@@ -3827,6 +3827,21 @@ and compares the RAM-drawn ground (against BG3) and units (against BG1) with
 the console's picture in its window, printing `ds_tilt:` lines on any
 difference; `TANGOAW2_TILT_TIME=1` times it.
 
+- **Resolution.** The tilted map is drawn at 4 times the console's size (960 x 640; 2 times on iOS, where
+  `tango::App::new` sets it with `set_ds_tilt_scale`; `TANGOAW2_TILT_SCALE=n` overrides it), through
+  `SharedGame::overlay_hires`, which hands back a larger picture only while the tilt draws (`None` and the
+  240 x 160 `overlay` everywhere else: tilt off, menus, title, netplay screens that are not the map).
+  `Framebuffer::write` takes a picture of a whole multiple of the layout's size, and the host sizes the texture
+  from its length (`hires_size` in `tango/src/session/mod.rs`; the pane stays native x scale, the pixel
+  filters are skipped for it). Each output pixel samples the ground's 16 x 16 tiles, the billboards (units,
+  buildings, peaks, trees) are sampled nearest at the output's resolution, and the console's own sprites and
+  windows come from its picture pixel by pixel. The menus and panels of `ds_menus` and `ds_coselect` are drawn
+  at the console's size and what they change is carried up by whole pixels. A unit's HP digit and marks (what
+  is left of the console's cell once Dual Strike's 32 x 32 art replaces the unit) are not shrunk by the tilt:
+  they keep the console's pixel size at the unit's foot (`Billboard::upright`). The ground rows, the
+  boards and the final colours are drawn on all cores (rayon); about 2 to 3 ms a picture at 4x on an M2 Pro
+  (`bench N` in `aw2_script`). Pictures: `tests/test_ds_tilt_hires.py`.
+
 - **Gate.** The battle map's main loop (`0x03000000 == 0x08022049`), Dual
   Strike graphics on, tile mode 0, no fade over everything, no affine
   sprites; anything else (menus, dialogue, the world map, battle animations,

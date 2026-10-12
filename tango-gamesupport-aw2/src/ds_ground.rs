@@ -271,6 +271,15 @@ impl<'a> Ground<'a> {
         self.cache[i].as_ref().unwrap()
     }
 
+    /// A cell's 16 x 16 pixels without needing `&mut`: the cached ones, else drawn for the call (draw cells first
+    /// with [`Ground::cell`] to share a `Ground` between threads without that cost).
+    pub fn cell_ref(&self, i: usize) -> std::borrow::Cow<'_, [u16; 256]> {
+        match &self.cache[i] {
+            Some(c) => std::borrow::Cow::Borrowed(&**c),
+            None => std::borrow::Cow::Owned(*self.draw(i as i32 % self.w, i as i32 / self.w)),
+        }
+    }
+
     /// The ground pixel at map pixel (gx, gy) (16 per cell); the map's edge
     /// repeats beyond it.
     pub fn px(&mut self, gx: i32, gy: i32) -> u16 {

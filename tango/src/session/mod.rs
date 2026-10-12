@@ -556,7 +556,9 @@ impl State {
                         let pixels = session.frame();
                         // Sized by the session: a DS lays out two screens
                         // where a GBA has one.
-                        let (width, height) = session.frame_size();
+                        let (native_w, native_h) = session.frame_size();
+                        // (a game may hand over its display larger than the console's, by a whole factor)
+                        let (width, height) = hires_size(pixels.len(), native_w, native_h);
                         self.frame_revision = self.frame_revision.wrapping_add(1);
                         self.current_frame = Some(crate::platform::video::framebuffer::Frame {
                             pixels: std::sync::Arc::new(pixels),
@@ -574,6 +576,7 @@ impl State {
                         // toggle is on.
                         self.pip_frame = session.pip_frame().map(|pixels| {
                             self.pip_revision = self.pip_revision.wrapping_add(1);
+                            let (width, height) = hires_size(pixels.len(), native_w, native_h);
                             crate::platform::video::framebuffer::Frame {
                                 pixels: std::sync::Arc::new(pixels),
                                 // The PiP surface shares the main
@@ -715,4 +718,18 @@ pub fn format_tick(tick: u32) -> String {
     } else {
         format!("{m}:{s:02}")
     }
+}
+
+/// The size of a frame of `len` bytes (RGBA8) of a console whose screens are `native_w` x `native_h`: that size, or
+/// a whole multiple of it when the game presents a larger picture of the same screens.
+fn hires_size(len: usize, native_w: u32, native_h: u32) -> (u32, u32) {
+    let base = native_w as usize * native_h as usize * 4;
+    if base > 0 && len > base && len % base == 0 {
+        let k = (len / base) as f64;
+        let r = k.sqrt().round() as u32;
+        if (r * r) as f64 == k {
+            return (native_w * r, native_h * r);
+        }
+    }
+    (native_w, native_h)
 }

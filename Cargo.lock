@@ -6014,6 +6014,7 @@ dependencies = [
  "log",
  "mgba",
  "png",
+ "rayon",
  "tango-backend-mgba",
  "tango-gamesupport",
  "tango-gamesupport-common-dataview",

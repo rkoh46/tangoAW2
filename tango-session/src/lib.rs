@@ -174,20 +174,31 @@ impl PauseGate {
 /// write several screens for one tick (the replay PiP), and it has
 /// state worth a repaint that isn't a frame at all, so the wake is the
 /// session's ([`Session::wake`]) rather than the surface's.
-pub struct Framebuffer(std::sync::Mutex<Vec<u8>>);
+pub struct Framebuffer(std::sync::Mutex<Vec<u8>>, usize);
 
 impl Framebuffer {
     /// A surface for `layout`'s screens, black until the first frame.
     pub fn new(layout: &tango_match::ScreenLayout) -> std::sync::Arc<Self> {
-        std::sync::Arc::new(Self(std::sync::Mutex::new(vec![0u8; layout.buffer_len()])))
+        std::sync::Arc::new(Self(std::sync::Mutex::new(vec![0u8; layout.buffer_len()]), layout.buffer_len()))
     }
 
     /// Emu side: put this frame up. A wrong-sized `pixels` is ignored
     /// — the last good frame stays up rather than tearing the surface.
+    /// The layout's size times a whole number squared is a larger picture of
+    /// the same screens (a game drawing its display at 2x, 4x ...): the host
+    /// reads its size from the length ([`Session::frame_size`] is the native one).
     pub fn write(&self, pixels: &[u8]) {
         let mut vbuf = self.0.lock().unwrap();
+        let base = self.1;
+        let scaled = base > 0 && pixels.len() % base == 0 && {
+            let k = pixels.len() / base;
+            let r = (k as f64).sqrt().round() as usize;
+            r * r == k && r <= 8
+        };
         if vbuf.len() == pixels.len() {
             vbuf.copy_from_slice(pixels);
+        } else if scaled {
+            *vbuf = pixels.to_vec();
         }
     }
 

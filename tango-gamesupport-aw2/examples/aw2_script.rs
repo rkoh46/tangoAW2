@@ -125,6 +125,9 @@ impl tango_backend_mgba::SharedGame for Traced {
     fn overlay(&self, core: &mgba::core::Core, mode: Option<(u8, u8)>, seat: usize, rgba: &mut [u8]) {
         tango_gamesupport_aw2::pvp::AW2E.overlay(core, mode, seat, rgba)
     }
+    fn overlay_hires(&self, core: &mgba::core::Core, mode: Option<(u8, u8)>, seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {
+        tango_gamesupport_aw2::pvp::AW2E.overlay_hires(core, mode, seat, rgba)
+    }
     fn traps(&self) -> Vec<(u32, Box<dyn Fn(&mut mgba::core::Core)>)> {
         let mut traps = tango_gamesupport_aw2::pvp::AW2E.traps();
         for &addr in &self.0 {
@@ -186,7 +189,9 @@ impl Aw2Link {
 }
 
 fn write_rgba_bmp(path: &str, rgba: &[u8]) {
-    let (w, h) = (240u32, 160u32);
+    // (240 x 160, or a whole multiple of it with TANGOAW2_TILT_SCALE)
+    let k = ((rgba.len() / (240 * 160 * 4)) as f64).sqrt().round() as u32;
+    let (w, h) = (240 * k, 160 * k);
     let mut out = Vec::new();
     out.extend_from_slice(b"BM");
     out.extend_from_slice(&(54 + w * h * 3).to_le_bytes());

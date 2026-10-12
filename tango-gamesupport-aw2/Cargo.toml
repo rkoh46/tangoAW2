@@ -15,6 +15,7 @@ tango-backend-mgba = { path = "../tango-backend-mgba" }
 mgba.workspace = true
 log.workspace = true
 png = { version = "0.18", default-features = false }
+rayon = "1.11"
 
 tango-gamesupport-common-ui = { path = "../tango-gamesupport-common-ui", optional = true }
 

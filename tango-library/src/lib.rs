@@ -78,6 +78,13 @@ pub fn set_ds_tilt_amount(amount: u8) {
     let _ = amount;
 }
 
+/// tangoAW2: how many times the console's size the tilted map is drawn (1 to 8).
+pub fn set_ds_tilt_scale(scale: u8) {
+    #[cfg(feature = "gamesupport-aw2")]
+    tango_gamesupport_aw2::ds_tilt::set_hires_scale(scale);
+    let _ = scale;
+}
+
 /// tangoAW2: log the tilt's cost every 120 pictures (hidden `ds_tilt_log` setting).
 pub fn set_ds_tilt_log(on: bool) {
     #[cfg(feature = "gamesupport-aw2")]

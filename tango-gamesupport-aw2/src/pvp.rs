@@ -452,6 +452,47 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::ds_coselect::apply(core, rgba);
     }
 
+    /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
+    /// drawn on the console's own grid and carried up by whole pixels.
+    fn overlay_hires(&self, core: &Core, _mode: Option<(u8, u8)>, _seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {
+        let ss = crate::ds_tilt::hires_scale();
+        if ss <= 1 || !crate::ds_tilt::enabled() || rgba.len() != 240 * 160 * 4 {
+            return None;
+        }
+        let Some(mut hi) = crate::ds_tilt::apply_scaled(core, rgba, ss) else {
+            // (the tilt leaves this picture as the console drew it: the flat overlays, at its size)
+            self.overlay(core, _mode, _seat, rgba);
+            return Some((240, 160));
+        };
+        // The menus and panels are drawn at the console's size over a copy of the map at it, and what they changed
+        // is carried up by whole pixels.
+        let (w, h) = (240 * ss, 160 * ss);
+        let mut lo = vec![0u8; 240 * 160 * 4];
+        for (i, px) in lo.chunks_exact_mut(4).enumerate() {
+            let (x, y) = (i % 240, i / 240);
+            let o = ((y * ss + ss / 2) * w + x * ss + ss / 2) * 4;
+            px.copy_from_slice(&hi[o..o + 4]);
+        }
+        let before = lo.clone();
+        crate::ds_menus::apply(core, &mut lo);
+        crate::ds_coselect::apply(core, &mut lo);
+        if lo != before {
+            for i in 0..240 * 160 {
+                if lo[i * 4..i * 4 + 4] != before[i * 4..i * 4 + 4] {
+                    let (x, y) = (i % 240, i / 240);
+                    for dy in 0..ss {
+                        let o = ((y * ss + dy) * w + x * ss) * 4;
+                        for dx in 0..ss {
+                            hi[o + dx * 4..o + dx * 4 + 4].copy_from_slice(&lo[i * 4..i * 4 + 4]);
+                        }
+                    }
+                }
+            }
+        }
+        *rgba = hi;
+        Some((w as u32, h as u32))
+    }
+
     /// On a Versus battlefield only the army whose turn it is moves, so
     /// only its seat's buttons reach the pad; the other seat watches. Anywhere
     /// else (title, map and CO select, results, the hand-off between

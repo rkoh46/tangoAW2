@@ -100,8 +100,10 @@ pub fn draw(map: &mut [u16], w: usize, h: usize, art: &Art, cell: (i32, i32), pr
     // Dual Strike's 256-wide picture is shown 240 wide.
     const S: f32 = 240.0 / 256.0;
     let (cu, cv) = (cell.0 as f32, cell.1 as f32);
+    // (`map` may be larger than the console's 240 pixels across: `project` and the sizes here stay in the console's)
+    let k = w as f32 / 240.0;
     let blit = |map: &mut [u16], pix: &[u16], n: usize, x0: f32, y0: f32, qw: f32, qh: f32, flip: (bool, bool)| {
-        blit_quad(map, w, h, pix, n, x0, y0, qw, qh, flip)
+        blit_quad(map, w, h, pix, n, x0 * k, y0 * k, qw * k, qh * k, flip)
     };
     for (dx, dy) in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0)] {
         let (fx, fy, c) = project(cu + dx, cv + dy);
@@ -169,6 +171,9 @@ pub fn draw_crosshair(
     let (fx, fy, c) = project(cell.0 as f32 + 0.5, cell.1 as f32 + 0.5);
     let side = side.unwrap_or(2.07 * c);
     let (cx, cy) = (fx + 0.064 * c, fy - 0.009 * c);
+    // (as in `draw`, `map` may be larger than the console's picture)
+    let sc = w as f32 / 240.0;
+    let (cx, cy, side) = (cx * sc, cy * sc, side * sc);
     let half = side / 2.0;
     let k = ring_frame(tick);
     blit_quad(map, w, h, &art.ring_arc[k], 16, cx - half, cy - half, half, half, (false, false));
