@@ -1118,6 +1118,15 @@ fn string(t: Option<Vec<u8>>) -> String {
     plain(&t.unwrap_or_default())
 }
 
+/// How many armies the battle has: the player table's slots from the first, up to the first with no controller (1 human, 2 computer;
+/// an unused slot has 0) (the Teams
+/// record is Versus' own: the campaigns and the War Room leave it as it was, with a count that is not the battle's).
+fn battle_armies(core: &Core) -> u32 {
+    let players = crate::five::players(core);
+    let n = (1..=5u32).take_while(|k| (1..=2).contains(&core.raw_read_8(players + 0x3C * k + 0x1B, -1))).count() as u32;
+    n.max(1)
+}
+
 /// A CO's page data. `core` gives Sturm's text (AW2's own), the game's
 /// pictures for the COs with no Dual Strike twin, and the army's skills and
 /// partners; without it (a preview) Dual Strike's COs only.
@@ -1180,7 +1189,7 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
     if let (Some(c), Some(army)) = (core, army) {
         tabs.clear();
         let on_partner = c.raw_read_8(crate::tag_extras::STATE + 0x10, -1) == 1;
-        for k in 1..=(crate::tag_ui::armies(c) as u32).clamp(1, 5) {
+        for k in 1..=battle_armies(c) {
             let (active, partner) = (crate::tag::army_co_of(c, k), crate::tag::partner(c, k));
             let mut pair = [Some(crate::custom_campaign::country(active)), partner.map(crate::custom_campaign::country)];
             if k == army {
@@ -1372,7 +1381,7 @@ fn draw(core: &mut Core, st: &mut State, army: u32, co: u8) {
     }
     // (the tabs: every army's COs and the partner view)
     let mut pairs = vec![core.raw_read_8(crate::tag_extras::STATE + 0x10, -1), army as u8];
-    for k in 1..=(crate::tag_ui::armies(core) as u32).clamp(1, 5) {
+    for k in 1..=battle_armies(core) {
         pairs.push(crate::tag::army_co_of(core, k));
         pairs.push(crate::tag::partner(core, k).unwrap_or(255));
     }
