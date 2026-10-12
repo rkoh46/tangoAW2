@@ -471,6 +471,15 @@ pub fn restore_front(core: &mut Core) {
         return;
     }
     let shadow = FRONT_SHADOW.lock().unwrap();
+    // The game's own pictures on this layer (the factory's build menu draws its panels on it): none is ours to write over. On
+    // the map the layer holds only what we painted, or the blank tile and the low ammunition / fuel icons.
+    let foreign = shadow.iter().enumerate().any(|(i, &want)| {
+        let have = core.raw_read_16(FRONT_MAP + 2 * i as u32, -1);
+        have != want && have != FRONT_BLANK && !is_low_icon(have)
+    });
+    if foreign {
+        return;
+    }
     for (i, &want) in shadow.iter().enumerate() {
         let at = FRONT_MAP + 2 * i as u32;
         let have = core.raw_read_16(at, -1);
