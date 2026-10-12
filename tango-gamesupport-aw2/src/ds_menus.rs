@@ -483,16 +483,14 @@ fn art() -> Option<&'static Art> {
 }
 
 /// AW2's icon codes and the Dual Strike icons that are the same pictures
-/// (the sheets agree silhouette for silhouette). The Fire command takes
-/// Dual Strike's crossed guns, not the flame it shares a code with.
+/// (the sheets agree silhouette for silhouette). Dual Strike's command label table has two "Fire" entries: the first with code
+/// 0x81 (the flame, as AW2's Fire and Dual Strike's Launch and Explode have) and a second with 0x92 (crossed guns); the flame is
+/// the ordinary Fire, as AW2 shows it, and what Fire takes here.
 fn icon_index(page: u8, code: u8, text: &str) -> Option<usize> {
     if page == 0x0A {
         // The Drop commands show the cargo's picture, in AW2 and in Dual
         // Strike ([`cargo_picture`]).
         return None;
-    }
-    if text == "Fire" {
-        return Some(22);
     }
     Some(match code {
         0x80 => 5,
