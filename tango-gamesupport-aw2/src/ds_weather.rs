@@ -64,11 +64,18 @@ pub fn tick(core: &mut Core, on: bool) {
     crate::com_tower::tick(core, on);
     let raw = core.raw_read_8(RULE_FOG, -1);
     let forced = raw & !IN_BATTLE;
-    // A battle left with the memory set drops it (it would else put that
-    // battle's fog choice over the next one's); one restored by a Continue
-    // is kept until its battle is on ([`IN_BATTLE`] not yet set).
+    // A battle left with the memory set gives the Rules' choice back and
+    // drops it (it would else put that battle's fog choice over the next
+    // one's); one restored by a Continue is kept until its battle is on
+    // ([`IN_BATTLE`] not yet set). The animated battle scenes also leave
+    // the map's callback for a while: the choice must be given back there
+    // too, or the rain would force the fog again on top of its own fog and
+    // take that for the Rules' choice, keeping it after the rain.
     if !crate::ds_campaign::in_battle(core) {
         if raw & IN_BATTLE != 0 {
+            if forced != 0 {
+                core.raw_write_8(FOG, -1, forced - 1);
+            }
             core.raw_write_8(RULE_FOG, -1, 0);
         }
         return;
