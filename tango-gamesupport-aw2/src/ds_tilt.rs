@@ -1673,6 +1673,21 @@ fn flat_range(core: &Core, rgba: &mut [u8]) {
     }
 }
 
+/// The tilt's own few threads (`TANGOAW2_TILT_THREADS`, default 3; 0: rayon's global pool, one thread for every core). A picture's
+/// parallel stretches wait for their slowest thread, so with a thread for every core any other load on the machine (a build, the
+/// browser) makes some core late for every one of them; a few threads are stable.
+fn run_in_pool<R: Send>(f: impl FnOnce() -> R + Send) -> R {
+    static POOL: OnceLock<Option<rayon::ThreadPool>> = OnceLock::new();
+    let pool = POOL.get_or_init(|| {
+        let n = std::env::var("TANGOAW2_TILT_THREADS").ok().and_then(|v| v.parse::<usize>().ok()).unwrap_or(3);
+        (n > 0).then(|| rayon::ThreadPoolBuilder::new().num_threads(n).thread_name(|i| format!("ds-tilt-{i}")).build().ok()).flatten()
+    });
+    match pool {
+        Some(p) => p.install(f),
+        None => f(),
+    }
+}
+
 fn apply_timed(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     static TIME: OnceLock<bool> = OnceLock::new();
     if TIMING_LOG.load(Ordering::Relaxed) || env_on("TANGOAW2_TILT_TIME", &TIME) {
@@ -2025,7 +2040,14 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let near = |ram: i32, shown: i32| {
             let d = (shown - ram).rem_euclid(512);
             let d = if d >= 256 { d - 512 } else { d };
-            if d.abs() <= 16 { ram + d } else { ram }
+            if d.abs() <= 16 {
+                ram + d
+            } else {
+                // BG3's plane is not at the map's origin (on the second army's turn it sits some whole cells apart): the cells come
+                // from the camera in RAM, the part of a cell that is scrolled off from the plane the console shows.
+                let phase = (shown - ram).rem_euclid(16);
+                ram + if phase > 8 { phase - 16 } else { phase }
+            }
         };
         (near(cam_px.0, bgs[3].hofs), near(cam_px.1, bgs[3].vofs))
     };
@@ -2112,7 +2134,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // the map's RAM, the banner is the console's own pixels over it).
     let bg3_parked = (bgs[3].hofs - cam_px.0).abs() > 16 || (bgs[3].vofs - cam_px.1).abs() > 16;
     if bg3_parked && std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
-        dbg_line(&format!("ds_tilt bg3 parked cam={:?} bg3=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs));
+        dbg_line(&format!("ds_tilt bg3 parked cam={:?} bg3=({},{}) bg2=({},{}) bg1=({},{}) bg0=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs, bgs[1].hofs, bgs[1].vofs, bgs[0].hofs, bgs[0].vofs));
     }
     if !bg3_parked {
         let mut bad = 0;
@@ -2157,6 +2179,15 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let (map_x0, map_y0) = (cam_px.0.div_euclid(16), cam_px.1.div_euclid(16));
     let ground_cx0 = bgs[3].hofs.div_euclid(16);
     let ground_cy0 = bgs[3].vofs.div_euclid(16);
+    // The cells a plane's scroll is from BG3's (the units' and the peaks' planes are not always scrolled as the ground is: on the
+    // second army's turn the game's planes sit apart): a plane's cell cx is the ground's cell cx - this.
+    let plane_off = |bg: &Bg| {
+        let wrap = |d: i32| {
+            let d = d.rem_euclid(512);
+            if d >= 256 { d - 512 } else { d }
+        };
+        ((wrap(bg.hofs - bgs[3].hofs) + 8).div_euclid(16), (wrap(bg.vofs - bgs[3].vofs) + 8).div_euclid(16))
+    };
     for b in [1usize, 2] {
         let bg = &bgs[b];
         if !bg.on {
@@ -2211,7 +2242,8 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     continue;
                 }
                 // The map cell it stands in, and where the console draws that cell's foot.
-                let (mx, my) = (map_x0 + cx - ground_cx0, map_y0 + cy - ground_cy0);
+                let (px_off, py_off) = plane_off(bg);
+                let (mx, my) = (map_x0 + cx - px_off - ground_cx0, map_y0 + cy - py_off - ground_cy0);
                 let mut art_board: Option<Vec<Px>> = None;
                 if b == 1 {
                     if let Some(u) = unit_in.get(&(mx, my)) {
@@ -2391,7 +2423,8 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         // for, empty or not): its plane is 16 x 16 cells but only 15 x 10 and the edge
         // pixels of the next are on the screen.
         let console_shows = |mx: i32, my: i32| {
-            let (cx, cy) = (mx - map_x0 + ground_cx0, my - map_y0 + ground_cy0);
+            let (px_off, py_off) = plane_off(&bgs[1]);
+            let (cx, cy) = (mx - map_x0 + ground_cx0 + px_off, my - map_y0 + ground_cy0 + py_off);
             let (cx0, cy0) = (bgs[1].hofs.div_euclid(16), bgs[1].vofs.div_euclid(16));
             let (sx0, sy0) = (cx * 16 - bgs[1].hofs, cy * 16 - bgs[1].vofs);
             (cx0 - 1..=cx0 + 15).contains(&cx)
@@ -2725,6 +2758,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let shade_step = if ss == 1 { 2 } else { ss };
     let tall: Vec<bool> = (0..(ground.w * ground.h) as usize).map(|i| ground.is_tall(i)).collect();
     let lift = cp().tall_lift;
+    run_in_pool(|| {
     map.par_chunks_mut(ow).enumerate().for_each(|(y, row)| {
         // (Along a row the ground's v and the scale are constant; u runs on.)
         let yy = (y as f32 + 0.5) / sf;
@@ -2816,6 +2850,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             *out = p;
         }
     });
+    });
     let t_ground = t0.elapsed();
     let mut placed = Vec::with_capacity(boards.len());
     for bb in boards.iter() {
@@ -2856,6 +2891,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     }
     // (drawn in bands of rows on all cores, each board in order within a band)
     const BAND: usize = 16;
+    run_in_pool(|| {
     map.par_chunks_mut(ow * BAND).enumerate().for_each(|(band, chunk)| {
         let (by0, by1) = ((band * BAND) as i32, ((band * BAND) + chunk.len() / ow) as i32);
         for &(bb, left, top, ssc, x0, x1, y0, y1) in placed.iter() {
@@ -2877,6 +2913,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     });
+    });
 
     if let (Some(art), true) = (ds_cursor, cursor_shown) {
         crate::ds_cursor::draw(&mut map, ow, oh, art, cursor, |u, v| cam.project(u, v));
@@ -2895,6 +2932,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let evy = (bldy & 31).min(16) as u32;
     // (what the map does not own is the console's picture, each pixel ss x ss times)
     let mut out = vec![0u8; ow * oh * 4];
+    run_in_pool(|| {
     out.par_chunks_mut(ow * 4).enumerate().for_each(|(y, orow)| {
         let ly = y / ss;
         for x in 0..ow {
@@ -2921,8 +2959,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     });
+    });
     if debug_time() {
-        eprintln!(
+        dbg_line(&format!(
             "ds_tilt stages us: read {} load {} objs {} layers {} objtop {} owner {} boards {} shadow {} warm {} ground {} map {} total {}",
             t_read.as_micros(),
             t_load.as_micros(),
@@ -2936,7 +2975,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             t_ground.as_micros(),
             t_map.as_micros(),
             t0.elapsed().as_micros()
-        );
+        ));
     }
     Some(out)
 }
@@ -3187,6 +3226,6 @@ fn skip_log(line: u32) {
     }
     static ON: OnceLock<bool> = OnceLock::new();
     if *ON.get_or_init(|| std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some()) {
-        eprintln!("ds_tilt skip line {line}");
+        dbg_line(&format!("ds_tilt skip line {line}"));
     }
 }
