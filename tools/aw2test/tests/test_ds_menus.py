@@ -33,10 +33,10 @@ def hand_sprites(e):
     return out
 
 
-def _battle(ctx):
+def _battle(ctx, env=None):
     m = ctx.map(hq=((1, 8, 6), (2, 29, 19)))
     m.unit(1, "artillery", 8, 6).unit(2, "tank", 10, 6).unit(1, "infantry", 6, 8)
-    g = ctx.start(m, ["andy", "sami"])
+    g = ctx.start(m, ["andy", "sami"], env=env)
     g.wait_idle()
     return g
 
@@ -94,8 +94,9 @@ def ds_menus_map_menu(ctx):
 
 @test(modes=("ds",))
 def ds_menus_off_is_aw2s(ctx):
-    """With the byte off the game draws its own menu as ever."""
-    g = _battle(ctx)
+    """With the byte off the game draws its own menu as ever (the byte alone decides: the run's
+    TANGOAW2_DS_GRAPHICS must not force it on for this console)."""
+    g = _battle(ctx, env={"TANGOAW2_DS_GRAPHICS": "0"})
     e = g.e
     e.w8(DS_GRAPHICS, 0)
     g.goto(8, 6)

@@ -17,6 +17,8 @@ from aw2test.game import Game, NavError
 from aw2test.harness import test
 
 DS_GRAPHICS = 0x0203E3FE
+# These tests switch the setting by its byte, so the run's TANGOAW2_DS_GRAPHICS must not force it on.
+BYTE_DRIVEN = {"TANGOAW2_DS_GRAPHICS": "0"}
 SELECT_MODE_CURSOR = 0x0300591C
 VERSUS = 3
 MAP_TAB = 0x0300596C
@@ -96,7 +98,7 @@ def ds_coselect_versus_two_armies(ctx):
     """The Teams screen with two armies: the title, a card for each army with its emblem (the army's colour as the Teams
     record has it: pixel for pixel Dual Strike's), the tab above it (P1, CPU), and the portraits; the setting off leaves
     AW2's own screen."""
-    g = ctx.boot_teams(ctx.map())
+    g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
     e = g.e
     e.w8(DS_GRAPHICS, 0)
     e.wait(10)
@@ -132,7 +134,7 @@ def ds_coselect_versus_two_armies(ctx):
 def ds_coselect_versus_five_armies(ctx):
     """Five armies: five cards of 48 pixels fill the screen's 240, each its army's emblem (Black Hole the fifth: its grey
     box), the tabs above them."""
-    e = Emu(save=paths.base_save(), ds=True)
+    e = Emu(save=paths.base_save(), ds=True, env=BYTE_DRIVEN)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     to_five_army_teams(ctx, g)
@@ -160,7 +162,7 @@ def ds_coselect_versus_five_armies(ctx):
 def pick_partners(ctx, on):
     """Boot the Teams screen, set the pairs with the pad (START on a CO stop, DOWN through the COs, START), return what the
     game holds."""
-    g = ctx.boot_teams(ctx.map())
+    g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
     e = g.e
     e.w8(DS_GRAPHICS, 1 if on else 0)
     e.wait(10)
@@ -196,7 +198,7 @@ def ds_coselect_partner_picks_are_the_games(ctx):
 
 
 def to_co_screen(ctx, step):
-    e = Emu(save=paths.base_save(), ds=True)
+    e = Emu(save=paths.base_save(), ds=True, env=BYTE_DRIVEN)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = dc.DsCampaign(g)
@@ -282,7 +284,7 @@ def ds_coselect_campaign_flags(ctx):
 
 
 def war_room_co_screen(ctx, on):
-    e = Emu(save=paths.base_save(), ds=True)
+    e = Emu(save=paths.base_save(), ds=True, env=BYTE_DRIVEN)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     saves.to_select_mode(e)
