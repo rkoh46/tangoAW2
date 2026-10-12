@@ -135,8 +135,8 @@ changes, and online both players need it):
 <td><img src="docs/screenshots/ds-second-front.png" width="240" alt="Commanding the second front yourself"></td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/ds-black-onyx-laser.png" width="240" alt="The Black Onyx's laser striking Crystal Calamity"></td>
-<td><img src="docs/screenshots/ds-teams-five-pairs.png" width="240" alt="Five armies with tag partners on Versus' Teams screen"></td>
+<td><img src="docs/screenshots/ds-black-onyx-laser.png" width="240" alt="The Black Onyx's laser charged and ready to strike on Crystal Calamity"></td>
+<td><img src="docs/screenshots/ds-teams-five-pairs.png" width="240" alt="Dual Strike's CO select with five armies and tag partners"></td>
 <td><img src="docs/screenshots/ds-set-skills.png" width="240" alt="Choosing CO skills on SET SKILLS"></td>
 </tr>
 </table>
@@ -145,7 +145,7 @@ changes, and online both players need it):
 <tr>
 <td><img src="docs/screenshots/bh-world-map.png" width="240" alt="The BH Campaign's world map with its flags and the BONDS legend"></td>
 <td><img src="docs/screenshots/bh-story.png" width="240" alt="Sturm offering Von Bolt a place at his side after Storm Landing"></td>
-<td><img src="docs/screenshots/bh-crumb.png" width="240" alt="Crumb's CO page with his large picture and biography"></td>
+<td><img src="docs/screenshots/bh-crumb.png" width="240" alt="Crumb's CO page in Dual Strike's style, with his biography"></td>
 </tr>
 <tr>
 <td><img src="docs/screenshots/bh-fortress.png" width="240" alt="Mission 28's fortress: Black Hole's army round the Obelisk, with the Volcano beyond"></td>
