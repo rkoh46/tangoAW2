@@ -1985,6 +1985,8 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let leak = (0..W * H)
             .filter(|&i| {
                 owner[i] == Owner::Hud && obj_top[i] == u32::MAX && layers[3][i] != 0 && bld_mode != 0 && bits_at((i % W) as i32, (i / W) as i32) & 0x20 != 0
+                    // (only where the ground itself is the top pixel: a layer above it that is opaque is what the effect blends)
+                    && !(0..3).any(|b| bgs[b].on && layers[b][i] != 0 && bits_at((i % W) as i32, (i / W) as i32) & (1 << b) != 0 && (bgs[b].pri, b) < (bgs[3].pri, 3))
             })
             .count();
         dbg_line(&format!("ds_tilt leak {leak} mode {bld_mode} bldcnt {bldcnt:04x} alpha {:04x} win {} {}", v.io[0x29], win.on[0], win.on[1]));
