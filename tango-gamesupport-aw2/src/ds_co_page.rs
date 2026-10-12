@@ -620,8 +620,7 @@ const BAR_ZERO: usize = 21;
 const BAR_STEPS: i32 = 20;
 const RANGE_ARROW: usize = 193;
 
-/// Dual Strike's red star (Orange Star) .. grey box icons by country; the
-/// grey box also stands for a tab nobody is on.
+/// Dual Strike's red star (Orange Star) .. grey box icons by country (the grey box is Black Hole's).
 const ICON_FIRST: usize = 10;
 const ICON_NONE: usize = 14;
 
@@ -673,14 +672,14 @@ fn frame(cv: &mut Canvas, a: &Art, v: &View, page: usize) {
     // The tabs: Dual Strike's header has a pair for each army of the battle, a tab for each CO (the country's flag, the grey
     // box for a CO nobody has), the page's own CO in Dual Strike's corner marks. Four armies' pairs lie 40 pixels apart, five
     // 32 (the last tab ends where the face begins).
-    let icon = |c: Option<u8>| match c {
-        Some(c) if c < 4 => ICON_FIRST + c as usize,
-        _ => ICON_NONE,
-    };
+    // (an army with no partner has one tab, as clean Dual Strike's: no box in the second place; the grey box is Black Hole's)
+    let icon = |c: u8| if c < 4 { ICON_FIRST + c as usize } else { ICON_NONE };
     let (x0, pitch) = if v.tabs.len() > 4 { (16, 32) } else { (24, 40) };
     for (k, pair) in v.tabs.iter().enumerate() {
         for (j, c) in pair.iter().enumerate() {
-            cv.tiles(x0 + pitch * k as i32 + 16 * j as i32, 8, a.icon(icon(*c)), 16, 16, TAB);
+            if let Some(c) = c {
+                cv.tiles(x0 + pitch * k as i32 + 16 * j as i32, 8, a.icon(icon(*c)), 16, 16, TAB);
+            }
         }
     }
     for (cx, cy) in [(x0 + 16 * v.tab as i32 + (pitch - 32) * (v.tab as i32 / 2), 8)] {

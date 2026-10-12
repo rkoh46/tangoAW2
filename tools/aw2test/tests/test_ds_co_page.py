@@ -178,8 +178,8 @@ def tag_battle3(ctx, cos, partners):
 
 @test(modes=("ds",))
 def ds_co_page_header_tabs_and_skills(ctx):
-    """Dual Strike's CO page header has a pair of tabs for each army of the battle (a tab for each CO: its country's flag,
-    the grey box for none), the page's own CO in the corner marks; RIGHT goes to the partner's tab, then on to the next
+    """Dual Strike's CO page header has a pair of tabs for each army of the battle (a tab for each CO: its country's flag, the grey box
+    Black Hole's; an army with no partner has one tab, as clean Dual Strike's), the page's own CO in the corner marks; RIGHT goes to the partner's tab, then on to the next
     army's. Page 2 lists the skills set (an icon, the name, the effect on one line) and nothing else: no "None set" and no
     tag partners (Dual Strike has those on its top screen)."""
     g = tag_battle3(ctx, ["jake", "sasha", "javier"], ["rachel", "colin", None])
@@ -197,6 +197,11 @@ def ds_co_page_header_tabs_and_skills(ctx):
     log = page_log(ctx)
     ctx.eq(log[1]["tabs"], "00,11,2-", "a pair of tabs for each army: Jake and Rachel (Orange Star), Sasha and Colin (Blue Moon), Javier alone")
     ctx.eq(log[1]["selected"], 0, "the page is on Jake's tab")
+    from PIL import Image as _I
+    hp = _I.open(ctx.shot(g, "tabs_p2")).convert("RGB").load()
+    def ink16(x0):
+        return sum(1 for y in range(8, 24) for x in range(x0, x0 + 16) if min(hp[x, y]) < 200)
+    ctx.check(ink16(24 + 80) > 60 and ink16(24 + 80 + 16) < 20, "Javier's army shows one tab, no box where a partner's would be")
     ctx.eq((log[2]["fitted"], log[2]["skills"]), (True, "42=Missile Guard"), "page 2 lists the skill set, and only that")
     # (the page lists the skills only: Jake and Rachel's partner lists, Jess's .. are not on it)
     from PIL import Image

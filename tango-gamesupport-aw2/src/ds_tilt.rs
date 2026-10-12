@@ -1407,7 +1407,8 @@ fn attack_cells(core: &Core, w: i32, h: i32) -> std::collections::HashMap<(i32, 
         for y in 0..h {
             for x in 0..w {
                 let d = (x - ox).abs() + (y - oy).abs();
-                if (min..=max).contains(&d) {
+                // (a cell the unit can move to is a move cell, never pink)
+                if (min..=max).contains(&d) && reach(x, y) == 0xff {
                     out.insert((x, y), ATTACK_TINT);
                 }
             }
@@ -1454,7 +1455,7 @@ impl FlatRange {
             for (&(cx, cy), t) in cells.iter_mut() {
                 *t = if reach_at(core, w, h, cx, cy) == 0xff { ATTACK_TINT } else { 0x7fff };
             }
-            // (a computed cell is pink even where the unit can move: an indirect unit's range lies inside it)
+            // (the computed pink cells are cells the unit cannot move to)
             for (c, t) in attack_cells(core, w, h) {
                 cells.insert(c, t);
             }
@@ -1970,6 +1971,15 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         });
     // The cells it can attack beyond them, in pink.
     let pink = if move_stage { attack_cells(core, ground.w, ground.h) } else { std::collections::HashMap::new() };
+
+    // A menu that covers the map with a backing of its own (the build menu at a factory, airport or port, the Intel, Options and unit
+    // lists ...) is drawn on the unit layers; the console's picture is kept whole, or the tilted ground would show through it.
+    {
+        let covered = (0..W * H).filter(|&i| layers[1][i] != 0 || layers[2][i] != 0).count();
+        if covered * 5 > W * H * 2 || crate::tag_ui::build_menu_up(core) {
+            return;
+        }
+    }
 
     // The ground drawn from the map's RAM must be the console's BG3 (with the
     // peaks over it) where that shows; when it is not (a scroll, a fade or a

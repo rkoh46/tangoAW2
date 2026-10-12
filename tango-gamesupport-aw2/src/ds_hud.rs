@@ -534,14 +534,14 @@ struct Row {
 
 /// The CO panel's sprites for rows (the active CO, its partner) with the
 /// funds between, on the left (`left`) or right edge of a screen 240 wide.
-fn co_panel(left: bool, rows: &[Row], funds: u32, powers: bool) -> Vec<Spr> {
+fn co_panel(left: bool, rows: &[Row], funds: Option<u32>, powers: bool) -> Vec<Spr> {
     const W: i32 = 240;
     let mut v: Vec<Spr> = Vec::new();
     // x of a sprite `w` wide at `x` on the left, as it is drawn on the right.
     let mx = |x: i32, w: i32| if left { x } else { W - x - w };
     // The funds: "G." and the digits, right-aligned to the panel's inner
     // edge (60 pixels in).
-    let digits: Vec<u32> = funds.to_string().bytes().map(|b| (b - b'0') as u32).collect();
+    let digits: Vec<u32> = funds.map_or(Vec::new(), |f| f.to_string().bytes().map(|b| (b - b'0') as u32).collect());
     let n = digits.len().min(6) as i32;
     let fy = 14;
     let gx = if left { 0 } else { W - 60 };
@@ -689,7 +689,13 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
         let ((first, n), _) = l.parts();
         write_tiles(core, LABEL_TILE as u32, &a.label[32 * first..32 * (first + n)]);
     }
-    let mut sprites = co_panel(left, &rows, funds, powers);
+    // With fog on, AW2 does not show the other armies' funds (a "?" in the digits' place): its digits are not drawn then, and ours
+    // are not either, so the real number is never shown.
+    let aw2_digits = list.iter().any(|e| {
+        let (w, h) = e.dims();
+        !e.hidden() && e.pal() == 1 && (976..986).contains(&e.tile()) && w == 8 && h == 8 && e.x() >= px - 4 && e.x() + w <= px + 70 && e.y() == py + 3
+    });
+    let mut sprites = co_panel(left, &rows, aw2_digits.then_some(funds), powers);
     // AW2 slides its panel in and out (its x and y move): ours with it, from
     // the place AW2's rests at.
     let (dx, dy) = (px - if left { 3 } else { 173 }, py - 3);

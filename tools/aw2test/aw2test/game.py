@@ -150,7 +150,12 @@ class Game:
     def five(self):
         return self.e.u8(ram.FIVE_ON) == 1
 
-    def set_teams(self, cos, humans):
+    def set_teams(self, *a, **k):
+        from . import tag
+        with tag.aw2_arrows(self.e):  # (AW2's own cursor moves, whatever the Dual Strike setting)
+            return self._set_teams(*a, **k)
+
+    def _set_teams(self, cos, humans):
         """cos: CO id (or name) per army in order; humans: set of 1-based armies played by 1P.
 
         COs are chosen with the pad (UP/DOWN on the army's CO stop; RIGHT moves
