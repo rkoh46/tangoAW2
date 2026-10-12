@@ -3361,7 +3361,8 @@ stay out.
   an army's CO stop, UP/DOWN through the COs and None, START again ("Choose
   a partner CO."). With Dual Strike map graphics on (offline) the arrows are
   Dual Strike's, checked in melonDS: LEFT/RIGHT go CO, partner, next army's
-  CO ..., then the P1/CPU tabs, and wrap; UP/DOWN change what the cell holds
+  CO ... army by army (CO, partner, P1/CPU tab; clean Dual Strike visits the
+  tabs after all the cards, the order here is the players' choice), and wrap; UP/DOWN change what the cell holds
   (the partner list starts with None and wraps). The game's own cursor is
   walked there by pad pulses (tag_ui::ds_arrows), so the record is AW2's. On
   the CO screens (War Room, Survival, campaign picks) the arrows move one

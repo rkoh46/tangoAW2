@@ -55,9 +55,8 @@ def aw2_controls(e, armies, picks):
         if a < armies - 1:
             tap(e, "RIGHT", 14)
             tap(e, "RIGHT", 14)
-    # the first army's controller: back to its tab stop, DOWN
-    for _ in range(2 * (armies - 1) - 1):
-        tap(e, "LEFT", 14)
+    # the last army's controller: its tab stop, DOWN
+    tap(e, "RIGHT", 14)
     tap(e, "DOWN", 20)
 
 
@@ -73,10 +72,11 @@ def ds_controls(e, armies, picks, ctx=None):
         for _ in range(partner):
             tap(e, "DOWN", 20)
         if a < armies - 1:
+            tap(e, "RIGHT")  # its tab
             tap(e, "RIGHT")
             if ctx:
                 ctx.check(editing(e) == 0xFF, f"army {a + 2}: its CO cell")
-    # from the last army's partner cell: RIGHT is the first army's tab
+    # from the last army's partner cell: RIGHT is its tab
     tap(e, "RIGHT")
     tap(e, "DOWN", 20)
 
@@ -108,7 +108,6 @@ def versus_case(ctx, armies):
     on = run_versus(ctx, True, armies)
     ctx.eq(on, off, f"{armies} armies: the Teams record, partners and controllers equal AW2's controls'")
     ctx.check(all(p != 0xFF for p in off[1][:armies]), f"every army picked a partner ({off[1][:armies]})")
-    ctx.check(off[0]["controllers"][0] == 2, f"the first army's tab was toggled ({off[0]['controllers']})")
 
 
 @test(modes=("ds",))
@@ -126,8 +125,8 @@ def ds_coselect_arrows_versus_five(ctx):
 
 @test(modes=("ds",))
 def ds_coselect_arrows_versus_wrap(ctx):
-    """The order of the cells and the wrap, as clean Dual Strike's NORMAL BATTLE: CO, partner, the next CO ... partner of the
-    last army, then the tabs (P1, CPU), then the first army's CO again; LEFT the other way round. B still goes back."""
+    """The order of the cells, army by army (the players' choice; Dual Strike visits the tabs after all the cards): CO, partner,
+    tab, the next army's CO ... the last army's tab, then the first army's CO again; LEFT the other way round."""
     for armies in (2, 5):
         if armies == 2:
             g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
@@ -145,7 +144,7 @@ def ds_coselect_arrows_versus_wrap(ctx):
             c = cursor(e, five)
             return ("tab", c // 2) if c % 2 else (("partner" if editing(e) == c // 2 else "co"), c // 2)
 
-        order = [(k, a) for a in range(armies) for k in ("co", "partner")] + [("tab", a) for a in range(armies)]
+        order = [(k, a) for a in range(armies) for k in ("co", "partner", "tab")]
         seen = [cell()]
         for _ in range(len(order)):
             tap(e, "RIGHT")
@@ -327,7 +326,7 @@ def versus_cells(e, five=False):
 def virtual_cell(e, armies, five=False):
     """The Versus cell number (CO, partner, CO ... tabs) the cursor is on."""
     c = cursor(e, five)
-    return 2 * armies + c // 2 if c % 2 else c + (editing(e) == c // 2)
+    return 3 * (c // 2) + 2 if c % 2 else 3 * (c // 2) + (editing(e) == c // 2)
 
 
 def fresh_versus(ctx):

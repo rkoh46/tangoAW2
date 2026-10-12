@@ -13,7 +13,7 @@
 //!   partner, a human's or the computer's, plays as a pair (no rule, as in
 //!   Dual Strike, whose partner slot has a blank). Offline with Dual Strike map graphics, LEFT and RIGHT go cell to
 //!   cell as Dual Strike's NORMAL BATTLE does (an army's CO, its partner, the next army's CO ..., then the P1 / CPU
-//!   tabs, round again: [`ds_arrows`]), UP and DOWN changing the cell's CO, partner or controller; START still works
+//!   tabs, army by army, round again: [`ds_arrows`]), UP and DOWN changing the cell's CO, partner or controller; START still works
 //!   as before. In netplay
 //!   both seats' buttons reach the Teams screen, as for the rest of it. The
 //!   boxes' tiles and colours are borrowed (OBJ tiles 0x100..0x13F, palettes
@@ -316,18 +316,18 @@ pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32) -> u32
     if fire { dir } else { 0 }
 }
 
-/// Dual Strike's cells in order: each army's CO, then its partner, then (after the last army) the P1 / CPU tabs. Returns
-/// (game cursor stop, partner cell) of cell `v` of `3 * armies`.
-fn cell_stop(v: u32, armies: u32) -> (u32, bool) {
-    if v < 2 * armies {
-        (2 * (v / 2), v % 2 == 1)
-    } else {
-        (2 * (v - 2 * armies) + 1, false)
+/// The cells in order, army by army: its CO, its partner, its P1 / CPU tab (the order is the players' choice: Dual Strike
+/// visits the tabs after all the cards). Returns (game cursor stop, partner cell) of cell `v` of `3 * armies`.
+fn cell_stop(v: u32, _armies: u32) -> (u32, bool) {
+    match v % 3 {
+        0 => (2 * (v / 3), false),
+        1 => (2 * (v / 3), true),
+        _ => (2 * (v / 3) + 1, false),
     }
 }
 
 /// Dual Strike's Versus (offline, with Dual Strike map graphics): LEFT and RIGHT go cell to cell as Dual Strike's cursor
-/// does (CO, partner, the next army's CO ..., then the tabs, round again; a press is one cell, a key held on repeats as Dual
+/// does (CO, partner, tab, the next army's CO ..., round again; a press is one cell, a key held on repeats as Dual
 /// Strike's does), UP and DOWN change what is in the cell (the CO, the partner, the controller). The cell the cursor is
 /// heading for is kept (a press on the way goes on from it), and the game's own cursor does the moving: the walk presses its
 /// LEFT or RIGHT, one press every other frame, until it stands on the cell's stop; the partner cell is START's. The player's
@@ -345,7 +345,7 @@ fn ds_arrows(core: &mut Core, keys: u32, pressed: u32, armies: u32) -> u32 {
         return out;
     }
     let editing = core.raw_read_8(EDITING, -1);
-    let here = if c % 2 == 1 { 2 * armies + c / 2 } else { c + (editing as u32 == c / 2) as u32 };
+    let here = if c % 2 == 1 { 3 * (c / 2) + 2 } else { 3 * (c / 2) + (editing as u32 == c / 2) as u32 };
     let target = core.raw_read_8(CELL_TARGET, -1) as u32;
     let mut v = if target != 0 { target - 1 } else { here };
     if fire != 0 {
