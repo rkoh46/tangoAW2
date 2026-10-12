@@ -533,6 +533,27 @@ const CARD_ROWS: [[(usize, bool); 8]; 7] = [
 const CARD_ONE: i32 = 40;
 const CARD_TWO: i32 = 56;
 
+/// A card's tiles are 64 pixels wide, its picture 56 (the first and last 4 pixels of its edge columns are clear).
+const CARD_W: i32 = 64;
+const CARD_SEEN: i32 = 56;
+
+/// Where Dual Strike spaces `n` cards: 80 pixels apart for two and three (its screen is 256 wide, so three fill it from 20
+/// to 236); four would need 256, so on the GBA's 240 the cards close up until only their clear edges overlap, the pictures
+/// 4 pixels apart.
+fn card_pitch(n: usize) -> i32 {
+    if n <= 3 {
+        80
+    } else {
+        CARD_SEEN + 4
+    }
+}
+
+/// The left of the first card's tiles: the pictures centred on the screen.
+fn card_left(n: usize) -> i32 {
+    let seen = card_pitch(n) * (n as i32 - 1) + CARD_SEEN;
+    (W as i32 - seen) / 2 - (CARD_W - CARD_SEEN) / 2
+}
+
 fn card(cv: &mut Canvas, a: &Art, x: i32, c: &Card, active: Option<bool>) {
     let pal = &a.versus_pal[(c.colour as usize).min(4)];
     let e = 21 + 4 * (c.colour as usize).min(4);
@@ -646,11 +667,9 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
     cv.rgba.copy_from_slice(&a.pick_bg);
     let n = v.cards.len().clamp(1, 4);
     let tall = v.cards.iter().any(|c| c.partner.is_some());
-    let gap = 8;
-    let x0 = (W as i32 - (64 * n as i32 + gap * (n as i32 - 1))) / 2;
     for (i, c) in v.cards.iter().take(4).enumerate() {
         let active = v.active.and_then(|(k, p)| (k == i).then_some(p));
-        card(cv, a, x0 + i as i32 * (64 + gap), c, active);
+        card(cv, a, card_left(n) + i as i32 * card_pitch(n), c, active);
     }
     let top = if tall { CARD_TWO } else { CARD_ONE };
     let body = (H as i32 - top - 16 + 7) / 8;
@@ -772,8 +791,12 @@ fn country(core: &Core, co: u8) -> u8 {
     core.raw_read_8(table + co as u32 * 0x104 + 0x15, -1).min(4)
 }
 
+/// Dual Strike's plates before anything is picked, by army colour (Dual Strike ids: the main CO, the partner): Orange Star
+/// Jake and Rachel, Blue Moon Sasha and Colin, Green Earth Javier and Jess; the other armies' are not known.
+const DEFAULT_PAIRS: [Option<(u8, u8)>; 5] = [Some((20, 21)), Some((22, 17)), Some((23, 18)), None, None];
+
 /// The CO screen's cards, over the picks made and the CO under the cursor.
-fn cards(core: &Core, picks: &[u8], cur: u8) -> (Vec<Card>, Option<(usize, bool)>, Vec<(u8, u8, u8)>) {
+fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Option<(usize, bool)>, Vec<(u8, u8, u8)>) {
     // (colour, army, number) of each pick made, for the flags.
     let mut flags = Vec::new();
     let pic = |co: u8| Slot { name: name(core, co) };
@@ -784,44 +807,59 @@ fn cards(core: &Core, picks: &[u8], cur: u8) -> (Vec<Card>, Option<(usize, bool)
         let armies = (m.armies as usize).min(4);
         let mut out = Vec::new();
         let mut active = None;
-        let fixed = |k: usize, partner: bool| -> Option<u8> {
-            let (a, b) = match &m.native {
-                Some(nat) => nat.cos[k],
-                None => (crate::ds_campaign_data::aw2_co(m.cos[k].0).unwrap_or(0xFF), crate::ds_campaign_data::aw2_co(m.cos[k].1).unwrap_or(0xFF)),
-            };
-            let co = if partner { b } else { a };
-            (co != 0xFF).then_some(co)
-        };
         let lead = m.native.as_ref().and_then(|nat| nat.lead_lock);
         let five_pick = m.native.as_ref().is_some_and(|nat| nat.five_pick.is_some());
-        let slot = |idx: usize| -> Slot {
+        // A plate not picked yet shows what Dual Strike fills it with (read from its own CO screens: Orange Star's Jake and
+        // Rachel, Blue Moon's Sasha and Colin, Green Earth's Javier and Jess), when the mission offers the CO and it is not
+        // picked already; the plate being picked shows the CO under the cursor.
+        let defaults = |colour: u8| -> Vec<u8> {
+            DEFAULT_PAIRS
+                .get(colour as usize)
+                .and_then(|p| *p)
+                .map(|(a, b)| [a, b])
+                .into_iter()
+                .flatten()
+                .filter_map(|ds| (0..=255u8).find(|&c| crate::tag::ds_id(c) == Some(ds)))
+                .filter(|c| offered.contains(c) && !picks.contains(c))
+                .collect()
+        };
+        let slot = |idx: usize, colour: u8, partner: bool, main_picked: bool, flags: &mut Vec<(u8, u8, u8)>| -> Slot {
             if idx < done {
                 pic(picks[idx])
             } else if idx == done {
                 pic(cur)
             } else {
-                Slot { name: None }
+                let d = defaults(colour);
+                match d.get(if partner && !main_picked { 1 } else { 0 }) {
+                    Some(&co) => {
+                        flags.push((colour, co, if partner { 2 } else { 1 }));
+                        pic(co)
+                    }
+                    None => Slot { name: None },
+                }
             }
         };
-        for a in 0..armies {
+        // Only the armies the player picks for have a card (Dual Strike's CO screen shows no card for the opponents'),
+        // however many armies the mission has.
+        for a in 0..n.min(armies) {
             // (a mission whose player is the fifth army, Black Hole, picks on army 1's place)
             let colour = if five_pick && a == 0 { 4 } else { m.colours[a].clamp(1, 5) - 1 };
-            let picking = a < n;
-            let (main, partner) = if picking && a == 0 && lead.is_some() {
+            let (main, partner) = if a == 0 && lead.is_some() {
                 // The army leads with a fixed CO and picks only its partner.
                 if done == 0 {
                     active = Some((0, true));
                 } else {
                     flags.push((colour, picks[0], 2));
                 }
-                (Slot { name: lead.and_then(|c| name(core, c)) }, Some(slot(0)))
-            } else if picking {
+                (Slot { name: lead.and_then(|c| name(core, c)) }, Some(slot(0, colour, true, true, &mut flags)))
+            } else {
                 if a == done && done < n + k {
                     active = Some((a, false));
                 }
                 if a < done {
                     flags.push((colour, picks[a], 1));
                 }
+                let main = slot(a, colour, false, false, &mut flags);
                 let partner = (a < k).then(|| {
                     if n + a == done {
                         active = Some((a, true));
@@ -829,12 +867,8 @@ fn cards(core: &Core, picks: &[u8], cur: u8) -> (Vec<Card>, Option<(usize, bool)
                     if n + a < done {
                         flags.push((colour, picks[n + a], 2));
                     }
-                    slot(n + a)
+                    slot(n + a, colour, true, a < done, &mut flags)
                 });
-                (slot(a), partner)
-            } else {
-                let main = Slot { name: fixed(a, false).and_then(|c| name(core, c)) };
-                let partner = fixed(a, true).map(|c| Slot { name: name(core, c) });
                 (main, partner)
             };
             out.push(Card { colour, main, partner });
@@ -882,7 +916,7 @@ fn pick_view(core: &Core) -> Option<PickView> {
         }
     }
     all.sort_by_key(|&c| (country(core, c), c));
-    let (cards, active, flags) = cards(core, &picks, cur);
+    let (cards, active, flags) = cards(core, &picks, cur, &offered);
     let cells: Vec<Cell> = all
         .iter()
         .map(|&c| {
@@ -930,6 +964,21 @@ mod tests {
             // centred
             assert_eq!(card_x(n, 0), W as i32 - (card_x(n, n - 1) + 48));
         }
+    }
+
+    #[test]
+    fn one_to_four_name_cards_lie_wholly_on_the_screen() {
+        for n in 1..=4usize {
+            let (first, last) = (card_left(n) + (CARD_W - CARD_SEEN) / 2, card_left(n) + card_pitch(n) * (n as i32 - 1) + (CARD_W + CARD_SEEN) / 2);
+            assert!(first >= 0 && last <= W as i32, "{n} cards: pictures from {first} to {last}");
+            // centred, the pictures never over each other
+            assert!((first - (W as i32 - last)).abs() <= 1, "{n} cards centred");
+            assert!(n == 1 || card_pitch(n) >= CARD_SEEN, "{n} cards overlap");
+        }
+        // two and three as Dual Strike has them: 80 pixels apart (its 256-pixel screen: 60 and 140; 20, 100 and 180)
+        assert_eq!((card_pitch(2), card_pitch(3)), (80, 80));
+        assert_eq!(card_left(3) + 4 + 8, 20);
+        assert_eq!(card_left(2) + 4 + 8, 60);
     }
 
     /// With `TANGOAW2_DS_ROM` naming a Dual Strike (USA) ROM: the art builds, the five armies have a palette each and the

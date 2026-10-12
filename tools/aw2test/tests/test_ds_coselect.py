@@ -247,6 +247,18 @@ def card_colour(rows, x, w=64):
     return f"?{(R, G, B)}"
 
 
+def pick_card_left(n):
+    """Where the first of n name cards' tiles start (crate::ds_coselect::card_left): the pictures (56 of the 64 pixels) centred,
+    80 apart for two and three cards, closed up to 60 for four."""
+    pitch = 80 if n <= 3 else 60
+    return (240 - (pitch * (n - 1) + 56)) // 2 - 4
+
+
+def only_background(rows, x0, x1, y0, y1):
+    """Nothing but the ring wallpaper's pale colours in the box (a card's header is saturated or grey, never this light)."""
+    return all(min(p) >= 185 for r in rows[y0:y1] for p in r[x0:x1])
+
+
 @test(modes=("ds",))
 def ds_coselect_campaign_pick(ctx):
     """The DS Campaign's CO screen (a mission of three armies, the player picking two COs and their partners: Orange Star's
@@ -258,8 +270,34 @@ def ds_coselect_campaign_pick(ctx):
     ctx.eq(picked_on, picked_off, "the COs picked")
     ctx.eq(cos_on, cos_off, "the armies' COs in the battle")
     ctx.check(len(picked_on) >= 2, f"the mission asked for picks ({picked_on})")
-    x0 = (240 - (64 * 3 + 16)) // 2
-    ctx.eq([card_colour(first_on, x0 + 72 * i) for i in range(3)], ["red", "blue", "grey"], "three cards: Orange Star, Blue Moon, Black Hole")
+    # Dual Strike's CO screen has a card for each army the player picks for (not the opponents'): here two, centred, 80 pixels apart
+    ctx.eq([card_colour(first_on, pick_card_left(2) + 80 * i) for i in range(2)], ["red", "blue"], "two cards: Orange Star, Blue Moon")
+    ctx.check(only_background(first_on, pick_card_left(2) + 80 * 2 + 8, 236, 4, 22), "no card for the mission's fixed army")
+
+
+def ink(rows, x, y, w, h):
+    """Dark pixels in a box (a name plate's lettering is dark green with an outline; the faint 1 and 2 are pale)."""
+    return sum(1 for r in rows[y:y + h] for p in r[x:x + w] if max(p) < 100)
+
+
+@test(modes=("ds",))
+def ds_coselect_campaign_plates_are_filled(ctx):
+    """Before anything is picked every plate of every card shows a name, as Dual Strike's does (Orange Star's Jake and Rachel,
+    Blue Moon's Sasha and Colin, Green Earth's Javier and Jess, the pick's own taking the CO under the cursor): none is
+    left empty with only its faint 1 or 2. Two cards (the mission picks two armies) and three, all wholly on the screen."""
+    # (the CO screen has room for four picks: with three armies only the first has a partner's plate)
+    for step, n, partners, colours in ((10, 2, 2, ["red", "blue"]), (21, 3, 1, ["red", "blue", "green"])):
+        e, g, d = to_co_screen(ctx, step)
+        e.w8(DS_GRAPHICS, 1)
+        e.wait(30)
+        rows = shot(ctx, e, f"plates_{n}")
+        left = pick_card_left(n)
+        ctx.eq([card_colour(rows, left + 80 * i) for i in range(n)], colours, f"{n} cards")
+        # (the pictures' own edges: nothing of a card in the 4 clear pixels before the first and after the last)
+        ctx.check(only_background(rows, 0, left + 4, 4, 22) and only_background(rows, left + 80 * (n - 1) + 60, 240, 4, 22), f"{n} cards fit the screen")
+        for i in range(n):
+            for k, plate in enumerate((16, 32)[:2 if i < partners else 1]):
+                ctx.check(ink(rows, left + 80 * i + 8, plate, 48, 16) > 30, f"card {i + 1}, plate {k + 1} shows a name")
 
 
 @test(modes=("ds",))

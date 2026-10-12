@@ -41,7 +41,7 @@ fn main() {
         save(out.join(format!("versus{n}_plain.ppm")), &buf);
     }
     let order: Vec<u8> = (1..=27).collect();
-    for (name, ncards) in [("pick1", 1usize), ("pick2", 2), ("pick3", 3)] {
+    for (name, ncards) in [("pick1", 1usize), ("pick2", 2), ("pick3", 3), ("pick4", 4)] {
         let cards: Vec<Card> = (0..ncards)
             .map(|i| Card {
                 colour: i as u8,
