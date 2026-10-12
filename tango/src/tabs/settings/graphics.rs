@@ -138,6 +138,17 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                     .into()
             },
         ));
+        if config.ds_graphics && config.ds_tilt {
+            let options = vec![
+                Choice::new(0u8, t!(lang, "settings-ds-tilt-amount-full")),
+                Choice::new(1u8, t!(lang, "settings-ds-tilt-amount-light")),
+            ];
+            let selected = options.iter().find(|c| c.value == config.ds_tilt_amount).cloned();
+            emulator_rows.push(option_row::<Message>(
+                t!(lang, "settings-ds-tilt-amount"),
+                widgets::picker(options, selected, |c: Choice<u8>| Message::DsTiltAmountChanged(c.value)),
+            ));
+        }
     }
     if cfg!(target_os = "ios") {
         let options = vec![

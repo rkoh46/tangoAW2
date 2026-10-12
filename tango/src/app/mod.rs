@@ -174,6 +174,7 @@ impl App {
     pub fn new() -> (Self, iced::Task<Message>) {
         let config = config::Config::load_or_create();
         tango_library::set_ds_tilt(config.ds_tilt);
+        tango_library::set_ds_tilt_amount(config.ds_tilt_amount);
         tango_library::set_ds_tilt_log(config.ds_tilt_log);
         tango_library::set_ds_graphics(config.ds_graphics);
 

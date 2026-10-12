@@ -108,6 +108,10 @@ impl App {
                 self.config.ds_tilt = b;
                 tango_library::set_ds_tilt(b);
             }
+            C::DsTiltAmount(a) => {
+                self.config.ds_tilt_amount = a;
+                tango_library::set_ds_tilt_amount(a);
+            }
             C::LandscapeStretch(b) => self.config.landscape_stretch = b,
             C::DsScreenStacking(s) => self.config.ds_screen_stacking = s,
             C::DsPrimaryScreen(s) => self.config.ds_primary_screen = s,

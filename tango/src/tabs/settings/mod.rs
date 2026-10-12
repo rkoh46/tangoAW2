@@ -161,6 +161,7 @@ pub enum Message {
     VideoFilterChanged(String),
     ToggleFractionalScaling(bool),
     ToggleDsTilt(bool),
+    DsTiltAmountChanged(u8),
     ToggleDsGraphics(bool),
     LandscapeStretchChanged(bool),
     /// New DS screen arrangement picked. Applied at draw time, so an
@@ -228,6 +229,7 @@ pub enum ConfigChange {
     VideoFilter(String),
     FractionalScaling(bool),
     DsTilt(bool),
+    DsTiltAmount(u8),
     DsGraphics(bool),
     LandscapeStretch(bool),
     DsScreenStacking(config::DsScreenStacking),
@@ -320,6 +322,7 @@ impl State {
             Message::VideoFilterChanged(s) => Some(ConfigChange::VideoFilter(s)),
             Message::ToggleFractionalScaling(b) => Some(ConfigChange::FractionalScaling(b)),
             Message::ToggleDsTilt(b) => Some(ConfigChange::DsTilt(b)),
+            Message::DsTiltAmountChanged(a) => Some(ConfigChange::DsTiltAmount(a)),
             Message::ToggleDsGraphics(b) => Some(ConfigChange::DsGraphics(b)),
             Message::LandscapeStretchChanged(b) => Some(ConfigChange::LandscapeStretch(b)),
             Message::DsScreenStackingChanged(s) => Some(ConfigChange::DsScreenStacking(s)),

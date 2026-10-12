@@ -71,6 +71,13 @@ pub fn set_ds_tilt(on: bool) {
     let _ = on;
 }
 
+/// tangoAW2: how far the tilted map leans (0 Dual Strike's, 1 lighter).
+pub fn set_ds_tilt_amount(amount: u8) {
+    #[cfg(feature = "gamesupport-aw2")]
+    tango_gamesupport_aw2::ds_tilt::set_amount(amount);
+    let _ = amount;
+}
+
 /// tangoAW2: log the tilt's cost every 120 pictures (hidden `ds_tilt_log` setting).
 pub fn set_ds_tilt_log(on: bool) {
     #[cfg(feature = "gamesupport-aw2")]

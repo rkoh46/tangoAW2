@@ -241,6 +241,9 @@ pub struct Config {
     /// Strike graphics mode). Off by default.
     #[serde(default)]
     pub ds_tilt: bool,
+    /// tangoAW2: how far the tilted map leans: 0 Dual Strike's, 1 lighter.
+    #[serde(default)]
+    pub ds_tilt_amount: u8,
     /// tangoAW2: log the tilt's frame cost every 120 pictures (set `"ds_tilt_log": true` in
     /// config.json; there is no settings row).
     #[serde(default)]
@@ -391,6 +394,7 @@ impl Default for Config {
             video_filter: String::new(),
             fractional_scaling: default_fractional_scaling(),
             ds_tilt: false,
+            ds_tilt_amount: 0,
             ds_tilt_log: false,
             ds_graphics: false,
             landscape_stretch: false,

@@ -46,6 +46,21 @@ pub fn set_enabled(on: bool) {
     ENABLED.store(on, Ordering::Relaxed);
 }
 
+static AMOUNT: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+/// Settings > Graphics > Tilt amount: 0 Dual Strike's, 1 lighter (the camera leans about half as far).
+pub fn set_amount(amount: u8) {
+    AMOUNT.store(amount, Ordering::Relaxed);
+}
+
+/// The camera's lean now.
+fn pitch() -> f32 {
+    match AMOUNT.load(Ordering::Relaxed) {
+        0 => cp().pitch,
+        _ => cp().pitch * 0.5,
+    }
+}
+
 static TIMING_LOG: AtomicBool = AtomicBool::new(false);
 
 /// The frontend's frame-time log (the hidden `ds_tilt_log` setting in config.json): every 120
@@ -240,7 +255,7 @@ struct Cam {
 
 impl Cam {
     fn new(cu: f32, cv: f32) -> Cam {
-        Cam { cu, cv, sin: cp().pitch.sin(), cos: cp().pitch.cos(), tan: cp().pitch.tan() }
+        Cam { cu, cv, sin: pitch().sin(), cos: pitch().cos(), tan: pitch().tan() }
     }
 
     /// The screen position of the ground point (u, v) in cells, and the size
@@ -2664,7 +2679,32 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
                 if !(0..bb.w).contains(&u) {
                     continue;
                 }
-                let p = bb.pix[(v * bb.w + u) as usize];
+                let p = if ssc < 1.0 {
+                    // Shrunk: the source pixels the screen pixel covers are averaged (nearest-neighbour sampling drops
+                    // rows and columns of the small digits and icons, and the units' outlines).
+                    let (ua, ub) = (((x as f32 - left) / ssc).floor() as i32, (((x + 1) as f32 - left) / ssc).ceil() as i32);
+                    let (va, vb) = (((y as f32 - top) / ssc).floor() as i32, (((y + 1) as f32 - top) / ssc).ceil() as i32);
+                    let (mut r, mut g, mut b, mut n, mut all) = (0u32, 0u32, 0u32, 0u32, 0u32);
+                    for sv in va.max(0)..vb.min(bb.h) {
+                        for su in ua.max(0)..ub.min(bb.w) {
+                            all += 1;
+                            let q = bb.pix[(sv * bb.w + su) as usize];
+                            if q != 0 {
+                                n += 1;
+                                r += q as u32 & 31;
+                                g += (q as u32 >> 5) & 31;
+                                b += (q as u32 >> 10) & 31;
+                            }
+                        }
+                    }
+                    if n == 0 || n * 2 < all {
+                        0
+                    } else {
+                        ((r / n) | ((g / n) << 5) | ((b / n) << 10) | 0x8000) as Px
+                    }
+                } else {
+                    bb.pix[(v * bb.w + u) as usize]
+                };
                 if p != 0 {
                     map[y as usize * W + x as usize] = p;
                 }
