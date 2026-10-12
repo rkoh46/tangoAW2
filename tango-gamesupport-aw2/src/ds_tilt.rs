@@ -1791,7 +1791,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let bldy = v.io[0x2a];
     let bld_mode = (bldcnt >> 6) & 3;
     // A fade over everything is not ours to redo.
-    if (bld_mode >= 2 && (!win.any() || win.outside & 0x20 != 0)) || v.io[0x26] & 0xff != 0 {
+    // A fade over everything (the map going dark for the battle scene and coming back) is redone on the tilted map: its pixels are
+    // darkened or lightened as the console does its own. Only when it takes the map's layers (BG1-3 and the sprites).
+    let fade_all = bld_mode >= 2 && (!win.any() || win.outside & 0x20 != 0);
+    if (fade_all && bldcnt & 0x1e != 0x1e) || v.io[0x26] & 0xff != 0 {
         { skip_log(line!()); return None; }
     }
     for bg in &bgs {
@@ -1965,6 +1968,13 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         };
                     }
                 }
+            }
+        }
+    }
+    if fade_all {
+        for o in owner.iter_mut() {
+            if *o == Owner::Map {
+                *o = Owner::MapFx;
             }
         }
     }
