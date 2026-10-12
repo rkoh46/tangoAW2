@@ -1616,11 +1616,11 @@ fn apply_timed(core: &Core, rgba: &mut [u8]) {
 
 fn apply_inner(core: &Core, rgba: &mut [u8]) {
     if !enabled() || rgba.len() != W * H * 4 {
-        return;
+        { skip_log(line!()); return; }
     }
     // (the Design Room's map editor runs the battle map's loop over records it does not keep)
     if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
-        return;
+        { skip_log(line!()); return; }
     }
     let t0 = std::time::Instant::now();
     let mut v = Vid::read(core);
@@ -1666,12 +1666,12 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let d = v.dispcnt();
     // Tile mode 0, display on, BG1-3 and OBJ on.
     if d & 7 != 0 || d & 0x80 != 0 || d & 0x0e00 != 0x0e00 || d & 0x1000 == 0 {
-        return;
+        { skip_log(line!()); return; }
     }
     let (Some(bgs0), Some(bgs1), Some(bgs2), Some(bgs3)) =
         (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3))
     else {
-        return;
+        { skip_log(line!()); return; }
     };
     let bgs = [bgs0, bgs1, bgs2, bgs3];
     let win = Windows::new(&v);
@@ -1680,7 +1680,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     let bld_mode = (bldcnt >> 6) & 3;
     // A fade over everything is not ours to redo.
     if (bld_mode >= 2 && (!win.any() || win.outside & 0x20 != 0)) || v.io[0x26] & 0xff != 0 {
-        return;
+        { skip_log(line!()); return; }
     }
     for bg in &bgs {
         if bg.on {
@@ -1689,7 +1689,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     }
     let t_load = t0.elapsed();
     let Some(objs) = read_objs(core, &mut v) else {
-        return;
+        { skip_log(line!()); return; }
     };
     let t_objs = t0.elapsed();
 
@@ -1914,12 +1914,22 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     Ground::load(core, &mut v);
     v.ensure(core, OBJ_TILES, 0x8000);
     let Some(mut ground) = Ground::new(core, &v) else {
-        return;
+        { skip_log(line!()); return; }
     };
     let cam_px = (
         core.raw_read_16(MAP + 4, -1) as i16 as i32,
         core.raw_read_16(MAP + 6, -1) as i16 as i32,
     );
+    // While the map scrolls the camera word in RAM runs a step (4 px) ahead of what the console shows: BG3's scroll
+    // is the picture's own, so the camera is put back on it (a small difference only; a big one is another screen).
+    let cam_px = {
+        let near = |ram: i32, shown: i32| {
+            let d = (shown - ram).rem_euclid(512);
+            let d = if d >= 256 { d - 512 } else { d };
+            if d.abs() <= 16 { ram + d } else { ram }
+        };
+        (near(cam_px.0, bgs[3].hofs), near(cam_px.1, bgs[3].vofs))
+    };
     // Dual Strike's camera follows the cursor with a dead zone and keeps the
     // map's edge in view (fitted to melonDS frames, see the module notes).
     let cursor = (
@@ -1992,7 +2002,7 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
     {
         let covered = (0..W * H).filter(|&i| layers[1][i] != 0 || layers[2][i] != 0).count();
         if covered * 5 > W * H * 2 || crate::tag_ui::build_menu_up(core) {
-            return;
+            { skip_log(line!()); return; }
         }
     }
 
@@ -2021,8 +2031,11 @@ fn apply_inner(core: &Core, rgba: &mut [u8]) {
         if debug_check() && bad > 0 {
             eprintln!("ds_tilt: ground from RAM differs from BG3 at {} of {} sampled pixels", bad, seen);
         }
+        if std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
+            eprintln!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs);
+        }
         if bad * 12 > seen {
-            return;
+            { skip_log(line!()); return; }
         }
     }
 
@@ -2995,4 +3008,12 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
         });
     }
     out
+}
+
+/// Debug aid: `TANGOAW2_TILT_SKIP_LOG=1` prints why a picture was left flat.
+fn skip_log(line: u32) {
+    static ON: OnceLock<bool> = OnceLock::new();
+    if *ON.get_or_init(|| std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some()) {
+        eprintln!("ds_tilt skip line {line}");
+    }
 }
