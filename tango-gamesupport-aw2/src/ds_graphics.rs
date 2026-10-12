@@ -146,7 +146,25 @@ fn building_tick(core: &mut Core, on: bool) {
     for (at, _, off) in BLD_POOLS {
         switch32(core, at, BLD_NEW + off as u32);
     }
+    // The sheet's Lab tiles hold Black Hole's HQ picture while five armies are in play
+    // ([`crate::five`] does that to AW2's own sheet, which this one replaces).
+    let five = crate::five::patches_on(core);
+    for (sheet, hq) in [(0, HQ), (SNOW, HQ_SNOW)] {
+        let lab = sheet + at(LAB_TILE);
+        let from = if five { hq + 4 * 256 } else { lab };
+        let want = &b[from..from + 256];
+        let to = BLD_NEW + lab as u32;
+        let mut now = [0u8; 256];
+        core.raw_read_range(to, -1, &mut now);
+        if now[..] != want[..] {
+            core.raw_write_range(to, -1, want);
+        }
+    }
 }
+
+/// The OBJ tile of the Lab's picture in the building sheet (OBJ tiles 0x90..0x97).
+const LAB_TILE: usize = 0x90;
+
 
 // --- Units ---------------------------------------------------------------------
 

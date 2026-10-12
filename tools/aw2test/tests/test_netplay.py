@@ -79,3 +79,34 @@ def netplay_new_co_powers(ctx):
     ctx.check(identical, "netplay: all identical: true (both peers and the straight replay)")
     for a, v in offline.items():
         ctx.eq(values.get(a, b"").hex(), v.hex(), f"netplay peer 0 RAM at {a:08x} equals the offline run")
+
+
+@test()
+def netplay_black_hole_hq_captured(ctx):
+    """A five-army battle: Orange Star captures Black Hole's HQ (terrain 0x1B4) over two turns, the
+    CPU armies play between, and both peers end byte-identical to the offline run and the replay."""
+    m = ctx.map(hq=((1, 0, 0), (2, 29, 19), (3, 29, 0), (4, 0, 19)))
+    m.terrain(15, 10, 0x1B4)
+    m.unit(5, "infantry", 29, 10)
+    m.unit(1, "infantry", 15, 9)
+    m.colours = [5, 1, 2, 3, 4]
+    g = ctx.start(m, None)
+    for _ in range(2):
+        g.select(15, 9) if g.unit_at(15, 9) else g.select(15, 10)
+        pos = (15, 10)
+        g.move_to(*pos) if g.unit_at(15, 9) else (g.goto(*pos), g.e.press("A", 6), g.wait_menu(g.ACTION_MENU))
+        g.choose("Capt", g.ACTION_MENU)
+        g.wait_for_input()
+        if g.battle_over() or g.terrain_class(15, 10) != 0xA8:
+            break
+        g.end_turn(human=1)
+    ctx.eq(g.terrain_class(15, 10), 0x06 | 1 << 5, "Black Hole's HQ is Orange Star's city")
+    units = (g.units_base + ram.UNIT_SIZE * 1, ram.UNIT_SIZE * 255)
+    players = (g.players_base + ram.PLAYER_SIZE, ram.PLAYER_SIZE * 5)
+    offline = {a: g.e.read(a, n) for a, n in (units, players)}
+    g.e.wait(60)
+    identical, values, text = ctx.netplay_replay(g, [units, players])
+    ctx.log("\n".join(l for l in text.splitlines() if not l.startswith("peek")))
+    ctx.check(identical, "netplay: all identical: true (both peers and the straight replay)")
+    for a, v in offline.items():
+        ctx.eq(values.get(a, b"").hex(), v.hex(), f"netplay peer 0 RAM at {a:08x} equals the offline run")
