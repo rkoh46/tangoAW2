@@ -263,6 +263,14 @@ const CELL_X: [(u8, usize); 14] = [(1, 8), (7, 8), (25, 8), (8, 24), (9, 24), (1
 /// The rows its grid strip (the CO screen's cells: 16 rows of the 48-pixel-wide mug) starts at: 16 unless listed.
 const STRIP_Y: [(u8, usize); 8] = [(16, 8), (6, 8), (23, 8), (25, 8), (26, 8), (27, 8), (12, 8), (14, 24)];
 
+/// Where the crops start for the COs Dual Strike lacks (the game's own mugs): their faces sit elsewhere in the 48 x 48 picture
+/// than Dual Strike's, so the 24-pixel cell and the 16-row strip are placed per CO to show the eyes. (Crumb: his goggles sit right of centre and a little lower; Sturm's eyes already read with the default crop.)
+const OWN_CROPS: [(u8, usize, usize); 1] = [(crate::co_new::CRUMB, 24, 20)];
+
+fn own_crop(co: u8) -> (usize, usize) {
+    OWN_CROPS.iter().find(|e| e.0 == co).map_or_else(|| crop_of(None), |e| (e.1, e.2))
+}
+
 fn crop_of(ds: Option<u8>) -> (usize, usize) {
     let find = |t: &[(u8, usize)]| ds.and_then(|d| t.iter().find(|e| e.0 == d)).map_or(16, |e| e.1);
     (find(&CELL_X), find(&STRIP_Y))
@@ -331,14 +339,17 @@ fn mug(core: &Core, co: u8) -> Option<Arc<Mug>> {
     let row = row(core, co)?;
     let mut tiles = crate::invention_art::lz77(core, core.raw_read_32(row + 0x0C, -1));
     tiles.resize(36 * 32, 0);
-    let (cell_x, strip_y) = crop_of(None);
+    let (cell_x, strip_y) = own_crop(co);
     Some(Arc::new(Mug { tiles, pal: pal_of(&crate::tag_ui::co_palette(core, co)), cell_x, strip_y }))
 }
 
 /// The name: Dual Strike's for a CO it has, the game's own (`+0x04`, LZ77) for the others.
 fn name(core: &Core, co: u8) -> Option<Arc<Name>> {
-    if let Some((_, n)) = ds_pictures(co) {
-        return Some(n);
+    // (Clone Andy takes Dual Strike's Andy for his picture, but his name is the game's own: "Clone")
+    if co != crate::co_new::CLONE_ANDY {
+        if let Some((_, n)) = ds_pictures(co) {
+            return Some(n);
+        }
     }
     let row = row(core, co)?;
     let mut tiles = crate::invention_art::lz77(core, core.raw_read_32(row + 0x04, -1));

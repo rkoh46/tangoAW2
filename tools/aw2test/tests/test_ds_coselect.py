@@ -9,7 +9,7 @@ import os
 import subprocess
 
 from aw2test import dscampaign as dc
-from aw2test import paths, ram, saves, shots, tag
+from aw2test import paths, ram, saves, shots, tag, warroom
 from aw2test import rom as romlib
 from aw2test import survival as sv
 from aw2test.emu import Emu
@@ -471,3 +471,23 @@ def ds_coselect_black_cells_campaign(ctx):
                 wrong.append(co)
     ctx.eq(wrong, [], "every visible cell is black exactly when the CO cannot be picked")
     e.close()
+
+
+@test(modes=("ds",))
+def ds_coselect_own_cos_name_and_face(ctx):
+    """The COs Dual Strike lacks, on the War Room's CO screen: Clone Andy's name card reads the game's own name ("Clone", not
+    Dual Strike's Andy), and Crumb's grid strip shows his goggles' lens (the orange disc) and his mask, not just the helmet."""
+    e = Emu(save=paths.base_save(), ds=True, env={"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "0"})
+    ctx.games.append(Game(e, ctx.image))
+    warroom.open_war_room(e)
+    plates = {}
+    for co, n in ((1, "andy"), (81, "clone"), (82, "crumb")):
+        warroom.go_to(e, co)
+        e.wait(40)
+        rows = shot(ctx, e, f"own_{n}")
+        plates[n] = [r[60:180] for r in rows[14:36]]
+        if n == "crumb":
+            # the strip under the cursor: the lens is orange-brown, the helmet blue
+            lens = sum(1 for r in rows[95:160] for (R, G, B) in r[30:120] if R > 140 and G < 100 and B < 90 and R - B > 60)
+            ctx.check(lens > 15, f"Crumb's strip shows his goggle lens ({lens})")
+    ctx.check(plates["clone"] != plates["andy"], "Clone Andy's name card is not Andy's")
