@@ -59,7 +59,9 @@ other army's turn. The match runs on player 1's save (and design maps).
 ## What it adds
 
 - **Everything unlocked:** all COs including Sturm, CO colour edits,
-  Battle Maps, Hard Campaign and the Sound Room.
+  Battle Maps, Hard Campaign and the Sound Room. Every CO is on every screen
+  where you pick one freely: Versus, the War Room and Survival (with Dual
+  Strike's nine new COs, Clone Andy and Crumb when the pack is there).
 - **Black Hole as a Versus army** and **five-army maps** (a 5P Maps tab in
   Versus: press LEFT on the tab list), any army human or computer.
 - **Design Room:** Black Hole as a fifth army and its inventions

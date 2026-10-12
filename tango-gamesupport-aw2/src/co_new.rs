@@ -147,6 +147,7 @@ const HUD: u32 = DATA + 0x3000; // ROOM x 0x100: to +0x9000
 const DOSSIER: u32 = DATA + 0x9000; // ROOM x 4 u16
 const BATTLE_STYLE: u32 = DATA + 0x9400; // ROOM bytes
 const ORDER: u32 = DATA + 0x9500; // the Teams list's order, 0xFF-ended
+const WAR_ROOM: u32 = DATA + 0x9540; // the War Room's CO groups, up to 0x40 bytes (co_powers' data starts at 0x9600)
 const PICTURES: u32 = DATA + 0xA000; // LZ77 pictures, one after another
 const STRINGS: u32 = DATA + 0x30000; // texts
 const END: u32 = DATA + 0x40000;
@@ -178,6 +179,12 @@ const AW2_ORDER_BOUND: u16 = 0x2D12;
 const AW2_LIST: u32 = 0x0202_88A0;
 const LIST: u32 = 0x0203_FE80; // 128 bytes
 const LIST_POOL: [u32; 5] = [0x0803_C12C, 0x0804_3C9C, 0x0809_0A5C, 0x0809_137C, 0x0809_1380];
+/// The War Room's (and Survival's) CO screen is built from a table of
+/// country groups, each its CO ids, 0xFF, its country, the table ending in a
+/// bare 0xFF (`0x0807F57C`, which asks `sub_0803CAB8` whether each CO is
+/// unlocked). Its one pool word reads the table.
+const AW2_WAR_ROOM: u32 = 0x0861_66F0;
+const WAR_ROOM_POOL: u32 = 0x0807_F608;
 
 const AW2_COS: u32 = crate::co_roster::AW2_COS as u32;
 const ANDY: u32 = 1;
@@ -398,6 +405,10 @@ pub fn wrap_page(t: &[u8], widths: &[u8]) -> Vec<u8> {
 /// A CO's name as Dual Strike writes it (AW2's ids and the new COs), from
 /// the pack.
 pub fn ds_name(co: u8) -> Option<Vec<u8>> {
+    // (Sturm is not in Dual Strike: Survival's record page names its CO)
+    if co == crate::sturm_pairs::STURM {
+        return Some(b"Sturm".to_vec());
+    }
     if co == CLONE_ANDY {
         return Some(CLONE_ANDY_NAME.to_vec());
     }
@@ -778,6 +789,7 @@ fn build(core: &Core) -> Option<Built> {
         order.insert(at, co);
     }
     let order_len = order.len() as u8;
+    let war_room = war_room_table(&read(core, AW2_WAR_ROOM, 0x40))?;
     order.push(0xFF);
     writes.push((PRESENTATION, pres));
     writes.push((BODY_PAIRS, pairs));
@@ -785,12 +797,45 @@ fn build(core: &Core) -> Option<Built> {
     writes.push((DOSSIER, dossier));
     writes.push((BATTLE_STYLE, style));
     writes.push((ORDER, order));
+    writes.push((WAR_ROOM, war_room));
     writes.push((PICTURES, pictures));
     writes.push((STRINGS, strings));
     for (at, p) in slots {
         writes.push((at, p.to_le_bytes().to_vec()));
     }
     Some(Built { writes, order_len })
+}
+
+/// The War Room's CO groups with the new COs in: each one in its country's
+/// group (the one holding the CO it takes after), after that CO and the new
+/// COs already after it, as the Teams list has them. (`raw` is AW2's table.)
+fn war_room_groups(raw: &[u8]) -> Option<Vec<(Vec<u8>, u8)>> {
+    let mut groups: Vec<(Vec<u8>, u8)> = Vec::new();
+    let mut at = 0;
+    while *raw.get(at)? != 0xFF {
+        let end = at + raw[at..].iter().position(|&b| b == 0xFF)?;
+        groups.push((raw[at..end].to_vec(), *raw.get(end + 1)?));
+        at = end + 2;
+    }
+    for (co, _, like) in all() {
+        let group = groups.iter_mut().find(|g| g.0.contains(&like))?;
+        let mut k = group.0.iter().position(|&c| c == like)? + 1;
+        while k < group.0.len() && is_new(group.0[k]) {
+            k += 1;
+        }
+        group.0.insert(k, co);
+    }
+    Some(groups)
+}
+
+fn war_room_table(raw: &[u8]) -> Option<Vec<u8>> {
+    let mut out = Vec::new();
+    for (cos, country) in war_room_groups(raw)? {
+        out.extend_from_slice(&cos);
+        out.extend_from_slice(&[0xFF, country]);
+    }
+    out.push(0xFF);
+    (out.len() <= 0x40).then_some(out)
 }
 
 static BUILT: OnceLock<Option<Built>> = OnceLock::new();
@@ -830,6 +875,7 @@ pub fn tick(core: &mut Core, on: bool) {
         switch32(core, at, pick(BATTLE_STYLE, AW2_BATTLE_STYLE));
     }
     switch32(core, ORDER_POOL, pick(ORDER, AW2_ORDER));
+    switch32(core, WAR_ROOM_POOL, pick(WAR_ROOM, AW2_WAR_ROOM));
     for at in LIST_POOL {
         switch32(core, at, pick(LIST, AW2_LIST));
     }
@@ -951,6 +997,25 @@ mod tests {
         assert!(t.split('\r').all(|l| pixels(l, &widths) <= PAGE_PIXELS), "{t}");
         assert!(t.split('\r').count() <= PAGE_LINES, "{t}");
         assert!(t.ends_with("Miss: Retreating"), "{t}");
+    }
+
+    #[test]
+    fn war_room_groups_hold_every_co() {
+        // AW2's table: Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole.
+        let aw2 = [1, 2, 4, 0, 15, 0xFF, 0, 3, 5, 16, 0xFF, 1, 8, 9, 17, 0xFF, 2, 6, 7, 18, 0xFF, 3, 11, 12, 13, 14, 10, 0xFF, 4, 0xFF];
+        let g = war_room_groups(&aw2).unwrap();
+        assert_eq!(g.len(), 5);
+        let all_ids: Vec<u8> = g.iter().flat_map(|x| x.0.clone()).collect();
+        assert_eq!(all_ids.len(), 19 + 11);
+        for co in (0..19).chain(FIRST..=CRUMB) {
+            assert_eq!(all_ids.iter().filter(|&&c| c == co).count(), 1, "CO {co}");
+        }
+        assert_eq!(g[0].0, vec![1, 2, 4, 0, 15, 79, 80]);
+        let bh = &g[4].0;
+        let at = |c: u8| bh.iter().position(|&x| x == c).unwrap();
+        assert_eq!(at(CRUMB), at(CLONE_ANDY) + 1);
+        assert_eq!(at(75), at(10) + 1, "Von Bolt after Sturm");
+        assert!(war_room_table(&aw2).unwrap().len() <= 0x40);
     }
 
     #[test]

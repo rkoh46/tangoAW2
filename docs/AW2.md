@@ -51,6 +51,29 @@ are set, the bytes' other flags (0x21 the campaign won, 0x23..0x26 its
 missions', ...) are kept (until 0.4.0 the whole bytes were written as 1,
 and those flags were lost at every save; `save_keeps_aw2_completion_flags`).
 
+**Every CO where the player picks freely.** Versus' Teams screen (and its tag
+partner pick), the War Room's CO screen, Survival's and its Champion
+courses' (the War Room's screen) all offer every CO the game can show: AW2's
+19, Sturm included, and with the Dual Strike pack the 11 new ones
+(`co_new`: the nine, Clone Andy, Crumb), 30. The Teams list is
+`co_new::ORDER`; the War Room's screen is built by `0x0807F57C` from a table
+of country groups (`0x086166F0`: each group's CO ids, `0xFF`, the country, a
+last bare `0xFF`; Sturm was in it, the new COs and Survival's records could
+not be). With the pack its one pool word (`0x0807F608`) reads
+`co_new::WAR_ROOM`, the same table with each new CO in its country's group
+after the CO it takes after, as the Teams list has them (the unlock test,
+`sub_0803CAB8`, answers yes for them); without the pack the word is AW2's and
+nothing changes. Which COs are offered depends on the pack alone, never on a
+display setting, so both Versus peers see the same list (the War Room is
+single-player). A War Room record is five rows a map of four bytes in the
+profile (`0x0200C078`: the CO's id as a byte, then the score), so a new CO's
+record saves and loads as AW2's own (`war_room_record_with_new_cos`,
+`war_room_new_record_joins_an_old_save`; a map saved halfway:
+`war_room_suspend_with_a_new_co`); Survival's records keep the CO in seven
+bits and name Sturm too (`survival_offers_every_co`). Left as designed: the
+campaigns' CO screens (AW2's own per-mission picks, the DS Campaign's story
+pool, the BH Campaign's pool, forced picks and recruits, Free Play's roster).
+
 Armies: picked on Versus' Teams screen. R moves the highlighted
 army (cursor / 2) to the next colour no other army has, L to the previous
 one (without the Dual Strike pack SELECT does as R, as in 0.4.0; with it
