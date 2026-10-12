@@ -3,7 +3,7 @@
 //!
 //! Usage: TANGOAW2_DS_ROM=<Dual Strike ROM or pack> ds_coselect_preview <out dir>
 
-use tango_gamesupport_aw2::ds_coselect::{art_mug, art_name, render_pick, render_versus, Card, Cell, PickView, Slot, Stop, Tab, VersusArmy, H, W};
+use tango_gamesupport_aw2::ds_coselect::{render_cell, art_mug, art_name, render_pick, render_versus, Card, Cell, PickView, Slot, Stop, Tab, VersusArmy, H, W};
 
 fn save(path: std::path::PathBuf, rgba: &[u8]) {
     let mut ppm = format!("P6\n{W} {H}\n255\n").into_bytes();
@@ -17,6 +17,17 @@ fn main() {
     let out = std::path::PathBuf::from(std::env::args().nth(1).expect("out dir"));
     std::fs::create_dir_all(&out).unwrap();
     tango_gamesupport_aw2::ds_pack::pack().expect("TANGOAW2_DS_ROM");
+    // Every Dual Strike CO's Versus cell, for the check sheet against the clean game's.
+    for ds in 1..=27u8 {
+        let mut cell = vec![0u8; 24 * 48 * 4];
+        if render_cell(&mut cell, ds) {
+            let mut ppm = b"P6\n24 48\n255\n".to_vec();
+            for px in cell.chunks(4) {
+                ppm.extend_from_slice(&px[..3]);
+            }
+            std::fs::write(out.join(format!("cell{ds}.ppm")), ppm).unwrap();
+        }
+    }
     let mut buf = vec![0u8; W * H * 4];
     let mains = [26u8, 2, 8, 15, 17];
     let parts = [Some(13u8), Some(3), Some(5), None, None];

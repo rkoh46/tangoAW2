@@ -3976,7 +3976,7 @@ nothing is written, so the picks, the cursor and the partner choices are AW2's o
   (`res_wall_single`), a card for each army (`ohashi/res_versus`: 128 tiles, the five armies' palettes at the file's end in
   the order Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole, and a 2 x 2 emblem each at tiles 21..40), 48 pixels
   wide with the CO's and the partner's portrait (24 x 48 pixels of the 48 x 48 mug, from where Dual Strike cuts each CO's:
-  `CELL_X`, measured in melonDS by cycling a card through the COs; Dual Strike's own mug for every CO it has, the game's
+  `CELL_X`, fitted pixel for pixel to the clean game's cells by cycling a card through the COs (the partner cell uses the same crop); Von Bolt, Rachel, Javier and Kindle use the appearance record's eighth file (`SELECT_MUG_WORD7`); a CO's colour edit in Dual Strike's save (Flak, Olaf, Kindle in the clean frames) is not applied; Dual Strike's own mug for every CO it has, the game's
   for Sturm, Crumb and Clone Andy; an empty partner cell is the card's palest colour) and above it the tab, a rounded
   box with P1..P4 or CPU (`icon/res_icon4_cg_E`). Dual Strike's Versus has only two armies: the green, yellow and grey
   cards are the same tiles in the other armies' palettes, Black Hole's emblem is the grey box. Up to five cards of 48 pixels

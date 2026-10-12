@@ -261,7 +261,7 @@ pub struct Mug {
 /// COs and fitting each cell to the mug file): 16 unless listed (Dual Strike ids).
 const CELL_X: [(u8, usize); 14] = [(1, 8), (7, 8), (25, 8), (8, 24), (9, 24), (10, 24), (16, 24), (14, 21), (17, 21), (19, 20), (22, 19), (15, 10), (21, 10), (4, 16)];
 /// The rows its grid strip (the CO screen's cells: 16 rows of the 48-pixel-wide mug) starts at: 16 unless listed.
-const STRIP_Y: [(u8, usize); 7] = [(16, 8), (6, 8), (23, 8), (26, 8), (27, 8), (12, 8), (14, 24)];
+const STRIP_Y: [(u8, usize); 8] = [(16, 8), (6, 8), (23, 8), (25, 8), (26, 8), (27, 8), (12, 8), (14, 24)];
 
 fn crop_of(ds: Option<u8>) -> (usize, usize) {
     let find = |t: &[(u8, usize)]| ds.and_then(|d| t.iter().find(|e| e.0 == d)).map_or(16, |e| e.1);
@@ -278,10 +278,28 @@ fn pal_of(b: &[u8]) -> [u16; 16] {
 }
 
 /// A Dual Strike CO's pictures straight from the pack (previews).
+/// The COs whose select mug Dual Strike takes from the appearance record's eighth file (word 7) and not the normal mug's
+/// (word 4): Von Bolt, Rachel, Javier and Kindle (the same in its Versus cells and its CO grid; the other COs' two files are
+/// alike or the grid and cells use word 4).
+const SELECT_MUG_WORD7: [u8; 4] = [11, 21, 23, 25];
+
+fn select_mug_tiles(ds: u8) -> Option<Vec<u8>> {
+    let pack = crate::ds_pack::pack()?;
+    if SELECT_MUG_WORD7.contains(&ds) {
+        let rec = pack.arm9_at(0x0215_2B8C + 0x54 * (ds as u32 - 1), 0x54)?;
+        let at = u32::from_le_bytes(rec[28..32].try_into().ok()?);
+        let name = pack.arm9_at(at, 4)?;
+        let name = std::str::from_utf8(&name[..3]).ok().filter(|_| name[3] == 0)?;
+        let d = crate::ds_art::lz10(pack.file(&format!("syogun/{name}"))?)?;
+        return d.get(..36 * 32).map(<[u8]>::to_vec);
+    }
+    crate::ds_co_art::co_art(ds).map(|a| a.face[0].clone())
+}
+
 pub fn art_mug(ds: u8) -> Option<Arc<Mug>> {
     let a = crate::ds_co_art::co_art(ds)?;
     let (cell_x, strip_y) = crop_of(Some(ds));
-    Some(Arc::new(Mug { tiles: a.face[0].clone(), pal: pal_of(a.palette.get(..32)?), cell_x, strip_y }))
+    Some(Arc::new(Mug { tiles: select_mug_tiles(ds)?, pal: pal_of(a.palette.get(..32)?), cell_x, strip_y }))
 }
 
 pub fn art_name(ds: u8) -> Option<Arc<Name>> {
@@ -422,8 +440,6 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
         }
         for (k, co) in [&army.main, &army.partner].into_iter().enumerate() {
             let cx = x + 24 * k as i32;
-            // (a cell is white behind its portrait)
-            cv.rect(cx, MUG_Y, 24, 48, rgba_of(pal[1]));
             match co {
                 Some(co) => {
                     // The cell: 24 pixels of the mug, from where Dual Strike cuts it.
@@ -660,6 +676,23 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
             corners(cv, a, PANEL_X + 8 + 56 * col as i32, start + pitch * (r - first) as i32, 48, 16);
         }
     }
+}
+
+/// One Dual Strike CO's Versus cell (24 x 48, with the card behind it) as RGBA (the check sheet).
+pub fn render_cell(rgba: &mut [u8], ds: u8) -> bool {
+    let Some(a) = art() else { return false };
+    let Some(m) = art_mug(ds) else { return false };
+    let army = VersusArmy { colour: 0, main: Some(m), partner: None, tab: Tab::Player(1) };
+    let mut full = vec![0u8; W * H * 4];
+    draw_versus(a, &mut Canvas { rgba: &mut full }, &[army], Stop::None);
+    let x0 = card_x(1, 0);
+    for y in 0..48usize {
+        for x in 0..24usize {
+            let o = 4 * ((MUG_Y as usize + y) * W + x0 as usize + x);
+            rgba[4 * (y * 24 + x)..4 * (y * 24 + x) + 4].copy_from_slice(&full[o..o + 4]);
+        }
+    }
+    true
 }
 
 /// Draws the views into the 240 x 160 RGBA picture `rgba` (previews).
