@@ -557,6 +557,8 @@ enum Class {
     Piece,
     /// The nine pieces put together: the unit that is moving, upright.
     Mover,
+    /// A semi-transparent affine sprite over the map (a shadow, a glow): blended with the map where it stands.
+    Shade,
     /// A piece of a structure's heal effect ([`crate::heal_effect`]): upright at the structure, placed by its cell.
     Effect,
 }
@@ -823,9 +825,6 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             // An affine sprite (the Day banner's turning letters): drawn as the console draws it, rotated and scaled by its
             // parameter group, and kept as one of the console's own pictures over the tilted map (a HUD piece).
             let y = a0 & 255;
-            if (160..224).contains(&y) {
-                continue;
-            }
             let shape = (a0 >> 14) as usize;
             let size = (a1 >> 14) as usize;
             if shape == 3 || (a0 >> 10) & 3 == 2 {
@@ -872,7 +871,7 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
                 h: bh,
                 pri: ((a2 >> 10) & 3) as u8,
                 idx,
-                class: Class::Hud,
+                class: if (a0 >> 10) & 3 == 1 && v.dispcnt() & 0xE000 == 0 { Class::Shade } else { Class::Hud },
                 pix,
                 tile: a2 & 0x3ff,
                 pal: (a2 >> 12) as u8,
@@ -1162,6 +1161,8 @@ struct Billboard {
     /// Sorted this much nearer the camera's far side than its foot (cells): a tall property's upper half, whose cell above holds a
     /// unit the console draws over it (the units' plane is above the properties' sprites).
     lift: f32,
+    /// Blended over what is under it (EVA, EVB sixteenths) instead of opaque: a shadow's, a glow's.
+    blend: (u32, u32),
 }
 
 /// Which way Dual Strike draws an army's units: mirrored (they face right; the art faces left) for the
@@ -2117,7 +2118,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // the tilted camera follows the console's: the cell at the middle of its window stands for the cursor.)
     let in_window = cursor.0 * 16 + 8 >= cam_px.0 && cursor.0 * 16 + 8 < cam_px.0 + 240 && cursor.1 * 16 + 8 >= cam_px.1 && cursor.1 * 16 + 8 < cam_px.1 + 160;
     let effects_up = objs.iter().any(|o| o.class == Class::Billboard && o.pri == 0);
-    let look = if in_window && heal_at.is_none() && !effects_up { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
+    // (a pan the cursor did not make: the console's camera is more than a cell from where it was when the cursor last moved)
+    let panned = {
+        static ANCHOR: std::sync::Mutex<((i32, i32), (i32, i32))> = std::sync::Mutex::new(((-1, -1), (0, 0)));
+        let mut a = ANCHOR.lock().unwrap();
+        if a.0 != cursor {
+            *a = (cursor, cam_px);
+        }
+        (cam_px.0 - a.1 .0).abs() > 20 || (cam_px.1 - a.1 .1).abs() > 20
+    };
+    let look = if in_window && heal_at.is_none() && !effects_up && !panned { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
     let (fx, fy) = follow(look, ground.w, ground.h, core.frame_counter());
     let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
 
@@ -2394,6 +2404,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         upright: false,
                         tag: None,
                         lift: 0.0,
+                        blend: (0, 0),
                     });
                 }
                 boards.push(Billboard {
@@ -2410,6 +2421,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     upright: has_art,
                     tag: None,
                     lift: 0.0,
+                    blend: (0, 0),
                 });
             }
         }
@@ -2563,6 +2575,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     upright: false,
                     tag: None,
                     lift: 0.0,
+                    blend: (0, 0),
                 });
             }
             boards.push(Billboard {
@@ -2581,6 +2594,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 upright: art_here,
                 tag: Some((ux, uy, u.low)),
                 lift: 0.0,
+                blend: (0, 0),
             });
         }
     }
@@ -2689,6 +2703,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         upright: false,
                         tag: None,
                         lift: 0.0,
+                        blend: (0, 0),
                     });
                 }
             }
@@ -2696,7 +2711,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     }
     for o in objs
         .iter()
-        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer | Class::Mover) && !is_obelisk_part(o) && !(cursor_shown && is_cursor_piece(o)))
+        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer | Class::Mover | Class::Shade) && !is_obelisk_part(o) && !(cursor_shown && is_cursor_piece(o)))
     {
         let fx = o.x as f32 + o.w as f32 / 2.0;
         let fy = (o.y + o.h) as f32;
@@ -2717,6 +2732,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             // (a property's sprite 32 tall reaches into the cell above its own, where a unit may stand: the console draws the unit over
             // it, so the sprite is drawn before the units of that cell, not after)
             lift: if o.class == Class::Billboard && o.pri == 3 && o.h >= 32 { 0.9 } else { 0.0 },
+            blend: if o.class == Class::Shade { ((v.io[0x29] & 31).min(16) as u32, ((v.io[0x29] >> 8) & 31).min(16) as u32) } else { (0, 0) },
         });
     }
     if let Some((ax, ay)) = heal_at {
@@ -2737,6 +2753,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 upright: false,
                 tag: None,
                 lift: 0.0,
+                blend: (0, 0),
             });
         }
     }
@@ -2787,6 +2804,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         upright: false,
                         tag: Some((-1, -1, 0)),
                         lift: 0.0,
+                        blend: (0, 0),
                     });
                 }
             }
@@ -3027,7 +3045,14 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     }
                     let p = bb.pix[(v * bb.w + u) as usize];
                     if p != 0 {
-                        chunk[(y - by0) as usize * ow + x as usize] = p;
+                        let at = (y - by0) as usize * ow + x as usize;
+                        chunk[at] = if bb.blend.0 + bb.blend.1 > 0 {
+                            let d = if chunk[at] != 0 { chunk[at] } else { backdrop };
+                            let ch = |s: u32| ((((p as u32 >> s) & 31) * bb.blend.0 + ((d as u32 >> s) & 31) * bb.blend.1) / 16).min(31);
+                            0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16
+                        } else {
+                            p
+                        };
                     }
                 }
             }
@@ -3068,10 +3093,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     Some(0x8000 | (ch(0).min(31) | ch(5).min(31) << 5 | ch(10).min(31) << 10) as u16)
                 }
                 Owner::Map => {
-                    let p = map[y * ow + x];
+                    // (a pixel the ground did not reach, at the edge of a wipe: the backdrop)
+                    let p = { let q = map[y * ow + x]; if q != 0 { q } else { backdrop } };
                     Some(if sand { sand_grain(p, (i % W) as u32, ly as u32, clock as u32) } else { p })
                 }
-                Owner::MapFx => Some(brightness(map[y * ow + x], bld_mode, evy)),
+                Owner::MapFx => Some(brightness({ let q = map[y * ow + x]; if q != 0 { q } else { backdrop } }, bld_mode, evy)),
             };
             match p {
                 Some(p) => px.copy_from_slice(&lut[(p & 0x7fff) as usize]),

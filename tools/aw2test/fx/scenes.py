@@ -179,3 +179,88 @@ def weather(ctx, env, Rec):
     g.wait_for_input()
     rec = Rec(g.e)
     rec.on(); g.e.wait(200); rec.off()
+
+
+def _structures_map(ctx, which):
+    m = ctx.map(hq=((1, 1, 1), (2, 28, 18)))
+    m.colours = [0, 5, 1, 3, 4]
+    foes = []
+    for (x, y, t, cells) in which:
+        m.terrain(x, y, t)
+        foes += cells
+    for x, y in foes:
+        m.unit(2, "tank", x, y)
+    return m, foes
+
+
+def _versus_fire(ctx, env, Rec, which, after=120):
+    """The structures fire at Black Hole's first turn start: recording begins before the battle starts."""
+    os.environ.update(env)
+    m, foes = _structures_map(ctx, which)
+    g = ctx.boot_teams(m, env=env)
+    e = g.e
+    g.set_teams(["andy", "vonbolt"], {1})
+    g.teams_to_rules()
+    g.set_rules(fog=False)
+    rec = Rec(e)
+    rec.on()
+    g.start_battle()
+    g.wait_for_input()
+    e.wait(after)
+    rec.off()
+
+
+def cannon_down(ctx, env, Rec): _versus_fire(ctx, env, Rec, [(8, 4, 0x187, [(8, 7), (7, 8), (9, 8), (8, 9)])])
+def cannon_up(ctx, env, Rec): _versus_fire(ctx, env, Rec, [(8, 16, 0x18A, [(8, 13), (7, 12), (9, 12), (8, 11)])])
+def mini_all(ctx, env, Rec):
+    _versus_fire(ctx, env, Rec, [(20, 4, 0x182, [(20, 6), (20, 7)]), (20, 16, 0x183, [(20, 14), (20, 13)]),
+                                 (26, 10, 0x184, [(24, 10), (23, 10)]), (13, 10, 0x185, [(15, 10), (16, 10)])])
+def deathray(ctx, env, Rec): _versus_fire(ctx, env, Rec, [(14, 12, 0x190, [(14, 8), (10, 12), (18, 12), (14, 16)])], after=300)
+def volcano(ctx, env, Rec): _versus_fire(ctx, env, Rec, [(14, 12, 0x1A7, [(12, 8), (16, 8), (14, 16)])], after=600)
+
+
+def oozium_eat(ctx, env, Rec):
+    m = ctx.map()
+    m.unit(1, 27, 10, 10).unit(2, "mdtank", 10, 11).unit(2, "tank", 12, 10)
+    g = _versus(ctx, env, m, ["andy", "olaf"], weather="clear")
+    g.wait_for_input()
+    rec = Rec(g.e)
+    g.select(10, 10); g.move_to(10, 11)
+    rec.on()
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_for_input(); g.e.wait(60)
+    rec.off()
+
+
+def explosion_anim(ctx, env, Rec):
+    """Battle animations on: the battle scene plays, then the destroyed unit's explosion on the map."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "infantry", 11, 10)
+    os.environ.update(env)
+    g = ctx.start(m, ["andy", "andy"], visuals="a", env=env)
+    g.wait_for_input()
+    a = g.unit_addr(g.unit_at(11, 10)["id"]); g.e.w16(a + 4, (g.e.u16(a + 4) & ~0x7F) | 3)
+    rec = Rec(g.e)
+    g.select(10, 10); g.move_to(10, 10)
+    rec.on()
+    g.choose("Fire", g.ACTION_MENU); g.pick_target(11, 10)
+    g.wait_for_input(max_frames=3000); g.e.wait(60)
+    rec.off()
+
+
+def weather_snow(ctx, env, Rec):
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "tank", 14, 10)
+    g = _versus(ctx, env, m, ["andy", "drake"], weather="snow")
+    g.wait_for_input()
+    rec = Rec(g.e)
+    rec.on(); g.e.wait(240); rec.off()
+
+
+def weather_sand(ctx, env, Rec):
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "tank", 14, 10)
+    g = _versus(ctx, env, m, ["andy", "drake"], weather="sandstorm")
+    g.wait_for_input()
+    rec = Rec(g.e)
+    rec.on(); g.e.wait(240); rec.off()
