@@ -4,7 +4,7 @@ reading its state, getting through dialogue, and forcing a mission's end."""
 import os
 import struct
 
-from . import paths
+from . import paths, tag
 from .game import Game, NavError
 
 # tangoAW2's DS Campaign RAM (crate::ds_campaign).
@@ -511,8 +511,9 @@ class DsCampaign:
         c = self.co_cursor()
         picked = self.picked()
         if c and c["co"] in picked and len(picked) < self.total_picks():
-            self.e.press("RIGHT", 6)
-            self.e.wait(20)
+            with tag.aw2_arrows(self.e):
+                self.e.press("RIGHT", 6)
+                self.e.wait(20)
         else:
             self.e.press("A", 6)
 
@@ -536,6 +537,10 @@ class DsCampaign:
         return {"co": cos[sum(counts[:tab]) + at], "tab": tab, "at": at, "counts": counts, "cos": cos}
 
     def choose_co(self, prefs=None):
+        with tag.aw2_arrows(self.e):
+            return self._choose_co(prefs)
+
+    def _choose_co(self, prefs=None):
         """On the CO screen: the first CO of `prefs` (tangoAW2 CO ids) the
         screen offers, moved to with the pad (DOWN: the next country tab,
         RIGHT: the next CO in it), then A. Returns the CO picked."""

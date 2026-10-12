@@ -10,7 +10,7 @@ u16 ids (Time 0x022F64FC, Money 0x022F652C, Turn 0x022F6514), the text table
 
 import struct
 
-from . import paths
+from . import paths, tag
 from . import rom as romlib
 from .rom import DS_OVERLAY0_BASE, DualStrike, lz10
 
@@ -212,9 +212,10 @@ def pick(e, row, co_steps=0):
             return True
         if running(e, CO_SCREEN_PROC):
             e.wait(60)
-            for _ in range(co_steps):
-                e.press("DOWN", 8)
-                e.wait(30)
+            with tag.aw2_arrows(e):
+                for _ in range(co_steps):
+                    e.press("DOWN", 8)
+                    e.wait(30)
             e.press("A", 8)
             e.wait(100)
             e.press("A", 8)

@@ -410,6 +410,13 @@ fn cycle_colour(core: &Core, slot: u32, armies: u32, step: isize) -> u8 {
         .unwrap_or(current)
 }
 
+/// Dual Strike's arrows on the CO screens (crate::tag_ui, crate::ds_coselect): offline (a netplay match or a replay has a mode)
+/// and with the Dual Strike map graphics setting. A byte of the tag pairs' UI state set to 1 (a development byte for the
+/// test harness, whose pad helpers press AW2's own cursor moves) gives AW2's controls back.
+fn dual_strike_arrows(core: &Core, mode: Option<(u8, u8)>) -> bool {
+    mode.is_none() && crate::wasteland::ds_graphics(core) && core.raw_read_8(crate::tag::AW2_ARROWS, -1) == 0
+}
+
 fn turn_ended(core: &Core) -> bool {
     core.raw_read_8(MAP_MENU_STATE, -1) == 5 && core.raw_read_8(MAP_MENU_CURSOR, -1) == 4
 }
@@ -536,7 +543,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // the Dual Strike map graphics setting.
         keys = crate::ds_co_page::tick(core, ds && mode.is_none(), keys, prev);
         // CO tag pairs: the partners picked on the Teams screen (crate::tag_ui).
-        keys = crate::tag_ui::teams_tick(core, ds, keys, prev);
+        keys = crate::tag_ui::teams_tick(core, ds, ds && dual_strike_arrows(core, mode), keys, prev);
+        // Dual Strike's cursor on the CO screens' grid (crate::ds_coselect): offline, with the Dual Strike map graphics setting.
+        let arrows = ds && dual_strike_arrows(core, mode);
+        keys = crate::ds_coselect::arrows(core, arrows, keys, keys & !prev);
         // The Rules screen's Skills row (crate::versus_rules).
         keys = crate::versus_rules::tick(core, ds, keys, prev);
 

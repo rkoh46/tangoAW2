@@ -908,8 +908,18 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
     (vec![Card { colour, main: pic(if done == 0 { cur } else { picks[0] }), partner: None }], (done == 0).then_some((0, false)), flags)
 }
 
-/// The CO screen (the campaigns', the War Room's) while it is up.
-fn pick_view(core: &Core) -> Option<PickView> {
+/// The CO screen's proc and what it offers, with Dual Strike's grid of every CO (by country, then id; four to a row).
+struct Grid {
+    proc: u32,
+    sizes: Vec<usize>,
+    offered: Vec<u8>,
+    /// The game's cursor: its country tab and the CO under it.
+    group: usize,
+    cur: u8,
+    all: Vec<u8>,
+}
+
+fn grid(core: &Core) -> Option<Grid> {
     let proc = (PROC_POOL.0..PROC_POOL.1).step_by(PROC_SIZE as usize).find(|&p| core.raw_read_32(p, -1) == CO_SELECT)?;
     let groups = core.raw_read_32(CO_GROUPS, -1) as usize;
     if !(1..=5).contains(&groups) {
@@ -928,8 +938,6 @@ fn pick_view(core: &Core) -> Option<PickView> {
     }
     let k = core.raw_read_16(proc + 0x52, -1) as usize % size + core.raw_read_32(proc + 0x5C, -1) as usize;
     let cur = *offered.get(k)?;
-    let idx = (core.raw_read_16(proc + 0x64, -1) as usize).min(8);
-    let picks: Vec<u8> = (0..idx).map(|j| core.raw_read_8(PICKS + j as u32, -1)).collect();
     // Every CO of the roster, Dual Strike's way: by country, a CO the screen does not offer locked.
     let mut all: Vec<u8> = (0..19u8).chain(crate::co_new::all().map(|n| n.0)).collect();
     for &c in &offered {
@@ -938,16 +946,152 @@ fn pick_view(core: &Core) -> Option<PickView> {
         }
     }
     all.sort_by_key(|&c| (country(core, c), c));
-    let (cards, active, flags) = cards(core, &picks, cur, &offered);
-    let cells: Vec<Cell> = all
+    Some(Grid { proc, sizes, offered, group, cur, all })
+}
+
+/// Dual Strike's arrows on the CO screen (see [`arrows`]): the cell the cursor is on although the game's cannot be (a locked CO:
+/// its cell + 1), the CO the walk of the game's cursor is heading for (+ 1) and the walk's pulse.
+const LOCKED_CELL: u32 = crate::tag::UI + 5;
+const WALK_TO: u32 = crate::tag::UI + 6;
+const WALK_PULSE: u32 = crate::tag::UI + 7;
+
+/// The CO screen (the campaigns', the War Room's) while it is up.
+fn pick_view(core: &Core) -> Option<PickView> {
+    let g = grid(core)?;
+    let walk = core.raw_read_8(WALK_TO, -1);
+    let cur = if walk != 0 && g.offered.contains(&(walk - 1)) { walk - 1 } else { g.cur };
+    let idx = (core.raw_read_16(g.proc + 0x64, -1) as usize).min(8);
+    let picks: Vec<u8> = (0..idx).map(|j| core.raw_read_8(PICKS + j as u32, -1)).collect();
+    let (cards, active, flags) = cards(core, &picks, cur, &g.offered);
+    let cells: Vec<Cell> = g
+        .all
         .iter()
         .map(|&c| {
             let flag = flags.iter().find(|f| f.1 == c).map(|f| (f.0, f.2));
-            Cell { mug: offered.contains(&c).then(|| mug(core, c)).flatten(), flag }
+            Cell { mug: g.offered.contains(&c).then(|| mug(core, c)).flatten(), flag }
         })
         .collect();
-    let cursor = all.iter().position(|&c| c == cur)?;
+    let locked = core.raw_read_8(LOCKED_CELL, -1) as usize;
+    let cursor = if locked != 0 && locked <= cells.len() { locked - 1 } else { g.all.iter().position(|&c| c == cur)? };
     Some(PickView { cards, active, cells, cursor })
+}
+
+const KEY_A: u32 = 1;
+const KEY_START: u32 = 1 << 3;
+const KEY_RIGHT: u32 = 1 << 4;
+const KEY_LEFT: u32 = 1 << 5;
+const KEY_UP: u32 = 1 << 6;
+const KEY_DOWN: u32 = 1 << 7;
+
+/// The cell one step from `cell` in a grid of `n` cells, four to a row: a row's end wraps to its start, the top row to the
+/// bottom (Dual Strike's cursor wraps both ways; a short last row has no cell in the missing columns).
+fn grid_step(n: usize, cell: usize, dx: i32, dy: i32) -> usize {
+    let (r, c) = (cell / CELL_COLUMNS, cell % CELL_COLUMNS);
+    let rows = n.div_ceil(CELL_COLUMNS);
+    if dx != 0 {
+        let len = CELL_COLUMNS.min(n - r * CELL_COLUMNS);
+        return r * CELL_COLUMNS + (c as i32 + dx).rem_euclid(len as i32) as usize;
+    }
+    let mut r2 = r as i32;
+    for _ in 0..rows {
+        r2 = (r2 + dy).rem_euclid(rows as i32);
+        if r2 as usize * CELL_COLUMNS + c < n {
+            return r2 as usize * CELL_COLUMNS + c;
+        }
+    }
+    cell
+}
+
+/// Dual Strike's cursor on the CO screen (offline, with Dual Strike map graphics, the screen drawn as its grid): the arrows move
+/// one cell of the drawn grid (UP and DOWN a row, LEFT and RIGHT a column, wrapping), though the game's own cursor moves by
+/// country (UP and DOWN) and within it (LEFT and RIGHT). The game's cursor is walked to the cell's CO with its own presses (a
+/// pulse every other frame; the picture shows the cell already), so A picks exactly the CO the picture shows. A cell of a CO the
+/// screen does not offer is a locked cell, which the cursor lands on as Dual Strike's does: the game's stays where it was and
+/// A does nothing there. All of it is in the game's RAM.
+pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
+    let dpad = KEY_LEFT | KEY_RIGHT | KEY_UP | KEY_DOWN;
+    let grid = if on && !crate::ds_co_page::is_open() && !crate::skills_panel::is_open(core) { grid(core) } else { None };
+    let Some(g) = grid else {
+        for at in [LOCKED_CELL, WALK_TO, WALK_PULSE] {
+            if core.raw_read_8(at, -1) != 0 {
+                core.raw_write_8(at, -1, 0);
+            }
+        }
+        return keys;
+    };
+    let (dx, dy) = if pressed & KEY_RIGHT != 0 {
+        (1, 0)
+    } else if pressed & KEY_LEFT != 0 {
+        (-1, 0)
+    } else if pressed & KEY_DOWN != 0 {
+        (0, 1)
+    } else if pressed & KEY_UP != 0 {
+        (0, -1)
+    } else {
+        (0, 0)
+    };
+    let locked = core.raw_read_8(LOCKED_CELL, -1) as usize;
+    let mut walk = core.raw_read_8(WALK_TO, -1);
+    // The picture's cursor is where the walk is heading (arrows pressed on the way go on from there).
+    if dx != 0 || dy != 0 {
+        let here = if locked != 0 && locked <= g.all.len() {
+            locked - 1
+        } else {
+            let at = if walk != 0 { walk - 1 } else { g.cur };
+            g.all.iter().position(|&c| c == at).unwrap_or(0)
+        };
+        let co = g.all[grid_step(g.all.len(), here, dx, dy)];
+        if g.offered.contains(&co) {
+            core.raw_write_8(LOCKED_CELL, -1, 0);
+            walk = if co == g.cur { 0 } else { co + 1 };
+        } else {
+            core.raw_write_8(LOCKED_CELL, -1, grid_step(g.all.len(), here, dx, dy) as u8 + 1);
+            walk = 0;
+        }
+        core.raw_write_8(WALK_TO, -1, walk);
+        core.raw_write_8(WALK_PULSE, -1, 1);
+    }
+    let locked = core.raw_read_8(LOCKED_CELL, -1);
+    let mut keys = keys & !dpad;
+    if locked != 0 || walk != 0 {
+        keys &= !(KEY_A | KEY_START);
+    }
+    if walk == 0 {
+        return keys;
+    }
+    // Walking: the game's cursor to the CO's country tab, then to its place in it.
+    let Some(k) = g.offered.iter().position(|&c| c == walk - 1) else {
+        core.raw_write_8(WALK_TO, -1, 0);
+        return keys;
+    };
+    let (mut first, mut want) = (0, 0);
+    for (i, &s) in g.sizes.iter().enumerate() {
+        if k < first + s {
+            want = i;
+            break;
+        }
+        first += s;
+    }
+    let size = g.sizes[want];
+    let pos = core.raw_read_16(g.proc + 0x52, -1) as usize % g.sizes[g.group];
+    if g.group == want && pos == k - first {
+        core.raw_write_8(WALK_TO, -1, 0);
+        core.raw_write_8(WALK_PULSE, -1, 0);
+        return keys;
+    }
+    let pulse = core.raw_read_8(WALK_PULSE, -1);
+    core.raw_write_8(WALK_PULSE, -1, 1 - pulse.min(1));
+    if pulse != 0 {
+        return keys;
+    }
+    keys | if g.group != want {
+        let n = g.sizes.len();
+        if (want + n - g.group) % n <= n / 2 { KEY_DOWN } else { KEY_UP }
+    } else if (k - first + size - pos) % size <= size / 2 {
+        KEY_RIGHT
+    } else {
+        KEY_LEFT
+    }
 }
 
 // --- The frame --------------------------------------------------------------------------------------------

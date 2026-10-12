@@ -104,8 +104,9 @@ def ds_coselect_versus_two_armies(ctx):
     e.wait(10)
     off = shot(ctx, e, "versus2_off")
     e.w8(DS_GRAPHICS, 1)
-    e.press("RIGHT", 6)  # the first army's controller stop: the cursor leaves the cards' headers clear
-    e.wait(30)
+    for _ in range(4):  # the first army's tab (RIGHT: its partner cell, the next army's CO and partner): the cursor leaves the cards' headers clear
+        e.press("RIGHT", 6)
+        e.wait(30)
     on = shot(ctx, e, "versus2_on")
     ctx.check(differs(off, on), "the screen is Dual Strike's with the setting on")
     ctx.check(blue_title_pixels(on) > 400 > blue_title_pixels(off), "NORMAL BATTLE's blue title is on it (and not on AW2's)")
@@ -143,8 +144,9 @@ def ds_coselect_versus_five_armies(ctx):
     e.wait(10)
     shot(ctx, e, "versus5_off")
     e.w8(DS_GRAPHICS, 1)
-    e.press("RIGHT", 6)
-    e.wait(30)
+    for _ in range(10):  # the first army's tab
+        e.press("RIGHT", 6)
+        e.wait(30)
     on = shot(ctx, e, "versus5")
     refs = ref_emblems(ctx)
     colours = list(e.read(ram.TEAMS_FIVE + 0x98, 5))
@@ -224,7 +226,8 @@ def pick_cos(ctx, on, step, label):
     e.wait(30)
     first = shot(ctx, e, f"{label}_{'on' if on else 'off'}")
     data = dc.DsData()
-    picked = d.choose_cos(dc.co_picks(data, dc.ORDER[step]), dc.CO_PREFS)
+    if True:  # (choose_cos presses AW2's arrows itself)
+        picked = d.choose_cos(dc.co_picks(data, dc.ORDER[step]), dc.CO_PREFS)
     cos = [g.player(a)["co"] for a in range(1, 5)]
     return first, picked, cos
 
@@ -309,7 +312,8 @@ def ds_coselect_campaign_flags(ctx):
     e.w8(DS_GRAPHICS, 1)
     e.wait(30)
     before = shot(ctx, e, "flags_before")
-    co = d.choose_co(None)
+    with tag.aw2_arrows(e):
+        co = d.choose_co(None)
     for _ in range(60):
         if d.picked():
             break
@@ -479,12 +483,14 @@ def ds_coselect_black_cells_campaign(ctx):
 def ds_coselect_own_cos_name_and_face(ctx):
     """The COs Dual Strike lacks, on the War Room's CO screen: Clone Andy's name card reads the game's own name ("Clone", not
     Dual Strike's Andy), and Crumb's grid strip shows his goggles' lens (the orange disc) and his mask, not just the helmet."""
-    e = Emu(save=paths.base_save(), ds=True, env={"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "0"})
+    e = Emu(save=paths.base_save(), ds=True, env={"TANGOAW2_DS_GRAPHICS": "0", "TANGOAW2_TILT": "0"})
     ctx.games.append(Game(e, ctx.image))
     warroom.open_war_room(e)
+    e.w8(DS_GRAPHICS, 1)
     plates = {}
     for co, n in ((1, "andy"), (81, "clone"), (82, "crumb")):
-        warroom.go_to(e, co)
+        with tag.aw2_arrows(e):
+            warroom.go_to(e, co)
         e.wait(40)
         rows = shot(ctx, e, f"own_{n}")
         plates[n] = [r[60:180] for r in rows[14:36]]

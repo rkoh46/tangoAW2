@@ -87,6 +87,8 @@ pub const PANEL: u32 = STATE + 0xAC;
 const PENDING: u32 = STATE + 0xB4;
 /// Teams-screen bookkeeping ([`crate::tag_ui`]): STATE + 0xC0..0xCF.
 pub const UI: u32 = STATE + 0xC0;
+/// 1: AW2's own arrows on the Teams and CO screens although Dual Strike map graphics are on (a development byte, for tools).
+pub const AW2_ARROWS: u32 = UI + 8;
 pub const STATE_END: u32 = STATE + 0x100;
 
 const NONE: u8 = 0xFF;

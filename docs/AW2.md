@@ -3359,7 +3359,15 @@ stay out.
   tag team, one with the blank plays single (checked in melonDS). Here every
   army's partner slot is under its box on Teams, None by default: START on
   an army's CO stop, UP/DOWN through the COs and None, START again ("Choose
-  a partner CO."). Humans and the computer alike: the player picks the
+  a partner CO."). With Dual Strike map graphics on (offline) the arrows are
+  Dual Strike's, checked in melonDS: LEFT/RIGHT go CO, partner, next army's
+  CO ..., then the P1/CPU tabs, and wrap; UP/DOWN change what the cell holds
+  (the partner list starts with None and wraps). The game's own cursor is
+  walked there by pad pulses (tag_ui::ds_arrows), so the record is AW2's. On
+  the CO screens (War Room, Survival, campaign picks) the arrows move one
+  cell of the drawn grid (wrapping; a locked cell takes the cursor, not A)
+  and the game's cursor is walked to that CO (ds_coselect::arrows). Tools
+  set byte 0x0203F4C8 to 1 for AW2's arrows. Humans and the computer alike: the player picks the
   computer's partner, as in Dual Strike, and the computer then plays the
   pair (Change, both powers, the Tag Power). Five-army games too (Black
   Hole the fifth: five partner slots, OBJ tiles 0x100..0x14F, the five

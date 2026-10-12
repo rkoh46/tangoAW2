@@ -7,6 +7,7 @@ country group (proc +0x58, its offset in the list +0x5C), RIGHT to the next CO i
 
 from . import rom as romlib
 from . import saves
+from . import tag
 from . import survival as sv
 from .game import NavError
 
@@ -91,7 +92,12 @@ def open_survival(e):
 
 
 def go_to(e, co):
-    """Move the CO screen's highlight to `co`."""
+    """Move the CO screen's highlight to `co` (with AW2's own arrows)."""
+    with tag.aw2_arrows(e):
+        _go_to(e, co)
+
+
+def _go_to(e, co):
     groups = lists(e)
     want = next((i for i, g in enumerate(groups) if co in g), None)
     if want is None:

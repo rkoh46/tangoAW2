@@ -9,6 +9,8 @@ import struct
 from . import rom as romlib
 
 STATE = 0x0203F400
+UI = STATE + 0xC0  # Teams / CO screen bookkeeping (crate::tag_ui, crate::ds_coselect)
+AW2_ARROWS = UI + 8  # 1: AW2's own arrows on the Teams and CO screens although the Dual Strike map graphics are on
 REC = 0x20
 P_CO, P_PHASE, P_USES, P_ANNOUNCE, P_CHARGE, P_SKILLS = 0x00, 0x01, 0x02, 0x03, 0x04, 0x08
 TEAMS_PARTNER = STATE + 0xA0  # armies 1..5
@@ -83,3 +85,18 @@ def compatibility(ds, a, b):
     if ra is None or rb is None:
         return 100
     return ds.a9(0x0215360C + 0x220 * ra + 0x84 + rb, 1)[0]
+
+
+class aw2_arrows:
+    """AW2's own cursor moves for a stretch of a test (the pad helpers press AW2's: with Dual Strike map graphics on, the arrows
+    of the Teams and CO screens are Dual Strike's, tests/test_ds_arrows.py)."""
+
+    def __init__(self, e):
+        self.e = e
+
+    def __enter__(self):
+        self.e.w8(AW2_ARROWS, 1)
+        self.e.wait(2)
+
+    def __exit__(self, *exc):
+        self.e.w8(AW2_ARROWS, 0)
