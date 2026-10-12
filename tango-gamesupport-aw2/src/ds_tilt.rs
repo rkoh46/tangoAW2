@@ -2249,6 +2249,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 let (mx, my) = (map_x0 + cx - px_off - ground_cx0, map_y0 + cy - py_off - ground_cy0);
                 let mut art_board: Option<Vec<Px>> = None;
                 if b == 1 {
+                    if unit_in.contains_key(&(mx, my)) && !debug_check_console_units() {
+                        // Every unit is drawn from its record (below), whether the console's window has its cell or not: a unit near the
+                        // window's edge no longer changes how it is drawn as the map scrolls.
+                        continue;
+                    }
                     if let Some(u) = unit_in.get(&(mx, my)) {
                         // (the console's picture of the unit: whether it is mirrored)
                         let e0 = bg.entry(&v, cx * 2, cy * 2);
@@ -2443,7 +2448,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         };
         for u in records.iter() {
             let (ux, uy) = (u.x as i32, u.y as i32);
-            if console_shows(ux, uy) || seen.contains(&(ux, uy)) {
+            if (debug_check_console_units() && console_shows(ux, uy)) || seen.contains(&(ux, uy)) {
                 continue;
             }
             if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x0e != 0 {
@@ -2981,6 +2986,12 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         ));
     }
     Some(out)
+}
+
+/// `TANGOAW2_TILT_CONSOLE_UNITS=1`: units in the console's window are drawn from its plane again (the old rule), a debug aid.
+fn debug_check_console_units() -> bool {
+    static ENV: OnceLock<bool> = OnceLock::new();
+    env_on("TANGOAW2_TILT_CONSOLE_UNITS", &ENV)
 }
 
 fn debug_time() -> bool {
