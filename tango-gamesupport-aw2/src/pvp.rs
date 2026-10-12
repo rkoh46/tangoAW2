@@ -442,6 +442,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::ds_tilt::apply_flat_range(core, rgba);
         crate::ds_tilt::apply_flat_cursor(core, rgba);
         crate::ds_menus::apply(core, rgba);
+        crate::ds_coselect::apply(core, rgba);
     }
 
     /// On a Versus battlefield only the army whose turn it is moves, so

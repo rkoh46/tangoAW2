@@ -3989,6 +3989,38 @@ difference; `TANGOAW2_TILT_TIME=1` times it.
 
 **Driving the real app in tests** (`tango/src/app/debug_aids.rs`): `TANGOAW2_SCREENSHOTS=<s>:<png>,...` saves the app window's own picture (read back from the GPU: no screen-recording permission) at those seconds after launch (`TANGOAW2_SCREENSHOT_EXIT=1` quits after the last), `TANGOAW2_PAD_SCRIPT=<file>` plays the harness's `press`/`hold`/`wait` lines (an `Emu.timeline` dump) into the offline session as the pad, and `TANGOAW2_AUTOSTART=offline|settings|settings:graphics|replays` opens that. With `TANGOAW2_PROFILE=<dir>` (config/config.json with `ds_graphics` and `ds_tilt`, data/roms with the two ROMs, data/saves with the harness's `map.sav`) the app plays a Versus battle by itself and photographs it.
 
+### Dual Strike's CO selection screens (`ds_coselect.rs`, Settings > Graphics > Dual Strike map graphics)
+
+With the pack and the setting (offline only), Versus' Teams screen and the CO screen of the campaigns, the War Room and
+Survival are Dual Strike's. They are drawn over the finished frame (the `overlay` hook, as `ds_menus`) from the game's state:
+nothing is written, so the picks, the cursor and the partner choices are AW2's own and with the setting off nothing changes.
+
+- **Versus (NORMAL BATTLE).** The title (`ohashi/res_modefont` glyphs, the lion crests) over Dual Strike's wall
+  (`res_wall_single`), a card for each army (`ohashi/res_versus`: 128 tiles, the five armies' palettes at the file's end in
+  the order Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole, and a 2 x 2 emblem each at tiles 21..40), 48 pixels
+  wide with the CO's and the partner's portrait (24 x 48 pixels of the 48 x 48 mug, from where Dual Strike cuts each CO's:
+  `CELL_X`, fitted pixel for pixel to the clean game's cells by cycling a card through the COs (the partner cell uses the same crop); Von Bolt, Rachel, Javier and Kindle use the appearance record's eighth file (`SELECT_MUG_WORD7`); a CO's colour edit in Dual Strike's save (Flak, Olaf, Kindle in the clean frames) is not applied; Dual Strike's own mug for every CO it has, the game's
+  for Sturm, Crumb and Clone Andy; an empty partner cell is the card's palest colour) and above it the tab, a rounded
+  box with P1..P4 or CPU (`icon/res_icon4_cg_E`). Dual Strike's Versus has only two armies: the green, yellow and grey
+  cards are the same tiles in the other armies' palettes, Black Hole's emblem is the grey box. Up to five cards of 48 pixels
+  fill the 240; the cursor's corner marks are Dual Strike's menu corners, with its arrows on a portrait being picked.
+  Reads: the Teams record (armies, colours, controllers, CO indices, `0x0203F4A0` partners), its cursor (`+0x32`).
+- **CO screen (SELECT CO).** The ring wallpaper (`res_wall_base`), the armies' name cards (`res_syogunselect_lang_E`: the CO's
+  name graphic on each plate, a card of two plates when the army has a partner), the "COs" panel with the grid of every CO's
+  face (a 16-row strip of the 48-pixel-wide mug, rows from `STRIP_Y`: 16, or 8 or 24 for some COs, as measured in Dual Strike's
+  grid; not the HUD face), four a row, by country; the cells touch (16 rows a cell) on the War Room's screen and lie 24 apart
+  on the campaigns'; a CO the screen does not offer is a black cell, as Dual Strike's locked
+  ones. The grid scrolls a row when the cursor passes its last visible one; the picks carry Dual Strike's flags (`res_syogunselect`:
+  1 and 2, in Orange Star's, Blue Moon's, Green Earth's and Yellow Comet's colours; Black Hole's in its grey). The cards are
+  the mission's armies (the DS and BH Campaigns: the picked ones filling as the picks are made, the fixed ones named); the War
+  Room's and AW2's campaign's one army takes the colour of the CO under the cursor. The screen's proc (`0x08616638`): the
+  country tabs' sizes `0x03005948`, the list `0x030058E0`, the cursor (`+0x58` tab, `+0x52` place, `+0x5C` list offset), the pick
+  index `+0x64`, the picks `0x030058D4`.
+- Not drawn: the pages a..d, the buttons' discs (X, A, B: the GBA's keys are AW2's), Dual Strike's top screen (the title of the
+  CO screen, the big portraits, the RANK strip) and its flag cell.
+- Tests: `tests/test_ds_coselect.py`; `examples/ds_coselect_preview.rs` draws the screens from the .nds alone (the tests compare
+  the emblems with it pixel for pixel).
+
 ### Dual Strike's CO page (`ds_co_page.rs`, Settings > Graphics > Dual Strike map graphics)
 
 With the pack and the setting (development byte `0x0203E3FE`, offline only), the CO page (the map

@@ -193,6 +193,11 @@ fn face(core: &Core, co: u8) -> ([u8; 256], [u8; 32]) {
     ds.unwrap_or_else(|| (crate::tag_ui::hud_face(core, co), crate::tag_ui::co_palette(core, co)))
 }
 
+/// A CO's menu face (the HUD face: 8 tiles, 32 x 16) and its palette, for [`crate::ds_coselect`]'s cells.
+pub(crate) fn menu_face(core: &Core, co: u8) -> ([u8; 256], [u8; 32]) {
+    face(core, co)
+}
+
 // --- Sprite list helpers -------------------------------------------------------------------------
 
 #[derive(Clone, Copy)]

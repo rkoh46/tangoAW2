@@ -539,7 +539,7 @@ pub fn map_start(core: &mut Core) {
 /// player picks both): (the armies picked for, the partners picked). AW2's
 /// CO screen has room for four picks, so with three armies only the first
 /// gets a partner. A mission with a second front is left to its own flow.
-fn ds_partner_picks(core: &Core) -> (u32, u32) {
+pub(crate) fn ds_partner_picks(core: &Core) -> (u32, u32) {
     let Some(m) = crate::ds_campaign::mission_info(core) else { return (0, 0) };
     if m.two_front.is_some() {
         return (0, 0);
