@@ -1930,7 +1930,15 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         }
     }
     // Anything on the units' layer that is not a unit stays the HUD's.
-    let foreign2 = if bgs[2].on { bgs[2].foreign(&v, 0, 0x361) } else { Vec::new() };
+    // (BG2 drawn from other tiles than the ground's is a screen of the console's own, not the peaks' plane: the lower half of a
+    // power's banner is BG2)
+    let foreign2 = if bgs[2].on && bgs[2].char_base != bgs[3].char_base {
+        vec![true; W * H]
+    } else if bgs[2].on {
+        bgs[2].foreign(&v, 0, 0x361)
+    } else {
+        Vec::new()
+    };
     let foreign1 = if bgs[1].on { bgs[1].foreign(&v, UNIT_TILES_LO, UNIT_TILES_HI) } else { Vec::new() };
     let t_layers = t0.elapsed();
     // Top sprite per pixel: (priority, index) lowest wins.
