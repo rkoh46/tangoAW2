@@ -2235,6 +2235,44 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // The attack target's ring (four crosshair pieces) is Dual Strike's as well.
     let is_ring_piece = |o: &Obj| o.class == Class::Ground && is_crosshair(o.tile);
     let ring_shown = ds_cursor.is_some() && objs.iter().any(|o| is_ring_piece(o));
+    // The Black Obelisk (lying on the ground) from the map, at its centre cell (0x193): the console's sprites of it are not there on
+    // every frame (it went missing for a frame) and lag its camera during a pan.
+    {
+        static OBELISK_PAL: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(9);
+        if let Some(o) = objs.iter().find(|o| is_obelisk_part(o)) {
+            OBELISK_PAL.store(o.pal as u32, Ordering::Relaxed);
+        }
+        objs.retain(|o| !is_obelisk_part(o));
+        let pal = OBELISK_PAL.load(Ordering::Relaxed) as usize;
+        let one_d = v.dispcnt() & 0x40 != 0;
+        let (x0, y0) = (cam_px.0.div_euclid(16), cam_px.1.div_euclid(16));
+        for my in (y0 - 4).max(0)..(y0 + 15).min(ground.h) {
+            for mx in (x0 - 4).max(0)..(x0 + 19).min(ground.w) {
+                if ground.tile(mx, my) != 0x193 {
+                    continue;
+                }
+                for &(dx, dy, w, h, tile) in &[(-16, -16, 32, 32, 374u16), (16, -16, 16, 32, 390), (-16, 16, 32, 16, 398), (16, 16, 16, 16, 406)] {
+                    let pix = obj_pixels_ro(&v, one_d, tile as usize, pal, w, h, false, false, false);
+                    if pix.iter().all(|&p| p == 0) {
+                        continue;
+                    }
+                    objs.push(Obj {
+                        x: mx * 16 - cam_px.0 + dx,
+                        y: my * 16 - cam_px.1 + dy,
+                        w,
+                        h,
+                        pri: 3,
+                        idx: usize::MAX,
+                        class: Class::Billboard,
+                        pix,
+                        tile,
+                        pal: pal as u8,
+                        flip: (false, false),
+                    });
+                }
+            }
+        }
+    }
     // (with a margin: the tilted view shows ground the console's picture does not, and the
     // sprites that lie on it (the cursor's brackets, the move arrow, a target's glow) go there too)
     const DM: i32 = 48;
@@ -2335,10 +2373,17 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let mut boards: Vec<Billboard> = Vec::new();
     // Every unit on the map, from the game's records.
     let records = ram_units(core);
+    // (a unit that has set off but whose moving sprite the console has not drawn yet: still on its own cell, drawn from its record, or
+    // it was gone for the first frames of every move)
+    static NO_RAM_MOVER: OnceLock<bool> = OnceLock::new();
+    let mover = if env_on("TANGOAW2_TILT_NO_RAM_MOVER", &NO_RAM_MOVER) { None } else { find_mover(core) };
+    let console_mover = objs.iter().any(|o| o.class == Class::Mover);
+    let setting_off = |u: &RamUnit| !console_mover && mover == Some((u.x as i32 * 16, u.y as i32 * 16));
+    let mover_at_home = records.iter().any(|u| u.flags & 0x0a != 0 && setting_off(u));
     let unit_in: std::collections::HashMap<(i32, i32), &RamUnit> = records
         .iter()
         // (flag 4 alone is the computer having picked the unit: it still stands where it is, and is drawn there until it moves)
-        .filter(|u| u.flags & 0x0a == 0)
+        .filter(|u| u.flags & 0x0a == 0 || setting_off(u))
         .map(|u| ((u.x as i32, u.y as i32), u))
         .collect();
     // A cell of the console's plane is map cell (camx / 16 + cell - scroll / 16).
@@ -2354,7 +2399,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         };
         ((wrap(bg.hofs - bgs[3].hofs) + 8).div_euclid(16), (wrap(bg.vofs - bgs[3].vofs) + 8).div_euclid(16))
     };
-    for b in [1usize, 2] {
+    // (the peaks' and treetops' plane, BG2, holds nothing else: they are drawn from the map below; what the plane showed beyond them
+    // was peaks put in the wrong cells while it was parked)
+    for b in [1usize] {
         let bg = &bgs[b];
         if !bg.on {
             continue;
@@ -2528,6 +2575,42 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     }
+    // Peaks and treetops, from the map: every cell in view whose cell below is a mountain or a wood.
+    for my in map_y0 - 1..=map_y0 + 10 {
+        for mx in map_x0 - 1..=map_x0 + 15 {
+            let Some(up) = ground.upper_pixels(mx, my) else { continue };
+            let mut pix: Vec<u16> = up.to_vec();
+            let (sx0, sy0) = (mx * 16 - cam_px.0, my * 16 - cam_px.1);
+            if tint.is_some() && mx >= 0 && my >= 0 && mx < ground.w && my < ground.h {
+                let on = reach[(my * ground.w + mx) as usize] != 0xff;
+                let (qx, qy) = (sx0 + 8, sy0 + 8);
+                let sample = if (0..W as i32).contains(&qx) && (0..H as i32).contains(&qy) { layers[0][qy as usize * W + qx as usize] } else { 0 };
+                let t = match pink.get(&(mx, my)) {
+                    Some(&q) => q,
+                    None => if on { if sample != 0 && !move_stage { sample } else { 0x7fff } } else { 0 },
+                };
+                for (i, p) in pix.iter_mut().enumerate().filter(|(_, p)| **p != 0) {
+                    *p = range_look(*p, t, i as i32 % 16, i as i32 / 16, true);
+                }
+            }
+            boards.push(Billboard {
+                pix,
+                w: 16,
+                h: 16,
+                fu: mx as f32 + 0.5,
+                fv: my as f32 + 1.0 + cp().terrain_drop,
+                ox: -8.0,
+                oy: -16.0,
+                rank: (3 - bgs[2].pri) * 2,
+                last: false,
+                scale: 1.0,
+                upright: false,
+                tag: None,
+                lift: 0.0,
+                blend: (0, 0),
+            });
+        }
+    }
     // Units beyond the console's window, from the game's own records: the
     // console draws only the cells it shows. A unit is drawn as the console
     // draws it (the first tile of its picture by type and country, mirrored
@@ -2625,7 +2708,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             if (debug_check_console_units() && console_shows(ux, uy)) || seen.contains(&(ux, uy)) {
                 continue;
             }
-            if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x0a != 0 {
+            if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || (u.flags & 0x0a != 0 && !setting_off(u)) {
                 continue;
             }
             let u = with_facing(u);
@@ -2700,7 +2783,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             });
         }
     }
-    // Buildings and structures beyond the console's window, from the map's
+    // The pictures drawn from the map below: the console's sprites of them are left out.
+    let mut from_map: std::collections::HashSet<u16> = std::collections::HashSet::new();
+    // Buildings and structures, in the console's window and beyond it, from the map's
     // tile ids and the sprite parts the console draws for each (`ds_plans`).
     // Where a part sits is the same everywhere; which tiles and palette hold
     // its picture is, for the structures, the mission's (the console gives them
@@ -2753,9 +2838,6 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let (y_lo, y_hi) = ((cam.cv - rt).floor() as i32 - 1, (cam.cv + rb).ceil() as i32 + 4);
         for my in y_lo.max(0)..y_hi.min(ground.h) {
             for mx in x_lo.max(0)..x_hi.min(ground.w) {
-                if win_x.contains(&mx) && win_y.contains(&my) {
-                    continue;
-                }
                 let t = ground.tile(mx, my);
                 let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else {
                     continue;
@@ -2788,6 +2870,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         (tile, pal, (hf, vf))
                     };
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
+                    from_map.insert(tile);
                     if pix.iter().all(|&p| p == 0) {
                         continue;
                     }
@@ -2804,7 +2887,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         scale: 1.0,
                         upright: false,
                         tag: None,
-                        lift: 0.0,
+                        lift: if h >= 32 { 0.9 } else { 0.0 },
                         blend: (0, 0),
                     });
                 }
@@ -2814,6 +2897,8 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     for o in objs
         .iter()
         .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer | Class::Mover | Class::Shade) && !is_obelisk_part(o) && !(cursor_shown && is_cursor_piece(o)))
+        // (a building's sprite in the console's window: drawn from the map, where it does not drop out for a frame or lag the camera)
+        .filter(|o| !(o.class == Class::Billboard && o.pri == 3 && from_map.contains(&o.tile)))
     {
         let fx = o.x as f32 + o.w as f32 / 2.0;
         let fy = (o.y + o.h) as f32;
@@ -2863,15 +2948,13 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // unit is off the console's screen (the tilted view shows more), so it is drawn from the
     // game's record of the move, with the pieces and facing the console last showed.
     // (`TANGOAW2_TILT_NO_RAM_MOVER=1` leaves it out, for a test's comparison)
-    static NO_RAM_MOVER: OnceLock<bool> = OnceLock::new();
-    let mover = if env_on("TANGOAW2_TILT_NO_RAM_MOVER", &NO_RAM_MOVER) { None } else { find_mover(core) };
     if std::env::var_os("TANGOAW2_TILT_CAM_LOG").is_some() {
         let off: Vec<_> = records.iter().filter(|u| u.flags & 0x0e != 0).map(|u| (u.id, u.flags, u.x, u.y)).collect();
         dbg_line(&format!("ds_tilt mover: ram {:?} console_mover {} seen {} off {:?}", mover, objs.iter().any(|o| o.class == Class::Mover), MOVER_SEEN.lock().unwrap().is_some(), off));
     }
     {
         let mut seen = MOVER_SEEN.lock().unwrap();
-        if let (Some(sn), Some((mx, my))) = (seen.as_mut(), mover) {
+        if let (Some(sn), Some((mx, my)), false) = (seen.as_mut(), mover, mover_at_home) {
             if let Some(o) = objs.iter().find(|o| o.class == Class::Mover) {
                 // (the picture's corner against the record's place, learned while it shows)
                 sn.delta = Some((o.x - (mx - cam_px.0 - 10), o.y - (my - cam_px.1 - 8)));

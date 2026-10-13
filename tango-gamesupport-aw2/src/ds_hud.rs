@@ -986,7 +986,19 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
             }
         }
     }
-    match co_flush(core, &list, at, end) {
+    let co = co_flush(core, &list, at, end);
+    // (and for a frame whose list has the map's sprites but not the CO panel: AW2 leaves the panel out of one frame now and then on
+    // the map, and it blinked; where the panel goes for good, it stays one frame longer)
+    if co.is_none() && crate::ds_battle::on_map(core) {
+        let held = LAST_LIST.lock().ok().and_then(|mut l| l.take());
+        if let Some(bytes) = held {
+            if start + bytes.len() as u32 <= end {
+                core.raw_write_range(start, -1, &bytes);
+                return start + bytes.len() as u32;
+            }
+        }
+    }
+    match co {
         Some(n) => at = n,
         None => restore(core),
     }

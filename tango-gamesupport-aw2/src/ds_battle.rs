@@ -753,6 +753,11 @@ pub fn snapshot_map_palettes(core: &mut Core) {
     core.raw_write_8(MAP_PALS, -1, SNAPPED);
 }
 
+/// The game is on the map (not a battle scene or another screen).
+pub fn on_map(core: &Core) -> bool {
+    core.raw_read_32(MAIN_CALLBACK, -1) == MAP_CALLBACK
+}
+
 fn restore_map_palettes(core: &mut Core) {
     if core.raw_read_8(MAP_PALS, -1) != HELD {
         return;
