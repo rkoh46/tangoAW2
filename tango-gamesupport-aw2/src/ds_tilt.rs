@@ -174,6 +174,9 @@ const CURSOR_Y: u32 = 0x0300_33E6;
 struct Follow {
     /// Where the dead zone has left it, and where it shows.
     logical: (f32, f32),
+    /// The target, eased once (a cascaded second ease: a target that moves in cell steps, as the cursor and a
+    /// console pan do, comes out as a steady glide instead of alternating fast and slow frames).
+    eased: (f32, f32),
     shown: (f32, f32),
     map: (i32, i32),
     /// The console's frame counter at the last picture (the glide runs on console frames, not on pictures: a picture
@@ -187,8 +190,8 @@ static FOLLOW: std::sync::Mutex<Option<Follow>> = std::sync::Mutex::new(None);
 /// below (the cell inside +-6 and +-4 by its far edge), never shows beyond the
 /// map's edge (centre at least 8 cells from the sides and 6 from the top and
 /// bottom) and centres a map smaller than that; it glides there.
-fn follow(cursor: (i32, i32), w: i32, h: i32, now: u32) -> (f32, f32) {
-    let (cx, cy) = (cursor.0 as f32, cursor.1 as f32);
+fn follow(cursor: (f32, f32), w: i32, h: i32, now: u32) -> (f32, f32) {
+    let (cx, cy) = cursor;
     let clamp_to_map = |x: f32, y: f32| {
         (
             if w >= 16 { x.clamp(8.0, (w - 8) as f32) } else { w as f32 / 2.0 },
@@ -197,9 +200,9 @@ fn follow(cursor: (i32, i32), w: i32, h: i32, now: u32) -> (f32, f32) {
     };
     let mut st = FOLLOW.lock().unwrap();
     let fresh = st.as_ref().map_or(true, |f| f.map != (w, h));
-    let f = st.get_or_insert(Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h), at: now });
+    let f = st.get_or_insert(Follow { logical: (cx, cy), eased: (0.0, 0.0), shown: (0.0, 0.0), map: (w, h), at: now });
     if fresh {
-        *f = Follow { logical: (cx, cy), shown: (0.0, 0.0), map: (w, h), at: now };
+        *f = Follow { logical: (cx, cy), eased: (0.0, 0.0), shown: (0.0, 0.0), map: (w, h), at: now };
         f.logical = (
             f.logical.0.clamp(cx - 5.0, cx + 6.0),
             f.logical.1.clamp(cy - 3.0, cy + 4.0),
@@ -212,18 +215,28 @@ fn follow(cursor: (i32, i32), w: i32, h: i32, now: u32) -> (f32, f32) {
     let target = clamp_to_map(f.logical.0, f.logical.1);
     static SNAP: OnceLock<bool> = OnceLock::new();
     if fresh || env_on("TANGOAW2_TILT_SNAP", &SNAP) {
+        f.eased = target;
         f.shown = target;
     } else {
-        // 0.3 of the way a frame, for the frames since the last picture (a counter that went back: one).
+        // Two eases of 0.45 a frame in a row, for the frames since the last picture (a counter that went back: one):
+        // about the old single ease's pace, without its frame-to-frame jolts when the target steps a cell.
         let n = if now >= f.at { (now - f.at).min(60) } else { 1 };
-        let k = 1.0 - 0.7f32.powi(n as i32);
-        f.shown.0 += (target.0 - f.shown.0) * k;
-        f.shown.1 += (target.1 - f.shown.1) * k;
-        if (target.0 - f.shown.0).abs() < 0.02 {
-            f.shown.0 = target.0;
+        for _ in 0..n.max(1) {
+            f.eased.0 += (target.0 - f.eased.0) * 0.45;
+            f.eased.1 += (target.1 - f.eased.1) * 0.45;
+            f.shown.0 += (f.eased.0 - f.shown.0) * 0.45;
+            f.shown.1 += (f.eased.1 - f.shown.1) * 0.45;
         }
-        if (target.1 - f.shown.1).abs() < 0.02 {
+        if n == 0 {
+            return f.shown;
+        }
+        if (target.0 - f.shown.0).abs() < 0.01 && (target.0 - f.eased.0).abs() < 0.01 {
+            f.shown.0 = target.0;
+            f.eased.0 = target.0;
+        }
+        if (target.1 - f.shown.1).abs() < 0.01 && (target.1 - f.eased.1).abs() < 0.01 {
             f.shown.1 = target.1;
+            f.eased.1 = target.1;
         }
     }
     f.at = now;
@@ -2199,7 +2212,12 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         }
         (cam_px.0 - a.1 .0).abs() > 20 || (cam_px.1 - a.1 .1).abs() > 20
     };
-    let look = if in_window && heal_at.is_none() && !effects_up && !panned { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
+    // (a pan the console makes is followed at its own pixel pace, not cell by cell)
+    let look = if in_window && heal_at.is_none() && !effects_up && !panned {
+        (cursor.0 as f32, cursor.1 as f32)
+    } else {
+        ((cam_px.0 + 120) as f32 / 16.0 - 0.5, (cam_px.1 + 80) as f32 / 16.0 - 0.5)
+    };
     let (fx, fy) = follow(look, ground.w, ground.h, core.frame_counter());
     if std::env::var_os("TANGOAW2_TILT_CAM_LOG").is_some() {
         dbg_line(&format!("ds_tilt scrolls: bg3 ({},{}) bg2 ({},{}) bg1 ({},{}) ram {:?} fc {}", bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs, bgs[1].hofs, bgs[1].vofs, (core.raw_read_16(MAP + 4, -1) as i16, core.raw_read_16(MAP + 6, -1) as i16), core.frame_counter()));
