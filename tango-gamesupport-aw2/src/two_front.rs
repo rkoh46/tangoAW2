@@ -1103,6 +1103,9 @@ fn swap_step(core: &mut Core, s: Stub, b: &Battle) {
             {
                 return return_to(core, 0);
             }
+            // (the block cleared first: the capture writes the battle's armies' units only, and the other armies' slots kept
+            // what the buffer held before, which came back as units no one sees)
+            core.raw_write_range(STAGING, -1, &vec![0u8; BLOCK_LEN as usize]);
             // `CaptureBattleSaveState(0)`: resumed, a front goes on where it
             // was (its state set by [`Stub::State`]).
             let cpu = core.gba_mut().cpu_mut();
@@ -1149,6 +1152,7 @@ fn swap_step(core: &mut Core, s: Stub, b: &Battle) {
         }
         Stub::Arrive => {
             arrive(core, b);
+            unit_planes(core);
             return_to(core, 0)
         }
         Stub::Music => {
@@ -1197,6 +1201,8 @@ fn swap_step(core: &mut Core, s: Stub, b: &Battle) {
             return_to(core, 0)
         }
         Stub::End => {
+            // (again at the swap's end: AW2's unit reset and the map's graphics, after the arrival, put stale ids back)
+            unit_planes(core);
             core.raw_write_8(BUSY, -1, if kind == Stub::BeginViewIn as u32 { kind as u8 } else { 0 });
             if kind != Stub::BeginViewIn as u32 {
                 core.raw_write_8(VIEW, -1, 0);
@@ -1314,6 +1320,43 @@ fn setup_second(core: &mut Core, b: &Battle) {
 
 /// The front has been restored (or set up): its own tangoAW2 state, its
 /// controllers and the units sent to it.
+/// The map's two unit planes (each cell: the id of the unit on it, 0 none) made from the front now on the screen: the
+/// front left kept its units' ids there, and its units blocked the way on this one as unseen units (a "Trap!").
+fn unit_planes(core: &mut Core) {
+    const PLANES: [u32; 2] = [MAP + 0x12, MAP + 0x51A];
+    let (w, h) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
+    if w == 0 || h == 0 || w > 64 || h > 64 {
+        return;
+    }
+    for y in 0..h {
+        let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+        for plane in PLANES {
+            core.raw_write_range(plane + row, -1, &vec![0u8; w as usize]);
+        }
+    }
+    let base = core.raw_read_32(UNITS_PTR, -1);
+    for id in 1..4 * 64u32 {
+        let at = base + 12 * id;
+        let kind = core.raw_read_8(at, -1);
+        // (a record that is no unit's, left by a swap before the capture's block was cleared: emptied)
+        if kind > crate::roster::OOZIUM {
+            core.raw_write_range(at, -1, &[0u8; 12]);
+            continue;
+        }
+        // (a carried unit is with its transport, not on a cell of its own)
+        if kind == 0 || core.raw_read_8(at + 1, -1) & 0x08 != 0 {
+            continue;
+        }
+        let (x, y) = (core.raw_read_8(at + 2, -1) as u32, core.raw_read_8(at + 3, -1) as u32);
+        if x < w && y < h {
+            let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+            for plane in PLANES {
+                core.raw_write_8(plane + row + x, -1, id as u8);
+            }
+        }
+    }
+}
+
 fn arrive(core: &mut Core, b: &Battle) {
     // Its look (before the map's graphics are loaded, the swap's next
     // steps): each front its own (crate::ds_campaign::set_look).
