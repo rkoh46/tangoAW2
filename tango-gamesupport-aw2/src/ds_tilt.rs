@@ -2337,7 +2337,8 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let records = ram_units(core);
     let unit_in: std::collections::HashMap<(i32, i32), &RamUnit> = records
         .iter()
-        .filter(|u| u.flags & 0x0e == 0)
+        // (flag 4 alone is the computer having picked the unit: it still stands where it is, and is drawn there until it moves)
+        .filter(|u| u.flags & 0x0a == 0)
         .map(|u| ((u.x as i32, u.y as i32), u))
         .collect();
     // A cell of the console's plane is map cell (camx / 16 + cell - scroll / 16).
@@ -2624,7 +2625,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             if (debug_check_console_units() && console_shows(ux, uy)) || seen.contains(&(ux, uy)) {
                 continue;
             }
-            if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x0e != 0 {
+            if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || u.flags & 0x0a != 0 {
                 continue;
             }
             let u = with_facing(u);
@@ -2864,6 +2865,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // (`TANGOAW2_TILT_NO_RAM_MOVER=1` leaves it out, for a test's comparison)
     static NO_RAM_MOVER: OnceLock<bool> = OnceLock::new();
     let mover = if env_on("TANGOAW2_TILT_NO_RAM_MOVER", &NO_RAM_MOVER) { None } else { find_mover(core) };
+    if std::env::var_os("TANGOAW2_TILT_CAM_LOG").is_some() {
+        let off: Vec<_> = records.iter().filter(|u| u.flags & 0x0e != 0).map(|u| (u.id, u.flags, u.x, u.y)).collect();
+        dbg_line(&format!("ds_tilt mover: ram {:?} console_mover {} seen {} off {:?}", mover, objs.iter().any(|o| o.class == Class::Mover), MOVER_SEEN.lock().unwrap().is_some(), off));
+    }
     {
         let mut seen = MOVER_SEEN.lock().unwrap();
         if let (Some(sn), Some((mx, my))) = (seen.as_mut(), mover) {
