@@ -3584,7 +3584,8 @@ impl RamUnit {
             e[2] = 0x2ae | bank;
         } else if self.raw[7] | self.raw[8] != 0 {
             e[2] = 0x2ab | bank;
-        } else if self.raw[5] >> 3 != 0 {
+        } else if self.raw[5] >> 3 != 0 && matches!(self.kind, 1 | 2) {
+            // (capture points: only Infantry and Mech capture; on another unit the bits hold the campaign's tag for it)
             e[2] = 0x2ac | bank;
         } else if self.flags & 0x20 != 0 {
             e[2] = 0x2ad | bank;
