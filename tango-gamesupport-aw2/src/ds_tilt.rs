@@ -2733,6 +2733,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 // unit's (a tile that is not the one the record names, e.g. a greyed unit's) and would show as a solid box over
                 // Dual Strike's art, which this piece is now drawn after.
                 for k in 0..4usize {
+                    // (the marks and digits are the record's own: the capture flag is an almost solid badge, and went with them)
+                    if (0x2a1..=0x2af).contains(&(entries[k] & 0x3ff)) {
+                        continue;
+                    }
                     let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
                     let filled = (0..8usize).flat_map(|y| (0..8usize).map(move |x| (x, y))).filter(|&(x, y)| pix[(qy + y) * 16 + qx + x] != 0).count();
                     if filled > 58 {
