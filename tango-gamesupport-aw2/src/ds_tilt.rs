@@ -593,6 +593,11 @@ struct Obj {
 
 /// The Black Obelisk's picture is a plaza with the tower on it, drawn top-down: standing it up
 /// would put a second plaza beside the real one, so it lies on the ground (as the console draws it).
+/// A base's terrain id (neutral, armies 1 to 4).
+fn is_base(t: u16) -> bool {
+    matches!(t, 0x1c1 | 0x1c6 | 0x1cb | 0x1d0 | 0x1d5)
+}
+
 fn is_obelisk_part(o: &Obj) -> bool {
     o.class == Class::Billboard && matches!(o.tile as u32, 374 | 390 | 398 | 406)
 }
@@ -610,6 +615,11 @@ type SpriteCache = (u64, std::collections::HashMap<(u16, u8), (u16, u8, (bool, b
 /// The palette the structures of this mission are drawn with (9 until the console shows one).
 static STRUCT_PAL: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(9);
 static FOG_PAL: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(u32::MAX);
+/// The plan parts the console has not drawn while the others were in place, frames in a row (for the map with this
+/// signature, with Dual Strike's map graphics on or off).
+type Absent = (u64, bool, std::collections::HashMap<(u16, u8), u16>);
+static ABSENT: std::sync::LazyLock<std::sync::Mutex<Absent>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new((0, false, std::collections::HashMap::new())));
 static SPRITES: std::sync::LazyLock<std::sync::Mutex<SpriteCache>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new((0, std::collections::HashMap::new())));
 
@@ -2289,9 +2299,51 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     }
+    // A base, with Dual Strike's map graphics, is Dual Strike's base: a pad seen from above, which lies on the ground (stood
+    // up it showed as a square). Drawn from the map, the console's sprite of it left out.
+    let ds_bases = crate::wasteland::ds_graphics(core);
+    if ds_bases {
+        let base_cell = |o: &Obj| {
+            let (mx, my) = ((o.x + cam_px.0 + 8).div_euclid(16), (o.y + o.h + cam_px.1 - 1).div_euclid(16));
+            mx >= 0 && my >= 0 && mx < ground.w && my < ground.h && is_base(ground.tile(mx, my))
+        };
+        objs.retain(|o| !(o.class == Class::Billboard && o.pri == 3 && base_cell(o)));
+        let one_d = v.dispcnt() & 0x40 != 0;
+        let cache = SPRITES.lock().unwrap();
+        let (x0, y0) = (cam_px.0.div_euclid(16), cam_px.1.div_euclid(16));
+        for my in (y0 - 9).max(0)..(y0 + 19).min(ground.h) {
+            for mx in (x0 - 9).max(0)..(x0 + 24).min(ground.w) {
+                let t = ground.tile(mx, my);
+                if !is_base(t) {
+                    continue;
+                }
+                let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else { continue };
+                for (k, &(dx, dy, w, h, tile, pal, hf, vf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
+                    let (tile, pal, (hf, vf)) = cache.1.get(&(t, k as u8)).copied().unwrap_or((tile, pal, (hf, vf)));
+                    let fp = FOG_PAL.load(Ordering::Relaxed);
+                    let pal = if ground.fogged(mx, my) && fp != u32::MAX { fp as u8 } else { pal };
+                    let (w, h) = (w as i32, h as i32);
+                    let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
+                    objs.push(Obj {
+                        x: mx * 16 - cam_px.0 + dx as i32,
+                        y: my * 16 - cam_px.1 + dy as i32,
+                        w,
+                        h,
+                        pri: 3,
+                        idx: usize::MAX,
+                        class: Class::Ground,
+                        pix,
+                        tile,
+                        pal,
+                        flip: (hf, vf),
+                    });
+                }
+            }
+        }
+    }
     // (with a margin: the tilted view shows ground the console's picture does not, and the
-    // sprites that lie on it (the cursor's brackets, the move arrow, a target's glow) go there too)
-    const DM: i32 = 48;
+    // sprites that lie on it (the cursor's brackets, the move arrow, a target's glow, the bases) go there too)
+    const DM: i32 = 144;
     const DW: usize = W + 2 * DM as usize;
     let mut decal = vec![0u16; DW * (H + 2 * DM as usize)];
     for o in objs
@@ -2842,7 +2894,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             *cache = (sig, std::collections::HashMap::new());
             STRUCT_PAL.store(9, Ordering::Relaxed);
         }
-        // Learn.
+        // Learn. (Which parts the console does not draw at all is learned too: with Dual Strike's map graphics a base is
+        // the ground's, not a sprite, and its sprite's tiles hold another picture. A part counts as missing only on a frame
+        // where the console's other parts are where the map has them, so not during a pan.)
+        let mut absent = ABSENT.lock().unwrap();
+        let ds = crate::wasteland::ds_graphics(core);
+        if absent.0 != sig || absent.1 != ds {
+            *absent = (sig, ds, std::collections::HashMap::new());
+        }
+        let mut seen: Vec<(u16, u8)> = Vec::new();
+        let mut unseen: Vec<(u16, u8)> = Vec::new();
         for my in win_y.clone() {
             for mx in win_x.clone() {
                 if mx < 0 || my < 0 || mx >= ground.w || my >= ground.h {
@@ -2854,9 +2915,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 };
                 for (k, &(dx, dy, w, h, pt, pp, _phf, _pvf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
                     let (px, py) = (mx * 16 - cam_px.0 + dx as i32, my * 16 - cam_px.1 + dy as i32);
-                    if let Some(o) = objs.iter().find(|o| {
+                    let on_screen = px + w as i32 > 0 && py + h as i32 > 0 && px < W as i32 && py < H as i32;
+                    let found = objs.iter().find(|o| {
                         o.class == Class::Billboard && (o.x, o.y, o.w, o.h) == (px, py, w as i32, h as i32)
-                    }) {
+                    });
+                    if found.is_some() {
+                        seen.push((t, k as u8));
+                    } else if on_screen && !ground.fogged(mx, my) {
+                        unseen.push((t, k as u8));
+                    }
+                    if let Some(o) = found {
                         {
                             cache.1.insert((t, k as u8), (o.tile, o.pal, o.flip));
                             // (the structures share a palette in a mission: 9 in all but the
@@ -2873,6 +2941,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 }
             }
         }
+        if !seen.is_empty() {
+            for key in &seen {
+                absent.2.insert(*key, 0);
+            }
+            for key in unseen.iter().filter(|k| !seen.contains(k)) {
+                let n = absent.2.entry(*key).or_insert(0);
+                *n = n.saturating_add(1);
+            }
+        }
+        let not_drawn = |key: (u16, u8)| absent.2.get(&key).is_some_and(|&n| n >= 12);
         // Draw.
         let volcano_here = (0..16u32).any(|k| (core.raw_read_16(0x0202_8362 + 8 * k, -1) >> 6) & 0xF == 2);
         let (rl, rr, rt, rb) = cam.reach();
@@ -2885,6 +2963,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     continue;
                 };
                 for (k, &(dx, dy, w, h, tile, pal, hf, vf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
+                    if not_drawn((t, k as u8)) || (ds_bases && is_base(t)) {
+                        continue;
+                    }
                     let (w, h) = (w as i32, h as i32);
                     // The properties' sheet is fixed; a structure's picture is
                     // known once the console has drawn one.
@@ -2912,6 +2993,13 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         (tile, pal, (hf, vf))
                     };
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
+                    if std::env::var_os("TANGOAW2_TILT_PLAN_LOG").is_some() {
+                        dbg_line(&format!(
+                            "plan ({mx},{my}) t {t:#x} k {k} tile {tile} pal {pal} cached {} absent {:?}",
+                            cache.1.contains_key(&(t, k as u8)),
+                            absent.2.get(&(t, k as u8))
+                        ));
+                    }
                     from_map.insert(tile);
                     if pix.iter().all(|&p| p == 0) {
                         continue;
