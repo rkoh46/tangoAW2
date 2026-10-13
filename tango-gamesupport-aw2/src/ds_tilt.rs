@@ -2703,9 +2703,31 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             let d = (bgs[1].vofs - bgs[3].vofs).rem_euclid(512);
             if d < 16 { d } else { 0 }
         };
+        // A hidden unit (a dived Sub, a hidden Stealth) is shown, as the console shows it, only to its own side and to a side with a
+        // unit next to it. The side looking is the army moving if a human plays it, else the humans'.
+        let players = crate::five::players(core);
+        let team = |a: u8| core.raw_read_8(players + 0x3C * a as u32 + 0x2A, -1);
+        let human = |a: u8| core.raw_read_8(players + 0x3C * a as u32 + 0x1B, -1) == 1;
+        let moving = core.raw_read_16(0x0300_33EC, -1) as u8;
+        let viewers: Vec<u8> = if human(moving) {
+            vec![team(moving)]
+        } else {
+            let h: Vec<u8> = (1..=5u8).filter(|&a| human(a)).map(team).collect();
+            if h.is_empty() { vec![team(moving)] } else { h }
+        };
+        let hidden_from_view = |u: &RamUnit| {
+            u.flags & 0x20 != 0
+                && !viewers.contains(&team(u.army))
+                && !records.iter().any(|o| {
+                    (o.x as i32 - u.x as i32).abs() + (o.y as i32 - u.y as i32).abs() == 1 && viewers.contains(&team(o.army))
+                })
+        };
         for u in records.iter() {
             let (ux, uy) = (u.x as i32, u.y as i32);
             if (debug_check_console_units() && console_shows(ux, uy)) || seen.contains(&(ux, uy)) {
+                continue;
+            }
+            if hidden_from_view(u) {
                 continue;
             }
             if ux >= ground.w || uy >= ground.h || ground.fogged(ux, uy) || (u.flags & 0x0a != 0 && !setting_off(u)) {
