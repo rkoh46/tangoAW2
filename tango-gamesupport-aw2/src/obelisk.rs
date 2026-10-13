@@ -116,6 +116,19 @@ pub fn install(core: &mut Core) {
         core.raw_write_8(TERRAIN_TABLE + tile as u32, -1, class);
         core.raw_write_8(TERRAIN_RAM + tile as u32, -1, class);
     }
+    // The Black Cannon facing north's corner (its last four tiles, at 914..917): the map's own sheet, loaded after the building
+    // sheet, writes over them (past the menu's hand at 910..913), and the cannon's corner showed letters. Put back on the map.
+    if crate::ds_battle::on_map(core) {
+        if let Some(a) = crate::ds_art::art().filter(|a| a.cannon_north.len() == 36 * 32) {
+            let want = &a.cannon_north[32 * 32..36 * 32];
+            let at = 0x0601_0000 + NORTH_OBJ_TILES[3] * 32;
+            let mut now = [0u8; 4 * 32];
+            core.raw_read_range(at, -1, &mut now);
+            if now[..] != want[..] {
+                core.raw_write_range(at, -1, want);
+            }
+        }
+    }
     if core.raw_read_32(DATA_SENTINEL, -1) == DATA_MAGIC {
         return;
     }
