@@ -1910,7 +1910,9 @@ fn two_front_of(second: u8, f: &FrontDef) -> Result<TwoFront, Error> {
     Ok(TwoFront {
         second,
         cos,
-        control: [FrontControl::Cpu; 4],
+        // (the player plays their army's second-front turns, or gives them to the computer with Intel > Auto CO, as in Dual
+        // Strike's later missions; a computer army's are the computer's either way)
+        control: [FrontControl::AutoCo { on: false }; 4],
         send: f.send,
         powers: false,
         sky: f.sky,
