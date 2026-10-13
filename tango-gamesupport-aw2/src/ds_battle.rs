@@ -295,7 +295,7 @@ const BODY_IDLE: &[Aw2Layer] = &[al(1, 0, None, None)];
 
 /// AW2's own units drawn in Dual Strike's art in a battle: AW2 type, Dual Strike record, layers. Their figures, how many
 /// and where (the slide-in, the hit shakes, the falls), and their shots, hits and explosions stay AW2's.
-const AW2_ART: [(u8, u32, &[Aw2Layer]); 19] = [
+const AW2_ART: [(u8, u32, &[Aw2Layer]); 20] = [
     (1, 0, BODY_DRIVES),
     (2, 1, BODY_DRIVES),
     (3, 2, BODY_DRIVES),
@@ -315,13 +315,22 @@ const AW2_ART: [(u8, u32, &[Aw2Layer]); 19] = [
     (22, 21, &[al(1, 1, None, None), al(2, 2, None, None), aw(3, 1, Some(1)), aw(4, 2, Some(1)), al(5, 0, None, None)]),
     (23, 22, &[al(1, 0, None, None), al(5, 0, None, None)]),
     (24, 23, &[al(1, 0, None, None), al(5, 0, None, None)]),
+    // (a dived Sub: Dual Strike's periscope and its wake, record 31)
+    (DIVED_SUB, 31, BODY_IDLE),
 ];
+
+/// A dived Sub's place in [`AW2_ART`]: AW2's dived Sub type (its scene shows the periscope).
+const DIVED_SUB: u8 = 25;
 
 /// AW2's units Dual Strike shows as one figure, whatever their HP (its formation numbers are a single unit's): the APC, the
 /// Bomber, the T Copter and the ships.
-const AW2_ONE: [u8; 7] = [7, 17, 20, 21, 22, 23, 24];
+const AW2_ONE: [u8; 8] = [7, 17, 20, 21, 22, 23, 24, DIVED_SUB];
 /// Planes and copters (they fly at [`SKY`] when shown as one).
 const AW2_AIR: [u8; 4] = [16, 17, 19, 20];
+
+/// AW2's own units in Dual Strike's battle art: off (the player asked for AW2's own battle scenes back; only the new
+/// units are Dual Strike's). The code stays, for a later try.
+const AW2_UNITS_IN_DS_ART: bool = false;
 
 /// The state's first byte for a side showing one of AW2's own units: this plus its index in [`AW2_ART`].
 const AW2_UNIT: u8 = 100;
@@ -897,6 +906,12 @@ fn side_unit_type(core: &Core, side: u32) -> u8 {
     }
 }
 
+/// The side's unit is dived (a Sub) or hidden (a Stealth).
+fn side_unit_dived(core: &Core, side: u32) -> bool {
+    let u = core.raw_read_32(SIDE_UNITS + 4 * side, -1);
+    (0x0200_0000..0x0204_0000).contains(&u) && core.raw_read_8(u + 1, -1) & 0x20 != 0
+}
+
 fn class_of(core: &Core, t: u8) -> u8 {
     core.raw_read_8(crate::roster::table(core) + UNIT_RECORD * t as u32 + CLASS, -1)
 }
@@ -1029,13 +1044,15 @@ fn figure_count(core: &mut Core) {
         after,
         if spec_of(t).is_some() {
             "a new unit in Dual Strike's art"
-        } else if aw2_art_of(t).is_some() && crate::wasteland::ds_graphics(core) {
+        } else if AW2_UNITS_IN_DS_ART && aw2_art_of(t).is_some() && crate::wasteland::ds_graphics(core) {
             "Dual Strike's art"
         } else {
             "AW2's art"
         }
     );
-    if let Some(unit) = aw2_art_of(t).filter(|_| crate::wasteland::ds_graphics(core)) {
+    // (a dived Sub is shown dived: its periscope)
+    let t = if t == 24 && side_unit_dived(core, side) { DIVED_SUB } else { t };
+    if let Some(unit) = aw2_art_of(t).filter(|_| AW2_UNITS_IN_DS_ART && crate::wasteland::ds_graphics(core)) {
         // One of AW2's own units, with Dual Strike's map graphics on: its figures stay AW2's, drawn in Dual Strike's art.
         let army = core.raw_read_8(SIDE_COLOURS + side, -1).min(ARMIES as u8 - 1) as usize;
         let Some(fig) = aw2_figure(unit, army) else { return };
@@ -1289,7 +1306,8 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         let origin = if mirror { (px + 1, py) } else { (px - AW2_RIGHT_SHIFT, py) };
         if st != 0 {
             alive_now |= 1 << k;
-            figs.push((origin, st == 1));
+            // (no flash: AW2 leaves a damaged figure's state at 1 for the rest of the battle, and Dual Strike flashes none)
+            figs.push((origin, false));
         } else if alive_before >> k & 1 != 0 {
             died.push(origin);
         }
