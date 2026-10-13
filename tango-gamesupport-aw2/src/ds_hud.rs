@@ -712,6 +712,13 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     if px <= -62 || px >= 240 {
         sprites.clear();
     }
+    // The "?" AW2 shows for funds hidden by fog: in our funds row, where the last digit would be (AW2 leaves it at its own
+    // panel's place, over our face).
+    if let Some(q) = list.iter().find(|e| {
+        !e.hidden() && e.tile() == T_QUESTION && e.pal() == 1 && e.dims() == (8, 8) && e.y() == py + 3 && e.x() >= px - 4 && e.x() + 8 <= px + 70
+    }) {
+        move_to(core, q, if left { 60 - 8 } else { 240 - 8 } + dx, 14 + dy);
+    }
     Some(insert(core, header.at, at, end, &sprites))
 }
 
