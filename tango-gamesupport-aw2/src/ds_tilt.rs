@@ -2898,6 +2898,43 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
     }
+    // The Laser's beams: rows of 32 x 8 and columns of 8 x 32 pieces the console lays only over its own screen, while the tilted
+    // view shows more of the map; each beam is drawn on from its outermost pieces to the map's edge, a piece's length at a time.
+    let beam_piece = |o: &Obj| o.class == Class::Billboard && o.pri == 0 && matches!((o.w, o.h), (32, 8) | (8, 32));
+    {
+        let mut extra: Vec<(i32, i32, i32, i32, Vec<Px>)> = Vec::new();
+        let (mw, mh) = (ground.w * 16 - cam_px.0, ground.h * 16 - cam_px.1);
+        for across in [true, false] {
+            let mut lines: std::collections::HashMap<i32, Vec<&Obj>> = std::collections::HashMap::new();
+            for o in objs.iter().filter(|o| beam_piece(o) && (o.w == 32) == across) {
+                lines.entry(if across { o.y } else { o.x }).or_default().push(o);
+            }
+            for (_, mut ps) in lines.into_iter().filter(|(_, ps)| ps.len() >= 3) {
+                let along = |o: &Obj| if across { o.x } else { o.y };
+                ps.sort_by_key(|o| along(o));
+                // (the console's pieces are on screen, and a few wrapped round its 512 pixels: the ends kept are the outermost on screen)
+                let lim = if across { W as i32 } else { H as i32 };
+                let on: Vec<&&Obj> = ps.iter().filter(|o| along(o) > -32 && along(o) < lim).collect();
+                let (Some(first), Some(last)) = (on.first(), on.last()) else { continue };
+                let (lo_end, hi_end) = if across { (-cam_px.0, mw) } else { (-cam_px.1, mh) };
+                let mut at = along(first) - 32;
+                while at + 32 > lo_end {
+                    extra.push(if across { (at, first.y, 32, 8, first.pix.clone()) } else { (first.x, at, 8, 32, first.pix.clone()) });
+                    at -= 32;
+                }
+                let mut at = along(last) + 32;
+                while at < hi_end {
+                    extra.push(if across { (at, last.y, 32, 8, last.pix.clone()) } else { (last.x, at, 8, 32, last.pix.clone()) });
+                    at += 32;
+                }
+            }
+        }
+        // (the console's wrapped pieces off screen are left out: they are drawn again above at their places)
+        objs.retain(|o| !(beam_piece(o) && (if o.w == 32 { o.x <= -32 || o.x >= W as i32 } else { o.y <= -32 || o.y >= H as i32 })));
+        for (x, y, w, h, pix) in extra {
+            objs.push(Obj { x, y, w, h, pri: 0, idx: usize::MAX, class: Class::Billboard, pix, tile: 0, pal: 3, flip: (false, false) });
+        }
+    }
     for o in objs
         .iter()
         .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer | Class::Mover | Class::Shade) && !is_obelisk_part(o) && !(cursor_shown && is_cursor_piece(o)))
