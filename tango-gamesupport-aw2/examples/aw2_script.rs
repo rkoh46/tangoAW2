@@ -329,6 +329,14 @@ fn main() {
         let parts: Vec<&str> = line.split_whitespace().collect();
         match parts[0] {
             "oamlog" => *OAMLOG.lock().unwrap() = parts.get(1).map(|p| p.to_string()),
+            "tilttag" => {
+                if let Ok(path) = std::env::var("TANGOAW2_TILT_LOG") {
+                    use std::io::Write;
+                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                        let _ = writeln!(f, "@shot {}", parts[1]);
+                    }
+                }
+            }
             "tiltall" => {
                 // `tiltall 1 [DIR STRIDE]`: every frame's picture is made (and every STRIDE-th written to DIR)
                 TILTALL.store(parts[1] != "0", std::sync::atomic::Ordering::Relaxed);

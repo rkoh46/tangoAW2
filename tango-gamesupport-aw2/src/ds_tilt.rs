@@ -2202,6 +2202,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let look = if in_window && heal_at.is_none() && !effects_up && !panned { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
     let (fx, fy) = follow(look, ground.w, ground.h, core.frame_counter());
     if std::env::var_os("TANGOAW2_TILT_CAM_LOG").is_some() {
+        dbg_line(&format!("ds_tilt scrolls: bg3 ({},{}) bg2 ({},{}) bg1 ({},{}) ram {:?} fc {}", bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs, bgs[1].hofs, bgs[1].vofs, (core.raw_read_16(MAP + 4, -1) as i16, core.raw_read_16(MAP + 6, -1) as i16), core.frame_counter()));
         dbg_line(&format!("ds_tilt cam: cursor {cursor:?} cam_px {cam_px:?} look {look:?} in_window {in_window} panned {panned} effects {effects_up} -> ({fx:.3}, {fy:.3})"));
     }
     let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
@@ -2392,7 +2393,14 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 let (mx, my) = (map_x0 + cx - px_off - ground_cx0, map_y0 + cy - py_off - ground_cy0);
                 let mut art_board: Option<Vec<Px>> = None;
                 if b == 1 {
-                    if unit_in.contains_key(&(mx, my)) && !debug_check_console_units() {
+                    // (a cell of the units' plane that holds a unit's picture is a unit whichever cell the scroll arithmetic says it is: during the
+                    // camera's pan the plane's scroll and the camera word disagree by a step, the cell was taken for another and the unit drawn twice,
+                    // once from its record and once from the console's picture)
+                    let unit_cell = (0..4).any(|k| {
+                        let t = (bg.entry(&v, cx * 2 + k % 2, cy * 2 + k / 2) & 0x3ff) as usize;
+                        (UNIT_TILES_LO..UNIT_TILES_HI).contains(&t) && !bg.tile_blank(&v, t)
+                    });
+                    if (unit_cell || unit_in.contains_key(&(mx, my))) && !debug_check_console_units() {
                         // Every unit is drawn from its record (below), whether the console's window has its cell or not: a unit near the
                         // window's edge no longer changes how it is drawn as the map scrolls.
                         continue;

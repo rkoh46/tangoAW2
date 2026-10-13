@@ -676,6 +676,10 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     }
     let Some(a) = art() else { return };
     let Some((_, menu)) = find(core) else { return };
+    // (a menu whose rows have no text yet, the frame the game builds it: nothing is drawn until they are known)
+    if menu.rows.is_empty() || menu.rows.iter().all(|r| r.text.trim().is_empty()) {
+        return;
+    }
     let mut cv = Canvas { rgba };
     let n = menu.rows.len() as i32;
     let tw = menu.rows.iter().map(|r| text_width(a, &r.text)).max().unwrap_or(0);
