@@ -661,12 +661,16 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     let left = px < 120;
     // AW2's own pieces of the panel go: the header, the stars, the face and
     // the funds' digits.
+    // (AW2 can draw a second panel in a frame as it slides one out and the next in: its header at another x. It is
+    // AW2's art: it is hidden whole, or its edge shows on the map's side for a frame)
+    let others: Vec<i32> = list.iter().filter(|e| is_header(e) && (e.x() - px).abs() > 2).map(|e| e.x()).collect();
     for e in list {
         if e.hidden() {
             continue;
         }
         let (w, h) = e.dims();
-        let inside = e.x() >= px - 4 && e.x() + w <= px + 70 && e.y() >= py - 4 && e.y() + h <= py + 40;
+        let inside = e.x() >= px - 4 && e.x() + w <= px + 70 && e.y() >= py - 4 && e.y() + h <= py + 40
+            || others.iter().any(|&ox| e.x() >= ox - 4 && e.x() + w <= ox + 70 && e.y() >= py - 4 && e.y() + h <= py + 40);
         let ours = (e.pal() == 7 && (e.a0 >> 8) & 3 != 2 && inside)
             || (e.pal() == 14 && e.tile() == ACTIVE_FACE_TILE && inside)
             || (e.pal() == 1 && (976..986).contains(&e.tile()) && w == 8 && h == 8 && inside && e.y() == py + 3);
@@ -702,6 +706,11 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     for sp in sprites.iter_mut() {
         sp.x += dx;
         sp.y += dy;
+    }
+    // (AW2's header is 64 wide: with it wholly off the screen so is the panel. Ours is wider, and its last stars
+    // would show at the screen's edge for that frame)
+    if px <= -62 || px >= 240 {
+        sprites.clear();
     }
     Some(insert(core, header.at, at, end, &sprites))
 }
@@ -958,10 +967,25 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         box_restore(core);
         window_release(core);
         PANEL_DRAWN.store(false, Ordering::Relaxed);
+        if let Ok(mut l) = LAST_LIST.lock() {
+            *l = None;
+        }
         return at;
     }
     let mut at = at;
     let list = entries(core, start, at);
+    // AW2 now and then builds no sprite list for one frame (a lone stray sprite, or none), and the whole map's HUD would
+    // be gone for that frame: the last frame's list stands in (once; the panels' tiles are still ours).
+    if list.len() <= 1 {
+        let held = LAST_LIST.lock().ok().and_then(|mut l| l.take());
+        if let Some(bytes) = held {
+            if start + bytes.len() as u32 <= end {
+                core.raw_write_range(start, -1, &bytes);
+                at = start + bytes.len() as u32;
+                return at;
+            }
+        }
+    }
     match co_flush(core, &list, at, end) {
         Some(n) => at = n,
         None => restore(core),
@@ -981,7 +1005,25 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     if !box_flush(core, &list) {
         box_restore(core);
     }
+    // The list as the frame ends, for a frame AW2 skips (only while the CO panel is on the map).
+    if let Ok(mut l) = LAST_LIST.lock() {
+        *l = if list.iter().any(is_header_like) {
+            let mut b = vec![0u8; (at - start) as usize];
+            core.raw_read_range(start, -1, &mut b);
+            Some(b)
+        } else {
+            None
+        };
+    }
     at
+}
+
+/// The list of the last frame that had Dual Strike's CO panel in it, to stand in for a frame AW2 skips.
+static LAST_LIST: Mutex<Option<Vec<u8>>> = Mutex::new(None);
+
+/// One of our CO panel's plate pieces (a 32 x 8 sprite of palette 7 on the sheet's plate tiles).
+fn is_header_like(e: &Entry) -> bool {
+    e.pal() == 7 && e.tile() == T_PLATE_A && e.dims() == (32, 8) && !e.hidden()
 }
 
 /// Where Dual Strike's CO panel is drawn this frame: `Some(true)` the left
