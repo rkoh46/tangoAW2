@@ -455,11 +455,16 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
     /// drawn on the console's own grid and carried up by whole pixels.
     fn overlay_hires(&self, core: &Core, _mode: Option<(u8, u8)>, _seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {
-        let ss = crate::ds_tilt::hires_scale();
+        let ss = crate::ds_tilt::adaptive_scale();
         if ss <= 1 || !crate::ds_tilt::enabled() || rgba.len() != 240 * 160 * 4 {
             return None;
         }
-        let Some(mut hi) = crate::ds_tilt::apply_scaled(core, rgba, ss) else {
+        let t0 = std::time::Instant::now();
+        let made = crate::ds_tilt::apply_scaled(core, rgba, ss);
+        if made.is_some() {
+            crate::ds_tilt::note_picture_time(t0.elapsed().as_secs_f32() * 1000.0, ss);
+        }
+        let Some(mut hi) = made else {
             // (the tilt leaves this picture as the console drew it: the flat overlays, at its size)
             self.overlay(core, _mode, _seat, rgba);
             return Some((240, 160));

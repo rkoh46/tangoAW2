@@ -1318,6 +1318,47 @@ pub fn hires_scale() -> usize {
         .unwrap_or_else(|| HIRES.load(Ordering::Relaxed) as usize)
 }
 
+/// What a picture is made at: `hires_scale()` less the steps the machine's load has cost. The tilted picture is made on a few
+/// threads and takes about 3.5 ms at 4x on an idle machine; when other work holds the cores (a build, a browser) its time runs to
+/// 10 and 20 ms and the game's own step stalls with it. The picture's time is followed (an average over about 20 pictures);
+/// over `ADAPT_DROP_MS` the scale goes down a step (never below 2), and back up once a picture at the larger scale (its time grows with
+/// the square of the scale) would again be under `ADAPT_RISE_MS`, after `ADAPT_HOLD` pictures. `TANGOAW2_TILT_SCALE` fixes the scale
+/// (a test's pictures stay alike) unless `TANGOAW2_TILT_ADAPT=1`.
+const ADAPT_DROP_MS: f32 = 7.0;
+const ADAPT_RISE_MS: f32 = 5.0;
+const ADAPT_HOLD: u32 = 240;
+static ADAPT: std::sync::Mutex<(usize, f32, u32)> = std::sync::Mutex::new((0, 0.0, 0));
+
+pub fn adaptive_scale() -> usize {
+    let base = hires_scale();
+    static FIXED: OnceLock<bool> = OnceLock::new();
+    let fixed = *FIXED.get_or_init(|| std::env::var_os("TANGOAW2_TILT_SCALE").is_some() && std::env::var_os("TANGOAW2_TILT_ADAPT").is_none());
+    if fixed || base <= 2 {
+        return base;
+    }
+    let drop = ADAPT.lock().unwrap().0;
+    base.saturating_sub(drop).max(2)
+}
+
+/// A picture of `ms` milliseconds was made at `scale` (see [`adaptive_scale`]).
+pub fn note_picture_time(ms: f32, scale: usize) {
+    let mut a = ADAPT.lock().unwrap();
+    a.1 = if a.1 == 0.0 { ms } else { a.1 * 0.95 + ms * 0.05 };
+    a.2 += 1;
+    let base = hires_scale();
+    if a.1 > ADAPT_DROP_MS && scale > 2 {
+        a.0 = (base - scale) + 1;
+        a.1 *= ((scale - 1) as f32 / scale as f32).powi(2);
+        a.2 = 0;
+        log::info!("ds_tilt: pictures take {ms:.1} ms: down to {}x", scale - 1);
+    } else if a.0 > 0 && a.2 >= ADAPT_HOLD && a.1 * ((scale + 1) as f32 / scale as f32).powi(2) < ADAPT_RISE_MS {
+        a.0 -= 1;
+        a.1 *= ((scale + 1) as f32 / scale as f32).powi(2);
+        a.2 = 0;
+        log::info!("ds_tilt: back up to {}x", scale + 1);
+    }
+}
+
 /// Dual Strike's cursor on the flat map (the tilt off, "Dual Strike map graphics" on): the console's
 /// picture is kept, AW2's pointer and corner brackets (tiles 869 and 873) are taken out of it (the
 /// pixels they cover are redone from what lies under them) and Dual Strike's own cursor
@@ -1734,6 +1775,12 @@ fn apply_timed(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             );
             *st = (0, 0, 0);
         }
+        out
+    } else if std::env::var_os("TANGOAW2_TILT_US_LOG").is_some() {
+        // (a debug aid: every picture's time, for a profile)
+        let t = std::time::Instant::now();
+        let out = apply_inner(core, rgba, ss);
+        dbg_line(&format!("ds_tilt us {}{}", t.elapsed().as_micros(), if out.is_some() { "" } else { " flat" }));
         out
     } else {
         apply_inner(core, rgba, ss)

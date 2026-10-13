@@ -327,3 +327,19 @@ def walk_ds_campaign(ctx, env, Rec):
             e.press("A", 4)
         e.wait(10)
     e.wait(30); rec.off()
+
+
+def busy_perf(ctx, env, Rec):
+    """60 units on a busy map; a unit walks, the turn ends (the Day banner), the CPU moves: every picture timed (TANGOAW2_TILT_TIME)."""
+    from tests.test_ds_tilt_hires import busy
+    os.environ.update(env)
+    g = _versus(ctx, env, busy(ctx), ["andy", "drake"])
+    g.wait_for_input()
+    e = g.e
+    rec = Rec(e)
+    g.goto(15, 9)
+    rec.on()
+    g.select(*[(u["x"], u["y"]) for u in g.units(1)][0]); 
+    g.move_to(*[(u["x"], u["y"]) for u in g.units(1)][0]); g.choose("Wait", g.ACTION_MENU); g.wait_for_input()
+    g.end_turn(human=1, max_frames=60000); g.wait_for_input(); e.wait(60)
+    rec.off()
