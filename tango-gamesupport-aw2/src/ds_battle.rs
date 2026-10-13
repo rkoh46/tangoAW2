@@ -268,6 +268,23 @@ const fn al(set: u32, weapon: u8, fire: Option<u8>, drive: Option<u8>) -> Aw2Lay
     Aw2Layer { set, weapon, fire, drive }
 }
 
+/// A weapon's layer that is part of the unit's picture whichever weapon fires (the Cruiser's missile launcher and its
+/// gun): shown always, firing with its weapon only ([`ALWAYS`] in the layer's weapon).
+const fn aw(set: u32, weapon: u8, fire: Option<u8>) -> Aw2Layer {
+    Aw2Layer { set, weapon: ALWAYS | weapon, fire, drive: None }
+}
+
+/// In a layer's weapon: shown with either weapon (the low bits: the weapon it fires with).
+const ALWAYS: u8 = 0x10;
+
+/// Whether a layer shows while the unit fires `weapon`, and whether it fires with it.
+fn layer_shows(w: u8, weapon: u8) -> bool {
+    w == 0 || w & ALWAYS != 0 || w == weapon
+}
+fn layer_fires(w: u8, weapon: u8) -> bool {
+    w & 0xF == 0 || w & 0xF == weapon
+}
+
 /// Infantry, Mech, tanks, Recon, Anti-Air: a body per weapon (the record's first and second sets), scripts idle 0, driving
 /// (walking) 1, stopping 2, firing 3.
 const BODY_DRIVES: &[Aw2Layer] = &[al(1, 1, Some(3), Some(1)), al(2, 2, Some(3), Some(1))];
@@ -295,7 +312,7 @@ const AW2_ART: [(u8, u32, &[Aw2Layer]); 19] = [
     (19, 18, &[al(1, 1, None, None), al(2, 2, Some(1), None)]),
     (20, 19, BODY_IDLE),
     (21, 20, &[al(1, 0, None, None), al(3, 0, Some(1), None), al(5, 0, None, None)]),
-    (22, 21, &[al(1, 1, None, None), al(2, 2, None, None), al(3, 1, Some(1), None), al(4, 2, Some(1), None), al(5, 0, None, None)]),
+    (22, 21, &[al(1, 1, None, None), al(2, 2, None, None), aw(3, 1, Some(1)), aw(4, 2, Some(1)), al(5, 0, None, None)]),
     (23, 22, &[al(1, 0, None, None), al(5, 0, None, None)]),
     (24, 23, &[al(1, 0, None, None), al(5, 0, None, None)]),
 ];
@@ -563,7 +580,7 @@ fn convert_aw2(record: u32, layers_spec: &[Aw2Layer], army: usize) -> Option<Fig
         layers.push(Layer { weapon: l.weapon, frames, scripts });
     }
     let mut b = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
-    for l in layers.iter().filter(|l| l.weapon <= 1) {
+    for l in layers.iter().filter(|l| l.weapon & 0xF <= 1) {
         let idle = l.scripts[0].first().map_or(0, |&(_, f)| f as usize);
         for p in l.frames.get(idle).into_iter().flatten() {
             for (i, &t) in p.texels.iter().enumerate() {
@@ -643,7 +660,7 @@ fn side_spec(core: &Core, side: u32) -> Option<&'static UnitSpec> {
 /// for a gun firing up (`indirect`: the artillery, the launchers) the frontmost of the top.
 fn gun_tip(layers: &[Layer], weapon: u8, indirect: bool) -> (i32, i32) {
     let mut best: Option<(i32, (i32, i32))> = None;
-    for l in layers.iter().filter(|l| l.weapon == 0 || l.weapon == weapon) {
+    for l in layers.iter().filter(|l| layer_fires(l.weapon, weapon)) {
         let idle = l.scripts[0].first().map_or(0, |&(_, f)| f as usize);
         for p in l.frames.get(idle).into_iter().flatten() {
             for (i, &t) in p.texels.iter().enumerate() {
@@ -999,6 +1016,25 @@ fn figure_count(core: &mut Core) {
     core.raw_write_range(state, -1, &[0u8; SIDE_STATE as usize]);
     core.raw_write_range(FX + SIDE_FX * side, -1, &[0u8; SIDE_FX as usize]);
     let t = side_unit_type(core, side);
+    if side == 0 {
+        DROPS.store(0, std::sync::atomic::Ordering::Relaxed);
+    }
+    log::info!(
+        "battle: side {side} ({}): unit {t} {}, army colour {}, weapon {}, HP {} -> {}, {}",
+        if side == 0 { "left" } else { "right" },
+        UNIT_NAMES.get(t as usize).copied().unwrap_or("?"),
+        core.raw_read_8(SIDE_COLOURS + side, -1),
+        core.raw_read_16(ROWS + ROW * side + 4, -1),
+        before,
+        after,
+        if spec_of(t).is_some() {
+            "a new unit in Dual Strike's art"
+        } else if aw2_art_of(t).is_some() && crate::wasteland::ds_graphics(core) {
+            "Dual Strike's art"
+        } else {
+            "AW2's art"
+        }
+    );
     if let Some(unit) = aw2_art_of(t).filter(|_| crate::wasteland::ds_graphics(core)) {
         // One of AW2's own units, with Dual Strike's map graphics on: its figures stay AW2's, drawn in Dual Strike's art.
         let army = core.raw_read_8(SIDE_COLOURS + side, -1).min(ARMIES as u8 - 1) as usize;
@@ -1140,10 +1176,24 @@ pub fn drain(core: &mut Core) {
     }
 }
 
-/// A block of a side's picture did not fit (`TANGOAW2_BATTLE_LOG`: for the tests).
+/// Unit names by AW2 type, for the log.
+const UNIT_NAMES: [&str; 28] = [
+    "-", "Infantry", "Mech", "Md Tank", "Megatank", "Tank", "Recon", "APC", "Neotank", "Piperunner", "Artillery", "Rockets",
+    "Stealth", "Black Bomb", "Anti-Air", "Missiles", "Fighter", "Bomber", "Black Boat", "B Copter", "T Copter",
+    "Battleship", "Cruiser", "Lander", "Sub", "dived Sub", "Carrier", "Oozium",
+];
+
+/// Blocks left out in this battle (logged once a battle).
+static DROPS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// A block of a side's picture did not fit: in the session's log (once a battle), and every time with
+/// `TANGOAW2_BATTLE_LOG` (the tests count them).
 fn dropped(side: u32, plane: u8, why: &str) {
     if std::env::var_os("TANGOAW2_BATTLE_LOG").is_some() {
         eprintln!("ds_battle: dropped side {side} plane {plane}: {why}");
+    }
+    if DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed) == 0 {
+        log::warn!("battle: part of side {side}'s picture was left out (plane {plane}: out of {why})");
     }
 }
 
@@ -1152,14 +1202,23 @@ fn both_drawn(core: &Core) -> bool {
     (0..2).all(|side| core.raw_read_8(STATE + SIDE_STATE * side, -1) != 0)
 }
 
-/// A side's extra tiles, in AW2's effect tiles, while both sides are drawn here.
-fn extra_tiles(core: &Core, side: u32) -> (u32, u32) {
+/// The first of AW2's effect tiles not yet taken this frame: the two sides share them (a side with a big unit takes what
+/// the other leaves).
+static EXTRA_FREE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// A side's extra tiles, in AW2's effect tiles, while both sides are drawn here: what the frame has left of them.
+fn extra_tiles(core: &Core, _side: u32) -> (u32, u32) {
     if both_drawn(core) {
-        let half = (FX_TILES - EFFECT_TILES as u32) / 2;
-        let lo = EFFECT_TILES as u32 + half * side;
-        (lo, lo + half)
+        (EXTRA_FREE.load(std::sync::atomic::Ordering::Relaxed).max(EFFECT_TILES as u32), FX_TILES)
     } else {
         (0, 0)
+    }
+}
+
+/// What a side took of the extra tiles.
+fn extra_taken(tiles: &Tiles) {
+    if tiles.ranges[1].1 == FX_TILES {
+        EXTRA_FREE.store(tiles.ranges[1].0, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -1274,7 +1333,7 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
     for (l, layer) in fig.layers.iter().enumerate() {
         let at = state + S_AW2_LAYERS + 4 * l as u32;
         let which = core.raw_read_8(at, -1);
-        if shots > seen && !layer.scripts[1].is_empty() {
+        if shots > seen && !layer.scripts[1].is_empty() && layer_fires(layer.weapon, weapon) {
             start(core, at, &layer.scripts, 1, 0, 0);
         } else if moving && !layer.scripts[2].is_empty() && which == 0 {
             start(core, at, &layer.scripts, 2, 0, 0);
@@ -1290,7 +1349,7 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
     let mut other = Canvas::new(HALVES[1 - side as usize], (0, 0));
     for &(origin, hit) in &figs {
         for (l, layer) in fig.layers.iter().enumerate() {
-            if !(layer.weapon == 0 || layer.weapon == weapon) {
+            if !layer_shows(layer.weapon, weapon) {
                 continue;
             }
             let at = state + S_AW2_LAYERS + 4 * l as u32;
@@ -1367,6 +1426,7 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
             }
         }
     }
+    extra_taken(&tiles);
 }
 
 struct Canvas {
@@ -1891,6 +1951,7 @@ fn flush(core: &mut Core) {
         }
         kept.push(attrs);
     }
+    EXTRA_FREE.store(EFFECT_TILES as u32, std::sync::atomic::Ordering::Relaxed);
     let mut mine: Vec<[u16; 3]> = Vec::new();
     let mut fx_mine: Vec<[u16; 3]> = Vec::new();
     for side in 0..2u32 {
@@ -2113,6 +2174,7 @@ fn flush(core: &mut Core) {
                 }
             }
         }
+        extra_taken(&tiles);
     }
     for side in 0..2u32 {
         if let Some(unit) = aw2[side as usize] {
