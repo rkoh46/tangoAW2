@@ -264,3 +264,66 @@ def weather_sand(ctx, env, Rec):
     g.wait_for_input()
     rec = Rec(g.e)
     rec.on(); g.e.wait(240); rec.off()
+
+
+def _walkmap(ctx):
+    m = ctx.map()
+    m.unit(1, "tank", 6, 6).unit(1, "infantry", 7, 8).unit(1, "recon", 5, 10)
+    m.unit(2, "tank", 20, 12).unit(2, "infantry", 22, 8).unit(2, "recon", 24, 14)
+    return m
+
+
+def _walk_mine(g, e, moves):
+    for (a, b) in moves:
+        g.select(*a); g.move_to(*b); g.choose("Wait", g.ACTION_MENU); g.wait_for_input()
+
+
+def walk_vs_humans(ctx, env, Rec):
+    """Both armies human: army 1 moves its units, ends the turn, army 2 moves its."""
+    g = _versus(ctx, env, _walkmap(ctx), ["andy", "drake"], humans=(1, 2))
+    g.wait_for_input()
+    rec = Rec(g.e); rec.on()
+    _walk_mine(g, g.e, [((6, 6), (9, 6)), ((7, 8), (7, 6)), ((5, 10), (8, 10))])
+    g.open_map_menu(); g.choose("End", g.MAP_MENU)
+    g.e.wait_until(lambda: g.current_army() == 2, 1200, step=4); g.wait_for_input()
+    _walk_mine(g, g.e, [((20, 12), (17, 12)), ((22, 8), (20, 8)), ((24, 14), (21, 14))])
+    g.e.wait(60); rec.off()
+
+
+def walk_vs_cpu(ctx, env, Rec):
+    g = _versus(ctx, env, _walkmap(ctx), ["andy", "drake"])
+    g.wait_for_input()
+    rec = Rec(g.e); rec.on()
+    _walk_mine(g, g.e, [((6, 6), (9, 6)), ((7, 8), (7, 6)), ((5, 10), (8, 10))])
+    g.end_turn(human=1, max_frames=60000); g.wait_for_input(); g.e.wait(30); rec.off()
+
+
+def walk_snow_fog(ctx, env, Rec):
+    g = _versus(ctx, env, _walkmap(ctx), ["andy", "drake"], fog=True, weather="snow")
+    g.wait_for_input()
+    rec = Rec(g.e); rec.on()
+    _walk_mine(g, g.e, [((6, 6), (9, 6)), ((7, 8), (7, 6))])
+    g.end_turn(human=1, max_frames=60000); g.wait_for_input(); g.e.wait(30); rec.off()
+
+
+def walk_ds_campaign(ctx, env, Rec):
+    from aw2test import dscampaign as dc
+    from aw2test.emu import Emu
+    from aw2test.game import Game
+    os.environ.update(env)
+    e = Emu(save=paths.base_save(), ds=True, env=env)
+    g = Game(e, ctx.image); ctx.games.append(g)
+    d = dc.DsCampaign(g)
+    d.start(step=2)
+    d.wait_map()
+    d.dialogue()
+    d.wait_control()
+    rec = Rec(e); rec.on()
+    d.end_turn()
+    for _ in range(1500):
+        if g.current_army() == 1 and e.u16(0x03004080) >= 2 and not d.scripts_running():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(10)
+    e.wait(30); rec.off()

@@ -277,7 +277,12 @@ fn main() {
                 // (`oamlog FILE`: every frame, the sprites shown: idx x y shape size mode tile pal pri affine)
                 use std::io::Write;
                 if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
-                    let _ = writeln!(f, "@frame {}", *frame);
+                    {
+                        let c = link.core(0);
+                        let m = 0x0201_E450u32;
+                        let _ = writeln!(f, "@frame {} cam {} {} bg3 {} {} bg1 {} {}", *frame, c.raw_read_16(m + 4, -1) as i16, c.raw_read_16(m + 6, -1) as i16,
+                            c.raw_read_16(0x0400_001C, -1) & 511, c.raw_read_16(0x0400_001E, -1) & 511, c.raw_read_16(0x0400_0014, -1) & 511, c.raw_read_16(0x0400_0016, -1) & 511);
+                    }
                     for i in 0..128u32 {
                         let c = link.core(0);
                         let a0 = c.raw_read_16(0x0700_0000 + 8 * i, -1);

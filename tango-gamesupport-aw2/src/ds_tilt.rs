@@ -2104,9 +2104,34 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let near = |ram: i32, shown: i32| {
             let d = (shown - ram).rem_euclid(512);
             let d = if d >= 256 { d - 512 } else { d };
-            if d.abs() <= 12 { ram + d } else { ram }
+            if d.abs() <= 9 { ram + d } else { ram }
         };
         (near(cam_px.0, bgs[3].hofs), near(cam_px.1, bgs[3].vofs))
+    };
+    // The console's sprites are placed with the camera of the frame before (BG3's scroll shows it: the camera word runs a step ahead).
+    // Where BG3 is parked (the second army's turn, a banner) there is no scroll to read, and the word of the frame before is used: with
+    // the current one a walking unit jumped a step when the camera started or stopped.
+    let cam_px = {
+        static HIST: std::sync::Mutex<(u32, (i32, i32), (i32, i32))> = std::sync::Mutex::new((u32::MAX, (0, 0), (0, 0)));
+        let now = core.frame_counter();
+        let mut h = HIST.lock().unwrap();
+        let ram = (core.raw_read_16(MAP + 4, -1) as i16 as i32, core.raw_read_16(MAP + 6, -1) as i16 as i32);
+        let parked = cam_px == ram;
+        let mut used = cam_px;
+        if h.0 != now {
+            // (a new frame: what was current is the previous one's)
+            let (before_frame, before) = (h.0, h.1);
+            if parked && before_frame != u32::MAX && now.wrapping_sub(before_frame) == 1 && (before.0 - ram.0).abs() <= 12 && (before.1 - ram.1).abs() <= 12 {
+                used = before;
+            }
+            h.2 = used;
+            h.0 = now;
+            h.1 = ram;
+        } else {
+            // (the same frame drawn again: as it was)
+            used = h.2;
+        }
+        used
     };
     // Dual Strike's camera follows the cursor with a dead zone and keeps the
     // map's edge in view (fitted to melonDS frames, see the module notes).
@@ -2129,6 +2154,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     };
     let look = if in_window && heal_at.is_none() && !effects_up && !panned { cursor } else { ((cam_px.0 + 120).div_euclid(16), (cam_px.1 + 80).div_euclid(16)) };
     let (fx, fy) = follow(look, ground.w, ground.h, core.frame_counter());
+    if std::env::var_os("TANGOAW2_TILT_CAM_LOG").is_some() {
+        dbg_line(&format!("ds_tilt cam: cursor {cursor:?} cam_px {cam_px:?} look {look:?} in_window {in_window} panned {panned} effects {effects_up} -> ({fx:.3}, {fy:.3})"));
+    }
     let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
 
     // What lies on the ground, as the console shows it: BG0's range tint
