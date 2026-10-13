@@ -2421,8 +2421,10 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
     match c {
         Cond::DayAtLeast(d) => core.raw_read_16(DAY, -1) >= *d,
         Cond::EveryDays { n, from } => {
+            // (on the player's turn of the day only: the turn-start rules are checked at every army's turn, and a day's
+            // scene was shown, and its units sent, once per army)
             let d = core.raw_read_16(DAY, -1);
-            d >= *from && *n > 0 && (d - from) % n == 0
+            d >= *from && *n > 0 && (d - from) % n == 0 && core.raw_read_16(0x0300_33EC, -1) == crate::ds_campaign::player_army(core) as u16
         }
         Cond::UnitAt { name, x, y } => {
             named(core, name).is_some_and(|(a, alive)| alive && core.raw_read_8(a + 2, -1) == *x && core.raw_read_8(a + 3, -1) == *y)

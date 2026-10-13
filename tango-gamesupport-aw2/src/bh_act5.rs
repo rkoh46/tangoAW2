@@ -381,7 +381,8 @@ fn bh30() -> MissionDef {
         on_day(1, None, vec![Action::Custom(charge_nell_60)]),
         // Her meter stays under her first power's bar except on the power days; the treasury is capped each morning.
         Trigger::new(When::AfterAction, Cond::Custom(always), vec![Action::Custom(clamp_nell)]).repeating(),
-        Trigger::new(When::TurnStart, Cond::EveryDays { n: 1, from: 2 }, vec![Action::Custom(cap_treasury)]).repeating(),
+        // (at every army's turn start, Orange Star's too: its income comes at its own)
+        Trigger::new(When::TurnStart, Cond::DayAtLeast(2), vec![Action::Custom(cap_treasury)]).repeating(),
         on_day(1, Some(Cond::PlayerPair { a: co::STURM, b: co::CLONE_ANDY }), vec![Action::Scene(crate::bh_text::scene("m30_day1_sturm_clone"))]),
         // Day 5: Nell's first power, her Lucky Star (if she still leads).
         on_day(
