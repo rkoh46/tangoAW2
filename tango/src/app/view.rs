@@ -179,6 +179,14 @@ impl App {
                 };
                 if let crate::platform::input_capture::Input::Keyboard(kb) = &input {
                     match kb {
+                        // (F8: mark this moment for a problem report)
+                        iced::keyboard::Event::KeyPressed {
+                            physical_key: iced::keyboard::key::Physical::Code(iced::keyboard::key::Code::F8),
+                            repeat: false,
+                            ..
+                        } => {
+                            return Some(Message::ReportMark);
+                        }
                         iced::keyboard::Event::KeyPressed { physical_key, .. } if is_escape(physical_key) => {
                             return Some(Message::Session(session::Message::EscPressed));
                         }

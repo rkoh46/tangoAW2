@@ -121,6 +121,15 @@ impl App {
                     None => iced::Task::none(),
                 }
             }
+            Message::ReportMark => {
+                // A problem report: the moment marked in the session's log, the window's picture saved beside it.
+                let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+                let path = self.config.logs_path().join(format!("report-{stamp}.png"));
+                log::warn!("=== REPORT (F8) {stamp}: the player marked this moment; screenshot {} ===", path.display());
+                iced::window::latest()
+                    .and_then(iced::window::screenshot)
+                    .map(move |s| Message::DebugScreenshot(s, path.clone(), false))
+            }
             Message::DebugScreenshot(shot, path, exit) => {
                 super::debug_aids::save_png(&shot, &path);
                 if exit {

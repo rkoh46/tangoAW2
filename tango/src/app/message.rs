@@ -60,6 +60,8 @@ pub enum Message {
     DiscordTick,
     /// Test aids: a window picture to save (and whether to quit after it).
     DebugScreenshot(iced::window::Screenshot, std::path::PathBuf, bool),
+    /// F8 in a session: a marked moment for a problem report (a line in the log, a screenshot beside it).
+    ReportMark,
     /// Test aids: the scripted pad's next frame.
     PadScriptTick,
     /// Raw window event (open, resize, move, etc.). Filtered in the

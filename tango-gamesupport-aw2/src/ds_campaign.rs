@@ -228,6 +228,7 @@ fn mission_start(core: &mut Core) {
         return;
     }
     let index = core.raw_read_8(MISSION, -1) as usize;
+    log::info!("campaign: mission {} starts (index {index})", index + 1);
     // A replay (Free Play) plays the mission's triggers again: the once-latches
     // its first win left in the record are lifted for the battle (the end of
     // the battle puts the record's flags back, `end_of_battle`).
@@ -1198,6 +1199,7 @@ fn end_of_battle(core: &mut Core) {
     core.raw_write_8(LAST_RESULT, -1, if won { 1 } else { 2 });
     core.raw_write_8(LAST_RESULT + 1, -1, index);
     core.raw_write_16(LAST_RESULT + 2, -1, core.raw_read_16(0x0300_4080, -1));
+    log::info!("campaign: mission {} {} on day {}", index as u32 + 1, if won { "won" } else { "lost" }, core.raw_read_16(0x0300_4080, -1));
     if replay {
         flags_from_record(core);
     } else if won {
