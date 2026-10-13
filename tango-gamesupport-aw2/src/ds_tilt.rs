@@ -919,6 +919,14 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
         if class == Class::Billboard && (a2 >> 10) & 3 == 0 && v.dispcnt() & 0xE000 != 0 {
             class = Class::Hud;
         }
+        // (the tag panel's partner face is palette 5 as the map's effects are: it is the HUD's, unless a heal effect has its tiles)
+        if class == Class::Billboard
+            && a2 >> 12 == crate::ds_hud::PARTNER_FACE_PAL
+            && (crate::ds_hud::PARTNER_FACE_TILE..crate::ds_hud::PARTNER_FACE_TILE + 32).contains(&(a2 & 0x3ff))
+            && !crate::heal_effect::playing(core)
+        {
+            class = Class::Hud;
+        }
         if x + w <= 0 || y + h <= 0 || x >= W as i32 || y >= H as i32 {
             // Off the console's picture. The tilted view shows a little more than that, so the
             // sprites that lie on the map (the cursor, its brackets, the move arrow, the target

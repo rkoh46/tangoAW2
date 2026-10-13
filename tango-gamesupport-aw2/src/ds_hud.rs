@@ -592,8 +592,8 @@ fn is_header(e: &Entry) -> bool {
 }
 
 const ACTIVE_FACE_TILE: u16 = 58;
-const PARTNER_FACE_TILE: u16 = 0x309;
-const PARTNER_FACE_PAL: u16 = 5;
+pub(crate) const PARTNER_FACE_TILE: u16 = 0x309;
+pub(crate) const PARTNER_FACE_PAL: u16 = 5;
 
 fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     let a = art()?;
