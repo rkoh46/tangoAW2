@@ -229,6 +229,7 @@ fn mission_start(core: &mut Core) {
     }
     let index = core.raw_read_8(MISSION, -1) as usize;
     log::info!("campaign: mission {} starts (index {index})", index + 1);
+    PROMPTED.store(false, std::sync::atomic::Ordering::Relaxed);
     // A replay (Free Play) plays the mission's triggers again: the once-latches
     // its first win left in the record are lifted for the battle (the end of
     // the battle puts the record's flags back, `end_of_battle`).
@@ -1081,6 +1082,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (crate::campaign_menu::SAVE_FLAG, Box::new(crate::campaign_menu::save_flag)),
         (MISSION_NUMBER, Box::new(mission_number)),
         (crate::ds_worldmap::SAVE_PROMPT, Box::new(save_prompt)),
+        (SAVE_GAME, Box::new(save_game)),
         (BEST_SCORE, Box::new(best_score)),
         (SCRIPT_END_MATCH, Box::new(script_end_match)),
         (MAP_CURSOR_LOOP, Box::new(cursor_loop)),
@@ -1295,10 +1297,24 @@ fn best_score(core: &mut Core) {
     }
 }
 
-/// AW2's save prompt after a mission (`SaveScreenCampaign_StartMessage`):
-/// in a DS session the DS Campaign saves its own record instead.
+/// AW2's save prompt after a mission (`SaveScreenCampaign_StartMessage`): in a DS or BH session AW2 asks as it does
+/// in its own campaign ("Save current data?"), and a Yes saves the session's own record ([`save_game`]).
 fn save_prompt(core: &mut Core) {
     if active(core) {
+        PROMPTED.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// The session's save prompt is up: AW2's campaign save (kind 2) that its Yes makes is the session's own.
+static PROMPTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// `SaveGame` (r0 the kind: 2 the campaign): after a session's mission, the prompt's Yes. AW2 would write its own
+/// campaign data over slot 15 (the DS Campaign's); the session's record goes to its own slot instead.
+pub const SAVE_GAME: u32 = 0x0801_6C70;
+fn save_game(core: &mut Core) {
+    let kind = core.gba().cpu().gpr(0) as u32 & 0xFF;
+    if kind == 2 && active(core) && PROMPTED.swap(false, std::sync::atomic::Ordering::Relaxed) {
+        log::info!("campaign: the player saved after the mission");
         save(core);
     }
 }
