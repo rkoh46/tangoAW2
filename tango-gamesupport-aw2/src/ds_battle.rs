@@ -594,6 +594,7 @@ const PAL_RAM: u32 = 0x0500_0200;
 /// screen's borrowed-tile buffer (`0x0203E800..0x0203F09F`), idle in a battle.
 const MAP_PALS: u32 = 0x0203_EC00;
 const HELD: u8 = 0xA5;
+const SNAPPED: u8 = 0x5A;
 const MAP_PAL_ROWS: [u32; 10] = [0, 1, 2, 3, 4, 5, 6, 7, FX_PAL as u32, FX_PAL as u32 + 1];
 /// Each half of the screen, as the scene's windows show it.
 const HALVES: [(i32, i32); 2] = [(0, 119), (121, 240)];
@@ -719,8 +720,14 @@ fn donor(t: u8, class: u8, weapon: u16) -> (u16, u16) {
 /// palettes 12 and 13, which the game never reloads. So the map's rows are held
 /// when a scene with a new unit starts and put back when it is over.
 fn hold_map_palettes(core: &mut Core) {
-    if core.raw_read_8(MAP_PALS, -1) == HELD {
-        return;
+    match core.raw_read_8(MAP_PALS, -1) {
+        HELD => return,
+        // (the copy taken on the map before the scene began: by now the scene has loaded its own)
+        SNAPPED => {
+            core.raw_write_8(MAP_PALS, -1, HELD);
+            return;
+        }
+        _ => {}
     }
     for (i, &row) in MAP_PAL_ROWS.iter().enumerate() {
         let mut now = [0u8; 32];
@@ -728,6 +735,22 @@ fn hold_map_palettes(core: &mut Core) {
         core.raw_write_range(MAP_PALS + 0x10 + 32 * i as u32, -1, &now);
     }
     core.raw_write_8(MAP_PALS, -1, HELD);
+}
+
+/// On the map (every frame, from [`crate::ds_hud::flush`]): keep a copy of the map's OBJ palettes for the scene to come.
+/// Taking it at the scene's first frame was too late: the scene had loaded its palettes already, and a copy of those
+/// (the info panel's text palette half empty) was put back, leaving the panel's text and icons black after every
+/// battle but the first.
+pub fn snapshot_map_palettes(core: &mut Core) {
+    if !is_on(core) || core.raw_read_32(MAIN_CALLBACK, -1) != MAP_CALLBACK || core.raw_read_8(MAP_PALS, -1) == HELD {
+        return;
+    }
+    for (i, &row) in MAP_PAL_ROWS.iter().enumerate() {
+        let mut now = [0u8; 32];
+        core.raw_read_range(PAL_BUFFER + 32 * row, -1, &mut now);
+        core.raw_write_range(MAP_PALS + 0x10 + 32 * i as u32, -1, &now);
+    }
+    core.raw_write_8(MAP_PALS, -1, SNAPPED);
 }
 
 fn restore_map_palettes(core: &mut Core) {
@@ -777,7 +800,6 @@ fn figure_count(core: &mut Core) {
         return;
     }
     let state = STATE + SIDE_STATE * side;
-    core.raw_write_8(MAP_PALS, -1, 0);
     core.raw_write_range(state, -1, &[0u8; SIDE_STATE as usize]);
     core.raw_write_range(FX + SIDE_FX * side, -1, &[0u8; SIDE_FX as usize]);
     let t = side_unit_type(core, side);

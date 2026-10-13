@@ -949,6 +949,7 @@ fn box_flush(core: &mut Core, list: &[Entry]) -> bool {
 /// At the sprite flush ([`crate::branding::flush`]): `start..at` is the
 /// frame's list; returns its new end.
 pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
+    crate::ds_battle::snapshot_map_palettes(core);
     // (the Design Room's map editor has no CO or terrain panel: its translucent sprites at the foot are its own
     // Feature box, not a panel to take the backing window for)
     if !on(core) || crate::design::in_map_editor(core) {
