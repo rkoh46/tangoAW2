@@ -1133,6 +1133,33 @@ pub fn drain(core: &mut Core) {
                 core.raw_write_8(e + 0xA, -1, QUEUE_SKIP);
             }
         }
+        // (with both sides drawn here AW2's effects are not shown, and their tiles are the figures' extra room)
+        if both_drawn(core) && (OBJ_VRAM + 32 * EFFECT_TILES as u32..OBJ_VRAM + 32 * FX_TILES).contains(&dst) {
+            core.raw_write_8(e + 0xA, -1, QUEUE_SKIP);
+        }
+    }
+}
+
+/// A block of a side's picture did not fit (`TANGOAW2_BATTLE_LOG`: for the tests).
+fn dropped(side: u32, plane: u8, why: &str) {
+    if std::env::var_os("TANGOAW2_BATTLE_LOG").is_some() {
+        eprintln!("ds_battle: dropped side {side} plane {plane}: {why}");
+    }
+}
+
+/// Both sides of the battle are drawn here (Dual Strike's art and effects): AW2's effect tiles are free.
+fn both_drawn(core: &Core) -> bool {
+    (0..2).all(|side| core.raw_read_8(STATE + SIDE_STATE * side, -1) != 0)
+}
+
+/// A side's extra tiles, in AW2's effect tiles, while both sides are drawn here.
+fn extra_tiles(core: &Core, side: u32) -> (u32, u32) {
+    if both_drawn(core) {
+        let half = (FX_TILES - EFFECT_TILES as u32) / 2;
+        let lo = EFFECT_TILES as u32 + half * side;
+        (lo, lo + half)
+    } else {
+        (0, 0)
     }
 }
 
@@ -1298,13 +1325,14 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
     let mut tiles = Tiles {
         ranges: [
             (SIDE_TILES * side, SIDE_TILES * (side + 1)),
+            extra_tiles(core, side),
             (FX_TILES + SIDE_FX_TILES * side, FX_TILES + SIDE_FX_TILES * (side + 1)),
         ],
     };
-    // The figures in the side's own tiles, then the effects in what is left.
+    // The figures in the side's own tiles (and the extra room), then the effects in what is left.
     let groups: [&[(&Canvas, u8)]; 2] = [&[(&own, 0), (&own, 1), (&own, 4), (&own, 5)], &[(&own, 2), (&own, 3), (&other, 2), (&other, 3)]];
     for (g, group) in groups.iter().enumerate() {
-        let room = if g == 0 { tiles.ranges[0].1 - tiles.ranges[0].0 } else { tiles.left() };
+        let room = if g == 0 { tiles.ranges[0].1 - tiles.ranges[0].0 + tiles.ranges[1].1 - tiles.ranges[1].0 } else { tiles.left() };
         let mut blocks: Vec<(&Canvas, u8, (usize, usize, usize))> = Vec::new();
         for need in &COVERS {
             blocks = group.iter().flat_map(|&(c, p)| c.cover(p, need).into_iter().map(move |b| (c, p, b))).collect();
@@ -1315,10 +1343,14 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         blocks.sort_by_key(|b| std::cmp::Reverse(b.2 .2));
         for (canvas, plane, block) in blocks {
             if mine.len() + fx_mine.len() + kept >= SHADOW_ENTRIES as usize {
+                dropped(side, plane, "sprites");
                 break;
             }
             let sp = canvas.sprite(plane, block);
-            let Some(tile) = tiles.take(sp.tiles.len() as u32) else { continue };
+            let Some(tile) = tiles.take(sp.tiles.len() as u32) else {
+                dropped(side, plane, "tiles");
+                continue;
+            };
             let data: Vec<u8> = sp.tiles.iter().flatten().copied().collect();
             core.raw_write_range(OBJ_VRAM + 32 * tile, -1, &data);
             let size = sp.size.trailing_zeros() as u16 - 3;
@@ -1454,7 +1486,7 @@ const COVERS: [[usize; 4]; 4] = [[1, 2, 6, 24], [1, 2, 9, 40], [1, 3, 13, 56], [
 
 /// A side's tiles: its figure tiles, then its effect tiles.
 struct Tiles {
-    ranges: [(u32, u32); 2],
+    ranges: [(u32, u32); 3],
 }
 
 impl Tiles {
@@ -2035,6 +2067,7 @@ fn flush(core: &mut Core) {
         let mut tiles = Tiles {
             ranges: [
                 (SIDE_TILES * side, SIDE_TILES * (side + 1)),
+                extra_tiles(core, side),
                 (FX_TILES + SIDE_FX_TILES * side, FX_TILES + SIDE_FX_TILES * (side + 1)),
             ],
         };
@@ -2044,7 +2077,7 @@ fn flush(core: &mut Core) {
         for (g, group) in groups.iter().enumerate() {
             // The unit's sprites in its own tiles (the effect tiles are too
             // few for its big ones).
-            let room = if g == 0 { tiles.ranges[0].1 - tiles.ranges[0].0 } else { tiles.left() };
+            let room = if g == 0 { tiles.ranges[0].1 - tiles.ranges[0].0 + tiles.ranges[1].1 - tiles.ranges[1].0 } else { tiles.left() };
             let mut blocks: Vec<(&Canvas, u8, (usize, usize, usize))> = Vec::new();
             for need in &COVERS {
                 blocks = group.iter().flat_map(|&(c, p)| c.cover(p, need).into_iter().map(move |b| (c, p, b))).collect();
@@ -2057,9 +2090,13 @@ fn flush(core: &mut Core) {
                 let s = canvas.sprite(plane, block);
                 let n = s.tiles.len() as u32;
                 if mine.len() + fx_mine.len() + kept.len() >= SHADOW_ENTRIES as usize {
+                    dropped(side, plane, "sprites");
                     break;
                 }
-                let Some(tile) = tiles.take(n) else { continue };
+                let Some(tile) = tiles.take(n) else {
+                    dropped(side, plane, "tiles");
+                    continue;
+                };
                 let data: Vec<u8> = s.tiles.iter().flatten().copied().collect();
                 core.raw_write_range(OBJ_VRAM + 32 * tile, -1, &data);
                 let size = s.size.trailing_zeros() as u16 - 3;
