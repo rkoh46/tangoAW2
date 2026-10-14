@@ -669,15 +669,11 @@ pub fn tick(core: &mut Core, on_: bool) {
     let Some(b) = battle(core) else { return };
     install(core);
     if !in_battle(core) {
-        // Between battles (the world map, the CO screen, the mission card,
-        // a Continue on its way): a battle starts on its main front (its
-        // state is cleared when it starts, [`map_start`], or comes with a
-        // mission saved halfway, [`restore_saved`]).
-        // (but a Continue on the second front, between its block restored
-        // and the battle's frame callbacks, [`restore_saved`])
-        if core.raw_read_8(LIVE, -1) != 0 && core.raw_read_8(CONTINUED, -1) == 0 {
-            core.raw_write_8(LIVE, -1, 0);
-        }
+        // Not on the battle map: between battles, or a screen over the battle (a fight's scene, the CO page), which this
+        // cannot tell apart. The front on the screen is left as it is: a battle starts on its main front by its own hook
+        // ([`map_start`] clears the state) or with a mission saved halfway ([`restore_saved`]). (It was put back to the main
+        // front here, and a fight or the CO page on the second front's turn made the next swap go the wrong way: the
+        // second front was stored over the main one and the main front's map came back garbled.)
         return;
     }
     if core.raw_read_8(CONTINUED, -1) != 0 {
