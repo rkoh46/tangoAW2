@@ -973,10 +973,13 @@ Strike theme, converted at run time for AW2's sound engine (MP2K, "Sappy").
   `sound/seq/<id>`, `sound/bank/<id>`, `sound/wave/<id>` (about 4 MB;
   with the Crystal's and Obelisk's heal sounds, 175 and 176, nothing else
   of the 18 MB archive), and the DS Campaign's 15 story songs
-  (`STORY_SONGS`), the staff roll's stream (`sound/strm/0`) and the tag
-  screens' six sounds (`TAG_SE_CALLS`, after the roll in the story's range).
-  The pack's version is 6 (3: the heal sounds, 4: the story songs, 5: the
-  stream, 6: the tag sounds). A saved pack of an older version is rebuilt
+  (`STORY_SONGS`), the staff roll's stream (`sound/strm/0`), the tag
+  screens' six sounds (`TAG_SE_CALLS`, after the roll in the story's range)
+  and the six power themes (`POWER_SONGS`, after them: songs 539..544 with
+  every story song there; the story's range ends at 0x098438DC, below its
+  limit `STORY_END` 0x09E00000).
+  The pack's version is 7 (3: the heal sounds, 4: the story songs, 5: the
+  stream, 6: the tag sounds, 7: the power themes). A saved pack of an older version is rebuilt
   from the .nds by the scan when the .nds is in the ROMs folder (every
   start's first scan reads it, so a player updating needs to do nothing:
   `tango-library/tests/ds_pack_update.rs`, 0.5.0's version 5 pack to 6, the
@@ -984,8 +987,35 @@ Strike theme, converted at run time for AW2's sound engine (MP2K, "Sappy").
   of 3 or later still loads (what it lacks stood in for by AW2's like
   sounds, or silent: the tag screens), and the Play tab says it is out of
   date and to put the .nds back (`ds_pack::outdated`,
-  `tests/ds_pack_update_no_nds.rs`). Power music stays AW2's
-  (Dual Strike's is shared too).
+  `tests/ds_pack_update_no_nds.rs`; a version 6 pack to 7 checked with
+  the power themes).
+- **Power music** (`power_music.rs`): Dual Strike's `Player_PlayTheme`: a
+  CO Power `BGM_BREAK_ALLY1` / `_ENEMY1` (0x1D / 0x1C), a Super
+  `BGM_SPECIAL_BREAK_ALLY1` / `_ENEMY1` (0x1F / 0x20), a Super while a Tag
+  Power is on (both halves) `BGM_TAG_BREAK_ALLY1` / `_ENEMY1` (0x2E /
+  0x2F); Allied or Black Hole by `Player_IsAlliedNations`: the front CO's
+  nation, but in the DS Campaign the player's armies are Allied and the
+  computer's are not (every army on Jake's Trial, Lightning Strikes and
+  Verdant Hills); in the BH Campaign the player is Black Hole (the
+  computer's armies by their CO). AW2's `sub_08043DAC(army)` picks the
+  power music by player +0x1E through `sub_08043DF4` (0x1A3 Black Hole /
+  0x1A4) and `sub_08043E18` (0x199 / 0x19A); their four `sub_0803B4EC`
+  calls (`0x08043E02`, `0x08043E10`, `0x08043E26`, `0x08043E34`) are
+  trapped and get Dual Strike's song (the army kept at `sub_08043DAC`'s
+  entry, RAM `0x0203C601`, or the current army when the power screens
+  call the two directly from `0x08080EE4` / `0x08080EF8`); the nation test
+  is AW2's own (`sub_08044BA0`, COs 10..14, the new COs as the CO they take
+  after: `co_new::black_hole_power_music`). The tag theme starts at the Tag
+  Power's frame 256 (as Dual Strike's script, `func_02057ef8`), through
+  AW2's music call from the tag screen's wait, so the power's own call
+  finds it playing (`sub_0803B524` leaves it). The themes are music on the
+  themes' player (at most 8 tracks; 12 channels mixed while they play, as
+  the CO themes). Without them (no pack, a pack before 7) AW2's power music
+  plays. Tests `power_music_is_dual_strikes` (Andy's CO Power, Lash's Super
+  Power three songs on, 10 s of each recorded and heard, the day theme
+  back), `power_music_without_the_pack`, `tag_power_screen` (the tag theme
+  from 256, the Super Power's call leaves it), `power_themes_convert`
+  (ignored, with the pack).
 - **Sequence.** Each SSEQ track is walked (calls inlined, loops and jumps
   followed; the jump back is the loop) into timed notes and controls, and
   written as an MP2K track that plays the intro, then the loop, then GOTOs
@@ -3489,7 +3519,7 @@ are under CO skills.
   `0x020593E0`, `0x0205CCBC`), played through AW2's sound-effect call
   `sub_0803B4DC` on the frames Dual Strike plays them (pack version 6; an
   older saved pack has none and the screens play silent). The tag music
-  stays AW2's power music.
+  is Dual Strike's from frame 256 (see "Power music", pack version 7).
 
   On the GBA the screen keeps Dual Strike's pixels, scale and timing, cut
   to the window the COs' heads are in (Dual Strike's two screens' x 8..,
@@ -3570,7 +3600,7 @@ are under CO skills.
   until frame 297) and put back at 257 or when the screen is cut short;
   RAM `0x0203C600` (1 byte). Test `tag_power_screen` (the blend and EVA
   per bolt, sparks in OAM, everything back).
-- **Left out**: the tag music (AW2's power music plays). Market Crash and other meter
+- **Left out**: Market Crash and other meter
   drains reach only the active CO. The pad bot (`aw2test/bot.py`) fires
   Tag Powers but no longer wins four missions where the computer fights as
   a pair (The Long March, Verdant Hills, Into the Woods, Pincer Strike):

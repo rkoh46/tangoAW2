@@ -315,8 +315,10 @@ fn screen_frame(core: &mut Core, kind: u8) -> (Option<u16>, bool) {
     (sound, over)
 }
 
-/// AW2's sound-effect call (`sub_0803B4DC(song)`).
+/// AW2's sound-effect call (`sub_0803B4DC(song)`) and its music call
+/// (`sub_0803B4EC(song)`: a song already playing goes on).
 const PLAY_SE: u32 = 0x0803_B4DC;
+const PLAY_MUSIC: u32 = 0x0803_B4EC;
 
 // --- The Tag Power's screen ----------------------------------------------------------
 
@@ -350,15 +352,21 @@ fn wait_quote(core: &mut Core) {
     if !over {
         // Still up: the script waits (the function returns without
         // `Proc_Break`), through AW2's sound-effect call on a frame with a
-        // sound.
+        // sound, or its music call when the tag theme starts
+        // (crate::power_music).
+        let theme = if crate::tag_screens::tag_theme_starts(core.raw_read_16(FRAME, -1)) {
+            crate::power_music::tag_theme(core, core.raw_read_8(ARMY, -1) as u32)
+        } else {
+            None
+        };
         let cpu = core.gba_mut().cpu_mut();
-        match sound {
-            Some(song) => {
+        match (sound, theme) {
+            (Some(song), _) | (None, Some(song)) => {
                 cpu.set_gpr(0, song as i32);
                 cpu.set_gpr(14, (WAIT_QUOTE_DONE | 1) as i32);
-                cpu.set_thumb_pc(PLAY_SE);
+                cpu.set_thumb_pc(if sound.is_some() { PLAY_SE } else { PLAY_MUSIC });
             }
-            None => cpu.set_thumb_pc(WAIT_QUOTE_DONE),
+            (None, None) => cpu.set_thumb_pc(WAIT_QUOTE_DONE),
         }
     }
 }

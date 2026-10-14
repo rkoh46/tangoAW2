@@ -945,6 +945,12 @@ fn unlocked(core: &mut Core) {
     }
 }
 
+/// AW2's answer to `sub_08044BA0(co)` (Black Hole's power music: COs
+/// 10..14), the new COs as the CO they take after ([`black_hole_music`]).
+pub fn black_hole_power_music(core: &Core, co: u8) -> bool {
+    (10..=14).contains(&co) || (is_on(core) && is_new(co) && (10..=14).contains(&like(co)))
+}
+
 /// `sub_08044BA0(co)`: Black Hole's power music, for COs 10..14 in AW2.
 const BLACK_HOLE_MUSIC: u32 = 0x0804_4BA0;
 fn black_hole_music(core: &mut Core) {

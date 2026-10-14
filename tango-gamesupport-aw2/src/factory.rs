@@ -173,6 +173,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     traps.extend(crate::setup_phase::traps());
     traps.extend(crate::tag::traps());
     traps.extend(crate::tag_extras::traps());
+    traps.extend(crate::power_music::traps());
     traps.extend(crate::versus_rules::traps());
     traps
 }

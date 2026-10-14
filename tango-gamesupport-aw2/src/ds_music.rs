@@ -36,6 +36,12 @@
 //! effects (ids read from Dual Strike's code, [`HEAL_SE_CALLS`]) are
 //! converted the same way after the themes, as sound effects on AW2's
 //! sound-effect player 2 ([`heal_se`], played by [`crate::heal_effect`]).
+//!
+//! **Power music.** Dual Strike's CO Power, Super CO Power and Tag Power
+//! themes, Allied and Black Hole ([`POWER_SONGS`]), come last (after the tag
+//! screens' sounds, in the story's ROM range), as music on the themes'
+//! player; [`power_song`] gives them to crate::power_music. A pack saved
+//! before them (version 6) has none: AW2's power music plays.
 
 use mgba::core::Core;
 use std::collections::HashMap;
@@ -134,6 +140,27 @@ pub const STORY_SONGS: [(u16, &str); 15] = [
     (0x36, "BGM_NML_ENDING1"),
     (0x37, "BGM_NML_ENDING2"),
 ];
+/// Dual Strike's power themes (sequence ids, its symbol names), in
+/// [`PowerSong`]'s order, the Allied Nations' then Black Hole's:
+/// `PlayCoPowerTheme`, `PlaySuperPowerTheme`, `PlayTagPowerTheme`.
+pub const POWER_SONGS: [(u16, &str); 6] = [
+    (0x1D, "BGM_BREAK_ALLY1"),
+    (0x1C, "BGM_BREAK_ENEMY1"),
+    (0x1F, "BGM_SPECIAL_BREAK_ALLY1"),
+    (0x20, "BGM_SPECIAL_BREAK_ENEMY1"),
+    (0x2E, "BGM_TAG_BREAK_ALLY1"),
+    (0x2F, "BGM_TAG_BREAK_ENEMY1"),
+];
+
+/// Which power theme.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PowerSong {
+    CoPower = 0,
+    Super = 1,
+    Tag = 2,
+}
+/// The story songs' ROM range ends here.
+pub const STORY_END: u32 = 0x09E0_0000;
 pub const OPENING: u16 = 0x29;
 pub const WORLD_MAP: u16 = 0x06;
 pub const ENDING: u16 = 0x36;
@@ -216,7 +243,8 @@ pub fn keep(sdat: &[u8], arm9: &[u8]) -> Option<Vec<(String, Vec<u8>)>> {
     let mut out: Vec<(String, Vec<u8>)> = Vec::new();
     let mut have = std::collections::HashSet::new();
     let tag = tag_se_ids(arm9)?;
-    for id in theme_ids(arm9)?.into_iter().chain(heal_se_ids(arm9)?).chain(STORY_SONGS.iter().map(|s| s.0)).chain(tag) {
+    let songs = STORY_SONGS.iter().chain(POWER_SONGS.iter()).map(|s| s.0);
+    for id in theme_ids(arm9)?.into_iter().chain(heal_se_ids(arm9)?).chain(songs).chain(tag) {
         let seq = record(0, id)?;
         let bank = u16_at(seq, 4)?;
         if have.insert(format!("s{id}")) {
@@ -1213,6 +1241,9 @@ pub struct Music {
     /// The tag screens' sounds ([`TagSe`]'s order), when the pack has them
     /// (a pack saved before 0.5.2 has none: the screens play silent).
     pub tag_se: [Option<u16>; 6],
+    /// The power themes ([`POWER_SONGS`]) the pack has: (sequence id, song
+    /// id).
+    pub power: Vec<(u16, u16)>,
 }
 
 struct Blob {
@@ -1283,6 +1314,14 @@ fn build() -> Option<Music> {
             distinct.push(id);
         }
     }
+    // The power themes the pack has, after them (music).
+    let tag_end = distinct.len();
+    let power_ids: Vec<u16> = POWER_SONGS.iter().map(|s| s.0).filter(|&id| pack.file(&format!("sound/seq/{id}")).is_some()).collect();
+    for &id in &power_ids {
+        if !distinct[tag_end..].contains(&id) {
+            distinct.push(id);
+        }
+    }
     let mut story_blob = Blob { bytes: Vec::new(), base: STORY_BASE };
     let table_at = TABLE;
     // The staff roll's stream, a song after the others.
@@ -1316,7 +1355,7 @@ fn build() -> Option<Music> {
         // Dual Strike's default tempo if it sets none, and a note without a
         // length (Dual Strike plays it until its sample ends) as long as its
         // sample.
-        let se = (n >= themes && n < effects) || n >= story_end;
+        let se = (n >= themes && n < effects) || (n >= story_end && n < tag_end);
         let out: &mut Blob = if n >= effects { &mut story_blob } else { &mut blob };
         let mut seq = parse_seq(pack_file(&format!("sound/seq/{sid}"))?)?;
         if se && !seq.tracks.iter().flat_map(|t| t.evs.iter()).any(|e| matches!(e.1, Ev::Ctl(Ctl::Tempo(_)))) {
@@ -1510,7 +1549,9 @@ fn build() -> Option<Music> {
             tag_se[k] = distinct[story_end..].iter().position(|d| d == id).map(|p| FIRST_SONG + table_index(story_end + p) as u16);
         }
     }
-    Some(Music { blob: blob.bytes, story_blob: story_blob.bytes, songs, headers, heal_se, story, staff_roll, tag_se })
+    let power = power_ids.iter().map(|&id| (id, FIRST_SONG + table_index(tag_end + distinct[tag_end..].iter().position(|&d| d == id).unwrap()) as u16)).collect();
+    debug_assert!(STORY_BASE as usize + story_blob.bytes.len() <= STORY_END as usize, "the story's songs pass {STORY_END:#x}");
+    Some(Music { blob: blob.bytes, story_blob: story_blob.bytes, songs, headers, heal_se, story, staff_roll, tag_se, power })
 }
 
 static BUILT: OnceLock<Option<Music>> = OnceLock::new();
@@ -1541,6 +1582,13 @@ pub fn song(co: u8) -> Option<u16> {
 /// pack has it.
 pub fn tag_se(which: TagSe) -> Option<u16> {
     music()?.tag_se[which as usize]
+}
+
+/// Dual Strike's power theme `which` for the Allied Nations (`allied`) or
+/// Black Hole, when the pack has it.
+pub fn power_song(which: PowerSong, allied: bool) -> Option<u16> {
+    let seq = POWER_SONGS[2 * which as usize + !allied as usize].0;
+    music()?.power.iter().find(|p| p.0 == seq).map(|p| p.1)
 }
 
 /// The song (a sound effect) Dual Strike plays with the Crystal's (`0`) or
@@ -1746,5 +1794,33 @@ mod pack_tests {
             assert!(header >= STORY_BASE, "{song}: header {header:#x}");
         }
         assert_eq!(tag_se(TagSe::Swap), Some(songs[5]));
+    }
+
+    /// The six power themes: after the tag sounds (every earlier song keeps
+    /// its id), music on the themes' player with at most 8 tracks, in the
+    /// story's ROM range, which ends before [`STORY_END`].
+    #[test]
+    #[ignore]
+    fn power_themes_convert() {
+        crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
+        let m = music().expect("music");
+        let last_tag = m.tag_se.iter().flatten().copied().max().expect("the tag sounds");
+        assert_eq!(m.power.len(), 6);
+        for (k, &(seq, song)) in m.power.iter().enumerate() {
+            assert_eq!(seq, POWER_SONGS[k].0);
+            assert_eq!(song, last_tag + 1 + k as u16, "{}", POWER_SONGS[k].1);
+            let e = (TABLE - BASE) as usize + 8 * song as usize;
+            assert_eq!(u16_at(&m.blob, e + 4), Some(PLAYER));
+            let header = u32_at(&m.blob, e).unwrap();
+            assert!(header >= STORY_BASE && m.headers.contains(&header), "{song}: header {header:#x}");
+            let h = (header - STORY_BASE) as usize;
+            let tracks = m.story_blob[h] as usize;
+            assert!((1..=MAX_TRACKS).contains(&tracks), "{}: {tracks} tracks", POWER_SONGS[k].1);
+            assert_eq!(m.story_blob[h + 3], REVERB);
+        }
+        assert_eq!(power_song(PowerSong::Tag, false), Some(m.power[5].1));
+        assert_eq!(power_song(PowerSong::CoPower, true), Some(m.power[0].1));
+        eprintln!("the story's songs end at {:#010x}", STORY_BASE as usize + m.story_blob.len());
+        assert!(STORY_BASE as usize + m.story_blob.len() <= STORY_END as usize);
     }
 }

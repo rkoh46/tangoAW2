@@ -42,6 +42,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("smart Black Factory: picks and savings", FACTORY),
     ("CO screen: picks seen", CO_SCREEN_PICKS),
     ("Tag Power's thunder: what it covers is kept aside (crate::tag_thunder::STATE)", (0x0203_C600, 1)),
+    ("power music: the army whose music is being picked (crate::power_music::ARMY)", (0x0203_C601, 1)),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),
@@ -101,5 +102,6 @@ mod tests {
         assert_eq!(find("DS Campaign's records").0, crate::ds_campaign::RECORDS);
         assert_eq!(find("Survival").0, crate::survival::STATE);
         assert_eq!(find("Tag Power's thunder"), (crate::tag_thunder::STATE, crate::tag_thunder::STATE_LEN));
+        assert_eq!(find("power music"), (crate::power_music::ARMY, crate::power_music::ARMY_LEN));
     }
 }

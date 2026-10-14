@@ -1083,6 +1083,11 @@ def tag_power_screen(ctx):
     ctx.check(len(sparks) >= 20, f"sparks drawn at frame 225 ({len(sparks)})")
     ctx.require(screen_at(e, 258 - TAG_START), "the white")
     ctx.eq(e.u8(0x0203C600), 0, "the thunder is over")
+    # The tag theme (crate::power_music) started at 256, as Dual Strike's script starts it.
+    theme = e.u16(0x030005CA)
+    header = e.u32(e.u32(0x080704A0) + 8 * theme)
+    ctx.check(theme >= 505 and header >= 0x09000000, f"Dual Strike's tag theme plays from 256 (song {theme}, header {header:08x})")
+    ctx.eq(e.u32(0x03005AE0), header, "on the music player")
     ctx.check(covered() == before, "BG0's tiles and buffer, the palettes and the OBJ tiles as they were")
     ctx.eq(e.u16(BLDCNT), 0x00BF, "the map whitens")
     ctx.eq((e.u16(DISPCNT) & 0x0100, e.u16(BGCNT[0])), (layers & 0x0100, cnts[0]), "BG0 as it was")
@@ -1123,6 +1128,8 @@ def tag_power_screen(ctx):
     ctx.eq(e.u16(DISPCNT) & 0x1F00, layers & 0x1F00, "the layers as they were")
     ctx.eq([e.u16(a) for a in BGCNT], cnts, "the BGs as they were")
     ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the Super Power follows")
+    g.wait_for_input()
+    ctx.eq((e.u16(0x030005CA), e.u32(0x03005AE0)), (theme, header), "the Super Power's music is the tag theme, not started again")
 
 
 @test(modes=("ds",))

@@ -109,6 +109,7 @@ pub mod tag;
 pub mod tag_extras;
 pub mod tag_screens;
 pub mod tag_thunder;
+pub mod power_music;
 pub mod sturm_pairs;
 pub mod tag_ui;
 pub mod versus_rules;

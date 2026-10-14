@@ -70,8 +70,8 @@
 //! bolts and their sparks are drawn over the map by crate::tag_thunder
 //! (BG0 blended in, the map's dimming then its EVB). Sound effects are Dual Strike's, converted
 //! with the music ([`crate::ds_music::tag_se`], played through AW2's
-//! sound-effect call by crate::tag_extras). The tag music stays AW2's power
-//! music.
+//! sound-effect call by crate::tag_extras). The tag music is Dual Strike's
+//! (crate::power_music), started at 256 as Dual Strike's.
 //!
 //! Everything a frame shows is a function of the screen (the COs, the
 //! name, the compatibility) and its frame count in RAM (crate::tag_extras),
@@ -459,6 +459,8 @@ const SWAP_X: [i16; 86] = [
 ];
 /// The thunder's three bolts (`SE_TAG_BREAK`).
 const BOLTS: [i32; 3] = [173, 209, 219];
+/// The tag theme starts (Dual Strike's `func_02057ef8`, after the thunder).
+const TAG_THEME: i32 = 256;
 /// Dual Strike's capture is a 110% pair; what follows the count moves with
 /// the compatibility.
 const CAPTURED_POWER: i32 = 110;
@@ -484,6 +486,12 @@ pub fn length(s: &Screen) -> u16 {
 /// is; CO SWAP's.
 pub fn tag_frame(t: u16) -> i32 {
     TAG_START + t as i32
+}
+
+/// The Tag Power's theme starts at its screen's frame `t`
+/// (crate::power_music).
+pub fn tag_theme_starts(t: u16) -> bool {
+    tag_frame(t) == TAG_THEME
 }
 
 pub fn swap_frame(t: u16) -> i32 {
