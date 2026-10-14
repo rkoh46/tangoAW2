@@ -27,7 +27,7 @@ pub fn eruption(core: &mut Core) {
     let day = core.raw_read_16(DAY, -1);
     let mut at = CELLS;
     if let Some(v) = spec.as_ref().filter(|v| v.erupts(day)) {
-        for &(x, y) in v.cells.iter().take(CELLS_LEN) {
+        for (x, y) in v.cells_on(day).into_iter().take(CELLS_LEN) {
             core.raw_write_16(at, -1, x as u16);
             core.raw_write_16(at + 2, -1, y as u16);
             at += 4;
@@ -109,7 +109,7 @@ pub fn flush_sprites(core: &mut Core, at: u32, end: u32) -> u32 {
     let map = core.raw_read_32(MAP_POINTER, -1);
     let (sx, sy) = (core.raw_read_16(map + 4, -1) as i16 as i32, core.raw_read_16(map + 6, -1) as i16 as i32);
     let mut at = at;
-    for &(x, y) in &v.cells {
+    for (x, y) in v.cells_on(day + 1) {
         let (px, py) = (x as i32 * 16 - sx, y as i32 * 16 - sy);
         if at + 8 > end || !(-16..240).contains(&px) || !(-16..160).contains(&py) {
             continue;

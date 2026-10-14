@@ -135,24 +135,55 @@ pub struct OnyxDef {
 /// `first`, every `interval` days, on the Black Hole turn, every unit of any
 /// army on one of `cells` loses `damage` HP (AW2's own eruption: the queued
 /// impacts; the Volcano structure of the map runs the turn-start loop), the
-/// cells marked from the day before.
+/// cells marked from the day before. With `per_eruption` set, each eruption
+/// takes only that many of `cells`, spread round the list and moving on
+/// from day to day ([`VolcanoDef::cells_on`]).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VolcanoDef {
     pub first: u8,
     pub interval: u8,
     pub damage: u8,
     pub cells: Vec<(u8, u8)>,
+    /// How many of `cells` one eruption hits (0: all of them).
+    pub per_eruption: u8,
 }
 
 impl VolcanoDef {
     pub fn new(first: u8, interval: u8, damage: u8, cells: &[(u8, u8)]) -> VolcanoDef {
-        VolcanoDef { first, interval, damage, cells: cells.to_vec() }
+        VolcanoDef { first, interval, damage, cells: cells.to_vec(), per_eruption: 0 }
+    }
+
+    /// Each eruption hits `n` of the cells (a ring's cells, in order round it: they are spread round the ring).
+    pub fn per_eruption(mut self, n: u8) -> VolcanoDef {
+        self.per_eruption = n;
+        self
     }
 
     /// Day `day` is an eruption's.
     pub fn erupts(&self, day: u16) -> bool {
         day >= self.first as u16 && self.interval > 0 && (day - self.first as u16) % self.interval as u16 == 0
     }
+
+    /// The cells day `day`'s eruption hits: all of them, or `per_eruption` evenly spaced round the list from a start
+    /// that moves 5 cells a day (a function of the day alone: both netplay peers and a rollback agree).
+    pub fn cells_on(&self, day: u16) -> Vec<(u8, u8)> {
+        let n = self.cells.len();
+        let per = self.per_eruption as usize;
+        if per == 0 || per >= n {
+            return self.cells.clone();
+        }
+        let start = (day as usize * 5) % n;
+        (0..per).map(|k| self.cells[(start + k * n / per) % n]).collect()
+    }
+}
+
+/// The cells of a rectangle's edge (a road ring), clockwise from its top-left corner.
+pub fn ring(x0: u8, y0: u8, x1: u8, y1: u8) -> Vec<(u8, u8)> {
+    let mut v: Vec<(u8, u8)> = (x0..=x1).map(|x| (x, y0)).collect();
+    v.extend((y0 + 1..=y1).map(|y| (x1, y)));
+    v.extend((x0..x1).rev().map(|x| (x, y1)));
+    v.extend((y0 + 1..y1).rev().map(|y| (x0, y)));
+    v
 }
 
 impl OnyxDef {
@@ -501,3 +532,30 @@ pub const TEXT_FIRST: u16 = 0x7400;
 pub const TEXT_LAST: u16 = 0x7FFF;
 pub const TEXT_TABLE: u32 = 0x0861_0A38;
 
+
+#[cfg(test)]
+mod volcano_tests {
+    use super::*;
+
+    #[test]
+    fn a_ring_is_its_edge_once_round() {
+        let r = ring(11, 6, 18, 13);
+        assert_eq!(r.len(), 28);
+        assert_eq!(r[0], (11, 6));
+        let mut sorted = r.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), 28);
+        assert!(r.iter().all(|&(x, y)| x == 11 || x == 18 || y == 6 || y == 13));
+    }
+
+    #[test]
+    fn an_eruption_takes_its_share_spread_round_and_moving_on() {
+        let v = VolcanoDef::new(3, 1, 5, &ring(11, 6, 18, 13)).per_eruption(3);
+        let a = v.cells_on(3);
+        let b = v.cells_on(4);
+        assert_eq!(a.len(), 3);
+        assert_ne!(a, b);
+        assert_eq!(VolcanoDef::new(3, 1, 5, &[(1, 1), (2, 2)]).cells_on(9).len(), 2);
+    }
+}

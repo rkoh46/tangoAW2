@@ -16,7 +16,7 @@
 use mgba::core::Core;
 
 use crate::bh_campaign::{region, roster};
-use crate::campaign_model::SendRule;
+use crate::campaign_model::{SendRule, VolcanoDef};
 use crate::custom_campaign::{co, colour, unit, *};
 
 // --- Writing helpers ---------------------------------------------------------------
@@ -568,11 +568,10 @@ fn bh11() -> MissionDef {
         UnitDef::new(3, unit::INFANTRY, 2, 11),
         UnitDef::new(3, unit::INFANTRY, 3, 6),
     ];
+    // From day 3 Mount Ember erupts once a day on 3 cells of the Rim Track (the 28 cells of the road ring round it),
+    // marked a turn ahead, hitting any army's units there for 5 HP (never below 1).
+    m.volcano = Some(VolcanoDef::new(3, 1, 5, &crate::campaign_model::ring(11, 6, 18, 13)).per_eruption(3));
     m.triggers = vec![
-        // TODO(engine): from day 3 Mount Ember erupts once a day on 3 marked cells of the Rim Track (the 28 cells
-        // of the road ring round it), marked a turn ahead, hitting any army's units there for 5 HP (never below
-        // 1): hook the eruption call here (`ds_campaign_rules`' volcano) when the engine has it. Today the
-        // volcano is the map's picture and its mountains; the day 3 and day 8 scenes below play on their days.
         on_day(
             3,
             None,
