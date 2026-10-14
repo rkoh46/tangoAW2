@@ -127,7 +127,18 @@ class Ctx:
             skills=frozenset(self.skills.get(u["army"], ())),
             weather=3 if self.sandstorm else st["weather"],
             tag_firepower=self.tag_firepower(g, u["army"], p["co"]),
+            lent=self.lent_skills(g, u["army"]),
         )
+
+    def lent_skills(self, g, army):
+        """The tag skills army's partner has on (crate::tag's P_SKILLS bitmap)."""
+        if not self.ds:
+            return frozenset()
+        from . import tag
+        t = tag.partner(g.e, army)
+        if not t:
+            return frozenset()
+        return frozenset(i for i in (0x35, 0x36, 0x37) if t["skills"][(i - 0x20) // 8] >> ((i - 0x20) % 8) & 1)
 
     def tag_firepower(self, g, army, co):
         """A Tag Power under way (crate::tag): the pair's compatibility - 100,

@@ -3166,9 +3166,23 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
 `0x022F5ECC`: 12-byte records by id, {rank, name `0x7C<<24|i`, description
 `0x7B<<24|i`}; its per-CO bitmap test `0x020E7EE0`):
 
-- **Skills.** Its 43 player skills (ids 0x20..0x4A) less the three tag
-  skills (0x35..0x37: the tag pairs, see CO tag pairs, leave them out). Each takes a slot; their effects
-  stack. Names, ranks and descriptions come from the pack.
+- **Skills.** Its 43 player skills (ids 0x20..0x4A), the three tag skills
+  among them (0x35 Teamwork rank 3, 0x37 Bodyguard rank 6, 0x36 Synergy
+  rank 9; below). Each takes a slot; their effects stack. Names, ranks and
+  descriptions come from the pack; the SET SKILLS board's six rows hold
+  every rank's (test `every_rank_fits_six_rows`, ignored, with the pack).
+- **Tag skills** (Dual Strike's `UpdatePlayerSkills` `0x020E70B8`,
+  `FirepowerIncrease`, `DefenseIncreaseTagTransport`): the back CO of a tag
+  pair equips one, the front CO gets it: Teamwork +5, Synergy +8 firepower
+  (every unit), Bodyguard +10 defence (none with CO abilities off, as all
+  of Dual Strike's skill defence). A front CO's own tag skill does nothing
+  for itself; no partner, nothing; nothing is lent while a two-front
+  mission's second front is on. The partner's set is its record's
+  `P_SKILLS` (crate::tag), swapped with `ACTIVE` at a Change and a Tag
+  Power's second half, so the new front gets the new back's. Test
+  `tag_skills_lent` (`test_tag.py`: a partner's Teamwork + Synergy +13 for
+  the active CO, its own nothing, Bodyguard +10 for the defender, and after
+  a Change the new partner's set; the calculator's `Side.lent`).
 - **In battle.** Each army's skills are a bitmap in RAM (`ACTIVE`,
   `0x0203F7E0`, 6 bytes an army), cleared at every map start and set by
   the mode (`battle_start`): the player's armies get their CO's set of the
@@ -3250,7 +3264,7 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
 
 Dual Strike's tag pairs (Change and the Tag Power) in AW2's battles, with
 the Dual Strike pack. Its tag-only skills (Teamwork, Synergy, Bodyguard)
-stay out.
+are under CO skills.
 
 **What Dual Strike does** (its arm9, read statically and checked in melonDS,
 `tango-backend-melonds/examples/ds_script`):
@@ -3540,7 +3554,7 @@ stay out.
   the tag screens is AW2's.
 - **Left out**: the tag screens' bolts over the map and their drifting
   white specks (flashes of the map stand in for the bolts); the tag music
-  (AW2's power music plays); tag skills. Market Crash and other meter
+  (AW2's power music plays). Market Crash and other meter
   drains reach only the active CO. The pad bot (`aw2test/bot.py`) fires
   Tag Powers but no longer wins four missions where the computer fights as
   a pair (The Long March, Verdant Hills, Into the Woods, Pincer Strike):

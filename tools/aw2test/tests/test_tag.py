@@ -6,16 +6,18 @@ CO record +0x84); the damage is the calculator's (aw2test/damage.py, which
 adds the Tag Power's firepower); the power meters are AW2's formula, the
 partner's half of the active CO's."""
 
+import dataclasses
 import os
 
 from aw2test.harness import Skip, test
 from aw2test import dscampaign as dc
-from aw2test import paths, ram, saves, setting, tag
+from aw2test import damage, paths, ram, saves, setting, tag
 from aw2test import rom as romlib
 from aw2test.emu import Emu
 from aw2test.game import Game
 
 TEAMS = ram.TEAMS
+ACTIVE = 0x0203F7E0  # crate::co_skills::ACTIVE: 6 bytes per army
 TEAMS_CURSOR = TEAMS + 0x32
 
 
@@ -370,6 +372,76 @@ def tag_change(ctx):
     if spot and abs(spot[0] - u["x"]) + abs(spot[1] - u["y"]) <= 6:
         r = ctx.attack(g, (u["x"], u["y"]), spot, (ex, ey))
         ctx.eq(r["first"].acc >= 100, True, "an attack with Andy's numbers")
+
+
+def skill_bits(ids):
+    b = bytearray(6)
+    for i in ids:
+        b[(i - 0x20) // 8] |= 1 << ((i - 0x20) % 8)
+    return bytes(b)
+
+
+def lent_attack(ctx, g, src, target, label):
+    """An attack checked against the calculator (with the partner's tag
+    skills), then exactly: the attacker's damage before defence is acc x
+    base + luck, and the defender's total defence the calculator's."""
+    a = ctx.side(g, g.unit_at(*src))
+    d = ctx.side(g, g.unit_at(*target))
+    dist = abs(src[0] - target[0]) + abs(src[1] - target[1])
+    first = damage.battle(ctx.rules, a, d, dist)[0]
+    ctx.attack(g, src, src, target)
+    ra, rd = ctx.battle_records(g)
+    lo = damage.div(first.acc * first.base, 100)
+    ctx.check(lo <= ra["damage"] < lo + first.luck[0], f"{label}: the game's damage {ra['damage']} is acc {first.acc} x base {first.base} + luck")
+    ctx.eq(rd["defence"], first.defence, f"{label}: the target's defence")
+    return first
+
+
+@test(modes=("ds",))
+def tag_skills_lent(ctx):
+    """Teamwork, Synergy, Bodyguard (crate::co_skills): the partner's work for
+    the active CO (+5 / +8 firepower, +10 defence), the active CO's own do
+    nothing for it; after a Change the new partner's are the ones lent."""
+    T, S, B = 0x35, 0x36, 0x37
+    units = [(1, "md tank", 10, 10), (2, "tank", 11, 10), (1, "md tank", 10, 14), (2, "tank", 11, 14)]
+    m = ctx.map()
+    for u in units:
+        m.unit(*u)
+    m.terrain(11, 10, "wood").terrain(11, 14, "wood")
+    g = ctx.boot_teams(m)
+    tag.set_teams_partner(g.e, 1, "andy")
+    tag.set_teams_partner(g.e, 2, "sami")
+    g.set_teams(["max", "olaf"], {1, 2})
+    g.teams_to_rules()
+    g.set_rules()
+    g.start_battle()
+    g.wait_for_input()
+    e = g.e
+    # Max (active) has Teamwork and Synergy himself; his partner Andy has them too; Olaf's partner Sami has Bodyguard.
+    e.write(ACTIVE + 0, skill_bits([T, S]))
+    e.write(tag.rec(1) + tag.P_SKILLS, skill_bits([T, S]))
+    e.write(tag.rec(2) + tag.P_SKILLS, skill_bits([B]))
+    ctx.skills[1] = {T, S}
+    a = ctx.side(g, g.unit_at(10, 10))
+    ctx.eq(a.lent, frozenset({T, S}), "army 1 is lent Andy's Teamwork and Synergy")
+    plain = damage.battle(ctx.rules, dataclasses.replace(a, lent=frozenset()), ctx.side(g, g.unit_at(11, 10)), 1)[0]
+    first = lent_attack(ctx, g, (10, 10), (11, 10), "Max, lent Teamwork + Synergy")
+    ctx.eq(first.acc - plain.acc, 13, "the lent skills' +13 (Max's own do nothing for him)")
+    ctx.eq(ctx.side(g, g.unit_at(11, 14)).lent, frozenset({B}), "army 2 is lent Sami's Bodyguard")
+    d = ctx.side(g, g.unit_at(11, 14))
+    ctx.eq(damage.total_defence(ctx.rules, d) - damage.total_defence(ctx.rules, dataclasses.replace(d, lent=frozenset())), 10, "Bodyguard's +10")
+    # The Change: Andy in front with Max's set lent; Andy's own (Teamwork, Synergy) now in ACTIVE do nothing for him.
+    names = g.open_map_menu()["names"]
+    ctx.require("Change" in names, f"Change offered ({names})")
+    g.choose("Change", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: g.current_army() == 2, 900, step=8), "Change ends the turn")
+    ctx.eq(tag.partner(e, 1)["skills"], skill_bits([T, S]), "Max's set goes with him to the partner's place")
+    g.wait_for_input()
+    g.end_turn(human=1)
+    ctx.eq(g.player(1)["co"], romlib.co_id("andy"), "Andy is the active CO")
+    ctx.skills[1] = {T, S}
+    first = lent_attack(ctx, g, (10, 14), (11, 14), "Andy, lent Max's Teamwork + Synergy")
+    ctx.eq(first.acc, 100 + 13, "Andy's acc: his own 100 and the lent +13")
 
 
 @test(modes=("ds",))

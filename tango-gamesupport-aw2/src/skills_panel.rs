@@ -792,4 +792,18 @@ mod tests {
         // The backup in the ROM image's free space (0x08EE0000..0x08EFFFFF).
         assert!(BACKUP >= 0x08EE_0000 && BACKUP + CHARS_LEN + MAP_LEN + 0x400 <= 0x08F0_0000);
     }
+
+    /// With `TANGOAW2_DS_ROM`: every rank's skills, the tag skills with them
+    /// (Teamwork rank 3, Bodyguard 6, Synergy 9), fit the board's six rows.
+    #[test]
+    #[ignore]
+    fn every_rank_fits_six_rows() {
+        crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
+        let b = board();
+        for (col, ids) in b.iter().enumerate() {
+            assert!(ids.len() <= 6, "rank {} has {} skills", col + 1, ids.len());
+        }
+        assert!(b[2].contains(&co_skills::TEAMWORK) && b[5].contains(&co_skills::BODYGUARD) && b[8].contains(&co_skills::SYNERGY));
+        assert_eq!(b.iter().map(|c| c.len()).sum::<usize>(), 43);
+    }
 }
