@@ -31,7 +31,7 @@ pub const BATTLE_POINTS: Region = (0x0203_C170, 0x20);
 
 /// Dual Strike's History: its record (crate::history::RECORD), then its screen's state (crate::history_ui).
 pub const HISTORY: Region = (0x0203_C190, 0x1A4);
-pub const HISTORY_SCREEN: Region = (0x0203_C340, 0x20);
+pub const HISTORY_SCREEN: Region = (0x0203_C340, 0x60);
 
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
@@ -50,6 +50,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("CO screen: picks seen", CO_SCREEN_PICKS),
     ("battle points: destroyed counts", BATTLE_POINTS),
     ("History: the record", HISTORY),
+    ("History: the screen", HISTORY_SCREEN),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),
@@ -110,5 +111,6 @@ mod tests {
         assert_eq!(find("Survival").0, crate::survival::STATE);
         assert_eq!(BATTLE_POINTS, (crate::battle_points::STATE, crate::battle_points::STATE_LEN));
         assert_eq!(HISTORY, (crate::history::RECORD, crate::history::SAVED_LEN));
+        assert_eq!(HISTORY_SCREEN, (crate::history_ui::STATE, crate::history_ui::STATE_LEN));
     }
 }

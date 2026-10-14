@@ -3251,6 +3251,31 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   SKILLS screen on both screens (and what it covers put back), the Versus
   rule.
 
+## History (`history.rs`, `history_ui.rs`)
+
+Dual Strike's lifetime record and medals, with the pack.
+
+- **Record.** Dual Strike's 104 counters (`gPlayRecords` + 0x37C) in its own order, so its History table's
+  indexes read them directly: play time, turns, points earned, campaigns cleared (Normal, Hard), battles by rank,
+  CO, Super and Tag Powers, direct and indirect attacks, captures, the COs' ranks added up, funds spent, damage
+  (the value of the HP human units took off enemies, as its label says), silos, structure shots taken, spaces
+  moved, Black Cannons, minicannons, Obelisks, Crystals, pipe seams destroyed, supplies and repairs, joins, loads,
+  unloads, units moved, CO swaps, wins by HQ and by rout, defeats, units sent to the other front, Survival runs
+  and maps by kind, units bought and enemy units destroyed by type. Only human armies count. RAM `0x0203C190`
+  (a magic word, then the u32s), saved in slot 15 after the CO skills' data; a battle's end marks it to be written
+  with the next profile write. Counted at AW2's own functions (`IncrementDayCount`, `BuyUnit`, `DefeatArmy`,
+  `ApplyCaptureProgress` and the capture's end, `SiloFire_StartLaunch`, `JoinUnits`, `LoadUnitIntoTransport`,
+  `DropCargoUnit`, `CommitUnitMove*`, `ActivateCoPower`, the battle's meter charge, the structure hit step, the
+  Supply menu, the tag and two-front menu actions, `InsertBestScoreRecord`, Survival's end of a map). Left at 0:
+  ambushes (AW2's fog trap was not found); hidden: deletes and Combat mode (AW2 has neither). Funds spent are
+  units bought; spaces moved the straight distance of each move.
+- **Screen.** L on Survival's SELECT MAP opens it (`survival_ui.rs`' BG0 picture, Dual Strike's title font and
+  wallpaper): the four tabs (General, Built, Destroyed, Objects; L and R), five rows at a time (UP, DOWN) with
+  label, value and three medal slots, the medals earned of all there are, and the help line of the row or of the
+  medal under the cursor (LEFT, RIGHT); B closes it. Labels, help and thresholds are Dual Strike's (its table
+  `0x0215D6C4`, text bank 0x7A), the medal is `ohashi/res_history_medal`'s, drawn with BG palette bank 2 (the
+  game's put back when it closes).
+
 ## CO tag pairs (`tag.rs`, `tag_ui.rs`, `versus_rules.rs`)
 
 Dual Strike's tag pairs (Change and the Tag Power) in AW2's battles, with
