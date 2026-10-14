@@ -656,7 +656,10 @@ fn teams_flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
 
 // --- The CO panel on the battle map ---------------------------------------------------------
 
-const PANEL_FACE_TILE: u32 = 0x309;
+/// The partner's face: 8 tiles (256 bytes, `hud_face`) from here, in the
+/// run of free OBJ tiles at 0x309 ([`crate::two_front::free_tile_pairs`]).
+pub(crate) const PANEL_FACE_TILE: u32 = 0x309;
+pub(crate) const PANEL_FACE_TILES: u32 = 8;
 const PANEL_PAL: u32 = 5;
 /// The panel's header (64x32, OBJ tile 0, palette 7: the army's colours)
 /// and its star tiles (small: 32 empty, 33 half, 34 full; big, 16x16: 35,

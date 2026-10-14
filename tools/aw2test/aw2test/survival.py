@@ -200,7 +200,8 @@ def battle_up(e):
 
 def pick(e, row, co_steps=0):
     """Pick list row `row` (from the top), then (on a run's first map) the CO
-    screen's CO, `co_steps` down its list: the battle starts. True once the
+    screen's CO, `co_steps` down its list, and the partner the cursor moves
+    to after it: the battle starts. True once the
     battle map is up. From the second map on the screen offers the run's CO
     only."""
     for _ in range(row):
@@ -219,6 +220,13 @@ def pick(e, row, co_steps=0):
             e.press("A", 8)
             e.wait(100)
             e.press("A", 8)
+            # A run's first map picks a partner too (the CO the cursor
+            # moved to), then its OK.
+            for _ in range(3):
+                e.wait(100)
+                if not running(e, CO_SCREEN_PROC) or battle_up(e):
+                    break
+                e.press("A", 8)
             break
         e.wait(10)
     return e.wait_until(lambda: battle_up(e), 1500, step=20)

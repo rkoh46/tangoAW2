@@ -1254,7 +1254,8 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   else C. **Records** (`sub_020EAE84`): per kind, the best leftover with the
   run's two COs.
 - **COs**: picked once for the run (a tag pair in Dual Strike: the survival
-  state's +0/+1, copied into the player at every map start, `sub_020EACC4`).
+  state's +0/+1, copied into the player at every map start, `sub_020EACC4`;
+  its CO screen has the tag row, `co_select_has_tag_row`).
 - **Maps**: Dual Strike's own Survival maps, in AW2's map format (Dual Strike
   grew AW2's map header to 0xA0 bytes, overlay 0 `0x022DBDB0`, id n at n - 1;
   tiles are AW2's LZ77 blob of AW2 tile ids; units 13-byte records). Each
@@ -1294,7 +1295,9 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   cleared or lost. SELECT MAP itself is drawn as Dual Strike's course screen
   (`survival_ui.rs`, below); from the second map on, the CO screen offers
   only the run's CO (one group with that CO, as the campaign's restricted
-  CO screens build theirs: trap `0x0807C588`). B on SELECT MAP leaves
+  CO screens build theirs: trap `0x0807C588`). The first map's CO screen
+  takes a partner too, and the run plays as a tag pair on every map (see
+  CO tag pairs). B on SELECT MAP leaves
   Survival (a run in progress is given up).
 - **SELECT MAP in Dual Strike's look** (`survival_ui.rs`). Dual Strike's
   course screen (its title, the BASIC COURSE panel with the number of maps,
@@ -1374,7 +1377,10 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   the time), in AW2's proportional font, white outlined in black as the
   second front's title is, 8x16 sprites in the OBJ tiles the map leaves
   free (`two_front::free_tile_pairs`; not while a structure's heal plays in
-  them).   Out of budget, the player's army yields (`unk31`, as the map menu's Yield
+  them; with a tag pair not in `0x309..0x310`, the partner's face under the
+  CO panel, `tag_ui::PANEL_FACE_TILE`: the lines go on into the last run,
+  `0x1F9..`, as Money's longer line already did; before this the second
+  line was drawn over by the face). Out of budget, the player's army yields (`unk31`, as the map menu's Yield
   does) and loses at the game's next rules check.
 - **End of a map** (`EndOfGame_Finish`, trap `0x0803832C`): won, the map's
   cost is taken off, its score added, the next map listed; the last map
@@ -1382,15 +1388,50 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   The War Room keeps its records by `id - 0x6C`: while Survival is on its
   record readers and writer (pools `0x0808759C`, `0x08087664`, `0x08087B18`,
   `0x08087C6C`, `0x080177E4`) read a zeroed block of ours; `SetMapPlayed`
-  (`0x0803CA28`) skips Survival's ids (its bits stop at 0xBF). The map menu
-  hides Save on a Survival map (`0x0802C646`): a suspended map would come back
-  without its run. The War Room's end of a map asks its save question with
+  (`0x0803CA28`) skips Survival's ids (its bits stop at 0xBF). The War Room's end of a map asks its save question with
   the War Room's suspend slot (`sub_0803D73C(3, ..)`), which clears the
   profile's "War Room game saved" flag and deletes slot 3 when it saves; a
   Survival map asks with slot 6 instead (the prompt's "profile only", as
   `sub_0803D960` uses it; trap `0x0803D746`), so a War Room game saved
   halfway survives a Survival run (until this, the first Survival map ended
   took it away; `save_survival_keeps_war_room_suspend`).
+- **A map saved halfway** (Dual Strike saves a battle in progress, and its
+  survival state lives in its progress, so a run survives between maps and
+  a reboot). The map menu's Save writes the map to a slot of its own, **9**
+  (`suspend::SURVIVAL_SLOT`), with the run: `WriteSuspendSave(3, ..)`
+  (`sub_08016D30`, the War Room's slot) is trapped past its prologue
+  (`0x08016D3A`: the War Room's mark `0x0200C42A` as it was) and at its
+  call of the slot writer (`0x08016D8E`: the slot made 9, the mark put back
+  before the writer serializes the profile, the run in the block's tail at
+  +0xE04, where a DS mission keeps its session: "SV", version, kind,
+  Champion, maps cleared, CO, partner, out of budget, then what is left,
+  the budget, points, the map's time, the funds cap and the last map's
+  score), as the DS Campaign's own slot. The tag pair rides after the block
+  as for every suspend ("TAG2"). So a War Room game saved halfway and its
+  mark stay as they were. Save is offered (`0x0802C646`) while the write
+  leaves the two free sectors every later save needs (`survival_save_fits`:
+  with every other slot in use it does not, and Save is hidden as on a
+  linked game). **Continue**: when Survival opens and AW2's directory lists
+  slot 9, SELECT MAP shows the run saved halfway (its panel between maps:
+  maps cleared, what is left, points, the next map) over the courses' list,
+  with "A Continue B Back START New run". A gives the game B (SELECT MAP
+  back to Select Mode); once the wheel stands still its input loop
+  (`0x08081D30`) is replaced, for that frame, by what its A on a box's
+  Continue does (mode 4, the War Room's Continue, position and row kept,
+  the main menu locked, `Proc_Start(0x08616A68, wheel)`); the dispatcher's
+  `MainMenuWarRoom_Continue` (`0x0803B904`) is then trapped to tail-call
+  AW2's resume of slot 9 (`sub_08017688(9)`) in place of slot 3's. When the
+  block is applied (`0x08016DD0`) the run comes back from the tail (Survival
+  on, the map being played), the skills its armies have on are set again
+  (`co_skills::battle_start`, a map start's), then the pairs. START gives
+  the saved run up (the slot leaves AW2's directory, written with the next
+  save), as does a new run's first map; the map's end drops it too (the end
+  of map's save writes that). Tests: `save_survival_suspend_resume` (the
+  second map of a paired run saved and continued after a reboot: the same
+  battle, run and pair with its meter; won, the run goes on and the slot is
+  gone; START and a new run), `save_survival_keeps_war_room_suspend` (both
+  saved halfway, the War Room's slot and mark untouched),
+  `save_every_slot_at_once` (thirteen slots).
 - **Records** in the profile the game saves (so the save's own checksum covers
   them): `0x0200C435..=0x0200C43F`, the eleven bytes between
   `0x0200C420`'s +0x14 and +0x20 that no code of the game reads or writes
@@ -1401,7 +1442,7 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   records live" below.
 - **RAM**: `0x0203FA00..0x0203FA3F` (the run: on, kind, maps cleared, phase,
   left, budget, points, the map's time, the funds cap, CO, the menu's pick,
-  bonus, rank, `+0x21` the Champion course flag), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
+  bonus, rank, `+0x21` the Champion course flag, `+0x34` the tag partner, `+0x35..+0x38` a map saved halfway: shown, Continue's step, the War Room's mark while saving, Continue's B every other frame), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
   reads). **ROM**: `0x08E00000..0x08E05BFF` (map table), `0x08E08000..`
   (map data, 0x800 per map), `0x08E30000..` (strings), `0x08E40000..0x08E40FFF`
   (the wheel's data and labels); text ids 0x7172.. (pointers at `0x0862D000`).
@@ -1445,10 +1486,18 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
 
 **Compromises.**
 
-- AW2 has no tag battles: the run keeps one CO (the one picked for the first
-  map) where Dual Strike keeps a pair; the record keeps that CO.
-- A run cannot be suspended mid-map, and turning the console off loses a run
-  in progress (Dual Strike saves its survival state); records are saved.
+- The run's tag pair comes back at every map start, but from the second
+  map the CO screen shows only the CO in front (the War Room's screen of
+  one pick), where Dual Strike shows the pair. The record keeps the CO in
+  front only: the profile's eleven bytes have 4 bits to spare, not the 7 of
+  a second CO (Dual Strike keeps both).
+- A run is kept through a reboot only by a map saved halfway: turning the
+  console off between maps loses it (Dual Strike keeps its survival state
+  in its progress), and Continue goes back through Select Mode (a moment of
+  the wheel) because AW2's resume is started by Select Mode's dispatcher.
+  With every other slot in use the Survival map's Save is hidden (Flash has
+  sixteen sectors). A map continued counts the frames of its opening on the
+  player's turn as AW2 does at a map start (Time).
 - The War Room's CO screen colours the player's army by its CO's country and
   moves a computer army off that colour, as it does for its own maps; two
   armies Dual Strike gives one colour (Single File Isle's allies) get two.
@@ -2237,11 +2286,13 @@ here (a mission saved halfway on two fronts takes two). The layout:
 | 15 | the DS record and the CO skills (global to every mode) | as before |
 
 AW2 uses 0 (profile), 2..4 (suspends), 5..7 (design maps), 8 (the design
-map a suspended Versus game is on). With every slot in use at once (twelve
-slots, `save_every_slot_at_once`) twelve sectors are held and four are free;
-a write needs one free sector for the slot's new copy (two for a two-front
-mission) and one for the new profile, so two-front missions saved halfway in
-both campaigns at once leave exactly the two a write of either needs.
+map a suspended Versus game is on); Survival 9 (a map saved halfway). With
+every slot in use at once (thirteen slots, `save_every_slot_at_once`)
+thirteen sectors are held and three are free; a write needs one free sector
+for the slot's new copy (two for a two-front mission) and one for the new
+profile, so two-front missions saved halfway in both campaigns at once leave
+exactly the two a write of either needs (Survival's Save is offered only
+while its own write leaves those two: `suspend::survival_save_fits`).
 The BH Campaign never writes slots 2..8, 14, 15's progress and records, or
 the profile but AW2's counters and the Battle Maps points a win earns;
 `stage_slot` (the DS slot, written when the skills change in any mode) stages
@@ -2252,7 +2303,7 @@ reads the rest as zeros) and `skills_panel`'s RAM moved to `0x0203E3F0` (Crumb: 
 Tests: `save_bh_campaign_beside_aw2_and_ds` (record, win, mission saved
 halfway and continued, AW2's and the DS Campaign's saved missions and the
 DS record byte for byte as they were, the profile as expected),
-`save_every_slot_at_once` (twelve slots).
+`save_every_slot_at_once` (thirteen slots).
 
 **Prologue and credits.** Same mechanism as the DS Campaign's: the prologue
 is a script run from the session's copy of AW2's world map script before the
@@ -2297,7 +2348,7 @@ texts; an error names the mission.
 | `recruits`, `needs`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked; what opens it **by mission key** (`Needs::Start`, `All(vec!["bh01"])`, `Any(..)`, `Bonds(..)`: those won and every hidden bond earned); its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
 | five armies | `armies` is 2..=5. In a **five-army mission the player is army 5, Black Hole** (the fifth army of `five.rs`; its colour must be Black Hole's), armies 1..4 are the header's four, units name armies 1..5, a map has five HQs (`1`..`5`); the player's CO is `Fixed` or `Pair` (a tag pair; no pick yet). The patched game (`five::set_campaign`, switched on at `ResetRulesAfterCampaignMap`) is on for the battle only; no mid-mission Save (as a Versus five-army game); no second front. `five.rs`' patched unit ids (51 an army) are handled by `custom_campaign`'s helpers (`unit_by_name`, `units_of`) | tested (`bh_campaign_five_armies`) |
 | two fronts: own rules | `front2_triggers` / `front2_victory` on a `MissionDef`: the second front is compiled as a mission of its own (`compile_second` builds a synthetic `MissionDef` with the front's map, deployment, structures and these triggers), so its rules run while it is on the screen, on its own units; **a named unit of `front2.units` is the second front's** (`custom_campaign::SECOND_FRONT` flag on its latch bit: it is judged only while its front is live, so the other front's units in the same slots never trip it); `Cond::UnitGone("name")` is the "unit destroyed" condition for both fronts (the death latch keeps it true). The second front is played by the computer, whose actions do not run the after-action lists: use `When::TurnStart` triggers there. `Action::Win` on it wins the second front (its `front2_victory` scene) | tested (`bh_campaign_second_front_has_its_own_rules`) |
-| pair pick | with Sonja (a Yellow Comet CO) in the roster the second pick could not reach the Black Hole tab: `tag::co_screen_partners` kept a DS campaign's partner on the leader's country tab; it now runs for the DS Campaign only. Every roster CO is a partner of every other; the one exception of the game's own rule: a Yellow Comet CO (Sonja) picked first does not lead a Black Hole army (the other becomes the lead) | tested (`bh_campaign_pair_pick_matches_every_partner`, 30 pairs by the pad) |
+| pair pick | with Sonja (a Yellow Comet CO) in the roster the second pick could not reach the Black Hole tab: `tag::co_screen_partners` kept a DS campaign's partner on the leader's country tab; it now runs for the DS Campaign only (and Survival's first map, whose War Room screen keeps its tabs). Every roster CO is a partner of every other; the one exception of the game's own rule: a Yellow Comet CO (Sonja) picked first does not lead a Black Hole army (the other becomes the lead) | tested (`bh_campaign_pair_pick_matches_every_partner`, 30 pairs by the pad) |
 | marches | `MissionDef::marches` (`MarchDef::new(name, path, cells_a_day)` or `MarchDef::speed(name, path, move_points)`, `.from(day)`): a named unit (deployed, or spawned with a name) walks its fixed path on its own army's turn (the computer's dispatch), once a day, stopping at the first occupied cell (or the first cell it cannot afford: AW2's movement chart for its type, as the flood fill charges it) and trying again the next day. It stands on the path; the next day's start is its record's cell. The last day each march moved is a byte of the custom campaign's side table (`custom_campaign::SIDE`, `0x0203F3A0..0x0203F400`, cleared at a battle's first day: the unit record has no byte free for every type, +7/+8 are an APC's cargo) | tested (`bh_campaign_march_named_spawn_and_jammed_cannon`) |
 | driven marches | `MarchDef::driven(name, path, 1)`: the computer moves the unit itself with AW2's own role code (role byte +0x0B, which every unit has as 1: advance on the enemy HQ; hold is +9), so it keeps its real speed, pathfinding (other teams' units in the way), the stop in front of a blocker and the normal move animation; only the place the role code goes to (`sub_08058F90`, the enemy HQ; `custom_campaign::goal_hook`, `0x0805ED2A`) is replaced by the path's last cell. The unit must not hold (+9 0). AW2 has no per-unit target-cell field: roles 0/1 (`0x0805ECD9`/`0x0805ECDD`) share the HQ place, 2, 3, 4, 5 and 6 pick targets of their own (`0x08059A0C`, `0x08059C00`, `0x08059C60`, `0x08059E3C`, `0x08059F24`/`0x0805A008`: nearest enemies and properties), 7 stays by the HQ | tested (the Recon of `bh_campaign_march_named_spawn_and_jammed_cannon`) |
 | held foot soldiers | AW2's role 0 (the deployment's AI byte 0, record +0x0B) does nothing in the role code, but Infantry and Mechs still walk off to capture neutral cities. `custom_campaign::ai_unit` (called from `unit_actions::behaviour_row`, the CPU's per-unit entry `0x0805D496`) skips such a soldier (AW2's own skip of a unit that has acted, `0x0805D4A6`) unless an enemy stands next to it (then AW2 plays it) or its army has given up; no fuel trick is needed (zeroing the fuel does not stop it). A unit a scripted march moves is skipped too (an APC would load soldiers and leave its route). `UnitDef::stand()` is role 0 for a spawned unit too (the default role is 1: for the enemy HQ) | tested (`bh_campaign_march_named_spawn_and_jammed_cannon`) |
@@ -3500,6 +3551,20 @@ are under CO skills.
   menu's pool is left to `two_front` unless a pair needs ours, and
   `SetArmyCoIdsFromList`'s trap is `two_front`'s, which calls
   `tag::set_cos` first.
+- **Survival** (Dual Strike's Survival CO screen has its tag row): the
+  first map's CO screen (the War Room's) takes two picks for army 1,
+  the run's CO and its partner (`survival::picks_partner`: Survival on,
+  no run under way, the map an entry), through the same pick count and
+  `SetArmyCoIdsFromList` traps as the DS Campaign's. The War Room's
+  screen lets every pick change the country tab (its `0x030059C0` words
+  are all set): the partner's pick keeps that and only opens every
+  country, and its badge is the War Room's ("1P" at tile 848, not the
+  campaigns' 836). The partner is kept with the run (`0x0203FA34`, 0xFF
+  none) and every map start asks for the pair again (`tag::set_pending`
+  from `survival::map_start`, which runs before `tag::map_start`): the
+  CO in front, the partner behind, both meters empty, as Dual Strike's
+  `sub_020EACC4`. From the second map the CO screen offers the run's CO
+  alone, as before; the pair comes back at the map start.
 - **API** (`tag.rs`):
   `tag::form_pair(core, army, co, charge)` gives an army a partner (its
   active CO stays; `charge` the partner's meter in AW2's units; its
@@ -3698,7 +3763,8 @@ kept fog on for good once the rain stopped. The sandstorm and the map's
 look are in the weather block (`0x03004490` +3), which AW2 saves itself;
 Com Towers are counted on the map. Tag pairs and the Versus rule Skills
 ride after the block (+0xE28, "TAG2", see CO tag pairs).
-Without the pack nothing is written.
+A Survival map is saved in slot 9 with its run in the tail (+0xE04, "SV",
+see Survival). Without the pack nothing is written.
 Tests: `save_versus_suspend_keeps_ex_machina_stun`,
 `save_versus_suspend_in_rain_keeps_fog_rule`.
 
@@ -3721,12 +3787,13 @@ from the directory.
 | 2 / 3 / 4 | Campaign / War Room / Versus game saved halfway, 0xE28 (tangoAW2's tail: `suspend.rs`) | map menu Save |
 | 5..7 | design maps 1..3, 0x724 (tangoAW2: +0x4C4 the five-army mark, +0x723 the look) | Design Room Save |
 | 8 | the design map a saved Versus game is on (its current terrain and units) | map menu Save on a design map |
+| 9 | a Survival map saved halfway (tangoAW2): the block, the run in its tail ("SV"), the pairs after it | map menu Save on a Survival map |
 | 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14) | map menu Save in a BH mission |
 | 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign") | BH Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state follow the block (two sectors) | map menu Save in a DS mission |
 | 15 | the DS Campaign's record, 0x20 (tangoAW2), its records, the CO skills' data and the History's record (`history.rs`, 0x1A4) | DS Campaign New, mission start, after a win, a skills change, after a profile write once a battle has ended (EXP, the History) |
 
-Twelve slots at most (AW2's ten and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
+Thirteen slots at most (AW2's ten, Survival's and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
 delete for one map: saving over a slot replaces it. The Battle Maps points
 (options +0x00, +0x04) grow with every map won, a DS mission's and a
 Survival map's too (as the War Room's). A netplay match runs

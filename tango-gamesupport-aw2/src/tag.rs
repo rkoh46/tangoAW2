@@ -436,6 +436,16 @@ pub fn set_pending(core: &mut Core, army: u32, co: u8, partner: u8) {
     }
 }
 
+/// The pair asked for army `army` at the next map start: (CO, partner).
+pub fn pending(core: &Core, army: u32) -> Option<(u8, u8)> {
+    if !valid_army(army) {
+        return None;
+    }
+    let co = core.raw_read_8(PENDING + 2 * (army - 1), -1);
+    let b = core.raw_read_8(PENDING + 2 * (army - 1) + 1, -1);
+    (co != NONE && b != NONE).then_some((co, b))
+}
+
 fn clear_pending(core: &mut Core) {
     core.raw_write_range(PENDING, -1, &[NONE; 2 * ARMIES as usize]);
 }
@@ -546,7 +556,12 @@ pub fn map_start(core: &mut Core) {
 /// player picks both): (the armies picked for, the partners picked). AW2's
 /// CO screen has room for four picks, so with three armies only the first
 /// gets a partner. A mission with a second front is left to its own flow.
+/// Survival's first map: army 1 and its partner
+/// ([`crate::survival::picks_partner`]).
 pub(crate) fn ds_partner_picks(core: &Core) -> (u32, u32) {
+    if crate::survival::picks_partner(core) {
+        return (1, 1);
+    }
     let Some(m) = crate::ds_campaign::mission_info(core) else { return (0, 0) };
     if m.two_front.is_some() {
         return (0, 0);
@@ -557,6 +572,12 @@ pub(crate) fn ds_partner_picks(core: &Core) -> (u32, u32) {
     (n, pairs.min(4 - n))
 }
 
+/// A CO screen whose picks may include partners: the DS Campaign's, and
+/// Survival's first map's.
+fn partner_screen(core: &Core) -> bool {
+    crate::ds_campaign::active(core) || crate::survival::picks_partner(core)
+}
+
 /// `sub_0803BD14` (the CO screen's count of picks: the leading player armies
 /// of the map's header) at its return (r3): the partners are picked after
 /// the armies' COs, on the same screen. Not for `SetArmyCoIdsFromList`
@@ -564,7 +585,7 @@ pub(crate) fn ds_partner_picks(core: &Core) -> (u32, u32) {
 const PICK_COUNT: u32 = 0x0803_BD42;
 const SET_COS: u32 = 0x0803_BCDC;
 fn pick_count(core: &mut Core) {
-    if !is_on(core) || !crate::ds_campaign::active(core) {
+    if !is_on(core) || !partner_screen(core) {
         return;
     }
     let lr = core.gba().cpu().gpr(14) as u32 & !1;
@@ -583,7 +604,7 @@ fn pick_count(core: &mut Core) {
 /// partners (pending until the map starts). Called from crate::two_front's
 /// trap there (one trap an address).
 pub fn set_cos(core: &mut Core) {
-    if !is_on(core) || !crate::ds_campaign::active(core) {
+    if !is_on(core) || !partner_screen(core) {
         return;
     }
     let (n, k) = ds_partner_picks(core);
@@ -633,7 +654,7 @@ const PROC_POOL: (u32, u32) = (0x0200_D610, 0x0200_E418);
 fn co_screen_partners(core: &mut Core) {
     // (a custom campaign's partner may be of any country: its roster mixes
     // them, and its screen keeps every tab open, crate::ds_campaign)
-    if !crate::ds_campaign::active(core) || !crate::ds_campaign::is_ds(core) {
+    if !(crate::ds_campaign::active(core) && crate::ds_campaign::is_ds(core)) && !crate::survival::picks_partner(core) {
         return;
     }
     let Some(proc) = (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT) else {
@@ -643,9 +664,14 @@ fn co_screen_partners(core: &mut Core) {
     if k == 0 {
         return;
     }
-    for i in n..(n + k).min(5) {
-        if core.raw_read_32(PICK_LOCKS + 4 * i, -1) != 0 {
-            core.raw_write_32(PICK_LOCKS + 4 * i, -1, 0);
+    // (Survival's screen is the War Room's, whose words are all set: they
+    // also let UP and DOWN change the country tab, which the partner's pick
+    // keeps; its pick is the last, so it locks nothing either way)
+    if !crate::survival::picks_partner(core) {
+        for i in n..(n + k).min(5) {
+            if core.raw_read_32(PICK_LOCKS + 4 * i, -1) != 0 {
+                core.raw_write_32(PICK_LOCKS + 4 * i, -1, 0);
+            }
         }
     }
     if core.raw_read_16(proc + 0x64, -1) as u32 >= n {
@@ -669,8 +695,11 @@ const BOX_EMBLEM_Y: u16 = 104;
 const BOX_EMBLEM_PAL: u16 = 12;
 const BADGE_PAL: u16 = 13;
 const BADGE_TILE: u16 = 836;
+/// The War Room's screen (Survival's) has its badges from tile 848 (read
+/// from its OAM: "1P" 848, "2P" 852; its 836 and 840 are other sprites).
+const WAR_ROOM_BADGE_TILE: u16 = 848;
 pub fn co_screen_flush(core: &mut Core, start: u32, at: u32) {
-    if !is_on(core) || !crate::ds_campaign::active(core) {
+    if !is_on(core) || !partner_screen(core) {
         return;
     }
     let Some(proc) = (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT) else {
@@ -701,7 +730,8 @@ pub fn co_screen_flush(core: &mut Core, start: u32, at: u32) {
     }
     let pick = core.raw_read_16(proc + 0x64, -1) as u32;
     if (n..n + k).contains(&pick) {
-        let (from, to) = (BADGE_TILE + 4 * pick as u16, BADGE_TILE + 4 * (pick - n) as u16);
+        let base = if crate::survival::picks_partner(core) { WAR_ROOM_BADGE_TILE } else { BADGE_TILE };
+        let (from, to) = (base + 4 * pick as u16, base + 4 * (pick - n) as u16);
         let mut e = start;
         while e + 8 <= at {
             let (a0, a1, a2) = (core.raw_read_16(e, -1), core.raw_read_16(e + 2, -1), core.raw_read_16(e + 4, -1));

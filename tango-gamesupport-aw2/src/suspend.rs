@@ -35,6 +35,12 @@
 //! slot is dropped from the directory (AW2's delete, `sub_0801ABF8`, without
 //! its write: the next save writes it) when the mission ends and on a new
 //! DS Campaign.
+//!
+//! **A Survival map saved halfway** goes to [`SURVIVAL_SLOT`] the same way
+//! (the War Room's slot 3 and its mark left alone), the run in the tail
+//! where a DS mission keeps its session ([`SV_MARK`]); Survival's Continue
+//! resumes it through the War Room's Continue handler (trapped:
+//! [`WAR_ROOM_CONTINUE`]) and the run comes back when the block is applied.
 
 use mgba::core::Core;
 
@@ -294,15 +300,139 @@ pub fn drop_mid(core: &mut Core, slot: u8) {
     }
 }
 
+// --- A Survival map saved halfway ------------------------------------------------
+
+/// The Flash slot of a Survival map saved halfway (tangoAW2's; 9 was free).
+/// The War Room's map menu saves in slot 3 (`sub_08016D04(2)`); a Survival
+/// map is saved here instead, so a War Room game saved halfway and its mark
+/// (`0x0200C42A`) are kept, as the DS Campaign's [`DS_SLOT`] keeps AW2's.
+pub const SURVIVAL_SLOT: u8 = 9;
+const WAR_ROOM_SLOT: u32 = 3;
+/// AW2's War Room suspend mark in the profile (`sub_08016C9C(3)`).
+const WAR_ROOM_MARK: u32 = 0x0200_C42A;
+/// The run in the block's tail, where a DS mission keeps its session (the
+/// two never run together): +0 [`SV_MARK`], +2 version, +3 kind, +4 the
+/// Champion course, +5 maps cleared, +6 the CO, +7 its partner, +8 out of
+/// budget, +0x0C what is left, +0x10 the budget, +0x14 points, +0x18 the
+/// map's time, +0x1C the funds cap, +0x20 the last map's score (u16).
+const SV_AT: u32 = DS_AT;
+const SV_MARK: u16 = 0x5653; // "SV"
+pub const SV_LEN: usize = 0x24;
+
+/// The run's fields as the block's tail keeps them
+/// ([`crate::survival::saved_run`] / [`crate::survival::restore_run`]).
+pub type SurvivalRun = [u8; SV_LEN];
+
+/// The Survival map saved halfway, read from Flash: the run's tail (its
+/// mark checked), if AW2's directory lists the slot.
+pub fn survival_saved(core: &Core) -> Option<SurvivalRun> {
+    let at = FLASH + 0x1000 * mid_sector(core, SURVIVAL_SLOT)? + 0x52 + (SV_AT - BLOCK);
+    let mut b = [0u8; SV_LEN];
+    // (bytes: the tail is not word-aligned in Flash)
+    for (k, v) in b.iter_mut().enumerate() {
+        *v = core.raw_read_8(at + k as u32, -1);
+    }
+    (u16::from_le_bytes([b[0], b[1]]) == SV_MARK && b[2] == VERSION).then_some(b)
+}
+
+/// Flash sectors a write needs free: the slot's new copy and the new
+/// profile (AW2's writer never reuses the old copies' sectors).
+const WRITE_NEEDS: usize = 2;
+
+/// Whether a Survival map can be saved now: the slot's write fits, and
+/// after it every one-sector save still has the two free sectors it needs
+/// (with every other slot in use, docs/AW2.md "Saves", the room left is
+/// exactly that).
+pub fn survival_save_fits(core: &Core) -> bool {
+    let free = (0..16).filter(|&i| core.raw_read_8(DIRECTORY + i, -1) == 0xFF).count();
+    let held = (0..16).any(|i| core.raw_read_8(DIRECTORY + i, -1) == SURVIVAL_SLOT);
+    let after = if held { free } else { free.saturating_sub(1) };
+    free >= WRITE_NEEDS && after >= WRITE_NEEDS
+}
+
+/// While a Survival map is being saved: 0x80 | the War Room's mark as it
+/// was (Survival's own byte, crate::survival::SAVING).
+fn survival_save_start(core: &mut Core) {
+    if !crate::survival::playing(core) || core.gba().cpu().gpr(4) as u32 != WAR_ROOM_SLOT {
+        return;
+    }
+    let mark = core.raw_read_8(WAR_ROOM_MARK, -1);
+    core.raw_write_8(crate::survival::SAVING, -1, 0x80 | mark);
+}
+
+/// At the slot writer's call: the slot made [`SURVIVAL_SLOT`], the War
+/// Room's mark put back (before the writer serializes the profile), the run
+/// in the tail.
+fn survival_save_write(core: &mut Core) {
+    let saving = core.raw_read_8(crate::survival::SAVING, -1);
+    if saving & 0x80 == 0 {
+        return;
+    }
+    core.raw_write_8(crate::survival::SAVING, -1, 0);
+    core.raw_write_8(WAR_ROOM_MARK, -1, saving & 0x7F);
+    let mut b = crate::survival::saved_run(core);
+    b[0..2].copy_from_slice(&SV_MARK.to_le_bytes());
+    b[2] = VERSION;
+    core.raw_write_range(SV_AT, -1, &b);
+    core.gba_mut().cpu_mut().set_gpr(0, SURVIVAL_SLOT as i32);
+}
+
+/// The block just applied by Survival's Continue
+/// ([`crate::survival::resuming`]): the run back, the skills its armies had
+/// on (a map start sets them; a Continue has none), before the tag pairs
+/// ([`applied`]) give the partner its own.
+fn applied_survival(core: &mut Core) {
+    if !crate::survival::resuming(core) {
+        return;
+    }
+    let mut b = [0u8; SV_LEN];
+    core.raw_read_range(SV_AT, -1, &mut b);
+    if u16::from_le_bytes([b[0], b[1]]) != SV_MARK {
+        return;
+    }
+    crate::survival::restore_run(core, &b);
+    // Read once: a War Room game saved later in the same buffer is not one.
+    core.raw_write_16(SV_AT, -1, 0);
+    crate::co_skills::clear(core);
+    crate::co_skills::battle_start(core);
+}
+
+/// Survival's Continue (`MainMenuWarRoom_Continue`'s first instruction,
+/// the mode its pick stores: [`crate::survival`]): AW2's own resume of
+/// [`SURVIVAL_SLOT`] in place of the War Room's slot 3, tail-called (it
+/// returns to the mode dispatcher).
+pub const WAR_ROOM_CONTINUE: u32 = 0x0803_B904;
+/// `StartWarRoom` (mode 5's handler): Survival's SELECT MAP when its slot
+/// has gone.
+const WAR_ROOM_NEW: u32 = 0x0803_BA00;
+fn war_room_continue(core: &mut Core) {
+    let Some(resume) = crate::survival::continue_now(core) else { return };
+    let cpu = core.gba_mut().cpu_mut();
+    if resume {
+        cpu.set_gpr(0, SURVIVAL_SLOT as i32);
+        cpu.set_thumb_pc(RESUME);
+    } else {
+        cpu.set_thumb_pc(WAR_ROOM_NEW);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (CAPTURED, Box::new(captured)),
         (APPLIED, Box::new(|core: &mut Core| {
+            applied_survival(core);
             applied(core);
             applied_ds(core);
         })),
-        (SAVE_START, Box::new(save_start)),
-        (SAVE_WRITE, Box::new(save_write)),
+        (SAVE_START, Box::new(|core: &mut Core| {
+            save_start(core);
+            survival_save_start(core);
+        })),
+        (SAVE_WRITE, Box::new(|core: &mut Core| {
+            save_write(core);
+            survival_save_write(core);
+        })),
+        (WAR_ROOM_CONTINUE, Box::new(war_room_continue)),
     ]
 }
 
@@ -314,6 +444,7 @@ mod tests {
     fn tail_fits_the_block() {
         assert!(TAIL + TAIL_LEN <= BLOCK + BLOCK_LEN);
         assert!(DS_AT + DS_LEN <= BLOCK + BLOCK_LEN);
+        assert!(SV_AT + SV_LEN as u32 <= BLOCK + BLOCK_LEN);
         // The longer write still fits one Flash sector (payload from +0x52,
         // the profile's directory from +0xFEF).
         assert!(0x52 + BLOCK_LEN + TAG_LEN <= 0xFEF);
