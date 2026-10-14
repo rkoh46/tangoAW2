@@ -921,6 +921,25 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
             return (vec![Card { colour, main: plate(0), partner: Some(plate(1)) }], active, flags);
         }
     }
+    // Survival's first map: one card, the run's CO on its first plate and its partner on the second (Dual Strike's
+    // Survival CO screen has the tag row); its colour the CO's country, as the War Room's.
+    if crate::survival::picks_partner(core) {
+        let colour = country(core, if done == 0 { cur } else { picks[0] });
+        for (j, &co) in picks.iter().enumerate().take(2) {
+            flags.push((colour, co, j as u8 + 1));
+        }
+        let plate = |idx: usize| -> Slot {
+            if idx < done {
+                pic(picks[idx])
+            } else if idx == done {
+                pic(cur)
+            } else {
+                Slot { name: None }
+            }
+        };
+        let active = (done < 2).then_some((0, done == 1));
+        return (vec![Card { colour, main: plate(0), partner: Some(plate(1)) }], active, flags);
+    }
     // The War Room, AW2's campaign: one army, one CO; its colour its CO's country.
     let co = if done > 0 { picks[0] } else { cur };
     let colour = country(core, if done == 0 { cur } else { co });

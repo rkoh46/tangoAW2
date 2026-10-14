@@ -1189,7 +1189,8 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   else C. **Records** (`sub_020EAE84`): per kind, the best leftover with the
   run's two COs.
 - **COs**: picked once for the run (a tag pair in Dual Strike: the survival
-  state's +0/+1, copied into the player at every map start, `sub_020EACC4`).
+  state's +0/+1, copied into the player at every map start, `sub_020EACC4`;
+  its CO screen has the tag row, `co_select_has_tag_row`).
 - **Maps**: Dual Strike's own Survival maps, in AW2's map format (Dual Strike
   grew AW2's map header to 0xA0 bytes, overlay 0 `0x022DBDB0`, id n at n - 1;
   tiles are AW2's LZ77 blob of AW2 tile ids; units 13-byte records). Each
@@ -1229,7 +1230,9 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   cleared or lost. SELECT MAP itself is drawn as Dual Strike's course screen
   (`survival_ui.rs`, below); from the second map on, the CO screen offers
   only the run's CO (one group with that CO, as the campaign's restricted
-  CO screens build theirs: trap `0x0807C588`). B on SELECT MAP leaves
+  CO screens build theirs: trap `0x0807C588`). The first map's CO screen
+  takes a partner too, and the run plays as a tag pair on every map (see
+  CO tag pairs). B on SELECT MAP leaves
   Survival (a run in progress is given up).
 - **SELECT MAP in Dual Strike's look** (`survival_ui.rs`). Dual Strike's
   course screen (its title, the BASIC COURSE panel with the number of maps,
@@ -1336,7 +1339,7 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   records live" below.
 - **RAM**: `0x0203FA00..0x0203FA3F` (the run: on, kind, maps cleared, phase,
   left, budget, points, the map's time, the funds cap, CO, the menu's pick,
-  bonus, rank, `+0x21` the Champion course flag), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
+  bonus, rank, `+0x21` the Champion course flag, `+0x34` the tag partner), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
   reads). **ROM**: `0x08E00000..0x08E05BFF` (map table), `0x08E08000..`
   (map data, 0x800 per map), `0x08E30000..` (strings), `0x08E40000..0x08E40FFF`
   (the wheel's data and labels); text ids 0x7172.. (pointers at `0x0862D000`).
@@ -1380,8 +1383,11 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
 
 **Compromises.**
 
-- AW2 has no tag battles: the run keeps one CO (the one picked for the first
-  map) where Dual Strike keeps a pair; the record keeps that CO.
+- The run's tag pair comes back at every map start, but from the second
+  map the CO screen shows only the CO in front (the War Room's screen of
+  one pick), where Dual Strike shows the pair. The record keeps the CO in
+  front only: the profile's eleven bytes have 4 bits to spare, not the 7 of
+  a second CO (Dual Strike keeps both).
 - A run cannot be suspended mid-map, and turning the console off loses a run
   in progress (Dual Strike saves its survival state); records are saved.
 - The War Room's CO screen colours the player's army by its CO's country and
@@ -2232,7 +2238,7 @@ texts; an error names the mission.
 | `recruits`, `needs`, `flag`, `style`, `stars`, `pool`, `setup` | roster entries unlocked; what opens it **by mission key** (`Needs::Start`, `All(vec!["bh01"])`, `Any(..)`, `Bonds(..)`: those won and every hidden bond earned); its world-map place, marker, LEVEL stars, the CO pool, the Setup phase (scout, then Deploy) when the player picks | tested |
 | five armies | `armies` is 2..=5. In a **five-army mission the player is army 5, Black Hole** (the fifth army of `five.rs`; its colour must be Black Hole's), armies 1..4 are the header's four, units name armies 1..5, a map has five HQs (`1`..`5`); the player's CO is `Fixed` or `Pair` (a tag pair; no pick yet). The patched game (`five::set_campaign`, switched on at `ResetRulesAfterCampaignMap`) is on for the battle only; no mid-mission Save (as a Versus five-army game); no second front. `five.rs`' patched unit ids (51 an army) are handled by `custom_campaign`'s helpers (`unit_by_name`, `units_of`) | tested (`bh_campaign_five_armies`) |
 | two fronts: own rules | `front2_triggers` / `front2_victory` on a `MissionDef`: the second front is compiled as a mission of its own (`compile_second` builds a synthetic `MissionDef` with the front's map, deployment, structures and these triggers), so its rules run while it is on the screen, on its own units; **a named unit of `front2.units` is the second front's** (`custom_campaign::SECOND_FRONT` flag on its latch bit: it is judged only while its front is live, so the other front's units in the same slots never trip it); `Cond::UnitGone("name")` is the "unit destroyed" condition for both fronts (the death latch keeps it true). The second front is played by the computer, whose actions do not run the after-action lists: use `When::TurnStart` triggers there. `Action::Win` on it wins the second front (its `front2_victory` scene) | tested (`bh_campaign_second_front_has_its_own_rules`) |
-| pair pick | with Sonja (a Yellow Comet CO) in the roster the second pick could not reach the Black Hole tab: `tag::co_screen_partners` kept a DS campaign's partner on the leader's country tab; it now runs for the DS Campaign only. Every roster CO is a partner of every other; the one exception of the game's own rule: a Yellow Comet CO (Sonja) picked first does not lead a Black Hole army (the other becomes the lead) | tested (`bh_campaign_pair_pick_matches_every_partner`, 30 pairs by the pad) |
+| pair pick | with Sonja (a Yellow Comet CO) in the roster the second pick could not reach the Black Hole tab: `tag::co_screen_partners` kept a DS campaign's partner on the leader's country tab; it now runs for the DS Campaign only (and Survival's first map, whose War Room screen keeps its tabs). Every roster CO is a partner of every other; the one exception of the game's own rule: a Yellow Comet CO (Sonja) picked first does not lead a Black Hole army (the other becomes the lead) | tested (`bh_campaign_pair_pick_matches_every_partner`, 30 pairs by the pad) |
 | marches | `MissionDef::marches` (`MarchDef::new(name, path, cells_a_day)` or `MarchDef::speed(name, path, move_points)`, `.from(day)`): a named unit (deployed, or spawned with a name) walks its fixed path on its own army's turn (the computer's dispatch), once a day, stopping at the first occupied cell (or the first cell it cannot afford: AW2's movement chart for its type, as the flood fill charges it) and trying again the next day. It stands on the path; the next day's start is its record's cell. The last day each march moved is a byte of the custom campaign's side table (`custom_campaign::SIDE`, `0x0203F3A0..0x0203F400`, cleared at a battle's first day: the unit record has no byte free for every type, +7/+8 are an APC's cargo) | tested (`bh_campaign_march_named_spawn_and_jammed_cannon`) |
 | driven marches | `MarchDef::driven(name, path, 1)`: the computer moves the unit itself with AW2's own role code (role byte +0x0B, which every unit has as 1: advance on the enemy HQ; hold is +9), so it keeps its real speed, pathfinding (other teams' units in the way), the stop in front of a blocker and the normal move animation; only the place the role code goes to (`sub_08058F90`, the enemy HQ; `custom_campaign::goal_hook`, `0x0805ED2A`) is replaced by the path's last cell. The unit must not hold (+9 0). AW2 has no per-unit target-cell field: roles 0/1 (`0x0805ECD9`/`0x0805ECDD`) share the HQ place, 2, 3, 4, 5 and 6 pick targets of their own (`0x08059A0C`, `0x08059C00`, `0x08059C60`, `0x08059E3C`, `0x08059F24`/`0x0805A008`: nearest enemies and properties), 7 stays by the HQ | tested (the Recon of `bh_campaign_march_named_spawn_and_jammed_cannon`) |
 | held foot soldiers | AW2's role 0 (the deployment's AI byte 0, record +0x0B) does nothing in the role code, but Infantry and Mechs still walk off to capture neutral cities. `custom_campaign::ai_unit` (called from `unit_actions::behaviour_row`, the CPU's per-unit entry `0x0805D496`) skips such a soldier (AW2's own skip of a unit that has acted, `0x0805D4A6`) unless an enemy stands next to it (then AW2 plays it) or its army has given up; no fuel trick is needed (zeroing the fuel does not stop it). A unit a scripted march moves is skipped too (an APC would load soldiers and leave its route). `UnitDef::stand()` is role 0 for a spawned unit too (the default role is 1: for the enemy HQ) | tested (`bh_campaign_march_named_spawn_and_jammed_cannon`) |
@@ -3391,6 +3397,20 @@ stay out.
   menu's pool is left to `two_front` unless a pair needs ours, and
   `SetArmyCoIdsFromList`'s trap is `two_front`'s, which calls
   `tag::set_cos` first.
+- **Survival** (Dual Strike's Survival CO screen has its tag row): the
+  first map's CO screen (the War Room's) takes two picks for army 1,
+  the run's CO and its partner (`survival::picks_partner`: Survival on,
+  no run under way, the map an entry), through the same pick count and
+  `SetArmyCoIdsFromList` traps as the DS Campaign's. The War Room's
+  screen lets every pick change the country tab (its `0x030059C0` words
+  are all set): the partner's pick keeps that and only opens every
+  country, and its badge is the War Room's ("1P" at tile 848, not the
+  campaigns' 836). The partner is kept with the run (`0x0203FA34`, 0xFF
+  none) and every map start asks for the pair again (`tag::set_pending`
+  from `survival::map_start`, which runs before `tag::map_start`): the
+  CO in front, the partner behind, both meters empty, as Dual Strike's
+  `sub_020EACC4`. From the second map the CO screen offers the run's CO
+  alone, as before; the pair comes back at the map start.
 - **API** (`tag.rs`):
   `tag::form_pair(core, army, co, charge)` gives an army a partner (its
   active CO stays; `charge` the partner's meter in AW2's units; its

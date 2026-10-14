@@ -24,8 +24,9 @@
 //! War Room's results and save; back on SELECT MAP the next map of the run is
 //! the only one listed (its CO screen offers only the run's CO), until the
 //! run is cleared or lost and its results are shown there. In battle the
-//! budget left is shown at the top of the screen. AW2 has no tag battles:
-//! the run keeps one CO.
+//! budget left is shown at the top of the screen. The first map's CO screen
+//! takes a partner too, and the run is a tag pair ([`crate::tag`]) on every
+//! map, the CO in front, as picked.
 //!
 //! - Maps: ids 0xC9..0xCB are the three runs' entries (the first map of
 //!   each, named after the kind), 0xCC.. the 33 maps; their headers are in
@@ -116,6 +117,10 @@ pub(crate) const BONUS: u32 = STATE + 0x1C;
 pub(crate) const RANK: u32 = STATE + 0x20;
 const LAST_SCORE: u32 = STATE + 0x22;
 const OUT_SET: u32 = STATE + 0x24;
+/// The run's tag partner (Dual Strike's second CO, picked on the first map's
+/// CO screen), 0xFF none.
+pub(crate) const PARTNER: u32 = STATE + 0x34;
+const NO_PARTNER: u8 = 0xFF;
 /// A zeroed block the War Room's record code reads while Survival is on:
 /// rows for ids FIRST_ID..=0xEC.
 const ROWS: u32 = STATE + 0x40;
@@ -582,7 +587,12 @@ pub fn map_start(core: &mut Core) {
         core.raw_write_32(BUDGET, -1, budget);
         core.raw_write_32(LEFT, -1, budget);
         core.raw_write_32(POINTS, -1, 0);
-        core.raw_write_8(CO, -1, core.raw_read_8(PLAYST_CO + 1, -1));
+        let co = core.raw_read_8(PLAYST_CO + 1, -1);
+        core.raw_write_8(CO, -1, co);
+        // The partner picked on the CO screen (crate::tag::set_cos made it
+        // the pair pending for this map start).
+        let partner = crate::tag::pending(core, 1).filter(|&(a, b)| a == co && b != co).map_or(NO_PARTNER, |(_, b)| b);
+        core.raw_write_8(PARTNER, -1, partner);
     } else if phase != BETWEEN
         || run_map_id(kind(core), champion_now(core), core.raw_read_8(STAGE, -1) as usize) != Some(id)
     {
@@ -591,10 +601,16 @@ pub fn map_start(core: &mut Core) {
     core.raw_write_8(PHASE, -1, PLAYING);
     core.raw_write_32(TIME, -1, 0);
     core.raw_write_8(OUT_SET, -1, 0);
-    // The run's CO.
+    // The run's CO, and its partner as a tag pair in the order picked, both
+    // meters empty (Dual Strike's `sub_020EACC4` copies the pair into the
+    // player at every map start; crate::tag::map_start forms it after this).
     let co = core.raw_read_8(CO, -1);
     core.raw_write_8(PLAYST_CO + 1, -1, co);
     core.raw_write_8(player(core, 1) + P_CO, -1, co);
+    let partner = core.raw_read_8(PARTNER, -1);
+    if partner != NO_PARTNER && partner != co {
+        crate::tag::set_pending(core, 1, co, partner);
+    }
     // Weather: 0 clear, 1 snow, 2 rain, 3 sandstorm (fixed weather with
     // clear as the default, crate::sandstorm).
     let (mode, w) = match map.weather {
@@ -746,6 +762,17 @@ fn co_screen(core: &mut Core) {
     core.raw_write_8(CO_GROUP_SIZES, -1, 1);
     core.raw_write_8(CO_GROUP_COLOURS, -1, colour);
     core.raw_write_8(CO_LIST, -1, co);
+}
+
+/// The CO screen of a run's first map picks a partner too (Dual Strike's
+/// Survival CO screen has its tag row, `co_select_has_tag_row`): two picks
+/// for army 1, the CO and its partner ([`crate::tag::ds_partner_picks`]).
+pub(crate) fn picks_partner(core: &Core) -> bool {
+    if core.raw_read_8(ON, -1) != 1 || !crate::ds_weather::is_on(core) {
+        return false;
+    }
+    let phase = core.raw_read_8(PHASE, -1);
+    matches!(phase, CHOOSING | CLEARED | LOST) && entry_kind(core.raw_read_8(MAP_ID, -1)).is_some()
 }
 
 /// The map menu's Save test (`savingEnabled`, after its first load): a
@@ -1052,6 +1079,8 @@ mod tests {
         assert_eq!(CHAMPION_IDS[0], MAPS_FROM + 33);
         assert_eq!(CHAMPION_IDS[2] + 1, crate::campaign_model::MAP_ID);
         assert!(CHAMPION > STATE + 0x20 && CHAMPION < STATE + 0x22);
+        // The run's own bytes after the screen's (crate::survival_ui), before the record rows.
+        assert!(PARTNER >= crate::survival_ui::STATE_END && PARTNER < ROWS);
         assert_eq!(clock(90000), "25:00");
     }
 
