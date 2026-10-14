@@ -3129,7 +3129,7 @@ bits), `two_front_general_saved` (across a reboot); `ally_posture`'s
 `two_fronts_are_dual_strikes` (with Auto CO's missions) and
 `day_limits_are_dual_strikes` (with the .nds).
 
-## Dual Strike's CPU (`ds_ai.rs`, `ds_ai_build.rs`, `ds_ai_power.rs`)
+## Dual Strike's CPU (`ds_ai.rs`, `ds_ai_build.rs`, `ds_ai_power.rs`, `ds_ai_move.rs`)
 
 With the pack, in Versus, the DS Campaign and the BH Campaign (not AW2's campaign, whose maps name AW2's own CPU
 personalities, nor Survival), a computer army decides as Dual Strike's does. AW2's CPU and Dual Strike's are the same
@@ -3232,6 +3232,32 @@ roll each turn, its units by their own roles; Strike no threat maps at all (and 
 role 4). The roles are `ally_posture.rs`'s, now for every CPU army with the pack; the threat limits steer the moves
 (below).
 
+**Threat maps and moves** (`ds_ai_move.rs`; Dual Strike's `Ai_BuildThreatMaps`, `Ai_AddEnemyThreat`,
+`AiUnit_MoveToSafestTile`). For each unit it moves Dual Strike rates every cell against that unit's type: `threatMax`,
+the most one direct enemy that can get next to the cell would deal (rated base damage x its hp), and `threatSum`, the
+indirect fire covering it; an enemy under 25, or too far to matter (beyond the unit's move + its own move or range + 1),
+is left out, and in fog only seen enemies count (adjacent only in woods and reefs, or when dived or hidden). A cell is
+unsafe when `threatMax` reaches the type's `threatMaxLimit` or `threatSum` its `threatSumLimit` (the turn's roll); danger
+compares cells as `threatMax + 2 x threatSum`. AW2's attack check (`0x0805E9DC`) still decides the attacks; where it
+finds none AW2 moves the unit by its role (`AiRunRoleMove`, `0x0805F4CC`). There, for a direct combat unit (not a foot
+soldier) with an advancing role (1 the enemy HQ, 3 the enemy's properties, 4 the nearest enemy units; the behaviour's
+role where it has one), not on a campaign march (`custom_campaign::driven_goal`) nor sent at an invention
+(`cpu_inventions`, which comes first), the cell it goes to this turn is chosen here: its target by the role (the nearest
+enemy unit it can hurt, enemy HQ or property not its team's, by its own movement costs over the map), then of the cells
+it can reach this turn (move and fuel) the safe one nearest that target (ties: the lower danger, then more terrain
+stars); with no safe cell nearer it holds if its cell is safe, else it goes to the safest cell (the lowest danger, the
+most stars, the shortest move). The cell is handed to AW2's "move towards a place" (the role 1 code, its place
+replaced at `0x0805ED2A`, as `cpu_inventions` does). Foot soldiers, indirect units, transports and AW2's other roles
+move as AW2 moves them. A move costs 0.05..0.6 ms (logged as `dsai move`), once per unit moved. Not ported: Dual
+Strike's attack scoring (`AiAttack_Score`, the trade penalties Strike skips) and its own unit phases (foot units,
+indirect fire, transports), which AW2's passes keep; the threat maps are worked out per unit, not kept (the range
+`0x0203D000..0x0203DFFF` the plan set aside for them is unused).
+
+Seen against `aw2test/bot.py` (`AW2TEST_DSAI_BOT=1 -k ds_ai_vs_bot`, 14 days, the bot as army 1): on Rust Basin, Dune
+Fork and Cinder Flats the bot ended with 104700, 87200 and 103200 in units against Dual Strike's CPU, 114100, 106700
+and 121900 against it without the moves (switch bit 3), and 131800, 133700 and 127500 against AW2's CPU; the CPU kept
+35400, 21000 and 37800 (AW2's: 10800, 12600, 37100).
+
 **Change** (`tag.rs` `cpu_wants_change`, Dual Strike's `AiCo_FrontCloserToSuper` after its builds): the computer
 Changes when the active CO is nearer its Super than the partner; the two alike (or both empty), to the higher rank
 (`AiCo_TagRank`): Max 1, Sami 4, Grit 5, Kanbei 0, Hachi 6 and Colin 7 while the army owns a base, airport or port
@@ -3243,9 +3269,10 @@ check), the `dsai power` lines of `ds_ai_cpu_<map>`. `tag_cpu_change_and_powers`
 Strike's powers switched off).
 
 Development switch (`0x0203C7F0`, emulated memory): bit 0 Dual Strike's CPU off (AW2's decides), bit 1 its production,
-bit 2 its powers (`aw2test/ram.py` `DS_AI_SWITCHES`). The decisions are logged with `TANGOAW2_BH_LOG` (`dsai` lines).
+bit 2 its powers, bit 3 its moves (`aw2test/ram.py` `DS_AI_SWITCHES`). The decisions are logged with `TANGOAW2_BH_LOG` (`dsai` lines).
 
-Tests: `test_ds_ai.py` (`ds_ai_cpu_<map>`: CPU against CPU on Rust Basin, Coral Strait, Dune Fork, Harbor Cross and
+Tests: `test_ds_ai.py` (`ds_ai_move_goes_where_chosen`: a CPU Tank and Recon end each turn on the cell chosen for
+them; `ds_ai_cpu_<map>`: CPU against CPU on Rust Basin, Coral Strait, Dune Fork, Harbor Cross and
 Black Wastes for `AW2TEST_DSAI_DAYS` days, 8 by default, every decision in the log; `AW2TEST_DSAI_OFF=1` plays the same
 with AW2's CPU), `netplay_cpu_ds_map_dune_fork` (both peers identical), `bh_cpuai_acts` (every BH mission's enemy still
 builds, moves and captures). `test_cpu_buys.py` and `cpu_piperunners_stop_at_broken_seam` test AW2's production with

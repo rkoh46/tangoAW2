@@ -69,6 +69,7 @@ pub mod cpu_tactics;
 pub mod ds_ai;
 pub mod ds_ai_build;
 pub mod ds_ai_power;
+pub mod ds_ai_move;
 pub mod cpu_inventions;
 pub mod co_powers;
 pub mod co_skills;
