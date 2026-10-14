@@ -295,7 +295,8 @@ fn previous_best(core: &Core, hard: bool) -> u32 {
 }
 
 /// `InsertBestScoreRecord(co, map, score r2, days)` at its entry, at every battle's end (before the results and
-/// any record): the battle's points and each human army's COs' EXP. Then the counts are cleared.
+/// any record): the battle's points, each human army's COs' EXP, the History's battle counters
+/// ([`crate::history::battle_over`]). Then the counts are cleared.
 pub fn results(core: &mut Core) {
     if !is_on(core) {
         return;
@@ -342,6 +343,7 @@ pub fn results(core: &mut Core) {
             }
         }
     }
+    crate::history::battle_over(core, score, total, prev, survival, !aw2_campaign_plain);
     clear(core);
 }
 
@@ -358,6 +360,7 @@ pub fn survival_run_over(core: &mut Core, points: u32) {
         let e = (crate::co_skills::exp(core, co) + gain).min(crate::co_skills::MAX_EXP);
         crate::co_skills::set_exp(core, co, e);
     }
+    crate::history::co_ranks(core);
 }
 
 /// Every map start (crate::sandstorm's trap): a battle's first day, on its main front, starts with no counts.

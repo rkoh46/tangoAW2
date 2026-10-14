@@ -430,7 +430,7 @@ fn move_costs_done(core: &mut Core) {
 const SHOT_HIT: u32 = 0x0803_ED12;
 const HIT_LIST: u32 = 0x0300_3338;
 fn shot_hit(core: &mut Core) {
-    if !any_on(core) {
+    if !crate::ds_weather::is_on(core) {
         return;
     }
     let cpu = core.gba().cpu();
@@ -440,9 +440,6 @@ fn shot_hit(core: &mut Core) {
         return;
     }
     let army = crate::five::army_of_index(core, (unit - units) / UNIT);
-    if !has(core, army, CANNON_GUARD) {
-        return;
-    }
     let list = core.raw_read_32(HIT_LIST, -1);
     let mut e = entry;
     let mut kind = 0;
@@ -456,7 +453,9 @@ fn shot_hit(core: &mut Core) {
         }
         e -= 8;
     }
-    if matches!(kind, 1 | 3 | 4) {
+    // (a human's unit hit: the History's count, crate::history)
+    crate::history::shot_taken(core, army, kind);
+    if any_on(core) && has(core, army, CANNON_GUARD) && matches!(kind, 1 | 3 | 4) {
         core.gba_mut().cpu_mut().set_gpr(1, dmg.saturating_sub(20) as i32);
     }
 }

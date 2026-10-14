@@ -673,6 +673,7 @@ fn end_of_game(core: &mut Core) {
     core.raw_write_32(POINTS, -1, points);
     let stage = core.raw_read_8(STAGE, -1).saturating_add(1);
     core.raw_write_8(STAGE, -1, stage);
+    crate::history::survival_map(core, k as u8, !champion && stage as usize >= MAPS_PER_RUN);
     if !champion && stage as usize >= MAPS_PER_RUN {
         let bonus = maps::leftover_points(k, left);
         core.raw_write_32(BONUS, -1, bonus);

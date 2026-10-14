@@ -899,12 +899,14 @@ fn landing(core: &mut Core) {
         T_CHANGE2 => return_to(core, (!(paired && ph == 1)) as u32),
         T_END => return_to(core, (paired && ph == 1) as u32),
         A_TAG => {
+            crate::history::tag_power(core, army);
             set_phase(core, army, 1);
             core.raw_write_8(rec(army) + P_SHOW, -1, 2);
             crate::tag_extras::tag_chosen(core, army);
             tail_call(core, SUPER_POWER);
         }
         A_CHANGE => {
+            crate::history::swap(core, army);
             // The incoming CO's quote and the CO SWAP band, then the swap
             // and the turn's end (crate::tag_extras's script).
             crate::tag_extras::change_chosen(core, army);

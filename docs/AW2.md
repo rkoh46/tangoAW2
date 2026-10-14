@@ -3604,7 +3604,7 @@ from the directory.
 | 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14) | map menu Save in a BH mission |
 | 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign") | BH Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state follow the block (two sectors) | map menu Save in a DS mission |
-| 15 | the DS Campaign's record, 0x20 (tangoAW2), its records and the CO skills' data | DS Campaign New, mission start, after a win, a skills change |
+| 15 | the DS Campaign's record, 0x20 (tangoAW2), its records, the CO skills' data and the History's record (`history.rs`, 0x1A4) | DS Campaign New, mission start, after a win, a skills change, after a profile write once a battle has ended (EXP, the History) |
 
 Twelve slots at most (AW2's ten and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
 delete for one map: saving over a slot replaces it. The Battle Maps points

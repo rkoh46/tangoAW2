@@ -1613,6 +1613,7 @@ fn send_chosen(core: &mut Core, b: &Battle) {
     }
     let u = core.raw_read_32(SELECTED, -1);
     core.raw_write_32(SENDING, -1, u);
+    crate::history::sent(core);
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(2, 0);
     cpu.set_thumb_pc(WAIT_CHOSEN)

@@ -391,6 +391,8 @@ pub fn stage_slot(core: &mut Core) -> (u8, u32, u32) {
     // (else no DS Campaign is saved: the slot carries the skill data alone,
     // its progress empty, so DS CAMPAIGN offers no Continue)
     b.extend_from_slice(&crate::co_skills::bytes(core));
+    // (the History's record follows: crate::history)
+    b.extend_from_slice(&crate::history::bytes(core));
     core.raw_write_range(STAGING, -1, &b);
     crate::co_skills::written(core);
     (SAVE_SLOT, STAGING, b.len() as u32)
@@ -1009,7 +1011,7 @@ fn read_slot(core: &Core, slot: u8) -> Option<Vec<u8>> {
         }
     }
     let (_, at) = best?;
-    let len = (core.raw_read_16(at + 0x50, -1) as u32).min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN);
+    let len = (core.raw_read_16(at + 0x50, -1) as u32).min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN + crate::history::SAVED_LEN);
     let mut b = vec![0u8; len as usize];
     core.raw_read_range(at + 0x52, -1, &mut b);
     Some(b)
@@ -1024,6 +1026,12 @@ pub fn skills_loaded(core: &mut Core) {
     let saved = read_slot(core, SAVE_SLOT).filter(|b| b.len() > (SAVE_SIZE + RECORDS_SIZE) as usize);
     let part = saved.as_ref().map(|b| &b[(SAVE_SIZE + RECORDS_SIZE) as usize..]);
     crate::co_skills::load(core, part);
+}
+
+/// The History's record as saved after the skill data (crate::history), if the slot has one.
+pub fn saved_history(core: &Core) -> Option<Vec<u8>> {
+    let at = (SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN) as usize;
+    read_slot(core, SAVE_SLOT).filter(|b| b.len() > at).map(|b| b[at..].to_vec())
 }
 
 /// A campaign (Normal, or Hard) has been cleared in the saved record.
@@ -1253,6 +1261,9 @@ fn end_of_battle(core: &mut Core) {
         core.raw_write_8(CREDITS, -1, 1);
         let c = core.raw_read_8(P_CLEARS, -1) | if hard(core) { 2 } else { 1 };
         core.raw_write_8(P_CLEARS, -1, c);
+        if is_ds(core) {
+            crate::history::campaign_cleared(core, hard(core));
+        }
     }
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(4, 0);

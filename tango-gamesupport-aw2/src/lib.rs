@@ -12,6 +12,7 @@ pub mod ui {
 
 pub mod battle_points;
 pub mod branding;
+pub mod history;
 pub mod campaign_menu;
 pub mod design;
 pub mod design5;

@@ -29,6 +29,10 @@ pub const CO_SCREEN_PICKS: Region = (0x0203_C160, 1);
 /// Dual Strike's battle points: the battle's destroyed counts and the last bonus (crate::battle_points).
 pub const BATTLE_POINTS: Region = (0x0203_C170, 0x20);
 
+/// Dual Strike's History: its record (crate::history::RECORD), then its screen's state (crate::history_ui).
+pub const HISTORY: Region = (0x0203_C190, 0x1A4);
+pub const HISTORY_SCREEN: Region = (0x0203_C340, 0x20);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -45,6 +49,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("smart Black Factory: picks and savings", FACTORY),
     ("CO screen: picks seen", CO_SCREEN_PICKS),
     ("battle points: destroyed counts", BATTLE_POINTS),
+    ("History: the record", HISTORY),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),
@@ -104,5 +109,6 @@ mod tests {
         assert_eq!(find("DS Campaign's records").0, crate::ds_campaign::RECORDS);
         assert_eq!(find("Survival").0, crate::survival::STATE);
         assert_eq!(BATTLE_POINTS, (crate::battle_points::STATE, crate::battle_points::STATE_LEN));
+        assert_eq!(HISTORY, (crate::history::RECORD, crate::history::SAVED_LEN));
     }
 }
