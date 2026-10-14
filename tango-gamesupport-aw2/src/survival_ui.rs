@@ -56,6 +56,9 @@ const CONTEXT: u32 = sv::STATE + 0x2C;
 const SIGNATURE: u32 = sv::STATE + 0x30;
 #[cfg(test)]
 pub(crate) const STATE_END: u32 = SIGNATURE + 4;
+/// Continue's B, given every other frame (Survival's byte after the run's
+/// own, crate::survival).
+const B_TOGGLE: u32 = sv::STATE + 0x38;
 
 // --- The game ------------------------------------------------------------------
 
@@ -1160,10 +1163,17 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
             keys &= !(KEY_R | KEY_L | KEY_LEFT | KEY_RIGHT);
             if sv::suspended(core) && pressed & KEY_R == 0 {
                 // A run saved halfway: A continues it (the game gets B,
-                // back to Select Mode, crate::survival::ask_continue),
-                // START gives it up; the list's own A never starts its map.
-                if pressed & KEY_A != 0 {
+                // back to Select Mode, crate::survival::ask_continue; every
+                // other frame until the list lets go, which it does once
+                // nothing else is moving), START gives it up; the list's own
+                // A never starts its map.
+                if sv::continue_asked(core) {
+                    let t = core.raw_read_8(B_TOGGLE, -1) ^ 1;
+                    core.raw_write_8(B_TOGGLE, -1, t);
+                    keys = if t == 1 { keys | KEY_B } else { keys & !KEY_B };
+                } else if pressed & KEY_A != 0 {
                     sv::ask_continue(core);
+                    core.raw_write_8(B_TOGGLE, -1, 1);
                     keys |= KEY_B;
                 } else if pressed & KEY_START != 0 {
                     sv::give_up_suspended(core);

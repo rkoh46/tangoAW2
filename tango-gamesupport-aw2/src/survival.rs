@@ -918,6 +918,11 @@ pub(crate) fn ask_continue(core: &mut Core) {
     core.raw_write_8(CONTINUE, -1, ASKED);
 }
 
+/// Continue asked on SELECT MAP, the wheel not reached yet.
+pub(crate) fn continue_asked(core: &Core) -> bool {
+    core.raw_read_8(CONTINUE, -1) == ASKED
+}
+
 pub(crate) fn give_up_suspended(core: &mut Core) {
     crate::suspend::drop_mid(core, crate::suspend::SURVIVAL_SLOT);
     core.raw_write_8(SUSPENDED, -1, 0);
@@ -1242,7 +1247,7 @@ mod tests {
         assert!(CHAMPION > STATE + 0x20 && CHAMPION < STATE + 0x22);
         // The run's own bytes after the screen's (crate::survival_ui), before the record rows.
         assert!(PARTNER >= crate::survival_ui::STATE_END && PARTNER < ROWS);
-        assert!(SAVING < ROWS);
+        assert!(SAVING < ROWS && SAVING < STATE + 0x38, "survival_ui's B toggle follows");
         assert_eq!(clock(90000), "25:00");
     }
 

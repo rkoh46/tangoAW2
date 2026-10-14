@@ -1377,7 +1377,7 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   records live" below.
 - **RAM**: `0x0203FA00..0x0203FA3F` (the run: on, kind, maps cleared, phase,
   left, budget, points, the map's time, the funds cap, CO, the menu's pick,
-  bonus, rank, `+0x21` the Champion course flag, `+0x34` the tag partner, `+0x35..+0x37` a map saved halfway: shown, Continue's step, the War Room's mark while saving), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
+  bonus, rank, `+0x21` the Champion course flag, `+0x34` the tag partner, `+0x35..+0x38` a map saved halfway: shown, Continue's step, the War Room's mark while saving, Continue's B every other frame), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
   reads). **ROM**: `0x08E00000..0x08E05BFF` (map table), `0x08E08000..`
   (map data, 0x800 per map), `0x08E30000..` (strings), `0x08E40000..0x08E40FFF`
   (the wheel's data and labels); text ids 0x7172.. (pointers at `0x0862D000`).
