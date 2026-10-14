@@ -1112,6 +1112,21 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   Power's x1.1 and the partner's half are worked in Dual Strike's units
   and multiplied back, and round as its `Player_AddPowerCharge` does. The
   Oozium's eat charges as a battle in which the victim lost all its HP.
+- **Firepower.** Dual Strike adds every firepower bonus into one sum and
+  scales the chart value by it once (`Unit_GetChartDamage`: chart x (100 +
+  FP) / 100, at least 1); only a counter-attack's bonus multiplies again
+  (`Combatant_CalcDamage`). AW2 has two steps (`sub_08043070`'s CO bonus,
+  then `100 + counter + Lash's terrain + player +0x26` in `sub_08024C58`):
+  with the pack the CO's terrain row, Lash's terrain, Com Towers, High
+  Society, a Tag Power's compatibility, skills and Colin's funds / 300
+  (+0x26) go into the first (`com_tower::scaled_firepower`, 0x0804308C,
+  for `CalcDamage`'s and a structure attack's calls; the CPU's estimates
+  are as before) and the second is `100 + counter` (0x08043380). Lash's
+  terrain firepower is half her terrain defence as `DoubleTerrainStars`
+  gives it: 5% a star day to day and in her CO Power, 10% in her Super
+  Power, less the enemies' star cuts (AW2's ability 0x40 gave the whole
+  value). Example: Tank vs Tank (55) under a power with two towers is 55 x
+  130 / 100 = 71 (AW2's steps gave 72).
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
@@ -3339,7 +3354,7 @@ stay out.
   shares): the partner gets half, then its Star Power, up to its Super
   Power's cost; nothing while a power is on. The firepower (compatibility
   - 100, from the pack's arm9 record table `0x0215360C` + 0x220 a CO,
-  +0x84) goes through `com_tower`'s firepower hook.
+  +0x84) goes into the base damage's firepower (`com_tower::scaled_firepower`).
 - **The computer**: `AiDeliberateCoPower` (`0x0805DB70`, `0x0805DBCC`),
   `AiEndTurnStep`'s end (`0x08061ACE`: in the first half it pays the
   partner's Super Power and plays the turn again with it; else Dual

@@ -52,7 +52,8 @@ def attack_with(ctx, g, src, dst, target, label):
     lo = damage.div(sk.acc * sk.base, 100)
     ctx.check(lo <= ra["damage"] < lo + sk.luck[0], f"{label}: the game's damage {ra['damage']} is acc {sk.acc} x base {sk.base} + luck")
     ctx.eq(rd["defence"], sk.defence, f"{label}: the target's defence")
-    ctx.check((sk.acc, sk.defence) != (plain.acc, plain.defence), f"{label}: the skills change acc/defence ({plain.acc}/{plain.defence} -> {sk.acc}/{sk.defence})")
+    ctx.check((sk.base, sk.acc, sk.defence) != (plain.base, plain.acc, plain.defence),
+              f"{label}: the skills change base/acc/defence ({plain.base}/{plain.acc}/{plain.defence} -> {sk.base}/{sk.acc}/{sk.defence})")
 
 
 @test(modes=("ds",))

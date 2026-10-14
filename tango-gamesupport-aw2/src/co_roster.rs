@@ -233,6 +233,52 @@ pub fn enemy_terrain_cut(core: &Core, army: u32) -> i32 {
     army_field(core, army, 0x2A, 0).max(0)
 }
 
+/// Whether an army's CO has Dual Strike skill `bit` of its power block's
+/// skill byte `byte` (+0x08 + byte; [`SKILLS`]), with CO abilities on.
+pub fn has_ds_skill(core: &Core, army: u32, byte: usize, bit: u8) -> bool {
+    let (co, mode) = army_co(core, army);
+    abilities_on(core) && ds_co(co).and_then(|ds| block(ds, mode)).is_some_and(|b| b[0x08 + byte] & bit != 0)
+}
+
+/// Lash's day to day (Dual Strike's `SKILL_TERRAIN_FIREPOWER`, block +0x09
+/// bit 0x80) and her Super Power (`SKILL_DOUBLE_TERRAIN_STARS`, +0x08 bit
+/// 0x10).
+pub fn terrain_firepower_skill(core: &Core, army: u32) -> bool {
+    has_ds_skill(core, army, 1, 0x80)
+}
+fn double_terrain_stars(core: &Core, army: u32) -> bool {
+    has_ds_skill(core, army, 0, 0x10)
+}
+
+/// Army `a` is still in the game: it has a controller (+0x1B) and is not
+/// defeated (+0x14).
+fn in_game(core: &Core, a: u32) -> bool {
+    let p = core.raw_read_32(PLAYERS_POINTER, -1) + PLAYER * a;
+    core.raw_read_8(p + 0x1B, -1) != 0 && core.raw_read_16(p + 0x14, -1) == 0
+}
+
+/// Terrain defence (10 a star) army `army`'s units lose: every enemy in
+/// the game (another team) cuts its CO's stars at its power level
+/// (Dual Strike's `MovementCost`, `player.terrainDefense` negated).
+pub fn terrain_cut_against(core: &Core, army: u32) -> i32 {
+    let p = core.raw_read_32(PLAYERS_POINTER, -1);
+    let team = |a: u32| core.raw_read_8(p + PLAYER * a + 0x2A, -1);
+    (1..=5u32)
+        .filter(|&e| e != army && in_game(core, e) && team(e) != team(army))
+        .map(|e| 10 * enemy_terrain_cut(core, e))
+        .sum()
+}
+
+/// Dual Strike's `DoubleTerrainStars` for army `army`'s unit whose
+/// terrain gives `raw` (stars x 10, 0 for an air unit: a battle unit's
+/// +0x06 as `sub_08024A2C` sets it): less the enemies' cuts, not below 0,
+/// then doubled in Lash's Super Power. The cuts count with CO abilities on.
+pub fn ds_terrain_stars(core: &Core, army: u32, raw: i32) -> i32 {
+    let cut = if abilities_on(core) { terrain_cut_against(core, army) } else { 0 };
+    let d = (raw - cut).max(0);
+    if double_terrain_stars(core, army) { 2 * d } else { d }
+}
+
 // --- The table ----------------------------------------------------------------
 
 /// tangoAW2's table: AW2's rows with Dual Strike's numbers, then Andy's

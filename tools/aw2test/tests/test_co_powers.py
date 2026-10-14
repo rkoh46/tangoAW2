@@ -75,8 +75,9 @@ def kindle_high_society(ctx):
     g = ctx.start(m, ["kindle", "andy"])
     ctx.power(g, 1, "super")
     r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
-    # 7 properties (6 cities and the HQ): +21% (and the power's 10).
-    ctx.eq(r["first"].acc, 121, "High Society firepower")
+    # 7 properties (6 cities and the HQ): +21% with the power's 10, in Dual
+    # Strike's one firepower sum: Tank vs Tank 55 x 131 / 100.
+    ctx.eq(r["first"].base, 72, "High Society firepower")
 
 
 @test(modes=DS)

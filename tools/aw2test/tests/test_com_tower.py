@@ -20,8 +20,9 @@ def com_tower_firepower(ctx):
     g.goto(2, 2)
     g.e.wait(30)
     ctx.shot(g, "tower_panel")
-    # Attacker +20%, the counter +10% (with the pack).
-    ctx.attack(g, (10, 6), (10, 6), (11, 6), expect_base=55)
+    # Attacker +20%, the counter +10% (with the pack, in the base damage:
+    # Dual Strike's one firepower sum, 55 x 120 / 100).
+    ctx.attack(g, (10, 6), (10, 6), (11, 6), expect_base={"aw2": 55, "ds": 66}[ctx.mode])
     ctx.shot(g, "after")
 
 

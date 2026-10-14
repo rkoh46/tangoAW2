@@ -127,7 +127,25 @@ class Ctx:
             skills=frozenset(self.skills.get(u["army"], ())),
             weather=3 if self.sandstorm else st["weather"],
             tag_firepower=self.tag_firepower(g, u["army"], p["co"]),
+            terrain_cut=self.terrain_cut(g, u["army"]) if st["co_abilities"] else 0,
         )
+
+    def terrain_cut(self, g, army):
+        """Terrain stars every enemy CO in the game cuts (Dual Strike's Sonja;
+        crate::co_roster::terrain_cut_against, in stars)."""
+        if not self.ds:
+            return 0
+        me = g.player(army)["raw"]
+        cut = 0
+        for a in range(1, 6):
+            if a == army:
+                continue
+            p = g.player(a)
+            b = p["raw"]
+            if b[0x1B] == 0 or struct.unpack_from("<H", b, 0x14)[0] != 0 or b[0x2A] == me[0x2A]:
+                continue
+            cut += self.rules.enemy_terrain_cut(p["co"], p["co_mode"])
+        return cut
 
     def tag_firepower(self, g, army, co):
         """A Tag Power under way (crate::tag): the pair's compatibility - 100,
