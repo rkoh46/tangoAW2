@@ -66,6 +66,8 @@ pub mod co_new;
 pub mod crumb;
 pub mod crumb_art;
 pub mod cpu_tactics;
+pub mod ds_ai;
+pub mod ds_ai_build;
 pub mod cpu_inventions;
 pub mod co_powers;
 pub mod co_skills;

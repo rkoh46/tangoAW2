@@ -72,3 +72,8 @@ RULES_ITEM_FNS = (0x08064739, 0x08064775, 0x080647BD, 0x0806486D, 0x08064919, 0x
 RULES_ITEM_VALUE = 0x48        # offset of the value byte in a rules item proc (0x60 bytes)
 RULES_ITEM_COUNT = 0x4B
 RULES_ITEM_FN = 0x4C
+
+# Dual Strike's CPU (crate::ds_ai::SWITCHES): bit 0 all of it off (AW2's CPU decides), bit 1 its production,
+# bit 2 its powers. Emulated memory: a poke here rolls back and replays like the battle.
+DS_AI_SWITCHES = 0x0203C7F0
+DS_AI_OFF, DS_AI_OFF_BUILD, DS_AI_OFF_POWER = 1, 2, 4

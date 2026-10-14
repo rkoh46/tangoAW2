@@ -114,6 +114,8 @@ def cpu_map(ctx, seam_tile):
 
 def cpu_piperunners(ctx, seam_tile, days=8):
     g = ctx.start(cpu_map(ctx, seam_tile), ["andy", "andy"])
+    # (AW2's production with crate::cpu_tactics's Piperunner swap: Dual Strike's is switched off)
+    g.e.w8(ram.DS_AI_SWITCHES, ram.DS_AI_OFF_BUILD)
     seen = set()
     for day in range(days):
         g.e.w32(g.player(2)["addr"] + ram.P_FUNDS, 100000)

@@ -922,7 +922,7 @@ traps (a trap runs before the instruction it replaces; setting the PC skips it).
 | Units | `roster.rs`, `ds_units.rs`, `unit_actions.rs`, `oozium.rs`, `unit_names.rs`, `ds_unit_art.rs`, `ds_unit_pictures.rs`, `ds_battle.rs`, `ds_backdrop.rs`, `map_anim.rs` | Unit table grown to 64 rows (0x08680000), 7 new units (ids 4, 9, 12, 13, 18, 26, 27), Dual Strike's stats and damage chart, their actions (Hide, Explode, Repair, Carrier; the Oozium eats: no weapon, moving onto a unit of another team next to it destroys that unit with the game's own destruction, and no CO, power, silo or Black Bomb touches it), map art, their own information pictures (build menu panel, R on a unit) in each army's colours, every unit in the Intel unit list, battle scenes with Dual Strike's figures, effects and volleys, Dual Strike's battle backgrounds (a Piperunner on its pipe; every battle on a Wasteland map; a Com Tower's city), and Dual Strike's map animations played through AW2's own map effects (a Black Bomb's explosion, a Stealth hiding and appearing, a Black Boat's REPAIR label, Oozium's death in its army's colours; for the CPU at its turn's end, before the turn passes) |
 | COs | `co_roster.rs`, `co_new.rs`, `co_powers.rs`, `crumb.rs`, `crumb_art.rs`, `ds_co_art.rs`, `ds_power_art.rs`, `power_anim.rs` | CO table grown to 96 rows (0x086A0000), Dual Strike's numbers for AW2's COs (and its 200% defence cap), 11 new COs at ids 72..82 (Dual Strike's nine, Clone Andy and Crumb, "Clone Andy" and "Crumb" below; face ids stay unambiguous), their pictures, texts, powers and Dual Strike's power animations (Ex Machina, Covering Fire, Urban Blight), and Dual Strike's choice of power effect on their units |
 | CO screen | `co_grid.rs` | The unit grid (map menu > CO, its last page) gets a second page: ground units, then air and naval units, in the build menus' order, every unit with its icon in the viewed army's colours (the new units in the map sheet's slots for other countries' Infantry and Mech) and its firepower bar (Dual Strike's bonuses take the nearest of AW2's 13 bars) and move / range change |
-| CPU | `cpu_tactics.rs`, `cpu_inventions.rs` | The CPU buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls), explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
+| CPU | `ds_ai.rs`, `ds_ai_build.rs`, `cpu_tactics.rs`, `cpu_inventions.rs` | Dual Strike's CPU decides what it builds (below, "Dual Strike's CPU"); where it does not play (Survival, AW2's campaign) AW2's production buys every new unit (Carrier, Oozium and Piperunner in place of a like AW2 unit at its three `BuyUnit` calls); the CPU explodes Black Bombs, hides Stealths, repairs with Black Boats, eats with Ooziums (and moves them towards enemies), and leaves Ooziums out when it aims a silo or a strike (on Crystal Calamity's map its Launch is Dual Strike's: no missile, Black Hole's line and the mission lost, `onyx.rs`); a base builds Piperunners (for the CPU and in the build menu) only by a pipe or an intact seam |
 | Terrain | `com_tower.rs`, `wasteland.rs`, `ds_look.rs`, `sandstorm.rs` | Com Tower (the Versus Lab), Dual Strike's Wasteland, Desert and Snow looks drawn with its own terrain (below), the Sandstorm weather (Dual Strike's sand, `bmap/0b2`) |
 | Structures | `obelisk.rs`, `heal_effect.rs` | Black Crystal / Obelisk heal with Dual Strike's own animation and sound for each (arm9 0x0213E078 / 0x0213E2A0; SE 175 / 176), the camera visiting each |
 | Music | `ds_music.rs` | The nine new COs' own map themes, Dual Strike's, converted to AW2's sound engine (below) |
@@ -949,7 +949,7 @@ table with room for 0x100 ids, its maps, strings, the Select Mode wheel's data),
 0x08E70000..0x08E73FFF (two fronts: stubs, swap scripts, the menus' copies, labels; text ids 0x7FFD, 0x7FFE),
 0x08E74000..0x08E743FF (the DS Campaign's Setup phase: stubs, script, menu, label; text id 0x7FFC),
 0x08E75000..0x08E753FF (Crystal Calamity's Black Onyx: `onyx.rs`; its RAM 0x0203FFC8..0x0203FFE3).
-Free RAM used: 0x0203FD57 (the chosen campaign, `ds_campaign::SOURCE`), 0x0203E3F0..0x0203E3FD (the skills panel; the skill data now ends at 0x0203E3C5 with Crumb's slot, the Grand Bolt's borrowed palette follows at 0x0203E3C8..0x0203E3EB), 0x0203F4D0..0x0203F4D2 (Crumb's Tag Power rule and the power being paid for) and 0x0203F5D8..0x0203F5FF (the units it healed: a bit a unit slot), 0x0203E400..0x0203F3FF (two fronts: their state, the front off the screen), 0x0203FA00..0x0203FD0F (Survival), 0x0203FD10..0x0203FD5F (DS Campaign), 0x0203F600..0x0203F6FF (the DS
+Free RAM used: 0x0203C700..0x0203C7FF (Dual Strike's CPU: the turn's build list, profile rolls, behaviours, switches; `ram_map::DS_AI`), 0x0203FD57 (the chosen campaign, `ds_campaign::SOURCE`), 0x0203E3F0..0x0203E3FD (the skills panel; the skill data now ends at 0x0203E3C5 with Crumb's slot, the Grand Bolt's borrowed palette follows at 0x0203E3C8..0x0203E3EB), 0x0203F4D0..0x0203F4D2 (Crumb's Tag Power rule and the power being paid for) and 0x0203F5D8..0x0203F5FF (the units it healed: a bit a unit slot), 0x0203E400..0x0203F3FF (two fronts: their state, the front off the screen), 0x0203FA00..0x0203FD0F (Survival), 0x0203FD10..0x0203FD5F (DS Campaign), 0x0203F600..0x0203F6FF (the DS
 Campaign's records; 0x0203E000..0x0203F73F was found unwritten at the title, Select Mode, in AW2 and DS battles), 0x0203F740..0x0203F79F
 (map animations), 0x0203F7A0..0x0203F7DF (power animations), 0x0203F800..0x0203F9FF (battle
 scenes), 0x0203FD60..0x0203FEFF (CPU tactics, heal effect, the Oozium's eat
@@ -2306,8 +2306,9 @@ flag is AW2's role 1, which `bh_ai::orders` replaces); each mission gives them t
   (M9's pursuit, which would otherwise stop at Von Bolt's HQ beside it).
 
 Missiles and Fighters hit aircraft only: with no aircraft against them role 4 has no target and they stay (that is the engine's logic,
-not a hold). The CPU's purchases are the engine's own (`cpu_tactics.rs`, the Black Hole factory aside): it buys at every free base,
-airport and port when it has the funds, saves up on the naval and air maps (M6, M24: funds rise for two or three days before one big purchase), and stops at 50 units (M29: 55000 unspent by day 6, 50 units). A property's owner can be set in a mission
+not a hold). The CPU's purchases are Dual Strike's (`ds_ai_build.rs`, "Dual Strike's CPU"; the Black Hole factory aside): it buys at
+the free bases, airports and ports its rules pick, saves up for a unit it cannot pay for yet when two days' income would
+cover it, and stops at 50 units. A property's owner can be set in a mission
 (`m.props`): M2 starts three of Green Earth's front-line cities neutral so that its Infantry and Mechs capture on days 2 to 4.
 
 Audit and tests (`test_bh_cpuai.py`): `-k bh_cpuai_probe` runs each of the 31 missions with the player passive for five CPU days and
@@ -2735,9 +2736,9 @@ record id the map hands on, `0x02183CC0`):
   (on or off), in the other three while the army's second-front controller
   is the computer (always there). Not on the second front's Intel (Status,
   Unit). **What it changes**: Dual Strike's CPU reads the current army's
-  posture on its turns (15 reads, arm9): its per-turn plan (`0x0208CBA8`)
-  sets each unit type's two advance ranges (base +/- half a spread, from
-  the plan table `0x02162A90`) by a percent: General and Strike a random
+  posture on its turns (15 reads, arm9): its `AiProfile_Build` (`0x0208CBA8`)
+  sets each unit type's two threat limits (base +/- half a spread, from
+  `gAiProfileTemplates` `0x02162A90`; "Dual Strike's CPU" below) by a percent: General and Strike a random
   0..99 each turn, Assault 100 (the top), Defense 0 (the bottom); its
   type table (`0x0208C948`) the same at 100, Defense 0; Defense skips its
   advance steps (`0x0209B458` from `0x0209B2B0`; `0x020AEEFC` in the three
@@ -3127,6 +3128,78 @@ bits), `two_front_general_saved` (across a reboot); `ally_posture`'s
 `from_the_nds` (labels, help lines, icon); `ds_campaign_data`'s
 `two_fronts_are_dual_strikes` (with Auto CO's missions) and
 `day_limits_are_dual_strikes` (with the .nds).
+
+## Dual Strike's CPU (`ds_ai.rs`, `ds_ai_build.rs`)
+
+With the pack, in Versus, the DS Campaign and the BH Campaign (not AW2's campaign, whose maps name AW2's own CPU
+personalities, nor Survival), a computer army decides as Dual Strike's does. AW2's CPU and Dual Strike's are the same
+design (Dual Strike's grew from it): a turn driver that runs passes of unit queues, then production, then the end of
+turn; a per-CO personality of the same shape (7 order weights a unit type, rolled when a unit is bought). So the
+decisions are made in Rust from the battle in emulated RAM, by Dual Strike's rules as its decompilation
+(`~/advance-wars-dual-strike-decomp`, `src/game/main/ai/`) has them, and handed to AW2's driver where it takes the same
+decision; AW2's own code then carries them out (prices, `BuyUnit`, the action executor, the pictures).
+
+**AW2's driver** (`AiDriverStep` `0x0806171C`, its state halfword `0x03004780`): 0 `AiBeginTurn` (`0x08061868`: the
+CPU record copied, threat maps at `0x02029ED8`, the Black Factory), 1 the pass list (`0x085766E8`, with fog
+`0x08576738`; index `0x03004770`), 2 a pass's unit queue (`0x0805D438`: the unit at `0x030040D8`, its behaviour row at
+`0x03004784`, a roll 0..99 to its +0x0A, `setjmp` at `0x03004680`, the attack check `0x0805E9DC`, the pass's routine),
+3 the action executor (`0x0805FD64`, kinds by the action struct `0x030046C0` +0), 4 end of turn (`0x08061AC4`), 5
+production (`0x080606D0`).
+
+**Dual Strike's profiles** (its arm9, read from the pack at run time): the AI sets (`0x02161B8C`, 42 of 29 bytes: a
+mods id, then a template id per Dual Strike CO id; Versus uses set 1, mods 0, as Dual Strike does for a map with no
+set), `gAiProfileMods` (`0x02162050`, 0x40 bytes: 12 header bytes, foot quotas, the Mech chance a day, transport
+ratios, the site radius, build flags and day gates, then per unit type its build percentage and a roll threshold) and
+`gAiProfileTemplates` (`0x02162A90`, 34 of 0x15C bytes: the power hook, six power bytes, then per unit type its two
+threat limits as base and spread, the supply and repair thresholds and the 7 signed order weights). (This section
+once called `0x02162A90` "the plan table" and `0x0208CBA8` "the per-turn plan" under "Two fronts": they are these
+templates and `AiProfile_Build`, which rolls the threat limits once a turn: base + spread x roll / 100 - spread / 2.)
+The CPU's "random" draws are Dual Strike's `Rng_Next` places, each a hash of AW2's generator state (read, never
+advanced, `0x03001FD4`), the day, the army and what the draw is for, so both netplay peers and every replay draw the
+same; what lasts across frames is in EWRAM (`ram_map::DS_AI`, `0x0203C700..0x0203C7FF`).
+
+**Production** (`ds_ai_build.rs`; Dual Strike's `AiTurn_RunEndActions` `0x02093824`). It runs once the units have
+moved, as AW2's does. At state 5's start (the return of `sub_08060DAC`, `0x080606E2`) the whole turn's list is worked
+out and AW2's loop count set to its length; each pass of `sub_08060718` takes the next entry instead of AW2's type
+pickers (`0x08060794` -> `0x080607AE`), and `sub_080610D0` its order (`0x08061102`) and factory (`0x08061112`); AW2's
+price check and `BuyUnit` do the rest. Dual Strike's ten steps, each repeated until it builds nothing (a factory builds
+once a turn, 50 units at most):
+- 0: the sites (free bases, airports and ports), grouped by where an Infantry walks from them; each rated by the units
+  within the profile's radius (7) that a Tank could reach (enemies +2, foot units and units by a port +1, own -1); the
+  repair reserve (1.5 x what the units on a repairing property cost to repair, at least 1000); threat maps against an
+  Anti-Air (each direct enemy's reach + 1 at its damage x hp, the indirect ones' fire summed);
+- 1: an Anti-Air for a group with enemy aircraft and no cover (only with a sea domain, Dual Strike's own quirk);
+- 2: for each site with more enemies than friends near, the best unit against those units;
+- 3: a Fighter against enemy aircraft when the army has no Fighter at half health; 4, 5: Cruisers against Subs;
+- 6: Infantry and Mechs, one free in each group with properties to take, then up to the profile's quota (4), a Mech
+  by a chance of 5% a day from day 4 (80% at most);
+- 8: a T-Copter while they are under 10% of the foot units (to day 10), a Black Boat for every three armed ships, an
+  APC while APCs and T-Copters are under 5% of the foot units (to day 10). Dual Strike's Landers and Black Boats for
+  waiting units answer its units' transport requests, which AW2's units do not make: not built;
+- 9: the main pick, repeated: enemy hp by target group (foot, light, tank, plane, copter, battleship, cruiser,
+  transport, sub; all of it, fog or not, as Dual Strike does) less what the army's units already cover; each type
+  scored by `AiBuild_RateAttackerVsTarget` (Super firepower, ships x2 against ships, x2 against air, a Fighter x2 again,
+  by its reach in eighths) against what is left, x7/8 for each one owned; then the landmass rule (a quiet landmass
+  builds no direct ground units), the indirect ratio (Artillery while directs > 3 x indirects), a safe factory
+  (`AiBuild_RateSiteDanger` under 90 for an airport or port), the funds. A Black Bomb takes the pick's place when the
+  army can pay for one, has none and a safe airport; a Piperunner when a base by a pipe network of six or more cells
+  (tangoAW2's rule, `cpu_tactics::MIN_PIPE_NETWORK`) has armed enemies in its reach. A unit it cannot pay for may start
+  the army saving (`AiBuild_ShouldSaveFunds`: when next day's income less the reserve would not cover it but two days'
+  would): until then only types it has none of may spend into the savings, twice.
+The new unit's order (`AiBuild_RollOrder`: 0 attack, 1 attack whatever the odds, 2 enemy HQ, 3 contested properties,
+4 escort foot units, 5 defend own properties, 6 defend the HQ, weighted by the profile) is given to AW2 as its nearest
+role (4, 4, 1, 3, 4, 7, 7); units whose first weight is negative (foot units, transports) and ships keep AW2's roll.
+`cpu_tactics`'s swaps (Carrier, Oozium, Piperunner into AW2's buys) are off while Dual Strike's production plays; the
+CPU never builds an Oozium (Dual Strike's never does). Each turn's list takes 0.1..1.5 ms, once a turn.
+
+Development switch (`0x0203C7F0`, emulated memory): bit 0 Dual Strike's CPU off (AW2's decides), bit 1 its production,
+bit 2 its powers (`aw2test/ram.py` `DS_AI_SWITCHES`). The decisions are logged with `TANGOAW2_BH_LOG` (`dsai` lines).
+
+Tests: `test_ds_ai.py` (`ds_ai_cpu_<map>`: CPU against CPU on Rust Basin, Coral Strait, Dune Fork, Harbor Cross and
+Black Wastes for `AW2TEST_DSAI_DAYS` days, 8 by default, every decision in the log; `AW2TEST_DSAI_OFF=1` plays the same
+with AW2's CPU), `netplay_cpu_ds_map_dune_fork` (both peers identical), `bh_cpuai_acts` (every BH mission's enemy still
+builds, moves and captures). `test_cpu_buys.py` and `cpu_piperunners_stop_at_broken_seam` test AW2's production with
+the swaps (Dual Strike's switched off).
 
 ## Setup phase (`setup_phase.rs`)
 

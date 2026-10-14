@@ -163,6 +163,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     traps.extend(crate::ds_battle::traps());
     traps.extend(crate::ds_backdrop::traps());
     traps.extend(crate::cpu_tactics::traps());
+    traps.extend(crate::ds_ai_build::traps());
     traps.extend(crate::survival::traps());
     traps.extend(crate::mode_menu::traps());
     traps.extend(crate::ds_campaign::traps());

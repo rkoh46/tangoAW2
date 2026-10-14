@@ -20,10 +20,11 @@
 //!   eats moves onto the most valuable and eats it ([`crate::oozium`]).
 //! - Black Boat, as the CPU's turn ends: it repairs its army's adjacent
 //!   units, as the player's Repair does.
-//! - Buying: the CPU buys Megatanks, Stealths, Black Bombs and Black Boats
-//!   by their rows ([`crate::unit_actions`]); Carriers, Oozium and
-//!   Piperunners (past AW2's 24 types) in place of a Cruiser, a Md Tank or
-//!   an Artillery / Rockets now and then ([`buy`]).
+//! - Buying, where AW2's production plays (Dual Strike's, [`crate::ds_ai_build`],
+//!   decides in Versus and the campaigns): the CPU buys Megatanks, Stealths,
+//!   Black Bombs and Black Boats by their rows ([`crate::unit_actions`]);
+//!   Carriers, Oozium and Piperunners (past AW2's 24 types) in place of a
+//!   Cruiser, a Md Tank or an Artillery / Rockets now and then ([`buy`]).
 
 use mgba::core::Core;
 
@@ -377,10 +378,11 @@ fn pipe_network(core: &Core, x: i32, y: i32) -> usize {
 
 /// The CPU builds a Piperunner only at a base touching a connected pipe
 /// network of at least this many cells.
-const MIN_PIPE_NETWORK: usize = 6;
+pub(crate) const MIN_PIPE_NETWORK: usize = 6;
 
 fn buy(core: &mut Core) {
-    if !is_on(core) {
+    // (Dual Strike's production picks these units itself: crate::ds_ai_build)
+    if !is_on(core) || crate::ds_ai_build::active(core) {
         return;
     }
     let cpu = core.gba().cpu();
