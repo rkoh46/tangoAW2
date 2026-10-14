@@ -17,7 +17,7 @@
 //!   enemy's power meter by 1% of its full meter per 500 funds she has
 //!   (Dual Strike's 0x020E1D2C); War Bonds pays her half the value of the
 //!   HP her units take off enemies.
-//! - Rachel: property repairs give one HP more.
+//! - Rachel: property repairs give one HP more (her blocks' `repairBonus`).
 //! - Javier: defence against indirect attacks, +20/+40/+80%.
 //! - Eagle: Dual Strike's Lightning Drive lets units move again, as
 //!   Lightning Strike does (his COP takes his SCOP's unit effect).
@@ -520,15 +520,20 @@ fn income(core: &mut Core) {
     cpu.set_gpr(1, r1 + add);
 }
 
-/// `RepairUnit(unit, hp, pay)`: Rachel's units get one HP more.
+/// `RepairUnit(unit, hp, pay)`: a property's daily repair (its two calls,
+/// by their return addresses) gives Dual Strike's `Player_GetDailyRepairHp`:
+/// 2 + the CO's `repairBonus` (its power block +0x1A, Rachel's 1; with CO
+/// abilities on) + Mechanic's 1 / Gear Head's 2. A power's heal (Andy's 2
+/// and 5 HP) or Ration Run's 1 HP is a fixed number of steps, no bonus.
 const REPAIR: u32 = 0x0802_9AF8;
+const DAILY_REPAIR_CALLS: [u32; 2] = [0x0802_A0C5, 0x0802_A137];
 fn repair(core: &mut Core) {
     if !is_on(core) {
         return;
     }
     let cpu = core.gba().cpu();
-    let (u, hp) = (cpu.gpr(0) as u32, cpu.gpr(1));
-    if hp <= 0 {
+    let (u, hp, lr) = (cpu.gpr(0) as u32, cpu.gpr(1), cpu.gpr(14) as u32);
+    if hp <= 0 || !DAILY_REPAIR_CALLS.contains(&lr) {
         return;
     }
     let units = core.raw_read_32(UNITS_POINTER, -1);
@@ -536,11 +541,30 @@ fn repair(core: &mut Core) {
     if !(1..=5).contains(&army) {
         return;
     }
-    let add = (army_co(core, army).0 == RACHEL) as i32 + crate::co_skills::repair_bonus(core, army);
+    let add = crate::co_roster::repair_bonus(core, army) + crate::co_skills::repair_bonus(core, army);
     if add != 0 {
         core.gba_mut().cpu_mut().set_gpr(1, hp + add);
     }
 }
+
+/// Dual Strike's `Unit_GetValuePerHp(army, type)`: the unit's cost / 10 x
+/// (100 + its CO's cost % at its power level, with CO abilities on, + Sale
+/// Price's / Fire Sale's cut) / 100, as AW2's `sub_08042C9C` with
+/// tangoAW2's price trap ([`crate::co_skills`]) works it out. For repairs
+/// and War Bonds.
+pub(crate) fn value_per_hp(core: &Core, army: u32, t: u8) -> u32 {
+    let cost10 = core.raw_read_16(crate::roster::table(core) + 0x5C * t as u32 + 6, -1) as i32;
+    let mut pct = 0;
+    if core.raw_read_8(CO_ABILITIES, -1) != 0 {
+        let (co, mode) = army_co(core, army);
+        let table = core.raw_read_32(COST_TABLE_POOL, -1);
+        pct += core.raw_read_16(table + 0x104 * co as u32 + 0x4C + 0x44 * mode.min(2) as u32, -1) as i16 as i32;
+    }
+    pct -= crate::co_skills::price_cut(core, army);
+    (cost10 * (100 + pct) / 100).max(0) as u32
+}
+/// `GetCoPriceModifier`'s literal pool word: the CO table it reads.
+const COST_TABLE_POOL: u32 = 0x0804_329C;
 
 /// `sub_08041978(defender index, ...)`, after a battle is chosen: it
 /// works the battle out (`sub_080251BC`), then charges both power meters

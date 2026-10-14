@@ -228,6 +228,13 @@ pub fn terrain_firepower(core: &Core, army: u32, terrain: u8) -> i32 {
         .unwrap_or(0)
 }
 
+/// HP a property's daily repair adds for the army's CO (Dual Strike's
+/// `Player_GetCoRepairBonus`: its power block's `repairBonus`, +0x1A;
+/// Rachel's 1), with CO abilities on.
+pub fn repair_bonus(core: &Core, army: u32) -> i32 {
+    if abilities_on(core) { army_field(core, army, 0x1A, 0) } else { 0 }
+}
+
 /// Terrain stars the army's enemies lose (Sonja).
 pub fn enemy_terrain_cut(core: &Core, army: u32) -> i32 {
     army_field(core, army, 0x2A, 0).max(0)

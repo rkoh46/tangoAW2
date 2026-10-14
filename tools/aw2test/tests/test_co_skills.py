@@ -303,6 +303,20 @@ def skills_repair(ctx):
 
 
 @test(modes=("ds",))
+def skills_repair_daily_only(ctx):
+    """Mechanic + Gear Head add to a property's daily repair only (Dual
+    Strike's Player_GetDailyRepairHp): Andy's Hyper Repair still heals 2 HP."""
+    m = ctx.map()
+    m.unit(1, "tank", 5, 5).unit(2, "infantry", 27, 17)
+    g = ctx.start(m, ["andy", "andy"])
+    set_skills(ctx, g, 1, [0x3D, 0x3E])
+    ctx.set_hp(g, 5, 5, 40)
+    before, after = ctx.power(g, 1, "power")
+    u = g.unit_at(5, 5)
+    ctx.eq(u["hp"], 60, "Hyper Repair: 40 + 20 HP")
+
+
+@test(modes=("ds",))
 def skills_star_power(ctx):
     """Star Power: the power meter fills 10% faster (ctx.attack's meter check
     with the skill)."""

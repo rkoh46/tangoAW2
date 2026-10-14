@@ -306,12 +306,17 @@ fn price(core: &mut Core) {
         return;
     }
     let army = core.gba().cpu().gpr(4) as u32;
-    let cut = (if has(core, army, SALE_PRICE) { 5 } else { 0 }) + (if has(core, army, FIRE_SALE) { 8 } else { 0 });
+    let cut = price_cut(core, army);
     if cut != 0 {
         let cpu = core.gba_mut().cpu_mut();
         let r0 = cpu.gpr(0);
         cpu.set_gpr(0, r0 - cut);
     }
+}
+
+/// The cost % Sale Price (-5) and Fire Sale (-8) take off.
+pub fn price_cut(core: &Core, army: u32) -> i32 {
+    (if has(core, army, SALE_PRICE) { 5 } else { 0 }) + (if has(core, army, FIRE_SALE) { 8 } else { 0 })
 }
 
 /// `GetPlayerCoLuckBonus(army)`: its entry keeps the army; at its return the

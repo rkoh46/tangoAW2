@@ -1164,6 +1164,16 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   below 2, under every CO (tangoAW2 exempted Max and Grit and kept the
   unit's minimum range as the floor): Grit's Rockets 3-5, Max's Rockets
   3-3 (`sandstorm::range`, 0x08042D76).
+- **Repairs** (`Unit_Repair`: steps of 10 HP at the unit's value per HP,
+  `Unit_GetValuePerHp`: cost / 10 x (100 + the CO's cost % + Sale Price's
+  cut) / 100, never past 10 shown HP, ending on a whole HP). A property's
+  daily repair is `Player_GetDailyRepairHp`: 2 + the CO block's
+  `repairBonus` (+0x1A: Rachel's 1, with CO abilities on) + Mechanic 1 /
+  Gear Head 2 (`co_powers::repair`, only for `RepairUnit`'s two daily
+  calls, return addresses 0x0802A0C5 / 0x0802A137); a power's heal (Andy's
+  2 and 5 HP, Ration Run's 1) gets no bonus. A Black Boat's Repair is
+  `Unit_Repair(unit, 1, TRUE)` (`unit_actions::repair_around`): a unit at
+  10 shown HP is left alone and not charged, 75 HP becomes 90.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
@@ -3255,7 +3265,7 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   attack (direct/indirect +5/+8, terrain +10, Backstab +15, weather +20),
   defence (direct/indirect +8/+12, APC Guard +10) through the firepower
   and defence hooks the CO code already has; funds (Gold Rush +100 per
-  earning property, Combat Pay 2% of the value hit), repairs (+1/+2),
+  earning property, Combat Pay 2% of the value hit), daily repairs (+1/+2),
   Missile Guard (silo blasts and the Black Arc 10 less), Cannon Guard
   (structure shots 20 less, `0x0803ED12`); and traps in AW2's code: move
   (`GetUnitMovementWithCoBonus` 0x08042D42, APC Boost), vision

@@ -123,7 +123,10 @@ fn supply_selected(core: &mut Core) {
 
 /// A Black Boat's Repair where it stands: its army's adjacent units get
 /// 1 HP each (and are resupplied by the Supply command itself), while
-/// funds last. The units repaired.
+/// funds last, as Dual Strike's `Unit_Repair(unit, 1, TRUE)`: a unit at 10
+/// shown HP is left alone, the HP costs its value per HP
+/// ([`crate::co_powers::value_per_hp`]: the CO's cost % and Sale Price
+/// count), and the unit ends on a whole HP. The units repaired.
 pub(crate) fn repair_around(core: &mut Core, boat: u32) -> Vec<u32> {
     let mut repaired = Vec::new();
     let (x, y) = (core.raw_read_8(boat + 2, -1) as i32, core.raw_read_8(boat + 3, -1) as i32);
@@ -136,22 +139,25 @@ pub(crate) fn repair_around(core: &mut Core, boat: u32) -> Vec<u32> {
         }
         let w = core.raw_read_16(u + 4, -1);
         let hp = w & HP_BITS;
-        if hp >= FULL_HP {
+        if shown(hp) == 10 {
             continue;
         }
-        let t = core.raw_read_8(u, -1) as u32;
-        let price = core.raw_read_16(crate::roster::table(core) + 0x5C * t + 6, -1) as u32 * 10;
-        let add = REPAIR_HP.min(FULL_HP - hp);
-        let cost = price * add as u32 / 100;
+        let cost = crate::co_powers::value_per_hp(core, army, core.raw_read_8(u, -1));
         let funds = core.raw_read_32(funds_at, -1);
         if funds < cost {
             continue;
         }
         core.raw_write_32(funds_at, -1, funds - cost);
-        core.raw_write_16(u + 4, -1, (w & !HP_BITS) | (hp + add));
+        let hp = 10 * shown((hp + REPAIR_HP).min(FULL_HP));
+        core.raw_write_16(u + 4, -1, (w & !HP_BITS) | hp);
         repaired.push(u);
     }
     repaired
+}
+
+/// HP as the map shows it (1..10, rounded up; 0 for none).
+fn shown(hp: u16) -> u16 {
+    if hp == 0 { 0 } else { (hp - 1) / 10 + 1 }
 }
 
 // --- Black Bomb ---------------------------------------------------------------
