@@ -197,6 +197,47 @@ fn shown_move(core: &mut Core) {
     cap_reach(core, 0, unit);
 }
 
+// --- Olaf's snow --------------------------------------------------------
+
+/// A power's weather (`sub_08035144(weather)`: Olaf's Blizzard and Winter
+/// Fury bring snow, Drake's Typhoon rain). Dual Strike's power snow lasts
+/// two days (`Weather_SetDays`: 2 for `WEATHER_POWER_SNOW`, 1 for any
+/// other), AW2's one: AW2 ends a weather when every army has ended a turn
+/// since it began (`sub_08035080`: each army's turn-end count, at
+/// `0x03004494 + army - 1`, all equal); for power snow the first time they
+/// are all equal starts the count again ([`day_all_equal`]).
+const POWER_WEATHER: u32 = 0x0803_5144;
+const POWER_SNOW: u32 = crate::ram_map::POWER_SNOW.0;
+fn power_weather(core: &mut Core) {
+    if is_on(core) {
+        let snow = core.gba().cpu().gpr(0) as u8 == SNOW;
+        core.raw_write_8(POWER_SNOW, -1, snow as u8);
+    }
+}
+
+/// `sub_08035080`'s "every army's count is equal" return (r0 = 1); 0x080350D6
+/// returns 0.
+const DAY_ALL_EQUAL: u32 = 0x0803_50DA;
+const DAY_NOT_YET: u32 = 0x0803_50D6;
+const DAY_COUNTS: u32 = 0x0300_4494;
+fn day_all_equal(core: &mut Core) {
+    if !is_on(core) || core.raw_read_8(POWER_SNOW, -1) == 0 {
+        return;
+    }
+    core.raw_write_8(POWER_SNOW, -1, 0);
+    for k in 0..4 {
+        core.raw_write_8(DAY_COUNTS + k, -1, 0);
+    }
+    core.gba_mut().cpu_mut().set_thumb_pc(DAY_NOT_YET);
+}
+
+/// A map starts: no power snow's second day carries over.
+pub fn map_start(core: &mut Core) {
+    if core.raw_read_8(POWER_SNOW, -1) != 0 {
+        core.raw_write_8(POWER_SNOW, -1, 0);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (FUEL, Box::new(fuel)),
@@ -204,5 +245,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (RANGE_MOVE, Box::new(range_move)),
         (CPU_MOVE, Box::new(cpu_move)),
         (SHOWN_MOVE, Box::new(shown_move)),
+        (POWER_WEATHER, Box::new(power_weather)),
+        (DAY_ALL_EQUAL, Box::new(day_all_equal)),
     ]
 }

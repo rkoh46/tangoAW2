@@ -122,7 +122,8 @@ def rules_weather_choices(ctx):
 
 @test(modes=("ds",))
 def olaf_snow_during_sandstorm(ctx):
-    """Olaf's Blizzard makes it snow for a day; then the Sandstorm is back."""
+    """Olaf's Blizzard makes it snow for two days (Dual Strike's power snow,
+    Weather_SetDays); then the Sandstorm is back."""
     m, cases = range_map(ctx, "olaf", 0)
     g = ctx.start(m, ["olaf", "andy"], weather="sandstorm")
     art = [c for c in cases if c[0] == "artillery"]
@@ -133,7 +134,9 @@ def olaf_snow_during_sandstorm(ctx):
     seen = {}
     g.end_turn(human=1, observe=lambda gg: seen.update(cpu=gg.e.read(WEATHER_BYTES, 4)))
     ctx.log(f"weather during the CPU's turn: {seen['cpu'].hex()}")
-    ctx.eq(g.e.read(WEATHER_BYTES, 4), SANDSTORM_BYTES, "Sandstorm again on Olaf's next day")
+    ctx.eq(g.e.u8(WEATHER_BYTES), 1, "still snow on Olaf's next day (the power snow's second)")
+    g.end_turn(human=1)
+    ctx.eq(g.e.read(WEATHER_BYTES, 4), SANDSTORM_BYTES, "Sandstorm again on the day after")
     check_ranges(ctx, g, art, "olaf", sandstorm=True)
 
 

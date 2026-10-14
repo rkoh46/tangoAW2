@@ -139,6 +139,7 @@ fn map_start(core: &mut Core) {
     if one_day(core) {
         set_one_day(core, false);
     }
+    crate::ds_weather::map_start(core);
     crate::wasteland::map_start(core);
     if is_on(core) {
         crate::co_skills::clear(core);

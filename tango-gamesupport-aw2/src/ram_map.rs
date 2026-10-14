@@ -33,6 +33,9 @@ pub const SECOND_FRONT_MERGE: Region = (0x0203_C800, 0x20);
 /// Kindle's High Society, counted when her Super Power starts (crate::co_powers): 1 + the bonus per army 1..5 (u16).
 pub const HIGH_SOCIETY: Region = (0x0203_C820, 10);
 
+/// Olaf's power snow waiting for its second day (crate::ds_weather).
+pub const POWER_SNOW: Region = (0x0203_C830, 1);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -50,6 +53,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("CO screen: picks seen", CO_SCREEN_PICKS),
     ("second front's end: what each army brings (crate::two_front)", SECOND_FRONT_MERGE),
     ("Kindle's High Society count (crate::co_powers)", HIGH_SOCIETY),
+    ("Olaf's power snow's second day (crate::ds_weather)", POWER_SNOW),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),

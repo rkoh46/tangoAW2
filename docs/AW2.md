@@ -1191,6 +1191,14 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   in the bolt lose their army's next turn; Von Bolt's own are done for the
   turn they are hit in (marked moved) and free on his next
   (`co_powers::strike_square`).
+- **Olaf's snow** (Blizzard, Winter Fury: `WEATHER_POWER_SNOW`, which
+  `Weather_SetDays` gives two days; any other weather one) lasts two
+  rounds: AW2 ends a weather once every army's turn-end count since it
+  began is equal (`sub_08035080`); after a power's snow
+  (`sub_08035144(1)`, flag `ram_map::POWER_SNOW` 0x0203C830) the first
+  time they are equal the counts start again (`ds_weather::day_all_equal`,
+  0x080350DA). Drake's rain stays one round, as in Dual Strike. A game
+  suspended during the power snow loses its second day.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
