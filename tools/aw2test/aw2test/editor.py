@@ -98,7 +98,7 @@ class Editor:
         return self.e.u8(MAP + 0x1432 + row + x)
 
     def biome(self):
-        """0 Normal, 1 Wasteland."""
+        """0 Normal, 1 Wasteland, 2 Desert, 3 Snow."""
         return (self.e.u8(BIOME) >> 4) & 7
 
     def cursor(self):
@@ -213,15 +213,23 @@ class Editor:
         t = self.e.u8(self.e.u32(0x08499594) + 12 * uid)
         return uid // 51 + 1, t
 
-    def set_wasteland(self, on=True):
-        if self.biome() == int(on):
+    def set_look(self, look):
+        """The look entry until the map has `look` (0 Normal, 1 Wasteland,
+        2 Desert, 3 Snow): A on the map steps Normal, Wasteland, Desert,
+        Snow (crate::wasteland::toggle)."""
+        if self.biome() == look:
             return
         self.to_entry(WASTELAND)
         self.pick()
-        self.e.press("A", 8)
-        self.e.wait(40)
-        if self.biome() != int(on):
-            raise NavError(f"biome {self.biome()}")
+        for _ in range(4):
+            if self.biome() == look:
+                return
+            self.e.press("A", 8)
+            self.e.wait(40)
+        raise NavError(f"biome {self.biome()}, wanted {look}")
+
+    def set_wasteland(self, on=True):
+        self.set_look(int(on))
 
     # -- the File menu ---------------------------------------------------------
     def _file_menu(self):

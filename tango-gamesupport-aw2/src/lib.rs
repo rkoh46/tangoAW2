@@ -15,6 +15,7 @@ pub mod campaign_menu;
 pub mod design;
 pub mod design5;
 pub mod design_bar;
+pub mod design_random;
 pub mod ds_art;
 pub mod ds_backdrop;
 pub mod ds_battle;
