@@ -490,7 +490,7 @@ fn stat_function(core: &mut Core, field: usize) {
 
 /// `GetUnitDefenceWithCoBonus(army, type)` = 100 + the CO's defence: the
 /// Com Towers' defence and Javier's against indirect attacks go on top
-/// (the army kept from its entry).
+/// (the army kept from its entry), with CO abilities on.
 const DEFENCE_ARMY: u32 = 0x0804_2CF8;
 const DEFENCE_DONE: u32 = 0x0804_2D10;
 const DEFENCE_SIDE: u32 = 0x0203_FFBA;
@@ -520,7 +520,8 @@ fn defence_done(core: &mut Core) {
     }
     let army = side as u32;
     let mut add = 0;
-    if crate::com_tower::active(core) {
+    // (none with CO abilities off: Dual Strike's `Player_GetComTowerDefense`)
+    if crate::com_tower::active(core) && abilities_on(core) {
         add += crate::com_tower::towers(core, army) as i32 * tower_defence(core, army);
     }
     if abilities_on(core) && core.raw_read_8(BATTLE_DISTANCE, -1) > 1 {

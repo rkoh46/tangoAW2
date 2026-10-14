@@ -65,6 +65,7 @@ const MASS_DAMAGE_SCRIPT: u32 = 0x084A_0994;
 const BLACK_WAVE_GFX: u32 = 0x0811_33D0;
 const BLACK_WAVE_PAL: u32 = 0x0811_3BA0;
 const CURRENT_ARMY: u32 = 0x0300_33EC;
+const CO_ABILITIES: u32 = 0x0300_3FC8;
 
 /// Hit points of damage a strike or Urban Blight does, in the game's
 /// tenths.
@@ -264,9 +265,13 @@ fn army_of_index(core: &Core, i: u32) -> u32 {
 }
 
 /// Firepower % an army's units get on top of their CO's: its Com Towers'
-/// and Kindle's High Society.
+/// and Kindle's High Society. Nothing with CO abilities off (Dual Strike's
+/// `Player_GetFirepowerBonus` returns 0 then, towers and all).
 pub fn extra_firepower(core: &Core, army: u32) -> i32 {
     let mut add = 0;
+    if core.raw_read_8(CO_ABILITIES, -1) == 0 {
+        return 0;
+    }
     if crate::com_tower::active(core) {
         let per = crate::co_roster::tower_attack(core, army) + crate::co_skills::tower_bonus(core, army);
         add += per * crate::com_tower::towers(core, army) as i32;

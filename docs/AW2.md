@@ -1138,6 +1138,10 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   Super Power (`co_roster::terrain_defence_done`, 0x08043344). AW2 doubled
   first and tangoAW2 took off only the battle opponent's cut after: a Lash
   unit on a wood (2 stars) under a 1-star cut now has 20, not 30.
+- **CO abilities off** (the Rules' CO abilities, Dual Strike's
+  `coEffectsOn`): Com Towers give no firepower and no defence, as Dual
+  Strike's `Player_GetFirepowerBonus` and `Player_GetComTowerDefense` give
+  0 then (`co_powers::extra_firepower`, `co_roster::defence_done`).
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

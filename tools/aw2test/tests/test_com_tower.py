@@ -26,6 +26,20 @@ def com_tower_firepower(ctx):
     ctx.shot(g, "after")
 
 
+@test(modes=("ds",))
+def com_tower_abilities_off(ctx):
+    """With CO abilities off (gPlaySt +0x08) the towers add nothing, as Dual
+    Strike's firepower and defence bonuses are 0 without CO effects."""
+    m = ctx.map()
+    m.terrain(2, 2, LAB[1]).terrain(4, 2, LAB[1]).terrain(6, 2, LAB[2])
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.start(m, ["javier", "javier"])
+    g.e.w8(0x03003FC8, 0)
+    r = ctx.attack(g, (10, 6), (10, 6), (11, 6), expect_base=55)
+    _, rd = ctx.battle_records(g)
+    ctx.eq(rd["defence"], 110, "the defender's defence: 100 + plains, no towers")
+
+
 @test()
 def com_tower_earns_nothing(ctx):
     m = ctx.map()

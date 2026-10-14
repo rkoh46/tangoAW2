@@ -112,7 +112,9 @@ class Ctx:
         # With the Dual Strike pack, a Versus Lab is a Com Tower: the CO's tower
         # firepower (10%; Javier more, and defence too) per tower the army owns,
         # added with tempFirepower / tempDefence.
-        towers = self.towers(g, u["army"]) if self.ds else 0
+        # With CO abilities off they give nothing (Dual Strike's
+        # Player_GetFirepowerBonus / Player_GetComTowerDefense).
+        towers = self.towers(g, u["army"]) if self.ds and st["co_abilities"] else 0
         tower_fp = self.rules.tower(p["co"], p["co_mode"], 0) * towers
         if self.ds and p["co"] == 74 and p["co_mode"] == 2 and st["co_abilities"]:
             # Kindle's High Society: +3% per property she owns (co_powers).
