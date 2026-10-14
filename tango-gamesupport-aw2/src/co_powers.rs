@@ -5,7 +5,8 @@
 //! a CO's `powerAssembly`):
 //! - Von Bolt's Ex Machina: AW2's meteor strike (`0x084A0858`: the CPU's
 //!   target scorer picks the spot, radius 2, every unit there) at 3 HP,
-//!   and the units hit skip their army's next turn ([`stun`]).
+//!   and the enemy units hit skip their army's next turn ([`stun`]; his
+//!   own are done for the turn).
 //! - Rachel's Covering Fire: the same strike three times, 3 HP each.
 //! - Kindle's Urban Blight: AW2's mass damage (Black Wave's,
 //!   `sub_08044D70`) at 3 HP, only to enemy units on properties.
@@ -351,7 +352,10 @@ fn clear_stuns(core: &mut Core) {
 }
 
 /// `sub_08044854(x, y, damage)`, a strike's hit on one square: in Von
-/// Bolt's Ex Machina the unit there is marked (not an Oozium).
+/// Bolt's Ex Machina the unit there is paralysed (not an Oozium), as Dual
+/// Strike's `Unit_ParalyseAtTile`: another army's is marked to lose its
+/// next turn; one of his own is done for this turn (it moved), and free
+/// again on his next.
 const STRIKE_SQUARE: u32 = 0x0804_4854;
 fn strike_square(core: &mut Core) {
     if !is_on(core) {
@@ -373,7 +377,13 @@ fn strike_square(core: &mut Core) {
         return;
     }
     let u = core.raw_read_32(UNITS_POINTER, -1) + UNIT * i;
-    if core.raw_read_8(u, -1) != 0 && core.raw_read_8(u + 1, -1) & 0x08 == 0 && !crate::oozium::immune(core, u) {
+    let f = core.raw_read_8(u + 1, -1);
+    if core.raw_read_8(u, -1) == 0 || f & 0x08 != 0 || crate::oozium::immune(core, u) {
+        return;
+    }
+    if army_of_index(core, i) == army {
+        core.raw_write_8(u + 1, -1, f | MOVED);
+    } else {
         set_bit(core, STUN_PENDING, i, true);
     }
 }

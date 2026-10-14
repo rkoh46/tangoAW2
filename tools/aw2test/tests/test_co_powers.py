@@ -39,6 +39,25 @@ def von_bolt_ex_machina_stuns(ctx):
 
 
 @test(modes=DS)
+def von_bolt_ex_machina_own_units(ctx):
+    """Dual Strike's Unit_ParalyseAtTile: Von Bolt's own units in the bolt
+    are done for this turn only (free on his next), unlike the enemy's."""
+    m = ctx.map()
+    m.unit(1, "tank", 2, 2).unit(1, "infantry", 21, 11)
+    m.unit(2, "tank", 20, 10).unit(2, "mech", 21, 10).unit(2, "infantry", 20, 11)
+    g = ctx.start(m, ["vonbolt", "andy"], humans=(1, 2))
+    ctx.set_hp(g, 21, 11, 10)
+    own = g.unit_at(21, 11)["id"]
+    before, after = ctx.power(g, 1, "super")
+    ctx.require(after[own]["hp"] < before[own]["hp"] or before[own]["hp"] == 10 and after[own]["hp"] == 1,
+                f"the bolt hit his own Infantry ({before[own]['hp']} -> {after[own]['hp']})")
+    ctx.check(after[own]["flags"] & 1, "his own unit is done for this turn")
+    g.end_turn(human=2)
+    g.end_turn(human=1)
+    ctx.check(not g.unit(own)["flags"] & 1, "and free on his next turn")
+
+
+@test(modes=DS)
 def rachel_covering_fire(ctx):
     m = ctx.map()
     m.unit(1, "tank", 2, 2)

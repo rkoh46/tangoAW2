@@ -1187,6 +1187,10 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
 - **Market Crash** (`MarketCrash`): every enemy in the game loses, from
   its active CO's meter and its tag partner's, that CO's Super Power cost
   x min(funds / 500, 100)% (in Dual Strike's meter units), not below 0.
+- **Ex Machina's paralysis** (`Unit_ParalyseAtTile`): another army's units
+  in the bolt lose their army's next turn; Von Bolt's own are done for the
+  turn they are hit in (marked moved) and free on his next
+  (`co_powers::strike_square`).
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
