@@ -2145,6 +2145,24 @@ const SHADE: u8 = 11;
 const BUTTON: u8 = 3;
 const WHITE_PX: u8 = 6;
 
+/// The colours the lines and the title are drawn with, as OBJ palette 0 has them on a battle map that has just
+/// started (ink, shade, button, white).
+const LABEL_COLOURS: [(u8, u16); 4] = [(INK, 0x0000), (SHADE, 0x4A52), (BUTTON, 0x2108), (WHITE_PX, 0x7FFF)];
+
+/// Puts [`LABEL_COLOURS`] in OBJ palette 0 (the buffer AW2 copies at VBlank, and the palette itself). AW2's CO page
+/// loads its own palette 0 and the map does not load the map's back (the map's sprites do not use it): the title
+/// turned pink and purple, the help lines' grey turned pale.
+fn label_colours(core: &mut Core) {
+    for base in [0x0300_22C0u32, 0x0500_0200] {
+        for &(i, c) in &LABEL_COLOURS {
+            let at = base + 2 * i as u32;
+            if core.raw_read_16(at, -1) != c {
+                core.raw_write_16(at, -1, c);
+            }
+        }
+    }
+}
+
 fn font_width(core: &Core, s: &str) -> u32 {
     s.bytes().map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as u32 + 1).sum::<u32>().saturating_sub(1)
 }
@@ -2266,6 +2284,7 @@ pub fn flush_sprites(core: &mut Core, at: u32, end: u32) -> u32 {
     }
     let mut sp = Sprites { at, end };
     let mut pairs = free_tile_pairs().into_iter();
+    label_colours(core);
     // A panel's lines (its window is on BG2, [`panel_tick`]), in tiles of
     // ours: 8x16 sprites, a column of 8 pixels each.
     if let Some(p) = want_panel(core).filter(|p| core.raw_read_8(PANEL, -1) == *p as u8) {
