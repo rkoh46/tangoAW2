@@ -426,7 +426,9 @@ def tag_skills_lent(ctx):
     ctx.eq(a.lent, frozenset({T, S}), "army 1 is lent Andy's Teamwork and Synergy")
     plain = damage.battle(ctx.rules, dataclasses.replace(a, lent=frozenset()), ctx.side(g, g.unit_at(11, 10)), 1)[0]
     first = lent_attack(ctx, g, (10, 10), (11, 10), "Max, lent Teamwork + Synergy")
-    ctx.eq(first.acc - plain.acc, 13, "the lent skills' +13 (Max's own do nothing for him)")
+    # (Dual Strike sums every firepower term once, in the base: crate::com_tower's step 1)
+    ctx.eq(first.acc, plain.acc, "the lent skills leave the counter step alone")
+    ctx.check(first.base > plain.base, f"the lent skills' +13 raise the base ({plain.base} -> {first.base}; Max's own do nothing for him)")
     ctx.eq(ctx.side(g, g.unit_at(11, 14)).lent, frozenset({B}), "army 2 is lent Sami's Bodyguard")
     d = ctx.side(g, g.unit_at(11, 14))
     ctx.eq(damage.total_defence(ctx.rules, d) - damage.total_defence(ctx.rules, dataclasses.replace(d, lent=frozenset())), 10, "Bodyguard's +10")
@@ -440,8 +442,11 @@ def tag_skills_lent(ctx):
     g.end_turn(human=1)
     ctx.eq(g.player(1)["co"], romlib.co_id("andy"), "Andy is the active CO")
     ctx.skills[1] = {T, S}
+    a = ctx.side(g, g.unit_at(10, 14))
+    plain = damage.battle(ctx.rules, dataclasses.replace(a, lent=frozenset()), ctx.side(g, g.unit_at(11, 14)), 1)[0]
     first = lent_attack(ctx, g, (10, 14), (11, 14), "Andy, lent Max's Teamwork + Synergy")
-    ctx.eq(first.acc, 100 + 13, "Andy's acc: his own 100 and the lent +13")
+    ctx.eq(first.acc, plain.acc, "the lent skills leave Andy's counter step alone")
+    ctx.check(first.base > plain.base, f"Andy's base: the lent +13 ({plain.base} -> {first.base}; his own Teamwork and Synergy do nothing for him)")
 
 
 @test(modes=("ds",))
