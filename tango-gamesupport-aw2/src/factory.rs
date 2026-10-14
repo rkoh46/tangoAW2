@@ -44,7 +44,11 @@ const DESIGN_MAPS: std::ops::RangeInclusive<u8> = 0xB4..=0xB7;
 
 fn on_design_map(core: &Core) -> bool {
     let id = core.raw_read_8(MAP_ID, -1);
-    DESIGN_MAPS.contains(&id) || crate::five::is_five_map(id) || crate::five_map::is_ds_map(id) || crate::ds_campaign::active(core)
+    DESIGN_MAPS.contains(&id)
+        || crate::five::is_five_map(id)
+        || crate::five_map::is_ds_map(id)
+        || crate::ds_campaign::active(core)
+        || crate::ds_versus::in_use(core)
 }
 
 /// The table a design map or campaign mission spawns from: a custom
@@ -165,6 +169,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     traps.extend(crate::ds_backdrop::traps());
     traps.extend(crate::cpu_tactics::traps());
     traps.extend(crate::survival::traps());
+    traps.extend(crate::ds_versus::traps());
     traps.extend(crate::mode_menu::traps());
     traps.extend(crate::ds_campaign::traps());
     traps.extend(crate::ds_worldmap::traps());

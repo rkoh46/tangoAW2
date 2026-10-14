@@ -546,6 +546,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // Dual Strike's unit stats and damage chart, with the pack on.
         let ds = crate::ds_pack::features(mode);
         crate::survival::tick_tables(core, ds && ds_features);
+        // The War Room's records on Dual Strike's maps (crate::ds_versus).
+        crate::ds_versus::tick(core);
         crate::five_map::show_maps(core, ds_features, ds, crate::survival::last_listed_id(core));
         crate::mode_menu::tick(core, ds && ds_features && mode.is_none(), crate::survival::TEXT_BASE + crate::survival::T_HELP);
         crate::design_bar::patch_rom(core, ds_features, ds);
@@ -565,7 +567,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::history::frame(core, mode.is_none());
         crate::ds_graphics::tick(core, ds, mode.is_none());
         crate::ds_campaign::tick(core, ds && ds_features && mode.is_none());
-        // Battles on two fronts (crate::two_front): the DS Campaign's.
+        // Battles on two fronts (crate::two_front): the DS Campaign's, and
+        // Versus' and the War Room's on Dual Strike's maps (crate::ds_versus).
         crate::two_front::tick(core, ds && ds_features && mode.is_none());
         crate::two_front::menus(core, ds && ds_features && mode.is_none());
         // CO tag pairs (crate::tag): the map menu's Tag and Change.
@@ -617,6 +620,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         }
         // Dual Strike's Survival (offline: its War Room is single-player).
         keys = crate::survival::tick(core, ds && mode.is_none(), keys, prev);
+        // Versus' list: SELECT marks the second front of a two-map battle
+        // (crate::ds_versus; offline, as two-front battles are).
+        keys = crate::ds_versus::keys(core, ds && ds_features, mode.is_none(), keys, prev);
         // Looking at a battle's other front: the cursor only (B goes back).
         if ds && mode.is_none() {
             keys = crate::two_front::keys(core, keys, prev);

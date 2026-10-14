@@ -594,14 +594,16 @@ pub fn ids_for(core: &mut Core, army: u32, co: u8) -> Vec<u8> {
 
 /// AW2's profile has just been written (`sub_0801A7D8(0, ...)` returned:
 /// in `sub_08016E14`, and in the two save routines of `0x0801AC3C` and
-/// `0x0801AE2A`): if the skill data changed, it is written to the DS
+/// `0x0801AE2A`): if the skill data changed (or a War Room record on Dual
+/// Strike's maps is new, crate::ds_versus), it is written to the DS
 /// Campaign's slot too (the progress and records with it), by the same
 /// writer, which returns to the same place (then with nothing left to
 /// write).
 pub const PROFILE_WRITTEN: [u32; 3] = [0x0801_6E2C, 0x0801_AC40, 0x0801_AE2E];
 const SLOT_WRITER: u32 = 0x0801_A7D9;
 pub fn profile_written(core: &mut Core, back: u32) {
-    if !crate::ds_weather::is_on(core) || core.raw_read_8(DIRTY, -1) == 0 || !data_valid(core) {
+    let skills = core.raw_read_8(DIRTY, -1) != 0 && data_valid(core);
+    if !crate::ds_weather::is_on(core) || !(skills || crate::ds_versus::records_dirty(core)) {
         return;
     }
     core.raw_write_8(DIRTY, -1, 0);

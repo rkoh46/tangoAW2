@@ -279,14 +279,15 @@ pub fn install(core: &mut Core) {
 /// The list's "may this map be shown" test (a bit of the unlock block,
 /// `0x02028042 + id / 8`: 26 bytes for the Battle Maps, then the COs' bits,
 /// which pvp.rs sets): the ids from 0xF0 up have no bit there (the byte past
-/// it is something else), so with the larger map table in use they are all
-/// shown. The map list then lists and previews the Colonel's Vault (0xF1).
+/// it is something else), so with a larger map table in use (Survival's,
+/// or Dual Strike's Versus maps', crate::ds_versus) they are all shown. The map list then lists and previews the Colonel's Vault (0xF1).
 const MAP_SHOWN: u32 = 0x0803_CA54;
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![(MAP_SHOWN, Box::new(|core: &mut Core| {
         let id = core.gba().cpu().gpr(0) as u32;
-        if id >= 0xF0 && table(core) == crate::survival::TABLE {
+        let t = table(core);
+        if id >= 0xF0 && (t == crate::survival::TABLE || t == crate::ds_versus::TABLE) {
             let cpu = core.gba_mut().cpu_mut();
             cpu.set_gpr(0, 1);
             let lr = cpu.gpr(14) as u32;
@@ -336,7 +337,8 @@ pub fn show_maps(core: &mut Core, art: bool, pack: bool, last_id: Option<u8>) {
     }
     let table = table(core);
     for (map, &id) in MAPS.iter().zip(IDS.iter()) {
-        if !map.obelisk && !map.ds {
+        // (Dual Strike's Versus maps' table has its own maps at some of these ids, crate::ds_versus)
+        if (!map.obelisk && !map.ds) || (table == crate::ds_versus::TABLE && crate::ds_versus::replaced(id)) {
             continue;
         }
         let on = (!map.obelisk || art) && (!map.ds || (art && pack));

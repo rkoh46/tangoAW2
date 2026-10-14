@@ -104,9 +104,9 @@ def save_versus_suspend_design_4p(ctx):
     suspend_and_resume(ctx, g, "4p", act=move_tank)
 
 
-# -- tangoAW2's Versus maps ---------------------------------------------------------------
+# -- tangoAW2's Versus maps, and Dual Strike's (with the pack, crate::ds_versus) ------------------
 # name -> (map id, Versus tab) (tests/test_ds_maps.py)
-DS_MAPS = {"Rust Basin": (0xC1, 3), "Coral Strait": (0xC5, 3), "Black Wastes": (0xC4, 9),
+DS_MAPS = {"Clover Pond": (0x89, 6), "Dark City": (0x88, 6), "Black Wastes": (0xC4, 9),
            "Obelisk Duel": (0xB8, 3), "Obelisk Plains": (0xBA, 6), "Black Rampart": (0xC0, 9), "Five Seas": (0x00, 9)}
 BIOME = 0x03004493
 LAB = 0x14
@@ -150,12 +150,12 @@ def _ds_map(name, weather, tower):
         if cell:
             ctx.eq(g2.terrain_class(*cell), LAB | 1 << 5, f"{name}: the captured tower is still army 1's")
     fn.__name__ = "save_versus_suspend_" + name.replace(" ", "_").lower()
-    fn.__doc__ = (f"{name} (tangoAW2's map) with {weather} weather: suspended, rebooted and continued, its look, "
+    fn.__doc__ = (f"{name} (Dual Strike's or tangoAW2's map) with {weather} weather: suspended, rebooted and continued, its look, "
                   "weather and a captured tower kept.")
     test(modes=("ds",))(fn)
 
 
-for _n, _w, _t in (("Rust Basin", "sandstorm", True), ("Coral Strait", "random", True), ("Obelisk Duel", "snow", False),
+for _n, _w, _t in (("Clover Pond", "sandstorm", True), ("Dark City", "random", True), ("Obelisk Duel", "snow", False),
                    ("Obelisk Plains", "rain", False)):
     _ds_map(_n, _w, _t)
 

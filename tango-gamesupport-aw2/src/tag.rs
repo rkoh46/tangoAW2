@@ -506,9 +506,12 @@ pub fn map_start(core: &mut Core) {
         return;
     }
     clear_pairs(core);
+    // (a Versus battle on two maps: the partners lead the second front,
+    // crate::ds_versus)
     let versus = core.raw_read_8(GAME_MODE, -1) == VERSUS
         && !crate::survival::on(core)
-        && !crate::ds_campaign::active(core);
+        && !crate::ds_campaign::active(core)
+        && crate::ds_versus::two_fronts(core).is_none();
     let mut pairs: Vec<(u32, u8, u8)> = Vec::new();
     if versus {
         // Dual Strike's Versus: an army (a human's or the computer's) with

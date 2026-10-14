@@ -28,11 +28,15 @@ const GAME_MODE: u32 = 0x0300_3FC1;
 const VERSUS: u8 = 3;
 const CO_ABILITIES: u32 = 0x0300_3FC8;
 
-/// Whether Labs are Com Towers now: in Versus, and in the Design Room's
-/// map editor, with the pack.
+/// Whether Labs are Com Towers now: in Versus, in the Design Room's
+/// map editor and in the War Room on Dual Strike's maps
+/// (crate::ds_versus), with the pack.
 pub fn active(core: &Core) -> bool {
     is_on(core)
-        && (core.raw_read_8(GAME_MODE, -1) == VERSUS || crate::design::in_map_editor(core) || crate::ds_campaign::towers_active(core))
+        && (core.raw_read_8(GAME_MODE, -1) == VERSUS
+            || crate::design::in_map_editor(core)
+            || crate::ds_campaign::towers_active(core)
+            || crate::ds_versus::war_room(core))
 }
 
 /// The Lab tile of an owner (0 neutral .. 4; 5 is Black Hole's, tangoAW2's

@@ -146,6 +146,8 @@ fn map_start(core: &mut Core) {
         set_one_day(core, false);
     }
     crate::wasteland::map_start(core);
+    // A Dual Strike Versus or War Room map's look, weather and fog (crate::ds_versus).
+    crate::ds_versus::map_start(core);
     if is_on(core) {
         crate::co_skills::clear(core);
     }

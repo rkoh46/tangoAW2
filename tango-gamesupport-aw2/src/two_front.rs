@@ -55,9 +55,12 @@
 //!   army ([`second_front_over`], the hook for tag pairs). Lost: the
 //!   battle goes on.
 //!
-//! The one gate ([`battle`]) decides where any of this is on: today the DS
-//! Campaign's two-front missions. Everywhere else nothing here runs or
-//! writes, and every menu is the game's own.
+//! The one gate ([`battle`]) decides where any of this is on: the DS
+//! Campaign's two-front missions, and with the Dual Strike pack's maps a
+//! Versus battle on two maps or one of the War Room's five two-front maps
+//! ([`crate::ds_versus`]: its description and both fronts' headers come from
+//! there, the battle played on a map id of its own). Everywhere else nothing
+//! here runs or writes, and every menu is the game's own.
 
 use mgba::core::Core;
 
@@ -562,9 +565,14 @@ pub struct Battle {
 }
 
 /// The one gate: whether the battle being played (or set up) is on two
-/// fronts. Today: a DS Campaign mission whose description has a second
-/// front (Dual Strike's five). Everything in this module is off without it.
+/// fronts: a DS Campaign mission whose description has a second front (Dual
+/// Strike's five), or a Versus or War Room battle on two of Dual Strike's
+/// maps ([`crate::ds_versus::two_fronts`]). Everything in this module is off
+/// without it.
 pub fn battle(core: &Core) -> Option<Battle> {
+    if let Some((main, fronts)) = crate::ds_versus::two_fronts(core) {
+        return Some(Battle { main, fronts });
+    }
     if !crate::ds_campaign::active(core)
         || core.raw_read_8(MAP_ID, -1) != crate::campaign_model::MAP_ID
         || core.raw_read_8(GAME_MODE, -1) != CAMPAIGN
@@ -615,8 +623,20 @@ pub fn swapping(core: &Core) -> bool {
     on(core).is_some() && core.raw_read_8(BUSY, -1) != 0 && core.raw_read_8(VIEW, -1) != 1
 }
 
+/// Each army's CO on the second front, picked before the battle (Versus'
+/// Teams screen, crate::ds_versus): kept as the CO screen's picks are.
+pub fn set_second_cos(core: &mut Core, cos: [u8; 4]) {
+    let Some(b) = battle(core) else { return };
+    core.raw_write_range(SECOND_COS, -1, &cos);
+    core.raw_write_8(PICKED_FOR, -1, b.main.index as u8 + 1);
+}
+
 /// The live front's own mission info (its look, weather, fog, armies).
 pub fn live_info(core: &Core) -> Option<&'static MissionInfo> {
+    // (a Versus or War Room battle's fronts are no missions: crate::ds_versus)
+    if crate::ds_versus::two_fronts(core).is_some() {
+        return None;
+    }
     let b = battle(core)?;
     if core.raw_read_8(LIVE, -1) == 1 {
         crate::ds_campaign::campaign(core)?.model.built.missions.get(b.fronts.second as usize)
@@ -626,12 +646,19 @@ pub fn live_info(core: &Core) -> Option<&'static MissionInfo> {
 }
 
 fn header(core: &Core, index: u8) -> Option<[u8; 0x5C]> {
+    // (a Versus or War Room battle's: index 0 the main front, 1 the second)
+    if crate::ds_versus::two_fronts(core).is_some() {
+        return crate::ds_versus::front_header(core, index);
+    }
     crate::ds_campaign::campaign(core)?.model.built.headers.iter().find(|h| h.0 == index).map(|h| h.1)
 }
 
 /// The map table entry the battle is played on (tangoAW2's table with
 /// room for 0x100 ids).
 fn table_entry(core: &Core) -> Option<u32> {
+    if crate::ds_versus::two_fronts(core).is_some() {
+        return crate::ds_versus::two_front_entry(core);
+    }
     let t = crate::five_map::table(core);
     (t == crate::survival::TABLE).then_some(t + 0x5C * crate::campaign_model::MAP_ID as u32)
 }
@@ -1004,8 +1031,10 @@ pub fn magic(core: &mut Core, id: u32) {
         }
         (Stub::SaveUsable, Some(_)) => {
             // On either front (Dual Strike's menu has Save on a player's
-            // second-front turn too); the game's own test.
-            if core.raw_read_8(BUSY, -1) != 0 {
+            // second-front turn too); the game's own test. Not in a Versus
+            // or War Room battle (crate::ds_versus): its suspend slot holds
+            // one sector, the two fronts do not fit.
+            if core.raw_read_8(BUSY, -1) != 0 || crate::ds_versus::two_fronts(core).is_some() {
                 return return_to(core, 1);
             }
             core.gba_mut().cpu_mut().set_thumb_pc(0x0802_C644)
@@ -1300,9 +1329,13 @@ const EXTRA_PENDING: u32 = STAGING + 0x1F90;
 /// COs (the player's pick), who directs them and its rules.
 fn setup_second(core: &mut Core, b: &Battle) {
     let Some(h) = header(core, b.fronts.second) else { return };
-    let Some(info) = crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(b.fronts.second as usize)) else { return };
+    // (a Versus or War Room battle's second front: its header's armies)
+    let armies = match crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(b.fronts.second as usize)) {
+        Some(info) if crate::ds_versus::two_fronts(core).is_none() => info.armies,
+        _ => h[0x18],
+    };
     for k in 0..4u32 {
-        let present = k < info.armies as u32;
+        let present = k < armies as u32;
         core.raw_write_8(COLOURS + 1 + k, -1, h[0x40 + k as usize]);
         core.raw_write_8(TEAMS + 1 + k, -1, h[0x44 + k as usize]);
         let co = core.raw_read_8(SECOND_COS + k, -1);
@@ -1355,8 +1388,11 @@ fn unit_planes(core: &mut Core) {
 
 fn arrive(core: &mut Core, b: &Battle) {
     // Its look (before the map's graphics are loaded, the swap's next
-    // steps): each front its own (crate::ds_campaign::set_look).
-    if let Some(m) = live_info(core) {
+    // steps): each front its own (crate::ds_campaign::set_look; a Versus or
+    // War Room battle's, crate::ds_versus).
+    if crate::ds_versus::two_fronts(core).is_some() {
+        crate::ds_versus::front_look(core, core.raw_read_8(LIVE, -1));
+    } else if let Some(m) = live_info(core) {
         crate::ds_campaign::set_look(core, m);
     }
     // The battle's flags, shared by both fronts.

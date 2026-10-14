@@ -97,9 +97,9 @@ const T_KINDS: u16 = 1; // three
 const T_MAPS: u16 = 5; // 33
 const T_CHAMPIONS: u16 = 38; // three
 
-/// The War Room record table (`id - 0x6C` rows of 0x14) and the
-/// literal-pool words of its readers and writer.
-const RECORDS: u32 = 0x0200_C078;
+/// The literal-pool words of the War Room record table's (`id - 0x6C`
+/// rows of 0x14, `0x0200C078`: crate::ds_versus::RECORDS) readers and
+/// writer.
 const RECORD_POOLS: [u32; 5] = [0x0808_759C, 0x0808_7664, 0x0808_7B18, 0x0808_7C6C, 0x0801_77E4];
 
 // --- RAM ---------------------------------------------------------------------
@@ -407,7 +407,10 @@ fn install(core: &mut Core) -> bool {
 pub fn tick_tables(core: &mut Core, on: bool) {
     let on = on && install(core);
     if on {
-        crate::five_map::use_table(core, TABLE);
+        // (Versus and the War Room read Dual Strike's maps' table, crate::ds_versus)
+        if !crate::ds_versus::tick_tables(core, true) {
+            crate::five_map::use_table(core, TABLE);
+        }
     } else if installed(core) {
         crate::five_map::use_table(core, crate::five_map::MAP_TABLE);
     }
@@ -533,8 +536,10 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
     }
     let on = core.raw_read_8(ON, -1) == 1;
     set8(core, WAR_ROOM_TAB, if on { TAB as u8 } else { WAR_ROOM_TAB_GAME });
-    let rows = if on { ROWS.wrapping_sub(ROW * (FIRST_ID as u32 - 0x6C)) } else { RECORDS };
-    for at in RECORD_POOLS {
+    // (the War Room on Dual Strike's maps has rows of its own, crate::ds_versus; the insert's search and store
+    // read the table through one more word)
+    let rows = if on { ROWS.wrapping_sub(ROW * (FIRST_ID as u32 - 0x6C)) } else { crate::ds_versus::record_rows(core) };
+    for at in RECORD_POOLS.into_iter().chain([crate::ds_versus::INSERT_POOL]) {
         if core.raw_read_32(at, -1) != rows {
             core.raw_write_32(at, -1, rows);
         }

@@ -160,7 +160,7 @@ pub enum PowerSong {
     Tag = 2,
 }
 /// The story songs' ROM range ends here.
-pub const STORY_END: u32 = 0x09E0_0000;
+pub const STORY_END: u32 = 0x09C0_0000;
 pub const OPENING: u16 = 0x29;
 pub const WORLD_MAP: u16 = 0x06;
 pub const ENDING: u16 = 0x36;
