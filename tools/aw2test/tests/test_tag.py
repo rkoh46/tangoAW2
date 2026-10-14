@@ -6,16 +6,18 @@ CO record +0x84); the damage is the calculator's (aw2test/damage.py, which
 adds the Tag Power's firepower); the power meters are AW2's formula, the
 partner's half of the active CO's."""
 
+import dataclasses
 import os
 
 from aw2test.harness import Skip, test
 from aw2test import dscampaign as dc
-from aw2test import paths, ram, saves, setting, tag
+from aw2test import damage, paths, ram, saves, setting, tag
 from aw2test import rom as romlib
 from aw2test.emu import Emu
 from aw2test.game import Game
 
 TEAMS = ram.TEAMS
+ACTIVE = 0x0203F7E0  # crate::co_skills::ACTIVE: 6 bytes per army
 TEAMS_CURSOR = TEAMS + 0x32
 
 
@@ -370,6 +372,76 @@ def tag_change(ctx):
     if spot and abs(spot[0] - u["x"]) + abs(spot[1] - u["y"]) <= 6:
         r = ctx.attack(g, (u["x"], u["y"]), spot, (ex, ey))
         ctx.eq(r["first"].acc >= 100, True, "an attack with Andy's numbers")
+
+
+def skill_bits(ids):
+    b = bytearray(6)
+    for i in ids:
+        b[(i - 0x20) // 8] |= 1 << ((i - 0x20) % 8)
+    return bytes(b)
+
+
+def lent_attack(ctx, g, src, target, label):
+    """An attack checked against the calculator (with the partner's tag
+    skills), then exactly: the attacker's damage before defence is acc x
+    base + luck, and the defender's total defence the calculator's."""
+    a = ctx.side(g, g.unit_at(*src))
+    d = ctx.side(g, g.unit_at(*target))
+    dist = abs(src[0] - target[0]) + abs(src[1] - target[1])
+    first = damage.battle(ctx.rules, a, d, dist)[0]
+    ctx.attack(g, src, src, target)
+    ra, rd = ctx.battle_records(g)
+    lo = damage.div(first.acc * first.base, 100)
+    ctx.check(lo <= ra["damage"] < lo + first.luck[0], f"{label}: the game's damage {ra['damage']} is acc {first.acc} x base {first.base} + luck")
+    ctx.eq(rd["defence"], first.defence, f"{label}: the target's defence")
+    return first
+
+
+@test(modes=("ds",))
+def tag_skills_lent(ctx):
+    """Teamwork, Synergy, Bodyguard (crate::co_skills): the partner's work for
+    the active CO (+5 / +8 firepower, +10 defence), the active CO's own do
+    nothing for it; after a Change the new partner's are the ones lent."""
+    T, S, B = 0x35, 0x36, 0x37
+    units = [(1, "md tank", 10, 10), (2, "tank", 11, 10), (1, "md tank", 10, 14), (2, "tank", 11, 14)]
+    m = ctx.map()
+    for u in units:
+        m.unit(*u)
+    m.terrain(11, 10, "wood").terrain(11, 14, "wood")
+    g = ctx.boot_teams(m)
+    tag.set_teams_partner(g.e, 1, "andy")
+    tag.set_teams_partner(g.e, 2, "sami")
+    g.set_teams(["max", "olaf"], {1, 2})
+    g.teams_to_rules()
+    g.set_rules()
+    g.start_battle()
+    g.wait_for_input()
+    e = g.e
+    # Max (active) has Teamwork and Synergy himself; his partner Andy has them too; Olaf's partner Sami has Bodyguard.
+    e.write(ACTIVE + 0, skill_bits([T, S]))
+    e.write(tag.rec(1) + tag.P_SKILLS, skill_bits([T, S]))
+    e.write(tag.rec(2) + tag.P_SKILLS, skill_bits([B]))
+    ctx.skills[1] = {T, S}
+    a = ctx.side(g, g.unit_at(10, 10))
+    ctx.eq(a.lent, frozenset({T, S}), "army 1 is lent Andy's Teamwork and Synergy")
+    plain = damage.battle(ctx.rules, dataclasses.replace(a, lent=frozenset()), ctx.side(g, g.unit_at(11, 10)), 1)[0]
+    first = lent_attack(ctx, g, (10, 10), (11, 10), "Max, lent Teamwork + Synergy")
+    ctx.eq(first.acc - plain.acc, 13, "the lent skills' +13 (Max's own do nothing for him)")
+    ctx.eq(ctx.side(g, g.unit_at(11, 14)).lent, frozenset({B}), "army 2 is lent Sami's Bodyguard")
+    d = ctx.side(g, g.unit_at(11, 14))
+    ctx.eq(damage.total_defence(ctx.rules, d) - damage.total_defence(ctx.rules, dataclasses.replace(d, lent=frozenset())), 10, "Bodyguard's +10")
+    # The Change: Andy in front with Max's set lent; Andy's own (Teamwork, Synergy) now in ACTIVE do nothing for him.
+    names = g.open_map_menu()["names"]
+    ctx.require("Change" in names, f"Change offered ({names})")
+    g.choose("Change", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: g.current_army() == 2, 900, step=8), "Change ends the turn")
+    ctx.eq(tag.partner(e, 1)["skills"], skill_bits([T, S]), "Max's set goes with him to the partner's place")
+    g.wait_for_input()
+    g.end_turn(human=1)
+    ctx.eq(g.player(1)["co"], romlib.co_id("andy"), "Andy is the active CO")
+    ctx.skills[1] = {T, S}
+    first = lent_attack(ctx, g, (10, 14), (11, 14), "Andy, lent Max's Teamwork + Synergy")
+    ctx.eq(first.acc, 100 + 13, "Andy's acc: his own 100 and the lent +13")
 
 
 @test(modes=("ds",))
@@ -975,10 +1047,11 @@ def power_digits(ctx, path, want, what):
 
 @test(modes=("ds",))
 def tag_power_screen(ctx):
-    """Tag: after the first CO's quote, Dual Strike's tag screen full
-    screen (both COs' art, the pair's Tag Power name, POWER 110%) holds
-    the power's script, then goes (the layers as they were) and AW2's
-    Super Power screen follows."""
+    """Tag: after the first CO's quote, the map dims and Dual Strike's three
+    bolts strike with their sparks (crate::tag_thunder; what they cover put
+    back), then Dual Strike's tag screen full screen (both COs' art, the
+    pair's Tag Power name, POWER 110%) holds the power's script, then goes
+    (the layers as they were) and AW2's Super Power screen follows."""
     units = [(1, "tank", 10, 4), (2, "tank", 20, 10)]
     g = tag_battle(ctx, ["max", "olaf"], ["andy", None], units=units)
     e = g.e
@@ -994,6 +1067,30 @@ def tag_power_screen(ctx):
     ctx.require(screen_at(e, 20), "frame 20")
     ctx.eq((e.u8(SCREEN_UP), e.u16(BLDCNT)), (0, 0x00FF), "the map dims before the screen (darkened)")
     ctx.shot(g, "tag_0_map")
+    # What the thunder covers (crate::tag_thunder): BG0's tiles at its character block + 0x5600, its map buffer, BG palette 8,
+    # OBJ tiles 0x1CA.., OBJ palette 15.
+    chars = 0x06000000 + 0x4000 * ((e.u16(BGCNT[0]) >> 2) & 3) + 0x5600
+    buffer = e.u32(0x08499578)
+    covered = lambda: (e.read(chars, 0x1000), e.read(buffer, 0x800), e.read(0x030020C0 + 0x100, 0x20), e.read(0x06010000 + 32 * 0x1CA, 0xC0), e.read(0x030020C0 + 0x3E0, 0x20))
+    before = covered()
+    # The three bolts over the map (BG0 blended in, the map dimmed by EVB) with their sparks.
+    for f, name, eva in ((174, "tag_0_bolt1", 16), (190, "tag_0_bolt1_fading", 13), (215, "tag_0_bolt2", 11), (225, "tag_0_bolt3", 16)):
+        ctx.require(screen_at(e, f - TAG_START), f"Dual Strike's frame {f}")
+        ctx.eq((e.u16(BLDCNT), e.u16(DISPCNT) & 0x0100, e.u16(BGCNT[0]) & 3, e.u16(0x03002B28)), (0x3E41, 0x0100, 0, 10), f"frame {f}: the bolt (BG0, priority 0) blended over the dimmed map")
+        ctx.eq(e.u16(0x03002020), eva, f"frame {f}: the bolt's EVA (Math_Ease curve 1, 16 -> 0)")
+        ctx.shot(g, name)
+    sparks = [k for k in range(128) if (e.u16(0x07000000 + 8 * k + 4) & 0x3FF) in range(0x1CA, 0x1D0) and e.u16(0x07000000 + 8 * k) & 0xFF < 160]
+    ctx.check(len(sparks) >= 20, f"sparks drawn at frame 225 ({len(sparks)})")
+    ctx.require(screen_at(e, 258 - TAG_START), "the white")
+    ctx.eq(e.u8(0x0203C600), 0, "the thunder is over")
+    # The tag theme (crate::power_music) started at 256, as Dual Strike's script starts it.
+    theme = e.u16(0x030005CA)
+    header = e.u32(e.u32(0x080704A0) + 8 * theme)
+    ctx.check(theme >= 505 and header >= 0x09000000, f"Dual Strike's tag theme plays from 256 (song {theme}, header {header:08x})")
+    ctx.eq(e.u32(0x03005AE0), header, "on the music player")
+    ctx.check(covered() == before, "BG0's tiles and buffer, the palettes and the OBJ tiles as they were")
+    ctx.eq(e.u16(BLDCNT), 0x00BF, "the map whitens")
+    ctx.eq((e.u16(DISPCNT) & 0x0100, e.u16(BGCNT[0])), (layers & 0x0100, cnts[0]), "BG0 as it was")
     # The screen from white: the emblem alone, the COs at the start of their
     # slide (the partner on the right 94 pixels low), no POWER box yet.
     ctx.require(screen_at(e, 305 - TAG_START), "Dual Strike's frame 305")
@@ -1031,6 +1128,8 @@ def tag_power_screen(ctx):
     ctx.eq(e.u16(DISPCNT) & 0x1F00, layers & 0x1F00, "the layers as they were")
     ctx.eq([e.u16(a) for a in BGCNT], cnts, "the BGs as they were")
     ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the Super Power follows")
+    g.wait_for_input()
+    ctx.eq((e.u16(0x030005CA), e.u32(0x03005AE0)), (theme, header), "the Super Power's music is the tag theme, not started again")
 
 
 @test(modes=("ds",))

@@ -1008,10 +1008,13 @@ Strike theme, converted at run time for AW2's sound engine (MP2K, "Sappy").
   `sound/seq/<id>`, `sound/bank/<id>`, `sound/wave/<id>` (about 4 MB;
   with the Crystal's and Obelisk's heal sounds, 175 and 176, nothing else
   of the 18 MB archive), and the DS Campaign's 15 story songs
-  (`STORY_SONGS`), the staff roll's stream (`sound/strm/0`) and the tag
-  screens' six sounds (`TAG_SE_CALLS`, after the roll in the story's range).
-  The pack's version is 6 (3: the heal sounds, 4: the story songs, 5: the
-  stream, 6: the tag sounds). A saved pack of an older version is rebuilt
+  (`STORY_SONGS`), the staff roll's stream (`sound/strm/0`), the tag
+  screens' six sounds (`TAG_SE_CALLS`, after the roll in the story's range)
+  and the six power themes (`POWER_SONGS`, after them: songs 539..544 with
+  every story song there; the story's range ends at 0x098438DC, below its
+  limit `STORY_END` 0x09E00000).
+  The pack's version is 7 (3: the heal sounds, 4: the story songs, 5: the
+  stream, 6: the tag sounds, 7: the power themes). A saved pack of an older version is rebuilt
   from the .nds by the scan when the .nds is in the ROMs folder (every
   start's first scan reads it, so a player updating needs to do nothing:
   `tango-library/tests/ds_pack_update.rs`, 0.5.0's version 5 pack to 6, the
@@ -1019,8 +1022,35 @@ Strike theme, converted at run time for AW2's sound engine (MP2K, "Sappy").
   of 3 or later still loads (what it lacks stood in for by AW2's like
   sounds, or silent: the tag screens), and the Play tab says it is out of
   date and to put the .nds back (`ds_pack::outdated`,
-  `tests/ds_pack_update_no_nds.rs`). Power music stays AW2's
-  (Dual Strike's is shared too).
+  `tests/ds_pack_update_no_nds.rs`; a version 6 pack to 7 checked with
+  the power themes).
+- **Power music** (`power_music.rs`): Dual Strike's `Player_PlayTheme`: a
+  CO Power `BGM_BREAK_ALLY1` / `_ENEMY1` (0x1D / 0x1C), a Super
+  `BGM_SPECIAL_BREAK_ALLY1` / `_ENEMY1` (0x1F / 0x20), a Super while a Tag
+  Power is on (both halves) `BGM_TAG_BREAK_ALLY1` / `_ENEMY1` (0x2E /
+  0x2F); Allied or Black Hole by `Player_IsAlliedNations`: the front CO's
+  nation, but in the DS Campaign the player's armies are Allied and the
+  computer's are not (every army on Jake's Trial, Lightning Strikes and
+  Verdant Hills); in the BH Campaign the player is Black Hole (the
+  computer's armies by their CO). AW2's `sub_08043DAC(army)` picks the
+  power music by player +0x1E through `sub_08043DF4` (0x1A3 Black Hole /
+  0x1A4) and `sub_08043E18` (0x199 / 0x19A); their four `sub_0803B4EC`
+  calls (`0x08043E02`, `0x08043E10`, `0x08043E26`, `0x08043E34`) are
+  trapped and get Dual Strike's song (the army kept at `sub_08043DAC`'s
+  entry, RAM `0x0203C601`, or the current army when the power screens
+  call the two directly from `0x08080EE4` / `0x08080EF8`); the nation test
+  is AW2's own (`sub_08044BA0`, COs 10..14, the new COs as the CO they take
+  after: `co_new::black_hole_power_music`). The tag theme starts at the Tag
+  Power's frame 256 (as Dual Strike's script, `func_02057ef8`), through
+  AW2's music call from the tag screen's wait, so the power's own call
+  finds it playing (`sub_0803B524` leaves it). The themes are music on the
+  themes' player (at most 8 tracks; 12 channels mixed while they play, as
+  the CO themes). Without them (no pack, a pack before 7) AW2's power music
+  plays. Tests `power_music_is_dual_strikes` (Andy's CO Power, Lash's Super
+  Power three songs on, 10 s of each recorded and heard, the day theme
+  back), `power_music_without_the_pack`, `tag_power_screen` (the tag theme
+  from 256, the Super Power's call leaves it), `power_themes_convert`
+  (ignored, with the pack).
 - **Sequence.** Each SSEQ track is walked (calls inlined, loops and jumps
   followed; the jump back is the loop) into timed notes and controls, and
   written as an MP2K track that plays the intro, then the loop, then GOTOs
@@ -3201,9 +3231,23 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
 `0x022F5ECC`: 12-byte records by id, {rank, name `0x7C<<24|i`, description
 `0x7B<<24|i`}; its per-CO bitmap test `0x020E7EE0`):
 
-- **Skills.** Its 43 player skills (ids 0x20..0x4A) less the three tag
-  skills (0x35..0x37: the tag pairs, see CO tag pairs, leave them out). Each takes a slot; their effects
-  stack. Names, ranks and descriptions come from the pack.
+- **Skills.** Its 43 player skills (ids 0x20..0x4A), the three tag skills
+  among them (0x35 Teamwork rank 3, 0x37 Bodyguard rank 6, 0x36 Synergy
+  rank 9; below). Each takes a slot; their effects stack. Names, ranks and
+  descriptions come from the pack; the SET SKILLS board's six rows hold
+  every rank's (test `every_rank_fits_six_rows`, ignored, with the pack).
+- **Tag skills** (Dual Strike's `UpdatePlayerSkills` `0x020E70B8`,
+  `FirepowerIncrease`, `DefenseIncreaseTagTransport`): the back CO of a tag
+  pair equips one, the front CO gets it: Teamwork +5, Synergy +8 firepower
+  (every unit), Bodyguard +10 defence (none with CO abilities off, as all
+  of Dual Strike's skill defence). A front CO's own tag skill does nothing
+  for itself; no partner, nothing; nothing is lent while a two-front
+  mission's second front is on. The partner's set is its record's
+  `P_SKILLS` (crate::tag), swapped with `ACTIVE` at a Change and a Tag
+  Power's second half, so the new front gets the new back's. Test
+  `tag_skills_lent` (`test_tag.py`: a partner's Teamwork + Synergy +13 for
+  the active CO, its own nothing, Bodyguard +10 for the defender, and after
+  a Change the new partner's set; the calculator's `Side.lent`).
 - **In battle.** Each army's skills are a bitmap in RAM (`ACTIVE`,
   `0x0203F7E0`, 6 bytes an army), cleared at every map start and set by
   the mode (`battle_start`): the player's armies get their CO's set of the
@@ -3285,7 +3329,7 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
 
 Dual Strike's tag pairs (Change and the Tag Power) in AW2's battles, with
 the Dual Strike pack. Its tag-only skills (Teamwork, Synergy, Bodyguard)
-stay out.
+are under CO skills.
 
 **What Dual Strike does** (its arm9, read statically and checked in melonDS,
 `tango-backend-melonds/examples/ds_script`):
@@ -3510,7 +3554,7 @@ stay out.
   `0x020593E0`, `0x0205CCBC`), played through AW2's sound-effect call
   `sub_0803B4DC` on the frames Dual Strike plays them (pack version 6; an
   older saved pack has none and the screens play silent). The tag music
-  stays AW2's power music.
+  is Dual Strike's from frame 256 (see "Power music", pack version 7).
 
   On the GBA the screen keeps Dual Strike's pixels, scale and timing, cut
   to the window the COs' heads are in (Dual Strike's two screens' x 8..,
@@ -3573,9 +3617,25 @@ stay out.
   each line inside the results box's 104 pixels); his tag-in line one of
   AW2's own Sturm power quotes (his CO table row +0x20). His body art on
   the tag screens is AW2's.
-- **Left out**: the tag screens' bolts over the map and their drifting
-  white specks (flashes of the map stand in for the bolts); the tag music
-  (AW2's power music plays); tag skills. Market Crash and other meter
+- **The Tag Power's thunder** (`tag_thunder.rs`): before the tag screen
+  takes the display, Dual Strike's three bolts strike the dimmed map
+  (script `0x0215C4F4`: `res_tagbreak_thunder`'s map A at 173, B in its
+  own palette at 209, A again at 219; BG0 blended in at EVA 16 easing to 0
+  over 36, 10 and 36 frames, `Math_Ease` curve 1), each with two bursts of
+  36 white sparks flying 60 pixels out (`gSparkBurstOffsets`, curve 4, a
+  style 0..15 per spark: Dual Strike's random pick is a fixed hash here).
+  The GBA window is the DS screen less 8 pixels a side and 16 top and
+  bottom; each bolt map's 216/224 tiles are cut to the wave overlay's 128
+  (BG0 chars + `0x5600`, BG palette 8, the game's BG0 buffer), BG0 at
+  priority 0 with EVB the map's dim (16 - 6: BLDY cannot darken while the
+  blend is on); the sparks are 8x8 sprites (OBJ tiles `0x1CA..0x1CF`,
+  colour 3 of OBJ palette 15) in sprite-list entries the map leaves
+  parked, so with four bursts up some may be left out (spread round them).
+  What it covers is kept at the start of the tag screen's backup (free
+  until frame 297) and put back at 257 or when the screen is cut short;
+  RAM `0x0203C600` (1 byte). Test `tag_power_screen` (the blend and EVA
+  per bolt, sparks in OAM, everything back).
+- **Left out**: Market Crash and other meter
   drains reach only the active CO. The pad bot (`aw2test/bot.py`) fires
   Tag Powers but no longer wins four missions where the computer fights as
   a pair (The Long March, Verdant Hills, Into the Woods, Pincer Strike):

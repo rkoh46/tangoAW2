@@ -38,9 +38,13 @@ fn an_older_pack_is_rebuilt_from_the_nds_in_the_folder() {
     for se in [Thunder, MeterUp, Count, Letter, Burst, Swap] {
         assert!(ds_music::tag_se(se).is_some(), "{se:?}: the tag screens' sound");
     }
+    for (which, allied) in [(ds_music::PowerSong::CoPower, true), (ds_music::PowerSong::Tag, false)] {
+        assert!(ds_music::power_song(which, allied).is_some(), "{which:?}: Dual Strike's power theme");
+    }
     eprintln!(
-        "pack version {old_version} -> {saved}; tag sounds: {:?}",
-        ds_music::music().unwrap().tag_se
+        "pack version {old_version} -> {saved}; tag sounds: {:?}; power themes: {:?}",
+        ds_music::music().unwrap().tag_se,
+        ds_music::music().unwrap().power
     );
     let _ = std::fs::remove_dir_all(&dir);
 }

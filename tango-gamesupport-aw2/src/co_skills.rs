@@ -2,8 +2,8 @@
 //! has on in a battle, and what they do.
 //!
 //! Dual Strike's 43 player skills are ids 0x20..0x4A in its skill table
-//! (overlay 0 `0x022F5ECC`: rank, name, description); its three tag skills
-//! (0x35..0x37) need tag pairs and are left out. Each army's skills in the
+//! (overlay 0 `0x022F5ECC`: rank, name, description), the three tag skills
+//! (0x35..0x37) among them. Each army's skills in the
 //! battle being played are a bitmap in [`ACTIVE`] (bit `id - 0x20`), set when
 //! the battle starts from the mode's rules (the DS Campaign, Survival and the
 //! War Room as Dual Strike has them, AW2's campaign, Versus with its Skills
@@ -24,6 +24,12 @@
 //!   Combat Pay, 2% of the value of the HP its attacks take (`0x020C86CC`).
 //! - Missile Guard: a silo's blast (and Victory or Death!'s Black Arc) takes
 //!   10 HP points less (`0x020E6874`).
+//! - the tag skills (`UpdatePlayerSkills` `0x020E70B8`): the partner (back
+//!   CO) of a tag pair equips them, the active (front) CO gets the effect:
+//!   Teamwork +5, Synergy +8 firepower for every unit, Bodyguard +10 defence
+//!   (none with CO abilities off). A CO's own tag skill does nothing while it
+//!   is in front; they follow a Change (crate::tag swaps the sets). Nothing
+//!   is lent while a two-front mission's second front is still on.
 //!
 //! Everything lives in emulated RAM, the same on both netplay peers.
 
@@ -53,8 +59,11 @@ pub const BACKSTAB: u8 = 0x31;
 pub const HIGH_AND_DRY: u8 = 0x32;
 pub const ICEBREAKER: u8 = 0x33;
 pub const SAND_SCORPION: u8 = 0x34;
-/// Tag skills (0x35..0x37): left out.
-pub const TAG_SKILLS: [u8; 3] = [0x35, 0x36, 0x37];
+pub const TEAMWORK: u8 = 0x35;
+pub const SYNERGY: u8 = 0x36;
+pub const BODYGUARD: u8 = 0x37;
+/// The tag skills (0x35..0x37): they work from the partner (see [`lent`]).
+pub const TAG_SKILLS: [u8; 3] = [TEAMWORK, SYNERGY, BODYGUARD];
 pub const MECHANIC: u8 = 0x3D;
 pub const GEAR_HEAD: u8 = 0x3E;
 pub const COMBAT_PAY: u8 = 0x45;
@@ -74,15 +83,15 @@ pub fn has(core: &Core, army: u32, id: u8) -> bool {
     core.raw_read_8(ACTIVE + ACTIVE_LEN * (army - 1) + bit / 8, -1) & (1 << (bit % 8)) != 0
 }
 
-/// Sets army `army`'s skills for the battle (ids outside 0x20..0x4A and the
-/// tag skills are ignored).
+/// Sets army `army`'s skills for the battle (ids outside 0x20..0x4A are
+/// ignored).
 pub fn set(core: &mut Core, army: u32, ids: &[u8]) {
     if !(1..=5).contains(&army) {
         return;
     }
     let mut b = [0u8; ACTIVE_LEN as usize];
     for &id in ids {
-        if (FIRST..=LAST).contains(&id) && !TAG_SKILLS.contains(&id) {
+        if (FIRST..=LAST).contains(&id) {
             let bit = (id - FIRST) as usize;
             b[bit / 8] |= 1 << (bit % 8);
         }
@@ -155,7 +164,23 @@ pub fn firepower(core: &Core, army: u32, t: u8, flags: u8, terrain: u8) -> i32 {
     if (on(HIGH_AND_DRY) && weather == RAIN) || (on(ICEBREAKER) && weather == SNOW) || (on(SAND_SCORPION) && sandstorm) {
         v += 20;
     }
+    v += if lent(core, army, TEAMWORK) { 5 } else { 0 } + if lent(core, army, SYNERGY) { 8 } else { 0 };
     v
+}
+
+/// Army `army`'s partner (the back CO of its tag pair) has tag skill `id`
+/// on, which the active CO gets (Dual Strike's `UpdatePlayerSkills`: the
+/// back CO's Teamwork, Synergy, Bodyguard give the front CO's set the
+/// lent ones). No partner, or a two-front mission whose second front is
+/// still on (Dual Strike's `secondMapId` branch): nothing.
+fn lent(core: &Core, army: u32, id: u8) -> bool {
+    if crate::tag::partner(core, army).is_none() {
+        return false;
+    }
+    if crate::two_front::on(core).is_some() && crate::two_front::second_front_result(core).is_none() {
+        return false;
+    }
+    crate::tag::has_partner_skill(core, army, id)
 }
 
 /// The defence army `army`'s unit of type `t` gets from skills against an
@@ -169,6 +194,10 @@ pub fn defence(core: &Core, army: u32, t: u8, distance: u8) -> i32 {
         v += if on(SNIPE_GUARD) { 8 } else { 0 } + if on(SNIPE_SHIELD) { 12 } else { 0 };
     }
     if on(APC_GUARD) && is_transport(t) {
+        v += 10;
+    }
+    // (Dual Strike's `Player_GetCoDefense` gives none with CO abilities off.)
+    if core.raw_read_8(CO_ABILITIES, -1) != 0 && lent(core, army, BODYGUARD) {
         v += 10;
     }
     v
@@ -672,7 +701,7 @@ const SKILL_TABLE: u32 = 0x022F_5ECC;
 
 /// Skill `id`'s rank, name and description (Dual Strike's, from the pack).
 pub fn info(id: u8) -> Option<(u8, Vec<u8>, Vec<u8>)> {
-    if !(FIRST..=LAST).contains(&id) || TAG_SKILLS.contains(&id) {
+    if !(FIRST..=LAST).contains(&id) {
         return None;
     }
     let pack = crate::ds_pack::pack()?;
@@ -684,9 +713,9 @@ pub fn info(id: u8) -> Option<(u8, Vec<u8>, Vec<u8>)> {
     Some((rank, name, desc))
 }
 
-/// The ids a player can equip (Dual Strike's, less the tag skills).
+/// The ids a player can equip (Dual Strike's 43, the tag skills too).
 pub fn ids() -> impl Iterator<Item = u8> {
-    (FIRST..=LAST).filter(|id| !TAG_SKILLS.contains(id))
+    FIRST..=LAST
 }
 
 // --- Per CO: EXP and the sets (saved with the DS Campaign's record) ---------------

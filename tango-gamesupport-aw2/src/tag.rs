@@ -283,7 +283,8 @@ pub fn charged(core: &mut Core) {
     core.raw_write_32(rec(army) + P_CHARGE, -1, v);
 }
 
-fn has_partner_skill(core: &Core, army: u32, id: u8) -> bool {
+/// Army `army`'s partner has skill `id` on (its set, kept with the pair).
+pub fn has_partner_skill(core: &Core, army: u32, id: u8) -> bool {
     if !(crate::co_skills::FIRST..=crate::co_skills::LAST).contains(&id) {
         return false;
     }

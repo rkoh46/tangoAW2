@@ -160,6 +160,9 @@ class Side:
     # weather (0 clear, 1 snow, 2 rain, 3 sandstorm) for the weather skills.
     skills: frozenset = frozenset()
     weather: int = 0
+    # The tag skills (0x35 Teamwork, 0x36 Synergy, 0x37 Bodyguard) the army's
+    # tag partner has on: the active CO gets them (crate::co_skills).
+    lent: frozenset = frozenset()
     # A CO tag pair's Tag Power under way (tangoAW2's crate::tag): the pair's
     # Dual Strike compatibility - 100, as firepower (Dual Strike's
     # 0x020E5C40 -> 0x020E5508; with CO abilities on).
@@ -179,9 +182,9 @@ SKILL_NEITHER = {13, 27}
 def skill_attack(s):
     """Attack (percentage points) side `s`'s skills give it."""
     k = s.skills
+    v = 5 * (0x35 in s.lent) + 8 * (0x36 in s.lent)
     if not k:
-        return 0
-    v = 0
+        return v
     direct = s.type not in SKILL_INDIRECT | SKILL_TRANSPORT | SKILL_NEITHER
     if direct:
         v += 5 * (0x20 in k) + 8 * (0x21 in k)
@@ -202,9 +205,10 @@ def skill_attack(s):
 def skill_defence(s, dist):
     """Defence side `s`'s skills give it against an attack from `dist`."""
     k = s.skills
+    lent = 10 if 0x37 in s.lent and s.co_abilities else 0
     if not k:
-        return 0
-    v = 8 * (0x25 in k) + 12 * (0x26 in k) if dist <= 1 else 8 * (0x27 in k) + 12 * (0x28 in k)
+        return lent
+    v = lent + (8 * (0x25 in k) + 12 * (0x26 in k) if dist <= 1 else 8 * (0x27 in k) + 12 * (0x28 in k))
     if 0x29 in k and s.type in SKILL_TRANSPORT:
         v += 10
     return v

@@ -6,7 +6,8 @@
 //! ([`crate::ds_art::offer`]); the pack keeps its ARM9 code image, its
 //! overlays and its file system (every file but the sound archive, of
 //! which only the new COs' themes, the heal sounds, the DS Campaign's
-//! songs and the staff roll's stream are kept:
+//! songs, the staff roll's stream, the tag screens' sounds and the power
+//! themes are kept:
 //! [`crate::ds_music`]), and
 //! is saved next to the ROMs ([`CACHE_NAME`]) so the .nds is needed only
 //! once. Features built on it read their tables and pictures from here at
@@ -23,10 +24,11 @@ pub const CACHE_NAME: &str = "Dual Strike pack.tangoaw2";
 const MAGIC: &[u8; 8] = b"TAW2DSPK";
 /// Bumped when the pack's contents change; an older pack is rebuilt from
 /// the .nds on the next scan (3: the heal sounds; 4: the DS Campaign's
-/// songs; 5: the staff roll's stream; 6: the tag screens' sounds). Without
+/// songs; 5: the staff roll's stream; 6: the tag screens' sounds; 7: the
+/// power themes). Without
 /// the .nds, a pack of version [`OLDEST`] or later is still used (what it
 /// lacks falls back to AW2's own, or is silent).
-const VERSION: u32 = 6;
+const VERSION: u32 = 7;
 const OLDEST: u32 = 3;
 /// The header CRC16 of Advance Wars: Dual Strike (USA).
 const HEADER_CRC: u16 = 0xB586;

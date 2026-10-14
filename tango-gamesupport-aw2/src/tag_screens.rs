@@ -66,12 +66,12 @@
 //!
 //! Fades to and from white and black (Dual Strike's master brightness) are
 //! the palettes' colours moved toward white or black; on the map, before
-//! and after, they are the GBA's brightness effect (`BLDY`), and the bolts
-//! are flashes of it (the bolts themselves are not drawn: they are a layer
-//! over Dual Strike's 3D map). Sound effects are Dual Strike's, converted
+//! and after, they are the GBA's brightness effect (`BLDY`); the three
+//! bolts and their sparks are drawn over the map by crate::tag_thunder
+//! (BG0 blended in, the map's dimming then its EVB). Sound effects are Dual Strike's, converted
 //! with the music ([`crate::ds_music::tag_se`], played through AW2's
-//! sound-effect call by crate::tag_extras). The tag music stays AW2's power
-//! music.
+//! sound-effect call by crate::tag_extras). The tag music is Dual Strike's
+//! (crate::power_music), started at 256 as Dual Strike's.
 //!
 //! Everything a frame shows is a function of the screen (the COs, the
 //! name, the compatibility) and its frame count in RAM (crate::tag_extras),
@@ -459,6 +459,8 @@ const SWAP_X: [i16; 86] = [
 ];
 /// The thunder's three bolts (`SE_TAG_BREAK`).
 const BOLTS: [i32; 3] = [173, 209, 219];
+/// The tag theme starts (Dual Strike's `func_02057ef8`, after the thunder).
+const TAG_THEME: i32 = 256;
 /// Dual Strike's capture is a 110% pair; what follows the count moves with
 /// the compatibility.
 const CAPTURED_POWER: i32 = 110;
@@ -484,6 +486,12 @@ pub fn length(s: &Screen) -> u16 {
 /// is; CO SWAP's.
 pub fn tag_frame(t: u16) -> i32 {
     TAG_START + t as i32
+}
+
+/// The Tag Power's theme starts at its screen's frame `t`
+/// (crate::power_music).
+pub fn tag_theme_starts(t: u16) -> bool {
+    tag_frame(t) == TAG_THEME
 }
 
 pub fn swap_frame(t: u16) -> i32 {
@@ -1109,6 +1117,12 @@ fn keep_shadows(core: &mut Core, ram: &Ram) {
     core.raw_write_8(ram.kept, -1, 1);
 }
 
+/// A display shadow (one of [`SHADOWS`]) as it was when the screen
+/// started (crate::tag_thunder's registers come back from here).
+pub(crate) fn kept_shadow(core: &Core, a: u32) -> u16 {
+    saved(core, a)
+}
+
 fn saved(core: &Core, a: u32) -> u16 {
     let k = SHADOWS.iter().position(|&s| s == a).unwrap() as u32;
     core.raw_read_16(BACKUP_SHADOWS + 2 * k, -1)
@@ -1187,6 +1201,7 @@ fn give_back(core: &mut Core, ram: &Ram) {
 
 /// Everything back as it was (a screen over, or cut short).
 pub fn hide(core: &mut Core, ram: &Ram) {
+    crate::tag_thunder::hide(core);
     give_back(core, ram);
     restore_shadows(core, ram);
 }
@@ -1326,16 +1341,14 @@ pub fn frame(core: &mut Core, ram: &Ram, s: &Screen, t: u16) -> (Option<u16>, bo
                 None
             };
             if f < 297 {
-                // The map: dims, flashes at the bolts, then whitens.
-                let v = if f >= 257 {
-                    ramp(&TAG_MAP_WHITE, 257, f, 0)
-                } else if let Some(&b) = BOLTS.iter().rev().find(|&&b| f >= b && f < b + 8) {
-                    (12 - 3 * (f - b) / 2) as i8
-                } else {
-                    -((f - TAG_START) / 5).min(6) as i8
-                };
+                // The map: dims, the bolts strike (crate::tag_thunder), then
+                // it whitens.
+                let dim = ((f - TAG_START) / 5).min(6) as u8;
+                let v = if f >= 257 { ramp(&TAG_MAP_WHITE, 257, f, 0) } else { -(dim as i8) };
                 give_back(core, ram);
-                map_brightness(core, v);
+                if !crate::tag_thunder::frame(core, f, dim) {
+                    map_brightness(core, v);
+                }
             } else if f < 687 + sh {
                 let shown = compose_tag(art, &st, *power, f);
                 show(core, ram, &st, &shown);
