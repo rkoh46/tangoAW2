@@ -16,7 +16,7 @@
 //! - Sasha: +100 funds a day per property; Market Crash lowers each
 //!   enemy's power meter by 1% of its full meter per 500 funds she has
 //!   (Dual Strike's 0x020E1D2C); War Bonds pays her half the value of the
-//!   HP her units take off enemies.
+//!   HP her units take off enemies (at the enemy CO's prices).
 //! - Rachel: property repairs give one HP more (her blocks' `repairBonus`).
 //! - Javier: defence against indirect attacks, +20/+40/+80%.
 //! - Eagle: Dual Strike's Lightning Drive lets units move again, as
@@ -665,8 +665,10 @@ fn war_bonds(core: &mut Core) {
         let before = bars(core.raw_read_8(foe + 4, -1) as i32 & 0x7F);
         let after = bars(core.raw_read_16(foe_record + 8, -1) as i16 as i32);
         let lost = (before - after).max(0) as u32;
-        let t = core.raw_read_8(foe, -1) as u32;
-        let cost = core.raw_read_16(crate::roster::table(core) + 0x5C * t + 6, -1) as u32 * 10;
+        // The HP's value as its owner's (Dual Strike's `DamageToFunds`:
+        // `Unit_GetValuePerHp(targetOwner, type)`, the CO's cost % in it).
+        let foe_army = army_of_index(core, foe.wrapping_sub(units) / UNIT);
+        let cost = value_per_hp(core, foe_army, core.raw_read_8(foe, -1)) * 10;
         let pay = if bonds { lost * cost / 10 / 2 } else { 0 } + crate::co_skills::combat_pay(core, army, lost, cost);
         if pay == 0 {
             continue;

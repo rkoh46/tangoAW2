@@ -1174,6 +1174,10 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   2 and 5 HP, Ration Run's 1) gets no bonus. A Black Boat's Repair is
   `Unit_Repair(unit, 1, TRUE)` (`unit_actions::repair_around`): a unit at
   10 shown HP is left alone and not charged, 75 HP becomes 90.
+- **War Bonds and Combat Pay** (`DamageToFunds`): half (Combat Pay 2%) of
+  the HP taken off, valued at the target owner's value per HP (its CO's
+  cost %): Sasha's Super Power taking 5 HP off Colin's Tank pays 560 x 5 /
+  2 = 1400 (the raw price gave 1750).
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

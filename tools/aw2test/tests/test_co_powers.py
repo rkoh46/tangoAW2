@@ -118,6 +118,22 @@ def sasha_war_bonds(ctx):
 
 
 @test(modes=DS)
+def sasha_war_bonds_enemy_prices(ctx):
+    """War Bonds values the HP at its owner's prices (Dual Strike's
+    DamageToFunds: Unit_GetValuePerHp(target owner)): Colin's Tank, -20%, is
+    560 an HP, so half is 280 an HP."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.start(m, ["sasha", "colin"])
+    ctx.power(g, 1, "super")
+    f0 = funds(g, 1)
+    r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
+    bars = lambda hp: (hp - 1) // 10 + 1 if hp > 0 else 0
+    lost = bars(r["before"][1]["hp"]) - bars(r["after"][1]["hp"])
+    ctx.eq(funds(g, 1) - f0, 560 * lost * 50 // 100, f"War Bonds for {lost} HP of Colin's Tank")
+
+
+@test(modes=DS)
 def rachel_repairs(ctx):
     m = ctx.map()
     m.terrain(5, 5, "city", 1)
