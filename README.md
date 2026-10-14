@@ -76,8 +76,11 @@ changes, and online both players need it):
 - **Units, COs and terrain:** its 7 units and 9 new COs with their
   pictures, animations, music and numbers; Com Towers, Sandstorm, its
   weather and fog looks, Wasteland, Desert and Snow terrain, the Black
-  Crystal and Obelisk, Black Hole's structures as Dual Strike draws them;
-  eight new Versus maps.
+  Crystal and Obelisk, Black Hole's structures as Dual Strike draws them.
+- **Dual Strike's maps:** its 138 Versus maps on Versus' tabs and its 44 War
+  Room maps (with records), in place of AW2's; two-front battles offline
+  (in Versus press SELECT on a 2P map to make it the second front, then pick
+  the main map; the Teams partner leads the second front).
 - **Dual Strike's look (optional, Settings > Graphics, offline):** its map
   graphics and tilted 3D battle map, cursor, menus, CO panel and power
   labels, info box, CO pages and CO selection screens (five armies too).
@@ -168,7 +171,8 @@ with **SELECT → File → Save**; play it from **Versus → Design Maps**.
 
 - USA cartridge only; two human players online (more armies can be
   computer-controlled).
-- Five-army battles and Survival runs can't be suspended.
+- Five-army battles, two-front Versus and War Room battles and Survival
+  runs can't be suspended.
 - The mini maps show Black Hole's buildings in neutral grey.
 - Dual Strike's top-screen pictures (the Black Onyx's Earth view) are left
   out, and tag powers play AW2's power music.

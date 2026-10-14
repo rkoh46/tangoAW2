@@ -592,7 +592,11 @@ original instruction against the ROM and writes `src/five_patches.rs`.
 
 Eight Versus maps for the Dual Strike pack, drawn by `five/design_ds_maps.py`
 (called from `design_maps.py`) into `five/maps.txt`, built like the others by
-`five/map.py`. Every Com Tower on them starts neutral.
+`five/map.py`. Every Com Tower on them starts neutral. Since Dual Strike's own
+Versus maps came in (below, "Dual Strike's Versus and War Room maps"), only
+the two 5P maps, Black Wastes and Coral Crown, are listed (with the pack);
+the other six stay in the data, listed nowhere: their ids hold Dual Strike's
+War Room maps or are hidden.
 
 | Id | Map | Armies, size | Tab | Look | What is on it |
 |---|---|---|---|---|---|
@@ -673,6 +677,91 @@ Eight Versus maps for the Dual Strike pack, drawn by `five/design_ds_maps.py`
   on each (two in netplay), and checks the maps are not listed without the
   pack; `test_pipe_seams.py` checks the build menu and the CPU against intact
   and broken seams.
+
+## Dual Strike's Versus and War Room maps (`ds_versus.rs`, `ds_maps.rs`)
+
+With the pack, Versus lists Dual Strike's 138 Versus maps on AW2's own tabs
+(Dual Strike's cases 2..6 are AW2's Classic, Vs. Maps, Pre-Deployed, 3P
+Maps and 4P Maps) and the War Room its 44 maps, in place of AW2's (AW2's 107
+Versus and 30 War Room maps are among them, in Dual Strike's padded
+versions). Without the pack every list is AW2's.
+
+- **Reading Dual Strike's maps** (`ds_maps.rs`, which Survival reads through
+  too): the header table `Ov000_gMapHeaders` (overlay 0 `0x022DBD28`, 0xA0
+  bytes per id, ids 0..0x10C; the decomp's `include/game/map_header.h`):
+  +0x0C the 4x4 structure's `bmap` file, +0x10 the second map of a two-map
+  battle, +0x14 the name, +0x1A..+0x1C look, weather, fog, +0x24 armies,
+  +0x26 the case, +0x2C par days, +0x44 tiles (LZ77, AW2's tile ids plus the
+  Crystal, two mountains and the Com Towers, converted), +0x4C units (13-byte
+  records), +0x54 (front, back) CO per army slot (0x1C: the player picks),
+  +0x88 colours, +0x8D teams. Survival's reader once read the colours 0x18
+  bytes early, the previous map's.
+- **The table** (ROM `0x09800000`: 0x100 ids of 0x5C bytes; the second maps'
+  headers at `0x09806000`; names at `0x09808000`, text ids 0x7200.. with
+  pointers at `0x0862D238`; the maps' tiles and units, 0x1000 each, from
+  `0x09810000` to about `0x098C0000`): a copy of `five_map`'s table with
+  Dual Strike's maps at its ids (0x01..0x8A Versus, 0x8B..0xB3 the War
+  Room). AW2's code treats 0xB4..0xB7 as design maps, so the War Room's
+  last three (Silo Nation, Risky Duo, Helix Peninsula) are 0xC1..0xC3, the
+  ids of three of the eight Dual Strike-style maps above (their other three,
+  0xC5..0xC7, are hidden there). Built once from the pack in id order and
+  written once; the game reads it in Versus and the War Room (title mode
+  `0x030033FC` 2..5: Versus Continue and New, War Room Continue and New)
+  while the pack's features are on (online: both players have it) and
+  Survival is not open, its 37 pointer words set from RAM each frame
+  (`survival::tick_tables` defers to it). Header fields: AW2's War Room form
+  (+0x3C the CPU armies' COs, the player's 0xFF), colours +0x40, teams
+  +0x44, par days +0x20 (the speed score's), +0x16 2 on Pre-Deployed maps.
+- **Per map** (at its start, `sandstorm`'s trap): Dual Strike's look
+  (Snow, Desert, Wasteland), its weather as fixed weather over the Rules'
+  (Dark City snow, Clover Pond a sandstorm), its fog. Com Towers count in
+  the War Room too (`com_tower::active`).
+- **Saves.** A game saved halfway marks the table it was played on (the
+  suspend tail +6, `suspend.rs`); Continue (trap `0x08016DCC`, the block
+  read and not yet applied) plays a game saved without the mark on AW2's
+  table until the next map list is built (`BuildMapListForMode`, trap
+  `0x080375A4`). A game saved with the mark and continued without the pack
+  would load AW2's map of that id (not handled).
+- **The list.** Its names' text tiles come from a cache that grows while the
+  list is up, with room for about 35 names; Dual Strike's 4P Maps (37) and
+  War Room (44) ran past it into the preview's tiles, so the cache starts
+  over at every redraw (trap `0x08086A6E`, after `ClearBg0Tilemap`).
+- **Ids AW2 reads by `id - 0x8A`** (its campaign tables): the computer Black
+  Hole's factory schedule (these maps get the design maps' rule,
+  `factory.rs`) and scripted CO power quotes (`0x08039850`, off here).
+- **War Room records.** AW2 keeps a row per map by `id - 0x6C` (0x14 bytes,
+  five places, `0x0200C078`, 30 maps); Dual Strike's ids land past them. On
+  this table the War Room's record code (Survival's five pool words, and the
+  word `0x0808E55C` the insert's search and store read the table through)
+  reads rows of ours, `0x0203E500..0x0203E973` (time-shared with the
+  two-front store and Versus' screens: loaded from Flash on the War Room's
+  screens and at a record's insert, given up elsewhere). They are saved at
+  the end of slot 15's payload (44 rows after the skill data, then "DSWR"),
+  written right after the profile as the skill data is
+  (`co_skills::profile_written`). Dual Strike keeps four record strips (tag,
+  partner boost); these are strip 0.
+- **Two fronts** (`two_front.rs`, offline). Versus, Dual Strike's rule: on
+  the list SELECT marks a 2P map as the second front (its name is drawn
+  "2:Name", the list drawn again at once through its idle callback,
+  `0x08085F90`; SELECT again takes the mark back), the 2P map picked next is
+  the main front. Each army's Teams partner leads its second front (none:
+  its CO) and forms no tag pair; every army plays its own turns on both
+  fronts; Send (ground, main to second). The War Room's five two-front maps
+  are its pairs (Jelly Island, Whiplash, Silo Nation, Risky Duo, Helix
+  Peninsula): the CO screen asks for the second front's CO, the computer
+  directs both armies there (Dual Strike's strips 0 and 1), Intel > General
+  sets its posture, the enemy's second front has its back CO, the record is
+  the main map's. `SetMapId` (trap `0x0803BCD2`) puts such a battle on id
+  0xFE, whose entry is the live front's header (set from RAM); each front
+  starts with its own look, weather and fog. Save is hidden. Not done: the
+  computer sending units, two-front battles online, the second front's
+  survivors charging army 2's meter in Versus (the bonus is army 1's).
+- **RAM** `0x0203C900..0x0203C91F`: the table flag, the records' state, the
+  mark, the two-front battle (kind, main, second), the list's redraw.
+- Tests: `test_ds_maps.py` (the six replaced maps unlisted with the pack),
+  `test_save_integrity.py` (Versus saves on Clover Pond and Dark City),
+  `test_save_integrity_modes.py` (a War Room record in slot 15, read back
+  after a reboot).
 
 ## Dual Strike's looks (`wasteland.rs`, `ds_look.rs`)
 
@@ -948,7 +1037,8 @@ table with room for 0x100 ids, its maps, strings, the Select Mode wheel's data),
 0x08E80000..0x08EFFFFF (Dual Strike's looks: 0x20000 each for Wasteland, Desert, Snow and Means to an End's),
 0x08E70000..0x08E73FFF (two fronts: stubs, swap scripts, the menus' copies, labels; text ids 0x7FFD, 0x7FFE),
 0x08E74000..0x08E743FF (the DS Campaign's Setup phase: stubs, script, menu, label; text id 0x7FFC),
-0x08E75000..0x08E753FF (Crystal Calamity's Black Onyx: `onyx.rs`; its RAM 0x0203FFC8..0x0203FFE3).
+0x08E75000..0x08E753FF (Crystal Calamity's Black Onyx: `onyx.rs`; its RAM 0x0203FFC8..0x0203FFE3),
+0x09800000..0x098FFFFF (Dual Strike's Versus and War Room maps: `ds_versus.rs`; text ids 0x7200..0x72FF, pointers at 0x0862D238).
 Free RAM used: 0x0203FD57 (the chosen campaign, `ds_campaign::SOURCE`), 0x0203E3F0..0x0203E3FD (the skills panel; the skill data now ends at 0x0203E3C5 with Crumb's slot, the Grand Bolt's borrowed palette follows at 0x0203E3C8..0x0203E3EB), 0x0203F4D0..0x0203F4D2 (Crumb's Tag Power rule and the power being paid for) and 0x0203F5D8..0x0203F5FF (the units it healed: a bit a unit slot), 0x0203E400..0x0203F3FF (two fronts: their state, the front off the screen), 0x0203FA00..0x0203FD0F (Survival), 0x0203FD10..0x0203FD5F (DS Campaign), 0x0203F600..0x0203F6FF (the DS
 Campaign's records; 0x0203E000..0x0203F73F was found unwritten at the title, Select Mode, in AW2 and DS battles), 0x0203F740..0x0203F79F
 (map animations), 0x0203F7A0..0x0203F7DF (power animations), 0x0203F800..0x0203F9FF (battle
@@ -2647,7 +2737,9 @@ rule, the extra move, gone with the turn), `crumb_netplay_is_deterministic`,
 
 Dual Strike's five two-front missions (Victory or Death!, Lightning Strikes,
 Omens and Signs, Ring of Fire, Means to an End) are played on both fronts,
-with the Dual Strike pack, offline.
+with the Dual Strike pack, offline; so are Versus battles on two of Dual
+Strike's 2P maps and the War Room's five pairs ("Dual Strike's Versus and War
+Room maps").
 
 **Dual Strike's two-front battles, as found** (the USA .nds, melonDS with
 `tango-backend-melonds/examples/ds_script`; a battle in progress for each
@@ -3599,7 +3691,7 @@ from the directory.
 | 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14) | map menu Save in a BH mission |
 | 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign") | BH Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state follow the block (two sectors) | map menu Save in a DS mission |
-| 15 | the DS Campaign's record, 0x20 (tangoAW2), its records and the CO skills' data | DS Campaign New, mission start, after a win, a skills change |
+| 15 | the DS Campaign's record, 0x20 (tangoAW2), its records, the CO skills' data and the War Room's records on Dual Strike's maps | DS Campaign New, mission start, after a win, a skills change, a War Room record |
 
 Twelve slots at most (AW2's ten and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
 delete for one map: saving over a slot replaces it. The Battle Maps points
