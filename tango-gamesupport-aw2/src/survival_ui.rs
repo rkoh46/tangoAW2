@@ -1217,12 +1217,18 @@ fn draw(core: &mut Core, a: &Art, k: Kind, champion: bool, phase: u8, records: b
 ///
 /// `corner`: Dual Strike's CO panel is up in the left (`Some(true)`) or right
 /// corner ([`crate::ds_hud`]): the lines go to the other side of the screen.
+///
+/// With a tag pair the panel's partner strip has its face in tiles of that
+/// run ([`crate::tag_ui::PANEL_FACE_TILE`]): the lines leave them out and go
+/// on into the last run, as Money's longer line already did.
 pub fn hud(core: &mut Core, at: u32, end: u32, lines: &[String], corner: Option<bool>) -> u32 {
     if crate::heal_effect::playing(core) {
         return at;
     }
     let mut at = at;
-    let mut pairs = crate::two_front::free_tile_pairs().into_iter();
+    let face = crate::tag_ui::PANEL_FACE_TILE as u16..(crate::tag_ui::PANEL_FACE_TILE + crate::tag_ui::PANEL_FACE_TILES) as u16;
+    let paired = crate::tag::any(core);
+    let mut pairs = crate::two_front::free_tile_pairs().into_iter().filter(|t| !(paired && face.contains(t)));
     for (i, s) in lines.iter().enumerate() {
         let cols = crate::two_front::outlined(core, s);
         let x = match corner {

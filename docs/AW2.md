@@ -1312,7 +1312,10 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   the time), in AW2's proportional font, white outlined in black as the
   second front's title is, 8x16 sprites in the OBJ tiles the map leaves
   free (`two_front::free_tile_pairs`; not while a structure's heal plays in
-  them).   Out of budget, the player's army yields (`unk31`, as the map menu's Yield
+  them; with a tag pair not in `0x309..0x310`, the partner's face under the
+  CO panel, `tag_ui::PANEL_FACE_TILE`: the lines go on into the last run,
+  `0x1F9..`, as Money's longer line already did; before this the second
+  line was drawn over by the face). Out of budget, the player's army yields (`unk31`, as the map menu's Yield
   does) and loses at the game's next rules check.
 - **End of a map** (`EndOfGame_Finish`, trap `0x0803832C`): won, the map's
   cost is taken off, its score added, the next map listed; the last map
