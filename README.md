@@ -79,7 +79,8 @@ changes, and online both players need it):
   Crystal and Obelisk, Black Hole's structures as Dual Strike draws them;
   eight new Versus maps.
 - **Design Room:** Dual Strike's random maps (**SELECT → Fill → Random**;
-  **L+R** held on Yes gives its preset map).
+  **L+R** held on Yes gives its preset map) and a look per map (Normal,
+  Wasteland, Desert or Snow).
 - **Dual Strike's look (optional, Settings > Graphics, offline):** its map
   graphics and tilted 3D battle map, cursor, menus, CO panel and power
   labels, info box, CO pages and CO selection screens (five armies too).
@@ -164,7 +165,9 @@ army's colour, Black Hole included (without Dual Strike, **SELECT** too).
 
 Design Room: **R** opens the terrain bar (the inventions come after Silo),
 **L** the unit bar, **SELECT** or **UP** changes army, **A** places. Save
-with **SELECT → File → Save**; play it from **Versus → Design Maps**.
+with **SELECT → File → Save**; play it from **Versus → Design Maps**. With
+Dual Strike, **A** with the look entry (named after the look it gives) steps
+the map through Normal, Wasteland, Desert and Snow.
 
 ## Known limits
 

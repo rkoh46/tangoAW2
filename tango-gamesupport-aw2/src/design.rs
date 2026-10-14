@@ -342,8 +342,8 @@ pub fn editor_tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
     // In the bars UP/DOWN (and SELECT) step through the armies: neutral,
     // Orange Star, Blue Moon, Green Earth, Yellow Comet and Black Hole
     // (crate::design5 gives the bars a fifth army).
-    // The Wasteland entry: A on the map switches the map's biome and
-    // places nothing.
+    // The look entry: A on the map gives the map its next look (Normal,
+    // Wasteland, Desert, Snow) and places nothing.
     if !bar_open && terrain_bar && word == crate::design_bar::WASTE_WORD && keys & KEY_A != 0 {
         if pressed & KEY_A != 0 {
             crate::wasteland::toggle(core);

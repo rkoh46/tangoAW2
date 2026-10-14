@@ -708,8 +708,8 @@ Eight Versus maps for the Dual Strike pack, drawn by `five/design_ds_maps.py`
 ## Dual Strike's looks (`wasteland.rs`, `ds_look.rs`)
 
 Dual Strike draws a map in one of four looks: Normal, Snow, Desert and
-Wasteland. With the pack, Wasteland is a per-map setting of design maps (the
-Design Room's Waste entry) and the look of tangoAW2's Wasteland Versus maps;
+Wasteland. With the pack, the look is a per-map setting of design maps (the
+Design Room's look entry) and Wasteland the look of tangoAW2's Wasteland Versus maps;
 Survival's maps and the DS Campaign's missions bring their own look (Dual
 Strike's look byte, `wasteland::set_ds_look`). Normal stays AW2's own; Snow,
 Desert and Wasteland are drawn with Dual Strike's own terrain graphics,
@@ -816,9 +816,13 @@ converted from the .nds at run time.
   `ds_campaign::map_start`; checked against melonDS frames of the mission.
   Dual Strike's drifting darker sand on its 3D map (it moves from frame to
   frame: an effect over the map, not terrain) is not drawn.
-- **The Design Room.** A on the map with the Waste entry switches Normal and
-  Wasteland: the next frame the colours, the terrain tiles in VRAM and the
-  map's tilemap (`RenderMap` done in Rust) are the new look's.
+- **The Design Room.** A on the map with the look entry steps Normal,
+  Wasteland, Desert, Snow and round (a look the pack could not build is
+  passed over): the next frame the colours, the terrain tiles in VRAM and
+  the map's tilemap (`RenderMap` done in Rust) are the new look's. The
+  entry's name is the look it gives ("Waste", "Desert", "Snow",
+  "Normal": tangoAW2's 32x16 pictures at `0x08671300 + 0x100*k`,
+  `wasteland::name_at`, through the bar's name trap).
 - **Kept AW2's.** Buildings and structures (sprites in AW2; Dual Strike draws
   them in its map layers), the battle backgrounds of Desert and Snow
   (Wasteland's are Dual Strike's, `ds_backdrop.rs`), the terrain panel's

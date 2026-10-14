@@ -97,8 +97,8 @@ pub fn entries(core: &Core) -> u32 {
 /// `design::INVENTIONS` order. The Black Crystal and Black Obelisk are a
 /// minicannon and a Black Cannon to the game (`crate::obelisk`); their words
 /// carry bit 8 ([`OURS`]) so the bar can tell them from the real ones. The
-/// Wasteland entry, [`WASTE_WORD`], is not placed: it switches the map
-/// between Normal and Wasteland ([`crate::wasteland`]); it shows the
+/// look entry, [`WASTE_WORD`], is not placed: it steps the map through
+/// Normal, Wasteland, Desert and Snow ([`crate::wasteland`]); it shows the
 /// mountain's icon. The last is the Com Tower ([`TOWER_WORD`]).
 pub const ENTRIES_ADDED: [(u16, u16); 14] = [
     (0x15, 0x182),        // minicannon facing down
@@ -113,7 +113,7 @@ pub const ENTRIES_ADDED: [(u16, u16); 14] = [
     (0x1E, 0x190),        // Deathray
     (OURS | 0x15, 0x192), // Black Crystal
     (OURS | 0x1A, 0x193), // Black Obelisk
-    (WASTE_WORD, 0x020),  // Wasteland (shown as a mountain)
+    (WASTE_WORD, 0x020),  // the look switch (shown as a mountain)
     (TOWER_WORD, 0x1D9),  // Com Tower (a Lab; its owner follows the bar's army)
 ];
 /// The Com Tower's entry: a Lab ([`crate::com_tower`]), neutral here; the
@@ -482,7 +482,8 @@ pub fn icon_palette(core: &mut Core) {
 /// terrain panel's; r3 = the entry's word).
 pub const BAR_NAME: u32 = 0x0800_2998;
 
-/// Trap at [`BAR_NAME`]: the Crystal's, Obelisk's and Wasteland's own names.
+/// Trap at [`BAR_NAME`]: the Crystal's, Obelisk's and the look entry's own
+/// names (the look entry's is the look it switches to).
 pub fn bar_name(core: &mut Core) {
     if !crate::design::in_map_editor(core) {
         return;
@@ -491,7 +492,7 @@ pub fn bar_name(core: &mut Core) {
     let name = match word {
         CRYSTAL_WORD => crate::obelisk::CRYSTAL_NAME_AT,
         OBELISK_WORD => crate::obelisk::OBELISK_NAME_AT,
-        WASTE_WORD => crate::wasteland::NAME_AT,
+        WASTE_WORD => crate::wasteland::name_at(core),
         TOWER_WORD if crate::com_tower::active(core) => crate::com_tower::NAME_AT,
         _ => return,
     };
