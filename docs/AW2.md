@@ -3552,9 +3552,25 @@ are under CO skills.
   each line inside the results box's 104 pixels); his tag-in line one of
   AW2's own Sturm power quotes (his CO table row +0x20). His body art on
   the tag screens is AW2's.
-- **Left out**: the tag screens' bolts over the map and their drifting
-  white specks (flashes of the map stand in for the bolts); the tag music
-  (AW2's power music plays). Market Crash and other meter
+- **The Tag Power's thunder** (`tag_thunder.rs`): before the tag screen
+  takes the display, Dual Strike's three bolts strike the dimmed map
+  (script `0x0215C4F4`: `res_tagbreak_thunder`'s map A at 173, B in its
+  own palette at 209, A again at 219; BG0 blended in at EVA 16 easing to 0
+  over 36, 10 and 36 frames, `Math_Ease` curve 1), each with two bursts of
+  36 white sparks flying 60 pixels out (`gSparkBurstOffsets`, curve 4, a
+  style 0..15 per spark: Dual Strike's random pick is a fixed hash here).
+  The GBA window is the DS screen less 8 pixels a side and 16 top and
+  bottom; each bolt map's 216/224 tiles are cut to the wave overlay's 128
+  (BG0 chars + `0x5600`, BG palette 8, the game's BG0 buffer), BG0 at
+  priority 0 with EVB the map's dim (16 - 6: BLDY cannot darken while the
+  blend is on); the sparks are 8x8 sprites (OBJ tiles `0x1CA..0x1CF`,
+  colour 3 of OBJ palette 15) in sprite-list entries the map leaves
+  parked, so with four bursts up some may be left out (spread round them).
+  What it covers is kept at the start of the tag screen's backup (free
+  until frame 297) and put back at 257 or when the screen is cut short;
+  RAM `0x0203C600` (1 byte). Test `tag_power_screen` (the blend and EVA
+  per bolt, sparks in OAM, everything back).
+- **Left out**: the tag music (AW2's power music plays). Market Crash and other meter
   drains reach only the active CO. The pad bot (`aw2test/bot.py`) fires
   Tag Powers but no longer wins four missions where the computer fights as
   a pair (The Long March, Verdant Hills, Into the Woods, Pincer Strike):

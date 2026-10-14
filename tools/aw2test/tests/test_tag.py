@@ -1047,10 +1047,11 @@ def power_digits(ctx, path, want, what):
 
 @test(modes=("ds",))
 def tag_power_screen(ctx):
-    """Tag: after the first CO's quote, Dual Strike's tag screen full
-    screen (both COs' art, the pair's Tag Power name, POWER 110%) holds
-    the power's script, then goes (the layers as they were) and AW2's
-    Super Power screen follows."""
+    """Tag: after the first CO's quote, the map dims and Dual Strike's three
+    bolts strike with their sparks (crate::tag_thunder; what they cover put
+    back), then Dual Strike's tag screen full screen (both COs' art, the
+    pair's Tag Power name, POWER 110%) holds the power's script, then goes
+    (the layers as they were) and AW2's Super Power screen follows."""
     units = [(1, "tank", 10, 4), (2, "tank", 20, 10)]
     g = tag_battle(ctx, ["max", "olaf"], ["andy", None], units=units)
     e = g.e
@@ -1066,6 +1067,25 @@ def tag_power_screen(ctx):
     ctx.require(screen_at(e, 20), "frame 20")
     ctx.eq((e.u8(SCREEN_UP), e.u16(BLDCNT)), (0, 0x00FF), "the map dims before the screen (darkened)")
     ctx.shot(g, "tag_0_map")
+    # What the thunder covers (crate::tag_thunder): BG0's tiles at its character block + 0x5600, its map buffer, BG palette 8,
+    # OBJ tiles 0x1CA.., OBJ palette 15.
+    chars = 0x06000000 + 0x4000 * ((e.u16(BGCNT[0]) >> 2) & 3) + 0x5600
+    buffer = e.u32(0x08499578)
+    covered = lambda: (e.read(chars, 0x1000), e.read(buffer, 0x800), e.read(0x030020C0 + 0x100, 0x20), e.read(0x06010000 + 32 * 0x1CA, 0xC0), e.read(0x030020C0 + 0x3E0, 0x20))
+    before = covered()
+    # The three bolts over the map (BG0 blended in, the map dimmed by EVB) with their sparks.
+    for f, name, eva in ((174, "tag_0_bolt1", 16), (190, "tag_0_bolt1_fading", 13), (215, "tag_0_bolt2", 11), (225, "tag_0_bolt3", 16)):
+        ctx.require(screen_at(e, f - TAG_START), f"Dual Strike's frame {f}")
+        ctx.eq((e.u16(BLDCNT), e.u16(DISPCNT) & 0x0100, e.u16(BGCNT[0]) & 3, e.u16(0x03002B28)), (0x3E41, 0x0100, 0, 10), f"frame {f}: the bolt (BG0, priority 0) blended over the dimmed map")
+        ctx.eq(e.u16(0x03002020), eva, f"frame {f}: the bolt's EVA (Math_Ease curve 1, 16 -> 0)")
+        ctx.shot(g, name)
+    sparks = [k for k in range(128) if (e.u16(0x07000000 + 8 * k + 4) & 0x3FF) in range(0x1CA, 0x1D0) and e.u16(0x07000000 + 8 * k) & 0xFF < 160]
+    ctx.check(len(sparks) >= 20, f"sparks drawn at frame 225 ({len(sparks)})")
+    ctx.require(screen_at(e, 258 - TAG_START), "the white")
+    ctx.eq(e.u8(0x0203C600), 0, "the thunder is over")
+    ctx.check(covered() == before, "BG0's tiles and buffer, the palettes and the OBJ tiles as they were")
+    ctx.eq(e.u16(BLDCNT), 0x00BF, "the map whitens")
+    ctx.eq((e.u16(DISPCNT) & 0x0100, e.u16(BGCNT[0])), (layers & 0x0100, cnts[0]), "BG0 as it was")
     # The screen from white: the emblem alone, the COs at the start of their
     # slide (the partner on the right 94 pixels low), no POWER box yet.
     ctx.require(screen_at(e, 305 - TAG_START), "Dual Strike's frame 305")
