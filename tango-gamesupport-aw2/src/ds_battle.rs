@@ -807,9 +807,10 @@ const PAL_BUFFER: u32 = 0x0300_20C0 + 0x200;
 const PAL_RAM: u32 = 0x0500_0200;
 /// The map's OBJ palettes the scene writes over (the figures' 0..7 and the
 /// effects' 12 and 13), kept for the scene's length: +0 whether they are held
-/// ([`HELD`]; cleared when a battle is set up), then the ten rows of 32 bytes from +0x10. The Teams
-/// screen's borrowed-tile buffer (`0x0203E800..0x0203F09F`), idle in a battle.
-const MAP_PALS: u32 = 0x0203_EC00;
+/// ([`HELD`]; cleared when a battle is set up), then the ten rows of 32 bytes from +0x10.
+// (it was 0x0203EC00, inside crate::two_front's store of the front off the screen: the snapshot, taken on every map
+// frame, overwrote the stored front's units and its palettes came back as units; see crate::ram_map)
+pub const MAP_PALS: u32 = crate::ram_map::BATTLE_MAP_PALETTES.0;
 const HELD: u8 = 0xA5;
 const SNAPPED: u8 = 0x5A;
 const MAP_PAL_ROWS: [u32; 10] = [0, 1, 2, 3, 4, 5, 6, 7, FX_PAL as u32, FX_PAL as u32 + 1];
@@ -2236,7 +2237,7 @@ mod tests {
     fn helpers() {
         assert_eq!(lighten(0x0421), 0x4210);
         assert_eq!(aim((0, 0), (40, 20), 8), (8, 4, 0));
-        let mut t = Tiles { ranges: [(0, 20), (100, 116)] };
+        let mut t = Tiles { ranges: [(0, 20), (0, 0), (100, 116)] };
         assert_eq!(t.take(16), Some(0));
         assert_eq!(t.take(16), Some(100));
         assert_eq!(t.take(8), None);

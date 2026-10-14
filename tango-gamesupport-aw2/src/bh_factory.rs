@@ -61,10 +61,10 @@ const NO_ENTRY: u8 = 0xFF;
 /// free RAM is non-zero the factory spawns the table's units, as AW2's does.
 /// It is emulated memory, so it replays and rolls back like the rest.
 /// The last four picks of each of three armies (4 bytes each, newest first, 0 = none): the variety rule's memory
-/// (free EWRAM between crate::grand_bolt's and crate::skills_panel's); the two armies' savings follow (a byte each, in
+/// (crate::ram_map: it was 0x0203E3E4, over crate::grand_bolt's saved palette); the two armies' savings follow (a byte each, in
 /// [`BANK_UNIT`]s): the value of slots that spawned nothing, spendable on the next slot, up to [`BANK_MAX`].
 /// Armies 1, 3, 5 share the first slot of each, armies 2 and 4 the second.
-const HISTORY: u32 = 0x0203_E3E4;
+const HISTORY: u32 = crate::ram_map::FACTORY.0;
 const BANK: u32 = HISTORY + 8;
 const BANK_UNIT: i32 = 500;
 /// One Md Tank-level slot, so a saved factory stays within a fair stretch of the table.
