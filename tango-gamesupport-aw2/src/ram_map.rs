@@ -26,6 +26,10 @@ pub const FACTORY: Region = (0x0203_C150, 10);
 /// The CO screen: how many picks it had when its cursor was last put on a CO not picked (crate::ds_coselect), + 1.
 pub const CO_SCREEN_PICKS: Region = (0x0203_C160, 1);
 
+/// Dual Strike's battle rules (0x0203C800..0x0203C8FF reserved for them): the second front's end, what each army
+/// brings to the main front (crate::two_front, 4 armies of 8 bytes).
+pub const SECOND_FRONT_MERGE: Region = (0x0203_C800, 0x20);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -41,6 +45,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Crumb's healed units", (0x0203_F5D8, 0x28)),
     ("smart Black Factory: picks and savings", FACTORY),
     ("CO screen: picks seen", CO_SCREEN_PICKS),
+    ("second front's end: what each army brings (crate::two_front)", SECOND_FRONT_MERGE),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),

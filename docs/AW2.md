@@ -2924,11 +2924,18 @@ Room, Survival, the Design Room, netplay and the pack off are untouched
   any battle ends (`FinalizeMatchResult`, the match-end records, state
   0x12); at `MapState_EndOfGame` (`0x08034EF0`, trapped) on the second
   front, once its scenes are over, the outcome is kept and the main front
-  comes back for good (its result panel shown). Won: the survivors' value
-  (price x bars, as a battle's) charges army 1's power meter
-  (`sub_080440E0`). Then `second_front_over`, **the hook for tag pairs**:
-  `second_front_result` gives (won, the winning army, its second-front CO);
-  a tag-pair module joins that CO to that army's main-front CO there.
+  comes back for good (its result panel shown). Then, as Dual Strike's
+  `TwoMaps_MergeOtherFront`, for every army still in the game on the
+  second front, whichever side won (`end_of_game` keeps, per army, its CO
+  there, that CO's meter and its survivors' shown HP x `chargePerHp` at
+  `0x0203C800`, `ram_map::SECOND_FRONT_MERGE`; `second_front_over` uses
+  them once the main front is back): its second-front CO becomes the
+  army's tag partner with the meter it had (in place of any partner; not
+  when it is the main front's CO), then the survivors' charge goes in full
+  to both COs (x 180 in AW2's meter units), each with its own Star Power,
+  up to its own Super Power's cost, unless a power is on.
+  `second_front_result` gives (won, the winning army, its second-front CO)
+  for the banner and the missions' rules.
 - **The CO screen.** A two-front mission's second-front picks follow the
   main front's on AW2's own CO screen (`sub_0803BD14`, the number of picks,
   and `SetArmyCoIdsFromList` `sub_0803BCDC`, trapped while it shows):
@@ -3083,11 +3090,10 @@ barrier, eruption cells, the Volcano), `grand_bolt::on` (the main front's),
   nothing in reach hold by their own roles (Dual Strike's may advance);
   Intel > General's Strike or Assault sends them forward, and the player
   sends units to carry it.
-- Tag pairs: the second front's winning CO joins its army on the main
-  front (`tag.rs`, through the hook above); Black Hole's CO does not when
-  the second front is lost.
-- The survivors' power is a battle's measure (price x bars), not Dual
-  Strike's own formula (not read).
+- Tag pairs: each army still in the game on the second front gets its CO
+  there as its partner on the main front (`tag.rs`, above); an army routed
+  or defeated there gets none (in Victory or Death!, won: the player's CO
+  joins; lost: Black Hole's).
 - The swap's wipes take about a second each way.
 
 **A two-front Versus map, later.** Control is already per army and by the
