@@ -179,7 +179,11 @@ const AW2_SLOTS: u32 = 0x0849_9608;
 /// Moving sheets (LZ77, literal) of the 24 original unit types.
 const MOVE_NEW: u32 = 0x09EC_0000;
 const MOVE_SIZE: u32 = 0x1000;
-const MOVE_SENTINEL: u32 = MOVE_NEW + 32 * MOVE_SIZE;
+/// (slot 31: the 24 types' and the 7 new units' sheets take 0..30; at 32 it was the HUD's first word)
+const MOVE_SENTINEL: u32 = MOVE_NEW + 31 * MOVE_SIZE;
+/// The other countries' moving Infantry and Mech (Blue Moon, Green Earth, Yellow Comet, Black Hole; Infantry then Mech).
+const MOVE_COUNTRY_NEW: u32 = 0x09F0_0000;
+const MOVE_COUNTRY_SENTINEL: u32 = MOVE_COUNTRY_NEW + 8 * MOVE_SIZE;
 const AW2_MOVES: u32 = 0x0849_CD88;
 
 /// The sheet the game reads now (AW2's or ours).
@@ -333,7 +337,31 @@ fn unit_tick(core: &mut Core, on: bool) {
             }
         }
     }
+    // Infantry and Mech moving as their country's (a Black Hole Infantry with its dome, not Orange Star's recoloured).
+    let country_moves = COUNTRY_MOVES.get_or_init(|| {
+        (1..=4usize)
+            .flat_map(|c| [1u8, 2].map(move |t| (c, t)))
+            .map(|(c, t)| crate::ds_unit_art::move_sheet_ds_country(t, c).map(|s| lz_literal(&s)))
+            .collect::<Option<Vec<_>>>()
+    });
+    if let Some(m) = country_moves {
+        if core.raw_read_32(MOVE_COUNTRY_SENTINEL, -1) != MAGIC {
+            for (k, lz) in m.iter().enumerate() {
+                assert!(lz.len() as u32 <= MOVE_SIZE);
+                core.raw_write_range(MOVE_COUNTRY_NEW + MOVE_SIZE * k as u32, -1, lz);
+            }
+            core.raw_write_32(MOVE_COUNTRY_SENTINEL, -1, MAGIC);
+        }
+        for c in 1..=4u32 {
+            for t in 1..=2u32 {
+                let k = 2 * (c - 1) + (t - 1);
+                switch32(core, crate::roster::move_pointer(t, c), MOVE_COUNTRY_NEW + MOVE_SIZE * k);
+            }
+        }
+    }
 }
+
+static COUNTRY_MOVES: OnceLock<Option<Vec<Vec<u8>>>> = OnceLock::new();
 
 // --- HP digits and status icons ------------------------------------------------
 

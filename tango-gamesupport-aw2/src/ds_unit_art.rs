@@ -235,6 +235,24 @@ fn move_file(ds_id: u8) -> Option<&'static [u8]> {
     matches!(f.len() / DS_SPRITE, 6 | 9).then_some(f)
 }
 
+/// Dual Strike's moving Infantry (`ds_id` 1) or Mech (2) of a country 1..4 (Blue Moon, Green Earth, Yellow Comet, Black
+/// Hole): the picture files after the units' (`mu/01f..026`, Infantry then Mech for each, in that order); country 0,
+/// Orange Star, is the units' own file.
+fn move_file_country(ds_id: u8, country: usize) -> Option<&'static [u8]> {
+    if country == 0 || !(1..=2).contains(&ds_id) {
+        return move_file(ds_id);
+    }
+    if country > 4 {
+        return None;
+    }
+    let pack = crate::ds_pack::pack()?;
+    let f = (1..=0x26)
+        .filter_map(|i| pack.file(&format!("mu/{i:03x}")))
+        .filter(|f| !f.is_empty() && f.len() % DS_SPRITE == 0)
+        .nth(IDS - 1 + 2 * (country - 1) + ds_id as usize - 1)?;
+    (f.len() / DS_SPRITE == 9).then_some(f)
+}
+
 /// Frames per direction AW2's animation descriptor for a unit type plays:
 /// two for copters and ships (types 19..24), three otherwise.
 pub fn frames_per_direction(aw2_type: u8) -> Option<usize> {
@@ -257,18 +275,23 @@ pub fn frames_per_direction(aw2_type: u8) -> Option<usize> {
 /// class plays 0, 1, 0, and one with three given a two-frame class plays
 /// 0, 1.
 pub fn move_sheet(ds_id: u8, like_aw2_type: u8) -> Option<Vec<u8>> {
-    move_sheet_impl(ds_id, like_aw2_type, false)
+    move_sheet_impl(ds_id, like_aw2_type, false, 0)
 }
 
 /// [`move_sheet`] for the Dual Strike graphics preview: colour 14 is the
 /// skin shadow ([`map_tiles_ds`]).
 pub fn move_sheet_ds(ds_id: u8, like_aw2_type: u8) -> Option<Vec<u8>> {
-    move_sheet_impl(ds_id, like_aw2_type, true)
+    move_sheet_impl(ds_id, like_aw2_type, true, 0)
 }
 
-fn move_sheet_impl(ds_id: u8, like_aw2_type: u8, preview: bool) -> Option<Vec<u8>> {
+/// [`move_sheet_ds`] for Infantry or Mech of a country 1..4 (Dual Strike draws them per country, moving too).
+pub fn move_sheet_ds_country(ds_id: u8, country: usize) -> Option<Vec<u8>> {
+    move_sheet_impl(ds_id, ds_id, true, country)
+}
+
+fn move_sheet_impl(ds_id: u8, like_aw2_type: u8, preview: bool, country: usize) -> Option<Vec<u8>> {
     let want = frames_per_direction(like_aw2_type)?;
-    let src = move_file(ds_id)?;
+    let src = move_file_country(ds_id, country)?;
     let have = src.len() / DS_SPRITE / 3;
     let pick: &[usize] = match (have, want) {
         (3, 3) => &[0, 1, 2],
