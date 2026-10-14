@@ -166,8 +166,9 @@ fn onyx_art() -> Option<&'static OnyxArt> {
         .as_ref()
 }
 
-/// The kind of the Black Onyx's laser; its sprites stop short of the
-/// satellite panel's tiles (crate::onyx, OBJ `0x1F9..`).
+/// The kind of the Black Onyx's laser; its sprites stop short of OBJ `0x1F9`
+/// (the satellite panel's tiles once; crate::onyx now has them at 0x25A, and
+/// the laser's frames stay fitted to this room).
 const ONYX: u8 = 3;
 const ONYX_OBJ_TILES: usize = 0x1F9 - OBJ_TILE as usize;
 

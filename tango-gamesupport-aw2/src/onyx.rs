@@ -1291,8 +1291,11 @@ fn build_art(pack: &crate::ds_pack::Pack, tiles: &[u8], pal: &[u8]) -> Option<Ar
 /// OBJ tiles the panel draws into (free on the battle map: crate::heal_effect's
 /// and the two fronts', neither in use on Crystal Calamity while it shows):
 /// the satellite's 16 (a 32x32 sprite), then five columns of four (8x32
-/// sprites) for the time, the hits and the charge.
-const SAT_TILE: u16 = 0x1F9;
+/// sprites) for the time, the hits and the charge. The satellite is at 0x25A,
+/// past AW2's effect tiles (0x1CA..0x259: the move arrow and the explosions;
+/// at 0x1F9 it drew over the arrow's corner piece), in tiles AW2 left
+/// untouched through moves, fights and their explosions.
+const SAT_TILE: u16 = 0x25A;
 const TEXT_TILES: [u16; 5] = [0x2D2, 0x2D6, 0x2E4, 0x2EC, 0x2F4];
 const OBJ_TILES: u32 = 0x0601_0000;
 const PANEL_W: i32 = 32 + 8 * TEXT_TILES.len() as i32;

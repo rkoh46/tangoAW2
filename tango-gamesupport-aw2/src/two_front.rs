@@ -2231,9 +2231,13 @@ pub(crate) fn outlined(core: &Core, s: &str) -> Vec<[u8; 16]> {
 
 /// OBJ tiles free on the battle map (crate::heal_effect's, which it uses
 /// only while a structure's heal plays at a turn's start): pairs of tiles,
-/// each an 8x16 sprite.
+/// each an 8x16 sprite. The run at 0x1F9 comes last: it lies in AW2's own
+/// effect tiles (0x1CA..0x259: the move arrow, loaded when a unit is picked,
+/// and the explosions), so only a menu's long help lines reach it, when no
+/// arrow shows; the front's title above the map stays out of it (it drew
+/// over the arrow's corner piece, tile 514).
 pub(crate) fn free_tile_pairs() -> Vec<u16> {
-    const RUNS: [(u16, u16); 7] = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)];
+    const RUNS: [(u16, u16); 7] = [(0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9), (0x1F9, 17)];
     RUNS.iter().flat_map(|&(t, n)| (0..n / 2).map(move |k| t + 2 * k)).collect()
 }
 
