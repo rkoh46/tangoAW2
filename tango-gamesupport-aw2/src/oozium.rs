@@ -402,7 +402,8 @@ fn value(core: &Core, u: u32) -> u32 {
 fn best_meal(core: &Core, oozium: u32, army: u32) -> Option<u32> {
     let (x, y) = pos(core, oozium);
     let reach = core.raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1).max(1);
-    let fuel = core.raw_read_8(oozium + 6, -1) & 0x7F;
+    // (its fuel / the snow's rate: Dual Strike's `Unit_GetMovePoints`)
+    let fuel = crate::ds_weather::reach(core, oozium) as u8;
     let mut best: Option<(u32, u32)> = None;
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
         let Some(u) = unit_on(core, ALL_PLANE, x + dx, y + dy) else { continue };
@@ -466,7 +467,7 @@ fn advance(core: &mut Core, u: u32, army: u32) {
     let dist = |p: (i32, i32)| foes.iter().map(|f| (f.0 - p.0).abs() + (f.1 - p.1).abs()).min();
     let Some(now) = dist((x, y)) else { return };
     let reach = core.raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1).max(1);
-    let fuel = core.raw_read_8(u + 6, -1) & 0x7F;
+    let fuel = crate::ds_weather::reach(core, u) as u8;
     let mut best: Option<(i32, (i32, i32), u8)> = None;
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
         let to = (x + dx, y + dy);
@@ -482,16 +483,15 @@ fn advance(core: &mut Core, u: u32, army: u32) {
             best = Some((d, to, cost));
         }
     }
-    if let Some((_, to, cost)) = best {
-        move_unit(core, u, to, cost);
+    if let Some((_, to, _)) = best {
+        move_unit(core, u, to);
         let f = core.raw_read_8(u + 1, -1);
         core.raw_write_8(u + 1, -1, f | MOVED);
     }
 }
 
-/// Moves a unit to (x, y) on the map (its record and both unit planes),
-/// paying the fuel.
-fn move_unit(core: &mut Core, u: u32, to: (i32, i32), cost: u8) {
+/// Moves a unit to (x, y) on the map (its record and both unit planes).
+fn move_unit(core: &mut Core, u: u32, to: (i32, i32)) {
     let from = pos(core, u);
     let id = ((u - units(core)) / UNIT) as u8;
     for plane in [SEEN_PLANE, ALL_PLANE] {
@@ -506,8 +506,7 @@ fn move_unit(core: &mut Core, u: u32, to: (i32, i32), cost: u8) {
     }
     core.raw_write_8(u + 2, -1, to.0 as u8);
     core.raw_write_8(u + 3, -1, to.1 as u8);
-    let fuel = core.raw_read_8(u + 6, -1);
-    core.raw_write_8(u + 6, -1, (fuel & 0x80) | (fuel & 0x7F).saturating_sub(cost));
+    // (an Oozium's move uses no fuel: Dual Strike's `Unit_GetFuelUsed`)
 }
 
 /// The frame's effects pass ([`crate::cpu_tactics::effects_pass`]): a CPU
@@ -534,8 +533,7 @@ pub fn effects_pass(core: &mut Core, ret: u32) -> bool {
         {
             continue;
         }
-        let cost = move_cost(core, army, OOZIUM, to.0, to.1);
-        move_unit(core, me, to, cost);
+        move_unit(core, me, to);
         begin(core, v, army, ret);
         eat_next(core);
         return true;

@@ -1147,6 +1147,18 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   at most 999, as Dual Strike's `Combatant_TakeHit` (AW2's `sub_08024DDC`
   did the two the other way round, which could show 1 off;
   `co_roster::preview_scaled`, 0x08024E00). The damage dealt is unchanged.
+- **Snow and fuel** (`Player_GetFuelRate`: 2 in snow, 1 otherwise; 1 for
+  Olaf's army with CO abilities on): a move uses its path's cost x the
+  rate in fuel (`Unit_GetFuelUsed`; `ds_weather::move_fuel` on
+  `SubtractFuel` 0x08025B80, after a move, a path shown in fog, a join;
+  an Oozium's move uses none), and a unit reaches at most its fuel / the
+  rate squares (`Unit_GetMovePoints`; `ds_weather::reach` at the move
+  range's flood 0x08020308, the CPU's usable movement 0x0805824E, the
+  move shown 0x08038D34, the Oozium's own moves). The daily burn takes no
+  weather (`Unit_BurnDailyFuel`; tangoAW2 doubled it before). AW2's other
+  callers of the movement function (the CPU's threat and planning ranges)
+  never read fuel and are left alone. Example: a Tank's 4-square move in
+  snow uses 8 fuel; one with 5 fuel reaches 2 squares.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

@@ -198,3 +198,52 @@ def random_sandstorm_resets_at_map_start(ctx):
     g.start_battle()
     g.wait_for_input()
     ctx.eq(e.u8(SANDSTORM_DAY), 0, "sandstorm byte after the map start")
+
+
+@test(modes=("ds",))
+def snow_fuel(ctx):
+    """Dual Strike's snow (Player_GetFuelRate 2): a move uses twice its cost
+    in fuel, a unit reaches at most fuel / 2 squares, the daily burn is
+    unchanged; Olaf's army (CO abilities on) is exempt."""
+    for co, rate in (("andy", 2), ("olaf", 1)):
+        m = ctx.map()
+        m.unit(1, "tank", 5, 5).unit(1, "tank", 5, 9).unit(1, "fighter", 15, 5).unit(2, "infantry", 25, 15)
+        g = ctx.start(m, [co, "andy"], weather="snow", humans=(1, 2))
+        # A move of 4 plains.
+        f0 = g.unit_at(5, 5)["fuel"]
+        g.select(5, 5)
+        g.move_to(9, 5)
+        g.choose("Wait", g.ACTION_MENU)
+        g.wait_idle()
+        ctx.eq(f0 - g.unit_at(9, 5)["fuel"], 4 * rate, f"{co}: a Tank's 4-square move in snow uses 4 x {rate} fuel")
+        # A Tank with 5 fuel reaches 5 // rate squares (move 6).
+        t = g.unit_at(5, 9)
+        a = g.unit_addr(t["id"]) + 6
+        g.e.w8(a, (g.e.u8(a) & 0x80) | 5)
+        cells = reach(g, 5, 9)
+        far = max(abs(x - 5) + abs(y - 9) for x, y in cells)
+        ctx.eq(far, 5 // rate, f"{co}: a Tank with 5 fuel reaches {5 // rate} squares in snow")
+        # The Fighter's daily burn: 5, snow or not.
+        f1 = g.unit_at(15, 5)["fuel"]
+        g.end_turn(human=2)
+        g.end_turn(human=1)
+        ctx.eq(f1 - g.unit_at(15, 5)["fuel"], 5, f"{co}: a Fighter's daily fuel in snow")
+
+
+RANGE = 0x0201E450 + 0x2852
+ROWS = 0x0201E450 + 0x417A
+
+
+def reach(g, x, y):
+    """The cells the unit at (x, y) can move to (its move range drawn)."""
+    g.select(x, y)
+    g.e.wait(8)
+    cells = set()
+    w, h = g.e.u16(0x0201E450), g.e.u16(0x0201E452)
+    for yy in range(h):
+        row = g.e.u16(ROWS + 2 * yy)
+        r = g.e.read(RANGE + row, w)
+        cells |= {(xx, yy) for xx in range(w) if r[xx] != 0xFF}
+    g.e.press("B", 4)
+    g.wait_for_input()
+    return cells
