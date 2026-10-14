@@ -5,8 +5,9 @@
 //! Where Dual Strike (USA) keeps them (overlay 0 is loaded at 0x022AD560):
 //!
 //! - **Map table**: overlay 0 `0x022DBDB0`, 0xA0 bytes per map, DS map id
-//!   `n` at index `n - 1`. The record is AW2's map header grown: armies'
-//!   colours at +0x01..+0x04, the name's text id at +0x2C, the map look at
+//!   `n` at index `n - 1` (each record read from 0x18 bytes before Dual
+//!   Strike's header). The record is AW2's map header grown: armies' colours at +0xA1..+0xA4
+//!   (the header's `army[1..5]`), the name's text id at +0x2C, the map look at
 //!   +0x32 (0 normal, 1 snow, 2 desert, 3 wasteland), the weather at +0x33
 //!   (0 clear, 1 snow, 2 rain, 3 sandstorm: `sub_020D2104` stores it as the
 //!   battle's weather), fog at +0x34, the army count at +0x3C, the speed
@@ -288,7 +289,8 @@ impl Reader<'_> {
             tiles: tiles.clone(),
             units,
             armies,
-            colours: [self.u8(e + 1)?, self.u8(e + 2)?, self.u8(e + 3)?, self.u8(e + 4)?],
+            // (the header's army[1..5]; +0x01.. is the previous map's)
+            colours: [self.u8(e + 0xA1)?, self.u8(e + 0xA2)?, self.u8(e + 0xA3)?, self.u8(e + 0xA4)?],
             cos: [co(0x70)?, if armies >= 3 { co(0x72)? } else { None }, None],
             fog: self.u8(e + 0x34)? != 0,
             weather: self.u8(e + 0x33)?,
@@ -479,6 +481,11 @@ mod tests {
         assert_eq!(structure("Lone Wolf"), Some(Structure::MissilePad));
         assert_eq!(structure("Silo Sweep"), Some(Structure::Fortress));
         assert_eq!(s.maps.iter().filter(|m| m.structure.is_some()).count(), 3);
+        // Each map's own colours (Lone Wolf's computer is Black Hole, Fenced
+        // In's Blue Moon), not the map before it's.
+        let colours = |n: &str| s.maps.iter().find(|m| m.name == n).unwrap().colours;
+        assert_eq!(colours("Lone Wolf"), [1, 5, 3, 4]);
+        assert_eq!(colours("Fenced In"), [1, 2, 3, 4]);
         for m in &s.maps {
             // A map with a structure names its picture, the one its tiles show.
             assert_eq!(m.structure, Structure::of_tiles(&m.tiles), "{}", m.name);
