@@ -173,6 +173,13 @@ pub fn partner_charge(core: &Core, army: u32) -> u32 {
     core.raw_read_32(rec(army) + P_CHARGE, -1)
 }
 
+/// Sets the partner's meter (AW2's units; Market Crash, crate::co_powers).
+pub fn set_partner_charge(core: &mut Core, army: u32, v: u32) {
+    if partner(core, army).is_some() {
+        core.raw_write_32(rec(army) + P_CHARGE, -1, v);
+    }
+}
+
 pub fn partner_uses(core: &Core, army: u32) -> u8 {
     core.raw_read_8(rec(army) + P_USES, -1)
 }

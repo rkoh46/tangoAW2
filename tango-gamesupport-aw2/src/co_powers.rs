@@ -14,7 +14,8 @@
 //! - Kindle's High Society: +3% firepower per property she owns when it
 //!   starts ([`extra_firepower`], with the Com Towers').
 //! - Sasha: +100 funds a day per property; Market Crash lowers each
-//!   enemy's power meter by 1% of its full meter per 500 funds she has
+//!   enemy's power meters (its tag partner's too) by 1% of the full meter
+//!   per 500 funds she has
 //!   (Dual Strike's 0x020E1D2C); War Bonds pays her half the value of the
 //!   HP her units take off enemies (at the enemy CO's prices).
 //! - Rachel: property repairs give one HP more (her blocks' `repairBonus`).
@@ -491,18 +492,26 @@ fn activate(core: &mut Core) {
     if co != SASHA || mode != COP {
         return;
     }
+    // Dual Strike's `MarketCrash`: every enemy in the game, its active CO
+    // and its tag partner, each loses its Super Power's cost x the % (worked
+    // in Dual Strike's meter units, AW2's / 180, as it rounds).
     let funds = core.raw_read_32(player(core, army), -1);
     let pct = (funds / 500).min(100);
+    let cut = |full: u32| full / METER_SCALE * pct / 100 * METER_SCALE;
     let team: Vec<u8> = (0..=5u32).map(|a| core.raw_read_8(player(core, a) + 0x2A, -1)).collect();
     for enemy in 1..=5u32 {
-        if enemy == army || team[enemy as usize] == team[army as usize] || army_co(core, enemy).0 == 0xFF {
+        if enemy == army || team[enemy as usize] == team[army as usize] || !crate::co_roster::in_game(core, enemy) {
             continue;
         }
         let full = super_cost(core, enemy);
         let p = player(core, enemy) + 0x20;
         let charge = core.raw_read_32(p, -1);
-        let cut = full * pct / 100;
-        core.raw_write_32(p, -1, charge.saturating_sub(cut));
+        core.raw_write_32(p, -1, charge.saturating_sub(cut(full)));
+        if let Some(co) = crate::tag::partner(core, enemy) {
+            let full = crate::tag::scop_cost(core, co, crate::tag::partner_uses(core, enemy));
+            let charge = crate::tag::partner_charge(core, enemy);
+            crate::tag::set_partner_charge(core, enemy, charge.saturating_sub(cut(full)));
+        }
     }
     let _ = SCOP_COST;
 }

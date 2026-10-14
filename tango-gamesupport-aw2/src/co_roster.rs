@@ -259,7 +259,7 @@ fn double_terrain_stars(core: &Core, army: u32) -> bool {
 
 /// Army `a` is still in the game: it has a controller (+0x1B) and is not
 /// defeated (+0x14).
-fn in_game(core: &Core, a: u32) -> bool {
+pub(crate) fn in_game(core: &Core, a: u32) -> bool {
     let p = core.raw_read_32(PLAYERS_POINTER, -1) + PLAYER * a;
     core.raw_read_8(p + 0x1B, -1) != 0 && core.raw_read_16(p + 0x14, -1) == 0
 }

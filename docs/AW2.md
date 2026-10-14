@@ -1184,6 +1184,9 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   (`co_powers::high_society`; `ram_map::HIGH_SOCIETY` at 0x0203C820, 1 +
   the bonus per army; a game continued during the power counts again).
   Colin's Power of Money (funds / 300) is AW2's own snapshot, player +0x26.
+- **Market Crash** (`MarketCrash`): every enemy in the game loses, from
+  its active CO's meter and its tag partner's, that CO's Super Power cost
+  x min(funds / 500, 100)% (in Dual Strike's meter units), not below 0.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

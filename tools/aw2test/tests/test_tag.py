@@ -408,6 +408,22 @@ def tag_star_luck(ctx):
 
 
 @test(modes=("ds",))
+def tag_market_crash_partner(ctx):
+    """Sasha's Market Crash (Dual Strike's MarketCrash) cuts both of an enemy
+    pair's meters: 25000 funds, 50% of each CO's Super Power cost."""
+    g = tag_battle(ctx, ["sasha", "andy"], [None, "max"], units=[(1, "infantry", 10, 6), (2, "infantry", 20, 6)])
+    e = g.e
+    e.w32(g.player(1)["addr"] + ram.P_FUNDS, 25000)
+    e.w32(g.player(2)["addr"] + ram.P_CHARGE, 40000)
+    e.w32(tag.rec(2) + tag.P_CHARGE, 40000)
+    t = tag.partner(e, 2)
+    full = tag.star_cost(t["uses"]) * g.co_stars(t["co"])[1]
+    ctx.power(g, 1, "power")
+    ctx.eq(g.player(2)["charge"], 40000 - 27000, "Andy's meter: 50% of 6 stars x 9000 off")
+    ctx.eq(tag.partner(e, 2)["charge"], max(0, 40000 - full // 2), f"Max's meter: 50% of his {full} off")
+
+
+@test(modes=("ds",))
 def tag_power(ctx):
     """Tag Power: offered with both meters full; the active CO's Super Power
     (first half: End hidden, Change goes on), then the partner's (the COs
