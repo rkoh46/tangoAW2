@@ -297,21 +297,15 @@ fn capture_points(core: &mut Core) {
 }
 
 /// `GetCoPriceMultiplier(army r4, type r5)`: the CO's cost % in r0 before
-/// 100 is added: Sale Price -5, Fire Sale -8. Not for the power meter
-/// (Dual Strike's meter reads no price modifier): its calls from
-/// `sub_08041978` and the Oozium's eat keep the CO's own.
+/// 100 is added: Sale Price -5, Fire Sale -8. (The power meter no longer
+/// reads prices with the pack: [`crate::co_powers`] charges it by Dual
+/// Strike's `chargePerHp`.)
 const PRICE: u32 = 0x0804_2CC0;
-const PRICE_METER_CALLERS: [u32; 3] = [0x0804_1C3F, 0x0804_1C89, 0x0802_C8E3];
 fn price(core: &mut Core) {
     if !any_on(core) {
         return;
     }
-    let cpu = core.gba().cpu();
-    let (army, sp) = (cpu.gpr(4) as u32, cpu.gpr(13) as u32);
-    let caller = core.raw_read_32(sp + 12, -1);
-    if PRICE_METER_CALLERS.contains(&caller) {
-        return;
-    }
+    let army = core.gba().cpu().gpr(4) as u32;
     let cut = (if has(core, army, SALE_PRICE) { 5 } else { 0 }) + (if has(core, army, FIRE_SALE) { 8 } else { 0 });
     if cut != 0 {
         let cpu = core.gba_mut().cpu_mut();
@@ -342,7 +336,10 @@ fn luck_done(core: &mut Core) {
     }
 }
 
-/// The power meter's charge (`sub_080440E0(army, amount)`): Star Power x1.1.
+/// The power meter's charge (`sub_080440E0(army, amount)`): Star Power
+/// x1.1, worked in Dual Strike's meter units (AW2's / 180, which every
+/// charge with the pack is a multiple of) so it rounds as Dual Strike's
+/// `Player_AddPowerCharge` does.
 const METER_CHARGE: u32 = 0x0804_40E0;
 fn meter_charge(core: &mut Core) {
     // The partner of a tag pair gets half (crate::tag), before Star Power.
@@ -353,7 +350,9 @@ fn meter_charge(core: &mut Core) {
     let cpu = core.gba().cpu();
     let (army, amount) = (cpu.gpr(0) as u32, cpu.gpr(1));
     if has(core, army, STAR_POWER) && amount > 0 {
-        core.gba_mut().cpu_mut().set_gpr(1, amount * 110 / 100);
+        let scale = crate::co_powers::METER_SCALE as i32;
+        let v = if crate::ds_weather::is_on(core) { amount / scale * 110 / 100 * scale } else { amount * 110 / 100 };
+        core.gba_mut().cpu_mut().set_gpr(1, v);
     }
 }
 

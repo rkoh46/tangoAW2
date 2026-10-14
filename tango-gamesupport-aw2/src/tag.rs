@@ -274,10 +274,13 @@ pub fn charged(core: &mut Core) {
     if amount <= 0 || core.raw_read_8(POWERS_ON, -1) == 0 || core.raw_read_8(player(core, army) + PL_MODE, -1) != 0 {
         return;
     }
-    let mut add = amount as u32 / 2;
+    // In Dual Strike's meter units (AW2's / 180), as it rounds.
+    let scale = crate::co_powers::METER_SCALE;
+    let mut add = amount as u32 / scale >> 1;
     if has_partner_skill(core, army, crate::co_skills::STAR_POWER) {
         add = add * 110 / 100;
     }
+    add *= scale;
     let cap = scop_cost(core, co, partner_uses(core, army));
     let v = (partner_charge(core, army) + add).min(cap);
     core.raw_write_32(rec(army) + P_CHARGE, -1, v);

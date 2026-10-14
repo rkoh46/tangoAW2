@@ -63,10 +63,10 @@ def oozium_eats(ctx):
     ctx.check(g.unit_at(10, 10) is None, "it left its own square")
     ctx.eq(others(g, 2), [], "the Tank is gone")
     ctx.eq(u["hp"] if u else None, 100, "the Oozium is unharmed")
-    # A Tank is 7000: the eater charges half its value, the victim all of it
-    # (as a battle in which the Tank lost 10 HP).
-    ctx.eq(charge(g, 1) - c1, 3500, "the eater's power meter charges as for a kill")
-    ctx.eq(charge(g, 2) - c2, 7000, "the victim's power meter charges as for its loss")
+    # Dual Strike's charge for a Tank losing 10 HP: 10 x chargePerHp 5 = 50,
+    # x 180 in AW2's meter; the eater gets half, the victim all of it.
+    ctx.eq(charge(g, 1) - c1, 4500, "the eater's power meter charges as for a kill")
+    ctx.eq(charge(g, 2) - c2, 9000, "the victim's power meter charges as for its loss")
     ctx.eq(destroyed(g, 1) - d0, 1, "army 1 counts a unit destroyed")
     ctx.eq(g.player(2)["raw"][0x3B] - lost0, 1, "army 2 counts a unit lost")
     g.end_turn()
@@ -254,8 +254,8 @@ def cpu_oozium_eats(ctx):
     ctx.eq(others(g, 1), [], "the CPU's Oozium ate the Tank")
     u = g.unit_at(10, 10)
     ctx.check(u is not None and u["type"] == OOZIUM, f"the Oozium is on the Tank's square: {u}")
-    ctx.eq(charge(g, 2) - c2, 3500, "the CPU's meter charges as for a kill")
-    ctx.eq(charge(g, 1) - c1, 7000, "the player's as for the loss")
+    ctx.eq(charge(g, 2) - c2, 4500, "the CPU's meter charges as for a kill")
+    ctx.eq(charge(g, 1) - c1, 9000, "the player's as for the loss")
 
 
 @test(modes=DS)

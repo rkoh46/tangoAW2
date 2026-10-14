@@ -541,7 +541,8 @@ fn repair(core: &mut Core) {
 /// works the battle out (`sub_080251BC`), then charges both power meters
 /// (the first at 0x08041CB8), with the units' HP not yet updated and the
 /// battle records holding what is left. There War Bonds pays Sasha half
-/// the value of the HP her side took off the other. (The defender is
+/// the value of the HP her side took off the other, and with the pack
+/// both charges are Dual Strike's ([`battle_charges`]). (The defender is
 /// kept from its entry.)
 const AFTER_BATTLE: u32 = 0x0804_1978;
 const METERS_CHARGED: u32 = 0x0804_1CB8;
@@ -557,6 +558,60 @@ fn after_battle(core: &mut Core) {
     if is_on(core) {
         let d = core.gba().cpu().gpr(0) as u8;
         core.raw_write_8(BATTLE_DEFENDER_INDEX, -1, d);
+    }
+}
+
+/// AW2's meter is Dual Strike's x 180: a star costs 9000 to its 50, and
+/// both add 20% a power used ([`super_cost`]).
+pub(crate) const METER_SCALE: u32 = 180;
+
+/// Dual Strike's meter charge per shown HP a unit type loses (its unit
+/// record +0x13, `chargePerHp`: Infantry 2, Tank 5, Megatank 11), in its
+/// own units; 0 without the pack.
+pub(crate) fn charge_per_hp(t: u8) -> u32 {
+    crate::roster::ds_record(t).map_or(0, |r| r[0x13] as u32)
+}
+
+/// The battle's charge for each side in Dual Strike's units
+/// (`ActingUnit_StartAttack`): its shown HP lost x its unit's
+/// `chargePerHp`, plus half the other side's. AW2 values the HP at the
+/// unit's price instead.
+fn battle_charges(core: &Core) -> Option<(u32, u32)> {
+    let d = core.raw_read_8(BATTLE_DEFENDER_INDEX, -1) as u32;
+    if d == 0 {
+        return None;
+    }
+    let att = core.raw_read_32(SELECTED_UNIT, -1);
+    let dfd = core.raw_read_32(UNITS_POINTER, -1) + UNIT * d;
+    let loss = |u: u32, record: u32| {
+        let before = bars(core.raw_read_8(u + 4, -1) as i32 & 0x7F);
+        let after = bars(core.raw_read_16(record + 8, -1) as i16 as i32);
+        (before - after).max(0) as u32 * charge_per_hp(core.raw_read_8(u, -1))
+    };
+    let (a, b) = (loss(att, BATTLE_ATTACKER), loss(dfd, BATTLE_DEFENDER));
+    Some((a + (b >> 1), b + (a >> 1)))
+}
+
+/// The attacker's `AddCoPowerCharge` (r1 the amount), after War Bonds:
+/// with the pack, Dual Strike's charge.
+fn attacker_charged(core: &mut Core) {
+    war_bonds(core);
+    if !is_on(core) {
+        return;
+    }
+    if let Some((a, _)) = battle_charges(core) {
+        core.gba_mut().cpu_mut().set_gpr(1, (a * METER_SCALE) as i32);
+    }
+}
+
+/// The defender's `AddCoPowerCharge` (0x08041CCA, r1 the amount).
+const DEFENDER_CHARGED: u32 = 0x0804_1CCA;
+fn defender_charged(core: &mut Core) {
+    if !is_on(core) {
+        return;
+    }
+    if let Some((_, d)) = battle_charges(core) {
+        core.gba_mut().cpu_mut().set_gpr(1, (d * METER_SCALE) as i32);
     }
 }
 
@@ -601,7 +656,8 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (INCOME, Box::new(income)),
         (REPAIR, Box::new(repair)),
         (AFTER_BATTLE, Box::new(after_battle)),
-        (METERS_CHARGED, Box::new(war_bonds)),
+        (METERS_CHARGED, Box::new(attacker_charged)),
+        (DEFENDER_CHARGED, Box::new(defender_charged)),
     ]
 }
 

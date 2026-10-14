@@ -206,15 +206,22 @@ class Ctx:
         else:
             self.eq(att1["hp"], att0["hp"], f"{label}: no counter")
         # Power meter (sub_08041978): each side gains its own HP bars lost x its
-        # unit's price (GetCoPriceMultiplier: cost x (100 + CO cost %) / 100)
-        # plus half of the other side's; clamped to the SCOP cost, and not
+        # unit's price (GetCoPriceMultiplier: cost x (100 + CO cost %) / 100;
+        # with the pack Dual Strike's chargePerHp x 180) plus half of the other side's; clamped to the SCOP cost, and not
         # charged while a power is on (sub_080440E0).
         pa1, pd1 = g.player(att0["army"]), g.player(dfd0["army"])
 
         def price(p, t):
+            if self.ds:
+                # Dual Strike: the unit's chargePerHp (record +0x13), in its
+                # meter units, which are AW2's / 180 (crate::co_powers).
+                if not hasattr(self, "_ds"):
+                    self._ds = romlib.DualStrike()
+                return self._ds.record(t)[0x13]
             cost = self.image.u16(romlib.UNIT_TABLE + romlib.UNIT_RECORD * t + 6)
             pct = g.co_cost_percent(p["co"], p["co_mode"])
             return damage.div(cost * (100 + pct), 100)
+        scale = 180 if self.ds else 1
 
         x1 = (damage.hp_bars(att0["hp"]) - damage.hp_bars(att1["hp"])) * price(pa0, att0["type"])
         x2 = (damage.hp_bars(dfd0["hp"]) - damage.hp_bars(dfd1["hp"])) * price(pd0, dfd0["type"])
@@ -225,7 +232,7 @@ class Ctx:
             if 0x48 in self.skills.get(army, ()):
                 gain = damage.div(gain * 110, 100)  # Star Power (crate::co_skills)
             cap = power_star_cost(p0["powers_used"]) * g.co_stars(p0["co"])[1]
-            self.eq(p1["charge"], min(cap, p0["charge"] + gain), f"{label}: {who}'s power meter")
+            self.eq(p1["charge"], min(cap, p0["charge"] + gain * scale), f"{label}: {who}'s power meter")
             # A tag pair's partner: half the active CO's (before Star Power),
             # its own Star Power, up to its Super Power's cost (crate::tag).
             t0 = ta0 if army == att0["army"] else td0
@@ -233,7 +240,7 @@ class Ctx:
                 t1 = tag.partner(g.e, army)
                 half = damage.div(x1 + damage.div(x2, 2) if who == "attacker" else x2 + damage.div(x1, 2), 2)
                 pcap = power_star_cost(t0["uses"]) * g.co_stars(t0["co"])[1]
-                self.eq(t1["charge"], min(pcap, t0["charge"] + half), f"{label}: {who}'s partner's power meter (half)")
+                self.eq(t1["charge"], min(pcap, t0["charge"] + half * scale), f"{label}: {who}'s partner's power meter (half)")
         return {"first": first, "counter": counter, "before": (att0, dfd0), "after": (att1, dfd1),
                 "records": (ra, rd)}
 

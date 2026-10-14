@@ -1084,7 +1084,7 @@ counter-attack). Its move takes in the squares next to it holding a unit of
 another team, any unit (air units and ships in port too) on a square it can
 enter; moving onto one and choosing Wait destroys that unit with the game's
 destruction (`sub_0804018C`: explosion, units lost, rout), charges both power
-meters as a battle in which the victim lost all its HP, and counts a unit
+meters as a battle in which the victim lost all its HP (below), and counts a unit
 destroyed for the eater's army. A hidden unit on that square is eaten too
 (no Trap!). The CPU eats with its Ooziums as its turn starts (the most
 valuable unit next to one) and moves the others a square towards the enemy.
@@ -1096,6 +1096,22 @@ is added, and whose CO blocks' unit filters (block +0x34: 0x020E25E8,
 nor Com Towers' or Javier's), no power's damage, stun or fuel loss, no
 repair, move-again or resupply; a Missile Silo's and a Black Bomb's blasts
 spare it, and the CPU's silo and strike scoring leave it out.
+
+Battle rules, as Dual Strike's code has them (checked against the decomp,
+`~/advance-wars-dual-strike-decomp`):
+
+- **Power meter.** A battle charges each side its shown HP lost x its unit's
+  `chargePerHp` (Dual Strike's unit record +0x13: Infantry and Mech 2, Tank
+  5, Md Tank 8, Megatank 11, Oozium 15; no CO or price changes it), plus
+  half the other side's (`ActingUnit_StartAttack`); a tag partner gets half
+  the active CO's amount. AW2 values the HP at the unit's price with the
+  CO's cost % (`sub_08041978`, 0x08041C32..0x08041CCA); with the pack the
+  amounts at its two `AddCoPowerCharge` calls (0x08041CB8, 0x08041CCA) are
+  replaced (`co_powers::battle_charges`). AW2's meter is Dual Strike's x
+  180 exactly (a star 9000 to its 50, both +20% a power used), so Star
+  Power's x1.1 and the partner's half are worked in Dual Strike's units
+  and multiplied back, and round as its `Player_AddPowerCharge` does. The
+  Oozium's eat charges as a battle in which the victim lost all its HP.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
@@ -3186,8 +3202,8 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   (structure shots 20 less, `0x0803ED12`); and traps in AW2's code: move
   (`GetUnitMovementWithCoBonus` 0x08042D42, APC Boost), vision
   (0x08042DA6), capture points (0x0804269A), price (`GetCoPriceMultiplier`
-  0x08042CC0; not for the power meter, as Dual Strike), luck (0x08042E64 /
-  0x08042E7A), the meter (0x080440E0, Star Power x1.1), hidden fuel (with
+  0x08042CC0), luck (0x08042E64 / 0x08042E7A), the meter (0x080440E0,
+  Star Power x1.1 in Dual Strike's meter units), hidden fuel (with
   crate::ds_weather's fuel trap), move costs (`CacheUnitMovementCosts`'
   end 0x0801F91E), and the special-ability bits in a Super Power
   (`GetPlayerSpecialAbilities` 0x08043050 / 0x08043066: Mistwalker
