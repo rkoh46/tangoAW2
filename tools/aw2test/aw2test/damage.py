@@ -10,7 +10,9 @@ HP is the game's internal 0..100 scale (display HP = ceil(hp / 10)).
     base      = chart[att][def] (weapon chosen as the game does), scaled by the
                 attacker CO's firepower: max(1, v * (100 + coAtk) / 100), 0 stays 0
     acc       = 100 + tempFirepower (+ counter bonus when countering)
-                (+ terrain defence when the CO has ability 0x40)
+                (+ terrain defence when the CO has ability 0x40); with the
+                pack every term but the counter bonus is in `base`'s
+                firepower instead (Dual Strike's one sum)
     damage    = acc * base / 100 + rand % luck - rand % negLuck   (clamped at 0)
     damage    = damage * hpBars(attacker) / 10
     defence   = hpBars(defender) * terrainDefence / 10 + 100 + coDef + tempDefence
@@ -134,12 +136,13 @@ class Rules:
     def stars(self, terrain_class):
         return self.image.terrain_stars(terrain_class)
 
-    def scaled(self, co, mode, att, dfd, weapon):
-        """sub_08043070: the chart value scaled by the CO's firepower."""
+    def scaled(self, co, mode, att, dfd, weapon, extra=0):
+        """sub_08043070: the chart value scaled by the CO's firepower (with the
+        pack, plus every other firepower term, `extra`: Dual Strike's one sum)."""
         v = self.raw(att, dfd, weapon)
         if v <= 0:
             return 0
-        r = div(v * (100 + self.co_bonus(co, mode, att, 0)), 100)
+        r = div(v * (100 + self.co_bonus(co, mode, att, 0) + extra), 100)
         return r if r else 1
 
 
@@ -167,6 +170,12 @@ class Side:
     # Dual Strike compatibility - 100, as firepower (Dual Strike's
     # 0x020E5C40 -> 0x020E5508; with CO abilities on).
     tag_firepower: int = 0
+    # Terrain stars (x1) this side's enemies cut (Dual Strike's Sonja), for
+    # Lash's terrain firepower.
+    terrain_cut: int = 0
+    # A tag pair's luck: 5 per star of its special-pair rating (Dual Strike's
+    # Player_GetGoodLuck; crate::co_skills::luck_done).
+    tag_luck: int = 0
 
 
 # Dual Strike's skill effects (its code: attack 0x020E646C / 0x020E68D0 /
@@ -229,21 +238,52 @@ class Outcome:
                 f"target defence {self.defence} -> loss {lo}..{hi}")
 
 
+def step2_extra(rules, a: Side):
+    """Firepower AW2 adds in its second step (sub_08024C58), besides the
+    counter bonus: tempFirepower (Com Towers, High Society, Colin's +0x26),
+    Lash's terrain (ability 0x40), the CO's terrain row, skills, tag."""
+    m = rules.co_mode(a.co, a.co_mode)
+    v = a.temp_firepower
+    if a.co_abilities and m["abilities"] & 0x40:
+        v += terrain_defence(rules, a)
+    if a.co_abilities:
+        v += rules.terrain_firepower(a.co, a.co_mode, a.terrain)
+    v += skill_attack(a)
+    if a.co_abilities:
+        v += a.tag_firepower
+    return v
+
+
+def step1_extra(rules, a: Side):
+    """With the pack (Dual Strike's Unit_GetChartDamage) every firepower term
+    is in the first step, Lash's terrain as half her DoubleTerrainStars."""
+    if rules.chart is None:
+        return 0
+    m = rules.co_mode(a.co, a.co_mode)
+    v = a.temp_firepower + skill_attack(a)
+    if a.co_abilities:
+        v += rules.terrain_firepower(a.co, a.co_mode, a.terrain) + a.tag_firepower
+        if m["abilities"] & 0x40:
+            v += max(0, terrain_defence(rules, a, double=False) - 10 * a.terrain_cut) * (2 if m["abilities"] & 0x20 else 1) >> 1
+    return v
+
+
 def choose_weapon(rules, a: Side, b: Side, dist, is_attacker):
     """CalcDamage: (weapon, base) for `a` hitting `b` at distance `dist`."""
     t = rules.unit(a.type)
     v1 = v2 = v3 = 0
     col = 25 if b.dived else b.type
+    x = step1_extra(rules, a)
     if dist == 1:
         v2 = rules.raw(a.type, b.type, 1)
         if v2:
-            v1 = rules.scaled(a.co, a.co_mode, a.type, b.type, 1)
+            v1 = rules.scaled(a.co, a.co_mode, a.type, b.type, 1, x)
         if t["min_range"] == 1 and a.ammo:
-            v3 = rules.scaled(a.co, a.co_mode, a.type, col, 0)
+            v3 = rules.scaled(a.co, a.co_mode, a.type, col, 0, x)
     else:
         rng = t["max_range"] + (range_bonus(rules, a) if a.co_abilities else 0)
         if t["min_range"] <= dist <= rng and a.ammo and is_attacker:
-            v3 = rules.scaled(a.co, a.co_mode, a.type, col, 0)
+            v3 = rules.scaled(a.co, a.co_mode, a.type, col, 0, x)
     if v3 <= v1:
         if v2:
             return "secondary", v1
@@ -255,12 +295,12 @@ def range_bonus(rules, a: Side):
     return rules.co_bonus(a.co, a.co_mode, a.type, 3)
 
 
-def terrain_defence(rules, s: Side):
+def terrain_defence(rules, s: Side, double=True):
     u = rules.unit(s.type)
     if u["domain"] == 0x10:
         return 0
     d = rules.stars(s.terrain) * 10
-    if s.co_abilities and rules.co_mode(s.co, s.co_mode)["abilities"] & 0x20:
+    if double and s.co_abilities and rules.co_mode(s.co, s.co_mode)["abilities"] & 0x20:
         d *= 2
     return d
 
@@ -275,7 +315,14 @@ def total_defence(rules, s: Side, cut=0, dist=1):
     temp = s.temp_defence
     if rules.chart is not None and s.type == OOZIUM:
         coDef, temp = 0, 0  # nothing from its CO: no power's +10, towers or Javier's
-    terrain = max(0, terrain_defence(rules, s) - 10 * cut)
+    if rules.chart is not None:
+        # Dual Strike's DoubleTerrainStars: every enemy's cut first, then
+        # Lash's doubling (crate::co_roster::ds_terrain_stars).
+        terrain = max(0, terrain_defence(rules, s, double=False) - 10 * s.terrain_cut)
+        if s.co_abilities and rules.co_mode(s.co, s.co_mode)["abilities"] & 0x20:
+            terrain *= 2
+    else:
+        terrain = max(0, terrain_defence(rules, s) - 10 * cut)
     total = div(hp_bars(s.hp) * terrain, 10) + 100 + coDef + temp
     if rules.chart is not None:
         total = min(total, 200)  # Dual Strike's cap (0x020C34C8), with the pack
@@ -286,17 +333,10 @@ def strike(rules, a: Side, b: Side, dist, is_attacker, a_hp_now):
     """Possible HP losses of `b` when `a` (now at `a_hp_now` HP) strikes it."""
     weapon, base = choose_weapon(rules, a, b, dist, is_attacker)
     m = rules.co_mode(a.co, a.co_mode)
-    acc = 100 + a.temp_firepower
+    acc = 100 + (0 if rules.chart is not None else step2_extra(rules, a))
     if not is_attacker and a.co_abilities:
         acc += m["counter"]
-    if a.co_abilities and m["abilities"] & 0x40:
-        acc += terrain_defence(rules, a)
-    if a.co_abilities:
-        acc += rules.terrain_firepower(a.co, a.co_mode, a.terrain)
-    acc += skill_attack(a)
-    if a.co_abilities:
-        acc += a.tag_firepower
-    luck = (m["luck"], m["neg_luck"]) if a.co_abilities else (10, 0)
+    luck = (m["luck"] + a.tag_luck, m["neg_luck"]) if a.co_abilities else (10, 0)
     dmg0 = div(acc * base, 100)
     cut = rules.enemy_terrain_cut(a.co, a.co_mode) if a.co_abilities else 0
     defence = total_defence(rules, b, cut, dist)

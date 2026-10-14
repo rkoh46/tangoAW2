@@ -1239,7 +1239,7 @@ counter-attack). Its move takes in the squares next to it holding a unit of
 another team, any unit (air units and ships in port too) on a square it can
 enter; moving onto one and choosing Wait destroys that unit with the game's
 destruction (`sub_0804018C`: explosion, units lost, rout), charges both power
-meters as a battle in which the victim lost all its HP, and counts a unit
+meters as a battle in which the victim lost all its HP (below), and counts a unit
 destroyed for the eater's army. A hidden unit on that square is eaten too
 (no Trap!). The CPU eats with its Ooziums as its turn starts (the most
 valuable unit next to one) and moves the others a square towards the enemy.
@@ -1251,6 +1251,127 @@ is added, and whose CO blocks' unit filters (block +0x34: 0x020E25E8,
 nor Com Towers' or Javier's), no power's damage, stun or fuel loss, no
 repair, move-again or resupply; a Missile Silo's and a Black Bomb's blasts
 spare it, and the CPU's silo and strike scoring leave it out.
+
+Battle rules, as Dual Strike's code has them (checked against the decomp,
+`~/advance-wars-dual-strike-decomp`):
+
+- **Power meter.** A battle charges each side its shown HP lost x its unit's
+  `chargePerHp` (Dual Strike's unit record +0x13: Infantry and Mech 2, Tank
+  5, Md Tank 8, Megatank 11, Oozium 15; no CO or price changes it), plus
+  half the other side's (`ActingUnit_StartAttack`); a tag partner gets half
+  the active CO's amount. AW2 values the HP at the unit's price with the
+  CO's cost % (`sub_08041978`, 0x08041C32..0x08041CCA); with the pack the
+  amounts at its two `AddCoPowerCharge` calls (0x08041CB8, 0x08041CCA) are
+  replaced (`co_powers::battle_charges`). AW2's meter is Dual Strike's x
+  180 exactly (a star 9000 to its 50, both +20% a power used), so Star
+  Power's x1.1 and the partner's half are worked in Dual Strike's units
+  and multiplied back, and round as its `Player_AddPowerCharge` does. The
+  Oozium's eat charges as a battle in which the victim lost all its HP.
+- **Firepower.** Dual Strike adds every firepower bonus into one sum and
+  scales the chart value by it once (`Unit_GetChartDamage`: chart x (100 +
+  FP) / 100, at least 1); only a counter-attack's bonus multiplies again
+  (`Combatant_CalcDamage`). AW2 has two steps (`sub_08043070`'s CO bonus,
+  then `100 + counter + Lash's terrain + player +0x26` in `sub_08024C58`):
+  with the pack the CO's terrain row, Lash's terrain, Com Towers, High
+  Society, a Tag Power's compatibility, skills and Colin's funds / 300
+  (+0x26) go into the first (`com_tower::scaled_firepower`, 0x0804308C,
+  for `CalcDamage`'s and a structure attack's calls; the CPU's estimates
+  are as before) and the second is `100 + counter` (0x08043380). Lash's
+  terrain firepower is half her terrain defence as `DoubleTerrainStars`
+  gives it: 5% a star day to day and in her CO Power, 10% in her Super
+  Power, less the enemies' star cuts (AW2's ability 0x40 gave the whole
+  value). Example: Tank vs Tank (55) under a power with two towers is 55 x
+  130 / 100 = 71 (AW2's steps gave 72).
+- **Luck.** A tag pair adds 5 luck per star of its special-pair rating (the
+  active CO's record +0x6C entry for the partner, 0 without one), whether a
+  Tag Power is on or not, with CO abilities on (`Player_GetGoodLuck`;
+  `co_skills::luck_done`, with the Luck skill's +10).
+- **Terrain stars.** A unit's terrain defence is Dual Strike's
+  `DoubleTerrainStars`: stars x 10 (air units 0), less 10 a star for every
+  enemy in the game (another team) whose CO cuts stars (Sonja; each at its
+  own power level, `MovementCost`), not below 0, then doubled in Lash's
+  Super Power (`co_roster::terrain_defence_done`, 0x08043344). AW2 doubled
+  first and tangoAW2 took off only the battle opponent's cut after: a Lash
+  unit on a wood (2 stars) under a 1-star cut now has 20, not 30.
+- **CO abilities off** (the Rules' CO abilities, Dual Strike's
+  `coEffectsOn`): Com Towers give no firepower and no defence, as Dual
+  Strike's `Player_GetFirepowerBonus` and `Player_GetComTowerDefense` give
+  0 then (`co_powers::extra_firepower`, `co_roster::defence_done`).
+- **The forecast's number** (a battle unit's +0x14, damage before luck):
+  scaled by the attacker's shown HP first, then by the target's defence,
+  at most 999, as Dual Strike's `Combatant_TakeHit` (AW2's `sub_08024DDC`
+  did the two the other way round, which could show 1 off;
+  `co_roster::preview_scaled`, 0x08024E00). The damage dealt is unchanged.
+- **Snow and fuel** (`Player_GetFuelRate`: 2 in snow, 1 otherwise; 1 for
+  Olaf's army with CO abilities on): a move uses its path's cost x the
+  rate in fuel (`Unit_GetFuelUsed`; `ds_weather::move_fuel` on
+  `SubtractFuel` 0x08025B80, after a move, a path shown in fog, a join;
+  an Oozium's move uses none), and a unit reaches at most its fuel / the
+  rate squares (`Unit_GetMovePoints`; `ds_weather::reach` at the move
+  range's flood 0x08020308, the CPU's usable movement 0x0805824E, the
+  move shown 0x08038D34, the Oozium's own moves). The daily burn takes no
+  weather (`Unit_BurnDailyFuel`; tangoAW2 doubled it before). AW2's other
+  callers of the movement function (the CPU's threat and planning ranges)
+  never read fuel and are left alone. Example: a Tank's 4-square move in
+  snow uses 8 fuel; one with 5 fuel reaches 2 squares.
+- **Sandstorm range** (`GetCoRangeBonus`): a unit whose own maximum range
+  is 2 or more loses 1 of its maximum range (CO bonus included), never
+  below 2, under every CO (tangoAW2 exempted Max and Grit and kept the
+  unit's minimum range as the floor): Grit's Rockets 3-5, Max's Rockets
+  3-3 (`sandstorm::range`, 0x08042D76).
+- **Repairs** (`Unit_Repair`: steps of 10 HP at the unit's value per HP,
+  `Unit_GetValuePerHp`: cost / 10 x (100 + the CO's cost % + Sale Price's
+  cut) / 100, never past 10 shown HP, ending on a whole HP). A property's
+  daily repair is `Player_GetDailyRepairHp`: 2 + the CO block's
+  `repairBonus` (+0x1A: Rachel's 1, with CO abilities on) + Mechanic 1 /
+  Gear Head 2 (`co_powers::repair`, only for `RepairUnit`'s two daily
+  calls, return addresses 0x0802A0C5 / 0x0802A137); a power's heal (Andy's
+  2 and 5 HP, Ration Run's 1) gets no bonus. A Black Boat's Repair is
+  `Unit_Repair(unit, 1, TRUE)` (`unit_actions::repair_around`): a unit at
+  10 shown HP is left alone and not charged, 75 HP becomes 90.
+- **War Bonds and Combat Pay** (`DamageToFunds`): half (Combat Pay 2%) of
+  the HP taken off, valued at the target owner's value per HP (its CO's
+  cost %): Sasha's Super Power taking 5 HP off Colin's Tank pays 560 x 5 /
+  2 = 1400 (the raw price gave 1750).
+- **Kindle's High Society** (`UrbanMultiplier`, her Super Power's bonus):
+  +3% per property she owns (city, HQ, airport, port, base, Lab / Com
+  Tower) counted once as it starts and kept until it ends
+  (`co_powers::high_society`; `ram_map::HIGH_SOCIETY` at 0x0203C820, 1 +
+  the bonus per army; a game continued during the power counts again).
+  Colin's Power of Money (funds / 300) is AW2's own snapshot, player +0x26.
+- **Market Crash** (`MarketCrash`): every enemy in the game loses, from
+  its active CO's meter and its tag partner's, that CO's Super Power cost
+  x min(funds / 500, 100)% (in Dual Strike's meter units), not below 0.
+- **Strike sites** (Covering Fire, Ex Machina: `Strike_FindBestSite`,
+  `Strike_ScoreSite`). Every cell is a candidate centre (rows from the top,
+  a later cell only on a higher score); each unit within 2 cells scores
+  for 3 HP, enemy and own team apart (an Oozium 0; a unit at 1 HP, or an
+  enemy with no weapon, 1 (funds score 2); otherwise the HP it would lose,
+  at most hp - 1, by HP, by cost / 10 x that (funds), or by HP with enemy
+  Infantry and Mechs x4 and capturing enemies x2 (infantry); an own unit
+  with no weapon half), and an enemy on the centre adds 1. Ex Machina:
+  funds or HP score by the game's RNG, enemy - 2 x own; Covering Fire's
+  three missiles: HP, then funds, then infantry score, enemy - 4 x own,
+  each after the last one's damage. No enemy score: that strike falls
+  nowhere. AW2's meteor script centres its strikes on a unit its CPU
+  scorer picks (`sub_0805C290`, at `sub_080448E4`); with these powers the
+  pick is replaced (`co_powers::strike_pick`, 0x080448E8: the proc's +0x66
+  set to 1 and the site, `ram_map::STRIKE_SITE` 0x0203C840, used where the
+  script draws, 0x08044988, and hits, 0x080449BE; `power_anim` draws Dual
+  Strike's effect there). The computer's choice to fire the power is still
+  AW2's.
+- **Ex Machina's paralysis** (`Unit_ParalyseAtTile`): another army's units
+  in the bolt lose their army's next turn; Von Bolt's own are done for the
+  turn they are hit in (marked moved) and free on his next
+  (`co_powers::strike_square`).
+- **Olaf's snow** (Blizzard, Winter Fury: `WEATHER_POWER_SNOW`, which
+  `Weather_SetDays` gives two days; any other weather one) lasts two
+  rounds: AW2 ends a weather once every army's turn-end count since it
+  began is equal (`sub_08035080`); after a power's snow
+  (`sub_08035144(1)`, flag `ram_map::POWER_SNOW` 0x0203C830) the first
+  time they are equal the counts start again (`ds_weather::day_all_equal`,
+  0x080350DA). Drake's rain stays one round, as in Dual Strike. A game
+  suspended during the power snow loses its second day.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
@@ -3101,11 +3222,18 @@ Room, Survival, the Design Room, netplay and the pack off are untouched
   any battle ends (`FinalizeMatchResult`, the match-end records, state
   0x12); at `MapState_EndOfGame` (`0x08034EF0`, trapped) on the second
   front, once its scenes are over, the outcome is kept and the main front
-  comes back for good (its result panel shown). Won: the survivors' value
-  (price x bars, as a battle's) charges army 1's power meter
-  (`sub_080440E0`). Then `second_front_over`, **the hook for tag pairs**:
-  `second_front_result` gives (won, the winning army, its second-front CO);
-  a tag-pair module joins that CO to that army's main-front CO there.
+  comes back for good (its result panel shown). Then, as Dual Strike's
+  `TwoMaps_MergeOtherFront`, for every army still in the game on the
+  second front, whichever side won (`end_of_game` keeps, per army, its CO
+  there, that CO's meter and its survivors' shown HP x `chargePerHp` at
+  `0x0203C800`, `ram_map::SECOND_FRONT_MERGE`; `second_front_over` uses
+  them once the main front is back): its second-front CO becomes the
+  army's tag partner with the meter it had (in place of any partner; not
+  when it is the main front's CO), then the survivors' charge goes in full
+  to both COs (x 180 in AW2's meter units), each with its own Star Power,
+  up to its own Super Power's cost, unless a power is on.
+  `second_front_result` gives (won, the winning army, its second-front CO)
+  for the banner and the missions' rules.
 - **The CO screen.** A two-front mission's second-front picks follow the
   main front's on AW2's own CO screen (`sub_0803BD14`, the number of picks,
   and `SetArmyCoIdsFromList` `sub_0803BCDC`, trapped while it shows):
@@ -3260,11 +3388,10 @@ barrier, eruption cells, the Volcano), `grand_bolt::on` (the main front's),
   nothing in reach hold by their own roles (Dual Strike's may advance);
   Intel > General's Strike or Assault sends them forward, and the player
   sends units to carry it.
-- Tag pairs: the second front's winning CO joins its army on the main
-  front (`tag.rs`, through the hook above); Black Hole's CO does not when
-  the second front is lost.
-- The survivors' power is a battle's measure (price x bars), not Dual
-  Strike's own formula (not read).
+- Tag pairs: each army still in the game on the second front gets its CO
+  there as its partner on the main front (`tag.rs`, above); an army routed
+  or defeated there gets none (in Victory or Death!, won: the player's CO
+  joins; lost: Black Hole's).
 - The swap's wipes take about a second each way.
 
 **A two-front Versus map, later.** Control is already per army and by the
@@ -3403,13 +3530,13 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   attack (direct/indirect +5/+8, terrain +10, Backstab +15, weather +20),
   defence (direct/indirect +8/+12, APC Guard +10) through the firepower
   and defence hooks the CO code already has; funds (Gold Rush +100 per
-  earning property, Combat Pay 2% of the value hit), repairs (+1/+2),
+  earning property, Combat Pay 2% of the value hit), daily repairs (+1/+2),
   Missile Guard (silo blasts and the Black Arc 10 less), Cannon Guard
   (structure shots 20 less, `0x0803ED12`); and traps in AW2's code: move
   (`GetUnitMovementWithCoBonus` 0x08042D42, APC Boost), vision
   (0x08042DA6), capture points (0x0804269A), price (`GetCoPriceMultiplier`
-  0x08042CC0; not for the power meter, as Dual Strike), luck (0x08042E64 /
-  0x08042E7A), the meter (0x080440E0, Star Power x1.1), hidden fuel (with
+  0x08042CC0), luck (0x08042E64 / 0x08042E7A), the meter (0x080440E0,
+  Star Power x1.1 in Dual Strike's meter units), hidden fuel (with
   crate::ds_weather's fuel trap), move costs (`CacheUnitMovementCosts`'
   end 0x0801F91E), and the special-ability bits in a Super Power
   (`GetPlayerSpecialAbilities` 0x08043050 / 0x08043066: Mistwalker
@@ -3575,7 +3702,7 @@ are under CO skills.
   shares): the partner gets half, then its Star Power, up to its Super
   Power's cost; nothing while a power is on. The firepower (compatibility
   - 100, from the pack's arm9 record table `0x0215360C` + 0x220 a CO,
-  +0x84) goes through `com_tower`'s firepower hook.
+  +0x84) goes into the base damage's firepower (`com_tower::scaled_firepower`).
 - **The computer**: `AiDeliberateCoPower` (`0x0805DB70`, `0x0805DBCC`),
   `AiEndTurnStep`'s end (`0x08061ACE`: in the first half it pays the
   partner's Super Power and plays the turn again with it; else Dual

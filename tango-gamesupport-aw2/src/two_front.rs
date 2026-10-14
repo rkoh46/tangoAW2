@@ -49,11 +49,12 @@
 //! - **The second front's end.** The second front's own events (Dual
 //!   Strike's records for it) end its battle as AW2's events end a battle;
 //!   then, instead of AW2's results, the front's result shows and the main
-//!   front comes back for good. Won: the surviving units' value charges the
-//!   army's power meter (Dual Strike: "the surviving units will be added to
-//!   the power meter") and the second front's CO joins the main front's
-//!   army ([`second_front_over`], the hook for tag pairs). Lost: the
-//!   battle goes on.
+//!   front comes back for good. For every army still in the game there
+//!   (won or lost), its second-front CO joins its main-front CO as the tag
+//!   partner with its meter, and its survivors' shown HP x `chargePerHp`
+//!   charges both COs in full (Dual Strike's `TwoMaps_MergeOtherFront`:
+//!   "the surviving units will be added to the power meter";
+//!   [`second_front_over`]). Lost: the battle goes on.
 //!
 //! The one gate ([`battle`]) decides where any of this is on: the DS
 //! Campaign's two-front missions, and with the Dual Strike pack's maps a
@@ -133,7 +134,6 @@ const FADES_RUNNING: u32 = 0x0801_16A0;
 const START_SLOT_SCRIPT: u32 = 0x0801_52EC;
 const CLOSE_MENU: u32 = 0x0801_A168;
 const REBUILD_UNITS: u32 = 0x0802_4268;
-const ADD_CHARGE: u32 = 0x0804_40E0;
 /// The staging buffer the suspend block is captured into and restored from.
 pub const STAGING: u32 = 0x0200_0000;
 pub const BLOCK_LEN: u32 = 0xE28;
@@ -488,8 +488,7 @@ const BANNER: u32 = STATE + 7;
 const SENDING: u32 = STATE + 0x08;
 /// The staging buffer's checksum while a front is looked at.
 const CHECK: u32 = STATE + 0x0C;
-/// The power the second front's survivors bring (its value).
-const BONUS: u32 = STATE + 0x10;
+// (STATE + 0x10..0x14: the survivors' value up to 0.6.28, now [`MERGE`].)
 /// Units sent before the second front's first round (12-byte records,
 /// their armies), placed when it starts; their count.
 const QUEUED: u32 = STATE + 0x14;
@@ -929,15 +928,28 @@ fn end_of_game(core: &mut Core) {
     core.raw_write_8(SECOND, -1, if won { SECOND_WON } else { SECOND_LOST });
     let winner = (1..=4u32).find(|&a| alive(core, a)).unwrap_or(0);
     core.raw_write_8(WINNER, -1, winner as u8);
-    // The survivors' value, for the main front's power meter (Dual Strike:
-    // "the surviving units will be added to the power meter").
-    let mut value = 0u32;
-    if won {
-        for (_, u) in live_units(core, 1) {
-            value += unit_value(core, u);
+    // What each army still in the game here brings to the main front (Dual
+    // Strike's `TwoMaps_MergeOtherFront`, whichever side won): its CO and
+    // meter, and its survivors' shown HP x `chargePerHp`.
+    for a in 1..=4u32 {
+        let at = MERGE + MERGE_ENTRY * (a - 1);
+        if !alive(core, a) {
+            core.raw_write_8(at, -1, 0);
+            continue;
         }
+        let p = players(core) + PLAYER * a;
+        let charge: u32 = live_units(core, a)
+            .into_iter()
+            .map(|(_, u)| {
+                let hp = (core.raw_read_16(u + 4, -1) & 0x7F) as u32;
+                hp.div_ceil(10) * crate::co_powers::charge_per_hp(core.raw_read_8(u, -1))
+            })
+            .sum();
+        core.raw_write_8(at, -1, 1);
+        core.raw_write_8(at + 1, -1, core.raw_read_8(p + 0x1D, -1));
+        core.raw_write_16(at + 2, -1, charge.min(0xFFFF) as u16);
+        core.raw_write_32(at + 4, -1, core.raw_read_32(p + 0x20, -1));
     }
-    core.raw_write_32(BONUS, -1, value);
     let _ = b;
     core.raw_write_16(MAP_STATE, -1, STATE_IDLE);
     core.raw_write_8(BUSY, -1, Stub::BeginOver as u8);
@@ -958,35 +970,38 @@ fn live_units(core: &Core, army: u32) -> Vec<(u32, u32)> {
         .collect()
 }
 
-/// A unit's value: its price x its bars (the power meter's measure,
-/// crate::oozium).
-fn unit_value(core: &Core, u: u32) -> u32 {
-    let t = core.raw_read_8(u, -1) as u32;
-    let price = core.raw_read_16(crate::roster::table(core) + 0x5C * t + 6, -1) as u32 * 10;
-    let hp = (core.raw_read_16(u + 4, -1) & 0x7F) as u32;
-    price * hp.div_ceil(10)
-}
+/// What each army brings from the second front to the main front
+/// ([`end_of_game`] to [`second_front_over`]), [`MERGE_ENTRY`] bytes an
+/// army 1..4: +0 set when the army was still in the game there, +1 its CO
+/// there, +2 its survivors' charge (u16, Dual Strike's meter units), +4
+/// that CO's meter (u32, AW2's units).
+const MERGE: u32 = crate::ram_map::SECOND_FRONT_MERGE.0;
+const MERGE_ENTRY: u32 = 8;
 
 /// The second front is over (won or lost) and the main front is back on
-/// the screen (the over swap's last step, before the survivors' power).
-///
-/// **The hook for tag pairs** (worked on separately): Dual Strike brings
-/// the winning side's second-front CO to the main front as its army's tag
-/// partner (won by the player: "The second front has been secured. The CO
-/// will now report back to the main front."; by Black Hole: "Return to the
-/// main front for tag battle."). [`second_front_result`] gives the side,
-/// the winning army and its second-front CO; a tag-pair module joins that
-/// CO to that army's main-front CO here. Until then the main front's armies
-/// keep their one CO.
+/// the screen (the over swap's last step). As Dual Strike's
+/// `TwoMaps_MergeOtherFront`, for every army that was still in the game on
+/// the second front: its CO there joins its main-front CO as the tag
+/// partner with the meter it had (in place of any partner it had; crate::tag),
+/// then its survivors' charge (shown HP x `chargePerHp`) goes in full to
+/// both COs, each with its own Star Power, up to its own Super Power's
+/// cost, unless a power is on. [`second_front_result`] gives the side and
+/// the winning army for the banner and the mission's rules.
 fn second_front_over(core: &mut Core) {
-    // The winning side's second-front CO joins its army's main-front CO as
-    // its tag partner (crate::tag; an empty meter, as Dual Strike's), for
-    // the player's army and Black Hole's alike.
-    if let Some((_, army, co)) = second_front_result(core) {
-        let main = crate::tag::army_co_of(core, army);
-        if co != 0xFF && co != main && crate::tag::partner(core, army).is_none() {
-            crate::tag::form_pair(core, army, co, 0);
+    for army in 1..=4u32 {
+        let at = MERGE + MERGE_ENTRY * (army - 1);
+        if core.raw_read_8(at, -1) == 0 {
+            continue;
         }
+        core.raw_write_8(at, -1, 0);
+        let co = core.raw_read_8(at + 1, -1);
+        let charge = core.raw_read_16(at + 2, -1) as u32;
+        let meter = core.raw_read_32(at + 4, -1);
+        if co != 0xFF && co != crate::tag::army_co_of(core, army) {
+            crate::tag::form_pair(core, army, co, meter);
+        }
+        crate::tag::add_charge(core, army, 0, charge);
+        crate::tag::add_charge(core, army, 1, charge);
     }
 }
 
@@ -1244,15 +1259,7 @@ fn swap_step(core: &mut Core, s: Stub, b: &Battle) {
         }
         Stub::Bonus => {
             second_front_over(core);
-            let value = core.raw_read_32(BONUS, -1);
-            core.raw_write_32(BONUS, -1, 0);
-            if value == 0 || core.raw_read_8(SECOND, -1) != SECOND_WON {
-                return return_to(core, 0);
-            }
-            let cpu = core.gba_mut().cpu_mut();
-            cpu.set_gpr(0, 1);
-            cpu.set_gpr(1, value as i32);
-            cpu.set_thumb_pc(ADD_CHARGE)
+            return_to(core, 0)
         }
         _ => return_to(core, 0),
     }

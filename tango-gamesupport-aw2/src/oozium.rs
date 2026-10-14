@@ -13,8 +13,8 @@
 //!   square: [`wait_hide`]); Wait ends the move as usual, then the eat
 //!   ([`wait_selected`]).
 //! - The eat ([`eat_next`]): both power meters charge as for a battle in
-//!   which the victim lost all its HP (`sub_080440E0`, the value from
-//!   `GetCoPriceMultiplier`), the eater's army counts a unit destroyed
+//!   which the victim lost all its HP (`sub_080440E0`, Dual Strike's
+//!   charge: its shown HP x its type's `chargePerHp`), the eater's army counts a unit destroyed
 //!   (`sub_08026588`'s counters), then the game's destruction
 //!   (`sub_0804018C`: camera, explosion, removal, units lost, and the
 //!   unit planes rebuilt from the records, which leaves the Oozium alone
@@ -67,7 +67,7 @@ const RAM: u32 = 0x0203_FDC8;
 const VICTIM: u32 = RAM;
 /// Where the eat returns to when done (a Thumb address, bit 0 set).
 const RETURN: u32 = RAM + 4;
-/// The eaten unit's value (bars x price) for the power meters.
+/// The eaten unit's charge (bars x `chargePerHp`) for the power meters.
 const VALUE: u32 = RAM + 8;
 /// The eating Oozium's army, and the eat's next step.
 const KILLER: u32 = RAM + 0x0C;
@@ -302,7 +302,6 @@ fn begin(core: &mut Core, victim: u32, killer: u32, ret: u32) {
 /// `sub_0802C8BC` (after its `b`, before its literal pool), which the game
 /// never runs.
 const EAT_NEXT: u32 = 0x0802_C8E2;
-const PRICE: u32 = 0x0804_2C9C;
 const CHARGE: u32 = 0x0804_40E0;
 
 fn call(core: &mut Core, f: u32, args: &[u32], ret: u32) {
@@ -314,11 +313,13 @@ fn call(core: &mut Core, f: u32, args: &[u32], ret: u32) {
     cpu.set_thumb_pc(f);
 }
 
-/// The eat, one call at a time: the victim's value
-/// (`GetCoPriceMultiplier(army, type)` x its bars), the eater's meter
-/// (half of it, as for damage dealt), the victim's (all of it, as for
-/// damage taken), the eater's army's destroyed count, then the game's
-/// destruction, which returns where the eat began.
+/// The eat, one call at a time: the eater's meter (half the victim's
+/// charge, as for damage dealt), the victim's (all of it, as for damage
+/// taken), the eater's army's destroyed count, then the game's
+/// destruction, which returns where the eat began. The charge is Dual
+/// Strike's for a battle (`ActingUnit_StartAttack`, its eat being an
+/// attack): the victim's shown HP x its type's `chargePerHp`, in AW2's
+/// meter units ([`crate::co_powers::METER_SCALE`]).
 fn eat_next(core: &mut Core) {
     let victim = core.raw_read_32(VICTIM, -1);
     if victim == 0 {
@@ -331,18 +332,14 @@ fn eat_next(core: &mut Core) {
     let foe = army_of(core, victim);
     match step {
         0 => {
-            let t = core.raw_read_8(victim, -1) as u32;
-            call(core, PRICE, &[foe, t], next);
+            let t = core.raw_read_8(victim, -1);
+            let value = crate::co_powers::charge_per_hp(t) * bars(core.raw_read_16(victim + 4, -1) & 0x7F);
+            core.raw_write_32(VALUE, -1, value);
+            call(core, CHARGE, &[killer, (value >> 1) * crate::co_powers::METER_SCALE], next);
         }
         1 => {
-            let price = core.gba().cpu().gpr(0) as u32;
-            let value = price * bars(core.raw_read_16(victim + 4, -1) & 0x7F);
-            core.raw_write_32(VALUE, -1, value);
-            call(core, CHARGE, &[killer, value / 2], next);
-        }
-        2 => {
             let value = core.raw_read_32(VALUE, -1);
-            call(core, CHARGE, &[foe, value], next);
+            call(core, CHARGE, &[foe, value * crate::co_powers::METER_SCALE], next);
         }
         _ => {
             let p = players(core) + 0x3C * killer;
@@ -405,7 +402,8 @@ fn value(core: &Core, u: u32) -> u32 {
 fn best_meal(core: &Core, oozium: u32, army: u32) -> Option<u32> {
     let (x, y) = pos(core, oozium);
     let reach = core.raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1).max(1);
-    let fuel = core.raw_read_8(oozium + 6, -1) & 0x7F;
+    // (its fuel / the snow's rate: Dual Strike's `Unit_GetMovePoints`)
+    let fuel = crate::ds_weather::reach(core, oozium) as u8;
     let mut best: Option<(u32, u32)> = None;
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
         let Some(u) = unit_on(core, ALL_PLANE, x + dx, y + dy) else { continue };
@@ -469,7 +467,7 @@ fn advance(core: &mut Core, u: u32, army: u32) {
     let dist = |p: (i32, i32)| foes.iter().map(|f| (f.0 - p.0).abs() + (f.1 - p.1).abs()).min();
     let Some(now) = dist((x, y)) else { return };
     let reach = core.raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1).max(1);
-    let fuel = core.raw_read_8(u + 6, -1) & 0x7F;
+    let fuel = crate::ds_weather::reach(core, u) as u8;
     let mut best: Option<(i32, (i32, i32), u8)> = None;
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
         let to = (x + dx, y + dy);
@@ -485,16 +483,15 @@ fn advance(core: &mut Core, u: u32, army: u32) {
             best = Some((d, to, cost));
         }
     }
-    if let Some((_, to, cost)) = best {
-        move_unit(core, u, to, cost);
+    if let Some((_, to, _)) = best {
+        move_unit(core, u, to);
         let f = core.raw_read_8(u + 1, -1);
         core.raw_write_8(u + 1, -1, f | MOVED);
     }
 }
 
-/// Moves a unit to (x, y) on the map (its record and both unit planes),
-/// paying the fuel.
-fn move_unit(core: &mut Core, u: u32, to: (i32, i32), cost: u8) {
+/// Moves a unit to (x, y) on the map (its record and both unit planes).
+fn move_unit(core: &mut Core, u: u32, to: (i32, i32)) {
     let from = pos(core, u);
     let id = ((u - units(core)) / UNIT) as u8;
     for plane in [SEEN_PLANE, ALL_PLANE] {
@@ -509,8 +506,7 @@ fn move_unit(core: &mut Core, u: u32, to: (i32, i32), cost: u8) {
     }
     core.raw_write_8(u + 2, -1, to.0 as u8);
     core.raw_write_8(u + 3, -1, to.1 as u8);
-    let fuel = core.raw_read_8(u + 6, -1);
-    core.raw_write_8(u + 6, -1, (fuel & 0x80) | (fuel & 0x7F).saturating_sub(cost));
+    // (an Oozium's move uses no fuel: Dual Strike's `Unit_GetFuelUsed`)
 }
 
 /// The frame's effects pass ([`crate::cpu_tactics::effects_pass`]): a CPU
@@ -537,8 +533,7 @@ pub fn effects_pass(core: &mut Core, ret: u32) -> bool {
         {
             continue;
         }
-        let cost = move_cost(core, army, OOZIUM, to.0, to.1);
-        move_unit(core, me, to, cost);
+        move_unit(core, me, to);
         begin(core, v, army, ret);
         eat_next(core);
         return true;

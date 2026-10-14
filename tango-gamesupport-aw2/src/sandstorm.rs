@@ -1,8 +1,8 @@
 //! Sandstorm, Dual Strike's fourth weather, with the Dual Strike pack on.
 //!
 //! In a sandstorm every unit that fires from a distance loses 1 of its
-//! maximum range (never below its minimum), except under Max, Grit and
-//! Jugger, as in Dual Strike.
+//! maximum range, never below 2, under every CO (Max's, Grit's and
+//! Jugger's too), as in Dual Strike (`GetCoRangeBonus`).
 //!
 //! To AW2's own weather code a sandstorm is clear weather, so nothing that
 //! indexes a table by the weather (palettes, battle backgrounds, sounds,
@@ -46,10 +46,6 @@ fn set_one_day(core: &mut Core, on: bool) {
 }
 const RNG: u32 = 0x0300_1FD4;
 
-const UNIT_RECORD: u32 = 0x5C;
-/// COs whose units keep their range: Max, Grit (and Jugger, when added).
-const EXEMPT_COS: [u8; 2] = [2, 5];
-
 /// Whether a sandstorm is blowing now.
 pub fn active(core: &Core) -> bool {
     is_on(core)
@@ -64,23 +60,21 @@ fn fixed(core: &Core) -> bool {
 // --- Range -------------------------------------------------------------
 
 /// `GetUnitFiringRangeWithCoBonus` (army r5, unit type r6) has the maximum
-/// range, CO bonus included, in r4 here.
+/// range, CO bonus included, in r4 here, and the CO's bonus in r0. As Dual
+/// Strike's `GetCoRangeBonus`: a unit whose own maximum range is 2 or more
+/// loses 1, and its range stays at least 2.
 const RANGE: u32 = 0x0804_2D76;
 fn range(core: &mut Core) {
     if !active(core) {
         return;
     }
     let cpu = core.gba().cpu();
-    let (max, army, unit) = (cpu.gpr(4), cpu.gpr(5) as u32, cpu.gpr(6) as u32);
-    if max < 2 {
+    let (max, bonus) = (cpu.gpr(4), cpu.gpr(0));
+    let base = max - bonus;
+    if base < 2 {
         return;
     }
-    let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
-    if EXEMPT_COS.contains(&co) {
-        return;
-    }
-    let min = core.raw_read_8(crate::roster::table(core) + UNIT_RECORD * (unit & 0xFF) + 0x0E, -1) as i32;
-    core.gba_mut().cpu_mut().set_gpr(4, (max - 1).max(min));
+    core.gba_mut().cpu_mut().set_gpr(4, (max - 1).max(2));
 }
 
 // --- Turn end ----------------------------------------------------------
@@ -145,6 +139,7 @@ fn map_start(core: &mut Core) {
     if one_day(core) {
         set_one_day(core, false);
     }
+    crate::ds_weather::map_start(core);
     crate::wasteland::map_start(core);
     // A Dual Strike Versus or War Room map's look, weather and fog (crate::ds_versus).
     crate::ds_versus::map_start(core);

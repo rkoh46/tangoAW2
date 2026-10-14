@@ -19,7 +19,7 @@ from aw2test import paths, saves
 from aw2test import twofront as tf
 from aw2test.rom import DualStrike
 from aw2test.emu import Emu
-from aw2test.game import Game
+from aw2test.game import Game, power_star_cost
 from aw2test.harness import test
 
 VICTORY_OR_DEATH, LIGHTNING_STRIKES, OMENS_AND_SIGNS, RING_OF_FIRE, MEANS_TO_AN_END = 8, 10, 14, 21, 24
@@ -362,7 +362,7 @@ def lost_on_main(ctx, e, d, label):
     ctx.eq(tf.mission_over(e, d), 2, f"{label}: the mission is lost")
 
 
-def second_front_ends(ctx, e, d, g, result, label, setup, army=None):
+def second_front_ends(ctx, e, d, g, result, label, setup, army=None, on_over=None):
     """The player ends the turn; when the second front's round begins (its
     first army's turn, on the screen) `setup` arranges its state; the round
     is played. Then: the second front is over (2 won, 3 lost), the main front
@@ -381,6 +381,8 @@ def second_front_ends(ctx, e, d, g, result, label, setup, army=None):
              each=lambda: seen.append(e.u8(tf.BANNER)) if e.u8(tf.BANNER) else None)
     ctx.eq(e.u8(tf.SECOND), result, f"{label}: the second front {'won' if result == tf.SECOND_WON else 'lost'}")
     ctx.check(e.u8(tf.LIVE) == 0 and e.u8(LAST_RESULT) == 0 and d.in_battle(), f"{label}: the mission goes on, on the main front")
+    if on_over:
+        on_over()
     ctx.check(bool(seen), f"{label}: its result shown")
     d.wait_control()
     names = tf.map_menu_names(g)
@@ -391,6 +393,8 @@ def second_front_ends(ctx, e, d, g, result, label, setup, army=None):
 
 
 DIRECT = (1, 2, 3, 4, 5, 6, 8)
+MERGE = 0x0203C800             # crate::two_front's MERGE (ram_map::SECOND_FRONT_MERGE), army 1's entry
+
 AIR_DIRECT = (16, 19)
 
 
@@ -488,9 +492,26 @@ def two_front_victory_or_death(ctx):
     ctx.eq(flag2(), 0, "the Black Arc's flag (2) clear while it flies")
     p = g.players_base + 0x3C
     charge = e.u32(p + 0x20)
-    second_front_ends(ctx, e, d, g, tf.SECOND_WON, "its four minicannons destroyed", lambda: structures_down(d, lambda x, y: True))
+
+    def merged():
+        # Dual Strike's TwoMaps_MergeOtherFront: the second-front CO joins as
+        # the partner with its meter, and its survivors' shown HP x
+        # chargePerHp (crate::two_front's MERGE: +1 CO, +2 charge, +4 meter)
+        # goes in full to both COs, x 180 in AW2's meter units.
+        from aw2test import tag
+        co, ds, meter = e.u8(MERGE + 1), e.u16(MERGE + 2), e.u32(MERGE + 4)
+        ctx.log(f"merge: CO {co}, survivors' charge {ds}, its meter {meter}")
+        ctx.check(ds > 0, "the survivors bring charge")
+        me = g.player(1)
+        cap = power_star_cost(me["powers_used"]) * g.co_stars(me["co"])[1]
+        ctx.eq(me["charge"], min(cap, charge + 180 * ds), "the main front's CO: charged in full")
+        t = tag.partner(e, 1)
+        ctx.require(t is not None and t["co"] == co, f"the second-front CO is the partner ({t})")
+        ctx.eq(t["charge"], min(power_star_cost(0) * g.co_stars(co)[1], meter + 180 * ds), "the partner: its own meter, charged in full")
+
+    second_front_ends(ctx, e, d, g, tf.SECOND_WON, "its four minicannons destroyed", lambda: structures_down(d, lambda x, y: True),
+                      on_over=merged)
     ctx.eq(flag2(), 1, "the battle's flag 2 set by the second front's record: the bombing stops")
-    ctx.check(e.u32(p + 0x20) > charge, f"the survivors charge the power meter ({charge} -> {e.u32(p + 0x20)})")
     ctx.eq(e.u8(tf.WINNER), 1, "the second front's winner: the player's army (the tag-pair hook's)")
     tf.back_to(e, g, cp1)
     second_front_ends(ctx, e, d, g, tf.SECOND_LOST, "the player's units there routed", lambda: kill_setup(d, 1, 2, keep_others=False))

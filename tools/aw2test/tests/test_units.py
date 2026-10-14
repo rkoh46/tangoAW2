@@ -118,6 +118,33 @@ def stealth_hides(ctx):
 
 
 @test(modes=("ds",))
+def black_boat_repair_rounds(ctx):
+    """Dual Strike's Unit_Repair(unit, 1, TRUE): a unit at 10 shown HP (95) is
+    neither repaired nor charged; one at 75 gets 10 and ends on a whole HP
+    (90), for its value per HP (Colin's units cost 80%: a Tank 560)."""
+    m = ctx.map()
+    for x in range(9, 13):
+        for y in range(8, 13):
+            m.terrain(x, y, "sea")
+    m.terrain(12, 10, "plain").terrain(10, 10, "plain")
+    m.unit(1, 18, 11, 10).unit(1, "tank", 12, 10).unit(1, "tank", 10, 10)
+    g = ctx.start(m, ["colin", "andy"])
+    ctx.set_hp(g, 10, 10, 95)
+    t = g.unit_at(12, 10)
+    a = g.unit_addr(t["id"]) + 4
+    g.e.w16(a, (g.e.u16(a) & ~(0xF << 7) & ~0x7F) | (3 << 7) | 75)  # 75 HP, ammo 3 (Supply shows)
+    funds0 = struct.unpack_from("<I", g.player(1)["raw"], 0)[0]
+    g.select(11, 10)
+    g.move_to(11, 10)
+    g.choose("Repair", g.ACTION_MENU)
+    g.wait_for_input()
+    ctx.eq(g.unit_at(12, 10)["hp"], 90, "75 HP: +10, then a whole HP")
+    ctx.eq(g.unit_at(10, 10)["hp"], 95, "95 HP (10 shown): left alone")
+    funds1 = struct.unpack_from("<I", g.player(1)["raw"], 0)[0]
+    ctx.eq(funds0 - funds1, 560, "one HP of a Tank at Colin's price")
+
+
+@test(modes=("ds",))
 def black_boat_repairs(ctx):
     m = ctx.map()
     for x in range(9, 13):

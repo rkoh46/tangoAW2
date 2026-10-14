@@ -20,9 +20,24 @@ def com_tower_firepower(ctx):
     g.goto(2, 2)
     g.e.wait(30)
     ctx.shot(g, "tower_panel")
-    # Attacker +20%, the counter +10% (with the pack).
-    ctx.attack(g, (10, 6), (10, 6), (11, 6), expect_base=55)
+    # Attacker +20%, the counter +10% (with the pack, in the base damage:
+    # Dual Strike's one firepower sum, 55 x 120 / 100).
+    ctx.attack(g, (10, 6), (10, 6), (11, 6), expect_base={"aw2": 55, "ds": 66}[ctx.mode])
     ctx.shot(g, "after")
+
+
+@test(modes=("ds",))
+def com_tower_abilities_off(ctx):
+    """With CO abilities off (gPlaySt +0x08) the towers add nothing, as Dual
+    Strike's firepower and defence bonuses are 0 without CO effects."""
+    m = ctx.map()
+    m.terrain(2, 2, LAB[1]).terrain(4, 2, LAB[1]).terrain(6, 2, LAB[2])
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.start(m, ["javier", "javier"])
+    g.e.w8(0x03003FC8, 0)
+    r = ctx.attack(g, (10, 6), (10, 6), (11, 6), expect_base=55)
+    _, rd = ctx.battle_records(g)
+    ctx.eq(rd["defence"], 110, "the defender's defence: 100 + plains, no towers")
 
 
 @test()

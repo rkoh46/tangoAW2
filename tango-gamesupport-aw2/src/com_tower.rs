@@ -82,34 +82,78 @@ fn count_towers(core: &mut Core) {
 
 // --- Firepower ---------------------------------------------------------
 
-/// `sub_0804334C(battle unit)`, the firepower % added to a side in the
-/// damage formula: the army in r0 just before its abilities are looked up,
-/// and the result in r0 at its return (r4 still the battle unit). With the
-/// pack it gets the CO's firepower on that terrain ([`crate::co_roster`]),
-/// and with the towers on, the army's towers.
-const FIREPOWER_ARMY: u32 = 0x0804_336E;
-const FIREPOWER_DONE: u32 = 0x0804_3380;
-/// The army of the side being worked out (between the two traps).
-const SIDE_ARMY: u32 = 0x0203_FFAA;
+/// Dual Strike sums every firepower bonus once and scales the chart value
+/// by it (`Unit_GetChartDamage`: `chart x (100 + FP) / 100`, at least 1);
+/// only the counter-attack bonus is a second multiplier
+/// (`Combatant_CalcDamage`). AW2 has two steps: `sub_08043070` scales the
+/// chart by its CO's firepower (`GetCoAttackBonus`, which
+/// [`crate::co_roster`] answers with Dual Strike's stat rows and the
+/// power's +10), then `sub_08024C58` multiplies by `100 + counter +
+/// sub_0804334C (Lash's terrain) + player +0x26 (Colin's Power of Money)`.
+/// With the pack every other term goes into the first step
+/// ([`scaled_firepower`]) and the second keeps only the counter bonus
+/// ([`firepower_done`]).
+///
+/// `sub_08043070` just after `GetCoAttackBonus` returned (r0 the CO's
+/// firepower, before 100 is added): for a battle's base damage (its
+/// caller's return address at sp+12: `CalcDamage` 0x08024ABC, its battle
+/// unit in the caller's r6 at sp+8; the attack on a structure
+/// `sub_080251D8`, the attacker's battle unit), the side's other terms:
+/// - the CO's firepower on its terrain (Koal's roads, Jake's plains),
+/// - Lash's: half her terrain defence, as Dual Strike's
+///   `DoubleTerrainStars` gives it (less the enemies' star cuts, doubled
+///   in her Super Power),
+/// - Com Towers and Kindle's High Society ([`crate::co_powers`]),
+/// - a Tag Power's compatibility ([`crate::tag`]), the skills
+///   ([`crate::co_skills`]),
+/// - the player's +0x26 (AW2 sets Colin's funds / 300 there).
+///
+/// The CPU's own damage estimates (other callers) are left as they were.
+const SCALED_FIREPOWER: u32 = 0x0804_308C;
+const CALC_DAMAGE_CALLS: [u32; 2] = [0x0802_4B53, 0x0802_4C1D];
+const STRUCTURE_CALLS: [u32; 2] = [0x0802_522D, 0x0802_5271];
+const BATTLE_ATTACKER: u32 = 0x0300_13D0;
 const BATTLE_TERRAIN: u32 = 4;
+const BATTLE_STARS: u32 = 6;
+const PLAYERS_POINTER: u32 = 0x0849_9598;
+const TEMP_FIREPOWER: u32 = 0x26;
 
-fn firepower_army(core: &mut Core) {
-    if is_on(core) {
-        let army = core.gba().cpu().gpr(0) as u8;
-        core.raw_write_8(SIDE_ARMY, -1, army);
-    }
-}
-
-fn firepower_done(core: &mut Core) {
+fn scaled_firepower(core: &mut Core) {
     if !is_on(core) {
         return;
     }
-    let army = core.raw_read_8(SIDE_ARMY, -1) as u32;
-    let bu = core.gba().cpu().gpr(4) as u32;
+    let sp = core.gba().cpu().gpr(13) as u32;
+    let caller = core.raw_read_32(sp + 12, -1);
+    let bu = if CALC_DAMAGE_CALLS.contains(&caller) {
+        core.raw_read_32(sp + 8, -1)
+    } else if STRUCTURE_CALLS.contains(&caller) {
+        BATTLE_ATTACKER
+    } else {
+        return;
+    };
+    let add = side_firepower(core, bu);
+    if add != 0 {
+        let cpu = core.gba_mut().cpu_mut();
+        let r0 = cpu.gpr(0);
+        cpu.set_gpr(0, r0 + add);
+    }
+}
+
+/// The firepower % a battle unit's side gets on top of its CO's stat rows
+/// ([`scaled_firepower`]).
+fn side_firepower(core: &Core, bu: u32) -> i32 {
+    let army = crate::co_roster::battle_army(core, bu);
+    if !(1..=5).contains(&army) {
+        return 0;
+    }
     let terrain = core.raw_read_16(bu + BATTLE_TERRAIN, -1) as u8;
     let mut add = 0;
     if core.raw_read_8(CO_ABILITIES, -1) != 0 {
         add += crate::co_roster::terrain_firepower(core, army, terrain);
+    }
+    if crate::co_roster::terrain_firepower_skill(core, army) {
+        let raw = core.raw_read_16(bu + BATTLE_STARS, -1) as i16 as i32;
+        add += crate::co_roster::ds_terrain_stars(core, army, raw) >> 1;
     }
     add += crate::co_powers::extra_firepower(core, army);
     add += crate::tag::firepower(core, army);
@@ -117,11 +161,24 @@ fn firepower_done(core: &mut Core) {
     if (0x0200_0000..0x0204_0000).contains(&unit) {
         add += crate::co_skills::firepower(core, army, core.raw_read_8(unit, -1), core.raw_read_8(unit + 1, -1), terrain);
     }
-    if add != 0 {
-        let cpu = core.gba_mut().cpu_mut();
-        let r0 = cpu.gpr(0);
-        cpu.set_gpr(0, r0 + add);
+    let player = core.raw_read_32(PLAYERS_POINTER, -1) + 0x3C * army;
+    add + core.raw_read_16(player + TEMP_FIREPOWER, -1) as i16 as i32
+}
+
+/// `sub_0804334C(battle unit)`'s return (r0: AW2's Lash terrain bonus, 0
+/// for everyone else), which `sub_08024C58` adds to `100 + counter` and
+/// then adds the player's +0x26 (in r9): with the pack both are in the
+/// first step ([`scaled_firepower`]), so r0 cancels them and the second
+/// step is `100 + counter` alone.
+const FIREPOWER_DONE: u32 = 0x0804_3380;
+
+fn firepower_done(core: &mut Core) {
+    if !is_on(core) {
+        return;
     }
+    let cpu = core.gba_mut().cpu_mut();
+    let temp = cpu.gpr(9) as i16 as i32;
+    cpu.set_gpr(0, -temp);
 }
 
 /// `RecountArmyProperties` lists the map's buildings in `gProperty`
@@ -440,7 +497,7 @@ pub fn tower_at(core: &Core, x: u32, y: u32) -> bool {
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
-        (FIREPOWER_ARMY, Box::new(firepower_army)),
+        (SCALED_FIREPOWER, Box::new(scaled_firepower)),
         (FIREPOWER_DONE, Box::new(firepower_done)),
         (INCOME, Box::new(income)),
         (KEY_PROPERTY, Box::new(key_property)),

@@ -112,11 +112,16 @@ class Ctx:
         # With the Dual Strike pack, a Versus Lab is a Com Tower: the CO's tower
         # firepower (10%; Javier more, and defence too) per tower the army owns,
         # added with tempFirepower / tempDefence.
-        towers = self.towers(g, u["army"]) if self.ds else 0
+        # With CO abilities off they give nothing (Dual Strike's
+        # Player_GetFirepowerBonus / Player_GetComTowerDefense).
+        towers = self.towers(g, u["army"]) if self.ds and st["co_abilities"] else 0
         tower_fp = self.rules.tower(p["co"], p["co_mode"], 0) * towers
         if self.ds and p["co"] == 74 and p["co_mode"] == 2 and st["co_abilities"]:
             # Kindle's High Society: +3% per property she owns (co_powers).
-            tower_fp += 3 * self.properties(g, u["army"])
+            # (counted when the power started: crate::co_powers' HIGH_SOCIETY,
+            # 1 + the bonus, u16 per army at 0x0203C820)
+            snap = g.e.u16(0x0203C820 + 2 * (u["army"] - 1))
+            tower_fp += snap - 1 if snap else 3 * self.properties(g, u["army"])
         tower_def = self.rules.tower(p["co"], p["co_mode"], 1) * towers
         return damage.Side(
             type=u["type"], hp=u["hp"], ammo=u["ammo"],
@@ -128,6 +133,8 @@ class Ctx:
             weather=3 if self.sandstorm else st["weather"],
             tag_firepower=self.tag_firepower(g, u["army"], p["co"]),
             lent=self.lent_skills(g, u["army"]),
+            terrain_cut=self.terrain_cut(g, u["army"]) if st["co_abilities"] else 0,
+            tag_luck=5 * self.tag_stars(g, u["army"], p["co"]),
         )
 
     def lent_skills(self, g, army):
@@ -139,6 +146,59 @@ class Ctx:
         if not t:
             return frozenset()
         return frozenset(i for i in (0x35, 0x36, 0x37) if t["skills"][(i - 0x20) // 8] >> ((i - 0x20) % 8) & 1)
+
+    def tag_stars(self, g, army, co):
+        """The pair's special-pair stars (the active CO's record +0x6C list,
+        8 bytes an entry: the partner's Dual Strike id, stars at +2), 0 without
+        a partner or an entry."""
+        if not self.ds:
+            return 0
+        from . import tag
+        t = tag.partner(g.e, army)
+        if not t:
+            return 0
+        # tangoAW2's own pairs first (crate::tag::special_pair): Sturm's, the
+        # duos; Clone Andy has none of Andy's.
+        pair = {co, t["co"]}
+        sturm = romlib.co_id("sturm")
+        if sturm in pair:
+            o = (pair - {sturm} or {sturm}).pop()
+            for name, _, stars, _ in tag.STURM_PAIRS:
+                if romlib.co_id(name) == o:
+                    return stars
+        if pair == set(tag.VAULT_BREAKERS[:2]):
+            return tag.VAULT_BREAKERS[3]
+        if romlib.co_id("cloneandy") in pair:
+            return 0
+        if not hasattr(self, "_ds"):
+            self._ds = romlib.DualStrike()
+        rec, partner = self._ds.co_record(co), romlib.DS_CO_IDS.get(t["co"])
+        if rec is None or partner is None:
+            return 0
+        for k in range(3):
+            e = rec[0x6C + 8 * k:0x6C + 8 * k + 8]
+            if e[0] == 0:
+                break
+            if e[0] == partner:
+                return e[2]
+        return 0
+
+    def terrain_cut(self, g, army):
+        """Terrain stars every enemy CO in the game cuts (Dual Strike's Sonja;
+        crate::co_roster::terrain_cut_against, in stars)."""
+        if not self.ds:
+            return 0
+        me = g.player(army)["raw"]
+        cut = 0
+        for a in range(1, 6):
+            if a == army:
+                continue
+            p = g.player(a)
+            b = p["raw"]
+            if b[0x1B] == 0 or struct.unpack_from("<H", b, 0x14)[0] != 0 or b[0x2A] == me[0x2A]:
+                continue
+            cut += self.rules.enemy_terrain_cut(p["co"], p["co_mode"])
+        return cut
 
     def tag_firepower(self, g, army, co):
         """A Tag Power under way (crate::tag): the pair's compatibility - 100,
@@ -199,6 +259,13 @@ class Ctx:
             self.eq(first.weapon, expect_weapon, f"{label}: weapon")
         self.eq(ra["base"], first.base, f"{label}: game's base damage")
         self.eq(ra["attack_type"], {"primary": 1, "secondary": 5}[first.weapon], f"{label}: game's weapon")
+        if self.ds:
+            # The forecast's number (+0x14): Dual Strike's Combatant_TakeHit,
+            # damage before luck x shown HP / 10, then x (200 - defence) / 100,
+            # at most 999 (crate::co_roster::preview_scaled).
+            want = damage.div(damage.div(first.base * first.acc, 100) * damage.hp_bars(att0["hp"]), 10)
+            want = min(999, damage.div((200 - rd["defence"]) * want, 100))
+            self.eq(ra["display"], want, f"{label}: the forecast's damage, in Dual Strike's order")
         self.eq(att1["x"], dst[0], f"{label}: attacker moved to x")
         self.eq(att1["y"], dst[1], f"{label}: attacker moved to y")
         loss = dfd0["hp"] - dfd1["hp"]
@@ -217,15 +284,22 @@ class Ctx:
         else:
             self.eq(att1["hp"], att0["hp"], f"{label}: no counter")
         # Power meter (sub_08041978): each side gains its own HP bars lost x its
-        # unit's price (GetCoPriceMultiplier: cost x (100 + CO cost %) / 100)
-        # plus half of the other side's; clamped to the SCOP cost, and not
+        # unit's price (GetCoPriceMultiplier: cost x (100 + CO cost %) / 100;
+        # with the pack Dual Strike's chargePerHp x 180) plus half of the other side's; clamped to the SCOP cost, and not
         # charged while a power is on (sub_080440E0).
         pa1, pd1 = g.player(att0["army"]), g.player(dfd0["army"])
 
         def price(p, t):
+            if self.ds:
+                # Dual Strike: the unit's chargePerHp (record +0x13), in its
+                # meter units, which are AW2's / 180 (crate::co_powers).
+                if not hasattr(self, "_ds"):
+                    self._ds = romlib.DualStrike()
+                return self._ds.record(t)[0x13]
             cost = self.image.u16(romlib.UNIT_TABLE + romlib.UNIT_RECORD * t + 6)
             pct = g.co_cost_percent(p["co"], p["co_mode"])
             return damage.div(cost * (100 + pct), 100)
+        scale = 180 if self.ds else 1
 
         x1 = (damage.hp_bars(att0["hp"]) - damage.hp_bars(att1["hp"])) * price(pa0, att0["type"])
         x2 = (damage.hp_bars(dfd0["hp"]) - damage.hp_bars(dfd1["hp"])) * price(pd0, dfd0["type"])
@@ -236,7 +310,7 @@ class Ctx:
             if 0x48 in self.skills.get(army, ()):
                 gain = damage.div(gain * 110, 100)  # Star Power (crate::co_skills)
             cap = power_star_cost(p0["powers_used"]) * g.co_stars(p0["co"])[1]
-            self.eq(p1["charge"], min(cap, p0["charge"] + gain), f"{label}: {who}'s power meter")
+            self.eq(p1["charge"], min(cap, p0["charge"] + gain * scale), f"{label}: {who}'s power meter")
             # A tag pair's partner: half the active CO's (before Star Power),
             # its own Star Power, up to its Super Power's cost (crate::tag).
             t0 = ta0 if army == att0["army"] else td0
@@ -244,7 +318,7 @@ class Ctx:
                 t1 = tag.partner(g.e, army)
                 half = damage.div(x1 + damage.div(x2, 2) if who == "attacker" else x2 + damage.div(x1, 2), 2)
                 pcap = power_star_cost(t0["uses"]) * g.co_stars(t0["co"])[1]
-                self.eq(t1["charge"], min(pcap, t0["charge"] + half), f"{label}: {who}'s partner's power meter (half)")
+                self.eq(t1["charge"], min(pcap, t0["charge"] + half * scale), f"{label}: {who}'s partner's power meter (half)")
         return {"first": first, "counter": counter, "before": (att0, dfd0), "after": (att1, dfd1),
                 "records": (ra, rd)}
 

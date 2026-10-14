@@ -39,6 +39,47 @@ def von_bolt_ex_machina_stuns(ctx):
 
 
 @test(modes=DS)
+def von_bolt_ex_machina_own_units(ctx):
+    """Dual Strike's Unit_ParalyseAtTile: Von Bolt's own units in the bolt
+    are done for this turn only (free on his next), unlike the enemy's."""
+    m = ctx.map()
+    # (his Infantry at 1 HP in the middle of four enemy Tanks: the bolt's
+    # best site, Dual Strike's Strike_FindBestSite, is its square)
+    m.unit(1, "tank", 2, 2).unit(1, "infantry", 21, 10)
+    for x, y in ((19, 10), (23, 10), (21, 8), (21, 12)):
+        m.unit(2, "tank", x, y)
+    g = ctx.start(m, ["vonbolt", "andy"], humans=(1, 2))
+    ctx.set_hp(g, 21, 10, 10)
+    own = g.unit_at(21, 10)["id"]
+    before, after = ctx.power(g, 1, "super")
+    ctx.require(after[own]["hp"] < before[own]["hp"] or before[own]["hp"] == 10 and after[own]["hp"] == 1,
+                f"the bolt hit his own Infantry ({before[own]['hp']} -> {after[own]['hp']})")
+    ctx.check(after[own]["flags"] & 1, "his own unit is done for this turn")
+    g.end_turn(human=2)
+    g.end_turn(human=1)
+    ctx.check(not g.unit(own)["flags"] & 1, "and free on his next turn")
+
+
+@test(modes=DS)
+def strike_sites_dual_strike(ctx):
+    """Dual Strike's Strike_FindBestSite: any cell can be the centre, so two
+    Tanks four apart are both in the 2-cell diamond around the cell between
+    them (AW2's pick centred on a unit, hitting one). With army 2's spare
+    Infantry at its HQ: Ex Machina (HP or funds score) hits both Tanks, 3 HP
+    each; Covering Fire's HP and funds missiles hit both Tanks (60 > the
+    Infantry's 31; 4200 > 3001), its infantry missile the Infantry (30 x 4 +
+    1 = 121 > the Tanks' 60)."""
+    for co, want in (("vonbolt", [70, 70, 100]), ("rachel", [40, 40, 70])):
+        m = ctx.map()
+        m.unit(1, "tank", 2, 2)
+        m.unit(2, "tank", 10, 10).unit(2, "tank", 14, 10)
+        g = ctx.start(m, [co, "andy"], humans=(1, 2))
+        before, after = ctx.power(g, 1, "super")
+        got = sorted(after[i]["hp"] for i, u in before.items() if u["army"] == 2)
+        ctx.eq(got, want, f"{co}: army 2's Tanks and Infantry after the strikes")
+
+
+@test(modes=DS)
 def rachel_covering_fire(ctx):
     m = ctx.map()
     m.unit(1, "tank", 2, 2)
@@ -74,9 +115,15 @@ def kindle_high_society(ctx):
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
     g = ctx.start(m, ["kindle", "andy"])
     ctx.power(g, 1, "super")
+    # Counted when the power starts (Dual Strike's UrbanMultiplier): three of
+    # her cities lost afterwards change nothing.
+    for x in range(2, 5):
+        row = g.e.u16(ram.MAP_ROW_OFFSETS + 4)
+        g.e.w8(ram.MAP_TERRAIN + row + x, (2 << 5) | 6)
     r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
-    # 7 properties (6 cities and the HQ): +21% (and the power's 10).
-    ctx.eq(r["first"].acc, 121, "High Society firepower")
+    # 7 properties (6 cities and the HQ): +21% with the power's 10, in Dual
+    # Strike's one firepower sum: Tank vs Tank 55 x 131 / 100.
+    ctx.eq(r["first"].base, 72, "High Society firepower")
 
 
 @test(modes=DS)
@@ -114,6 +161,22 @@ def sasha_war_bonds(ctx):
     bars = lambda hp: (hp - 1) // 10 + 1 if hp > 0 else 0
     lost = bars(r["before"][1]["hp"]) - bars(r["after"][1]["hp"])
     ctx.eq(funds(g, 1) - f0, lost * 7000 // 10 // 2, f"War Bonds for {lost} HP of a Tank")
+
+
+@test(modes=DS)
+def sasha_war_bonds_enemy_prices(ctx):
+    """War Bonds values the HP at its owner's prices (Dual Strike's
+    DamageToFunds: Unit_GetValuePerHp(target owner)): Colin's Tank, -20%, is
+    560 an HP, so half is 280 an HP."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+    g = ctx.start(m, ["sasha", "colin"])
+    ctx.power(g, 1, "super")
+    f0 = funds(g, 1)
+    r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
+    bars = lambda hp: (hp - 1) // 10 + 1 if hp > 0 else 0
+    lost = bars(r["before"][1]["hp"]) - bars(r["after"][1]["hp"])
+    ctx.eq(funds(g, 1) - f0, 560 * lost * 50 // 100, f"War Bonds for {lost} HP of Colin's Tank")
 
 
 @test(modes=DS)

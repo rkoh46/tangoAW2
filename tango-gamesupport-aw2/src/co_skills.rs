@@ -326,22 +326,16 @@ fn capture_points(core: &mut Core) {
 }
 
 /// `GetCoPriceMultiplier(army r4, type r5)`: the CO's cost % in r0 before
-/// 100 is added: Sale Price -5, Fire Sale -8. Not for the power meter
-/// (Dual Strike's meter reads no price modifier): its calls from
-/// `sub_08041978` and the Oozium's eat keep the CO's own.
+/// 100 is added: Sale Price -5, Fire Sale -8. (The power meter no longer
+/// reads prices with the pack: [`crate::co_powers`] charges it by Dual
+/// Strike's `chargePerHp`.)
 const PRICE: u32 = 0x0804_2CC0;
-const PRICE_METER_CALLERS: [u32; 3] = [0x0804_1C3F, 0x0804_1C89, 0x0802_C8E3];
 fn price(core: &mut Core) {
     if !any_on(core) {
         return;
     }
-    let cpu = core.gba().cpu();
-    let (army, sp) = (cpu.gpr(4) as u32, cpu.gpr(13) as u32);
-    let caller = core.raw_read_32(sp + 12, -1);
-    if PRICE_METER_CALLERS.contains(&caller) {
-        return;
-    }
-    let cut = (if has(core, army, SALE_PRICE) { 5 } else { 0 }) + (if has(core, army, FIRE_SALE) { 8 } else { 0 });
+    let army = core.gba().cpu().gpr(4) as u32;
+    let cut = price_cut(core, army);
     if cut != 0 {
         let cpu = core.gba_mut().cpu_mut();
         let r0 = cpu.gpr(0);
@@ -349,29 +343,45 @@ fn price(core: &mut Core) {
     }
 }
 
+/// The cost % Sale Price (-5) and Fire Sale (-8) take off.
+pub fn price_cut(core: &Core, army: u32) -> i32 {
+    (if has(core, army, SALE_PRICE) { 5 } else { 0 }) + (if has(core, army, FIRE_SALE) { 8 } else { 0 })
+}
+
 /// `GetPlayerCoLuckBonus(army)`: its entry keeps the army; at its return the
-/// luck in r0 (10 with CO abilities off): Luck adds 10 (abilities on).
+/// luck in r0 (10 with CO abilities off). With abilities on, as Dual
+/// Strike's `Player_GetGoodLuck`: Luck adds 10, and a tag pair 5 per star
+/// of its rating (`Co_GetTagStars`: the active CO's special-pair entry for
+/// the partner, 0 without one; Tag Power or not).
 const LUCK_ENTRY: u32 = 0x0804_2E64;
 const LUCK_DONE: u32 = 0x0804_2E7A;
 fn luck_entry(core: &mut Core) {
-    if any_on(core) {
+    if crate::ds_weather::is_on(core) {
         let army = core.gba().cpu().gpr(0) as u8;
         core.raw_write_8(LUCK_ARMY, -1, army);
     }
 }
 fn luck_done(core: &mut Core) {
-    if !any_on(core) || core.raw_read_8(CO_ABILITIES, -1) == 0 {
+    if !crate::ds_weather::is_on(core) || core.raw_read_8(CO_ABILITIES, -1) == 0 {
         return;
     }
     let army = core.raw_read_8(LUCK_ARMY, -1) as u32;
-    if has(core, army, LUCK) {
+    let mut add = if has(core, army, LUCK) { 10 } else { 0 };
+    if let Some(b) = crate::tag::partner(core, army) {
+        let co = crate::co_roster::army_co(core, army).0;
+        add += 5 * crate::tag::special_pair(co, b).map_or(0, |p| p.0 as i32);
+    }
+    if add != 0 {
         let cpu = core.gba_mut().cpu_mut();
         let r0 = cpu.gpr(0);
-        cpu.set_gpr(0, r0 + 10);
+        cpu.set_gpr(0, r0 + add);
     }
 }
 
-/// The power meter's charge (`sub_080440E0(army, amount)`): Star Power x1.1.
+/// The power meter's charge (`sub_080440E0(army, amount)`): Star Power
+/// x1.1, worked in Dual Strike's meter units (AW2's / 180, which every
+/// charge with the pack is a multiple of) so it rounds as Dual Strike's
+/// `Player_AddPowerCharge` does.
 const METER_CHARGE: u32 = 0x0804_40E0;
 fn meter_charge(core: &mut Core) {
     // The partner of a tag pair gets half (crate::tag), before Star Power.
@@ -382,7 +392,9 @@ fn meter_charge(core: &mut Core) {
     let cpu = core.gba().cpu();
     let (army, amount) = (cpu.gpr(0) as u32, cpu.gpr(1));
     if has(core, army, STAR_POWER) && amount > 0 {
-        core.gba_mut().cpu_mut().set_gpr(1, amount * 110 / 100);
+        let scale = crate::co_powers::METER_SCALE as i32;
+        let v = if crate::ds_weather::is_on(core) { amount / scale * 110 / 100 * scale } else { amount * 110 / 100 };
+        core.gba_mut().cpu_mut().set_gpr(1, v);
     }
 }
 

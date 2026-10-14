@@ -173,6 +173,13 @@ pub fn partner_charge(core: &Core, army: u32) -> u32 {
     core.raw_read_32(rec(army) + P_CHARGE, -1)
 }
 
+/// Sets the partner's meter (AW2's units; Market Crash, crate::co_powers).
+pub fn set_partner_charge(core: &mut Core, army: u32, v: u32) {
+    if partner(core, army).is_some() {
+        core.raw_write_32(rec(army) + P_CHARGE, -1, v);
+    }
+}
+
 pub fn partner_uses(core: &Core, army: u32) -> u8 {
     core.raw_read_8(rec(army) + P_USES, -1)
 }
@@ -274,13 +281,49 @@ pub fn charged(core: &mut Core) {
     if amount <= 0 || core.raw_read_8(POWERS_ON, -1) == 0 || core.raw_read_8(player(core, army) + PL_MODE, -1) != 0 {
         return;
     }
-    let mut add = amount as u32 / 2;
+    // In Dual Strike's meter units (AW2's / 180), as it rounds.
+    let scale = crate::co_powers::METER_SCALE;
+    let mut add = amount as u32 / scale >> 1;
     if has_partner_skill(core, army, crate::co_skills::STAR_POWER) {
         add = add * 110 / 100;
     }
+    add *= scale;
     let cap = scop_cost(core, co, partner_uses(core, army));
     let v = (partner_charge(core, army) + add).min(cap);
     core.raw_write_32(rec(army) + P_CHARGE, -1, v);
+}
+
+/// Dual Strike's `Player_AddPowerCharge(army, slot, amount)` (`amount` in
+/// its meter units, AW2's / 180): the active CO (slot 0) or the partner
+/// (1) gets it with its own Star Power, up to its Super Power's cost;
+/// nothing while powers are off or a power is on. For the second front's
+/// end (crate::two_front), which charges both COs in full.
+pub fn add_charge(core: &mut Core, army: u32, slot: u8, amount: u32) {
+    if !valid_army(army) || amount == 0 || core.raw_read_8(POWERS_ON, -1) == 0 {
+        return;
+    }
+    let p = player(core, army);
+    if core.raw_read_8(p + PL_MODE, -1) != 0 {
+        return;
+    }
+    let scale = crate::co_powers::METER_SCALE;
+    if slot == 0 {
+        let mut add = amount;
+        if crate::co_skills::has(core, army, crate::co_skills::STAR_POWER) {
+            add = add * 110 / 100;
+        }
+        let cap = scop_cost(core, army_co(core, army), core.raw_read_8(p + PL_USES, -1));
+        let v = (core.raw_read_32(p + PL_CHARGE, -1) + add * scale).min(cap);
+        core.raw_write_32(p + PL_CHARGE, -1, v);
+    } else if let Some(co) = partner(core, army) {
+        let mut add = amount;
+        if has_partner_skill(core, army, crate::co_skills::STAR_POWER) {
+            add = add * 110 / 100;
+        }
+        let cap = scop_cost(core, co, partner_uses(core, army));
+        let v = (partner_charge(core, army) + add * scale).min(cap);
+        core.raw_write_32(rec(army) + P_CHARGE, -1, v);
+    }
 }
 
 /// Army `army`'s partner has skill `id` on (its set, kept with the pair).

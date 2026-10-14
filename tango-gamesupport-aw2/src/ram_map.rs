@@ -33,6 +33,19 @@ pub const BATTLE_POINTS: Region = (0x0203_C170, 0x20);
 pub const HISTORY: Region = (0x0203_C190, 0x1A4);
 pub const HISTORY_SCREEN: Region = (0x0203_C340, 0x60);
 
+/// Dual Strike's battle rules (0x0203C800..0x0203C8FF reserved for them): the second front's end, what each army
+/// brings to the main front (crate::two_front, 4 armies of 8 bytes).
+pub const SECOND_FRONT_MERGE: Region = (0x0203_C800, 0x20);
+
+/// Kindle's High Society, counted when her Super Power starts (crate::co_powers): 1 + the bonus per army 1..5 (u16).
+pub const HIGH_SOCIETY: Region = (0x0203_C820, 10);
+
+/// Olaf's power snow waiting for its second day (crate::ds_weather).
+pub const POWER_SNOW: Region = (0x0203_C830, 1);
+
+/// Covering Fire's and Ex Machina's strike site (crate::co_powers): power, army, missiles picked, set, x, y.
+pub const STRIKE_SITE: Region = (0x0203_C840, 8);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -55,6 +68,10 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("History: the screen", HISTORY_SCREEN),
     ("Dual Strike's Versus and War Room maps (crate::ds_versus::STATE)", (0x0203_C900, 0x20)),
     ("War Room records on Dual Strike's maps (crate::ds_versus::ROWS)", (0x0203_E500, 0x474)),
+    ("second front's end: what each army brings (crate::two_front)", SECOND_FRONT_MERGE),
+    ("Kindle's High Society count (crate::co_powers)", HIGH_SOCIETY),
+    ("Olaf's power snow's second day (crate::ds_weather)", POWER_SNOW),
+    ("Covering Fire / Ex Machina strike site (crate::co_powers)", STRIKE_SITE),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),

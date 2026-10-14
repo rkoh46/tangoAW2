@@ -9,9 +9,9 @@
 //! - **Ex Machina, Covering Fire.** Two traps in AW2's meteor code, which
 //!   act only in these powers (the army setting off Von Bolt's or Rachel's
 //!   SCOP, the pack on; Sturm's Meteor Strike stays AW2's): where a strike
-//!   draws its meteor (`sub_08044968`) the effect starts instead, with the
-//!   target square the strike's proc holds (`proc+0x66`, a unit index, as
-//!   AW2 takes it) and the meteor's sound; where the strike waits for the
+//!   draws its meteor (`sub_08044968`) the effect starts instead, at the
+//!   strike's target square (Dual Strike's site, [`crate::co_powers`]) and
+//!   with the meteor's sound; where the strike waits for the
 //!   meteor to land (`sub_0806AAC4`, a `PROC_WHILE`) one frame of the
 //!   effect plays and the answer is whether it goes on. The powers run
 //!   tangoAW2's copies of the meteor script ([`install`]) without the
@@ -293,8 +293,8 @@ fn bg0_chars(core: &Core) -> u32 {
 
 /// `sub_08044968(proc)`, a strike draws its meteor, just after its
 /// `push {lr}`: in Ex Machina and Covering Fire the effect starts instead
-/// (the target square from the strike's proc as AW2 takes it,
-/// `proc+0x66`, a unit index), the display state is kept, and the meteor's
+/// (at the strike's target, `co_powers::strike_target`), the display state
+/// is kept, and the meteor's
 /// sound plays (`sub_0803B4DC(0xC5)`, returning to the function's end).
 const DRAW_METEOR: u32 = 0x0804_496A;
 const DRAW_METEOR_END: u32 = 0x0804_498D;
@@ -320,13 +320,12 @@ fn draw_meteor(core: &mut Core) {
         _ => return,
     };
     let proc = core.gba().cpu().gpr(0) as u32;
-    let i = core.raw_read_16(proc + 0x66, -1) as i16;
+    // (Dual Strike's site, or the unit AW2's pick chose: crate::co_powers)
+    let target = crate::co_powers::strike_target(core, proc);
     for k in 0..STATE_LEN {
         core.raw_write_8(STATE + k, -1, 0);
     }
-    if i > 0 {
-        let u = core.raw_read_32(UNITS_POINTER, -1) + UNIT * i as u32;
-        let (x, y) = (core.raw_read_8(u + 2, -1), core.raw_read_8(u + 3, -1));
+    if let Some((x, y)) = target {
         let (cx, cy) = camera(core);
         core.raw_write_8(KIND, -1, kind);
         core.raw_write_8(TARGET, -1, x);

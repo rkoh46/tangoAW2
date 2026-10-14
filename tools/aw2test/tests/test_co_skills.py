@@ -52,7 +52,8 @@ def attack_with(ctx, g, src, dst, target, label):
     lo = damage.div(sk.acc * sk.base, 100)
     ctx.check(lo <= ra["damage"] < lo + sk.luck[0], f"{label}: the game's damage {ra['damage']} is acc {sk.acc} x base {sk.base} + luck")
     ctx.eq(rd["defence"], sk.defence, f"{label}: the target's defence")
-    ctx.check((sk.acc, sk.defence) != (plain.acc, plain.defence), f"{label}: the skills change acc/defence ({plain.acc}/{plain.defence} -> {sk.acc}/{sk.defence})")
+    ctx.check((sk.base, sk.acc, sk.defence) != (plain.base, plain.acc, plain.defence),
+              f"{label}: the skills change base/acc/defence ({plain.base}/{plain.acc}/{plain.defence} -> {sk.base}/{sk.acc}/{sk.defence})")
 
 
 @test(modes=("ds",))
@@ -299,6 +300,20 @@ def skills_repair(ctx):
     ctx.set_hp(g, 5, 5, 40)
     g.end_turn()
     ctx.eq(g.unit(u["id"])["hp"], 90, "40 + 50 HP")
+
+
+@test(modes=("ds",))
+def skills_repair_daily_only(ctx):
+    """Mechanic + Gear Head add to a property's daily repair only (Dual
+    Strike's Player_GetDailyRepairHp): Andy's Hyper Repair still heals 2 HP."""
+    m = ctx.map()
+    m.unit(1, "tank", 5, 5).unit(2, "infantry", 27, 17)
+    g = ctx.start(m, ["andy", "andy"])
+    set_skills(ctx, g, 1, [0x3D, 0x3E])
+    ctx.set_hp(g, 5, 5, 40)
+    before, after = ctx.power(g, 1, "power")
+    u = g.unit_at(5, 5)
+    ctx.eq(u["hp"], 60, "Hyper Repair: 40 + 20 HP")
 
 
 @test(modes=("ds",))
