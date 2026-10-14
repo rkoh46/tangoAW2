@@ -43,11 +43,14 @@ def von_bolt_ex_machina_own_units(ctx):
     """Dual Strike's Unit_ParalyseAtTile: Von Bolt's own units in the bolt
     are done for this turn only (free on his next), unlike the enemy's."""
     m = ctx.map()
-    m.unit(1, "tank", 2, 2).unit(1, "infantry", 21, 11)
-    m.unit(2, "tank", 20, 10).unit(2, "mech", 21, 10).unit(2, "infantry", 20, 11)
+    # (his Infantry at 1 HP in the middle of four enemy Tanks: the bolt's
+    # best site, Dual Strike's Strike_FindBestSite, is its square)
+    m.unit(1, "tank", 2, 2).unit(1, "infantry", 21, 10)
+    for x, y in ((19, 10), (23, 10), (21, 8), (21, 12)):
+        m.unit(2, "tank", x, y)
     g = ctx.start(m, ["vonbolt", "andy"], humans=(1, 2))
-    ctx.set_hp(g, 21, 11, 10)
-    own = g.unit_at(21, 11)["id"]
+    ctx.set_hp(g, 21, 10, 10)
+    own = g.unit_at(21, 10)["id"]
     before, after = ctx.power(g, 1, "super")
     ctx.require(after[own]["hp"] < before[own]["hp"] or before[own]["hp"] == 10 and after[own]["hp"] == 1,
                 f"the bolt hit his own Infantry ({before[own]['hp']} -> {after[own]['hp']})")
@@ -55,6 +58,25 @@ def von_bolt_ex_machina_own_units(ctx):
     g.end_turn(human=2)
     g.end_turn(human=1)
     ctx.check(not g.unit(own)["flags"] & 1, "and free on his next turn")
+
+
+@test(modes=DS)
+def strike_sites_dual_strike(ctx):
+    """Dual Strike's Strike_FindBestSite: any cell can be the centre, so two
+    Tanks four apart are both in the 2-cell diamond around the cell between
+    them (AW2's pick centred on a unit, hitting one). With army 2's spare
+    Infantry at its HQ: Ex Machina (HP or funds score) hits both Tanks, 3 HP
+    each; Covering Fire's HP and funds missiles hit both Tanks (60 > the
+    Infantry's 31; 4200 > 3001), its infantry missile the Infantry (30 x 4 +
+    1 = 121 > the Tanks' 60)."""
+    for co, want in (("vonbolt", [70, 70, 100]), ("rachel", [40, 40, 70])):
+        m = ctx.map()
+        m.unit(1, "tank", 2, 2)
+        m.unit(2, "tank", 10, 10).unit(2, "tank", 14, 10)
+        g = ctx.start(m, [co, "andy"], humans=(1, 2))
+        before, after = ctx.power(g, 1, "super")
+        got = sorted(after[i]["hp"] for i, u in before.items() if u["army"] == 2)
+        ctx.eq(got, want, f"{co}: army 2's Tanks and Infantry after the strikes")
 
 
 @test(modes=DS)

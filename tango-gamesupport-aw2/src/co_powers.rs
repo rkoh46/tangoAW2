@@ -3,8 +3,8 @@
 //! Powers built from AW2's own pieces, as small functions and a proc
 //! script tangoAW2 writes into free ROM (ordinary code the game calls, as
 //! a CO's `powerAssembly`):
-//! - Von Bolt's Ex Machina: AW2's meteor strike (`0x084A0858`: the CPU's
-//!   target scorer picks the spot, radius 2, every unit there) at 3 HP,
+//! - Von Bolt's Ex Machina: AW2's meteor strike (`0x084A0858`: radius 2,
+//!   every unit there; the spot Dual Strike's, [`strike_pick`]) at 3 HP,
 //!   and the enemy units hit skip their army's next turn ([`stun`]; his
 //!   own are done for the turn).
 //! - Rachel's Covering Fire: the same strike three times, 3 HP each.
@@ -457,6 +457,222 @@ pub fn set_stun_state(core: &mut Core, state: Option<&[u8]>, army: u8) {
     core.raw_write_8(STUN_PREV_ARMY, -1, army);
 }
 
+// --- Strike sites (Covering Fire, Ex Machina) ------------------------------------
+
+/// Where Covering Fire's missiles and Ex Machina's bolt land, as Dual
+/// Strike picks them (`Strike_FindBestSite` / `Strike_ScoreSite`): every
+/// cell is a candidate centre (rows from the top, cells from the left; a
+/// later one only on a higher score); each unit within 2 (a 13-cell
+/// diamond) scores for 3 HP of damage, enemy and own team apart, and an
+/// enemy on the centre adds 1. Ex Machina scores by HP or by funds (the
+/// game's RNG, `Rng_Range(0, 1)`) and takes enemy - 2 x own; Covering
+/// Fire's three missiles by HP, then funds, then infantry, each enemy - 4 x
+/// own, each seeing the last one's damage. No enemy score: no site, and
+/// that missile or bolt falls nowhere (Dual Strike skips the infantry
+/// missile and the bolt then; tangoAW2 the other two missiles too, whose
+/// site Dual Strike leaves unset).
+///
+/// AW2's meteor script picks an enemy unit (`sub_0805C290`) into the
+/// proc's +0x66 and reads that unit's square where it moves the cursor,
+/// draws and hits: with a site from here +0x66 holds 1 and the square is
+/// put in at those three places ([`strike_pick`], [`strike_draw`],
+/// [`strike_hit`]).
+const STRIKE: u32 = crate::ram_map::STRIKE_SITE.0;
+/// [`STRIKE`]: +0 the power whose sites are picked (1 Ex Machina, 2
+/// Covering Fire, 0 none), +1 its army, +2 missiles picked, +3 a site is
+/// set, +4 its x, +5 its y.
+const STRIKE_EX_MACHINA: u8 = 1;
+const STRIKE_COVERING_FIRE: u8 = 2;
+const STRIKE_DAMAGE: i32 = 30;
+const STRIKE_RADIUS: i32 = 2;
+const NO_SITE: i32 = i32::MIN + 1;
+/// Units with no weapon (`UnitType_GetAttackKind` 2): APC, Black Boat, T
+/// Copter, Lander.
+const NO_WEAPON: [u8; 4] = [7, 18, 20, 23];
+const INFANTRY: u8 = 1;
+const MECH: u8 = 2;
+const RNG: u32 = 0x0300_1FD4;
+
+#[derive(Clone, Copy)]
+enum StrikeScore {
+    Hp,
+    Funds,
+    Infantry,
+}
+
+fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool) -> i32 {
+    let t = core.raw_read_8(u, -1);
+    if t == crate::roster::OOZIUM {
+        return 0;
+    }
+    let hp = (core.raw_read_8(u + 4, -1) & 0x7F) as i32;
+    let small = if matches!(kind, StrikeScore::Funds) { 2 } else { 1 };
+    let no_weapon = NO_WEAPON.contains(&t);
+    if hp <= 10 || (no_weapon && enemy) {
+        return small;
+    }
+    let lost = if hp > STRIKE_DAMAGE { STRIKE_DAMAGE } else { hp - 1 };
+    let mut v = match kind {
+        StrikeScore::Hp => lost,
+        StrikeScore::Funds => core.raw_read_16(crate::roster::table(core) + 0x5C * t as u32 + 6, -1) as i32 * lost,
+        StrikeScore::Infantry => {
+            let mut v = lost;
+            if enemy && (t == INFANTRY || t == MECH) {
+                v *= 4;
+            }
+            if enemy && core.raw_read_8(u + 5, -1) >> 3 != 0 {
+                v *= 2;
+            }
+            v
+        }
+    };
+    if no_weapon && !enemy {
+        v /= 2;
+    }
+    v
+}
+
+fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, own_weight: i32) -> i32 {
+    let m = map(core);
+    let (w, h) = (core.raw_read_16(m, -1) as i32, core.raw_read_16(m + 2, -1) as i32);
+    let units = core.raw_read_32(UNITS_POINTER, -1);
+    let team = |a: u32| core.raw_read_8(player(core, a) + 0x2A, -1);
+    let mine = team(army);
+    let (mut enemy, mut own) = (0i32, 0i32);
+    for ty in (y - STRIKE_RADIUS).max(0)..=(y + STRIKE_RADIUS).min(h - 1) {
+        for tx in (x - STRIKE_RADIUS).max(0)..=(x + STRIKE_RADIUS).min(w - 1) {
+            if (x - tx).abs() + (y - ty).abs() > STRIKE_RADIUS {
+                continue;
+            }
+            let i = unit_index_at(core, tx as u32, ty as u32);
+            let u = units + UNIT * i;
+            if i == 0 || core.raw_read_8(u, -1) == 0 {
+                continue;
+            }
+            if team(army_of_index(core, i)) == mine {
+                own += strike_unit_score(core, u, kind, false);
+            } else {
+                enemy += strike_unit_score(core, u, kind, true);
+            }
+        }
+    }
+    let c = unit_index_at(core, x as u32, y as u32);
+    if c != 0 && team(army_of_index(core, c)) != mine {
+        enemy += 1;
+    }
+    if enemy == 0 { NO_SITE } else { enemy - own_weight * own }
+}
+
+/// `Strike_FindBestSite` for `army`.
+fn strike_best_site(core: &Core, army: u32, kind: StrikeScore, own_weight: i32) -> Option<(u8, u8)> {
+    let m = map(core);
+    let (w, h) = (core.raw_read_16(m, -1) as i32, core.raw_read_16(m + 2, -1) as i32);
+    let mut best = (NO_SITE, None);
+    for y in 0..h.min(64) {
+        for x in 0..w.min(64) {
+            let v = strike_site_score(core, army, x, y, kind, own_weight);
+            if v > best.0 {
+                best = (v, Some((x as u8, y as u8)));
+            }
+        }
+    }
+    best.1
+}
+
+/// The pick step (`sub_080448E4(proc)`, just past its `push`: r4 the
+/// proc): with a site from here, +0x66 = 1 and on to its cursor move
+/// (0x08044912, r0/r1 the square); with none, +0x66 = 0 and out.
+const STRIKE_PICK: u32 = 0x0804_48E8;
+const STRIKE_PICK_CURSOR: u32 = 0x0804_4912;
+const STRIKE_PICK_OUT: u32 = 0x0804_4916;
+fn strike_pick(core: &mut Core) {
+    if !is_on(core) {
+        return;
+    }
+    let power = core.raw_read_8(STRIKE, -1);
+    let army = core.raw_read_8(STRIKE + 1, -1) as u32;
+    if power == 0 || army != core.raw_read_16(CURRENT_ARMY, -1) as u32 {
+        return;
+    }
+    let site = if power == STRIKE_EX_MACHINA {
+        core.raw_write_8(STRIKE, -1, 0);
+        let s = core.raw_read_32(RNG, -1).wrapping_mul(4);
+        let r = s.wrapping_add(2).wrapping_mul(s.wrapping_add(3)) >> 2;
+        core.raw_write_32(RNG, -1, r);
+        let kind = if r % 2 == 0 { StrikeScore::Funds } else { StrikeScore::Hp };
+        strike_best_site(core, army, kind, 2)
+    } else {
+        let k = core.raw_read_8(STRIKE + 2, -1);
+        core.raw_write_8(STRIKE + 2, -1, k + 1);
+        if k >= 2 {
+            core.raw_write_8(STRIKE, -1, 0);
+        }
+        let kind = [StrikeScore::Hp, StrikeScore::Funds, StrikeScore::Infantry][k.min(2) as usize];
+        strike_best_site(core, army, kind, 4)
+    };
+    let p = core.gba().cpu().gpr(4) as u32;
+    match site {
+        Some((x, y)) => {
+            core.raw_write_8(STRIKE + 3, -1, 1);
+            core.raw_write_8(STRIKE + 4, -1, x);
+            core.raw_write_8(STRIKE + 5, -1, y);
+            core.raw_write_16(p + 0x66, -1, 1);
+            let cpu = core.gba_mut().cpu_mut();
+            cpu.set_gpr(0, x as i32);
+            cpu.set_gpr(1, y as i32);
+            cpu.set_gpr(4, (p + 0x66) as i32);
+            cpu.set_thumb_pc(STRIKE_PICK_CURSOR);
+        }
+        None => {
+            core.raw_write_8(STRIKE + 3, -1, 0);
+            core.raw_write_16(p + 0x66, -1, 0);
+            core.gba_mut().cpu_mut().set_thumb_pc(STRIKE_PICK_OUT);
+        }
+    }
+}
+
+fn strike_square_set(core: &Core) -> Option<(i32, i32)> {
+    (is_on(core) && core.raw_read_8(STRIKE + 3, -1) != 0)
+        .then(|| (core.raw_read_8(STRIKE + 4, -1) as i32, core.raw_read_8(STRIKE + 5, -1) as i32))
+}
+
+/// A strike's target square: the site from here, else the square of the
+/// unit at its proc's +0x66 (AW2's pick; none for 0). For the drawing
+/// (crate::power_anim).
+pub(crate) fn strike_target(core: &Core, proc: u32) -> Option<(u8, u8)> {
+    if let Some((x, y)) = strike_square_set(core) {
+        return Some((x as u8, y as u8));
+    }
+    let i = core.raw_read_16(proc + 0x66, -1) as i16;
+    (i > 0).then(|| {
+        let u = core.raw_read_32(UNITS_POINTER, -1) + UNIT * i as u32;
+        (core.raw_read_8(u + 2, -1), core.raw_read_8(u + 3, -1))
+    })
+}
+
+/// The draw step (`sub_08044968`), about to draw at the unit's square
+/// (r0, r1).
+const STRIKE_DRAW: u32 = 0x0804_4988;
+fn strike_draw(core: &mut Core) {
+    if let Some((x, y)) = strike_square_set(core) {
+        let cpu = core.gba_mut().cpu_mut();
+        cpu.set_gpr(0, x);
+        cpu.set_gpr(1, y);
+    }
+}
+
+/// The hit step (`sub_08044994`), the unit's square just loaded (r8, r6):
+/// the site's, used once.
+const STRIKE_HIT: u32 = 0x0804_49BE;
+fn strike_hit(core: &mut Core) {
+    if let Some((x, y)) = strike_square_set(core) {
+        core.raw_write_8(STRIKE + 3, -1, 0);
+        let cpu = core.gba_mut().cpu_mut();
+        cpu.set_gpr(8, x);
+        cpu.set_gpr(6, y);
+    }
+}
+
 // --- Traps -----------------------------------------------------------------------
 
 /// `sub_08044F24`'s per-unit step of a mass damage (r4 the unit, just
@@ -497,6 +713,13 @@ fn activate(core: &mut Core) {
     let (army, mode) = (cpu.gpr(0) as u32, cpu.gpr(1) as u8);
     if (1..=5).contains(&army) {
         count_high_society(core, army, mode);
+        // The strikes' sites are Dual Strike's ([`strike_pick`]).
+        let power = match (army_co(core, army).0, mode) {
+            (VON_BOLT, SCOP) => STRIKE_EX_MACHINA,
+            (RACHEL, SCOP) => STRIKE_COVERING_FIRE,
+            _ => 0,
+        };
+        core.raw_write_range(STRIKE, -1, &[power, army as u8, 0, 0]);
     }
     let (co, _) = army_co(core, army);
     if co != SASHA || mode != COP {
@@ -728,6 +951,9 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (AFTER_BATTLE, Box::new(after_battle)),
         (METERS_CHARGED, Box::new(attacker_charged)),
         (DEFENDER_CHARGED, Box::new(defender_charged)),
+        (STRIKE_PICK, Box::new(strike_pick)),
+        (STRIKE_DRAW, Box::new(strike_draw)),
+        (STRIKE_HIT, Box::new(strike_hit)),
     ]
 }
 

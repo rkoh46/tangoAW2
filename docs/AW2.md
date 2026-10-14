@@ -1187,6 +1187,24 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
 - **Market Crash** (`MarketCrash`): every enemy in the game loses, from
   its active CO's meter and its tag partner's, that CO's Super Power cost
   x min(funds / 500, 100)% (in Dual Strike's meter units), not below 0.
+- **Strike sites** (Covering Fire, Ex Machina: `Strike_FindBestSite`,
+  `Strike_ScoreSite`). Every cell is a candidate centre (rows from the top,
+  a later cell only on a higher score); each unit within 2 cells scores
+  for 3 HP, enemy and own team apart (an Oozium 0; a unit at 1 HP, or an
+  enemy with no weapon, 1 (funds score 2); otherwise the HP it would lose,
+  at most hp - 1, by HP, by cost / 10 x that (funds), or by HP with enemy
+  Infantry and Mechs x4 and capturing enemies x2 (infantry); an own unit
+  with no weapon half), and an enemy on the centre adds 1. Ex Machina:
+  funds or HP score by the game's RNG, enemy - 2 x own; Covering Fire's
+  three missiles: HP, then funds, then infantry score, enemy - 4 x own,
+  each after the last one's damage. No enemy score: that strike falls
+  nowhere. AW2's meteor script centres its strikes on a unit its CPU
+  scorer picks (`sub_0805C290`, at `sub_080448E4`); with these powers the
+  pick is replaced (`co_powers::strike_pick`, 0x080448E8: the proc's +0x66
+  set to 1 and the site, `ram_map::STRIKE_SITE` 0x0203C840, used where the
+  script draws, 0x08044988, and hits, 0x080449BE; `power_anim` draws Dual
+  Strike's effect there). The computer's choice to fire the power is still
+  AW2's.
 - **Ex Machina's paralysis** (`Unit_ParalyseAtTile`): another army's units
   in the bolt lose their army's next turn; Von Bolt's own are done for the
   turn they are hit in (marked moved) and free on his next
