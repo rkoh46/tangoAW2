@@ -420,7 +420,8 @@ fn bh08() -> MissionDef {
 
 // --- M9 The Loot Train ---------------------------------------------------------------
 
-/// The loading yard at the east end (the rail depot's city at (26, 7)): where the Vault APCs must arrive.
+/// The loading yard at the east end (marked by the neutral Com Tower at (26, 7), the end of the railway): where the Vault APCs
+/// must arrive.
 const PORT_YARD: Rect = Rect::new(24, 6, 27, 8);
 const VAULTS: [&str; 3] = ["vault1", "vault2", "vault3"];
 
@@ -460,7 +461,7 @@ fn alarm(core: &mut Core) -> bool {
 
 fn bh09() -> MissionDef {
     let mut m = MissionDef::new("bh09", "The Loot Train");
-    m.objective = "Escort 2 of 3 Vault APCs to the loading yard.";
+    m.objective = "Escort 2 of 3 Vault APCs to the yard by the Com Tower at the railway's east end.";
     m.map = MapSrc::Built("bh09");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::VON_BOLT)).funds(0),
