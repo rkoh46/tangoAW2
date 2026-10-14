@@ -4,20 +4,10 @@
 //!
 //! Where Dual Strike (USA) keeps them (overlay 0 is loaded at 0x022AD560):
 //!
-//! - **Map table**: overlay 0 `0x022DBDB0`, 0xA0 bytes per map, DS map id
-//!   `n` at index `n - 1` (each record read from 0x18 bytes before Dual
-//!   Strike's header). The record is AW2's map header grown: armies' colours at +0xA1..+0xA4
-//!   (the header's `army[1..5]`), the name's text id at +0x2C, the map look at
-//!   +0x32 (0 normal, 1 snow, 2 desert, 3 wasteland), the weather at +0x33
-//!   (0 clear, 1 snow, 2 rain, 3 sandstorm: `sub_020D2104` stores it as the
-//!   battle's weather), fog at +0x34, the army count at +0x3C, the speed
-//!   rank's day limit at +0x44, the tiles (AW2's LZ77 blob: width, height,
-//!   then a u16 per cell in AW2's own tile ids) at +0x5C, the pre-deployed
-//!   units (13 bytes each: x, y, type, 0, HP, ammo, fuel, AI fields; `FE
-//!   army` starts an army, `FF` ends) at +0x64, and the computer armies' COs
-//!   (Dual Strike CO ids) at +0x70 (army 2) and +0x72 (army 3).
-//! - **Map names**: Dual Strike's text table, overlay 0 `0x02306954` (a
-//!   pointer per text id to an ASCII string).
+//! - **The maps**: Dual Strike's map headers, read and converted by
+//!   [`crate::ds_maps`] (its header table, names and terrain): each map's
+//!   tiles, units, armies, colours, look, weather, fog, par days (the speed
+//!   rank's day limit) and the computer armies' COs (armies 2 and 3).
 //! - **The three runs**: eleven map ids each (u16, zero-ended), overlay 0
 //!   `0x022F64FC` (Time), `0x022F652C` (Money), `0x022F6514` (Turn); the
 //!   kind -> list switch is arm9 `0x020EAC50` (kinds 3..5, the Champion
@@ -26,21 +16,8 @@
 //!   (25 minutes), Money 500000 G, Turn 99 days; Champion 108000, 600000,
 //!   120 (read by `sub_020EAA8C`).
 //!
-//! Terrain: Dual Strike uses AW2's tile ids (its maps came from AW2's
-//! format), plus a few of its own: 0x1A1 the Black Crystal (tangoAW2's
-//! 0x192, [`crate::obelisk`]) and 0x1B9..0x1BD the Com Tower, neutral and
-//! armies 1..4 (tangoAW2's Com Tower is the Lab, 0x1D9..0x1DD,
-//! [`crate::com_tower`]). Everything else is AW2's own tile, structures
-//! included (the 4x4 blocks 0x1AA..0x1AD and 0x1AE..0x1B1 on Convoy Cape,
-//! Lone Wolf and Silo Sweep are the same tiles AW2's T Minus 15 and Sea
-//! Fortress use).
-
 use std::sync::OnceLock;
 
-const OV0: u32 = 0x022A_D560;
-const DS_MAPS: u32 = 0x022D_BDB0;
-const DS_MAP: u32 = 0xA0;
-const DS_TEXT: u32 = 0x0230_6954;
 const BUDGETS: u32 = 0x0216_8D04;
 /// Each kind's map list (Time, Money, Turn).
 const LISTS: [u32; 3] = [0x022F_64FC, 0x022F_652C, 0x022F_6514];
@@ -85,18 +62,7 @@ impl Kind {
     }
 }
 
-/// A unit placed on a map: army 1.., position, tangoAW2 unit type, HP
-/// (0..100), ammo, fuel.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Unit {
-    pub army: u8,
-    pub x: u8,
-    pub y: u8,
-    pub kind: u8,
-    pub hp: u8,
-    pub ammo: u8,
-    pub fuel: u8,
-}
+pub use crate::ds_maps::{convert_co, convert_tile, convert_unit, Structure, Unit};
 
 #[derive(Clone, Debug)]
 pub struct Map {
@@ -124,38 +90,6 @@ pub struct Map {
     /// header's +0x24 points at a `bmap` file name (Convoy Cape and Lone
     /// Wolf "0a5", the missile pad; Silo Sweep "0a6", the fortress).
     pub structure: Option<Structure>,
-}
-
-/// The 4x4 structures some Survival maps stand on their map (tiles
-/// 0x1AA..0x1AD and 0x1AE..0x1B1). Dual Strike's pictures of them
-/// (`bmap/0a5`, `bmap/0a6`) are byte for byte AW2's (`0x080D2DA8`,
-/// `0x080D38AC`, which T Minus 15 / Final Front and Show Stopper / Sea
-/// Fortress name in their headers' +0x10).
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Structure {
-    MissilePad,
-    Fortress,
-}
-
-impl Structure {
-    /// AW2's picture: the map header's `tileGraphic4x4` (+0x10), which
-    /// `LoadInventionGraphics` (`0x0803FD80`) loads into OBJ VRAM.
-    pub fn aw2_picture(self) -> u32 {
-        match self {
-            Structure::MissilePad => 0x080D_2DA8,
-            Structure::Fortress => 0x080D_38AC,
-        }
-    }
-    /// The structure the tiles show.
-    pub fn of_tiles(tiles: &[u16]) -> Option<Structure> {
-        if tiles.iter().any(|t| (0x1AA..=0x1AD).contains(t)) {
-            Some(Structure::MissilePad)
-        } else if tiles.iter().any(|t| (0x1AE..=0x1B1).contains(t)) {
-            Some(Structure::Fortress)
-        } else {
-            None
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -186,133 +120,28 @@ impl Survival {
     }
 }
 
-/// Dual Strike's tile -> tangoAW2's.
-pub fn convert_tile(t: u16) -> u16 {
-    match t {
-        0x1A1 => 0x192,                     // Black Crystal
-        // Dual Strike's other two mountains (it draws every mountain cell as
-        // one of 0x020, 0x146, 0x147 by position: crate::ds_look): AW2's
-        // mountain, as the DS Campaign's maps (crate::ds_campaign_data).
-        0x146 | 0x147 => 0x022,
-        0x1B9..=0x1BD => t - 0x1B9 + 0x1D9, // Com Tower: the Lab tiles
-        _ => t,
-    }
-}
-
-/// Dual Strike's unit type -> tangoAW2's (Carrier and Oozium move up one).
-pub fn convert_unit(t: u8) -> Option<u8> {
-    match t {
-        1..=24 => Some(t),
-        25 => Some(crate::roster::CARRIER),
-        26 => Some(crate::roster::OOZIUM),
-        _ => None,
-    }
-}
-
-/// Dual Strike's CO id -> tangoAW2's.
-pub fn convert_co(ds: u8) -> Option<u8> {
-    (0..crate::co_roster::AW2_COS)
-        .chain(crate::co_new::FIRST..crate::co_new::FIRST + crate::co_new::NEW.len() as u8)
-        .find(|&co| crate::co_roster::ds_co(co) == Some(ds))
-}
-
-struct Reader<'a> {
-    pack: &'a crate::ds_pack::Pack,
-}
-
-impl Reader<'_> {
-    fn ov(&self, at: u32, len: usize) -> Option<&[u8]> {
-        self.pack.overlay_at(0, OV0, at, len)
-    }
-    fn u8(&self, at: u32) -> Option<u8> {
-        self.ov(at, 1).map(|b| b[0])
-    }
-    fn u16(&self, at: u32) -> Option<u16> {
-        self.ov(at, 2).map(|b| u16::from_le_bytes([b[0], b[1]]))
-    }
-    fn u32(&self, at: u32) -> Option<u32> {
-        self.ov(at, 4).map(|b| u32::from_le_bytes(b.try_into().unwrap()))
-    }
-    fn text(&self, id: u16) -> Option<String> {
-        let p = self.u32(DS_TEXT + 4 * id as u32)?;
-        let mut s = String::new();
-        for k in 0..64 {
-            let c = self.u8(p + k)?;
-            if c == 0 {
-                break;
-            }
-            s.push(c as char);
-        }
-        Some(s)
-    }
-    fn map(&self, ds_id: u16) -> Option<Map> {
-        let e = DS_MAPS + DS_MAP * (ds_id as u32 - 1);
-        let name = self.text(self.u16(e + 0x2C)?)?;
-        let tiles_at = self.u32(e + 0x5C)?;
-        let head = self.ov(tiles_at, 4)?;
-        let len = (u32::from_le_bytes(head.try_into().unwrap()) >> 8) as usize;
-        let raw = crate::ds_art::lz10(self.ov(tiles_at, len * 9 / 8 + 16)?)?;
-        let (w, h) = (raw[0], raw[1]);
-        let tiles: Vec<u16> = (0..w as usize * h as usize)
-            .map(|k| convert_tile(u16::from_le_bytes([raw[2 + 2 * k], raw[3 + 2 * k]])))
-            .collect();
-        let mut units = Vec::new();
-        let mut p = self.u32(e + 0x64)?;
-        let mut army = 0;
-        for _ in 0..200 {
-            let r = self.ov(p, 13)?;
-            p += 13;
-            match r[0] {
-                0xFF => break,
-                0xFE => army = r[1],
-                _ => units.push(Unit {
-                    army,
-                    x: r[0],
-                    y: r[1],
-                    kind: convert_unit(r[2])?,
-                    hp: r[4],
-                    ammo: r[5],
-                    fuel: r[6],
-                }),
-            }
-        }
-        let armies = self.u8(e + 0x3C)?;
-        let co = |o: u32| -> Option<Option<u8>> {
-            let v = self.u8(e + o)?;
-            Some(if v == 0 { None } else { convert_co(v) })
-        };
-        Some(Map {
-            ds_id,
-            name,
-            width: w,
-            height: h,
-            tiles: tiles.clone(),
-            units,
-            armies,
-            // (the header's army[1..5]; +0x01.. is the previous map's)
-            colours: [self.u8(e + 0xA1)?, self.u8(e + 0xA2)?, self.u8(e + 0xA3)?, self.u8(e + 0xA4)?],
-            cos: [co(0x70)?, if armies >= 3 { co(0x72)? } else { None }, None],
-            fog: self.u8(e + 0x34)? != 0,
-            weather: self.u8(e + 0x33)?,
-            look: self.u8(e + 0x32)?,
-            speed_days: self.u16(e + 0x44)?,
-            structure: {
-                let name = match self.u32(e + 0x24)? {
-                    0 => String::new(),
-                    p => (0..3).filter_map(|k| self.u8(p + k)).map(|c| c as char).collect(),
-                };
-                match name.as_str() {
-                    "0a5" => Some(Structure::MissilePad),
-                    "0a6" => Some(Structure::Fortress),
-                    _ => Structure::of_tiles(&tiles),
-                }
-            },
-        })
+/// A Survival map from Dual Strike's header (crate::ds_maps).
+fn survival_map(m: crate::ds_maps::Map) -> Map {
+    Map {
+        ds_id: m.ds_id,
+        cos: [m.cos[1].0, if m.armies >= 3 { m.cos[2].0 } else { None }, None],
+        speed_days: m.par.0,
+        name: m.name,
+        width: m.width,
+        height: m.height,
+        tiles: m.tiles,
+        units: m.units,
+        armies: m.armies,
+        colours: m.colours,
+        fog: m.fog,
+        weather: m.weather,
+        look: m.look,
+        structure: m.structure,
     }
 }
 
 fn read(pack: &crate::ds_pack::Pack) -> Option<Survival> {
-    let r = Reader { pack };
+    let r = crate::ds_maps::Reader::new(pack);
     let mut ids: Vec<u16> = Vec::new();
     let mut lists = Vec::new();
     for list in LISTS {
@@ -328,7 +157,7 @@ fn read(pack: &crate::ds_pack::Pack) -> Option<Survival> {
     }
     ids.sort();
     ids.dedup();
-    let maps: Vec<Map> = ids.iter().map(|&id| r.map(id)).collect::<Option<_>>()?;
+    let maps: Vec<Map> = ids.iter().map(|&id| r.map(id).map(survival_map)).collect::<Option<_>>()?;
     let budget = |k: u32| -> Option<u32> {
         pack.arm9_at(BUDGETS + 4 * k, 4).map(|b| u32::from_le_bytes(b.try_into().unwrap()))
     };
