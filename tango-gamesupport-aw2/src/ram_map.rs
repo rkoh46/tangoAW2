@@ -46,6 +46,10 @@ pub const POWER_SNOW: Region = (0x0203_C830, 1);
 /// Covering Fire's and Ex Machina's strike site (crate::co_powers): power, army, missiles picked, set, x, y.
 pub const STRIKE_SITE: Region = (0x0203_C840, 8);
 
+/// Dual Strike's CPU (crate::ds_ai): the turn's build list, the profile rolls, the armies' behaviours, the
+/// development switches.
+pub const DS_AI: Region = (0x0203_C700, 0x100);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -72,6 +76,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Kindle's High Society count (crate::co_powers)", HIGH_SOCIETY),
     ("Olaf's power snow's second day (crate::ds_weather)", POWER_SNOW),
     ("Covering Fire / Ex Machina strike site (crate::co_powers)", STRIKE_SITE),
+    ("Dual Strike's CPU", DS_AI),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),

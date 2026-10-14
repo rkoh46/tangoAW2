@@ -727,6 +727,9 @@ def tag_cpu_change_and_powers(ctx):
     units = [(1, "tank", 10, 10), (2, "tank", 13, 10), (2, "infantry", 20, 15), (2, "mech", 21, 15)]
     g = tag_battle(ctx, ["andy", "max"], [None, "sami"], units=units)
     e = g.e
+    # (AW2's power rule with the pair's on top: Dual Strike's, which never uses Sami's CO Power, is off;
+    # test_ds_ai.py has it)
+    e.w8(ram.DS_AI_SWITCHES, ram.DS_AI_OFF_POWER)
     max_, sami = romlib.co_id("max"), romlib.co_id("sami")
     p = g.player(2)
     mcop, mscop = g.co_stars(max_)

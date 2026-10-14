@@ -1,6 +1,8 @@
 """The CPU buys every unit, the new ones included (crate::cpu_tactics, unit_actions),
 each at its own kind of factory: bases (Megatank, Piperunner by pipes, Oozium),
-airports (Stealth, Black Bomb), ports (Black Boat, Carrier)."""
+airports (Stealth, Black Bomb), ports (Black Boat, Carrier). This is AW2's
+production with tangoAW2's swaps; Dual Strike's (crate::ds_ai_build) is switched
+off here."""
 
 from aw2test import ram, rom as romlib
 from aw2test.game import NavError
@@ -34,6 +36,9 @@ def big_map(ctx, pipes=7):
 
 def play(ctx, funds, bought, seen_all, pipes=7, days=10):
     g = ctx.start(big_map(ctx, pipes), ["andy", "andy"])
+    # AW2's production with crate::cpu_tactics's swaps (where Dual Strike's production does not play, e.g.
+    # Survival): Dual Strike's is switched off here (test_ds_ai.py has its own).
+    g.e.w8(ram.DS_AI_SWITCHES, ram.DS_AI_OFF_BUILD)
     for day in range(days):
         g.e.w32(g.player(2)["addr"] + ram.P_FUNDS, funds)
         try:

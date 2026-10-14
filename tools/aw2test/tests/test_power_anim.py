@@ -101,7 +101,9 @@ def cpu(ctx, co, which, kind):
     m = map_two(ctx)
     # The CPU's targets: army 1's units near its own.
     m.unit(1, "tank", 20, 12).unit(1, "mech", 21, 13).unit(1, "infantry", 19, 12)
-    m.terrain(19, 12, "city", 0)
+    # (two of army 1's six units on properties: Dual Strike's Kindle uses her CO Power with a fifth of the
+    # enemy's units on properties, crate::ds_ai_power)
+    m.terrain(19, 12, "city", 0).terrain(20, 12, "city", 0)
     g = ctx.start(m, ["andy", co])
     seen = None
     for turn in range(3):

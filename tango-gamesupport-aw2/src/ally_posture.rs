@@ -58,8 +58,13 @@ fn role_move(core: &mut Core) {
     if crate::cpu_inventions::role_move(core) {
         return;
     }
+    // (Dual Strike's threat-aware move for an advancing unit, crate::ds_ai_move)
+    if crate::ds_ai_move::role_move(core) {
+        return;
+    }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-    let Some(r) = role(crate::two_front::cpu_posture(core, army)) else {
+    // (the two-front posture, or with the pack any CPU army's behaviour, crate::ds_ai::behaviour)
+    let Some(r) = role(crate::ds_ai::behaviour(core, army)) else {
         return;
     };
     let f = core.raw_read_32(ROLE_MOVES + 4 * r, -1);

@@ -15,7 +15,7 @@ import subprocess
 
 from aw2test import bhcampaign as bh
 from aw2test import dscampaign as dc
-from aw2test import paths
+from aw2test import paths, ram
 from aw2test.emu import Emu
 from aw2test.game import Game, NavError
 from aw2test.harness import Skip, test
@@ -498,6 +498,9 @@ def ds_mission_compat(index, title, days):
         d.start(step=dc.ORDER.index(index))
         d.wait_map()
         d.wait_control()
+        # (what this protects is the computer's handling of the inventions: Dual Strike's CPU, which decides the
+        # campaigns' computers with the pack and changes on purpose between builds, is switched off)
+        e.w8(ram.DS_AI_SWITCHES, ram.DS_AI_OFF)
         kinds = [(e.u16(INV + 8 * k + 2) >> 6) & 15 for k in range(16) if (e.u16(INV + 8 * k + 2) >> 6) & 15]
         ctx.log(f"map {e.u8(0x03003FC2):02x} ({title}), {len(g.units())} units, inventions {kinds}, controllers {d.controllers()}")
         played = 0
@@ -534,6 +537,8 @@ def compat_cpu_inv_versus_computer_owns_the_inventions(ctx):
     # (what this protects is the computer's handling of the inventions, not the smart factory's choice, which changes
     # on purpose between builds: the factory spawns the table's units, as AW2's does, via the development byte)
     g.e.w8(0x0203E3FF, 1)
+    # (and Dual Strike's CPU, likewise: AW2's decides, as in the build compared with)
+    g.e.w8(ram.DS_AI_SWITCHES, ram.DS_AI_OFF)
     pristine = os.path.join(ctx.out, "versus_pristine.sav")
     shutil.copyfile(os.path.join(ctx.out, "map.sav"), pristine)
     for _ in range(12):
