@@ -89,7 +89,14 @@ changes, and online both players need it):
   labels, info box, CO pages and CO selection screens (five armies too).
 - **Survival:** Money, Turn and Time, eleven maps each, with ranks and
   records, on screens like Dual Strike's; clear a course to open its endless
-  Champion course.
+  Champion course. A run can be a tag pair, and a map can be saved halfway.
+- **History and medals:** Dual Strike's lifetime records (units built and
+  destroyed, powers used, wins, play time...) with its 300 medals: **L** on
+  Survival's SELECT MAP. Battles give Dual Strike's points and CO EXP.
+- **Dual Strike's rules and computer:** battles follow Dual Strike's own
+  code (power meters, damage, luck, weather, repairs, CO powers), and the
+  computer plays as Dual Strike's does: what it buys, when it uses powers,
+  tags and swaps, each CO's style, and moves that avoid danger.
 - **Black Factory (Versus):** same schedule and cost, but it picks what the
   battle needs; 200 hit points, destructible; human Black Hole armies too.
 - **The computer goes for your inventions** when you are Black Hole (the BH
@@ -123,15 +130,16 @@ changes, and online both players need it):
 - **Mission specials:** the real Grand Bolt in Means to an End; Crystal
   Calamity's Black Onyx with its countdown, its laser every ten minutes
   and the missile silos that hit it; Reclaim the Skies' 30-minute limit.
-- **CO skills:** Dual Strike's 40 skills, earned with EXP. **SELECT** on a
+- **CO skills:** Dual Strike's 43 skills, earned with EXP. **SELECT** on a
   CO screen (on Teams, on an army's CO) opens SET SKILLS; Versus' Rules
   screen turns them on (off by default).
 - **CO tag pairs:** on Teams press **START** on a CO, then **UP**/**DOWN**
   for a partner:
   - **Change** swaps COs; with both meters full **Tag** fires a Tag Power,
     with Dual Strike's pair boosts;
-  - the Tag Power and CO SWAP screens are animated, with Dual Strike's
-    sounds;
+  - the Tag Power (with its lightning) and CO SWAP screens are animated,
+    with Dual Strike's sounds and power music;
+  - a partner's Teamwork, Synergy or Bodyguard skill boosts the active CO;
   - Sturm gets pairs of his own.
 
 <table>
@@ -176,11 +184,11 @@ the map through Normal, Wasteland, Desert and Snow.
 
 - USA cartridge only; two human players online (more armies can be
   computer-controlled).
-- Five-army battles, two-front Versus and War Room battles and Survival
-  runs can't be suspended.
+- Five-army battles and two-front Versus and War Room battles can't be
+  suspended.
 - The mini maps show Black Hole's buildings in neutral grey.
 - Dual Strike's top-screen pictures (the Black Onyx's Earth view) are left
-  out, and tag powers play AW2's power music.
+  out.
 - Where a computer owns the Black Factory it strikes an enemy one only in range; Survival's
   records are per course, not per map; Champion courses open when their
   basic course is cleared (Dual Strike sells them in its shop).
@@ -194,6 +202,10 @@ without Dual Strike are compared byte for byte with the previous release,
 and a test bot wins most DS missions through the pad. The checks are in
 [CONTRIBUTING.md](CONTRIBUTING.md); how it all works is in
 [docs/AW2.md](docs/AW2.md).
+
+Dual Strike's rules, computer player, maps, History and scores were ported
+with the help of sturmds' [Advance Wars: Dual Strike decompilation](https://github.com/sturmds/advance-wars-dual-strike-decomp),
+which made reading the real game's code possible. Thank you, sturmds.
 
 Most of the code and research was written with an AI coding assistant
 (Claude) under the maintainer's direction. Bug reports, especially "this

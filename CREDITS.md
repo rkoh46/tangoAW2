@@ -8,6 +8,9 @@
   Mad-Man-Dan, Veslyquix and contributors; used as a map of the game's code,
   none of it is copied), and the [libretro cheat database](https://github.com/libretro/libretro-database)
   for the Advance Wars 2 CodeBreaker list.
+- Advance Wars: Dual Strike research: sturmds' [Advance Wars: Dual Strike decompilation](https://github.com/sturmds/advance-wars-dual-strike-decomp)
+  (CC0), the reference for Dual Strike's battle rules, computer player, maps, History, scores and Design Room
+  generator as ported in 0.7.0; tangoAW2 reads Dual Strike's data from the player's own ROM and ships none of it.
 - Emulation: [endrift](https://twitter.com/endrift) (mGBA), [Arisotura](https://github.com/Arisotura) (melonDS).
 
 Advance Wars is a trademark of Nintendo. tangoAW2 is not affiliated with
