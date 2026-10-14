@@ -3129,7 +3129,7 @@ bits), `two_front_general_saved` (across a reboot); `ally_posture`'s
 `two_fronts_are_dual_strikes` (with Auto CO's missions) and
 `day_limits_are_dual_strikes` (with the .nds).
 
-## Dual Strike's CPU (`ds_ai.rs`, `ds_ai_build.rs`)
+## Dual Strike's CPU (`ds_ai.rs`, `ds_ai_build.rs`, `ds_ai_power.rs`)
 
 With the pack, in Versus, the DS Campaign and the BH Campaign (not AW2's campaign, whose maps name AW2's own CPU
 personalities, nor Survival), a computer army decides as Dual Strike's does. AW2's CPU and Dual Strike's are the same
@@ -3191,6 +3191,42 @@ The new unit's order (`AiBuild_RollOrder`: 0 attack, 1 attack whatever the odds,
 role (4, 4, 1, 3, 4, 7, 7); units whose first weight is negative (foot units, transports) and ships keep AW2's roll.
 `cpu_tactics`'s swaps (Carrier, Oozium, Piperunner into AW2's buys) are off while Dual Strike's production plays; the
 CPU never builds an Oozium (Dual Strike's never does). Each turn's list takes 0.1..1.5 ms, once a turn.
+
+**Powers** (`ds_ai_power.rs`; Dual Strike's `AiPlayer_TryUsePower` `0x020995C4`). AW2 considers its power three times a
+turn, in `AiDeliberateCoPower` (`0x0805DB70`, the per-unit routine of pass `0x0805CE21` at list positions 0, 4 and 17;
+0, 4 and 21 in the fog list), as Dual Strike does at its phases 3, 9 and 27 (32 in fog or rain). A trap after its
+prologue (`0x0805DB78`) decides and goes on at AW2's Super call (`0x0805DBB2`: the announcement, `PayForPower(army, 2)`,
+which `tag.rs` turns into the Tag Power when both meters are full), its CO Power call (`0x0805DC74`) or its return
+(`0x0805DC92`). The first check is the pass index `*0x03004770` = 1, the last 18 (22). Dual Strike's order: with a
+partner and both Supers paid for, the Tag Power if the CO's hook agrees to a Super (else nothing); Colin's CO Power as
+soon as it is paid for; the Super (with a partner only while the partner's meter is at most template byte 8 % full and
+the check's roll at most byte 9); the CO Power when no partner's Super is ready, the meter is not past its cost by more
+than byte 4 % (6 with a partner) of the gap to the Super's, and the roll is under byte 5 (7). Most COs' hook agrees only
+at the first check, before any unit moves; their own: Andy with a unit under 91 hp (first check), Olaf only the Super in
+snow, Sonja the CO Power only in fog or rain, Sasha also with 30000 funds and an enemy meter fuller than hers, Drake any
+time in fog or rain (else the Super after the first check), Eagle only at the last check (Dual Strike then runs its unit
+phases again after Lightning Strike; AW2's passes do not run twice, so only the units still unmoved move after it),
+Colin's CO Power while he owns a factory, Hawke always, Hachi anything while he owns a factory, Kindle the CO Power with
+five enemy units, or a fifth of them, on properties. Per CO (template, b4..b9): Nell 2 [25,95,0,0,40,70], Andy 3
+[15,95,10,70,50,80], Max 4 [25,95,5,70,50,80], Olaf 9 [0,0,0,0,40,80], Sami 5 [0,0,0,0,50,80], Grit 10, Kanbei 17,
+Lash 23 and Jess 15 [25,95,(5|10),70,50,80], Sonja 18 [50,95,0,0,20,50], Eagle 13 [0,0,0,0,50,80], Drake 14
+[50,95,30,70,50,80], Von Bolt 21 [0,0,0,0,50,80], Jugger 22 [35,85,5,50,50,80], Koal 24 and Adder 28 [50,95,5,70,50,80],
+Hawke 25 [15,95,5,50,50,80], Hachi 6 [100,100,75,95,75,95], Colin 11 [100,100,100,100,30,50], Sensei 19
+[15,70,5,70,50,80], Jake 7 [30,95,5,70,50,80], Rachel 8 [0,0,0,0,40,70], Sasha 12 [50,95,50,95,50,80], Javier 20 and
+Grimm 16 [20,95,10,70,50,80], Kindle 26 [100,100,10,70,50,80], Flak 27 [35,95,5,70,50,80]: a 0 in byte 5 means the CO
+never uses its CO Power and saves for the Super (Olaf, Sami, Eagle, Von Bolt, Rachel; Nell and Sonja with a partner).
+After a power the threat limits are rolled at the top for the rest of the turn (Dual Strike's
+`AiProfile_RerandomiseForPlayer`). `tag.rs`'s own rule for AW2's CPU (`ai_power`) stands aside while this decides.
+
+**Change** (`tag.rs` `cpu_wants_change`, Dual Strike's `AiCo_FrontCloserToSuper` after its builds): the computer
+Changes when the active CO is nearer its Super than the partner; the two alike (or both empty), to the higher rank
+(`AiCo_TagRank`): Max 1, Sami 4, Grit 5, Kanbei 0, Hachi 6 and Colin 7 while the army owns a base, airport or port
+(else 2), Sonja 3 in fog or rain (else 2), the others 2.
+
+Tests (powers): `test_cpu_powers.py` (the new COs by their profiles: Kindle's CO Power with enemies on properties,
+Sasha's with 30000 funds, Rachel never), `power_anim_cpu_kindle`, `tag_cpu_ds_mission` (the Tag Power at the first
+check), the `dsai power` lines of `ds_ai_cpu_<map>`. `tag_cpu_change_and_powers` tests AW2's rule with the pair's (Dual
+Strike's powers switched off).
 
 Development switch (`0x0203C7F0`, emulated memory): bit 0 Dual Strike's CPU off (AW2's decides), bit 1 its production,
 bit 2 its powers (`aw2test/ram.py` `DS_AI_SWITCHES`). The decisions are logged with `TANGOAW2_BH_LOG` (`dsai` lines).

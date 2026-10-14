@@ -970,6 +970,10 @@ fn ai_power(core: &mut Core) {
         return;
     }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+    // (Dual Strike's own rule decides where its CPU plays: crate::ds_ai_power)
+    if crate::ds_ai_power::deciding(core, army) {
+        return;
+    }
     let Some(b) = partner(core, army) else { return };
     if phase(core, army) != 0 {
         return;
@@ -1066,19 +1070,28 @@ fn cpu_wants_change(core: &Core, army: u32) -> bool {
     let da = scop_cost(core, a, core.raw_read_8(p + PL_USES, -1)).saturating_sub(ma);
     let db = scop_cost(core, b, partner_uses(core, army)).saturating_sub(mb);
     if da == db || (ma == 0 && mb == 0) {
-        return cpu_rating(a) < cpu_rating(b);
+        return cpu_rating(core, army, a) < cpu_rating(core, army, b);
     }
     da < db
 }
 
-/// Dual Strike's rating of a CO for the computer's Change (`0x02099DAC`):
-/// Max 1, Sami 4, Grit 5, the others 2 (its Kanbei, Sonja, Hachi and Colin
-/// answer by the battle's state; here 2).
-fn cpu_rating(co: u8) -> u8 {
+/// Dual Strike's rating of a CO for the computer's Change (`AiCo_TagRank`,
+/// `0x02099DAC`): Max 1, Sami 4, Grit 5, the others 2; Kanbei 0, Hachi 6 and
+/// Colin 7 while the army owns a base, airport or port (else 2); Sonja 3 in
+/// fog or rain (else 2).
+fn cpu_rating(core: &Core, army: u32, co: u8) -> u8 {
+    let factory = || {
+        let b = crate::ds_ai::Board::read(core);
+        crate::ds_ai_power::owns_factory(&b, army)
+    };
     match ds_id(co) {
         Some(3) => 1,
         Some(5) => 4,
         Some(6) => 5,
+        Some(7) if factory() => 0,
+        Some(16) if factory() => 6,
+        Some(17) if factory() => 7,
+        Some(8) if crate::ds_ai::foggy(core) => 3,
         _ => 2,
     }
 }
