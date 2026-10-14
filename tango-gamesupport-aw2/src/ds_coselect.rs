@@ -634,8 +634,9 @@ fn panel(cv: &mut Canvas, a: &Art, x: i32, y: i32, body: usize) {
 fn flag(cv: &mut Canvas, a: &Art, x: i32, y: i32, colour: u8, number: u8) {
     let mut pal = a.badge_pal;
     let k = if colour >= 4 {
-        // Black Hole's flag: the red one in the grey of its card.
-        pal[3] = a.versus_pal[4][4];
+        // Black Hole's flag: the red one in Black Hole's dark purple (Dual Strike has none; its card's grey did not show on
+        // the white flag).
+        pal[3] = 0x408C;
         number as usize - 1
     } else {
         colour as usize * 2 + (number as usize - 1)
@@ -899,6 +900,27 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
             return (out, active, flags);
         }
     }
+    // A battle on two fronts whose second front's CO the player picks: one card, the main front's CO on its first plate and
+    // the second front's on its second (Dual Strike numbers them 1 and 2), each picked CO's face flagged with its number.
+    if let Some(m) = crate::ds_campaign::mission_info(core) {
+        if m.two_front.as_ref().is_some_and(|tf| tf.cos[0] == crate::campaign_model::PICK) {
+            let colour = m.colours[0].clamp(1, 5) - 1;
+            for (j, &co) in picks.iter().enumerate().take(2) {
+                flags.push((colour, co, j as u8 + 1));
+            }
+            let plate = |idx: usize| -> Slot {
+                if idx < done {
+                    pic(picks[idx])
+                } else if idx == done {
+                    pic(cur)
+                } else {
+                    Slot { name: None }
+                }
+            };
+            let active = (done < 2).then_some((0, done == 1));
+            return (vec![Card { colour, main: plate(0), partner: Some(plate(1)) }], active, flags);
+        }
+    }
     // The War Room, AW2's campaign: one army, one CO; its colour its CO's country.
     let co = if done > 0 { picks[0] } else { cur };
     let colour = country(core, if done == 0 { cur } else { co });
@@ -1012,6 +1034,9 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
     let dpad = KEY_LEFT | KEY_RIGHT | KEY_UP | KEY_DOWN;
     let grid = if on && !crate::ds_co_page::is_open() && !crate::skills_panel::is_open(core) { grid(core) } else { None };
     let Some(g) = grid else {
+        if core.raw_read_8(crate::ram_map::CO_SCREEN_PICKS.0, -1) != 0 {
+            core.raw_write_8(crate::ram_map::CO_SCREEN_PICKS.0, -1, 0);
+        }
         for at in [LOCKED_CELL, WALK_TO, WALK_PULSE] {
             if core.raw_read_8(at, -1) != 0 {
                 core.raw_write_8(at, -1, 0);
@@ -1029,6 +1054,24 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
     };
     let locked = core.raw_read_8(LOCKED_CELL, -1) as usize;
     let mut walk = core.raw_read_8(WALK_TO, -1);
+    // (a later pick's screen opens with the cursor on a CO already picked, which A cannot take again: it is walked to the
+    // first CO not picked yet, in the grid's order)
+    let idx = (core.raw_read_16(g.proc + 0x64, -1) as usize).min(8);
+    let seen = crate::ram_map::CO_SCREEN_PICKS.0;
+    if core.raw_read_8(seen, -1) != idx as u8 + 1 {
+        // (once a pick's screen: the player may still move onto a picked CO afterwards)
+        core.raw_write_8(seen, -1, idx as u8 + 1);
+        let picked: Vec<u8> = (0..idx).map(|j| core.raw_read_8(PICKS + j as u32, -1)).collect();
+        // (only while a pick is still to come: after the last one the screen is on its way out)
+        let more = cards(core, &picked, g.cur, &g.offered).1.is_some();
+        if idx > 0 && more && walk == 0 && picked.contains(&g.cur) {
+            if let Some(&co) = g.all.iter().find(|&&c| g.offered.contains(&c) && !picked.contains(&c)) {
+                walk = co + 1;
+                core.raw_write_8(WALK_TO, -1, walk);
+                core.raw_write_8(WALK_PULSE, -1, 1);
+            }
+        }
+    }
     // The picture's cursor is where the walk is heading (arrows pressed on the way go on from there).
     if dx != 0 || dy != 0 {
         let here = if locked != 0 && locked <= g.all.len() {
@@ -1167,3 +1210,4 @@ mod tests {
         assert!((last[0] as i32 - last[1] as i32).abs() < 12 && (last[1] as i32 - last[2] as i32).abs() < 12, "Black Hole's is grey: {last:?}");
     }
 }
+

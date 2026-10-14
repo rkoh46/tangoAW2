@@ -23,6 +23,9 @@ pub const BATTLE_MAP_PALETTES: Region = (0x0203_C000, 0x150);
 /// each).
 pub const FACTORY: Region = (0x0203_C150, 10);
 
+/// The CO screen: how many picks it had when its cursor was last put on a CO not picked (crate::ds_coselect), + 1.
+pub const CO_SCREEN_PICKS: Region = (0x0203_C160, 1);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -37,6 +40,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("tag screens and the CO page's TAG box (crate::tag_extras::STATE)", (0x0203_F500, 0xD8)),
     ("Crumb's healed units", (0x0203_F5D8, 0x28)),
     ("smart Black Factory: picks and savings", FACTORY),
+    ("CO screen: picks seen", CO_SCREEN_PICKS),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),
