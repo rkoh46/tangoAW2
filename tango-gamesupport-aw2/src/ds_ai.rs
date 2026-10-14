@@ -259,7 +259,11 @@ pub(crate) struct UnitProfile {
     pub build: u8,
     pub threat_max: (u8, u8),
     pub threat_sum: (u8, u8),
+    /// Fuel % and hp under which the unit wants supply or repair (Dual Strike's service steps, which AW2's passes
+    /// keep: read for the record, not used).
+    #[allow(dead_code)]
     pub fuel: u8,
+    #[allow(dead_code)]
     pub repair: u8,
     pub weights: [i8; 7],
 }
@@ -430,7 +434,6 @@ pub(crate) fn rated_damage(att: u8, def: u8) -> i32 {
 const MAP: u32 = 0x0201_E450;
 const ROWS: u32 = MAP + 0x417A;
 const TERRAIN: u32 = MAP + 0x1432;
-const TILES: u32 = MAP + 0xA22;
 const UNIT_PLANE: u32 = MAP + 0x12;
 const UNITS_POINTER: u32 = 0x0849_9594;
 const UNIT: u32 = 12;
@@ -468,9 +471,8 @@ pub(crate) struct Board {
     pub w: i32,
     pub h: i32,
     pub class: Vec<u8>,
-    /// The army (1..5) owning the property on each cell (0: none or neutral). A property tile's row (neutral,
-    /// then armies 1..5, [`crate::five::property_tile`]) is its owner's army slot, not its colour (a campaign's
-    /// army 2 may wear Green Earth's colours on Blue Moon's tiles' row).
+    /// The army (1..5) owning the property on each cell (0: none or neutral): the terrain plane's top three bits,
+    /// the army slot, not its colour (a campaign's army 2 may wear Green Earth's colours).
     pub owner: Vec<u8>,
     /// Index + 1 into `units` of the unit on each cell (0: none).
     pub at: Vec<u16>,
@@ -530,12 +532,10 @@ impl Board {
             for x in 0..w {
                 let c = row + x as u32;
                 let i = (y * w + x) as usize;
-                b.class[i] = core.raw_read_8(TERRAIN + c, -1) & 0x1F;
+                let t = core.raw_read_8(TERRAIN + c, -1);
+                b.class[i] = t & 0x1F;
                 if PROPERTIES.contains(&b.class[i]) {
-                    let tile = core.raw_read_16(TILES + 2 * c, -1) & 0x1FF;
-                    if let Some((_, o)) = crate::five::property_tile(tile) {
-                        b.owner[i] = o as u8;
-                    }
+                    b.owner[i] = (t >> 5) % 6;
                 }
                 ids[i] = core.raw_read_8(UNIT_PLANE + c, -1);
             }
