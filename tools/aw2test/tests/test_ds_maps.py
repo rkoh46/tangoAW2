@@ -1,6 +1,7 @@
 """tangoAW2's Dual Strike Versus maps (five/design_ds_maps.py): the Wasteland
-set and the sea set, a 2P, 3P, 4P and 5P map each, listed only with the Dual
-Strike pack.
+set and the sea set, a 2P, 3P, 4P and 5P map each. With the Dual Strike pack
+Versus lists Dual Strike's own maps (crate::ds_versus) and of these only the
+two 5P maps, Black Wastes and Coral Crown; without it none of them.
 
 Each map is opened from its Versus tab like a player would (the last entry of
 the tab); the list's preview and the battle map are checked tile by tile, and
@@ -51,6 +52,9 @@ ALL = {**MAPS, **OWN}
 AIRBORNE = ("Skyreach", "Crystal Isles")
 NO_PIPES = ("The Colonel's Vault",)   # (a pack-only map without Piperunners)
 WASTELAND = ("Rust Basin", "Dune Fork", "Cinder Flats", "Black Wastes")
+# Given way to Dual Strike's real maps with the pack (crate::ds_versus: their
+# ids hold Dual Strike's War Room maps or are hidden): listed nowhere.
+REPLACED = ("Rust Basin", "Dune Fork", "Cinder Flats", "Coral Strait", "Trident Isles", "Harbor Cross")
 
 # The Select Map screen: the highlighted map's tiles, decompressed for the
 # preview (width, height, then u16 tiles).
@@ -294,11 +298,12 @@ def _cpu(name, netplay=False):
 
 
 for _name in MAPS:
-    _open(_name)
-    _cpu(_name)
+    if _name not in REPLACED:
+        _open(_name)
+        _cpu(_name)
 for _name in OWN:
     _open(_name, "five_map_")
-_cpu("Dune Fork", netplay=True)
+_cpu("Black Wastes", netplay=True)
 _cpu("Coral Crown", netplay=True)
 # Five Seas is tangoAW2's own and is listed without the pack too: both modes.
 for _nl in (False, True):
@@ -316,6 +321,16 @@ def ds_maps_hidden_without_pack(ctx):
         g, found = select_map(ctx, name)
         ctx.check(not found, f"{name} is not listed without the pack")
         ctx.shot(g, name.lower().replace(" ", "_"))
+        g.e.close()
+
+
+@test(modes=("ds",))
+def ds_maps_replaced_with_pack(ctx):
+    """With the pack the six 2P-4P maps are not listed: Dual Strike's maps
+    are, at their ids (crate::ds_versus)."""
+    for name in REPLACED:
+        g, found = select_map(ctx, name)
+        ctx.check(not found, f"{name} is not listed with the pack")
         g.e.close()
 
 

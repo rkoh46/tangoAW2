@@ -101,6 +101,7 @@ pub mod power_anim;
 pub mod mode_menu;
 pub mod survival;
 pub mod ds_maps;
+pub mod ds_versus;
 pub mod survival_maps;
 pub mod survival_ui;
 pub mod suspend;

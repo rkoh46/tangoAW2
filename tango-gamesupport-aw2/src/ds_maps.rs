@@ -324,14 +324,6 @@ pub fn blobs(map: &Map) -> (Vec<u8>, Vec<u8>) {
     (lz, units)
 }
 
-/// A name in AW2's font (it draws its apostrophe at `~`, as the staff
-/// roll's names do), NUL-ended.
-pub fn aw2_name(name: &str) -> Vec<u8> {
-    let mut b: Vec<u8> = name.bytes().map(|b| if b == b'\'' { b'~' } else { b }).collect();
-    b.push(0);
-    b
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -345,7 +337,6 @@ mod tests {
         assert_eq!(convert_tile(0x02A), 0x02A);
         assert_eq!(convert_unit(25), Some(crate::roster::CARRIER));
         assert_eq!(convert_unit(0), None);
-        assert_eq!(aw2_name("Hachi's Land"), b"Hachi~s Land\0");
     }
 
     /// With a Dual Strike ROM (TANGOAW2_DS_ROM): the Versus and War Room

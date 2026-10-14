@@ -1,0 +1,427 @@
+//! Dual Strike's Versus and War Room maps, with the Dual Strike pack: docs/AW2.md "Dual Strike's Versus and War
+//! Room maps".
+//!
+//! With the pack, Versus lists Dual Strike's 138 Versus maps on AW2's own tabs (Classic, Vs. Maps, Pre-Deployed,
+//! 3P Maps, 4P Maps: Dual Strike's cases 2..6 are the same lists) and the War Room Dual Strike's 44 maps, in place of
+//! AW2's (AW2's 107 Versus maps and 30 War Room maps are among them, in Dual Strike's padded versions). Without the
+//! pack nothing changes.
+//!
+//! - **A map table of its own** ([`TABLE`], 0x100 ids): a copy of [`crate::five_map`]'s (the Design Room's ids,
+//!   tangoAW2's own maps, the Colonel's Vault) with Dual Strike's maps over AW2's ids. Dual Strike's ids are kept:
+//!   0x01..0x8A Versus, 0x8B..0xB3 the War Room; the War Room's last three (0xB4..0xB6, two-front battles) are
+//!   0xC1..0xC3, the ids of three of tangoAW2's eight Dual Strike-style maps, which give way to Dual Strike's real
+//!   ones (their other three ids are hidden; the two 5-army maps, Black Wastes 0xC4 and Coral Crown 0xC8, stay for
+//!   5-army Versus). The second maps of the War Room's five two-front battles have headers beside the table
+//!   ([`SECOND_HEADERS`]), no id. Built once from the pack, in id order (the same bytes on every console with the
+//!   pack), and written into the ROM image's free space once.
+//! - **When.** The game reads this table in Versus and the War Room (the title menu's mode, `0x030033FC`, 2..5)
+//!   while the pack's features are on (in a match: both players have the pack) and Survival is not open: each
+//!   frame the 37 words that point at the map table are set from RAM ([`tick_tables`]), so rollback (which restores
+//!   RAM, not ROM) keeps it. A game saved halfway records which table it was saved on (the suspend tail,
+//!   [`crate::suspend`]); a game saved on AW2's table (before this, or without the pack) continues on it
+//!   ([`TABLE_FLAG`], until the next map list is built).
+//! - **Per map** (at its start): the look (Snow, Desert, Wasteland as Dual Strike draws them,
+//!   [`crate::wasteland::set_ds_look`]), the weather (Dark City's snow, Clover Pond's sandstorm: fixed, over the
+//!   Rules' choice, as Dual Strike's `SetupMapRules` sets it), fog.
+//! - **The War Room**: enemy COs, colours and teams from Dual Strike's header, par days as the speed score's days,
+//!   Com Towers as in Versus ([`crate::com_tower`]).
+//! - **The map list**: Dual Strike's longer tabs (up to 44 maps) outgrow the list's text tile cache; it starts
+//!   over at every redraw ([`LIST_DRAWN`]).
+//! - **Map ids AW2 treats as special**: AW2's campaign tables by `id - 0x8A` (the factory schedule a computer Black
+//!   Hole reads, crate::factory, which gives these maps the design maps' rule; scripted CO power quotes, off here).
+
+use std::sync::OnceLock;
+
+use mgba::core::Core;
+
+use crate::ds_maps::{self, Map, CASE_VERSUS_FIRST, CASE_WAR_ROOM, CASE_WAR_ROOM_SECOND};
+
+// --- Where things are ------------------------------------------------------------------
+
+/// The map table (0x100 ids of 0x5C bytes), the War Room's second maps' headers, a sentinel, the names, the
+/// maps (tiles then units, [`MAP_DATA_SIZE`] each) in the ROM image's free space (past the DS Campaign's story
+/// songs from 0x09000000, before the Dual Strike graphics from 0x09E00000).
+pub const TABLE: u32 = 0x0980_0000;
+const ENTRY: u32 = 0x5C;
+pub const SECOND_HEADERS: u32 = 0x0980_6000;
+const SENTINEL: u32 = 0x0980_7FFC;
+const MAGIC: u32 = 0x3150_4D44; // "DMP1"
+const STRINGS: u32 = 0x0980_8000;
+const STRING_SIZE: u32 = 0x20;
+const MAP_DATA: u32 = 0x0981_0000;
+const MAP_DATA_SIZE: u32 = 0x1000;
+const ROM_END: u32 = 0x0990_0000;
+
+/// Text ids from 0x7200 read their pointer from 0x0862D238 (free ROM; see crate::five_map for why that works).
+const TEXT_TABLE: u32 = crate::campaign_model::TEXT_TABLE;
+pub const TEXT_BASE: u16 = 0x7200;
+const TEXT_IDS: u16 = 0x100;
+
+/// Dual Strike's War Room ids past AW2's design ids (0xB4..0xB7 are the Design Room's to AW2's code), and theirs
+/// here: three of tangoAW2's Dual Strike-style maps' ids ([`crate::five_map::IDS`]).
+const MOVED: [(u16, u8); 3] = [(0xB4, 0xC1), (0xB5, 0xC2), (0xB6, 0xC3)];
+/// tangoAW2's Dual Strike-style maps hidden while this table is in use (the other three ids are [`MOVED`]'s; the
+/// 5-army Black Wastes and Coral Crown stay).
+const HIDDEN: [u8; 3] = [0xC5, 0xC6, 0xC7];
+/// The last Versus id and the War Room's first.
+const LAST_VERSUS: u16 = 0x8A;
+pub const FIRST_WAR_ROOM: u16 = 0x8B;
+
+// --- RAM -----------------------------------------------------------------------------
+
+/// This module's state (crate::ram_map): 0x0203C900..
+pub const STATE: u32 = 0x0203_C900;
+pub const STATE_LEN: u32 = 0x10;
+/// The table a game continued from a save was saved on: 0 as usual, [`FORCED_AW2`] AW2's (until the next map
+/// list is built).
+pub const TABLE_FLAG: u32 = STATE;
+const FORCED_AW2: u8 = 1;
+
+// --- The game ----------------------------------------------------------------------------
+
+/// The title menu's mode: Versus' Continue 2 and New 3, the War Room's Continue 4 and New 5.
+const TITLE_MODE: u32 = 0x0300_33FC;
+const VERSUS: [u8; 2] = [2, 3];
+const WAR_ROOM: [u8; 2] = [4, 5];
+const PLAY_ST: u32 = 0x0300_3FC0;
+const MAP_ID: u32 = PLAY_ST + 0x02;
+const FOG: u32 = PLAY_ST + 0x0D;
+const WEATHER: u32 = PLAY_ST + 0x2C;
+const WEATHER_MODE: u32 = PLAY_ST + 0x2D;
+const NEXT_WEATHER: u32 = PLAY_ST + 0x2E;
+const DEFAULT_WEATHER: u32 = PLAY_ST + 0x2F;
+
+// --- The table -----------------------------------------------------------------------------
+
+/// What the game's code needs of a map here at run time.
+#[derive(Clone, Debug)]
+pub struct Entry {
+    pub id: u8,
+    pub ds_id: u16,
+    pub name: String,
+    pub armies: u8,
+    pub look: u8,
+    pub weather: u8,
+    pub fog: bool,
+    pub case: u16,
+    /// The War Room's two-front battles: the second map (its Dual Strike id and header address).
+    pub second: Option<(u16, u32)>,
+    /// The CPU armies' (front, back) COs (armies 1..4; tangoAW2 ids).
+    pub cos: [(Option<u8>, Option<u8>); 4],
+}
+
+pub struct Built {
+    writes: Vec<(u32, Vec<u8>)>,
+    pub entries: Vec<Entry>,
+    /// The second maps (two-front battles): Dual Strike id, look, weather.
+    pub seconds: Vec<Entry>,
+}
+
+static BUILT: OnceLock<Option<Built>> = OnceLock::new();
+
+/// The table built from the pack (None without it).
+pub fn built() -> Option<&'static Built> {
+    BUILT.get_or_init(build).as_ref()
+}
+
+/// tangoAW2's id for a Dual Strike id (None: a second map or not in the table).
+pub fn id_of(ds_id: u16) -> Option<u8> {
+    if let Some(&(_, id)) = MOVED.iter().find(|m| m.0 == ds_id) {
+        return Some(id);
+    }
+    (1..=0xB3).contains(&ds_id).then_some(ds_id as u8)
+}
+
+/// A map's header in AW2's form.
+fn header(map: &Map, tiles: u32, units: u32, text: u16, tab: u16) -> [u8; 0x5C] {
+    let mut h = [0u8; 0x5C];
+    let w32 = |h: &mut [u8], at: usize, v: u32| h[at..at + 4].copy_from_slice(&v.to_le_bytes());
+    let w16 = |h: &mut [u8], at: usize, v: u16| h[at..at + 2].copy_from_slice(&v.to_le_bytes());
+    w32(&mut h, 0x00, tiles);
+    w32(&mut h, 0x10, map.structure.map_or(0, |s| s.aw2_picture()));
+    w16(&mut h, 0x14, text);
+    // (AW2's Pre-Deployed maps have 2 here, the others 1)
+    h[0x16] = if map.case == 4 { 2 } else { 1 };
+    h[0x17] = map.fog as u8;
+    h[0x18] = map.armies;
+    w16(&mut h, 0x1A, tab);
+    w16(&mut h, 0x1C, 1);
+    w16(&mut h, 0x1E, 1);
+    // The speed score's days: Dual Strike's par.
+    w16(&mut h, 0x20, map.par.0.max(1));
+    h[0x26] = 0xFF;
+    w32(&mut h, 0x2C, tiles);
+    w32(&mut h, 0x34, units);
+    if map.case == CASE_WAR_ROOM || map.case == CASE_WAR_ROOM_SECOND {
+        // The player picks army 1's CO (0xFF), the computer's are the map's.
+        h[0x3C] = 0xFF;
+        for k in 1..4 {
+            if (k as u8) < map.armies {
+                h[0x3C + k] = map.cos[k].0.unwrap_or(1);
+            }
+        }
+    }
+    h[0x40..0x44].copy_from_slice(&map.colours);
+    h[0x44..0x48].copy_from_slice(&map.teams);
+    for i in 0..4 {
+        h[0x48 + 4 * i..0x4C + 4 * i].copy_from_slice(&[0xFF, 0xFF, 0, 0]);
+    }
+    h
+}
+
+fn entry(id: u8, map: &Map) -> Entry {
+    Entry {
+        id,
+        ds_id: map.ds_id,
+        name: map.name.clone(),
+        armies: map.armies,
+        look: map.look,
+        weather: map.weather,
+        fog: map.fog,
+        case: map.case,
+        second: None,
+        cos: map.cos,
+    }
+}
+
+fn build() -> Option<Built> {
+    let pack = crate::ds_pack::pack()?;
+    let r = ds_maps::Reader::new(pack);
+    let mut writes = Vec::new();
+    let mut entries = Vec::new();
+    let mut seconds = Vec::new();
+    let mut slot = 0u32;
+    let mut text = 0u16;
+    // A map's name, tiles and units: (tiles, units, text id).
+    let mut put = |writes: &mut Vec<(u32, Vec<u8>)>, map: &Map| -> (u32, u32, u16) {
+        let (lz, units) = ds_maps::blobs(map);
+        let at = MAP_DATA + MAP_DATA_SIZE * slot;
+        assert!(lz.len() + units.len() <= MAP_DATA_SIZE as usize, "{}", map.name);
+        assert!(at + MAP_DATA_SIZE <= ROM_END && text < TEXT_IDS);
+        let units_at = at + lz.len() as u32;
+        let t = TEXT_BASE + text;
+        let s = STRINGS + STRING_SIZE * text as u32;
+        // (the map list's font has the apostrophe)
+        let mut name = map.name.as_bytes().to_vec();
+        name.truncate(STRING_SIZE as usize - 1);
+        name.push(0);
+        writes.push((s, name));
+        writes.push((TEXT_TABLE + 4 * t as u32, s.to_le_bytes().to_vec()));
+        writes.push((at, lz));
+        writes.push((units_at, units));
+        slot += 1;
+        text += 1;
+        (at, units_at, t)
+    };
+    for ds_id in 1..=0xB6u16 {
+        let map = r.map(ds_id)?;
+        let id = id_of(ds_id)?;
+        let tab = map.case;
+        if !(CASE_VERSUS_FIRST..=CASE_WAR_ROOM).contains(&tab) || (ds_id <= LAST_VERSUS) == (tab == CASE_WAR_ROOM) {
+            return None;
+        }
+        let (at, units_at, t) = put(&mut writes, &map);
+        writes.push((TABLE + ENTRY * id as u32, header(&map, at, units_at, t, tab).to_vec()));
+        let mut e = entry(id, &map);
+        if let Some(second) = map.second {
+            let s = r.map(second)?;
+            let (sat, sunits, st) = put(&mut writes, &s);
+            let hat = SECOND_HEADERS + ENTRY * seconds.len() as u32;
+            writes.push((hat, header(&s, sat, sunits, st, crate::five_map::HIDDEN_TAB).to_vec()));
+            e.second = Some((second, hat));
+            seconds.push(entry(0, &s));
+        }
+        entries.push(e);
+    }
+    Some(Built { writes, entries, seconds })
+}
+
+fn installed(core: &Core) -> bool {
+    core.raw_read_32(SENTINEL, -1) == MAGIC
+}
+
+fn install(core: &mut Core) -> bool {
+    let Some(b) = built() else { return false };
+    if !installed(core) {
+        // crate::five_map's table (the Design Room's ids, tangoAW2's maps), with room for 0x100 ids.
+        let mut table = vec![0u8; (crate::five_map::ENTRY * crate::five_map::MAP_IDS) as usize];
+        core.raw_read_range(crate::five_map::MAP_TABLE, -1, &mut table);
+        table.resize((ENTRY * 0x100) as usize, 0);
+        core.raw_write_range(TABLE, -1, &table);
+        for &id in &HIDDEN {
+            core.raw_write_16(TABLE + ENTRY * id as u32 + 0x1A, -1, crate::five_map::HIDDEN_TAB);
+        }
+        for (at, bytes) in &b.writes {
+            core.raw_write_range(*at, -1, bytes);
+        }
+        core.raw_write_32(SENTINEL, -1, MAGIC);
+    }
+    true
+}
+
+/// Whether the game reads this table now.
+pub fn in_use(core: &Core) -> bool {
+    crate::five_map::table(core) == TABLE
+}
+
+/// The map with id `id` while this table is in use.
+pub fn map_of(core: &Core, id: u8) -> Option<&'static Entry> {
+    if !in_use(core) {
+        return None;
+    }
+    built()?.entries.iter().find(|e| e.id == id)
+}
+
+/// An id whose map in [`crate::five_map`]'s table is not this table's (crate::five_map keeps its tabs in
+/// whichever table is in use).
+pub fn replaced(id: u8) -> bool {
+    MOVED.iter().any(|m| m.1 == id) || HIDDEN.contains(&id)
+}
+
+/// Whether this table should be in use: the pack's features (`on`), Versus or the War Room, not Survival, not a
+/// game continued from a save made on AW2's table.
+fn wanted(core: &Core, on: bool) -> bool {
+    let mode = core.raw_read_8(TITLE_MODE, -1);
+    on && (VERSUS.contains(&mode) || WAR_ROOM.contains(&mode)) && !crate::survival::on(core) && core.raw_read_8(TABLE_FLAG, -1) != FORCED_AW2
+}
+
+/// Every frame, from [`crate::survival::tick_tables`] (`on`: the pack's features, Survival's table installed):
+/// this table when [`wanted`] (true returned), else Survival's.
+pub fn tick_tables(core: &mut Core, on: bool) -> bool {
+    if !wanted(core, on) || !install(core) {
+        return false;
+    }
+    crate::five_map::use_table(core, TABLE);
+    true
+}
+
+/// `BuildMapListForMode` (a map list being built, Versus' or the War Room's): a new game, so a continued game's
+/// table is over; the list is built from this table when it is wanted.
+pub const BUILD_LIST: u32 = 0x0803_75A4;
+fn build_list(core: &mut Core) {
+    if core.raw_read_8(TABLE_FLAG, -1) != 0 {
+        core.raw_write_8(TABLE_FLAG, -1, 0);
+        // (Survival's table in use: the pack's features are on)
+        let on = crate::five_map::table(core) == crate::survival::TABLE;
+        if wanted(core, on) && install(core) {
+            crate::five_map::use_table(core, TABLE);
+        }
+    }
+}
+
+/// A game saved halfway being continued (crate::suspend, its block loaded, before the map is): `ds_table`, the
+/// save says it was played on this table. Saved on AW2's, it goes on on AW2's.
+pub fn continued(core: &mut Core, ds_table: bool) {
+    let want = if ds_table { 0 } else { FORCED_AW2 };
+    if core.raw_read_8(TABLE_FLAG, -1) != want {
+        core.raw_write_8(TABLE_FLAG, -1, want);
+    }
+    // The table now, before the map loads (the frame's tick would be too late): with the pack's features on
+    // (Survival's table or this one in use).
+    let on = in_use(core) || crate::five_map::table(core) == crate::survival::TABLE;
+    if wanted(core, on) && install(core) {
+        crate::five_map::use_table(core, TABLE);
+    } else if in_use(core) {
+        crate::five_map::use_table(core, crate::survival::TABLE);
+    }
+}
+
+/// At every map start (crate::sandstorm's trap, after crate::wasteland's): a map of this table brings its look,
+/// its weather (when it has one: fixed, over the Rules') and its fog (when it has fog).
+pub fn map_start(core: &mut Core) {
+    let id = core.raw_read_8(MAP_ID, -1);
+    let Some(e) = map_of(core, id) else { return };
+    crate::wasteland::set_ds_look(core, e.look);
+    if e.weather != 0 {
+        // 1 snow, 2 rain as AW2's fixed weather; 3 the sandstorm: fixed clear (crate::sandstorm).
+        let w = if e.weather == 3 { 0 } else { e.weather };
+        core.raw_write_8(WEATHER_MODE, -1, 3);
+        core.raw_write_8(DEFAULT_WEATHER, -1, w);
+        core.raw_write_8(WEATHER, -1, w);
+        core.raw_write_8(NEXT_WEATHER, -1, w);
+    }
+    if e.fog {
+        core.raw_write_8(FOG, -1, 1);
+    }
+}
+
+/// `TryShowScriptedCoPowerQuote`: AW2's campaign quotes by `id - 0x8A` are no War Room map's here.
+const POWER_QUOTE: u32 = 0x0803_9850;
+fn power_quote(core: &mut Core) {
+    if in_use(core) && core.raw_read_8(MAP_ID, -1) as u16 >= LAST_VERSUS {
+        let cpu = core.gba_mut().cpu_mut();
+        cpu.set_gpr(0, 0);
+        let lr = cpu.gpr(14) as u32;
+        cpu.set_thumb_pc(lr & !1);
+    }
+}
+
+/// `DrawMapList`, past its `ClearBg0Tilemap` (every row is drawn again): the names' text tiles come from a cache
+/// that only grows while the list is up (`ResetTextTileCache`, `gUnknown_03002B80`: +0 a "start over" flag,
+/// +0x358 the next tile), with room for about 35 names; Dual Strike's tabs have up to 44, and the names past that
+/// were drawn over the preview's tiles. Every row being drawn again here, the cache starts over (at the tile the
+/// list's screen starts it at, `InitTextTileCache(0)`).
+const LIST_DRAWN: u32 = 0x0808_6A6E;
+const TEXT_CACHE: u32 = 0x0300_2B80;
+const TEXT_CACHE_NEXT: u32 = TEXT_CACHE + 0x358;
+const LIST_TEXT_FIRST: u16 = 0x29;
+fn list_drawn(core: &mut Core) {
+    if in_use(core) {
+        core.raw_write_16(TEXT_CACHE_NEXT, -1, LIST_TEXT_FIRST);
+        core.raw_write_8(TEXT_CACHE, -1, 1);
+    }
+}
+
+/// The War Room on this table.
+pub fn war_room(core: &Core) -> bool {
+    in_use(core) && WAR_ROOM.contains(&core.raw_read_8(TITLE_MODE, -1))
+}
+
+pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
+    vec![
+        (BUILD_LIST, Box::new(build_list)),
+        (LIST_DRAWN, Box::new(list_drawn)),
+        (POWER_QUOTE, Box::new(power_quote)),
+    ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout() {
+        assert!(TABLE + ENTRY * 0x100 <= SECOND_HEADERS && SECOND_HEADERS + ENTRY * 5 <= SENTINEL);
+        assert!(STRINGS + STRING_SIZE * TEXT_IDS as u32 <= MAP_DATA);
+        assert!(MAP_DATA + MAP_DATA_SIZE * (0xB6 + 5) <= ROM_END);
+        // Text ids: past Survival's (0x7172..), before the tag pairs' (0x7300..).
+        assert!(TEXT_BASE > crate::survival::TEXT_BASE + 0x40 && TEXT_BASE + TEXT_IDS <= crate::tag::TEXT_TAG);
+        // Every moved id is one of tangoAW2's Dual Strike-style maps, never a 5-army one.
+        for id in MOVED.iter().map(|m| m.1).chain(HIDDEN) {
+            assert!(crate::five_map::is_ds_map(id) && !crate::five_map::is_five_map(id));
+        }
+    }
+
+    /// With a Dual Strike ROM (TANGOAW2_DS_ROM): Dual Strike's ids, tabs, the War Room's two-front battles.
+    #[test]
+    fn table_from_the_rom() {
+        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else { return };
+        let Ok(buf) = std::fs::read(path) else { return };
+        crate::ds_art::offer(&buf);
+        let b = built().expect("table");
+        assert_eq!(b.entries.len(), 0xB6);
+        let tab = |c| b.entries.iter().filter(|e| e.case == c).count();
+        assert_eq!([tab(2), tab(3), tab(4), tab(5), tab(6), tab(7)], [17, 27, 31, 27, 36, 44]);
+        assert_eq!(b.seconds.len(), 5);
+        let e = |id: u8| b.entries.iter().find(|e| e.id == id).unwrap();
+        assert_eq!(e(0x01).name, "Bean Island");
+        assert_eq!(e(0x8B).name, "Spann Island");
+        assert_eq!((e(0xC1).name.as_str(), e(0xC1).second.map(|s| s.0)), ("Silo Nation", Some(0xB9)));
+        assert_eq!(e(0xC3).name, "Helix Peninsula");
+        assert_eq!(e(0xB2).second.map(|s| s.0), Some(0xB7));
+        assert_eq!(b.entries.iter().filter(|e| e.second.is_some()).count(), 5);
+        // The same bytes every time (netplay: both consoles build it).
+        let again = build().unwrap();
+        assert_eq!(again.writes, b.writes);
+    }
+}

@@ -373,7 +373,10 @@ fn install(core: &mut Core) -> bool {
 pub fn tick_tables(core: &mut Core, on: bool) {
     let on = on && install(core);
     if on {
-        crate::five_map::use_table(core, TABLE);
+        // (Versus and the War Room read Dual Strike's maps' table, crate::ds_versus)
+        if !crate::ds_versus::tick_tables(core, true) {
+            crate::five_map::use_table(core, TABLE);
+        }
     } else if installed(core) {
         crate::five_map::use_table(core, crate::five_map::MAP_TABLE);
     }

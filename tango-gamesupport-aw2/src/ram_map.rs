@@ -41,6 +41,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Crumb's healed units", (0x0203_F5D8, 0x28)),
     ("smart Black Factory: picks and savings", FACTORY),
     ("CO screen: picks seen", CO_SCREEN_PICKS),
+    ("Dual Strike's Versus and War Room maps (crate::ds_versus::STATE)", (0x0203_C900, 0x10)),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),
@@ -99,5 +100,7 @@ mod tests {
         assert_eq!(find("tag pairs").0 + find("tag pairs").1, crate::tag::STATE_END);
         assert_eq!(find("DS Campaign's records").0, crate::ds_campaign::RECORDS);
         assert_eq!(find("Survival").0, crate::survival::STATE);
+        assert_eq!(find("Dual Strike's Versus").0, crate::ds_versus::STATE);
+        assert!(crate::ds_versus::STATE_LEN <= find("Dual Strike's Versus").1);
     }
 }

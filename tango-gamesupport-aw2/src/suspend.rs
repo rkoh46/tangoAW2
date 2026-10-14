@@ -14,6 +14,10 @@
 //! - Ex Machina's stun ([`crate::co_powers`]): the units it marked were all
 //!   free after Continue.
 //!
+//! - the map table the game was played on ([`crate::ds_versus`]: Dual
+//!   Strike's Versus and War Room maps, or AW2's): a game saved on AW2's
+//!   table (without the byte: before it existed) continues on AW2's.
+//!
 //! (The sandstorm and the map's look are in the weather block, which AW2
 //! saves itself; Com Towers are counted on the map.) Without the pack
 //! nothing is written: the block is AW2's own, byte for byte.
@@ -47,16 +51,21 @@ const TAIL: u32 = BLOCK + 0xDAC;
 const BLOCK_LEN: u32 = 0xE28;
 /// The length `sub_08016D30` writes.
 const BLOCK_WRITE: u32 = 0xE28;
-/// The tail: +0 [`MARK`], +4 version, +5 the rain's fog flag, +8 the stun.
+/// The tail: +0 [`MARK`], +4 version, +5 the rain's fog flag, +6 Dual
+/// Strike's maps' table in use (1), +8 the stun.
 const MARK: u32 = 0x3257_4154; // "TAW2"
 const VERSION: u8 = 1;
 const AT_RULE_FOG: u32 = 5;
+const AT_DS_TABLE: u32 = 6;
 const AT_STUN: u32 = 8;
 const TAIL_LEN: u32 = AT_STUN + crate::co_powers::STUN_STATE_LEN as u32;
 
 /// `sub_08016D30` right after `CaptureBattleSaveState` returns (the block
 /// filled, not yet written to Flash).
 pub const CAPTURED: u32 = 0x0801_6D88;
+/// `sub_08016DB8` (Continue) right after the slot is read into the block,
+/// before `sub_08017208` applies it (and loads the map from the map table).
+pub const LOADED: u32 = 0x0801_6DCC;
 /// `sub_08016DB8` (Continue) right after `sub_08017208` returns (the block
 /// loaded and applied; a design map's own slot is loaded over the buffer
 /// next).
@@ -105,8 +114,16 @@ fn captured(core: &mut Core) {
     b[0..4].copy_from_slice(&MARK.to_le_bytes());
     b[4] = VERSION;
     b[AT_RULE_FOG as usize] = crate::ds_weather::rule_fog(core);
+    b[AT_DS_TABLE as usize] = crate::ds_versus::in_use(core) as u8;
     b[AT_STUN as usize..].copy_from_slice(&crate::co_powers::stun_state(core));
     core.raw_write_range(TAIL, -1, &b);
+}
+
+/// The block read, before the map is loaded: the map table it was saved on
+/// (crate::ds_versus).
+fn loaded(core: &mut Core) {
+    let ours = core.raw_read_32(TAIL, -1) == MARK && core.raw_read_8(TAIL + 4, -1) == VERSION;
+    crate::ds_versus::continued(core, ours && core.raw_read_8(TAIL + AT_DS_TABLE, -1) == 1);
 }
 
 fn applied(core: &mut Core) {
@@ -297,6 +314,7 @@ pub fn drop_mid(core: &mut Core, slot: u8) {
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (CAPTURED, Box::new(captured)),
+        (LOADED, Box::new(loaded)),
         (APPLIED, Box::new(|core: &mut Core| {
             applied(core);
             applied_ds(core);
