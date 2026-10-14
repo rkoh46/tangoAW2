@@ -231,7 +231,7 @@ pub(crate) fn tile_at(core: &Core, x: u32, y: u32) -> u16 {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-enum Structure {
+pub(crate) enum Structure {
     Crystal,
     Obelisk,
     /// The Grand Bolt's weak point.
@@ -239,7 +239,7 @@ enum Structure {
 }
 
 /// What an invention-list entry is, if it is one of ours.
-fn structure(core: &Core, entry: u32) -> Option<Structure> {
+pub(crate) fn structure(core: &Core, entry: u32) -> Option<Structure> {
     let (x, y) = (core.raw_read_8(entry, -1) as u32, core.raw_read_8(entry + 1, -1) as u32);
     let kind = (core.raw_read_16(entry + 2, -1) >> 6) & 0xF;
     match kind {

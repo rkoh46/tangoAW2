@@ -9,8 +9,10 @@
 //! cleared map costs its days less one (`sub_020EA87C`), and a map is lost
 //! when its day passes what is left. **Time**: 25 minutes, counted only on
 //! the player's own turns (whole seconds are taken off per map). Points are
-//! the battles' scores added up (at most 9999), plus a bonus for what is
-//! left at the end (`sub_020EB024`); the final rank is S/A/B/C by what is
+//! the battles' scores and bonus points for what they destroyed added up
+//! (at most 9999; crate::battle_points), plus a bonus for what is
+//! left at the end (`sub_020EB024`), which go to the run's COs as EXP at
+//! its end; the final rank is S/A/B/C by what is
 //! left (`sub_020EAD98`); the best leftover per kind is kept with its COs
 //! (`sub_020EAE84`). The COs are picked once and kept for the whole run
 //! (the survival state's CO pair is copied into the player at every map
@@ -624,7 +626,6 @@ pub fn map_start(core: &mut Core) {
 /// prompt): the run goes on, is cleared, or is lost.
 pub const END_OF_GAME: u32 = 0x0803_832C;
 fn end_of_game(core: &mut Core) {
-    crate::co_skills::battle_end(core);
     if core.raw_read_8(ON, -1) != 1 || core.raw_read_8(PHASE, -1) != PLAYING {
         return;
     }
@@ -654,6 +655,8 @@ fn end_of_game(core: &mut Core) {
             core.raw_write_8(RANK, -1, maps::champion_rank(cleared));
             save_champion(core, k, cleared);
         }
+        // The run's points as EXP for its COs (crate::battle_points).
+        crate::battle_points::survival_run_over(core, core.raw_read_32(POINTS, -1));
         return;
     }
     let cost = match k {
@@ -665,7 +668,8 @@ fn end_of_game(core: &mut Core) {
     core.raw_write_32(LEFT, -1, left);
     let score = core.raw_read_16(p1 + P_SCORE, -1) as u32;
     core.raw_write_16(LAST_SCORE, -1, score as u16);
-    let points = (core.raw_read_32(POINTS, -1) + score).min(maps::MAX_POINTS);
+    // The map's points: its score and Dual Strike's bonus for what was destroyed (crate::battle_points).
+    let points = (core.raw_read_32(POINTS, -1) + score + crate::battle_points::last_bonus(core)).min(maps::MAX_POINTS);
     core.raw_write_32(POINTS, -1, points);
     let stage = core.raw_read_8(STAGE, -1).saturating_add(1);
     core.raw_write_8(STAGE, -1, stage);
@@ -677,6 +681,7 @@ fn end_of_game(core: &mut Core) {
         core.raw_write_8(RANK, -1, rank);
         save_record(core, k, left);
         core.raw_write_8(PHASE, -1, CLEARED);
+        crate::battle_points::survival_run_over(core, core.raw_read_32(POINTS, -1));
     } else {
         core.raw_write_8(PHASE, -1, BETWEEN);
     }

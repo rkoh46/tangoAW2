@@ -3197,13 +3197,18 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   opens at its rank; slots = min(rank, 4). The rank-10 skills open with
   Means to an End won instead (Eagle Eye, Gear Head, Conquerer on Normal;
   Mistwalker and Soul of Hachi on Hard), as Dual Strike's flags 0x21/0x22.
-- **EXP** (a won battle; the humans' COs): the DS Campaign the mission's
-  score, x2 (x1 in Dual Strike's first eight missions), x2 on Hard
-  (`ds_campaign`'s best-score trap); at `EndOfGame_Finish` (0x0803832C):
-  Survival half the score, the War Room x2.5 (x2 with skills on), AW2's
-  campaign as the DS Campaign's but only once the player has set skills
-  for some CO (until then it stays AW2's own); Versus none. Dual Strike's
-  few extra points for its battle counters are left out.
+- **EXP** (`battle_points.rs`, Dual Strike's `BattleScore_Compute`, `BattleResults_Fill`, `ExpBonus_Scale`): at
+  every battle's end (`InsertBestScoreRecord`, before any record changes) the battle's points are the score plus
+  bonus points for what the human armies destroyed in it (each count capped at 99: Black Cannon 30, minicannon 10,
+  Black Crystal 20, pipe seam 5, Oozium 40 with that row at most 999; 30 more on Crystal Calamity and For the
+  Future!), 0 when player 1's team lost and in Versus, x2 in a Hard campaign. Each CO of each human army (a tag
+  pair's partner too) gets them scaled: the campaigns x2 for a lone CO, x1 for each CO of a pair, x1 in the first
+  eight missions on Normal; the War Room x2.5, x2 with skills on, x1.5 for a pair, x1 for a pair with skills; in a
+  campaign the mission's best before this battle (its record, x2 on Hard) is taken off first, scaled the same way
+  and not below 0. Survival gives none per map (a map adds its bonus to the run's points); at a run's end, cleared
+  or lost, player 1's COs get the run's points (with its leftover bonus), at most 9999. Versus gives none. AW2's
+  campaign gives EXP only once the player has set skills for some CO (until then it stays AW2's own). Unlike
+  Dual Strike, Survival's map scores are not halved (tangoAW2's run points).
 - **Save.** Per CO (AW2's 19 and the ten new): EXP and seven sets
   (Campaign, Survival, War Room, four Versus), 32 bytes, at `0x0203E000`
   after a magic word; saved in Flash slot 15 after the DS Campaign's

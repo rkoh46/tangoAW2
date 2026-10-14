@@ -481,32 +481,13 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     t
 }
 
-// --- EXP (Dual Strike's `0x020EA240`, `0x020E9C24`) ------------------------------
-
-/// EXP a CO gets for a DS Campaign win: the mission's score (AW2's results,
-/// as Dual Strike's total of speed, power and technique), x2 played solo as
-/// AW2 always is (but the first eight missions, Dual Strike's maps
-/// 0xE0..0xE7, x1), and x2 on Hard. (Dual Strike's few extra points for its
-/// own battle counters are left out.)
-pub fn campaign_exp(score: u32, mission: u8, hard: bool) -> u32 {
-    let base = score.min(999) * if hard { 2 } else { 1 };
-    base * if mission < 8 { 1 } else { 2 }
-}
-
-// --- The modes: which set each army has on, EXP at a battle's end -------------------
+// --- The modes: which set each army has on (EXP: crate::battle_points) -------------
 
 const GAME_MODE: u32 = 0x0300_3FC1;
-const MAP_ID: u32 = 0x0300_3FC2;
 const CAMPAIGN: u8 = 1;
 const WAR_ROOM: u8 = 2;
 const VERSUS: u8 = 3;
 const PLAYERS_PTR: u32 = 0x0849_9598;
-/// AW2's campaign maps start at this id (`InsertBestScoreRecord`'s rows).
-const FIRST_CAMPAIGN_MAP: u8 = 0x8A;
-/// A player's score (u16), defeated (u16), yielded (u8).
-const P_SCORE: u32 = 0x38;
-const P_DEFEATED: u32 = 0x14;
-const P_YIELD: u32 = 0x31;
 /// The data changed since it was last written to Flash (by the DS
 /// Campaign's save, or after AW2's profile: [`profile_written`]).
 const DIRTY: u32 = DATA + DATA_LEN;
@@ -581,53 +562,6 @@ pub fn ids_for(core: &mut Core, army: u32, co: u8) -> Vec<u8> {
     }
     crate::ds_campaign::skills_loaded(core);
     usable(core, co, which)
-}
-
-/// A battle ends (`EndOfGame_Finish`): a won battle gives each of the
-/// player's COs EXP from its score, by Dual Strike's rules for the mode:
-/// Survival half the score (x1); AW2's campaign as the DS Campaign (x2 but
-/// its first eight missions, x1); the War Room x2.5, x2 with skills on.
-/// Versus gives none. (The DS Campaign's is crate::ds_campaign's.)
-pub fn battle_end(core: &mut Core) {
-    if !crate::ds_weather::is_on(core) || crate::ds_campaign::active(core) {
-        return;
-    }
-    let mode = core.raw_read_8(GAME_MODE, -1);
-    let survival = crate::survival::on(core);
-    if !(survival || mode == CAMPAIGN || mode == WAR_ROOM) {
-        return;
-    }
-    crate::ds_campaign::skills_loaded(core);
-    // AW2's campaign plays as AW2's own (and saves nothing more) until the
-    // player has set skills for a CO (crate::co_skills::any_set).
-    if mode == CAMPAIGN && !survival && !any_set(core) {
-        return;
-    }
-    let p1 = player(core, 1);
-    if core.raw_read_16(p1 + P_DEFEATED, -1) != 0 || core.raw_read_8(p1 + P_YIELD, -1) != 0 {
-        return;
-    }
-    crate::ds_campaign::skills_loaded(core);
-    for a in 1..=4u32 {
-        if !human(core, a) {
-            continue;
-        }
-        let score = core.raw_read_16(player(core, a) + P_SCORE, -1) as u32;
-        let skills_on = (0..ACTIVE_LEN).any(|k| core.raw_read_8(ACTIVE + ACTIVE_LEN * (a - 1) + k, -1) != 0);
-        let n = if survival {
-            score / 2
-        } else if mode == CAMPAIGN {
-            let early = core.raw_read_8(MAP_ID, -1).wrapping_sub(FIRST_CAMPAIGN_MAP) < 8;
-            score * if early { 1 } else { 2 }
-        } else if skills_on {
-            score * 2
-        } else {
-            score * 5 / 2
-        };
-        if n > 0 {
-            add_exp(core, army_co(core, a), n);
-        }
-    }
 }
 
 /// AW2's profile has just been written (`sub_0801A7D8(0, ...)` returned:
@@ -767,11 +701,21 @@ pub fn exp(core: &Core, co: u8) -> u32 {
 }
 
 pub fn add_exp(core: &mut Core, co: u8, n: u32) {
+    let v = exp(core, co);
+    set_exp(core, co, v + n);
+}
+
+/// A CO's EXP (Dual Strike's rules for a battle's: crate::battle_points), up to [`MAX_EXP`].
+pub fn set_exp(core: &mut Core, co: u8, n: u32) {
     if let Some(a) = co_at(co) {
-        let v = core.raw_read_32(a, -1).min(MAX_EXP);
-        core.raw_write_32(a, -1, (v + n).min(MAX_EXP));
+        core.raw_write_32(a, -1, n.min(MAX_EXP));
         core.raw_write_8(DIRTY, -1, 1);
     }
+}
+
+/// The data is to be written with the next profile write (crate::history's records changed).
+pub fn mark_dirty(core: &mut Core) {
+    core.raw_write_8(DIRTY, -1, 1);
 }
 
 /// A CO's rank: EXP / 1000, up to 100 (Dual Strike's `0x020E5450`).

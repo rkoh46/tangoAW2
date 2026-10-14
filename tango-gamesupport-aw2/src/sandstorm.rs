@@ -155,6 +155,7 @@ fn map_start(core: &mut Core) {
     }
     crate::ds_campaign::map_start(core);
     crate::tag::map_start(core);
+    crate::battle_points::map_start(core);
 }
 
 // --- Rules screen --------------------------------------------------------

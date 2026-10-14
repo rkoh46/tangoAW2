@@ -568,6 +568,8 @@ fn war_bonds(core: &mut Core) {
     if d == 0 {
         return;
     }
+    // (an Oozium destroyed: Dual Strike's bonus points, crate::battle_points)
+    crate::battle_points::battle_fought(core, core.raw_read_32(SELECTED_UNIT, -1), d);
     let units = core.raw_read_32(UNITS_POINTER, -1);
     let att = core.raw_read_32(SELECTED_UNIT, -1);
     let dfd = units + UNIT * d;

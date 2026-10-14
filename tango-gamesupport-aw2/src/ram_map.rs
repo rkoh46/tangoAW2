@@ -26,6 +26,9 @@ pub const FACTORY: Region = (0x0203_C150, 10);
 /// The CO screen: how many picks it had when its cursor was last put on a CO not picked (crate::ds_coselect), + 1.
 pub const CO_SCREEN_PICKS: Region = (0x0203_C160, 1);
 
+/// Dual Strike's battle points: the battle's destroyed counts and the last bonus (crate::battle_points).
+pub const BATTLE_POINTS: Region = (0x0203_C170, 0x20);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -41,6 +44,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Crumb's healed units", (0x0203_F5D8, 0x28)),
     ("smart Black Factory: picks and savings", FACTORY),
     ("CO screen: picks seen", CO_SCREEN_PICKS),
+    ("battle points: destroyed counts", BATTLE_POINTS),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),
@@ -99,5 +103,6 @@ mod tests {
         assert_eq!(find("tag pairs").0 + find("tag pairs").1, crate::tag::STATE_END);
         assert_eq!(find("DS Campaign's records").0, crate::ds_campaign::RECORDS);
         assert_eq!(find("Survival").0, crate::survival::STATE);
+        assert_eq!(BATTLE_POINTS, (crate::battle_points::STATE, crate::battle_points::STATE_LEN));
     }
 }

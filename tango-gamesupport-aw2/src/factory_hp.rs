@@ -172,8 +172,11 @@ pub fn destroyed(core: &Core) -> bool {
 }
 
 /// The hit step's destroy branch: the factory is destroyed with the
-/// Black Cannon's explosion at the square it was aimed at.
+/// Black Cannon's explosion at the square it was aimed at. (Every
+/// structure a unit destroys comes here: crate::battle_points counts it.)
 fn destroy(core: &mut Core) {
+    // (every structure destroyed: Dual Strike's bonus points, crate::battle_points)
+    crate::battle_points::structure_destroyed(core);
     if !in_scope(core) {
         return;
     }
