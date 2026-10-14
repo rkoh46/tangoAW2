@@ -118,7 +118,10 @@ class Ctx:
         tower_fp = self.rules.tower(p["co"], p["co_mode"], 0) * towers
         if self.ds and p["co"] == 74 and p["co_mode"] == 2 and st["co_abilities"]:
             # Kindle's High Society: +3% per property she owns (co_powers).
-            tower_fp += 3 * self.properties(g, u["army"])
+            # (counted when the power started: crate::co_powers' HIGH_SOCIETY,
+            # 1 + the bonus, u16 per army at 0x0203C820)
+            snap = g.e.u16(0x0203C820 + 2 * (u["army"] - 1))
+            tower_fp += snap - 1 if snap else 3 * self.properties(g, u["army"])
         tower_def = self.rules.tower(p["co"], p["co_mode"], 1) * towers
         return damage.Side(
             type=u["type"], hp=u["hp"], ammo=u["ammo"],

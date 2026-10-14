@@ -11,8 +11,8 @@
 //!   `sub_08044D70`) at 3 HP, only to enemy units on properties.
 //!
 //! Abilities, by trap:
-//! - Kindle's High Society: +3% firepower per property she owns
-//!   ([`extra_firepower`], with the Com Towers').
+//! - Kindle's High Society: +3% firepower per property she owns when it
+//!   starts ([`extra_firepower`], with the Com Towers').
 //! - Sasha: +100 funds a day per property; Market Crash lowers each
 //!   enemy's power meter by 1% of its full meter per 500 funds she has
 //!   (Dual Strike's 0x020E1D2C); War Bonds pays her half the value of the
@@ -277,9 +277,25 @@ pub fn extra_firepower(core: &Core, army: u32) -> i32 {
         add += per * crate::com_tower::towers(core, army) as i32;
     }
     if is_on(core) && army_co(core, army) == (KINDLE, SCOP) {
-        add += 3 * owned(core, army, &PROPERTIES);
+        add += high_society(core, army);
     }
     add
+}
+
+/// Kindle's High Society as Dual Strike has it (`UrbanMultiplier`, her
+/// Super Power's bonus, worked out once as it starts): +3% per property
+/// she owns then, kept until it ends. [`activate`] counts it; a game
+/// continued during the power without the count counts now.
+const HIGH_SOCIETY: u32 = crate::ram_map::HIGH_SOCIETY.0;
+fn high_society(core: &Core, army: u32) -> i32 {
+    match core.raw_read_16(HIGH_SOCIETY + 2 * (army - 1), -1) {
+        0 => 3 * owned(core, army, &PROPERTIES),
+        v => v as i32 - 1,
+    }
+}
+fn count_high_society(core: &mut Core, army: u32, mode: u8) {
+    let v = if army_co(core, army).0 == KINDLE && mode == SCOP { 1 + 3 * owned(core, army, &PROPERTIES) as u16 } else { 0 };
+    core.raw_write_16(HIGH_SOCIETY + 2 * (army - 1), -1, v);
 }
 
 /// Defence % for Javier's units against an indirect attack: +20 day to
@@ -457,7 +473,8 @@ fn mass_unit(core: &mut Core) {
     }
 }
 
-/// `ActivateCoPower(army, mode, proc)`: Sasha's Market Crash.
+/// `ActivateCoPower(army, mode, proc)`: Kindle's High Society is counted
+/// ([`high_society`]); Sasha's Market Crash.
 const ACTIVATE: u32 = 0x0804_4B28;
 const SCOP_COST: u32 = 0x0804_4208;
 fn activate(core: &mut Core) {
@@ -467,6 +484,9 @@ fn activate(core: &mut Core) {
 
     let cpu = core.gba().cpu();
     let (army, mode) = (cpu.gpr(0) as u32, cpu.gpr(1) as u8);
+    if (1..=5).contains(&army) {
+        count_high_society(core, army, mode);
+    }
     let (co, _) = army_co(core, army);
     if co != SASHA || mode != COP {
         return;

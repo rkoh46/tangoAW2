@@ -1178,6 +1178,12 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   the HP taken off, valued at the target owner's value per HP (its CO's
   cost %): Sasha's Super Power taking 5 HP off Colin's Tank pays 560 x 5 /
   2 = 1400 (the raw price gave 1750).
+- **Kindle's High Society** (`UrbanMultiplier`, her Super Power's bonus):
+  +3% per property she owns (city, HQ, airport, port, base, Lab / Com
+  Tower) counted once as it starts and kept until it ends
+  (`co_powers::high_society`; `ram_map::HIGH_SOCIETY` at 0x0203C820, 1 +
+  the bonus per army; a game continued during the power counts again).
+  Colin's Power of Money (funds / 300) is AW2's own snapshot, player +0x26.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

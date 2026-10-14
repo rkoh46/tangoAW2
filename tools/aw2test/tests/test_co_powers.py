@@ -74,6 +74,11 @@ def kindle_high_society(ctx):
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
     g = ctx.start(m, ["kindle", "andy"])
     ctx.power(g, 1, "super")
+    # Counted when the power starts (Dual Strike's UrbanMultiplier): three of
+    # her cities lost afterwards change nothing.
+    for x in range(2, 5):
+        row = g.e.u16(ram.MAP_ROW_OFFSETS + 4)
+        g.e.w8(ram.MAP_TERRAIN + row + x, (2 << 5) | 6)
     r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
     # 7 properties (6 cities and the HQ): +21% with the power's 10, in Dual
     # Strike's one firepower sum: Tank vs Tank 55 x 131 / 100.
