@@ -42,6 +42,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("smart Black Factory: picks and savings", FACTORY),
     ("CO screen: picks seen", CO_SCREEN_PICKS),
     ("Dual Strike's Versus and War Room maps (crate::ds_versus::STATE)", (0x0203_C900, 0x10)),
+    ("War Room records on Dual Strike's maps (crate::ds_versus::ROWS)", (0x0203_E500, 0x474)),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),
@@ -65,6 +66,22 @@ pub const TIME_SHARED: &[(&str, &str, &str)] = &[
     ("two fronts: the front off the screen", "Rules screen: borrowed label tiles", "the Rules screen is before a battle"),
     ("two fronts: the front off the screen", "Versus rules: saved label tiles", "Versus rules are set before a Versus battle, which has one front"),
     ("Teams screen: borrowed tiles while partners show", "Versus rules: saved label tiles", "two screens, never shown together"),
+    (
+        "War Room records on Dual Strike's maps (crate::ds_versus::ROWS)",
+        "two fronts: the front off the screen",
+        "the records are in RAM only on the War Room's screens and at its battles' end; during a two-front battle \
+         they are given up and read from Flash again",
+    ),
+    (
+        "War Room records on Dual Strike's maps (crate::ds_versus::ROWS)",
+        "Teams screen: borrowed tiles while partners show",
+        "the Teams screen is Versus'; the records are the War Room's",
+    ),
+    (
+        "War Room records on Dual Strike's maps (crate::ds_versus::ROWS)",
+        "Versus rules: saved label tiles",
+        "the Rules screen is Versus'; the records are the War Room's",
+    ),
 ];
 
 #[cfg(test)]
@@ -102,5 +119,7 @@ mod tests {
         assert_eq!(find("Survival").0, crate::survival::STATE);
         assert_eq!(find("Dual Strike's Versus").0, crate::ds_versus::STATE);
         assert!(crate::ds_versus::STATE_LEN <= find("Dual Strike's Versus").1);
+        assert_eq!(find("War Room records").0, crate::ds_versus::ROWS);
+        assert_eq!(find("War Room records").1, crate::ds_versus::ROWS_LEN);
     }
 }

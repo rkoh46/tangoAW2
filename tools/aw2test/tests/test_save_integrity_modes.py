@@ -33,6 +33,22 @@ SURVIVAL_RECORDS = saves.c420(0x15, 11)
 # mission's id once did, crate::ds_campaign::best_score).
 SCORE_RAM = (0x0200C078, 0x0200C528)
 EVENT_SLOTS = 0x0200C510
+# With the pack the War Room is Dual Strike's 44 maps (crate::ds_versus): their
+# records are rows of their own in RAM while the War Room shows, saved at the
+# end of the DS record (slot 15) after a mark.
+DS_WAR_ROOM = list(range(0x8B, 0xB4)) + [0xC1, 0xC2, 0xC3]
+DS_ROWS = 0x0203E500
+DS_TAIL = 44 * 0x14 + 4
+
+
+def ds_war_room_row(img, mid):
+    """Map `mid`'s War Room row as slot 15 of an image keeps it (None: no records saved)."""
+    b = img.slot(15)
+    if not b or bytes(b[-4:]) != b"DSWR":
+        return None
+    k = DS_WAR_ROOM.index(mid)
+    t = b[-DS_TAIL:]
+    return bytes(t[0x14 * k:0x14 * (k + 1)])
 
 
 def event_slots_idle(e):
@@ -103,34 +119,47 @@ def armies(e):
 def save_war_room_score_saved(ctx):
     """A War Room map won: its row of the War Room table, its played bit and
     the points; after a reboot the War Room has the score. With the pack the
-    War Room lists AW2's maps only."""
+    War Room lists Dual Strike's 44 maps, and a map's row is saved at the end
+    of the DS record (AW2's War Room rows untouched)."""
     e, g = boot(ctx)
     saves.to_select_mode(e)
     war_room_open(e)
     ids = list(e.read(saves.LIST_IDS, e.u8(saves.LIST_LAST) + 1))
-    ctx.check(ids and all(0x6C <= i <= 0x89 for i in ids), f"the War Room lists its own maps only ({[hex(i) for i in ids]})")
+    if ctx.ds:
+        ctx.check(ids == DS_WAR_ROOM, f"the War Room lists Dual Strike's maps ({[hex(i) for i in ids]})")
+    else:
+        ctx.check(ids and all(0x6C <= i <= 0x89 for i in ids), f"the War Room lists its own maps only ({[hex(i) for i in ids]})")
     before = saves.flash(e, os.path.join(ctx.out, "before"))
     ram0 = e.read(*SCORE_RAM[:1], SCORE_RAM[1] - SCORE_RAM[0])
     pick_and_play(e, g)
     mid = e.u8(0x03003FC2)
-    ctx.check(0x6C <= mid <= 0x89, f"a War Room map ({mid:#x})")
+    ctx.check(mid in DS_WAR_ROOM if ctx.ds else 0x6C <= mid <= 0x89, f"a War Room map ({mid:#x})")
     row = mid - 0x6C
     win(e, g, armies(e))
     after = saves.flash(e, os.path.join(ctx.out, "after"))
     lo = WAR_ROOM_ROWS[0] + 0x14 * row
-    saves.expect_slots(ctx, before, after, [], "the War Room's save",
-                       profile_allow=[(lo, lo + 0x14), PLAYED_BITS] + list(POINTS) + list(saves.OPTIONS) + [saves.MODE_BYTE])
-    ctx.check(after.slot(0)[lo:lo + 0x14] != before.slot(0)[lo:lo + 0x14], f"map {mid:#x}'s scores saved (row {row})")
+    allow = [PLAYED_BITS] + list(POINTS) + list(saves.OPTIONS) + [saves.MODE_BYTE]
+    saves.expect_slots(ctx, before, after, [], "the War Room's save", profile_allow=allow + ([] if ctx.ds else [(lo, lo + 0x14)]))
+    if ctx.ds:
+        saved = ds_war_room_row(after, mid)
+        ctx.check(saved and any(saved), f"map {mid:#x}'s scores saved in the DS record ({saved})")
+        ctx.eq(e.read(DS_ROWS + 0x14 * (mid - 0x8B), 0x14), saved, "the row in RAM as saved")
+    else:
+        ctx.check(after.slot(0)[lo:lo + 0x14] != before.slot(0)[lo:lo + 0x14], f"map {mid:#x}'s scores saved (row {row})")
     ram1 = e.read(SCORE_RAM[0], SCORE_RAM[1] - SCORE_RAM[0])
-    off = 0x14 * row
+    off = None if ctx.ds else 0x14 * row
     bad = [hex(SCORE_RAM[0] + s) for s, t in saveimg.ranges(ram0, ram1)
-           if not (off <= s and t <= off + 0x14) and not 0x0200C420 <= SCORE_RAM[0] + s < 0x0200C500]
+           if not (off is not None and off <= s and t <= off + 0x14) and not 0x0200C420 <= SCORE_RAM[0] + s < 0x0200C500]
     ctx.check(not bad, f"AW2's score tables in RAM: only the map's row written (else {bad[:8]})")
     ctx.check(not event_slots_idle(e), f"no event script slot left running {event_slots_idle(e)}")
     e.close()
     e, g = boot(ctx, after.path)
     saves.to_select_mode(e)
-    ctx.eq(e.read(0x0200C078 + off, 0x14), after.slot(0)[lo:lo + 0x14], "after a reboot: the War Room has the score")
+    if ctx.ds:
+        war_room_open(e)
+        ctx.eq(e.read(DS_ROWS + 0x14 * (mid - 0x8B), 0x14), ds_war_room_row(after, mid), "after a reboot: the War Room has the score")
+    else:
+        ctx.eq(e.read(0x0200C078 + off, 0x14), after.slot(0)[lo:lo + 0x14], "after a reboot: the War Room has the score")
 
 
 @test(modes=("ds",))

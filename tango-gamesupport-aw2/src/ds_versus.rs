@@ -24,7 +24,12 @@
 //!   [`crate::wasteland::set_ds_look`]), the weather (Dark City's snow, Clover Pond's sandstorm: fixed, over the
 //!   Rules' choice, as Dual Strike's `SetupMapRules` sets it), fog.
 //! - **The War Room**: enemy COs, colours and teams from Dual Strike's header, par days as the speed score's days,
-//!   Com Towers as in Versus ([`crate::com_tower`]).
+//!   Com Towers as in Versus ([`crate::com_tower`]). Records: AW2 keeps a War Room record row (0x14 bytes, five
+//!   places) per map by `id - 0x6C` in its profile (`0x0200C078`, 30 maps); Dual Strike's maps take rows of their
+//!   own ([`ROWS`]) that the War Room's record code reads and writes while this table is in use (its five literal-pool words, [`crate::survival`]'s, and the
+//!   insert's own, `0x0808E55C`), kept in Flash at the end of the DS Campaign's slot 15 and written right after
+//!   the profile, as the COs' skill data is (crate::co_skills::profile_written). Dual Strike keeps four sets of
+//!   records ("strips": tag or not, partner boost or not); this is strip 0, no tag.
 //! - **The map list**: Dual Strike's longer tabs (up to 44 maps) outgrow the list's text tile cache; it starts
 //!   over at every redraw ([`LIST_DRAWN`]).
 //! - **Map ids AW2 treats as special**: AW2's campaign tables by `id - 0x8A` (the factory schedule a computer Black
@@ -66,6 +71,8 @@ const HIDDEN: [u8; 3] = [0xC5, 0xC6, 0xC7];
 /// The last Versus id and the War Room's first.
 const LAST_VERSUS: u16 = 0x8A;
 pub const FIRST_WAR_ROOM: u16 = 0x8B;
+/// The War Room's 44 maps.
+pub const WAR_ROOM_MAPS: usize = 44;
 
 // --- RAM -----------------------------------------------------------------------------
 
@@ -76,6 +83,23 @@ pub const STATE_LEN: u32 = 0x10;
 /// list is built).
 pub const TABLE_FLAG: u32 = STATE;
 const FORCED_AW2: u8 = 1;
+/// The War Room's records in RAM: bit 0 loaded from Flash into [`ROWS`], bit 1 a record not yet saved.
+const ROWS_STATE: u32 = STATE + 1;
+const LOADED: u8 = 1;
+const DIRTY: u8 = 2;
+
+/// The War Room's record rows for Dual Strike's ids (0x8B..0xC3: AW2's `id - 0x6C` rows, 0x14 bytes each),
+/// while the War Room's screens show. Time-shared (crate::ram_map): loaded from Flash on the War Room's screens,
+/// given up during a two-front battle and outside the War Room.
+pub const ROWS: u32 = 0x0203_E500;
+const ROW: u32 = 0x14;
+pub const ROWS_LEN: u32 = ROW * (0xC4 - FIRST_WAR_ROOM as u32);
+
+/// The War Room's record table and the six literal-pool words its code reads it through (the readers' and the
+/// writer's: crate::survival's five; the insert's search and store read the table's address from the word at
+/// `0x0808E55C`, which [`INSERT_POOL`] is).
+pub const RECORDS: u32 = 0x0200_C078;
+pub const INSERT_POOL: u32 = 0x0808_E55C;
 
 // --- The game ----------------------------------------------------------------------------
 
@@ -372,9 +396,133 @@ fn list_drawn(core: &mut Core) {
     }
 }
 
+// --- The War Room's records ------------------------------------------------------------
+
 /// The War Room on this table.
 pub fn war_room(core: &Core) -> bool {
     in_use(core) && WAR_ROOM.contains(&core.raw_read_8(TITLE_MODE, -1))
+}
+
+/// The record table the War Room's code should read now (crate::survival's tick, Survival not open).
+pub fn record_rows(core: &Core) -> u32 {
+    if war_room(core) {
+        ROWS.wrapping_sub(ROW * (FIRST_WAR_ROOM as u32 - 0x6C))
+    } else {
+        RECORDS
+    }
+}
+
+/// The War Room's maps in record order (the order of the rows in Flash).
+fn war_room_ids() -> impl Iterator<Item = u8> {
+    (FIRST_WAR_ROOM..=0xB3).map(|i| i as u8).chain(MOVED.iter().map(|m| m.1))
+}
+
+fn row_at(id: u8) -> u32 {
+    ROWS + ROW * (id as u32 - FIRST_WAR_ROOM as u32)
+}
+
+/// The mark after the records in slot 15's payload (they end it).
+const RECORDS_MARK: u32 = 0x5257_5344; // "DSWR"
+pub const RECORDS_TAIL_LEN: usize = WAR_ROOM_MAPS * ROW as usize + 4;
+
+/// AW2's Flash: sectors of 0x1000; "2ars" at +0, generation +8, part +0x0C, slot +0x0D, length +0x50, payload
+/// +0x52.
+const FLASH: u32 = 0x0E00_0000;
+const SECTOR_MAGIC: u32 = 0x7372_6132;
+
+/// The records saved in the DS Campaign's slot (the newest copy), if any.
+fn saved_tail(core: &Core) -> Option<Vec<u8>> {
+    let mut best: Option<(u32, u32)> = None;
+    for sector in 0..16 {
+        let at = FLASH + 0x1000 * sector;
+        if core.raw_read_32(at, -1) != SECTOR_MAGIC
+            || core.raw_read_8(at + 0x0D, -1) != crate::ds_campaign::SAVE_SLOT
+            || core.raw_read_8(at + 0x0C, -1) >> 4 != 0
+        {
+            continue;
+        }
+        let generation = core.raw_read_32(at + 8, -1);
+        if best.is_none_or(|(g, _)| generation >= g) {
+            best = Some((generation, at));
+        }
+    }
+    let (_, at) = best?;
+    let len = core.raw_read_16(at + 0x50, -1) as usize;
+    if len < RECORDS_TAIL_LEN || len > 0xFAD {
+        return None;
+    }
+    let mut b = vec![0u8; RECORDS_TAIL_LEN];
+    core.raw_read_range(at + 0x52 + (len - RECORDS_TAIL_LEN) as u32, -1, &mut b);
+    (u32::from_le_bytes(b[RECORDS_TAIL_LEN - 4..].try_into().unwrap()) == RECORDS_MARK).then_some(b)
+}
+
+/// The rows from Flash into [`ROWS`] (none saved: empty rows).
+fn load_rows(core: &mut Core) {
+    core.raw_write_range(ROWS, -1, &vec![0u8; ROWS_LEN as usize]);
+    if let Some(t) = saved_tail(core) {
+        for (k, id) in war_room_ids().enumerate() {
+            core.raw_write_range(row_at(id), -1, &t[k * ROW as usize..(k + 1) * ROW as usize]);
+        }
+    }
+    core.raw_write_8(ROWS_STATE, -1, LOADED);
+}
+
+/// The records to save at the end of slot 15's payload (crate::ds_campaign::stage_slot): the War Room's rows in
+/// RAM while they are loaded, else the saved ones (none saved: nothing).
+pub fn records_tail(core: &Core) -> Vec<u8> {
+    if core.raw_read_8(ROWS_STATE, -1) & LOADED != 0 {
+        let mut t = Vec::with_capacity(RECORDS_TAIL_LEN);
+        for id in war_room_ids() {
+            let mut row = [0u8; ROW as usize];
+            core.raw_read_range(row_at(id), -1, &mut row);
+            t.extend_from_slice(&row);
+        }
+        t.extend_from_slice(&RECORDS_MARK.to_le_bytes());
+        t
+    } else {
+        saved_tail(core).unwrap_or_default()
+    }
+}
+
+/// Every frame (crate::pvp, after the tables): the records are in RAM on the War Room's screens and given up
+/// elsewhere (the rows' bytes are time-shared).
+pub fn tick(core: &mut Core) {
+    let s = core.raw_read_8(ROWS_STATE, -1);
+    let keep = war_room(core) && crate::two_front::on(core).is_none();
+    if !keep {
+        if s != 0 {
+            core.raw_write_8(ROWS_STATE, -1, 0);
+        }
+    } else if s & LOADED == 0 {
+        load_rows(core);
+    }
+}
+
+/// `InsertBestScoreRecord`'s War Room branch (`subs r4, #0x6c`): the rows loaded (a two-front battle borrowed
+/// their bytes) and marked to be saved.
+const INSERT: u32 = 0x0801_774A;
+fn insert(core: &mut Core) {
+    if !war_room(core) {
+        return;
+    }
+    if core.raw_read_8(ROWS_STATE, -1) & LOADED == 0 {
+        load_rows(core);
+    }
+    let s = core.raw_read_8(ROWS_STATE, -1);
+    core.raw_write_8(ROWS_STATE, -1, s | DIRTY);
+}
+
+/// A War Room record on Dual Strike's maps not yet saved (crate::co_skills writes slot 15 after the profile).
+pub fn records_dirty(core: &Core) -> bool {
+    war_room(core) && core.raw_read_8(ROWS_STATE, -1) == LOADED | DIRTY
+}
+
+/// Slot 15 is being written with [`records_tail`].
+pub fn records_written(core: &mut Core) {
+    let s = core.raw_read_8(ROWS_STATE, -1);
+    if s & DIRTY != 0 {
+        core.raw_write_8(ROWS_STATE, -1, s & !DIRTY);
+    }
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
@@ -382,6 +530,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (BUILD_LIST, Box::new(build_list)),
         (LIST_DRAWN, Box::new(list_drawn)),
         (POWER_QUOTE, Box::new(power_quote)),
+        (INSERT, Box::new(insert)),
     ]
 }
 
@@ -396,10 +545,13 @@ mod tests {
         assert!(MAP_DATA + MAP_DATA_SIZE * (0xB6 + 5) <= ROM_END);
         // Text ids: past Survival's (0x7172..), before the tag pairs' (0x7300..).
         assert!(TEXT_BASE > crate::survival::TEXT_BASE + 0x40 && TEXT_BASE + TEXT_IDS <= crate::tag::TEXT_TAG);
+        assert_eq!(war_room_ids().count(), WAR_ROOM_MAPS);
+        assert!(war_room_ids().all(|id| row_at(id) + ROW <= ROWS + ROWS_LEN));
         // Every moved id is one of tangoAW2's Dual Strike-style maps, never a 5-army one.
         for id in MOVED.iter().map(|m| m.1).chain(HIDDEN) {
             assert!(crate::five_map::is_ds_map(id) && !crate::five_map::is_five_map(id));
         }
+        assert!(RECORDS_TAIL_LEN + 0x20 + crate::ds_campaign::RECORDS_SIZE as usize + crate::co_skills::DATA_LEN as usize <= 0xFAD);
     }
 
     /// With a Dual Strike ROM (TANGOAW2_DS_ROM): Dual Strike's ids, tabs, the War Room's two-front battles.

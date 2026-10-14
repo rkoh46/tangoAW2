@@ -369,8 +369,10 @@ fn save(core: &mut Core) {
     cpu.set_thumb_pc(SLOT_WRITER);
 }
 
-/// The DS Campaign's slot in the staging buffer: the progress, the records
-/// and the COs' skill data. (slot, buffer, length) for AW2's slot writer.
+/// The DS Campaign's slot in the staging buffer: the progress, the records,
+/// the COs' skill data, and the War Room's records on Dual Strike's maps
+/// (crate::ds_versus, at the end). (slot, buffer, length) for AW2's slot
+/// writer.
 ///
 /// The skill data is global (every mode uses it) and lives in the DS
 /// Campaign's slot, so this stages *that* slot whenever the skills are
@@ -391,6 +393,9 @@ pub fn stage_slot(core: &mut Core) -> (u8, u32, u32) {
     // (else no DS Campaign is saved: the slot carries the skill data alone,
     // its progress empty, so DS CAMPAIGN offers no Continue)
     b.extend_from_slice(&crate::co_skills::bytes(core));
+    // The War Room's records on Dual Strike's maps end the slot (crate::ds_versus).
+    b.extend_from_slice(&crate::ds_versus::records_tail(core));
+    crate::ds_versus::records_written(core);
     core.raw_write_range(STAGING, -1, &b);
     crate::co_skills::written(core);
     (SAVE_SLOT, STAGING, b.len() as u32)

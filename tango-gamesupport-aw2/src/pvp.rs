@@ -546,6 +546,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // Dual Strike's unit stats and damage chart, with the pack on.
         let ds = crate::ds_pack::features(mode);
         crate::survival::tick_tables(core, ds && ds_features);
+        // The War Room's records on Dual Strike's maps (crate::ds_versus).
+        crate::ds_versus::tick(core);
         crate::five_map::show_maps(core, ds_features, ds, crate::survival::last_listed_id(core));
         crate::mode_menu::tick(core, ds && ds_features && mode.is_none(), crate::survival::TEXT_BASE + crate::survival::T_HELP);
         crate::design_bar::patch_rom(core, ds_features, ds);
