@@ -49,7 +49,8 @@ const RNG: u32 = 0x0300_1FD4;
 
 /// The RAM (crate::ram_map::DS_AI): +0x00 the build list (+0 count, +1 next, +2 army, +3 day, then four bytes an
 /// entry: type, x, y, role), +0xB0 per army (1..5) the turn's profile roll and the day it was rolled for (two bytes
-/// each), +0xC0 per army its behaviour + 1 (0: General), +0xF0 the development switches.
+/// each), +0xC0 per army its behaviour + 1 (0: General), +0xD0 the move in hand ([`crate::ds_ai_move`]: flag, x, y,
+/// then the unit's record), +0xF0 the development switches.
 pub(crate) const STATE: u32 = crate::ram_map::DS_AI.0;
 pub(crate) const BUILDS: u32 = STATE;
 pub(crate) const BUILDS_MAX: u32 = 40;
@@ -61,6 +62,8 @@ pub(crate) const SWITCHES: u32 = STATE + 0xF0;
 pub(crate) const OFF: u8 = 1;
 pub(crate) const OFF_BUILD: u8 = 2;
 pub(crate) const OFF_POWER: u8 = 4;
+/// Bit 3: only its unit moves ([`crate::ds_ai_move`]) off.
+pub(crate) const OFF_MOVE: u8 = 8;
 
 fn players(core: &Core) -> u32 {
     crate::five::players(core)
@@ -137,6 +140,9 @@ pub use crate::two_front::{ASSAULT, DEFENSE, GENERAL, STRIKE};
 /// General unless set.
 pub fn behaviour(core: &Core, army: u32) -> u8 {
     let two = crate::two_front::cpu_posture(core, army);
+    if !is_on(core) {
+        return two;
+    }
     if two != GENERAL || !(1..=5).contains(&army) {
         return two;
     }
@@ -782,7 +788,7 @@ mod tests {
     #[test]
     fn ram() {
         assert!(BUILDS + 4 + 4 * BUILDS_MAX <= ROLLS);
-        assert!(ROLLS + 10 <= BEHAVIOURS && BEHAVIOURS + 5 <= SWITCHES);
+        assert!(ROLLS + 10 <= BEHAVIOURS && BEHAVIOURS + 5 <= STATE + 0xD0 && STATE + 0xD8 <= SWITCHES);
         assert!(SWITCHES < crate::ram_map::DS_AI.0 + crate::ram_map::DS_AI.1);
     }
 

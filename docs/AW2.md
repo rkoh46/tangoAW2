@@ -3218,6 +3218,20 @@ never uses its CO Power and saves for the Super (Olaf, Sami, Eagle, Von Bolt, Ra
 After a power the threat limits are rolled at the top for the rest of the turn (Dual Strike's
 `AiProfile_RerandomiseForPlayer`). `tag.rs`'s own rule for AW2's CPU (`ai_power`) stands aside while this decides.
 
+**Profiles and behaviours** (`ds_ai.rs`). An army's profile is its active CO's template (set 1, mods 0): the
+production's weights, ratios and day gates, the power bytes and hook, and per unit type the threat limits and order
+weights. Dual Strike rolls the limits once a turn (`AiProfile_Build`: base + spread x roll / 100 - spread / 2, clamped
+to 1..255): here the roll is drawn once per army and day (a hash, kept in `ram_map::DS_AI` +0xB0) and set to the top
+after a power. Every army has a behaviour (Dual Strike's player +0x2E): Strike, Assault, General or Defense. Dual Strike
+sets it only for the ally on a two-front mission (Intel > General, `ally_posture.rs`); here a two-front battle's posture
+is that, and any other CPU army's is a byte of `ram_map::DS_AI` (+0xC0, `ds_ai::set_behaviour`), General unless a
+mission sets it (no menu offers it outside two fronts, as in Dual Strike). What a behaviour does: Defense rolls 0 (the
+lowest threat limits) and its units hold (AW2's role 0, firing at what comes in reach); Assault rolls 100 (the highest
+limits; a direct unit ignores direct enemies' threat) and its units go for the enemy's properties (role 3); General a new
+roll each turn, its units by their own roles; Strike no threat maps at all (and its units at the nearest enemy units,
+role 4). The roles are `ally_posture.rs`'s, now for every CPU army with the pack; the threat limits steer the moves
+(below).
+
 **Change** (`tag.rs` `cpu_wants_change`, Dual Strike's `AiCo_FrontCloserToSuper` after its builds): the computer
 Changes when the active CO is nearer its Super than the partner; the two alike (or both empty), to the higher rank
 (`AiCo_TagRank`): Max 1, Sami 4, Grit 5, Kanbei 0, Hachi 6 and Colin 7 while the army owns a base, airport or port
