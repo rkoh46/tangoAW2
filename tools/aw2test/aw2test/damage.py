@@ -311,7 +311,14 @@ def total_defence(rules, s: Side, cut=0, dist=1):
     temp = s.temp_defence
     if rules.chart is not None and s.type == OOZIUM:
         coDef, temp = 0, 0  # nothing from its CO: no power's +10, towers or Javier's
-    terrain = max(0, terrain_defence(rules, s) - 10 * cut)
+    if rules.chart is not None:
+        # Dual Strike's DoubleTerrainStars: every enemy's cut first, then
+        # Lash's doubling (crate::co_roster::ds_terrain_stars).
+        terrain = max(0, terrain_defence(rules, s, double=False) - 10 * s.terrain_cut)
+        if s.co_abilities and rules.co_mode(s.co, s.co_mode)["abilities"] & 0x20:
+            terrain *= 2
+    else:
+        terrain = max(0, terrain_defence(rules, s) - 10 * cut)
     total = div(hp_bars(s.hp) * terrain, 10) + 100 + coDef + temp
     if rules.chart is not None:
         total = min(total, 200)  # Dual Strike's cap (0x020C34C8), with the pack

@@ -1131,6 +1131,13 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   active CO's record +0x6C entry for the partner, 0 without one), whether a
   Tag Power is on or not, with CO abilities on (`Player_GetGoodLuck`;
   `co_skills::luck_done`, with the Luck skill's +10).
+- **Terrain stars.** A unit's terrain defence is Dual Strike's
+  `DoubleTerrainStars`: stars x 10 (air units 0), less 10 a star for every
+  enemy in the game (another team) whose CO cuts stars (Sonja; each at its
+  own power level, `MovementCost`), not below 0, then doubled in Lash's
+  Super Power (`co_roster::terrain_defence_done`, 0x08043344). AW2 doubled
+  first and tangoAW2 took off only the battle opponent's cut after: a Lash
+  unit on a wood (2 stars) under a 1-star cut now has 20, not 30.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

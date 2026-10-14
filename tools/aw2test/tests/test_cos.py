@@ -100,3 +100,19 @@ def co_lash_terrain_firepower(ctx):
         r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
         ctx.eq(r["first"].base, raw * (100 + rows + terrain) // 100, f"against {enemy}: chart {raw} x (100 + {rows} + {terrain}) / 100")
         ctx.eq(r["first"].acc, 100, f"against {enemy}: no second firepower step")
+
+
+@test(modes=("ds",))
+def co_lash_super_terrain_after_cut(ctx):
+    """Dual Strike's DoubleTerrainStars: Sonja's cut comes off first, then
+    Lash's Super Power doubles: a wood (2 stars) under a 1-star cut is
+    (20 - 10) x 2 = 20 (cutting after the doubling gave 30)."""
+    m = ctx.map()
+    m.terrain(11, 6, "wood")
+    m.unit(1, "tank", 10, 6).unit(2, "mech", 11, 6)
+    g = ctx.start(m, ["sonja", "lash"])
+    g.e.w8(g.player(2)["addr"] + 0x1E, 2)
+    r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
+    _, rd = ctx.battle_records(g)
+    ctx.eq(rd["terrain_def"], 20, "the Lash mech's terrain defence")
+    ctx.eq(r["first"].defence, rd["defence"], "the calculator's defence")

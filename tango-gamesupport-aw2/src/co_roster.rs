@@ -571,9 +571,12 @@ fn calc_damage(core: &mut Core) {
     }
 }
 
-/// `sub_08043304(battle unit)`, a side's terrain defence (stars x 10), at
-/// its return (r4 the battle unit): less the stars the other side's CO
-/// takes away.
+/// `sub_08043304(battle unit)`, a side's terrain defence, at its return (r4
+/// the battle unit, whose +0x06 still holds the stars x 10, 0 for an air
+/// unit, until `sub_08024C58` stores this result there): Dual Strike's
+/// `DoubleTerrainStars` ([`ds_terrain_stars`]): less every enemy's star cut
+/// first, then doubled in Lash's Super Power (AW2 doubled first, and
+/// tangoAW2 took off the battle opponent's cut alone after).
 const TERRAIN_DEFENCE_DONE: u32 = 0x0804_3344;
 const BATTLE_ATTACKER: u32 = 0x0300_13D0;
 const BATTLE_DEFENDER: u32 = 0x0300_13B0;
@@ -588,21 +591,16 @@ pub fn battle_army(core: &Core, bu: u32) -> u32 {
 }
 
 fn terrain_defence_done(core: &mut Core) {
-    if !is_on(core) || !abilities_on(core) {
+    if !is_on(core) {
         return;
     }
     let bu = core.gba().cpu().gpr(4) as u32;
-    let other = match bu {
-        BATTLE_ATTACKER => BATTLE_DEFENDER,
-        BATTLE_DEFENDER => BATTLE_ATTACKER,
-        _ => return,
-    };
-    let cut = 10 * enemy_terrain_cut(core, battle_army(core, other));
-    if cut > 0 {
-        let cpu = core.gba_mut().cpu_mut();
-        let r0 = cpu.gpr(0);
-        cpu.set_gpr(0, (r0 - cut).max(0));
+    if bu != BATTLE_ATTACKER && bu != BATTLE_DEFENDER {
+        return;
     }
+    let raw = core.raw_read_16(bu + 6, -1) as i16 as i32;
+    let v = ds_terrain_stars(core, battle_army(core, bu), raw);
+    core.gba_mut().cpu_mut().set_gpr(0, v);
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
