@@ -3204,8 +3204,9 @@ the check's roll at most byte 9); the CO Power when no partner's Super is ready,
 than byte 4 % (6 with a partner) of the gap to the Super's, and the roll is under byte 5 (7). Most COs' hook agrees only
 at the first check, before any unit moves; their own: Andy with a unit under 91 hp (first check), Olaf only the Super in
 snow, Sonja the CO Power only in fog or rain, Sasha also with 30000 funds and an enemy meter fuller than hers, Drake any
-time in fog or rain (else the Super after the first check), Eagle only at the last check (Dual Strike then runs its unit
-phases again after Lightning Strike; AW2's passes do not run twice, so only the units still unmoved move after it),
+time in fog or rain (else the Super after the first check), Eagle only at the last check (Lightning Strike; the passes then run again from the one
+after the first check, as Dual Strike sets its phase back to 3, so his units move twice; before that check, while his
+Super is paid for, his units other than foot soldiers ignore the threat maps),
 Colin's CO Power while he owns a factory, Hawke always, Hachi anything while he owns a factory, Kindle the CO Power with
 five enemy units, or a fifth of them, on properties. Per CO (template, b4..b9): Nell 2 [25,95,0,0,40,70], Andy 3
 [15,95,10,70,50,80], Max 4 [25,95,5,70,50,80], Olaf 9 [0,0,0,0,40,80], Sami 5 [0,0,0,0,50,80], Grit 10, Kanbei 17,
@@ -3246,17 +3247,22 @@ role where it has one), not on a campaign march (`custom_campaign::driven_goal`)
 enemy unit it can hurt, enemy HQ or property not its team's, by its own movement costs over the map), then of the cells
 it can reach this turn (move and fuel) the safe one nearest that target (ties: the lower danger, then more terrain
 stars); with no safe cell nearer it holds if its cell is safe, else it goes to the safest cell (the lowest danger, the
-most stars, the shortest move). The cell is handed to AW2's "move towards a place" (the role 1 code, its place
-replaced at `0x0805ED2A`, as `cpu_inventions` does). Foot soldiers, indirect units, transports and AW2's other roles
-move as AW2 moves them. A move costs 0.05..0.6 ms (logged as `dsai move`), once per unit moved. Not ported: Dual
+most stars, the shortest move); where no free cell it can reach is nearer at all the way is blocked, not dangerous,
+and AW2's own move finds its way round. A cell to go to is handed to AW2's "move towards a place" (the role 1 code,
+its place replaced at `0x0805ED2A`, as `cpu_inventions` does); a unit that stays takes AW2's role 0 (a wait, as a
+holder's: AW2 does not count a move to its own cell as an action). Foot soldiers, indirect units, transports and
+AW2's other roles move as AW2 moves them, and so does a unit AW2's earlier passes take up (an enemy within its
+reach for the next turn): Dual Strike's moves are the approach. A move costs 0.05..0.6 ms (logged as `dsai move`), once per unit moved. Not ported: Dual
 Strike's attack scoring (`AiAttack_Score`, the trade penalties Strike skips) and its own unit phases (foot units,
 indirect fire, transports), which AW2's passes keep; the threat maps are worked out per unit, not kept (the range
 `0x0203D000..0x0203DFFF` the plan set aside for them is unused).
 
-Seen against `aw2test/bot.py` (`AW2TEST_DSAI_BOT=1 -k ds_ai_vs_bot`, 14 days, the bot as army 1): on Rust Basin, Dune
-Fork and Cinder Flats the bot ended with 104700, 87200 and 103200 in units against Dual Strike's CPU, 114100, 106700
-and 121900 against it without the moves (switch bit 3), and 131800, 133700 and 127500 against AW2's CPU; the CPU kept
-35400, 21000 and 37800 (AW2's: 10800, 12600, 37100).
+Seen against `aw2test/bot.py` (`AW2TEST_DSAI_BOT=1 -k ds_ai_vs_bot`, 14 days, the bot as army 1, its seed 7): on Rust
+Basin, Dune Fork and Cinder Flats the bot ended with 114100, 117700 and 107200 in units against Dual Strike's CPU (on
+Rust Basin the bot's advance keeps every CPU unit in AW2's engagement passes, so the moves do not come in), 114100,
+106700 and 121900 against it without the moves (switch bit 3), and 131800, 133700 and 127500 against AW2's CPU; the CPU
+kept 24600, 31400 and 32000 (without the moves 24600, 36400, 20000; AW2's 10800, 12600, 37100). The bot wins all of
+them; Dual Strike's CPU costs it more.
 
 **Change** (`tag.rs` `cpu_wants_change`, Dual Strike's `AiCo_FrontCloserToSuper` after its builds): the computer
 Changes when the active CO is nearer its Super than the partner; the two alike (or both empty), to the higher rank
@@ -3272,7 +3278,7 @@ Development switch (`0x0203C7F0`, emulated memory): bit 0 Dual Strike's CPU off 
 bit 2 its powers, bit 3 its moves (`aw2test/ram.py` `DS_AI_SWITCHES`). The decisions are logged with `TANGOAW2_BH_LOG` (`dsai` lines).
 
 Tests: `test_ds_ai.py` (`ds_ai_move_goes_where_chosen`: a CPU Tank and Recon end each turn on the cell chosen for
-them; `ds_ai_cpu_<map>`: CPU against CPU on Rust Basin, Coral Strait, Dune Fork, Harbor Cross and
+them; `ds_ai_eagle_lightning_strike_moves_again`: Eagle's Super at the last check, his Tank moving twice; `ds_ai_cpu_<map>`: CPU against CPU on Rust Basin, Coral Strait, Dune Fork, Harbor Cross and
 Black Wastes for `AW2TEST_DSAI_DAYS` days, 8 by default, every decision in the log; `AW2TEST_DSAI_OFF=1` plays the same
 with AW2's CPU), `netplay_cpu_ds_map_dune_fork` (both peers identical), `bh_cpuai_acts` (every BH mission's enemy still
 builds, moves and captures). `test_cpu_buys.py` and `cpu_piperunners_stop_at_broken_seam` test AW2's production with
