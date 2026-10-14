@@ -128,7 +128,44 @@ class Ctx:
             weather=3 if self.sandstorm else st["weather"],
             tag_firepower=self.tag_firepower(g, u["army"], p["co"]),
             terrain_cut=self.terrain_cut(g, u["army"]) if st["co_abilities"] else 0,
+            tag_luck=5 * self.tag_stars(g, u["army"], p["co"]),
         )
+
+    def tag_stars(self, g, army, co):
+        """The pair's special-pair stars (the active CO's record +0x6C list,
+        8 bytes an entry: the partner's Dual Strike id, stars at +2), 0 without
+        a partner or an entry."""
+        if not self.ds:
+            return 0
+        from . import tag
+        t = tag.partner(g.e, army)
+        if not t:
+            return 0
+        # tangoAW2's own pairs first (crate::tag::special_pair): Sturm's, the
+        # duos; Clone Andy has none of Andy's.
+        pair = {co, t["co"]}
+        sturm = romlib.co_id("sturm")
+        if sturm in pair:
+            o = (pair - {sturm} or {sturm}).pop()
+            for name, _, stars, _ in tag.STURM_PAIRS:
+                if romlib.co_id(name) == o:
+                    return stars
+        if pair == set(tag.VAULT_BREAKERS[:2]):
+            return tag.VAULT_BREAKERS[3]
+        if romlib.co_id("cloneandy") in pair:
+            return 0
+        if not hasattr(self, "_ds"):
+            self._ds = romlib.DualStrike()
+        rec, partner = self._ds.co_record(co), romlib.DS_CO_IDS.get(t["co"])
+        if rec is None or partner is None:
+            return 0
+        for k in range(3):
+            e = rec[0x6C + 8 * k:0x6C + 8 * k + 8]
+            if e[0] == 0:
+                break
+            if e[0] == partner:
+                return e[2]
+        return 0
 
     def terrain_cut(self, g, army):
         """Terrain stars every enemy CO in the game cuts (Dual Strike's Sonja;

@@ -315,24 +315,32 @@ fn price(core: &mut Core) {
 }
 
 /// `GetPlayerCoLuckBonus(army)`: its entry keeps the army; at its return the
-/// luck in r0 (10 with CO abilities off): Luck adds 10 (abilities on).
+/// luck in r0 (10 with CO abilities off). With abilities on, as Dual
+/// Strike's `Player_GetGoodLuck`: Luck adds 10, and a tag pair 5 per star
+/// of its rating (`Co_GetTagStars`: the active CO's special-pair entry for
+/// the partner, 0 without one; Tag Power or not).
 const LUCK_ENTRY: u32 = 0x0804_2E64;
 const LUCK_DONE: u32 = 0x0804_2E7A;
 fn luck_entry(core: &mut Core) {
-    if any_on(core) {
+    if crate::ds_weather::is_on(core) {
         let army = core.gba().cpu().gpr(0) as u8;
         core.raw_write_8(LUCK_ARMY, -1, army);
     }
 }
 fn luck_done(core: &mut Core) {
-    if !any_on(core) || core.raw_read_8(CO_ABILITIES, -1) == 0 {
+    if !crate::ds_weather::is_on(core) || core.raw_read_8(CO_ABILITIES, -1) == 0 {
         return;
     }
     let army = core.raw_read_8(LUCK_ARMY, -1) as u32;
-    if has(core, army, LUCK) {
+    let mut add = if has(core, army, LUCK) { 10 } else { 0 };
+    if let Some(b) = crate::tag::partner(core, army) {
+        let co = crate::co_roster::army_co(core, army).0;
+        add += 5 * crate::tag::special_pair(co, b).map_or(0, |p| p.0 as i32);
+    }
+    if add != 0 {
         let cpu = core.gba_mut().cpu_mut();
         let r0 = cpu.gpr(0);
-        cpu.set_gpr(0, r0 + 10);
+        cpu.set_gpr(0, r0 + add);
     }
 }
 

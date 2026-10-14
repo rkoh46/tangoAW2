@@ -388,6 +388,26 @@ def tag_meters(ctx):
 
 
 @test(modes=("ds",))
+def tag_star_luck(ctx):
+    """A tag pair's luck (Dual Strike's Player_GetGoodLuck): 5 per star of the
+    pair's rating, Tag Power or not. Sami with Eagle (3 stars): 10 + 15. Eight
+    artillery shots (no counter): every luck roll (the battle record's damage
+    less base x acc / 100) is below 25, and some reach past Sami's own 10."""
+    units = [(1, "artillery", 4 + 3 * k, 6) for k in range(8)] + [(2, "tank", 4 + 3 * k, 8) for k in range(8)]
+    g = tag_battle(ctx, ["sami", "andy"], ["eagle", None], units=units)
+    rolls = []
+    for k in range(8):
+        x = 4 + 3 * k
+        r = ctx.attack(g, (x, 6), (x, 6), (x, 8))
+        ra, _ = ctx.battle_records(g)
+        ctx.eq(r["first"].luck[0], 25, "the calculator's luck: Sami's 10 + 3 stars x 5")
+        rolls.append(ra["damage"] - r["first"].base * r["first"].acc // 100)
+    ctx.log(f"luck rolls: {rolls}")
+    ctx.check(all(0 <= v < 25 for v in rolls), f"every roll within 0..24 ({rolls})")
+    ctx.check(max(rolls) >= 10, f"a roll past Sami's own luck ({rolls})")
+
+
+@test(modes=("ds",))
 def tag_power(ctx):
     """Tag Power: offered with both meters full; the active CO's Super Power
     (first half: End hidden, Change goes on), then the partner's (the COs

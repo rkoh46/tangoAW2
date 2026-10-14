@@ -170,6 +170,9 @@ class Side:
     # Terrain stars (x1) this side's enemies cut (Dual Strike's Sonja), for
     # Lash's terrain firepower.
     terrain_cut: int = 0
+    # A tag pair's luck: 5 per star of its special-pair rating (Dual Strike's
+    # Player_GetGoodLuck; crate::co_skills::luck_done).
+    tag_luck: int = 0
 
 
 # Dual Strike's skill effects (its code: attack 0x020E646C / 0x020E68D0 /
@@ -322,7 +325,7 @@ def strike(rules, a: Side, b: Side, dist, is_attacker, a_hp_now):
     acc = 100 + (0 if rules.chart is not None else step2_extra(rules, a))
     if not is_attacker and a.co_abilities:
         acc += m["counter"]
-    luck = (m["luck"], m["neg_luck"]) if a.co_abilities else (10, 0)
+    luck = (m["luck"] + a.tag_luck, m["neg_luck"]) if a.co_abilities else (10, 0)
     dmg0 = div(acc * base, 100)
     cut = rules.enemy_terrain_cut(a.co, a.co_mode) if a.co_abilities else 0
     defence = total_defence(rules, b, cut, dist)

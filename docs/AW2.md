@@ -1127,6 +1127,10 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   Power, less the enemies' star cuts (AW2's ability 0x40 gave the whole
   value). Example: Tank vs Tank (55) under a power with two towers is 55 x
   130 / 100 = 71 (AW2's steps gave 72).
+- **Luck.** A tag pair adds 5 luck per star of its special-pair rating (the
+  active CO's record +0x6C entry for the partner, 0 without one), whether a
+  Tag Power is on or not, with CO abilities on (`Player_GetGoodLuck`;
+  `co_skills::luck_done`, with the Luck skill's +10).
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),
