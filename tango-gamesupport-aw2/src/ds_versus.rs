@@ -30,6 +30,14 @@
 //!   insert's own, `0x0808E55C`), kept in Flash at the end of the DS Campaign's slot 15 and written right after
 //!   the profile, as the COs' skill data is (crate::co_skills::profile_written). Dual Strike keeps four sets of
 //!   records ("strips": tag or not, partner boost or not); this is strip 0, no tag.
+//! - **Two fronts** ([`crate::two_front`], offline): Dual Strike's rule, any two 2P maps. On Versus' map list
+//!   SELECT marks a 2P map as the second front (its name shows "2:" and is drawn again at once; SELECT again
+//!   takes the mark back), and the 2P map picked then is the main front; the Teams screen's partner (crate::tag_ui)
+//!   leads each army's second front (none: its CO), every army plays its own turns on both fronts (Dual Strike's
+//!   Versus), the main front sends units to the second, Save is off. The War Room's five two-front maps are its
+//!   fixed pairs: the CO screen asks for the second front's CO too, the computer directs the player's second front
+//!   (Dual Strike's records strips 0 and 1) and the enemy's second front has its back CO. Either battle is played
+//!   on map id [`BATTLE_ID`], whose entry is the live front's header, set from RAM ([`FRONTS`]) every frame.
 //! - **The map list**: Dual Strike's longer tabs (up to 44 maps) outgrow the list's text tile cache; it starts
 //!   over at every redraw ([`LIST_DRAWN`]).
 //! - **Map ids AW2 treats as special**: AW2's campaign tables by `id - 0x8A` (the factory schedule a computer Black
@@ -59,6 +67,7 @@ const ROM_END: u32 = 0x0990_0000;
 
 /// Text ids from 0x7200 read their pointer from 0x0862D238 (free ROM; see crate::five_map for why that works).
 const TEXT_TABLE: u32 = crate::campaign_model::TEXT_TABLE;
+const FONT_WIDTHS: u32 = 0x084C_36E4;
 pub const TEXT_BASE: u16 = 0x7200;
 const TEXT_IDS: u16 = 0x100;
 
@@ -68,6 +77,8 @@ const MOVED: [(u16, u8); 3] = [(0xB4, 0xC1), (0xB5, 0xC2), (0xB6, 0xC3)];
 /// tangoAW2's Dual Strike-style maps hidden while this table is in use (the other three ids are [`MOVED`]'s; the
 /// 5-army Black Wastes and Coral Crown stay).
 const HIDDEN: [u8; 3] = [0xC5, 0xC6, 0xC7];
+/// The map id a two-front battle is played on (its entry: the live front's header).
+pub const BATTLE_ID: u8 = 0xFE;
 /// The last Versus id and the War Room's first.
 const LAST_VERSUS: u16 = 0x8A;
 pub const FIRST_WAR_ROOM: u16 = 0x8B;
@@ -78,7 +89,7 @@ pub const WAR_ROOM_MAPS: usize = 44;
 
 /// This module's state (crate::ram_map): 0x0203C900..
 pub const STATE: u32 = 0x0203_C900;
-pub const STATE_LEN: u32 = 0x10;
+pub const STATE_LEN: u32 = 0x20;
 /// The table a game continued from a save was saved on: 0 as usual, [`FORCED_AW2`] AW2's (until the next map
 /// list is built).
 pub const TABLE_FLAG: u32 = STATE;
@@ -87,6 +98,20 @@ const FORCED_AW2: u8 = 1;
 const ROWS_STATE: u32 = STATE + 1;
 const LOADED: u8 = 1;
 const DIRTY: u8 = 2;
+/// Two-front Versus may be set up (1: offline; crate::two_front runs offline only).
+const TWO_ALLOWED: u32 = STATE + 2;
+/// The 2P map marked on Versus' list as the second front (its id; 0 none).
+const MARK: u32 = STATE + 3;
+/// The two-front battle set up: 0 none, [`FRONTS_VERSUS`], [`FRONTS_WAR_ROOM`]; its main map's id and its second
+/// map (Versus: the map's id; the War Room: its pair's index).
+pub const FRONTS: u32 = STATE + 4;
+const FRONTS_VERSUS: u8 = 1;
+const FRONTS_WAR_ROOM: u8 = 2;
+const MAIN_ID: u32 = STATE + 5;
+const SECOND_ID: u32 = STATE + 6;
+/// The list is to be drawn again (1), with the arguments `DrawMapList` last had (first, count, top).
+const REDRAW: u32 = STATE + 7;
+const LIST_ARGS: u32 = STATE + 8;
 
 /// The War Room's record rows for Dual Strike's ids (0x8B..0xC3: AW2's `id - 0x6C` rows, 0x14 bytes each),
 /// while the War Room's screens show. Time-shared (crate::ram_map): loaded from Flash on the War Room's screens,
@@ -136,6 +161,9 @@ pub struct Entry {
 
 pub struct Built {
     writes: Vec<(u32, Vec<u8>)>,
+    /// The 2P Versus maps' names: (id, the word that points at its name, the name's string, its marked
+    /// string, [`MARK`]).
+    names: Vec<(u8, u32, u32, u32, String)>,
     pub entries: Vec<Entry>,
     /// The second maps (two-front battles): Dual Strike id, look, weather.
     pub seconds: Vec<Entry>,
@@ -212,6 +240,7 @@ fn build() -> Option<Built> {
     let pack = crate::ds_pack::pack()?;
     let r = ds_maps::Reader::new(pack);
     let mut writes = Vec::new();
+    let mut names = Vec::new();
     let mut entries = Vec::new();
     let mut seconds = Vec::new();
     let mut slot = 0u32;
@@ -246,6 +275,11 @@ fn build() -> Option<Built> {
         }
         let (at, units_at, t) = put(&mut writes, &map);
         writes.push((TABLE + ENTRY * id as u32, header(&map, at, units_at, t, tab).to_vec()));
+        if map.armies == 2 && ds_id <= LAST_VERSUS {
+            let k = (t - TEXT_BASE) as u32;
+            let marked = STRINGS + STRING_SIZE * (TEXT_IDS as u32 + names.len() as u32);
+            names.push((id, TEXT_TABLE + 4 * t as u32, STRINGS + STRING_SIZE * k, marked, map.name.clone()));
+        }
         let mut e = entry(id, &map);
         if let Some(second) = map.second {
             let s = r.map(second)?;
@@ -257,7 +291,7 @@ fn build() -> Option<Built> {
         }
         entries.push(e);
     }
-    Some(Built { writes, entries, seconds })
+    Some(Built { writes, names, entries, seconds })
 }
 
 fn installed(core: &Core) -> bool {
@@ -277,6 +311,20 @@ fn install(core: &mut Core) -> bool {
         }
         for (at, bytes) in &b.writes {
             core.raw_write_range(*at, -1, bytes);
+        }
+        // The names marked as the second front: "2:" and the name, cut to the longest name's width in the list's
+        // font (its widths, `0x084C36E4`).
+        let width = |core: &Core, s: &str| s.bytes().map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as u32).sum::<u32>();
+        let room = b.names.iter().map(|n| width(core, &n.4)).max().unwrap_or(0);
+        for (_, _, _, marked, name) in &b.names {
+            let mut m = format!("2:{name}");
+            while width(core, &m) > room {
+                m.pop();
+            }
+            let mut bytes = m.into_bytes();
+            bytes.truncate(STRING_SIZE as usize - 1);
+            bytes.push(0);
+            core.raw_write_range(*marked, -1, &bytes);
         }
         core.raw_write_32(SENTINEL, -1, MAGIC);
     }
@@ -323,6 +371,10 @@ pub fn tick_tables(core: &mut Core, on: bool) -> bool {
 /// table is over; the list is built from this table when it is wanted.
 pub const BUILD_LIST: u32 = 0x0803_75A4;
 fn build_list(core: &mut Core) {
+    // (a list opened afresh: no map marked yet)
+    if core.raw_read_8(MARK, -1) != 0 {
+        core.raw_write_8(MARK, -1, 0);
+    }
     if core.raw_read_8(TABLE_FLAG, -1) != 0 {
         core.raw_write_8(TABLE_FLAG, -1, 0);
         // (Survival's table in use: the pack's features are on)
@@ -354,7 +406,14 @@ pub fn continued(core: &mut Core, ds_table: bool) {
 /// its weather (when it has one: fixed, over the Rules') and its fog (when it has fog).
 pub fn map_start(core: &mut Core) {
     let id = core.raw_read_8(MAP_ID, -1);
+    if id == BATTLE_ID && two_fronts(core).is_some() {
+        return two_front_start(core);
+    }
     let Some(e) = map_of(core, id) else { return };
+    start_rules(core, e);
+}
+
+fn start_rules(core: &mut Core, e: &Entry) {
     crate::wasteland::set_ds_look(core, e.look);
     if e.weather != 0 {
         // 1 snow, 2 rain as AW2's fixed weather; 3 the sandstorm: fixed clear (crate::sandstorm).
@@ -391,9 +450,272 @@ const TEXT_CACHE_NEXT: u32 = TEXT_CACHE + 0x358;
 const LIST_TEXT_FIRST: u16 = 0x29;
 fn list_drawn(core: &mut Core) {
     if in_use(core) {
+        // (first, count, top: in sl, r7 and sb by now, for [`REDRAW`])
+        let cpu = core.gba().cpu();
+        let args = [cpu.gpr(10) as u8, cpu.gpr(7) as u8, cpu.gpr(9) as u8];
+        core.raw_write_range(LIST_ARGS, -1, &args);
         core.raw_write_16(TEXT_CACHE_NEXT, -1, LIST_TEXT_FIRST);
         core.raw_write_8(TEXT_CACHE, -1, 1);
     }
+}
+
+// --- Two fronts ------------------------------------------------------------------------
+
+/// The Select Mode list's proc, its idle callback (an empty function) and `DrawMapList`; the list's rows: the
+/// ids, the highlighted row and each tab's first row shown.
+const SELECT_MAP: u32 = 0x0861_6C54;
+const SELECT_MAP_IDLE: u32 = 0x0808_5F90;
+const DRAW_MAP_LIST: u32 = 0x0808_6A58;
+const PROC_POOL: (u32, u32) = (0x0200_D610, 0x0200_E418);
+const LIST_IDS: u32 = 0x0202_7F78;
+const LIST_LAST: u32 = 0x0202_7FAB;
+const LIST_ROW: u32 = 0x0300_5980;
+const LIST_TOP: u32 = 0x0300_5990;
+const LIST_TAB: u32 = 0x0300_596C;
+const KEY_SELECT: u32 = 1 << 2;
+
+fn list_up(core: &Core) -> bool {
+    (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).any(|p| core.raw_read_32(p, -1) == SELECT_MAP && core.raw_read_32(p + 0x10, -1) == SELECT_MAP_IDLE | 1)
+}
+
+/// The map the Versus list's cursor is on.
+fn highlighted(core: &Core) -> Option<u8> {
+    let k = core.raw_read_8(LIST_ROW, -1) as u32 + core.raw_read_8(LIST_TOP + core.raw_read_8(LIST_TAB, -1) as u32, -1) as u32;
+    (k <= core.raw_read_8(LIST_LAST, -1) as u32).then(|| core.raw_read_8(LIST_IDS + k, -1))
+}
+
+/// A map that can be either front of a two-map Versus battle: Dual Strike's 2P Versus maps.
+fn two_player(id: u8) -> bool {
+    built().is_some_and(|b| b.names.iter().any(|n| n.0 == id))
+}
+
+/// Every frame before the game (crate::pvp, `ds`: the pack's features; `allowed`: offline): on Versus' list,
+/// SELECT marks the 2P map under the cursor as the second front (or takes the mark back), and the list is drawn
+/// again. Returns the keys the game sees.
+pub fn keys(core: &mut Core, ds: bool, allowed: bool, keys: u32, prev: u32) -> u32 {
+    if core.raw_read_8(TWO_ALLOWED, -1) != allowed as u8 {
+        core.raw_write_8(TWO_ALLOWED, -1, allowed as u8);
+    }
+    let versus = VERSUS.contains(&core.raw_read_8(TITLE_MODE, -1));
+    if !ds || !allowed || !versus || !in_use(core) || !list_up(core) {
+        return keys;
+    }
+    if keys & !prev & KEY_SELECT != 0 {
+        if let Some(id) = highlighted(core).filter(|&id| two_player(id)) {
+            let now = core.raw_read_8(MARK, -1);
+            core.raw_write_8(MARK, -1, if now == id { 0 } else { id });
+            core.raw_write_8(REDRAW, -1, 1);
+            names(core);
+        }
+    }
+    keys & !KEY_SELECT
+}
+
+/// The list's idle callback (`bx lr`): drawn again when asked, with `DrawMapList`'s last arguments (tail-called:
+/// it returns to the proc runner).
+fn list_idle(core: &mut Core) {
+    if core.raw_read_8(REDRAW, -1) == 0 {
+        return;
+    }
+    core.raw_write_8(REDRAW, -1, 0);
+    let args = [core.raw_read_8(LIST_ARGS, -1), core.raw_read_8(LIST_ARGS + 1, -1), core.raw_read_8(LIST_ARGS + 2, -1)];
+    if args[1] == 0 || !in_use(core) {
+        return;
+    }
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(0, args[0] as i32);
+    cpu.set_gpr(1, args[1] as i32);
+    cpu.set_gpr(2, args[2] as i32);
+    cpu.set_thumb_pc(DRAW_MAP_LIST);
+}
+
+/// `SetMapId` (`sub_0803BCD0`, at its store; r0 the map picked): a two-front battle is set up and played on
+/// [`BATTLE_ID`] (the War Room's two-front maps; in Versus, a 2P map picked with another 2P map marked), any
+/// other map clears it.
+const SET_MAP_ID: u32 = 0x0803_BCD2;
+fn set_map_id(core: &mut Core) {
+    let id = core.gba().cpu().gpr(0) as u8;
+    if id == BATTLE_ID {
+        return;
+    }
+    let mode = core.raw_read_8(TITLE_MODE, -1);
+    let mark = core.raw_read_8(MARK, -1);
+    let pair = built().and_then(|b| b.entries.iter().filter(|e| e.second.is_some()).position(|e| e.id == id));
+    let fronts = if !in_use(core) {
+        None
+    } else if WAR_ROOM.contains(&mode) && pair.is_some() {
+        Some((FRONTS_WAR_ROOM, pair.unwrap_or(0) as u8))
+    } else if VERSUS.contains(&mode) && core.raw_read_8(TWO_ALLOWED, -1) == 1 && mark != 0 && mark != id && two_player(id) && two_player(mark) {
+        Some((FRONTS_VERSUS, mark))
+    } else {
+        None
+    };
+    core.raw_write_8(MARK, -1, 0);
+    match fronts {
+        Some((kind, second)) => {
+            core.raw_write_8(FRONTS, -1, kind);
+            core.raw_write_8(MAIN_ID, -1, id);
+            core.raw_write_8(SECOND_ID, -1, second);
+            write_entry(core, 0);
+            core.gba_mut().cpu_mut().set_gpr(0, BATTLE_ID as i32);
+        }
+        None => {
+            if core.raw_read_8(FRONTS, -1) != 0 {
+                core.raw_write_8(FRONTS, -1, 0);
+            }
+        }
+    }
+}
+
+/// The main front's description (the CO screen's picks: army 1's CO; the description's index 0, as
+/// [`front_header`] takes it).
+fn main_front() -> &'static crate::campaign_model::MissionInfo {
+    static MAIN: OnceLock<crate::campaign_model::MissionInfo> = OnceLock::new();
+    MAIN.get_or_init(|| crate::campaign_model::MissionInfo {
+        index: 0,
+        name: String::new(),
+        info_text: 0,
+        two_front: None,
+        number: 0,
+        cos: [(0x1C, 0x1C), (0, 0), (0, 0), (0, 0)],
+        colours: [1, 2, 3, 4],
+        teams: [1, 2, 3, 4],
+        armies: 2,
+        pool: Vec::new(),
+        day_limit: 0,
+        width: 0,
+        height: 0,
+        look: 0,
+        weather: 0,
+        fog: false,
+        labs: Vec::new(),
+        realtime: 0,
+        unit_event_list: 0,
+        native: None,
+    })
+}
+
+/// Versus' two fronts (Dual Strike's): each army plays its own turns on both and picks its second front's CO
+/// (Teams' partner), the main front sends units on the ground.
+fn versus_fronts() -> &'static crate::campaign_model::TwoFront {
+    use crate::campaign_model::{FrontControl, SendRule, TwoFront, PICK};
+    static V: OnceLock<TwoFront> = OnceLock::new();
+    V.get_or_init(|| TwoFront {
+        second: 1,
+        cos: [PICK, PICK, 0, 0],
+        control: [FrontControl::Owner; 4],
+        send: SendRule::Ground,
+        powers: true,
+        sky: false,
+        posture: false,
+    })
+}
+
+/// The War Room's five pairs: the computer directs the player's second front (records strip 0) and the enemy's
+/// (its back CO leads it), the player picks the second front's CO and its posture (Intel > General).
+fn war_room_fronts() -> &'static [crate::campaign_model::TwoFront] {
+    use crate::campaign_model::{FrontControl, SendRule, TwoFront, PICK};
+    static W: OnceLock<Vec<TwoFront>> = OnceLock::new();
+    W.get_or_init(|| {
+        built()
+            .map(|b| {
+                b.entries
+                    .iter()
+                    .filter(|e| e.second.is_some())
+                    .map(|e| TwoFront {
+                        second: 1,
+                        cos: [PICK, e.cos[1].1.or(e.cos[1].0).unwrap_or(1), 0, 0],
+                        control: [FrontControl::Cpu; 4],
+                        send: SendRule::Ground,
+                        powers: true,
+                        sky: false,
+                        posture: true,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    })
+}
+
+/// The two-front battle being played or set up (on [`BATTLE_ID`]): its main front and description
+/// (crate::two_front's gate).
+pub fn two_fronts(core: &Core) -> Option<(&'static crate::campaign_model::MissionInfo, &'static crate::campaign_model::TwoFront)> {
+    if core.raw_read_8(MAP_ID, -1) != BATTLE_ID || !in_use(core) {
+        return None;
+    }
+    match core.raw_read_8(FRONTS, -1) {
+        FRONTS_VERSUS => Some((main_front(), versus_fronts())),
+        FRONTS_WAR_ROOM => war_room_fronts().get(core.raw_read_8(SECOND_ID, -1) as usize).map(|f| (main_front(), f)),
+        _ => None,
+    }
+}
+
+/// A front's map: 0 the main front, 1 the second (its header's address, and what is needed of it).
+fn front(core: &Core, index: u8) -> Option<(u32, &'static Entry)> {
+    let b = built()?;
+    let main = core.raw_read_8(MAIN_ID, -1);
+    let second = core.raw_read_8(SECOND_ID, -1);
+    let e = b.entries.iter().find(|e| e.id == main)?;
+    match (index, core.raw_read_8(FRONTS, -1)) {
+        (0, _) => Some((TABLE + ENTRY * main as u32, e)),
+        (_, FRONTS_VERSUS) => Some((TABLE + ENTRY * second as u32, b.entries.iter().find(|e| e.id == second)?)),
+        (_, FRONTS_WAR_ROOM) => {
+            let (_, at) = e.second?;
+            Some((at, b.seconds.get(second as usize)?))
+        }
+        _ => None,
+    }
+}
+
+/// A front's header (crate::two_front).
+pub fn front_header(core: &Core, index: u8) -> Option<[u8; 0x5C]> {
+    let (at, _) = front(core, index)?;
+    let mut h = [0u8; 0x5C];
+    core.raw_read_range(at, -1, &mut h);
+    Some(h)
+}
+
+/// The entry the battle is played on (crate::two_front writes the live front's header there).
+pub fn two_front_entry(core: &Core) -> Option<u32> {
+    in_use(core).then_some(TABLE + ENTRY * BATTLE_ID as u32)
+}
+
+/// [`BATTLE_ID`]'s entry: front `index`'s header.
+fn write_entry(core: &mut Core, index: u8) {
+    let Some(h) = front_header(core, index) else { return };
+    let at = TABLE + ENTRY * BATTLE_ID as u32;
+    let mut now = [0u8; 0x5C];
+    core.raw_read_range(at, -1, &mut now);
+    if now != h {
+        core.raw_write_range(at, -1, &h);
+    }
+}
+
+/// A front's look, as it comes on the screen (crate::two_front's swap).
+pub fn front_look(core: &mut Core, index: u8) {
+    if let Some((_, e)) = front(core, index) {
+        crate::wasteland::set_ds_look(core, e.look);
+    }
+}
+
+/// The front starting now on [`BATTLE_ID`] (the main front at the battle's start; the second front at its first
+/// round, which a swap starts as a battle): its look, weather and fog; at the start the second front's COs
+/// (Versus: each army's partner from the Teams screen, else its CO), and crate::two_front's own start.
+fn two_front_start(core: &mut Core) {
+    let live = crate::two_front::live(core).unwrap_or(0);
+    if let Some((_, e)) = front(core, live) {
+        start_rules(core, e);
+    }
+    if live == 0 && core.raw_read_8(FRONTS, -1) == FRONTS_VERSUS {
+        let mut cos = [0xFFu8; 4];
+        for (k, c) in cos.iter_mut().enumerate().take(2) {
+            let main = core.raw_read_8(PLAY_ST + 0x3E + k as u32, -1);
+            let partner = core.raw_read_8(crate::tag::TEAMS_PARTNER + k as u32, -1);
+            *c = if partner == 0xFF { main } else { partner };
+        }
+        crate::two_front::set_second_cos(core, cos);
+    }
+    crate::two_front::map_start(core);
 }
 
 // --- The War Room's records ------------------------------------------------------------
@@ -484,11 +806,31 @@ pub fn records_tail(core: &Core) -> Vec<u8> {
     }
 }
 
+/// The names on Versus' list: the marked map's with its mark.
+fn names(core: &mut Core) {
+    if let Some(b) = built().filter(|_| installed(core)) {
+        let mark = core.raw_read_8(MARK, -1);
+        for &(id, word, name, marked, _) in &b.names {
+            let want = if id == mark { marked } else { name };
+            if core.raw_read_32(word, -1) != want {
+                core.raw_write_32(word, -1, want);
+            }
+        }
+    }
+}
+
 /// Every frame (crate::pvp, after the tables): the records are in RAM on the War Room's screens and given up
 /// elsewhere (the rows' bytes are time-shared).
 pub fn tick(core: &mut Core) {
+    names(core);
+    // A two-front battle being set up: its entry is the main front's (crate::two_front keeps the live front's
+    // there during the battle).
+    if core.raw_read_8(FRONTS, -1) != 0 && crate::two_front::on(core).is_none() && in_use(core) {
+        write_entry(core, 0);
+    }
     let s = core.raw_read_8(ROWS_STATE, -1);
-    let keep = war_room(core) && crate::two_front::on(core).is_none();
+    // (a record just made at a two-front battle's end stays: no swap writes the store after the battle)
+    let keep = war_room(core) && (crate::two_front::on(core).is_none() || s & DIRTY != 0);
     if !keep {
         if s != 0 {
             core.raw_write_8(ROWS_STATE, -1, 0);
@@ -504,6 +846,11 @@ const INSERT: u32 = 0x0801_774A;
 fn insert(core: &mut Core) {
     if !war_room(core) {
         return;
+    }
+    // A two-front map's record is its main map's.
+    if core.raw_read_8(MAP_ID, -1) == BATTLE_ID && core.raw_read_8(FRONTS, -1) == FRONTS_WAR_ROOM {
+        let main = core.raw_read_8(MAIN_ID, -1);
+        core.gba_mut().cpu_mut().set_gpr(4, main as i32);
     }
     if core.raw_read_8(ROWS_STATE, -1) & LOADED == 0 {
         load_rows(core);
@@ -529,6 +876,8 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (BUILD_LIST, Box::new(build_list)),
         (LIST_DRAWN, Box::new(list_drawn)),
+        (SELECT_MAP_IDLE, Box::new(list_idle)),
+        (SET_MAP_ID, Box::new(set_map_id)),
         (POWER_QUOTE, Box::new(power_quote)),
         (INSERT, Box::new(insert)),
     ]
@@ -541,7 +890,8 @@ mod tests {
     #[test]
     fn layout() {
         assert!(TABLE + ENTRY * 0x100 <= SECOND_HEADERS && SECOND_HEADERS + ENTRY * 5 <= SENTINEL);
-        assert!(STRINGS + STRING_SIZE * TEXT_IDS as u32 <= MAP_DATA);
+        // (the names, then the marked names of the 2P Versus maps)
+        assert!(STRINGS + STRING_SIZE * (TEXT_IDS as u32 + 0x8A) <= MAP_DATA);
         assert!(MAP_DATA + MAP_DATA_SIZE * (0xB6 + 5) <= ROM_END);
         // Text ids: past Survival's (0x7172..), before the tag pairs' (0x7300..).
         assert!(TEXT_BASE > crate::survival::TEXT_BASE + 0x40 && TEXT_BASE + TEXT_IDS <= crate::tag::TEXT_TAG);
