@@ -1142,6 +1142,11 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   `coEffectsOn`): Com Towers give no firepower and no defence, as Dual
   Strike's `Player_GetFirepowerBonus` and `Player_GetComTowerDefense` give
   0 then (`co_powers::extra_firepower`, `co_roster::defence_done`).
+- **The forecast's number** (a battle unit's +0x14, damage before luck):
+  scaled by the attacker's shown HP first, then by the target's defence,
+  at most 999, as Dual Strike's `Combatant_TakeHit` (AW2's `sub_08024DDC`
+  did the two the other way round, which could show 1 off;
+  `co_roster::preview_scaled`, 0x08024E00). The damage dealt is unchanged.
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

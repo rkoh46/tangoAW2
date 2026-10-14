@@ -572,6 +572,29 @@ fn calc_damage(core: &mut Core) {
     }
 }
 
+/// `sub_08024DDC(target, attacker)` applying a hit, about to scale the
+/// attacker's damage before luck (+0x14, the number the battle forecast
+/// shows; r5 the attacker's shown HP, r6 the target): Dual Strike's
+/// `Combatant_TakeHit` scales it by the shown HP first and the target's
+/// defence after (AW2 the other way round, which can be 1 off), and stops
+/// it at 999. The rest of the function (0x08024E30, r7 its 200) is AW2's.
+const PREVIEW_SCALED: u32 = 0x0802_4E00;
+const PREVIEW_DONE: u32 = 0x0802_4E30;
+fn preview_scaled(core: &mut Core) {
+    if !is_on(core) {
+        return;
+    }
+    let cpu = core.gba().cpu();
+    let (target, attacker, shown) = (cpu.gpr(6) as u32, cpu.gpr(4) as u32, cpu.gpr(5));
+    let defence = core.raw_read_16(target + 0x0E, -1) as i16 as i32;
+    let v = core.raw_read_16(attacker + 0x14, -1) as i16 as i32 * shown / 10;
+    let v = ((200 - defence) * v / 100).min(999);
+    core.raw_write_16(attacker + 0x14, -1, v as u16);
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(7, 200);
+    cpu.set_thumb_pc(PREVIEW_DONE);
+}
+
 /// `sub_08043304(battle unit)`, a side's terrain defence, at its return (r4
 /// the battle unit, whose +0x06 still holds the stars x 10, 0 for an air
 /// unit, until `sub_08024C58` stores this result there): Dual Strike's
@@ -614,6 +637,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     t.push((TERRAIN_DEFENCE_DONE, Box::new(terrain_defence_done)));
     t.push((CALC_DAMAGE, Box::new(calc_damage)));
     t.push((DEFENCE_TOTAL, Box::new(defence_total)));
+    t.push((PREVIEW_SCALED, Box::new(preview_scaled)));
     t
 }
 

@@ -245,6 +245,13 @@ class Ctx:
             self.eq(first.weapon, expect_weapon, f"{label}: weapon")
         self.eq(ra["base"], first.base, f"{label}: game's base damage")
         self.eq(ra["attack_type"], {"primary": 1, "secondary": 5}[first.weapon], f"{label}: game's weapon")
+        if self.ds:
+            # The forecast's number (+0x14): Dual Strike's Combatant_TakeHit,
+            # damage before luck x shown HP / 10, then x (200 - defence) / 100,
+            # at most 999 (crate::co_roster::preview_scaled).
+            want = damage.div(damage.div(first.base * first.acc, 100) * damage.hp_bars(att0["hp"]), 10)
+            want = min(999, damage.div((200 - rd["defence"]) * want, 100))
+            self.eq(ra["display"], want, f"{label}: the forecast's damage, in Dual Strike's order")
         self.eq(att1["x"], dst[0], f"{label}: attacker moved to x")
         self.eq(att1["y"], dst[1], f"{label}: attacker moved to y")
         loss = dfd0["hp"] - dfd1["hp"]
