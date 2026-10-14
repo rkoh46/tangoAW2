@@ -35,14 +35,35 @@ def armies_summary(g):
     return out
 
 
+# Dual Strike's Versus maps (crate::ds_versus): name -> (map id, Versus tab).
+DS_MAPS = {"Spann Island": (0x01, 2), "Clover Pond": (0x89, 6), "Dark City": (0x88, 6)}
+
+
 def cpu_vs_cpu(ctx, name, days=DAYS, off=None):
     if not ctx.ds:
         raise Skip("the pack's maps")
     off = os.environ.get("AW2TEST_DSAI_OFF") == "1" if off is None else off
-    g, found = dm.select_map(ctx, name)
-    ctx.require(found, f"{name} is listed")
-    dm.to_teams(g)
-    dm.start(ctx, g, humans=())
+    if name in DS_MAPS:
+        # Dual Strike's own maps (crate::ds_versus), by id and tab.
+        from aw2test import paths, saves
+        from aw2test.emu import Emu
+        from aw2test.game import Game
+        mid, tab = DS_MAPS[name]
+        e = Emu(save=paths.base_save(), ds=ctx.ds)
+        g = Game(e, ctx.image)
+        ctx.games.append(g)
+        saves.to_select_mode(e)
+        saves.versus_select_map(g, tab, mid)
+        # (saves.versus_start without its wait for a human's turn: every army is the computer's)
+        g.set_teams(None, set())
+        g.teams_to_rules()
+        g.set_rules(fog=False, weather="clear", power=True, visuals="off")
+        g.start_battle()
+    else:
+        g, found = dm.select_map(ctx, name)
+        ctx.require(found, f"{name} is listed")
+        dm.to_teams(g)
+        dm.start(ctx, g, humans=())
     e = g.e
     if off:
         e.w8(SWITCHES, 1)
@@ -84,7 +105,7 @@ def _cpu(name):
     return test(modes=("ds",))(fn)
 
 
-for _name in ("Rust Basin", "Coral Strait", "Dune Fork", "Harbor Cross", "Black Wastes"):
+for _name in ("Spann Island", "Clover Pond", "Dark City", "Black Wastes"):
     _cpu(_name)
 
 
@@ -179,7 +200,7 @@ def vs_bot(ctx, name, days, switch):
 
 
 if os.environ.get("AW2TEST_DSAI_BOT"):
-    for _name in ("Rust Basin", "Dune Fork", "Cinder Flats"):
+    for _name in ("Spann Island", "Clover Pond", "Dark City"):
         for _sw, _tag in ((0, "ds"), (8, "ds_nomove"), (1, "aw2")):
             def _fn(ctx, name=_name, sw=_sw):
                 vs_bot(ctx, name, int(os.environ.get("AW2TEST_DSAI_DAYS", "14")), sw)
