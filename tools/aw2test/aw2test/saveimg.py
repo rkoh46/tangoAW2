@@ -25,7 +25,7 @@ SECTOR = 0x1000
 MAGIC = 0x73726132
 
 TAG_NAMES = {0: "profile", 2: "campaign suspend", 3: "war room suspend", 4: "versus suspend",
-             5: "design 1", 6: "design 2", 7: "design 3", 8: "suspended design map", 12: "BH mission saved halfway", 13: "BH Campaign",
+             5: "design 1", 6: "design 2", 7: "design 3", 8: "suspended design map", 9: "Survival map saved halfway", 12: "BH mission saved halfway", 13: "BH Campaign",
              14: "DS mission saved halfway", 15: "DS Campaign"}
 
 # The profile (sub_08016B2C): where each part comes from.

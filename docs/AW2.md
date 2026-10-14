@@ -1320,15 +1320,50 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   The War Room keeps its records by `id - 0x6C`: while Survival is on its
   record readers and writer (pools `0x0808759C`, `0x08087664`, `0x08087B18`,
   `0x08087C6C`, `0x080177E4`) read a zeroed block of ours; `SetMapPlayed`
-  (`0x0803CA28`) skips Survival's ids (its bits stop at 0xBF). The map menu
-  hides Save on a Survival map (`0x0802C646`): a suspended map would come back
-  without its run. The War Room's end of a map asks its save question with
+  (`0x0803CA28`) skips Survival's ids (its bits stop at 0xBF). The War Room's end of a map asks its save question with
   the War Room's suspend slot (`sub_0803D73C(3, ..)`), which clears the
   profile's "War Room game saved" flag and deletes slot 3 when it saves; a
   Survival map asks with slot 6 instead (the prompt's "profile only", as
   `sub_0803D960` uses it; trap `0x0803D746`), so a War Room game saved
   halfway survives a Survival run (until this, the first Survival map ended
   took it away; `save_survival_keeps_war_room_suspend`).
+- **A map saved halfway** (Dual Strike saves a battle in progress, and its
+  survival state lives in its progress, so a run survives between maps and
+  a reboot). The map menu's Save writes the map to a slot of its own, **9**
+  (`suspend::SURVIVAL_SLOT`), with the run: `WriteSuspendSave(3, ..)`
+  (`sub_08016D30`, the War Room's slot) is trapped past its prologue
+  (`0x08016D3A`: the War Room's mark `0x0200C42A` as it was) and at its
+  call of the slot writer (`0x08016D8E`: the slot made 9, the mark put back
+  before the writer serializes the profile, the run in the block's tail at
+  +0xE04, where a DS mission keeps its session: "SV", version, kind,
+  Champion, maps cleared, CO, partner, out of budget, then what is left,
+  the budget, points, the map's time, the funds cap and the last map's
+  score), as the DS Campaign's own slot. The tag pair rides after the block
+  as for every suspend ("TAG2"). So a War Room game saved halfway and its
+  mark stay as they were. Save is offered (`0x0802C646`) while the write
+  leaves the two free sectors every later save needs (`survival_save_fits`:
+  with every other slot in use it does not, and Save is hidden as on a
+  linked game). **Continue**: when Survival opens and AW2's directory lists
+  slot 9, SELECT MAP shows the run saved halfway (its panel between maps:
+  maps cleared, what is left, points, the next map) over the courses' list,
+  with "A Continue B Back START New run". A gives the game B (SELECT MAP
+  back to Select Mode); once the wheel stands still its input loop
+  (`0x08081D30`) is replaced, for that frame, by what its A on a box's
+  Continue does (mode 4, the War Room's Continue, position and row kept,
+  the main menu locked, `Proc_Start(0x08616A68, wheel)`); the dispatcher's
+  `MainMenuWarRoom_Continue` (`0x0803B904`) is then trapped to tail-call
+  AW2's resume of slot 9 (`sub_08017688(9)`) in place of slot 3's. When the
+  block is applied (`0x08016DD0`) the run comes back from the tail (Survival
+  on, the map being played), the skills its armies have on are set again
+  (`co_skills::battle_start`, a map start's), then the pairs. START gives
+  the saved run up (the slot leaves AW2's directory, written with the next
+  save), as does a new run's first map; the map's end drops it too (the end
+  of map's save writes that). Tests: `save_survival_suspend_resume` (the
+  second map of a paired run saved and continued after a reboot: the same
+  battle, run and pair with its meter; won, the run goes on and the slot is
+  gone; START and a new run), `save_survival_keeps_war_room_suspend` (both
+  saved halfway, the War Room's slot and mark untouched),
+  `save_every_slot_at_once` (thirteen slots).
 - **Records** in the profile the game saves (so the save's own checksum covers
   them): `0x0200C435..=0x0200C43F`, the eleven bytes between
   `0x0200C420`'s +0x14 and +0x20 that no code of the game reads or writes
@@ -1339,7 +1374,7 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   records live" below.
 - **RAM**: `0x0203FA00..0x0203FA3F` (the run: on, kind, maps cleared, phase,
   left, budget, points, the map's time, the funds cap, CO, the menu's pick,
-  bonus, rank, `+0x21` the Champion course flag, `+0x34` the tag partner), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
+  bonus, rank, `+0x21` the Champion course flag, `+0x34` the tag partner, `+0x35..+0x37` a map saved halfway: shown, Continue's step, the War Room's mark while saving), `0x0203FA40..0x0203FD0F` (the War Room record rows Survival
   reads). **ROM**: `0x08E00000..0x08E05BFF` (map table), `0x08E08000..`
   (map data, 0x800 per map), `0x08E30000..` (strings), `0x08E40000..0x08E40FFF`
   (the wheel's data and labels); text ids 0x7172.. (pointers at `0x0862D000`).
@@ -1388,8 +1423,13 @@ Time, `0x022F652C` Money, `0x022F6514` Turn; `sub_020EAC50` picks the list):
   one pick), where Dual Strike shows the pair. The record keeps the CO in
   front only: the profile's eleven bytes have 4 bits to spare, not the 7 of
   a second CO (Dual Strike keeps both).
-- A run cannot be suspended mid-map, and turning the console off loses a run
-  in progress (Dual Strike saves its survival state); records are saved.
+- A run is kept through a reboot only by a map saved halfway: turning the
+  console off between maps loses it (Dual Strike keeps its survival state
+  in its progress), and Continue goes back through Select Mode (a moment of
+  the wheel) because AW2's resume is started by Select Mode's dispatcher.
+  With every other slot in use the Survival map's Save is hidden (Flash has
+  sixteen sectors). A map continued counts the frames of its opening on the
+  player's turn as AW2 does at a map start (Time).
 - The War Room's CO screen colours the player's army by its CO's country and
   moves a computer army off that colour, as it does for its own maps; two
   armies Dual Strike gives one colour (Single File Isle's allies) get two.
@@ -2178,11 +2218,13 @@ here (a mission saved halfway on two fronts takes two). The layout:
 | 15 | the DS record and the CO skills (global to every mode) | as before |
 
 AW2 uses 0 (profile), 2..4 (suspends), 5..7 (design maps), 8 (the design
-map a suspended Versus game is on). With every slot in use at once (twelve
-slots, `save_every_slot_at_once`) twelve sectors are held and four are free;
-a write needs one free sector for the slot's new copy (two for a two-front
-mission) and one for the new profile, so two-front missions saved halfway in
-both campaigns at once leave exactly the two a write of either needs.
+map a suspended Versus game is on); Survival 9 (a map saved halfway). With
+every slot in use at once (thirteen slots, `save_every_slot_at_once`)
+thirteen sectors are held and three are free; a write needs one free sector
+for the slot's new copy (two for a two-front mission) and one for the new
+profile, so two-front missions saved halfway in both campaigns at once leave
+exactly the two a write of either needs (Survival's Save is offered only
+while its own write leaves those two: `suspend::survival_save_fits`).
 The BH Campaign never writes slots 2..8, 14, 15's progress and records, or
 the profile but AW2's counters and the Battle Maps points a win earns;
 `stage_slot` (the DS slot, written when the skills change in any mode) stages
@@ -2193,7 +2235,7 @@ reads the rest as zeros) and `skills_panel`'s RAM moved to `0x0203E3F0` (Crumb: 
 Tests: `save_bh_campaign_beside_aw2_and_ds` (record, win, mission saved
 halfway and continued, AW2's and the DS Campaign's saved missions and the
 DS record byte for byte as they were, the profile as expected),
-`save_every_slot_at_once` (twelve slots).
+`save_every_slot_at_once` (thirteen slots).
 
 **Prologue and credits.** Same mechanism as the DS Campaign's: the prologue
 is a script run from the session's copy of AW2's world map script before the
@@ -3593,7 +3635,8 @@ kept fog on for good once the rain stopped. The sandstorm and the map's
 look are in the weather block (`0x03004490` +3), which AW2 saves itself;
 Com Towers are counted on the map. Tag pairs and the Versus rule Skills
 ride after the block (+0xE28, "TAG2", see CO tag pairs).
-Without the pack nothing is written.
+A Survival map is saved in slot 9 with its run in the tail (+0xE04, "SV",
+see Survival). Without the pack nothing is written.
 Tests: `save_versus_suspend_keeps_ex_machina_stun`,
 `save_versus_suspend_in_rain_keeps_fog_rule`.
 
@@ -3616,12 +3659,13 @@ from the directory.
 | 2 / 3 / 4 | Campaign / War Room / Versus game saved halfway, 0xE28 (tangoAW2's tail: `suspend.rs`) | map menu Save |
 | 5..7 | design maps 1..3, 0x724 (tangoAW2: +0x4C4 the five-army mark, +0x723 the look) | Design Room Save |
 | 8 | the design map a saved Versus game is on (its current terrain and units) | map menu Save on a design map |
+| 9 | a Survival map saved halfway (tangoAW2): the block, the run in its tail ("SV"), the pairs after it | map menu Save on a Survival map |
 | 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14) | map menu Save in a BH mission |
 | 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign") | BH Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state follow the block (two sectors) | map menu Save in a DS mission |
 | 15 | the DS Campaign's record, 0x20 (tangoAW2), its records and the CO skills' data | DS Campaign New, mission start, after a win, a skills change |
 
-Twelve slots at most (AW2's ten and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
+Thirteen slots at most (AW2's ten, Survival's and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
 delete for one map: saving over a slot replaces it. The Battle Maps points
 (options +0x00, +0x04) grow with every map won, a DS mission's and a
 Survival map's too (as the War Room's). A netplay match runs

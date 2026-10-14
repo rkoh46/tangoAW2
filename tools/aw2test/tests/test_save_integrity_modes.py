@@ -6,8 +6,10 @@ won writes the profile with nothing of the War Room's (its rows are
 tangoAW2's own while Survival is on), a cleared run its record, in the
 profile's spare bytes; nothing else changes, in RAM (AW2's score tables,
 the event slots past them) or in Flash. A War Room map saved halfway and
-continued, and kept through Survival. Every mode in one boot, then rebooted;
-every slot in use at once."""
+continued, and kept through Survival. A Survival map saved halfway (its
+own slot, 9, with the run and its tag pair) and continued after a reboot,
+beside a War Room game saved halfway. Every mode in one boot, then
+rebooted; every slot in use at once."""
 
 import os
 
@@ -15,6 +17,7 @@ from aw2test import campaigns as cp
 from aw2test import dscampaign as dc
 from aw2test import paths, saveimg, saves
 from aw2test import survival as sv
+from aw2test import tag
 from aw2test.editor import Editor, HQ, STATE as EDITOR_STATE
 from aw2test.emu import Emu
 from aw2test.game import Game, NavError
@@ -415,9 +418,10 @@ def save_war_room_suspend_resume(ctx):
 
 @test(modes=("ds",))
 def save_survival_keeps_war_room_suspend(ctx):
-    """A War Room map saved halfway, then a Survival map won (Survival plays
-    on the War Room's screens and its end of map): the War Room's saved map
-    is still there, after a reboot too."""
+    """A War Room map saved halfway, then a Survival map saved halfway (in
+    its own slot, the War Room's slot and mark as they were) and won
+    (Survival plays on the War Room's screens and its end of map): the War
+    Room's saved map is still there, after a reboot too."""
     e, g = boot(ctx)
     saves.to_select_mode(e)
     img, snap = war_room_suspended(ctx, e, g, "war_room")
@@ -428,8 +432,12 @@ def save_survival_keeps_war_room_suspend(ctx):
     ctx.require(sv.pick(e, sv.LIST_ORDER.index(sv.MONEY)), "Money Survival starts")
     g._units_base = g._players_base = None
     g.wait_for_input()
-    names = g.map_menu_names()
-    ctx.check("Save" not in names, f"no Save on a Survival map ({names})")
+    saves.suspend(g)
+    saved = saves.flash(e, os.path.join(ctx.out, "survival_saved"))
+    saves.expect_slots(ctx, img, saved, [SURVIVAL_SUSPEND], "a Survival map saved halfway",
+                       profile_allow=list(saves.OPTIONS) + [saves.MODE_BYTE])
+    ctx.check(saved.slot(WAR_ROOM_SUSPEND) == img.slot(WAR_ROOM_SUSPEND), "the War Room's saved map kept beside it")
+    ctx.eq(saved.slot(0)[saveimg.P_C420 + saveimg.C420_SUSPEND[3]], 1, "the profile still marks the War Room's")
     win(e, g, armies(e))
     after = saves.flash(e, os.path.join(ctx.out, "survival_won"))
     saves.expect_slots(ctx, img, after, [], "a Survival map won",
@@ -444,9 +452,96 @@ def save_survival_keeps_war_room_suspend(ctx):
     saves.compare_snapshots(ctx, snap, saves.snapshot(g), "after Survival and a reboot, the War Room's Continue")
 
 
+# -- a Survival map saved halfway ---------------------------------------------------------------
+SURVIVAL_SUSPEND = 9
+
+
+def survival_continue(e, g):
+    """Select Mode -> Survival: SELECT MAP shows the run saved halfway; A
+    continues it."""
+    open_survival_from_wheel(e)
+    e.press("A", 8)
+    if not e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1500, step=10):
+        raise NavError("Survival's Continue did not bring the map back")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+
+
+def run_of(e):
+    """What a run keeps (crate::survival's state) and its tag pair."""
+    s = sv.state(e)
+    keep = {k: s[k] for k in ("on", "kind", "stage", "phase", "left", "budget", "points", "co", "champion")}
+    keep["partner"] = e.u8(sv.STATE + 0x34)
+    p = tag.partner(e, 1)
+    keep["pair"] = (e.u8(player(1) + 0x1D), p and (p["co"], p["charge"], p["uses"]))
+    return keep
+
+
+@test(modes=("ds",))
+def save_survival_suspend_resume(ctx):
+    """A Survival run with a tag pair: its second map saved halfway from the
+    map menu (slot 9 only, the profile's suspend marks untouched), rebooted,
+    continued from Survival's SELECT MAP: the same battle and the same run
+    (maps cleared, what is left, points, the pair with its meters); won, the
+    run goes on to its third map and the slot is gone. START on the page
+    gives a run saved halfway up for a new one."""
+    e, g = boot(ctx)
+    saves.to_select_mode(e)
+    open_survival_from_wheel(e)
+    ctx.require(sv.pick(e, sv.LIST_ORDER.index(sv.MONEY)), "Money Survival starts")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    ctx.check(tag.partner(e, 1) is not None, f"the first map's CO screen gave a partner ({run_of(e)})")
+    win(e, g, armies(e))
+    ctx.require(sv.pick(e, 0), "map 2 starts")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    first = run_of(e)
+    ctx.check(first["pair"][1] is not None and first["pair"][1][1] == 0, f"map 2: the pair again, its meter empty ({first})")
+    g.end_turn(human=1)
+    e.w32(tag.rec(1) + tag.P_CHARGE, 7000)
+    before = saves.flash(e, os.path.join(ctx.out, "before"))
+    names = saves.suspend(g)
+    ctx.check("Save" in names, f"Save on a Survival map ({names})")
+    run = run_of(e)
+    snap = saves.snapshot(g)
+    img = saves.flash(e, os.path.join(ctx.out, "saved"))
+    saves.expect_slots(ctx, before, img, [SURVIVAL_SUSPEND], "a Survival map saved halfway",
+                       profile_allow=list(saves.OPTIONS) + [saves.MODE_BYTE])
+    for m in (2, 3, 4):
+        ctx.eq(img.slot(0)[saveimg.P_C420 + saveimg.C420_SUSPEND[m]], before.slot(0)[saveimg.P_C420 + saveimg.C420_SUSPEND[m]],
+               f"the profile's suspend mark {m} as it was")
+    e.close()
+    e, g = boot(ctx, img.path)
+    saves.to_select_mode(e)
+    survival_continue(e, g)
+    saves.compare_snapshots(ctx, snap, saves.snapshot(g), "after a reboot, Survival's Continue")
+    ctx.eq(run_of(e), run, "the run as it was saved (and its tag pair)")
+    win(e, g, armies(e))
+    ctx.eq(sv.state(e)["stage"], run["stage"] + 1, "the map won: the run goes on")
+    after = saves.flash(e, os.path.join(ctx.out, "won"))
+    ctx.check(SURVIVAL_SUSPEND not in after.tags(), f"the slot is gone with the map ({after.tags()})")
+    ctx.check(not after.problems(), f"every slot passes AW2's check ({after.problems()})")
+    e.close()
+    # START gives the saved run up: the courses' list, a new run.
+    e, g = boot(ctx, img.path)
+    saves.to_select_mode(e)
+    open_survival_from_wheel(e)
+    e.press("START", 8)
+    e.wait(60)
+    ctx.eq([hex(i) for i in sv.listed(e)], [hex(sv.ENTRY_IDS[k]) for k in sv.LIST_ORDER], "START: the courses' list")
+    ctx.require(sv.pick(e, sv.LIST_ORDER.index(sv.TURN)), "a new Turn run starts")
+    ctx.eq((sv.state(e)["kind"], sv.state(e)["stage"]), (sv.TURN, 0), "a new run")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    win(e, g, armies(e))
+    after = saves.flash(e, os.path.join(ctx.out, "new_run"))
+    ctx.check(SURVIVAL_SUSPEND not in after.tags(), f"the saved run is given up ({after.tags()})")
+
+
 # -- every slot in use at once ------------------------------------------------------------------
 
-ALL_SLOTS = [0, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15]
+ALL_SLOTS = [0, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15]
 
 
 def two_army_design(name, x):
@@ -459,9 +554,9 @@ def two_army_design(name, x):
 @test(modes=("ds",))
 def save_every_slot_at_once(ctx):
     """Every slot in use at once: three designs, an AW2 mission, a War Room
-    map and a Versus game (on design 1) saved halfway, the DS Campaign with
-    a mission saved halfway, the BH Campaign with a mission saved halfway:
-    twelve slots of Flash's sixteen sectors. Each save
+    map, a Survival map and a Versus game (on design 1) saved halfway, the
+    DS Campaign with a mission saved halfway, the BH Campaign with a mission
+    saved halfway: thirteen slots of Flash's sixteen sectors. Each save
     keeps the others; rebooted, every slot passes AW2's check and its own
     boot, and each saved game continues (and can be saved again)."""
     path = os.path.join(ctx.out, "designs.sav")
@@ -498,6 +593,17 @@ def save_every_slot_at_once(ctx):
     snaps[3] = saves.snapshot(g)
     saved("war_room", [3], [saves.c420(saveimg.C420_SUSPEND[3])])
     e.close()
+    # Survival: its first map saved halfway.
+    e, g = boot(ctx, img.path)
+    saves.to_select_mode(e)
+    open_survival_from_wheel(e)
+    ctx.require(sv.pick(e, sv.LIST_ORDER.index(sv.MONEY)), "Money Survival starts")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    saves.suspend(g)
+    snaps[9] = saves.snapshot(g)
+    saved("survival", [9], [])
+    e.close()
     # Versus on design 1.
     e, g = boot(ctx, img.path)
     saves.to_select_mode(e)
@@ -528,7 +634,7 @@ def save_every_slot_at_once(ctx):
     saved("bh_mission", [12, 13], [])
     e.close()
 
-    ctx.eq(img.tags(), ALL_SLOTS, "twelve slots in use")
+    ctx.eq(img.tags(), ALL_SLOTS, "thirteen slots in use")
     ctx.check(not img.problems(), f"every slot passes AW2's check {img.problems()}")
     e, g = boot(ctx, img.path)
     saves.to_select_mode(e)
@@ -552,6 +658,13 @@ def save_every_slot_at_once(ctx):
     saves.to_select_mode(e)
     war_room_continue(e, g)
     resumed(3, "the War Room's map continued")
+    e.close()
+    e, g = boot(ctx, img.path)
+    saves.to_select_mode(e)
+    open_survival_from_wheel(e)
+    e.press("A", 8)
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1500, step=10), "Survival's Continue")
+    resumed(9, "the Survival map continued")
     e.close()
     e, g = boot(ctx, img.path)
     d = dc.DsCampaign(g)
@@ -578,7 +691,7 @@ def save_every_slot_at_once(ctx):
     g.end_turn(human=1)
     saves.suspend(g)
     saved("versus_again", [4, 8], [saves.c420(saveimg.C420_SUSPEND[4])])
-    ctx.eq(img.tags(), ALL_SLOTS, "still twelve slots")
+    ctx.eq(img.tags(), ALL_SLOTS, "still thirteen slots")
 
 
 @test(modes=("ds",))

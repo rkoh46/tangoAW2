@@ -78,6 +78,9 @@ const FONT_WIDTHS: u32 = 0x084C_36E4;
 
 const KEY_A: u32 = 1 << 0;
 const KEY_B: u32 = 1 << 1;
+const KEY_START: u32 = 1 << 3;
+const KEY_UP: u32 = 1 << 6;
+const KEY_DOWN: u32 = 1 << 7;
 const KEY_RIGHT: u32 = 1 << 4;
 const KEY_LEFT: u32 = 1 << 5;
 const KEY_R: u32 = 1 << 8;
@@ -871,7 +874,17 @@ fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, champion: bool, p
     let map = &s.maps[run.maps[browsed.min(MAPS_PER_RUN - 1)]];
     minimap(cv, core, map, 8, 104);
     record_box(cv, core, map, browsed);
-    if phase == sv::BETWEEN {
+    if phase == sv::BETWEEN && sv::suspended(core) {
+        // A run saved halfway: its map goes on from where it was saved.
+        hint(
+            cv,
+            core,
+            &[
+                "A Continue   B Back   START New run   R Record",
+                "A Continue   B Back   START New   R Record",
+            ],
+        );
+    } else if phase == sv::BETWEEN {
         hint(
             cv,
             core,
@@ -1054,7 +1067,9 @@ fn hash(bytes: &[u8]) -> u32 {
 /// Which page the state asks for, and its signature (a hash of everything
 /// the picture is drawn from).
 fn page(core: &Core) -> Option<(Kind, bool, u8, u8, u32)> {
-    let phase = core.raw_read_8(sv::PHASE, -1);
+    // A run saved halfway is shown as between its maps (the list under it
+    // is the courses', for a new run).
+    let phase = if sv::suspended(core) { sv::BETWEEN } else { core.raw_read_8(sv::PHASE, -1) };
     let (k, champion) = if phase == sv::CHOOSING {
         kind_on_list(core)?
     } else {
@@ -1070,6 +1085,7 @@ fn page(core: &Core) -> Option<(Kind, bool, u8, u8, u32)> {
     b.push(core.raw_read_8(BROWSE, -1));
     let records = core.raw_read_8(RECORDS, -1);
     b.push(records);
+    b.push(sv::suspended(core) as u8);
     Some((k, champion, phase, records, hash(&b)))
 }
 
@@ -1142,6 +1158,18 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
             }
             core.raw_write_8(BROWSE, -1, browse as u8);
             keys &= !(KEY_R | KEY_L | KEY_LEFT | KEY_RIGHT);
+            if sv::suspended(core) && pressed & KEY_R == 0 {
+                // A run saved halfway: A continues it (the game gets B,
+                // back to Select Mode, crate::survival::ask_continue),
+                // START gives it up; the list's own A never starts its map.
+                if pressed & KEY_A != 0 {
+                    sv::ask_continue(core);
+                    keys |= KEY_B;
+                } else if pressed & KEY_START != 0 {
+                    sv::give_up_suspended(core);
+                }
+                keys &= !(KEY_A | KEY_START | KEY_UP | KEY_DOWN);
+            }
         }
     }
     let Some((k, champion, phase, recs, sig)) = page(core) else {

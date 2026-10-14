@@ -36,6 +36,9 @@
 //!   on (the War Room's tab byte, `0x08090EF2`).
 //! - The War Room keeps its records by `id - 0x6C`; while Survival is on its
 //!   record readers and writer look at a zeroed block of ours ([`ROWS`]).
+//! - A map saved halfway: the map menu's Save writes it to a slot of its own
+//!   with the run ([`crate::suspend::SURVIVAL_SLOT`]); SELECT MAP then shows
+//!   that run and A continues it ([`ask_continue`]).
 //! - State: [`STATE`] in EWRAM; records in the profile the game saves
 //!   (`0x0200C435..0x0200C43F`, eleven bytes no code of the game touches:
 //!   see [`Records`]).
@@ -121,6 +124,20 @@ const OUT_SET: u32 = STATE + 0x24;
 /// CO screen), 0xFF none.
 pub(crate) const PARTNER: u32 = STATE + 0x34;
 const NO_PARTNER: u8 = 0xFF;
+/// 1 while SELECT MAP shows a run saved halfway ([`crate::suspend`]'s slot,
+/// loaded when Survival opens).
+const SUSPENDED: u32 = STATE + 0x35;
+/// Survival's Continue, step by step: [`ASKED`], [`PICKED`], [`RESUMING`].
+const CONTINUE: u32 = STATE + 0x36;
+/// While a Survival map is being saved: 0x80 | the War Room's suspend mark
+/// as it was ([`crate::suspend`]).
+pub(crate) const SAVING: u32 = STATE + 0x37;
+/// CONTINUE: A on SELECT MAP (the game is given B: back to Select Mode);
+/// picked on Select Mode as the War Room's Continue ([`continue_pick`]);
+/// AW2's resume running until the block is applied.
+const ASKED: u8 = 1;
+const PICKED: u8 = 2;
+const RESUMING: u8 = 3;
 /// A zeroed block the War Room's record code reads while Survival is on:
 /// rows for ids FIRST_ID..=0xEC.
 const ROWS: u32 = STATE + 0x40;
@@ -186,6 +203,16 @@ fn running(core: &Core, script: u32) -> bool {
 /// Survival's War Room is open (a run being played).
 pub fn on(core: &Core) -> bool {
     core.raw_read_8(ON, -1) == 1
+}
+
+/// A Survival map is being played.
+pub(crate) fn playing(core: &Core) -> bool {
+    core.raw_read_8(ON, -1) == 1 && core.raw_read_8(PHASE, -1) == PLAYING && is_survival_map(core.raw_read_8(MAP_ID, -1))
+}
+
+/// SELECT MAP shows a run saved halfway.
+pub(crate) fn suspended(core: &Core) -> bool {
+    core.raw_read_8(SUSPENDED, -1) == 1
 }
 
 fn player(core: &Core, army: u32) -> u32 {
@@ -483,9 +510,21 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
             // may be past the end of Survival's three).
             core.raw_write_32(LIST_FIRST, -1, 0);
             core.raw_write_32(LIST_CURSOR, -1, 0);
-        } else if core.raw_read_8(ON, -1) != 0 {
-            core.raw_write_8(ON, -1, 0);
-            core.raw_write_8(PHASE, -1, CHOOSING);
+            // A run saved halfway: SELECT MAP shows it (crate::survival_ui)
+            // over the courses' list, which stays as it is for a new run.
+            match crate::suspend::survival_saved(core) {
+                Some(b) => {
+                    load_run(core, &b);
+                    set8(core, SUSPENDED, 1);
+                }
+                None => set8(core, SUSPENDED, 0),
+            }
+        } else {
+            if core.raw_read_8(ON, -1) != 0 {
+                core.raw_write_8(ON, -1, 0);
+                core.raw_write_8(PHASE, -1, CHOOSING);
+            }
+            set8(core, SUSPENDED, 0);
         }
     } else if core.raw_read_8(MENU_PICKED, -1) != 0 {
         core.raw_write_8(MENU_PICKED, -1, 0);
@@ -593,6 +632,9 @@ pub fn map_start(core: &mut Core) {
         // the pair pending for this map start).
         let partner = crate::tag::pending(core, 1).filter(|&(a, b)| a == co && b != co).map_or(NO_PARTNER, |(_, b)| b);
         core.raw_write_8(PARTNER, -1, partner);
+        // A new run: a run saved halfway is given up.
+        crate::suspend::drop_mid(core, crate::suspend::SURVIVAL_SLOT);
+        core.raw_write_8(SUSPENDED, -1, 0);
     } else if phase != BETWEEN
         || run_map_id(kind(core), champion_now(core), core.raw_read_8(STAGE, -1) as usize) != Some(id)
     {
@@ -648,6 +690,9 @@ fn end_of_game(core: &mut Core) {
     if !is_survival_map(id) {
         return;
     }
+    // A save of this map made halfway is over with it (the directory is
+    // written with the end of map's save).
+    crate::suspend::drop_mid(core, crate::suspend::SURVIVAL_SLOT);
     let p1 = player(core, 1);
     let won = core.raw_read_16(p1 + P_DEFEATED, -1) == 0 && core.raw_read_8(p1 + P_YIELD, -1) == 0;
     let k = kind(core);
@@ -776,11 +821,13 @@ pub(crate) fn picks_partner(core: &Core) -> bool {
 }
 
 /// The map menu's Save test (`savingEnabled`, after its first load): a
-/// Survival map hides Save, as linked play does (a suspended map would
-/// come back without its run).
+/// Survival map is saved in a slot of its own with the run
+/// ([`crate::suspend::SURVIVAL_SLOT`]); Save is hidden, as linked play
+/// hides it, only when Flash has no room for that slot
+/// ([`crate::suspend::survival_save_fits`]).
 const SAVE_ITEM: u32 = 0x0802_C646;
 fn save_item(core: &mut Core) {
-    if core.raw_read_8(ON, -1) == 1 && core.raw_read_8(PHASE, -1) == PLAYING {
+    if core.raw_read_8(ON, -1) == 1 && core.raw_read_8(PHASE, -1) == PLAYING && !crate::suspend::survival_save_fits(core) {
         let cpu = core.gba_mut().cpu_mut();
         cpu.set_gpr(0, 1);
         let lr = cpu.gpr(14) as u32;
@@ -813,9 +860,123 @@ fn save_prompt_slot(core: &mut Core) {
     }
 }
 
+// --- A run saved halfway ----------------------------------------------------------
+
+/// The run's fields for the suspended block's tail (crate::suspend's
+/// layout; it writes the mark and version at +0..+2).
+pub(crate) fn saved_run(core: &Core) -> crate::suspend::SurvivalRun {
+    let mut b = [0u8; crate::suspend::SV_LEN];
+    b[3] = core.raw_read_8(KIND, -1);
+    b[4] = core.raw_read_8(CHAMPION, -1);
+    b[5] = core.raw_read_8(STAGE, -1);
+    b[6] = core.raw_read_8(CO, -1);
+    b[7] = core.raw_read_8(PARTNER, -1);
+    b[8] = core.raw_read_8(OUT_SET, -1);
+    for (k, at) in [LEFT, BUDGET, POINTS, TIME, FUNDS_CAP].into_iter().enumerate() {
+        b[0x0C + 4 * k..0x10 + 4 * k].copy_from_slice(&core.raw_read_32(at, -1).to_le_bytes());
+    }
+    b[0x20..0x22].copy_from_slice(&core.raw_read_16(LAST_SCORE, -1).to_le_bytes());
+    b
+}
+
+fn load_run(core: &mut Core, b: &crate::suspend::SurvivalRun) {
+    core.raw_write_8(KIND, -1, b[3]);
+    core.raw_write_8(CHAMPION, -1, b[4]);
+    core.raw_write_8(STAGE, -1, b[5]);
+    core.raw_write_8(CO, -1, b[6]);
+    core.raw_write_8(PARTNER, -1, b[7]);
+    core.raw_write_8(OUT_SET, -1, b[8]);
+    for (k, at) in [LEFT, BUDGET, POINTS, TIME, FUNDS_CAP].into_iter().enumerate() {
+        core.raw_write_32(at, -1, u32::from_le_bytes(b[0x0C + 4 * k..0x10 + 4 * k].try_into().unwrap()));
+    }
+    core.raw_write_16(LAST_SCORE, -1, u16::from_le_bytes([b[0x20], b[0x21]]));
+}
+
+/// The block of a Survival map saved halfway has been applied: the run as
+/// it was, in battle.
+pub(crate) fn restore_run(core: &mut Core, b: &crate::suspend::SurvivalRun) {
+    load_run(core, b);
+    core.raw_write_8(ON, -1, 1);
+    core.raw_write_8(PHASE, -1, PLAYING);
+    core.raw_write_8(SUSPENDED, -1, 0);
+    core.raw_write_8(CONTINUE, -1, 0);
+}
+
+/// AW2's resume of the Survival slot is under way (until its block is
+/// applied).
+pub(crate) fn resuming(core: &Core) -> bool {
+    core.raw_read_8(CONTINUE, -1) == RESUMING
+}
+
+/// SELECT MAP's page of a run saved halfway (crate::survival_ui): A
+/// continues it, START gives it up for a new run. Continue goes the way the
+/// War Room's does, through Select Mode's dispatch of its Continue: the game
+/// gets B (SELECT MAP back to Select Mode), where the wheel is made to pick
+/// the War Room's Continue ([`continue_pick`]), whose handler resumes
+/// Survival's slot instead of the War Room's ([`continue_now`]).
+pub(crate) fn ask_continue(core: &mut Core) {
+    core.raw_write_8(CONTINUE, -1, ASKED);
+}
+
+pub(crate) fn give_up_suspended(core: &mut Core) {
+    crate::suspend::drop_mid(core, crate::suspend::SURVIVAL_SLOT);
+    core.raw_write_8(SUSPENDED, -1, 0);
+}
+
+/// `MainMenuCarouselWheel_InputLoop(p)` (Select Mode's wheel, every frame;
+/// p: +0x4E moving, +0x52 the position, +0x66 the box's row, +0x6A picked)
+/// with Continue asked, once the wheel stands still: what its A on a box's
+/// Continue does (the mode, the position and row kept, picked, the main
+/// menu locked, then `Proc_Start(0x08616A68, p)`, tail-called in place of
+/// the loop; the dispatcher then runs the mode's handler). Mode 4 is the War
+/// Room's Continue (`0x0849EACC`'s table: `MainMenuWarRoom_Continue`).
+const WHEEL_INPUT: u32 = 0x0808_1D30;
+const MODE: u32 = 0x0300_33FC;
+const WAR_ROOM_CONTINUE_MODE: u32 = 4;
+const WHEEL_POSITION: u32 = 0x0300_5934;
+const WHEEL_ROW: u32 = 0x0300_5924;
+const MAIN_MENU_LOCK: u32 = 0x0300_30F2;
+const PICKED_PROC: u32 = 0x0861_6A68;
+const FADE_LOAD_MAP: u32 = 0x0848_92C4;
+const PROC_START: u32 = 0x0801_C8F4;
+fn continue_pick(core: &mut Core) {
+    if core.raw_read_8(CONTINUE, -1) != ASKED {
+        return;
+    }
+    let p = core.gba().cpu().gpr(0) as u32;
+    if core.raw_read_16(p + 0x4E, -1) != 0 || core.raw_read_16(p + 0x6A, -1) != 0 || running(core, FADE_LOAD_MAP) {
+        return;
+    }
+    core.raw_write_8(CONTINUE, -1, PICKED);
+    core.raw_write_32(MODE, -1, WAR_ROOM_CONTINUE_MODE);
+    let (pos, row) = (core.raw_read_16(p + 0x52, -1), core.raw_read_16(p + 0x66, -1));
+    core.raw_write_32(WHEEL_POSITION, -1, pos as u32);
+    core.raw_write_32(WHEEL_ROW, -1, row as u32);
+    core.raw_write_16(p + 0x6A, -1, 1);
+    core.raw_write_8(MAIN_MENU_LOCK, -1, 1);
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(0, PICKED_PROC as i32);
+    cpu.set_gpr(1, p as i32);
+    cpu.set_thumb_pc(PROC_START);
+}
+
+/// `MainMenuWarRoom_Continue` started by Survival's pick: true when the
+/// slot is there to resume (the run's state comes back with the block,
+/// [`restore_run`]); otherwise Survival's SELECT MAP opens as on New.
+pub(crate) fn continue_now(core: &mut Core) -> Option<bool> {
+    if core.raw_read_8(CONTINUE, -1) != PICKED {
+        return None;
+    }
+    let ok = crate::suspend::survival_saved(core).is_some();
+    core.raw_write_8(CONTINUE, -1, if ok { RESUMING } else { 0 });
+    core.raw_write_8(ON, -1, 1);
+    Some(ok)
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (CO_SCREEN, Box::new(co_screen)),
+        (WHEEL_INPUT, Box::new(continue_pick)),
         (SAVE_ITEM, Box::new(save_item)),
         (SAVE_PROMPT_SLOT, Box::new(save_prompt_slot)),
         (DRAW_MAP_LIST, Box::new(draw_map_list)),
@@ -1081,6 +1242,7 @@ mod tests {
         assert!(CHAMPION > STATE + 0x20 && CHAMPION < STATE + 0x22);
         // The run's own bytes after the screen's (crate::survival_ui), before the record rows.
         assert!(PARTNER >= crate::survival_ui::STATE_END && PARTNER < ROWS);
+        assert!(SAVING < ROWS);
         assert_eq!(clock(90000), "25:00");
     }
 
