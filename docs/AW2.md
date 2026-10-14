@@ -195,6 +195,37 @@ from the ROM table `0x080C1BC4`.
 - Buttons tangoAW2 takes are hidden from the game for as long as they
   stay held (`0x0203FFF6`), so a held press never reaches the editor as a
   new one.
+- **Dual Strike's random maps** (`design_random.rs`, with the pack). AW2's
+  menu has Fill > Random ("Let the computer design a map?" Yes / No):
+  `GenerateRandomMap` (`sub_08003B8C`; also how the editor opens, from
+  `sub_08000DF8(0)`) clears the units, makes the map 30x20 and picks a
+  filler by the keys held (L+R a built-in map `sub_08004724`, L or R one of
+  two generators, neither a random pick of the two), then
+  `FixAllShorelines` and the recount (`0x08003C2E`: properties, HQs, the
+  property count). Its key state (`gpKeySt` at `[0x03002EE0]`, `0x03002090`)
+  reads 0 while the confirmation's dialogue runs, so it always takes the
+  random pick (`0x08003C0E`). A trap there runs Dual Strike's
+  `Ov006_GenerateRandomMap` (decompilation `src/game/ov006/`, its random
+  numbers in its order) seeded like Dual Strike's from AW2's random word
+  (`0x03001FD4`) advanced once plus the frame counter (`0x03004008`), or,
+  with L and R down in `REG_KEYINPUT`, lays `Ov006_gPresetMapTiles`
+  (overlay 6 `0x0236D2DC`, 600 tile bytes, from the pack), writes tiles and
+  classes and continues at the recount; a trap at `0x08003BDA` (AW2's own
+  L+R branch) lays the preset too. The terrain is drawn with AW2's tiles as
+  `five/map.py` lays its maps (sea edges from `0x08485DC4`, peaks, shades,
+  roads, bridges, shoals, pipes). Departures from Dual Strike: the map's edge
+  is checked before a cell is read, `Ov006_PickLinkTiles`' open searches are
+  bounded (a link not found is left out), a shoal shape AW2 has no beach for
+  is drawn as open sea, and the second HQ placed by `Ov006_PlaceRandomHq`
+  (the 3x3 search failed, about one map in fifty) also keeps 15 from the
+  first. Dual Strike's own quirks stay: roads cross the sea as causeways
+  where a bridge does not fit, two road legs side by side make a double
+  road. The editor opens on a map from the same function
+  (`sub_08000DF8(0)`); that one stays AW2's (the traps act only when the
+  return address `GenerateRandomMap` pushed is `DesignRoomNewMap`'s,
+  `0x08003C5D`), so a design started on it is as before.
+  Tests: unit tests (`design_random::tests`: Dual Strike's RNG, a seed's map,
+  400 maps with two HQs 15 apart and 2-4 bases each).
 
 ## Inventions in battle (`tango-gamesupport-aw2/src/factory.rs`)
 

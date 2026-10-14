@@ -78,6 +78,8 @@ changes, and online both players need it):
   weather and fog looks, Wasteland, Desert and Snow terrain, the Black
   Crystal and Obelisk, Black Hole's structures as Dual Strike draws them;
   eight new Versus maps.
+- **Design Room:** Dual Strike's random maps (**SELECT → Fill → Random**;
+  **L+R** held on Yes gives its preset map).
 - **Dual Strike's look (optional, Settings > Graphics, offline):** its map
   graphics and tilted 3D battle map, cursor, menus, CO panel and power
   labels, info box, CO pages and CO selection screens (five armies too).

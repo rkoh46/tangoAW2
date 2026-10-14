@@ -146,6 +146,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     traps.extend(crate::sandstorm::traps());
     traps.extend(crate::title_card::traps());
     traps.extend(crate::wasteland::traps());
+    traps.extend(crate::design_random::traps());
     traps.extend(crate::ds_menus::traps());
     traps.extend(crate::com_tower::traps());
     traps.extend(crate::roster::traps());
