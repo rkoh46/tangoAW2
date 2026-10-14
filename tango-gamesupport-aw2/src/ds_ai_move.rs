@@ -15,16 +15,18 @@
 //!
 //! **Here** AW2's own attack check (`0x0805E9DC`) still decides the attacks; where it found none, AW2 moves the unit
 //! by its role (`AiRunRoleMove`, `0x0805F4CC`). For a direct combat unit with an advancing role (1 the enemy HQ, 3
-//! the enemy's properties, 4 the nearest enemy units), not a foot soldier, not on a campaign march and not of a
-//! Defense army, the place it goes this turn is chosen here: its target by its role (the nearest enemy unit it can
-//! hurt, the nearest enemy HQ, the nearest property not its team's, by its own movement costs), then of the cells it
-//! can reach this turn the one nearest that target among those that are safe, so that it gets closer without
-//! stepping into danger (ties: the lower danger, then the more terrain stars); with no safe cell that gets closer it
-//! stays where it is if that is safe, or else moves to the safest cell (Dual Strike's `AiUnit_MoveToSafestTile`:
-//! the lowest danger, the most stars, the shortest move). The cell is given to AW2's "move towards a place" (the role
-//! 1 code, its place replaced at [`GOAL_HOOK`], the mechanism [`crate::cpu_inventions`] proved), which moves the
-//! unit there. Foot soldiers (their captures), indirect units, transports, holders and AW2's other roles move as AW2
-//! moves them.
+//! the enemy's properties, 4 the nearest enemy units; its army's behaviour's role where it has one), not a foot
+//! soldier, not on a campaign march and not of a Defense army, the place it goes this turn is chosen here: its
+//! target by its role (the nearest enemy unit it can hurt, the nearest enemy HQ, the nearest property not its
+//! team's, by its own movement costs), then of the cells it can reach this turn the one nearest that target among
+//! those that are safe, so that it gets closer without stepping into danger (ties: the lower danger, then the more
+//! terrain stars); with no safe cell that gets closer it stays where it is if that is safe, or else moves to the
+//! safest cell (Dual Strike's `AiUnit_MoveToSafestTile`: the lowest danger, the most stars, the shortest move).
+//! Where no free cell it can reach is nearer at all, the way is blocked, not dangerous, and AW2's own move finds its
+//! way round. A cell to go to is given to AW2's "move towards a place" (the role 1 code, its place replaced at
+//! [`GOAL_HOOK`], the mechanism [`crate::cpu_inventions`] proved), which moves the unit there; a unit that stays
+//! takes AW2's role 0 (it waits where it is). Foot soldiers (their captures), indirect units, transports, holders
+//! and AW2's other roles move as AW2 moves them.
 //!
 //! The cost is a few floods per unit (its reach, the reverse distance to its target, each nearby enemy's reach), a
 //! fraction of a millisecond, once per unit moved; the time is in the log (`dsai move` lines).
@@ -258,6 +260,21 @@ pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll
         .copied()
         .filter(|&i| safe(i) && progress(i))
         .min_by_key(|&i| (to[i], danger(i), -star(i), i));
+    // (no reachable free cell nearer at all: the way is blocked, not dangerous; AW2's own move finds its way round)
+    if pick.is_none() && !cells.iter().any(|&i| progress(i)) {
+        if logging() {
+            log(&format!(
+                "dsai move day {} army {army} {} at ({},{}) role {role} to {what} {} away: blocked, AW2's move ({} cells in reach)",
+                b.day,
+                crate::bh_smart::NAMES[u.t as usize % 28],
+                u.x,
+                u.y,
+                to[here],
+                cells.len()
+            ));
+        }
+        return None;
+    }
     let (cell, why) = if let Some(i) = pick {
         (i, "safe, nearer")
     } else if safe(here) {
@@ -308,9 +325,16 @@ pub fn role_move(core: &mut Core) -> bool {
     if logging() {
         log(&format!("dsai move day {} army {army} {note}, {} us", b.day, started.elapsed().as_micros()));
     }
-    core.raw_write_range(GOAL, -1, &[1, cell.0 as u8, cell.1 as u8]);
-    core.raw_write_32(GOAL_UNIT, -1, rec);
-    let f = core.raw_read_32(ROLE_MOVES + 4, -1);
+    // Staying where it is is AW2's role 0 (hold: the unit waits there, an action like any other, so the turn's
+    // checks after actions run and the unit is done); going somewhere is role 1 with the place replaced.
+    let role = if (cell.0, cell.1) == (u.x, u.y) {
+        0
+    } else {
+        core.raw_write_range(GOAL, -1, &[1, cell.0 as u8, cell.1 as u8]);
+        core.raw_write_32(GOAL_UNIT, -1, rec);
+        1
+    };
+    let f = core.raw_read_32(ROLE_MOVES + 4 * role, -1);
     core.gba_mut().cpu_mut().set_thumb_pc(f & !1);
     true
 }
