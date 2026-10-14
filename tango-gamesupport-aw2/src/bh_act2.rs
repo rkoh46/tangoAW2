@@ -357,6 +357,24 @@ fn second_front_lost(core: &mut Core) -> bool {
     core.raw_read_8(0x0203_E401, -1) == 3
 }
 
+/// Factory table F8, the dusk gate's (the second front): per day the three doors' units (0 none). Ground units,
+/// lighter than Greenhaven's: the main front sends the heavy ones.
+const F8: [(u8, [u8; 3]); 13] = [
+    (2, [unit::INFANTRY, 0, unit::TANK]),
+    (3, [0, unit::MECH, 0]),
+    (4, [unit::TANK, 0, 0]),
+    (5, [0, unit::ARTILLERY, unit::MECH]),
+    (6, [unit::MD_TANK, 0, 0]),
+    (7, [unit::INFANTRY, 0, unit::INFANTRY]),
+    (8, [0, unit::TANK, 0]),
+    (9, [unit::ANTI_AIR, 0, unit::MECH]),
+    (10, [0, unit::MD_TANK, 0]),
+    (11, [unit::ARTILLERY, 0, unit::TANK]),
+    (13, [0, unit::MD_TANK, 0]),
+    (15, [unit::TANK, 0, unit::ROCKETS]),
+    (17, [unit::MD_TANK, 0, 0]),
+];
+
 fn bh08() -> MissionDef {
     let mut m = MissionDef::new("bh08", "The Twin Gates");
     m.objective = "Take both gates. The dusk gate's CO joins.";
@@ -368,10 +386,9 @@ fn bh08() -> MissionDef {
     ];
     m.day_limit = 0;
     m.rank_days = 16;
-    // The dusk gate's Black Factory is dormant (an all-zero table): AW2's computer-Black-Hole turn calls
-    // the factory spawner, which on a map without a factory wrote garbage and reset the game on day 2 (the
-    // player's army there is played by Auto CO).
-    m.factory = vec![(0, [0, 0, 0])];
+    // The dusk gate's Black Factory builds for the second front (the table is the mission's; on the main
+    // front, which has no factory, crate::factory's guard keeps the spawner idle).
+    m.factory = F8.to_vec();
     m.front2 = Some(FrontDef {
         map: MapSrc::Built("bh08b"),
         props: Vec::new(),
