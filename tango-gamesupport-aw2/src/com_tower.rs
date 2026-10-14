@@ -158,6 +158,8 @@ fn held_hq_capture(core: &mut Core) {
 }
 
 fn captured(core: &mut Core) {
+    // (the History's captures, crate::history)
+    crate::history::captured(core);
     let (x, y) = (core.raw_read_16(CAPTURE_CELL, -1) as u32, core.raw_read_16(CAPTURE_CELL + 2, -1) as u32);
     // A DS Campaign mission's research lab is a Lab (crate::ds_campaign).
     if active(core) && core.gba().cpu().gpr(0) as u8 == LAB && !crate::ds_campaign::is_lab_cell(core, x, y) {

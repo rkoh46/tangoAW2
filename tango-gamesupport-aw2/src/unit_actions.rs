@@ -114,6 +114,8 @@ pub(crate) fn army_of(core: &Core, unit: u32) -> u32 {
 /// repairs its army's adjacent units by 1 HP each, while funds last.
 const SUPPLY_SELECTED: u32 = 0x0802_D158;
 fn supply_selected(core: &mut Core) {
+    // (the History's supplies and repairs, crate::history)
+    crate::history::supplied(core);
     if !is_on(core) || selected_type(core) != Some(BLACK_BOAT) {
         return;
     }

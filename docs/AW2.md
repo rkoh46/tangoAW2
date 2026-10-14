@@ -3276,13 +3276,18 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   opens at its rank; slots = min(rank, 4). The rank-10 skills open with
   Means to an End won instead (Eagle Eye, Gear Head, Conquerer on Normal;
   Mistwalker and Soul of Hachi on Hard), as Dual Strike's flags 0x21/0x22.
-- **EXP** (a won battle; the humans' COs): the DS Campaign the mission's
-  score, x2 (x1 in Dual Strike's first eight missions), x2 on Hard
-  (`ds_campaign`'s best-score trap); at `EndOfGame_Finish` (0x0803832C):
-  Survival half the score, the War Room x2.5 (x2 with skills on), AW2's
-  campaign as the DS Campaign's but only once the player has set skills
-  for some CO (until then it stays AW2's own); Versus none. Dual Strike's
-  few extra points for its battle counters are left out.
+- **EXP** (`battle_points.rs`, Dual Strike's `BattleScore_Compute`, `BattleResults_Fill`, `ExpBonus_Scale`): at
+  every battle's end (`InsertBestScoreRecord`, before any record changes) the battle's points are the score plus
+  bonus points for what the human armies destroyed in it (each count capped at 99: Black Cannon 30, minicannon 10,
+  Black Crystal 20, pipe seam 5, Oozium 40 with that row at most 999; 30 more on Crystal Calamity and For the
+  Future!), 0 when player 1's team lost and in Versus, x2 in a Hard campaign. Each CO of each human army (a tag
+  pair's partner too) gets them scaled: the campaigns x2 for a lone CO, x1 for each CO of a pair, x1 in the first
+  eight missions on Normal; the War Room x2.5, x2 with skills on, x1.5 for a pair, x1 for a pair with skills; in a
+  campaign the mission's best before this battle (its record, x2 on Hard) is taken off first, scaled the same way
+  and not below 0. Survival gives none per map (a map adds its bonus to the run's points); at a run's end, cleared
+  or lost, player 1's COs get the run's points (with its leftover bonus), at most 9999. Versus gives none. AW2's
+  campaign gives EXP only once the player has set skills for some CO (until then it stays AW2's own). Unlike
+  Dual Strike, Survival's map scores are not halved (tangoAW2's run points).
 - **Save.** Per CO (AW2's 19 and the ten new): EXP and seven sets
   (Campaign, Survival, War Room, four Versus), 32 bytes, at `0x0203E000`
   after a magic word; saved in Flash slot 15 after the DS Campaign's
@@ -3324,6 +3329,31 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   the DS Campaign (across a reboot) and the War Room (in Flash), the SET
   SKILLS screen on both screens (and what it covers put back), the Versus
   rule.
+
+## History (`history.rs`, `history_ui.rs`)
+
+Dual Strike's lifetime record and medals, with the pack.
+
+- **Record.** Dual Strike's 104 counters (`gPlayRecords` + 0x37C) in its own order, so its History table's
+  indexes read them directly: play time, turns, points earned, campaigns cleared (Normal, Hard), battles by rank,
+  CO, Super and Tag Powers, direct and indirect attacks, captures, the COs' ranks added up, funds spent, damage
+  (the value of the HP human units took off enemies, as its label says), silos, structure shots taken, spaces
+  moved, Black Cannons, minicannons, Obelisks, Crystals, pipe seams destroyed, supplies and repairs, joins, loads,
+  unloads, units moved, CO swaps, wins by HQ and by rout, defeats, units sent to the other front, Survival runs
+  and maps by kind, units bought and enemy units destroyed by type. Only human armies count. RAM `0x0203C190`
+  (a magic word, then the u32s), saved in slot 15 after the CO skills' data; a battle's end marks it to be written
+  with the next profile write. Counted at AW2's own functions (`IncrementDayCount`, `BuyUnit`, `DefeatArmy`,
+  `ApplyCaptureProgress` and the capture's end, `SiloFire_StartLaunch`, `JoinUnits`, `LoadUnitIntoTransport`,
+  `DropCargoUnit`, `CommitUnitMove*`, `ActivateCoPower`, the battle's meter charge, the structure hit step, the
+  Supply menu, the tag and two-front menu actions, `InsertBestScoreRecord`, Survival's end of a map). Left at 0:
+  ambushes (AW2's fog trap was not found); hidden: deletes and Combat mode (AW2 has neither). Funds spent are
+  units bought; spaces moved the straight distance of each move.
+- **Screen.** L on Survival's SELECT MAP opens it (`survival_ui.rs`' BG0 picture, Dual Strike's title font and
+  wallpaper): the four tabs (General, Built, Destroyed, Objects; L and R), five rows at a time (UP, DOWN) with
+  label, value and three medal slots, the medals earned of all there are, and the help line of the row or of the
+  medal under the cursor (LEFT, RIGHT); B closes it. Labels, help and thresholds are Dual Strike's (its table
+  `0x0215D6C4`, text bank 0x7A), the medal is `ohashi/res_history_medal`'s, drawn with BG palette bank 2 (the
+  game's put back when it closes).
 
 ## CO tag pairs (`tag.rs`, `tag_ui.rs`, `versus_rules.rs`)
 
@@ -3694,7 +3724,7 @@ from the directory.
 | 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14) | map menu Save in a BH mission |
 | 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign") | BH Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state follow the block (two sectors) | map menu Save in a DS mission |
-| 15 | the DS Campaign's record, 0x20 (tangoAW2), its records and the CO skills' data | DS Campaign New, mission start, after a win, a skills change |
+| 15 | the DS Campaign's record, 0x20 (tangoAW2), its records, the CO skills' data and the History's record (`history.rs`, 0x1A4) | DS Campaign New, mission start, after a win, a skills change, after a profile write once a battle has ended (EXP, the History) |
 
 Twelve slots at most (AW2's ten and the BH Campaign's two; each one sector, a two-front mission two); a write needs a free sector for the slot's new copy and one for the new profile. The Design Room has no
 delete for one map: saving over a slot replaces it. The Battle Maps points

@@ -452,7 +452,7 @@ fn mass_unit(core: &mut Core) {
     }
 }
 
-/// `ActivateCoPower(army, mode, proc)`: Sasha's Market Crash.
+/// `ActivateCoPower(army, mode, proc)`: Sasha's Market Crash (and the History's count).
 const ACTIVATE: u32 = 0x0804_4B28;
 const SCOP_COST: u32 = 0x0804_4208;
 fn activate(core: &mut Core) {
@@ -462,6 +462,8 @@ fn activate(core: &mut Core) {
 
     let cpu = core.gba().cpu();
     let (army, mode) = (cpu.gpr(0) as u32, cpu.gpr(1) as u8);
+    // (the History's powers used, crate::history)
+    crate::history::power(core, army, mode);
     let (co, _) = army_co(core, army);
     if co != SASHA || mode != COP {
         return;
@@ -568,6 +570,9 @@ fn war_bonds(core: &mut Core) {
     if d == 0 {
         return;
     }
+    // (an Oozium destroyed: Dual Strike's bonus points, crate::battle_points; the History's counters)
+    crate::battle_points::battle_fought(core, core.raw_read_32(SELECTED_UNIT, -1), d);
+    crate::history::battle_fought(core, core.raw_read_32(SELECTED_UNIT, -1), d);
     let units = core.raw_read_32(UNITS_POINTER, -1);
     let att = core.raw_read_32(SELECTED_UNIT, -1);
     let dfd = units + UNIT * d;

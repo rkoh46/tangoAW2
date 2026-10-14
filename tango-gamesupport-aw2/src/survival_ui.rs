@@ -30,7 +30,8 @@
 //! opaque over every other layer, and the game's sprites are dropped from
 //! the frame ([`flush`]); the game keeps the list and its pad (UP and DOWN
 //! change the course, A starts it, B leaves). LEFT and RIGHT browse the
-//! course's maps, R shows the records, B closes them. Nothing is put back
+//! course's maps, R shows the records, B closes them; L opens Dual Strike's
+//! History ([`crate::history_ui`]). Nothing is put back
 //! when the screen goes: whatever loads next sets up its own BG0.
 //!
 //! Pack off: nothing here runs (every entry is behind Survival's own flag).
@@ -68,20 +69,20 @@ const SELECT_MAP: u32 = 0x0861_6C54;
 const BG0CNT: u32 = 0x0400_0008;
 /// The game's DISPCNT shadow: the screen moves its cursor under a window
 /// (WIN1), which would cut the picture.
-const DISP_CT: u32 = 0x0300_30CC;
-const WINDOWS: u16 = 0xE000;
-const PAL_BUFFER: u32 = 0x0300_20C0;
-const PAL_RAM: u32 = 0x0500_0000;
+pub(crate) const DISP_CT: u32 = 0x0300_30CC;
+pub(crate) const WINDOWS: u16 = 0xE000;
+pub(crate) const PAL_BUFFER: u32 = 0x0300_20C0;
+pub(crate) const PAL_RAM: u32 = 0x0500_0000;
 const TILE_CLASS: u32 = 0x080C_1BC4;
 const FONT_GLYPHS: u32 = 0x084C_32E4;
 const FONT_WIDTHS: u32 = 0x084C_36E4;
 
-const KEY_A: u32 = 1 << 0;
-const KEY_B: u32 = 1 << 1;
-const KEY_RIGHT: u32 = 1 << 4;
-const KEY_LEFT: u32 = 1 << 5;
-const KEY_R: u32 = 1 << 8;
-const KEY_L: u32 = 1 << 9;
+pub(crate) const KEY_A: u32 = 1 << 0;
+pub(crate) const KEY_B: u32 = 1 << 1;
+pub(crate) const KEY_RIGHT: u32 = 1 << 4;
+pub(crate) const KEY_LEFT: u32 = 1 << 5;
+pub(crate) const KEY_R: u32 = 1 << 8;
+pub(crate) const KEY_L: u32 = 1 << 9;
 
 /// SELECT MAP's list: the first row shown, the cursor's row, the ids.
 const LIST_FIRST: u32 = 0x0300_5900;
@@ -107,29 +108,29 @@ pub fn shown(core: &Core) -> bool {
 
 // --- The canvas ----------------------------------------------------------------
 
-const W: usize = 240;
-const H: usize = 160;
+pub(crate) const W: usize = 240;
+pub(crate) const H: usize = 160;
 
 /// Bank 0's colours (index 0 stays unused: it is clear on a BG): the rings'
 /// four, white and the window colours, the title font's blues, AW2's text.
-const WHITE: u8 = 1;
-const CREAM: u8 = 2;
-const PINK: u8 = 3;
-const RING_BLUE: u8 = 4;
-const RING_GREEN: u8 = 5;
-const INK: u8 = 6;
-const SHADE: u8 = 7;
-const RED: u8 = 8;
-const BLUE: u8 = 9;
-const LIGHT_BLUE: u8 = 10;
-const DARK_BLUE: u8 = 11;
-const LIGHT_GRAY: u8 = 12;
-const MID_BLUE: u8 = 13;
-const YELLOW: u8 = 14;
-const GRAY: u8 = 15;
+pub(crate) const WHITE: u8 = 1;
+pub(crate) const CREAM: u8 = 2;
+pub(crate) const PINK: u8 = 3;
+pub(crate) const RING_BLUE: u8 = 4;
+pub(crate) const RING_GREEN: u8 = 5;
+pub(crate) const INK: u8 = 6;
+pub(crate) const SHADE: u8 = 7;
+pub(crate) const RED: u8 = 8;
+pub(crate) const BLUE: u8 = 9;
+pub(crate) const LIGHT_BLUE: u8 = 10;
+pub(crate) const DARK_BLUE: u8 = 11;
+pub(crate) const LIGHT_GRAY: u8 = 12;
+pub(crate) const MID_BLUE: u8 = 13;
+pub(crate) const YELLOW: u8 = 14;
+pub(crate) const GRAY: u8 = 15;
 
 /// RGB (0..255) of bank 0, index 0 the clear colour (cream, unused).
-const BANK0: [(u8, u8, u8); 16] = [
+pub(crate) const BANK0: [(u8, u8, u8); 16] = [
     (255, 246, 214),
     (255, 255, 255),
     (255, 246, 214),
@@ -178,11 +179,11 @@ const BANK1: [(u8, u8, u8); 16] = [
     (24, 32, 120),
 ];
 
-fn rgb15(c: (u8, u8, u8)) -> u16 {
+pub(crate) fn rgb15(c: (u8, u8, u8)) -> u16 {
     ((c.0 as u16) >> 3) | ((c.1 as u16) >> 3) << 5 | ((c.2 as u16) >> 3) << 10
 }
 
-fn bgr15_to_rgb(c: u16) -> (u8, u8, u8) {
+pub(crate) fn bgr15_to_rgb(c: u16) -> (u8, u8, u8) {
     let e = |v: u16| ((v << 3) | (v >> 2)) as u8;
     (e(c & 31), e((c >> 5) & 31), e((c >> 10) & 31))
 }
@@ -206,25 +207,25 @@ const TITLE_COLOURS: [u8; 7] = [WHITE, INK, LIGHT_BLUE, MID_BLUE, DARK_BLUE, BLU
 const BANNER_COLOURS: [u8; 5] = [WHITE, INK, SHADE, LIGHT_GRAY, GRAY];
 const WALL_COLOURS: [u8; 5] = [CREAM, PINK, RING_BLUE, RING_GREEN, WHITE];
 
-struct Canvas {
-    px: Vec<u8>,
+pub(crate) struct Canvas {
+    pub(crate) px: Vec<u8>,
     /// The palette bank of each 8x8 cell (0 or 1).
-    bank: Vec<u8>,
+    pub(crate) bank: Vec<u8>,
 }
 
 impl Canvas {
-    fn new(art: &Art) -> Canvas {
+    pub(crate) fn new(art: &Art) -> Canvas {
         Canvas {
             px: art.wall.clone(),
             bank: vec![0; (W / 8) * (H / 8)],
         }
     }
-    fn put(&mut self, x: i32, y: i32, v: u8) {
+    pub(crate) fn put(&mut self, x: i32, y: i32, v: u8) {
         if (0..W as i32).contains(&x) && (0..H as i32).contains(&y) {
             self.px[W * y as usize + x as usize] = v;
         }
     }
-    fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, v: u8) {
+    pub(crate) fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, v: u8) {
         for yy in y..y + h {
             for xx in x..x + w {
                 self.put(xx, yy, v);
@@ -232,7 +233,7 @@ impl Canvas {
         }
     }
     /// A window: white, red above, blue below, a light edge at the sides.
-    fn window(&mut self, x: i32, y: i32, w: i32, h: i32) {
+    pub(crate) fn window(&mut self, x: i32, y: i32, w: i32, h: i32) {
         self.rect(x, y, w, h, WHITE);
         self.rect(x + 1, y + 2, 1, h - 4, LIGHT_GRAY);
         self.rect(x + w - 2, y + 2, 1, h - 4, LIGHT_GRAY);
@@ -241,7 +242,7 @@ impl Canvas {
     }
     /// AW2's proportional font from (x, y) (16 rows of 4bpp nibbles a glyph,
     /// 11 shown from the third); returns the x after the text.
-    fn text(&mut self, core: &Core, x: i32, y: i32, s: &str, ink: u8, shade: u8) -> i32 {
+    pub(crate) fn text(&mut self, core: &Core, x: i32, y: i32, s: &str, ink: u8, shade: u8) -> i32 {
         let mut x = x;
         for c in s.bytes() {
             let w = core.raw_read_8(FONT_WIDTHS + c as u32, -1) as usize;
@@ -264,7 +265,7 @@ impl Canvas {
     }
 }
 
-fn text_width(core: &Core, s: &str) -> i32 {
+pub(crate) fn text_width(core: &Core, s: &str) -> i32 {
     s.bytes()
         .map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as i32 + 1)
         .sum::<i32>()
@@ -281,7 +282,7 @@ struct Glyph {
     right: usize,
 }
 
-struct Art {
+pub(crate) struct Art {
     glyphs: Vec<Glyph>,
     title_pal: [u16; 16],
     /// Rows of the title font that carry pixels (the glyphs' common extent).
@@ -297,7 +298,7 @@ struct Art {
 
 /// One LZ10 stream at `p`: its bytes and where the next stream starts
 /// (the files keep several one after another, each on a word).
-fn lz10_stream(b: &[u8], p: usize) -> Option<(Vec<u8>, usize)> {
+pub(crate) fn lz10_stream(b: &[u8], p: usize) -> Option<(Vec<u8>, usize)> {
     if *b.get(p)? != 0x10 {
         return None;
     }
@@ -330,7 +331,7 @@ fn lz10_stream(b: &[u8], p: usize) -> Option<(Vec<u8>, usize)> {
     Some((out, (q + 3) & !3))
 }
 
-fn palette(b: &[u8], at: usize) -> Option<[u16; 16]> {
+pub(crate) fn palette(b: &[u8], at: usize) -> Option<[u16; 16]> {
     let mut p = [0u16; 16];
     for (k, c) in p.iter_mut().enumerate() {
         *c = u16::from_le_bytes([*b.get(at + 2 * k)?, *b.get(at + 2 * k + 1)?]);
@@ -339,7 +340,7 @@ fn palette(b: &[u8], at: usize) -> Option<[u16; 16]> {
 }
 
 /// A 4bpp tile's pixels.
-fn tile_px(tiles: &[u8], t: usize, x: usize, y: usize) -> u8 {
+pub(crate) fn tile_px(tiles: &[u8], t: usize, x: usize, y: usize) -> u8 {
     tiles
         .get(32 * t + 4 * y + x / 2)
         .map_or(0, |b| (b >> (4 * (x & 1))) & 15)
@@ -432,7 +433,7 @@ fn build_art() -> Option<Art> {
     })
 }
 
-fn art() -> Option<&'static Art> {
+pub(crate) fn art() -> Option<&'static Art> {
     static ART: OnceLock<Option<Art>> = OnceLock::new();
     ART.get_or_init(build_art).as_ref()
 }
@@ -447,7 +448,7 @@ impl Art {
         }
     }
     /// The title, centred, its top at `y`.
-    fn title(&self, cv: &mut Canvas, y: i32, s: &str) {
+    pub(crate) fn title(&self, cv: &mut Canvas, y: i32, s: &str) {
         let list: Vec<&Glyph> = s.chars().filter_map(|c| self.glyph(c)).collect();
         // Neighbouring glyphs share their white outline's column.
         let total: i32 = list.iter().map(|g| (g.right - g.left) as i32).sum::<i32>() + 1;
@@ -826,11 +827,11 @@ fn record_box(cv: &mut Canvas, core: &Core, map: &maps::Map, number: usize) {
 }
 
 /// The ink of captions.
-const GRAY_INK: u8 = SHADE;
+pub(crate) const GRAY_INK: u8 = SHADE;
 
 /// A small triangle (9 wide, 5 tall) pointing up or down: UP and DOWN
 /// change the course.
-fn arrow(cv: &mut Canvas, x: i32, y: i32, up: bool) {
+pub(crate) fn arrow(cv: &mut Canvas, x: i32, y: i32, up: bool) {
     for r in 0..5 {
         let half = if up { r } else { 4 - r };
         cv.rect(x + 4 - half, y + r, 2 * half + 1, 1, INK);
@@ -876,7 +877,8 @@ fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, champion: bool, p
             cv,
             core,
             &[
-                "A Next map   B Quit   Left/Right Maps   R Record",
+                "A Next map  B Quit  < > Maps  R Record  L History",
+                "A Next  B Quit  < > Maps  R Record  L History",
                 "A Next   B Quit   < > Maps   R Record",
             ],
         );
@@ -885,7 +887,8 @@ fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, champion: bool, p
             cv,
             core,
             &[
-                "A Start   B Back   Left/Right Maps   R Record",
+                "A Start  B Back  < > Maps  R Record  L History",
+                "A Start  B Back  < > Maps  R  L History",
                 "A Start   B Back   < > Maps   R Record",
             ],
         );
@@ -981,7 +984,7 @@ fn records_page(cv: &mut Canvas, core: &Core, a: &Art) {
 
 /// The picture as tiles (the same ones shared), a 32x32 tilemap and the
 /// two palettes.
-fn tiles_of(cv: &Canvas) -> (Vec<u8>, Vec<u8>) {
+pub(crate) fn tiles_of(cv: &Canvas) -> (Vec<u8>, Vec<u8>) {
     let mut tiles: Vec<[u8; 32]> = vec![[0u8; 32]];
     let mut index = std::collections::HashMap::new();
     index.insert([0u8; 32], 0u16);
@@ -1012,7 +1015,7 @@ fn tiles_of(cv: &Canvas) -> (Vec<u8>, Vec<u8>) {
     (tiles.concat(), map)
 }
 
-fn palettes(a: &Art) -> Vec<u8> {
+pub(crate) fn palettes(a: &Art) -> Vec<u8> {
     let _ = a;
     let mut out = Vec::new();
     for bank in [&BANK0, &BANK1] {
@@ -1023,7 +1026,7 @@ fn palettes(a: &Art) -> Vec<u8> {
     out
 }
 
-fn bg0(core: &Core) -> (u32, u32) {
+pub(crate) fn bg0(core: &Core) -> (u32, u32) {
     let c = core.raw_read_16(BG0CNT, -1) as u32;
     (
         0x0600_0000 + 0x4000 * ((c >> 2) & 3),
@@ -1031,7 +1034,7 @@ fn bg0(core: &Core) -> (u32, u32) {
     )
 }
 
-fn write_if_changed(core: &mut Core, at: u32, b: &[u8]) {
+pub(crate) fn write_if_changed(core: &mut Core, at: u32, b: &[u8]) {
     let mut now = vec![0u8; b.len()];
     core.raw_read_range(at, -1, &mut now);
     if now != b {
@@ -1045,7 +1048,7 @@ fn kind_on_list(core: &Core) -> Option<(Kind, bool)> {
     sv::entry_kind_of(id)
 }
 
-fn hash(bytes: &[u8]) -> u32 {
+pub(crate) fn hash(bytes: &[u8]) -> u32 {
     bytes
         .iter()
         .fold(0x811C_9DC5u32, |h, &b| (h ^ b as u32).wrapping_mul(0x0100_0193))
@@ -1075,6 +1078,7 @@ fn page(core: &Core) -> Option<(Kind, bool, u8, u8, u32)> {
 
 /// Survival's War Room is closed: nothing is up.
 pub fn off(core: &mut Core, keys: u32) -> u32 {
+    crate::history_ui::close(core);
     if core.raw_read_8(SHOWN, -1) != 0 {
         core.raw_write_8(SHOWN, -1, 0);
         core.raw_write_8(RECORDS, -1, 0);
@@ -1088,6 +1092,7 @@ pub fn off(core: &mut Core, keys: u32) -> u32 {
 pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
     let mut keys = keys;
     if !selecting(core) {
+        crate::history_ui::close(core);
         if core.raw_read_8(SHOWN, -1) != 0 {
             core.raw_write_8(SHOWN, -1, 0);
             core.raw_write_8(RECORDS, -1, 0);
@@ -1100,6 +1105,15 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
         return keys;
     }
     let pressed = keys & !prev;
+    // The History (crate::history_ui, opened with L) has the screen while it is open; this page is drawn again
+    // when it closes.
+    if crate::history_ui::open(core) {
+        let keys = crate::history_ui::tick(core, a, keys, prev);
+        if !crate::history_ui::open(core) {
+            core.raw_write_32(SIGNATURE, -1, 0);
+        }
+        return keys;
+    }
     let Some((k, champion, phase, recs, _)) = page(core) else {
         return keys;
     };
@@ -1138,6 +1152,9 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
                 }
                 if pressed & KEY_R != 0 {
                     core.raw_write_8(RECORDS, -1, 1);
+                }
+                if pressed & KEY_L != 0 && core.raw_read_8(SHOWN, -1) == 1 {
+                    crate::history_ui::open_now(core);
                 }
             }
             core.raw_write_8(BROWSE, -1, browse as u8);

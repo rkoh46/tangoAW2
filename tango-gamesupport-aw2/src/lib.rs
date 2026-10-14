@@ -10,7 +10,10 @@ pub mod ui {
     pub use tango_gamesupport_common_ui::editor::EMPTY_SAVE_EDITOR as SAVE_EDITOR;
 }
 
+pub mod battle_points;
 pub mod branding;
+pub mod history;
+pub mod history_ui;
 pub mod campaign_menu;
 pub mod design;
 pub mod design5;

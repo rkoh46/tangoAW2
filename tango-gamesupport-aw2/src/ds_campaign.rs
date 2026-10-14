@@ -391,6 +391,8 @@ pub fn stage_slot(core: &mut Core) -> (u8, u32, u32) {
     // (else no DS Campaign is saved: the slot carries the skill data alone,
     // its progress empty, so DS CAMPAIGN offers no Continue)
     b.extend_from_slice(&crate::co_skills::bytes(core));
+    // (the History's record follows: crate::history)
+    b.extend_from_slice(&crate::history::bytes(core));
     core.raw_write_range(STAGING, -1, &b);
     crate::co_skills::written(core);
     (SAVE_SLOT, STAGING, b.len() as u32)
@@ -1009,7 +1011,7 @@ fn read_slot(core: &Core, slot: u8) -> Option<Vec<u8>> {
         }
     }
     let (_, at) = best?;
-    let len = (core.raw_read_16(at + 0x50, -1) as u32).min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN);
+    let len = (core.raw_read_16(at + 0x50, -1) as u32).min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN + crate::history::SAVED_LEN);
     let mut b = vec![0u8; len as usize];
     core.raw_read_range(at + 0x52, -1, &mut b);
     Some(b)
@@ -1024,6 +1026,12 @@ pub fn skills_loaded(core: &mut Core) {
     let saved = read_slot(core, SAVE_SLOT).filter(|b| b.len() > (SAVE_SIZE + RECORDS_SIZE) as usize);
     let part = saved.as_ref().map(|b| &b[(SAVE_SIZE + RECORDS_SIZE) as usize..]);
     crate::co_skills::load(core, part);
+}
+
+/// The History's record as saved after the skill data (crate::history), if the slot has one.
+pub fn saved_history(core: &Core) -> Option<Vec<u8>> {
+    let at = (SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN) as usize;
+    read_slot(core, SAVE_SLOT).filter(|b| b.len() > at).map(|b| b[at..].to_vec())
 }
 
 /// A campaign (Normal, or Hard) has been cleared in the saved record.
@@ -1253,22 +1261,25 @@ fn end_of_battle(core: &mut Core) {
         core.raw_write_8(CREDITS, -1, 1);
         let c = core.raw_read_8(P_CLEARS, -1) | if hard(core) { 2 } else { 1 };
         core.raw_write_8(P_CLEARS, -1, c);
+        if is_ds(core) {
+            crate::history::campaign_cleared(core, hard(core));
+        }
     }
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(4, 0);
     cpu.set_thumb_pc(CAMPAIGN_END_RESET);
 }
 
-/// `InsertBestScoreRecord`: in campaign mode it keeps a mission's best
-/// score at AW2's results `[mapID - 0x8A]` (`gUnknown_0200C2D0`, 8 bytes
-/// each); a DS mission's id (0xF0) would land on the event script slots
-/// (0x0200C600: a slot that never ends, which held the map's save
-/// prompt). The DS Campaign keeps no scores.
+/// `InsertBestScoreRecord` (every battle's end, the results army's score just worked out): Dual Strike's points
+/// and EXP for the battle first (crate::battle_points, while the records still hold the best before it). In
+/// campaign mode the game keeps a mission's best score at AW2's results `[mapID - 0x8A]` (`gUnknown_0200C2D0`, 8
+/// bytes each); a DS mission's id (0xF0) would land on the event script slots (0x0200C600: a slot that never ends,
+/// which held the map's save prompt). A session keeps its missions' bests in its own records instead.
 const BEST_SCORE: u32 = 0x0801_7720;
 fn best_score(core: &mut Core) {
+    crate::battle_points::results(core);
     if active(core) && core.raw_read_8(MAP_ID, -1) == data::MAP_ID {
-        // The DS Campaign's own records instead ([`RECORDS`], AW2's
-        // layout and rule: kept unless the new score is lower).
+        // The session's own records ([`RECORDS`], AW2's layout and rule: kept unless the new score is lower).
         let cpu = core.gba().cpu();
         let (co, score, days) = (cpu.gpr(0) as u32 & 0xFF, cpu.gpr(2) as u32 & 0xFFF, cpu.gpr(3) as u32 & 0xFFF);
         let index = core.raw_read_8(MISSION, -1) as u32;
@@ -1277,18 +1288,6 @@ fn best_score(core: &mut Core) {
             let old = core.raw_read_32(at, -1);
             if score >= old >> 20 {
                 core.raw_write_32(at, -1, co | days << 8 | score << 20);
-            }
-        }
-        // EXP for each of the player's COs (crate::co_skills::battle_exp).
-        skills_loaded(core);
-        let players = core.raw_read_32(0x0849_9598, -1);
-        let hard = hard(core);
-        for a in 1..=4u32 {
-            let p = players + 0x3C * a;
-            if core.raw_read_8(p + 0x1B, -1) == 1 {
-                let co = core.raw_read_8(p + 0x1D, -1);
-                let n = crate::co_skills::campaign_exp(score, index as u8, hard);
-                crate::co_skills::add_exp(core, co, n);
             }
         }
         let cpu = core.gba_mut().cpu_mut();
