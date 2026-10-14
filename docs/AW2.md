@@ -1159,6 +1159,11 @@ Battle rules, as Dual Strike's code has them (checked against the decomp,
   callers of the movement function (the CPU's threat and planning ranges)
   never read fuel and are left alone. Example: a Tank's 4-square move in
   snow uses 8 fuel; one with 5 fuel reaches 2 squares.
+- **Sandstorm range** (`GetCoRangeBonus`): a unit whose own maximum range
+  is 2 or more loses 1 of its maximum range (CO bonus included), never
+  below 2, under every CO (tangoAW2 exempted Max and Grit and kept the
+  unit's minimum range as the floor): Grit's Rockets 3-5, Max's Rockets
+  3-3 (`sandstorm::range`, 0x08042D76).
 
 `tools/aw2test` plays real battles in both modes and checks them against its
 own damage calculator (Dual Strike's numbers read from the .nds in `ds` mode),

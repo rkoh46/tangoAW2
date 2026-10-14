@@ -1,8 +1,7 @@
 """Weather: the Rules screen's choices, and Dual Strike's Sandstorm (pack only).
 
-Sandstorm (Dual Strike): every unit that fires from a distance loses 1 of its
-maximum range (never below its minimum), except under Max and Grit (and
-Jugger). Direct units are unchanged. Fixed Sandstorm is gPlaySt weather 0,
+Sandstorm (Dual Strike's GetCoRangeBonus): every unit whose own maximum range
+is 2 or more loses 1 of its maximum range, never below 2, under every CO. Direct units are unchanged. Fixed Sandstorm is gPlaySt weather 0,
 mode 3, next 0, default 0 (0x03003FEC..EF = 00 03 00 00); a random one-day
 sandstorm sets 0x03004493 to 2.
 
@@ -19,7 +18,6 @@ RAIN_CHANCE = 0x03004491
 SNOW_CHANCE = 0x03004492
 SANDSTORM_DAY = 0x03004493
 ONE_DAY = 2
-EXEMPT = ("max", "grit")
 
 # attacker, its cell, the enemy it aims at, and the direction of the enemy
 PAIRS = [
@@ -62,8 +60,8 @@ def check_ranges(ctx, g, cases, co, sandstorm):
     (distances are read from RAM, so CPU moves are allowed for)."""
     for unit, pos, d, lo, hi in cases:
         eff = hi
-        if sandstorm and hi > 1 and co not in EXEMPT:
-            eff = max(lo, hi - 1)
+        if sandstorm and ctx.image.unit(romlib.unit_id(unit))["max_range"] >= 2:
+            eff = max(2, hi - 1)
         me = g.unit_at(*pos)
         if me is None:
             ctx.log(f"{unit} at {pos} is gone; not checked")
