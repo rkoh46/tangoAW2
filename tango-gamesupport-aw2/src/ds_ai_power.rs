@@ -19,8 +19,8 @@
 //! The hooks ([`crate::ds_ai::Hook`]): most COs only at the first check; Andy with a hurt unit; Olaf not the CO
 //! Power in snow; Sonja the CO Power only in fog or rain; Sasha also with 30000 funds and an enemy nearer its
 //! power; Drake any time in fog or rain, else the Super after the first check; Eagle only at the last check
-//! (Dual Strike then runs the unit phases again after Lightning Strike; AW2's passes do not run twice: here
-//! his Super comes at the last check and the units that have not moved yet move after it); Colin's CO Power
+//! (and then, as Dual Strike does, the passes run again from the one after the first check, so his units move
+//! again after Lightning Strike); Colin's CO Power
 //! while he owns a factory; Hawke always; Hachi anything while he owns a factory; Kindle her CO Power with
 //! enemies on properties.
 //!
@@ -85,6 +85,12 @@ impl Meter {
     fn partner_super_ready(&self) -> bool {
         self.partner.is_some_and(|(c, s)| s > 0 && c >= s)
     }
+}
+
+/// Army `army`'s Super is paid for (and its partner's, with one).
+pub(crate) fn super_ready(core: &Core, army: u32) -> bool {
+    let m = Meter::read(core, army);
+    m.super_ready() && (m.partner.is_none() || m.partner_super_ready())
 }
 
 /// The army owns a base, airport or port (`gAiTurnState->factoryDomainsOwn`).
@@ -212,6 +218,15 @@ fn decide_trap(core: &mut Core) {
     if to != NOTHING {
         // Dual Strike's `AiProfile_RerandomiseForPlayer`: the threat limits at the top for the rest of the turn.
         set_profile_roll(core, army, if behaviour(core, army) == DEFENSE { 0 } else { 100 });
+        // Eagle's Super at the last check (Lightning Strike: his units move again): the passes run again from the
+        // one after the first check, as Dual Strike sets its phase back to 3 (`func_02099338`); the checks on the
+        // way find his power on.
+        if to == SUPER && profile(co).is_some_and(|p| p.hook == Hook::Last) {
+            core.raw_write_32(PASS, -1, 1);
+            if logging() {
+                log(&format!("dsai power army {army}: Lightning Strike, the passes run again"));
+            }
+        }
     }
     core.gba_mut().cpu_mut().set_thumb_pc(to);
 }

@@ -86,13 +86,25 @@ fn visible(b: &Board, sight: &[bool], army: u32, e: &Unit) -> bool {
     sight[i]
 }
 
+/// `Ai_UnitUsesThreatMaps`'s Eagle rule: before the last power check, while his Super (both, with a partner) is
+/// paid for, his units other than foot soldiers ignore the threat maps (Lightning Strike will move them again).
+fn eagle_rush(core: &Core, army: u32, t: u8) -> bool {
+    let (co, _) = army_co(core, army);
+    if crate::tag::ds_id(co) != Some(9) || t <= MECH {
+        return false;
+    }
+    let pass = core.raw_read_32(0x0300_4770, -1);
+    let last = if core.raw_read_8(0x0300_3FCD, -1) != 0 { 22 } else { 18 };
+    pass < last && crate::ds_ai_power::super_ready(core, army)
+}
+
 /// Dual Strike's threat maps against a unit of type `t` of `army` at (x, y) with `moves` move points
 /// (`Ai_BuildThreatMaps` / `Ai_AddEnemyThreat`): (`threatMax`, `threatSum`).
 pub(crate) fn threat_maps(core: &Core, b: &Board, army: u32, t: u8, x: i32, y: i32, moves: i32) -> (Vec<u8>, Vec<u8>) {
     let n = b.class.len();
     let (mut max, mut sum) = (vec![0u8; n], vec![0u8; n]);
     let beh = behaviour(core, army);
-    if beh == STRIKE || crate::tag::phase(core, army) == 1 {
+    if beh == STRIKE || crate::tag::phase(core, army) == 1 || eagle_rush(core, army, t) {
         return (max, sum);
     }
     let sight = seen(b, army);

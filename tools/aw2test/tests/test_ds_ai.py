@@ -185,3 +185,25 @@ if os.environ.get("AW2TEST_DSAI_BOT"):
                 vs_bot(ctx, name, int(os.environ.get("AW2TEST_DSAI_DAYS", "14")), sw)
             _fn.__name__ = f"ds_ai_vs_bot_{_tag}_" + _name.lower().replace(" ", "_")
             test(modes=("ds",))(_fn)
+
+
+@test(modes=("ds",))
+def ds_ai_eagle_lightning_strike_moves_again(ctx):
+    """Eagle's CPU keeps his Super for the last power check of the turn; Lightning Strike then lets his units move
+    again, and the passes run again (crate::ds_ai_power, as Dual Strike's func_02099338)."""
+    m = ctx.map()
+    m.unit(1, "tank", 3, 3).unit(1, "infantry", 4, 4)
+    m.unit(2, "tank", 26, 16)
+    g = ctx.start(m, ["andy", "eagle"])
+    g.charge_power(2, "super")
+    before = [(u["x"], u["y"]) for u in g.units(2) if u["type"] == 5]
+    g.end_turn()
+    after = [(u["x"], u["y"]) for u in g.units(2) if u["type"] == 5]
+    lines = [l for l in g.e.decisions() if l.startswith("dsai power") or l.startswith("dsai move")]
+    ctx.log("\n".join(lines))
+    ctx.check(any("Super" in l and "pass 18" in l for l in lines), "the Super at the last check (pass 18)")
+    ctx.check(any("Lightning Strike" in l for l in lines), "the passes ran again")
+    ctx.eq(g.player(2)["powers_used"], 1, "Eagle used his Super")
+    moved = abs(after[0][0] - before[0][0]) + abs(after[0][1] - before[0][1]) if after and before else 0
+    ctx.log(f"tank {before} -> {after}")
+    ctx.check(moved > 6, f"the Tank moved twice ({moved} cells, its move is 6)")
