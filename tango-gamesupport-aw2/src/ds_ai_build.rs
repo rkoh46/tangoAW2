@@ -178,6 +178,8 @@ pub(crate) struct Plan<'a> {
     pub builds: Vec<Build>,
     pub notes: Vec<String>,
     k: u32,
+    /// Floods already worked out this turn (the planned units are the army's own, and block no flood of its own).
+    floods: std::cell::RefCell<std::collections::HashMap<(u32, u8, i32, i32, i32, bool), std::rc::Rc<Vec<i16>>>>,
 }
 
 impl<'a> Plan<'a> {
@@ -208,8 +210,20 @@ impl<'a> Plan<'a> {
             builds: Vec::new(),
             notes: Vec::new(),
             k: 0,
+            floods: Default::default(),
             b,
         })
+    }
+
+    /// [`Board::flood`], remembered for the turn.
+    fn flood(&self, army: u32, t: u8, x: i32, y: i32, budget: i32, ring: bool) -> std::rc::Rc<Vec<i16>> {
+        let key = (army, t, x, y, budget, ring);
+        if let Some(f) = self.floods.borrow().get(&key) {
+            return f.clone();
+        }
+        let f = std::rc::Rc::new(self.b.flood(army, t, x, y, budget, ring));
+        self.floods.borrow_mut().insert(key, f.clone());
+        f
     }
 
     fn price(&self, t: u8) -> i64 {
@@ -341,7 +355,7 @@ impl<'a> Plan<'a> {
             }
             let g = self.groups.len();
             let (sx, sy) = (self.sites[s].x, self.sites[s].y);
-            let reach = self.b.flood(army, INFANTRY, sx, sy, FAR, false);
+            let reach = self.flood(army, INFANTRY, sx, sy, FAR, false);
             for o in self.sites.iter_mut() {
                 if reach[self.b.idx(o.x, o.y)] >= 0 {
                     o.group = g;
@@ -415,7 +429,7 @@ impl<'a> Plan<'a> {
     fn rate_surroundings(&mut self, g: usize, fx: i32, fy: i32) {
         let army = self.army;
         // (Dual Strike's range map is the group's first site's Tank reach here, left by `AiSite_RateLandmass`.)
-        let reach = self.b.flood(army, TANK, fx, fy, FAR, true);
+        let reach = self.flood(army, TANK, fx, fy, FAR, true);
         let r = self.header(8) as i32;
         let enemies: Vec<Unit> = self.b.units.iter().filter(|u| !u.carried() && self.enemy(u.army)).copied().collect();
         for s in 0..self.sites.len() {
@@ -430,7 +444,7 @@ impl<'a> Plan<'a> {
                     self.sites[s].enemy_distance = self.sites[s].enemy_distance.min(d);
                 }
             }
-            let near = self.b.flood(army, TANK, sx, sy, r, false);
+            let near = self.flood(army, TANK, sx, sy, r, false);
             let (mut bal, mut count) = (0, 0);
             for u in self.b.units.iter().filter(|u| !u.carried()) {
                 let d = (u.x - sx).abs() + (u.y - sy).abs();
@@ -453,7 +467,7 @@ impl<'a> Plan<'a> {
             self.sites[s].balance = bal;
             self.sites[s].enemies = count;
             if self.sites[s].property_moves == 0xFF {
-                let inf = self.b.flood(army, INFANTRY, sx, sy, FAR, false);
+                let inf = self.flood(army, INFANTRY, sx, sy, FAR, false);
                 for i in 0..inf.len() {
                     if inf[i] >= 0 && PROPERTIES.contains(&self.b.class[i]) && !self.owned_by_team(i) {
                         self.sites[s].property_moves = self.sites[s].property_moves.min(inf[i] as i32);
@@ -468,7 +482,7 @@ impl<'a> Plan<'a> {
     /// else the army's foot units there + 1; bit 8 when the landmass wants sea transport.
     fn rate_landmass(&self, x: i32, y: i32) -> i32 {
         let army = self.army;
-        let reach = self.b.flood(army, TANK, x, y, FAR, true);
+        let reach = self.flood(army, TANK, x, y, FAR, true);
         let wants_sea = self.prof.header[9] & 0x0C != 0;
         let landers = self.count(LANDER) > 0;
         let (mut capturable, mut foot, mut transport) = (false, 0, false);
@@ -539,7 +553,7 @@ impl<'a> Plan<'a> {
             }
             let threat = (damage * hp.min(100) / 100).min(255) as u8;
             if direct {
-                let reach = self.b.flood(u.army, u.t, u.x, u.y, self.b.moves(u.army, u.t), true);
+                let reach = self.flood(u.army, u.t, u.x, u.y, self.b.moves(u.army, u.t), true);
                 for i in 0..n {
                     if reach[i] >= 0 && threat > max[i] {
                         max[i] = threat;
@@ -664,7 +678,7 @@ impl<'a> Plan<'a> {
         let air = stats(t).group & AIR != 0;
         let mut cover = 0;
         if air {
-            let reach = self.b.flood(self.army, FIGHTER, x, y, self.b.moves(self.army, FIGHTER), true);
+            let reach = self.flood(self.army, FIGHTER, x, y, self.b.moves(self.army, FIGHTER), true);
             for u in self.b.units.iter().filter(|u| !u.carried() && u.t == FIGHTER && self.b.same_team(u.army, self.army)) {
                 if reach[self.b.idx(u.x, u.y)] >= 0 {
                     cover += u.hp;
@@ -678,7 +692,7 @@ impl<'a> Plan<'a> {
                 continue;
             }
             let hits_next_to = |me: &Self| {
-                let r = me.b.flood(u.army, u.t, u.x, u.y, me.b.moves(u.army, u.t), true);
+                let r = me.flood(u.army, u.t, u.x, u.y, me.b.moves(u.army, u.t), true);
                 r[me.b.idx(x, y)] >= 0
             };
             let damage = base_damage(u.t, t) * u.hp / 100;
@@ -839,7 +853,7 @@ impl<'a> Plan<'a> {
         self.enemy_hp = [0; 28];
         self.own_hp = [0; 28];
         let r = self.header(8) as i32;
-        let near = site.map(|s| (self.sites[s].x, self.sites[s].y, self.b.flood(self.army, TANK, self.sites[s].x, self.sites[s].y, r, false)));
+        let near = site.map(|s| (self.sites[s].x, self.sites[s].y, self.flood(self.army, TANK, self.sites[s].x, self.sites[s].y, r, false)));
         for u in &self.b.units {
             if !self.b.playing[u.army as usize % 6] {
                 continue;
@@ -1118,7 +1132,7 @@ impl<'a> Plan<'a> {
     fn sub_reach(&self, count: bool) -> Vec<i32> {
         let mut out = vec![if count { 0 } else { 127 }; self.b.class.len()];
         for u in self.b.units.iter().filter(|u| !u.carried() && u.t == SUB && u.hp > 20 && self.enemy(u.army)) {
-            let reach = self.b.flood(u.army, SUB, u.x, u.y, FAR, true);
+            let reach = self.flood(u.army, SUB, u.x, u.y, FAR, true);
             let guarded = self.b.units.iter().any(|c| {
                 !c.carried() && c.t == CRUISER && c.hp >= 40 && self.b.same_team(c.army, self.army) && reach[self.b.idx(c.x, c.y)] >= 0
             });
@@ -1206,7 +1220,7 @@ impl<'a> Plan<'a> {
             if feet.is_empty() {
                 break;
             }
-            let reach = self.b.flood(self.army, INFANTRY, self.sites[s].x, self.sites[s].y, FAR, false);
+            let reach = self.flood(self.army, INFANTRY, self.sites[s].x, self.sites[s].y, FAR, false);
             self.sites[s].foot = feet.iter().map(|&(x, y)| reach[self.b.idx(x, y)] as i32).filter(|&d| d >= 0).min().unwrap_or(0xFF);
         }
     }
@@ -1267,18 +1281,23 @@ impl<'a> Plan<'a> {
             if !by_pipe || self.pipe_network(x, y) < crate::cpu_tactics::MIN_PIPE_NETWORK {
                 continue;
             }
-            let reach = self.b.flood(self.army, PIPERUNNER, x, y, FAR, false);
+            let reach = self.flood(self.army, PIPERUNNER, x, y, FAR, false);
+            // (the reach, and the cells within the Piperunner's range of it)
+            let mut covered = vec![false; reach.len()];
+            for j in (0..reach.len()).filter(|&j| reach[j] >= 0) {
+                let (jx, jy) = (j as i32 % self.b.w, j as i32 / self.b.w);
+                for cy in (jy - max).max(0)..=(jy + max).min(self.b.h - 1) {
+                    for cx in (jx - max).max(0)..=(jx + max).min(self.b.w - 1) {
+                        if (cx - jx).abs() + (cy - jy).abs() <= max {
+                            covered[self.b.idx(cx, cy)] = true;
+                        }
+                    }
+                }
+            }
             let (mut own, mut foes) = (0, 0);
             for u in self.b.units.iter().filter(|u| !u.carried()) {
                 let i = self.b.idx(u.x, u.y);
-                let within = reach[i] >= 0
-                    || (0..self.b.class.len()).any(|j| {
-                        reach[j] >= 0 && {
-                            let d = (j as i32 % self.b.w - u.x).abs() + (j as i32 / self.b.w - u.y).abs();
-                            d >= 1 && d <= max
-                        }
-                    });
-                if !within {
+                if !covered[i] {
                     continue;
                 }
                 if u.army == self.army {
@@ -1491,7 +1510,11 @@ impl<'a> Plan<'a> {
 
     /// The turn's builds (`AiTurn_RunEndActions`).
     pub fn run(&mut self) {
+        let t0 = std::time::Instant::now();
         self.start();
+        if logging() {
+            self.notes.push(format!("start took {} us", t0.elapsed().as_micros()));
+        }
         let day1 = self.b.day <= 1;
         let mut step = 1;
         let mut guard = 0;
@@ -1501,6 +1524,7 @@ impl<'a> Plan<'a> {
                 break;
             }
             let none = self.own == 0;
+            let t0 = std::time::Instant::now();
             let again = match step {
                 1 => self.step_anti_air(),
                 2 if day1 && none => false,
@@ -1517,6 +1541,12 @@ impl<'a> Plan<'a> {
                 8 => self.step_transport(),
                 _ => self.step_main(),
             };
+            if logging() {
+                let us = t0.elapsed().as_micros();
+                if us > 500 {
+                    self.notes.push(format!("step {step} took {us} us"));
+                }
+            }
             if !again {
                 if step == 8 {
                     self.score_piperunner_sites();
