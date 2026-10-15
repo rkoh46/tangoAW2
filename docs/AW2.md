@@ -4228,9 +4228,21 @@ tests). Online play starts in the game, played alone:
   save prompt are the host's; on the Teams screen UP/DOWN, SELECT, L, R and
   START come from the seat of the army under the cursor (with the pack, a
   partner being picked: everything but A and B), LEFT/RIGHT from both, A and
-  B from the host; every army is a human's. A on a map whose header (+0x18)
-  has another number of armies than players is refused ("Pick a map for 2
-  players."). After a battle the game is back on SELECT MAP (a rematch); B
+  B from the host; every army is a human's. SELECT MAP is AW2's own screen,
+  filled for the room (`online_maps.rs`): every frame, after `show_maps`,
+  `retab` sets each Versus map's header tab (+0x1A, what the list builder
+  `0x08037448` sorts by) for the room's count: 2 players Classic (tab 2) and
+  Pre-Deployed (4, units placed: the unit list's first record is `0xFE`), 3
+  "3P Maps" (5) and Pre-Deployed, 4 "4P Maps" (6) and Pre-Deployed, 5 "5P
+  Maps" (9); every other map (and the Design Room's `0xB4..0xB7`) on tab
+  `0x7E`, which no list shows, so the game's own tabs, list, picture, size and
+  property boxes work as offline and cannot reach another count's map (a
+  5-army map says 4 in its header: `five_map::is_five_map`). The map table is
+  the game's (`five_map::table`: AW2's, or Dual Strike's with the pack). The
+  host drives it. The list is built when the screen opens, so the boot walk
+  stops on Versus' box (New) until the session's first tick has told it the
+  room's size (`waiting_for_room`). `online_maps::list(core, armies,
+  predeployed)` and `preview` serve other screens (UNRANKED). After a battle the game is back on SELECT MAP (a rematch); B
   there, back to Select Mode, raises `online::match_over`, which the shared
   console reports as the match's end through its telemetry: both peers
   complete on the same tick and the replay is finished. The app then boots

@@ -979,7 +979,7 @@ fn nav(core: &mut Core) -> Option<u32> {
                     0
                 } else if row != BOX_NEW {
                     pulse(t, 24, KEY_DOWN)
-                } else if t % 24 >= 16 {
+                } else if t % 24 >= 16 && room_known(core) {
                     next(core, 5);
                     0
                 } else {
@@ -1015,11 +1015,25 @@ fn nav(core: &mut Core) -> Option<u32> {
     Some(keys)
 }
 
+/// The room's size is known (the session's first tick sets it, [`crate::online_teams::players`]).
+fn room_known(core: &Core) -> bool {
+    core.raw_read_8(PLAYERS_N_FOR_PROBE, -1) != 0
+}
+
+/// The walk to SELECT MAP stands at Versus' box on New until the session says how many players the room has (the
+/// map list is made for them, crate::online_maps): the boot ends here and the session's first ticks go on.
+fn waiting_for_room(core: &Core) -> bool {
+    !room_known(core)
+        && core.raw_read_8(NAV_GOAL, -1) == GOAL_VERSUS
+        && core.raw_read_8(NAV_STEP, -1) == 3
+        && crate::campaign_menu::box_cursor(core) == Some(BOX_NEW)
+}
+
 /// Whether the console should run another tick before its session takes over: the walk of an online match
 /// (netplay: to SELECT MAP) or of a console asked to boot to the lobby.
 pub fn boot_more(core: &Core, mode: Option<(u8, u8)>) -> bool {
     match mode {
-        Some((_, sub)) if sub & ONLINE_MATCH != 0 => core.raw_read_8(MATCH, -1) == 0 || navigating(core),
+        Some((_, sub)) if sub & ONLINE_MATCH != 0 => core.raw_read_8(MATCH, -1) == 0 || (navigating(core) && !waiting_for_room(core)),
         None => BOOT_TO_LOBBY.load(Ordering::Relaxed) || navigating(core),
         _ => false,
     }
@@ -1053,7 +1067,9 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             let mut keys = keys;
             // The list only lands on maps for as many armies as there are players: a move onto another map goes on
             // in the same direction (a press every few frames) until one fits.
-            if crate::survival_ui::idle(core) && !unranked {
+            // (a room's SELECT MAP lists only maps for its count, crate::online_maps: none to skip or refuse)
+            let paged = crate::online_maps::owns(core);
+            if crate::survival_ui::idle(core) && !paged && !unranked {
                 let want = crate::online_teams::players(core) as u8;
                 let wrong = map_armies(core, pack).is_some_and(|n| n != want);
                 let pressed = keys & !prev;
@@ -1118,6 +1134,7 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
                 keys = crate::unranked::rules(core, keys);
             }
             if keys & !prev & KEY_A != 0
+                && !paged
                 && crate::survival_ui::idle(core)
                 && map_armies(core, pack).is_some_and(|n| n as usize != crate::online_teams::players(core))
             {
