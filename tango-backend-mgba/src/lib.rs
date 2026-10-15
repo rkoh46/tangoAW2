@@ -9,7 +9,7 @@ pub mod gba;
 pub mod shared;
 
 pub use gba::JOYFLAGS_MASK;
-pub use shared::{SharedBackend, SharedGame, SharedLink};
+pub use shared::{Scratch, SharedBackend, SharedGame, SharedLink};
 
 /// Simulation failure, as this engine reports it. Converts into the
 /// seam's [`tango_match::Error`], which cannot name mgba's error type.

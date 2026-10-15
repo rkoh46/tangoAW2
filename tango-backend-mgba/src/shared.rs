@@ -24,6 +24,43 @@ use tango_match::{HostInput, Side};
 
 use crate::gba::{to_rgba, JOYFLAGS_MASK};
 
+/// A waiting window's picture is made again after this many ticks.
+const WATCH_EVERY: u32 = 2;
+
+/// The scratch copy of the console a [`SharedGame::view_as`] works on.
+pub trait Scratch {
+    fn core(&self) -> &mgba::core::Core;
+    fn core_mut(&mut self) -> &mut mgba::core::Core;
+    /// One tick with `keys` held, the game's [`before_tick`](SharedGame::before_tick) first; false if it failed.
+    fn tick(&mut self, keys: u32) -> bool;
+    /// Four words of the game's own that live as long as the link, per seat (not in the console: they are only ever
+    /// read by [`view_as`](SharedGame::view_as), so the simulation cannot see them).
+    fn memory(&mut self) -> &mut [i32; 4];
+}
+
+struct ScratchConsole<'a> {
+    link: &'a mut mgba_rollback::Link,
+    game: &'static (dyn SharedGame + Send + Sync),
+    mode: Option<(u8, u8)>,
+    memory: &'a mut [i32; 4],
+}
+
+impl Scratch for ScratchConsole<'_> {
+    fn core(&self) -> &mgba::core::Core {
+        self.link.core(0)
+    }
+    fn core_mut(&mut self) -> &mut mgba::core::Core {
+        self.link.core_mut(0)
+    }
+    fn tick(&mut self, keys: u32) -> bool {
+        let word = self.game.before_tick(self.link.core_mut(0), self.mode, keys & JOYFLAGS_MASK) & JOYFLAGS_MASK;
+        self.link.try_tick(&[word]).is_ok()
+    }
+    fn memory(&mut self) -> &mut [i32; 4] {
+        self.memory
+    }
+}
+
 /// Game support for a shared-console title.
 pub trait SharedGame: Sync {
     /// The game half of [`Backend::sim_version`](tango_match::Backend::sim_version).
@@ -53,20 +90,20 @@ pub trait SharedGame: Sync {
         keys
     }
 
-    /// Whether `seat` is watching a turn that is not its own, in a game whose picture is the mover's (fog of war):
-    /// its window is then made on a scratch copy of the console ([`view_as`](Self::view_as)). Presentation only,
-    /// read after the tick.
+    /// Whether `seat` is watching a turn that is not its own, so that its window is made on a scratch copy of the
+    /// console ([`view_as`](Self::view_as)) and not from the console's own picture, which is the mover's: its menus,
+    /// its cursor, and with fog of war its vision. Presentation only, read after the tick.
     fn watching(&self, core: &mgba::core::Core, seat: usize) -> bool {
         let _ = (core, seat);
         false
     }
 
-    /// On the scratch copy of the console (restored from a snapshot afterwards, so nothing here persists), make the
-    /// game draw `seat`'s view of the turn; returns the ticks to run, with an idle pad and the game's
-    /// [`before_tick`](Self::before_tick) as usual, before the picture is taken (0: show the console's own).
-    fn view_as(&self, core: &mut mgba::core::Core, seat: usize) -> u32 {
-        let _ = (core, seat);
-        0
+    /// On a scratch copy of the console (restored from a snapshot afterwards, so nothing done here persists),
+    /// make the game draw what `seat` may see of the turn: run ticks as it likes through `scratch`. Returns whether
+    /// the console now shows the picture (false: show the last one made).
+    fn view_as(&self, scratch: &mut dyn Scratch, seat: usize) -> bool {
+        let _ = (scratch, seat);
+        false
     }
 
     /// Whether `seat` should be shown nothing right now: a hot-seat game
@@ -169,6 +206,10 @@ pub struct SharedLink {
     /// session's tick count it stamps.
     telemetry: Option<tango_match::telemetry::Telemetry<mgba::core::Core>>,
     tick: u32,
+    /// Each seat's last waiting picture (shown while the game cannot make one) and its view memory.
+    watched: [Option<Vec<u8>>; 2],
+    watched_at: [Option<u32>; 2],
+    view_memory: [[i32; 4]; 2],
 }
 
 impl SharedLink {
@@ -215,6 +256,9 @@ impl SharedLink {
             render: [true, true],
             telemetry: None,
             tick: 0,
+            watched: [None, None],
+            watched_at: [None, None],
+            view_memory: [[0; 4]; 2],
         })
     }
 
@@ -257,10 +301,29 @@ impl SharedLink {
         self.inner.core_mut(0)
     }
 
-    /// `seat`'s window while another seat plays: the picture of a scratch copy of the console, made to draw the
-    /// seat's own view ([`SharedGame::view_as`]), after which the console is loaded back from a snapshot taken
-    /// first, the sound the ticks made is dropped and the frameskip is back, so the simulation never sees any of it.
-    fn watching_frame(&mut self, seat: usize) -> Option<Vec<u8>> {
+    /// `seat`'s window while another seat plays: the picture of a scratch copy of the console, made by the game
+    /// ([`SharedGame::view_as`]), after which the console is loaded back from a snapshot taken first, the sound the
+    /// ticks made is dropped and the frameskip is back, so the simulation never sees any of it. The seat's last
+    /// picture stands in when the game cannot make one now (a battle scene, a full-screen page).
+    fn watching_frame(&mut self, seat: usize) -> Vec<u8> {
+        // (a window that updates every other tick: the scratch picture is the costly part of a frame)
+        if let Some((f, at)) = self.watched[seat].as_ref().zip(self.watched_at[seat]) {
+            if self.tick.wrapping_sub(at) < WATCH_EVERY {
+                return f.clone();
+            }
+        }
+        let made = self.scratch_frame(seat);
+        match made {
+            Some(f) => {
+                self.watched[seat] = Some(f.clone());
+                self.watched_at[seat] = Some(self.tick);
+                f
+            }
+            None => self.watched[seat].clone().unwrap_or_else(|| concealed(&vec![0u8; 240 * 160 * 4])),
+        }
+    }
+
+    fn scratch_frame(&mut self, seat: usize) -> Option<Vec<u8>> {
         let snap = self.inner.save().ok()?;
         let game = self.game;
         let mode = self.mode;
@@ -272,24 +335,19 @@ impl SharedLink {
             kept
         };
         self.inner.set_frameskip(0, 0);
-        let ticks = game.view_as(self.inner.core_mut(0), seat);
-        let mut ok = ticks > 0;
-        for _ in 0..ticks {
-            let word = game.before_tick(self.inner.core_mut(0), mode, 0) & JOYFLAGS_MASK;
-            if self.inner.try_tick(&[word]).is_err() {
-                ok = false;
-                break;
+        let mut frame = None;
+        {
+            let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat] };
+            if game.view_as(&mut scratch, seat) {
+                frame = scratch.link.video_buffer(0).map(to_rgba);
+                if let Some(f) = frame.as_mut() {
+                    let core = scratch.link.core(0);
+                    if game.overlay_hires(core, mode, seat, f).is_none() {
+                        game.overlay(core, mode, seat, f);
+                    }
+                }
             }
         }
-        let mut frame = ok.then(|| self.inner.video_buffer(0).map(to_rgba)).flatten();
-        if let Some(f) = frame.as_mut() {
-            let core = self.inner.core(0);
-            if game.overlay_hires(core, mode, seat, f).is_none() {
-                game.overlay(core, mode, seat, f);
-            }
-        }
-        // (a failed load leaves a console the next tick would run from the scratch state: that is the engine's to
-        // resync, as for any failed restore; it is not expected)
         let _ = self.inner.load(&snap);
         {
             let buf = self.inner.core_mut(0).audio_buffer();
@@ -377,11 +435,7 @@ struct SharedSide<'a> {
 impl Side for SharedSide<'_> {
     fn frame(&mut self) -> Option<Vec<u8>> {
         if self.conceal && self.link.game.watching(self.link.inner.core(0), self.player) {
-            // (the scratch console failing to give a picture shows nothing rather than the mover's view)
-            return Some(self.link.watching_frame(self.player).unwrap_or_else(|| {
-                let own = self.link.inner.video_buffer(0).map(to_rgba).unwrap_or_default();
-                concealed(&own)
-            }));
+            return Some(self.link.watching_frame(self.player));
         }
         let mut frame = self.link.inner.video_buffer(0).map(to_rgba)?;
         let core = self.link.inner.core(0);

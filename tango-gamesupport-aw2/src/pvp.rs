@@ -545,17 +545,14 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::online::match_over(core)
     }
 
+    /// The waiting seat's window is not the console's picture (crate::fog_view).
     fn watching(&self, core: &Core, seat: usize) -> bool {
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
-        in_battle(core)
-            && core.raw_read_8(FOG, -1) != 0
-            && (1..=5).contains(&current)
-            && seat_of(current) != seat
-            && !turn_ended(core)
+        in_battle(core) && (1..=5).contains(&current) && seat_of(current) != seat && !turn_ended(core)
     }
 
-    fn view_as(&self, core: &mut Core, seat: usize) -> u32 {
-        crate::fog_view::begin(core, seat)
+    fn view_as(&self, scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) -> bool {
+        crate::fog_view::view(scratch, seat)
     }
 
     fn before_tick(&self, core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {

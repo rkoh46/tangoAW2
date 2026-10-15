@@ -18,7 +18,7 @@ use mgba::core::Core;
 
 /// The game's choice of which armies' vision the next refresh builds (`sub_08020984`: from the current army and its
 /// controller, which armies are viewers), then the map refresh, as a turn start runs them.
-const CALLS: [u32; 2] = [0x0802_0984, REFRESH];
+const CALLS: [(u32, bool); 5] = [(0x0802_0984, false), (0x0801_A548, true), (0x0801_A57C, true), (0x0804_3834, true), (REFRESH, false)];
 /// The game's map refresh: vision planes of every army, then the terrain and unit layers redrawn.
 const REFRESH: u32 = 0x0802_58CC;
 /// Alignment padding between two functions (`movs r0, r0`), never executed: the refresh returns here.
@@ -29,25 +29,163 @@ const CALL_LEN: u32 = 4 + 15 * 4;
 
 const CURRENT_PLAYER: u32 = 0x0300_33EC;
 
-/// Ticks the scratch console runs: the call at the first flush, then the frames that carry the redraw to the screen.
-pub const TICKS: u32 = 4;
-
-/// The army whose picture `seat` gets: its first army still playing after the current one in turn order (the army
-/// that will play next, whose "Next turn" screen it will see), else any.
-pub fn viewer_army(core: &Core, seat: usize) -> Option<u8> {
+/// The army whose picture `seat` gets: its first army still playing after the current one in turn order, else any.
+fn viewer_army(core: &Core, seat: usize) -> Option<u8> {
     let current = crate::pvp::current_army(core) as usize;
     let armies = core.raw_read_8(0x0201_7C58, -1) as usize;
     let alive = |a: usize| a <= armies;
     (1..=5).map(|k| (current + k - 1) % 5 + 1).find(|&a| alive(a) && crate::pvp::seat_of(a as u8) == seat).map(|a| a as u8)
 }
 
-/// Prepares the scratch console for `seat`'s picture and returns the ticks to run.
-pub fn begin(core: &mut Core, seat: usize) -> u32 {
-    let Some(army) = viewer_army(core, seat) else { return 0 };
-    core.raw_write_8(CURRENT_PLAYER, -1, army);
+const FOG: u32 = 0x0300_3FCD;
+const MAIN_LOOP: u32 = 0x0300_0000;
+/// The main-loop callback while the map is on screen and nothing else (no battle scene, no full-screen page).
+const MAP_LOOP: u32 = 0x0802_2049;
+/// gMap: size (halfwords), scroll in pixels at +4/+6 (the refresh copies them to +8/+0xA), row offsets at +0x417A,
+/// terrain classes at +0x1432, the displayed vision plane at +0x234A.
+const MAP: u32 = 0x0201_E450;
+/// The cursor: cell and pixel position (halfword pairs).
+const CURSOR: u32 = 0x0300_33E4;
+const CURSOR_PX: u32 = 0x0300_33E0;
+const KEY_B: u32 = 1 << 1;
+
+fn cell(core: &Core, x: i32, y: i32) -> u32 {
+    core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32 + x as u32
+}
+
+fn size(core: &Core) -> (i32, i32) {
+    (core.raw_read_16(MAP, -1) as i32, core.raw_read_16(MAP + 2, -1) as i32)
+}
+
+/// Whether the army the window belongs to sees the cell now (the plane the game drew from).
+fn seen(core: &Core, x: i32, y: i32) -> bool {
+    core.raw_read_8(MAP + 0x234A + cell(core, x, y), -1) != 0
+}
+
+/// Where `army`'s window starts looking: its HQ.
+fn anchor(core: &Core, army: u8) -> (i32, i32) {
+    let (w, h) = size(core);
+    for y in 0..h {
+        for x in 0..w {
+            let class = core.raw_read_8(MAP + 0x1432 + cell(core, x, y), -1);
+            if class & 0x1F == 8 && class >> 5 == army {
+                return (x, y);
+            }
+        }
+    }
+    (0, 0)
+}
+
+/// Whether the map's UI has anything running: a selected unit, a menu, a panel (the map's procs in IWRAM and in an
+/// EWRAM pool, two script pointers and a Thumb function each; none while the map waits for the player), apart from
+/// the two background ones.
+fn ui_open(core: &Core) -> bool {
+    const AREAS: [(u32, u32); 2] = [(0x0300_0C00, 0x1300), (0x0200_C000, 0x2000)];
+    const EVENT_SLOTS: std::ops::Range<u32> = 0x0200_C510..0x0200_C528 + 10 * 0x18;
+    const BACKGROUND: [u32; 2] = [0x0803_4F8D, 0x0800_3891];
+    let mut buf = vec![0u8; 0x2000];
+    for (base, len) in AREAS {
+        core.raw_read_range(base, -1, &mut buf[..len as usize]);
+        let word = |i: usize| u32::from_le_bytes(buf[i..i + 4].try_into().unwrap());
+        for i in (0..len as usize - 12).step_by(4) {
+            if EVENT_SLOTS.contains(&(base + i as u32)) {
+                continue;
+            }
+            let (s0, s1, f) = (word(i), word(i + 4), word(i + 8));
+            let script = |v: u32| (0x0840_0000..0x0870_0000).contains(&v);
+            if script(s0) && script(s1) && (0x0800_0001..0x0810_0000).contains(&f) && f & 1 == 1 && !BACKGROUND.contains(&f) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+type Scratch<'a> = &'a mut dyn tango_backend_mgba::Scratch;
+
+fn run(scratch: Scratch, keys: &[u32]) -> Result<(), &'static str> {
+    keys.iter().all(|&k| scratch.tick(k)).then_some(()).ok_or("tick failed")
+}
+
+/// Calls the game's viewer setup and map refresh at the next flush, runs until they have returned (they can take more
+/// than a frame), then `settle` more ticks.
+fn refresh(scratch: Scratch, settle: usize) -> Result<(), &'static str> {
+    let core = scratch.core_mut();
     core.raw_write_8(CALL, -1, 1);
     core.raw_write_8(CALL + 1, -1, 0);
-    TICKS
+    let mut n = 0;
+    while scratch.core().raw_read_8(CALL, -1) != 3 {
+        n += 1;
+        if n > 30 {
+            return Err("the refresh did not return");
+        }
+        run(scratch, &[0])?;
+    }
+    run(scratch, &vec![0; settle])
+}
+
+/// The waiting seat's picture, on the scratch console: B closes whatever the mover has open (build, command and map
+/// menus, a selected unit's range, an attack ring, info panels: it never sees them); with fog the game is told that
+/// the waiting army is the current one and refreshes the map for it (the vision of its own units, the mover's units
+/// in the cells it does not see gone); the cursor and the camera follow the mover only through cells the waiting
+/// army sees, and stay where they were (the army's HQ at first) otherwise. False when the console is not showing the
+/// map (a battle scene, a full-screen page): the caller keeps the last picture.
+pub fn view(scratch: Scratch, seat: usize) -> bool {
+    view_inner(scratch, seat).is_ok()
+}
+
+fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
+    let on_map = |s: &dyn tango_backend_mgba::Scratch| s.core().raw_read_32(MAIN_LOOP, -1) == MAP_LOOP;
+    if !on_map(scratch) {
+        return Err("not the map loop");
+    }
+    let fog = scratch.core().raw_read_8(FOG, -1) != 0;
+    let mover_cell = (scratch.core().raw_read_16(CURSOR, -1) as i32, scratch.core().raw_read_16(CURSOR + 2, -1) as i32);
+    for _ in 0..4 {
+        if !ui_open(scratch.core()) {
+            break;
+        }
+        run(scratch, &[KEY_B, KEY_B, 0])?;
+    }
+    if !on_map(scratch) {
+        return Err("left the map loop");
+    }
+    if !fog {
+        // (the turn as played, but the mover's menus closed)
+        return run(scratch, &[0]);
+    }
+    let (w, h) = size(scratch.core());
+    let mut mem = *scratch.memory();
+    let army = viewer_army(scratch.core(), seat).ok_or("no army")?;
+    scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, army);
+    if mem[0] == 0 {
+        let (ax, ay) = anchor(scratch.core(), army);
+        mem = [1, (ax - 7).clamp(0, (w - 15).max(0)), (ay - 4).clamp(0, (h - 10).max(0)), 0];
+    }
+    // The camera and the cursor where the window last had them, the game's refresh for the waiting army...
+    let place = |scratch: Scratch, cx: i32, cy: i32, cursor: (i32, i32)| {
+        let core = scratch.core_mut();
+        for (at, v) in [(4u32, cx * 16), (6, cy * 16), (8, cx * 16), (0xA, cy * 16)] {
+            core.raw_write_16(MAP + at, -1, v as u16);
+        }
+        core.raw_write_16(CURSOR, -1, cursor.0 as u16);
+        core.raw_write_16(CURSOR + 2, -1, cursor.1 as u16);
+        core.raw_write_16(CURSOR_PX, -1, (cursor.0 * 16) as u16);
+        core.raw_write_16(CURSOR_PX + 2, -1, (cursor.1 * 16) as u16);
+    };
+    let (mut cx, mut cy) = (mem[1], mem[2]);
+    place(scratch, cx, cy, (cx + 7, cy + 4));
+    refresh(scratch, 2)?;
+    // ... and if the mover's cursor is on a cell it sees, the camera follows it there and the cursor shows.
+    let (x, y) = mover_cell;
+    if x < w && y < h && seen(scratch.core(), x, y) {
+        cx = if x < cx { x } else if x > cx + 14 { x - 14 } else { cx }.clamp(0, (w - 15).max(0));
+        cy = if y < cy { y } else if y > cy + 9 { y - 9 } else { cy }.clamp(0, (h - 10).max(0));
+        place(scratch, cx, cy, mover_cell);
+        refresh(scratch, 2)?;
+    }
+    *scratch.memory() = [1, cx, cy, 0];
+    Ok(())
 }
 
 /// At the sprite flush: starts the asked call.
@@ -63,7 +201,7 @@ pub fn at_flush(core: &mut Core) {
     saved[52..56].copy_from_slice(&(cpu.gpr(14) as u32).to_le_bytes());
     saved[56..60].copy_from_slice(&cpu.thumb_pc().to_le_bytes());
     cpu.set_gpr(14, (RETURN | 1) as i32);
-    cpu.set_thumb_pc(CALLS[0]);
+    cpu.set_thumb_pc(CALLS[0].0);
     core.raw_write_range(CALL + 4, -1, &saved);
     core.raw_write_8(CALL, -1, 2);
     core.raw_write_8(CALL + 1, -1, 1);
@@ -75,9 +213,13 @@ pub fn returned(core: &mut Core) {
         return;
     }
     let next = core.raw_read_8(CALL + 1, -1) as usize;
-    if let Some(&f) = CALLS.get(next) {
+    if let Some(&(f, army_arg)) = CALLS.get(next) {
         core.raw_write_8(CALL + 1, -1, next as u8 + 1);
+        let army = core.raw_read_8(CURRENT_PLAYER, -1) as i32;
         let cpu = core.gba_mut().cpu_mut();
+        if army_arg {
+            cpu.set_gpr(0, army);
+        }
         cpu.set_gpr(14, (RETURN | 1) as i32);
         cpu.set_thumb_pc(f);
         return;

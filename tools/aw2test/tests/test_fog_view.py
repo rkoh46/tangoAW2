@@ -17,16 +17,6 @@ from aw2test import paths
 from aw2test.harness import test
 
 
-def fog_map(ctx):
-    m = ctx.map()
-    # Army 1 (seat 0): a tank and a recon.  Army 2 (seat 1): infantry near the tank
-    # (seen by army 1), a mech in the open far away (not seen) and one in woods.
-    m.terrain(16, 8, "wood").terrain(17, 8, "wood")
-    m.unit(1, "tank", 10, 8).unit(1, "recon", 4, 12).unit(1, "infantry", 17, 12)
-    m.unit(2, "infantry", 13, 8).unit(2, "mech", 22, 12).unit(2, "infantry", 16, 8)
-    return m
-
-
 def end_turn(g, nxt):
     """Map menu > End, then A on the hand-off screen ("Next turn") for the army that plays next."""
     g.open_map_menu()
@@ -54,34 +44,78 @@ def run(ctx, g, extra=()):
     return text
 
 
-@test(netplay=True)
-def fog_view_both_turns(ctx):
-    g = ctx.start(fog_map(ctx), ["andy", "grit"], humans=(1, 2), fog=True)
+def fog_map(ctx, colours=None):
+    m = ctx.map()
+    # Army 1 (seat 0): a tank and a recon far away, an infantry in the open.  Army 2 (seat 1): infantry near the
+    # tank (seen by army 1), a mech in the open far away (not seen), one in woods, and a base.
+    m.terrain(16, 8, "wood").terrain(17, 8, "wood").terrain(25, 14, "base", 2)
+    m.unit(1, "tank", 10, 8).unit(1, "recon", 4, 12).unit(1, "infantry", 17, 12)
+    m.unit(2, "infantry", 13, 8).unit(2, "mech", 22, 12).unit(2, "infantry", 16, 8)
+    if colours:
+        m.colours = colours
+    return m
+
+
+def play(ctx, fog, cos=("andy", "grit"), colours=None):
+    g = ctx.start(fog_map(ctx, colours), list(cos), humans=(1, 2), fog=fog)
     t = g.e.timeline
+    tag = "fog" if fog else "nofog"
+    def shot(name):
+        t.append("wait 20")
+        t.append(f"shot {tag}_{name}")
     t.append("wait 30")
-    t.append("shot t1_a1_start")
-    # Army 1: tank forward, then end the turn.
+    shot("t1_a1_start")
     g.select(10, 8)
+    shot("t1_a1_selected")
     g.move_to(10, 10)
+    shot("t1_a1_actionmenu")
     g.choose("Wait", g.ACTION_MENU)
     g.wait_for_input()
-    t.append("shot t1_a1_moved")
+    shot("t1_a1_moved")
     end_turn(g, 2)
     t.append("seat 1")
     t.append("wait 30")
-    t.append("shot t2_a2_start")
-    # Army 2: the far mech walks toward the tank; the infantry steps back into the open.
-    g.select(22, 12)
-    t.append("shot t2_a2_selected")
+    shot("t2_a2_start")
+    g.goto(22, 12)
+    shot("t2_a2_cursor_on_hidden_mech")
+    g.e.press("A", 6)
+    g.wait_menu(g.ACTION_MENU) if False else None
+    shot("t2_a2_selected")
     g.move_to(20, 12)
+    shot("t2_a2_actionmenu")
     g.choose("Wait", g.ACTION_MENU)
     g.wait_for_input()
-    t.append("wait 20")
-    t.append("shot t2_a2_moved")
+    shot("t2_a2_moved")
+    g.goto(25, 14)
+    g.e.press("A", 6)
+    g.e.wait(30)
+    shot("t2_a2_buildmenu")
+    g.e.press("B", 6)
+    g.wait_for_input()
+    g.open_map_menu()
+    shot("t2_a2_mapmenu")
+    g.e.press("B", 6)
+    g.wait_for_input()
     end_turn(g, 1)
     t.append("seat 0")
     t.append("wait 30")
-    t.append("shot t3_a1_start")
+    shot("t3_a1_start")
     text = run(ctx, g, ["wait 60"])
     ctx.log("\n".join(l for l in text.splitlines() if not l.startswith("peek")))
     ctx.check("all identical: true" in text, "netplay: both peers and the straight replay identical")
+
+
+@test(netplay=True)
+def fog_view_both_turns(ctx):
+    play(ctx, True)
+
+
+@test(netplay=True)
+def fog_off_view_both_turns(ctx):
+    play(ctx, False)
+
+
+@test(netplay=True)
+def fog_view_yellow_comet_vs_black_hole(ctx):
+    """Every portrait, panel, unit and building keeps its own army's colours in the waiting window."""
+    play(ctx, True, ("sonja", "sturm"), colours=[0, 4, 5, 3, 2])
