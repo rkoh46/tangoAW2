@@ -95,13 +95,14 @@ const LIST_FIRST: u32 = 0x0300_5900;
 const LIST_CURSOR: u32 = 0x0300_5930;
 const LIST_IDS: u32 = 0x0202_7F78;
 
-fn selecting(core: &Core) -> bool {
+pub(crate) fn selecting(core: &Core) -> bool {
     (PROC_POOL.0..PROC_POOL.1)
         .step_by(PROC_SIZE as usize)
         .any(|p| core.raw_read_32(p, -1) == SELECT_MAP)
 }
 
-fn idle(core: &Core) -> bool {
+/// SELECT MAP's list is in and takes the pad (any mode's: Versus' too).
+pub(crate) fn idle(core: &Core) -> bool {
     (PROC_POOL.0..PROC_POOL.1)
         .step_by(PROC_SIZE as usize)
         .any(|p| core.raw_read_32(p, -1) == SELECT_MAP && core.raw_read_32(p + 0x10, -1) == SELECT_MAP_IDLE)
