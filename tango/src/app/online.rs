@@ -147,7 +147,7 @@ impl App {
             game_info: self.loadout.game_info(),
             match_type: (0, subtype),
             save: self.loaded.as_ref().map(|l| l.snapshot_sram()).unwrap_or_default(),
-            content: tango_library::shared_content_flag() != 0,
+            content: tango_library::shared_content_flag() != 0 && std::env::var("TANGOAW2_NO_CONTENT").is_err(),
         }
     }
 

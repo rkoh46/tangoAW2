@@ -436,6 +436,28 @@ fn dual_strike_arrows(core: &Core, mode: Option<(u8, u8)>) -> bool {
     mode.is_none() && crate::wasteland::ds_graphics(core) && core.raw_read_8(crate::tag::AW2_ARROWS, -1) == 0
 }
 
+/// Test aid (`VRAMDUMP=<dir>`): the video memory every 300 frames of a battle (up to 24 times).
+fn debug_dump(core: &Core) {
+    static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let Ok(dir) = std::env::var("VRAMDUMP") else { return };
+    if !in_battle(core) {
+        return;
+    }
+    let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    if n % 300 == 0 && n / 300 < 24 {
+        let k = n / 300;
+        let mut dump = |name: &str, at: u32, len: usize| {
+            let mut b = vec![0u8; len];
+            core.raw_read_range(at, -1, &mut b);
+            let _ = std::fs::create_dir_all(&dir);
+            let _ = std::fs::write(format!("{dir}/{k:02}_{name}"), b);
+        };
+        dump("vram.bin", 0x0600_0000, 0x18000);
+        dump("pal.bin", 0x0500_0000, 0x400);
+        dump("io.bin", 0x0400_0000, 0x60);
+    }
+}
+
 pub(crate) fn turn_ended(core: &Core) -> bool {
     core.raw_read_8(MAP_MENU_STATE, -1) == 5 && core.raw_read_8(MAP_MENU_CURSOR, -1) == 4
 }
@@ -570,6 +592,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // An online match's walk to SELECT MAP and its end (crate::online).
         let keys = crate::online::before(core, mode, keys);
         crate::online::probe::store(core);
+        debug_dump(core);
         // Everything unlocked: every CO (Sturm and Hachi included), every
         // CO colour edit, every Battle Map, Hard Campaign and the Sound
         // Room. The game saves this block, so a save made here keeps it.
