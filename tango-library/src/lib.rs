@@ -25,6 +25,7 @@ pub mod http;
 pub mod lang;
 pub mod loadout;
 pub mod marker;
+pub mod online;
 pub mod patch;
 pub mod replays;
 pub mod rom;
