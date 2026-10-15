@@ -1797,8 +1797,8 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                         // How this player is reached and the round trip, between the name and the tag.
                         let (kind, rtt) = player_link(core, k);
                         let from = x + 16 + text_width(core, &shown) + 5;
-                        if let Some(l) = link_label(core, kind, rtt, tag_x - 4 - from) {
-                            let at = tag_x - 4 - text_width(core, &l);
+                        if let Some(l) = link_label(core, kind, rtt, tag_x - 6 - from) {
+                            let at = tag_x - 6 - text_width(core, &l);
                             cv.text(core, at, ry, &l, if kind == LINK_RELAY { INK } else { GRAY_INK }, SHADE);
                         }
                     }
