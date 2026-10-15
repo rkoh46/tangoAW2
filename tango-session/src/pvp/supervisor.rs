@@ -114,14 +114,77 @@ pub(super) struct SupervisorContext {
     pub(super) completed: Arc<AtomicBool>,
     pub(super) cancel: tokio_util::sync::CancellationToken,
     pub(super) metrics: Arc<Metrics>,
-    pub(super) drive_paused: Arc<crate::PauseGate>,
+    pub(super) pauses: Arc<Pauses>,
     pub(super) wake: Arc<tokio::sync::Notify>,
+    /// A room's players and links (`None`: a plain two-player match).
+    pub(super) room: Option<Arc<RoomCtx>>,
+    /// When this link's peer was last heard from (milliseconds on the room's clock, [`RoomCtx::clock`]).
+    pub(super) last_rx: Arc<std::sync::atomic::AtomicU64>,
     /// Whether our own pair is primed, so a reconnect can re-announce it
     /// (the rebuild drops anything the old transport hadn't delivered).
     pub(super) local_primed: Arc<AtomicBool>,
     /// Process-exit waiter, cancelled after the bounded quit announcement and
     /// the rest of supervisor teardown have completed.
     pub(super) done: tokio_util::sync::CancellationToken,
+}
+
+/// How long a link's peer has been silent before a full input queue counts as a dead link, in a room. The host
+/// decides first (and tells the guests why the match went quiet, [`RoomMsg::Hold`]); a guest waits longer for that.
+const STALL_QUIET_HOST: std::time::Duration = std::time::Duration::from_secs(3);
+const STALL_QUIET_GUEST: std::time::Duration = std::time::Duration::from_secs(7);
+
+/// The match is paused while anyone is waited for: the drive loop's gate, held by as many reasons as there are
+/// (a link of ours being rebuilt, a player the host says it is waiting for), released with the last.
+pub(super) struct Pauses {
+    n: std::sync::Mutex<u32>,
+    gate: Arc<crate::PauseGate>,
+}
+
+impl Pauses {
+    pub(super) fn new(gate: Arc<crate::PauseGate>) -> Self {
+        Pauses { n: Default::default(), gate }
+    }
+    fn enter(&self) {
+        *self.n.lock().unwrap() += 1;
+        self.gate.set(true);
+    }
+    fn leave(&self) {
+        let mut n = self.n.lock().unwrap();
+        *n = n.saturating_sub(1);
+        if *n == 0 {
+            self.gate.set(false);
+        }
+    }
+    /// Teardown: let the drive loop go whatever is held.
+    fn release_all(&self) {
+        *self.n.lock().unwrap() = 0;
+        self.gate.set(false);
+    }
+}
+
+/// A room's players as the supervisors see them.
+pub(super) struct RoomCtx {
+    /// Gamertags in seat order.
+    pub(super) players: Vec<String>,
+    pub(super) host_seat: usize,
+    pub(super) is_host: bool,
+    /// Every link of the session, in order (a host's: one to each guest by ascending seat).
+    pub(super) links: Vec<Arc<tango_net::link::Link>>,
+    pub(super) clock: web_time::Instant,
+}
+
+impl RoomCtx {
+    /// The seat of the peer on link `idx`.
+    pub(super) fn seat_of_link(&self, idx: usize) -> usize {
+        if self.is_host {
+            (0..self.players.len()).filter(|&s| s != self.host_seat).nth(idx).unwrap_or(0)
+        } else {
+            self.host_seat
+        }
+    }
+    pub(super) fn name_of_link(&self, idx: usize) -> String {
+        self.players.get(self.seat_of_link(idx)).cloned().unwrap_or_default()
+    }
 }
 
 /// Pump one receiver until error/EOF, forwarding events to the drive
@@ -132,10 +195,14 @@ async fn run_receive_pump(
     link_idx: usize,
     event_tx: std::sync::mpsc::Sender<(usize, tango_net::data::Input)>,
     wake: Arc<tokio::sync::Notify>,
+    last_rx: Option<(Arc<std::sync::atomic::AtomicU64>, web_time::Instant)>,
 ) -> std::io::Error {
     loop {
         match receiver.receive().await {
             Ok(input) => {
+                if let Some((at, clock)) = last_rx.as_ref() {
+                    at.store(clock.elapsed().as_millis() as u64, Ordering::Relaxed);
+                }
                 if event_tx.send((link_idx, input)).is_err() {
                     return std::io::Error::new(std::io::ErrorKind::BrokenPipe, "drive thread gone");
                 }
@@ -166,8 +233,10 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         completed,
         cancel,
         metrics,
-        drive_paused,
+        pauses,
         wake,
+        room,
+        last_rx,
         local_primed,
         done,
     } = ctx;
@@ -209,9 +278,42 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             /// the peer stopped matching our inputs, i.e. a quiet/dead link.
             /// Reconnects on the full per-transport window.
             Stalled,
+            /// A room notice arrived (the host says who the match is waiting for).
+            Notice,
         }
 
-        let mut receiver = make_receiver().expect("bring_up parks the in-match receiver");
+        let clock = room.as_ref().map(|r| r.clock);
+        let rx_tag = || clock.map(|c| (last_rx.clone(), c));
+        let peer_seat = room.as_ref().map_or(0, |r| r.seat_of_link(link_idx)) as u8;
+        let peer_name = room.as_ref().map(|r| r.name_of_link(link_idx)).unwrap_or_default();
+        let quiet = match room.as_ref() {
+            Some(r) if r.is_host => STALL_QUIET_HOST,
+            Some(_) => STALL_QUIET_GUEST,
+            None => std::time::Duration::ZERO,
+        };
+        // The other guests' links (a room's host): who to tell what it waits for.
+        let others: Vec<Arc<tango_net::link::Link>> = match room.as_ref() {
+            Some(r) if r.is_host => r
+                .links
+                .iter()
+                .enumerate()
+                .filter(|&(i, _)| i != link_idx)
+                .map(|(_, l)| l.clone())
+                .collect(),
+            _ => Vec::new(),
+        };
+        let notice_wake = link.notice_wake();
+        // Seats the host told us it waits for (each holds a pause).
+        let mut notice_held: std::collections::HashSet<u8> = Default::default();
+
+        let mut pump = Box::pin(run_receive_pump(
+            make_receiver().expect("bring_up parks the in-match receiver"),
+            link_idx,
+            event_tx.clone(),
+            wake.clone(),
+            rx_tag(),
+        ));
+        let mut watch = Some(Box::pin(link.watch_control()));
         // Set after each successful reconnect to `now + RECONNECT_DRAIN_GRACE`:
         // the stall watch stays quiet until the queue recovers or this passes,
         // so the just-reconnected (still-full) queue can't instantly re-trip.
@@ -222,14 +324,23 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // climb to the trip point. A queue below the threshold clears any
             // post-reconnect drain grace (the link recovered); a queue at or
             // above it trips a stall — unless we're still inside the grace,
-            // where a high queue is the expected pre-drain state.
+            // where a high queue is the expected pre-drain state. In a room
+            // the queue is shared by every link, so a stall also needs this
+            // link's peer to have gone quiet (and nobody to be waited for
+            // already): the silent one is the one to rebuild.
             let stall_watch = async {
                 loop {
                     let queue_len = metrics.queue_len.load(Ordering::Relaxed) as usize;
                     if queue_len < tango_net::data::RECONNECT_QUEUE_LENGTH {
                         drain_until = None;
                     } else if drain_until.is_none_or(|t| web_time::Instant::now() >= t) {
-                        return;
+                        let silent = clock.is_none_or(|c| {
+                            let now = c.elapsed().as_millis() as u64;
+                            now.saturating_sub(last_rx.load(Ordering::Relaxed)) >= quiet.as_millis() as u64
+                        });
+                        if silent && !end.any_hold() {
+                            return;
+                        }
                     }
                     tango_platform::sleep(std::time::Duration::from_millis(100)).await;
                 }
@@ -237,19 +348,45 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             let trip = tokio::select! {
                 biased;
                 _ = cancel.cancelled() => Trip::Cancelled,
-                end = link.watch_control() => match end {
+                ctl = async { watch.as_mut().expect("the watch is up").await } => match ctl {
                     tango_net::link::ControlEnd::Goodbye => {
                         log::info!("pvp: peer announced a quit");
                         Trip::PeerQuit
                     }
                     tango_net::link::ControlEnd::Eof => Trip::Closed,
                 },
-                e = run_receive_pump(receiver, link_idx, event_tx.clone(), wake.clone()) => {
+                e = &mut pump => {
                     log::info!("pvp in-match channel closed: {e:?}");
                     Trip::Closed
                 }
+                _ = notice_wake.notified() => Trip::Notice,
                 _ = stall_watch => Trip::Stalled,
             };
+
+            if matches!(trip, Trip::Notice) {
+                for msg in link.take_notices() {
+                    use tango_net_protocol::control::RoomMsg;
+                    match msg {
+                        RoomMsg::Hold(h) => {
+                            end.hold_add(h.seat, h.name, web_time::Instant::now() + std::time::Duration::from_millis(h.left_ms as u64));
+                            if notice_held.insert(h.seat) {
+                                pauses.enter();
+                            }
+                        }
+                        RoomMsg::Unhold { seat } => {
+                            end.hold_remove(seat);
+                            if notice_held.remove(&seat) {
+                                pauses.leave();
+                                drain_until = Some(web_time::Instant::now() + RECONNECT_DRAIN_GRACE);
+                            }
+                        }
+                        RoomMsg::GiveUp { name, .. } => end.note_dropped(name),
+                        _ => {}
+                    }
+                }
+                wake.notify_one();
+                continue;
+            }
 
             // Our own deliberate close: announce it, then stop. The
             // session's teardown drops the peer connection gracefully, and
@@ -283,6 +420,11 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 // dress the end as one.
                 if !end.aborted.load(Ordering::Acquire) {
                     end.remote_disconnected.store(true, Ordering::Release);
+                    if !completed.load(Ordering::Acquire) && !end.remote_ended.load(Ordering::Acquire) {
+                        end.note_dropped(peer_name.clone());
+                        // (the other guests hear who it was before the host's own goodbye)
+                        tell_others(&others, RoomMsgOut::GiveUp(peer_seat, peer_name.clone())).await;
+                    }
                 }
                 cancel.cancel();
                 break;
@@ -293,9 +435,41 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // converge on the rebuild: whoever trips first goes silent,
             // which stall-trips the other within RECONNECT_QUEUE_LENGTH
             // frames.
-            drive_paused.set(true);
+            // (what the host told us about someone else is moot now: it is the host we wait for)
+            for seat in notice_held.drain() {
+                end.hold_remove(seat);
+                pauses.leave();
+            }
+            // The control watch holds the control receiver; the rebuild replaces it.
+            watch = None;
+            let timeout = link.reconnect_timeout().unwrap_or_default();
+            end.hold_add(peer_seat, peer_name.clone(), web_time::Instant::now() + timeout);
+            pauses.enter();
             wake.notify_one();
-            log::info!("pvp link dropped — pausing to reconnect");
+            log::info!("pvp link dropped — pausing to reconnect (waiting for {peer_name:?})");
+
+            // A room's host tells the other guests who the match waits for, about once a second.
+            let announce_stop = tokio_util::sync::CancellationToken::new();
+            if !others.is_empty() {
+                let others = others.clone();
+                let stop = announce_stop.clone();
+                let name = peer_name.clone();
+                let deadline = web_time::Instant::now() + timeout;
+                tango_platform::spawn(async move {
+                    loop {
+                        let left = deadline.saturating_duration_since(web_time::Instant::now());
+                        tell_others(
+                            &others,
+                            RoomMsgOut::Hold(peer_seat, name.clone(), left.as_millis().min(u32::MAX as u128) as u32),
+                        )
+                        .await;
+                        tokio::select! {
+                            _ = stop.cancelled() => return,
+                            _ = tango_platform::sleep(std::time::Duration::from_secs(1)) => {}
+                        }
+                    }
+                });
+            }
 
             // Rebuild + hot-swap (the link's job), ticking the UI at
             // ~30 fps so the give-up bar drains smoothly while the paused
@@ -308,14 +482,15 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                         wake.notify_one();
                     }
                 };
-                let timeout = link.reconnect_timeout().unwrap_or_default();
                 let watchdog_done = tokio_util::sync::CancellationToken::new();
                 {
                     let end = end.clone();
                     let cancel = cancel.clone();
-                    let drive_paused = drive_paused.clone();
+                    let pauses_w = pauses.clone();
                     let wake = wake.clone();
                     let watchdog_done = watchdog_done.clone();
+                    let others = others.clone();
+                    let name = peer_name.clone();
                     // This task is deliberately independent of the reconnect
                     // future: when the displayed budget runs out, end the
                     // session even if WebRTC cleanup is still stuck.
@@ -325,8 +500,10 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                             _ = watchdog_done.cancelled() => {}
                             _ = cancel.cancelled() => {}
                             _ = tango_platform::sleep(timeout) => {
+                                end.note_dropped(name.clone());
+                                tell_others(&others, RoomMsgOut::GiveUp(peer_seat, name)).await;
                                 end.remote_disconnected.store(true, Ordering::Release);
-                                drive_paused.set(false);
+                                pauses_w.release_all();
                                 cancel.cancel();
                                 wake.notify_one();
                             }
@@ -341,21 +518,33 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 watchdog_done.cancel();
                 restored
             };
+            announce_stop.cancel();
+            end.hold_remove(peer_seat);
 
             if !restored {
                 // Timed out or cancelled — give up and end the match.
+                end.note_dropped(peer_name.clone());
+                tell_others(&others, RoomMsgOut::GiveUp(peer_seat, peer_name.clone())).await;
                 end.remote_disconnected.store(true, Ordering::Release);
                 cancel.cancel();
-                drive_paused.set(false);
+                pauses.release_all();
                 break;
             }
+            tell_others(&others, RoomMsgOut::Unhold(peer_seat)).await;
 
             // Fresh receiver over the swapped channel, same `in_match` —
             // the rennet in-stream (seq/ack) carries across the swap, so
             // the peer's resent window fills our gap contiguously. The
             // drive loop resumes; its stall guard holds it below the
             // horizon until the resends drain the queue.
-            receiver = make_receiver().expect("reconnect parks a fresh receiver");
+            pump = Box::pin(run_receive_pump(
+                make_receiver().expect("reconnect parks a fresh receiver"),
+                link_idx,
+                event_tx.clone(),
+                wake.clone(),
+                rx_tag(),
+            ));
+            watch = Some(Box::pin(link.watch_control()));
             // The swap rebuilds the control channel too, so an earlier
             // `Primed` may have died with the old transport. Say it again:
             // a peer still waiting on the ready gate has nothing else to
@@ -367,9 +556,10 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             if local_primed.load(Ordering::Acquire) {
                 if let Err(e) = link.send_primed().await {
                     log::warn!("pvp: primed re-announce failed after reconnect, ending match: {e}");
+                    end.note_dropped(peer_name.clone());
                     end.remote_disconnected.store(true, Ordering::Release);
                     cancel.cancel();
-                    drive_paused.set(false);
+                    pauses.release_all();
                     break;
                 }
             }
@@ -378,7 +568,11 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // so the stale-high `queue_len` can't instantly re-trip the stall
             // and bounce us straight back into another reconnect.
             drain_until = Some(web_time::Instant::now() + RECONNECT_DRAIN_GRACE);
-            drive_paused.set(false);
+            // (a restored peer is not silent: its clock starts over)
+            if let Some(c) = clock {
+                last_rx.store(c.elapsed().as_millis() as u64, Ordering::Relaxed);
+            }
+            pauses.leave();
             wake.notify_one();
             log::info!("pvp transparently reconnected the link");
         }
@@ -387,9 +581,37 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         // telemetry panel retires, and wake the session to re-check
         // `is_ended` (the drive loop may already be gone, so no frame is
         // coming).
+        drop(watch);
         link.retire_latency();
-        drive_paused.set(false);
+        pauses.release_all();
         wake.notify_one();
         done.cancel();
     });
+}
+
+/// What a room's host tells the other guests.
+enum RoomMsgOut {
+    Hold(u8, String, u32),
+    Unhold(u8),
+    GiveUp(u8, String),
+}
+
+/// Say it to every link in `others` (best effort, a second at most each).
+async fn tell_others(others: &[Arc<tango_net::link::Link>], msg: RoomMsgOut) {
+    use tango_net_protocol::control::{RoomHold, RoomMsg};
+    for l in others {
+        let m = match &msg {
+            RoomMsgOut::Hold(seat, name, left_ms) => RoomMsg::Hold(RoomHold {
+                seat: *seat,
+                name: name.clone(),
+                left_ms: *left_ms,
+            }),
+            RoomMsgOut::Unhold(seat) => RoomMsg::Unhold { seat: *seat },
+            RoomMsgOut::GiveUp(seat, name) => RoomMsg::GiveUp {
+                seat: *seat,
+                name: name.clone(),
+            },
+        };
+        let _ = tango_platform::timeout(std::time::Duration::from_secs(1), l.send_room(m)).await;
+    }
 }
