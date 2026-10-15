@@ -154,6 +154,7 @@ fn main() {
     let mut jitter = 99u32;
     let mut t = 0usize;
     let mut timeline: Vec<String> = Vec::new();
+    let mut shot_ticks: Vec<(usize, String)> = Vec::new();
     let mut pokes: Vec<(usize, u32, Vec<u8>)> = Vec::new();
 
     fn keys_for(seat: usize, bits: u32) -> [u32; 2] {
@@ -242,6 +243,7 @@ fn main() {
         let keys = match row {
             Row::Shot(name) => {
                 timeline.push(format!("# shot {t} {name}"));
+                shot_ticks.push((t, name.clone()));
                 for (p, peer) in peers.iter_mut().enumerate() {
                     if let Some(f) = peer.frame() {
                         write_bmp(&out.join(format!("{name}_peer{p}.bmp")), &f);
@@ -323,10 +325,26 @@ fn main() {
             straight.core_mut().raw_write_range(*addr, -1, bytes);
         }
         straight.tick(*row);
+        // (the same shots from the straight replay, which never rolls back: seat 0's window)
+        for (_, name) in shot_ticks.iter().filter(|(at, _)| *at == i + 1) {
+            if let Some(f) = straight.side(0).frame() {
+                write_bmp(&out.join(format!("{name}_straight.bmp")), &f);
+            }
+        }
     }
 
     println!("ticks: {t}, confirmed rows: {}", confirmed.len());
     println!("advances that rolled back: {rollbacks}, deepest rollback: {deepest} ticks");
+    // Video memory (VRAM, palette, OAM, I/O) before and after the seats' pictures are made: making a waiting seat's
+    // picture runs a scratch console and must leave the real one as it was.
+    let video = |peer: &tango_match::Match| -> Vec<u8> {
+        let mut v = Vec::new();
+        for (base, len) in [(0x0600_0000u32, 0x1_8000usize), (0x0500_0000, 0x400), (0x0700_0000, 0x400), (0x0400_0000, 0x400)] {
+            v.extend(peek(peer, base, len));
+        }
+        v
+    };
+    let (video0, video1) = (video(&peers[0]), video(&peers[1]));
     let mut all = true;
     for seat in 0..2 {
         let a = peers[0].seat_frame(seat).unwrap();
@@ -340,6 +358,15 @@ fn main() {
         );
         all &= a == b && a == s;
     }
+    let (after0, after1) = (video(&peers[0]), video(&peers[1]));
+    let vdiff = |a: &[u8], b: &[u8]| a.iter().zip(b).filter(|(p, q)| p != q).count();
+    println!(
+        "video memory changed by making the seats' pictures: peer0 {} bytes, peer1 {} bytes (peers differ {} before)",
+        vdiff(&video0, &after0),
+        vdiff(&video1, &after1),
+        vdiff(&video0, &video1)
+    );
+    all &= video0 == after0 && video1 == after1;
     // All of EWRAM and IWRAM, both peers and the straight replay.
     for (name, base, len) in [("ewram", 0x0200_0000u32, 0x4_0000usize), ("iwram", 0x0300_0000, 0x8000)] {
         let a = peek(&peers[0], base, len);

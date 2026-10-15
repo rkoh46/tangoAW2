@@ -131,7 +131,8 @@ fn refresh(scratch: Scratch, settle: usize) -> Result<(), &'static str> {
 /// army sees, and stay where they were (the army's HQ at first) otherwise. False when the console is not showing the
 /// map (a battle scene, a full-screen page): the caller keeps the last picture.
 pub fn view(scratch: Scratch, seat: usize) -> bool {
-    view_inner(scratch, seat).is_ok()
+    let r = view_inner(scratch, seat);
+    r.is_ok()
 }
 
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
@@ -175,21 +176,61 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     };
     let (mut cx, mut cy) = (mem[1], mem[2]);
     place(scratch, cx, cy, (cx + 7, cy + 4));
+    scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
     refresh(scratch, 2)?;
     // ... and if the mover's cursor is on a cell it sees, the camera follows it there and the cursor shows.
     let (x, y) = mover_cell;
-    if x < w && y < h && seen(scratch.core(), x, y) {
+    let follow = x < w && y < h && seen(scratch.core(), x, y);
+    // (the window has no cursor of its own: it is hidden unless it is the mover's, over a cell the window sees)
+    scratch.core_mut().raw_write_8(CALL + 2, -1, !follow as u8);
+    if follow {
         cx = if x < cx { x } else if x > cx + 14 { x - 14 } else { cx }.clamp(0, (w - 15).max(0));
         cy = if y < cy { y } else if y > cy + 9 { y - 9 } else { cy }.clamp(0, (h - 10).max(0));
         place(scratch, cx, cy, mover_cell);
         refresh(scratch, 2)?;
+    } else {
+        run(scratch, &[0, 0])?;
     }
     *scratch.memory() = [1, cx, cy, 0];
     Ok(())
 }
 
-/// At the sprite flush: starts the asked call.
+/// The sprite list the game copies to OAM at the flush: its start and the next free entry, 8 bytes each.
+const SPRITE_LIST: u32 = 0x0300_0268;
+const NEXT_SPRITE: u32 = 0x0300_2F2C;
+
+/// Hides the cursor's sprites (the small ones of palette 1 around its pixel position on the screen) and its info panel
+/// from the frame's sprite list: the waiting window has no cursor of its own.
+fn hide_cursor(core: &mut Core) {
+    let start = core.raw_read_32(SPRITE_LIST, -1);
+    let end = core.raw_read_32(NEXT_SPRITE, -1);
+    if !(0x0300_0000..0x0300_8000).contains(&start) || end < start || end - start > 128 * 8 {
+        return;
+    }
+    let sx = core.raw_read_16(CURSOR_PX, -1) as i32 - core.raw_read_16(MAP + 4, -1) as i16 as i32;
+    let sy = core.raw_read_16(CURSOR_PX + 2, -1) as i32 - core.raw_read_16(MAP + 6, -1) as i16 as i32;
+    let mut at = start;
+    while at + 8 <= end {
+        let (a0, a1, a2) = (core.raw_read_16(at, -1), core.raw_read_16(at + 2, -1), core.raw_read_16(at + 4, -1));
+        let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
+        let y = (a0 & 0xFF) as i32;
+        let small = a0 >> 14 != 2 && a1 >> 14 < 2; // (not a tall sprite, not 32 wide or more)
+        let cursor = a2 >> 12 == 1 && small && (sx - 12..sx + 24).contains(&x) && (sy - 12..sy + 24).contains(&y);
+        // The info panel of the cell under it (terrain, unit), in the lower corners: sprites in the units' and
+        // cursor's palettes, not the buildings' (8 to 13).
+        let panel = y >= 88 && (a2 >> 12 < 8 || (a0 >> 10) & 3 == 1) && (x < 72 || x >= 168);
+        if a0 & 0x300 != 0x200 && (cursor || panel) {
+            core.raw_write_16(at, -1, (a0 & !0x300) | 0x200);
+        }
+        at += 8;
+    }
+}
+
+/// At the sprite flush: hides the cursor if asked, and starts the asked call.
 pub fn at_flush(core: &mut Core) {
+    if core.raw_read_8(CALL + 2, -1) == 1 {
+        hide_cursor(core);
+    }
     if core.raw_read_8(CALL, -1) != 1 {
         return;
     }

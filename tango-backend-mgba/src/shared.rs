@@ -442,10 +442,14 @@ impl Side for SharedSide<'_> {
         if self.conceal && self.link.game.conceal(core, self.player) {
             return Some(concealed(&frame));
         }
-        if self.link.game.overlay_hires(core, self.link.mode, self.player, &mut frame).is_some() {
-            return Some(frame);
+        if self.link.game.overlay_hires(core, self.link.mode, self.player, &mut frame).is_none() {
+            self.link.game.overlay(core, self.link.mode, self.player, &mut frame);
         }
-        self.link.game.overlay(core, self.link.mode, self.player, &mut frame);
+        // The seat's own turn: its picture is what its window shows until the first one of the next waiting turn is made.
+        if self.conceal && self.link.game.watching(self.link.inner.core(0), 1 - self.player) {
+            self.link.watched[self.player] = Some(frame.clone());
+            self.link.watched_at[self.player] = None;
+        }
         Some(frame)
     }
 
