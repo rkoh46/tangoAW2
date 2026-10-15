@@ -343,6 +343,26 @@ fn mug(core: &Core, co: u8) -> Option<Arc<Mug>> {
     Some(Arc::new(Mug { tiles, pal: pal_of(&crate::tag_ui::co_palette(core, co)), cell_x, strip_y }))
 }
 
+/// A CO's mug as the real CO screens draw it (Dual Strike's for the COs it has, the game's own for the rest), as 36 tiles
+/// in rows of six with the transparent pixels turned into the palette's lightest colour, and the palette as bytes.
+pub fn mug_for_face(core: &Core, co: u8) -> Option<(Vec<u8>, [u8; 32])> {
+    let m = mug(core, co)?;
+    let colour = |i: usize| m.pal[i];
+    let lum = |c: u16| (c & 31) as u32 * 3 + ((c >> 5) & 31) as u32 * 6 + ((c >> 10) & 31) as u32;
+    let light = (1..16).max_by_key(|&i| lum(colour(i))).unwrap_or(1) as u8;
+    let mut tiles = m.tiles.clone();
+    tiles.resize(36 * 32, 0);
+    for b in tiles.iter_mut() {
+        let (lo, hi) = (*b & 15, *b >> 4);
+        *b = (if lo == 0 { light } else { lo }) | (if hi == 0 { light } else { hi }) << 4;
+    }
+    let mut pal = [0u8; 32];
+    for (i, c) in m.pal.iter().enumerate() {
+        pal[2 * i..2 * i + 2].copy_from_slice(&c.to_le_bytes());
+    }
+    Some((tiles, pal))
+}
+
 /// The name: Dual Strike's for a CO it has, the game's own (`+0x04`, LZ77) for the others.
 fn name(core: &Core, co: u8) -> Option<Arc<Name>> {
     // (Clone Andy takes Dual Strike's Andy for his picture, but his name is the game's own: "Clone")

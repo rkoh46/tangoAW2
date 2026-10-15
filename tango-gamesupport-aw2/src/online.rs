@@ -57,8 +57,8 @@ pub const STATUS: u32 = STATE + 0x10;
 /// The room's code (the app's, for a room made).
 pub const ROOM: u32 = STATE + 0x12;
 /// The app's message: the opponent's name, or what went wrong (zero-terminated).
-pub const MESSAGE: u32 = STATE + 0x18;
-pub const MESSAGE_LEN: u32 = 0x20;
+pub const MESSAGE: u32 = STATE + 0xD0;
+pub const MESSAGE_LEN: u32 = 0x30;
 /// Characters typed on the keyboard (the app's), and how many.
 pub const TYPED: u32 = STATE + 0x38;
 pub const TYPED_LEN: u32 = STATE + 0x48;
@@ -1685,7 +1685,8 @@ mod tests {
     fn state_fits() {
         assert!(STATE_END <= STATE + STATE_LEN);
         assert!(TYPED + TYPED_MAX <= TYPED_LEN);
-        assert!(MESSAGE + MESSAGE_LEN <= TYPED);
+        assert!(MESSAGE + MESSAGE_LEN <= STATE + STATE_LEN);
+        assert!(MESSAGE >= PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32);
     }
 
     #[test]
