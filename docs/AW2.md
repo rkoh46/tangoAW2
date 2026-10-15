@@ -4143,6 +4143,72 @@ see Survival). Without the pack nothing is written.
 Tests: `save_versus_suspend_keeps_ex_machina_stun`,
 `save_versus_suspend_in_rain_keeps_fog_rule`.
 
+## Online from inside the game (`online.rs`, `online_menu.rs`, `online_art.rs`; app: `tango/src/app/online.rs`)
+
+The app's main button is **Play** (the link code and Fight are behind its
+**Link code** button). Online play starts in the game, played alone:
+
+- **Select Mode.** LINK (item 4) reads ONLINE, help "Play online with
+  friends.": its label pointers (`0x08616AC0 + 8 * 4`) point at labels set
+  at run time from the wheel's own letters (O, N, I, E of DESIGN ROOM, L of
+  BATTLEMAPS on LINK's plate) as literal-only LZ77 streams in free ROM
+  `0x08E50400..`; text id 0x9CE reads ours. Offline only, pack or not.
+- **The ONLINE screen** is AW2's link-cable screen (menu proc `0x0849BC50`,
+  cursor at +0x36, items 0 Single-Pak, 1 Multi-Pak, 2 Trade Maps): its label
+  sheet (one LZ77 stream at `0x081D8A54`, pointer `0x08033AE4`: three 128x32
+  big labels then three 128x16 small ones, letters index 4 with 2/3 shading
+  on box index 1) is replaced by UNRANKED / LOBBY / STATS; the LOBBY level
+  writes CREATE / JOIN / BACK into the label tiles in OBJ VRAM (big 700,
+  764, 828; small 892, 924, 956), so the game's own cursor and label
+  animation carry on. Letters the sheet lacks are drawn from its own: O is D
+  with its round side mirrored, B is R's top over D's bottom, Y is U's arms
+  over T's stem, C is O open on the right, J is U without its left arm's
+  top. The title LINK (four 16x32 sprites, OBJ tiles 236.., palette 15, the
+  title font at `0x081CC038`: A C D E G H I K L M N O P R S T U W Y, star,
+  B) becomes ONLINE / LOBBY at the sprite flush (two sprites added). Help
+  lines: text ids 0xCBE..0xCC0. A and START never reach the game there (its
+  link modes never start); UNRANKED and STATS say "Coming soon!".
+- **The lobby's pages** are drawn over the screen as a presentation overlay
+  (`online::apply`) from EWRAM `0x0203CA00..0x0203CAFF`: CREATE asks for an
+  optional password (up to four letters), then shows the room's code (the
+  app's) in the title font and five player slots (the room holds two for
+  now); JOIN takes the six-letter code and the password on a grid (letters
+  `ACDEGHKLMNPRSTUWY`: the title font's, less I, O and B) or the keyboard.
+  The guest's A is READY, the host's START starts once everyone is ready.
+- **The mailbox** (same block): the game's request (+0x0C: 1 make a room,
+  2 join, 3 leave, 4 ready, 5 not ready, 6 start; +0x0D its serial; the code
+  +0x04, the password +0x5A), the app's answer (+0x10 status: waiting,
+  connecting, connected, failed, back; +0x12 the room's code; +0x18 a
+  message; +0x80 the players, 16 bytes each: ready, flags host/you, name),
+  keyboard typing (+0x38, its count +0x48). The app reads and writes it
+  between frames (`tango_match::Console::peek/poke`).
+- **Connecting.** The room's code and password make a matchmaking link code
+  (`tangoaw2-room-<code>[-<password>]`; a wrong password meets nobody); the
+  match type is Versus subtype 1 ([`online::ONLINE_MATCH`]) and the room's
+  maker sets `ROOM_HOST` in their subtype, which gives them seat 0 (the
+  lobby ignores the bit when comparing). The app commits the save on READY
+  and on the host's START.
+- **The match.** Booting a subtype-1 console, `SharedGame::boot_more` lets
+  `online::before` press for the players before the session (the same on
+  both peers and in the replay): START/A through the title, the wheel turned
+  to Versus, A, New in its box (never Continue), until SELECT MAP's list
+  takes the pad. Then (`online::merge`) SELECT MAP, Rules, results and the
+  save prompt are the host's; on the Teams screen UP/DOWN, SELECT, L, R and
+  START come from the seat of the army under the cursor (with the pack, a
+  partner being picked: everything but A and B), LEFT/RIGHT from both, A and
+  B from the host; every army is a human's. A on a map whose header (+0x18)
+  has another number of armies than players is refused ("Pick a map for 2
+  players."). After a battle the game is back on SELECT MAP (a rematch); B
+  there, back to Select Mode, raises `online::match_over`, which the shared
+  console reports as the match's end through its telemetry: both peers
+  complete on the same tick and the replay is finished. The app then boots
+  the game again (`mailbox::boot_to_lobby`: the same walk, to the LOBBY
+  menu) and says how it ended.
+- **Later (planned).** UNRANKED: random matching (each proposes a 2P map,
+  one drawn from the match seed; fixed rules), the same Teams screen for CO
+  and a colour no other army has. Rooms of up to five. STATS: the player's
+  own online record.
+
 ## Saves
 
 AW2's 64 KiB Flash is 16 sectors of 0x1000 bytes. A sector is one part of a

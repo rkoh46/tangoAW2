@@ -466,7 +466,10 @@ impl State {
             c => {
                 let name = format!("{c:?}");
                 match name.strip_prefix("Key") {
-                    Some(l) if l.len() == 1 => l.as_bytes()[0],
+                    // (only the code's letters: Z and X, the pad's A and B by default, stay the pad's)
+                    Some(l) if l.len() == 1 && tango_library::online::CODE_ALPHABET.contains(&l.as_bytes()[0]) => {
+                        l.as_bytes()[0]
+                    }
                     _ => return false,
                 }
             }

@@ -36,11 +36,28 @@ desktop players).
    `5AD0E571`.
    (on iPhone, import it from the welcome screen; the Dual Strike `.nds`
    goes there too).
-3. Press **Play offline** to play alone, or see below to play a friend.
+3. Press **Play**. Everything, online play included, is inside the game.
 
 ## Playing online
 
 You both need tangoAW2 (same version) and your own copy of the ROM.
+
+**From inside the game** (the usual way): press **Play**, then on Select
+Mode pick **ONLINE → LOBBY**.
+
+- **CREATE** makes a room (optionally with a password) and shows its
+  six-letter code: give it to your friend.
+- **JOIN** takes the code (and the password, if any) on an on-screen grid,
+  or typed on the keyboard.
+- Once you are both in the room, the guest presses **A** (READY) and the
+  host **START**. The game lands both of you on Versus' **SELECT MAP**:
+  the host picks a map for two players and the rules, each of you picks
+  your own army's CO and colour on the Teams screen.
+- After a battle the host picks the next map (a rematch); **B** on SELECT
+  MAP ends the match and takes you both back to the LOBBY.
+- UNRANKED (random opponents) and STATS are coming.
+
+**Advanced** (the **Link code** button next to Play):
 
 - **Link code:** both type the same made-up code (say `sturm-4812`) on the
   Play tab. Works through most home routers with no setup.
@@ -173,6 +190,8 @@ changes, and online both players need it):
 Default keys: A/B = Z/X, L/R = A/S, START/SELECT = Enter/Space (change
 them in Settings). On Versus' Teams screen **R** or **L** changes an
 army's colour, Black Hole included (without Dual Strike, **SELECT** too).
+In the LOBBY's code and password pages the keyboard types: letters, Backspace,
+Enter (the pad's arrows, A, B and START work as well).
 
 Design Room: **R** opens the terrain bar (the inventions come after Silo),
 **L** the unit bar, **SELECT** or **UP** changes army, **A** places. Save
