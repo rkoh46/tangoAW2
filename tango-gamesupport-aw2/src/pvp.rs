@@ -122,8 +122,11 @@ pub const ARMIES: [(u8, &str); 5] = [
     (5, "Black Hole"),
 ];
 
-/// One mode, Versus: armies are picked on the game's own Teams screen.
-pub const MATCH_TYPES: &[usize] = &[1];
+/// One mode, Versus, two ways in: subtype 0 the players walk the menus from the
+/// title together; subtype 1 ([`crate::online::ONLINE_MATCH`]) the match was
+/// made in the in-game lobby and boots to Versus' SELECT MAP. Armies are picked
+/// on the game's own Teams screen either way.
+pub const MATCH_TYPES: &[usize] = &[2];
 
 /// Which seat drives army slot `slot` (1..=4): odd slots are the first
 /// player's, even slots the second's.
