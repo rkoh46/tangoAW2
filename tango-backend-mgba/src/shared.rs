@@ -170,6 +170,14 @@ pub trait SharedGame: Sync {
         false
     }
 
+    /// What a console's memory shows for the list of saved matches (the map, the day, the rules), from a state's
+    /// EWRAM and IWRAM: a match is suspended when a player's connection drops for good.
+    /// `core` is a live console of the same game (its ROM and patches), not at the state.
+    fn describe(&self, core: &mgba::core::Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {
+        let _ = (core, ewram, iwram);
+        None
+    }
+
     /// Whether the players have left the match for good, as the game
     /// sees it: on a netplay console the session then completes (its
     /// replay finished) on the tick it turns true, on both peers.
@@ -264,6 +272,49 @@ impl SharedLink {
             inner.try_tick(&[word])?;
             more += 1;
         }
+        let core = inner.core_mut(0);
+        core.set_audio_buffer_size(16384);
+        core.audio_buffer().clear();
+        Ok(SharedLink {
+            inner,
+            game,
+            mode,
+            render: [true; tango_match::MAX_SEATS],
+            telemetry: None,
+            tick: 0,
+            players: 2,
+            watched: Default::default(),
+            watched_at: Default::default(),
+            view_memory: Default::default(),
+        })
+    }
+
+    /// A console started from a stored state ([`tango_match::Link::state_image`]) in place of the boot and the walk:
+    /// the ROM and save as for [`boot`](Self::boot), the traps installed, the state loaded over them. The game's
+    /// own state (the match's flags, whose turn it is, every seat's choices) is all in the state's RAM.
+    pub fn boot_resumed(
+        rom: &[u8],
+        save: Option<&[u8]>,
+        rtc: Option<std::time::SystemTime>,
+        game: &'static (dyn SharedGame + Send + Sync),
+        mode: Option<(u8, u8)>,
+        state: &[u8],
+    ) -> Result<Self, crate::Error> {
+        if state.len() != std::mem::size_of::<mgba::state::State>() {
+            return Err(mgba::Error::CallFailed("the saved state is not this emulator's").into());
+        }
+        let mut inner = mgba_rollback::Link::with_options(LinkOptions {
+            sides: vec![SideOptions {
+                rom: rom.to_vec(),
+                save: save.map(<[u8]>::to_vec),
+            }],
+            rtc,
+            peripheral: Peripheral::Cable,
+        })?;
+        inner.set_traps(0, game.traps());
+        // (sound: exactly a state's size, from `Link::state_image` of a compatible console)
+        let loaded = unsafe { mgba::state::State::from_slice(state) };
+        inner.core_mut(0).load_state(&loaded)?;
         let core = inner.core_mut(0);
         core.set_audio_buffer_size(16384);
         core.audio_buffer().clear();
@@ -455,6 +506,30 @@ impl tango_match::Link for SharedLink {
         })
     }
 
+    fn state_image(&mut self, snapshot: &tango_match::Snapshot) -> Option<tango_match::StateImage> {
+        let snapshot = snapshot.downcast_ref::<SharedSnapshot>()?;
+        let state = snapshot.snap.core_state(0);
+        // FNV-1a over what the simulation reads: the registers and both RAMs (the emulator's reserved parts of the
+        // image are not written, and differ between peers).
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        let mut feed = |b: &[u8]| {
+            for &x in b {
+                h = (h ^ x as u64).wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        };
+        for r in 0..16 {
+            feed(&state.gpr(r).to_le_bytes());
+        }
+        feed(&state.cpsr().to_le_bytes());
+        feed(state.wram());
+        feed(state.iwram());
+        Some(tango_match::StateImage {
+            state: state.as_slice().to_vec(),
+            digest: h,
+            info: self.game.describe(self.inner.core(0), state.wram(), state.iwram()),
+        })
+    }
+
     fn peek(&mut self, addr: u32, buf: &mut [u8]) -> bool {
         self.inner.core(0).raw_read_range(addr, -1, buf);
         true
@@ -578,6 +653,31 @@ impl tango_match::Backend for SharedBackend {
             config.audio,
         )?;
         match_.set_telemetry(handle);
+        match_.keep_checkpoints();
+        Ok(match_)
+    }
+
+    /// A suspended match resumed: the same console, started from the stored state.
+    fn start_resumed(&self, config: tango_match::StartConfig, state: &[u8]) -> Result<tango_match::Match, tango_match::Error> {
+        let mut link = SharedLink::boot_resumed(
+            config.roms[0],
+            config.saves[0],
+            Some(config.rtc),
+            self.game,
+            Some(config.match_type),
+            state,
+        )?;
+        link.set_players(config.players);
+        let handle = link.watch_end();
+        let mut match_ = tango_match::Match::new_n(
+            link,
+            config.local_player,
+            config.players,
+            config.present_delay,
+            config.audio,
+        )?;
+        match_.set_telemetry(handle);
+        match_.keep_checkpoints();
         Ok(match_)
     }
 

@@ -4,9 +4,9 @@
 //! memory. Without the game compiled in, nothing is ever asked.
 
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, Request};
+pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, Request, SavedRow};
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, MAX_PLAYERS, ONLINE_MATCH, YOU};
+pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, MAX_PLAYERS, ONLINE_MATCH, UNRANKED_MATCH, UNRANKED_PICK_GUEST, YOU};
 
 /// The match type a room made in the in-game lobby is played as.
 #[cfg(feature = "gamesupport-aw2")]
@@ -34,6 +34,24 @@ pub fn level(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
 #[cfg(feature = "gamesupport-aw2")]
 pub fn write_status(write: &mut dyn FnMut(u32, &[u8]), status: Status, message: &str) {
     tango_gamesupport_aw2::online::mailbox::write_status(write, status, message)
+}
+
+/// The list of suspended matches the RESUME page shows.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn write_saved(write: &mut dyn FnMut(u32, &[u8]), rows: &[SavedRow]) {
+    tango_gamesupport_aw2::online::mailbox::write_saved(write, rows)
+}
+
+/// How many saved matches the game is showing now.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn saved_count(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
+    tango_gamesupport_aw2::online::mailbox::saved_count(read)
+}
+
+/// The note on the LOBBY menu when the game comes back from a match (longer than a status message).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn write_note(write: &mut dyn FnMut(u32, &[u8]), text: &str) {
+    tango_gamesupport_aw2::online::mailbox::write_note(write, text)
 }
 
 #[cfg(feature = "gamesupport-aw2")]
@@ -80,6 +98,17 @@ pub fn probe_bits() -> u64 {
 #[cfg(feature = "gamesupport-aw2")]
 pub fn set_room(names: Vec<String>, local_seat: usize) {
     tango_gamesupport_aw2::online::set_room(names, local_seat)
+}
+
+/// The room's player count, the name of a seat and this peer's seat (for the status bar).
+pub fn room_players() -> usize {
+    tango_gamesupport_aw2::online::room_players()
+}
+pub fn room_name(seat: usize) -> String {
+    tango_gamesupport_aw2::online::room_name(seat)
+}
+pub fn room_local_seat() -> usize {
+    tango_gamesupport_aw2::online::room_local_seat()
 }
 
 #[cfg(feature = "gamesupport-aw2")]

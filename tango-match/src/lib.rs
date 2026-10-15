@@ -40,6 +40,7 @@ pub mod replay;
 pub mod screens;
 pub mod seek;
 pub mod solo;
+pub mod suspend;
 pub mod telemetry;
 pub mod throttler;
 
@@ -50,6 +51,7 @@ pub use link::{Backend, Link, PeerRom, Screen, ScreenLayout, SessionMode, Side, 
 pub use replay::{BootedReplay, Capture, LiveFrames, Playback, Replay, ReplayBoot, ReplayConfig, ReplaySet, StatsPass};
 pub use seek::SeekStep;
 pub use solo::{Console, Solo, SoloConfig};
+pub use suspend::{Checkpoint, StateImage, StateInfo, SuspendedMatch};
 
 /// The clock-sync governor: feed it `skew()` + `speculation_balance()`
 /// each frame and shave the returned fps off the tick rate. Shared by

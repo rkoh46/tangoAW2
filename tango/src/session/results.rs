@@ -27,6 +27,8 @@ pub enum MatchEnd {
 /// to leave, so they go straight back to the menu.
 pub struct MatchResults {
     pub remote_nickname: String,
+    /// A room: who disconnected, when the match ended that way.
+    pub dropped: Option<String>,
     /// How the match ended — picks the card's dress (verdict reveal vs
     /// the quiet disconnect layout).
     pub end: MatchEnd,
@@ -106,6 +108,7 @@ impl MatchResults {
             .collect::<Vec<_>>();
         let results = Self {
             remote_nickname: pvp.remote_nickname.clone(),
+            dropped: pvp.dropped_player(),
             end,
             rounds,
             duration: pvp.match_duration(),

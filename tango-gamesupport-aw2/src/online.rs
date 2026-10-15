@@ -57,8 +57,8 @@ pub const STATUS: u32 = STATE + 0x10;
 /// The room's code (the app's, for a room made).
 pub const ROOM: u32 = STATE + 0x12;
 /// The app's message: the opponent's name, or what went wrong (zero-terminated).
-pub const MESSAGE: u32 = STATE + 0x18;
-pub const MESSAGE_LEN: u32 = 0x20;
+pub const MESSAGE: u32 = STATE + 0xD0;
+pub const MESSAGE_LEN: u32 = 0x30;
 /// Characters typed on the keyboard (the app's), and how many.
 pub const TYPED: u32 = STATE + 0x38;
 pub const TYPED_LEN: u32 = STATE + 0x48;
@@ -71,6 +71,16 @@ const NAV_T: u32 = STATE + 0x52;
 const NAV_TOTAL: u32 = STATE + 0x54;
 /// A netplay console of an online match: 1 once it has started.
 const MATCH: u32 = STATE + 0x56;
+/// The level of RESUME's page (the others' numbers are taken by the other lobby pages).
+pub const SAVED_LEVEL: u8 = 8;
+/// The gamertag's typing page and the STATS page ([`crate::online_stats`]).
+pub const TAG_LEVEL: u8 = 9;
+/// The request that tells the app the gamertag changed.
+pub const REQUEST_GAMERTAG: u8 = 10;
+pub const STATS_LEVEL: u8 = 10;
+/// RESUME's page: the cursor, and which saved match a request is about (the game's).
+const RESUME_CUR: u32 = STATE + 0x6A;
+const RESUME_ARG: u32 = STATE + 0x6B;
 /// The match is over (B back to Select Mode after SELECT MAP).
 const OVER: u32 = STATE + 0x57;
 /// What the password page is for: 0 a room to make, 1 the room to join.
@@ -102,11 +112,32 @@ const BATTLE: u32 = STATE + 0x64;
 const OUT_T: u32 = STATE + 0x65;
 const STATE_END: u32 = PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32;
 pub const PASSWORD_CHARS: usize = 4;
+
+// --- The saved matches (ONLINE > LOBBY > RESUME; tangoAW2's 0x0203D100..0x0203D43F) -------------------------
+
+/// The app's list of suspended matches, and a longer message than [`MESSAGE`] holds: how many (byte 0), the note
+/// shown on the LOBBY menu when the game comes back from a match (zero-terminated, from +0x10), then the rows
+/// ([`SAVED_AT`], [`SAVED_SIZE`] each: who played, the map, the day and date).
+pub const SAVED: u32 = 0x0203_D100;
+pub const SAVED_LEN: u32 = 0x340;
+const SAVED_NOTE: u32 = SAVED + 0x10;
+pub const SAVED_NOTE_LEN: usize = 0x70;
+const SAVED_AT: u32 = SAVED + 0x80;
+pub const SAVED_SIZE: u32 = 0x70;
+pub const SAVED_MAX: usize = 6;
+const SAVED_PLAYERS: usize = 0x40;
+const SAVED_MAP: usize = 0x1C;
+const SAVED_TAIL: usize = 0x14;
 /// Players a match has (step 1: two; the room's page has a slot for each of [`MAX_PLAYERS`]).
 pub const MATCH_PLAYERS: u8 = 2;
 
 /// A match subtype bit: the match was made in the in-game lobby (boot to Versus, host's screens).
 pub const ONLINE_MATCH: u8 = 0x01;
+/// A match subtype bit: the room was made by UNRANKED's pairing (crate::unranked).
+pub const UNRANKED_MATCH: u8 = 0x02;
+/// Bit 2 of an UNRANKED match's subtype: the guest's map proposal is played (the room's host draws it from the match
+/// seed). The same as `tango_net_protocol::control::UNRANKED_PICK_GUEST` (checked by the app).
+pub const UNRANKED_PICK_GUEST: u8 = 0x04;
 /// The room code's characters: every letter and digit. (The game's title font has only some letters, so the code is
 /// drawn from the text font, doubled and outlined, letters and digits alike.)
 pub const CODE_ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -171,11 +202,25 @@ pub mod mailbox {
         Start,
         /// The player set a gamertag in the game.
         SetGamertag(String),
+        /// UNRANKED: look for an opponent.
+        Unranked,
+        /// Make a room to resume the saved match at this place in the list ([`write_saved`]).
+        Resume { index: usize },
+        /// Delete the saved match at this place in the list.
+        DeleteSaved { index: usize },
+    }
+
+    /// One row of the list of saved matches.
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct SavedRow {
+        pub players: String,
+        pub map: String,
+        pub tail: String,
     }
 
     /// The request numbered `serial`, if it is new (`seen` is the last serial the app has handled).
     pub fn read_request(read: &mut dyn FnMut(u32, &mut [u8]), seen: u8) -> Option<(u8, Request)> {
-        let mut b = [0u8; 0x60];
+        let mut b = [0u8; 0x70];
         read(STATE, &mut b);
         let (kind, serial) = (b[0x0C], b[0x0D]);
         if serial == seen {
@@ -197,11 +242,14 @@ pub mod mailbox {
             4 => Request::Ready,
             5 => Request::NotReady,
             6 => Request::Start,
-            7 => {
+            REQUEST_GAMERTAG => {
                 let mut tag = [0u8; crate::online_stats::TAG_CHARS];
                 read(crate::online_stats::GAMERTAG, &mut tag);
                 Request::SetGamertag(tag.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect())
             }
+            7 => Request::Unranked,
+            8 => Request::Resume { index: b[0x6B] as usize },
+            9 => Request::DeleteSaved { index: b[0x6B] as usize },
             _ => Request::Leave,
         };
         Some((serial, r))
@@ -253,6 +301,47 @@ pub mod mailbox {
         write(STATUS, &[status as u8]);
     }
 
+    /// The list of saved matches the RESUME page shows.
+    pub fn write_saved(write: &mut dyn FnMut(u32, &[u8]), rows: &[SavedRow]) {
+        let rows = &rows[..rows.len().min(SAVED_MAX)];
+        let put = |b: &mut [u8], s: &str| {
+            let n = b.len() - 1;
+            for (k, c) in s.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).take(n).enumerate() {
+                b[k] = c as u8;
+            }
+        };
+        let mut all = vec![0u8; SAVED_MAX * SAVED_SIZE as usize];
+        for (k, r) in rows.iter().enumerate() {
+            let e = &mut all[k * SAVED_SIZE as usize..(k + 1) * SAVED_SIZE as usize];
+            put(&mut e[..SAVED_PLAYERS], &r.players);
+            put(&mut e[SAVED_PLAYERS..SAVED_PLAYERS + SAVED_MAP], &r.map);
+            put(&mut e[SAVED_PLAYERS + SAVED_MAP..SAVED_PLAYERS + SAVED_MAP + SAVED_TAIL], &r.tail);
+        }
+        write(SAVED_AT, &all);
+        write(SAVED, &[rows.len() as u8]);
+    }
+
+    /// The saved matches the game shows now (their count), for the app to know when to write them again.
+    pub fn saved_count(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
+        let mut b = [0u8];
+        read(SAVED, &mut b);
+        b[0]
+    }
+
+    /// The note shown on the LOBBY menu (how the last match ended), longer than a status message.
+    pub fn write_note(write: &mut dyn FnMut(u32, &[u8]), text: &str) {
+        let mut b = vec![0u8; SAVED_NOTE_LEN];
+        for (k, c) in text
+            .chars()
+            .filter(|c| c.is_ascii() && !c.is_ascii_control())
+            .take(SAVED_NOTE_LEN - 1)
+            .enumerate()
+        {
+            b[k] = c as u8;
+        }
+        write(SAVED_NOTE, &b);
+    }
+
     pub fn write_room(write: &mut dyn FnMut(u32, &[u8]), code: &str) {
         let mut b = [0u8; CODE_CHARS];
         for (k, c) in code.bytes().take(CODE_CHARS).enumerate() {
@@ -264,7 +353,7 @@ pub mod mailbox {
     /// Characters typed on the keyboard, for the code being typed: letters, 8 to rub one out, 13 to join.
     /// Returns false when the lobby is not taking typing (nothing written).
     pub fn type_chars(read: &mut dyn FnMut(u32, &mut [u8]), write: &mut dyn FnMut(u32, &[u8]), chars: &[u8]) -> bool {
-        if !matches!(level(read), 3 | 5 | 6) {
+        if !matches!(level(read), 3 | 5 | TAG_LEVEL) {
             return false;
         }
         let mut n = [0u8];
@@ -457,7 +546,7 @@ fn request(core: &mut Core, kind: u8) {
     core.raw_write_8(REQUEST, -1, kind);
     let s = core.raw_read_8(SERIAL, -1).wrapping_add(1);
     core.raw_write_8(SERIAL, -1, s);
-    if kind <= 3 {
+    if kind <= 3 || kind == 7 {
         core.raw_write_8(STATUS, -1, 0);
         core.raw_write_range(MESSAGE, -1, &[0u8; MESSAGE_LEN as usize]);
         core.raw_write_range(PLAYERS, -1, &[0u8; (PLAYER_SIZE * MAX_PLAYERS as u32) as usize]);
@@ -477,7 +566,7 @@ const GRID_CELLS: usize = CODE_ALPHABET.len() + 2;
 /// The text being typed: the room's code (level 3) or a password (level 5): (where, its length's byte, at most,
 /// at least).
 fn field(core: &Core) -> (u32, u32, usize, usize) {
-    if level(core) == 6 {
+    if level(core) == TAG_LEVEL {
         (
             crate::online_stats::TAG_BUF,
             crate::online_stats::TAG_LEN,
@@ -541,10 +630,10 @@ fn accept(core: &mut Core) {
     if (core.raw_read_8(len, -1) as usize) < min {
         return;
     }
-    if level(core) == 6 {
+    if level(core) == TAG_LEVEL {
         // The gamertag: kept here at once, the app keeps it too.
         crate::online_stats::commit(core);
-        request(core, 7);
+        request(core, REQUEST_GAMERTAG);
         let back = crate::online_stats::entry_from(core);
         set_level(core, back.min(1));
         return;
@@ -566,7 +655,7 @@ fn accept(core: &mut Core) {
 
 /// Back from the typing page.
 fn back_from_typing(core: &mut Core) {
-    if level(core) == 6 {
+    if level(core) == TAG_LEVEL {
         let back = crate::online_stats::entry_from(core);
         set_level(core, back.min(1));
     } else if level(core) == 5 && core.raw_read_8(ENTRY, -1) == 1 {
@@ -614,7 +703,7 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
     }
     let Some(cursor) = crate::online_menu::cursor(core).filter(|_| crate::online_menu::active(core)) else {
         // Left the ONLINE screen: the lobby closes (a room made or joined is left).
-        if matches!(level(core), 2 | 4) {
+        if matches!(level(core), 2 | 4 | 6) {
             request(core, 3);
         }
         if level(core) != 0 {
@@ -624,22 +713,29 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
     };
     let pressed = keys & !prev;
     // The first visit asks for a gamertag when none is set.
-    if level(core) <= 1 && crate::online_stats::should_ask(core) {
-        crate::online_stats::open_entry(core, level(core));
+    // (SELECT on the ONLINE and LOBBY menus sets it, too.)
+    if level(core) <= 1 && (crate::online_stats::should_ask(core) || pressed & KEY_SELECT != 0) {
+        let from = level(core);
+        crate::online_stats::open_entry(core, from);
         core.raw_write_8(GRID, -1, 0);
         core.raw_write_8(TYPED_LEN, -1, 0);
-        set_level(core, 6);
+        set_level(core, TAG_LEVEL);
+        return keys & !ALL_KEYS;
     }
     let level = level(core);
     crate::online_menu::draw(core, level as usize);
     match level {
         0 => {
             if pressed & (KEY_A | KEY_START) != 0 {
-                if cursor == 1 {
+                if cursor == 0 {
+                    // UNRANKED: look for an opponent.
+                    request(core, 7);
+                    set_level(core, 6);
+                } else if cursor == 1 {
                     set_level(core, 1);
                 } else if cursor == 2 {
                     crate::online_stats::open_stats(core);
-                    set_level(core, 7);
+                    set_level(core, STATS_LEVEL);
                 } else {
                     core.raw_write_8(NOTICE, -1, 120);
                 }
@@ -664,11 +760,8 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                         set_level(core, 3);
                     }
                     _ => {
-                        // GAMERTAG: the name to edit, on the code's grid.
-                        crate::online_stats::open_entry(core, 1);
-                        core.raw_write_8(GRID, -1, 0);
-                        core.raw_write_8(TYPED_LEN, -1, 0);
-                        set_level(core, 6);
+                        core.raw_write_8(RESUME_CUR, -1, 0);
+                        set_level(core, SAVED_LEVEL);
                     }
                 }
             } else if pressed & KEY_B != 0 {
@@ -693,15 +786,53 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             }
             keys & !ALL_KEYS
         }
-        3 | 5 | 6 => {
+        3 | 5 | TAG_LEVEL => {
             code_entry(core, pressed);
             keys & !ALL_KEYS
         }
-        7 => {
+        STATS_LEVEL => {
             if pressed & KEY_B != 0 {
                 set_level(core, 0);
             } else if pressed & (KEY_UP | KEY_DOWN) != 0 {
                 crate::online_stats::scroll(core, pressed & KEY_DOWN != 0);
+            }
+            keys & !ALL_KEYS
+        }
+        SAVED_LEVEL => {
+            let n = (core.raw_read_8(SAVED, -1) as usize).min(SAVED_MAX);
+            let mut cur = core.raw_read_8(RESUME_CUR, -1) as usize;
+            if n > 0 {
+                cur = cur.min(n - 1);
+                if pressed & KEY_UP != 0 {
+                    cur = (cur + n - 1) % n;
+                }
+                if pressed & KEY_DOWN != 0 {
+                    cur = (cur + 1) % n;
+                }
+                core.raw_write_8(RESUME_CUR, -1, cur as u8);
+            }
+            if pressed & KEY_B != 0 {
+                set_level(core, 1);
+            } else if n > 0 && pressed & KEY_A != 0 {
+                // A room for the match: its page is the one CREATE shows.
+                core.raw_write_8(RESUME_ARG, -1, cur as u8);
+                core.raw_write_range(ROOM, -1, &[0u8; CODE_CHARS]);
+                core.raw_write_range(PASSWORD, -1, &[0u8; PASSWORD_CHARS]);
+                core.raw_write_8(PASSWORD_LEN, -1, 0);
+                request(core, 8);
+                set_level(core, 2);
+            } else if n > 0 && pressed & KEY_START != 0 {
+                core.raw_write_8(RESUME_ARG, -1, cur as u8);
+                request(core, 9);
+                core.raw_write_8(RESUME_CUR, -1, cur.saturating_sub(1) as u8);
+            }
+            keys & !ALL_KEYS
+        }
+        6 => {
+            // (searching for an opponent: B stops)
+            if pressed & KEY_B != 0 {
+                request(core, 3);
+                set_level(core, 0);
             }
             keys & !ALL_KEYS
         }
@@ -953,14 +1084,16 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             if core.raw_read_8(MATCH, -1) == 0 {
                 core.raw_write_8(MATCH, -1, 1);
                 core.raw_write_8(OVER, -1, 0);
+                crate::unranked::init(core, sub);
                 start_nav(core, GOAL_VERSUS);
             }
             if let Some(k) = nav(core) {
                 return k;
             }
-            if crate::campaign_menu::on_select_mode(core) {
+            if crate::campaign_menu::on_select_mode(core) || crate::unranked::finished(core) {
                 core.raw_write_8(OVER, -1, 1);
             }
+            let unranked = crate::unranked::on(core);
             let n = core.raw_read_8(NOTICE, -1);
             if n > 0 {
                 core.raw_write_8(NOTICE, -1, n - 1);
@@ -971,7 +1104,7 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             let mut keys = keys;
             // The list only lands on maps for as many armies as there are players: a move onto another map goes on
             // in the same direction (a press every few frames) until one fits.
-            if crate::survival_ui::idle(core) {
+            if crate::survival_ui::idle(core) && !unranked {
                 let want = crate::online_teams::players(core) as u8;
                 let wrong = map_armies(core, pack).is_some_and(|n| n != want);
                 let pressed = keys & !prev;
@@ -1030,6 +1163,11 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             } else {
                 core.raw_write_8(SKIP_DONE, -1, 0);
             }
+            if unranked {
+                // (UNRANKED: the chosen map is walked to and chosen, the standard rules are set)
+                keys = crate::unranked::drive(core, keys);
+                keys = crate::unranked::rules(core, keys);
+            }
             if keys & !prev & KEY_A != 0
                 && crate::survival_ui::idle(core)
                 && map_armies(core, pack).is_some_and(|n| n as usize != crate::online_teams::players(core))
@@ -1065,14 +1203,14 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
     }
 }
 
-const LIST_IDS: u32 = 0x0202_7F78;
+pub(crate) const LIST_IDS: u32 = 0x0202_7F78;
 
 /// SELECT MAP's list proc (the game's own: its cursor row is at +0x58) and where procs live.
 const LIST_PROC: u32 = 0x0861_6CF4;
 const PROCS: (u32, u32) = (0x0200_D610, 0x0200_E418);
 
 /// The row the cursor is on in SELECT MAP's list (an index into [`LIST_IDS`]).
-fn list_cursor(core: &Core) -> Option<u32> {
+pub(crate) fn list_cursor(core: &Core) -> Option<u32> {
     let p = (PROCS.0..PROCS.1)
         .step_by(0x6C)
         .find(|&p| core.raw_read_32(p, -1) == LIST_PROC)?;
@@ -1094,6 +1232,7 @@ fn map_armies(core: &Core, pack: bool) -> Option<u8> {
 /// The online match's notes over its console (presentation only): a map for another number of players.
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     crate::online_teams::draw(core, rgba);
+    crate::unranked::draw(core, rgba);
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {
         return;
     }
@@ -1115,6 +1254,7 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     if core.raw_read_8(MATCH, -1) != 1 {
         return;
     }
+    crate::unranked::tick(core, inputs);
     let battle = core.raw_read_8(BATTLE, -1) == 1;
     if crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
         if !battle {
@@ -1180,6 +1320,9 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     }
     if navigating(core) {
         return Some(0);
+    }
+    if let Some(keys) = crate::unranked::merge(core, inputs) {
+        return Some(keys);
     }
     // The whole battle phase (every turn, its menus, banners, hand-offs, animations, the moments between): only the
     // army whose turn it is has the pad (the incoming army's player on the "Next turn" screen), and nobody else's
@@ -1469,6 +1612,7 @@ fn status_lines(core: &Core, hosting: bool) -> (Vec<String>, Rgb) {
             .into()],
             GRAY_INK,
         ),
+        Status::Waiting if !m.is_empty() => (wrap(core, &m, PANEL.2 - 12), INK),
         Status::Waiting => (vec!["Waiting for player(s)...".into()], INK),
         Status::Connecting => (vec!["Connecting...".into()], INK),
         Status::Connected => (vec![format!("Connected: {m}"), "The battle is starting!".into()], BLUE),
@@ -1517,6 +1661,72 @@ fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) 
     }
 }
 
+fn note(core: &Core) -> String {
+    let mut b = [0u8; SAVED_NOTE_LEN];
+    core.raw_read_range(SAVED_NOTE, -1, &mut b);
+    b.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect()
+}
+
+/// A row of the list of saved matches: (who played, the map, the day and date).
+fn saved_row(core: &Core, k: usize) -> (String, String, String) {
+    let mut b = [0u8; SAVED_SIZE as usize];
+    core.raw_read_range(SAVED_AT + SAVED_SIZE * k as u32, -1, &mut b);
+    let text = |a: usize, n: usize| -> String { b[a..a + n].iter().take_while(|&&c| c != 0).map(|&c| c as char).collect() };
+    (text(0, SAVED_PLAYERS), text(SAVED_PLAYERS, SAVED_MAP), text(SAVED_PLAYERS + SAVED_MAP, SAVED_TAIL))
+}
+
+/// `s` cut with ".." to fit `width` pixels.
+fn fit(core: &Core, s: &str, width: i32) -> String {
+    if text_width(core, s) <= width {
+        return s.to_string();
+    }
+    let mut t: String = s.to_string();
+    while !t.is_empty() && text_width(core, &format!("{t}..")) > width {
+        t.pop();
+    }
+    format!("{t}..")
+}
+
+/// RESUME: the matches cut short, one under the cursor (UP and DOWN, A resumes it, START deletes it).
+fn saved_page(cv: &mut Rgba, core: &Core) {
+    let (x, y, w, h) = (6, 22, W as i32 - 12, 118);
+    cv.window(x, y, w, h);
+    let n = (core.raw_read_8(SAVED, -1) as usize).min(SAVED_MAX);
+    cv.text(core, x + 6, y + 4, "Matches cut short", GRAY_INK, SHADE);
+    if n == 0 {
+        let t = "No saved matches.";
+        cv.text(core, x + (w - text_width(core, t)) / 2, y + 48, t, GRAY_INK, SHADE);
+        let t2 = "A match is kept when a player's connection drops.";
+        let lines = wrap(core, t2, w - 20);
+        for (k, l) in lines.iter().enumerate() {
+            cv.text(core, x + (w - text_width(core, l)) / 2, y + 64 + 12 * k as i32, l, SHADE, LIGHT_GRAY);
+        }
+        bar(cv, core, "B: Back");
+        return;
+    }
+    let cur = (core.raw_read_8(RESUME_CUR, -1) as usize).min(n - 1);
+    // Four rows show at a time, the cursor's among them.
+    let first = cur.saturating_sub(3).min(n.saturating_sub(4));
+    for (row, k) in (first..n.min(first + 4)).enumerate() {
+        let (players, map, tail) = saved_row(core, k);
+        let ry = y + 16 + 25 * row as i32;
+        if k == cur {
+            cv.rect(x + 3, ry - 1, w - 6, 24, YELLOW);
+        } else {
+            cv.rect(x + 4, ry + 23, w - 8, 1, LIGHT_GRAY);
+        }
+        cv.text(core, x + 7, ry, &fit(core, &players, w - 14), INK, SHADE);
+        cv.text(core, x + 7, ry + 11, &fit(core, &format!("{map}  {tail}"), w - 14), if k == cur { INK } else { GRAY_INK }, SHADE);
+    }
+    if first > 0 {
+        cv.text(core, x + w - 14, y + 4, "^", GRAY_INK, SHADE);
+    }
+    if first + 4 < n {
+        cv.text(core, x + w - 14, y + h - 12, "v", GRAY_INK, SHADE);
+    }
+    bar(cv, core, "A: Resume  START: Delete  B: Back");
+}
+
 /// The lobby's pages over the ONLINE screen (offline): see the module's docs.
 pub fn apply(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != W * H * 4 || !crate::online_menu::active(core) {
@@ -1537,15 +1747,26 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             }
         }
         1 => {
-            let back = (Status::of(core.raw_read_8(STATUS, -1)) == Status::Back)
-                .then(|| message(core))
-                .filter(|m| !m.is_empty());
+            let note = (Status::of(core.raw_read_8(STATUS, -1)) == Status::Back).then(|| note(core)).filter(|m| !m.is_empty());
             let help = [
                 "Make a room and give its code to a friend.",
                 "Type in the code of a friend's room.",
-                "Choose the name others see.  B: Back to ONLINE",
+                "Pick up a match cut short by a disconnect.",
             ];
-            bar(&mut cv, core, back.as_deref().unwrap_or(help[cursor as usize % 3]));
+            match note {
+                // How the last match ended: longer than the bar, so in a box of its own over the menu.
+                Some(m) => {
+                    let lines = wrap(core, &m, W as i32 - 20);
+                    let h = 8 + 12 * lines.len().min(4) as i32;
+                    let y = 142 - h;
+                    cv.window(4, y, W as i32 - 8, h);
+                    for (k, l) in lines.iter().take(4).enumerate() {
+                        cv.text(core, 10, y + 5 + 12 * k as i32, l, INK, SHADE);
+                    }
+                    bar(&mut cv, core, "UP or DOWN: Dismiss");
+                }
+                None => bar(&mut cv, core, help[cursor as usize % 3]),
+            }
         }
         2 | 4 => {
             let Some(font) = title_font(core) else { return };
@@ -1641,6 +1862,40 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 }
             }
         }
+        6 => {
+            let (x, y, w, h) = PANEL;
+            cv.window(x, y, w, h);
+            let status = Status::of(core.raw_read_8(STATUS, -1));
+            cv.text(core, x + 6, y + 5, "Unranked", GRAY_INK, SHADE);
+            let (lines, ink): (Vec<String>, Rgb) = match status {
+                Status::Connected => (
+                    vec!["Opponent found:".into(), message(core), "The match is starting!".into()],
+                    BLUE,
+                ),
+                Status::Failed => status_lines(core, false),
+                _ => (
+                    wrap(core, "Looking for an opponent...", w - 16)
+                        .into_iter()
+                        .chain(wrap(core, "Another player has to be looking too.", w - 16))
+                        .collect(),
+                    INK,
+                ),
+            };
+            for (k, l) in lines.iter().take(6).enumerate() {
+                let ink = if k > 0 && status != Status::Connected && status != Status::Failed { GRAY_INK } else { ink };
+                cv.text(core, x + (w - text_width(core, l)) / 2, y + 28 + 13 * k as i32, l, ink, SHADE);
+            }
+            bar(
+                &mut cv,
+                core,
+                match status {
+                    Status::Connected => "Starting...",
+                    Status::Failed => "B: Back",
+                    _ => "B: Cancel",
+                },
+            );
+        }
+        SAVED_LEVEL => saved_page(&mut cv, core),
         3 | 5 => {
             let Some(font) = title_font(core) else { return };
             let (x, y, w, h) = PANEL;
@@ -1677,14 +1932,14 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 },
             );
         }
-        6 => {
+        TAG_LEVEL => {
             let (x, y, w, h) = PANEL;
             cv.window(x, y, w, h);
             crate::online_stats::draw_entry(&mut cv, core, PANEL);
             draw_grid(&mut cv, core, PANEL, 44);
             bar(&mut cv, core, "A: Type  B: Rub out  START: OK");
         }
-        7 => {
+        STATS_LEVEL => {
             let (x, y, w, h) = PANEL;
             cv.window(x, y, w, h);
             crate::online_stats::draw_stats(&mut cv, core, PANEL);
@@ -1701,7 +1956,8 @@ mod tests {
     fn state_fits() {
         assert!(STATE_END <= STATE + STATE_LEN);
         assert!(TYPED + TYPED_MAX <= TYPED_LEN);
-        assert!(MESSAGE + MESSAGE_LEN <= TYPED);
+        assert!(MESSAGE + MESSAGE_LEN <= STATE + STATE_LEN);
+        assert!(MESSAGE >= PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32);
     }
 
     #[test]

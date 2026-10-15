@@ -2,8 +2,8 @@
 //! "Play online with friends.", and the screen it opens (AW2's link-cable screen, `ProcScr` `0x0849BC50`, its
 //! cursor at +0x36: 0 Single-Pak, 1 Multi-Pak, 2 Trade Maps) is the ONLINE screen: titled ONLINE, its items
 //! UNRANKED, LOBBY and STATS with their own help lines. A on LOBBY goes a level down on the same screen (titled
-//! LOBBY: CREATE, JOIN, GAMERTAG; B goes back up); A on CREATE or JOIN opens the lobby's own pages
-//! ([`crate::online`]). UNRANKED says it is coming soon; STATS shows the online record ([`crate::online_stats`]); the LOBBY level's third item is GAMERTAG. The game never sees A or START on this
+//! LOBBY: CREATE, JOIN, RESUME; B goes back up, as BACK did); A on CREATE or JOIN opens the lobby's own pages
+//! ([`crate::online`]). UNRANKED opens its own page (level 6); STATS shows the online record ([`crate::online_stats`]); SELECT on the ONLINE and LOBBY menus sets the gamertag. The game never sees A or START on this
 //! screen, so its link-cable modes never start.
 //!
 //! How (the lettering is [`crate::online_art`]'s):
@@ -45,7 +45,7 @@ const TEXT_IDS: [(u32, u32); 4] = [
 ];
 const HELP: [&str; 4] = [
     "Play online with friends.",
-    "Coming soon: play someone at random.",
+    "Play someone at random.",
     "Create a room or join a friend's room.",
     "See your online record.",
 ];
@@ -70,7 +70,7 @@ const SMALL_SLOTS: [u32; 3] = [892, 924, 956];
 const TITLE_TILE: u32 = 236;
 const TITLE_PALETTE: u16 = 15;
 
-pub const WORDS: [[&str; 3]; 2] = [["UNRANKED", "LOBBY", "STATS"], ["CREATE", "JOIN", "GAMERTAG"]];
+pub const WORDS: [[&str; 3]; 2] = [["UNRANKED", "LOBBY", "STATS"], ["CREATE", "JOIN", "RESUME"]];
 pub const TITLES: [&str; 2] = ["ONLINE", "LOBBY"];
 
 struct Built {
@@ -172,7 +172,7 @@ fn write_if_changed(core: &mut Core, at: u32, b: &[u8]) {
 
 /// Which of the two menus (0 ONLINE, 1 LOBBY) a lobby level is drawn over: STATS' page is over ONLINE's.
 fn menu_level(level: usize) -> usize {
-    if level == 0 || level == 7 {
+    if matches!(level, 0 | 6 | 10) {
         0
     } else {
         1

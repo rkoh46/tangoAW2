@@ -101,6 +101,26 @@ pub enum RoomMsg {
     Loaded,
     /// Either: I am leaving.
     Leave,
+    /// UNRANKED, both players, first: the two the pool paired each say a random number; the lower one hosts.
+    Pool(u64),
+    /// Host to every other guest, mid-match, while it waits for the player in `seat` to reconnect (repeated about
+    /// once a second): the match is paused, show "Waiting for <name> to reconnect" and hold off any reconnect of
+    /// your own.
+    Hold(RoomHold),
+    /// Host to every other guest: the player in `seat` is back; the match goes on.
+    Unhold { seat: u8 },
+    /// Host to every other guest: the player in `seat` did not come back in time; the match is over (it is saved
+    /// for resuming by whoever can) and the host closes its links next.
+    GiveUp { seat: u8, name: String },
+}
+
+/// A player the match is waiting for.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct RoomHold {
+    pub seat: u8,
+    pub name: String,
+    /// Milliseconds left of the reconnect window.
+    pub left_ms: u32,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -111,12 +131,17 @@ pub struct RoomJoin {
     /// This player can show the content their game gates ([`SHARED_CONTENT`]); the match has it only when everyone
     /// does.
     pub content: bool,
+    /// The ids of the suspended matches this player has saved, so that a room resuming one can tell who is in it.
+    pub saves: Vec<u64>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RoomPlayer {
     pub nickname: String,
     pub ready: bool,
+    /// The player's seat in the match (a room resuming a suspended match seats players as they were).
+    pub seat: u8,
+    pub host: bool,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -141,6 +166,8 @@ pub enum RejectReason {
     Started,
     GameMismatch,
     NotTheHost,
+    /// A room resuming a saved match, and you are not one of its players (or are already in it).
+    NotInMatch,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -154,6 +181,20 @@ pub struct RoomStart {
     pub save_len: u64,
     pub save_hash: [u8; 16],
     pub match_type: (u8, u8),
+    /// The match's id (random, the host's choice; a resumed match keeps its own).
+    pub match_id: u64,
+    /// The seat of the host.
+    pub host_seat: u8,
+    /// A suspended match being resumed: the payload that follows is `bincode((save, state))` and not the save alone.
+    pub resume: Option<ResumeInfo>,
+}
+
+/// What a resumed match starts from (the state itself travels in the start's payload).
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct ResumeInfo {
+    /// The tick of the saved state in the original match, and its digest.
+    pub tick: u32,
+    pub digest: u64,
 }
 
 /// A room's password as it crosses the wire: not secret (the room's code is its only privacy), just enough to
@@ -255,6 +296,10 @@ pub const SHARED_CONTENT: u8 = 0x80;
 /// The lobby ignores it when it compares match types, and the match terms
 /// drop it.
 pub const ROOM_HOST: u8 = 0x40;
+
+/// Bit 2 of an UNRANKED match's subtype (tangoAW2): the match's map is the guest's proposal (clear: the host's).
+/// The host draws it from the match seed when it starts the match, so both peers and the replay have the same.
+pub const UNRANKED_PICK_GUEST: u8 = 0x04;
 
 /// The local player's seat when [`ROOM_HOST`] decides it: `Some(0)` for the
 /// room's host, `Some(1)` for its guest, `None` when it does not (neither

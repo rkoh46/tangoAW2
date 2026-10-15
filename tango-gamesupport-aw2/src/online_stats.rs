@@ -1,9 +1,9 @@
 //! The gamertag and the online record (docs/AW2.md "Gamertag and STATS").
 //!
-//! **Gamertag.** The name a player goes by online (the app's `config.nickname`): the LOBBY level's third item
-//! (GAMERTAG) opens a typing page (level 6 of [`crate::online`], the code grid's letters and digits, up to
+//! **Gamertag.** The name a player goes by online (the app's `config.nickname`): SELECT on the ONLINE and LOBBY
+//! menus opens a typing page ([`crate::online::TAG_LEVEL`], the code grid's letters and digits, up to
 //! [`TAG_CHARS`], or the keyboard); the first visit to the ONLINE screen asks when none is set. The game keeps the
-//! committed name at [`GAMERTAG`] and asks the app to keep it (request 7); the app also writes it there when the
+//! committed name at [`GAMERTAG`] and asks the app to keep it (request 10); the app also writes it there when the
 //! console starts ([`SYNCED`]). The ONLINE and LOBBY screens show it ([`draw_tag`]).
 //!
 //! **STATS.** The ONLINE screen's third item shows the player's own record, kept by the app in the profile's data
@@ -270,14 +270,17 @@ pub fn scroll(core: &mut Core, down: bool) {
 
 // --- Drawing (presentation only) ------------------------------------------------------------------------
 
-/// The gamertag in the screen's top right corner (the ONLINE and LOBBY menus).
+/// The gamertag in the screen's top right corner (the ONLINE and LOBBY menus), with the key that changes it.
 pub fn draw_tag(cv: &mut Rgba, core: &Core) {
     let tag = gamertag(core);
-    let s = if tag.is_empty() { "No gamertag".to_string() } else { tag };
-    let w = text_width(core, &s);
-    let (x, y) = (W as i32 - w - 9, 4);
-    cv.rect(x - 4, y - 2, w + 8, 15, crate::online::BAR);
-    cv.text(core, x, y, &s, if gamertag(core).is_empty() { GRAY_INK } else { WHITE }, GRAY_INK);
+    let set = !tag.is_empty();
+    let s = if set { tag } else { "No gamertag".to_string() };
+    let hint = "SELECT: Gamertag";
+    let w = text_width(core, &s).max(text_width(core, hint));
+    let x = W as i32 - w - 9;
+    cv.rect(x - 4, 2, w + 8, 26, crate::online::BAR);
+    cv.text(core, x + (w - text_width(core, &s)) / 2, 4, &s, if set { WHITE } else { GRAY_INK }, GRAY_INK);
+    cv.text(core, x, 16, hint, GRAY_INK, GRAY_INK);
 }
 
 /// The typing page.
