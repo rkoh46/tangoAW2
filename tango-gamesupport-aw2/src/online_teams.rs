@@ -310,10 +310,31 @@ pub fn co_label(core: &Core, co: u8) -> String {
     name.iter().filter(|&&c| (0x20..0x7F).contains(&c)).map(|&c| c as char).collect()
 }
 
+/// `text` with selection arrows, cut down so it (and the highlight round it) never passes `max_w` pixels: "< text >",
+/// else "<text>", else the text shortened with the arrows kept.
+fn fit_arrows(core: &Core, text: &str, on: bool, max_w: i32) -> String {
+    let w = |t: &str| crate::online::text_width(core, t);
+    if !on {
+        return text.to_string();
+    }
+    for cand in [format!("< {text} >"), format!("<{text}>")] {
+        if w(&cand) <= max_w {
+            return cand;
+        }
+    }
+    let mut t: String = text.to_string();
+    while !t.is_empty() && w(&format!("<{t}>")) > max_w {
+        t.pop();
+    }
+    format!("<{t}>")
+}
+
 /// A CO's portrait scaled to `sz` pixels square at (x, y).
 fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i32, sz: i32) {
     let mut f = faces().lock().unwrap();
-    let (px, pal) = f.entry(co).or_insert_with(|| crate::tag_ui::portrait48(core, co));
+    let (px, pal) = f.entry(co).or_insert_with(|| {
+        crate::ds_coselect::mug_for_face(core, co).unwrap_or_else(|| crate::tag_ui::portrait48(core, co))
+    });
     for yy in 0..sz {
         for xx in 0..sz {
             let (sx, sy) = ((xx * 48 / sz) as usize, (yy * 48 / sz) as usize);
@@ -360,29 +381,18 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
             cv.rect(2, y, 236, rh - 2, if mine { crate::online::CREAM } else { crate::online::WHITE });
             cv.rect(2, y, 4, rh - 2, colour_rgb(colour));
             // The portrait.
+            let fsz = (rh - 4).clamp(12, 32);
             if let Some(co) = co {
-                let mut f = faces().lock().unwrap();
-                let (px, pal) = f.entry(co).or_insert_with(|| crate::tag_ui::portrait48(core, co));
-                let sz = (rh - 4).clamp(12, 40);
-                for yy in 0..sz {
-                    for xx in 0..sz {
-                        let (sx, sy) = ((xx * 48 / sz) as usize, (yy * 48 / sz) as usize);
-                        let t = 6 * (sy / 8) + sx / 8;
-                        let b = px.get(32 * t + 4 * (sy % 8) + (sx % 8) / 2).copied().unwrap_or(0);
-                        let v = ((b >> (4 * (sx & 1))) & 15) as usize;
-                        let c = u16::from_le_bytes([pal[2 * v], pal[2 * v + 1]]);
-                        cv.put(8 + xx, y + 1 + yy, crate::online::bgr(c));
-                    }
-                }
+                draw_face(core, cv, co, 8, y + 1, fsz);
             }
-            let tx = 8 + (rh - 4).clamp(12, 40) + 4;
+            let tx = 8 + fsz + 4;
             let name = crate::online::room_name(s);
             let name: String = name.chars().take(10).collect();
             let name_ink = if mine { crate::online::BLUE } else { crate::online::INK };
             cv.text(core, tx, y + 1, &name, name_ink, crate::online::SHADE);
             let co_name = co.map(|c| co_label(core, c)).unwrap_or_default();
             let sel = |f: u8| mine && !ready && field == f;
-            let arrows = |on: bool, s: &str| if on { format!("< {s} >") } else { s.to_string() };
+            let arrows = |on: bool, s: &str, max_w: i32| fit_arrows(core, s, on, max_w);
             let line = |cv: &mut crate::online::Rgba<'_>, core: &Core, x: i32, yy: i32, text: &str, on: bool| {
                 let w = crate::online::text_width(core, text);
                 if on {
@@ -391,7 +401,7 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
                 cv.text(core, x, yy, text, crate::online::INK, crate::online::SHADE);
             };
             let row2 = y + (rh / 2).max(11);
-            line(cv, core, tx, row2, &arrows(sel(F_CO), &co_name), sel(F_CO));
+            line(cv, core, tx, row2, &arrows(sel(F_CO), &co_name, 104 - tx), sel(F_CO));
             // Colour.
             let cx = 112;
             if sel(F_COLOUR) {
@@ -404,10 +414,10 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
             }
             // Partner.
             if tag_on {
-                let px = 150;
-                let pname = if partner == NONE { "no partner".to_string() } else { co_label(core, partner) };
+                let px = 148;
+                let pname = if partner == NONE { "none".to_string() } else { co_label(core, partner) };
                 cv.text(core, px, y + 1, "Partner", crate::online::GRAY_INK, crate::online::SHADE);
-                line(cv, core, px, row2, &arrows(sel(F_PARTNER), &pname), sel(F_PARTNER));
+                line(cv, core, px, row2, &arrows(sel(F_PARTNER), &pname, 196 - px), sel(F_PARTNER));
             }
             // READY.
             let (rx, rw) = (200, 36);
@@ -454,7 +464,7 @@ fn draw_compact(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32,
     let name_ink = if mine { crate::online::BLUE } else { crate::online::INK };
     cv.text(core, tx, y, &name, name_ink, crate::online::SHADE);
     let co_name = co.map(|c| co_label(core, c)).unwrap_or_default();
-    let co_text = if sel(F_CO) { format!("< {co_name} >") } else { co_name };
+    let co_text = fit_arrows(core, &co_name, sel(F_CO), 112 - tx);
     let row2 = y + h - 11;
     let w = crate::online::text_width(core, &co_text);
     if sel(F_CO) {

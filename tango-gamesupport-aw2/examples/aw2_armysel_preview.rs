@@ -66,8 +66,10 @@ fn main() {
     let names = ["Gamertag10", "Hostname", "Guest", "Nell", "XxLongNamexX"];
     let colours = [1u8, 2, 4, 3, 5];
     // (players, local seat, field, ready flags)
-    let cases: [(usize, usize, u8, [bool; 5], &str); 7] = [
+    let cases: [(usize, usize, u8, [bool; 5], &str); 9] = [
         (2, 1, 0, [false; 5], "2"),
+        (3, 0, 2, [false; 5], "3_partner"),
+        (3, 0, 0, [false; 5], "3_co"),
         (3, 2, 1, [false; 5], "3"),
         (4, 1, 0, [true, false, false, false, false], "4"),
         (5, 4, 0, [true, false, false, true, false], "5"),
@@ -97,5 +99,28 @@ fn main() {
             ppm.extend_from_slice(&px[..3]);
         }
         std::fs::write(out.join(format!("armysel_{tag}.ppm")), ppm).unwrap();
+    }
+    // Every CO's face in both row styles: pages of 5 (compact) and 3 (full size) seats, main CO and the next as partner.
+    for (n, tag) in [(5usize, "c"), (3, "f")] {
+        for (page, chunk) in (0..list.len()).collect::<Vec<_>>().chunks(n).enumerate() {
+            let mut ram = vec![0u8; 0x100];
+            ram[0] = 1;
+            ram[2] = n as u8;
+            for (s, &idx) in chunk.iter().enumerate() {
+                let b = 0x10 + 0x10 * s;
+                ram[b] = idx as u8;
+                ram[b + 1] = colours[s];
+                ram[b + 2] = list[(idx + 1) % list.len()];
+            }
+            core.raw_write_range(tango_gamesupport_aw2::online_teams::SEL, -1, &ram);
+            tango_gamesupport_aw2::online::set_room(chunk.iter().map(|&i| format!("#{i}")).collect::<Vec<_>>(), 99);
+            let mut rgba = vec![0u8; 240 * 160 * 4];
+            tango_gamesupport_aw2::online_teams::draw(core, &mut rgba);
+            let mut ppm = b"P6\n240 160\n255\n".to_vec();
+            for px in rgba.chunks(4) {
+                ppm.extend_from_slice(&px[..3]);
+            }
+            std::fs::write(out.join(format!("faces_{tag}{page}.ppm")), ppm).unwrap();
+        }
     }
 }
