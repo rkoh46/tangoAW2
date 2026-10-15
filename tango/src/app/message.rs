@@ -54,6 +54,8 @@ pub enum Message {
         netplay::HandoffTicket,
         std::sync::Arc<std::sync::Mutex<Option<anyhow::Result<session::Launch>>>>,
     ),
+    /// A room's match built (tangoAW2's in-game lobby): the session to install.
+    RoomMatchBuilt(std::sync::Arc<std::sync::Mutex<Option<anyhow::Result<session::Launch>>>>),
     /// 1 Hz tick: refresh Discord rich-presence + drain any
     /// Discord-initiated join secret into the play link-code
     /// field.

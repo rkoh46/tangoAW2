@@ -21,6 +21,8 @@ pub(super) struct BootPieces {
     pub(super) rng_seed: [u8; 16],
     pub(super) rtc: std::time::SystemTime,
     pub(super) local_player: usize,
+    /// How many players share the match (2; a room's, up to 5).
+    pub(super) players: usize,
     pub(super) present_delay: u32,
     pub(super) disable_bgm: bool,
 }
@@ -35,9 +37,14 @@ pub(super) struct DriveContext {
     /// See the session's copy.
     pub(super) displayed_screens: Arc<std::sync::atomic::AtomicU8>,
     pub(super) end: EndState,
-    pub(super) event_rx: std::sync::mpsc::Receiver<tango_net::data::Input>,
-    pub(super) sender: tango_net::PvpSender,
-    pub(super) in_match: tango_net::InMatchTx,
+    /// What the links bring in, tagged with the link it came on (a room's host has one to each guest).
+    pub(super) event_rx: std::sync::mpsc::Receiver<(usize, tango_net::data::Input)>,
+    /// One sender to each link (two players: one; a room's guest: the host's; its host: one to each guest).
+    pub(super) senders: Vec<tango_net::PvpSender>,
+    /// A room of more than two players: this peer is its host (which joins the guests' inputs into one for each),
+    /// or a guest (which hears the others as one).
+    pub(super) room_host: bool,
+    pub(super) in_matches: Vec<tango_net::InMatchTx>,
     pub(super) replay_writer: Option<tango_replay::Writer>,
     pub(super) stats: Arc<Mutex<tango_match::analysis::StatsBuilder>>,
     /// Recording identity and the host's optional statistics destination.
@@ -52,7 +59,8 @@ pub(super) struct DriveContext {
     /// peer says the same. [`PvpDriver::tick`] advances nothing until
     /// both are set.
     pub(super) local_primed: Arc<AtomicBool>,
-    pub(super) peer_primed: Arc<AtomicBool>,
+    /// Each link's peer's say-so (a room's host waits for every guest).
+    pub(super) peer_primed: Vec<Arc<AtomicBool>>,
     pub(super) announce_primed: Arc<tokio::sync::Notify>,
     pub(super) local_player: usize,
     /// The close signal as the priming walk can read it — a plain flag
@@ -82,6 +90,7 @@ impl DriveContext {
             match_type: pieces.match_type,
             peer_rom: pieces.peer_rom,
             local_player: pieces.local_player,
+            players: pieces.players,
             present_delay: pieces.present_delay.clamp(MIN_FRAME_DELAY, MAX_FRAME_DELAY),
             disable_bgm: pieces.disable_bgm,
             // The pair pushes the local seat's sound into the ring the
@@ -101,6 +110,7 @@ impl DriveContext {
         self.local_primed.store(true, Ordering::Release);
         self.announce_primed.notify_one();
 
+        let agg = (self.room_host && pieces.players > 2).then(|| HostAgg::new(pieces.players - 1));
         Ok(PvpDriver {
             ctx: self,
             expected_fps,
@@ -108,6 +118,7 @@ impl DriveContext {
             throttler: tango_match::Throttler::new(),
             fired_end_of_match: false,
             confirmed_through: 0,
+            agg,
         })
     }
 
@@ -216,7 +227,7 @@ fn host_input_of_wire(input: &tango_net::data::Input) -> tango_match::HostInput 
     tango_match::HostInput {
         keys: input.joyflags as u32,
         touch: input.touch.map(|(x, y)| (x as u16, y as u16)),
-        extra: [0; 3],
+        extra: input.extra,
     }
 }
 
@@ -228,6 +239,8 @@ fn wire_input_of(input: tango_match::HostInput, tick_advantage: i16) -> tango_ne
         joyflags: input.keys as u16,
         touch: input.touch.map(|(x, y)| (x.min(0xff) as u8, y.min(0xff) as u8)),
         tick_advantage,
+        extra: [0; 3],
+        others: 0,
     }
 }
 
@@ -237,6 +250,7 @@ fn replay_input_of(input: tango_match::HostInput) -> tango_replay::stream::Input
     tango_replay::stream::Input {
         keys: input.keys as u16,
         touch: input.touch.map(|(x, y)| (x.min(0xff) as u8, y.min(0xff) as u8)),
+        extra: input.extra,
     }
 }
 
@@ -255,6 +269,77 @@ pub struct PvpDriver {
     /// Number of authoritative input rows consumed so far: the tick boundary
     /// shared by the replay stream and confirmed telemetry.
     confirmed_through: u32,
+    /// A room's host: the guests' inputs joined tick by tick, and the host's own waiting to go out with them.
+    agg: Option<HostAgg>,
+}
+
+/// A room's host joins its guests' inputs: its own engine hears them as one input (the guests' joypad words in
+/// seat order), and each guest is sent one for everyone else (the host's, then the other guests').
+struct HostAgg {
+    guests: usize,
+    /// What each guest's link has brought, in tick order.
+    queues: Vec<std::collections::VecDeque<tango_net::data::Input>>,
+    /// Ticks every guest has an input for: the joypad words, and the guests' mean time-sync lead.
+    rows: std::collections::VecDeque<(Vec<u16>, i16)>,
+    /// The host's own inputs, one a tick, and its time-sync lead then.
+    own: std::collections::VecDeque<(tango_match::HostInput, i16)>,
+}
+
+impl HostAgg {
+    fn new(guests: usize) -> Self {
+        HostAgg {
+            guests,
+            queues: vec![Default::default(); guests],
+            rows: Default::default(),
+            own: Default::default(),
+        }
+    }
+
+    /// An input from guest `link`'s link; the rows it completes, as the host's one remote input each.
+    fn ingest(&mut self, link: usize, input: tango_net::data::Input) -> Vec<(tango_match::HostInput, i16)> {
+        if link >= self.guests {
+            return Vec::new();
+        }
+        self.queues[link].push_back(input);
+        let mut done = Vec::new();
+        while self.queues.iter().all(|q| !q.is_empty()) {
+            let row: Vec<tango_net::data::Input> = self.queues.iter_mut().map(|q| q.pop_front().unwrap()).collect();
+            let words: Vec<u16> = row.iter().map(|i| i.joyflags).collect();
+            let adv = (row.iter().map(|i| i.tick_advantage as i32).sum::<i32>() / self.guests as i32) as i16;
+            let get = |k: usize| words.get(k).copied().unwrap_or(0);
+            done.push((
+                tango_match::HostInput {
+                    keys: get(0) as u32,
+                    touch: None,
+                    extra: [get(1), get(2), get(3)],
+                },
+                adv,
+            ));
+            self.rows.push_back((words, adv));
+        }
+        done
+    }
+
+    /// Send every guest the tick it is owed: the host's input and the other guests'.
+    fn distribute(&mut self, senders: &mut [tango_net::PvpSender]) -> std::io::Result<()> {
+        while !self.rows.is_empty() && !self.own.is_empty() {
+            let (words, _) = self.rows.pop_front().unwrap();
+            let (own, adv) = self.own.pop_front().unwrap();
+            for (g, sender) in senders.iter_mut().enumerate() {
+                let mut seats: Vec<u16> = vec![own.keys as u16];
+                seats.extend(words.iter().enumerate().filter(|&(k, _)| k != g).map(|(_, &w)| w));
+                let get = |k: usize| seats.get(k).copied().unwrap_or(0);
+                sender.send(&tango_net::data::Input {
+                    joyflags: get(0),
+                    touch: None,
+                    tick_advantage: adv,
+                    extra: [get(1), get(2), get(3)],
+                    others: self.guests as u8,
+                })?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl PvpDriver {
@@ -289,7 +374,7 @@ impl PvpDriver {
         // The wait is bounded without a timer: a peer that never primes
         // fails its own boot (`MAX_PRIME_TICKS`) and tears down, which
         // reaches us as the control channel's `Goodbye` or EOF.
-        if !self.ctx.peer_primed.load(Ordering::Acquire) {
+        if !self.ctx.peer_primed.iter().all(|p| p.load(Ordering::Acquire)) {
             return true;
         }
 
@@ -301,9 +386,15 @@ impl PvpDriver {
 
         // Drain the network before advancing: every confirmed tick we
         // ingest now is a rollback we don't take deeper.
-        for input in self.ctx.event_rx.try_iter() {
-            self.match_
-                .add_remote_input(host_input_of_wire(&input), input.tick_advantage);
+        let arrived: Vec<(usize, tango_net::data::Input)> = self.ctx.event_rx.try_iter().collect();
+        for (link, input) in arrived {
+            self.ingest(link, input);
+        }
+        if let Err(e) = self.distribute() {
+            log::warn!("pvp: send pump terminated; ending match ({e})");
+            self.ctx.end.remote_disconnected.store(true, Ordering::Release);
+            self.ctx.cancel.cancel();
+            return false;
         }
 
         // Stall guard: the peer is too far behind (or gone) — advancing
@@ -337,9 +428,8 @@ impl PvpDriver {
             // next time whether we're unstuck. A dead channel
             // yields too — the supervisor owns what happens next,
             // and spinning on it would burn the host's loop.
-            if let Ok(input) = self.ctx.event_rx.try_recv() {
-                self.match_
-                    .add_remote_input(host_input_of_wire(&input), input.tick_advantage);
+            if let Ok((link, input)) = self.ctx.event_rx.try_recv() {
+                self.ingest(link, input);
             }
             return true;
         }
@@ -397,7 +487,15 @@ impl PvpDriver {
         // Ship this tick's local input. Push-before-send semantics live
         // in the pump; a transport error is non-terminal (the heartbeat
         // retransmits once the reconnect swaps a live channel back in).
-        if self.ctx.sender.send(&wire_input_of(outgoing, tick_advantage)).is_err() {
+        let sent = match self.agg.as_mut() {
+            // A room's host: its input goes out with the guests' (to each guest, once all have said theirs).
+            Some(agg) => {
+                agg.own.push_back((outgoing, tick_advantage));
+                agg.distribute(&mut self.ctx.senders)
+            }
+            None => self.ctx.senders[0].send(&wire_input_of(outgoing, tick_advantage)),
+        };
+        if sent.is_err() {
             log::warn!("pvp: send pump terminated; ending match");
             self.ctx.end.remote_disconnected.store(true, Ordering::Release);
             self.ctx.cancel.cancel();
@@ -443,12 +541,13 @@ impl PvpDriver {
                 // In-band EndOfMatch: rides the same ordered seq stream
                 // as inputs, so the peer sees it exactly once and only
                 // after every preceding input.
-                let in_match = self.ctx.in_match.clone();
-                tango_platform::spawn(async move {
-                    if let Err(e) = in_match.send_end_of_match().await {
-                        log::warn!("pvp: send EndOfMatch failed: {e}");
-                    }
-                });
+                for in_match in self.ctx.in_matches.clone() {
+                    tango_platform::spawn(async move {
+                        if let Err(e) = in_match.send_end_of_match().await {
+                            log::warn!("pvp: send EndOfMatch failed: {e}");
+                        }
+                    });
+                }
                 // Wall-clock fallback wake so `is_ended` is rechecked
                 // even if the peer never sends EndOfMatch.
                 let wake = self.ctx.wake.clone();
@@ -508,6 +607,30 @@ impl PvpDriver {
                     log::warn!("failed to write replay stats cache entry: {e}");
                 }
             }
+        }
+    }
+}
+
+impl PvpDriver {
+    /// One input in from a link: the remote's (two players), the host's one for everyone else (a room's guest), or
+    /// a guest's (a room's host, which joins them).
+    fn ingest(&mut self, link: usize, input: tango_net::data::Input) {
+        match self.agg.as_mut() {
+            Some(agg) => {
+                for (joined, adv) in agg.ingest(link, input) {
+                    self.match_.add_remote_input(joined, adv);
+                }
+            }
+            None => self
+                .match_
+                .add_remote_input(host_input_of_wire(&input), input.tick_advantage),
+        }
+    }
+
+    fn distribute(&mut self) -> std::io::Result<()> {
+        match self.agg.as_mut() {
+            Some(agg) => agg.distribute(&mut self.ctx.senders),
+            None => Ok(()),
         }
     }
 }

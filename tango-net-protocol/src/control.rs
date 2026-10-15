@@ -108,6 +108,9 @@ pub struct RoomJoin {
     pub nickname: String,
     pub password: u64,
     pub game_info: Option<GameInfo>,
+    /// This player can show the content their game gates ([`SHARED_CONTENT`]); the match has it only when everyone
+    /// does.
+    pub content: bool,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]

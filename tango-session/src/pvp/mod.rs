@@ -164,6 +164,10 @@ pub struct PvpSession {
     /// eventual drop closes the connection gracefully (DTLS close_notify → the
     /// peer's prompt EOF).
     link: Arc<tango_net::link::Link>,
+    /// A room's host has a link to each guest: the others (kept alive with the session).
+    extra_links: Vec<Arc<tango_net::link::Link>>,
+    /// How many players the match has.
+    players: usize,
     /// The two halves of the ready gate, as the session's own readouts:
     /// `local_primed` is set when our pair reaches its link battle
     /// ([`is_booting`](Self::is_booting) until then), `peer_primed`
@@ -172,7 +176,7 @@ pub struct PvpSession {
     /// session is on screen for both waits, which is why it publishes
     /// them at all.
     local_primed: Arc<AtomicBool>,
-    peer_primed: Arc<AtomicBool>,
+    peer_primed: Vec<Arc<AtomicBool>>,
     /// Why the boot failed, if it did — the priming walk timing out on
     /// a game that never reached its link battle, or the engine
     /// refusing to start at all. Filled in by the drive loop
@@ -246,6 +250,19 @@ pub struct PvpSessionArgs<'a> {
     pub stats_sink: Option<Arc<dyn crate::stats::StatsSink>>,
     /// The host output rate the session's audio stream resamples to.
     pub sample_rate: u32,
+    /// A tangoAW2 room's match (up to five players): `pre_match` carries the first link.
+    pub room: Option<RoomArgs>,
+}
+
+/// What a room's match adds to [`PvpSessionArgs`].
+pub struct RoomArgs {
+    /// Everyone's gamertag in seat order.
+    pub players: Vec<String>,
+    /// This peer's seat.
+    pub seat: usize,
+    pub is_host: bool,
+    /// The links after the first (a room's host has one to each guest).
+    pub extra_links: Vec<tango_net::link::LinkParts>,
 }
 
 impl PvpSession {
@@ -293,7 +310,12 @@ impl PvpSession {
     /// otherwise sit black with nothing said about why. A slower
     /// machine on the other end can make this wait quite long.
     pub fn waiting_for_peer(&self) -> bool {
-        !self.is_booting() && !self.peer_primed.load(Ordering::Acquire)
+        !self.is_booting() && !self.peer_primed.iter().all(|p| p.load(Ordering::Acquire))
+    }
+
+    /// How many players the match has (2, or a room's up to 5).
+    pub fn players(&self) -> usize {
+        self.players
     }
 
     /// Why the boot failed, ready to show, or `None` while it is still

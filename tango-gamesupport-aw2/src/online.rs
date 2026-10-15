@@ -1373,7 +1373,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                         cv.text(core, x + w - 6 - text_width(core, tag), ry, tag, ink, SHADE);
                     }
                     None => {
-                        let t = if (k as u8) < MATCH_PLAYERS { "Open" } else { "-" };
+                        let t = "Open";
                         cv.text(core, x + 16, ry, t, SHADE, LIGHT_GRAY);
                     }
                 }

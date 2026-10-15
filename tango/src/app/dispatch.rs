@@ -177,6 +177,12 @@ impl App {
                 };
                 self.finish_pvp_handoff(ticket, result)
             }
+            Message::RoomMatchBuilt(slot) => {
+                let Some(result) = slot.lock().unwrap().take() else {
+                    return iced::Task::none();
+                };
+                self.finish_room_match(result)
+            }
             Message::Rescanned(followup) => self.finish_rescan(followup),
         }
     }

@@ -42,6 +42,8 @@ pub(super) fn build_replay_writer(
     local_player_index: u8,
     local_sram: &[u8],
     remote_sram: &[u8],
+    // A tangoAW2 room's gamertags in seat order (the sides are then the room's players, not just the two settings').
+    room: Option<&[String]>,
 ) -> Result<(tango_replay::Writer, std::path::PathBuf), crate::Error> {
     let link_code = &pre_match.terms.link_code;
     let local_settings = &pre_match.terms.local_settings;
@@ -64,9 +66,18 @@ pub(super) fn build_replay_writer(
     // substitute a stable placeholder here so the filename
     // doesn't end up with a double-dash where the slot would be.
     let filename_link_code = if link_code.is_empty() { "direct" } else { link_code };
+    let vs = match room {
+        Some(names) => names
+            .iter()
+            .enumerate()
+            .filter(|&(k, _)| k != local_player_index as usize)
+            .map(|(_, n)| n.as_str())
+            .collect::<Vec<_>>()
+            .join("+"),
+        None => remote_settings.nickname.clone(),
+    };
     let raw_name = format!(
-        "{ts}-{filename_link_code}-{netplay_compat}-vs-{}-p{}",
-        remote_settings.nickname,
+        "{ts}-{filename_link_code}-{netplay_compat}-vs-{vs}-p{}",
         local_player_index + 1
     );
     let safe_name: String = raw_name.chars().filter(|c| !"/\\?%*:|\"<>. ".contains(*c)).collect();
@@ -110,16 +121,31 @@ pub(super) fn build_replay_writer(
     // The recorder is where perspective enters the format: everything in
     // the file is absolute player order, so seat the two sides (and the
     // two saves) by our negotiated player index here and nowhere else.
-    let (p1_side, p2_side, srams) = if local_player_index == 0 {
+    let (mut p1_side, mut p2_side, srams) = if local_player_index == 0 {
         (local_side, remote_side, [local_sram, remote_sram])
     } else {
         (remote_side, local_side, [remote_sram, local_sram])
     };
+    // A room: every seat is a side of the same game, named by the roster.
+    let mut extra_sides = Vec::new();
+    if let Some(names) = room {
+        let base = p1_side.clone().or(p2_side.clone());
+        let side_of = |name: &str| {
+            base.clone().map(|mut s| {
+                s.nickname = name.to_string();
+                s
+            })
+        };
+        p1_side = names.first().and_then(|n| side_of(n));
+        p2_side = names.get(1).and_then(|n| side_of(n));
+        extra_sides = names.iter().skip(2).filter_map(|n| side_of(n)).collect();
+    }
     let writer = tango_replay::Writer::new(
         sink,
         // SIO-engine stream: one continuous run of pair ticks.
         tango_replay::VERSION,
-        local_player_index,
+        // (a room's seats after the second are filed as the second's perspective: the recording is of everyone's)
+        local_player_index.min(1),
         tango_replay::Metadata {
             // The negotiated match clock, not the local wall clock: both
             // cores' cart RTC is pinned to this instant, and playback
@@ -132,6 +158,7 @@ pub(super) fn build_replay_writer(
             p2_side,
             match_type: pre_match.terms.match_type.0 as u32,
             match_subtype: pre_match.terms.match_type.1 as u32,
+            extra_sides,
         },
         pre_match.terms.rng_seed,
         [srams[0], srams[1]],

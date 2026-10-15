@@ -57,6 +57,9 @@ pub struct RoomParams {
     pub match_type: (u8, u8),
     /// The host's save (SRAM image): the match runs on it. Unused by guests.
     pub save: Vec<u8>,
+    /// This player can show the content the game gates (tangoAW2: Dual Strike's, from their own ROM): the match
+    /// has it only when everyone can.
+    pub content: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -112,6 +115,35 @@ pub struct RoomMatch {
     pub links: Vec<LinkParts>,
 }
 
+impl RoomMatch {
+    /// The match as the session's first-link handoff (`local` and `remote` settings are what the game library
+    /// resolves the games from) and the links after the first (a room's host has one to each guest).
+    pub fn into_pre_match(
+        mut self,
+        local: tango_net_protocol::control::Settings,
+        remote: tango_net_protocol::control::Settings,
+    ) -> (tango_net::handoff::PreMatchData, Vec<LinkParts>) {
+        let first = self.links.remove(0);
+        (
+            tango_net::handoff::PreMatchData {
+                terms: tango_net::handoff::MatchTerms {
+                    is_offerer: self.is_host,
+                    rng_seed: self.seed,
+                    match_ts: self.ts,
+                    local_save_data: self.host_save.clone(),
+                    remote_save_data: self.host_save,
+                    local_settings: local,
+                    remote_settings: remote,
+                    link_code: self.code,
+                    match_type: self.match_type,
+                },
+                link_parts: first,
+            },
+            self.links,
+        )
+    }
+}
+
 impl std::fmt::Debug for RoomMatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RoomMatch")
@@ -134,6 +166,7 @@ struct HostPeer {
     nickname: String,
     ready: bool,
     loaded: bool,
+    content: bool,
     sender: Arc<tokio::sync::Mutex<tango_net::Sender>>,
     /// Fired to make the peer's task give its control receiver back for the match.
     handoff: CancellationToken,
@@ -518,6 +551,7 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
                 nickname: join.nickname.chars().filter(|c| !c.is_control()).take(12).collect(),
                 ready: false,
                 loaded: false,
+                content: join.content,
                 sender: sender.clone(),
                 handoff: handoff.clone(),
                 receiver_back: Some(back_rx),
@@ -540,18 +574,15 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
         }
     };
     log::info!("room: {} joined", join.nickname);
-    {
+    let welcome = {
         let g = inner.lock().unwrap();
         let seat = g.peers.iter().position(|p| p.id == id).map_or(1, |k| k + 1);
-        let welcome = Packet::Room(RoomMsg::Welcome(RoomRoster {
+        Packet::Room(RoomMsg::Welcome(RoomRoster {
             seat: seat as u8,
             players: roster_of(&g),
-        }));
-        let sender = sender.clone();
-        tango_platform::spawn(async move {
-            let _ = sender.lock().await.send_packet(&welcome).await;
-        });
-    }
+        }))
+    };
+    let _ = sender.lock().await.send_packet(&welcome).await;
     broadcast_roster(&inner);
 
     let mut last_heard = web_time::Instant::now();
@@ -634,10 +665,15 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         let g = inner.lock().unwrap();
         let mut names = vec![g.params.nickname.clone()];
         names.extend(g.peers.iter().map(|p| p.nickname.clone()));
+        let all_content = g.params.content && g.peers.iter().all(|p| p.content);
+        let mut match_type = g.params.match_type;
+        if all_content {
+            match_type.1 |= tango_net_protocol::control::SHARED_CONTENT;
+        }
         (
             names,
             g.params.save.clone(),
-            g.params.match_type,
+            match_type,
             g.peers.iter().map(|p| p.sender.clone()).collect::<Vec<_>>(),
         )
     };
@@ -715,14 +751,9 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             .filter_map(|p| p.parts.take().map(|parts| (p.sender.clone(), parts)))
             .collect()
     };
-    let (endpoint, use_relay, code, match_type) = {
+    let (endpoint, use_relay, code) = {
         let g = inner.lock().unwrap();
-        (
-            g.params.endpoint.clone(),
-            g.params.use_relay,
-            g.params.code.clone(),
-            g.params.match_type,
-        )
+        (g.params.endpoint.clone(), g.params.use_relay, g.params.code.clone())
     };
     for ((sender, parts), back) in taken.drain(..).zip(backs.drain(..)) {
         let (tx, rx) = tokio::sync::oneshot::channel();
@@ -776,6 +807,7 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                 nickname: g.params.nickname.clone(),
                 password: room_password_hash(&g.params.code, &g.params.password),
                 game_info: g.params.game_info.clone(),
+                content: g.params.content,
             },
         )
     };
@@ -825,8 +857,9 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         if channels.control.0.send_packet(&Packet::Room(RoomMsg::Join(join.clone()))).await.is_err() {
             continue;
         }
-        match tango_platform::timeout(FIRST_WORDS, channels.control.1.receive()).await {
-            Ok(Ok(Packet::Room(RoomMsg::Welcome(w)))) => break (channels, w),
+        let first = tango_platform::timeout(FIRST_WORDS, channels.control.1.receive()).await;
+        match first {
+            Ok(Ok(Packet::Room(RoomMsg::Welcome(w)))) | Ok(Ok(Packet::Room(RoomMsg::Roster(w)))) => break (channels, w),
             Ok(Ok(Packet::Room(RoomMsg::Reject(r)))) => {
                 if r.reason == RejectReason::NotTheHost {
                     // (another guest: try again)
@@ -973,6 +1006,7 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                         }
                     }
                     Ok(Packet::Room(RoomMsg::Leave)) | Err(_) => {
+                        log::info!("room: the host's link ended: {:?}", pkt.as_ref().map(|p| format!("{p:?}")).map_err(|e| e.to_string()));
                         fail(&inner, "The host closed the room.");
                         return;
                     }

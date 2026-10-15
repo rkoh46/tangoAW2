@@ -1,17 +1,17 @@
 //! tangoAW2's in-game lobby, the app's half (the game's is
 //! `tango_gamesupport_aw2::online`): while the game is played alone, its mailbox
-//! is read every frame. A room made or joined there is dialled through the
-//! matchmaking server like a link code ([`tango_library::online::link_code`]:
-//! the room's code, and its password), played as the "Online lobby" match type,
-//! with the room's maker in seat 0 (`ROOM_HOST`). The connection's progress and
-//! the players are written back for the game to show; READY in the game is the
-//! lobby's Ready (the save committed), and the host's START is the host's own
-//! Ready, once the guest is. When the match ends (the host leaves SELECT MAP, a
-//! player quits, or the link drops) the game is booted again, straight to its
-//! LOBBY menu, with how it ended.
+//! is read every frame. A room made or joined there is a [`netplay::room::Room`]
+//! (up to five players: the host dials for guests through the matchmaking
+//! server, every guest has a link of its own to the host): the connection's
+//! progress and the players are written back for the game to show, READY in the
+//! game is the guest's ready and the host's START starts the match for everyone.
+//! When the match ends (the host leaves SELECT MAP, a player quits, or a link
+//! drops) the game is booted again, straight to its LOBBY menu, with how it
+//! ended.
 
 use super::{App, Message};
 use crate::{netplay, session, tabs};
+use netplay::room::{Room, RoomParams, RoomPhase};
 use tango_library::online::{self as mailbox, Request, Status};
 
 /// What the app knows of the in-game lobby.
@@ -21,7 +21,9 @@ pub struct Flow {
     seen: Option<u8>,
     /// The room this player made or joined.
     room: Option<Room>,
-    /// A match made in the lobby is running (its end brings the game back).
+    /// The room's match is being built.
+    building: bool,
+    /// A lobby-made match is running (its end brings the game back).
     in_match: bool,
     /// Said on the LOBBY menu when the game comes back.
     back_message: Option<String>,
@@ -29,14 +31,9 @@ pub struct Flow {
     last_log: Option<std::time::Instant>,
 }
 
-struct Room {
-    code: String,
-    host: bool,
-}
-
 impl App {
-    /// Every session frame: the in-game lobby's mailbox, and the way back from
-    /// a match it made.
+    /// Every session frame: the in-game lobby's mailbox, and the way back from a
+    /// match it made.
     pub(super) fn online_tick(&mut self) -> iced::Task<Message> {
         // A lobby-made match just ended: back to the game, at its lobby.
         if self.online.in_match && !self.session.is_active() {
@@ -44,26 +41,15 @@ impl App {
             self.online.room = None;
             self.online.seen = None;
             let how = match self.session.results.take() {
-                Some(r) if r.end == session::results::MatchEnd::Disconnected => "The other player left.",
+                Some(r) if r.end == session::results::MatchEnd::Disconnected => "A player left.",
                 Some(_) => "The match is over.",
                 None => "You left the match.",
             };
             self.online.back_message = Some(how.to_string());
-            self.netplay.disconnect();
             mailbox::boot_to_lobby();
             return self.update_play(tabs::play::Message::PlayOfflinePressed);
         }
-        if let Some(pvp) = self.session.active_as::<session::pvp::PvpSession>() {
-            if self.online.room.is_some() {
-                self.online.in_match = true;
-                // Who is who, for the game's pictures (gamertags next to the armies).
-                let local = pvp.local_player_index() as usize;
-                let me = self.config.nickname.clone().filter(|n| !n.is_empty()).unwrap_or_else(|| "You".into());
-                let mut names = vec![String::new(); 2];
-                names[local] = me;
-                names[1 - local] = pvp.remote_nickname.clone();
-                tango_library::online::set_room(names, local);
-            }
+        if self.session.active_as::<session::pvp::PvpSession>().is_some() {
             return iced::Task::none();
         }
         let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
@@ -94,13 +80,22 @@ impl App {
         let mut task = iced::Task::none();
         if let Some((serial, request)) = request {
             self.online.seen = Some(serial);
-            task = self.online_request(request);
+            self.online_request(request);
+        }
+        // The room's match is ready: build it.
+        if let Some(room) = self.online.room.as_ref() {
+            if room.view().phase == RoomPhase::Ready && !self.online.building {
+                if let Some(m) = room.take_match() {
+                    self.online.building = true;
+                    task = self.online_build_match(m);
+                }
+            }
         }
         self.online_write_back();
         task
     }
 
-    fn online_request(&mut self, request: Request) -> iced::Task<Message> {
+    fn online_request(&mut self, request: Request) {
         log::info!("online: the game asks {request:?}");
         match request {
             Request::Host { password } => {
@@ -108,50 +103,120 @@ impl App {
                     .duration_since(std::time::UNIX_EPOCH)
                     .map_or(1, |d| d.as_nanos() as u64);
                 let code = std::env::var("TANGOAW2_ONLINE_CODE").unwrap_or_else(|_| mailbox::new_code(seed));
-                self.online.room = Some(Room {
-                    code: code.clone(),
-                    host: true,
-                });
-                self.online_connect(&code, &password)
+                let params = self.online_params(&code, &password);
+                self.online.back_message = None;
+                self.online.room = Some(Room::host(params));
             }
             Request::Join { code, password } => {
-                self.online.room = Some(Room {
-                    code: code.clone(),
-                    host: false,
-                });
-                self.online_connect(&code, &password)
+                let params = self.online_params(&code, &password);
+                self.online.back_message = None;
+                self.online.room = Some(Room::join(params));
             }
             Request::Leave => {
-                self.online.room = None;
-                self.netplay.disconnect();
-                iced::Task::none()
+                if let Some(room) = self.online.room.take() {
+                    room.leave();
+                }
             }
-            Request::Ready | Request::Start => self.update_play(tabs::play::Message::Ready),
-            Request::NotReady => self.update_play(tabs::play::Message::Unready),
+            Request::Ready => {
+                if let Some(room) = self.online.room.as_ref() {
+                    room.set_ready(true);
+                }
+            }
+            Request::NotReady => {
+                if let Some(room) = self.online.room.as_ref() {
+                    room.set_ready(false);
+                }
+            }
+            Request::Start => {
+                if let Some(room) = self.online.room.as_ref() {
+                    room.set_ready(true);
+                    room.start();
+                }
+            }
         }
     }
 
-    fn online_connect(&mut self, code: &str, password: &str) -> iced::Task<Message> {
-        self.online.back_message = None;
-        let task = netplay::connect(
-            &mut self.netplay,
-            netplay::MatchmakingParams {
-                link_code: mailbox::link_code(code, password),
-                endpoint: self.config.matchmaking_endpoint.clone(),
-                use_relay: self.config.relay_mode.use_relay(),
-            },
-        );
-        // The lobby's own match type (not remembered as the player's pick), with the room's maker marked.
-        let family = self.loadout.game().map(|g| g.family_and_variant().0);
-        let host = self.online.room.as_ref().is_some_and(|r| r.host);
-        let (mode, subtype) = mailbox::MATCH_TYPE;
-        let flag = if host {
-            tango_net_protocol::control::ROOM_HOST
+    fn online_params(&self, code: &str, password: &str) -> RoomParams {
+        let (_, subtype) = mailbox::MATCH_TYPE;
+        RoomParams {
+            endpoint: self.config.matchmaking_endpoint.clone(),
+            use_relay: self.config.relay_mode.use_relay(),
+            code: code.to_string(),
+            password: password.to_string(),
+            nickname: self.online_nickname(),
+            game_info: self.loadout.game_info(),
+            match_type: (0, subtype),
+            save: self.loaded.as_ref().map(|l| l.snapshot_sram()).unwrap_or_default(),
+            content: tango_library::shared_content_flag() != 0,
+        }
+    }
+
+    fn online_nickname(&self) -> String {
+        let me = self.config.nickname.clone().unwrap_or_default();
+        if me.is_empty() {
+            "You".to_string()
         } else {
-            0
+            me
+        }
+    }
+
+    /// The room's match is ready: build the session (every link is handed over to it).
+    fn online_build_match(&mut self, m: netplay::room::RoomMatch) -> iced::Task<Message> {
+        let is_host = m.is_host;
+        let seat = m.seat;
+        let players = m.players.clone();
+        // Who is who, for the game's pictures (gamertags next to the armies).
+        tango_library::online::set_room(players.clone(), seat);
+        let settings = |nickname: String, host: bool| tango_net_protocol::control::Settings {
+            nickname,
+            // (the shared-content bit stays only when everyone has it: the room decided)
+            match_type: (
+                m.match_type.0,
+                (m.match_type.1 & !tango_net_protocol::control::ROOM_HOST)
+                    | if host { tango_net_protocol::control::ROOM_HOST } else { 0 },
+            ),
+            game_info: self.loadout.game_info(),
+            blind_setup: false,
         };
-        self.netplay.pick_match_type(family, (mode, subtype | flag));
-        task
+        let other = players
+            .iter()
+            .enumerate()
+            .find(|&(k, _)| k != seat)
+            .map(|(_, n)| n.clone())
+            .unwrap_or_default();
+        let local = settings(self.online_nickname(), is_host);
+        let remote = settings(other, !is_host);
+        let (pre_match, extra_links) = m.into_pre_match(local, remote);
+        let room_args = session::pvp::RoomArgs {
+            players,
+            seat,
+            is_host,
+            extra_links,
+        };
+        let scanners = self.scanners.clone();
+        let config = self.config.clone();
+        let audio_binder = self.audio_binder.clone();
+        iced::Task::perform(
+            async move { session::spawn_pvp(scanners, config, audio_binder, pre_match, Some(room_args)).await },
+            |result| Message::RoomMatchBuilt(std::sync::Arc::new(std::sync::Mutex::new(Some(result)))),
+        )
+    }
+
+    /// The room's match was built (or not).
+    pub(super) fn finish_room_match(&mut self, result: anyhow::Result<session::Launch>) -> iced::Task<Message> {
+        self.online.building = false;
+        match result {
+            Ok(launch) => {
+                self.online.in_match = true;
+                self.session.install(launch, &self.audio_binder, &self.config);
+            }
+            Err(e) => {
+                log::error!("online: the room's match could not be built: {e:#}");
+                self.online.back_message = Some(format!("The match could not start ({e:#})."));
+                self.online.room = None;
+            }
+        }
+        iced::Task::none()
     }
 
     /// The connection and the players, for the game to show.
@@ -168,92 +233,43 @@ impl App {
             }
             return;
         };
-        if room.host {
-            mailbox::write_room(&mut write, &room.code);
+        let view = room.view();
+        if room.is_host() {
+            mailbox::write_room(&mut write, &room.code());
         }
-        let (status, message) = match &self.netplay.phase {
-            netplay::Phase::Idle => (Status::Failed, "Not connected.".to_string()),
-            netplay::Phase::Connecting {
-                waiting_for_opponent, ..
-            } => (
-                if *waiting_for_opponent {
-                    Status::Waiting
-                } else {
-                    Status::Connecting
-                },
-                String::new(),
+        let (status, message) = match view.phase {
+            RoomPhase::Connecting => (
+                if room.is_host() { Status::Waiting } else { Status::Connecting },
+                view.message.clone(),
             ),
-            netplay::Phase::Negotiating { .. } => (Status::Connecting, String::new()),
-            netplay::Phase::Lobby { .. } => match self.online_verdict() {
-                Some(problem) => (Status::Failed, problem),
-                None if self.netplay.lobby.remote.is_some() => (Status::Connected, self.online_remote_name()),
-                None => (Status::Connecting, String::new()),
-            },
-            netplay::Phase::Failed { error } => (Status::Failed, online_error_text(error)),
+            RoomPhase::Open | RoomPhase::Starting | RoomPhase::Ready => {
+                if view.players.len() >= 2 && view.joined {
+                    let other = view
+                        .players
+                        .iter()
+                        .find(|p| !p.you)
+                        .map(|p| p.nickname.clone())
+                        .unwrap_or_default();
+                    (Status::Connected, other)
+                } else if room.is_host() {
+                    (Status::Waiting, String::new())
+                } else {
+                    (Status::Connecting, view.message.clone())
+                }
+            }
+            RoomPhase::Failed => (Status::Failed, view.message.clone()),
+            RoomPhase::Closed => (Status::Failed, "Not connected.".to_string()),
         };
         mailbox::write_status(&mut write, status, &message);
-        // The players: the host first.
-        let ready = self.netplay.ready_view();
-        let me = self.config.nickname.clone().unwrap_or_default();
-        let me = if me.is_empty() { "You".to_string() } else { me };
-        let local = (
-            me.as_str(),
-            ready.local_ready,
-            mailbox::YOU | if room.host { mailbox::HOST } else { 0 },
-        );
-        let them_name = self.online_remote_name();
-        let remote = (status == Status::Connected).then_some((
-            them_name.as_str(),
-            ready.remote_ready,
-            if room.host { 0 } else { mailbox::HOST },
-        ));
-        // The room's maker is always the first slot, on every peer (a guest not yet connected to them sees "Host").
-        let (first, second) = if room.host {
-            (Some(local), remote)
-        } else {
-            (Some(remote.unwrap_or(("Host", false, mailbox::HOST))), Some(local))
-        };
-        mailbox::write_player(&mut write, 0, first);
-        mailbox::write_player(&mut write, 1, second);
-        for slot in 2..mailbox::MAX_PLAYERS {
-            mailbox::write_player(&mut write, slot, None);
+        for slot in 0..mailbox::MAX_PLAYERS {
+            let player = view.players.get(slot).map(|p| {
+                (
+                    p.nickname.as_str(),
+                    p.ready,
+                    (if p.you { mailbox::YOU } else { 0 }) | (if p.host { mailbox::HOST } else { 0 }),
+                )
+            });
+            mailbox::write_player(&mut write, slot, player);
         }
-    }
-
-    fn online_remote_name(&self) -> String {
-        self.netplay
-            .lobby
-            .remote
-            .as_ref()
-            .map(|s| s.nickname.clone())
-            .filter(|n| !n.is_empty())
-            .unwrap_or_else(|| "Player".to_string())
-    }
-
-    /// Why the two players cannot play together, if they cannot.
-    fn online_verdict(&self) -> Option<String> {
-        use netplay::compat::Verdict as V;
-        let (Some(local), Some(remote)) = (self.netplay.lobby.local.as_ref(), self.netplay.lobby.remote.as_ref())
-        else {
-            return None;
-        };
-        let facts = self.scanners.compatibility_facts(local, remote);
-        match netplay::compat::check(local, remote, facts) {
-            V::Compatible => None,
-            V::SimVersionTooOld => Some("The other player's tangoAW2 is older: they need to update.".into()),
-            V::SimVersionTooNew => Some("Your tangoAW2 is older: update it to play them.".into()),
-            V::DifferentMatchTypes => Some("The other player is in another kind of match.".into()),
-            V::MissingRom | V::MissingGame => Some("The other player's game is not one you have.".into()),
-            other => Some(format!("Cannot play: {other:?}")),
-        }
-    }
-}
-
-fn online_error_text(error: &netplay::Error) -> String {
-    match error {
-        netplay::Error::PeerDisconnected => "The other player left.".into(),
-        netplay::Error::SignalingUnreachable(_) => "The matchmaking server cannot be reached.".into(),
-        netplay::Error::SignalingVersionTooOld => "This tangoAW2 needs updating to play online.".into(),
-        e => format!("Could not connect ({e})."),
     }
 }

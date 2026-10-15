@@ -64,13 +64,52 @@ pub(super) fn spawn_primed_announcer(
     });
 }
 
+/// A room's host tells every guest it is primed, once it is and every guest has said it is (so no guest ticks
+/// before the others are ready to).
+pub(super) fn spawn_room_primed_announcer(
+    links: Vec<Arc<tango_net::link::Link>>,
+    local_primed: Arc<AtomicBool>,
+    announce: Arc<tokio::sync::Notify>,
+    end: EndState,
+    cancel: tokio_util::sync::CancellationToken,
+) {
+    tango_platform::spawn(async move {
+        while !local_primed.load(Ordering::Acquire) {
+            tokio::select! {
+                _ = cancel.cancelled() => return,
+                _ = announce.notified() => {}
+            }
+        }
+        loop {
+            if links.iter().all(|l| l.peer_primed().load(Ordering::Acquire)) {
+                break;
+            }
+            tokio::select! {
+                _ = cancel.cancelled() => return,
+                _ = tango_platform::sleep(std::time::Duration::from_millis(20)) => {}
+            }
+        }
+        for link in &links {
+            if let Err(e) = link.send_primed().await {
+                log::warn!("pvp: could not announce primed, ending match: {e}");
+                end.remote_disconnected.store(true, Ordering::Release);
+                cancel.cancel();
+                return;
+            }
+        }
+        log::info!("pvp: announced primed to the room");
+    });
+}
+
 // ---------------------------------------------------------------------------
 // The receive pump + link supervisor.
 
 pub(super) struct SupervisorContext {
     pub(super) link: Arc<tango_net::link::Link>,
     pub(super) in_match: tango_net::InMatchTx,
-    pub(super) event_tx: std::sync::mpsc::Sender<tango_net::data::Input>,
+    /// Which of the session's links this one is (what its inputs are tagged with).
+    pub(super) link_idx: usize,
+    pub(super) event_tx: std::sync::mpsc::Sender<(usize, tango_net::data::Input)>,
     pub(super) end: EndState,
     pub(super) completed: Arc<AtomicBool>,
     pub(super) cancel: tokio_util::sync::CancellationToken,
@@ -90,13 +129,14 @@ pub(super) struct SupervisorContext {
 /// supervisor's).
 async fn run_receive_pump(
     mut receiver: tango_net::PvpReceiver,
-    event_tx: std::sync::mpsc::Sender<tango_net::data::Input>,
+    link_idx: usize,
+    event_tx: std::sync::mpsc::Sender<(usize, tango_net::data::Input)>,
     wake: Arc<tokio::sync::Notify>,
 ) -> std::io::Error {
     loop {
         match receiver.receive().await {
             Ok(input) => {
-                if event_tx.send(input).is_err() {
+                if event_tx.send((link_idx, input)).is_err() {
                     return std::io::Error::new(std::io::ErrorKind::BrokenPipe, "drive thread gone");
                 }
                 // Remote inputs settle ticks; make sure a paused/idle UI
@@ -120,6 +160,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
     let SupervisorContext {
         link,
         in_match,
+        link_idx,
         event_tx,
         end,
         completed,
@@ -203,7 +244,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                     }
                     tango_net::link::ControlEnd::Eof => Trip::Closed,
                 },
-                e = run_receive_pump(receiver, event_tx.clone(), wake.clone()) => {
+                e = run_receive_pump(receiver, link_idx, event_tx.clone(), wake.clone()) => {
                     log::info!("pvp in-match channel closed: {e:?}");
                     Trip::Closed
                 }

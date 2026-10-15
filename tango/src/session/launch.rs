@@ -125,6 +125,8 @@ pub async fn spawn_pvp(
     config: config::Config,
     audio_binder: audio::LateBinder,
     pre_match: crate::netplay::PreMatchData,
+    // A tangoAW2 room's match (up to five players): `pre_match` carries the first link.
+    room: Option<pvp::RoomArgs>,
 ) -> anyhow::Result<Launch> {
     let prepared = scanners.resolver(crate::library::storage(), &config).prepare_match(
         &pre_match.terms.local_settings,
@@ -162,6 +164,7 @@ pub async fn spawn_pvp(
             replays_path: config.replays_path(),
         })),
         sample_rate: audio_binder.sample_rate(),
+        room,
     })
     .await?;
     // The drive thread boots the pair on its first tick — priming is

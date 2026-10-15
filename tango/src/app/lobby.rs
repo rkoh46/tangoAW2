@@ -36,7 +36,7 @@ impl App {
         let config = self.config.clone();
         let audio_binder = self.audio_binder.clone();
         iced::Task::perform(
-            async move { session::spawn_pvp(scanners, config, audio_binder, pre_match).await },
+            async move { session::spawn_pvp(scanners, config, audio_binder, pre_match, None).await },
             move |result| Message::PvpSessionBuilt(ticket, std::sync::Arc::new(std::sync::Mutex::new(Some(result)))),
         )
     }

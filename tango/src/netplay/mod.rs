@@ -12,6 +12,7 @@
 //! * [`Delivery`]: iced routes messages by value and demands `Clone`;
 //!   what comes down that channel owns a live data channel and can't be.
 
+pub use tango_lobby::room;
 pub use tango_lobby::{
     compat, DirectRole, Error, Event, HandoffTicket, Incoming, LinkIdent, LobbyState, MatchmakingParams, Phase,
     PreMatchData, State,

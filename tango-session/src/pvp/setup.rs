@@ -2,7 +2,7 @@
 
 use super::driver::{BootPieces, DriveContext};
 use super::recording::build_replay_writer;
-use super::supervisor::{spawn_primed_announcer, spawn_supervisor, SupervisorContext};
+use super::supervisor::{spawn_primed_announcer, spawn_room_primed_announcer, spawn_supervisor, SupervisorContext};
 use super::{EndState, Metrics, PvpBoot, PvpSession, PvpSessionArgs, Seat, TpsCounter};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
@@ -40,6 +40,7 @@ impl PvpSession {
             replays,
             stats_sink,
             sample_rate,
+            room,
         } = args;
         let Seat {
             game: local_game,
@@ -58,6 +59,7 @@ impl PvpSession {
         // the awaits below (handoff, transport bring-up) are where a
         // browser's worker threads get the event-loop turns their
         // startup needs.
+        let players = room.as_ref().map_or(2, |r| r.players.len().clamp(2, tango_match::MAX_SEATS));
         local_game.pvp.prepare(2);
 
         // Player index off the shared RNG seed, same negotiation as ever:
@@ -71,6 +73,8 @@ impl PvpSession {
             pre_match.terms.remote_settings.match_type.1,
         )
         .unwrap_or(drawn);
+        // A room's seats are its roster's order.
+        let local_player_index = room.as_ref().map_or(local_player_index, |r| r.seat as u8);
 
         // The match clock, pinned into both carts' RTC and recorded in the
         // replay metadata so playback re-primes to the identical state.
@@ -89,6 +93,7 @@ impl PvpSession {
                     local_player_index,
                     &local_sram,
                     &remote_sram,
+                    room.as_ref().map(|r| r.players.as_slice()),
                 ) {
                     Ok((writer, path)) => (Some(writer), Some(path)),
                     Err(e) => {
@@ -103,11 +108,19 @@ impl PvpSession {
         // lobby loop releasing the reliable receiver (typically a few ms after
         // take_pre_match flipped the cancel) and starts the in-match
         // retransmit heartbeat.
-        let link = Arc::new(
+        let room_host = room.as_ref().is_some_and(|r| r.is_host) && players > 2;
+        let extra_parts = room.map(|r| r.extra_links).unwrap_or_default();
+        let mut links = vec![Arc::new(
             tango_net::link::Link::bring_up(pre_match.link_parts, IN_MATCH_HEARTBEAT, cancellation_token.clone())
                 .await?,
-        );
-        let in_match = link.in_match().clone();
+        )];
+        for parts in extra_parts {
+            links.push(Arc::new(
+                tango_net::link::Link::bring_up(parts, IN_MATCH_HEARTBEAT, cancellation_token.clone()).await?,
+            ));
+        }
+        let link = links[0].clone();
+        let in_matches: Vec<tango_net::InMatchTx> = links.iter().map(|l| l.in_match().clone()).collect();
 
         let end = EndState::default();
         let local_input = crate::InputCell::new();
@@ -134,7 +147,7 @@ impl PvpSession {
         // reaches the link battle and neither ticks until both have.
         let local_primed = Arc::new(AtomicBool::new(false));
         let boot_cancel = Arc::new(AtomicBool::new(false));
-        let peer_primed = link.peer_primed();
+        let peer_primed: Vec<Arc<AtomicBool>> = links.iter().map(|l| l.peer_primed()).collect();
         let announce_primed = Arc::new(tokio::sync::Notify::new());
 
         // A game whose engine reports no chip events folds the rest of
@@ -144,11 +157,11 @@ impl PvpSession {
         // Remote input events flow receive-task → drive thread over this
         // queue; the rennet reassembly in PvpReceiver already ordered and
         // deduplicated them (one Input per remote tick, in tick order).
-        let (event_tx, event_rx) = std::sync::mpsc::channel::<tango_net::data::Input>();
+        let (event_tx, event_rx) = std::sync::mpsc::channel::<(usize, tango_net::data::Input)>();
 
         // The sender pump: the drive thread pushes one Input per advance;
         // the pump ships each as a rennet frame over the unreliable channel.
-        let sender = tango_net::PvpSender::new(in_match.clone());
+        let senders: Vec<tango_net::PvpSender> = in_matches.iter().map(|im| tango_net::PvpSender::new(im.clone())).collect();
 
         // Pair-order arrays: core 0 always runs player 0's game, on both
         // peers, so priming and simulation are bit-identical across the pair.
@@ -183,6 +196,7 @@ impl PvpSession {
             rng_seed: pre_match.terms.rng_seed,
             rtc: rtc_time,
             local_player: local_player_index as usize,
+            players,
             present_delay: frame_delay.load(Ordering::Relaxed),
             disable_bgm,
         };
@@ -196,8 +210,9 @@ impl PvpSession {
             displayed_screens: displayed_screens.clone(),
             end: end.clone(),
             event_rx,
-            sender,
-            in_match: in_match.clone(),
+            senders,
+            room_host,
+            in_matches: in_matches.clone(),
             replay_writer,
             stats: stats.clone(),
             stats_key: replay_path.clone(),
@@ -243,30 +258,57 @@ impl PvpSession {
         // delivered one; a rejected send means that channel is gone and
         // ends the match. (The supervisor re-announces after a
         // reconnect, whose rebuild drops anything undelivered.)
-        spawn_primed_announcer(
-            link.clone(),
-            local_primed.clone(),
-            announce_primed,
-            end.clone(),
-            cancellation_token.clone(),
-        );
+        if room_host {
+            spawn_room_primed_announcer(
+                links.clone(),
+                local_primed.clone(),
+                announce_primed,
+                end.clone(),
+                cancellation_token.clone(),
+            );
+        } else {
+            spawn_primed_announcer(
+                link.clone(),
+                local_primed.clone(),
+                announce_primed,
+                end.clone(),
+                cancellation_token.clone(),
+            );
+        }
 
         // Receive pump + link supervisor: reads peer frames into the event
         // queue, watches for stalls, and runs the transparent reconnect.
         let supervisor_done = tokio_util::sync::CancellationToken::new();
-        spawn_supervisor(SupervisorContext {
-            link: link.clone(),
-            in_match,
-            event_tx,
-            end: end.clone(),
-            completed: completed.clone(),
-            cancel: cancellation_token.clone(),
-            metrics: metrics.clone(),
-            drive_paused: drive_paused.clone(),
-            wake: wake.clone(),
-            local_primed: local_primed.clone(),
-            done: supervisor_done.clone(),
-        });
+        let mut dones = Vec::new();
+        for (link_idx, (link, in_match)) in links.iter().zip(in_matches.iter()).enumerate() {
+            let done = tokio_util::sync::CancellationToken::new();
+            dones.push(done.clone());
+            spawn_supervisor(SupervisorContext {
+                link: link.clone(),
+                in_match: in_match.clone(),
+                link_idx,
+                event_tx: event_tx.clone(),
+                end: end.clone(),
+                completed: completed.clone(),
+                cancel: cancellation_token.clone(),
+                metrics: metrics.clone(),
+                drive_paused: drive_paused.clone(),
+                wake: wake.clone(),
+                local_primed: local_primed.clone(),
+                done,
+            });
+        }
+        drop(event_tx);
+        {
+            // (the session is done with its links when every supervisor is)
+            let all = supervisor_done.clone();
+            tango_platform::spawn(async move {
+                for d in dones {
+                    d.cancelled().await;
+                }
+                all.cancel();
+            });
+        }
 
         let session = Self {
             local_game,
@@ -279,6 +321,8 @@ impl PvpSession {
             cancellation_token,
             supervisor_done,
             link,
+            extra_links: links[1..].to_vec(),
+            players,
             local_primed,
             peer_primed,
             prime_error,

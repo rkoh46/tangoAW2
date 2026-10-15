@@ -52,7 +52,8 @@ impl EngineReplay {
                 row.map(|input| tango_match::HostInput {
                     keys: input.keys as u32,
                     touch: input.touch.map(|(x, y)| (x as u16, y as u16)),
-                    ..Default::default()
+                    // (a room's seats 2.. ride in the second input's extra)
+                    extra: input.extra,
                 })
             })
             .collect();
@@ -66,7 +67,7 @@ impl EngineReplay {
                 rtc: replay.rtc_time(),
                 match_type: (replay.metadata.match_type as u8, replay.metadata.match_subtype as u8),
                 local_player,
-                players: 2,
+                players: replay.players(),
                 peer_rom: tango_match::PeerRom {
                     code: *games[1 - local_player].rom_code,
                     revision: games[1 - local_player].revision,
