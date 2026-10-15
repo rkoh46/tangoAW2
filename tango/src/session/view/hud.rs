@@ -131,13 +131,11 @@ pub(super) const CONTROLS_SLIDE: f32 = 120.0;
 /// `tear_down_msg` is direct Close for replay/SP, the disconnect
 /// confirm for a live PvP link. Rides the same auto-hide transition
 /// as the rest of the controls, sliding up past the top edge when
-/// the cursor goes idle — unless `behind_drawer` (PvP: the opponent
-/// drawer covers the cluster), which pins it instead.
+/// the cursor goes idle.
 pub(super) fn corner_commands_overlay<'a>(
     lang: &'a LanguageIdentifier,
     state: &'a State,
     tear_down_msg: Message,
-    behind_drawer: bool,
 ) -> Element<'a, Message> {
     let now = iced::time::Instant::now();
     let cmd = |icon: Icon,
@@ -173,18 +171,7 @@ pub(super) fn corner_commands_overlay<'a>(
     let pinned = iced::widget::mouse_area(cluster)
         .on_enter(Message::ControlsHovered(true))
         .on_exit(Message::ControlsHovered(false));
-    // While the opponent drawer is open the cluster sits behind it
-    // (see the layer order in [`pvp::view`]) — skip the auto-hide
-    // slide then. The slide draws in iced's floating layer
-    // (`anim::slide_in`), which would pop the buttons OVER the
-    // drawer they're supposed to be under for the length of the
-    // animation; at rest behind the drawer the slide is invisible
-    // anyway.
-    let progress = if behind_drawer {
-        1.0
-    } else {
-        state.controls_anim.progress(now)
-    };
+    let progress = state.controls_anim.progress(now);
     let slid = anim::slide_in(pinned, progress, iced::Vector::new(0.0, -CONTROLS_SLIDE));
     container(slid)
         .width(Fill)

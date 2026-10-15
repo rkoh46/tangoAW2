@@ -116,20 +116,6 @@ pub struct App {
     /// What the current `screen_enter` moves and which way — see
     /// [`EnterScope`].
     screen_enter_scope: EnterScope,
-    /// Two-phase swap between the Play tab's bottom bands (link-code
-    /// strip ↔ lobby) — mirrors [`App::lobby_on_screen`], synced after
-    /// every update. Runs two transition lengths with a linear ramp:
-    /// the view spends the first half sinking + dissolving the
-    /// outgoing band into the page surface and the second half
-    /// rising + condensing the incoming one out of it, so the swap
-    /// reads as the code strip turning into the lobby and back.
-    lobby_swap: anim::Transition,
-    /// The lobby's last live (phase, lobby) pair, frozen on the
-    /// frame the lobby leaves the screen. The exiting half of the
-    /// band swap renders from this so the verdict (e.g. the failure
-    /// banner being dismissed) holds steady through the dissolve
-    /// instead of flashing to the idle handshake line.
-    lobby_exit_snapshot: Option<(netplay::Phase, netplay::LobbyState, netplay::ReadyView)>,
     /// Set while an application quit waits for PvP's bounded `Goodbye` send.
     /// Repeated close requests during that short window are ignored.
     exit_pending: bool,
@@ -263,8 +249,6 @@ impl App {
             // and not animating until first triggered.
             screen_enter: anim::Enter::default(),
             screen_enter_scope: EnterScope::Root { dy: ROOT_SLIDE },
-            lobby_swap: anim::Transition::swap(false),
-            lobby_exit_snapshot: None,
             exit_pending: false,
         };
         app.refresh_loaded();
@@ -303,7 +287,7 @@ impl App {
     /// Whether the Play tab's bottom band is the lobby (a netplay
     /// attempt is in flight, failed-but-not-dismissed, or handing
     /// off) rather than the link-code strip. Drives
-    /// [`App::lobby_swap`] and the nav badge on the Play tab.
+    /// the nav badge on the Play tab.
     /// `Failed` counts: the lobby stays up as a sticky failure
     /// banner until the user cancels it.
     fn lobby_on_screen(&self) -> bool {

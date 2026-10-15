@@ -1,5 +1,4 @@
-//! Live-PvP session view: the setup drawers and their edge handles,
-//! the telemetry deck (see [`telemetry`]), and the disconnect /
+//! Live-PvP session view: the telemetry deck (see [`telemetry`]), and the disconnect /
 //! reconnect modals. The [`Message`]s those controls emit are handled in
 //! [`crate::session::update::pvp`].
 
@@ -14,49 +13,9 @@ use sweeten::widget::{column, row};
 mod telemetry;
 use telemetry::{frame_delay_overlay, telemetry_panel};
 
-/// Docked sidebar surface for the PvP setup drawers — flush with
-/// its screen edge, full height, square corners, no border or
-/// shadow. A near-opaque scrim in the page background so the save
-/// view inside stays readable over the bezel art without reading
-/// as a floating card.
-fn setup_sidebar_plate(theme: &iced::Theme) -> iced::widget::container::Style {
-    iced::widget::container::Style {
-        background: Some(iced::Background::Color(iced::Color {
-            a: 0.95,
-            ..theme.palette().background
-        })),
-        text_color: Some(theme.palette().text),
-        ..Default::default()
-    }
-}
-
-/// Width of the resize grip carved out of a setup drawer's inner
-/// edge — the strip that takes the drag. Deliberately wider than what
-/// it paints ([`SETUP_GRIP_RULE_W`]): the edge has to be easy to hit,
-/// but a 6px band running the drawer's full height would read as a
-/// structural divider rather than a hairline.
-const SETUP_GRIP_W: f32 = 6.0;
-
-/// Painted width of the grip — a hairline hugging the pane's true
-/// inner edge, inside the wider hit band.
-const SETUP_GRIP_RULE_W: f32 = 1.0;
-
-/// The grip's hairline: a faint vertical rule down the drawer's inner
-/// edge. It's the only resting mark that the edge is draggable — the
-/// resize cursor takes over the moment the pointer is on it.
-fn setup_grip_plate(theme: &iced::Theme) -> iced::widget::container::Style {
-    iced::widget::container::Style {
-        background: Some(iced::Background::Color(iced::Color {
-            a: 0.08,
-            ..theme.palette().text
-        })),
-        ..Default::default()
-    }
-}
-
-/// Live PvP: emulator with setup-drawer slots, the drawer edge
-/// handles, the drawers themselves, telemetry, and the
-/// disconnect / reconnect modals.
+/// Live PvP: the emulator, telemetry, and the disconnect / reconnect
+/// modals. (No Tango match-setup UI: setup happens in the game's own
+/// ONLINE screens.)
 pub(crate) fn view<'a>(p: &'a PvpSession, ctx: Ctx<'a>) -> Element<'a, SessionMessage> {
     let Ctx { lang, state, .. } = ctx;
     let now = iced::time::Instant::now();
@@ -66,27 +25,9 @@ pub(crate) fn view<'a>(p: &'a PvpSession, ctx: Ctx<'a>) -> Element<'a, SessionMe
         iced::alignment::Horizontal::Center,
         iced::alignment::Vertical::Center,
     );
-    let panes = state.pvp_panes.as_ref();
-    // A claimed slot reserves its drawer's current width, so a resize
-    // drag walks the emulator's edge along with the pane's.
-    let slots = [
-        panes
-            .filter(|p| p.local_loaded.is_some() && state.self_panel.shown())
-            .map(|p| p.pane_widths[0]),
-        panes
-            .filter(|p| p.opponent_loaded.is_some() && state.opponent_panel.shown())
-            .map(|p| p.pane_widths[1]),
-    ];
-    let body = emulator_body(frame, slots, true, ctx.landscape_stretch);
+    let body = emulator_body(frame, true, ctx.landscape_stretch);
     let mut game_stack = stack![body];
-    // A drawer pane mid-animation draws in iced's floating layer, above every
-    // base stack layer. The build warning is hoisted alongside it so the
-    // warning stays explicit; the top-right commands remain below the drawer.
-    let drawer_moving = state.self_panel.is_animating(now) || state.opponent_panel.is_animating(now);
     if state.controls_anim.visible(now) {
-        // The setup toggles ride the screen edges as drawer handles
-        // (the replay transport's slot in the layer order).
-        game_stack = game_stack.push(setup_handles_overlay(lang, state, state.controls_anim.progress(now)));
         // Settings + tear-down, top-right; a live link routes the
         // tear-down through the disconnect confirm (whose copy
         // carries the unplug framing); once the link is already gone
@@ -99,24 +40,12 @@ pub(crate) fn view<'a>(p: &'a PvpSession, ctx: Ctx<'a>) -> Element<'a, SessionMe
         } else {
             SessionMessage::Close
         };
-        game_stack = game_stack.push(corner_commands_overlay(lang, state, tear_down_msg, slots[1].is_some()));
-    }
-    // Setup drawers — above the corner commands, within the game region. The
-    // telemetry panel occupies its own layout region below this whole stack.
-    for pane in setup_drawers_overlay(lang, state) {
-        game_stack = game_stack.push(pane.map(SessionMessage::Pvp));
-    }
-    // Drag capture, above the drawers: a Stack takes the topmost
-    // non-None mouse interaction, so this has to outrank the pane's
-    // own `Idle` for the resize cursor to hold across the drawer the
-    // user is sizing (see `pane_resize_capture`).
-    if panes.is_some_and(|p| p.pane_drag.is_some()) {
-        game_stack = game_stack.push(pane_resize_capture().map(SessionMessage::Pvp));
+        game_stack = game_stack.push(corner_commands_overlay(lang, state, tear_down_msg));
     }
     // Advisory only: invalid committed builds never alter the running
     // session, but remain explicit until the player dismisses this card.
     if let Some(o) = build_warning_overlay(lang, state) {
-        game_stack = game_stack.push(keep_above_drawers(o.map(SessionMessage::Pvp), drawer_moving));
+        game_stack = game_stack.push(o.map(SessionMessage::Pvp));
     }
 
     // Telemetry is a real status region below the game stack, not an overlay:
@@ -261,311 +190,6 @@ fn build_warning_plate(theme: &iced::Theme) -> iced::widget::container::Style {
         },
         snap: false,
     }
-}
-
-/// The PvP setup drawers, one overlay layer per visible pane. Each
-/// is a docked sidebar flush with its screen edge — full height,
-/// square corners, only the content padded — whose width
-/// `emulator_body`'s drawer slots reserve in the layout while it's
-/// open, and whose inner edge is the grip that resizes it (the
-/// docked outer edge never moves). Rendered as stack layers (rather
-/// than row members) so the drawers sit ABOVE the corner commands — an open
-/// drawer covers the Settings / Close buttons instead of having them intrude
-/// on its content. Telemetry is outside this stack in its own bottom region.
-/// Mid-slide the panes draw in iced's floating layer, above every base layer
-/// (see `anim::slide_in` / `keep_above_drawers`).
-fn setup_drawers_overlay<'a>(lang: &'a LanguageIdentifier, state: &'a State) -> Vec<Element<'a, Message>> {
-    let now = iced::time::Instant::now();
-    let Some(s) = state.pvp_panes.as_ref() else {
-        return Vec::new();
-    };
-    let setup_pane = |panel: Element<'a, Message>, side: usize, progress: f32| -> Element<'a, Message> {
-        let on_left = side == 0;
-        let width = s.pane_widths[side];
-        let body = container(panel).width(Fill).height(Fill).padding(style::PANE_PADDING);
-        // The inner edge doubles as the drawer's resize grip — carved
-        // out of the pane's own width, so a drag moves that edge while
-        // the outer one stays docked to the screen. The band is the hit
-        // area; the hairline it paints sits at the far side of it, on
-        // the pane's actual edge.
-        let rule = container(iced::widget::Space::new().width(Fill).height(Fill))
-            .width(iced::Length::Fixed(SETUP_GRIP_RULE_W))
-            .height(Fill)
-            .style(setup_grip_plate);
-        let grip = iced::widget::mouse_area(
-            container(rule)
-                .width(iced::Length::Fixed(SETUP_GRIP_W))
-                .height(Fill)
-                .align_x(if on_left {
-                    iced::alignment::Horizontal::Right
-                } else {
-                    iced::alignment::Horizontal::Left
-                }),
-        )
-        .interaction(iced::mouse::Interaction::ResizingHorizontally)
-        .on_press(Message::StartPaneResize(side, width));
-        // Explicitly Fill, not the row's default Shrink: the body has
-        // to claim everything the fixed-width plate isn't giving the
-        // grip.
-        let inner = if on_left { row![body, grip] } else { row![grip, body] }
-            .width(Fill)
-            .height(Fill);
-        let pane = container(inner)
-            .width(iced::Length::Fixed(width))
-            .height(Fill)
-            .style(setup_sidebar_plate);
-        // An opaque plate must be opaque to the mouse too: iced's
-        // Stack lets the cursor reach lower layers anywhere the
-        // upper one reports no interaction, so without this a
-        // click on a quiet patch of the pane would press the
-        // corner commands hidden beneath it.
-        let pane = iced::widget::mouse_area(pane).interaction(iced::mouse::Interaction::Idle);
-        // The drawer slides its full width in and out — it docks flush
-        // with its screen edge, so travel and width are the same thing.
-        let from_dx = if on_left { -width } else { width };
-        anim::slide_in(pane, progress, iced::Vector::new(from_dx, 0.0))
-    };
-    let mut panes: Vec<Element<'a, Message>> = Vec::new();
-    if let Some(me) = s
-        .local_loaded
-        .as_ref()
-        .filter(|_| state.self_panel.shown() || state.self_panel.is_animating(now))
-    {
-        let panel = me
-            .editor
-            .view(lang, me, true, None, false, false)
-            .map(Message::SelfSaveView);
-        let pane = setup_pane(panel, 0, state.self_panel.progress(now));
-        panes.push(
-            container(pane)
-                .width(Fill)
-                .height(Fill)
-                .align_x(iced::alignment::Horizontal::Left)
-                .into(),
-        );
-    }
-    if let Some(opponent) = s
-        .opponent_loaded
-        .as_ref()
-        .filter(|_| state.opponent_panel.shown() || state.opponent_panel.is_animating(now))
-    {
-        let panel = opponent
-            .editor
-            .view(lang, opponent, true, None, false, false)
-            .map(Message::OpponentSaveView);
-        let pane = setup_pane(panel, 1, state.opponent_panel.progress(now));
-        panes.push(
-            container(pane)
-                .width(Fill)
-                .height(Fill)
-                .align_x(iced::alignment::Horizontal::Right)
-                .into(),
-        );
-    }
-    panes
-}
-
-/// The full-window layer that owns the cursor while a drawer edge is
-/// being dragged. `mouse_area` only reports moves and releases over
-/// its OWN bounds, so the 6px grip alone would drop the drag the
-/// instant the cursor outran it; this covers the whole window instead
-/// and reports window-relative x. Leaving the window ends the drag
-/// too — the release that happens out there never comes back.
-///
-/// It sets no `on_press`, so it captures nothing: clicks still reach
-/// the layers below once the drag is over and the layer is gone.
-fn pane_resize_capture<'a>() -> Element<'a, Message> {
-    iced::widget::mouse_area(iced::widget::Space::new().width(Fill).height(Fill))
-        .interaction(iced::mouse::Interaction::ResizingHorizontally)
-        .on_move(|p| Message::PaneResizeMoved(p.x))
-        .on_release(Message::EndPaneResize)
-        .on_exit(Message::EndPaneResize)
-        .into()
-}
-
-/// Hoist a persistent chrome layer into iced's floating layer —
-/// an invisible sub-pixel translation — so it keeps drawing above
-/// a drawer pane mid-animation (which floats, and floats render
-/// above every base stack layer; among floats, tree order wins, and this layer
-/// comes after the drawer). Used by the build warning, whose advisory must not
-/// disappear during a drawer transition. Only applied while a drawer is
-/// actually moving: hoisted permanently, it would also paint over modals.
-fn keep_above_drawers(el: Element<'_, SessionMessage>, drawer_moving: bool) -> Element<'_, SessionMessage> {
-    if drawer_moving {
-        iced::widget::float(el)
-            .translate(|_bounds, _viewport| iced::Vector::new(0.0, 0.001))
-            .into()
-    } else {
-        el
-    }
-}
-
-/// PvP setup-panel handles, riding the screen edges they control:
-/// the red "my setup" handle vertically centered on the LEFT edge
-/// (the side its pane occupies), the blue opponent handle on the
-/// RIGHT. Each is drawn as a tab emerging from its edge — square
-/// against the edge, rounded on the inner corners — with a
-/// chevron that points the way the click will move the drawer
-/// (inward to open, back out to close) tinted in the side's
-/// accent. They ride the shared auto-hide, slipping out through
-/// their own edges; the opponent handle isn't rendered at all
-/// while the peer has blinded their setup.
-fn setup_handles_overlay<'a>(
-    lang: &'a LanguageIdentifier,
-    state: &'a State,
-    hide_progress: f32,
-) -> Element<'a, SessionMessage> {
-    let now = iced::time::Instant::now();
-    let panes = state.pvp_panes.as_ref();
-
-    // `on_left`: which screen edge the tab grows out of.
-    // `drawer_progress`: how far the tab's drawer is out (0..1) —
-    // the tab rides the drawer's moving inner edge.
-    // `drawer_width`: that drawer's travel, so the tab lands on the
-    // edge wherever the user has dragged it.
-    let handle = |on_left: bool,
-                  open: bool,
-                  drawer_progress: f32,
-                  drawer_width: f32,
-                  accent: Color,
-                  label: String,
-                  msg: Option<SessionMessage>|
-     -> Element<'a, SessionMessage> {
-        // Open chevrons point back toward the edge (push the
-        // drawer shut), closed ones inward (pull it open).
-        let icon = match (on_left, open) {
-            (true, false) | (false, true) => Icon::ChevronRight,
-            (true, true) | (false, false) => Icon::ChevronLeft,
-        };
-        // Square against the edge, rounded inner corners.
-        let radius = if on_left {
-            iced::border::Radius {
-                top_left: 0.0,
-                top_right: 8.0,
-                bottom_right: 8.0,
-                bottom_left: 0.0,
-            }
-        } else {
-            iced::border::Radius {
-                top_left: 8.0,
-                top_right: 0.0,
-                bottom_right: 0.0,
-                bottom_left: 8.0,
-            }
-        };
-        let enabled = msg.is_some();
-        let style = move |theme: &iced::Theme, status: iced::widget::button::Status| {
-            let mut st = if open {
-                // Lit accent plate while the pane is out.
-                widgets::tinted_button(theme, status, accent)
-            } else {
-                telemetry_plate_button(theme, status)
-            };
-            if !open {
-                // The chevron carries the side's identity even at
-                // rest; a disabled handle goes muted instead.
-                st.text_color = if enabled { accent } else { widgets::muted_color(theme) };
-            }
-            st.border.radius = radius;
-            // No glow shadow on a flush tab — it would paint a
-            // halo onto the screen edge.
-            st.shadow = iced::Shadow::default();
-            st
-        };
-        let mut btn = button(
-            container(icon.widget().size(14.0))
-                .width(Fill)
-                .height(Fill)
-                .center(Fill),
-        )
-        .padding(0)
-        .width(iced::Length::Fixed(18.0))
-        .height(iced::Length::Fixed(56.0))
-        .style(style);
-        if let Some(m) = msg {
-            btn = btn.on_press(m);
-        }
-        let tip = iced::widget::tooltip(
-            btn,
-            widgets::tooltip_bubble(label),
-            if on_left {
-                iced::widget::tooltip::Position::Right
-            } else {
-                iced::widget::tooltip::Position::Left
-            },
-        )
-        .gap(4);
-        let pinned = iced::widget::mouse_area(tip)
-            .on_enter(SessionMessage::ControlsHovered(true))
-            .on_exit(SessionMessage::ControlsHovered(false));
-        // Riding the drawer's inner edge is LAYOUT (edge padding),
-        // not a Float translation: a floating element draws in
-        // iced's overlay layer above everything, so a permanently
-        // translated handle would sit on top of the settings /
-        // disconnect modals whenever a drawer is open.
-        let ride = drawer_progress * drawer_width;
-        let positioned: Element<'a, SessionMessage> = container(pinned)
-            .padding(iced::Padding {
-                top: 0.0,
-                right: if on_left { 0.0 } else { ride },
-                bottom: 0.0,
-                left: if on_left { ride } else { 0.0 },
-            })
-            .into();
-        // The auto-hide slide through the screen edge stays a
-        // Float (it needs to go off-screen), but it's transient —
-        // suppressed entirely while the drawer is out at all,
-        // where a tab twitching toward the edge would read as a
-        // glitch (and an open drawer needs its close affordance).
-        let hide = if drawer_progress > 0.0 {
-            0.0
-        } else {
-            (1.0 - hide_progress) * if on_left { -28.0 } else { 28.0 }
-        };
-        if hide == 0.0 {
-            positioned
-        } else {
-            iced::widget::float(positioned)
-                .translate(move |_bounds, _viewport| iced::Vector::new(hide, 0.0))
-                .into()
-        }
-    };
-
-    const FIELD_RED: Color = Color::from_rgb(0.85, 0.22, 0.28);
-    const FIELD_BLUE: Color = Color::from_rgb(0.18, 0.40, 0.85);
-
-    let mut edges = row![].width(Fill).align_y(Alignment::Center);
-    if let Some(panes) = panes.filter(|panes| panes.local_loaded.is_some()) {
-        edges = edges.push(handle(
-            true,
-            state.self_panel.shown(),
-            state.self_panel.progress(now),
-            panes.pane_widths[0],
-            FIELD_RED,
-            t!(lang, "session-self"),
-            Some(SessionMessage::Pvp(Message::ToggleSelfPanel)),
-        ));
-    }
-    edges = edges.push(horizontal_space());
-    // No tab at all when the peer blinded their setup — a
-    // permanently dead handle is just clutter on the edge.
-    if let Some(panes) = panes.filter(|panes| panes.opponent_loaded.is_some()) {
-        edges = edges.push(handle(
-            false,
-            state.opponent_panel.shown(),
-            state.opponent_panel.progress(now),
-            panes.pane_widths[1],
-            FIELD_BLUE,
-            t!(lang, "session-opponent"),
-            Some(SessionMessage::Pvp(Message::ToggleOpponentPanel)),
-        ));
-    }
-
-    container(edges)
-        .width(Fill)
-        .height(Fill)
-        .align_y(iced::alignment::Vertical::Center)
-        .into()
 }
 
 /// Disconnect confirmation modal (PvP-only). Centered panel with a
@@ -738,7 +362,7 @@ mod build_warning_tests {
         );
 
         assert!(!state.pvp_panes.as_ref().unwrap().build_warning_violations_expanded);
-        let _ = crate::session::update::pvp::update(&mut state, Message::ToggleBuildWarningViolations, &FALLBACK_LANG);
+        let _ = crate::session::update::pvp::update(&mut state, Message::ToggleBuildWarningViolations);
         assert!(state.pvp_panes.as_ref().unwrap().build_warning_violations_expanded);
     }
 }

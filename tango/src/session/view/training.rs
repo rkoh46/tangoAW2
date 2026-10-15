@@ -15,7 +15,7 @@ pub(crate) fn view<'a>(s: &'a TrainingSession, ctx: Ctx<'a>) -> Element<'a, Sess
     let (main_horizontal, main_vertical) = main_frame_alignment(ctx.opponent_view);
     let frame = framebuffer_view(ctx, None, main_horizontal, main_vertical);
     let frame = stacked_framebuffers(ctx, frame, None, ctx.opponent_view);
-    let body = emulator_body(frame, [None, None], true, ctx.landscape_stretch);
+    let body = emulator_body(frame, true, ctx.landscape_stretch);
     let mut stacked = stack![body];
     // Opponent-screen PiP — outside the controls gate, so it doesn't tuck
     // away with the idle cursor (same treatment as replay).
@@ -26,7 +26,7 @@ pub(crate) fn view<'a>(s: &'a TrainingSession, ctx: Ctx<'a>) -> Element<'a, Sess
     }
     if state.controls_anim.visible(now) {
         stacked = stacked.push(bottom_bar(lang, s, state, ctx.opponent_view));
-        stacked = stacked.push(corner_commands_overlay(lang, state, SessionMessage::Close, false));
+        stacked = stacked.push(corner_commands_overlay(lang, state, SessionMessage::Close));
     }
     finish_session_stack(lang, state, stacked)
 }

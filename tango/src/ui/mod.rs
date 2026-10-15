@@ -10,8 +10,6 @@
 //! has to know which side a given widget comes from. [`copy_feedback`]
 //! is shared whole, so it passes straight through.
 
-pub use tango_ui::copy_feedback;
-
 pub mod anim;
 pub mod backdrop;
 pub mod style;

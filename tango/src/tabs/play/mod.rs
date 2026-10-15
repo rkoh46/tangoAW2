@@ -10,7 +10,6 @@
 //! so the lobby settings-resend sees every change made here live.
 
 pub mod loadout_strip;
-mod lobby;
 mod save_manage;
 
 pub use save_manage::SaveAction;
@@ -38,38 +37,19 @@ pub enum Message {
     SaveEditor(std::sync::Arc<dyn tango_gamesupport::SaveEditorMessage>),
 
     LinkCodeChanged(String),
-    /// Copy plain text to the clipboard — the lobby's copy-link-code
-    /// button. Carries the real code even when streamer mode masks it
-    /// on screen.
-    CopyText(String),
     FightPressed,
     /// Bottom strip: start the selected game on its own, with no link
     /// code, server or network.
     PlayOfflinePressed,
-    Disconnect,
-    /// Lobby UI: user picked a different match type. App routes
-    /// this through Effect::SetMatchType so the resend
-    /// machinery picks it up.
-    SetMatchType((u8, u8)),
-    /// Lobby UI: user dragged the frame-delay slider, OR pressed
-    /// the "suggest" button (which dispatches a value computed from the
-    /// `lobby.latency_counter` median). Routes to the shared `config.frame_delay`
-    /// (same store the Settings-tab slider writes), not lobby-local state.
-    SetFrameDelay(u32),
-    /// Lobby UI: user pressed Ready. App loads the local
+    /// In-game lobby READY (via `app/online.rs`): App loads the local
     /// save's raw SRAM, builds a NegotiatedState, and
     /// commits the local save.
     Ready,
-    /// Lobby UI: user pressed Unready (Ready button while
-    /// already committed). Sends an Uncommit packet.
+    /// In-game lobby NOT READY (via `app/online.rs`). Sends an Uncommit packet.
     Unready,
-    /// Soft-disable sentinel for widgets that don't accept a
-    /// `None` handler in iced 0.14 (pick_list). The lobby
-    /// reroutes match-type changes here while the committed
-    /// terms are locked (failure / handoff), and the selector
-    /// strip does the same during handoff, so the controls
-    /// render inert without touching layout. The update handler
-    /// drops it.
+    /// Soft-disable sentinel: the selector strip reroutes its
+    /// controls here during handoff so they render inert without
+    /// touching layout. The update handler drops it.
     Noop,
 
     SaveOpenFolder,
@@ -98,15 +78,6 @@ pub enum Message {
 
 pub struct State {
     link_code: String,
-    /// A link code Fight auto-generated for an empty input, parked here
-    /// instead of `link_code` while the lobby is up: the outgoing strip
-    /// renders for the first half of the band morph, so writing the input
-    /// immediately would flash the code on screen before the lobby's
-    /// connection line (which masks it in streamer mode) gets to debut it.
-    /// [`restore_generated_link_code`](Self::restore_generated_link_code)
-    /// moves it into the input when the lobby band leaves, so a retry
-    /// re-hosts the same code.
-    pending_generated_code: Option<String>,
     /// Inline state for the save-management actions (rename / delete).
     save_action: SaveAction,
     /// Entrance glide for the whole save-view pane under the selector
@@ -131,7 +102,6 @@ impl Default for State {
     fn default() -> Self {
         Self {
             link_code: String::new(),
-            pending_generated_code: None,
             save_action: SaveAction::None,
             save_body_enter: crate::ui::anim::Enter::default(),
             save_form: crate::ui::anim::Transition::swap(false),
@@ -147,27 +117,13 @@ impl Default for State {
 /// as an `Effect` for the caller to interpret.
 #[derive(Debug)]
 pub enum Effect {
-    /// Kick off netplay. The `LinkIdent` variant tells the app
-    /// handler whether to route via matchmaking signaling or direct
-    /// TCP transport. `copy_code` is `Some` when Fight auto-generated
-    /// the code for an empty input — the App puts it straight on the
-    /// clipboard so the host can paste it to their opponent without
-    /// hunting for the lobby's copy button.
-    Connect {
-        ident: crate::netplay::LinkIdent,
-        copy_code: Option<String>,
-    },
-    /// Leave the lobby / cancel a connection attempt.
-    Disconnect,
-    /// Lobby match-type picker moved. App records it and resends Settings.
-    SetMatchType((u8, u8)),
-    /// Lobby Un-ready — drop our commitment and tell the peer.
+    /// Kick off netplay (autostart / Discord join). The `LinkIdent`
+    /// variant tells the app handler whether to route via matchmaking
+    /// signaling or direct TCP transport.
+    Connect { ident: crate::netplay::LinkIdent },
+    /// In-game NOT READY — drop our commitment and tell the peer.
     Unready,
-    /// Lobby frame-delay slider moved. App persists `config.frame_delay`; it's
-    /// this side's local frame delay (snapshotted into the match at
-    /// start, not negotiated with the peer), so there's nothing live to update.
-    SetFrameDelay(u32),
-    /// Lobby Ready — App reads the local save SRAM and commits it.
+    /// In-game READY — App reads the local save SRAM and commits it.
     ReadyWithSave,
     /// `open::that(_)` on a file or folder.
     OpenPath(std::path::PathBuf),
@@ -240,19 +196,6 @@ impl State {
         effect
     }
 
-    /// Move a Fight-generated link code into the input. The App calls this
-    /// the moment the lobby band leaves (failure, cancel, or handoff into a
-    /// match), so the returning strip shows what was hosted and a retry
-    /// re-hosts the same code — without the code ever rendering in the
-    /// input on the way *into* the lobby.
-    pub fn restore_generated_link_code(&mut self) {
-        if let Some(code) = self.pending_generated_code.take() {
-            if self.link_code.trim().is_empty() {
-                self.link_code = code;
-            }
-        }
-    }
-
     /// Prefill the link-code input from an external source — the CLI
     /// `Join <code>` argument or a Discord join secret.
     pub fn adopt_link_code(&mut self, code: String) {
@@ -295,50 +238,12 @@ impl State {
                 self.link_code = filtered.chars().take(100).collect();
                 None
             }
-            Message::CopyText(s) => {
-                // The lobby's copy-link-code button is the only
-                // sender — light its "Copied!" flash as the text
-                // heads for the clipboard.
-                crate::ui::copy_feedback::flash(lobby::LINK_CODE_FLASH_KEY);
-                Some(Effect::CopyText(s))
-            }
             Message::PlayOfflinePressed => Some(Effect::StartSinglePlayer),
             Message::FightPressed => {
-                // An empty bar means "just get me a lobby": generate a
-                // fresh random adjective-word-noun code and connect with
-                // it directly. The code deliberately skips the input —
-                // the outgoing strip still renders through the first
-                // half of the band morph, so the lobby's connection
-                // line (which masks in streamer mode) should be the
-                // first place it shows. It rides the Connect effect
-                // onto the clipboard, and `pending_generated_code`
-                // refills the input once the lobby band leaves.
-                let generated = self
-                    .link_code
-                    .trim()
-                    .is_empty()
-                    .then(|| crate::netplay::randomcode::generate(&config.language));
-                // The Fight CTA is gated at the view layer to require
-                // an empty or submittable link code, so reaching this
-                // handler with a malformed one is a stale message +
-                // safe to ignore.
-                let ident = crate::netplay::LinkIdent::parse(generated.as_deref().unwrap_or(self.link_code.trim()))?;
-                if let Some(code) = &generated {
-                    self.pending_generated_code = Some(code.clone());
-                    // Light the lobby copy button's "Copied!" flash as
-                    // the band rises — the cue that the code is already
-                    // in hand.
-                    crate::ui::copy_feedback::flash(lobby::LINK_CODE_FLASH_KEY);
-                }
-                Some(Effect::Connect {
-                    ident,
-                    copy_code: generated,
-                })
+                let ident = crate::netplay::LinkIdent::parse(self.link_code.trim())?;
+                Some(Effect::Connect { ident })
             }
             Message::Noop => None,
-            Message::Disconnect => Some(Effect::Disconnect),
-            Message::SetMatchType(mt) => Some(Effect::SetMatchType(mt)),
-            Message::SetFrameDelay(d) => Some(Effect::SetFrameDelay(d)),
             Message::Ready => Some(Effect::ReadyWithSave),
             Message::Unready => Some(Effect::Unready),
             Message::SaveEditor(msg) => {
@@ -381,35 +286,6 @@ impl State {
     }
 }
 
-/// The netplay-side inputs the Play tab needs to render its bottom
-/// band, bundled so [`State::view`] doesn't take the App's netplay
-/// internals as loose positional arguments.
-pub struct LobbyBandCtx<'a> {
-    pub phase: &'a crate::netplay::Phase,
-    pub lobby: &'a crate::netplay::LobbyState,
-    /// Derived ready-ladder projection (who's committed / match
-    /// starting), same per-frame vintage as `lobby`.
-    pub ready: crate::netplay::ReadyView,
-    /// True between "both sides exchanged StartMatch" and the PvP
-    /// session taking over: the selector strip goes inert and the
-    /// lobby shows its "Starting match…" chrome.
-    pub handoff_pending: bool,
-    /// Two-phase swap between the bottom bands (link-code strip ↔
-    /// lobby), driven by the App (which sees the netplay phase
-    /// flip): first half sinks + dissolves the outgoing band,
-    /// second half rises the incoming one out of the page surface.
-    pub swap: &'a crate::ui::anim::Transition,
-    /// The lobby's last live state, frozen by the App on the
-    /// frame the band left — the exiting band renders from
-    /// this so the verdict (e.g. the failure banner) doesn't
-    /// flash to the idle handshake line mid-dissolve.
-    pub exit_snapshot: Option<&'a (
-        crate::netplay::Phase,
-        crate::netplay::LobbyState,
-        crate::netplay::ReadyView,
-    )>,
-}
-
 impl State {
     pub fn view<'a>(
         &'a self,
@@ -422,7 +298,8 @@ impl State {
         // The startup scan hasn't landed yet, so empty scanners mean
         // "not read yet" rather than "nothing installed".
         scanning: bool,
-        band: LobbyBandCtx<'a>,
+        netplay_phase: &'a crate::netplay::Phase,
+        handoff_pending: bool,
     ) -> Element<'a, Message> {
         let now = iced::time::Instant::now();
         let mut save_body = self.body(
@@ -433,7 +310,7 @@ impl State {
             streamer_mode,
             config,
             scanning,
-            band.phase,
+            netplay_phase,
         );
         // A family switch replaces the entire bottom of the tab, so
         // the whole pane glides in (the App starts `save_body_enter`
@@ -458,7 +335,7 @@ impl State {
         // the user. The scanning card holds the pane on its own.
         let mut inner = column![].spacing(style::PANE_GAP).padding(style::PANE_GAP).height(Fill);
         if !scanning {
-            inner = inner.push(self.selector_strip(lang, scanners, loadout, config, band.handoff_pending));
+            inner = inner.push(self.selector_strip(lang, scanners, loadout, config, handoff_pending));
         }
         let inner = inner.push(save_body);
 
@@ -483,73 +360,16 @@ impl State {
                 .padding([6, 16]),
             );
         }
-        // While a netplay attempt is in flight (Connecting /
-        // Negotiating / Lobby, sticky Failed, handoff) the lobby IS
-        // the bottom band — it carries the versus cards, match
-        // settings, and the verdict/cancel/ready chrome, while the
-        // save view above stays visible. Otherwise the normal bottom
-        // strip handles the link code + Fight CTA.
-        //
-        // The swap between them is a two-phase morph on
-        // `bottom_swap`'s unified timeline: the outgoing band sinks
-        // while dissolving into the page surface, then the incoming
-        // one rises out of it — so the code strip reads as turning
-        // into the lobby and back, rather than one vanishing and the
-        // other arriving. The bottom HUD scanline is grouped into the
-        // moving band so it rides the motion instead of staying
-        // pinned above it.
-        let (render_lobby, swap) = crate::ui::anim::swap_phase(band.swap, now);
-        let bottom: Element<'a, Message> = if render_lobby {
-            // While the band is on its way OUT, the live phase has
-            // already gone Idle (and the lobby may be wiped) — use
-            // the snapshot the App froze on the band's last live
-            // frame so the verdict doesn't flash mid-dissolve.
-            let (band_phase, band_lobby, band_ready) = if !band.swap.shown() {
-                band.exit_snapshot
-                    .map(|(p, l, r)| (p, l, *r))
-                    .unwrap_or((band.phase, band.lobby, band.ready))
-            } else {
-                (band.phase, band.lobby, band.ready)
-            };
-            // Synthesize the local side's Settings from the current
-            // loadout so the "You" slot fills in immediately —
-            // pre-Lobby phases haven't populated `lobby.local` yet,
-            // but everything it needs is already on hand locally.
-            // Same builder the netplay loop uses to ship settings on
-            // the wire, so the visible info during the handshake
-            // exactly matches what gets sent.
-            let local_fallback = loadout_strip::local_settings(loadout, config, band.lobby);
-            lobby::Lobby {
-                lang,
-                state: band_lobby,
-                ready: band_ready,
-                phase: band_phase,
-                local_game: loadout.game(),
-                scanners,
-                has_save: loadout.is_playable(),
-                local_fallback,
-                streamer_mode,
-                handoff_pending: band.handoff_pending,
-                frame_delay: config.frame_delay,
-            }
-            .view()
-        } else {
-            self.bottom_strip(
-                lang,
-                streamer_mode,
-                loadout.patch_ready(scanners),
-                loadout.is_playable(),
-            )
-        };
-        let mut group: Element<'a, Message> = column![widgets::hud_scanline_bottom(), bottom].width(Fill).into();
-        if let Some(phase) = swap {
-            let dist = if render_lobby { 48.0 } else { 24.0 };
-            group =
-                crate::ui::anim::swap_transform(group, phase, iced::Vector::new(0.0, dist), |theme: &iced::Theme| {
-                    theme.palette().background
-                });
-        }
-        col = col.push(group);
+        // The bottom band is just the Play button. Online play (room,
+        // lobby, READY) is the game's own ONLINE screens; the app
+        // drives them from the mailbox and shows no match setup here.
+        let bottom = self.bottom_strip(
+            lang,
+            streamer_mode,
+            loadout.patch_ready(scanners),
+            loadout.is_playable(),
+        );
+        col = col.push(column![widgets::hud_scanline_bottom(), bottom].width(Fill));
         col.into()
     }
 
@@ -711,7 +531,7 @@ impl State {
                 .padding(BOTTOM_CTA_PAD)
                 .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
                 .width(Length::Fill)
-                .style(|theme: &iced::Theme, status| ready_button_style(theme, status, ReadyPalette::Idle));
+                .style(|theme: &iced::Theme, status| ready_button_style(theme, status));
             if playable && patch_ready {
                 btn = btn.on_press(Message::PlayOfflinePressed);
             }
@@ -726,9 +546,9 @@ impl State {
         // (the link code and its Fight button have no place here: online play is in the game)
         let strip = row![offline_button];
         container(strip.spacing(10).align_y(Alignment::Center).padding([10, 8]))
-        .width(Fill)
-        .style(widgets::hud_bar)
-        .into()
+            .width(Fill)
+            .style(widgets::hud_bar)
+            .into()
     }
 }
 
@@ -775,106 +595,62 @@ fn empty_state_card(
 
 // ---------- Commit-button styling (Fight + Ready) ----------
 
-/// Which ready-button state we're painting. Drives
-/// [`ready_button_style`]'s color choice.
-#[derive(Clone, Copy)]
-enum ReadyPalette {
-    /// Pre-commit; the action is "ready up". Accent (primary) so
-    /// it reads as the call-to-action in the strip.
-    Idle,
-    /// Locally committed; the action is "unready". Neutral / gray —
-    /// the commitment isn't a celebration to surface in green;
-    /// what matters is the user can un-commit.
-    Committed,
-    /// Both committed; match is spinning up. Rendered as a passive
-    /// indicator: muted background, no click target, no border.
-    /// Caller sets `on_press = None` to match the disabled look.
-    Starting,
-}
-
-/// Custom style for the lobby's Ready toggle. Three discrete
-/// moods — each one its own visual register so a glance at the
-/// button tells the whole story of "where are we in the
-/// handshake".
-///
-/// * Idle — primary_button on steroids: brighter gradient, huge
-///   primary glow, chunky 2 px border. This is the moment the user is
-///   supposed to slam the button, so it has to feel hot.
-/// * Committed — neutral beveled plate. We've ack'd locally and are
-///   waiting on the peer; the only useful action is to take it back,
-///   which is not a celebration.
-/// * Starting — flat muted badge. Both sides committed; the button is
-///   now purely a status indicator with no click target.
-fn ready_button_style(theme: &iced::Theme, status: button::Status, palette: ReadyPalette) -> button::Style {
-    let p = theme.extended_palette();
+/// Style for the Play button: accent (primary) so it reads as the
+/// call-to-action in the strip. Primary on steroids: brighter
+/// gradient, huge primary glow, chunky 2 px border.
+fn ready_button_style(theme: &iced::Theme, status: button::Status) -> button::Style {
     let primary = theme.palette().primary;
-    match palette {
-        ReadyPalette::Starting => button::Style {
-            background: Some(iced::Background::Color(p.background.weak.color)),
-            text_color: widgets::muted_color(theme),
+    if tango_ui::style::is_advance_wars(theme) {
+        return widgets::aw_fight_button(status);
+    }
+    {
+        // Disabled state defers to the standard neutral
+        // button so it reads as a plainly-greyed-out button
+        // — the dim-primary-fill version this used to
+        // render looked like a corrupted variant of the
+        // lit-up state rather than a disabled affordance.
+        if matches!(status, button::Status::Disabled) {
+            return crate::ui::widgets::neutral(theme, status);
+        }
+        // Inline expansion of the battle-button kernel with
+        // every dial cranked: bigger glow, brighter top stop,
+        // 2 px border so the button reads as a console
+        // affordance rather than a CSS rectangle.
+        let lighter = widgets::mix(primary, iced::Color::WHITE, 0.30);
+        let darker = widgets::mix(primary, iced::Color::BLACK, 0.25);
+        let (top, bottom, glow_alpha, offset_y, blur) = match status {
+            button::Status::Hovered => (
+                widgets::mix(lighter, iced::Color::WHITE, 0.18),
+                widgets::mix(primary, iced::Color::WHITE, 0.05),
+                0.95,
+                8.0,
+                28.0,
+            ),
+            button::Status::Pressed => (darker, widgets::mix(darker, iced::Color::BLACK, 0.12), 0.35, 2.0, 14.0),
+            button::Status::Disabled => unreachable!("handled above"),
+            button::Status::Active => (lighter, darker, 0.75, 6.0, 22.0),
+        };
+        button::Style {
+            background: Some(iced::Background::Gradient(iced::Gradient::Linear(
+                iced::gradient::Linear::new(0.0)
+                    .add_stop(0.0, top)
+                    .add_stop(1.0, bottom),
+            ))),
+            text_color: widgets::on_accent(primary),
             border: iced::Border {
                 radius: widgets::tech_radius(10.0),
-                width: 1.0,
-                color: p.background.strong.color,
+                width: 2.0,
+                color: widgets::mix(primary, iced::Color::WHITE, 0.45),
             },
-            ..Default::default()
-        },
-        ReadyPalette::Committed => {
-            // Defer to the shared beveled neutral so the
-            // un-ready toggle looks like a sibling of the other
-            // chunky neutral buttons in the lobby strip.
-            crate::ui::widgets::neutral(theme, status)
-        }
-        ReadyPalette::Idle if tango_ui::style::is_advance_wars(theme) => widgets::aw_fight_button(status),
-        ReadyPalette::Idle => {
-            // Disabled state defers to the standard neutral
-            // button so it reads as a plainly-greyed-out button
-            // — the dim-primary-fill version this used to
-            // render looked like a corrupted variant of the
-            // lit-up state rather than a disabled affordance.
-            if matches!(status, button::Status::Disabled) {
-                return crate::ui::widgets::neutral(theme, status);
-            }
-            // Inline expansion of the battle-button kernel with
-            // every dial cranked: bigger glow, brighter top stop,
-            // 2 px border so the button reads as a console
-            // affordance rather than a CSS rectangle.
-            let lighter = widgets::mix(primary, iced::Color::WHITE, 0.30);
-            let darker = widgets::mix(primary, iced::Color::BLACK, 0.25);
-            let (top, bottom, glow_alpha, offset_y, blur) = match status {
-                button::Status::Hovered => (
-                    widgets::mix(lighter, iced::Color::WHITE, 0.18),
-                    widgets::mix(primary, iced::Color::WHITE, 0.05),
-                    0.95,
-                    8.0,
-                    28.0,
-                ),
-                button::Status::Pressed => (darker, widgets::mix(darker, iced::Color::BLACK, 0.12), 0.35, 2.0, 14.0),
-                button::Status::Disabled => unreachable!("handled above"),
-                button::Status::Active => (lighter, darker, 0.75, 6.0, 22.0),
-            };
-            button::Style {
-                background: Some(iced::Background::Gradient(iced::Gradient::Linear(
-                    iced::gradient::Linear::new(0.0)
-                        .add_stop(0.0, top)
-                        .add_stop(1.0, bottom),
-                ))),
-                text_color: widgets::on_accent(primary),
-                border: iced::Border {
-                    radius: widgets::tech_radius(10.0),
-                    width: 2.0,
-                    color: widgets::mix(primary, iced::Color::WHITE, 0.45),
+            shadow: iced::Shadow {
+                color: iced::Color {
+                    a: glow_alpha,
+                    ..primary
                 },
-                shadow: iced::Shadow {
-                    color: iced::Color {
-                        a: glow_alpha,
-                        ..primary
-                    },
-                    offset: iced::Vector::new(0.0, offset_y),
-                    blur_radius: blur,
-                },
-                snap: false,
-            }
+                offset: iced::Vector::new(0.0, offset_y),
+                blur_radius: blur,
+            },
+            snap: false,
         }
     }
 }

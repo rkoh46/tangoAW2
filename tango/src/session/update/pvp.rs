@@ -4,7 +4,7 @@
 
 use super::Effect;
 use crate::session::pvp::PvpSession;
-use crate::session::{Message as SessionMessage, State};
+use crate::session::State;
 
 /// One per-frame snapshot of the live PvP telemetry, retained in a short ring
 /// buffer ([`State::metric_history`]) so the persistent PvP panel can draw a
@@ -63,30 +63,6 @@ pub struct PvpPanes {
     /// Whether the warning's exact violation list has been explicitly opened.
     /// Starts collapsed so opponent build details are never shown implicitly.
     pub build_warning_violations_expanded: bool,
-    /// Current width of each setup drawer (`[self, opponent]`), seeded
-    /// from `config.pvp_setup_pane_widths` at match start and moved by
-    /// dragging a drawer's inner edge. The App mirrors it back into
-    /// config when a drag ends.
-    pub pane_widths: [f32; 2],
-    /// The drawer edge currently being dragged, `None` at rest.
-    pub pane_drag: Option<PaneDrag>,
-}
-
-/// A setup drawer being sized by its inner edge. `anchor_x` is latched
-/// on the drag's FIRST move rather than at the press: iced's
-/// `mouse_area` press carries no cursor position, so the first move
-/// establishes the origin and every move after it is a delta off
-/// `start_width` — which keeps the pane from jumping to sit centered
-/// under the cursor when the grab lands off the edge's exact pixel.
-#[derive(Clone, Copy)]
-pub struct PaneDrag {
-    /// Which drawer, indexing [`PvpPanes::pane_widths`]: 0 = self
-    /// (left edge), 1 = opponent (right).
-    pub side: usize,
-    /// The drawer's width when the grab started.
-    pub start_width: f32,
-    /// Window x the drag measures from, `None` until the first move.
-    pub anchor_x: Option<f32>,
 }
 
 // A LoadedSave is a whole parsed rom + save; a placeholder keeps the
@@ -100,14 +76,11 @@ impl std::fmt::Debug for PvpPanes {
 
 impl PvpPanes {
     /// Fresh presentation state for a match: nothing dismissed or
-    /// expanded, and the drawers at their remembered `widths`. Clamped on
-    /// the way in: the persisted pair predates the current bounds on an
-    /// older config, or the window it was sized against is gone.
+    /// expanded.
     pub(in crate::session) fn new(
         local_loaded: crate::selection::LoadedSave,
         opponent_loaded: Option<crate::selection::LoadedSave>,
         opponent_build_warnings: Option<tango_gamesupport::OpaqueBuildWarnings>,
-        widths: [f32; 2],
     ) -> Self {
         Self {
             local_loaded: Some(local_loaded),
@@ -115,19 +88,9 @@ impl PvpPanes {
             opponent_build_warnings,
             build_warning_dismissed: false,
             build_warning_violations_expanded: false,
-            pane_widths: widths.map(|w| w.clamp(SETUP_PANE_MIN_WIDTH, SETUP_PANE_MAX_WIDTH)),
-            pane_drag: None,
         }
     }
 }
-
-/// How wide a PvP setup side pane is allowed to get by dragging its
-/// inner edge. The floor keeps the save view's tab strip legible; the
-/// ceiling keeps the emulator from being squeezed off a modest window
-/// with both drawers out. The resting width is the user's — persisted
-/// as `config.pvp_setup_pane_widths` and carried on [`PvpPanes`].
-pub(crate) const SETUP_PANE_MIN_WIDTH: f32 = 300.0;
-pub(crate) const SETUP_PANE_MAX_WIDTH: f32 = 720.0;
 
 /// Messages the PvP view emits. Wrapped as [`SessionMessage::Pvp`] on
 /// the way out; inert unless a PvP session is active.
@@ -154,31 +117,11 @@ pub enum Message {
     DismissBuildWarning,
     /// Explicitly open/close the opponent build's violation list.
     ToggleBuildWarningViolations,
-    /// Show/hide the opponent's setup side panel.
-    ToggleOpponentPanel,
-    /// Show/hide the local player's save-view panel.
-    ToggleSelfPanel,
-    /// User interacted with the opponent's save-view (tab swap,
-    /// folder-group toggle, hover, …).
-    OpponentSaveView(std::sync::Arc<dyn tango_gamesupport::SaveEditorMessage>),
-    /// Mirror of [`OpponentSaveView`](Self::OpponentSaveView) for the
-    /// local panel.
-    SelfSaveView(std::sync::Arc<dyn tango_gamesupport::SaveEditorMessage>),
-    /// A setup drawer's inner edge was grabbed to resize it. Carries
-    /// the side (0 = self, 1 = opponent) and that drawer's width at
-    /// the grab, which the drag then works in deltas off.
-    StartPaneResize(usize, f32),
-    /// Cursor moved during a drawer resize — window x, from the
-    /// full-window capture layer that's up for the drag's duration.
-    PaneResizeMoved(f32),
-    /// Drawer resize finished: button released, or the cursor left the
-    /// window mid-drag. The new widths are persisted here.
-    EndPaneResize,
 }
 
 /// Apply a PvP-view message. Takes the whole session [`State`] because the
-/// setup drawers and disconnect/build-warning overlays live beside the slot.
-pub(crate) fn update(state: &mut State, msg: Message, lang: &unic_langid::LanguageIdentifier) -> Option<Effect> {
+/// disconnect/build-warning overlays live beside the slot.
+pub(crate) fn update(state: &mut State, msg: Message) -> Option<Effect> {
     match msg {
         Message::SetFrameDelay(d) => {
             // Purely local frame delay — apply straight to the running
@@ -208,62 +151,6 @@ pub(crate) fn update(state: &mut State, msg: Message, lang: &unic_langid::Langua
             if let Some(panes) = state.pvp_panes.as_mut() {
                 panes.build_warning_violations_expanded = !panes.build_warning_violations_expanded;
             }
-        }
-        Message::ToggleOpponentPanel => {
-            state.opponent_panel.toggle();
-        }
-        Message::ToggleSelfPanel => {
-            state.self_panel.toggle();
-        }
-        Message::OpponentSaveView(msg) => {
-            // View-local folds only in practice (tab swaps, hovers):
-            // the in-match drawers render read-only, so the editor can't
-            // mint an edit to stage into this side's loaded save.
-            if let Some(panes) = state.pvp_panes.as_mut() {
-                if let Some(data) = panes.opponent_loaded.as_mut() {
-                    let (task, _) = data.editor.update(lang, data, &*msg);
-                    return Some(Effect::Task(
-                        task.map(|m| SessionMessage::Pvp(Message::OpponentSaveView(m))),
-                    ));
-                }
-            }
-        }
-        Message::SelfSaveView(msg) => {
-            if let Some(panes) = state.pvp_panes.as_mut() {
-                if let Some(data) = panes.local_loaded.as_mut() {
-                    let (task, _) = data.editor.update(lang, data, &*msg);
-                    return Some(Effect::Task(
-                        task.map(|m| SessionMessage::Pvp(Message::SelfSaveView(m))),
-                    ));
-                }
-            }
-        }
-        Message::StartPaneResize(side, width) => {
-            if let Some(panes) = state.pvp_panes.as_mut() {
-                panes.pane_drag = Some(PaneDrag {
-                    side,
-                    start_width: width,
-                    anchor_x: None,
-                });
-            }
-        }
-        Message::PaneResizeMoved(x) => {
-            if let Some(panes) = state.pvp_panes.as_mut() {
-                if let Some(drag) = panes.pane_drag.as_mut() {
-                    let anchor = *drag.anchor_x.get_or_insert(x);
-                    // Each drawer widens as the cursor pulls its inner
-                    // edge toward the middle of the window: rightward
-                    // for the left drawer, leftward for the right one.
-                    let delta = if drag.side == 0 { x - anchor } else { anchor - x };
-                    panes.pane_widths[drag.side] =
-                        (drag.start_width + delta).clamp(SETUP_PANE_MIN_WIDTH, SETUP_PANE_MAX_WIDTH);
-                }
-            }
-        }
-        Message::EndPaneResize => {
-            let panes = state.pvp_panes.as_mut()?;
-            panes.pane_drag = None;
-            return Some(Effect::PersistPaneWidths(panes.pane_widths));
         }
     }
     None

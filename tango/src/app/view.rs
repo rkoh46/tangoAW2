@@ -259,14 +259,8 @@ impl App {
                         self.config.streamer_mode,
                         &self.config,
                         !self.library_scanned,
-                        tabs::play::LobbyBandCtx {
-                            phase: &self.netplay.phase,
-                            lobby: &self.netplay.lobby,
-                            ready: self.netplay.ready_view(),
-                            handoff_pending: self.netplay.handoff_pending(),
-                            swap: &self.lobby_swap,
-                            exit_snapshot: self.lobby_exit_snapshot.as_ref(),
-                        },
+                        &self.netplay.phase,
+                        self.netplay.handoff_pending(),
                     )
                     .map(Message::Play);
                 container(main).width(Fill).height(Fill).into()

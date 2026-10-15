@@ -4188,7 +4188,14 @@ tests). Online play starts in the game, played alone:
   match type is Versus subtype 1 ([`online::ONLINE_MATCH`]) and the room's
   maker sets `ROOM_HOST` in their subtype, which gives them seat 0 (the
   lobby ignores the bit when comparing). The app commits the save on READY
-  and on the host's START.
+  and on the host's START (`tabs::play::Message::Ready`/`Unready`, sent by
+  `app/online.rs`). The client shows no match-setup UI of Tango's own: the
+  Play tab's lobby band (versus cards, match settings, Ready) and the
+  in-match "My setup" / "Opponent setup" drawers are gone. The netplay
+  `State`, the compatibility verdict (`online_verdict`), the settings resend
+  and the handoff into the PvP session run silently under the game's
+  screens; a live match shows the game, the telemetry bar and the
+  disconnect/build-warning overlays.
 - **The match.** Booting a subtype-1 console, `SharedGame::boot_more` lets
   `online::before` press for the players before the session (the same on
   both peers and in the replay): START/A through the title, the wheel turned

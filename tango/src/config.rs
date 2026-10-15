@@ -42,10 +42,6 @@ fn default_ui_scale() -> f32 {
     1.0
 }
 
-fn default_setup_pane_widths() -> [f32; 2] {
-    [420.0; 2]
-}
-
 fn default_language() -> unic_langid::LanguageIdentifier {
     tango_library::lang::FALLBACK_LANG
 }
@@ -278,12 +274,6 @@ pub struct Config {
     /// alias so existing configs migrate in place.
     #[serde(default, alias = "show_opponent_pip", deserialize_with = "de_opponent_view")]
     pub opponent_view: OpponentView,
-    /// Width in logical pixels of each PvP setup drawer, `[self,
-    /// opponent]`. Dragged from the drawer's inner edge during a match
-    /// and persisted on release, so the next one opens the panes where
-    /// the user left them.
-    #[serde(default = "default_setup_pane_widths")]
-    pub pvp_setup_pane_widths: [f32; 2],
     /// When true, the self-updater (`updater::Updater`) runs in
     /// the background and downloads any newer GitHub release.
     /// Toggle takes effect immediately via Settings; downloaded
@@ -402,7 +392,6 @@ impl Default for Config {
             ds_primary_screen: DsPrimaryScreen::default(),
             show_replay_inputs: false,
             opponent_view: OpponentView::Off,
-            pvp_setup_pane_widths: default_setup_pane_widths(),
             enable_updater: true,
             allow_prerelease_upgrades: false,
             last_window_size: None,
@@ -698,7 +687,6 @@ mod tests {
         assert!(config.enable_updater);
         assert_eq!(config.ui_scale, 1.0);
         assert_eq!(config.volume, 1.0);
-        assert_eq!(config.pvp_setup_pane_widths, [420.0; 2]);
         assert_eq!(config.language, tango_library::lang::FALLBACK_LANG);
         assert_eq!(config.opponent_view, OpponentView::Off);
     }

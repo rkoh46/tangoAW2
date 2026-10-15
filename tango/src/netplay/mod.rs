@@ -13,8 +13,8 @@
 //!   what comes down that channel owns a live data channel and can't be.
 
 pub use tango_lobby::{
-    compat, randomcode, ConnectionKind, DirectRole, Error, Event, HandoffTicket, Incoming, LinkIdent, LobbyState,
-    MatchmakingParams, Phase, PreMatchData, ReadyView, State,
+    compat, DirectRole, Error, Event, HandoffTicket, Incoming, LinkIdent, LobbyState, MatchmakingParams, Phase,
+    PreMatchData, State,
 };
 
 use std::sync::Arc;
