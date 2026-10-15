@@ -21,8 +21,8 @@
 //!   players before the match starts ([`boot_more`], the same on both peers and in the replay);
 //! - who drives the pad ([`merge`]): SELECT MAP, the Rules screen, the results and the save prompt are the room
 //!   host's (seat 0, see `tango_net_protocol::control::ROOM_HOST`); on the Teams screen each player picks their own
-//!   armies' CO and colour (UP/DOWN, SELECT, L, R reach the pad from the seat of the army under the cursor; LEFT
-//!   and RIGHT from both; A, B, START from the host's); every army is a human's (seat by army, as in any match:
+//!   armies' CO and colour (UP/DOWN, SELECT, L, R, START reach the pad from the seat of the army under the cursor,
+//!   and all but A and B while a tag partner is picked; LEFT and RIGHT from both; A and B from the host's); every army is a human's (seat by army, as in any match:
 //!   odd armies the host's, even ones the guest's);
 //! - back on SELECT MAP after a battle the host picks the next map (a rematch); B there, back to Select Mode, ends
 //!   the match for both ([`match_over`]), and the app takes both players back to the offline lobby.
@@ -845,13 +845,18 @@ pub fn merge(core: &Core, inputs: [u32; 2]) -> Option<u32> {
         return None;
     }
     if crate::pvp::on_teams_screen(core) && !crate::five::active(core) {
+        // (with the pack, a tag partner being picked: that army's player has the pad but A and B)
+        if let Some(army) = crate::tag_ui::editing(core) {
+            let owner = crate::pvp::seat_of(army as u8 + 1);
+            return Some((inputs[owner] & !(KEY_A | KEY_B)) | (inputs[0] & (KEY_A | KEY_B)));
+        }
         let slot = (core.raw_read_8(0x0201_7C50 + 0x32, -1) / 2) as u8;
         let owner = crate::pvp::seat_of(slot + 1);
         let both = inputs[0] | inputs[1];
         return Some(
-            (inputs[owner] & (KEY_UP | KEY_DOWN | KEY_SELECT | KEY_L | KEY_R))
+            (inputs[owner] & (KEY_UP | KEY_DOWN | KEY_SELECT | KEY_L | KEY_R | KEY_START))
                 | (both & (KEY_LEFT | KEY_RIGHT))
-                | (inputs[0] & (KEY_A | KEY_B | KEY_START)),
+                | (inputs[0] & (KEY_A | KEY_B)),
         );
     }
     if crate::pvp::on_teams_screen(core) {
