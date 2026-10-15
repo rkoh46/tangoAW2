@@ -1,0 +1,58 @@
+[package]
+name = "tango-signaling"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+
+[features]
+default = ["client"]
+client = [
+  "dep:datachannel-wrapper",
+  "dep:url",
+  "dep:urlencoding",
+  "dep:tokio",
+  "dep:rand",
+  # Native only; see the target tables below. Cargo resolves an
+  # optional dependency that isn't in the graph for this target to
+  # nothing, so naming them here is safe on wasm32 too.
+  "dep:tokio-tungstenite",
+  "dep:tokio-tungstenite-wasm"
+]
+proto = []
+
+[dependencies]
+datachannel-wrapper = { git = "https://github.com/tangobattle/datachannel-wrapper", optional = true }
+futures = "0.3"
+futures-util = "0.3"
+http = "0.2"
+log = "0.4"
+prost = "0.14"
+rand = { version = "0.8", optional = true }
+thiserror = "1"
+# Only the parts that need no runtime under them: the sync primitives
+# and `select!`. `rt` and `time` are native-only (see the table below) —
+# a browser has a driver for neither, and every use of them here is
+# already behind the per-target seam in `time`.
+tokio = { version = "1", features = ["macros", "sync"], optional = true }
+url = { version = "2", optional = true }
+urlencoding = { version = "2", optional = true }
+
+# Natively the websocket is tungstenite over rustls, which is what lets
+# the client set request headers.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# The runtime halves of `time`: real timers and a real spawner.
+tokio = { version = "1", features = ["rt", "time"], optional = true }
+tokio-tungstenite = { version = "0.16", features = [
+  "rustls-tls-webpki-roots"
+], optional = true }
+
+# In a browser it's the page's own `WebSocket`: no headers, no TLS of
+# ours to configure — and the page's own timers, since `tokio::time`
+# wants a runtime a browser can't host (see `time`).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = { version = "0.3", features = ["futures"] }
+wasm-bindgen-futures = "0.4"
+tokio-tungstenite-wasm = { version = "0.8", optional = true }
+
+[build-dependencies]
+prost-build = "0.14"

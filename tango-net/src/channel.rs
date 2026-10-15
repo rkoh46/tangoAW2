@@ -49,6 +49,13 @@ pub struct Channels {
     pub peer_dtls_fingerprint: Vec<u8>,
 }
 
+/// How a connection's packets flow: peer to peer, or through a TURN relay.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    Direct,
+    Relayed,
+}
+
 impl Channels {
     /// Build the bundle from a freshly-connected matchmaking session: split the
     /// signaling client's channel `Vec` into [control, in-match] (the spec order
@@ -65,6 +72,15 @@ impl Channels {
         } = connected;
         let [control_dc, in_match_dc] = <[_; 2]>::try_from(dcs)
             .map_err(|dcs: Vec<_>| std::io::Error::other(format!("expected 2 data channels, got {}", dcs.len())))?;
+        match Self::route_types(&peer_conn) {
+            Some((local, remote)) => log::info!(
+                "net: selected ICE pair local={local} remote={remote} -> {} (host/srflx/prflx/relay candidates in the SDPs: ours {}, theirs {})",
+                if local == "relay" || remote == "relay" { "relayed (TURN)" } else { "direct" },
+                Self::candidate_counts(peer_conn.local_description()),
+                Self::candidate_counts(peer_conn.remote_description()),
+            ),
+            None => log::info!("net: selected ICE pair unknown"),
+        }
         let is_offerer = peer_conn
             .local_description()
             .is_some_and(|d| matches!(d.sdp_type, datachannel_wrapper::SdpType::Offer));
@@ -85,6 +101,41 @@ impl Channels {
     pub fn relayed(peer_conn: &PeerConnection) -> Option<bool> {
         let (local, remote) = peer_conn.selected_candidate_pair().ok()?;
         Some(local.contains("typ relay") || remote.contains("typ relay"))
+    }
+
+    /// How the selected pair flows, or `None` when it can't be read.
+    pub fn kind(peer_conn: &PeerConnection) -> Option<Kind> {
+        Self::relayed(peer_conn).map(|r| if r { Kind::Relayed } else { Kind::Direct })
+    }
+
+    /// How many candidates of each type (host, srflx, prflx, relay) a description's SDP carries, as `h/s/p/r`.
+    fn candidate_counts(sdp: Option<datachannel_wrapper::SessionDescription>) -> String {
+        let sdp = sdp.map(|d| d.sdp).unwrap_or_default();
+        let mut n = [0usize; 4];
+        for line in sdp.lines().filter(|l| l.starts_with("a=candidate")) {
+            match line.split_whitespace().skip_while(|w| *w != "typ").nth(1) {
+                Some("host") => n[0] += 1,
+                Some("srflx") => n[1] += 1,
+                Some("prflx") => n[2] += 1,
+                Some("relay") => n[3] += 1,
+                _ => {}
+            }
+        }
+        format!("{}/{}/{}/{}", n[0], n[1], n[2], n[3])
+    }
+
+    /// The types (`host`, `srflx`, `prflx`, `relay`) of the selected ICE pair, local then remote, or `None` when
+    /// it can't be read. Never an address: for logs and the room page.
+    pub fn route_types(peer_conn: &PeerConnection) -> Option<(String, String)> {
+        let (local, remote) = peer_conn.selected_candidate_pair().ok()?;
+        let typ = |c: &str| -> String {
+            c.split_whitespace()
+                .skip_while(|w| *w != "typ")
+                .nth(1)
+                .unwrap_or("?")
+                .to_string()
+        };
+        Some((typ(&local), typ(&remote)))
     }
 }
 
@@ -166,10 +217,15 @@ impl PacketStream for DataChannelStream {
 
 /// Wrap a `DataChannel`'s two halves into the shared [`PacketSink`] /
 /// [`PacketStream`] byte-pipe both planes' transports build on.
-fn split(dc: datachannel_wrapper::DataChannel) -> (Box<dyn PacketSink>, Box<dyn PacketStream>) {
+fn split(dc: datachannel_wrapper::DataChannel, reliable: bool) -> (Box<dyn PacketSink>, Box<dyn PacketStream>) {
     let (dc_tx, dc_rx) = dc.split();
+    let sink: Box<dyn PacketSink> = Box::new(DataChannelSink { inner: dc_tx });
+    #[cfg(not(target_arch = "wasm32"))]
+    let sink = super::impair::wrap(sink, reliable);
+    #[cfg(target_arch = "wasm32")]
+    let _ = reliable;
     (
-        Box::new(DataChannelSink { inner: dc_tx }),
+        sink,
         Box::new(DataChannelStream { inner: dc_rx }),
     )
 }
@@ -180,13 +236,13 @@ fn split(dc: datachannel_wrapper::DataChannel) -> (Box<dyn PacketSink>, Box<dyn 
 /// connection that owns the channel must be kept alive separately (see
 /// `netplay::NegotiationOutput`).
 pub fn control_pair(dc: datachannel_wrapper::DataChannel) -> (control::Sender, control::Receiver) {
-    let (sink, stream) = split(dc);
+    let (sink, stream) = split(dc, true);
     (control::Sender::new(sink), control::Receiver::new(stream))
 }
 
 /// Pair a `DataChannel` into the data plane's raw-bytes [`data::Sender`] /
 /// [`data::Receiver`] — the in-match counterpart to [`control_pair`].
 pub fn data_pair(dc: datachannel_wrapper::DataChannel) -> (data::Sender, data::Receiver) {
-    let (sink, stream) = split(dc);
+    let (sink, stream) = split(dc, false);
     (data::Sender::new(sink), data::Receiver::new(stream))
 }

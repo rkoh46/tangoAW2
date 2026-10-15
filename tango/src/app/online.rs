@@ -268,6 +268,11 @@ impl App {
 
     fn online_params(&self, code: &str, password: &str) -> RoomParams {
         let (_, subtype) = mailbox::MATCH_TYPE;
+        log::info!(
+            "online: relay mode {:?} -> use_relay {:?}",
+            self.config.relay_mode,
+            self.config.relay_mode.use_relay()
+        );
         RoomParams {
             endpoint: self.config.matchmaking_endpoint.clone(),
             use_relay: self.config.relay_mode.use_relay(),
@@ -428,6 +433,16 @@ impl App {
                 )
             });
             mailbox::write_player(&mut write, slot, player);
+            if let Some(link) = view.players.get(slot).and_then(|p| p.link) {
+                use netplay::room::{LinkKind, LinkView};
+                let LinkView { kind, rtt_ms } = link;
+                let kind = match kind {
+                    Some(LinkKind::Direct) => mailbox::LINK_DIRECT,
+                    Some(LinkKind::Relayed) => mailbox::LINK_RELAY,
+                    None => 0,
+                };
+                mailbox::write_link(&mut write, slot, kind, rtt_ms.unwrap_or(0).max(rtt_ms.is_some() as u32));
+            }
         }
     }
 }

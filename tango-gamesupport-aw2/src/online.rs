@@ -84,9 +84,16 @@ const PASSWORD_LEN: u32 = STATE + 0x59;
 /// The password (up to [`PASSWORD_CHARS`] letters of [`CODE_ALPHABET`]; none is no password).
 pub const PASSWORD: u32 = STATE + 0x5A;
 /// The room's players as the app knows them ([`MAX_PLAYERS`] slots of [`PLAYER_SIZE`]): ready (1), flags
-/// ([`PRESENT`], [`HOST`], [`YOU`]), the name (zero-terminated).
+/// ([`PRESENT`], [`HOST`], [`YOU`]), the name (zero-terminated, at most [`NAME_CHARS`] letters), the round trip to
+/// the player in ms ([`LINK_RTT`], 0 not known) and how the link flows ([`LINK_KIND`]: [`LINK_DIRECT`], [`LINK_RELAY`]).
 pub const PLAYERS: u32 = STATE + 0x80;
 pub const PLAYER_SIZE: u32 = 0x10;
+pub const NAME_CHARS: usize = PLAYER_SIZE as usize - 4;
+const LINK_RTT: usize = PLAYER_SIZE as usize - 2;
+const LINK_KIND: usize = PLAYER_SIZE as usize - 1;
+/// A link's kind: not known (0), peer to peer, or through the TURN relay.
+pub const LINK_DIRECT: u8 = 1;
+pub const LINK_RELAY: u8 = 2;
 pub const MAX_PLAYERS: usize = 5;
 pub const PRESENT: u8 = 1;
 pub const HOST: u8 = 2;
@@ -252,13 +259,22 @@ pub mod mailbox {
             for (k, c) in name
                 .chars()
                 .filter(|c| c.is_ascii() && !c.is_ascii_control())
-                .take(PLAYER_SIZE as usize - 3)
+                .take(NAME_CHARS)
                 .enumerate()
             {
                 b[2 + k] = c as u8;
             }
         }
         write(PLAYERS + PLAYER_SIZE * slot as u32, &b);
+    }
+
+    /// The connection's diagnostic for one player's slot (after [`write_player`], which clears it): the round trip
+    /// in ms (0 not known) and the kind ([`LINK_DIRECT`], [`LINK_RELAY`], 0 not known).
+    pub fn write_link(write: &mut dyn FnMut(u32, &[u8]), slot: usize, kind: u8, rtt_ms: u32) {
+        write(
+            PLAYERS + PLAYER_SIZE * slot as u32 + LINK_RTT as u32,
+            &[rtt_ms.clamp(0, 255) as u8, kind],
+        );
     }
 
     /// The serial of the last request (for an app that starts watching a console already running).
@@ -641,11 +657,49 @@ fn player(core: &Core, slot: usize) -> Option<(String, bool, u8)> {
     core.raw_read_range(PLAYERS + PLAYER_SIZE * slot as u32, -1, &mut b);
     (b[1] & PRESENT != 0).then(|| {
         (
-            b[2..].iter().take_while(|&&c| c != 0).map(|&c| c as char).collect(),
+            b[2..2 + NAME_CHARS].iter().take_while(|&&c| c != 0).map(|&c| c as char).collect(),
             b[0] == 1,
             b[1],
         )
     })
+}
+
+/// A player's link diagnostic: (kind, round trip in ms).
+fn player_link(core: &Core, slot: usize) -> (u8, u8) {
+    let mut b = [0u8; PLAYER_SIZE as usize];
+    core.raw_read_range(PLAYERS + PLAYER_SIZE * slot as u32, -1, &mut b);
+    (b[LINK_KIND], b[LINK_RTT])
+}
+
+/// The words for a link in at most `avail` pixels ("direct 23ms", "relay 140ms", or shorter), or nothing when
+/// nothing is known or no form fits.
+fn link_label(core: &Core, kind: u8, rtt: u8, avail: i32) -> Option<String> {
+    if kind == 0 && rtt == 0 {
+        return None;
+    }
+    let word = match kind {
+        LINK_DIRECT => "direct",
+        LINK_RELAY => "relay",
+        _ => "",
+    };
+    let short = match kind {
+        LINK_DIRECT => "D",
+        LINK_RELAY => "R",
+        _ => "",
+    };
+    let rtt = if rtt == 255 { "255+".to_string() } else { rtt.to_string() };
+    let forms = [
+        format!("{word} {rtt}ms"),
+        format!("{word} {rtt}"),
+        format!("{short} {rtt}ms"),
+        format!("{short} {rtt}"),
+        format!("{word}"),
+        format!("{short}"),
+    ];
+    forms
+        .into_iter()
+        .map(|f| f.trim().to_string())
+        .find(|f| !f.is_empty() && text_width(core, f) <= avail)
 }
 
 /// The players in the room, and whether every one but the host is ready (the host's START).
@@ -1707,7 +1761,8 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     Some((name, ready, flags)) => {
                         let name = if name.is_empty() { "Player".to_string() } else { name };
                         let you = if flags & YOU != 0 { " (you)" } else { "" };
-                        cv.text(core, x + 16, ry, &format!("{name}{you}"), INK, SHADE);
+                        let shown = format!("{name}{you}");
+                        cv.text(core, x + 16, ry, &shown, INK, SHADE);
                         let tag = if flags & HOST != 0 {
                             if ready {
                                 "START"
@@ -1720,7 +1775,15 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                             "..."
                         };
                         let ink = if ready { BLUE } else { GRAY_INK };
-                        cv.text(core, x + w - 6 - text_width(core, tag), ry, tag, ink, SHADE);
+                        let tag_x = x + w - 6 - text_width(core, tag);
+                        cv.text(core, tag_x, ry, tag, ink, SHADE);
+                        // How this player is reached and the round trip, between the name and the tag.
+                        let (kind, rtt) = player_link(core, k);
+                        let from = x + 16 + text_width(core, &shown) + 5;
+                        if let Some(l) = link_label(core, kind, rtt, tag_x - 4 - from) {
+                            let at = tag_x - 4 - text_width(core, &l);
+                            cv.text(core, at, ry, &l, if kind == LINK_RELAY { INK } else { GRAY_INK }, SHADE);
+                        }
                     }
                     None => {
                         let t = "Open";
