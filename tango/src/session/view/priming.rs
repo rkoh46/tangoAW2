@@ -91,11 +91,10 @@ pub(super) fn priming_notice<'a>(copy: &PrimingCopy, w: f32, h: f32) -> Element<
             color: Some(if failed {
                 theme.palette().danger
             } else {
-                widgets::mix(
-                    widgets::muted_color(theme),
-                    theme.palette().primary,
-                    0.45 + 0.55 * pulse,
-                )
+                // (on a black screen: light text, breathing between grey and white)
+                let _ = theme;
+                let v = 0.72 + 0.28 * pulse;
+                iced::Color::from_rgb(v, v, v)
             }),
         });
     let mut copy_col = column![title].spacing(6).align_x(Alignment::Center);
@@ -103,14 +102,18 @@ pub(super) fn priming_notice<'a>(copy: &PrimingCopy, w: f32, h: f32) -> Element<
         text(copy.detail.clone())
             .size(TEXT_CAPTION)
             .align_x(iced::alignment::Horizontal::Center)
-            .style(widgets::muted_text_style),
+            .style(|_: &iced::Theme| iced::widget::text::Style {
+                color: Some(iced::Color::from_rgb(0.85, 0.85, 0.85)),
+            }),
     );
     if let Some(clock) = copy.clock.as_ref() {
         copy_col = copy_col.push(
             text(clock.clone())
                 .size(TEXT_CAPTION)
                 .align_x(iced::alignment::Horizontal::Center)
-                .style(widgets::muted_text_style),
+                .style(|_: &iced::Theme| iced::widget::text::Style {
+                    color: Some(iced::Color::from_rgb(0.7, 0.7, 0.7)),
+                }),
         );
     }
     if let Some(dismiss) = copy.dismiss.as_ref() {

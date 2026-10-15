@@ -233,8 +233,8 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     // ... and if the mover's cursor is on a cell it sees, the camera follows it there and the cursor shows.
     let (x, y) = mover_cell;
     let follow = x < w && y < h && seen(scratch.core(), x, y);
-    // (the window has no cursor of its own: it is hidden unless it is the mover's, over a cell the window sees)
-    scratch.core_mut().raw_write_8(CALL + 2, -1, !follow as u8);
+    // (the waiting window shows no cursor at all, neither its own nor the mover's: the camera only follows it)
+    scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
     if follow {
         cx = if x < cx { x } else if x > cx + 14 { x - 14 } else { cx }.clamp(0, (w - 15).max(0));
         cy = if y < cy { y } else if y > cy + 9 { y - 9 } else { cy }.clamp(0, (h - 10).max(0));
@@ -282,6 +282,13 @@ fn hide_cursor(core: &mut Core) {
 pub fn at_flush(core: &mut Core) {
     if core.raw_read_8(CALL + 2, -1) == 1 {
         hide_cursor(core);
+        // The info panel's backing is a window with the game's darkening (BLDCNT mode 3): it goes with the panel
+        // (as the game itself does when the panel closes), or an empty dark box stays in a lower corner.
+        if (core.raw_read_16(0x0300_30E0, -1) >> 6) & 3 == 3 {
+            for a in [0x0300_30E0, 0x0300_2020, 0x0300_2B28, 0x0300_1FFC] {
+                core.raw_write_16(a, -1, 0);
+            }
+        }
     }
     if core.raw_read_8(CALL, -1) != 1 {
         return;

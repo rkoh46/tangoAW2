@@ -100,6 +100,17 @@ pub fn set_room(names: Vec<String>, local_seat: usize) {
     tango_gamesupport_aw2::online::set_room(names, local_seat)
 }
 
+/// The room's player count, the name of a seat and this peer's seat (for the status bar).
+pub fn room_players() -> usize {
+    tango_gamesupport_aw2::online::room_players()
+}
+pub fn room_name(seat: usize) -> String {
+    tango_gamesupport_aw2::online::room_name(seat)
+}
+pub fn room_local_seat() -> usize {
+    tango_gamesupport_aw2::online::room_local_seat()
+}
+
 #[cfg(feature = "gamesupport-aw2")]
 pub fn list_debug() -> u64 {
     tango_gamesupport_aw2::online::probe::LIST_DEBUG.load(std::sync::atomic::Ordering::Relaxed)

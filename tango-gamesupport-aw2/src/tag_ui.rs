@@ -185,7 +185,7 @@ fn co_stop(core: &Core) -> Option<u32> {
     (c % 2 == 0).then_some(c / 2)
 }
 
-pub(crate) fn teams_list(core: &Core) -> Vec<u8> {
+pub fn teams_list(core: &Core) -> Vec<u8> {
     let n = core.raw_read_8(record(core) + CO_COUNT_AT, -1) as u32;
     let at = core.raw_read_32(record(core) + CO_LIST_AT, -1);
     if !(0x0200_0000..0x0400_0000).contains(&at) {
