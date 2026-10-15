@@ -38,6 +38,7 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
                 password: room_password_hash(&g.params.code, &g.params.password),
                 game_info: g.params.game_info.clone(),
                 content: g.params.content,
+                saves: Vec::new(),
             },
         )
     };

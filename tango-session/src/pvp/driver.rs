@@ -25,6 +25,20 @@ pub(super) struct BootPieces {
     pub(super) players: usize,
     pub(super) present_delay: u32,
     pub(super) disable_bgm: bool,
+    /// A suspended match being resumed: the console state to start from, in place of the boot.
+    pub(super) resume_state: Option<Vec<u8>>,
+}
+
+/// What a room's match needs to be kept when a disconnect cuts it short.
+pub(super) struct SuspendCtx {
+    pub(super) match_id: u64,
+    pub(super) players: Vec<String>,
+    pub(super) seat: usize,
+    pub(super) match_ts: u64,
+    pub(super) match_type: (u8, u8),
+    pub(super) save: Vec<u8>,
+    pub(super) sim_version: u32,
+    pub(super) sink: Arc<dyn Fn(tango_match::SuspendedMatch) + Send + Sync>,
 }
 
 pub(super) struct DriveContext {
@@ -68,6 +82,10 @@ pub(super) struct DriveContext {
     /// token, raised beside it by
     /// [`request_close`](crate::Session::request_close).
     pub(super) boot_cancel: Arc<AtomicBool>,
+    /// A room's host seat (the guests' inputs are joined around it).
+    pub(super) host_seat: usize,
+    /// A room: how to keep the match if a disconnect ends it.
+    pub(super) suspend: Option<SuspendCtx>,
 }
 
 impl DriveContext {
@@ -82,7 +100,7 @@ impl DriveContext {
         // The game's registration starts the match on whatever engine it
         // runs; this session never learns which.
         let local = pieces.pvp[pieces.local_player.min(1)];
-        let match_ = local.start(tango_match::StartConfig {
+        let config = tango_match::StartConfig {
             roms: [&pieces.roms[0], &pieces.roms[1]],
             saves: [Some(&pieces.saves[0]), Some(&pieces.saves[1])],
             rng_seed: pieces.rng_seed,
@@ -101,7 +119,11 @@ impl DriveContext {
             // walk, so a close has to reach into it — otherwise the
             // host's drive-thread join waits the walk out.
             cancel: Some(&self.boot_cancel),
-        })?;
+        };
+        let match_ = match pieces.resume_state.as_deref() {
+            Some(state) => local.start_resumed(config, state)?,
+            None => local.start(config)?,
+        };
 
         // Our half of the ready gate: the pair is at its link battle.
         // Release the announcer so the peer learns it — priming ran at
@@ -110,7 +132,7 @@ impl DriveContext {
         self.local_primed.store(true, Ordering::Release);
         self.announce_primed.notify_one();
 
-        let agg = (self.room_host && pieces.players > 2).then(|| HostAgg::new(pieces.players - 1));
+        let agg = (self.room_host && pieces.players > 2).then(|| HostAgg::new(pieces.players, self.host_seat));
         Ok(PvpDriver {
             ctx: self,
             expected_fps,
@@ -274,9 +296,12 @@ pub struct PvpDriver {
 }
 
 /// A room's host joins its guests' inputs: its own engine hears them as one input (the guests' joypad words in
-/// seat order), and each guest is sent one for everyone else (the host's, then the other guests').
+/// seat order), and each guest is sent one for everyone else (the other seats' in seat order, the host's among them).
 struct HostAgg {
     guests: usize,
+    /// The host's seat, and the guests' (ascending, as the links are).
+    host_seat: usize,
+    guest_seats: Vec<usize>,
     /// What each guest's link has brought, in tick order.
     queues: Vec<std::collections::VecDeque<tango_net::data::Input>>,
     /// Ticks every guest has an input for: the joypad words, and the guests' mean time-sync lead.
@@ -286,9 +311,13 @@ struct HostAgg {
 }
 
 impl HostAgg {
-    fn new(guests: usize) -> Self {
+    fn new(players: usize, host_seat: usize) -> Self {
+        let guest_seats: Vec<usize> = (0..players).filter(|&s| s != host_seat).collect();
+        let guests = guest_seats.len();
         HostAgg {
             guests,
+            host_seat,
+            guest_seats,
             queues: vec![Default::default(); guests],
             rows: Default::default(),
             own: Default::default(),
@@ -325,9 +354,15 @@ impl HostAgg {
         while !self.rows.is_empty() && !self.own.is_empty() {
             let (words, _) = self.rows.pop_front().unwrap();
             let (own, adv) = self.own.pop_front().unwrap();
+            // Every seat's word, then each guest's are the others' in seat order.
+            let mut by_seat = vec![0u16; self.guests + 1];
+            by_seat[self.host_seat] = own.keys as u16;
+            for (k, &seat) in self.guest_seats.iter().enumerate() {
+                by_seat[seat] = words.get(k).copied().unwrap_or(0);
+            }
             for (g, sender) in senders.iter_mut().enumerate() {
-                let mut seats: Vec<u16> = vec![own.keys as u16];
-                seats.extend(words.iter().enumerate().filter(|&(k, _)| k != g).map(|(_, &w)| w));
+                let me = self.guest_seats[g];
+                let seats: Vec<u16> = by_seat.iter().enumerate().filter(|&(s, _)| s != me).map(|(_, &w)| w).collect();
                 let get = |k: usize| seats.get(k).copied().unwrap_or(0);
                 sender.send(&tango_net::data::Input {
                     joyflags: get(0),
@@ -604,6 +639,7 @@ impl PvpDriver {
     /// [`crate::Drive::finish`], which is why a host must wind a driver
     /// down rather than drop it.
     pub fn finish(mut self) {
+        self.suspend_if_cut_short();
         // Finalize (write the EOR sentinel) only if the match completed
         // — same policy as the trap engine, so an aborted match leaves
         // a truncated-but-parseable recording.
@@ -629,6 +665,52 @@ impl PvpDriver {
 }
 
 impl PvpDriver {
+    /// A room's match that a disconnect cut short is kept for resuming: its newest settled checkpoints go to the
+    /// app's sink (a match not in a battle, or not yet checkpointed, is not worth keeping).
+    fn suspend_if_cut_short(&mut self) {
+        let Some(ctx) = self.ctx.suspend.as_ref() else { return };
+        if self.ctx.completed.load(Ordering::Acquire)
+            || self.ctx.end.aborted.load(Ordering::Acquire)
+            || !self.ctx.end.remote_disconnected.load(Ordering::Acquire)
+        {
+            return;
+        }
+        let mut checkpoints: Vec<tango_match::Checkpoint> = self
+            .match_
+            .checkpoints()
+            .into_iter()
+            .filter(|c| c.image.info.is_some())
+            .collect();
+        if checkpoints.len() > tango_match::suspend::CHECKPOINTS_STORED {
+            checkpoints.drain(..checkpoints.len() - tango_match::suspend::CHECKPOINTS_STORED);
+        }
+        if checkpoints.is_empty() {
+            log::info!("pvp: the match ended by a disconnect before a battle checkpoint; nothing to keep");
+            return;
+        }
+        let disconnected = self.ctx.end.dropped.lock().unwrap().clone().unwrap_or_default();
+        log::info!(
+            "pvp: match {:016x} cut short by {disconnected:?}: keeping checkpoints {:?}",
+            ctx.match_id,
+            checkpoints.iter().map(|c| (c.tick, c.image.digest)).collect::<Vec<_>>()
+        );
+        (ctx.sink)(tango_match::SuspendedMatch {
+            version: tango_match::suspend::SUSPENDED_VERSION,
+            match_id: ctx.match_id,
+            sim_version: ctx.sim_version,
+            players: ctx.players.clone(),
+            seat: ctx.seat as u8,
+            disconnected,
+            saved_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs()),
+            match_ts: ctx.match_ts,
+            match_type: ctx.match_type,
+            save: ctx.save.clone(),
+            checkpoints,
+        });
+    }
+
     /// One input in from a link: the remote's (two players), the host's one for everyone else (a room's guest), or
     /// a guest's (a room's host, which joins them).
     fn ingest(&mut self, link: usize, input: tango_net::data::Input) {

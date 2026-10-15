@@ -4,7 +4,7 @@
 //! memory. Without the game compiled in, nothing is ever asked.
 
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, Request};
+pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, Request, SavedRow};
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, MAX_PLAYERS, ONLINE_MATCH, UNRANKED_MATCH, UNRANKED_PICK_GUEST, YOU};
 
@@ -34,6 +34,24 @@ pub fn level(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
 #[cfg(feature = "gamesupport-aw2")]
 pub fn write_status(write: &mut dyn FnMut(u32, &[u8]), status: Status, message: &str) {
     tango_gamesupport_aw2::online::mailbox::write_status(write, status, message)
+}
+
+/// The list of suspended matches the RESUME page shows.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn write_saved(write: &mut dyn FnMut(u32, &[u8]), rows: &[SavedRow]) {
+    tango_gamesupport_aw2::online::mailbox::write_saved(write, rows)
+}
+
+/// How many saved matches the game is showing now.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn saved_count(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
+    tango_gamesupport_aw2::online::mailbox::saved_count(read)
+}
+
+/// The note on the LOBBY menu when the game comes back from a match (longer than a status message).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn write_note(write: &mut dyn FnMut(u32, &[u8]), text: &str) {
+    tango_gamesupport_aw2::online::mailbox::write_note(write, text)
 }
 
 #[cfg(feature = "gamesupport-aw2")]

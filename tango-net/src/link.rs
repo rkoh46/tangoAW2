@@ -252,6 +252,10 @@ pub struct Link {
     /// `Primed` lands. The match's ready gate reads it from the drive
     /// loop, so it's an atomic rather than a channel.
     peer_primed: Arc<AtomicBool>,
+    /// A room's mid-match notices from the peer ([`tango_net_protocol::control::RoomMsg::Hold`] and the like), for
+    /// the session's supervisor, with the wake that says one is there.
+    notices: std::sync::Mutex<std::collections::VecDeque<tango_net_protocol::control::RoomMsg>>,
+    notice_wake: Arc<tokio::sync::Notify>,
     /// Rebuild recipe. Mutable so a successful matchmaking reconnect can
     /// refresh the rendezvous `session_id` for the next drop; `rng_seed` is
     /// the unchanging half of that derivation.
@@ -292,6 +296,8 @@ impl Link {
             control_receiver: tokio::sync::Mutex::new(control_receiver),
             match_receiver: std::sync::Mutex::new(Some(parts.in_match_receiver)),
             peer_primed: Arc::new(AtomicBool::new(false)),
+            notices: Default::default(),
+            notice_wake: Arc::new(tokio::sync::Notify::new()),
             recipe: std::sync::Mutex::new(parts.recipe),
             rng_seed: parts.rng_seed,
             // 5 marks at roughly one ack-confirmed seq per frame ≈ a 5 s
@@ -384,6 +390,15 @@ impl Link {
                 Ok(tango_net_protocol::control::Packet::Primed(_)) => {
                     self.peer_primed.store(true, Ordering::Release);
                 }
+                // A room's host tells us who the match is waiting for (or has given up on): keep it for the
+                // supervisor and go on watching.
+                Ok(tango_net_protocol::control::Packet::Room(msg)) => {
+                    use tango_net_protocol::control::RoomMsg;
+                    if matches!(msg, RoomMsg::Hold(_) | RoomMsg::Unhold { .. } | RoomMsg::GiveUp { .. }) {
+                        self.notices.lock().unwrap().push_back(msg);
+                        self.notice_wake.notify_one();
+                    }
+                }
                 // Any other packet — nothing else legitimately flows here
                 // mid-match, but ignore it and keep watching.
                 Ok(_) => {}
@@ -394,6 +409,22 @@ impl Link {
                 Err(_) => return ControlEnd::Eof,
             }
         }
+    }
+
+    /// The room notices that have arrived since the last call, oldest first.
+    pub fn take_notices(&self) -> Vec<tango_net_protocol::control::RoomMsg> {
+        self.notices.lock().unwrap().drain(..).collect()
+    }
+
+    /// Woken when a notice arrives ([`take_notices`](Self::take_notices)).
+    pub fn notice_wake(&self) -> Arc<tokio::sync::Notify> {
+        self.notice_wake.clone()
+    }
+
+    /// Say something to the peer on the reliable control channel (a room's host to its guests mid-match).
+    pub async fn send_room(&self, msg: tango_net_protocol::control::RoomMsg) -> std::io::Result<()> {
+        let mut sender = self.control_sender.lock().await;
+        sender.send_packet(&tango_net_protocol::control::Packet::Room(msg)).await
     }
 
     /// The peer-primed latch, for the match's ready gate. Survives a

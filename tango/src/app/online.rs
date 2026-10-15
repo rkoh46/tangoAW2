@@ -36,6 +36,26 @@ pub struct Flow {
     back_message: Option<String>,
     /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
     last_log: Option<std::time::Instant>,
+    /// The matches cut short that are saved (the RESUME page's list, newest first), read again when the page
+    /// is opened and when one is deleted or saved.
+    saved: Vec<tango_match::SuspendedMatch>,
+    saved_dirty: bool,
+    in_saved_menu: bool,
+    /// The saved match this session resumed (deleted when it ends the way a match does).
+    resumed: Option<u64>,
+    /// Who disconnected, as the session last said (it is gone when the match ends).
+    dropped: Option<String>,
+    /// Set by the session's sink when it has kept the match.
+    kept: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+fn row_of(m: &tango_match::SuspendedMatch) -> mailbox::SavedRow {
+    let info = m.info();
+    mailbox::SavedRow {
+        players: m.players.join(", "),
+        map: info.map,
+        tail: format!("Day {}  {}", info.day, crate::suspended::date(m.saved_at)),
+    }
 }
 
 impl App {
@@ -47,19 +67,40 @@ impl App {
             self.online.in_match = false;
             self.online.room = None;
             self.online.seen = None;
+            let dropped = self.online.dropped.take();
+            let kept = self.online.kept.swap(false, std::sync::atomic::Ordering::AcqRel);
+            let resumed = self.online.resumed.take();
             let how = match self.session.results.take() {
-                Some(r) if r.end == session::results::MatchEnd::Disconnected => "A player left.",
-                Some(_) => "The match is over.",
-                None => "You left the match.",
+                Some(r) if r.end == session::results::MatchEnd::Disconnected => {
+                    let who = r.dropped.clone().or(dropped).filter(|n| !n.is_empty()).unwrap_or_else(|| "A player".to_string());
+                    if kept {
+                        self.online.saved_dirty = true;
+                        format!("{who} disconnected - match saved. Resume it from ONLINE > RESUME")
+                    } else {
+                        format!("{who} disconnected.")
+                    }
+                }
+                Some(_) => {
+                    // (a resumed match that was played to its end is done with)
+                    if let Some(id) = resumed {
+                        crate::suspended::delete(&self.config.data_path, id);
+                        self.online.saved_dirty = true;
+                    }
+                    "The match is over.".to_string()
+                }
+                None => "You left the match.".to_string(),
             };
             if std::mem::take(&mut self.online.unranked_match) {
                 log::info!("unranked: the match ended ({how})");
             }
-            self.online.back_message = Some(how.to_string());
+            self.online.back_message = Some(how);
             mailbox::boot_to_lobby();
             return self.update_play(tabs::play::Message::PlayOfflinePressed);
         }
-        if self.session.active_as::<session::pvp::PvpSession>().is_some() {
+        if let Some(pvp) = self.session.active_as::<session::pvp::PvpSession>() {
+            if let Some(name) = pvp.dropped_player() {
+                self.online.dropped = Some(name);
+            }
             if std::env::var("TANGOAW2_ONLINE_LOG").is_ok_and(|v| v == "1")
                 && self.online.last_log.is_none_or(|t| t.elapsed().as_secs() >= 1)
             {
@@ -91,7 +132,13 @@ impl App {
                 tango_library::online::probe_bits()
             );
         }
-        if mailbox::level(&mut read) == 0 && self.online.room.is_none() && self.online.back_message.is_none() {
+        let level = mailbox::level(&mut read);
+        self.online_refresh_saved(level);
+        let solo = self.session.active_as::<session::singleplayer::SinglePlayerSession>().expect("checked above");
+        let mut read = |a: u32, b: &mut [u8]| {
+            solo.peek(a, b);
+        };
+        if level == 0 && self.online.room.is_none() && self.online.back_message.is_none() {
             // (nothing asked; keep up with the serial so an old request is never taken for a new one)
             self.online.seen = Some(mailbox::serial(&mut read));
             return iced::Task::none();
@@ -114,6 +161,23 @@ impl App {
         }
         self.online_write_back();
         task
+    }
+
+    /// The RESUME page's list, written into the console when the page (or the LOBBY menu in front of it) is up.
+    fn online_refresh_saved(&mut self, level: u8) {
+        let in_menu = matches!(level, 1 | 8);
+        if in_menu && (self.online.saved_dirty || !self.online.in_saved_menu) {
+            self.online.saved = crate::suspended::list(&self.config.data_path);
+            self.online.saved_dirty = false;
+            let rows: Vec<mailbox::SavedRow> = self.online.saved.iter().map(row_of).collect();
+            if let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() {
+                let mut write = |a: u32, b: &[u8]| {
+                    solo.poke(a, b);
+                };
+                mailbox::write_saved(&mut write, &rows);
+            }
+        }
+        self.online.in_saved_menu = in_menu;
     }
 
     fn online_request(&mut self, request: Request) {
@@ -139,6 +203,44 @@ impl App {
                 params.match_type.1 |= mailbox::UNRANKED_MATCH;
                 self.online.back_message = None;
                 self.online.room = Some(Room::unranked(params));
+            }
+            Request::Resume { index } => {
+                let Some(m) = self.online.saved.get(index).cloned() else {
+                    log::warn!("online: no saved match at {index}");
+                    return;
+                };
+                let seed = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(1, |d| d.as_nanos() as u64);
+                let code = std::env::var("TANGOAW2_ONLINE_CODE").unwrap_or_else(|_| mailbox::new_code(seed));
+                let mut params = self.online_params(&code, "");
+                if let Some(c) = m.newest() {
+                    let mut players = m.players.clone();
+                    // (my seat is mine whatever my gamertag was then)
+                    if let Some(me) = players.get_mut(m.seat as usize) {
+                        *me = params.nickname.clone();
+                    }
+                    params.resume = Some(netplay::room::ResumeParams {
+                        match_id: m.match_id,
+                        players,
+                        seat: m.seat as usize,
+                        tick: c.tick,
+                        digest: c.image.digest,
+                        state: c.image.state.clone(),
+                        match_ts: m.match_ts,
+                        match_type: m.match_type,
+                        save: m.save.clone(),
+                    });
+                    params.match_type = m.match_type;
+                    self.online.back_message = None;
+                    self.online.room = Some(Room::host(params));
+                }
+            }
+            Request::DeleteSaved { index } => {
+                if let Some(m) = self.online.saved.get(index) {
+                    crate::suspended::delete(&self.config.data_path, m.match_id);
+                }
+                self.online.saved_dirty = true;
             }
             Request::Leave => {
                 if let Some(room) = self.online.room.take() {
@@ -176,6 +278,8 @@ impl App {
             match_type: (0, subtype),
             save: self.loaded.as_ref().map(|l| l.snapshot_sram()).unwrap_or_default(),
             content: tango_library::shared_content_flag() != 0 && std::env::var("TANGOAW2_NO_CONTENT").is_err(),
+            saves: self.online.saved.iter().map(|m| m.match_id).collect(),
+            resume: None,
         }
     }
 
@@ -193,6 +297,9 @@ impl App {
         let is_host = m.is_host;
         self.online.unranked_match = m.match_type.1 & mailbox::UNRANKED_MATCH != 0;
         let seat = m.seat;
+        let host_seat = m.host_seat;
+        let match_id = m.match_id;
+        let resume_state = m.resume_state.clone();
         let players = m.players.clone();
         // Who is who, for the game's pictures (gamertags next to the armies).
         tango_library::online::set_room(players.clone(), seat);
@@ -216,11 +323,26 @@ impl App {
         let local = settings(self.online_nickname(), is_host);
         let remote = settings(other, !is_host);
         let (pre_match, extra_links) = m.into_pre_match(local, remote);
+        let kept = self.online.kept.clone();
+        let data_path = self.config.data_path.clone();
+        let sink: std::sync::Arc<dyn Fn(tango_match::SuspendedMatch) + Send + Sync> =
+            std::sync::Arc::new(move |m: tango_match::SuspendedMatch| match crate::suspended::save(&data_path, &m) {
+                Ok(path) => {
+                    log::info!("online: match {:016x} saved to {}", m.match_id, path.display());
+                    kept.store(true, std::sync::atomic::Ordering::Release);
+                }
+                Err(e) => log::error!("online: could not save the suspended match: {e}"),
+            });
+        self.online.resumed = resume_state.is_some().then_some(match_id);
         let room_args = session::pvp::RoomArgs {
             players,
             seat,
             is_host,
             extra_links,
+            host_seat,
+            match_id,
+            resume_state,
+            suspend_sink: Some(sink),
         };
         let scanners = self.scanners.clone();
         let config = self.config.clone();
@@ -258,7 +380,8 @@ impl App {
         };
         let Some(room) = self.online.room.as_ref() else {
             if let Some(m) = self.online.back_message.take() {
-                mailbox::write_status(&mut write, Status::Back, &m);
+                mailbox::write_note(&mut write, &m);
+                mailbox::write_status(&mut write, Status::Back, "");
             }
             return;
         };
@@ -267,12 +390,18 @@ impl App {
             mailbox::write_room(&mut write, &room.code());
         }
         let (status, message) = match view.phase {
+            RoomPhase::Connecting if view.resuming && !view.waiting_for.is_empty() => {
+                (Status::Waiting, format!("Waiting for {}", view.waiting_for.join(", ")))
+            }
             RoomPhase::Connecting => (
                 if room.is_host() { Status::Waiting } else { Status::Connecting },
                 view.message.clone(),
             ),
             RoomPhase::Open | RoomPhase::Starting | RoomPhase::Ready => {
-                if view.players.len() >= 2 && view.joined {
+                if view.resuming && !view.waiting_for.is_empty() {
+                    // (a saved match: it starts when all of its players are in)
+                    (Status::Waiting, format!("Waiting for {}", view.waiting_for.join(", ")))
+                } else if view.players.len() >= 2 && view.joined {
                     let other = view
                         .players
                         .iter()
