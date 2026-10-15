@@ -32,19 +32,17 @@ const CURRENT_PLAYER: u32 = 0x0300_33EC;
 /// The army whose picture `seat` gets: its first army still playing after the current one in turn order, else any.
 fn viewer_army(core: &Core, seat: usize) -> Option<u8> {
     let current = crate::pvp::current_army(core) as usize;
-    let armies = crate::tag_ui::armies(core) as usize;
-    let players = crate::online::room_players();
+    let armies = core.raw_read_8(0x0201_7C58, -1) as usize;
     let alive = |a: usize| a <= armies;
-    (1..=5)
-        .map(|k| (current + k - 1) % 5 + 1)
-        .find(|&a| alive(a) && crate::pvp::seat_of_n(a as u8, players) == seat)
-        .map(|a| a as u8)
+    (1..=5).map(|k| (current + k - 1) % 5 + 1).find(|&a| alive(a) && crate::pvp::seat_of_n(a as u8, crate::online::room_players()) == seat).map(|a| a as u8)
 }
 
 const FOG: u32 = 0x0300_3FCD;
 const MAIN_LOOP: u32 = 0x0300_0000;
 /// The main-loop callback while the map is on screen and nothing else (no battle scene, no full-screen page).
 const MAP_LOOP: u32 = 0x0802_2049;
+/// The main-loop callback while the full-screen CO page is up.
+const CO_PAGE_LOOP: u32 = 0x0804_3591;
 /// gMap: size (halfwords), scroll in pixels at +4/+6 (the refresh copies them to +8/+0xA), row offsets at +0x417A,
 /// terrain classes at +0x1432, the displayed vision plane at +0x234A.
 const MAP: u32 = 0x0201_E450;
@@ -52,6 +50,8 @@ const MAP: u32 = 0x0201_E450;
 const CURSOR: u32 = 0x0300_33E4;
 const CURSOR_PX: u32 = 0x0300_33E0;
 const KEY_B: u32 = 1 << 1;
+/// The map menu's state: 5 once an item was chosen.
+const MAP_MENU_STATE: u32 = 0x0300_14E2;
 
 fn cell(core: &Core, x: i32, y: i32) -> u32 {
     core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32 + x as u32
@@ -83,10 +83,11 @@ fn anchor(core: &Core, army: u8) -> (i32, i32) {
 /// Whether the map's UI has anything running: a selected unit, a menu, a panel (the map's procs in IWRAM and in an
 /// EWRAM pool, two script pointers and a Thumb function each; none while the map waits for the player), apart from
 /// the two background ones.
-fn ui_open(core: &Core) -> bool {
+fn procs(core: &Core) -> Vec<u32> {
     const AREAS: [(u32, u32); 2] = [(0x0300_0C00, 0x1300), (0x0200_C000, 0x2000)];
     const EVENT_SLOTS: std::ops::Range<u32> = 0x0200_C510..0x0200_C528 + 10 * 0x18;
     const BACKGROUND: [u32; 2] = [0x0803_4F8D, 0x0800_3891];
+    let mut out = Vec::new();
     let mut buf = vec![0u8; 0x2000];
     for (base, len) in AREAS {
         core.raw_read_range(base, -1, &mut buf[..len as usize]);
@@ -98,11 +99,58 @@ fn ui_open(core: &Core) -> bool {
             let (s0, s1, f) = (word(i), word(i + 4), word(i + 8));
             let script = |v: u32| (0x0840_0000..0x0870_0000).contains(&v);
             if script(s0) && script(s1) && (0x0800_0001..0x0810_0000).contains(&f) && f & 1 == 1 && !BACKGROUND.contains(&f) {
-                return true;
+                out.push(f);
             }
         }
     }
-    false
+    out
+}
+
+fn ui_open(core: &Core) -> bool {
+    !procs(core).is_empty()
+}
+
+/// The procs of the mover's own UI, which B closes: the selection (`0x080228D9`), a unit picked up and walking
+/// (`0x080363D1`), the command menu (`0x08035E25`), the menus' frame (`0x08019D0D`, `0x08019DED`), the build menu
+/// (`0x0802DA19`, `0x0803A441`).
+const UI_PROCS: [u32; 7] = [0x0802_28D9, 0x0803_63D1, 0x0803_5E25, 0x0801_9D0D, 0x0801_9DED, 0x0802_DA19, 0x0803_A441];
+
+/// What the shared console shows, for the waiting windows.
+#[derive(PartialEq, Eq, Debug)]
+pub enum Phase {
+    /// The battle map, with nothing on it or only the mover's own UI: the waiting window is made on a scratch console.
+    Map,
+    /// The "Next turn" hand-off screen (a map-menu item chosen and nothing running): the same picture for everybody.
+    HandOff,
+    /// Anything else running on the map (the turn's banners, a CO Power, a battle, an attack target being chosen):
+    /// with fog the waiting window keeps its last picture, without it shows the console's.
+    Busy,
+    /// The mover's full-screen CO page: never shown; the waiting window keeps its last picture.
+    Page,
+}
+
+pub fn phase(core: &Core) -> Phase {
+    match core.raw_read_32(MAIN_LOOP, -1) {
+        MAP_LOOP => {}
+        CO_PAGE_LOOP => return Phase::Page,
+        _ => return Phase::Busy,
+    }
+    let running = procs(core);
+    // (End's place in the map menu is not always the same, so the hand-off is also told by its look: a map-menu item
+    // chosen, nothing running, and the map's window (WIN0, always on while the map shows) off)
+    let window_off = core.raw_read_16(0x0400_0000, -1) & 0x2000 == 0;
+    if running.is_empty() && (crate::pvp::turn_ended(core) || (core.raw_read_8(MAP_MENU_STATE, -1) == 5 && window_off)) {
+        return Phase::HandOff;
+    }
+    if running.iter().all(|f| UI_PROCS.contains(f)) {
+        Phase::Map
+    } else {
+        Phase::Busy
+    }
+}
+
+pub fn fog(core: &Core) -> bool {
+    core.raw_read_8(FOG, -1) != 0
 }
 
 type Scratch<'a> = &'a mut dyn tango_backend_mgba::Scratch;
@@ -141,8 +189,8 @@ pub fn view(scratch: Scratch, seat: usize) -> bool {
 
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let on_map = |s: &dyn tango_backend_mgba::Scratch| s.core().raw_read_32(MAIN_LOOP, -1) == MAP_LOOP;
-    if !on_map(scratch) {
-        return Err("not the map loop");
+    if phase(scratch.core()) != Phase::Map {
+        return Err("not the plain map");
     }
     let fog = scratch.core().raw_read_8(FOG, -1) != 0;
     let mover_cell = (scratch.core().raw_read_16(CURSOR, -1) as i32, scratch.core().raw_read_16(CURSOR + 2, -1) as i32);
