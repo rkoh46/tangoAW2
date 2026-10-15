@@ -204,7 +204,8 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         return Err("left the map loop");
     }
     if !fog {
-        // (the turn as played, but the mover's menus closed)
+        // (the turn as played, but the mover's menus closed and no cursor)
+        scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
         return run(scratch, &[0]);
     }
     let (w, h) = size(scratch.core());
