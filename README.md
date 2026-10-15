@@ -57,17 +57,10 @@ Mode pick **ONLINE → LOBBY**.
   MAP ends the match and takes you both back to the LOBBY.
 - UNRANKED (random opponents) and STATS are coming.
 
-**Advanced** (the **Link code** button next to Play):
+There is no link code to type any more: the lobby's rooms are the way in.
 
-- **Link code:** both type the same made-up code (say `sturm-4812`) on the
-  Play tab. Works through most home routers with no setup.
-- **Direct:** one player types `/host`, the other `/connect <their IP>`
-  (UDP port 24680 must be reachable: same network, a VPN such as
-  Tailscale, or a forwarded port).
-
-Both press Ready; the game starts from power-on for both. Go to
-**Versus → New**, pick a map, and on the **Teams** screen set army 2 to
-**2P**. Player 1 moves armies 1, 3 and 5; player 2 moves armies 2 and 4.
+At SELECT MAP the host picks a map; each player picks their own army's
+CO and colour on the **Teams** screen.
 
 On the map only the moving army's player can press anything; menus are
 shared. With fog on, the waiting player's screen is covered during the

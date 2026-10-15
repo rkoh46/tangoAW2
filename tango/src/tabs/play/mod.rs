@@ -38,9 +38,6 @@ pub enum Message {
     SaveEditor(std::sync::Arc<dyn tango_gamesupport::SaveEditorMessage>),
 
     LinkCodeChanged(String),
-    /// tangoAW2: show or hide the link-code strip (the advanced way into a
-    /// match; Play and the in-game lobby are the usual one).
-    ToggleAdvanced,
     /// Copy plain text to the clipboard — the lobby's copy-link-code
     /// button. Carries the real code even when streamer mode masks it
     /// on screen.
@@ -101,8 +98,6 @@ pub enum Message {
 
 pub struct State {
     link_code: String,
-    /// The link-code input and Fight are shown (see [`Message::ToggleAdvanced`]).
-    advanced: bool,
     /// A link code Fight auto-generated for an empty input, parked here
     /// instead of `link_code` while the lobby is up: the outgoing strip
     /// renders for the first half of the band morph, so writing the input
@@ -136,7 +131,6 @@ impl Default for State {
     fn default() -> Self {
         Self {
             link_code: String::new(),
-            advanced: false,
             pending_generated_code: None,
             save_action: SaveAction::None,
             save_body_enter: crate::ui::anim::Enter::default(),
@@ -309,10 +303,6 @@ impl State {
                 Some(Effect::CopyText(s))
             }
             Message::PlayOfflinePressed => Some(Effect::StartSinglePlayer),
-            Message::ToggleAdvanced => {
-                self.advanced = !self.advanced;
-                None
-            }
             Message::FightPressed => {
                 // An empty bar means "just get me a lobby": generate a
                 // fresh random adjective-word-noun code and connect with
@@ -700,55 +690,12 @@ impl State {
     fn bottom_strip<'a>(
         &'a self,
         lang: &'a LanguageIdentifier,
-        streamer_mode: bool,
+        _streamer_mode: bool,
         patch_ready: bool,
         playable: bool,
     ) -> Element<'a, Message> {
         const BOTTOM_SIZE: f32 = 15.0;
-        const BOTTOM_PAD: [f32; 2] = [10.0, 16.0];
         const BOTTOM_CTA_PAD: [f32; 2] = [10.0, 22.0];
-        let trimmed = self.link_code.trim();
-        let can_submit = patch_ready && (trimmed.is_empty() || crate::netplay::LinkIdent::parse(trimmed).is_some());
-        let fight_button: Element<'a, Message> = {
-            // Same chrome as the lobby's Ready button — both are
-            // "commit to a match" CTAs. ready_button_style for
-            // ReadyPalette::Idle falls back to neutral when the
-            // button is disabled, so the empty-link-code case
-            // renders as a plain greyed-out pill without a
-            // separate branch here.
-            let label = row![
-                Icon::Swords.widget().size(BOTTOM_SIZE),
-                text(t!(lang, "play-fight")).size(BOTTOM_SIZE),
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center);
-            let mut btn = button(label)
-                .padding(BOTTOM_CTA_PAD)
-                .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
-                .style(|theme: &iced::Theme, status| ready_button_style(theme, status, ReadyPalette::Idle));
-            if can_submit {
-                btn = btn.on_press(Message::FightPressed);
-            }
-            btn.into()
-        };
-        // Link-code input fills all the slack to the left of the
-        // Fight CTA. text_input doesn't expose a `.height()` method,
-        // so we wrap it in a fixed-height container to match the
-        // surrounding controls.
-        let link_input: Element<'a, Message> = container(
-            text_input(&t!(lang, "play-link-code"), &self.link_code)
-                .secure(streamer_mode)
-                .on_input(Message::LinkCodeChanged)
-                .on_submit(Message::FightPressed)
-                .size(BOTTOM_SIZE)
-                .padding(BOTTOM_PAD)
-                .width(Length::Fill)
-                .style(widgets::chunky_text_input),
-        )
-        .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
-        .width(Length::Fill)
-        .into();
-
         // Offline: the same single-player session the save view's Play
         // button starts, offered here so it never depends on a save
         // editor or a connection.
@@ -763,7 +710,7 @@ impl State {
             let mut btn = button(label)
                 .padding(BOTTOM_CTA_PAD)
                 .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
-                .width(if self.advanced { Length::Shrink } else { Length::Fill })
+                .width(Length::Fill)
                 .style(|theme: &iced::Theme, status| ready_button_style(theme, status, ReadyPalette::Idle));
             if playable && patch_ready {
                 btn = btn.on_press(Message::PlayOfflinePressed);
@@ -776,34 +723,8 @@ impl State {
             .into()
         };
 
-        let advanced_button: Element<'a, Message> = iced::widget::tooltip(
-            button(
-                row![
-                    Icon::Link.widget().size(BOTTOM_SIZE),
-                    text(t!(lang, "play-advanced")).size(BOTTOM_SIZE),
-                ]
-                .spacing(8)
-                .align_y(Alignment::Center),
-            )
-            .padding(BOTTOM_PAD)
-            .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
-            .style(|theme: &iced::Theme, status| {
-                if tango_ui::style::is_advance_wars(theme) {
-                    widgets::aw_cream_button(status)
-                } else {
-                    ready_button_style(theme, status, ReadyPalette::Idle)
-                }
-            })
-            .on_press(Message::ToggleAdvanced),
-            text(t!(lang, "play-advanced-tooltip")).size(TEXT_CAPTION),
-            iced::widget::tooltip::Position::Top,
-        )
-        .into();
-        let strip = if self.advanced {
-            row![offline_button, advanced_button, link_input, fight_button]
-        } else {
-            row![offline_button, advanced_button]
-        };
+        // (the link code and its Fight button have no place here: online play is in the game)
+        let strip = row![offline_button];
         container(strip.spacing(10).align_y(Alignment::Center).padding([10, 8]))
         .width(Fill)
         .style(widgets::hud_bar)

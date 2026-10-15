@@ -4145,8 +4145,9 @@ Tests: `save_versus_suspend_keeps_ex_machina_stun`,
 
 ## Online from inside the game (`online.rs`, `online_menu.rs`, `online_art.rs`; app: `tango/src/app/online.rs`)
 
-The app's main button is **Play** (the link code and Fight are behind its
-**Link code** button). Online play starts in the game, played alone:
+The app's main screen is just **Play** (the link-code and direct-connect
+strip is gone from the UI; `TANGOAW2_AUTOSTART=link:...` still starts one for
+tests). Online play starts in the game, played alone:
 
 - **Select Mode.** LINK (item 4) reads ONLINE, help "Play online with
   friends.": its label pointers (`0x08616AC0 + 8 * 4`) point at labels set
