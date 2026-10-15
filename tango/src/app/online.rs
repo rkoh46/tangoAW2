@@ -40,6 +40,8 @@ pub struct Flow {
     browse: Option<(netplay::browse::Browse, std::time::Instant)>,
     /// The lobbies in the order they were first seen (so the list does not shuffle at every refresh).
     browse_order: Vec<String>,
+    /// What was last logged of the list.
+    browse_logged: Vec<String>,
     /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
     last_log: Option<std::time::Instant>,
     /// The matches cut short that are saved (the RESUME page's list, newest first), read again when the page
@@ -200,6 +202,18 @@ impl App {
             }
             return;
         }
+        // The game was left (closed, or the player went to another page of the app) while the room was open: nobody
+        // is there to start it, so it is closed and withdrawn rather than listed for as long as the app lives.
+        if !self.online.building
+            && self.session.active_as::<session::singleplayer::SinglePlayerSession>().is_none()
+        {
+            if let Some(room) = self.online.room.take() {
+                room.leave();
+            }
+            self.online.announcer = None;
+            log::info!("lobby list: the game was left; the room is closed and its lobby withdrawn");
+            return;
+        }
         let Some(room) = self.online.room.as_ref() else { return };
         let players = room.view().players.len().clamp(1, netplay::room::MAX_PLAYERS) as u8;
         if let Some(a) = self.online.announcer.as_ref() {
@@ -273,6 +287,11 @@ impl App {
                 locked: l.lobby.locked,
             })
             .collect();
+        let codes: Vec<String> = rows.iter().map(|r| r.code.clone()).collect();
+        if codes != self.online.browse_logged {
+            log::info!("lobby list: rows now {codes:?} ({net:?})");
+            self.online.browse_logged = codes;
+        }
         let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
             return;
         };
