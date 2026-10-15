@@ -176,7 +176,7 @@ pub fn draw(core: &mut Core, level: usize) {
         return;
     }
     let Some(b) = built(core) else { return };
-    let level = level.min(1);
+    let level = if level == 6 { 0 } else { level.min(1) };
     let sheet = &b.sheets[level];
     let tile = 32 * art::BIG_TILES;
     for i in 0..3 {
@@ -213,7 +213,10 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
             s += 8;
         }
     }
-    let level = (crate::online::level(core) as usize).min(1);
+    let level = match crate::online::level(core) as usize {
+        6 => 0,
+        l => l.min(1),
+    };
     let word = TITLES[level];
     // The game's title sprites, left to right.
     let mut ours: Vec<u32> = Vec::new();

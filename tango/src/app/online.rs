@@ -14,6 +14,11 @@ use crate::{netplay, session, tabs};
 use netplay::room::{Room, RoomParams, RoomPhase};
 use tango_library::online::{self as mailbox, Request, Status};
 
+// (the room's host draws the UNRANKED map pick into the same bit the game reads)
+const _: () = assert!(
+    tango_net_protocol::control::UNRANKED_PICK_GUEST == tango_library::online::UNRANKED_PICK_GUEST
+);
+
 /// What the app knows of the in-game lobby.
 #[derive(Default)]
 pub struct Flow {
@@ -25,6 +30,8 @@ pub struct Flow {
     building: bool,
     /// A lobby-made match is running (its end brings the game back).
     in_match: bool,
+    /// ...and it is an UNRANKED one (its end is logged: the hook for the stats).
+    unranked_match: bool,
     /// Said on the LOBBY menu when the game comes back.
     back_message: Option<String>,
     /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
@@ -45,6 +52,9 @@ impl App {
                 Some(_) => "The match is over.",
                 None => "You left the match.",
             };
+            if std::mem::take(&mut self.online.unranked_match) {
+                log::info!("unranked: the match ended ({how})");
+            }
             self.online.back_message = Some(how.to_string());
             mailbox::boot_to_lobby();
             return self.update_play(tabs::play::Message::PlayOfflinePressed);
@@ -123,6 +133,13 @@ impl App {
                 self.online.back_message = None;
                 self.online.room = Some(Room::join(params));
             }
+            Request::Unranked => {
+                // (a pool of players looking: see `tango_lobby::room::Room::unranked`)
+                let mut params = self.online_params("unranked", "");
+                params.match_type.1 |= mailbox::UNRANKED_MATCH;
+                self.online.back_message = None;
+                self.online.room = Some(Room::unranked(params));
+            }
             Request::Leave => {
                 if let Some(room) = self.online.room.take() {
                     room.leave();
@@ -174,6 +191,7 @@ impl App {
     /// The room's match is ready: build the session (every link is handed over to it).
     fn online_build_match(&mut self, m: netplay::room::RoomMatch) -> iced::Task<Message> {
         let is_host = m.is_host;
+        self.online.unranked_match = m.match_type.1 & mailbox::UNRANKED_MATCH != 0;
         let seat = m.seat;
         let players = m.players.clone();
         // Who is who, for the game's pictures (gamertags next to the armies).
@@ -245,7 +263,7 @@ impl App {
             return;
         };
         let view = room.view();
-        if room.is_host() {
+        if room.is_host() && !room.is_unranked() {
             mailbox::write_room(&mut write, &room.code());
         }
         let (status, message) = match view.phase {
@@ -262,7 +280,7 @@ impl App {
                         .map(|p| p.nickname.clone())
                         .unwrap_or_default();
                     (Status::Connected, other)
-                } else if room.is_host() {
+                } else if room.is_host() && !room.is_unranked() {
                     (Status::Waiting, String::new())
                 } else {
                     (Status::Connecting, view.message.clone())

@@ -81,6 +81,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Dual Strike's CPU", DS_AI),
     ("online: the in-game lobby, its mailbox, an online match's walk (crate::online::STATE)", (crate::online::STATE, crate::online::STATE_LEN)),
     ("online: each seat's CO, colour and partner choices in a room (crate::online_teams::SEL)", (crate::online_teams::SEL, crate::online_teams::SEL_LEN)),
+    ("online: an UNRANKED match's map proposals and rules (crate::unranked::STATE)", (crate::unranked::STATE, crate::unranked::STATE_LEN)),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),

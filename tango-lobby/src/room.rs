@@ -37,11 +37,20 @@ const FIRST_WORDS: Duration = Duration::from_secs(8);
 const LOAD_DEADLINE: Duration = Duration::from_secs(40);
 /// A silent link this long is a dead one.
 const SILENCE: Duration = Duration::from_secs(15);
+/// How long an UNRANKED search goes on before it says nobody else is looking.
+const SEARCH_DEADLINE: Duration = Duration::from_secs(300);
 
 /// The matchmaking session id of a room: its code (the password is inside the conversation, so that a wrong one can
 /// be told apart from a room that is not there).
 pub fn room_session(code: &str) -> String {
     format!("tangoaw2-room-{}", code.to_ascii_lowercase())
+}
+
+/// The matchmaking session id of the UNRANKED pool: the first two players to connect with it are paired. Players on
+/// different simulations never meet (their sim version is part of the id), so nobody is paired to a match that cannot
+/// be played.
+pub fn unranked_session(sim_version: u32) -> String {
+    format!("tangoaw2-unranked-v1-s{sim_version}")
 }
 
 /// What a room needs to be made or joined.
@@ -176,6 +185,8 @@ struct HostPeer {
 
 struct Inner {
     host: bool,
+    /// UNRANKED: a room of two made by the pool's pairing (see [`Room::unranked`]).
+    unranked: bool,
     params: RoomParams,
     phase: RoomPhase,
     message: String,
@@ -228,10 +239,28 @@ impl Room {
         room
     }
 
+    /// UNRANKED: look for another player who is looking too (the pool of [`unranked_session`]); the two the server
+    /// pairs draw lots over their link (the lower number hosts) and play a room of two, the guest READY and the host
+    /// starting as soon as it is. `params.code` and `password` are only labels; `match_type` carries the UNRANKED
+    /// bits.
+    pub fn unranked(params: RoomParams) -> Room {
+        let room = Room::new(false, params);
+        room.inner.lock().unwrap().unranked = true;
+        let inner = room.inner.clone();
+        let cancel = room.cancel.clone();
+        tango_platform::spawn(async move { unranked_main(inner, cancel).await });
+        room
+    }
+
+    pub fn is_unranked(&self) -> bool {
+        self.inner.lock().unwrap().unranked
+    }
+
     fn new(host: bool, params: RoomParams) -> Room {
         Room {
             inner: Arc::new(Mutex::new(Inner {
                 host,
+                unranked: false,
                 params,
                 phase: RoomPhase::Connecting,
                 message: String::new(),
@@ -324,18 +353,7 @@ impl Room {
 
     /// The host starts the match (every guest READY).
     pub fn start(&self) {
-        let inner = self.inner.clone();
-        let cancel = self.cancel.clone();
-        {
-            let mut g = inner.lock().unwrap();
-            if !g.host || g.started || g.peers.is_empty() || !g.peers.iter().all(|p| p.ready) {
-                return;
-            }
-            g.started = true;
-            g.phase = RoomPhase::Starting;
-            g.dial.cancel();
-        }
-        tango_platform::spawn(async move { host_start(inner, cancel).await });
+        start_room(&self.inner, &self.cancel);
     }
 
     /// The match, once the room is [`RoomPhase::Ready`] (taken once).
@@ -374,6 +392,21 @@ impl Drop for Room {
 }
 
 // --- Shared ---------------------------------------------------------------------------------------------
+
+/// The host's START, when there is a guest and every guest is READY.
+fn start_room(inner: &Arc<Mutex<Inner>>, cancel: &CancellationToken) {
+    let (inner, cancel) = (inner.clone(), cancel.clone());
+    {
+        let mut g = inner.lock().unwrap();
+        if !g.host || g.started || g.peers.is_empty() || !g.peers.iter().all(|p| p.ready) {
+            return;
+        }
+        g.started = true;
+        g.phase = RoomPhase::Starting;
+        g.dial.cancel();
+    }
+    tango_platform::spawn(async move { host_start(inner, cancel).await });
+}
 
 fn roster_of(g: &Inner) -> Vec<RoomPlayer> {
     let mut v = vec![RoomPlayer {
@@ -670,6 +703,10 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         if all_content {
             match_type.1 |= tango_net_protocol::control::SHARED_CONTENT;
         }
+        // UNRANKED: whose proposed map is played, drawn from the match seed (the guest gets it in `Start`).
+        if g.unranked && seed[0] & 1 != 0 {
+            match_type.1 |= tango_net_protocol::control::UNRANKED_PICK_GUEST;
+        }
         (
             names,
             g.params.save.clone(),
@@ -884,6 +921,11 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             }
         }
     };
+    guest_session(inner, cancel, channels, welcome).await;
+}
+
+/// A guest welcomed by the host over `channels`: its READY, the roster and the start, then the hand-over to the match.
+async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channels: Channels, welcome: RoomRoster) {
     let Channels {
         control: (sender, mut receiver),
         in_match,
@@ -1013,6 +1055,132 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                     Ok(_) => {}
                 }
             }
+        }
+    }
+}
+
+// --- UNRANKED ---------------------------------------------------------------------------------------------
+
+/// Look for an opponent in the pool; the two paired draw lots and play a room of two.
+async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
+    let (endpoint, use_relay, session, join) = {
+        let mut g = inner.lock().unwrap();
+        g.message = "Looking for an opponent...".into();
+        // (READY at once: the pairing is the agreement to play)
+        g.my_ready = true;
+        let sim = g.params.game_info.as_ref().map_or(0, |i| i.sim_version);
+        (
+            g.params.endpoint.clone(),
+            g.params.use_relay,
+            unranked_session(sim),
+            RoomJoin {
+                nickname: g.params.nickname.clone(),
+                password: room_password_hash(&g.params.code, &g.params.password),
+                game_info: g.params.game_info.clone(),
+                content: g.params.content,
+            },
+        )
+    };
+    let deadline = web_time::Instant::now() + SEARCH_DEADLINE;
+    let (mut channels, theirs, mine) = loop {
+        let left = deadline.saturating_duration_since(web_time::Instant::now());
+        if left.is_zero() {
+            fail(&inner, "Nobody else is looking right now. Try again later.");
+            return;
+        }
+        let route = tango_net::connect::Route::Matchmaking {
+            endpoint: &endpoint,
+            session_id: &session,
+            use_relay,
+        };
+        let opened = tokio::select! {
+            _ = cancel.cancelled() => return,
+            r = tango_platform::timeout(left, tango_net::open_channels(route, |_| {})) => r,
+        };
+        let mut channels = match opened {
+            Err(_) => {
+                fail(&inner, "Nobody else is looking right now. Try again later.");
+                return;
+            }
+            Ok(Ok(c)) => c,
+            Ok(Err(tango_net::ConnectError::Signaling(e))) => {
+                let text = format!("{e}");
+                log::warn!("unranked: the matchmaking server: {text}");
+                if text.contains("Websocket") || text.contains("Io") {
+                    fail(&inner, "The matchmaking server cannot be reached.");
+                    return;
+                }
+                tokio::select! {
+                    _ = cancel.cancelled() => return,
+                    _ = tango_platform::sleep(Duration::from_secs(1)) => {}
+                }
+                continue;
+            }
+            Ok(Err(e)) => {
+                log::warn!("unranked: could not connect: {e}");
+                tokio::select! {
+                    _ = cancel.cancelled() => return,
+                    _ = tango_platform::sleep(Duration::from_millis(700)) => {}
+                }
+                continue;
+            }
+        };
+        // Paired. Draw lots.
+        let mine: u64 = rand::random();
+        if channels.control.0.send_packet(&Packet::Room(RoomMsg::Pool(mine))).await.is_err() {
+            continue;
+        }
+        match tango_platform::timeout(FIRST_WORDS, channels.control.1.receive()).await {
+            Ok(Ok(Packet::Room(RoomMsg::Pool(theirs)))) if theirs != mine => break (channels, theirs, mine),
+            _ => {
+                log::info!("unranked: the pairing did not hold; looking again");
+                continue;
+            }
+        }
+    };
+    log::info!("unranked: paired; {} hosts", if mine < theirs { "this peer" } else { "the other" });
+    {
+        let mut g = inner.lock().unwrap();
+        g.message.clear();
+        g.phase = RoomPhase::Open;
+        g.host = mine < theirs;
+    }
+    if mine < theirs {
+        // The host: the guest's Join comes next. Start as soon as it is in and READY.
+        let (inner2, cancel2) = (inner.clone(), cancel.clone());
+        tango_platform::spawn(async move { serve_guest(inner2, cancel2, channels).await });
+        let mut seen_guest = false;
+        let paired = web_time::Instant::now();
+        loop {
+            let gone = {
+                let g = inner.lock().unwrap();
+                if g.started || matches!(g.phase, RoomPhase::Failed | RoomPhase::Closed) {
+                    return;
+                }
+                seen_guest |= !g.peers.is_empty();
+                seen_guest && g.peers.is_empty()
+            };
+            if gone || (!seen_guest && paired.elapsed() > FIRST_WORDS * 2) {
+                fail(&inner, if gone { "The other player left." } else { "The other player did not answer." });
+                return;
+            }
+            start_room(&inner, &cancel);
+            tokio::select! {
+                _ = cancel.cancelled() => return,
+                _ = tango_platform::sleep(Duration::from_millis(100)) => {}
+            }
+        }
+    } else {
+        if channels.control.0.send_packet(&Packet::Room(RoomMsg::Join(join))).await.is_err() {
+            fail(&inner, "The other player left.");
+            return;
+        }
+        match tango_platform::timeout(FIRST_WORDS, channels.control.1.receive()).await {
+            Ok(Ok(Packet::Room(RoomMsg::Welcome(w)))) | Ok(Ok(Packet::Room(RoomMsg::Roster(w)))) => {
+                guest_session(inner, cancel, channels, w).await;
+            }
+            Ok(Ok(Packet::Room(RoomMsg::Reject(r)))) => fail(&inner, r.text),
+            _ => fail(&inner, "The other player did not answer."),
         }
     }
 }
