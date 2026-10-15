@@ -960,7 +960,7 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
     let (channels, welcome) = loop {
         let left = deadline.saturating_duration_since(web_time::Instant::now());
         if left.is_zero() {
-            fail(&inner, "No such room: nobody has it open with that code.");
+            fail(&inner, "No room with that code is open.");
             return;
         }
         let route = tango_net::connect::Route::Matchmaking {
@@ -974,7 +974,7 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         };
         let mut channels = match opened {
             Err(_) => {
-                fail(&inner, "No such room: nobody has it open with that code.");
+                fail(&inner, "No room with that code is open.");
                 return;
             }
             Ok(Ok(c)) => c,

@@ -65,7 +65,7 @@ impl App {
             let resumed = self.online.resumed.take();
             let how = match self.session.results.take() {
                 Some(r) if r.end == session::results::MatchEnd::Disconnected => {
-                    let who = dropped.filter(|n| !n.is_empty()).unwrap_or_else(|| "A player".to_string());
+                    let who = r.dropped.clone().or(dropped).filter(|n| !n.is_empty()).unwrap_or_else(|| "A player".to_string());
                     if kept {
                         self.online.saved_dirty = true;
                         format!("{who} disconnected - match saved. Resume it from ONLINE > RESUME")
@@ -372,6 +372,9 @@ impl App {
             mailbox::write_room(&mut write, &room.code());
         }
         let (status, message) = match view.phase {
+            RoomPhase::Connecting if view.resuming && !view.waiting_for.is_empty() => {
+                (Status::Waiting, format!("Waiting for {}", view.waiting_for.join(", ")))
+            }
             RoomPhase::Connecting => (
                 if room.is_host() { Status::Waiting } else { Status::Connecting },
                 view.message.clone(),

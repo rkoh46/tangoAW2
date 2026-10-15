@@ -333,7 +333,9 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                     let queue_len = metrics.queue_len.load(Ordering::Relaxed) as usize;
                     if queue_len < tango_net::data::RECONNECT_QUEUE_LENGTH {
                         drain_until = None;
-                    } else if drain_until.is_none_or(|t| web_time::Instant::now() >= t) {
+                    } else if clock.is_none() && drain_until.is_none_or(|t| web_time::Instant::now() >= t) {
+                        // (a room never calls a slow or busy peer dead: only the transport closing, or its own
+                        // dead-peer timeout, starts the wait for a player to reconnect)
                         let silent = clock.is_none_or(|c| {
                             let now = c.elapsed().as_millis() as u64;
                             now.saturating_sub(last_rx.load(Ordering::Relaxed)) >= quiet.as_millis() as u64

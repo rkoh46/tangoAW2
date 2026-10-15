@@ -338,8 +338,9 @@ impl Match {
     /// [`keep_checkpoints`](Self::keep_checkpoints) was not asked for). Every peer of a match holds the same state
     /// for the same tick.
     pub fn checkpoints(&self) -> Vec<crate::suspend::Checkpoint> {
-        let cps = self.checkpoints.lock().unwrap();
+        // (the lock order of `World::step`: the console, then the checkpoints)
         let mut link = self.link.lock().unwrap();
+        let cps = self.checkpoints.lock().unwrap();
         cps.kept
             .iter()
             .filter(|(t, _)| *t <= self.settled)
