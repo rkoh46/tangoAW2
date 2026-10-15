@@ -17,10 +17,19 @@ from aw2test import paths
 from aw2test.harness import test
 
 
-def end_turn(g, nxt):
+def end_turn(g, nxt, tag=None):
     """Map menu > End, then A on the hand-off screen ("Next turn") for the army that plays next."""
     g.open_map_menu()
     g.choose("End", g.MAP_MENU)
+    if tag:
+        for k in range(4):
+            g.e.timeline.append("wait 15")
+            g.e.timeline.append(f"shot {tag}_{k}")
+            if k == 3:
+                g.e.timeline.append("peek 07000000 400")
+                g.e.timeline.append("peek 05000000 400")
+                g.e.timeline.append("peek 04000000 60")
+            g.e.wait(15)
     g.e.wait(60)
     g.e.press("A", 6)
     g.e.wait_until(lambda: g.current_army() == nxt, 3000, step=10)
@@ -72,7 +81,7 @@ def play(ctx, fog, cos=("andy", "grit"), colours=None):
     g.choose("Wait", g.ACTION_MENU)
     g.wait_for_input()
     shot("t1_a1_moved")
-    end_turn(g, 2)
+    end_turn(g, 2, "fog_handoff1")
     t.append("seat 1")
     t.append("wait 30")
     shot("t2_a2_start")
@@ -119,3 +128,53 @@ def fog_off_view_both_turns(ctx):
 def fog_view_yellow_comet_vs_black_hole(ctx):
     """Every portrait, panel, unit and building keeps its own army's colours in the waiting window."""
     play(ctx, True, ("sonja", "sturm"), colours=[0, 4, 5, 3, 2])
+
+
+@test(netplay=True)
+def fog_view_attack_scene(ctx):
+    """The mover's attack (battle animations on): the waiting window never shows a garbled or concealed picture."""
+    m = ctx.map()
+    m.unit(1, "infantry", 17, 12).unit(2, "tank", 20, 12).unit(2, "infantry", 25, 5)
+    g = ctx.start(m, ["andy", "grit"], humans=(1, 2), fog=True, visuals="a")
+    t = g.e.timeline
+    end_turn(g, 2)
+    t.append("seat 1")
+    t.append("wait 30")
+    g.select(20, 12)
+    g.move_to(18, 12)
+    g.choose("Fire", g.ACTION_MENU)
+    g.pick_target(17, 12)
+    for k in range(6):
+        t.append("wait 25")
+        t.append(f"shot fog_scene_{k}")
+        g.e.wait(25)
+    g.wait_for_input()
+    text = run(ctx, g, ["wait 60"])
+    ctx.check("all identical: true" in text, "netplay: both peers and the straight replay identical")
+
+
+@test(netplay=True)
+def fog_view_menu_opening(ctx):
+    """Shots at each stage of a menu opening and closing: the waiting window never shows it."""
+    m = ctx.map()
+    m.unit(1, "infantry", 17, 12).unit(2, "infantry", 25, 5)
+    m.terrain(24, 6, "base", 2)
+    g = ctx.start(m, ["andy", "grit"], humans=(1, 2), fog=True)
+    t = g.e.timeline
+    end_turn(g, 2)
+    t.append("seat 1")
+    t.append("wait 40")
+    g.goto(29, 19)
+    t.append("press A 6")
+    g.e.press("A", 6)
+    for k in range(10):
+        t.append("wait 4")
+        t.append(f"shot fog_open_{k}")
+        g.e.wait(4)
+    g.e.press("B", 6)
+    for k in range(6):
+        t.append("wait 4")
+        t.append(f"shot fog_close_{k}")
+        g.e.wait(4)
+    text = run(ctx, g, ["wait 60"])
+    ctx.check("all identical: true" in text, "netplay: both peers and the straight replay identical")
