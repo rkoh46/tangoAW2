@@ -14,6 +14,12 @@ const PLAYER_STRIDE: u32 = 0x3C;
 /// 3 Green Earth, 4 Yellow Comet, 5 Black Hole.
 const COLOUR: u32 = 0x1A;
 
+/// Army `a`'s (1..=5) player block.
+#[allow(non_snake_case)]
+pub(crate) fn PLAYER_BLOCK_OF(a: u32) -> u32 {
+    PLAYER_BLOCK + PLAYER_STRIDE * a
+}
+
 /// The army whose turn it is, 1..=4. Left over after a battle ends.
 const CURRENT_PLAYER: u32 = 0x0300_33EC;
 /// First of seven battle-scene function pointers, filled for the whole
@@ -539,13 +545,17 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::online::match_over(core)
     }
 
-    fn conceal(&self, core: &Core, seat: usize) -> bool {
+    fn watching(&self, core: &Core, seat: usize) -> bool {
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
         in_battle(core)
             && core.raw_read_8(FOG, -1) != 0
             && (1..=5).contains(&current)
             && seat_of(current) != seat
             && !turn_ended(core)
+    }
+
+    fn view_as(&self, core: &mut Core, seat: usize) -> u32 {
+        crate::fog_view::begin(core, seat)
     }
 
     fn before_tick(&self, core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {

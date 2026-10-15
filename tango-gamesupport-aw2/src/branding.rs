@@ -264,6 +264,7 @@ pub fn tick(core: &mut Core) {
 /// Design Room's inventions) to the frame's sprite list just before it is
 /// copied to OAM.
 pub fn flush(core: &mut Core) {
+    crate::fog_view::at_flush(core);
     let start = core.raw_read_32(FLUSH_AREA, -1);
     let end = start + core.raw_read_16(FLUSH_AREA + 0xA, -1) as u32 * 8;
     let mut at = core.raw_read_32(NEXT_SPRITE, -1);

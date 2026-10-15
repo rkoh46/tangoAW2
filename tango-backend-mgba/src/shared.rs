@@ -53,6 +53,22 @@ pub trait SharedGame: Sync {
         keys
     }
 
+    /// Whether `seat` is watching a turn that is not its own, in a game whose picture is the mover's (fog of war):
+    /// its window is then made on a scratch copy of the console ([`view_as`](Self::view_as)). Presentation only,
+    /// read after the tick.
+    fn watching(&self, core: &mgba::core::Core, seat: usize) -> bool {
+        let _ = (core, seat);
+        false
+    }
+
+    /// On the scratch copy of the console (restored from a snapshot afterwards, so nothing here persists), make the
+    /// game draw `seat`'s view of the turn; returns the ticks to run, with an idle pad and the game's
+    /// [`before_tick`](Self::before_tick) as usual, before the picture is taken (0: show the console's own).
+    fn view_as(&self, core: &mut mgba::core::Core, seat: usize) -> u32 {
+        let _ = (core, seat);
+        0
+    }
+
     /// Whether `seat` should be shown nothing right now: a hot-seat game
     /// hides one player's view from the other between turns, and on a
     /// networked shared console nothing else would. Presentation only,
@@ -241,6 +257,50 @@ impl SharedLink {
         self.inner.core_mut(0)
     }
 
+    /// `seat`'s window while another seat plays: the picture of a scratch copy of the console, made to draw the
+    /// seat's own view ([`SharedGame::view_as`]), after which the console is loaded back from a snapshot taken
+    /// first, the sound the ticks made is dropped and the frameskip is back, so the simulation never sees any of it.
+    fn watching_frame(&mut self, seat: usize) -> Option<Vec<u8>> {
+        let snap = self.inner.save().ok()?;
+        let game = self.game;
+        let mode = self.mode;
+        let kept = {
+            let buf = self.inner.core_mut(0).audio_buffer();
+            let n = buf.available();
+            let mut kept = vec![0i16; n * 2];
+            buf.read(&mut kept, n);
+            kept
+        };
+        self.inner.set_frameskip(0, 0);
+        let ticks = game.view_as(self.inner.core_mut(0), seat);
+        let mut ok = ticks > 0;
+        for _ in 0..ticks {
+            let word = game.before_tick(self.inner.core_mut(0), mode, 0) & JOYFLAGS_MASK;
+            if self.inner.try_tick(&[word]).is_err() {
+                ok = false;
+                break;
+            }
+        }
+        let mut frame = ok.then(|| self.inner.video_buffer(0).map(to_rgba)).flatten();
+        if let Some(f) = frame.as_mut() {
+            let core = self.inner.core(0);
+            if game.overlay_hires(core, mode, seat, f).is_none() {
+                game.overlay(core, mode, seat, f);
+            }
+        }
+        // (a failed load leaves a console the next tick would run from the scratch state: that is the engine's to
+        // resync, as for any failed restore; it is not expected)
+        let _ = self.inner.load(&snap);
+        {
+            let buf = self.inner.core_mut(0).audio_buffer();
+            buf.clear();
+            let n = kept.len() / 2;
+            buf.write(&kept, n);
+        }
+        self.apply_render();
+        frame
+    }
+
     fn apply_render(&mut self) {
         let on = self.render[0] || self.render[1];
         self.inner.set_frameskip(0, if on { 0 } else { i32::MAX });
@@ -316,6 +376,13 @@ struct SharedSide<'a> {
 
 impl Side for SharedSide<'_> {
     fn frame(&mut self) -> Option<Vec<u8>> {
+        if self.conceal && self.link.game.watching(self.link.inner.core(0), self.player) {
+            // (the scratch console failing to give a picture shows nothing rather than the mover's view)
+            return Some(self.link.watching_frame(self.player).unwrap_or_else(|| {
+                let own = self.link.inner.video_buffer(0).map(to_rgba).unwrap_or_default();
+                concealed(&own)
+            }));
+        }
         let mut frame = self.link.inner.video_buffer(0).map(to_rgba)?;
         let core = self.link.inner.core(0);
         if self.conceal && self.link.game.conceal(core, self.player) {
