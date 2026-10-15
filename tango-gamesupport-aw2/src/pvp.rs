@@ -480,7 +480,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 14: rooms of up to five, each player's own selector on the CO page, and in a room's battle only the army
         // whose turn it is has the pad, always.
         // 15: the Black Cannon's picture and the font share OBJ tiles by turns (a stash in EWRAM, crate::obelisk).
-        // 16: a room's SELECT MAP is the host's map page (crate::online_maps) with its own state in EWRAM.
+        // 16: a room's SELECT MAP lists only the maps for its player count (crate::online_maps::retab).
         16
     }
 
@@ -638,6 +638,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // The War Room's records on Dual Strike's maps (crate::ds_versus).
         crate::ds_versus::tick(core);
         crate::five_map::show_maps(core, ds_features, ds, crate::survival::last_listed_id(core));
+        crate::online_maps::retab(core);
         crate::mode_menu::tick(core, ds && ds_features && mode.is_none(), crate::survival::TEXT_BASE + crate::survival::T_HELP);
         // LINK is ONLINE, played alone (crate::online_menu).
         crate::online_menu::patch(core, mode.is_none());

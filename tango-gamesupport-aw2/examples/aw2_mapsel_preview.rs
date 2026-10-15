@@ -1,4 +1,4 @@
-//! The online map page with 2..5 fake seats (BMPs into <out-dir>), and a map chosen through it.
+//! the online SELECT MAP with 2..5 fake seats (BMPs into <out-dir>), and a map chosen through it.
 //!
 //! Usage: [AW2_SHARED_ART=1 TANGOAW2_DS_ROM=<nds>] aw2_mapsel_preview <rom> <save> <out-dir> <players> [script]
 //!
@@ -44,7 +44,7 @@ fn main() {
     };
     for t in 0..8000 {
         tick(&mut link, 0);
-        if t > 100 && tango_gamesupport_aw2::online_maps::owns(link.core_mut()) {
+        if t > 100 && tango_gamesupport_aw2::online_maps::idle(link.core_mut()) {
             break;
         }
     }
@@ -93,10 +93,10 @@ fn main() {
     }
     let c = link.core_mut();
     println!(
-        "players {players}: map id {:02x}, teams {}, record armies {}, page up {}",
+        "players {players}: map id {:02x}, teams {}, record armies {}, list idle {}",
         c.raw_read_8(0x0300_3FC2, -1),
         tango_gamesupport_aw2::pvp::on_teams_screen(c),
         c.raw_read_8(0x0201_7C58, -1),
-        tango_gamesupport_aw2::online_maps::owns(c)
+        tango_gamesupport_aw2::online_maps::idle(c)
     );
 }
