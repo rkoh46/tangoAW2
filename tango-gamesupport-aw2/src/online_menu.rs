@@ -2,7 +2,7 @@
 //! "Play online with friends.", and the screen it opens (AW2's link-cable screen, `ProcScr` `0x0849BC50`, its
 //! cursor at +0x36: 0 Single-Pak, 1 Multi-Pak, 2 Trade Maps) is the ONLINE screen: titled ONLINE, its items
 //! UNRANKED, LOBBY and STATS with their own help lines. A on LOBBY goes a level down on the same screen (titled
-//! LOBBY: CREATE, JOIN, BACK; B goes back up); A on CREATE or JOIN opens the lobby's own pages
+//! LOBBY: CREATE, JOIN, RESUME; B goes back up, as BACK did); A on CREATE or JOIN opens the lobby's own pages
 //! ([`crate::online`]). UNRANKED and STATS say they are coming soon. The game never sees A or START on this
 //! screen, so its link-cable modes never start.
 //!
@@ -70,7 +70,7 @@ const SMALL_SLOTS: [u32; 3] = [892, 924, 956];
 const TITLE_TILE: u32 = 236;
 const TITLE_PALETTE: u16 = 15;
 
-pub const WORDS: [[&str; 3]; 2] = [["UNRANKED", "LOBBY", "STATS"], ["CREATE", "JOIN", "BACK"]];
+pub const WORDS: [[&str; 3]; 2] = [["UNRANKED", "LOBBY", "STATS"], ["CREATE", "JOIN", "RESUME"]];
 pub const TITLES: [&str; 2] = ["ONLINE", "LOBBY"];
 
 struct Built {
