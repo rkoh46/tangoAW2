@@ -347,6 +347,7 @@ fn insert(core: &mut Core, before: u32, at: u32, end: u32, sprites: &[Spr]) -> u
 // --- Borrowed tiles and palettes -----------------------------------------------------------------
 
 /// What AW2 had in the OBJ tiles and palette 7 we borrow, while ours are in.
+#[derive(Clone)]
 struct Saved {
     tiles: Vec<u8>,
 }
@@ -1059,4 +1060,66 @@ pub fn panel_corner(core: &Core) -> Option<bool> {
 /// [`crate::tag_ui`], which then leaves its own strip out).
 pub fn draws_co_panel(core: &Core) -> bool {
     on(core) && art().is_some()
+}
+
+// --- Scratch consoles ---------------------------------------------------------------------------------
+
+/// This module keeps what it borrowed (AW2's tiles, the window, the last list) in host statics, not in the console, so
+/// a scratch run of the console (the waiting player's window, see [`crate::fog_view`]) would leave them describing
+/// the scratch console: AW2's tiles "put back" were ours. The statics are kept around such a run and put back after.
+pub struct Stash {
+    window: Option<([u8; 4], [u8; 4])>,
+    frame: u32,
+    saved: Option<Saved>,
+    digits: Option<Vec<u8>>,
+    panel: (i32, i32, u32, bool, u32),
+    struct_hp: Option<u32>,
+    box_: Option<Vec<u8>>,
+    list: Option<Vec<u8>>,
+}
+
+pub fn stash() -> Stash {
+    Stash {
+        window: WINDOW.lock().ok().and_then(|w| *w),
+        frame: FRAME.load(Ordering::Relaxed),
+        saved: SAVED.lock().ok().and_then(|s| s.clone()),
+        digits: SAVED_DIGITS.lock().ok().and_then(|s| s.clone()),
+        panel: (
+            PANEL_X.load(Ordering::Relaxed),
+            PANEL_Y.load(Ordering::Relaxed),
+            PANEL_ARMY.load(Ordering::Relaxed),
+            PANEL_DRAWN.load(Ordering::Relaxed),
+            PANEL_SIDE.load(Ordering::Relaxed),
+        ),
+        struct_hp: LAST_STRUCT_HP.lock().ok().and_then(|s| *s),
+        box_: SAVED_BOX.lock().ok().and_then(|s| s.clone()),
+        list: LAST_LIST.lock().ok().and_then(|s| s.clone()),
+    }
+}
+
+pub fn unstash(s: Stash) {
+    if let Ok(mut w) = WINDOW.lock() {
+        *w = s.window;
+    }
+    FRAME.store(s.frame, Ordering::Relaxed);
+    if let Ok(mut v) = SAVED.lock() {
+        *v = s.saved;
+    }
+    if let Ok(mut v) = SAVED_DIGITS.lock() {
+        *v = s.digits;
+    }
+    PANEL_X.store(s.panel.0, Ordering::Relaxed);
+    PANEL_Y.store(s.panel.1, Ordering::Relaxed);
+    PANEL_ARMY.store(s.panel.2, Ordering::Relaxed);
+    PANEL_DRAWN.store(s.panel.3, Ordering::Relaxed);
+    PANEL_SIDE.store(s.panel.4, Ordering::Relaxed);
+    if let Ok(mut v) = LAST_STRUCT_HP.lock() {
+        *v = s.struct_hp;
+    }
+    if let Ok(mut v) = SAVED_BOX.lock() {
+        *v = s.box_;
+    }
+    if let Ok(mut v) = LAST_LIST.lock() {
+        *v = s.list;
+    }
 }

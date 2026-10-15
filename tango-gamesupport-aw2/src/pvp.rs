@@ -551,6 +551,16 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         in_battle(core) && (1..=5).contains(&current) && seat_of(current) != seat && !turn_ended(core)
     }
 
+    fn scratch_stash(&self) -> Box<dyn std::any::Any> {
+        Box::new(crate::ds_hud::stash())
+    }
+
+    fn scratch_unstash(&self, stash: Box<dyn std::any::Any>) {
+        if let Ok(s) = stash.downcast::<crate::ds_hud::Stash>() {
+            crate::ds_hud::unstash(*s);
+        }
+    }
+
     fn view_as(&self, scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) -> bool {
         crate::fog_view::view(scratch, seat)
     }

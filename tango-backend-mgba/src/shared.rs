@@ -98,6 +98,16 @@ pub trait SharedGame: Sync {
         false
     }
 
+    /// Host-side state the game keeps outside the console (what must not follow the scratch console): kept before a
+    /// scratch run and handed back to [`scratch_unstash`](Self::scratch_unstash) after it.
+    fn scratch_stash(&self) -> Box<dyn std::any::Any> {
+        Box::new(())
+    }
+
+    fn scratch_unstash(&self, stash: Box<dyn std::any::Any>) {
+        let _ = stash;
+    }
+
     /// On a scratch copy of the console (restored from a snapshot afterwards, so nothing done here persists),
     /// make the game draw what `seat` may see of the turn: run ticks as it likes through `scratch`. Returns whether
     /// the console now shows the picture (false: show the last one made).
@@ -334,6 +344,7 @@ impl SharedLink {
             buf.read(&mut kept, n);
             kept
         };
+        let stash = game.scratch_stash();
         self.inner.set_frameskip(0, 0);
         let mut frame = None;
         {
@@ -349,6 +360,7 @@ impl SharedLink {
             }
         }
         let _ = self.inner.load(&snap);
+        game.scratch_unstash(stash);
         {
             let buf = self.inner.core_mut(0).audio_buffer();
             buf.clear();
