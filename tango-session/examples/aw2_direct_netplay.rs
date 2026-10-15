@@ -135,8 +135,8 @@ fn build_script() -> Script {
     s.mark("p1_day2");
     // Beyond aw2_rollback_sim: player 1 ends day 2 too, so the match
     // settles on the "Next turn" screen, which both seats are shown. On a
-    // fog-of-war turn the waiting seat's picture is concealed (see
-    // `SharedGame::conceal`), so a mid-turn frame differs between peers
+    // fog-of-war turn the waiting seat's picture is its own view of the turn
+    // (see `SharedGame::view_as`), so a mid-turn frame differs between peers
     // by design and can't be the determinism check.
     s.press(0, A); // map menu on the HQ
     s.wait(40);

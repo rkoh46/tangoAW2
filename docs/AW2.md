@@ -13,10 +13,34 @@ engine and asks the game (`SharedGame`) for:
 - `merge`: the joypad word the console sees this tick.
 - `before_tick`: runtime memory writes, applied before every frame
   (including during rollback re-simulation, so they stay deterministic).
-- `conceal`: whether a seat's picture is blacked out. Presentation only.
+- `watching` / `view_as`: whether a seat is watching a turn that is not its own, and the picture it is shown, made on
+  a scratch copy of the console (see "The waiting player's window"). Presentation only.
 
 The session's save and ROM are seat 0's, identical on both peers. Solo
 play and replays use the same console and the same patches.
+
+## The waiting player's window (`tango-gamesupport-aw2/src/fog_view.rs`)
+
+The console draws the mover's picture: its menus, cursor, selection and, with fog of war, its vision. The waiting seat
+is never shown that (it was a black window with fog on and the mover's menus with it off). `SharedSide::frame` makes
+the waiting seat's picture on a scratch copy of the console: it snapshots the console, runs `SharedGame::view_as`
+(ticks with whatever keys it likes, the game's `before_tick` included), takes the picture through the overlays
+(flat and Dual Strike tilt/hires alike), loads the snapshot back, drops the sound the ticks made and puts the
+frameskip back. Nothing reaches the simulation; the picture is made every second tick (the last one stands between)
+and costs about 2 ms (up to 7 with a menu to close and a second refresh). `view_as` for AW2:
+
+- B is pressed (two ticks, one released, up to four times) while the map has anything running (`ui_open`: the map's
+  procs, none while it waits for the player), so build, command and map menus, a selected unit's range, attack rings
+  and info panels are closed on the scratch console and never seen.
+- With fog, `CURRENT_PLAYER` is set to the waiting army and the game's own routines run as a call on the emulated CPU
+  at the sprite flush (the registers are kept in EWRAM `0x0203DF00`, a trap at padding `0x08020EDA` catches the
+  return): `sub_08020984` (who the viewers are), `sub_0801A548`, `sub_0801A57C`, `sub_08043834` (the CO panel and its
+  palettes, called with the army), `sub_080258CC` (vision planes of every army, then the terrain and unit layers
+  redrawn). The game then draws what that army sees: fogged cells dark, the mover's units in them gone, its own
+  units, buildings and HUD in its colours.
+- The cursor and the camera (`gMap +4/+6`) follow the mover only through cells the waiting army sees, and otherwise
+  stay where the window last had them (the army's HQ at first; kept in the link, not in the console).
+- Off the plain map loop (a battle scene, the full-screen CO page) the seat's last picture stays up.
 
 ## Advance Wars 2 rules (`tango-gamesupport-aw2/src/pvp.rs`)
 
