@@ -26,6 +26,7 @@ def end_turn(g, nxt, tag=None):
             g.e.timeline.append("wait 15")
             g.e.timeline.append(f"shot {tag}_{k}")
             if k == 3:
+                g.e.timeline.append("peek 06017c00 768")
                 g.e.timeline.append("peek 07000000 400")
                 g.e.timeline.append("peek 05000000 400")
                 g.e.timeline.append("peek 04000000 60")
@@ -45,6 +46,9 @@ def run(ctx, g, extra=()):
     if ctx.ds:
         env["TANGOAW2_DS_ROM"] = paths.ds_rom()
         env["AW2_SHARED_ART"] = "1"
+    else:
+        env.pop("TANGOAW2_DS_ROM", None)
+        env.pop("AW2_SHARED_ART", None)
     out = subprocess.run([paths.runner("aw2_netplay_script"), g.e.rom, os.path.join(ctx.out, "map.sav"), path,
                           os.path.join(ctx.out, "netplay")], capture_output=True, text=True, env=env, timeout=1800)
     text = out.stdout + out.stderr
