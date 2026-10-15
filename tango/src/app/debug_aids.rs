@@ -11,7 +11,8 @@
 //!   the moment a session starts); `until COND [SECONDS]` idles until the
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
-//!   `army=N`, `status=N`, `players=N`, `ready=N`), `shot PATH` saves the
+//!   `army=N`, `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
+//!   keys now and then until the console shows COND, `shot PATH` saves the
 //!   window's picture, `log TEXT` writes to the log, `session` starts the part
 //!   for the next session, `#` comments out a line.
 
@@ -37,6 +38,8 @@ enum Op {
     Until(String, f64),
     Shot(PathBuf),
     Log(String),
+    /// Press the keys now and then (4 frames in 12) until the condition holds (or this many seconds pass).
+    Seek(u32, String, f64),
 }
 
 struct Pad {
@@ -97,6 +100,7 @@ fn parse_script(text: &str) -> Vec<Vec<Op>> {
             ["hold", k, n] => ops.extend(n.parse().ok().map(|n| Op::Hold(key_bits(k), n))),
             ["until", cond] => ops.push(Op::Until(cond.to_string(), 120.0)),
             ["until", cond, secs] => ops.push(Op::Until(cond.to_string(), secs.parse().unwrap_or(120.0))),
+            ["seek", k, cond] => ops.push(Op::Seek(key_bits(k), cond.to_string(), 60.0)),
             ["shot", path] => ops.push(Op::Shot(PathBuf::from(path))),
             ["log", rest @ ..] => ops.push(Op::Log(rest.join(" "))),
             _ => {}
@@ -237,6 +241,30 @@ impl DebugAids {
                         pad.done = 0;
                     } else {
                         break;
+                    }
+                }
+                Op::Seek(k, c, secs) => {
+                    if pad.done == 0 {
+                        pad.op_started = now;
+                    }
+                    if cond(c) {
+                        log::info!("pad script: found {c}");
+                        pad.at += 1;
+                        pad.done = 0;
+                    } else if now.duration_since(pad.op_started).as_secs_f64() > *secs {
+                        log::warn!("pad script: gave up seeking {c}");
+                        pad.at += 1;
+                        pad.done = 0;
+                    } else if frames == 0 {
+                        break;
+                    } else {
+                        // (one frame of the 12 of a press)
+                        if pad.done % 12 < 4 {
+                            keys |= k;
+                        }
+                        last_frame_keys = if pad.done % 12 < 4 { *k } else { 0 };
+                        pad.done += 1;
+                        frames -= 1;
                     }
                 }
                 Op::Shot(path) => {

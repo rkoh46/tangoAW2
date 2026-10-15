@@ -88,6 +88,14 @@ pub const HOST: u8 = 2;
 pub const YOU: u8 = 4;
 /// An online match's previous frame's keys (its map pick's A).
 const MATCH_PREV: u32 = STATE + 0x5E;
+/// SELECT MAP's skip over maps for another number of players: the direction, the steps taken, a frame count.
+const SKIP_DIR: u32 = STATE + 0x60;
+const SKIP_STEPS: u32 = STATE + 0x61;
+const SKIP_T: u32 = STATE + 0x62;
+const SKIP_DONE: u32 = STATE + 0x63;
+/// 1 for the whole of a room's battle (from its map loading until it is left for good), and the frames out of it.
+const BATTLE: u32 = STATE + 0x64;
+const OUT_T: u32 = STATE + 0x65;
 const STATE_END: u32 = PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32;
 pub const PASSWORD_CHARS: usize = 4;
 /// Players a match has (step 1: two; the room's page has a slot for each of [`MAX_PLAYERS`]).
@@ -302,6 +310,7 @@ pub mod mailbox {
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
+            ("maparmies", Some(v)) => (bits >> 32) & 0xFF == v as u64,
             ("status", Some(v)) => status(read) as u32 == v,
             ("players", Some(v)) => players(read).len() as u32 == v,
             ("ready", Some(v)) => players(read).iter().filter(|p| p.0).count() as u32 == v,
@@ -378,6 +387,7 @@ pub mod probe {
         b |= (crate::online_menu::cursor(core).unwrap_or(0xFF) as u64) << 8;
         b |= (level(core) as u64) << 16;
         b |= (crate::pvp::current_army(core) as u64) << 24;
+        b |= (super::map_armies(core).unwrap_or(0) as u64) << 32;
         BITS.store(b, Ordering::Relaxed);
     }
 
@@ -879,6 +889,44 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             // game got, so an A held on such a map stays new, and refused, every frame.)
             let prev = core.raw_read_16(MATCH_PREV, -1) as u32;
             let mut keys = keys;
+            // The list only lands on maps for as many armies as there are players: a move onto another map goes on
+            // in the same direction (a press every few frames) until one fits.
+            if crate::survival_ui::idle(core) {
+                let want = crate::online_teams::players(core) as u8;
+                let wrong = map_armies(core).is_some_and(|n| n != want);
+                let pressed = keys & !prev;
+                let (mut dir, mut steps) = (core.raw_read_8(SKIP_DIR, -1) as u32, core.raw_read_8(SKIP_STEPS, -1));
+                if pressed & (KEY_UP | KEY_DOWN) != 0 {
+                    dir = pressed & (KEY_UP | KEY_DOWN);
+                    steps = 0;
+                } else if pressed & (KEY_LEFT | KEY_RIGHT) != 0 {
+                    dir = KEY_DOWN;
+                    steps = 0;
+                }
+                // (on first coming to the list: look for a fitting map from the top)
+                if wrong && dir == 0 && core.raw_read_8(SKIP_DONE, -1) == 0 {
+                    dir = KEY_DOWN;
+                    steps = 0;
+                }
+                core.raw_write_8(SKIP_DONE, -1, 1);
+                if wrong && dir != 0 && steps < 120 {
+                    let t = core.raw_read_8(SKIP_T, -1).wrapping_add(1);
+                    core.raw_write_8(SKIP_T, -1, t);
+                    if t % 4 == 0 {
+                        keys |= dir;
+                        steps += 1;
+                    } else {
+                        keys &= !(KEY_UP | KEY_DOWN);
+                    }
+                } else {
+                    dir = 0;
+                    steps = 0;
+                }
+                core.raw_write_8(SKIP_DIR, -1, dir as u8);
+                core.raw_write_8(SKIP_STEPS, -1, steps);
+            } else {
+                core.raw_write_8(SKIP_DONE, -1, 0);
+            }
             if keys & !prev & KEY_A != 0
                 && crate::survival_ui::idle(core)
                 && map_armies(core).is_some_and(|n| n as usize != crate::online_teams::players(core))
@@ -948,9 +996,29 @@ pub fn in_room_match(core: &Core) -> bool {
     core.raw_read_8(MATCH, -1) == 1
 }
 
-/// Every tick, before the keys are merged: what each seat pressed (see [`crate::online_teams`]).
+/// Every tick, before the keys are merged: what each seat pressed (see [`crate::online_teams`]), and whether a battle
+/// is on ([`BATTLE`]).
 pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     crate::online_teams::tick(core, inputs);
+    if core.raw_read_8(MATCH, -1) != 1 {
+        return;
+    }
+    let battle = core.raw_read_8(BATTLE, -1) == 1;
+    if crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
+        if !battle {
+            core.raw_write_8(BATTLE, -1, 1);
+        }
+        core.raw_write_8(OUT_T, -1, 0);
+    } else if battle {
+        // Out of the battle for good (results, the save prompt, SELECT MAP again), not for a moment between its screens.
+        let t = core.raw_read_8(OUT_T, -1).saturating_add(1);
+        core.raw_write_8(OUT_T, -1, t);
+        let menus = crate::survival_ui::selecting(core) || crate::pvp::on_teams_screen(core) || crate::campaign_menu::on_select_mode(core);
+        if t > 150 || menus {
+            core.raw_write_8(BATTLE, -1, 0);
+            core.raw_write_8(OUT_T, -1, 0);
+        }
+    }
 }
 
 /// Who is who in the room, for the picture (presentation only, set by the app before the match starts).
@@ -995,20 +1063,20 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if navigating(core) {
         return Some(0);
     }
-    if !crate::pvp::in_versus(core) {
-        return None;
-    }
-    if crate::pvp::in_battle(core) {
-        // The battle, every turn of it (the map, its menus, the CO page, the hand-off screens): only the army whose
-        // turn it is has the pad, and nobody else's keys are ORed in or let through at any moment. On the
-        // "Next turn" screen after End the incoming army's player has it.
+    // The whole battle phase (every turn, its menus, banners, hand-offs, animations, the moments between): only the
+    // army whose turn it is has the pad (the incoming army's player on the "Next turn" screen), and nobody else's
+    // keys reach the game at any moment: not the host's, not ORed in. If that army cannot be told, nobody has it.
+    if core.raw_read_8(BATTLE, -1) == 1 {
         let n = inputs.len().max(1);
         let current = crate::pvp::current_army(core);
         if !(1..=5).contains(&current) {
-            return Some(inputs[0]);
+            return Some(0);
         }
         let army = if crate::pvp::turn_ended(core) { current % n as u8 + 1 } else { current };
         return Some(inputs[crate::pvp::seat_of_n(army, n)]);
+    }
+    if !crate::pvp::in_versus(core) {
+        return None;
     }
     // Versus' Teams screen is not played: every player has a selector of their own (crate::online_teams).
     if crate::pvp::on_teams_screen(core) {

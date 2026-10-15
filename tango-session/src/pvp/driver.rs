@@ -81,7 +81,7 @@ impl DriveContext {
     ) -> Result<PvpDriver, tango_match::Error> {
         // The game's registration starts the match on whatever engine it
         // runs; this session never learns which.
-        let local = pieces.pvp[pieces.local_player];
+        let local = pieces.pvp[pieces.local_player.min(1)];
         let match_ = local.start(tango_match::StartConfig {
             roms: [&pieces.roms[0], &pieces.roms[1]],
             saves: [Some(&pieces.saves[0]), Some(&pieces.saves[1])],

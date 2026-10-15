@@ -1,0 +1,72 @@
+seat 0
+wait 400
+press A 6
+wait 300
+shot teams
+press A 6
+wait 20
+press A 6
+wait 20
+press A 6
+wait 20
+seat 1
+press A 6
+wait 20
+press A 6
+wait 20
+press A 6
+wait 20
+wait 300
+shot rules
+seat 0
+press A 6
+wait 700
+shot b0
+noise 1 300
+shot b1
+press A 6
+wait 40
+noise 1 300
+shot b2
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+shot b3
+press A 6
+wait 60
+noise 0 300
+shot h0
+seat 1
+press A 6
+wait 200
+shot t1
+noise 0 300
+shot t2
+press A 6
+wait 40
+noise 0 300
+shot t3
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press A 6
+wait 60
+noise 1 300
+shot h1
+seat 0
+press A 6
+wait 200
+shot t4
+noise 1 300
+shot t5
+wait 50

@@ -13,6 +13,7 @@
 //!   hold KEYS N         hold KEYS for N frames
 //!   goto X Y            walk the map cursor to tile (X, Y) with the arrows,
 //!                       reading where it is from the seat's own peer
+//!   noisequiet SEAT N   the same frames as `noise`, nobody pressing (the control run)
 //!   noise SEAT N        SEAT mashes random buttons for N frames (the other
 //!                       seat idle), for checking the turn lock
 //!   shot NAME           write NAME_peer0.bmp and NAME_peer1.bmp (each
@@ -202,6 +203,15 @@ fn main() {
                         (0..6).for_each(|_| rows.push_back(Row::Keys([0, 0])));
                     }
                     (0..30).for_each(|_| rows.push_back(Row::Keys([0, 0])));
+                }
+                // `noise`'s frames exactly, with nobody pressing anything (the control run of a turn-lock check).
+                "noisequiet" => {
+                    let n: usize = p[2].parse().unwrap();
+                    let mut i = 0;
+                    while i < n {
+                        (0..11).for_each(|_| rows.push_back(Row::Keys([0, 0])));
+                        i += 11;
+                    }
                 }
                 "noise" => {
                     let who: usize = p[1].parse().unwrap();
