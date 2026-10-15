@@ -247,13 +247,8 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
             }
         }
         if pressed & (KEY_A | KEY_START) != 0 {
-            if field == F_READY || pressed & KEY_START != 0 {
-                core.raw_write_8(seat(s) + S_READY, -1, 1);
-            } else {
-                // (A on a choice goes down to READY)
-                let at = rows.iter().position(|&f| f == field).unwrap_or(0);
-                core.raw_write_8(seat(s) + S_FIELD, -1, rows[(at + 1) % rows.len()]);
-            }
+            // (A is READY wherever the cursor is, as the legend says; Up and Down only choose what to change)
+            core.raw_write_8(seat(s) + S_READY, -1, 1);
         }
     }
     if (0..n).all(|s| core.raw_read_8(seat(s) + S_READY, -1) == 1) {
