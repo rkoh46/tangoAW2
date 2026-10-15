@@ -14,12 +14,20 @@ pub struct HostInput {
     /// Stylus position on the console's touch screen, in that screen's
     /// own pixels, or `None` for a lifted stylus.
     pub touch: Option<(u16, u16)>,
+    /// A room of more than two players (tangoAW2): what a peer hears of the others is one input, the other
+    /// players' joypad words together: the first goes in `keys`, the rest here, in seat order (see
+    /// [`crate::engine::seat_inputs`]). Zero in every two-player match.
+    pub extra: [u16; 3],
 }
 
 impl HostInput {
     /// Input with nothing but the joypad held — what every console
     /// without a touch screen takes.
     pub fn keys(keys: u32) -> Self {
-        HostInput { keys, touch: None }
+        HostInput {
+            keys,
+            touch: None,
+            extra: [0; 3],
+        }
     }
 }

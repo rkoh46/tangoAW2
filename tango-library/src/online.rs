@@ -75,3 +75,9 @@ pub fn players(read: &mut dyn FnMut(u32, &mut [u8])) -> Vec<(bool, u8)> {
 pub fn probe_bits() -> u64 {
     tango_gamesupport_aw2::online::probe::bits()
 }
+
+/// Who is who in the room (gamertags in seat order, and this peer's seat), for the game's pictures.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn set_room(names: Vec<String>, local_seat: usize) {
+    tango_gamesupport_aw2::online::set_room(names, local_seat)
+}

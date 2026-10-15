@@ -53,9 +53,16 @@ impl App {
             mailbox::boot_to_lobby();
             return self.update_play(tabs::play::Message::PlayOfflinePressed);
         }
-        if self.session.active_as::<session::pvp::PvpSession>().is_some() {
+        if let Some(pvp) = self.session.active_as::<session::pvp::PvpSession>() {
             if self.online.room.is_some() {
                 self.online.in_match = true;
+                // Who is who, for the game's pictures (gamertags next to the armies).
+                let local = pvp.local_player_index() as usize;
+                let me = self.config.nickname.clone().filter(|n| !n.is_empty()).unwrap_or_else(|| "You".into());
+                let mut names = vec![String::new(); 2];
+                names[local] = me;
+                names[1 - local] = pvp.remote_nickname.clone();
+                tango_library::online::set_room(names, local);
             }
             return iced::Task::none();
         }

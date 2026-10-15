@@ -433,7 +433,7 @@ impl State {
     /// Test aids: the scripted pad's word for this frame, as if held.
     pub fn set_scripted_keys(&self, keys: u32) {
         if let Some(s) = self.active.as_ref() {
-            s.set_input(tango_session::HostInput { keys, touch: self.stylus.touch() });
+            s.set_input(tango_session::HostInput { keys, touch: self.stylus.touch(), ..Default::default() });
         }
     }
 
@@ -446,6 +446,7 @@ impl State {
             s.set_input(tango_session::HostInput {
                 keys: mapping.to_joyflags(&self.input_held),
                 touch: self.stylus.touch(),
+                ..Default::default()
             });
         }
     }

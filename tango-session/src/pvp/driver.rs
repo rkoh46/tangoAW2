@@ -216,6 +216,7 @@ fn host_input_of_wire(input: &tango_net::data::Input) -> tango_match::HostInput 
     tango_match::HostInput {
         keys: input.joyflags as u32,
         touch: input.touch.map(|(x, y)| (x as u16, y as u16)),
+        extra: [0; 3],
     }
 }
 

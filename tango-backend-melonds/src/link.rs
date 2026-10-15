@@ -367,6 +367,7 @@ fn sanitize(input: HostInput) -> HostInput {
         touch: input
             .touch
             .map(|(x, y)| (x.min(SCREENS[1].width as u16 - 1), y.min(SCREENS[1].height as u16 - 1))),
+        ..Default::default()
     }
 }
 

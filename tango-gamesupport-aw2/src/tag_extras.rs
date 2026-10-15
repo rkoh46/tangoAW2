@@ -247,7 +247,7 @@ fn pick(core: &Core) -> usize {
 const DAY: u32 = 0x0300_4080;
 
 /// An AW2 CO's name, from the game's own text (its CO table row +0x00).
-fn co_name(core: &Core, co: u8) -> Vec<u8> {
+pub(crate) fn co_name(core: &Core, co: u8) -> Vec<u8> {
     let table = core.raw_read_32(tag::CO_TABLE_POOL, -1);
     let id = core.raw_read_32(table + 0x104 * co as u32, -1);
     let at = core.raw_read_32(TEXT_TABLE + 4 * id, -1);

@@ -118,7 +118,7 @@ impl tango_backend_mgba::SharedGame for Traced {
     fn sim_version(&self) -> u16 {
         tango_gamesupport_aw2::pvp::AW2E.sim_version()
     }
-    fn merge(&self, core: &mgba::core::Core, inputs: [u32; 2]) -> u32 {
+    fn merge(&self, core: &mgba::core::Core, inputs: &[u32]) -> u32 {
         tango_gamesupport_aw2::pvp::AW2E.merge(core, inputs)
     }
     fn before_tick(&self, core: &mut mgba::core::Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {

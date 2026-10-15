@@ -52,6 +52,7 @@ impl EngineReplay {
                 row.map(|input| tango_match::HostInput {
                     keys: input.keys as u32,
                     touch: input.touch.map(|(x, y)| (x as u16, y as u16)),
+                    ..Default::default()
                 })
             })
             .collect();

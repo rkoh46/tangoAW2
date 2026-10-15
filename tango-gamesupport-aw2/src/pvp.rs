@@ -131,7 +131,12 @@ pub const MATCH_TYPES: &[usize] = &[2];
 /// Which seat drives army slot `slot` (1..=4): odd slots are the first
 /// player's, even slots the second's.
 pub fn seat_of(slot: u8) -> usize {
-    ((slot - 1) % 2) as usize
+    seat_of_n(slot, 2)
+}
+
+/// [`seat_of`] in a room of `players` (army `slot` is player `slot - 1`).
+pub fn seat_of_n(slot: u8, players: usize) -> usize {
+    ((slot - 1) as usize) % players.max(1)
 }
 
 /// The title-menu mode and every army slot's colour byte, for tests.
@@ -512,17 +517,21 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// only its seat's buttons reach the pad; the other seat watches. Anywhere
     /// else (title, map and CO select, results, the hand-off between
     /// turns) both seats share the pad.
-    fn merge(&self, core: &Core, inputs: [u32; 2]) -> u32 {
+    fn merge(&self, core: &Core, inputs: &[u32]) -> u32 {
         // A match made in the in-game lobby: its menus are the host's (crate::online).
         if let Some(keys) = crate::online::merge(core, inputs) {
             return keys;
         }
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
         if in_versus(core) && in_battle(core) && (1..=5).contains(&current) && !turn_ended(core) {
-            inputs[seat_of(current)]
+            inputs[seat_of_n(current, inputs.len())]
         } else {
-            inputs[0] | inputs[1]
+            inputs.iter().fold(0, |a, &b| a | b)
         }
+    }
+
+    fn seat_keys(&self, core: &mut Core, mode: Option<(u8, u8)>, inputs: &[u32]) {
+        crate::online::seat_keys(core, mode, inputs);
     }
 
     /// With fog of war on, the waiting player sees nothing of the other
@@ -544,7 +553,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         in_battle(core)
             && core.raw_read_8(FOG, -1) != 0
             && (1..=5).contains(&current)
-            && seat_of(current) != seat
+            && seat_of_n(current, crate::online::room_players()) != seat
             && !turn_ended(core)
     }
 

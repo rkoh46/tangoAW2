@@ -392,16 +392,16 @@ static BOOT_TO_LOBBY: AtomicBool = AtomicBool::new(false);
 
 // --- Keys -------------------------------------------------------------------------------------------
 
-const KEY_A: u32 = 1 << 0;
-const KEY_B: u32 = 1 << 1;
-const KEY_SELECT: u32 = 1 << 2;
-const KEY_START: u32 = 1 << 3;
-const KEY_RIGHT: u32 = 1 << 4;
-const KEY_LEFT: u32 = 1 << 5;
-const KEY_UP: u32 = 1 << 6;
-const KEY_DOWN: u32 = 1 << 7;
-const KEY_R: u32 = 1 << 8;
-const KEY_L: u32 = 1 << 9;
+pub(crate) const KEY_A: u32 = 1 << 0;
+pub(crate) const KEY_B: u32 = 1 << 1;
+pub(crate) const KEY_SELECT: u32 = 1 << 2;
+pub(crate) const KEY_START: u32 = 1 << 3;
+pub(crate) const KEY_RIGHT: u32 = 1 << 4;
+pub(crate) const KEY_LEFT: u32 = 1 << 5;
+pub(crate) const KEY_UP: u32 = 1 << 6;
+pub(crate) const KEY_DOWN: u32 = 1 << 7;
+pub(crate) const KEY_R: u32 = 1 << 8;
+pub(crate) const KEY_L: u32 = 1 << 9;
 const ALL_KEYS: u32 = 0x3FF;
 
 // --- The lobby (offline) ---------------------------------------------------------------------------
@@ -881,7 +881,7 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             let mut keys = keys;
             if keys & !prev & KEY_A != 0
                 && crate::survival_ui::idle(core)
-                && map_armies(core).is_some_and(|n| n != MATCH_PLAYERS)
+                && map_armies(core).is_some_and(|n| n as usize != crate::online_teams::players(core))
             {
                 keys &= !KEY_A;
                 core.raw_write_8(NOTICE, -1, 120);
@@ -933,13 +933,53 @@ fn map_armies(core: &Core) -> Option<u8> {
 
 /// The online match's notes over its console (presentation only): a map for another number of players.
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
+    crate::online_teams::draw(core, rgba);
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {
         return;
     }
     if crate::survival_ui::selecting(core) {
         let mut cv = Rgba(rgba);
-        bar(&mut cv, core, &format!("Pick a map for {MATCH_PLAYERS} players."));
+        bar(&mut cv, core, &format!("Pick a map for {} players.", crate::online_teams::players(core)));
     }
+}
+
+/// A room's match runs on this console.
+pub fn in_room_match(core: &Core) -> bool {
+    core.raw_read_8(MATCH, -1) == 1
+}
+
+/// Every tick, before the keys are merged: what each seat pressed (see [`crate::online_teams`]).
+pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
+    crate::online_teams::tick(core, inputs);
+}
+
+/// Who is who in the room, for the picture (presentation only, set by the app before the match starts).
+struct RoomInfo {
+    names: Vec<String>,
+    local_seat: usize,
+}
+
+static ROOM_INFO: std::sync::Mutex<RoomInfo> = std::sync::Mutex::new(RoomInfo {
+    names: Vec::new(),
+    local_seat: 0,
+});
+
+/// The room's players' gamertags in seat order, and which seat this peer is.
+pub fn set_room(names: Vec<String>, local_seat: usize) {
+    *ROOM_INFO.lock().unwrap() = RoomInfo { names, local_seat };
+}
+
+pub fn room_name(seat: usize) -> String {
+    ROOM_INFO.lock().unwrap().names.get(seat).cloned().unwrap_or_else(|| format!("Player {}", seat + 1))
+}
+
+pub fn room_local_seat() -> usize {
+    ROOM_INFO.lock().unwrap().local_seat
+}
+
+/// How many players the room has, for the picture (2 when nobody said).
+pub fn room_players() -> usize {
+    ROOM_INFO.lock().unwrap().names.len().clamp(2, 5)
 }
 
 /// The match is over: its players left SELECT MAP for Select Mode.
@@ -948,7 +988,7 @@ pub fn match_over(core: &Core) -> bool {
 }
 
 /// Who drives the pad on an online match's console, outside a battle's turns (`None`: the usual rules).
-pub fn merge(core: &Core, inputs: [u32; 2]) -> Option<u32> {
+pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if core.raw_read_8(MATCH, -1) != 1 {
         return None;
     }
@@ -958,56 +998,42 @@ pub fn merge(core: &Core, inputs: [u32; 2]) -> Option<u32> {
     if !crate::pvp::in_versus(core) || crate::pvp::in_battle(core) {
         return None;
     }
-    if crate::pvp::on_teams_screen(core) && !crate::five::active(core) {
-        // (with the pack, a tag partner being picked: that army's player has the pad but A and B)
-        if let Some(army) = crate::tag_ui::editing(core) {
-            let owner = crate::pvp::seat_of(army as u8 + 1);
-            return Some((inputs[owner] & !(KEY_A | KEY_B)) | (inputs[0] & (KEY_A | KEY_B)));
-        }
-        let slot = (core.raw_read_8(0x0201_7C50 + 0x32, -1) / 2) as u8;
-        let owner = crate::pvp::seat_of(slot + 1);
-        let both = inputs[0] | inputs[1];
-        return Some(
-            (inputs[owner] & (KEY_UP | KEY_DOWN | KEY_SELECT | KEY_L | KEY_R | KEY_START))
-                | (both & (KEY_LEFT | KEY_RIGHT))
-                | (inputs[0] & (KEY_A | KEY_B)),
-        );
-    }
+    // Versus' Teams screen is not played: every player has a selector of their own (crate::online_teams).
     if crate::pvp::on_teams_screen(core) {
-        return Some(inputs[0] | inputs[1]);
+        return Some(crate::online_teams::merge(core).unwrap_or(0));
     }
     Some(inputs[0])
 }
 
 // --- Drawing (presentation only) ------------------------------------------------------------------
 
-const W: usize = 240;
-const H: usize = 160;
+pub(crate) const W: usize = 240;
+pub(crate) const H: usize = 160;
 const FONT_GLYPHS: u32 = 0x084C_32E4;
 const FONT_WIDTHS: u32 = 0x084C_36E4;
 
-type Rgb = (u8, u8, u8);
-const WHITE: Rgb = (255, 255, 255);
-const INK: Rgb = (16, 16, 24);
-const SHADE: Rgb = (176, 184, 200);
-const RED: Rgb = (240, 48, 56);
-const BLUE: Rgb = (48, 64, 232);
-const LIGHT_GRAY: Rgb = (232, 232, 236);
-const GRAY_INK: Rgb = (104, 112, 128);
-const CREAM: Rgb = (255, 246, 214);
-const YELLOW: Rgb = (255, 224, 64);
-const BAR: Rgb = (24, 24, 32);
+pub(crate) type Rgb = (u8, u8, u8);
+pub(crate) const WHITE: Rgb = (255, 255, 255);
+pub(crate) const INK: Rgb = (16, 16, 24);
+pub(crate) const SHADE: Rgb = (176, 184, 200);
+pub(crate) const RED: Rgb = (240, 48, 56);
+pub(crate) const BLUE: Rgb = (48, 64, 232);
+pub(crate) const LIGHT_GRAY: Rgb = (232, 232, 236);
+pub(crate) const GRAY_INK: Rgb = (104, 112, 128);
+pub(crate) const CREAM: Rgb = (255, 246, 214);
+pub(crate) const YELLOW: Rgb = (255, 224, 64);
+pub(crate) const BAR: Rgb = (24, 24, 32);
 
-struct Rgba<'a>(&'a mut [u8]);
+pub(crate) struct Rgba<'a>(pub(crate) &'a mut [u8]);
 
 impl Rgba<'_> {
-    fn put(&mut self, x: i32, y: i32, c: Rgb) {
+    pub(crate) fn put(&mut self, x: i32, y: i32, c: Rgb) {
         if (0..W as i32).contains(&x) && (0..H as i32).contains(&y) {
             let o = 4 * (W * y as usize + x as usize);
             self.0[o..o + 3].copy_from_slice(&[c.0, c.1, c.2]);
         }
     }
-    fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, c: Rgb) {
+    pub(crate) fn rect(&mut self, x: i32, y: i32, w: i32, h: i32, c: Rgb) {
         for yy in y..y + h {
             for xx in x..x + w {
                 self.put(xx, yy, c);
@@ -1024,7 +1050,7 @@ impl Rgba<'_> {
         self.rect(x, y + h - 2, w, 2, BLUE);
     }
     /// AW2's proportional font; returns the x after the text.
-    fn text(&mut self, core: &Core, x: i32, y: i32, s: &str, ink: Rgb, shade: Rgb) -> i32 {
+    pub(crate) fn text(&mut self, core: &Core, x: i32, y: i32, s: &str, ink: Rgb, shade: Rgb) -> i32 {
         let mut x = x;
         for c in s.bytes() {
             if c.is_ascii_digit() {
@@ -1059,14 +1085,14 @@ impl Rgba<'_> {
     }
 }
 
-fn text_width(core: &Core, s: &str) -> i32 {
+pub(crate) fn text_width(core: &Core, s: &str) -> i32 {
     s.bytes()
         .map(|c| if c.is_ascii_digit() { DIGIT_W as i32 + 1 } else { core.raw_read_8(FONT_WIDTHS + c as u32, -1) as i32 + 1 })
         .sum::<i32>()
         - 1
 }
 
-fn bgr(c: u16) -> Rgb {
+pub(crate) fn bgr(c: u16) -> Rgb {
     let f = |v: u16| ((v & 31) * 255 / 31) as u8;
     (f(c), f(c >> 5), f(c >> 10))
 }
@@ -1202,7 +1228,7 @@ fn room(core: &Core) -> String {
 }
 
 /// The help bar at the bottom, over the game's.
-fn bar(cv: &mut Rgba, core: &Core, s: &str) {
+pub(crate) fn bar(cv: &mut Rgba, core: &Core, s: &str) {
     cv.rect(0, 144, W as i32, 16, BAR);
     let w = text_width(core, s);
     cv.text(core, (W as i32 - w) / 2, 147, s, WHITE, GRAY_INK);

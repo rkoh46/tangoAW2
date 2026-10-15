@@ -39,6 +39,8 @@ struct World {
     link: Arc<Mutex<dyn Link>>,
     live_tick: u32,
     local_player: usize,
+    /// How many players the match has (2, or up to [`MAX_SEATS`] in a room).
+    players: usize,
     /// Snapshots the engine has retired, kept for their allocations —
     /// a rollback session retires one nearly every tick and they run to
     /// megabytes.
@@ -46,7 +48,7 @@ struct World {
     /// Which seats the host displays — the local one, until something
     /// like training turns the remote back on. Shared with the
     /// [`Match`] so that can happen mid-session.
-    visible: Arc<[AtomicBool; 2]>,
+    visible: Arc<[AtomicBool; MAX_SEATS]>,
     /// Which screens the host actually puts in front of someone, as a
     /// mask over the composition order. All of them until a host says
     /// otherwise; shared with the [`Match`] because an arrangement
@@ -63,14 +65,39 @@ struct World {
     audio: Option<crate::audio::Pump>,
 }
 
+/// The most players a match can have (a room of five).
+pub const MAX_SEATS: usize = 5;
+
 /// Put getgud's local/remote-slot input view into Tango's absolute player
-/// order.
-fn player_inputs(local_player: usize, local: HostInput, remotes: &[HostInput]) -> [HostInput; 2] {
-    debug_assert_eq!(remotes.len(), 1);
-    let mut inputs = [local; 2];
+/// order. In a room of more than two players the one remote input is the
+/// others' words together ([`HostInput::extra`]): the other seats in
+/// ascending order, the first in `keys`.
+pub fn seat_inputs(local_player: usize, players: usize, local: HostInput, remote: HostInput) -> [HostInput; MAX_SEATS] {
+    let mut inputs = [HostInput::default(); MAX_SEATS];
+    if players <= 2 {
+        inputs[local_player] = local;
+        inputs[1 - local_player] = remote;
+        return inputs;
+    }
     inputs[local_player] = local;
-    inputs[1 - local_player] = remotes[0];
+    let words = [remote.keys, remote.extra[0] as u32, remote.extra[1] as u32, remote.extra[2] as u32];
+    for (k, seat) in (0..players).filter(|&s| s != local_player).enumerate() {
+        inputs[seat] = HostInput::keys(words[k]);
+    }
     inputs
+}
+
+/// The inverse of [`seat_inputs`] for the peer at `seat`: the one input standing for every player but `seat`.
+pub fn others_input(seat: usize, players: usize, inputs: &[HostInput]) -> HostInput {
+    let mut words = [0u32; 4];
+    for (k, s) in (0..players).filter(|&s| s != seat).enumerate() {
+        words[k] = inputs.get(s).map_or(0, |i| i.keys);
+    }
+    HostInput {
+        keys: words[0],
+        touch: None,
+        extra: [words[1] as u16, words[2] as u16, words[3] as u16],
+    }
 }
 
 impl getgud::World for World {
@@ -79,16 +106,21 @@ impl getgud::World for World {
     type Error = crate::Error;
 
     fn step(&mut self, local: &HostInput, remotes: &[HostInput]) -> Result<(), crate::Error> {
-        let inputs = player_inputs(self.local_player, *local, remotes);
+        debug_assert_eq!(remotes.len(), 1);
+        let inputs = seat_inputs(self.local_player, self.players, *local, remotes[0]);
         let mut link = self.link.lock().unwrap();
         let render = self.live_tick + 1 >= self.render_from.load(Ordering::Relaxed);
         let screens = self.displayed_screens.load(Ordering::Relaxed);
-        for player in 0..2 {
+        for player in 0..self.players {
             let mut side = link.side(player);
             side.set_render(render && self.visible[player].load(Ordering::Relaxed));
             side.set_displayed_screens(screens);
         }
-        link.tick(inputs);
+        if self.players == 2 {
+            link.tick([inputs[0], inputs[1]]);
+        } else {
+            link.tick_n(&inputs[..self.players]);
+        }
         // Straight after the tick, with the link still in hand: this is
         // the one moment its lock is certainly free, and audio that does
         // not cross here waits behind it for as long as the drive loop
@@ -154,6 +186,8 @@ pub struct Advance {
     /// Input rows that joined the authoritative settled state during this
     /// advance, in absolute player order and tick order.
     pub confirmed_inputs: Vec<[HostInput; 2]>,
+    /// The same rows' seats 2.. (a room of more than two players; zeros otherwise).
+    pub confirmed_extra: Vec<[HostInput; 3]>,
 }
 
 /// A running two-player rollback match on any engine — the unified
@@ -163,7 +197,8 @@ pub struct Match {
     inner: getgud::Session<World>,
     link: Arc<Mutex<dyn Link>>,
     local_player: usize,
-    visible: Arc<[AtomicBool; 2]>,
+    players: usize,
+    visible: Arc<[AtomicBool; MAX_SEATS]>,
     /// See the world's copy: which screens are actually presented,
     /// live so an arrangement setting takes effect mid-session.
     displayed_screens: Arc<AtomicU8>,
@@ -196,9 +231,21 @@ impl Match {
         present_delay: u32,
         audio: Option<crate::AudioIn>,
     ) -> Result<Self, crate::Error> {
-        assert!(local_player < 2);
+        Self::new_n(link, local_player, 2, present_delay, audio)
+    }
+
+    /// [`new`](Self::new) for a room of `players` (2..=[`MAX_SEATS`]): the one remote input is the others
+    /// together ([`HostInput::extra`], see [`seat_inputs`]).
+    pub fn new_n<L: Link>(
+        link: L,
+        local_player: usize,
+        players: usize,
+        present_delay: u32,
+        audio: Option<crate::AudioIn>,
+    ) -> Result<Self, crate::Error> {
+        assert!((2..=MAX_SEATS).contains(&players) && local_player < players);
         let link: Arc<Mutex<dyn Link>> = Arc::new(Mutex::new(link));
-        let visible = Arc::new([AtomicBool::new(local_player == 0), AtomicBool::new(local_player == 1)]);
+        let visible = Arc::new(std::array::from_fn(|seat| AtomicBool::new(seat == local_player)));
         let render_from = Arc::new(AtomicU32::new(0));
         let displayed_screens = Arc::new(AtomicU8::new(u8::MAX));
         let audio_seat = Arc::new(std::sync::atomic::AtomicUsize::new(local_player));
@@ -207,6 +254,7 @@ impl Match {
             link: link.clone(),
             live_tick: 0,
             local_player,
+            players,
             pool: Vec::new(),
             visible: visible.clone(),
             displayed_screens: displayed_screens.clone(),
@@ -233,6 +281,7 @@ impl Match {
             }),
             link,
             local_player,
+            players,
             visible,
             displayed_screens,
             render_from,
@@ -277,15 +326,18 @@ impl Match {
             .store(tick.saturating_sub(self.inner.present_delay()), Ordering::Relaxed);
         let getgud::Advance { confirmed, .. } = self.inner.advance(local)?;
         self.last_rollback_depth = self.inner.last_misprediction_depth();
-        let confirmed_inputs = confirmed
+        let rows: Vec<[HostInput; MAX_SEATS]> = confirmed
             .into_iter()
-            .map(|(local, remotes)| player_inputs(self.local_player, local, &remotes))
+            .map(|(local, remotes)| seat_inputs(self.local_player, self.players, local, remotes[0]))
             .collect();
+        let confirmed_inputs = rows.iter().map(|r| [r[0], r[1]]).collect();
+        let confirmed_extra = rows.iter().map(|r| [r[2], r[3], r[4]]).collect();
         Ok(Advance {
             tick,
             outgoing: local,
             tick_advantage,
             confirmed_inputs,
+            confirmed_extra,
         })
     }
 
@@ -329,8 +381,9 @@ impl Match {
         for seat in &*self.visible {
             seat.store(true, Ordering::Relaxed);
         }
+        let players = self.players;
         self.with_link(|link| {
-            for player in 0..2 {
+            for player in 0..players {
                 link.side(player).set_render(true);
             }
         });

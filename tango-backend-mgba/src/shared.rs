@@ -33,9 +33,16 @@ pub trait SharedGame: Sync {
     /// sanitized inputs in absolute seat order. Must be a pure function
     /// of `core`'s state and `inputs`, so both peers (and every
     /// re-simulation) build the same word.
-    fn merge(&self, core: &mgba::core::Core, inputs: [u32; 2]) -> u32 {
+    fn merge(&self, core: &mgba::core::Core, inputs: &[u32]) -> u32 {
         let _ = core;
-        inputs[0] | inputs[1]
+        inputs.iter().fold(0, |a, &b| a | b)
+    }
+
+    /// Every tick, before [`merge`](Self::merge), with the console in hand and every seat's keys (2, or up to 5 in a
+    /// room): for a game that keeps state of its own for each seat (tangoAW2's CO selection). Like everything that
+    /// touches the simulation, a pure function of the console's state, `mode` and `inputs`.
+    fn seat_keys(&self, core: &mut mgba::core::Core, mode: Option<(u8, u8)>, inputs: &[u32]) {
+        let _ = (core, mode, inputs);
     }
 
     /// Runs before every tick, with the console in hand: the place for a
@@ -148,7 +155,7 @@ pub struct SharedLink {
     game: &'static (dyn SharedGame + Send + Sync),
     mode: Option<(u8, u8)>,
     /// What each seat last asked for; the console renders if either does.
-    render: [bool; 2],
+    render: [bool; tango_match::MAX_SEATS],
     /// A netplay match's end watch ([`SharedGame::match_over`]), and the
     /// session's tick count it stamps.
     telemetry: Option<tango_match::telemetry::Telemetry<mgba::core::Core>>,
@@ -196,7 +203,7 @@ impl SharedLink {
             inner,
             game,
             mode,
-            render: [true, true],
+            render: [true; tango_match::MAX_SEATS],
             telemetry: None,
             tick: 0,
         })
@@ -249,12 +256,21 @@ impl SharedLink {
 
 impl tango_match::Link for SharedLink {
     fn sanitize(&self, input: HostInput) -> HostInput {
-        HostInput::keys(input.keys & JOYFLAGS_MASK)
+        HostInput {
+            keys: input.keys & JOYFLAGS_MASK,
+            touch: None,
+            extra: input.extra.map(|w| w & JOYFLAGS_MASK as u16),
+        }
     }
 
     fn tick(&mut self, inputs: [HostInput; 2]) {
-        let keys = inputs.map(|i| i.keys & JOYFLAGS_MASK);
-        let word = self.game.merge(self.inner.core(0), keys) & JOYFLAGS_MASK;
+        self.tick_n(&inputs);
+    }
+
+    fn tick_n(&mut self, inputs: &[HostInput]) {
+        let keys: Vec<u32> = inputs.iter().map(|i| i.keys & JOYFLAGS_MASK).collect();
+        self.game.seat_keys(self.inner.core_mut(0), self.mode, &keys);
+        let word = self.game.merge(self.inner.core(0), &keys) & JOYFLAGS_MASK;
         let word = self.game.before_tick(self.inner.core_mut(0), self.mode, word) & JOYFLAGS_MASK;
         self.inner.tick(&[word]);
         if let Some(telemetry) = self.telemetry.as_mut() {

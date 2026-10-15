@@ -59,6 +59,13 @@ pub trait Link: Send + 'static {
     /// Advance the pair one video frame.
     fn tick(&mut self, inputs: [crate::HostInput; 2]);
 
+    /// [`tick`](Self::tick) for a console shared by more than two players (tangoAW2's rooms of up to five): every
+    /// seat's input, in seat order. The default is a pair's.
+    fn tick_n(&mut self, inputs: &[crate::HostInput]) {
+        let pad = |k: usize| inputs.get(k).copied().unwrap_or_default();
+        self.tick([pad(0), pad(1)]);
+    }
+
     /// Capture the link. Reuses `recycled`'s allocations when one is
     /// offered — rollback retires a snapshot nearly every tick, and
     /// these run to megabytes. A recycled snapshot is always one this
