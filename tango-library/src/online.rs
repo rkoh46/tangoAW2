@@ -81,3 +81,13 @@ pub fn probe_bits() -> u64 {
 pub fn set_room(names: Vec<String>, local_seat: usize) {
     tango_gamesupport_aw2::online::set_room(names, local_seat)
 }
+
+#[cfg(feature = "gamesupport-aw2")]
+pub fn list_debug() -> u64 {
+    tango_gamesupport_aw2::online::probe::LIST_DEBUG.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+#[cfg(feature = "gamesupport-aw2")]
+pub fn map_debug() -> u64 {
+    tango_gamesupport_aw2::online::probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed)
+}

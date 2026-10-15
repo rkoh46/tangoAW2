@@ -454,6 +454,23 @@ impl PvpDriver {
             .depth
             .store(self.match_.last_rollback_depth(), Ordering::Relaxed);
 
+        // Test aid (`TANGOAW2_STATE_LOG=1`): a checksum of the console's memory every 120 ticks, to compare peers.
+        if std::env::var("TANGOAW2_STATE_LOG").is_ok_and(|v| v == "1") && self.confirmed_through % 120 == 0 {
+            let sums = self.match_.with_link(|link| {
+                let mut out = Vec::new();
+                for (name, at, len) in [("iwram", 0x0300_0000u32, 0x8000usize), ("ewram", 0x0200_0000, 0x40000)] {
+                    let mut b = vec![0u8; len];
+                    link.peek(at, &mut b);
+                    let mut h: u64 = 0xcbf29ce484222325;
+                    for x in &b {
+                        h = (h ^ *x as u64).wrapping_mul(0x100000001b3);
+                    }
+                    out.push(format!("{name}={h:016x}"));
+                }
+                out.join(" ")
+            });
+            log::info!("state tick {}: {}", self.confirmed_through, sums);
+        }
         // A successful advance returns every row it settled. Nothing else
         // settles the engine, so every early return below is already consumed
         // and teardown has no tail path.

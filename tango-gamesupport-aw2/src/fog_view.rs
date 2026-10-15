@@ -32,9 +32,13 @@ const CURRENT_PLAYER: u32 = 0x0300_33EC;
 /// The army whose picture `seat` gets: its first army still playing after the current one in turn order, else any.
 fn viewer_army(core: &Core, seat: usize) -> Option<u8> {
     let current = crate::pvp::current_army(core) as usize;
-    let armies = core.raw_read_8(0x0201_7C58, -1) as usize;
+    let armies = crate::tag_ui::armies(core) as usize;
+    let players = crate::online::room_players();
     let alive = |a: usize| a <= armies;
-    (1..=5).map(|k| (current + k - 1) % 5 + 1).find(|&a| alive(a) && crate::pvp::seat_of(a as u8) == seat).map(|a| a as u8)
+    (1..=5)
+        .map(|k| (current + k - 1) % 5 + 1)
+        .find(|&a| alive(a) && crate::pvp::seat_of_n(a as u8, players) == seat)
+        .map(|a| a as u8)
 }
 
 const FOG: u32 = 0x0300_3FCD;

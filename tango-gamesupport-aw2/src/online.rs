@@ -93,6 +93,10 @@ const SKIP_DIR: u32 = STATE + 0x60;
 const SKIP_STEPS: u32 = STATE + 0x61;
 const SKIP_T: u32 = STATE + 0x62;
 const SKIP_DONE: u32 = STATE + 0x63;
+const SKIP_LAST: u32 = STATE + 0x66;
+const SKIP_SAME: u32 = STATE + 0x67;
+const SKIP_TAB: u32 = STATE + 0x68;
+const PLAYERS_N_FOR_PROBE: u32 = crate::online_teams::SEL + 2;
 /// 1 for the whole of a room's battle (from its map loading until it is left for good), and the frames out of it.
 const BATTLE: u32 = STATE + 0x64;
 const OUT_T: u32 = STATE + 0x65;
@@ -367,6 +371,8 @@ pub mod probe {
     pub const TURN_ENDED: u64 = 128;
 
     static BITS: AtomicU64 = AtomicU64::new(0);
+    pub static LIST_DEBUG: AtomicU64 = AtomicU64::new(0);
+    pub static MAP_DEBUG: AtomicU64 = AtomicU64::new(0);
 
     /// Every tick (any console): note the screen.
     pub fn store(core: &Core) {
@@ -387,8 +393,32 @@ pub mod probe {
         b |= (crate::online_menu::cursor(core).unwrap_or(0xFF) as u64) << 8;
         b |= (level(core) as u64) << 16;
         b |= (crate::pvp::current_army(core) as u64) << 24;
-        b |= (super::map_armies(core).unwrap_or(0) as u64) << 32;
+        b |= (super::map_armies(core, crate::ds_pack::pack().is_some()).unwrap_or(0) as u64) << 32;
+        b |= (core.raw_read_8(super::SKIP_DIR, -1) as u64) << 40;
+        b |= (core.raw_read_8(super::SKIP_STEPS, -1) as u64) << 48;
+        b |= (crate::survival_ui::idle(core) as u64) << 56;
+        b |= (core.raw_read_8(super::PLAYERS_N_FOR_PROBE, -1) as u64) << 57;
         BITS.store(b, Ordering::Relaxed);
+        // (test aid: where SELECT MAP's cursor is, by both ways of telling)
+        let first = core.raw_read_32(0x0300_5900, -1) & 0xFF;
+        let cur = core.raw_read_32(0x0300_5930, -1) & 0xFF;
+        let pcur = super::list_cursor(core).unwrap_or(0xFF) & 0xFF;
+        let id_a = core.raw_read_8(super::LIST_IDS + (first + cur).min(0x31), -1) as u32;
+        let id_b = core.raw_read_8(super::LIST_IDS + pcur.min(0x31), -1) as u32;
+        let tab = crate::five_map::table(core);
+        let arm = |id: u32| core.raw_read_8(tab + 0x5C * id + 0x18, -1) as u64;
+        let ml = core.raw_read_32(0x0300_0000, -1) as u64;
+        MAP_DEBUG.store(
+            ml | (core.raw_read_8(0x0300_14E2, -1) as u64) << 32
+                | (core.raw_read_8(0x0300_14F0, -1) as u64) << 40
+                | (core.raw_read_8(0x0300_33EC, -1) as u64) << 48
+                | ((core.raw_read_32(0x0300_0004, -1) != 0) as u64) << 56,
+            Ordering::Relaxed,
+        );
+        LIST_DEBUG.store(
+            first as u64 | (cur as u64) << 8 | (pcur as u64) << 16 | (id_a as u64) << 24 | (id_b as u64) << 32 | arm(id_a) << 40 | arm(id_b) << 48,
+            Ordering::Relaxed,
+        );
     }
 
     /// The last tick's note: flags in the low byte, then the ONLINE cursor (0xFF none), the lobby level and the army
@@ -870,6 +900,7 @@ pub fn boot_more(core: &Core, mode: Option<(u8, u8)>) -> bool {
 pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
     match mode {
         Some((_, sub)) if sub & ONLINE_MATCH != 0 => {
+            let pack = crate::ds_pack::features(mode);
             if core.raw_read_8(MATCH, -1) == 0 {
                 core.raw_write_8(MATCH, -1, 1);
                 core.raw_write_8(OVER, -1, 0);
@@ -893,7 +924,7 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             // in the same direction (a press every few frames) until one fits.
             if crate::survival_ui::idle(core) {
                 let want = crate::online_teams::players(core) as u8;
-                let wrong = map_armies(core).is_some_and(|n| n != want);
+                let wrong = map_armies(core, pack).is_some_and(|n| n != want);
                 let pressed = keys & !prev;
                 let (mut dir, mut steps) = (core.raw_read_8(SKIP_DIR, -1) as u32, core.raw_read_8(SKIP_STEPS, -1));
                 if pressed & (KEY_UP | KEY_DOWN) != 0 {
@@ -909,14 +940,37 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
                     steps = 0;
                 }
                 core.raw_write_8(SKIP_DONE, -1, 1);
-                if wrong && dir != 0 && steps < 120 {
+                if wrong && dir != 0 && steps < 250 {
                     let t = core.raw_read_8(SKIP_T, -1).wrapping_add(1);
                     core.raw_write_8(SKIP_T, -1, t);
-                    if t % 4 == 0 {
+                    // (a press of 4 frames in 10)
+                    if t % 10 < 4 {
                         keys |= dir;
-                        steps += 1;
+                        if t % 10 == 0 {
+                            steps += 1;
+                            // The end of the list with no fitting map: on to the next tab, from its top.
+                            let at = list_cursor(core).unwrap_or(0xFF) as u8;
+                            let last = core.raw_read_8(SKIP_LAST, -1);
+                            let same = core.raw_read_8(SKIP_SAME, -1);
+                            let same = if at == last { same + 1 } else { 0 };
+                            core.raw_write_8(SKIP_LAST, -1, at);
+                            if same >= 2 && dir == KEY_DOWN {
+                                core.raw_write_8(SKIP_SAME, -1, 0);
+                                core.raw_write_8(SKIP_TAB, -1, 1);
+                            } else {
+                                core.raw_write_8(SKIP_SAME, -1, same);
+                            }
+                        }
                     } else {
                         keys &= !(KEY_UP | KEY_DOWN);
+                    }
+                    if core.raw_read_8(SKIP_TAB, -1) == 1 {
+                        // (one RIGHT in place of the DOWN, then DOWN again)
+                        keys = (keys & !KEY_DOWN) | KEY_RIGHT;
+                        if t % 10 == 5 {
+                            core.raw_write_8(SKIP_TAB, -1, 0);
+                            core.raw_write_8(SKIP_SAME, -1, 0);
+                        }
                     }
                 } else {
                     dir = 0;
@@ -929,7 +983,7 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             }
             if keys & !prev & KEY_A != 0
                 && crate::survival_ui::idle(core)
-                && map_armies(core).is_some_and(|n| n as usize != crate::online_teams::players(core))
+                && map_armies(core, pack).is_some_and(|n| n as usize != crate::online_teams::players(core))
             {
                 keys &= !KEY_A;
                 core.raw_write_8(NOTICE, -1, 120);
@@ -962,15 +1016,24 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
     }
 }
 
-const LIST_FIRST: u32 = 0x0300_5900;
-const LIST_CURSOR: u32 = 0x0300_5930;
 const LIST_IDS: u32 = 0x0202_7F78;
 
+/// SELECT MAP's list proc (the game's own: its cursor row is at +0x58) and where procs live.
+const LIST_PROC: u32 = 0x0861_6CF4;
+const PROCS: (u32, u32) = (0x0200_D610, 0x0200_E418);
+
+/// The row the cursor is on in SELECT MAP's list (an index into [`LIST_IDS`]).
+fn list_cursor(core: &Core) -> Option<u32> {
+    let p = (PROCS.0..PROCS.1)
+        .step_by(0x6C)
+        .find(|&p| core.raw_read_32(p, -1) == LIST_PROC)?;
+    Some(core.raw_read_16(p + 0x58, -1) as u32)
+}
+
 /// How many armies the map under SELECT MAP's cursor has.
-fn map_armies(core: &Core) -> Option<u8> {
-    let i = core
-        .raw_read_32(LIST_FIRST, -1)
-        .wrapping_add(core.raw_read_32(LIST_CURSOR, -1));
+fn map_armies(core: &Core, pack: bool) -> Option<u8> {
+    let _ = pack;
+    let i = list_cursor(core)?;
     if i > 0x31 {
         return None;
     }

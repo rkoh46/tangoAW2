@@ -388,7 +388,7 @@ impl SharedLink {
     }
 
     fn apply_render(&mut self) {
-        let on = self.render[0] || self.render[1];
+        let on = self.render.iter().any(|&r| r);
         self.inner.set_frameskip(0, if on { 0 } else { i32::MAX });
     }
 }
@@ -491,7 +491,7 @@ impl Side for SharedSide<'_> {
             self.link.game.overlay(core, self.link.mode, self.player, &mut frame);
         }
         // The seat's own turn: its picture is what its window shows until the first one of the next waiting turn is made.
-        if self.conceal && self.link.game.watching(self.link.inner.core(0), 1 - self.player) {
+        if self.conceal && !self.link.game.watching(self.link.inner.core(0), self.player) {
             self.link.watched[self.player] = Some(frame.clone());
             self.link.watched_at[self.player] = None;
         }

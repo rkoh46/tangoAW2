@@ -50,6 +50,17 @@ impl App {
             return self.update_play(tabs::play::Message::PlayOfflinePressed);
         }
         if self.session.active_as::<session::pvp::PvpSession>().is_some() {
+            if std::env::var("TANGOAW2_ONLINE_LOG").is_ok_and(|v| v == "1")
+                && self.online.last_log.is_none_or(|t| t.elapsed().as_secs() >= 1)
+            {
+                self.online.last_log = Some(std::time::Instant::now());
+                log::info!(
+                    "match state: probe {:#x} list {:#x} map {:#x}",
+                    tango_library::online::probe_bits(),
+                    tango_library::online::list_debug(),
+                    tango_library::online::map_debug()
+                );
+            }
             return iced::Task::none();
         }
         let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
