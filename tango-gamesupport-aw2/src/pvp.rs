@@ -582,7 +582,16 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// The waiting seat's window is not the console's picture (crate::fog_view).
     fn watching(&self, core: &Core, seat: usize) -> bool {
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
-        in_battle(core) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat && !turn_ended(core)
+        if !(in_battle(core) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat) {
+            return false;
+        }
+        // (the hand-off screen, and without fog the turn's banners and animations: the console's own picture, the same
+        // in every window)
+        match crate::fog_view::phase(core) {
+            crate::fog_view::Phase::HandOff => false,
+            crate::fog_view::Phase::Busy => crate::fog_view::fog(core),
+            crate::fog_view::Phase::Map | crate::fog_view::Phase::Page => true,
+        }
     }
 
     fn scratch_stash(&self) -> Box<dyn std::any::Any> {

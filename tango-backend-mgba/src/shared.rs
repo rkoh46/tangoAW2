@@ -123,10 +123,8 @@ pub trait SharedGame: Sync {
         false
     }
 
-    /// Whether `seat` should be shown nothing right now: a hot-seat game
-    /// hides one player's view from the other between turns, and on a
-    /// networked shared console nothing else would. Presentation only,
-    /// read after the tick, so it never touches the simulation.
+    /// Whether `seat` should be shown nothing right now. The engine no longer blacks a window out (a waiting seat's
+    /// picture is [`view_as`](Self::view_as)'s); kept for tools that still ask.
     fn conceal(&self, core: &mgba::core::Core, seat: usize) -> bool {
         let _ = (core, seat);
         false
@@ -331,11 +329,11 @@ impl SharedLink {
     /// ([`SharedGame::view_as`]), after which the console is loaded back from a snapshot taken first, the sound the
     /// ticks made is dropped and the frameskip is back, so the simulation never sees any of it. The seat's last
     /// picture stands in when the game cannot make one now (a battle scene, a full-screen page).
-    fn watching_frame(&mut self, seat: usize) -> Vec<u8> {
+    fn watching_frame(&mut self, seat: usize) -> Option<Vec<u8>> {
         // (a window that updates every other tick: the scratch picture is the costly part of a frame)
         if let Some((f, at)) = self.watched[seat].as_ref().zip(self.watched_at[seat]) {
             if self.tick.wrapping_sub(at) < WATCH_EVERY {
-                return f.clone();
+                return Some(f.clone());
             }
         }
         let made = self.scratch_frame(seat);
@@ -343,9 +341,9 @@ impl SharedLink {
             Some(f) => {
                 self.watched[seat] = Some(f.clone());
                 self.watched_at[seat] = Some(self.tick);
-                f
+                Some(f)
             }
-            None => self.watched[seat].clone().unwrap_or_else(|| concealed(&vec![0u8; 240 * 160 * 4])),
+            None => self.watched[seat].clone(),
         }
     }
 
@@ -479,19 +477,25 @@ struct SharedSide<'a> {
 
 impl Side for SharedSide<'_> {
     fn frame(&mut self) -> Option<Vec<u8>> {
+        // (a waiting seat whose picture cannot be made, and none was made before, sees the console's own: never a
+        // blacked-out window; the game's `watching` keeps to the moments the picture can be made)
         if self.conceal && self.link.game.watching(self.link.inner.core(0), self.player) {
-            return Some(self.link.watching_frame(self.player));
+            if let Some(f) = self.link.watching_frame(self.player) {
+                return Some(f);
+            }
         }
         let mut frame = self.link.inner.video_buffer(0).map(to_rgba)?;
         let core = self.link.inner.core(0);
-        if self.conceal && self.link.game.conceal(core, self.player) {
-            return Some(concealed(&frame));
-        }
         if self.link.game.overlay_hires(core, self.link.mode, self.player, &mut frame).is_none() {
             self.link.game.overlay(core, self.link.mode, self.player, &mut frame);
         }
         // The seat's own turn: its picture is what its window shows until the first one of the next waiting turn is made.
-        if self.conceal && self.link.game.watching(self.link.inner.core(0), 1 - self.player) {
+        let mover = {
+            let core = self.link.inner.core(0);
+            let game = self.link.game;
+            (0..self.link.players.max(2)).any(|s| s != self.player && game.watching(core, s))
+        };
+        if self.conceal && mover {
             self.link.watched[self.player] = Some(frame.clone());
             self.link.watched_at[self.player] = None;
         }
@@ -519,17 +523,6 @@ impl Side for SharedSide<'_> {
     }
 }
 
-/// What a concealed seat sees: the picture blacked out except a faint
-/// band, so it reads as "the other player is moving" rather than a crash.
-fn concealed(frame: &[u8]) -> Vec<u8> {
-    let mut out = vec![0u8; frame.len()];
-    for (i, px) in out.chunks_mut(4).enumerate() {
-        let y = i / 240;
-        let v = if (76..84).contains(&y) { 40 } else { 8 };
-        px.copy_from_slice(&[v, v, v + 12, 255]);
-    }
-    out
-}
 
 /// A shared-console game as the engine-neutral backend its registration
 /// holds.
