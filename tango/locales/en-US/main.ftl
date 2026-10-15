@@ -5,8 +5,10 @@ LANGUAGE = English
 window-title = tangoAW2
 # Tooltip on the top bar's close button (fullscreen only).
 window-quit = Exit tangoAW2
-play-offline = Play offline
-play-offline-tooltip = Play Advance Wars 2 on your own, no internet needed. Everything is unlocked; pick army colours on the Teams screen with SELECT.
+play-offline = Play
+play-offline-tooltip = Start Advance Wars 2. Play online from inside the game: Select Mode > ONLINE > LOBBY makes or joins a room.
+play-advanced = Link code
+play-advanced-tooltip = Advanced: meet a player with a link code instead (both walk the menus from the title).
 
 # Crash handler dialogs (parent process)
 crash = Oops, tangoAW2 has encountered an error and has crashed!
