@@ -15,7 +15,7 @@ use crate::online::{
     YELLOW,
 };
 
-pub const STATE: u32 = 0x0203_CB00;
+pub const STATE: u32 = 0x0203_D300;
 pub const STATE_LEN: u32 = 0x100;
 /// Rows the app wrote.
 const COUNT: u32 = STATE;
@@ -259,7 +259,7 @@ fn bar_text(core: &Core, options: &[&str]) -> String {
 }
 
 /// The browser's page, over the ONLINE screen.
-pub fn apply(cv: &mut Rgba, core: &Core) {
+pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
     let (x, y, w, h) = crate::online::PANEL;
     cv.window(x, y, w, h);
     let rows = rows(core);

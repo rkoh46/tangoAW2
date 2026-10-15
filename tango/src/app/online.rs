@@ -163,6 +163,11 @@ impl App {
 
     /// The game's lobby browser is open (level 7): look at the public list and write what is found.
     fn online_browse(&mut self, level: u8) {
+        // The look goes on while a lobby picked from the list is joined or its password typed (the list is still there
+        // when B comes back); any other page ends it.
+        if matches!(level, 3..=5) && self.online.browse.is_some() {
+            return;
+        }
         if level != 7 {
             if self.online.browse.take().is_some() {
                 self.online.browse_order.clear();
@@ -200,11 +205,15 @@ impl App {
         };
         // First seen first; a lobby that is gone leaves the order.
         self.online.browse_order.retain(|c| listed.iter().any(|l| &l.lobby.code == c));
-        for l in &listed {
-            if !self.online.browse_order.contains(&l.lobby.code) {
-                self.online.browse_order.push(l.lobby.code.clone());
-            }
-        }
+        // (lobbies seen for the first time in this look, by code: the same order wherever they came from first)
+        let mut fresh: Vec<&String> = listed
+            .iter()
+            .map(|l| &l.lobby.code)
+            .filter(|c| !self.online.browse_order.contains(c))
+            .collect();
+        fresh.sort();
+        let fresh: Vec<String> = fresh.into_iter().cloned().collect();
+        self.online.browse_order.extend(fresh);
         let rows: Vec<mailbox::BrowseRow> = self
             .online
             .browse_order
