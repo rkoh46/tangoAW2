@@ -171,12 +171,7 @@ pub async fn spawn_pvp(
     let mut runtime = RunningSession::new(session, audio);
     runtime.spawn_driver("tango-sio-drive", boot)?;
     Ok(Launch {
-        pvp_panes: Some(PvpPanes::new(
-            local_loaded,
-            opponent_loaded,
-            opponent_build_warnings,
-            config.pvp_setup_pane_widths,
-        )),
+        pvp_panes: Some(PvpPanes::new(local_loaded, opponent_loaded, opponent_build_warnings)),
         ..Launch::new(runtime)
     })
 }

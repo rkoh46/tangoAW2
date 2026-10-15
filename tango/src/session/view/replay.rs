@@ -45,7 +45,7 @@ pub(crate) fn view<'a>(r: &'a ReplaySession, ctx: Ctx<'a>) -> Element<'a, Sessio
     let (main_horizontal, main_vertical) = main_frame_alignment(ctx.opponent_view);
     let frame = framebuffer_view(ctx, touch_spot, main_horizontal, main_vertical);
     let frame = stacked_framebuffers(ctx, frame, pip_touch_spot, ctx.opponent_view);
-    let body = emulator_body(frame, [None, None], false, ctx.landscape_stretch);
+    let body = emulator_body(frame, false, ctx.landscape_stretch);
     // Clicking the screen itself plays/pauses, like any video player.
     // This is the stack's bottom layer, and iced dispatches presses
     // topmost-first with capture — so the transport bar's controls
@@ -74,7 +74,7 @@ pub(crate) fn view<'a>(r: &'a ReplaySession, ctx: Ctx<'a>) -> Element<'a, Sessio
             ctx.clip_job,
             ctx.queued,
         ));
-        stacked = stacked.push(corner_commands_overlay(lang, state, SessionMessage::Close, false));
+        stacked = stacked.push(corner_commands_overlay(lang, state, SessionMessage::Close));
     }
     // Input display, above the transport bar's resting spot.
     // Deliberately outside the floating-controls gate — the whole

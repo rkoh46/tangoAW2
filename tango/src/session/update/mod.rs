@@ -10,12 +10,8 @@ pub mod training;
 /// Work a session message asks of the application, which owns the
 /// configuration, the replays tab, and session launches.
 pub enum Effect {
-    /// Follow-up work inside the session, from a save view's update.
-    Task(iced::Task<super::Message>),
     /// Remember the local frame delay the PvP slider set.
     PersistFrameDelay(u32),
-    /// Remember the PvP setup drawers' widths after a resize.
-    PersistPaneWidths([f32; 2]),
     /// Remember how the opponent's screen is presented.
     PersistOpponentView(crate::config::OpponentView),
     /// Show or hide the replay input display.

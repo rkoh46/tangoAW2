@@ -36,16 +36,7 @@ impl App {
         };
         use tabs::play::Effect as E;
         match effect {
-            E::SetFrameDelay(d) => {
-                // Lobby slider. Persisted to config; it's this side's local
-                // frame delay (snapshotted into the match at start, not
-                // negotiated with the peer), so there's no live match to push it
-                // to here.
-                self.config.frame_delay = d;
-                self.persist_config();
-                iced::Task::none()
-            }
-            E::Connect { ident, copy_code } => {
+            E::Connect { ident } => {
                 let task = match ident {
                     netplay::LinkIdent::Matchmaking(link_code) => netplay::connect(
                         &mut self.netplay,
@@ -66,31 +57,7 @@ impl App {
                 // Seed the blind-setup flag the lobby sends from the
                 // stored choice (cancel_and_renew reset it to false).
                 self.netplay.lobby.blind_setup = self.config.last_blind_setup;
-                match copy_code {
-                    // Fight auto-generated this code — put it straight on
-                    // the clipboard so the host can paste it to their
-                    // opponent right away.
-                    Some(code) => iced::Task::batch([iced::clipboard::write(code), task]),
-                    None => task,
-                }
-            }
-            E::Disconnect => {
-                self.netplay.disconnect();
-                iced::Task::none()
-            }
-            E::SetMatchType(mt) => {
-                // Stamping the family keeps the default policy from
-                // clobbering a pick made before it ever ran (see
-                // `netplay::State::pick_match_type`).
-                let family = self.loadout.game().map(|g| g.family_and_variant().0);
-                self.netplay.pick_match_type(family, mt);
-                if let Some(family) = family {
-                    // And remember it for the next time this family
-                    // comes up, here or in a future launch.
-                    self.config.last_match_type_per_family.insert(family.to_string(), mt);
-                    self.persist_config();
-                }
-                self.resend_settings_if_lobby()
+                task
             }
             E::Unready => {
                 self.netplay.uncommit();

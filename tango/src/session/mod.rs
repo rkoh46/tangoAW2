@@ -28,7 +28,7 @@ use crate::i18n::t;
 use crate::platform::audio;
 use crate::platform::video::framebuffer::Effect;
 use crate::ui::anim;
-use crate::ui::style::{self, TEXT_BODY, TEXT_CAPTION};
+use crate::ui::style::{TEXT_BODY, TEXT_CAPTION};
 use crate::ui::widgets;
 use iced::widget::canvas::{self, Canvas, Frame, LineCap, Path, Stroke};
 use iced::widget::space::horizontal as horizontal_space;
@@ -76,15 +76,6 @@ pub struct State {
     /// should land back on the results. The App's view routes here whenever
     /// no session is active.
     pub results: Option<MatchResults>,
-    /// PvP-only: the opponent's save-view side panel, shown when
-    /// they haven't blinded their setup. Defaults to hidden; user
-    /// opens it via the edge handle. The drawer slides in from the
-    /// screen edge and the edge handle rides its moving inner edge.
-    pub opponent_panel: anim::Overlay,
-    /// PvP-only: the local player's save-view side panel. Defaults
-    /// to hidden; user toggles it via the red toolbar button. Slides
-    /// the same way as [`opponent_panel`](Self::opponent_panel).
-    pub self_panel: anim::Overlay,
     /// Combined keyboard + gamepad held state. Updated from
     /// the input event stream; the user's Mapping resolves it
     /// into GBA joyflags each event.
@@ -184,8 +175,6 @@ impl Default for State {
             pvp_panes: None,
             replay_path: None,
             results: None,
-            opponent_panel: anim::Overlay::new(false),
-            self_panel: anim::Overlay::new(false),
             input_held: crate::platform::input::HeldState::default(),
             stylus: Stylus::default(),
             speed_up_engaged: false,
@@ -363,8 +352,6 @@ impl State {
         self.settings.sync(now);
         self.disconnect.sync(now);
         self.frame_delay_control.sync(now);
-        self.self_panel.sync(now);
-        self.opponent_panel.sync(now);
         // Floating controls auto-hide. The per-frame
         // UpdateFramebuffer messages re-run this, so the idle
         // timer expires without needing its own timer source; a
@@ -433,7 +420,11 @@ impl State {
     /// Test aids: the scripted pad's word for this frame, as if held.
     pub fn set_scripted_keys(&self, keys: u32) {
         if let Some(s) = self.active.as_ref() {
-            s.set_input(tango_session::HostInput { keys, touch: self.stylus.touch(), ..Default::default() });
+            s.set_input(tango_session::HostInput {
+                keys,
+                touch: self.stylus.touch(),
+                ..Default::default()
+            });
         }
     }
 
@@ -479,7 +470,9 @@ impl State {
                 }
             }
         };
-        let Some(solo) = self.active_as::<singleplayer::SinglePlayerSession>() else { return false };
+        let Some(solo) = self.active_as::<singleplayer::SinglePlayerSession>() else {
+            return false;
+        };
         tango_library::online::type_chars(
             &mut |a, b| {
                 solo.peek(a, b);
@@ -525,7 +518,7 @@ impl State {
             // Kind-specific view messages — defined + handled beside
             // the views that emit them.
             Message::Replay(m) => return update::replay::update(self, m, config),
-            Message::Pvp(m) => return update::pvp::update(self, m, &config.language),
+            Message::Pvp(m) => return update::pvp::update(self, m),
             Message::Training(m) => return update::training::update(self, m),
             Message::Results(m) => match m {
                 view::results::Message::Dismiss => self.results = None,

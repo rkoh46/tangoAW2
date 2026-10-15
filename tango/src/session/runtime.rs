@@ -367,7 +367,6 @@ mod tests {
             &config,
         );
         state.settings.open();
-        state.opponent_panel.open();
         state.scrub.tools_open = true;
         state.speed_up_engaged = true;
         let seq = state.session_seq;
@@ -382,7 +381,6 @@ mod tests {
         );
         assert_eq!(*old.lock().unwrap(), ["close", "audio", "session", "worker"]);
         assert!(!state.settings.shown());
-        assert!(!state.opponent_panel.shown());
         assert!(!state.scrub.tools_open);
         assert!(!state.speed_up_engaged);
         assert_ne!(state.session_seq, seq);

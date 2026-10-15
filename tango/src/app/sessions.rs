@@ -37,9 +37,7 @@ impl App {
     fn perform_session_effect(&mut self, effect: session::update::Effect) -> iced::Task<Message> {
         use session::update::Effect as E;
         match effect {
-            E::Task(task) => return task.map(Message::Session),
             E::PersistFrameDelay(delay) => self.config.frame_delay = delay,
-            E::PersistPaneWidths(widths) => self.config.pvp_setup_pane_widths = widths,
             E::PersistOpponentView(view) => self.config.opponent_view = view,
             E::PersistReplayInputs(show) => self.config.show_replay_inputs = show,
             E::PersistCustomScreenSpeedup(enabled) => self.config.replay_custom_screen_speedup = enabled,

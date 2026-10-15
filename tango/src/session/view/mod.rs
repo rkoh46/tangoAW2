@@ -192,20 +192,11 @@ fn main_frame_alignment(view: crate::config::OpponentView) -> (iced::alignment::
         _ => (iced::alignment::Horizontal::Center, iced::alignment::Vertical::Center),
     }
 }
-/// Body: framebuffer + optional setup panes layered over a pure-black
-/// backdrop. The backdrop spans the full body width so the setup panes
-/// float on top of it.
-/// `slots` are the PvP setup-drawer slots (`[left, right]`), each
-/// `Some(width)` while that drawer holds the row open — see the
-/// comment on `drawer_slot` below; always `[None, None]` outside PvP.
+/// Body: framebuffer over a pure-black backdrop that spans the full
+/// body width.
 /// `touch` asks for the on-screen controller (iOS only; sessions the
 /// player drives, not replays).
-fn emulator_body<'a>(
-    frame: Element<'a, Message>,
-    slots: [Option<f32>; 2],
-    touch: bool,
-    stretch: bool,
-) -> Element<'a, Message> {
+fn emulator_body<'a>(frame: Element<'a, Message>, touch: bool, stretch: bool) -> Element<'a, Message> {
     let frame_container = container(frame).center(Fill);
     // iOS: the game above the touch controls in portrait.
     #[cfg(target_os = "ios")]
@@ -223,26 +214,10 @@ fn emulator_body<'a>(
         })
         .into();
 
-    // Left/right drawer SLOTS for PvP. The panes themselves render
-    // as overlay layers in [`view`] (`setup_drawers_overlay`) so
-    // they can layer above the corner commands; the row only claims
-    // their width so the emulator docks aside. The space is claimed
-    // eagerly and handed back eagerly: an OPEN drawer holds its slot
-    // (while the pane slides in over it), but the moment it starts
-    // closing the slot collapses — the emulator expands right away —
-    // and the exit slide plays out over the reflowed body. The
-    // matching edge handle rides the drawer's inner edge either way
-    // (`setup_handles_overlay`). A slot's width is its drawer's, so a
-    // resize drag moves the emulator's edge in step with the pane's.
-    let drawer_slot = |w: f32| iced::widget::Space::new().width(iced::Length::Fixed(w)).height(Fill);
-    let mut content_row = row![].spacing(0).height(Fill).width(Fill);
-    if let Some(w) = slots[0] {
-        content_row = content_row.push(drawer_slot(w));
-    }
-    content_row = content_row.push(container(frame_container).width(Fill).height(Fill));
-    if let Some(w) = slots[1] {
-        content_row = content_row.push(drawer_slot(w));
-    }
+    let content_row = row![container(frame_container).width(Fill).height(Fill)]
+        .spacing(0)
+        .height(Fill)
+        .width(Fill);
     #[allow(unused_mut)]
     let mut body = stack![backdrop, Element::from(content_row)];
     // The on-screen controller, hidden while a game controller is

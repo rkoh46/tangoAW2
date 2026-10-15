@@ -71,10 +71,6 @@ impl Overlay {
         self.anim.visible(now)
     }
 
-    pub fn is_animating(&self, now: Instant) -> bool {
-        self.anim.is_animating(now)
-    }
-
     /// 0.0 = fully hidden, 1.0 = fully shown.
     pub fn progress(&self, now: Instant) -> f32 {
         self.anim.progress(now)

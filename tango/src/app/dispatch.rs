@@ -7,16 +7,6 @@ impl App {
     pub fn update(&mut self, message: Message) -> iced::Task<Message> {
         let screen_before = self.screen_key();
         let family_before = self.loadout.family();
-        // Candidate snapshot for the lobby's exit animation — taken
-        // before dispatch (the handler about to run may reset the
-        // phase/lobby), kept only if the lobby actually left.
-        let lobby_live = self.lobby_on_screen().then(|| {
-            (
-                self.netplay.phase.clone(),
-                self.netplay.lobby.clone(),
-                self.netplay.ready_view(),
-            )
-        });
         let task = self.update_inner(message);
         let now = iced::time::Instant::now();
         let screen_after = self.screen_key();
@@ -42,19 +32,6 @@ impl App {
                 _ => EnterScope::Root { dy: ROOT_SLIDE },
             };
         }
-        // The Play tab's band swap follows the netplay phase: the
-        // view morphs the link-code strip into the lobby (and back)
-        // off this transition. When the lobby leaves, freeze its last
-        // live state for the exit half to render from.
-        let lobby_after = self.lobby_on_screen();
-        if let (Some(snap), false) = (lobby_live, lobby_after) {
-            self.lobby_exit_snapshot = Some(snap);
-            // A Fight-generated code never touched the input on the way in
-            // (it debuted in the lobby band) — drop it in now that the
-            // strip is coming back, so a retry re-hosts the same code.
-            self.play.restore_generated_link_code();
-        }
-        self.lobby_swap.set(lobby_after, now);
         // A different family swaps the entire bottom of the tab —
         // rise the whole save-view pane in. A different game or save
         // within the family only re-renders the save's content, and
@@ -125,7 +102,10 @@ impl App {
                 // A problem report: the moment marked in the session's log, the window's picture saved beside it.
                 let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
                 let path = self.config.logs_path().join(format!("report-{stamp}.png"));
-                log::warn!("=== REPORT (F8) {stamp}: the player marked this moment; screenshot {} ===", path.display());
+                log::warn!(
+                    "=== REPORT (F8) {stamp}: the player marked this moment; screenshot {} ===",
+                    path.display()
+                );
                 iced::window::latest()
                     .and_then(iced::window::screenshot)
                     .map(move |s| Message::DebugScreenshot(s, path.clone(), false))
@@ -139,7 +119,9 @@ impl App {
             }
             Message::PadScriptTick => {
                 let seq = self.session.is_active().then(|| self.session.install_seq());
-                let solo = self.session.active_as::<crate::session::singleplayer::SinglePlayerSession>();
+                let solo = self
+                    .session
+                    .active_as::<crate::session::singleplayer::SinglePlayerSession>();
                 let mut cond = |c: &str| {
                     let mut read = |a: u32, b: &mut [u8]| {
                         if let Some(solo) = solo {
