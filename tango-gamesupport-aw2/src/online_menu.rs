@@ -203,6 +203,16 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         return at;
     }
     let Some(b) = built(core) else { return at };
+    // The lobby's pages are drawn over the screen: the menu's cursor arrows (tile 0, palette 6) are off.
+    if crate::online::level(core) >= 2 {
+        let mut s = start;
+        while s < at {
+            if core.raw_read_16(s + 4, -1) == 0x6000 {
+                core.raw_write_16(s, -1, (core.raw_read_16(s, -1) & !0x0300) | 0x0200);
+            }
+            s += 8;
+        }
+    }
     let level = (crate::online::level(core) as usize).min(1);
     let word = TITLES[level];
     // The game's title sprites, left to right.

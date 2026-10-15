@@ -465,7 +465,7 @@ impl State {
             Code::Enter | Code::NumpadEnter => 13,
             c => {
                 let name = format!("{c:?}");
-                // (only the code's characters: Z and X, the pad's A and B by default, stay the pad's)
+                // (only on the code's pages: Z and X are the pad's A and B elsewhere)
                 let ch = name
                     .strip_prefix("Key")
                     .or_else(|| name.strip_prefix("Digit"))

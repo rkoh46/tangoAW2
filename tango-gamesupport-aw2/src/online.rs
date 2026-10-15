@@ -95,9 +95,9 @@ pub const MATCH_PLAYERS: u8 = 2;
 
 /// A match subtype bit: the match was made in the in-game lobby (boot to Versus, host's screens).
 pub const ONLINE_MATCH: u8 = 0x01;
-/// The room code's characters: the letters the game's title font has, less I and O (read as 1 and 0) and B (as 8),
-/// and the digits 2 3 4 6 7 8 9 (no 0 and 1 for O and I, no 5 for S), drawn from the text font doubled.
-pub const CODE_ALPHABET: &[u8] = b"ACDEGHKLMNPRSTUWY2346789";
+/// The room code's characters: every letter and digit. (The game's title font has only some letters, so the code is
+/// drawn from the text font, doubled and outlined, letters and digits alike.)
+pub const CODE_ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 pub const CODE_CHARS: usize = 6;
 
 /// What the app says about the connection.
@@ -422,7 +422,7 @@ fn set_level(core: &mut Core, l: u8) {
 }
 
 /// The grid: the alphabet, then rub out and OK. Six columns.
-const GRID_COLS: usize = 8;
+const GRID_COLS: usize = 9;
 const GRID_DEL: usize = CODE_ALPHABET.len();
 const GRID_OK: usize = CODE_ALPHABET.len() + 1;
 const GRID_CELLS: usize = CODE_ALPHABET.len() + 2;
@@ -646,22 +646,44 @@ fn code_entry(core: &mut Core, pressed: u32) {
         }
     }
     let mut g = (core.raw_read_8(GRID, -1) as usize).min(GRID_CELLS - 1);
-    let rows = GRID_CELLS.div_ceil(GRID_COLS);
-    let (mut r, mut c) = (g / GRID_COLS, g % GRID_COLS);
-    if pressed & KEY_RIGHT != 0 {
-        c = (c + 1) % GRID_COLS;
-    }
-    if pressed & KEY_LEFT != 0 {
-        c = (c + GRID_COLS - 1) % GRID_COLS;
-    }
-    if pressed & KEY_DOWN != 0 {
-        r = (r + 1) % rows;
-    }
-    if pressed & KEY_UP != 0 {
-        r = (r + rows - 1) % rows;
-    }
+    // The characters fill whole rows; Del and OK have a row of their own.
+    let chars_rows = CODE_ALPHABET.len() / GRID_COLS;
     if pressed & (KEY_RIGHT | KEY_LEFT | KEY_UP | KEY_DOWN) != 0 {
-        g = (r * GRID_COLS + c).min(GRID_CELLS - 1);
+        if g >= GRID_DEL {
+            if pressed & (KEY_RIGHT | KEY_LEFT) != 0 {
+                g = if g == GRID_DEL { GRID_OK } else { GRID_DEL };
+            } else if pressed & KEY_UP != 0 {
+                g = (chars_rows - 1) * GRID_COLS + if g == GRID_DEL { 0 } else { GRID_COLS / 2 + 1 };
+            } else {
+                g = if g == GRID_DEL { 0 } else { GRID_COLS / 2 + 1 };
+            }
+        } else {
+            let (mut r, mut c) = (g / GRID_COLS, g % GRID_COLS);
+            let action = |c: usize| if c <= GRID_COLS / 2 { GRID_DEL } else { GRID_OK };
+            if pressed & KEY_RIGHT != 0 {
+                c = (c + 1) % GRID_COLS;
+            }
+            if pressed & KEY_LEFT != 0 {
+                c = (c + GRID_COLS - 1) % GRID_COLS;
+            }
+            g = r * GRID_COLS + c;
+            if pressed & KEY_DOWN != 0 {
+                if r + 1 == chars_rows {
+                    g = action(c);
+                } else {
+                    r += 1;
+                    g = r * GRID_COLS + c;
+                }
+            }
+            if pressed & KEY_UP != 0 {
+                if r == 0 {
+                    g = action(c);
+                } else {
+                    r -= 1;
+                    g = r * GRID_COLS + c;
+                }
+            }
+        }
         core.raw_write_8(GRID, -1, g as u8);
     }
     if pressed & KEY_A != 0 {
@@ -1005,6 +1027,18 @@ impl Rgba<'_> {
     fn text(&mut self, core: &Core, x: i32, y: i32, s: &str, ink: Rgb, shade: Rgb) -> i32 {
         let mut x = x;
         for c in s.bytes() {
+            if c.is_ascii_digit() {
+                let (w, rows) = digit_glyph(core, c);
+                for (r, bits) in rows.iter().enumerate() {
+                    for cx in 0..w {
+                        if bits >> cx & 1 != 0 {
+                            self.put(x + cx as i32, y + r as i32, ink);
+                        }
+                    }
+                }
+                x += w as i32 + 1;
+                continue;
+            }
             let w = core.raw_read_8(FONT_WIDTHS + c as u32, -1) as usize;
             let at = core.raw_read_32(FONT_GLYPHS + 4 * c as u32, -1);
             if (0x0800_0000..0x0A00_0000).contains(&at) {
@@ -1027,7 +1061,7 @@ impl Rgba<'_> {
 
 fn text_width(core: &Core, s: &str) -> i32 {
     s.bytes()
-        .map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as i32 + 1)
+        .map(|c| if c.is_ascii_digit() { DIGIT_W as i32 + 1 } else { core.raw_read_8(FONT_WIDTHS + c as u32, -1) as i32 + 1 })
         .sum::<i32>()
         - 1
 }
@@ -1037,13 +1071,77 @@ fn bgr(c: u16) -> Rgb {
     (f(c), f(c >> 5), f(c >> 10))
 }
 
-/// A word in the game's title font (its OBJ palette 15, as the screen's title), from (x, y). The font has no digits:
-/// they are the game's text font, doubled and outlined as the letters are.
+/// The digits, thin as the text font's letters (its own digits are bold): 6 wide, 9 tall, on the letters' rows.
+const DIGIT_W: usize = 6;
+const DIGITS: [[&str; 9]; 10] = [
+    [".###..", "#...#.", "#..##.", "#.#.#.", "##..#.", "#...#.", "#...#.", "#...#.", ".###.."],
+    ["..#...", ".##...", "#.#...", "..#...", "..#...", "..#...", "..#...", "..#...", "#####."],
+    [".###..", "#...#.", "....#.", "....#.", "...#..", "..#...", ".#....", "#.....", "#####."],
+    [".###..", "#...#.", "....#.", "....#.", "..##..", "....#.", "....#.", "#...#.", ".###.."],
+    ["...#..", "..##..", ".#.#..", "#..#..", "#..#..", "#####.", "...#..", "...#..", "...#.."],
+    ["#####.", "#.....", "#.....", "####..", "....#.", "....#.", "....#.", "#...#.", ".###.."],
+    [".###..", "#.....", "#.....", "####..", "#...#.", "#...#.", "#...#.", "#...#.", ".###.."],
+    ["#####.", "....#.", "....#.", "...#..", "...#..", "..#...", "..#...", ".#....", ".#...."],
+    [".###..", "#...#.", "#...#.", "#...#.", ".###..", "#...#.", "#...#.", "#...#.", ".###.."],
+    [".###..", "#...#.", "#...#.", "#...#.", ".####.", "....#.", "....#.", "....#.", ".###.."],
+];
+
+/// A digit's rows (bit x set: a pixel at x), in the 11 rows the text font's glyphs use, the digit's top on the
+/// capitals' top row.
+fn digit_glyph(core: &Core, c: u8) -> (usize, [u16; 11]) {
+    // (the top of an H)
+    let at = core.raw_read_32(FONT_GLYPHS + 4 * b'H' as u32, -1);
+    let w = core.raw_read_8(FONT_WIDTHS + b'H' as u32, -1) as usize;
+    let mut top = 1;
+    if (0x0800_0000..0x0A00_0000).contains(&at) {
+        let stride = w.div_ceil(2);
+        top = (0..11)
+            .find(|&r| {
+                (0..w).any(|cx| (core.raw_read_8(at + (stride * (3 + r) + cx / 2) as u32, -1) >> (4 * (cx & 1))) & 15 != 0)
+            })
+            .unwrap_or(1);
+    }
+    let mut rows = [0u16; 11];
+    for (i, line) in DIGITS[(c - b'0') as usize].iter().enumerate() {
+        if top + i < 11 {
+            rows[top + i] = line
+                .bytes()
+                .enumerate()
+                .filter(|&(_, p)| p == b'#')
+                .fold(0, |m, (x, _)| m | 1 << x);
+        }
+    }
+    (DIGIT_W, rows)
+}
+
+/// A character's rows as [`digit_glyph`]'s (any set pixel of the text font's letter).
+fn glyph_rows(core: &Core, c: u8) -> (usize, [u16; 11]) {
+    if c.is_ascii_digit() {
+        return digit_glyph(core, c);
+    }
+    let w = core.raw_read_8(FONT_WIDTHS + c as u32, -1) as usize;
+    let at = core.raw_read_32(FONT_GLYPHS + 4 * c as u32, -1);
+    let mut rows = [0u16; 11];
+    if (0x0800_0000..0x0A00_0000).contains(&at) {
+        let stride = w.div_ceil(2);
+        for (r, row) in rows.iter_mut().enumerate() {
+            for cx in 0..w {
+                if (core.raw_read_8(at + (stride * (3 + r) + cx / 2) as u32, -1) >> (4 * (cx & 1))) & 15 != 0 {
+                    *row |= 1 << cx;
+                }
+            }
+        }
+    }
+    (w, rows)
+}
+
+/// A word of the room code: the text font doubled and outlined in the title's white and blue, letters and digits
+/// alike, its outline's top at `y`.
 fn title(cv: &mut Rgba, core: &Core, font: &crate::online_art::TitleFont, x: i32, y: i32, word: &str) {
     let pal: Vec<Rgb> = (0..16)
         .map(|i| bgr(core.raw_read_16(0x0500_0200 + 15 * 32 + 2 * i, -1)))
         .collect();
-    // The letters' fill and outline: across the middle of an I.
+    // The title letters' fill and outline: across the middle of an I.
     let (fill, edge) = {
         let i = &font.px[crate::online_art::TitleFont::index('I').unwrap_or(0)];
         let row: Vec<u8> = (0..16).map(|x| i.get(x, 16)).collect();
@@ -1051,52 +1149,39 @@ fn title(cv: &mut Rgba, core: &Core, font: &crate::online_art::TitleFont, x: i32
         (row[(first + 4).min(15)], row[first])
     };
     let mut cx = x;
-    for c in word.chars() {
-        if c.is_ascii_digit() {
-            let w = core.raw_read_8(FONT_WIDTHS + c as u32, -1) as usize;
-            let at = core.raw_read_32(FONT_GLYPHS + 4 * c as u32, -1);
-            if !(0x0800_0000..0x0A00_0000).contains(&at) {
-                continue;
+    for c in word.bytes() {
+        let (w, rows) = glyph_rows(core, c);
+        // (the letters' own rows: from the first used to the last)
+        let used: Vec<usize> = (0..11).filter(|&r| rows[r] != 0).collect();
+        let (top, bottom) = (
+            used.first().copied().unwrap_or(0) as i32,
+            used.last().copied().unwrap_or(0) as i32,
+        );
+        let on = |gx: i32, gy: i32| -> bool {
+            if gx < 0 || gy < 0 || gx >= 2 * w as i32 || gy >= 2 * (bottom - top + 1) {
+                return false;
             }
-            let stride = w.div_ceil(2);
-            // (the digit at 2x: rows 3..14 of its glyph)
-            let on = |gx: i32, gy: i32| -> bool {
-                if gx < 0 || gy < 0 || gx >= 2 * w as i32 || gy >= 22 {
-                    return false;
-                }
-                let (sx, sy) = (gx as usize / 2, gy as usize / 2);
-                let b = core.raw_read_8(at + (stride * (3 + sy) + sx / 2) as u32, -1);
-                (b >> (4 * (sx & 1))) & 15 != 0
-            };
-            for gy in -1..23 {
-                for gx in -1..2 * w as i32 + 1 {
-                    let v = if on(gx, gy) {
-                        fill
-                    } else if (-1..=1).any(|dy| (-1..=1).any(|dx| on(gx + dx, gy + dy))) {
-                        edge
-                    } else {
-                        continue;
-                    };
-                    cv.put(cx + gx + 1, y + gy + 5, pal[v as usize]);
-                }
-            }
-            cx += 2 * w as i32 + 2;
-            continue;
-        }
-        let Some(i) = crate::online_art::TitleFont::index(c) else {
-            continue;
+            rows[(top + gy / 2) as usize] >> (gx / 2) & 1 != 0
         };
-        let g = &font.px[i];
-        for py in 0..32 {
-            for px in 0..16 {
-                let v = g.get(px, py);
-                if v != 0 {
-                    cv.put(cx + px as i32, y + py as i32 - 4, pal[v as usize]);
-                }
+        for gy in -1..2 * (bottom - top + 1) + 1 {
+            for gx in -1..2 * w as i32 + 1 {
+                let v = if on(gx, gy) {
+                    fill
+                } else if (-1..=1).any(|dy| (-1..=1).any(|dx| on(gx + dx, gy + dy))) {
+                    edge
+                } else {
+                    continue;
+                };
+                cv.put(cx + gx + 1, y + gy + 1, pal[v as usize]);
             }
         }
-        cx += font.advance(c);
+        cx += 2 * w as i32 + 3;
     }
+}
+
+/// How wide [`title`] draws `word`.
+fn title_width(core: &Core, _font: &crate::online_art::TitleFont, word: &str) -> i32 {
+    word.bytes().map(|c| 2 * glyph_rows(core, c).0 as i32 + 3).sum::<i32>() - 1
 }
 
 fn title_font(core: &Core) -> Option<&'static crate::online_art::TitleFont> {
@@ -1220,7 +1305,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     SHADE,
                 );
             } else {
-                title(&mut cv, core, font, x + (w - font.width(&code)) / 2, y + 16, &code);
+                title(&mut cv, core, font, x + (w - title_width(core, font, &code)) / 2, y + 18, &code);
             }
             // The players: a row a slot.
             let status = Status::of(core.raw_read_8(STATUS, -1));
@@ -1313,38 +1398,40 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 cv.rect(cx, y + 43, bw, 2, if here { RED } else { SHADE });
                 if let Some(&c) = typed.get(k as usize) {
                     let s = c.to_string();
-                    title(&mut cv, core, font, cx + (bw - font.width(&s)) / 2, y + 17, &s);
+                    title(&mut cv, core, font, cx + (bw - title_width(core, font, &s)) / 2, y + 22, &s);
                 }
             }
             let g = core.raw_read_8(GRID, -1) as usize;
-            let (cw, ch) = (17, 13);
+            let (cw, ch) = (15, 12);
             let gx = x + (w - cw * GRID_COLS as i32) / 2;
-            let gy = y + 50;
+            let gy = y + 49;
             let (_, _, max, min) = field(core);
+            let full = typed.len() >= min;
             for k in 0..GRID_CELLS {
-                let (r, c) = ((k / GRID_COLS) as i32, (k % GRID_COLS) as i32);
-                let (cx, cy) = (gx + c * cw, gy + r * ch);
-                let label = match k {
-                    GRID_DEL => "Del".to_string(),
-                    GRID_OK => "OK".to_string(),
-                    _ => (CODE_ALPHABET[k] as char).to_string(),
+                // Del and OK take half the width each of the row of their own.
+                let (cx, cy, cwid, label) = match k {
+                    GRID_DEL => (gx, gy + 4 * ch + 2, 4 * cw, "Del".to_string()),
+                    GRID_OK => (gx + 5 * cw, gy + 4 * ch + 2, 4 * cw, "OK".to_string()),
+                    _ => (
+                        gx + (k % GRID_COLS) as i32 * cw,
+                        gy + (k / GRID_COLS) as i32 * ch,
+                        cw,
+                        (CODE_ALPHABET[k] as char).to_string(),
+                    ),
                 };
-                if k == g {
-                    cv.rect(cx + 1, cy, cw - 2, ch, YELLOW);
-                }
                 let ready = match k {
-                    GRID_OK => typed.len() >= min,
+                    GRID_OK => full,
                     GRID_DEL => true,
                     _ => typed.len() < max,
                 };
-                cv.text(
-                    core,
-                    cx + (cw - text_width(core, &label)) / 2,
-                    cy + 1,
-                    &label,
-                    if ready { INK } else { SHADE },
-                    SHADE,
-                );
+                if k == g {
+                    cv.rect(cx + 1, cy, cwid - 2, ch, YELLOW);
+                } else if k == GRID_OK && full {
+                    // (an OK that can be pressed: a blue plate)
+                    cv.rect(cx + 1, cy, cwid - 2, ch, BLUE);
+                }
+                let ink = if k == GRID_OK && full && k != g { WHITE } else if ready { INK } else { SHADE };
+                cv.text(core, cx + (cwid - text_width(core, &label)) / 2, cy + 1, &label, ink, SHADE);
             }
             bar(
                 &mut cv,
@@ -1379,10 +1466,8 @@ mod tests {
             assert!(c.bytes().all(|b| CODE_ALPHABET.contains(&b)), "{c}");
         }
         assert_ne!(mailbox::new_code(1), mailbox::new_code(2));
-        // Every code letter is one the title font draws (the digits are drawn from the text font).
-        assert!(CODE_ALPHABET
-            .iter()
-            .all(|&c| c.is_ascii_digit() || crate::online_art::TITLE_ORDER.contains(c as char)));
+        // Every character is a letter or a digit.
+        assert!(CODE_ALPHABET.iter().all(|&c| c.is_ascii_alphanumeric()));
     }
 
     #[test]

@@ -51,6 +51,8 @@ struct Pad {
     op_started: Instant,
     last: Instant,
     carry: f64,
+    /// The keys of the last frame consumed (held while no new frame is due).
+    held: u32,
 }
 
 fn key_bits(s: &str) -> u32 {
@@ -127,6 +129,7 @@ impl DebugAids {
                 op_started: now,
                 last: now,
                 carry: 0.0,
+                held: 0,
             })
         });
         DebugAids {
@@ -181,8 +184,10 @@ impl DebugAids {
         pad.carry += now.duration_since(pad.last).as_secs_f64() * 60.0;
         pad.last = now;
         let mut frames = (pad.carry as usize).min(30);
+        let had_frames = frames > 0;
         pad.carry -= pad.carry.floor();
         let mut keys = 0;
+        let mut last_frame_keys = pad.held;
         let ops = pad.parts.get(pad.part)?;
         let mut guard = 0;
         loop {
@@ -200,6 +205,7 @@ impl DebugAids {
                         break;
                     } else {
                         keys |= k;
+                        last_frame_keys = *k;
                         pad.done += 1;
                         frames -= 1;
                     }
@@ -211,6 +217,7 @@ impl DebugAids {
                     } else if frames == 0 {
                         break;
                     } else {
+                        last_frame_keys = 0;
                         pad.done += 1;
                         frames -= 1;
                     }
@@ -244,7 +251,10 @@ impl DebugAids {
                 }
             }
         }
-        Some(keys)
+        // (no frame was due: the keys stay as they were, or a press would be let go and made again)
+        let out = if had_frames { keys } else { pad.held };
+        pad.held = last_frame_keys;
+        Some(out)
     }
 }
 
