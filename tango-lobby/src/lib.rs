@@ -24,6 +24,8 @@
 // for no gain: wasm is single-threaded, so the atomics cost nothing real.
 #![cfg_attr(target_arch = "wasm32", allow(clippy::arc_with_non_send_sync))]
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod browse;
 pub mod compat;
 pub mod randomcode;
 

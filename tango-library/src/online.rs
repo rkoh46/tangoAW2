@@ -6,6 +6,8 @@
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, Request};
 #[cfg(feature = "gamesupport-aw2")]
+pub use tango_gamesupport_aw2::online_browse::{Net as BrowseNet, Row as BrowseRow};
+#[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, MAX_PLAYERS, ONLINE_MATCH, YOU};
 
 /// The match type a room made in the in-game lobby is played as.
@@ -101,4 +103,11 @@ pub fn list_debug() -> u64 {
 #[cfg(feature = "gamesupport-aw2")]
 pub fn map_debug() -> u64 {
     tango_gamesupport_aw2::online::probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// The lobby browser's rows and how the search stands, for the game's page (the app's half of
+/// `tango_gamesupport_aw2::online_browse`).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn write_browse(write: &mut dyn FnMut(u32, &[u8]), rows: &[BrowseRow], net: BrowseNet, version: &str) {
+    tango_gamesupport_aw2::online_browse::mailbox::write(write, rows, net, version)
 }

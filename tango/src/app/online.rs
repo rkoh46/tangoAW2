@@ -27,6 +27,12 @@ pub struct Flow {
     in_match: bool,
     /// Said on the LOBBY menu when the game comes back.
     back_message: Option<String>,
+    /// The public announcement of the room this player made (withdrawn when the match starts or the room closes).
+    announcer: Option<netplay::browse::Announcer>,
+    /// The look at the public lobby list, while the game's lobby browser is open.
+    browse: Option<(netplay::browse::Browse, std::time::Instant)>,
+    /// The lobbies in the order they were first seen (so the list does not shuffle at every refresh).
+    browse_order: Vec<String>,
     /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
     last_log: Option<std::time::Instant>,
 }
@@ -35,6 +41,8 @@ impl App {
     /// Every session frame: the in-game lobby's mailbox, and the way back from a
     /// match it made.
     pub(super) fn online_tick(&mut self) -> iced::Task<Message> {
+        // (a match starting, or a room closing, withdraws the public lobby whatever the game is doing)
+        self.online_announce();
         // A lobby-made match just ended: back to the game, at its lobby.
         if self.online.in_match && !self.session.is_active() {
             self.online.in_match = false;
@@ -81,7 +89,8 @@ impl App {
                 tango_library::online::probe_bits()
             );
         }
-        if mailbox::level(&mut read) == 0 && self.online.room.is_none() && self.online.back_message.is_none() {
+        let level = mailbox::level(&mut read);
+        if level == 0 && self.online.room.is_none() && self.online.back_message.is_none() {
             // (nothing asked; keep up with the serial so an old request is never taken for a new one)
             self.online.seen = Some(mailbox::serial(&mut read));
             return iced::Task::none();
@@ -103,7 +112,109 @@ impl App {
             }
         }
         self.online_write_back();
+        self.online_announce();
+        self.online_browse(level);
         task
+    }
+
+    /// The public relays used by the lobby list (`TANGOAW2_LOBBY_RELAYS`, comma separated, for tests).
+    fn lobby_relays() -> Vec<String> {
+        match std::env::var("TANGOAW2_LOBBY_RELAYS") {
+            Ok(v) if !v.trim().is_empty() => v.split(',').map(|s| s.trim().to_string()).collect(),
+            _ => netplay::browse::RELAYS.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    fn lobby_version() -> String {
+        env!("CARGO_PKG_VERSION").to_string()
+    }
+
+    fn lobby_pack() -> bool {
+        tango_library::shared_content_flag() != 0 && std::env::var("TANGOAW2_NO_CONTENT").is_err()
+    }
+
+    /// The room made here is listed while it waits for players, and withdrawn once its match starts or it closes.
+    fn online_announce(&mut self) {
+        let open = self.online.room.as_ref().is_some_and(|r| {
+            r.is_host() && matches!(r.view().phase, RoomPhase::Connecting | RoomPhase::Open)
+        });
+        if !open {
+            if self.online.announcer.take().is_some() {
+                log::info!("lobby list: the lobby is withdrawn");
+            }
+            return;
+        }
+        let Some(room) = self.online.room.as_ref() else { return };
+        let players = room.view().players.len().clamp(1, netplay::room::MAX_PLAYERS) as u8;
+        if let Some(a) = self.online.announcer.as_ref() {
+            a.update(|l| l.players = players);
+        }
+    }
+
+    /// The game's lobby browser is open (level 6): look at the public list and write what is found.
+    fn online_browse(&mut self, level: u8) {
+        if level != 6 {
+            if self.online.browse.take().is_some() {
+                self.online.browse_order.clear();
+            }
+            return;
+        }
+        let relays = Self::lobby_relays();
+        let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
+        let (browse, since) = self.online.browse.get_or_insert_with(|| {
+            (
+                netplay::browse::Browse::start(
+                    &relays,
+                    netplay::browse::Compat {
+                        version: Self::lobby_version(),
+                        pack: Self::lobby_pack(),
+                    },
+                ),
+                std::time::Instant::now(),
+            )
+        });
+        let mine = self.online.room.as_ref().map(|r| r.code());
+        let listed: Vec<netplay::browse::Listing> = browse
+            .listings()
+            .into_iter()
+            .filter(|l| Some(&l.lobby.code) != mine.as_ref())
+            .collect();
+        let stats = browse.stats();
+        let elapsed = since.elapsed().as_secs_f32();
+        let net = if stats.connected == 0 && elapsed >= 10.0 {
+            mailbox::BrowseNet::Offline
+        } else if stats.connected > 0 && (stats.events > 0 || elapsed >= 2.5) {
+            mailbox::BrowseNet::Ok
+        } else {
+            mailbox::BrowseNet::Looking
+        };
+        // First seen first; a lobby that is gone leaves the order.
+        self.online.browse_order.retain(|c| listed.iter().any(|l| &l.lobby.code == c));
+        for l in &listed {
+            if !self.online.browse_order.contains(&l.lobby.code) {
+                self.online.browse_order.push(l.lobby.code.clone());
+            }
+        }
+        let rows: Vec<mailbox::BrowseRow> = self
+            .online
+            .browse_order
+            .iter()
+            .filter_map(|c| listed.iter().find(|l| &l.lobby.code == c))
+            .map(|l| mailbox::BrowseRow {
+                code: l.lobby.code.clone(),
+                host: l.lobby.host.clone(),
+                players: l.lobby.players,
+                max: l.lobby.max,
+                locked: l.lobby.locked,
+            })
+            .collect();
+        let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
+            return;
+        };
+        let mut write = |a: u32, b: &[u8]| {
+            solo.poke(a, b);
+        };
+        mailbox::write_browse(&mut write, &rows, net, &Self::lobby_version());
     }
 
     fn online_request(&mut self, request: Request) {
@@ -117,6 +228,21 @@ impl App {
                 let params = self.online_params(&code, &password);
                 self.online.back_message = None;
                 self.online.room = Some(Room::host(params));
+                // Every lobby is public: listed for everyone on this version (never with an address).
+                let relays = Self::lobby_relays();
+                let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
+                self.online.announcer = Some(netplay::browse::Announcer::start(
+                    &relays,
+                    netplay::browse::Lobby {
+                        code: code.clone(),
+                        host: self.online_nickname(),
+                        players: 1,
+                        max: netplay::room::MAX_PLAYERS as u8,
+                        locked: !password.is_empty(),
+                        version: Self::lobby_version(),
+                        pack: Self::lobby_pack(),
+                    },
+                ));
             }
             Request::Join { code, password } => {
                 let params = self.online_params(&code, &password);
@@ -124,6 +250,7 @@ impl App {
                 self.online.room = Some(Room::join(params));
             }
             Request::Leave => {
+                self.online.announcer = None;
                 if let Some(room) = self.online.room.take() {
                     room.leave();
                 }
