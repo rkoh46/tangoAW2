@@ -4236,6 +4236,21 @@ tests). Online play starts in the game, played alone:
   complete on the same tick and the replay is finished. The app then boots
   the game again (`mailbox::boot_to_lobby`: the same walk, to the LOBBY
   menu) and says how it ended.
+- **Teams** (`online_teams.rs`). The army page (SELECT YOUR ARMY: a row for each seat, CO, colour, TEAM, partner
+  with the pack, READY; the game's Teams screen waits underneath) gives every seat a TEAM, A..E, its own to set
+  (the Teams record's team bytes: `+0x11` per army, five-army record `+0xA0`; letters 0..4). Everyone starts on
+  what the game's record has (every army its own team: a free-for-all, as before). The host can set any seat's: on
+  the TEAM field L and R pick the seat, LEFT and RIGHT change its team (and it has to say READY again). READY is
+  refused while every seat is on one team ("Pick at least two different teams."). When everyone is READY the
+  choices are written to the record and the game's own rules take over: the battle's player blocks carry the team
+  (`+0x2A`), allies cannot attack each other (no Fire with only an ally next to the unit, the attack ring skips
+  them), the battle ends when one team is left (VICTORY!), allies share fog vision (the game's viewer setup,
+  `0x08020984`, marks the current army's allies as viewers; the waiting windows of `fog_view` call it, so a
+  teammate watching an ally's turn sees through the team's fog). Turn order stays by army. The page also stays
+  through the game's own Teams screen moving from its CO stage to its team stage and on to the Rules (its task is
+  gone for a moment in between). The status bar shows `A: Host, Guest2  B: Guest` when any team has two or more
+  (`tango_library::online::room_picks`, kept by `online_teams::publish`). Harness: `aw2_room_teams` (a room of
+  3..5 on one console with a script: pages, teams, an attack on an ally, a win by the last enemy team's fall).
 - **Later (planned).** UNRANKED: random matching (each proposes a 2P map,
   one drawn from the match seed; fixed rules), the same Teams screen for CO
   and a colour no other army has. Rooms of up to five. STATS: the player's

@@ -14,7 +14,7 @@ const PLAYER_STRIDE: u32 = 0x3C;
 /// 3 Green Earth, 4 Yellow Comet, 5 Black Hole.
 const COLOUR: u32 = 0x1A;
 
-/// Army `a`'s (1..=5) player block.
+/// Army `a`'s player block, `a` counted from 0 (army 1 is 0).
 #[allow(non_snake_case)]
 pub(crate) fn PLAYER_BLOCK_OF(a: u32) -> u32 {
     PLAYER_BLOCK + PLAYER_STRIDE * a
@@ -480,7 +480,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 14: rooms of up to five, each player's own selector on the CO page, and in a room's battle only the army
         // whose turn it is has the pad, always.
         // 15: the Black Cannon's picture and the font share OBJ tiles by turns (a stash in EWRAM, crate::obelisk).
-        15
+        // 16: every seat's TEAM on the army page, written into the Teams record (crate::online_teams); the page keeps
+        // its state through the game's Teams screen going from its CO stage to its team stage and on.
+        16
     }
 
     fn traps(&self) -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {

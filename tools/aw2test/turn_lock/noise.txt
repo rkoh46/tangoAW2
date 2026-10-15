@@ -9,7 +9,11 @@ press A 6
 wait 20
 press A 6
 wait 20
+press A 6
+wait 20
 seat 1
+press A 6
+wait 20
 press A 6
 wait 20
 press A 6

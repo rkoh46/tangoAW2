@@ -86,6 +86,10 @@ pub fn set_room(names: Vec<String>, local_seat: usize) {
 pub fn room_players() -> usize {
     tango_gamesupport_aw2::online::room_players()
 }
+/// Each seat's (team 0..=4, army colour code 1..=5), once the room's match has them.
+pub fn room_picks() -> Vec<(u8, u8)> {
+    tango_gamesupport_aw2::online::room_picks()
+}
 pub fn room_name(seat: usize) -> String {
     tango_gamesupport_aw2::online::room_name(seat)
 }

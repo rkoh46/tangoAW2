@@ -1095,9 +1095,25 @@ static ROOM_INFO: std::sync::Mutex<RoomInfo> = std::sync::Mutex::new(RoomInfo {
     local_seat: 0,
 });
 
+/// Each seat's (team 0..=4, army colour code) as last seen on the console, for the status bar (presentation only).
+static ROOM_PICKS: std::sync::Mutex<Vec<(u8, u8)>> = std::sync::Mutex::new(Vec::new());
+
+pub(crate) fn set_picks(picks: Vec<(u8, u8)>) {
+    let mut p = ROOM_PICKS.lock().unwrap();
+    if *p != picks {
+        *p = picks;
+    }
+}
+
+/// Each seat's (team 0..=4, army colour code, 1 Orange Star .. 5 Black Hole) in the room's match, once chosen.
+pub fn room_picks() -> Vec<(u8, u8)> {
+    ROOM_PICKS.lock().unwrap().clone()
+}
+
 /// The room's players' gamertags in seat order, and which seat this peer is.
 pub fn set_room(names: Vec<String>, local_seat: usize) {
     *ROOM_INFO.lock().unwrap() = RoomInfo { names, local_seat };
+    ROOM_PICKS.lock().unwrap().clear();
 }
 
 pub fn room_name(seat: usize) -> String {
