@@ -114,6 +114,7 @@ pub mod online_browse;
 pub mod online_menu;
 pub mod online_teams;
 pub mod unranked;
+pub mod resume_info;
 pub mod survival;
 pub mod ds_maps;
 pub mod ds_versus;

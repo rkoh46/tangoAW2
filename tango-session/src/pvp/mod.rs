@@ -108,6 +108,39 @@ struct EndState {
     /// itself — the supervisor reads it to keep the peer's near-
     /// simultaneous teardown from being mistaken for a disconnect.
     aborted: Arc<AtomicBool>,
+    /// A room: the players the match is waiting for to reconnect (a link of ours being rebuilt, or the host saying
+    /// another's is), with when their window closes.
+    holds: Arc<Mutex<Vec<Hold>>>,
+    /// A room: who disconnected, once known (the first to be named stays).
+    dropped: Arc<Mutex<Option<String>>>,
+}
+
+/// A player the match waits for.
+#[derive(Clone, Debug)]
+struct Hold {
+    seat: u8,
+    name: String,
+    deadline: Instant,
+}
+
+impl EndState {
+    fn hold_add(&self, seat: u8, name: String, deadline: Instant) {
+        let mut h = self.holds.lock().unwrap();
+        h.retain(|x| x.seat != seat);
+        h.push(Hold { seat, name, deadline });
+    }
+    fn hold_remove(&self, seat: u8) {
+        self.holds.lock().unwrap().retain(|x| x.seat != seat);
+    }
+    fn any_hold(&self) -> bool {
+        !self.holds.lock().unwrap().is_empty()
+    }
+    fn note_dropped(&self, name: String) {
+        let mut d = self.dropped.lock().unwrap();
+        if d.is_none() {
+            *d = Some(name);
+        }
+    }
 }
 
 /// Live per-frame readouts the drive thread publishes for the UI —
@@ -189,6 +222,8 @@ pub struct PvpSession {
     boot_cancel: Arc<AtomicBool>,
     /// Live UI readouts published by the drive thread.
     metrics: Arc<Metrics>,
+    /// A room's resumable match: set when it is one that was started from a suspended match.
+    resumed_match: Option<u64>,
     pub link_code: String,
     pub remote_nickname: String,
     /// Live local frame delay — realized as the engine's present delay
@@ -263,6 +298,14 @@ pub struct RoomArgs {
     pub is_host: bool,
     /// The links after the first (a room's host has one to each guest).
     pub extra_links: Vec<tango_net::link::LinkParts>,
+    /// The seat of the host (0, but for a room resuming a suspended match).
+    pub host_seat: usize,
+    /// The match's id (see [`tango_match::SuspendedMatch::match_id`]).
+    pub match_id: u64,
+    /// A suspended match being resumed: the console's state to start from (the replay is not recorded).
+    pub resume_state: Option<Vec<u8>>,
+    /// Where a match cut short by a disconnect is handed over to be kept (called on the drive thread at its end).
+    pub suspend_sink: Option<Arc<dyn Fn(tango_match::SuspendedMatch) + Send + Sync>>,
 }
 
 impl PvpSession {
@@ -331,12 +374,37 @@ impl PvpSession {
     /// PvP view shows a "Reconnecting…" overlay.
     pub fn is_reconnecting(&self) -> bool {
         matches!(self.link.health(), tango_net::link::LinkHealth::Reconnecting { .. })
+            || self.extra_links.iter().any(|l| matches!(l.health(), tango_net::link::LinkHealth::Reconnecting { .. }))
+            || self.end.any_hold()
+    }
+
+    /// The player the match is waiting for (a room), and the seconds left of their window to reconnect: the first
+    /// such, whether the link is ours or the host says it is another guest's.
+    pub fn waiting_for(&self) -> Option<(String, u32)> {
+        let holds = self.end.holds.lock().unwrap();
+        let h = holds.iter().min_by_key(|h| h.deadline)?;
+        let left = h.deadline.saturating_duration_since(Instant::now());
+        Some((h.name.clone(), left.as_secs_f32().ceil() as u32))
+    }
+
+    /// Who disconnected, in a room whose match ended that way.
+    pub fn dropped_player(&self) -> Option<String> {
+        self.end.dropped.lock().unwrap().clone()
+    }
+
+    /// The id of the suspended match this session resumed, if it did.
+    pub fn resumed_match(&self) -> Option<u64> {
+        self.resumed_match
     }
 
     /// Fraction of the reconnect give-up window still remaining — `1.0` when a
     /// reconnect just started, falling to `0.0` at the give-up deadline, or
     /// `None` when not reconnecting. Drives the overlay's depleting progress bar.
     pub fn reconnect_progress(&self) -> Option<f32> {
+        if let Some(h) = self.end.holds.lock().unwrap().iter().min_by_key(|h| h.deadline) {
+            let left = h.deadline.saturating_duration_since(Instant::now()).as_secs_f32();
+            return Some((left / 60.0).clamp(0.0, 1.0));
+        }
         match self.link.health() {
             tango_net::link::LinkHealth::Reconnecting { started, give_up_at } => {
                 let total = give_up_at

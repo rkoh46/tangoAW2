@@ -99,6 +99,13 @@ pub trait Link: Send + 'static {
         let _ = (addr, bytes);
         false
     }
+
+    /// A capture as bytes that can be stored and later started from ([`Backend::start_resumed`]), with a digest of
+    /// the state that matters. Engines that cannot say leave the default: their matches cannot be suspended.
+    fn state_image(&mut self, snapshot: &Snapshot) -> Option<crate::suspend::StateImage> {
+        let _ = snapshot;
+        None
+    }
 }
 
 /// One console of a boot, as the seam reads it: everything a console
@@ -382,6 +389,14 @@ pub trait Backend: Sync {
     /// Boot a pair, prime it into a link battle, and start the rollback
     /// session over it.
     fn start(&self, config: StartConfig) -> Result<crate::Match, crate::Error>;
+
+    /// [`start`](Self::start) from a stored state ([`Link::state_image`]'s bytes) instead of booting and priming: the
+    /// consoles are booted from the ROMs and saves in `config` and the state loaded over them. Only the engines that
+    /// can suspend a match offer this.
+    fn start_resumed(&self, config: StartConfig, state: &[u8]) -> Result<crate::Match, crate::Error> {
+        let _ = (config, state);
+        Err(crate::Error::Unsupported("this game cannot resume a suspended match"))
+    }
 
     /// Boot one console on its own, for a host that just wants to play
     /// the game. Not every engine offers this — a game supported for

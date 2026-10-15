@@ -25,6 +25,7 @@ publish = false
 futures.workspace = true
 log.workspace = true
 rand.workspace = true
+bincode.workspace = true
 semver.workspace = true
 subtle.workspace = true
 thiserror.workspace = true

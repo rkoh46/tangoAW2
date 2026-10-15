@@ -6075,6 +6075,7 @@ dependencies = [
  "anyhow",
  "arboard",
  "arrayvec",
+ "bincode",
  "bytemuck",
  "cc",
  "chrono",
@@ -6121,6 +6122,7 @@ dependencies = [
  "unic-langid",
  "wgpu",
  "windows-core 0.61.2",
+ "zstd",
 ]
 
 [[package]]
@@ -6232,6 +6234,7 @@ dependencies = [
 name = "tango-lobby"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "env_logger",
  "futures",
  "k256",

@@ -2,7 +2,7 @@
 
 use super::driver::{BootPieces, DriveContext};
 use super::recording::build_replay_writer;
-use super::supervisor::{spawn_primed_announcer, spawn_room_primed_announcer, spawn_supervisor, SupervisorContext};
+use super::supervisor::{spawn_primed_announcer, spawn_room_primed_announcer, spawn_supervisor, Pauses, RoomCtx, SupervisorContext};
 use super::{EndState, Metrics, PvpBoot, PvpSession, PvpSessionArgs, Seat, TpsCounter};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
@@ -82,7 +82,9 @@ impl PvpSession {
 
         // Replay writer. Failing to open it shouldn't kill the
         // match — log and continue without recording.
-        let (replay_writer, replay_path) = match replays {
+        // (a match resumed from a saved state cannot be replayed from its start: it is not recorded)
+        let resumed = room.as_ref().is_some_and(|r| r.resume_state.is_some());
+        let (replay_writer, replay_path) = match replays.filter(|_| !resumed) {
             None => (None, None),
             Some(store) => {
                 match build_replay_writer(
@@ -109,6 +111,10 @@ impl PvpSession {
         // take_pre_match flipped the cancel) and starts the in-match
         // retransmit heartbeat.
         let room_host = room.as_ref().is_some_and(|r| r.is_host) && players > 2;
+        let room_meta = room.as_ref().map(|r| (r.players.clone(), r.seat, r.host_seat, r.is_host, r.match_id));
+        let resume_state = room.as_ref().and_then(|r| r.resume_state.clone());
+        let resumed_match = resume_state.is_some().then(|| room.as_ref().map_or(0, |r| r.match_id));
+        let suspend_sink = room.as_ref().and_then(|r| r.suspend_sink.clone());
         let extra_parts = room.map(|r| r.extra_links).unwrap_or_default();
         let mut links = vec![Arc::new(
             tango_net::link::Link::bring_up(pre_match.link_parts, IN_MATCH_HEARTBEAT, cancellation_token.clone())
@@ -199,6 +205,7 @@ impl PvpSession {
             players,
             present_delay: frame_delay.load(Ordering::Relaxed),
             disable_bgm,
+            resume_state,
         };
         let drive = DriveContext {
             local_input: local_input.clone(),
@@ -225,6 +232,17 @@ impl PvpSession {
             announce_primed: announce_primed.clone(),
             local_player: local_player_index as usize,
             boot_cancel: boot_cancel.clone(),
+            host_seat: room_meta.as_ref().map_or(0, |m| m.2),
+            suspend: room_meta.as_ref().zip(suspend_sink).map(|(m, sink)| super::driver::SuspendCtx {
+                match_id: m.4,
+                players: m.0.clone(),
+                seat: m.1,
+                match_ts: pre_match.terms.match_ts,
+                match_type: pre_match.terms.match_type,
+                save: pre_match.terms.local_save_data.clone(),
+                sim_version: local_game.pvp.sim_version(),
+                sink,
+            }),
         };
 
         // The session's audio ring, made before the pair that feeds it
@@ -280,6 +298,16 @@ impl PvpSession {
         // queue, watches for stalls, and runs the transparent reconnect.
         let supervisor_done = tokio_util::sync::CancellationToken::new();
         let mut dones = Vec::new();
+        let pauses = Arc::new(Pauses::new(drive_paused.clone()));
+        let room_ctx = room_meta.as_ref().map(|m| {
+            Arc::new(RoomCtx {
+                players: m.0.clone(),
+                host_seat: m.2,
+                is_host: m.3,
+                links: links.clone(),
+                clock: web_time::Instant::now(),
+            })
+        });
         for (link_idx, (link, in_match)) in links.iter().zip(in_matches.iter()).enumerate() {
             let done = tokio_util::sync::CancellationToken::new();
             dones.push(done.clone());
@@ -292,8 +320,10 @@ impl PvpSession {
                 completed: completed.clone(),
                 cancel: cancellation_token.clone(),
                 metrics: metrics.clone(),
-                drive_paused: drive_paused.clone(),
+                pauses: pauses.clone(),
                 wake: wake.clone(),
+                room: room_ctx.clone(),
+                last_rx: Arc::new(std::sync::atomic::AtomicU64::new(0)),
                 local_primed: local_primed.clone(),
                 done,
             });
@@ -328,6 +358,7 @@ impl PvpSession {
             prime_error,
             boot_cancel,
             metrics,
+            resumed_match,
             link_code: pre_match.terms.link_code,
             remote_nickname: pre_match.terms.remote_settings.nickname,
             frame_delay,
