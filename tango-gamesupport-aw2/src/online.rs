@@ -922,7 +922,9 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             let mut keys = keys;
             // The list only lands on maps for as many armies as there are players: a move onto another map goes on
             // in the same direction (a press every few frames) until one fits.
-            if crate::survival_ui::idle(core) {
+            // (a room's map is chosen on crate::online_maps' page; the game's own list only takes its id)
+            let paged = crate::online_maps::owns(core);
+            if crate::survival_ui::idle(core) && !paged {
                 let want = crate::online_teams::players(core) as u8;
                 let wrong = map_armies(core, pack).is_some_and(|n| n != want);
                 let pressed = keys & !prev;
@@ -982,6 +984,7 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
                 core.raw_write_8(SKIP_DONE, -1, 0);
             }
             if keys & !prev & KEY_A != 0
+                && !paged
                 && crate::survival_ui::idle(core)
                 && map_armies(core, pack).is_some_and(|n| n as usize != crate::online_teams::players(core))
             {
@@ -1044,6 +1047,7 @@ fn map_armies(core: &Core, pack: bool) -> Option<u8> {
 
 /// The online match's notes over its console (presentation only): a map for another number of players.
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
+    crate::online_maps::draw(core, rgba);
     crate::online_teams::draw(core, rgba);
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {
         return;
@@ -1063,6 +1067,7 @@ pub fn in_room_match(core: &Core) -> bool {
 /// is on ([`BATTLE`]).
 pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     crate::online_teams::tick(core, inputs);
+    crate::online_maps::tick(core, inputs);
     if core.raw_read_8(MATCH, -1) != 1 {
         return;
     }
@@ -1125,6 +1130,10 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     }
     if navigating(core) {
         return Some(0);
+    }
+    // SELECT MAP is the page of crate::online_maps: the host's keys move it, the game gets none until a map is chosen.
+    if let Some(keys) = crate::online_maps::merge(core) {
+        return Some(keys);
     }
     // The whole battle phase (every turn, its menus, banners, hand-offs, animations, the moments between): only the
     // army whose turn it is has the pad (the incoming army's player on the "Next turn" screen), and nobody else's
