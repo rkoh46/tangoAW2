@@ -1603,7 +1603,11 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             bar(
                 &mut cv,
                 core,
-                if matches!(status, Status::Connected) { "Starting..." } else { "B: Cancel" },
+                match status {
+                    Status::Connected => "Starting...",
+                    Status::Failed => "B: Back",
+                    _ => "B: Cancel",
+                },
             );
         }
         3 | 5 => {

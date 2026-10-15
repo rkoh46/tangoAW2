@@ -45,7 +45,7 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
     let (mut channels, theirs, mine) = loop {
         let left = deadline.saturating_duration_since(web_time::Instant::now());
         if left.is_zero() {
-            fail(&inner, "Nobody else is looking right now. Try again later.");
+            fail(&inner, "Nobody else is looking.");
             return;
         }
         let route = tango_net::connect::Route::Matchmaking {
@@ -59,7 +59,7 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
         };
         let mut channels = match opened {
             Err(_) => {
-                fail(&inner, "Nobody else is looking right now. Try again later.");
+                fail(&inner, "Nobody else is looking.");
                 return;
             }
             Ok(Ok(c)) => c,
@@ -67,7 +67,7 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
                 let text = format!("{e}");
                 log::warn!("unranked: the matchmaking server: {text}");
                 if text.contains("Websocket") || text.contains("Io") {
-                    fail(&inner, "The matchmaking server cannot be reached.");
+                    fail(&inner, "Server cannot be reached.");
                     return;
                 }
                 tokio::select! {
@@ -121,7 +121,7 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
                 seen_guest && g.peers.is_empty()
             };
             if gone || (!seen_guest && paired.elapsed() > FIRST_WORDS * 2) {
-                fail(&inner, if gone { "The other player left." } else { "The other player did not answer." });
+                fail(&inner, if gone { "The other player left." } else { "The other player left." });
                 return;
             }
             start_room(&inner, &cancel);
@@ -140,7 +140,7 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
                 guest_session(inner, cancel, channels, w).await;
             }
             Ok(Ok(Packet::Room(RoomMsg::Reject(r)))) => fail(&inner, r.text),
-            _ => fail(&inner, "The other player did not answer."),
+            _ => fail(&inner, "The other player left."),
         }
     }
 }

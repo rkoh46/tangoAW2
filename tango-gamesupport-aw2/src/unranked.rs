@@ -117,7 +117,8 @@ fn list_candidates(core: &mut Core) {
     for id in 1..crate::five_map::MAP_IDS {
         let e = table + 0x5C * id;
         let tab = core.raw_read_16(e + 0x1A, -1);
-        if core.raw_read_8(e + 0x18, -1) == 2 && TABS.contains(&tab) && n < MAX_CAND {
+        // (the Colonel's Vault is the BH Campaign's prize: not for a random match)
+        if core.raw_read_8(e + 0x18, -1) == 2 && TABS.contains(&tab) && id != crate::five_map::VAULT_ID as u32 && n < MAX_CAND {
             core.raw_write_8(CAND + n as u32, -1, id as u8);
             n += 1;
         }

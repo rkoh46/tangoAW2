@@ -45,7 +45,7 @@ const TEXT_IDS: [(u32, u32); 4] = [
 ];
 const HELP: [&str; 4] = [
     "Play online with friends.",
-    "Coming soon: play someone at random.",
+    "Play someone at random.",
     "Create a room or join a friend's room.",
     "Coming soon: your online record.",
 ];
