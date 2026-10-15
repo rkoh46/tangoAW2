@@ -408,12 +408,12 @@ fn game_differs(host: &Option<tango_net_protocol::control::GameInfo>, guest: &Op
     match (host, guest) {
         (Some(h), Some(g)) => {
             if h.family_and_variant != g.family_and_variant || h.patch != g.patch {
-                Some("The host's game (or patch) is not the one you have.".to_string())
+                Some("The host has another game or patch.".to_string())
             } else if h.sim_version != g.sim_version {
                 Some(if g.sim_version < h.sim_version {
-                    "Your tangoAW2 is older than the host's: update it to play.".to_string()
+                    "Your tangoAW2 is older: update it to play.".to_string()
                 } else {
-                    "The host's tangoAW2 is older than yours: they need to update.".to_string()
+                    "The host's tangoAW2 is older: they must update.".to_string()
                 })
             } else {
                 None
@@ -816,7 +816,7 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
     let (channels, welcome) = loop {
         let left = deadline.saturating_duration_since(web_time::Instant::now());
         if left.is_zero() {
-            fail(&inner, "No such room: nobody has it open with that code.");
+            fail(&inner, "No room with that code is open.");
             return;
         }
         let route = tango_net::connect::Route::Matchmaking {
@@ -830,7 +830,7 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         };
         let mut channels = match opened {
             Err(_) => {
-                fail(&inner, "No such room: nobody has it open with that code.");
+                fail(&inner, "No room with that code is open.");
                 return;
             }
             Ok(Ok(c)) => c,
