@@ -478,4 +478,14 @@ impl tango_match::Console for SharedSolo {
     fn side(&mut self) -> Box<dyn Side + '_> {
         self.0.solo_side()
     }
+
+    fn peek(&mut self, addr: u32, buf: &mut [u8]) -> bool {
+        self.0.inner.core(0).raw_read_range(addr, -1, buf);
+        true
+    }
+
+    fn poke(&mut self, addr: u32, bytes: &[u8]) -> bool {
+        self.0.inner.core_mut(0).raw_write_range(addr, -1, bytes);
+        true
+    }
 }
