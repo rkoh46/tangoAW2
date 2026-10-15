@@ -4218,7 +4218,7 @@ tests). Online play starts in the game, played alone:
   40 s later. Content: code, gamertag, players/5, padlock, app version, pack flag; **never an address** (the connection is
   the matchmaking session `tangoaw2-room-<code>` as before; a password is only the hashed check inside the room's
   conversation). A listing is believed only after its id and BIP-340 signature check out and its fields pass
-  `Lobby::decode` (it is a public channel). The game's page is the mailbox at `0x0203D300` (rows of 24 bytes written by
+  `Lobby::decode` (it is a public channel). The game's page is the mailbox at `0x0203D500` (rows of 24 bytes written by
   the app; the cursor follows the lobby's code, so the list changing under it never moves it onto another lobby; rows
   keep their order of first sight). Checks: `cargo test -p tango-lobby browse`, and
   `cargo run -p tango-lobby --example browse_check [seconds]` (announces two lobbies on the real relays and lists

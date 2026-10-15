@@ -15,7 +15,7 @@ use crate::online::{
     YELLOW,
 };
 
-pub const STATE: u32 = 0x0203_D300;
+pub const STATE: u32 = 0x0203_D500;
 pub const STATE_LEN: u32 = 0x100;
 /// Rows the app wrote.
 const COUNT: u32 = STATE;
