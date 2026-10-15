@@ -114,6 +114,12 @@ fn main() {
             | if online { tango_gamesupport_aw2::online::ONLINE_MATCH } else { 0 },
     );
 
+    // `AW2_TILT=1`: the Dual Strike tilt on the console's own size (needs the pack: TANGOAW2_DS_ROM).
+    if std::env::var("AW2_TILT").is_ok_and(|v| v == "1") {
+        tango_gamesupport_aw2::ds_tilt::set_enabled(true);
+        tango_gamesupport_aw2::ds_tilt::set_amount(2);
+        tango_gamesupport_aw2::ds_graphics::set_enabled(true);
+    }
     let game = &tango_gamesupport_aw2::AW2;
     let start = |local_player| {
         game.pvp
