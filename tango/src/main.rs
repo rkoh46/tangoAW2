@@ -14,6 +14,7 @@ mod netplay;
 
 // Attaching the save editor to a prepared save.
 mod selection;
+mod suspended; // matches cut short by a disconnect, kept to be resumed
 
 // Screens. Per-game save editors are embedded through tango-gamesupport.
 mod session;

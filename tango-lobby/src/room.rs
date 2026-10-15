@@ -44,6 +44,10 @@ pub fn room_session(code: &str) -> String {
     format!("tangoaw2-room-{}", code.to_ascii_lowercase())
 }
 
+// UNRANKED's discovery (a child module: it works on the room's state).
+#[path = "unranked.rs"]
+pub mod unranked;
+
 /// What a room needs to be made or joined.
 #[derive(Clone)]
 pub struct RoomParams {
@@ -60,6 +64,28 @@ pub struct RoomParams {
     /// This player can show the content the game gates (tangoAW2: Dual Strike's, from their own ROM): the match
     /// has it only when everyone can.
     pub content: bool,
+    /// The ids of the suspended matches this player has saved (a guest says them to the host when joining).
+    pub saves: Vec<u64>,
+    /// A room made to resume a suspended match (the host's).
+    pub resume: Option<ResumeParams>,
+}
+
+/// A suspended match a room is made to resume (the host's copy of it).
+#[derive(Clone)]
+pub struct ResumeParams {
+    pub match_id: u64,
+    /// Everyone's gamertag in seat order, as saved.
+    pub players: Vec<String>,
+    /// The seat the host had.
+    pub seat: usize,
+    /// The state to start from: its tick in the original match, its digest, the emulator's bytes.
+    pub tick: u32,
+    pub digest: u64,
+    pub state: Vec<u8>,
+    /// The match clock and type the console was started with, and the save it ran on.
+    pub match_ts: u64,
+    pub match_type: (u8, u8),
+    pub save: Vec<u8>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,8 +119,12 @@ pub struct RoomView {
     pub message: String,
     /// A guest: welcomed by the host.
     pub joined: bool,
-    /// Every guest is READY (and there is one): the host may start.
+    /// Every guest is READY (and there is one, and in a room resuming a match every player of it is here): the host
+    /// may start.
     pub all_ready: bool,
+    /// A room resuming a suspended match: the players of it who are not in the room yet.
+    pub waiting_for: Vec<String>,
+    pub resuming: bool,
 }
 
 /// A room's match, ready to be played: everything the session needs from the lobby.
@@ -113,6 +143,12 @@ pub struct RoomMatch {
     pub code: String,
     /// The host: a link to each guest in seat order (1..). A guest: the link to the host.
     pub links: Vec<LinkParts>,
+    /// The host's seat (0, unless the room resumes a match the host was not the first seat of).
+    pub host_seat: usize,
+    /// The match's id (random; a resumed match keeps its own).
+    pub match_id: u64,
+    /// A suspended match being resumed: the console state it starts from.
+    pub resume_state: Option<Vec<u8>>,
 }
 
 impl RoomMatch {
@@ -164,6 +200,8 @@ struct Parts {
 struct HostPeer {
     id: u64,
     nickname: String,
+    /// Its seat in a room resuming a match (otherwise by order of joining).
+    seat: Option<u8>,
     ready: bool,
     loaded: bool,
     content: bool,
@@ -176,6 +214,8 @@ struct HostPeer {
 
 struct Inner {
     host: bool,
+    /// UNRANKED: a room of two made by the pool's pairing (see [`Room::unranked`]).
+    unranked: bool,
     params: RoomParams,
     phase: RoomPhase,
     message: String,
@@ -228,10 +268,28 @@ impl Room {
         room
     }
 
+    /// UNRANKED: look for another player who is looking too (the pool of [`unranked::unranked_session`]); the two the server
+    /// pairs draw lots over their link (the lower number hosts) and play a room of two, the guest READY and the host
+    /// starting as soon as it is. `params.code` and `password` are only labels; `match_type` carries the UNRANKED
+    /// bits.
+    pub fn unranked(params: RoomParams) -> Room {
+        let room = Room::new(false, params);
+        room.inner.lock().unwrap().unranked = true;
+        let inner = room.inner.clone();
+        let cancel = room.cancel.clone();
+        tango_platform::spawn(async move { unranked::unranked_main(inner, cancel).await });
+        room
+    }
+
+    pub fn is_unranked(&self) -> bool {
+        self.inner.lock().unwrap().unranked
+    }
+
     fn new(host: bool, params: RoomParams) -> Room {
         Room {
             inner: Arc::new(Mutex::new(Inner {
                 host,
+                unranked: false,
                 params,
                 phase: RoomPhase::Connecting,
                 message: String::new(),
@@ -262,27 +320,21 @@ impl Room {
         let g = self.inner.lock().unwrap();
         let mut players = Vec::new();
         if g.host {
-            players.push(PlayerView {
-                nickname: g.params.nickname.clone(),
-                ready: g.my_ready,
-                host: true,
-                you: true,
-            });
-            for p in &g.peers {
+            for p in roster_of(&g) {
                 players.push(PlayerView {
-                    nickname: p.nickname.clone(),
+                    you: p.host,
+                    nickname: p.nickname,
                     ready: p.ready,
-                    host: false,
-                    you: false,
+                    host: p.host,
                 });
             }
         } else if g.welcomed {
-            for (k, p) in g.roster.iter().enumerate() {
+            for p in g.roster.iter() {
                 players.push(PlayerView {
                     nickname: p.nickname.clone(),
                     ready: p.ready,
-                    host: k == 0,
-                    you: k == g.my_seat,
+                    host: p.host,
+                    you: p.seat as usize == g.my_seat,
                 });
             }
         } else {
@@ -299,13 +351,24 @@ impl Room {
                 you: true,
             });
         }
-        let all_ready = g.host && !g.peers.is_empty() && g.peers.iter().all(|p| p.ready);
+        let waiting_for: Vec<String> = match (g.host, g.params.resume.as_ref()) {
+            (true, Some(r)) => r
+                .players
+                .iter()
+                .filter(|n| **n != g.params.nickname && !g.peers.iter().any(|p| &p.nickname == *n))
+                .cloned()
+                .collect(),
+            _ => Vec::new(),
+        };
+        let all_ready = g.host && !g.peers.is_empty() && g.peers.iter().all(|p| p.ready) && waiting_for.is_empty();
         RoomView {
             phase: g.phase,
             players,
             message: g.message.clone(),
             joined: g.host || g.welcomed,
             all_ready,
+            waiting_for,
+            resuming: g.params.resume.is_some(),
         }
     }
 
@@ -324,18 +387,7 @@ impl Room {
 
     /// The host starts the match (every guest READY).
     pub fn start(&self) {
-        let inner = self.inner.clone();
-        let cancel = self.cancel.clone();
-        {
-            let mut g = inner.lock().unwrap();
-            if !g.host || g.started || g.peers.is_empty() || !g.peers.iter().all(|p| p.ready) {
-                return;
-            }
-            g.started = true;
-            g.phase = RoomPhase::Starting;
-            g.dial.cancel();
-        }
-        tango_platform::spawn(async move { host_start(inner, cancel).await });
+        start_room(&self.inner, &self.cancel);
     }
 
     /// The match, once the room is [`RoomPhase::Ready`] (taken once).
@@ -375,27 +427,78 @@ impl Drop for Room {
 
 // --- Shared ---------------------------------------------------------------------------------------------
 
+/// The host's START, when there is a guest and every guest is READY.
+fn start_room(inner: &Arc<Mutex<Inner>>, cancel: &CancellationToken) {
+    let (inner, cancel) = (inner.clone(), cancel.clone());
+    {
+        let mut g = inner.lock().unwrap();
+        let complete = g.params.resume.as_ref().is_none_or(|r| g.peers.len() + 1 == r.players.len());
+        if !g.host || g.started || g.peers.is_empty() || !g.peers.iter().all(|p| p.ready) || !complete {
+            return;
+        }
+        g.started = true;
+        g.phase = RoomPhase::Starting;
+        g.dial.cancel();
+    }
+    tango_platform::spawn(async move { host_start(inner, cancel).await });
+}
+
+/// Everyone in the room by seat: the host's, then each guest's (in a room resuming a match, as saved; otherwise in
+/// order of joining).
 fn roster_of(g: &Inner) -> Vec<RoomPlayer> {
+    let host_seat = g.params.resume.as_ref().map_or(0, |r| r.seat as u8);
     let mut v = vec![RoomPlayer {
         nickname: g.params.nickname.clone(),
         ready: g.my_ready,
+        seat: host_seat,
+        host: true,
     }];
-    v.extend(g.peers.iter().map(|p| RoomPlayer {
-        nickname: p.nickname.clone(),
-        ready: p.ready,
-    }));
+    let mut next = 0u8;
+    for p in &g.peers {
+        let seat = match p.seat {
+            Some(s) => s,
+            None => {
+                // (by order of joining, around the host's seat)
+                if next == host_seat {
+                    next += 1;
+                }
+                let s = next;
+                next += 1;
+                s
+            }
+        };
+        v.push(RoomPlayer {
+            nickname: p.nickname.clone(),
+            ready: p.ready,
+            seat,
+            host: false,
+        });
+    }
+    v.sort_by_key(|p| p.seat);
     v
+}
+
+/// The seat of the guest at `index` among the host's peers.
+fn peer_seat(g: &Inner, index: usize) -> u8 {
+    let name = &g.peers[index].nickname;
+    roster_of(g)
+        .iter()
+        .find(|p| !p.host && &p.nickname == name)
+        .map_or(index as u8 + 1, |p| p.seat)
 }
 
 /// Tell every guest who is in the room (each its own seat).
 fn broadcast_roster(inner: &Arc<Mutex<Inner>>) {
     let (roster, senders): (Vec<RoomPlayer>, Vec<_>) = {
         let g = inner.lock().unwrap();
-        (roster_of(&g), g.peers.iter().map(|p| p.sender.clone()).collect())
+        (
+            roster_of(&g),
+            (0..g.peers.len()).map(|k| (peer_seat(&g, k), g.peers[k].sender.clone())).collect(),
+        )
     };
-    for (k, sender) in senders.into_iter().enumerate() {
+    for (seat, sender) in senders {
         let msg = Packet::Room(RoomMsg::Roster(RoomRoster {
-            seat: k as u8 + 1,
+            seat,
             players: roster.clone(),
         }));
         tango_platform::spawn(async move {
@@ -502,6 +605,21 @@ async fn host_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
     }
 }
 
+/// A room resuming a match takes only its players, each once, with the content the match needs.
+fn resume_refusal(g: &Inner, nickname: &str, content: bool) -> Option<String> {
+    let r = g.params.resume.as_ref()?;
+    if !r.players.iter().any(|n| n == nickname) {
+        return Some("This room is resuming a saved match that you are not in.".to_string());
+    }
+    if nickname == g.params.nickname || g.peers.iter().any(|p| p.nickname == nickname) {
+        return Some("Someone with your gamertag is already in this room.".to_string());
+    }
+    if r.match_type.1 & tango_net_protocol::control::SHARED_CONTENT != 0 && !content {
+        return Some("The saved match uses Dual Strike content that you have not imported.".to_string());
+    }
+    None
+}
+
 async fn reject(sender: &Arc<tokio::sync::Mutex<tango_net::Sender>>, reason: RejectReason, text: &str) {
     let msg = Packet::Room(RoomMsg::Reject(RoomReject {
         reason,
@@ -529,7 +647,9 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
         Ok(Ok(Packet::Room(_))) | Ok(Ok(_)) => return,
         _ => return,
     };
+    let nickname: String = join.nickname.chars().filter(|c| !c.is_control()).take(12).collect();
     // Let in, or turn away.
+    let resume_seat: Option<u8>;
     let verdict: Result<(u64, CancellationToken, tokio::sync::oneshot::Sender<tango_net::Receiver>), (RejectReason, String)> = {
         let mut g = inner.lock().unwrap();
         if g.started {
@@ -540,7 +660,15 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
             Err((RejectReason::WrongPassword, "Wrong password.".into()))
         } else if let Some(why) = game_differs(&g.params.game_info, &join.game_info) {
             Err((RejectReason::GameMismatch, why))
+        } else if let Some(why) = resume_refusal(&g, &nickname, join.content) {
+            Err((RejectReason::NotInMatch, why))
         } else {
+            resume_seat = g
+                .params
+                .resume
+                .as_ref()
+                .and_then(|r| r.players.iter().position(|n| *n == nickname))
+                .map(|k| k as u8);
             let id = g.next_id;
             g.next_id += 1;
             let handoff = CancellationToken::new();
@@ -548,7 +676,8 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
             // (the receiver goes back through `back_tx` when the match takes the link)
             g.peers.push(HostPeer {
                 id,
-                nickname: join.nickname.chars().filter(|c| !c.is_control()).take(12).collect(),
+                nickname: nickname.clone(),
+                seat: resume_seat,
                 ready: false,
                 loaded: false,
                 content: join.content,
@@ -576,9 +705,9 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
     log::info!("room: {} joined", join.nickname);
     let welcome = {
         let g = inner.lock().unwrap();
-        let seat = g.peers.iter().position(|p| p.id == id).map_or(1, |k| k + 1);
+        let seat = g.peers.iter().position(|p| p.id == id).map_or(1, |k| peer_seat(&g, k));
         Packet::Room(RoomMsg::Welcome(RoomRoster {
-            seat: seat as u8,
+            seat,
             players: roster_of(&g),
         }))
     };
@@ -661,23 +790,57 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         .duration_since(web_time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis() as u64;
-    let (players, save, match_type, senders) = {
-        let g = inner.lock().unwrap();
+    let (players, save, match_type, senders, host_seat, match_id, resume, ts) = {
+        let mut g = inner.lock().unwrap();
+        // (the links go to the match by seat: ascending)
+        let order: Vec<u8> = (0..g.peers.len()).map(|k| peer_seat(&g, k)).collect();
+        let mut idx: Vec<usize> = (0..g.peers.len()).collect();
+        idx.sort_by_key(|&k| order[k]);
+        let mut sorted = Vec::new();
+        let mut taken: Vec<Option<HostPeer>> = std::mem::take(&mut g.peers).into_iter().map(Some).collect();
+        for k in idx {
+            sorted.push(taken[k].take().unwrap());
+        }
+        g.peers = sorted;
+        let resume = g.params.resume.clone();
         let mut names = vec![g.params.nickname.clone()];
         names.extend(g.peers.iter().map(|p| p.nickname.clone()));
+        let (names, host_seat) = match resume.as_ref() {
+            // (as saved: every player of it is here, which `start` checked)
+            Some(r) => (r.players.clone(), r.seat),
+            None => (names, 0),
+        };
         let all_content = g.params.content && g.peers.iter().all(|p| p.content);
         let mut match_type = g.params.match_type;
         if all_content {
             match_type.1 |= tango_net_protocol::control::SHARED_CONTENT;
         }
+        // UNRANKED: whose proposed map is played, drawn from the match seed (the guest gets it in `Start`).
+        if g.unranked && seed[0] & 1 != 0 {
+            match_type.1 |= tango_net_protocol::control::UNRANKED_PICK_GUEST;
+        }
+        let (save, match_type, ts) = match resume.as_ref() {
+            Some(r) => (r.save.clone(), r.match_type, r.match_ts),
+            None => (g.params.save.clone(), match_type, ts),
+        };
+        let match_id = resume.as_ref().map_or_else(rand::random::<u64>, |r| r.match_id);
         (
             names,
-            g.params.save.clone(),
+            save,
             match_type,
             g.peers.iter().map(|p| p.sender.clone()).collect::<Vec<_>>(),
+            host_seat,
+            match_id,
+            resume,
+            ts,
         )
     };
-    let compressed = match zstd::stream::encode_all(std::io::Cursor::new(&save), 3) {
+    // The payload: the host's save, and for a match being resumed the state as well.
+    let payload = match resume.as_ref() {
+        Some(r) => bincode::serialize(&(&save, &r.state)).unwrap_or_default(),
+        None => save.clone(),
+    };
+    let compressed = match zstd::stream::encode_all(std::io::Cursor::new(&payload), 3) {
         Ok(c) => c,
         Err(e) => {
             fail(&inner, format!("Could not pack the save ({e})."));
@@ -691,6 +854,12 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         save_len: compressed.len() as u64,
         save_hash: make_commitment(&compressed),
         match_type,
+        match_id,
+        host_seat: host_seat as u8,
+        resume: resume.as_ref().map(|r| tango_net_protocol::control::ResumeInfo {
+            tick: r.tick,
+            digest: r.digest,
+        }),
     }));
     for sender in &senders {
         let mut s = sender.lock().await;
@@ -779,17 +948,19 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         });
     }
     let mut g = inner.lock().unwrap();
-    let host_save = g.params.save.clone();
     g.matched = Some(RoomMatch {
         is_host: true,
-        seat: 0,
+        seat: host_seat,
         players,
         seed,
         ts,
-        host_save,
+        host_save: save,
         match_type,
         code,
         links,
+        host_seat,
+        match_id,
+        resume_state: resume.map(|r| r.state),
     });
     g.phase = RoomPhase::Ready;
 }
@@ -808,6 +979,7 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                 password: room_password_hash(&g.params.code, &g.params.password),
                 game_info: g.params.game_info.clone(),
                 content: g.params.content,
+                saves: g.params.saves.clone(),
             },
         )
     };
@@ -884,6 +1056,11 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             }
         }
     };
+    guest_session(inner, cancel, channels, welcome).await;
+}
+
+/// A guest welcomed by the host over `channels`: its READY, the roster and the start, then the hand-over to the match.
+async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channels: Channels, welcome: RoomRoster) {
     let Channels {
         control: (sender, mut receiver),
         in_match,
@@ -963,9 +1140,21 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                                     fail(&inner, "The host's save did not arrive intact.");
                                     return;
                                 }
-                                let Ok(save) = zstd::stream::decode_all(std::io::Cursor::new(&bytes)) else {
+                                let Ok(payload) = zstd::stream::decode_all(std::io::Cursor::new(&bytes)) else {
                                     fail(&inner, "The host's save did not unpack.");
                                     return;
+                                };
+                                // (a match being resumed brings its state with the save)
+                                let (save, resume_state) = if s.resume.is_some() {
+                                    match bincode::deserialize::<(Vec<u8>, Vec<u8>)>(&payload) {
+                                        Ok((save, state)) => (save, Some(state)),
+                                        Err(_) => {
+                                            fail(&inner, "The host's saved match did not unpack.");
+                                            return;
+                                        }
+                                    }
+                                } else {
+                                    (payload, None)
                                 };
                                 let _ = sender.lock().await.send_packet(&Packet::Room(RoomMsg::Loaded)).await;
                                 // Hand over: the control receiver is ours to give straight away.
@@ -999,6 +1188,9 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                                     match_type: s.match_type,
                                     code,
                                     links: vec![parts],
+                                    host_seat: s.host_seat as usize,
+                                    match_id: s.match_id,
+                                    resume_state,
                                 });
                                 g.phase = RoomPhase::Ready;
                                 return;

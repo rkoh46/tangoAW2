@@ -63,6 +63,17 @@ struct World {
     /// the link is still in hand — the one moment its lock is certainly
     /// free, which is what a sound callback could never count on.
     audio: Option<crate::audio::Pump>,
+    /// Captures at every [`crate::suspend::CHECKPOINT_EVERY`]th tick, newest last. A capture taken on the way into a
+    /// tick is the last one for that tick, and so the settled one once the tick is settled (a rollback re-simulates
+    /// through the tick again and takes it again), which is what [`Match::checkpoints`] reads.
+    /// Shared with the [`Match`], which reads them; switched on by [`Match::keep_checkpoints`].
+    checkpoints: Arc<Mutex<Checkpoints>>,
+}
+
+#[derive(Default)]
+struct Checkpoints {
+    on: bool,
+    kept: std::collections::VecDeque<(u32, Snapshot)>,
 }
 
 /// The most players a match can have (a room of five).
@@ -129,6 +140,19 @@ impl getgud::World for World {
             audio.pump(&mut *link);
         }
         self.live_tick += 1;
+        if self.live_tick % crate::suspend::CHECKPOINT_EVERY == 0 {
+            let mut cps = self.checkpoints.lock().unwrap();
+            if cps.on {
+                if let Ok(snap) = link.snapshot(None) {
+                    let tick = self.live_tick;
+                    cps.kept.retain(|(t, _)| *t < tick);
+                    cps.kept.push_back((tick, snap));
+                    while cps.kept.len() > crate::suspend::CHECKPOINTS_KEPT {
+                        cps.kept.pop_front();
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
@@ -158,6 +182,7 @@ impl getgud::World for World {
             audio.revoke_to(state.audio_mark);
         }
         self.live_tick = state.tick;
+        self.checkpoints.lock().unwrap().kept.retain(|(t, _)| *t <= state.tick);
         Ok(())
     }
 
@@ -214,6 +239,10 @@ pub struct Match {
     /// The telemetry this match publishes, when its engine reads any —
     /// installed by the backend that wired the link's pollers up.
     telemetry: Option<crate::telemetry::TelemetryHandle>,
+    /// See the world's copy.
+    checkpoints: Arc<Mutex<Checkpoints>>,
+    /// Ticks settled so far (every input row folded into the authoritative state).
+    settled: u32,
 }
 
 impl Match {
@@ -248,6 +277,7 @@ impl Match {
         let render_from = Arc::new(AtomicU32::new(0));
         let displayed_screens = Arc::new(AtomicU8::new(u8::MAX));
         let audio_seat = Arc::new(std::sync::atomic::AtomicUsize::new(local_player));
+        let checkpoints = Arc::new(Mutex::new(Checkpoints::default()));
         let audio = audio.map(|into| crate::audio::Pump::new(into, audio_seat.clone()));
         let mut world = World {
             link: link.clone(),
@@ -259,6 +289,7 @@ impl Match {
             displayed_screens: displayed_screens.clone(),
             render_from: render_from.clone(),
             audio,
+            checkpoints: checkpoints.clone(),
         };
         // The priming walk ran on these consoles and left whatever it
         // voiced sitting in their buffers. Nobody wants to hear a menu
@@ -287,7 +318,36 @@ impl Match {
             last_rollback_depth: 0,
             audio_seat,
             telemetry: None,
+            checkpoints,
+            settled: 0,
         })
+    }
+
+    /// Keep a capture of the console every [`crate::suspend::CHECKPOINT_EVERY`] ticks, for [`checkpoints`](Self::checkpoints)
+    /// (a match that can be suspended; costs one capture per half second).
+    pub fn keep_checkpoints(&self) {
+        self.checkpoints.lock().unwrap().on = true;
+    }
+
+    /// How many ticks are settled: every row up to there is confirmed and folded in.
+    pub fn settled_ticks(&self) -> u32 {
+        self.settled
+    }
+
+    /// The settled checkpoints held, oldest first, as stored images (empty when the engine cannot make them or
+    /// [`keep_checkpoints`](Self::keep_checkpoints) was not asked for). Every peer of a match holds the same state
+    /// for the same tick.
+    pub fn checkpoints(&self) -> Vec<crate::suspend::Checkpoint> {
+        // (the lock order of `World::step`: the console, then the checkpoints)
+        let mut link = self.link.lock().unwrap();
+        let cps = self.checkpoints.lock().unwrap();
+        cps.kept
+            .iter()
+            .filter(|(t, _)| *t <= self.settled)
+            .filter_map(|(tick, snap)| {
+                link.state_image(snap).map(|image| crate::suspend::Checkpoint { tick: *tick, image })
+            })
+            .collect()
     }
 
     /// Install the telemetry handle this match publishes. Factory-side:
@@ -329,6 +389,7 @@ impl Match {
             .into_iter()
             .map(|(local, remotes)| seat_inputs(self.local_player, self.players, local, remotes[0]))
             .collect();
+        self.settled += rows.len() as u32;
         let confirmed_inputs = rows
             .iter()
             .map(|r| {

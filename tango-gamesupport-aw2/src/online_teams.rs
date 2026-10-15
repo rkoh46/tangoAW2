@@ -118,7 +118,8 @@ fn record(core: &Core) -> Record {
 }
 
 fn tags(core: &Core) -> bool {
-    crate::ds_weather::is_on(core)
+    // (UNRANKED has no tag pairs)
+    crate::ds_weather::is_on(core) && !crate::unranked::on(core)
 }
 
 fn next_colour(core: &Core, n: usize, s: usize, step: isize) -> u8 {

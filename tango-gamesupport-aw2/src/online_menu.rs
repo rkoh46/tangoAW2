@@ -2,7 +2,7 @@
 //! "Play online with friends.", and the screen it opens (AW2's link-cable screen, `ProcScr` `0x0849BC50`, its
 //! cursor at +0x36: 0 Single-Pak, 1 Multi-Pak, 2 Trade Maps) is the ONLINE screen: titled ONLINE, its items
 //! UNRANKED, LOBBY and STATS with their own help lines. A on LOBBY goes a level down on the same screen (titled
-//! LOBBY: CREATE, JOIN, BACK; B goes back up); A on CREATE or JOIN opens the lobby's own pages
+//! LOBBY: CREATE, JOIN, RESUME; B goes back up, as BACK did); A on CREATE or JOIN opens the lobby's own pages
 //! ([`crate::online`]). UNRANKED and STATS say they are coming soon. The game never sees A or START on this
 //! screen, so its link-cable modes never start.
 //!
@@ -45,7 +45,7 @@ const TEXT_IDS: [(u32, u32); 4] = [
 ];
 const HELP: [&str; 4] = [
     "Play online with friends.",
-    "Coming soon: play someone at random.",
+    "Play someone at random.",
     "Create a room or join a friend's room.",
     "Coming soon: your online record.",
 ];
@@ -70,7 +70,7 @@ const SMALL_SLOTS: [u32; 3] = [892, 924, 956];
 const TITLE_TILE: u32 = 236;
 const TITLE_PALETTE: u16 = 15;
 
-pub const WORDS: [[&str; 3]; 2] = [["UNRANKED", "LOBBY", "STATS"], ["CREATE", "JOIN", "BACK"]];
+pub const WORDS: [[&str; 3]; 2] = [["UNRANKED", "LOBBY", "STATS"], ["CREATE", "JOIN", "RESUME"]];
 pub const TITLES: [&str; 2] = ["ONLINE", "LOBBY"];
 
 struct Built {
@@ -176,7 +176,7 @@ pub fn draw(core: &mut Core, level: usize) {
         return;
     }
     let Some(b) = built(core) else { return };
-    let level = level.min(1);
+    let level = if level == 6 { 0 } else { level.min(1) };
     let sheet = &b.sheets[level];
     let tile = 32 * art::BIG_TILES;
     for i in 0..3 {
@@ -213,7 +213,10 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
             s += 8;
         }
     }
-    let level = (crate::online::level(core) as usize).min(1);
+    let level = match crate::online::level(core) as usize {
+        6 => 0,
+        l => l.min(1),
+    };
     let word = TITLES[level];
     // The game's title sprites, left to right.
     let mut ours: Vec<u32> = Vec::new();

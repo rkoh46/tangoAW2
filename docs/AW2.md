@@ -4192,7 +4192,7 @@ tests). Online play starts in the game, played alone:
   title font at `0x081CC038`: A C D E G H I K L M N O P R S T U W Y, star,
   B) becomes ONLINE / LOBBY at the sprite flush (two sprites added). Help
   lines: text ids 0xCBE..0xCC0. A and START never reach the game there (its
-  link modes never start); UNRANKED and STATS say "Coming soon!".
+  link modes never start); UNRANKED looks for an opponent (below), STATS says "Coming soon!".
 - **The lobby's pages** are drawn over the screen as a presentation overlay
   (`online::apply`) from EWRAM `0x0203CA00..0x0203CAFF`: CREATE asks for an
   optional password (up to four letters), then shows the room's code (the
@@ -4228,9 +4228,21 @@ tests). Online play starts in the game, played alone:
   save prompt are the host's; on the Teams screen UP/DOWN, SELECT, L, R and
   START come from the seat of the army under the cursor (with the pack, a
   partner being picked: everything but A and B), LEFT/RIGHT from both, A and
-  B from the host; every army is a human's. A on a map whose header (+0x18)
-  has another number of armies than players is refused ("Pick a map for 2
-  players."). After a battle the game is back on SELECT MAP (a rematch); B
+  B from the host; every army is a human's. SELECT MAP is AW2's own screen,
+  filled for the room (`online_maps.rs`): every frame, after `show_maps`,
+  `retab` sets each Versus map's header tab (+0x1A, what the list builder
+  `0x08037448` sorts by) for the room's count: 2 players Classic (tab 2) and
+  Pre-Deployed (4, units placed: the unit list's first record is `0xFE`), 3
+  "3P Maps" (5) and Pre-Deployed, 4 "4P Maps" (6) and Pre-Deployed, 5 "5P
+  Maps" (9); every other map (and the Design Room's `0xB4..0xB7`) on tab
+  `0x7E`, which no list shows, so the game's own tabs, list, picture, size and
+  property boxes work as offline and cannot reach another count's map (a
+  5-army map says 4 in its header: `five_map::is_five_map`). The map table is
+  the game's (`five_map::table`: AW2's, or Dual Strike's with the pack). The
+  host drives it. The list is built when the screen opens, so the boot walk
+  stops on Versus' box (New) until the session's first tick has told it the
+  room's size (`waiting_for_room`). `online_maps::list(core, armies,
+  predeployed)` and `preview` serve other screens (UNRANKED). After a battle the game is back on SELECT MAP (a rematch); B
   there, back to Select Mode, raises `online::match_over`, which the shared
   console reports as the match's end through its telemetry: both peers
   complete on the same tick and the replay is finished. The app then boots
@@ -4251,10 +4263,70 @@ tests). Online play starts in the game, played alone:
   gone for a moment in between). The status bar shows `A: Host, Guest2  B: Guest` when any team has two or more
   (`tango_library::online::room_picks`, kept by `online_teams::publish`). Harness: `aw2_room_teams` (a room of
   3..5 on one console with a script: pages, teams, an attack on an ally, a win by the last enemy team's fall).
-- **Later (planned).** UNRANKED: random matching (each proposes a 2P map,
-  one drawn from the match seed; fixed rules), the same Teams screen for CO
-  and a colour no other army has. Rooms of up to five. STATS: the player's
-  own online record.
+- **UNRANKED** (`unranked.rs`; app `tango/src/app/online.rs`, `tango_lobby::room::Room::unranked`). A on UNRANKED
+  (lobby level 6, request 7) makes the app dial the public matchmaking server under the pool's session id
+  `tangoaw2-unranked-v1-s<sim version>` (no server of our own: the server pairs the first two clients with the same
+  id; players on other simulations never meet). The two paired each send `RoomMsg::Pool(random u64)`; the lower
+  number hosts, the other sends `Join` and both run the room's protocol over that one link as a room of two (the
+  guest READY at once, the host starting as soon as the guest is in; the host's save is the match's). B cancels,
+  five minutes without a pairing, or a server that cannot be reached, says so. The match subtype is
+  `ONLINE_MATCH | UNRANKED_MATCH (0x02)`, plus `UNRANKED_PICK_GUEST (0x04)` when the host's draw from the match seed
+  (`seed[0] & 1`) picks the guest's proposal: the console reads both from its subtype (`unranked::init` copies them
+  to EWRAM `0x0203D100..`), so both peers and the replay have them. On the console: SELECT MAP's list is not played;
+  each player moves a selector over the 2-army maps of the Classic, Vs. Maps and Pre-Deployed tabs (LEFT/RIGHT,
+  UP/DOWN six at a time, A confirms, B takes back; both proposals and gamertags shown live); with both confirmed the
+  drawn seat's map is walked to in the list (pressed for the players) and chosen; then the room's Teams page (CO and
+  a colour no other army has; no tag pairs); the Rules screen's rows are written with the standard rules
+  (`unranked::RULES`: fog off, weather clear, funds 1000 per property, no turn limit, no capture limit, CO powers on,
+  Dual Strike's Skills off, no visuals) and A is pressed. After the battle the results take both players' buttons and
+  the match ends back at SELECT MAP (`match_over`); the app logs `unranked: the match ended (...)` (the hook for
+  stats; nothing is recorded). Harness: `AW2_UNRANKED=host|guest` in `aw2_netplay_script` (the value says whose
+  proposal is played).
+- **Later (planned).** STATS: the player's own online record. Rooms of up to five are built.
+
+### A player drops: the 60-second wait, and the saved match (`tango-session/src/pvp/`, `tango-match/src/suspend.rs`, `tango/src/suspended.rs`)
+
+- **The wait.** A link that goes quiet or closes without a goodbye is rebuilt by `Link::reconnect` for 60 seconds
+  (matchmaking window). The rennet streams carry across the swap, so a player who comes back in time finds the match
+  exactly where it stopped; nothing is resynced. A room's host has a link to each guest, so it knows first: it
+  pauses, and tells every other guest on its control channel (`RoomMsg::Hold { seat, name, left_ms }`, about once a
+  second; `Unhold { seat }` when the player is back, `GiveUp { seat, name }` when the window closes). A guest that is
+  told pauses too (a `Pauses` count on the drive loop's gate: one reason per rebuilt link or waited-for player) and
+  its own stall watch stays quiet. Every window shows "Waiting for NAME to reconnect... NNs" (`PvpSession::waiting_for`,
+  the reconnect overlay). In a room the input queue is shared by all links, so a stall trips only the link whose peer
+  has been silent (`last_rx`) for 3 s (a guest's link to the host: 7 s, so the host's `Hold` always arrives first).
+- **Checkpoints.** Every 30 ticks `World::step` (`tango-match/src/engine.rs`) keeps a capture of the console (12 at
+  most). A capture taken on the way into a tick is the last for that tick, so once the tick is settled
+  (`Match::settled_ticks`) it is the settled state, the same on every peer. The mgba engine turns one into bytes with
+  `Link::state_image` (its savestate, 400 KB, and a digest over the registers and both RAMs: the image's reserved
+  parts are unwritten and differ between peers) and the game says what it shows (`SharedGame::describe`:
+  `resume_info.rs`, the map's name from the ROM's text table, the day, the army count, fog).
+- **The save.** When a room's match ends by a disconnect (`remote_disconnected`, not completed, not aborted) the drive
+  thread hands the newest three settled checkpoints to the app's sink (`PvpDriver::suspend_if_cut_short`), which writes
+  `<data>/suspended/<match id>.taw2s` (zstd of bincode `SuspendedMatch`: match id, gamertags in seat order, seat,
+  who dropped, date, match clock and type, the host's save, the checkpoints). Every remaining player has one; a player
+  who can tell they dropped (their own link failed while the app still ran) saves too. The state is not in the GBA's
+  flash. Only a state inside a battle is kept (the lobby's BATTLE byte, `online.rs`). The agreed frame needs no
+  exchange: every peer's checkpoints are at multiples of 30, the resuming host's newest decides, and the room ships it.
+  The lobby gets "NAME disconnected - match saved. Resume it from ONLINE > RESUME" (`Flow::back_message`, drawn in a box
+  over the LOBBY menu: the longer text sits in `online::SAVED_NOTE`).
+- **RESUME.** The LOBBY level of the ONLINE screen reads CREATE / JOIN / RESUME (RESUME took BACK's place: B goes back
+  anyway). A opens level 8 (`online::SAVED_LEVEL`): the saved matches (who, map, day, date), UP/DOWN, A resumes, START
+  deletes, B back. The list is the app's (`online::mailbox::write_saved`, EWRAM `0x0203D100`). A makes a room as CREATE
+  does (`Request::Resume { index }`), flagged with the match id (`RoomParams::resume`). The others JOIN with the code as
+  usual; a join carries the ids of the saves the joiner has. The host refuses anyone whose gamertag is not one of the
+  match's players (or is taken), and a player without Dual Strike content when the match used it; it starts when all
+  its players are in and ready. Seats are as saved (`RoomPlayer::seat`): the room's host takes its own saved seat
+  (`RoomMatch::host_seat`; `HostAgg` joins the guests' inputs around it), so whoever resumes can host. The start
+  carries the host's save and the state (`RoomStart::resume`), so every peer starts from the very same bytes even if
+  its own file differs; a player who lost their save can rejoin if any one player has it.
+- **The resumed match** is `Backend::start_resumed` (`SharedLink::boot_resumed`): the ROM and save booted without the walk,
+  the traps installed, the state loaded. The game's own state (match type, online flags, each seat's choices, whose
+  turn it is) is all in the RAM. The match keeps its id; it is not recorded (a replay starts from the beginning of a
+  match, and this one starts in the middle), and the save is deleted when it ends. If it is cut short again it
+  replaces its save. Restoring a savestate loses the audio FIFO and DMA detail a rollback snapshot keeps, so a
+  resumed match is not tick-for-tick the original's continuation; the peers agree with each other (checked by
+  `aw2_netplay_script`'s `drop`, and by `TANGOAW2_STATE_LOG` in a live game).
 
 ## Saves
 

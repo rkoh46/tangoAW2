@@ -19,6 +19,10 @@
 //!   shot NAME           write NAME_peer0.bmp and NAME_peer1.bmp (each
 //!                       peer's own view)
 //!   peek ADDR LEN       print LEN bytes at ADDR on both peers
+//!   drop                a player's connection drops for good: both peers' settled checkpoints must agree tick for
+//!                       tick; the newest common one is the saved match, and the pair is started again from it
+//!                       (a resumed match), the rest of the script playing on from there. The straight replay
+//!                       restarts from the saved state too.
 //! KEYS is `+`-joined from A B SELECT START RIGHT LEFT UP DOWN R L.
 //!
 //! `TANGOAW2_DS_ROM=<file>` gives the peers the Dual Strike art, and
@@ -26,6 +30,8 @@
 //! players have it (the Black Crystal and Black Obelisk maps then show).
 //!
 //! `AW2_ONLINE=1` plays a match made in the in-game lobby (booted to Versus' SELECT MAP, the host's menus).
+//! `AW2_UNRANKED=host|guest` plays an UNRANKED one (implies AW2_ONLINE): both players propose a 2-army map, the host's
+//! or the guest's (the value) is played, then CO and colour, the standard rules, the battle.
 //!
 //! `AW2_TIMELINE=<file>` writes the resolved script: one line per tick with
 //! both seats' keys (hex), and `# shot TICK NAME` lines, for replaying the
@@ -90,6 +96,7 @@ fn peek(m: &tango_match::Match, addr: u32, len: usize) -> Vec<u8> {
 
 /// What a script step asks for at one tick.
 enum Row {
+    Drop,
     Keys([u32; 2]),
     Shot(String),
     Peek(u32, usize),
@@ -108,11 +115,14 @@ fn main() {
     // have imported the Dual Strike art (`ds_art::SHARED_ART`).
     let shared_art = std::env::var_os("AW2_SHARED_ART").is_some();
     // `AW2_ONLINE=1`: a match made in the in-game lobby (it boots to Versus' SELECT MAP; crate::online).
-    let online = std::env::var("AW2_ONLINE").is_ok_and(|v| v == "1");
+    let unranked = std::env::var("AW2_UNRANKED").ok();
+    let online = std::env::var("AW2_ONLINE").is_ok_and(|v| v == "1") || unranked.is_some();
     let match_type = (
         0u8,
         if shared_art { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 }
-            | if online { tango_gamesupport_aw2::online::ONLINE_MATCH } else { 0 },
+            | if online { tango_gamesupport_aw2::online::ONLINE_MATCH } else { 0 }
+            | if unranked.is_some() { tango_gamesupport_aw2::online::UNRANKED_MATCH } else { 0 }
+            | if unranked.as_deref() == Some("guest") { tango_gamesupport_aw2::online::UNRANKED_PICK_GUEST } else { 0 },
     );
 
     // `AW2_TILT=1`: the Dual Strike tilt on the console's own size (needs the pack: TANGOAW2_DS_ROM).
@@ -122,9 +132,8 @@ fn main() {
         tango_gamesupport_aw2::ds_graphics::set_enabled(true);
     }
     let game = &tango_gamesupport_aw2::AW2;
-    let start = |local_player| {
-        game.pvp
-            .start(tango_match::StartConfig {
+    let start = |local_player: usize, resume: Option<&[u8]>| {
+        let config = tango_match::StartConfig {
                 roms: [&rom, &rom],
                 saves: [Some(&save), Some(&save)],
                 rng_seed: [0; 16],
@@ -140,10 +149,16 @@ fn main() {
                 disable_bgm: false,
                 audio: None,
                 cancel: None,
-            })
-            .expect("start")
+        };
+        match resume {
+            Some(state) => game.pvp.start_resumed(config, state),
+            None => game.pvp.start(config),
+        }
+        .expect("start")
     };
-    let mut peers = [start(0), start(1)];
+    let mut peers = [start(0, None), start(1, None)];
+    // The state a dropped match was resumed from (the straight replay starts from it too).
+    let mut resumed_from: Option<Vec<u8>> = None;
 
     let mut lines: VecDeque<String> = script
         .lines()
@@ -237,6 +252,11 @@ fn main() {
                     }
                 }
                 "shot" => rows.push_back(Row::Shot(p[1].to_string())),
+                // (idle first, so that the wire is empty and the checkpoints settled)
+                "drop" => {
+                    (0..60).for_each(|_| rows.push_back(Row::Keys([0, 0])));
+                    rows.push_back(Row::Drop);
+                }
                 "peek" => rows.push_back(Row::Peek(hex(p[1]), p[2].parse().unwrap())),
                 // A test's setup write, on both peers at this tick (and in
                 // the straight replay at the same row), then idle frames so
@@ -258,6 +278,56 @@ fn main() {
         }
         let Some(row) = rows.pop_front() else { break };
         let keys = match row {
+            Row::Drop => {
+                // Everything that is in flight arrives; then the connection is gone.
+                let before = [peers[0].checkpoints(), peers[1].checkpoints()];
+                println!(
+                    "drop at tick {t}: peer0 settled {} (checkpoints {:?}), peer1 settled {} ({:?})",
+                    peers[0].settled_ticks(),
+                    before[0].iter().map(|c| c.tick).collect::<Vec<_>>(),
+                    peers[1].settled_ticks(),
+                    before[1].iter().map(|c| c.tick).collect::<Vec<_>>()
+                );
+                let mut common = 0;
+                let mut agree = true;
+                for c0 in &before[0] {
+                    if let Some(c1) = before[1].iter().find(|c| c.tick == c0.tick) {
+                        common += 1;
+                        if c0.image.digest != c1.image.digest {
+                            agree = false;
+                            println!("  checkpoint at tick {} DIFFERS between the peers", c0.tick);
+                        }
+                    }
+                }
+                println!("  {common} checkpoints held by both, digests agree: {agree}");
+                assert!(common > 0 && agree, "no common settled checkpoint, or the peers disagree");
+                let newest = before[0]
+                    .iter()
+                    .rev()
+                    .find(|c| before[1].iter().any(|d| d.tick == c.tick))
+                    .unwrap();
+                println!(
+                    "  saved: tick {} digest {:016x} info {:?}",
+                    newest.tick, newest.image.digest, newest.image.info
+                );
+                let state = newest.image.state.clone();
+                // The pair, again, from the saved state (every peer starts from the very same bytes).
+                peers = [start(0, Some(&state)), start(1, Some(&state))];
+                let restored = {
+                    let st = unsafe { mgba::state::State::from_slice(&state) };
+                    peek(&peers[0], 0x0200_0000, 0x4_0000) == st.wram() && peek(&peers[0], 0x0300_0000, 0x8000) == st.iwram()
+                };
+                println!("  resumed: both consoles hold the saved state's RAM: {}", restored && peek(&peers[1], 0x0200_0000, 0x4_0000) == peek(&peers[0], 0x0200_0000, 0x4_0000));
+                assert!(restored, "the restored console differs from the saved state");
+                wire = [VecDeque::new(), VecDeque::new()];
+                confirmed.clear();
+                pokes.clear();
+                timeline.clear();
+                shot_ticks.clear();
+                t = 0;
+                resumed_from = Some(state);
+                continue;
+            }
             Row::Shot(name) => {
                 timeline.push(format!("# shot {t} {name}"));
                 shot_ticks.push((t, name.clone()));
@@ -328,14 +398,24 @@ fn main() {
     }
 
     // Ground truth: the confirmed inputs straight through, no rollback.
-    let mut straight = tango_backend_mgba::SharedLink::boot(
-        &rom,
-        Some(&save),
-        Some(rtc),
-        &tango_gamesupport_aw2::pvp::AW2E,
-        Some(match_type),
-        None,
-    )
+    let mut straight = match resumed_from.as_deref() {
+        Some(state) => tango_backend_mgba::SharedLink::boot_resumed(
+            &rom,
+            Some(&save),
+            Some(rtc),
+            &tango_gamesupport_aw2::pvp::AW2E,
+            Some(match_type),
+            state,
+        ),
+        None => tango_backend_mgba::SharedLink::boot(
+            &rom,
+            Some(&save),
+            Some(rtc),
+            &tango_gamesupport_aw2::pvp::AW2E,
+            Some(match_type),
+            None,
+        ),
+    }
     .expect("boot");
     for (i, row) in confirmed.iter().enumerate() {
         for (_, addr, bytes) in pokes.iter().filter(|p| p.0 == i) {

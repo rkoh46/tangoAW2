@@ -66,6 +66,8 @@ cpal = "0.18"
 lucide-icons.workspace = true
 # Unique replay file names.
 rand.workspace = true
+bincode.workspace = true
+zstd.workspace = true
 bytemuck.workspace = true
 thiserror.workspace = true
 chrono = { workspace = true, default-features = true }
