@@ -456,7 +456,7 @@ pub fn seat_picks(core: &Core) -> Option<Vec<(u8, u8)>> {
 }
 
 pub fn draw(core: &Core, rgba: &mut [u8]) {
-    if rgba.len() != crate::online::W * crate::online::H * 4 || (!active(core) && !(done(core) && crate::pvp::on_teams_screen(core))) || std::env::var_os("TEAMS_NO_PAGE").is_some() {
+    if rgba.len() != crate::online::W * crate::online::H * 4 || (!active(core) && !(done(core) && crate::pvp::on_teams_screen(core))) {
         return;
     }
     let n = players(core);
