@@ -169,6 +169,8 @@ pub mod mailbox {
         NotReady,
         /// The host starts the match (every player is ready).
         Start,
+        /// The player set a gamertag in the game.
+        SetGamertag(String),
     }
 
     /// The request numbered `serial`, if it is new (`seen` is the last serial the app has handled).
@@ -195,6 +197,11 @@ pub mod mailbox {
             4 => Request::Ready,
             5 => Request::NotReady,
             6 => Request::Start,
+            7 => {
+                let mut tag = [0u8; crate::online_stats::TAG_CHARS];
+                read(crate::online_stats::GAMERTAG, &mut tag);
+                Request::SetGamertag(tag.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect())
+            }
             _ => Request::Leave,
         };
         Some((serial, r))
@@ -257,7 +264,7 @@ pub mod mailbox {
     /// Characters typed on the keyboard, for the code being typed: letters, 8 to rub one out, 13 to join.
     /// Returns false when the lobby is not taking typing (nothing written).
     pub fn type_chars(read: &mut dyn FnMut(u32, &mut [u8]), write: &mut dyn FnMut(u32, &[u8]), chars: &[u8]) -> bool {
-        if !matches!(level(read), 3 | 5) {
+        if !matches!(level(read), 3 | 5 | 6) {
             return false;
         }
         let mut n = [0u8];
@@ -470,7 +477,14 @@ const GRID_CELLS: usize = CODE_ALPHABET.len() + 2;
 /// The text being typed: the room's code (level 3) or a password (level 5): (where, its length's byte, at most,
 /// at least).
 fn field(core: &Core) -> (u32, u32, usize, usize) {
-    if level(core) == 5 {
+    if level(core) == 6 {
+        (
+            crate::online_stats::TAG_BUF,
+            crate::online_stats::TAG_LEN,
+            crate::online_stats::TAG_CHARS,
+            1,
+        )
+    } else if level(core) == 5 {
         (PASSWORD, PASSWORD_LEN, PASSWORD_CHARS, 0)
     } else {
         (CODE, CODE_LEN, CODE_CHARS, CODE_CHARS)
@@ -527,6 +541,14 @@ fn accept(core: &mut Core) {
     if (core.raw_read_8(len, -1) as usize) < min {
         return;
     }
+    if level(core) == 6 {
+        // The gamertag: kept here at once, the app keeps it too.
+        crate::online_stats::commit(core);
+        request(core, 7);
+        let back = crate::online_stats::entry_from(core);
+        set_level(core, back.min(1));
+        return;
+    }
     if level(core) == 3 {
         clear_field(core, PASSWORD, PASSWORD_LEN, PASSWORD_CHARS);
         core.raw_write_8(ENTRY, -1, 1);
@@ -544,7 +566,10 @@ fn accept(core: &mut Core) {
 
 /// Back from the typing page.
 fn back_from_typing(core: &mut Core) {
-    if level(core) == 5 && core.raw_read_8(ENTRY, -1) == 1 {
+    if level(core) == 6 {
+        let back = crate::online_stats::entry_from(core);
+        set_level(core, back.min(1));
+    } else if level(core) == 5 && core.raw_read_8(ENTRY, -1) == 1 {
         core.raw_write_8(GRID, -1, 0);
         set_level(core, 3);
     } else {
@@ -598,6 +623,13 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
         return keys;
     };
     let pressed = keys & !prev;
+    // The first visit asks for a gamertag when none is set.
+    if level(core) <= 1 && crate::online_stats::should_ask(core) {
+        crate::online_stats::open_entry(core, level(core));
+        core.raw_write_8(GRID, -1, 0);
+        core.raw_write_8(TYPED_LEN, -1, 0);
+        set_level(core, 6);
+    }
     let level = level(core);
     crate::online_menu::draw(core, level as usize);
     match level {
@@ -605,6 +637,9 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             if pressed & (KEY_A | KEY_START) != 0 {
                 if cursor == 1 {
                     set_level(core, 1);
+                } else if cursor == 2 {
+                    crate::online_stats::open_stats(core);
+                    set_level(core, 7);
                 } else {
                     core.raw_write_8(NOTICE, -1, 120);
                 }
@@ -628,7 +663,13 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                         core.raw_write_8(TYPED_LEN, -1, 0);
                         set_level(core, 3);
                     }
-                    _ => set_level(core, 0),
+                    _ => {
+                        // GAMERTAG: the name to edit, on the code's grid.
+                        crate::online_stats::open_entry(core, 1);
+                        core.raw_write_8(GRID, -1, 0);
+                        core.raw_write_8(TYPED_LEN, -1, 0);
+                        set_level(core, 6);
+                    }
                 }
             } else if pressed & KEY_B != 0 {
                 set_level(core, 0);
@@ -652,8 +693,16 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             }
             keys & !ALL_KEYS
         }
-        3 | 5 => {
+        3 | 5 | 6 => {
             code_entry(core, pressed);
+            keys & !ALL_KEYS
+        }
+        7 => {
+            if pressed & KEY_B != 0 {
+                set_level(core, 0);
+            } else if pressed & (KEY_UP | KEY_DOWN) != 0 {
+                crate::online_stats::scroll(core, pressed & KEY_DOWN != 0);
+            }
             keys & !ALL_KEYS
         }
         _ => {
@@ -1070,16 +1119,22 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     if crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
         if !battle {
             core.raw_write_8(BATTLE, -1, 1);
+            crate::online_stats::battle_started(core);
         }
         core.raw_write_8(OUT_T, -1, 0);
+        crate::online_stats::track(core);
     } else if battle {
         // Out of the battle for good (results, the save prompt, SELECT MAP again), not for a moment between its screens.
         let t = core.raw_read_8(OUT_T, -1).saturating_add(1);
         core.raw_write_8(OUT_T, -1, t);
         let menus = crate::survival_ui::selecting(core) || crate::pvp::on_teams_screen(core) || crate::campaign_menu::on_select_mode(core);
+        if !menus {
+            crate::online_stats::track(core);
+        }
         if t > 150 || menus {
             core.raw_write_8(BATTLE, -1, 0);
             core.raw_write_8(OUT_T, -1, 0);
+            crate::online_stats::battle_ended();
         }
     }
 }
@@ -1424,6 +1479,44 @@ fn status_lines(core: &Core, hosting: bool) -> (Vec<String>, Rgb) {
     }
 }
 
+/// The code grid (letters, Del, OK) of the typing pages, its top `top` pixels below the panel's.
+fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) {
+    let (x, y, w, _) = panel;
+    let g = core.raw_read_8(GRID, -1) as usize;
+    let (cw, ch) = (15, 12);
+    let gx = x + (w - cw * GRID_COLS as i32) / 2;
+    let gy = y + top;
+    let typed: Vec<char> = typed(core).chars().collect();
+    let (_, _, max, min) = field(core);
+    let full = typed.len() >= min;
+    for k in 0..GRID_CELLS {
+        // Del and OK take half the width each of the row of their own.
+        let (cx, cy, cwid, label) = match k {
+            GRID_DEL => (gx, gy + 4 * ch + 2, 4 * cw, "Del".to_string()),
+            GRID_OK => (gx + 5 * cw, gy + 4 * ch + 2, 4 * cw, "OK".to_string()),
+            _ => (
+                gx + (k % GRID_COLS) as i32 * cw,
+                gy + (k / GRID_COLS) as i32 * ch,
+                cw,
+                (CODE_ALPHABET[k] as char).to_string(),
+            ),
+        };
+        let ready = match k {
+            GRID_OK => full,
+            GRID_DEL => true,
+            _ => typed.len() < max,
+        };
+        if k == g {
+            cv.rect(cx + 1, cy, cwid - 2, ch, YELLOW);
+        } else if k == GRID_OK && full {
+            // (an OK that can be pressed: a blue plate)
+            cv.rect(cx + 1, cy, cwid - 2, ch, BLUE);
+        }
+        let ink = if k == GRID_OK && full && k != g { WHITE } else if ready { INK } else { SHADE };
+        cv.text(core, cx + (cwid - text_width(core, &label)) / 2, cy + 1, &label, ink, SHADE);
+    }
+}
+
 /// The lobby's pages over the ONLINE screen (offline): see the module's docs.
 pub fn apply(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != W * H * 4 || !crate::online_menu::active(core) {
@@ -1434,9 +1527,12 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     };
     let mut cv = Rgba(rgba);
     let level = level(core);
+    if level <= 1 {
+        crate::online_stats::draw_tag(&mut cv, core);
+    }
     match level {
         0 => {
-            if core.raw_read_8(NOTICE, -1) > 0 && cursor != 1 {
+            if core.raw_read_8(NOTICE, -1) > 0 && cursor == 0 {
                 bar(&mut cv, core, "Coming soon!");
             }
         }
@@ -1447,7 +1543,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             let help = [
                 "Make a room and give its code to a friend.",
                 "Type in the code of a friend's room.",
-                "Back to ONLINE.",
+                "Choose the name others see.  B: Back to ONLINE",
             ];
             bar(&mut cv, core, back.as_deref().unwrap_or(help[cursor as usize % 3]));
         }
@@ -1570,38 +1666,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     title(&mut cv, core, font, cx + (bw - title_width(core, font, &s)) / 2, y + 22, &s);
                 }
             }
-            let g = core.raw_read_8(GRID, -1) as usize;
-            let (cw, ch) = (15, 12);
-            let gx = x + (w - cw * GRID_COLS as i32) / 2;
-            let gy = y + 49;
-            let (_, _, max, min) = field(core);
-            let full = typed.len() >= min;
-            for k in 0..GRID_CELLS {
-                // Del and OK take half the width each of the row of their own.
-                let (cx, cy, cwid, label) = match k {
-                    GRID_DEL => (gx, gy + 4 * ch + 2, 4 * cw, "Del".to_string()),
-                    GRID_OK => (gx + 5 * cw, gy + 4 * ch + 2, 4 * cw, "OK".to_string()),
-                    _ => (
-                        gx + (k % GRID_COLS) as i32 * cw,
-                        gy + (k / GRID_COLS) as i32 * ch,
-                        cw,
-                        (CODE_ALPHABET[k] as char).to_string(),
-                    ),
-                };
-                let ready = match k {
-                    GRID_OK => full,
-                    GRID_DEL => true,
-                    _ => typed.len() < max,
-                };
-                if k == g {
-                    cv.rect(cx + 1, cy, cwid - 2, ch, YELLOW);
-                } else if k == GRID_OK && full {
-                    // (an OK that can be pressed: a blue plate)
-                    cv.rect(cx + 1, cy, cwid - 2, ch, BLUE);
-                }
-                let ink = if k == GRID_OK && full && k != g { WHITE } else if ready { INK } else { SHADE };
-                cv.text(core, cx + (cwid - text_width(core, &label)) / 2, cy + 1, &label, ink, SHADE);
-            }
+            draw_grid(&mut cv, core, PANEL, 49);
             bar(
                 &mut cv,
                 core,
@@ -1611,6 +1676,18 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     "A: Type  B: Rub out  START: OK (none)"
                 },
             );
+        }
+        6 => {
+            let (x, y, w, h) = PANEL;
+            cv.window(x, y, w, h);
+            crate::online_stats::draw_entry(&mut cv, core, PANEL);
+            draw_grid(&mut cv, core, PANEL, 44);
+            bar(&mut cv, core, "A: Type  B: Rub out  START: OK");
+        }
+        7 => {
+            let (x, y, w, h) = PANEL;
+            cv.window(x, y, w, h);
+            crate::online_stats::draw_stats(&mut cv, core, PANEL);
         }
         _ => {}
     }

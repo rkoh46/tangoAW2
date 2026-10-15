@@ -25,7 +25,7 @@ pub fn serial(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
 }
 
 /// Which page the in-game lobby is on (0 the ONLINE menu, 1 LOBBY, 2 a room made, 3 a code being typed, 4 a room
-/// joined, 5 a password being typed).
+/// joined, 5 a password being typed, 6 the gamertag being typed, 7 the STATS page).
 #[cfg(feature = "gamesupport-aw2")]
 pub fn level(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
     tango_gamesupport_aw2::online::mailbox::level(read)
@@ -90,4 +90,39 @@ pub fn list_debug() -> u64 {
 #[cfg(feature = "gamesupport-aw2")]
 pub fn map_debug() -> u64 {
     tango_gamesupport_aw2::online::probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// A battle of a room's match as the console last showed it, and the armies in it (see
+/// `tango_gamesupport_aw2::online_stats`).
+#[cfg(feature = "gamesupport-aw2")]
+pub use tango_gamesupport_aw2::online_stats::{ArmySummary, BattleSummary};
+
+/// The room's battles finished since the last call, oldest first.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn take_battles() -> Vec<BattleSummary> {
+    tango_gamesupport_aw2::online_stats::take_battles()
+}
+
+/// A new match is built: forget the old notes.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn forget_battles() {
+    tango_gamesupport_aw2::online_stats::forget()
+}
+
+/// Whether the console just started and wants the gamertag and the record's lines ([`sync`]).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn needs_sync(read: &mut dyn FnMut(u32, &mut [u8])) -> bool {
+    tango_gamesupport_aw2::online_stats::needs_sync(read)
+}
+
+/// Puts the gamertag and the record's lines (label, a tab, value) in the console for the game to show.
+#[cfg(feature = "gamesupport-aw2")]
+pub fn sync(write: &mut dyn FnMut(u32, &[u8]), gamertag: &str, lines: &[String]) {
+    tango_gamesupport_aw2::online_stats::sync(write, gamertag, lines)
+}
+
+/// A gamertag as it is kept (printable ASCII, at most ten characters).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn clean_gamertag(name: &str) -> String {
+    tango_gamesupport_aw2::online_stats::clean(name)
 }

@@ -111,6 +111,7 @@ pub mod mode_menu;
 pub mod online;
 pub mod online_art;
 pub mod online_menu;
+pub mod online_stats;
 pub mod online_teams;
 pub mod survival;
 pub mod ds_maps;

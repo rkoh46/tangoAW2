@@ -4192,7 +4192,7 @@ tests). Online play starts in the game, played alone:
   title font at `0x081CC038`: A C D E G H I K L M N O P R S T U W Y, star,
   B) becomes ONLINE / LOBBY at the sprite flush (two sprites added). Help
   lines: text ids 0xCBE..0xCC0. A and START never reach the game there (its
-  link modes never start); UNRANKED and STATS say "Coming soon!".
+  link modes never start); UNRANKED says "Coming soon!" (STATS shows the record, below).
 - **The lobby's pages** are drawn over the screen as a presentation overlay
   (`online::apply`) from EWRAM `0x0203CA00..0x0203CAFF`: CREATE asks for an
   optional password (up to four letters), then shows the room's code (the
@@ -4236,10 +4236,39 @@ tests). Online play starts in the game, played alone:
   complete on the same tick and the replay is finished. The app then boots
   the game again (`mailbox::boot_to_lobby`: the same walk, to the LOBBY
   menu) and says how it ended.
+- **Gamertag and STATS** (`online_stats.rs`; app: `tango/src/app/online_stats.rs`).
+  The LOBBY level's third item is GAMERTAG (it replaced BACK: B goes back):
+  level 6 of the lobby is a typing page on the code's grid (letters and
+  digits, up to ten, or the keyboard) that starts from the current name; OK
+  writes it at `0x0203D100` and asks the app (request 7, `SetGamertag`), which
+  sets `config.nickname` and saves the config. The first visit to the ONLINE
+  screen on a console asks when the app has said none is set (`SYNCED` set,
+  name empty). The name is drawn in the top right corner of the ONLINE and
+  LOBBY menus; rooms, the CO page and the battle already used the nickname.
+  STATS (ONLINE item 3, level 7) draws lines the app put at `0x0203D200`
+  (24 lines of 32 bytes: label, a tab, value; no tab is a heading), UP/DOWN
+  scrolling. The app writes the name and the lines whenever a console starts
+  (`SYNCED` 0) or the record changed.
+  The record is `online_stats.json` in the profile's data folder (versioned,
+  unknown fields ignored, written by temp file and rename): battles, won,
+  lost, units destroyed and lost, CO powers used, days, the last eight
+  opponents. How a battle is read: on the room's netplay console every tick
+  (`online_stats::track`, a pure function of the console) copies each army's
+  player record while the battle lasts and until the game is back on the
+  menus: AW2's own end-of-battle counters, `+0x3A` units built (the map's
+  starting units count) and `+0x3B` units lost (`0x08025D20` and
+  `0x08025D40` count them; the results screen's Power is the other teams'
+  `+0x3B`, Technique compares the two, `0x08026368..0x08026520`), the team
+  (`+0x2A`), routed or defeated (`+0x14`) or yielded (`+0x31`), and the day
+  (`0x03004080`). CO powers are counted per army in EWRAM by the
+  `ActivateCoPower` trap (also without the pack). When the battle is over for
+  good the last note is kept in a static (`take_battles`, numbered so a
+  rollback's replay replaces its own note); the app judges it (exactly one
+  team still in: its players won; otherwise the battle was left and is not
+  recorded), adds it up and saves. Armies are seats by `seat_of_n`.
 - **Later (planned).** UNRANKED: random matching (each proposes a 2P map,
   one drawn from the match seed; fixed rules), the same Teams screen for CO
-  and a colour no other army has. Rooms of up to five. STATS: the player's
-  own online record.
+  and a colour no other army has. Rooms of up to five.
 
 ## Saves
 
