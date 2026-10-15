@@ -479,7 +479,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     fn sim_version(&self) -> u16 {
         // 14: rooms of up to five, each player's own selector on the CO page, and in a room's battle only the army
         // whose turn it is has the pad, always.
-        14
+        // 15: the Black Cannon's picture and the font share OBJ tiles by turns (a stash in EWRAM, crate::obelisk).
+        15
     }
 
     fn traps(&self) -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {

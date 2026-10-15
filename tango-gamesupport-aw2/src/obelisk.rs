@@ -301,14 +301,60 @@ fn load_tiles(core: &mut Core) {
         -1,
         art.map_or(&blank[..256], |a| &a.crystal),
     );
+    // (The Black Cannon facing north's tiles are put by [`north_swap`], at the sprite flush.)
     if let Some(a) = art.filter(|a| a.cannon_north.len() == 36 * 32) {
-        let mut at = 0;
-        for (tile, n) in NORTH_OBJ_TILES.iter().zip([16usize, 8, 8, 4]) {
-            core.raw_write_range(0x0601_0000 + tile * 32, -1, &a.cannon_north[at * 32..(at + n) * 32]);
-            at += n;
-        }
+        core.raw_write_range(0x0601_0000 + NORTH_OBJ_TILES[3] * 32, -1, &a.cannon_north[32 * 32..]);
     }
     crate::com_tower::after_sheet(core);
+}
+
+/// The font tiles (OBJ 989..1004 and 1007..1022) kept aside while the Black Cannon facing north's picture is in them, and a byte
+/// (after them) that says they are kept.
+pub const FONT_KEPT: u32 = 0x0203_CC00;
+const FONT_KEPT_FLAG: u32 = FONT_KEPT + 0x400;
+
+/// At the sprite flush (`list` is the frame's sprite list, `start..end`): the Black Cannon facing north's picture
+/// shares OBJ tiles 989..1022 with the game's font (the Next turn screen's and the CO Power splash's letters), so
+/// the picture is in them only while a frame's sprites draw the cannon, and the font otherwise.
+pub fn north_swap(core: &mut Core, start: u32, end: u32) {
+    let Some(a) = crate::ds_art::art().filter(|a| a.cannon_north.len() == 36 * 32) else {
+        return;
+    };
+    // The picture's three groups of tiles that are the font's too (its fourth, at 914, is no font's).
+    let groups = [(NORTH_OBJ_TILES[0], 0usize, 16usize), (NORTH_OBJ_TILES[1], 16, 8), (NORTH_OBJ_TILES[2], 24, 8)];
+    let mut wanted = false;
+    let mut s = start;
+    while s < end {
+        let (a0, a1, a2) = (core.raw_read_16(s, -1), core.raw_read_16(s + 2, -1), core.raw_read_16(s + 4, -1));
+        let tile = (a2 & 0x3FF) as u32;
+        // (a sprite of more than one tile on the cannon's tiles; the font's are 8x8)
+        if a0 & 0x300 != 0x200 && (a0 >> 14 != 0 || a1 >> 14 != 0) && groups.iter().any(|g| g.0 == tile) {
+            wanted = true;
+            break;
+        }
+        s += 8;
+    }
+    let ours = &a.cannon_north[..32 * 32];
+    let mut now = vec![0u8; 32 * 32];
+    for &(tile, from, n) in &groups {
+        core.raw_read_range(0x0601_0000 + tile * 32, -1, &mut now[from * 32..(from + n) * 32]);
+    }
+    if wanted {
+        if now[..] != *ours {
+            core.raw_write_range(FONT_KEPT, -1, &now);
+            core.raw_write_8(FONT_KEPT_FLAG, -1, 1);
+            for &(tile, from, n) in &groups {
+                core.raw_write_range(0x0601_0000 + tile * 32, -1, &ours[from * 32..(from + n) * 32]);
+            }
+        }
+    } else if now[..] == *ours && core.raw_read_8(FONT_KEPT_FLAG, -1) == 1 {
+        let mut kept = vec![0u8; 32 * 32];
+        core.raw_read_range(FONT_KEPT, -1, &mut kept);
+        for &(tile, from, n) in &groups {
+            core.raw_write_range(0x0601_0000 + tile * 32, -1, &kept[from * 32..(from + n) * 32]);
+        }
+        core.raw_write_8(FONT_KEPT_FLAG, -1, 0);
+    }
 }
 
 /// Whether the 8 OBJ tiles at `t` hold what [`load_tiles`] put there: the

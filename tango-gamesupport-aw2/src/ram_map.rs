@@ -72,6 +72,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("History: the record", HISTORY),
     ("History: the screen", HISTORY_SCREEN),
     ("Dual Strike's Versus and War Room maps (crate::ds_versus::STATE)", (0x0203_C900, 0x20)),
+    ("font tiles kept aside while the Black Cannon's picture is in them (crate::obelisk::FONT_KEPT)", (0x0203_CC00, 0x401)),
     ("War Room records on Dual Strike's maps (crate::ds_versus::ROWS)", (0x0203_E500, 0x474)),
     ("second front's end: what each army brings (crate::two_front)", SECOND_FRONT_MERGE),
     ("Kindle's High Society count (crate::co_powers)", HIGH_SOCIETY),
