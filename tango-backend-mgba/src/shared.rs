@@ -91,10 +91,55 @@ pub trait SharedGame: Sync {
     fn boot_ticks(&self) -> u32 {
         0
     }
+
+    /// After [`boot_ticks`](Self::boot_ticks): whether to run one more
+    /// such tick (the pad is still [`before_tick`](Self::before_tick)'s to
+    /// press: a game can walk its menus for the players before the
+    /// session). Like everything here, a pure function of the console and
+    /// `mode`, so both peers and a replay boot to the same state.
+    fn boot_more(&self, core: &mgba::core::Core, mode: Option<(u8, u8)>) -> bool {
+        let _ = (core, mode);
+        false
+    }
+
+    /// Whether the players have left the match for good, as the game
+    /// sees it: on a netplay console the session then completes (its
+    /// replay finished) on the tick it turns true, on both peers.
+    fn match_over(&self, core: &mgba::core::Core) -> bool {
+        let _ = core;
+        false
+    }
+}
+
+/// The most ticks [`SharedGame::boot_more`] may add (a minute of play).
+const MAX_BOOT_MORE: u32 = 3600;
+
+/// Reports [`SharedGame::match_over`]'s rise as the match's end.
+#[derive(Clone)]
+struct OverPoller {
+    game: &'static (dyn SharedGame + Send + Sync),
+    over: bool,
+}
+
+impl tango_match::telemetry::CorePoller<mgba::core::Core> for OverPoller {
+    fn poll(
+        &mut self,
+        core: &mut mgba::core::Core,
+        events: &tango_match::telemetry::EventSink,
+        _round: u32,
+    ) -> Option<tango_match::telemetry::CoreObs> {
+        let over = self.game.match_over(core);
+        if over && !self.over {
+            events.match_ended();
+        }
+        self.over = over;
+        None
+    }
 }
 
 struct SharedSnapshot {
     snap: mgba_rollback::Snapshot,
+    tick: u32,
 }
 
 /// One console, both seats.
@@ -104,6 +149,10 @@ pub struct SharedLink {
     mode: Option<(u8, u8)>,
     /// What each seat last asked for; the console renders if either does.
     render: [bool; 2],
+    /// A netplay match's end watch ([`SharedGame::match_over`]), and the
+    /// session's tick count it stamps.
+    telemetry: Option<tango_match::telemetry::Telemetry<mgba::core::Core>>,
+    tick: u32,
 }
 
 impl SharedLink {
@@ -131,6 +180,15 @@ impl SharedLink {
             let word = game.before_tick(inner.core_mut(0), mode, 0);
             inner.try_tick(&[word])?;
         }
+        let mut more = 0;
+        while more < MAX_BOOT_MORE && game.boot_more(inner.core(0), mode) {
+            if cancel.is_some_and(|c| c.load(std::sync::atomic::Ordering::Relaxed)) {
+                return Err(crate::Error::Cancelled);
+            }
+            let word = game.before_tick(inner.core_mut(0), mode, 0);
+            inner.try_tick(&[word])?;
+            more += 1;
+        }
         let core = inner.core_mut(0);
         core.set_audio_buffer_size(16384);
         core.audio_buffer().clear();
@@ -139,7 +197,25 @@ impl SharedLink {
             game,
             mode,
             render: [true, true],
+            telemetry: None,
+            tick: 0,
         })
+    }
+
+    /// Watch for the match's end ([`SharedGame::match_over`]): the handle
+    /// is the match's telemetry.
+    fn watch_end(&mut self) -> tango_match::telemetry::TelemetryHandle {
+        let events = tango_match::telemetry::EventSink::new();
+        let poller = || -> Box<dyn tango_match::telemetry::CorePoller<mgba::core::Core>> {
+            Box::new(OverPoller {
+                game: self.game,
+                over: false,
+            })
+        };
+        let (telemetry, handle) = tango_match::telemetry::Telemetry::new([poller(), poller()], events);
+        self.telemetry = Some(telemetry);
+        self.tick = 0;
+        handle
     }
 
     /// The picture as solo play shows it: one screen for whoever moves
@@ -181,6 +257,12 @@ impl tango_match::Link for SharedLink {
         let word = self.game.merge(self.inner.core(0), keys) & JOYFLAGS_MASK;
         let word = self.game.before_tick(self.inner.core_mut(0), self.mode, word) & JOYFLAGS_MASK;
         self.inner.tick(&[word]);
+        if let Some(telemetry) = self.telemetry.as_mut() {
+            // (one console: the second poller only keeps the pair's shape)
+            let obs = telemetry.poll(0, self.inner.core_mut(0));
+            telemetry.observe(obs, None, self.tick);
+        }
+        self.tick += 1;
     }
 
     fn snapshot(
@@ -188,7 +270,7 @@ impl tango_match::Link for SharedLink {
         _recycled: Option<tango_match::Snapshot>,
     ) -> Result<tango_match::Snapshot, tango_match::Error> {
         let snap = self.inner.save().map_err(crate::Error::from)?;
-        Ok(Box::new(SharedSnapshot { snap }))
+        Ok(Box::new(SharedSnapshot { snap, tick: self.tick }))
     }
 
     fn restore(&mut self, snapshot: &tango_match::Snapshot) -> Result<(), tango_match::Error> {
@@ -196,6 +278,11 @@ impl tango_match::Link for SharedLink {
             .downcast_ref::<SharedSnapshot>()
             .expect("a shared link can only restore its own snapshots");
         self.inner.load(&snapshot.snap).map_err(crate::Error::from)?;
+        self.tick = snapshot.tick;
+        if let Some(telemetry) = self.telemetry.as_mut() {
+            // (a snapshot's tick is a count: observations from it on are revoked)
+            telemetry.on_rewind(snapshot.tick.saturating_sub(1));
+        }
         Ok(())
     }
 
@@ -317,7 +404,11 @@ impl tango_match::Backend for SharedBackend {
             Some(config.match_type),
             config.cancel,
         )?;
-        tango_match::Match::new(link, config.local_player, config.present_delay, config.audio)
+        let mut link = link;
+        let handle = link.watch_end();
+        let mut match_ = tango_match::Match::new(link, config.local_player, config.present_delay, config.audio)?;
+        match_.set_telemetry(handle);
+        Ok(match_)
     }
 
     /// Played alone, the console still gets the game's runtime patches.
