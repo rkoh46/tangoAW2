@@ -64,7 +64,13 @@ impl PvpSession {
         // both peers derive the same assignment, mirrored.
         use rand::SeedableRng;
         let mut rng = rand_pcg::Mcg128Xsl64::from_seed(pre_match.terms.rng_seed);
-        let local_player_index = pick_local_player_index(&mut rng, pre_match.terms.is_offerer);
+        let drawn = pick_local_player_index(&mut rng, pre_match.terms.is_offerer);
+        // A room made in a game's own lobby: its host takes seat 0.
+        let local_player_index = tango_net_protocol::control::room_host_seat(
+            pre_match.terms.local_settings.match_type.1,
+            pre_match.terms.remote_settings.match_type.1,
+        )
+        .unwrap_or(drawn);
 
         // The match clock, pinned into both carts' RTC and recorded in the
         // replay metadata so playback re-primes to the identical state.
