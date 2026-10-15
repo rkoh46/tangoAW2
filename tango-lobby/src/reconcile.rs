@@ -75,10 +75,12 @@ impl State {
     /// Keyed off [`LobbyState::default_mt_for_family`], so it fires once
     /// per (lobby, family) pair.
     pub fn apply_default_match_type(&mut self, family: &str, match_types: &[usize], remembered: Option<(u8, u8)>) {
+        // (the subtype's flag bits are not part of the match type)
+        let flags = protocol::SHARED_CONTENT | protocol::ROOM_HOST;
         let offered = |(mode, subtype): (u8, u8)| {
             match_types
                 .get(mode as usize)
-                .is_some_and(|subtypes| (subtype as usize) < *subtypes)
+                .is_some_and(|subtypes| ((subtype & !flags) as usize) < *subtypes)
         };
         let family_changed = self.lobby.default_mt_for_family.as_deref() != Some(family);
         if !family_changed && offered(self.lobby.match_type) {

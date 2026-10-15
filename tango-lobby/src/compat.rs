@@ -89,7 +89,7 @@ pub fn check(local: &protocol::Settings, remote: &protocol::Settings, facts: Fac
         return Verdict::MissingPatch { name, version };
     }
 
-    let flag = tango_net_protocol::control::SHARED_CONTENT;
+    let flag = tango_net_protocol::control::SHARED_CONTENT | tango_net_protocol::control::ROOM_HOST;
     if (local.match_type.0, local.match_type.1 & !flag) != (remote.match_type.0, remote.match_type.1 & !flag) {
         return Verdict::DifferentMatchTypes;
     }

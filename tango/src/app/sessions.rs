@@ -27,7 +27,9 @@ impl App {
             None => iced::Task::none(),
         };
         let queue = self.advance_replay_queue();
-        iced::Task::batch([effect, rescan, queue])
+        // The in-game lobby's mailbox, and the way back from a match it made (tangoAW2).
+        let online = self.online_tick();
+        iced::Task::batch([effect, rescan, queue, online])
     }
 
     /// Persist the preferences a session changed (the session has already

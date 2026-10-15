@@ -11,7 +11,7 @@
 
 mod launch;
 mod recording;
-mod results;
+pub mod results;
 mod runtime;
 mod stylus;
 pub use launch::{build_playback, spawn_pvp, spawn_singleplayer, spawn_training, Launch};
@@ -215,6 +215,11 @@ impl State {
 
     pub fn active(&self) -> Option<&(dyn Session + 'static)> {
         self.active.as_deref()
+    }
+
+    /// The running session's install number (test aids tell sessions apart by it).
+    pub fn install_seq(&self) -> u64 {
+        self.session_seq
     }
 
     /// Whether a session is running.
@@ -445,6 +450,42 @@ impl State {
         }
     }
 
+    /// A key typed into the in-game lobby's code or password (see `tango_library::online::type_chars`).
+    fn typed_into_game(&self, ev: &crate::platform::input::Event) -> bool {
+        use iced::keyboard::key::{Code, Physical};
+        let crate::platform::input::Event::Key {
+            physical: Physical::Code(code),
+            pressed: true,
+        } = ev
+        else {
+            return false;
+        };
+        let c = match code {
+            Code::Backspace => 8,
+            Code::Enter | Code::NumpadEnter => 13,
+            c => {
+                let name = format!("{c:?}");
+                match name.strip_prefix("Key") {
+                    // (only the code's letters: Z and X, the pad's A and B by default, stay the pad's)
+                    Some(l) if l.len() == 1 && tango_library::online::CODE_ALPHABET.contains(&l.as_bytes()[0]) => {
+                        l.as_bytes()[0]
+                    }
+                    _ => return false,
+                }
+            }
+        };
+        let Some(solo) = self.active_as::<singleplayer::SinglePlayerSession>() else { return false };
+        tango_library::online::type_chars(
+            &mut |a, b| {
+                solo.peek(a, b);
+            },
+            &mut |a, b| {
+                solo.poke(a, b);
+            },
+            &[c],
+        )
+    }
+
     fn update_inner(&mut self, msg: Message, config: &config::Config) -> Option<update::Effect> {
         let mapping = &config.input_mapping;
         match msg {
@@ -452,6 +493,11 @@ impl State {
                 self.close_session();
             }
             Message::Input(ev) => {
+                // tangoAW2: a room's code or password being typed in the game takes letters, Backspace and Enter
+                // from the keyboard; those presses are not the pad's then.
+                if self.typed_into_game(&ev) {
+                    return None;
+                }
                 self.input_held.apply(&ev);
                 self.push_input(mapping);
                 // Live-session speed-up: only fire set_speed on the

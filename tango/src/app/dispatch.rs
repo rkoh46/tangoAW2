@@ -138,8 +138,8 @@ impl App {
                 iced::Task::none()
             }
             Message::PadScriptTick => {
-                let active = self.session.is_active();
-                if let Some(keys) = self.debug.pad_keys(active) {
+                let seq = self.session.is_active().then(|| self.session.install_seq());
+                if let Some(keys) = self.debug.pad_keys(seq) {
                     self.session.set_scripted_keys(keys);
                 }
                 iced::Task::none()

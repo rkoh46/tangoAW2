@@ -21,9 +21,11 @@ pub struct DebugAids {
 }
 
 struct Pad {
-    /// The joypad word of each frame.
-    frames: Vec<u32>,
-    session_start: Option<Instant>,
+    /// The joypad word of each frame, a list per session.
+    parts: Vec<Vec<u32>>,
+    part: usize,
+    /// The session being played and when it started.
+    session: Option<(u64, Instant)>,
 }
 
 fn key_bits(s: &str) -> u32 {
@@ -58,10 +60,12 @@ impl DebugAids {
             .unwrap_or_default();
         let pad = std::env::var("TANGOAW2_PAD_SCRIPT").ok().and_then(|path| {
             let text = std::fs::read_to_string(path).ok()?;
-            let mut frames = Vec::new();
+            let mut parts = vec![Vec::new()];
             for line in text.lines() {
                 let p: Vec<&str> = line.split_whitespace().collect();
+                let frames = parts.last_mut()?;
                 match p.as_slice() {
+                    ["session"] => parts.push(Vec::new()),
                     ["wait", n] => frames.extend(std::iter::repeat(0).take(n.parse().ok()?)),
                     ["press", k, n] => {
                         frames.extend(std::iter::repeat(key_bits(k)).take(n.parse().ok()?));
@@ -71,7 +75,11 @@ impl DebugAids {
                     _ => {}
                 }
             }
-            Some(Pad { frames, session_start: None })
+            Some(Pad {
+                parts,
+                part: 0,
+                session: None,
+            })
         });
         DebugAids {
             start: Instant::now(),
@@ -95,15 +103,23 @@ impl DebugAids {
     }
 
     /// The pad word for now; `None` once the script is over (or none).
-    pub fn pad_keys(&mut self, session_active: bool) -> Option<u32> {
+    /// `session` is the running session's install number.
+    pub fn pad_keys(&mut self, session: Option<u64>) -> Option<u32> {
         let pad = self.pad.as_mut()?;
-        if !session_active {
-            pad.session_start = None;
+        let Some(seq) = session else {
             return None;
+        };
+        match pad.session {
+            Some((s, _)) if s == seq => {}
+            Some(_) => {
+                pad.part += 1;
+                pad.session = Some((seq, Instant::now()));
+            }
+            None => pad.session = Some((seq, Instant::now())),
         }
-        let t0 = *pad.session_start.get_or_insert_with(Instant::now);
+        let t0 = pad.session?.1;
         let frame = (t0.elapsed().as_secs_f64() * 60.0) as usize;
-        pad.frames.get(frame).copied()
+        pad.parts.get(pad.part)?.get(frame).copied()
     }
 }
 

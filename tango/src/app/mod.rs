@@ -18,6 +18,7 @@ mod dispatch;
 mod library;
 mod lobby;
 mod message;
+mod online;
 mod play;
 mod replay;
 mod replay_controller;
@@ -61,6 +62,8 @@ pub struct App {
     settings: tabs::settings::State,
     welcome: tabs::welcome::State,
     netplay: netplay::State,
+    /// tangoAW2's in-game lobby: the app's half (see [`online`]).
+    online: online::Flow,
 
     /// Owns the active runtime and its presentation, including post-match results.
     session: session::State,
@@ -247,6 +250,7 @@ impl App {
             replays: ReplaysState::default(),
             session: session::State::new(),
             netplay: netplay::State::new(),
+            online: online::Flow::default(),
             discord: discord::Client::new(),
             session_started_at: None,
             debug: debug_aids::DebugAids::from_env(),

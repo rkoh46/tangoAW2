@@ -115,6 +115,17 @@ impl SinglePlayerSession {
     pub fn export_save(&self) -> Option<Vec<u8>> {
         self.console.export_save()
     }
+
+    /// Read the console's memory between frames: a game's mailbox for its
+    /// host (tangoAW2's in-game lobby). `false` when the engine offers none.
+    pub fn peek(&self, addr: u32, buf: &mut [u8]) -> bool {
+        self.console.peek(addr, buf)
+    }
+
+    /// Write the console's memory between frames (see [`peek`](Self::peek)).
+    pub fn poke(&self, addr: u32, bytes: &[u8]) -> bool {
+        self.console.poke(addr, bytes)
+    }
 }
 
 /// What a single-player session's savedata write-back should put in its

@@ -118,7 +118,10 @@ impl State {
         // players set it (see `SHARED_CONTENT`).
         let flag = tango_net_protocol::control::SHARED_CONTENT;
         let both = local_settings.match_type.1 & remote_settings.match_type.1 & flag;
-        let match_type = (self.lobby.match_type.0, (self.lobby.match_type.1 & !flag) | both);
+        let match_type = (
+            self.lobby.match_type.0,
+            (self.lobby.match_type.1 & !flag & !tango_net_protocol::control::ROOM_HOST) | both,
+        );
         let pre_match = PreMatchData {
             link_parts: LinkParts {
                 control_sender: handles.sender,

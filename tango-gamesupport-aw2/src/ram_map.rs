@@ -77,6 +77,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Olaf's power snow's second day (crate::ds_weather)", POWER_SNOW),
     ("Covering Fire / Ex Machina strike site (crate::co_powers)", STRIKE_SITE),
     ("Dual Strike's CPU", DS_AI),
+    ("online: the in-game lobby, its mailbox, an online match's walk (crate::online::STATE)", (crate::online::STATE, crate::online::STATE_LEN)),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),
     ("power animations", (0x0203_F7A0, 0x40)),

@@ -155,6 +155,25 @@ pub struct GameInfo {
 /// players set it, so both peers and the replay agree.
 pub const SHARED_CONTENT: u8 = 0x80;
 
+/// Bit 6 of a player's match subtype is not part of the match type either:
+/// it says this player made the room they met in (tangoAW2's in-game
+/// lobby). When exactly one of the two sets it, that player takes seat 0
+/// (the room's host drives its menus); otherwise seats are drawn as ever.
+/// The lobby ignores it when it compares match types, and the match terms
+/// drop it.
+pub const ROOM_HOST: u8 = 0x40;
+
+/// The local player's seat when [`ROOM_HOST`] decides it: `Some(0)` for the
+/// room's host, `Some(1)` for its guest, `None` when it does not (neither
+/// or both set it).
+pub fn room_host_seat(local_subtype: u8, remote_subtype: u8) -> Option<u8> {
+    match (local_subtype & ROOM_HOST != 0, remote_subtype & ROOM_HOST != 0) {
+        (true, false) => Some(0),
+        (false, true) => Some(1),
+        _ => None,
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Settings {
     pub nickname: String,
@@ -214,4 +233,17 @@ pub fn make_commitment(buf: &[u8]) -> [u8; 16] {
     let mut out = [0u8; 16];
     h.finalize_xof().read(&mut out);
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_room_host_takes_seat_0() {
+        assert_eq!(room_host_seat(ROOM_HOST | 1, 1), Some(0));
+        assert_eq!(room_host_seat(SHARED_CONTENT | 1, ROOM_HOST), Some(1));
+        assert_eq!(room_host_seat(0, 0), None);
+        assert_eq!(room_host_seat(ROOM_HOST, ROOM_HOST), None);
+    }
 }

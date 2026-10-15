@@ -122,8 +122,11 @@ pub const ARMIES: [(u8, &str); 5] = [
     (5, "Black Hole"),
 ];
 
-/// One mode, Versus: armies are picked on the game's own Teams screen.
-pub const MATCH_TYPES: &[usize] = &[1];
+/// One mode, Versus, two ways in: subtype 0 the players walk the menus from the
+/// title together; subtype 1 ([`crate::online::ONLINE_MATCH`]) the match was
+/// made in the in-game lobby and boots to Versus' SELECT MAP. Armies are picked
+/// on the game's own Teams screen either way.
+pub const MATCH_TYPES: &[usize] = &[2];
 
 /// Which seat drives army slot `slot` (1..=4): odd slots are the first
 /// player's, even slots the second's.
@@ -158,7 +161,7 @@ pub struct Aw2;
 
 pub static AW2E: Aw2 = Aw2;
 
-fn in_battle(core: &Core) -> bool {
+pub(crate) fn in_battle(core: &Core) -> bool {
     core.raw_read_32(BATTLE_SCENE, -1) != 0 || core.raw_read_32(MAIN_LOOP, -1) == CO_PAGE_LOOP
 }
 
@@ -450,6 +453,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::ds_tilt::apply_flat_cursor(core, rgba);
         crate::ds_menus::apply(core, rgba);
         crate::ds_coselect::apply(core, rgba);
+        crate::online::apply(core, rgba);
+        crate::online::apply_match(core, rgba);
     }
 
     /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
@@ -503,6 +508,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// else (title, map and CO select, results, the hand-off between
     /// turns) both seats share the pad.
     fn merge(&self, core: &Core, inputs: [u32; 2]) -> u32 {
+        // A match made in the in-game lobby: its menus are the host's (crate::online).
+        if let Some(keys) = crate::online::merge(core, inputs) {
+            return keys;
+        }
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
         if in_versus(core) && in_battle(core) && (1..=5).contains(&current) && !turn_ended(core) {
             inputs[seat_of(current)]
@@ -515,6 +524,16 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// army's turn: the game shows the mover's own fog, which on a shared
     /// console would give the mover's vision away. The "Next turn" screen
     /// stays visible so the incoming player can press A.
+    /// An online match's console walks to SELECT MAP before the session (crate::online), as does a console asked
+    /// to boot to the lobby.
+    fn boot_more(&self, core: &Core, mode: Option<(u8, u8)>) -> bool {
+        crate::online::boot_more(core, mode)
+    }
+
+    fn match_over(&self, core: &Core) -> bool {
+        crate::online::match_over(core)
+    }
+
     fn conceal(&self, core: &Core, seat: usize) -> bool {
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
         in_battle(core)
@@ -525,6 +544,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     }
 
     fn before_tick(&self, core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
+        // An online match's walk to SELECT MAP and its end (crate::online).
+        let keys = crate::online::before(core, mode, keys);
         // Everything unlocked: every CO (Sturm and Hachi included), every
         // CO colour edit, every Battle Map, Hard Campaign and the Sound
         // Room. The game saves this block, so a save made here keeps it.
@@ -550,6 +571,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::ds_versus::tick(core);
         crate::five_map::show_maps(core, ds_features, ds, crate::survival::last_listed_id(core));
         crate::mode_menu::tick(core, ds && ds_features && mode.is_none(), crate::survival::TEXT_BASE + crate::survival::T_HELP);
+        // LINK is ONLINE, played alone (crate::online_menu).
+        crate::online_menu::patch(core, mode.is_none());
         crate::design_bar::patch_rom(core, ds_features, ds);
         crate::design5::patch_rom(core);
         crate::roster::tick(core, ds);
@@ -608,6 +631,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // The Select Mode menu's Campaign sub-menu (AW2 / DS Campaign).
         keys = crate::campaign_menu::tick(core, ds && ds_features && mode.is_none(), keys, prev);
         crate::campaign_menu::draw(core);
+        // The ONLINE screen and its lobby (crate::online), played alone.
+        keys = crate::online::tick(core, mode.is_none(), keys, prev);
 
         // The Design Room's Black Hole colour and inventions: offline only.
         if mode.is_none() && crate::design::in_editor(core) {

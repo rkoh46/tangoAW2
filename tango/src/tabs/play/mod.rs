@@ -38,6 +38,9 @@ pub enum Message {
     SaveEditor(std::sync::Arc<dyn tango_gamesupport::SaveEditorMessage>),
 
     LinkCodeChanged(String),
+    /// tangoAW2: show or hide the link-code strip (the advanced way into a
+    /// match; Play and the in-game lobby are the usual one).
+    ToggleAdvanced,
     /// Copy plain text to the clipboard — the lobby's copy-link-code
     /// button. Carries the real code even when streamer mode masks it
     /// on screen.
@@ -98,6 +101,8 @@ pub enum Message {
 
 pub struct State {
     link_code: String,
+    /// The link-code input and Fight are shown (see [`Message::ToggleAdvanced`]).
+    advanced: bool,
     /// A link code Fight auto-generated for an empty input, parked here
     /// instead of `link_code` while the lobby is up: the outgoing strip
     /// renders for the first half of the band morph, so writing the input
@@ -131,6 +136,7 @@ impl Default for State {
     fn default() -> Self {
         Self {
             link_code: String::new(),
+            advanced: false,
             pending_generated_code: None,
             save_action: SaveAction::None,
             save_body_enter: crate::ui::anim::Enter::default(),
@@ -303,6 +309,10 @@ impl State {
                 Some(Effect::CopyText(s))
             }
             Message::PlayOfflinePressed => Some(Effect::StartSinglePlayer),
+            Message::ToggleAdvanced => {
+                self.advanced = !self.advanced;
+                None
+            }
             Message::FightPressed => {
                 // An empty bar means "just get me a lobby": generate a
                 // fresh random adjective-word-noun code and connect with
@@ -749,16 +759,12 @@ impl State {
             ]
             .spacing(8)
             .align_y(Alignment::Center);
+            // The main way in: the game, where ONLINE is.
             let mut btn = button(label)
                 .padding(BOTTOM_CTA_PAD)
                 .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
-                .style(|theme: &iced::Theme, status| {
-                    if tango_ui::style::is_advance_wars(theme) {
-                        widgets::aw_cream_button(status)
-                    } else {
-                        ready_button_style(theme, status, ReadyPalette::Idle)
-                    }
-                });
+                .width(if self.advanced { Length::Shrink } else { Length::Fill })
+                .style(|theme: &iced::Theme, status| ready_button_style(theme, status, ReadyPalette::Idle));
             if playable && patch_ready {
                 btn = btn.on_press(Message::PlayOfflinePressed);
             }
@@ -770,12 +776,35 @@ impl State {
             .into()
         };
 
-        container(
-            row![offline_button, link_input, fight_button]
-                .spacing(10)
-                .align_y(Alignment::Center)
-                .padding([10, 8]),
+        let advanced_button: Element<'a, Message> = iced::widget::tooltip(
+            button(
+                row![
+                    Icon::Link.widget().size(BOTTOM_SIZE),
+                    text(t!(lang, "play-advanced")).size(BOTTOM_SIZE),
+                ]
+                .spacing(8)
+                .align_y(Alignment::Center),
+            )
+            .padding(BOTTOM_PAD)
+            .height(Length::Fixed(crate::ui::style::BAR_CONTROL_HEIGHT))
+            .style(|theme: &iced::Theme, status| {
+                if tango_ui::style::is_advance_wars(theme) {
+                    widgets::aw_cream_button(status)
+                } else {
+                    ready_button_style(theme, status, ReadyPalette::Idle)
+                }
+            })
+            .on_press(Message::ToggleAdvanced),
+            text(t!(lang, "play-advanced-tooltip")).size(TEXT_CAPTION),
+            iced::widget::tooltip::Position::Top,
         )
+        .into();
+        let strip = if self.advanced {
+            row![offline_button, advanced_button, link_input, fight_button]
+        } else {
+            row![offline_button, advanced_button]
+        };
+        container(strip.spacing(10).align_y(Alignment::Center).padding([10, 8]))
         .width(Fill)
         .style(widgets::hud_bar)
         .into()

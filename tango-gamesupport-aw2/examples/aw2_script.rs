@@ -45,6 +45,8 @@
 //!                        immediate-offset load from [ADDR, ADDR+LEN)
 //! KEYS is `+`-joined from A B SELECT START RIGHT LEFT UP DOWN R L.
 //!
+//! `AW2_BOOT_LOBBY=1` boots to the in-game LOBBY menu (crate::online's walk, before the script).
+//!
 //! `AW2_TRACE=<file>` (hex ROM addresses, one per line) traps each address
 //! and prints `trap ADDR @FRAME lr r0 r1 r2 r3` whenever the CPU reaches
 //! it, for finding the game code behind a behaviour.
@@ -229,6 +231,11 @@ fn main() {
         } else {
             i += 1;
         }
+    }
+    // `AW2_BOOT_LOBBY=1`: the console boots straight to the ONLINE screen's LOBBY menu, as the app's return
+    // from an online match does (crate::online).
+    if std::env::var("AW2_BOOT_LOBBY").is_ok_and(|v| v == "1") {
+        tango_gamesupport_aw2::online::mailbox::boot_to_lobby();
     }
     let mut link = Aw2Link(
         tango_backend_mgba::SharedLink::boot(

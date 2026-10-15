@@ -29,6 +29,20 @@ pub trait Console: Send + 'static {
 
     /// The console's per-side surface: display, audio out, savedata.
     fn side(&mut self) -> Box<dyn crate::Side + '_>;
+
+    /// Read the console's memory at `addr` into `buf`, between frames: a
+    /// host talking to a game that keeps a mailbox in its RAM (tangoAW2's
+    /// in-game lobby). `false` when the engine offers no such access.
+    fn peek(&mut self, addr: u32, buf: &mut [u8]) -> bool {
+        let _ = (addr, buf);
+        false
+    }
+
+    /// Write the console's memory, between frames (see [`peek`](Self::peek)).
+    fn poke(&mut self, addr: u32, bytes: &[u8]) -> bool {
+        let _ = (addr, bytes);
+        false
+    }
 }
 
 /// One console running by itself, as a host drives it — the solo
@@ -94,6 +108,16 @@ impl Solo {
     /// has never written any. The host owns persisting it.
     pub fn export_save(&self) -> Option<Vec<u8>> {
         self.inner.lock().unwrap().console.side().export_save()
+    }
+
+    /// Read the console's memory between frames ([`Console::peek`]).
+    pub fn peek(&self, addr: u32, buf: &mut [u8]) -> bool {
+        self.inner.lock().unwrap().console.peek(addr, buf)
+    }
+
+    /// Write the console's memory between frames ([`Console::poke`]).
+    pub fn poke(&self, addr: u32, bytes: &[u8]) -> bool {
+        self.inner.lock().unwrap().console.poke(addr, bytes)
     }
 }
 

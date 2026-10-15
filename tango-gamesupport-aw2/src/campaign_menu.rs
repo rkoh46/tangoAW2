@@ -73,6 +73,12 @@ fn wheel(core: &Core) -> Option<u32> {
     (PROCS..PROCS_END).step_by(PROC_SIZE as usize).find(|&p| WHEELS.contains(&core.raw_read_32(p, -1)))
 }
 
+/// The wheel's open item box (Continue / New), when one is open: its cursor (6 the top row, 7 the bottom).
+pub(crate) fn box_cursor(core: &Core) -> Option<u16> {
+    let p = wheel(core)?;
+    ((core.raw_read_16(p + W_BOX, -1) as i16) > 0).then(|| core.raw_read_16(p + W_CURSOR, -1))
+}
+
 /// The Select Mode menu is up (entered from the title, or come back to
 /// from a mode: then only the wheel's proc may be running).
 pub fn on_select_mode(core: &Core) -> bool {

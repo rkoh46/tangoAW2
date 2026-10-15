@@ -24,6 +24,8 @@
 //! `AW2_SHARED_ART=1` plays the match as the lobby makes it when both
 //! players have it (the Black Crystal and Black Obelisk maps then show).
 //!
+//! `AW2_ONLINE=1` plays a match made in the in-game lobby (booted to Versus' SELECT MAP, the host's menus).
+//!
 //! `AW2_TIMELINE=<file>` writes the resolved script: one line per tick with
 //! both seats' keys (hex), and `# shot TICK NAME` lines, for replaying the
 //! same match over a real connection (tango-session's aw2_direct_netplay).
@@ -104,13 +106,12 @@ fn main() {
     // `AW2_SHARED_ART=1`: the match as the lobby makes it when both players
     // have imported the Dual Strike art (`ds_art::SHARED_ART`).
     let shared_art = std::env::var_os("AW2_SHARED_ART").is_some();
+    // `AW2_ONLINE=1`: a match made in the in-game lobby (it boots to Versus' SELECT MAP; crate::online).
+    let online = std::env::var("AW2_ONLINE").is_ok_and(|v| v == "1");
     let match_type = (
         0u8,
-        if shared_art {
-            tango_gamesupport_aw2::ds_art::SHARED_ART
-        } else {
-            0
-        },
+        if shared_art { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 }
+            | if online { tango_gamesupport_aw2::online::ONLINE_MATCH } else { 0 },
     );
 
     let game = &tango_gamesupport_aw2::AW2;
@@ -372,6 +373,19 @@ fn main() {
             println!("  {name} peer0/straight first differences: {}", first.join(", "));
         }
         all &= peers_equal && a == s;
+    }
+    for (k, p) in peers.iter().enumerate() {
+        let ended = p
+            .telemetry()
+            .and_then(|h| {
+                h.lock()
+                    .unwrap()
+                    .events()
+                    .iter()
+                    .find(|(_, e)| matches!(e, tango_match::telemetry::Event::MatchEnded))
+                    .map(|(t, _)| *t)
+            });
+        println!("peer {k}: match ended at {ended:?}");
     }
     println!("all identical: {all}");
 }
