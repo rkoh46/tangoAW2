@@ -95,8 +95,9 @@ pub const MATCH_PLAYERS: u8 = 2;
 
 /// A match subtype bit: the match was made in the in-game lobby (boot to Versus, host's screens).
 pub const ONLINE_MATCH: u8 = 0x01;
-/// The room code's letters: those the game's title font has, less I and O (read as 1 and 0) and B (as 8).
-pub const CODE_ALPHABET: &[u8] = b"ACDEGHKLMNPRSTUWY";
+/// The room code's characters: the letters the game's title font has, less I and O (read as 1 and 0) and B (as 8),
+/// and the digits 2 3 4 6 7 8 9 (no 0 and 1 for O and I, no 5 for S), drawn from the text font doubled.
+pub const CODE_ALPHABET: &[u8] = b"ACDEGHKLMNPRSTUWY2346789";
 pub const CODE_CHARS: usize = 6;
 
 /// What the app says about the connection.
@@ -263,6 +264,51 @@ pub mod mailbox {
         true
     }
 
+    /// The connection's status byte ([`Status`]).
+    pub fn status(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
+        let mut b = [0u8];
+        read(STATUS, &mut b);
+        b[0]
+    }
+
+    /// The players on the room's page: (ready, flags).
+    pub fn players(read: &mut dyn FnMut(u32, &mut [u8])) -> Vec<(bool, u8)> {
+        (0..MAX_PLAYERS)
+            .filter_map(|k| {
+                let mut b = [0u8; 2];
+                read(PLAYERS + PLAYER_SIZE * k as u32, &mut b);
+                (b[1] & PRESENT != 0).then_some((b[0] == 1, b[1]))
+            })
+            .collect()
+    }
+
+    /// A test aid's question of the console (`TANGOAW2_PAD_SCRIPT`'s `until`): see the app's `debug_aids`.
+    pub fn condition(read: &mut dyn FnMut(u32, &mut [u8]), cond: &str) -> bool {
+        if let Some(c) = cond.strip_prefix('!') {
+            return !condition(read, c);
+        }
+        let bits = probe::bits();
+        let flag = |f: u64| bits & f != 0;
+        let (name, value) = cond.split_once('=').map_or((cond, None), |(n, v)| (n, v.parse::<u32>().ok()));
+        match (name, value) {
+            ("onmenu", None) => flag(probe::ONLINE_MENU),
+            ("selectmode", None) => flag(probe::SELECT_MODE),
+            ("selectmap", None) => flag(probe::SELECTING),
+            ("teams", None) => flag(probe::TEAMS),
+            ("battle", None) => flag(probe::BATTLE),
+            ("versus", None) => flag(probe::VERSUS),
+            ("nav", None) => flag(probe::NAV),
+            ("turnended", None) => flag(probe::TURN_ENDED),
+            ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
+            ("level", Some(v)) => level(read) as u32 == v,
+            ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
+            ("status", Some(v)) => status(read) as u32 == v,
+            ("players", Some(v)) => players(read).len() as u32 == v,
+            ("ready", Some(v)) => players(read).iter().filter(|p| p.0).count() as u32 == v,
+            _ => false,
+        }
+    }
+
     /// A fresh room code.
     pub fn new_code(seed: u64) -> String {
         let mut x = seed | 1;
@@ -293,6 +339,52 @@ pub mod mailbox {
     /// Asks the console just booted to go straight to the LOBBY menu (offline; the next boot only).
     pub fn boot_to_lobby() {
         BOOT_TO_LOBBY.store(true, Ordering::Relaxed);
+    }
+}
+
+/// What the console shows right now, for the test aids of the app (a pad script that waits for a screen): kept in a
+/// static on every tick, outside the simulation (nothing reads it back into the game).
+pub mod probe {
+    use super::*;
+    use std::sync::atomic::AtomicU64;
+
+    pub const SELECT_MODE: u64 = 1;
+    pub const ONLINE_MENU: u64 = 2;
+    pub const SELECTING: u64 = 4;
+    pub const TEAMS: u64 = 8;
+    pub const BATTLE: u64 = 16;
+    pub const VERSUS: u64 = 32;
+    pub const NAV: u64 = 64;
+    pub const TURN_ENDED: u64 = 128;
+
+    static BITS: AtomicU64 = AtomicU64::new(0);
+
+    /// Every tick (any console): note the screen.
+    pub fn store(core: &Core) {
+        let mut b = 0u64;
+        let mut flag = |on: bool, bit: u64| {
+            if on {
+                b |= bit;
+            }
+        };
+        flag(crate::campaign_menu::on_select_mode(core), SELECT_MODE);
+        flag(crate::online_menu::active(core), ONLINE_MENU);
+        flag(crate::survival_ui::selecting(core), SELECTING);
+        flag(crate::pvp::on_teams_screen(core), TEAMS);
+        flag(crate::pvp::in_battle(core), BATTLE);
+        flag(crate::pvp::in_versus(core), VERSUS);
+        flag(navigating(core), NAV);
+        flag(crate::pvp::turn_ended(core), TURN_ENDED);
+        b |= (crate::online_menu::cursor(core).unwrap_or(0xFF) as u64) << 8;
+        b |= (level(core) as u64) << 16;
+        b |= (crate::pvp::current_army(core) as u64) << 24;
+        BITS.store(b, Ordering::Relaxed);
+    }
+
+    /// The last tick's note: flags in the low byte, then the ONLINE cursor (0xFF none), the lobby level and the army
+    /// whose turn it is.
+    pub fn bits() -> u64 {
+        BITS.load(Ordering::Relaxed)
     }
 }
 
@@ -330,7 +422,7 @@ fn set_level(core: &mut Core, l: u8) {
 }
 
 /// The grid: the alphabet, then rub out and OK. Six columns.
-const GRID_COLS: usize = 6;
+const GRID_COLS: usize = 8;
 const GRID_DEL: usize = CODE_ALPHABET.len();
 const GRID_OK: usize = CODE_ALPHABET.len() + 1;
 const GRID_CELLS: usize = CODE_ALPHABET.len() + 2;
@@ -945,23 +1037,65 @@ fn bgr(c: u16) -> Rgb {
     (f(c), f(c >> 5), f(c >> 10))
 }
 
-/// A word in the game's title font (its OBJ palette 15, as the screen's title), from (x, y).
+/// A word in the game's title font (its OBJ palette 15, as the screen's title), from (x, y). The font has no digits:
+/// they are the game's text font, doubled and outlined as the letters are.
 fn title(cv: &mut Rgba, core: &Core, font: &crate::online_art::TitleFont, x: i32, y: i32, word: &str) {
     let pal: Vec<Rgb> = (0..16)
         .map(|i| bgr(core.raw_read_16(0x0500_0200 + 15 * 32 + 2 * i, -1)))
         .collect();
-    for (c, gx) in font.layout(word, x) {
-        let Some(g) = crate::online_art::TitleFont::index(c).and_then(|i| font.px.get(i)) else {
+    // The letters' fill and outline: across the middle of an I.
+    let (fill, edge) = {
+        let i = &font.px[crate::online_art::TitleFont::index('I').unwrap_or(0)];
+        let row: Vec<u8> = (0..16).map(|x| i.get(x, 16)).collect();
+        let first = row.iter().position(|&v| v != 0).unwrap_or(0);
+        (row[(first + 4).min(15)], row[first])
+    };
+    let mut cx = x;
+    for c in word.chars() {
+        if c.is_ascii_digit() {
+            let w = core.raw_read_8(FONT_WIDTHS + c as u32, -1) as usize;
+            let at = core.raw_read_32(FONT_GLYPHS + 4 * c as u32, -1);
+            if !(0x0800_0000..0x0A00_0000).contains(&at) {
+                continue;
+            }
+            let stride = w.div_ceil(2);
+            // (the digit at 2x: rows 3..14 of its glyph)
+            let on = |gx: i32, gy: i32| -> bool {
+                if gx < 0 || gy < 0 || gx >= 2 * w as i32 || gy >= 22 {
+                    return false;
+                }
+                let (sx, sy) = (gx as usize / 2, gy as usize / 2);
+                let b = core.raw_read_8(at + (stride * (3 + sy) + sx / 2) as u32, -1);
+                (b >> (4 * (sx & 1))) & 15 != 0
+            };
+            for gy in -1..23 {
+                for gx in -1..2 * w as i32 + 1 {
+                    let v = if on(gx, gy) {
+                        fill
+                    } else if (-1..=1).any(|dy| (-1..=1).any(|dx| on(gx + dx, gy + dy))) {
+                        edge
+                    } else {
+                        continue;
+                    };
+                    cv.put(cx + gx + 1, y + gy + 5, pal[v as usize]);
+                }
+            }
+            cx += 2 * w as i32 + 2;
+            continue;
+        }
+        let Some(i) = crate::online_art::TitleFont::index(c) else {
             continue;
         };
+        let g = &font.px[i];
         for py in 0..32 {
             for px in 0..16 {
                 let v = g.get(px, py);
                 if v != 0 {
-                    cv.put(gx + px as i32, y + py as i32 - 4, pal[v as usize]);
+                    cv.put(cx + px as i32, y + py as i32 - 4, pal[v as usize]);
                 }
             }
         }
+        cx += font.advance(c);
     }
 }
 
@@ -1026,7 +1160,7 @@ fn status_lines(core: &Core, hosting: bool) -> (Vec<String>, Rgb) {
             .into()],
             GRAY_INK,
         ),
-        Status::Waiting => (vec!["Waiting for a player...".into()], INK),
+        Status::Waiting => (vec!["Waiting for player(s)...".into()], INK),
         Status::Connecting => (vec!["Connecting...".into()], INK),
         Status::Connected => (vec![format!("Connected: {m}"), "The battle is starting!".into()], BLUE),
         Status::Failed => (
@@ -1131,7 +1265,13 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 _ => {
                     let (lines, _) = status_lines(core, hosting);
                     let mut l = lines.join(" ");
-                    l.push_str(if hosting { "  B: Close" } else { "  B: Back" });
+                    let b = if hosting { "B: Close" } else { "B: Back" };
+                    l.push_str("  ");
+                    l.push_str(b);
+                    // (the bar is the screen's width: the key matters more than the status, which the page shows)
+                    if text_width(core, &l) > W as i32 - 8 {
+                        l = b.to_string();
+                    }
                     l
                 }
             };
@@ -1177,7 +1317,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 }
             }
             let g = core.raw_read_8(GRID, -1) as usize;
-            let (cw, ch) = (22, 13);
+            let (cw, ch) = (17, 13);
             let gx = x + (w - cw * GRID_COLS as i32) / 2;
             let gy = y + 50;
             let (_, _, max, min) = field(core);
@@ -1239,10 +1379,10 @@ mod tests {
             assert!(c.bytes().all(|b| CODE_ALPHABET.contains(&b)), "{c}");
         }
         assert_ne!(mailbox::new_code(1), mailbox::new_code(2));
-        // Every code letter is one the title font draws.
+        // Every code letter is one the title font draws (the digits are drawn from the text font).
         assert!(CODE_ALPHABET
             .iter()
-            .all(|&c| crate::online_art::TITLE_ORDER.contains(c as char)));
+            .all(|&c| c.is_ascii_digit() || crate::online_art::TITLE_ORDER.contains(c as char)));
     }
 
     #[test]

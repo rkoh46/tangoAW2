@@ -53,3 +53,25 @@ pub fn write_player(write: &mut dyn FnMut(u32, &[u8]), slot: usize, player: Opti
 pub fn type_chars(read: &mut dyn FnMut(u32, &mut [u8]), write: &mut dyn FnMut(u32, &[u8]), chars: &[u8]) -> bool {
     tango_gamesupport_aw2::online::mailbox::type_chars(read, write, chars)
 }
+
+/// A test aid's question of the console (see the app's `debug_aids`).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn condition(read: &mut dyn FnMut(u32, &mut [u8]), cond: &str) -> bool {
+    tango_gamesupport_aw2::online::mailbox::condition(read, cond)
+}
+
+#[cfg(feature = "gamesupport-aw2")]
+pub fn status(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
+    tango_gamesupport_aw2::online::mailbox::status(read)
+}
+
+#[cfg(feature = "gamesupport-aw2")]
+pub fn players(read: &mut dyn FnMut(u32, &mut [u8])) -> Vec<(bool, u8)> {
+    tango_gamesupport_aw2::online::mailbox::players(read)
+}
+
+/// What the console showed on its last tick (see the game's `online::probe`).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn probe_bits() -> u64 {
+    tango_gamesupport_aw2::online::probe::bits()
+}

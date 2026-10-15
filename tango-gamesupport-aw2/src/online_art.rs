@@ -593,6 +593,11 @@ impl TitleFont {
         out
     }
 
+    /// How far a letter moves the next one on.
+    pub fn advance(&self, c: char) -> i32 {
+        Self::index(c).map_or(0, |g| self.right[g] as i32)
+    }
+
     pub fn width(&self, word: &str) -> i32 {
         let l = self.layout(word, 0);
         l.last()

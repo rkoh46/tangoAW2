@@ -178,6 +178,10 @@ impl App {
                 // `replays` opens that tab (for screenshots).
                 match std::env::var("TANGOAW2_AUTOSTART").as_deref() {
                     Ok("offline") => {
+                        // (`TANGOAW2_BOOT_LOBBY=1`: and the console walks to the ONLINE LOBBY menu by itself)
+                        if std::env::var("TANGOAW2_BOOT_LOBBY").is_ok_and(|v| v == "1") {
+                            tango_library::online::boot_to_lobby();
+                        }
                         return iced::Task::done(Message::Play(crate::tabs::play::Message::PlayOfflinePressed))
                     }
                     Ok("settings") => return iced::Task::done(Message::TabSelected(super::Tab::Settings)),

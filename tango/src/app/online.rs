@@ -25,6 +25,8 @@ pub struct Flow {
     in_match: bool,
     /// Said on the LOBBY menu when the game comes back.
     back_message: Option<String>,
+    /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
+    last_log: Option<std::time::Instant>,
 }
 
 struct Room {
@@ -63,6 +65,18 @@ impl App {
         let mut read = |a: u32, b: &mut [u8]| {
             solo.peek(a, b);
         };
+        if std::env::var("TANGOAW2_ONLINE_LOG").is_ok_and(|v| v == "1")
+            && self.online.last_log.is_none_or(|t| t.elapsed().as_secs() >= 1)
+        {
+            self.online.last_log = Some(std::time::Instant::now());
+            log::info!(
+                "online state: level {} status {} players {:?} probe {:#x}",
+                mailbox::level(&mut read),
+                tango_library::online::status(&mut read),
+                tango_library::online::players(&mut read),
+                tango_library::online::probe_bits()
+            );
+        }
         if mailbox::level(&mut read) == 0 && self.online.room.is_none() && self.online.back_message.is_none() {
             // (nothing asked; keep up with the serial so an old request is never taken for a new one)
             self.online.seen = Some(mailbox::serial(&mut read));
@@ -186,10 +200,11 @@ impl App {
             ready.remote_ready,
             if room.host { 0 } else { mailbox::HOST },
         ));
+        // The room's maker is always the first slot, on every peer (a guest not yet connected to them sees "Host").
         let (first, second) = if room.host {
             (Some(local), remote)
         } else {
-            (remote, Some(local))
+            (Some(remote.unwrap_or(("Host", false, mailbox::HOST))), Some(local))
         };
         mailbox::write_player(&mut write, 0, first);
         mailbox::write_player(&mut write, 1, second);

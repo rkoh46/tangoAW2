@@ -190,7 +190,7 @@ changes, and online both players need it):
 Default keys: A/B = Z/X, L/R = A/S, START/SELECT = Enter/Space (change
 them in Settings). On Versus' Teams screen **R** or **L** changes an
 army's colour, Black Hole included (without Dual Strike, **SELECT** too).
-In the LOBBY's code and password pages the keyboard types: letters, Backspace,
+In the LOBBY's code and password pages the keyboard types: letters and digits, Backspace,
 Enter (the pad's arrows, A, B and START work as well).
 
 Design Room: **R** opens the terrain bar (the inventions come after Silo),

@@ -465,11 +465,15 @@ impl State {
             Code::Enter | Code::NumpadEnter => 13,
             c => {
                 let name = format!("{c:?}");
-                match name.strip_prefix("Key") {
-                    // (only the code's letters: Z and X, the pad's A and B by default, stay the pad's)
-                    Some(l) if l.len() == 1 && tango_library::online::CODE_ALPHABET.contains(&l.as_bytes()[0]) => {
-                        l.as_bytes()[0]
-                    }
+                // (only the code's characters: Z and X, the pad's A and B by default, stay the pad's)
+                let ch = name
+                    .strip_prefix("Key")
+                    .or_else(|| name.strip_prefix("Digit"))
+                    .or_else(|| name.strip_prefix("Numpad"))
+                    .filter(|l| l.len() == 1)
+                    .map(|l| l.as_bytes()[0]);
+                match ch {
+                    Some(b) if tango_library::online::CODE_ALPHABET.contains(&b) => b,
                     _ => return false,
                 }
             }

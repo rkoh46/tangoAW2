@@ -139,10 +139,24 @@ impl App {
             }
             Message::PadScriptTick => {
                 let seq = self.session.is_active().then(|| self.session.install_seq());
-                if let Some(keys) = self.debug.pad_keys(seq) {
+                let solo = self.session.active_as::<crate::session::singleplayer::SinglePlayerSession>();
+                let mut cond = |c: &str| {
+                    let mut read = |a: u32, b: &mut [u8]| {
+                        if let Some(solo) = solo {
+                            solo.peek(a, b);
+                        }
+                    };
+                    tango_library::online::condition(&mut read, c)
+                };
+                if let Some(keys) = self.debug.pad_keys(seq, &mut cond) {
                     self.session.set_scripted_keys(keys);
                 }
-                iced::Task::none()
+                match self.debug.take_script_shot() {
+                    Some(path) => iced::window::latest()
+                        .and_then(iced::window::screenshot)
+                        .map(move |s| Message::DebugScreenshot(s, path.clone(), false)),
+                    None => iced::Task::none(),
+                }
             }
             Message::Window(id, ev) => self.update_window(id, ev),
             Message::WindowScaleQueried { id, scale } => {

@@ -165,6 +165,11 @@ pub(crate) fn in_battle(core: &Core) -> bool {
     core.raw_read_32(BATTLE_SCENE, -1) != 0 || core.raw_read_32(MAIN_LOOP, -1) == CO_PAGE_LOOP
 }
 
+/// The army whose turn it is (1..=5), 0 outside a battle.
+pub(crate) fn current_army(core: &Core) -> u8 {
+    core.raw_read_8(CURRENT_PLAYER, -1)
+}
+
 pub(crate) fn in_versus(core: &Core) -> bool {
     core.raw_read_8(GAME_MODE, -1) == VERSUS
 }
@@ -420,7 +425,7 @@ fn dual_strike_arrows(core: &Core, mode: Option<(u8, u8)>) -> bool {
     mode.is_none() && crate::wasteland::ds_graphics(core) && core.raw_read_8(crate::tag::AW2_ARROWS, -1) == 0
 }
 
-fn turn_ended(core: &Core) -> bool {
+pub(crate) fn turn_ended(core: &Core) -> bool {
     core.raw_read_8(MAP_MENU_STATE, -1) == 5 && core.raw_read_8(MAP_MENU_CURSOR, -1) == 4
 }
 
@@ -546,6 +551,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     fn before_tick(&self, core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
         // An online match's walk to SELECT MAP and its end (crate::online).
         let keys = crate::online::before(core, mode, keys);
+        crate::online::probe::store(core);
         // Everything unlocked: every CO (Sturm and Hachi included), every
         // CO colour edit, every Battle Map, Hard Campaign and the Sound
         // Room. The game saves this block, so a save made here keeps it.
