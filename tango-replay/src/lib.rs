@@ -56,6 +56,11 @@ pub const EXTENSION: &str = "tangoreplay";
 /// replay already on disk.
 pub const VERSION: u8 = 0x1E;
 
+/// A tangoAW2 room's match, of more than two players: the same container, its metadata naming the other players
+/// (`extra_sides`) and its stream carrying their inputs as extra pair records a tick (see [`stream::Writer::with_players`]).
+/// Older builds do not read it.
+pub const VERSION_ROOM: u8 = 0x1F;
+
 pub struct Writer {
     /// Everything after the header framing is the shared stream
     /// encoding.
@@ -80,6 +85,13 @@ pub struct Replay {
     /// recording says happened. Where the rounds fall in it is the
     /// telemetry's answer, arrived at by re-simulating these inputs.
     pub inputs: Vec<[stream::Input; 2]>,
+}
+
+impl Replay {
+    /// How many players the match had.
+    pub fn players(&self) -> usize {
+        2 + self.metadata.extra_sides.len()
+    }
 }
 
 impl Metadata {
@@ -120,7 +132,7 @@ pub enum DecodeError {
 
 pub fn decode_metadata(version: u8, raw: &[u8]) -> Result<Metadata, DecodeError> {
     Ok(match version {
-        VERSION => protos::replay11::Metadata::decode(raw)?,
+        VERSION | VERSION_ROOM => protos::replay11::Metadata::decode(raw)?,
         _ => return Err(DecodeError::UnsupportedVersion(version)),
     })
 }
@@ -142,7 +154,7 @@ pub fn read_metadata(r: &mut impl std::io::Read) -> Result<(u8, u8, Metadata), D
     // proto's leading field tag as its high byte and asks for ~128 MiB
     // per file, which is what made scanning a library carried across
     // the 0x1D bump take minutes.
-    if version != VERSION {
+    if version != VERSION && version != VERSION_ROOM {
         return Err(DecodeError::UnsupportedVersion(version));
     }
     let local_player_index = r.read_u8()?;
@@ -209,7 +221,7 @@ impl Replay {
         // The rest of the file is the shared stream encoding; a
         // truncated tail comes back as is_complete = false with the
         // partial record dropped.
-        let stream = stream::Stream::read(&mut r)?;
+        let stream = stream::Stream::read_players(&mut r, 2 + metadata.extra_sides.len())?;
         Ok(Self {
             is_complete: stream.is_complete,
             metadata,
@@ -233,8 +245,9 @@ impl Writer {
         rng_seed: [u8; 16],
         srams: [&[u8]; 2],
     ) -> std::io::Result<Self> {
+        let players = 2 + metadata.extra_sides.len();
         writer.write_all(HEADER)?;
-        writer.write_u8(version)?;
+        writer.write_u8(if players > 2 { VERSION_ROOM } else { version })?;
         writer.write_u8(local_player_index)?;
         let raw_metadata = metadata.encode_to_vec();
         writer.write_u32::<byteorder::LittleEndian>(raw_metadata.len() as u32)?;
@@ -247,7 +260,7 @@ impl Writer {
         }
         writer.flush()?;
         Ok(Writer {
-            stream: stream::Writer::new(writer),
+            stream: stream::Writer::with_players(writer, players),
         })
     }
 

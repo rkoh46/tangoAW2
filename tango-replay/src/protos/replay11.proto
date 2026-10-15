@@ -56,4 +56,7 @@ message Metadata {
   reserved 5;
   uint32 match_type = 6;
   uint32 match_subtype = 7;
+  // tangoAW2's rooms (schema 0x1F): the players after the first two, in seat
+  // order. The stream then carries ceil((2 + extra_sides) / 2) pair records a tick.
+  repeated Side extra_sides = 8;
 }

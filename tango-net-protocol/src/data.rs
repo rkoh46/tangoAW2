@@ -68,6 +68,9 @@ const TOUCH_FLAG: u8 = 0x40;
 /// Marker kind, carried in the low bits of a marker byte.
 const KIND_END_OF_MATCH: u8 = 1;
 
+/// A composite marker: `MARKER_FLAG | COMPOSITE_FLAG | (count - 1)`, then `count` words, high byte first.
+const COMPOSITE_FLAG: u8 = 0x10;
+
 /// Hard cap on elements decoded from one datagram. A legitimate redundancy
 /// window can't exceed the rollback horizon (the out-stream trims it to that),
 /// so a datagram claiming more is malformed or hostile; rennet enforces this in
@@ -142,6 +145,9 @@ pub enum Element {
     },
     /// End-of-match boundary.
     EndOfMatch,
+    /// A room of more than two players (tangoAW2): the host's one input standing for every player but the
+    /// receiver, in seat order (`count` of them, 1..=4 words of 13 bits each).
+    Composite { words: [u16; 4], count: u8 },
 }
 
 impl rennet::Codec for Element {
@@ -166,6 +172,15 @@ impl rennet::Codec for Element {
                 Ok(())
             }
             Element::EndOfMatch => w.write_all(&[MARKER_FLAG | KIND_END_OF_MATCH]),
+            Element::Composite { words, count } => {
+                assert!((1..=4).contains(&count), "composite of {count} words");
+                w.write_all(&[MARKER_FLAG | COMPOSITE_FLAG | (count - 1)])?;
+                for &word in &words[..count as usize] {
+                    assert!(word & !KEYS_MASK == 0, "joyflags use reserved high bits: {word:#06x}");
+                    w.write_all(&word.to_be_bytes())?;
+                }
+                Ok(())
+            }
         }
     }
 
@@ -179,7 +194,16 @@ impl rennet::Codec for Element {
             return Ok(None);
         }
         let b0 = b0[0];
-        let element = if b0 & MARKER_FLAG != 0 {
+        let element = if b0 & MARKER_FLAG != 0 && b0 & COMPOSITE_FLAG != 0 {
+            let count = (b0 & 0x03) + 1;
+            let mut words = [0u16; 4];
+            for word in words.iter_mut().take(count as usize) {
+                let mut b = [0u8; 2];
+                r.read_exact(&mut b)?;
+                *word = u16::from_be_bytes(b) & KEYS_MASK;
+            }
+            Element::Composite { words, count }
+        } else if b0 & MARKER_FLAG != 0 {
             match b0 & !MARKER_FLAG {
                 KIND_END_OF_MATCH => Element::EndOfMatch,
                 other => return Err(invalid(format!("unknown marker kind: {other}"))),
@@ -271,6 +295,21 @@ mod tests {
                 Element::EndOfMatch,
             ],
         );
+        assert_eq!(Frame::decode(&mut &f.to_vec()[..]).unwrap(), f);
+    }
+
+    #[test]
+    fn composite_roundtrips_and_has_exact_bytes() {
+        let f = data_frame(
+            3,
+            3,
+            Meta::default(),
+            vec![Element::Composite {
+                words: [0x001, 0x1fff, 0, 0],
+                count: 2,
+            }],
+        );
+        assert_eq!(f.to_vec(), vec![0x03, 0x00, 0x00, 0x91, 0x00, 0x01, 0x1f, 0xff]);
         assert_eq!(Frame::decode(&mut &f.to_vec()[..]).unwrap(), f);
     }
 

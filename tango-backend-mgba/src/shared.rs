@@ -160,6 +160,9 @@ pub struct SharedLink {
     /// session's tick count it stamps.
     telemetry: Option<tango_match::telemetry::Telemetry<mgba::core::Core>>,
     tick: u32,
+    /// How many players share the console (2; a room's, up to 5). A replay's rows are pairs: seats 2.. are in the
+    /// second input's `extra`.
+    players: usize,
 }
 
 impl SharedLink {
@@ -206,7 +209,13 @@ impl SharedLink {
             render: [true; tango_match::MAX_SEATS],
             telemetry: None,
             tick: 0,
+            players: 2,
         })
+    }
+
+    /// How many players share this console (see the field).
+    pub fn set_players(&mut self, players: usize) {
+        self.players = players.clamp(2, tango_match::MAX_SEATS);
     }
 
     /// Watch for the match's end ([`SharedGame::match_over`]): the handle
@@ -264,7 +273,15 @@ impl tango_match::Link for SharedLink {
     }
 
     fn tick(&mut self, inputs: [HostInput; 2]) {
-        self.tick_n(&inputs);
+        if self.players <= 2 {
+            self.tick_n(&inputs);
+            return;
+        }
+        let mut seats = vec![inputs[0], HostInput::keys(inputs[1].keys)];
+        for k in 0..self.players - 2 {
+            seats.push(HostInput::keys(inputs[1].extra[k] as u32));
+        }
+        self.tick_n(&seats);
     }
 
     fn tick_n(&mut self, inputs: &[HostInput]) {
@@ -421,8 +438,15 @@ impl tango_match::Backend for SharedBackend {
             config.cancel,
         )?;
         let mut link = link;
+        link.set_players(config.players);
         let handle = link.watch_end();
-        let mut match_ = tango_match::Match::new(link, config.local_player, config.present_delay, config.audio)?;
+        let mut match_ = tango_match::Match::new_n(
+            link,
+            config.local_player,
+            config.players,
+            config.present_delay,
+            config.audio,
+        )?;
         match_.set_telemetry(handle);
         Ok(match_)
     }
@@ -440,6 +464,7 @@ impl tango_match::Backend for SharedBackend {
             rtc: config.rtc,
             game: self.game,
             mode: config.match_type,
+            players: config.players,
         };
         Ok(tango_match::ReplaySet::new(&config, boot))
     }
@@ -451,12 +476,14 @@ struct SharedBoot {
     rtc: std::time::SystemTime,
     game: &'static (dyn SharedGame + Send + Sync),
     mode: (u8, u8),
+    players: usize,
 }
 
 impl SharedBoot {
     fn link(&self, cancel: Option<&AtomicBool>) -> Result<tango_match::BootedReplay, tango_match::Error> {
         let save = (!self.save.is_empty()).then_some(self.save.as_slice());
-        let link = SharedLink::boot(&self.rom, save, Some(self.rtc), self.game, Some(self.mode), cancel)?;
+        let mut link = SharedLink::boot(&self.rom, save, Some(self.rtc), self.game, Some(self.mode), cancel)?;
+        link.set_players(self.players);
         Ok(tango_match::BootedReplay {
             link: Box::new(link),
             telemetry: None,

@@ -31,6 +31,7 @@ mod connect;
 mod handshake;
 mod lobby;
 mod reconcile;
+pub mod room;
 mod state;
 
 pub use connect::connect;

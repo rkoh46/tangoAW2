@@ -184,10 +184,9 @@ pub struct Advance {
     /// This side's clock-sync hint to send beside `outgoing`.
     pub tick_advantage: i16,
     /// Input rows that joined the authoritative settled state during this
-    /// advance, in absolute player order and tick order.
+    /// advance, in absolute player order and tick order. In a room of more than two players seats 2.. ride in the
+    /// second input's `extra` (as a recording and a replay carry them).
     pub confirmed_inputs: Vec<[HostInput; 2]>,
-    /// The same rows' seats 2.. (a room of more than two players; zeros otherwise).
-    pub confirmed_extra: Vec<[HostInput; 3]>,
 }
 
 /// A running two-player rollback match on any engine — the unified
@@ -330,14 +329,23 @@ impl Match {
             .into_iter()
             .map(|(local, remotes)| seat_inputs(self.local_player, self.players, local, remotes[0]))
             .collect();
-        let confirmed_inputs = rows.iter().map(|r| [r[0], r[1]]).collect();
-        let confirmed_extra = rows.iter().map(|r| [r[2], r[3], r[4]]).collect();
+        let confirmed_inputs = rows
+            .iter()
+            .map(|r| {
+                [
+                    r[0],
+                    HostInput {
+                        extra: [r[2].keys as u16, r[3].keys as u16, r[4].keys as u16],
+                        ..r[1]
+                    },
+                ]
+            })
+            .collect();
         Ok(Advance {
             tick,
             outgoing: local,
             tick_advantage,
             confirmed_inputs,
-            confirmed_extra,
         })
     }
 

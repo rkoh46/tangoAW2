@@ -75,6 +75,96 @@ pub enum Packet {
     /// mid-match watch ignores as stray traffic (hence no version bump) —
     /// it just falls back to that window.
     Goodbye(Goodbye),
+
+    /// tangoAW2's rooms (the in-game lobby): the room's own conversation, see [`RoomMsg`]. Last in the enum so every
+    /// other packet keeps its wire number.
+    Room(RoomMsg),
+}
+
+/// What the players of a room say to each other on the control channel (tangoAW2): a guest joins the host, the
+/// host tells everyone who is there, the guests say READY, and the host starts the match.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub enum RoomMsg {
+    /// Guest to host, first: who I am, the room's password (hashed, see [`room_password_hash`]), and my game.
+    Join(RoomJoin),
+    /// Host to guest: you are in, at this seat.
+    Welcome(RoomRoster),
+    /// Host to guest: you are not in.
+    Reject(RoomReject),
+    /// Host to every guest, when the room changes: who is in it.
+    Roster(RoomRoster),
+    /// Guest to host: READY, or not.
+    Ready(bool),
+    /// Host to every guest: the match starts. The host's save follows as `ChunkStart` / `Chunk` packets.
+    Start(RoomStart),
+    /// Guest to host: I have the start and the save, and am ready to hand over to the match.
+    Loaded,
+    /// Either: I am leaving.
+    Leave,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct RoomJoin {
+    pub nickname: String,
+    pub password: u64,
+    pub game_info: Option<GameInfo>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct RoomPlayer {
+    pub nickname: String,
+    pub ready: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct RoomRoster {
+    /// The receiver's seat (0 is the host).
+    pub seat: u8,
+    /// Everyone in seat order, the host first.
+    pub players: Vec<RoomPlayer>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct RoomReject {
+    pub reason: RejectReason,
+    /// Words for the player.
+    pub text: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RejectReason {
+    WrongPassword,
+    Full,
+    Started,
+    GameMismatch,
+    NotTheHost,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct RoomStart {
+    /// The match's RNG seed and clock (the host's), the same for everyone.
+    pub seed: [u8; 16],
+    pub ts: u64,
+    /// Everyone in seat order.
+    pub players: Vec<String>,
+    /// The host's save, zstd'd: its length and its commitment hash ([`make_commitment`]), for the chunks that follow.
+    pub save_len: u64,
+    pub save_hash: [u8; 16],
+    pub match_type: (u8, u8),
+}
+
+/// A room's password as it crosses the wire: not secret (the room's code is its only privacy), just enough to
+/// tell a wrong one from the right one.
+pub fn room_password_hash(code: &str, password: &str) -> u64 {
+    use sha3::digest::{ExtendableOutput, Update, XofReader};
+    let mut h = sha3::Shake128::default();
+    h.update(b"tangoaw2:room:");
+    h.update(code.to_ascii_lowercase().as_bytes());
+    h.update(b":");
+    h.update(password.to_ascii_lowercase().as_bytes());
+    let mut out = [0u8; 8];
+    h.finalize_xof().read(&mut out);
+    u64::from_le_bytes(out)
 }
 
 impl Packet {

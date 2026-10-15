@@ -973,6 +973,8 @@ pub struct ReplayConfig {
     pub match_type: (u8, u8),
     /// Which seat the recording was taken from.
     pub local_player: usize,
+    /// How many players the match had (more than two: seats 2.. ride in each row's second input's `extra`).
+    pub players: usize,
     /// The peer's cartridge, for the seat this backend does not own.
     pub peer_rom: crate::PeerRom,
     /// Collect per-round statistics as the pass runs. A host that only

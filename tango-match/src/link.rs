@@ -442,6 +442,8 @@ pub struct StartConfig<'a> {
     pub peer_rom: crate::PeerRom,
     /// Which console this peer drives.
     pub local_player: usize,
+    /// How many players the match has (2; up to 5 in a tangoAW2 room, whose peers share one console).
+    pub players: usize,
     /// How many ticks behind the frontier to present. Purely local.
     pub present_delay: u32,
     /// Silence battle BGM. Purely local presentation.

@@ -113,6 +113,10 @@ pub struct Input {
     pub joyflags: u16,
     pub touch: Option<(u8, u8)>,
     pub tick_advantage: i16,
+    /// A room of more than two players: the host's one input for everyone but the receiver is `others` words,
+    /// `joyflags` then these (0 for the ordinary input of one player).
+    pub extra: [u16; 3],
+    pub others: u8,
 }
 
 /// Shared per-match stream state: the outbound seq/redundancy window
@@ -217,11 +221,25 @@ impl InMatchTx {
 
     pub async fn send_input(&self, input: Input) -> std::io::Result<()> {
         self.send_frame_with(move |out| {
-            out.push_with_meta(
+            let mask = tango_net_protocol::data::KEYS_MASK;
+            let element = if input.others > 0 {
+                protocol::Element::Composite {
+                    words: [
+                        input.joyflags & mask,
+                        input.extra[0] & mask,
+                        input.extra[1] & mask,
+                        input.extra[2] & mask,
+                    ],
+                    count: input.others.min(4),
+                }
+            } else {
                 protocol::Element::Input {
-                    joyflags: input.joyflags & tango_net_protocol::data::KEYS_MASK,
+                    joyflags: input.joyflags & mask,
                     touch: input.touch,
-                },
+                }
+            };
+            out.push_with_meta(
+                element,
                 protocol::Meta {
                     tick_advantage: input.tick_advantage,
                 },
@@ -433,6 +451,17 @@ impl PvpReceiver {
                             joyflags,
                             touch,
                             tick_advantage: delivery.meta.tick_advantage,
+                            extra: [0; 3],
+                            others: 0,
+                        });
+                    }
+                    protocol::Element::Composite { words, count } => {
+                        self.pending.push_back(Input {
+                            joyflags: words[0],
+                            touch: None,
+                            tick_advantage: delivery.meta.tick_advantage,
+                            extra: [words[1], words[2], words[3]],
+                            others: count,
                         });
                     }
                     protocol::Element::EndOfMatch => {

@@ -75,12 +75,19 @@ pub struct Input {
     /// Stylus position on the touch screen in that screen's own pixels
     /// (the DS's fits a byte per axis), or `None` for a lifted stylus.
     pub touch: Option<(u8, u8)>,
+    /// A room of more than two players (schema 0x1F): on a tick's second input, the keys of seats 2..4 (never
+    /// written for a seat of its own: the stream carries them as extra pair records, see [`Writer`]).
+    pub extra: [u16; 3],
 }
 
 impl Input {
     /// An input with nothing but the joypad held.
     pub fn keys(keys: u16) -> Self {
-        Input { keys, touch: None }
+        Input {
+            keys,
+            touch: None,
+            extra: [0; 3],
+        }
     }
 }
 
@@ -126,32 +133,55 @@ fn read_u8_opt(r: &mut (impl std::io::Read + ?Sized)) -> std::io::Result<Option<
 /// still parses up to its last flushed tick.
 pub struct Writer<W: std::io::Write> {
     w: W,
-    /// What the repeat flags may refer to, per side.
-    state: [SideState; 2],
+    /// What the repeat flags may refer to, per side, for each pair record of a tick (one for two players; a room
+    /// of more has a pair record more for every two more).
+    state: Vec<[SideState; 2]>,
+}
+
+/// How many pair records a tick of `players` takes.
+pub fn pairs_per_tick(players: usize) -> usize {
+    players.max(2).div_ceil(2)
 }
 
 impl<W: std::io::Write> Writer<W> {
     /// Wrap `w`, which the embedder has already written its framing
     /// into; everything from here on is input records.
     pub fn new(w: W) -> Self {
+        Self::with_players(w, 2)
+    }
+
+    /// [`new`](Self::new) for a room of `players`: each tick is [`pairs_per_tick`] pair records, the second pair's
+    /// being seats 2 and 3, the third's seat 4.
+    pub fn with_players(w: W, players: usize) -> Self {
         Writer {
             w,
-            state: [SideState::default(); 2],
+            state: vec![[SideState::default(); 2]; pairs_per_tick(players)],
         }
     }
 
-    /// Append one confirmed tick's input pair.
+    /// Append one confirmed tick's inputs: the pair, and in a room the other seats in the second input's `extra`.
     pub fn push(&mut self, inputs: [Input; 2]) -> std::io::Result<()> {
+        self.push_pair(0, inputs)?;
+        for k in 1..self.state.len() {
+            let e = inputs[1].extra;
+            let a = Input::keys(e[2 * k - 2]);
+            let b = if 2 * k - 1 < 3 { Input::keys(e[2 * k - 1]) } else { Input::default() };
+            self.push_pair(k, [a, b])?;
+        }
+        Ok(())
+    }
+
+    fn push_pair(&mut self, pair: usize, inputs: [Input; 2]) -> std::io::Result<()> {
         let inputs = inputs.map(|input| Input {
             keys: input.keys & 0x1fff,
             touch: input.touch,
+            extra: [0; 3],
         });
-
         let mut tag = SENTINEL;
         // Tag + two sides of up to 4 bytes each.
         let mut record = [0u8; 9];
         let mut len = 1;
-        for (which, (input, state)) in inputs.iter().zip(self.state.iter_mut()).enumerate() {
+        for (which, (input, state)) in inputs.iter().zip(self.state[pair].iter_mut()).enumerate() {
             let (key_repeat, touch_down, touch_repeat) = [
                 (P0_KEY_REPEAT, P0_TOUCH_DOWN, P0_TOUCH_REPEAT),
                 (P1_KEY_REPEAT, P1_TOUCH_DOWN, P1_TOUCH_REPEAT),
@@ -201,20 +231,30 @@ impl Stream {
     /// `is_complete = false` (so a crashed recording still plays back
     /// everything that was flushed); any other I/O error propagates.
     pub fn read(r: impl std::io::Read) -> std::io::Result<Self> {
+        Self::read_players(r, 2)
+    }
+
+    /// [`read`](Self::read) for a room of `players` (see [`Writer::with_players`]): the other seats come back in
+    /// each row's second input's `extra`.
+    pub fn read_players(r: impl std::io::Read, players: usize) -> std::io::Result<Self> {
         let mut r = r;
-        let mut state = [SideState::default(); 2];
+        let pairs = pairs_per_tick(players);
+        let mut states = vec![[SideState::default(); 2]; pairs];
         let mut inputs: Vec<[Input; 2]> = Vec::new();
         let mut is_complete = false;
 
         'stream: loop {
+            let mut row = [Input::default(); 2];
+            for (k, state) in states.iter_mut().enumerate() {
             let tag = match read_u8(&mut r) {
                 Ok(tag) => tag,
-                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break 'stream,
                 Err(e) => return Err(e),
             };
             if tag == END_OF_STREAM {
-                is_complete = true;
-                break;
+                // (a sentinel inside a tick is a truncated tick)
+                is_complete = k == 0;
+                break 'stream;
             }
 
             let mut pair = [Input::default(); 2];
@@ -249,7 +289,16 @@ impl Stream {
                 };
                 state.advance(*input);
             }
-            inputs.push(pair);
+            if k == 0 {
+                row = pair;
+            } else {
+                row[1].extra[2 * k - 2] = pair[0].keys;
+                if 2 * k - 1 < 3 {
+                    row[1].extra[2 * k - 1] = pair[1].keys;
+                }
+            }
+            }
+            inputs.push(row);
         }
 
         Ok(Stream { inputs, is_complete })
@@ -268,6 +317,7 @@ mod tests {
         Input {
             keys: k,
             touch: Some((x, y)),
+            extra: [0; 3],
         }
     }
 

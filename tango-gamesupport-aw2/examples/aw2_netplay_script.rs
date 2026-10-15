@@ -128,6 +128,7 @@ fn main() {
                     revision: 0,
                 },
                 local_player,
+                players: 2,
                 present_delay: 2,
                 disable_bgm: false,
                 audio: None,

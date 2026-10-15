@@ -378,6 +378,7 @@ fn main() {
                         revision: 0,
                     },
                     local_player,
+                    players: 2,
                     // No presentation delay, so each peer shows the tick it
                     // simulated and can be compared with the offline run.
                     present_delay: 0,

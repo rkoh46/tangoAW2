@@ -66,6 +66,7 @@ impl EngineReplay {
                 rtc: replay.rtc_time(),
                 match_type: (replay.metadata.match_type as u8, replay.metadata.match_subtype as u8),
                 local_player,
+                players: 2,
                 peer_rom: tango_match::PeerRom {
                     code: *games[1 - local_player].rom_code,
                     revision: games[1 - local_player].revision,

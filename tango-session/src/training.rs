@@ -93,6 +93,7 @@ impl TrainingSession {
                 revision: game.revision,
             },
             local_player: 0,
+            players: 2,
             present_delay: 0,
             disable_bgm: false,
             audio: Some(audio_in),

@@ -995,8 +995,20 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if navigating(core) {
         return Some(0);
     }
-    if !crate::pvp::in_versus(core) || crate::pvp::in_battle(core) {
+    if !crate::pvp::in_versus(core) {
         return None;
+    }
+    if crate::pvp::in_battle(core) {
+        // The battle, every turn of it (the map, its menus, the CO page, the hand-off screens): only the army whose
+        // turn it is has the pad, and nobody else's keys are ORed in or let through at any moment. On the
+        // "Next turn" screen after End the incoming army's player has it.
+        let n = inputs.len().max(1);
+        let current = crate::pvp::current_army(core);
+        if !(1..=5).contains(&current) {
+            return Some(inputs[0]);
+        }
+        let army = if crate::pvp::turn_ended(core) { current % n as u8 + 1 } else { current };
+        return Some(inputs[crate::pvp::seat_of_n(army, n)]);
     }
     // Versus' Teams screen is not played: every player has a selector of their own (crate::online_teams).
     if crate::pvp::on_teams_screen(core) {
