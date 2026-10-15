@@ -107,6 +107,11 @@ pub const MATCH_PLAYERS: u8 = 2;
 
 /// A match subtype bit: the match was made in the in-game lobby (boot to Versus, host's screens).
 pub const ONLINE_MATCH: u8 = 0x01;
+/// A match subtype bit: the room was made by UNRANKED's pairing (crate::unranked).
+pub const UNRANKED_MATCH: u8 = 0x02;
+/// Bit 2 of an UNRANKED match's subtype: the guest's map proposal is played (the room's host draws it from the match
+/// seed). The same as `tango_net_protocol::control::UNRANKED_PICK_GUEST` (checked by the app).
+pub const UNRANKED_PICK_GUEST: u8 = 0x04;
 /// The room code's characters: every letter and digit. (The game's title font has only some letters, so the code is
 /// drawn from the text font, doubled and outlined, letters and digits alike.)
 pub const CODE_ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -169,6 +174,8 @@ pub mod mailbox {
         NotReady,
         /// The host starts the match (every player is ready).
         Start,
+        /// UNRANKED: look for an opponent.
+        Unranked,
     }
 
     /// The request numbered `serial`, if it is new (`seen` is the last serial the app has handled).
@@ -195,6 +202,7 @@ pub mod mailbox {
             4 => Request::Ready,
             5 => Request::NotReady,
             6 => Request::Start,
+            7 => Request::Unranked,
             _ => Request::Leave,
         };
         Some((serial, r))
@@ -450,7 +458,7 @@ fn request(core: &mut Core, kind: u8) {
     core.raw_write_8(REQUEST, -1, kind);
     let s = core.raw_read_8(SERIAL, -1).wrapping_add(1);
     core.raw_write_8(SERIAL, -1, s);
-    if kind <= 3 {
+    if kind <= 3 || kind == 7 {
         core.raw_write_8(STATUS, -1, 0);
         core.raw_write_range(MESSAGE, -1, &[0u8; MESSAGE_LEN as usize]);
         core.raw_write_range(PLAYERS, -1, &[0u8; (PLAYER_SIZE * MAX_PLAYERS as u32) as usize]);
@@ -547,7 +555,7 @@ fn back_from_typing(core: &mut Core) {
     if level(core) == 5 && core.raw_read_8(ENTRY, -1) == 1 {
         if core.raw_read_8(crate::online_browse::FROM, -1) == 1 {
             // (the password of a lobby picked from the list: back to the list)
-            set_level(core, 6);
+            set_level(core, 7);
             return;
         }
         core.raw_write_8(GRID, -1, 0);
@@ -594,7 +602,7 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
     }
     let Some(cursor) = crate::online_menu::cursor(core).filter(|_| crate::online_menu::active(core)) else {
         // Left the ONLINE screen: the lobby closes (a room made or joined is left).
-        if matches!(level(core), 2 | 4) {
+        if matches!(level(core), 2 | 4 | 6) {
             request(core, 3);
         }
         if level(core) != 0 {
@@ -608,7 +616,11 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
     match level {
         0 => {
             if pressed & (KEY_A | KEY_START) != 0 {
-                if cursor == 1 {
+                if cursor == 0 {
+                    // UNRANKED: look for an opponent.
+                    request(core, 7);
+                    set_level(core, 6);
+                } else if cursor == 1 {
                     set_level(core, 1);
                 } else {
                     core.raw_write_8(NOTICE, -1, 120);
@@ -630,7 +642,7 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                     1 => {
                         // JOIN: the public lobbies, with "Enter a code" first.
                         crate::online_browse::open(core);
-                        set_level(core, 6);
+                        set_level(core, 7);
                     }
                     _ => set_level(core, 0),
                 }
@@ -650,7 +662,7 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                 request(core, 3);
                 // (a lobby joined from the list: back to the list)
                 let back = level == 4 && core.raw_read_8(crate::online_browse::FROM, -1) == 1;
-                set_level(core, if back { 6 } else { 1 });
+                set_level(core, if back { 7 } else { 1 });
             } else if connected && !host && pressed & KEY_A != 0 {
                 request(core, if my_ready { 5 } else { 4 });
             } else if connected && host && others_ready && !my_ready && pressed & (KEY_START | KEY_A) != 0 {
@@ -663,6 +675,14 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             keys & !ALL_KEYS
         }
         6 => {
+            // (searching for an opponent: B stops)
+            if pressed & KEY_B != 0 {
+                request(core, 3);
+                set_level(core, 0);
+            }
+            keys & !ALL_KEYS
+        }
+        7 => {
             use crate::online_browse::Pick;
             match crate::online_browse::tick(core, pressed) {
                 Pick::Back => set_level(core, 1),
@@ -953,14 +973,16 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             if core.raw_read_8(MATCH, -1) == 0 {
                 core.raw_write_8(MATCH, -1, 1);
                 core.raw_write_8(OVER, -1, 0);
+                crate::unranked::init(core, sub);
                 start_nav(core, GOAL_VERSUS);
             }
             if let Some(k) = nav(core) {
                 return k;
             }
-            if crate::campaign_menu::on_select_mode(core) {
+            if crate::campaign_menu::on_select_mode(core) || crate::unranked::finished(core) {
                 core.raw_write_8(OVER, -1, 1);
             }
+            let unranked = crate::unranked::on(core);
             let n = core.raw_read_8(NOTICE, -1);
             if n > 0 {
                 core.raw_write_8(NOTICE, -1, n - 1);
@@ -971,7 +993,7 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             let mut keys = keys;
             // The list only lands on maps for as many armies as there are players: a move onto another map goes on
             // in the same direction (a press every few frames) until one fits.
-            if crate::survival_ui::idle(core) {
+            if crate::survival_ui::idle(core) && !unranked {
                 let want = crate::online_teams::players(core) as u8;
                 let wrong = map_armies(core, pack).is_some_and(|n| n != want);
                 let pressed = keys & !prev;
@@ -1030,6 +1052,11 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             } else {
                 core.raw_write_8(SKIP_DONE, -1, 0);
             }
+            if unranked {
+                // (UNRANKED: the chosen map is walked to and chosen, the standard rules are set)
+                keys = crate::unranked::drive(core, keys);
+                keys = crate::unranked::rules(core, keys);
+            }
             if keys & !prev & KEY_A != 0
                 && crate::survival_ui::idle(core)
                 && map_armies(core, pack).is_some_and(|n| n as usize != crate::online_teams::players(core))
@@ -1065,14 +1092,14 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
     }
 }
 
-const LIST_IDS: u32 = 0x0202_7F78;
+pub(crate) const LIST_IDS: u32 = 0x0202_7F78;
 
 /// SELECT MAP's list proc (the game's own: its cursor row is at +0x58) and where procs live.
 const LIST_PROC: u32 = 0x0861_6CF4;
 const PROCS: (u32, u32) = (0x0200_D610, 0x0200_E418);
 
 /// The row the cursor is on in SELECT MAP's list (an index into [`LIST_IDS`]).
-fn list_cursor(core: &Core) -> Option<u32> {
+pub(crate) fn list_cursor(core: &Core) -> Option<u32> {
     let p = (PROCS.0..PROCS.1)
         .step_by(0x6C)
         .find(|&p| core.raw_read_32(p, -1) == LIST_PROC)?;
@@ -1094,6 +1121,7 @@ fn map_armies(core: &Core, pack: bool) -> Option<u8> {
 /// The online match's notes over its console (presentation only): a map for another number of players.
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     crate::online_teams::draw(core, rgba);
+    crate::unranked::draw(core, rgba);
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {
         return;
     }
@@ -1115,6 +1143,7 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     if core.raw_read_8(MATCH, -1) != 1 {
         return;
     }
+    crate::unranked::tick(core, inputs);
     let battle = core.raw_read_8(BATTLE, -1) == 1;
     if crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
         if !battle {
@@ -1174,6 +1203,9 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     }
     if navigating(core) {
         return Some(0);
+    }
+    if let Some(keys) = crate::unranked::merge(core, inputs) {
+        return Some(keys);
     }
     // The whole battle phase (every turn, its menus, banners, hand-offs, animations, the moments between): only the
     // army whose turn it is has the pad (the incoming army's player on the "Next turn" screen), and nobody else's
@@ -1594,6 +1626,39 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 }
             }
         }
+        6 => {
+            let (x, y, w, h) = PANEL;
+            cv.window(x, y, w, h);
+            let status = Status::of(core.raw_read_8(STATUS, -1));
+            cv.text(core, x + 6, y + 5, "Unranked", GRAY_INK, SHADE);
+            let (lines, ink): (Vec<String>, Rgb) = match status {
+                Status::Connected => (
+                    vec!["Opponent found:".into(), message(core), "The match is starting!".into()],
+                    BLUE,
+                ),
+                Status::Failed => status_lines(core, false),
+                _ => (
+                    wrap(core, "Looking for an opponent...", w - 16)
+                        .into_iter()
+                        .chain(wrap(core, "Another player has to be looking too.", w - 16))
+                        .collect(),
+                    INK,
+                ),
+            };
+            for (k, l) in lines.iter().take(6).enumerate() {
+                let ink = if k > 0 && status != Status::Connected && status != Status::Failed { GRAY_INK } else { ink };
+                cv.text(core, x + (w - text_width(core, l)) / 2, y + 28 + 13 * k as i32, l, ink, SHADE);
+            }
+            bar(
+                &mut cv,
+                core,
+                match status {
+                    Status::Connected => "Starting...",
+                    Status::Failed => "B: Back",
+                    _ => "B: Cancel",
+                },
+            );
+        }
         3 | 5 => {
             let Some(font) = title_font(core) else { return };
             let (x, y, w, h) = PANEL;
@@ -1661,7 +1726,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 },
             );
         }
-        6 => crate::online_browse::apply(&mut cv, core),
+        7 => crate::online_browse::apply(&mut cv, core),
         _ => {}
     }
 }

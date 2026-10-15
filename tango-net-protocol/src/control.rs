@@ -101,6 +101,8 @@ pub enum RoomMsg {
     Loaded,
     /// Either: I am leaving.
     Leave,
+    /// UNRANKED, both players, first: the two the pool paired each say a random number; the lower one hosts.
+    Pool(u64),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -255,6 +257,10 @@ pub const SHARED_CONTENT: u8 = 0x80;
 /// The lobby ignores it when it compares match types, and the match terms
 /// drop it.
 pub const ROOM_HOST: u8 = 0x40;
+
+/// Bit 2 of an UNRANKED match's subtype (tangoAW2): the match's map is the guest's proposal (clear: the host's).
+/// The host draws it from the match seed when it starts the match, so both peers and the replay have the same.
+pub const UNRANKED_PICK_GUEST: u8 = 0x04;
 
 /// The local player's seat when [`ROOM_HOST`] decides it: `Some(0)` for the
 /// room's host, `Some(1)` for its guest, `None` when it does not (neither

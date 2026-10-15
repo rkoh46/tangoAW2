@@ -26,6 +26,8 @@
 //! players have it (the Black Crystal and Black Obelisk maps then show).
 //!
 //! `AW2_ONLINE=1` plays a match made in the in-game lobby (booted to Versus' SELECT MAP, the host's menus).
+//! `AW2_UNRANKED=host|guest` plays an UNRANKED one (implies AW2_ONLINE): both players propose a 2-army map, the host's
+//! or the guest's (the value) is played, then CO and colour, the standard rules, the battle.
 //!
 //! `AW2_TIMELINE=<file>` writes the resolved script: one line per tick with
 //! both seats' keys (hex), and `# shot TICK NAME` lines, for replaying the
@@ -108,11 +110,14 @@ fn main() {
     // have imported the Dual Strike art (`ds_art::SHARED_ART`).
     let shared_art = std::env::var_os("AW2_SHARED_ART").is_some();
     // `AW2_ONLINE=1`: a match made in the in-game lobby (it boots to Versus' SELECT MAP; crate::online).
-    let online = std::env::var("AW2_ONLINE").is_ok_and(|v| v == "1");
+    let unranked = std::env::var("AW2_UNRANKED").ok();
+    let online = std::env::var("AW2_ONLINE").is_ok_and(|v| v == "1") || unranked.is_some();
     let match_type = (
         0u8,
         if shared_art { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 }
-            | if online { tango_gamesupport_aw2::online::ONLINE_MATCH } else { 0 },
+            | if online { tango_gamesupport_aw2::online::ONLINE_MATCH } else { 0 }
+            | if unranked.is_some() { tango_gamesupport_aw2::online::UNRANKED_MATCH } else { 0 }
+            | if unranked.as_deref() == Some("guest") { tango_gamesupport_aw2::online::UNRANKED_PICK_GUEST } else { 0 },
     );
 
     // `AW2_TILT=1`: the Dual Strike tilt on the console's own size (needs the pack: TANGOAW2_DS_ROM).

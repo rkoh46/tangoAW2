@@ -1,4 +1,4 @@
-//! The lobby browser (level 6 of the in-game lobby, [`crate::online`]): JOIN lists the public lobbies, drawn in the
+//! The lobby browser (level 7 of the in-game lobby, [`crate::online`]): JOIN lists the public lobbies, drawn in the
 //! lobby's own window and bar. The first line is "Enter a code" (the code page of old); the others are the lobbies
 //! the app found on the public relays (`tango_lobby::browse`), each with its host's gamertag, a padlock when it has
 //! a password and how many of its seats are taken. UP and DOWN pick, A joins (a locked one asks for its password on
@@ -167,7 +167,7 @@ pub fn open(core: &mut Core) {
     core.raw_write_8(crate::online::TYPED_LEN, -1, 0);
 }
 
-/// Every frame at level 6: moves the cursor, A and B. Returns what the game should do next.
+/// Every frame at level 7: moves the cursor, A and B. Returns what the game should do next.
 pub fn tick(core: &mut Core, pressed: u32) -> Pick {
     let rows = rows(core);
     let items = rows.len() + 1;

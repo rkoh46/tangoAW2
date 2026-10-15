@@ -4192,7 +4192,7 @@ tests). Online play starts in the game, played alone:
   title font at `0x081CC038`: A C D E G H I K L M N O P R S T U W Y, star,
   B) becomes ONLINE / LOBBY at the sprite flush (two sprites added). Help
   lines: text ids 0xCBE..0xCC0. A and START never reach the game there (its
-  link modes never start); UNRANKED and STATS say "Coming soon!".
+  link modes never start); UNRANKED looks for an opponent (below), STATS says "Coming soon!".
 - **The lobby's pages** are drawn over the screen as a presentation overlay
   (`online::apply`) from EWRAM `0x0203CA00..0x0203CAFF`: CREATE asks for an
   optional password (up to four letters), then shows the room's code (the
@@ -4236,10 +4236,26 @@ tests). Online play starts in the game, played alone:
   complete on the same tick and the replay is finished. The app then boots
   the game again (`mailbox::boot_to_lobby`: the same walk, to the LOBBY
   menu) and says how it ended.
-- **Later (planned).** UNRANKED: random matching (each proposes a 2P map,
-  one drawn from the match seed; fixed rules), the same Teams screen for CO
-  and a colour no other army has. Rooms of up to five. STATS: the player's
-  own online record.
+- **UNRANKED** (`unranked.rs`; app `tango/src/app/online.rs`, `tango_lobby::room::Room::unranked`). A on UNRANKED
+  (lobby level 6, request 7) makes the app dial the public matchmaking server under the pool's session id
+  `tangoaw2-unranked-v1-s<sim version>` (no server of our own: the server pairs the first two clients with the same
+  id; players on other simulations never meet). The two paired each send `RoomMsg::Pool(random u64)`; the lower
+  number hosts, the other sends `Join` and both run the room's protocol over that one link as a room of two (the
+  guest READY at once, the host starting as soon as the guest is in; the host's save is the match's). B cancels,
+  five minutes without a pairing, or a server that cannot be reached, says so. The match subtype is
+  `ONLINE_MATCH | UNRANKED_MATCH (0x02)`, plus `UNRANKED_PICK_GUEST (0x04)` when the host's draw from the match seed
+  (`seed[0] & 1`) picks the guest's proposal: the console reads both from its subtype (`unranked::init` copies them
+  to EWRAM `0x0203D100..`), so both peers and the replay have them. On the console: SELECT MAP's list is not played;
+  each player moves a selector over the 2-army maps of the Classic, Vs. Maps and Pre-Deployed tabs (LEFT/RIGHT,
+  UP/DOWN six at a time, A confirms, B takes back; both proposals and gamertags shown live); with both confirmed the
+  drawn seat's map is walked to in the list (pressed for the players) and chosen; then the room's Teams page (CO and
+  a colour no other army has; no tag pairs); the Rules screen's rows are written with the standard rules
+  (`unranked::RULES`: fog off, weather clear, funds 1000 per property, no turn limit, no capture limit, CO powers on,
+  Dual Strike's Skills off, no visuals) and A is pressed. After the battle the results take both players' buttons and
+  the match ends back at SELECT MAP (`match_over`); the app logs `unranked: the match ended (...)` (the hook for
+  stats; nothing is recorded). Harness: `AW2_UNRANKED=host|guest` in `aw2_netplay_script` (the value says whose
+  proposal is played).
+- **Later (planned).** STATS: the player's own online record. Rooms of up to five are built.
 
 ## Saves
 

@@ -8,7 +8,7 @@ pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_c
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online_browse::{Net as BrowseNet, Row as BrowseRow};
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, MAX_PLAYERS, ONLINE_MATCH, YOU};
+pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, MAX_PLAYERS, ONLINE_MATCH, UNRANKED_MATCH, UNRANKED_PICK_GUEST, YOU};
 
 /// The match type a room made in the in-game lobby is played as.
 #[cfg(feature = "gamesupport-aw2")]
