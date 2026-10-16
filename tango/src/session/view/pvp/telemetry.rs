@@ -597,11 +597,13 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
                 .width(Length::Fixed(8.0))
                 .height(Length::Fixed(8.0)),
         )
-        .style(move |_: &iced::Theme| iced::widget::container::Style {
+        .style(move |theme: &iced::Theme| iced::widget::container::Style {
             background: Some(iced::Background::Color(accent)),
+            // (a hairline outline: Black Hole's near-black dot must show on a dark bar and a light one)
             border: iced::Border {
                 radius: 999.0.into(),
-                ..Default::default()
+                width: 1.0,
+                color: Color { a: 0.55, ..theme.palette().text },
             },
             ..Default::default()
         });
@@ -624,9 +626,9 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
         for k in 0..n.clamp(2, 5) {
             let c = colors[k];
             r = r.push(container(iced::widget::Space::new().width(Length::Fixed(8.0)).height(Length::Fixed(8.0))).style(
-                move |_: &iced::Theme| iced::widget::container::Style {
+                move |theme: &iced::Theme| iced::widget::container::Style {
                     background: Some(iced::Background::Color(c)),
-                    border: iced::Border { radius: 999.0.into(), ..Default::default() },
+                    border: iced::Border { radius: 999.0.into(), width: 1.0, color: Color { a: 0.55, ..theme.palette().text } },
                     ..Default::default()
                 },
             ));
@@ -751,7 +753,7 @@ fn legend_names_in(names: &[String], me: usize, you: &str, full: &[String], budg
             })
             .collect()
     };
-    for m in [10, 8, 6, 4] {
+    for m in [10, 9, 8, 7, 6, 5, 4] {
         let texts = cut_to(m);
         if width(&texts) <= budget {
             return (texts, true);
@@ -937,6 +939,21 @@ mod legend_tests {
             let w = 12.0 * 4.0 + shown.iter().map(|t| legend_entry_width_in(t.chars().count(), 0.0)).sum::<f32>();
             assert!(w <= room, "{teams} teams: {w} > {room}: {shown:?}");
         }
+    }
+
+    /// At a 1100 px window (the bar is the window less 40) five players with 8-letter gamertags keep them whole, and
+    /// 10-letter ones lose at most two letters.
+    #[test]
+    fn five_players_at_1100_keep_eight_letters() {
+        let budget = 1100.0 - 24.0 - 16.0 - BAR_MIN;
+        let nm = names(5, 8);
+        let (shown, _) = legend_names(&nm, 1, "You", &full(&nm, 1), budget);
+        for (k, t) in shown.iter().enumerate() {
+            assert!(k == 1 || !t.contains('…'), "{shown:?}");
+        }
+        let nm = names(5, 10);
+        let (shown, _) = legend_names(&nm, 1, "You", &full(&nm, 1), budget);
+        println!("1100 px, 10-letter: {shown:?}");
     }
 
     #[test]

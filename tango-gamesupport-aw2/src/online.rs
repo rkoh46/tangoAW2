@@ -2112,7 +2112,7 @@ pub(crate) fn fit(core: &Core, s: &str, width: i32) -> String {
 
 /// RESUME: the matches cut short, one under the cursor (UP and DOWN, A resumes it, START deletes it).
 fn saved_page(cv: &mut Rgba, core: &Core) {
-    let (x, y, w, h) = (6, 22, W as i32 - 12, 118);
+    let (x, y, w, h) = (6, 28, W as i32 - 12, 114);
     cv.window(x, y, w, h);
     let n = (core.raw_read_8(SAVED, -1) as usize).min(SAVED_MAX);
     cv.text(core, x + 6, y + 4, "Matches cut short", GRAY_INK, SHADE);
@@ -2132,11 +2132,11 @@ fn saved_page(cv: &mut Rgba, core: &Core) {
     let first = cur.saturating_sub(3).min(n.saturating_sub(4));
     for (row, k) in (first..n.min(first + 4)).enumerate() {
         let (players, map, tail) = saved_row(core, k);
-        let ry = y + 16 + 25 * row as i32;
+        let ry = y + 15 + 24 * row as i32;
         if k == cur {
-            cv.rect(x + 3, ry - 1, w - 6, 24, YELLOW);
+            cv.rect(x + 3, ry - 1, w - 6, 23, YELLOW);
         } else {
-            cv.rect(x + 4, ry + 23, w - 8, 1, LIGHT_GRAY);
+            cv.rect(x + 4, ry + 22, w - 8, 1, LIGHT_GRAY);
         }
         cv.text(core, x + 7, ry, &fit(core, &players, w - 14), INK, SHADE);
         // (the day and date stay whole at the right; a long map name gives way to them)

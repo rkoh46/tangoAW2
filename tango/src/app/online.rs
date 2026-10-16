@@ -75,7 +75,7 @@ fn row_of(m: &tango_match::SuspendedMatch) -> mailbox::SavedRow {
     mailbox::SavedRow {
         players: m.players.join(", "),
         map: info.map,
-        tail: format!("Day {}  {}", info.day, crate::suspended::date(m.saved_at)),
+        tail: format!("Day {} {}", info.day.min(99), crate::suspended::date(m.saved_at)),
     }
 }
 

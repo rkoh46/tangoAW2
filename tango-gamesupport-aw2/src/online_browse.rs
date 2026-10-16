@@ -272,7 +272,8 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
     let version: String = v.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect();
     cv.text(core, x + 6, y + 5, "Lobbies", GRAY_INK, SHADE);
     if !version.is_empty() {
-        let t = format!("v{version}");
+        // (a pre-release suffix is left off: "v0.10.12", never cut)
+        let t = format!("v{}", version.split('-').next().unwrap_or(&version));
         cv.text(core, x + w - 6 - text_width(core, &t), y + 5, &t, GRAY_INK, SHADE);
     }
     let line = 12;
@@ -308,15 +309,18 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
     }
     // More above or below.
     if top > 0 {
-        cv.rect(x + w - 12, y + 7, 5, 1, GRAY_INK);
-        cv.rect(x + w - 11, y + 6, 3, 1, GRAY_INK);
-        cv.rect(x + w - 10, y + 5, 1, 1, GRAY_INK);
+        // (mid-title, clear of the version at the right)
+        let ax = x + w / 2 - 6;
+        cv.rect(ax, y + 7, 5, 1, GRAY_INK);
+        cv.rect(ax + 1, y + 6, 3, 1, GRAY_INK);
+        cv.rect(ax + 2, y + 5, 1, 1, GRAY_INK);
     }
     if top + VISIBLE < items {
-        let by = y + h - 6;
-        cv.rect(x + w - 12, by, 5, 1, GRAY_INK);
-        cv.rect(x + w - 11, by + 1, 3, 1, GRAY_INK);
-        cv.rect(x + w - 10, by + 2, 1, 1, GRAY_INK);
+        // (in the title line too, beside the up arrow: the last row owns the panel's foot)
+        let ax = x + w / 2 + 4;
+        cv.rect(ax, y + 5, 5, 1, GRAY_INK);
+        cv.rect(ax + 1, y + 6, 3, 1, GRAY_INK);
+        cv.rect(ax + 2, y + 7, 1, 1, GRAY_INK);
     }
     // Only the list itself is empty (the first line is always there): say so under it.
     if rows.is_empty() {
