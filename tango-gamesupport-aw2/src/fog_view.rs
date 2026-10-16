@@ -32,7 +32,7 @@ const CURRENT_PLAYER: u32 = 0x0300_33EC;
 /// The army whose picture `seat` gets: its first army still playing after the current one in turn order, else any.
 fn viewer_army(core: &Core, seat: usize) -> Option<u8> {
     let current = crate::pvp::current_army(core) as usize;
-    let armies = core.raw_read_8(0x0201_7C58, -1) as usize;
+    let armies = crate::five::armies(core) as usize;
     let alive = |a: usize| a <= armies;
     (1..=5).map(|k| (current + k - 1) % 5 + 1).find(|&a| alive(a) && crate::pvp::seat_of_n(a as u8, crate::online::room_players()) == seat).map(|a| a as u8)
 }
@@ -304,6 +304,9 @@ pub fn call_program(scratch: Scratch, calls: &[(u32, i32, i32)]) -> Result<(), &
 /// map (a battle scene, a full-screen page): the caller keeps the last picture.
 pub fn view(scratch: Scratch, seat: usize) -> bool {
     let r = view_inner(scratch, seat);
+    if let (Err(e), true) = (&r, std::env::var_os("AW2_VIEW_DEBUG").is_some()) {
+        eprintln!("view seat {seat}: {e} (phase {:?})", phase(scratch.core()));
+    }
     r.is_ok()
 }
 

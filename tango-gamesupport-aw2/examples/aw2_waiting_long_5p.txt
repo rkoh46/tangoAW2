@@ -1,0 +1,40 @@
+# 5 seats, Fog on: the mover opens the CO page as soon as the battle takes input and stays 60 s (3600 ticks). Run: AW2_SAMPLE=20 aw2_room_teams <rom> <out> this-file; exits 1 when a waiting seat's picture is black for over 20 ticks while the console's is not.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+wait 240
+phase page
+press 0 A
+wait 20
+press 0 A
+wait 200
+fv
+wait 3400
+fv
+shotall hold

@@ -46,7 +46,6 @@ const PLAYER_STRIDE: u32 = 0x3C;
 /// A block's controller (0 none, 1 human, 2 computer) and its defeated flag.
 const CONTROLLER: u32 = 0x1B;
 const DEFEATED: u32 = 0x14;
-const ARMIES: u32 = 0x0201_7C58;
 
 /// Ticks of the DEFEAT screen kept (its soldier, the text dropping in, then still), every second one.
 const TICKS: usize = 150;
@@ -80,7 +79,7 @@ fn alive(core: &Core, army: u8) -> bool {
 
 /// The army the game's VICTORY! is for: the first one still alive.
 pub fn winner(core: &Core) -> Option<u8> {
-    let armies = (core.raw_read_8(ARMIES, -1) as u8).clamp(2, 5);
+    let armies = crate::five::armies(core).clamp(2, 5);
     (1..=armies).find(|&a| alive(core, a))
 }
 
@@ -184,7 +183,7 @@ fn make(scratch: &mut dyn tango_backend_mgba::Scratch, army: u8) -> Result<Frame
 pub fn view(scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) -> bool {
     let now = scratch.core().frame_counter();
     let players = crate::online::room_players();
-    let armies = (scratch.core().raw_read_8(ARMIES, -1) as u8).clamp(2, 5);
+    let armies = crate::five::armies(scratch.core()).clamp(2, 5);
     let army = army_of(seat, armies, players);
     let known = STATE
         .lock()

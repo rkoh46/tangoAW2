@@ -236,6 +236,15 @@ pub fn players(core: &Core) -> u32 {
 /// a rollback does not restore) are switched from it every frame.
 const FIVE_ON: u32 = 0x0203_0206;
 
+/// How many armies the battle has: the game's count, which a five-army map keeps elsewhere (the usual place reads 0 there).
+pub fn armies(core: &Core) -> u8 {
+    if active(core) {
+        core.raw_read_8(ARMIES_ON_MAP, -1)
+    } else {
+        core.raw_read_8(0x0201_7C58, -1)
+    }
+}
+
 pub fn active(core: &Core) -> bool {
     let map = core.raw_read_8(MAP_SELECTED, -1);
     let on = core.raw_read_8(FIVE_ON, -1);
