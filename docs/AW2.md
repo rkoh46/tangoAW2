@@ -42,6 +42,43 @@ and costs about 2 ms (up to 7 with a menu to close and a second refresh). `view_
   stay where the window last had them (the army's HQ at first; kept in the link, not in the console).
 - Off the plain map loop (a battle scene, the full-screen CO page) the seat's last picture stays up.
 
+## The match's end: VICTORY! for the winner, DEFEAT for everybody else (`tango-gamesupport-aw2/src/result_view.rs`)
+
+The game draws one result for the whole console. AW2's match-end proc (script `0x0849D56C`, started by
+`0x08037F80`) runs `0x08037FD0`: it looks at the armies and starts DEFEAT (`0x08037FB4`: the battle map under the
+word DEFEAT, dropping in and settling) only when no human army is left alive, and otherwise VICTORY!
+(`0x08037F94`: proc script `0x08615CB0`, the tank photo, the winning CO's quote in a child proc, then the WIN!/LOSE
+page `0x08615FB4`, then the save prompt). Every army of a room is a human's, so the console always shows VICTORY!, and
+it did so in the window of the player who yielded.
+
+Nothing in the simulation changes (the console plays the winner's screens for everybody). A seat that did not win
+has its window made on a scratch copy of the console, like the waiting player's:
+
+- `winner(core)`: the first army still alive (controller byte `+0x1B` non-zero and defeated word `+0x14` zero in its
+  player block); the winner's seat is `seat_of_n(army, room_players())`. Every other seat is a loser, the ones
+  eliminated earlier in a room of three to five included.
+- `victory_showing(core)`: the VICTORY! proc (`0x08615CB0`..`0x08615E08`: the banner and the quote) is up and the fade
+  to the WIN!/LOSE page (script `0x08615E08`) has not started. `PvpGame::watching` is true for a loser then, and
+  `view_as` goes to `result_view::view`. The WIN!/LOSE page (the winner's face and WIN! above, "LOSE" and the other
+  army's face below, the map name and days) is the console's own for everybody.
+- The scratch console needs the state before VICTORY! covered the map. `SharedGame::keep_for_view` (read after every
+  tick; `marked(core)`: the VICTORY! proc is waiting at `0x08615CC8`, its first wait) has the link keep a snapshot of
+  the console on the tick that turns it true (`SharedLink::kept`, host-side, never in the simulation), and
+  `Scratch::load_kept` loads it into the scratch console. There `result_view::make` starts the game's own DEFEAT proc
+  as a child of the match-end proc (the same two clearing calls and `0x08049F08(army, parent)` that `0x08037FB4`
+  makes, army = the seat's first army) and ends the VICTORY! proc (`EndProc`, `0x0801C9EC`), as one program of calls
+  on the emulated CPU (`fog_view::call_program`: the fog view's call mechanism with a list of its own), and runs 150
+  ticks, keeping every second picture (`Scratch::frame`). That is made once per army (about 150 ms) and kept in
+  statics (presentation only); the window plays the pictures from the console frame (`Core::frame_counter`, the same
+  on both peers) at which it first showed DEFEAT and holds the settled one (the text has stopped bouncing by tick
+  ~140; the game fades it out after ~150). `pvp::overlay` puts the picture on the window (`result_view::serve`),
+  because the scratch console itself has run past the frame wanted.
+- The loser hears the console's sound (the winner's fanfare); the winner's quote is not shown to a loser (DEFEAT
+  stays up through it).
+- Harness: `tools/aw2test/turn_lock`-style scripts with `AW2_ONLINE=1`; a yield is the map menu (A on an empty tile),
+  Options, Yield, LEFT, A (see `tools/aw2test/yield/`). Both peers' pictures are the same and the simulations stay
+  identical (`all identical: true`).
+
 ## Advance Wars 2 rules (`tango-gamesupport-aw2/src/pvp.rs`)
 
 USA cartridge `AW2E`, CRC32 `5AD0E571`, 64 KiB Flash save.

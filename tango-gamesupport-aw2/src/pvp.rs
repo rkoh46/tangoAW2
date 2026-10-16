@@ -501,6 +501,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::ds_coselect::apply(core, rgba);
         crate::online::apply(core, rgba);
         crate::online::apply_match(core, rgba);
+        crate::result_view::serve(_seat, rgba);
     }
 
     /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
@@ -586,6 +587,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
 
     /// The waiting seat's window is not the console's picture (crate::fog_view).
     fn watching(&self, core: &Core, seat: usize) -> bool {
+        // (the match is won and this seat is not the winner: its window shows DEFEAT, crate::result_view)
+        if crate::result_view::watching(core, seat) {
+            return true;
+        }
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
         if !(in_battle(core) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat) {
             return false;
@@ -599,6 +604,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         }
     }
 
+    fn keep_for_view(&self, core: &Core) -> bool {
+        crate::result_view::marked(core)
+    }
+
     fn scratch_stash(&self) -> Box<dyn std::any::Any> {
         Box::new(crate::ds_hud::stash())
     }
@@ -610,6 +619,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     }
 
     fn view_as(&self, scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) -> bool {
+        if crate::result_view::loser(scratch.core(), seat) {
+            return crate::result_view::view(scratch, seat);
+        }
         crate::fog_view::view(scratch, seat)
     }
 

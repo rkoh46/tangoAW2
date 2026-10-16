@@ -176,6 +176,31 @@ fn refresh(scratch: Scratch, settle: usize) -> Result<(), &'static str> {
     run(scratch, &vec![0; settle])
 }
 
+/// A program of calls for the scratch console to run instead of the fog refresh's own list (the result screens'
+/// view, crate::result_view): the game function, then r0 and r1. Host-side and presentation only (the scratch console
+/// runs it and is dropped); empty when none is asked for.
+static PROGRAM: std::sync::Mutex<Vec<(u32, i32, i32)>> = std::sync::Mutex::new(Vec::new());
+/// In a program, r0 as the current army (what the fog refresh's own list passes where it takes one).
+pub const ARMY: i32 = i32::MIN;
+
+/// The `n`th call of the list being run: the function and what goes in r0 and r1 (`None`: as they are).
+fn step(n: usize) -> Option<(u32, Option<i32>, Option<i32>)> {
+    let prog = PROGRAM.lock().unwrap();
+    if !prog.is_empty() {
+        return prog.get(n).map(|&(f, r0, r1)| (f, Some(r0), Some(r1)));
+    }
+    CALLS.get(n).map(|&(f, army_arg)| (f, army_arg.then_some(ARMY), None))
+}
+
+/// Runs `calls` (function, r0, r1) on the scratch console at its next sprite flush, one after the other, and waits
+/// for the last to return (a few frames at most).
+pub fn call_program(scratch: Scratch, calls: &[(u32, i32, i32)]) -> Result<(), &'static str> {
+    *PROGRAM.lock().unwrap() = calls.to_vec();
+    let r = refresh(scratch, 0);
+    PROGRAM.lock().unwrap().clear();
+    r
+}
+
 /// The waiting seat's picture, on the scratch console: B closes whatever the mover has open (build, command and map
 /// menus, a selected unit's range, an attack ring, info panels: it never sees them); with fog the game is told that
 /// the waiting army is the current one and refreshes the map for it (the vision of its own units, the mover's units
@@ -302,7 +327,15 @@ pub fn at_flush(core: &mut Core) {
     saved[52..56].copy_from_slice(&(cpu.gpr(14) as u32).to_le_bytes());
     saved[56..60].copy_from_slice(&cpu.thumb_pc().to_le_bytes());
     cpu.set_gpr(14, (RETURN | 1) as i32);
-    cpu.set_thumb_pc(CALLS[0].0);
+    let first = step(0).map_or(CALLS[0].0, |(f, r0, r1)| {
+        for (r, v) in [(0, r0), (1, r1)] {
+            if let Some(v) = v {
+                cpu.set_gpr(r, v);
+            }
+        }
+        f
+    });
+    cpu.set_thumb_pc(first);
     core.raw_write_range(CALL + 4, -1, &saved);
     core.raw_write_8(CALL, -1, 2);
     core.raw_write_8(CALL + 1, -1, 1);
@@ -314,17 +347,21 @@ pub fn returned(core: &mut Core) {
         return;
     }
     let next = core.raw_read_8(CALL + 1, -1) as usize;
-    if let Some(&(f, army_arg)) = CALLS.get(next) {
+    if let Some((f, r0, r1)) = step(next) {
         core.raw_write_8(CALL + 1, -1, next as u8 + 1);
         let army = core.raw_read_8(CURRENT_PLAYER, -1) as i32;
         let cpu = core.gba_mut().cpu_mut();
-        if army_arg {
-            cpu.set_gpr(0, army);
+        if let Some(v) = r0 {
+            cpu.set_gpr(0, if v == ARMY { army } else { v });
+        }
+        if let Some(v) = r1 {
+            cpu.set_gpr(1, v);
         }
         cpu.set_gpr(14, (RETURN | 1) as i32);
         cpu.set_thumb_pc(f);
         return;
     }
+    PROGRAM.lock().unwrap().clear();
     let mut saved = [0u8; CALL_LEN as usize - 4];
     core.raw_read_range(CALL + 4, -1, &mut saved);
     let word = |i: usize| u32::from_le_bytes(saved[4 * i..4 * i + 4].try_into().unwrap());

@@ -36,6 +36,11 @@ pub trait Scratch {
     /// Four words of the game's own that live as long as the link, per seat (not in the console: they are only ever
     /// read by [`view_as`](SharedGame::view_as), so the simulation cannot see them).
     fn memory(&mut self) -> &mut [i32; 4];
+    /// The picture the scratch console shows now (RGBA8, 240x160), as the host would take it after the tick.
+    fn frame(&self) -> Option<Vec<u8>>;
+    /// Loads the console the game asked to keep ([`SharedGame::keep_for_view`]) into the scratch console; false when
+    /// there is none. The caller's own snapshot is loaded back afterwards, as always.
+    fn load_kept(&mut self) -> bool;
 }
 
 struct ScratchConsole<'a> {
@@ -43,6 +48,7 @@ struct ScratchConsole<'a> {
     game: &'static (dyn SharedGame + Send + Sync),
     mode: Option<(u8, u8)>,
     memory: &'a mut [i32; 4],
+    kept: Option<&'a mgba_rollback::Snapshot>,
 }
 
 impl Scratch for ScratchConsole<'_> {
@@ -58,6 +64,12 @@ impl Scratch for ScratchConsole<'_> {
     }
     fn memory(&mut self) -> &mut [i32; 4] {
         self.memory
+    }
+    fn frame(&self) -> Option<Vec<u8>> {
+        self.link.video_buffer(0).map(to_rgba)
+    }
+    fn load_kept(&mut self) -> bool {
+        self.kept.is_some_and(|snap| self.link.load(snap).is_ok())
     }
 }
 
@@ -102,6 +114,14 @@ pub trait SharedGame: Sync {
     /// its cursor, and with fog of war its vision. Presentation only, read after the tick.
     fn watching(&self, core: &mgba::core::Core, seat: usize) -> bool {
         let _ = (core, seat);
+        false
+    }
+
+    /// Read after every tick: true while the console's state is one the game wants kept for presentation
+    /// ([`Scratch::load_kept`]); the state is kept on the tick this turns true. For the moment before a screen that
+    /// only some seats are to see as it is. A pure read of the console, like everything the simulation depends on.
+    fn keep_for_view(&self, core: &mgba::core::Core) -> bool {
+        let _ = core;
         false
     }
 
@@ -236,6 +256,9 @@ pub struct SharedLink {
     watched: [Option<Vec<u8>>; tango_match::MAX_SEATS],
     watched_at: [Option<u32>; tango_match::MAX_SEATS],
     view_memory: [[i32; 4]; tango_match::MAX_SEATS],
+    /// The console as [`SharedGame::keep_for_view`] last asked to keep it.
+    kept: Option<mgba_rollback::Snapshot>,
+    keep_was: bool,
 }
 
 impl SharedLink {
@@ -286,6 +309,8 @@ impl SharedLink {
             watched: Default::default(),
             watched_at: Default::default(),
             view_memory: Default::default(),
+            kept: None,
+            keep_was: false,
         })
     }
 
@@ -329,6 +354,8 @@ impl SharedLink {
             watched: Default::default(),
             watched_at: Default::default(),
             view_memory: Default::default(),
+            kept: None,
+            keep_was: false,
         })
     }
 
@@ -413,7 +440,7 @@ impl SharedLink {
         self.inner.set_frameskip(0, 0);
         let mut frame = None;
         {
-            let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat] };
+            let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat], kept: self.kept.as_ref() };
             if game.view_as(&mut scratch, seat) {
                 frame = scratch.link.video_buffer(0).map(to_rgba);
                 if let Some(f) = frame.as_mut() {
@@ -469,6 +496,12 @@ impl tango_match::Link for SharedLink {
         let word = self.game.merge(self.inner.core(0), &keys) & JOYFLAGS_MASK;
         let word = self.game.before_tick(self.inner.core_mut(0), self.mode, word) & JOYFLAGS_MASK;
         self.inner.tick(&[word]);
+        // (kept on the tick it turns true, not on every tick it stays so)
+        let keep = self.game.keep_for_view(self.inner.core(0));
+        if keep && !self.keep_was {
+            self.kept = self.inner.save().ok();
+        }
+        self.keep_was = keep;
         if let Some(telemetry) = self.telemetry.as_mut() {
             // (one console: the second poller only keeps the pair's shape)
             let obs = telemetry.poll(0, self.inner.core_mut(0));
@@ -491,6 +524,7 @@ impl tango_match::Link for SharedLink {
             .expect("a shared link can only restore its own snapshots");
         self.inner.load(&snapshot.snap).map_err(crate::Error::from)?;
         self.tick = snapshot.tick;
+        self.keep_was = false;
         if let Some(telemetry) = self.telemetry.as_mut() {
             // (a snapshot's tick is a count: observations from it on are revoked)
             telemetry.on_rewind(snapshot.tick.saturating_sub(1));

@@ -1,0 +1,102 @@
+# The host ends its turn; the guest (seat 1, army 2) yields on its turn. The host wins. run.sh checks the windows.
+seat 0
+wait 400
+press A 6
+wait 300
+shot teams
+press A 6
+wait 20
+press A 6
+wait 20
+press A 6
+wait 20
+seat 1
+press A 6
+wait 20
+press A 6
+wait 20
+press A 6
+wait 20
+wait 300
+shot rules
+seat 0
+press A 6
+wait 700
+shot b0
+wait 300
+shot b1
+press A 6
+wait 40
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press A 6
+wait 120
+shot e0
+seat 1
+press A 6
+wait 400
+shot e1
+goto 12 5
+shot e2
+press A 6
+wait 60
+shot e3
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+press A 6
+wait 40
+press DOWN 6
+wait 10
+press A 6
+wait 200
+press LEFT 6
+wait 20
+shot y0
+press A 6
+wait 40
+shot z01
+wait 40
+shot z02
+wait 40
+shot z03
+wait 40
+shot z04
+wait 40
+shot z05
+wait 40
+shot z06
+wait 40
+shot z07
+wait 40
+shot z08
+wait 40
+shot z09
+wait 40
+shot z10
+wait 40
+shot z11
+wait 40
+shot z12
+seat 0
+press A 6
+wait 30
+shot w0
+wait 50
+shot w1
+press A 6
+wait 10
+shot w2
+wait 30
+shot w3
+wait 60
+shot w4
+wait 100
+shot w5
