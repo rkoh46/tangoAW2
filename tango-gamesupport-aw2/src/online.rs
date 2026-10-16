@@ -1519,6 +1519,7 @@ impl Rgba<'_> {
     }
     /// A window as the game's: white, red above, blue below, a light edge at the sides.
     pub(crate) fn window(&mut self, x: i32, y: i32, w: i32, h: i32) {
+        audit::window(x, y, w, h);
         self.rect(x - 1, y - 1, w + 2, h + 2, INK);
         self.rect(x, y, w, h, WHITE);
         self.rect(x + 1, y + 2, 1, h - 4, LIGHT_GRAY);
@@ -1528,6 +1529,9 @@ impl Rgba<'_> {
     }
     /// AW2's proportional font; returns the x after the text.
     pub(crate) fn text(&mut self, core: &Core, x: i32, y: i32, s: &str, ink: Rgb, shade: Rgb) -> i32 {
+        if audit::on() {
+            audit::text(x, y, text_width(core, s), s);
+        }
         let mut x = x;
         for c in s.bytes() {
             if c.is_ascii_digit() {
@@ -1562,7 +1566,82 @@ impl Rgba<'_> {
     }
 }
 
-pub(crate) fn text_width(core: &Core, s: &str) -> i32 {
+/// A record of what a page draws, for the text audit (`examples/aw2_online_text_audit.rs`): every string with
+/// its extent and every window, so a string that leaves the window it starts in (or the screen) is found.
+/// Off (one atomic load a string) unless the audit turns it on.
+pub mod audit {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
+
+    static ON: AtomicBool = AtomicBool::new(false);
+    static LOG: Mutex<(Vec<(i32, i32, i32, i32)>, Vec<(i32, i32, i32, String)>)> = Mutex::new((Vec::new(), Vec::new()));
+
+    /// A box drawn over what is under it: the strings that start in it are hidden.
+    pub(crate) fn cover(x: i32, y: i32, w: i32, h: i32) {
+        if ON.load(Ordering::Relaxed) {
+            LOG.lock().unwrap().1.retain(|&(tx, ty, _, _)| !(tx >= x && tx < x + w && ty >= y && ty < y + h));
+        }
+    }
+
+    pub(crate) fn on() -> bool {
+        ON.load(Ordering::Relaxed)
+    }
+
+    pub(crate) fn window(x: i32, y: i32, w: i32, h: i32) {
+        if ON.load(Ordering::Relaxed) {
+            LOG.lock().unwrap().0.push((x, y, w, h));
+        }
+    }
+
+    pub(crate) fn text(x: i32, y: i32, w: i32, s: &str) {
+        if ON.load(Ordering::Relaxed) {
+            LOG.lock().unwrap().1.push((x, y, w, s.to_string()));
+        }
+    }
+
+    /// Starts recording (and forgets what was).
+    pub fn start() {
+        *LOG.lock().unwrap() = (Vec::new(), Vec::new());
+        ON.store(true, Ordering::Relaxed);
+    }
+
+    /// Stops recording; the problems found in the picture drawn since [`start`]: a string whose extent leaves the
+    /// innermost window it starts in (2 px of the window's edge are its frame), or the screen (2 px margin).
+    pub fn finish() -> Vec<String> {
+        ON.store(false, Ordering::Relaxed);
+        let (wins, texts) = std::mem::take(&mut *LOG.lock().unwrap());
+        let mut bad = Vec::new();
+        let texts_kept: Vec<_> = texts.iter().filter(|t| !t.3.trim().is_empty()).cloned().collect();
+        for (x, y, w, s) in texts {
+            if s.trim().is_empty() {
+                continue;
+            }
+            let end = x + w;
+            if x < 0 || end > 240 - 2 {
+                bad.push(format!("off the screen: {s:?} x {x}..{end}"));
+                continue;
+            }
+            // (the innermost window: the last drawn that holds the string's start)
+            if let Some(&(wx, wy, ww, wh)) = wins.iter().rev().find(|&&(wx, wy, ww, wh)| x >= wx && x < wx + ww && y >= wy && y < wy + wh) {
+                if end > wx + ww - 2 {
+                    bad.push(format!("leaves its window: {s:?} x {x}..{end}, window {wx}..{}", wx + ww));
+                }
+            }
+        }
+        // (two strings on one line that run into each other)
+        let ts: Vec<&(i32, i32, i32, String)> = texts_kept.iter().collect();
+        for (i, a) in ts.iter().enumerate() {
+            for b in &ts[i + 1..] {
+                if (a.1 - b.1).abs() < 9 && a.0 < b.0 + b.2 && b.0 < a.0 + a.2 {
+                    bad.push(format!("overlap: {:?} x {}..{} and {:?} x {}..{} (y {}/{})", a.3, a.0, a.0 + a.2, b.3, b.0, b.0 + b.2, a.1, b.1));
+                }
+            }
+        }
+        bad
+    }
+}
+
+pub fn text_width(core: &Core, s: &str) -> i32 {
     s.bytes()
         .map(|c| if c.is_ascii_digit() { DIGIT_W as i32 + 1 } else { core.raw_read_8(FONT_WIDTHS + c as u32, -1) as i32 + 1 })
         .sum::<i32>()
@@ -1712,7 +1791,7 @@ pub(crate) fn bar(cv: &mut Rgba, core: &Core, s: &str) {
 }
 
 /// Lines of at most `width` pixels.
-fn wrap(core: &Core, s: &str, width: i32) -> Vec<String> {
+pub(crate) fn wrap(core: &Core, s: &str, width: i32) -> Vec<String> {
     let mut lines = Vec::new();
     let mut line = String::new();
     for w in s.split_whitespace() {
@@ -1812,7 +1891,7 @@ fn saved_row(core: &Core, k: usize) -> (String, String, String) {
 }
 
 /// `s` cut with ".." to fit `width` pixels.
-fn fit(core: &Core, s: &str, width: i32) -> String {
+pub(crate) fn fit(core: &Core, s: &str, width: i32) -> String {
     if text_width(core, s) <= width {
         return s.to_string();
     }
@@ -1994,6 +2073,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             bar(&mut cv, core, &hint);
             if status == Status::Failed {
                 let (lines, ink) = status_lines(core, hosting);
+                audit::cover(x + 3, y + 45, w - 6, 56);
                 cv.rect(x + 3, y + 45, w - 6, 56, WHITE);
                 for (k, l) in lines.iter().take(4).enumerate() {
                     cv.text(

@@ -90,6 +90,20 @@ pub fn init(core: &mut Core, subtype: u8) {
     }
 }
 
+/// Test aid (the text audit): both seats' proposals (indexes of the candidates) and whether they are confirmed.
+pub fn set_proposals(core: &mut Core, cursors: [u8; 2], ok: [bool; 2], phase: u8, pick: u8) {
+    core.raw_write_8(PHASE, -1, phase);
+    core.raw_write_8(PICK, -1, pick);
+    for s in 0..2 {
+        core.raw_write_8(seat(s) + S_CURSOR, -1, cursors[s]);
+        core.raw_write_8(seat(s) + S_OK, -1, ok[s] as u8);
+    }
+}
+
+pub fn candidates_len(core: &Core) -> usize {
+    n_candidates(core)
+}
+
 pub fn on(core: &Core) -> bool {
     core.raw_read_8(FLAG, -1) == 1
 }
@@ -111,7 +125,7 @@ fn n_candidates(core: &Core) -> usize {
 }
 
 /// The 2-army maps on the offered tabs, in id order, from the map table the game reads now.
-fn list_candidates(core: &mut Core) {
+pub fn list_candidates(core: &mut Core) {
     let table = crate::five_map::table(core);
     let mut n = 0;
     for id in 1..crate::five_map::MAP_IDS {
@@ -391,10 +405,15 @@ pub fn finished(core: &Core) -> bool {
 // --- Drawing (presentation only) ---------------------------------------------------------------------------
 
 pub fn draw(core: &Core, rgba: &mut [u8]) {
-    use crate::online::*;
-    if rgba.len() != W * H * 4 || !on(core) || phase(core) > 2 || !crate::survival_ui::selecting(core) {
+    if rgba.len() != crate::online::W * crate::online::H * 4 || !on(core) || phase(core) > 2 || !crate::survival_ui::selecting(core) {
         return;
     }
+    paint(core, rgba);
+}
+
+/// The proposals page (see [`draw`]; the text audit paints it without the game being on SELECT MAP).
+pub fn paint(core: &Core, rgba: &mut [u8]) {
+    use crate::online::*;
     let n = n_candidates(core);
     let mut canvas = Rgba(rgba);
     let cv = &mut canvas;
