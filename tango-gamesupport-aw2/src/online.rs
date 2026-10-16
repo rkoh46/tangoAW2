@@ -1351,6 +1351,13 @@ fn map_armies(core: &Core, pack: bool) -> Option<u8> {
 
 /// The online match's notes over its console (presentation only): a map for another number of players.
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
+    // The walk to SELECT MAP presses the game's own menus (Select Mode, Versus): the players see none of it.
+    if rgba.len() == W * H * 4 && core.raw_read_8(MATCH, -1) == 1 && navigating(core) {
+        for px in rgba.chunks_exact_mut(4) {
+            px.copy_from_slice(&[0, 0, 0, 255]);
+        }
+        return;
+    }
     crate::online_teams::draw(core, rgba);
     crate::unranked::draw(core, rgba);
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {

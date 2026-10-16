@@ -26,7 +26,15 @@ pub(super) struct PrimingCopy {
 }
 
 pub(super) fn priming_copy(lang: &LanguageIdentifier, state: &State) -> Option<PrimingCopy> {
-    let (title, detail) = match state.prime_wait()? {
+    // Test aid: `TANGOAW2_PRIMING_DEBUG=match|peer|replay|failed` holds that notice over any session (screenshots).
+    let debug = std::env::var("TANGOAW2_PRIMING_DEBUG").ok().and_then(|v| match v.as_str() {
+        "match" => Some(Priming::Match),
+        "peer" => Some(Priming::Peer),
+        "replay" => Some(Priming::Playback),
+        "failed" => Some(Priming::Failed("The game never reached its battle.".to_string())),
+        _ => None,
+    });
+    let (title, detail) = match debug.or_else(|| state.prime_wait())? {
         Priming::Match => (
             t!(lang, "playback-priming-match"),
             t!(lang, "playback-priming-match-detail"),
@@ -85,7 +93,7 @@ pub(super) fn priming_notice<'a>(copy: &PrimingCopy, w: f32, h: f32) -> Element<
     let failed = copy.dismiss.is_some();
     let pulse = crate::ui::anim::pulse();
     let title = text(copy.title.clone())
-        .size(TEXT_BODY)
+        .size(crate::ui::style::TEXT_TITLE)
         .align_x(iced::alignment::Horizontal::Center)
         .style(move |theme: &iced::Theme| iced::widget::text::Style {
             color: Some(if failed {
@@ -93,26 +101,26 @@ pub(super) fn priming_notice<'a>(copy: &PrimingCopy, w: f32, h: f32) -> Element<
             } else {
                 // (on a black screen: light text, breathing between grey and white)
                 let _ = theme;
-                let v = 0.72 + 0.28 * pulse;
+                let v = 0.88 + 0.12 * pulse;
                 iced::Color::from_rgb(v, v, v)
             }),
         });
     let mut copy_col = column![title].spacing(6).align_x(Alignment::Center);
     copy_col = copy_col.push(
         text(copy.detail.clone())
-            .size(TEXT_CAPTION)
+            .size(TEXT_BODY)
             .align_x(iced::alignment::Horizontal::Center)
             .style(|_: &iced::Theme| iced::widget::text::Style {
-                color: Some(iced::Color::from_rgb(0.85, 0.85, 0.85)),
+                color: Some(iced::Color::WHITE),
             }),
     );
     if let Some(clock) = copy.clock.as_ref() {
         copy_col = copy_col.push(
             text(clock.clone())
-                .size(TEXT_CAPTION)
+                .size(TEXT_BODY)
                 .align_x(iced::alignment::Horizontal::Center)
                 .style(|_: &iced::Theme| iced::widget::text::Style {
-                    color: Some(iced::Color::from_rgb(0.7, 0.7, 0.7)),
+                    color: Some(iced::Color::from_rgb(0.85, 0.85, 0.85)),
                 }),
         );
     }
@@ -129,6 +137,11 @@ pub(super) fn priming_notice<'a>(copy: &PrimingCopy, w: f32, h: f32) -> Element<
     // its edges — a GBA frame at 1× is only 240 px wide, and the text
     // has to live within whatever the pane gave us.
     container(copy_col)
+        .style(move |_: &iced::Theme| iced::widget::container::Style {
+            // Opaque black: nothing of the game's last picture shows through the words.
+            background: Some(iced::Background::Color(iced::Color::BLACK)),
+            ..Default::default()
+        })
         .width(Length::Fixed(w))
         .height(Length::Fixed(h))
         .padding(12)
