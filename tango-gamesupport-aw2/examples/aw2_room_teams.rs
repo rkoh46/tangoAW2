@@ -110,6 +110,8 @@ fn main() {
     // (AW2_LEAK_CHECK=1: every tick, no watching seat may show the console's picture)
     let leak_check = std::env::var_os("AW2_LEAK_CHECK").is_some();
     let leaks: std::cell::RefCell<Vec<(usize, usize, String)>> = Default::default();
+    let power_ticks = std::cell::Cell::new((0usize, 0usize));
+    let power_ticks_nofog = std::cell::Cell::new(0usize);
     let vram_last: std::cell::RefCell<(Vec<u8>, Vec<u8>)> = Default::default();
     // (watch BASE TOL: every tick, until unwatch, the waiting seats' pictures are compared with the BASE shotall's)
     let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
@@ -138,7 +140,43 @@ fn main() {
                 up
             };
             let army = link.core().raw_read_8(0x0300_33EC, -1);
-            for seat in 0..n {
+            // (a CO Power with fog: the cut-in frames are the console's for everybody, every other frame of the scene is a seat's
+            // own map, never the console's)
+            let (scene, cutin) = (tango_gamesupport_aw2::fog_view::power_scene(link.core()), tango_gamesupport_aw2::fog_view::power_cutin(link.core()));
+            if scene && link.core().raw_read_8(0x0300_3FCD, -1) == 0 {
+                // (without fog the scene is the console's for everybody)
+                power_ticks_nofog.set(power_ticks_nofog.get() + 1);
+                for seat in 0..n {
+                    if tango_gamesupport_aw2::pvp::seat_of_n(army, n) == seat {
+                        continue;
+                    }
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    let f = link.side(seat).frame().unwrap_or_default();
+                    let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
+                    if diff > 3000 {
+                        leaks.borrow_mut().push((t, seat, format!("power scene (no fog) not the console's ({diff} px)")));
+                    }
+                }
+            }
+            let skip_generic = scene && link.core().raw_read_8(0x0300_3FCD, -1) != 0;
+            if skip_generic {
+                power_ticks.set((power_ticks.get().0 + 1, power_ticks.get().1 + cutin as usize));
+                for seat in 0..n {
+                    if tango_gamesupport_aw2::pvp::seat_of_n(army, n) == seat {
+                        continue;
+                    }
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    let f = link.side(seat).frame().unwrap_or_default();
+                    let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
+                    if cutin && diff > 3000 {
+                        leaks.borrow_mut().push((t, seat, format!("power cut-in not shown ({diff} px)")));
+                    }
+                    if !cutin && !dark && diff <= 300 {
+                        leaks.borrow_mut().push((t, seat, "power scene frame is the mover's map".to_string()));
+                    }
+                }
+            }
+            for seat in (0..n).filter(|_| !skip_generic) {
                 let mover = (1..=5).contains(&army) && tango_gamesupport_aw2::pvp::seat_of_n(army, n) == seat;
                 if cursor_up && !mover && !dark {
                     tango_gamesupport_aw2::online::set_room(names.clone(), seat);
@@ -588,6 +626,14 @@ fn main() {
     }
     if leak_check {
         let l = leaks.borrow();
+        if power_ticks_nofog.get() > 0 {
+            println!("power scene without fog: {} ticks", power_ticks_nofog.get());
+        }
+        let (pt, pc) = power_ticks.get();
+        if pt > 0 {
+            println!("power scene: {pt} ticks, {pc} of them the full cut-in");
+            failed |= pc == 0;
+        }
         println!("leak check: {} ticks where a watching seat showed the console's picture{}", l.len(), l.first().map_or(String::new(), |(t, s, _)| format!(" (first tick {t} seat {s})")));
         let mut by: std::collections::BTreeMap<String, (usize, usize, usize)> = Default::default();
         for (t, _, ph) in l.iter() {

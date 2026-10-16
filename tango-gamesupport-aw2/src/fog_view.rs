@@ -403,9 +403,30 @@ pub fn mover_cursor_up(core: &Core) -> bool {
     })
 }
 
+/// A CO Power chosen from the map menu is playing out (its lines over the map, the full-screen cut-in, the fades).
+pub fn power_scene(core: &Core) -> bool {
+    if core.raw_read_32(MAIN_LOOP, -1) != MAP_LOOP || crate::pvp::chosen_item(core) != Some(crate::pvp::MENU_POWER) {
+        return false;
+    }
+    let running = procs(core);
+    !running.iter().any(|f| *f == 0x0801_9D0D || *f == 0x0801_9DED) && !(running.is_empty() && steady_regs(core))
+}
+
+/// The power's full-screen cut-in is fully up (the CO's portrait, the red bands, the name of the power): BG 0 on its own, the
+/// fade to and from the mover's map over (BLDALPHA 16 : 0), so there is no map in the picture.
+pub fn power_cutin(core: &Core) -> bool {
+    let io = |o: u32| core.raw_read_16(0x0400_0000 + o, -1);
+    power_scene(core) && io(0) & 0x1F00 == 0x1F00 && io(0x50) == 0x1E41 && io(0x52) == 0x0010 && io(0x54) == 0
+}
+
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     if phase(scratch.core()) == Phase::Scene {
         return scene_view(scratch, seat);
+    }
+    if scratch.core().raw_read_8(FOG, -1) != 0 && power_cutin(scratch.core()) {
+        // The mover's CO Power: every seat sees the cut-in (it has no map in it), not the lines or the fades over the mover's map.
+        scratch.show_console();
+        return Ok(());
     }
     if phase(scratch.core()) == Phase::Busy && scratch.core().raw_read_8(FOG, -1) == 0 {
         // Without fog the game's animations are shown as they are, but not with the mover's cursor, info panel and so on
