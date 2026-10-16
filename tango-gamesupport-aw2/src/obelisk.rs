@@ -322,18 +322,26 @@ pub fn north_swap(core: &mut Core, start: u32, end: u32) {
     };
     // The picture's three groups of tiles that are the font's too (its fourth, at 914, is no font's).
     let groups = [(NORTH_OBJ_TILES[0], 0usize, 16usize), (NORTH_OBJ_TILES[1], 16, 8), (NORTH_OBJ_TILES[2], 24, 8)];
-    let mut wanted = false;
+    let mut cannon = false;
+    let mut letters = false;
     let mut s = start;
     while s < end {
         let (a0, a1, a2) = (core.raw_read_16(s, -1), core.raw_read_16(s + 2, -1), core.raw_read_16(s + 4, -1));
         let tile = (a2 & 0x3FF) as u32;
-        // (a sprite of more than one tile on the cannon's tiles; the font's are 8x8)
-        if a0 & 0x300 != 0x200 && (a0 >> 14 != 0 || a1 >> 14 != 0) && groups.iter().any(|g| g.0 == tile) {
-            wanted = true;
-            break;
+        if a0 & 0x300 != 0x200 {
+            if a0 >> 14 != 0 || a1 >> 14 != 0 {
+                // (a sprite of more than one tile on the cannon's tiles; the font's are 8x8)
+                cannon |= groups.iter().any(|g| g.0 == tile);
+            } else {
+                letters |= (NORTH_OBJ_TILES[0]..NORTH_OBJ_TILES[1] + 16).contains(&tile) || (NORTH_OBJ_TILES[2]..NORTH_OBJ_TILES[2] + 8).contains(&tile);
+            }
         }
         s += 8;
     }
+    // (Letters on the frame win: the Next turn screen keeps the map's sprites in the list, a Black Cannon facing north among
+    // them in the screen's hidden palette, and the picture over the font garbled its text, the Orange Star banner's as the
+    // turn passed from the last army to the first.)
+    let wanted = cannon && !letters;
     let ours = &a.cannon_north[..32 * 32];
     let mut now = vec![0u8; 32 * 32];
     for &(tile, from, n) in &groups {

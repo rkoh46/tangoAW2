@@ -1,0 +1,156 @@
+# Next turn hand-off pictures for the five armies (run with and without TANGOAW2_DS_ROM + AW2_SHARED_ART=1): the NEXT TURN row of every hand-off must be the same pixels, so a font overwritten by a loader (the Black Cannon facing north in the font tiles) fails it. Dumps ho1..ho5 per seat in the out dir.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 300
+phase turn0
+until army=1 60
+wait 400
+fv
+notconsole 1,2,3,4
+consoleis 0
+press 0 B
+wait 20
+press 0 A
+wait 80
+notconsole 1,2,3,4
+consoleis 0
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+until turnended 30
+wait 40
+shotall ho1
+press 1 A
+wait 100
+phase turn1
+until army=2 60
+wait 400
+fv
+notconsole 0,2,3,4
+consoleis 1
+press 1 B
+wait 20
+press 1 A
+wait 80
+notconsole 0,2,3,4
+consoleis 1
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+until turnended 30
+wait 40
+shotall ho2
+press 2 A
+wait 100
+phase turn2
+until army=3 60
+wait 400
+fv
+notconsole 0,1,3,4
+consoleis 2
+press 2 B
+wait 20
+press 2 A
+wait 80
+notconsole 0,1,3,4
+consoleis 2
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 A
+until turnended 30
+wait 40
+shotall ho3
+press 3 A
+wait 100
+phase turn3
+until army=4 60
+wait 400
+fv
+notconsole 0,1,2,4
+consoleis 3
+press 3 B
+wait 20
+press 3 A
+wait 80
+notconsole 0,1,2,4
+consoleis 3
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 A
+until turnended 30
+wait 40
+shotall ho4
+press 4 A
+wait 100
+phase turn4
+until army=5 60
+wait 400
+fv
+notconsole 0,1,2,3
+consoleis 4
+press 4 B
+wait 20
+press 4 A
+wait 80
+notconsole 0,1,2,3
+consoleis 4
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 A
+until turnended 30
+wait 40
+shotall ho5
+press 0 A
+wait 100
+region ho1 ho5 all 80 45 170 75 0
+region ho2 ho5 all 80 45 170 75 0
+region ho3 ho5 all 80 45 170 75 0
+region ho4 ho5 all 80 45 170 75 0

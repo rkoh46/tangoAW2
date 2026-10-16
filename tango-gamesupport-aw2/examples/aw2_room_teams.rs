@@ -107,6 +107,7 @@ fn main() {
     let native = std::cell::Cell::new(0usize);
     let phase = std::cell::RefCell::new(String::from("start"));
     let merge_last = std::cell::RefCell::new(String::new());
+    let vram_last: std::cell::RefCell<(Vec<u8>, Vec<u8>)> = Default::default();
     // (watch BASE TOL: every tick, until unwatch, the waiting seats' pictures are compared with the BASE shotall's)
     let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
     let tick = |link: &mut tango_backend_mgba::SharedLink, keys: &[u32]| {
@@ -139,6 +140,25 @@ fn main() {
                 let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c).iter().map(|f| format!("{:x}", f & 0xFFFFFF)).collect();
                 let io = |o: u32| c.raw_read_16(0x0400_0000 + o, -1);
                 println!("trace t{t} army {} mm {}/{} keys {:03x} loop {:08x} phase {:?} disp {:04x} win {:04x}/{:04x} bld {:04x}/{:04x}/{:02x} mos {:04x} procs [{}]", c.raw_read_8(0x0300_33EC, -1), c.raw_read_8(0x0300_14E2, -1), c.raw_read_8(0x0300_14F0, -1), keys.iter().fold(0, |a, b| a | b), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), io(0), io(0x48), io(0x4A), io(0x50), io(0x52), io(0x54), io(0x4C), procs.join(" "));
+            }
+        }
+        // AW2_VRAMDIFF=A-B: every tick in A..B, the VRAM tiles (32 bytes) and palette entries that changed since the tick before
+        if let Some((a, b)) = std::env::var("AW2_VRAMDIFF").ok().and_then(|v| v.split_once('-').map(|(a, b)| (a.parse::<usize>().unwrap(), b.parse::<usize>().unwrap()))) {
+            if (a..b).contains(&t) {
+                let mut now = vec![0u8; 0x18000];
+                link.peek(0x0600_0000, &mut now);
+                let mut pal = vec![0u8; 0x400];
+                link.peek(0x0500_0000, &mut pal);
+                let mut last = vram_last.borrow_mut();
+                if !last.0.is_empty() {
+                    let ch: Vec<String> = (0..0x18000 / 32).filter(|i| now[i * 32..i * 32 + 32] != last.0[i * 32..i * 32 + 32]).map(|i| format!("{:x}", i)).collect();
+                    let pc: Vec<String> = (0..0x200).filter(|i| pal[i * 2..i * 2 + 2] != last.1[i * 2..i * 2 + 2]).map(|i| format!("{:x}", i)).collect();
+                    if !ch.is_empty() || !pc.is_empty() {
+                        let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(link.core()).iter().map(|f| format!("{:x}", f & 0xFFFFFF)).collect();
+                        println!("vram t{t} loop {:08x} procs [{}] tiles({}) {} pal {}", link.core().raw_read_32(0x0300_0000, -1), procs.join(" "), ch.len(), ch.iter().take(40).cloned().collect::<Vec<_>>().join(","), pc.join(","));
+                    }
+                }
+                *last = (now, pal);
             }
         }
         if let Some((label, base, tol, bad, count)) = watch.borrow_mut().as_mut() {
@@ -292,6 +312,22 @@ fn main() {
                     failed |= !bad.is_empty();
                 }
             }
+            // region NAME1 NAME2 SEATS(comma list or all) X0 Y0 X1 Y1 [TOL]: the seats' pictures of two shotall/shot names are identical
+            // within the pixel box (240x160 screen); like `same` for a part of the picture (a banner's text row between armies)
+            "region" => {
+                let seats: Vec<usize> = if p[3] == "all" { (0..n).collect() } else { p[3].split(',').map(|v| v.parse().unwrap()).collect() };
+                let b: Vec<usize> = p[4..8].iter().map(|v| v.parse().unwrap()).collect();
+                let tol: usize = p.get(8).map_or(20, |v| v.parse().unwrap());
+                for seat in seats {
+                    let (a, c) = (shots.get(&format!("{}_s{seat}", p[1])), shots.get(&format!("{}_s{seat}", p[2])));
+                    let diff = match (a, c) {
+                        (Some(a), Some(c)) => (b[1]..b[3]).flat_map(|y| (b[0]..b[2]).map(move |x| y * 240 + x)).filter(|&i| a[i * 4..i * 4 + 4] != c[i * 4..i * 4 + 4]).count(),
+                        _ => usize::MAX,
+                    };
+                    println!("region {} {} seat {seat}: {} differing pixels {}", p[1], p[2], diff, if diff <= tol { "ok" } else { "FAIL" });
+                    failed |= diff > tol;
+                }
+            }
             // consoleis SEAT: SEAT's window shows the console's own picture (the mover's: its cursor, its menus), exit 1 otherwise
             // notconsole SEATS: none of those seats' windows shows it (waiting seats: never the mover's cursor, menus or ranges)
             "consoleis" | "notconsole" => {
@@ -437,6 +473,14 @@ fn main() {
                         }
                     }
                 }
+            }
+            // vram NAME: the console's VRAM, palette and OAM to NAME.vram (for diffing two runs)
+            "vram" => {
+                let mut v = vec![0u8; 0x18000 + 0x400 + 0x400];
+                link.peek(0x0600_0000, &mut v[..0x18000]);
+                link.peek(0x0500_0000, &mut v[0x18000..0x18400]);
+                link.peek(0x0700_0000, &mut v[0x18400..]);
+                std::fs::write(out.join(format!("{}.vram", p[1])), v).unwrap();
             }
             "hash" => {
                 let w = rd(&mut link, 0x0200_0000, 0x40000);
