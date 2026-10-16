@@ -311,7 +311,20 @@ struct HostAgg {
     rows: std::collections::VecDeque<(Vec<u16>, i16)>,
     /// The host's own inputs, one a tick, and its time-sync lead then.
     own: std::collections::VecDeque<(tango_match::HostInput, i16)>,
+    /// Which guests have sent a first input (the host's first tick waits for them all: [`START_WAIT_TICKS`]).
+    heard: Vec<bool>,
+    /// The host has begun to advance.
+    started: bool,
+    /// Idle ticks spent waiting for the guests' first inputs.
+    waited: u32,
 }
+
+/// A room's host holds its first tick until every guest has sent its first input, at most this many idle ticks
+/// (3 s). The guests begin ticking a little after the host does (a few hundred ms, more with more guests: each
+/// one primes and hears the others on its own), and a host that starts first runs that many ticks ahead of them
+/// for good, until the clock sync has shaved its rate (a room's host ran at 56 fps on SELECT MAP for its first
+/// seconds). Starting when the guests' inputs are in, the host is where it should be: a trip behind them.
+const START_WAIT_TICKS: u32 = 180;
 
 impl HostAgg {
     fn new(players: usize, host_seat: usize) -> Self {
@@ -324,6 +337,9 @@ impl HostAgg {
             queues: vec![Default::default(); guests],
             rows: Default::default(),
             own: Default::default(),
+            heard: vec![false; guests],
+            started: false,
+            waited: 0,
         }
     }
 
@@ -333,6 +349,7 @@ impl HostAgg {
             return Vec::new();
         }
         self.queues[link].push_back(input);
+        self.heard[link] = true;
         let mut done = Vec::new();
         while self.queues.iter().all(|q| !q.is_empty()) {
             let row: Vec<tango_net::data::Input> = self.queues.iter_mut().map(|q| q.pop_front().unwrap()).collect();
@@ -440,6 +457,18 @@ impl PvpDriver {
             self.ctx.end.remote_disconnected.store(true, Ordering::Release);
             self.ctx.cancel.cancel();
             return false;
+        }
+
+        // A room's host starts once every guest has begun (see [`START_WAIT_TICKS`]).
+        if let Some(agg) = self.agg.as_mut() {
+            if !agg.started {
+                if agg.heard.iter().all(|&h| h) || agg.waited >= START_WAIT_TICKS {
+                    agg.started = true;
+                } else {
+                    agg.waited += 1;
+                    return true;
+                }
+            }
         }
 
         // Stall guard: the peer is too far behind (or gone) — advancing
@@ -640,6 +669,15 @@ impl PvpDriver {
         // delay.
         let slowdown = self.throttler.step(skew, self.match_.speculation_balance());
         let target = self.expected_fps - slowdown;
+        // Test aid (`TANGOAW2_PACE_LOG=1`): the clock sync's inputs and result every 120 ticks.
+        if self.confirmed_through % 120 == 0 && std::env::var("TANGOAW2_PACE_LOG").is_ok_and(|v| v == "1") {
+            log::info!(
+                "pace: tick {} skew {skew} balance {} slowdown {slowdown:.2} fps target {target:.2} depth {}",
+                self.confirmed_through,
+                self.match_.speculation_balance(),
+                self.match_.last_rollback_depth()
+            );
+        }
         self.ctx.metrics.fps_target.store(target.to_bits(), Ordering::Relaxed);
 
         true
