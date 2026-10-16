@@ -598,6 +598,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         }
     }
 
+    fn plain_map(&self, core: &Core) -> bool {
+        crate::fog_view::plain_map(core)
+    }
+
     fn keep_for_view(&self, core: &Core) -> bool {
         crate::result_view::marked(core)
     }
