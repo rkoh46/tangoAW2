@@ -1,0 +1,38 @@
+# 4 seats, Fog off: the mover opens Intel and stays 60 s. Run: AW2_SAMPLE=20 aw2_room_teams <rom> <out> this-file (exit 1 on a black waiting picture).
+n 4
+until maparmies=4 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+wait 300
+poke 03003FCD 00
+phase page
+press 0 A
+wait 20
+press 0 DOWN
+press 0 A
+wait 200
+fv
+wait 3400
+fv
+shotall hold

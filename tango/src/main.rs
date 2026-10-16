@@ -219,6 +219,7 @@ fn run_app() -> iced::Result {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     #[cfg(target_os = "ios")]
     platform::ios::init_logging();
+    log::info!("tangoAW2 {} build {}", env!("CARGO_PKG_VERSION"), env!("TANGOAW2_BUILD"));
 
     // Catch native crashes (segfaults, SEH violations, Mach
     // EXC_BAD_ACCESS) from mgba / datachannel / wgpu C code. Connect to

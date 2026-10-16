@@ -622,7 +622,10 @@ impl SharedSide<'_> {
             let game = self.link.game;
             (0..self.link.players.max(2)).any(|s| s != self.player && game.watching(core, s))
         };
-        if self.conceal && mover {
+        // (only the seat's own picture, a clean one: a waiting seat that had none to show must not keep the console's, the
+        // mover's, which may be a wipe or black, as the picture it holds for the rest of the turn)
+        let own = !self.link.game.watching(self.link.inner.core(0), self.player);
+        if self.conceal && mover && own && !dark(&frame) {
             self.link.watched[self.player] = Some(frame.clone());
             self.link.watched_at[self.player] = None;
         }
