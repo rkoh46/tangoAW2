@@ -434,7 +434,14 @@ fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i
     }
     let (px, pal, _) = &f[&co];
     // Sturm's mug is mostly armour: at this size only the cap, visor and eyes read, so those are what is shown.
-    let (x0, y0, span) = if co == crate::sturm_pairs::STURM { (6usize, 0usize, 36i32) } else { (0, 0, 48) };
+    let (x0, y0, span) = if co == crate::sturm_pairs::STURM {
+        (6usize, 0usize, 36i32)
+    } else if crate::tag::ds_id(co) == Some(crate::ds_coselect::VON_BOLT_DS) {
+        // Von Bolt: the old man in his machine's dome, without the strip above and the floor below.
+        (0, 10, 36)
+    } else {
+        (0, 0, 48)
+    };
     for yy in 0..sz {
         for xx in 0..sz {
             let (sx, sy) = (x0 + (xx * span / sz) as usize, y0 + (yy * span / sz) as usize);

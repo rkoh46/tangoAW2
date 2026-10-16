@@ -248,6 +248,7 @@ fn ring_background(tiles: &[u8], map: &[u8], pal: &[u16; 16]) -> Vec<u8> {
 // --- A CO's pictures ------------------------------------------------------------------------------------
 
 /// A CO's 48 x 48 mug (36 tiles in rows of six) and its colours.
+#[derive(Clone)]
 pub struct Mug {
     pub tiles: Vec<u8>,
     pub pal: [u16; 16],
@@ -351,8 +352,17 @@ fn mug(core: &Core, co: u8) -> Option<Arc<Mug>> {
 
 /// A CO's mug as the real CO screens draw it (Dual Strike's for the COs it has, the game's own for the rest), as 36 tiles
 /// in rows of six with the transparent pixels turned into the palette's lightest colour, and the palette as bytes.
+/// Von Bolt's Dual Strike id.
+pub const VON_BOLT_DS: u8 = 11;
+
 pub fn mug_for_face(core: &Core, co: u8) -> Option<(Vec<u8>, [u8; 32])> {
-    let m = mug(core, co)?;
+    let mut m = (*mug(core, co)?).clone();
+    // Von Bolt's select mug is the grid's strip (dark band above the dome); his normal mug has the whole machine.
+    if crate::tag::ds_id(co) == Some(VON_BOLT_DS) {
+        if let Some(a) = crate::ds_co_art::co_art(VON_BOLT_DS) {
+            m.tiles = a.face[0].clone();
+        }
+    }
     let colour = |i: usize| m.pal[i];
     let lum = |c: u16| (c & 31) as u32 * 3 + ((c >> 5) & 31) as u32 * 6 + ((c >> 10) & 31) as u32;
     let light = (1..16).max_by_key(|&i| lum(colour(i))).unwrap_or(1) as u8;
