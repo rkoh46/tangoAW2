@@ -459,7 +459,9 @@ fn debug_dump(core: &Core) {
 }
 
 pub(crate) fn turn_ended(core: &Core) -> bool {
-    core.raw_read_8(MAP_MENU_STATE, -1) == 5 && core.raw_read_8(MAP_MENU_CURSOR, -1) == 4
+    // (End is the menu's fifth row, the fourth in a five-army battle where Save is hidden)
+    let end_row = if crate::five::active(core) { 3 } else { 4 };
+    core.raw_read_8(MAP_MENU_STATE, -1) == 5 && core.raw_read_8(MAP_MENU_CURSOR, -1) == end_row
 }
 
 fn set_bit0(core: &mut Core, at: u32) {
