@@ -6,15 +6,15 @@
 //! told, which is what a list needs.
 //!
 //! **The announcement** is one *parameterized replaceable* event (kind [`KIND`], 30078, "application specific
-//! data"), `d` = the room's code, `t` = [`TAG`], with a NIP-40 `expiration` a few seconds after the next refresh.
+//! data"), `d` = the room's code, `t` = [`TAG`], with a NIP-40 `expiration` a few seconds after a few refreshes.
 //! It is signed by a throw-away key made when the host app starts (nobody can be told from it) and replaced every
-//! [`REFRESH`] (12 s) by a new one with the same `d`: the relay keeps just the latest. Its content is [`Lobby`] as JSON:
+//! [`REFRESH`] (15 s) by a new one with the same `d`: the relay keeps just the latest. Its content is [`Lobby`] as JSON:
 //! code, host gamertag, players and seats, whether there is a password, the game version and whether the content
 //! pack is on. **Never an address**: the connection is still made through the matchmaking server, in the session
 //! `tangoaw2-room-<code>` ([`crate::room::room_session`]). A lobby that starts or closes is replaced by an event with
 //! `{"x":1}` as its content; one that just disappears (a crash) is gone [`TTL`] after its last refresh.
 //!
-//! **The list** ([`Browse`]) subscribes to the `t` tag with `since` a minute back on every relay at once, keeps the
+//! **The list** ([`Browse`]) subscribes to the `t` tag with `since` a few minutes back on every relay at once, keeps the
 //! newest event of each (author, code), drops those older than [`TTL`] and the closed ones, and shows only the lobbies
 //! of this game version and the same pack setting ([`Compat`]); everything a relay sends is verified (id and
 //! signature) and checked ([`Lobby::decode`]) before it is believed, since anybody can write to a public relay. Any
@@ -27,7 +27,7 @@ use k256::schnorr::{Signature, SigningKey, VerifyingKey};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio_tungstenite::tungstenite::Message;
@@ -37,22 +37,27 @@ use tokio_util::sync::CancellationToken;
 pub const TAG: &str = "tangoaw2-lobby-v1";
 /// Nostr kind 30078: parameterized replaceable, application specific data.
 pub const KIND: u64 = 30078;
-/// The public relays tried in parallel (any one working is enough). Chosen for being long-running, free to write to
-/// and not asking for payment or a login.
+/// The public relays, the best first (a probe of each on 2026-10-15: all of these took kind 30078 with a `#t`
+/// filter and answered the question in under a second; damus took the event but never answered a question, so it
+/// is last; offchain.pub took the first events and then refused a throw-away key; others refuse the kind or want a NIP-05 or payment). A host announces on the first few and brings in
+/// more of the others while fewer than three take it; the browser listens on all of them.
 pub const RELAYS: &[&str] = &[
-    "wss://relay.damus.io",
     "wss://nos.lol",
     "wss://relay.primal.net",
-    "wss://offchain.pub",
     "wss://nostr.mom",
     "wss://relay.snort.social",
     "wss://nostr-pub.wellorder.net",
     "wss://nostr.oxtr.dev",
+    "wss://nostr.bitcoiner.social",
+    "wss://relay.coinos.io",
+    "wss://offchain.pub",
+    "wss://relay.damus.io",
 ];
 /// How often a host repeats its announcement.
-pub const REFRESH: Duration = Duration::from_secs(12);
-/// An announcement older than this is a lobby that is gone.
-pub const TTL: u64 = 40;
+pub const REFRESH: Duration = Duration::from_secs(15);
+/// An announcement older than this is a lobby that is gone (four refreshes missed; a closing event removes a lobby at
+/// once, so this only waits for a host that vanished).
+pub const TTL: u64 = 60;
 /// Most lobbies kept and shown.
 pub const MAX_LISTED: usize = 9;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(8);
@@ -176,8 +181,8 @@ fn event_id(pubkey: &str, created_at: u64, kind: u64, tags: &Value, content: &st
 pub fn make_event(key: &SigningKey, code: &str, lobby: Option<&Lobby>, created_at: u64) -> Value {
     let pubkey = hex(&key.verifying_key().to_bytes());
     let content = lobby.map_or_else(|| json!({"x": 1}).to_string(), |l| l.encode());
-    // (gone a little after the next refresh would have been; a closing event only has to outlive being read)
-    let expiry = created_at + if lobby.is_some() { TTL } else { 120 };
+    // (gone a little after a few refreshes would have been; a closing event only has to outlive being read)
+    let expiry = created_at + if lobby.is_some() { TTL + 30 } else { 120 };
     let tags = json!([["d", code.to_ascii_uppercase()], ["t", TAG], ["expiration", expiry.to_string()]]);
     let id = event_id(&pubkey, created_at, KIND, &tags, &content);
     let sig = key.sign_raw(&id, &rand::random::<[u8; 32]>()).map(|s| hex(&s.to_bytes())).unwrap_or_default();
@@ -252,6 +257,14 @@ impl Heard {
         }
     }
 
+    /// How many lobbies are open `at` but not shown because they are of another version or pack.
+    fn hidden(&self, at: u64, compat: &Compat) -> usize {
+        self.latest
+            .values()
+            .filter(|(created_at, l)| l.as_ref().is_some_and(|l| !l.fits(compat)) && *created_at + TTL >= at)
+            .count()
+    }
+
     /// The lobbies that are open `at` unix time and fit `compat`, newest first, one per code.
     fn listings(&self, at: u64, compat: &Compat) -> Vec<Listing> {
         let mut by_code: HashMap<&str, Listing> = HashMap::new();
@@ -283,59 +296,159 @@ impl Heard {
 /// How the relays are doing.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct RelayStats {
+    /// Relays in use (an announcer's spare ones are not, until needed).
     pub relays: usize,
     /// Connected now.
     pub connected: usize,
+    /// Relays that have answered the question (browser: sent the end of the stored events) or accepted an
+    /// announcement lately (announcer).
+    pub answered: usize,
     /// Announcements heard (browser) or accepted (announcer), in all.
     pub events: usize,
 }
 
+/// What one relay is doing, for the log and the stats.
 #[derive(Default)]
-struct Counters {
-    connected: AtomicUsize,
+struct Relay {
+    url: String,
+    connected: AtomicBool,
+    /// Browser: when the relay ended the stored events (EOSE) on this connection. Announcer: when it last accepted
+    /// something. (Seconds on [`mono`]; 0: never.)
+    answered: AtomicU64,
     events: AtomicUsize,
+    /// Whether the task of this relay runs (the announcer keeps spare relays idle until needed).
+    active: AtomicBool,
+    note: Mutex<String>,
+}
+
+impl Relay {
+    fn new(url: &str) -> Arc<Relay> {
+        Arc::new(Relay {
+            url: url.to_string(),
+            ..Default::default()
+        })
+    }
+
+    fn note(&self, s: impl Into<String>) {
+        *self.note.lock().unwrap() = s.into();
+    }
+}
+
+/// Seconds since the first call, plus one (so 0 can mean never).
+fn mono() -> u64 {
+    static T0: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+    T0.get_or_init(std::time::Instant::now).elapsed().as_secs() + 1
+}
+
+/// How long an acceptance by a relay counts as healthy.
+const HEALTHY_FOR: u64 = 40;
+
+fn stats_of(relays: &[Arc<Relay>], announcer: bool) -> RelayStats {
+    let t = mono();
+    let mut s = RelayStats::default();
+    for r in relays.iter().filter(|r| r.active.load(Ordering::Relaxed)) {
+        s.relays += 1;
+        s.connected += r.connected.load(Ordering::Relaxed) as usize;
+        s.events += r.events.load(Ordering::Relaxed);
+        let a = r.answered.load(Ordering::Relaxed);
+        s.answered += (a != 0 && (!announcer || t.saturating_sub(a) <= HEALTHY_FOR)) as usize;
+    }
+    s
+}
+
+fn describe(relays: &[Arc<Relay>]) -> String {
+    let t = mono();
+    relays
+        .iter()
+        .map(|r| {
+            let a = r.answered.load(Ordering::Relaxed);
+            let state = if !r.active.load(Ordering::Relaxed) {
+                "spare"
+            } else if r.connected.load(Ordering::Relaxed) {
+                "up"
+            } else {
+                "down"
+            };
+            let ok = if a != 0 { format!("/answered {}s ago", t.saturating_sub(a)) } else { String::new() };
+            let note = r.note.lock().unwrap().clone();
+            let note = if note.is_empty() { String::new() } else { format!(" ({note})") };
+            format!("{}={state}{ok} ev{}{note}", r.url.trim_start_matches("wss://"), r.events.load(Ordering::Relaxed))
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// Logs every relay's state now and then until `cancel` fires.
+fn spawn_status_log(what: &'static str, relays: Vec<Arc<Relay>>, cancel: CancellationToken) {
+    tokio::spawn(async move {
+        while nap(&cancel, Duration::from_secs(20)).await {
+            log::info!("lobby {what}: relays: {}", describe(&relays));
+        }
+    });
 }
 
 /// A running look at the public lobby list: dropping it stops.
 pub struct Browse {
     heard: Arc<Mutex<Heard>>,
     compat: Compat,
-    counters: Arc<Counters>,
-    relays: usize,
+    relays: Vec<Arc<Relay>>,
+    /// When a relay last answered (the list stays as it was through a stretch with none: a hiccup is not "no
+    /// lobbies").
+    healthy_at: Mutex<std::time::Instant>,
     cancel: CancellationToken,
 }
+
+/// How long the last list is kept as it was when no relay answers.
+const HICCUP: u64 = 60;
 
 impl Browse {
     /// Starts looking on `relays` (must run inside the tokio runtime).
     pub fn start(relays: &[&str], compat: Compat) -> Browse {
         let heard = Arc::new(Mutex::new(Heard::default()));
-        let counters = Arc::new(Counters::default());
         let cancel = CancellationToken::new();
-        for &url in relays {
-            let (heard, counters, cancel) = (heard.clone(), counters.clone(), cancel.clone());
-            let url = url.to_string();
-            tokio::spawn(async move { browse_relay(url, heard, counters, cancel).await });
+        let infos: Vec<Arc<Relay>> = relays.iter().map(|u| Relay::new(u)).collect();
+        for r in &infos {
+            r.active.store(true, Ordering::Relaxed);
+            let (r, heard, cancel) = (r.clone(), heard.clone(), cancel.clone());
+            tokio::spawn(async move { browse_relay(r, heard, cancel).await });
         }
+        spawn_status_log("list", infos.clone(), cancel.clone());
         Browse {
             heard,
             compat,
-            counters,
-            relays: relays.len(),
+            relays: infos,
+            healthy_at: Mutex::new(std::time::Instant::now()),
             cancel,
         }
     }
 
     /// The open lobbies of this version, newest first.
     pub fn listings(&self) -> Vec<Listing> {
-        self.heard.lock().unwrap().listings(now(), &self.compat)
+        // A stretch with no relay answering stops the clock of the list (for at most [`HICCUP`]).
+        let mut at = now();
+        {
+            let mut h = self.healthy_at.lock().unwrap();
+            if self.stats().answered > 0 {
+                *h = std::time::Instant::now();
+            } else {
+                at = at.saturating_sub(h.elapsed().as_secs().min(HICCUP));
+            }
+        }
+        self.heard.lock().unwrap().listings(at, &self.compat)
+    }
+
+    /// How many lobbies are heard but hidden because they are of another version or pack.
+    pub fn hidden(&self) -> usize {
+        self.heard.lock().unwrap().hidden(now(), &self.compat)
     }
 
     pub fn stats(&self) -> RelayStats {
-        RelayStats {
-            relays: self.relays,
-            connected: self.counters.connected.load(Ordering::Relaxed),
-            events: self.counters.events.load(Ordering::Relaxed),
-        }
+        stats_of(&self.relays, false)
+    }
+
+    /// Every relay's state in a line (for the log).
+    pub fn describe(&self) -> String {
+        describe(&self.relays)
     }
 }
 
@@ -363,50 +476,58 @@ async fn nap(cancel: &CancellationToken, d: Duration) -> bool {
     }
 }
 
-async fn browse_relay(url: String, heard: Arc<Mutex<Heard>>, counters: Arc<Counters>, cancel: CancellationToken) {
-    let mut wait = 3;
-    let mut failures = 0u32;
+async fn browse_relay(relay: Arc<Relay>, heard: Arc<Mutex<Heard>>, cancel: CancellationToken) {
+    let url = relay.url.clone();
+    let mut wait = 2;
     loop {
         match connect(&url).await {
             Err(e) => {
-                failures += 1;
-                if failures <= 2 {
-                    log::info!("lobby list: {url}: {e}");
-                }
+                log::info!("lobby list: {url}: {e}");
+                relay.note(e);
             }
             Ok(mut ws) => {
-                failures = 0;
-                wait = 3;
-                counters.connected.fetch_add(1, Ordering::Relaxed);
-                let r = browse_session(&url, &mut ws, &heard, &counters, &cancel).await;
-                counters.connected.fetch_sub(1, Ordering::Relaxed);
+                wait = 2;
+                relay.connected.store(true, Ordering::Relaxed);
+                relay.note("");
+                let r = browse_session(&relay, &mut ws, &heard, &cancel).await;
+                relay.connected.store(false, Ordering::Relaxed);
+                relay.answered.store(0, Ordering::Relaxed);
                 log::info!("lobby list: {url} ended: {r:?}");
+                if let Err(e) = r {
+                    relay.note(e);
+                }
             }
         }
         if cancel.is_cancelled() || !nap(&cancel, Duration::from_secs(wait)).await {
             return;
         }
-        wait = (wait * 2).min(30);
+        wait = (wait * 2).min(20);
     }
 }
 
 async fn browse_session(
-    url: &str,
+    relay: &Relay,
     ws: &mut Ws,
     heard: &Arc<Mutex<Heard>>,
-    counters: &Counters,
     cancel: &CancellationToken,
 ) -> Result<(), String> {
-    let mut ask = tango_platform::Ticker::immediate(Duration::from_secs(15));
+    let url = relay.url.as_str();
+    let started = std::time::Instant::now();
+    let mut ask = tango_platform::Ticker::immediate(Duration::from_secs(20));
     loop {
         tokio::select! {
             _ = cancel.cancelled() => {
                 let _ = ws.close(None).await;
                 return Ok(());
             }
-            // (asking again on the same subscription replays what is stored: also a liveness check)
+            // The subscription stays open (the relay then pushes new announcements by itself); asking again on it
+            // replays what is stored: a safety net against a relay that stops pushing, and a liveness check.
             _ = ask.tick() => {
-                let req = json!(["REQ", "lobbies", {"kinds": [KIND], "#t": [TAG], "since": now().saturating_sub(60)}]);
+                // (a relay that has not answered the question in 20 s is not one to wait for: another connection)
+                if relay.answered.load(Ordering::Relaxed) == 0 && started.elapsed().as_secs() >= 20 {
+                    return Err("no answer to the question".into());
+                }
+                let req = json!(["REQ", "lobbies", {"kinds": [KIND], "#t": [TAG], "since": now().saturating_sub(150)}]);
                 ws.send(Message::Text(req.to_string())).await.map_err(|e| e.to_string())?;
             }
             m = ws.next() => {
@@ -417,13 +538,21 @@ async fn browse_session(
                         match v.get(0).and_then(Value::as_str) {
                             Some("EVENT") => match v.get(2).map(read_event) {
                                 Some(Ok((author, code, at, lobby))) => {
-                                    counters.events.fetch_add(1, Ordering::Relaxed);
+                                    relay.events.fetch_add(1, Ordering::Relaxed);
                                     heard.lock().unwrap().hear(author, code, at, lobby);
                                 }
                                 Some(Err(why)) => log::debug!("lobby list: {url}: event ignored: {why}"),
                                 None => {}
                             },
-                            Some("NOTICE") | Some("CLOSED") => log::info!("lobby list: {url}: {t}"),
+                            Some("EOSE") => {
+                                if relay.answered.swap(mono(), Ordering::Relaxed) == 0 {
+                                    log::info!("lobby list: {url} answered after {} ms", started.elapsed().as_millis());
+                                }
+                            }
+                            Some("NOTICE") | Some("CLOSED") => {
+                                relay.note(t.chars().take(60).collect::<String>());
+                                log::info!("lobby list: {url}: {t}");
+                            }
                             _ => {}
                         }
                     }
@@ -437,30 +566,56 @@ async fn browse_session(
 
 // --- The announcement ---------------------------------------------------------------------------------------
 
-/// A host's running announcement: dropping it (or [`stop`](Self::stop)) withdraws the lobby.
+/// How many relays a lobby is announced on at first, and how many must be taking it (more of the spare ones are
+/// brought in while fewer do).
+pub const ANNOUNCE_AT_FIRST: usize = 5;
+pub const ANNOUNCE_HEALTHY: usize = 3;
+
+/// A host's running announcement: dropping it withdraws the lobby.
 pub struct Announcer {
     lobby: Arc<Mutex<Lobby>>,
-    counters: Arc<Counters>,
-    relays: usize,
+    relays: Vec<Arc<Relay>>,
     cancel: CancellationToken,
 }
 
 impl Announcer {
-    /// Announces `lobby` on `relays` (must run inside the tokio runtime).
+    /// Announces `lobby` on `relays` (the best first; must run inside the tokio runtime): on the first
+    /// [`ANNOUNCE_AT_FIRST`] at once and on the others as soon as fewer than [`ANNOUNCE_HEALTHY`] take it.
     pub fn start(relays: &[&str], lobby: Lobby) -> Announcer {
         let key = Arc::new(new_key());
         let lobby = Arc::new(Mutex::new(lobby));
-        let counters = Arc::new(Counters::default());
         let cancel = CancellationToken::new();
-        for &url in relays {
-            let (key, lobby, counters, cancel) = (key.clone(), lobby.clone(), counters.clone(), cancel.clone());
-            let url = url.to_string();
-            tokio::spawn(async move { announce_relay(url, key, lobby, counters, cancel).await });
+        let infos: Vec<Arc<Relay>> = relays.iter().map(|u| Relay::new(u)).collect();
+        let begin: Arc<dyn Fn(&Arc<Relay>) + Send + Sync> = {
+            let (key, lobby, cancel) = (key, lobby.clone(), cancel.clone());
+            Arc::new(move |r: &Arc<Relay>| {
+                r.active.store(true, Ordering::Relaxed);
+                let (r, key, lobby, cancel) = (r.clone(), key.clone(), lobby.clone(), cancel.clone());
+                tokio::spawn(async move { announce_relay(r, key, lobby, cancel).await });
+            })
+        };
+        for r in infos.iter().take(ANNOUNCE_AT_FIRST) {
+            begin(r);
         }
+        // While fewer than the wanted number take the announcement, one more relay joins.
+        {
+            let (infos, cancel) = (infos.clone(), cancel.clone());
+            tokio::spawn(async move {
+                while nap(&cancel, Duration::from_secs(6)).await {
+                    let s = stats_of(&infos, true);
+                    if s.answered < ANNOUNCE_HEALTHY {
+                        if let Some(r) = infos.iter().find(|r| !r.active.load(Ordering::Relaxed)) {
+                            log::info!("lobby announce: only {} relay(s) take it; adding {}", s.answered, r.url);
+                            begin(r);
+                        }
+                    }
+                }
+            });
+        }
+        spawn_status_log("announce", infos.clone(), cancel.clone());
         Announcer {
             lobby,
-            counters,
-            relays: relays.len(),
+            relays: infos,
             cancel,
         }
     }
@@ -471,11 +626,12 @@ impl Announcer {
     }
 
     pub fn stats(&self) -> RelayStats {
-        RelayStats {
-            relays: self.relays,
-            connected: self.counters.connected.load(Ordering::Relaxed),
-            events: self.counters.events.load(Ordering::Relaxed),
-        }
+        stats_of(&self.relays, true)
+    }
+
+    /// Every relay's state in a line (for the log).
+    pub fn describe(&self) -> String {
+        describe(&self.relays)
     }
 }
 
@@ -486,54 +642,56 @@ impl Drop for Announcer {
     }
 }
 
-async fn announce_relay(
-    url: String,
-    key: Arc<SigningKey>,
-    lobby: Arc<Mutex<Lobby>>,
-    counters: Arc<Counters>,
-    cancel: CancellationToken,
-) {
-    let mut wait = 3;
-    let mut failures = 0u32;
+async fn announce_relay(relay: Arc<Relay>, key: Arc<SigningKey>, lobby: Arc<Mutex<Lobby>>, cancel: CancellationToken) {
+    let url = relay.url.clone();
+    let mut wait = 2;
     let mut last_at = 0;
     loop {
         match connect(&url).await {
             Err(e) => {
-                failures += 1;
-                if failures <= 2 {
-                    log::info!("lobby announce: {url}: {e}");
-                }
+                log::info!("lobby announce: {url}: {e}");
+                relay.note(e);
             }
             Ok(mut ws) => {
-                failures = 0;
-                wait = 3;
-                counters.connected.fetch_add(1, Ordering::Relaxed);
-                let r = announce_session(&url, &mut ws, &key, &lobby, &counters, &cancel, &mut last_at).await;
-                counters.connected.fetch_sub(1, Ordering::Relaxed);
+                wait = 2;
+                relay.connected.store(true, Ordering::Relaxed);
+                relay.note("");
+                let r = announce_session(&relay, &mut ws, &key, &lobby, &cancel, &mut last_at).await;
+                relay.connected.store(false, Ordering::Relaxed);
+                relay.answered.store(0, Ordering::Relaxed);
                 log::info!("lobby announce: {url} ended: {r:?}");
-                // A relay that turned the announcement away (rate limits are common) is left alone for a while.
+                // A relay that turned the announcement away for good (blocked kind, payment, login) is left alone
+                // for a long while; the spare relays take its place.
                 if r == Err("refused".to_string()) {
-                    wait = 90;
+                    wait = 300;
                 }
             }
         }
         if cancel.is_cancelled() || !nap(&cancel, Duration::from_secs(wait)).await {
             return;
         }
-        wait = if wait >= 90 { 30 } else { (wait * 2).min(30) };
+        wait = if wait >= 300 { 60 } else { (wait * 2).min(30) };
     }
 }
 
+/// Whether a relay's refusal is only a limit on how often events may come (try again a little later).
+fn rate_limited(why: &str) -> bool {
+    let w = why.to_ascii_lowercase();
+    w.starts_with("rate") || w.contains("rate-limit") || w.contains("rate limit") || w.contains("too many") || w.contains("slow down")
+}
+
 async fn announce_session(
-    url: &str,
+    relay: &Relay,
     ws: &mut Ws,
     key: &SigningKey,
     lobby: &Mutex<Lobby>,
-    counters: &Counters,
     cancel: &CancellationToken,
     last_at: &mut u64,
 ) -> Result<(), String> {
+    let url = relay.url.as_str();
     let mut sent: Option<(Lobby, std::time::Instant)> = None;
+    // After a rate limit: nothing is sent until then (the connection stays).
+    let mut pause: Option<std::time::Instant> = None;
     let mut look = tango_platform::Ticker::immediate(Duration::from_secs(1));
     loop {
         tokio::select! {
@@ -554,6 +712,9 @@ async fn announce_session(
                 return Ok(());
             }
             _ = look.tick() => {
+                if pause.is_some_and(|p| std::time::Instant::now() < p) {
+                    continue;
+                }
                 let now_l = lobby.lock().unwrap().clone();
                 let due = match &sent {
                     Some((l, at)) => *l != now_l || at.elapsed() >= REFRESH,
@@ -572,11 +733,21 @@ async fn announce_session(
                     Message::Text(t) => {
                         if let Ok(v) = serde_json::from_str::<Value>(&t) {
                             if v.get(0).and_then(Value::as_str) == Some("OK") {
-                                if v.get(2).and_then(Value::as_bool) == Some(true) {
-                                    counters.events.fetch_add(1, Ordering::Relaxed);
+                                let why = v.get(3).and_then(Value::as_str).unwrap_or("");
+                                if v.get(2).and_then(Value::as_bool) == Some(true) || why.starts_with("duplicate") {
+                                    relay.events.fetch_add(1, Ordering::Relaxed);
+                                    relay.answered.store(mono(), Ordering::Relaxed);
+                                    relay.note("");
+                                    pause = None;
+                                } else if rate_limited(why) {
+                                    log::info!("lobby announce: {url} rate-limits it ({why}); pausing 30 s");
+                                    relay.note(format!("rate-limited: {}", why.chars().take(40).collect::<String>()));
+                                    pause = Some(std::time::Instant::now() + Duration::from_secs(30));
+                                    // (the next try is due as soon as the pause ends)
+                                    sent = None;
                                 } else {
-                                    log::info!("lobby announce: {url} refused it: {}", v.get(3).and_then(Value::as_str).unwrap_or(""));
-                                    // (a relay that does not take it: leave it for now)
+                                    log::info!("lobby announce: {url} refused it: {why}");
+                                    relay.note(format!("refused: {}", why.chars().take(40).collect::<String>()));
                                     return Err("refused".into());
                                 }
                             }
@@ -651,7 +822,7 @@ mod tests {
         assert_eq!(author, hex(&key.verifying_key().to_bytes()));
         assert_eq!(l, Some(lobby("AB12CD")));
         // The tags carry an expiration.
-        assert!(ev["tags"].to_string().contains("\"expiration\",\"1040\""), "{}", ev["tags"]);
+        assert!(ev["tags"].to_string().contains("\"expiration\",\"1090\""), "{}", ev["tags"]);
         // Tampering with any part is refused.
         let mut e2 = ev.clone();
         e2["content"] = json!(lobby("AB12CD").encode().replace("Rkoh", "Evil"));
@@ -692,10 +863,10 @@ mod tests {
         assert_eq!(at.len(), 2);
         assert_eq!(at[0].lobby.code, "BBBBBB");
         assert_eq!(at[1].lobby.players, 3);
-        // TTL: the one last heard at 110 is gone at 151, the other at 153.
-        assert_eq!(h.listings(150, &compat()).len(), 2);
-        assert_eq!(h.listings(151, &compat()).len(), 1);
-        assert_eq!(h.listings(153, &compat()).len(), 0);
+        // TTL: the one last heard at 110 is gone after 170, the other after 172.
+        assert_eq!(h.listings(170, &compat()).len(), 2);
+        assert_eq!(h.listings(171, &compat()).len(), 1);
+        assert_eq!(h.listings(173, &compat()).len(), 0);
         // A lobby that closed is not listed, even though an older event of it arrives afterwards.
         hear(&mut h, &k2, None, "BBBBBB", 113);
         hear(&mut h, &k2, Some(&lobby("BBBBBB")), "BBBBBB", 112);

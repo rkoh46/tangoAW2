@@ -321,7 +321,7 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
     // Only the list itself is empty (the first line is always there): say so under it.
     if rows.is_empty() {
         let (a, ink) = match state {
-            Net::Looking => ("Looking for lobbies...", GRAY_INK),
+            Net::Looking => ("Searching for lobbies...", GRAY_INK),
             Net::Ok => ("No lobbies right now", GRAY_INK),
             Net::Offline => ("The lobby list cannot be reached.", RED),
         };
