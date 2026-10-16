@@ -136,6 +136,14 @@ fn main() {
                 let _ = std::fs::write(dir.join(format!("e{t}.bin")), &ew);
             }
         }
+        if std::env::var_os("AW2_CONSOLE_PROCS").is_some() {
+            // (the console's own running procs when they change: where a walk, a menu or a selection begins and ends)
+            thread_local!(static LAST_P: std::cell::RefCell<Vec<u32>> = const { std::cell::RefCell::new(Vec::new()) });
+            let p = tango_gamesupport_aw2::fog_view::procs(link.core());
+            if LAST_P.with(|l| l.replace(p.clone())) != p {
+                eprintln!("consoleprocs tick {t} {p:x?}");
+            }
+        }
         if std::env::var("AW2_CAM_LOG").is_ok_and(|v| v == "ticks") {
             eprintln!("tickmark {t}");
         }

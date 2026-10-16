@@ -1,0 +1,73 @@
+# 5 seats, Fog off: the cam_5p copter moves with the waiting windows showing the walks (AW2_SAMPLE=1 AW2_DUMP=<dir>, tools/pic_check.py)
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
+press 3 A
+wait 20
+press 4 A
+wait 20
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+aid unit 1 copter 9 7
+aid unit 2 copter 8 14
+aid unit 2 copter 10 20
+aid unit 3 copter 8 15
+aid unit 3 copter 10 21
+aid unit 4 copter 8 16
+aid unit 4 copter 10 22
+aid unit 5 copter 8 17
+aid unit 5 copter 10 23
+wait 10
+goto 0 9 7
+wait 30
+press 0 A
+wait 30
+goto 0 9 13
+wait 10
+press 0 A
+wait 60
+press 0 A
+wait 300
+goto 0 9 13
+wait 30
+press 0 A
+wait 30
+goto 0 9 19
+wait 10
+press 0 A
+wait 60
+press 0 A
+wait 300

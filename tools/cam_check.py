@@ -4,7 +4,7 @@
 Usage: cam_check.py LOG [MAX_STEP]
 
 - `camend seat S mine (x,y)` lines: each waiting window's camera (pixels) after each view. A view may move it by at most
-  MAX_STEP (default 16: the game's scroll is four pixels a tick, eight over a long way, a view every second tick) on each axis, and the camera may not
+  MAX_STEP (default 32: the game scrolls its own camera after a walk the seat sees) on each axis, and the camera may not
   reverse direction on an axis while it is moving (no up-and-down): a reversal needs a view at rest in between.
 - `concam tick T px (x, y)` lines: the console's own camera (what a window shows with Fog off): at most 8 pixels a tick,
   same reversal rule.
@@ -47,7 +47,7 @@ def check(series, max_step, what, bad, ticked=False):
 
 def main():
     log = sys.argv[1]
-    step = int(sys.argv[2]) if len(sys.argv) > 2 else 16
+    step = int(sys.argv[2]) if len(sys.argv) > 2 else 32
     cams, con = {}, {"console": []}
     targets = {}
     bad = []

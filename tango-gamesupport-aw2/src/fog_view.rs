@@ -87,6 +87,16 @@ fn settle_panel(core: &mut Core, last: i32) -> i32 {
     if right { 2 } else { 1 }
 }
 
+/// The cursor parked at the middle of the screen, so the CO panel's side (which the game chooses from where the cursor
+/// is) is the same every frame: a waiting window has no cursor of its own and the mover's must not move the panel.
+fn park_cursor(core: &mut Core) {
+    let (cx, cy) = ((core.raw_read_16(MAP + 4, -1) as i16 as i32) / 16 + 7, (core.raw_read_16(MAP + 6, -1) as i16 as i32) / 16 + 4);
+    core.raw_write_16(CURSOR, -1, cx as u16);
+    core.raw_write_16(CURSOR + 2, -1, cy as u16);
+    core.raw_write_16(CURSOR_PX, -1, (cx * 16) as u16);
+    core.raw_write_16(CURSOR_PX + 2, -1, (cy * 16) as u16);
+}
+
 fn cell(core: &Core, x: i32, y: i32) -> u32 {
     core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32 + x as u32
 }
@@ -616,6 +626,10 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
             let mover = scratch.core().raw_read_8(CURRENT_PLAYER, -1);
             scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, army);
             scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
+            park_cursor(scratch.core_mut());
+            let last = scratch.memory()[3] & 3;
+            let side = settle_panel(scratch.core_mut(), last);
+            scratch.memory()[3] = (scratch.memory()[3] & !3) | side;
             panel_call(scratch)?;
             restore_unit_palettes(scratch.core_mut(), &pal_before.0, &pal_before.1);
             scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, mover);
@@ -709,6 +723,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
             scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, army);
         }
         let last = scratch.memory()[3] & 3;
+        park_cursor(scratch.core_mut());
         let side = settle_panel(scratch.core_mut(), last);
         // (the header is the seat's own: its CO's face and colours, drawn by the game's panel routines for its army)
         let pal_before = {
@@ -749,7 +764,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let place = |scratch: Scratch, px: i32, py: i32, cursor: (i32, i32)| {
         let core = scratch.core_mut();
         // (the pixels, their copy, the camera's cell and the remainder of a scroll the console had begun: none)
-        for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py), (0x10, 0), (0x12, 0)] {
+        for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py), (0xC, (px + 8) / 16), (0xE, (py + 8) / 16), (0x10, 0), (0x12, 0)] {
             core.raw_write_16(MAP + at, -1, v as u16);
         }
         core.raw_write_16(CURSOR, -1, cursor.0 as u16);
@@ -792,8 +807,11 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let mut reason = "none";
     if follow {
         reason = "follow";
-        tx = if x < tx { x } else if x > tx + 14 { x - 14 } else { tx }.clamp(0, (w - 15).max(0));
-        ty = if y < ty { y } else if y > ty + 9 { y - 9 } else { ty }.clamp(0, (h - 10).max(0));
+        // (the game's own camera scrolls after a unit that comes within a few cells of the window's edge, which on the
+        // scratch console would carry the picture past the window's own camera: the target keeps the unit that far in)
+        const MARGIN: i32 = 3;
+        tx = if x < tx + MARGIN { x - MARGIN } else if x > tx + 14 - MARGIN { x - 14 + MARGIN } else { tx }.clamp(0, (w - 15).max(0));
+        ty = if y < ty + MARGIN { y - MARGIN } else if y > ty + 9 - MARGIN { y - 9 + MARGIN } else { ty }.clamp(0, (h - 10).max(0));
     } else if !window_sees(scratch.core(), (px + 8) / 16, (py + 8) / 16, w, h) && (tx * 16, ty * 16) == (px, py) {
         // (nothing in the window is seen and it is at rest: grey fogged terrain and no units; the army's own HQ)
         reason = "hq";
@@ -811,6 +829,11 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         eprintln!("cam seat {seat} phase {:?} cam ({px},{py}) -> ({nx},{ny}) target ({tx},{ty}) mover ({x},{y}) follow {follow} reason {reason}", phase(scratch.core()));
     }
     scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
+    if walk_start && !follow {
+        // (a unit walking where the seat sees nothing: the window keeps its picture; the game's own camera follows the unit
+        // on the scratch console, so no picture of it is made)
+        return Err("the walking unit is out of sight");
+    }
     if (nx, ny) != (px, py) || follow {
         (px, py) = (nx, ny);
         scratch.core_mut().raw_write_16(PIN + 2, -1, px as u16);
@@ -863,6 +886,9 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
             c.raw_read_16(MAP + 6, -1) as i16
         );
     }
+    // (the camera is kept whatever picture comes of this view: a view that makes none must not leave the window's camera
+    // where it was, or the next one starts from there and the picture goes back and forth)
+    *scratch.memory() = [1, px, py, side | (tx << 8) | (ty << 16)];
     if walk_start && anim && WALK_TRACK.lock().unwrap().1 {
         return Err("the walk has just stopped");
     }
@@ -975,14 +1001,19 @@ fn hide_fogged_sprites(core: &mut Core) {
     }
 }
 
-/// At the sprite flush: hides the cursor if asked, and starts the asked call.
-pub fn at_flush(core: &mut Core) {
+/// The camera pinned (see [`PIN`]): on the scratch console, before every tick and at every flush.
+pub fn pin_camera(core: &mut Core) {
     if core.raw_read_8(PIN, -1) == 1 {
         let (px, py) = (core.raw_read_16(PIN + 2, -1), core.raw_read_16(PIN + 4, -1));
         for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py)] {
             core.raw_write_16(MAP + at, -1, v);
         }
     }
+}
+
+/// At the sprite flush: hides the cursor if asked, and starts the asked call.
+pub fn at_flush(core: &mut Core) {
+    pin_camera(core);
     if core.raw_read_8(CALL + 3, -1) == 1 {
         hide_fogged_sprites(core);
     }

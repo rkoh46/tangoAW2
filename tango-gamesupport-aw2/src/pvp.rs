@@ -550,7 +550,20 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     }
 
     fn traps(&self) -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-        crate::factory::traps()
+        let mut t = crate::factory::traps();
+        // (test aid: `AW2_TRAP_LOG=1` logs the calls of the candidate camera routines, to find who scrolls the map)
+        if std::env::var_os("AW2_TRAP_LOG").is_some() {
+            for f in [0x0800_0E0Au32, 0x0802_4A42, 0x0802_8D52, 0x0803_7AA6, 0x0806_A94A, 0x0802_9038] {
+                t.push((
+                    f,
+                    Box::new(move |core: &mut Core| {
+                        let c = core.gba().cpu();
+                        eprintln!("trap {f:08x} scratch {} r0 {:x} r1 {:x} r2 {:x} r3 {:x} lr {:x}", tango_backend_mgba::shared::in_scratch(), c.gpr(0), c.gpr(1), c.gpr(2), c.gpr(3), c.gpr(14));
+                    }),
+                ));
+            }
+        }
+        t
     }
 
     /// Dual Strike tilt (display only, see [`crate::ds_tilt`]).
@@ -699,6 +712,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         if !tango_backend_mgba::shared::in_scratch() {
             crate::online::probe::store(core);
             crate::run_dump::tick(core, keys);
+        }
+        if tango_backend_mgba::shared::in_scratch() {
+            crate::fog_view::pin_camera(core);
         }
         track_menu(core);
         debug_dump(core);
