@@ -151,7 +151,14 @@ impl Stats {
         ];
         for b in &self.last {
             let who = if b.opponents.is_empty() { "?".to_string() } else { b.opponents.join(", ") };
-            let who: String = who.chars().take(17).collect();
+            // (whole names: the first, and how many more)
+            let who: String = if who.chars().count() <= 17 {
+                who
+            } else if b.opponents.len() > 1 {
+                format!("{} +{}", b.opponents[0].chars().take(12).collect::<String>(), b.opponents.len() - 1)
+            } else {
+                who.chars().take(17).collect()
+            };
             l.push(format!("  {who}\t{}", if b.won { "Won" } else { "Lost" }));
         }
         l

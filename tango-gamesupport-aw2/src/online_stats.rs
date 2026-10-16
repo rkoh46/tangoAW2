@@ -323,7 +323,9 @@ pub fn draw_stats(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32)) {
             cv.rect(x + 4, ry + 9, w - 8, 1, LIGHT_GRAY);
             cv.text(core, x + 6, ry, label, BLUE, SHADE);
         } else {
-            cv.text(core, x + 6, ry, label, INK, SHADE);
+            // (a long label gives way to its value)
+            let label = crate::online::fit(core, label, w - 12 - text_width(core, value) - 6);
+            cv.text(core, x + 6, ry, &label, INK, SHADE);
             cv.text(core, x + w - 6 - text_width(core, value), ry, value, INK, SHADE);
         }
     }
