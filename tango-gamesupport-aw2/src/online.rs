@@ -1407,6 +1407,9 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     if crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
         if !battle {
             core.raw_write_8(BATTLE, -1, 1);
+            if input_log_on() {
+                log::info!("input-drop: battle started, Teams record controller bytes (1 = human) {:?}", crate::online_teams::controller_bytes(core));
+            }
             crate::online_stats::battle_started(core);
         }
         core.raw_write_8(OUT_T, -1, 0);
@@ -1489,6 +1492,46 @@ pub(crate) fn input_log_on() -> bool {
     *ON.get_or_init(|| std::env::var("TANGOAW2_INPUT_LOG").is_ok_and(|v| v == "1"))
 }
 
+/// Test aid (`TANGOAW2_INPUT_LOG=1`): every unit on the map (army, kind, cell, hit points), logged whenever the list
+/// changes (looked at twice a second), so the pictures can be checked against the game's own state.
+fn log_units(core: &Core) {
+    use std::sync::atomic::{AtomicU32, Ordering::Relaxed};
+    static TICK: AtomicU32 = AtomicU32::new(0);
+    if TICK.fetch_add(1, Relaxed) % 30 != 0 {
+        return;
+    }
+    const MAP: u32 = 0x0201_E450;
+    let (w, h) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
+    if w == 0 || w > 64 || h == 0 || h > 64 {
+        return;
+    }
+    let base = core.raw_read_32(0x0849_9594, -1);
+    let mut out = format!(" [map {w}x{h}]");
+    for y in 0..h {
+        let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+        for x in 0..w {
+            let id = core.raw_read_8(MAP + 0x51A + row + x, -1) as u32;
+            if id == 0 {
+                continue;
+            }
+            let u = base + 12 * id;
+            let t = core.raw_read_8(u, -1) as usize;
+            if t == 0 {
+                continue;
+            }
+            let hp = core.raw_read_16(u + 4, -1) & 0x7F;
+            let name = crate::bh_smart::NAMES.get(t).copied().unwrap_or("?");
+            out.push_str(&format!(" A{} {name}({x},{y}) hp{hp};", crate::five::army_of_index(core, id)));
+        }
+    }
+    static LAST: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+    let mut last = LAST.lock().unwrap();
+    if *last != out {
+        log::info!("units:{out}");
+        *last = out;
+    }
+}
+
 fn log_dropped(active: usize, army: u8, inputs: &[u32]) {
     static LAST: std::sync::Mutex<Vec<u32>> = std::sync::Mutex::new(Vec::new());
     let dropped: Vec<u32> = inputs.iter().enumerate().map(|(k, &v)| if k == active { 0 } else { v & 0x3FF }).collect();
@@ -1528,10 +1571,9 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         let active = crate::pvp::seat_of_n(army, n);
         if input_log_on() {
             log_dropped(active, army, inputs);
+            log_units(core);
             static CELLS_FOR: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
-            if CELLS_FOR.swap(current, std::sync::atomic::Ordering::Relaxed) != current {
-                crate::fog_view::log_cells(core, current);
-            }
+            CELLS_FOR.store(current, std::sync::atomic::Ordering::Relaxed);
             static CURSOR_WAS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
             let at = core.raw_read_16(0x0300_33E4, -1) as u32 | (core.raw_read_16(0x0300_33E6, -1) as u32) << 16;
             if CURSOR_WAS.swap(at, std::sync::atomic::Ordering::Relaxed) != at {

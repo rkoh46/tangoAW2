@@ -117,6 +117,12 @@ fn record(core: &Core) -> Record {
     }
 }
 
+/// The Teams record's controller byte of each army (1 = human, 0 = the computer), for the test log.
+pub fn controller_bytes(core: &Core) -> Vec<u8> {
+    let rec = record(core);
+    (0..rec.armies.min(5)).map(|a| core.raw_read_8(rec.controller + a, -1)).collect()
+}
+
 fn tags(core: &Core) -> bool {
     // (UNRANKED has no tag pairs)
     crate::ds_weather::is_on(core) && !crate::unranked::on(core)
