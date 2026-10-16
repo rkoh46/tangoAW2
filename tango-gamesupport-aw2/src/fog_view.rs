@@ -136,6 +136,11 @@ pub fn procs(core: &Core) -> Vec<u32> {
     out
 }
 
+/// The console shows the plain map with nothing of the mover's UI on it.
+pub fn plain_map(core: &Core) -> bool {
+    phase(core) == Phase::Map && !ui_open(core) && steady_regs(core)
+}
+
 fn ui_open(core: &Core) -> bool {
     !procs(core).is_empty()
 }

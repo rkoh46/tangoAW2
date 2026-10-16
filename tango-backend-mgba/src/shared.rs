@@ -25,6 +25,8 @@ use tango_match::{HostInput, Side};
 use crate::gba::{to_rgba, JOYFLAGS_MASK};
 
 /// A waiting window's picture is made again after this many ticks.
+/// Ticks between two clean pictures of a mover's own view kept for its window.
+const OWN_EVERY: u32 = 20;
 const WATCH_EVERY: u32 = 2;
 
 /// The scratch copy of the console a [`SharedGame::view_as`] works on.
@@ -143,6 +145,14 @@ pub trait SharedGame: Sync {
         false
     }
 
+    /// Whether the console shows the plain map of the mover's own turn: nothing of its menus, pages or wipes, which is when
+    /// a clean picture of the seat's own view can be made for it to keep ([`view_as`](Self::view_as)) until its first
+    /// waiting picture of the next turn.
+    fn plain_map(&self, core: &mgba::core::Core) -> bool {
+        let _ = core;
+        false
+    }
+
     /// Whether `seat` should be shown nothing right now. The engine no longer blacks a window out (a waiting seat's
     /// picture is [`view_as`](Self::view_as)'s); kept for tools that still ask.
     fn conceal(&self, core: &mgba::core::Core, seat: usize) -> bool {
@@ -255,6 +265,12 @@ pub struct SharedLink {
     /// Each seat's last waiting picture (shown while the game cannot make one) and its view memory.
     watched: [Option<Vec<u8>>; tango_match::MAX_SEATS],
     watched_at: [Option<u32>; tango_match::MAX_SEATS],
+    /// The console's own picture as of tick `.1`, taken before the first scratch run of that tick: the scratch run
+    /// leaves its own picture in the video buffer (loading the snapshot back does not redraw), so a window showing the
+    /// console's picture after another seat's scratch picture would show that one.
+    console_frame: Option<(Vec<u8>, u32)>,
+    /// When a seat's own clean picture was last made for it to keep.
+    own_at: [Option<u32>; tango_match::MAX_SEATS],
     /// Each seat's last picture that was not black, and the tick it was shown.
     good: [Option<(Vec<u8>, u32)>; tango_match::MAX_SEATS],
     /// The tick each seat's last "black picture" log line was written (instrumentation).
@@ -312,6 +328,8 @@ impl SharedLink {
             players: 2,
             watched: Default::default(),
             watched_at: Default::default(),
+            console_frame: None,
+            own_at: Default::default(),
             good: Default::default(),
             black_logged: Default::default(),
             view_memory: Default::default(),
@@ -359,6 +377,8 @@ impl SharedLink {
             players: 2,
             watched: Default::default(),
             watched_at: Default::default(),
+            console_frame: None,
+            own_at: Default::default(),
             good: Default::default(),
             black_logged: Default::default(),
             view_memory: Default::default(),
@@ -434,6 +454,9 @@ impl SharedLink {
     }
 
     fn scratch_frame(&mut self, seat: usize) -> Option<Vec<u8>> {
+        if self.console_frame.as_ref().is_none_or(|(_, at)| *at != self.tick) {
+            self.console_frame = self.inner.video_buffer(0).map(to_rgba).map(|f| (f, self.tick));
+        }
         let snap = self.inner.save().ok()?;
         let game = self.game;
         let mode = self.mode;
@@ -611,23 +634,32 @@ impl SharedSide<'_> {
                 return Some((f, "watch"));
             }
         }
-        let mut frame = self.link.inner.video_buffer(0).map(to_rgba)?;
+        let mut frame = match self.link.console_frame.as_ref().filter(|(_, at)| *at == self.link.tick) {
+            Some((f, _)) => f.clone(),
+            None => self.link.inner.video_buffer(0).map(to_rgba)?,
+        };
         let core = self.link.inner.core(0);
         if self.link.game.overlay_hires(core, self.link.mode, self.player, &mut frame).is_none() {
             self.link.game.overlay(core, self.link.mode, self.player, &mut frame);
         }
-        // The seat's own turn: its picture is what its window shows until the first one of the next waiting turn is made.
+        // The seat's own turn: until the first picture of the next waiting turn is made, its window keeps a clean picture of
+        // its own view (made on the scratch console while the console shows the plain map: no menu, no cursor), never the
+        // console's frame itself, which has the menu and the cursor of the moment the turn ended.
         let mover = {
             let core = self.link.inner.core(0);
             let game = self.link.game;
             (0..self.link.players.max(2)).any(|s| s != self.player && game.watching(core, s))
         };
-        // (only the seat's own picture, a clean one: a waiting seat that had none to show must not keep the console's, the
-        // mover's, which may be a wipe or black, as the picture it holds for the rest of the turn)
         let own = !self.link.game.watching(self.link.inner.core(0), self.player);
-        if self.conceal && mover && own && !dark(&frame) {
-            self.link.watched[self.player] = Some(frame.clone());
-            self.link.watched_at[self.player] = None;
+        if self.conceal && mover && own && self.link.game.plain_map(self.link.inner.core(0)) {
+            let due = self.link.own_at[self.player].is_none_or(|at| self.link.tick.wrapping_sub(at) >= OWN_EVERY);
+            if due {
+                self.link.own_at[self.player] = Some(self.link.tick);
+                if let Some(f) = self.link.scratch_frame(self.player) {
+                    self.link.watched[self.player] = Some(f);
+                    self.link.watched_at[self.player] = None;
+                }
+            }
         }
         Some((frame, "console"))
     }
@@ -641,7 +673,11 @@ impl Side for SharedSide<'_> {
         let (f, path) = self.frame_raw()?;
         let (tick, seat) = (self.link.tick, self.player);
         if dark(&f) {
-            let native = path == "console" || self.link.inner.video_buffer(0).map(to_rgba).is_none_or(|c| dark(&c));
+            let native = path == "console"
+                || match self.link.console_frame.as_ref().filter(|(_, at)| *at == tick) {
+                    Some((c, _)) => dark(c),
+                    None => self.link.inner.video_buffer(0).map(to_rgba).is_none_or(|c| dark(&c)),
+                };
             if tick.wrapping_sub(self.link.black_logged[seat]) >= 60 {
                 self.link.black_logged[seat] = tick;
                 let core = self.link.inner.core(0);

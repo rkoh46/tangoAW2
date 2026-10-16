@@ -106,6 +106,7 @@ fn main() {
     let ticks = std::cell::Cell::new(0usize);
     let native = std::cell::Cell::new(0usize);
     let phase = std::cell::RefCell::new(String::from("start"));
+    let merge_last = std::cell::RefCell::new(String::new());
     // (watch BASE TOL: every tick, until unwatch, the waiting seats' pictures are compared with the BASE shotall's)
     let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
     let tick = |link: &mut tango_backend_mgba::SharedLink, keys: &[u32]| {
@@ -113,12 +114,31 @@ fn main() {
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
+        if std::env::var_os("AW2_MERGE_CHECK").is_some() {
+            // which seat's keys the console would take now: every seat presses its own bit
+            let c = link.core();
+            let seats: Vec<u32> = (0..n).map(|i| 1u32 << i).collect();
+            let real = tango_gamesupport_aw2::online::merge(c, keys);
+            if real.is_some_and(|w| w != 0) {
+                println!("  t{t}: keys {:?} -> console word {:x} cursor y {}", keys, real.unwrap(), c.raw_read_16(0x0300_33E6, -1));
+            }
+            let word = tango_gamesupport_aw2::online::merge(c, &seats);
+            let src = word.map(|w| if w == 0 { "none".to_string() } else { format!("{}", w.trailing_zeros()) }).unwrap_or_else(|| "pass".into());
+            let ph = tango_gamesupport_aw2::fog_view::phase(c);
+            let army = c.raw_read_8(0x0300_33EC, -1);
+            let key = format!("src {src} army {army} phase {ph:?}");
+            let mut last = merge_last.borrow_mut();
+            if *last != key {
+                println!("merge t{t}: {key}");
+                *last = key;
+            }
+        }
         if let Some((a, b)) = std::env::var("AW2_TRACE").ok().and_then(|v| v.split_once('-').map(|(a, b)| (a.parse::<usize>().unwrap(), b.parse::<usize>().unwrap()))) {
             if (a..b).contains(&t) {
                 let c = link.core();
                 let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c).iter().map(|f| format!("{:x}", f & 0xFFFFFF)).collect();
                 let io = |o: u32| c.raw_read_16(0x0400_0000 + o, -1);
-                println!("trace t{t} keys {:03x} loop {:08x} phase {:?} disp {:04x} win {:04x}/{:04x} bld {:04x}/{:04x}/{:02x} mos {:04x} procs [{}]", keys.iter().fold(0, |a, b| a | b), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), io(0), io(0x48), io(0x4A), io(0x50), io(0x52), io(0x54), io(0x4C), procs.join(" "));
+                println!("trace t{t} army {} mm {}/{} keys {:03x} loop {:08x} phase {:?} disp {:04x} win {:04x}/{:04x} bld {:04x}/{:04x}/{:02x} mos {:04x} procs [{}]", c.raw_read_8(0x0300_33EC, -1), c.raw_read_8(0x0300_14E2, -1), c.raw_read_8(0x0300_14F0, -1), keys.iter().fold(0, |a, b| a | b), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), io(0), io(0x48), io(0x4A), io(0x50), io(0x52), io(0x54), io(0x4C), procs.join(" "));
             }
         }
         if let Some((label, base, tol, bad, count)) = watch.borrow_mut().as_mut() {
@@ -270,6 +290,21 @@ fn main() {
                     let worst = bad.iter().map(|b| b.2).max().unwrap_or(0);
                     println!("watch {label}: {count} ticks, {} frames over {tol} differing pixels (worst {worst}){first} {}", bad.len(), if bad.is_empty() { "ok" } else { "FAIL" });
                     failed |= !bad.is_empty();
+                }
+            }
+            // consoleis SEAT: SEAT's window shows the console's own picture (the mover's: its cursor, its menus), exit 1 otherwise
+            // notconsole SEATS: none of those seats' windows shows it (waiting seats: never the mover's cursor, menus or ranges)
+            "consoleis" | "notconsole" => {
+                let seats: Vec<usize> = p[1].split(',').map(|v| v.parse().unwrap()).collect();
+                let console = link.solo_side().frame().unwrap_or_default();
+                for seat in seats {
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    let f = link.side(seat).frame().unwrap_or_default();
+                    let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
+                    let same = diff == 0;
+                    let ok = same == (p[0] == "consoleis");
+                    println!("{} seat {seat}: {diff} pixels from the console's {}", p[0], if ok { "ok" } else { "FAIL" });
+                    failed |= !ok;
                 }
             }
             // fv: the game's state the waiting view decides from
