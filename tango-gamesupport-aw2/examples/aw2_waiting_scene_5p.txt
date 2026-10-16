@@ -1,0 +1,56 @@
+# 5 seats, Fog on: seat 0 (army 1) attacks with an infantry at (8,4) the army 2 infantry at (7,4). The mover and army 2 (who sees its own unit) show the battle scene, armies 3-5 (no vision of the fight) keep their map. Run: AW2_SAMPLE=10 aw2_room_teams <rom> <out> this-file (the seats need pictures of the map from before); exit 1 on a failed check.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 300
+until army=1 60
+wait 400
+aid unit 1 inf 8 4
+aid unit 2 inf 7 4
+wait 10
+goto 0 8 4
+wait 10
+press 0 A
+wait 30
+press 0 A
+wait 30
+shotall at1
+press 0 A
+wait 20
+fv
+press 0 A
+wait 40
+fv
+wait 40
+consoleis 0,1 3000
+notconsole 2,3,4 3000
+wait 60
+consoleis 0,1 3000
+notconsole 2,3,4 3000

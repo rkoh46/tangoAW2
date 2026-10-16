@@ -177,10 +177,19 @@ pub enum Phase {
     Busy,
     /// The mover's full-screen CO page: never shown; the waiting window keeps its last picture.
     Page,
+    /// A battle scene (the combat animation with the COs' faces): with fog it is shown to the seats that see the attacker or
+    /// its target, the others keep their last clean picture; without fog it is the console's for everybody.
+    Scene,
     /// A wipe or fade into or out of the mover's menu or page, or between two screens: the waiting window keeps its last
     /// clean picture until the map is plain again.
     Moving,
 }
+
+/// The battle scene's procs (`0x080501DD`, many of them, while the scene plays; the main-loop callback is 0).
+const SCENE_PROC: u32 = 0x0805_01DD;
+
+/// What each seat's window last saw of the map (width, height, cells seen), for the seats' share of a battle scene.
+static VISION: std::sync::Mutex<[Option<(i32, i32, Vec<bool>)>; 5]> = std::sync::Mutex::new([None, None, None, None, None]);
 
 /// The procs of the pages' wipes and fades in and out (the CO page's, the map overview's): the mover's, never shown.
 const WIPE_PROCS: [u32; 2] = [0x0801_11AD, 0x0802_C451];
@@ -219,8 +228,11 @@ fn between_screens(core: &Core) -> Option<Phase> {
     if core.raw_read_32(MAIN_LOOP, -1) != 0 {
         return None;
     }
-    if procs(core).iter().any(|&f| rules_proc(f)) {
+    let running = procs(core);
+    if running.iter().any(|&f| rules_proc(f)) {
         Some(Phase::Page)
+    } else if running.contains(&SCENE_PROC) {
+        Some(Phase::Scene)
     } else if moving(core) {
         Some(Phase::Moving)
     } else {
@@ -385,7 +397,27 @@ pub fn view(scratch: Scratch, seat: usize) -> bool {
     r.is_ok()
 }
 
+/// A battle scene during a fog match: the seat is shown the console's picture when its last view of the map sees the
+/// attacker's cell (where the cursor is now) or the target's (where it was last on the map).
+fn scene_view(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
+    let core = scratch.core();
+    let attacker = (core.raw_read_8(CURSOR, -1) as i32, core.raw_read_8(CURSOR + 2, -1) as i32);
+    let target = (core.raw_read_8(crate::pvp::LAST_CELL, -1) as i32, core.raw_read_8(crate::pvp::LAST_CELL + 1, -1) as i32);
+    let vision = VISION.lock().unwrap();
+    let (w, h, seen) = vision.get(seat).and_then(|v| v.as_ref()).ok_or("no view of the map yet")?;
+    let sees = |(x, y): (i32, i32)| x >= 0 && y >= 0 && x < *w && y < *h && seen[(y * w + x) as usize];
+    if sees(attacker) || sees(target) {
+        scratch.show_console();
+        Ok(())
+    } else {
+        Err("the scene is out of sight")
+    }
+}
+
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
+    if phase(scratch.core()) == Phase::Scene {
+        return scene_view(scratch, seat);
+    }
     let on_map = |s: &dyn tango_backend_mgba::Scratch| s.core().raw_read_32(MAIN_LOOP, -1) == MAP_LOOP;
     if phase(scratch.core()) == Phase::Page && scratch.memory()[0] == 0 {
         // The mover's full-screen CO page: never shown. On the scratch B closes it (a few dozen frames, and its fade),
@@ -432,7 +464,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         if let Some(army) = viewer_army(scratch.core(), seat) {
             scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, army);
         }
-        let last = scratch.memory()[3];
+        let last = scratch.memory()[3] & 3;
         let side = settle_panel(scratch.core_mut(), last);
         scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
         run(scratch, &[0, 0, 0])?;
@@ -461,7 +493,9 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         core.raw_write_16(CURSOR_PX + 2, -1, (cursor.1 * 16) as u16);
     };
     let (mut cx, mut cy) = (mem[1], mem[2]);
-    let mut side = mem[3];
+    // (bit 2 of the fourth word: the camera is where a followed cell of the mover's put it, not at the army's own place)
+    let followed = mem[3] & 4 != 0;
+    let mut side = mem[3] & 3;
     place(scratch, cx, cy, (cx + 7, cy + 4));
     side = settle_panel(scratch.core_mut(), side);
     scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
@@ -480,8 +514,8 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         place(scratch, cx, cy, mover_cell);
         side = settle_panel(scratch.core_mut(), side);
         refresh(scratch, 2)?;
-    } else if !window_sees(scratch.core(), cx, cy, w, h) {
-        // (the camera was left where a unit of the mover's was seen once, and nothing in the window is seen now: grey
+    } else if followed || !window_sees(scratch.core(), cx, cy, w, h) {
+        // (the camera was left where a cell of the mover's was seen once, or nothing in its window is seen now: grey
         // fogged terrain and no units; back to the army's own HQ)
         let (ax, ay) = anchor(scratch.core(), army);
         cx = (ax - 7).clamp(0, (w - 15).max(0));
@@ -496,7 +530,12 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         run(scratch, &[0, 0])?;
     }
     close_ui(scratch)?;
-    *scratch.memory() = [1, cx, cy, side];
+    if seat < 5 {
+        let core = scratch.core();
+        let seen_cells: Vec<bool> = (0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| seen(core, x, y)).collect();
+        VISION.lock().unwrap()[seat] = Some((w, h, seen_cells));
+    }
+    *scratch.memory() = [1, cx, cy, side | if follow { 4 } else { 0 }];
     Ok(())
 }
 

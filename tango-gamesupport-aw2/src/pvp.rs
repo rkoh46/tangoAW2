@@ -466,11 +466,19 @@ fn debug_dump(core: &Core) {
 const MAP_MENU_ITEMS: u32 = 0x0300_14A1;
 const MENU_END: u8 = 6;
 pub(crate) const MENU_POWER: u8 = 2;
-/// The End row of the map menu last shown, plus one (0: none yet), then the item the cursor was last on.
+/// The End row of the map menu last shown, plus one (0: none yet), then the item the cursor was last on, then the cell
+/// the cursor was last on while the map showed (x, y): the target of an attack when its scene starts.
 pub const END_ROW: u32 = 0x0203_C610;
+pub const LAST_CELL: u32 = END_ROW + 2;
 
-/// Before every tick: keeps the row of End while the map menu shows it.
+/// Before every tick: keeps the row of End while the map menu shows it, and the cursor's cell while the map is up.
 pub(crate) fn track_menu(core: &mut Core) {
+    if core.raw_read_32(0x0300_0000, -1) == 0x0802_2049 {
+        let cell = [core.raw_read_8(0x0300_33E4, -1), core.raw_read_8(0x0300_33E6, -1)];
+        if core.raw_read_8(LAST_CELL, -1) != cell[0] || core.raw_read_8(LAST_CELL + 1, -1) != cell[1] {
+            core.raw_write_range(LAST_CELL, -1, &cell);
+        }
+    }
     // (the list is led by a 0xFF while it is the menu's: the game reuses those bytes for other things afterwards)
     if core.raw_read_8(MAP_MENU_STATE, -1) != 4 || core.raw_read_8(MAP_MENU_ITEMS - 1, -1) != 0xFF {
         return;
@@ -642,6 +650,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             // (a battle scene is the console's own picture only for a seat whose army, or a teammate's, fights in it)
             crate::fog_view::Phase::Busy => crate::fog_view::fog(core) && !crate::fog_view::scene_visible_to(core, seat),
             crate::fog_view::Phase::Map | crate::fog_view::Phase::Page | crate::fog_view::Phase::Moving => true,
+            crate::fog_view::Phase::Scene => crate::fog_view::fog(core),
         }
     }
 
