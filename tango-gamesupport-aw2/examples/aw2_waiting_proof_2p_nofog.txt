@@ -1,0 +1,96 @@
+# 2 seats, a real Fog-off match (the g2poff case): the mover (seat 0) opens the map menu, selects a unit (move range), opens a base build menu, moves a unit and waits; the other window stays within 6000 pixels of its clean view on EVERY tick. Run: aw2_room_teams <rom> <out> this-file; exit 1 on a failed watch.
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+until teams 100
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+goto 0 4 7
+wait 60
+shotall wb
+press 0 B
+wait 10
+watch map_menu wb 6000
+press 0 A
+wait 30
+press 0 B
+wait 40
+wait 40
+unwatch map_menu
+# 2 seats, Fog off: proof frames that the waiting window (seat 1) never shows the mover's move-range tiles, base build menu or build result early: shots of both windows at each step (move range, build menu, build, walk, wait). Run: aw2_room_teams <rom> <out> this-file, then look at the *_s0 / *_s1 pairs.
+aid unit 1 inf 4 7
+aid unit 2 inf 9 7
+wait 10
+goto 0 4 7
+wait 60
+shotall r0
+press 0 A
+wait 25
+shotall r1
+wait 25
+shotall r2
+press 0 B
+wait 40
+goto 0 1 6
+wait 60
+shotall b0
+press 0 A
+wait 12
+shotall b1
+wait 40
+shotall b2
+press 0 DOWN
+wait 20
+shotall b3
+press 0 A
+wait 10
+shotall b4
+wait 20
+shotall b5
+wait 60
+shotall b6
+press 0 B
+wait 40
+goto 0 4 7
+wait 60
+press 0 A
+wait 30
+goto 0 6 7
+wait 10
+shotall m0
+press 0 A
+wait 6
+shotall m1
+wait 6
+shotall m2
+wait 6
+shotall m3
+wait 12
+shotall m4
+wait 20
+shotall m5
+press 0 A
+wait 6
+shotall m6
+wait 20
+shotall m7
+wait 60
+shotall m8

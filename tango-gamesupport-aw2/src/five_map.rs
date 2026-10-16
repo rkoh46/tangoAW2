@@ -414,17 +414,21 @@ mod tests {
     }
 
     /// The armies of a map counted from its data, not its label: the owners of its property tiles and of the
-    /// units placed on it (both by army slot; the colours are the header's). Returns (armies, armies with an HQ, units placed).
-    fn counted(m: &crate::five_map_data::Map) -> (u32, u32, u32) {
+    /// units placed on it (both by army slot; the colours are the header's). Returns (armies, armies with an HQ, units placed, production properties: bases, airports, ports, owned or neutral).
+    fn counted(m: &crate::five_map_data::Map) -> (u32, u32, u32, u32) {
         let raw = &m.tiles[4..];
         let mut bytes = Vec::new();
         for block in raw.chunks(9) {
             bytes.extend_from_slice(&block[1..]);
         }
         let (w, h) = (bytes[0] as usize, bytes[1] as usize);
-        let (mut owners, mut hqs) = (0u32, 0u32);
+        let (mut owners, mut hqs, mut prod) = (0u32, 0u32, 0u32);
         for t in 0..w * h {
             let id = u16::from_le_bytes([bytes[2 + 2 * t], bytes[3 + 2 * t]]) as u32;
+            // (production: base +1, airport +3, port +4 in each owner's five tiles, neutral's included)
+            if matches!(id, 0x1C0..=0x1D8 if matches!((id - 0x1C0) % 5, 1 | 3 | 4)) || matches!(id, 0x1B5 | 0x1B7 | 0x1B8) {
+                prod += 1;
+            }
             let (army, hq) = match id {
                 // (neutral 0x1C0.. is owner 0; armies 1..4 follow, then the fifth's 0x1B4..)
                 0x1C5..=0x1D8 => ((id - 0x1C0) / 5, (id - 0x1C0) % 5 == 0),
@@ -445,21 +449,21 @@ mod tests {
                 }
             }
         }
-        (owners.count_ones(), hqs.count_ones(), placed)
+        (owners.count_ones(), hqs.count_ones(), placed, prod)
     }
 
     #[test]
     fn every_map_has_the_armies_it_is_listed_for() {
         for m in MAPS {
-            let (armies, hqs, _) = counted(m);
+            let (armies, hqs, _, _) = counted(m);
             assert_eq!(armies, m.armies as u32, "{}: armies counted from its data", m.name);
             assert!(hqs <= armies && hqs >= 1, "{}", m.name);
             assert_eq!(m.colours.len(), m.armies as usize, "{}", m.name);
         }
         // the groups the online tabs use (armies, pre-deployed): none empty is asserted by the audit example
         for m in MAPS {
-            let (_, _, placed) = counted(m);
-            let group = (m.armies, placed > 0);
+            let (_, _, placed, prod) = counted(m);
+            let group = (m.armies, placed > 0 && prod == 0);
             assert!((2..=5).contains(&group.0), "{}", m.name);
         }
     }

@@ -4,8 +4,8 @@
 //! ([`crate::unranked`]; its tabs, list, picture, size and property boxes as offline), but its list holds only the maps
 //! for as many armies as the room has players, in two tabs: every frame [`retab`] puts each map's header tab (+0x1A,
 //! what the list builder sorts maps into tabs by) on the Classic tab (2) or the Pre-Deployed tab (4), and maps for
-//! another count on a tab no list shows ([`HIDE`]). A map is Pre-Deployed when its unit list places units
-//! ([`predeployed`]). The tabs read "3P" and "3P Predeploy" for a room of 3 ([`tab_titles`]); a tab with no map is
+//! another count on a tab no list shows ([`HIDE`]). A map is Pre-Deployed when it starts with units placed and has no
+//! base, airport or port ([`Info::predeployed`]). The tabs read "3P" and "3P Predeploy" for a room of 3 ([`tab_titles`]); a tab with no map is
 //! skipped by the list (the 5P rooms have one tab). Offline Versus is not touched (nothing here runs outside a room's
 //! match).
 //!
@@ -81,7 +81,7 @@ fn scan(core: &Core, armies: usize) -> (Vec<u8>, Vec<u8>) {
         if !(TABS.contains(&tab) || tab == HIDE) || armies_of(core, table, id) as usize != armies {
             continue;
         }
-        let pre = predeployed(core, core.raw_read_32(h + 0x34, -1));
+        let pre = info(core, id as u8).is_some_and(|i| i.predeployed());
         found.push((tab, id as u8, pre));
     }
     found.sort();
@@ -89,9 +89,12 @@ fn scan(core: &Core, armies: usize) -> (Vec<u8>, Vec<u8>) {
     (pick(false), pick(true))
 }
 
-/// A map starts with units placed (its unit list has units, not only the armies' empty headers).
-fn predeployed(core: &Core, units: u32) -> bool {
-    rom(units) && core.raw_read_8(units, -1) == 0xFE && unit_owners(core, units).1 > 0
+impl Info {
+    /// Pre-deployed: it starts with units placed and nobody can build more, because it has no production property (a
+    /// base, airport or port, owned or neutral: a neutral one can be captured). Units placed and a base: a plain map.
+    fn predeployed(&self) -> bool {
+        self.placed > 0 && self.bases + self.airports + self.ports == 0
+    }
 }
 
 /// What a map is made of, decoded once.
@@ -104,6 +107,12 @@ struct Info {
     /// Bit k: army slot k owns a property / an HQ on the map.
     owners: u8,
     hqs: u8,
+    /// Production properties, owned or neutral (they can be captured): bases, airports, ports.
+    airports: u16,
+    ports: u16,
+    /// Units placed at the start, and bit k: army slot k has some.
+    placed: u32,
+    unit_owners: u8,
     /// Per tile, row by row: a kind (`K_*`).
     cells: Vec<u8>,
 }
@@ -199,7 +208,7 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
             slot.min(5)
         }
     };
-    let (mut props, mut bases, mut owners, mut hqs) = (0u16, 0u16, 0u8, 0u8);
+    let (mut props, mut bases, mut owners, mut hqs, mut airports, mut ports) = (0u16, 0u16, 0u8, 0u8, 0u16, 0u16);
     let cells = (0..w as usize * ht as usize)
         .map(|i| {
             let t = u16::from_le_bytes([raw[2 + 2 * i], raw[3 + 2 * i]]) as usize;
@@ -209,6 +218,8 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
                 6 | 8 | 10 | 11 | 14 | 20 => {
                     props += 1;
                     bases += (kind == 14) as u16;
+                    airports += (kind == 10) as u16;
+                    ports += (kind == 11) as u16;
                     if (1..=5).contains(&owner) {
                         owners |= 1 << owner;
                         if kind == 8 {
@@ -232,7 +243,9 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
             }
         })
         .collect();
-    let info = Arc::new(Info { name: name_of(core, text), w, h: ht, props, bases, owners, hqs, cells });
+    let units = core.raw_read_32(h + 0x34, -1);
+    let (unit_owners, placed) = if rom(units) && core.raw_read_8(units, -1) == 0xFE { unit_owners(core, units) } else { (0, 0) };
+    let info = Arc::new(Info { name: name_of(core, text), w, h: ht, props, bases, owners, hqs, airports, ports, placed, unit_owners, cells });
     caches().lock().unwrap().insert(key, info.clone());
     Some(info)
 }
@@ -251,6 +264,12 @@ pub struct AuditRow {
     /// Of them, the armies with an HQ.
     pub hqs: u8,
     pub predeployed: bool,
+    /// Production properties, owned or neutral.
+    pub bases: u16,
+    pub airports: u16,
+    pub ports: u16,
+    /// Units placed at the start.
+    pub placed: u32,
     /// The armies the map's header says (what the game's own lists trust).
     pub header: u8,
 }
@@ -288,10 +307,8 @@ pub fn audit(core: &Core) -> Vec<AuditRow> {
             continue;
         }
         let Some(i) = info(core, id as u8) else { continue };
-        let units = core.raw_read_32(h + 0x34, -1);
-        let (umask, placed) = if rom(units) && core.raw_read_8(units, -1) == 0xFE { unit_owners(core, units) } else { (0, 0) };
-        let predeployed = placed > 0;
-        let all = i.owners | umask;
+        let predeployed = i.predeployed();
+        let all = i.owners | i.unit_owners;
         let source = if crate::five_map::map_of(id as u8).is_some() {
             "tangoAW2"
         } else if table == crate::ds_versus::TABLE {
@@ -308,6 +325,10 @@ pub fn audit(core: &Core) -> Vec<AuditRow> {
             armies: all.count_ones() as u8,
             hqs: i.hqs.count_ones() as u8,
             predeployed,
+            bases: i.bases,
+            airports: i.airports,
+            ports: i.ports,
+            placed: i.placed,
             header: armies_of(core, table, id),
         });
     }
@@ -425,7 +446,7 @@ pub fn retab(core: &mut Core) {
         } else if armies_of(core, table, id) as usize != n {
             HIDE
         } else {
-            if predeployed(core, core.raw_read_32(h + 0x34, -1)) {
+            if info(core, id as u8).is_some_and(|i| i.predeployed()) {
                 pre
             } else {
                 plain

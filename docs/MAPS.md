@@ -9,356 +9,366 @@ A unit test (`five_map::tests::every_map_has_the_armies_it_is_listed_for`) check
 A room of N players sees two tabs: "NP" and "NP Predeploy" ("NP - Predeploy" is two letters too wide for the game's
 tab box). A tab with no map is hidden.
 
-**Pre-deployed** means the map's unit list places units for the armies at the start.
+**Pre-deployed** means the map starts with units placed **and has no production property**: no base, airport or
+port, owned or neutral (a neutral one can be captured), so nobody can build units. A map with units placed and a base
+is a plain map.
 
-**5P limitation:** every 5-army map is pre-deployed (the nine below), so a 5-player room has only the "5P Predeploy" tab;
-there is no 5P map without pre-placed units yet. (Maps marked tangoAW2 with the Black Obelisk or Dual Strike art
-need that art to be listed.)
+## Counts
+
+| Players | Without the Dual Strike pack (plain / predeploy) | With the pack (plain / predeploy) |
+|---|---|---|
+| 2P | 60 / 12 | 76 / 15 |
+| 3P | 30 / 3 | 37 / 6 |
+| 4P | 27 / 5 | 42 / 10 |
+| 5P | 6 / 0 | 9 / 0 |
+
+**5P limitation:** no 5-army map is pre-deployed yet (all nine have bases), so a 5-player room has only the "5P" tab
+and "5P Predeploy" is hidden (Left/Right does nothing). The first 5P pre-deployed map is planned.
 
 ## Without the Dual Strike pack (AW2's own maps and tangoAW2's)
 
-| Id | Map | Source | Size | Armies | Pre-deployed |
-|---|---|---|---|---|---|
-| 01 | Bean Island | AW2 | 16x15 | 2 | no |
-| 02 | Crater Isle | AW2 | 16x15 | 2 | no |
-| 03 | Triangles | AW2 | 16x15 | 2 | no |
-| 04 | Ball Islands | AW2 | 42x15 | 2 | no |
-| 05 | Coral Lagoon | AW2 | 16x15 | 2 | no |
-| 06 | Puzzle Trio | AW2 | 32x15 | 2 | no |
-| 07 | Fist Peninsula | AW2 | 16x15 | 2 | no |
-| 08 | Deer Harbor | AW2 | 32x30 | 2 | no |
-| 09 | Alara Range | AW2 | 32x15 | 2 | no |
-| 0A | Lost River | AW2 | 32x15 | 2 | no |
-| 0B | Volcano Isle | AW2 | 16x15 | 2 | no |
-| 0C | Turtle Atoll | AW2 | 16x30 | 2 | no |
-| 0D | Squash Island | AW2 | 48x15 | 2 | no |
-| 0E | Cube Keys | AW2 | 32x30 | 2 | no |
-| 0F | Mirror Islands | AW2 | 32x15 | 2 | no |
-| 10 | Shark Strait | AW2 | 37x30 | 2 | no |
-| 11 | Royal Channel | AW2 | 39x30 | 2 | no |
-| 12 | Little Island | AW2 | 19x10 | 2 | no |
-| 13 | Sun Canal | AW2 | 15x13 | 2 | no |
-| 14 | Beaker River | AW2 | 19x15 | 2 | no |
-| 15 | Star Islands | AW2 | 31x16 | 2 | no |
-| 16 | Eon Springs | AW2 | 19x17 | 2 | no |
-| 17 | Portal Bridge | AW2 | 19x17 | 2 | no |
-| 18 | Sabre Range | AW2 | 15x11 | 2 | no |
-| 19 | Asphalt Maze | AW2 | 15x11 | 2 | no |
-| 1A | Cog Isle | AW2 | 15x11 | 2 | no |
-| 1B | Zero Wood | AW2 | 15x11 | 2 | no |
-| 1C | Switchback | AW2 | 21x15 | 2 | no |
-| 1D | Ruby Keys | AW2 | 29x15 | 2 | no |
-| 1E | Rainy Haven | AW2 | 15x15 | 2 | no |
-| 1F | Rail Strait | AW2 | 18x15 | 2 | no |
-| 20 | Tribe Islands | AW2 | 19x17 | 2 | no |
-| 21 | Vision Bridge | AW2 | 31x24 | 2 | no |
-| 22 | Piston Dam | AW2 | 26x14 | 2 | no |
-| 23 | Hat Harbor | AW2 | 21x21 | 2 | no |
-| 24 | Swan Cove | AW2 | 24x17 | 2 | no |
-| 25 | Go Islands | AW2 | 24x17 | 2 | no |
-| 26 | Hourglass Isle | AW2 | 16x24 | 2 | no |
-| 6C | Spann Island | AW2 | 15x10 | 2 | no |
-| 6D | Moji Island | AW2 | 26x22 | 2 | no |
-| 6E | Duo Falls | AW2 | 33x13 | 2 | no |
-| 6F | Sole Harbor | AW2 | 22x15 | 2 | no |
-| 70 | Pivot Isle | AW2 | 21x14 | 2 | no |
-| 71 | Land's End | AW2 | 32x27 | 2 | no |
-| 72 | Kita Straight | AW2 | 27x35 | 2 | no |
-| 73 | Point Stormy | AW2 | 25x22 | 2 | no |
-| 74 | Ridge Island | AW2 | 19x16 | 2 | no |
-| 75 | Mial's Hope | AW2 | 45x28 | 2 | no |
-| 76 | Bounty River | AW2 | 28x22 | 2 | no |
-| 77 | Toil Ferry | AW2 | 26x16 | 2 | no |
-| 78 | Twin Isle | AW2 | 22x16 | 2 | no |
-| 79 | Dire Range | AW2 | 37x25 | 2 | no |
-| 7A | Egg Islands | AW2 | 42x28 | 2 | no |
-| 7B | Terra Maw | AW2 | 32x28 | 2 | no |
-| 80 | Pay Dirt | AW2 | 16x12 | 2 | no |
-| 82 | Nest Egg | AW2 | 18x11 | 2 | no |
-| 83 | The Trident | AW2 | 19x19 | 2 | no |
-| 84 | Banker Hills | AW2 | 18x13 | 2 | no |
-| 27 | Brace Range | AW2 | 15x10 | 2 | yes |
-| 28 | River Range | AW2 | 15x10 | 2 | yes |
-| 29 | Moon Isle | AW2 | 17x11 | 2 | yes |
-| 2A | Mint Plateau | AW2 | 17x11 | 2 | yes |
-| 2B | Jewel Canal | AW2 | 19x12 | 2 | yes |
-| 2C | Wrench Island | AW2 | 22x13 | 2 | yes |
-| 2D | Rapid Ferry | AW2 | 19x12 | 2 | yes |
-| 2E | Bundle City | AW2 | 16x11 | 2 | yes |
-| 2F | Scarab Road | AW2 | 15x14 | 2 | yes |
-| 30 | Pointing River | AW2 | 15x10 | 2 | yes |
-| 31 | Liaison Wood | AW2 | 19x14 | 2 | yes |
-| 38 | Big Daddy | AW2 | 19x15 | 2 | yes |
-| 81 | Long Road | AW2 | 15x20 | 2 | yes |
-| 85 | Missile Plains | AW2 | 20x20 | 2 | yes |
-| 3B | Pyramid Cape | AW2 | 21x18 | 3 | no |
-| 3C | Bead Islands | AW2 | 19x16 | 3 | no |
-| 3D | Clover Keys | AW2 | 21x18 | 3 | no |
-| 3E | Keyhole Cove | AW2 | 18x25 | 3 | no |
-| 3F | Fork River | AW2 | 22x22 | 3 | no |
-| 40 | Mantis River | AW2 | 21x22 | 3 | no |
-| 41 | Channel City | AW2 | 23x17 | 3 | no |
-| 42 | Ink Canal | AW2 | 21x20 | 3 | no |
-| 43 | Shield Hills | AW2 | 22x18 | 3 | no |
-| 44 | Peril Maze | AW2 | 25x23 | 3 | no |
-| 45 | Gem Creek | AW2 | 19x16 | 3 | no |
-| 46 | Glass Heights | AW2 | 19x16 | 3 | no |
-| 47 | Devil's Inlet | AW2 | 28x18 | 3 | no |
-| 48 | Shear Port | AW2 | 27x19 | 3 | no |
-| 49 | Liar's Cove | AW2 | 21x22 | 3 | no |
-| 4A | Nail Canal | AW2 | 27x17 | 3 | no |
-| 4B | Atlas River | AW2 | 24x23 | 3 | no |
-| 4C | Eel Channels | AW2 | 27x24 | 3 | no |
-| 4D | Jab Peninsula | AW2 | 21x22 | 3 | no |
-| 4E | Thorn Islands | AW2 | 32x15 | 3 | no |
-| 4F | Portsmouth | AW2 | 30x20 | 3 | no |
-| 50 | Archipelagos | AW2 | 24x16 | 3 | no |
-| 51 | Wyrm's Eye | AW2 | 30x20 | 3 | no |
-| 52 | Knotted Keys | AW2 | 30x20 | 3 | no |
-| 7C | Stamp Islands | AW2 | 27x22 | 3 | no |
-| 7D | Rivers Four | AW2 | 25x16 | 3 | no |
-| 7E | Ring Islands | AW2 | 33x35 | 3 | no |
-| 7F | Last Mission | AW2 | 26x20 | 3 | no |
-| 86 | Lost Basin | AW2 | 22x15 | 3 | no |
-| 87 | Risky Vale | AW2 | 18x12 | 3 | no |
-| 32 | Delta Heights | AW2 | 15x11 | 3 | yes |
-| 33 | Poem Cape | AW2 | 16x22 | 3 | yes |
-| 34 | Blue Lake | AW2 | 23x16 | 3 | yes |
-| 53 | Four Corners | AW2 | 15x10 | 4 | no |
-| 54 | Rocket Cape | AW2 | 24x21 | 4 | no |
-| 55 | Crop River | AW2 | 32x28 | 4 | no |
-| 56 | Tween Isle | AW2 | 19x23 | 4 | no |
-| 57 | Rival Islands | AW2 | 23x26 | 4 | no |
-| 58 | Loop Road | AW2 | 25x16 | 4 | no |
-| 59 | Plus Canal | AW2 | 25x17 | 4 | no |
-| 5A | Islas Five | AW2 | 23x23 | 4 | no |
-| 5B | Patriot Cove | AW2 | 23x18 | 4 | no |
-| 5C | Web River | AW2 | 21x27 | 4 | no |
-| 5D | Cap Narrows | AW2 | 17x26 | 4 | no |
-| 5E | Jay Islands | AW2 | 32x18 | 4 | no |
-| 5F | Chain Canal | AW2 | 19x26 | 4 | no |
-| 60 | Spring Lakes | AW2 | 32x28 | 4 | no |
-| 61 | Tatter River | AW2 | 32x28 | 4 | no |
-| 62 | Island X | AW2 | 30x16 | 4 | no |
-| 63 | Alakule | AW2 | 32x28 | 4 | no |
-| 64 | Traitor River | AW2 | 46x28 | 4 | no |
-| 65 | Fable Hills | AW2 | 32x28 | 4 | no |
-| 66 | South Cape | AW2 | 32x39 | 4 | no |
-| 67 | Glory Islands | AW2 | 32x28 | 4 | no |
-| 68 | Pipe Maze | AW2 | 22x22 | 4 | no |
-| 69 | Lock Ridge | AW2 | 30x20 | 4 | no |
-| 6A | Heartland | AW2 | 30x20 | 4 | no |
-| 6B | Badlands | AW2 | 40x26 | 4 | no |
-| 88 | The Ring | AW2 | 19x18 | 4 | no |
-| 89 | Strong Land | AW2 | 18x12 | 4 | no |
-| 35 | Coil Range | AW2 | 15x11 | 4 | yes |
-| 36 | Leaf Haven | AW2 | 18x18 | 4 | yes |
-| 37 | Battle Cube | AW2 | 28x30 | 4 | yes |
-| 39 | Grid Assault | AW2 | 19x19 | 4 | yes |
-| 3A | Crossroad | AW2 | 25x23 | 4 | yes |
-| 00 | Five Seas | tangoAW2 | 20x40 | 5 | yes |
-| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | yes |
-| BD | Magma Crown | tangoAW2 | 30x30 | 5 | yes |
-| BE | Skyreach | tangoAW2 | 32x36 | 5 | yes |
-| BF | The Citadel | tangoAW2 | 29x33 | 5 | yes |
-| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | yes |
+| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed |
+|---|---|---|---|---|---|---|---|---|---|
+| 01 | Bean Island | AW2 | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
+| 02 | Crater Isle | AW2 | 16x15 | 2 | 0 | 10 | 0 | 0 | no |
+| 03 | Triangles | AW2 | 16x15 | 2 | 0 | 8 | 4 | 0 | no |
+| 04 | Ball Islands | AW2 | 42x15 | 2 | 0 | 10 | 6 | 5 | no |
+| 05 | Coral Lagoon | AW2 | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
+| 06 | Puzzle Trio | AW2 | 32x15 | 2 | 0 | 6 | 6 | 7 | no |
+| 07 | Fist Peninsula | AW2 | 16x15 | 2 | 0 | 6 | 0 | 0 | no |
+| 08 | Deer Harbor | AW2 | 32x30 | 2 | 0 | 8 | 6 | 4 | no |
+| 09 | Alara Range | AW2 | 32x15 | 2 | 0 | 7 | 7 | 0 | no |
+| 0A | Lost River | AW2 | 32x15 | 2 | 0 | 9 | 5 | 0 | no |
+| 0B | Volcano Isle | AW2 | 16x15 | 2 | 0 | 7 | 2 | 0 | no |
+| 0C | Turtle Atoll | AW2 | 16x30 | 2 | 0 | 7 | 0 | 4 | no |
+| 0D | Squash Island | AW2 | 48x15 | 2 | 0 | 7 | 6 | 4 | no |
+| 0E | Cube Keys | AW2 | 32x30 | 2 | 0 | 9 | 7 | 0 | no |
+| 0F | Mirror Islands | AW2 | 32x15 | 2 | 0 | 6 | 3 | 0 | no |
+| 10 | Shark Strait | AW2 | 37x30 | 2 | 0 | 10 | 14 | 8 | no |
+| 11 | Royal Channel | AW2 | 39x30 | 2 | 0 | 10 | 9 | 8 | no |
+| 12 | Little Island | AW2 | 19x10 | 2 | 0 | 4 | 0 | 0 | no |
+| 13 | Sun Canal | AW2 | 15x13 | 2 | 0 | 7 | 0 | 4 | no |
+| 14 | Beaker River | AW2 | 19x15 | 2 | 0 | 8 | 6 | 0 | no |
+| 15 | Star Islands | AW2 | 31x16 | 2 | 0 | 10 | 8 | 8 | no |
+| 16 | Eon Springs | AW2 | 19x17 | 2 | 0 | 8 | 6 | 0 | no |
+| 17 | Portal Bridge | AW2 | 19x17 | 2 | 0 | 8 | 4 | 0 | no |
+| 18 | Sabre Range | AW2 | 15x11 | 2 | 0 | 8 | 0 | 0 | no |
+| 19 | Asphalt Maze | AW2 | 15x11 | 2 | 0 | 8 | 0 | 0 | no |
+| 1A | Cog Isle | AW2 | 15x11 | 2 | 0 | 4 | 0 | 0 | no |
+| 1B | Zero Wood | AW2 | 15x11 | 2 | 0 | 5 | 0 | 0 | no |
+| 1C | Switchback | AW2 | 21x15 | 2 | 0 | 12 | 0 | 0 | no |
+| 1D | Ruby Keys | AW2 | 29x15 | 2 | 0 | 8 | 4 | 4 | no |
+| 1E | Rainy Haven | AW2 | 15x15 | 2 | 0 | 5 | 4 | 6 | no |
+| 1F | Rail Strait | AW2 | 18x15 | 2 | 0 | 5 | 0 | 3 | no |
+| 20 | Tribe Islands | AW2 | 19x17 | 2 | 0 | 8 | 0 | 6 | no |
+| 21 | Vision Bridge | AW2 | 31x24 | 2 | 0 | 13 | 0 | 8 | no |
+| 22 | Piston Dam | AW2 | 26x14 | 2 | 0 | 6 | 8 | 0 | no |
+| 23 | Hat Harbor | AW2 | 21x21 | 2 | 0 | 9 | 10 | 0 | no |
+| 24 | Swan Cove | AW2 | 24x17 | 2 | 0 | 11 | 0 | 6 | no |
+| 25 | Go Islands | AW2 | 24x17 | 2 | 0 | 7 | 0 | 6 | no |
+| 26 | Hourglass Isle | AW2 | 16x24 | 2 | 0 | 10 | 0 | 0 | no |
+| 6C | Spann Island | AW2 | 15x10 | 2 | 0 | 8 | 0 | 0 | no |
+| 6D | Moji Island | AW2 | 26x22 | 2 | 0 | 8 | 0 | 0 | no |
+| 6E | Duo Falls | AW2 | 33x13 | 2 | 0 | 10 | 5 | 0 | no |
+| 6F | Sole Harbor | AW2 | 22x15 | 2 | 0 | 8 | 0 | 3 | no |
+| 70 | Pivot Isle | AW2 | 21x14 | 2 | 0 | 10 | 4 | 3 | no |
+| 71 | Land's End | AW2 | 32x27 | 2 | 0 | 12 | 3 | 0 | no |
+| 72 | Kita Straight | AW2 | 27x35 | 2 | 0 | 9 | 0 | 7 | no |
+| 73 | Point Stormy | AW2 | 25x22 | 2 | 0 | 14 | 4 | 4 | no |
+| 74 | Ridge Island | AW2 | 19x16 | 2 | 0 | 8 | 0 | 0 | no |
+| 75 | Mial's Hope | AW2 | 45x28 | 2 | 0 | 14 | 9 | 0 | no |
+| 76 | Bounty River | AW2 | 28x22 | 2 | 0 | 16 | 0 | 8 | no |
+| 77 | Toil Ferry | AW2 | 26x16 | 2 | 0 | 8 | 8 | 6 | no |
+| 78 | Twin Isle | AW2 | 22x16 | 2 | 0 | 8 | 0 | 0 | no |
+| 79 | Dire Range | AW2 | 37x25 | 2 | 0 | 14 | 10 | 0 | no |
+| 7A | Egg Islands | AW2 | 42x28 | 2 | 0 | 18 | 0 | 9 | no |
+| 7B | Terra Maw | AW2 | 32x28 | 2 | 0 | 16 | 5 | 5 | no |
+| 80 | Pay Dirt | AW2 | 16x12 | 2 | 0 | 7 | 4 | 0 | no |
+| 81 | Long Road | AW2 | 15x20 | 2 | 2 | 12 | 0 | 0 | no |
+| 82 | Nest Egg | AW2 | 18x11 | 2 | 0 | 11 | 0 | 0 | no |
+| 83 | The Trident | AW2 | 19x19 | 2 | 0 | 8 | 8 | 5 | no |
+| 84 | Banker Hills | AW2 | 18x13 | 2 | 0 | 8 | 0 | 0 | no |
+| 85 | Missile Plains | AW2 | 20x20 | 2 | 28 | 22 | 0 | 0 | no |
+| 27 | Brace Range | AW2 | 15x10 | 2 | 18 | 0 | 0 | 0 | yes |
+| 28 | River Range | AW2 | 15x10 | 2 | 20 | 0 | 0 | 0 | yes |
+| 29 | Moon Isle | AW2 | 17x11 | 2 | 30 | 0 | 0 | 0 | yes |
+| 2A | Mint Plateau | AW2 | 17x11 | 2 | 28 | 0 | 0 | 0 | yes |
+| 2B | Jewel Canal | AW2 | 19x12 | 2 | 38 | 0 | 0 | 0 | yes |
+| 2C | Wrench Island | AW2 | 22x13 | 2 | 24 | 0 | 0 | 0 | yes |
+| 2D | Rapid Ferry | AW2 | 19x12 | 2 | 32 | 0 | 0 | 0 | yes |
+| 2E | Bundle City | AW2 | 16x11 | 2 | 20 | 0 | 0 | 0 | yes |
+| 2F | Scarab Road | AW2 | 15x14 | 2 | 26 | 0 | 0 | 0 | yes |
+| 30 | Pointing River | AW2 | 15x10 | 2 | 26 | 0 | 0 | 0 | yes |
+| 31 | Liaison Wood | AW2 | 19x14 | 2 | 28 | 0 | 0 | 0 | yes |
+| 38 | Big Daddy | AW2 | 19x15 | 2 | 36 | 0 | 0 | 0 | yes |
+| 3B | Pyramid Cape | AW2 | 21x18 | 3 | 0 | 12 | 0 | 0 | no |
+| 3C | Bead Islands | AW2 | 19x16 | 3 | 0 | 9 | 0 | 6 | no |
+| 3D | Clover Keys | AW2 | 21x18 | 3 | 0 | 9 | 4 | 0 | no |
+| 3E | Keyhole Cove | AW2 | 18x25 | 3 | 0 | 15 | 9 | 9 | no |
+| 3F | Fork River | AW2 | 22x22 | 3 | 0 | 12 | 0 | 0 | no |
+| 40 | Mantis River | AW2 | 21x22 | 3 | 0 | 13 | 5 | 0 | no |
+| 41 | Channel City | AW2 | 23x17 | 3 | 0 | 10 | 0 | 3 | no |
+| 42 | Ink Canal | AW2 | 21x20 | 3 | 0 | 12 | 5 | 6 | no |
+| 43 | Shield Hills | AW2 | 22x18 | 3 | 0 | 11 | 0 | 0 | no |
+| 44 | Peril Maze | AW2 | 25x23 | 3 | 0 | 9 | 10 | 0 | no |
+| 45 | Gem Creek | AW2 | 19x16 | 3 | 0 | 6 | 4 | 3 | no |
+| 46 | Glass Heights | AW2 | 19x16 | 3 | 0 | 12 | 0 | 0 | no |
+| 47 | Devil's Inlet | AW2 | 28x18 | 3 | 0 | 12 | 10 | 0 | no |
+| 48 | Shear Port | AW2 | 27x19 | 3 | 0 | 15 | 0 | 6 | no |
+| 49 | Liar's Cove | AW2 | 21x22 | 3 | 0 | 13 | 4 | 4 | no |
+| 4A | Nail Canal | AW2 | 27x17 | 3 | 0 | 11 | 0 | 0 | no |
+| 4B | Atlas River | AW2 | 24x23 | 3 | 0 | 12 | 7 | 0 | no |
+| 4C | Eel Channels | AW2 | 27x24 | 3 | 0 | 13 | 0 | 7 | no |
+| 4D | Jab Peninsula | AW2 | 21x22 | 3 | 0 | 12 | 5 | 6 | no |
+| 4E | Thorn Islands | AW2 | 32x15 | 3 | 0 | 14 | 5 | 3 | no |
+| 4F | Portsmouth | AW2 | 30x20 | 3 | 0 | 9 | 0 | 9 | no |
+| 50 | Archipelagos | AW2 | 24x16 | 3 | 0 | 14 | 0 | 11 | no |
+| 51 | Wyrm's Eye | AW2 | 30x20 | 3 | 0 | 19 | 0 | 0 | no |
+| 52 | Knotted Keys | AW2 | 30x20 | 3 | 0 | 9 | 0 | 0 | no |
+| 7C | Stamp Islands | AW2 | 27x22 | 3 | 0 | 19 | 13 | 11 | no |
+| 7D | Rivers Four | AW2 | 25x16 | 3 | 0 | 17 | 0 | 0 | no |
+| 7E | Ring Islands | AW2 | 33x35 | 3 | 0 | 24 | 0 | 15 | no |
+| 7F | Last Mission | AW2 | 26x20 | 3 | 0 | 20 | 10 | 0 | no |
+| 86 | Lost Basin | AW2 | 22x15 | 3 | 0 | 15 | 0 | 0 | no |
+| 87 | Risky Vale | AW2 | 18x12 | 3 | 0 | 13 | 0 | 0 | no |
+| 32 | Delta Heights | AW2 | 15x11 | 3 | 18 | 0 | 0 | 0 | yes |
+| 33 | Poem Cape | AW2 | 16x22 | 3 | 24 | 0 | 0 | 0 | yes |
+| 34 | Blue Lake | AW2 | 23x16 | 3 | 36 | 0 | 0 | 0 | yes |
+| 53 | Four Corners | AW2 | 15x10 | 4 | 0 | 8 | 1 | 0 | no |
+| 54 | Rocket Cape | AW2 | 24x21 | 4 | 0 | 20 | 0 | 0 | no |
+| 55 | Crop River | AW2 | 32x28 | 4 | 0 | 21 | 11 | 0 | no |
+| 56 | Tween Isle | AW2 | 19x23 | 4 | 0 | 8 | 0 | 6 | no |
+| 57 | Rival Islands | AW2 | 23x26 | 4 | 0 | 20 | 8 | 8 | no |
+| 58 | Loop Road | AW2 | 25x16 | 4 | 0 | 12 | 0 | 0 | no |
+| 59 | Plus Canal | AW2 | 25x17 | 4 | 0 | 16 | 0 | 0 | no |
+| 5A | Islas Five | AW2 | 23x23 | 4 | 0 | 16 | 12 | 0 | no |
+| 5B | Patriot Cove | AW2 | 23x18 | 4 | 0 | 20 | 6 | 8 | no |
+| 5C | Web River | AW2 | 21x27 | 4 | 0 | 20 | 0 | 0 | no |
+| 5D | Cap Narrows | AW2 | 17x26 | 4 | 0 | 16 | 6 | 0 | no |
+| 5E | Jay Islands | AW2 | 32x18 | 4 | 0 | 8 | 0 | 4 | no |
+| 5F | Chain Canal | AW2 | 19x26 | 4 | 0 | 18 | 6 | 10 | no |
+| 60 | Spring Lakes | AW2 | 32x28 | 4 | 0 | 15 | 0 | 0 | no |
+| 61 | Tatter River | AW2 | 32x28 | 4 | 0 | 24 | 11 | 0 | no |
+| 62 | Island X | AW2 | 30x16 | 4 | 0 | 18 | 4 | 6 | no |
+| 63 | Alakule | AW2 | 32x28 | 4 | 0 | 19 | 0 | 0 | no |
+| 64 | Traitor River | AW2 | 46x28 | 4 | 0 | 21 | 0 | 0 | no |
+| 65 | Fable Hills | AW2 | 32x28 | 4 | 0 | 26 | 12 | 0 | no |
+| 66 | South Cape | AW2 | 32x39 | 4 | 0 | 21 | 0 | 11 | no |
+| 67 | Glory Islands | AW2 | 32x28 | 4 | 0 | 19 | 10 | 14 | no |
+| 68 | Pipe Maze | AW2 | 22x22 | 4 | 0 | 20 | 4 | 0 | no |
+| 69 | Lock Ridge | AW2 | 30x20 | 4 | 0 | 8 | 0 | 0 | no |
+| 6A | Heartland | AW2 | 30x20 | 4 | 0 | 22 | 0 | 0 | no |
+| 6B | Badlands | AW2 | 40x26 | 4 | 0 | 22 | 6 | 4 | no |
+| 88 | The Ring | AW2 | 19x18 | 4 | 0 | 14 | 5 | 5 | no |
+| 89 | Strong Land | AW2 | 18x12 | 4 | 0 | 15 | 0 | 0 | no |
+| 35 | Coil Range | AW2 | 15x11 | 4 | 28 | 0 | 0 | 0 | yes |
+| 36 | Leaf Haven | AW2 | 18x18 | 4 | 40 | 0 | 0 | 0 | yes |
+| 37 | Battle Cube | AW2 | 28x30 | 4 | 76 | 0 | 0 | 0 | yes |
+| 39 | Grid Assault | AW2 | 19x19 | 4 | 36 | 0 | 0 | 0 | yes |
+| 3A | Crossroad | AW2 | 25x23 | 4 | 96 | 0 | 0 | 0 | yes |
+| 00 | Five Seas | tangoAW2 | 20x40 | 5 | 35 | 10 | 9 | 18 | no |
+| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | 30 | 10 | 4 | 0 | no |
+| BD | Magma Crown | tangoAW2 | 30x30 | 5 | 30 | 5 | 5 | 5 | no |
+| BE | Skyreach | tangoAW2 | 32x36 | 5 | 35 | 5 | 21 | 0 | no |
+| BF | The Citadel | tangoAW2 | 29x33 | 5 | 24 | 8 | 7 | 0 | no |
+| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no |
 
 ## With the Dual Strike pack
 
-| Id | Map | Source | Size | Armies | Pre-deployed |
-|---|---|---|---|---|---|
-| 01 | Bean Island | Dual Strike | 16x15 | 2 | no |
-| 02 | Crater Isle | Dual Strike | 16x15 | 2 | no |
-| 03 | Triangles | Dual Strike | 16x15 | 2 | no |
-| 04 | Ball Islands | Dual Strike | 42x15 | 2 | no |
-| 05 | Coral Lagoon | Dual Strike | 16x15 | 2 | no |
-| 06 | Puzzle Trio | Dual Strike | 32x15 | 2 | no |
-| 07 | Fist Peninsula | Dual Strike | 16x15 | 2 | no |
-| 08 | Deer Harbor | Dual Strike | 32x30 | 2 | no |
-| 09 | Alara Range | Dual Strike | 32x15 | 2 | no |
-| 0A | Lost River | Dual Strike | 32x15 | 2 | no |
-| 0B | Volcano Isle | Dual Strike | 16x15 | 2 | no |
-| 0C | Turtle Atoll | Dual Strike | 16x30 | 2 | no |
-| 0D | Squash Island | Dual Strike | 48x15 | 2 | no |
-| 0E | Cube Keys | Dual Strike | 32x30 | 2 | no |
-| 0F | Mirror Islands | Dual Strike | 32x15 | 2 | no |
-| 12 | Little Island | Dual Strike | 19x12 | 2 | no |
-| 13 | Sun Canal | Dual Strike | 16x13 | 2 | no |
-| 14 | Beaker River | Dual Strike | 19x15 | 2 | no |
-| 15 | Star Islands | Dual Strike | 31x16 | 2 | no |
-| 16 | Eon Springs | Dual Strike | 19x17 | 2 | no |
-| 17 | Portal Bridge | Dual Strike | 19x17 | 2 | no |
-| 18 | Sabre Range | Dual Strike | 16x12 | 2 | no |
-| 19 | Asphalt Maze | Dual Strike | 16x12 | 2 | no |
-| 1A | Cog Isle | Dual Strike | 16x12 | 2 | no |
-| 1B | Zero Wood | Dual Strike | 16x12 | 2 | no |
-| 1C | Switchback | Dual Strike | 21x15 | 2 | no |
-| 1D | Ruby Keys | Dual Strike | 29x15 | 2 | no |
-| 1E | Rainy Haven | Dual Strike | 16x15 | 2 | no |
-| 1F | Rail Strait | Dual Strike | 18x15 | 2 | no |
-| 20 | Tribe Islands | Dual Strike | 19x17 | 2 | no |
-| 21 | Vision Bridge | Dual Strike | 31x24 | 2 | no |
-| 22 | Piston Dam | Dual Strike | 26x14 | 2 | no |
-| 23 | Hat Harbor | Dual Strike | 21x21 | 2 | no |
-| 24 | Swan Cove | Dual Strike | 24x17 | 2 | no |
-| 25 | Go Islands | Dual Strike | 24x17 | 2 | no |
-| 26 | Hourglass Isle | Dual Strike | 16x24 | 2 | no |
-| 27 | Pipes Aplenty | Dual Strike | 18x15 | 2 | no |
-| 28 | Frigid Finale | Dual Strike | 17x15 | 2 | no |
-| 29 | Hachi's Land | Dual Strike | 32x32 | 2 | no |
-| 2A | Nell's Land | Dual Strike | 32x32 | 2 | no |
-| 2B | Sturm's Land | Dual Strike | 31x32 | 2 | no |
-| 2C | Lash's Land | Dual Strike | 31x33 | 2 | no |
-| 8B | Spann Island | Dual Strike | 16x12 | 2 | no |
-| 8C | Moji Island | Dual Strike | 26x22 | 2 | no |
-| 8D | Duo Falls | Dual Strike | 33x13 | 2 | no |
-| 8E | Sole Harbor | Dual Strike | 22x15 | 2 | no |
-| 8F | Pivot Isle | Dual Strike | 21x14 | 2 | no |
-| 90 | Land's End | Dual Strike | 32x27 | 2 | no |
-| 91 | Kita Straight | Dual Strike | 27x35 | 2 | no |
-| 92 | Point Stormy | Dual Strike | 25x22 | 2 | no |
-| 93 | Ridge Island | Dual Strike | 19x16 | 2 | no |
-| 94 | Mial's Hope | Dual Strike | 45x28 | 2 | no |
-| 95 | Bounty River | Dual Strike | 28x22 | 2 | no |
-| 96 | Toil Ferry | Dual Strike | 26x16 | 2 | no |
-| 97 | Twin Isle | Dual Strike | 22x16 | 2 | no |
-| 98 | Dire Range | Dual Strike | 37x25 | 2 | no |
-| 99 | Egg Islands | Dual Strike | 42x28 | 2 | no |
-| 9A | Terra Maw | Dual Strike | 32x28 | 2 | no |
-| 9F | Pay Dirt | Dual Strike | 16x12 | 2 | no |
-| A1 | Nest Egg | Dual Strike | 18x12 | 2 | no |
-| A2 | The Trident | Dual Strike | 19x19 | 2 | no |
-| A3 | Banker Hills | Dual Strike | 18x13 | 2 | no |
-| A9 | Little Lion | Dual Strike | 18x18 | 2 | no |
-| AA | Megalopolis | Dual Strike | 26x12 | 2 | no |
-| AB | Pipeline | Dual Strike | 27x22 | 2 | no |
-| B2 | Jelly Island | Dual Strike | 16x12 | 2 | no |
-| B3 | Whiplash | Dual Strike | 16x16 | 2 | no |
-| C1 | Silo Nation | tangoAW2 | 20x12 | 2 | no |
-| C2 | Risky Duo | tangoAW2 | 17x17 | 2 | no |
-| C3 | Helix Peninsula | tangoAW2 | 20x20 | 2 | no |
-| 10 | Shark Strait | Dual Strike | 37x30 | 2 | yes |
-| 11 | Royal Channel | Dual Strike | 39x30 | 2 | yes |
-| 2D | Brace Range | Dual Strike | 16x12 | 2 | yes |
-| 2E | River Range | Dual Strike | 16x12 | 2 | yes |
-| 2F | Moon Isle | Dual Strike | 17x12 | 2 | yes |
-| 30 | Mint Plateau | Dual Strike | 17x12 | 2 | yes |
-| 31 | Jewel Canal | Dual Strike | 19x12 | 2 | yes |
-| 32 | Wrench Island | Dual Strike | 22x13 | 2 | yes |
-| 33 | Rapid Ferry | Dual Strike | 19x12 | 2 | yes |
-| 34 | Bundle City | Dual Strike | 16x12 | 2 | yes |
-| 35 | Scarab Road | Dual Strike | 16x14 | 2 | yes |
-| 36 | Pointing River | Dual Strike | 16x12 | 2 | yes |
-| 37 | Liaison Wood | Dual Strike | 19x14 | 2 | yes |
-| 3E | Big Daddy | Dual Strike | 19x15 | 2 | yes |
-| 41 | Trifecta Isles | Dual Strike | 20x20 | 2 | yes |
-| 42 | Ocean Prison | Dual Strike | 26x12 | 2 | yes |
-| 43 | Narrow Ridge | Dual Strike | 17x25 | 2 | yes |
-| A0 | Long Road | Dual Strike | 15x20 | 2 | yes |
-| A4 | Missile Plains | Dual Strike | 20x20 | 2 | yes |
-| B8 | Obelisk Duel | tangoAW2 | 24x16 | 2 | yes |
-| F1 | The Colonel's Vault | tangoAW2 | 30x20 | 2 | yes |
-| 4C | Pyramid Cape | Dual Strike | 21x18 | 3 | no |
-| 4D | Bead Islands | Dual Strike | 19x16 | 3 | no |
-| 4E | Clover Keys | Dual Strike | 21x18 | 3 | no |
-| 4F | Keyhole Cove | Dual Strike | 18x25 | 3 | no |
-| 50 | Fork River | Dual Strike | 22x22 | 3 | no |
-| 51 | Mantis River | Dual Strike | 21x22 | 3 | no |
-| 52 | Channel City | Dual Strike | 23x17 | 3 | no |
-| 53 | Ink Canal | Dual Strike | 21x20 | 3 | no |
-| 54 | Shield Hills | Dual Strike | 22x18 | 3 | no |
-| 55 | Peril Maze | Dual Strike | 25x23 | 3 | no |
-| 56 | Gem Creek | Dual Strike | 19x16 | 3 | no |
-| 57 | Glass Heights | Dual Strike | 19x16 | 3 | no |
-| 58 | Devil's Inlet | Dual Strike | 28x18 | 3 | no |
-| 59 | Shear Port | Dual Strike | 27x19 | 3 | no |
-| 5A | Liar's Cove | Dual Strike | 21x22 | 3 | no |
-| 5B | Nail Canal | Dual Strike | 27x17 | 3 | no |
-| 5C | Atlas River | Dual Strike | 24x23 | 3 | no |
-| 5D | Eel Channels | Dual Strike | 27x24 | 3 | no |
-| 5E | Jab Peninsula | Dual Strike | 21x22 | 3 | no |
-| 5F | Thorn Islands | Dual Strike | 32x15 | 3 | no |
-| 60 | Portsmouth | Dual Strike | 30x20 | 3 | no |
-| 61 | Archipelagos | Dual Strike | 24x16 | 3 | no |
-| 62 | Wyrm's Eye | Dual Strike | 30x20 | 3 | no |
-| 63 | Knotted Keys | Dual Strike | 30x20 | 3 | no |
-| 64 | Fan Isle | Dual Strike | 25x27 | 3 | no |
-| 65 | Gridlock Glen | Dual Strike | 21x21 | 3 | no |
-| 66 | Kidney Island | Dual Strike | 18x27 | 3 | no |
-| 9B | Lost Basin | Dual Strike | 22x15 | 3 | no |
-| 9C | Rivers Four | Dual Strike | 25x16 | 3 | no |
-| 9D | Ring Islands | Dual Strike | 33x35 | 3 | no |
-| 9E | Last Mission | Dual Strike | 26x20 | 3 | no |
-| A5 | Stamp Islands | Dual Strike | 27x22 | 3 | no |
-| A6 | Risky Vale | Dual Strike | 18x12 | 3 | no |
-| AC | Rabbit Island | Dual Strike | 15x28 | 3 | no |
-| AD | Watery Downs | Dual Strike | 24x12 | 3 | no |
-| AE | Fortress Isle | Dual Strike | 27x17 | 3 | no |
-| 38 | Delta Heights | Dual Strike | 16x12 | 3 | yes |
-| 39 | Poem Cape | Dual Strike | 16x22 | 3 | yes |
-| 3A | Blue Lake | Dual Strike | 23x16 | 3 | yes |
-| 44 | Deadlakes | Dual Strike | 15x17 | 3 | yes |
-| 45 | No-Exit Isles | Dual Strike | 18x19 | 3 | yes |
-| 46 | Arrow Point | Dual Strike | 24x24 | 3 | yes |
-| B9 | Crystal Isles | tangoAW2 | 30x26 | 3 | yes |
-| 67 | Four Corners | Dual Strike | 16x12 | 4 | no |
-| 68 | Rocket Cape | Dual Strike | 24x21 | 4 | no |
-| 69 | Crop River | Dual Strike | 32x28 | 4 | no |
-| 6A | Tween Isle | Dual Strike | 19x23 | 4 | no |
-| 6B | Rival Islands | Dual Strike | 23x26 | 4 | no |
-| 6C | Loop Road | Dual Strike | 25x16 | 4 | no |
-| 6D | Plus Canal | Dual Strike | 25x17 | 4 | no |
-| 6E | Islas Five | Dual Strike | 23x23 | 4 | no |
-| 6F | Patriot Cove | Dual Strike | 23x18 | 4 | no |
-| 70 | Web River | Dual Strike | 21x27 | 4 | no |
-| 71 | Cap Narrows | Dual Strike | 17x26 | 4 | no |
-| 72 | Jay Islands | Dual Strike | 32x18 | 4 | no |
-| 73 | Chain Canal | Dual Strike | 19x26 | 4 | no |
-| 74 | Spring Lakes | Dual Strike | 32x28 | 4 | no |
-| 75 | Tatter River | Dual Strike | 32x28 | 4 | no |
-| 76 | Island X | Dual Strike | 30x16 | 4 | no |
-| 77 | Alakule | Dual Strike | 32x28 | 4 | no |
-| 78 | Traitor River | Dual Strike | 46x28 | 4 | no |
-| 79 | Fable Hills | Dual Strike | 32x28 | 4 | no |
-| 7A | South Cape | Dual Strike | 32x39 | 4 | no |
-| 7B | Glory Islands | Dual Strike | 32x28 | 4 | no |
-| 7C | Pipe Maze | Dual Strike | 22x22 | 4 | no |
-| 7D | Lock Ridge | Dual Strike | 30x20 | 4 | no |
-| 7E | Heartland | Dual Strike | 30x20 | 4 | no |
-| 7F | Badlands | Dual Strike | 40x26 | 4 | no |
-| 80 | Marine Cross | Dual Strike | 16x25 | 4 | no |
-| 81 | Axle Roads | Dual Strike | 25x25 | 4 | no |
-| 82 | Worm Canal | Dual Strike | 21x28 | 4 | no |
-| 83 | Broken Land | Dual Strike | 21x21 | 4 | no |
-| 84 | Rough Terrain | Dual Strike | 35x35 | 4 | no |
-| 85 | Deep Forest | Dual Strike | 16x12 | 4 | no |
-| 86 | Scramble Isle | Dual Strike | 16x12 | 4 | no |
-| 87 | Danger Pool | Dual Strike | 17x17 | 4 | no |
-| 88 | Dark City | Dual Strike | 30x14 | 4 | no |
-| 89 | Clover Pond | Dual Strike | 20x20 | 4 | no |
-| 8A | Cross Cape | Dual Strike | 16x32 | 4 | no |
-| A7 | The Ring | Dual Strike | 19x18 | 4 | no |
-| A8 | Strong Land | Dual Strike | 18x12 | 4 | no |
-| AF | Treble Ridge | Dual Strike | 16x12 | 4 | no |
-| B0 | Four Acres | Dual Strike | 26x26 | 4 | no |
-| B1 | Final Battle | Dual Strike | 16x12 | 4 | no |
-| 3B | Coil Range | Dual Strike | 16x12 | 4 | yes |
-| 3C | Leaf Haven | Dual Strike | 18x18 | 4 | yes |
-| 3D | Battle Cube | Dual Strike | 28x30 | 4 | yes |
-| 3F | Grid Assault | Dual Strike | 19x19 | 4 | yes |
-| 40 | Crossroad | Dual Strike | 25x23 | 4 | yes |
-| 47 | Crater Reef | Dual Strike | 35x35 | 4 | yes |
-| 48 | Lost Road | Dual Strike | 28x17 | 4 | yes |
-| 49 | Capital Clash | Dual Strike | 21x21 | 4 | yes |
-| 4A | Islands Agogo | Dual Strike | 27x26 | 4 | yes |
-| 4B | Grand Battle | Dual Strike | 29x29 | 4 | yes |
-| BA | Obelisk Plains | tangoAW2 | 28x28 | 4 | yes |
-| 00 | Five Seas | tangoAW2 | 20x40 | 5 | yes |
-| BB | Black Monolith | tangoAW2 | 30x30 | 5 | yes |
-| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | yes |
-| BD | Magma Crown | tangoAW2 | 30x30 | 5 | yes |
-| BE | Skyreach | tangoAW2 | 32x36 | 5 | yes |
-| BF | The Citadel | tangoAW2 | 29x33 | 5 | yes |
-| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | yes |
-| C4 | Black Wastes | tangoAW2 | 29x29 | 5 | yes |
-| C8 | Coral Crown | tangoAW2 | 29x29 | 5 | yes |
+| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed |
+|---|---|---|---|---|---|---|---|---|---|
+| 01 | Bean Island | Dual Strike | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
+| 02 | Crater Isle | Dual Strike | 16x15 | 2 | 0 | 10 | 0 | 0 | no |
+| 03 | Triangles | Dual Strike | 16x15 | 2 | 0 | 8 | 4 | 0 | no |
+| 04 | Ball Islands | Dual Strike | 42x15 | 2 | 0 | 10 | 6 | 5 | no |
+| 05 | Coral Lagoon | Dual Strike | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
+| 06 | Puzzle Trio | Dual Strike | 32x15 | 2 | 0 | 6 | 6 | 7 | no |
+| 07 | Fist Peninsula | Dual Strike | 16x15 | 2 | 0 | 6 | 0 | 0 | no |
+| 08 | Deer Harbor | Dual Strike | 32x30 | 2 | 0 | 8 | 6 | 4 | no |
+| 09 | Alara Range | Dual Strike | 32x15 | 2 | 0 | 7 | 7 | 0 | no |
+| 0A | Lost River | Dual Strike | 32x15 | 2 | 0 | 9 | 5 | 0 | no |
+| 0B | Volcano Isle | Dual Strike | 16x15 | 2 | 0 | 7 | 2 | 0 | no |
+| 0C | Turtle Atoll | Dual Strike | 16x30 | 2 | 0 | 7 | 0 | 4 | no |
+| 0D | Squash Island | Dual Strike | 48x15 | 2 | 0 | 7 | 6 | 4 | no |
+| 0E | Cube Keys | Dual Strike | 32x30 | 2 | 0 | 9 | 7 | 0 | no |
+| 0F | Mirror Islands | Dual Strike | 32x15 | 2 | 0 | 6 | 3 | 0 | no |
+| 10 | Shark Strait | Dual Strike | 37x30 | 2 | 20 | 10 | 14 | 8 | no |
+| 11 | Royal Channel | Dual Strike | 39x30 | 2 | 21 | 10 | 9 | 8 | no |
+| 12 | Little Island | Dual Strike | 19x12 | 2 | 0 | 4 | 0 | 0 | no |
+| 13 | Sun Canal | Dual Strike | 16x13 | 2 | 0 | 7 | 0 | 4 | no |
+| 14 | Beaker River | Dual Strike | 19x15 | 2 | 0 | 8 | 6 | 0 | no |
+| 15 | Star Islands | Dual Strike | 31x16 | 2 | 0 | 10 | 8 | 8 | no |
+| 16 | Eon Springs | Dual Strike | 19x17 | 2 | 0 | 8 | 6 | 0 | no |
+| 17 | Portal Bridge | Dual Strike | 19x17 | 2 | 0 | 8 | 4 | 0 | no |
+| 18 | Sabre Range | Dual Strike | 16x12 | 2 | 0 | 8 | 0 | 0 | no |
+| 19 | Asphalt Maze | Dual Strike | 16x12 | 2 | 0 | 8 | 0 | 0 | no |
+| 1A | Cog Isle | Dual Strike | 16x12 | 2 | 0 | 4 | 0 | 0 | no |
+| 1B | Zero Wood | Dual Strike | 16x12 | 2 | 0 | 5 | 0 | 0 | no |
+| 1C | Switchback | Dual Strike | 21x15 | 2 | 0 | 12 | 0 | 0 | no |
+| 1D | Ruby Keys | Dual Strike | 29x15 | 2 | 0 | 8 | 4 | 4 | no |
+| 1E | Rainy Haven | Dual Strike | 16x15 | 2 | 0 | 5 | 4 | 6 | no |
+| 1F | Rail Strait | Dual Strike | 18x15 | 2 | 0 | 5 | 0 | 3 | no |
+| 20 | Tribe Islands | Dual Strike | 19x17 | 2 | 0 | 8 | 0 | 6 | no |
+| 21 | Vision Bridge | Dual Strike | 31x24 | 2 | 0 | 13 | 0 | 8 | no |
+| 22 | Piston Dam | Dual Strike | 26x14 | 2 | 0 | 6 | 8 | 0 | no |
+| 23 | Hat Harbor | Dual Strike | 21x21 | 2 | 0 | 9 | 10 | 0 | no |
+| 24 | Swan Cove | Dual Strike | 24x17 | 2 | 0 | 11 | 0 | 6 | no |
+| 25 | Go Islands | Dual Strike | 24x17 | 2 | 0 | 7 | 0 | 6 | no |
+| 26 | Hourglass Isle | Dual Strike | 16x24 | 2 | 0 | 10 | 0 | 0 | no |
+| 27 | Pipes Aplenty | Dual Strike | 18x15 | 2 | 0 | 6 | 0 | 0 | no |
+| 28 | Frigid Finale | Dual Strike | 17x15 | 2 | 0 | 6 | 0 | 0 | no |
+| 29 | Hachi's Land | Dual Strike | 32x32 | 2 | 0 | 8 | 5 | 5 | no |
+| 2A | Nell's Land | Dual Strike | 32x32 | 2 | 0 | 10 | 2 | 2 | no |
+| 2B | Sturm's Land | Dual Strike | 31x32 | 2 | 0 | 21 | 2 | 10 | no |
+| 2C | Lash's Land | Dual Strike | 31x33 | 2 | 0 | 15 | 3 | 3 | no |
+| 8B | Spann Island | Dual Strike | 16x12 | 2 | 0 | 9 | 0 | 0 | no |
+| 8C | Moji Island | Dual Strike | 26x22 | 2 | 0 | 8 | 0 | 0 | no |
+| 8D | Duo Falls | Dual Strike | 33x13 | 2 | 0 | 7 | 5 | 0 | no |
+| 8E | Sole Harbor | Dual Strike | 22x15 | 2 | 0 | 10 | 0 | 3 | no |
+| 8F | Pivot Isle | Dual Strike | 21x14 | 2 | 0 | 8 | 5 | 3 | no |
+| 90 | Land's End | Dual Strike | 32x27 | 2 | 0 | 12 | 4 | 0 | no |
+| 91 | Kita Straight | Dual Strike | 27x35 | 2 | 0 | 9 | 0 | 8 | no |
+| 92 | Point Stormy | Dual Strike | 25x22 | 2 | 0 | 11 | 5 | 4 | no |
+| 93 | Ridge Island | Dual Strike | 19x16 | 2 | 0 | 8 | 0 | 0 | no |
+| 94 | Mial's Hope | Dual Strike | 45x28 | 2 | 0 | 13 | 9 | 0 | no |
+| 95 | Bounty River | Dual Strike | 28x22 | 2 | 0 | 16 | 0 | 10 | no |
+| 96 | Toil Ferry | Dual Strike | 26x16 | 2 | 0 | 9 | 8 | 6 | no |
+| 97 | Twin Isle | Dual Strike | 22x16 | 2 | 0 | 8 | 0 | 0 | no |
+| 98 | Dire Range | Dual Strike | 37x25 | 2 | 0 | 11 | 10 | 0 | no |
+| 99 | Egg Islands | Dual Strike | 42x28 | 2 | 0 | 12 | 0 | 8 | no |
+| 9A | Terra Maw | Dual Strike | 32x28 | 2 | 0 | 13 | 5 | 5 | no |
+| 9F | Pay Dirt | Dual Strike | 16x12 | 2 | 0 | 6 | 4 | 0 | no |
+| A0 | Long Road | Dual Strike | 15x20 | 2 | 2 | 12 | 0 | 0 | no |
+| A1 | Nest Egg | Dual Strike | 18x12 | 2 | 0 | 12 | 0 | 0 | no |
+| A2 | The Trident | Dual Strike | 19x19 | 2 | 0 | 6 | 8 | 5 | no |
+| A3 | Banker Hills | Dual Strike | 18x13 | 2 | 0 | 8 | 0 | 0 | no |
+| A4 | Missile Plains | Dual Strike | 20x20 | 2 | 28 | 22 | 0 | 0 | no |
+| A9 | Little Lion | Dual Strike | 18x18 | 2 | 0 | 12 | 1 | 0 | no |
+| AA | Megalopolis | Dual Strike | 26x12 | 2 | 0 | 8 | 0 | 0 | no |
+| AB | Pipeline | Dual Strike | 27x22 | 2 | 0 | 11 | 0 | 6 | no |
+| B2 | Jelly Island | Dual Strike | 16x12 | 2 | 0 | 9 | 0 | 0 | no |
+| B3 | Whiplash | Dual Strike | 16x16 | 2 | 0 | 5 | 0 | 8 | no |
+| B8 | Obelisk Duel | tangoAW2 | 24x16 | 2 | 12 | 4 | 2 | 0 | no |
+| C1 | Silo Nation | tangoAW2 | 20x12 | 2 | 0 | 6 | 1 | 0 | no |
+| C2 | Risky Duo | tangoAW2 | 17x17 | 2 | 0 | 16 | 2 | 1 | no |
+| C3 | Helix Peninsula | tangoAW2 | 20x20 | 2 | 0 | 10 | 2 | 3 | no |
+| F1 | The Colonel's Vault | tangoAW2 | 30x20 | 2 | 14 | 4 | 2 | 4 | no |
+| 2D | Brace Range | Dual Strike | 16x12 | 2 | 18 | 0 | 0 | 0 | yes |
+| 2E | River Range | Dual Strike | 16x12 | 2 | 20 | 0 | 0 | 0 | yes |
+| 2F | Moon Isle | Dual Strike | 17x12 | 2 | 30 | 0 | 0 | 0 | yes |
+| 30 | Mint Plateau | Dual Strike | 17x12 | 2 | 28 | 0 | 0 | 0 | yes |
+| 31 | Jewel Canal | Dual Strike | 19x12 | 2 | 38 | 0 | 0 | 0 | yes |
+| 32 | Wrench Island | Dual Strike | 22x13 | 2 | 24 | 0 | 0 | 0 | yes |
+| 33 | Rapid Ferry | Dual Strike | 19x12 | 2 | 32 | 0 | 0 | 0 | yes |
+| 34 | Bundle City | Dual Strike | 16x12 | 2 | 20 | 0 | 0 | 0 | yes |
+| 35 | Scarab Road | Dual Strike | 16x14 | 2 | 26 | 0 | 0 | 0 | yes |
+| 36 | Pointing River | Dual Strike | 16x12 | 2 | 26 | 0 | 0 | 0 | yes |
+| 37 | Liaison Wood | Dual Strike | 19x14 | 2 | 28 | 0 | 0 | 0 | yes |
+| 3E | Big Daddy | Dual Strike | 19x15 | 2 | 36 | 0 | 0 | 0 | yes |
+| 41 | Trifecta Isles | Dual Strike | 20x20 | 2 | 26 | 0 | 0 | 0 | yes |
+| 42 | Ocean Prison | Dual Strike | 26x12 | 2 | 28 | 0 | 0 | 0 | yes |
+| 43 | Narrow Ridge | Dual Strike | 17x25 | 2 | 28 | 0 | 0 | 0 | yes |
+| 4C | Pyramid Cape | Dual Strike | 21x18 | 3 | 0 | 12 | 0 | 0 | no |
+| 4D | Bead Islands | Dual Strike | 19x16 | 3 | 0 | 9 | 0 | 6 | no |
+| 4E | Clover Keys | Dual Strike | 21x18 | 3 | 0 | 9 | 4 | 0 | no |
+| 4F | Keyhole Cove | Dual Strike | 18x25 | 3 | 0 | 15 | 9 | 9 | no |
+| 50 | Fork River | Dual Strike | 22x22 | 3 | 0 | 12 | 0 | 0 | no |
+| 51 | Mantis River | Dual Strike | 21x22 | 3 | 0 | 13 | 5 | 0 | no |
+| 52 | Channel City | Dual Strike | 23x17 | 3 | 0 | 10 | 0 | 3 | no |
+| 53 | Ink Canal | Dual Strike | 21x20 | 3 | 0 | 12 | 5 | 6 | no |
+| 54 | Shield Hills | Dual Strike | 22x18 | 3 | 0 | 11 | 0 | 0 | no |
+| 55 | Peril Maze | Dual Strike | 25x23 | 3 | 0 | 9 | 10 | 0 | no |
+| 56 | Gem Creek | Dual Strike | 19x16 | 3 | 0 | 6 | 4 | 3 | no |
+| 57 | Glass Heights | Dual Strike | 19x16 | 3 | 0 | 12 | 0 | 0 | no |
+| 58 | Devil's Inlet | Dual Strike | 28x18 | 3 | 0 | 12 | 10 | 0 | no |
+| 59 | Shear Port | Dual Strike | 27x19 | 3 | 0 | 15 | 0 | 6 | no |
+| 5A | Liar's Cove | Dual Strike | 21x22 | 3 | 0 | 13 | 4 | 4 | no |
+| 5B | Nail Canal | Dual Strike | 27x17 | 3 | 0 | 11 | 0 | 0 | no |
+| 5C | Atlas River | Dual Strike | 24x23 | 3 | 0 | 12 | 7 | 0 | no |
+| 5D | Eel Channels | Dual Strike | 27x24 | 3 | 0 | 13 | 0 | 7 | no |
+| 5E | Jab Peninsula | Dual Strike | 21x22 | 3 | 0 | 12 | 5 | 6 | no |
+| 5F | Thorn Islands | Dual Strike | 32x15 | 3 | 0 | 14 | 5 | 3 | no |
+| 60 | Portsmouth | Dual Strike | 30x20 | 3 | 0 | 9 | 0 | 9 | no |
+| 61 | Archipelagos | Dual Strike | 24x16 | 3 | 0 | 14 | 0 | 11 | no |
+| 62 | Wyrm's Eye | Dual Strike | 30x20 | 3 | 0 | 19 | 0 | 0 | no |
+| 63 | Knotted Keys | Dual Strike | 30x20 | 3 | 0 | 9 | 0 | 0 | no |
+| 64 | Fan Isle | Dual Strike | 25x27 | 3 | 0 | 12 | 1 | 6 | no |
+| 65 | Gridlock Glen | Dual Strike | 21x21 | 3 | 0 | 12 | 3 | 0 | no |
+| 66 | Kidney Island | Dual Strike | 18x27 | 3 | 0 | 12 | 7 | 6 | no |
+| 9B | Lost Basin | Dual Strike | 22x15 | 3 | 0 | 16 | 0 | 0 | no |
+| 9C | Rivers Four | Dual Strike | 25x16 | 3 | 0 | 15 | 0 | 0 | no |
+| 9D | Ring Islands | Dual Strike | 33x35 | 3 | 0 | 19 | 1 | 10 | no |
+| 9E | Last Mission | Dual Strike | 26x20 | 3 | 0 | 16 | 9 | 0 | no |
+| A5 | Stamp Islands | Dual Strike | 27x22 | 3 | 0 | 15 | 11 | 9 | no |
+| A6 | Risky Vale | Dual Strike | 18x12 | 3 | 0 | 14 | 0 | 0 | no |
+| AC | Rabbit Island | Dual Strike | 15x28 | 3 | 0 | 11 | 1 | 4 | no |
+| AD | Watery Downs | Dual Strike | 24x12 | 3 | 0 | 13 | 1 | 1 | no |
+| AE | Fortress Isle | Dual Strike | 27x17 | 3 | 0 | 16 | 2 | 3 | no |
+| B9 | Crystal Isles | tangoAW2 | 30x26 | 3 | 18 | 3 | 4 | 6 | no |
+| 38 | Delta Heights | Dual Strike | 16x12 | 3 | 18 | 0 | 0 | 0 | yes |
+| 39 | Poem Cape | Dual Strike | 16x22 | 3 | 24 | 0 | 0 | 0 | yes |
+| 3A | Blue Lake | Dual Strike | 23x16 | 3 | 36 | 0 | 0 | 0 | yes |
+| 44 | Deadlakes | Dual Strike | 15x17 | 3 | 39 | 0 | 0 | 0 | yes |
+| 45 | No-Exit Isles | Dual Strike | 18x19 | 3 | 39 | 0 | 0 | 0 | yes |
+| 46 | Arrow Point | Dual Strike | 24x24 | 3 | 48 | 0 | 0 | 0 | yes |
+| 67 | Four Corners | Dual Strike | 16x12 | 4 | 0 | 8 | 1 | 0 | no |
+| 68 | Rocket Cape | Dual Strike | 24x21 | 4 | 0 | 20 | 0 | 0 | no |
+| 69 | Crop River | Dual Strike | 32x28 | 4 | 0 | 21 | 11 | 0 | no |
+| 6A | Tween Isle | Dual Strike | 19x23 | 4 | 0 | 8 | 0 | 6 | no |
+| 6B | Rival Islands | Dual Strike | 23x26 | 4 | 0 | 20 | 8 | 8 | no |
+| 6C | Loop Road | Dual Strike | 25x16 | 4 | 0 | 12 | 0 | 0 | no |
+| 6D | Plus Canal | Dual Strike | 25x17 | 4 | 0 | 16 | 0 | 0 | no |
+| 6E | Islas Five | Dual Strike | 23x23 | 4 | 0 | 16 | 12 | 0 | no |
+| 6F | Patriot Cove | Dual Strike | 23x18 | 4 | 0 | 20 | 6 | 8 | no |
+| 70 | Web River | Dual Strike | 21x27 | 4 | 0 | 20 | 0 | 0 | no |
+| 71 | Cap Narrows | Dual Strike | 17x26 | 4 | 0 | 16 | 6 | 0 | no |
+| 72 | Jay Islands | Dual Strike | 32x18 | 4 | 0 | 8 | 0 | 4 | no |
+| 73 | Chain Canal | Dual Strike | 19x26 | 4 | 0 | 18 | 6 | 10 | no |
+| 74 | Spring Lakes | Dual Strike | 32x28 | 4 | 0 | 15 | 0 | 0 | no |
+| 75 | Tatter River | Dual Strike | 32x28 | 4 | 0 | 24 | 11 | 0 | no |
+| 76 | Island X | Dual Strike | 30x16 | 4 | 0 | 18 | 4 | 6 | no |
+| 77 | Alakule | Dual Strike | 32x28 | 4 | 0 | 19 | 0 | 0 | no |
+| 78 | Traitor River | Dual Strike | 46x28 | 4 | 0 | 21 | 0 | 0 | no |
+| 79 | Fable Hills | Dual Strike | 32x28 | 4 | 0 | 26 | 12 | 0 | no |
+| 7A | South Cape | Dual Strike | 32x39 | 4 | 0 | 21 | 0 | 11 | no |
+| 7B | Glory Islands | Dual Strike | 32x28 | 4 | 0 | 19 | 10 | 14 | no |
+| 7C | Pipe Maze | Dual Strike | 22x22 | 4 | 0 | 20 | 4 | 0 | no |
+| 7D | Lock Ridge | Dual Strike | 30x20 | 4 | 0 | 8 | 0 | 0 | no |
+| 7E | Heartland | Dual Strike | 30x20 | 4 | 0 | 22 | 0 | 0 | no |
+| 7F | Badlands | Dual Strike | 40x26 | 4 | 0 | 22 | 6 | 4 | no |
+| 80 | Marine Cross | Dual Strike | 16x25 | 4 | 0 | 8 | 4 | 4 | no |
+| 81 | Axle Roads | Dual Strike | 25x25 | 4 | 0 | 14 | 8 | 0 | no |
+| 82 | Worm Canal | Dual Strike | 21x28 | 4 | 0 | 14 | 4 | 8 | no |
+| 83 | Broken Land | Dual Strike | 21x21 | 4 | 0 | 20 | 8 | 0 | no |
+| 84 | Rough Terrain | Dual Strike | 35x35 | 4 | 0 | 21 | 0 | 4 | no |
+| 85 | Deep Forest | Dual Strike | 16x12 | 4 | 0 | 12 | 0 | 0 | no |
+| 86 | Scramble Isle | Dual Strike | 16x12 | 4 | 0 | 8 | 8 | 0 | no |
+| 87 | Danger Pool | Dual Strike | 17x17 | 4 | 0 | 8 | 0 | 4 | no |
+| 88 | Dark City | Dual Strike | 30x14 | 4 | 0 | 16 | 2 | 0 | no |
+| 89 | Clover Pond | Dual Strike | 20x20 | 4 | 0 | 17 | 1 | 0 | no |
+| 8A | Cross Cape | Dual Strike | 16x32 | 4 | 0 | 4 | 0 | 24 | no |
+| A7 | The Ring | Dual Strike | 19x18 | 4 | 0 | 13 | 5 | 5 | no |
+| A8 | Strong Land | Dual Strike | 18x12 | 4 | 0 | 14 | 0 | 0 | no |
+| AF | Treble Ridge | Dual Strike | 16x12 | 4 | 0 | 11 | 0 | 0 | no |
+| B0 | Four Acres | Dual Strike | 26x26 | 4 | 0 | 13 | 5 | 2 | no |
+| B1 | Final Battle | Dual Strike | 16x12 | 4 | 0 | 15 | 0 | 0 | no |
+| BA | Obelisk Plains | tangoAW2 | 28x28 | 4 | 24 | 8 | 4 | 0 | no |
+| 3B | Coil Range | Dual Strike | 16x12 | 4 | 28 | 0 | 0 | 0 | yes |
+| 3C | Leaf Haven | Dual Strike | 18x18 | 4 | 40 | 0 | 0 | 0 | yes |
+| 3D | Battle Cube | Dual Strike | 28x30 | 4 | 76 | 0 | 0 | 0 | yes |
+| 3F | Grid Assault | Dual Strike | 19x19 | 4 | 36 | 0 | 0 | 0 | yes |
+| 40 | Crossroad | Dual Strike | 25x23 | 4 | 96 | 0 | 0 | 0 | yes |
+| 47 | Crater Reef | Dual Strike | 35x35 | 4 | 112 | 0 | 0 | 0 | yes |
+| 48 | Lost Road | Dual Strike | 28x17 | 4 | 40 | 0 | 0 | 0 | yes |
+| 49 | Capital Clash | Dual Strike | 21x21 | 4 | 69 | 0 | 0 | 0 | yes |
+| 4A | Islands Agogo | Dual Strike | 27x26 | 4 | 52 | 0 | 0 | 0 | yes |
+| 4B | Grand Battle | Dual Strike | 29x29 | 4 | 68 | 0 | 0 | 0 | yes |
+| 00 | Five Seas | tangoAW2 | 20x40 | 5 | 35 | 10 | 9 | 18 | no |
+| BB | Black Monolith | tangoAW2 | 30x30 | 5 | 30 | 10 | 9 | 0 | no |
+| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | 30 | 10 | 4 | 0 | no |
+| BD | Magma Crown | tangoAW2 | 30x30 | 5 | 30 | 5 | 5 | 5 | no |
+| BE | Skyreach | tangoAW2 | 32x36 | 5 | 35 | 5 | 21 | 0 | no |
+| BF | The Citadel | tangoAW2 | 29x33 | 5 | 24 | 8 | 7 | 0 | no |
+| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no |
+| C4 | Black Wastes | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 0 | no |
+| C8 | Coral Crown | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 6 | no |

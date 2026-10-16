@@ -27,7 +27,7 @@ fn main() {
     let rows = tango_gamesupport_aw2::online_maps::audit(link.core_mut());
     let mut bad = 0;
     if md {
-        println!("| Id | Map | Source | Size | Armies | Pre-deployed |\n|---|---|---|---|---|---|");
+        println!("| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed |\n|---|---|---|---|---|---|---|---|---|---|");
     }
     let mut rows = rows;
     rows.sort_by_key(|r| (r.armies, r.predeployed, r.id));
@@ -37,13 +37,21 @@ fn main() {
             bad += 1;
         }
         if md {
-            println!("| {:02X} | {} | {} | {}x{} | {} | {} |", r.id, r.name, r.source, r.w, r.h, r.armies, if r.predeployed { "yes" } else { "no" });
+            println!(
+                "| {:02X} | {} | {} | {}x{} | {} | {} | {} | {} | {} | {} |",
+                r.id, r.name, r.source, r.w, r.h, r.armies, r.placed, r.bases, r.airports, r.ports, if r.predeployed { "yes" } else { "no" }
+            );
         } else {
             println!(
-                "{}P {:12} {:02x} {:24} {:11} {}x{} hqs {} header {}{}",
-                r.armies, if r.predeployed { "predeployed" } else { "" }, r.id, r.name, r.source, r.w, r.h, r.hqs, r.header, if ok { "" } else { "  MISMATCH" }
+                "{}P {:12} {:02x} {:24} {:11} {}x{} hqs {} units {} bases {} airports {} ports {} header {}{}",
+                r.armies, if r.predeployed { "predeployed" } else { "" }, r.id, r.name, r.source, r.w, r.h, r.hqs, r.placed, r.bases, r.airports, r.ports, r.header, if ok { "" } else { "  MISMATCH" }
             );
         }
+    }
+    for n in 2..=5u8 {
+        let plain = rows.iter().filter(|r| r.armies == n && !r.predeployed).count();
+        let pre = rows.iter().filter(|r| r.armies == n && r.predeployed).count();
+        eprintln!("{n}P: {plain} plain, {pre} predeploy");
     }
     eprintln!("{} maps, {} mismatches", rows.len(), bad);
     if bad > 0 {
