@@ -208,7 +208,7 @@ pub fn view(scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) -> bool 
         .get(seat)
         .copied()
         .flatten()
-        .map_or(0, |t| now.wrapping_sub(t) as usize);
+        .map_or(0, |t| now.saturating_sub(t) as usize);
     let Some(f) = frames.get((ticks / 2).min(frames.len().saturating_sub(1))) else {
         return false;
     };
