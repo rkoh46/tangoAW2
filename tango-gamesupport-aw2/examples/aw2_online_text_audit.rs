@@ -292,10 +292,10 @@ fn main() {
         .collect();
     for (name, rows, net, ver, cur) in [
         ("browse_full", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.10.12-beta", 0usize),
-        ("browse_full_c1", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 1),
+        ("browse_full_c1", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.10.12-beta.3", 1),
         ("browse_full_c2", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 2),
         ("browse_full_c3", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 3),
-        ("browse_full_c9", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 9),
+        ("browse_full_c9", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.10.12-beta.3", 9),
         ("browse_empty", vec![], tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 0),
         ("browse_looking", vec![], tango_gamesupport_aw2::online_browse::Net::Looking, "0.7.1", 0),
         ("browse_offline", vec![], tango_gamesupport_aw2::online_browse::Net::Offline, "0.7.1", 0),
@@ -312,7 +312,7 @@ fn main() {
         .map(|k| mailbox::SavedRow {
             players: format!("{W12}, {W12}, {W12}, {W12}, {W12}"),
             map: "WWWWWWWWWWWWWWWWWWWWWWWWWWW".to_string(),
-            tail: format!("Wed 28 Sep {k}"),
+            tail: format!("Day 99 {} Sep 14:05", 20 + k),
         })
         .collect();
     c.page("resume_rows", |core| {
