@@ -488,6 +488,27 @@ fn start_room(inner: &Arc<Mutex<Inner>>, cancel: &CancellationToken) {
     tango_platform::spawn(async move { host_start(inner, cancel).await });
 }
 
+/// The seat of each guest, by index among the host's peers (a room resuming a match: as saved; otherwise in order of
+/// joining, around the host's seat). Keyed by the link, not the nickname: two guests may share one.
+fn peer_seats(g: &Inner) -> Vec<u8> {
+    let host_seat = g.params.resume.as_ref().map_or(0, |r| r.seat as u8);
+    let mut next = 0u8;
+    g.peers
+        .iter()
+        .map(|p| match p.seat {
+            Some(s) => s,
+            None => {
+                if next == host_seat {
+                    next += 1;
+                }
+                let s = next;
+                next += 1;
+                s
+            }
+        })
+        .collect()
+}
+
 /// Everyone in the room by seat: the host's, then each guest's (in a room resuming a match, as saved; otherwise in
 /// order of joining).
 fn roster_of(g: &Inner) -> Vec<RoomPlayer> {
@@ -498,20 +519,7 @@ fn roster_of(g: &Inner) -> Vec<RoomPlayer> {
         seat: host_seat,
         host: true,
     }];
-    let mut next = 0u8;
-    for p in &g.peers {
-        let seat = match p.seat {
-            Some(s) => s,
-            None => {
-                // (by order of joining, around the host's seat)
-                if next == host_seat {
-                    next += 1;
-                }
-                let s = next;
-                next += 1;
-                s
-            }
-        };
+    for (p, seat) in g.peers.iter().zip(peer_seats(g)) {
         v.push(RoomPlayer {
             nickname: p.nickname.clone(),
             ready: p.ready,
@@ -525,11 +533,7 @@ fn roster_of(g: &Inner) -> Vec<RoomPlayer> {
 
 /// The seat of the guest at `index` among the host's peers.
 fn peer_seat(g: &Inner, index: usize) -> u8 {
-    let name = &g.peers[index].nickname;
-    roster_of(g)
-        .iter()
-        .find(|p| !p.host && &p.nickname == name)
-        .map_or(index as u8 + 1, |p| p.seat)
+    peer_seats(g).get(index).copied().unwrap_or(index as u8 + 1)
 }
 
 /// Tell every guest who is in the room (each its own seat).
