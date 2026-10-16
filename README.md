@@ -43,159 +43,39 @@ desktop players).
 You both need tangoAW2 (same version) and your own copy of the ROM.
 
 **From inside the game** (the usual way): press **Play**, then on Select
-Mode pick **ONLINE → LOBBY**.
+Mode pick **ONLINE**. Set your **gamertag** there first (it is shown beside
+your army and kept in your settings).
 
-- **CREATE** makes a room (optionally with a password) and shows its
-  six-letter code: give it to your friend.
-- **JOIN** takes the code (and the password, if any) on an on-screen grid,
-  or typed on the keyboard.
-- Once you are both in the room, the guest presses **A** (READY) and the
-  host **START**. The game lands both of you on Versus' **SELECT MAP**:
-  the host picks a map for two players and the rules, each of you picks
-  your own army's CO and colour on the Teams screen.
-- After a battle the host picks the next map (a rematch); **B** on SELECT
-  MAP ends the match and takes you both back to the LOBBY.
-- UNRANKED (random opponents) and STATS are coming.
+- **UNRANKED** pairs you with a random opponent (same version). You each
+  propose a 2-player map, the game picks one of the two, then you pick CO
+  and colour; the rules are fixed (no fog, clear weather, 1000 funds, no
+  limits, CO powers on).
+- **LOBBY** lists the open lobbies (every lobby is public; a padlock marks
+  password ones, a wrong password is told to you), or type a room code.
+  **CREATE** makes a room for up to **five players** (optional password) and
+  shows its code.
+- In the room everyone presses **A** (READY); the host presses **START**.
+  The room's **SELECT MAP** is AW2's own screen with tabs for the room's
+  player count; every player then picks their own army (CO, colour,
+  partner) on **SELECT YOUR ARMY** and presses READY, and the host sets the
+  rules.
+- Only the army whose turn it is can be moved; the others watch the turn
+  live through their own fog (no cursor or menus). Your seat, the other
+  players' gamertags and the connection type (direct or relay) are shown.
+- If a player drops, everyone waits up to 60 seconds with a countdown; if
+  they do not return the match is saved: **ONLINE > LOBBY > RESUME** starts
+  it again from the same moment with the same players.
+- **STATS** keeps your own record on this device.
+- After a battle the host picks the next map; **B** on SELECT MAP ends the
+  match and takes everyone back to the LOBBY.
 
-There is no link code to type any more: the lobby's rooms are the way in.
-
-At SELECT MAP the host picks a map; each player picks their own army's
-CO and colour on the **Teams** screen.
-
-On the map only the moving army's player can press anything; menus are
-shared. With fog on, the waiting player's screen is covered during the
-other army's turn. The match runs on player 1's save (and design maps).
-
-## What it adds
-
-- **Everything unlocked:** all COs including Sturm, CO colour edits,
-  Battle Maps, Hard Campaign and the Sound Room. Every CO is on every screen
-  where you pick one freely: Versus, the War Room and Survival (with Dual
-  Strike's nine new COs, Clone Andy and Crumb when the pack is there).
-- **Black Hole as a Versus army** and **five-army maps** (a 5P Maps tab in
-  Versus: press LEFT on the tab list), any army human or computer.
-- **Design Room:** Black Hole as a fifth army and its inventions
-  (minicannons, Laser, Black Cannons, Black Factory, Volcano, Deathray),
-  which work in Versus as in the campaign.
-- **An Advance Wars look** for the app, or your own background image.
-
-With your own Advance Wars: Dual Strike (USA) `.nds` in the `roms` folder,
-Dual Strike comes to AW2 (converted on your computer; without it nothing
-changes, and online both players need it):
-
-- **Units, COs and terrain:** its 7 units and 9 new COs with their
-  pictures, animations, music and numbers; Com Towers, Sandstorm, its
-  weather and fog looks, Wasteland, Desert and Snow terrain, the Black
-  Crystal and Obelisk, Black Hole's structures as Dual Strike draws them.
-- **Dual Strike's maps:** its 138 Versus maps on Versus' tabs and its 44 War
-  Room maps (with records), in place of AW2's; two-front battles offline
-  (in Versus press SELECT on a 2P map to make it the second front, then pick
-  the main map; the Teams partner leads the second front).
-- **Design Room:** Dual Strike's random maps (**SELECT → Fill → Random**;
-  **L+R** held on Yes gives its preset map) and a look per map (Normal,
-  Wasteland, Desert or Snow).
-- **Dual Strike's look (optional, Settings > Graphics, offline):** its map
-  graphics and tilted 3D battle map, cursor, menus, CO panel and power
-  labels, info box, CO pages and CO selection screens (five armies too).
-- **Survival:** Money, Turn and Time, eleven maps each, with ranks and
-  records, on screens like Dual Strike's; clear a course to open its endless
-  Champion course. A run can be a tag pair, and a map can be saved halfway.
-- **History and medals:** Dual Strike's lifetime records (units built and
-  destroyed, powers used, wins, play time...) with its 300 medals: **L** on
-  Survival's SELECT MAP. Battles give Dual Strike's points and CO EXP.
-- **Dual Strike's rules and computer:** battles follow Dual Strike's own
-  code (power meters, damage, luck, weather, repairs, CO powers), and the
-  computer plays as Dual Strike's does: what it buys, when it uses powers,
-  tags and swaps, each CO's style, and moves that avoid danger.
-- **Black Factory (Versus):** same schedule and cost, but it picks what the
-  battle needs; 200 hit points, destructible; human Black Hole armies too.
-- **The computer goes for your inventions** when you are Black Hole (the BH
-  Campaign, and Versus against a computer): it marches on your Black
-  Cannons, Obelisks, Crystals and Black Factory, artillery setting up in
-  range and tanks coming in from the side of a cannon's line, and hits them.
-- **DS Campaign:** all 28 missions on Dual Strike's world map:
-  - missions open as you advance, with LEVEL stars for each; Hard
-    campaign once Normal is cleared;
-  - the story scenes, prologue, ending with a choice, credits and music;
-  - mission records, and saving mid-mission;
-  - each mission opens with Dual Strike's Setup phase: look around, then
-    **Deploy**.
-- **BH Campaign:** a second campaign where you lead Black Hole:
-  - 31 missions in five acts across the four nations, plus a secret 31st
-    that opens once every recruit's bond is earned;
-  - recruits (Von Bolt, Hawke, Koal, Kindle and more) with hidden bonds,
-    and **Crumb**, a CO of his own;
-  - set rivalries and free picks: your CO or tag pair on the CO screen
-    changes who you fight and what is said;
-  - two fronts, fog, a five-army fortress with Obelisk, Volcano and
-    Factory, and a finale where Andy takes Orange Star over;
-  - every scene is written for it (pick it in the Campaign menu).
-- **Two-front missions** are fought on both fronts, taking turns each round:
-  - **Front** on the map menu looks at the other front; **Send** moves
-    units over;
-  - in Lightning Strikes and Ring of Fire, **Intel → Auto CO** off lets
-    you command the second front yourself;
-  - while the computer runs it, **Intel → General** sets how it fights
-    (Strike, Assault, General or Defense).
-- **Mission specials:** the real Grand Bolt in Means to an End; Crystal
-  Calamity's Black Onyx with its countdown, its laser every ten minutes
-  and the missile silos that hit it; Reclaim the Skies' 30-minute limit.
-- **CO skills:** Dual Strike's 43 skills, earned with EXP. **SELECT** on a
-  CO screen (on Teams, on an army's CO) opens SET SKILLS; Versus' Rules
-  screen turns them on (off by default).
-- **CO tag pairs:** on Teams press **START** on a CO, then **UP**/**DOWN**
-  for a partner:
-  - **Change** swaps COs; with both meters full **Tag** fires a Tag Power,
-    with Dual Strike's pair boosts;
-  - the Tag Power (with its lightning) and CO SWAP screens are animated,
-    with Dual Strike's sounds and power music;
-  - a partner's Teamwork, Synergy or Bodyguard skill boosts the active CO;
-  - Sturm gets pairs of his own.
-
-<table>
-<tr>
-<td><img src="docs/screenshots/ds-tag-power.png" width="240" alt="A Tag Power screen counting up its power"></td>
-<td><img src="docs/screenshots/ds-world-map.png" width="240" alt="The DS Campaign's world map"></td>
-<td><img src="docs/screenshots/ds-second-front.png" width="240" alt="Commanding the second front yourself"></td>
-</tr>
-<tr>
-<td><img src="docs/screenshots/ds-black-onyx-laser.png" width="240" alt="The Black Onyx's laser charged and ready to strike on Crystal Calamity"></td>
-<td><img src="docs/screenshots/ds-teams-five-pairs.png" width="240" alt="Dual Strike's CO select with five armies and tag partners"></td>
-<td><img src="docs/screenshots/ds-set-skills.png" width="240" alt="Choosing CO skills on SET SKILLS"></td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td><img src="docs/screenshots/bh-world-map.png" width="240" alt="The BH Campaign's world map with its flags and the BONDS legend"></td>
-<td><img src="docs/screenshots/bh-story.png" width="240" alt="Sturm offering Von Bolt a place at his side after Storm Landing"></td>
-<td><img src="docs/screenshots/bh-crumb.png" width="240" alt="Crumb's CO page in Dual Strike's style, with his biography"></td>
-</tr>
-<tr>
-<td><img src="docs/screenshots/bh-fortress.png" width="240" alt="Mission 28's fortress: Black Hole's army round the Obelisk, with the Volcano beyond"></td>
-<td><img src="docs/screenshots/bh-takeover.png" width="240" alt="Andy rallying Orange Star after the takeover in Nell's Stand"></td>
-<td><img src="docs/screenshots/bh-vault.png" width="240" alt="The secret mission, The Colonel's Vault: a Vault Truck and its escort beside a Black Hole Recon, under a Black Cannon"></td>
-</tr>
-</table>
-
-## Controls
-
-Default keys: A/B = Z/X, L/R = A/S, START/SELECT = Enter/Space (change
-them in Settings). On Versus' Teams screen **R** or **L** changes an
-army's colour, Black Hole included (without Dual Strike, **SELECT** too).
-In the LOBBY's code and password pages the keyboard types: letters and digits, Backspace,
-Enter (the pad's arrows, A, B and START work as well).
-
-Design Room: **R** opens the terrain bar (the inventions come after Silo),
-**L** the unit bar, **SELECT** or **UP** changes army, **A** places. Save
-with **SELECT → File → Save**; play it from **Versus → Design Maps**. With
-Dual Strike, **A** with the look entry (named after the look it gives) steps
-the map through Normal, Wasteland, Desert and Snow.
+Connections go straight to your friend when they can and through a relay
+when a router blocks that (see docs/AW2.md, "Across networks").
 
 ## Known limits
 
-- USA cartridge only; two human players online (more armies can be
-  computer-controlled).
+- USA cartridge only; up to five human players online (Design Room maps
+  are not offered online).
 - Five-army battles and two-front Versus and War Room battles can't be
   suspended.
 - The mini maps show Black Hole's buildings in neutral grey.
