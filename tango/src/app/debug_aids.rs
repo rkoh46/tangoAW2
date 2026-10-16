@@ -11,7 +11,7 @@
 //!   the moment a session starts); `until COND [SECONDS]` idles until the
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
-//!   `army=N`, `menu=N` (the map menu's row: 0 CO .. 4 End), `cx=N`/`cy=N` (the map cursor's cell; `cxlt=N`, `cxgt=N`,
+//!   `army=N`, `menu=N` (the map menu's row), `onend` (the menu's cursor is on End, whatever its row), `cx=N`/`cy=N` (the map cursor's cell; `cxlt=N`, `cxgt=N`,
 //!   `cylt=N`, `cygt=N`: left of, right of, above, below it), `idle` (the map waits for the cursor, nothing running),
 //!   `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
 //!   keys now and then until the console shows COND, `label NAME` / `jumpif COND NAME` carry on at the label when COND holds, `goto X Y [SECONDS]` walks the map cursor to the cell, `shot PATH` saves the
@@ -86,9 +86,9 @@ fn key_bits(s: &str) -> u32 {
 }
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
-const CONDS: [&str; 24] = [
+const CONDS: [&str; 25] = [
     "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "cursor", "level", "army",
-    "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "!",
+    "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "onend", "!",
 ];
 
 fn cond_ok(c: &str) -> bool {

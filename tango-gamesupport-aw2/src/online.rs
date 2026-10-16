@@ -469,6 +469,12 @@ pub mod mailbox {
             // the map waits for the cursor and nothing runs (a test script's cue to press)
             ("idle", None) => bits >> 63 & 1 != 0,
             // the map menu's selected row (0 CO, 1 Intel, 2 Options, 3 Save, 4 End; the menu keeps its row between uses)
+            // the map menu's cursor is on its End item (the row End had when the menu was last shown, kept in RAM)
+            ("onend", None) => {
+                let m = probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed);
+                let end = (m >> 57) & 0xF;
+                end != 0 && ((m >> 40) & 0xFF) + 1 == end
+            }
             ("menu", Some(v)) => (probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed) >> 40) & 0xFF == v as u64,
             ("maparmies", Some(v)) => (bits >> 32) & 0xFF == v as u64,
             ("status", Some(v)) => status(read) as u32 == v,
@@ -576,7 +582,8 @@ pub mod probe {
             ml | (core.raw_read_8(0x0300_14E2, -1) as u64) << 32
                 | (core.raw_read_8(0x0300_14F0, -1) as u64) << 40
                 | (core.raw_read_8(0x0300_33EC, -1) as u64) << 48
-                | ((core.raw_read_32(0x0300_0004, -1) != 0) as u64) << 56,
+                | ((core.raw_read_32(0x0300_0004, -1) != 0) as u64) << 56
+                | ((core.raw_read_8(crate::pvp::END_ROW, -1) & 0xF) as u64) << 57,
             Ordering::Relaxed,
         );
         LIST_DEBUG.store(
