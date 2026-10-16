@@ -480,8 +480,10 @@ pub fn seat_picks(core: &Core) -> Option<Vec<(u8, u8)>> {
     seat_teams(core).map(|t| t.into_iter().enumerate().map(|(s, t)| (t, core.raw_read_8(seat(s) + S_COLOUR, -1))).collect())
 }
 
+/// (Once everyone is READY the page stays up while the game's own Teams stages go by (its Choose-a-CO and alliance
+/// pictures would show the screen's old picks for a moment), until the page's state is cleared as the Rules come up.)
 pub fn draw(core: &Core, rgba: &mut [u8]) {
-    if rgba.len() != crate::online::W * crate::online::H * 4 || (!active(core) && !(done(core) && crate::pvp::on_teams_screen(core))) {
+    if rgba.len() != crate::online::W * crate::online::H * 4 || (!active(core) && !done(core)) {
         return;
     }
     let n = players(core);

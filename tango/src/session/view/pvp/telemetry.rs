@@ -83,12 +83,24 @@ const PING_SPAN: u128 = 200;
 // [`BAR_MIN`] adds up to.
 /// The bar's height inside its plate: the frame-delay chip is its tallest part.
 const BAR_H: f32 = 22.0;
-const LANE_TPS: u16 = 121; // "59.97 /59.73"
-const LANE_SMALL: u16 = 64; // "  -1", "+12", "  0"
-const LANE_PING: u16 = 84; // " 10 ms"
-/// The lanes' least width together with their four dividers (17 each) and the frame-delay chip, the bar's gaps and
+/// A monospace readout of `chars` glyphs at TEXT_CAPTION (Noto Sans Mono's advance is 0.6 em), with a pixel of slack.
+const fn mono_w(chars: u32) -> f32 {
+    chars as f32 * TEXT_CAPTION * 0.6 + 1.0
+}
+/// Every readout is a fixed-width box (its widest text), never sized by what the lane has left: the sparkline gives way
+/// and the number never does (a lane too narrow for its number used to wrap or clip it away).
+const VALUE_TPS: f32 = mono_w(12); // "59.97 /59.73" (a "100.00" rate still fits)
+const VALUE_SMALL: f32 = mono_w(4); // "  -1", "+12", "  0"
+const VALUE_PING: f32 = mono_w(7); // " 10 ms", "1234 ms"
+/// A lane's icon, its two gaps and the least sparkline.
+const LANE_FIXED: f32 = 14.0 + 5.0 + 5.0 + 20.0;
+/// The lanes' shares of the bar are their least widths, so a bar with room for them all gives each its least.
+const LANE_TPS: u16 = (LANE_FIXED + VALUE_TPS) as u16 + 1;
+const LANE_SMALL: u16 = (LANE_FIXED + VALUE_SMALL) as u16 + 1;
+const LANE_PING: u16 = (LANE_FIXED + VALUE_PING) as u16 + 1;
+/// The lanes' least width together with their four dividers (17 each), the frame-delay chip, the bar's gaps and
 /// padding: what the player legend must leave.
-const BAR_MIN: f32 = (LANE_TPS + 3 * LANE_SMALL + LANE_PING) as f32 * 1.04 + 4.0 * 17.0 + 56.0 + 34.0;
+const BAR_MIN: f32 = (LANE_TPS + 3 * LANE_SMALL + LANE_PING) as f32 + 4.0 * 17.0 + 62.0 + 34.0;
 
 /// A compact per-metric history chart for the persistent PvP panel. Each
 /// retained sample is `(height fraction in 0..=1, tone)`, plotted left→right
@@ -224,8 +236,12 @@ fn telemetry_card<'a>(
     caption: String,
     control: Element<'a, Message>,
     value: Element<'a, Message>,
+    value_w: f32,
     weight: u16,
 ) -> Element<'a, Message> {
+    let value = container(value)
+        .width(Length::Fixed(value_w))
+        .align_x(iced::alignment::Horizontal::Right);
     let icon = iced::widget::tooltip(
         icon.widget().size(14.0).style(widgets::muted_text_style),
         widgets::tooltip_bubble(caption),
@@ -233,41 +249,69 @@ fn telemetry_card<'a>(
     )
     .gap(5);
     // (a lane's share of the bar follows what its readout needs, so a narrow bar never takes a number's room)
-    let lane = row![icon, control, value,]
+    let lane = row![icon, control, value]
         .spacing(5)
         .align_y(Alignment::Center)
         .width(Length::FillPortion(weight));
     lane.into()
 }
 
+/// A monospace readout drawn on a canvas, its segments right-aligned and read right to left: `(text, tone)`, `None`
+/// for the plain text colour. It is deliberately not a `text` widget. A widget's text is a weak reference to its
+/// paragraph, and the next layout (a new number) replaces the paragraph: a screenshot taken after that layout (the
+/// debug aids' `shot`, the F8 report) re-renders the last drawn frame with the changing numbers (the rate, the ping)
+/// missing. Canvas text carries its own string, so the numbers are in every picture of the bar.
+struct Readout {
+    segments: Vec<(String, Option<StatTone>)>,
+}
+
+impl Readout {
+    fn view<'a>(self) -> Element<'a, Message> {
+        Canvas::new(self).width(Length::Fill).height(Length::Fixed(SPARK_H)).into()
+    }
+}
+
+impl canvas::Program<Message> for Readout {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &Renderer,
+        theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = Frame::new(renderer, bounds.size());
+        let mut right = bounds.width;
+        for (s, tone) in &self.segments {
+            frame.fill_text(canvas::Text {
+                content: s.clone(),
+                position: Point::new(right, bounds.height / 2.0),
+                color: tone.map_or_else(|| theme.palette().text, |t| stat_tone_color(theme, t)),
+                size: TEXT_CAPTION.into(),
+                font: iced::Font::MONOSPACE,
+                align_x: iced::advanced::text::Alignment::Right,
+                align_y: iced::alignment::Vertical::Center,
+                ..canvas::Text::default()
+            });
+            right -= s.chars().count() as f32 * TEXT_CAPTION * 0.6 + 2.0;
+        }
+        vec![frame.into_geometry()]
+    }
+}
+
 /// A right-aligned monospace value readout, tinted by `tone`.
 fn value_text<'a>(s: String, tone: Option<StatTone>) -> Element<'a, Message> {
-    text(s)
-        .size(TEXT_CAPTION)
-        .font(iced::Font::MONOSPACE)
-        .style(move |theme: &iced::Theme| iced::widget::text::Style {
-            color: Some(tone.map_or_else(|| theme.palette().text, |t| stat_tone_color(theme, t))),
-        })
-        .into()
+    Readout { segments: vec![(s, tone)] }.view()
 }
 
 /// TPS readout: current rate over its live cap, compressed to fit a status lane.
 fn tps_value<'a>(tps: f32, fps_target: f32, tone: StatTone) -> Element<'a, Message> {
-    row![
-        text(format!("{:5.2}", tps))
-            .size(TEXT_CAPTION)
-            .font(iced::Font::MONOSPACE)
-            .style(move |theme: &iced::Theme| iced::widget::text::Style {
-                color: Some(stat_tone_color(theme, tone)),
-            }),
-        text(format!("/{:5.2}", fps_target))
-            .size(TEXT_CAPTION)
-            .font(iced::Font::MONOSPACE)
-            .style(widgets::muted_text_style),
-    ]
-    .spacing(2)
-    .align_y(Alignment::Center)
-    .into()
+    Readout {
+        segments: vec![(format!("/{:5.2}", fps_target), Some(StatTone::Muted)), (format!("{:5.2}", tps), Some(tone))],
+    }
+    .view()
 }
 
 /// One metric card: build its sparkline series by mapping every retained sample
@@ -282,6 +326,7 @@ fn metric_card<'a>(
     history: &std::collections::VecDeque<MetricSample>,
     point: impl Fn(&MetricSample) -> Option<(f32, StatTone)>,
     value: impl Fn(&MetricSample) -> Option<Element<'a, Message>>,
+    value_w: f32,
     weight: u16,
 ) -> Element<'a, Message> {
     let points = history.iter().map(&point).collect();
@@ -299,6 +344,7 @@ fn metric_card<'a>(
         }
         .view(),
         value,
+        value_w,
         weight,
     )
 }
@@ -326,6 +372,7 @@ fn telemetry_content<'a>(
             })
         },
         |s| (s.fps_target > 0.0).then(|| tps_value(s.tps, s.fps_target, tone_for_tps(s.tps, s.fps_target))),
+        VALUE_TPS,
         LANE_TPS,
     );
 
@@ -345,6 +392,7 @@ fn telemetry_content<'a>(
             s.round
                 .map(|(skew, _, _)| value_text(fmt_skew(skew), Some(tone_for_skew(skew))))
         },
+        VALUE_SMALL,
         LANE_SMALL,
     );
 
@@ -364,6 +412,7 @@ fn telemetry_content<'a>(
             s.round
                 .map(|(_, _, lead)| value_text(fmt_lead(lead), Some(tone_for_lead(lead))))
         },
+        VALUE_SMALL,
         LANE_SMALL,
     );
 
@@ -381,6 +430,7 @@ fn telemetry_content<'a>(
             s.round
                 .map(|(_, depth, _)| value_text(fmt_depth(depth), Some(tone_for_depth(depth))))
         },
+        VALUE_SMALL,
         LANE_SMALL,
     );
 
@@ -398,6 +448,7 @@ fn telemetry_content<'a>(
             s.ping_ms
                 .map(|ping_ms| value_text(fmt_ping(ping_ms), Some(tone_for_ping(ping_ms))))
         },
+        VALUE_PING,
         LANE_PING,
     );
 
@@ -535,6 +586,11 @@ fn fmt_ping(ping_ms: u128) -> String {
 /// halves everywhere except games that color players by seat; those keep the
 /// game-native P1/P2 color assignment while You/Opponent follows the local seat.
 fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget: f32, compact: bool) -> Element<'a, Message> {
+    legend_view(lang, (pvp.local_player_index() == 0, pvp.local_game().family.players_colored_by_seat), budget, compact)
+}
+
+/// The legend; `two` is the two-player view's (local seat is P1, seats colour the armies), all a pvp session adds.
+fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32, compact: bool) -> Element<'a, Message> {
     let side = |accent: Color, seat: &'static str, name: String| -> Element<'a, Message> {
         let dot = container(
             iced::widget::Space::new()
@@ -638,9 +694,9 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
             .gap(5)
             .into();
     }
-    let local_is_p1 = pvp.local_player_index() == 0;
+    let (local_is_p1, by_seat) = two;
     let (you, opponent) = (t!(lang, "play-you"), t!(lang, "play-opponent"));
-    if pvp.local_game().family.players_colored_by_seat {
+    if by_seat {
         let (p1, p2) = if local_is_p1 { (you, opponent) } else { (opponent, you) };
         row![side(FIELD_RED, "P1", p1), side(FIELD_BLUE, "P2", p2)]
     } else {
@@ -656,21 +712,21 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
 }
 
 /// A legend entry's width at TEXT_CAPTION, roughly: the army's dot (8), a gap (4), the seat marker (two mono glyphs),
-/// a gap, the name's glyphs (about 5.6 px each).
+/// a gap, the name's glyphs (about 6.5 px each: Noto Sans at 11 px, measured in the render test).
 fn legend_entry_width(name_chars: usize) -> f32 {
-    legend_entry_width_in(name_chars, 13.5)
+    legend_entry_width_in(name_chars, 15.0)
 }
 
 /// [`legend_entry_width`] with the seat marker's `marker` width (none in the teams' legend).
 fn legend_entry_width_in(name_chars: usize, marker: f32) -> f32 {
-    8.0 + 4.0 + marker + if name_chars > 0 { 4.0 + name_chars as f32 * 5.6 } else { 0.0 }
+    8.0 + 4.0 + marker + if name_chars > 0 { 4.0 + name_chars as f32 * 6.5 } else { 0.0 }
 }
 
 /// The names the legend shows in `budget` pixels, and whether any was cut: the full ones ("Name (You)") if they fit,
 /// else names of at most 10, 8, 6 and 4 letters (ending in an ellipsis; the local seat shows "You"), else no names but
 /// the local seat's "You".
 fn legend_names(names: &[String], me: usize, you: &str, full: &[String], budget: f32) -> (Vec<String>, bool) {
-    legend_names_in(names, me, you, full, budget, 13.5)
+    legend_names_in(names, me, you, full, budget, 15.0)
 }
 
 fn legend_names_in(names: &[String], me: usize, you: &str, full: &[String], budget: f32, marker: f32) -> (Vec<String>, bool) {
@@ -725,10 +781,14 @@ fn status_divider<'a>() -> Element<'a, Message> {
 /// Resting frame-delay control: current value and disclosure chevron only. The
 /// full slider is intentionally out of the bar until requested.
 fn frame_delay_chip<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, open: bool) -> Element<'a, Message> {
+    frame_delay_chip_of(lang, pvp.frame_delay(), open)
+}
+
+fn frame_delay_chip_of<'a>(lang: &'a LanguageIdentifier, frame_delay: impl ToString, open: bool) -> Element<'a, Message> {
     let chip = button(
         row![
             Icon::Turtle.widget().size(14.0),
-            text(pvp.frame_delay().to_string())
+            text(frame_delay.to_string())
                 .size(TEXT_CAPTION)
                 .font(iced::Font::MONOSPACE)
                 .width(Length::Fixed(14.0)),
@@ -752,6 +812,28 @@ fn frame_delay_chip<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, open:
     .into()
 }
 
+/// The bar's one row for a bar `width` wide.
+fn status_row<'a>(
+    width: f32,
+    legend: impl FnOnce(f32, bool) -> Element<'a, Message>,
+    content: impl FnOnce(bool) -> Element<'a, Message>,
+    chip: Element<'a, Message>,
+) -> Element<'a, Message> {
+    let budget = width - BAR_MIN;
+    let compact = budget < 0.0;
+    // (the legend is cut by its own estimate; should that be short, it is clipped here, never the numbers beside it)
+    let legend: Element<'a, Message> = if compact {
+        legend(budget, compact)
+    } else {
+        container(legend(budget, compact)).max_width(budget).clip(true).into()
+    };
+    row![legend, status_divider(), content(compact), status_divider(), chip]
+        .spacing(8)
+        .align_y(Alignment::Center)
+        .width(Fill)
+        .into()
+}
+
 /// Always-visible PvP telemetry. P1/P2 and all five tiny charts occupy one
 /// stable row; the trailing chip is the only disclosure control.
 pub(super) fn telemetry_panel<'a>(
@@ -762,19 +844,12 @@ pub(super) fn telemetry_panel<'a>(
     // The bar knows its width: the numbers (lanes, frame-delay chip) keep what they need ([`BAR_MIN`]) and the player
     // legend of a room takes the rest, shortened if it must be.
     let bar = iced::widget::responsive(move |size| {
-        let budget = size.width - BAR_MIN;
-        let compact = budget < 0.0;
-        row![
-            players_header(lang, pvp, budget, compact),
-            status_divider(),
-            telemetry_content(lang, &state.metric_history, compact),
-            status_divider(),
+        status_row(
+            size.width,
+            |budget, compact| players_header(lang, pvp, budget, compact),
+            |compact| telemetry_content(lang, &state.metric_history, compact),
             frame_delay_chip(lang, pvp, state.frame_delay_control.shown()),
-        ]
-        .spacing(8)
-        .align_y(Alignment::Center)
-        .width(Fill)
-        .into()
+        )
     });
     let panel = container(container(bar).height(Length::Fixed(BAR_H)).width(Fill))
         .padding([6.0, 8.0])
@@ -881,5 +956,199 @@ mod legend_tests {
         let (shown, cut) = legend_names(&nm, 0, "You", &full(&nm, 0), 100.0);
         assert!(cut);
         assert!(shown[1].is_empty());
+    }
+}
+
+/// Offline render of the bar (iced's tiny-skia headless renderer, no session): PNGs of the real layout at several widths
+/// and room sizes, and the check that every readout is on screen. `BAR_OUT=<dir>` keeps the PNGs.
+#[cfg(test)]
+mod render_tests {
+    use super::*;
+    use iced::advanced::renderer::Headless;
+    use iced_runtime::user_interface::{Cache, UserInterface};
+    use std::collections::VecDeque;
+
+    fn samples() -> VecDeque<MetricSample> {
+        (0..METRIC_HISTORY_LEN)
+            .map(|i| MetricSample {
+                tps: 59.5 + ((i % 7) as f32) * 0.07,
+                fps_target: 59.73,
+                ping_ms: Some(8 + (i % 5) as u128),
+                round: Some((((i % 5) as i32) - 2, (i % 4) as u32, ((i % 6) as i32) - 3)),
+            })
+            .collect()
+    }
+
+    fn renderer() -> iced::Renderer {
+        let mut fs = iced_graphics::text::font_system().write().unwrap();
+        for f in [
+            &include_bytes!("../../../../fonts/NotoSans-Regular.ttf")[..],
+            &include_bytes!("../../../../fonts/NotoSansMono-Regular.ttf")[..],
+            lucide_icons::LUCIDE_FONT_BYTES,
+        ] {
+            fs.load_font(std::borrow::Cow::Borrowed(f));
+        }
+        drop(fs);
+        // BAR_BACKEND=any tries the GPU (the app's renderer) first; the default is the software one.
+        let backend = std::env::var("BAR_BACKEND").unwrap_or_else(|_| "tiny-skia".into());
+        let backend = (backend != "any").then_some(backend);
+        futures::executor::block_on(<iced::Renderer as Headless>::new(
+            crate::ui::style::DEFAULT_FONT,
+            16.0.into(),
+            backend.as_deref(),
+        ))
+        .expect("headless renderer")
+    }
+
+    fn render(renderer: &mut iced::Renderer, width: u32, players: usize, name_len: usize, history: &VecDeque<MetricSample>) -> (Vec<u8>, u32, u32) {
+        render_cached(renderer, &mut Cache::default(), width, players, name_len, history, None)
+    }
+
+    fn root_for<'a>(lang: &'a LanguageIdentifier, history: &'a VecDeque<MetricSample>) -> Element<'a, Message> {
+        let bar: Element<'_, Message> = iced::widget::responsive(move |size| {
+            status_row(
+                size.width,
+                |budget, compact| legend_view(lang, (true, true), budget, compact),
+                |compact| telemetry_content(lang, history, compact),
+                frame_delay_chip_of(lang, 2, false),
+            )
+        })
+        .into();
+        let panel = container(container(bar).height(Length::Fixed(BAR_H)).width(Fill))
+            .padding([6.0, 8.0])
+            .width(Fill);
+        container(panel).width(Fill).padding([0.0, 12.0]).into()
+    }
+
+    /// As [`render`], the interface's widget state kept between frames (as the app does: text paragraphs are updated).
+    /// With `next`, the following frame's interface is laid out (not drawn) before the screenshot, as the app's
+    /// `window::screenshot` finds it: it re-renders the last drawn layers, whose text still points at the paragraphs
+    /// the new layout has since replaced.
+    fn render_cached(
+        renderer: &mut iced::Renderer,
+        cache: &mut Cache,
+        width: u32,
+        players: usize,
+        name_len: usize,
+        history: &VecDeque<MetricSample>,
+        next: Option<&VecDeque<MetricSample>>,
+    ) -> (Vec<u8>, u32, u32) {
+        // (the room is a process-wide global: one render at a time)
+        static ROOM: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _room = ROOM.lock().unwrap_or_else(|e| e.into_inner());
+        let lang: LanguageIdentifier = "en-US".parse().unwrap();
+        let names: Vec<String> = (0..players).map(|k| format!("{}{}", "Gamertagxyz".chars().take(name_len - 1).collect::<String>(), k)).collect();
+        tango_library::online::set_room(names, 1);
+        let theme = iced::Theme::Dark;
+        let h = BAR_H as u32 + 12;
+        let size = iced::Size::new(width as f32, h as f32);
+        let mut ui = UserInterface::build(root_for(&lang, history), size, std::mem::take(cache), renderer);
+        ui.draw(
+            renderer,
+            &theme,
+            &iced::advanced::renderer::Style { text_color: theme.palette().text },
+            iced::mouse::Cursor::Unavailable,
+        );
+        let bg = theme.palette().background;
+        let (px, c) = match next {
+            None => (renderer.screenshot(iced::Size::new(width, h), 1.0, bg), ui.into_cache()),
+            Some(next) => {
+                let ui2 = UserInterface::build(root_for(&lang, next), size, ui.into_cache(), renderer);
+                (renderer.screenshot(iced::Size::new(width, h), 1.0, bg), ui2.into_cache())
+            }
+        };
+        *cache = c;
+        (px, width, h)
+    }
+
+    /// Whether the columns `x0..x1` of the bar's row hold text-coloured pixels (not the background's).
+    fn ink(px: &[u8], w: u32, h: u32, x0: u32, x1: u32) -> usize {
+        let bg = &px[0..4];
+        let mut n = 0;
+        for y in 0..h {
+            for x in x0..x1.min(w) {
+                let i = ((y * w + x) * 4) as usize;
+                let d: i32 = (0..3).map(|c| (px[i + c] as i32 - bg[c] as i32).abs()).sum();
+                if d > 120 {
+                    n += 1;
+                }
+            }
+        }
+        n
+    }
+
+    #[test]
+    fn bar_png_matrix() {
+        let out = std::env::var("BAR_OUT").ok();
+        let mut renderer = renderer();
+        for players in 2..=5 {
+            for width in [960u32, 1100, 1440] {
+                let (px, w, h) = render(&mut renderer, width, players, 10, &samples());
+                // the ping readout ("12 ms") sits just left of the last divider, which is left of the frame-delay chip
+                let right = w - 99;
+                assert!(ink(&px, w, h, right - 48, right) > 25, "{players} players at {width}: the ping readout is missing");
+                if let Some(dir) = &out {
+                    let img = image::RgbaImage::from_raw(w, h, px.clone()).unwrap();
+                    img.save(format!("{dir}/bar_{players}p_{width}.png")).unwrap();
+                }
+            }
+        }
+    }
+
+    /// A live-like run on one renderer: samples roll in every frame (tps and ping jitter), the bar is drawn after each,
+    /// and no readout may ever be missing. Prints the ink per frame with `--nocapture`.
+    #[test]
+    fn bar_readouts_never_vanish() {
+        let mut renderer = renderer();
+        let mut caches: Vec<Cache> = (0..3).map(|_| Cache::default()).collect();
+        let mut hist = samples();
+        let mut worst = usize::MAX;
+        let mut best = 0;
+        for frame in 0..240u32 {
+            hist.pop_front();
+            let j = (frame * 7919 % 100) as f32 / 100.0;
+            hist.push_back(MetricSample {
+                tps: 59.2 + j * 0.9,
+                fps_target: 59.73,
+                ping_ms: Some(7 + (frame * 31 % 90) as u128),
+                round: Some(((frame % 5) as i32 - 2, frame % 4, (frame % 7) as i32 - 3)),
+            });
+            for (ci, (players, width)) in [(3usize, 960u32), (3, 1100), (5, 960)].into_iter().enumerate() {
+                let (px, w, h) = render_cached(&mut renderer, &mut caches[ci], width, players, 10, &hist, None);
+                let n = ink(&px, w, h, 0, w);
+                if players == 3 && width == 960 {
+                    worst = worst.min(n);
+                    best = best.max(n);
+                    if let Ok(dir) = std::env::var("BAR_OUT") {
+                        if frame % 30 == 0 {
+                            image::RgbaImage::from_raw(w, h, px).unwrap().save(format!("{dir}/live_{frame:03}.png")).unwrap();
+                        }
+                    }
+                }
+            }
+        }
+        println!("ink min {worst} max {best}");
+    }
+
+    /// The app's screenshots (`window::screenshot`: the pad script's `shot`, the F8 report) re-render the last drawn layers
+    /// after the next frame's layout. Readouts as text widgets were blank there when their text had changed since (the
+    /// rate, the ping): the "missing numbers" in the harness's captures. They are canvas text now, which carries its string.
+    #[test]
+    fn late_screenshot_keeps_changing_readouts() {
+        let mut renderer = renderer();
+        let a = samples();
+        let mut b = samples();
+        b.pop_front();
+        b.push_back(MetricSample { tps: 58.9, fps_target: 59.73, ping_ms: Some(77), round: a.back().unwrap().round });
+        let (live, w, h) = render_cached(&mut renderer, &mut Cache::default(), 1100, 3, 10, &a, None);
+        let (late, _, _) = render_cached(&mut renderer, &mut Cache::default(), 1100, 3, 10, &a, Some(&b));
+        let right = w - 99;
+        let (a, b) = (ink(&live, w, h, right - 48, right), ink(&late, w, h, right - 48, right));
+        assert!(a > 25 && b > 25, "ping readout: live ink {a}, late-screenshot ink {b}");
+        assert!(ink(&live, w, h, 0, w).abs_diff(ink(&late, w, h, 0, w)) < 200, "the late screenshot differs from the live frame");
+        if let Ok(dir) = std::env::var("BAR_OUT") {
+            image::RgbaImage::from_raw(w, h, live).unwrap().save(format!("{dir}/shot_live.png")).unwrap();
+            image::RgbaImage::from_raw(w, h, late).unwrap().save(format!("{dir}/shot_late.png")).unwrap();
+        }
     }
 }

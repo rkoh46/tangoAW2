@@ -556,16 +556,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// else (title, map and CO select, results, the hand-off between
     /// turns) both seats share the pad.
     fn merge(&self, core: &Core, inputs: &[u32]) -> u32 {
-        // A match made in the in-game lobby: its menus are the host's (crate::online).
-        if let Some(keys) = crate::online::merge(core, inputs) {
-            return keys;
-        }
-        let current = core.raw_read_8(CURRENT_PLAYER, -1);
-        if in_versus(core) && in_battle(core) && (1..=5).contains(&current) && !turn_ended(core) {
-            inputs[seat_of_n(current, inputs.len())]
-        } else {
-            inputs.iter().fold(0, |a, &b| a | b)
-        }
+        strip_reset_chord(merge_keys(core, inputs))
     }
 
     fn seat_keys(&self, core: &mut Core, mode: Option<(u8, u8)>, inputs: &[u32]) {
@@ -802,5 +793,45 @@ mod tests {
     #[test]
     fn seats_alternate_by_slot() {
         assert_eq!([1, 2, 3, 4].map(seat_of), [0, 1, 0, 1]);
+    }
+}
+
+
+/// The game's soft reset is A + B + START + SELECT held together (and any seat can hold it): online it must reach the
+/// shared console from no seat at all, or one player could reset the match for everybody. START and SELECT are dropped
+/// from a word that holds the whole chord.
+pub fn strip_reset_chord(keys: u32) -> u32 {
+    const CHORD: u32 = 0x1 | 0x2 | 0x4 | 0x8;
+    if keys & CHORD == CHORD {
+        keys & !(0x4 | 0x8)
+    } else {
+        keys
+    }
+}
+
+/// The keys of the console for one tick of a match (the turn lock of a room, else every seat's keys ORed).
+fn merge_keys(core: &Core, inputs: &[u32]) -> u32 {
+    // A match made in the in-game lobby: its menus are the host's (crate::online).
+    if let Some(keys) = crate::online::merge(core, inputs) {
+        return keys;
+    }
+    let current = core.raw_read_8(CURRENT_PLAYER, -1);
+    if in_versus(core) && in_battle(core) && (1..=5).contains(&current) && !turn_ended(core) {
+        inputs[seat_of_n(current, inputs.len())]
+    } else {
+        inputs.iter().fold(0, |a, &b| a | b)
+    }
+}
+
+#[cfg(test)]
+mod chord_tests {
+    use super::strip_reset_chord;
+
+    #[test]
+    fn the_soft_reset_chord_never_reaches_the_console() {
+        assert_eq!(strip_reset_chord(0x0F), 0x03);
+        assert_eq!(strip_reset_chord(0x3FF), 0x3F3);
+        assert_eq!(strip_reset_chord(0x09), 0x09);
+        assert_eq!(strip_reset_chord(0x07), 0x07);
     }
 }
