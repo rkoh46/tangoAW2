@@ -43,5 +43,18 @@ tango-net = { path = "../tango-net" }
 tango-platform = { path = "../tango-platform" }
 tango-signaling.workspace = true
 
+# The lobby browser's discovery over public Nostr relays (native only): a websocket over rustls (the stack the
+# matchmaking client uses) and BIP-340 signatures, which Nostr events need.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+k256 = { version = "0.13", default-features = false, features = ["schnorr", "std"] }
+serde_json.workspace = true
+sha2 = "0.10"
+tokio-tungstenite = { version = "0.16", features = ["rustls-tls-webpki-roots"] }
+tokio = { workspace = true, features = ["net", "rt", "time"] }
+
+[dev-dependencies]
+env_logger = "0.9"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+
 [lints]
 workspace = true

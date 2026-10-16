@@ -629,6 +629,11 @@ fn accept(core: &mut Core) {
 /// Back from the typing page.
 fn back_from_typing(core: &mut Core) {
     if level(core) == 5 && core.raw_read_8(ENTRY, -1) == 1 {
+        if core.raw_read_8(crate::online_browse::FROM, -1) == 1 {
+            // (the password of a lobby picked from the list: back to the list)
+            set_level(core, 7);
+            return;
+        }
         core.raw_write_8(GRID, -1, 0);
         set_level(core, 3);
     } else {
@@ -711,10 +716,9 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                         set_level(core, 5);
                     }
                     1 => {
-                        clear_field(core, CODE, CODE_LEN, CODE_CHARS);
-                        core.raw_write_8(GRID, -1, 0);
-                        core.raw_write_8(TYPED_LEN, -1, 0);
-                        set_level(core, 3);
+                        // JOIN: the public lobbies, with "Enter a code" first.
+                        crate::online_browse::open(core);
+                        set_level(core, 7);
                     }
                     _ => {
                         core.raw_write_8(RESUME_CUR, -1, 0);
@@ -735,7 +739,9 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             let connected = Status::of(core.raw_read_8(STATUS, -1)) == Status::Connected;
             if pressed & KEY_B != 0 {
                 request(core, 3);
-                set_level(core, 1);
+                // (a lobby joined from the list: back to the list)
+                let back = level == 4 && core.raw_read_8(crate::online_browse::FROM, -1) == 1;
+                set_level(core, if back { 7 } else { 1 });
             } else if connected && !host && pressed & KEY_A != 0 {
                 request(core, if my_ready { 5 } else { 4 });
             } else if connected && host && others_ready && !my_ready && pressed & (KEY_START | KEY_A) != 0 {
@@ -785,11 +791,54 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             }
             keys & !ALL_KEYS
         }
+        7 => {
+            use crate::online_browse::Pick;
+            match crate::online_browse::tick(core, pressed) {
+                Pick::Back => set_level(core, 1),
+                Pick::Code => {
+                    clear_field(core, CODE, CODE_LEN, CODE_CHARS);
+                    core.raw_write_8(GRID, -1, 0);
+                    core.raw_write_8(TYPED_LEN, -1, 0);
+                    core.raw_write_8(crate::online_browse::FROM, -1, 0);
+                    set_level(core, 3);
+                }
+                Pick::Open(c) => join_listed(core, &c, false),
+                Pick::Locked(c) => join_listed(core, &c, true),
+                _ => {}
+            }
+            keys & !ALL_KEYS
+        }
         _ => {
             set_level(core, 0);
             keys
         }
     }
+}
+
+/// A lobby picked from the list: its code goes where a typed one would, and its password (if it has one) is asked for
+/// on the password page; B comes back to the list.
+fn join_listed(core: &mut Core, code: &str, locked: bool) {
+    clear_field(core, CODE, CODE_LEN, CODE_CHARS);
+    for c in code.bytes().take(CODE_CHARS) {
+        type_field(core, CODE, CODE_LEN, c);
+    }
+    clear_field(core, PASSWORD, PASSWORD_LEN, PASSWORD_CHARS);
+    core.raw_write_8(TYPED_LEN, -1, 0);
+    core.raw_write_8(ENTRY, -1, 1);
+    core.raw_write_8(crate::online_browse::FROM, -1, 1);
+    if locked {
+        core.raw_write_8(GRID, -1, GRID_OK as u8);
+        set_level(core, 5);
+    } else {
+        request(core, 2);
+        set_level(core, 4);
+    }
+}
+
+fn type_field(core: &mut Core, at: u32, len: u32, c: u8) {
+    let n = core.raw_read_8(len, -1) as u32;
+    core.raw_write_8(at + n, -1, c);
+    core.raw_write_8(len, -1, n as u8 + 1);
 }
 
 fn code_entry(core: &mut Core, pressed: u32) {
@@ -1342,7 +1391,7 @@ impl Rgba<'_> {
         }
     }
     /// A window as the game's: white, red above, blue below, a light edge at the sides.
-    fn window(&mut self, x: i32, y: i32, w: i32, h: i32) {
+    pub(crate) fn window(&mut self, x: i32, y: i32, w: i32, h: i32) {
         self.rect(x - 1, y - 1, w + 2, h + 2, INK);
         self.rect(x, y, w, h, WHITE);
         self.rect(x + 1, y + 2, 1, h - 4, LIGHT_GRAY);
@@ -1557,7 +1606,7 @@ fn wrap(core: &Core, s: &str, width: i32) -> Vec<String> {
     lines
 }
 
-const PANEL: (i32, i32, i32, i32) = (92, 26, 142, 114);
+pub(crate) const PANEL: (i32, i32, i32, i32) = (92, 26, 142, 114);
 
 /// How the connection stands, in words.
 fn status_lines(core: &Core, hosting: bool) -> (Vec<String>, Rgb) {
@@ -1669,7 +1718,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             let note = (Status::of(core.raw_read_8(STATUS, -1)) == Status::Back).then(|| note(core)).filter(|m| !m.is_empty());
             let help = [
                 "Make a room and give its code to a friend.",
-                "Type in the code of a friend's room.",
+                "Find a lobby, or type in a room's code.",
                 "Pick up a match cut short by a disconnect.",
             ];
             match note {
@@ -1882,6 +1931,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 },
             );
         }
+        7 => crate::online_browse::apply(&mut cv, core),
         _ => {}
     }
 }

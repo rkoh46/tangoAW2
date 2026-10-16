@@ -34,6 +34,14 @@ pub struct Flow {
     unranked_match: bool,
     /// Said on the LOBBY menu when the game comes back.
     back_message: Option<String>,
+    /// The public announcement of the room this player made (withdrawn when the match starts or the room closes).
+    announcer: Option<netplay::browse::Announcer>,
+    /// The look at the public lobby list, while the game's lobby browser is open.
+    browse: Option<(netplay::browse::Browse, std::time::Instant)>,
+    /// The lobbies in the order they were first seen (so the list does not shuffle at every refresh).
+    browse_order: Vec<String>,
+    /// What was last logged of the list.
+    browse_logged: Vec<String>,
     /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
     last_log: Option<std::time::Instant>,
     /// The matches cut short that are saved (the RESUME page's list, newest first), read again when the page
@@ -62,6 +70,8 @@ impl App {
     /// Every session frame: the in-game lobby's mailbox, and the way back from a
     /// match it made.
     pub(super) fn online_tick(&mut self) -> iced::Task<Message> {
+        // (a match starting, or a room closing, withdraws the public lobby whatever the game is doing)
+        self.online_announce();
         // A lobby-made match just ended: back to the game, at its lobby.
         if self.online.in_match && !self.session.is_active() {
             self.online.in_match = false;
@@ -160,7 +170,135 @@ impl App {
             }
         }
         self.online_write_back();
+        self.online_announce();
+        self.online_browse(level);
         task
+    }
+
+    /// The public relays used by the lobby list (`TANGOAW2_LOBBY_RELAYS`, comma separated, for tests).
+    fn lobby_relays() -> Vec<String> {
+        match std::env::var("TANGOAW2_LOBBY_RELAYS") {
+            Ok(v) if !v.trim().is_empty() => v.split(',').map(|s| s.trim().to_string()).collect(),
+            _ => netplay::browse::RELAYS.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    fn lobby_version() -> String {
+        env!("CARGO_PKG_VERSION").to_string()
+    }
+
+    fn lobby_pack() -> bool {
+        tango_library::shared_content_flag() != 0 && std::env::var("TANGOAW2_NO_CONTENT").is_err()
+    }
+
+    /// The room made here is listed while it waits for players, and withdrawn once its match starts or it closes.
+    fn online_announce(&mut self) {
+        let open = self.online.room.as_ref().is_some_and(|r| {
+            r.is_host() && matches!(r.view().phase, RoomPhase::Connecting | RoomPhase::Open)
+        });
+        if !open {
+            if self.online.announcer.take().is_some() {
+                log::info!("lobby list: the lobby is withdrawn");
+            }
+            return;
+        }
+        // The game was left (closed, or the player went to another page of the app) while the room was open: nobody
+        // is there to start it, so it is closed and withdrawn rather than listed for as long as the app lives.
+        if !self.online.building
+            && self.session.active_as::<session::singleplayer::SinglePlayerSession>().is_none()
+        {
+            if let Some(room) = self.online.room.take() {
+                room.leave();
+            }
+            self.online.announcer = None;
+            log::info!("lobby list: the game was left; the room is closed and its lobby withdrawn");
+            return;
+        }
+        let Some(room) = self.online.room.as_ref() else { return };
+        let players = room.view().players.len().clamp(1, netplay::room::MAX_PLAYERS) as u8;
+        if let Some(a) = self.online.announcer.as_ref() {
+            a.update(|l| l.players = players);
+        }
+    }
+
+    /// The game's lobby browser is open (level 7): look at the public list and write what is found.
+    fn online_browse(&mut self, level: u8) {
+        // The look goes on while a lobby picked from the list is joined or its password typed (the list is still there
+        // when B comes back); any other page ends it.
+        if matches!(level, 3..=5) && self.online.browse.is_some() {
+            return;
+        }
+        if level != 7 {
+            if self.online.browse.take().is_some() {
+                self.online.browse_order.clear();
+            }
+            return;
+        }
+        let relays = Self::lobby_relays();
+        let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
+        let (browse, since) = self.online.browse.get_or_insert_with(|| {
+            (
+                netplay::browse::Browse::start(
+                    &relays,
+                    netplay::browse::Compat {
+                        version: Self::lobby_version(),
+                        pack: Self::lobby_pack(),
+                    },
+                ),
+                std::time::Instant::now(),
+            )
+        });
+        let mine = self.online.room.as_ref().map(|r| r.code());
+        let listed: Vec<netplay::browse::Listing> = browse
+            .listings()
+            .into_iter()
+            .filter(|l| Some(&l.lobby.code) != mine.as_ref())
+            .collect();
+        let stats = browse.stats();
+        let elapsed = since.elapsed().as_secs_f32();
+        let net = if stats.connected == 0 && elapsed >= 10.0 {
+            mailbox::BrowseNet::Offline
+        } else if stats.connected > 0 && (stats.events > 0 || elapsed >= 2.5) {
+            mailbox::BrowseNet::Ok
+        } else {
+            mailbox::BrowseNet::Looking
+        };
+        // First seen first; a lobby that is gone leaves the order.
+        self.online.browse_order.retain(|c| listed.iter().any(|l| &l.lobby.code == c));
+        // (lobbies seen for the first time in this look, by code: the same order wherever they came from first)
+        let mut fresh: Vec<&String> = listed
+            .iter()
+            .map(|l| &l.lobby.code)
+            .filter(|c| !self.online.browse_order.contains(c))
+            .collect();
+        fresh.sort();
+        let fresh: Vec<String> = fresh.into_iter().cloned().collect();
+        self.online.browse_order.extend(fresh);
+        let rows: Vec<mailbox::BrowseRow> = self
+            .online
+            .browse_order
+            .iter()
+            .filter_map(|c| listed.iter().find(|l| &l.lobby.code == c))
+            .map(|l| mailbox::BrowseRow {
+                code: l.lobby.code.clone(),
+                host: l.lobby.host.clone(),
+                players: l.lobby.players,
+                max: l.lobby.max,
+                locked: l.lobby.locked,
+            })
+            .collect();
+        let codes: Vec<String> = rows.iter().map(|r| r.code.clone()).collect();
+        if codes != self.online.browse_logged {
+            log::info!("lobby list: rows now {codes:?} ({net:?})");
+            self.online.browse_logged = codes;
+        }
+        let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
+            return;
+        };
+        let mut write = |a: u32, b: &[u8]| {
+            solo.poke(a, b);
+        };
+        mailbox::write_browse(&mut write, &rows, net, &Self::lobby_version());
     }
 
     /// The RESUME page's list, written into the console when the page (or the LOBBY menu in front of it) is up.
@@ -191,6 +329,21 @@ impl App {
                 let params = self.online_params(&code, &password);
                 self.online.back_message = None;
                 self.online.room = Some(Room::host(params));
+                // Every lobby is public: listed for everyone on this version (never with an address).
+                let relays = Self::lobby_relays();
+                let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
+                self.online.announcer = Some(netplay::browse::Announcer::start(
+                    &relays,
+                    netplay::browse::Lobby {
+                        code: code.clone(),
+                        host: self.online_nickname(),
+                        players: 1,
+                        max: netplay::room::MAX_PLAYERS as u8,
+                        locked: !password.is_empty(),
+                        version: Self::lobby_version(),
+                        pack: Self::lobby_pack(),
+                    },
+                ));
             }
             Request::Join { code, password } => {
                 let params = self.online_params(&code, &password);
@@ -243,6 +396,7 @@ impl App {
                 self.online.saved_dirty = true;
             }
             Request::Leave => {
+                self.online.announcer = None;
                 if let Some(room) = self.online.room.take() {
                     room.leave();
                 }

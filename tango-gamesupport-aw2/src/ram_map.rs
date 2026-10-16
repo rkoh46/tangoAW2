@@ -80,6 +80,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Covering Fire / Ex Machina strike site (crate::co_powers)", STRIKE_SITE),
     ("Dual Strike's CPU", DS_AI),
     ("online: the in-game lobby, its mailbox, an online match's walk (crate::online::STATE)", (crate::online::STATE, crate::online::STATE_LEN)),
+    ("online: the lobby browser's rows (crate::online_browse::STATE)", (crate::online_browse::STATE, crate::online_browse::STATE_LEN)),
     ("online: each seat's CO, colour and partner choices in a room (crate::online_teams::SEL)", (crate::online_teams::SEL, crate::online_teams::SEL_LEN)),
     ("online: an UNRANKED match's map proposals and rules (crate::unranked::STATE)", (crate::unranked::STATE, crate::unranked::STATE_LEN)),
     ("online: the saved matches' list and the lobby's note (crate::online::SAVED)", (crate::online::SAVED, crate::online::SAVED_LEN)),

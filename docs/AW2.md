@@ -4197,7 +4197,7 @@ tests). Online play starts in the game, played alone:
   (`online::apply`) from EWRAM `0x0203CA00..0x0203CAFF`: CREATE asks for an
   optional password (up to four letters), then shows the room's code (the
   app's) in the title font and five player slots (the room holds two for
-  now); JOIN takes the six-letter code and the password on a grid (letters
+  now); JOIN lists the public lobbies (below) and, from its first line, takes the six-letter code and the password on a grid (letters
   `ACDEGHKLMNPRSTUWY`: the title font's, less I, O and B) or the keyboard.
   The guest's A is READY, the host's START starts once everyone is ready.
 - **The mailbox** (same block): the game's request (+0x0C: 1 make a room,
@@ -4207,6 +4207,23 @@ tests). Online play starts in the game, played alone:
   message; +0x80 the players, 16 bytes each: ready, flags host/you, name),
   keyboard typing (+0x38, its count +0x48). The app reads and writes it
   between frames (`tango_match::Console::peek/poke`).
+- **The lobby browser** (`online_browse.rs`, lobby level 7; `tango-lobby/src/browse.rs`; app: `tango/src/app/online.rs`).
+  Every room made here is public: its host app announces it, and JOIN lists the open lobbies of the same
+  version and content-pack setting (a padlock marks one with a password; B backs out; "Enter a code" is the first line and
+  opens the old code page). There is no server of ours: the channel is public **Nostr relays** (websocket servers run by
+  third parties, best effort), tried in parallel (`browse::RELAYS`; any one working is enough; a refused or unreachable
+  relay is retried with a back-off). An announcement is a signed parameterized-replaceable event (kind 30078, `d` the
+  code, `t` `tangoaw2-lobby-v1`, NIP-40 `expiration`) from a throw-away key made when the app starts, replaced every
+  12 s and withdrawn (a closing event) when the match starts or the room closes; one that just stops (a crash) is gone
+  40 s later. Content: code, gamertag, players/5, padlock, app version, pack flag; **never an address** (the connection is
+  the matchmaking session `tangoaw2-room-<code>` as before; a password is only the hashed check inside the room's
+  conversation). A listing is believed only after its id and BIP-340 signature check out and its fields pass
+  `Lobby::decode` (it is a public channel). The game's page is the mailbox at `0x0203D500` (rows of 24 bytes written by
+  the app; the cursor follows the lobby's code, so the list changing under it never moves it onto another lobby; rows
+  keep their order of first sight). Checks: `cargo test -p tango-lobby browse`, and
+  `cargo run -p tango-lobby --example browse_check [seconds]` (announces two lobbies on the real relays and lists
+  them from a second client). Relays see the IP address of whoever connects, like any server; `TANGOAW2_LOBBY_RELAYS`
+  (comma separated) replaces the relay list for tests.
 - **Connecting.** The room's code and password make a matchmaking link code
   (`tangoaw2-room-<code>[-<password>]`; a wrong password meets nobody); the
   match type is Versus subtype 1 ([`online::ONLINE_MATCH`]) and the room's
