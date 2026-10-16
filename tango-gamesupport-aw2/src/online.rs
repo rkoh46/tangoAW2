@@ -452,6 +452,10 @@ pub mod mailbox {
             ("versus", None) => flag(probe::VERSUS),
             ("nav", None) => flag(probe::NAV),
             ("turnended", None) => flag(probe::TURN_ENDED),
+            ("myturn", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 1 != 0,
+            ("banner", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 2 != 0,
+            ("acting", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 4 != 0,
+            ("over", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 8 != 0,
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
@@ -538,9 +542,37 @@ pub mod probe {
     /// The map cursor's cell (x, then y << 16), noted every tick: a test script's `cx`/`cy` in a netplay session, whose
     /// console the script cannot read.
     pub static CURSOR_CELL: AtomicU64 = AtomicU64::new(0);
+    /// State-driven test cues (`TANGOAW2_PAD_SCRIPT` conditions): bit 0 `myturn` (this window's seat has the turn),
+    /// bit 1 `banner` (the NEXT TURN banner is up and this seat is the incoming mover: its A dismisses it), bit 2
+    /// `acting` (my turn, on the plain map, waiting for the cursor), bit 3 `over` (the match is decided).
+    pub static CUES: AtomicU64 = AtomicU64::new(0);
 
     /// Every tick (any console): note the screen.
     pub fn store(core: &Core) {
+        crate::run_dump::tick(core);
+        {
+            let n = super::room_players();
+            let me = super::room_local_seat();
+            let current = crate::pvp::current_army(core);
+            let mut c = 0u64;
+            if crate::pvp::in_battle(core) && (1..=5).contains(&current) {
+                let mine = crate::pvp::seat_of_n(current, n) == me;
+                let ended = crate::pvp::turn_ended(core);
+                if mine && !ended {
+                    c |= 1;
+                }
+                if ended && crate::pvp::seat_of_n(super::incoming_alive(core, current, n), n) == me {
+                    c |= 2;
+                }
+                if mine && !ended && crate::survival_ui::idle(core) {
+                    c |= 4;
+                }
+                if crate::result_view::decided(core) {
+                    c |= 8;
+                }
+            }
+            CUES.store(c, Ordering::Relaxed);
+        }
         let mut b = 0u64;
         let mut flag = |on: bool, bit: u64| {
             if on {

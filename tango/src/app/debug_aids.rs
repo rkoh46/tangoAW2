@@ -11,7 +11,7 @@
 //!   the moment a session starts); `until COND [SECONDS]` idles until the
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
-//!   `army=N`, `menu=N` (the map menu's row), `onend` (the menu's cursor is on End, whatever its row), `cx=N`/`cy=N` (the map cursor's cell; `cxlt=N`, `cxgt=N`,
+//!   `myturn` (this window's seat has the turn), `banner` (NEXT TURN is up and this seat is the incoming mover: press A), `acting` (my turn, plain map, waiting for the cursor), `over` (the match is decided), `army=N`, `menu=N` (the map menu's row), `onend` (the menu's cursor is on End, whatever its row), `cx=N`/`cy=N` (the map cursor's cell; `cxlt=N`, `cxgt=N`,
 //!   `cylt=N`, `cygt=N`: left of, right of, above, below it), `idle` (the map waits for the cursor, nothing running),
 //!   `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
 //!   keys now and then until the console shows COND, `label NAME` / `jumpif COND NAME` carry on at the label when COND holds, `goto X Y [SECONDS]` walks the map cursor to the cell, `shot PATH` saves the
@@ -28,6 +28,18 @@ pub struct DebugAids {
     pad: Option<Pad>,
     /// Screenshots a pad script asked for (`shot <path>`).
     script_shots: Vec<PathBuf>,
+    /// Test run directory (`TANGOAW2_RUN_DIR`, with `TANGOAW2_RUN_SEAT` and `TANGOAW2_RUN_SHOT_HZ`): the window's
+    /// picture `s<seat>_<NNNN>.png` at a steady rate, beside the game state dump (tango-gamesupport-aw2 `run_dump`).
+    run: Option<RunDir>,
+}
+
+/// A test run's output directory: frames on a steady clock.
+struct RunDir {
+    dir: PathBuf,
+    seat: u32,
+    every: f64,
+    next: f64,
+    n: u32,
 }
 
 /// One line of a pad script.
@@ -86,15 +98,61 @@ fn key_bits(s: &str) -> u32 {
 }
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
-const CONDS: [&str; 25] = [
-    "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "cursor", "level", "army",
+const CONDS: [&str; 30] = [
+    "always",
+    "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "myturn", "banner", "acting", "over", "cursor", "level", "army",
     "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "onend", "!",
 ];
 
 fn cond_ok(c: &str) -> bool {
-    let c = c.trim_start_matches('!');
-    let name = c.split_once('=').map_or(c, |(n, v)| if v.parse::<u32>().is_ok() { n } else { "?" });
-    CONDS.contains(&name) 
+    // (`a|b` holds when either does)
+    c.split('|').all(|c| {
+        let c = c.trim_start_matches('!');
+        let name = c.split_once('=').map_or(c, |(n, v)| if v.parse::<u32>().is_ok() { n } else { "?" });
+        CONDS.contains(&name)
+    })
+}
+
+/// The script's macros, expanded into plain lines: state-driven steps that wait for the game and carry on at once.
+/// - `jump NAME`: carry on at the label.
+/// - `onbanner`: wait (10 s) until this seat's NEXT TURN banner is up, then press A until it is gone (up to 4 tries).
+/// - `endturn`: on my turn, on the plain map: clear with B, open the map menu with A, DOWN until the cursor is on End
+///   (read from the game's RAM, never counted), A, and check that the turn ended (up to 3 tries).
+fn expand_macros(text: &str) -> String {
+    let mut out = String::new();
+    let mut n = 0u32;
+    for line in text.lines() {
+        match line.trim() {
+            l if l.starts_with("jump ") => {
+                out.push_str(&format!("jumpif always {}\n", &l[5..]));
+            }
+            "onbanner" => {
+                n += 1;
+                out.push_str(&format!("until banner 10\n"));
+                for k in 0..4 {
+                    out.push_str(&format!("press A 8\nuntil !banner 2\njumpif !banner bn{n}\n"));
+                    let _ = k;
+                }
+                out.push_str(&format!("label bn{n}\n"));
+            }
+            "endturn" => {
+                n += 1;
+                out.push_str("until acting 10\npress B 6\npress B 6\n");
+                for k in 0..3 {
+                    out.push_str(&format!(
+                        "until acting 4\npress A 8\nwait 20\nseek DOWN onend 6\npress A 8\nuntil !myturn 5\njumpif !myturn et{n}\npress B 6\npress B 6\npress B 6\n"
+                    ));
+                    let _ = k;
+                }
+                out.push_str(&format!("label et{n}\n"));
+            }
+            l => {
+                out.push_str(l);
+                out.push('\n');
+            }
+        }
+    }
+    out
 }
 
 fn keys_ok(k: &str) -> bool {
@@ -185,7 +243,7 @@ impl DebugAids {
             let text = std::fs::read_to_string(&path).ok()?;
             let now = Instant::now();
             Some(Pad {
-                parts: match parse_script(&text) {
+                parts: match parse_script(&expand_macros(&text)) {
                     Ok(parts) => parts,
                     Err(e) => {
                         log::error!("pad script {path}: {e}: the script is not run");
@@ -208,7 +266,31 @@ impl DebugAids {
             exit_after: std::env::var("TANGOAW2_SCREENSHOT_EXIT").is_ok_and(|v| v == "1"),
             pad,
             script_shots: Vec::new(),
+            run: Self::run_from_env(),
         }
+    }
+
+    /// `TANGOAW2_RUN_DIR=<fresh dir>` (the runner makes one per run, never reused), `TANGOAW2_RUN_SEAT=<k>`,
+    /// `TANGOAW2_RUN_SHOT_HZ=<n>` (default 1): writes `meta_s<k>.json` (the build stamp and this client's start on the
+    /// shared wall clock) and enables the steady frames.
+    fn run_from_env() -> Option<RunDir> {
+        let dir = PathBuf::from(std::env::var("TANGOAW2_RUN_DIR").ok()?);
+        let seat: u32 = std::env::var("TANGOAW2_RUN_SEAT").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+        let hz: f64 = std::env::var("TANGOAW2_RUN_SHOT_HZ").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
+        let _ = std::fs::create_dir_all(&dir);
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_millis());
+        let _ = std::fs::write(
+            dir.join(format!("meta_s{seat}.json")),
+            format!(
+                "{{\"seat\":{seat},\"build\":\"{}\",\"version\":\"{}\",\"start_ms\":{now_ms},\"shot_hz\":{hz},\"pid\":{}}}\n",
+                env!("TANGOAW2_BUILD"),
+                env!("CARGO_PKG_VERSION"),
+                std::process::id()
+            ),
+        );
+        Some(RunDir { dir, seat, every: 1.0 / hz.max(0.1), next: 0.0, n: 0 })
     }
 
     pub fn has_pad(&self) -> bool {
@@ -218,6 +300,13 @@ impl DebugAids {
     /// The next screenshot that is due, if any.
     pub fn due_shot(&mut self) -> Option<(PathBuf, bool)> {
         let now = self.start.elapsed().as_secs_f64();
+        if let Some(r) = self.run.as_mut() {
+            if now >= r.next {
+                r.next = now + r.every;
+                r.n += 1;
+                return Some((r.dir.join(format!("s{}_{:04}.png", r.seat, r.n)), false));
+            }
+        }
         let i = self.shots.iter().position(|(t, _, done)| !*done && *t <= now)?;
         self.shots[i].2 = true;
         let last = self.shots.iter().all(|s| s.2);
@@ -232,6 +321,8 @@ impl DebugAids {
     /// The pad word for now; `None` once the script is over (or none). `session` is the running session's install
     /// number; `cond` answers an `until` line's condition.
     pub fn pad_keys(&mut self, session: Option<u64>, cond: &mut dyn FnMut(&str) -> bool) -> Option<u32> {
+        let mut any = |c: &str| c.split('|').any(|p| p == "always" || cond(p));
+        let cond: &mut dyn FnMut(&str) -> bool = &mut any;
         let pad = self.pad.as_mut()?;
         let seq = session?;
         let now = Instant::now();
