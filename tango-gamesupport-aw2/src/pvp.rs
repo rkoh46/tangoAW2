@@ -693,7 +693,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     fn before_tick(&self, core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
         // An online match's walk to SELECT MAP and its end (crate::online).
         let keys = crate::online::before(core, mode, keys);
-        crate::online::probe::store(core);
+        if !tango_backend_mgba::shared::in_scratch() {
+            crate::online::probe::store(core);
+            crate::run_dump::tick(core, keys);
+        }
         track_menu(core);
         debug_dump(core);
         // Everything unlocked: every CO (Sturm and Hachi included), every

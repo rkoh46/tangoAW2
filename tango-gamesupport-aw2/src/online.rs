@@ -549,7 +549,6 @@ pub mod probe {
 
     /// Every tick (any console): note the screen.
     pub fn store(core: &Core) {
-        crate::run_dump::tick(core);
         {
             let n = super::room_players();
             let me = super::room_local_seat();

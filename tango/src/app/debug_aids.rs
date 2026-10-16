@@ -400,6 +400,8 @@ impl DebugAids {
                         pad.at += 1;
                         pad.done = 0;
                     } else {
+                        // (waiting: no key is held, whatever the last press left)
+                        last_frame_keys = 0;
                         break;
                     }
                 }

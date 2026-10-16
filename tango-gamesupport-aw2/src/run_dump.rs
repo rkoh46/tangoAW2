@@ -43,7 +43,7 @@ fn ms() -> u128 {
 }
 
 /// Every tick of the match's console (any peer): note the state (cheap unless the aid is on).
-pub fn tick(core: &Core) {
+pub fn tick(core: &Core, keys: u32) {
     let Some((dir, seat)) = enabled() else { return };
     let mut guard = DUMP.lock().unwrap();
     let d = guard.get_or_insert_with(|| {
@@ -55,6 +55,10 @@ pub fn tick(core: &Core) {
         Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), ready: false }
     });
     d.tick += 1;
+    // (every non-zero joypad word the console takes, with its tick: proof of what reached the game)
+    if keys != 0 {
+        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"keys\",\"word\":{keys}}}", ms(), d.tick);
+    }
     if d.tick % 6 != 0 {
         return;
     }

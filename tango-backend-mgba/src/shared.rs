@@ -63,6 +63,16 @@ struct ScratchConsole<'a> {
     console_pick: bool,
 }
 
+thread_local! {
+    static IN_SCRATCH: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Whether the tick being run is on a scratch copy of the console (a waiting seat's picture), not the match's own:
+/// state noted for tools from a tick (the probes, the run dump) must come from the real console only.
+pub fn in_scratch() -> bool {
+    IN_SCRATCH.with(|c| c.get())
+}
+
 impl Scratch for ScratchConsole<'_> {
     fn core(&self) -> &mgba::core::Core {
         self.link.core(0)
@@ -71,8 +81,11 @@ impl Scratch for ScratchConsole<'_> {
         self.link.core_mut(0)
     }
     fn tick(&mut self, keys: u32) -> bool {
+        IN_SCRATCH.with(|c| c.set(true));
         let word = self.game.before_tick(self.link.core_mut(0), self.mode, keys & JOYFLAGS_MASK) & JOYFLAGS_MASK;
-        self.link.try_tick(&[word]).is_ok()
+        let ok = self.link.try_tick(&[word]).is_ok();
+        IN_SCRATCH.with(|c| c.set(false));
+        ok
     }
     fn memory(&mut self) -> &mut [i32; 4] {
         self.memory
