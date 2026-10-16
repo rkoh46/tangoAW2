@@ -567,12 +567,16 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
         let picks = tango_library::online::room_picks();
         if picks.len() == n && (0..n).any(|a| (0..n).any(|b| a != b && picks[a].0 == picks[b].0)) {
             let mut r = row![].spacing(12).align_y(Alignment::Center);
+            // (the letters count the teams in use: A, A, C, C reads A, A, B, B)
+            let mut used: Vec<u8> = picks.iter().map(|p| p.0).collect();
+            used.sort_unstable();
+            used.dedup();
             for team in 0..5u8 {
                 let members: Vec<usize> = (0..n).filter(|&k| picks[k].0 == team).collect();
                 if members.is_empty() {
                     continue;
                 }
-                let mut g = row![text(format!("{}:", (b'A' + team) as char)).size(TEXT_CAPTION).font(iced::Font::MONOSPACE)]
+                let mut g = row![text(format!("{}:", (b'A' + used.iter().position(|&t| t == team).unwrap_or(0) as u8) as char)).size(TEXT_CAPTION).font(iced::Font::MONOSPACE)]
                     .spacing(4)
                     .align_y(Alignment::Center);
                 for (i, &k) in members.iter().enumerate() {

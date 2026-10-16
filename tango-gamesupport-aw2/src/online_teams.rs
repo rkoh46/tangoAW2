@@ -433,6 +433,14 @@ fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i
     }
 }
 
+/// `team`'s place among the teams in use (`teams` holds every seat's): for display, so that A, A, C, C reads A, A, B, B.
+pub fn compact_team(teams: &[u8], team: u8) -> u8 {
+    let mut used: Vec<u8> = teams.to_vec();
+    used.sort_unstable();
+    used.dedup();
+    used.iter().position(|&t| t == team).unwrap_or(team as usize) as u8
+}
+
 /// A team's letter, as the game's Teams page names them.
 pub fn team_letter(team: u8) -> char {
     (b'A' + team.min(TEAMS - 1)) as char
@@ -584,7 +592,9 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
         let py = y + (h - ph) / 2;
         cv.rect(x - 1, py - 1, 16, ph + 2, ink);
         cv.rect(x, py, 14, ph, crate::online::BLUE);
-        let l = team_letter(team).to_string();
+        // (letters count the teams in use, A, B, ...: A, A, C, C reads A, A, B, B; the team being changed shows its own)
+        let shown = if team_on { team } else { compact_team(&(0..n).map(|k| core.raw_read_8(seat(k) + S_TEAM, -1)).collect::<Vec<_>>(), team) };
+        let l = team_letter(shown).to_string();
         let lw = crate::online::text_width(core, &l);
         cv.text(core, x + (14 - lw) / 2, py + (ph - 11) / 2, &l, crate::online::WHITE, crate::online::BLUE);
     });
