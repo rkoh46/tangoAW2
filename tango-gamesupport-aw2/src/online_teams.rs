@@ -578,7 +578,8 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
     let host_ready = core.raw_read_8(seat(0) + S_READY, -1) == 1;
     let target = core.raw_read_8(seat(0) + S_TARGET, -1) as usize % n;
     let team_on = if local == 0 { host_field == F_TEAM && !host_ready && target == s } else { sel(F_TEAM) };
-    let h = rh - 2;
+    // (five rows share their frame lines: one more pixel for the name and the CO under it)
+    let h = if n >= 5 { rh - 1 } else { rh - 2 };
     let ink = crate::online::INK;
     let shade = crate::online::SHADE;
     // The row's window: a thin frame, cream for the player's own.
@@ -604,7 +605,8 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
     let co_text = fit_arrows(core, &co_name, sel(F_CO), colour_x - 3 - tx);
     let w = crate::online::text_width(core, &co_text);
     if sel(F_CO) {
-        cv.rect(tx - 2, cy - 1, w + 4, 11, crate::online::YELLOW);
+        // (in the small rows the highlight starts under the name, which it must not cover)
+        cv.rect(tx - 2, if big { cy - 1 } else { cy }, w + 4, 11, crate::online::YELLOW);
     }
     cv.text(core, tx, cy, &co_text, ink, shade);
     // Colour chip.

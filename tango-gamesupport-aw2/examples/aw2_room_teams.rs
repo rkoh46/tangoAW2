@@ -9,6 +9,11 @@
 //!   press SEAT KEYS   SEAT holds KEYS (A B SELECT START RIGHT LEFT UP DOWN R L, `+`-joined) 4 frames, then 6 idle
 //!   until COND MAX    wait for selectmap | teams | battle | turnended | army=N | maparmies=N (MAX x 10 frames)
 //!   shot NAME SEAT    NAME_sSEAT.bmp: that seat's own window
+//!   shotall NAME      the same for every seat
+//!   same A B SEATS [TOL]  the seats' pictures of shots A and B (shotall) differ in at most TOL pixels (default 300: the
+//!                     game's animations; a leaked page is thousands), exit 1 otherwise
+//!   fv                print the main loop, the turn's army, the running procs and the waiting view's phase
+//!   props ARMY        print the army's properties
 //!   sel               print the page's per-seat state: CO colour team partner field ready
 //!   rec               print the Teams record's teams and the battle's player blocks' teams, colours
 //!   peek ADDR LEN     print bytes
@@ -78,6 +83,9 @@ fn main() {
     let rtc = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
     let mut link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &tango_gamesupport_aw2::pvp::AW2E, Some(mode), None).expect("boot");
     link.set_players(n);
+    for seat in 0..n {
+        link.side(seat).set_render(true);
+    }
     let sample_every: usize = std::env::var("AW2_SAMPLE").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
     let max_black: usize = std::env::var("AW2_MAX_BLACK").ok().and_then(|v| v.parse().ok()).unwrap_or(20);
     let dump = std::env::var_os("AW2_DUMP").map(std::path::PathBuf::from);
@@ -136,7 +144,9 @@ fn main() {
                 } else {
                     r.cur = 0;
                 }
-                if let Some(d) = &dump {
+                let from: usize = std::env::var("AW2_DUMP_FROM").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+                let to: usize = std::env::var("AW2_DUMP_TO").ok().and_then(|v| v.parse().ok()).unwrap_or(usize::MAX);
+                if let Some(d) = dump.as_ref().filter(|_| (from..to).contains(&t)) {
                     write_bmp(&d.join(format!("t{t:06}_s{seat}{}.bmp", if black { "_BLACK" } else { "" })), &f);
                 }
             }
@@ -150,6 +160,8 @@ fn main() {
     };
     let hex = |b: &[u8]| b.iter().map(|x| format!("{x:02x}")).collect::<Vec<_>>().join(" ");
     let parse = |s: &str| u32::from_str_radix(s.trim_start_matches("0x"), 16).unwrap();
+    let mut shots: std::collections::HashMap<String, Vec<u8>> = Default::default();
+    let mut failed = false;
     let mut t = 0usize;
     for line in lines {
         let p: Vec<&str> = line.split_whitespace().collect();
@@ -193,9 +205,46 @@ fn main() {
                 tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                 if let Some(f) = link.side(seat).frame() {
                     write_bmp(&out.join(format!("{}_s{seat}.bmp", p[1])), &f);
+                    shots.insert(format!("{}_s{seat}", p[1]), f);
                 }
             }
             "phase" => *phase.borrow_mut() = p[1].to_string(),
+            // shotall NAME: every seat's window
+            "shotall" => {
+                for seat in 0..n {
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    if let Some(f) = link.side(seat).frame() {
+                        write_bmp(&out.join(format!("{}_s{seat}.bmp", p[1])), &f);
+                        shots.insert(format!("{}_s{seat}", p[1]), f);
+                    }
+                }
+            }
+            // same NAME1 NAME2 SEATS(comma list or all): the seats' pictures of the two shotall/shot names are identical
+            // (a waiting seat's picture must not change with what the mover has open); exits 1 at the end when not
+            "same" => {
+                let seats: Vec<usize> = if p[3] == "all" { (0..n).collect() } else { p[3].split(',').map(|v| v.parse().unwrap()).collect() };
+                for seat in seats {
+                    let (a, b) = (shots.get(&format!("{}_s{seat}", p[1])), shots.get(&format!("{}_s{seat}", p[2])));
+                    let diff = match (a, b) {
+                        (Some(a), Some(b)) => a.chunks(4).zip(b.chunks(4)).filter(|(x, y)| x != y).count(),
+                        _ => usize::MAX,
+                    };
+                    let tol: usize = p.get(4).map_or(300, |v| v.parse().unwrap());
+                    println!("same {} {} seat {seat}: {} differing pixels {}", p[1], p[2], diff, if diff <= tol { "ok" } else { "FAIL" });
+                    failed |= diff > tol;
+                }
+            }
+            // fv: the game's state the waiting view decides from
+            "fv" => {
+                let c = link.core();
+                let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c).iter().map(|f| format!("{f:08x}")).collect();
+                {
+                    use tango_backend_mgba::SharedGame;
+                    let w: Vec<bool> = (0..n).map(|s| tango_gamesupport_aw2::pvp::AW2E.watching(c, s)).collect();
+                    println!("watching {w:?}");
+                }
+                println!("fv @{t} tick {} army {}: fog {} loop {:08x} phase {:?} procs [{}] dispcnt {:04x} menu {}", ticks.get(), c.raw_read_8(0x0300_33EC, -1), c.raw_read_8(0x0300_3FCD, -1), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), procs.join(" "), c.raw_read_16(0x0400_0000, -1), c.raw_read_8(0x0300_14E2, -1));
+            }
             "status" => {
                 let b = tango_gamesupport_aw2::online::probe::bits();
                 println!("status @{t}: select_mode {} selectmap {} teams {} battle {} versus {} nav {} army {} sel_init {:?} loop {:08x}", b & 1, b >> 2 & 1, b >> 3 & 1, b >> 4 & 1, b >> 5 & 1, b >> 6 & 1, b >> 24 & 255, rd(&mut link, tango_gamesupport_aw2::online_teams::SEL, 4), link.core().raw_read_32(0x0300_0000, -1));
@@ -301,6 +350,21 @@ fn main() {
                     }
                 }
             }
+            // props ARMY: that army's properties (terrain class low bits) with their cells
+            "props" => {
+                let m = 0x0201_E450u32;
+                let c = link.core();
+                let (w, h) = (c.raw_read_16(m, -1) as u32, c.raw_read_16(m + 2, -1) as u32);
+                for y in 0..h {
+                    let row = c.raw_read_16(m + 0x417A + 2 * y, -1) as u32;
+                    for x in 0..w {
+                        let class = c.raw_read_8(m + 0x1432 + row + x, -1);
+                        if (class >> 5) as u32 == p[1].parse::<u32>().unwrap() {
+                            println!("army {} kind {} at ({x},{y})", p[1], class & 0x1F);
+                        }
+                    }
+                }
+            }
             "hash" => {
                 let w = rd(&mut link, 0x0200_0000, 0x40000);
                 let h = w.iter().fold(0xcbf29ce484222325u64, |h, &b| (h ^ b as u64).wrapping_mul(0x100000001b3));
@@ -308,6 +372,10 @@ fn main() {
             }
             other => panic!("unknown command {other}"),
         }
+    }
+    if failed {
+        println!("SAME CHECK FAILED");
+        std::process::exit(1);
     }
     if sample_every > 0 {
         let mut bad = false;
