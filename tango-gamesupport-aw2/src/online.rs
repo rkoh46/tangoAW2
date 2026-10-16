@@ -1957,13 +1957,17 @@ fn saved_page(cv: &mut Rgba, core: &Core) {
             cv.rect(x + 4, ry + 23, w - 8, 1, LIGHT_GRAY);
         }
         cv.text(core, x + 7, ry, &fit(core, &players, w - 14), INK, SHADE);
-        cv.text(core, x + 7, ry + 11, &fit(core, &format!("{map}  {tail}"), w - 14), if k == cur { INK } else { GRAY_INK }, SHADE);
+        // (the day and date stay whole at the right; a long map name gives way to them)
+        let ink = if k == cur { INK } else { GRAY_INK };
+        let tail_w = text_width(core, &tail);
+        cv.text(core, x + w - 7 - tail_w, ry + 11, &tail, ink, SHADE);
+        cv.text(core, x + 7, ry + 11, &fit(core, &map, w - 14 - tail_w - 6), ink, SHADE);
     }
     if first > 0 {
-        cv.text(core, x + w - 14, y + 4, "^", GRAY_INK, SHADE);
+        cv.text(core, x + w - 24, y + 4, "^", GRAY_INK, SHADE);
     }
     if first + 4 < n {
-        cv.text(core, x + w - 14, y + h - 12, "v", GRAY_INK, SHADE);
+        cv.text(core, x + w - 14, y + 4, "v", GRAY_INK, SHADE);
     }
     bar(cv, core, "A: Resume  START: Delete  B: Back");
 }
