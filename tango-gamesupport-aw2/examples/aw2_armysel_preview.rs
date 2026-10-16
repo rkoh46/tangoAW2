@@ -68,7 +68,7 @@ fn main() {
     // (players, local seat, field, ready flags)
     let cases: [(usize, usize, u8, [bool; 5], &str); 16] = [
         (2, 1, 0, [false; 5], "2"),
-        (2, 1, 2, [false; 5], "2_team"),
+        (2, 1, 4, [false; 5], "2_ready"),
         (3, 0, 2, [false; 5], "3_team_host_notag"),
         (5, 3, 2, [false, true, false, false, false], "5_team_notag"),
         (4, 1, 4, [false; 5], "4_note"),
@@ -108,7 +108,7 @@ fn main() {
             ram[b + 1] = colours[s];
             ram[b + 2] = if s % 2 == 1 { 0xFF } else { cos[(s + 1) % 5] };
             // (2v1, 2v2 and 2v2v1 by seat)
-            ram[b + 5] = [0u8, 0, 1, 1, 2][s];
+            ram[b + 5] = if n == 2 { s as u8 } else { [0u8, 0, 1, 1, 2][s] };
             ram[b + 3] = if s == local { field } else { 0 };
             ram[b + 4] = ready[s] as u8;
         }

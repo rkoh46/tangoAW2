@@ -236,11 +236,9 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
             }
             continue;
         }
-        let rows: Vec<u8> = if tag_on {
-            vec![F_CO, F_COLOUR, F_TEAM, F_PARTNER, F_READY]
-        } else {
-            vec![F_CO, F_COLOUR, F_TEAM, F_READY]
-        };
+        // (two armies are always two teams: no TEAM field)
+        let mut rows: Vec<u8> = vec![F_CO, F_COLOUR, F_TEAM, F_PARTNER, F_READY];
+        rows.retain(|&f| (tag_on || f != F_PARTNER) && (n > 2 || f != F_TEAM));
         let at = rows.iter().position(|&f| f == field).unwrap_or(0);
         if pressed & KEY_DOWN != 0 {
             field = rows[(at + 1) % rows.len()];
@@ -346,6 +344,9 @@ fn publish(core: &Core, n: usize) {
 
 /// Whether the seats' teams make a battle: at least two different ones.
 fn teams_ok(core: &Core, n: usize) -> bool {
+    if n == 2 {
+        return true;
+    }
     let first = core.raw_read_8(seat(0) + S_TEAM, -1);
     (1..n).any(|s| core.raw_read_8(seat(s) + S_TEAM, -1) != first)
 }
@@ -504,7 +505,8 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
     let w = crate::online::text_width(core, title);
     cv.text(core, (crate::online::W as i32 - w) / 2, 2, title, crate::online::WHITE, crate::online::GRAY_INK);
     // The column headings: a strip under the title, over the fields' boxes.
-    let (colour_x, team_x, partner_x) = columns(tag_on);
+    let two = n == 2;
+    let (colour_x, team_x, partner_x) = columns(tag_on, two);
     cv.rect(0, 15, crate::online::W as i32, 11, crate::online::LIGHT_GRAY);
     let heading = |cv: &mut crate::online::Rgba<'_>, x: i32, t: &str| {
         let w = crate::online::text_width(core, t);
@@ -512,7 +514,9 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
     };
     cv.text(core, 8, 15, "Player", crate::online::GRAY_INK, crate::online::SHADE);
     heading(cv, colour_x, "Colour");
-    heading(cv, team_x, "Team");
+    if !two {
+        heading(cv, team_x, "Team");
+    }
     if tag_on {
         heading(cv, partner_x, "Pair");
     }
@@ -550,8 +554,11 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
 }
 
 /// The fields' columns (the left edge of the colour, team and partner boxes).
-fn columns(tag_on: bool) -> (i32, i32, i32) {
-    if tag_on { (102, 130, 158) } else { (116, 148, 0) }
+fn columns(tag_on: bool, two: bool) -> (i32, i32, i32) {
+    if two {
+        // (no team column with two players)
+        (116, 0, 148)
+    } else if tag_on { (102, 130, 158) } else { (116, 148, 0) }
 }
 
 /// The width of a field's box (the choice between its two arrows).
@@ -583,7 +590,7 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
     let host_field = core.raw_read_8(seat(0) + S_FIELD, -1);
     let host_ready = core.raw_read_8(seat(0) + S_READY, -1) == 1;
     let target = core.raw_read_8(seat(0) + S_TARGET, -1) as usize % n;
-    let team_on = if local == 0 { host_field == F_TEAM && !host_ready && target == s } else { sel(F_TEAM) };
+    let team_on = n > 2 && if local == 0 { host_field == F_TEAM && !host_ready && target == s } else { sel(F_TEAM) };
     // (five rows share their frame lines: one more pixel for the name and the CO under it)
     let h = if n >= 5 { rh - 1 } else { rh - 2 };
     let ink = crate::online::INK;
@@ -599,7 +606,7 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
         draw_face(core, cv, co, 8, y + (h - sz) / 2, sz);
     }
     let tx = 8 + sz + 3;
-    let (colour_x, team_x, partner_x) = columns(tag_on);
+    let (colour_x, team_x, partner_x) = columns(tag_on, n == 2);
     // (the name and the CO under it keep to the room left of the colour box: the audit's window for them)
     crate::online::audit::window(tx, y, colour_x - 3 - tx + 2, h);
     let name: String = crate::online::room_name(s).chars().take(10).collect();
@@ -622,6 +629,7 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
         cv.rect(x, y + (h - chip_h) / 2, 14, chip_h, colour_rgb(colour));
     });
     // Team: its letter on a plate like READY's.
+    if n > 2 {
     field_box(core, cv, team_x, y, h, team_on, |cv, x| {
         let ph = (h - 8).min(16);
         let py = y + (h - ph) / 2;
@@ -633,6 +641,7 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
         let lw = crate::online::text_width(core, &l);
         cv.text(core, x + (14 - lw) / 2, py + (ph - 11) / 2, &l, crate::online::WHITE, crate::online::BLUE);
     });
+    }
     // Partner: a small face, "-" for none.
     if tag_on {
         field_box(core, cv, partner_x, y, h, sel(F_PARTNER), |cv, x| {
