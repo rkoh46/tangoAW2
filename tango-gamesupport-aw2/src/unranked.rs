@@ -437,7 +437,9 @@ pub fn paint(core: &Core, rgba: &mut [u8]) {
         let chosen = ph >= 1 && s == pick;
         cv.rect(2, y, 236, h, if chosen { YELLOW } else if mine { CREAM } else { WHITE });
         cv.rect(2, y, 4, h, if s == 0 { RED } else { BLUE });
-        let name: String = room_name(s).chars().take(12).collect();
+        audit::window(2, y, 236, h);
+        audit::window(12, y, 190 - 12, 17);
+        let name: String = fit(core, &room_name(s).chars().take(12).collect::<String>(), 190 - 12 - 4);
         cv.text(core, 12, y + 3, &name, if mine { BLUE } else { INK }, SHADE);
         let tag = if chosen {
             "CHOSEN"
