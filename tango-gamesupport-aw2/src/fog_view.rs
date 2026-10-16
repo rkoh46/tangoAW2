@@ -165,6 +165,21 @@ fn rules_proc(f: u32) -> bool {
     (0x0806_D000..0x0806_E000).contains(&f) || f == 0x0806_5961
 }
 
+/// Test aid (`AW2_BUSY_LOG=1`): each distinct set of running procs that makes the phase Busy, once.
+pub fn log_busy(core: &Core) {
+    static SEEN: std::sync::Mutex<Vec<Vec<u32>>> = std::sync::Mutex::new(Vec::new());
+    if std::env::var_os("AW2_BUSY_LOG").is_none() {
+        return;
+    }
+    let mut p = procs(core);
+    p.sort();
+    let mut seen = SEEN.lock().unwrap();
+    if !seen.contains(&p) {
+        eprintln!("busy procs {:x?} loop {:08x} fog {} menu {} chosen {:?}", p, core.raw_read_32(MAIN_LOOP, -1), fog(core), core.raw_read_8(MAP_MENU_STATE, -1), crate::pvp::chosen_item(core));
+        seen.push(p);
+    }
+}
+
 /// What the shared console shows, for the waiting windows.
 #[derive(PartialEq, Eq, Debug)]
 pub enum Phase {
@@ -285,13 +300,19 @@ pub fn phase(core: &Core) -> Phase {
     }
     if running.iter().all(|f| UI_PROCS.contains(f)) {
         Phase::Map
-    } else if running.iter().any(|f| UI_PROCS.contains(f)) {
-        // (an animation with the mover's UI up at the same time: nothing of it is shown, the window holds its picture)
-        Phase::Moving
-    } else {
+    } else if running.iter().all(|f| ANIMATION_PROCS.contains(f)) {
+        // A unit's own animation of the turn (walking, capturing, a build or an attack's result): the allowlist.
         Phase::Busy
+    } else {
+        // Anything else (the mover's UI with an animation, a screen nobody has listed): nothing of it is shown, the window
+        // holds its last clean picture.
+        Phase::Moving
     }
 }
+
+/// The animations of the mover's turn that may be shown as they are (without fog; with fog the window holds its picture):
+/// the procs seen while units walk, capture, are built and fight on the map.
+const ANIMATION_PROCS: [u32; 6] = [0x0802_A509, 0x0802_7DD9, 0x0802_7905, 0x0802_788D, 0x0802_9FE5, 0x0802_A3FD];
 
 /// Test aid (`TANGOAW2_INPUT_LOG=1`): where the cursor is and which cells the army owns (HQ, factory, ...), for scripting.
 pub(crate) fn log_cells(core: &Core, army: u8) {

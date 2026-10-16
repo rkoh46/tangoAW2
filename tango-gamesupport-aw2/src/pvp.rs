@@ -655,7 +655,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // in every window)
         match crate::fog_view::phase(core) {
             crate::fog_view::Phase::HandOff => false,
-            crate::fog_view::Phase::Busy => crate::fog_view::fog(core) || crate::fog_view::mover_cursor_up(core),
+            crate::fog_view::Phase::Busy => {
+                crate::fog_view::log_busy(core);
+                crate::fog_view::fog(core) || crate::fog_view::mover_cursor_up(core)
+            }
             crate::fog_view::Phase::Map | crate::fog_view::Phase::Page | crate::fog_view::Phase::Moving => true,
             crate::fog_view::Phase::Scene => crate::fog_view::fog(core),
         }
