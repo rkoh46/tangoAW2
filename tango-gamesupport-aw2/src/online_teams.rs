@@ -65,13 +65,6 @@ const TEAMS: u8 = 5;
 const COLOURS: [u8; 5] = [1, 2, 4, 3, 5];
 const COLOUR_NAMES: [&str; 6] = ["", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole"];
 
-/// Whether seat `s` is READY on the army screen, read through a mailbox reader (the pad script's `teamready`).
-pub fn seat_ready(read: &mut dyn FnMut(u32, &mut [u8]), s: usize) -> bool {
-    let mut b = [0u8];
-    read(seat(s) + S_READY, &mut b);
-    b[0] == 1
-}
-
 pub fn players(core: &Core) -> usize {
     (core.raw_read_8(PLAYERS, -1) as usize).clamp(2, 5)
 }

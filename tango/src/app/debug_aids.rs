@@ -11,7 +11,7 @@
 //!   the moment a session starts); `until COND [SECONDS]` idles until the
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
-//!   `army=N`, `maparmies=N`, `status=N`, `players=N`, `ready=N`, `teamready`: this seat is READY on the army screen), `seek KEYS COND` presses
+//!   `army=N`, `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
 //!   keys now and then until the console shows COND, `shot PATH` saves the
 //!   window's picture, `log TEXT` writes to the log, `session` starts the part
 //!   for the next session, `#` comments out a line.
@@ -76,38 +76,81 @@ fn key_bits(s: &str) -> u32 {
         .fold(0, |a, b| a | b)
 }
 
-fn parse_script(text: &str) -> Vec<Vec<Op>> {
+/// The names `until` and `seek` understand (`tango_library::online::condition`).
+const CONDS: [&str; 16] = [
+    "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "cursor", "level", "army",
+    "maparmies", "status", "players", "ready", "!",
+];
+
+fn cond_ok(c: &str) -> bool {
+    let c = c.trim_start_matches('!');
+    let name = c.split_once('=').map_or(c, |(n, v)| if v.parse::<u32>().is_ok() { n } else { "?" });
+    CONDS.contains(&name) 
+}
+
+fn keys_ok(k: &str) -> bool {
+    k.split('+').all(|k| {
+        ["A", "B", "SELECT", "START", "RIGHT", "LEFT", "UP", "DOWN", "R", "L"].contains(&k.to_ascii_uppercase().as_str())
+    })
+}
+
+/// A script's parts (one per session), or the first line that is not understood: a test that silently skips a line
+/// tests something else, so the caller stops the script with the error.
+fn parse_script(text: &str) -> Result<Vec<Vec<Op>>, String> {
     let mut parts: Vec<Vec<Op>> = vec![Vec::new()];
-    for line in text.lines() {
+    for (no, line) in text.lines().enumerate() {
         let line = line.trim();
-        if line.starts_with('#') {
+        if line.is_empty() || line.starts_with('#') {
             continue;
         }
+        let bad = |why: &str| Err(format!("line {}: {why}: {line:?}", no + 1));
         let p: Vec<&str> = line.split_whitespace().collect();
         if p == ["session"] {
             parts.push(Vec::new());
             continue;
         }
         let ops = parts.last_mut().unwrap();
+        if matches!(p.first(), Some(&("press" | "hold" | "seek"))) && !p.get(1).is_some_and(|k| keys_ok(k)) {
+            return bad("unknown key");
+        }
         match p.as_slice() {
-            ["wait", n] => ops.extend(n.parse().ok().map(Op::Wait)),
-            ["press", k, n] => {
-                if let Ok(n) = n.parse() {
+            ["wait", n] => match n.parse() {
+                Ok(n) => ops.push(Op::Wait(n)),
+                Err(_) => return bad("wait needs a frame count"),
+            },
+            ["press", k, n] => match n.parse() {
+                Ok(n) => {
                     ops.push(Op::Hold(key_bits(k), n));
                     ops.push(Op::Wait(6));
                 }
+                Err(_) => return bad("press needs a frame count"),
+            },
+            ["hold", k, n] => match n.parse() {
+                Ok(n) => ops.push(Op::Hold(key_bits(k), n)),
+                Err(_) => return bad("hold needs a frame count"),
+            },
+            ["until", cond, rest @ ..] if rest.len() <= 1 && cond_ok(cond) => {
+                let secs = match rest.first().map(|s| s.parse::<f64>()) {
+                    None => 120.0,
+                    Some(Ok(v)) => v,
+                    Some(Err(_)) => return bad("until's limit is a number of seconds"),
+                };
+                ops.push(Op::Until(cond.to_string(), secs));
             }
-            ["hold", k, n] => ops.extend(n.parse().ok().map(|n| Op::Hold(key_bits(k), n))),
-            ["until", cond] => ops.push(Op::Until(cond.to_string(), 120.0)),
-            ["until", cond, secs] => ops.push(Op::Until(cond.to_string(), secs.parse().unwrap_or(120.0))),
-            ["seek", k, cond] => ops.push(Op::Seek(key_bits(k), cond.to_string(), 60.0)),
-            ["seek", k, cond, secs] => ops.push(Op::Seek(key_bits(k), cond.to_string(), secs.parse().unwrap_or(60.0))),
+            ["seek", k, cond, rest @ ..] if rest.len() <= 1 && cond_ok(cond) => {
+                let secs = match rest.first().map(|s| s.parse::<f64>()) {
+                    None => 60.0,
+                    Some(Ok(v)) => v,
+                    Some(Err(_)) => return bad("seek's limit is a number of seconds"),
+                };
+                ops.push(Op::Seek(key_bits(k), cond.to_string(), secs));
+            }
             ["shot", path] => ops.push(Op::Shot(PathBuf::from(path))),
             ["log", rest @ ..] => ops.push(Op::Log(rest.join(" "))),
-            _ => {}
+            _ => return bad("unknown or malformed line"),
         }
     }
-    parts
+    Ok(parts)
 }
 
 impl DebugAids {
@@ -123,10 +166,16 @@ impl DebugAids {
             })
             .unwrap_or_default();
         let pad = std::env::var("TANGOAW2_PAD_SCRIPT").ok().and_then(|path| {
-            let text = std::fs::read_to_string(path).ok()?;
+            let text = std::fs::read_to_string(&path).ok()?;
             let now = Instant::now();
             Some(Pad {
-                parts: parse_script(&text),
+                parts: match parse_script(&text) {
+                    Ok(parts) => parts,
+                    Err(e) => {
+                        log::error!("pad script {path}: {e}: the script is not run");
+                        return None;
+                    }
+                },
                 part: 0,
                 session: None,
                 at: 0,
@@ -294,5 +343,23 @@ pub fn save_png(shot: &iced::window::Screenshot, path: &PathBuf) {
             let _ = std::fs::create_dir_all(dir);
         }
         let _ = img.save(path);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_script;
+
+    #[test]
+    fn a_good_script_parses() {
+        let t = "wait 5\npress A 8\nuntil battle 90\nseek A !turnended\nuntil army=2\nshot /x.png\nsession\nlog hi\n# c\n";
+        assert_eq!(parse_script(t).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn a_bad_line_is_an_error() {
+        for t in ["wait x", "press Q 4", "until nonsense", "until army=x", "seek A battle 1 2", "frobnicate"] {
+            assert!(parse_script(t).is_err(), "{t}");
+        }
     }
 }
