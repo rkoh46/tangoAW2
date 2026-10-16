@@ -556,16 +556,34 @@ pub mod probe {
             let current = crate::pvp::current_army(core);
             let mut c = 0u64;
             if crate::pvp::in_battle(core) && (1..=5).contains(&current) {
-                let mine = crate::pvp::seat_of_n(current, n) == me;
                 let ended = crate::pvp::turn_ended(core);
+                // (who has the pad, as `merge` tells: the incoming army's seat on the Next turn screen)
+                let ender = core.raw_read_8(super::ENDER, -1);
+                let army = if ended {
+                    super::incoming_alive(core, if (1..=5).contains(&ender) { ender } else { current }, n)
+                } else {
+                    current
+                };
+                let mine = crate::pvp::seat_of_n(army, n) == me;
                 if mine && !ended {
                     c |= 1;
                 }
-                if ended && crate::pvp::seat_of_n(super::incoming_alive(core, current, n), n) == me {
-                    c |= 2;
+                // (steady for a moment: the turn start cycles the army byte through the other armies)
+                static BANNER: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                if mine && ended {
+                    if BANNER.fetch_add(1, Ordering::Relaxed) >= 20 {
+                        c |= 2;
+                    }
+                } else {
+                    BANNER.store(0, Ordering::Relaxed);
                 }
+                static STEADY: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
                 if mine && !ended && crate::fog_view::plain_map(core) {
-                    c |= 4;
+                    if STEADY.fetch_add(1, Ordering::Relaxed) >= 30 {
+                        c |= 4;
+                    }
+                } else {
+                    STEADY.store(0, Ordering::Relaxed);
                 }
                 if crate::result_view::decided(core) {
                     c |= 8;
