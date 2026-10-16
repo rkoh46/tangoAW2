@@ -430,10 +430,12 @@ pub fn power_cutin(core: &Core) -> bool {
     power_scene(core) && io(0) & 0x1F00 == 0x1F00 && io(0x50) == 0x1E41 && io(0x52) == 0x0010 && io(0x54) == 0
 }
 
-/// The banks of the background palette the units are drawn with (the army colours and the greyed moved units'): the refresh
+/// The banks of the background palette the units are drawn with (the army colours and the greyed moved units': bank 11
+/// for the land units, the others for ships, aircraft and the rest; a moved Cruiser was blue on a blue window with bank
+/// 11 alone): the refresh
 /// that makes the waiting army's view rebuilds them for the army it was told is the current one, which draws the mover's
 /// units that have moved in the viewer's colours. They are put back as the console has them.
-const UNIT_BANKS: [usize; 1] = [11];
+const UNIT_BANKS: [usize; 8] = [8, 9, 10, 11, 12, 13, 14, 15];
 
 fn banks_env() -> Vec<usize> {
     std::env::var("AW2_RESTORE_BANKS").ok().map(|v| v.split(',').filter_map(|x| x.parse().ok()).collect()).unwrap_or_else(|| UNIT_BANKS.to_vec())
