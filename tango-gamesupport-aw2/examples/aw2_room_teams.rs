@@ -346,6 +346,11 @@ fn main() {
                     t += 1;
                 }
                 println!("until {} @{t}: {}", p[1], if ok { "ok" } else { "TIMEOUT" });
+                // (AW2_STRICT_UNTIL=1: a wait that times out fails the run, except the map-select count, which the walk to SELECT MAP
+                // does not always reach in time)
+                if !ok && std::env::var_os("AW2_STRICT_UNTIL").is_some() && !p[1].starts_with("maparmies") {
+                    failed = true;
+                }
             }
             "shot" => {
                 let seat: usize = p[2].parse().unwrap();
@@ -475,6 +480,25 @@ fn main() {
                         tick(&mut link, &keys);
                         t += 1;
                     }
+                }
+            }
+            // mash SEATS N: for N ticks every listed seat presses pseudo-random keys (a new set every 3 ticks), the others nothing
+            "mash" => {
+                let seats: Vec<usize> = p[1].split(',').map(|v| v.parse().unwrap()).collect();
+                let mut x: u32 = 0x1234_5678 ^ t as u32;
+                for i in 0..p[2].parse::<usize>().unwrap() {
+                    if i % 3 == 0 {
+                        for &s in &seats {
+                            x = x.wrapping_mul(1664525).wrapping_add(1013904223);
+                            // (A B SELECT START and the directions, L R: the reset chord is stripped by the game)
+                            keys[s] = (x >> 8) & 0x3FF;
+                        }
+                    }
+                    tick(&mut link, &keys);
+                    t += 1;
+                }
+                for &s in &seats {
+                    keys[s] = 0;
                 }
             }
             // fv: the game's state the waiting view decides from

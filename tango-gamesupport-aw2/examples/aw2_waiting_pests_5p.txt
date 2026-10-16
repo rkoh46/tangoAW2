@@ -1,0 +1,332 @@
+# 5 seats, Fog on, three rounds of hand-offs (army 5 wraps to army 1) while the seats that are not to press mash random keys, the previous mover included, around every hand-off and during every turn. Run: AW2_STRICT_UNTIL=1 aw2_room_teams <rom> <out> this-file; exit 1 when a turn end or a turn start never comes.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 300
+phase r0t0
+until army=1 100
+wait 300
+mash 1,2,3,4 150
+press 0 B
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+until turnended 30
+mash 0,2,3,4 120
+press 1 A
+mash 0,2,3,4 200
+fv
+phase r0t1
+until army=2 100
+wait 300
+mash 0,2,3,4 150
+press 1 B
+wait 20
+press 1 A
+wait 80
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+until turnended 30
+mash 0,1,3,4 120
+press 2 A
+mash 0,1,3,4 200
+fv
+phase r0t2
+until army=3 100
+wait 300
+mash 0,1,3,4 150
+press 2 B
+wait 20
+press 2 A
+wait 80
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 A
+until turnended 30
+mash 0,1,2,4 120
+press 3 A
+mash 0,1,2,4 200
+fv
+phase r0t3
+until army=4 100
+wait 300
+mash 0,1,2,4 150
+press 3 B
+wait 20
+press 3 A
+wait 80
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 A
+until turnended 30
+mash 0,1,2,3 120
+press 4 A
+mash 0,1,2,3 200
+fv
+phase r0t4
+until army=5 100
+wait 300
+mash 0,1,2,3 150
+press 4 B
+wait 20
+press 4 A
+wait 80
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 A
+until turnended 30
+mash 1,2,3,4 120
+press 0 A
+mash 1,2,3,4 200
+fv
+phase r1t0
+until army=1 100
+wait 300
+mash 1,2,3,4 150
+press 0 B
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+until turnended 30
+mash 0,2,3,4 120
+press 1 A
+mash 0,2,3,4 200
+fv
+phase r1t1
+until army=2 100
+wait 300
+mash 0,2,3,4 150
+press 1 B
+wait 20
+press 1 A
+wait 80
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+until turnended 30
+mash 0,1,3,4 120
+press 2 A
+mash 0,1,3,4 200
+fv
+phase r1t2
+until army=3 100
+wait 300
+mash 0,1,3,4 150
+press 2 B
+wait 20
+press 2 A
+wait 80
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 A
+until turnended 30
+mash 0,1,2,4 120
+press 3 A
+mash 0,1,2,4 200
+fv
+phase r1t3
+until army=4 100
+wait 300
+mash 0,1,2,4 150
+press 3 B
+wait 20
+press 3 A
+wait 80
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 A
+until turnended 30
+mash 0,1,2,3 120
+press 4 A
+mash 0,1,2,3 200
+fv
+phase r1t4
+until army=5 100
+wait 300
+mash 0,1,2,3 150
+press 4 B
+wait 20
+press 4 A
+wait 80
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 A
+until turnended 30
+mash 1,2,3,4 120
+press 0 A
+mash 1,2,3,4 200
+fv
+phase r2t0
+until army=1 100
+wait 300
+mash 1,2,3,4 150
+press 0 B
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+until turnended 30
+mash 0,2,3,4 120
+press 1 A
+mash 0,2,3,4 200
+fv
+phase r2t1
+until army=2 100
+wait 300
+mash 0,2,3,4 150
+press 1 B
+wait 20
+press 1 A
+wait 80
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+until turnended 30
+mash 0,1,3,4 120
+press 2 A
+mash 0,1,3,4 200
+fv
+phase r2t2
+until army=3 100
+wait 300
+mash 0,1,3,4 150
+press 2 B
+wait 20
+press 2 A
+wait 80
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 A
+until turnended 30
+mash 0,1,2,4 120
+press 3 A
+mash 0,1,2,4 200
+fv
+phase r2t3
+until army=4 100
+wait 300
+mash 0,1,2,4 150
+press 3 B
+wait 20
+press 3 A
+wait 80
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 A
+until turnended 30
+mash 0,1,2,3 120
+press 4 A
+mash 0,1,2,3 200
+fv
+phase r2t4
+until army=5 100
+wait 300
+mash 0,1,2,3 150
+press 4 B
+wait 20
+press 4 A
+wait 80
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 A
+until turnended 30
+mash 1,2,3,4 120
+press 0 A
+mash 1,2,3,4 200
+fv
