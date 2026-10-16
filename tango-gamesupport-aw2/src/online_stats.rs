@@ -25,7 +25,7 @@ use crate::online::{bar, text_width, Rgba, BLUE, GRAY_INK, INK, LIGHT_GRAY, SHAD
 
 // --- State (tangoAW2's 0x0203D100..0x0203D4FF) -------------------------------------------------------------
 
-pub const BASE: u32 = 0x0203_D100;
+pub const BASE: u32 = 0x0203_D700;
 pub const LEN: u32 = 0x400;
 /// The committed gamertag (zero-terminated), at most [`TAG_CHARS`].
 pub const GAMERTAG: u32 = BASE;
