@@ -325,11 +325,17 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
             Net::Ok => ("No lobbies right now", GRAY_INK),
             Net::Offline => ("The lobby list cannot be reached.", RED),
         };
-        let t = fit(core, a, w - 12);
-        cv.text(core, x + (w - text_width(core, &t)) / 2, ly + line + 14, &t, ink, SHADE);
+        // (a line that is too long goes to two, whole)
+        let mut at = ly + line + 14;
+        for t in crate::online::wrap(core, a, w - 12) {
+            cv.text(core, x + (w - text_width(core, &t)) / 2, at, &t, ink, SHADE);
+            at += 13;
+        }
         if state == Net::Offline {
-            let t = fit(core, "Type a room's code instead.", w - 12);
-            cv.text(core, x + (w - text_width(core, &t)) / 2, ly + line + 28, &t, GRAY_INK, SHADE);
+            for t in crate::online::wrap(core, "Type a room's code instead.", w - 12) {
+                cv.text(core, x + (w - text_width(core, &t)) / 2, at + 1, &t, GRAY_INK, SHADE);
+                at += 13;
+            }
         }
     }
     let text = if cursor == 0 {
