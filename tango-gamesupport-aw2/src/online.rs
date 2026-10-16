@@ -544,7 +544,7 @@ pub mod probe {
     pub static CURSOR_CELL: AtomicU64 = AtomicU64::new(0);
     /// State-driven test cues (`TANGOAW2_PAD_SCRIPT` conditions): bit 0 `myturn` (this window's seat has the turn),
     /// bit 1 `banner` (the NEXT TURN banner is up and this seat is the incoming mover: its A dismisses it), bit 2
-    /// `acting` (my turn, on the plain map, waiting for the cursor), bit 3 `over` (the match is decided).
+    /// `acting` (my turn, the plain map with no menu, page or banner on it), bit 3 `over` (the match is decided).
     pub static CUES: AtomicU64 = AtomicU64::new(0);
 
     /// Every tick (any console): note the screen.
@@ -564,7 +564,7 @@ pub mod probe {
                 if ended && crate::pvp::seat_of_n(super::incoming_alive(core, current, n), n) == me {
                     c |= 2;
                 }
-                if mine && !ended && crate::survival_ui::idle(core) {
+                if mine && !ended && crate::fog_view::plain_map(core) {
                     c |= 4;
                 }
                 if crate::result_view::decided(core) {

@@ -57,8 +57,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let sha = run(&["rev-parse", "--short=9", "HEAD"]).unwrap_or_else(|| "unknown".into());
         let dirty = run(&["status", "--porcelain", "--untracked-files=no"]).is_some_and(|s| !s.is_empty());
         println!("cargo:rustc-env=TANGOAW2_BUILD={sha}{}", if dirty { "+changes" } else { "" });
-        println!("cargo:rerun-if-changed=../.git/HEAD");
-        println!("cargo:rerun-if-changed=../.git/index");
+        for what in ["HEAD", "index"] {
+            if let Some(path) = run(&["rev-parse", "--git-path", what]) {
+                println!("cargo:rerun-if-changed={path}");
+            }
+        }
     }
 
     if target_os == "windows" {
