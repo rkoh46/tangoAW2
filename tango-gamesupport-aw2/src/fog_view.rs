@@ -53,6 +53,25 @@ const KEY_B: u32 = 1 << 1;
 /// The map menu's state: 5 once an item was chosen.
 const MAP_MENU_STATE: u32 = 0x0300_14E2;
 
+/// The CO panel's state (`0x03003130`, kept by the map's per-frame cursor routine `0x08027654`): +0 the side it has
+/// slid to (1 right, 0 left), +4 its x (a word). The panel is at the top corner away from the cursor: with the cursor in
+/// the screen's upper half, the right corner while the cursor's pixel x is 127 or less, else the left; with it in the
+/// lower half, the side it last had. A panel changing sides slides off one edge and in from the other (about ten
+/// frames), and the scratch console only runs a few.
+const PANEL_STATE: u32 = 0x0300_3130;
+const PANEL_X_LEFT: u32 = 3;
+const PANEL_X_RIGHT: u32 = 173;
+
+/// Puts the CO panel where the game would have it at rest for the cursor as it is now, so that the scratch picture
+/// has it (the funds and the CO of the army it was told is the current one), not a panel sliding between two corners.
+fn settle_panel(core: &mut Core) {
+    let sx = (core.raw_read_16(CURSOR, -1) as i32 * 16 - core.raw_read_16(MAP + 4, -1) as i32) as i16;
+    let sy = (core.raw_read_16(CURSOR + 2, -1) as i32 * 16 - core.raw_read_16(MAP + 6, -1) as i32) as i16;
+    let right = if sy <= 0x4F { sx <= 0x7F } else { core.raw_read_8(PANEL_STATE, -1) == 1 };
+    core.raw_write_8(PANEL_STATE, -1, right as u8);
+    core.raw_write_32(PANEL_STATE + 4, -1, if right { PANEL_X_RIGHT } else { PANEL_X_LEFT });
+}
+
 fn cell(core: &Core, x: i32, y: i32) -> u32 {
     core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32 + x as u32
 }
@@ -214,6 +233,17 @@ pub fn view(scratch: Scratch, seat: usize) -> bool {
 
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let on_map = |s: &dyn tango_backend_mgba::Scratch| s.core().raw_read_32(MAIN_LOOP, -1) == MAP_LOOP;
+    if phase(scratch.core()) == Phase::Page && scratch.memory()[0] == 0 {
+        // The mover's full-screen CO page: never shown. On the scratch B closes it (a few dozen frames, and its fade),
+        // so a seat that never had a picture still gets its map (the others keep their last one).
+        for _ in 0..90 {
+            if scratch.core().raw_read_32(MAIN_LOOP, -1) == MAP_LOOP {
+                break;
+            }
+            run(scratch, &[KEY_B, 0])?;
+        }
+        run(scratch, &[0; 30])?;
+    }
     if phase(scratch.core()) != Phase::Map {
         return Err("not the plain map");
     }
@@ -229,9 +259,16 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         return Err("left the map loop");
     }
     if !fog {
-        // (the turn as played, but the mover's menus closed and no cursor)
+        // (the turn as played, but the mover's menus closed and no cursor, and the CO panel of the waiting seat's own
+        // army: its face and its funds)
+        if let Some(army) = viewer_army(scratch.core(), seat) {
+            scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, army);
+        }
+        settle_panel(scratch.core_mut());
         scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
-        return run(scratch, &[0]);
+        run(scratch, &[0])?;
+        scratch.memory()[0] = 1;
+        return Ok(());
     }
     let (w, h) = size(scratch.core());
     let mut mem = *scratch.memory();
@@ -254,6 +291,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     };
     let (mut cx, mut cy) = (mem[1], mem[2]);
     place(scratch, cx, cy, (cx + 7, cy + 4));
+    settle_panel(scratch.core_mut());
     scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
     refresh(scratch, 2)?;
     // ... and if the mover's cursor is on a cell it sees, the camera follows it there and the cursor shows.
@@ -265,6 +303,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         cx = if x < cx { x } else if x > cx + 14 { x - 14 } else { cx }.clamp(0, (w - 15).max(0));
         cy = if y < cy { y } else if y > cy + 9 { y - 9 } else { cy }.clamp(0, (h - 10).max(0));
         place(scratch, cx, cy, mover_cell);
+        settle_panel(scratch.core_mut());
         refresh(scratch, 2)?;
     } else {
         run(scratch, &[0, 0])?;
