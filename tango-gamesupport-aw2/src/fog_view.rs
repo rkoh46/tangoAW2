@@ -391,6 +391,12 @@ fn scene_view(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     }
 }
 
+/// For the view log: the phase the waiting windows are decided by, the running procs, the registers, the cursor.
+pub fn debug_line(core: &Core) -> String {
+    let io = |o: u32| core.raw_read_16(0x0400_0000 + o, -1);
+    format!("phase {:?} army {} fog {} loop {:08x} procs {:x?} disp {:04x} win {:04x}/{:04x} bld {:04x} menu {} cursor_up {} cutin {}", phase(core), core.raw_read_8(CURRENT_PLAYER, -1), fog(core), core.raw_read_32(MAIN_LOOP, -1), procs(core), io(0), io(0x48), io(0x4A), io(0x50), core.raw_read_8(MAP_MENU_STATE, -1), mover_cursor_up(core), power_cutin(core))
+}
+
 /// The cursor's corner sprites are in the sprite list the console is about to flush: the mover's own UI is on the picture.
 pub fn mover_cursor_up(core: &Core) -> bool {
     let (start, end) = (core.raw_read_32(SPRITE_LIST, -1), core.raw_read_32(NEXT_SPRITE, -1));
