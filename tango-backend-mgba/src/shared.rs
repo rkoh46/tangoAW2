@@ -43,6 +43,9 @@ pub trait Scratch {
     /// Loads the console the game asked to keep ([`SharedGame::keep_for_view`]) into the scratch console; false when
     /// there is none. The caller's own snapshot is loaded back afterwards, as always.
     fn load_kept(&mut self) -> bool;
+    /// The seat's window is to show the console's own picture of this tick (taken before any scratch run), not the
+    /// scratch console's: for a scene every seat that may see it is shown as it is.
+    fn show_console(&mut self);
 }
 
 struct ScratchConsole<'a> {
@@ -51,6 +54,7 @@ struct ScratchConsole<'a> {
     mode: Option<(u8, u8)>,
     memory: &'a mut [i32; 4],
     kept: Option<&'a mgba_rollback::Snapshot>,
+    console_pick: bool,
 }
 
 impl Scratch for ScratchConsole<'_> {
@@ -72,6 +76,9 @@ impl Scratch for ScratchConsole<'_> {
     }
     fn load_kept(&mut self) -> bool {
         self.kept.is_some_and(|snap| self.link.load(snap).is_ok())
+    }
+    fn show_console(&mut self) {
+        self.console_pick = true;
     }
 }
 
@@ -477,9 +484,9 @@ impl SharedLink {
         self.inner.set_frameskip(0, 0);
         let mut frame = None;
         {
-            let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat], kept: self.kept.as_ref() };
+            let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat], kept: self.kept.as_ref(), console_pick: false };
             if game.view_as(&mut scratch, seat) {
-                frame = scratch.link.video_buffer(0).map(to_rgba);
+                frame = if scratch.console_pick { self.console_frame.as_ref().map(|(f, _)| f.clone()) } else { scratch.link.video_buffer(0).map(to_rgba) };
                 // (a picture caught in a screen fade, forced blank or black is no picture: the last good one stays)
                 if frame.as_ref().is_some_and(|f| dark(f)) {
                     frame = None;

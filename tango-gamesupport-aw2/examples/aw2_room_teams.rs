@@ -348,7 +348,7 @@ fn main() {
                     failed |= diff > tol;
                 }
             }
-            // consoleis SEAT: SEAT's window shows the console's own picture (the mover's: its cursor, its menus), exit 1 otherwise
+            // consoleis SEATS [TOL]: SEAT's window shows the console's own picture (the mover's: its cursor, its menus), exit 1 otherwise
             // notconsole SEATS: none of those seats' windows shows it (waiting seats: never the mover's cursor, menus or ranges)
             "consoleis" | "notconsole" => {
                 let seats: Vec<usize> = p[1].split(',').map(|v| v.parse().unwrap()).collect();
@@ -357,7 +357,8 @@ fn main() {
                     tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                     let f = link.side(seat).frame().unwrap_or_default();
                     let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
-                    let same = diff == 0;
+                    let tol: usize = p.get(2).map_or(0, |v| v.parse().unwrap());
+                    let same = diff <= tol;
                     let ok = same == (p[0] == "consoleis");
                     println!("{} seat {seat}: {diff} pixels from the console's {}", p[0], if ok { "ok" } else { "FAIL" });
                     failed |= !ok;

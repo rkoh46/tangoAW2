@@ -1,0 +1,55 @@
+# as aw2_waiting_scene_5p.txt with Fog off (the poke): every seat shows the scene, as AW2 does.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 300
+until army=1 60
+wait 400
+poke 03003FCD 00
+aid unit 1 inf 8 4
+aid unit 2 inf 7 4
+wait 10
+goto 0 8 4
+wait 10
+press 0 A
+wait 30
+press 0 A
+wait 30
+shotall at1
+press 0 A
+wait 20
+fv
+press 0 A
+wait 40
+fv
+wait 40
+consoleis 0,1,2,3,4 3000
+wait 60
+consoleis 0,1,2,3,4 3000

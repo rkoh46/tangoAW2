@@ -1,0 +1,187 @@
+# 5 seats, Fog on: seat 0 (the host, army 1) is waiting during the turns of armies 2-5. Each mover walks its cursor over cells army 1 does not see; seat 0's window must keep its own camera (a camera sent to the mover's area, 23000+ differing pixels, fails; the tolerance is the game's blinking and a one-row camera difference). Run: AW2_SAMPLE=10 aw2_room_teams <rom> <out> this-file; exit 1 on a failed check.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 300
+press 0 B
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+until turnended 30
+wait 40
+press 1 A
+wait 100
+phase turn1
+until army=2 60
+wait 400
+shotall wb1
+goto 1 9 12
+wait 30
+shotall wn1_1
+same wb1 wn1_1 0 6000
+goto 1 6 10
+wait 30
+shotall wn1_2
+same wb1 wn1_2 0 6000
+goto 1 12 10
+wait 30
+shotall wn1_3
+same wb1 wn1_3 0 6000
+goto 1 9 10
+wait 30
+shotall wn1_4
+same wb1 wn1_4 0 6000
+press 1 B
+wait 20
+press 1 A
+wait 80
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+until turnended 30
+wait 40
+press 2 A
+wait 100
+phase turn2
+until army=3 60
+wait 400
+shotall wb2
+goto 2 9 21
+wait 30
+shotall wn2_1
+same wb2 wn2_1 0 6000
+goto 2 6 19
+wait 30
+shotall wn2_2
+same wb2 wn2_2 0 6000
+goto 2 12 19
+wait 30
+shotall wn2_3
+same wb2 wn2_3 0 6000
+goto 2 9 19
+wait 30
+shotall wn2_4
+same wb2 wn2_4 0 6000
+press 2 B
+wait 20
+press 2 A
+wait 80
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 A
+until turnended 30
+wait 40
+press 3 A
+wait 100
+phase turn3
+until army=4 60
+wait 400
+shotall wb3
+goto 3 9 31
+wait 30
+shotall wn3_1
+same wb3 wn3_1 0 6000
+goto 3 6 29
+wait 30
+shotall wn3_2
+same wb3 wn3_2 0 6000
+goto 3 12 29
+wait 30
+shotall wn3_3
+same wb3 wn3_3 0 6000
+goto 3 9 29
+wait 30
+shotall wn3_4
+same wb3 wn3_4 0 6000
+press 3 B
+wait 20
+press 3 A
+wait 80
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 A
+until turnended 30
+wait 40
+press 4 A
+wait 100
+phase turn4
+until army=5 60
+wait 400
+shotall wb4
+goto 4 9 39
+wait 30
+shotall wn4_1
+same wb4 wn4_1 0 6000
+goto 4 6 37
+wait 30
+shotall wn4_2
+same wb4 wn4_2 0 6000
+goto 4 12 37
+wait 30
+shotall wn4_3
+same wb4 wn4_3 0 6000
+goto 4 9 37
+wait 30
+shotall wn4_4
+same wb4 wn4_4 0 6000
+press 4 B
+wait 20
+press 4 A
+wait 80
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 A
+until turnended 30
+wait 40
+press 0 A
+wait 100
