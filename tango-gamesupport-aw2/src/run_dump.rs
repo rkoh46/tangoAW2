@@ -7,7 +7,7 @@
 //! - `{"ms","tick","k":"state","seat","army","mover","mine","over","ended","fog","ml","funds":[a1..a5],"owners":N}`
 //!   ten times a second: the army whose turn it is and the seat that plays it, whether it is this window's own turn,
 //!   the match decided, the turn ended (NEXT TURN banner), fog on, the main-loop callback, every army's funds.
-//! - `{"ms","tick","k":"act","what":"build|move|attack|kill|capture","actor":army,"unit":..,"from":[x,y],"to":[x,y],
+//! - `{"ms","tick","k":"act","what":"build|move|attack|kill|capture|load|unload|power","actor":army,"unit":..,"from":[x,y],"to":[x,y],
 //!   "hp":[a,b],"seat","army"}` whenever the unit list or the property owners change (compared ten times a second).
 //! - `{"ms","tick","k":"seen","army","cells":"hex"}` at every action: the cells the displayed army sees (the plane the
 //!   game drew from: the mover's own when this window is the mover's).
@@ -21,6 +21,7 @@ struct Dump {
     last_units: std::collections::BTreeMap<u32, (u32, u8, i32, i32, u32)>,
     last_owner: std::collections::BTreeMap<u32, u8>,
     last_powers: [u8; 6],
+    last_carried: std::collections::BTreeMap<u32, (u32, u8)>,
     ready: bool,
 }
 
@@ -53,7 +54,7 @@ pub fn tick(core: &Core, keys: u32) {
             .append(true)
             .open(dir.join(format!("state_s{seat}.jsonl")))
             .expect("run dump file");
-        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], ready: false }
+        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_carried: Default::default(), ready: false }
     });
     d.tick += 1;
     // (every non-zero joypad word the console takes, with its tick: proof of what reached the game)
@@ -118,10 +119,20 @@ pub fn tick(core: &Core, keys: u32) {
             }
         }
     }
+    // Units a transport carries (the record's flag 0x08 of byte +1): off the map, but not dead.
+    let mut carried = std::collections::BTreeMap::new();
+    for id in 1..320u32 {
+        let u = base + 12 * id;
+        let kind = core.raw_read_8(u, -1) as u32;
+        if kind != 0 && core.raw_read_8(u + 1, -1) & 0x08 != 0 {
+            carried.insert(id, (kind, crate::five::army_of_index(core, id) as u8));
+        }
+    }
     let mut acts: Vec<String> = Vec::new();
     if d.ready {
         for (id, &(kind, a, x, y, hp)) in &units {
             match d.last_units.get(id) {
+                None if d.last_carried.contains_key(id) => {}
                 None => acts.push(format!("\"what\":\"build\",\"actor\":{a},\"unit\":{kind},\"to\":[{x},{y}],\"hp\":[0,{hp}]")),
                 Some(&(_, _, ox, oy, ohp)) => {
                     if (ox, oy) != (x, y) {
@@ -132,8 +143,18 @@ pub fn tick(core: &Core, keys: u32) {
                 }
             }
         }
+        for (id, &(kind, a)) in &carried {
+            if !d.last_carried.contains_key(id) {
+                acts.push(format!("\"what\":\"load\",\"actor\":{a},\"unit\":{kind},\"id\":{id}"));
+            }
+        }
+        for (id, &(kind, a)) in &d.last_carried {
+            if !carried.contains_key(id) {
+                acts.push(format!("\"what\":\"unload\",\"actor\":{a},\"unit\":{kind},\"id\":{id}"));
+            }
+        }
         for (id, &(kind, a, x, y, hp)) in &d.last_units {
-            if !units.contains_key(id) {
+            if !units.contains_key(id) && !carried.contains_key(id) {
                 acts.push(format!("\"what\":\"kill\",\"actor\":{army},\"unit\":{kind},\"owner\":{a},\"to\":[{x},{y}],\"hp\":[{hp},0]"));
             }
         }
@@ -154,6 +175,7 @@ pub fn tick(core: &Core, keys: u32) {
         d.last_powers[a as usize] = n;
     }
     d.ready = true;
+    d.last_carried = carried;
     d.last_units = units;
     d.last_owner = owners;
     if !acts.is_empty() {
