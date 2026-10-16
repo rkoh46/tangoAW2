@@ -25,6 +25,9 @@
 //!                       restarts from the saved state too.
 //! KEYS is `+`-joined from A B SELECT START RIGHT LEFT UP DOWN R L.
 //!
+//! `AW2_NET_DELAY=base,spread` sets the fake wire's one-way delay in ticks (7,4 by default; the delay of each
+//! message is base plus 0..spread-1, and messages keep their order, as the ordered stream above the datagrams does).
+//!
 //! `TANGOAW2_DS_ROM=<file>` gives the peers the Dual Strike art, and
 //! `AW2_SHARED_ART=1` plays the match as the lobby makes it when both
 //! players have it (the Black Crystal and Black Obelisk maps then show).
@@ -175,6 +178,15 @@ fn main() {
     let mut rollbacks = 0u32;
     let mut deepest = 0u32;
     let mut jitter = 99u32;
+    // The wire's one-way delay in ticks: a base and a spread (`AW2_NET_DELAY=base,spread`; 7 and 4, ticks 7 to 10, by
+    // default). 30,20 is a 500 ms to 800 ms trip on a bad connection: no desync, whatever the rollback depth.
+    let net_delay: (usize, usize) = std::env::var("AW2_NET_DELAY")
+        .ok()
+        .and_then(|v| {
+            let (b, s) = v.split_once(',')?;
+            Some((b.trim().parse().ok()?, s.trim().parse::<usize>().ok()?.max(1)))
+        })
+        .unwrap_or((7, 4));
     let mut t = 0usize;
     let mut timeline: Vec<String> = Vec::new();
     let mut shot_ticks: Vec<(usize, String)> = Vec::new();
@@ -373,7 +385,7 @@ fn main() {
                 deepest = deepest.max(depth);
             }
             jitter = jitter.wrapping_mul(1_103_515_245).wrapping_add(12_345);
-            let delay = 7 + (jitter >> 16) as usize % 4;
+            let delay = net_delay.0 + (jitter >> 16) as usize % net_delay.1;
             let at = (t + delay).max(wire[p].back().map_or(0, |b| b.0));
             wire[p].push_back((at, adv.outgoing, adv.tick_advantage));
         }

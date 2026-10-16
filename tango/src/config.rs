@@ -177,6 +177,13 @@ pub enum RelayMode {
 impl RelayMode {
     /// The `use_relay` argument `tango_signaling::connect` expects.
     pub fn use_relay(self) -> Option<bool> {
+        // Test aid: `TANGOAW2_FORCE_RELAY=1` sends every connection through the TURN relay whatever the setting
+        // says (`0` forbids the relay), so a test profile needs no config edit.
+        match std::env::var("TANGOAW2_FORCE_RELAY").ok().as_deref() {
+            Some("1") => return Some(true),
+            Some("0") => return Some(false),
+            _ => {}
+        }
         match self {
             RelayMode::Auto => None,
             RelayMode::Always => Some(true),

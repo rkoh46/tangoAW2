@@ -29,6 +29,9 @@ pub mod channel;
 pub mod connect;
 pub mod control;
 pub mod data;
+/// Debug aid: `TANGOAW2_NET_IMPAIR` delays and drops what this side sends (see the module).
+#[cfg(not(target_arch = "wasm32"))]
+pub mod impair;
 /// Signaling-free direct play, over a UDP socket this side owns. Native
 /// by nature: a browser has no UDP, and its peer connections come from
 /// the page's own signaling.

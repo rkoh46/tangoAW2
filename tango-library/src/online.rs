@@ -8,7 +8,7 @@ pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_c
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online_browse::{Net as BrowseNet, Row as BrowseRow};
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, MAX_PLAYERS, ONLINE_MATCH, UNRANKED_MATCH, UNRANKED_PICK_GUEST, YOU};
+pub use tango_gamesupport_aw2::online::{Status, CODE_ALPHABET, HOST, LINK_DIRECT, LINK_RELAY, MAX_PLAYERS, ONLINE_MATCH, UNRANKED_MATCH, UNRANKED_PICK_GUEST, YOU};
 
 /// The match type a room made in the in-game lobby is played as.
 #[cfg(feature = "gamesupport-aw2")]
@@ -65,6 +65,13 @@ pub fn write_room(write: &mut dyn FnMut(u32, &[u8]), code: &str) {
 #[cfg(feature = "gamesupport-aw2")]
 pub fn write_player(write: &mut dyn FnMut(u32, &[u8]), slot: usize, player: Option<(&str, bool, u8)>) {
     tango_gamesupport_aw2::online::mailbox::write_player(write, slot, player)
+}
+
+/// One player's link diagnostic on the room's page: how it flows ([`LINK_DIRECT`], [`LINK_RELAY`], 0 not known) and
+/// the round trip in ms (0 not known). After [`write_player`].
+#[cfg(feature = "gamesupport-aw2")]
+pub fn write_link(write: &mut dyn FnMut(u32, &[u8]), slot: usize, kind: u8, rtt_ms: u32) {
+    tango_gamesupport_aw2::online::mailbox::write_link(write, slot, kind, rtt_ms)
 }
 
 /// Keyboard typing for a code or password being typed (letters, 8 rub out, 13 OK, 27 back). False when the lobby

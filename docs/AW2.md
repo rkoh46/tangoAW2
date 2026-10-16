@@ -4330,6 +4330,63 @@ tests). Online play starts in the game, played alone:
   resumed match is not tick-for-tick the original's continuation; the peers agree with each other (checked by
   `aw2_netplay_script`'s `drop`, and by `TANGOAW2_STATE_LOG` in a live game).
 
+## Across networks (relay, impairment, the room page's link line)
+
+Windows on one machine connect over host and loopback candidates and hide every NAT problem. What is known, and how
+to test the real thing.
+
+- **The TURN relay works.** The matchmaking server's hello carries a STUN server and Cloudflare TURN
+  (`turn.cloudflare.com:3478`, UDP; the `?transport=tcp` and `turns:` entries are dropped by `tango-signaling`
+  because libdatachannel has no TURN over TCP, so a network that blocks UDP altogether has no way in). Credentials
+  are per hello, realm `turn.cloudflare.com`, allocation lifetime 600 s. Checked on its own (an RFC 5766 client
+  against the credentials of a hello: two allocations, permissions, a Send indication relayed to the other
+  allocation in 30 ms). The `Got TURN CreatePermission error response, code=403` lines in every log are **harmless**:
+  Cloudflare refuses a permission for a private, loopback or link-local peer address (403 for 127.0.0.1,
+  192.168.x.x and 10.x.x.x; OK for the peer's public and relayed addresses), and ICE asks for one for every host
+  candidate the peer sends. They show the relay refusing LAN candidates, not a failure of it.
+- **Relay only** (settings Netplay > relay `Always`, or `TANGOAW2_FORCE_RELAY=1` for any profile; `=0` never uses
+  the relay). libdatachannel's `Relay` transport policy only filters the candidates it trickles: the first offer
+  still carried the offerer's host candidate (its LAN address) and the answerer connected to it directly, so
+  "relay only" was not. `vendor/tango-signaling` (a `[patch]` of the upstream crate, `relay_only_sdp`) drops every
+  non-relay candidate from the SDPs sent and applied and from trickled ones; a run then selects
+  `local=relay remote=relay` on both sides.
+- **The log says how a link flows.** At every connect: `net: selected ICE pair local=<type> remote=<type> -> direct |
+  relayed (TURN) (host/srflx/prflx/relay candidates in the SDPs: ours h/s/p/r, theirs h/s/p/r)`, types only, never an
+  address; `online: relay mode ... -> use_relay ...` when a room is made or joined.
+- **The room page's link line.** Each row of the in-game LOBBY room shows, between the name and READY/HOST, how
+  that player is reached and the round trip over the room's control channel: `direct 23ms`, `relay 140ms` (short
+  forms `D 23`, `R 140` when the name leaves no room; nothing when it fits no form). The host sees every guest;
+  a guest sees the host's row (guests have no link to each other). Written into byte 14 (ms, 255 at most) and 15
+  (`LINK_DIRECT`, `LINK_RELAY`, 0 unknown) of the row's slot in the mailbox (names are 12 letters at most, so
+  they stop at byte 13); `LinkView` in `tango-lobby/src/room.rs` carries it.
+- **Star topology: nothing needs guest-to-guest connectivity.** A room's guests each have one link, to the host
+  (`tango_lobby::room`: `serve_guest` on the host, one per guest; `guest_session` on a guest); the host's
+  `HostAgg` joins the guests' inputs and sends each guest the others'. Two guests that the server pairs with each
+  other (both dialing while the host is between two dials) reject each other (`NotTheHost`) and dial again.
+  Reconnects (`ReconnectRecipe::Matchmaking`, a session id derived from the match seed and the two DTLS
+  fingerprints) are per link as well.
+- **Impairment without root** (`dnctl`/`pfctl` need it): `TANGOAW2_NET_IMPAIR=latency_ms,jitter_ms,loss_pct`
+  (`tango-net/src/impair.rs`, debug only) delays what that process sends over its data channels by `latency_ms` plus
+  0 to `jitter_ms`, and drops `loss_pct` of the in-match datagrams (the reliable control channel is only delayed, in
+  order). The delay is one way: set it on both peers and the round trip is twice `latency_ms`. The harness's fake
+  wire takes `AW2_NET_DELAY=base,spread` (ticks) in `aw2_netplay_script`.
+
+### Testing for real: two networks
+
+1. Build or install the same version on both. On the Mac (home Wi-Fi) make a room (ONLINE > LOBBY > CREATE); on the
+   iPhone on **cellular** (Wi-Fi off) or at a friend's, JOIN with the code. Carrier NAT and the home router are
+   different networks, so a direct pair needs hole punching; a symmetric NAT on either side leaves only the relay.
+2. Read the room page: `direct NNms` means hole punching worked, `relay NNms` that it fell back to TURN (fine for
+   a turn-based game: a relay adds tens of ms). A round trip under ~150 ms is comfortable at the default input
+   delay. In `~/Documents/TangoAW2/logs/tango.log` look for `net: selected ICE pair` (the types: `host`, `srflx`,
+   `prflx` = direct; `relay` = TURN) and `juice: ... TURN ... 403` lines (ignore them).
+3. Try both ways: relay `Auto` (default), then relay `Always` on one side to prove the relay path from that
+   network. If nothing connects at all within 30 s: the network blocks UDP (cellular tethering and some guest
+   Wi-Fi do), which this client cannot get around.
+4. During the match watch for a "Waiting for <name> to reconnect" panel: it appears only when no input has come
+   from that player for ~3 s (180 frames); a few ms of jitter must never show it. Play a few turns, END the match
+   from SELECT MAP's B, and check both sides land on the same screen.
+
 ## Saves
 
 AW2's 64 KiB Flash is 16 sectors of 0x1000 bytes. A sector is one part of a

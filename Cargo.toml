@@ -118,3 +118,9 @@ blocks_in_conditions = "allow"
 redundant_closure = "allow"
 too_many_arguments = "allow"
 needless_lifetimes = "allow"
+
+# tangoAW2: tango-signaling with relay-only (`relay_mode = Always`, `TANGOAW2_FORCE_RELAY=1`) made strict: the
+# offer's host candidate is dropped and the peer's non-relay candidates are not used (see vendor/tango-signaling,
+# `relay_only_sdp`). Everything else is upstream's f294fa3.
+[patch."https://github.com/tangobattle/tango-signaling"]
+tango-signaling = { path = "vendor/tango-signaling" }

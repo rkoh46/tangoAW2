@@ -103,8 +103,40 @@ pub enum RoomPhase {
     Closed,
 }
 
+pub use tango_net::channel::Kind as LinkKind;
+
+/// How a peer is reached and how long a round trip takes, for the room page's diagnostic line. Never an address.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct LinkView {
+    /// Direct, through the TURN relay, or `None` when it can't be told.
+    pub kind: Option<LinkKind>,
+    /// The latest round trip over the room's link, in ms, once a pong has come back.
+    pub rtt_ms: Option<u32>,
+}
+
+impl LinkView {
+    /// Fold a new round-trip sample in (a quarter of the way: steady, but it follows a change within seconds).
+    fn sample(&mut self, rtt: Duration) {
+        let ms = rtt.as_millis().min(60_000) as u32;
+        self.rtt_ms = Some(match self.rtt_ms {
+            Some(old) => (old * 3 + ms) / 4,
+            None => ms,
+        });
+    }
+
+    fn of(peer_conn: &tango_net::channel::PeerConnection) -> Self {
+        Self {
+            kind: tango_net::channel::Channels::kind(peer_conn),
+            rtt_ms: None,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct PlayerView {
+    /// The host's link to this player (a guest's own link to the host is on the host's row); `None` on your own
+    /// row and for players you have no link to.
+    pub link: Option<LinkView>,
     pub nickname: String,
     pub ready: bool,
     pub host: bool,
@@ -205,6 +237,7 @@ struct HostPeer {
     ready: bool,
     loaded: bool,
     content: bool,
+    link: LinkView,
     sender: Arc<tokio::sync::Mutex<tango_net::Sender>>,
     /// Fired to make the peer's task give its control receiver back for the match.
     handoff: CancellationToken,
@@ -228,6 +261,8 @@ struct Inner {
     my_seat: usize,
     my_ready: bool,
     to_host: Option<tokio::sync::mpsc::UnboundedSender<RoomMsg>>,
+    /// A guest's link to the host.
+    host_link: LinkView,
     // Both.
     matched: Option<RoomMatch>,
     started: bool,
@@ -300,6 +335,7 @@ impl Room {
                 my_seat: 0,
                 my_ready: false,
                 to_host: None,
+                host_link: LinkView::default(),
                 matched: None,
                 started: false,
                 dial: CancellationToken::new(),
@@ -321,7 +357,13 @@ impl Room {
         let mut players = Vec::new();
         if g.host {
             for p in roster_of(&g) {
+                let link = if p.host {
+                    None
+                } else {
+                    g.peers.iter().find(|q| q.nickname == p.nickname).map(|q| q.link)
+                };
                 players.push(PlayerView {
+                    link,
                     you: p.host,
                     nickname: p.nickname,
                     ready: p.ready,
@@ -331,6 +373,7 @@ impl Room {
         } else if g.welcomed {
             for p in g.roster.iter() {
                 players.push(PlayerView {
+                    link: (p.host && p.seat as usize != g.my_seat).then_some(g.host_link),
                     nickname: p.nickname.clone(),
                     ready: p.ready,
                     host: p.host,
@@ -339,12 +382,14 @@ impl Room {
             }
         } else {
             players.push(PlayerView {
+                link: Some(g.host_link),
                 nickname: "Host".to_string(),
                 ready: false,
                 host: true,
                 you: false,
             });
             players.push(PlayerView {
+                link: None,
                 nickname: g.params.nickname.clone(),
                 ready: false,
                 host: false,
@@ -673,6 +718,7 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
             g.next_id += 1;
             let handoff = CancellationToken::new();
             let (back_tx, back_rx) = tokio::sync::oneshot::channel();
+            let link = LinkView::of(&peer_conn);
             // (the receiver goes back through `back_tx` when the match takes the link)
             g.peers.push(HostPeer {
                 id,
@@ -681,6 +727,7 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
                 ready: false,
                 loaded: false,
                 content: join.content,
+                link,
                 sender: sender.clone(),
                 handoff: handoff.clone(),
                 receiver_back: Some(back_rx),
@@ -716,6 +763,8 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
 
     let mut last_heard = web_time::Instant::now();
     let mut ping = 0u16;
+    let mut ping_sent = web_time::Instant::now();
+    let mut ticks = 0u32;
     let ended: Option<String> = loop {
         tokio::select! {
             biased;
@@ -730,7 +779,18 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
                     break Some("silent".into());
                 }
                 ping = ping.wrapping_add(1);
+                ping_sent = web_time::Instant::now();
                 let _ = sender.lock().await.send_ping(ping).await;
+                // (the route can change after the first pair: ICE may move from a relay to a better path)
+                ticks += 1;
+                if ticks % 4 == 0 {
+                    let mut g = inner.lock().unwrap();
+                    if let Some(p) = g.peers.iter_mut().find(|p| p.id == id) {
+                        if let Some(parts) = p.parts.as_ref() {
+                            p.link.kind = tango_net::channel::Channels::kind(&parts.peer_conn);
+                        }
+                    }
+                }
             }
             pkt = receiver.receive() => {
                 match pkt {
@@ -738,7 +798,16 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
                         last_heard = web_time::Instant::now();
                         let _ = sender.lock().await.send_pong(p.ts).await;
                     }
-                    Ok(Packet::Pong(_)) => last_heard = web_time::Instant::now(),
+                    Ok(Packet::Pong(p)) => {
+                        last_heard = web_time::Instant::now();
+                        if p.ts == ping {
+                            let rtt = last_heard.saturating_duration_since(ping_sent);
+                            let mut g = inner.lock().unwrap();
+                            if let Some(q) = g.peers.iter_mut().find(|q| q.id == id) {
+                                q.link.sample(rtt);
+                            }
+                        }
+                    }
                     Ok(Packet::Room(RoomMsg::Ready(r))) => {
                         last_heard = web_time::Instant::now();
                         {
@@ -1088,9 +1157,12 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
     }
     let mut last_heard = web_time::Instant::now();
     let mut ping = 0u16;
+    let mut ping_sent = web_time::Instant::now();
+    let mut ticks = 0u32;
     let mut start: Option<RoomStart> = None;
     let mut chunks: Option<(u64, Vec<u8>)> = None;
     let mut in_match = Some(in_match);
+    inner.lock().unwrap().host_link = LinkView::of(&peer_conn);
     let mut peer_conn = Some(peer_conn);
     loop {
         tokio::select! {
@@ -1110,12 +1182,24 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                     return;
                 }
                 ping = ping.wrapping_add(1);
+                ping_sent = web_time::Instant::now();
                 let _ = sender.lock().await.send_ping(ping).await;
+                ticks += 1;
+                if ticks % 4 == 0 {
+                    if let Some(pc) = peer_conn.as_ref() {
+                        inner.lock().unwrap().host_link.kind = tango_net::channel::Channels::kind(pc);
+                    }
+                }
             }
             pkt = receiver.receive() => {
                 last_heard = web_time::Instant::now();
                 match pkt {
                     Ok(Packet::Ping(p)) => { let _ = sender.lock().await.send_pong(p.ts).await; }
+                    Ok(Packet::Pong(p)) => {
+                        if p.ts == ping {
+                            inner.lock().unwrap().host_link.sample(last_heard.saturating_duration_since(ping_sent));
+                        }
+                    }
                     Ok(Packet::Room(RoomMsg::Roster(r))) => {
                         let mut g = inner.lock().unwrap();
                         g.my_seat = r.seat as usize;
