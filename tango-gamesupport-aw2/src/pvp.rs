@@ -584,7 +584,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             return true;
         }
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
-        if !((in_battle(core) || crate::fog_view::rules_page(core)) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat) {
+        if !((in_battle(core) || crate::fog_view::between_screens_view(core)) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat) {
             return false;
         }
         // (the hand-off screen, and without fog the turn's banners and animations: the console's own picture, the same
@@ -592,7 +592,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         match crate::fog_view::phase(core) {
             crate::fog_view::Phase::HandOff => false,
             crate::fog_view::Phase::Busy => crate::fog_view::fog(core),
-            crate::fog_view::Phase::Map | crate::fog_view::Phase::Page => true,
+            crate::fog_view::Phase::Map | crate::fog_view::Phase::Page | crate::fog_view::Phase::Moving => true,
         }
     }
 

@@ -1,0 +1,232 @@
+# as aw2_waiting_pages.txt with Fog of War on
+n 4
+until maparmies=4 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+status
+shot rules 0
+press 0 A
+until battle 300
+wait 300
+status
+wait 30
+goto 0 1 9
+wait 5
+press 0 A
+wait 20
+press 0 A
+wait 30
+fv
+goto 0 5 5
+wait 5
+press 0 A
+wait 20
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 40
+press 1 A
+wait 80
+goto 1 5 5
+wait 5
+press 1 A
+wait 20
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+wait 40
+press 2 A
+wait 80
+goto 2 5 5
+wait 5
+press 2 A
+wait 20
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+wait 40
+press 3 A
+wait 80
+goto 3 5 5
+wait 5
+press 3 A
+wait 20
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+wait 40
+press 0 A
+wait 80
+wait 60
+goto 0 5 5
+wait 40
+shotall base
+fv
+watch terrain base 400
+press 0 R
+wait 60
+press 0 B
+wait 60
+wait 30
+fv
+unwatch terrain
+watch map_menu base 400
+press 0 A
+wait 25
+press 0 B
+wait 60
+wait 30
+fv
+unwatch map_menu
+watch co_page base 400
+press 0 A
+wait 25
+press 0 A
+wait 90
+press 0 B
+wait 90
+wait 30
+fv
+unwatch co_page
+watch intel_status base 400
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 A
+wait 25
+press 0 A
+wait 60
+press 0 B
+wait 60
+press 0 B
+wait 40
+press 0 B
+wait 60
+wait 30
+fv
+unwatch intel_status
+watch intel_rules base 400
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 A
+wait 90
+press 0 B
+wait 90
+press 0 B
+wait 40
+press 0 B
+wait 60
+wait 30
+fv
+unwatch intel_rules
+watch options base 400
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 A
+wait 40
+press 0 B
+wait 60
+press 0 B
+wait 60
+wait 30
+fv
+unwatch options
+watch start_overview base 400
+press 0 START
+wait 90
+press 0 B
+wait 60
+wait 30
+fv
+unwatch start_overview
+goto 0 1 9
+wait 90
+shotall base_u
+watch unit_info base_u 400
+press 0 R
+wait 60
+press 0 B
+wait 60
+wait 30
+fv
+unwatch unit_info
+goto 0 0 8
+wait 90
+shotall base_b
+watch build_menu base_b 5000
+press 0 A
+wait 60
+press 0 B
+wait 60
+wait 30
+fv
+unwatch build_menu
+goto 0 1 9
+wait 90
+shotall base_u
+watch unit_select base_u 400
+press 0 A
+wait 40
+press 0 B
+wait 40
+wait 30
+fv
+unwatch unit_select
+watch save base_u 400
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 A
+wait 90
+press 0 RIGHT
+wait 20
+press 0 A
+wait 90
+wait 30
+fv
+unwatch save

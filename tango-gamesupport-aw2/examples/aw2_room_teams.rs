@@ -106,11 +106,35 @@ fn main() {
     let ticks = std::cell::Cell::new(0usize);
     let native = std::cell::Cell::new(0usize);
     let phase = std::cell::RefCell::new(String::from("start"));
+    // (watch BASE TOL: every tick, until unwatch, the waiting seats' pictures are compared with the BASE shotall's)
+    let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
     let tick = |link: &mut tango_backend_mgba::SharedLink, keys: &[u32]| {
         let inputs: Vec<HostInput> = keys.iter().map(|&k| HostInput::keys(k)).collect();
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
+        if let Some((a, b)) = std::env::var("AW2_TRACE").ok().and_then(|v| v.split_once('-').map(|(a, b)| (a.parse::<usize>().unwrap(), b.parse::<usize>().unwrap()))) {
+            if (a..b).contains(&t) {
+                let c = link.core();
+                let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c).iter().map(|f| format!("{:x}", f & 0xFFFFFF)).collect();
+                let io = |o: u32| c.raw_read_16(0x0400_0000 + o, -1);
+                println!("trace t{t} keys {:03x} loop {:08x} phase {:?} disp {:04x} win {:04x}/{:04x} bld {:04x}/{:04x}/{:02x} mos {:04x} procs [{}]", keys.iter().fold(0, |a, b| a | b), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), io(0), io(0x48), io(0x4A), io(0x50), io(0x52), io(0x54), io(0x4C), procs.join(" "));
+            }
+        }
+        if let Some((label, base, tol, bad, count)) = watch.borrow_mut().as_mut() {
+            for seat in 1..n {
+                tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                let Some(f) = link.side(seat).frame() else { continue };
+                let diff = f.chunks(4).zip(base[seat].chunks(4)).filter(|(x, y)| x != y).count();
+                if diff > *tol {
+                    bad.push((t, seat, diff));
+                    if let Some(d) = &dump {
+                        write_bmp(&d.join(format!("{label}_t{t:06}_s{seat}_DIFF{diff}.bmp")), &f);
+                    }
+                }
+            }
+            *count += 1;
+        }
         if sample_every > 0 && t % sample_every == 0 {
             for seat in 0..n {
                 tango_gamesupport_aw2::online::set_room(names.clone(), seat);
@@ -232,6 +256,20 @@ fn main() {
                     let tol: usize = p.get(4).map_or(300, |v| v.parse().unwrap());
                     println!("same {} {} seat {seat}: {} differing pixels {}", p[1], p[2], diff, if diff <= tol { "ok" } else { "FAIL" });
                     failed |= diff > tol;
+                }
+            }
+            // watch LABEL BASE TOL: from now every tick the seats 1.. pictures are compared with the shotall BASE (dumped to
+            // the out dir when AW2_DUMP is set, as LABEL_tTICK_sSEAT_DIFFn.bmp); unwatch LABEL: the report, exit 1 at the end
+            "watch" => {
+                let base: Vec<Vec<u8>> = (0..n).map(|seat| shots.get(&format!("{}_s{seat}", p[2])).cloned().unwrap_or_default()).collect();
+                *watch.borrow_mut() = Some((p[1].to_string(), base, p[3].parse().unwrap(), Vec::new(), 0));
+            }
+            "unwatch" => {
+                if let Some((label, _, tol, bad, count)) = watch.borrow_mut().take() {
+                    let first = bad.first().map_or(String::new(), |b| format!(" first at tick {} seat {}", b.0, b.1));
+                    let worst = bad.iter().map(|b| b.2).max().unwrap_or(0);
+                    println!("watch {label}: {count} ticks, {} frames over {tol} differing pixels (worst {worst}){first} {}", bad.len(), if bad.is_empty() { "ok" } else { "FAIL" });
+                    failed |= !bad.is_empty();
                 }
             }
             // fv: the game's state the waiting view decides from

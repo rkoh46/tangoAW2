@@ -1,4 +1,4 @@
-# 4 seats, Fog off from round 2: the mover (seat 0) opens the terrain info (R), map menu, Intel, Options and Save; the other seats' pictures stay as with nothing open. Run: aw2_room_teams <rom> <out> this-file
+# 4 seats, Fog off from round 2: the mover (seat 0) opens and closes every page it can (terrain and unit info, map menu, CO page, Intel Status/Rules, Options, START overview, build menu, unit selection, Save); on EVERY tick the other seats' pictures stay within a tolerance of the picture with nothing open (watch/unwatch). Run: aw2_room_teams <rom> <out> this-file; the same without the poke line checks Fog on.
 n 4
 until maparmies=4 100
 wait 60
@@ -30,6 +30,13 @@ wait 300
 status
 poke 03003FCD 00
 wait 30
+goto 0 1 9
+wait 5
+press 0 A
+wait 20
+press 0 A
+wait 30
+fv
 goto 0 5 5
 wait 5
 press 0 A
@@ -79,45 +86,148 @@ wait 40
 press 0 A
 wait 80
 wait 60
-# the mover (seat 0) opens every page it can; the other seats' pictures must stay the same as with nothing open
 goto 0 5 5
-wait 20
-shotall warm
-wait 10
+wait 40
 shotall base
+fv
+watch terrain base 400
 press 0 R
-wait 40
-shotall terrain
-same base terrain 1,2,3
+wait 60
 press 0 B
-wait 40
+wait 60
+wait 30
+fv
+unwatch terrain
+watch map_menu base 400
 press 0 A
-shotall menu
-same base menu 1,2,3
-press 0 DOWN
-press 0 A
-shotall intel
-same base intel 1,2,3
+wait 25
 press 0 B
-wait 40
-press 0 B
-wait 40
+wait 60
+wait 30
+fv
+unwatch map_menu
+watch co_page base 400
 press 0 A
-wait 20
-press 0 DOWN
-press 0 DOWN
+wait 25
 press 0 A
-shotall options
-same base options 1,2,3
+wait 90
 press 0 B
-wait 40
-press 0 B
+wait 90
+wait 30
+fv
+unwatch co_page
+watch intel_status base 400
 press 0 A
-wait 20
+wait 25
 press 0 DOWN
-press 0 DOWN
-press 0 DOWN
+wait 1
+press 0 A
+wait 25
 press 0 A
 wait 60
-shotall save
-same base save 1,2,3
+press 0 B
+wait 60
+press 0 B
+wait 40
+press 0 B
+wait 60
+wait 30
+fv
+unwatch intel_status
+watch intel_rules base 400
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 A
+wait 90
+press 0 B
+wait 90
+press 0 B
+wait 40
+press 0 B
+wait 60
+wait 30
+fv
+unwatch intel_rules
+watch options base 400
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 A
+wait 40
+press 0 B
+wait 60
+press 0 B
+wait 60
+wait 30
+fv
+unwatch options
+watch start_overview base 400
+press 0 START
+wait 90
+press 0 B
+wait 60
+wait 30
+fv
+unwatch start_overview
+goto 0 1 9
+wait 90
+shotall base_u
+watch unit_info base_u 400
+press 0 R
+wait 60
+press 0 B
+wait 60
+wait 30
+fv
+unwatch unit_info
+goto 0 0 8
+wait 90
+shotall base_b
+watch build_menu base_b 5000
+press 0 A
+wait 60
+press 0 B
+wait 60
+wait 30
+fv
+unwatch build_menu
+goto 0 1 9
+wait 90
+shotall base_u
+watch unit_select base_u 400
+press 0 A
+wait 40
+press 0 B
+wait 40
+wait 30
+fv
+unwatch unit_select
+watch save base_u 400
+press 0 A
+wait 25
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 DOWN
+wait 1
+press 0 A
+wait 90
+press 0 RIGHT
+wait 20
+press 0 A
+wait 90
+wait 30
+fv
+unwatch save
