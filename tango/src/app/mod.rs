@@ -315,6 +315,9 @@ impl App {
         if self.debug.has_pad() {
             subs.push(iced::time::every(std::time::Duration::from_millis(16)).map(|_| Message::PadScriptTick));
         }
+        if let Some(every) = self.debug.run_shot_every() {
+            subs.push(iced::time::every(every).map(|_| Message::RunShotTick));
+        }
         // iOS: re-lay the UI out when the on-screen keyboard comes and
         // goes (the root view lifts above it; see `view_in_safe_area`),
         // which nothing in iced's own event stream reports.

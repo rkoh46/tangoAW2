@@ -296,6 +296,11 @@ impl DebugAids {
         Some(RunDir { dir, seat, every: 1.0 / hz.max(0.1), next: 0.0, n: 0 })
     }
 
+    /// How often a test run's steady frames are due, when they are asked for above 1 Hz (the 1 Hz Discord tick serves the rest).
+    pub fn run_shot_every(&self) -> Option<std::time::Duration> {
+        self.run.as_ref().filter(|r| r.every < 0.99).map(|r| std::time::Duration::from_secs_f64(r.every / 2.0))
+    }
+
     pub fn has_pad(&self) -> bool {
         self.pad.is_some()
     }

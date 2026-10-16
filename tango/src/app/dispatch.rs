@@ -98,6 +98,12 @@ impl App {
                     None => iced::Task::none(),
                 }
             }
+            Message::RunShotTick => match self.debug.due_shot() {
+                Some((path, exit)) => iced::window::latest()
+                    .and_then(iced::window::screenshot)
+                    .map(move |s| Message::DebugScreenshot(s, path.clone(), exit)),
+                None => iced::Task::none(),
+            },
             Message::ReportMark => {
                 // A problem report: the moment marked in the session's log, the window's picture saved beside it.
                 let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();

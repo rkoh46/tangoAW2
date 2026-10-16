@@ -60,6 +60,8 @@ pub enum Message {
     /// Discord-initiated join secret into the play link-code
     /// field.
     DiscordTick,
+    /// A test run's steady frames at their own rate (`TANGOAW2_RUN_SHOT_HZ`).
+    RunShotTick,
     /// Test aids: a window picture to save (and whether to quit after it).
     DebugScreenshot(iced::window::Screenshot, std::path::PathBuf, bool),
     /// F8 in a session: a marked moment for a problem report (a line in the log, a screenshot beside it).

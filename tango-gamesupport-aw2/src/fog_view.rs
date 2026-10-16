@@ -384,7 +384,19 @@ fn step(n: usize) -> Option<(u32, Option<i32>, Option<i32>)> {
     if !prog.is_empty() {
         return prog.get(n).map(|&(f, r0, r1)| (f, Some(r0), Some(r1)));
     }
+    // (only the CO panel's calls: its colours, face and palettes for the army)
+    let n = if PANEL_ONLY.load(std::sync::atomic::Ordering::Relaxed) { if n < 3 { n + 1 } else { return None } } else { n };
     CALLS.get(n).map(|&(f, army_arg)| (f, army_arg.then_some(ARMY), None))
+}
+
+/// The next call list is only the CO panel's (the viewer's own header, without the fog refresh): Fog off.
+static PANEL_ONLY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn panel_call(scratch: Scratch) -> Result<(), &'static str> {
+    PANEL_ONLY.store(true, std::sync::atomic::Ordering::Relaxed);
+    let r = refresh(scratch, 0);
+    PANEL_ONLY.store(false, std::sync::atomic::Ordering::Relaxed);
+    r
 }
 
 /// Runs `calls` (function, r0, r1) on the scratch console at its next sprite flush, one after the other, and waits
@@ -549,7 +561,19 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         }
         let last = scratch.memory()[3] & 3;
         let side = settle_panel(scratch.core_mut(), last);
+        // (the header is the seat's own: its CO's face and colours, drawn by the game's panel routines for its army)
+        let pal_before = {
+            let mut a = vec![0u8; 0x400];
+            scratch.core().raw_read_range(0x0300_20C0, -1, &mut a);
+            let mut b = vec![0u8; 0x400];
+            scratch.core().raw_read_range(0x0500_0000, -1, &mut b);
+            (a, b)
+        };
+        scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
+        panel_call(scratch)?;
         scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
+        // (the panel's routines load the army's unit palettes too: the mover's units stay in their own colours)
+        restore_unit_palettes(scratch.core_mut(), &pal_before.0, &pal_before.1);
         run(scratch, &[0, 0, 0])?;
         close_ui(scratch)?;
         scratch.memory()[0] = 1;
@@ -571,7 +595,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let place = |scratch: Scratch, px: i32, py: i32, cursor: (i32, i32)| {
         let core = scratch.core_mut();
         // (the pixels, their copy, the camera's cell and the remainder of a scroll the console had begun: none)
-        for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py), (0xC, px / 16), (0xE, py / 16), (0x10, 0), (0x12, 0)] {
+        for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py), (0x10, 0), (0x12, 0)] {
             core.raw_write_16(MAP + at, -1, v as u16);
         }
         core.raw_write_16(CURSOR, -1, cursor.0 as u16);
