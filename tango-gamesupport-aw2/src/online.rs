@@ -1524,6 +1524,15 @@ fn log_units(core: &Core) {
             out.push_str(&format!(" A{} {name}({x},{y}) hp{hp};", crate::five::army_of_index(core, id)));
         }
     }
+    static TERRAIN_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if !TERRAIN_DONE.swap(true, Relaxed) {
+        // (once per run: the terrain class of every cell, two hex digits each, for working out routes offline)
+        for y in 0..h {
+            let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+            let line: String = (0..w).map(|x| format!("{:02x} ", core.raw_read_8(MAP + 0x1432 + row + x, -1) & 0x1F)).collect();
+            log::info!("terrain y={y:02}: {line}");
+        }
+    }
     static LAST: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
     let mut last = LAST.lock().unwrap();
     if *last != out {
