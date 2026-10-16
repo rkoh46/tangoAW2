@@ -522,7 +522,7 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
 
 /// The fields' columns (the left edge of the colour, team and partner boxes).
 fn columns(tag_on: bool) -> (i32, i32, i32) {
-    if tag_on { (94, 124, 154) } else { (116, 148, 0) }
+    if tag_on { (102, 130, 158) } else { (116, 148, 0) }
 }
 
 /// The width of a field's box (the choice between its two arrows).
@@ -563,16 +563,20 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
     cv.rect(2, y, 236, h, if mine { crate::online::CREAM } else { crate::online::WHITE });
     cv.rect(2, y, 4, h, colour_rgb(colour));
     let big = n <= 3;
-    let sz = (h - 2).min(if big { 32 } else { 24 });
+    // (with the partner column, the face is the small one: a 10-letter gamertag needs the room)
+    let sz = (h - 2).min(if big && !tag_on { 32 } else { 24 });
     if let Some(co) = co {
         draw_face(core, cv, co, 8, y + (h - sz) / 2, sz);
     }
     let tx = 8 + sz + 3;
+    let (colour_x, team_x, partner_x) = columns(tag_on);
+    // (the name and the CO under it keep to the room left of the colour box: the audit's window for them)
+    crate::online::audit::window(tx, y, colour_x - 3 - tx + 2, h);
     let name: String = crate::online::room_name(s).chars().take(10).collect();
+    let name = crate::online::fit(core, &name, colour_x - 3 - tx);
     let name_ink = if mine { crate::online::BLUE } else { ink };
     let (ny, cy) = if big { (y + 4, y + h - 15) } else { (y, y + h - 11) };
     cv.text(core, tx, ny, &name, name_ink, shade);
-    let (colour_x, team_x, partner_x) = columns(tag_on);
     let co_name = co.map(|c| co_label(core, c)).unwrap_or_default();
     let co_text = fit_arrows(core, &co_name, sel(F_CO), colour_x - 3 - tx);
     let w = crate::online::text_width(core, &co_text);
