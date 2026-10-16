@@ -491,6 +491,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::resume_info::describe(core, ewram, iwram)
     }
 
+    fn test_aid(&self, core: &mut Core, tick: u32) {
+        crate::test_aid::apply(core, tick);
+    }
+
     fn traps(&self) -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         crate::factory::traps()
     }

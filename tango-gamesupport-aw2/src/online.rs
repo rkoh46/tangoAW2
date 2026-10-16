@@ -461,6 +461,15 @@ pub mod mailbox {
                 read(0x0300_33E4 + if name == "cy" { 2 } else { 0 }, &mut b);
                 u16::from_le_bytes(b) as u32 == v
             }
+            // the cursor left of / right of (cxlt: its x is below the value) / above / below the cell
+            ("cxlt" | "cxgt" | "cylt" | "cygt", Some(v)) => {
+                let mut b = [0u8; 2];
+                read(0x0300_33E4 + if name.starts_with("cy") { 2 } else { 0 }, &mut b);
+                let at = u16::from_le_bytes(b) as u32;
+                if name.ends_with("lt") { at < v } else { at > v }
+            }
+            // the map waits for the cursor and nothing runs (a test script's cue to press)
+            ("idle", None) => bits >> 63 & 1 != 0,
             // the map menu's selected row (0 CO, 1 Intel, 2 Options, 3 Save, 4 End; the menu keeps its row between uses)
             ("menu", Some(v)) => (probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed) >> 40) & 0xFF == v as u64,
             ("maparmies", Some(v)) => (bits >> 32) & 0xFF == v as u64,
@@ -547,6 +556,7 @@ pub mod probe {
         b |= (core.raw_read_8(super::SKIP_STEPS, -1) as u64) << 48;
         b |= (crate::survival_ui::idle(core) as u64) << 56;
         b |= (core.raw_read_8(super::PLAYERS_N_FOR_PROBE, -1) as u64) << 57;
+        b |= ((crate::fog_view::phase(core) == crate::fog_view::Phase::Map) as u64) << 63;
         BITS.store(b, Ordering::Relaxed);
         // (test aid: where SELECT MAP's cursor is, by both ways of telling)
         let first = core.raw_read_32(0x0300_5900, -1) & 0xFF;

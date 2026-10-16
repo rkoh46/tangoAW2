@@ -100,6 +100,14 @@ pub trait Link: Send + 'static {
         false
     }
 
+    /// Test aid: runs on every simulated tick, `tick` counting the match's ticks from 0, before the tick's input
+    /// reaches the console (and again on a rollback's re-simulation of the same tick). A game's scenario script
+    /// (`TANGOAW2_TEST_POKE`) sets its state up here: a pure function of the tick and the console, so every peer
+    /// that runs the same script applies it on the same tick. The default does nothing.
+    fn test_aid(&mut self, tick: u32) {
+        let _ = tick;
+    }
+
     /// A capture as bytes that can be stored and later started from ([`Backend::start_resumed`]), with a digest of
     /// the state that matters. Engines that cannot say leave the default: their matches cannot be suspended.
     fn state_image(&mut self, snapshot: &Snapshot) -> Option<crate::suspend::StateImage> {

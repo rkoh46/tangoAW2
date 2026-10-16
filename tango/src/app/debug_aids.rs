@@ -11,8 +11,10 @@
 //!   the moment a session starts); `until COND [SECONDS]` idles until the
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
-//!   `army=N`, `menu=N` (the map menu's row: 0 CO .. 4 End), `cx=N`/`cy=N` (the map cursor's cell), `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
-//!   keys now and then until the console shows COND, `shot PATH` saves the
+//!   `army=N`, `menu=N` (the map menu's row: 0 CO .. 4 End), `cx=N`/`cy=N` (the map cursor's cell; `cxlt=N`, `cxgt=N`,
+//!   `cylt=N`, `cygt=N`: left of, right of, above, below it), `idle` (the map waits for the cursor, nothing running),
+//!   `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
+//!   keys now and then until the console shows COND, `goto X Y [SECONDS]` walks the map cursor to the cell, `shot PATH` saves the
 //!   window's picture, `log TEXT` writes to the log, `session` starts the part
 //!   for the next session, `#` comments out a line.
 
@@ -40,6 +42,8 @@ enum Op {
     Log(String),
     /// Press the keys now and then (4 frames in 12) until the condition holds (or this many seconds pass).
     Seek(u32, String, f64),
+    /// Walk the map cursor to the cell (the keys are chosen from where it is), for this many seconds at most.
+    Goto(u32, u32, f64),
 }
 
 struct Pad {
@@ -77,9 +81,9 @@ fn key_bits(s: &str) -> u32 {
 }
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
-const CONDS: [&str; 19] = [
+const CONDS: [&str; 24] = [
     "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "cursor", "level", "army",
-    "maparmies", "status", "players", "ready", "menu", "cx", "cy", "!",
+    "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "!",
 ];
 
 fn cond_ok(c: &str) -> bool {
@@ -145,6 +149,11 @@ fn parse_script(text: &str) -> Result<Vec<Vec<Op>>, String> {
                 };
                 ops.push(Op::Seek(key_bits(k), cond.to_string(), secs));
             }
+            ["goto", x, y, rest @ ..] if rest.len() <= 1 => match (x.parse(), y.parse(), rest.first().map(|s| s.parse::<f64>())) {
+                (Ok(x), Ok(y), None) => ops.push(Op::Goto(x, y, 40.0)),
+                (Ok(x), Ok(y), Some(Ok(secs))) => ops.push(Op::Goto(x, y, secs)),
+                _ => return bad("goto needs a cell and optionally seconds"),
+            },
             ["shot", path] => ops.push(Op::Shot(PathBuf::from(path))),
             ["log", rest @ ..] => ops.push(Op::Log(rest.join(" "))),
             _ => return bad("unknown or malformed line"),
@@ -313,6 +322,37 @@ impl DebugAids {
                             keys |= k;
                         }
                         last_frame_keys = if pad.done % 12 < 4 { *k } else { 0 };
+                        pad.done += 1;
+                        frames -= 1;
+                    }
+                }
+                Op::Goto(x, y, secs) => {
+                    if pad.done == 0 {
+                        pad.op_started = now;
+                    }
+                    let (at_x, at_y) = (cond(&format!("cx={x}")), cond(&format!("cy={y}")));
+                    if at_x && at_y {
+                        log::info!("pad script: cursor at ({x},{y})");
+                        pad.at += 1;
+                        pad.done = 0;
+                    } else if now.duration_since(pad.op_started).as_secs_f64() > *secs {
+                        log::warn!("pad script: gave up walking the cursor to ({x},{y})");
+                        pad.at += 1;
+                        pad.done = 0;
+                    } else if frames == 0 {
+                        break;
+                    } else {
+                        let k = if !at_x {
+                            if cond(&format!("cxlt={x}")) { key_bits("RIGHT") } else { key_bits("LEFT") }
+                        } else if cond(&format!("cylt={y}")) {
+                            key_bits("DOWN")
+                        } else {
+                            key_bits("UP")
+                        };
+                        if pad.done % 12 < 4 {
+                            keys |= k;
+                        }
+                        last_frame_keys = if pad.done % 12 < 4 { k } else { 0 };
                         pad.done += 1;
                         frames -= 1;
                     }

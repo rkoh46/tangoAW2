@@ -112,6 +112,7 @@ fn main() {
     let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
     let tick = |link: &mut tango_backend_mgba::SharedLink, keys: &[u32]| {
         let inputs: Vec<HostInput> = keys.iter().map(|&k| HostInput::keys(k)).collect();
+        tango_match::Link::test_aid(link, ticks.get() as u32);
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
