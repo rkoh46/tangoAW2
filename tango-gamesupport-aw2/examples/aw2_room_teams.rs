@@ -501,6 +501,58 @@ fn main() {
                     keys[s] = 0;
                 }
             }
+            // waitfor victory|over|armysel MAX: ticks (MAX x 10 at most) until the console shows VICTORY! / the match is over
+            // (crate::online::match_over); fails the run when it does not come
+            "waitfor" => {
+                let max: usize = p[2].parse().unwrap();
+                let mut ok = false;
+                for _ in 0..max * 10 {
+                    let c = link.core();
+                    let now = match p[1] {
+                        "victory" => tango_gamesupport_aw2::result_view::victory_showing(c),
+                        "over" => tango_gamesupport_aw2::online::match_over(c),
+                        // (the room is back on SELECT YOUR ARMY for the next match)
+                        "armysel" => {
+                            let mut read = |_: u32, b: &mut [u8]| b.fill(0);
+                            tango_gamesupport_aw2::online::mailbox::condition(&mut read, "teams")
+                        }
+                        other => panic!("waitfor {other}"),
+                    };
+                    if now {
+                        ok = true;
+                        break;
+                    }
+                    // (waitfor COND MAX pressA SEATS: those seats press A for 4 ticks of every 60 while waiting)
+                    let mut k = keys.clone();
+                    if let (Some("pressA"), Some(list)) = (p.get(3).copied(), p.get(4)) {
+                        if t % 60 < 4 {
+                            for seat in list.split(',').filter_map(|v| v.parse::<usize>().ok()) {
+                                k[seat] = 1;
+                            }
+                        }
+                    }
+                    tick(&mut link, &k);
+                    t += 1;
+                }
+                println!("waitfor {} @{t}: {}", p[1], if ok { "ok" } else { "TIMEOUT FAIL" });
+                failed |= !ok;
+            }
+            // expect winner SEAT: SEAT's window shows the console's picture (VICTORY!, then the result pages);
+            // expect loser SEAT: it shows its own DEFEAT, not the console's
+            "expect" => {
+                let seat: usize = p[2].parse().unwrap();
+                let console = link.solo_side().frame().unwrap_or_default();
+                tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                let f = link.side(seat).frame().unwrap_or_default();
+                let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
+                let ok = match p[1] {
+                    "winner" => diff <= 3000,
+                    "loser" => tango_gamesupport_aw2::result_view::loser(link.core(), seat) && diff > 3000,
+                    other => panic!("expect {other}"),
+                };
+                println!("expect {} seat {seat}: {diff} px from the console's {}", p[1], if ok { "ok" } else { "FAIL" });
+                failed |= !ok;
+            }
             // fv: the game's state the waiting view decides from
             "fv" => {
                 let c = link.core();
@@ -508,7 +560,7 @@ fn main() {
                 {
                     use tango_backend_mgba::SharedGame;
                     let w: Vec<bool> = (0..n).map(|s| tango_gamesupport_aw2::pvp::AW2E.watching(c, s)).collect();
-                    println!("watching {w:?}");
+                    println!("watching {w:?} alive {:?} decided {}", tango_gamesupport_aw2::result_view::alive_armies(c), tango_gamesupport_aw2::result_view::decided(c));
                 }
                 println!("fv @{t} tick {} army {}: fog {} loop {:08x} phase {:?} procs [{}] dispcnt {:04x} menu {}", ticks.get(), c.raw_read_8(0x0300_33EC, -1), c.raw_read_8(0x0300_3FCD, -1), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), procs.join(" "), c.raw_read_16(0x0400_0000, -1), c.raw_read_8(0x0300_14E2, -1));
             }

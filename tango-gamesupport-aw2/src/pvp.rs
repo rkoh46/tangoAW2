@@ -502,8 +502,15 @@ pub(crate) fn chosen_item(core: &Core) -> Option<u8> {
     matches!(core.raw_read_8(MAP_MENU_STATE, -1), 4 | 5).then(|| core.raw_read_8(END_ROW + 1, -1))
 }
 
+/// The army whose turn it is has yielded or been beaten: its turn is over (the game goes on to the next army's "Next turn"
+/// screen) without End having been chosen.
+pub(crate) fn current_defeated(core: &Core) -> bool {
+    let current = core.raw_read_8(CURRENT_PLAYER, -1);
+    (1..=5).contains(&current) && !crate::result_view::alive(core, current)
+}
+
 pub(crate) fn turn_ended(core: &Core) -> bool {
-    core.raw_read_8(MAP_MENU_STATE, -1) == 5 && {
+    current_defeated(core) || core.raw_read_8(MAP_MENU_STATE, -1) == 5 && {
         let end = core.raw_read_8(END_ROW, -1);
         end != 0 && core.raw_read_8(MAP_MENU_CURSOR, -1) + 1 == end
     }
@@ -530,7 +537,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 18: a room's SELECT MAP lists only the maps for its player count (crate::online_maps::retab); 17: UNRANKED matches (crate::unranked); rooms hold their state in checkpoints and can be resumed (the wire of the room changed with it).
         // 19: every seat's TEAM on the army page, written into the Teams record (crate::online_teams); the page keeps its state through the game's Teams screen going from its CO stage to its team stage and on.
         // 20: the hand-off is told by the map menu's End item (an id) and not by its row, which moves with Power and Save being shown.
-        20
+        // 21: a turn also ends when the army whose turn it is has yielded (the incoming army's player has the pad).
+        21
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {
@@ -634,6 +642,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // (the match is won and this seat is not the winner: its window shows DEFEAT, crate::result_view)
         if crate::result_view::watching(core, seat) {
             return true;
+        }
+        // (the match is decided: the winner's window and everything after VICTORY! is the console's own, never a held map)
+        if crate::result_view::decided(core) {
+            return false;
         }
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
         if !((in_battle(core) || crate::fog_view::between_screens_view(core)) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat) {

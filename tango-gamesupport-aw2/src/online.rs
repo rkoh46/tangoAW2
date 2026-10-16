@@ -1545,6 +1545,18 @@ fn incoming_army(current: u8, n: usize) -> u8 {
     current % n.max(1) as u8 + 1
 }
 
+/// [`incoming_army`] that skips the armies that are out (the game plays the next one still in).
+fn incoming_alive(core: &Core, current: u8, n: usize) -> u8 {
+    let mut a = incoming_army(current, n);
+    for _ in 0..n {
+        if crate::result_view::alive(core, a) {
+            return a;
+        }
+        a = incoming_army(a, n);
+    }
+    incoming_army(current, n)
+}
+
 /// Test aid (`TANGOAW2_INPUT_LOG=1`): every unit on the map (army, kind, cell, hit points), logged whenever the list
 /// changes (looked at twice a second), so the pictures can be checked against the game's own state.
 fn log_units(core: &Core) {
@@ -1638,7 +1650,7 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         // (the incoming army: the one after the army that chose End, which stays the same when the game has already moved
         // its current army on while the End screen is still up)
         let ender = core.raw_read_8(ENDER, -1);
-        let army = if crate::pvp::turn_ended(core) { incoming_army(if (1..=5).contains(&ender) { ender } else { current }, n) } else { current };
+        let army = if crate::pvp::turn_ended(core) { incoming_alive(core, if (1..=5).contains(&ender) { ender } else { current }, n) } else { current };
         let active = crate::pvp::seat_of_n(army, n);
         if input_log_on() {
             log_dropped(active, army, inputs);
