@@ -11,7 +11,7 @@
 //!   the moment a session starts); `until COND [SECONDS]` idles until the
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
-//!   `army=N`, `menu=N` (the map menu's row: 0 CO .. 4 End), `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
+//!   `army=N`, `menu=N` (the map menu's row: 0 CO .. 4 End), `cx=N`/`cy=N` (the map cursor's cell), `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
 //!   keys now and then until the console shows COND, `shot PATH` saves the
 //!   window's picture, `log TEXT` writes to the log, `session` starts the part
 //!   for the next session, `#` comments out a line.
@@ -77,9 +77,9 @@ fn key_bits(s: &str) -> u32 {
 }
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
-const CONDS: [&str; 17] = [
+const CONDS: [&str; 19] = [
     "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "cursor", "level", "army",
-    "maparmies", "status", "players", "ready", "menu", "!",
+    "maparmies", "status", "players", "ready", "menu", "cx", "cy", "!",
 ];
 
 fn cond_ok(c: &str) -> bool {

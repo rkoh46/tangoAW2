@@ -117,6 +117,9 @@ const PLAYERS_N_FOR_PROBE: u32 = crate::online_teams::SEL + 2;
 /// 1 for the whole of a room's battle (from its map loading until it is left for good), and the frames out of it.
 const BATTLE: u32 = STATE + 0x64;
 const OUT_T: u32 = STATE + 0x65;
+/// The army whose End was chosen while the turn-ended screen is up (0: none), kept in the console so every peer and
+/// every re-simulation agrees: the game moves its current army on before the screen's state is reset.
+const ENDER: u32 = STATE + 0x6C;
 const STATE_END: u32 = PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32;
 pub const PASSWORD_CHARS: usize = 4;
 
@@ -452,6 +455,12 @@ pub mod mailbox {
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
+            // the map cursor's cell (the cursor starts a turn where the last one left it)
+            ("cx" | "cy", Some(v)) => {
+                let mut b = [0u8; 2];
+                read(0x0300_33E4 + if name == "cy" { 2 } else { 0 }, &mut b);
+                u16::from_le_bytes(b) as u32 == v
+            }
             // the map menu's selected row (0 CO, 1 Intel, 2 Options, 3 Save, 4 End; the menu keeps its row between uses)
             ("menu", Some(v)) => (probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed) >> 40) & 0xFF == v as u64,
             ("maparmies", Some(v)) => (bits >> 32) & 0xFF == v as u64,
@@ -1404,6 +1413,13 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     }
     crate::unranked::tick(core, inputs);
     let battle = core.raw_read_8(BATTLE, -1) == 1;
+    if battle && crate::pvp::turn_ended(core) {
+        if core.raw_read_8(ENDER, -1) == 0 {
+            core.raw_write_8(ENDER, -1, crate::pvp::current_army(core));
+        }
+    } else if core.raw_read_8(ENDER, -1) != 0 {
+        core.raw_write_8(ENDER, -1, 0);
+    }
     if crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
         if !battle {
             core.raw_write_8(BATTLE, -1, 1);
@@ -1519,7 +1535,10 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         if !(1..=5).contains(&current) {
             return Some(0);
         }
-        let army = if crate::pvp::turn_ended(core) { current % n as u8 + 1 } else { current };
+        // (the incoming army: the one after the army that chose End, which stays the same when the game has already moved
+        // its current army on while the End screen is still up)
+        let ender = core.raw_read_8(ENDER, -1);
+        let army = if crate::pvp::turn_ended(core) { (if (1..=5).contains(&ender) { ender } else { current }) % n as u8 + 1 } else { current };
         let active = crate::pvp::seat_of_n(army, n);
         if input_log_on() {
             log_dropped(active, army, inputs);
