@@ -98,8 +98,8 @@ fn key_bits(s: &str) -> u32 {
 }
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
-const CONDS: [&str; 34] = [
-    "always", "mapup", "mypick", "chosen", "pickturn",
+const CONDS: [&str; 35] = [
+    "always", "mapup", "mypick", "chosen", "pickturn", "rules",
     "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "myturn", "banner", "acting", "over", "cursor", "level", "army",
     "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "onend", "!",
 ];
@@ -307,7 +307,14 @@ impl DebugAids {
             if now >= r.next {
                 r.next = now + r.every;
                 r.n += 1;
-                return Some((r.dir.join(format!("s{}_{:04}.png", r.seat, r.n)), false));
+                // (the sidecar: each picture's wall clock and the console's tick, to line the windows up)
+                let ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis());
+                let name = format!("s{}_{:04}.png", r.seat, r.n);
+                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(r.dir.join(format!("shots_s{}.jsonl", r.seat))) {
+                    use std::io::Write;
+                    let _ = writeln!(f, "{{\"file\":\"{name}\",\"ms\":{ms},\"tick\":{}}}", tango_library::online::run_ticks());
+                }
+                return Some((r.dir.join(name), false));
             }
         }
         let i = self.shots.iter().position(|(t, _, done)| !*done && *t <= now)?;

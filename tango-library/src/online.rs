@@ -178,3 +178,15 @@ pub fn sync(write: &mut dyn FnMut(u32, &[u8]), gamertag: &str, lines: &[String])
 pub fn clean_gamertag(name: &str) -> String {
     tango_gamesupport_aw2::online_stats::clean(name)
 }
+
+/// The console ticks the test-run dump has seen (the frame sidecar's tick).
+pub fn run_ticks() -> u32 {
+    #[cfg(feature = "gamesupport-aw2")]
+    {
+        tango_gamesupport_aw2::run_dump::ticks()
+    }
+    #[cfg(not(feature = "gamesupport-aw2"))]
+    {
+        0
+    }
+}

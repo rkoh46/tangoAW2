@@ -26,6 +26,9 @@ pub const RETURN: u32 = 0x0802_0EDA;
 /// The scratch call: +0 state (0 none, 1 asked, 2 running, 3 done), +4 the saved registers r0..r12, lr, pc.
 pub const CALL: u32 = 0x0203_DF00;
 const CALL_LEN: u32 = 4 + 15 * 4;
+/// The camera pin: while byte `CALL + 0x40` is 1 the camera registers (pixels) at `CALL + 0x42` and `+ 0x44` are written at every flush, so a scroll the
+/// console had begun does not go on in the scratch picture.
+const PIN: u32 = CALL + 0x40;
 
 const CURRENT_PLAYER: u32 = 0x0300_33EC;
 
@@ -101,6 +104,10 @@ fn seen(core: &Core, x: i32, y: i32) -> bool {
 fn window_sees(core: &Core, cx: i32, cy: i32, w: i32, h: i32) -> bool {
     (cy..(cy + 10).min(h)).any(|y| (cx..(cx + 15).min(w)).any(|x| seen(core, x, y)))
 }
+
+/// Pixels a waiting window's camera slides per view (the game's own scroll is four a tick, eight over a long way; a view is
+/// every second tick: eight, or sixteen when the way is more than sixteen pixels).
+const CAMERA_STEP: i32 = 8;
 
 /// Where `army`'s window starts looking: its HQ.
 fn anchor(core: &Core, army: u8) -> (i32, i32) {
@@ -553,14 +560,18 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let mut mem = *scratch.memory();
     let army = viewer_army(scratch.core(), seat).ok_or("no army")?;
     scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, army);
+    // The window's camera, in pixels, and the cell it is heading for (kept in the link: word 1 and 2 the pixels, word 3's
+    // bits 0..1 the CO panel's side, 8..15 and 16..23 the target cell).
     if mem[0] == 0 {
         let (ax, ay) = anchor(scratch.core(), army);
-        mem = [1, (ax - 7).clamp(0, (w - 15).max(0)), (ay - 4).clamp(0, (h - 10).max(0)), 0];
+        let (tx, ty) = ((ax - 7).clamp(0, (w - 15).max(0)), (ay - 4).clamp(0, (h - 10).max(0)));
+        mem = [1, tx * 16, ty * 16, (tx << 8) | (ty << 16)];
     }
     // The camera and the cursor where the window last had them, the game's refresh for the waiting army...
-    let place = |scratch: Scratch, cx: i32, cy: i32, cursor: (i32, i32)| {
+    let place = |scratch: Scratch, px: i32, py: i32, cursor: (i32, i32)| {
         let core = scratch.core_mut();
-        for (at, v) in [(4u32, cx * 16), (6, cy * 16), (8, cx * 16), (0xA, cy * 16)] {
+        // (the pixels, their copy, the camera's cell and the remainder of a scroll the console had begun: none)
+        for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py), (0xC, px / 16), (0xE, py / 16), (0x10, 0), (0x12, 0)] {
             core.raw_write_16(MAP + at, -1, v as u16);
         }
         core.raw_write_16(CURSOR, -1, cursor.0 as u16);
@@ -575,35 +586,53 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         scratch.core().raw_read_range(0x0500_0000, -1, &mut b);
         Some((a, b))
     };
-    let (mut cx, mut cy) = (mem[1], mem[2]);
-    // (bit 2 of the fourth word: the camera is where a followed cell of the mover's put it, not at the army's own place)
-    let followed = mem[3] & 4 != 0;
+    let (mut px, mut py) = (mem[1], mem[2]);
+    scratch.core_mut().raw_write_8(PIN, -1, 1);
+    scratch.core_mut().raw_write_16(PIN + 2, -1, px as u16);
+    scratch.core_mut().raw_write_16(PIN + 4, -1, py as u16);
+    let (mut tx, mut ty) = ((mem[3] >> 8) & 0xFF, (mem[3] >> 16) & 0xFF);
     let mut side = mem[3] & 3;
-    place(scratch, cx, cy, (cx + 7, cy + 4));
+    place(scratch, px, py, (px / 16 + 7, py / 16 + 4));
     side = settle_panel(scratch.core_mut(), side);
     scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
     refresh(scratch, 2)?;
-    // ... and if the mover's cursor is on a cell it sees, the camera follows it there and the cursor shows.
+    // ... and the camera's target. The game scrolls its camera after the cursor in steps of a cell, four pixels a frame
+    // (the same on every window; traced from the console's own camera): a cell the window sees that is outside the
+    // camera's view moves the target the least that brings it in, and the camera slides there. Nothing else moves the
+    // target: when the mover goes out of sight the camera stays where the last action was (never back to the HQ,
+    // never between two places), apart from a window that sees nothing at all (the HQ).
     let (x, y) = mover_cell;
     let follow = x < w && y < h && seen(scratch.core(), x, y);
     if std::env::var_os("AW2_VIEW_DEBUG").is_some() {
         eprintln!("follow seat {seat}: mover cell ({x},{y}) map {w}x{h} seen {follow} plane byte {:02x} army {army}", scratch.core().raw_read_8(MAP + 0x234A + cell(scratch.core(), x.min(w - 1), y.min(h - 1)), -1));
     }
-    // (the waiting window shows no cursor at all, neither its own nor the mover's: the camera only follows it)
-    scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
+    let mut reason = "none";
     if follow {
-        cx = if x < cx { x } else if x > cx + 14 { x - 14 } else { cx }.clamp(0, (w - 15).max(0));
-        cy = if y < cy { y } else if y > cy + 9 { y - 9 } else { cy }.clamp(0, (h - 10).max(0));
-        place(scratch, cx, cy, mover_cell);
-        side = settle_panel(scratch.core_mut(), side);
-        refresh(scratch, 2)?;
-    } else if followed || !window_sees(scratch.core(), cx, cy, w, h) {
-        // (the camera was left where a cell of the mover's was seen once, or nothing in its window is seen now: grey
-        // fogged terrain and no units; back to the army's own HQ)
+        reason = "follow";
+        tx = if x < tx { x } else if x > tx + 14 { x - 14 } else { tx }.clamp(0, (w - 15).max(0));
+        ty = if y < ty { y } else if y > ty + 9 { y - 9 } else { ty }.clamp(0, (h - 10).max(0));
+    } else if !window_sees(scratch.core(), (px + 8) / 16, (py + 8) / 16, w, h) && (tx * 16, ty * 16) == (px, py) {
+        // (nothing in the window is seen and it is at rest: grey fogged terrain and no units; the army's own HQ)
+        reason = "hq";
         let (ax, ay) = anchor(scratch.core(), army);
-        cx = (ax - 7).clamp(0, (w - 15).max(0));
-        cy = (ay - 4).clamp(0, (h - 10).max(0));
-        place(scratch, cx, cy, (cx + 7, cy + 4));
+        tx = (ax - 7).clamp(0, (w - 15).max(0));
+        ty = (ay - 4).clamp(0, (h - 10).max(0));
+    }
+    // (the slide: eight pixels a view, sixteen over a long way)
+    let step = |from: i32, to: i32| {
+        let by = if (to - from).abs() > 2 * CAMERA_STEP { 2 * CAMERA_STEP } else { CAMERA_STEP };
+        if (to - from).abs() <= by { to } else { from + by * (to - from).signum() }
+    };
+    let (nx, ny) = (step(px, tx * 16), step(py, ty * 16));
+    if std::env::var_os("AW2_CAM_LOG").is_some() {
+        eprintln!("cam seat {seat} phase {:?} cam ({px},{py}) -> ({nx},{ny}) target ({tx},{ty}) mover ({x},{y}) follow {follow} reason {reason}", phase(scratch.core()));
+    }
+    scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
+    if (nx, ny) != (px, py) || follow {
+        (px, py) = (nx, ny);
+        scratch.core_mut().raw_write_16(PIN + 2, -1, px as u16);
+        scratch.core_mut().raw_write_16(PIN + 4, -1, py as u16);
+        place(scratch, px, py, (x.clamp(0, w - 1), y.clamp(0, h - 1)));
         side = settle_panel(scratch.core_mut(), side);
         scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
         refresh(scratch, 2)?;
@@ -618,7 +647,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     if std::env::var_os("AW2_PAL_DEBUG").is_some() {
         // the tile entries of the 2 x 2 tiles of cell (10,5) in every background, with the camera as it is now
         let c = scratch.core();
-        let (sx, sy) = ((10 * 16 - cx * 16) as u32 / 8, (5 * 16 - cy * 16) as u32 / 8);
+        let (sx, sy) = ((10 * 16 - px) as u32 / 8, (5 * 16 - py) as u32 / 8);
         for bg in 0..4u32 {
             let cnt = c.raw_read_16(0x0400_0008 + 2 * bg, -1) as u32;
             let base = 0x0600_0000 + ((cnt >> 8) & 31) * 0x800;
@@ -642,7 +671,16 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         VISION.lock().unwrap()[seat] = Some((w, h, seen_cells));
     }
     scratch.core_mut().raw_write_8(CALL + 3, -1, 0);
-    *scratch.memory() = [1, cx, cy, side | if follow { 4 } else { 0 }];
+    scratch.core_mut().raw_write_8(PIN, -1, 0);
+    if std::env::var_os("AW2_CAM_LOG").is_some() {
+        let c = scratch.core();
+        eprintln!(
+            "camend seat {seat} mine ({px},{py}) game map+4/6 ({},{})",
+            c.raw_read_16(MAP + 4, -1) as i16,
+            c.raw_read_16(MAP + 6, -1) as i16
+        );
+    }
+    *scratch.memory() = [1, px, py, side | (tx << 8) | (ty << 16)];
     Ok(())
 }
 
@@ -753,6 +791,12 @@ fn hide_fogged_sprites(core: &mut Core) {
 
 /// At the sprite flush: hides the cursor if asked, and starts the asked call.
 pub fn at_flush(core: &mut Core) {
+    if core.raw_read_8(PIN, -1) == 1 {
+        let (px, py) = (core.raw_read_16(PIN + 2, -1), core.raw_read_16(PIN + 4, -1));
+        for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py)] {
+            core.raw_write_16(MAP + at, -1, v);
+        }
+    }
     if core.raw_read_8(CALL + 3, -1) == 1 {
         hide_fogged_sprites(core);
     }

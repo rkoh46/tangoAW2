@@ -458,6 +458,7 @@ pub mod mailbox {
             ("over", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 8 != 0,
             ("mapup", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 16 != 0,
             ("pickturn", Some(v)) => (probe::CUES.load(std::sync::atomic::Ordering::Relaxed) >> 8) & 0xF == v as u64 + 1,
+            ("rules", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 128 != 0,
             ("chosen", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 64 != 0,
             ("mypick", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 32 != 0,
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
@@ -599,6 +600,9 @@ pub mod probe {
             // (SELECT MAP: it is this seat's turn to propose a map, the list up and still)
             if crate::unranked::picking(core) == Some(me) && crate::survival_ui::idle(core) {
                 c |= 32;
+            }
+            if crate::unranked::rules_up(core) {
+                c |= 128;
             }
             // (whose turn it is to propose: bits 8..11, the seat + 1)
             if let Some(who) = crate::unranked::picking(core) {

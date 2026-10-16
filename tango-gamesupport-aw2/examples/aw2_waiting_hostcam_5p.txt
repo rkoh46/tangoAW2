@@ -1,4 +1,4 @@
-# 5 seats, Fog on: seat 0 (the host, army 1) is waiting during the turns of armies 2-5. Each mover walks its cursor over cells army 1 does not see; seat 0's window must keep its own camera (a camera sent to the mover's area, 23000+ differing pixels, fails; the tolerance is the game's blinking and a one-row camera difference). Run: AW2_SAMPLE=10 aw2_room_teams <rom> <out> this-file; exit 1 on a failed check.
+# 5 seats, Fog on: seat 0 (the host, army 1) is waiting during the turns of armies 2-5 while each mover walks its cursor around cells army 1 sees only in part. The waiting camera follows a seen cell of the mover's, in steps, and stays where the last seen action was: it is never sent to cells army 1 does not see and never goes back and forth (tools/cam_check.py on the AW2_CAM_LOG=1 AW2_SAMPLE=2 log: the target changes only on a seen cell, at most 16 pixels a view, no reversal while moving). Run: aw2_room_teams <rom> <out> this-file
 n 5
 until maparmies=5 100
 wait 60
@@ -61,19 +61,19 @@ shotall wb1
 goto 1 9 12
 wait 30
 shotall wn1_1
-same wb1 wn1_1 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb1 wn1_1 0 6000
 goto 1 6 10
 wait 30
 shotall wn1_2
-same wb1 wn1_2 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb1 wn1_2 0 6000
 goto 1 12 10
 wait 30
 shotall wn1_3
-same wb1 wn1_3 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb1 wn1_3 0 6000
 goto 1 9 10
 wait 30
 shotall wn1_4
-same wb1 wn1_4 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb1 wn1_4 0 6000
 press 1 B
 wait 20
 press 1 A
@@ -96,19 +96,19 @@ shotall wb2
 goto 2 9 21
 wait 30
 shotall wn2_1
-same wb2 wn2_1 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb2 wn2_1 0 6000
 goto 2 6 19
 wait 30
 shotall wn2_2
-same wb2 wn2_2 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb2 wn2_2 0 6000
 goto 2 12 19
 wait 30
 shotall wn2_3
-same wb2 wn2_3 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb2 wn2_3 0 6000
 goto 2 9 19
 wait 30
 shotall wn2_4
-same wb2 wn2_4 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb2 wn2_4 0 6000
 press 2 B
 wait 20
 press 2 A
@@ -131,19 +131,19 @@ shotall wb3
 goto 3 9 31
 wait 30
 shotall wn3_1
-same wb3 wn3_1 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb3 wn3_1 0 6000
 goto 3 6 29
 wait 30
 shotall wn3_2
-same wb3 wn3_2 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb3 wn3_2 0 6000
 goto 3 12 29
 wait 30
 shotall wn3_3
-same wb3 wn3_3 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb3 wn3_3 0 6000
 goto 3 9 29
 wait 30
 shotall wn3_4
-same wb3 wn3_4 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb3 wn3_4 0 6000
 press 3 B
 wait 20
 press 3 A
@@ -166,19 +166,19 @@ shotall wb4
 goto 4 9 39
 wait 30
 shotall wn4_1
-same wb4 wn4_1 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb4 wn4_1 0 6000
 goto 4 6 37
 wait 30
 shotall wn4_2
-same wb4 wn4_2 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb4 wn4_2 0 6000
 goto 4 12 37
 wait 30
 shotall wn4_3
-same wb4 wn4_3 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb4 wn4_3 0 6000
 goto 4 9 37
 wait 30
 shotall wn4_4
-same wb4 wn4_4 0 6000
+# (the camera follows a seen move and stays: checked by tools/cam_check.py) same wb4 wn4_4 0 6000
 press 4 B
 wait 20
 press 4 A

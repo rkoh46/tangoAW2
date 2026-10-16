@@ -337,6 +337,11 @@ fn rules_rows(core: &Core) -> Option<[u32; 7]> {
     ITEM_FNS.contains(&core.raw_read_32(rows[0] + ITEM_FN, -1)).then_some(rows)
 }
 
+/// The Rules screen is up after the map was chosen (a test cue).
+pub fn rules_up(core: &Core) -> bool {
+    active(core) && rules_rows(core).is_some()
+}
+
 /// The standard rules, on the Rules screen: the rows' values written every frame, and A pressed once they have
 /// shown for a moment. Returns the keys the game gets.
 pub fn rules(core: &mut Core, keys: u32) -> u32 {

@@ -121,6 +121,18 @@ fn main() {
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
+        if std::env::var("AW2_CAM_LOG").is_ok_and(|v| v == "ticks") {
+            eprintln!("tickmark {t}");
+        }
+        if std::env::var_os("AW2_CAM_LOG").is_some() {
+            // (the console's own camera: where it moves, tick by tick, as the game scrolls to the mover)
+            let c = link.core();
+            let now = (c.raw_read_16(0x0201_E454, -1) as i16, c.raw_read_16(0x0201_E456, -1) as i16);
+            thread_local!(static LAST: std::cell::Cell<(i16, i16)> = const { std::cell::Cell::new((0, 0)) });
+            if LAST.with(|l| l.replace(now)) != now {
+                eprintln!("concam tick {t} px ({}, {})", now.0, now.1);
+            }
+        }
         if leak_check {
             // a seat the game says is watching must never show the console's own picture (the mover's) unless that is dark
             use tango_backend_mgba::SharedGame;

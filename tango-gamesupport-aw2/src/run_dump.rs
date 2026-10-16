@@ -45,6 +45,12 @@ fn ms() -> u128 {
 }
 
 /// Every tick of the match's console (any peer): note the state (cheap unless the aid is on).
+/// The console ticks this client has run (for the frame sidecar: which tick a picture was taken at).
+static TICKS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+pub fn ticks() -> u32 {
+    TICKS.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 pub fn tick(core: &Core, keys: u32) {
     let Some((dir, seat)) = enabled() else { return };
     let mut guard = DUMP.lock().unwrap();
@@ -57,6 +63,7 @@ pub fn tick(core: &Core, keys: u32) {
         Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_carried: Default::default(), ready: false }
     });
     d.tick += 1;
+    TICKS.store(d.tick, std::sync::atomic::Ordering::Relaxed);
     // (every non-zero joypad word the console takes, with its tick: proof of what reached the game)
     if keys != 0 {
         let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"keys\",\"word\":{keys}}}", ms(), d.tick);
