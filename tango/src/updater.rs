@@ -272,8 +272,10 @@ impl Updater {
                         let mut g = status.lock().await;
                         match &*g {
                             Status::UpToDate { .. } => {
-                                let has_latest =
-                                    version == current_version || (allow_prerelease && version < current_version);
+                                // Never offer an older release than the running build
+                                // (a build ahead of the latest release would otherwise
+                                // "update" backwards, and on iOS open the release page).
+                                let has_latest = version <= current_version;
                                 if has_latest {
                                     *g = Status::UpToDate {
                                         release: Some(if version == current_version {
