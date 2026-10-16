@@ -166,8 +166,8 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
             core.raw_write_8(seat(s) + S_CO, -1, co);
             core.raw_write_8(seat(s) + S_COLOUR, -1, if COLOURS.contains(&colour) { colour } else { COLOURS[s % 5] });
             core.raw_write_8(seat(s) + S_PARTNER, -1, NONE);
-            let team = core.raw_read_8(rec.team + a, -1);
-            core.raw_write_8(seat(s) + S_TEAM, -1, if team < TEAMS { team } else { s as u8 });
+            // (every seat its own team: a free-for-all unless the players choose teams)
+            core.raw_write_8(seat(s) + S_TEAM, -1, s as u8);
             core.raw_write_8(seat(s) + S_FIELD, -1, F_CO);
             core.raw_write_8(seat(s) + S_READY, -1, 0);
             core.raw_write_16(seat(s) + S_PREV, -1, inputs[s] as u16);
