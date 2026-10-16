@@ -49,6 +49,7 @@ const MAP: u32 = 0x0201_E450;
 /// The cursor: cell and pixel position (halfword pairs).
 const CURSOR: u32 = 0x0300_33E4;
 const CURSOR_PX: u32 = 0x0300_33E0;
+const KEY_A: u32 = 1;
 const KEY_B: u32 = 1 << 1;
 /// The map menu's state: 5 once an item was chosen.
 const MAP_MENU_STATE: u32 = 0x0300_14E2;
@@ -94,6 +95,11 @@ fn size(core: &Core) -> (i32, i32) {
 /// Whether the army the window belongs to sees the cell now (the plane the game drew from).
 fn seen(core: &Core, x: i32, y: i32) -> bool {
     core.raw_read_8(MAP + 0x234A + cell(core, x, y), -1) != 0
+}
+
+/// Whether any cell of the 15 x 10 window at (`cx`, `cy`) is seen by the army the window belongs to.
+fn window_sees(core: &Core, cx: i32, cy: i32, w: i32, h: i32) -> bool {
+    (cy..(cy + 10).min(h)).any(|y| (cx..(cx + 15).min(w)).any(|x| seen(core, x, y)))
 }
 
 /// Where `army`'s window starts looking: its HQ.
@@ -248,6 +254,15 @@ pub fn phase(core: &Core) -> Phase {
     if running.is_empty() && crate::pvp::turn_ended(core) {
         return Phase::HandOff;
     }
+    // A CO Power just chosen from the map menu: the game's own scene (the CO's lines over the map, the full-screen
+    // cut-in). Without fog it is shown as it is; with fog the waiting window holds its last picture (the lines come over
+    // the mover's own view of the map); until the plain map is back.
+    if crate::pvp::chosen_item(core) == Some(crate::pvp::MENU_POWER)
+        && !running.iter().any(|f| *f == 0x0801_9D0D || *f == 0x0801_9DED)
+        && !(running.is_empty() && steady_regs(core))
+    {
+        return Phase::Busy;
+    }
     if moving(core) {
         return Phase::Moving;
     }
@@ -360,6 +375,16 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         }
         run(scratch, &[0; 30])?;
     }
+    if scratch.memory()[0] == 0 && matches!(phase(scratch.core()), Phase::Busy | Phase::Moving) && scratch.core().raw_read_8(FOG, -1) != 0 {
+        // A seat with no picture of its own yet (the battle has just begun) while the turn's banners run: they are the
+        // mover's view of the map, which is not to be shown; on the scratch A skips them, up to a few seconds of them.
+        for _ in 0..360 {
+            if phase(scratch.core()) == Phase::Map && steady_regs(scratch.core()) {
+                break;
+            }
+            run(scratch, &[KEY_A, 0])?;
+        }
+    }
     if phase(scratch.core()) != Phase::Map {
         return Err("not the plain map");
     }
@@ -421,6 +446,9 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     // ... and if the mover's cursor is on a cell it sees, the camera follows it there and the cursor shows.
     let (x, y) = mover_cell;
     let follow = x < w && y < h && seen(scratch.core(), x, y);
+    if std::env::var_os("AW2_VIEW_DEBUG").is_some() {
+        eprintln!("follow seat {seat}: mover cell ({x},{y}) map {w}x{h} seen {follow} plane byte {:02x} army {army}", scratch.core().raw_read_8(MAP + 0x234A + cell(scratch.core(), x.min(w - 1), y.min(h - 1)), -1));
+    }
     // (the waiting window shows no cursor at all, neither its own nor the mover's: the camera only follows it)
     scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
     if follow {
@@ -429,6 +457,18 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         place(scratch, cx, cy, mover_cell);
         side = settle_panel(scratch.core_mut(), side);
         refresh(scratch, 2)?;
+    } else if !window_sees(scratch.core(), cx, cy, w, h) {
+        // (the camera was left where a unit of the mover's was seen once, and nothing in the window is seen now: grey
+        // fogged terrain and no units; back to the army's own HQ)
+        let (ax, ay) = anchor(scratch.core(), army);
+        cx = (ax - 7).clamp(0, (w - 15).max(0));
+        cy = (ay - 4).clamp(0, (h - 10).max(0));
+        place(scratch, cx, cy, (cx + 7, cy + 4));
+        side = settle_panel(scratch.core_mut(), side);
+        scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
+        refresh(scratch, 2)?;
+        scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
+        run(scratch, &[0, 0])?;
     } else {
         run(scratch, &[0, 0])?;
     }
@@ -474,7 +514,10 @@ fn hide_cursor(core: &mut Core) {
         let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
         let y = (a0 & 0xFF) as i32;
         let small = a0 >> 14 != 2 && a1 >> 14 < 2; // (not a tall sprite, not 32 wide or more)
-        let cursor = a2 >> 12 == 1 && small && (sx - 12..sx + 24).contains(&x) && (sy - 12..sy + 24).contains(&y);
+        // (the cursor's four corner sprites are tiles 0x365 and 0x369 of palette 1, wherever they are: the game draws them
+        // at its own scroll, which a scratch camera that is still sliding to the mover's cell does not match)
+        let corner = a2 >> 12 == 1 && matches!(a2 & 0x3FF, 0x365 | 0x369);
+        let cursor = corner || (a2 >> 12 == 1 && small && (sx - 12..sx + 24).contains(&x) && (sy - 12..sy + 24).contains(&y));
         // The info panel of the cell under it (terrain, unit), in the lower corners: sprites in the units' and
         // cursor's palettes, not the buildings' (8 to 13).
         let panel = y >= 88 && (a2 >> 12 < 8 || (a0 >> 10) & 3 == 1) && (x < 72 || x >= 168);

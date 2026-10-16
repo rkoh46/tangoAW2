@@ -197,7 +197,7 @@ fn set_cell(core: &mut Core, x: u32, y: u32, id: u8) {
     }
 }
 
-fn run(core: &mut Core, tick: u32, cmd: &[String]) {
+pub fn run(core: &mut Core, tick: u32, cmd: &[String]) {
     let a = |i: usize| num(cmd.get(i));
     match cmd.first().map(String::as_str) {
         Some("poke") => {

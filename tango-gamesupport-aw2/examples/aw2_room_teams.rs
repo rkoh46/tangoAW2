@@ -107,6 +107,9 @@ fn main() {
     let native = std::cell::Cell::new(0usize);
     let phase = std::cell::RefCell::new(String::from("start"));
     let merge_last = std::cell::RefCell::new(String::new());
+    // (AW2_LEAK_CHECK=1: every tick, no watching seat may show the console's picture)
+    let leak_check = std::env::var_os("AW2_LEAK_CHECK").is_some();
+    let leaks: std::cell::RefCell<Vec<(usize, usize, String)>> = Default::default();
     let vram_last: std::cell::RefCell<(Vec<u8>, Vec<u8>)> = Default::default();
     // (watch BASE TOL: every tick, until unwatch, the waiting seats' pictures are compared with the BASE shotall's)
     let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
@@ -116,6 +119,22 @@ fn main() {
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
+        if leak_check {
+            // a seat the game says is watching must never show the console's own picture (the mover's) unless that is dark
+            use tango_backend_mgba::SharedGame;
+            let console = link.solo_side().frame().unwrap_or_default();
+            let dark = console.chunks(4).filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30).count() * 10 > 9 * 38400;
+            for seat in 0..n {
+                if !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat) {
+                    continue;
+                }
+                tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                let f = link.side(seat).frame().unwrap_or_default();
+                if !dark && f == console {
+                    leaks.borrow_mut().push((t, seat, format!("{:?} army {}", tango_gamesupport_aw2::fog_view::phase(link.core()), link.core().raw_read_8(0x0300_33EC, -1))));
+                }
+            }
+        }
         if std::env::var_os("AW2_MERGE_CHECK").is_some() {
             // which seat's keys the console would take now: every seat presses its own bit
             let c = link.core();
@@ -344,6 +363,56 @@ fn main() {
                     failed |= !ok;
                 }
             }
+            // aid CMD...: a test-aid command on the console (unit ARMY KIND X Y [HP], move, kill, funds, meter, poke ...)
+            "aid" => {
+                let cmd: Vec<String> = p[1..].iter().map(|s| s.to_string()).collect();
+                tango_gamesupport_aw2::test_aid::run(link.core_mut(), ticks.get() as u32, &cmd);
+            }
+            // sprites: the sprite list the game copies to OAM at the flush (a0 a1 a2 per sprite), and the cursor's pixel position
+            "sprites" => {
+                let c = link.core();
+                let (start, end) = (c.raw_read_32(0x0300_0268, -1), c.raw_read_32(0x0300_2F2C, -1));
+                let sx = c.raw_read_16(0x0300_33E0, -1) as i16 as i32 - c.raw_read_16(0x0201_E454, -1) as i16 as i32;
+                let sy = c.raw_read_16(0x0300_33E2, -1) as i16 as i32 - c.raw_read_16(0x0201_E456, -1) as i16 as i32;
+                println!("sprites @{t}: cursor screen ({sx},{sy}) list {start:08x}..{end:08x}");
+                if p.get(1) == Some(&"short") {
+                    let mut v = Vec::new();
+                    let mut at = start;
+                    while at + 8 <= end && end - start <= 1024 {
+                        let (a0, a1, a2) = (c.raw_read_16(at, -1), c.raw_read_16(at + 2, -1), c.raw_read_16(at + 4, -1));
+                        let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
+                        if a2 >> 12 <= 3 && (a2 & 0x3FF) < 0x3C0 && (a2 & 0x3FF) != 0x352 && !(0x35e..=0x360).contains(&(a2 & 0x3FF)) {
+                            v.push(format!("{:03x}p{}@{},{}", a2 & 0x3FF, a2 >> 12, x, a0 & 0xFF));
+                        }
+                        at += 8;
+                    }
+                    println!("  {}", v.join(" "));
+                    continue;
+                }
+                let mut at = start;
+                while at + 8 <= end && end - start <= 1024 {
+                    let (a0, a1, a2) = (c.raw_read_16(at, -1), c.raw_read_16(at + 2, -1), c.raw_read_16(at + 4, -1));
+                    let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
+                    println!("  spr x {x:4} y {:3} a0 {a0:04x} a1 {a1:04x} a2 {a2:04x} shape {} size {} tile {:03x} pal {} prio {} mode {}", a0 & 0xFF, a0 >> 14, a1 >> 14, a2 & 0x3FF, a2 >> 12, (a2 >> 10) & 3, (a0 >> 8) & 3);
+                    at += 8;
+                }
+            }
+            // consolesheet NAME N EVERY: N console pictures, EVERY ticks apart, as NAME_k.bmp
+            "consoleshot" => {
+                let (n_shots, every): (usize, usize) = (p[2].parse().unwrap(), p[3].parse().unwrap());
+                for k in 0..n_shots {
+                    let army = link.core().raw_read_8(0x0300_33EC, -1);
+                    if let Some(f) = link.solo_side().frame() {
+                        let dark = f.chunks(4).filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30).count();
+                        println!("console {} {k} @{t}: dark {dark}/38400 army {army}", p[1]);
+                        write_bmp(&out.join(format!("{}_{k}.bmp", p[1])), &f);
+                    }
+                    for _ in 0..every {
+                        tick(&mut link, &keys);
+                        t += 1;
+                    }
+                }
+            }
             // fv: the game's state the waiting view decides from
             "fv" => {
                 let c = link.core();
@@ -490,6 +559,20 @@ fn main() {
             }
             other => panic!("unknown command {other}"),
         }
+    }
+    if leak_check {
+        let l = leaks.borrow();
+        println!("leak check: {} ticks where a watching seat showed the console's picture{}", l.len(), l.first().map_or(String::new(), |(t, s, _)| format!(" (first tick {t} seat {s})")));
+        let mut by: std::collections::BTreeMap<String, (usize, usize, usize)> = Default::default();
+        for (t, _, ph) in l.iter() {
+            let e = by.entry(ph.clone()).or_insert((0, *t, *t));
+            e.0 += 1;
+            e.2 = *t;
+        }
+        for (ph, (n, a, b)) in by {
+            println!("  {ph}: {n} seat-ticks, ticks {a}..{b}");
+        }
+        failed |= !l.is_empty();
     }
     if failed {
         println!("SAME CHECK FAILED");

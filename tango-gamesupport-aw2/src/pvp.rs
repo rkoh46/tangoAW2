@@ -458,10 +458,47 @@ fn debug_dump(core: &Core) {
     }
 }
 
+/// The map menu's item ids, one byte per row (0 CO, 1 Intel, 2 Power when the meter is ready, 4 Options, 5 Save, 6 End,
+/// ended by 0xFF) while the menu is up; the game clears them when it closes. End is on a row that depends on the items
+/// shown (Save is hidden in a five-army battle, Power only appears with a full meter), so the row it was on is kept
+/// while the menu shows ([`track_menu`], in the console's RAM so that a snapshot carries it) and the hand-off is the
+/// cursor still being on it.
+const MAP_MENU_ITEMS: u32 = 0x0300_14A1;
+const MENU_END: u8 = 6;
+pub(crate) const MENU_POWER: u8 = 2;
+/// The End row of the map menu last shown, plus one (0: none yet), then the item the cursor was last on.
+pub const END_ROW: u32 = 0x0203_C610;
+
+/// Before every tick: keeps the row of End while the map menu shows it.
+pub(crate) fn track_menu(core: &mut Core) {
+    // (the list is led by a 0xFF while it is the menu's: the game reuses those bytes for other things afterwards)
+    if core.raw_read_8(MAP_MENU_STATE, -1) != 4 || core.raw_read_8(MAP_MENU_ITEMS - 1, -1) != 0xFF {
+        return;
+    }
+    if let Some(row) = (0..8u32).find(|&r| core.raw_read_8(MAP_MENU_ITEMS + r, -1) == MENU_END) {
+        if core.raw_read_8(END_ROW, -1) != row as u8 + 1 {
+            core.raw_write_8(END_ROW, -1, row as u8 + 1);
+        }
+    }
+    // (and the item the cursor is on: the one chosen when the menu closes)
+    let row = core.raw_read_8(MAP_MENU_CURSOR, -1) as u32;
+    let item = if row < 8 { core.raw_read_8(MAP_MENU_ITEMS + row, -1) } else { 0xFF };
+    if item != 0xFF && core.raw_read_8(END_ROW + 1, -1) != item {
+        core.raw_write_8(END_ROW + 1, -1, item);
+    }
+}
+
+/// The map menu's item the cursor was last on (its id) while the menu showed, once it has been used (state 4 or 5; the
+/// caller tells the menu showing from the menu gone by its procs).
+pub(crate) fn chosen_item(core: &Core) -> Option<u8> {
+    matches!(core.raw_read_8(MAP_MENU_STATE, -1), 4 | 5).then(|| core.raw_read_8(END_ROW + 1, -1))
+}
+
 pub(crate) fn turn_ended(core: &Core) -> bool {
-    // (End is the menu's fifth row, the fourth in a five-army battle where Save is hidden)
-    let end_row = if crate::five::active(core) { 3 } else { 4 };
-    core.raw_read_8(MAP_MENU_STATE, -1) == 5 && core.raw_read_8(MAP_MENU_CURSOR, -1) == end_row
+    core.raw_read_8(MAP_MENU_STATE, -1) == 5 && {
+        let end = core.raw_read_8(END_ROW, -1);
+        end != 0 && core.raw_read_8(MAP_MENU_CURSOR, -1) + 1 == end
+    }
 }
 
 fn set_bit0(core: &mut Core, at: u32) {
@@ -484,7 +521,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 15: the Black Cannon's picture and the font share OBJ tiles by turns (a stash in EWRAM, crate::obelisk).
         // 18: a room's SELECT MAP lists only the maps for its player count (crate::online_maps::retab); 17: UNRANKED matches (crate::unranked); rooms hold their state in checkpoints and can be resumed (the wire of the room changed with it).
         // 19: every seat's TEAM on the army page, written into the Teams record (crate::online_teams); the page keeps its state through the game's Teams screen going from its CO stage to its team stage and on.
-        19
+        // 20: the hand-off is told by the map menu's End item (an id) and not by its row, which moves with Power and Save being shown.
+        20
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {
@@ -631,6 +669,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // An online match's walk to SELECT MAP and its end (crate::online).
         let keys = crate::online::before(core, mode, keys);
         crate::online::probe::store(core);
+        track_menu(core);
         debug_dump(core);
         // Everything unlocked: every CO (Sturm and Hachi included), every
         // CO colour edit, every Battle Map, Hard Campaign and the Sound
