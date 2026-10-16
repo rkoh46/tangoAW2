@@ -23,7 +23,7 @@ use std::sync::Mutex;
 
 use crate::online::{bar, text_width, Rgba, BLUE, GRAY_INK, INK, LIGHT_GRAY, SHADE, W, WHITE, YELLOW};
 
-// --- State (tangoAW2's 0x0203D100..0x0203D4FF) -------------------------------------------------------------
+// --- State (tangoAW2's 0x0203D500..0x0203D8FF) -------------------------------------------------------------
 
 pub const BASE: u32 = 0x0203_D700;
 pub const LEN: u32 = 0x400;
