@@ -1,0 +1,65 @@
+# 5 seats, Fog on: the mover (army 1) has a full CO meter, opens the map menu and uses Power (menu row 3: CO, Intel, Power, Options, End), then ends its turn with End, which is then the fifth row. The power scene is held on waiting windows; AW2_LEAK_CHECK=1 must find none of the mover's picture on them, and the hand-off must reach seat 1.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 300
+until army=1 60
+wait 400
+aid meter 1 100
+wait 5
+press 0 B
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+wait 700
+fv
+press 0 B
+wait 20
+goto 0 9 2
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+until turnended 30
+wait 40
+press 1 A
+wait 400
+fv

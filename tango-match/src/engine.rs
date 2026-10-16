@@ -127,6 +127,7 @@ impl getgud::World for World {
             side.set_render(render && self.visible[player].load(Ordering::Relaxed));
             side.set_displayed_screens(screens);
         }
+        link.test_aid(self.live_tick);
         if self.players == 2 {
             link.tick([inputs[0], inputs[1]]);
         } else {

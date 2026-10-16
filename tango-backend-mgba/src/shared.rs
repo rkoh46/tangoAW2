@@ -96,6 +96,12 @@ pub trait SharedGame: Sync {
         let _ = (core, mode, inputs);
     }
 
+    /// Test aid (see [`tango_match::Link::test_aid`]): the game's scenario script for this tick, with the console in
+    /// hand. Only ever a pure function of `tick` and the console.
+    fn test_aid(&self, core: &mut mgba::core::Core, tick: u32) {
+        let _ = (core, tick);
+    }
+
     /// Runs before every tick, with the console in hand: the place for a
     /// game's runtime patches (Slippi-style memory writes). `keys` is the
     /// joypad word about to reach the console (after [`merge`](Self::merge));
@@ -607,6 +613,10 @@ impl tango_match::Link for SharedLink {
     fn poke(&mut self, addr: u32, bytes: &[u8]) -> bool {
         self.inner.core_mut(0).raw_write_range(addr, -1, bytes);
         true
+    }
+
+    fn test_aid(&mut self, tick: u32) {
+        self.game.test_aid(self.inner.core_mut(0), tick);
     }
 }
 
