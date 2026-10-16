@@ -63,6 +63,8 @@ def steps_of(seat):
             ((int(re.search(r"t0*(\d+)_s", f).group(1)), f) for f in glob.glob(f"{d}/t*_s{seat}.bmp")),
         )
     out = []  # (tick, dx, dy)
+    spikes = []  # (tick, dx, dy): one frame jumped away and the next is back where the one before was
+    hist = []
     prev = None
     for t, f in files:
         try:
@@ -77,11 +79,20 @@ def steps_of(seat):
                 # (a plain scroll: a small residual at the offset, much smaller than with none and than any other)
                 if e < 5 and e0 > 2 * e and e2 > 1.3 * e and (abs(dx) >= 8 or abs(dy) >= 8):
                     out.append((t, dx, dy))
+        hist.append((t, cur))
+        if len(hist) >= 5 and hist[-1][0] - hist[-5][0] == 4:
+            # (the window is made every second tick, so a jump shows as two equal frames: look two ticks either side)
+            (t0, a), (t1, b), (t2, c) = hist[-5], hist[-3], hist[-1]
+            if np.abs(a[30:150, 28:150] - c[30:150, 28:150]).mean() < 1.5 and np.abs(a[30:150, 28:150] - b[30:150, 28:150]).mean() > 6:
+                e, dx, dy, e2 = offset(a, b)
+                if e < 5 and e2 > 1.3 * e and (abs(dx) >= 8 or abs(dy) >= 8):
+                    spikes.append((t1, dx, dy))
         prev = cur
-    return len(files), out
+    return len(files), out, spikes
 
 
-per = {s: steps_of(s) for s in seats}
+per = {s: steps_of(s)[:2] for s in seats}
+spk = {s: steps_of(s)[2] for s in seats}
 common = set()
 if len(seats) > 1:
     ticks = [set(t for t, _, _ in per[s][1]) for s in seats]
@@ -104,6 +115,10 @@ for s in seats:
                 bad.append(f"seat {s} tick {t}: scroll reversed on axis {axis} ({last[axis][1]:+d} -> {sg:+d}) {t - last[axis][0]} ticks after the last step")
             last[axis] = (t, sg)
     print(f"pic_check seat {s}: {per[s][0]} frames, {n} scroll steps ({len([1 for t, _, _ in per[s][1] if t in common])} common to all seats, not scored)")
+for s_, sp in spk.items():
+    for t, dx, dy in sp:
+        if t not in common:
+            bad.append(f"seat {s_} tick {t}: one frame is shifted by ({dx},{dy}) px and the next is back (a jump up and down)")
 for b in bad[:20]:
     print("FAIL", b)
 sys.exit(1 if bad else 0)
