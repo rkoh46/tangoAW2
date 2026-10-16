@@ -44,6 +44,7 @@ pub mod training;
 
 // What they're built out of.
 pub mod audio;
+pub mod black_guard;
 mod local;
 /// Completion sink for host-owned statistics persistence.
 pub mod stats;

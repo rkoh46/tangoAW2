@@ -257,6 +257,8 @@ pub struct SharedLink {
     watched_at: [Option<u32>; tango_match::MAX_SEATS],
     /// Each seat's last picture that was not black, and the tick it was shown.
     good: [Option<(Vec<u8>, u32)>; tango_match::MAX_SEATS],
+    /// The tick each seat's last "black picture" log line was written (instrumentation).
+    black_logged: [u32; tango_match::MAX_SEATS],
     view_memory: [[i32; 4]; tango_match::MAX_SEATS],
     /// The console as [`SharedGame::keep_for_view`] last asked to keep it.
     kept: Option<mgba_rollback::Snapshot>,
@@ -311,6 +313,7 @@ impl SharedLink {
             watched: Default::default(),
             watched_at: Default::default(),
             good: Default::default(),
+            black_logged: Default::default(),
             view_memory: Default::default(),
             kept: None,
             keep_was: false,
@@ -357,6 +360,7 @@ impl SharedLink {
             watched: Default::default(),
             watched_at: Default::default(),
             good: Default::default(),
+            black_logged: Default::default(),
             view_memory: Default::default(),
             kept: None,
             keep_was: false,
@@ -599,12 +603,12 @@ fn dark(rgba: &[u8]) -> bool {
 }
 
 impl SharedSide<'_> {
-    fn frame_raw(&mut self) -> Option<Vec<u8>> {
+    fn frame_raw(&mut self) -> Option<(Vec<u8>, &'static str)> {
         // (a waiting seat whose picture cannot be made, and none was made before, sees the console's own: never a
         // blacked-out window; the game's `watching` keeps to the moments the picture can be made)
         if self.conceal && self.link.game.watching(self.link.inner.core(0), self.player) {
             if let Some(f) = self.link.watching_frame(self.player) {
-                return Some(f);
+                return Some((f, "watch"));
             }
         }
         let mut frame = self.link.inner.video_buffer(0).map(to_rgba)?;
@@ -622,20 +626,35 @@ impl SharedSide<'_> {
             self.link.watched[self.player] = Some(frame.clone());
             self.link.watched_at[self.player] = None;
         }
-        Some(frame)
+        Some((frame, "console"))
     }
 }
 
 impl Side for SharedSide<'_> {
-    /// A window is never black for a moment of the game's own making (a hand-off, a menu closing, a transition): a
-    /// picture that is entirely black right after a good one (within 3 seconds) shows that one again.
+    /// A window is never black through a fault of the app's: a waiting seat's picture (made on a scratch copy) that is
+    /// entirely black while the console's own is not shows the seat's last good one (up to ten seconds). The game's
+    /// own fades and wipes (the console's picture black too) are shown as the game draws them, in every window.
     fn frame(&mut self) -> Option<Vec<u8>> {
-        let f = self.frame_raw()?;
+        let (f, path) = self.frame_raw()?;
         let (tick, seat) = (self.link.tick, self.player);
         if dark(&f) {
-            if let Some((g, at)) = self.link.good[seat].as_ref() {
-                if tick.wrapping_sub(*at) < 180 {
-                    return Some(g.clone());
+            let native = path == "console" || self.link.inner.video_buffer(0).map(to_rgba).is_none_or(|c| dark(&c));
+            if tick.wrapping_sub(self.link.black_logged[seat]) >= 60 {
+                self.link.black_logged[seat] = tick;
+                let core = self.link.inner.core(0);
+                log::warn!(
+                    "black picture: seat {seat} tick {tick} path {path} native {native} watching {} dispcnt {:04x} bldy {:04x} good_age {:?}",
+                    self.link.game.watching(core, seat),
+                    core.raw_read_16(0x0400_0000, -1),
+                    core.raw_read_16(0x0400_0054, -1),
+                    self.link.good[seat].as_ref().map(|(_, at)| tick.wrapping_sub(*at)),
+                );
+            }
+            if !native {
+                if let Some((g, at)) = self.link.good[seat].as_ref() {
+                    if tick.wrapping_sub(*at) < 600 {
+                        return Some(g.clone());
+                    }
                 }
             }
             return Some(f);

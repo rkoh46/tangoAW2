@@ -141,6 +141,7 @@ impl DriveContext {
             fired_end_of_match: false,
             confirmed_through: 0,
             agg,
+            guard: crate::black_guard::BlackGuard::new(),
         })
     }
 
@@ -293,6 +294,8 @@ pub struct PvpDriver {
     confirmed_through: u32,
     /// A room's host: the guests' inputs joined tick by tick, and the host's own waiting to go out with them.
     agg: Option<HostAgg>,
+    /// The window is never black while the match is live ([`crate::black_guard`]).
+    guard: crate::black_guard::BlackGuard,
 }
 
 /// A room's host joins its guests' inputs: its own engine hears them as one input (the guests' joypad words in
@@ -620,6 +623,7 @@ impl PvpDriver {
         // Present the local screen to the UI. (Audio needs no push —
         // the output stream pulls it straight off the pair.)
         if let Some(buf) = self.match_.frame() {
+            let buf = self.guard.filter(buf);
             self.ctx.screen.write(&buf);
         }
         self.ctx.tps_counter.lock().unwrap().mark();

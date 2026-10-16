@@ -15,6 +15,12 @@
 //!   poke ADDR HEX     write bytes (hex string) after a few idle frames
 //!   goto SEAT X Y     walk SEAT's cursor to the cell
 //!   hash              print a hash of the console's work RAM (compare two runs)
+//!   phase NAME        label the following samples (printed in the black-run report)
+//!   AW2_SAMPLE=N      every N ticks (default off) every seat's window is sampled for blackness; at the end the longest
+//!                     run of black samples (>99% of the picture above the status bar under luma 8) of each seat is
+//!                     printed per phase, and the program exits 1 when one lasts over AW2_MAX_BLACK ticks (default 20); only seat pictures black while the
+//!                     console's own is not count (the game's wipes are black everywhere).
+//!                     AW2_DUMP=<dir> also writes every seat's picture at each sample (NAME_tTICK_sSEAT.bmp)
 //!   AW2_DS=1 / TANGOAW2_DS_ROM: the Dual Strike pack, as with the other examples.
 
 use tango_match::{HostInput, Link};
@@ -72,9 +78,69 @@ fn main() {
     let rtc = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
     let mut link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &tango_gamesupport_aw2::pvp::AW2E, Some(mode), None).expect("boot");
     link.set_players(n);
+    let sample_every: usize = std::env::var("AW2_SAMPLE").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+    let max_black: usize = std::env::var("AW2_MAX_BLACK").ok().and_then(|v| v.parse().ok()).unwrap_or(20);
+    let dump = std::env::var_os("AW2_DUMP").map(std::path::PathBuf::from);
+    if let Some(d) = &dump {
+        std::fs::create_dir_all(d).unwrap();
+    }
+    // (per seat: current black run start and length in ticks, longest run with its phase and start tick)
+    #[derive(Clone, Default)]
+    struct Run {
+        cur: usize,
+        longest: usize,
+        at: usize,
+        phase: String,
+        cur_start: usize,
+        phase_now: String,
+    }
+    let runs = std::cell::RefCell::new(vec![Run::default(); n]);
+    let ticks = std::cell::Cell::new(0usize);
+    let native = std::cell::Cell::new(0usize);
+    let phase = std::cell::RefCell::new(String::from("start"));
     let tick = |link: &mut tango_backend_mgba::SharedLink, keys: &[u32]| {
         let inputs: Vec<HostInput> = keys.iter().map(|&k| HostInput::keys(k)).collect();
         link.tick_n(&inputs);
+        let t = ticks.get() + 1;
+        ticks.set(t);
+        if sample_every > 0 && t % sample_every == 0 {
+            for seat in 0..n {
+                tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                let Some(f) = link.side(seat).frame() else { continue };
+                let top = &f[..f.len() * 140 / 160];
+                let dark = top.chunks(4).filter(|p| (p[0] as u32 * 30 + p[1] as u32 * 59 + p[2] as u32 * 11) / 100 < 8).count();
+                let frac = dark as f64 / (top.len() / 4) as f64;
+                // (a fault: the seat's picture is black and the console's own is not; the game's wipes are black everywhere)
+                let console_black = {
+                    let c = link.solo_side().frame().unwrap_or_default();
+                    let top = &c[..c.len() * 140 / 160];
+                    top.chunks(4).filter(|p| (p[0] as u32 * 30 + p[1] as u32 * 59 + p[2] as u32 * 11) / 100 < 8).count() * 100 > (top.len() / 4) * 99
+                };
+                let black = frac > 0.99 && !console_black;
+                if frac > 0.99 && console_black {
+                    native.set(native.get() + sample_every);
+                }
+                let mut r = runs.borrow_mut();
+                let r = &mut r[seat];
+                if black {
+                    if r.cur == 0 {
+                        r.cur_start = t;
+                        r.phase_now = phase.borrow().clone();
+                    }
+                    r.cur += sample_every;
+                    if r.cur > r.longest {
+                        r.longest = r.cur;
+                        r.at = r.cur_start;
+                        r.phase = r.phase_now.clone();
+                    }
+                } else {
+                    r.cur = 0;
+                }
+                if let Some(d) = &dump {
+                    write_bmp(&d.join(format!("t{t:06}_s{seat}{}.bmp", if black { "_BLACK" } else { "" })), &f);
+                }
+            }
+        }
     };
     let mut keys = vec![0u32; n];
     let rd = |link: &mut tango_backend_mgba::SharedLink, a: u32, len: usize| {
@@ -129,6 +195,7 @@ fn main() {
                     write_bmp(&out.join(format!("{}_s{seat}.bmp", p[1])), &f);
                 }
             }
+            "phase" => *phase.borrow_mut() = p[1].to_string(),
             "status" => {
                 let b = tango_gamesupport_aw2::online::probe::bits();
                 println!("status @{t}: select_mode {} selectmap {} teams {} battle {} versus {} nav {} army {} sel_init {:?} loop {:08x}", b & 1, b >> 2 & 1, b >> 3 & 1, b >> 4 & 1, b >> 5 & 1, b >> 6 & 1, b >> 24 & 255, rd(&mut link, tango_gamesupport_aw2::online_teams::SEL, 4), link.core().raw_read_32(0x0300_0000, -1));
@@ -240,6 +307,18 @@ fn main() {
                 println!("hash @{t}: {h:016x}");
             }
             other => panic!("unknown command {other}"),
+        }
+    }
+    if sample_every > 0 {
+        let mut bad = false;
+        for (seat, r) in runs.borrow().iter().enumerate() {
+            println!("black seat {seat}: longest run {} ticks at tick {} (phase {})", r.longest, r.at, r.phase);
+            bad |= r.longest > max_black;
+        }
+        println!("native black (console's own picture black too): {} seat-ticks", native.get());
+        if bad {
+            println!("BLACK RUN OVER {max_black} TICKS");
+            std::process::exit(1);
         }
     }
 }
