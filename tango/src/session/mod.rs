@@ -580,6 +580,10 @@ impl State {
                 // (no live PvP match) clears the history so a fresh match — or
                 // a return to SP/replay — starts the charts clean.
                 let mut sample = None;
+                if self.active.as_ref().is_some_and(|s| s.leave_requested()) {
+                    // (B on the game's reconnect box: the Disconnect button's way out)
+                    self.close_session();
+                }
                 if let Some(session) = self.active.as_ref() {
                     // PvP self-closes when the per-game match-end
                     // hook + peer-end handshake (or grace timeout)

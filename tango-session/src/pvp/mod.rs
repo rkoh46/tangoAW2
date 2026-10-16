@@ -113,6 +113,9 @@ struct EndState {
     holds: Arc<Mutex<Vec<Hold>>>,
     /// A room: who disconnected, once known (the first to be named stays).
     dropped: Arc<Mutex<Option<String>>>,
+    /// The local player pressed B on the game's reconnect box ("B: Disconnect"): the host closes the session as the
+    /// Disconnect button does ([`PvpSession::leave_requested`]).
+    leave: Arc<AtomicBool>,
 }
 
 /// A player the match waits for.
@@ -387,6 +390,11 @@ impl PvpSession {
         Some((h.name.clone(), left.as_secs_f32().ceil() as u32))
     }
 
+    /// The local player asked to leave with B on the game's reconnect box.
+    pub fn leave_requested(&self) -> bool {
+        self.end.leave.load(Ordering::Acquire)
+    }
+
     /// Who disconnected, in a room whose match ended that way.
     pub fn dropped_player(&self) -> Option<String> {
         self.end.dropped.lock().unwrap().clone()
@@ -506,6 +514,10 @@ impl PvpSession {
 }
 
 impl crate::Session for PvpSession {
+    fn leave_requested(&self) -> bool {
+        PvpSession::leave_requested(self)
+    }
+
     fn set_displayed_screens(&self, screens: u8) {
         self.displayed_screens.store(screens, Ordering::Relaxed);
     }

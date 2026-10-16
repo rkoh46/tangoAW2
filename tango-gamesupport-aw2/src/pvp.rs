@@ -555,6 +555,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::online::apply(core, rgba);
         crate::online::apply_match(core, rgba);
         crate::result_view::serve(_seat, rgba);
+        crate::hold_box::draw(core, rgba);
     }
 
     /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
@@ -586,6 +587,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         let before = lo.clone();
         crate::ds_menus::apply(core, &mut lo);
         crate::ds_coselect::apply(core, &mut lo);
+        crate::hold_box::draw(core, &mut lo);
         if lo != before {
             for i in 0..240 * 160 {
                 if lo[i * 4..i * 4 + 4] != before[i * 4..i * 4 + 4] {

@@ -111,6 +111,7 @@ mod panel_sprites;
 pub mod power_anim;
 pub mod mode_menu;
 pub mod online;
+pub mod hold_box;
 pub mod online_art;
 pub mod online_browse;
 pub mod online_maps;
