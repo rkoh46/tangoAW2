@@ -181,7 +181,9 @@ pub fn phase(core: &Core) -> Phase {
         }
     }
     let look = looks_like_hand_off(core, window_off && running.is_empty());
-    if running.is_empty() && (crate::pvp::turn_ended(core) || look) {
+    // (End chosen is not the hand-off yet: the mover's real map and menu are still on the console's screen until the
+    // map's window goes off for the "Next turn" screen, and that picture is never shown)
+    if running.is_empty() && ((crate::pvp::turn_ended(core) && window_off) || look) {
         return Phase::HandOff;
     }
     if running.iter().all(|f| UI_PROCS.contains(f)) {
@@ -189,6 +191,26 @@ pub fn phase(core: &Core) -> Phase {
     } else {
         Phase::Busy
     }
+}
+
+/// Test aid (`TANGOAW2_INPUT_LOG=1`): where the cursor is and which cells the army owns (HQ, factory, ...), for scripting.
+pub(crate) fn log_cells(core: &Core, army: u8) {
+    let (w, h) = size(core);
+    let mut owned = Vec::new();
+    for y in 0..h {
+        for x in 0..w {
+            let class = core.raw_read_8(MAP + 0x1432 + cell(core, x, y), -1);
+            if class >> 5 == army && (5..=13).contains(&(class & 0x1F)) {
+                owned.push(format!("({x},{y}):{}", class & 0x1F));
+            }
+        }
+    }
+    log::info!(
+        "cells: army {army} cursor ({},{}) map {w}x{h} owned {}",
+        core.raw_read_16(CURSOR, -1),
+        core.raw_read_16(CURSOR + 2, -1),
+        owned.join(" ")
+    );
 }
 
 pub fn fog(core: &Core) -> bool {
