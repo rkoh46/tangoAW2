@@ -124,8 +124,33 @@ fn main() {
             use tango_backend_mgba::SharedGame;
             let console = link.solo_side().frame().unwrap_or_default();
             let dark = console.chunks(4).filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30).count() * 10 > 9 * 38400;
+            // (and the mover's cursor on the console: no other seat may show that picture, watching or not)
+            let cursor_up = {
+                let c = link.core();
+                let (start, end) = (c.raw_read_32(0x0300_0268, -1), c.raw_read_32(0x0300_2F2C, -1));
+                let mut up = false;
+                let mut at = start;
+                while (0x0300_0000..0x0300_8000).contains(&start) && at + 8 <= end && end - start <= 1024 {
+                    let (a0, a2) = (c.raw_read_16(at, -1), c.raw_read_16(at + 4, -1));
+                    up |= a2 >> 12 == 1 && matches!(a2 & 0x3FF, 0x365 | 0x369) && a0 & 0x300 != 0x200;
+                    at += 8;
+                }
+                up
+            };
+            let army = link.core().raw_read_8(0x0300_33EC, -1);
             for seat in 0..n {
-                if !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat) {
+                let mover = (1..=5).contains(&army) && tango_gamesupport_aw2::pvp::seat_of_n(army, n) == seat;
+                if cursor_up && !mover && !dark {
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    let f = link.side(seat).frame().unwrap_or_default();
+                    if f == console {
+                        leaks.borrow_mut().push((t, seat, format!("cursor shown {:?} army {army}", tango_gamesupport_aw2::fog_view::phase(link.core()))));
+                    }
+                    continue;
+                }
+                // (with fog: a watching seat never shows the console's picture; without it the game's animations are shown as they
+                // are and only the mover's cursor above is checked)
+                if link.core().raw_read_8(0x0300_3FCD, -1) == 0 || !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat) {
                     continue;
                 }
                 tango_gamesupport_aw2::online::set_room(names.clone(), seat);

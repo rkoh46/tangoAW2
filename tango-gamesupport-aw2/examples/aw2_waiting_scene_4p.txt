@@ -1,0 +1,58 @@
+# 4 seats, Fog on, the 4P Four Corners map: army 1 attacks army 2's infantry with its own at (3,8) next to it (test aid). Seat 1 (the victim) sees the fight and shows the battle scene, seats 2 and 3 do not; within 600 ticks of the scene every seat is back on its own clean map (no dark held frame, none of the mover's cursor, picture close to the one before the fight). Run: AW2_SAMPLE=10 aw2_room_teams <rom> <out> this-file; exit 1 on a failed check or a seat black for over 20 ticks.
+n 4
+until maparmies=4 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+status
+shot rules 0
+press 0 A
+until battle 300
+wait 300
+status
+until army=1 60
+wait 400
+props 1
+aid unit 1 inf 3 8
+aid unit 2 inf 4 8
+wait 10
+wait 100
+shotall pre
+goto 0 3 8
+wait 10
+press 0 A
+wait 30
+press 0 A
+wait 30
+press 0 A
+wait 20
+fv
+press 0 A
+wait 3
+fv
+phase scene
+wait 500
+phase after
+fv
+wait 100
+shotall fin
+notconsole 1,2,3 3000
+same pre fin 1,2,3 9000
