@@ -249,6 +249,29 @@ pub fn phase(core: &Core) -> Phase {
     }
 }
 
+/// A battle scene is up (the main-loop callback is 0 and the screen is neither a page nor a wipe) and `seat`'s army, or a
+/// teammate of it, is the attacker's or the defender's: that seat sees the scene as the game draws it. Any other seat
+/// (in fog, one that cannot see the fight) keeps its last clean map: a scene would show it units it cannot see.
+pub fn scene_visible_to(core: &Core, seat: usize) -> bool {
+    if core.raw_read_32(MAIN_LOOP, -1) != 0 {
+        return false;
+    }
+    const UNITS_POINTER: u32 = 0x0849_9594;
+    const ATTACKER: u32 = 0x0300_13D0;
+    const DEFENDER: u32 = 0x0300_13B0;
+    let units = core.raw_read_32(UNITS_POINTER, -1);
+    let army_of = |record: u32| {
+        let p = core.raw_read_32(record, -1);
+        (p >= units && p < units.wrapping_add(12 * 0x140)).then(|| crate::five::army_of_index(core, (p - units) / 12))
+    };
+    let fighters: Vec<u32> = [army_of(ATTACKER), army_of(DEFENDER)].into_iter().flatten().collect();
+    let players = crate::online::room_players();
+    (1..=5u32).any(|mine| {
+        crate::pvp::seat_of_n(mine as u8, players) == seat
+            && fighters.iter().any(|&f| f == mine || crate::cpu_inventions::team(core, f) == crate::cpu_inventions::team(core, mine))
+    })
+}
+
 pub fn fog(core: &Core) -> bool {
     core.raw_read_8(FOG, -1) != 0
 }

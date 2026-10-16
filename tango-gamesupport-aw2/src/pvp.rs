@@ -586,14 +586,19 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             return true;
         }
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
-        if !((in_battle(core) || crate::fog_view::between_screens_view(core)) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat) {
+        // (a battle scene has no map state of the battle's own: the room's battle phase flag tells it is still the battle)
+        if !((in_battle(core) || crate::online::battle_phase(core) || crate::fog_view::between_screens_view(core))
+            && (1..=5).contains(&current)
+            && seat_of_n(current, crate::online::room_players()) != seat)
+        {
             return false;
         }
         // (the hand-off screen, and without fog the turn's banners and animations: the console's own picture, the same
         // in every window)
         match crate::fog_view::phase(core) {
             crate::fog_view::Phase::HandOff => false,
-            crate::fog_view::Phase::Busy => crate::fog_view::fog(core),
+            // (a battle scene is the console's own picture only for a seat whose army, or a teammate's, fights in it)
+            crate::fog_view::Phase::Busy => crate::fog_view::fog(core) && !crate::fog_view::scene_visible_to(core, seat),
             crate::fog_view::Phase::Map | crate::fog_view::Phase::Page | crate::fog_view::Phase::Moving => true,
         }
     }

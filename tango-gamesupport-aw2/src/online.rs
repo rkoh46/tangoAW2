@@ -1390,6 +1390,11 @@ pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     }
 }
 
+/// The room's battle phase flag (see [`seat_keys`]): set from the first battle screen, kept through the battle's scenes.
+pub fn battle_phase(core: &Core) -> bool {
+    core.raw_read_8(MATCH, -1) == 1 && core.raw_read_8(BATTLE, -1) == 1
+}
+
 /// A room's match runs on this console.
 pub fn in_room_match(core: &Core) -> bool {
     core.raw_read_8(MATCH, -1) == 1
@@ -1541,6 +1546,27 @@ fn log_units(core: &Core) {
     }
 }
 
+/// Test aid (`TANGOAW2_INPUT_LOG=1`): while a screen other than the plain map is up in a battle (a battle scene, a page),
+/// once a second the main-loop callback, the fog byte and the two battle records, to see what tells who fights.
+fn log_scene(core: &Core) {
+    use std::sync::atomic::{AtomicU32, Ordering::Relaxed};
+    static TICK: AtomicU32 = AtomicU32::new(0);
+    if TICK.fetch_add(1, Relaxed) % 60 != 0 {
+        return;
+    }
+    let ml = core.raw_read_32(0x0300_0000, -1);
+    if ml == 0x0802_2049 {
+        return;
+    }
+    let words = |at: u32| (0..8).map(|k| format!("{:08x}", core.raw_read_32(at + 4 * k, -1))).collect::<Vec<_>>().join(" ");
+    log::info!(
+        "scene: loop {ml:08x} fog byte {} attacker record {} | defender record {}",
+        core.raw_read_8(0x0300_3FCD, -1),
+        words(0x0300_13D0),
+        words(0x0300_13B0)
+    );
+}
+
 fn log_dropped(active: usize, army: u8, inputs: &[u32]) {
     static LAST: std::sync::Mutex<Vec<u32>> = std::sync::Mutex::new(Vec::new());
     let dropped: Vec<u32> = inputs.iter().enumerate().map(|(k, &v)| if k == active { 0 } else { v & 0x3FF }).collect();
@@ -1581,6 +1607,7 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         if input_log_on() {
             log_dropped(active, army, inputs);
             log_units(core);
+            log_scene(core);
             static CELLS_FOR: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
             CELLS_FOR.store(current, std::sync::atomic::Ordering::Relaxed);
             static CURSOR_WAS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
