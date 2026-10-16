@@ -1993,7 +1993,12 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             cv.text(core, x + 6, y + 5, head, GRAY_INK, SHADE);
             let pw = password(core);
             if !pw.is_empty() {
-                let t = format!("Password {pw}");
+                // ("Password: UT", or shorter when the heading leaves no room: the value always shows whole)
+                let room = w - 12 - text_width(core, head) - 8;
+                let t = [format!("Password: {pw}"), format!("Pass: {pw}"), format!("PW: {pw}")]
+                    .into_iter()
+                    .find(|t| text_width(core, t) <= room)
+                    .unwrap_or_else(|| pw.clone());
                 cv.text(core, x + w - 6 - text_width(core, &t), y + 5, &t, GRAY_INK, SHADE);
             }
             if code.is_empty() {
