@@ -115,7 +115,7 @@ fn cond_ok(c: &str) -> bool {
 
 /// The script's macros, expanded into plain lines: state-driven steps that wait for the game and carry on at once.
 /// - `jump NAME`: carry on at the label.
-/// - `onbanner`: wait (10 s) until this seat's NEXT TURN banner is up, then press A until it is gone (up to 4 tries).
+/// - `onbanner`: wait (10 s) until this seat's NEXT TURN banner is up, then press A (a tap every 12 frames) until it is gone (8 s).
 /// - `intro`: the battle's first pages: A (once a second) until the map is plain on my turn, at most 15 times.
 /// - `endturn`: on my turn, on the plain map: clear with B, open the map menu with A, DOWN until the cursor is on End
 ///   (read from the game's RAM, never counted), A, and check that the turn ended (up to 3 tries).
@@ -128,13 +128,7 @@ fn expand_macros(text: &str) -> String {
                 out.push_str(&format!("jumpif always {}\n", &l[5..]));
             }
             "onbanner" => {
-                n += 1;
-                out.push_str(&format!("until banner 10\n"));
-                for k in 0..4 {
-                    out.push_str(&format!("press A 8\nuntil !banner 2\njumpif !banner bn{n}\n"));
-                    let _ = k;
-                }
-                out.push_str(&format!("label bn{n}\n"));
+                out.push_str("until banner 10\nseek A !banner 8\n");
             }
             "intro" => {
                 // The first turn's pages (CO pages, the DAY banner): one A at a time until the map is plain on my turn.

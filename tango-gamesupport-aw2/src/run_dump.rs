@@ -73,13 +73,16 @@ pub fn tick(core: &Core) {
     let now = ms();
     let _ = writeln!(
         d.file,
-        "{{\"ms\":{now},\"tick\":{},\"k\":\"state\",\"seat\":{me},\"army\":{army},\"mover\":{mover},\"mine\":{},\"over\":{},\"ended\":{},\"fog\":{},\"ml\":{},\"funds\":{funds:?}}}",
+        "{{\"ms\":{now},\"tick\":{},\"k\":\"state\",\"seat\":{me},\"army\":{army},\"mover\":{mover},\"mine\":{},\"over\":{},\"ended\":{},\"fog\":{},\"ml\":{},\"menu\":{},\"mstate\":{},\"endrow\":{},\"funds\":{funds:?}}}",
         d.tick,
         mover == me as i32,
         crate::result_view::decided(core),
         crate::pvp::turn_ended(core),
         core.raw_read_8(0x0300_3FCD, -1) != 0,
-        core.raw_read_32(0x0300_0000, -1)
+        core.raw_read_32(0x0300_0000, -1),
+        core.raw_read_8(0x0300_14F0, -1),
+        core.raw_read_8(0x0300_14E2, -1),
+        core.raw_read_8(crate::pvp::END_ROW, -1) & 0xF
     );
     // The unit list and the property owners, compared with the last look.
     let base = core.raw_read_32(0x0849_9594, -1);
