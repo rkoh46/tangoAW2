@@ -686,11 +686,42 @@ fn set_level(core: &mut Core, l: u8) {
     core.raw_write_8(LEVEL, -1, l);
 }
 
-/// The grid: the alphabet, then rub out and OK. Six columns.
-const GRID_COLS: usize = 9;
+/// The grid, laid out like a keyboard: the digits, then Q to P, A to L and Z to M (each row starts further in, half a key
+/// and one key), then a row of its own with rub out and OK.
+const GRID_ROWS: [&[u8]; 4] = [b"1234567890", b"QWERTYUIOP", b"ASDFGHJKL", b"ZXCVBNM"];
+/// The first cell of each row in the flat order, and each row's indent in half keys.
+const GRID_START: [usize; 4] = [0, 10, 20, 29];
+const GRID_INDENT: [usize; 4] = [0, 0, 1, 2];
+const GRID_COLS: usize = 10;
 const GRID_DEL: usize = CODE_ALPHABET.len();
 const GRID_OK: usize = CODE_ALPHABET.len() + 1;
 const GRID_CELLS: usize = CODE_ALPHABET.len() + 2;
+
+/// The character in cell `g` of the flat order.
+fn grid_char(g: usize) -> u8 {
+    let r = (0..4).rev().find(|&r| g >= GRID_START[r]).unwrap_or(0);
+    GRID_ROWS[r][g - GRID_START[r]]
+}
+
+/// The row and column of a character cell.
+fn grid_rc(g: usize) -> (usize, usize) {
+    let r = (0..4).rev().find(|&r| g >= GRID_START[r]).unwrap_or(0);
+    (r, g - GRID_START[r])
+}
+
+/// The horizontal middle of a character cell in half keys (so that Up and Down keep the nearest column).
+fn grid_mid(g: usize) -> usize {
+    let (r, c) = grid_rc(g);
+    GRID_INDENT[r] + 2 * c + 1
+}
+
+/// The cell of row `r` whose middle is nearest to `mid`.
+fn grid_nearest(r: usize, mid: usize) -> usize {
+    (0..GRID_ROWS[r].len())
+        .map(|c| GRID_START[r] + c)
+        .min_by_key(|&g| grid_mid(g).abs_diff(mid))
+        .unwrap_or(GRID_START[r])
+}
 
 /// The text being typed: the room's code (level 3) or a password (level 5): (where, its length's byte, at most,
 /// at least).
@@ -1082,42 +1113,32 @@ fn code_entry(core: &mut Core, pressed: u32) {
         }
     }
     let mut g = (core.raw_read_8(GRID, -1) as usize).min(GRID_CELLS - 1);
-    // The characters fill whole rows; Del and OK have a row of their own.
-    let chars_rows = CODE_ALPHABET.len() / GRID_COLS;
+    // Left and Right go round their row; Up and Down keep the nearest column; Del and OK have a row of their own.
+    let last_row_mid = |g: usize| if grid_mid(g) <= 10 { GRID_DEL } else { GRID_OK };
     if pressed & (KEY_RIGHT | KEY_LEFT | KEY_UP | KEY_DOWN) != 0 {
         if g >= GRID_DEL {
             if pressed & (KEY_RIGHT | KEY_LEFT) != 0 {
                 g = if g == GRID_DEL { GRID_OK } else { GRID_DEL };
             } else if pressed & KEY_UP != 0 {
-                g = (chars_rows - 1) * GRID_COLS + if g == GRID_DEL { 0 } else { GRID_COLS / 2 + 1 };
+                // (Del is under the left of the bottom row, OK under its right)
+                g = if g == GRID_DEL { grid_nearest(3, 5) } else { grid_nearest(3, 13) };
             } else {
-                g = if g == GRID_DEL { 0 } else { GRID_COLS / 2 + 1 };
+                g = if g == GRID_DEL { grid_nearest(0, 5) } else { grid_nearest(0, 15) };
             }
         } else {
-            let (mut r, mut c) = (g / GRID_COLS, g % GRID_COLS);
-            let action = |c: usize| if c <= GRID_COLS / 2 { GRID_DEL } else { GRID_OK };
+            let (r, c) = grid_rc(g);
+            let len = GRID_ROWS[r].len();
             if pressed & KEY_RIGHT != 0 {
-                c = (c + 1) % GRID_COLS;
+                g = GRID_START[r] + (c + 1) % len;
             }
             if pressed & KEY_LEFT != 0 {
-                c = (c + GRID_COLS - 1) % GRID_COLS;
+                g = GRID_START[r] + (c + len - 1) % len;
             }
-            g = r * GRID_COLS + c;
             if pressed & KEY_DOWN != 0 {
-                if r + 1 == chars_rows {
-                    g = action(c);
-                } else {
-                    r += 1;
-                    g = r * GRID_COLS + c;
-                }
+                g = if r == 3 { last_row_mid(g) } else { grid_nearest(r + 1, grid_mid(g)) };
             }
             if pressed & KEY_UP != 0 {
-                if r == 0 {
-                    g = action(c);
-                } else {
-                    r -= 1;
-                    g = r * GRID_COLS + c;
-                }
+                g = if r == 0 { last_row_mid(g) } else { grid_nearest(r - 1, grid_mid(g)) };
             }
         }
         core.raw_write_8(GRID, -1, g as u8);
@@ -1129,7 +1150,7 @@ fn code_entry(core: &mut Core, pressed: u32) {
             }
             GRID_OK => accept(core),
             _ => {
-                type_char(core, CODE_ALPHABET[g]);
+                type_char(core, grid_char(g));
                 let (_, len, max, _) = field(core);
                 if core.raw_read_8(len, -1) as usize == max {
                     core.raw_write_8(GRID, -1, GRID_OK as u8);
@@ -2104,7 +2125,7 @@ fn status_lines(core: &Core, hosting: bool) -> (Vec<String>, Rgb) {
 fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) {
     let (x, y, w, _) = panel;
     let g = core.raw_read_8(GRID, -1) as usize;
-    let (cw, ch) = (15, 12);
+    let (cw, ch) = (13, 12);
     let gx = x + (w - cw * GRID_COLS as i32) / 2;
     let gy = y + top;
     let typed: Vec<char> = typed(core).chars().collect();
@@ -2113,14 +2134,17 @@ fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) 
     for k in 0..GRID_CELLS {
         // Del and OK take half the width each of the row of their own.
         let (cx, cy, cwid, label) = match k {
-            GRID_DEL => (gx, gy + 4 * ch + 2, 4 * cw, "Del".to_string()),
-            GRID_OK => (gx + 5 * cw, gy + 4 * ch + 2, 4 * cw, "OK".to_string()),
-            _ => (
-                gx + (k % GRID_COLS) as i32 * cw,
-                gy + (k / GRID_COLS) as i32 * ch,
-                cw,
-                (CODE_ALPHABET[k] as char).to_string(),
-            ),
+            GRID_DEL => (gx, gy + 4 * ch + 2, 5 * cw, "Del".to_string()),
+            GRID_OK => (gx + 5 * cw, gy + 4 * ch + 2, 5 * cw, "OK".to_string()),
+            _ => {
+                let (r, c) = grid_rc(k);
+                (
+                    gx + (GRID_INDENT[r] as i32 * cw) / 2 + c as i32 * cw,
+                    gy + r as i32 * ch,
+                    cw,
+                    (grid_char(k) as char).to_string(),
+                )
+            }
         };
         let ready = match k {
             GRID_OK => full,
@@ -2508,6 +2532,27 @@ mod tests {
         assert_ne!(mailbox::new_code(1), mailbox::new_code(2));
         // Every character is a letter or a digit.
         assert!(CODE_ALPHABET.iter().all(|&c| c.is_ascii_alphanumeric()));
+    }
+
+    #[test]
+    fn the_grid_is_a_keyboard() {
+        // every character of the alphabet is on the grid exactly once, in four rows of 10, 10, 9 and 7
+        let mut seen: Vec<u8> = (0..CODE_ALPHABET.len()).map(grid_char).collect();
+        assert_eq!(seen[0], b'1');
+        assert_eq!(seen[10], b'Q');
+        assert_eq!(seen[20], b'A');
+        assert_eq!(seen[29], b'Z');
+        seen.sort();
+        let mut all = CODE_ALPHABET.to_vec();
+        all.sort();
+        assert_eq!(seen, all);
+        // Down from E (middle 5 half keys in) lands on D, Up from Z lands on A or S, whichever is nearest
+        let e = (0..36).find(|&g| grid_char(g) == b'E').unwrap();
+        assert_eq!(grid_char(grid_nearest(2, grid_mid(e))), b'S');
+        let z = (0..36).find(|&g| grid_char(g) == b'Z').unwrap();
+        assert!(matches!(grid_char(grid_nearest(2, grid_mid(z))), b'A' | b'S'));
+        // the rows wrap: Left from the first key of a row is its last
+        assert_eq!(grid_rc(GRID_START[3]), (3, 0));
     }
 
     #[test]
