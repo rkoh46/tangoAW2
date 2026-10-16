@@ -19,3 +19,4 @@ __pycache__/
 
 # aw2test output (screenshots, saves, logs from the player's own ROMs): never committed
 /tools/aw2test/out*/
+/docs/mapsel/
