@@ -433,9 +433,11 @@ fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i
         f.insert(co, e);
     }
     let (px, pal, _) = &f[&co];
+    // Sturm's mug is mostly armour: at this size only the cap, visor and eyes read, so those are what is shown.
+    let (x0, y0, span) = if co == crate::sturm_pairs::STURM { (6usize, 0usize, 36i32) } else { (0, 0, 48) };
     for yy in 0..sz {
         for xx in 0..sz {
-            let (sx, sy) = ((xx * 48 / sz) as usize, (yy * 48 / sz) as usize);
+            let (sx, sy) = (x0 + (xx * span / sz) as usize, y0 + (yy * span / sz) as usize);
             let t = 6 * (sy / 8) + sx / 8;
             let b = px.get(32 * t + 4 * (sy % 8) + (sx % 8) / 2).copied().unwrap_or(0);
             let v = ((b >> (4 * (sx & 1))) & 15) as usize;
