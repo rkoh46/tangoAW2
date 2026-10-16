@@ -456,6 +456,7 @@ pub mod mailbox {
             ("banner", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 2 != 0,
             ("acting", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 4 != 0,
             ("over", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 8 != 0,
+            ("mapup", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 16 != 0,
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
@@ -586,6 +587,10 @@ pub mod probe {
                 }
                 if crate::result_view::decided(core) {
                     c |= 8;
+                }
+                // (the battle map is up, with or without a menu on it: the opening pages are over)
+                if crate::fog_view::phase(core) == crate::fog_view::Phase::Map {
+                    c |= 16;
                 }
             }
             CUES.store(c, Ordering::Relaxed);

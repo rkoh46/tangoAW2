@@ -98,8 +98,8 @@ fn key_bits(s: &str) -> u32 {
 }
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
-const CONDS: [&str; 30] = [
-    "always",
+const CONDS: [&str; 31] = [
+    "always", "mapup",
     "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "myturn", "banner", "acting", "over", "cursor", "level", "army",
     "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "onend", "!",
 ];
@@ -116,7 +116,7 @@ fn cond_ok(c: &str) -> bool {
 /// The script's macros, expanded into plain lines: state-driven steps that wait for the game and carry on at once.
 /// - `jump NAME`: carry on at the label.
 /// - `onbanner`: wait (10 s) until this seat's NEXT TURN banner is up, then press A (a tap every 12 frames) until it is gone (8 s).
-/// - `intro`: the battle's first pages: A (once a second) until the map is plain on my turn, at most 15 times.
+/// - `intro`: the battle's first pages: A (once a second) until the battle map is up, at most 15 times.
 /// - `endturn`: on my turn, on the plain map: clear with B, open the map menu with A, DOWN until the cursor is on End
 ///   (read from the game's RAM, never counted), A, and check that the turn ended (up to 3 tries).
 fn expand_macros(text: &str) -> String {
@@ -134,7 +134,7 @@ fn expand_macros(text: &str) -> String {
                 // The first turn's pages (CO pages, the DAY banner): one A at a time until the map is plain on my turn.
                 n += 1;
                 for _ in 0..15 {
-                    out.push_str(&format!("jumpif acting|over in{n}\npress A 8\nwait 50\n"));
+                    out.push_str(&format!("jumpif mapup|over in{n}\npress A 8\nwait 50\n"));
                 }
                 out.push_str(&format!("label in{n}\n"));
             }
