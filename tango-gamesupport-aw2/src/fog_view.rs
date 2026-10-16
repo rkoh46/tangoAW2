@@ -621,9 +621,51 @@ fn restore_unit_palettes(core: &mut Core, buffer: &[u8], ram: &[u8]) {
     }
 }
 
+/// What the picture of the view just made is, for [`hud_patch`] (taken by it once): 1 a walk (the game hides its CO panel while
+/// a unit walks, and the window keeps the seat's own), 2 a plain map.
+static WALK_VIEW: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+/// Each seat's last plain-map CO panel: the side it was on and its pixels (RGBA, [`HUD_W`] x [`HUD_H`]).
+static HUD: std::sync::Mutex<[Option<(bool, Vec<u8>)>; 5]> = std::sync::Mutex::new([None, None, None, None, None]);
+const HUD_W: usize = 76;
+const HUD_H: usize = 26;
+
+fn hud_x(right: bool) -> usize {
+    if right { 240 - HUD_W } else { 0 }
+}
+
+/// Display side: after the window's picture is made, the seat's own CO panel is put back over a walk's frames (the game
+/// does not draw it while a unit walks, and the panel is the seat's own from the last plain-map picture), and on a plain
+/// map its picture is kept.
+pub fn hud_patch(core: &Core, seat: usize, rgba: &mut [u8]) {
+    if seat >= 5 || rgba.len() != 240 * 160 * 4 {
+        return;
+    }
+    let right = core.raw_read_8(PANEL_STATE, -1) == 1;
+    let kind = WALK_VIEW.swap(0, std::sync::atomic::Ordering::Relaxed);
+    if kind == 1 {
+        if let Some((side, px)) = HUD.lock().unwrap()[seat].as_ref() {
+            let x0 = hud_x(*side);
+            for y in 0..HUD_H {
+                let (d, s) = (4 * (240 * y + x0), 4 * HUD_W * y);
+                rgba[d..d + 4 * HUD_W].copy_from_slice(&px[s..s + 4 * HUD_W]);
+            }
+        }
+    } else if kind == 2 && phase(core) == Phase::Map && steady_regs(core) && !ui_open(core) {
+        let x0 = hud_x(right);
+        let mut px = Vec::with_capacity(4 * HUD_W * HUD_H);
+        for y in 0..HUD_H {
+            let d = 4 * (240 * y + x0);
+            px.extend_from_slice(&rgba[d..d + 4 * HUD_W]);
+        }
+        HUD.lock().unwrap()[seat] = Some((right, px));
+    }
+}
+
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
+    WALK_VIEW.store(0, std::sync::atomic::Ordering::Relaxed);
     *WALK_TRACK.lock().unwrap() = (None, false);
     let walk_start = walking(scratch.core());
+    WALK_VIEW.store(if walk_start { 1 } else { 2 }, std::sync::atomic::Ordering::Relaxed);
     if phase(scratch.core()) == Phase::Scene {
         return scene_view(scratch, seat);
     }

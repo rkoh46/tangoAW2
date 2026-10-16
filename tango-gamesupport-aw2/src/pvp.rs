@@ -576,6 +576,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::online::apply(core, rgba);
         crate::online::apply_match(core, rgba);
         crate::result_view::serve(_seat, rgba);
+        crate::fog_view::hud_patch(core, _seat, rgba);
     }
 
     /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
