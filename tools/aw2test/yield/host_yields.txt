@@ -1,0 +1,70 @@
+# The host (seat 0, army 1) yields on its turn: Options, Yield, Yes. The guest wins. run.sh checks the windows.
+seat 0
+wait 400
+press A 6
+wait 300
+shot teams
+press A 6
+wait 20
+press A 6
+wait 20
+press A 6
+wait 20
+seat 1
+press A 6
+wait 20
+press A 6
+wait 20
+press A 6
+wait 20
+wait 300
+shot rules
+seat 0
+press A 6
+wait 700
+shot b0
+wait 300
+shot b1
+press A 6
+wait 40
+shot m0
+press DOWN 6
+wait 10
+press DOWN 6
+wait 10
+shot m1
+press A 6
+wait 40
+shot o0
+press DOWN 6
+wait 10
+press A 6
+wait 200
+press LEFT 6
+wait 20
+shot y0
+press A 6
+wait 40
+shot z01
+wait 40
+shot z02
+wait 40
+shot z03
+wait 40
+shot z04
+wait 40
+shot z05
+wait 40
+shot z06
+wait 40
+shot z07
+wait 40
+shot z08
+wait 40
+shot z09
+wait 40
+shot z10
+wait 40
+shot z11
+wait 40
+shot z12
