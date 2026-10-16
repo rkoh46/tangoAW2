@@ -308,6 +308,7 @@ fn metric_card<'a>(
 fn telemetry_content<'a>(
     lang: &'a LanguageIdentifier,
     history: &std::collections::VecDeque<MetricSample>,
+    compact: bool,
 ) -> Element<'a, Message> {
     // `zero` is the reference line: parity (mid-height) for skew, the value-0
     // floor for depth/ping, and `None` for tps (its floor is `target − 8`, so a
@@ -400,6 +401,10 @@ fn telemetry_content<'a>(
         LANE_PING,
     );
 
+    // (a bar narrower than the five lanes need, a phone's: the latency alone, the number a player acts on)
+    if compact {
+        return ping_card;
+    }
     row![
         tps_card,
         status_divider(),
@@ -529,7 +534,7 @@ fn fmt_ping(ping_ms: u128) -> String {
 /// Persistent player/seat legend above the charts. Red and blue describe field
 /// halves everywhere except games that color players by seat; those keep the
 /// game-native P1/P2 color assignment while You/Opponent follows the local seat.
-fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget: f32) -> Element<'a, Message> {
+fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget: f32, compact: bool) -> Element<'a, Message> {
     let side = |accent: Color, seat: &'static str, name: String| -> Element<'a, Message> {
         let dot = container(
             iced::widget::Space::new()
@@ -556,6 +561,22 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
 
     use widgets::{FIELD_BLUE, FIELD_RED};
     let n = tango_library::online::room_players();
+    if compact {
+        // The armies' dots alone: names and seat markers do not fit a phone's bar.
+        let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
+        let mut r = row![].spacing(4).align_y(Alignment::Center);
+        for k in 0..n.clamp(2, 5) {
+            let c = colors[k];
+            r = r.push(container(iced::widget::Space::new().width(Length::Fixed(8.0)).height(Length::Fixed(8.0))).style(
+                move |_: &iced::Theme| iced::widget::container::Style {
+                    background: Some(iced::Background::Color(c)),
+                    border: iced::Border { radius: 999.0.into(), ..Default::default() },
+                    ..Default::default()
+                },
+            ));
+        }
+        return r.into();
+    }
     if n > 2 {
         // A room of 3-5: every seat, in its army's colour, with its gamertag. The legend takes what the numbers beside
         // it leave (`budget`): the full names while they fit, else shorter and shorter ones, and last only the seat
@@ -563,9 +584,19 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
         let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
         let me = tango_library::online::room_local_seat();
         let seats: [&'static str; 5] = ["P1", "P2", "P3", "P4", "P5"];
-        // Teams (any team of two or more): "A: Host, Guest2  B: Guest", each in its army's colour.
+        let you = t!(lang, "play-you");
+        let names: Vec<String> = (0..n).map(|k| tango_library::online::room_name(k)).collect();
+        let full: Vec<String> = names
+            .iter()
+            .enumerate()
+            .map(|(k, name)| if k == me { format!("{name} ({you})") } else { name.clone() })
+            .collect();
+        // Teams (any team of two or more): "A: Host, Guest2  B: Guest", each in its army's colour. The names are cut
+        // to the budget as the seats' legend's are (less the room the team letters take).
         let picks = tango_library::online::room_picks();
         if picks.len() == n && (0..n).any(|a| (0..n).any(|b| a != b && picks[a].0 == picks[b].0)) {
+            let teams = (0..5u8).filter(|&t| picks.iter().any(|p| p.0 == t)).count() as f32;
+            let (shown, cut) = legend_names_in(&names, me, &you, &full, budget - 22.0 * teams, 0.0);
             let mut r = row![].spacing(12).align_y(Alignment::Center);
             // (the letters count the teams in use: A, A, C, C reads A, A, B, B)
             let mut used: Vec<u8> = picks.iter().map(|p| p.0).collect();
@@ -581,25 +612,19 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
                     .align_y(Alignment::Center);
                 for (i, &k) in members.iter().enumerate() {
                     let accent = colors[(picks[k].1 as usize).clamp(1, 5) - 1];
-                    let name = if k == me {
-                        format!("{} ({})", tango_library::online::room_name(k), t!(lang, "play-you"))
-                    } else {
-                        tango_library::online::room_name(k)
-                    };
-                    let name = if i + 1 < members.len() { format!("{name},") } else { name };
+                    let name = if i + 1 < members.len() { format!("{},", shown[k]) } else { shown[k].clone() };
                     g = g.push(side(accent, "", name));
                 }
                 r = r.push(g);
             }
-            return r.into();
+            if !cut {
+                return r.into();
+            }
+            let who = full.iter().enumerate().map(|(k, f)| format!("{} {f}", seats[k])).collect::<Vec<_>>().join("\n");
+            return iced::widget::tooltip(r, widgets::tooltip_bubble(who), iced::widget::tooltip::Position::Top)
+                .gap(5)
+                .into();
         }
-        let you = t!(lang, "play-you");
-        let names: Vec<String> = (0..n).map(|k| tango_library::online::room_name(k)).collect();
-        let full: Vec<String> = names
-            .iter()
-            .enumerate()
-            .map(|(k, name)| if k == me { format!("{name} ({you})") } else { name.clone() })
-            .collect();
         let (shown, cut) = legend_names(&names, me, &you, &full, budget);
         let mut r = row![].spacing(12).align_y(Alignment::Center);
         for k in 0..n {
@@ -633,16 +658,25 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
 /// A legend entry's width at TEXT_CAPTION, roughly: the army's dot (8), a gap (4), the seat marker (two mono glyphs),
 /// a gap, the name's glyphs (about 5.6 px each).
 fn legend_entry_width(name_chars: usize) -> f32 {
-    8.0 + 4.0 + 13.5 + if name_chars > 0 { 4.0 + name_chars as f32 * 5.6 } else { 0.0 }
+    legend_entry_width_in(name_chars, 13.5)
+}
+
+/// [`legend_entry_width`] with the seat marker's `marker` width (none in the teams' legend).
+fn legend_entry_width_in(name_chars: usize, marker: f32) -> f32 {
+    8.0 + 4.0 + marker + if name_chars > 0 { 4.0 + name_chars as f32 * 5.6 } else { 0.0 }
 }
 
 /// The names the legend shows in `budget` pixels, and whether any was cut: the full ones ("Name (You)") if they fit,
 /// else names of at most 10, 8, 6 and 4 letters (ending in an ellipsis; the local seat shows "You"), else no names but
 /// the local seat's "You".
 fn legend_names(names: &[String], me: usize, you: &str, full: &[String], budget: f32) -> (Vec<String>, bool) {
+    legend_names_in(names, me, you, full, budget, 13.5)
+}
+
+fn legend_names_in(names: &[String], me: usize, you: &str, full: &[String], budget: f32, marker: f32) -> (Vec<String>, bool) {
     let n = names.len();
     let gaps = 12.0 * (n as f32 - 1.0);
-    let width = |texts: &[String]| gaps + texts.iter().map(|t| legend_entry_width(t.chars().count())).sum::<f32>();
+    let width = |texts: &[String]| gaps + texts.iter().map(|t| legend_entry_width_in(t.chars().count(), marker)).sum::<f32>();
     if width(full) <= budget {
         return (full.to_vec(), false);
     }
@@ -729,10 +763,11 @@ pub(super) fn telemetry_panel<'a>(
     // legend of a room takes the rest, shortened if it must be.
     let bar = iced::widget::responsive(move |size| {
         let budget = size.width - BAR_MIN;
+        let compact = budget < 0.0;
         row![
-            players_header(lang, pvp, budget),
+            players_header(lang, pvp, budget, compact),
             status_divider(),
-            telemetry_content(lang, &state.metric_history),
+            telemetry_content(lang, &state.metric_history, compact),
             status_divider(),
             frame_delay_chip(lang, pvp, state.frame_delay_control.shown()),
         ]
@@ -813,6 +848,19 @@ mod legend_tests {
             let nm = names(n, 10);
             let (shown, _) = legend_names(&nm, 1, "You", &full(&nm, 1), budget);
             assert!(width(&shown) <= budget, "{n} players: {} > {budget}: {shown:?}", width(&shown));
+        }
+    }
+
+    /// The legend of teams (no seat markers, a letter a team) fits the minimum bar too, for 5 players in 2 or 3 teams.
+    #[test]
+    fn team_legend_fits_the_minimum_bar() {
+        let budget = 960.0 - 24.0 - 16.0 - BAR_MIN;
+        for teams in [2.0, 3.0] {
+            let nm = names(5, 10);
+            let room = budget - 22.0 * teams;
+            let (shown, _) = legend_names_in(&nm, 1, "You", &full(&nm, 1), room, 0.0);
+            let w = 12.0 * 4.0 + shown.iter().map(|t| legend_entry_width_in(t.chars().count(), 0.0)).sum::<f32>();
+            assert!(w <= room, "{teams} teams: {w} > {room}: {shown:?}");
         }
     }
 

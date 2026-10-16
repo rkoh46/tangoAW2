@@ -224,7 +224,8 @@ fn disconnect_overlay<'a>(lang: &'a LanguageIdentifier, state: &'a State) -> Opt
         .spacing(8)
         .align_y(Alignment::Center);
     let panel = container(column![title, body_text, buttons].spacing(14).width(Fill))
-        .width(iced::Length::Fixed(420.0))
+        .width(Fill)
+        .max_width(420.0)
         .padding(20)
         .style(widgets::panel);
     // Dim + click-swallow + centering come from the shared
@@ -292,7 +293,8 @@ fn reconnecting_overlay<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -
         .spacing(8)
         .align_y(Alignment::Center);
     let panel = container(column![title, body_text, progress, buttons].spacing(14).width(Fill))
-        .width(iced::Length::Fixed(420.0))
+        .width(Fill)
+        .max_width(420.0)
         .padding(20)
         .style(widgets::panel);
     // Solid dim, no dismiss-on-press: the user leaves only via Disconnect (or
@@ -342,8 +344,6 @@ mod build_warning_tests {
             opponent_build_warnings: Some(std::sync::Arc::new(TestBuildWarnings)),
             build_warning_dismissed: false,
             build_warning_violations_expanded: false,
-            pane_widths: [320.0, 320.0],
-            pane_drag: None,
         });
 
         assert!(build_warning_overlay(&FALLBACK_LANG, &state).is_some());
