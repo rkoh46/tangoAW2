@@ -1475,6 +1475,11 @@ pub fn match_over(core: &Core) -> bool {
     core.raw_read_8(MATCH, -1) == 1 && core.raw_read_8(OVER, -1) == 1
 }
 
+/// The army that takes over when `current`'s turn has ended in a room of `n` players (army 5 hands to 1).
+fn incoming_army(current: u8, n: usize) -> u8 {
+    current % n.max(1) as u8 + 1
+}
+
 /// Who drives the pad on an online match's console, outside a battle's turns (`None`: the usual rules).
 pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if core.raw_read_8(MATCH, -1) != 1 {
@@ -1495,7 +1500,7 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         if !(1..=5).contains(&current) {
             return Some(0);
         }
-        let army = if crate::pvp::turn_ended(core) { current % n as u8 + 1 } else { current };
+        let army = if crate::pvp::turn_ended(core) { incoming_army(current, n) } else { current };
         return Some(inputs[crate::pvp::seat_of_n(army, n)]);
     }
     if !crate::pvp::in_versus(core) {
@@ -2220,6 +2225,17 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hand_off_goes_to_the_next_seat_and_wraps() {
+        for n in 2..=5usize {
+            for current in 1..=n as u8 {
+                let next = incoming_army(current, n);
+                assert_eq!(crate::pvp::seat_of_n(next, n), (crate::pvp::seat_of_n(current, n) + 1) % n, "n {n} army {current}");
+            }
+            assert_eq!(incoming_army(n as u8, n), 1);
+        }
+    }
 
     #[test]
     fn state_fits() {
