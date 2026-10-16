@@ -136,7 +136,9 @@ fn main() {
                 } else {
                     r.cur = 0;
                 }
-                if let Some(d) = &dump {
+                let from: usize = std::env::var("AW2_DUMP_FROM").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+                let to: usize = std::env::var("AW2_DUMP_TO").ok().and_then(|v| v.parse().ok()).unwrap_or(usize::MAX);
+                if let Some(d) = dump.as_ref().filter(|_| (from..to).contains(&t)) {
                     write_bmp(&d.join(format!("t{t:06}_s{seat}{}.bmp", if black { "_BLACK" } else { "" })), &f);
                 }
             }
@@ -196,6 +198,21 @@ fn main() {
                 }
             }
             "phase" => *phase.borrow_mut() = p[1].to_string(),
+            // shotall NAME: every seat's window
+            "shotall" => {
+                for seat in 0..n {
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    if let Some(f) = link.side(seat).frame() {
+                        write_bmp(&out.join(format!("{}_s{seat}.bmp", p[1])), &f);
+                    }
+                }
+            }
+            // fv: the game's state the waiting view decides from
+            "fv" => {
+                let c = link.core();
+                let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c).iter().map(|f| format!("{f:08x}")).collect();
+                println!("fv @{t} tick {}: fog {} loop {:08x} phase {:?} procs [{}] dispcnt {:04x} menu {}", ticks.get(), c.raw_read_8(0x0300_3FCD, -1), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), procs.join(" "), c.raw_read_16(0x0400_0000, -1), c.raw_read_8(0x0300_14E2, -1));
+            }
             "status" => {
                 let b = tango_gamesupport_aw2::online::probe::bits();
                 println!("status @{t}: select_mode {} selectmap {} teams {} battle {} versus {} nav {} army {} sel_init {:?} loop {:08x}", b & 1, b >> 2 & 1, b >> 3 & 1, b >> 4 & 1, b >> 5 & 1, b >> 6 & 1, b >> 24 & 255, rd(&mut link, tango_gamesupport_aw2::online_teams::SEL, 4), link.core().raw_read_32(0x0300_0000, -1));
@@ -297,6 +314,21 @@ fn main() {
                         let class = c.raw_read_8(m + 0x1432 + row + x, -1);
                         if class & 0x1F == 8 {
                             println!("hq of army {} at ({x},{y})", class >> 5);
+                        }
+                    }
+                }
+            }
+            // props ARMY: that army's properties (terrain class low bits) with their cells
+            "props" => {
+                let m = 0x0201_E450u32;
+                let c = link.core();
+                let (w, h) = (c.raw_read_16(m, -1) as u32, c.raw_read_16(m + 2, -1) as u32);
+                for y in 0..h {
+                    let row = c.raw_read_16(m + 0x417A + 2 * y, -1) as u32;
+                    for x in 0..w {
+                        let class = c.raw_read_8(m + 0x1432 + row + x, -1);
+                        if (class >> 5) as u32 == p[1].parse::<u32>().unwrap() {
+                            println!("army {} kind {} at ({x},{y})", p[1], class & 0x1F);
                         }
                     }
                 }

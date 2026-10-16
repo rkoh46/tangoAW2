@@ -102,7 +102,7 @@ fn anchor(core: &Core, army: u8) -> (i32, i32) {
 /// Whether the map's UI has anything running: a selected unit, a menu, a panel (the map's procs in IWRAM and in an
 /// EWRAM pool, two script pointers and a Thumb function each; none while the map waits for the player), apart from
 /// the two background ones.
-fn procs(core: &Core) -> Vec<u32> {
+pub fn procs(core: &Core) -> Vec<u32> {
     const AREAS: [(u32, u32); 2] = [(0x0300_0C00, 0x1300), (0x0200_C000, 0x2000)];
     const EVENT_SLOTS: std::ops::Range<u32> = 0x0200_C510..0x0200_C528 + 10 * 0x18;
     const BACKGROUND: [u32; 2] = [0x0803_4F8D, 0x0800_3891];
@@ -131,8 +131,15 @@ fn ui_open(core: &Core) -> bool {
 
 /// The procs of the mover's own UI, which B closes: the selection (`0x080228D9`), a unit picked up and walking
 /// (`0x080363D1`), the command menu (`0x08035E25`), the menus' frame (`0x08019D0D`, `0x08019DED`), the build menu
-/// (`0x0802DA19`, `0x0803A441`).
-const UI_PROCS: [u32; 7] = [0x0802_28D9, 0x0803_63D1, 0x0803_5E25, 0x0801_9D0D, 0x0801_9DED, 0x0802_DA19, 0x0803_A441];
+/// (`0x0802DA19`, `0x0803A441`), the info pages opened with R on the map: the terrain's (`0x08046D31`, `0x08047079`)
+/// and a unit's (`0x0803A69D`, `0x0803A5B9`), the Save question (`0x08014401`, `0x080195F9`), the map overview START
+/// opens (`0x0802C391`, `0x0802C3D1`, `0x080375D5`) and the Intel table (`0x080466DD`).
+const UI_PROCS: [u32; 17] = [
+    0x0802_28D9, 0x0803_63D1, 0x0803_5E25, 0x0801_9D0D, 0x0801_9DED, 0x0802_DA19, 0x0803_A441, 0x0804_6D31, 0x0804_7079, 0x0803_A69D, 0x0803_A5B9,
+    0x0801_4401, 0x0801_95F9, 0x0802_C391, 0x0802_C3D1, 0x0803_75D5, 0x0804_66DD,
+];
+/// The Rules page of the Intel menu: a full-screen page with no main-loop callback of its own (`0`).
+const RULES_PAGE: u32 = 0x0806_DFF1;
 
 /// What the shared console shows, for the waiting windows.
 #[derive(PartialEq, Eq, Debug)]
@@ -148,10 +155,16 @@ pub enum Phase {
     Page,
 }
 
+/// The Intel menu's Rules page is up (no battle-scene callback while it shows).
+pub fn rules_page(core: &Core) -> bool {
+    core.raw_read_32(MAIN_LOOP, -1) == 0 && procs(core).contains(&RULES_PAGE)
+}
+
 pub fn phase(core: &Core) -> Phase {
     match core.raw_read_32(MAIN_LOOP, -1) {
         MAP_LOOP => {}
         CO_PAGE_LOOP => return Phase::Page,
+        0 if rules_page(core) => return Phase::Page,
         _ => return Phase::Busy,
     }
     let running = procs(core);
@@ -257,6 +270,10 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     }
     if !on_map(scratch) {
         return Err("left the map loop");
+    }
+    if ui_open(scratch.core()) {
+        // (a page or question B does not close: the seat keeps its last clean picture, never a half-closed one)
+        return Err("the mover's UI would not close");
     }
     if !fog {
         // (the turn as played, but the mover's menus closed and no cursor, and the CO panel of the waiting seat's own
