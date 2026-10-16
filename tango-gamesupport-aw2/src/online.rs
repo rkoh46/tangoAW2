@@ -2020,8 +2020,6 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     Some((name, ready, flags)) => {
                         let name = if name.is_empty() { "Player".to_string() } else { name };
                         let you = if flags & YOU != 0 { " (you)" } else { "" };
-                        let shown = format!("{name}{you}");
-                        cv.text(core, x + 16, ry, &shown, INK, SHADE);
                         let tag = if flags & HOST != 0 {
                             if ready {
                                 "START"
@@ -2035,6 +2033,14 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                         };
                         let ink = if ready { BLUE } else { GRAY_INK };
                         let tag_x = x + w - 6 - text_width(core, tag);
+                        // (the name gives way before the tag does: its tail is cut with ".." and "(you)" stays)
+                        let room = tag_x - 4 - (x + 16);
+                        let shown = if text_width(core, &format!("{name}{you}")) <= room {
+                            format!("{name}{you}")
+                        } else {
+                            format!("{}{you}", fit(core, &name, room - text_width(core, you)))
+                        };
+                        cv.text(core, x + 16, ry, &shown, INK, SHADE);
                         cv.text(core, tag_x, ry, tag, ink, SHADE);
                         // How this player is reached and the round trip, between the name and the tag.
                         let (kind, rtt) = player_link(core, k);
