@@ -658,13 +658,13 @@ async fn host_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
 fn resume_refusal(g: &Inner, nickname: &str, content: bool) -> Option<String> {
     let r = g.params.resume.as_ref()?;
     if !r.players.iter().any(|n| n == nickname) {
-        return Some("This room is resuming a saved match that you are not in.".to_string());
+        return Some("You are not in the match this room resumes.".to_string());
     }
     if nickname == g.params.nickname || g.peers.iter().any(|p| p.nickname == nickname) {
-        return Some("Someone with your gamertag is already in this room.".to_string());
+        return Some("Your gamertag is already in this room.".to_string());
     }
     if r.match_type.1 & tango_net_protocol::control::SHARED_CONTENT != 0 && !content {
-        return Some("The saved match uses Dual Strike content that you have not imported.".to_string());
+        return Some("This match needs the Dual Strike pack.".to_string());
     }
     None
 }
@@ -916,7 +916,8 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
     let compressed = match zstd::stream::encode_all(std::io::Cursor::new(&payload), 3) {
         Ok(c) => c,
         Err(e) => {
-            fail(&inner, format!("Could not pack the save ({e})."));
+            log::warn!("room: could not pack the save: {e}");
+            fail(&inner, "Could not pack the save.");
             return;
         }
     };
@@ -945,7 +946,8 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             std::io::Result::Ok(())
         };
         if let Err(e) = sent.await {
-            fail(&inner, format!("A player's link broke while the match was starting ({e})."));
+            log::warn!("room: a player's link broke while the match was starting: {e}");
+            fail(&inner, "A player's link broke as the match began.");
             return;
         }
     }
@@ -1294,5 +1296,46 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod text_tests {
+    /// What the game's mailbox holds of a message (`tango_gamesupport_aw2::online::MESSAGE_LEN` minus the zero):
+    /// a longer one is cut off on the console's page.
+    const MESSAGE_CHARS: usize = 47;
+
+    fn literals(line: &str) -> Vec<&str> {
+        line.split('"').skip(1).step_by(2).collect()
+    }
+
+    /// Every message this module (and UNRANKED's) puts on the game's room pages fits the mailbox whole.
+    #[test]
+    fn messages_fit_the_game_mailbox() {
+        let mut seen = 0;
+        for (file, src) in [("room.rs", include_str!("room.rs")), ("unranked.rs", include_str!("unranked.rs"))] {
+            let body = src.split("mod text_tests").next().unwrap();
+            let mut in_texts = false;
+            for line in body.lines() {
+                if line.starts_with("fn game_differs") || line.starts_with("fn resume_refusal") {
+                    in_texts = true;
+                }
+                if line.starts_with("async fn ") || line.starts_with("// ---") {
+                    in_texts = false;
+                }
+                let is_text = in_texts || line.contains("fail(&inner,") || line.contains("RejectReason::") && line.contains("Err((")
+                    || line.contains("g.message = ");
+                if !is_text || line.trim_start().starts_with("//") || line.contains("log::") {
+                    continue;
+                }
+                for l in literals(line) {
+                    if l.chars().next().is_some_and(|c| c.is_ascii_uppercase()) && l.contains(' ') && !l.contains("{}") {
+                        seen += 1;
+                        assert!(l.len() <= MESSAGE_CHARS, "{file}: {} chars, the console shows {MESSAGE_CHARS}: {l}", l.len());
+                    }
+                }
+            }
+        }
+        assert!(seen >= 25, "only {seen} messages found");
     }
 }

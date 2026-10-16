@@ -4,7 +4,7 @@
 //! memory. Without the game compiled in, nothing is ever asked.
 
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, Request, SavedRow};
+pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, waiting_for, Request, SavedRow};
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online_browse::{Net as BrowseNet, Row as BrowseRow};
 #[cfg(feature = "gamesupport-aw2")]

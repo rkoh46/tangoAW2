@@ -303,15 +303,41 @@ pub mod mailbox {
         b[0]
     }
 
+    /// The words for the players a saved match waits for, within what [`MESSAGE`] holds: "Waiting for A, B", and
+    /// "+N" for the names that do not fit.
+    pub fn waiting_for(names: &[String]) -> String {
+        const MAX: usize = MESSAGE_LEN as usize - 1;
+        let name = |n: &String| n.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).collect::<String>();
+        let full = format!("Waiting for {}", names.iter().map(name).collect::<Vec<_>>().join(", "));
+        if full.len() <= MAX {
+            return full;
+        }
+        for shown in (1..names.len()).rev() {
+            let t = format!("Waiting for {} +{}", names[..shown].iter().map(name).collect::<Vec<_>>().join(", "), names.len() - shown);
+            if t.len() <= MAX {
+                return t;
+            }
+        }
+        format!("Waiting for {} players", names.len())
+    }
+
+    /// The text a message is kept as: ASCII, and when it is longer than the mailbox holds, cut at a word's end
+    /// with ".." (the pages show a message whole or not at all).
+    pub fn message_text(message: &str) -> String {
+        const MAX: usize = MESSAGE_LEN as usize - 1;
+        let s: String = message.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).collect();
+        if s.len() <= MAX {
+            return s;
+        }
+        let cut = &s[..MAX - 2];
+        let cut = cut.rsplit_once(' ').map_or(cut, |(a, _)| a);
+        format!("{cut}..")
+    }
+
     pub fn write_status(write: &mut dyn FnMut(u32, &[u8]), status: Status, message: &str) {
         let mut m = vec![0u8; MESSAGE_LEN as usize];
-        for (k, c) in message
-            .chars()
-            .filter(|c| c.is_ascii() && !c.is_ascii_control())
-            .take(MESSAGE_LEN as usize - 1)
-            .enumerate()
-        {
-            m[k] = c as u8;
+        for (k, c) in message_text(message).bytes().enumerate() {
+            m[k] = c;
         }
         write(MESSAGE, &m);
         write(STATUS, &[status as u8]);
@@ -2076,7 +2102,9 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     l.push_str(b);
                     // (the bar is the screen's width: the key matters more than the status, which the page shows)
                     if text_width(core, &l) > W as i32 - 8 {
-                        l = b.to_string();
+                        // (a saved match's "Waiting for ..." is shown nowhere else: it goes before the key)
+                        let alone = lines.join(" ");
+                        l = if status == Status::Waiting && text_width(core, &alone) <= W as i32 - 8 { alone } else { b.to_string() };
                     }
                     l
                 }
@@ -2195,6 +2223,28 @@ mod tests {
         assert!(TYPED + TYPED_MAX <= TYPED_LEN);
         assert!(MESSAGE + MESSAGE_LEN <= STATE + STATE_LEN);
         assert!(MESSAGE >= PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32);
+    }
+
+    #[test]
+    fn messages_are_kept_whole_or_cut_at_a_word() {
+        let long = "A player's link broke while the match was starting and then it did not come back";
+        let t = mailbox::message_text(long);
+        assert!(t.len() < MESSAGE_LEN as usize, "{t}");
+        assert!(t.ends_with(".."), "{t}");
+        assert!(!t.trim_end_matches("..").ends_with(char::is_alphabetic) || long.starts_with(t.trim_end_matches("..")));
+        assert_eq!(mailbox::message_text("Wrong password."), "Wrong password.");
+    }
+
+    #[test]
+    fn waiting_names_fit_the_message() {
+        let n = |k: usize, len: usize| -> Vec<String> { (0..k).map(|_| "W".repeat(len)).collect() };
+        for (k, len) in [(1, 12), (2, 12), (3, 12), (4, 12), (4, 3)] {
+            let t = mailbox::waiting_for(&n(k, len));
+            assert!(t.len() < MESSAGE_LEN as usize, "{t}");
+            assert!(t.starts_with("Waiting for "), "{t}");
+        }
+        assert_eq!(mailbox::waiting_for(&["Ann".into(), "Bo".into()]), "Waiting for Ann, Bo");
+        assert_eq!(mailbox::waiting_for(&n(4, 12)), "Waiting for WWWWWWWWWWWW, WWWWWWWWWWWW +2");
     }
 
     #[test]

@@ -608,7 +608,7 @@ impl App {
             }
             Err(e) => {
                 log::error!("online: the room's match could not be built: {e:#}");
-                self.online.back_message = Some(format!("The match could not start ({e:#})."));
+                self.online.back_message = Some(format!("The match could not start ({}).", short_error(&format!("{e:#}"))));
                 self.online.room = None;
             }
         }
@@ -636,7 +636,7 @@ impl App {
         }
         let (status, message) = match view.phase {
             RoomPhase::Connecting if view.resuming && !view.waiting_for.is_empty() => {
-                (Status::Waiting, format!("Waiting for {}", view.waiting_for.join(", ")))
+                (Status::Waiting, mailbox::waiting_for(&view.waiting_for))
             }
             RoomPhase::Connecting => (
                 if room.is_host() { Status::Waiting } else { Status::Connecting },
@@ -645,7 +645,7 @@ impl App {
             RoomPhase::Open | RoomPhase::Starting | RoomPhase::Ready => {
                 if view.resuming && !view.waiting_for.is_empty() {
                     // (a saved match: it starts when all of its players are in)
-                    (Status::Waiting, format!("Waiting for {}", view.waiting_for.join(", ")))
+                    (Status::Waiting, mailbox::waiting_for(&view.waiting_for))
                 } else if view.players.len() >= 2 && view.joined {
                     let other = view
                         .players
@@ -685,4 +685,15 @@ impl App {
             }
         }
     }
+}
+
+/// An error's text cut to a length a page of the game shows whole (at a word's end, with "..").
+fn short_error(e: &str) -> String {
+    const MAX: usize = 60;
+    if e.chars().count() <= MAX {
+        return e.to_string();
+    }
+    let cut: String = e.chars().take(MAX).collect();
+    let cut = cut.rsplit_once(' ').map_or(cut.as_str(), |(a, _)| a);
+    format!("{cut}..")
 }
