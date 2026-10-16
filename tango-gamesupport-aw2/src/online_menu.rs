@@ -3,7 +3,7 @@
 //! cursor at +0x36: 0 Single-Pak, 1 Multi-Pak, 2 Trade Maps) is the ONLINE screen: titled ONLINE, its items
 //! UNRANKED, LOBBY and STATS with their own help lines. A on LOBBY goes a level down on the same screen (titled
 //! LOBBY: CREATE, JOIN, RESUME; B goes back up, as BACK did); A on CREATE or JOIN opens the lobby's own pages
-//! ([`crate::online`]). UNRANKED and STATS say they are coming soon. The game never sees A or START on this
+//! ([`crate::online`]). UNRANKED opens its own page (level 6); STATS shows the online record ([`crate::online_stats`]); SELECT on the ONLINE and LOBBY menus sets the gamertag. The game never sees A or START on this
 //! screen, so its link-cable modes never start.
 //!
 //! How (the lettering is [`crate::online_art`]'s):
@@ -47,7 +47,7 @@ const HELP: [&str; 4] = [
     "Play online with friends.",
     "Play someone at random.",
     "Create a room or join a friend's room.",
-    "Coming soon: your online record.",
+    "See your online record.",
 ];
 
 /// The game's label pointers for LINK, and its sheet.
@@ -170,13 +170,22 @@ fn write_if_changed(core: &mut Core, at: u32, b: &[u8]) {
     }
 }
 
+/// Which of the two menus (0 ONLINE, 1 LOBBY) a lobby level is drawn over: STATS' page is over ONLINE's.
+fn menu_level(level: usize) -> usize {
+    if matches!(level, 0 | 6 | 10) {
+        0
+    } else {
+        1
+    }
+}
+
 /// While the ONLINE screen is up: the level's words in the label slots and its title's glyphs.
 pub fn draw(core: &mut Core, level: usize) {
     if !active(core) || menu_proc(core).is_none() {
         return;
     }
     let Some(b) = built(core) else { return };
-    let level = if level == 6 { 0 } else { level.min(1) };
+    let level = menu_level(level);
     let sheet = &b.sheets[level];
     let tile = 32 * art::BIG_TILES;
     for i in 0..3 {
@@ -213,10 +222,7 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
             s += 8;
         }
     }
-    let level = match crate::online::level(core) as usize {
-        6 => 0,
-        l => l.min(1),
-    };
+    let level = menu_level(crate::online::level(core) as usize);
     let word = TITLES[level];
     // The game's title sprites, left to right.
     let mut ours: Vec<u32> = Vec::new();

@@ -632,7 +632,7 @@ mod tests {
     fn the_words_have_their_letters() {
         // The letters the sheet gives plus the five drawn from them cover every word the screens show.
         let have: String = BIG.iter().map(|b| b.0).chain("OCBYJ".chars()).collect();
-        for w in ["UNRANKED", "LOBBY", "STATS", "CREATE", "JOIN", "BACK"] {
+        for w in ["UNRANKED", "LOBBY", "STATS", "CREATE", "JOIN", "GAMERTAG"] {
             assert!(w.chars().all(|c| have.contains(c)), "{w}");
             assert!(
                 w.chars().all(|c| SMALL.iter().any(|s| s.0 == c) || "OCBYJ".contains(c)),

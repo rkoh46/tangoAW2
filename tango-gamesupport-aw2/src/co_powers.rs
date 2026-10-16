@@ -705,6 +705,12 @@ fn mass_unit(core: &mut Core) {
 const ACTIVATE: u32 = 0x0804_4B28;
 const SCOP_COST: u32 = 0x0804_4208;
 fn activate(core: &mut Core) {
+    // (a room's battle counts the powers used for the online record, with the pack or not)
+    {
+        let cpu = core.gba().cpu();
+        let (army, mode) = (cpu.gpr(0) as u32, cpu.gpr(1) as u8);
+        crate::online_stats::power_used(core, army, mode);
+    }
     if !is_on(core) {
         return;
     }

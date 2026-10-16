@@ -19,6 +19,7 @@ mod library;
 mod lobby;
 mod message;
 mod online;
+mod online_stats;
 mod play;
 mod replay;
 mod replay_controller;

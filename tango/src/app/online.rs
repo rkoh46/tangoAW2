@@ -44,6 +44,16 @@ pub struct Flow {
     browse_logged: Vec<String>,
     /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
     last_log: Option<std::time::Instant>,
+    /// The online record (loaded when first needed), and a count of its changes (the console's copy of its page).
+    stats: Option<super::online_stats::Stats>,
+    stats_rev: u32,
+    synced_rev: u32,
+    /// This peer's seat and the room's players' gamertags, for judging the match's battles.
+    match_seat: usize,
+    match_names: Vec<String>,
+    /// The number of the last battle recorded (a battle noted twice, after a rollback, is recorded once).
+    last_battle: Option<u8>,
+    typed_test: bool,
     /// The matches cut short that are saved (the RESUME page's list, newest first), read again when the page
     /// is opened and when one is deleted or saved.
     saved: Vec<tango_match::SuspendedMatch>,
@@ -74,6 +84,7 @@ impl App {
         self.online_announce();
         // A lobby-made match just ended: back to the game, at its lobby.
         if self.online.in_match && !self.session.is_active() {
+            self.online_record_battles();
             self.online.in_match = false;
             self.online.room = None;
             self.online.seen = None;
@@ -107,6 +118,7 @@ impl App {
             mailbox::boot_to_lobby();
             return self.update_play(tabs::play::Message::PlayOfflinePressed);
         }
+        self.online_record_battles();
         if let Some(pvp) = self.session.active_as::<session::pvp::PvpSession>() {
             if let Some(name) = pvp.dropped_player() {
                 self.online.dropped = Some(name);
@@ -124,12 +136,23 @@ impl App {
             }
             return iced::Task::none();
         }
+        self.online_stats();
         let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
             return iced::Task::none();
         };
         let mut read = |a: u32, b: &mut [u8]| {
             solo.peek(a, b);
         };
+        // A console just started: it gets the gamertag and the record's page.
+        if mailbox::needs_sync(&mut read) || self.online.synced_rev != self.online.stats_rev {
+            let tag = mailbox::clean_gamertag(&self.config.nickname.clone().unwrap_or_default());
+            let lines = self.online.stats.as_ref().map(|s| s.lines()).unwrap_or_default();
+            let mut write = |a: u32, b: &[u8]| {
+                solo.poke(a, b);
+            };
+            mailbox::sync(&mut write, &tag, &lines);
+            self.online.synced_rev = self.online.stats_rev;
+        }
         if std::env::var("TANGOAW2_ONLINE_LOG").is_ok_and(|v| v == "1")
             && self.online.last_log.is_none_or(|t| t.elapsed().as_secs() >= 1)
         {
@@ -148,6 +171,18 @@ impl App {
         let mut read = |a: u32, b: &mut [u8]| {
             solo.peek(a, b);
         };
+        // Test aid: `TANGOAW2_TYPE_CODE=<code>` types the room's code on the keyboard's path once its page is up.
+        if !self.online.typed_test && level == 3 {
+            if let Ok(code) = std::env::var("TANGOAW2_TYPE_CODE") {
+                self.online.typed_test = true;
+                let mut chars: Vec<u8> = code.bytes().collect();
+                chars.push(13);
+                let mut write = |a: u32, b: &[u8]| {
+                    solo.poke(a, b);
+                };
+                mailbox::type_chars(&mut read, &mut write, &chars);
+            }
+        }
         if level == 0 && self.online.room.is_none() && self.online.back_message.is_none() {
             // (nothing asked; keep up with the serial so an old request is never taken for a new one)
             self.online.seen = Some(mailbox::serial(&mut read));
@@ -417,6 +452,53 @@ impl App {
                     room.start();
                 }
             }
+            Request::SetGamertag(name) => {
+                let name = mailbox::clean_gamertag(&name);
+                if !name.is_empty() {
+                    self.config.nickname = Some(name);
+                    self.persist_config();
+                }
+            }
+        }
+    }
+
+    fn online_stats(&mut self) -> &mut super::online_stats::Stats {
+        let path = super::online_stats::Stats::path(&self.config.data_path);
+        self.online
+            .stats
+            .get_or_insert_with(|| super::online_stats::Stats::load(&path))
+    }
+
+    /// The battles the match's console finished since the last look go into the record.
+    fn online_record_battles(&mut self) {
+        let battles = mailbox::take_battles();
+        if battles.is_empty() {
+            return;
+        }
+        let (seat, names) = (self.online.match_seat, self.online.match_names.clone());
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs());
+        for b in battles {
+            if self.online.last_battle.is_some_and(|n| n == b.no) {
+                continue;
+            }
+            let Some(v) = super::online_stats::judge(&b, seat, names.len().max(2)) else {
+                log::info!("online stats: battle {} was not played to its end; not recorded", b.no);
+                continue;
+            };
+            log::info!("online stats: battle {} recorded: {v:?}", b.no);
+            self.online.last_battle = Some(b.no);
+            let opponents = v
+                .opponents
+                .iter()
+                .map(|&s| names.get(s).cloned().unwrap_or_else(|| format!("Player {}", s + 1)))
+                .collect();
+            let path = super::online_stats::Stats::path(&self.config.data_path);
+            let stats = self.online_stats();
+            stats.add(&v, opponents, now);
+            stats.save(&path);
+            self.online.stats_rev += 1;
         }
     }
 
@@ -443,7 +525,7 @@ impl App {
     }
 
     fn online_nickname(&self) -> String {
-        let me = self.config.nickname.clone().unwrap_or_default();
+        let me = mailbox::clean_gamertag(&self.config.nickname.clone().unwrap_or_default());
         if me.is_empty() {
             "You".to_string()
         } else {
@@ -462,6 +544,10 @@ impl App {
         let players = m.players.clone();
         // Who is who, for the game's pictures (gamertags next to the armies).
         tango_library::online::set_room(players.clone(), seat);
+        mailbox::forget_battles();
+        self.online.last_battle = None;
+        self.online.match_seat = seat;
+        self.online.match_names = players.clone();
         let settings = |nickname: String, host: bool| tango_net_protocol::control::Settings {
             nickname,
             // (the shared-content bit stays only when everyone has it: the room decided)

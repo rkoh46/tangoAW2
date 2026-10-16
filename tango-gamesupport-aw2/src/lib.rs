@@ -113,6 +113,7 @@ pub mod online_art;
 pub mod online_browse;
 pub mod online_maps;
 pub mod online_menu;
+pub mod online_stats;
 pub mod online_teams;
 pub mod unranked;
 pub mod resume_info;
