@@ -14,7 +14,7 @@ const PLAYER_STRIDE: u32 = 0x3C;
 /// 3 Green Earth, 4 Yellow Comet, 5 Black Hole.
 const COLOUR: u32 = 0x1A;
 
-/// Army `a`'s (1..=5) player block.
+/// Army `a`'s player block, `a` counted from 0 (army 1 is 0).
 #[allow(non_snake_case)]
 pub(crate) fn PLAYER_BLOCK_OF(a: u32) -> u32 {
     PLAYER_BLOCK + PLAYER_STRIDE * a
@@ -481,7 +481,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // whose turn it is has the pad, always.
         // 15: the Black Cannon's picture and the font share OBJ tiles by turns (a stash in EWRAM, crate::obelisk).
         // 18: a room's SELECT MAP lists only the maps for its player count (crate::online_maps::retab); 17: UNRANKED matches (crate::unranked); rooms hold their state in checkpoints and can be resumed (the wire of the room changed with it).
-        18
+        // 19: every seat's TEAM on the army page, written into the Teams record (crate::online_teams); the page keeps its state through the game's Teams screen going from its CO stage to its team stage and on.
+        19
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {

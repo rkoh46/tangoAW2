@@ -66,16 +66,23 @@ fn main() {
     let names = ["Gamertag10", "Hostname", "Guest", "Nell", "XxLongNamexX"];
     let colours = [1u8, 2, 4, 3, 5];
     // (players, local seat, field, ready flags)
-    let cases: [(usize, usize, u8, [bool; 5], &str); 9] = [
+    let cases: [(usize, usize, u8, [bool; 5], &str); 16] = [
         (2, 1, 0, [false; 5], "2"),
-        (3, 0, 2, [false; 5], "3_partner"),
+        (2, 1, 2, [false; 5], "2_team"),
+        (3, 0, 2, [false; 5], "3_team_host_notag"),
+        (5, 3, 2, [false, true, false, false, false], "5_team_notag"),
+        (4, 1, 4, [false; 5], "4_note"),
+        (3, 0, 2, [false; 5], "3_team_host"),
+        (4, 3, 2, [false, true, false, false, false], "4_team"),
+        (5, 0, 2, [false; 5], "5_team_host"),
+        (3, 0, 3, [false; 5], "3_partner"),
         (3, 0, 0, [false; 5], "3_co"),
         (3, 2, 1, [false; 5], "3"),
         (4, 1, 0, [true, false, false, false, false], "4"),
         (5, 4, 0, [true, false, false, true, false], "5"),
         (5, 2, 1, [true, false, false, true, false], "5_colour"),
-        (5, 3, 2, [false, true, false, false, false], "5_partner"),
-        (5, 0, 3, [false, false, false, false, false], "5_ready"),
+        (5, 3, 3, [false, true, false, false, false], "5_partner"),
+        (5, 0, 4, [false, false, false, false, false], "5_ready"),
     ];
     for (n, local, field, ready, tag) in cases {
         let mut ram = vec![0u8; 0x100];
@@ -86,12 +93,20 @@ fn main() {
             ram[b] = cos[s];
             ram[b + 1] = colours[s];
             ram[b + 2] = if s % 2 == 1 { 0xFF } else { cos[(s + 1) % 5] };
+            // (2v1, 2v2 and 2v2v1 by seat)
+            ram[b + 5] = [0u8, 0, 1, 1, 2][s];
             ram[b + 3] = if s == local { field } else { 0 };
             ram[b + 4] = ready[s] as u8;
         }
+        if local == 0 {
+            ram[0x10 + 10] = (n - 1) as u8; // (the host has picked the last seat)
+        }
+        if tag.contains("note") {
+            ram[4] = 100;
+        }
         core.raw_write_range(tango_gamesupport_aw2::online_teams::SEL, -1, &ram);
         tango_gamesupport_aw2::online::set_room(names[..n].iter().map(|s| s.to_string()).collect(), local);
-        core.raw_write_8(tango_gamesupport_aw2::ds_weather::DS_ON, -1, 1);
+        core.raw_write_8(tango_gamesupport_aw2::ds_weather::DS_ON, -1, if tag.contains("notag") { 0 } else { 1 });
         let mut rgba = vec![0u8; 240 * 160 * 4];
         tango_gamesupport_aw2::online_teams::draw(core, &mut rgba);
         let mut ppm = b"P6\n240 160\n255\n".to_vec();

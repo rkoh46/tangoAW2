@@ -541,6 +541,32 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -> Elem
         let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
         let me = tango_library::online::room_local_seat();
         let seats: [&'static str; 5] = ["P1", "P2", "P3", "P4", "P5"];
+        // Teams (any team of two or more): "A: Host, Guest2  B: Guest", each in its army's colour.
+        let picks = tango_library::online::room_picks();
+        if picks.len() == n && (0..n).any(|a| (0..n).any(|b| a != b && picks[a].0 == picks[b].0)) {
+            let mut r = row![].spacing(12).align_y(Alignment::Center);
+            for team in 0..5u8 {
+                let members: Vec<usize> = (0..n).filter(|&k| picks[k].0 == team).collect();
+                if members.is_empty() {
+                    continue;
+                }
+                let mut g = row![text(format!("{}:", (b'A' + team) as char)).size(TEXT_CAPTION).font(iced::Font::MONOSPACE)]
+                    .spacing(4)
+                    .align_y(Alignment::Center);
+                for (i, &k) in members.iter().enumerate() {
+                    let accent = colors[(picks[k].1 as usize).clamp(1, 5) - 1];
+                    let name = if k == me {
+                        format!("{} ({})", tango_library::online::room_name(k), t!(lang, "play-you"))
+                    } else {
+                        tango_library::online::room_name(k)
+                    };
+                    let name = if i + 1 < members.len() { format!("{name},") } else { name };
+                    g = g.push(side(accent, "", name));
+                }
+                r = r.push(g);
+            }
+            return r.into();
+        }
         let mut r = row![].spacing(12).align_y(Alignment::Center);
         for k in 0..n {
             let name = if k == me {

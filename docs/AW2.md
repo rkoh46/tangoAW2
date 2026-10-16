@@ -4307,12 +4307,12 @@ tests). Online play starts in the game, played alone:
   item is RESUME, so it has no menu item of its own; the name sits in the top
   right corner with "SELECT: Gamertag"): lobby level 9 is a typing page on the code's grid (letters and
   digits, up to ten, or the keyboard) that starts from the current name; OK
-  writes it at `0x0203D100` and asks the app (request 10, `SetGamertag`), which
+  writes it at `0x0203D500` and asks the app (request 10, `SetGamertag`), which
   sets `config.nickname` and saves the config. The first visit to the ONLINE
   screen on a console asks when the app has said none is set (`SYNCED` set,
   name empty). The name is drawn in the top right corner of the ONLINE and
   LOBBY menus; rooms, the CO page and the battle already used the nickname.
-  STATS (ONLINE item 3, level 10) draws lines the app put at `0x0203D200`
+  STATS (ONLINE item 3, level 10) draws lines the app put at `0x0203D600`
   (24 lines of 32 bytes: label, a tab, value; no tab is a heading), UP/DOWN
   scrolling. The app writes the name and the lines whenever a console starts
   (`SYNCED` 0) or the record changed.
@@ -4333,6 +4333,21 @@ tests). Online play starts in the game, played alone:
   rollback's replay replaces its own note); the app judges it (exactly one
   team still in: its players won; otherwise the battle was left and is not
   recorded), adds it up and saves. Armies are seats by `seat_of_n`.
+- **Teams** (`online_teams.rs`). The army page (SELECT YOUR ARMY: a row for each seat, CO, colour, TEAM, partner
+  with the pack, READY; the game's Teams screen waits underneath) gives every seat a TEAM, A..E, its own to set
+  (the Teams record's team bytes: `+0x11` per army, five-army record `+0xA0`; letters 0..4). Everyone starts on
+  what the game's record has (every army its own team: a free-for-all, as before). The host can set any seat's: on
+  the TEAM field L and R pick the seat, LEFT and RIGHT change its team (and it has to say READY again). READY is
+  refused while every seat is on one team ("Pick at least two different teams."). When everyone is READY the
+  choices are written to the record and the game's own rules take over: the battle's player blocks carry the team
+  (`+0x2A`), allies cannot attack each other (no Fire with only an ally next to the unit, the attack ring skips
+  them), the battle ends when one team is left (VICTORY!), allies share fog vision (the game's viewer setup,
+  `0x08020984`, marks the current army's allies as viewers; the waiting windows of `fog_view` call it, so a
+  teammate watching an ally's turn sees through the team's fog). Turn order stays by army. The page also stays
+  through the game's own Teams screen moving from its CO stage to its team stage and on to the Rules (its task is
+  gone for a moment in between). The status bar shows `A: Host, Guest2  B: Guest` when any team has two or more
+  (`tango_library::online::room_picks`, kept by `online_teams::publish`). Harness: `aw2_room_teams` (a room of
+  3..5 on one console with a script: pages, teams, an attack on an ally, a win by the last enemy team's fall).
 - **UNRANKED** (`unranked.rs`; app `tango/src/app/online.rs`, `tango_lobby::room::Room::unranked`). A on UNRANKED
   (lobby level 6, request 7) makes the app dial the public matchmaking server under the pool's session id
   `tangoaw2-unranked-v1-s<sim version>` (no server of our own: the server pairs the first two clients with the same
