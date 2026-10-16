@@ -466,7 +466,20 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
     let title = "SELECT YOUR ARMY";
     let w = crate::online::text_width(core, title);
     cv.text(core, (crate::online::W as i32 - w) / 2, 2, title, crate::online::WHITE, crate::online::GRAY_INK);
-    let top = 18;
+    // The column headings: a strip under the title, over the fields' boxes.
+    let (colour_x, team_x, partner_x) = columns(tag_on);
+    cv.rect(0, 15, crate::online::W as i32, 11, crate::online::LIGHT_GRAY);
+    let heading = |cv: &mut crate::online::Rgba<'_>, x: i32, t: &str| {
+        let w = crate::online::text_width(core, t);
+        cv.text(core, x + 14 - w / 2, 15, t, crate::online::GRAY_INK, crate::online::SHADE);
+    };
+    cv.text(core, 8, 15, "Player", crate::online::GRAY_INK, crate::online::SHADE);
+    heading(cv, colour_x, "Colour");
+    heading(cv, team_x, "Team");
+    if tag_on {
+        heading(cv, partner_x, "Pair");
+    }
+    let top = 27;
     let rows_h = 143 - top;
     let rh = (rows_h / n as i32).min(46);
     for s in 0..n {
@@ -497,6 +510,11 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
     };
     crate::online::bar(cv, core, &text);
     let _ = COLOUR_NAMES;
+}
+
+/// The fields' columns (the left edge of the colour, team and partner boxes).
+fn columns(tag_on: bool) -> (i32, i32, i32) {
+    if tag_on { (94, 124, 154) } else { (116, 148, 0) }
 }
 
 /// The width of a field's box (the choice between its two arrows).
@@ -546,7 +564,7 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
     let name_ink = if mine { crate::online::BLUE } else { ink };
     let (ny, cy) = if big { (y + 4, y + h - 15) } else { (y, y + h - 11) };
     cv.text(core, tx, ny, &name, name_ink, shade);
-    let (colour_x, team_x, partner_x) = if tag_on { (94, 124, 154) } else { (116, 148, 0) };
+    let (colour_x, team_x, partner_x) = columns(tag_on);
     let co_name = co.map(|c| co_label(core, c)).unwrap_or_default();
     let co_text = fit_arrows(core, &co_name, sel(F_CO), colour_x - 3 - tx);
     let w = crate::online::text_width(core, &co_text);
