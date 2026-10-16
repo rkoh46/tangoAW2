@@ -457,15 +457,13 @@ pub mod mailbox {
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
             // the map cursor's cell (the cursor starts a turn where the last one left it)
             ("cx" | "cy", Some(v)) => {
-                let mut b = [0u8; 2];
-                read(0x0300_33E4 + if name == "cy" { 2 } else { 0 }, &mut b);
-                u16::from_le_bytes(b) as u32 == v
+                let c = probe::CURSOR_CELL.load(std::sync::atomic::Ordering::Relaxed);
+                (if name == "cy" { c >> 16 } else { c } & 0xFFFF) as u32 == v
             }
             // the cursor left of / right of (cxlt: its x is below the value) / above / below the cell
             ("cxlt" | "cxgt" | "cylt" | "cygt", Some(v)) => {
-                let mut b = [0u8; 2];
-                read(0x0300_33E4 + if name.starts_with("cy") { 2 } else { 0 }, &mut b);
-                let at = u16::from_le_bytes(b) as u32;
+                let c = probe::CURSOR_CELL.load(std::sync::atomic::Ordering::Relaxed);
+                let at = (if name.starts_with("cy") { c >> 16 } else { c } & 0xFFFF) as u32;
                 if name.ends_with("lt") { at < v } else { at > v }
             }
             // the map waits for the cursor and nothing runs (a test script's cue to press)
@@ -531,6 +529,9 @@ pub mod probe {
     static BITS: AtomicU64 = AtomicU64::new(0);
     pub static LIST_DEBUG: AtomicU64 = AtomicU64::new(0);
     pub static MAP_DEBUG: AtomicU64 = AtomicU64::new(0);
+    /// The map cursor's cell (x, then y << 16), noted every tick: a test script's `cx`/`cy` in a netplay session, whose
+    /// console the script cannot read.
+    pub static CURSOR_CELL: AtomicU64 = AtomicU64::new(0);
 
     /// Every tick (any console): note the screen.
     pub fn store(core: &Core) {
@@ -558,6 +559,10 @@ pub mod probe {
         b |= (core.raw_read_8(super::PLAYERS_N_FOR_PROBE, -1) as u64) << 57;
         b |= ((crate::fog_view::phase(core) == crate::fog_view::Phase::Map) as u64) << 63;
         BITS.store(b, Ordering::Relaxed);
+        CURSOR_CELL.store(
+            core.raw_read_16(0x0300_33E4, -1) as u64 | (core.raw_read_16(0x0300_33E6, -1) as u64) << 16,
+            Ordering::Relaxed,
+        );
         // (test aid: where SELECT MAP's cursor is, by both ways of telling)
         let first = core.raw_read_32(0x0300_5900, -1) & 0xFF;
         let cur = core.raw_read_32(0x0300_5930, -1) & 0xFF;
