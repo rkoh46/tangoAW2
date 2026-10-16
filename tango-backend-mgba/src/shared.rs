@@ -255,6 +255,8 @@ pub struct SharedLink {
     /// Each seat's last waiting picture (shown while the game cannot make one) and its view memory.
     watched: [Option<Vec<u8>>; tango_match::MAX_SEATS],
     watched_at: [Option<u32>; tango_match::MAX_SEATS],
+    /// Each seat's last picture that was not black, and the tick it was shown.
+    good: [Option<(Vec<u8>, u32)>; tango_match::MAX_SEATS],
     view_memory: [[i32; 4]; tango_match::MAX_SEATS],
     /// The console as [`SharedGame::keep_for_view`] last asked to keep it.
     kept: Option<mgba_rollback::Snapshot>,
@@ -308,6 +310,7 @@ impl SharedLink {
             players: 2,
             watched: Default::default(),
             watched_at: Default::default(),
+            good: Default::default(),
             view_memory: Default::default(),
             kept: None,
             keep_was: false,
@@ -353,6 +356,7 @@ impl SharedLink {
             players: 2,
             watched: Default::default(),
             watched_at: Default::default(),
+            good: Default::default(),
             view_memory: Default::default(),
             kept: None,
             keep_was: false,
@@ -443,6 +447,10 @@ impl SharedLink {
             let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat], kept: self.kept.as_ref() };
             if game.view_as(&mut scratch, seat) {
                 frame = scratch.link.video_buffer(0).map(to_rgba);
+                // (a picture caught in a screen fade, forced blank or black is no picture: the last good one stays)
+                if frame.as_ref().is_some_and(|f| dark(f)) {
+                    frame = None;
+                }
                 if let Some(f) = frame.as_mut() {
                     let core = scratch.link.core(0);
                     if game.overlay_hires(core, mode, seat, f).is_none() {
@@ -584,8 +592,14 @@ struct SharedSide<'a> {
     conceal: bool,
 }
 
-impl Side for SharedSide<'_> {
-    fn frame(&mut self) -> Option<Vec<u8>> {
+/// Whether a 240x160 RGBA picture is (nearly) black: a fade or a blanked screen.
+fn dark(rgba: &[u8]) -> bool {
+    let total: u64 = rgba.chunks(4).map(|p| p[0] as u64 + p[1] as u64 + p[2] as u64).sum();
+    total < (rgba.len() as u64 / 4) * 3 * 12
+}
+
+impl SharedSide<'_> {
+    fn frame_raw(&mut self) -> Option<Vec<u8>> {
         // (a waiting seat whose picture cannot be made, and none was made before, sees the console's own: never a
         // blacked-out window; the game's `watching` keeps to the moments the picture can be made)
         if self.conceal && self.link.game.watching(self.link.inner.core(0), self.player) {
@@ -609,6 +623,25 @@ impl Side for SharedSide<'_> {
             self.link.watched_at[self.player] = None;
         }
         Some(frame)
+    }
+}
+
+impl Side for SharedSide<'_> {
+    /// A window is never black for a moment of the game's own making (a hand-off, a menu closing, a transition): a
+    /// picture that is entirely black right after a good one (within 3 seconds) shows that one again.
+    fn frame(&mut self) -> Option<Vec<u8>> {
+        let f = self.frame_raw()?;
+        let (tick, seat) = (self.link.tick, self.player);
+        if dark(&f) {
+            if let Some((g, at)) = self.link.good[seat].as_ref() {
+                if tick.wrapping_sub(*at) < 180 {
+                    return Some(g.clone());
+                }
+            }
+            return Some(f);
+        }
+        self.link.good[seat] = Some((f.clone(), tick));
+        Some(f)
     }
 
     fn set_render(&mut self, on: bool) {

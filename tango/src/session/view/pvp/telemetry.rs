@@ -78,6 +78,17 @@ const SKEW_SPAN: i32 = 8; // ± about parity; 0 sits mid-height
 const LEAD_SPAN: i32 = 24; // ± about zero; saturates well before the overflow bail
 const DEPTH_SPAN: u32 = 8;
 const PING_SPAN: u128 = 200;
+// What each lane needs at TEXT_CAPTION (icon 14, two gaps of 5, a sparkline of at least 20, the readout: mono glyphs
+// of about 6.6 px), also its share of the bar's width: a lane never gets less than it needs while the bar has the room
+// [`BAR_MIN`] adds up to.
+/// The bar's height inside its plate: the frame-delay chip is its tallest part.
+const BAR_H: f32 = 22.0;
+const LANE_TPS: u16 = 121; // "59.97 /59.73"
+const LANE_SMALL: u16 = 64; // "  -1", "+12", "  0"
+const LANE_PING: u16 = 84; // " 10 ms"
+/// The lanes' least width together with their four dividers (17 each) and the frame-delay chip, the bar's gaps and
+/// padding: what the player legend must leave.
+const BAR_MIN: f32 = (LANE_TPS + 3 * LANE_SMALL + LANE_PING) as f32 * 1.04 + 4.0 * 17.0 + 56.0 + 34.0;
 
 /// A compact per-metric history chart for the persistent PvP panel. Each
 /// retained sample is `(height fraction in 0..=1, tone)`, plotted left→right
@@ -213,6 +224,7 @@ fn telemetry_card<'a>(
     caption: String,
     control: Element<'a, Message>,
     value: Element<'a, Message>,
+    weight: u16,
 ) -> Element<'a, Message> {
     let icon = iced::widget::tooltip(
         icon.widget().size(14.0).style(widgets::muted_text_style),
@@ -220,10 +232,11 @@ fn telemetry_card<'a>(
         iced::widget::tooltip::Position::Top,
     )
     .gap(5);
+    // (a lane's share of the bar follows what its readout needs, so a narrow bar never takes a number's room)
     let lane = row![icon, control, value,]
         .spacing(5)
         .align_y(Alignment::Center)
-        .width(Fill);
+        .width(Length::FillPortion(weight));
     lane.into()
 }
 
@@ -269,6 +282,7 @@ fn metric_card<'a>(
     history: &std::collections::VecDeque<MetricSample>,
     point: impl Fn(&MetricSample) -> Option<(f32, StatTone)>,
     value: impl Fn(&MetricSample) -> Option<Element<'a, Message>>,
+    weight: u16,
 ) -> Element<'a, Message> {
     let points = history.iter().map(&point).collect();
     let value = history
@@ -285,6 +299,7 @@ fn metric_card<'a>(
         }
         .view(),
         value,
+        weight,
     )
 }
 
@@ -310,6 +325,7 @@ fn telemetry_content<'a>(
             })
         },
         |s| (s.fps_target > 0.0).then(|| tps_value(s.tps, s.fps_target, tone_for_tps(s.tps, s.fps_target))),
+        LANE_TPS,
     );
 
     let skew_card = metric_card(
@@ -328,6 +344,7 @@ fn telemetry_content<'a>(
             s.round
                 .map(|(skew, _, _)| value_text(fmt_skew(skew), Some(tone_for_skew(skew))))
         },
+        LANE_SMALL,
     );
 
     let lead_card = metric_card(
@@ -346,6 +363,7 @@ fn telemetry_content<'a>(
             s.round
                 .map(|(_, _, lead)| value_text(fmt_lead(lead), Some(tone_for_lead(lead))))
         },
+        LANE_SMALL,
     );
 
     let depth_card = metric_card(
@@ -362,6 +380,7 @@ fn telemetry_content<'a>(
             s.round
                 .map(|(_, depth, _)| value_text(fmt_depth(depth), Some(tone_for_depth(depth))))
         },
+        LANE_SMALL,
     );
 
     let ping_card = metric_card(
@@ -378,6 +397,7 @@ fn telemetry_content<'a>(
             s.ping_ms
                 .map(|ping_ms| value_text(fmt_ping(ping_ms), Some(tone_for_ping(ping_ms))))
         },
+        LANE_PING,
     );
 
     row![
@@ -509,7 +529,7 @@ fn fmt_ping(ping_ms: u128) -> String {
 /// Persistent player/seat legend above the charts. Red and blue describe field
 /// halves everywhere except games that color players by seat; those keep the
 /// game-native P1/P2 color assignment while You/Opponent follows the local seat.
-fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -> Element<'a, Message> {
+fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget: f32) -> Element<'a, Message> {
     let side = |accent: Color, seat: &'static str, name: String| -> Element<'a, Message> {
         let dot = container(
             iced::widget::Space::new()
@@ -537,20 +557,31 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -> Elem
     use widgets::{FIELD_BLUE, FIELD_RED};
     let n = tango_library::online::room_players();
     if n > 2 {
-        // A room of 3-5: every seat, in its army's colour, with its gamertag.
+        // A room of 3-5: every seat, in its army's colour, with its gamertag. The legend takes what the numbers beside
+        // it leave (`budget`): the full names while they fit, else shorter and shorter ones, and last only the seat
+        // markers (the local seat says "You"); the full legend is in a tooltip whenever anything is cut.
         let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
         let me = tango_library::online::room_local_seat();
         let seats: [&'static str; 5] = ["P1", "P2", "P3", "P4", "P5"];
+        let you = t!(lang, "play-you");
+        let names: Vec<String> = (0..n).map(|k| tango_library::online::room_name(k)).collect();
+        let full: Vec<String> = names
+            .iter()
+            .enumerate()
+            .map(|(k, name)| if k == me { format!("{name} ({you})") } else { name.clone() })
+            .collect();
+        let (shown, cut) = legend_names(&names, me, &you, &full, budget);
         let mut r = row![].spacing(12).align_y(Alignment::Center);
         for k in 0..n {
-            let name = if k == me {
-                format!("{} ({})", tango_library::online::room_name(k), t!(lang, "play-you"))
-            } else {
-                tango_library::online::room_name(k)
-            };
-            r = r.push(side(colors[k], seats[k], name));
+            r = r.push(side(colors[k], seats[k], shown[k].clone()));
         }
-        return r.into();
+        if !cut {
+            return r.into();
+        }
+        let who = full.iter().enumerate().map(|(k, f)| format!("{} {f}", seats[k])).collect::<Vec<_>>().join("\n");
+        return iced::widget::tooltip(r, widgets::tooltip_bubble(who), iced::widget::tooltip::Position::Top)
+            .gap(5)
+            .into();
     }
     let local_is_p1 = pvp.local_player_index() == 0;
     let (you, opponent) = (t!(lang, "play-you"), t!(lang, "play-opponent"));
@@ -567,6 +598,47 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -> Elem
     .spacing(12)
     .align_y(Alignment::Center)
     .into()
+}
+
+/// A legend entry's width at TEXT_CAPTION, roughly: the army's dot (8), a gap (4), the seat marker (two mono glyphs),
+/// a gap, the name's glyphs (about 5.6 px each).
+fn legend_entry_width(name_chars: usize) -> f32 {
+    8.0 + 4.0 + 13.5 + if name_chars > 0 { 4.0 + name_chars as f32 * 5.6 } else { 0.0 }
+}
+
+/// The names the legend shows in `budget` pixels, and whether any was cut: the full ones ("Name (You)") if they fit,
+/// else names of at most 10, 8, 6 and 4 letters (ending in an ellipsis; the local seat shows "You"), else no names but
+/// the local seat's "You".
+fn legend_names(names: &[String], me: usize, you: &str, full: &[String], budget: f32) -> (Vec<String>, bool) {
+    let n = names.len();
+    let gaps = 12.0 * (n as f32 - 1.0);
+    let width = |texts: &[String]| gaps + texts.iter().map(|t| legend_entry_width(t.chars().count())).sum::<f32>();
+    if width(full) <= budget {
+        return (full.to_vec(), false);
+    }
+    let cut_to = |m: usize| -> Vec<String> {
+        names
+            .iter()
+            .enumerate()
+            .map(|(k, name)| {
+                if k == me {
+                    you.to_string()
+                } else if name.chars().count() > m {
+                    format!("{}…", name.chars().take(m.saturating_sub(1).max(1)).collect::<String>())
+                } else {
+                    name.clone()
+                }
+            })
+            .collect()
+    };
+    for m in [10, 8, 6, 4] {
+        let texts = cut_to(m);
+        if width(&texts) <= budget {
+            return (texts, true);
+        }
+    }
+    let marks: Vec<String> = (0..n).map(|k| if k == me { you.to_string() } else { String::new() }).collect();
+    (marks, true)
 }
 
 /// Hairline between the player legend, telemetry lanes, and frame-delay chip.
@@ -623,17 +695,26 @@ pub(super) fn telemetry_panel<'a>(
     pvp: &'a PvpSession,
     state: &'a State,
 ) -> Element<'a, Message> {
-    let bar = row![
-        players_header(lang, pvp),
-        status_divider(),
-        telemetry_content(lang, &state.metric_history),
-        status_divider(),
-        frame_delay_chip(lang, pvp, state.frame_delay_control.shown()),
-    ]
-    .spacing(8)
-    .align_y(Alignment::Center)
-    .width(Fill);
-    let panel = container(bar).padding([6.0, 8.0]).width(Fill).style(hud_chip_plate);
+    // The bar knows its width: the numbers (lanes, frame-delay chip) keep what they need ([`BAR_MIN`]) and the player
+    // legend of a room takes the rest, shortened if it must be.
+    let bar = iced::widget::responsive(move |size| {
+        let budget = size.width - BAR_MIN;
+        row![
+            players_header(lang, pvp, budget),
+            status_divider(),
+            telemetry_content(lang, &state.metric_history),
+            status_divider(),
+            frame_delay_chip(lang, pvp, state.frame_delay_control.shown()),
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center)
+        .width(Fill)
+        .into()
+    });
+    let panel = container(container(bar).height(Length::Fixed(BAR_H)).width(Fill))
+        .padding([6.0, 8.0])
+        .width(Fill)
+        .style(hud_chip_plate);
 
     container(panel)
         .width(Fill)
@@ -675,4 +756,52 @@ pub(super) fn frame_delay_overlay<'a>(
             })
             .into(),
     )
+}
+
+#[cfg(test)]
+mod legend_tests {
+    use super::*;
+
+    fn names(n: usize, len: usize) -> Vec<String> {
+        (0..n).map(|k| format!("{}{}", "Gamertag".repeat(2).chars().take(len - 1).collect::<String>(), k)).collect()
+    }
+    fn full(names: &[String], me: usize) -> Vec<String> {
+        names.iter().enumerate().map(|(k, n)| if k == me { format!("{n} (You)") } else { n.clone() }).collect()
+    }
+    fn width(texts: &[String]) -> f32 {
+        12.0 * (texts.len() as f32 - 1.0) + texts.iter().map(|t| legend_entry_width(t.chars().count())).sum::<f32>()
+    }
+
+    /// The least bar the app allows (the window's minimum, 960, less the two paddings): the legend of 3, 4 and 5 players
+    /// with 10-letter gamertags always fits the room the numbers leave, and the numbers never lose theirs.
+    #[test]
+    fn legend_fits_the_minimum_bar() {
+        let bar = 960.0 - 24.0 - 16.0;
+        let budget = bar - BAR_MIN;
+        assert!(budget > 150.0, "the numbers must leave the legend some room: {budget}");
+        for n in 3..=5 {
+            let nm = names(n, 10);
+            let (shown, _) = legend_names(&nm, 1, "You", &full(&nm, 1), budget);
+            assert!(width(&shown) <= budget, "{n} players: {} > {budget}: {shown:?}", width(&shown));
+        }
+    }
+
+    #[test]
+    fn short_names_stay_whole() {
+        let nm: Vec<String> = ["Host", "Guest", "Guest2"].iter().map(|s| s.to_string()).collect();
+        let (shown, cut) = legend_names(&nm, 0, "You", &full(&nm, 0), 400.0);
+        assert!(!cut);
+        assert_eq!(shown[0], "Host (You)");
+    }
+
+    #[test]
+    fn long_names_are_cut_then_dropped() {
+        let nm = names(5, 10);
+        let (shown, cut) = legend_names(&nm, 0, "You", &full(&nm, 0), 250.0);
+        assert!(cut);
+        assert_eq!(shown[0], "You");
+        let (shown, cut) = legend_names(&nm, 0, "You", &full(&nm, 0), 100.0);
+        assert!(cut);
+        assert!(shown[1].is_empty());
+    }
 }
