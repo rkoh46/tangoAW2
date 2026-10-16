@@ -148,6 +148,19 @@ pub enum Phase {
     Page,
 }
 
+/// A map-menu item chosen, nothing running and the map's window off, held for a moment: the mover's own build and
+/// command menus pass through the same state for a few frames (menu state 5 is left over from the last item), and
+/// the waiting window must not show the console's picture then (the mover's cursor, move range and units in fog).
+fn looks_like_hand_off(core: &Core, window_off: bool) -> bool {
+    static SINCE: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+    let mut since = SINCE.lock().unwrap();
+    if !(core.raw_read_8(MAP_MENU_STATE, -1) == 5 && window_off) {
+        *since = None;
+        return false;
+    }
+    since.get_or_insert_with(std::time::Instant::now).elapsed() > std::time::Duration::from_millis(200)
+}
+
 pub fn phase(core: &Core) -> Phase {
     match core.raw_read_32(MAIN_LOOP, -1) {
         MAP_LOOP => {}
@@ -158,7 +171,17 @@ pub fn phase(core: &Core) -> Phase {
     // (End's place in the map menu is not always the same, so the hand-off is also told by its look: a map-menu item
     // chosen, nothing running, and the map's window (WIN0, always on while the map shows) off)
     let window_off = core.raw_read_16(0x0400_0000, -1) & 0x2000 == 0;
-    if running.is_empty() && (crate::pvp::turn_ended(core) || (core.raw_read_8(MAP_MENU_STATE, -1) == 5 && window_off)) {
+    if crate::online::input_log_on() {
+        static LAST: std::sync::Mutex<(bool, u8, bool, usize)> = std::sync::Mutex::new((false, 0, false, 0));
+        let now = (crate::pvp::turn_ended(core), core.raw_read_8(MAP_MENU_STATE, -1), window_off, running.len());
+        let mut last = LAST.lock().unwrap();
+        if *last != now {
+            log::info!("fog-phase: turn_ended {} menu_state {} window_off {} procs {:x?}", now.0, now.1, now.2, running);
+            *last = now;
+        }
+    }
+    let look = looks_like_hand_off(core, window_off && running.is_empty());
+    if running.is_empty() && (crate::pvp::turn_ended(core) || look) {
         return Phase::HandOff;
     }
     if running.iter().all(|f| UI_PROCS.contains(f)) {
