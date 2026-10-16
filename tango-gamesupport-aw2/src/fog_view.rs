@@ -218,8 +218,11 @@ pub(crate) fn log_cells(core: &Core, army: u8) {
             }
         }
     }
+    // (the Teams record's controller bytes, 1 human and 2 computer: every army of an online match is a human's)
+    let rec = crate::tag_ui::record(core) + if crate::five::active(core) { 0x90 } else { 0x09 };
+    let controllers: Vec<u8> = (0..5).map(|a| core.raw_read_8(rec + a, -1)).collect();
     log::info!(
-        "cells: army {army} cursor ({},{}) map {w}x{h} owned {}",
+        "cells: army {army} controllers {controllers:?} cursor ({},{}) map {w}x{h} owned {}",
         core.raw_read_16(CURSOR, -1),
         core.raw_read_16(CURSOR + 2, -1),
         owned.join(" ")
