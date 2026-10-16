@@ -349,20 +349,27 @@ impl HostAgg {
         done
     }
 
+    /// What each guest is owed for a tick: every seat's word but its own, in seat order.
+    fn guest_views(&self, own: u16, guest_words: &[u16]) -> Vec<Vec<u16>> {
+        let mut by_seat = vec![0u16; self.guests + 1];
+        by_seat[self.host_seat] = own;
+        for (k, &seat) in self.guest_seats.iter().enumerate() {
+            by_seat[seat] = guest_words.get(k).copied().unwrap_or(0);
+        }
+        self.guest_seats
+            .iter()
+            .map(|&me| by_seat.iter().enumerate().filter(|&(s, _)| s != me).map(|(_, &w)| w).collect())
+            .collect()
+    }
+
     /// Send every guest the tick it is owed: the host's input and the other guests'.
     fn distribute(&mut self, senders: &mut [tango_net::PvpSender]) -> std::io::Result<()> {
         while !self.rows.is_empty() && !self.own.is_empty() {
             let (words, _) = self.rows.pop_front().unwrap();
             let (own, adv) = self.own.pop_front().unwrap();
-            // Every seat's word, then each guest's are the others' in seat order.
-            let mut by_seat = vec![0u16; self.guests + 1];
-            by_seat[self.host_seat] = own.keys as u16;
-            for (k, &seat) in self.guest_seats.iter().enumerate() {
-                by_seat[seat] = words.get(k).copied().unwrap_or(0);
-            }
+            let per_guest = self.guest_views(own.keys as u16, &words);
             for (g, sender) in senders.iter_mut().enumerate() {
-                let me = self.guest_seats[g];
-                let seats: Vec<u16> = by_seat.iter().enumerate().filter(|&(s, _)| s != me).map(|(_, &w)| w).collect();
+                let seats = &per_guest[g];
                 let get = |k: usize| seats.get(k).copied().unwrap_or(0);
                 sender.send(&tango_net::data::Input {
                     joyflags: get(0),
@@ -747,5 +754,56 @@ impl crate::Drive for PvpDriver {
     /// to bring the peers' clocks together.
     fn fps_target(&self) -> f32 {
         f32::from_bits(self.ctx.metrics.fps_target.load(Ordering::Relaxed))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn input(keys: u16) -> tango_net::data::Input {
+        tango_net::data::Input { joyflags: keys, touch: None, tick_advantage: 0, extra: [0; 3], others: 0 }
+    }
+
+    /// A room of 3 and of 5: every guest's word reaches the host's engine as seat order, and every guest hears
+    /// every other seat, so that all peers build the same seats' words (a guest's keys reach the shared console).
+    #[test]
+    fn room_inputs_reach_every_seat() {
+        for players in [3usize, 4, 5] {
+            for host_seat in [0usize, 1] {
+                let mut agg = HostAgg::new(players, host_seat);
+                let guest_seats = agg.guest_seats.clone();
+                let words: Vec<u16> = guest_seats.iter().map(|&s| 0x10 << s).collect();
+                let own = 0x1u16;
+                let mut rows = Vec::new();
+                for (k, w) in words.iter().enumerate() {
+                    rows.extend(agg.ingest(k, input(*w)));
+                }
+                assert_eq!(rows.len(), 1);
+                // The host's engine: seat_inputs puts the composite back into seats.
+                let seats = tango_match::seat_inputs(host_seat, players, tango_match::HostInput::keys(own as u32), rows[0].0);
+                assert_eq!(seats[host_seat].keys, own as u32);
+                for (k, &s) in guest_seats.iter().enumerate() {
+                    assert_eq!(seats[s].keys, words[k] as u32, "host hears seat {s} ({players} players)");
+                }
+                // Each guest's engine: the same seats' words.
+                let views = agg.guest_views(own, &words);
+                for (g, &me) in guest_seats.iter().enumerate() {
+                    let v = &views[g];
+                    let get = |k: usize| v.get(k).copied().unwrap_or(0);
+                    let remote = tango_match::HostInput {
+                        keys: get(0) as u32,
+                        touch: None,
+                        extra: [get(1), get(2), get(3)],
+                    };
+                    let local = tango_match::HostInput::keys(words[g] as u32);
+                    let seats = tango_match::seat_inputs(me, players, local, remote);
+                    assert_eq!(seats[host_seat].keys, own as u32);
+                    for (k, &s) in guest_seats.iter().enumerate() {
+                        assert_eq!(seats[s].keys, words[k] as u32, "guest {me} hears seat {s} ({players} players)");
+                    }
+                }
+            }
+        }
     }
 }
