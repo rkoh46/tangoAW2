@@ -20,6 +20,7 @@ struct Dump {
     tick: u32,
     last_units: std::collections::BTreeMap<u32, (u32, u8, i32, i32, u32)>,
     last_owner: std::collections::BTreeMap<u32, u8>,
+    last_powers: [u8; 6],
     ready: bool,
 }
 
@@ -52,7 +53,7 @@ pub fn tick(core: &Core, keys: u32) {
             .append(true)
             .open(dir.join(format!("state_s{seat}.jsonl")))
             .expect("run dump file");
-        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), ready: false }
+        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], ready: false }
     });
     d.tick += 1;
     // (every non-zero joypad word the console takes, with its tick: proof of what reached the game)
@@ -144,21 +145,37 @@ pub fn tick(core: &Core, keys: u32) {
             }
         }
     }
+    // (a CO Power or Super CO Power: the game's own count per army (crate::online_stats))
+    for a in 1..=5u32 {
+        let n = core.raw_read_8(crate::online_stats::POWERS + a, -1);
+        if d.ready && n > d.last_powers[a as usize] {
+            acts.push(format!("\"what\":\"power\",\"actor\":{a},\"count\":{n}"));
+        }
+        d.last_powers[a as usize] = n;
+    }
     d.ready = true;
     d.last_units = units;
     d.last_owner = owners;
     if !acts.is_empty() {
-        let plane: String = (0..h)
-            .flat_map(|y| {
-                let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
-                (0..w).map(move |x| (row, x))
-            })
-            .map(|(row, x)| if core.raw_read_8(MAP + 0x234A + row + x, -1) != 0 { '1' } else { '0' })
-            .collect();
+        // The cells THIS window's seat sees: its own last view when it is waiting, the displayed plane when it is the
+        // mover's own window.
+        let plane: String = match (mover == me as i32, crate::fog_view::seat_vision(me)) {
+            (false, Some((vw, vh, cells))) if vw as u32 == w && vh as u32 == h => (0..h)
+                .flat_map(|y| (0..w).map(move |x| (x, y)))
+                .map(|(x, y)| if cells.get((y * w + x) as usize).copied().unwrap_or(false) { '1' } else { '0' })
+                .collect(),
+            _ => (0..h)
+                .flat_map(|y| {
+                    let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+                    (0..w).map(move |x| (row, x))
+                })
+                .map(|(row, x)| if core.raw_read_8(MAP + 0x234A + row + x, -1) != 0 { '1' } else { '0' })
+                .collect(),
+        };
         for a in acts {
             let _ = writeln!(d.file, "{{\"ms\":{now},\"tick\":{},\"k\":\"act\",{a},\"seat\":{me},\"army\":{army}}}", d.tick);
         }
-        let _ = writeln!(d.file, "{{\"ms\":{now},\"tick\":{},\"k\":\"seen\",\"army\":{army},\"w\":{w},\"h\":{h},\"cells\":\"{plane}\"}}", d.tick);
+        let _ = writeln!(d.file, "{{\"ms\":{now},\"tick\":{},\"k\":\"seen\",\"army\":{army},\"of_seat\":{me},\"w\":{w},\"h\":{h},\"cells\":\"{plane}\"}}", d.tick);
         let _ = d.file.flush();
     }
 }

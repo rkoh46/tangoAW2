@@ -191,6 +191,11 @@ const SCENE_PROC: u32 = 0x0805_01DD;
 /// What each seat's window last saw of the map (width, height, cells seen), for the seats' share of a battle scene.
 static VISION: std::sync::Mutex<[Option<(i32, i32, Vec<bool>)>; 5]> = std::sync::Mutex::new([None, None, None, None, None]);
 
+/// What `seat`'s window last saw of the map: width, height and the cells it saw (for the test tools).
+pub fn seat_vision(seat: usize) -> Option<(i32, i32, Vec<bool>)> {
+    VISION.lock().unwrap().get(seat).cloned().flatten()
+}
+
 /// The procs of the pages' wipes and fades in and out (the CO page's, the map overview's): the mover's, never shown.
 const WIPE_PROCS: [u32; 2] = [0x0801_11AD, 0x0802_C451];
 

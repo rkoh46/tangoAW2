@@ -43,7 +43,7 @@ pub const TAG_LEN: u32 = BASE + 0x1C;
 const SCROLL: u32 = BASE + 0x20;
 pub const LINE_COUNT: u32 = BASE + 0x21;
 /// CO powers used in the battle, by army 1..5.
-const POWERS: u32 = BASE + 0x30;
+pub(crate) const POWERS: u32 = BASE + 0x30;
 /// Counts the battles of a room's match.
 const BATTLE_NO: u32 = BASE + 0x38;
 /// The record's lines: [`LINE_SIZE`] bytes each, zero-terminated, "label", a tab, "value".
