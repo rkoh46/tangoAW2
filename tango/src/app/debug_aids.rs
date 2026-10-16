@@ -11,7 +11,7 @@
 //!   the moment a session starts); `until COND [SECONDS]` idles until the
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
-//!   `army=N`, `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
+//!   `army=N`, `maparmies=N`, `status=N`, `players=N`, `ready=N`, `teamready`: this seat is READY on the army screen), `seek KEYS COND` presses
 //!   keys now and then until the console shows COND, `shot PATH` saves the
 //!   window's picture, `log TEXT` writes to the log, `session` starts the part
 //!   for the next session, `#` comments out a line.
@@ -101,6 +101,7 @@ fn parse_script(text: &str) -> Vec<Vec<Op>> {
             ["until", cond] => ops.push(Op::Until(cond.to_string(), 120.0)),
             ["until", cond, secs] => ops.push(Op::Until(cond.to_string(), secs.parse().unwrap_or(120.0))),
             ["seek", k, cond] => ops.push(Op::Seek(key_bits(k), cond.to_string(), 60.0)),
+            ["seek", k, cond, secs] => ops.push(Op::Seek(key_bits(k), cond.to_string(), secs.parse().unwrap_or(60.0))),
             ["shot", path] => ops.push(Op::Shot(PathBuf::from(path))),
             ["log", rest @ ..] => ops.push(Op::Log(rest.join(" "))),
             _ => {}

@@ -411,6 +411,7 @@ pub mod mailbox {
             ("versus", None) => flag(probe::VERSUS),
             ("nav", None) => flag(probe::NAV),
             ("turnended", None) => flag(probe::TURN_ENDED),
+            ("teamready", None) => crate::online_teams::seat_ready(read, room_local_seat()),
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
