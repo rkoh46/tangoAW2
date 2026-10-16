@@ -236,6 +236,15 @@ pub fn phase(core: &Core) -> Phase {
         _ => return Phase::Busy,
     }
     let running = procs(core);
+    if crate::online::input_log_on() {
+        static LAST: std::sync::Mutex<(bool, u8, usize)> = std::sync::Mutex::new((false, 0, 0));
+        let now = (crate::pvp::turn_ended(core), core.raw_read_8(MAP_MENU_STATE, -1), running.len());
+        let mut last = LAST.lock().unwrap();
+        if *last != now {
+            log::info!("fog-phase: turn_ended {} menu_state {} procs {:x?}", now.0, now.1, running);
+            *last = now;
+        }
+    }
     if running.is_empty() && crate::pvp::turn_ended(core) {
         return Phase::HandOff;
     }
@@ -247,6 +256,29 @@ pub fn phase(core: &Core) -> Phase {
     } else {
         Phase::Busy
     }
+}
+
+/// Test aid (`TANGOAW2_INPUT_LOG=1`): where the cursor is and which cells the army owns (HQ, factory, ...), for scripting.
+pub(crate) fn log_cells(core: &Core, army: u8) {
+    let (w, h) = size(core);
+    let mut owned = Vec::new();
+    for y in 0..h {
+        for x in 0..w {
+            let class = core.raw_read_8(MAP + 0x1432 + cell(core, x, y), -1);
+            if class >> 5 == army && (5..=13).contains(&(class & 0x1F)) {
+                owned.push(format!("({x},{y}):{}", class & 0x1F));
+            }
+        }
+    }
+    // (the Teams record's controller bytes, 1 human and 2 computer: every army of an online match is a human's)
+    let rec = crate::tag_ui::record(core) + if crate::five::active(core) { 0x90 } else { 0x09 };
+    let controllers: Vec<u8> = (0..5).map(|a| core.raw_read_8(rec + a, -1)).collect();
+    log::info!(
+        "cells: army {army} controllers {controllers:?} cursor ({},{}) map {w}x{h} owned {}",
+        core.raw_read_16(CURSOR, -1),
+        core.raw_read_16(CURSOR + 2, -1),
+        owned.join(" ")
+    );
 }
 
 pub fn fog(core: &Core) -> bool {

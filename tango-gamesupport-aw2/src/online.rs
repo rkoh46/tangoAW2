@@ -117,6 +117,9 @@ const PLAYERS_N_FOR_PROBE: u32 = crate::online_teams::SEL + 2;
 /// 1 for the whole of a room's battle (from its map loading until it is left for good), and the frames out of it.
 const BATTLE: u32 = STATE + 0x64;
 const OUT_T: u32 = STATE + 0x65;
+/// The army whose End was chosen while the turn-ended screen is up (0: none), kept in the console so every peer and
+/// every re-simulation agrees: the game moves its current army on before the screen's state is reset.
+const ENDER: u32 = STATE + 0x6C;
 const STATE_END: u32 = PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32;
 pub const PASSWORD_CHARS: usize = 4;
 
@@ -452,6 +455,14 @@ pub mod mailbox {
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
+            // the map cursor's cell (the cursor starts a turn where the last one left it)
+            ("cx" | "cy", Some(v)) => {
+                let mut b = [0u8; 2];
+                read(0x0300_33E4 + if name == "cy" { 2 } else { 0 }, &mut b);
+                u16::from_le_bytes(b) as u32 == v
+            }
+            // the map menu's selected row (0 CO, 1 Intel, 2 Options, 3 Save, 4 End; the menu keeps its row between uses)
+            ("menu", Some(v)) => (probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed) >> 40) & 0xFF == v as u64,
             ("maparmies", Some(v)) => (bits >> 32) & 0xFF == v as u64,
             ("status", Some(v)) => status(read) as u32 == v,
             ("players", Some(v)) => players(read).len() as u32 == v,
@@ -1402,6 +1413,13 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
     }
     crate::unranked::tick(core, inputs);
     let battle = core.raw_read_8(BATTLE, -1) == 1;
+    if battle && crate::pvp::turn_ended(core) {
+        if core.raw_read_8(ENDER, -1) == 0 {
+            core.raw_write_8(ENDER, -1, crate::pvp::current_army(core));
+        }
+    } else if core.raw_read_8(ENDER, -1) != 0 {
+        core.raw_write_8(ENDER, -1, 0);
+    }
     if crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
         if !battle {
             core.raw_write_8(BATTLE, -1, 1);
@@ -1475,6 +1493,28 @@ pub fn match_over(core: &Core) -> bool {
     core.raw_read_8(MATCH, -1) == 1 && core.raw_read_8(OVER, -1) == 1
 }
 
+/// Test aid (`TANGOAW2_INPUT_LOG=1`): log the keys of the seats that are not the active one, which the merge drops,
+/// whenever they change.
+pub(crate) fn input_log_on() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var("TANGOAW2_INPUT_LOG").is_ok_and(|v| v == "1"))
+}
+
+fn log_dropped(active: usize, army: u8, inputs: &[u32]) {
+    static LAST: std::sync::Mutex<Vec<u32>> = std::sync::Mutex::new(Vec::new());
+    let dropped: Vec<u32> = inputs.iter().enumerate().map(|(k, &v)| if k == active { 0 } else { v & 0x3FF }).collect();
+    let mut last = LAST.lock().unwrap();
+    if *last != dropped {
+        if dropped.iter().any(|&v| v != 0) {
+            let list: Vec<String> = dropped.iter().enumerate().filter(|(_, &v)| v != 0).map(|(k, v)| format!("seat{k}={v:#05x}")).collect();
+            log::info!("input-drop: active seat {active} (army {army}) kept {:#05x}; dropped {}", inputs[active] & 0x3FF, list.join(" "));
+        } else if !last.is_empty() {
+            log::info!("input-drop: none (active seat {active}, army {army})");
+        }
+        *last = dropped;
+    }
+}
+
 /// The army that takes over when `current`'s turn has ended in a room of `n` players (army 5 hands to 1).
 fn incoming_army(current: u8, n: usize) -> u8 {
     current % n.max(1) as u8 + 1
@@ -1500,8 +1540,24 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         if !(1..=5).contains(&current) {
             return Some(0);
         }
-        let army = if crate::pvp::turn_ended(core) { incoming_army(current, n) } else { current };
-        return Some(inputs[crate::pvp::seat_of_n(army, n)]);
+        // (the incoming army: the one after the army that chose End, which stays the same when the game has already moved
+        // its current army on while the End screen is still up)
+        let ender = core.raw_read_8(ENDER, -1);
+        let army = if crate::pvp::turn_ended(core) { incoming_army(if (1..=5).contains(&ender) { ender } else { current }, n) } else { current };
+        let active = crate::pvp::seat_of_n(army, n);
+        if input_log_on() {
+            log_dropped(active, army, inputs);
+            static CELLS_FOR: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+            if CELLS_FOR.swap(current, std::sync::atomic::Ordering::Relaxed) != current {
+                crate::fog_view::log_cells(core, current);
+            }
+            static CURSOR_WAS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+            let at = core.raw_read_16(0x0300_33E4, -1) as u32 | (core.raw_read_16(0x0300_33E6, -1) as u32) << 16;
+            if CURSOR_WAS.swap(at, std::sync::atomic::Ordering::Relaxed) != at {
+                log::info!("cursor ({},{}) army {current}", at & 0xFFFF, at >> 16);
+            }
+        }
+        return Some(inputs[active]);
     }
     if !crate::pvp::in_versus(core) {
         return None;
