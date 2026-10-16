@@ -536,8 +536,8 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -> Elem
 
     use widgets::{FIELD_BLUE, FIELD_RED};
     let n = tango_library::online::room_players();
-    if n > 2 {
-        // A room of 3-5: every seat, in its army's colour, with its gamertag.
+    if n > 2 || tango_library::online::room_named() >= 2 {
+        // A room (2-5 players; on every platform): every seat, in its army's colour, with its gamertag.
         let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
         let me = tango_library::online::room_local_seat();
         let seats: [&'static str; 5] = ["P1", "P2", "P3", "P4", "P5"];

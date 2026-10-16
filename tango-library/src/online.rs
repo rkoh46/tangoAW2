@@ -117,6 +117,9 @@ pub fn room_players() -> usize {
 pub fn room_picks() -> Vec<(u8, u8)> {
     tango_gamesupport_aw2::online::room_picks()
 }
+pub fn room_named() -> usize {
+    tango_gamesupport_aw2::online::room_named()
+}
 pub fn room_name(seat: usize) -> String {
     tango_gamesupport_aw2::online::room_name(seat)
 }

@@ -89,6 +89,8 @@ impl App {
         if self.online.in_match && !self.session.is_active() {
             self.online_record_battles();
             self.online.in_match = false;
+            // (a later game without a room has no gamertags to show)
+            tango_library::online::set_room(Vec::new(), 0);
             self.online.room = None;
             self.online.seen = None;
             let dropped = self.online.dropped.take();

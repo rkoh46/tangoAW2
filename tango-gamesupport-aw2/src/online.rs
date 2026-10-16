@@ -1439,6 +1439,11 @@ pub fn room_local_seat() -> usize {
     ROOM_INFO.lock().unwrap().local_seat
 }
 
+/// How many gamertags the room's match has (0: none were told, e.g. a link-code game).
+pub fn room_named() -> usize {
+    ROOM_INFO.lock().unwrap().names.len()
+}
+
 /// How many players the room has, for the picture (2 when nobody said).
 pub fn room_players() -> usize {
     ROOM_INFO.lock().unwrap().names.len().clamp(2, 5)
