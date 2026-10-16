@@ -1421,11 +1421,6 @@ pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     }
 }
 
-/// The room's battle phase flag (see [`seat_keys`]): set from the first battle screen, kept through the battle's scenes.
-pub fn battle_phase(core: &Core) -> bool {
-    core.raw_read_8(MATCH, -1) == 1 && core.raw_read_8(BATTLE, -1) == 1
-}
-
 /// A room's match runs on this console.
 pub fn in_room_match(core: &Core) -> bool {
     core.raw_read_8(MATCH, -1) == 1
