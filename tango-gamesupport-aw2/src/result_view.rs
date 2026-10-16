@@ -73,8 +73,20 @@ fn block(core: &Core, army: u8) -> u32 {
     crate::five::players(core) + PLAYER_STRIDE * army as u32
 }
 
-fn alive(core: &Core, army: u8) -> bool {
+pub(crate) fn alive(core: &Core, army: u8) -> bool {
     core.raw_read_8(block(core, army) + CONTROLLER, -1) != 0 && core.raw_read_16(block(core, army) + DEFEATED, -1) == 0
+}
+
+/// The armies still in the match (for the tools).
+pub fn alive_armies(core: &Core) -> Vec<u8> {
+    (1..=crate::five::armies(core).clamp(2, 5)).filter(|&a| alive(core, a)).collect()
+}
+
+/// The match is decided: at most one army is left (the others yielded or were beaten). Whatever the console shows from
+/// here is the match's end (VICTORY!, the result pages): every window not made DEFEAT shows it as it is.
+pub fn decided(core: &Core) -> bool {
+    let armies = crate::five::armies(core).clamp(2, 5);
+    (1..=armies).filter(|&a| alive(core, a)).count() <= 1
 }
 
 /// The army the game's VICTORY! is for: the first one still alive.

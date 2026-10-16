@@ -1,0 +1,74 @@
+# 3 seats, Fog off: seat 0 yields (the match goes on between armies 2 and 3; seat 1 dismisses the hand-off), then seat 1 yields on its turn: seat 2 must show VICTORY! (the console's picture), seats 0 and 1 DEFEAT, and the room must return to SELECT YOUR ARMY once the winner and the host press A. Run: aw2_room_teams <rom> <out> this-file; exit 1 on a failed expect/waitfor.
+n 3
+until maparmies=3 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+goto 0 3 3
+wait 10
+press 0 A
+wait 40
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+wait 40
+press 0 DOWN
+wait 10
+press 0 A
+wait 200
+press 0 LEFT
+wait 20
+press 0 A
+wait 20
+wait 600
+press 1 A
+until army=2 100
+wait 400
+press 1 B
+wait 20
+press 1 B
+wait 20
+goto 1 3 3
+wait 10
+press 1 A
+wait 40
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+wait 40
+press 1 A
+wait 200
+press 1 LEFT
+wait 20
+press 1 A
+wait 20
+waitfor victory 60
+wait 100
+expect winner 2
+expect loser 1
+expect loser 0
+waitfor armysel 120 pressA 0,2

@@ -1,0 +1,45 @@
+# 2 seats, Fog off: seat 0 yields on its turn (Options, Yield, Yes). Seat 1 must show VICTORY! (the console's picture) and seat 0 its DEFEAT; the winner and the host press A (the winner has the pad for 150 ticks, then the host drives the result pages) and the room must be back on SELECT YOUR ARMY. Run: aw2_room_teams <rom> <out> this-file; exit 1 on a failed expect/waitfor.
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+goto 0 3 3
+wait 10
+press 0 A
+wait 40
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+wait 40
+press 0 DOWN
+wait 10
+press 0 A
+wait 200
+press 0 LEFT
+wait 20
+press 0 A
+wait 20
+waitfor victory 60
+wait 100
+expect winner 1
+expect loser 0
+waitfor armysel 120 pressA 0,1
