@@ -1416,11 +1416,9 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             } else {
                 core.raw_write_8(SKIP_DONE, -1, 0);
             }
-            if unranked {
-                // (UNRANKED: the chosen map is walked to and chosen, the standard rules are set)
-                keys = crate::unranked::drive(core, keys);
-                keys = crate::unranked::rules(core, keys);
-            }
+            // (the chosen map is walked to and chosen; UNRANKED: the standard rules are set)
+            keys = crate::unranked::drive(core, keys);
+            keys = crate::unranked::rules(core, keys);
             if keys & !prev & KEY_A != 0
                 && !paged
                 && crate::survival_ui::idle(core)

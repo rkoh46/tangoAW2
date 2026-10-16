@@ -3,6 +3,15 @@ n 5
 until maparmies=5 100
 wait 60
 press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
+press 3 A
+wait 20
+press 4 A
+wait 20
 until teams 100
 wait 90
 press 4 DOWN

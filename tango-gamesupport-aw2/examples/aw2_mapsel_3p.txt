@@ -1,0 +1,45 @@
+# 3 seats, each proposes a map on its own turn (every window shotall at each step), the draw, the chosen map and the Teams screen. Run: aw2_room_teams <rom> <out> this-file
+n 3
+until maparmies=3 100
+wait 60
+shotall pick0a
+press 0 DOWN
+wait 6
+press 0 DOWN
+wait 6
+press 0 DOWN
+wait 6
+wait 20
+shotall pick0b
+press 0 A
+wait 20
+shotall pick1a
+press 1 RIGHT
+wait 6
+press 1 DOWN
+wait 6
+wait 20
+shotall pick1b
+press 1 A
+wait 20
+shotall pick2a
+press 2 LEFT
+wait 6
+press 2 DOWN
+wait 6
+press 2 DOWN
+wait 6
+press 2 DOWN
+wait 6
+press 2 DOWN
+wait 6
+press 2 DOWN
+wait 6
+wait 20
+shotall pick2b
+press 2 A
+wait 2
+shotall chosen
+until teams 200
+wait 30
+shotall teams

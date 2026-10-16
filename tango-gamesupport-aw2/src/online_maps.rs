@@ -1,12 +1,13 @@
 //! The map list of a room's match (crate::online): AW2's own SELECT MAP, filled for the room.
 //!
-//! On the netplay console of a room's match the game's own Versus SELECT MAP is played by the host (its tabs, list,
-//! picture, size and property boxes as offline), but its list holds only the maps for as many armies as the room has
-//! players: every frame [`retab`] puts each map's header tab (+0x1A, what the list builder sorts maps into tabs by)
-//! where the room's count wants it, and maps for another count on a tab no list shows ([`HIDE`]). The tabs are the
-//! game's own, with its own names: for 2 players "2P Maps" (the Classic tab, renamed: [`crate::five_map::name_classic_tab`]) and "Pre-Deployed", for 3 "3P Maps" and "Pre-
-//! Deployed", for 4 "4P Maps" and "Pre-Deployed", for 5 players "5P Maps" (the tabs left empty are skipped by the
-//! list). Offline Versus is not touched (nothing here runs outside a room's match).
+//! On the netplay console of a room's match the game's own Versus SELECT MAP is played by the seats in turn
+//! ([`crate::unranked`]; its tabs, list, picture, size and property boxes as offline), but its list holds only the maps
+//! for as many armies as the room has players, in two tabs: every frame [`retab`] puts each map's header tab (+0x1A,
+//! what the list builder sorts maps into tabs by) on the Classic tab (2) or the Pre-Deployed tab (4), and maps for
+//! another count on a tab no list shows ([`HIDE`]). A map is Pre-Deployed when its unit list places units
+//! ([`predeployed`]). The tabs read "3P" and "3P Predeploy" for a room of 3 ([`tab_titles`]); a tab with no map is
+//! skipped by the list (the 5P rooms have one tab). Offline Versus is not touched (nothing here runs outside a room's
+//! match).
 //!
 //! [`list`], [`preview`] and [`draw_preview`] are independent of that (the UNRANKED proposals use them: maps for a
 //! count, each with its name, size, properties and a picture drawn from its tiles).
@@ -80,13 +81,17 @@ fn scan(core: &Core, armies: usize) -> (Vec<u8>, Vec<u8>) {
         if !(TABS.contains(&tab) || tab == HIDE) || armies_of(core, table, id) as usize != armies {
             continue;
         }
-        let units = core.raw_read_32(h + 0x34, -1);
-        let pre = rom(units) && core.raw_read_8(units, -1) == 0xFE;
+        let pre = predeployed(core, core.raw_read_32(h + 0x34, -1));
         found.push((tab, id as u8, pre));
     }
     found.sort();
     let pick = |pre: bool| found.iter().filter(|f| f.2 == pre).map(|f| f.1).collect();
     (pick(false), pick(true))
+}
+
+/// A map starts with units placed (its unit list has units, not only the armies' empty headers).
+fn predeployed(core: &Core, units: u32) -> bool {
+    rom(units) && core.raw_read_8(units, -1) == 0xFE && unit_owners(core, units).1 > 0
 }
 
 /// What a map is made of, decoded once.
@@ -96,6 +101,9 @@ struct Info {
     h: u8,
     props: u16,
     bases: u16,
+    /// Bit k: army slot k owns a property / an HQ on the map.
+    owners: u8,
+    hqs: u8,
     /// Per tile, row by row: a kind (`K_*`).
     cells: Vec<u8>,
 }
@@ -191,7 +199,7 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
             slot.min(5)
         }
     };
-    let (mut props, mut bases) = (0u16, 0u16);
+    let (mut props, mut bases, mut owners, mut hqs) = (0u16, 0u16, 0u8, 0u8);
     let cells = (0..w as usize * ht as usize)
         .map(|i| {
             let t = u16::from_le_bytes([raw[2 + 2 * i], raw[3 + 2 * i]]) as usize;
@@ -201,6 +209,12 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
                 6 | 8 | 10 | 11 | 14 | 20 => {
                     props += 1;
                     bases += (kind == 14) as u16;
+                    if (1..=5).contains(&owner) {
+                        owners |= 1 << owner;
+                        if kind == 8 {
+                            hqs |= 1 << owner;
+                        }
+                    }
                     if (1..=5).contains(&owner) {
                         K_ARMY + colour(owner) - 1
                     } else {
@@ -218,9 +232,86 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
             }
         })
         .collect();
-    let info = Arc::new(Info { name: name_of(core, text), w, h: ht, props, bases, cells });
+    let info = Arc::new(Info { name: name_of(core, text), w, h: ht, props, bases, owners, hqs, cells });
     caches().lock().unwrap().insert(key, info.clone());
     Some(info)
+}
+
+/// One row of the map audit: a map of the online pool with its armies counted from its data.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AuditRow {
+    pub id: u8,
+    pub name: String,
+    /// "AW2", "Dual Strike" or "tangoAW2".
+    pub source: &'static str,
+    pub w: u8,
+    pub h: u8,
+    /// The armies the data has: the owners of properties and of pre-placed units.
+    pub armies: u8,
+    /// Of them, the armies with an HQ.
+    pub hqs: u8,
+    pub predeployed: bool,
+    /// The armies the map's header says (what the game's own lists trust).
+    pub header: u8,
+}
+
+/// The armies with pre-placed units in a unit list (a mask of army slots), and the units placed.
+fn unit_owners(core: &Core, units: u32) -> (u8, u32) {
+    let (mut mask, mut n, mut army) = (0u8, 0u32, 0u8);
+    for k in 0..512 {
+        let at = units + 12 * k;
+        match core.raw_read_8(at, -1) {
+            0xFF => break,
+            0xFE => army = core.raw_read_8(at + 1, -1),
+            _ => {
+                n += 1;
+                if (1..=5).contains(&army) {
+                    mask |= 1 << army;
+                }
+            }
+        }
+    }
+    (mask, n)
+}
+
+/// Every map the online lists can show (Design Room maps and unlisted ids left out), counted from the data.
+pub fn audit(core: &Core) -> Vec<AuditRow> {
+    let table = crate::five_map::table(core);
+    let mut rows = Vec::new();
+    for id in 0..=last_id(table) {
+        let h = table + 0x5C * id;
+        if (0xB4..=0xB7).contains(&id) || !rom(core.raw_read_32(h, -1)) {
+            continue;
+        }
+        let tab = core.raw_read_16(h + 0x1A, -1);
+        if !(TABS.contains(&tab) || tab == HIDE) {
+            continue;
+        }
+        let Some(i) = info(core, id as u8) else { continue };
+        let units = core.raw_read_32(h + 0x34, -1);
+        let (umask, placed) = if rom(units) && core.raw_read_8(units, -1) == 0xFE { unit_owners(core, units) } else { (0, 0) };
+        let predeployed = placed > 0;
+        let all = i.owners | umask;
+        let source = if crate::five_map::map_of(id as u8).is_some() {
+            "tangoAW2"
+        } else if table == crate::ds_versus::TABLE {
+            "Dual Strike"
+        } else {
+            "AW2"
+        };
+        rows.push(AuditRow {
+            id: id as u8,
+            name: i.name.clone(),
+            source,
+            w: i.w,
+            h: i.h,
+            armies: all.count_ones() as u8,
+            hqs: i.hqs.count_ones() as u8,
+            predeployed,
+            header: armies_of(core, table, id),
+        });
+    }
+    rows
 }
 
 /// The maps a room of `armies` players can play, the Pre-Deployed ones or the others, in the game's order.
@@ -303,13 +394,14 @@ pub(crate) fn draw_preview(core: &Core, cv: &mut Rgba<'_>, id: u8, x: i32, y: i3
 
 /// The game's Versus tabs (header +0x1A) by number of armies: (a map's tab, a Pre-Deployed map's tab). Tab 2 is
 /// "Classic", 4 "Pre-Deployed", 5 "3P Maps", 6 "4P Maps", 9 "5P Maps".
-fn tabs_for(armies: usize) -> (u16, u16) {
-    match armies {
-        2 => (2, 4),
-        3 => (5, 4),
-        4 => (6, 4),
-        _ => (9, 9),
-    }
+fn tabs_for(_armies: usize) -> (u16, u16) {
+    (2, 4)
+}
+
+/// The tabs' titles for a room of `n`: "3P" and "3P Predeploy" ("3P - Predeploy" is two letters too wide for the
+/// game's tab box; this fits with room to spare).
+pub fn tab_titles(n: usize) -> (String, String) {
+    (format!("{n}P"), format!("{n}P Predeploy"))
 }
 
 /// A room's match: every frame (after [`crate::five_map::show_maps`]), every Versus map's tab for the room's count.
@@ -319,9 +411,8 @@ pub fn retab(core: &mut Core) {
     }
     let n = crate::online_teams::players(core);
     let (plain, pre) = tabs_for(n);
-    if n == 2 {
-        crate::five_map::name_classic_tab(core);
-    }
+    let (a, b) = tab_titles(n);
+    crate::five_map::name_room_tabs(core, n, &a, &b);
     let table = crate::five_map::table(core);
     for id in 0..=last_id(table) {
         let h = table + 0x5C * id;
@@ -334,8 +425,7 @@ pub fn retab(core: &mut Core) {
         } else if armies_of(core, table, id) as usize != n {
             HIDE
         } else {
-            let units = core.raw_read_32(h + 0x34, -1);
-            if rom(units) && core.raw_read_8(units, -1) == 0xFE {
+            if predeployed(core, core.raw_read_32(h + 0x34, -1)) {
                 pre
             } else {
                 plain

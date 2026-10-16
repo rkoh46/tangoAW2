@@ -200,21 +200,25 @@ pub fn is_wasteland_map(id: u8) -> bool {
     id != 0 && map_of(id).is_some_and(|m| m.wasteland)
 }
 
-/// A room of two: the Classic tab (2) reads "2P Maps", like the 3-5 player rooms' tabs. Its title is a text of its own
-/// (the one after the maps' names), so no other tab changes. Idempotent.
-pub fn name_classic_tab(core: &mut Core) {
-    let k = 1 + MAPS.len() as u32;
-    let at = STRINGS + 0x20 * k;
-    let id = TAB_TEXT as u32 + k;
-    let slot = TEXT_TABLE + 4 * id;
-    if core.raw_read_32(slot, -1) != at {
-        let mut bytes = b"2P Maps".to_vec();
-        bytes.push(0);
-        core.raw_write_range(at, -1, &bytes);
-        core.raw_write_32(slot, -1, at);
-    }
-    if core.raw_read_16(TAB_TITLES + 2 * 2, -1) != id as u16 {
-        core.raw_write_16(TAB_TITLES + 2 * 2, -1, id as u16);
+/// A room's Versus tabs read "<n>P" and "<n>P - <pre>" (a room of n players: [`crate::online_maps`]): the titles of the
+/// Classic tab (2) and the Pre-Deployed tab (4), each a text of its own (the ones after the maps' names, two for each
+/// count), so no other tab changes. Idempotent.
+pub fn name_room_tabs(core: &mut Core, players: usize, plain: &str, pre: &str) {
+    for (k, (tab, text)) in [(2u32, plain), (4, pre)].into_iter().enumerate() {
+        let slot_k = 1 + MAPS.len() as u32 + 2 * (players as u32 - 2) + k as u32;
+        let at = STRINGS + 0x20 * slot_k;
+        let id = TAB_TEXT as u32 + slot_k;
+        let slot = TEXT_TABLE + 4 * id;
+        if core.raw_read_32(slot, -1) != at {
+            let mut bytes = text.bytes().map(|b| if b == b'\'' { b'~' } else { b }).collect::<Vec<u8>>();
+            assert!(bytes.len() < 0x20);
+            bytes.push(0);
+            core.raw_write_range(at, -1, &bytes);
+            core.raw_write_32(slot, -1, at);
+        }
+        if core.raw_read_16(TAB_TITLES + 2 * tab, -1) != id as u16 {
+            core.raw_write_16(TAB_TITLES + 2 * tab, -1, id as u16);
+        }
     }
 }
 
@@ -407,5 +411,56 @@ mod tests {
         // the Colonel's Vault: a 2-army map with the pack's tab, the last id
         assert!(!is_five_map(VAULT_ID) && is_ds_map(VAULT_ID) && !is_wasteland_map(VAULT_ID));
         assert_eq!(map_of(VAULT_ID).unwrap().name, "The Colonel's Vault");
+    }
+
+    /// The armies of a map counted from its data, not its label: the owners of its property tiles and of the
+    /// units placed on it (both by army slot; the colours are the header's). Returns (armies, armies with an HQ, units placed).
+    fn counted(m: &crate::five_map_data::Map) -> (u32, u32, u32) {
+        let raw = &m.tiles[4..];
+        let mut bytes = Vec::new();
+        for block in raw.chunks(9) {
+            bytes.extend_from_slice(&block[1..]);
+        }
+        let (w, h) = (bytes[0] as usize, bytes[1] as usize);
+        let (mut owners, mut hqs) = (0u32, 0u32);
+        for t in 0..w * h {
+            let id = u16::from_le_bytes([bytes[2 + 2 * t], bytes[3 + 2 * t]]) as u32;
+            let (army, hq) = match id {
+                // (neutral 0x1C0.. is owner 0; armies 1..4 follow, then the fifth's 0x1B4..)
+                0x1C5..=0x1D8 => ((id - 0x1C0) / 5, (id - 0x1C0) % 5 == 0),
+                0x1B4..=0x1B8 => (5, id == 0x1B4),
+                _ => continue,
+            };
+            owners |= 1 << army;
+            hqs |= (hq as u32) << army;
+        }
+        let (mut placed, mut army) = (0, 0);
+        for rec in m.units.chunks(12) {
+            match rec[0] {
+                0xFF => break,
+                0xFE => army = rec[1] as u32,
+                _ => {
+                    placed += 1;
+                    owners |= 1 << army;
+                }
+            }
+        }
+        (owners.count_ones(), hqs.count_ones(), placed)
+    }
+
+    #[test]
+    fn every_map_has_the_armies_it_is_listed_for() {
+        for m in MAPS {
+            let (armies, hqs, _) = counted(m);
+            assert_eq!(armies, m.armies as u32, "{}: armies counted from its data", m.name);
+            assert!(hqs <= armies && hqs >= 1, "{}", m.name);
+            assert_eq!(m.colours.len(), m.armies as usize, "{}", m.name);
+        }
+        // the groups the online tabs use (armies, pre-deployed): none empty is asserted by the audit example
+        for m in MAPS {
+            let (_, _, placed) = counted(m);
+            let group = (m.armies, placed > 0);
+            assert!((2..=5).contains(&group.0), "{}", m.name);
+        }
     }
 }

@@ -3,6 +3,11 @@ n 3
 until maparmies=3 100
 wait 60
 press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
 until teams 100
 wait 90
 press 2 DOWN
@@ -71,4 +76,4 @@ wait 100
 expect winner 2
 expect loser 1
 expect loser 0
-waitfor armysel 120 pressA 0,2
+waitfor armysel 120 pressA 0,1,2
