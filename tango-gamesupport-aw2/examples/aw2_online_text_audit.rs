@@ -481,33 +481,24 @@ fn armies(c: &mut Ctx) {
     }
 }
 
-/// UNRANKED's PROPOSE A MAP page: both gamertags at their longest, every candidate map's name.
+/// UNRANKED's map pick: the bar over SELECT MAP's own screen at its longest (both gamertags, the widest map name).
 fn proposals(c: &mut Ctx) {
     use tango_gamesupport_aw2::unranked as un;
     let core = c.link.core_mut();
-    un::list_candidates(core);
-    let n = un::candidates_len(core);
-    let mut widest = (0, 0);
-    for i in 0..n {
-        let id = core.raw_read_8(un::STATE + 0x20 + i as u32, -1);
-        let w = tango_gamesupport_aw2::online::text_width(core, &un::map_name(core, id)) + 2 * tango_gamesupport_aw2::online::text_width(core, "< >");
+    let mut widest = (0, 1u8);
+    for id in 1..100u8 {
+        let w = tango_gamesupport_aw2::online::text_width(core, &un::map_name(core, id));
         if w > widest.0 {
-            widest = (w, i);
+            widest = (w, id);
         }
     }
-    println!("proposals: {n} maps, widest #{} ({} px with arrows)", widest.1, widest.0);
+    println!("unranked: widest map name #{} ({} px)", widest.1, widest.0);
     for local in 0..2usize {
         tango_gamesupport_aw2::online::set_room(vec![W12.to_string(), W12.to_string()], local);
-        for i in 0..n {
+        for (picks, phase, tag) in [(0u8, 0u8, "first"), (1, 0, "second"), (2, 1, "played0"), (2, 1, "played1")] {
             let core = c.link.core_mut();
-            un::set_proposals(core, [i as u8, i as u8], [false, false], 0, 0);
-            let save = i == widest.1 || i == 0;
-            paint(c, &format!("propose_s{local}_{i:03}"), save, |core, rgba| un::paint(core, rgba));
-        }
-        for (ok, ph, tag) in [([true, false], 0u8, "waiting"), ([true, true], 1, "picked")] {
-            let core = c.link.core_mut();
-            un::set_proposals(core, [widest.1 as u8, widest.1 as u8], ok, ph, 1);
-            paint(c, &format!("propose_s{local}_{tag}"), true, |core, rgba| un::paint(core, rgba));
+            un::set_state(core, picks, [widest.1, widest.1], phase, tag.ends_with('1') as u8);
+            paint(c, &format!("unranked_s{local}_{tag}"), true, |core, rgba| un::paint_bar(core, rgba));
         }
     }
 }

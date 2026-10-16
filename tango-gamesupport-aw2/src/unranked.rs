@@ -3,13 +3,15 @@
 //! The netplay console of an UNRANKED match ([`crate::online::UNRANKED_MATCH`] in its subtype) walks to Versus'
 //! SELECT MAP as any room's does, and from there the players do not play the game's menus:
 //!
-//! 1. **Proposals.** Each player moves a selector of their own through the 2-army maps of the Versus tabs Classic,
-//!    Vs. Maps and Pre-Deployed ([`candidates`]) and confirms with A (B takes it back); the page shows both players'
-//!    proposals and gamertags live. The game's own list waits underneath, given no keys.
-//! 2. **The draw.** When both have confirmed, one of the two proposals is the match's map: the seat chosen by
+//! 1. **Picks.** The game's own SELECT MAP (its tabs "2P Maps" and "Pre-Deployed", the list, the picture and the
+//!    counters: [`crate::online_maps`] shows only the 2-army maps) is played by the two players one after the other:
+//!    the host's seat first, then the guest's. While a seat picks, only its keys reach the game ([`merge`]; A, B and
+//!    START are kept from it: A is the pick, recorded by [`tick`] from the map under the cursor) and the other
+//!    player watches the same screen with "Waiting for the other player..." in the bar.
+//! 2. **The draw.** When both have picked, one of the two maps is the match's: the seat chosen by
 //!    [`crate::online::UNRANKED_PICK_GUEST`] (a bit of the match subtype, drawn by the room's host from the match seed, so
 //!    it is the same on both peers and in a replay). The map is then walked to in the game's list by pressing for the
-//!    players ([`drive`]) and chosen with A.
+//!    players ([`drive`]) and chosen with A; the bar says whose map is played.
 //! 3. **Armies.** Versus' Teams screen is the room's usual one ([`crate::online_teams`]): CO and a colour no other
 //!    army has, no partner (tag pairs are off).
 //! 4. **Rules.** The Rules screen is not played: [`rules`] writes the standard rules into its rows and presses A.
@@ -19,7 +21,7 @@
 //!
 //! The state is in EWRAM ([`STATE`]) so that rollback and replays carry it.
 
-use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
+use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_RIGHT, KEY_UP};
 use mgba::core::Core;
 
 pub const STATE: u32 = 0x0203_D600;
@@ -28,13 +30,12 @@ pub const STATE_LEN: u32 = 0x100;
 const FLAG: u32 = STATE;
 /// 1: the guest's proposal is the match's map.
 const PICK: u32 = STATE + 1;
-/// 0 proposing, 1 walking to the chosen map, 2 the map is chosen (the game goes on to the armies and the rules),
+/// 0 picking (the seats in turn, [`PICKS`]), 1 walking to the chosen map, 2 the map is chosen (the game goes on to the armies and the rules),
 /// 3 the walk failed (the host picks with the game's list).
 const PHASE: u32 = STATE + 2;
 const CHOSEN: u32 = STATE + 3;
-const NCAND: u32 = STATE + 4;
-/// 1 once the candidates are listed.
-const LISTED: u32 = STATE + 5;
+/// How many seats have picked (0: the host's seat picks, 1: the guest's).
+const PICKS: u32 = STATE + 4;
 /// Frames of the walk (u16, even address).
 const WALK_T: u32 = STATE + 6;
 /// Frames on the Rules screen.
@@ -47,21 +48,13 @@ const SETTLED: u32 = STATE + 0x0A;
 const CHANGED: u32 = STATE + 0x0B;
 const SEATS: u32 = STATE + 0x10;
 const SEAT_SIZE: u32 = 8;
-// A seat: +0 its proposal (an index into the candidates), +1 confirmed, +2 previous keys (u16), +4 frames the
-// direction has been held.
-const S_CURSOR: u32 = 0;
-const S_OK: u32 = 1;
+// A seat: +0 the map it picked (an id), +2 previous keys (u16).
+const S_MAP: u32 = 0;
 const S_PREV: u32 = 2;
-const S_HELD: u32 = 4;
-const CAND: u32 = STATE + 0x20;
-const MAX_CAND: usize = 0xE0;
 
 /// The standard rules, written into the Rules screen's rows (see [`rules`]).
 pub const RULES: &str = "Fog of war off, weather clear, funds 1000 per property, no turn limit, no capture limit, \
 CO powers on, CO skills off, tag pairs off";
-
-/// The Versus tabs whose 2-army maps are offered: Classic, Vs. Maps, Pre-Deployed.
-const TABS: [u16; 3] = [2, 3, 4];
 
 /// Rows of the Rules screen, in the order of its record's objects.
 const R_FOG: usize = 0;
@@ -90,18 +83,16 @@ pub fn init(core: &mut Core, subtype: u8) {
     }
 }
 
-/// Test aid (the text audit): both seats' proposals (indexes of the candidates) and whether they are confirmed.
-pub fn set_proposals(core: &mut Core, cursors: [u8; 2], ok: [bool; 2], phase: u8, pick: u8) {
+/// Test aid (the text audit): the picks made, both seats' maps, the phase and whose map is played.
+pub fn set_state(core: &mut Core, picks: u8, maps: [u8; 2], phase: u8, pick: u8) {
+    core.raw_write_8(FLAG, -1, 1);
     core.raw_write_8(PHASE, -1, phase);
     core.raw_write_8(PICK, -1, pick);
+    core.raw_write_8(PICKS, -1, picks);
+    core.raw_write_8(CHOSEN, -1, maps[pick as usize % 2]);
     for s in 0..2 {
-        core.raw_write_8(seat(s) + S_CURSOR, -1, cursors[s]);
-        core.raw_write_8(seat(s) + S_OK, -1, ok[s] as u8);
+        core.raw_write_8(seat(s) + S_MAP, -1, maps[s]);
     }
-}
-
-pub fn candidates_len(core: &Core) -> usize {
-    n_candidates(core)
 }
 
 pub fn on(core: &Core) -> bool {
@@ -114,31 +105,6 @@ fn phase(core: &Core) -> u8 {
 
 fn seat(s: usize) -> u32 {
     SEATS + SEAT_SIZE * s as u32
-}
-
-fn candidate(core: &Core, i: usize) -> u8 {
-    core.raw_read_8(CAND + i as u32, -1)
-}
-
-fn n_candidates(core: &Core) -> usize {
-    core.raw_read_8(NCAND, -1) as usize
-}
-
-/// The 2-army maps on the offered tabs, in id order, from the map table the game reads now.
-pub fn list_candidates(core: &mut Core) {
-    let table = crate::five_map::table(core);
-    let mut n = 0;
-    for id in 1..crate::five_map::MAP_IDS {
-        let e = table + 0x5C * id;
-        let tab = core.raw_read_16(e + 0x1A, -1);
-        // (the Colonel's Vault is the BH Campaign's prize: not for a random match)
-        if core.raw_read_8(e + 0x18, -1) == 2 && TABS.contains(&tab) && id != crate::five_map::VAULT_ID as u32 && n < MAX_CAND {
-            core.raw_write_8(CAND + n as u32, -1, id as u8);
-            n += 1;
-        }
-    }
-    core.raw_write_8(NCAND, -1, n as u8);
-    core.raw_write_8(LISTED, -1, 1);
 }
 
 /// A map's name as the game's text table has it.
@@ -157,17 +123,7 @@ pub fn map_name(core: &Core, id: u8) -> String {
         .collect()
 }
 
-fn tab_name(core: &Core, id: u8) -> &'static str {
-    let table = crate::five_map::table(core);
-    match core.raw_read_16(table + 0x5C * id as u32 + 0x1A, -1) {
-        2 => "Classic",
-        3 => "Vs. Maps",
-        4 => "Pre-Deployed",
-        _ => "",
-    }
-}
-
-/// Every tick: the proposals' selectors, from each seat's own keys.
+/// Every tick: the seat whose turn it is to pick, from its own keys: A picks the map under the game's cursor.
 pub fn tick(core: &mut Core, inputs: &[u32]) {
     if !on(core) || inputs.len() < 2 {
         return;
@@ -179,77 +135,47 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
     if phase(core) == 1 && core.raw_read_8(SETTLED, -1) >= 10 && !crate::survival_ui::selecting(core) {
         core.raw_write_8(PHASE, -1, 2);
     }
+    let was = [0, 1].map(|s| core.raw_read_16(seat(s) + S_PREV, -1) as u32);
+    for s in 0..2 {
+        core.raw_write_16(seat(s) + S_PREV, -1, inputs[s] as u16);
+    }
     if phase(core) != 0 || !crate::survival_ui::idle(core) {
         return;
     }
-    if core.raw_read_8(LISTED, -1) == 0 {
-        list_candidates(core);
-        for s in 0..2 {
-            core.raw_write_16(seat(s) + S_PREV, -1, inputs[s] as u16);
-        }
-    }
-    let n = n_candidates(core);
-    if n == 0 {
-        // (no map to propose: the host picks with the game's list)
-        core.raw_write_8(PHASE, -1, 3);
+    let who = (core.raw_read_8(PICKS, -1) as usize).min(1);
+    if inputs[who] & !was[who] & KEY_A == 0 {
         return;
     }
-    for s in 0..2 {
-        let keys = inputs[s];
-        let prev = core.raw_read_16(seat(s) + S_PREV, -1) as u32;
-        core.raw_write_16(seat(s) + S_PREV, -1, keys as u16);
-        let pressed = keys & !prev;
-        let ok = core.raw_read_8(seat(s) + S_OK, -1) == 1;
-        if ok {
-            if pressed & KEY_B != 0 {
-                core.raw_write_8(seat(s) + S_OK, -1, 0);
-            }
-            continue;
-        }
-        // A held direction goes on after a moment.
-        let dir = keys & (KEY_LEFT | KEY_RIGHT);
-        let mut step_dir = pressed & (KEY_LEFT | KEY_RIGHT);
-        if dir == 0 || step_dir != 0 {
-            core.raw_write_8(seat(s) + S_HELD, -1, 0);
-        } else {
-            let h = core.raw_read_8(seat(s) + S_HELD, -1).saturating_add(1);
-            if h >= 18 && (h - 18) % 4 == 0 {
-                step_dir = dir;
-            }
-            core.raw_write_8(seat(s) + S_HELD, -1, h);
-        }
-        let cur = core.raw_read_8(seat(s) + S_CURSOR, -1) as isize;
-        let mut step = 0isize;
-        if step_dir & KEY_RIGHT != 0 {
-            step = 1;
-        } else if step_dir & KEY_LEFT != 0 {
-            step = -1;
-        } else if pressed & KEY_DOWN != 0 {
-            step = 6;
-        } else if pressed & KEY_UP != 0 {
-            step = -6;
-        }
-        if step != 0 {
-            core.raw_write_8(seat(s) + S_CURSOR, -1, (cur + step).rem_euclid(n as isize) as u8);
-        }
-        if pressed & KEY_A != 0 {
-            core.raw_write_8(seat(s) + S_OK, -1, 1);
-        }
+    // The map under the cursor (the list holds only 2-army maps here).
+    let Some(cur) = crate::online::list_cursor(core).filter(|&c| c <= 0x31) else {
+        return;
+    };
+    let id = core.raw_read_8(crate::online::LIST_IDS + cur, -1);
+    if id == 0 {
+        return;
     }
-    if (0..2).all(|s| core.raw_read_8(seat(s) + S_OK, -1) == 1) {
-        let who = core.raw_read_8(PICK, -1) as usize;
-        let i = core.raw_read_8(seat(who) + S_CURSOR, -1) as usize;
-        core.raw_write_8(CHOSEN, -1, candidate(core, i.min(n - 1)));
+    core.raw_write_8(seat(who) + S_MAP, -1, id);
+    core.raw_write_8(PICKS, -1, who as u8 + 1);
+    if who == 1 {
+        let from = core.raw_read_8(PICK, -1) as usize;
+        let map = core.raw_read_8(seat(from) + S_MAP, -1);
+        core.raw_write_8(CHOSEN, -1, map);
+        core.raw_write_8(SETTLED, -1, 0);
         core.raw_write_16(WALK_T, -1, 0);
         core.raw_write_8(PHASE, -1, 1);
     }
 }
 
-/// Which keys reach the game: none while the map is proposed and walked to, none on the Rules screen, and after the
+/// Which keys reach the game: the picking seat's while the maps are picked, none while the map is walked to, none on the Rules screen, and after the
 /// battle both players'.
 pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if !on(core) {
         return None;
+    }
+    if phase(core) == 0 && crate::survival_ui::selecting(core) {
+        // (the seat picking has the pad, but A, B and START: A is its pick, there is no way back from here)
+        let who = (core.raw_read_8(PICKS, -1) as usize).min(1);
+        return Some(inputs.get(who).copied().unwrap_or(0) & !(KEY_A | KEY_B | crate::online::KEY_START));
     }
     if phase(core) < 3 && crate::survival_ui::selecting(core) {
         return Some(0);
@@ -404,67 +330,39 @@ pub fn finished(core: &Core) -> bool {
 
 // --- Drawing (presentation only) ---------------------------------------------------------------------------
 
+/// The bar over SELECT MAP's own screen: whose turn it is to pick, then whose map is played.
 pub fn draw(core: &Core, rgba: &mut [u8]) {
-    if rgba.len() != crate::online::W * crate::online::H * 4 || !on(core) || phase(core) > 2 || !crate::survival_ui::selecting(core) {
+    if rgba.len() != crate::online::W * crate::online::H * 4 || !on(core) || phase(core) > 1 || !crate::survival_ui::selecting(core) {
         return;
     }
-    paint(core, rgba);
+    paint_bar(core, rgba);
 }
 
-/// The proposals page (see [`draw`]; the text audit paints it without the game being on SELECT MAP).
-pub fn paint(core: &Core, rgba: &mut [u8]) {
+/// The bar's text (see [`draw`]; the text audit paints it without the game being on SELECT MAP).
+pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
     use crate::online::*;
-    let n = n_candidates(core);
     let mut canvas = Rgba(rgba);
     let cv = &mut canvas;
-    cv.rect(0, 0, W as i32, 160, LIGHT_GRAY);
-    cv.rect(0, 0, W as i32, 15, BAR);
-    let title = "PROPOSE A MAP";
-    cv.text(core, (W as i32 - text_width(core, title)) / 2, 2, title, WHITE, GRAY_INK);
-    if n == 0 {
-        bar(cv, core, "Getting the maps ready...");
-        return;
-    }
-    let local = room_local_seat();
-    let ph = phase(core);
-    let pick = core.raw_read_8(PICK, -1) as usize;
-    for s in 0..2usize {
-        let y = 19 + 49 * s as i32;
-        let h = 46;
-        let mine = s == local;
-        let ok = core.raw_read_8(seat(s) + S_OK, -1) == 1;
-        let id = candidate(core, (core.raw_read_8(seat(s) + S_CURSOR, -1) as usize).min(n - 1));
-        let chosen = ph >= 1 && s == pick;
-        cv.rect(2, y, 236, h, if chosen { YELLOW } else if mine { CREAM } else { WHITE });
-        cv.rect(2, y, 4, h, if s == 0 { RED } else { BLUE });
-        audit::window(2, y, 236, h);
-        audit::window(12, y, 190 - 12, 17);
-        let name: String = fit(core, &room_name(s).chars().take(12).collect::<String>(), 190 - 12 - 4);
-        cv.text(core, 12, y + 3, &name, if mine { BLUE } else { INK }, SHADE);
-        let tag = if chosen {
-            "CHOSEN"
-        } else if ok {
-            "READY"
+    let fits = |t: &str| text_width(core, t) <= 228;
+    let text = if phase(core) == 0 {
+        let who = (core.raw_read_8(PICKS, -1) as usize).min(1);
+        if who == room_local_seat() {
+            "Pick a map  A: Choose".to_string()
         } else {
-            "..."
-        };
-        let (plate, ink) = if chosen || ok { (BLUE, WHITE) } else { (LIGHT_GRAY, GRAY_INK) };
-        cv.rect(190, y + 3, 44, 13, plate);
-        cv.text(core, 190 + (44 - text_width(core, tag)) / 2, y + 4, tag, ink, SHADE);
-        let map = map_name(core, id);
-        let editing = mine && !ok && ph == 0;
-        let line = if editing { format!("< {map} >") } else { map };
-        let w = text_width(core, &line);
-        if editing {
-            cv.rect(10, y + 20, w + 4, 13, YELLOW);
+            "Waiting for the other player...".to_string()
         }
-        cv.text(core, 12, y + 21, &line, INK, SHADE);
-        cv.text(core, 12, y + 34, tab_name(core, id), GRAY_INK, SHADE);
-    }
-    let help = match ph {
-        0 if core.raw_read_8(seat(local.min(1)) + S_OK, -1) == 1 => "B: Change   Waiting for the other player...".to_string(),
-        0 => "Left Right: Map  Up Down: Faster  A: OK".to_string(),
-        _ => format!("The map from {} is played.", room_name(pick)),
+    } else {
+        // ("Bean Island from Hostname is played." in the game's words, shorter when it does not fit)
+        let pick = (core.raw_read_8(PICK, -1) as usize).min(1);
+        let map = map_name(core, core.raw_read_8(CHOSEN, -1));
+        let who = room_name(pick);
+        let tag = [who.clone(), fit(core, &who, 70)];
+        let options = [
+            format!("{map} from {} is played", tag[0]),
+            format!("{map} from {} is played", tag[1]),
+            format!("{map} is played"),
+        ];
+        options.iter().find(|t| fits(t)).cloned().unwrap_or_else(|| fit(core, &options[2], 228))
     };
-    bar(cv, core, &help);
+    bar(cv, core, &text);
 }
