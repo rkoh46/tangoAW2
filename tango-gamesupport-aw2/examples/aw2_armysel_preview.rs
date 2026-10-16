@@ -84,7 +84,21 @@ fn main() {
         (5, 3, 3, [false, true, false, false, false], "5_partner"),
         (5, 0, 4, [false, false, false, false, false], "5_ready"),
     ];
+    let mut cases: Vec<(usize, usize, u8, [bool; 5], String)> = cases.iter().map(|c| (c.0, c.1, c.2, c.3, c.4.to_string())).collect();
+    // Row fit: every seat focused on every field, 3 to 5 seats, 10-letter gamertags.
+    for n in 3..=5usize {
+        for k in 0..n {
+            for f in [0u8, 1, 2, 3, 4] {
+                cases.push((n, k, f, [false; 5], format!("r{n}_s{k}_f{f}")));
+            }
+        }
+    }
     for (n, local, field, ready, tag) in cases {
+        let names: [&str; 5] = if tag.starts_with('r') {
+            ["Guestguest", "Hostnamexx", "Guest2gues", "WWWWWWWWWW", "Guest4gues"]
+        } else {
+            names
+        };
         let mut ram = vec![0u8; 0x100];
         ram[0] = 1;
         ram[2] = n as u8;
