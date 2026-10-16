@@ -12,7 +12,8 @@
 //!   console shows something (`onmenu`, `selectmode`, `selectmap`, `teams`,
 //!   `battle`, `versus`, `nav`, `turnended`, `!COND`, `cursor=N`, `level=N`,
 //!   `army=N`, `menu=N` (the map menu's row: 0 CO .. 4 End), `maparmies=N`, `status=N`, `players=N`, `ready=N`), `seek KEYS COND` presses
-//!   keys now and then until the console shows COND, `shot PATH` saves the
+//!   keys now and then until the console shows COND, `label NAME` / `jumpif COND NAME` carry on at the label when
+//!   COND holds, `shot PATH` saves the
 //!   window's picture, `log TEXT` writes to the log, `session` starts the part
 //!   for the next session, `#` comments out a line.
 
@@ -40,6 +41,11 @@ enum Op {
     Log(String),
     /// Press the keys now and then (4 frames in 12) until the condition holds (or this many seconds pass).
     Seek(u32, String, f64),
+    /// `label NAME` marks a place for `jumpif`.
+    Label(String),
+    /// `jumpif COND NAME`: carry on at the label when the console shows COND (a waiting seat's key mashing stops the
+    /// moment its wait is over).
+    JumpIf(String, String),
 }
 
 struct Pad {
@@ -145,6 +151,8 @@ fn parse_script(text: &str) -> Result<Vec<Vec<Op>>, String> {
                 };
                 ops.push(Op::Seek(key_bits(k), cond.to_string(), secs));
             }
+            ["label", name] => ops.push(Op::Label(name.to_string())),
+            ["jumpif", cond, name] if cond_ok(cond) => ops.push(Op::JumpIf(cond.to_string(), name.to_string())),
             ["shot", path] => ops.push(Op::Shot(PathBuf::from(path))),
             ["log", rest @ ..] => ops.push(Op::Log(rest.join(" "))),
             _ => return bad("unknown or malformed line"),
@@ -321,6 +329,21 @@ impl DebugAids {
                     self.script_shots.push(path.clone());
                     pad.at += 1;
                     pad.done = 0;
+                }
+                Op::Label(_) => {
+                    pad.at += 1;
+                    pad.done = 0;
+                }
+                Op::JumpIf(c, name) => {
+                    pad.done = 0;
+                    if cond(c) {
+                        match ops.iter().position(|o| matches!(o, Op::Label(l) if l == name)) {
+                            Some(i) => pad.at = i,
+                            None => pad.at += 1,
+                        }
+                    } else {
+                        pad.at += 1;
+                    }
                 }
                 Op::Log(text) => {
                     log::info!("pad script: {text}");
