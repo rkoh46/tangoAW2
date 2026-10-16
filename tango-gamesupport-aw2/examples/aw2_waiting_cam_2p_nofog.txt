@@ -1,0 +1,64 @@
+# 2 seats, Fog off: the cam_2p moves (a cruiser along the south sea, an infantry across) with the waiting window (seat 1) showing the walks; run with AW2_SAMPLE=1 AW2_DUMP=<dir> and tools/pic_check.py
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+until teams 100
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+goto 0 4 7
+wait 60
+shotall wb
+press 0 B
+wait 10
+watch map_menu wb 6000
+press 0 A
+wait 30
+press 0 B
+wait 40
+wait 40
+unwatch map_menu
+# 2 seats, Fog off: proof frames that the waiting window (seat 1) never shows the mover's move-range tiles, base build menu or build result early: shots of both windows at each step (move range, build menu, build, walk, wait). Run: aw2_room_teams <rom> <out> this-file, then look at the *_s0 / *_s1 pairs.
+# the mover's long moves: a cruiser along the south sea (into army 2's view), an infantry across the map
+aid unit 1 cruiser 3 13
+aid unit 1 inf 2 3
+aid unit 2 inf 9 11
+aid unit 2 inf 13 3
+wait 10
+goto 0 3 13
+wait 30
+press 0 A
+wait 30
+goto 0 9 13
+wait 10
+press 0 A
+wait 60
+press 0 A
+wait 300
+goto 0 2 3
+wait 30
+press 0 A
+wait 30
+goto 0 5 3
+wait 10
+press 0 A
+wait 60
+press 0 A
+wait 300

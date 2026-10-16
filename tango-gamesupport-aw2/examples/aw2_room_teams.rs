@@ -121,6 +121,21 @@ fn main() {
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
+        if let Ok(range) = std::env::var("AW2_MEMSCAN") {
+            // (test aid: "from-to": the console's IWRAM and EWRAM every tick in that range, files in /tmp/memscan)
+            let (a, b) = range.split_once('-').map(|(x, y)| (x.parse::<usize>().unwrap_or(0), y.parse::<usize>().unwrap_or(0))).unwrap_or((0, 0));
+            if (a..=b).contains(&(t as usize)) {
+                let c = link.core();
+                let mut iw = vec![0u8; 0x8000];
+                c.raw_read_range(0x0300_0000, -1, &mut iw);
+                let mut ew = vec![0u8; 0x40000];
+                c.raw_read_range(0x0200_0000, -1, &mut ew);
+                let dir = std::path::Path::new("/tmp/memscan");
+                let _ = std::fs::create_dir_all(dir);
+                let _ = std::fs::write(dir.join(format!("i{t}.bin")), &iw);
+                let _ = std::fs::write(dir.join(format!("e{t}.bin")), &ew);
+            }
+        }
         if std::env::var("AW2_CAM_LOG").is_ok_and(|v| v == "ticks") {
             eprintln!("tickmark {t}");
         }
