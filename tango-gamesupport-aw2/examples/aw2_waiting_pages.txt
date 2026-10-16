@@ -1,0 +1,123 @@
+# 4 seats, Fog off from round 2: the mover (seat 0) opens the terrain info (R), map menu, Intel, Options and Save; the other seats' pictures stay as with nothing open. Run: aw2_room_teams <rom> <out> this-file
+n 4
+until maparmies=4 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+status
+shot rules 0
+press 0 A
+until battle 300
+wait 300
+status
+poke 03003FCD 00
+wait 30
+goto 0 5 5
+wait 5
+press 0 A
+wait 20
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 40
+press 1 A
+wait 80
+goto 1 5 5
+wait 5
+press 1 A
+wait 20
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+wait 40
+press 2 A
+wait 80
+goto 2 5 5
+wait 5
+press 2 A
+wait 20
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+wait 40
+press 3 A
+wait 80
+goto 3 5 5
+wait 5
+press 3 A
+wait 20
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+wait 40
+press 0 A
+wait 80
+wait 60
+# the mover (seat 0) opens every page it can; the other seats' pictures must stay the same as with nothing open
+goto 0 5 5
+wait 20
+shotall warm
+wait 10
+shotall base
+press 0 R
+wait 40
+shotall terrain
+same base terrain 1,2,3
+press 0 B
+wait 40
+press 0 A
+shotall menu
+same base menu 1,2,3
+press 0 DOWN
+press 0 A
+shotall intel
+same base intel 1,2,3
+press 0 B
+wait 40
+press 0 B
+wait 40
+press 0 A
+wait 20
+press 0 DOWN
+press 0 DOWN
+press 0 A
+shotall options
+same base options 1,2,3
+press 0 B
+wait 40
+press 0 B
+press 0 A
+wait 20
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 60
+shotall save
+same base save 1,2,3
