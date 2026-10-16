@@ -6092,6 +6092,7 @@ dependencies = [
  "gamepad-facade",
  "iced",
  "iced_graphics",
+ "iced_runtime",
  "image",
  "itertools 0.13.0",
  "libc",
