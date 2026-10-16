@@ -22,7 +22,7 @@
 use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
 use mgba::core::Core;
 
-pub const STATE: u32 = 0x0203_D100;
+pub const STATE: u32 = 0x0203_D600;
 pub const STATE_LEN: u32 = 0x100;
 /// 1 in an UNRANKED match.
 const FLAG: u32 = STATE;
