@@ -1,0 +1,54 @@
+# 5 seats, Fog on: army 1's cruiser sails four cells where only army 4 (seat 3, whose window starts 20 rows below) sees it: seat 3's camera has to slide that far (AW2_SAMPLE=1 AW2_DUMP=<dir>, tools/pic_check.py 1,2,3,4)
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
+press 3 A
+wait 20
+press 4 A
+wait 20
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+aid unit 1 cruiser 2 7
+aid unit 4 copter 4 9
+wait 10
+goto 0 2 7
+wait 30
+press 0 A
+wait 30
+goto 0 6 7
+wait 10
+press 0 A
+wait 60
+press 0 A
+wait 300

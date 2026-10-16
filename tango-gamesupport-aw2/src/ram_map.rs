@@ -54,7 +54,7 @@ pub const DS_AI: Region = (0x0203_C700, 0x100);
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
     ("the map menu's End row (crate::pvp::END_ROW)", (crate::pvp::END_ROW, 4)),
-    ("the waiting player's fog view: scratch call (crate::fog_view)", (crate::fog_view::CALL, 0x48)),
+    ("the waiting player's fog view: scratch call (crate::fog_view)", (crate::fog_view::CALL, 0x58)),
     ("CO skills' data (crate::co_skills::DATA)", (0x0203_E000, 0x3C6)),
     ("Grand Bolt's borrowed palette (crate::grand_bolt::BORROWED)", (0x0203_E3C8, 0x24)),
     ("Dual Strike graphics switch and the factory's table-only hook", (0x0203_E3FE, 2)),

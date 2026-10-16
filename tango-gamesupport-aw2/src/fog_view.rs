@@ -29,6 +29,10 @@ const CALL_LEN: u32 = 4 + 15 * 4;
 /// The camera pin: while byte `CALL + 0x40` is 1 the camera registers (pixels) at `CALL + 0x42` and `+ 0x44` are written at every flush, so a scroll the
 /// console had begun does not go on in the scratch picture.
 const PIN: u32 = CALL + 0x40;
+/// While the window's camera is still sliding to a walking unit: byte `PIN + 6` is 1, and `PIN + 8` / `PIN + 10` the cell (as 16 bit)
+/// the unit is made to be at for the game (the middle of the window), so its own scroll after the unit does not
+/// begin; the sprites on that cell are hidden.
+const FAKE: u32 = PIN + 6;
 
 const CURRENT_PLAYER: u32 = 0x0300_33EC;
 
@@ -405,6 +409,23 @@ fn walker_pixels(core: &Core) -> Option<(i32, i32)> {
         }
     }
     None
+}
+
+fn set_walker_pixels(core: &mut Core, (x, y): (i32, i32)) {
+    const AREAS: [(u32, u32); 2] = [(0x0300_0C00, 0x1300), (0x0200_C000, 0x2000)];
+    let mut buf = vec![0u8; 0x2000];
+    for (base, len) in AREAS {
+        core.raw_read_range(base, -1, &mut buf[..len as usize]);
+        for i in (0..len as usize - 12).step_by(4) {
+            let word = |o: usize| u32::from_le_bytes(buf[o..o + 4].try_into().unwrap());
+            if word(i + 8) == WALK_PROC && (0x0840_0000..0x0870_0000).contains(&word(i)) {
+                let at = base + i as u32;
+                core.raw_write_16(at + 0x3E, -1, x as u16);
+                core.raw_write_16(at + 0x40, -1, y as u16);
+                return;
+            }
+        }
+    }
 }
 
 /// A unit picked up is walking (see [`WALK_PROC`]).
@@ -829,6 +850,12 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         eprintln!("cam seat {seat} phase {:?} cam ({px},{py}) -> ({nx},{ny}) target ({tx},{ty}) mover ({x},{y}) follow {follow} reason {reason}", phase(scratch.core()));
     }
     scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
+    // (a camera that has still to get to the unit: the game is told the unit is in the middle of the window, so it does
+    // not scroll after it, and that unit is not drawn until the camera is there: the walk is seen from there on)
+    let sliding = walk_start && follow && (px, py) != (tx * 16, ty * 16);
+    scratch.core_mut().raw_write_8(FAKE, -1, sliding as u8);
+    scratch.core_mut().raw_write_16(FAKE + 2, -1, ((nx + 112) / 16) as u16);
+    scratch.core_mut().raw_write_16(FAKE + 4, -1, ((ny + 72) / 16) as u16);
     if walk_start && !follow {
         // (a unit walking where the seat sees nothing: the window keeps its picture; the game's own camera follows the unit
         // on the scratch console, so no picture of it is made)
@@ -878,6 +905,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     }
     scratch.core_mut().raw_write_8(CALL + 3, -1, 0);
     scratch.core_mut().raw_write_8(PIN, -1, 0);
+    scratch.core_mut().raw_write_8(FAKE, -1, 0);
     if std::env::var_os("AW2_CAM_LOG").is_some() {
         let c = scratch.core();
         eprintln!(
@@ -889,7 +917,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     // (the camera is kept whatever picture comes of this view: a view that makes none must not leave the window's camera
     // where it was, or the next one starts from there and the picture goes back and forth)
     *scratch.memory() = [1, px, py, side | (tx << 8) | (ty << 16)];
-    if walk_start && anim && WALK_TRACK.lock().unwrap().1 {
+    if walk_start && anim && !sliding && WALK_TRACK.lock().unwrap().1 {
         return Err("the walk has just stopped");
     }
     *scratch.memory() = [1, px, py, side | (tx << 8) | (ty << 16)];
@@ -991,7 +1019,8 @@ fn hide_fogged_sprites(core: &mut Core) {
             if !in_panel {
                 let (mx, my) = (x + sw / 2 + scroll_x, y + sh / 2 + scroll_y);
                 let (cx, cy) = (mx.div_euclid(16), my.div_euclid(16));
-                let sees = cx >= 0 && cy >= 0 && cx < w && cy < h && seen(core, cx, cy);
+                let fake = core.raw_read_8(FAKE, -1) == 1 && (cx, cy) == (core.raw_read_16(FAKE + 2, -1) as i32, core.raw_read_16(FAKE + 4, -1) as i32);
+                let sees = !fake && cx >= 0 && cy >= 0 && cx < w && cy < h && seen(core, cx, cy);
                 if !sees && (0..240).contains(&(x + sw / 2)) && (0..160).contains(&(y + sh / 2)) {
                     core.raw_write_16(at, -1, (a0 & !0x300) | 0x200);
                 }
@@ -1003,6 +1032,10 @@ fn hide_fogged_sprites(core: &mut Core) {
 
 /// The camera pinned (see [`PIN`]): on the scratch console, before every tick and at every flush.
 pub fn pin_camera(core: &mut Core) {
+    if core.raw_read_8(FAKE, -1) == 1 {
+        let (cx, cy) = (core.raw_read_16(FAKE + 2, -1) as i32, core.raw_read_16(FAKE + 4, -1) as i32);
+        set_walker_pixels(core, (cx * 16, cy * 16));
+    }
     if core.raw_read_8(PIN, -1) == 1 {
         let (px, py) = (core.raw_read_16(PIN + 2, -1), core.raw_read_16(PIN + 4, -1));
         for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py)] {
