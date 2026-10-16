@@ -338,7 +338,7 @@ pub fn draw_stats(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32)) {
         cv.rect(x + w - 11, y + h - 5, 3, 1, BLUE);
         cv.rect(x + w - 10, y + h - 4, 1, 1, BLUE);
     }
-    bar(cv, core, if n > STATS_ROWS { "UP/DOWN: Scroll  B: Back" } else { "B: Back" });
+    bar(cv, core, if n > STATS_ROWS { "Up Down: Scroll  B: Back" } else { "B: Back" });
 }
 
 #[cfg(test)]
