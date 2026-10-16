@@ -391,6 +391,12 @@ fn scene_view(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     }
 }
 
+/// For the view log: the phase the waiting windows are decided by, the running procs, the registers, the cursor.
+pub fn debug_line(core: &Core) -> String {
+    let io = |o: u32| core.raw_read_16(0x0400_0000 + o, -1);
+    format!("phase {:?} army {} fog {} loop {:08x} procs {:x?} disp {:04x} win {:04x}/{:04x} bld {:04x} menu {} cursor_up {} cutin {}", phase(core), core.raw_read_8(CURRENT_PLAYER, -1), fog(core), core.raw_read_32(MAIN_LOOP, -1), procs(core), io(0), io(0x48), io(0x4A), io(0x50), core.raw_read_8(MAP_MENU_STATE, -1), mover_cursor_up(core), power_cutin(core))
+}
+
 /// The cursor's corner sprites are in the sprite list the console is about to flush: the mover's own UI is on the picture.
 pub fn mover_cursor_up(core: &Core) -> bool {
     let (start, end) = (core.raw_read_32(SPRITE_LIST, -1), core.raw_read_32(NEXT_SPRITE, -1));
@@ -417,6 +423,23 @@ pub fn power_scene(core: &Core) -> bool {
 pub fn power_cutin(core: &Core) -> bool {
     let io = |o: u32| core.raw_read_16(0x0400_0000 + o, -1);
     power_scene(core) && io(0) & 0x1F00 == 0x1F00 && io(0x50) == 0x1E41 && io(0x52) == 0x0010 && io(0x54) == 0
+}
+
+/// The banks of the background palette the units are drawn with (the army colours and the greyed moved units'): the refresh
+/// that makes the waiting army's view rebuilds them for the army it was told is the current one, which draws the mover's
+/// units that have moved in the viewer's colours. They are put back as the console has them.
+const UNIT_BANKS: [usize; 1] = [11];
+
+fn banks_env() -> Vec<usize> {
+    std::env::var("AW2_RESTORE_BANKS").ok().map(|v| v.split(',').filter_map(|x| x.parse().ok()).collect()).unwrap_or_else(|| UNIT_BANKS.to_vec())
+}
+
+fn restore_unit_palettes(core: &mut Core, buffer: &[u8], ram: &[u8]) {
+    for bank in banks_env() {
+        let (lo, hi) = (bank * 32, bank * 32 + 32);
+        core.raw_write_range(0x0300_20C0 + lo as u32, -1, &buffer[lo..hi]);
+        core.raw_write_range(0x0500_0000 + lo as u32, -1, &ram[lo..hi]);
+    }
 }
 
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
@@ -509,6 +532,13 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         core.raw_write_16(CURSOR_PX, -1, (cursor.0 * 16) as u16);
         core.raw_write_16(CURSOR_PX + 2, -1, (cursor.1 * 16) as u16);
     };
+    let pal_before = {
+        let mut a = vec![0u8; 0x400];
+        scratch.core().raw_read_range(0x0300_20C0, -1, &mut a);
+        let mut b = vec![0u8; 0x400];
+        scratch.core().raw_read_range(0x0500_0000, -1, &mut b);
+        Some((a, b))
+    };
     let (mut cx, mut cy) = (mem[1], mem[2]);
     // (bit 2 of the fourth word: the camera is where a followed cell of the mover's put it, not at the army's own place)
     let followed = mem[3] & 4 != 0;
@@ -547,6 +577,27 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         run(scratch, &[0, 0])?;
     }
     close_ui(scratch)?;
+    if std::env::var_os("AW2_PAL_DEBUG").is_some() {
+        // the tile entries of the 2 x 2 tiles of cell (10,5) in every background, with the camera as it is now
+        let c = scratch.core();
+        let (sx, sy) = ((10 * 16 - cx * 16) as u32 / 8, (5 * 16 - cy * 16) as u32 / 8);
+        for bg in 0..4u32 {
+            let cnt = c.raw_read_16(0x0400_0008 + 2 * bg, -1) as u32;
+            let base = 0x0600_0000 + ((cnt >> 8) & 31) * 0x800;
+            let ents: Vec<String> = [(0, 0), (1, 0), (0, 1), (1, 1)].iter().map(|(dx, dy)| format!("{:04x}", c.raw_read_16(base + 2 * (((sy + dy) % 32) * 32 + (sx + dx) % 32), -1))).collect();
+            eprintln!("tiles seat {seat} bg{bg} cnt {cnt:04x} at ({sx},{sy}): {}", ents.join(" "));
+        }
+    }
+    if let Some((a0, b0)) = pal_before {
+        restore_unit_palettes(scratch.core_mut(), &a0, &b0);
+        run(scratch, &[0])?;
+        let mut a = vec![0u8; 0x400];
+        scratch.core().raw_read_range(0x0300_20C0, -1, &mut a);
+        let mut b = vec![0u8; 0x400];
+        scratch.core().raw_read_range(0x0500_0000, -1, &mut b);
+        let banks = |x: &[u8], y: &[u8]| (0..32).filter(|k| x[k * 32..k * 32 + 32] != y[k * 32..k * 32 + 32]).collect::<Vec<_>>();
+        if std::env::var_os("AW2_PAL_DEBUG").is_some() { eprintln!("pal seat {seat}: buffer banks changed {:?}, pal ram banks changed {:?} (0-15 BG, 16-31 OBJ)", banks(&a0, &a), banks(&b0, &b)); }
+    }
     if seat < 5 {
         let core = scratch.core();
         let seen_cells: Vec<bool> = (0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| seen(core, x, y)).collect();

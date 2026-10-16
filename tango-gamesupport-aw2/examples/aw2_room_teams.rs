@@ -126,6 +126,17 @@ fn main() {
             use tango_backend_mgba::SharedGame;
             let console = link.solo_side().frame().unwrap_or_default();
             let dark = console.chunks(4).filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30).count() * 10 > 9 * 38400;
+            // (a seat the game says is NOT watching shows the console's own picture: any other picture is stale)
+            for seat in 0..n {
+                if (1..=5).contains(&link.core().raw_read_8(0x0300_33EC, -1)) && !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat) {
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    let f = link.side(seat).frame().unwrap_or_default();
+                    let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
+                    if diff > 3000 {
+                        leaks.borrow_mut().push((t, seat, format!("not watching but shows another picture ({diff} px) {:?}", tango_gamesupport_aw2::fog_view::phase(link.core()))));
+                    }
+                }
+            }
             // (and the mover's cursor on the console: no other seat may show that picture, watching or not)
             let cursor_up = {
                 let c = link.core();
@@ -551,6 +562,48 @@ fn main() {
                     other => panic!("expect {other}"),
                 };
                 println!("expect {} seat {seat}: {diff} px from the console's {}", p[1], if ok { "ok" } else { "FAIL" });
+                failed |= !ok;
+            }
+            // unitcolours X Y SEAT MIN_PERCENT: the colours of the 16 x 16 pixels of cell (X, Y) in the console's picture (the mover's
+            // unit, as the console has it) must appear on SEAT's window as often as MIN_PERCENT of their count on the console: the unit moved or done is drawn in
+            // its owner's colours there too, not recoloured for the window's own army
+            "unitcolours" => {
+                let (x, y, seat, min): (i32, i32, usize, usize) = (p[1].parse().unwrap(), p[2].parse().unwrap(), p[3].parse().unwrap(), p[4].parse().unwrap());
+                let (sx, sy) = {
+                    let c = link.core();
+                    (x * 16 - c.raw_read_16(0x0201_E454, -1) as i16 as i32, y * 16 - c.raw_read_16(0x0201_E456, -1) as i16 as i32)
+                };
+                let console = link.solo_side().frame().unwrap_or_default();
+                let mut set = std::collections::HashSet::new();
+                for py in sy.max(0)..(sy + 16).min(160) {
+                    for px in sx.max(0)..(sx + 16).min(240) {
+                        let o = 4 * (py as usize * 240 + px as usize);
+                        set.insert([console[o], console[o + 1], console[o + 2]]);
+                    }
+                }
+                // (the colours of the cell that are the map's too tell nothing: leave out those of the picture's other 16 x 16 blocks)
+                let mut common = std::collections::HashSet::new();
+                for by in 0..9 {
+                    for bx in 0..15 {
+                        if (bx * 16, by * 16) == (sx.div_euclid(16) * 16, sy.div_euclid(16) * 16) {
+                            continue;
+                        }
+                        for py in by * 16..by * 16 + 16 {
+                            for px in bx * 16..bx * 16 + 16 {
+                                let o = 4 * (py as usize * 240 + px as usize);
+                                common.insert([console[o], console[o + 1], console[o + 2]]);
+                            }
+                        }
+                    }
+                }
+                set.retain(|c| !common.contains(c));
+                tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                let f = link.side(seat).frame().unwrap_or_default();
+                let n = f.chunks(4).filter(|px| set.contains(&[px[0], px[1], px[2]])).count();
+                let n_console = console.chunks(4).filter(|px| set.contains(&[px[0], px[1], px[2]])).count();
+                // (MIN percent of the console's own count)
+                let ok = n * 100 >= n_console * min;
+                println!("unitcolours ({x},{y}) seat {seat}: {} unit colours, {n} pixels on the window, {n_console} on the console (need {min}%) {}", set.len(), if ok { "ok" } else { "FAIL" });
                 failed |= !ok;
             }
             // fv: the game's state the waiting view decides from

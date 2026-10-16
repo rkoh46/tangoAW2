@@ -1,0 +1,34 @@
+# 2 seats, Fog on: army 1 moves an infantry next to army 2's (test aid) and it is done (greyed). The unit on army 2's window must be drawn in army 1's colours, as on the console (before the fix the refresh of the waiting view recoloured it with the window's own army: unitcolours fails). Run: AW2_SAMPLE=10 aw2_room_teams <rom> <out> this-file; exit 1 on a failed check.
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+aid unit 1 inf 9 5
+aid unit 2 inf 12 5
+wait 10
+goto 0 9 5
+wait 10
+press 0 A
+wait 30
+goto 0 10 5
+wait 10
+press 0 A
+wait 40
+press 0 A
+wait 200
+unitcolours 10 5 1 90

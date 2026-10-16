@@ -661,6 +661,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         }
     }
 
+    fn view_debug(&self, core: &Core) -> String {
+        crate::fog_view::debug_line(core)
+    }
+
     fn plain_map(&self, core: &Core) -> bool {
         crate::fog_view::plain_map(core)
     }

@@ -27,6 +27,12 @@ use crate::gba::{to_rgba, JOYFLAGS_MASK};
 /// A waiting window's picture is made again after this many ticks.
 /// Ticks between two clean pictures of a mover's own view kept for its window.
 const OWN_EVERY: u32 = 20;
+/// `AW2_VIEW_DEBUG=1`: the waiting windows log what they are made from, twice a second.
+fn debug_view() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("AW2_VIEW_DEBUG").is_some())
+}
+
 const WATCH_EVERY: u32 = 2;
 
 /// The scratch copy of the console a [`SharedGame::view_as`] works on.
@@ -164,6 +170,12 @@ pub trait SharedGame: Sync {
     fn plain_map(&self, core: &mgba::core::Core) -> bool {
         let _ = core;
         false
+    }
+
+    /// A line about the game's state for the view log (`AW2_VIEW_DEBUG=1`): what a waiting window is made from.
+    fn view_debug(&self, core: &mgba::core::Core) -> String {
+        let _ = core;
+        String::new()
     }
 
     /// Whether `seat` should be shown nothing right now. The engine no longer blacks a window out (a waiting seat's
@@ -657,8 +669,16 @@ impl SharedSide<'_> {
         // blacked-out window; the game's `watching` keeps to the moments the picture can be made)
         if self.conceal && self.link.game.watching(self.link.inner.core(0), self.player) {
             if let Some(f) = self.link.watching_frame(self.player) {
+                if debug_view() && self.link.tick % 30 == 0 {
+                    let held = self.link.watched_at[self.player].is_none_or(|at| at != self.link.tick);
+                    log::info!("view-debug seat {} tick {}: watching, {} {}", self.player, self.link.tick, if held { "cached or held picture" } else { "scratch picture" }, self.link.game.view_debug(self.link.inner.core(0)));
+                }
                 return Some((f, "watch"));
             }
+        }
+        if debug_view() && self.conceal && self.link.tick % 30 == 0 {
+            let w = self.link.game.watching(self.link.inner.core(0), self.player);
+            log::info!("view-debug seat {} tick {}: {} the console's own picture {}", self.player, self.link.tick, if w { "WATCHING BUT" } else { "not watching:" }, self.link.game.view_debug(self.link.inner.core(0)));
         }
         let mut frame = match self.link.console_frame.as_ref().filter(|(_, at)| *at == self.link.tick) {
             Some((f, _)) => f.clone(),

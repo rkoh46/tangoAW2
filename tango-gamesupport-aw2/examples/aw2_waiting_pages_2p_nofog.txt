@@ -1,0 +1,73 @@
+# 2 seats, a real Fog-off match (the g2poff case): the mover (seat 0) opens the map menu, selects a unit (move range), opens a base build menu, moves a unit and waits; the other window stays within 6000 pixels of its clean view on EVERY tick. Run: aw2_room_teams <rom> <out> this-file; exit 1 on a failed watch.
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+goto 0 4 7
+wait 60
+shotall wb
+press 0 B
+wait 10
+watch map_menu wb 6000
+press 0 A
+wait 30
+press 0 B
+wait 40
+wait 40
+unwatch map_menu
+aid unit 1 inf 4 7
+aid unit 2 inf 9 7
+wait 10
+goto 0 4 7
+wait 60
+shotall wb2
+watch move_range wb2 6000
+press 0 A
+wait 40
+press 0 B
+wait 40
+wait 20
+unwatch move_range
+goto 0 1 6
+wait 60
+shotall wb3
+watch base_menu wb3 6000
+press 0 A
+wait 60
+press 0 DOWN
+wait 20
+press 0 B
+wait 60
+wait 20
+unwatch base_menu
+goto 0 4 7
+wait 60
+shotall wb4
+watch move_and_wait wb4 6000
+press 0 A
+wait 30
+goto 0 6 7
+wait 10
+press 0 A
+wait 60
+press 0 A
+wait 90
+wait 40
+unwatch move_and_wait
