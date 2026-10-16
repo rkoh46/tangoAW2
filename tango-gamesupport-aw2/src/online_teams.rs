@@ -384,8 +384,12 @@ fn colour_rgb(c: u8) -> Rgb {
     }
 }
 
-fn faces() -> &'static std::sync::Mutex<std::collections::HashMap<u8, (Vec<u8>, [u8; 32])>> {
-    static F: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<u8, (Vec<u8>, [u8; 32])>>> =
+/// Face cache: CO -> (tiles, palette, from the CO screens' mug). A face drawn from the fallback is redone once the pack
+/// is there, so an early draw never leaves a wrong picture behind.
+type FaceCache = std::collections::HashMap<u8, (Vec<u8>, [u8; 32], bool)>;
+
+fn faces() -> &'static std::sync::Mutex<FaceCache> {
+    static F: std::sync::OnceLock<std::sync::Mutex<FaceCache>> =
         std::sync::OnceLock::new();
     F.get_or_init(Default::default)
 }
@@ -418,9 +422,17 @@ fn fit_arrows(core: &Core, text: &str, on: bool, max_w: i32) -> String {
 /// A CO's portrait scaled to `sz` pixels square at (x, y).
 fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i32, sz: i32) {
     let mut f = faces().lock().unwrap();
-    let (px, pal) = f.entry(co).or_insert_with(|| {
-        crate::ds_coselect::mug_for_face(core, co).unwrap_or_else(|| crate::tag_ui::portrait48(core, co))
-    });
+    if f.get(&co).is_none_or(|e| !e.2 && crate::ds_pack::pack().is_some()) {
+        let e = match crate::ds_coselect::mug_for_face(core, co) {
+            Some((t, p)) => (t, p, true),
+            None => {
+                let (t, p) = crate::tag_ui::portrait48(core, co);
+                (t, p, false)
+            }
+        };
+        f.insert(co, e);
+    }
+    let (px, pal, _) = &f[&co];
     for yy in 0..sz {
         for xx in 0..sz {
             let (sx, sy) = ((xx * 48 / sz) as usize, (yy * 48 / sz) as usize);

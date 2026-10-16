@@ -328,7 +328,13 @@ fn ds_pictures(co: u8) -> Option<(Arc<Mug>, Arc<Name>)> {
     static CACHE: OnceLock<Mutex<HashMap<u8, Option<(Arc<Mug>, Arc<Name>)>>>> = OnceLock::new();
     let ds = crate::tag::ds_id(co)?;
     let mut g = CACHE.get_or_init(Default::default).lock().ok()?;
-    g.entry(ds).or_insert_with(|| Some((art_mug(ds)?, art_name(ds)?))).clone()
+    // (only a found picture is kept: asked before the pack is loaded, it must be asked again)
+    if let Some(Some(p)) = g.get(&ds) {
+        return Some(p.clone());
+    }
+    let p = (art_mug(ds)?, art_name(ds)?);
+    g.insert(ds, Some(p.clone()));
+    Some(p)
 }
 
 /// The mug: Dual Strike's for a CO it has, the game's own (`+0x0C`, LZ77; the CO's palette `+0x08`) for the others.
