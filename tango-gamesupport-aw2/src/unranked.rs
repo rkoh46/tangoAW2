@@ -115,6 +115,16 @@ pub fn active(core: &Core) -> bool {
     core.raw_read_8(PROPOSE, -1) == 1
 }
 
+/// The seat whose turn it is to propose a map (SELECT MAP is up and the seats are picking).
+pub fn picking(core: &Core) -> Option<usize> {
+    (active(core) && phase(core) == 0 && crate::survival_ui::selecting(core)).then(|| (core.raw_read_8(PICKS, -1) as usize).min(seats(core) - 1))
+}
+
+/// The map is drawn and SELECT MAP is still up (walking to it).
+pub fn chosen(core: &Core) -> bool {
+    active(core) && phase(core) == 1 && crate::survival_ui::selecting(core)
+}
+
 /// How many seats propose.
 fn seats(core: &Core) -> usize {
     crate::online_teams::players(core).min(MAX_SEATS)
@@ -252,7 +262,7 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
         let settled = if was >= 200 { 34 } else { was + 1 };
         core.raw_write_8(SETTLED, -1, settled);
         // (A for 4 frames of 12, until the game leaves the list)
-        return if settled >= 10 && settled % 12 < 4 { KEY_A } else { 0 };
+        return if settled >= 100 && settled % 12 < 4 { KEY_A } else { 0 };
     }
     core.raw_write_8(SETTLED, -1, 0);
     if tab_of(core, target) != list_tab {
@@ -367,6 +377,36 @@ pub fn finished(core: &Core) -> bool {
 
 // --- Drawing (presentation only) ---------------------------------------------------------------------------
 
+/// The picking bar: whose turn it is, and the picks so far (two lines over the foot of the list).
+fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
+    use crate::online::*;
+    let n = seats(core);
+    let who = (core.raw_read_8(PICKS, -1) as usize).min(n - 1);
+    let me = room_local_seat();
+    let line1 = if who == me {
+        "Pick a map  A: Choose".to_string()
+    } else {
+        fit(core, &format!("{} is picking...", room_name(who)), 228)
+    };
+    let picked = core.raw_read_8(PICKS, -1) as usize;
+    let maps: Vec<String> = (0..picked.min(n)).map(|s| map_name(core, core.raw_read_8(seat(s) + S_MAP, -1))).collect();
+    let line2 = if picked == 0 {
+        String::new()
+    } else {
+        let full = (0..maps.len()).map(|s| format!("{}: {}", room_name(s), maps[s])).collect::<Vec<_>>().join(", ");
+        let short = (0..maps.len()).map(|s| format!("{}: {}", fit(core, &room_name(s), 44), fit(core, &maps[s], 64))).collect::<Vec<_>>().join(", ");
+        let mine = if me < picked { format!("Your pick: {}", maps[me]) } else { format!("Picks: {} of {}", picked, n) };
+        [full, short, mine].into_iter().find(|t| text_width(core, t) <= 228).unwrap_or_else(|| format!("Picks: {} of {}", picked, n))
+    };
+    let top = if line2.is_empty() { 144 } else { 128 };
+    cv.rect(0, top, W as i32, 160 - top, BAR);
+    let y = if line2.is_empty() { 147 } else { 131 };
+    cv.text(core, (W as i32 - text_width(core, &line1)) / 2, y, &line1, WHITE, GRAY_INK);
+    if !line2.is_empty() {
+        cv.text(core, (W as i32 - text_width(core, &line2)) / 2, 146, &line2, YELLOW, GRAY_INK);
+    }
+}
+
 /// The bar over SELECT MAP's own screen: whose turn it is to pick, then whose map is played.
 pub fn draw(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != crate::online::W * crate::online::H * 4 || !active(core) || phase(core) > 1 || !crate::survival_ui::selecting(core) {
@@ -381,16 +421,11 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
     let mut canvas = Rgba(rgba);
     let cv = &mut canvas;
     let fits = |t: &str| text_width(core, t) <= 228;
-    let text = if phase(core) == 0 {
-        let who = (core.raw_read_8(PICKS, -1) as usize).min(seats(core) - 1);
-        if who == room_local_seat() {
-            "Pick a map  A: Choose".to_string()
-        } else if seats(core) > 2 {
-            "Waiting for the others...".to_string()
-        } else {
-            "Waiting for the other player...".to_string()
-        }
-    } else {
+    if phase(core) == 0 {
+        paint_picks(core, cv);
+        return;
+    }
+    let text = {
         // ("Bean Island from Hostname is played." in the game's words, shorter when it does not fit)
         let pick = (core.raw_read_8(PICK, -1) as usize).min(seats(core) - 1);
         let map = map_name(core, core.raw_read_8(CHOSEN, -1));

@@ -98,8 +98,8 @@ fn key_bits(s: &str) -> u32 {
 }
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
-const CONDS: [&str; 31] = [
-    "always", "mapup",
+const CONDS: [&str; 33] = [
+    "always", "mapup", "mypick", "chosen",
     "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "myturn", "banner", "acting", "over", "cursor", "level", "army",
     "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "onend", "!",
 ];

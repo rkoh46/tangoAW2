@@ -457,6 +457,8 @@ pub mod mailbox {
             ("acting", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 4 != 0,
             ("over", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 8 != 0,
             ("mapup", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 16 != 0,
+            ("chosen", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 64 != 0,
+            ("mypick", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 32 != 0,
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
@@ -592,6 +594,14 @@ pub mod probe {
                 if crate::fog_view::phase(core) == crate::fog_view::Phase::Map {
                     c |= 16;
                 }
+            }
+            // (SELECT MAP: it is this seat's turn to propose a map, the list up and still)
+            if crate::unranked::picking(core) == Some(me) && crate::survival_ui::idle(core) {
+                c |= 32;
+            }
+            // (the draw is made: the bar tells whose map is played)
+            if crate::unranked::chosen(core) {
+                c |= 64;
             }
             CUES.store(c, Ordering::Relaxed);
         }
