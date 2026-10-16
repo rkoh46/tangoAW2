@@ -511,13 +511,18 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
             run(scratch, &[KEY_A, 0])?;
         }
     }
-    if phase(scratch.core()) != Phase::Map {
+    // A unit's own animation of the turn (walking, capturing, being built, an attack's result) in a fog match: made on
+    // the scratch like the map, for the waiting army's own fog; the sprites out of its sight are hidden at the flush
+    // (`hide_fogged_sprites`), so a walk is seen while the sprite is on cells the seat sees and never where it does not.
+    let anim = scratch.core().raw_read_8(FOG, -1) != 0 && phase(scratch.core()) == Phase::Busy && scratch.memory()[0] != 0;
+    scratch.core_mut().raw_write_8(CALL + 3, -1, anim as u8);
+    if phase(scratch.core()) != Phase::Map && !anim {
         return Err("not the plain map");
     }
     let fog = scratch.core().raw_read_8(FOG, -1) != 0;
     let mover_cell = (scratch.core().raw_read_16(CURSOR, -1) as i32, scratch.core().raw_read_16(CURSOR + 2, -1) as i32);
     for _ in 0..4 {
-        if !ui_open(scratch.core()) {
+        if anim || !ui_open(scratch.core()) {
             break;
         }
         run(scratch, &[KEY_B, KEY_B, 0])?;
@@ -525,7 +530,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     if !on_map(scratch) {
         return Err("left the map loop");
     }
-    if ui_open(scratch.core()) {
+    if !anim && ui_open(scratch.core()) {
         // (a page or question B does not close: the seat keeps its last clean picture, never a half-closed one)
         return Err("the mover's UI would not close");
     }
@@ -607,7 +612,9 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     } else {
         run(scratch, &[0, 0])?;
     }
-    close_ui(scratch)?;
+    if !anim {
+        close_ui(scratch)?;
+    }
     if std::env::var_os("AW2_PAL_DEBUG").is_some() {
         // the tile entries of the 2 x 2 tiles of cell (10,5) in every background, with the camera as it is now
         let c = scratch.core();
@@ -634,6 +641,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         let seen_cells: Vec<bool> = (0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| seen(core, x, y)).collect();
         VISION.lock().unwrap()[seat] = Some((w, h, seen_cells));
     }
+    scratch.core_mut().raw_write_8(CALL + 3, -1, 0);
     *scratch.memory() = [1, cx, cy, side | if follow { 4 } else { 0 }];
     Ok(())
 }
@@ -689,8 +697,65 @@ fn hide_cursor(core: &mut Core) {
     }
 }
 
+/// A sprite's size in pixels (shape in attribute 0, size in attribute 1).
+fn sprite_size(a0: u16, a1: u16) -> (i32, i32) {
+    match (a0 >> 14, a1 >> 14) {
+        (0, s) => (8 << s, 8 << s),
+        (1, 0) => (16, 8),
+        (1, 1) => (32, 8),
+        (1, 2) => (32, 16),
+        (1, _) => (64, 32),
+        (2, 0) => (8, 16),
+        (2, 1) => (8, 32),
+        (2, 2) => (16, 32),
+        (2, _) => (32, 64),
+        _ => (8, 8),
+    }
+}
+
+/// Hides every sprite whose middle is on a map cell the viewer does not see (a unit walking, fighting or being built
+/// out of its sight), apart from the army's CO panel in its corner. The plane is the viewer's own (the scratch console
+/// has been refreshed for the waiting army).
+fn hide_fogged_sprites(core: &mut Core) {
+    let start = core.raw_read_32(SPRITE_LIST, -1);
+    let end = core.raw_read_32(NEXT_SPRITE, -1);
+    if !(0x0300_0000..0x0300_8000).contains(&start) || end < start || end - start > 128 * 8 {
+        return;
+    }
+    let (w, h) = size(core);
+    if w <= 0 || h <= 0 || w > 64 || h > 64 {
+        return;
+    }
+    let scroll_x = core.raw_read_16(MAP + 4, -1) as i16 as i32;
+    let scroll_y = core.raw_read_16(MAP + 6, -1) as i16 as i32;
+    let panel_x = if core.raw_read_8(PANEL_STATE, -1) == 1 { 170 } else { 0 };
+    let mut at = start;
+    while at + 8 <= end {
+        let (a0, a1) = (core.raw_read_16(at, -1), core.raw_read_16(at + 2, -1));
+        if a0 & 0x300 != 0x200 {
+            let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
+            let y = (a0 & 0xFF) as i32;
+            let (sw, sh) = sprite_size(a0, a1);
+            // (the CO panel: a corner, the top 44 pixels)
+            let in_panel = y + sh <= 48 && x >= panel_x - 4 && x + sw <= panel_x + 80;
+            if !in_panel {
+                let (mx, my) = (x + sw / 2 + scroll_x, y + sh / 2 + scroll_y);
+                let (cx, cy) = (mx.div_euclid(16), my.div_euclid(16));
+                let sees = cx >= 0 && cy >= 0 && cx < w && cy < h && seen(core, cx, cy);
+                if !sees && (0..240).contains(&(x + sw / 2)) && (0..160).contains(&(y + sh / 2)) {
+                    core.raw_write_16(at, -1, (a0 & !0x300) | 0x200);
+                }
+            }
+        }
+        at += 8;
+    }
+}
+
 /// At the sprite flush: hides the cursor if asked, and starts the asked call.
 pub fn at_flush(core: &mut Core) {
+    if core.raw_read_8(CALL + 3, -1) == 1 {
+        hide_fogged_sprites(core);
+    }
     if core.raw_read_8(CALL + 2, -1) == 1 {
         hide_cursor(core);
         // The info panel's backing is a window with the game's darkening (BLDCNT mode 3): it goes with the panel
