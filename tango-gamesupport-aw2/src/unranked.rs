@@ -377,34 +377,39 @@ pub fn finished(core: &Core) -> bool {
 
 // --- Drawing (presentation only) ---------------------------------------------------------------------------
 
-/// The picking bar: whose turn it is, and the picks so far (two lines over the foot of the list).
+/// Lines of text in a box at the right foot of SELECT MAP, beside the list (the game's list can have its cursor
+/// on any of its rows to the foot of the screen, so nothing covers it).
+fn paint_box(core: &Core, cv: &mut crate::online::Rgba<'_>, lines: &[(String, crate::online::Rgb)]) {
+    use crate::online::*;
+    let (x, w) = (88, W as i32 - 88);
+    let h = 5 + 12 * lines.len() as i32;
+    cv.rect(x, 160 - h, w, h, BAR);
+    for (k, (t, ink)) in lines.iter().enumerate() {
+        let tw = text_width(core, t);
+        cv.text(core, x + (w - tw) / 2, 160 - h + 3 + 12 * k as i32, t, *ink, GRAY_INK);
+    }
+}
+
+/// The picking box: whose turn it is, and the picks so far.
 fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     use crate::online::*;
     let n = seats(core);
     let who = (core.raw_read_8(PICKS, -1) as usize).min(n - 1);
     let me = room_local_seat();
-    let line1 = if who == me {
-        "Pick a map  A: Choose".to_string()
-    } else {
-        fit(core, &format!("{} is picking...", room_name(who)), 228)
-    };
+    let fits = |t: &str| text_width(core, t) <= 144;
+    let line1 = if who == me { "Pick a map  A: Choose".to_string() } else { fit(core, &format!("{} is picking...", room_name(who)), 144) };
     let picked = core.raw_read_8(PICKS, -1) as usize;
     let maps: Vec<String> = (0..picked.min(n)).map(|s| map_name(core, core.raw_read_8(seat(s) + S_MAP, -1))).collect();
-    let line2 = if picked == 0 {
-        String::new()
-    } else {
+    let mut lines = vec![(line1, WHITE)];
+    if picked > 0 {
         let full = (0..maps.len()).map(|s| format!("{}: {}", room_name(s), maps[s])).collect::<Vec<_>>().join(", ");
-        let short = (0..maps.len()).map(|s| format!("{}: {}", fit(core, &room_name(s), 44), fit(core, &maps[s], 64))).collect::<Vec<_>>().join(", ");
-        let mine = if me < picked { format!("Your pick: {}", maps[me]) } else { format!("Picks: {} of {}", picked, n) };
-        [full, short, mine].into_iter().find(|t| text_width(core, t) <= 228).unwrap_or_else(|| format!("Picks: {} of {}", picked, n))
-    };
-    let top = if line2.is_empty() { 144 } else { 128 };
-    cv.rect(0, top, W as i32, 160 - top, BAR);
-    let y = if line2.is_empty() { 147 } else { 131 };
-    cv.text(core, (W as i32 - text_width(core, &line1)) / 2, y, &line1, WHITE, GRAY_INK);
-    if !line2.is_empty() {
-        cv.text(core, (W as i32 - text_width(core, &line2)) / 2, 146, &line2, YELLOW, GRAY_INK);
+        let count = format!("Picks: {picked} of {n}");
+        lines.push((if fits(&full) { full } else { count.clone() }, YELLOW));
+        if me < picked && lines[1].0 == count {
+            lines.push((fit(core, &format!("Yours: {}", maps[me]), 144), YELLOW));
+        }
     }
+    paint_box(core, cv, &lines);
 }
 
 /// The bar over SELECT MAP's own screen: whose turn it is to pick, then whose map is played.
@@ -420,23 +425,17 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
     use crate::online::*;
     let mut canvas = Rgba(rgba);
     let cv = &mut canvas;
-    let fits = |t: &str| text_width(core, t) <= 228;
     if phase(core) == 0 {
         paint_picks(core, cv);
         return;
     }
-    let text = {
-        // ("Bean Island from Hostname is played." in the game's words, shorter when it does not fit)
-        let pick = (core.raw_read_8(PICK, -1) as usize).min(seats(core) - 1);
-        let map = map_name(core, core.raw_read_8(CHOSEN, -1));
-        let who = room_name(pick);
-        let tag = [who.clone(), fit(core, &who, 70)];
-        let options = [
-            format!("{map} from {} is played", tag[0]),
-            format!("{map} from {} is played", tag[1]),
-            format!("{map} is played"),
-        ];
-        options.iter().find(|t| fits(t)).cloned().unwrap_or_else(|| fit(core, &options[2], 228))
-    };
-    bar(cv, core, &text);
+    let pick = (core.raw_read_8(PICK, -1) as usize).min(seats(core) - 1);
+    let map = map_name(core, core.raw_read_8(CHOSEN, -1));
+    let who = room_name(pick);
+    let from = [format!("from {who} is played"), format!("from {} is played", fit(core, &who, 70)), "is played".to_string()]
+        .into_iter()
+        .find(|t| text_width(core, t) <= 144)
+        .unwrap_or_else(|| "is played".to_string());
+    paint_box(core, cv, &[(fit(core, &map, 144), WHITE), (from, YELLOW)]);
 }
+
