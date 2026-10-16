@@ -452,6 +452,8 @@ pub mod mailbox {
             ("cursor", Some(v)) => (bits >> 8) & 0xFF == v as u64,
             ("level", Some(v)) => level(read) as u32 == v,
             ("army", Some(v)) => (bits >> 24) & 0xFF == v as u64,
+            // the map menu's selected row (0 CO, 1 Intel, 2 Options, 3 Save, 4 End; the menu keeps its row between uses)
+            ("menu", Some(v)) => (probe::MAP_DEBUG.load(std::sync::atomic::Ordering::Relaxed) >> 40) & 0xFF == v as u64,
             ("maparmies", Some(v)) => (bits >> 32) & 0xFF == v as u64,
             ("status", Some(v)) => status(read) as u32 == v,
             ("players", Some(v)) => players(read).len() as u32 == v,
@@ -1521,6 +1523,15 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         let active = crate::pvp::seat_of_n(army, n);
         if input_log_on() {
             log_dropped(active, army, inputs);
+            static CELLS_FOR: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+            if CELLS_FOR.swap(current, std::sync::atomic::Ordering::Relaxed) != current {
+                crate::fog_view::log_cells(core, current);
+            }
+            static CURSOR_WAS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+            let at = core.raw_read_16(0x0300_33E4, -1) as u32 | (core.raw_read_16(0x0300_33E6, -1) as u32) << 16;
+            if CURSOR_WAS.swap(at, std::sync::atomic::Ordering::Relaxed) != at {
+                log::info!("cursor ({},{}) army {current}", at & 0xFFFF, at >> 16);
+            }
         }
         return Some(inputs[active]);
     }
