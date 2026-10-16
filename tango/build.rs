@@ -43,6 +43,24 @@ END
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS")?;
 
+    // The build's commit (and whether the tree had changes), for the log and the About line: every test run can say
+    // which build it ran.
+    {
+        let run = |args: &[&str]| {
+            std::process::Command::new("git")
+                .args(args)
+                .output()
+                .ok()
+                .filter(|o| o.status.success())
+                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        };
+        let sha = run(&["rev-parse", "--short=9", "HEAD"]).unwrap_or_else(|| "unknown".into());
+        let dirty = run(&["status", "--porcelain", "--untracked-files=no"]).is_some_and(|s| !s.is_empty());
+        println!("cargo:rustc-env=TANGOAW2_BUILD={sha}{}", if dirty { "+changes" } else { "" });
+        println!("cargo:rerun-if-changed=../.git/HEAD");
+        println!("cargo:rerun-if-changed=../.git/index");
+    }
+
     if target_os == "windows" {
         // Always embed a VERSIONINFO resource. `icon.ico` is produced by
         // `win/build.sh` at release time and isn't checked in, so the
