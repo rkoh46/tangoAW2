@@ -54,6 +54,11 @@ fn seat_of(army: &ArmySummary, players: usize) -> usize {
 /// Who won the battle `b`, for `seat` of a room of `players`: `None` when it was not played to its end (a team still
 /// has armies in with another's, or none is left).
 pub fn judge(b: &BattleSummary, seat: usize, players: usize) -> Option<Verdict> {
+    // (the room has an army a player: any others in the console's table are not in the battle)
+    let b = &BattleSummary {
+        armies: b.armies.iter().filter(|a| a.army as usize <= players).cloned().collect(),
+        ..b.clone()
+    };
     let mine: Vec<&ArmySummary> = b.armies.iter().filter(|a| seat_of(a, players) == seat).collect();
     let me = mine.first()?;
     let in_play: Vec<&ArmySummary> = b.armies.iter().filter(|a| !a.out).collect();

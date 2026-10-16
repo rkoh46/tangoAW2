@@ -23,9 +23,9 @@ use std::sync::Mutex;
 
 use crate::online::{bar, text_width, Rgba, BLUE, GRAY_INK, INK, LIGHT_GRAY, SHADE, W, WHITE, YELLOW};
 
-// --- State (tangoAW2's 0x0203D100..0x0203D4FF) -------------------------------------------------------------
+// --- State (tangoAW2's 0x0203D500..0x0203D8FF) -------------------------------------------------------------
 
-pub const BASE: u32 = 0x0203_D100;
+pub const BASE: u32 = 0x0203_D500;
 pub const LEN: u32 = 0x400;
 /// The committed gamertag (zero-terminated), at most [`TAG_CHARS`].
 pub const GAMERTAG: u32 = BASE;
