@@ -1475,6 +1475,28 @@ pub fn match_over(core: &Core) -> bool {
     core.raw_read_8(MATCH, -1) == 1 && core.raw_read_8(OVER, -1) == 1
 }
 
+/// Test aid (`TANGOAW2_INPUT_LOG=1`): log the keys of the seats that are not the active one, which the merge drops,
+/// whenever they change.
+pub(crate) fn input_log_on() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var("TANGOAW2_INPUT_LOG").is_ok_and(|v| v == "1"))
+}
+
+fn log_dropped(active: usize, army: u8, inputs: &[u32]) {
+    static LAST: std::sync::Mutex<Vec<u32>> = std::sync::Mutex::new(Vec::new());
+    let dropped: Vec<u32> = inputs.iter().enumerate().map(|(k, &v)| if k == active { 0 } else { v & 0x3FF }).collect();
+    let mut last = LAST.lock().unwrap();
+    if *last != dropped {
+        if dropped.iter().any(|&v| v != 0) {
+            let list: Vec<String> = dropped.iter().enumerate().filter(|(_, &v)| v != 0).map(|(k, v)| format!("seat{k}={v:#05x}")).collect();
+            log::info!("input-drop: active seat {active} (army {army}) kept {:#05x}; dropped {}", inputs[active] & 0x3FF, list.join(" "));
+        } else if !last.is_empty() {
+            log::info!("input-drop: none (active seat {active}, army {army})");
+        }
+        *last = dropped;
+    }
+}
+
 /// Who drives the pad on an online match's console, outside a battle's turns (`None`: the usual rules).
 pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if core.raw_read_8(MATCH, -1) != 1 {
@@ -1496,7 +1518,11 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
             return Some(0);
         }
         let army = if crate::pvp::turn_ended(core) { current % n as u8 + 1 } else { current };
-        return Some(inputs[crate::pvp::seat_of_n(army, n)]);
+        let active = crate::pvp::seat_of_n(army, n);
+        if input_log_on() {
+            log_dropped(active, army, inputs);
+        }
+        return Some(inputs[active]);
     }
     if !crate::pvp::in_versus(core) {
         return None;
