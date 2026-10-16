@@ -1,0 +1,124 @@
+# 5 seats, Fog off, a full round (each mover opens the map menu and ends its turn with End, the next seat dismisses the hand-off). Run: AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> this-file; exit 1 when a waiting seat shows the mover's cursor (Fog off) or, with fog, any picture of the console that is not the dark hand-off screen.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 300
+phase turn0
+until army=1 60
+wait 400
+press 0 B
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+until turnended 30
+wait 40
+press 1 A
+wait 100
+phase turn1
+until army=2 60
+wait 400
+press 1 B
+wait 20
+press 1 A
+wait 80
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+until turnended 30
+wait 40
+press 2 A
+wait 100
+phase turn2
+until army=3 60
+wait 400
+press 2 B
+wait 20
+press 2 A
+wait 80
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 A
+until turnended 30
+wait 40
+press 3 A
+wait 100
+phase turn3
+until army=4 60
+wait 400
+press 3 B
+wait 20
+press 3 A
+wait 80
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 A
+until turnended 30
+wait 40
+press 4 A
+wait 100
+phase turn4
+until army=5 60
+wait 400
+press 4 B
+wait 20
+press 4 A
+wait 80
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 DOWN
+wait 10
+press 4 A
+until turnended 30
+wait 40
+press 0 A
+wait 100

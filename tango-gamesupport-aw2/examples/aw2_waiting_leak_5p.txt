@@ -1,4 +1,4 @@
-# 5 seats, Fog on, a full round (each mover opens the map menu and ends its turn with End, the next seat dismisses the hand-off). Run: AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> this-file; exit 1 when on any tick a seat the game says is watching shows the console's own picture (the mover's) that is not the dark hand-off screen: battle start, turn starts and every hand-off.
+# 5 seats, Fog on, a full round (each mover opens the map menu and ends its turn with End, the next seat dismisses the hand-off). Run: AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> this-file; exit 1 when a waiting seat shows the mover's cursor (Fog off) or, with fog, any picture of the console that is not the dark hand-off screen.
 n 5
 until maparmies=5 100
 wait 60

@@ -1,4 +1,4 @@
-# 4 seats, Fog off from round 2: the mover (seat 0) opens and closes every page it can (terrain and unit info, map menu, CO page, Intel Status/Rules, Options, START overview, build menu, unit selection, Save); on EVERY tick the other seats' pictures stay within a tolerance of the picture with nothing open (watch/unwatch). Run: aw2_room_teams <rom> <out> this-file; the same without the poke line checks Fog on.
+# as aw2_waiting_pages.txt, with Fog off set on the Rules screen (a real match without fog, not a poked flag)
 n 4
 until maparmies=4 100
 wait 60
@@ -24,11 +24,12 @@ press 0 A
 wait 300
 status
 shot rules 0
+press 0 DOWN
+wait 10
 press 0 A
 until battle 300
 wait 300
 status
-poke 03003FCD 00
 wait 30
 goto 0 1 9
 wait 5

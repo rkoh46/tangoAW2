@@ -391,9 +391,28 @@ fn scene_view(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     }
 }
 
+/// The cursor's corner sprites are in the sprite list the console is about to flush: the mover's own UI is on the picture.
+pub fn mover_cursor_up(core: &Core) -> bool {
+    let (start, end) = (core.raw_read_32(SPRITE_LIST, -1), core.raw_read_32(NEXT_SPRITE, -1));
+    if !(0x0300_0000..0x0300_8000).contains(&start) || end < start || end - start > 128 * 8 {
+        return false;
+    }
+    (start..end).step_by(8).any(|at| {
+        let (a0, a2) = (core.raw_read_16(at, -1), core.raw_read_16(at + 4, -1));
+        a2 >> 12 == 1 && matches!(a2 & 0x3FF, 0x365 | 0x369) && a0 & 0x300 != 0x200
+    })
+}
+
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     if phase(scratch.core()) == Phase::Scene {
         return scene_view(scratch, seat);
+    }
+    if phase(scratch.core()) == Phase::Busy && scratch.core().raw_read_8(FOG, -1) == 0 {
+        // Without fog the game's animations are shown as they are, but not with the mover's cursor, info panel and so on
+        // on them (a unit walking with its range up): the next frame of the animation with those hidden.
+        scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
+        run(scratch, &[0])?;
+        return Ok(());
     }
     let on_map = |s: &dyn tango_backend_mgba::Scratch| s.core().raw_read_32(MAIN_LOOP, -1) == MAP_LOOP;
     if phase(scratch.core()) == Phase::Page && scratch.memory()[0] == 0 {

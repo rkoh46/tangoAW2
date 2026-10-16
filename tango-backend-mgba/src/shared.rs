@@ -284,6 +284,8 @@ pub struct SharedLink {
     console_frame: Option<(Vec<u8>, u32)>,
     /// When a seat's own clean picture was last made for it to keep.
     own_at: [Option<u32>; tango_match::MAX_SEATS],
+    /// The last scratch run showed the console's own picture (a scene): that picture is not one to hold.
+    picked_console: bool,
     /// Each seat's last picture that was not black, and the tick it was shown.
     good: [Option<(Vec<u8>, u32)>; tango_match::MAX_SEATS],
     /// The tick each seat's last "black picture" log line was written (instrumentation).
@@ -343,6 +345,7 @@ impl SharedLink {
             watched_at: Default::default(),
             console_frame: None,
             own_at: Default::default(),
+            picked_console: false,
             good: Default::default(),
             black_logged: Default::default(),
             view_memory: Default::default(),
@@ -392,6 +395,7 @@ impl SharedLink {
             watched_at: Default::default(),
             console_frame: None,
             own_at: Default::default(),
+            picked_console: false,
             good: Default::default(),
             black_logged: Default::default(),
             view_memory: Default::default(),
@@ -457,6 +461,7 @@ impl SharedLink {
         }
         let made = self.scratch_frame(seat);
         match made {
+            Some(f) if self.picked_console => Some(f),
             Some(f) => {
                 self.watched[seat] = Some(f.clone());
                 self.watched_at[seat] = Some(self.tick);
@@ -483,9 +488,12 @@ impl SharedLink {
         let stash = game.scratch_stash();
         self.inner.set_frameskip(0, 0);
         let mut frame = None;
+        let mut picked = false;
         {
             let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat], kept: self.kept.as_ref(), console_pick: false };
-            if game.view_as(&mut scratch, seat) {
+            let shown = game.view_as(&mut scratch, seat);
+            picked = scratch.console_pick;
+            if shown {
                 frame = if scratch.console_pick { self.console_frame.as_ref().map(|(f, _)| f.clone()) } else { scratch.link.video_buffer(0).map(to_rgba) };
                 // (a picture caught in a screen fade, forced blank or black is no picture: the last good one stays)
                 if frame.as_ref().is_some_and(|f| dark(f)) {
@@ -499,6 +507,7 @@ impl SharedLink {
                 }
             }
         }
+        self.picked_console = picked;
         let _ = self.inner.load(&snap);
         game.scratch_unstash(stash);
         {

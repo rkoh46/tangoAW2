@@ -1,0 +1,62 @@
+# 5 seats, Fog off: army 1 and army 2 each select and move a Cruiser (test aid places them), army 2 within sight of army 1. Run: AW2_LEAK_CHECK=1 AW2_SAMPLE=10 aw2_room_teams <rom> <out> this-file; exit 1 when a waiting seat shows the mover's cursor.
+n 5
+until maparmies=5 100
+wait 60
+press 0 A
+until teams 100
+wait 90
+press 4 DOWN
+press 4 DOWN
+press 4 DOWN
+press 4 A
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+fv
+aid unit 1 cruiser 9 6
+aid unit 2 cruiser 9 8
+wait 20
+goto 0 9 6
+wait 20
+press 0 A
+wait 30
+goto 0 9 5
+wait 5
+press 0 A
+wait 60
+press 0 A
+wait 120
+fv
+aid poke 030033EC 02
+wait 60
+goto 1 9 8
+wait 20
+press 1 A
+wait 30
+goto 1 9 7
+wait 5
+press 1 A
+wait 60
+press 1 A
+wait 120
+fv
