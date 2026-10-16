@@ -4,7 +4,7 @@
 //! picture, size and property boxes as offline), but its list holds only the maps for as many armies as the room has
 //! players: every frame [`retab`] puts each map's header tab (+0x1A, what the list builder sorts maps into tabs by)
 //! where the room's count wants it, and maps for another count on a tab no list shows ([`HIDE`]). The tabs are the
-//! game's own, with its own names: for 2 players "Classic" (the maps) and "Pre-Deployed", for 3 "3P Maps" and "Pre-
+//! game's own, with its own names: for 2 players "2P Maps" (the Classic tab, renamed: [`crate::five_map::name_classic_tab`]) and "Pre-Deployed", for 3 "3P Maps" and "Pre-
 //! Deployed", for 4 "4P Maps" and "Pre-Deployed", for 5 players "5P Maps" (the tabs left empty are skipped by the
 //! list). Offline Versus is not touched (nothing here runs outside a room's match).
 //!
@@ -319,6 +319,9 @@ pub fn retab(core: &mut Core) {
     }
     let n = crate::online_teams::players(core);
     let (plain, pre) = tabs_for(n);
+    if n == 2 {
+        crate::five_map::name_classic_tab(core);
+    }
     let table = crate::five_map::table(core);
     for id in 0..=last_id(table) {
         let h = table + 0x5C * id;

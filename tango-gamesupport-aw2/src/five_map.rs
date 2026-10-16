@@ -200,6 +200,24 @@ pub fn is_wasteland_map(id: u8) -> bool {
     id != 0 && map_of(id).is_some_and(|m| m.wasteland)
 }
 
+/// A room of two: the Classic tab (2) reads "2P Maps", like the 3-5 player rooms' tabs. Its title is a text of its own
+/// (the one after the maps' names), so no other tab changes. Idempotent.
+pub fn name_classic_tab(core: &mut Core) {
+    let k = 1 + MAPS.len() as u32;
+    let at = STRINGS + 0x20 * k;
+    let id = TAB_TEXT as u32 + k;
+    let slot = TEXT_TABLE + 4 * id;
+    if core.raw_read_32(slot, -1) != at {
+        let mut bytes = b"2P Maps".to_vec();
+        bytes.push(0);
+        core.raw_write_range(at, -1, &bytes);
+        core.raw_write_32(slot, -1, at);
+    }
+    if core.raw_read_16(TAB_TITLES + 2 * 2, -1) != id as u16 {
+        core.raw_write_16(TAB_TITLES + 2 * 2, -1, id as u16);
+    }
+}
+
 pub fn install(core: &mut Core) {
     let mut names = vec![TAB_NAME_TEXT];
     names.extend(MAPS.iter().map(|m| m.name));
