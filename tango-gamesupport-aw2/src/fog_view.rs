@@ -64,12 +64,23 @@ const PANEL_X_RIGHT: u32 = 173;
 
 /// Puts the CO panel where the game would have it at rest for the cursor as it is now, so that the scratch picture
 /// has it (the funds and the CO of the army it was told is the current one), not a panel sliding between two corners.
-fn settle_panel(core: &mut Core) {
+///
+/// With the cursor in the lower half the panel keeps the side it last had: the seat's own (`last`, 1 left, 2 right, 0
+/// none yet: the console's), so that the mover opening a menu, which moves the console's panel, does not move the
+/// waiting window's. Returns the side the panel was put at.
+fn settle_panel(core: &mut Core, last: i32) -> i32 {
     let sx = (core.raw_read_16(CURSOR, -1) as i32 * 16 - core.raw_read_16(MAP + 4, -1) as i32) as i16;
     let sy = (core.raw_read_16(CURSOR + 2, -1) as i32 * 16 - core.raw_read_16(MAP + 6, -1) as i32) as i16;
-    let right = if sy <= 0x4F { sx <= 0x7F } else { core.raw_read_8(PANEL_STATE, -1) == 1 };
+    let right = if sy <= 0x4F {
+        sx <= 0x7F
+    } else if last != 0 {
+        last == 2
+    } else {
+        core.raw_read_8(PANEL_STATE, -1) == 1
+    };
     core.raw_write_8(PANEL_STATE, -1, right as u8);
     core.raw_write_32(PANEL_STATE + 4, -1, if right { PANEL_X_RIGHT } else { PANEL_X_LEFT });
+    if right { 2 } else { 1 }
 }
 
 fn cell(core: &Core, x: i32, y: i32) -> u32 {
@@ -138,8 +149,10 @@ const UI_PROCS: [u32; 17] = [
     0x0802_28D9, 0x0803_63D1, 0x0803_5E25, 0x0801_9D0D, 0x0801_9DED, 0x0802_DA19, 0x0803_A441, 0x0804_6D31, 0x0804_7079, 0x0803_A69D, 0x0803_A5B9,
     0x0801_4401, 0x0801_95F9, 0x0802_C391, 0x0802_C3D1, 0x0803_75D5, 0x0804_66DD,
 ];
-/// The Rules page of the Intel menu: a full-screen page with no main-loop callback of its own (`0`).
-const RULES_PAGE: u32 = 0x0806_DFF1;
+/// Whether a proc belongs to the Rules page and its wipes (its own: `0x0806D000..0x0806E000`, and `0x08065961`).
+fn rules_proc(f: u32) -> bool {
+    (0x0806_D000..0x0806_E000).contains(&f) || f == 0x0806_5961
+}
 
 /// What the shared console shows, for the waiting windows.
 #[derive(PartialEq, Eq, Debug)]
@@ -153,51 +166,85 @@ pub enum Phase {
     Busy,
     /// The mover's full-screen CO page: never shown; the waiting window keeps its last picture.
     Page,
+    /// A wipe or fade into or out of the mover's menu or page, or between two screens: the waiting window keeps its last
+    /// clean picture until the map is plain again.
+    Moving,
 }
 
-/// A map-menu item chosen, nothing running and the map's window off, held for a moment: the mover's own build and
-/// command menus pass through the same state for a few frames (menu state 5 is left over from the last item), and
-/// the waiting window must not show the console's picture then (the mover's cursor, move range and units in fog).
-fn looks_like_hand_off(core: &Core, window_off: bool) -> bool {
-    static SINCE: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-    let mut since = SINCE.lock().unwrap();
-    if !(core.raw_read_8(MAP_MENU_STATE, -1) == 5 && window_off) {
-        *since = None;
+/// The procs of the pages' wipes and fades in and out (the CO page's, the map overview's): the mover's, never shown.
+const WIPE_PROCS: [u32; 2] = [0x0801_11AD, 0x0802_C451];
+
+/// The registers of the plain map (what the game sets up once its screen is built): window 0 on with its inside and
+/// outside layers, no mosaic, and no fade (the darkening behind the cursor's panel, BLDCNT 0x1FDF, is part of it).
+fn steady_regs(core: &Core) -> bool {
+    let io = |o: u32| core.raw_read_16(0x0400_0000 + o, -1);
+    let (bldcnt, bldy) = (io(0x50), io(0x54));
+    io(0) & 0x2000 != 0 && io(0x48) == 0x003F && io(0x4A) == 0x001F && io(0x4C) == 0 && (bldy == 0 || bldcnt == 0x1FDF)
+}
+
+/// The mover has chosen from the map menu or opened a page and the game is wiping into it or out of it, or is
+/// between two screens (the main-loop callback is 0 or the map's while the registers are not the plain map's, or the
+/// page wipe proc runs): the screen shows a transition, never a picture to copy. A turn's own banners (the menu state
+/// is reset by then) and the hand-off are not this.
+fn moving(core: &Core) -> bool {
+    let menu = core.raw_read_8(MAP_MENU_STATE, -1);
+    if !(menu == 4 || menu == 5) || crate::pvp::turn_ended(core) {
         return false;
     }
-    since.get_or_insert_with(std::time::Instant::now).elapsed() > std::time::Duration::from_millis(200)
+    let running = procs(core);
+    if !running.iter().all(|f| UI_PROCS.contains(f) || WIPE_PROCS.contains(f)) {
+        return false;
+    }
+    match core.raw_read_32(MAIN_LOOP, -1) {
+        0 => true,
+        MAP_LOOP => running.iter().any(|f| WIPE_PROCS.contains(f)) || !steady_regs(core),
+        _ => false,
+    }
 }
 
-/// The Intel menu's Rules page is up (no battle-scene callback while it shows).
-pub fn rules_page(core: &Core) -> bool {
-    core.raw_read_32(MAIN_LOOP, -1) == 0 && procs(core).contains(&RULES_PAGE)
+/// The main-loop callback is 0 (between screens): the Intel menu's Rules page and the wipes of the mover's pages.
+/// None when it is not 0.
+fn between_screens(core: &Core) -> Option<Phase> {
+    if core.raw_read_32(MAIN_LOOP, -1) != 0 {
+        return None;
+    }
+    if procs(core).iter().any(|&f| rules_proc(f)) {
+        Some(Phase::Page)
+    } else if moving(core) {
+        Some(Phase::Moving)
+    } else {
+        None
+    }
+}
+
+/// A screen between two others that belongs to the mover's own pages ([`between_screens`]): the waiting window is
+/// made like on the map (there is no battle scene callback to ask).
+pub fn between_screens_view(core: &Core) -> bool {
+    between_screens(core).is_some()
 }
 
 pub fn phase(core: &Core) -> Phase {
     match core.raw_read_32(MAIN_LOOP, -1) {
         MAP_LOOP => {}
         CO_PAGE_LOOP => return Phase::Page,
-        0 if rules_page(core) => return Phase::Page,
+        0 => return between_screens(core).unwrap_or(Phase::Busy),
         _ => return Phase::Busy,
     }
     let running = procs(core);
-    // (End's place in the map menu is not always the same, so the hand-off is also told by its look: a map-menu item
-    // chosen, nothing running, and the map's window (WIN0, always on while the map shows) off)
-    let window_off = core.raw_read_16(0x0400_0000, -1) & 0x2000 == 0;
     if crate::online::input_log_on() {
-        static LAST: std::sync::Mutex<(bool, u8, bool, usize)> = std::sync::Mutex::new((false, 0, false, 0));
-        let now = (crate::pvp::turn_ended(core), core.raw_read_8(MAP_MENU_STATE, -1), window_off, running.len());
+        static LAST: std::sync::Mutex<(bool, u8, usize)> = std::sync::Mutex::new((false, 0, 0));
+        let now = (crate::pvp::turn_ended(core), core.raw_read_8(MAP_MENU_STATE, -1), running.len());
         let mut last = LAST.lock().unwrap();
         if *last != now {
-            log::info!("fog-phase: turn_ended {} menu_state {} window_off {} procs {:x?}", now.0, now.1, now.2, running);
+            log::info!("fog-phase: turn_ended {} menu_state {} procs {:x?}", now.0, now.1, running);
             *last = now;
         }
     }
-    let look = looks_like_hand_off(core, window_off && running.is_empty());
-    // (End chosen is not the hand-off yet: the mover's real map and menu are still on the console's screen until the
-    // map's window goes off for the "Next turn" screen, and that picture is never shown)
-    if running.is_empty() && ((crate::pvp::turn_ended(core) && window_off) || look) {
+    if running.is_empty() && crate::pvp::turn_ended(core) {
         return Phase::HandOff;
+    }
+    if moving(core) {
+        return Phase::Moving;
     }
     if running.iter().all(|f| UI_PROCS.contains(f)) {
         Phase::Map
@@ -329,10 +376,13 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         if let Some(army) = viewer_army(scratch.core(), seat) {
             scratch.core_mut().raw_write_8(CURRENT_PLAYER, -1, army);
         }
-        settle_panel(scratch.core_mut());
+        let last = scratch.memory()[3];
+        let side = settle_panel(scratch.core_mut(), last);
         scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
-        run(scratch, &[0])?;
+        run(scratch, &[0, 0, 0])?;
+        close_ui(scratch)?;
         scratch.memory()[0] = 1;
+        scratch.memory()[3] = side;
         return Ok(());
     }
     let (w, h) = size(scratch.core());
@@ -355,8 +405,9 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         core.raw_write_16(CURSOR_PX + 2, -1, (cursor.1 * 16) as u16);
     };
     let (mut cx, mut cy) = (mem[1], mem[2]);
+    let mut side = mem[3];
     place(scratch, cx, cy, (cx + 7, cy + 4));
-    settle_panel(scratch.core_mut());
+    side = settle_panel(scratch.core_mut(), side);
     scratch.core_mut().raw_write_8(CALL + 2, -1, 0);
     refresh(scratch, 2)?;
     // ... and if the mover's cursor is on a cell it sees, the camera follows it there and the cursor shows.
@@ -368,13 +419,31 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         cx = if x < cx { x } else if x > cx + 14 { x - 14 } else { cx }.clamp(0, (w - 15).max(0));
         cy = if y < cy { y } else if y > cy + 9 { y - 9 } else { cy }.clamp(0, (h - 10).max(0));
         place(scratch, cx, cy, mover_cell);
-        settle_panel(scratch.core_mut());
+        side = settle_panel(scratch.core_mut(), side);
         refresh(scratch, 2)?;
     } else {
         run(scratch, &[0, 0])?;
     }
-    *scratch.memory() = [1, cx, cy, 0];
+    close_ui(scratch)?;
+    *scratch.memory() = [1, cx, cy, side];
     Ok(())
+}
+
+/// The scratch console shows the plain map: nothing of the mover's UI running and the registers of the plain map. A
+/// button the mover pressed on the very tick the snapshot was taken is already latched in the game's state, and the
+/// scratch's own ticks then open the menu or page it was meant to: B closes it again, up to four times, and a picture
+/// that is still not the plain map is no picture (the caller keeps the last one).
+fn close_ui(scratch: Scratch) -> Result<(), &'static str> {
+    for _ in 0..4 {
+        if phase(scratch.core()) == Phase::Map && !ui_open(scratch.core()) && steady_regs(scratch.core()) {
+            return Ok(());
+        }
+        run(scratch, &[KEY_B, KEY_B, 0, 0, 0])?;
+    }
+    if phase(scratch.core()) == Phase::Map && !ui_open(scratch.core()) && steady_regs(scratch.core()) {
+        return Ok(());
+    }
+    Err("the scratch picture is not the plain map")
 }
 
 /// The sprite list the game copies to OAM at the flush: its start and the next free entry, 8 bytes each.

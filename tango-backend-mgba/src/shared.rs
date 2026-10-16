@@ -632,7 +632,7 @@ impl SharedSide<'_> {
 
 impl Side for SharedSide<'_> {
     /// A window is never black through a fault of the app's: a waiting seat's picture (made on a scratch copy) that is
-    /// entirely black while the console's own is not shows the seat's last good one (up to ten seconds). The game's
+    /// entirely black while the console's own is not shows the seat's last good one (up to three seconds). The game's
     /// own fades and wipes (the console's picture black too) are shown as the game draws them, in every window.
     fn frame(&mut self) -> Option<Vec<u8>> {
         let (f, path) = self.frame_raw()?;
@@ -652,7 +652,7 @@ impl Side for SharedSide<'_> {
             }
             if !native {
                 if let Some((g, at)) = self.link.good[seat].as_ref() {
-                    if tick.wrapping_sub(*at) < 600 {
+                    if tick.wrapping_sub(*at) < 180 {
                         return Some(g.clone());
                     }
                 }
