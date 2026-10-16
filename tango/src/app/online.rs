@@ -527,7 +527,8 @@ impl App {
     fn online_nickname(&self) -> String {
         let me = mailbox::clean_gamertag(&self.config.nickname.clone().unwrap_or_default());
         if me.is_empty() {
-            "You".to_string()
+            // (never the device's hostname: no gamertag yet reads as "Player")
+            "Player".to_string()
         } else {
             me
         }

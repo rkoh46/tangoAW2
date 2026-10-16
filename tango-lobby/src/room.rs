@@ -383,7 +383,8 @@ impl Room {
         } else {
             players.push(PlayerView {
                 link: Some(g.host_link),
-                nickname: "Host".to_string(),
+                // (the host's gamertag arrives with the welcome)
+                nickname: "Player".to_string(),
                 ready: false,
                 host: true,
                 you: false,
