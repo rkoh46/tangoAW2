@@ -38,6 +38,9 @@ pub struct Flow {
     announcer: Option<netplay::browse::Announcer>,
     /// The look at the public lobby list, while the game's lobby browser is open.
     browse: Option<(netplay::browse::Browse, std::time::Instant)>,
+    /// When the game left the lobby browser (the look then goes on for a while, so that opening it again shows
+    /// the list at once instead of searching again).
+    browse_left: Option<std::time::Instant>,
     /// The lobbies in the order they were first seen (so the list does not shuffle at every refresh).
     browse_order: Vec<String>,
     /// What was last logged of the list.
@@ -86,6 +89,8 @@ impl App {
         if self.online.in_match && !self.session.is_active() {
             self.online_record_battles();
             self.online.in_match = false;
+            // (a later game without a room has no gamertags to show)
+            tango_library::online::set_room(Vec::new(), 0);
             self.online.room = None;
             self.online.seen = None;
             let dropped = self.online.dropped.take();
@@ -138,6 +143,8 @@ impl App {
         }
         self.online_stats();
         let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
+            // (no game: no look at the lobby list)
+            self.online.browse = None;
             return iced::Task::none();
         };
         let mut read = |a: u32, b: &mut [u8]| {
@@ -264,11 +271,20 @@ impl App {
             return;
         }
         if level != 7 {
-            if self.online.browse.take().is_some() {
-                self.online.browse_order.clear();
+            if self.online.browse.is_some() {
+                // (kept for a minute and a half: the page is often left for a password or a lobby and come back to)
+                let left = *self.online.browse_left.get_or_insert_with(std::time::Instant::now);
+                if left.elapsed().as_secs() >= 90 {
+                    self.online.browse = None;
+                    self.online.browse_left = None;
+                    self.online.browse_order.clear();
+                    self.online.browse_logged.clear();
+                    log::info!("lobby list: the look ended");
+                }
             }
             return;
         }
+        self.online.browse_left = None;
         let relays = Self::lobby_relays();
         let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
         let (browse, since) = self.online.browse.get_or_insert_with(|| {
@@ -291,9 +307,11 @@ impl App {
             .collect();
         let stats = browse.stats();
         let elapsed = since.elapsed().as_secs_f32();
+        // "No lobbies" is only said once a relay has answered (its stored lobbies are in) or the wait is long; until
+        // then the page says it is searching.
         let net = if stats.connected == 0 && elapsed >= 10.0 {
             mailbox::BrowseNet::Offline
-        } else if stats.connected > 0 && (stats.events > 0 || elapsed >= 2.5) {
+        } else if stats.answered > 0 || stats.events > 0 || (stats.connected > 0 && elapsed >= 15.0) {
             mailbox::BrowseNet::Ok
         } else {
             mailbox::BrowseNet::Looking
@@ -324,7 +342,11 @@ impl App {
             .collect();
         let codes: Vec<String> = rows.iter().map(|r| r.code.clone()).collect();
         if codes != self.online.browse_logged {
-            log::info!("lobby list: rows now {codes:?} ({net:?})");
+            log::info!(
+                "lobby list: rows now {codes:?} ({net:?}, {stats:?}, {} of another version hidden)",
+                browse.hidden()
+            );
+            log::info!("lobby list: relays: {}", browse.describe());
             self.online.browse_logged = codes;
         }
         let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
@@ -527,7 +549,8 @@ impl App {
     fn online_nickname(&self) -> String {
         let me = mailbox::clean_gamertag(&self.config.nickname.clone().unwrap_or_default());
         if me.is_empty() {
-            "You".to_string()
+            // (never the device's hostname: no gamertag yet reads as "Player")
+            "Player".to_string()
         } else {
             me
         }

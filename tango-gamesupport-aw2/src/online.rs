@@ -1410,6 +1410,13 @@ fn map_armies(core: &Core, pack: bool) -> Option<u8> {
 
 /// The online match's notes over its console (presentation only): a map for another number of players.
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
+    // The walk to SELECT MAP presses the game's own menus (Select Mode, Versus): the players see none of it.
+    if rgba.len() == W * H * 4 && core.raw_read_8(MATCH, -1) == 1 && navigating(core) {
+        for px in rgba.chunks_exact_mut(4) {
+            px.copy_from_slice(&[0, 0, 0, 255]);
+        }
+        return;
+    }
     crate::online_teams::draw(core, rgba);
     crate::unranked::draw(core, rgba);
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {
@@ -1506,6 +1513,11 @@ pub fn room_name(seat: usize) -> String {
 
 pub fn room_local_seat() -> usize {
     ROOM_INFO.lock().unwrap().local_seat
+}
+
+/// How many gamertags the room's match has (0: none were told, e.g. a link-code game).
+pub fn room_named() -> usize {
+    ROOM_INFO.lock().unwrap().names.len()
 }
 
 /// How many players the room has, for the picture (2 when nobody said).

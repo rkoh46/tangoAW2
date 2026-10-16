@@ -633,7 +633,7 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
         }
         return r.into();
     }
-    if n > 2 {
+    if n > 2 || tango_library::online::room_named() >= 2 {
         // A room of 3-5: every seat, in its army's colour, with its gamertag. The legend takes what the numbers beside
         // it leave (`budget`): the full names while they fit, else shorter and shorter ones, and last only the seat
         // markers (the local seat says "You"); the full legend is in a tooltip whenever anything is cut.
