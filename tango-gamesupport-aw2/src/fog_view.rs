@@ -285,6 +285,9 @@ pub fn phase(core: &Core) -> Phase {
     }
     if running.iter().all(|f| UI_PROCS.contains(f)) {
         Phase::Map
+    } else if running.iter().any(|f| UI_PROCS.contains(f)) {
+        // (an animation with the mover's UI up at the same time: nothing of it is shown, the window holds its picture)
+        Phase::Moving
     } else {
         Phase::Busy
     }
