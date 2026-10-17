@@ -23,6 +23,7 @@ struct Dump {
     last_powers: [u8; 6],
     last_alive: [bool; 6],
     last_hash_frame: u32,
+    prev_fc: u32,
     last_carried: std::collections::BTreeMap<u32, (u32, u8)>,
     ready: bool,
 }
@@ -62,7 +63,7 @@ pub fn tick(core: &Core, keys: u32) {
             .append(true)
             .open(dir.join(format!("state_s{seat}.jsonl")))
             .expect("run dump file");
-        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_alive: [true; 6], last_hash_frame: 0, last_carried: Default::default(), ready: false }
+        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_alive: [true; 6], last_hash_frame: 0, prev_fc: 0, last_carried: Default::default(), ready: false }
     });
     d.tick += 1;
     TICKS.store(d.tick, std::sync::atomic::Ordering::Relaxed);
@@ -72,6 +73,11 @@ pub fn tick(core: &Core, keys: u32) {
     }
     // (the console's state hash at every 60th frame of its own count: peers that play the same match agree at the same frame)
     let fc = core.frame_counter();
+    // (a rollback re-simulates frames: hash them again, so the last line per frame is the corrected state, not the speculative first visit)
+    if fc < d.prev_fc {
+        d.last_hash_frame = 0;
+    }
+    d.prev_fc = fc;
     if fc % 60 == 0 && fc != d.last_hash_frame {
         d.last_hash_frame = fc;
         let mut iw = vec![0u8; 0x8000];
