@@ -319,6 +319,7 @@ mod tests {
                 stream::Input {
                     keys: 0x155,
                     touch: Some((128, 96)),
+                    extra: [0; 3],
                 },
             ],
             [keys(0), keys(0x300)],
@@ -366,6 +367,7 @@ mod tests {
                     stream::Input {
                         keys: 0x155,
                         touch: Some((128, 96)),
+                        extra: [0; 3],
                     },
                 ],
                 [keys(0), keys(0x300)],
