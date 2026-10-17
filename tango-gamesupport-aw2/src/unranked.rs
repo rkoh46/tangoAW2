@@ -66,6 +66,9 @@ pub const PICK_SECONDS: u32 = 120;
 pub const REVEAL_SECONDS: u32 = 9;
 const PICK_FRAMES: u32 = PICK_SECONDS * 60;
 const REVEAL_FRAMES: u16 = (REVEAL_SECONDS * 60) as u16;
+/// Frames the game's cursor sits on the drawn map, after the cycle, before the map is shown: the game's own picture of the map (the counters
+/// header and the preview) takes about that long to follow its cursor, and the reveal shows them uncovered.
+const REVEAL_SETTLE: u8 = 45;
 /// Frames the game's cursor sits on the drawn map before the game is told to choose it.
 const REVEAL_AFTER: u8 = 10;
 /// Frames of the current player's pick so far (u16, even address).
@@ -292,7 +295,7 @@ fn slot_at(n: usize, from: usize, at: u16) -> usize {
 
 /// The drawn map is shown (the cycle is over and the game's cursor is on it): its name, picture and whose it is.
 pub fn revealed(core: &Core) -> bool {
-    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core))
+    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core)) && core.raw_read_8(SETTLED, -1) >= REVEAL_SETTLE
 }
 
 /// The map the match is played on, once it is drawn (the Armies and Rules pages name it).
@@ -348,6 +351,10 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
     let cyc = core.raw_read_16(CYC_T, -1);
     if cyc > 0 && cyc < cycle_len(seats(core)) {
         core.raw_write_16(CYC_T, -1, cyc + 1);
+        if cyc + 1 >= cycle_len(seats(core)) {
+            // (the settling of the game's cursor on the map starts over: see [`revealed`])
+            core.raw_write_8(SETTLED, -1, 0);
+        }
         return match step_at(seats(core), cyc - 1) {
             Some((i, off)) if off < 2 => {
                 let mut len = 0;
@@ -375,12 +382,16 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
         };
     }
     // (the drawn map is shown for a while whatever the game's list is doing under it)
-    if cyc >= cycle_len(seats(core)) {
+    if revealed(core) {
         core.raw_write_16(HOLD_T, -1, core.raw_read_16(HOLD_T, -1).saturating_add(1));
     }
     if core.raw_read_8(ids + cur, -1) == target {
         let settled = core.raw_read_8(SETTLED, -1).saturating_add(1);
         core.raw_write_8(SETTLED, -1, settled);
+        if cyc > 0 && settled == REVEAL_SETTLE {
+            // (the reveal: the game's "power meter charged" chime, played by the list proc's next frame)
+            core.raw_write_8(SOUND_REQ, -1, SE_REVEAL);
+        }
         if cyc == 0 {
             if settled >= 20 {
                 core.raw_write_16(CYC_T, -1, 1);
@@ -525,29 +536,29 @@ fn paint_box(core: &Core, cv: &mut crate::online::Rgba<'_>, lines: &[(String, cr
     }
 }
 
-/// The picking box: whose turn it is, and the picks so far.
+/// The picking plate: whose turn it is, the time left and the picks so far. It takes the title's place (top left, the
+/// mirror of the game's counters header): the map's picture can use all of the area under the header and down to the
+/// foot of the screen, so nothing is drawn over it, and the tab box and list are the game's own.
 fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     use crate::online::*;
     let n = seats(core);
     let who = (core.raw_read_8(PICKS, -1) as usize).min(n - 1);
     let me = room_local_seat();
-    let fits = |t: &str| text_width(core, t) <= 144;
-    let line1 = if who == me { "Pick a map  A: Choose".to_string() } else { fit(core, &format!("{} is picking...", room_name(who)), 144) };
+    let picked = (core.raw_read_8(PICKS, -1) as usize).min(n);
     let left = pick_frames().saturating_sub(core.raw_read_16(PICK_T, -1) as u32).div_ceil(60);
-    let picked = core.raw_read_8(PICKS, -1) as usize;
-    let maps: Vec<String> = (0..picked.min(n)).map(|s| map_name(core, core.raw_read_8(seat(s) + S_MAP, -1))).collect();
-    // (the box stays three lines: the prompt, the time left with the count of picks, and what was picked)
-    let clock = format!("Time left {}:{:02}   Picks: {} of {}", left / 60, left % 60, picked, n);
-    let mut lines = vec![(line1, WHITE), (fit(core, &clock, 144), if left <= 10 { (255, 120, 96) } else { YELLOW })];
-    if picked > 0 {
-        let full = (0..maps.len()).map(|s| format!("{}: {}", room_name(s), maps[s])).collect::<Vec<_>>().join(", ");
-        if fits(&full) {
-            lines.push((full, WHITE));
-        } else if me < picked {
-            lines.push((fit(core, &format!("Yours: {}", maps[me]), 144), WHITE));
-        }
-    }
-    paint_box(core, cv, &lines);
+    let sea: Rgb = (139, 222, 230);
+    // (the title's logo goes: the plate covers it, a margin of sea round the plate)
+    cv.rect(0, 0, 140, 31, sea);
+    let (red, pink, grey): (Rgb, Rgb, Rgb) = ((246, 82, 57), (255, 238, 238), (131, 123, 115));
+    let (x, y, w, h) = (4, 2, 132, 27);
+    cv.rect(x - 1, y - 1, w + 2, h + 2, (0, 0, 0));
+    cv.rect(x, y, w, h, red);
+    cv.rect(x + 2, y + 2, w - 4, h - 4, pink);
+    let line1 = if who == me { "Your pick: press A".to_string() } else { fit(core, &format!("{} is picking", room_name(who)), w - 12) };
+    let line2 = format!("{}:{:02} left   {} of {}", left / 60, left % 60, picked + 1, n);
+    let ink: Rgb = if left <= 10 { (200, 40, 24) } else { (88, 72, 150) };
+    cv.text(core, x + (w - text_width(core, &line1)) / 2, y + 3, &line1, grey, SHADE);
+    cv.text(core, x + (w - text_width(core, &line2)) / 2, y + 13, &line2, ink, SHADE);
 }
 
 /// The picture is fading to black (the notes would hang on the black).
@@ -615,90 +626,92 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
     paint_box(core, cv, &lines);
 }
 
-/// The roulette's picture: the map list and picture are covered by one window of the proposals (a "?????" for each), a highlight
-/// that runs round them quickly, slows and lands on the drawn one (the game's cursor steps under it, with its own sound).
-/// There the "?????" turns into the map's name beside its owner's gamertag, the map's picture is drawn in a window beside
-/// the list, and a line at the foot counts down the seconds before the armies.
+/// The roulette's picture: the game's own SELECT MAP is covered (its list would give the maps away) except the title, and a
+/// window of the proposals (a "?????" for each) stands in the list's column: a highlight runs round them quickly, slows and
+/// lands on the drawn one (the game's cursor steps under it, with its own sound). There the "?????" turns into the map's name
+/// beside its owner's gamertag, and the right of the screen is the game's own: its counters header and its picture of the
+/// map, uncovered (the console renders it, so it is the same on every peer). The title's place has the plate with the
+/// seconds before the armies.
 fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     use crate::online::*;
     let n = seats(core);
     let sea: Rgb = (139, 222, 230);
-    // (everything but the title: the tab and the counters would say which map)
-    cv.rect(0, 30, W as i32, 130, sea);
-    cv.rect(134, 0, W as i32 - 134, 30, sea);
-    // (the logo's own colours stay; the map picture's pink showing round it goes)
-    for y in 0..30 {
-        for x in 0..134 {
-            let o = 4 * (W * y + x);
-            let px = (cv.0[o], cv.0[o + 1], cv.0[o + 2]);
-            if ![(49, 98, 148), (255, 255, 255), (197, 205, 197)].contains(&px) {
-                cv.put(x as i32, y as i32, sea);
-            }
-        }
-    }
     let shown = revealed(core);
+    // (the list's column always; the counters header and the picture only once the map is shown: they would say which map)
+    cv.rect(0, 30, 88, 130, sea);
+    cv.rect(0, 0, 140, 31, sea);
+    if !shown {
+        cv.rect(88, 30, W as i32 - 88, 130, sea);
+        cv.rect(134, 0, W as i32 - 134, 30, sea);
+    }
     let cyc = core.raw_read_16(CYC_T, -1);
     let from = (core.raw_read_8(PICK, -1) as usize).min(n - 1);
     let lit = (cyc > 0).then(|| slot_at(n, from, cyc - 1));
-    let (rows, w, rh) = (n as i32, 140, 15);
-    let h = 8 + 14 + rh * rows + 4;
-    let (x, y) = (6, 34);
-    // (the list's own look: a black edge, a red frame, a pink page with a line under each row, a lavender highlight)
+    // (the game's own look: a black edge, a red frame, a pink page with a line under each row, a lavender highlight)
     let (red, pink, line, lav, grey): (Rgb, Rgb, Rgb, Rgb, Rgb) = ((246, 82, 57), (255, 238, 238), (255, 230, 213), (222, 205, 255), (131, 123, 115));
+    // The plate where the title was.
+    let (px, py, pw, ph) = (4, 2, 132, 27);
+    audit::window(px, py, pw, ph);
+    cv.rect(px - 1, py - 1, pw + 2, ph + 2, (0, 0, 0));
+    cv.rect(px, py, pw, ph, red);
+    cv.rect(px + 2, py + 2, pw - 4, ph - 4, pink);
+    let (l1, l2) = if shown {
+        let left = (REVEAL_FRAMES.saturating_sub(core.raw_read_16(HOLD_T, -1)) as u32).div_ceil(60);
+        (
+            "The map is drawn".to_string(),
+            if room_local_seat() == 0 { format!("A: Start now  ({left})") } else { format!("Starting in {left}") },
+        )
+    } else {
+        ("Drawing the map...".to_string(), format!("{} proposals", n))
+    };
+    cv.text(core, px + (pw - text_width(core, &l1)) / 2, py + 2, &l1, grey, SHADE);
+    cv.text(core, px + (pw - text_width(core, &l2)) / 2, py + 12, &l2, (88, 72, 150), SHADE);
+    // The proposals, two lines each (the gamertag, then the map).
+    let (x, y, w, rh) = (2, 34, 84, 23);
+    let h = 6 + rh * n as i32;
     audit::window(x, y, w, h);
     cv.rect(x - 1, y - 1, w + 2, h + 2, (0, 0, 0));
     cv.rect(x, y, w, h, red);
-    cv.rect(x + 3, y + 3, w - 6, h - 6, pink);
-    let head = "The map is drawn...";
-    cv.text(core, x + (w - text_width(core, head)) / 2, y + 6, head, grey, SHADE);
+    cv.rect(x + 2, y + 2, w - 4, h - 4, pink);
     let map = core.raw_read_8(CHOSEN, -1);
     for k in 0..n {
-        let ry = y + 20 + rh * k as i32;
-        cv.rect(x + 5, ry + rh - 1, w - 10, 1, line);
+        let ry = y + 3 + rh * k as i32;
+        cv.rect(x + 4, ry + rh - 1, w - 8, 1, line);
         if lit == Some(k) {
-            cv.rect(x + 6, ry + 1, w - 12, rh - 3, lav);
-            cv.rect(x + 5, ry + 3, 1, rh - 7, lav);
-            cv.rect(x + w - 6, ry + 3, 1, rh - 7, lav);
+            cv.rect(x + 3, ry, w - 6, rh - 1, lav);
         }
         let ink = if lit == Some(k) { (88, 72, 150) } else { grey };
-        let who = fit(core, &room_name(k), if shown && lit == Some(k) { 50 } else { 58 });
-        cv.text(core, x + 10, ry + 2, &who, ink, SHADE);
-        let t = if shown && lit == Some(k) {
-            fit(core, &map_name(core, map), w - 20 - text_width(core, &who) - 6)
-        } else {
-            "?????".to_string()
-        };
-        cv.text(core, x + w - 10 - text_width(core, &t), ry + 2, &t, ink, SHADE);
+        let who = fit(core, &room_name(k), w - 14);
+        cv.text(core, x + 7, ry, &who, ink, SHADE);
+        let t = if shown && lit == Some(k) { fit(core, &map_name(core, map), w - 14) } else { "?????".to_string() };
+        cv.text(core, x + w - 7 - text_width(core, &t), ry + 11, &t, ink, SHADE);
     }
-    // The map's picture beside the list.
-    let (px, pw, ph) = (x + w + 6, W as i32 - (x + w + 6) - 4, 102);
-    audit::window(px, y, pw, ph);
-    cv.rect(px - 1, y - 1, pw + 2, ph + 2, (0, 0, 0));
-    cv.rect(px, y, pw, ph, red);
-    cv.rect(px + 3, y + 3, pw - 6, ph - 6, pink);
-    if shown {
-        crate::online_maps::draw_preview(core, cv, map, px + 4, y + 4, pw - 8, ph - 22);
-        if let Some((mw, mh)) = crate::online_maps::dims(core, map) {
-            let t = format!("{mw} x {mh}");
-            cv.text(core, px + (pw - text_width(core, &t)) / 2, y + ph - 16, &t, grey, SHADE);
-        }
-    } else {
-        let t = "?";
-        cv.text(core, px + (pw - text_width(core, t)) / 2, y + ph / 2 - 6, t, grey, SHADE);
-    }
-    // The foot: the seconds before the armies.
-    cv.rect(0, 140, W as i32, 20, BAR);
-    let text = if shown {
-        let left = (REVEAL_FRAMES.saturating_sub(core.raw_read_16(HOLD_T, -1)) as u32).div_ceil(60);
-        if room_local_seat() == 0 {
-            format!("A: Start now   Starting in {left}")
-        } else {
-            format!("Starting in {left}   (the host's A starts it)")
-        }
-    } else {
-        "Drawing the map...".to_string()
-    };
-    let text = fit(core, &text, 228);
-    cv.text(core, (W as i32 - text_width(core, &text)) / 2, 144, &text, WHITE, GRAY_INK);
 }
 
+// --- Sounds ----------------------------------------------------------------------------------------------------
+
+/// AW2's sound-effect call (`sub_0803B4DC(song)`: it keeps the game's sound setting) and the per-frame function SELECT MAP's list
+/// proc runs (`sub_0808606C`, after its `push {r4, lr}` and `adds r4, r0, #0`: r0..r3 are free there).
+const PLAY_SOUND: u32 = 0x0803_B4DC;
+const LIST_FRAME: u32 = 0x0808_6070;
+/// The sound asked for (0 none; u8), played by the next frame of the list's proc.
+const SOUND_REQ: u32 = STATE + 0x48;
+/// The reveal's chime: AW2's own "CO power meter charged" sound (`sub_080437xx` plays it when a meter fills up): two tracks, a quick rising
+/// arpeggio. (The steps before it are the game's own list tick, `0x67`, which the cursor plays by moving.)
+const SE_REVEAL: u8 = 0x75;
+
+fn play_requested(core: &mut Core) {
+    let id = core.raw_read_8(SOUND_REQ, -1);
+    if id == 0 || !active(core) {
+        return;
+    }
+    core.raw_write_8(SOUND_REQ, -1, 0);
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(0, id as i32);
+    cpu.set_gpr(14, (LIST_FRAME | 1) as i32);
+    cpu.set_thumb_pc(PLAY_SOUND);
+}
+
+pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
+    vec![(LIST_FRAME, Box::new(play_requested))]
+}
