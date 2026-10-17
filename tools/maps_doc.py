@@ -44,7 +44,7 @@ letters too wide for the game's tab box). A tab with no map is skipped (Left/Rig
 port, owned or neutral (a neutral one can be captured), so nobody can build units. A map with units placed and a base
 is a plain map.
 
-**5P limitation:** no 5-army map is pre-deployed yet, so "5P Predeploy" is empty and skipped.
+The 5P Predeploy tab has one map so far, Pentagon Atoll (five/pentagon.py generates it).
 
 The game's list holds up to 110 maps per tab (it stopped at 50 and garbled its names past row 34 before).
 
@@ -62,7 +62,6 @@ whatever its source. Every War Room map is listed (AW2 lists them on its Versus 
 
 {src_pack}
 
-**5P limitation (continued):** the 5-army maps are all tangoAW2's and none is pre-deployed.
 
 ## Without the Dual Strike pack (AW2's own maps and tangoAW2's)
 

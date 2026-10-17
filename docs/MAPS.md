@@ -21,7 +21,7 @@ letters too wide for the game's tab box). A tab with no map is skipped (Left/Rig
 port, owned or neutral (a neutral one can be captured), so nobody can build units. A map with units placed and a base
 is a plain map.
 
-**5P limitation:** no 5-army map is pre-deployed yet, so "5P Predeploy" is empty and skipped.
+The 5P Predeploy tab has one map so far, Pentagon Atoll (five/pentagon.py generates it).
 
 The game's list holds up to 110 maps per tab (it stopped at 50 and garbled its names past row 34 before).
 
@@ -41,8 +41,8 @@ whatever its source. Every War Room map is listed (AW2 lists them on its Versus 
 | AW2 Pre-Deployed | 0 | 12 | 0 | 3 | 0 | 5 | 0 | 0 | 20 |
 | AW2 Vs. Maps | 21 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 21 |
 | AW2 War Room | 22 | 0 | 6 | 0 | 2 | 0 | 0 | 0 | 30 |
-| tangoAW2 | 0 | 0 | 0 | 0 | 0 | 0 | 6 | 0 | 6 |
-| **All** | **60** | **12** | **30** | **3** | **27** | **5** | **6** | **0** | **143** |
+| tangoAW2 | 0 | 0 | 0 | 0 | 0 | 0 | 6 | 1 | 7 |
+| **All** | **60** | **12** | **30** | **3** | **27** | **5** | **6** | **1** | **144** |
 
 ### With the pack
 
@@ -50,10 +50,9 @@ whatever its source. Every War Room map is listed (AW2 lists them on its Versus 
 |---|---|---|---|---|---|---|---|---|---|
 | DS Versus | 44 | 15 | 27 | 6 | 36 | 10 | 0 | 0 | 138 |
 | DS War Room | 30 | 0 | 9 | 0 | 5 | 0 | 0 | 0 | 44 |
-| tangoAW2 | 2 | 0 | 1 | 0 | 1 | 0 | 9 | 0 | 13 |
-| **All** | **76** | **15** | **37** | **6** | **42** | **10** | **9** | **0** | **195** |
+| tangoAW2 | 2 | 0 | 1 | 0 | 1 | 0 | 9 | 1 | 14 |
+| **All** | **76** | **15** | **37** | **6** | **42** | **10** | **9** | **1** | **196** |
 
-**5P limitation (continued):** the 5-army maps are all tangoAW2's and none is pre-deployed.
 
 ## Without the Dual Strike pack (AW2's own maps and tangoAW2's)
 
@@ -202,6 +201,7 @@ whatever its source. Every War Room map is listed (AW2 lists them on its Versus 
 | BE | Skyreach | tangoAW2 | 32x36 | 5 | 35 | 5 | 21 | 0 | no |
 | BF | The Citadel | tangoAW2 | 29x33 | 5 | 24 | 8 | 7 | 0 | no |
 | C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no |
+| C9 | Pentagon Atoll | tangoAW2 | 35x35 | 5 | 60 | 0 | 0 | 0 | yes |
 
 ## With the Dual Strike pack
 
@@ -402,3 +402,4 @@ whatever its source. Every War Room map is listed (AW2 lists them on its Versus 
 | C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no |
 | C4 | Black Wastes | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 0 | no |
 | C8 | Coral Crown | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 6 | no |
+| C9 | Pentagon Atoll | tangoAW2 | 35x35 | 5 | 60 | 0 | 0 | 0 | yes |

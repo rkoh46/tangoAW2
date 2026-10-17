@@ -353,6 +353,10 @@ def build(m, edge):
         ports = [(x, y) for y in range(H) for x in range(W) if ch(x, y) == 'P' and mine(x, y)]
         airports = [(x, y) for y in range(H) for x in range(W) if ch(x, y) == 'A' and mine(x, y)]
         sea = []
+        if not ports:
+            # (no port at all: the army's ships start in the water of its own ground, beside land, nearest its HQ first)
+            sea = sorted(((x, y) for y in range(H) for x in range(W) if ch(x, y) == '~' and mine(x, y)
+                          and any(ch(x + dx, y + dy) not in '~r' for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)))), key=near)
         for px, py in ports:
             for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, 1), (1, -1), (-1, -1)]:
                 c = (px + dx, py + dy)

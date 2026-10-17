@@ -64,13 +64,11 @@ pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
     (0x0809_0EC0, 0x00),
 ];
 /// `cmp rN, #0xBF` in the two loops: the game's, then the last id without
-/// the Dual Strike maps (0xC0), then with them (0xC8, [`MAP_IDS`] - 1). The
-/// loops only reach the Dual Strike maps' ids while those can be listed:
-/// eight more ids a walk would shift the game's timing by a frame here and
-/// there, and without the pack everything runs as before
-/// ([`show_maps`]).
+/// the Dual Strike pack ([`BIG_FIVE_ID`], 0xC9: the ids between are the Dual Strike maps', hidden without it), then
+/// with it (0xF1, the Colonel's Vault: Survival's ids and the Champion courses
+/// are walked too, [`show_maps`]).
 const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
-    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29F1), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CF1)];
+    [(0x0802_06C8, 0x29BF, 0x29C9, 0x29F1), (0x0803_74B4, 0x2CBF, 0x2CC9, 0x2CF1)];
 /// Each map's tiles and units: 4 KiB apiece, the first ten from here (up to
 /// the CO texts at 0x0862C000), the rest after the moved map table.
 const MAP_DATA: u32 = 0x0862_2000;
@@ -114,9 +112,11 @@ pub const CATEGORY: u16 = 9;
 /// game never lists), design-map ids 0xB8..0xBF (the Design Room has three
 /// slots, 0xB4..0xB6, and a suspend copy, 0xB7; the rest serve only
 /// multi-cartridge link play), and 0xC0.., past the game's own table.
-pub const IDS: [u8; 19] = [
-    0, 0xBC, 0xBD, 0xBE, 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, VAULT_ID,
+pub const IDS: [u8; 20] = [
+    0, 0xBC, 0xBD, 0xBE, 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, VAULT_ID, BIG_FIVE_ID,
 ];
+/// The big pre-deployed 5-army map (Pentagon Atoll): the first id past the Dual Strike maps'.
+pub const BIG_FIVE_ID: u8 = 0xC9;
 /// The Colonel's Vault (the BH Campaign's prize map), past Survival's ids
 /// (0xC9..0xEF, with the Champion courses) and the campaigns' mission map
 /// (0xF0); the walk of the map list reaches it with the pack on
@@ -480,7 +480,7 @@ mod tests {
         // The loops walk past 0xC0 only while the Dual Strike maps can be
         // listed, so every map up to 0xC0 must not need the pack.
         for (m, &id) in MAPS.iter().zip(IDS.iter()) {
-            assert_eq!(m.ds, id > 0xC0, "{}", m.name);
+            assert_eq!(m.ds, id > 0xC0 && id != BIG_FIVE_ID, "{}", m.name);
             assert!(id <= VAULT_ID);
         }
         assert_eq!(MAPS.iter().filter(|m| m.wasteland).count(), 4);
