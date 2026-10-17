@@ -82,7 +82,9 @@ pub fn tick(core: &Core, keys: u32) {
         for b in iw.iter().chain(ew.iter()) {
             h = (h ^ *b as u64).wrapping_mul(0x100000001b3);
         }
-        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"hash\",\"frame\":{fc},\"h\":\"{h:016x}\"}}", ms(), d.tick);
+        // (the Visuals rule's three copies: the host's choice is shared by every peer; logged so a divergence would show)
+        let vis = [core.raw_read_8(0x0200_C42E, -1), core.raw_read_8(0x0201_7C52, -1), core.raw_read_8(0x0201_7CDA, -1)];
+        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"hash\",\"frame\":{fc},\"h\":\"{h:016x}\",\"visuals\":{vis:?}}}", ms(), d.tick);
     }
     if d.tick % 6 != 0 {
         return;
