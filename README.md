@@ -55,10 +55,13 @@ your army and kept in your settings).
   **CREATE** makes a room for up to **five players** (optional password) and
   shows its code.
 - In the room everyone presses **A** (READY); the host presses **START**.
-  The room's **SELECT MAP** is AW2's own screen with tabs for the room's
-  player count; every player then picks their own army (CO, colour,
-  partner) on **SELECT YOUR ARMY** and presses READY, and the host sets the
-  rules.
+  Each player then proposes a map on AW2's own **SELECT MAP** (tabs for the
+  room's player count, e.g. "3P" and "3P Predeploy"; 2 minutes each), and a
+  roulette draws one of the proposals. Every player picks their own army
+  (CO, colour, team, partner) on **SELECT YOUR ARMY** and presses READY, and
+  the host sets the rules (including battle animations, for everyone).
+- Maps that need the Dual Strike pack (its units or art, such as the 5-army
+  **Pentagon Atoll**) are offered only when every player has the pack.
 - Only the army whose turn it is can be moved; the others watch the turn
   live through their own fog (no cursor or menus). Your seat, the other
   players' gamertags and the connection type (direct or relay) are shown.
@@ -73,11 +76,17 @@ your army and kept in your settings).
   way, and one that is simply lost gets the 60 seconds first; its army then
   yields, as if the player had chosen Yield.
 - **STATS** keeps your own record on this device.
-- After a battle the host picks the next map; **B** on SELECT MAP ends the
-  match and takes everyone back to the LOBBY.
+- After a battle the players propose the next map; **B** on SELECT MAP ends
+  the match and takes everyone back to the LOBBY.
 
 Connections go straight to your friend when they can and through a relay
-when a router blocks that (see docs/AW2.md, "Across networks").
+when a router blocks that (see docs/AW2.md, "Across networks"). The game keeps
+lists of free public servers and moves to the next one when one fails; the
+ONLINE screen shows Online, Limited or Offline, and **R** there opens the
+Connection page.
+
+Offline Versus lists its maps by player count too; **L+R** switches to AW2's
+original lists.
 
 ## Known limits
 
