@@ -121,7 +121,7 @@ pub fn tick(core: &Core, keys: u32) {
         let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
         for x in 0..w {
             let class = core.raw_read_8(MAP + 0x1432 + row + x, -1);
-            if matches!(class & 0x1F, 8..=12) {
+            if matches!(class & 0x1F, 6 | 8 | 10 | 11 | 14 | 20) {
                 owners.insert(y * 64 + x, class >> 5);
             }
         }
