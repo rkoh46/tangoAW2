@@ -637,7 +637,7 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     let cyc = core.raw_read_16(CYC_T, -1);
     let from = (core.raw_read_8(PICK, -1) as usize).min(n - 1);
     let lit = (cyc > 0).then(|| slot_at(n, from, cyc - 1));
-    let (rows, w, rh) = (n as i32, 142, 15);
+    let (rows, w, rh) = (n as i32, 140, 15);
     let h = 8 + 14 + rh * rows + 4;
     let (x, y) = (6, 34);
     // (the list's own look: a black edge, a red frame, a pink page with a line under each row, a lavender highlight)
@@ -668,20 +668,20 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
         cv.text(core, x + w - 10 - text_width(core, &t), ry + 2, &t, ink, SHADE);
     }
     // The map's picture beside the list.
-    let (px, pw) = (x + w + 6, W as i32 - (x + w + 6) - 4);
-    audit::window(px, y, pw, h);
-    cv.rect(px - 1, y - 1, pw + 2, h + 2, (0, 0, 0));
-    cv.rect(px, y, pw, h, red);
-    cv.rect(px + 3, y + 3, pw - 6, h - 6, pink);
+    let (px, pw, ph) = (x + w + 6, W as i32 - (x + w + 6) - 4, 102);
+    audit::window(px, y, pw, ph);
+    cv.rect(px - 1, y - 1, pw + 2, ph + 2, (0, 0, 0));
+    cv.rect(px, y, pw, ph, red);
+    cv.rect(px + 3, y + 3, pw - 6, ph - 6, pink);
     if shown {
-        crate::online_maps::draw_preview(core, cv, map, px + 4, y + 4, pw - 8, h - 22);
+        crate::online_maps::draw_preview(core, cv, map, px + 4, y + 4, pw - 8, ph - 22);
         if let Some((mw, mh)) = crate::online_maps::dims(core, map) {
             let t = format!("{mw} x {mh}");
-            cv.text(core, px + (pw - text_width(core, &t)) / 2, y + h - 16, &t, grey, SHADE);
+            cv.text(core, px + (pw - text_width(core, &t)) / 2, y + ph - 16, &t, grey, SHADE);
         }
     } else {
         let t = "?";
-        cv.text(core, px + (pw - text_width(core, t)) / 2, y + h / 2 - 6, t, grey, SHADE);
+        cv.text(core, px + (pw - text_width(core, t)) / 2, y + ph / 2 - 6, t, grey, SHADE);
     }
     // The foot: the seconds before the armies.
     cv.rect(0, 140, W as i32, 20, BAR);
