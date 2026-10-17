@@ -722,7 +722,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             let p = crate::fog_view::procs(core);
             let mut last = LAST.lock().unwrap();
             if *last != p {
-                log::info!("consoleprocs {:x?} loop {:08x}", p, core.raw_read_32(0x0300_0000, -1));
+                log::info!("consoleprocs {:x?} loop {:08x} menu {} chosen {:?} ended {}", p, core.raw_read_32(0x0300_0000, -1), core.raw_read_8(MAP_MENU_STATE, -1), chosen_item(core), turn_ended(core));
                 *last = p;
             }
         }

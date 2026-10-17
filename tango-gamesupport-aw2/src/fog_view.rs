@@ -375,7 +375,7 @@ pub fn phase(core: &Core) -> Phase {
     if running.as_slice() == [WALK_PROC] && !crate::pvp::turn_ended(core) {
         return Phase::Busy;
     }
-    if dialog(&running) || capturing(&running) {
+    if dialog_for(core, &running) || capturing(&running) {
         return Phase::Busy;
     }
     if moving(core) {
@@ -437,8 +437,10 @@ const DIALOG_PROC: u32 = 0x0801_3FF1;
 /// A property being captured: the capture card (`0x08040C89`, `0x08040AFD`): shown to the seats that see the cell.
 const CAPTURE_PROCS: [u32; 2] = [0x0804_0C89, 0x0804_0AFD];
 
-fn dialog(running: &[u32]) -> bool {
-    running.contains(&DIALOG_PROC) && !running.contains(&0x0801_95F9)
+/// The game's narration over the map ("The Green Earth Army has lost!") as opposed to the mover's own questions (Yield, Save, End
+/// turn, CO Power: they come from a map-menu item, which is still the chosen one while they are up): only narration reaches every window.
+fn dialog_for(core: &Core, running: &[u32]) -> bool {
+    running.contains(&DIALOG_PROC) && !running.contains(&0x0801_95F9) && !matches!(crate::pvp::chosen_item(core), Some(0..=5))
 }
 
 fn capturing(running: &[u32]) -> bool {
@@ -749,7 +751,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     // (`hide_fogged_sprites`), so a walk is seen while the sprite is on cells the seat sees and never where it does not.
     let anim = scratch.core().raw_read_8(FOG, -1) != 0 && phase(scratch.core()) == Phase::Busy && scratch.memory()[0] != 0;
     let running_now = procs(scratch.core());
-    let (dialog_up, capture_up) = (dialog(&running_now), capturing(&running_now));
+    let (dialog_up, capture_up) = (dialog_for(scratch.core(), &running_now), capturing(&running_now));
     if std::env::var_os("AW2_VIEW_DEBUG").is_some() && (dialog_up || capture_up) {
         eprintln!("view seat {seat}: dialog {dialog_up} capture {capture_up} anim {anim} phase {:?}", phase(scratch.core()));
     }
