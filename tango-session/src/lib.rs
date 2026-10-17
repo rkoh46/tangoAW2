@@ -343,6 +343,12 @@ pub trait Session: std::any::Any {
     fn is_ended(&self) -> bool {
         false
     }
+
+    /// The player asked to leave from inside the game (B on a room's reconnect box); the host closes the session
+    /// as the Disconnect button does.
+    fn leave_requested(&self) -> bool {
+        false
+    }
 }
 
 impl dyn Session {

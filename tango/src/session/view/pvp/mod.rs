@@ -253,17 +253,13 @@ fn reconnecting_overlay<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -
     if !pvp.is_reconnecting() {
         return None;
     }
-    // A room names who the match waits for, and counts down the seconds they have.
-    let waiting = pvp.waiting_for().filter(|(name, _)| !name.is_empty());
-    let title = match waiting.as_ref() {
-        Some((name, secs)) => text(format!("Waiting for {name} to reconnect... {secs}s")).size(TEXT_BODY + 4.0),
-        None => text(t!(lang, "playback-reconnecting")).size(TEXT_BODY + 4.0),
-    };
-    let body_text = match waiting.as_ref() {
-        Some(_) => text("If they do not come back in time, the match is saved to resume later (ONLINE > LOBBY > RESUME).")
-            .style(widgets::muted_text_style),
-        None => text(t!(lang, "playback-reconnecting-detail")).style(widgets::muted_text_style),
-    };
+    // A room names who the match waits for: its countdown is the game's own message box over the match's picture
+    // (tangoAW2's `hold_box`, B to disconnect), not this modal. This one is for a plain link being rebuilt.
+    if pvp.waiting_for().is_some_and(|(name, _)| !name.is_empty()) {
+        return None;
+    }
+    let title = text(t!(lang, "playback-reconnecting")).size(TEXT_BODY + 4.0);
+    let body_text = text(t!(lang, "playback-reconnecting-detail")).style(widgets::muted_text_style);
     // Depleting bar for the time left before give-up, in place of a text
     // countdown: it fills the panel width (no wrap/min-width pitfall) and the
     // coordinator ticks the session redraw ~30 fps while paused so it eases down.

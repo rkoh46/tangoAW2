@@ -142,6 +142,9 @@ impl DriveContext {
             confirmed_through: 0,
             agg,
             guard: crate::black_guard::BlackGuard::new(),
+            hold_shown: None,
+            hold_up: false,
+            hold_b: true,
         })
     }
 
@@ -296,6 +299,11 @@ pub struct PvpDriver {
     agg: Option<HostAgg>,
     /// The window is never black while the match is live ([`crate::black_guard`]).
     guard: crate::black_guard::BlackGuard,
+    /// The reconnect box ((tangoAW2's `hold_box`)): when its picture was last handed over, whether it is
+    /// up, and whether B was down at the last look (a B held when it came up is not a press).
+    hold_shown: Option<std::time::Instant>,
+    hold_up: bool,
+    hold_b: bool,
 }
 
 /// A room's host joins its guests' inputs: its own engine hears them as one input (the guests' joypad words in
@@ -441,14 +449,63 @@ impl HostAgg {
 }
 
 impl PvpDriver {
+    /// The reconnect box of a room's hold (the game's own message box, see (tangoAW2's `hold_box`)): up
+    /// while the match is paused for a player it waits for, with a fresh picture ten times a second (the paused
+    /// loop makes none) and B to leave. A pause with nobody named (a plain link being rebuilt) has the host's modal.
+    fn hold_box(&mut self, paused: bool) {
+        let hold = if paused {
+            let holds = self.ctx.end.holds.lock().unwrap();
+            holds.iter().min_by_key(|h| h.deadline).map(|h| {
+                let left = h.deadline.saturating_duration_since(std::time::Instant::now());
+                (h.name.clone(), left.as_secs_f32().ceil() as u32)
+            })
+        } else {
+            None
+        };
+        let Some(hold) = hold.filter(|(n, _)| !n.is_empty()) else {
+            if self.hold_up {
+                self.hold_up = false;
+                self.hold_shown = None;
+                self.hold_b = true;
+                tango_gamesupport::hold::set(None);
+                if let Some(buf) = self.match_.frame() {
+                    let buf = self.guard.filter(buf);
+                    self.ctx.screen.write(&buf);
+                    self.ctx.wake.notify_one();
+                }
+            }
+            return;
+        };
+        // (B pressed anew since the box came up)
+        let b = self.ctx.local_input.load().keys & tango_match::keys::B != 0;
+        if b && !self.hold_b {
+            log::info!("pvp: B on the reconnect box: leaving the match");
+            self.ctx.end.leave.store(true, Ordering::Release);
+            self.ctx.wake.notify_one();
+        }
+        self.hold_b = b;
+        tango_gamesupport::hold::set(Some(hold));
+        self.hold_up = true;
+        if self.hold_shown.is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100)) {
+            self.hold_shown = Some(std::time::Instant::now());
+            if let Some(buf) = self.match_.frame() {
+                let buf = self.guard.filter(buf);
+                self.ctx.screen.write(&buf);
+                self.ctx.wake.notify_one();
+            }
+        }
+    }
+
     /// Advance the match one tick. `false` once it's over — cancelled,
     /// a dead link, or a failed advance — after which the host calls
     /// [`PvpDriver::finish`].
     pub fn tick(&mut self) -> bool {
         if self.ctx.cancel.is_cancelled() {
+            self.hold_box(false);
             return false;
         }
         if self.ctx.drive_paused.paused() {
+            self.hold_box(true);
             // The reconnect supervisor releases the gate on every
             // exit path. Nothing to advance meanwhile, so the tick
             // goes back to the host — which is also what lets a
@@ -555,6 +612,10 @@ impl PvpDriver {
                 self.ingest(link, input);
             }
             return true;
+        }
+
+        if self.hold_up {
+            self.hold_box(false);
         }
 
         // Sample the skew before `advance` enqueues this tick's local

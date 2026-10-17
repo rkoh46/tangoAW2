@@ -31,6 +31,7 @@
 //! moved off its static and lose its identity.)
 
 use std::sync::LazyLock;
+pub mod hold;
 pub mod save;
 pub use save::{AppliedPatch, PreparedSave, Validation};
 
