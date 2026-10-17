@@ -10,6 +10,7 @@ async-trait.workspace = true
 datachannel-wrapper.workspace = true
 futures.workspace = true
 log.workspace = true
+rand.workspace = true
 rennet.workspace = true
 tango-platform = { path = "../tango-platform" }
 tango-net-protocol = { path = "../tango-net-protocol" }
@@ -22,6 +23,7 @@ web-time.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true, features = ["net", "rt-multi-thread", "time"] }
 tokio-util = { workspace = true, features = ["rt"] }
+tokio-tungstenite = { version = "0.16", features = ["rustls-tls-webpki-roots"] }
 
 [lints]
 workspace = true

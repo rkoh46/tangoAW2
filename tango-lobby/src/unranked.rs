@@ -64,6 +64,10 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
                 return;
             }
             Ok(Ok(c)) => c,
+            Ok(Err(tango_net::ConnectError::Unreachable(m))) => {
+                fail(&inner, &m);
+                return;
+            }
             Ok(Err(tango_net::ConnectError::Signaling(e))) => {
                 let text = format!("{e}");
                 log::warn!("unranked: the matchmaking server: {text}");

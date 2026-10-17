@@ -44,6 +44,7 @@ open = "5"
 discord-ipc = { git = "https://github.com/tangobattle/discord-ipc" }
 tango-net-protocol = { path = "../tango-net-protocol" }
 tango-lobby = { path = "../tango-lobby" }
+tango-net = { path = "../tango-net" }
 # Reads packages and the index; the app never writes a package.
 tango-library = { path = "../tango-library", features = ["ui"] }
 tango-match = { path = "../tango-match" }

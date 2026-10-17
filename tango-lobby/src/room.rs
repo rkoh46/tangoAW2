@@ -630,6 +630,10 @@ async fn host_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                 let cancel2 = cancel.clone();
                 tango_platform::spawn(async move { serve_guest(inner2, cancel2, channels).await });
             }
+            Err(tango_net::ConnectError::Unreachable(m)) => {
+                fail(&inner, &m);
+                return;
+            }
             Err(tango_net::ConnectError::Signaling(e)) => {
                 log::warn!("room: the matchmaking server: {e}");
                 let text = format!("{e}");
@@ -1082,6 +1086,10 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                 return;
             }
             Ok(Ok(c)) => c,
+            Ok(Err(tango_net::ConnectError::Unreachable(m))) => {
+                fail(&inner, &m);
+                return;
+            }
             Ok(Err(tango_net::ConnectError::Signaling(e))) => {
                 let text = format!("{e}");
                 log::warn!("room: the matchmaking server: {text}");

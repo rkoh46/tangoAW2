@@ -29,6 +29,7 @@ pub mod channel;
 pub mod connect;
 pub mod control;
 pub mod data;
+pub mod endpoints;
 /// Debug aid: `TANGOAW2_NET_IMPAIR` delays and drops what this side sends (see the module).
 #[cfg(not(target_arch = "wasm32"))]
 pub mod impair;

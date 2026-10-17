@@ -147,6 +147,7 @@ impl From<tango_net::ConnectError> for Error {
         use tango_net::ConnectError as C;
         match e {
             C::Signaling(e) => signaling_error(e),
+            C::Unreachable(m) => Error::SignalingUnreachable(m),
             C::Channels(e) => Error::Channels(e.to_string()),
             C::Direct { hosting, source } => Error::Direct {
                 hosting,

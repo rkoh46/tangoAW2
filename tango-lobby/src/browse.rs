@@ -37,22 +37,13 @@ use tokio_util::sync::CancellationToken;
 pub const TAG: &str = "tangoaw2-lobby-v1";
 /// Nostr kind 30078: parameterized replaceable, application specific data.
 pub const KIND: u64 = 30078;
-/// The public relays, the best first (a probe of each on 2026-10-15: all of these took kind 30078 with a `#t`
-/// filter and answered the question in under a second; damus took the event but never answered a question, so it
-/// is last; offchain.pub took the first events and then refused a throw-away key; others refuse the kind or want a NIP-05 or payment). A host announces on the first few and brings in
-/// more of the others while fewer than three take it; the browser listens on all of them.
-pub const RELAYS: &[&str] = &[
-    "wss://nos.lol",
-    "wss://relay.primal.net",
-    "wss://nostr.mom",
-    "wss://relay.snort.social",
-    "wss://nostr-pub.wellorder.net",
-    "wss://nostr.oxtr.dev",
-    "wss://nostr.bitcoiner.social",
-    "wss://relay.coinos.io",
-    "wss://offchain.pub",
-    "wss://relay.damus.io",
-];
+/// The public relay pool (see [`tango_net::endpoints::NOSTR`] for how each was verified). One client uses at most
+/// [`MAX_BROWSE`] / [`MAX_ANNOUNCE`] of them at a time, picked by [`tango_net::endpoints::nostr_plan`]: two
+/// time-bucketed *anchor* relays that a host always announces on and a browser always has one of (so they meet),
+/// then the healthiest of the rest, shuffled; a relay that fails or says stop is swapped for the next.
+pub const RELAYS: &[&str] = tango_net::endpoints::NOSTR;
+pub const MAX_BROWSE: usize = tango_net::endpoints::NOSTR_MAX_BROWSE;
+pub const MAX_ANNOUNCE: usize = tango_net::endpoints::NOSTR_MAX_ANNOUNCE;
 /// How often a host repeats its announcement.
 pub const REFRESH: Duration = Duration::from_secs(15);
 /// An announcement older than this is a lobby that is gone (four refreshes missed; a closing event removes a lobby at
@@ -318,6 +309,10 @@ struct Relay {
     events: AtomicUsize,
     /// Whether the task of this relay runs (the announcer keeps spare relays idle until needed).
     active: AtomicBool,
+    /// Failures in a row on this run (2 gets the relay swapped for a spare).
+    fails: std::sync::atomic::AtomicU32,
+    /// Cancels this relay's own task (the swap), apart from the whole lookup's token.
+    stop: Mutex<Option<CancellationToken>>,
     note: Mutex<String>,
 }
 
@@ -327,6 +322,18 @@ impl Relay {
             url: url.to_string(),
             ..Default::default()
         })
+    }
+
+    /// This relay's task failed (never answered, or was told to stop).
+    fn failed(&self, why: &str) {
+        let n = if tango_net::endpoints::is_stop_signal(why) { 2 } else { 1 };
+        self.fails.fetch_add(n, Ordering::Relaxed);
+        tango_net::endpoints::record_fail(&self.url, why);
+    }
+
+    fn succeeded(&self, ms: u32) {
+        self.fails.store(0, Ordering::Relaxed);
+        tango_net::endpoints::record_ok(&self.url, ms);
     }
 
     fn note(&self, s: impl Into<String>) {
@@ -387,6 +394,62 @@ fn spawn_status_log(what: &'static str, relays: Vec<Arc<Relay>>, cancel: Cancell
     });
 }
 
+/// Keeps at most `max` relays of `infos` (best first) running: starts the first usable ones, and every few seconds
+/// swaps a relay that has failed twice (or been told to stop) for the next unused one. Never more than `max` at once.
+fn keep_running(
+    infos: Vec<Arc<Relay>>,
+    max: usize,
+    cancel: CancellationToken,
+    begin: Arc<dyn Fn(&Arc<Relay>, CancellationToken) + Send + Sync>,
+    replan: Arc<dyn Fn() -> Vec<String> + Send + Sync>,
+) {
+    let start = {
+        let begin = begin.clone();
+        let cancel = cancel.clone();
+        move |r: &Arc<Relay>| {
+            let t = cancel.child_token();
+            *r.stop.lock().unwrap() = Some(t.clone());
+            r.active.store(true, Ordering::Relaxed);
+            begin(r, t);
+        }
+    };
+    let usable = |r: &Arc<Relay>| !r.active.load(Ordering::Relaxed) && r.fails.load(Ordering::Relaxed) == 0 && !tango_net::endpoints::blocked(&r.url);
+    // The relays to start now, in the plan's order as it stands (a relay found dead changes the anchors, so the plan
+    // is made again at each swap: clients that saw the same relay fail converge on the same anchors).
+    let next = {
+        let infos = infos.clone();
+        move |n: usize| -> Vec<Arc<Relay>> {
+            replan()
+                .iter()
+                .filter_map(|u| infos.iter().find(|r| &r.url == u))
+                .filter(|r| usable(r))
+                .take(n)
+                .cloned()
+                .collect()
+        }
+    };
+    for r in next(max) {
+        start(&r);
+    }
+    tokio::spawn(async move {
+        while nap(&cancel, Duration::from_secs(6)).await {
+            for r in infos.iter().filter(|r| r.active.load(Ordering::Relaxed) && r.fails.load(Ordering::Relaxed) >= 2) {
+                log::info!("lobby: {} keeps failing; swapped for a spare", r.url);
+                if let Some(t) = r.stop.lock().unwrap().take() {
+                    t.cancel();
+                }
+                r.active.store(false, Ordering::Relaxed);
+                r.connected.store(false, Ordering::Relaxed);
+            }
+            let active = infos.iter().filter(|r| r.active.load(Ordering::Relaxed)).count();
+            for r in next(max.saturating_sub(active)) {
+                log::info!("lobby: adding spare relay {}", r.url);
+                start(&r);
+            }
+        }
+    });
+}
+
 /// A running look at the public lobby list: dropping it stops.
 pub struct Browse {
     heard: Arc<Mutex<Heard>>,
@@ -402,16 +465,23 @@ pub struct Browse {
 const HICCUP: u64 = 60;
 
 impl Browse {
-    /// Starts looking on `relays` (must run inside the tokio runtime).
+    /// Starts looking on up to [`MAX_BROWSE`] of the pool `relays` (must run inside the tokio runtime).
     pub fn start(relays: &[&str], compat: Compat) -> Browse {
         let heard = Arc::new(Mutex::new(Heard::default()));
         let cancel = CancellationToken::new();
-        let infos: Vec<Arc<Relay>> = relays.iter().map(|u| Relay::new(u)).collect();
-        for r in &infos {
-            r.active.store(true, Ordering::Relaxed);
-            let (r, heard, cancel) = (r.clone(), heard.clone(), cancel.clone());
-            tokio::spawn(async move { browse_relay(r, heard, cancel).await });
-        }
+        let pool: Vec<String> = relays.iter().map(|s| s.to_string()).collect();
+        let plan = tango_net::endpoints::plan_now(&pool, None);
+        log::info!("online: lobby list plan {}", plan.iter().take(MAX_BROWSE).cloned().collect::<Vec<_>>().join(", "));
+        let infos: Vec<Arc<Relay>> = plan.iter().map(|u| Relay::new(u)).collect();
+        let begin: Arc<dyn Fn(&Arc<Relay>, CancellationToken) + Send + Sync> = {
+            let heard = heard.clone();
+            Arc::new(move |r: &Arc<Relay>, t: CancellationToken| {
+                let (r, heard) = (r.clone(), heard.clone());
+                tokio::spawn(async move { browse_relay(r, heard, t).await });
+            })
+        };
+        let replan: Arc<dyn Fn() -> Vec<String> + Send + Sync> = Arc::new(move || tango_net::endpoints::plan_now(&pool, None));
+        keep_running(infos.clone(), MAX_BROWSE, cancel.clone(), begin, replan);
         spawn_status_log("list", infos.clone(), cancel.clone());
         Browse {
             heard,
@@ -461,6 +531,14 @@ impl Drop for Browse {
 type Ws = tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
 
 async fn connect(url: &str) -> Result<Ws, String> {
+    if tango_net::endpoints::test_blocked(url) {
+        return Err("blocked by TANGOAW2_BLOCK_ENDPOINTS".into());
+    }
+    // Left alone while it is backing off (also across restarts).
+    let wait = tango_net::endpoints::wait_for(url);
+    if wait > 0 {
+        return Err(format!("backing off for {wait} s"));
+    }
     match tango_platform::timeout(CONNECT_TIMEOUT, tokio_tungstenite::connect_async(url)).await {
         Err(_) => Err("timed out".into()),
         Ok(Err(e)) => Err(e.to_string()),
@@ -476,24 +554,39 @@ async fn nap(cancel: &CancellationToken, d: Duration) -> bool {
     }
 }
 
+/// Seconds to wait before this relay is dialled again: its backoff (5 s doubling to 10 min, jittered, or an hour
+/// after a stop signal), at least 2 s.
+fn redial_wait(url: &str) -> u64 {
+    tango_net::endpoints::wait_for(url).max(2)
+}
+
 async fn browse_relay(relay: Arc<Relay>, heard: Arc<Mutex<Heard>>, cancel: CancellationToken) {
     let url = relay.url.clone();
-    let mut wait = 2;
     loop {
+        let mut wait = 2;
         match connect(&url).await {
             Err(e) => {
                 log::info!("lobby list: {url}: {e}");
+                if !e.starts_with("backing off") {
+                    relay.failed(&e);
+                }
                 relay.note(e);
+                wait = redial_wait(&url);
             }
             Ok(mut ws) => {
-                wait = 2;
                 relay.connected.store(true, Ordering::Relaxed);
                 relay.note("");
                 let r = browse_session(&relay, &mut ws, &heard, &cancel).await;
                 relay.connected.store(false, Ordering::Relaxed);
-                relay.answered.store(0, Ordering::Relaxed);
+                let answered = relay.answered.swap(0, Ordering::Relaxed) != 0;
                 log::info!("lobby list: {url} ended: {r:?}");
                 if let Err(e) = r {
+                    // (a relay that had answered and then dropped is only retried soon; one that never answered, or
+                    // said stop, is backed off)
+                    if !answered || tango_net::endpoints::is_stop_signal(&e) {
+                        relay.failed(&e);
+                        wait = redial_wait(&url);
+                    }
                     relay.note(e);
                 }
             }
@@ -501,7 +594,6 @@ async fn browse_relay(relay: Arc<Relay>, heard: Arc<Mutex<Heard>>, cancel: Cance
         if cancel.is_cancelled() || !nap(&cancel, Duration::from_secs(wait)).await {
             return;
         }
-        wait = (wait * 2).min(20);
     }
 }
 
@@ -513,7 +605,10 @@ async fn browse_session(
 ) -> Result<(), String> {
     let url = relay.url.as_str();
     let started = std::time::Instant::now();
-    let mut ask = tango_platform::Ticker::immediate(Duration::from_secs(20));
+    // Looks every 5 s, asks (a small REQ, newest 100) at once and then every 45 s: the answer is also the liveness
+    // check; the websocket's own pings are answered by the library.
+    let mut ask = tango_platform::Ticker::immediate(Duration::from_secs(5));
+    let mut asked: Option<std::time::Instant> = None;
     loop {
         tokio::select! {
             _ = cancel.cancelled() => {
@@ -527,7 +622,11 @@ async fn browse_session(
                 if relay.answered.load(Ordering::Relaxed) == 0 && started.elapsed().as_secs() >= 20 {
                     return Err("no answer to the question".into());
                 }
-                let req = json!(["REQ", "lobbies", {"kinds": [KIND], "#t": [TAG], "since": now().saturating_sub(150)}]);
+                if asked.is_some_and(|a| a.elapsed().as_secs() < 45) {
+                    continue;
+                }
+                asked = Some(std::time::Instant::now());
+                let req = json!(["REQ", "lobbies", {"kinds": [KIND], "#t": [TAG], "since": now().saturating_sub(150), "limit": 100}]);
                 ws.send(Message::Text(req.to_string())).await.map_err(|e| e.to_string())?;
             }
             m = ws.next() => {
@@ -547,11 +646,16 @@ async fn browse_session(
                             Some("EOSE") => {
                                 if relay.answered.swap(mono(), Ordering::Relaxed) == 0 {
                                     log::info!("lobby list: {url} answered after {} ms", started.elapsed().as_millis());
+                                    relay.succeeded(started.elapsed().as_millis() as u32);
                                 }
                             }
                             Some("NOTICE") | Some("CLOSED") => {
                                 relay.note(t.chars().take(60).collect::<String>());
                                 log::info!("lobby list: {url}: {t}");
+                                // A relay's own words of refusal are believed: it is left alone for an hour or more.
+                                if tango_net::endpoints::is_stop_signal(&t) {
+                                    return Err(t.chars().take(80).collect());
+                                }
                             }
                             _ => {}
                         }
@@ -566,11 +670,6 @@ async fn browse_session(
 
 // --- The announcement ---------------------------------------------------------------------------------------
 
-/// How many relays a lobby is announced on at first, and how many must be taking it (more of the spare ones are
-/// brought in while fewer do).
-pub const ANNOUNCE_AT_FIRST: usize = 5;
-pub const ANNOUNCE_HEALTHY: usize = 3;
-
 /// A host's running announcement: dropping it withdraws the lobby.
 pub struct Announcer {
     lobby: Arc<Mutex<Lobby>>,
@@ -579,39 +678,28 @@ pub struct Announcer {
 }
 
 impl Announcer {
-    /// Announces `lobby` on `relays` (the best first; must run inside the tokio runtime): on the first
-    /// [`ANNOUNCE_AT_FIRST`] at once and on the others as soon as fewer than [`ANNOUNCE_HEALTHY`] take it.
+    /// Announces `lobby` on [`MAX_ANNOUNCE`] relays of the pool `relays` (must run inside the tokio runtime): both
+    /// anchor relays and one more chosen by the room's code, and a spare for each that fails or says stop.
     pub fn start(relays: &[&str], lobby: Lobby) -> Announcer {
         let key = Arc::new(new_key());
+        let pool: Vec<String> = relays.iter().map(|s| s.to_string()).collect();
+        let plan = tango_net::endpoints::plan_now(&pool, Some(&lobby.code));
+        log::info!("online: lobby announce plan {}", plan.iter().take(MAX_ANNOUNCE).cloned().collect::<Vec<_>>().join(", "));
         let lobby = Arc::new(Mutex::new(lobby));
         let cancel = CancellationToken::new();
-        let infos: Vec<Arc<Relay>> = relays.iter().map(|u| Relay::new(u)).collect();
-        let begin: Arc<dyn Fn(&Arc<Relay>) + Send + Sync> = {
-            let (key, lobby, cancel) = (key, lobby.clone(), cancel.clone());
-            Arc::new(move |r: &Arc<Relay>| {
-                r.active.store(true, Ordering::Relaxed);
-                let (r, key, lobby, cancel) = (r.clone(), key.clone(), lobby.clone(), cancel.clone());
-                tokio::spawn(async move { announce_relay(r, key, lobby, cancel).await });
+        let infos: Vec<Arc<Relay>> = plan.iter().map(|u| Relay::new(u)).collect();
+        let begin: Arc<dyn Fn(&Arc<Relay>, CancellationToken) + Send + Sync> = {
+            let (key, lobby) = (key, lobby.clone());
+            Arc::new(move |r: &Arc<Relay>, t: CancellationToken| {
+                let (r, key, lobby) = (r.clone(), key.clone(), lobby.clone());
+                tokio::spawn(async move { announce_relay(r, key, lobby, t).await });
             })
         };
-        for r in infos.iter().take(ANNOUNCE_AT_FIRST) {
-            begin(r);
-        }
-        // While fewer than the wanted number take the announcement, one more relay joins.
-        {
-            let (infos, cancel) = (infos.clone(), cancel.clone());
-            tokio::spawn(async move {
-                while nap(&cancel, Duration::from_secs(6)).await {
-                    let s = stats_of(&infos, true);
-                    if s.answered < ANNOUNCE_HEALTHY {
-                        if let Some(r) = infos.iter().find(|r| !r.active.load(Ordering::Relaxed)) {
-                            log::info!("lobby announce: only {} relay(s) take it; adding {}", s.answered, r.url);
-                            begin(r);
-                        }
-                    }
-                }
-            });
-        }
+        let replan: Arc<dyn Fn() -> Vec<String> + Send + Sync> = {
+            let (pool, lobby) = (pool.clone(), lobby.clone());
+            Arc::new(move || tango_net::endpoints::plan_now(&pool, Some(&lobby.lock().unwrap().code)))
+        };
+        keep_running(infos.clone(), MAX_ANNOUNCE, cancel.clone(), begin, replan);
         spawn_status_log("announce", infos.clone(), cancel.clone());
         Announcer {
             lobby,
@@ -644,40 +732,35 @@ impl Drop for Announcer {
 
 async fn announce_relay(relay: Arc<Relay>, key: Arc<SigningKey>, lobby: Arc<Mutex<Lobby>>, cancel: CancellationToken) {
     let url = relay.url.clone();
-    let mut wait = 2;
     let mut last_at = 0;
     loop {
+        let mut wait = 2;
         match connect(&url).await {
             Err(e) => {
                 log::info!("lobby announce: {url}: {e}");
+                if !e.starts_with("backing off") {
+                    relay.failed(&e);
+                }
                 relay.note(e);
+                wait = redial_wait(&url);
             }
             Ok(mut ws) => {
-                wait = 2;
                 relay.connected.store(true, Ordering::Relaxed);
                 relay.note("");
                 let r = announce_session(&relay, &mut ws, &key, &lobby, &cancel, &mut last_at).await;
                 relay.connected.store(false, Ordering::Relaxed);
                 relay.answered.store(0, Ordering::Relaxed);
                 log::info!("lobby announce: {url} ended: {r:?}");
-                // A relay that turned the announcement away for good (blocked kind, payment, login) is left alone
-                // for a long while; the spare relays take its place.
-                if r == Err("refused".to_string()) {
-                    wait = 300;
+                // (a refusal was recorded by the session: a stop signal blocks the relay for an hour or more)
+                if r.is_err() {
+                    wait = redial_wait(&url);
                 }
             }
         }
         if cancel.is_cancelled() || !nap(&cancel, Duration::from_secs(wait)).await {
             return;
         }
-        wait = if wait >= 300 { 60 } else { (wait * 2).min(30) };
     }
-}
-
-/// Whether a relay's refusal is only a limit on how often events may come (try again a little later).
-fn rate_limited(why: &str) -> bool {
-    let w = why.to_ascii_lowercase();
-    w.starts_with("rate") || w.contains("rate-limit") || w.contains("rate limit") || w.contains("too many") || w.contains("slow down")
 }
 
 async fn announce_session(
@@ -690,8 +773,9 @@ async fn announce_session(
 ) -> Result<(), String> {
     let url = relay.url.as_str();
     let mut sent: Option<(Lobby, std::time::Instant)> = None;
+    let mut refresh = REFRESH;
     // After a rate limit: nothing is sent until then (the connection stays).
-    let mut pause: Option<std::time::Instant> = None;
+    let pause: Option<std::time::Instant> = None;
     let mut look = tango_platform::Ticker::immediate(Duration::from_secs(1));
     loop {
         tokio::select! {
@@ -717,7 +801,12 @@ async fn announce_session(
                 }
                 let now_l = lobby.lock().unwrap().clone();
                 let due = match &sent {
-                    Some((l, at)) => *l != now_l || at.elapsed() >= REFRESH,
+                    Some((l, at)) => {
+                        // Every 15-20 s (jittered per send); a change goes out at once but never within 5 s of the
+                        // last event: at most 12 events a minute on a relay.
+                        (*l != now_l && at.elapsed().as_secs() >= tango_net::endpoints::MIN_PUBLISH_GAP_SECS)
+                            || at.elapsed() >= refresh
+                    }
                     None => true,
                 };
                 if due {
@@ -725,6 +814,7 @@ async fn announce_session(
                     let ev = make_event(key, &now_l.code, Some(&now_l), *last_at);
                     ws.send(Message::Text(json!(["EVENT", ev]).to_string())).await.map_err(|e| e.to_string())?;
                     sent = Some((now_l, std::time::Instant::now()));
+                    refresh = tango_net::endpoints::refresh_interval();
                 }
             }
             m = ws.next() => {
@@ -736,18 +826,16 @@ async fn announce_session(
                                 let why = v.get(3).and_then(Value::as_str).unwrap_or("");
                                 if v.get(2).and_then(Value::as_bool) == Some(true) || why.starts_with("duplicate") {
                                     relay.events.fetch_add(1, Ordering::Relaxed);
-                                    relay.answered.store(mono(), Ordering::Relaxed);
+                                    if relay.answered.swap(mono(), Ordering::Relaxed) == 0 {
+                                        relay.succeeded(0);
+                                    }
                                     relay.note("");
-                                    pause = None;
-                                } else if rate_limited(why) {
-                                    log::info!("lobby announce: {url} rate-limits it ({why}); pausing 30 s");
-                                    relay.note(format!("rate-limited: {}", why.chars().take(40).collect::<String>()));
-                                    pause = Some(std::time::Instant::now() + Duration::from_secs(30));
-                                    // (the next try is due as soon as the pause ends)
-                                    sent = None;
                                 } else {
+                                    // Refused: believed. A stop signal (rate limit, blocked, payment, login) leaves
+                                    // the relay alone for an hour or more; the swap brings a spare in.
                                     log::info!("lobby announce: {url} refused it: {why}");
                                     relay.note(format!("refused: {}", why.chars().take(40).collect::<String>()));
+                                    relay.failed(why);
                                     return Err("refused".into());
                                 }
                             }

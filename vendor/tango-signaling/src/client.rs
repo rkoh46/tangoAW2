@@ -13,6 +13,14 @@ type SignalingStream = ws::Stream;
 /// How long to wait for any signaling traffic before treating the websocket as
 /// dead. The server echoes our pings, so a healthy idle connection reads at
 /// least every `PING_INTERVAL`.
+/// tangoAW2: rewrites the ICE server URLs the signalling server offered (`scheme:user:pass@host:port`) before they
+/// reach WebRTC: libjuice uses only the first STUN server and two TURN servers, so which come first matters.
+static ICE_FILTER: std::sync::OnceLock<fn(Vec<String>, Option<bool>) -> Vec<String>> = std::sync::OnceLock::new();
+
+pub fn set_ice_filter(f: fn(Vec<String>, Option<bool>) -> Vec<String>) {
+    let _ = ICE_FILTER.set(f);
+}
+
 const READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 const PING_INTERVAL: std::time::Duration = std::time::Duration::from_secs(15);
 
@@ -326,8 +334,7 @@ async fn establish(
 
     log::info!("hello received from signaling stream: {:?}", hello);
 
-    let mut rtc_config = datachannel_wrapper::RtcConfig::new(
-        &hello
+    let ice_urls: Vec<String> = hello
             .ice_servers
             .into_iter()
             .flat_map(|ice_server| {
@@ -365,8 +372,13 @@ async fn establish(
                     })
                     .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>(),
-    );
+            .collect();
+    // tangoAW2: the relay-failover layer orders and extends the STUN / TURN list (see tango-net `endpoints`).
+    let ice_urls = match ICE_FILTER.get() {
+        Some(f) => f(ice_urls, use_relay),
+        None => ice_urls,
+    };
+    let mut rtc_config = datachannel_wrapper::RtcConfig::new(&ice_urls);
     if use_relay == Some(true) {
         rtc_config.ice_transport_policy = datachannel_wrapper::TransportPolicy::Relay;
     }

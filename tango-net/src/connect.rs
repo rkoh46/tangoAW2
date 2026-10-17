@@ -5,6 +5,7 @@
 //! [`negotiate`](super::negotiate) on the reliable channel.
 
 use super::channel::Channels;
+use super::endpoints;
 use super::link::{DirectRole, ReconnectRecipe};
 use super::NegotiationError;
 
@@ -63,6 +64,9 @@ pub enum ConnectError {
     /// handshake it brokers.
     #[error("signaling: {0}")]
     Signaling(#[source] tango_signaling::Error),
+    /// Every signalling server was tried (and retried with backoff) and none answered.
+    #[error("{0}")]
+    Unreachable(String),
     /// The rendezvous succeeded but its channels couldn't be bundled.
     #[error("{0}")]
     Channels(#[source] std::io::Error),
@@ -92,24 +96,27 @@ pub async fn open_channels(route: Route<'_>, mut on_status: impl FnMut(Status)) 
             session_id,
             use_relay,
         } => {
-            let connecting = tango_signaling::connect(
-                endpoint,
-                session_id,
-                use_relay,
-                tango_net_protocol::PROTOCOL_VERSION,
-                // Every channel the session needs, created together up
-                // front (the same specs the direct path uses).
-                vec![super::channel::control_channel(), super::channel::in_match_channel()],
-            )
-            .await
-            .map_err(ConnectError::Signaling)?;
+            let connecting = dial_signaling(endpoint, session_id, use_relay).await?;
             // Server hello is in hand (ICE config settled). From here the
             // await is the slow one — blocked on the peer joining. It fails
             // with the same type as the dial did: a server that turns us
             // away does it here, having taken the socket first.
             on_status(Status::WaitingForOpponent);
-            let connected = connecting.await.map_err(ConnectError::Signaling)?;
-            Channels::from_signaling(connected).map_err(ConnectError::Channels)?
+            let result = connecting.await;
+            let connected = match result {
+                Ok(c) => c,
+                Err(e) => {
+                    if use_relay == Some(true) {
+                        endpoints::turn_outcome(true, false);
+                    }
+                    return Err(ConnectError::Signaling(e));
+                }
+            };
+            let channels = Channels::from_signaling(connected).map_err(ConnectError::Channels)?;
+            if let Some(relayed) = Channels::relayed(&channels.peer_conn) {
+                endpoints::turn_outcome(relayed, true);
+            }
+            channels
         }
         #[cfg(not(target_arch = "wasm32"))]
         Route::Direct(DirectRole::Host { port }) => super::direct_rtc::host(*port)
@@ -128,4 +135,69 @@ pub async fn open_channels(route: Route<'_>, mut on_status: impl FnMut(Status)) 
     // shares the association and is open by the time the match starts.
     super::negotiate(&mut channels.control.0, &mut channels.control.1).await?;
     Ok(channels)
+}
+
+/// What a player is told when every signalling server failed.
+pub const UNREACHABLE: &str = "Matchmaking unreachable \u{2013} try again, or join by code";
+
+/// Rounds of the whole list before giving up, and the pause between them (1 s, 2 s, jittered).
+const ROUNDS: usize = 3;
+
+/// Dials the signalling servers in health order, each for [`endpoints::SIGNALING_TIMEOUT_SECS`], then the list again
+/// (twice) with a short backoff. A server that turns us away for a reason of ours (old version) ends it at once.
+async fn dial_signaling(
+    endpoint: &str,
+    session_id: &str,
+    use_relay: Option<bool>,
+) -> Result<tango_signaling::Connecting, ConnectError> {
+    endpoints::install();
+    #[cfg(not(target_arch = "wasm32"))]
+    endpoints::check_stun().await;
+    for round in 0..ROUNDS {
+        let list = endpoints::signaling_order(endpoint);
+        if list.is_empty() {
+            break;
+        }
+        for url in list {
+            if endpoints::test_blocked(&url) {
+                endpoints::record_fail(&url, "blocked by TANGOAW2_BLOCK_ENDPOINTS");
+                continue;
+            }
+            let started = web_time::Instant::now();
+            let attempt = tango_platform::timeout(
+                std::time::Duration::from_secs(endpoints::SIGNALING_TIMEOUT_SECS),
+                tango_signaling::connect(
+                    &url,
+                    session_id,
+                    use_relay,
+                    tango_net_protocol::PROTOCOL_VERSION,
+                    // Every channel the session needs, created together up
+                    // front (the same specs the direct path uses).
+                    vec![super::channel::control_channel(), super::channel::in_match_channel()],
+                ),
+            )
+            .await;
+            match attempt {
+                Ok(Ok(connecting)) => {
+                    endpoints::record_ok(&url, started.elapsed().as_millis() as u32);
+                    log::info!("online: matchmaking via {url} ({} ms)", started.elapsed().as_millis());
+                    return Ok(connecting);
+                }
+                Ok(Err(e @ tango_signaling::Error::ServerAbort(_))) => return Err(ConnectError::Signaling(e)),
+                Ok(Err(e)) => {
+                    log::warn!("online: matchmaking {url}: {e}; trying the next");
+                    endpoints::record_fail(&url, &e.to_string());
+                }
+                Err(_) => {
+                    log::warn!("online: matchmaking {url}: no answer in {} s; trying the next", endpoints::SIGNALING_TIMEOUT_SECS);
+                    endpoints::record_fail(&url, "timed out");
+                }
+            }
+        }
+        if round + 1 < ROUNDS {
+            let pause = (1u64 << round) as f64 * (0.75 + 0.5 * rand::random::<f64>());
+            tango_platform::sleep(std::time::Duration::from_secs_f64(pause)).await;
+        }
+    }
+    Err(ConnectError::Unreachable(UNREACHABLE.to_string()))
 }
