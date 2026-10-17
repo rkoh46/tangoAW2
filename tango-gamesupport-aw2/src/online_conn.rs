@@ -6,7 +6,7 @@
 
 use mgba::core::Core;
 
-use crate::online::{bar, fit, text_width, Rgb, Rgba, BAR, BLUE, GRAY_INK, INK, RED, SHADE, WHITE, YELLOW};
+use crate::online::{bar, fit, text_width, Rgb, Rgba, BLUE, GRAY_INK, INK, PLATE_GREY, PLATE_INK, RED, SHADE};
 
 /// tangoAW2's 0x0203D440..0x0203D500 (free between the saved matches' list and the lobby browser).
 pub const BASE: u32 = 0x0203_D440;
@@ -55,29 +55,43 @@ fn tone(c: char) -> Rgb {
     }
 }
 
-/// A small flag on a pole (the capture marker's look) in `c`.
-fn flag(cv: &mut Rgba, x: i32, y: i32, c: Rgb) {
-    cv.rect(x, y, 1, 9, WHITE);
-    cv.rect(x + 1, y, 6, 4, c);
-    cv.rect(x + 1, y + 4, 4, 1, c);
-    cv.rect(x + 1, y, 6, 1, WHITE);
+/// The status's badge: an army's emblem from the ROM (Green Earth online, Yellow Comet limited, Orange Star offline,
+/// Blue Moon while it checks), in the 16 x 16 the plate has room for.
+fn badge(cv: &mut Rgba, core: &Core, state: u8, x: i32, y: i32) {
+    let colour = match state {
+        1 => 3,
+        2 => 4,
+        3 => 1,
+        _ => 2,
+    };
+    if let Some((w, h, px)) = crate::pvp::emblem_pixels(core, colour) {
+        for yy in 0..h {
+            for xx in 0..w {
+                if let Some(c) = px[yy * w + xx] {
+                    cv.put(x + xx as i32, y + yy as i32, c);
+                }
+            }
+        }
+    }
 }
 
-/// The status in the screen's top middle, between the title and the gamertag, with the key to the page.
+/// The status in the screen's top middle, between the title and the gamertag, with the key to the page: a pink plate
+/// of the game's, an army's emblem for the state and its word.
 pub fn draw_corner(cv: &mut Rgba, core: &Core) {
-    let (word, c) = match state(core) {
-        1 => ("Online", GREEN),
-        2 => ("Limited", YELLOW),
-        3 => ("Offline", RED),
-        _ => ("Checking", GRAY_INK),
+    let st = state(core);
+    let word = match st {
+        1 => "Online",
+        2 => "Limited",
+        3 => "Offline",
+        _ => "Checking",
     };
     let hint = "R: Details";
-    let w = text_width(core, word).max(text_width(core, hint)).max(40);
-    let x = 80;
-    cv.rect(x - 2, 2, w + 8 + 8, 26, BAR);
-    flag(cv, x + 1, 5, c);
-    cv.text(core, x + 12, 4, word, WHITE, GRAY_INK);
-    cv.text(core, x + 2, 16, hint, GRAY_INK, GRAY_INK);
+    let w = text_width(core, word).max(text_width(core, hint)).max(36);
+    let x = 82;
+    cv.plate(x, 2, w + 26, 27);
+    badge(cv, core, st, x + 4, 7);
+    cv.text(core, x + 23, 3, word, PLATE_INK, SHADE);
+    cv.text(core, x + 23, 14, hint, PLATE_GREY, SHADE);
 }
 
 /// The Connection page's rows in the STATS page's frame.

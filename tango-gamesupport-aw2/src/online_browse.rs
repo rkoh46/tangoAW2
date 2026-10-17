@@ -230,7 +230,7 @@ pub enum Pick {
 }
 
 /// A padlock, 5 wide and 7 tall.
-fn padlock(cv: &mut Rgba, x: i32, y: i32, ink: Rgb) {
+pub(crate) fn padlock(cv: &mut Rgba, x: i32, y: i32, ink: Rgb) {
     cv.rect(x + 1, y, 3, 1, ink);
     cv.rect(x, y + 1, 1, 2, ink);
     cv.rect(x + 4, y + 1, 1, 2, ink);

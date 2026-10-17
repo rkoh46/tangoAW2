@@ -516,10 +516,11 @@ fn proposals(c: &mut Ctx) {
     println!("unranked: widest map name #{} ({} px)", widest.1, widest.0);
     for local in 0..2usize {
         tango_gamesupport_aw2::online::set_room(vec![W12.to_string(), W12.to_string()], local);
-        for (picks, phase, tag) in [(0u8, 0u8, "first"), (1, 0, "second"), (2, 1, "played0"), (2, 1, "played1")] {
+        for (picks, phase, tag) in [(0u8, 0u8, "first"), (1, 0, "second"), (2, 1, "played0"), (2, 1, "played1"), (2, 2, "chosen")] {
             let core = c.link.core_mut();
             un::set_state(core, picks, [widest.1, widest.1], phase, tag.ends_with('1') as u8);
             paint(c, &format!("unranked_s{local}_{tag}"), true, |core, rgba| un::paint_bar(core, rgba));
         }
+        paint(c, &format!("unranked_s{local}_rules"), true, |core, rgba| un::paint_rules_name(core, rgba));
     }
 }

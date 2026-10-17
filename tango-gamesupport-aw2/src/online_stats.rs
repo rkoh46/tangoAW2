@@ -21,7 +21,7 @@
 use mgba::core::Core;
 use std::sync::Mutex;
 
-use crate::online::{bar, text_width, Rgba, BLUE, GRAY_INK, INK, LIGHT_GRAY, SHADE, W, WHITE, YELLOW};
+use crate::online::{bar, fit, text_width, Rgba, BLUE, GRAY_INK, INK, LIGHT_GRAY, SHADE, W, YELLOW};
 
 // --- State (tangoAW2's 0x0203D500..0x0203D8FF) -------------------------------------------------------------
 
@@ -274,13 +274,13 @@ pub fn scroll(core: &mut Core, down: bool) {
 pub fn draw_tag(cv: &mut Rgba, core: &Core) {
     let tag = gamertag(core);
     let set = !tag.is_empty();
-    let s = if set { tag } else { "No gamertag".to_string() };
-    let hint = "SELECT: Gamertag";
+    let s = if set { fit(core, &tag, 72) } else { "No gamertag".to_string() };
+    let hint = "SELECT: Edit";
     let w = text_width(core, &s).max(text_width(core, hint));
     let x = W as i32 - w - 9;
-    cv.rect(x - 4, 2, w + 8, 26, crate::online::BAR);
-    cv.text(core, x + (w - text_width(core, &s)) / 2, 4, &s, if set { WHITE } else { GRAY_INK }, GRAY_INK);
-    cv.text(core, x, 16, hint, GRAY_INK, GRAY_INK);
+    cv.plate(x - 5, 2, w + 10, 27);
+    cv.text(core, x + (w - text_width(core, &s)) / 2, 3, &s, if set { crate::online::PLATE_INK } else { crate::online::PLATE_GREY }, SHADE);
+    cv.text(core, x, 14, hint, crate::online::PLATE_GREY, SHADE);
 }
 
 /// The typing page.

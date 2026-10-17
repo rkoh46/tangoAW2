@@ -22,6 +22,9 @@ for f in sorted(glob.glob(f"{d}/t*_s{seat}.bmp")):
     n += 1
     a = np.asarray(Image.open(f).convert("RGB"), dtype=int)[3:11]
     if never == "red":
+        # (the Rules page's map-name plate, red-framed, sits in the middle of the top rows: not the HUD)
+        a = a.copy()
+        a[:, 76:184] = 0
         hit = ((a[:, :, 0] > 200) & (a[:, :, 1] < 110) & (a[:, :, 2] < 110))
     else:
         hit = ((abs(a[:, :, 0] - 115) < 6) & (abs(a[:, :, 1] - 90) < 6) & (a[:, :, 2] > 240))

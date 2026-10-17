@@ -1831,6 +1831,11 @@ pub(crate) const GRAY_INK: Rgb = (104, 112, 128);
 pub(crate) const CREAM: Rgb = (255, 246, 214);
 pub(crate) const YELLOW: Rgb = (255, 224, 64);
 pub(crate) const BAR: Rgb = (24, 24, 32);
+/// The game's pink plate (SELECT MAP's boxes): black edge, red frame, pink page; grey and lavender-blue ink on it.
+pub(crate) const PLATE_RED: Rgb = (246, 82, 57);
+pub(crate) const PLATE_PINK: Rgb = (255, 238, 238);
+pub(crate) const PLATE_GREY: Rgb = (131, 123, 115);
+pub(crate) const PLATE_INK: Rgb = (88, 72, 150);
 
 pub(crate) struct Rgba<'a>(pub(crate) &'a mut [u8]);
 
@@ -1857,6 +1862,13 @@ impl Rgba<'_> {
         self.rect(x + w - 2, y + 2, 1, h - 4, LIGHT_GRAY);
         self.rect(x, y, w, 2, RED);
         self.rect(x, y + h - 2, w, 2, BLUE);
+    }
+    /// A plate as the game's SELECT MAP boxes: a black edge, a red frame, a pink page.
+    pub(crate) fn plate(&mut self, x: i32, y: i32, w: i32, h: i32) {
+        audit::window(x, y, w, h);
+        self.rect(x - 1, y - 1, w + 2, h + 2, (0, 0, 0));
+        self.rect(x, y, w, h, PLATE_RED);
+        self.rect(x + 2, y + 2, w - 4, h - 4, PLATE_PINK);
     }
     /// AW2's proportional font; returns the x after the text.
     pub(crate) fn text(&mut self, core: &Core, x: i32, y: i32, s: &str, ink: Rgb, shade: Rgb) -> i32 {
@@ -2114,6 +2126,11 @@ fn room(core: &Core) -> String {
     b.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect()
 }
 
+/// A room's battle has begun and is not left yet (the screens after it, VICTORY and the results, belong to it).
+pub(crate) fn battle_begun(core: &Core) -> bool {
+    core.raw_read_8(BATTLE, -1) == 1
+}
+
 /// The help bar at the bottom, over the game's.
 pub(crate) fn bar(cv: &mut Rgba, core: &Core, s: &str) {
     cv.rect(0, 144, W as i32, 16, BAR);
@@ -2331,14 +2348,21 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             let code = if hosting { room(core) } else { code(core) };
             cv.text(core, x + 6, y + 5, head, GRAY_INK, SHADE);
             let pw = password(core);
-            if !pw.is_empty() {
-                // ("Password: UT", or shorter when the heading leaves no room: the value always shows whole)
+            if !pw.is_empty() && hosting {
+                // The host sees the password it set ("Password: AB", or shorter when the heading leaves no room: the
+                // value always shows whole).
                 let room = w - 12 - text_width(core, head) - 8;
                 let t = [format!("Password: {pw}"), format!("Pass: {pw}"), format!("PW: {pw}")]
                     .into_iter()
                     .find(|t| text_width(core, t) <= room)
                     .unwrap_or_else(|| pw.clone());
                 cv.text(core, x + w - 6 - text_width(core, &t), y + 5, &t, GRAY_INK, SHADE);
+            } else if !pw.is_empty() {
+                // A guest sees only that the room is locked (the password is the host's to give).
+                let t = "Locked";
+                let tx = x + w - 6 - text_width(core, t);
+                cv.text(core, tx, y + 5, t, GRAY_INK, SHADE);
+                crate::online_browse::padlock(&mut cv, tx - 8, y + 7, GRAY_INK);
             }
             if code.is_empty() {
                 cv.text(

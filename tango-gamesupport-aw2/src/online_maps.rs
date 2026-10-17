@@ -676,11 +676,11 @@ pub fn draw_hint(core: &Core, rgba: &mut [u8]) {
     }
     let mut canvas = Rgba(rgba);
     for (k, t) in lines.iter().rev().enumerate() {
-        let w = text_width(core, t) + 12;
-        let x = W as i32 - w;
-        let y = 146 - 14 * k as i32;
-        canvas.rect(x, y, w, 14, BAR);
-        canvas.text(core, x + 6, y + 1, t, WHITE, GRAY_INK);
+        let w = text_width(core, t) + 14;
+        let x = W as i32 - w - 1;
+        let y = 141 - 17 * k as i32;
+        canvas.plate(x, y, w, 16);
+        canvas.text(core, x + 6, y + 3, t, PLATE_GREY, SHADE);
     }
 }
 

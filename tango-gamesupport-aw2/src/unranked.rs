@@ -461,6 +461,7 @@ fn rules_rows(core: &Core) -> Option<[u32; 7]> {
     if phase(core) != 2
         || !crate::pvp::in_versus(core)
         || crate::pvp::in_battle(core)
+        || crate::online::battle_begun(core)
         || crate::survival_ui::selecting(core)
         || crate::online_teams::active(core)
     {
@@ -528,11 +529,12 @@ pub fn finished(core: &Core) -> bool {
 fn paint_box(core: &Core, cv: &mut crate::online::Rgba<'_>, lines: &[(String, crate::online::Rgb)]) {
     use crate::online::*;
     let (x, w) = (88, W as i32 - 88);
-    let h = 5 + 12 * lines.len() as i32;
-    cv.rect(x, 160 - h, w, h, BAR);
+    let h = 7 + 12 * lines.len() as i32;
+    let (x, w) = (x + 1, w - 3);
+    cv.plate(x, 160 - h - 2, w, h);
     for (k, (t, ink)) in lines.iter().enumerate() {
         let tw = text_width(core, t);
-        cv.text(core, x + (w - tw) / 2, 160 - h + 3 + 12 * k as i32, t, *ink, GRAY_INK);
+        cv.text(core, x + (w - tw) / 2, 160 - h - 2 + 3 + 12 * k as i32, t, *ink, SHADE);
     }
 }
 
@@ -582,21 +584,28 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
         return;
     }
     if rules_up(core) {
-        // The Rules page names the map (a plate between its title and the PRESS A hint).
-        use crate::online::*;
-        let name = map_name(core, core.raw_read_8(CHOSEN, -1));
-        let name = fit(core, &name, 112);
-        let w = text_width(core, &name) + 10;
-        let mut canvas = Rgba(rgba);
-        let x = 130 - w / 2;
-        canvas.rect(x, 3, w, 14, BAR);
-        canvas.text(core, x + 5, 4, &name, WHITE, GRAY_INK);
+        // (not over the army page while it finishes: its own title already names the map)
+        if !crate::online_teams::done(core) {
+            paint_rules_name(core, rgba);
+        }
         return;
     }
     if phase(core) > 1 || !crate::survival_ui::selecting(core) {
         return;
     }
     paint_bar(core, rgba);
+}
+
+/// The Rules page names the map (a plate between its title and the PRESS A hint).
+pub fn paint_rules_name(core: &Core, rgba: &mut [u8]) {
+    use crate::online::*;
+    let name = map_name(core, core.raw_read_8(CHOSEN, -1));
+    let name = fit(core, &name, 112);
+    let w = text_width(core, &name) + 10;
+    let mut canvas = Rgba(rgba);
+    let x = 130 - w / 2;
+    canvas.plate(x, 2, w, 15);
+    canvas.text(core, x + 5, 4, &name, PLATE_INK, SHADE);
 }
 
 /// The bar's text (see [`draw`]; the text audit paints it without the game being on SELECT MAP).
@@ -619,9 +628,9 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
         .into_iter()
         .find(|t| text_width(core, t) <= 144)
         .unwrap_or_else(|| "is played".to_string());
-    let mut lines = vec![(fit(core, &map, 144), WHITE), (from, YELLOW)];
+    let mut lines = vec![(fit(core, &map, 144), PLATE_INK), (from, PLATE_GREY)];
     if crate::online::room_local_seat() == 0 {
-        lines.push(("A: Go on".to_string(), GRAY_INK));
+        lines.push(("A: Go on".to_string(), PLATE_GREY));
     }
     paint_box(core, cv, &lines);
 }

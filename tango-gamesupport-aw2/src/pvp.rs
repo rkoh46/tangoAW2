@@ -206,6 +206,40 @@ pub(crate) fn sprite_source(core: &Core, id: u32, group: u32) -> u32 {
     base + (before & 0x3FF) * 32
 }
 
+/// An army's emblem (colour 1..=5) as the game draws it, read from the ROM: its size in pixels and the pixels
+/// (None: transparent). For menus that show the emblem without the sprite engine.
+pub(crate) fn emblem_pixels(core: &Core, colour: u32) -> Option<(usize, usize, Vec<Option<(u8, u8, u8)>>)> {
+    let id = EMBLEM_BASE_ID + colour;
+    let (tw, th) = (core.raw_read_8(SPRITE_SIZES + id * 4, -1) as usize, core.raw_read_8(SPRITE_SIZES + id * 4 + 1, -1) as usize);
+    if tw == 0 || th == 0 || tw > 4 || th > 4 {
+        return None;
+    }
+    let pal_at = core.raw_read_32(SPRITE_ROWS + EMBLEM_GROUP * 12 + 4, -1);
+    if !(0x0800_0000..0x0A00_0000).contains(&pal_at) {
+        return None;
+    }
+    let mut pal = [0u8; 32];
+    core.raw_read_range(pal_at, -1, &mut pal);
+    let src = sprite_source(core, id, EMBLEM_GROUP);
+    let mut tiles = vec![0u8; tw * th * 32];
+    core.raw_read_range(src, -1, &mut tiles);
+    let mut out = vec![None; tw * 8 * th * 8];
+    for ty in 0..th {
+        for tx in 0..tw {
+            for y in 0..8 {
+                for x in 0..8 {
+                    let b = tiles[(ty * tw + tx) * 32 + y * 4 + x / 2];
+                    let v = ((b >> (4 * (x & 1))) & 15) as usize;
+                    if v != 0 {
+                        out[(ty * 8 + y) * tw * 8 + tx * 8 + x] = Some(crate::online::bgr(u16::from_le_bytes([pal[2 * v], pal[2 * v + 1]])));
+                    }
+                }
+            }
+        }
+    }
+    Some((tw * 8, th * 8, out))
+}
+
 /// The Teams screen shows each army's emblem, but only loads the four
 /// standard ones. With five colours and at most four armies at least one
 /// standard emblem is always unused: when an army is Black Hole, its
