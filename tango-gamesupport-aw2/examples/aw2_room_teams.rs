@@ -123,6 +123,41 @@ fn main() {
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
+        if let Ok(path) = std::env::var("AW2_HASH_LOG") {
+            // (test aid: one line per tick, FNV hashes of the console's IWRAM and EWRAM, and every 30 ticks of its ROM, VRAM, palette and OAM;
+            // run the same script with and without the Dual Strike pack (AW2_PACK_ONLY) and diff the two files: they must be equal)
+            use std::io::Write;
+            let fnv = |b: &[u8]| b.iter().fold(0xcbf29ce484222325u64, |h, x| (h ^ *x as u64).wrapping_mul(0x100000001b3));
+            let c = link.core();
+            let mut line = String::new();
+            let mut buf = vec![0u8; 0x8000];
+            c.raw_read_range(0x0300_0000, -1, &mut buf);
+            line += &format!("{t} iw {:016x}", fnv(&buf));
+            let mut buf = vec![0u8; 0x40000];
+            c.raw_read_range(0x0200_0000, -1, &mut buf);
+            line += &format!(" ew {:016x}", fnv(&buf));
+            if t % 30 == 0 {
+                for (name, at, len) in [("rom", 0x0800_0000u32, 0x0080_0000usize), ("vram", 0x0600_0000, 0x18000), ("pal", 0x0500_0000, 0x400), ("oam", 0x0700_0000, 0x400)] {
+                    let mut buf = vec![0u8; len];
+                    c.raw_read_range(at, -1, &mut buf);
+                    line += &format!(" {name} {:016x}", fnv(&buf));
+                }
+            }
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+                let _ = writeln!(f, "{line}");
+            }
+        }
+        if let Some(t0) = std::env::var("AW2_RAM_DUMP").ok().and_then(|v| v.parse::<usize>().ok()).filter(|&a| a == t) {
+            // (test aid: the whole console at that tick, in AW2_RAM_DIR)
+            if let Ok(dir) = std::env::var("AW2_RAM_DIR") {
+                let c = link.core();
+                for (name, at, len) in [("rom", 0x0800_0000u32, 0x0080_0000usize), ("vram", 0x0600_0000, 0x18000), ("pal", 0x0500_0000, 0x400), ("oam", 0x0700_0000, 0x400), ("iw", 0x0300_0000, 0x8000), ("ew", 0x0200_0000, 0x40000)] {
+                    let mut buf = vec![0u8; len];
+                    c.raw_read_range(at, -1, &mut buf);
+                    let _ = std::fs::write(format!("{dir}/{name}_{t0}.bin"), &buf);
+                }
+            }
+        }
         if let Ok(range) = std::env::var("AW2_MEMSCAN") {
             // (test aid: "from-to": the console's IWRAM and EWRAM every tick in that range, files in /tmp/memscan)
             let (a, b) = range.split_once('-').map(|(x, y)| (x.parse::<usize>().unwrap_or(0), y.parse::<usize>().unwrap_or(0))).unwrap_or((0, 0));

@@ -119,7 +119,7 @@ pub fn install(core: &mut Core) {
     // The Black Cannon facing north's corner (its last four tiles, at 914..917): the map's own sheet, loaded after the building
     // sheet, writes over them (past the menu's hand at 910..913), and the cannon's corner showed letters. Put back on the map.
     if crate::ds_weather::is_on(core) && crate::ds_battle::on_map(core) {
-        if let Some(a) = crate::ds_art::art().filter(|a| a.cannon_north.len() == 36 * 32) {
+        if let Some(a) = crate::ds_art::active(core).filter(|a| a.cannon_north.len() == 36 * 32) {
             let want = &a.cannon_north[32 * 32..36 * 32];
             let at = 0x0601_0000 + NORTH_OBJ_TILES[3] * 32;
             let mut now = [0u8; 4 * 32];
@@ -210,7 +210,7 @@ pub fn install(core: &mut Core) {
     // Their pictures: Dual Strike's, imported; without it they are shown
     // only in someone else's replay, and then as nothing.
     let blank = [0u8; 256];
-    let art = crate::ds_art::art();
+    let art = crate::ds_art::active(core);
     core.raw_write_range(CRYSTAL_PICTURE_AT, -1, art.map_or(&blank[..], |a| &a.crystal));
     core.raw_write_range(OBELISK_PICTURE_AT, -1, art.map_or(&blank[..], |a| &a.obelisk_small));
     core.raw_write_32(DATA_SENTINEL, -1, DATA_MAGIC);
@@ -290,7 +290,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 /// After the building sheet loads (0x0803F6A0): our sprites' tiles.
 fn load_tiles(core: &mut Core) {
     let blank = [0u8; 36 * 32];
-    let art = crate::ds_art::art();
+    let art = crate::ds_art::active(core);
     core.raw_write_range(
         0x0601_0000 + OBELISK_OBJ_TILE * 32,
         -1,
@@ -321,7 +321,7 @@ pub fn north_swap(core: &mut Core, start: u32, end: u32) {
     if !crate::ds_weather::is_on(core) {
         return;
     }
-    let Some(a) = crate::ds_art::art().filter(|a| a.cannon_north.len() == 36 * 32) else {
+    let Some(a) = crate::ds_art::active(core).filter(|a| a.cannon_north.len() == 36 * 32) else {
         return;
     };
     // The picture's three groups of tiles that are the font's too (its fourth, at 914, is no font's).
@@ -425,7 +425,7 @@ fn sprite(core: &mut Core) {
             if matches!(def, 0x0849_FA22 | 0x0849_FA08)
                 && tile_at(core, x + 1, y + 1) == NORTH_CANNON_TILE
                 && !crate::design::in_map_editor(core)
-                && crate::ds_art::art().is_some_and(|a| a.cannon_north.len() == 36 * 32) =>
+                && crate::ds_art::active(core).is_some_and(|a| a.cannon_north.len() == 36 * 32) =>
         {
             NORTH_DEF
         }

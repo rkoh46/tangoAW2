@@ -764,11 +764,13 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         set_bits(core, BATTLE_MAPS);
         set_bits(core, COS_AND_EDITS);
 
+        // The Black Crystal and Black Obelisk appear only with their art,
+        // imported from the player's Dual Strike ROM (see ds_art.rs). In a
+        // netplay match this is the match's bit, so a mixed room plays the console without it everywhere.
+        let ds_features = crate::ds_art::features(mode);
+        core.raw_write_8(crate::ds_art::ART_ON, -1, ds_features as u8);
         crate::five::sync(core);
         crate::obelisk::install(core);
-        // The Black Crystal and Black Obelisk appear only with their art,
-        // imported from the player's Dual Strike ROM (see ds_art.rs).
-        let ds_features = crate::ds_art::features(mode);
         crate::branding::tick(core);
         // Dual Strike's unit stats and damage chart, with the pack on.
         let ds = crate::ds_pack::features(mode);

@@ -73,6 +73,20 @@ pub fn art() -> Option<&'static Art> {
 /// Obelisk go with it online.
 pub const SHARED_ART: u8 = 0x80;
 
+/// Set every frame to 1 while the Crystal and Obelisk art is in this match ([`features`]), 0 otherwise. A byte of the console, the
+/// same on every peer (the match's bit, not this player's files): the art's consumers read it through [`active`], so a room with a
+/// player who has no art plays the console as that player's alone.
+pub const ART_ON: u32 = 0x0203_FFA5;
+
+/// The imported art, only when the match has it (see [`ART_ON`]).
+pub fn active(core: &mgba::core::Core) -> Option<&'static Art> {
+    if core.raw_read_8(ART_ON, -1) != 0 {
+        art()
+    } else {
+        None
+    }
+}
+
 /// Whether the Crystal and Obelisk (their maps, and the Design Room's
 /// entries) are shown: for a netplay match or its replay, as the match
 /// says ([`SHARED_ART`]), so both peers and every replay agree; played
