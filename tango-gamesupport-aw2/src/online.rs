@@ -456,6 +456,8 @@ pub mod mailbox {
             ("banner", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 2 != 0,
             ("acting", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 4 != 0,
             ("over", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 8 != 0,
+            // (the reconnect box is up: a test cue)
+            ("reconnect", None) => crate::hold_box::shown(),
             ("mapup", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 16 != 0,
             ("pickturn", Some(v)) => (probe::CUES.load(std::sync::atomic::Ordering::Relaxed) >> 8) & 0xF == v as u64 + 1,
             ("rules", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 128 != 0,

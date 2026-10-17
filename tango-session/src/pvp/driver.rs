@@ -484,6 +484,9 @@ impl PvpDriver {
             self.ctx.wake.notify_one();
         }
         self.hold_b = b;
+        if !self.hold_up {
+            log::info!("pvp: reconnect box up for {:?}", hold.0);
+        }
         tango_gamesupport::hold::set(Some(hold));
         self.hold_up = true;
         if self.hold_shown.is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100)) {

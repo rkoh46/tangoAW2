@@ -580,6 +580,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::hold_box::draw(core, rgba);
     }
 
+    fn overlay_notice(&self, core: &Core, rgba: &mut [u8]) {
+        crate::hold_box::draw(core, rgba);
+    }
+
     /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
     /// drawn on the console's own grid and carried up by whole pixels.
     fn overlay_hires(&self, core: &Core, _mode: Option<(u8, u8)>, _seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {

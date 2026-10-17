@@ -115,6 +115,12 @@ pub trait SharedGame: Sync {
         inputs.iter().fold(0, |a, &b| a | b)
     }
 
+    /// Notices drawn over a waiting seat's own picture too (the picture made on the scratch console carries none of
+    /// [`overlay`](Self::overlay)'s): presentation only.
+    fn overlay_notice(&self, core: &mgba::core::Core, rgba: &mut [u8]) {
+        let _ = (core, rgba);
+    }
+
     /// Every tick, before [`merge`](Self::merge), with the console in hand and every seat's keys (2, or up to 5 in a
     /// room): for a game that keeps state of its own for each seat (tangoAW2's CO selection). Like everything that
     /// touches the simulation, a pure function of the console's state, `mode` and `inputs`.
@@ -696,6 +702,9 @@ impl SharedSide<'_> {
                     let held = self.link.watched_at[self.player].is_none_or(|at| at != self.link.tick);
                     log::info!("view-debug seat {} tick {}: watching, {} {}", self.player, self.link.tick, if held { "cached or held picture" } else { "scratch picture" }, self.link.game.view_debug(self.link.inner.core(0)));
                 }
+                // (the notices that belong to every window, such as the reconnect box, are drawn over a watching seat's picture too)
+                let mut f = f;
+                self.link.game.overlay_notice(self.link.inner.core(0), &mut f);
                 return Some((f, "watch"));
             }
         }
