@@ -78,6 +78,13 @@ pub fn tick(core: &Core, keys: u32) {
         core.raw_read_range(0x0300_0000, -1, &mut iw);
         let mut ew = vec![0u8; 0x40000];
         core.raw_read_range(0x0200_0000, -1, &mut ew);
+        // (test aid: TANGOAW2_DUMP_FRAME=<n> keeps the console's RAM at that frame, to find where two peers differ)
+        if std::env::var("TANGOAW2_DUMP_FRAME").ok().and_then(|v| v.parse::<u32>().ok()) == Some(fc) {
+            if let (Ok(dir), Ok(seat)) = (std::env::var("TANGOAW2_RUN_DIR"), std::env::var("TANGOAW2_RUN_SEAT")) {
+                let _ = std::fs::write(format!("{dir}/ram_s{seat}_{fc}_i.bin"), &iw);
+                let _ = std::fs::write(format!("{dir}/ram_s{seat}_{fc}_e.bin"), &ew);
+            }
+        }
         let mut h: u64 = 0xcbf29ce484222325;
         for b in iw.iter().chain(ew.iter()) {
             h = (h ^ *b as u64).wrapping_mul(0x100000001b3);

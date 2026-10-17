@@ -118,7 +118,7 @@ pub fn install(core: &mut Core) {
     }
     // The Black Cannon facing north's corner (its last four tiles, at 914..917): the map's own sheet, loaded after the building
     // sheet, writes over them (past the menu's hand at 910..913), and the cannon's corner showed letters. Put back on the map.
-    if crate::ds_battle::on_map(core) {
+    if crate::ds_weather::is_on(core) && crate::ds_battle::on_map(core) {
         if let Some(a) = crate::ds_art::art().filter(|a| a.cannon_north.len() == 36 * 32) {
             let want = &a.cannon_north[32 * 32..36 * 32];
             let at = 0x0601_0000 + NORTH_OBJ_TILES[3] * 32;
@@ -317,6 +317,10 @@ const FONT_KEPT_FLAG: u32 = FONT_KEPT + 0x400;
 /// shares OBJ tiles 989..1022 with the game's font (the Next turn screen's and the CO Power splash's letters), so
 /// the picture is in them only while a frame's sprites draw the cannon, and the font otherwise.
 pub fn north_swap(core: &mut Core, start: u32, end: u32) {
+    // (only in a match that has the Dual Strike content, for every peer alike: a room with a player who has none keeps the console the same everywhere)
+    if !crate::ds_weather::is_on(core) {
+        return;
+    }
     let Some(a) = crate::ds_art::art().filter(|a| a.cannon_north.len() == 36 * 32) else {
         return;
     };

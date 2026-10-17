@@ -215,20 +215,21 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
     let pt = (core.raw_read_16(PICK_T, -1) as u32 + 1).min(65535);
     core.raw_write_16(PICK_T, -1, pt as u16);
     let timed_out = pt >= pick_frames();
+    if inputs[who] & !was[who] & KEY_A != 0 && std::env::var_os("AW2_PICK_LOG").is_some() {
+        log::info!("unranked: seat {who} pressed A, cursor {:?}, list last {}, keys {:x?}, was {:x?}", crate::online::list_cursor(core), core.raw_read_8(crate::five_map::LIST_LAST, -1), inputs, was);
+    }
     if inputs[who] & !was[who] & KEY_A == 0 && !timed_out {
         return;
     }
     // The map under the cursor (the list holds only the room's count of armies here).
-    let cursor = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP);
+    // (a row past the list's last is empty: its id is 0, which is Five Seas, a map, only when the list really holds it)
+    let last = core.raw_read_8(crate::five_map::LIST_LAST, -1) as u32;
+    let cursor = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP && c <= last);
     let id = match cursor {
         Some(cur) => core.raw_read_8(crate::online::LIST_IDS + cur, -1),
         None if timed_out => core.raw_read_8(crate::online::LIST_IDS, -1),
         None => return,
     };
-    // (id 0 is Five Seas, a map: it counts when the game lists it, on one of the room's tabs)
-    if id == 0 && !timed_out && !matches!(core.raw_read_16(crate::five_map::table(core) + 0x1A, -1), 2 | 4) {
-        return;
-    }
     core.raw_write_16(PICK_T, -1, 0);
     core.raw_write_8(seat(who) + S_MAP, -1, id);
     core.raw_write_8(PICKS, -1, who as u8 + 1);

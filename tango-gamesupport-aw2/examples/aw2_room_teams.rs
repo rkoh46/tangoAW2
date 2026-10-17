@@ -76,7 +76,9 @@ fn main() {
     if ds {
         tango_gamesupport_aw2::ds_pack::pack();
     }
-    let mode = (0u8, tango_gamesupport_aw2::online::ONLINE_MATCH | if ds { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 });
+    // (AW2_PACK_ONLY: this peer has the pack but the match does not, as in a room with a player who has none)
+    let shared = ds && std::env::var_os("AW2_PACK_ONLY").is_none();
+    let mode = (0u8, tango_gamesupport_aw2::online::ONLINE_MATCH | if shared { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 });
     let names: Vec<String> = ["Hostname", "Guest", "Guest3", "Guest4", "Guest5"][..n].iter().map(|s| s.to_string()).collect();
     tango_gamesupport_aw2::online::set_room(names.clone(), 0);
     let save = vec![0xffu8; tango_gamesupport_aw2::SAVE_SIZE];
