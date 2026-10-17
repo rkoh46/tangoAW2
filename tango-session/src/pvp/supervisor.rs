@@ -105,11 +105,34 @@ pub(super) fn spawn_room_primed_announcer(
 // ---------------------------------------------------------------------------
 // The receive pump + link supervisor.
 
+/// The supervisors a session has, counted: its `done` token is cancelled when the last one has finished (a host
+/// migration replaces the supervisors, and counts its own task until the new ones are up).
+pub(super) struct SupGroup {
+    n: std::sync::atomic::AtomicUsize,
+    done: tokio_util::sync::CancellationToken,
+}
+
+impl SupGroup {
+    pub(super) fn new(done: tokio_util::sync::CancellationToken) -> Self {
+        SupGroup { n: Default::default(), done }
+    }
+    pub(super) fn add(&self) {
+        self.n.fetch_add(1, Ordering::AcqRel);
+    }
+    pub(super) fn finish(&self) {
+        if self.n.fetch_sub(1, Ordering::AcqRel) <= 1 {
+            self.done.cancel();
+        }
+    }
+}
+
 pub(super) struct SupervisorContext {
     pub(super) link: Arc<tango_net::link::Link>,
     pub(super) in_match: tango_net::InMatchTx,
     /// Which of the session's links this one is (what its inputs are tagged with).
     pub(super) link_idx: usize,
+    /// The seat of the peer on this link.
+    pub(super) peer_seat: usize,
     pub(super) event_tx: std::sync::mpsc::Sender<(usize, tango_net::data::Input)>,
     pub(super) end: EndState,
     pub(super) completed: Arc<AtomicBool>,
@@ -125,8 +148,10 @@ pub(super) struct SupervisorContext {
     /// (the rebuild drops anything the old transport hadn't delivered).
     pub(super) local_primed: Arc<AtomicBool>,
     /// Process-exit waiter, cancelled after the bounded quit announcement and
-    /// the rest of supervisor teardown have completed.
-    pub(super) done: tokio_util::sync::CancellationToken,
+    /// the rest of supervisor teardown have completed (when the last supervisor has).
+    pub(super) group: Arc<SupGroup>,
+    /// A room of more than two: what a host migration needs (the guests' supervisor of the host's link starts one).
+    pub(super) mig: Option<Arc<super::migrate::MigHandle>>,
 }
 
 /// How long a link's peer has been silent before a full input queue counts as a dead link, in a room. The host
@@ -145,11 +170,11 @@ impl Pauses {
     pub(super) fn new(gate: Arc<crate::PauseGate>) -> Self {
         Pauses { n: Default::default(), gate }
     }
-    fn enter(&self) {
+    pub(super) fn enter(&self) {
         *self.n.lock().unwrap() += 1;
         self.gate.set(true);
     }
-    fn leave(&self) {
+    pub(super) fn leave(&self) {
         let mut n = self.n.lock().unwrap();
         *n = n.saturating_sub(1);
         if *n == 0 {
@@ -157,7 +182,7 @@ impl Pauses {
         }
     }
     /// Teardown: let the drive loop go whatever is held.
-    fn release_all(&self) {
+    pub(super) fn release_all(&self) {
         *self.n.lock().unwrap() = 0;
         self.gate.set(false);
     }
@@ -176,15 +201,12 @@ pub(super) struct RoomCtx {
 
 impl RoomCtx {
     /// The seat of the peer on link `idx`.
-    pub(super) fn seat_of_link(&self, idx: usize) -> usize {
+    pub(crate) fn seat_of_link(&self, idx: usize) -> usize {
         if self.is_host {
             (0..self.players.len()).filter(|&s| s != self.host_seat).nth(idx).unwrap_or(0)
         } else {
             self.host_seat
         }
-    }
-    pub(super) fn name_of_link(&self, idx: usize) -> String {
-        self.players.get(self.seat_of_link(idx)).cloned().unwrap_or_default()
     }
 }
 
@@ -239,7 +261,9 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         room,
         last_rx,
         local_primed,
-        done,
+        group,
+        mig,
+        peer_seat,
     } = ctx;
 
     let make_receiver = {
@@ -309,8 +333,8 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
 
         let clock = room.as_ref().map(|r| r.clock);
         let rx_tag = || clock.map(|c| (last_rx.clone(), c));
-        let peer_seat = room.as_ref().map_or(0, |r| r.seat_of_link(link_idx)) as u8;
-        let peer_name = room.as_ref().map(|r| r.name_of_link(link_idx)).unwrap_or_default();
+        let peer_seat = peer_seat as u8;
+        let peer_name = room.as_ref().and_then(|r| r.players.get(peer_seat as usize).cloned()).unwrap_or_default();
         let quiet = match room.as_ref() {
             Some(r) if r.is_host => STALL_QUIET_HOST,
             Some(_) => STALL_QUIET_GUEST,
@@ -321,9 +345,8 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             Some(r) if r.is_host => r
                 .links
                 .iter()
-                .enumerate()
-                .filter(|&(i, _)| i != link_idx)
-                .map(|(_, l)| l.clone())
+                .filter(|l| !Arc::ptr_eq(l, &link))
+                .cloned()
                 .collect(),
             _ => Vec::new(),
         };
@@ -490,6 +513,9 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                             }
                         }
                         RoomMsg::GiveUp { name, .. } => end.note_dropped(name),
+                        RoomMsg::Gone { seats } => {
+                            end.gone.fetch_or(seats, Ordering::AcqRel);
+                        }
                         _ => {}
                     }
                 }
@@ -512,6 +538,39 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 break;
             }
 
+            // A room's guest whose HOST is gone: the room goes on under a successor (see `migrate`). A host that is out
+            // of the match already has nothing to come back for: its leaving, its connection closing or its going
+            // quiet starts the migration at once. (A host that is still playing gets the reconnect window below.)
+            let host_link = mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() > 2);
+            if host_link
+                && matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled | Trip::Silent)
+                && !completed.load(Ordering::Acquire)
+                && !end.remote_ended.load(Ordering::Acquire)
+                && !end.aborted.load(Ordering::Acquire)
+                && super::is_out(end.seats_out.load(Ordering::Acquire), peer_seat)
+            {
+                log::info!("pvp: the host {peer_name:?} is gone after being out of the match: the room goes on without it");
+                let m = mig.clone().expect("a host link has its migration");
+                // (the migration holds the match from here; what this supervisor held is let go after)
+                m.pauses.enter();
+                m.group.add();
+                if let Some(s) = silent.take() {
+                    s.announce_stop.cancel();
+                    pauses.leave();
+                }
+                end.hold_remove(peer_seat);
+                for seat in notice_held.drain() {
+                    end.hold_remove(seat);
+                    pauses.leave();
+                }
+                drop(pump);
+                drop(watch);
+                link.send_goodbye().await;
+                link.retire_latency();
+                super::migrate::begin(m, peer_seat as usize);
+                group.finish();
+                return;
+            }
             // Reconnect on any mid-match link loss — a stalled input queue
             // *or* a bare channel close — as long as the transport can
             // rebuild and the match isn't ending (our completion, the
@@ -532,7 +591,9 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 wake.notify_one();
                 drop(watch);
                 link.retire_latency();
-                done.cancel();
+                // (the other guests are told: should the host go, they all know who is left)
+                tell_others(&others, RoomMsgOut::Gone(end.gone.load(Ordering::Acquire))).await;
+                group.finish();
                 return;
             }
             let reconnectable = matches!(trip, Trip::Stalled | Trip::Closed | Trip::Silent)
@@ -718,12 +779,13 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         link.retire_latency();
         pauses.release_all();
         wake.notify_one();
-        done.cancel();
+        group.finish();
     });
 }
 
 /// What a room's host tells the other guests.
 enum RoomMsgOut {
+    Gone(u8),
     Hold(u8, String, u32),
     Unhold(u8),
     GiveUp(u8, String),
@@ -734,6 +796,7 @@ async fn tell_others(others: &[Arc<tango_net::link::Link>], msg: RoomMsgOut) {
     use tango_net_protocol::control::{RoomHold, RoomMsg};
     for l in others {
         let m = match &msg {
+            RoomMsgOut::Gone(seats) => RoomMsg::Gone { seats: *seats },
             RoomMsgOut::Hold(seat, name, left_ms) => RoomMsg::Hold(RoomHold {
                 seat: *seat,
                 name: name.clone(),

@@ -14,12 +14,14 @@
 //! the driver's first tick, after the host can display the session's status.
 
 mod driver;
+mod migrate;
 mod recording;
 mod setup;
 mod silence;
 mod supervisor;
 
 pub use driver::{PvpBoot, PvpDriver};
+pub use migrate::successor_order;
 pub use recording::{Recording, ReplayStore};
 
 // The pure codec crate carries its own copy of the key mask so it
@@ -42,6 +44,12 @@ use web_time::Instant;
 /// clamp to this range. 0 presents the frontier itself — pure rollback, every
 /// misprediction visible immediately; [`DEFAULT_FRAME_DELAY`] stays above it,
 /// and the ping-based suggestion never lands below 1.
+/// Retransmit-heartbeat cadence for the in-match channel — one nominal 60 Hz frame. A wire cadence, not a sim rate —
+/// the engines' real rates differ from it by well under a percent, which loss recovery doesn't care about. Keeps the
+/// unacked redundancy window flowing while the local sim is throttled or stalled, so recovery isn't coupled to the
+/// frame rate (see [`tango_net::InMatchTx`]).
+pub(crate) const IN_MATCH_HEARTBEAT: std::time::Duration = std::time::Duration::from_nanos((1_000_000_000.0 / 60.0) as u64);
+
 pub const MIN_FRAME_DELAY: u32 = 0;
 pub const MAX_FRAME_DELAY: u32 = 10;
 /// Local frame delay before the user (or a ping-based suggestion) picks one.
@@ -119,6 +127,12 @@ struct EndState {
     /// A room's host: the seats whose player left after being out (a bit each). The match goes on without them: no pause, no
     /// save; their input is idle from then on.
     gone: Arc<std::sync::atomic::AtomicU8>,
+    /// A room whose host left and went on under a successor: the successor's gamertag and whether it is this player,
+    /// while the migration is under way (the game's box says so).
+    migrating: Arc<Mutex<Option<(String, bool)>>>,
+    /// A room: who hosts now (the seat), and how many times the host has changed.
+    host_seat: Arc<std::sync::atomic::AtomicU8>,
+    migrations: Arc<AtomicU32>,
     /// The local player pressed B on the game's reconnect box ("B: Disconnect"): the host closes the session as the
     /// Disconnect button does ([`PvpSession::leave_requested`]).
     leave: Arc<AtomicBool>,
@@ -126,7 +140,12 @@ struct EndState {
 
 /// A drop of the player in `seat` is no disconnect when the host sees it out of the match.
 pub(crate) fn is_benign_drop(is_host: bool, seats_out: u8, seat: u8) -> bool {
-    is_host && seat < 8 && seats_out & (1 << seat) != 0
+    is_host && is_out(seats_out, seat)
+}
+
+/// Whether the game says the player in `seat` is out of the match.
+pub(crate) fn is_out(seats_out: u8, seat: u8) -> bool {
+    seat < 8 && seats_out & (1 << seat) != 0
 }
 
 /// A player the match waits for.
@@ -218,9 +237,8 @@ pub struct PvpSession {
     /// session's keeps the transport alive for the match's lifetime, and its
     /// eventual drop closes the connection gracefully (DTLS close_notify → the
     /// peer's prompt EOF).
-    link: Arc<tango_net::link::Link>,
-    /// A room's host has a link to each guest: the others (kept alive with the session).
-    extra_links: Vec<Arc<tango_net::link::Link>>,
+    /// A room's host has a link to each guest: all of them, the first first (replaced when the host changes).
+    links: Arc<Mutex<Vec<Arc<tango_net::link::Link>>>>,
     /// How many players the match has.
     players: usize,
     /// The two halves of the ready gate, as the session's own readouts:
@@ -395,9 +413,38 @@ impl PvpSession {
     /// rebuilding it (direct or matchmaking) — the drive loop is paused and the
     /// PvP view shows a "Reconnecting…" overlay.
     pub fn is_reconnecting(&self) -> bool {
-        matches!(self.link.health(), tango_net::link::LinkHealth::Reconnecting { .. })
-            || self.extra_links.iter().any(|l| matches!(l.health(), tango_net::link::LinkHealth::Reconnecting { .. }))
+        self.links
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|l| matches!(l.health(), tango_net::link::LinkHealth::Reconnecting { .. }))
             || self.end.any_hold()
+            || self.end.migrating.lock().unwrap().is_some()
+    }
+
+    fn first_link(&self) -> Option<Arc<tango_net::link::Link>> {
+        self.links.lock().unwrap().first().cloned()
+    }
+
+    /// A room whose host left and went on under a successor: the successor's gamertag and whether it is this player,
+    /// while the migration is under way.
+    pub fn migrating(&self) -> Option<(String, bool)> {
+        self.end.migrating.lock().unwrap().clone()
+    }
+
+    /// The seat that hosts the room now (it changes when the host leaves and the room goes on), and whether this
+    /// player is it.
+    pub fn host_seat(&self) -> usize {
+        self.end.host_seat.load(Ordering::Acquire) as usize
+    }
+
+    pub fn is_host(&self) -> bool {
+        self.host_seat() == self.local_player_index as usize
+    }
+
+    /// How many times the host has changed in this match.
+    pub fn migrations(&self) -> u32 {
+        self.end.migrations.load(Ordering::Acquire)
     }
 
     /// The player the match is waiting for (a room), and the seconds left of their window to reconnect: the first
@@ -432,7 +479,8 @@ impl PvpSession {
             let left = h.deadline.saturating_duration_since(Instant::now()).as_secs_f32();
             return Some((left / 60.0).clamp(0.0, 1.0));
         }
-        match self.link.health() {
+        let Some(link) = self.first_link() else { return None };
+        match link.health() {
             tango_net::link::LinkHealth::Reconnecting { started, give_up_at } => {
                 let total = give_up_at
                     .saturating_duration_since(started)
@@ -470,7 +518,7 @@ impl PvpSession {
     /// retires the link's counter). The UI keys the instrument panel off this:
     /// `None` means "no live link".
     pub fn latency(&self) -> Option<std::time::Duration> {
-        self.link.latency()
+        self.first_link()?.latency()
     }
 
     /// Raw latest ping — the most recent single measurement, unsmoothed.
@@ -479,7 +527,7 @@ impl PvpSession {
     /// [`latency`](Self::latency) (both read the same counter), so it gates
     /// the instrument panel identically; only the reported value differs.
     pub fn latency_raw(&self) -> Option<std::time::Duration> {
-        self.link.latency_raw()
+        self.first_link()?.latency_raw()
     }
 
     /// Smoothed simulation ticks-per-second from the drive loop's

@@ -7,7 +7,11 @@
 //! peers' state hashes.
 //!
 //! `TANGOAW2_FAKE_HOLD=<name>:<seconds>` shows the box without a match (test aid): the seconds count down from the
-//! first picture.
+//! first picture. `TANGOAW2_FAKE_MIGRATION=<name>` shows the host migration's box (the new host's gamertag; a name
+//! of `You` is this player).
+//!
+//! A host migration (the host left and the room goes on under its successor) is the same box with other words:
+//! "Host left. <name> is hosting now... reconnecting".
 
 use std::sync::Mutex;
 use std::time::Instant;
@@ -24,7 +28,16 @@ const NELL: u8 = 0;
 
 /// Whether the box is up.
 pub fn shown() -> bool {
-    current().is_some()
+    current().is_some() || migration().is_some()
+}
+
+fn migration() -> Option<(String, bool)> {
+    if let Some(m) = tango_gamesupport::hold::migration() {
+        return Some(m);
+    }
+    let name = std::env::var("TANGOAW2_FAKE_MIGRATION").ok()?;
+    let you = name == "You";
+    Some((name, you))
 }
 
 fn current() -> Option<(String, u32)> {
@@ -47,12 +60,26 @@ fn lines(core: &Core, name: &str, secs: u32, width: i32) -> (Vec<String>, Vec<St
     )
 }
 
+/// The lines of the host migration's box: the host left, who hosts now (`you`: this player), and what happens next.
+fn migration_lines(core: &Core, name: &str, you: bool, width: i32) -> (Vec<String>, Vec<String>) {
+    let who = if you {
+        "You are".to_string()
+    } else {
+        format!("{} is", crate::online::fit(core, name, width - text_width(core, " is")))
+    };
+    (
+        vec!["Host left.".to_string(), format!("{who} hosting now"), "Reconnecting...".to_string()],
+        wrap(core, "The match goes on in a few seconds.", width),
+    )
+}
+
 /// The box over a 240 x 160 picture, if a hold is on.
 pub fn draw(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != W * H * 4 {
         return;
     }
-    let Some((name, secs)) = current() else {
+    let migrating = migration();
+    let Some((name, secs)) = migrating.clone().map(|(n, _)| (n, 0)).or_else(current) else {
         return;
     };
     let mut cv = Rgba(rgba);
@@ -81,7 +108,10 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
     }
     let tx = fx + fs + 10;
     let tw = x + w - 8 - tx;
-    let (head, note) = lines(core, &name, secs, tw);
+    let (head, note) = match migrating {
+        Some((name, you)) => migration_lines(core, &name, you, tw),
+        None => lines(core, &name, secs, tw),
+    };
     let mut ty = y + 8;
     for l in &head {
         cv.text(core, tx, ty, l, INK, SHADE);

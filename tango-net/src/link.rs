@@ -308,6 +308,15 @@ impl Link {
         })
     }
 
+    /// The matchmaking server and relay setting this link was made through (what a host migration dials with), when it
+    /// was made that way, and the match's RNG seed.
+    pub fn matchmaking(&self) -> Option<(String, Option<bool>, [u8; 16])> {
+        match self.recipe.lock().unwrap().as_ref()? {
+            ReconnectRecipe::Matchmaking { endpoint, use_relay, .. } => Some((endpoint.clone(), *use_relay, self.rng_seed)),
+            ReconnectRecipe::Direct(_) => None,
+        }
+    }
+
     /// Whether this link's transport can be transparently rebuilt on a drop.
     pub fn can_reconnect(&self) -> bool {
         self.recipe.lock().unwrap().is_some()
@@ -394,7 +403,7 @@ impl Link {
                 // supervisor and go on watching.
                 Ok(tango_net_protocol::control::Packet::Room(msg)) => {
                     use tango_net_protocol::control::RoomMsg;
-                    if matches!(msg, RoomMsg::Hold(_) | RoomMsg::Unhold { .. } | RoomMsg::GiveUp { .. }) {
+                    if matches!(msg, RoomMsg::Hold(_) | RoomMsg::Unhold { .. } | RoomMsg::GiveUp { .. } | RoomMsg::Gone { .. }) {
                         self.notices.lock().unwrap().push_back(msg);
                         self.notice_wake.notify_one();
                     }

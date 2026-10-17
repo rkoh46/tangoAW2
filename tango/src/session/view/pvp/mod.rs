@@ -255,7 +255,7 @@ fn reconnecting_overlay<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession) -
     }
     // A room names who the match waits for: its countdown is the game's own message box over the match's picture
     // (tangoAW2's `hold_box`, B to disconnect), not this modal. This one is for a plain link being rebuilt.
-    if pvp.waiting_for().is_some_and(|(name, _)| !name.is_empty()) {
+    if pvp.waiting_for().is_some_and(|(name, _)| !name.is_empty()) || pvp.migrating().is_some() {
         return None;
     }
     let title = text(t!(lang, "playback-reconnecting")).size(TEXT_BODY + 4.0);

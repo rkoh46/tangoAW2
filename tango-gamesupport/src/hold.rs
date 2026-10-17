@@ -16,3 +16,16 @@ pub fn set(hold: Option<(String, u32)>) {
 pub fn get() -> Option<(String, u32)> {
     HOLD.lock().unwrap().clone()
 }
+
+static MIGRATION: Mutex<Option<(String, bool)>> = Mutex::new(None);
+
+/// Sets (or clears) the host migration in progress: the new host's gamertag, and whether that is this player. The
+/// game draws "Host left. <name> is hosting now... reconnecting" as a message box (tangoAW2's `hold_box`).
+pub fn set_migration(m: Option<(String, bool)>) {
+    *MIGRATION.lock().unwrap() = m;
+}
+
+/// The host migration in progress, if any.
+pub fn migration() -> Option<(String, bool)> {
+    MIGRATION.lock().unwrap().clone()
+}

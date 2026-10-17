@@ -54,7 +54,7 @@ pub(super) struct DriveContext {
     /// What the links bring in, tagged with the link it came on (a room's host has one to each guest).
     pub(super) event_rx: std::sync::mpsc::Receiver<(usize, tango_net::data::Input)>,
     /// One sender to each link (two players: one; a room's guest: the host's; its host: one to each guest).
-    pub(super) senders: Vec<tango_net::PvpSender>,
+    pub(super) senders: Vec<Option<tango_net::PvpSender>>,
     /// A room of more than two players: this peer is its host (which joins the guests' inputs into one for each),
     /// or a guest (which hears the others as one).
     pub(super) room_host: bool,
@@ -86,6 +86,8 @@ pub(super) struct DriveContext {
     pub(super) host_seat: usize,
     /// A room: how to keep the match if a disconnect ends it.
     pub(super) suspend: Option<SuspendCtx>,
+    /// A room: what the host migration hands the drive thread and asks of it.
+    pub(super) mig: Arc<super::migrate::Mailbox>,
 }
 
 impl DriveContext {
@@ -133,7 +135,10 @@ impl DriveContext {
         self.announce_primed.notify_one();
 
         let agg = (self.room_host && pieces.players > 2).then(|| HostAgg::new(pieces.players, self.host_seat));
+        let players = pieces.players;
         Ok(PvpDriver {
+            players,
+            log: TickLog::default(),
             ctx: self,
             expected_fps,
             match_,
@@ -159,6 +164,64 @@ impl DriveContext {
     ) {
         let mut stats = self.stats.lock().unwrap();
         tango_match::analysis::fold_confirmed(&mut stats, self.local_player, samples, events);
+    }
+}
+
+/// The newest ticks' inputs, kept for a host migration: what this peer sent for each of its own ticks, and the rows of
+/// the old host's stream (the other seats' words) it received, by tick.
+#[derive(Default)]
+pub(super) struct TickLog {
+    local: std::collections::VecDeque<(u32, tango_match::HostInput, i16)>,
+    remote: std::collections::VecDeque<(u32, [u16; 4])>,
+    /// Ticks of the stream received (the next row's tick), and ticks played with local input.
+    pub(super) remote_count: u32,
+    pub(super) local_count: u32,
+}
+
+/// Ticks kept in the log: far more than the peers can be apart.
+const LOG_KEEP: usize = 600;
+
+impl TickLog {
+    fn push_local(&mut self, tick: u32, input: tango_match::HostInput, adv: i16) {
+        self.local.push_back((tick, input, adv));
+        self.local_count = tick + 1;
+        while self.local.len() > LOG_KEEP {
+            self.local.pop_front();
+        }
+    }
+
+    fn push_remote(&mut self, input: tango_match::HostInput) {
+        self.remote
+            .push_back((self.remote_count, [input.keys as u16, input.extra[0], input.extra[1], input.extra[2]]));
+        self.remote_count += 1;
+        while self.remote.len() > LOG_KEEP {
+            self.remote.pop_front();
+        }
+    }
+
+    fn local_at(&self, tick: u32) -> Option<tango_match::HostInput> {
+        let first = self.local.front()?.0;
+        self.local.get(tick.checked_sub(first)? as usize).filter(|e| e.0 == tick).map(|e| e.1)
+    }
+
+    fn remote_at(&self, tick: u32) -> Option<[u16; 4]> {
+        let first = self.remote.front()?.0;
+        self.remote.get(tick.checked_sub(first)? as usize).filter(|e| e.0 == tick).map(|e| e.1)
+    }
+
+    /// The last [`MIGRATE_TAIL`](tango_net_protocol::control::MIGRATE_TAIL) ticks before `remote_count` that both logs hold.
+    pub(super) fn tail(&self) -> Vec<tango_net_protocol::control::MigrateRow> {
+        let to = self.remote_count;
+        let from = to.saturating_sub(tango_net_protocol::control::MIGRATE_TAIL as u32);
+        let mut rows = Vec::new();
+        for t in from..to {
+            match (self.remote_at(t), self.local_at(t)) {
+                (Some(view), Some(own)) => rows.push(tango_net_protocol::control::MigrateRow { view, own: own.keys as u16 }),
+                // (a hole: only what follows it is contiguous)
+                _ => rows.clear(),
+            }
+        }
+        rows
     }
 }
 
@@ -289,6 +352,10 @@ fn replay_input_of(input: tango_match::HostInput) -> tango_replay::stream::Input
 /// browser's signaling exists.
 pub struct PvpDriver {
     ctx: DriveContext,
+    /// How many players share the match.
+    players: usize,
+    /// The newest ticks' inputs, for a host migration.
+    log: TickLog,
     expected_fps: f32,
     match_: tango_match::Match,
     throttler: tango_match::Throttler,
@@ -355,6 +422,22 @@ impl HostAgg {
             started: false,
             waited: 0,
         }
+    }
+
+    /// The host after a migration (this seat took the host over; `gone` are the seats whose players are not there, the
+    /// old host's among them): the guests' words begin at the migration's start tick, and the host's own words that
+    /// were not joined yet wait in `own`.
+    fn migrated(players: usize, host_seat: usize, gone: u8, own: Vec<(tango_match::HostInput, i16)>) -> Self {
+        let mut agg = HostAgg::new(players, host_seat);
+        for (k, &seat) in agg.guest_seats.clone().iter().enumerate() {
+            if gone & (1 << seat) != 0 {
+                agg.gone[k] = true;
+                agg.heard[k] = true;
+            }
+        }
+        agg.started = true;
+        agg.own = own.into();
+        agg
     }
 
     /// An input from guest `link`'s link; the rows it completes, as the host's one remote input each.
@@ -427,12 +510,13 @@ impl HostAgg {
     }
 
     /// Send every guest the tick it is owed: the host's input and the other guests'.
-    fn distribute(&mut self, senders: &mut [tango_net::PvpSender]) -> std::io::Result<()> {
+    fn distribute(&mut self, senders: &mut [Option<tango_net::PvpSender>]) -> std::io::Result<()> {
         while !self.rows.is_empty() && !self.own.is_empty() {
             let (words, _) = self.rows.pop_front().unwrap();
             let (own, adv) = self.own.pop_front().unwrap();
             let per_guest = self.guest_views(own.keys as u16, &words);
             for (g, sender) in senders.iter_mut().enumerate() {
+                let Some(sender) = sender.as_mut() else { continue };
                 if self.gone.get(g).copied().unwrap_or(false) {
                     continue;
                 }
@@ -456,7 +540,9 @@ impl PvpDriver {
     /// while the match is paused for a player it waits for, with a fresh picture ten times a second (the paused
     /// loop makes none) and B to leave. A pause with nobody named (a plain link being rebuilt) has the host's modal.
     fn hold_box(&mut self, paused: bool) {
-        let hold = if paused {
+        // A host migration in progress outranks a wait for a player (the old host's own wait has ended by then).
+        let migrating = if paused { self.ctx.end.migrating.lock().unwrap().clone() } else { None };
+        let hold = if paused && migrating.is_none() {
             let holds = self.ctx.end.holds.lock().unwrap();
             holds.iter().min_by_key(|h| h.deadline).map(|h| {
                 let left = h.deadline.saturating_duration_since(std::time::Instant::now());
@@ -465,12 +551,14 @@ impl PvpDriver {
         } else {
             None
         };
-        let Some(hold) = hold.filter(|(n, _)| !n.is_empty()) else {
+        let hold = hold.filter(|(n, _)| !n.is_empty());
+        if hold.is_none() && migrating.is_none() {
             if self.hold_up {
                 self.hold_up = false;
                 self.hold_shown = None;
                 self.hold_b = true;
                 tango_gamesupport::hold::set(None);
+                tango_gamesupport::hold::set_migration(None);
                 if let Some(buf) = self.match_.frame() {
                     let buf = self.guard.filter(buf);
                     self.ctx.screen.write(&buf);
@@ -478,7 +566,7 @@ impl PvpDriver {
                 }
             }
             return;
-        };
+        }
         // (B pressed anew since the box came up)
         let b = self.ctx.local_input.load().keys & tango_match::keys::B != 0;
         if b && !self.hold_b {
@@ -488,9 +576,14 @@ impl PvpDriver {
         }
         self.hold_b = b;
         if !self.hold_up {
-            log::info!("pvp: reconnect box up for {:?}", hold.0);
+            match (&hold, &migrating) {
+                (_, Some((name, _))) => log::info!("pvp: host migration box up (new host {name:?})"),
+                (Some(h), _) => log::info!("pvp: reconnect box up for {:?}", h.0),
+                _ => {}
+            }
         }
-        tango_gamesupport::hold::set(Some(hold));
+        tango_gamesupport::hold::set(hold);
+        tango_gamesupport::hold::set_migration(migrating);
         self.hold_up = true;
         if self.hold_shown.is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100)) {
             self.hold_shown = Some(std::time::Instant::now());
@@ -510,6 +603,7 @@ impl PvpDriver {
             self.hold_box(false);
             return false;
         }
+        self.serve_migration();
         if self.ctx.drive_paused.paused() {
             self.hold_box(true);
             // The reconnect supervisor releases the gate on every
@@ -551,15 +645,19 @@ impl PvpDriver {
         for (link, input) in arrived {
             self.ingest(link, input);
         }
-        if self.ctx.room_host {
-            // The seats the game says are out (the supervisors read them when a link drops), and the seats whose player has
-            // left since: their input is idle from here on.
+        if self.players > 2 {
+            // The seats the game says are out (the supervisors read them when a link drops; every peer of a room knows
+            // them: a guest decides by them whether the host's leaving is a migration)
             self.ctx.end.seats_out.store(self.match_.seats_out(), Ordering::Release);
+        }
+        if self.ctx.room_host {
+            // The seats whose player has left since: their input is idle from here on.
             let gone = self.ctx.end.gone.load(Ordering::Acquire);
             if gone != 0 {
                 if let Some(agg) = self.agg.as_mut() {
-                    for (joined, adv) in agg.set_gone(gone) {
-                        self.match_.add_remote_input(joined, adv);
+                    let rows = agg.set_gone(gone);
+                    for (joined, adv) in rows {
+                        self.add_remote(joined, adv);
                     }
                 }
             }
@@ -673,11 +771,14 @@ impl PvpDriver {
         // settles the engine, so every early return below is already consumed
         // and teardown has no tail path.
         let tango_match::Advance {
+            tick,
             outgoing,
             tick_advantage,
             confirmed_inputs,
-            ..
         } = advanced;
+        if self.players > 2 {
+            self.log.push_local(tick, outgoing, tick_advantage);
+        }
         self.confirmed_through += confirmed_inputs.len() as u32;
         let (samples, events) = match self.match_.telemetry() {
             Some(telemetry) => telemetry.lock().unwrap().take_through(self.confirmed_through),
@@ -708,7 +809,10 @@ impl PvpDriver {
                 agg.own.push_back((outgoing, tick_advantage));
                 agg.distribute(&mut self.ctx.senders)
             }
-            None => self.ctx.senders[0].send(&wire_input_of(outgoing, tick_advantage)),
+            None => match self.ctx.senders[0].as_mut() {
+                Some(sender) => sender.send(&wire_input_of(outgoing, tick_advantage)),
+                None => Ok(()),
+            },
         };
         if sent.is_err() {
             log::warn!("pvp: send pump terminated; ending match");
@@ -889,13 +993,82 @@ impl PvpDriver {
     fn ingest(&mut self, link: usize, input: tango_net::data::Input) {
         match self.agg.as_mut() {
             Some(agg) => {
-                for (joined, adv) in agg.ingest(link, input) {
-                    self.match_.add_remote_input(joined, adv);
+                let rows = agg.ingest(link, input);
+                for (joined, adv) in rows {
+                    self.add_remote(joined, adv);
                 }
             }
-            None => self
-                .match_
-                .add_remote_input(host_input_of_wire(&input), input.tick_advantage),
+            None => self.add_remote(host_input_of_wire(&input), input.tick_advantage),
+        }
+    }
+
+    /// One row of the (joined) remote stream into the engine, and into the log.
+    fn add_remote(&mut self, joined: tango_match::HostInput, adv: i16) {
+        self.log.push_remote(joined);
+        self.match_.add_remote_input(joined, adv);
+    }
+
+    /// The host migration's requests of the drive thread, served between ticks even while the match is paused: a
+    /// snapshot of how far this peer got in the old host's stream (after taking in what the old link had delivered),
+    /// and the handover to the new host's links.
+    fn serve_migration(&mut self) {
+        let mig = self.ctx.mig.clone();
+        if mig.want_snapshot.swap(false, Ordering::AcqRel) {
+            let arrived: Vec<(usize, tango_net::data::Input)> = self.ctx.event_rx.try_iter().collect();
+            for (link, input) in arrived {
+                self.ingest(link, input);
+            }
+            *mig.snapshot.lock().unwrap() = Some(super::migrate::Snapshot {
+                remote: self.log.remote_count,
+                local: self.log.local_count,
+                tail: self.log.tail(),
+            });
+            self.ctx.wake.notify_one();
+        }
+        let handover = mig.handover.lock().unwrap().take();
+        if let Some(h) = handover {
+            self.apply_handover(h);
+            self.ctx.wake.notify_one();
+        }
+    }
+
+    fn apply_handover(&mut self, h: super::migrate::Handover) {
+        // (whatever the old links still had queued is moot: the stream goes on from the migration's rows)
+        while self.ctx.event_rx.try_recv().is_ok() {}
+        self.ctx.in_matches = h.in_matches;
+        self.ctx.senders = h.senders;
+        self.ctx.peer_primed = vec![Arc::new(AtomicBool::new(true))];
+        self.ctx.host_seat = h.host_seat;
+        self.ctx.room_host = h.i_host;
+        self.ctx.end.gone.fetch_or(h.gone, Ordering::AcqRel);
+        let lacking = h.catchup.len();
+        for row in h.catchup {
+            let joined = tango_match::HostInput { keys: row[0] as u32, touch: None, extra: [row[1], row[2], row[3]] };
+            self.add_remote(joined, 0);
+        }
+        log::info!(
+            "pvp: host migration: {} ticks taken in, the stream resumes at tick {} (we have {}); host is seat {}{}",
+            lacking,
+            h.start,
+            self.log.remote_count,
+            h.host_seat,
+            if h.i_host { " (us)" } else { "" }
+        );
+        let words: Vec<(tango_match::HostInput, i16)> =
+            self.log.local.iter().filter(|(t, ..)| *t >= h.start).map(|(_, i, a)| (*i, *a)).collect();
+        if h.i_host {
+            self.agg = Some(HostAgg::migrated(self.players, h.host_seat, h.gone | self.ctx.end.gone.load(Ordering::Acquire), words));
+        } else {
+            self.agg = None;
+            // our own words from the start tick on go to the new host again (the old one never joined them)
+            if let Some(sender) = self.ctx.senders.first_mut().and_then(|s| s.as_mut()) {
+                for (input, adv) in words {
+                    if sender.send(&wire_input_of(input, adv)).is_err() {
+                        log::warn!("pvp: could not resend our inputs to the new host");
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -948,6 +1121,58 @@ mod tests {
         assert_eq!(agg.ingest(0, input(0x30)).len(), 1);
         assert_eq!(agg.rows.len(), 3);
         assert!(agg.rows.iter().all(|(w, _)| w[1] == 0));
+    }
+
+    /// The host left and seat 1 took the room over (3 players): the old host's seat is idle from the first row, the
+    /// remaining guest's words alone make the rows, the new host's own unsent words are paired with them, and the guest
+    /// hears the idle old host and the new host's word in seat order.
+    #[test]
+    fn the_new_host_joins_from_the_migration_tick_with_the_old_host_idle() {
+        let own: Vec<(tango_match::HostInput, i16)> =
+            (0..3).map(|k| (tango_match::HostInput::keys(0x100 + k), 0)).collect();
+        let mut agg = HostAgg::migrated(3, 1, 1 << 0, own);
+        // guests are seats 0 (gone) and 2: the link of seat 2 is guest 1
+        assert_eq!(agg.guest_seats, vec![0, 2]);
+        let r = agg.ingest(1, input(0x20));
+        assert_eq!(r.len(), 1, "a row needs only the seat that is there");
+        // the new host's engine hears [seat 0 = idle, seat 2]
+        assert_eq!(r[0].0.keys, 0);
+        assert_eq!(r[0].0.extra[0], 0x20);
+        assert_eq!(agg.ingest(1, input(0x30)).len(), 1);
+        assert_eq!(agg.rows.len(), 2);
+        // the guest in seat 2 is owed [seat 0 = idle, seat 1 = the host's word]
+        let views = agg.guest_views(0x100, &agg.rows[0].0.clone());
+        assert_eq!(views[1], vec![0, 0x100]);
+        // the gone seat's link is ignored
+        assert!(agg.ingest(0, input(0x99)).is_empty());
+        // the host's own words wait to go out with the rows
+        assert_eq!(agg.own.len(), 3);
+    }
+
+    /// The log keeps what a migration needs: the last rows of the stream with this seat's own words beside them, as many as
+    /// both logs hold, and the counts.
+    #[test]
+    fn the_tick_log_gives_the_tail_of_the_stream_for_a_migration() {
+        let mut log = TickLog::default();
+        for t in 0..300u32 {
+            log.push_local(t, tango_match::HostInput::keys(0x100 + (t % 16)), 0);
+        }
+        for t in 0..290u32 {
+            log.push_remote(tango_match::HostInput { keys: t, touch: None, extra: [t as u16 + 1, 0, 0] });
+        }
+        assert_eq!((log.remote_count, log.local_count), (290, 300));
+        let tail = log.tail();
+        assert_eq!(tail.len(), tango_net_protocol::control::MIGRATE_TAIL);
+        let last = tail.last().unwrap();
+        assert_eq!(last.view, [289, 290, 0, 0]);
+        assert_eq!(last.own, 0x100 + (289 % 16) as u16);
+        // a log that holds more than it keeps drops the oldest
+        for t in 300..1000u32 {
+            log.push_local(t, tango_match::HostInput::keys(1), 0);
+            log.push_remote(tango_match::HostInput::keys(2));
+        }
+        assert!(log.local.len() <= LOG_KEEP && log.remote.len() <= LOG_KEEP);
+        assert_eq!(log.tail().len(), tango_net_protocol::control::MIGRATE_TAIL);
     }
 
     #[test]

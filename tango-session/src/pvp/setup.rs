@@ -2,19 +2,13 @@
 
 use super::driver::{BootPieces, DriveContext};
 use super::recording::build_replay_writer;
-use super::supervisor::{spawn_primed_announcer, spawn_room_primed_announcer, spawn_supervisor, Pauses, RoomCtx, SupervisorContext};
+use super::supervisor::{spawn_primed_announcer, spawn_room_primed_announcer, spawn_supervisor, Pauses, RoomCtx, SupGroup, SupervisorContext};
 use super::{EndState, Metrics, PvpBoot, PvpSession, PvpSessionArgs, Seat, TpsCounter};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use tango_net_protocol::derive::pick_local_player_index;
 
-/// Retransmit-heartbeat cadence for the in-match channel — one nominal
-/// 60 Hz frame. A wire cadence, not a sim rate — the engines' real
-/// rates differ from it by well under a percent, which loss recovery
-/// doesn't care about. Keeps the unacked redundancy window flowing
-/// while the local sim is throttled or stalled, so recovery isn't
-/// coupled to the frame rate (see [`tango_net::InMatchTx`]).
-const IN_MATCH_HEARTBEAT: std::time::Duration = std::time::Duration::from_nanos((1_000_000_000.0 / 60.0) as u64);
+use super::IN_MATCH_HEARTBEAT;
 
 impl PvpSession {
     /// Build the live match from [`PvpSessionArgs`].
@@ -129,6 +123,9 @@ impl PvpSession {
         let in_matches: Vec<tango_net::InMatchTx> = links.iter().map(|l| l.in_match().clone()).collect();
 
         let end = EndState::default();
+        if let Some(m) = room_meta.as_ref() {
+            end.host_seat.store(m.2 as u8, Ordering::Release);
+        }
         let local_input = crate::InputCell::new();
         let completed = Arc::new(AtomicBool::new(false));
         // All screens until the host says which it is arranging to show.
@@ -167,7 +164,8 @@ impl PvpSession {
 
         // The sender pump: the drive thread pushes one Input per advance;
         // the pump ships each as a rennet frame over the unreliable channel.
-        let senders: Vec<tango_net::PvpSender> = in_matches.iter().map(|im| tango_net::PvpSender::new(im.clone())).collect();
+        let senders: Vec<Option<tango_net::PvpSender>> =
+            in_matches.iter().map(|im| Some(tango_net::PvpSender::new(im.clone()))).collect();
 
         // Pair-order arrays: core 0 always runs player 0's game, on both
         // peers, so priming and simulation are bit-identical across the pair.
@@ -207,7 +205,9 @@ impl PvpSession {
             disable_bgm,
             resume_state,
         };
+        let mailbox = Arc::new(super::migrate::Mailbox::default());
         let drive = DriveContext {
+            mig: mailbox.clone(),
             local_input: local_input.clone(),
             frame_delay: frame_delay.clone(),
             metrics: metrics.clone(),
@@ -297,7 +297,7 @@ impl PvpSession {
         // Receive pump + link supervisor: reads peer frames into the event
         // queue, watches for stalls, and runs the transparent reconnect.
         let supervisor_done = tokio_util::sync::CancellationToken::new();
-        let mut dones = Vec::new();
+        let group = Arc::new(SupGroup::new(supervisor_done.clone()));
         let pauses = Arc::new(Pauses::new(drive_paused.clone()));
         let room_ctx = room_meta.as_ref().map(|m| {
             Arc::new(RoomCtx {
@@ -308,13 +308,41 @@ impl PvpSession {
                 clock: web_time::Instant::now(),
             })
         });
+        let links_shared = Arc::new(Mutex::new(links.clone()));
+        // A room of more than two players whose links come from the matchmaking server can go on without its host.
+        let mig = room_meta
+            .as_ref()
+            .filter(|m| m.0.len() > 2)
+            .zip(link.matchmaking())
+            .map(|(m, (endpoint, use_relay, seed))| {
+                Arc::new(super::migrate::MigHandle {
+                    end: end.clone(),
+                    pauses: pauses.clone(),
+                    wake: wake.clone(),
+                    cancel: cancellation_token.clone(),
+                    completed: completed.clone(),
+                    metrics: metrics.clone(),
+                    event_tx: event_tx.clone(),
+                    local_primed: local_primed.clone(),
+                    mailbox: mailbox.clone(),
+                    links: links_shared.clone(),
+                    group: group.clone(),
+                    players: m.0.clone(),
+                    my_seat: m.1,
+                    seed,
+                    endpoint,
+                    use_relay,
+                    heartbeat: IN_MATCH_HEARTBEAT,
+                    links_pending: Mutex::new(None),
+                })
+            });
         for (link_idx, (link, in_match)) in links.iter().zip(in_matches.iter()).enumerate() {
-            let done = tokio_util::sync::CancellationToken::new();
-            dones.push(done.clone());
+            group.add();
             spawn_supervisor(SupervisorContext {
                 link: link.clone(),
                 in_match: in_match.clone(),
                 link_idx,
+                peer_seat: room_ctx.as_ref().map_or(0, |r| r.seat_of_link(link_idx)),
                 event_tx: event_tx.clone(),
                 end: end.clone(),
                 completed: completed.clone(),
@@ -325,20 +353,11 @@ impl PvpSession {
                 room: room_ctx.clone(),
                 last_rx: Arc::new(std::sync::atomic::AtomicU64::new(0)),
                 local_primed: local_primed.clone(),
-                done,
+                group: group.clone(),
+                mig: mig.clone(),
             });
         }
         drop(event_tx);
-        {
-            // (the session is done with its links when every supervisor is)
-            let all = supervisor_done.clone();
-            tango_platform::spawn(async move {
-                for d in dones {
-                    d.cancelled().await;
-                }
-                all.cancel();
-            });
-        }
 
         let session = Self {
             local_game,
@@ -350,8 +369,7 @@ impl PvpSession {
             tps_counter,
             cancellation_token,
             supervisor_done,
-            link,
-            extra_links: links[1..].to_vec(),
+            links: links_shared,
             players,
             local_primed,
             peer_primed,

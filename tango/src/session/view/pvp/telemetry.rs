@@ -586,12 +586,25 @@ fn fmt_ping(ping_ms: u128) -> String {
 /// halves everywhere except games that color players by seat; those keep the
 /// game-native P1/P2 color assignment while You/Opponent follows the local seat.
 fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget: f32, compact: bool) -> Element<'a, Message> {
-    legend_view(lang, (pvp.local_player_index() == 0, pvp.local_game().family.players_colored_by_seat), budget, compact)
+    legend_view(
+        lang,
+        (pvp.local_player_index() == 0, pvp.local_game().family.players_colored_by_seat),
+        budget,
+        compact,
+        Some(pvp.host_seat()),
+    )
 }
 
 /// The legend; `two` is the two-player view's (local seat is P1, seats colour the armies), all a pvp session adds.
-fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32, compact: bool) -> Element<'a, Message> {
-    let side = |accent: Color, seat: &'static str, name: String| -> Element<'a, Message> {
+fn legend_view<'a>(
+    lang: &'a LanguageIdentifier,
+    two: (bool, bool),
+    budget: f32,
+    compact: bool,
+    host: Option<usize>,
+) -> Element<'a, Message> {
+    // (a room's host is marked "host" after its name: it changes when the host leaves and a guest takes the room over)
+    let side = |accent: Color, seat: &'static str, name: String, host: bool| -> Element<'a, Message> {
         let dot = container(
             iced::widget::Space::new()
                 .width(Length::Fixed(8.0))
@@ -607,14 +620,18 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
             },
             ..Default::default()
         });
-        row![
+        let r = row![
             dot,
             text(seat).size(TEXT_CAPTION).font(iced::Font::MONOSPACE),
             text(name).size(TEXT_CAPTION).style(widgets::muted_text_style),
         ]
         .spacing(4)
-        .align_y(Alignment::Center)
-        .into()
+        .align_y(Alignment::Center);
+        if host {
+            r.push(text("host").size(TEXT_CAPTION).font(iced::Font::MONOSPACE)).into()
+        } else {
+            r.into()
+        }
     };
 
     use widgets::{FIELD_BLUE, FIELD_RED};
@@ -654,7 +671,7 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
         let picks = tango_library::online::room_picks();
         if picks.len() == n && (0..n).any(|a| (0..n).any(|b| a != b && picks[a].0 == picks[b].0)) {
             let teams = (0..5u8).filter(|&t| picks.iter().any(|p| p.0 == t)).count() as f32;
-            let (shown, cut) = legend_names_in(&names, me, &you, &full, budget - 22.0 * teams, 0.0);
+            let (shown, cut) = legend_names_in(&names, me, &you, &full, budget - 22.0 * teams - if host.is_some() { 32.0 } else { 0.0 }, 0.0);
             let mut r = row![].spacing(12).align_y(Alignment::Center);
             // (the letters count the teams in use: A, A, C, C reads A, A, B, B)
             let mut used: Vec<u8> = picks.iter().map(|p| p.0).collect();
@@ -671,7 +688,7 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
                 for (i, &k) in members.iter().enumerate() {
                     let accent = colors[(picks[k].1 as usize).clamp(1, 5) - 1];
                     let name = if i + 1 < members.len() { format!("{},", shown[k]) } else { shown[k].clone() };
-                    g = g.push(side(accent, "", name));
+                    g = g.push(side(accent, "", name, host == Some(k)));
                 }
                 r = r.push(g);
             }
@@ -683,10 +700,11 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
                 .gap(5)
                 .into();
         }
+        let budget = budget - if host.is_some() { 32.0 } else { 0.0 };
         let (shown, cut) = legend_names(&names, me, &you, &full, budget);
         let mut r = row![].spacing(12).align_y(Alignment::Center);
         for k in 0..n {
-            r = r.push(side(colors[k], seats[k], shown[k].clone()));
+            r = r.push(side(colors[k], seats[k], shown[k].clone(), host == Some(k)));
         }
         if !cut {
             return r.into();
@@ -700,12 +718,12 @@ fn legend_view<'a>(lang: &'a LanguageIdentifier, two: (bool, bool), budget: f32,
     let (you, opponent) = (t!(lang, "play-you"), t!(lang, "play-opponent"));
     if by_seat {
         let (p1, p2) = if local_is_p1 { (you, opponent) } else { (opponent, you) };
-        row![side(FIELD_RED, "P1", p1), side(FIELD_BLUE, "P2", p2)]
+        row![side(FIELD_RED, "P1", p1, false), side(FIELD_BLUE, "P2", p2, false)]
     } else {
         let (local_seat, remote_seat) = if local_is_p1 { ("P1", "P2") } else { ("P2", "P1") };
         row![
-            side(FIELD_RED, local_seat, you),
-            side(FIELD_BLUE, remote_seat, opponent),
+            side(FIELD_RED, local_seat, you, false),
+            side(FIELD_BLUE, remote_seat, opponent, false),
         ]
     }
     .spacing(12)
@@ -1025,7 +1043,7 @@ mod render_tests {
         let bar: Element<'_, Message> = iced::widget::responsive(move |size| {
             status_row(
                 size.width,
-                |budget, compact| legend_view(lang, (true, true), budget, compact),
+                |budget, compact| legend_view(lang, (true, true), budget, compact, None),
                 |compact| telemetry_content(lang, history, compact),
                 frame_delay_chip_of(lang, 2, false),
             )

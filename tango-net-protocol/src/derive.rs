@@ -80,6 +80,22 @@ pub fn derive_reconnect_session_id(rng_seed: &[u8; 16], fp_a: &[u8], fp_b: &[u8]
     code
 }
 
+/// The matchmaking session the guests of a room dial to find the new host after the old one left. Only the
+/// players of the match know the seed, so nobody else can camp the rendezvous; `rank` is the candidate's place
+/// in the succession order, so that a second candidate has a rendezvous of its own if the first never came.
+pub fn derive_migration_session_id(rng_seed: &[u8; 16], rank: u8) -> String {
+    use sha3::digest::{ExtendableOutput, Update, XofReader};
+    let mut h = sha3::Shake128::default();
+    h.update(b"tangoaw2:migrate:");
+    h.update(rng_seed);
+    h.update(&[rank]);
+    let mut out = [0u8; 16];
+    h.finalize_xof().read(&mut out);
+    let mut code: String = "_".into();
+    code.extend(out.iter().map(|b| format!("{b:02x}")));
+    code
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -100,6 +116,16 @@ mod tests {
         let a = pick_local_player_index(&mut rng_a, true);
         let b = pick_local_player_index(&mut rng_b, false);
         assert_eq!(a + b, 1);
+    }
+
+    #[test]
+    fn migration_ids_differ_by_rank_and_seed() {
+        let a = [1u8; 16];
+        let b = [2u8; 16];
+        assert_ne!(derive_migration_session_id(&a, 0), derive_migration_session_id(&a, 1));
+        assert_ne!(derive_migration_session_id(&a, 0), derive_migration_session_id(&b, 0));
+        assert_eq!(derive_migration_session_id(&a, 1), derive_migration_session_id(&a, 1));
+        assert_ne!(derive_migration_session_id(&a, 0), derive_reconnect_session_id(&a, &[], &[]));
     }
 
     #[test]

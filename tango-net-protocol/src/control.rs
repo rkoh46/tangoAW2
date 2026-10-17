@@ -112,6 +112,49 @@ pub enum RoomMsg {
     /// Host to every other guest: the player in `seat` did not come back in time; the match is over (it is saved
     /// for resuming by whoever can) and the host closes its links next.
     GiveUp { seat: u8, name: String },
+    /// Host to every guest: the players in these seats (a bit each) left after being out of the match; their input
+    /// is idle from now on. Every peer knows it, so that all of them agree on who is left if the host goes.
+    Gone { seats: u8 },
+    /// HOST MIGRATION, guest to the successor host, first words on a link made after the host left.
+    Migrate(RoomMigrate),
+    /// HOST MIGRATION, successor host to a guest: you are in; the ticks you lack, and where the data stream resumes.
+    MigrateGo(RoomMigrateGo),
+}
+
+/// How many of its newest ticks a guest tells the successor host in [`RoomMigrate::tail`].
+pub const MIGRATE_TAIL: usize = 120;
+
+/// A guest's side of a host migration. The match is one shared console, so what the successor needs is how far
+/// each peer got in the host's stream of joined inputs and the ticks that stream held.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct RoomMigrate {
+    pub seat: u8,
+    /// Which candidate for the new host this link is made for (0 is the first choice, see `tango_session`).
+    pub rank: u8,
+    /// Ticks of the old host's stream this peer has received, and ticks it has played with local input (sent).
+    pub remote: u32,
+    pub local: u32,
+    /// Seats this peer knows left the match after being out.
+    pub gone: u8,
+    /// The last ticks before `remote`, oldest first: the words of the other seats (the old stream's row, in seat
+    /// order, four at most) and this seat's own.
+    pub tail: Vec<MigrateRow>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MigrateRow {
+    pub view: [u16; 4],
+    pub own: u16,
+}
+
+/// The successor's answer: the ticks of the old host's stream this guest lacks (from its `remote`), and the tick at
+/// which the data stream of the new host starts (both sides send from there).
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct RoomMigrateGo {
+    pub start: u32,
+    pub host_seat: u8,
+    pub gone: u8,
+    pub catchup: Vec<[u16; 4]>,
 }
 
 /// A player the match is waiting for.
