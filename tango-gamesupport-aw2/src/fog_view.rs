@@ -121,7 +121,7 @@ fn window_sees(core: &Core, cx: i32, cy: i32, w: i32, h: i32) -> bool {
 
 /// Pixels a waiting window's camera slides per view (the game's own scroll is four a tick, eight over a long way; a view is
 /// every second tick: eight, or sixteen when the way is more than sixteen pixels).
-const CAMERA_STEP: i32 = 8;
+const CAMERA_STEP: i32 = 4;
 
 /// Where `army`'s window starts looking: its HQ.
 fn anchor(core: &Core, army: u8) -> (i32, i32) {
@@ -359,7 +359,8 @@ pub fn phase(core: &Core) -> Phase {
         }
     }
     if running.is_empty() && crate::pvp::turn_ended(core) {
-        return Phase::HandOff;
+        // (the hand-off screen is a fade and a banner, not the plain map: the last frame of the mover's menu before it is held)
+        return if steady_regs(core) && core.raw_read_8(MAP_MENU_STATE, -1) == 5 { Phase::Moving } else { Phase::HandOff };
     }
     // A CO Power just chosen from the map menu: the game's own scene (the CO's lines over the map, the full-screen
     // cut-in). Without fog it is shown as it is; with fog the waiting window holds its last picture (the lines come over
@@ -908,18 +909,30 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         ty = (ay - 4).clamp(0, (h - 10).max(0));
     }
     // (the slide: eight pixels a view, sixteen over a long way)
-    let step = |from: i32, to: i32| {
-        let by = if (to - from).abs() > 2 * CAMERA_STEP { 2 * CAMERA_STEP } else { CAMERA_STEP };
-        if (to - from).abs() <= by { to } else { from + by * (to - from).signum() }
+    // The game's own scroll after a unit: a cell in four steps of four pixels, then a rest of about six ticks before the next cell
+    // (measured on the console's camera): the same in fog and without.
+    let mut rest = (mem[3] >> 24) & 0xF;
+    let on_cell = px % 16 == 0 && py % 16 == 0;
+    let moving_now = (px, py) != (tx * 16, ty * 16);
+    let step = |from: i32, to: i32| -> i32 {
+        if from == to { from } else { from + (to - from).signum() * CAMERA_STEP.min((to - from).abs()) }
     };
-    let (nx, ny) = (step(px, tx * 16), step(py, ty * 16));
+    let (nx, ny) = if on_cell && rest > 0 && moving_now {
+        rest -= 1;
+        (px, py)
+    } else {
+        (step(px, tx * 16), step(py, ty * 16))
+    };
+    if moving_now && nx % 16 == 0 && ny % 16 == 0 && (nx, ny) != (px, py) {
+        rest = 2;
+    }
     if std::env::var_os("AW2_CAM_LOG").is_some() {
         eprintln!("cam seat {seat} phase {:?} cam ({px},{py}) -> ({nx},{ny}) target ({tx},{ty}) mover ({x},{y}) follow {follow} reason {reason}", phase(scratch.core()));
     }
     scratch.core_mut().raw_write_8(CALL + 2, -1, 1);
     // (a camera that has still to get to the unit: the game is told the unit is in the middle of the window, so it does
     // not scroll after it, and that unit is not drawn until the camera is there: the walk is seen from there on)
-    let sliding = walk_start && follow && (px, py) != (tx * 16, ty * 16);
+    let sliding = walk_start && follow && (nx, ny) != (tx * 16, ty * 16);
     scratch.core_mut().raw_write_8(FAKE, -1, sliding as u8);
     scratch.core_mut().raw_write_16(FAKE + 2, -1, ((nx + 112) / 16) as u16);
     scratch.core_mut().raw_write_16(FAKE + 4, -1, ((ny + 72) / 16) as u16);
@@ -987,7 +1000,7 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     }
     // (the camera is kept whatever picture comes of this view: a view that makes none must not leave the window's camera
     // where it was, or the next one starts from there and the picture goes back and forth)
-    *scratch.memory() = [1, px, py, side | (tx << 8) | (ty << 16)];
+    *scratch.memory() = [1, px, py, side | (tx << 8) | (ty << 16) | (rest << 24)];
     if walk_start && anim && !sliding && WALK_TRACK.lock().unwrap().1 {
         return Err("the walk has just stopped");
     }

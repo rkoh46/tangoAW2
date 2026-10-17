@@ -1,0 +1,115 @@
+# 4 seats, Fog on, a full round (each mover opens the map menu and ends its turn with End, the next seat dismisses the hand-off). Run: AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> this-file; exit 1 when a waiting seat shows the mover's cursor (Fog off) or, with fog, any picture of the console that is not the dark hand-off screen.
+n 4
+until maparmies=4 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
+press 3 A
+wait 20
+until teams 100
+wait 90
+poke 0x0203CB15 00
+poke 0x0203CB25 00
+poke 0x0203CB35 01
+poke 0x0203CB45 01
+wait 20
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 A
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+# 4 seats 2v2 (armies 1+2 team A, 3+4 team B), Fog on: army 1 takes army 3's HQ (army 4 plays on), army 2 takes army 4's HQ: team B is out, A wins. AW2_SAMPLE=2 AW2_DUMP=<dir>; look at elim*/end shots
+wait 400
+aid unit 1 inf 0 0
+aid capture 0 0 15
+wait 10
+goto 0 0 0
+wait 20
+press 0 A
+wait 30
+press 0 A
+wait 60
+press 0 A
+wait 400
+shotall elim3
+wait 300
+goto 0 7 5
+wait 20
+press 0 A
+wait 40
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+wait 10
+press 0 A
+until army=2 300
+wait 150
+goto 1 7 5
+wait 20
+press 1 A
+wait 40
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+wait 10
+press 1 A
+until army=4 300
+wait 150
+goto 3 7 5
+wait 20
+press 3 A
+wait 40
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+press 3 DOWN
+wait 10
+press 3 A
+until army=1 300
+wait 150
+goto 0 7 5
+wait 20
+press 0 A
+wait 40
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+wait 10
+press 0 A
+until army=2 300
+wait 100
+aid unit 2 inf 14 0
+aid capture 14 0 15
+wait 10
+goto 1 14 0
+wait 20
+press 1 A
+wait 30
+press 1 A
+wait 60
+press 1 A
+wait 400
+wait 600
+shotall end
