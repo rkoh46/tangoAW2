@@ -142,6 +142,27 @@ fn main() {
             core.raw_write_16(p + 0x36, -1, cur);
         });
     }
+    // --- connection status and page ---
+    let conn_cases: [(&str, u8, [&str; 5]); 3] = [
+        ("ok", 1, ["g|Matchmaking\tOK (Tango)", "g|Lobby browser\t3 of 3 OK", "g|Direct connect (STUN)\tOK", "g|Relay fallback (TURN)\tOK", "g|Last check\t2 min ago"]),
+        ("limited", 2, ["y|Matchmaking\tTrying next...", "y|Lobby browser\t1 of 3 OK", "g|Direct connect (STUN)\tOK", "r|Relay fallback (TURN)\tUnavailable", "g|Last check\tjust now"]),
+        ("offline", 3, ["r|Matchmaking\tUnreachable", "r|Lobby browser\t0 of 3 OK", "r|Direct connect (STUN)\tUnreachable", "r|Relay fallback (TURN)\tUnavailable", "g|Last check\t12 min ago"]),
+    ];
+    for (name, st, lines) in &conn_cases {
+        let l: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
+        for (nm, tg) in [("w10", W10), ("nell", "Nell")] {
+            c.page(&format!("conn_hub_{name}_{nm}"), |core| {
+                level(core, 0);
+                tag(core, tg, &[]);
+                tango_gamesupport_aw2::online_conn::write(&mut w(core), *st, &l);
+            });
+        }
+        c.page(&format!("conn_page_{name}"), |core| {
+            level(core, 11);
+            tag(core, "Nell", &[]);
+            tango_gamesupport_aw2::online_conn::write(&mut w(core), *st, &l);
+        });
+    }
     // --- LOBBY menu: the three helps, the notes ---
     for cur in 0..3u16 {
         c.page(&format!("lobby_help{cur}"), |core| {

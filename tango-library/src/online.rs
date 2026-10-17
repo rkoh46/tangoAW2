@@ -173,6 +173,13 @@ pub fn sync(write: &mut dyn FnMut(u32, &[u8]), gamertag: &str, lines: &[String])
     tango_gamesupport_aw2::online_stats::sync(write, gamertag, lines)
 }
 
+/// The ONLINE screen's status and its Connection page (see `tango_gamesupport_aw2::online_conn`): the overall state
+/// (0 not checked, 1 Online, 2 Limited, 3 Offline) and the lines "T|label<TAB>value" (T: g, y or r).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn write_connection(write: &mut dyn FnMut(u32, &[u8]), state: u8, lines: &[String]) {
+    tango_gamesupport_aw2::online_conn::write(write, state, lines)
+}
+
 /// A gamertag as it is kept (printable ASCII, at most ten characters).
 #[cfg(feature = "gamesupport-aw2")]
 pub fn clean_gamertag(name: &str) -> String {

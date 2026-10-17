@@ -47,6 +47,11 @@ pub struct Flow {
     browse_logged: Vec<String>,
     /// Test aid (`TANGOAW2_ONLINE_LOG=1`): when the state was last logged.
     last_log: Option<std::time::Instant>,
+    /// The Connection status: when the menu's polite refresh last ran, what was last written, the level before.
+    conn_refreshed: Option<std::time::Instant>,
+    conn_written: Option<(u8, Vec<String>)>,
+    conn_checked_at: Option<std::time::Instant>,
+    conn_level: u8,
     /// The online record (loaded when first needed), and a count of its changes (the console's copy of its page).
     stats: Option<super::online_stats::Stats>,
     stats_rev: u32,
@@ -174,6 +179,7 @@ impl App {
         }
         let level = mailbox::level(&mut read);
         self.online_refresh_saved(level);
+        self.online_connection(level);
         let solo = self.session.active_as::<session::singleplayer::SinglePlayerSession>().expect("checked above");
         let mut read = |a: u32, b: &mut [u8]| {
             solo.peek(a, b);
@@ -356,6 +362,76 @@ impl App {
             solo.poke(a, b);
         };
         mailbox::write_browse(&mut write, &rows, net, &Self::lobby_version());
+    }
+
+    /// The ONLINE screen's status and Connection page: kept up to date from the health table of the relay services.
+    /// While the ONLINE menu (or the page) is open there is one polite refresh every 5 minutes at most (a binding
+    /// request to each stale STUN server, a signalling handshake, a short look at the lobby relays); never during a
+    /// match (this runs only on the menu console).
+    fn online_connection(&mut self, level: u8) {
+        static STATE_PATH: std::sync::Once = std::sync::Once::new();
+        STATE_PATH.call_once(|| {
+            if let Some(d) = crate::config::config_dir() {
+                tango_net::endpoints::set_state_path(d.join("relay_health.txt"));
+            }
+        });
+        let before = std::mem::replace(&mut self.online.conn_level, level);
+        if !matches!(level, 0 | 1 | 11) {
+            return;
+        }
+        let stale = self.online.conn_refreshed.is_none_or(|t| t.elapsed().as_secs() >= 300);
+        if stale || (level == 11 && before != 11 && self.online.conn_refreshed.is_none_or(|t| t.elapsed().as_secs() >= 30)) {
+            self.online.conn_refreshed = Some(std::time::Instant::now());
+            let endpoint = self.config.matchmaking_endpoint.clone();
+            tokio::spawn(async move { tango_net::endpoints::refresh(&endpoint).await });
+            // (a short look at the lobby relays teaches the table which of them answer; it ends by itself)
+            if self.online.browse.is_none() {
+                let relays = Self::lobby_relays();
+                let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
+                self.online.browse = Some((
+                    netplay::browse::Browse::start(
+                        &relays,
+                        netplay::browse::Compat { version: Self::lobby_version(), pack: Self::lobby_pack() },
+                    ),
+                    std::time::Instant::now(),
+                ));
+                self.online.browse_left = Some(std::time::Instant::now());
+            }
+        }
+        if self.online.conn_checked_at.is_some_and(|t| t.elapsed().as_millis() < 1500) {
+            return;
+        }
+        self.online.conn_checked_at = Some(std::time::Instant::now());
+        let live = self.online.browse.as_ref().map(|(b, _)| {
+            let s = b.stats();
+            (s.answered, s.relays)
+        });
+        let summary = tango_net::endpoints::summary_now(&self.config.matchmaking_endpoint, live);
+        use tango_net::endpoints::{Overall, Tone};
+        let state = match summary.overall {
+            Overall::Checking => 0,
+            Overall::Online => 1,
+            Overall::Limited => 2,
+            Overall::Offline => 3,
+        };
+        let lines: Vec<String> = summary
+            .lines
+            .iter()
+            .map(|(l, v, t)| format!("{}|{l}\t{v}", match t { Tone::Good => 'g', Tone::Middling => 'y', Tone::Bad => 'r' }))
+            .collect();
+        if self.online.conn_written.as_ref() == Some(&(state, lines.clone())) {
+            return;
+        }
+        if let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() {
+            let mut write = |a: u32, b: &[u8]| {
+                solo.poke(a, b);
+            };
+            mailbox::write_connection(&mut write, state, &lines);
+            if std::env::var("TANGOAW2_ONLINE_LOG").is_ok_and(|v| v == "1") {
+                log::info!("online: connection {:?}: {}", summary.overall, lines.join(" / "));
+            }
+            self.online.conn_written = Some((state, lines));
+        }
     }
 
     /// The RESUME page's list, written into the console when the page (or the LOBBY menu in front of it) is up.

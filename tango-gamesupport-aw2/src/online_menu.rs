@@ -172,7 +172,7 @@ fn write_if_changed(core: &mut Core, at: u32, b: &[u8]) {
 
 /// Which of the two menus (0 ONLINE, 1 LOBBY) a lobby level is drawn over: STATS' page is over ONLINE's.
 fn menu_level(level: usize) -> usize {
-    if matches!(level, 0 | 6 | 10) {
+    if matches!(level, 0 | 6 | 10 | 11) {
         0
     } else {
         1

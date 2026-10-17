@@ -78,6 +78,8 @@ pub const TAG_LEVEL: u8 = 9;
 /// The request that tells the app the gamertag changed.
 pub const REQUEST_GAMERTAG: u8 = 10;
 pub const STATS_LEVEL: u8 = 10;
+/// The Connection page ([`crate::online_conn`]): R on the ONLINE screen.
+pub const CONN_LEVEL: u8 = 11;
 /// RESUME's page: the cursor, and which saved match a request is about (the game's).
 const RESUME_CUR: u32 = STATE + 0x6A;
 const RESUME_ARG: u32 = STATE + 0x6B;
@@ -950,6 +952,10 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
     crate::online_menu::draw(core, level as usize);
     match level {
         0 => {
+            if pressed & KEY_R != 0 {
+                set_level(core, CONN_LEVEL);
+                return keys & !ALL_KEYS;
+            }
             if pressed & (KEY_A | KEY_START) != 0 {
                 if cursor == 0 {
                     // UNRANKED: look for an opponent.
@@ -1013,6 +1019,12 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
         }
         3 | 5 | TAG_LEVEL => {
             code_entry(core, pressed);
+            keys & !ALL_KEYS
+        }
+        CONN_LEVEL => {
+            if pressed & KEY_B != 0 {
+                set_level(core, 0);
+            }
             keys & !ALL_KEYS
         }
         STATS_LEVEL => {
@@ -2264,6 +2276,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     let level = level(core);
     if level <= 1 {
         crate::online_stats::draw_tag(&mut cv, core);
+        crate::online_conn::draw_corner(&mut cv, core);
     }
     match level {
         0 => {
@@ -2492,6 +2505,11 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             let (x, y, w, h) = PANEL;
             cv.window(x, y, w, h);
             crate::online_stats::draw_stats(&mut cv, core, PANEL);
+        }
+        CONN_LEVEL => {
+            let (x, y, w, h) = PANEL;
+            cv.window(x, y, w, h);
+            crate::online_conn::draw_page(&mut cv, core, PANEL);
         }
         _ => {}
     }

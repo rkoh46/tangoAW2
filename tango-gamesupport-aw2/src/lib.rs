@@ -114,6 +114,7 @@ pub mod online;
 pub mod hold_box;
 pub mod online_art;
 pub mod online_browse;
+pub mod online_conn;
 pub mod online_maps;
 pub mod online_menu;
 pub mod online_stats;

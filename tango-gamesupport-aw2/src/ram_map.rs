@@ -83,6 +83,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("online: the in-game lobby, its mailbox, an online match's walk (crate::online::STATE)", (crate::online::STATE, crate::online::STATE_LEN)),
     ("online: the lobby browser's rows (crate::online_browse::STATE)", (crate::online_browse::STATE, crate::online_browse::STATE_LEN)),
     ("online: the gamertag, the record's lines and a room battle's notes (crate::online_stats)", (crate::online_stats::BASE, crate::online_stats::LEN)),
+    ("online: the connection status and its page (crate::online_conn)", (crate::online_conn::BASE, crate::online_conn::LEN)),
     ("online: each seat's CO, colour and partner choices in a room (crate::online_teams::SEL)", (crate::online_teams::SEL, crate::online_teams::SEL_LEN)),
     ("online: an UNRANKED match's map proposals and rules (crate::unranked::STATE)", (crate::unranked::STATE, crate::unranked::STATE_LEN)),
     ("offline Versus' map tabs: the maps' own tabs kept aside (crate::online_maps::OFF)", (0x0203_DB00, crate::online_maps::OFF_LEN)),
