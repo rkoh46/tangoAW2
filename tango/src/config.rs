@@ -600,7 +600,7 @@ mod tests {
     /// present and every value off its default, so a key either half
     /// stops reading shows up as a changed value on the way back out.
     fn every_key() -> serde_json::Value {
-        serde_json::json!({
+        let mut v = serde_json::json!({
             "nickname": "someone",
             "language": "ja-JP",
             "streamer_mode": true,
@@ -617,7 +617,6 @@ mod tests {
             "ds_primary_screen": "Touch",
             "show_replay_inputs": true,
             "opponent_view": "StackVertically",
-            "pvp_setup_pane_widths": [300.0, 512.5],
             "enable_updater": false,
             "allow_prerelease_upgrades": true,
             "last_game": ["bn6", 1],
@@ -642,7 +641,19 @@ mod tests {
             "last_blind_setup": true,
             "input_mapping": serde_json::to_value(crate::platform::input::Mapping::default()).unwrap(),
             "replay_custom_screen_speedup": true,
-        })
+        });
+        // Split out so the json! macro stays under its recursion limit.
+        v.as_object_mut().unwrap().extend(
+            [
+                ("ds_tilt", serde_json::json!(true)),
+                ("ds_tilt_amount", serde_json::json!(1)),
+                ("ds_tilt_log", serde_json::json!(true)),
+                ("ds_graphics", serde_json::json!(true)),
+                ("landscape_stretch", serde_json::json!(true)),
+            ]
+            .map(|(k, x)| (k.to_string(), x)),
+        );
+        v
     }
 
     /// Splitting the settings model into a library half and a frontend
