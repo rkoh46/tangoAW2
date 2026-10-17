@@ -375,6 +375,9 @@ pub fn phase(core: &Core) -> Phase {
     if running.as_slice() == [WALK_PROC] && !crate::pvp::turn_ended(core) {
         return Phase::Busy;
     }
+    if dialog(&running) || capturing(&running) {
+        return Phase::Busy;
+    }
     if moving(core) {
         return Phase::Moving;
     }
@@ -426,6 +429,20 @@ fn set_walker_pixels(core: &mut Core, (x, y): (i32, i32)) {
             }
         }
     }
+}
+
+/// The dialogue box of the game's messages over the map ("The Green Earth Army has lost!"): `0x08013FF1` with the text box's
+/// own proc `0x08014401` (the Save question has `0x080195F9` there): every window shows it, over its own map.
+const DIALOG_PROC: u32 = 0x0801_3FF1;
+/// A property being captured: the capture card (`0x08040C89`, `0x08040AFD`): shown to the seats that see the cell.
+const CAPTURE_PROCS: [u32; 2] = [0x0804_0C89, 0x0804_0AFD];
+
+fn dialog(running: &[u32]) -> bool {
+    running.contains(&DIALOG_PROC) && !running.contains(&0x0801_95F9)
+}
+
+fn capturing(running: &[u32]) -> bool {
+    running.iter().any(|f| CAPTURE_PROCS.contains(f)) && running.iter().all(|f| UI_PROCS.contains(f) || CAPTURE_PROCS.contains(f))
 }
 
 /// A unit picked up is walking (see [`WALK_PROC`]).
@@ -731,7 +748,13 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     // the scratch like the map, for the waiting army's own fog; the sprites out of its sight are hidden at the flush
     // (`hide_fogged_sprites`), so a walk is seen while the sprite is on cells the seat sees and never where it does not.
     let anim = scratch.core().raw_read_8(FOG, -1) != 0 && phase(scratch.core()) == Phase::Busy && scratch.memory()[0] != 0;
-    scratch.core_mut().raw_write_8(CALL + 3, -1, anim as u8);
+    let running_now = procs(scratch.core());
+    let (dialog_up, capture_up) = (dialog(&running_now), capturing(&running_now));
+    if std::env::var_os("AW2_VIEW_DEBUG").is_some() && (dialog_up || capture_up) {
+        eprintln!("view seat {seat}: dialog {dialog_up} capture {capture_up} anim {anim} phase {:?}", phase(scratch.core()));
+    }
+    // (a message box over the map is no fogged sprite: its portrait is not hidden)
+    scratch.core_mut().raw_write_8(CALL + 3, -1, (anim && !dialog_up) as u8);
     if phase(scratch.core()) != Phase::Map && !anim {
         return Err("not the plain map");
     }
@@ -898,6 +921,10 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     scratch.core_mut().raw_write_8(FAKE, -1, sliding as u8);
     scratch.core_mut().raw_write_16(FAKE + 2, -1, ((nx + 112) / 16) as u16);
     scratch.core_mut().raw_write_16(FAKE + 4, -1, ((ny + 72) / 16) as u16);
+    if capture_up && !seen(scratch.core(), mover_cell.0.clamp(0, w - 1), mover_cell.1.clamp(0, h - 1)) {
+        // (a capture where the seat sees nothing: no card, no picture)
+        return Err("the capture is out of sight");
+    }
     if walk_start && !follow {
         // (a unit walking where the seat sees nothing: the window keeps its picture; the game's own camera follows the unit
         // on the scratch console, so no picture of it is made)

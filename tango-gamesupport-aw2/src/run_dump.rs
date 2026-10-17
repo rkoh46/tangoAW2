@@ -21,6 +21,7 @@ struct Dump {
     last_units: std::collections::BTreeMap<u32, (u32, u8, i32, i32, u32)>,
     last_owner: std::collections::BTreeMap<u32, u8>,
     last_powers: [u8; 6],
+    last_alive: [bool; 6],
     last_carried: std::collections::BTreeMap<u32, (u32, u8)>,
     ready: bool,
 }
@@ -60,7 +61,7 @@ pub fn tick(core: &Core, keys: u32) {
             .append(true)
             .open(dir.join(format!("state_s{seat}.jsonl")))
             .expect("run dump file");
-        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_carried: Default::default(), ready: false }
+        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_alive: [true; 6], last_carried: Default::default(), ready: false }
     });
     d.tick += 1;
     TICKS.store(d.tick, std::sync::atomic::Ordering::Relaxed);
@@ -172,6 +173,14 @@ pub fn tick(core: &Core, keys: u32) {
                 }
             }
         }
+    }
+    // (an army out of the match: its HQ taken, or all its units gone)
+    for a in 1..=armies as u8 {
+        let alive = crate::result_view::alive(core, a);
+        if d.ready && d.last_alive[a as usize] && !alive {
+            acts.push(format!("\"what\":\"eliminated\",\"actor\":{a}"));
+        }
+        d.last_alive[a as usize] = alive;
     }
     // (a CO Power or Super CO Power: the game's own count per army (crate::online_stats))
     for a in 1..=5u32 {

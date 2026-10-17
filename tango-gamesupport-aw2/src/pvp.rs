@@ -716,6 +716,15 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         }
         if tango_backend_mgba::shared::in_scratch() {
             crate::fog_view::pin_camera(core);
+        } else if std::env::var_os("AW2_CONSOLE_PROCS").is_some() {
+            // (test aid: the console's own running procs, whenever they change)
+            static LAST: std::sync::Mutex<Vec<u32>> = std::sync::Mutex::new(Vec::new());
+            let p = crate::fog_view::procs(core);
+            let mut last = LAST.lock().unwrap();
+            if *last != p {
+                log::info!("consoleprocs {:x?} loop {:08x}", p, core.raw_read_32(0x0300_0000, -1));
+                *last = p;
+            }
         }
         track_menu(core);
         debug_dump(core);
