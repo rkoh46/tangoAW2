@@ -61,6 +61,8 @@ const SKIP: u32 = STATE + 0x44;
 const STEP_DIR: u32 = STATE + 0x45;
 /// Frames the revealed map is shown before the game goes on by itself (the host's A goes on sooner).
 const HOLD_FRAMES: u16 = 180;
+/// Frames the game's cursor sits on the drawn map before the picture is uncovered (its minimap needs a while to load).
+const REVEAL_AFTER: u8 = 45;
 const SEATS: u32 = STATE + 0x10;
 const SEAT_SIZE: u32 = 8;
 /// The most seats of a room.
@@ -232,12 +234,12 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
 
 /// Steps of the highlight around the proposals (it lands on the drawn one on the last).
 fn steps(n: usize) -> usize {
-    (3 * n + 2).max(12)
+    (2 * n + 4).max(12)
 }
 
 /// Frames of step `i`: quick first, slower as it nears the end.
 fn step_len(i: usize, k: usize) -> u16 {
-    4 + (10 * i * i / (k * k)) as u16
+    4 + (30 * i * i / (k * k)) as u16
 }
 
 /// The step the cycle is in `at` frames from its start, and the frame within it (`None` once it has landed).
@@ -271,7 +273,7 @@ fn slot_at(n: usize, from: usize, at: u16) -> usize {
 
 /// The drawn map is shown (the cycle is over and the game's cursor is on it): its name, picture and whose it is.
 pub fn revealed(core: &Core) -> bool {
-    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core)) && core.raw_read_8(SETTLED, -1) >= 10
+    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core)) && core.raw_read_8(SETTLED, -1) >= REVEAL_AFTER
 }
 
 /// The map the match is played on, once it is drawn (the Armies and Rules pages name it).
@@ -363,7 +365,7 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
             return 0;
         }
         // (revealed: held, then A for 4 frames of 12 until the game leaves the list)
-        if settled < 10 {
+        if settled < REVEAL_AFTER {
             return 0;
         }
         let hold = core.raw_read_16(HOLD_T, -1).saturating_add(1);
@@ -523,9 +525,24 @@ fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     paint_box(core, cv, &lines);
 }
 
+/// The picture is fading to black (the notes would hang on the black).
+fn dark(rgba: &[u8]) -> bool {
+    let sum: u32 = (0..20)
+        .map(|k| {
+            let (x, y) = (12 + 11 * k, 20 + 7 * k);
+            let o = 4 * (crate::online::W * y + x);
+            rgba[o] as u32 + rgba[o + 1] as u32 + rgba[o + 2] as u32
+        })
+        .sum();
+    sum / 60 < 60
+}
+
 /// The bar over SELECT MAP's own screen: whose turn it is to pick, then whose map is played.
 pub fn draw(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != crate::online::W * crate::online::H * 4 || !active(core) {
+        return;
+    }
+    if dark(rgba) {
         return;
     }
     if rules_up(core) {
@@ -581,27 +598,45 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     let sea: Rgb = (139, 222, 230);
     // (everything but the title: the tab and the counters would say which map)
     cv.rect(0, 30, W as i32, 130, sea);
-    cv.rect(137, 0, W as i32 - 137, 30, sea);
+    cv.rect(134, 0, W as i32 - 134, 30, sea);
+    // (the logo's own colours stay; the map picture's pink showing round it goes)
+    for y in 0..30 {
+        for x in 0..134 {
+            let o = 4 * (W * y + x);
+            let px = (cv.0[o], cv.0[o + 1], cv.0[o + 2]);
+            if ![(49, 98, 148), (255, 255, 255), (197, 205, 197)].contains(&px) {
+                cv.put(x as i32, y as i32, sea);
+            }
+        }
+    }
     let rows = n as i32;
     let (w, rh) = (150, 15);
     let h = 8 + 14 + rh * rows + 4;
     let (x, y) = ((W as i32 - w) / 2, 36 + (110 - h) / 2);
-    cv.window(x, y, w, h);
+    // (the list's own look: a black edge, a red frame, a pink page with a line under each row, a lavender highlight)
+    let (red, pink, line, lav, grey): (Rgb, Rgb, Rgb, Rgb, Rgb) = ((246, 82, 57), (255, 238, 238), (255, 230, 213), (222, 205, 255), (131, 123, 115));
+    audit::window(x, y, w, h);
+    cv.rect(x - 1, y - 1, w + 2, h + 2, (0, 0, 0));
+    cv.rect(x, y, w, h, red);
+    cv.rect(x + 3, y + 3, w - 6, h - 6, pink);
     let head = "The map is drawn...";
-    cv.text(core, x + (w - text_width(core, head)) / 2, y + 5, head, INK, SHADE);
+    cv.text(core, x + (w - text_width(core, head)) / 2, y + 6, head, grey, SHADE);
     let cyc = core.raw_read_16(CYC_T, -1);
     let from = (core.raw_read_8(PICK, -1) as usize).min(n - 1);
     let lit = (cyc > 0).then(|| slot_at(n, from, cyc - 1));
     for k in 0..n {
         let ry = y + 20 + rh * k as i32;
+        cv.rect(x + 5, ry + rh - 1, w - 10, 1, line);
         if lit == Some(k) {
-            cv.rect(x + 6, ry, w - 12, rh - 1, CREAM);
-            cv.rect(x + 6, ry, w - 12, 1, YELLOW);
-            cv.rect(x + 6, ry + rh - 2, w - 12, 1, YELLOW);
-            cv.text(core, x + 10, ry + 2, ">", RED, GRAY_INK);
+            cv.rect(x + 6, ry + 1, w - 12, rh - 3, lav);
+            cv.rect(x + 5, ry + 3, 1, rh - 7, lav);
+            cv.rect(x + w - 6, ry + 3, 1, rh - 7, lav);
         }
+        let ink = if lit == Some(k) { (88, 72, 150) } else { grey };
+        let who = fit(core, &room_name(k), 74);
+        cv.text(core, x + 12, ry + 2, &who, ink, SHADE);
         let t = "?????";
-        cv.text(core, x + (w - text_width(core, t)) / 2, ry + 2, t, if lit == Some(k) { INK } else { GRAY_INK }, SHADE);
+        cv.text(core, x + w - 12 - text_width(core, t), ry + 2, t, ink, SHADE);
     }
 }
 
