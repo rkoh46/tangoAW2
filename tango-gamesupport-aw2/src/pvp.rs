@@ -538,7 +538,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 19: every seat's TEAM on the army page, written into the Teams record (crate::online_teams); the page keeps its state through the game's Teams screen going from its CO stage to its team stage and on.
         // 20: the hand-off is told by the map menu's End item (an id) and not by its row, which moves with Power and Save being shown.
         // 21: a turn also ends when the army whose turn it is has yielded (the incoming army's player has the pad).
-        21
+        // 22: a room's host seat can change, and a seat whose player is gone can be played by the console to yield (crate::proxy_seat; the commands are words no pad makes, so a match that never uses them runs as before).
+        22
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {
@@ -641,6 +642,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
 
     fn seat_keys(&self, core: &mut Core, mode: Option<(u8, u8)>, inputs: &[u32]) {
         crate::online::seat_keys(core, mode, inputs);
+    }
+
+    fn proxy_keys(&self, core: &mut Core, keys: &mut [u32]) {
+        crate::proxy_seat::tick(core, keys);
     }
 
     /// With fog of war on, the waiting player sees nothing of the other

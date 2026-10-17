@@ -56,19 +56,27 @@ fn lines(core: &Core, name: &str, secs: u32, width: i32) -> (Vec<String>, Vec<St
     let name = crate::online::fit(core, name, width - text_width(core, "Waiting for "));
     (
         vec![format!("Waiting for {name}"), format!("to reconnect... {secs}s")],
-        wrap(core, "Your match is saved for RESUME if they do not return.", width),
+        wrap(
+            core,
+            if tango_gamesupport::hold::host_wait() {
+                "The match goes on without them if they do not return."
+            } else {
+                "Your match is saved for RESUME if they do not return."
+            },
+            width,
+        ),
     )
 }
 
 /// The lines of the host migration's box: the host left, who hosts now (`you`: this player), and what happens next.
 fn migration_lines(core: &Core, name: &str, you: bool, width: i32) -> (Vec<String>, Vec<String>) {
-    let who = if you {
-        "You are".to_string()
+    let line = if you {
+        "You are hosting now".to_string()
     } else {
-        format!("{} is", crate::online::fit(core, name, width - text_width(core, " is")))
+        format!("{} is hosting now", crate::online::fit(core, name, width - text_width(core, " is hosting now")))
     };
     (
-        vec!["Host left.".to_string(), format!("{who} hosting now"), "Reconnecting...".to_string()],
+        vec!["Host left.".to_string(), line, "Reconnecting...".to_string()],
         wrap(core, "The match goes on in a few seconds.", width),
     )
 }

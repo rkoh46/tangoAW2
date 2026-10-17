@@ -599,6 +599,11 @@ fn main() {
                             let mut read = |_: u32, b: &mut [u8]| b.fill(0);
                             tango_gamesupport_aw2::online::mailbox::condition(&mut read, "teams")
                         }
+                        // (the room is on SELECT MAP for the next match)
+                        "selectmap" => {
+                            let mut read = |_: u32, b: &mut [u8]| b.fill(0);
+                            tango_gamesupport_aw2::online::mailbox::condition(&mut read, "selectmap")
+                        }
                         other => panic!("waitfor {other}"),
                     };
                     if now {
@@ -622,6 +627,14 @@ fn main() {
             }
             // expect winner SEAT: SEAT's window shows the console's picture (VICTORY!, then the result pages);
             // expect loser SEAT: it shows its own DEFEAT, not the console's
+            // expect alive A,B,..: exactly those armies are still in the match
+            "expect" if p[1] == "alive" => {
+                let want: Vec<u8> = p[2].split(',').filter_map(|v| v.parse().ok()).collect();
+                let have = tango_gamesupport_aw2::result_view::alive_armies(link.core());
+                let ok = have == want;
+                println!("expect alive {want:?}: {have:?} {}", if ok { "ok" } else { "FAIL" });
+                failed |= !ok;
+            }
             "expect" => {
                 let seat: usize = p[2].parse().unwrap();
                 let console = link.solo_side().frame().unwrap_or_default();

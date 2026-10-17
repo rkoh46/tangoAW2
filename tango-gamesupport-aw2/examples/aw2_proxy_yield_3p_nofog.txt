@@ -1,0 +1,65 @@
+# 3 seats, Fog off: seat 0 sends the YIELD command (all four directions and B: its player is gone) and seat 1 the HOST command (all four directions and A), the console yields army 1 by itself; seat 1 yields on its turn: seat 2 must show VICTORY!, and the screens after the battle go by with the new host's A. Run: aw2_room_teams <rom> <out> this-file
+n 3
+until maparmies=3 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
+until teams 100
+wait 90
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 DOWN
+wait 10
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+press 0 UP+DOWN+LEFT+RIGHT+B 1
+press 1 UP+DOWN+LEFT+RIGHT+A 1
+wait 20
+wait 900
+press 1 A
+expect alive 2,3
+until army=2 100
+wait 400
+press 1 B
+wait 20
+press 1 B
+wait 20
+goto 1 3 3
+wait 10
+press 1 A
+wait 40
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+wait 40
+press 1 A
+wait 200
+press 1 LEFT
+wait 20
+press 1 A
+wait 20
+waitfor victory 60
+wait 100
+expect winner 2
+expect loser 1
+expect loser 0
+waitfor selectmap 120 pressA 1,2

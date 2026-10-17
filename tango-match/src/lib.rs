@@ -118,4 +118,32 @@ pub mod keys {
     /// Every named bit — the widest input this vocabulary can express,
     /// which is also what the netplay wire's input element carries.
     pub const MASK: u32 = 0x1fff;
+
+    /// A room's host speaks to the consoles of the room in the pad words it joins (host migration, tangoAW2): a word with
+    /// all four directions down at once, which no pad makes, is a command and not keys. The session strips that shape from
+    /// every real word ([`strip`]), so only the host's own joining makes one.
+    pub mod command {
+        use super::{A, B, DOWN, LEFT, RIGHT, UP};
+
+        /// The four directions together.
+        pub const BITS: u32 = UP | DOWN | LEFT | RIGHT;
+        /// The seat that sends it is the room's host from now on.
+        pub const HOST: u32 = BITS | A;
+        /// Play the seat that sends it: the player is gone, its armies yield when their turns come.
+        pub const YIELD: u32 = BITS | B;
+
+        /// Whether a word is a command.
+        pub fn is(word: u32) -> bool {
+            word & BITS == BITS
+        }
+
+        /// A real word that would read as a command (a keyboard can press anything): one direction is let go.
+        pub fn strip(word: u32) -> u32 {
+            if is(word) {
+                word & !RIGHT
+            } else {
+                word
+            }
+        }
+    }
 }

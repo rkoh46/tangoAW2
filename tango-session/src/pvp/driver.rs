@@ -151,6 +151,7 @@ impl DriveContext {
             hold_up: false,
             hold_b: true,
             keys_released: false,
+            host_command: false,
         })
     }
 
@@ -374,6 +375,9 @@ pub struct PvpDriver {
     hold_b: bool,
     /// The pad has been let go since the match began ([`PvpDriver::tick`]).
     keys_released: bool,
+    /// This peer has just become its room's host: its next word is the command that says so
+    /// ([`tango_match::keys::command::HOST`]), which gives it the screens outside a battle.
+    host_command: bool,
 }
 
 /// A room's host joins its guests' inputs: its own engine hears them as one input (the guests' joypad words in
@@ -393,6 +397,9 @@ struct HostAgg {
     heard: Vec<bool>,
     /// Guests whose player left after being out of the match (by link): their words are idle and nothing is sent to them.
     gone: Vec<bool>,
+    /// Guests whose player is gone but whose army is to be played by the console (a host migration after the host left while
+    /// still in the match): the next row says so to every console ([`tango_match::keys::command::YIELD`]).
+    yield_pending: Vec<bool>,
     /// The host has begun to advance.
     started: bool,
     /// Idle ticks spent waiting for the guests' first inputs.
@@ -419,6 +426,7 @@ impl HostAgg {
             own: Default::default(),
             heard: vec![false; guests],
             gone: vec![false; guests],
+            yield_pending: vec![false; guests],
             started: false,
             waited: 0,
         }
@@ -427,12 +435,13 @@ impl HostAgg {
     /// The host after a migration (this seat took the host over; `gone` are the seats whose players are not there, the
     /// old host's among them): the guests' words begin at the migration's start tick, and the host's own words that
     /// were not joined yet wait in `own`.
-    fn migrated(players: usize, host_seat: usize, gone: u8, own: Vec<(tango_match::HostInput, i16)>) -> Self {
+    fn migrated(players: usize, host_seat: usize, gone: u8, proxy: u8, own: Vec<(tango_match::HostInput, i16)>) -> Self {
         let mut agg = HostAgg::new(players, host_seat);
         for (k, &seat) in agg.guest_seats.clone().iter().enumerate() {
             if gone & (1 << seat) != 0 {
                 agg.gone[k] = true;
                 agg.heard[k] = true;
+                agg.yield_pending[k] = proxy & (1 << seat) != 0;
             }
         }
         agg.started = true;
@@ -445,6 +454,9 @@ impl HostAgg {
         if link >= self.guests || self.gone[link] {
             return Vec::new();
         }
+        // (no pad makes a command word: a real one that looks like it loses a direction)
+        let mut input = input;
+        input.joyflags = tango_match::keys::command::strip(input.joyflags as u32) as u16;
         self.queues[link].push_back(input);
         self.heard[link] = true;
         self.complete()
@@ -475,6 +487,10 @@ impl HostAgg {
             let mut advs = Vec::new();
             for k in 0..self.guests {
                 if self.gone[k] {
+                    // (the seat of a player who is not there is idle, but for the one word that has the console play it)
+                    if std::mem::take(&mut self.yield_pending[k]) {
+                        words[k] = tango_match::keys::command::YIELD as u16;
+                    }
                     continue;
                 }
                 let i = self.queues[k].pop_front().unwrap();
@@ -584,6 +600,7 @@ impl PvpDriver {
         }
         tango_gamesupport::hold::set(hold);
         tango_gamesupport::hold::set_migration(migrating);
+        tango_gamesupport::hold::set_host_wait(self.ctx.end.host_wait.load(Ordering::Acquire));
         self.hold_up = true;
         if self.hold_shown.is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100)) {
             self.hold_shown = Some(std::time::Instant::now());
@@ -729,6 +746,8 @@ impl PvpDriver {
 
         let mut local = self.ctx.local_input.load();
         local.keys &= tango_match::keys::MASK;
+        // (no pad makes a command word: a real one that looks like it loses a direction)
+        local.keys = tango_match::keys::command::strip(local.keys);
         // Keys held as the match comes up (the START that began the room, the A of READY) are not presses: the match gets
         // none until the pad has been released once (a resumed match opened AW2's overview on the host).
         if !self.keys_released {
@@ -736,6 +755,9 @@ impl PvpDriver {
                 self.keys_released = true;
             }
             local.keys = 0;
+        }
+        if std::mem::take(&mut self.host_command) {
+            local.keys = tango_match::keys::command::HOST;
         }
         let advanced = match self.match_.advance(local) {
             Ok(r) => r,
@@ -1057,7 +1079,14 @@ impl PvpDriver {
         let words: Vec<(tango_match::HostInput, i16)> =
             self.log.local.iter().filter(|(t, ..)| *t >= h.start).map(|(_, i, a)| (*i, *a)).collect();
         if h.i_host {
-            self.agg = Some(HostAgg::migrated(self.players, h.host_seat, h.gone | self.ctx.end.gone.load(Ordering::Acquire), words));
+            self.host_command = true;
+            self.agg = Some(HostAgg::migrated(
+                self.players,
+                h.host_seat,
+                h.gone | self.ctx.end.gone.load(Ordering::Acquire),
+                h.proxy,
+                words,
+            ));
         } else {
             self.agg = None;
             // our own words from the start tick on go to the new host again (the old one never joined them)
@@ -1130,7 +1159,7 @@ mod tests {
     fn the_new_host_joins_from_the_migration_tick_with_the_old_host_idle() {
         let own: Vec<(tango_match::HostInput, i16)> =
             (0..3).map(|k| (tango_match::HostInput::keys(0x100 + k), 0)).collect();
-        let mut agg = HostAgg::migrated(3, 1, 1 << 0, own);
+        let mut agg = HostAgg::migrated(3, 1, 1 << 0, 0, own);
         // guests are seats 0 (gone) and 2: the link of seat 2 is guest 1
         assert_eq!(agg.guest_seats, vec![0, 2]);
         let r = agg.ingest(1, input(0x20));
@@ -1147,6 +1176,28 @@ mod tests {
         assert!(agg.ingest(0, input(0x99)).is_empty());
         // the host's own words wait to go out with the rows
         assert_eq!(agg.own.len(), 3);
+    }
+
+    /// A host that left while still in the match: the first row of the new host says so to every console (YIELD), the rows
+    /// after it have the seat idle. No guest can send that word: a real one loses a direction on the way in.
+    #[test]
+    fn a_host_that_left_while_playing_is_yielded_once_and_no_pad_can_say_it() {
+        use tango_match::keys::command;
+        let mut agg = HostAgg::migrated(3, 1, 1 << 0, 1 << 0, vec![]);
+        let r = agg.ingest(1, input(0x20));
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].0.keys, command::YIELD, "the old host's seat says it once");
+        assert_eq!(r[0].0.extra[0], 0x20);
+        let r = agg.ingest(1, input(0x30));
+        assert_eq!(r[0].0.keys, 0, "and is idle after");
+        // a guest's real word that looks like a command is not one
+        for forged in [command::YIELD as u16, command::HOST as u16, 0x3FF] {
+            let r = agg.ingest(1, input(forged));
+            assert!(!command::is(r[0].0.extra[0] as u32), "{forged:#x} got through");
+        }
+        // a host that was out has nothing to yield
+        let mut agg = HostAgg::migrated(3, 1, 1 << 0, 0, vec![]);
+        assert_eq!(agg.ingest(1, input(0x20))[0].0.keys, 0);
     }
 
     /// The log keeps what a migration needs: the last rows of the stream with this seat's own words beside them, as many as

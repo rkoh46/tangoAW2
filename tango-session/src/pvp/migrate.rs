@@ -70,6 +70,9 @@ pub(super) struct Handover {
     pub(super) i_host: bool,
     /// Seats whose players are not in the room any more (the old host's among them).
     pub(super) gone: u8,
+    /// Among them, the seats still in the match whose armies the console is to yield (the old host's, when it left while
+    /// playing): the new host's first row says so to every console.
+    pub(super) proxy: u8,
     /// The tick from which the new host's stream runs, and the rows this peer lacked before it.
     pub(super) start: u32,
     pub(super) catchup: Vec<[u16; 4]>,
@@ -406,6 +409,8 @@ async fn host_phase(h: &Arc<MigHandle>, rank: u8, old_host: usize, snapshot: &Sn
         }
     }
     let mut gone = gone0 | (1 << old_host);
+    // (a host that left while still in the match: its army is yielded for it, as the player would have done)
+    let proxy: u8 = if out & (1 << old_host) == 0 { 1 << old_host } else { 0 };
     for &s in &expected {
         if !peers.iter().any(|p| p.0 == s) {
             gone |= 1 << s;
@@ -452,6 +457,7 @@ async fn host_phase(h: &Arc<MigHandle>, rank: u8, old_host: usize, snapshot: &Sn
         host_seat: me,
         i_host: true,
         gone,
+        proxy,
         start: plan.start,
         catchup: mine,
         senders,
@@ -517,6 +523,7 @@ async fn guest_phase(h: &Arc<MigHandle>, rank: u8, cand: usize, snapshot: &Snaps
                     host_seat: go.host_seat as usize,
                     i_host: false,
                     gone: go.gone,
+                    proxy: 0,
                     start: go.start,
                     catchup: go.catchup,
                     senders: vec![Some(sender)],

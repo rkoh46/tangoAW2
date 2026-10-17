@@ -65,6 +65,13 @@ your army and kept in your settings).
 - If a player drops, everyone waits up to 60 seconds with a countdown; if
   they do not return the match is saved: **ONLINE > LOBBY > RESUME** starts
   it again from the same moment with the same players.
+- If the **host** leaves (quits, crashes or freezes) the room does not stop:
+  when the host has been eliminated, the lowest-numbered player still in the
+  match takes the room over within a few seconds (a box says "Host left. NAME
+  is hosting now"), everyone reconnects to them by themselves and play goes on
+  from the same moment. A host who is still playing and quits makes way the same
+  way, and one that is simply lost gets the 60 seconds first; its army then
+  yields, as if the player had chosen Yield.
 - **STATS** keeps your own record on this device.
 - After a battle the host picks the next map; **B** on SELECT MAP ends the
   match and takes everyone back to the LOBBY.

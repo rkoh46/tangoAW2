@@ -112,6 +112,7 @@ pub mod power_anim;
 pub mod mode_menu;
 pub mod online;
 pub mod hold_box;
+pub mod proxy_seat;
 pub mod online_art;
 pub mod online_browse;
 pub mod online_conn;

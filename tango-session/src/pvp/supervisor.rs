@@ -359,6 +359,9 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         // The match waits for this peer: the box, the pause, and (a room's host) the word to the other guests.
         let begin_hold = |timeout: std::time::Duration| -> tokio_util::sync::CancellationToken {
             end.hold_add(peer_seat, peer_name.clone(), web_time::Instant::now() + timeout);
+            // (a room's guest waiting for its host: the box says the room goes on without it, not that the match is saved)
+            end.host_wait
+                .store(mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() > 2), Ordering::Release);
             pauses.enter();
             wake.notify_one();
             // A room's host tells the other guests who the match waits for, about once a second.
@@ -540,16 +543,22 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
 
             // A room's guest whose HOST is gone: the room goes on under a successor (see `migrate`). A host that is out
             // of the match already has nothing to come back for: its leaving, its connection closing or its going
-            // quiet starts the migration at once. (A host that is still playing gets the reconnect window below.)
+            // quiet starts the migration at once. A host that is still playing and tells us it is leaving does the same
+            // (its army is yielded by the console, see `migrate`); one that is simply lost gets the reconnect window
+            // below first and the migration after it.
             let host_link = mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() > 2);
+            let host_out = super::is_out(end.seats_out.load(Ordering::Acquire), peer_seat);
             if host_link
                 && matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled | Trip::Silent)
                 && !completed.load(Ordering::Acquire)
                 && !end.remote_ended.load(Ordering::Acquire)
                 && !end.aborted.load(Ordering::Acquire)
-                && super::is_out(end.seats_out.load(Ordering::Acquire), peer_seat)
+                && (host_out || matches!(trip, Trip::PeerQuit))
             {
-                log::info!("pvp: the host {peer_name:?} is gone after being out of the match: the room goes on without it");
+                log::info!(
+                    "pvp: the host {peer_name:?} is gone{}: the room goes on without it",
+                    if host_out { " after being out of the match" } else { " (it left)" }
+                );
                 let m = mig.clone().expect("a host link has its migration");
                 // (the migration holds the match from here; what this supervisor held is let go after)
                 m.pauses.enter();
@@ -677,7 +686,9 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                     }
                 };
                 let watchdog_done = tokio_util::sync::CancellationToken::new();
-                {
+                // (a room's guest waiting for its host does not end the match when the window runs out: the room goes on
+                // without the host, see below)
+                if !host_link {
                     let end = end.clone();
                     let cancel = cancel.clone();
                     let pauses_w = pauses.clone();
@@ -705,16 +716,38 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                     });
                 }
 
-                let restored = tokio::select! {
-                    restored = link.reconnect() => restored,
-                    _ = ui_tick => unreachable!(),
+                let restored = if host_link {
+                    tokio::select! {
+                        restored = tango_platform::timeout(timeout + std::time::Duration::from_secs(2), link.reconnect()) => restored.unwrap_or(false),
+                        _ = ui_tick => unreachable!(),
+                    }
+                } else {
+                    tokio::select! {
+                        restored = link.reconnect() => restored,
+                        _ = ui_tick => unreachable!(),
+                    }
                 };
                 watchdog_done.cancel();
                 restored
             };
             announce_stop.cancel();
             end.hold_remove(peer_seat);
+            end.host_wait.store(false, Ordering::Release);
 
+            if !restored && host_link && !cancel.is_cancelled() && !completed.load(Ordering::Acquire) && !end.remote_ended.load(Ordering::Acquire) && !end.aborted.load(Ordering::Acquire) {
+                // The host did not come back within its window: the room goes on without it, its army yielded.
+                log::info!("pvp: the host {peer_name:?} did not come back: the room goes on without it");
+                let m = mig.clone().expect("a host link has its migration");
+                m.pauses.enter();
+                m.group.add();
+                pauses.leave();
+                drop(pump);
+                drop(watch);
+                link.retire_latency();
+                super::migrate::begin(m, peer_seat as usize);
+                group.finish();
+                return;
+            }
             if !restored {
                 // Timed out or cancelled — give up and end the match.
                 end.note_dropped(peer_name.clone());

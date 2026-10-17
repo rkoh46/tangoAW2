@@ -4413,6 +4413,40 @@ tests). Online play starts in the game, played alone:
   resumed match is not tick-for-tick the original's continuation; the peers agree with each other (checked by
   `aw2_netplay_script`'s `drop`, and by `TANGOAW2_STATE_LOG` in a live game).
 
+- **Host migration** (`tango-session/src/pvp/migrate.rs`; `RoomMsg::{Gone, Migrate, MigrateGo}`). A room of three to
+  five goes on when its host leaves: the match is one console that every peer simulates, and the host only joins the
+  guests' inputs into one stream (`HostAgg`), so a successor needs to carry that stream on from the tick everyone has.
+  - *Who.* Every guest computes `successor_order(players, host_seat, seats_out, gone)`: the seats still in the match first,
+    then those that are out, each by seat, never a seat that left earlier. All peers read the same console (`seats_out`
+    is published by every peer, not only the host; the host tells the guests which seats left, `RoomMsg::Gone`).
+  - *When.* A host that is out of the match: its goodbye, its connection closing or 5 s of silence (`silence.rs`) start it
+    at once. A host still playing: its goodbye does; a host that is simply lost gets the 60 s window first (the box says
+    the room goes on without it) and the migration after it. Guests dropping are unchanged (60 s, saved for RESUME).
+  - *How.* The drive thread stops at a tick boundary and publishes a `Snapshot` (rows of the old stream taken in, ticks
+    played, the last 120 rows with every seat's words: `TickLog`). The successor dials a rendezvous only the room can
+    name (`derive_migration_session_id(seed, rank)`, the room's matchmaking server and relay setting, so TURN works);
+    guests dial it and say their snapshot (`Migrate`; two guests the server pairs reject each other as in the lobby). The
+    successor works out `plan`: the stream resumes at the longest any peer has, and a peer that is ahead gives the rows
+    the others lack (each peer's own view of them in `MigrateGo::catchup`), so nobody rolls back and two peers that
+    disagree about a settled tick are caught (the migration fails). Both sides send from that tick on; the successor's
+    `HostAgg::migrated` joins them, the old host's seat idle. A second candidate is tried after 10 s; failing that the
+    match is saved for RESUME as for any disconnect.
+  - *The room's host seat and the departed army.* The screens outside a battle take the host's pad (seat 0); the new host's
+    first word is a *command word* (`tango_match::keys::command`: all four directions down, which no pad makes; the
+    session strips that shape from every real word) that sets the host seat in console RAM (`proxy_seat.rs`). A host that
+    left while still playing is sent a second command (YIELD) in the first joined row: from then on the console plays
+    that seat, a tap at a time with the screen allowed to settle, exactly as a player yields (an empty cell, A, Options,
+    Yield, "Yes"), and the army is out. Everything is in the simulation (console RAM, the stream's words), so rollback,
+    snapshots and replays carry it. `SharedGame::sim_version` is 22.
+  - *Seen.* The game's box ("Host left. NAME is hosting now... Reconnecting...", `hold_box.rs`, `hold::set_migration`), the
+    status bar's "host" mark (`PvpSession::host_seat`).
+  - *Checked.* Unit tests (`migrate.rs`, `driver.rs`), the harness (`aw2_proxy_yield_{3p,3p_nofog,5p}`), and live with
+    `scen.py hq3h|hq5h|hq3l` (kill -9, SIGSTOP, TANGOAW2_FORCE_RELAY): every peer's recorded stream is identical
+    (`cargo run --release -p tango-replay --example replay_inputs <replays>`).
+  - *Limits.* A guest that alone loses its host's link for 5 s while the host is out tries to migrate and, finding nobody,
+    ends with the match saved. A host that thaws after the room moved on sees its normal 60 s box and then the saved match.
+    The departed seat never READYs, so a migrated room does not start another match (B returns to the lobby).
+
 ## Across networks (relay, impairment, the room page's link line)
 
 Windows on one machine connect over host and loopback candidates and hide every NAT problem. What is known, and how

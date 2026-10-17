@@ -1,6 +1,9 @@
 //! The reconnect countdown's message box (`hold_box`) over the room page of 2..5 players, with 10 and 12 letter names
 //! and 57 / 38 / 9 seconds, as BMPs (<out-dir>/NAME.bmp), with the text audit.
 //!
+//! Also the host migration's box ("Host left. NAME is hosting now... Reconnecting...", for a new host with a long name and
+//! for this player) and the countdown for a host (the room goes on without it).
+//!
 //! Usage: [TANGOAW2_DS_ROM=<nds>] aw2_hold_box <rom> <out-dir>
 //!
 //! Prints `PROBLEM <case>: ...` for each string that leaves its box, and `done: N problems`.
@@ -89,6 +92,46 @@ fn main() {
             }
             c.problems += bad.len();
         }
+    }
+    // The host migration's box, and the countdown of a guest waiting for its host.
+    for n in 3..=5usize {
+        let core = c.link.core_mut();
+        core.raw_write_range(STATE, -1, &[0u8; 0x100]);
+        core.raw_write_8(STATE, -1, 2);
+        for (i, nm) in names5[..n].iter().enumerate() {
+            let flags = if i == 0 { HOST | YOU } else { 0 };
+            mailbox::write_player(&mut w(core), i, Some((nm, false, flags)));
+        }
+        mailbox::write_room(&mut w(core), "WWWWWW");
+        mailbox::write_status(&mut w(core), Status::Waiting, "");
+        for _ in 0..3 {
+            c.link.tick([HostInput::keys(0), HostInput::keys(0)]);
+        }
+        let mut render = |c: &mut Ctx, name_: String| {
+            audit::start();
+            let frame = c.link.solo_side().frame().expect("frame");
+            let bad = audit::finish();
+            write_bmp(&c.out.join(format!("{name_}.bmp")), &frame);
+            for b in &bad {
+                println!("PROBLEM {name_}: {b}");
+            }
+            c.problems += bad.len();
+        };
+        for (k, (name, you)) in [("Guest", false), ("WWWWWWWWWWWW", false), ("iiiiiiiiiiii", false), ("You", true), ("MMMMMMMMMMMM", false)]
+            .iter()
+            .enumerate()
+        {
+            tango_gamesupport::hold::set_migration(Some((name.to_string(), *you)));
+            render(&mut c, format!("migration_{n}p_{k}"));
+            tango_gamesupport::hold::set_migration(None);
+        }
+        tango_gamesupport::hold::set_host_wait(true);
+        for (k, (name, secs)) in cases.iter().enumerate() {
+            tango_gamesupport::hold::set(Some((name.to_string(), *secs)));
+            render(&mut c, format!("hostwait_{n}p_{k}"));
+            tango_gamesupport::hold::set(None);
+        }
+        tango_gamesupport::hold::set_host_wait(false);
     }
     println!("done: {} problems", c.problems);
 }

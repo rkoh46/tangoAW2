@@ -1763,13 +1763,7 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if core.raw_read_8(BATTLE, -1) == 1 {
         let n = inputs.len().max(1);
         let current = crate::pvp::current_army(core);
-        if !(1..=5).contains(&current) {
-            return Some(0);
-        }
-        // (the incoming army: the one after the army that chose End, which stays the same when the game has already moved
-        // its current army on while the End screen is still up)
-        let ender = core.raw_read_8(ENDER, -1);
-        let army = if crate::pvp::turn_ended(core) { incoming_alive(core, if (1..=5).contains(&ender) { ender } else { current }, n) } else { current };
+        let Some(army) = pad_army(core, n) else { return Some(0) };
         let active = crate::pvp::seat_of_n(army, n);
         if input_log_on() {
             log_dropped(active, army, inputs);
@@ -1794,7 +1788,29 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if crate::pvp::on_teams_screen(core) {
         return Some(crate::online_teams::merge(core).unwrap_or(0));
     }
-    Some(inputs[0])
+    // (the screens outside a battle are the room's host's: seat 0, or the seat a host migration gave the room to)
+    Some(inputs[crate::proxy_seat::host_seat(core, inputs.len())])
+}
+
+/// The army that has the pad in a room's battle: the army whose turn it is, or, from the moment a turn has ended until the
+/// next begins, the army that takes over (a yielded army's turn ends by itself). `None` outside a battle, or when no army
+/// can be told.
+pub(crate) fn pad_army(core: &Core, n: usize) -> Option<u8> {
+    if core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(BATTLE, -1) != 1 {
+        return None;
+    }
+    let current = crate::pvp::current_army(core);
+    if !(1..=5).contains(&current) {
+        return None;
+    }
+    // (the incoming army: the one after the army that chose End, which stays the same when the game has already moved
+    // its current army on while the End screen is still up)
+    let ender = core.raw_read_8(ENDER, -1);
+    Some(if crate::pvp::turn_ended(core) {
+        incoming_alive(core, if (1..=5).contains(&ender) { ender } else { current }, n)
+    } else {
+        current
+    })
 }
 
 // --- Drawing (presentation only) ------------------------------------------------------------------

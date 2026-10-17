@@ -260,6 +260,13 @@ pub trait SharedGame: Sync {
         false
     }
 
+    /// A room's seats whose player is not there (host migration): every tick, before the keys are used, the words of the
+    /// seats that carry commands from the room's host are taken out of `keys`, and the seats the game plays itself get their
+    /// keys. The default leaves them as they are.
+    fn proxy_keys(&self, core: &mut mgba::core::Core, keys: &mut [u32]) {
+        let _ = (core, keys);
+    }
+
     /// The seats out of the match (see [`tango_match::Link::seats_out`]).
     fn seats_out(&self, core: &mgba::core::Core) -> u8 {
         let _ = core;
@@ -585,7 +592,8 @@ impl tango_match::Link for SharedLink {
     }
 
     fn tick_n(&mut self, inputs: &[HostInput]) {
-        let keys: Vec<u32> = inputs.iter().map(|i| i.keys & JOYFLAGS_MASK).collect();
+        let mut keys: Vec<u32> = inputs.iter().map(|i| i.keys & JOYFLAGS_MASK).collect();
+        self.game.proxy_keys(self.inner.core_mut(0), &mut keys);
         self.game.seat_keys(self.inner.core_mut(0), self.mode, &keys);
         let word = self.game.merge(self.inner.core(0), &keys) & JOYFLAGS_MASK;
         let word = self.game.before_tick(self.inner.core_mut(0), self.mode, word) & JOYFLAGS_MASK;

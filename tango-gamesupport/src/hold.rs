@@ -29,3 +29,15 @@ pub fn set_migration(m: Option<(String, bool)>) {
 pub fn migration() -> Option<(String, bool)> {
     MIGRATION.lock().unwrap().clone()
 }
+
+static HOST_WAIT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// The player waited for is the room's host and the room goes on without it if it does not come back (instead of the match
+/// being saved for RESUME): the box says so.
+pub fn set_host_wait(on: bool) {
+    HOST_WAIT.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn host_wait() -> bool {
+    HOST_WAIT.load(std::sync::atomic::Ordering::Relaxed)
+}

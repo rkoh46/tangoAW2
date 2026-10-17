@@ -130,6 +130,9 @@ struct EndState {
     /// A room whose host left and went on under a successor: the successor's gamertag and whether it is this player,
     /// while the migration is under way (the game's box says so).
     migrating: Arc<Mutex<Option<(String, bool)>>>,
+    /// A room's guest is waiting for its host to reconnect (the game's box says the room goes on without the host if it does
+    /// not come back).
+    host_wait: Arc<AtomicBool>,
     /// A room: who hosts now (the seat), and how many times the host has changed.
     host_seat: Arc<std::sync::atomic::AtomicU8>,
     migrations: Arc<AtomicU32>,
