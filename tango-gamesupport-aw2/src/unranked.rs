@@ -53,6 +53,14 @@ const BATTLED: u32 = STATE + 9;
 const SETTLED: u32 = STATE + 0x0A;
 /// Test aid: a bit for each Rules row that was not the standard value when the screen came up.
 const CHANGED: u32 = STATE + 0x0B;
+/// Roulette (see [`mask`]): frames of the reveal cycle (u16, even address; 0 until the walk has settled), frames held on
+/// the revealed map (u16), the host pressed A to go on (u8), the direction of the last cursor step (u8).
+const CYC_T: u32 = STATE + 0x40;
+const HOLD_T: u32 = STATE + 0x42;
+const SKIP: u32 = STATE + 0x44;
+const STEP_DIR: u32 = STATE + 0x45;
+/// Frames the revealed map is shown before the game goes on by itself (the host's A goes on sooner).
+const HOLD_FRAMES: u16 = 180;
 const SEATS: u32 = STATE + 0x10;
 const SEAT_SIZE: u32 = 8;
 /// The most seats of a room.
@@ -179,6 +187,10 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
     for s in 0..n {
         core.raw_write_16(seat(s) + S_PREV, -1, inputs[s] as u16);
     }
+    // The host's A on the revealed map goes on to the armies.
+    if phase(core) == 1 && revealed(core) && inputs[0] & !was[0] & KEY_A != 0 {
+        core.raw_write_8(SKIP, -1, 1);
+    }
     if phase(core) != 0 || !crate::survival_ui::idle(core) {
         return;
     }
@@ -209,8 +221,62 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         core.raw_write_8(CHOSEN, -1, map);
         core.raw_write_8(SETTLED, -1, 0);
         core.raw_write_16(WALK_T, -1, 0);
+        core.raw_write_16(CYC_T, -1, 0);
+        core.raw_write_16(HOLD_T, -1, 0);
+        core.raw_write_8(SKIP, -1, 0);
         core.raw_write_8(PHASE, -1, 1);
     }
+}
+
+// --- The roulette -------------------------------------------------------------------------------------------
+
+/// Steps of the highlight around the proposals (it lands on the drawn one on the last).
+fn steps(n: usize) -> usize {
+    (3 * n + 2).max(12)
+}
+
+/// Frames of step `i`: quick first, slower as it nears the end.
+fn step_len(i: usize, k: usize) -> u16 {
+    4 + (10 * i * i / (k * k)) as u16
+}
+
+/// The step the cycle is in `at` frames from its start, and the frame within it (`None` once it has landed).
+fn step_at(n: usize, at: u16) -> Option<(usize, u16)> {
+    let k = steps(n);
+    let mut from = 0u16;
+    for i in 0..k {
+        let len = step_len(i, k);
+        if at < from + len {
+            return Some((i, at - from));
+        }
+        from += len;
+    }
+    None
+}
+
+/// Frames of the cycle: its steps, then a moment on the landed slot.
+fn cycle_len(n: usize) -> u16 {
+    let k = steps(n);
+    (0..k).map(|i| step_len(i, k)).sum::<u16>() + 24 + 1
+}
+
+/// The slot the highlight is on at frame `at` of the cycle (the drawn seat's on the last step).
+fn slot_at(n: usize, from: usize, at: u16) -> usize {
+    let k = steps(n);
+    match step_at(n, at) {
+        Some((i, _)) => (from + i + 1 + n * k - k) % n,
+        None => from,
+    }
+}
+
+/// The drawn map is shown (the cycle is over and the game's cursor is on it): its name, picture and whose it is.
+pub fn revealed(core: &Core) -> bool {
+    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core)) && core.raw_read_8(SETTLED, -1) >= 10
+}
+
+/// The map the match is played on, once it is drawn (the Armies and Rules pages name it).
+pub fn map_played(core: &Core) -> Option<String> {
+    (active(core) && phase(core) >= 2).then(|| map_name(core, core.raw_read_8(CHOSEN, -1)))
 }
 
 /// Which keys reach the game: the picking seat's while the maps are picked, none while the map is walked to, none on the Rules screen of
@@ -256,13 +322,53 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
     };
     // The list is the tab's maps: the first id's tab is the one shown.
     let list_tab = tab_of(core, core.raw_read_8(ids, -1));
+    // The reveal cycle: the game's cursor steps up and down in the list (its own sound each step, the picture covered, see
+    // [`mask`]), the net move none.
+    let cyc = core.raw_read_16(CYC_T, -1);
+    if cyc > 0 && cyc < cycle_len(seats(core)) {
+        core.raw_write_16(CYC_T, -1, cyc + 1);
+        return match step_at(seats(core), cyc - 1) {
+            Some((i, off)) if off < 2 => {
+                let mut len = 0;
+                while len <= 0x31 && tab_of(core, core.raw_read_8(ids + len, -1)) == list_tab {
+                    len += 1;
+                }
+                if len < 2 {
+                    0
+                } else if i % 2 == 0 {
+                    // (down unless at the foot; the next step undoes it)
+                    let down = cur + 1 < len;
+                    core.raw_write_8(STEP_DIR, -1, down as u8);
+                    if down {
+                        KEY_DOWN
+                    } else {
+                        KEY_UP
+                    }
+                } else if core.raw_read_8(STEP_DIR, -1) == 1 {
+                    KEY_UP
+                } else {
+                    KEY_DOWN
+                }
+            }
+            _ => 0,
+        };
+    }
     if core.raw_read_8(ids + cur, -1) == target {
-        // (settled on it for a few frames, then A)
-        let was = core.raw_read_8(SETTLED, -1);
-        let settled = if was >= 200 { 34 } else { was + 1 };
+        let settled = core.raw_read_8(SETTLED, -1).saturating_add(1);
         core.raw_write_8(SETTLED, -1, settled);
-        // (A for 4 frames of 12, until the game leaves the list)
-        return if settled >= 100 && settled % 12 < 4 { KEY_A } else { 0 };
+        if cyc == 0 {
+            if settled >= 20 {
+                core.raw_write_16(CYC_T, -1, 1);
+            }
+            return 0;
+        }
+        // (revealed: held, then A for 4 frames of 12 until the game leaves the list)
+        if settled < 10 {
+            return 0;
+        }
+        let hold = core.raw_read_16(HOLD_T, -1).saturating_add(1);
+        core.raw_write_16(HOLD_T, -1, hold);
+        return if (hold >= HOLD_FRAMES || core.raw_read_8(SKIP, -1) != 0) && hold % 12 < 4 { KEY_A } else { 0 };
     }
     core.raw_write_8(SETTLED, -1, 0);
     if tab_of(core, target) != list_tab {
@@ -419,7 +525,22 @@ fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
 
 /// The bar over SELECT MAP's own screen: whose turn it is to pick, then whose map is played.
 pub fn draw(core: &Core, rgba: &mut [u8]) {
-    if rgba.len() != crate::online::W * crate::online::H * 4 || !active(core) || phase(core) > 1 || !crate::survival_ui::selecting(core) {
+    if rgba.len() != crate::online::W * crate::online::H * 4 || !active(core) {
+        return;
+    }
+    if rules_up(core) {
+        // The Rules page names the map (a plate between its title and the PRESS A hint).
+        use crate::online::*;
+        let name = map_name(core, core.raw_read_8(CHOSEN, -1));
+        let name = fit(core, &name, 112);
+        let w = text_width(core, &name) + 10;
+        let mut canvas = Rgba(rgba);
+        let x = 130 - w / 2;
+        canvas.rect(x, 3, w, 14, BAR);
+        canvas.text(core, x + 5, 4, &name, WHITE, GRAY_INK);
+        return;
+    }
+    if phase(core) > 1 || !crate::survival_ui::selecting(core) {
         return;
     }
     paint_bar(core, rgba);
@@ -434,6 +555,10 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
         paint_picks(core, cv);
         return;
     }
+    if !revealed(core) {
+        mask(core, cv);
+        return;
+    }
     let pick = (core.raw_read_8(PICK, -1) as usize).min(seats(core) - 1);
     let map = map_name(core, core.raw_read_8(CHOSEN, -1));
     let who = room_name(pick);
@@ -441,6 +566,42 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
         .into_iter()
         .find(|t| text_width(core, t) <= 144)
         .unwrap_or_else(|| "is played".to_string());
-    paint_box(core, cv, &[(fit(core, &map, 144), WHITE), (from, YELLOW)]);
+    let mut lines = vec![(fit(core, &map, 144), WHITE), (from, YELLOW)];
+    if crate::online::room_local_seat() == 0 {
+        lines.push(("A: Go on".to_string(), GRAY_INK));
+    }
+    paint_box(core, cv, &lines);
+}
+
+/// The roulette's picture: the map list and picture are covered by one window, a "?????" for each proposal, and a highlight
+/// that runs round them quickly, slows and lands on the drawn one (the game's cursor steps under it, with its own sound).
+fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
+    use crate::online::*;
+    let n = seats(core);
+    let sea: Rgb = (139, 222, 230);
+    // (everything but the title: the tab and the counters would say which map)
+    cv.rect(0, 30, W as i32, 130, sea);
+    cv.rect(137, 0, W as i32 - 137, 30, sea);
+    let rows = n as i32;
+    let (w, rh) = (150, 15);
+    let h = 8 + 14 + rh * rows + 4;
+    let (x, y) = ((W as i32 - w) / 2, 36 + (110 - h) / 2);
+    cv.window(x, y, w, h);
+    let head = "The map is drawn...";
+    cv.text(core, x + (w - text_width(core, head)) / 2, y + 5, head, INK, SHADE);
+    let cyc = core.raw_read_16(CYC_T, -1);
+    let from = (core.raw_read_8(PICK, -1) as usize).min(n - 1);
+    let lit = (cyc > 0).then(|| slot_at(n, from, cyc - 1));
+    for k in 0..n {
+        let ry = y + 20 + rh * k as i32;
+        if lit == Some(k) {
+            cv.rect(x + 6, ry, w - 12, rh - 1, CREAM);
+            cv.rect(x + 6, ry, w - 12, 1, YELLOW);
+            cv.rect(x + 6, ry + rh - 2, w - 12, 1, YELLOW);
+            cv.text(core, x + 10, ry + 2, ">", RED, GRAY_INK);
+        }
+        let t = "?????";
+        cv.text(core, x + (w - text_width(core, t)) / 2, ry + 2, t, if lit == Some(k) { INK } else { GRAY_INK }, SHADE);
+    }
 }
 

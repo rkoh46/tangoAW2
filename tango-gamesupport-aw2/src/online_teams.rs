@@ -501,7 +501,10 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
     let cv = &mut canvas;
     cv.rect(0, 0, crate::online::W as i32, 160, crate::online::LIGHT_GRAY);
     cv.rect(0, 0, crate::online::W as i32, 15, crate::online::BAR);
-    let title = "SELECT YOUR ARMY";
+    let title = &match crate::unranked::map_played(core).filter(|m| !m.is_empty()) {
+        Some(m) => crate::online::fit(core, &format!("SELECT YOUR ARMY - {m}"), 232),
+        None => "SELECT YOUR ARMY".to_string(),
+    };
     let w = crate::online::text_width(core, title);
     cv.text(core, (crate::online::W as i32 - w) / 2, 2, title, crate::online::WHITE, crate::online::GRAY_INK);
     // The column headings: a strip under the title, over the fields' boxes.
