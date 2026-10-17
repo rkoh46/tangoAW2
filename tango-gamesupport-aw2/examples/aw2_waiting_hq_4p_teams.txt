@@ -49,60 +49,44 @@ wait 30
 press 0 A
 wait 60
 press 0 A
-wait 400
+wait 500
 shotall elim3
-wait 300
 goto 0 7 5
 wait 20
 press 0 A
 wait 40
-press 0 DOWN
-press 0 DOWN
-press 0 DOWN
-press 0 DOWN
-wait 10
-press 0 A
-until army=2 300
+menuend 0
+wait 200
+press 1 A
 wait 150
 goto 1 7 5
 wait 20
 press 1 A
 wait 40
-press 1 DOWN
-press 1 DOWN
-press 1 DOWN
-press 1 DOWN
-wait 10
-press 1 A
-until army=4 300
+menuend 1
+wait 200
+press 3 A
 wait 150
 goto 3 7 5
 wait 20
 press 3 A
 wait 40
-press 3 DOWN
-press 3 DOWN
-press 3 DOWN
-press 3 DOWN
-wait 10
-press 3 A
-until army=1 300
+menuend 3
+wait 200
+press 0 A
 wait 150
-goto 0 7 5
-wait 20
-press 0 A
-wait 40
-press 0 DOWN
-press 0 DOWN
-press 0 DOWN
-press 0 DOWN
-wait 10
-press 0 A
-until army=2 300
 wait 100
 aid unit 2 inf 14 0
 aid capture 14 0 15
 wait 10
+goto 0 7 5
+wait 20
+press 0 A
+wait 40
+menuend 0
+wait 200
+press 1 A
+wait 150
 goto 1 14 0
 wait 20
 press 1 A
@@ -110,6 +94,6 @@ wait 30
 press 1 A
 wait 60
 press 1 A
-wait 400
+wait 500
 wait 600
 shotall end

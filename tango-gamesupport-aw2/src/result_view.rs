@@ -86,7 +86,16 @@ pub fn alive_armies(core: &Core) -> Vec<u8> {
 /// here is the match's end (VICTORY!, the result pages): every window not made DEFEAT shows it as it is.
 pub fn decided(core: &Core) -> bool {
     let armies = crate::five::armies(core).clamp(2, 5);
-    (1..=armies).filter(|&a| alive(core, a)).count() <= 1
+    let mut teams = (1..=armies).filter(|&a| alive(core, a)).map(|a| team_of(core, a));
+    match teams.next() {
+        None => true,
+        Some(t) => teams.all(|u| u == t),
+    }
+}
+
+/// An army's team (the game's player block +0x2A: allies share it, a free-for-all has one each).
+fn team_of(core: &Core, army: u8) -> u8 {
+    core.raw_read_8(block(core, army) + 0x2A, -1)
 }
 
 /// The army the game's VICTORY! is for: the first one still alive.
@@ -130,8 +139,14 @@ fn army_of(seat: usize, armies: u8, players: usize) -> u8 {
 
 /// Whether `seat` should be shown DEFEAT: VICTORY! is up and the seat is not the winner's.
 pub fn loser(core: &Core, seat: usize) -> bool {
+    // (a seat wins with the winner's team: its army is that team's, alive or not)
     victory_showing(core)
-        && winner(core).is_some_and(|w| crate::pvp::seat_of_n(w, crate::online::room_players()) != seat)
+        && winner(core).is_some_and(|w| {
+            let n = crate::online::room_players();
+            let armies = crate::five::armies(core).clamp(2, 5);
+            let t = team_of(core, w);
+            !(1..=armies).any(|a| crate::pvp::seat_of_n(a, n) == seat && team_of(core, a) == t)
+        })
 }
 
 /// `SharedGame::watching`, and the bookkeeping of the window's clock.

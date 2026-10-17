@@ -672,6 +672,25 @@ fn main() {
                     println!("army {a}: block {}", hex(&rd(&mut link, base, 0x3C)));
                 }
             }
+            // menuend SEAT: with the map menu open, DOWN until its cursor is on End, then A (the menu keeps its row between uses)
+            "menuend" => {
+                let seat: usize = p[1].parse().unwrap();
+                for _ in 0..10 {
+                    let cur = rd(&mut link, 0x0300_14F0, 1)[0] as u32;
+                    let item = rd(&mut link, 0x0300_14A1 + cur.min(7), 1)[0];
+                    let mut k = vec![0; n];
+                    k[seat] = if item == 6 { 1 } else { key_bits("DOWN") };
+                    for _ in 0..4 {
+                        tick(&mut link, &k);
+                    }
+                    for _ in 0..10 {
+                        tick(&mut link, &keys);
+                    }
+                    if item == 6 {
+                        break;
+                    }
+                }
+            }
             "peek" => println!("{} @{t}: {}", p[1], hex(&rd(&mut link, parse(p[1]), p[2].parse().unwrap()))),
             "poke" => {
                 for _ in 0..4 {
