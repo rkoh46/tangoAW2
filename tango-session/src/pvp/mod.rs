@@ -16,6 +16,7 @@
 mod driver;
 mod recording;
 mod setup;
+mod silence;
 mod supervisor;
 
 pub use driver::{PvpBoot, PvpDriver};

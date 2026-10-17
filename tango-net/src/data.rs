@@ -407,6 +407,10 @@ pub struct PvpReceiver {
     wake: std::sync::Arc<tokio::sync::Notify>,
     /// Inputs made contiguous by the last frame but not yet yielded.
     pending: std::collections::VecDeque<Input>,
+    /// Called for every datagram that decodes as a frame, whether or not it carries an input: the peer's
+    /// retransmit heartbeat (a bare ack while its emulator sends nothing) is the keepalive, and this is how
+    /// the session learns that the peer is still there.
+    on_frame: Option<Box<dyn Fn() + Send + Sync>>,
 }
 
 impl PvpReceiver {
@@ -424,7 +428,14 @@ impl PvpReceiver {
             remote_ended,
             wake,
             pending: std::collections::VecDeque::new(),
+            on_frame: None,
         }
+    }
+
+    /// Report every received frame (inputs and bare keepalive acks alike) to `f`.
+    pub fn with_frame_hook(mut self, f: impl Fn() + Send + Sync + 'static) -> Self {
+        self.on_frame = Some(Box::new(f));
+        self
     }
 
     pub async fn receive(&mut self) -> std::io::Result<Input> {
@@ -434,6 +445,9 @@ impl PvpReceiver {
             }
             let msg = self.receiver.recv().await?;
             let frame = protocol::Frame::decode(&mut &msg[..])?;
+            if let Some(f) = self.on_frame.as_ref() {
+                f();
+            }
             let delivery = self
                 .im
                 .recv(&frame)
@@ -471,5 +485,92 @@ impl PvpReceiver {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    struct ChanSink(tokio::sync::mpsc::UnboundedSender<Vec<u8>>);
+    #[async_trait::async_trait]
+    impl crate::PacketSink for ChanSink {
+        async fn send(&mut self, bytes: &[u8]) -> std::io::Result<()> {
+            self.0.send(bytes.to_vec()).map_err(|_| std::io::Error::other("closed"))
+        }
+    }
+    struct ChanStream(tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>);
+    #[async_trait::async_trait]
+    impl crate::PacketStream for ChanStream {
+        async fn recv(&mut self) -> std::io::Result<Vec<u8>> {
+            self.0.recv().await.ok_or_else(|| std::io::ErrorKind::UnexpectedEof.into())
+        }
+    }
+
+    /// An idle peer (its emulator sends no input) keeps sending: the heartbeat is the keepalive, and the receiver
+    /// reports each of its frames although none carries an input.
+    #[tokio::test]
+    async fn an_idle_peer_keeps_the_link_alive_and_the_receiver_hears_it() {
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        let cancel = tokio_util::sync::CancellationToken::new();
+        let _idle = InMatchTx::new(Sender::new(Box::new(ChanSink(tx))), Duration::from_millis(10), cancel.clone());
+
+        // the other end: its own (unused) send side, and the receiver of the idle peer's frames
+        let (tx2, _rx2) = tokio::sync::mpsc::unbounded_channel();
+        let ours = InMatchTx::new(Sender::new(Box::new(ChanSink(tx2))), Duration::from_millis(10), cancel.clone());
+        let heard = Arc::new(AtomicU32::new(0));
+        let h = heard.clone();
+        let mut recv = PvpReceiver::new(
+            Receiver::new(Box::new(ChanStream(rx))),
+            ours,
+            Arc::new(Mutex::new(None)),
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            Arc::new(tokio::sync::Notify::new()),
+        )
+        .with_frame_hook(move || {
+            h.fetch_add(1, Ordering::Relaxed);
+        });
+
+        // no input ever arrives ...
+        let got = tokio::time::timeout(Duration::from_millis(300), recv.receive()).await;
+        assert!(got.is_err(), "an idle peer yields no input");
+        // ... yet the frames kept coming (about one per heartbeat)
+        assert!(heard.load(Ordering::Relaxed) >= 10, "heard {} frames", heard.load(Ordering::Relaxed));
+        cancel.cancel();
+    }
+
+    /// A stopped peer (the heartbeat's task is cancelled with the process; here: the sender is dropped from the
+    /// pipe) stops being heard.
+    #[tokio::test]
+    async fn no_frames_when_the_peer_stops() {
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        let cancel = tokio_util::sync::CancellationToken::new();
+        let hb = tokio_util::sync::CancellationToken::new();
+        let _idle = InMatchTx::new(Sender::new(Box::new(ChanSink(tx))), Duration::from_millis(10), hb.clone());
+        let (tx2, _rx2) = tokio::sync::mpsc::unbounded_channel();
+        let ours = InMatchTx::new(Sender::new(Box::new(ChanSink(tx2))), Duration::from_millis(10), cancel.clone());
+        let heard = Arc::new(AtomicU32::new(0));
+        let h = heard.clone();
+        let mut recv = PvpReceiver::new(
+            Receiver::new(Box::new(ChanStream(rx))),
+            ours,
+            Arc::new(Mutex::new(None)),
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            Arc::new(tokio::sync::Notify::new()),
+        )
+        .with_frame_hook(move || {
+            h.fetch_add(1, Ordering::Relaxed);
+        });
+        let _ = tokio::time::timeout(Duration::from_millis(100), recv.receive()).await;
+        hb.cancel();
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        let _ = tokio::time::timeout(Duration::from_millis(20), recv.receive()).await;
+        let at_stop = heard.load(Ordering::Relaxed);
+        let _ = tokio::time::timeout(Duration::from_millis(200), recv.receive()).await;
+        assert_eq!(heard.load(Ordering::Relaxed), at_stop);
+        cancel.cancel();
     }
 }
