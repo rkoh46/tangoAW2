@@ -532,16 +532,18 @@ fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     let me = room_local_seat();
     let fits = |t: &str| text_width(core, t) <= 144;
     let line1 = if who == me { "Pick a map  A: Choose".to_string() } else { fit(core, &format!("{} is picking...", room_name(who)), 144) };
+    let left = pick_frames().saturating_sub(core.raw_read_16(PICK_T, -1) as u32).div_ceil(60);
     let picked = core.raw_read_8(PICKS, -1) as usize;
     let maps: Vec<String> = (0..picked.min(n)).map(|s| map_name(core, core.raw_read_8(seat(s) + S_MAP, -1))).collect();
-    let left = pick_frames().saturating_sub(core.raw_read_16(PICK_T, -1) as u32).div_ceil(60);
-    let mut lines = vec![(line1, WHITE), (format!("Time left {}:{:02}", left / 60, left % 60), if left <= 10 { (255, 120, 96) } else { WHITE })];
+    // (the box stays three lines: the prompt, the time left with the count of picks, and what was picked)
+    let clock = format!("Time left {}:{:02}   Picks: {} of {}", left / 60, left % 60, picked, n);
+    let mut lines = vec![(line1, WHITE), (fit(core, &clock, 144), if left <= 10 { (255, 120, 96) } else { YELLOW })];
     if picked > 0 {
         let full = (0..maps.len()).map(|s| format!("{}: {}", room_name(s), maps[s])).collect::<Vec<_>>().join(", ");
-        let count = format!("Picks: {picked} of {n}");
-        lines.push((if fits(&full) { full } else { count.clone() }, YELLOW));
-        if me < picked && lines[2].0 == count {
-            lines.push((fit(core, &format!("Yours: {}", maps[me]), 144), YELLOW));
+        if fits(&full) {
+            lines.push((full, WHITE));
+        } else if me < picked {
+            lines.push((fit(core, &format!("Yours: {}", maps[me]), 144), WHITE));
         }
     }
     paint_box(core, cv, &lines);
