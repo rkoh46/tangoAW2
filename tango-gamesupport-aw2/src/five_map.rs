@@ -205,24 +205,103 @@ pub fn is_wasteland_map(id: u8) -> bool {
 /// count), so no other tab changes. Idempotent.
 pub fn name_room_tabs(core: &mut Core, players: usize, plain: &str, pre: &str) {
     for (k, (tab, text)) in [(2u32, plain), (4, pre)].into_iter().enumerate() {
-        let slot_k = 1 + MAPS.len() as u32 + 2 * (players as u32 - 2) + k as u32;
-        let at = STRINGS + 0x20 * slot_k;
-        let id = TAB_TEXT as u32 + slot_k;
-        let slot = TEXT_TABLE + 4 * id;
-        if core.raw_read_32(slot, -1) != at {
-            let mut bytes = text.bytes().map(|b| if b == b'\'' { b'~' } else { b }).collect::<Vec<u8>>();
-            assert!(bytes.len() < 0x20);
-            bytes.push(0);
-            core.raw_write_range(at, -1, &bytes);
-            core.raw_write_32(slot, -1, at);
+        name_tab(core, tab, players, k, text);
+    }
+}
+
+/// Tab `tab`'s title is the text for `players` players' plain (k 0) or Pre-Deployed (k 1) list. Idempotent.
+pub fn name_tab(core: &mut Core, tab: u32, players: usize, k: usize, text: &str) {
+    let slot_k = 1 + MAPS.len() as u32 + 2 * (players as u32 - 2) + k as u32;
+    let at = STRINGS + 0x20 * slot_k;
+    let id = TAB_TEXT as u32 + slot_k;
+    let slot = TEXT_TABLE + 4 * id;
+    if core.raw_read_32(slot, -1) != at {
+        let mut bytes = text.bytes().map(|b| if b == b'\'' { b'~' } else { b }).collect::<Vec<u8>>();
+        assert!(bytes.len() < 0x20);
+        bytes.push(0);
+        core.raw_write_range(at, -1, &bytes);
+        core.raw_write_32(slot, -1, at);
+    }
+    if core.raw_read_16(TAB_TITLES + 2 * tab, -1) != id as u16 {
+        core.raw_write_16(TAB_TITLES + 2 * tab, -1, id as u16);
+    }
+}
+
+/// The game's own tab titles (a text id per tab 2..=8, [`TAB_TITLES`]); tab 9 is [`TAB_TEXT`].
+pub fn native_tab_title(tab: u32) -> u16 {
+    if tab == CATEGORY as u32 {
+        TAB_TEXT
+    } else {
+        2603 + tab as u16
+    }
+}
+
+pub fn set_tab_title(core: &mut Core, tab: u32, id: u16) {
+    if core.raw_read_16(TAB_TITLES + 2 * tab, -1) != id {
+        core.raw_write_16(TAB_TITLES + 2 * tab, -1, id);
+    }
+}
+
+
+// --- The map list's buffer ---------------------------------------------------------------------------------
+//
+// The game's SELECT MAP list keeps its rows in a small struct in EWRAM (0x02027F74: four bytes, the ids of up to 50
+// maps from +4, then the cursor at +0x36 and the last row at +0x37) and its builder stops at 50 maps. A Versus tab can
+// hold more (60 maps for 2 players, 76 with the Dual Strike pack), so the struct moves to [`LIST`] with room for
+// [`LIST_CAP`] ids, every literal that points to it (or to its ids) follows, the two fields move behind the ids and the
+// builder's stop moves up. The other modes' builders (up to 107 rows, the ids are their own) fill it as before.
+
+/// The list's struct: four bytes, [`LIST_CAP`] ids, the cursor row, the last row.
+pub const LIST: u32 = 0x0203_DC20;
+pub const LIST_IDS: u32 = LIST + 4;
+pub const LIST_CAP: u32 = 0x6E;
+pub const LIST_CURSOR: u32 = LIST + 4 + LIST_CAP;
+pub const LIST_LAST: u32 = LIST_CURSOR + 1;
+pub const LIST_BYTES: u32 = 8 + LIST_CAP;
+const OLD_LIST: u32 = 0x0202_7F74;
+/// Literal words that hold the struct's address (and its ids', +4).
+const LIST_LITERALS: [u32; 33] = [
+    0x0803_74DC, 0x0803_7504, 0x0803_7538, 0x0803_756C, 0x0803_75A0, 0x0803_7938, 0x0803_7C94, 0x0808_615C, 0x0808_6250, 0x0808_63C4,
+    0x0808_6544, 0x0808_6648, 0x0808_6ACC, 0x0808_6BA4, 0x0808_6C9C, 0x0808_6D50, 0x0808_6DB0, 0x0808_6EEC, 0x0808_6FA4, 0x0808_7140,
+    0x0808_71B0, 0x0808_7218, 0x0808_73AC, 0x0808_74C0, 0x0808_75A0, 0x0808_7668, 0x0808_7934, 0x0808_7B1C, 0x0808_7BFC, 0x081D_9414,
+    0x081D_9448, 0x0861_7A64, 0x0861_7CE8,
+];
+const LIST_IDS_LITERALS: [u32; 5] = [0x0803_74D8, 0x0803_7534, 0x0803_7568, 0x0803_759C, 0x0808_7C70];
+/// `adds rN, #0x36` (the cursor row) and `adds rN, #0x37` (the last row) on the struct's pointer.
+const LIST_CURSOR_SITES: [u32; 6] = [0x0803_74C0, 0x0803_74F4, 0x0803_7526, 0x0803_755A, 0x0803_758E, 0x0808_6126];
+const LIST_LAST_SITES: [u32; 17] = [
+    0x0803_74C8, 0x0803_74FA, 0x0803_752C, 0x0803_7560, 0x0803_7594, 0x0808_6212, 0x0808_64FC, 0x0808_6600, 0x0808_6B3E, 0x0808_6C32,
+    0x0808_6CF2, 0x0808_718A, 0x0808_71CE, 0x0808_72F8, 0x0808_7362, 0x0808_7404, 0x0808_7476,
+];
+/// The Versus builder's `cmp r5, #0x31` (it stops when 50 maps are in).
+const LIST_BUILDER_STOP: u32 = 0x0803_74AA;
+
+fn patch_list(core: &mut Core) {
+    for at in LIST_LITERALS {
+        if core.raw_read_32(at, -1) == OLD_LIST {
+            core.raw_write_32(at, -1, LIST);
         }
-        if core.raw_read_16(TAB_TITLES + 2 * tab, -1) != id as u16 {
-            core.raw_write_16(TAB_TITLES + 2 * tab, -1, id as u16);
+    }
+    for at in LIST_IDS_LITERALS {
+        if core.raw_read_32(at, -1) == OLD_LIST + 4 {
+            core.raw_write_32(at, -1, LIST_IDS);
         }
+    }
+    for (sites, old, new) in [(&LIST_CURSOR_SITES[..], 0x36u16, (LIST_CAP + 4) as u16), (&LIST_LAST_SITES[..], 0x37, (LIST_CAP + 5) as u16)] {
+        for &at in sites {
+            let h = core.raw_read_16(at, -1);
+            if h & 0xFF == old {
+                core.raw_write_16(at, -1, (h & 0xFF00) | new);
+            }
+        }
+    }
+    if core.raw_read_16(LIST_BUILDER_STOP, -1) == 0x2D31 {
+        core.raw_write_16(LIST_BUILDER_STOP, -1, 0x2D00 | (LIST_CAP as u16 - 1));
     }
 }
 
 pub fn install(core: &mut Core) {
+    patch_list(core);
     let mut names = vec![TAB_NAME_TEXT];
     names.extend(MAPS.iter().map(|m| m.name));
     for (k, text) in names.iter().enumerate() {
@@ -306,7 +385,8 @@ pub fn install(core: &mut Core) {
 const MAP_SHOWN: u32 = 0x0803_CA54;
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(MAP_SHOWN, Box::new(|core: &mut Core| {
+    let mut v: Vec<(u32, Box<dyn Fn(&mut Core)>)> = Vec::new();
+    v.push((MAP_SHOWN, Box::new(|core: &mut Core| {
         let id = core.gba().cpu().gpr(0) as u32;
         let t = table(core);
         if id >= 0xF0 && (t == crate::survival::TABLE || t == crate::ds_versus::TABLE) {
@@ -315,7 +395,8 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
             let lr = cpu.gpr(14) as u32;
             cpu.set_thumb_pc(lr & !1);
         }
-    }))]
+    })));
+    v
 }
 
 /// A Versus tab no map list shows: where a map goes to be hidden.

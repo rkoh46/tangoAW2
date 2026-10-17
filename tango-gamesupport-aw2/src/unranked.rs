@@ -204,7 +204,7 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         return;
     }
     // The map under the cursor (the list holds only the room's count of armies here).
-    let Some(cur) = crate::online::list_cursor(core).filter(|&c| c <= 0x31) else {
+    let Some(cur) = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP) else {
         return;
     };
     let id = core.raw_read_8(crate::online::LIST_IDS + cur, -1);
@@ -319,7 +319,7 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
     let table = crate::five_map::table(core);
     let tab_of = |core: &Core, id: u8| core.raw_read_16(table + 0x5C * id as u32 + 0x1A, -1);
     let ids = crate::online::LIST_IDS;
-    let Some(cur) = crate::online::list_cursor(core).filter(|&c| c <= 0x31) else {
+    let Some(cur) = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP) else {
         return 0;
     };
     // The list is the tab's maps: the first id's tab is the one shown.
@@ -332,7 +332,7 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
         return match step_at(seats(core), cyc - 1) {
             Some((i, off)) if off < 2 => {
                 let mut len = 0;
-                while len <= 0x31 && tab_of(core, core.raw_read_8(ids + len, -1)) == list_tab {
+                while len < crate::five_map::LIST_CAP && tab_of(core, core.raw_read_8(ids + len, -1)) == list_tab {
                     len += 1;
                 }
                 if len < 2 {
@@ -377,7 +377,7 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
         return if t % 30 < 4 { KEY_RIGHT } else { 0 };
     }
     let mut at = None;
-    for i in 0..=0x31u32 {
+    for i in 0..crate::five_map::LIST_CAP {
         let id = core.raw_read_8(ids + i, -1);
         if tab_of(core, id) != list_tab {
             break;

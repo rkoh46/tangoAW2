@@ -771,6 +771,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::ds_versus::tick(core);
         crate::five_map::show_maps(core, ds_features, ds, crate::survival::last_listed_id(core));
         crate::online_maps::retab(core);
+        crate::online_maps::offline_retab(core);
         crate::mode_menu::tick(core, ds && ds_features && mode.is_none(), crate::survival::TEXT_BASE + crate::survival::T_HELP);
         // LINK is ONLINE, played alone (crate::online_menu).
         crate::online_menu::patch(core, mode.is_none());

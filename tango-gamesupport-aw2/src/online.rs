@@ -646,8 +646,8 @@ pub mod probe {
         let first = core.raw_read_32(0x0300_5900, -1) & 0xFF;
         let cur = core.raw_read_32(0x0300_5930, -1) & 0xFF;
         let pcur = super::list_cursor(core).unwrap_or(0xFF) & 0xFF;
-        let id_a = core.raw_read_8(super::LIST_IDS + (first + cur).min(0x31), -1) as u32;
-        let id_b = core.raw_read_8(super::LIST_IDS + pcur.min(0x31), -1) as u32;
+        let id_a = core.raw_read_8(super::LIST_IDS + (first + cur).min(crate::five_map::LIST_CAP - 1), -1) as u32;
+        let id_b = core.raw_read_8(super::LIST_IDS + pcur.min(crate::five_map::LIST_CAP - 1), -1) as u32;
         let tab = crate::five_map::table(core);
         let arm = |id: u32| core.raw_read_8(tab + 0x5C * id + 0x18, -1) as u64;
         let ml = core.raw_read_32(0x0300_0000, -1) as u64;
@@ -1468,13 +1468,13 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             if BOOT_TO_LOBBY.swap(false, Ordering::Relaxed) {
                 start_nav(core, GOAL_LOBBY);
             }
-            keys
+            crate::online_maps::offline_before(core, keys)
         }
-        _ => keys,
+        _ => crate::online_maps::offline_before(core, keys),
     }
 }
 
-pub(crate) const LIST_IDS: u32 = 0x0202_7F78;
+pub(crate) const LIST_IDS: u32 = crate::five_map::LIST_IDS;
 
 /// SELECT MAP's list proc (the game's own: its cursor row is at +0x58) and where procs live.
 const LIST_PROC: u32 = 0x0861_6CF4;
@@ -1492,7 +1492,7 @@ pub(crate) fn list_cursor(core: &Core) -> Option<u32> {
 fn map_armies(core: &Core, pack: bool) -> Option<u8> {
     let _ = pack;
     let i = list_cursor(core)?;
-    if i > 0x31 {
+    if i >= crate::five_map::LIST_CAP {
         return None;
     }
     let id = core.raw_read_8(LIST_IDS + i, -1) as u32;
@@ -1511,6 +1511,7 @@ pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     }
     crate::online_teams::draw(core, rgba);
     crate::unranked::draw(core, rgba);
+    crate::online_maps::draw_hint(core, rgba);
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {
         return;
     }

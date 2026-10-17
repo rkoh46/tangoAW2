@@ -85,6 +85,8 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("online: the gamertag, the record's lines and a room battle's notes (crate::online_stats)", (crate::online_stats::BASE, crate::online_stats::LEN)),
     ("online: each seat's CO, colour and partner choices in a room (crate::online_teams::SEL)", (crate::online_teams::SEL, crate::online_teams::SEL_LEN)),
     ("online: an UNRANKED match's map proposals and rules (crate::unranked::STATE)", (crate::unranked::STATE, crate::unranked::STATE_LEN)),
+    ("offline Versus' map tabs: the maps' own tabs kept aside (crate::online_maps::OFF)", (0x0203_DB00, crate::online_maps::OFF_LEN)),
+    ("the map list's rows, moved and enlarged (crate::five_map::LIST)", (crate::five_map::LIST, crate::five_map::LIST_BYTES)),
     ("online: the saved matches' list and the lobby's note (crate::online::SAVED)", (crate::online::SAVED, crate::online::SAVED_LEN)),
     ("DS Campaign's records", (0x0203_F600, 0x100)),
     ("map animations", (0x0203_F740, 0x60)),

@@ -450,11 +450,14 @@ const TEXT_CACHE: u32 = 0x0300_2B80;
 const TEXT_CACHE_NEXT: u32 = TEXT_CACHE + 0x358;
 const LIST_TEXT_FIRST: u16 = 0x29;
 fn list_drawn(core: &mut Core) {
-    if in_use(core) {
-        // (first, count, top: in sl, r7 and sb by now, for [`REDRAW`])
-        let cpu = core.gba().cpu();
-        let args = [cpu.gpr(10) as u8, cpu.gpr(7) as u8, cpu.gpr(9) as u8];
-        core.raw_write_range(LIST_ARGS, -1, &args);
+    // (every Versus list: the lists by player count have up to 76 names, a tab of the game's own has 24 at most)
+    if in_use(core) || crate::pvp::in_versus(core) {
+        if in_use(core) {
+            // (first, count, top: in sl, r7 and sb by now, for [`REDRAW`])
+            let cpu = core.gba().cpu();
+            let args = [cpu.gpr(10) as u8, cpu.gpr(7) as u8, cpu.gpr(9) as u8];
+            core.raw_write_range(LIST_ARGS, -1, &args);
+        }
         core.raw_write_16(TEXT_CACHE_NEXT, -1, LIST_TEXT_FIRST);
         core.raw_write_8(TEXT_CACHE, -1, 1);
     }
@@ -468,8 +471,8 @@ const SELECT_MAP: u32 = 0x0861_6C54;
 const SELECT_MAP_IDLE: u32 = 0x0808_5F90;
 const DRAW_MAP_LIST: u32 = 0x0808_6A58;
 const PROC_POOL: (u32, u32) = (0x0200_D610, 0x0200_E418);
-const LIST_IDS: u32 = 0x0202_7F78;
-const LIST_LAST: u32 = 0x0202_7FAB;
+const LIST_IDS: u32 = crate::five_map::LIST_IDS;
+const LIST_LAST: u32 = crate::five_map::LIST_LAST;
 const LIST_ROW: u32 = 0x0300_5980;
 const LIST_TOP: u32 = 0x0300_5990;
 const LIST_TAB: u32 = 0x0300_596C;
@@ -488,6 +491,12 @@ fn highlighted(core: &Core) -> Option<u8> {
 /// A map that can be either front of a two-map Versus battle: Dual Strike's 2P Versus maps.
 fn two_player(id: u8) -> bool {
     built().is_some_and(|b| b.names.iter().any(|n| n.0 == id))
+}
+
+/// SELECT is the second-front mark here: the Dual Strike pack's list is up and the cursor is on a 2P map of it
+/// (crate::online_maps keeps SELECT for its lists otherwise).
+pub fn wants_select(core: &Core) -> bool {
+    in_use(core) && list_up(core) && highlighted(core).is_some_and(two_player)
 }
 
 /// Every frame before the game (crate::pvp, `ds`: the pack's features; `allowed`: offline): on Versus' list,

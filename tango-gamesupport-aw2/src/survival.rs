@@ -775,7 +775,7 @@ fn set_map_played(core: &mut Core) {
 /// whatever the list holds (it always has more than seven maps); Survival's
 /// list has fewer, so the rows past its end are left out, as Versus does.
 const DRAW_MAP_LIST: u32 = 0x0808_6A58;
-const MAP_LIST_LAST: u32 = 0x0202_7FAB;
+const MAP_LIST_LAST: u32 = crate::five_map::LIST_LAST;
 fn draw_map_list(core: &mut Core) {
     if core.raw_read_8(ON, -1) != 1 {
         return;

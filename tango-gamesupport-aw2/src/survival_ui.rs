@@ -93,7 +93,7 @@ pub(crate) const KEY_L: u32 = 1 << 9;
 /// SELECT MAP's list: the first row shown, the cursor's row, the ids.
 const LIST_FIRST: u32 = 0x0300_5900;
 const LIST_CURSOR: u32 = 0x0300_5930;
-const LIST_IDS: u32 = 0x0202_7F78;
+const LIST_IDS: u32 = crate::five_map::LIST_IDS;
 
 pub(crate) fn selecting(core: &Core) -> bool {
     (PROC_POOL.0..PROC_POOL.1)
@@ -1061,7 +1061,7 @@ pub(crate) fn write_if_changed(core: &mut Core, at: u32, b: &[u8]) {
 
 fn kind_on_list(core: &Core) -> Option<(Kind, bool)> {
     let (first, cursor) = (core.raw_read_32(LIST_FIRST, -1), core.raw_read_32(LIST_CURSOR, -1));
-    let id = core.raw_read_8(LIST_IDS + (first + cursor).min(0x31), -1);
+    let id = core.raw_read_8(LIST_IDS + (first + cursor).min(crate::five_map::LIST_CAP - 1), -1);
     sv::entry_kind_of(id)
 }
 

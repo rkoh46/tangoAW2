@@ -458,6 +458,173 @@ pub fn retab(core: &mut Core) {
     }
 }
 
+// --- Offline Versus: the same lists by player count, SELECT for the game's own -------------------------------------
+
+/// Offline Versus' SELECT MAP lists the maps by number of players, as a room does: "2P", "2P Predeploy", "3P" .. "5P
+/// Predeploy" on the game's tab slots 2..9 (a tab with no map is skipped by the list). SELECT swaps them for the game's
+/// own lists (Classic, Vs. Maps, Pre-Deployed, the player-count tabs, War Room, Design Maps and tangoAW2's 5P Maps) and
+/// back; the choice is kept for the session. The maps' header tabs are rewritten while Versus is the game's mode
+/// and put back (from the copy kept at [`OFF_SHADOW`]) when it is not, so War Room and the other modes list as before.
+const OFF: u32 = 0x0203_DB00;
+/// 1 while the maps' tabs are rewritten (the copy at [`OFF_SHADOW`] is valid).
+const OFF_ON: u32 = OFF;
+/// The table the copy was taken from (u32).
+const OFF_TABLE: u32 = OFF + 4;
+/// The keys of last frame (u16).
+const OFF_PREV: u32 = OFF + 8;
+/// A map's own tab, by id.
+const OFF_SHADOW: u32 = OFF + 0x10;
+pub const OFF_LEN: u32 = 0x110;
+
+/// The list by number of players (false) or the game's own (true): kept for the session.
+static ORIGINAL_VIEW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn original_view() -> bool {
+    ORIGINAL_VIEW.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// The tab of a map for `armies` players in the player-count view: 2P 2, 2P Predeploy 3, .. 5P Predeploy 9.
+pub fn count_tab(armies: usize, predeployed: bool) -> u16 {
+    (2 + 2 * (armies.clamp(2, 5) - 2) + predeployed as usize) as u16
+}
+
+/// Offline Versus' SELECT MAP is the screen to show (not a room's, which [`retab`] owns).
+fn offline_versus(core: &Core) -> bool {
+    !owns(core) && crate::pvp::in_versus(core)
+}
+
+/// Every frame, offline, before the game runs: the tabs of the view in use, and SELECT swaps the view (the game is
+/// told RIGHT once, from the last tab, so that it rebuilds its list on the first tab of the other view). Returns the keys the game gets.
+pub fn offline_before(core: &mut Core, keys: u32) -> u32 {
+    use crate::online::KEY_RIGHT;
+    const SELECT: u32 = 1 << 2;
+    let table = crate::five_map::table(core);
+    let on = core.raw_read_8(OFF_ON, -1) == 1;
+    if on && core.raw_read_32(OFF_TABLE, -1) != table {
+        // (another table is in use now: the copy is no good)
+        core.raw_write_8(OFF_ON, -1, 0);
+    }
+    let prev = core.raw_read_16(OFF_PREV, -1) as u32;
+    core.raw_write_16(OFF_PREV, -1, keys as u16);
+    let mut keys = keys;
+    if !offline_versus(core) {
+        return keys;
+    }
+    if crate::survival_ui::idle(core) && keys & !prev & SELECT != 0 && !crate::ds_versus::wants_select(core) {
+        ORIGINAL_VIEW.fetch_xor(true, std::sync::atomic::Ordering::Relaxed);
+        // (the game's tab cursor to the last tab, its memory of each tab's row cleared: RIGHT then wraps to the first non-empty tab)
+        core.raw_write_16(TAB_VAR, -1, 9);
+        for t in 0..10 {
+            core.raw_write_8(TAB_ROWS + t, -1, 0);
+        }
+        keys = (keys & !SELECT) | KEY_RIGHT;
+        return keys;
+    }
+    if !crate::ds_versus::wants_select(core) {
+        keys &= !SELECT;
+    }
+    keys
+}
+
+/// Every frame, offline (after [`crate::five_map::show_maps`]): the maps' tabs for the view in use, or the game's own
+/// when Versus is not the mode.
+pub fn offline_retab(core: &mut Core) {
+    if owns(core) {
+        return;
+    }
+    if crate::pvp::in_versus(core) {
+        offline_apply(core);
+    } else {
+        offline_restore(core);
+    }
+}
+
+/// The game's tab cursor (a halfword) and its memory of the row on each tab (a byte each), in IWRAM.
+const TAB_VAR: u32 = 0x0300_596C;
+const TAB_ROWS: u32 = 0x0300_5990;
+
+/// The maps' tabs for the view in use.
+fn offline_apply(core: &mut Core) {
+    if original_view() {
+        offline_restore(core);
+        return;
+    }
+    let table = crate::five_map::table(core);
+    if core.raw_read_8(OFF_ON, -1) != 1 {
+        for id in 0..=0xFFu32 {
+            let tab = if id <= last_id(table) { core.raw_read_16(table + 0x5C * id + 0x1A, -1) } else { 0x7F };
+            core.raw_write_8(OFF_SHADOW + id, -1, tab.min(0xFF) as u8);
+        }
+        core.raw_write_32(OFF_TABLE, -1, table);
+        core.raw_write_8(OFF_ON, -1, 1);
+    }
+    for id in 0..=last_id(table) {
+        let h = table + 0x5C * id;
+        let tab = core.raw_read_16(h + 0x1A, -1);
+        // (a map the game or the pack keeps off the lists stays off; the Design Room's slots are not for this list)
+        let want = if (0xB4..=0xB7).contains(&id) {
+            HIDE
+        } else if !rom(core.raw_read_32(h, -1)) || !(TABS.contains(&tab) || tab == HIDE) {
+            continue;
+        } else {
+            let armies = armies_of(core, table, id) as usize;
+            if !(2..=5).contains(&armies) {
+                HIDE
+            } else {
+                count_tab(armies, info(core, id as u8).is_some_and(|i| i.predeployed()))
+            }
+        };
+        if tab != want {
+            core.raw_write_16(h + 0x1A, -1, want);
+        }
+    }
+    for t in 2..=9u32 {
+        let n = 2 + (t as usize - 2) / 2;
+        let (plain, pre) = tab_titles(n);
+        let k = (t as usize - 2) % 2;
+        crate::five_map::name_tab(core, t, n, k, if k == 0 { &plain } else { &pre });
+    }
+}
+
+/// Puts the game's own tabs (and their titles) back.
+fn offline_restore(core: &mut Core) {
+    if core.raw_read_8(OFF_ON, -1) != 1 {
+        return;
+    }
+    let table = crate::five_map::table(core);
+    for id in 0..=last_id(table) {
+        let at = table + 0x5C * id + 0x1A;
+        let own = core.raw_read_8(OFF_SHADOW + id, -1) as u16;
+        if core.raw_read_16(at, -1) != own {
+            core.raw_write_16(at, -1, own);
+        }
+    }
+    for t in 2..=9u32 {
+        crate::five_map::set_tab_title(core, t, crate::five_map::native_tab_title(t));
+    }
+    core.raw_write_8(OFF_ON, -1, 0);
+}
+
+/// The hint at the foot of offline Versus' SELECT MAP: what SELECT does.
+pub fn draw_hint(core: &Core, rgba: &mut [u8]) {
+    use crate::online::*;
+    if rgba.len() != W * H * 4 || !offline_versus(core) || !crate::survival_ui::selecting(core) {
+        return;
+    }
+    let t = if crate::ds_versus::wants_select(core) {
+        "SELECT: Second map"
+    } else if original_view() {
+        "SELECT: By players"
+    } else {
+        "SELECT: Original lists"
+    };
+    let mut canvas = Rgba(rgba);
+    let w = text_width(core, t) + 12;
+    let x = W as i32 - w;
+    canvas.rect(x, 146, w, 14, BAR);
+    canvas.text(core, x + 6, 147, t, WHITE, GRAY_INK);
+}
+
 /// A room's match is on this console (its SELECT MAP lists only the room's maps, so none is skipped or refused).
 pub fn owns(core: &Core) -> bool {
     crate::online::in_room_match(core)
@@ -479,4 +646,25 @@ mod tests {
 /// SELECT MAP's list is up and takes the pad (test aid).
 pub fn idle(core: &Core) -> bool {
     crate::survival_ui::idle(core)
+}
+
+/// Test aid (the offline tab check): the list on screen as text: the tab of its first map, the cursor and the ids.
+pub fn probe(core: &Core) -> String {
+    let ids: Vec<u8> = (0..0x100).map(|k| core.raw_read_8(crate::online::LIST_IDS + k, -1)).collect();
+    let table = crate::five_map::table(core);
+    format!("tab-of-first {} cursor {:?} ids {:?}", core.raw_read_16(table + 0x5C * ids[0] as u32 + 0x1A, -1), crate::online::list_cursor(core), ids)
+}
+
+/// Test aid: the ids of the rows of the list on screen, and the tab of the first.
+pub fn list_rows(core: &Core) -> (u16, Vec<u8>) {
+    let n = core.raw_read_8(crate::five_map::LIST_LAST, -1) as usize + 1;
+    let ids: Vec<u8> = (0..n.min(crate::five_map::LIST_CAP as usize)).map(|k| core.raw_read_8(crate::five_map::LIST_IDS + k as u32, -1)).collect();
+    let table = crate::five_map::table(core);
+    let tab = ids.first().map_or(0, |&i| core.raw_read_16(table + 0x5C * i as u32 + 0x1A, -1));
+    (tab, ids)
+}
+
+/// Test aid: every map the audit lists (not the Design Room's), by id.
+pub fn audit_ids(core: &Core) -> Vec<u8> {
+    audit(core).into_iter().map(|r| r.id).collect()
 }
