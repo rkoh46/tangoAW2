@@ -678,15 +678,19 @@ fn main() {
                 for _ in 0..10 {
                     let cur = rd(&mut link, 0x0300_14F0, 1)[0] as u32;
                     let item = rd(&mut link, 0x0300_14A1 + cur.min(7), 1)[0];
+                    if std::env::var_os("AW2_MENU_LOG").is_some() {
+                        eprintln!("menu cursor {cur} item {item} items {:?}", rd(&mut link, 0x0300_14A1, 8));
+                    }
+                    let want: u8 = p.get(2).and_then(|v| v.parse().ok()).unwrap_or(6);
                     let mut k = vec![0; n];
-                    k[seat] = if item == 6 { 1 } else { key_bits("DOWN") };
+                    k[seat] = if item == want { 1 } else { key_bits("DOWN") };
                     for _ in 0..4 {
                         tick(&mut link, &k);
                     }
                     for _ in 0..10 {
                         tick(&mut link, &keys);
                     }
-                    if item == 6 {
+                    if item == want {
                         break;
                     }
                 }
