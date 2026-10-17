@@ -651,7 +651,7 @@ pub enum Tone {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Summary {
     pub overall: Overall,
-    /// (label, value, tone): Matchmaking, Lobby browser, Direct connect (STUN), Relay fallback (TURN), Last check.
+    /// (label, value, tone): Matchmaking, Lobby browser, Direct (STUN), Relay (TURN), Last check.
     pub lines: Vec<(String, String, Tone)>,
 }
 
@@ -724,8 +724,8 @@ pub fn summarize(h: &Health, now: u64, signaling: &[String], lobby_live: Option<
         lines: vec![
             ("Matchmaking".into(), mm, mm_tone),
             ("Lobby browser".into(), format!("{n} of {m} OK"), lobby_tone),
-            ("Direct connect (STUN)".into(), stun, stun_tone),
-            ("Relay fallback (TURN)".into(), turn, turn_tone),
+            ("Direct (STUN)".into(), stun, stun_tone),
+            ("Relay (TURN)".into(), turn, turn_tone),
             ("Last check".into(), last_text, Tone::Good),
         ],
     }
@@ -961,7 +961,7 @@ mod tests {
         h.fail("turn.cloudflare.com:3478", 1000, 0.5);
         let s = summarize(&h, 1001, &sig, Some((1, 3)), Some("turn.cloudflare.com:3478"));
         assert_eq!(s.overall, Overall::Limited);
-        assert_eq!(s.lines[3], ("Relay fallback (TURN)".into(), "Unavailable".into(), Tone::Bad));
+        assert_eq!(s.lines[3], ("Relay (TURN)".into(), "Unavailable".into(), Tone::Bad));
         // offline: everything failed
         let mut h = Health::default();
         h.fail(&sig[0], 1000, 0.5);

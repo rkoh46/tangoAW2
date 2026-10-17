@@ -144,9 +144,9 @@ fn main() {
     }
     // --- connection status and page ---
     let conn_cases: [(&str, u8, [&str; 5]); 3] = [
-        ("ok", 1, ["g|Matchmaking\tOK (Tango)", "g|Lobby browser\t3 of 3 OK", "g|Direct connect (STUN)\tOK", "g|Relay fallback (TURN)\tOK", "g|Last check\t2 min ago"]),
-        ("limited", 2, ["y|Matchmaking\tTrying next...", "y|Lobby browser\t1 of 3 OK", "g|Direct connect (STUN)\tOK", "r|Relay fallback (TURN)\tUnavailable", "g|Last check\tjust now"]),
-        ("offline", 3, ["r|Matchmaking\tUnreachable", "r|Lobby browser\t0 of 3 OK", "r|Direct connect (STUN)\tUnreachable", "r|Relay fallback (TURN)\tUnavailable", "g|Last check\t12 min ago"]),
+        ("ok", 1, ["g|Matchmaking\tOK (Tango)", "g|Lobby browser\t3 of 3 OK", "g|Direct (STUN)\tOK", "g|Relay (TURN)\tOK", "g|Last check\t2 min ago"]),
+        ("limited", 2, ["y|Matchmaking\tTrying next...", "y|Lobby browser\t1 of 3 OK", "g|Direct (STUN)\tOK", "r|Relay (TURN)\tUnavailable", "g|Last check\tjust now"]),
+        ("offline", 3, ["r|Matchmaking\tUnreachable", "r|Lobby browser\t0 of 3 OK", "r|Direct (STUN)\tUnreachable", "r|Relay (TURN)\tUnavailable", "g|Last check\t12 min ago"]),
     ];
     for (name, st, lines) in &conn_cases {
         let l: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
