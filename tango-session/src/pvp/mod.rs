@@ -113,6 +113,16 @@ struct EndState {
     holds: Arc<Mutex<Vec<Hold>>>,
     /// A room: who disconnected, once known (the first to be named stays).
     dropped: Arc<Mutex<Option<String>>>,
+    /// A room: the seats the game says are out of the match (a bit each), published by the drive thread every tick.
+    seats_out: Arc<std::sync::atomic::AtomicU8>,
+    /// A room's host: the seats whose player left after being out (a bit each). The match goes on without them: no pause, no
+    /// save; their input is idle from then on.
+    gone: Arc<std::sync::atomic::AtomicU8>,
+}
+
+/// A drop of the player in `seat` is no disconnect when the host sees it out of the match.
+pub(crate) fn is_benign_drop(is_host: bool, seats_out: u8, seat: u8) -> bool {
+    is_host && seat < 8 && seats_out & (1 << seat) != 0
 }
 
 /// A player the match waits for.
@@ -134,6 +144,14 @@ impl EndState {
     }
     fn any_hold(&self) -> bool {
         !self.holds.lock().unwrap().is_empty()
+    }
+    /// Whether a drop of the player in `seat` is no disconnect: it is out of the match already, and this is a room's host (the
+    /// one that joins the inputs, so the one that can go on without a seat).
+    fn benign_drop(&self, is_host: bool, seat: u8) -> bool {
+        is_benign_drop(is_host, self.seats_out.load(Ordering::Acquire), seat)
+    }
+    fn note_gone(&self, seat: u8) {
+        self.gone.fetch_or(1 << seat, Ordering::AcqRel);
     }
     fn note_dropped(&self, name: String) {
         let mut d = self.dropped.lock().unwrap();

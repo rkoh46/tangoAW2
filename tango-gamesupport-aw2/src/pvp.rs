@@ -651,6 +651,24 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::online::match_over(core)
     }
 
+    /// The seats out of the match: a battle is on and every army of the seat is beaten or yielded, while the match goes on
+    /// (the room's session lets such a seat leave without ending it).
+    fn seats_out(&self, core: &Core) -> u8 {
+        if !in_battle(core) || crate::result_view::decided(core) {
+            return 0;
+        }
+        let n = crate::online::room_players();
+        let armies = crate::five::armies(core).clamp(2, 5);
+        let mut out = 0u8;
+        for seat in 0..n.min(8) {
+            let mine: Vec<u8> = (1..=armies).filter(|&a| seat_of_n(a, n) == seat).collect();
+            if !mine.is_empty() && mine.iter().all(|&a| !crate::result_view::alive(core, a)) {
+                out |= 1 << seat;
+            }
+        }
+        out
+    }
+
     /// The waiting seat's window is not the console's picture (crate::fog_view).
     fn watching(&self, core: &Core, seat: usize) -> bool {
         // (the match is won and this seat is not the winner: its window shows DEFEAT, crate::result_view)

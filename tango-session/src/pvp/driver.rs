@@ -313,6 +313,8 @@ struct HostAgg {
     own: std::collections::VecDeque<(tango_match::HostInput, i16)>,
     /// Which guests have sent a first input (the host's first tick waits for them all: [`START_WAIT_TICKS`]).
     heard: Vec<bool>,
+    /// Guests whose player left after being out of the match (by link): their words are idle and nothing is sent to them.
+    gone: Vec<bool>,
     /// The host has begun to advance.
     started: bool,
     /// Idle ticks spent waiting for the guests' first inputs.
@@ -338,6 +340,7 @@ impl HostAgg {
             rows: Default::default(),
             own: Default::default(),
             heard: vec![false; guests],
+            gone: vec![false; guests],
             started: false,
             waited: 0,
         }
@@ -345,16 +348,46 @@ impl HostAgg {
 
     /// An input from guest `link`'s link; the rows it completes, as the host's one remote input each.
     fn ingest(&mut self, link: usize, input: tango_net::data::Input) -> Vec<(tango_match::HostInput, i16)> {
-        if link >= self.guests {
+        if link >= self.guests || self.gone[link] {
             return Vec::new();
         }
         self.queues[link].push_back(input);
         self.heard[link] = true;
+        self.complete()
+    }
+
+    /// Guests (by seat bit) whose player has left: their words are idle from now on, and the rows that waited for them are done.
+    fn set_gone(&mut self, seats: u8) -> Vec<(tango_match::HostInput, i16)> {
+        let mut changed = false;
+        for (k, &seat) in self.guest_seats.iter().enumerate() {
+            if seats & (1 << seat) != 0 && !self.gone[k] {
+                self.gone[k] = true;
+                self.heard[k] = true;
+                self.queues[k].clear();
+                changed = true;
+            }
+        }
+        if changed {
+            self.complete()
+        } else {
+            Vec::new()
+        }
+    }
+
+    fn complete(&mut self) -> Vec<(tango_match::HostInput, i16)> {
         let mut done = Vec::new();
-        while self.queues.iter().all(|q| !q.is_empty()) {
-            let row: Vec<tango_net::data::Input> = self.queues.iter_mut().map(|q| q.pop_front().unwrap()).collect();
-            let words: Vec<u16> = row.iter().map(|i| i.joyflags).collect();
-            let adv = (row.iter().map(|i| i.tick_advantage as i32).sum::<i32>() / self.guests as i32) as i16;
+        while (0..self.guests).all(|k| self.gone[k] || !self.queues[k].is_empty()) && (0..self.guests).any(|k| !self.gone[k]) {
+            let mut words = vec![0u16; self.guests];
+            let mut advs = Vec::new();
+            for k in 0..self.guests {
+                if self.gone[k] {
+                    continue;
+                }
+                let i = self.queues[k].pop_front().unwrap();
+                words[k] = i.joyflags;
+                advs.push(i.tick_advantage as i32);
+            }
+            let adv = (advs.iter().sum::<i32>() / advs.len().max(1) as i32) as i16;
             let get = |k: usize| words.get(k).copied().unwrap_or(0);
             done.push((
                 tango_match::HostInput {
@@ -389,6 +422,9 @@ impl HostAgg {
             let (own, adv) = self.own.pop_front().unwrap();
             let per_guest = self.guest_views(own.keys as u16, &words);
             for (g, sender) in senders.iter_mut().enumerate() {
+                if self.gone.get(g).copied().unwrap_or(false) {
+                    continue;
+                }
                 let seats = &per_guest[g];
                 let get = |k: usize| seats.get(k).copied().unwrap_or(0);
                 sender.send(&tango_net::data::Input {
@@ -451,6 +487,19 @@ impl PvpDriver {
         let arrived: Vec<(usize, tango_net::data::Input)> = self.ctx.event_rx.try_iter().collect();
         for (link, input) in arrived {
             self.ingest(link, input);
+        }
+        if self.ctx.room_host {
+            // The seats the game says are out (the supervisors read them when a link drops), and the seats whose player has
+            // left since: their input is idle from here on.
+            self.ctx.end.seats_out.store(self.match_.seats_out(), Ordering::Release);
+            let gone = self.ctx.end.gone.load(Ordering::Acquire);
+            if gone != 0 {
+                if let Some(agg) = self.agg.as_mut() {
+                    for (joined, adv) in agg.set_gone(gone) {
+                        self.match_.add_remote_input(joined, adv);
+                    }
+                }
+            }
         }
         if let Err(e) = self.distribute() {
             log::warn!("pvp: send pump terminated; ending match ({e})");
@@ -809,6 +858,32 @@ mod tests {
 
     /// A room of 3 and of 5: every guest's word reaches the host's engine as seat order, and every guest hears
     /// every other seat, so that all peers build the same seats' words (a guest's keys reach the shared console).
+    #[test]
+    fn a_gone_guest_is_idle_and_the_rest_go_on() {
+        let mut agg = HostAgg::new(3, 0);
+        // guests are seats 1 and 2 (links 0 and 1); guest 2 has sent nothing when its player leaves
+        assert!(agg.ingest(0, input(0x10)).is_empty());
+        let done = agg.set_gone(1 << 2);
+        assert_eq!(done.len(), 1, "the row that waited for the gone seat is done");
+        assert_eq!(done[0].0.keys, 0x10);
+        assert_eq!(done[0].0.extra[0], 0, "the gone seat's word is idle");
+        // from now on guest 1's inputs alone make rows, and the gone guest's link is ignored
+        assert_eq!(agg.ingest(0, input(0x20)).len(), 1);
+        assert!(agg.ingest(1, input(0x40)).is_empty());
+        assert_eq!(agg.ingest(0, input(0x30)).len(), 1);
+        assert_eq!(agg.rows.len(), 3);
+        assert!(agg.rows.iter().all(|(w, _)| w[1] == 0));
+    }
+
+    #[test]
+    fn only_a_host_lets_an_out_seat_leave() {
+        use super::super::is_benign_drop;
+        assert!(is_benign_drop(true, 0b100, 2));
+        assert!(!is_benign_drop(true, 0b100, 1), "a seat still in the match is a disconnect");
+        assert!(!is_benign_drop(false, 0b100, 2), "a guest cannot go on without the host's join");
+        assert!(!is_benign_drop(true, 0xFF, 9));
+    }
+
     #[test]
     fn room_inputs_reach_every_seat() {
         for players in [3usize, 4, 5] {

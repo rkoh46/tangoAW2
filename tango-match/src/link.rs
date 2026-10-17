@@ -108,6 +108,12 @@ pub trait Link: Send + 'static {
         let _ = tick;
     }
 
+    /// The seats that are out of the match (a bit each: every army of the seat beaten while the match goes on). A room's session
+    /// lets such a seat leave without pausing the others. A pure read of the console. The default says none.
+    fn seats_out(&mut self) -> u8 {
+        0
+    }
+
     /// A capture as bytes that can be stored and later started from ([`Backend::start_resumed`]), with a digest of
     /// the state that matters. Engines that cannot say leave the default: their matches cannot be suspended.
     fn state_image(&mut self, snapshot: &Snapshot) -> Option<crate::suspend::StateImage> {

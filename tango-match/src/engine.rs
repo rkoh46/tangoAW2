@@ -324,6 +324,11 @@ impl Match {
         })
     }
 
+    /// The seats out of the match, as the console says now (see [`Link::seats_out`]).
+    pub fn seats_out(&self) -> u8 {
+        self.link.lock().map_or(0, |mut l| l.seats_out())
+    }
+
     /// Keep a capture of the console every [`crate::suspend::CHECKPOINT_EVERY`] ticks, for [`checkpoints`](Self::checkpoints)
     /// (a match that can be suspended; costs one capture per half second).
     pub fn keep_checkpoints(&self) {

@@ -253,6 +253,12 @@ pub trait SharedGame: Sync {
         let _ = core;
         false
     }
+
+    /// The seats out of the match (see [`tango_match::Link::seats_out`]).
+    fn seats_out(&self, core: &mgba::core::Core) -> u8 {
+        let _ = core;
+        0
+    }
 }
 
 /// The most ticks [`SharedGame::boot_more`] may add (a minute of play).
@@ -658,6 +664,10 @@ impl tango_match::Link for SharedLink {
 
     fn test_aid(&mut self, tick: u32) {
         self.game.test_aid(self.inner.core_mut(0), tick);
+    }
+
+    fn seats_out(&mut self) -> u8 {
+        self.game.seats_out(self.inner.core(0))
     }
 }
 

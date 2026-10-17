@@ -409,6 +409,22 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // (`PeerQuit`) never reconnects — the peer told us it isn't
             // coming back; every unannounced loss uses the normal transport
             // budget.
+            // A player that is out of the match leaves it without ending it (a room's host: the others play on, that seat's
+            // input is idle from now on; no pause, no countdown, no saved match).
+            if matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled)
+                && !completed.load(Ordering::Acquire)
+                && !end.remote_ended.load(Ordering::Acquire)
+                && !end.aborted.load(Ordering::Acquire)
+                && end.benign_drop(room.as_ref().is_some_and(|r| r.is_host), peer_seat)
+            {
+                log::info!("pvp: {peer_name:?} left after being out of the match: the match goes on without it");
+                end.note_gone(peer_seat);
+                wake.notify_one();
+                drop(watch);
+                link.retire_latency();
+                done.cancel();
+                return;
+            }
             let reconnectable = matches!(trip, Trip::Stalled | Trip::Closed)
                 && link.can_reconnect()
                 && !completed.load(Ordering::Acquire)
