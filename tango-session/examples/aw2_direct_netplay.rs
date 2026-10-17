@@ -400,6 +400,7 @@ async fn build_session(lib: &Library, pre_match: tango_session::pvp::PreMatchDat
         replays: None,
         stats_sink: None,
         sample_rate: 48_000,
+        room: None,
     })
     .await
     .map_err(|e| format!("PvpSession::new: {e}"))
