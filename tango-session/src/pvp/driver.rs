@@ -145,6 +145,7 @@ impl DriveContext {
             hold_shown: None,
             hold_up: false,
             hold_b: true,
+            keys_released: false,
         })
     }
 
@@ -304,6 +305,8 @@ pub struct PvpDriver {
     hold_shown: Option<std::time::Instant>,
     hold_up: bool,
     hold_b: bool,
+    /// The pad has been let go since the match began ([`PvpDriver::tick`]).
+    keys_released: bool,
 }
 
 /// A room's host joins its guests' inputs: its own engine hears them as one input (the guests' joypad words in
@@ -628,6 +631,14 @@ impl PvpDriver {
 
         let mut local = self.ctx.local_input.load();
         local.keys &= tango_match::keys::MASK;
+        // Keys held as the match comes up (the START that began the room, the A of READY) are not presses: the match gets
+        // none until the pad has been released once (a resumed match opened AW2's overview on the host).
+        if !self.keys_released {
+            if local.keys == 0 {
+                self.keys_released = true;
+            }
+            local.keys = 0;
+        }
         let advanced = match self.match_.advance(local) {
             Ok(r) => r,
             Err(e) => {

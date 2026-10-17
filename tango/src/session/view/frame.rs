@@ -94,6 +94,9 @@ fn fit(size: iced::Size, (img_w, img_h): (f32, f32), fractional_scaling: bool) -
         return (size.width.max(1.0), size.height.max(1.0));
     }
     let raw = (size.width / img_w).min(size.height / img_h);
+    // (iOS: a phone held upright is 1.7 times the picture's width, and the whole-number scale left it 60 % wide: it is fitted to
+    // the width, its texels kept crisp by the iOS passthrough shader)
+    let fractional_scaling = fractional_scaling || cfg!(target_os = "ios");
     let scale = if fractional_scaling {
         raw.max(0.0)
     } else {
@@ -133,6 +136,7 @@ fn place<'a>(
     horizontal_alignment: iced::alignment::Horizontal,
     vertical_alignment: iced::alignment::Vertical,
 ) -> Element<'a, Message> {
+    let fractional_scaling = fractional_scaling || cfg!(target_os = "ios");
     let content: Element<'a, Message> = if fractional_scaling {
         fb
     } else {
