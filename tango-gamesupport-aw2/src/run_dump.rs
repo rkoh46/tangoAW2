@@ -22,6 +22,7 @@ struct Dump {
     last_owner: std::collections::BTreeMap<u32, u8>,
     last_powers: [u8; 6],
     last_alive: [bool; 6],
+    last_hash_frame: u32,
     last_carried: std::collections::BTreeMap<u32, (u32, u8)>,
     ready: bool,
 }
@@ -61,13 +62,27 @@ pub fn tick(core: &Core, keys: u32) {
             .append(true)
             .open(dir.join(format!("state_s{seat}.jsonl")))
             .expect("run dump file");
-        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_alive: [true; 6], last_carried: Default::default(), ready: false }
+        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_alive: [true; 6], last_hash_frame: 0, last_carried: Default::default(), ready: false }
     });
     d.tick += 1;
     TICKS.store(d.tick, std::sync::atomic::Ordering::Relaxed);
     // (every non-zero joypad word the console takes, with its tick: proof of what reached the game)
     if keys != 0 {
         let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"keys\",\"word\":{keys}}}", ms(), d.tick);
+    }
+    // (the console's state hash at every 60th frame of its own count: peers that play the same match agree at the same frame)
+    let fc = core.frame_counter();
+    if fc % 60 == 0 && fc != d.last_hash_frame {
+        d.last_hash_frame = fc;
+        let mut iw = vec![0u8; 0x8000];
+        core.raw_read_range(0x0300_0000, -1, &mut iw);
+        let mut ew = vec![0u8; 0x40000];
+        core.raw_read_range(0x0200_0000, -1, &mut ew);
+        let mut h: u64 = 0xcbf29ce484222325;
+        for b in iw.iter().chain(ew.iter()) {
+            h = (h ^ *b as u64).wrapping_mul(0x100000001b3);
+        }
+        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"hash\",\"frame\":{fc},\"h\":\"{h:016x}\"}}", ms(), d.tick);
     }
     if d.tick % 6 != 0 {
         return;
