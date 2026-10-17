@@ -115,6 +115,13 @@ fn main() {
                     }
                     println!("check: {} audited, {} listed, missing {:?}, twice {:?}, not audited {:?}", want.len(), seen.len(), missing, twice, extra);
                 }
+                'F' => {
+                    // A DOWN press, then every frame of it saved (f<n>.bmp).
+                    for i in 0..30u32 {
+                        r.link.tick([HostInput::keys(if i < 3 { 1 << 7 } else { 0 }), HostInput::keys(0)]);
+                        write_bmp(&out.join(format!("f{i:02}.bmp")), &r.link.solo_side().frame().unwrap());
+                    }
+                }
                 'v' => {
                     let core = r.link.core();
                     let io = |a: u32| core.raw_read_16(0x0400_0000 + a, -1);
