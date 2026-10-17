@@ -255,7 +255,7 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
 pub struct AuditRow {
     pub id: u8,
     pub name: String,
-    /// "AW2", "Dual Strike" or "tangoAW2".
+    /// "AW2 Classic" .. "AW2 War Room" (the tab AW2 lists it on), "DS Versus", "DS War Room" or "tangoAW2".
     pub source: &'static str,
     pub w: u8,
     pub h: u8,
@@ -293,6 +293,30 @@ fn unit_owners(core: &Core, units: u32) -> (u8, u32) {
     (mask, n)
 }
 
+/// Where a map comes from: AW2's own (by the tab AW2 lists it on), Dual Strike's (Versus or War Room) or tangoAW2's.
+fn source_of(core: &Core, table: u32, id: u8) -> &'static str {
+    let dual = table == crate::ds_versus::TABLE;
+    if crate::five_map::map_of(id).is_some() && !(dual && crate::ds_versus::replaced(id)) {
+        return "tangoAW2";
+    }
+    if dual {
+        return match crate::ds_versus::map_of(core, id) {
+            Some(e) if e.case == crate::ds_maps::CASE_WAR_ROOM || e.case == crate::ds_maps::CASE_WAR_ROOM_SECOND => "DS War Room",
+            _ => "DS Versus",
+        };
+    }
+    // (AW2's own table in the ROM is untouched: the tab AW2 lists the map on)
+    match core.raw_read_16(0x085C_77A0 + 0x5C * id as u32 + 0x1A, -1) {
+        2 => "AW2 Classic",
+        3 => "AW2 Vs. Maps",
+        4 => "AW2 Pre-Deployed",
+        5 => "AW2 3P Maps",
+        6 => "AW2 4P Maps",
+        7 => "AW2 War Room",
+        _ => "AW2",
+    }
+}
+
 /// Every map the online lists can show (Design Room maps and unlisted ids left out), counted from the data.
 pub fn audit(core: &Core) -> Vec<AuditRow> {
     let table = crate::five_map::table(core);
@@ -309,13 +333,7 @@ pub fn audit(core: &Core) -> Vec<AuditRow> {
         let Some(i) = info(core, id as u8) else { continue };
         let predeployed = i.predeployed();
         let all = i.owners | i.unit_owners;
-        let source = if crate::five_map::map_of(id as u8).is_some() {
-            "tangoAW2"
-        } else if table == crate::ds_versus::TABLE {
-            "Dual Strike"
-        } else {
-            "AW2"
-        };
+        let source = source_of(core, table, id as u8);
         rows.push(AuditRow {
             id: id as u8,
             name: i.name.clone(),
@@ -633,6 +651,19 @@ pub fn owns(core: &Core) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn each_count_has_a_tab_of_its_own() {
+        let mut seen = std::collections::BTreeSet::new();
+        for n in 2..=5 {
+            for pre in [false, true] {
+                let t = count_tab(n, pre);
+                assert!(TABS.contains(&t) && t <= crate::five_map::CATEGORY, "{n} {pre}: {t}");
+                assert!(seen.insert(t), "tab {t} twice");
+            }
+        }
+        assert_eq!(seen.len(), 8);
+    }
 
     #[test]
     fn tabs_are_listable() {
