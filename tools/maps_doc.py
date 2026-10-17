@@ -35,9 +35,9 @@ Every map is in exactly one of eight tabs, by the number of players it has and w
 letters too wide for the game's tab box). A tab with no map is skipped (Left/Right passes over it).
 
 - **Online** (a room of N players): its two tabs, "NP" and "NP Predeploy".
-- **Offline Versus**: the eight tabs, on the game's tab slots 2..9. SELECT swaps them for AW2's own lists (Classic,
+- **Offline Versus**: the eight tabs, on the game's tab slots 2..9. L and R together swap them for AW2's own lists (Classic,
   Vs. Maps, Pre-Deployed, 3P Maps, 4P Maps, War Room, Design Maps and tangoAW2's 5P Maps) and back; the choice is
-  kept for the session. (With the Dual Strike pack, SELECT on a 2P Dual Strike map keeps marking the second front.)
+  kept for the session. (L or R alone change the tab as in AW2; SELECT keeps marking the second front on a 2P Dual Strike map.)
   War Room mode itself is unchanged: its list and scoring are as before, and its maps are also in the lists above.
 
 **Pre-deployed** means the map starts with units placed **and has no production property**: no base, airport or

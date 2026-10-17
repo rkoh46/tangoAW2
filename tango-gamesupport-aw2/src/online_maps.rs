@@ -476,10 +476,10 @@ pub fn retab(core: &mut Core) {
     }
 }
 
-// --- Offline Versus: the same lists by player count, SELECT for the game's own -------------------------------------
+// --- Offline Versus: the same lists by player count, L+R for the game's own -------------------------------------
 
 /// Offline Versus' SELECT MAP lists the maps by number of players, as a room does: "2P", "2P Predeploy", "3P" .. "5P
-/// Predeploy" on the game's tab slots 2..9 (a tab with no map is skipped by the list). SELECT swaps them for the game's
+/// Predeploy" on the game's tab slots 2..9 (a tab with no map is skipped by the list). L and R together swap them for the game's
 /// own lists (Classic, Vs. Maps, Pre-Deployed, the player-count tabs, War Room, Design Maps and tangoAW2's 5P Maps) and
 /// back; the choice is kept for the session. The maps' header tabs are rewritten while Versus is the game's mode
 /// and put back (from the copy kept at [`OFF_SHADOW`]) when it is not, so War Room and the other modes list as before.
@@ -490,6 +490,12 @@ const OFF_ON: u32 = OFF;
 const OFF_TABLE: u32 = OFF + 4;
 /// The keys of last frame (u16).
 const OFF_PREV: u32 = OFF + 8;
+/// Frames a lone L or R is held back (a combo may follow), the frames it has been down, and whether a combo is held.
+const LR_DELAY: u8 = 4;
+const OFF_LR: u32 = OFF + 0x0A;
+const OFF_COMBO: u32 = OFF + 0x0B;
+const OFF_LR_KEY: u32 = OFF + 0x0C;
+const OFF_TAP: u32 = OFF + 0x0D;
 /// A map's own tab, by id.
 const OFF_SHADOW: u32 = OFF + 0x10;
 pub const OFF_LEN: u32 = 0x110;
@@ -511,35 +517,61 @@ fn offline_versus(core: &Core) -> bool {
     !owns(core) && crate::pvp::in_versus(core)
 }
 
-/// Every frame, offline, before the game runs: the tabs of the view in use, and SELECT swaps the view (the game is
+/// Every frame, offline, before the game runs: the tabs of the view in use, and L+R swaps the view (the game is
 /// told RIGHT once, from the last tab, so that it rebuilds its list on the first tab of the other view). Returns the keys the game gets.
 pub fn offline_before(core: &mut Core, keys: u32) -> u32 {
-    use crate::online::KEY_RIGHT;
-    const SELECT: u32 = 1 << 2;
+    use crate::online::{KEY_L, KEY_R, KEY_RIGHT};
     let table = crate::five_map::table(core);
     let on = core.raw_read_8(OFF_ON, -1) == 1;
     if on && core.raw_read_32(OFF_TABLE, -1) != table {
         // (another table is in use now: the copy is no good)
         core.raw_write_8(OFF_ON, -1, 0);
     }
-    let prev = core.raw_read_16(OFF_PREV, -1) as u32;
     core.raw_write_16(OFF_PREV, -1, keys as u16);
     let mut keys = keys;
     if !offline_versus(core) {
+        core.raw_write_8(OFF_LR, -1, 0);
+        core.raw_write_8(OFF_COMBO, -1, 0);
         return keys;
     }
-    if crate::survival_ui::idle(core) && keys & !prev & SELECT != 0 && !crate::ds_versus::wants_select(core) {
+    // L and R together swap the views. L or R alone change the tab, as the game has them; so that a combo does not
+    // also move a tab, a lone L or R is held back for a few frames (the other may join).
+    let lr = keys & (KEY_L | KEY_R);
+    let held = core.raw_read_8(OFF_LR, -1);
+    if core.raw_read_8(OFF_COMBO, -1) != 0 {
+        keys &= !(KEY_L | KEY_R);
+        if lr == 0 {
+            core.raw_write_8(OFF_COMBO, -1, 0);
+            core.raw_write_8(OFF_LR, -1, 0);
+        }
+    } else if lr == KEY_L | KEY_R && crate::survival_ui::idle(core) {
+        core.raw_write_8(OFF_COMBO, -1, 1);
         ORIGINAL_VIEW.fetch_xor(true, std::sync::atomic::Ordering::Relaxed);
         // (the game's tab cursor to the last tab, its memory of each tab's row cleared: RIGHT then wraps to the first non-empty tab)
         core.raw_write_16(TAB_VAR, -1, 9);
         for t in 0..10 {
             core.raw_write_8(TAB_ROWS + t, -1, 0);
         }
-        keys = (keys & !SELECT) | KEY_RIGHT;
-        return keys;
-    }
-    if !crate::ds_versus::wants_select(core) {
-        keys &= !SELECT;
+        keys = (keys & !(KEY_L | KEY_R)) | KEY_RIGHT;
+    } else if lr != 0 {
+        let n = held.saturating_add(1);
+        core.raw_write_8(OFF_LR, -1, n);
+        core.raw_write_8(OFF_LR_KEY, -1, (lr >> 8) as u8);
+        if n <= LR_DELAY {
+            keys &= !(KEY_L | KEY_R);
+        }
+    } else {
+        // (a tap shorter than the delay is given to the game when it ends, for three frames)
+        let mut replay = core.raw_read_8(OFF_TAP, -1);
+        if held != 0 && held <= LR_DELAY {
+            replay = 3;
+        }
+        if replay > 0 {
+            keys |= (core.raw_read_8(OFF_LR_KEY, -1) as u32) << 8;
+            replay -= 1;
+        }
+        core.raw_write_8(OFF_TAP, -1, replay);
+        core.raw_write_8(OFF_LR, -1, 0);
     }
     keys
 }
@@ -623,24 +655,24 @@ fn offline_restore(core: &mut Core) {
     core.raw_write_8(OFF_ON, -1, 0);
 }
 
-/// The hint at the foot of offline Versus' SELECT MAP: what SELECT does.
+/// The hints at the foot of offline Versus' SELECT MAP: what L+R does (and SELECT, on a Dual Strike 2P map).
 pub fn draw_hint(core: &Core, rgba: &mut [u8]) {
     use crate::online::*;
     if rgba.len() != W * H * 4 || !offline_versus(core) || !crate::survival_ui::selecting(core) {
         return;
     }
-    let t = if crate::ds_versus::wants_select(core) {
-        "SELECT: Second map"
-    } else if original_view() {
-        "SELECT: By players"
-    } else {
-        "SELECT: Original lists"
-    };
+    let mut lines = vec![if original_view() { "L+R: Filter by players" } else { "L+R: Show all lists" }];
+    if crate::ds_versus::wants_select(core) {
+        lines.insert(0, "SELECT: Second map");
+    }
     let mut canvas = Rgba(rgba);
-    let w = text_width(core, t) + 12;
-    let x = W as i32 - w;
-    canvas.rect(x, 146, w, 14, BAR);
-    canvas.text(core, x + 6, 147, t, WHITE, GRAY_INK);
+    for (k, t) in lines.iter().rev().enumerate() {
+        let w = text_width(core, t) + 12;
+        let x = W as i32 - w;
+        let y = 146 - 14 * k as i32;
+        canvas.rect(x, y, w, 14, BAR);
+        canvas.text(core, x + 6, y + 1, t, WHITE, GRAY_INK);
+    }
 }
 
 /// A room's match is on this console (its SELECT MAP lists only the room's maps, so none is skipped or refused).

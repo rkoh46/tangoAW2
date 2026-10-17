@@ -80,6 +80,9 @@ fn main() {
                 'A' => r.press(1),
                 'B' => r.press(2),
                 'S' => r.press(1 << 2),
+                'X' => r.press((1 << 8) | (1 << 9)),
+                'l' => r.press(1 << 9),
+                'r' => r.press(1 << 8),
                 'w' => r.wait(120),
                 't' => {
                     let core = r.link.core();
