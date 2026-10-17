@@ -30,6 +30,9 @@ def offset(a, b, span=64 if '--live' in sys.argv else 32):
     """The (dx, dy) such that b's map area shifted by it matches a's best (both axes searched together, so a diagonal
     scroll is not taken for two repeats of the map's tile pattern), the residual, and the runner-up's residual."""
     A = a[30:150:2, 28:150:2].astype(np.float32)
+    # (a flat picture, such as the map roulette's plain sea, has no offset to find)
+    if A.std() < 6 or b[30:150:2, 28:150:2].std() < 6:
+        return 999.0, 0, 0, 999.0
     res = []
     for dy in range(-span, span + 1, 2):
         for dx in range(-span, span + 1, 2):
