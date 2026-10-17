@@ -1,0 +1,37 @@
+# 2 seats, Fog on, a full round (each mover opens the map menu and ends its turn with End, the next seat dismisses the hand-off). Run: AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> this-file; exit 1 when a waiting seat shows the mover's cursor (Fog off) or, with fog, any picture of the console that is not the dark hand-off screen.
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+until teams 100
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 RIGHT
+press 0 RIGHT
+press 0 RIGHT
+press 0 RIGHT
+press 0 RIGHT
+press 0 RIGHT
+wait 10
+press 0 DOWN
+wait 10
+shotall rules0
+press 0 DOWN
+wait 10
+shotall rules1
+press 0 A
+until battle 300
+until army=1 60
+wait 100
+dump b

@@ -695,6 +695,16 @@ fn main() {
                     }
                 }
             }
+            // dump NAME: the console's IWRAM and EWRAM to /tmp/dump_NAME_i.bin / _e.bin (a test aid, to diff two runs)
+            "dump" => {
+                let c = link.core();
+                let mut iw = vec![0u8; 0x8000];
+                c.raw_read_range(0x0300_0000, -1, &mut iw);
+                let mut ew = vec![0u8; 0x40000];
+                c.raw_read_range(0x0200_0000, -1, &mut ew);
+                let _ = std::fs::write(format!("/tmp/dump_{}_i.bin", p[1]), &iw);
+                let _ = std::fs::write(format!("/tmp/dump_{}_e.bin", p[1]), &ew);
+            }
             "peek" => println!("{} @{t}: {}", p[1], hex(&rd(&mut link, parse(p[1]), p[2].parse().unwrap()))),
             "poke" => {
                 for _ in 0..4 {

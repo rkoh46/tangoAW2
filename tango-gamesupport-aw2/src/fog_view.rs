@@ -360,7 +360,7 @@ pub fn phase(core: &Core) -> Phase {
     }
     if running.is_empty() && crate::pvp::turn_ended(core) {
         // (the hand-off screen is a fade and a banner, not the plain map: the last frame of the mover's menu before it is held)
-        return if steady_regs(core) && core.raw_read_8(MAP_MENU_STATE, -1) == 5 { Phase::Moving } else { Phase::HandOff };
+        return if steady_regs(core) && (core.raw_read_8(MAP_MENU_STATE, -1) == 5 || fog(core)) { Phase::Moving } else { Phase::HandOff };
     }
     // A CO Power just chosen from the map menu: the game's own scene (the CO's lines over the map, the full-screen
     // cut-in). Without fog it is shown as it is; with fog the waiting window holds its last picture (the lines come over
