@@ -78,9 +78,53 @@ HQ = (12.6, 0.0)
 # each army's cities (u, v) and the neutral ones on the borders between armies (radius, degrees off the axis)
 CITIES = [(9.0, 3.6), (9.0, -3.6), (5.9, 0.0), (12.4, 6.6), (12.4, -6.6)]
 BORDER_CITIES = [(6.6, 36.0), (10.2, 36.0), (13.2, 36.0)]
-# the forces each army starts with (unit types as in map.py): 3 infantry, 2 mech, recon, 2 tanks, artillery, APC,
-# a cruiser and a battle copter
-FORCES = [1, 1, 1, 2, 2, 6, 5, 5, 10, 7, 22, 19]
+# The forces each army starts with, 40 units (unit types as in map.py), as (type, u, v): the template's cells, turned to each army.
+# Front: 5 infantry, 5 mech and the armour; middle: recon, supply, anti-air; rear: indirects; flanks: air (with the
+# APCs and a T-Copter to resupply it). Megatank and Stealth are Dual Strike's: the map is listed only with the pack.
+def force_template():
+    inf, mech, tank, md, neo, mega = 1, 2, 5, 3, 8, 4
+    recon, apc, aa, missiles, art, rockets = 6, 7, 14, 15, 10, 11
+    bc, fighter, bomber, stealth, tc = 19, 16, 17, 12, 20
+    rows = [
+        (9.0, [inf, inf, inf, inf, inf]),
+        (10.0, [mech, mech, mech, mech, mech]),
+        (11.0, [tank, tank, md, mega, md]),
+        (12.0, [tank, tank, tank, md, neo]),
+        (13.0, [recon, recon, recon, apc, apc]),
+        (14.0, [aa, aa, missiles, art, art]),
+        (15.0, [art, rockets, rockets, bc, bc]),
+    ]
+    out = []
+    for u, kinds in rows:
+        for i, k in enumerate(kinds):
+            out.append((k, u, (i - 2) * 2.0 + (1.0 if k in (inf, mech) and False else 0.0)))
+    # the air forces beside the HQ's row
+    out += [(bc, 12.6, -6.5), (fighter, 12.6, 6.5), (bomber, 14.0, -6.5), (stealth, 14.0, 6.5), (tc, 12.6, -4.5)]
+    return out
+
+
+def place_forces(rows):
+    """The forces' cells: each template cell turned to the army's sector, then the nearest free ground (plain or wood) of
+    that army that no unit has yet. Returns {army: [(type, x, y)]}."""
+    hqs = {}
+    for y, r in enumerate(rows):
+        for x, c in enumerate(r):
+            if c in '12345':
+                hqs[int(c)] = (x, y)
+    owner = lambda x, y: min(hqs, key=lambda a: (abs(hqs[a][0] - x) + abs(hqs[a][1] - y), a))
+    used, out = set(), {}
+    for k in range(5):
+        army = k + 1
+        for kind, u, v in force_template():
+            a = AXES[k] + math.atan2(v, u)
+            r = math.hypot(u, v)
+            fx, fy = CX + r * math.cos(a), CY + r * math.sin(a)
+            cands = [(math.hypot(x - fx, y - fy), x, y) for y in range(H) for x in range(W)
+                     if rows[y][x] in '.f' and (x, y) not in used and owner(x, y) == army]
+            _, x, y = min(cands)
+            used.add((x, y))
+            out.setdefault(army, []).append((kind, x, y))
+    return out
 
 
 def build():
@@ -252,8 +296,9 @@ def main():
     if miss:
         print('unreachable:', miss, file=sys.stderr)
     out = [f'map {NAME}', 'armies 5 9 1 2 3 4 5']
-    for a in range(1, 6):
-        out.append('units %d %s' % (a, ' '.join(map(str, FORCES))))
+    for a, units in sorted(place_forces(rows).items()):
+        for kind, x, y in units:
+            out.append(f'at {a} {kind} {x} {y}')
     out += rows
     print('\n'.join(out))
     counts = {c: sum(r.count(c) for r in rows) for c in '12345Cc'}

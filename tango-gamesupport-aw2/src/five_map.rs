@@ -64,11 +64,10 @@ pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
     (0x0809_0EC0, 0x00),
 ];
 /// `cmp rN, #0xBF` in the two loops: the game's, then the last id without
-/// the Dual Strike pack ([`BIG_FIVE_ID`], 0xC9: the ids between are the Dual Strike maps', hidden without it), then
-/// with it (0xF1, the Colonel's Vault: Survival's ids and the Champion courses
-/// are walked too, [`show_maps`]).
+/// the Dual Strike pack (0xC0), then with it (0xF1, the Colonel's Vault: the ids between, [`BIG_FIVE_ID`]'s among them,
+/// are Dual Strike content and walked only with the pack, [`show_maps`]).
 const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
-    [(0x0802_06C8, 0x29BF, 0x29C9, 0x29F1), (0x0803_74B4, 0x2CBF, 0x2CC9, 0x2CF1)];
+    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29F1), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CF1)];
 /// Each map's tiles and units: 4 KiB apiece, the first ten from here (up to
 /// the CO texts at 0x0862C000), the rest after the moved map table.
 const MAP_DATA: u32 = 0x0862_2000;
@@ -115,7 +114,8 @@ pub const CATEGORY: u16 = 9;
 pub const IDS: [u8; 20] = [
     0, 0xBC, 0xBD, 0xBE, 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, VAULT_ID, BIG_FIVE_ID,
 ];
-/// The big pre-deployed 5-army map (Pentagon Atoll): the first id past the Dual Strike maps'.
+/// The big pre-deployed 5-army map (Pentagon Atoll: Megatanks, Stealths and T-Copters, so the pack's): the first id
+/// past the Dual Strike maps'.
 pub const BIG_FIVE_ID: u8 = 0xC9;
 /// The Colonel's Vault (the BH Campaign's prize map), past Survival's ids
 /// (0xC9..0xEF, with the Champion courses) and the campaigns' mission map
@@ -179,6 +179,12 @@ const TEXT_TABLE: u32 = 0x0861_0A38;
 const TAB_TEXT: u16 = 0x3D72;
 const STRINGS: u32 = 0x0862_0100;
 pub const TAB_NAME_TEXT: &str = "5P Maps";
+
+/// Whether a map of tangoAW2's needs the Dual Strike pack (its art, its units or its look): listed online only when
+/// every peer has the pack ([`crate::ds_art::SHARED_ART`]), offline only with it.
+pub fn needs_pack(map: &crate::five_map_data::Map) -> bool {
+    map.ds || map.obelisk
+}
 
 /// A 5-army map's id.
 pub fn is_five_map(id: u8) -> bool {
@@ -444,7 +450,7 @@ pub fn show_maps(core: &mut Core, art: bool, pack: bool, last_id: Option<u8>) {
         if (!map.obelisk && !map.ds) || (table == crate::ds_versus::TABLE && crate::ds_versus::replaced(id)) {
             continue;
         }
-        let on = (!map.obelisk || art) && (!map.ds || (art && pack));
+        let on = !needs_pack(map) || (art && pack);
         let at = table + 0x5C * id as u32 + 0x1A;
         let tab = if on { map.tab } else { HIDDEN_TAB };
         if core.raw_read_16(at, -1) != tab {
@@ -480,12 +486,16 @@ mod tests {
         // The loops walk past 0xC0 only while the Dual Strike maps can be
         // listed, so every map up to 0xC0 must not need the pack.
         for (m, &id) in MAPS.iter().zip(IDS.iter()) {
-            assert_eq!(m.ds, id > 0xC0 && id != BIG_FIVE_ID, "{}", m.name);
+            assert_eq!(m.ds, id > 0xC0, "{}", m.name);
             assert!(id <= VAULT_ID);
         }
         assert_eq!(MAPS.iter().filter(|m| m.wasteland).count(), 4);
         for armies in 2..=5 {
-            assert_eq!(MAPS.iter().filter(|m| m.ds && m.armies == armies).count(), if armies == 2 { 3 } else { 2 });
+            assert_eq!(MAPS.iter().filter(|m| m.ds && m.armies == armies).count(), match armies {
+                2 => 3,
+                5 => 3,
+                _ => 2,
+            });
         }
         assert!(is_wasteland_map(0xC1) && !is_wasteland_map(0xC5) && !is_wasteland_map(0));
         assert!(is_five_map(0xC4) && is_five_map(0xC8) && !is_five_map(0xC3));
@@ -497,10 +507,29 @@ mod tests {
     /// The armies of a map counted from its data, not its label: the owners of its property tiles and of the
     /// units placed on it (both by army slot; the colours are the header's). Returns (armies, armies with an HQ, units placed, production properties: bases, airports, ports, owned or neutral).
     fn counted(m: &crate::five_map_data::Map) -> (u32, u32, u32, u32) {
-        let raw = &m.tiles[4..];
-        let mut bytes = Vec::new();
-        for block in raw.chunks(9) {
-            bytes.extend_from_slice(&block[1..]);
+        // (BIOS LZ77: literal blocks, or matches back)
+        let size = u32::from_le_bytes([m.tiles[0], m.tiles[1], m.tiles[2], m.tiles[3]]) as usize >> 8;
+        let mut bytes: Vec<u8> = Vec::new();
+        let mut p = 4;
+        while bytes.len() < size {
+            let flags = m.tiles[p];
+            p += 1;
+            for bit in 0..8 {
+                if bytes.len() >= size {
+                    break;
+                }
+                if flags & (0x80 >> bit) != 0 {
+                    let (b1, b2) = (m.tiles[p] as usize, m.tiles[p + 1] as usize);
+                    p += 2;
+                    let disp = ((b1 & 15) << 8 | b2) + 1;
+                    for _ in 0..(b1 >> 4) + 3 {
+                        bytes.push(bytes[bytes.len() - disp]);
+                    }
+                } else {
+                    bytes.push(m.tiles[p]);
+                    p += 1;
+                }
+            }
         }
         let (w, h) = (bytes[0] as usize, bytes[1] as usize);
         let (mut owners, mut hqs, mut prod) = (0u32, 0u32, 0u32);

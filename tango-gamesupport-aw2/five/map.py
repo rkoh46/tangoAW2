@@ -7,7 +7,7 @@ its own maps, which every tile is then checked against: five/tilecheck.py)
 
 Each map in maps.txt is a `map NAME` line, an `armies N TAB COLOURS...` line
 (N armies, the Versus tab 3 Vs. / 5 3P / 6 4P / 9 5P, and each army's
-starting colour: 1 Orange Star .. 5 Black Hole), `units ARMY TYPE...` lines,
+starting colour: 1 Orange Star .. 5 Black Hole), `units ARMY TYPE...` lines (placed nearest the HQ) or `at ARMY TYPE X Y` lines (placed where said),
 then its rows, one character per tile:
   ~ sea   r reef   . plain   f wood   ^ mountain
   R road (straights, bends, junctions)   I pipe   Z pipe seam (in a straight
@@ -140,6 +140,8 @@ TALL = 'f^HBCAPbcaptT12345SNWELXO'
 # ... and on a wood to its right, also pipes and the inventions' ground.
 TALL_FOR_WOOD = TALL + 'IZ#vnFVD'
 SHIPS = {21, 22, 23, 24}
+# Dual Strike's units (the pack's roster: Megatank, Piperunner, Stealth, Black Bomb, Black Boat, Carrier, Oozium)
+DS_UNITS = {4, 9, 12, 13, 18, 26, 27}
 PIPERUNNER = 9
 AIR = {16, 17, 19, 20}
 
@@ -160,6 +162,9 @@ def parse(path):
         elif line.startswith('look '):
             cur['wasteland'] = line.split()[1] == 'wasteland'
             cur['pack'] = line.split()[1] == 'pack'
+        elif line.startswith('at '):
+            f = line.split()
+            cur.setdefault('at', {}).setdefault(int(f[1]), []).append((int(f[2]), int(f[3]), int(f[4])))
         elif line.startswith('units '):
             f = line.split()
             cur['units'][int(f[1])] = [int(x) for x in f[2:]]
@@ -365,6 +370,10 @@ def build(m, edge):
         sky = sorted({(ax + dx, ay + dy) for ax, ay in airports for dx in range(-2, 3) for dy in range(-2, 3)
                       if 0 <= ax + dx < W and 0 <= ay + dy < H and ch(ax + dx, ay + dy) in '.f'},
                      key=lambda c: min(abs(c[0] - a[0]) + abs(c[1] - a[1]) for a in airports))
+        for kind, ax, ay in m.get('at', {}).get(army, []):
+            assert (ax, ay) not in taken, (m['name'], army, kind, ax, ay)
+            taken.add((ax, ay))
+            units.append(bytes([ax, ay, kind, 0, 0x64, 0x63, 0x63, 0, 0, 4, 0, 0]))
         for kind in m['units'].get(army, []):
             pool = sea if kind in SHIPS else (sky or free_land) if kind in AIR else pipes if kind == PIPERUNNER else free_land
             spot = next((c for c in pool if c not in taken), None)
@@ -374,20 +383,53 @@ def build(m, edge):
     units.append(bytes([0xFF] + [0] * 11))
 
     raw = bytes([W, H]) + b''.join(struct.pack('<H', t) for row in tiles for t in row)
-    # GBA BIOS LZ77 with every block a literal: flag byte 0, then 8 bytes.
+    # GBA BIOS LZ77: every block a literal (flag byte 0, then 8 bytes), or compressed when the map would not fit its slot.
+    lz = lz77(raw, len(raw) + (len(units) + 1) * 12 > 3000)
+    return lz, b''.join(units), (W, H), counts
+
+
+def lz77(raw, compress):
+    """GBA BIOS LZ77 (type 0x10) of `raw`: literal blocks, or (compress) matches of 3..18 bytes back up to 4096, never
+    the byte just before (the VRAM variant of the BIOS call does not allow it)."""
     lz = bytearray(struct.pack('<I', 0x10 | (len(raw) << 8)))
-    for i in range(0, len(raw), 8):
-        lz.append(0)
-        lz += raw[i:i + 8]
+    if not compress:
+        for i in range(0, len(raw), 8):
+            lz.append(0)
+            lz += raw[i:i + 8]
+    else:
+        i = 0
+        while i < len(raw):
+            flag, block = 0, bytearray()
+            for bit in range(8):
+                best = (0, 0)
+                if i < len(raw):
+                    for d in range(2, min(i, 4096) + 1):
+                        n = 0
+                        while n < 18 and i + n < len(raw) and raw[i + n - d] == raw[i + n]:
+                            n += 1
+                        if n > best[0]:
+                            best = (n, d)
+                if best[0] >= 3:
+                    flag |= 0x80 >> bit
+                    n, d = best
+                    block += bytes([((n - 3) << 4) | ((d - 1) >> 8), (d - 1) & 0xFF])
+                    i += n
+                elif i < len(raw):
+                    block.append(raw[i])
+                    i += 1
+            lz.append(flag)
+            lz += block
     while len(lz) % 4:
         lz.append(0)
-    return lz, b''.join(units), (W, H), counts
+    return lz
 
 
 def needs_pack(m):
     """Com Towers, Piperunners and the Wasteland look come with the Dual Strike pack."""
     return (m['wasteland'] or m.get('pack') or any(c in r for r in m['rows'] for c in 'tT')
-            or any(PIPERUNNER in u for u in m['units'].values()))
+            or any(PIPERUNNER in u for u in m['units'].values())
+            or any(k in DS_UNITS for u in m['units'].values() for k in u)
+            or any(k in DS_UNITS for a in m.get('at', {}).values() for k, _, _ in a))
 
 
 def sea_edges(rom):

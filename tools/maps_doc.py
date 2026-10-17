@@ -21,6 +21,7 @@ def audit(pack, *flags):
 
 plain, pack = audit(False, "--md"), audit(True, "--md")
 src_plain, src_pack = audit(False, "--sources"), audit(True, "--sources")
+needs = audit(True, "--needs-pack")
 doc = f"""# Map pool
 
 Every map a player-count list can show, with its armies **counted from the map data** (the owners of its property
@@ -47,6 +48,16 @@ is a plain map.
 The 5P Predeploy tab has one map so far, Pentagon Atoll (five/pentagon.py generates it).
 
 The game's list holds up to 110 maps per tab (it stopped at 50 and garbled its names past row 34 before).
+
+## Maps that need the Dual Strike pack
+
+A map needs the pack when its art (Black Crystal, Black Obelisk, Dual Strike terrain) or its units (Megatank, Stealth,
+Piperunner ...) are Dual Strike's, or it is a Dual Strike map. It is listed offline only with the pack, and online only
+when every player of the room (or both of an UNRANKED match) has it: the lobby sets the match's shared-content bit
+only when everyone's settings have it, so the flag is the same in every window before any map is proposed. The
+"Needs DS pack" column of the tables below comes from the same flag.
+
+{needs}
 
 ## Counts by source
 

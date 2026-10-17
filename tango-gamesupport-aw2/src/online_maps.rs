@@ -270,6 +270,9 @@ pub struct AuditRow {
     pub ports: u16,
     /// Units placed at the start.
     pub placed: u32,
+    /// Needs the Dual Strike pack: its art (Black Crystal, Black Obelisk), terrain, units (Megatank, Stealth ...), or it is
+    /// Dual Strike's own map. Listed only with the pack (online: when every peer has it).
+    pub needs_pack: bool,
     /// The armies the map's header says (what the game's own lists trust).
     pub header: u8,
 }
@@ -347,6 +350,7 @@ pub fn audit(core: &Core) -> Vec<AuditRow> {
             airports: i.airports,
             ports: i.ports,
             placed: i.placed,
+            needs_pack: source.starts_with("DS ") || crate::five_map::map_of(id as u8).is_some_and(|m| source == "tangoAW2" && crate::five_map::needs_pack(m)),
             header: armies_of(core, table, id),
         });
     }

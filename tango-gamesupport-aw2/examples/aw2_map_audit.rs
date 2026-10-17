@@ -12,6 +12,7 @@ fn main() {
     let rom = std::fs::read(&args[1]).expect("rom");
     let md = args.iter().any(|a| a == "--md");
     let sources = args.iter().any(|a| a == "--sources");
+    let needs = args.iter().any(|a| a == "--needs-pack");
     let ds = std::env::var_os("TANGOAW2_DS_ROM").is_some();
     if ds {
         tango_gamesupport_aw2::ds_pack::pack();
@@ -27,8 +28,8 @@ fn main() {
     }
     let rows = tango_gamesupport_aw2::online_maps::audit(link.core_mut());
     let mut bad = 0;
-    if md && !sources {
-        println!("| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed |\n|---|---|---|---|---|---|---|---|---|---|");
+    if md && !sources && !needs {
+        println!("| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed | Needs DS pack |\n|---|---|---|---|---|---|---|---|---|---|---|");
     }
     let mut rows = rows;
     rows.sort_by_key(|r| (r.armies, r.predeployed, r.id));
@@ -37,11 +38,11 @@ fn main() {
         if !ok {
             bad += 1;
         }
-        if sources {
+        if sources || needs {
         } else if md {
             println!(
-                "| {:02X} | {} | {} | {}x{} | {} | {} | {} | {} | {} | {} |",
-                r.id, r.name, r.source, r.w, r.h, r.armies, r.placed, r.bases, r.airports, r.ports, if r.predeployed { "yes" } else { "no" }
+                "| {:02X} | {} | {} | {}x{} | {} | {} | {} | {} | {} | {} | {} |",
+                r.id, r.name, r.source, r.w, r.h, r.armies, r.placed, r.bases, r.airports, r.ports, if r.predeployed { "yes" } else { "no" }, if r.needs_pack { "yes" } else { "no" }
             );
         } else {
             println!(
@@ -49,6 +50,14 @@ fn main() {
                 r.armies, if r.predeployed { "predeployed" } else { "" }, r.id, r.name, r.source, r.w, r.h, r.hqs, r.placed, r.bases, r.airports, r.ports, r.header, if ok { "" } else { "  MISMATCH" }
             );
         }
+    }
+    if needs {
+        println!("| Id | Map | Source | Armies |\n|---|---|---|---|");
+        for r in rows.iter().filter(|r| r.needs_pack && r.source == "tangoAW2") {
+            println!("| {:02X} | {} | {} | {} |", r.id, r.name, r.source, r.armies);
+        }
+        println!("\nPlus all {} Dual Strike maps (Versus and War Room).", rows.iter().filter(|r| r.source.starts_with("DS ")).count());
+        return;
     }
     // How many maps each source puts on each tab of the player-count lists (2P, 2P Predeploy, .. 5P Predeploy).
     if sources {

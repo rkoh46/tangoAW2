@@ -12,9 +12,9 @@ Every map is in exactly one of eight tabs, by the number of players it has and w
 letters too wide for the game's tab box). A tab with no map is skipped (Left/Right passes over it).
 
 - **Online** (a room of N players): its two tabs, "NP" and "NP Predeploy".
-- **Offline Versus**: the eight tabs, on the game's tab slots 2..9. SELECT swaps them for AW2's own lists (Classic,
+- **Offline Versus**: the eight tabs, on the game's tab slots 2..9. L and R together swap them for AW2's own lists (Classic,
   Vs. Maps, Pre-Deployed, 3P Maps, 4P Maps, War Room, Design Maps and tangoAW2's 5P Maps) and back; the choice is
-  kept for the session. (With the Dual Strike pack, SELECT on a 2P Dual Strike map keeps marking the second front.)
+  kept for the session. (L or R alone change the tab as in AW2; SELECT keeps marking the second front on a 2P Dual Strike map.)
   War Room mode itself is unchanged: its list and scoring are as before, and its maps are also in the lists above.
 
 **Pre-deployed** means the map starts with units placed **and has no production property**: no base, airport or
@@ -24,6 +24,27 @@ is a plain map.
 The 5P Predeploy tab has one map so far, Pentagon Atoll (five/pentagon.py generates it).
 
 The game's list holds up to 110 maps per tab (it stopped at 50 and garbled its names past row 34 before).
+
+## Maps that need the Dual Strike pack
+
+A map needs the pack when its art (Black Crystal, Black Obelisk, Dual Strike terrain) or its units (Megatank, Stealth,
+Piperunner ...) are Dual Strike's, or it is a Dual Strike map. It is listed offline only with the pack, and online only
+when every player of the room (or both of an UNRANKED match) has it: the lobby sets the match's shared-content bit
+only when everyone's settings have it, so the flag is the same in every window before any map is proposed. The
+"Needs DS pack" column of the tables below comes from the same flag.
+
+| Id | Map | Source | Armies |
+|---|---|---|---|
+| B8 | Obelisk Duel | tangoAW2 | 2 |
+| F1 | The Colonel's Vault | tangoAW2 | 2 |
+| B9 | Crystal Isles | tangoAW2 | 3 |
+| BA | Obelisk Plains | tangoAW2 | 4 |
+| BB | Black Monolith | tangoAW2 | 5 |
+| C4 | Black Wastes | tangoAW2 | 5 |
+| C8 | Coral Crown | tangoAW2 | 5 |
+| C9 | Pentagon Atoll | tangoAW2 | 5 |
+
+Plus all 182 Dual Strike maps (Versus and War Room).
 
 ## Counts by source
 
@@ -41,8 +62,8 @@ whatever its source. Every War Room map is listed (AW2 lists them on its Versus 
 | AW2 Pre-Deployed | 0 | 12 | 0 | 3 | 0 | 5 | 0 | 0 | 20 |
 | AW2 Vs. Maps | 21 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 21 |
 | AW2 War Room | 22 | 0 | 6 | 0 | 2 | 0 | 0 | 0 | 30 |
-| tangoAW2 | 0 | 0 | 0 | 0 | 0 | 0 | 6 | 1 | 7 |
-| **All** | **60** | **12** | **30** | **3** | **27** | **5** | **6** | **1** | **144** |
+| tangoAW2 | 0 | 0 | 0 | 0 | 0 | 0 | 6 | 0 | 6 |
+| **All** | **60** | **12** | **30** | **3** | **27** | **5** | **6** | **0** | **143** |
 
 ### With the pack
 
@@ -56,350 +77,349 @@ whatever its source. Every War Room map is listed (AW2 lists them on its Versus 
 
 ## Without the Dual Strike pack (AW2's own maps and tangoAW2's)
 
-| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed |
-|---|---|---|---|---|---|---|---|---|---|
-| 01 | Bean Island | AW2 Classic | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
-| 02 | Crater Isle | AW2 Classic | 16x15 | 2 | 0 | 10 | 0 | 0 | no |
-| 03 | Triangles | AW2 Classic | 16x15 | 2 | 0 | 8 | 4 | 0 | no |
-| 04 | Ball Islands | AW2 Classic | 42x15 | 2 | 0 | 10 | 6 | 5 | no |
-| 05 | Coral Lagoon | AW2 Classic | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
-| 06 | Puzzle Trio | AW2 Classic | 32x15 | 2 | 0 | 6 | 6 | 7 | no |
-| 07 | Fist Peninsula | AW2 Classic | 16x15 | 2 | 0 | 6 | 0 | 0 | no |
-| 08 | Deer Harbor | AW2 Classic | 32x30 | 2 | 0 | 8 | 6 | 4 | no |
-| 09 | Alara Range | AW2 Classic | 32x15 | 2 | 0 | 7 | 7 | 0 | no |
-| 0A | Lost River | AW2 Classic | 32x15 | 2 | 0 | 9 | 5 | 0 | no |
-| 0B | Volcano Isle | AW2 Classic | 16x15 | 2 | 0 | 7 | 2 | 0 | no |
-| 0C | Turtle Atoll | AW2 Classic | 16x30 | 2 | 0 | 7 | 0 | 4 | no |
-| 0D | Squash Island | AW2 Classic | 48x15 | 2 | 0 | 7 | 6 | 4 | no |
-| 0E | Cube Keys | AW2 Classic | 32x30 | 2 | 0 | 9 | 7 | 0 | no |
-| 0F | Mirror Islands | AW2 Classic | 32x15 | 2 | 0 | 6 | 3 | 0 | no |
-| 10 | Shark Strait | AW2 Classic | 37x30 | 2 | 0 | 10 | 14 | 8 | no |
-| 11 | Royal Channel | AW2 Classic | 39x30 | 2 | 0 | 10 | 9 | 8 | no |
-| 12 | Little Island | AW2 Vs. Maps | 19x10 | 2 | 0 | 4 | 0 | 0 | no |
-| 13 | Sun Canal | AW2 Vs. Maps | 15x13 | 2 | 0 | 7 | 0 | 4 | no |
-| 14 | Beaker River | AW2 Vs. Maps | 19x15 | 2 | 0 | 8 | 6 | 0 | no |
-| 15 | Star Islands | AW2 Vs. Maps | 31x16 | 2 | 0 | 10 | 8 | 8 | no |
-| 16 | Eon Springs | AW2 Vs. Maps | 19x17 | 2 | 0 | 8 | 6 | 0 | no |
-| 17 | Portal Bridge | AW2 Vs. Maps | 19x17 | 2 | 0 | 8 | 4 | 0 | no |
-| 18 | Sabre Range | AW2 Vs. Maps | 15x11 | 2 | 0 | 8 | 0 | 0 | no |
-| 19 | Asphalt Maze | AW2 Vs. Maps | 15x11 | 2 | 0 | 8 | 0 | 0 | no |
-| 1A | Cog Isle | AW2 Vs. Maps | 15x11 | 2 | 0 | 4 | 0 | 0 | no |
-| 1B | Zero Wood | AW2 Vs. Maps | 15x11 | 2 | 0 | 5 | 0 | 0 | no |
-| 1C | Switchback | AW2 Vs. Maps | 21x15 | 2 | 0 | 12 | 0 | 0 | no |
-| 1D | Ruby Keys | AW2 Vs. Maps | 29x15 | 2 | 0 | 8 | 4 | 4 | no |
-| 1E | Rainy Haven | AW2 Vs. Maps | 15x15 | 2 | 0 | 5 | 4 | 6 | no |
-| 1F | Rail Strait | AW2 Vs. Maps | 18x15 | 2 | 0 | 5 | 0 | 3 | no |
-| 20 | Tribe Islands | AW2 Vs. Maps | 19x17 | 2 | 0 | 8 | 0 | 6 | no |
-| 21 | Vision Bridge | AW2 Vs. Maps | 31x24 | 2 | 0 | 13 | 0 | 8 | no |
-| 22 | Piston Dam | AW2 Vs. Maps | 26x14 | 2 | 0 | 6 | 8 | 0 | no |
-| 23 | Hat Harbor | AW2 Vs. Maps | 21x21 | 2 | 0 | 9 | 10 | 0 | no |
-| 24 | Swan Cove | AW2 Vs. Maps | 24x17 | 2 | 0 | 11 | 0 | 6 | no |
-| 25 | Go Islands | AW2 Vs. Maps | 24x17 | 2 | 0 | 7 | 0 | 6 | no |
-| 26 | Hourglass Isle | AW2 Vs. Maps | 16x24 | 2 | 0 | 10 | 0 | 0 | no |
-| 6C | Spann Island | AW2 War Room | 15x10 | 2 | 0 | 8 | 0 | 0 | no |
-| 6D | Moji Island | AW2 War Room | 26x22 | 2 | 0 | 8 | 0 | 0 | no |
-| 6E | Duo Falls | AW2 War Room | 33x13 | 2 | 0 | 10 | 5 | 0 | no |
-| 6F | Sole Harbor | AW2 War Room | 22x15 | 2 | 0 | 8 | 0 | 3 | no |
-| 70 | Pivot Isle | AW2 War Room | 21x14 | 2 | 0 | 10 | 4 | 3 | no |
-| 71 | Land's End | AW2 War Room | 32x27 | 2 | 0 | 12 | 3 | 0 | no |
-| 72 | Kita Straight | AW2 War Room | 27x35 | 2 | 0 | 9 | 0 | 7 | no |
-| 73 | Point Stormy | AW2 War Room | 25x22 | 2 | 0 | 14 | 4 | 4 | no |
-| 74 | Ridge Island | AW2 War Room | 19x16 | 2 | 0 | 8 | 0 | 0 | no |
-| 75 | Mial's Hope | AW2 War Room | 45x28 | 2 | 0 | 14 | 9 | 0 | no |
-| 76 | Bounty River | AW2 War Room | 28x22 | 2 | 0 | 16 | 0 | 8 | no |
-| 77 | Toil Ferry | AW2 War Room | 26x16 | 2 | 0 | 8 | 8 | 6 | no |
-| 78 | Twin Isle | AW2 War Room | 22x16 | 2 | 0 | 8 | 0 | 0 | no |
-| 79 | Dire Range | AW2 War Room | 37x25 | 2 | 0 | 14 | 10 | 0 | no |
-| 7A | Egg Islands | AW2 War Room | 42x28 | 2 | 0 | 18 | 0 | 9 | no |
-| 7B | Terra Maw | AW2 War Room | 32x28 | 2 | 0 | 16 | 5 | 5 | no |
-| 80 | Pay Dirt | AW2 War Room | 16x12 | 2 | 0 | 7 | 4 | 0 | no |
-| 81 | Long Road | AW2 War Room | 15x20 | 2 | 2 | 12 | 0 | 0 | no |
-| 82 | Nest Egg | AW2 War Room | 18x11 | 2 | 0 | 11 | 0 | 0 | no |
-| 83 | The Trident | AW2 War Room | 19x19 | 2 | 0 | 8 | 8 | 5 | no |
-| 84 | Banker Hills | AW2 War Room | 18x13 | 2 | 0 | 8 | 0 | 0 | no |
-| 85 | Missile Plains | AW2 War Room | 20x20 | 2 | 28 | 22 | 0 | 0 | no |
-| 27 | Brace Range | AW2 Pre-Deployed | 15x10 | 2 | 18 | 0 | 0 | 0 | yes |
-| 28 | River Range | AW2 Pre-Deployed | 15x10 | 2 | 20 | 0 | 0 | 0 | yes |
-| 29 | Moon Isle | AW2 Pre-Deployed | 17x11 | 2 | 30 | 0 | 0 | 0 | yes |
-| 2A | Mint Plateau | AW2 Pre-Deployed | 17x11 | 2 | 28 | 0 | 0 | 0 | yes |
-| 2B | Jewel Canal | AW2 Pre-Deployed | 19x12 | 2 | 38 | 0 | 0 | 0 | yes |
-| 2C | Wrench Island | AW2 Pre-Deployed | 22x13 | 2 | 24 | 0 | 0 | 0 | yes |
-| 2D | Rapid Ferry | AW2 Pre-Deployed | 19x12 | 2 | 32 | 0 | 0 | 0 | yes |
-| 2E | Bundle City | AW2 Pre-Deployed | 16x11 | 2 | 20 | 0 | 0 | 0 | yes |
-| 2F | Scarab Road | AW2 Pre-Deployed | 15x14 | 2 | 26 | 0 | 0 | 0 | yes |
-| 30 | Pointing River | AW2 Pre-Deployed | 15x10 | 2 | 26 | 0 | 0 | 0 | yes |
-| 31 | Liaison Wood | AW2 Pre-Deployed | 19x14 | 2 | 28 | 0 | 0 | 0 | yes |
-| 38 | Big Daddy | AW2 Pre-Deployed | 19x15 | 2 | 36 | 0 | 0 | 0 | yes |
-| 3B | Pyramid Cape | AW2 3P Maps | 21x18 | 3 | 0 | 12 | 0 | 0 | no |
-| 3C | Bead Islands | AW2 3P Maps | 19x16 | 3 | 0 | 9 | 0 | 6 | no |
-| 3D | Clover Keys | AW2 3P Maps | 21x18 | 3 | 0 | 9 | 4 | 0 | no |
-| 3E | Keyhole Cove | AW2 3P Maps | 18x25 | 3 | 0 | 15 | 9 | 9 | no |
-| 3F | Fork River | AW2 3P Maps | 22x22 | 3 | 0 | 12 | 0 | 0 | no |
-| 40 | Mantis River | AW2 3P Maps | 21x22 | 3 | 0 | 13 | 5 | 0 | no |
-| 41 | Channel City | AW2 3P Maps | 23x17 | 3 | 0 | 10 | 0 | 3 | no |
-| 42 | Ink Canal | AW2 3P Maps | 21x20 | 3 | 0 | 12 | 5 | 6 | no |
-| 43 | Shield Hills | AW2 3P Maps | 22x18 | 3 | 0 | 11 | 0 | 0 | no |
-| 44 | Peril Maze | AW2 3P Maps | 25x23 | 3 | 0 | 9 | 10 | 0 | no |
-| 45 | Gem Creek | AW2 3P Maps | 19x16 | 3 | 0 | 6 | 4 | 3 | no |
-| 46 | Glass Heights | AW2 3P Maps | 19x16 | 3 | 0 | 12 | 0 | 0 | no |
-| 47 | Devil's Inlet | AW2 3P Maps | 28x18 | 3 | 0 | 12 | 10 | 0 | no |
-| 48 | Shear Port | AW2 3P Maps | 27x19 | 3 | 0 | 15 | 0 | 6 | no |
-| 49 | Liar's Cove | AW2 3P Maps | 21x22 | 3 | 0 | 13 | 4 | 4 | no |
-| 4A | Nail Canal | AW2 3P Maps | 27x17 | 3 | 0 | 11 | 0 | 0 | no |
-| 4B | Atlas River | AW2 3P Maps | 24x23 | 3 | 0 | 12 | 7 | 0 | no |
-| 4C | Eel Channels | AW2 3P Maps | 27x24 | 3 | 0 | 13 | 0 | 7 | no |
-| 4D | Jab Peninsula | AW2 3P Maps | 21x22 | 3 | 0 | 12 | 5 | 6 | no |
-| 4E | Thorn Islands | AW2 3P Maps | 32x15 | 3 | 0 | 14 | 5 | 3 | no |
-| 4F | Portsmouth | AW2 3P Maps | 30x20 | 3 | 0 | 9 | 0 | 9 | no |
-| 50 | Archipelagos | AW2 3P Maps | 24x16 | 3 | 0 | 14 | 0 | 11 | no |
-| 51 | Wyrm's Eye | AW2 3P Maps | 30x20 | 3 | 0 | 19 | 0 | 0 | no |
-| 52 | Knotted Keys | AW2 3P Maps | 30x20 | 3 | 0 | 9 | 0 | 0 | no |
-| 7C | Stamp Islands | AW2 War Room | 27x22 | 3 | 0 | 19 | 13 | 11 | no |
-| 7D | Rivers Four | AW2 War Room | 25x16 | 3 | 0 | 17 | 0 | 0 | no |
-| 7E | Ring Islands | AW2 War Room | 33x35 | 3 | 0 | 24 | 0 | 15 | no |
-| 7F | Last Mission | AW2 War Room | 26x20 | 3 | 0 | 20 | 10 | 0 | no |
-| 86 | Lost Basin | AW2 War Room | 22x15 | 3 | 0 | 15 | 0 | 0 | no |
-| 87 | Risky Vale | AW2 War Room | 18x12 | 3 | 0 | 13 | 0 | 0 | no |
-| 32 | Delta Heights | AW2 Pre-Deployed | 15x11 | 3 | 18 | 0 | 0 | 0 | yes |
-| 33 | Poem Cape | AW2 Pre-Deployed | 16x22 | 3 | 24 | 0 | 0 | 0 | yes |
-| 34 | Blue Lake | AW2 Pre-Deployed | 23x16 | 3 | 36 | 0 | 0 | 0 | yes |
-| 53 | Four Corners | AW2 4P Maps | 15x10 | 4 | 0 | 8 | 1 | 0 | no |
-| 54 | Rocket Cape | AW2 4P Maps | 24x21 | 4 | 0 | 20 | 0 | 0 | no |
-| 55 | Crop River | AW2 4P Maps | 32x28 | 4 | 0 | 21 | 11 | 0 | no |
-| 56 | Tween Isle | AW2 4P Maps | 19x23 | 4 | 0 | 8 | 0 | 6 | no |
-| 57 | Rival Islands | AW2 4P Maps | 23x26 | 4 | 0 | 20 | 8 | 8 | no |
-| 58 | Loop Road | AW2 4P Maps | 25x16 | 4 | 0 | 12 | 0 | 0 | no |
-| 59 | Plus Canal | AW2 4P Maps | 25x17 | 4 | 0 | 16 | 0 | 0 | no |
-| 5A | Islas Five | AW2 4P Maps | 23x23 | 4 | 0 | 16 | 12 | 0 | no |
-| 5B | Patriot Cove | AW2 4P Maps | 23x18 | 4 | 0 | 20 | 6 | 8 | no |
-| 5C | Web River | AW2 4P Maps | 21x27 | 4 | 0 | 20 | 0 | 0 | no |
-| 5D | Cap Narrows | AW2 4P Maps | 17x26 | 4 | 0 | 16 | 6 | 0 | no |
-| 5E | Jay Islands | AW2 4P Maps | 32x18 | 4 | 0 | 8 | 0 | 4 | no |
-| 5F | Chain Canal | AW2 4P Maps | 19x26 | 4 | 0 | 18 | 6 | 10 | no |
-| 60 | Spring Lakes | AW2 4P Maps | 32x28 | 4 | 0 | 15 | 0 | 0 | no |
-| 61 | Tatter River | AW2 4P Maps | 32x28 | 4 | 0 | 24 | 11 | 0 | no |
-| 62 | Island X | AW2 4P Maps | 30x16 | 4 | 0 | 18 | 4 | 6 | no |
-| 63 | Alakule | AW2 4P Maps | 32x28 | 4 | 0 | 19 | 0 | 0 | no |
-| 64 | Traitor River | AW2 4P Maps | 46x28 | 4 | 0 | 21 | 0 | 0 | no |
-| 65 | Fable Hills | AW2 4P Maps | 32x28 | 4 | 0 | 26 | 12 | 0 | no |
-| 66 | South Cape | AW2 4P Maps | 32x39 | 4 | 0 | 21 | 0 | 11 | no |
-| 67 | Glory Islands | AW2 4P Maps | 32x28 | 4 | 0 | 19 | 10 | 14 | no |
-| 68 | Pipe Maze | AW2 4P Maps | 22x22 | 4 | 0 | 20 | 4 | 0 | no |
-| 69 | Lock Ridge | AW2 4P Maps | 30x20 | 4 | 0 | 8 | 0 | 0 | no |
-| 6A | Heartland | AW2 4P Maps | 30x20 | 4 | 0 | 22 | 0 | 0 | no |
-| 6B | Badlands | AW2 4P Maps | 40x26 | 4 | 0 | 22 | 6 | 4 | no |
-| 88 | The Ring | AW2 War Room | 19x18 | 4 | 0 | 14 | 5 | 5 | no |
-| 89 | Strong Land | AW2 War Room | 18x12 | 4 | 0 | 15 | 0 | 0 | no |
-| 35 | Coil Range | AW2 Pre-Deployed | 15x11 | 4 | 28 | 0 | 0 | 0 | yes |
-| 36 | Leaf Haven | AW2 Pre-Deployed | 18x18 | 4 | 40 | 0 | 0 | 0 | yes |
-| 37 | Battle Cube | AW2 Pre-Deployed | 28x30 | 4 | 76 | 0 | 0 | 0 | yes |
-| 39 | Grid Assault | AW2 Pre-Deployed | 19x19 | 4 | 36 | 0 | 0 | 0 | yes |
-| 3A | Crossroad | AW2 Pre-Deployed | 25x23 | 4 | 96 | 0 | 0 | 0 | yes |
-| 00 | Five Seas | tangoAW2 | 20x40 | 5 | 35 | 10 | 9 | 18 | no |
-| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | 30 | 10 | 4 | 0 | no |
-| BD | Magma Crown | tangoAW2 | 30x30 | 5 | 30 | 5 | 5 | 5 | no |
-| BE | Skyreach | tangoAW2 | 32x36 | 5 | 35 | 5 | 21 | 0 | no |
-| BF | The Citadel | tangoAW2 | 29x33 | 5 | 24 | 8 | 7 | 0 | no |
-| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no |
-| C9 | Pentagon Atoll | tangoAW2 | 35x35 | 5 | 60 | 0 | 0 | 0 | yes |
+| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed | Needs DS pack |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 01 | Bean Island | AW2 Classic | 16x15 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 02 | Crater Isle | AW2 Classic | 16x15 | 2 | 0 | 10 | 0 | 0 | no | no |
+| 03 | Triangles | AW2 Classic | 16x15 | 2 | 0 | 8 | 4 | 0 | no | no |
+| 04 | Ball Islands | AW2 Classic | 42x15 | 2 | 0 | 10 | 6 | 5 | no | no |
+| 05 | Coral Lagoon | AW2 Classic | 16x15 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 06 | Puzzle Trio | AW2 Classic | 32x15 | 2 | 0 | 6 | 6 | 7 | no | no |
+| 07 | Fist Peninsula | AW2 Classic | 16x15 | 2 | 0 | 6 | 0 | 0 | no | no |
+| 08 | Deer Harbor | AW2 Classic | 32x30 | 2 | 0 | 8 | 6 | 4 | no | no |
+| 09 | Alara Range | AW2 Classic | 32x15 | 2 | 0 | 7 | 7 | 0 | no | no |
+| 0A | Lost River | AW2 Classic | 32x15 | 2 | 0 | 9 | 5 | 0 | no | no |
+| 0B | Volcano Isle | AW2 Classic | 16x15 | 2 | 0 | 7 | 2 | 0 | no | no |
+| 0C | Turtle Atoll | AW2 Classic | 16x30 | 2 | 0 | 7 | 0 | 4 | no | no |
+| 0D | Squash Island | AW2 Classic | 48x15 | 2 | 0 | 7 | 6 | 4 | no | no |
+| 0E | Cube Keys | AW2 Classic | 32x30 | 2 | 0 | 9 | 7 | 0 | no | no |
+| 0F | Mirror Islands | AW2 Classic | 32x15 | 2 | 0 | 6 | 3 | 0 | no | no |
+| 10 | Shark Strait | AW2 Classic | 37x30 | 2 | 0 | 10 | 14 | 8 | no | no |
+| 11 | Royal Channel | AW2 Classic | 39x30 | 2 | 0 | 10 | 9 | 8 | no | no |
+| 12 | Little Island | AW2 Vs. Maps | 19x10 | 2 | 0 | 4 | 0 | 0 | no | no |
+| 13 | Sun Canal | AW2 Vs. Maps | 15x13 | 2 | 0 | 7 | 0 | 4 | no | no |
+| 14 | Beaker River | AW2 Vs. Maps | 19x15 | 2 | 0 | 8 | 6 | 0 | no | no |
+| 15 | Star Islands | AW2 Vs. Maps | 31x16 | 2 | 0 | 10 | 8 | 8 | no | no |
+| 16 | Eon Springs | AW2 Vs. Maps | 19x17 | 2 | 0 | 8 | 6 | 0 | no | no |
+| 17 | Portal Bridge | AW2 Vs. Maps | 19x17 | 2 | 0 | 8 | 4 | 0 | no | no |
+| 18 | Sabre Range | AW2 Vs. Maps | 15x11 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 19 | Asphalt Maze | AW2 Vs. Maps | 15x11 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 1A | Cog Isle | AW2 Vs. Maps | 15x11 | 2 | 0 | 4 | 0 | 0 | no | no |
+| 1B | Zero Wood | AW2 Vs. Maps | 15x11 | 2 | 0 | 5 | 0 | 0 | no | no |
+| 1C | Switchback | AW2 Vs. Maps | 21x15 | 2 | 0 | 12 | 0 | 0 | no | no |
+| 1D | Ruby Keys | AW2 Vs. Maps | 29x15 | 2 | 0 | 8 | 4 | 4 | no | no |
+| 1E | Rainy Haven | AW2 Vs. Maps | 15x15 | 2 | 0 | 5 | 4 | 6 | no | no |
+| 1F | Rail Strait | AW2 Vs. Maps | 18x15 | 2 | 0 | 5 | 0 | 3 | no | no |
+| 20 | Tribe Islands | AW2 Vs. Maps | 19x17 | 2 | 0 | 8 | 0 | 6 | no | no |
+| 21 | Vision Bridge | AW2 Vs. Maps | 31x24 | 2 | 0 | 13 | 0 | 8 | no | no |
+| 22 | Piston Dam | AW2 Vs. Maps | 26x14 | 2 | 0 | 6 | 8 | 0 | no | no |
+| 23 | Hat Harbor | AW2 Vs. Maps | 21x21 | 2 | 0 | 9 | 10 | 0 | no | no |
+| 24 | Swan Cove | AW2 Vs. Maps | 24x17 | 2 | 0 | 11 | 0 | 6 | no | no |
+| 25 | Go Islands | AW2 Vs. Maps | 24x17 | 2 | 0 | 7 | 0 | 6 | no | no |
+| 26 | Hourglass Isle | AW2 Vs. Maps | 16x24 | 2 | 0 | 10 | 0 | 0 | no | no |
+| 6C | Spann Island | AW2 War Room | 15x10 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 6D | Moji Island | AW2 War Room | 26x22 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 6E | Duo Falls | AW2 War Room | 33x13 | 2 | 0 | 10 | 5 | 0 | no | no |
+| 6F | Sole Harbor | AW2 War Room | 22x15 | 2 | 0 | 8 | 0 | 3 | no | no |
+| 70 | Pivot Isle | AW2 War Room | 21x14 | 2 | 0 | 10 | 4 | 3 | no | no |
+| 71 | Land's End | AW2 War Room | 32x27 | 2 | 0 | 12 | 3 | 0 | no | no |
+| 72 | Kita Straight | AW2 War Room | 27x35 | 2 | 0 | 9 | 0 | 7 | no | no |
+| 73 | Point Stormy | AW2 War Room | 25x22 | 2 | 0 | 14 | 4 | 4 | no | no |
+| 74 | Ridge Island | AW2 War Room | 19x16 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 75 | Mial's Hope | AW2 War Room | 45x28 | 2 | 0 | 14 | 9 | 0 | no | no |
+| 76 | Bounty River | AW2 War Room | 28x22 | 2 | 0 | 16 | 0 | 8 | no | no |
+| 77 | Toil Ferry | AW2 War Room | 26x16 | 2 | 0 | 8 | 8 | 6 | no | no |
+| 78 | Twin Isle | AW2 War Room | 22x16 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 79 | Dire Range | AW2 War Room | 37x25 | 2 | 0 | 14 | 10 | 0 | no | no |
+| 7A | Egg Islands | AW2 War Room | 42x28 | 2 | 0 | 18 | 0 | 9 | no | no |
+| 7B | Terra Maw | AW2 War Room | 32x28 | 2 | 0 | 16 | 5 | 5 | no | no |
+| 80 | Pay Dirt | AW2 War Room | 16x12 | 2 | 0 | 7 | 4 | 0 | no | no |
+| 81 | Long Road | AW2 War Room | 15x20 | 2 | 2 | 12 | 0 | 0 | no | no |
+| 82 | Nest Egg | AW2 War Room | 18x11 | 2 | 0 | 11 | 0 | 0 | no | no |
+| 83 | The Trident | AW2 War Room | 19x19 | 2 | 0 | 8 | 8 | 5 | no | no |
+| 84 | Banker Hills | AW2 War Room | 18x13 | 2 | 0 | 8 | 0 | 0 | no | no |
+| 85 | Missile Plains | AW2 War Room | 20x20 | 2 | 28 | 22 | 0 | 0 | no | no |
+| 27 | Brace Range | AW2 Pre-Deployed | 15x10 | 2 | 18 | 0 | 0 | 0 | yes | no |
+| 28 | River Range | AW2 Pre-Deployed | 15x10 | 2 | 20 | 0 | 0 | 0 | yes | no |
+| 29 | Moon Isle | AW2 Pre-Deployed | 17x11 | 2 | 30 | 0 | 0 | 0 | yes | no |
+| 2A | Mint Plateau | AW2 Pre-Deployed | 17x11 | 2 | 28 | 0 | 0 | 0 | yes | no |
+| 2B | Jewel Canal | AW2 Pre-Deployed | 19x12 | 2 | 38 | 0 | 0 | 0 | yes | no |
+| 2C | Wrench Island | AW2 Pre-Deployed | 22x13 | 2 | 24 | 0 | 0 | 0 | yes | no |
+| 2D | Rapid Ferry | AW2 Pre-Deployed | 19x12 | 2 | 32 | 0 | 0 | 0 | yes | no |
+| 2E | Bundle City | AW2 Pre-Deployed | 16x11 | 2 | 20 | 0 | 0 | 0 | yes | no |
+| 2F | Scarab Road | AW2 Pre-Deployed | 15x14 | 2 | 26 | 0 | 0 | 0 | yes | no |
+| 30 | Pointing River | AW2 Pre-Deployed | 15x10 | 2 | 26 | 0 | 0 | 0 | yes | no |
+| 31 | Liaison Wood | AW2 Pre-Deployed | 19x14 | 2 | 28 | 0 | 0 | 0 | yes | no |
+| 38 | Big Daddy | AW2 Pre-Deployed | 19x15 | 2 | 36 | 0 | 0 | 0 | yes | no |
+| 3B | Pyramid Cape | AW2 3P Maps | 21x18 | 3 | 0 | 12 | 0 | 0 | no | no |
+| 3C | Bead Islands | AW2 3P Maps | 19x16 | 3 | 0 | 9 | 0 | 6 | no | no |
+| 3D | Clover Keys | AW2 3P Maps | 21x18 | 3 | 0 | 9 | 4 | 0 | no | no |
+| 3E | Keyhole Cove | AW2 3P Maps | 18x25 | 3 | 0 | 15 | 9 | 9 | no | no |
+| 3F | Fork River | AW2 3P Maps | 22x22 | 3 | 0 | 12 | 0 | 0 | no | no |
+| 40 | Mantis River | AW2 3P Maps | 21x22 | 3 | 0 | 13 | 5 | 0 | no | no |
+| 41 | Channel City | AW2 3P Maps | 23x17 | 3 | 0 | 10 | 0 | 3 | no | no |
+| 42 | Ink Canal | AW2 3P Maps | 21x20 | 3 | 0 | 12 | 5 | 6 | no | no |
+| 43 | Shield Hills | AW2 3P Maps | 22x18 | 3 | 0 | 11 | 0 | 0 | no | no |
+| 44 | Peril Maze | AW2 3P Maps | 25x23 | 3 | 0 | 9 | 10 | 0 | no | no |
+| 45 | Gem Creek | AW2 3P Maps | 19x16 | 3 | 0 | 6 | 4 | 3 | no | no |
+| 46 | Glass Heights | AW2 3P Maps | 19x16 | 3 | 0 | 12 | 0 | 0 | no | no |
+| 47 | Devil's Inlet | AW2 3P Maps | 28x18 | 3 | 0 | 12 | 10 | 0 | no | no |
+| 48 | Shear Port | AW2 3P Maps | 27x19 | 3 | 0 | 15 | 0 | 6 | no | no |
+| 49 | Liar's Cove | AW2 3P Maps | 21x22 | 3 | 0 | 13 | 4 | 4 | no | no |
+| 4A | Nail Canal | AW2 3P Maps | 27x17 | 3 | 0 | 11 | 0 | 0 | no | no |
+| 4B | Atlas River | AW2 3P Maps | 24x23 | 3 | 0 | 12 | 7 | 0 | no | no |
+| 4C | Eel Channels | AW2 3P Maps | 27x24 | 3 | 0 | 13 | 0 | 7 | no | no |
+| 4D | Jab Peninsula | AW2 3P Maps | 21x22 | 3 | 0 | 12 | 5 | 6 | no | no |
+| 4E | Thorn Islands | AW2 3P Maps | 32x15 | 3 | 0 | 14 | 5 | 3 | no | no |
+| 4F | Portsmouth | AW2 3P Maps | 30x20 | 3 | 0 | 9 | 0 | 9 | no | no |
+| 50 | Archipelagos | AW2 3P Maps | 24x16 | 3 | 0 | 14 | 0 | 11 | no | no |
+| 51 | Wyrm's Eye | AW2 3P Maps | 30x20 | 3 | 0 | 19 | 0 | 0 | no | no |
+| 52 | Knotted Keys | AW2 3P Maps | 30x20 | 3 | 0 | 9 | 0 | 0 | no | no |
+| 7C | Stamp Islands | AW2 War Room | 27x22 | 3 | 0 | 19 | 13 | 11 | no | no |
+| 7D | Rivers Four | AW2 War Room | 25x16 | 3 | 0 | 17 | 0 | 0 | no | no |
+| 7E | Ring Islands | AW2 War Room | 33x35 | 3 | 0 | 24 | 0 | 15 | no | no |
+| 7F | Last Mission | AW2 War Room | 26x20 | 3 | 0 | 20 | 10 | 0 | no | no |
+| 86 | Lost Basin | AW2 War Room | 22x15 | 3 | 0 | 15 | 0 | 0 | no | no |
+| 87 | Risky Vale | AW2 War Room | 18x12 | 3 | 0 | 13 | 0 | 0 | no | no |
+| 32 | Delta Heights | AW2 Pre-Deployed | 15x11 | 3 | 18 | 0 | 0 | 0 | yes | no |
+| 33 | Poem Cape | AW2 Pre-Deployed | 16x22 | 3 | 24 | 0 | 0 | 0 | yes | no |
+| 34 | Blue Lake | AW2 Pre-Deployed | 23x16 | 3 | 36 | 0 | 0 | 0 | yes | no |
+| 53 | Four Corners | AW2 4P Maps | 15x10 | 4 | 0 | 8 | 1 | 0 | no | no |
+| 54 | Rocket Cape | AW2 4P Maps | 24x21 | 4 | 0 | 20 | 0 | 0 | no | no |
+| 55 | Crop River | AW2 4P Maps | 32x28 | 4 | 0 | 21 | 11 | 0 | no | no |
+| 56 | Tween Isle | AW2 4P Maps | 19x23 | 4 | 0 | 8 | 0 | 6 | no | no |
+| 57 | Rival Islands | AW2 4P Maps | 23x26 | 4 | 0 | 20 | 8 | 8 | no | no |
+| 58 | Loop Road | AW2 4P Maps | 25x16 | 4 | 0 | 12 | 0 | 0 | no | no |
+| 59 | Plus Canal | AW2 4P Maps | 25x17 | 4 | 0 | 16 | 0 | 0 | no | no |
+| 5A | Islas Five | AW2 4P Maps | 23x23 | 4 | 0 | 16 | 12 | 0 | no | no |
+| 5B | Patriot Cove | AW2 4P Maps | 23x18 | 4 | 0 | 20 | 6 | 8 | no | no |
+| 5C | Web River | AW2 4P Maps | 21x27 | 4 | 0 | 20 | 0 | 0 | no | no |
+| 5D | Cap Narrows | AW2 4P Maps | 17x26 | 4 | 0 | 16 | 6 | 0 | no | no |
+| 5E | Jay Islands | AW2 4P Maps | 32x18 | 4 | 0 | 8 | 0 | 4 | no | no |
+| 5F | Chain Canal | AW2 4P Maps | 19x26 | 4 | 0 | 18 | 6 | 10 | no | no |
+| 60 | Spring Lakes | AW2 4P Maps | 32x28 | 4 | 0 | 15 | 0 | 0 | no | no |
+| 61 | Tatter River | AW2 4P Maps | 32x28 | 4 | 0 | 24 | 11 | 0 | no | no |
+| 62 | Island X | AW2 4P Maps | 30x16 | 4 | 0 | 18 | 4 | 6 | no | no |
+| 63 | Alakule | AW2 4P Maps | 32x28 | 4 | 0 | 19 | 0 | 0 | no | no |
+| 64 | Traitor River | AW2 4P Maps | 46x28 | 4 | 0 | 21 | 0 | 0 | no | no |
+| 65 | Fable Hills | AW2 4P Maps | 32x28 | 4 | 0 | 26 | 12 | 0 | no | no |
+| 66 | South Cape | AW2 4P Maps | 32x39 | 4 | 0 | 21 | 0 | 11 | no | no |
+| 67 | Glory Islands | AW2 4P Maps | 32x28 | 4 | 0 | 19 | 10 | 14 | no | no |
+| 68 | Pipe Maze | AW2 4P Maps | 22x22 | 4 | 0 | 20 | 4 | 0 | no | no |
+| 69 | Lock Ridge | AW2 4P Maps | 30x20 | 4 | 0 | 8 | 0 | 0 | no | no |
+| 6A | Heartland | AW2 4P Maps | 30x20 | 4 | 0 | 22 | 0 | 0 | no | no |
+| 6B | Badlands | AW2 4P Maps | 40x26 | 4 | 0 | 22 | 6 | 4 | no | no |
+| 88 | The Ring | AW2 War Room | 19x18 | 4 | 0 | 14 | 5 | 5 | no | no |
+| 89 | Strong Land | AW2 War Room | 18x12 | 4 | 0 | 15 | 0 | 0 | no | no |
+| 35 | Coil Range | AW2 Pre-Deployed | 15x11 | 4 | 28 | 0 | 0 | 0 | yes | no |
+| 36 | Leaf Haven | AW2 Pre-Deployed | 18x18 | 4 | 40 | 0 | 0 | 0 | yes | no |
+| 37 | Battle Cube | AW2 Pre-Deployed | 28x30 | 4 | 76 | 0 | 0 | 0 | yes | no |
+| 39 | Grid Assault | AW2 Pre-Deployed | 19x19 | 4 | 36 | 0 | 0 | 0 | yes | no |
+| 3A | Crossroad | AW2 Pre-Deployed | 25x23 | 4 | 96 | 0 | 0 | 0 | yes | no |
+| 00 | Five Seas | tangoAW2 | 20x40 | 5 | 35 | 10 | 9 | 18 | no | no |
+| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | 30 | 10 | 4 | 0 | no | no |
+| BD | Magma Crown | tangoAW2 | 30x30 | 5 | 30 | 5 | 5 | 5 | no | no |
+| BE | Skyreach | tangoAW2 | 32x36 | 5 | 35 | 5 | 21 | 0 | no | no |
+| BF | The Citadel | tangoAW2 | 29x33 | 5 | 24 | 8 | 7 | 0 | no | no |
+| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no | no |
 
 ## With the Dual Strike pack
 
-| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed |
-|---|---|---|---|---|---|---|---|---|---|
-| 01 | Bean Island | DS Versus | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
-| 02 | Crater Isle | DS Versus | 16x15 | 2 | 0 | 10 | 0 | 0 | no |
-| 03 | Triangles | DS Versus | 16x15 | 2 | 0 | 8 | 4 | 0 | no |
-| 04 | Ball Islands | DS Versus | 42x15 | 2 | 0 | 10 | 6 | 5 | no |
-| 05 | Coral Lagoon | DS Versus | 16x15 | 2 | 0 | 8 | 0 | 0 | no |
-| 06 | Puzzle Trio | DS Versus | 32x15 | 2 | 0 | 6 | 6 | 7 | no |
-| 07 | Fist Peninsula | DS Versus | 16x15 | 2 | 0 | 6 | 0 | 0 | no |
-| 08 | Deer Harbor | DS Versus | 32x30 | 2 | 0 | 8 | 6 | 4 | no |
-| 09 | Alara Range | DS Versus | 32x15 | 2 | 0 | 7 | 7 | 0 | no |
-| 0A | Lost River | DS Versus | 32x15 | 2 | 0 | 9 | 5 | 0 | no |
-| 0B | Volcano Isle | DS Versus | 16x15 | 2 | 0 | 7 | 2 | 0 | no |
-| 0C | Turtle Atoll | DS Versus | 16x30 | 2 | 0 | 7 | 0 | 4 | no |
-| 0D | Squash Island | DS Versus | 48x15 | 2 | 0 | 7 | 6 | 4 | no |
-| 0E | Cube Keys | DS Versus | 32x30 | 2 | 0 | 9 | 7 | 0 | no |
-| 0F | Mirror Islands | DS Versus | 32x15 | 2 | 0 | 6 | 3 | 0 | no |
-| 10 | Shark Strait | DS Versus | 37x30 | 2 | 20 | 10 | 14 | 8 | no |
-| 11 | Royal Channel | DS Versus | 39x30 | 2 | 21 | 10 | 9 | 8 | no |
-| 12 | Little Island | DS Versus | 19x12 | 2 | 0 | 4 | 0 | 0 | no |
-| 13 | Sun Canal | DS Versus | 16x13 | 2 | 0 | 7 | 0 | 4 | no |
-| 14 | Beaker River | DS Versus | 19x15 | 2 | 0 | 8 | 6 | 0 | no |
-| 15 | Star Islands | DS Versus | 31x16 | 2 | 0 | 10 | 8 | 8 | no |
-| 16 | Eon Springs | DS Versus | 19x17 | 2 | 0 | 8 | 6 | 0 | no |
-| 17 | Portal Bridge | DS Versus | 19x17 | 2 | 0 | 8 | 4 | 0 | no |
-| 18 | Sabre Range | DS Versus | 16x12 | 2 | 0 | 8 | 0 | 0 | no |
-| 19 | Asphalt Maze | DS Versus | 16x12 | 2 | 0 | 8 | 0 | 0 | no |
-| 1A | Cog Isle | DS Versus | 16x12 | 2 | 0 | 4 | 0 | 0 | no |
-| 1B | Zero Wood | DS Versus | 16x12 | 2 | 0 | 5 | 0 | 0 | no |
-| 1C | Switchback | DS Versus | 21x15 | 2 | 0 | 12 | 0 | 0 | no |
-| 1D | Ruby Keys | DS Versus | 29x15 | 2 | 0 | 8 | 4 | 4 | no |
-| 1E | Rainy Haven | DS Versus | 16x15 | 2 | 0 | 5 | 4 | 6 | no |
-| 1F | Rail Strait | DS Versus | 18x15 | 2 | 0 | 5 | 0 | 3 | no |
-| 20 | Tribe Islands | DS Versus | 19x17 | 2 | 0 | 8 | 0 | 6 | no |
-| 21 | Vision Bridge | DS Versus | 31x24 | 2 | 0 | 13 | 0 | 8 | no |
-| 22 | Piston Dam | DS Versus | 26x14 | 2 | 0 | 6 | 8 | 0 | no |
-| 23 | Hat Harbor | DS Versus | 21x21 | 2 | 0 | 9 | 10 | 0 | no |
-| 24 | Swan Cove | DS Versus | 24x17 | 2 | 0 | 11 | 0 | 6 | no |
-| 25 | Go Islands | DS Versus | 24x17 | 2 | 0 | 7 | 0 | 6 | no |
-| 26 | Hourglass Isle | DS Versus | 16x24 | 2 | 0 | 10 | 0 | 0 | no |
-| 27 | Pipes Aplenty | DS Versus | 18x15 | 2 | 0 | 6 | 0 | 0 | no |
-| 28 | Frigid Finale | DS Versus | 17x15 | 2 | 0 | 6 | 0 | 0 | no |
-| 29 | Hachi's Land | DS Versus | 32x32 | 2 | 0 | 8 | 5 | 5 | no |
-| 2A | Nell's Land | DS Versus | 32x32 | 2 | 0 | 10 | 2 | 2 | no |
-| 2B | Sturm's Land | DS Versus | 31x32 | 2 | 0 | 21 | 2 | 10 | no |
-| 2C | Lash's Land | DS Versus | 31x33 | 2 | 0 | 15 | 3 | 3 | no |
-| 8B | Spann Island | DS War Room | 16x12 | 2 | 0 | 9 | 0 | 0 | no |
-| 8C | Moji Island | DS War Room | 26x22 | 2 | 0 | 8 | 0 | 0 | no |
-| 8D | Duo Falls | DS War Room | 33x13 | 2 | 0 | 7 | 5 | 0 | no |
-| 8E | Sole Harbor | DS War Room | 22x15 | 2 | 0 | 10 | 0 | 3 | no |
-| 8F | Pivot Isle | DS War Room | 21x14 | 2 | 0 | 8 | 5 | 3 | no |
-| 90 | Land's End | DS War Room | 32x27 | 2 | 0 | 12 | 4 | 0 | no |
-| 91 | Kita Straight | DS War Room | 27x35 | 2 | 0 | 9 | 0 | 8 | no |
-| 92 | Point Stormy | DS War Room | 25x22 | 2 | 0 | 11 | 5 | 4 | no |
-| 93 | Ridge Island | DS War Room | 19x16 | 2 | 0 | 8 | 0 | 0 | no |
-| 94 | Mial's Hope | DS War Room | 45x28 | 2 | 0 | 13 | 9 | 0 | no |
-| 95 | Bounty River | DS War Room | 28x22 | 2 | 0 | 16 | 0 | 10 | no |
-| 96 | Toil Ferry | DS War Room | 26x16 | 2 | 0 | 9 | 8 | 6 | no |
-| 97 | Twin Isle | DS War Room | 22x16 | 2 | 0 | 8 | 0 | 0 | no |
-| 98 | Dire Range | DS War Room | 37x25 | 2 | 0 | 11 | 10 | 0 | no |
-| 99 | Egg Islands | DS War Room | 42x28 | 2 | 0 | 12 | 0 | 8 | no |
-| 9A | Terra Maw | DS War Room | 32x28 | 2 | 0 | 13 | 5 | 5 | no |
-| 9F | Pay Dirt | DS War Room | 16x12 | 2 | 0 | 6 | 4 | 0 | no |
-| A0 | Long Road | DS War Room | 15x20 | 2 | 2 | 12 | 0 | 0 | no |
-| A1 | Nest Egg | DS War Room | 18x12 | 2 | 0 | 12 | 0 | 0 | no |
-| A2 | The Trident | DS War Room | 19x19 | 2 | 0 | 6 | 8 | 5 | no |
-| A3 | Banker Hills | DS War Room | 18x13 | 2 | 0 | 8 | 0 | 0 | no |
-| A4 | Missile Plains | DS War Room | 20x20 | 2 | 28 | 22 | 0 | 0 | no |
-| A9 | Little Lion | DS War Room | 18x18 | 2 | 0 | 12 | 1 | 0 | no |
-| AA | Megalopolis | DS War Room | 26x12 | 2 | 0 | 8 | 0 | 0 | no |
-| AB | Pipeline | DS War Room | 27x22 | 2 | 0 | 11 | 0 | 6 | no |
-| B2 | Jelly Island | DS War Room | 16x12 | 2 | 0 | 9 | 0 | 0 | no |
-| B3 | Whiplash | DS War Room | 16x16 | 2 | 0 | 5 | 0 | 8 | no |
-| B8 | Obelisk Duel | tangoAW2 | 24x16 | 2 | 12 | 4 | 2 | 0 | no |
-| C1 | Silo Nation | DS War Room | 20x12 | 2 | 0 | 6 | 1 | 0 | no |
-| C2 | Risky Duo | DS War Room | 17x17 | 2 | 0 | 16 | 2 | 1 | no |
-| C3 | Helix Peninsula | DS War Room | 20x20 | 2 | 0 | 10 | 2 | 3 | no |
-| F1 | The Colonel's Vault | tangoAW2 | 30x20 | 2 | 14 | 4 | 2 | 4 | no |
-| 2D | Brace Range | DS Versus | 16x12 | 2 | 18 | 0 | 0 | 0 | yes |
-| 2E | River Range | DS Versus | 16x12 | 2 | 20 | 0 | 0 | 0 | yes |
-| 2F | Moon Isle | DS Versus | 17x12 | 2 | 30 | 0 | 0 | 0 | yes |
-| 30 | Mint Plateau | DS Versus | 17x12 | 2 | 28 | 0 | 0 | 0 | yes |
-| 31 | Jewel Canal | DS Versus | 19x12 | 2 | 38 | 0 | 0 | 0 | yes |
-| 32 | Wrench Island | DS Versus | 22x13 | 2 | 24 | 0 | 0 | 0 | yes |
-| 33 | Rapid Ferry | DS Versus | 19x12 | 2 | 32 | 0 | 0 | 0 | yes |
-| 34 | Bundle City | DS Versus | 16x12 | 2 | 20 | 0 | 0 | 0 | yes |
-| 35 | Scarab Road | DS Versus | 16x14 | 2 | 26 | 0 | 0 | 0 | yes |
-| 36 | Pointing River | DS Versus | 16x12 | 2 | 26 | 0 | 0 | 0 | yes |
-| 37 | Liaison Wood | DS Versus | 19x14 | 2 | 28 | 0 | 0 | 0 | yes |
-| 3E | Big Daddy | DS Versus | 19x15 | 2 | 36 | 0 | 0 | 0 | yes |
-| 41 | Trifecta Isles | DS Versus | 20x20 | 2 | 26 | 0 | 0 | 0 | yes |
-| 42 | Ocean Prison | DS Versus | 26x12 | 2 | 28 | 0 | 0 | 0 | yes |
-| 43 | Narrow Ridge | DS Versus | 17x25 | 2 | 28 | 0 | 0 | 0 | yes |
-| 4C | Pyramid Cape | DS Versus | 21x18 | 3 | 0 | 12 | 0 | 0 | no |
-| 4D | Bead Islands | DS Versus | 19x16 | 3 | 0 | 9 | 0 | 6 | no |
-| 4E | Clover Keys | DS Versus | 21x18 | 3 | 0 | 9 | 4 | 0 | no |
-| 4F | Keyhole Cove | DS Versus | 18x25 | 3 | 0 | 15 | 9 | 9 | no |
-| 50 | Fork River | DS Versus | 22x22 | 3 | 0 | 12 | 0 | 0 | no |
-| 51 | Mantis River | DS Versus | 21x22 | 3 | 0 | 13 | 5 | 0 | no |
-| 52 | Channel City | DS Versus | 23x17 | 3 | 0 | 10 | 0 | 3 | no |
-| 53 | Ink Canal | DS Versus | 21x20 | 3 | 0 | 12 | 5 | 6 | no |
-| 54 | Shield Hills | DS Versus | 22x18 | 3 | 0 | 11 | 0 | 0 | no |
-| 55 | Peril Maze | DS Versus | 25x23 | 3 | 0 | 9 | 10 | 0 | no |
-| 56 | Gem Creek | DS Versus | 19x16 | 3 | 0 | 6 | 4 | 3 | no |
-| 57 | Glass Heights | DS Versus | 19x16 | 3 | 0 | 12 | 0 | 0 | no |
-| 58 | Devil's Inlet | DS Versus | 28x18 | 3 | 0 | 12 | 10 | 0 | no |
-| 59 | Shear Port | DS Versus | 27x19 | 3 | 0 | 15 | 0 | 6 | no |
-| 5A | Liar's Cove | DS Versus | 21x22 | 3 | 0 | 13 | 4 | 4 | no |
-| 5B | Nail Canal | DS Versus | 27x17 | 3 | 0 | 11 | 0 | 0 | no |
-| 5C | Atlas River | DS Versus | 24x23 | 3 | 0 | 12 | 7 | 0 | no |
-| 5D | Eel Channels | DS Versus | 27x24 | 3 | 0 | 13 | 0 | 7 | no |
-| 5E | Jab Peninsula | DS Versus | 21x22 | 3 | 0 | 12 | 5 | 6 | no |
-| 5F | Thorn Islands | DS Versus | 32x15 | 3 | 0 | 14 | 5 | 3 | no |
-| 60 | Portsmouth | DS Versus | 30x20 | 3 | 0 | 9 | 0 | 9 | no |
-| 61 | Archipelagos | DS Versus | 24x16 | 3 | 0 | 14 | 0 | 11 | no |
-| 62 | Wyrm's Eye | DS Versus | 30x20 | 3 | 0 | 19 | 0 | 0 | no |
-| 63 | Knotted Keys | DS Versus | 30x20 | 3 | 0 | 9 | 0 | 0 | no |
-| 64 | Fan Isle | DS Versus | 25x27 | 3 | 0 | 12 | 1 | 6 | no |
-| 65 | Gridlock Glen | DS Versus | 21x21 | 3 | 0 | 12 | 3 | 0 | no |
-| 66 | Kidney Island | DS Versus | 18x27 | 3 | 0 | 12 | 7 | 6 | no |
-| 9B | Lost Basin | DS War Room | 22x15 | 3 | 0 | 16 | 0 | 0 | no |
-| 9C | Rivers Four | DS War Room | 25x16 | 3 | 0 | 15 | 0 | 0 | no |
-| 9D | Ring Islands | DS War Room | 33x35 | 3 | 0 | 19 | 1 | 10 | no |
-| 9E | Last Mission | DS War Room | 26x20 | 3 | 0 | 16 | 9 | 0 | no |
-| A5 | Stamp Islands | DS War Room | 27x22 | 3 | 0 | 15 | 11 | 9 | no |
-| A6 | Risky Vale | DS War Room | 18x12 | 3 | 0 | 14 | 0 | 0 | no |
-| AC | Rabbit Island | DS War Room | 15x28 | 3 | 0 | 11 | 1 | 4 | no |
-| AD | Watery Downs | DS War Room | 24x12 | 3 | 0 | 13 | 1 | 1 | no |
-| AE | Fortress Isle | DS War Room | 27x17 | 3 | 0 | 16 | 2 | 3 | no |
-| B9 | Crystal Isles | tangoAW2 | 30x26 | 3 | 18 | 3 | 4 | 6 | no |
-| 38 | Delta Heights | DS Versus | 16x12 | 3 | 18 | 0 | 0 | 0 | yes |
-| 39 | Poem Cape | DS Versus | 16x22 | 3 | 24 | 0 | 0 | 0 | yes |
-| 3A | Blue Lake | DS Versus | 23x16 | 3 | 36 | 0 | 0 | 0 | yes |
-| 44 | Deadlakes | DS Versus | 15x17 | 3 | 39 | 0 | 0 | 0 | yes |
-| 45 | No-Exit Isles | DS Versus | 18x19 | 3 | 39 | 0 | 0 | 0 | yes |
-| 46 | Arrow Point | DS Versus | 24x24 | 3 | 48 | 0 | 0 | 0 | yes |
-| 67 | Four Corners | DS Versus | 16x12 | 4 | 0 | 8 | 1 | 0 | no |
-| 68 | Rocket Cape | DS Versus | 24x21 | 4 | 0 | 20 | 0 | 0 | no |
-| 69 | Crop River | DS Versus | 32x28 | 4 | 0 | 21 | 11 | 0 | no |
-| 6A | Tween Isle | DS Versus | 19x23 | 4 | 0 | 8 | 0 | 6 | no |
-| 6B | Rival Islands | DS Versus | 23x26 | 4 | 0 | 20 | 8 | 8 | no |
-| 6C | Loop Road | DS Versus | 25x16 | 4 | 0 | 12 | 0 | 0 | no |
-| 6D | Plus Canal | DS Versus | 25x17 | 4 | 0 | 16 | 0 | 0 | no |
-| 6E | Islas Five | DS Versus | 23x23 | 4 | 0 | 16 | 12 | 0 | no |
-| 6F | Patriot Cove | DS Versus | 23x18 | 4 | 0 | 20 | 6 | 8 | no |
-| 70 | Web River | DS Versus | 21x27 | 4 | 0 | 20 | 0 | 0 | no |
-| 71 | Cap Narrows | DS Versus | 17x26 | 4 | 0 | 16 | 6 | 0 | no |
-| 72 | Jay Islands | DS Versus | 32x18 | 4 | 0 | 8 | 0 | 4 | no |
-| 73 | Chain Canal | DS Versus | 19x26 | 4 | 0 | 18 | 6 | 10 | no |
-| 74 | Spring Lakes | DS Versus | 32x28 | 4 | 0 | 15 | 0 | 0 | no |
-| 75 | Tatter River | DS Versus | 32x28 | 4 | 0 | 24 | 11 | 0 | no |
-| 76 | Island X | DS Versus | 30x16 | 4 | 0 | 18 | 4 | 6 | no |
-| 77 | Alakule | DS Versus | 32x28 | 4 | 0 | 19 | 0 | 0 | no |
-| 78 | Traitor River | DS Versus | 46x28 | 4 | 0 | 21 | 0 | 0 | no |
-| 79 | Fable Hills | DS Versus | 32x28 | 4 | 0 | 26 | 12 | 0 | no |
-| 7A | South Cape | DS Versus | 32x39 | 4 | 0 | 21 | 0 | 11 | no |
-| 7B | Glory Islands | DS Versus | 32x28 | 4 | 0 | 19 | 10 | 14 | no |
-| 7C | Pipe Maze | DS Versus | 22x22 | 4 | 0 | 20 | 4 | 0 | no |
-| 7D | Lock Ridge | DS Versus | 30x20 | 4 | 0 | 8 | 0 | 0 | no |
-| 7E | Heartland | DS Versus | 30x20 | 4 | 0 | 22 | 0 | 0 | no |
-| 7F | Badlands | DS Versus | 40x26 | 4 | 0 | 22 | 6 | 4 | no |
-| 80 | Marine Cross | DS Versus | 16x25 | 4 | 0 | 8 | 4 | 4 | no |
-| 81 | Axle Roads | DS Versus | 25x25 | 4 | 0 | 14 | 8 | 0 | no |
-| 82 | Worm Canal | DS Versus | 21x28 | 4 | 0 | 14 | 4 | 8 | no |
-| 83 | Broken Land | DS Versus | 21x21 | 4 | 0 | 20 | 8 | 0 | no |
-| 84 | Rough Terrain | DS Versus | 35x35 | 4 | 0 | 21 | 0 | 4 | no |
-| 85 | Deep Forest | DS Versus | 16x12 | 4 | 0 | 12 | 0 | 0 | no |
-| 86 | Scramble Isle | DS Versus | 16x12 | 4 | 0 | 8 | 8 | 0 | no |
-| 87 | Danger Pool | DS Versus | 17x17 | 4 | 0 | 8 | 0 | 4 | no |
-| 88 | Dark City | DS Versus | 30x14 | 4 | 0 | 16 | 2 | 0 | no |
-| 89 | Clover Pond | DS Versus | 20x20 | 4 | 0 | 17 | 1 | 0 | no |
-| 8A | Cross Cape | DS Versus | 16x32 | 4 | 0 | 4 | 0 | 24 | no |
-| A7 | The Ring | DS War Room | 19x18 | 4 | 0 | 13 | 5 | 5 | no |
-| A8 | Strong Land | DS War Room | 18x12 | 4 | 0 | 14 | 0 | 0 | no |
-| AF | Treble Ridge | DS War Room | 16x12 | 4 | 0 | 11 | 0 | 0 | no |
-| B0 | Four Acres | DS War Room | 26x26 | 4 | 0 | 13 | 5 | 2 | no |
-| B1 | Final Battle | DS War Room | 16x12 | 4 | 0 | 15 | 0 | 0 | no |
-| BA | Obelisk Plains | tangoAW2 | 28x28 | 4 | 24 | 8 | 4 | 0 | no |
-| 3B | Coil Range | DS Versus | 16x12 | 4 | 28 | 0 | 0 | 0 | yes |
-| 3C | Leaf Haven | DS Versus | 18x18 | 4 | 40 | 0 | 0 | 0 | yes |
-| 3D | Battle Cube | DS Versus | 28x30 | 4 | 76 | 0 | 0 | 0 | yes |
-| 3F | Grid Assault | DS Versus | 19x19 | 4 | 36 | 0 | 0 | 0 | yes |
-| 40 | Crossroad | DS Versus | 25x23 | 4 | 96 | 0 | 0 | 0 | yes |
-| 47 | Crater Reef | DS Versus | 35x35 | 4 | 112 | 0 | 0 | 0 | yes |
-| 48 | Lost Road | DS Versus | 28x17 | 4 | 40 | 0 | 0 | 0 | yes |
-| 49 | Capital Clash | DS Versus | 21x21 | 4 | 69 | 0 | 0 | 0 | yes |
-| 4A | Islands Agogo | DS Versus | 27x26 | 4 | 52 | 0 | 0 | 0 | yes |
-| 4B | Grand Battle | DS Versus | 29x29 | 4 | 68 | 0 | 0 | 0 | yes |
-| 00 | Five Seas | tangoAW2 | 20x40 | 5 | 35 | 10 | 9 | 18 | no |
-| BB | Black Monolith | tangoAW2 | 30x30 | 5 | 30 | 10 | 9 | 0 | no |
-| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | 30 | 10 | 4 | 0 | no |
-| BD | Magma Crown | tangoAW2 | 30x30 | 5 | 30 | 5 | 5 | 5 | no |
-| BE | Skyreach | tangoAW2 | 32x36 | 5 | 35 | 5 | 21 | 0 | no |
-| BF | The Citadel | tangoAW2 | 29x33 | 5 | 24 | 8 | 7 | 0 | no |
-| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no |
-| C4 | Black Wastes | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 0 | no |
-| C8 | Coral Crown | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 6 | no |
-| C9 | Pentagon Atoll | tangoAW2 | 35x35 | 5 | 60 | 0 | 0 | 0 | yes |
+| Id | Map | Source | Size | Armies | Units placed | Bases | Airports | Ports | Pre-deployed | Needs DS pack |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 01 | Bean Island | DS Versus | 16x15 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| 02 | Crater Isle | DS Versus | 16x15 | 2 | 0 | 10 | 0 | 0 | no | yes |
+| 03 | Triangles | DS Versus | 16x15 | 2 | 0 | 8 | 4 | 0 | no | yes |
+| 04 | Ball Islands | DS Versus | 42x15 | 2 | 0 | 10 | 6 | 5 | no | yes |
+| 05 | Coral Lagoon | DS Versus | 16x15 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| 06 | Puzzle Trio | DS Versus | 32x15 | 2 | 0 | 6 | 6 | 7 | no | yes |
+| 07 | Fist Peninsula | DS Versus | 16x15 | 2 | 0 | 6 | 0 | 0 | no | yes |
+| 08 | Deer Harbor | DS Versus | 32x30 | 2 | 0 | 8 | 6 | 4 | no | yes |
+| 09 | Alara Range | DS Versus | 32x15 | 2 | 0 | 7 | 7 | 0 | no | yes |
+| 0A | Lost River | DS Versus | 32x15 | 2 | 0 | 9 | 5 | 0 | no | yes |
+| 0B | Volcano Isle | DS Versus | 16x15 | 2 | 0 | 7 | 2 | 0 | no | yes |
+| 0C | Turtle Atoll | DS Versus | 16x30 | 2 | 0 | 7 | 0 | 4 | no | yes |
+| 0D | Squash Island | DS Versus | 48x15 | 2 | 0 | 7 | 6 | 4 | no | yes |
+| 0E | Cube Keys | DS Versus | 32x30 | 2 | 0 | 9 | 7 | 0 | no | yes |
+| 0F | Mirror Islands | DS Versus | 32x15 | 2 | 0 | 6 | 3 | 0 | no | yes |
+| 10 | Shark Strait | DS Versus | 37x30 | 2 | 20 | 10 | 14 | 8 | no | yes |
+| 11 | Royal Channel | DS Versus | 39x30 | 2 | 21 | 10 | 9 | 8 | no | yes |
+| 12 | Little Island | DS Versus | 19x12 | 2 | 0 | 4 | 0 | 0 | no | yes |
+| 13 | Sun Canal | DS Versus | 16x13 | 2 | 0 | 7 | 0 | 4 | no | yes |
+| 14 | Beaker River | DS Versus | 19x15 | 2 | 0 | 8 | 6 | 0 | no | yes |
+| 15 | Star Islands | DS Versus | 31x16 | 2 | 0 | 10 | 8 | 8 | no | yes |
+| 16 | Eon Springs | DS Versus | 19x17 | 2 | 0 | 8 | 6 | 0 | no | yes |
+| 17 | Portal Bridge | DS Versus | 19x17 | 2 | 0 | 8 | 4 | 0 | no | yes |
+| 18 | Sabre Range | DS Versus | 16x12 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| 19 | Asphalt Maze | DS Versus | 16x12 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| 1A | Cog Isle | DS Versus | 16x12 | 2 | 0 | 4 | 0 | 0 | no | yes |
+| 1B | Zero Wood | DS Versus | 16x12 | 2 | 0 | 5 | 0 | 0 | no | yes |
+| 1C | Switchback | DS Versus | 21x15 | 2 | 0 | 12 | 0 | 0 | no | yes |
+| 1D | Ruby Keys | DS Versus | 29x15 | 2 | 0 | 8 | 4 | 4 | no | yes |
+| 1E | Rainy Haven | DS Versus | 16x15 | 2 | 0 | 5 | 4 | 6 | no | yes |
+| 1F | Rail Strait | DS Versus | 18x15 | 2 | 0 | 5 | 0 | 3 | no | yes |
+| 20 | Tribe Islands | DS Versus | 19x17 | 2 | 0 | 8 | 0 | 6 | no | yes |
+| 21 | Vision Bridge | DS Versus | 31x24 | 2 | 0 | 13 | 0 | 8 | no | yes |
+| 22 | Piston Dam | DS Versus | 26x14 | 2 | 0 | 6 | 8 | 0 | no | yes |
+| 23 | Hat Harbor | DS Versus | 21x21 | 2 | 0 | 9 | 10 | 0 | no | yes |
+| 24 | Swan Cove | DS Versus | 24x17 | 2 | 0 | 11 | 0 | 6 | no | yes |
+| 25 | Go Islands | DS Versus | 24x17 | 2 | 0 | 7 | 0 | 6 | no | yes |
+| 26 | Hourglass Isle | DS Versus | 16x24 | 2 | 0 | 10 | 0 | 0 | no | yes |
+| 27 | Pipes Aplenty | DS Versus | 18x15 | 2 | 0 | 6 | 0 | 0 | no | yes |
+| 28 | Frigid Finale | DS Versus | 17x15 | 2 | 0 | 6 | 0 | 0 | no | yes |
+| 29 | Hachi's Land | DS Versus | 32x32 | 2 | 0 | 8 | 5 | 5 | no | yes |
+| 2A | Nell's Land | DS Versus | 32x32 | 2 | 0 | 10 | 2 | 2 | no | yes |
+| 2B | Sturm's Land | DS Versus | 31x32 | 2 | 0 | 21 | 2 | 10 | no | yes |
+| 2C | Lash's Land | DS Versus | 31x33 | 2 | 0 | 15 | 3 | 3 | no | yes |
+| 8B | Spann Island | DS War Room | 16x12 | 2 | 0 | 9 | 0 | 0 | no | yes |
+| 8C | Moji Island | DS War Room | 26x22 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| 8D | Duo Falls | DS War Room | 33x13 | 2 | 0 | 7 | 5 | 0 | no | yes |
+| 8E | Sole Harbor | DS War Room | 22x15 | 2 | 0 | 10 | 0 | 3 | no | yes |
+| 8F | Pivot Isle | DS War Room | 21x14 | 2 | 0 | 8 | 5 | 3 | no | yes |
+| 90 | Land's End | DS War Room | 32x27 | 2 | 0 | 12 | 4 | 0 | no | yes |
+| 91 | Kita Straight | DS War Room | 27x35 | 2 | 0 | 9 | 0 | 8 | no | yes |
+| 92 | Point Stormy | DS War Room | 25x22 | 2 | 0 | 11 | 5 | 4 | no | yes |
+| 93 | Ridge Island | DS War Room | 19x16 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| 94 | Mial's Hope | DS War Room | 45x28 | 2 | 0 | 13 | 9 | 0 | no | yes |
+| 95 | Bounty River | DS War Room | 28x22 | 2 | 0 | 16 | 0 | 10 | no | yes |
+| 96 | Toil Ferry | DS War Room | 26x16 | 2 | 0 | 9 | 8 | 6 | no | yes |
+| 97 | Twin Isle | DS War Room | 22x16 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| 98 | Dire Range | DS War Room | 37x25 | 2 | 0 | 11 | 10 | 0 | no | yes |
+| 99 | Egg Islands | DS War Room | 42x28 | 2 | 0 | 12 | 0 | 8 | no | yes |
+| 9A | Terra Maw | DS War Room | 32x28 | 2 | 0 | 13 | 5 | 5 | no | yes |
+| 9F | Pay Dirt | DS War Room | 16x12 | 2 | 0 | 6 | 4 | 0 | no | yes |
+| A0 | Long Road | DS War Room | 15x20 | 2 | 2 | 12 | 0 | 0 | no | yes |
+| A1 | Nest Egg | DS War Room | 18x12 | 2 | 0 | 12 | 0 | 0 | no | yes |
+| A2 | The Trident | DS War Room | 19x19 | 2 | 0 | 6 | 8 | 5 | no | yes |
+| A3 | Banker Hills | DS War Room | 18x13 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| A4 | Missile Plains | DS War Room | 20x20 | 2 | 28 | 22 | 0 | 0 | no | yes |
+| A9 | Little Lion | DS War Room | 18x18 | 2 | 0 | 12 | 1 | 0 | no | yes |
+| AA | Megalopolis | DS War Room | 26x12 | 2 | 0 | 8 | 0 | 0 | no | yes |
+| AB | Pipeline | DS War Room | 27x22 | 2 | 0 | 11 | 0 | 6 | no | yes |
+| B2 | Jelly Island | DS War Room | 16x12 | 2 | 0 | 9 | 0 | 0 | no | yes |
+| B3 | Whiplash | DS War Room | 16x16 | 2 | 0 | 5 | 0 | 8 | no | yes |
+| B8 | Obelisk Duel | tangoAW2 | 24x16 | 2 | 12 | 4 | 2 | 0 | no | yes |
+| C1 | Silo Nation | DS War Room | 20x12 | 2 | 0 | 6 | 1 | 0 | no | yes |
+| C2 | Risky Duo | DS War Room | 17x17 | 2 | 0 | 16 | 2 | 1 | no | yes |
+| C3 | Helix Peninsula | DS War Room | 20x20 | 2 | 0 | 10 | 2 | 3 | no | yes |
+| F1 | The Colonel's Vault | tangoAW2 | 30x20 | 2 | 14 | 4 | 2 | 4 | no | yes |
+| 2D | Brace Range | DS Versus | 16x12 | 2 | 18 | 0 | 0 | 0 | yes | yes |
+| 2E | River Range | DS Versus | 16x12 | 2 | 20 | 0 | 0 | 0 | yes | yes |
+| 2F | Moon Isle | DS Versus | 17x12 | 2 | 30 | 0 | 0 | 0 | yes | yes |
+| 30 | Mint Plateau | DS Versus | 17x12 | 2 | 28 | 0 | 0 | 0 | yes | yes |
+| 31 | Jewel Canal | DS Versus | 19x12 | 2 | 38 | 0 | 0 | 0 | yes | yes |
+| 32 | Wrench Island | DS Versus | 22x13 | 2 | 24 | 0 | 0 | 0 | yes | yes |
+| 33 | Rapid Ferry | DS Versus | 19x12 | 2 | 32 | 0 | 0 | 0 | yes | yes |
+| 34 | Bundle City | DS Versus | 16x12 | 2 | 20 | 0 | 0 | 0 | yes | yes |
+| 35 | Scarab Road | DS Versus | 16x14 | 2 | 26 | 0 | 0 | 0 | yes | yes |
+| 36 | Pointing River | DS Versus | 16x12 | 2 | 26 | 0 | 0 | 0 | yes | yes |
+| 37 | Liaison Wood | DS Versus | 19x14 | 2 | 28 | 0 | 0 | 0 | yes | yes |
+| 3E | Big Daddy | DS Versus | 19x15 | 2 | 36 | 0 | 0 | 0 | yes | yes |
+| 41 | Trifecta Isles | DS Versus | 20x20 | 2 | 26 | 0 | 0 | 0 | yes | yes |
+| 42 | Ocean Prison | DS Versus | 26x12 | 2 | 28 | 0 | 0 | 0 | yes | yes |
+| 43 | Narrow Ridge | DS Versus | 17x25 | 2 | 28 | 0 | 0 | 0 | yes | yes |
+| 4C | Pyramid Cape | DS Versus | 21x18 | 3 | 0 | 12 | 0 | 0 | no | yes |
+| 4D | Bead Islands | DS Versus | 19x16 | 3 | 0 | 9 | 0 | 6 | no | yes |
+| 4E | Clover Keys | DS Versus | 21x18 | 3 | 0 | 9 | 4 | 0 | no | yes |
+| 4F | Keyhole Cove | DS Versus | 18x25 | 3 | 0 | 15 | 9 | 9 | no | yes |
+| 50 | Fork River | DS Versus | 22x22 | 3 | 0 | 12 | 0 | 0 | no | yes |
+| 51 | Mantis River | DS Versus | 21x22 | 3 | 0 | 13 | 5 | 0 | no | yes |
+| 52 | Channel City | DS Versus | 23x17 | 3 | 0 | 10 | 0 | 3 | no | yes |
+| 53 | Ink Canal | DS Versus | 21x20 | 3 | 0 | 12 | 5 | 6 | no | yes |
+| 54 | Shield Hills | DS Versus | 22x18 | 3 | 0 | 11 | 0 | 0 | no | yes |
+| 55 | Peril Maze | DS Versus | 25x23 | 3 | 0 | 9 | 10 | 0 | no | yes |
+| 56 | Gem Creek | DS Versus | 19x16 | 3 | 0 | 6 | 4 | 3 | no | yes |
+| 57 | Glass Heights | DS Versus | 19x16 | 3 | 0 | 12 | 0 | 0 | no | yes |
+| 58 | Devil's Inlet | DS Versus | 28x18 | 3 | 0 | 12 | 10 | 0 | no | yes |
+| 59 | Shear Port | DS Versus | 27x19 | 3 | 0 | 15 | 0 | 6 | no | yes |
+| 5A | Liar's Cove | DS Versus | 21x22 | 3 | 0 | 13 | 4 | 4 | no | yes |
+| 5B | Nail Canal | DS Versus | 27x17 | 3 | 0 | 11 | 0 | 0 | no | yes |
+| 5C | Atlas River | DS Versus | 24x23 | 3 | 0 | 12 | 7 | 0 | no | yes |
+| 5D | Eel Channels | DS Versus | 27x24 | 3 | 0 | 13 | 0 | 7 | no | yes |
+| 5E | Jab Peninsula | DS Versus | 21x22 | 3 | 0 | 12 | 5 | 6 | no | yes |
+| 5F | Thorn Islands | DS Versus | 32x15 | 3 | 0 | 14 | 5 | 3 | no | yes |
+| 60 | Portsmouth | DS Versus | 30x20 | 3 | 0 | 9 | 0 | 9 | no | yes |
+| 61 | Archipelagos | DS Versus | 24x16 | 3 | 0 | 14 | 0 | 11 | no | yes |
+| 62 | Wyrm's Eye | DS Versus | 30x20 | 3 | 0 | 19 | 0 | 0 | no | yes |
+| 63 | Knotted Keys | DS Versus | 30x20 | 3 | 0 | 9 | 0 | 0 | no | yes |
+| 64 | Fan Isle | DS Versus | 25x27 | 3 | 0 | 12 | 1 | 6 | no | yes |
+| 65 | Gridlock Glen | DS Versus | 21x21 | 3 | 0 | 12 | 3 | 0 | no | yes |
+| 66 | Kidney Island | DS Versus | 18x27 | 3 | 0 | 12 | 7 | 6 | no | yes |
+| 9B | Lost Basin | DS War Room | 22x15 | 3 | 0 | 16 | 0 | 0 | no | yes |
+| 9C | Rivers Four | DS War Room | 25x16 | 3 | 0 | 15 | 0 | 0 | no | yes |
+| 9D | Ring Islands | DS War Room | 33x35 | 3 | 0 | 19 | 1 | 10 | no | yes |
+| 9E | Last Mission | DS War Room | 26x20 | 3 | 0 | 16 | 9 | 0 | no | yes |
+| A5 | Stamp Islands | DS War Room | 27x22 | 3 | 0 | 15 | 11 | 9 | no | yes |
+| A6 | Risky Vale | DS War Room | 18x12 | 3 | 0 | 14 | 0 | 0 | no | yes |
+| AC | Rabbit Island | DS War Room | 15x28 | 3 | 0 | 11 | 1 | 4 | no | yes |
+| AD | Watery Downs | DS War Room | 24x12 | 3 | 0 | 13 | 1 | 1 | no | yes |
+| AE | Fortress Isle | DS War Room | 27x17 | 3 | 0 | 16 | 2 | 3 | no | yes |
+| B9 | Crystal Isles | tangoAW2 | 30x26 | 3 | 18 | 3 | 4 | 6 | no | yes |
+| 38 | Delta Heights | DS Versus | 16x12 | 3 | 18 | 0 | 0 | 0 | yes | yes |
+| 39 | Poem Cape | DS Versus | 16x22 | 3 | 24 | 0 | 0 | 0 | yes | yes |
+| 3A | Blue Lake | DS Versus | 23x16 | 3 | 36 | 0 | 0 | 0 | yes | yes |
+| 44 | Deadlakes | DS Versus | 15x17 | 3 | 39 | 0 | 0 | 0 | yes | yes |
+| 45 | No-Exit Isles | DS Versus | 18x19 | 3 | 39 | 0 | 0 | 0 | yes | yes |
+| 46 | Arrow Point | DS Versus | 24x24 | 3 | 48 | 0 | 0 | 0 | yes | yes |
+| 67 | Four Corners | DS Versus | 16x12 | 4 | 0 | 8 | 1 | 0 | no | yes |
+| 68 | Rocket Cape | DS Versus | 24x21 | 4 | 0 | 20 | 0 | 0 | no | yes |
+| 69 | Crop River | DS Versus | 32x28 | 4 | 0 | 21 | 11 | 0 | no | yes |
+| 6A | Tween Isle | DS Versus | 19x23 | 4 | 0 | 8 | 0 | 6 | no | yes |
+| 6B | Rival Islands | DS Versus | 23x26 | 4 | 0 | 20 | 8 | 8 | no | yes |
+| 6C | Loop Road | DS Versus | 25x16 | 4 | 0 | 12 | 0 | 0 | no | yes |
+| 6D | Plus Canal | DS Versus | 25x17 | 4 | 0 | 16 | 0 | 0 | no | yes |
+| 6E | Islas Five | DS Versus | 23x23 | 4 | 0 | 16 | 12 | 0 | no | yes |
+| 6F | Patriot Cove | DS Versus | 23x18 | 4 | 0 | 20 | 6 | 8 | no | yes |
+| 70 | Web River | DS Versus | 21x27 | 4 | 0 | 20 | 0 | 0 | no | yes |
+| 71 | Cap Narrows | DS Versus | 17x26 | 4 | 0 | 16 | 6 | 0 | no | yes |
+| 72 | Jay Islands | DS Versus | 32x18 | 4 | 0 | 8 | 0 | 4 | no | yes |
+| 73 | Chain Canal | DS Versus | 19x26 | 4 | 0 | 18 | 6 | 10 | no | yes |
+| 74 | Spring Lakes | DS Versus | 32x28 | 4 | 0 | 15 | 0 | 0 | no | yes |
+| 75 | Tatter River | DS Versus | 32x28 | 4 | 0 | 24 | 11 | 0 | no | yes |
+| 76 | Island X | DS Versus | 30x16 | 4 | 0 | 18 | 4 | 6 | no | yes |
+| 77 | Alakule | DS Versus | 32x28 | 4 | 0 | 19 | 0 | 0 | no | yes |
+| 78 | Traitor River | DS Versus | 46x28 | 4 | 0 | 21 | 0 | 0 | no | yes |
+| 79 | Fable Hills | DS Versus | 32x28 | 4 | 0 | 26 | 12 | 0 | no | yes |
+| 7A | South Cape | DS Versus | 32x39 | 4 | 0 | 21 | 0 | 11 | no | yes |
+| 7B | Glory Islands | DS Versus | 32x28 | 4 | 0 | 19 | 10 | 14 | no | yes |
+| 7C | Pipe Maze | DS Versus | 22x22 | 4 | 0 | 20 | 4 | 0 | no | yes |
+| 7D | Lock Ridge | DS Versus | 30x20 | 4 | 0 | 8 | 0 | 0 | no | yes |
+| 7E | Heartland | DS Versus | 30x20 | 4 | 0 | 22 | 0 | 0 | no | yes |
+| 7F | Badlands | DS Versus | 40x26 | 4 | 0 | 22 | 6 | 4 | no | yes |
+| 80 | Marine Cross | DS Versus | 16x25 | 4 | 0 | 8 | 4 | 4 | no | yes |
+| 81 | Axle Roads | DS Versus | 25x25 | 4 | 0 | 14 | 8 | 0 | no | yes |
+| 82 | Worm Canal | DS Versus | 21x28 | 4 | 0 | 14 | 4 | 8 | no | yes |
+| 83 | Broken Land | DS Versus | 21x21 | 4 | 0 | 20 | 8 | 0 | no | yes |
+| 84 | Rough Terrain | DS Versus | 35x35 | 4 | 0 | 21 | 0 | 4 | no | yes |
+| 85 | Deep Forest | DS Versus | 16x12 | 4 | 0 | 12 | 0 | 0 | no | yes |
+| 86 | Scramble Isle | DS Versus | 16x12 | 4 | 0 | 8 | 8 | 0 | no | yes |
+| 87 | Danger Pool | DS Versus | 17x17 | 4 | 0 | 8 | 0 | 4 | no | yes |
+| 88 | Dark City | DS Versus | 30x14 | 4 | 0 | 16 | 2 | 0 | no | yes |
+| 89 | Clover Pond | DS Versus | 20x20 | 4 | 0 | 17 | 1 | 0 | no | yes |
+| 8A | Cross Cape | DS Versus | 16x32 | 4 | 0 | 4 | 0 | 24 | no | yes |
+| A7 | The Ring | DS War Room | 19x18 | 4 | 0 | 13 | 5 | 5 | no | yes |
+| A8 | Strong Land | DS War Room | 18x12 | 4 | 0 | 14 | 0 | 0 | no | yes |
+| AF | Treble Ridge | DS War Room | 16x12 | 4 | 0 | 11 | 0 | 0 | no | yes |
+| B0 | Four Acres | DS War Room | 26x26 | 4 | 0 | 13 | 5 | 2 | no | yes |
+| B1 | Final Battle | DS War Room | 16x12 | 4 | 0 | 15 | 0 | 0 | no | yes |
+| BA | Obelisk Plains | tangoAW2 | 28x28 | 4 | 24 | 8 | 4 | 0 | no | yes |
+| 3B | Coil Range | DS Versus | 16x12 | 4 | 28 | 0 | 0 | 0 | yes | yes |
+| 3C | Leaf Haven | DS Versus | 18x18 | 4 | 40 | 0 | 0 | 0 | yes | yes |
+| 3D | Battle Cube | DS Versus | 28x30 | 4 | 76 | 0 | 0 | 0 | yes | yes |
+| 3F | Grid Assault | DS Versus | 19x19 | 4 | 36 | 0 | 0 | 0 | yes | yes |
+| 40 | Crossroad | DS Versus | 25x23 | 4 | 96 | 0 | 0 | 0 | yes | yes |
+| 47 | Crater Reef | DS Versus | 35x35 | 4 | 112 | 0 | 0 | 0 | yes | yes |
+| 48 | Lost Road | DS Versus | 28x17 | 4 | 40 | 0 | 0 | 0 | yes | yes |
+| 49 | Capital Clash | DS Versus | 21x21 | 4 | 69 | 0 | 0 | 0 | yes | yes |
+| 4A | Islands Agogo | DS Versus | 27x26 | 4 | 52 | 0 | 0 | 0 | yes | yes |
+| 4B | Grand Battle | DS Versus | 29x29 | 4 | 68 | 0 | 0 | 0 | yes | yes |
+| 00 | Five Seas | tangoAW2 | 20x40 | 5 | 35 | 10 | 9 | 18 | no | no |
+| BB | Black Monolith | tangoAW2 | 30x30 | 5 | 30 | 10 | 9 | 0 | no | yes |
+| BC | Iron Crossing | tangoAW2 | 30x30 | 5 | 30 | 10 | 4 | 0 | no | no |
+| BD | Magma Crown | tangoAW2 | 30x30 | 5 | 30 | 5 | 5 | 5 | no | no |
+| BE | Skyreach | tangoAW2 | 32x36 | 5 | 35 | 5 | 21 | 0 | no | no |
+| BF | The Citadel | tangoAW2 | 29x33 | 5 | 24 | 8 | 7 | 0 | no | no |
+| C0 | Black Rampart | tangoAW2 | 25x36 | 5 | 30 | 10 | 7 | 0 | no | no |
+| C4 | Black Wastes | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 0 | no | yes |
+| C8 | Coral Crown | tangoAW2 | 29x29 | 5 | 34 | 10 | 4 | 6 | no | yes |
+| C9 | Pentagon Atoll | tangoAW2 | 35x35 | 5 | 200 | 0 | 0 | 0 | yes | yes |
