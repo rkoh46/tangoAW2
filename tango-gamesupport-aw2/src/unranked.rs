@@ -59,10 +59,22 @@ const CYC_T: u32 = STATE + 0x40;
 const HOLD_T: u32 = STATE + 0x42;
 const SKIP: u32 = STATE + 0x44;
 const STEP_DIR: u32 = STATE + 0x45;
-/// Frames the revealed map is shown before the game goes on by itself (the host's A goes on sooner).
-const HOLD_FRAMES: u16 = 180;
-/// Frames the game's cursor sits on the drawn map before the picture is uncovered (its minimap needs a while to load).
-const REVEAL_AFTER: u8 = 45;
+/// The time each player has to pick a map, in console frames (60 a second): then the map under their cursor is their pick.
+/// (`TANGOAW2_PICK_SECONDS` shortens it for a test, on every client alike.)
+pub const PICK_SECONDS: u32 = 120;
+/// How long the drawn map is shown before the game goes on by itself (the host's A goes on at once).
+pub const REVEAL_SECONDS: u32 = 9;
+const PICK_FRAMES: u32 = PICK_SECONDS * 60;
+const REVEAL_FRAMES: u16 = (REVEAL_SECONDS * 60) as u16;
+/// Frames the game's cursor sits on the drawn map before the game is told to choose it.
+const REVEAL_AFTER: u8 = 10;
+/// Frames of the current player's pick so far (u16, even address).
+const PICK_T: u32 = STATE + 0x46;
+
+fn pick_frames() -> u32 {
+    static F: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
+    *F.get_or_init(|| std::env::var("TANGOAW2_PICK_SECONDS").ok().and_then(|v| v.parse::<u32>().ok()).map_or(PICK_FRAMES, |s| s * 60))
+}
 const SEATS: u32 = STATE + 0x10;
 const SEAT_SIZE: u32 = 8;
 /// The most seats of a room.
@@ -200,18 +212,24 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
     let t = core.raw_read_16(DRAW_T, -1).wrapping_add(1);
     core.raw_write_16(DRAW_T, -1, t);
     let who = (core.raw_read_8(PICKS, -1) as usize).min(n - 1);
-    if inputs[who] & !was[who] & KEY_A == 0 {
+    let pt = (core.raw_read_16(PICK_T, -1) as u32 + 1).min(65535);
+    core.raw_write_16(PICK_T, -1, pt as u16);
+    let timed_out = pt >= pick_frames();
+    if inputs[who] & !was[who] & KEY_A == 0 && !timed_out {
         return;
     }
     // The map under the cursor (the list holds only the room's count of armies here).
-    let Some(cur) = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP) else {
-        return;
+    let cursor = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP);
+    let id = match cursor {
+        Some(cur) => core.raw_read_8(crate::online::LIST_IDS + cur, -1),
+        None if timed_out => core.raw_read_8(crate::online::LIST_IDS, -1),
+        None => return,
     };
-    let id = core.raw_read_8(crate::online::LIST_IDS + cur, -1);
     // (id 0 is Five Seas, a map: it counts when the game lists it, on one of the room's tabs)
-    if id == 0 && !matches!(core.raw_read_16(crate::five_map::table(core) + 0x1A, -1), 2 | 4) {
+    if id == 0 && !timed_out && !matches!(core.raw_read_16(crate::five_map::table(core) + 0x1A, -1), 2 | 4) {
         return;
     }
+    core.raw_write_16(PICK_T, -1, 0);
     core.raw_write_8(seat(who) + S_MAP, -1, id);
     core.raw_write_8(PICKS, -1, who as u8 + 1);
     if who + 1 == n {
@@ -273,7 +291,7 @@ fn slot_at(n: usize, from: usize, at: u16) -> usize {
 
 /// The drawn map is shown (the cycle is over and the game's cursor is on it): its name, picture and whose it is.
 pub fn revealed(core: &Core) -> bool {
-    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core)) && core.raw_read_8(SETTLED, -1) >= REVEAL_AFTER
+    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core))
 }
 
 /// The map the match is played on, once it is drawn (the Armies and Rules pages name it).
@@ -355,6 +373,10 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
             _ => 0,
         };
     }
+    // (the drawn map is shown for a while whatever the game's list is doing under it)
+    if cyc >= cycle_len(seats(core)) {
+        core.raw_write_16(HOLD_T, -1, core.raw_read_16(HOLD_T, -1).saturating_add(1));
+    }
     if core.raw_read_8(ids + cur, -1) == target {
         let settled = core.raw_read_8(SETTLED, -1).saturating_add(1);
         core.raw_write_8(SETTLED, -1, settled);
@@ -368,9 +390,8 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
         if settled < REVEAL_AFTER {
             return 0;
         }
-        let hold = core.raw_read_16(HOLD_T, -1).saturating_add(1);
-        core.raw_write_16(HOLD_T, -1, hold);
-        return if (hold >= HOLD_FRAMES || core.raw_read_8(SKIP, -1) != 0) && hold % 12 < 4 { KEY_A } else { 0 };
+        let hold = core.raw_read_16(HOLD_T, -1);
+        return if (hold >= REVEAL_FRAMES || core.raw_read_8(SKIP, -1) != 0) && hold % 12 < 4 { KEY_A } else { 0 };
     }
     core.raw_write_8(SETTLED, -1, 0);
     if tab_of(core, target) != list_tab {
@@ -513,12 +534,13 @@ fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     let line1 = if who == me { "Pick a map  A: Choose".to_string() } else { fit(core, &format!("{} is picking...", room_name(who)), 144) };
     let picked = core.raw_read_8(PICKS, -1) as usize;
     let maps: Vec<String> = (0..picked.min(n)).map(|s| map_name(core, core.raw_read_8(seat(s) + S_MAP, -1))).collect();
-    let mut lines = vec![(line1, WHITE)];
+    let left = pick_frames().saturating_sub(core.raw_read_16(PICK_T, -1) as u32).div_ceil(60);
+    let mut lines = vec![(line1, WHITE), (format!("Time left {}:{:02}", left / 60, left % 60), if left <= 10 { (255, 120, 96) } else { WHITE })];
     if picked > 0 {
         let full = (0..maps.len()).map(|s| format!("{}: {}", room_name(s), maps[s])).collect::<Vec<_>>().join(", ");
         let count = format!("Picks: {picked} of {n}");
         lines.push((if fits(&full) { full } else { count.clone() }, YELLOW));
-        if me < picked && lines[1].0 == count {
+        if me < picked && lines[2].0 == count {
             lines.push((fit(core, &format!("Yours: {}", maps[me]), 144), YELLOW));
         }
     }
@@ -572,7 +594,7 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
         paint_picks(core, cv);
         return;
     }
-    if !revealed(core) {
+    if phase(core) == 1 {
         mask(core, cv);
         return;
     }
@@ -590,8 +612,10 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
     paint_box(core, cv, &lines);
 }
 
-/// The roulette's picture: the map list and picture are covered by one window, a "?????" for each proposal, and a highlight
+/// The roulette's picture: the map list and picture are covered by one window of the proposals (a "?????" for each), a highlight
 /// that runs round them quickly, slows and lands on the drawn one (the game's cursor steps under it, with its own sound).
+/// There the "?????" turns into the map's name beside its owner's gamertag, the map's picture is drawn in a window beside
+/// the list, and a line at the foot counts down the seconds before the armies.
 fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     use crate::online::*;
     let n = seats(core);
@@ -609,10 +633,13 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
             }
         }
     }
-    let rows = n as i32;
-    let (w, rh) = (150, 15);
+    let shown = revealed(core);
+    let cyc = core.raw_read_16(CYC_T, -1);
+    let from = (core.raw_read_8(PICK, -1) as usize).min(n - 1);
+    let lit = (cyc > 0).then(|| slot_at(n, from, cyc - 1));
+    let (rows, w, rh) = (n as i32, 142, 15);
     let h = 8 + 14 + rh * rows + 4;
-    let (x, y) = ((W as i32 - w) / 2, 36 + (110 - h) / 2);
+    let (x, y) = (6, 34);
     // (the list's own look: a black edge, a red frame, a pink page with a line under each row, a lavender highlight)
     let (red, pink, line, lav, grey): (Rgb, Rgb, Rgb, Rgb, Rgb) = ((246, 82, 57), (255, 238, 238), (255, 230, 213), (222, 205, 255), (131, 123, 115));
     audit::window(x, y, w, h);
@@ -621,9 +648,7 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     cv.rect(x + 3, y + 3, w - 6, h - 6, pink);
     let head = "The map is drawn...";
     cv.text(core, x + (w - text_width(core, head)) / 2, y + 6, head, grey, SHADE);
-    let cyc = core.raw_read_16(CYC_T, -1);
-    let from = (core.raw_read_8(PICK, -1) as usize).min(n - 1);
-    let lit = (cyc > 0).then(|| slot_at(n, from, cyc - 1));
+    let map = core.raw_read_8(CHOSEN, -1);
     for k in 0..n {
         let ry = y + 20 + rh * k as i32;
         cv.rect(x + 5, ry + rh - 1, w - 10, 1, line);
@@ -633,10 +658,44 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
             cv.rect(x + w - 6, ry + 3, 1, rh - 7, lav);
         }
         let ink = if lit == Some(k) { (88, 72, 150) } else { grey };
-        let who = fit(core, &room_name(k), 74);
-        cv.text(core, x + 12, ry + 2, &who, ink, SHADE);
-        let t = "?????";
-        cv.text(core, x + w - 12 - text_width(core, t), ry + 2, t, ink, SHADE);
+        let who = fit(core, &room_name(k), if shown && lit == Some(k) { 50 } else { 58 });
+        cv.text(core, x + 10, ry + 2, &who, ink, SHADE);
+        let t = if shown && lit == Some(k) {
+            fit(core, &map_name(core, map), w - 20 - text_width(core, &who) - 6)
+        } else {
+            "?????".to_string()
+        };
+        cv.text(core, x + w - 10 - text_width(core, &t), ry + 2, &t, ink, SHADE);
     }
+    // The map's picture beside the list.
+    let (px, pw) = (x + w + 6, W as i32 - (x + w + 6) - 4);
+    audit::window(px, y, pw, h);
+    cv.rect(px - 1, y - 1, pw + 2, h + 2, (0, 0, 0));
+    cv.rect(px, y, pw, h, red);
+    cv.rect(px + 3, y + 3, pw - 6, h - 6, pink);
+    if shown {
+        crate::online_maps::draw_preview(core, cv, map, px + 4, y + 4, pw - 8, h - 22);
+        if let Some((mw, mh)) = crate::online_maps::dims(core, map) {
+            let t = format!("{mw} x {mh}");
+            cv.text(core, px + (pw - text_width(core, &t)) / 2, y + h - 16, &t, grey, SHADE);
+        }
+    } else {
+        let t = "?";
+        cv.text(core, px + (pw - text_width(core, t)) / 2, y + h / 2 - 6, t, grey, SHADE);
+    }
+    // The foot: the seconds before the armies.
+    cv.rect(0, 140, W as i32, 20, BAR);
+    let text = if shown {
+        let left = (REVEAL_FRAMES.saturating_sub(core.raw_read_16(HOLD_T, -1)) as u32).div_ceil(60);
+        if room_local_seat() == 0 {
+            format!("A: Start now   Starting in {left}")
+        } else {
+            format!("Starting in {left}   (the host's A starts it)")
+        }
+    } else {
+        "Drawing the map...".to_string()
+    };
+    let text = fit(core, &text, 228);
+    cv.text(core, (W as i32 - text_width(core, &text)) / 2, 144, &text, WHITE, GRAY_INK);
 }
 

@@ -382,6 +382,11 @@ fn previews() -> &'static Mutex<HashMap<PreviewKey, Arc<Preview>>> {
     C.get_or_init(Default::default)
 }
 
+/// A map's size in tiles.
+pub fn dims(core: &Core, id: u8) -> Option<(u8, u8)> {
+    info(core, id).map(|i| (i.w, i.h))
+}
+
 /// The map `id` drawn as large as fits in `max_w` x `max_h` pixels: whole pixels per tile when it can, else each
 /// pixel shows what is most of its tiles (a property over anything).
 pub fn preview(core: &Core, id: u8, max_w: usize, max_h: usize) -> Option<Arc<Preview>> {
