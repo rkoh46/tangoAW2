@@ -228,7 +228,6 @@ settings-section-netplay = 連線對戰
 settings-section-audio = 音訊
 settings-volume = 音量
 settings-disable-bgm-in-pvp = 連線對戰時靜音
-settings-nickname = 暱稱
 settings-language = 語言
 settings-data-path = 資料路徑
 settings-streamer-mode = 實況模式
@@ -322,11 +321,10 @@ welcome-title = 歡迎使用 tangoAW2！
 welcome-subtitle = 開始遊玩前，你只需完成幾個步驟。
 welcome-continue = 繼續
 welcome-step-roms = 新增你的 ROM
-welcome-step-roms-detected = 偵測到 { $count } 個 ROM。
-welcome-step-nickname = 設定你的暱稱
-welcome-step-nickname-description = 你可以隨時在設定中變更。
+welcome-roms-found-both = 已找到 Advance Wars 2 ROM + 選用的 Dual Strike ROM
+welcome-roms-found-aw2 = 已找到 Advance Wars 2 ROM(Dual Strike:選用,未找到)
 welcome-open-folder = 開啟 ROM 資料夾
-welcome-roms-needed = 繼續前請至少新增一個 ROM。
+welcome-roms-needed = 繼續前請新增你的 Advance Wars 2 ROM。Dual Strike 為選用。
 
 # Common actions
 rescan = 重新掃描

@@ -208,7 +208,13 @@ pub struct Config {
     #[serde(flatten)]
     pub library: tango_library::config::Config,
 
-    pub nickname: Option<String>,
+    /// The name a player goes by online (set from the game's ONLINE menus). Older builds
+    /// stored it as the client's `nickname`, which still loads.
+    #[serde(alias = "nickname")]
+    pub gamertag: Option<String>,
+    /// Whether the first-run welcome screen was finished. `None` (never set) counts as done
+    /// for a config that already has a gamertag, i.e. one from an older build.
+    pub welcomed: Option<bool>,
     #[serde(serialize_with = "ser_language", deserialize_with = "de_language")]
     pub language: unic_langid::LanguageIdentifier,
     pub streamer_mode: bool,
@@ -381,7 +387,8 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             library: tango_library::config::Config::default(),
-            nickname: None,
+            gamertag: None,
+            welcomed: None,
             language: default_language(),
             streamer_mode: false,
             theme: ThemeMode::default(),
@@ -457,6 +464,7 @@ impl Config {
             config.advance_wars_skin = true;
             config.theme = ThemeMode::AdvanceWars;
         }
+        config.ensure_dirs();
         config
     }
 
@@ -469,6 +477,38 @@ impl Config {
             },
             ..Self::default()
         }
+    }
+
+    /// Creates the standard folders (roms, saves, patches, replays, logs) under the data
+    /// path if they are missing, so a first run has them to drop files into (on iOS they
+    /// show up in the Files app under tangoAW2).
+    pub fn ensure_dirs(&self) {
+        for dir in [
+            self.roms_path(),
+            self.saves_path(),
+            self.patches_path(),
+            self.replays_path(),
+            self.logs_path(),
+        ] {
+            if let Err(e) = std::fs::create_dir_all(&dir) {
+                log::warn!("could not create {}: {e}", dir.display());
+            }
+        }
+    }
+
+    /// Whether the first-run welcome screen has been completed.
+    pub fn is_welcomed(&self) -> bool {
+        self.welcomed.unwrap_or(self.gamertag.is_some())
+    }
+
+    /// The name this player goes by online, "Player" until one is set.
+    pub fn display_name(&self) -> String {
+        self.gamertag
+            .as_deref()
+            .map(str::trim)
+            .filter(|n| !n.is_empty())
+            .unwrap_or("Player")
+            .to_string()
     }
 
     pub fn save(&self) -> std::io::Result<()> {
@@ -601,7 +641,8 @@ mod tests {
     /// stops reading shows up as a changed value on the way back out.
     fn every_key() -> serde_json::Value {
         let mut v = serde_json::json!({
-            "nickname": "someone",
+            "gamertag": "someone",
+            "welcomed": true,
             "language": "ja-JP",
             "streamer_mode": true,
             "theme": "Light",
@@ -697,7 +738,7 @@ mod tests {
             "input_mapping": { "keyboard": {} }
         }"#;
         let config: Config = serde_json::from_str(raw).unwrap();
-        assert_eq!(config.nickname.as_deref(), Some("someone"));
+        assert_eq!(config.gamertag.as_deref(), Some("someone"));
         assert!(config.streamer_mode);
         assert_eq!(config.patch_repo, "https://example.invalid/patches");
         assert_eq!(config.frame_delay, 7);
@@ -740,7 +781,7 @@ mod tests {
             "show_opponent_setup": true,
         }))
         .unwrap();
-        assert_eq!(config.nickname.as_deref(), Some("someone"));
+        assert_eq!(config.gamertag.as_deref(), Some("someone"));
         let json = serde_json::to_value(config).unwrap();
         assert!(json.get("enable_patch_autoupdate").is_none());
         assert!(json.get("hide_emulator_border").is_none());

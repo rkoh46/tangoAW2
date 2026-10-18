@@ -27,14 +27,14 @@ impl App {
         let now = iced::time::Instant::now();
         let enter = self.screen_enter.progress(now);
 
-        // First-run gate: no main UI until the user picks a nickname.
+        // First-run gate: no main UI until the welcome screen is done (the ROM folder, the language).
         // Sits on the same map-room backdrop as the main shell.
-        if self.config.nickname.is_none() {
+        if !self.config.is_welcomed() {
             let roms_count = self.scanners.roms.read().len();
             let welcome = tabs::welcome::view(
                 lang,
-                &self.welcome,
                 roms_count,
+                tango_library::ds_pack_present(),
                 &self.config.roms_path(),
                 self.is_rescanning(),
             )

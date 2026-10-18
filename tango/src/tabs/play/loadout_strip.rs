@@ -52,7 +52,7 @@ pub fn local_settings(
     lobby: &crate::netplay::LobbyState,
 ) -> tango_net_protocol::control::Settings {
     tango_net_protocol::control::Settings {
-        nickname: config.nickname.clone().unwrap_or_default(),
+        nickname: config.display_name(),
         match_type: (
             lobby.match_type.0,
             lobby.match_type.1 | tango_library::shared_content_flag(),

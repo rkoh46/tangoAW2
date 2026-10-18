@@ -71,7 +71,6 @@ impl App {
         use tabs::settings::ConfigChange as C;
         match change {
             C::Language(l) => self.config.language = l,
-            C::Nickname(s) => self.config.nickname = if s.is_empty() { None } else { Some(s) },
             C::StreamerMode(b) => self.config.streamer_mode = b,
             C::MatchmakingEndpoint(s) => self.config.matchmaking_endpoint = s,
             C::RelayMode(m) => self.config.relay_mode = m,
@@ -83,15 +82,7 @@ impl App {
                 self.config.data_path = path;
                 // Make sure the standard subfolders exist in the new location
                 // so scanners and writers have somewhere to go.
-                for dir in [
-                    self.config.roms_path(),
-                    self.config.saves_path(),
-                    self.config.patches_path(),
-                    self.config.replays_path(),
-                    self.config.logs_path(),
-                ] {
-                    let _ = std::fs::create_dir_all(&dir);
-                }
+                self.config.ensure_dirs();
                 // Re-scan off the UI thread so the new folder's contents
                 // show up. The self-updater cache and log file follow the
                 // new path on next launch.
@@ -190,15 +181,9 @@ impl App {
     pub(super) fn update_welcome(&mut self, msg: tabs::welcome::Message) -> iced::Task<Message> {
         use tabs::welcome::Message as M;
         match msg {
-            M::NicknameChanged(s) => {
-                self.welcome.nickname_draft = s;
-                iced::Task::none()
-            }
             M::Continue => {
-                if let Some(nickname) = self.welcome.finalize_nickname() {
-                    self.config.nickname = Some(nickname);
-                    self.persist_config();
-                }
+                self.config.welcomed = Some(true);
+                self.persist_config();
                 iced::Task::none()
             }
             M::LanguageSelected(l) => {

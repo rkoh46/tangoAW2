@@ -162,7 +162,7 @@ impl App {
         };
         // A console just started: it gets the gamertag and the record's page.
         if mailbox::needs_sync(&mut read) || self.online.synced_rev != self.online.stats_rev {
-            let tag = mailbox::clean_gamertag(&self.config.nickname.clone().unwrap_or_default());
+            let tag = mailbox::clean_gamertag(&self.config.gamertag.clone().unwrap_or_default());
             let lines = self.online.stats.as_ref().map(|s| s.lines()).unwrap_or_default();
             let mut write = |a: u32, b: &[u8]| {
                 solo.poke(a, b);
@@ -558,7 +558,7 @@ impl App {
             Request::SetGamertag(name) => {
                 let name = mailbox::clean_gamertag(&name);
                 if !name.is_empty() {
-                    self.config.nickname = Some(name);
+                    self.config.gamertag = Some(name);
                     self.persist_config();
                 }
             }
@@ -628,7 +628,7 @@ impl App {
     }
 
     fn online_nickname(&self) -> String {
-        let me = mailbox::clean_gamertag(&self.config.nickname.clone().unwrap_or_default());
+        let me = mailbox::clean_gamertag(&self.config.gamertag.clone().unwrap_or_default());
         if me.is_empty() {
             // (never the device's hostname: no gamertag yet reads as "Player")
             "Player".to_string()

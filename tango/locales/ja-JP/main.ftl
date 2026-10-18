@@ -219,7 +219,6 @@ settings-section-netplay = ネットプレイ
 settings-section-audio = オーディオ
 settings-volume = 音量
 settings-disable-bgm-in-pvp = ネットプレイで音楽を消す
-settings-nickname = ニックネーム
 settings-language = 言語
 settings-data-path = データパス
 settings-streamer-mode = 配信モード
@@ -306,11 +305,10 @@ welcome-title = tangoAW2 へようこそ！
 welcome-subtitle = 対戦できる前にいくつかの初期設定をしてください。
 welcome-continue = 続ける
 welcome-step-roms = ROM を追加
-welcome-step-roms-detected = { $count } 個の ROM を検出しました。
-welcome-step-nickname = ニックネームを設定
-welcome-step-nickname-description = 設定からいつでも変更できます。
+welcome-roms-found-both = Advance Wars 2 の ROM を検出 + 任意の Dual Strike の ROM を検出
+welcome-roms-found-aw2 = Advance Wars 2 の ROM を検出(Dual Strike: 任意、未検出)
 welcome-open-folder = ROM フォルダを開く
-welcome-roms-needed = 続行するには ROM を 1 つ以上追加してください。
+welcome-roms-needed = 続行するには Advance Wars 2 の ROM を追加してください。Dual Strike は任意です。
 
 # Common actions
 rescan = 再スキャン

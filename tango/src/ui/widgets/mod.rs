@@ -144,14 +144,6 @@ impl<T> std::fmt::Display for Choice<T> {
     }
 }
 
-/// A caption label stacked over a control — the "form row" shape
-/// used by the welcome screen (settings rows use [`option_row`]).
-pub fn labeled<'a, M: Clone + 'a>(label: String, ctrl: impl Into<Element<'a, M>>) -> Element<'a, M> {
-    sweeten::widget::column![text(label).size(TEXT_CAPTION).style(muted_text_style), ctrl.into(),]
-        .spacing(4)
-        .into()
-}
-
 /// Fixed height of every [`option_row`] — one slot size whatever
 /// the control (a text input, a picker, a bare checkbox), so a
 /// settings pane reads as an even options list, not a form whose

@@ -1,6 +1,6 @@
 //! The gamertag and the online record (docs/AW2.md "Gamertag and STATS").
 //!
-//! **Gamertag.** The name a player goes by online (the app's `config.nickname`): SELECT on the ONLINE and LOBBY
+//! **Gamertag.** The name a player goes by online (the app's `config.gamertag`): SELECT on the ONLINE and LOBBY
 //! menus opens a typing page ([`crate::online::TAG_LEVEL`], the code grid's letters and digits, up to
 //! [`TAG_CHARS`], or the keyboard); the first visit to the ONLINE screen asks when none is set. The game keeps the
 //! committed name at [`GAMERTAG`] and asks the app to keep it (request 10); the app also writes it there when the

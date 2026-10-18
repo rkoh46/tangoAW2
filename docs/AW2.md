@@ -4308,10 +4308,10 @@ tests). Online play starts in the game, played alone:
   right corner with "SELECT: Gamertag"): lobby level 9 is a typing page on the code's grid (letters and
   digits, up to ten, or the keyboard) that starts from the current name; OK
   writes it at `0x0203D500` and asks the app (request 10, `SetGamertag`), which
-  sets `config.nickname` and saves the config. The first visit to the ONLINE
+  sets `config.gamertag` (an older config's `nickname`) and saves the config. The first visit to the ONLINE
   screen on a console asks when the app has said none is set (`SYNCED` set,
   name empty). The name is drawn in the top right corner of the ONLINE and
-  LOBBY menus; rooms, the CO page and the battle already used the nickname.
+  LOBBY menus; rooms, the CO page and the battle already used the gamertag.
   STATS (ONLINE item 3, level 10) draws lines the app put at `0x0203D600`
   (24 lines of 32 bytes: label, a tab, value; no tab is a heading), UP/DOWN
   scrolling. The app writes the name and the lines whenever a console starts

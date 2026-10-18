@@ -56,7 +56,6 @@ settings-video-filter = Filtro de vídeo
     .hq4x = hq4x
     .mmpx = MMPX
 settings-language = Lenguaje
-settings-nickname = Apodo
 settings-streamer-mode = Modo streamer
 settings-section-experimental = Experimental
 settings-enable-save-editor = Habilitar editor de guardados
@@ -305,10 +304,9 @@ updater-update-now = Actualizar ahora
 welcome-title = ¡Bienvenido a tangoAW2!
 welcome-subtitle = Solo faltan unos pasos para que puedas empezar a jugar.
 welcome-step-roms = Agrega tus ROMs
-welcome-step-roms-detected = { $count } ROMs detectados.
-welcome-step-nickname = Pon tu apodo
-welcome-step-nickname-description = Puedes cambiarlo en cualquier momento en Ajustes.
-welcome-roms-needed = Agrega al menos un ROM para continuar.
+welcome-roms-found-both = ROM de Advance Wars 2 encontrado + ROM opcional de Dual Strike encontrado
+welcome-roms-found-aw2 = ROM de Advance Wars 2 encontrado (Dual Strike: opcional, no encontrado)
+welcome-roms-needed = Agrega tu ROM de Advance Wars 2 para continuar. Dual Strike es opcional.
 rescan = Reanalizar
 
 # Reconnect / data folder / save-view tabs

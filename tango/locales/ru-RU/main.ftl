@@ -56,7 +56,6 @@ settings-video-filter = Видео фильтр
     .hq4x = hq4x
     .mmpx = MMPX
 settings-language = Язык
-settings-nickname = Ник
 settings-streamer-mode = Режим стримера
 settings-section-experimental = Экспериментальное
 settings-enable-save-editor = Включить редактор сохранений
@@ -307,10 +306,9 @@ updater-update-now = Обновить сейчас
 welcome-title = Добро пожаловать в tangoAW2!
 welcome-subtitle = Осталось пару шагов до начала игры.
 welcome-step-roms = Добавьте свои ROM
-welcome-step-roms-detected = Обнаружено { $count } ROM.
-welcome-step-nickname = Задайте свой ник
-welcome-step-nickname-description = Можно изменить в любой момент в Настройках.
-welcome-roms-needed = Добавьте хотя бы один ROM, чтобы продолжить.
+welcome-roms-found-both = ROM Advance Wars 2 найден + необязательный ROM Dual Strike найден
+welcome-roms-found-aw2 = ROM Advance Wars 2 найден (Dual Strike: необязательно, не найден)
+welcome-roms-needed = Добавьте ROM Advance Wars 2, чтобы продолжить. Dual Strike необязателен.
 rescan = Пересканировать
 
 # Reconnect / data folder / save-view tabs

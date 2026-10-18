@@ -61,7 +61,6 @@ pub struct App {
     replays: ReplaysState,
     replay_controller: replay_controller::Controller,
     settings: tabs::settings::State,
-    welcome: tabs::welcome::State,
     netplay: netplay::State,
     /// tangoAW2's in-game lobby: the app's half (see [`online`]).
     online: online::Flow,
@@ -182,7 +181,6 @@ impl App {
         // rest once it lands.
         let mut restored = tango_library::loadout::Selection::default();
         restored.restore(&config, &scanners);
-        let welcome = tabs::welcome::State::from_nickname(config.nickname.as_deref());
 
         // Spin up the CPAL audio backend once at startup with the
         // LateBinder as the source. Sessions later bind their
@@ -226,7 +224,6 @@ impl App {
             config,
             config_writer: config::Writer::new(),
             tab: Tab::Play,
-            welcome,
             settings: tabs::settings::State::default(),
             scanners,
             audio_binder,
@@ -274,7 +271,7 @@ impl App {
     /// across an `update` dispatch means the screen was swapped
     /// wholesale — the trigger for [`App::screen_enter`].
     fn screen_key(&self) -> ScreenKey {
-        if self.config.nickname.is_none() {
+        if !self.config.is_welcomed() {
             ScreenKey::Welcome
         } else if self.session.is_active() {
             ScreenKey::Session

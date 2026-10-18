@@ -30,13 +30,12 @@ desktop players).
 
 ## First run
 
-1. Open tangoAW2 and pick a nickname.
-2. Put your Advance Wars 2 ROM in the `roms` folder the welcome screen
-   shows: No-Intro `Advance Wars 2 - Black Hole Rising (USA)`, CRC32
-   `5AD0E571`.
-   (on iPhone, import it from the welcome screen; the Dual Strike `.nds`
-   goes there too).
-3. Press **Play**. Everything, online play included, is inside the game.
+1. Open tangoAW2 (it creates the `roms`, `saves` and `replays` folders).
+2. Put your Advance Wars 2 ROM (required) in the `roms` folder the welcome
+   screen shows: No-Intro `Advance Wars 2 - Black Hole Rising (USA)`, CRC32
+   `5AD0E571`. The Dual Strike `.nds` is optional and goes there too
+   (on iPhone, import them from the welcome screen).
+3. Press **Continue**, then **Play**. Everything, online play included, is inside the game.
 
 ## Playing online
 

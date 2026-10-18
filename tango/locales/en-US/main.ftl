@@ -245,7 +245,6 @@ settings-section-netplay = Netplay
 settings-section-audio = Audio
 settings-volume = Volume
 settings-disable-bgm-in-pvp = Mute music in netplay
-settings-nickname = Nickname
 settings-language = Language
 settings-data-path = Data path
 settings-streamer-mode = Streamer mode
@@ -361,17 +360,16 @@ welcome-title = Welcome to tangoAW2!
 welcome-subtitle = There's just a few steps you'll need to complete before you can start playing.
 welcome-continue = Continue
 welcome-step-roms = Add your Advance Wars 2 ROM
-welcome-step-roms-description = Put your Advance Wars 2: Black Hole Rising (USA) .gba file into:
-welcome-step-roms-detected = { $count } ROMs detected.
-welcome-step-nickname = Set your nickname
-welcome-step-nickname-description = You can change this at any time in Settings.
+welcome-step-roms-description = Put your Advance Wars 2: Black Hole Rising (USA) .gba file (required) and, optionally, your Advance Wars: Dual Strike (USA) .nds file into:
+welcome-roms-found-both = Advance Wars 2 ROM found + optional Dual Strike ROM found
+welcome-roms-found-aw2 = Advance Wars 2 ROM found (Dual Strike: optional, not found)
 welcome-open-folder = Open ROMs folder
 # iPhone / iPad: the ROMs come in through the Files picker, or by copying
 # them into the app's folder in the Files app.
 welcome-step-roms-description-ios = Import your Advance Wars 2: Black Hole Rising (USA) .gba file (and, for the Dual Strike features, your Advance Wars: Dual Strike (USA) .nds), or copy them in the Files app to:
 welcome-roms-folder-ios = On My iPhone or iPad › tangoAW2 › roms
 welcome-import-roms = Import ROMs…
-welcome-roms-needed = Add at least one ROM before continuing.
+welcome-roms-needed = Add your Advance Wars 2 ROM before continuing. Dual Strike is optional.
 
 # Common actions
 rescan = Rescan

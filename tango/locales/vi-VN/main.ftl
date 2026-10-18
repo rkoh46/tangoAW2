@@ -56,7 +56,6 @@ settings-video-filter = Bộ lọc ảnh
     .hq4x = hq4x
     .mmpx = MMPX
 settings-language = Ngôn ngữ
-settings-nickname = Nickname
 settings-streamer-mode = Chế độ streamer
 settings-section-experimental = Thử nghiệm
 settings-enable-save-editor = Bật trình chỉnh sửa save
@@ -299,10 +298,9 @@ updater-update-now = Cập nhật ngay
 welcome-title = Chào mừng đến với tangoAW2!
 welcome-subtitle = Còn vài bước nữa trước khi bạn bắt đầu chơi.
 welcome-step-roms = Thêm ROM của bạn
-welcome-step-roms-detected = Đã phát hiện { $count } ROM.
-welcome-step-nickname = Đặt biệt danh
-welcome-step-nickname-description = Bạn có thể đổi bất cứ lúc nào trong Cài đặt.
-welcome-roms-needed = Thêm ít nhất một ROM để tiếp tục.
+welcome-roms-found-both = Đã tìm thấy ROM Advance Wars 2 + ROM Dual Strike tùy chọn
+welcome-roms-found-aw2 = Đã tìm thấy ROM Advance Wars 2 (Dual Strike: tùy chọn, không tìm thấy)
+welcome-roms-needed = Thêm ROM Advance Wars 2 để tiếp tục. Dual Strike là tùy chọn.
 rescan = Quét lại
 
 # Reconnect / data folder / save-view tabs

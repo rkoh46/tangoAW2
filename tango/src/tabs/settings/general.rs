@@ -37,20 +37,10 @@ pub(super) fn settings_general<'a>(lang: &'a LanguageIdentifier, config: &'a con
     let groups: Vec<Element<'a, Message>> = vec![
         settings_group(
             t!(lang, "settings-group-profile"),
-            vec![
-                option_row::<Message>(
-                    t!(lang, "settings-nickname"),
-                    text_input("", config.nickname.as_deref().unwrap_or(""))
-                        .on_input(Message::NicknameChanged)
-                        .padding(STANDARD_PADDING)
-                        .width(Length::Fixed(240.0))
-                        .style(widgets::chunky_text_input),
-                ),
-                option_row(
-                    t!(lang, "settings-streamer-mode"),
-                    toggle(config.streamer_mode, Message::ToggleStreamerMode),
-                ),
-            ],
+            vec![option_row(
+                t!(lang, "settings-streamer-mode"),
+                toggle(config.streamer_mode, Message::ToggleStreamerMode),
+            )],
         ),
         settings_group(
             t!(lang, "settings-group-interface"),

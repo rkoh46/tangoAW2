@@ -136,7 +136,6 @@ pub struct State {
 pub enum Message {
     TabSelected(SettingsTab),
     LanguageSelected(LanguageIdentifier),
-    NicknameChanged(String),
     ToggleStreamerMode(bool),
     MatchmakingEndpointChanged(String),
     /// Relay (TURN) usage policy picked: auto / always / never.
@@ -218,7 +217,6 @@ pub enum Message {
 #[derive(Debug, Clone)]
 pub enum ConfigChange {
     Language(LanguageIdentifier),
-    Nickname(String),
     StreamerMode(bool),
     MatchmakingEndpoint(String),
     RelayMode(config::RelayMode),
@@ -304,7 +302,6 @@ impl State {
                 None
             }
             Message::LanguageSelected(l) => Some(ConfigChange::Language(l)),
-            Message::NicknameChanged(s) => Some(ConfigChange::Nickname(s)),
             Message::ToggleStreamerMode(b) => Some(ConfigChange::StreamerMode(b)),
             Message::MatchmakingEndpointChanged(s) => Some(ConfigChange::MatchmakingEndpoint(s)),
             Message::RelayModeChanged(m) => Some(ConfigChange::RelayMode(m)),
