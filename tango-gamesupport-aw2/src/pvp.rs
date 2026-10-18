@@ -720,10 +720,6 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         out
     }
 
-    fn battle_on(&self, core: &Core) -> bool {
-        in_battle(core) && !crate::result_view::decided(core)
-    }
-
     fn seat_order(&self, core: &Core, _players: usize) -> Option<Vec<usize>> {
         crate::proxy_seat::seat_order(core)
     }

@@ -598,7 +598,7 @@ impl PvpDriver {
         // (a guest who is waited for in a battle has its armies yielded if it does not return, and a host's guests go on under
         // a successor: the box says the match goes on without them)
         let goes_on = self.ctx.end.host_wait.load(Ordering::Acquire)
-            || hold.as_ref().is_some_and(|h| self.ctx.end.battle_on.load(Ordering::Acquire) && h.2 != self.ctx.end.host_seat.load(Ordering::Acquire));
+            || hold.as_ref().is_some_and(|h| self.ctx.end.running.load(Ordering::Acquire) && h.2 != self.ctx.end.host_seat.load(Ordering::Acquire));
         let hold = hold.map(|(n, secs, _)| (n, secs));
         if hold.is_none() && migrating.is_none() {
             if self.hold_up {
@@ -682,6 +682,8 @@ impl PvpDriver {
             return true;
         }
 
+        self.ctx.end.running.store(true, Ordering::Release);
+
         // Live present-delay adjustment from the footer slider.
         let pd = self.ctx.frame_delay.load(Ordering::Relaxed);
         if pd != self.match_.present_delay() {
@@ -699,10 +701,8 @@ impl PvpDriver {
             // them: a guest decides by them whether the host's leaving is a migration), and whether a battle is on (a
             // player who drops then has its armies yielded, the match goes on)
             self.ctx.end.seats_out.store(self.match_.seats_out(), Ordering::Release);
-            self.ctx.end.battle_on.store(self.match_.battle_on(), Ordering::Release);
         } else if self.players > 2 {
             self.ctx.end.seats_out.store(self.match_.seats_out(), Ordering::Release);
-            self.ctx.end.battle_on.store(self.match_.battle_on(), Ordering::Release);
         }
         if self.ctx.room_host || self.ctx.solo_host {
             // The seats whose player has left since: their input is idle from here on.
@@ -721,8 +721,13 @@ impl PvpDriver {
             }
             // Every guest gone: the stream is made here, a row for each tick played.
             if self.agg.as_ref().is_some_and(|a| a.all_gone()) {
-                let (joined, adv) = self.agg.as_mut().expect("checked").alone_row();
-                self.add_remote(joined, adv);
+                // (the host ran ahead of its guests while it waited for them: the rows it lacks are made at once, so that the
+                // end of the match is confirmed at once and not seconds late)
+                let behind = self.log.local_count.saturating_sub(self.log.remote_count).min(1200);
+                for _ in 0..=behind {
+                    let (joined, adv) = self.agg.as_mut().expect("checked").alone_row();
+                    self.add_remote(joined, adv);
+                }
             }
         }
         if let Err(e) = self.distribute() {
@@ -844,9 +849,7 @@ impl PvpDriver {
             tick_advantage,
             confirmed_inputs,
         } = advanced;
-        if self.players > 2 {
-            self.log.push_local(tick, outgoing, tick_advantage);
-        }
+        self.log.push_local(tick, outgoing, tick_advantage);
         self.confirmed_through += confirmed_inputs.len() as u32;
         let (samples, events) = match self.match_.telemetry() {
             Some(telemetry) => telemetry.lock().unwrap().take_through(self.confirmed_through),
@@ -911,6 +914,7 @@ impl PvpDriver {
         // both peers see it at the same pair tick). No runout needed:
         // the anchor fires after the result screens have played.
         if match_ended {
+            log::info!("pvp: the console says the match is over (tick {})", self.confirmed_through);
             self.ctx.completed.store(true, Ordering::Release);
         }
         if self.ctx.completed.load(Ordering::Acquire) && !self.fired_end_of_match {

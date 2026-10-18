@@ -124,9 +124,9 @@ struct EndState {
     dropped: Arc<Mutex<Option<String>>>,
     /// A room: the seats the game says are out of the match (a bit each), published by the drive thread every tick.
     seats_out: Arc<std::sync::atomic::AtomicU8>,
-    /// A battle is on and undecided, as the game says, published by the drive thread every tick: the seat of a player who is
-    /// gone can be played on by the console (its armies yield) and the match goes on without it.
-    battle_on: Arc<AtomicBool>,
+    /// The match is running (every peer has primed): a player who is gone can be played on by the console (its armies yield,
+    /// or it takes no part in the next maps) and the match goes on without it. Set by the drive thread.
+    running: Arc<AtomicBool>,
     /// The links of players who left and were given up on (their reconnect attempt was dropped half way).
     given_up: Arc<Mutex<Vec<Arc<tango_net::link::Link>>>>,
     /// A room's host: the seats whose player has left (a bit each): out of the match already, or still playing and not back
@@ -182,9 +182,9 @@ impl EndState {
     fn benign_drop(&self, is_host: bool, seat: u8) -> bool {
         is_benign_drop(is_host, self.seats_out.load(Ordering::Acquire), seat)
     }
-    /// Whether a drop of the player in `seat` can be survived by yielding its armies: a room's host, a battle on.
+    /// Whether a drop of a player can be survived by playing its seat out: a room's host with the match running.
     fn yieldable(&self, is_host: bool) -> bool {
-        is_host && self.battle_on.load(Ordering::Acquire)
+        is_host && self.running.load(Ordering::Acquire)
     }
     fn note_gone(&self, seat: u8) {
         self.gone.fetch_or(1 << seat, Ordering::AcqRel);
@@ -695,6 +695,8 @@ impl crate::Session for PvpSession {
             return true;
         }
         match *self.end.local_ended_at.lock().unwrap() {
+            // (nobody is left to say it ended)
+            Some(_) if self.everyone_left() => true,
             Some(t) => t.elapsed() >= PEER_END_GRACE,
             // The completion flag can flip before the drive loop
             // observes it and stamps the deadline. Hold off

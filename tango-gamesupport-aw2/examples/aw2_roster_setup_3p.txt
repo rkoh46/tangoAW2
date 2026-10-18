@@ -1,0 +1,34 @@
+# 3 seats: the maps are proposed and drawn, and on the army page seat 2 leaves the room (the YIELD command). The console backs the game out of the armies to SELECT MAP (B, by itself), the roster is seats 0 and 1, the note says who left, the 2P maps are proposed again, both READY, and the battle begins as a two-player match. Run: aw2_room_teams <rom> <out> this-file; exit 1 on a failed expect/waitfor.
+n 3
+until maparmies=3 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
+until teams 100
+wait 90
+press 2 UP+DOWN+LEFT+RIGHT+B 1
+waitfor selectmap 60
+wait 30
+expect roster 0,1
+until maparmies=2 100
+shotall left_note
+wait 400
+shotall left_after
+press 0 A
+wait 20
+press 1 A
+wait 20
+until teams 200
+wait 90
+shotall left_teams
+press 0 A
+press 1 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+expect alive 1,2

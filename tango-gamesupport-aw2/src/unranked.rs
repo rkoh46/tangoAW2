@@ -142,7 +142,7 @@ pub fn active(core: &Core) -> bool {
 
 /// The seat whose turn it is to propose a map (SELECT MAP is up and the seats are picking).
 pub fn picking(core: &Core) -> Option<usize> {
-    (active(core) && phase(core) == 0 && crate::survival_ui::selecting(core)).then(|| (core.raw_read_8(PICKS, -1) as usize).min(seats(core) - 1))
+    (active(core) && !crate::proxy_seat::alone(core) && phase(core) == 0 && crate::survival_ui::selecting(core)).then(|| (core.raw_read_8(PICKS, -1) as usize).min(seats(core) - 1))
 }
 
 /// The map is drawn and SELECT MAP is still up (walking to it).
@@ -190,11 +190,7 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
     }
     // A room's battle is over and the game is back at SELECT MAP: the seats propose again.
     if !on(core) && core.raw_read_8(BATTLED, -1) == 1 && !crate::pvp::in_battle(core) && crate::survival_ui::selecting(core) {
-        for k in 0..STATE_LEN {
-            if !(PROPOSE - STATE..PROPOSE - STATE + 1).contains(&k) && k != 0x0E && k != 0x0F {
-                core.raw_write_8(STATE + k, -1, 0);
-            }
-        }
+        restart(core);
     }
     // The game left the list on the chosen map: it goes on to the armies.
     if phase(core) == 1 && core.raw_read_8(SETTLED, -1) >= 10 && !crate::survival_ui::selecting(core) {
@@ -518,6 +514,30 @@ pub fn rules(core: &mut Core, keys: u32) -> u32 {
 /// change, see [`crate::proxy_seat`]).
 pub fn back_from_battle(core: &Core) -> bool {
     active(core) && !on(core) && core.raw_read_8(BATTLED, -1) == 1 && !crate::pvp::in_battle(core) && crate::survival_ui::selecting(core)
+}
+
+/// The seats propose maps again (a battle was played, or a player left): everything but the draw's counter starts over.
+pub fn restart(core: &mut Core) {
+    for k in 0..STATE_LEN {
+        if !(PROPOSE - STATE..PROPOSE - STATE + 1).contains(&k) && k != 0x0E && k != 0x0F {
+            core.raw_write_8(STATE + k, -1, 0);
+        }
+    }
+}
+
+/// A room's SELECT MAP is up and no battle is on (the roster may be made, see [`crate::proxy_seat`]).
+pub fn setup_select(core: &Core) -> bool {
+    active(core) && !on(core) && !crate::pvp::in_battle(core) && crate::survival_ui::selecting(core)
+}
+
+/// A room's map is drawn and the game has gone on to the armies or the rules, before the first battle of the match.
+pub fn setup_past_select(core: &Core) -> bool {
+    active(core)
+        && !on(core)
+        && core.raw_read_8(BATTLED, -1) == 0
+        && phase(core) >= 2
+        && !crate::pvp::in_battle(core)
+        && !crate::survival_ui::selecting(core)
 }
 
 /// The battle is played and the game is back in its menus: the match is over.

@@ -274,11 +274,6 @@ pub trait SharedGame: Sync {
         0
     }
 
-    /// A battle is on and undecided (see [`tango_match::Link::battle_on`]).
-    fn battle_on(&self, core: &mgba::core::Core) -> bool {
-        let _ = core;
-        false
-    }
 
     /// A room whose players have left plays on without their seats: the session's seats (`players` of them) that the game
     /// is played by from now, as the physical seat of each in the game's order. The game's hooks ([`merge`](Self::merge),
@@ -725,9 +720,6 @@ impl tango_match::Link for SharedLink {
         }
     }
 
-    fn battle_on(&mut self) -> bool {
-        self.game.battle_on(self.inner.core(0))
-    }
 }
 
 struct SharedSide<'a> {

@@ -1519,7 +1519,8 @@ fn map_armies(core: &Core, pack: bool) -> Option<u8> {
 /// The online match's notes over its console (presentation only): a map for another number of players.
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     // The walk to SELECT MAP presses the game's own menus (Select Mode, Versus): the players see none of it.
-    if rgba.len() == W * H * 4 && core.raw_read_8(MATCH, -1) == 1 && navigating(core) {
+    // (a room that has fallen to one player is over: SELECT MAP is not shown to it, the lobby follows)
+    if rgba.len() == W * H * 4 && core.raw_read_8(MATCH, -1) == 1 && (navigating(core) || crate::proxy_seat::alone(core)) {
         for px in rgba.chunks_exact_mut(4) {
             px.copy_from_slice(&[0, 0, 0, 255]);
         }
@@ -1528,6 +1529,15 @@ pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     crate::online_teams::draw(core, rgba);
     crate::unranked::draw(core, rgba);
     crate::online_maps::draw_hint(core, rgba);
+    if rgba.len() == W * H * 4 && core.raw_read_8(MATCH, -1) == 1 {
+        if let Some(seat) = crate::proxy_seat::left_note(core) {
+            let mut cv = Rgba(rgba);
+            let name = room_physical_name(seat);
+            let name = fit(core, &name, W as i32 - 2 * 8 - text_width(core, " left the room. Pick a map again."));
+            bar(&mut cv, core, &format!("{name} left the room. Pick a map again."));
+            return;
+        }
+    }
     if rgba.len() != W * H * 4 || core.raw_read_8(MATCH, -1) != 1 || core.raw_read_8(NOTICE, -1) == 0 {
         return;
     }
@@ -1641,6 +1651,11 @@ fn order() -> Option<Vec<usize>> {
 pub fn room_seats() -> Vec<usize> {
     let n = ROOM_INFO.lock().unwrap().names.len();
     order().unwrap_or_else(|| (0..n).collect())
+}
+
+/// The gamertag of a seat of the room itself (not counted without the players who left).
+pub fn room_physical_name(seat: usize) -> String {
+    ROOM_INFO.lock().unwrap().names.get(seat).cloned().unwrap_or_else(|| format!("Player {}", seat + 1))
 }
 
 /// A seat of the console (counted without the players who left) as the room's name for it.
@@ -1789,6 +1804,10 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     }
     if navigating(core) {
         return Some(0);
+    }
+    // (a player left after the map was drawn: B, every other few frames, takes the game back to SELECT MAP)
+    if crate::proxy_seat::backing_out(core) {
+        return Some(crate::proxy_seat::back_key(core));
     }
     if let Some(keys) = crate::unranked::merge(core, inputs) {
         return Some(keys);

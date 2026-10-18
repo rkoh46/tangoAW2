@@ -74,7 +74,8 @@ pub fn tick(core: &Core, keys: u32) {
     // (the console's state hash at every 60th frame of its own count: peers that play the same match agree at the same frame)
     let fc = core.frame_counter();
     // (a rollback re-simulates frames: hash them again, so the last line per frame is the corrected state, not the speculative first visit)
-    if fc < d.prev_fc {
+    // (a rollback of the last tick alone starts the same frame again: equal counts too)
+    if fc <= d.prev_fc {
         d.last_hash_frame = 0;
     }
     d.prev_fc = fc;
@@ -97,7 +98,18 @@ pub fn tick(core: &Core, keys: u32) {
         }
         // (the Visuals rule's three copies: the host's choice is shared by every peer; logged so a divergence would show)
         let vis = [core.raw_read_8(0x0200_C42E, -1), core.raw_read_8(0x0201_7C52, -1), core.raw_read_8(0x0201_7CDA, -1)];
-        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"hash\",\"frame\":{fc},\"h\":\"{h:016x}\",\"visuals\":{vis:?}}}", ms(), d.tick);
+        // (test aid: TANGOAW2_HASH_PARTS=1 adds a short hash of every 4 KB of IWRAM then EWRAM, to find where two peers differ)
+        let parts = if std::env::var_os("TANGOAW2_HASH_PARTS").is_some() {
+            let hs: Vec<String> = iw
+                .chunks(0x1000)
+                .chain(ew.chunks(0x1000))
+                .map(|c| format!("{:04x}", (c.iter().fold(0xcbf29ce484222325u64, |h, b| (h ^ *b as u64).wrapping_mul(0x100000001b3)) >> 24) as u16))
+                .collect();
+            format!(",\"parts\":\"{}\"", hs.join(""))
+        } else {
+            String::new()
+        };
+        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"hash\",\"frame\":{fc},\"h\":\"{h:016x}\",\"visuals\":{vis:?}{parts}}}", ms(), d.tick);
     }
     if d.tick % 6 != 0 {
         return;

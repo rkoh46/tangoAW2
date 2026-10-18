@@ -45,6 +45,13 @@ const ROSTER_M: u32 = BASE + 0x10;
 const ORDER: u32 = BASE + 0x11;
 const APPLIED: u32 = BASE + 0x19;
 const N_PHYS: u32 = BASE + 0x1A;
+/// The note that a player left the room: frames left (u16, even address) and the seat.
+const LEFT_T: u32 = BASE + 0x1C;
+const LEFT_SEAT: u32 = BASE + 0x1E;
+/// Ticks spent backing out.
+const BACK_T: u32 = BASE + 0x1F;
+/// How long the note is shown (console frames).
+const LEFT_FRAMES: u16 = 360;
 
 const KEY_A: u32 = 1 << 0;
 const KEY_B: u32 = 1 << 1;
@@ -114,7 +121,17 @@ fn make_roster(core: &mut Core, n: usize) {
         core.raw_write_8(ORDER + k as u32, -1, s as u8);
     }
     core.raw_write_8(ROSTER_M, -1, order.len() as u8);
+    let before = core.raw_read_8(APPLIED, -1);
     core.raw_write_8(APPLIED, -1, gone);
+    // (who left since: the note says so, and the proposals begin again)
+    if let Some(s) = (0..8usize).find(|&s| gone & !before & (1 << s) != 0) {
+        core.raw_write_8(LEFT_SEAT, -1, s as u8);
+        core.raw_write_16(LEFT_T, -1, LEFT_FRAMES);
+    }
+    if order.len() == 1 {
+        log::info!("room: everyone else has left (seats gone {gone:#04x}); the match is over for the one left");
+    }
+    crate::unranked::restart(core);
 }
 
 /// The seats of a room of `n` that are still there (`gone` has a bit for each that left), in the order the console plays them:
@@ -130,9 +147,31 @@ pub fn roster_order(n: usize, host: usize, gone: u8) -> Vec<usize> {
     order
 }
 
-/// The roster is up to date with the seats that left (the console's tick, when SELECT MAP is back after a battle).
+/// The roster is up to date with the seats that left. It is made whenever SELECT MAP is up with the room's players not in a battle
+/// (after a battle, or because a player left while the maps were being proposed, or after the game was backed out of the armies
+/// and the rules, see [`backing_out`]): the proposals begin again for the players that are left.
 fn roster_due(core: &Core) -> bool {
-    core.raw_read_8(SEATS, -1) != core.raw_read_8(APPLIED, -1) && crate::unranked::back_from_battle(core)
+    core.raw_read_8(SEATS, -1) != core.raw_read_8(APPLIED, -1) && crate::unranked::setup_select(core)
+}
+
+/// A player left after the maps were drawn and before the battle began (the game is on the armies or the rules): the game is
+/// backed out of them with B, by the console, to SELECT MAP, where the roster is made and the maps proposed again.
+pub fn backing_out(core: &Core) -> bool {
+    core.raw_read_8(SEATS, -1) != core.raw_read_8(APPLIED, -1) && crate::unranked::setup_past_select(core)
+}
+
+/// The keys of the back-out: B for 6 ticks of every 12.
+pub fn back_key(core: &Core) -> u32 {
+    if core.raw_read_8(BACK_T, -1) / 6 % 2 == 0 {
+        crate::online::KEY_B
+    } else {
+        0
+    }
+}
+
+/// Frames left of the note that a player left, and the seat that left (a physical seat).
+pub fn left_note(core: &Core) -> Option<usize> {
+    (core.raw_read_16(LEFT_T, -1) > 0).then(|| core.raw_read_8(LEFT_SEAT, -1) as usize)
 }
 
 /// Whether any seat is under the yield command.
@@ -169,6 +208,14 @@ pub fn tick(core: &mut Core, keys: &mut [u32]) {
         make_roster(core, n);
     }
     crate::online::note_order(seat_order(core));
+    let back = if backing_out(core) { core.raw_read_8(BACK_T, -1).wrapping_add(1) } else { 0 };
+    if core.raw_read_8(BACK_T, -1) != back {
+        core.raw_write_8(BACK_T, -1, back);
+    }
+    let note = core.raw_read_16(LEFT_T, -1);
+    if note > 0 {
+        core.raw_write_16(LEFT_T, -1, note - 1);
+    }
     if seats == 0 {
         return;
     }
