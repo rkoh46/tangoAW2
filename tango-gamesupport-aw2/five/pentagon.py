@@ -18,6 +18,54 @@ LAGOON = 3.3
 RING = 8.4
 
 
+# the river pieces the game draws (map.py RIVER), by what lies N, E, S, W of the cell (r river, s sea, l land)
+VALID_RIVER = {'rlrl', 'lrlr', 'llrr', 'lrrl', 'rllr', 'rrll', 'rrlr', 'rrrl', 'rlrr', 'lrrr', 'rrrr', 'llrl', 'rlll', 'lrll',
+               'lllr', 'slrl', 'rlsl', 'lslr', 'lrls', 'rsss', 'ssrs', 'sssr', 'srss'}
+SEA_END = {'slrl', 'rlsl', 'lslr', 'lrls', 'rsss', 'ssrs', 'sssr', 'srss'}
+
+
+def river_key(g, x, y):
+    cell = lambda px, py: g[py][px] if 0 <= px < W and 0 <= py < H else '~'
+    around = [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
+    return around, ''.join('r' if cell(*p) in '-=' else 's' if cell(*p) == '~' else 'l' for p in around)
+
+
+def try_river(g, k):
+    """Draws river k (the border after army k's axis) as one channel from the lagoon to the outer sea in a copy of g: the
+    first line that the game can draw end to end (every piece one it has, both ends running straight into the sea,
+    the water beside an end or a bend shaved to land). Returns (the grid, the river's cells), or None."""
+    a = AXES[k] + math.radians(36)
+    for eps in (0.0, 0.3, -0.3, 0.6, -0.6, 0.9, -0.9, 1.2, -1.2):
+        for swap in (False, True):
+            def pt(r):
+                return (round(CX + r * math.cos(a) - eps * math.sin(a)), round(CY + r * math.sin(a) + eps * math.cos(a)))
+            p0, p1 = pt(2.2), pt(17.0)
+            p1 = (min(max(p1[0], 0), W - 1), min(max(p1[1], 0), H - 1))
+            path = line(p0, p1) if not swap else [(x, y) for y, x in line(p0[::-1], p1[::-1])]
+            h = [row[:] for row in g]
+            cells = [(x, y) for x, y in path if h[y][x] != '~']
+            for x, y in cells:
+                h[y][x] = '-'
+            ok = True
+            for _ in range(6):
+                for x, y in cells:
+                    around, key = river_key(h, x, y)
+                    for i, (px, py) in enumerate(around):
+                        # sea beside the channel (not the one it runs on into) becomes land
+                        if key[i] == 's' and 0 <= px < W and 0 <= py < H and not (key.count('r') == 1 and key[(i + 2) % 4] == 'r'):
+                            h[py][px] = '.'
+            ends = []
+            for x, y in cells:
+                around, key = river_key(h, x, y)
+                if key not in VALID_RIVER:
+                    ok = False
+                if key in SEA_END:
+                    ends.append((x, y))
+            if ok and len(ends) == 2:
+                return h, cells
+    return None
+
+
 def fold(x, y):
     """(sector, u, v, psi): the cell in the frame of the nearest army's axis (u along it, v the distance beside it)."""
     dx, dy = x - CX, y - CY
@@ -144,14 +192,10 @@ def build():
     # goes round them), crossed by a bridge on the ring road
     rivers = []
     for k in range(5):
-        a = AXES[k] + math.radians(36)
-        p0 = (round(CX + 5.2 * math.cos(a)), round(CY + 5.2 * math.sin(a)))
-        p1 = (round(CX + 11.6 * math.cos(a)), round(CY + 11.6 * math.sin(a)))
-        rivers.append(line(p0, p1))
-    for path in rivers:
-        for x, y in path:
-            if g[y][x] != '~':
-                g[y][x] = '-'
+        found = try_river(g, k)
+        assert found is not None, ('no river fits', k)
+        g[:], cells = found[0], found[1]
+        rivers.append(cells)
     # roads: each army's axis from its HQ to the lagoon, and a ring through the sectors
     roads = set()
     ring = []
