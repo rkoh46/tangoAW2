@@ -127,6 +127,8 @@ struct EndState {
     /// A battle is on and undecided, as the game says, published by the drive thread every tick: the seat of a player who is
     /// gone can be played on by the console (its armies yield) and the match goes on without it.
     battle_on: Arc<AtomicBool>,
+    /// The links of players who left and were given up on (their reconnect attempt was dropped half way).
+    given_up: Arc<Mutex<Vec<Arc<tango_net::link::Link>>>>,
     /// A room's host: the seats whose player has left (a bit each): out of the match already, or still playing and not back
     /// within the grace (its armies yield). The match goes on without them: no pause, no save; their input is idle from then on
     /// (the console is told to yield their armies), and the room has no seat for them in the matches to come.
@@ -424,10 +426,13 @@ impl PvpSession {
     /// rebuilding it (direct or matchmaking) — the drive loop is paused and the
     /// PvP view shows a "Reconnecting…" overlay.
     pub fn is_reconnecting(&self) -> bool {
+        // (the link of a player who left is given up, not reconnecting)
+        let given_up = self.end.given_up.lock().unwrap().clone();
         self.links
             .lock()
             .unwrap()
             .iter()
+            .filter(|l| !given_up.iter().any(|g| Arc::ptr_eq(g, l)))
             .any(|l| matches!(l.health(), tango_net::link::LinkHealth::Reconnecting { .. }))
             || self.end.any_hold()
             || self.end.migrating.lock().unwrap().is_some()

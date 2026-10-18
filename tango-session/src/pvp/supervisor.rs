@@ -596,6 +596,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 && end.benign_drop(room.as_ref().is_some_and(|r| r.is_host), peer_seat)
             {
                 log::info!("pvp: {peer_name:?} left after being out of the match: the match goes on without it");
+                end.given_up.lock().unwrap().push(link.clone());
                 end.note_gone(peer_seat);
                 wake.notify_one();
                 drop(watch);
@@ -626,7 +627,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                     end.hold_remove(seat);
                     pauses.leave();
                 }
-                seat_yields(&end, &wake, &others, peer_seat).await;
+                seat_yields(&end, &wake, &others, peer_seat, &link).await;
                 drop(watch);
                 link.retire_latency();
                 group.finish();
@@ -777,7 +778,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             }
             if !restored && yieldable && !cancel.is_cancelled() && !completed.load(Ordering::Acquire) && !end.remote_ended.load(Ordering::Acquire) && !end.aborted.load(Ordering::Acquire) {
                 log::info!("pvp: {peer_name:?} did not come back: its army yields, the match goes on without it");
-                seat_yields(&end, &wake, &others, peer_seat).await;
+                seat_yields(&end, &wake, &others, peer_seat, &link).await;
                 pauses.leave();
                 drop(pump);
                 link.retire_latency();
@@ -863,7 +864,8 @@ enum RoomMsgOut {
 /// A guest's player is gone while a battle is on and does not come back: the host marks the seat gone (its words are idle from
 /// the next tick and the console is told to yield its armies, see `driver::HostAgg`), lets the others go on (they were told to
 /// wait for it) and says who is gone, so that they all know who is left should the host leave.
-async fn seat_yields(end: &EndState, wake: &tokio::sync::Notify, others: &[Arc<tango_net::link::Link>], seat: u8) {
+async fn seat_yields(end: &EndState, wake: &tokio::sync::Notify, others: &[Arc<tango_net::link::Link>], seat: u8, link: &Arc<tango_net::link::Link>) {
+    end.given_up.lock().unwrap().push(link.clone());
     end.note_gone(seat);
     wake.notify_one();
     tell_others(others, RoomMsgOut::Unhold(seat)).await;
