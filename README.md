@@ -66,8 +66,9 @@ your army and kept in your settings).
   live through their own fog (no cursor or menus). Your seat, the other
   players' gamertags and the connection type (direct or relay) are shown.
 - If a player drops, everyone waits up to 60 seconds with a countdown; if
-  they do not return the match is saved: **ONLINE > LOBBY > RESUME** starts
-  it again from the same moment with the same players.
+  they do not return their army yields and the match goes on without them
+  (before the battle, the others pick a map again). The room keeps the players
+  who are left for the next match.
 - If the **host** leaves (quits, crashes or freezes) the room does not stop:
   when the host has been eliminated, the lowest-numbered player still in the
   match takes the room over within a few seconds (a box says "Host left. NAME
