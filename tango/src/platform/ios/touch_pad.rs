@@ -18,7 +18,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tango_session::keys;
 
 /// Whether the game is being stretched over the whole area right now
-/// (landscape with "Stretch" on). Set when [`GameArea`] lays out, just
+/// (landscape with "Stretch" on; the picture is widened to at most 4/3 of its width, not to the whole screen). Set when [`GameArea`] lays out, just
 /// before the frame does, so the frame's own fit can follow it.
 static STRETCHED: AtomicBool = AtomicBool::new(false);
 
@@ -66,7 +66,7 @@ pub struct Placement {
     /// Where the picture ends up in landscape (3:2 and centered, or all
     /// of `game` when stretched); controls over it are drawn fainter.
     picture: Option<Rectangle>,
-    /// Stretching the game over `game`, aspect ignored.
+    /// Widening the game over `game` (a modest aspect change).
     pub stretch: bool,
     /// The whole screen in landscape (the padded area plus the safe-area
     /// insets), and where its top-left corner is relative to the padded
@@ -76,6 +76,9 @@ pub struct Placement {
     pub origin: Point,
     controls: Vec<Control>,
 }
+
+/// The most the stretched picture is widened beyond 3:2.
+const STRETCH_MAX_WIDEN: f32 = 4.0 / 3.0;
 
 const DPAD: u32 = keys::UP | keys::DOWN | keys::LEFT | keys::RIGHT;
 
@@ -132,8 +135,13 @@ pub fn place(size: Size, stretch: bool) -> Placement {
         let margin = il.max(ir) + pad + d + 8.0;
         let pw = (fw - 2.0 * margin).min(fh * 1.5).max(0.0);
         let fit = Rectangle::new(Point::new((fw - pw) / 2.0, (fh - pw / 1.5) / 2.0), Size::new(pw, pw / 1.5));
-        let whole = Rectangle::new(Point::ORIGIN, full);
-        game = if stretch { whole } else { fit };
+        // Stretch: the full screen height, widened by at most a third (a 3:2
+        // picture on a 19.5:9 phone would otherwise look squashed) and kept
+        // clear of the Dynamic Island and the rounded corners, which the
+        // insets cover on the sides.
+        let sw = (fh * 1.5 * STRETCH_MAX_WIDEN).min(fw - 2.0 * il.max(ir)).max(fh * 1.5).min(fw);
+        let wide = Rectangle::new(Point::new((fw - sw) / 2.0, 0.0), Size::new(sw, fh));
+        game = if stretch { wide } else { fit };
         picture = Some(game);
         controls.push(Control {
             bits: keys::L,

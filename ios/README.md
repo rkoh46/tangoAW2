@@ -52,8 +52,9 @@ All of it is `cfg(target_os = "ios")`; the desktop build is unchanged.
   default, draws the picture as large as fits between the control columns
   (D-pad and Select left, A/B and Start right, L/R at the top corners; at
   most the full screen height, even behind the home indicator) with the
-  buttons clear of it; **Stretch** fills the whole screen, aspect ignored,
-  and the buttons float over the picture on a dark backing. Non-whole
+  buttons clear of it; **Stretch** fills the screen height and widens the
+  picture by at most a third (never under the Dynamic Island or the rounded
+  corners), and the buttons float over the picture on a dark backing. Non-whole
   scales use nearest-neighbour with anti-aliased texel borders
   (`passthrough_ios.wgsl`), so pixels stay crisp and do not shimmer. Game
   controllers (MFi, Xbox, PlayStation) and a hardware keyboard are read
