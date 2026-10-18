@@ -1,0 +1,115 @@
+# 3 seats, Fog on: seat 0 leaves the room (the YIELD command: its player is gone) and seat 1 is the host from now on; the console yields army 1, seat 1 yields too and seat 2 wins. The room then goes on as two players, seats 1 (host) and 2: the roster is the host first, SELECT MAP has the 2P tabs, both propose, READY needs only those two, a second battle is played (seat 1 yields, seat 2 wins) and the room is back on SELECT MAP. Run: aw2_room_teams <rom> <out> this-file; exit 1 on a failed expect/waitfor.
+n 3
+until maparmies=3 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+press 2 A
+wait 20
+until teams 100
+wait 90
+press 2 DOWN
+press 2 DOWN
+press 2 DOWN
+press 2 A
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+press 0 UP+DOWN+LEFT+RIGHT+B 1
+press 1 UP+DOWN+LEFT+RIGHT+A 1
+wait 20
+wait 900
+press 1 A
+expect alive 2,3
+until army=2 100
+wait 400
+press 1 B
+wait 20
+press 1 B
+wait 20
+goto 1 3 3
+wait 10
+press 1 A
+wait 40
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+wait 40
+press 1 A
+wait 200
+press 1 LEFT
+wait 20
+press 1 A
+wait 20
+waitfor victory 60
+wait 100
+expect winner 2
+expect loser 1
+expect loser 0
+# (the host migration's HOST command gives the screens after the battle to seat 1: the results pages go by with its A, and the room is on SELECT MAP for the next match)
+waitfor selectmap 120 pressA 1,2
+wait 5
+expect roster 1,2
+# the second match: two players, the 2P maps, the proposals in turn (the host first)
+until maparmies=2 100
+wait 60
+shotall roster_pick0
+press 1 A
+wait 20
+shotall roster_pick1
+press 2 A
+wait 2
+until teams 200
+wait 60
+shotall roster_teams
+sel
+# only the two there have to be READY (the seat that left never is)
+press 1 A
+press 2 A
+wait 300
+# the host (seat 1) plays the Rules screen
+press 1 A
+until battle 300
+until army=1 60
+wait 400
+expect alive 1,2
+goto 1 3 3
+wait 10
+press 1 A
+wait 40
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
+press 1 A
+wait 40
+press 1 DOWN
+wait 10
+press 1 A
+wait 200
+press 1 LEFT
+wait 20
+press 1 A
+wait 20
+waitfor victory 60
+wait 100
+expect winner 2
+expect loser 1
+shotall roster_victory
+waitfor selectmap 120 pressA 1,2
+wait 5
+expect roster 1,2

@@ -53,7 +53,17 @@ fn seat_of(army: &ArmySummary, players: usize) -> usize {
 
 /// Who won the battle `b`, for `seat` of a room of `players`: `None` when it was not played to its end (a team still
 /// has armies in with another's, or none is left).
+///
+/// A battle that was played by some of the room's seats only (the others had left) says which (`b.seats`): `seat` and the
+/// opponents it names are the room's seats then, and `players` is the room's size.
 pub fn judge(b: &BattleSummary, seat: usize, players: usize) -> Option<Verdict> {
+    if b.seats.len() >= 2 && b.seats.len() < players {
+        let room = b.seats.iter().map(|&s| s as usize).collect::<Vec<_>>();
+        let at = room.iter().position(|&s| s == seat)?;
+        let mut v = judge(&BattleSummary { seats: Vec::new(), ..b.clone() }, at, room.len())?;
+        v.opponents = v.opponents.iter().filter_map(|&o| room.get(o).copied()).collect();
+        return Some(v);
+    }
     // (the room has an army a player: any others in the console's table are not in the battle)
     let b = &BattleSummary {
         armies: b.armies.iter().filter(|a| a.army as usize <= players).cloned().collect(),
@@ -187,6 +197,7 @@ mod tests {
             no: 1,
             day: 9,
             armies: vec![army(1, 1, false, 3), army(2, 2, true, 7)],
+            ..Default::default()
         };
         let host = judge(&b, 0, 2).unwrap();
         assert!(host.won);
@@ -204,6 +215,26 @@ mod tests {
             ..b
         };
         assert!(judge(&b3, 2, 3).unwrap().won);
+    }
+
+    /// A room of four that lost its seat 1: the next battle has three armies, played by seats 0, 2 and 3.
+    #[test]
+    fn a_battle_without_the_seats_that_left_names_the_rooms_seats() {
+        let b = BattleSummary {
+            no: 2,
+            day: 5,
+            armies: vec![army(1, 1, false, 2), army(2, 2, true, 6), army(3, 3, true, 1)],
+            seats: vec![0, 2, 3],
+        };
+        // seat 3's army is the third; the foes are seats 0 and 2
+        let v = judge(&b, 3, 4).unwrap();
+        assert!(!v.won);
+        assert_eq!(v.opponents, vec![0, 2]);
+        let v = judge(&b, 0, 4).unwrap();
+        assert!(v.won);
+        assert_eq!(v.opponents, vec![2, 3]);
+        // a seat that is not in the battle has no verdict
+        assert_eq!(judge(&b, 1, 4), None);
     }
 
     #[test]

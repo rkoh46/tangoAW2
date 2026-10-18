@@ -1368,13 +1368,15 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
             if core.raw_read_8(MATCH, -1) == 0 {
                 core.raw_write_8(MATCH, -1, 1);
                 core.raw_write_8(OVER, -1, 0);
+                note_order(None);
                 crate::unranked::init(core, sub);
                 start_nav(core, GOAL_VERSUS);
             }
             if let Some(k) = nav(core) {
                 return k;
             }
-            if crate::campaign_menu::on_select_mode(core) || crate::unranked::finished(core) {
+            // (a room that has fallen to one player ends too, crate::proxy_seat)
+            if crate::campaign_menu::on_select_mode(core) || crate::unranked::finished(core) || crate::proxy_seat::alone(core) {
                 core.raw_write_8(OVER, -1, 1);
             }
             let unranked = crate::unranked::on(core);
@@ -1610,26 +1612,60 @@ pub fn room_picks() -> Vec<(u8, u8)> {
 
 /// The room's players' gamertags in seat order, and which seat this peer is.
 pub fn set_room(names: Vec<String>, local_seat: usize) {
+    let none = names.is_empty();
     *ROOM_INFO.lock().unwrap() = RoomInfo { names, local_seat };
     ROOM_PICKS.lock().unwrap().clear();
+    // (the console's tick notes who has left, from its own RAM; a room that is gone has nobody)
+    if none {
+        *ROOM_ORDER.lock().unwrap() = None;
+    }
 }
 
+/// The seats the room's console plays now, in its order (a physical seat each), once players have left (see
+/// [`crate::proxy_seat`]); `None` while the room is whole. Presentation only, noted by the console's tick from its RAM.
+static ROOM_ORDER: std::sync::Mutex<Option<Vec<usize>>> = std::sync::Mutex::new(None);
+
+pub(crate) fn note_order(order: Option<Vec<usize>>) {
+    let mut o = ROOM_ORDER.lock().unwrap();
+    if *o != order {
+        *o = order;
+    }
+}
+
+/// The room's seats as the console plays them: the physical seat of each, in order.
+fn order() -> Option<Vec<usize>> {
+    ROOM_ORDER.lock().unwrap().clone()
+}
+
+/// The room's seat of each console seat, in the console's order: whole while no one has left, else the players still there.
+pub fn room_seats() -> Vec<usize> {
+    let n = ROOM_INFO.lock().unwrap().names.len();
+    order().unwrap_or_else(|| (0..n).collect())
+}
+
+/// A seat of the console (counted without the players who left) as the room's name for it.
 pub fn room_name(seat: usize) -> String {
-    ROOM_INFO.lock().unwrap().names.get(seat).cloned().unwrap_or_else(|| format!("Player {}", seat + 1))
+    let info = ROOM_INFO.lock().unwrap();
+    let physical = order().and_then(|o| o.get(seat).copied()).unwrap_or(seat);
+    info.names.get(physical).cloned().unwrap_or_else(|| format!("Player {}", physical + 1))
 }
 
+/// The console's seat of this peer (its place among the players still in the room).
 pub fn room_local_seat() -> usize {
-    ROOM_INFO.lock().unwrap().local_seat
+    let local = ROOM_INFO.lock().unwrap().local_seat;
+    order().and_then(|o| o.iter().position(|&p| p == local)).unwrap_or(local)
 }
 
 /// How many gamertags the room's match has (0: none were told, e.g. a link-code game).
 pub fn room_named() -> usize {
-    ROOM_INFO.lock().unwrap().names.len()
+    let n = ROOM_INFO.lock().unwrap().names.len();
+    order().map_or(n, |o| o.len().min(n))
 }
 
 /// How many players the room has, for the picture (2 when nobody said).
 pub fn room_players() -> usize {
-    ROOM_INFO.lock().unwrap().names.len().clamp(2, 5)
+    let n = ROOM_INFO.lock().unwrap().names.len();
+    order().map_or(n, |o| o.len()).clamp(2, 5)
 }
 
 /// The match is over: its players left SELECT MAP for Select Mode.
@@ -1789,7 +1825,7 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
         return Some(crate::online_teams::merge(core).unwrap_or(0));
     }
     // (the screens outside a battle are the room's host's: seat 0, or the seat a host migration gave the room to)
-    Some(inputs[crate::proxy_seat::host_seat(core, inputs.len())])
+    Some(inputs[crate::proxy_seat::host_index(core, inputs.len())])
 }
 
 /// The army that has the pad in a room's battle: the army whose turn it is, or, from the moment a turn has ended until the

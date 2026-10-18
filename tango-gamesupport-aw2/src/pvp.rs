@@ -573,7 +573,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 20: the hand-off is told by the map menu's End item (an id) and not by its row, which moves with Power and Save being shown.
         // 21: a turn also ends when the army whose turn it is has yielded (the incoming army's player has the pad).
         // 22: a room's host seat can change, and a seat whose player is gone can be played by the console to yield (crate::proxy_seat; the commands are words no pad makes, so a match that never uses them runs as before).
-        22
+        // 23: a seat that left the room is sent the yield command whatever it was doing (a guest who dropped in a battle, one that
+        // was out of the match), and the room's next match is played by the seats still there (crate::proxy_seat roster).
+        23
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {
@@ -697,12 +699,16 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     }
 
     /// The seats out of the match: a battle is on and every army of the seat is beaten or yielded, while the match goes on
-    /// (the room's session lets such a seat leave without ending it).
+    /// (the room's session lets such a seat leave without ending it). Once the match is decided every seat is: nobody is
+    /// needed but the room's host, who has the screens that follow. The seats are the console's own (see `seat_order`).
     fn seats_out(&self, core: &Core) -> u8 {
-        if !in_battle(core) || crate::result_view::decided(core) {
+        if !in_battle(core) {
             return 0;
         }
         let n = crate::online::room_players();
+        if crate::result_view::decided(core) {
+            return ((1u16 << n.min(8)) - 1) as u8;
+        }
         let armies = crate::five::armies(core).clamp(2, 5);
         let mut out = 0u8;
         for seat in 0..n.min(8) {
@@ -712,6 +718,14 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             }
         }
         out
+    }
+
+    fn battle_on(&self, core: &Core) -> bool {
+        in_battle(core) && !crate::result_view::decided(core)
+    }
+
+    fn seat_order(&self, core: &Core, _players: usize) -> Option<Vec<usize>> {
+        crate::proxy_seat::seat_order(core)
     }
 
     /// The waiting seat's window is not the console's picture (crate::fog_view).

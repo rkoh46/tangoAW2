@@ -114,6 +114,12 @@ pub trait Link: Send + 'static {
         0
     }
 
+    /// Whether a battle is on and not yet decided: the moment a seat whose player is gone can be played on by the console
+    /// (its armies yield) and the others go on. A pure read of the console. The default says no.
+    fn battle_on(&mut self) -> bool {
+        false
+    }
+
     /// A capture as bytes that can be stored and later started from ([`Backend::start_resumed`]), with a digest of
     /// the state that matters. Engines that cannot say leave the default: their matches cannot be suspended.
     fn state_image(&mut self, snapshot: &Snapshot) -> Option<crate::suspend::StateImage> {

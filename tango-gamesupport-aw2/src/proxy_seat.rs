@@ -12,6 +12,14 @@
 //!   keys from what the console shows, a tap at a time with the screen allowed to settle between taps, exactly what a
 //!   player does to yield (a cell with nothing on it, A, Options, Yield, Yes). A tap is four ticks down and six up.
 //!   Once the army is beaten the game ends its turn by itself and the next army's player has the pad.
+//! - **The roster.** A seat under the yield command is a player who has left the room, whether it was playing, out of the
+//!   match, or on the results screens: [`YIELD`] is the one word for it. The room goes on without that seat from the next
+//!   match: when SELECT MAP is back after a battle ([`tick`] sees [`crate::unranked::back_from_battle`]) the seats still
+//!   there are written down, the room's host first and the others by seat ([`seat_order`]), and the console is played by
+//!   them alone from then on: the session's words for the seats that left are taken out of the keys the game's code sees
+//!   (`tango_backend_mgba::SharedGame::seat_order`), so the READY of the armies page, the map proposals, the roulette and the
+//!   rules are those of the players that are left, and the armies of the next map are theirs. A room that falls to one
+//!   player is over ([`alone`]).
 
 use mgba::core::Core;
 
@@ -22,7 +30,7 @@ pub use tango_match::keys::command::{strip as strip_command, BITS as COMMAND_BIT
 /// progress, the ticks since Yield was chosen (the game asks "Do you really yield?" and types the question out first),
 /// and what the screen showed at the last progress. (Words, not bytes, on word addresses: the console reads whole words.)
 pub const BASE: u32 = 0x0203_C620;
-pub const LEN: u32 = 16;
+pub const LEN: u32 = 0x20;
 const SEATS: u32 = BASE;
 const HOST_SEAT: u32 = BASE + 1;
 const HELD: u32 = BASE + 2;
@@ -31,6 +39,12 @@ const WAIT: u32 = BASE + 5;
 const STUCK: u32 = BASE + 6;
 const CONFIRM: u32 = BASE + 8;
 const SIG: u32 = BASE + 12;
+/// The roster: how many seats play (0: all of the room's), their physical seats in the order the console plays them
+/// (up to eight), the departed seats (a bit each) the roster was made with, and how many seats the room has.
+const ROSTER_M: u32 = BASE + 0x10;
+const ORDER: u32 = BASE + 0x11;
+const APPLIED: u32 = BASE + 0x19;
+const N_PHYS: u32 = BASE + 0x1A;
 
 const KEY_A: u32 = 1 << 0;
 const KEY_B: u32 = 1 << 1;
@@ -55,7 +69,7 @@ const ITEM_EXIT_MAP: u8 = 8;
 /// Terrain a cursor may stand on to open the map menu (plain, forest, road): nothing to select, nothing to build.
 const OPEN_TERRAIN: [u8; 3] = [1, 4, 5];
 
-/// The room's host seat as the console has it (0 until a command says another).
+/// The room's host seat as the console has it (0 until a command says another): a physical seat.
 pub fn host_seat(core: &Core, players: usize) -> usize {
     let s = core.raw_read_8(HOST_SEAT, -1) as usize;
     if s < players {
@@ -63,6 +77,62 @@ pub fn host_seat(core: &Core, players: usize) -> usize {
     } else {
         0
     }
+}
+
+/// The seats that left the room (a bit each, physical seats): every seat that was sent the yield command.
+pub fn departed(core: &Core) -> u8 {
+    core.raw_read_8(SEATS, -1)
+}
+
+/// The seats the console is played by, in its order (the physical seat of each), once players have left and a match has
+/// begun without them; `None` while it is played by the whole room.
+pub fn seat_order(core: &Core) -> Option<Vec<usize>> {
+    let m = core.raw_read_8(ROSTER_M, -1) as usize;
+    (2..=8).contains(&m).then(|| (0..m).map(|k| core.raw_read_8(ORDER + k as u32, -1) as usize).collect())
+}
+
+/// Only one player is left in the room: the match is over for it.
+pub fn alone(core: &Core) -> bool {
+    core.raw_read_8(ROSTER_M, -1) == 1
+}
+
+/// The index in the console's keys of the room's host (`players` keys).
+pub fn host_index(core: &Core, players: usize) -> usize {
+    let host = core.raw_read_8(HOST_SEAT, -1) as usize;
+    match seat_order(core) {
+        Some(order) => order.iter().position(|&p| p == host).unwrap_or(0),
+        None => host_seat(core, players),
+    }
+}
+
+/// The seats still in the room as the console plays them from the next match: the host first, then the others by seat.
+fn make_roster(core: &mut Core, n: usize) {
+    let gone = core.raw_read_8(SEATS, -1);
+    let host = core.raw_read_8(HOST_SEAT, -1) as usize;
+    let order = roster_order(n, host, gone);
+    for (k, &s) in order.iter().enumerate() {
+        core.raw_write_8(ORDER + k as u32, -1, s as u8);
+    }
+    core.raw_write_8(ROSTER_M, -1, order.len() as u8);
+    core.raw_write_8(APPLIED, -1, gone);
+}
+
+/// The seats of a room of `n` that are still there (`gone` has a bit for each that left), in the order the console plays them:
+/// the room's host first (it has the screens outside a battle, and seat 0's place on the pages), then the others by seat.
+/// Every peer works it out from the console's RAM alone.
+pub fn roster_order(n: usize, host: usize, gone: u8) -> Vec<usize> {
+    let here = |s: usize| s < 8 && gone & (1 << s) == 0;
+    let mut order: Vec<usize> = Vec::new();
+    if host < n && here(host) {
+        order.push(host);
+    }
+    order.extend((0..n.min(8)).filter(|&s| here(s) && s != host));
+    order
+}
+
+/// The roster is up to date with the seats that left (the console's tick, when SELECT MAP is back after a battle).
+fn roster_due(core: &Core) -> bool {
+    core.raw_read_8(SEATS, -1) != core.raw_read_8(APPLIED, -1) && crate::unranked::back_from_battle(core)
 }
 
 /// Whether any seat is under the yield command.
@@ -74,8 +144,11 @@ pub fn any(core: &Core) -> bool {
 /// of their yield.
 pub fn tick(core: &mut Core, keys: &mut [u32]) {
     let n = keys.len();
-    if n < 3 {
+    if n < 2 {
         return;
+    }
+    if core.raw_read_8(N_PHYS, -1) != n as u8 {
+        core.raw_write_8(N_PHYS, -1, n as u8);
     }
     let mut seats = core.raw_read_8(SEATS, -1);
     for (s, k) in keys.iter_mut().enumerate().take(8) {
@@ -92,11 +165,20 @@ pub fn tick(core: &mut Core, keys: &mut [u32]) {
     if seats != core.raw_read_8(SEATS, -1) {
         core.raw_write_8(SEATS, -1, seats);
     }
+    if roster_due(core) {
+        make_roster(core, n);
+    }
+    crate::online::note_order(seat_order(core));
     if seats == 0 {
         return;
     }
-    // (the seat whose army has the pad: the same army the merge gives it to)
-    let active = crate::online::pad_army(core, n).map(|a| (a, crate::pvp::seat_of_n(a, n)));
+    // (the seat whose army has the pad: the same army the merge gives it to, among the seats the console is played by)
+    let order = seat_order(core);
+    let m = order.as_ref().map_or(n, |o| o.len());
+    let active = crate::online::pad_army(core, m).map(|a| {
+        let seat = crate::pvp::seat_of_n(a, m);
+        (a, order.as_ref().and_then(|o| o.get(seat).copied()).unwrap_or(seat))
+    });
     for s in 0..n.min(8) {
         if seats & (1 << s) == 0 {
             continue;
@@ -288,6 +370,37 @@ fn decide(core: &mut Core) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_roster_is_the_host_then_the_seats_still_there_by_seat() {
+        // the host left a room of three: the others, by seat
+        assert_eq!(roster_order(3, 1, 0b001), vec![1, 2]);
+        // seat 0 left and seat 2 hosts: the host first
+        assert_eq!(roster_order(3, 2, 0b001), vec![2, 1]);
+        // a guest left a room of four
+        assert_eq!(roster_order(4, 0, 0b0100), vec![0, 1, 3]);
+        // two left a room of five, one of them the host: the successor hosts
+        assert_eq!(roster_order(5, 3, 0b10001), vec![3, 1, 2]);
+        // nobody left
+        assert_eq!(roster_order(3, 0, 0), vec![0, 1, 2]);
+        // one player left in the room: a roster of one
+        assert_eq!(roster_order(3, 2, 0b011), vec![2]);
+        assert_eq!(roster_order(2, 0, 0b10), vec![0]);
+        // every peer works the same order out of the same bytes, whatever the room
+        for n in 2..=5usize {
+            for gone in 0u8..(1 << n) {
+                for host in 0..n {
+                    let a = roster_order(n, host, gone);
+                    assert_eq!(a, roster_order(n, host, gone));
+                    assert!(a.iter().all(|&s| gone & (1 << s) == 0), "a seat that left is not played");
+                    assert_eq!(a.len(), n - (gone as u32).count_ones() as usize);
+                    if gone & (1 << host) == 0 {
+                        assert_eq!(a[0], host);
+                    }
+                }
+            }
+        }
+    }
 
     #[test]
     fn a_command_is_never_a_pad() {

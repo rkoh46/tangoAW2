@@ -105,6 +105,7 @@ impl PvpSession {
         // take_pre_match flipped the cancel) and starts the in-match
         // retransmit heartbeat.
         let room_host = room.as_ref().is_some_and(|r| r.is_host) && players > 2;
+        let solo_host = room.as_ref().is_some_and(|r| r.is_host) && players == 2;
         let room_meta = room.as_ref().map(|r| (r.players.clone(), r.seat, r.host_seat, r.is_host, r.match_id));
         let resume_state = room.as_ref().and_then(|r| r.resume_state.clone());
         let resumed_match = resume_state.is_some().then(|| room.as_ref().map_or(0, |r| r.match_id));
@@ -219,6 +220,7 @@ impl PvpSession {
             event_rx,
             senders,
             room_host,
+            solo_host,
             in_matches: in_matches.clone(),
             replay_writer,
             stats: stats.clone(),

@@ -29,6 +29,8 @@ pub struct MatchResults {
     pub remote_nickname: String,
     /// A room: who disconnected, when the match ended that way.
     pub dropped: Option<String>,
+    /// A room: every other player had left by the end (the room fell to one player).
+    pub everyone_left: bool,
     /// How the match ended — picks the card's dress (verdict reveal vs
     /// the quiet disconnect layout).
     pub end: MatchEnd,
@@ -109,6 +111,7 @@ impl MatchResults {
         let results = Self {
             remote_nickname: pvp.remote_nickname.clone(),
             dropped: pvp.dropped_player(),
+            everyone_left: pvp.everyone_left(),
             end,
             rounds,
             duration: pvp.match_duration(),

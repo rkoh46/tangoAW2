@@ -514,6 +514,12 @@ pub fn rules(core: &mut Core, keys: u32) -> u32 {
     }
 }
 
+/// A room's battle is played and the game is back at SELECT MAP: the seats propose again (the moment a room's roster may
+/// change, see [`crate::proxy_seat`]).
+pub fn back_from_battle(core: &Core) -> bool {
+    active(core) && !on(core) && core.raw_read_8(BATTLED, -1) == 1 && !crate::pvp::in_battle(core) && crate::survival_ui::selecting(core)
+}
+
 /// The battle is played and the game is back in its menus: the match is over.
 pub fn finished(core: &Core) -> bool {
     on(core)

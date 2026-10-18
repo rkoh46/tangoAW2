@@ -111,13 +111,18 @@ impl App {
                         format!("{who} disconnected.")
                     }
                 }
-                Some(_) => {
+                Some(r) => {
                     // (a resumed match that was played to its end is done with)
                     if let Some(id) = resumed {
                         crate::suspended::delete(&self.config.data_path, id);
                         self.online.saved_dirty = true;
                     }
-                    "The match is over.".to_string()
+                    if r.everyone_left {
+                        // (the room fell to one player: the match is over, and why)
+                        "Everyone else left the room. The match is over.".to_string()
+                    } else {
+                        "The match is over.".to_string()
+                    }
                 }
                 None => "You left the match.".to_string(),
             };

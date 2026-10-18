@@ -58,6 +58,9 @@ pub(super) struct DriveContext {
     /// A room of more than two players: this peer is its host (which joins the guests' inputs into one for each),
     /// or a guest (which hears the others as one).
     pub(super) room_host: bool,
+    /// A room of two whose host this peer is: it has no joiner (the two-player wire), but should its guest leave it plays
+    /// the seat on alone.
+    pub(super) solo_host: bool,
     pub(super) in_matches: Vec<tango_net::InMatchTx>,
     pub(super) replay_writer: Option<tango_replay::Writer>,
     pub(super) stats: Arc<Mutex<tango_match::analysis::StatsBuilder>>,
@@ -435,13 +438,15 @@ impl HostAgg {
     /// The host after a migration (this seat took the host over; `gone` are the seats whose players are not there, the
     /// old host's among them): the guests' words begin at the migration's start tick, and the host's own words that
     /// were not joined yet wait in `own`.
-    fn migrated(players: usize, host_seat: usize, gone: u8, proxy: u8, own: Vec<(tango_match::HostInput, i16)>) -> Self {
+    fn migrated(players: usize, host_seat: usize, gone: u8, own: Vec<(tango_match::HostInput, i16)>) -> Self {
         let mut agg = HostAgg::new(players, host_seat);
         for (k, &seat) in agg.guest_seats.clone().iter().enumerate() {
             if gone & (1 << seat) != 0 {
                 agg.gone[k] = true;
                 agg.heard[k] = true;
-                agg.yield_pending[k] = proxy & (1 << seat) != 0;
+                // (every seat that left is told to the console again: a command is harmless the second time, and the old host
+                // may not have got its word through)
+                agg.yield_pending[k] = true;
             }
         }
         agg.started = true;
@@ -462,7 +467,8 @@ impl HostAgg {
         self.complete()
     }
 
-    /// Guests (by seat bit) whose player has left: their words are idle from now on, and the rows that waited for them are done.
+    /// Guests (by seat bit) whose player has left: their words are idle from now on (but for the one that has the console
+    /// play their armies out and take their seat from the room's next match), and the rows that waited for them are done.
     fn set_gone(&mut self, seats: u8) -> Vec<(tango_match::HostInput, i16)> {
         let mut changed = false;
         for (k, &seat) in self.guest_seats.iter().enumerate() {
@@ -470,6 +476,7 @@ impl HostAgg {
                 self.gone[k] = true;
                 self.heard[k] = true;
                 self.queues[k].clear();
+                self.yield_pending[k] = true;
                 changed = true;
             }
         }
@@ -478,6 +485,26 @@ impl HostAgg {
         } else {
             Vec::new()
         }
+    }
+
+    /// Every guest has left: the host plays on alone.
+    fn all_gone(&self) -> bool {
+        self.guests > 0 && self.gone.iter().all(|&g| g)
+    }
+
+    /// A host whose guests have all left makes the rows of its stream itself, one for each tick it plays: idle words, the
+    /// commands first.
+    fn alone_row(&mut self) -> (tango_match::HostInput, i16) {
+        let mut words = vec![0u16; self.guests];
+        for (k, w) in words.iter_mut().enumerate() {
+            if std::mem::take(&mut self.yield_pending[k]) {
+                *w = tango_match::keys::command::YIELD as u16;
+            }
+        }
+        let get = |k: usize| words.get(k).copied().unwrap_or(0);
+        let row = tango_match::HostInput { keys: get(0) as u32, touch: None, extra: [get(1), get(2), get(3)] };
+        self.rows.push_back((words, 0));
+        (row, 0)
     }
 
     fn complete(&mut self) -> Vec<(tango_match::HostInput, i16)> {
@@ -562,12 +589,17 @@ impl PvpDriver {
             let holds = self.ctx.end.holds.lock().unwrap();
             holds.iter().min_by_key(|h| h.deadline).map(|h| {
                 let left = h.deadline.saturating_duration_since(std::time::Instant::now());
-                (h.name.clone(), left.as_secs_f32().ceil() as u32)
+                (h.name.clone(), left.as_secs_f32().ceil() as u32, h.seat)
             })
         } else {
             None
         };
-        let hold = hold.filter(|(n, _)| !n.is_empty());
+        let hold = hold.filter(|(n, ..)| !n.is_empty());
+        // (a guest who is waited for in a battle has its armies yielded if it does not return, and a host's guests go on under
+        // a successor: the box says the match goes on without them)
+        let goes_on = self.ctx.end.host_wait.load(Ordering::Acquire)
+            || hold.as_ref().is_some_and(|h| self.ctx.end.battle_on.load(Ordering::Acquire) && h.2 != self.ctx.end.host_seat.load(Ordering::Acquire));
+        let hold = hold.map(|(n, secs, _)| (n, secs));
         if hold.is_none() && migrating.is_none() {
             if self.hold_up {
                 self.hold_up = false;
@@ -600,7 +632,7 @@ impl PvpDriver {
         }
         tango_gamesupport::hold::set(hold);
         tango_gamesupport::hold::set_migration(migrating);
-        tango_gamesupport::hold::set_host_wait(self.ctx.end.host_wait.load(Ordering::Acquire));
+        tango_gamesupport::hold::set_host_wait(goes_on);
         self.hold_up = true;
         if self.hold_shown.is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100)) {
             self.hold_shown = Some(std::time::Instant::now());
@@ -662,21 +694,35 @@ impl PvpDriver {
         for (link, input) in arrived {
             self.ingest(link, input);
         }
-        if self.players > 2 {
+        if self.ctx.room_host || self.ctx.solo_host {
             // The seats the game says are out (the supervisors read them when a link drops; every peer of a room knows
-            // them: a guest decides by them whether the host's leaving is a migration)
+            // them: a guest decides by them whether the host's leaving is a migration), and whether a battle is on (a
+            // player who drops then has its armies yielded, the match goes on)
             self.ctx.end.seats_out.store(self.match_.seats_out(), Ordering::Release);
+            self.ctx.end.battle_on.store(self.match_.battle_on(), Ordering::Release);
+        } else if self.players > 2 {
+            self.ctx.end.seats_out.store(self.match_.seats_out(), Ordering::Release);
+            self.ctx.end.battle_on.store(self.match_.battle_on(), Ordering::Release);
         }
-        if self.ctx.room_host {
+        if self.ctx.room_host || self.ctx.solo_host {
             // The seats whose player has left since: their input is idle from here on.
             let gone = self.ctx.end.gone.load(Ordering::Acquire);
             if gone != 0 {
+                if self.agg.is_none() && self.ctx.solo_host {
+                    // (a room of two: the host joins nothing, but plays the seat of the guest that left)
+                    self.agg = Some(HostAgg::migrated(2, self.ctx.host_seat, gone, Vec::new()));
+                }
                 if let Some(agg) = self.agg.as_mut() {
                     let rows = agg.set_gone(gone);
                     for (joined, adv) in rows {
                         self.add_remote(joined, adv);
                     }
                 }
+            }
+            // Every guest gone: the stream is made here, a row for each tick played.
+            if self.agg.as_ref().is_some_and(|a| a.all_gone()) {
+                let (joined, adv) = self.agg.as_mut().expect("checked").alone_row();
+                self.add_remote(joined, adv);
             }
         }
         if let Err(e) = self.distribute() {
@@ -1084,7 +1130,6 @@ impl PvpDriver {
                 self.players,
                 h.host_seat,
                 h.gone | self.ctx.end.gone.load(Ordering::Acquire),
-                h.proxy,
                 words,
             ));
         } else {
@@ -1143,13 +1188,13 @@ mod tests {
         let done = agg.set_gone(1 << 2);
         assert_eq!(done.len(), 1, "the row that waited for the gone seat is done");
         assert_eq!(done[0].0.keys, 0x10);
-        assert_eq!(done[0].0.extra[0], 0, "the gone seat's word is idle");
-        // from now on guest 1's inputs alone make rows, and the gone guest's link is ignored
+        assert_eq!(done[0].0.extra[0], tango_match::keys::command::YIELD as u16, "the gone seat says so once");
+        // from now on guest 1's inputs alone make rows, the gone seat is idle and its link is ignored
         assert_eq!(agg.ingest(0, input(0x20)).len(), 1);
         assert!(agg.ingest(1, input(0x40)).is_empty());
         assert_eq!(agg.ingest(0, input(0x30)).len(), 1);
         assert_eq!(agg.rows.len(), 3);
-        assert!(agg.rows.iter().all(|(w, _)| w[1] == 0));
+        assert!(agg.rows.iter().skip(1).all(|(w, _)| w[1] == 0));
     }
 
     /// The host left and seat 1 took the room over (3 players): the old host's seat is idle from the first row, the
@@ -1159,18 +1204,20 @@ mod tests {
     fn the_new_host_joins_from_the_migration_tick_with_the_old_host_idle() {
         let own: Vec<(tango_match::HostInput, i16)> =
             (0..3).map(|k| (tango_match::HostInput::keys(0x100 + k), 0)).collect();
-        let mut agg = HostAgg::migrated(3, 1, 1 << 0, 0, own);
+        let mut agg = HostAgg::migrated(3, 1, 1 << 0, own);
         // guests are seats 0 (gone) and 2: the link of seat 2 is guest 1
         assert_eq!(agg.guest_seats, vec![0, 2]);
         let r = agg.ingest(1, input(0x20));
         assert_eq!(r.len(), 1, "a row needs only the seat that is there");
-        // the new host's engine hears [seat 0 = idle, seat 2]
-        assert_eq!(r[0].0.keys, 0);
+        // the new host's engine hears [seat 0 = the one command that tells the console it left, seat 2]
+        assert_eq!(r[0].0.keys, tango_match::keys::command::YIELD);
         assert_eq!(r[0].0.extra[0], 0x20);
         assert_eq!(agg.ingest(1, input(0x30)).len(), 1);
         assert_eq!(agg.rows.len(), 2);
-        // the guest in seat 2 is owed [seat 0 = idle, seat 1 = the host's word]
+        // the guest in seat 2 is owed [seat 0 = the command, seat 1 = the host's word]; the second row has seat 0 idle
         let views = agg.guest_views(0x100, &agg.rows[0].0.clone());
+        assert_eq!(views[1], vec![tango_match::keys::command::YIELD as u16, 0x100]);
+        let views = agg.guest_views(0x100, &agg.rows[1].0.clone());
         assert_eq!(views[1], vec![0, 0x100]);
         // the gone seat's link is ignored
         assert!(agg.ingest(0, input(0x99)).is_empty());
@@ -1183,7 +1230,7 @@ mod tests {
     #[test]
     fn a_host_that_left_while_playing_is_yielded_once_and_no_pad_can_say_it() {
         use tango_match::keys::command;
-        let mut agg = HostAgg::migrated(3, 1, 1 << 0, 1 << 0, vec![]);
+        let mut agg = HostAgg::migrated(3, 1, 1 << 0, vec![]);
         let r = agg.ingest(1, input(0x20));
         assert_eq!(r.len(), 1);
         assert_eq!(r[0].0.keys, command::YIELD, "the old host's seat says it once");
@@ -1195,9 +1242,60 @@ mod tests {
             let r = agg.ingest(1, input(forged));
             assert!(!command::is(r[0].0.extra[0] as u32), "{forged:#x} got through");
         }
-        // a host that was out has nothing to yield
-        let mut agg = HostAgg::migrated(3, 1, 1 << 0, 0, vec![]);
-        assert_eq!(agg.ingest(1, input(0x20))[0].0.keys, 0);
+        // a host that was out is told to the console as well: it has no armies to yield, but its seat is gone from the room
+        let mut agg = HostAgg::migrated(3, 1, 1 << 0, vec![]);
+        assert_eq!(agg.ingest(1, input(0x20))[0].0.keys, command::YIELD);
+    }
+
+    /// A living guest whose player did not come back within the window: its seat is told to the console once, in the row the
+    /// others' words make, and idle after; the others go on.
+    #[test]
+    fn a_guest_that_does_not_come_back_has_its_army_yielded_once_and_the_rest_go_on() {
+        use tango_match::keys::command;
+        let mut agg = HostAgg::new(4, 0);
+        // guests are seats 1, 2, 3; seat 2 stopped sending
+        assert!(agg.ingest(0, input(0x10)).is_empty());
+        assert!(agg.ingest(2, input(0x30)).is_empty());
+        let done = agg.set_gone(1 << 2);
+        assert_eq!(done.len(), 1, "the row that waited for it is done");
+        assert_eq!(done[0].0.keys, 0x10);
+        assert_eq!(done[0].0.extra, [command::YIELD as u16, 0x30, 0], "seat 2 yields, in the same row");
+        // and from then on it is idle
+        assert!(agg.ingest(0, input(0x11)).is_empty());
+        let r = agg.ingest(2, input(0x31));
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].0.extra, [0, 0x31, 0]);
+        // the same set again is no new command
+        assert!(agg.set_gone(1 << 2).is_empty());
+        // seats 1 and 3 hear the command for seat 2 once (their own word left out)
+        let first = agg.rows[0].0.clone();
+        let views = agg.guest_views(0x100, &first);
+        assert_eq!(views[0], vec![0x100, command::YIELD as u16, 0x30]);
+        assert_eq!(views[2], vec![0x100, 0x10, command::YIELD as u16]);
+    }
+
+    /// Every guest gone: the host makes its stream itself, a row per tick, the commands first. This is also the two-player
+    /// room whose guest left.
+    #[test]
+    fn a_host_alone_makes_its_own_rows() {
+        use tango_match::keys::command;
+        let mut agg = HostAgg::migrated(2, 0, 1 << 1, vec![]);
+        assert!(agg.all_gone());
+        let (first, _) = agg.alone_row();
+        assert_eq!(first.keys, command::YIELD, "the guest's army yields");
+        let (second, _) = agg.alone_row();
+        assert_eq!(second.keys, 0);
+        // three players, both guests gone
+        let mut agg = HostAgg::new(3, 0);
+        assert!(!agg.all_gone());
+        agg.set_gone(1 << 1);
+        assert!(!agg.all_gone());
+        agg.set_gone(1 << 2);
+        assert!(agg.all_gone());
+        let (row, _) = agg.alone_row();
+        assert_eq!((row.keys, row.extra[0]), (command::YIELD, command::YIELD as u16));
+        let (row, _) = agg.alone_row();
+        assert_eq!((row.keys, row.extra[0]), (0, 0));
     }
 
     /// The log keeps what a migration needs: the last rows of the stream with this seat's own words beside them, as many as

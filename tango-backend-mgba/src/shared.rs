@@ -267,10 +267,26 @@ pub trait SharedGame: Sync {
         let _ = (core, keys);
     }
 
-    /// The seats out of the match (see [`tango_match::Link::seats_out`]).
+    /// The seats out of the match (see [`tango_match::Link::seats_out`]), counted as the game counts them (see
+    /// [`seat_order`](Self::seat_order)).
     fn seats_out(&self, core: &mgba::core::Core) -> u8 {
         let _ = core;
         0
+    }
+
+    /// A battle is on and undecided (see [`tango_match::Link::battle_on`]).
+    fn battle_on(&self, core: &mgba::core::Core) -> bool {
+        let _ = core;
+        false
+    }
+
+    /// A room whose players have left plays on without their seats: the session's seats (`players` of them) that the game
+    /// is played by from now, as the physical seat of each in the game's order. The game's hooks ([`merge`](Self::merge),
+    /// [`seat_keys`](Self::seat_keys), the windows' seat numbers, [`seats_out`](Self::seats_out)) all speak this order.
+    /// `None`: all seats, as they are. A pure read of the console, like everything the simulation depends on.
+    fn seat_order(&self, core: &mgba::core::Core, players: usize) -> Option<Vec<usize>> {
+        let _ = (core, players);
+        None
     }
 }
 
@@ -341,6 +357,19 @@ pub struct SharedLink {
 }
 
 impl SharedLink {
+    /// The seats the game is played by now, if some players have left the room (see [`SharedGame::seat_order`]).
+    fn order(&self) -> Option<Vec<usize>> {
+        self.game.seat_order(self.inner.core(0), self.players)
+    }
+
+    /// A session seat as the game counts it (the same while the room is whole).
+    fn game_seat(&self, physical: usize) -> usize {
+        match self.order() {
+            Some(order) => order.iter().position(|&p| p == physical).unwrap_or(physical),
+            None => physical,
+        }
+    }
+
     pub fn boot(
         rom: &[u8],
         save: Option<&[u8]>,
@@ -516,6 +545,7 @@ impl SharedLink {
     }
 
     fn scratch_frame(&mut self, seat: usize) -> Option<Vec<u8>> {
+        let game_seat = self.game_seat(seat);
         if self.console_frame.as_ref().is_none_or(|(_, at)| *at != self.tick) {
             self.console_frame = self.inner.video_buffer(0).map(to_rgba).map(|f| (f, self.tick));
         }
@@ -535,7 +565,7 @@ impl SharedLink {
         let mut picked = false;
         {
             let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat], kept: self.kept.as_ref(), console_pick: false };
-            let shown = game.view_as(&mut scratch, seat);
+            let shown = game.view_as(&mut scratch, game_seat);
             picked = scratch.console_pick;
             if shown {
                 frame = if scratch.console_pick { self.console_frame.as_ref().map(|(f, _)| f.clone()) } else { scratch.link.video_buffer(0).map(to_rgba) };
@@ -545,8 +575,8 @@ impl SharedLink {
                 }
                 if let Some(f) = frame.as_mut() {
                     let core = scratch.link.core(0);
-                    if game.overlay_hires(core, mode, seat, f).is_none() {
-                        game.overlay(core, mode, seat, f);
+                    if game.overlay_hires(core, mode, game_seat, f).is_none() {
+                        game.overlay(core, mode, game_seat, f);
                     }
                 }
             }
@@ -594,6 +624,12 @@ impl tango_match::Link for SharedLink {
     fn tick_n(&mut self, inputs: &[HostInput]) {
         let mut keys: Vec<u32> = inputs.iter().map(|i| i.keys & JOYFLAGS_MASK).collect();
         self.game.proxy_keys(self.inner.core_mut(0), &mut keys);
+        // (the players who left take no part in the next match: the game sees the others' keys, in its order)
+        if let Some(order) = self.game.seat_order(self.inner.core(0), keys.len()) {
+            if order.iter().all(|&p| p < keys.len()) {
+                keys = order.iter().map(|&p| keys[p]).collect();
+            }
+        }
         self.game.seat_keys(self.inner.core_mut(0), self.mode, &keys);
         let word = self.game.merge(self.inner.core(0), &keys) & JOYFLAGS_MASK;
         let word = self.game.before_tick(self.inner.core_mut(0), self.mode, word) & JOYFLAGS_MASK;
@@ -681,7 +717,16 @@ impl tango_match::Link for SharedLink {
     }
 
     fn seats_out(&mut self) -> u8 {
-        self.game.seats_out(self.inner.core(0))
+        let out = self.game.seats_out(self.inner.core(0));
+        match self.order() {
+            // (the session counts the room's own seats)
+            Some(order) => order.iter().enumerate().filter(|&(c, _)| out & (1 << c) != 0).fold(0u8, |a, (_, &p)| a | (1 << p)),
+            None => out,
+        }
+    }
+
+    fn battle_on(&mut self) -> bool {
+        self.game.battle_on(self.inner.core(0))
     }
 }
 
@@ -702,9 +747,12 @@ fn dark(rgba: &[u8]) -> bool {
 
 impl SharedSide<'_> {
     fn frame_raw(&mut self) -> Option<(Vec<u8>, &'static str)> {
+        // (the game counts the seats of the players still in the room)
+        let gseat = self.link.game_seat(self.player);
+        let order = self.link.order();
         // (a waiting seat whose picture cannot be made, and none was made before, sees the console's own: never a
         // blacked-out window; the game's `watching` keeps to the moments the picture can be made)
-        if self.conceal && self.link.game.watching(self.link.inner.core(0), self.player) {
+        if self.conceal && self.link.game.watching(self.link.inner.core(0), gseat) {
             if let Some(f) = self.link.watching_frame(self.player) {
                 if debug_view() && self.link.tick % 30 == 0 {
                     let held = self.link.watched_at[self.player].is_none_or(|at| at != self.link.tick);
@@ -717,7 +765,7 @@ impl SharedSide<'_> {
             }
         }
         if debug_view() && self.conceal && self.link.tick % 30 == 0 {
-            let w = self.link.game.watching(self.link.inner.core(0), self.player);
+            let w = self.link.game.watching(self.link.inner.core(0), gseat);
             log::info!("view-debug seat {} tick {}: {} the console's own picture {}", self.player, self.link.tick, if w { "WATCHING BUT" } else { "not watching:" }, self.link.game.view_debug(self.link.inner.core(0)));
         }
         let mut frame = match self.link.console_frame.as_ref().filter(|(_, at)| *at == self.link.tick) {
@@ -725,8 +773,8 @@ impl SharedSide<'_> {
             None => self.link.inner.video_buffer(0).map(to_rgba)?,
         };
         let core = self.link.inner.core(0);
-        if self.link.game.overlay_hires(core, self.link.mode, self.player, &mut frame).is_none() {
-            self.link.game.overlay(core, self.link.mode, self.player, &mut frame);
+        if self.link.game.overlay_hires(core, self.link.mode, gseat, &mut frame).is_none() {
+            self.link.game.overlay(core, self.link.mode, gseat, &mut frame);
         }
         // The seat's own turn: until the first picture of the next waiting turn is made, its window keeps a clean picture of
         // its own view (made on the scratch console while the console shows the plain map: no menu, no cursor), never the
@@ -734,9 +782,13 @@ impl SharedSide<'_> {
         let mover = {
             let core = self.link.inner.core(0);
             let game = self.link.game;
-            (0..self.link.players.max(2)).any(|s| s != self.player && game.watching(core, s))
+            let others = match order.as_ref() {
+                Some(o) => o.len(),
+                None => self.link.players.max(2),
+            };
+            (0..others).any(|s| s != gseat && game.watching(core, s))
         };
-        let own = !self.link.game.watching(self.link.inner.core(0), self.player);
+        let own = !self.link.game.watching(self.link.inner.core(0), gseat);
         if self.conceal && mover && own && self.link.game.plain_map(self.link.inner.core(0)) {
             let due = self.link.own_at[self.player].is_none_or(|at| self.link.tick.wrapping_sub(at) >= OWN_EVERY);
             if due {
@@ -769,7 +821,7 @@ impl Side for SharedSide<'_> {
                 let core = self.link.inner.core(0);
                 log::warn!(
                     "black picture: seat {seat} tick {tick} path {path} native {native} watching {} dispcnt {:04x} bldy {:04x} good_age {:?}",
-                    self.link.game.watching(core, seat),
+                    self.link.game.watching(core, self.link.game_seat(seat)),
                     core.raw_read_16(0x0400_0000, -1),
                     core.raw_read_16(0x0400_0054, -1),
                     self.link.good[seat].as_ref().map(|(_, at)| tick.wrapping_sub(*at)),

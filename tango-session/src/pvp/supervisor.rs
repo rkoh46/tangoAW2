@@ -605,6 +605,33 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 group.finish();
                 return;
             }
+            // A room's host whose guest drops while a battle is on: the guest gets the reconnect window like a host that is still
+            // playing; when it runs out (or the guest said it is leaving, or there is nothing to rebuild) the guest's armies
+            // yield, driven by the console, and the match goes on without it: no save, no end.
+            let ended = completed.load(Ordering::Acquire) || end.remote_ended.load(Ordering::Acquire) || end.aborted.load(Ordering::Acquire);
+            let yieldable = !ended
+                && matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled | Trip::Silent)
+                && end.yieldable(room.as_ref().is_some_and(|r| r.is_host));
+            if yieldable && (matches!(trip, Trip::PeerQuit) || !link.can_reconnect()) {
+                log::info!(
+                    "pvp: {peer_name:?} {}: its army yields, the match goes on without it",
+                    if matches!(trip, Trip::PeerQuit) { "left" } else { "is gone for good" }
+                );
+                if let Some(s) = silent.take() {
+                    s.announce_stop.cancel();
+                    pauses.leave();
+                }
+                end.hold_remove(peer_seat);
+                for seat in notice_held.drain() {
+                    end.hold_remove(seat);
+                    pauses.leave();
+                }
+                seat_yields(&end, &wake, &others, peer_seat).await;
+                drop(watch);
+                link.retire_latency();
+                group.finish();
+                return;
+            }
             let reconnectable = matches!(trip, Trip::Stalled | Trip::Closed | Trip::Silent)
                 && link.can_reconnect()
                 && !completed.load(Ordering::Acquire)
@@ -688,7 +715,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 let watchdog_done = tokio_util::sync::CancellationToken::new();
                 // (a room's guest waiting for its host does not end the match when the window runs out: the room goes on
                 // without the host, see below)
-                if !host_link {
+                if !host_link && !yieldable {
                     let end = end.clone();
                     let cancel = cancel.clone();
                     let pauses_w = pauses.clone();
@@ -716,7 +743,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                     });
                 }
 
-                let restored = if host_link {
+                let restored = if host_link || yieldable {
                     tokio::select! {
                         restored = tango_platform::timeout(timeout + std::time::Duration::from_secs(2), link.reconnect()) => restored.unwrap_or(false),
                         _ = ui_tick => unreachable!(),
@@ -745,6 +772,15 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 drop(watch);
                 link.retire_latency();
                 super::migrate::begin(m, peer_seat as usize);
+                group.finish();
+                return;
+            }
+            if !restored && yieldable && !cancel.is_cancelled() && !completed.load(Ordering::Acquire) && !end.remote_ended.load(Ordering::Acquire) && !end.aborted.load(Ordering::Acquire) {
+                log::info!("pvp: {peer_name:?} did not come back: its army yields, the match goes on without it");
+                seat_yields(&end, &wake, &others, peer_seat).await;
+                pauses.leave();
+                drop(pump);
+                link.retire_latency();
                 group.finish();
                 return;
             }
@@ -822,6 +858,16 @@ enum RoomMsgOut {
     Hold(u8, String, u32),
     Unhold(u8),
     GiveUp(u8, String),
+}
+
+/// A guest's player is gone while a battle is on and does not come back: the host marks the seat gone (its words are idle from
+/// the next tick and the console is told to yield its armies, see `driver::HostAgg`), lets the others go on (they were told to
+/// wait for it) and says who is gone, so that they all know who is left should the host leave.
+async fn seat_yields(end: &EndState, wake: &tokio::sync::Notify, others: &[Arc<tango_net::link::Link>], seat: u8) {
+    end.note_gone(seat);
+    wake.notify_one();
+    tell_others(others, RoomMsgOut::Unhold(seat)).await;
+    tell_others(others, RoomMsgOut::Gone(end.gone.load(Ordering::Acquire))).await;
 }
 
 /// Say it to every link in `others` (best effort, a second at most each).

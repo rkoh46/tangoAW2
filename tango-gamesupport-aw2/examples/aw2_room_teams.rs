@@ -635,6 +635,25 @@ fn main() {
                 println!("expect alive {want:?}: {have:?} {}", if ok { "ok" } else { "FAIL" });
                 failed |= !ok;
             }
+            // expect roster A,B,C: the seats the console is played by, in its order, and that the page and the room agree
+            // (`expect roster -`: the whole room); expect over: the match is over (the room fell to one player)
+            "expect" if p[1] == "roster" => {
+                let want: Vec<usize> = p[2].split(',').filter_map(|v| v.parse().ok()).collect();
+                let c = link.core();
+                let have = tango_gamesupport_aw2::proxy_seat::seat_order(c).unwrap_or_default();
+                let size = if want.is_empty() { n } else { want.len() };
+                let page = tango_gamesupport_aw2::online_teams::players(c);
+                let room = tango_gamesupport_aw2::online::room_players();
+                let named: Vec<String> = (0..size).map(tango_gamesupport_aw2::online::room_name).collect();
+                let ok = have == want && page == size.clamp(2, 5) && room == size.clamp(2, 5);
+                println!("expect roster {want:?}: order {have:?} page {page} room {room} names {named:?} departed {:#04x} {}", tango_gamesupport_aw2::proxy_seat::departed(c), if ok { "ok" } else { "FAIL" });
+                failed |= !ok;
+            }
+            "expect" if p[1] == "over" => {
+                let ok = tango_gamesupport_aw2::online::match_over(link.core());
+                println!("expect over: {}", if ok { "ok" } else { "FAIL" });
+                failed |= !ok;
+            }
             "expect" => {
                 let seat: usize = p[2].parse().unwrap();
                 let console = link.solo_side().frame().unwrap_or_default();
@@ -643,7 +662,11 @@ fn main() {
                 let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
                 let ok = match p[1] {
                     "winner" => diff <= 3000,
-                    "loser" => tango_gamesupport_aw2::result_view::loser(link.core(), seat) && diff > 3000,
+                    // (the game counts the seats still in the room)
+                    "loser" => {
+                        let game_seat = tango_gamesupport_aw2::online::room_seats().iter().position(|&p| p == seat).unwrap_or(seat);
+                        tango_gamesupport_aw2::result_view::loser(link.core(), game_seat) && diff > 3000
+                    }
                     other => panic!("expect {other}"),
                 };
                 println!("expect {} seat {seat}: {diff} px from the console's {}", p[1], if ok { "ok" } else { "FAIL" });

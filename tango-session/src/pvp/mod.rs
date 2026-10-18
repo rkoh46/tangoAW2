@@ -124,8 +124,12 @@ struct EndState {
     dropped: Arc<Mutex<Option<String>>>,
     /// A room: the seats the game says are out of the match (a bit each), published by the drive thread every tick.
     seats_out: Arc<std::sync::atomic::AtomicU8>,
-    /// A room's host: the seats whose player left after being out (a bit each). The match goes on without them: no pause, no
-    /// save; their input is idle from then on.
+    /// A battle is on and undecided, as the game says, published by the drive thread every tick: the seat of a player who is
+    /// gone can be played on by the console (its armies yield) and the match goes on without it.
+    battle_on: Arc<AtomicBool>,
+    /// A room's host: the seats whose player has left (a bit each): out of the match already, or still playing and not back
+    /// within the grace (its armies yield). The match goes on without them: no pause, no save; their input is idle from then on
+    /// (the console is told to yield their armies), and the room has no seat for them in the matches to come.
     gone: Arc<std::sync::atomic::AtomicU8>,
     /// A room whose host left and went on under a successor: the successor's gamertag and whether it is this player,
     /// while the migration is under way (the game's box says so).
@@ -175,6 +179,10 @@ impl EndState {
     /// one that joins the inputs, so the one that can go on without a seat).
     fn benign_drop(&self, is_host: bool, seat: u8) -> bool {
         is_benign_drop(is_host, self.seats_out.load(Ordering::Acquire), seat)
+    }
+    /// Whether a drop of the player in `seat` can be survived by yielding its armies: a room's host, a battle on.
+    fn yieldable(&self, is_host: bool) -> bool {
+        is_host && self.battle_on.load(Ordering::Acquire)
     }
     fn note_gone(&self, seat: u8) {
         self.gone.fetch_or(1 << seat, Ordering::AcqRel);
@@ -467,6 +475,11 @@ impl PvpSession {
     /// Who disconnected, in a room whose match ended that way.
     pub fn dropped_player(&self) -> Option<String> {
         self.end.dropped.lock().unwrap().clone()
+    }
+
+    /// Every other player of the room has left (a room that has fallen to one player is over for it).
+    pub fn everyone_left(&self) -> bool {
+        self.players > 1 && self.end.gone.load(Ordering::Acquire).count_ones() as usize + 1 >= self.players
     }
 
     /// The id of the suspended match this session resumed, if it did.

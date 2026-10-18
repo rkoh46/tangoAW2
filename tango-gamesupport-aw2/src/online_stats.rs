@@ -88,6 +88,9 @@ pub struct BattleSummary {
     pub no: u8,
     pub day: u16,
     pub armies: Vec<ArmySummary>,
+    /// The room's seat of each player of the battle, in the order the console played them (empty: the room's own order). A room
+    /// whose players have left plays its next matches without their seats.
+    pub seats: Vec<u8>,
 }
 
 static LIVE: Mutex<Option<BattleSummary>> = Mutex::new(None);
@@ -117,6 +120,7 @@ pub fn snapshot(core: &Core) -> BattleSummary {
         no: core.raw_read_8(BATTLE_NO, -1),
         day: core.raw_read_16(DAY, -1),
         armies,
+        seats: crate::online::room_seats().into_iter().map(|s| s as u8).collect(),
     }
 }
 

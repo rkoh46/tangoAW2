@@ -329,6 +329,11 @@ impl Match {
         self.link.lock().map_or(0, |mut l| l.seats_out())
     }
 
+    /// Whether a battle is on and undecided, as the console says now (see [`Link::battle_on`]).
+    pub fn battle_on(&self) -> bool {
+        self.link.lock().is_ok_and(|mut l| l.battle_on())
+    }
+
     /// Keep a capture of the console every [`crate::suspend::CHECKPOINT_EVERY`] ticks, for [`checkpoints`](Self::checkpoints)
     /// (a match that can be suspended; costs one capture per half second).
     pub fn keep_checkpoints(&self) {
