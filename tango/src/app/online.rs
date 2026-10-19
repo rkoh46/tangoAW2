@@ -42,6 +42,13 @@ pub struct Flow {
     /// When the game left the lobby browser (the look then goes on for a while, so that opening it again shows
     /// the list at once instead of searching again).
     browse_left: Option<std::time::Instant>,
+    /// R on the browser (see [`Self::online_browse_refresh`]): the presses seen, when the relays were last asked again, the new query
+    /// until it has answered, and the note on the page (0 none, 1 Refreshing, 2 Updated) since when.
+    refresh_seen: u8,
+    refresh_at: Option<std::time::Instant>,
+    browse_next: Option<netplay::browse::Browse>,
+    refresh_phase: (u8, Option<std::time::Instant>),
+    refresh_written: u8,
     /// The lobbies in the order they were first seen (so the list does not shuffle at every refresh).
     browse_order: Vec<String>,
     /// What was last logged of the list.
@@ -87,6 +94,8 @@ pub struct Flow {
 
 /// A player coming back to an UNRANKED match its app crashed out of.
 struct Returning {
+    /// An UNRANKED match (the words differ: it has no room).
+    unranked: bool,
     /// Giving the match up: the room is joined only to tell the other player, then left.
     giving_up: bool,
     ready_sent: bool,
@@ -97,6 +106,10 @@ struct Returning {
 #[derive(Default)]
 struct Stayed {
     asked: bool,
+    /// This player is not the one who makes the room (the lowest seat of those who stayed does): it joins it at once.
+    guest: bool,
+    /// The most players the room has had in it (a guest who stayed sees the returning player come and go by it).
+    most: usize,
     room: Option<Room>,
     guest_seen: bool,
     /// How many goodbyes of returning players the room had when it was made (more means one gave the match up).
@@ -183,7 +196,7 @@ impl App {
                     tango_library::online::map_debug()
                 );
             }
-            return self.online_unranked_tick();
+            return self.online_rejoin_tick();
         }
         self.online_stats();
         let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else {
@@ -205,8 +218,10 @@ impl App {
             mailbox::sync(&mut write, &tag, &lines);
             self.online.synced_rev = self.online.stats_rev;
             // (an UNRANKED match this app crashed out of is offered on the ONLINE screen of the console that comes up)
-            if fresh && self.online.offer.is_some() {
-                mailbox::write_rejoin(&mut write, 1);
+            if fresh {
+                if let Some(live) = self.online.offer.as_ref() {
+                    mailbox::write_rejoin(&mut write, 1, &live.room_name);
+                }
             }
         }
         if std::env::var("TANGOAW2_ONLINE_LOG").is_ok_and(|v| v == "1")
@@ -253,12 +268,14 @@ impl App {
             self.online_request(request);
         }
         self.online_returning(level);
+        self.online_offer_expiry();
         // The room's match is ready: build it.
         if let Some(room) = self.online.room.as_ref() {
             if room.view().phase == RoomPhase::Ready && !self.online.building {
                 if let Some(m) = room.take_match() {
                     self.online.building = true;
-                    task = self.online_build_match(m);
+                    let name = room.view().name;
+                    task = self.online_build_match(m, name);
                 }
             }
         }
@@ -288,20 +305,41 @@ impl App {
         match live.verdict(unranked_live::now_ms()) {
             unranked_live::Verdict::Rejoin { left_ms } => {
                 log::info!(
-                    "unranked: a match of {:?} was on when the app stopped ({} s of the window are left): offering to rejoin",
+                    "live match: a match of {:?} in {:?} was on when the app stopped ({} s of the window are left): offering to rejoin",
                     live.players,
+                    live.room_name,
                     left_ms / 1000
                 );
                 self.online.offer = Some(live);
             }
             unranked_live::Verdict::Ended => {
-                log::info!("unranked: a match of {:?} was on when the app stopped, long ago: its army yielded", live.players);
+                log::info!("live match: a match of {:?} in {:?} was on when the app stopped, long ago: its army yielded", live.players, live.room_name);
                 unranked_live::clear(&self.config.data_path);
-                self.online.back_message = Some("Your Unranked match ended: your army yielded.".to_string());
+                self.online.back_message = Some(live.ended_message());
             }
         }
         tango_library::online::boot_to_lobby();
         Some(iced::Task::done(Message::Play(crate::tabs::play::Message::PlayOfflinePressed)))
+    }
+
+    /// The match offered for a rejoin (its window is open) is over when the window passes: the army yielded, which the LOBBY menu says
+    /// once, and the offer is withdrawn from the game (the box, the JOIN list's line).
+    fn online_offer_expiry(&mut self) {
+        let Some(live) = self.online.offer.as_ref() else { return };
+        if self.online.returning.is_some() || !matches!(live.verdict(unranked_live::now_ms()), unranked_live::Verdict::Ended) {
+            return;
+        }
+        log::info!("live match: the window to come back to {:?} has passed: the army yielded", live.room_name);
+        let message = live.ended_message();
+        unranked_live::clear(&self.config.data_path);
+        self.online.offer = None;
+        self.online.back_message = Some(message);
+        if let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() {
+            let mut write = |a: u32, b: &[u8]| {
+                solo.poke(a, b);
+            };
+            mailbox::write_rejoin(&mut write, 0, "");
+        }
     }
 
     /// The player who rejoins or gives up: its room is joined, READY once it is in, and left again when the way back is gone.
@@ -344,11 +382,13 @@ impl App {
         }
     }
 
-    /// While an UNRANKED match runs: its file is touched; and when the other player is gone (their app crashed) a way back is
-    /// made for them: a room the returning player joins, with the newest settled state of the console. The match goes on from
-    /// that state for both, in new sessions.
-    fn online_unranked_tick(&mut self) -> iced::Task<Message> {
-        if !self.online.unranked_match {
+    /// While a room's match runs (a lobby's or UNRANKED's): its file is touched; and when a player is gone (their app crashed) a way back
+    /// is made for them within their window. The stayer with the lowest seat opens a room for the returning player (the newest
+    /// settled state of its console, like RESUME's); the other stayers join it at once and wait, ready; the returning player joins it
+    /// from its new launch. When all are in, every console goes on from that state, in new sessions (state hashes equal). A single
+    /// player is waited for: with two gone at once nobody can be seated as they were, and the armies yield when the windows pass.
+    fn online_rejoin_tick(&mut self) -> iced::Task<Message> {
+        if self.online.live.is_none() {
             return iced::Task::none();
         }
         let now = std::time::Instant::now();
@@ -357,29 +397,55 @@ impl App {
                 self.online.live_touched = Some(now);
                 live.touched_ms = unranked_live::now_ms();
                 if let Err(e) = unranked_live::write(&self.config.data_path, live) {
-                    log::warn!("unranked: could not touch the match's file: {e}");
+                    log::warn!("live match: could not touch the match's file: {e}");
                 }
             }
         }
         let Some(pvp) = self.session.active_as::<session::pvp::PvpSession>() else {
             return iced::Task::none();
         };
-        let hold = pvp.rejoin_hold();
+        let holds = pvp.rejoin_holds();
         if self.online.building {
             return iced::Task::none();
         }
-        match (hold.as_ref(), self.online.stayed.is_some()) {
-            (Some((name, left)), false) if *left >= 3 => {
-                log::info!("unranked: {name:?} is gone ({left} s of its window left): making a way back for it");
-                pvp.request_rejoin_state();
-                self.online.stayed = Some(Stayed { asked: true, since: Some(now), ..Default::default() });
+        let Some(live) = self.online.live.clone() else { return iced::Task::none() };
+        // (the room for the returning player has the match ready: it goes on whatever the old session says by then)
+        let ready = self
+            .online
+            .stayed
+            .as_ref()
+            .and_then(|s| s.room.as_ref())
+            .is_some_and(|r| matches!(r.view().phase, RoomPhase::Ready | RoomPhase::Starting));
+        let present = self.online.stayed.is_some();
+        match (holds.as_slice(), present) {
+            ([(seat, name, left)], false) if *left >= 3 => {
+                let me = pvp.local_player_index() as usize;
+                // (every peer works the same out from the seats: the stayer with the lowest seat makes the room)
+                let maker = unranked_live::rejoin_maker(live.players.len(), *seat as usize);
+                log::info!(
+                    "live match: {name:?} (seat {seat}) is gone ({left} s of its window left): {}",
+                    if me == maker { "making a way back for it" } else { "joining the room made for it" }
+                );
+                if me == maker {
+                    pvp.request_rejoin_state();
+                    self.online.stayed = Some(Stayed { asked: true, since: Some(now), ..Default::default() });
+                } else {
+                    let names = unranked_live::room_names(&live.players);
+                    let mut params = self.online_params_for(&live.code);
+                    params.nickname = names.get(me).cloned().unwrap_or_else(|| self.online_nickname());
+                    params.match_type = live.match_type;
+                    params.saves = vec![live.match_id];
+                    params.join_seconds = 30;
+                    self.online.stayed =
+                        Some(Stayed { asked: true, guest: true, room: Some(Room::join(params)), since: Some(now), ..Default::default() });
+                }
                 return iced::Task::none();
             }
-            (None, true) => {
+            ([], true) if !ready => {
                 // The wait is over: the player came back by itself, or the window passed (the army yielded).
                 pvp.set_rejoin_busy(false);
                 if let Some(st) = self.online.stayed.take() {
-                    log::info!("unranked: the wait for the other player is over");
+                    log::info!("live match: the wait for the other player is over");
                     if let Some(room) = st.room {
                         room.leave();
                     }
@@ -388,8 +454,61 @@ impl App {
             }
             _ => {}
         }
-        let Some(live) = self.online.live.clone() else { return iced::Task::none() };
         let Some(mut st) = self.online.stayed.take() else { return iced::Task::none() };
+        let total = live.players.len();
+        // The stayers who are not the maker: in the room, ready, and on the lookout for the returning player leaving it again.
+        if st.guest {
+            let room = st.room.as_ref().expect("a guest has its room");
+            let view = room.view();
+            if view.joined && !st.guest_seen {
+                // (joined: ready at once; the room starts when the returning player is in too)
+                room.set_ready(true);
+                st.guest_seen = true;
+                log::info!("live match: in the room made for the returning player; ready");
+            }
+            st.most = st.most.max(view.players.len());
+            if view.players.len() >= total {
+                pvp.set_rejoin_busy(true);
+            } else if st.most >= total && view.joined {
+                // It came and left again: it gave the match up.
+                log::info!("live match: the returning player gave the match up: its army yields");
+                pvp.rejoin_gave_up();
+                pvp.set_rejoin_busy(false);
+                if let Some(r) = st.room.take() {
+                    r.leave();
+                }
+                return iced::Task::none();
+            }
+            match view.phase {
+                RoomPhase::Ready => {
+                    if let Some(m) = st.room.as_ref().expect("checked").take_match() {
+                        log::info!("live match: everyone is back: the match goes on from the state we all have");
+                        pvp.set_rejoin_busy(true);
+                        self.online.building = true;
+                        let name = live.room_name.clone();
+                        self.online.stayed = Some(st);
+                        self.online_record_battles();
+                        return self.online_build_match(m, name);
+                    }
+                }
+                RoomPhase::Failed | RoomPhase::Closed => {
+                    // (the maker's room is not there: try again a little later, while the window lasts)
+                    log::info!("live match: the room for the returning player failed ({}); looking again", view.message);
+                    st.room = None;
+                    st.guest_seen = false;
+                    st.most = 0;
+                    st.since = Some(now);
+                }
+                _ => {}
+            }
+            if st.room.is_none() {
+                // (joined again from here on: the stayed state is made anew by the next tick of the hold)
+                pvp.set_rejoin_busy(false);
+                return iced::Task::none();
+            }
+            self.online.stayed = Some(st);
+            return iced::Task::none();
+        }
         let task = iced::Task::none();
         if st.room.is_none() {
             match pvp.take_rejoin_state() {
@@ -399,6 +518,7 @@ impl App {
                         let mut params = self.online_params_for(&live.code);
                         params.nickname = names.get(sm.seat as usize).cloned().unwrap_or_else(|| self.online_nickname());
                         params.match_type = sm.match_type;
+                        params.name = live.room_name.clone();
                         params.resume = Some(netplay::room::ResumeParams {
                             match_id: sm.match_id,
                             players: names,
@@ -410,7 +530,7 @@ impl App {
                             match_type: sm.match_type,
                             save: sm.save,
                         });
-                        log::info!("unranked: a room for the returning player is open (state of tick {})", c.tick);
+                        log::info!("live match: a room for the returning player is open (state of tick {})", c.tick);
                         st.room = Some(Room::host(params));
                         st.leaves_seen = 0;
                         st.since = Some(now);
@@ -426,15 +546,16 @@ impl App {
             return task;
         }
         let view = st.room.as_ref().expect("checked").view();
-        if view.players.len() >= 2 {
+        // (everyone is in the room when it has all the players of the match: the returning player is the last)
+        if view.players.len() >= total {
             if !st.guest_seen {
-                log::info!("unranked: the other player is back in the room");
+                log::info!("live match: the returning player is back in the room");
             }
             st.guest_seen = true;
             pvp.set_rejoin_busy(true);
-        } else if view.said_leave > st.leaves_seen && view.phase == RoomPhase::Open {
+        } else if view.said_leave > st.leaves_seen && view.phase == RoomPhase::Open && st.guest_seen {
             // It came and left: it gave the match up.
-            log::info!("unranked: the other player gave the match up: its army yields");
+            log::info!("live match: the returning player gave the match up: its army yields");
             pvp.rejoin_gave_up();
             pvp.set_rejoin_busy(false);
             if let Some(r) = st.room.take() {
@@ -444,6 +565,8 @@ impl App {
             st.leaves_seen = view.said_leave;
             self.online.stayed = Some(st);
             return task;
+        } else {
+            st.leaves_seen = st.leaves_seen.max(view.said_leave);
         }
         if view.all_ready && view.phase == RoomPhase::Open {
             let room = st.room.as_ref().expect("checked");
@@ -453,16 +576,17 @@ impl App {
         match view.phase {
             RoomPhase::Ready => {
                 if let Some(m) = st.room.as_ref().expect("checked").take_match() {
-                    log::info!("unranked: the other player is back: the match goes on from the state we both have");
+                    log::info!("live match: everyone is back: the match goes on from the state we all have");
                     pvp.set_rejoin_busy(true);
                     self.online.building = true;
+                    let name = live.room_name.clone();
                     self.online.stayed = Some(st);
                     self.online_record_battles();
-                    return self.online_build_match(m);
+                    return self.online_build_match(m, name);
                 }
             }
             RoomPhase::Failed | RoomPhase::Closed => {
-                log::info!("unranked: the room for the returning player failed ({}); making it again", view.message);
+                log::info!("live match: the room for the returning player failed ({}); making it again", view.message);
                 pvp.set_rejoin_busy(false);
                 st.room = None;
                 st.guest_seen = false;
@@ -521,6 +645,68 @@ impl App {
         }
     }
 
+    /// R on the lobby browser: the relays are asked again, but never more than once every [`REFRESH_EVERY`] seconds. A press sooner
+    /// shows "Refreshing..." for a moment and reuses the query that is in flight (or just made): no extra load on the relays. The new
+    /// query takes the list's place when a relay has answered it (the list does not empty meanwhile); "Updated" shows for two seconds.
+    fn online_browse_refresh(&mut self) {
+        const REFRESH_EVERY: u64 = 5;
+        let Some(solo) = self.session.active_as::<session::singleplayer::SinglePlayerSession>() else { return };
+        let mut read = |a: u32, b: &mut [u8]| {
+            solo.peek(a, b);
+        };
+        let pressed = mailbox::browse_refreshes(&mut read);
+        let now = std::time::Instant::now();
+        if pressed != self.online.refresh_seen {
+            self.online.refresh_seen = pressed;
+            self.online.refresh_phase = (1, Some(now));
+            let due = self.online.refresh_at.is_none_or(|t| t.elapsed().as_secs() >= REFRESH_EVERY);
+            if due && self.online.browse_next.is_none() {
+                self.online.refresh_at = Some(now);
+                let relays = Self::lobby_relays();
+                let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
+                self.online.browse_next = Some(netplay::browse::Browse::start(
+                    &relays,
+                    netplay::browse::Compat { version: Self::lobby_version(), pack: Self::lobby_pack() },
+                ));
+                log::info!("lobby list: R: the relays are asked again");
+            } else {
+                log::info!("lobby list: R: too soon (or a query is in flight): the one in flight is used");
+            }
+        }
+        let (phase, since) = self.online.refresh_phase;
+        let since = since.unwrap_or(now);
+        match phase {
+            1 => {
+                let done = match self.online.browse_next.as_ref() {
+                    Some(next) => next.stats().answered > 0 || since.elapsed().as_secs() >= 4,
+                    None => since.elapsed().as_millis() >= 700,
+                };
+                if done {
+                    if let Some(next) = self.online.browse_next.take() {
+                        // (the old look ends when it is dropped; the order the lobbies were first seen in is kept)
+                        self.online.browse = Some((next, since));
+                    }
+                    self.online.refresh_phase = (2, Some(now));
+                }
+            }
+            2 if since.elapsed().as_secs() >= 2 => self.online.refresh_phase = (0, None),
+            _ => {}
+        }
+        let shown = self.online.refresh_phase.0;
+        if shown != self.online.refresh_written {
+            self.online.refresh_written = shown;
+            let note = match shown {
+                1 => mailbox::BrowseNote::Refreshing,
+                2 => mailbox::BrowseNote::Updated,
+                _ => mailbox::BrowseNote::None,
+            };
+            let mut write = |a: u32, b: &[u8]| {
+                solo.poke(a, b);
+            };
+            mailbox::write_browse_note(&mut write, note);
+        }
+    }
+
     /// The game's lobby browser is open (level 7): look at the public list and write what is found.
     fn online_browse(&mut self, level: u8) {
         // The look goes on while a lobby picked from the list is joined or its password typed (the list is still there
@@ -529,11 +715,17 @@ impl App {
             return;
         }
         if level != 7 {
+            // (the page's own note and press count start over the next time it opens)
+            self.online.refresh_seen = 0;
+            self.online.refresh_phase = (0, None);
+            self.online.refresh_written = 0;
+            self.online.browse_next = None;
             if self.online.browse.is_some() {
                 // (kept for a minute and a half: the page is often left for a password or a lobby and come back to)
                 let left = *self.online.browse_left.get_or_insert_with(std::time::Instant::now);
                 if left.elapsed().as_secs() >= 90 {
                     self.online.browse = None;
+                    self.online.browse_next = None;
                     self.online.browse_left = None;
                     self.online.browse_order.clear();
                     self.online.browse_logged.clear();
@@ -545,7 +737,7 @@ impl App {
         self.online.browse_left = None;
         let relays = Self::lobby_relays();
         let relays: Vec<&str> = relays.iter().map(String::as_str).collect();
-        let (browse, since) = self.online.browse.get_or_insert_with(|| {
+        self.online.browse.get_or_insert_with(|| {
             (
                 netplay::browse::Browse::start(
                     &relays,
@@ -557,6 +749,8 @@ impl App {
                 std::time::Instant::now(),
             )
         });
+        self.online_browse_refresh();
+        let Some((browse, since)) = self.online.browse.as_ref() else { return };
         let mine = self.online.room.as_ref().map(|r| r.code());
         let listed: Vec<netplay::browse::Listing> = browse
             .listings()
@@ -592,7 +786,7 @@ impl App {
             .filter_map(|c| listed.iter().find(|l| &l.lobby.code == c))
             .map(|l| mailbox::BrowseRow {
                 code: l.lobby.code.clone(),
-                host: l.lobby.host.clone(),
+                name: l.lobby.name.clone(),
                 players: l.lobby.players,
                 max: l.lobby.max,
                 locked: l.lobby.locked,
@@ -706,12 +900,16 @@ impl App {
     fn online_request(&mut self, request: Request) {
         log::info!("online: the game asks {request:?}");
         match request {
-            Request::Host { password } => {
+            Request::Host { password, name } => {
                 let seed = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map_or(1, |d| d.as_nanos() as u64);
                 let code = std::env::var("TANGOAW2_ONLINE_CODE").unwrap_or_else(|_| mailbox::new_code(seed));
-                let params = self.online_params(&code, &password);
+                // (the room's name: typed on the first page of CREATE; none typed is "<gamertag>'s room")
+                let me = mailbox::clean_gamertag(&self.config.gamertag.clone().unwrap_or_default());
+                let name = if name.is_empty() { mailbox::default_room_name(&me) } else { name };
+                let mut params = self.online_params(&code, &password);
+                params.name = name.clone();
                 self.online.back_message = None;
                 self.online.room = Some(Room::host(params));
                 // Every lobby is public: listed for everyone on this version (never with an address).
@@ -722,6 +920,7 @@ impl App {
                     netplay::browse::Lobby {
                         code: code.clone(),
                         host: self.online_nickname(),
+                        name,
                         players: 1,
                         max: netplay::room::MAX_PLAYERS as u8,
                         locked: !password.is_empty(),
@@ -785,17 +984,21 @@ impl App {
                 params.nickname = names.get(live.seat).cloned().unwrap_or_else(|| self.online_nickname());
                 params.match_type = live.match_type;
                 params.saves = vec![live.match_id];
-                params.join_seconds = if giving_up { 12 } else { 20 };
+                params.join_seconds = if giving_up { 12 } else { 30 };
                 self.online.room = Some(Room::join(params));
-                self.online.returning = Some(Returning { giving_up, ready_sent: false });
+                self.online.returning = Some(Returning { unranked: live.is_unranked(), giving_up, ready_sent: false });
                 if giving_up {
-                    // (the other player is told by the room's goodbye; the match is over for this one at once)
-                    log::info!("unranked: the player gives the match up");
+                    // (the others are told by the room's goodbye; the match is over for this one at once)
+                    log::info!("live match: the player gives the match up");
                     unranked_live::clear(&self.config.data_path);
                     self.online.offer = None;
-                    self.online.back_message = Some("You gave up your Unranked match. Your army yielded.".to_string());
+                    self.online.back_message = Some(if live.is_unranked() {
+                        "You gave up your Unranked match. Your army yielded.".to_string()
+                    } else {
+                        format!("You gave up your match in {}. Your army yielded.", live.room_name)
+                    });
                 } else {
-                    log::info!("unranked: the player rejoins the match (room {})", live.code);
+                    log::info!("live match: the player rejoins the match (room {})", live.code);
                 }
             }
             Request::DeleteSaved { index } => {
@@ -900,6 +1103,7 @@ impl App {
             saves: self.online.saved.iter().map(|m| m.match_id).collect(),
             resume: None,
             join_seconds: 0,
+            name: String::new(),
         }
     }
 
@@ -914,7 +1118,7 @@ impl App {
     }
 
     /// The room's match is ready: build the session (every link is handed over to it).
-    fn online_build_match(&mut self, m: netplay::room::RoomMatch) -> iced::Task<Message> {
+    fn online_build_match(&mut self, m: netplay::room::RoomMatch, room_name: String) -> iced::Task<Message> {
         let is_host = m.is_host;
         self.online.unranked_match = m.match_type.1 & mailbox::UNRANKED_MATCH != 0;
         let seat = m.seat;
@@ -922,19 +1126,19 @@ impl App {
         let match_id = m.match_id;
         let resume_state = m.resume_state.clone();
         let players = m.players.clone();
-        // UNRANKED: the match is kept on disk while it runs, for a player whose app crashes to come back to (the file is written
-        // when the session is up, see `finish_room_match`)
+        // The match is kept on disk while it runs, for a player whose app crashes to come back to (the file is written when the session
+        // is up, see `finish_room_match`); an UNRANKED match has no room name.
         let unranked = self.online.unranked_match;
-        self.online.live_pending = unranked.then(|| {
-            unranked_live::Live::new(
-                match_id,
-                tango_net_protocol::derive::derive_rejoin_code(&m.seed, match_id),
-                seat,
-                players.clone(),
-                m.match_type,
-                unranked_live::now_ms(),
-            )
-        });
+        let live_name = if unranked { String::new() } else { room_name };
+        self.online.live_pending = Some(unranked_live::Live::new(
+            match_id,
+            tango_net_protocol::derive::derive_rejoin_code(&m.seed, match_id),
+            seat,
+            players.clone(),
+            m.match_type,
+            live_name,
+            unranked_live::now_ms(),
+        ));
         self.online.offer = None;
         self.online.returning = None;
         // Who is who, for the game's pictures (gamertags next to the armies).
@@ -984,7 +1188,8 @@ impl App {
             resume_state,
             suspend_sink: Some(sink),
             unranked,
-            on_leave: unranked.then(|| {
+            rejoin: true,
+            on_leave: Some({
                 let data_path = self.config.data_path.clone();
                 std::sync::Arc::new(move || unranked_live::clear(&data_path)) as std::sync::Arc<dyn Fn() + Send + Sync>
             }),
@@ -1041,6 +1246,7 @@ impl App {
             solo.poke(a, b);
         };
         let Some(room) = self.online.room.as_ref() else {
+            mailbox::write_room_name(&mut write, "");
             if let Some(m) = self.online.back_message.take() {
                 mailbox::write_note(&mut write, &m);
                 mailbox::write_status(&mut write, Status::Back, "");
@@ -1051,6 +1257,7 @@ impl App {
         if room.is_host() && !room.is_unranked() {
             mailbox::write_room(&mut write, &room.code());
         }
+        mailbox::write_room_name(&mut write, &view.name);
         let (status, message) = match view.phase {
             RoomPhase::Connecting if view.resuming && !view.waiting_for.is_empty() => {
                 (Status::Waiting, mailbox::waiting_for(&view.waiting_for))
@@ -1077,7 +1284,10 @@ impl App {
                     (Status::Connecting, view.message.clone())
                 }
             }
-            RoomPhase::Failed if self.online.returning.is_some() => (Status::Failed, "Your Unranked match is over.".to_string()),
+            RoomPhase::Failed if self.online.returning.is_some() => (
+                Status::Failed,
+                if self.online.returning.as_ref().is_some_and(|r| r.unranked) { "Your Unranked match is over." } else { "Your match is over." }.to_string(),
+            ),
             RoomPhase::Failed => (Status::Failed, view.message.clone()),
             RoomPhase::Closed => (Status::Failed, "Not connected.".to_string()),
         };

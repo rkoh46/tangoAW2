@@ -38,7 +38,7 @@ async fn probe(url: String, code: String) -> String {
     let c = ms(t0);
     let key = k256::schnorr::SigningKey::from_bytes(&rand::random::<[u8; 32]>()).unwrap();
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
-    let lobby = Lobby { code: code.clone(), host: "Probe".into(), players: 1, max: 5, locked: false, version: "probe".into(), pack: true };
+    let lobby = Lobby { code: code.clone(), host: "Probe".into(), name: "Probe room".into(), players: 1, max: 5, locked: false, version: "probe".into(), pack: true };
     let ev = make_event(&key, &code, Some(&lobby), now);
     let _ = ws.send(Message::Text(json!(["EVENT", ev]).to_string())).await;
     let tp = Instant::now();

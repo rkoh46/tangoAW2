@@ -1,0 +1,58 @@
+# 2 seats, Dual Strike pack (TANGOAW2_DS_ROM), tag pairs chosen on the army page, Fog on: army 1 chooses Change (CO SWAP) from the map menu. Run: AW2_LEAK_CHECK=1 TANGOAW2_DS_ROM=<nds> aw2_room_teams <rom> <out> this-file; every seat but the mover shows the swap's own full-screen scenes (the console's picture, with no map in it).
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+until teams 600
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 RIGHT
+wait 10
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 RIGHT
+wait 10
+press 0 DOWN
+press 0 A
+shotall teams_done
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+goto 0 3 3
+wait 10
+press 0 A
+wait 60
+shot menu 0
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+shot menu_change 0
+press 0 A
+wait 30
+shotall swap_a
+wait 60
+shotall swap_b
+wait 60
+shotall swap_c
+wait 60
+shotall swap_d
+wait 60
+shotall swap_e
+wait 300
+shotall after
+press 1 A
+wait 200
+shotall turn2

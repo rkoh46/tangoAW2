@@ -114,15 +114,35 @@ fn main() {
     let leaks: std::cell::RefCell<Vec<(usize, usize, String)>> = Default::default();
     let power_ticks = std::cell::Cell::new((0usize, 0usize));
     let power_ticks_nofog = std::cell::Cell::new(0usize);
+    let tag_ticks = std::cell::Cell::new(0usize);
+    let super_nofog = std::cell::Cell::new((0usize, 0usize));
     let vram_last: std::cell::RefCell<(Vec<u8>, Vec<u8>)> = Default::default();
     // (watch BASE TOL: every tick, until unwatch, the waiting seats' pictures are compared with the BASE shotall's)
     let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
     let tick = |link: &mut tango_backend_mgba::SharedLink, keys: &[u32]| {
-        let inputs: Vec<HostInput> = keys.iter().map(|&k| HostInput::keys(k)).collect();
+        // (the maps are picked in private: every seat's window keeps a console of its own, driven by its keys, and the pick it makes
+        // goes out as two words of the seat's input, as the session sends them)
+        let picking = tango_gamesupport_aw2::unranked::picking(link.core());
+        let mut sent = keys.to_vec();
+        if picking {
+            for (seat, k) in sent.iter_mut().enumerate() {
+                tango_gamesupport::private::set_keys(seat, *k);
+                if let Some(word) = tango_gamesupport::private::next_word(seat) {
+                    *k = word;
+                }
+            }
+        }
+        let inputs: Vec<HostInput> = sent.iter().map(|&k| HostInput::keys(k)).collect();
         tango_match::Link::test_aid(link, ticks.get() as u32);
         link.tick_n(&inputs);
         let t = ticks.get() + 1;
         ticks.set(t);
+        if picking && t % 2 == 0 {
+            for seat in 0..n {
+                tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                let _ = link.side(seat).frame();
+            }
+        }
         if let Ok(path) = std::env::var("AW2_HASH_LOG") {
             // (test aid: one line per tick, FNV hashes of the console's IWRAM and EWRAM, and every 30 ticks of its ROM, VRAM, palette and OAM;
             // run the same script with and without the Dual Strike pack (AW2_PACK_ONLY) and diff the two files: they must be equal)
@@ -171,6 +191,14 @@ fn main() {
                 let _ = std::fs::create_dir_all(dir);
                 let _ = std::fs::write(dir.join(format!("i{t}.bin")), &iw);
                 let _ = std::fs::write(dir.join(format!("e{t}.bin")), &ew);
+            }
+        }
+        if let Some((a, b)) = std::env::var("AW2_WATCH_LOG").ok().and_then(|v| v.split_once('-').map(|(a, b)| (a.parse::<usize>().unwrap_or(0), b.parse::<usize>().unwrap_or(0)))) {
+            // (test aid: "from-to": what the game says about the waiting seats' pictures, tick by tick)
+            if (a..=b).contains(&t) {
+                use tango_backend_mgba::SharedGame;
+                let c = link.core();
+                eprintln!("watchlog t{t}: picking {} phase {:?} watching [{}, {}] selecting {} unranked-phase picks {} mask {:#x}", tango_gamesupport_aw2::unranked::picking(c), tango_gamesupport_aw2::fog_view::phase(c), tango_gamesupport_aw2::pvp::AW2E.watching(c, 0), tango_gamesupport_aw2::pvp::AW2E.watching(c, 1), 0, tango_gamesupport_aw2::unranked::picks_made(c), tango_gamesupport_aw2::unranked::picked_mask(c));
             }
         }
         if std::env::var_os("AW2_CONSOLE_PROCS").is_some() {
@@ -236,13 +264,39 @@ fn main() {
                     tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                     let f = link.side(seat).frame().unwrap_or_default();
                     let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
-                    if diff > 3000 {
+                    // (a Super CO Power without fog: its scene is the console's picture; the banner wipes in over the map and the scene
+                    // fades out into it, frames that differ from the console's by the seat's own CO panel or a frame's lag: most of
+                    // the scene's ticks must be equal, see the end)
+                    if tango_gamesupport_aw2::pvp::chosen_main_item(link.core()) == Some(tango_gamesupport_aw2::pvp::MENU_SUPER) {
+                        super_nofog.set((super_nofog.get().0 + 1, super_nofog.get().1 + (diff <= 3000) as usize));
+                    } else if diff > 3000 {
                         leaks.borrow_mut().push((t, seat, format!("power scene (no fog) not the console's ({diff} px)")));
                     }
                 }
             }
-            let skip_generic = scene && link.core().raw_read_8(0x0300_3FCD, -1) != 0;
-            if skip_generic {
+            // (a tag screen, CO SWAP or the Tag Power's: full screen, no map in it: every seat but the mover shows the console's picture; the
+            // maps are picked in private: the windows are not the console's, see `private_picks`)
+            let tag_screen = tango_gamesupport_aw2::tag_extras::screen_up(link.core()) || tango_gamesupport_aw2::fog_view::power_screen(link.core());
+            if tag_screen {
+                tag_ticks.set(tag_ticks.get() + 1);
+                if tango_gamesupport_aw2::fog_view::power_screen(link.core()) {
+                    // (a Super CO Power's own screen counts as its full cut-in)
+                    power_ticks.set((power_ticks.get().0, power_ticks.get().1 + 1));
+                }
+                for seat in 0..n {
+                    if tango_gamesupport_aw2::pvp::seat_of_n(army, n) == seat {
+                        continue;
+                    }
+                    tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                    let f = link.side(seat).frame().unwrap_or_default();
+                    let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
+                    if diff > 300 && !dark {
+                        leaks.borrow_mut().push((t, seat, format!("tag screen not shown ({diff} px)")));
+                    }
+                }
+            }
+            let skip_generic = tag_screen || tango_gamesupport_aw2::unranked::picking(link.core()) || (scene && link.core().raw_read_8(0x0300_3FCD, -1) != 0);
+            if skip_generic && !tag_screen && scene && link.core().raw_read_8(0x0300_3FCD, -1) != 0 {
                 power_ticks.set((power_ticks.get().0 + 1, power_ticks.get().1 + cutin as usize));
                 for seat in 0..n {
                     if tango_gamesupport_aw2::pvp::seat_of_n(army, n) == seat {
@@ -895,7 +949,17 @@ fn main() {
         }
     }
     if leak_check {
+        if super_nofog.get().0 > 0 {
+            let (total, same) = super_nofog.get();
+            println!("super power without fog: {same} of {total} scene ticks equal to the console's picture");
+            if same * 2 < total {
+                leaks.borrow_mut().push((0, 0, format!("super power without fog: only {same} of {total} ticks show the console's picture")));
+            }
+        }
         let l = leaks.borrow();
+        if tag_ticks.get() > 0 {
+            println!("tag screens: {} ticks shown to every seat", tag_ticks.get());
+        }
         if power_ticks_nofog.get() > 0 {
             println!("power scene without fog: {} ticks", power_ticks_nofog.get());
         }

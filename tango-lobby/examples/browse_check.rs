@@ -15,6 +15,7 @@ async fn main() {
     let lobby = |code: &str, locked| Lobby {
         code: code.into(),
         host: if locked { "LockedHost" } else { "OpenHost" }.into(),
+        name: if locked { "A Locked Room" } else { "An Open Room" }.into(),
         players: 1,
         max: 5,
         locked,

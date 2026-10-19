@@ -276,6 +276,12 @@ fn write_palette(core: &mut Core, pal: u32, p: &[u8; 32]) {
     }
 }
 
+/// One of the tag screens (the Tag Power's, CO SWAP) has the display: a full-screen scene of its own (the two COs, its band, its text), with
+/// no map in it, so every window shows it as the console draws it (crate::fog_view), fog or not.
+pub fn screen_up(core: &Core) -> bool {
+    core.raw_read_8(SCREEN_UP, -1) == 1 && core.raw_read_8(KIND, -1) != 0
+}
+
 fn screen_ram() -> crate::tag_screens::Ram {
     crate::tag_screens::Ram { up: SCREEN_UP, kept: SCREEN_KEPT, back: SCREEN_BACK }
 }

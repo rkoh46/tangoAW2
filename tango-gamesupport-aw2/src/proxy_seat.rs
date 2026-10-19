@@ -72,6 +72,8 @@ const MENU_ITEMS: u32 = 0x0300_14A1;
 /// have.
 const ITEM_OPTIONS: u8 = 4;
 const ITEM_YIELD: u8 = 1;
+/// The map menu's End item (End turn).
+const ITEM_END: u8 = 6;
 const ITEM_EXIT_MAP: u8 = 8;
 /// Terrain a cursor may stand on to open the map menu (plain, forest, road): nothing to select, nothing to build.
 const OPEN_TERRAIN: [u8; 3] = [1, 4, 5];
@@ -191,7 +193,14 @@ pub fn tick(core: &mut Core, keys: &mut [u32]) {
     }
     let mut seats = core.raw_read_8(SEATS, -1);
     for (s, k) in keys.iter_mut().enumerate().take(8) {
+        if tango_match::keys::command::is_pick(*k) {
+            // (half of a map pick, a seat's own word: see crate::unranked)
+            crate::unranked::pick_word(core, s, tango_match::keys::command::pick_half(*k));
+            *k = 0;
+            continue;
+        }
         if *k & COMMAND_BITS != COMMAND_BITS {
+            crate::unranked::pick_reset(core, s);
             continue;
         }
         match *k {
@@ -226,19 +235,69 @@ pub fn tick(core: &mut Core, keys: &mut [u32]) {
         let seat = crate::pvp::seat_of_n(a, m);
         (a, order.as_ref().and_then(|o| o.get(seat).copied()).unwrap_or(seat))
     });
+    // (the last army still in the match has the pad and the match is decided, but the game only looks at it when something
+    // happens: the console ends the turn for it, a tap at a time, which is when VICTORY! comes, see [`force_yield`])
+    let mut ending = false;
+    if let Some((army, seat)) = active {
+        if seats & (1 << seat) == 0 && crate::result_view::decided(core) && crate::result_view::alive(core, army) {
+            keys[seat] = yield_keys(core, army, true);
+            ending = true;
+        }
+    }
     for s in 0..n.min(8) {
         if seats & (1 << s) == 0 {
             continue;
         }
         keys[s] = match active {
-            Some((army, seat)) if seat == s => yield_keys(core, army),
+            Some((army, seat)) if seat == s => yield_keys(core, army, false),
             _ => {
-                rest(core);
+                // (the taps in progress are the ending turn's, if the match is decided)
+                if !ending {
+                    rest(core);
+                }
+                // (the player is gone and the pad is another army's: this seat's armies are yielded at once, out of turn)
+                force_yield(core, s, n, &order, active.map(|a| a.0));
                 0
             }
         };
     }
 }
+
+/// A seat under the yield command whose armies do not hold the pad (another player is mid-turn, or the screens that
+/// follow are up): the armies are yielded at once, the way the map menu's Yield sets it (the player block's yielded flag),
+/// so that the game's rules check ends them and the match does not wait for the departed player's turn to come, which can
+/// be as long as the other player takes over its own. Only in a battle (`mover` is the army that has the pad).
+fn force_yield(core: &mut Core, seat: usize, n: usize, order: &Option<Vec<usize>>, mover: Option<u8>) {
+    if mover.is_none() {
+        return;
+    }
+    let m = order.as_ref().map_or(n, |o| o.len());
+    for army in 1..=crate::five::armies(core).clamp(2, 5) {
+        if Some(army) == mover || !crate::result_view::alive(core, army) {
+            continue;
+        }
+        let slot = crate::pvp::seat_of_n(army, m);
+        let physical = order.as_ref().and_then(|o| o.get(slot).copied()).unwrap_or(slot);
+        if physical != seat {
+            continue;
+        }
+        // (what the game's own check does with a yielded army, `0x08028AEC` -> `0x08028874(army, 8)`: the day it was beaten on
+        // and why)
+        let block = crate::five::players(core) + PLAYER_STRIDE * army as u32;
+        core.raw_write_8(block + P_YIELDED, -1, 1);
+        core.raw_write_8(block + P_REASON, -1, REASON_YIELDED);
+        let day = core.raw_read_16(DAY, -1).max(1);
+        core.raw_write_16(block + P_DEFEATED, -1, day);
+    }
+}
+
+const PLAYER_STRIDE: u32 = 0x3C;
+/// A player block's yielded flag (the map menu's Yield sets it, the game's rules check then defeats the army).
+const P_YIELDED: u32 = 0x31;
+const P_DEFEATED: u32 = 0x14;
+const P_REASON: u32 = 0x13;
+const REASON_YIELDED: u8 = 8;
+const DAY: u32 = 0x0300_4080;
 
 /// Nothing to do for now: the counters start over.
 fn rest(core: &mut Core) {
@@ -255,7 +314,7 @@ fn rest(core: &mut Core) {
 }
 
 /// The keys this tick for the seat of `army`, which has the pad.
-fn yield_keys(core: &mut Core, army: u8) -> u32 {
+fn yield_keys(core: &mut Core, army: u8, end_turn: bool) -> u32 {
     if !crate::result_view::alive(core, army) {
         rest(core);
         return 0;
@@ -273,7 +332,7 @@ fn yield_keys(core: &mut Core, army: u8) -> u32 {
         }
         return key;
     }
-    let key = decide(core);
+    let key = decide(core, end_turn);
     if key != 0 && std::env::var_os("AW2_PROXY_LOG").is_some() {
         eprintln!(
             "proxy: army {army} taps {key:#x} (cursor {},{} menu state {} row {} items {:?} loop {:08x})",
@@ -334,7 +393,7 @@ fn nearest_open(core: &Core, cx: i32, cy: i32) -> Option<(i32, i32)> {
 }
 
 /// What to tap now, or 0 to let the screen settle.
-fn decide(core: &mut Core) -> u32 {
+fn decide(core: &mut Core, end_turn: bool) -> u32 {
     // Progress: whatever the screen shows changed since the last look (a stuck yield backs out after ten seconds).
     let (cx, cy) = (core.raw_read_16(CURSOR, -1) as u32, core.raw_read_16(CURSOR + 2, -1) as u32);
     let sig = core.raw_read_8(MENU_STATE, -1) as u32
@@ -371,7 +430,13 @@ fn decide(core: &mut Core) -> u32 {
     if let Some(items) = menu_items(core) {
         let row = core.raw_read_8(MENU_CURSOR, -1) as usize;
         // (the Options menu has Exit Map, the map menu has not)
-        let want = if items.contains(&ITEM_EXIT_MAP) { ITEM_YIELD } else { ITEM_OPTIONS };
+        let want = if end_turn {
+            ITEM_END
+        } else if items.contains(&ITEM_EXIT_MAP) {
+            ITEM_YIELD
+        } else {
+            ITEM_OPTIONS
+        };
         return match items.iter().position(|&i| i == want) {
             Some(r) if r == row => {
                 if want == ITEM_YIELD {

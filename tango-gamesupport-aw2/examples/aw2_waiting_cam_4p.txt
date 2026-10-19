@@ -3,6 +3,7 @@
 n 4
 until maparmies=4 100
 wait 60
+wait 0
 press 0 DOWN
 wait 10
 press 0 DOWN
@@ -13,14 +14,38 @@ press 1 DOWN
 wait 10
 press 1 DOWN
 wait 10
+press 1 DOWN
+wait 10
+press 1 DOWN
+wait 10
 press 1 A
 wait 20
 press 2 DOWN
 wait 10
 press 2 DOWN
 wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
+press 2 DOWN
+wait 10
 press 2 A
 wait 20
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
+press 3 DOWN
+wait 10
 press 3 DOWN
 wait 10
 press 3 DOWN

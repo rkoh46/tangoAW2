@@ -89,6 +89,9 @@ const PENDING: u32 = STATE + 0xB4;
 pub const UI: u32 = STATE + 0xC0;
 /// Dual Strike's arrows' state (crate::tag_ui, crate::ds_coselect): STATE + 0xE0..0xEF, free. +0: 1 gives AW2's own arrows on the Teams and CO screens although Dual Strike map graphics are on (a development byte, for tools).
 pub const ARROWS: u32 = STATE + 0xE0;
+/// 1 from the moment Change swaps the COs until the next army's turn starts: the turn is over (a Change ends it, as End does: the game
+/// shows the next army's "Next turn" screen and the incoming player has the pad, see [`ended_by_change`]).
+const CHANGE_ENDED: u32 = STATE + 0xF0;
 pub const AW2_ARROWS: u32 = ARROWS;
 /// The keys the arrows' walks added to this frame's pad (u16, ARROWS + 8; the pad merge keeps them out of the keys it holds back as
 /// claimed, which the player may be holding down).
@@ -178,6 +181,11 @@ pub fn set_partner_charge(core: &mut Core, army: u32, v: u32) {
     if partner(core, army).is_some() {
         core.raw_write_32(rec(army) + P_CHARGE, -1, v);
     }
+}
+
+/// The turn has ended with Change (a swap of the COs), and the next army's turn has not begun.
+pub fn ended_by_change(core: &Core) -> bool {
+    core.raw_read_8(CHANGE_ENDED, -1) == 1
 }
 
 pub fn partner_uses(core: &Core, army: u32) -> u8 {
@@ -993,6 +1001,8 @@ fn landing(core: &mut Core) {
         S_SWAP => {
             power_off(core, army);
             swap(core, army);
+            // (Change ends the turn: the script's next command is the map menu's End, which leaves the menu's own state as it was)
+            core.raw_write_8(CHANGE_ENDED, -1, 1);
             return_to(core, 0);
         }
         S_CPU_SWAP => {
@@ -1026,6 +1036,10 @@ fn second_half(core: &mut Core, army: u32) {
 /// `StartArmyTurn`: the army's Tag Power (both halves) is over.
 const TURN_START: u32 = 0x0802_67AC;
 fn turn_start(core: &mut Core) {
+    // (the previous turn's end by Change is over with the next turn's start)
+    if core.raw_read_8(CHANGE_ENDED, -1) != 0 {
+        core.raw_write_8(CHANGE_ENDED, -1, 0);
+    }
     if !is_on(core) {
         return;
     }

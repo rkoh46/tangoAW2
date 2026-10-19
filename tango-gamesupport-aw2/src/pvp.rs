@@ -500,10 +500,14 @@ fn debug_dump(core: &Core) {
 const MAP_MENU_ITEMS: u32 = 0x0300_14A1;
 const MENU_END: u8 = 6;
 pub(crate) const MENU_POWER: u8 = 2;
+pub const MENU_SUPER: u8 = 3;
 /// The End row of the map menu last shown, plus one (0: none yet), then the item the cursor was last on, then the cell
 /// the cursor was last on while the map showed (x, y): the target of an attack when its scene starts.
 pub const END_ROW: u32 = 0x0203_C610;
 pub const LAST_CELL: u32 = END_ROW + 2;
+/// The item the cursor was last on in the MAP menu itself (the one that has End: the Intel and Options menus after it are menus of
+/// their own with ids of their own, which the item above also takes).
+pub const MAIN_ITEM: u32 = END_ROW + 4;
 
 /// Before every tick: keeps the row of End while the map menu shows it, and the cursor's cell while the map is up.
 pub(crate) fn track_menu(core: &mut Core) {
@@ -517,7 +521,8 @@ pub(crate) fn track_menu(core: &mut Core) {
     if core.raw_read_8(MAP_MENU_STATE, -1) != 4 || core.raw_read_8(MAP_MENU_ITEMS - 1, -1) != 0xFF {
         return;
     }
-    if let Some(row) = (0..8u32).find(|&r| core.raw_read_8(MAP_MENU_ITEMS + r, -1) == MENU_END) {
+    let main_menu = (0..8u32).find(|&r| core.raw_read_8(MAP_MENU_ITEMS + r, -1) == MENU_END);
+    if let Some(row) = main_menu {
         if core.raw_read_8(END_ROW, -1) != row as u8 + 1 {
             core.raw_write_8(END_ROW, -1, row as u8 + 1);
         }
@@ -528,11 +533,19 @@ pub(crate) fn track_menu(core: &mut Core) {
     if item != 0xFF && core.raw_read_8(END_ROW + 1, -1) != item {
         core.raw_write_8(END_ROW + 1, -1, item);
     }
+    if main_menu.is_some() && item != 0xFF && core.raw_read_8(MAIN_ITEM, -1) != item {
+        core.raw_write_8(MAIN_ITEM, -1, item);
+    }
+}
+
+/// The map menu's own item (not one of the menus after it) the cursor was last on, while a menu has been used.
+pub fn chosen_main_item(core: &Core) -> Option<u8> {
+    matches!(core.raw_read_8(MAP_MENU_STATE, -1), 4 | 5).then(|| core.raw_read_8(MAIN_ITEM, -1))
 }
 
 /// The map menu's item the cursor was last on (its id) while the menu showed, once it has been used (state 4 or 5; the
 /// caller tells the menu showing from the menu gone by its procs).
-pub(crate) fn chosen_item(core: &Core) -> Option<u8> {
+pub fn chosen_item(core: &Core) -> Option<u8> {
     matches!(core.raw_read_8(MAP_MENU_STATE, -1), 4 | 5).then(|| core.raw_read_8(END_ROW + 1, -1))
 }
 
@@ -544,7 +557,7 @@ pub(crate) fn current_defeated(core: &Core) -> bool {
 }
 
 pub(crate) fn turn_ended(core: &Core) -> bool {
-    current_defeated(core) || core.raw_read_8(MAP_MENU_STATE, -1) == 5 && {
+    current_defeated(core) || crate::tag::ended_by_change(core) || core.raw_read_8(MAP_MENU_STATE, -1) == 5 && {
         let end = core.raw_read_8(END_ROW, -1);
         end != 0 && core.raw_read_8(MAP_MENU_CURSOR, -1) + 1 == end
     }
@@ -576,7 +589,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 23: a seat that left the room is sent the yield command whatever it was doing (a guest who dropped in a battle, one that
         // was out of the match), and the room's next match is played by the seats still there (crate::proxy_seat roster).
         // 24: UNRANKED's standard rules stay on the Rules screen for three seconds before the match goes on (crate::unranked::RULES_SHOW).
-        24
+        // 25: the maps are picked at the same time and in private (two pad words a seat, crate::unranked::pick_word), and a seat under the yield
+        // command is yielded at once, out of turn, with the last army left ending its own turn (crate::proxy_seat::force_yield).
+        25
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {
@@ -731,6 +746,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         if crate::result_view::watching(core, seat) {
             return true;
         }
+        // (the maps are picked in private: every window is its own SELECT MAP, crate::unranked)
+        if crate::unranked::picking(core) {
+            return true;
+        }
         // (the match is decided: the winner's window and everything after VICTORY! is the console's own, never a held map)
         if crate::result_view::decided(core) {
             return false;
@@ -775,6 +794,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     }
 
     fn view_as(&self, scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) -> bool {
+        if crate::unranked::picking(scratch.core()) {
+            return crate::unranked::private_view(scratch, seat);
+        }
         if crate::result_view::loser(scratch.core(), seat) {
             return crate::result_view::view(scratch, seat);
         }

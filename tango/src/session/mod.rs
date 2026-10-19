@@ -455,6 +455,8 @@ impl State {
         let c = match code {
             Code::Backspace => 8,
             Code::Enter | Code::NumpadEnter => 13,
+            // (a space: a gamertag's and a room's name; the game ignores it where there are none, and at the start or twice)
+            Code::Space => b' ',
             c => {
                 let name = format!("{c:?}");
                 // (only on the code's pages: Z and X are the pad's A and B elsewhere)

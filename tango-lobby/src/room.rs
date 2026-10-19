@@ -70,6 +70,8 @@ pub struct RoomParams {
     pub resume: Option<ResumeParams>,
     /// A guest: how long it looks for the host (seconds; 0 is the usual [`GUEST_DEADLINE`]).
     pub join_seconds: u32,
+    /// The room's name, the host's (a guest learns it from the roster; "" is none).
+    pub name: String,
 }
 
 /// A suspended match a room is made to resume (the host's copy of it).
@@ -161,6 +163,8 @@ pub struct RoomView {
     pub resuming: bool,
     /// The host: how many guests have said they are leaving (a guest may come and go between two looks at the view).
     pub said_leave: u32,
+    /// The room's name ("" while a guest has not been welcomed yet, or from a host that has none).
+    pub name: String,
 }
 
 /// A room's match, ready to be played: everything the session needs from the lobby.
@@ -264,6 +268,8 @@ struct Inner {
     // A guest's side.
     welcomed: bool,
     roster: Vec<RoomPlayer>,
+    /// The room's name a host told (a guest's).
+    room_name: String,
     my_seat: usize,
     my_ready: bool,
     to_host: Option<tokio::sync::mpsc::UnboundedSender<RoomMsg>>,
@@ -340,6 +346,7 @@ impl Room {
                 next_id: 1,
                 welcomed: false,
                 roster: Vec::new(),
+                room_name: String::new(),
                 my_seat: 0,
                 my_ready: false,
                 to_host: None,
@@ -425,6 +432,7 @@ impl Room {
             waiting_for,
             resuming: g.params.resume.is_some(),
             said_leave: g.said_leave,
+            name: if g.host { g.params.name.clone() } else { g.room_name.clone() },
         }
     }
 
@@ -549,16 +557,18 @@ fn peer_seat(g: &Inner, index: usize) -> u8 {
 
 /// Tell every guest who is in the room (each its own seat).
 fn broadcast_roster(inner: &Arc<Mutex<Inner>>) {
-    let (roster, senders): (Vec<RoomPlayer>, Vec<_>) = {
+    let (roster, senders, name): (Vec<RoomPlayer>, Vec<_>, String) = {
         let g = inner.lock().unwrap();
         (
             roster_of(&g),
             (0..g.peers.len()).map(|k| (peer_seat(&g, k), g.peers[k].sender.clone())).collect(),
+            g.params.name.clone(),
         )
     };
     for (seat, sender) in senders {
         let msg = Packet::Room(RoomMsg::Roster(RoomRoster {
             seat,
+            name: name.clone(),
             players: roster.clone(),
         }));
         tango_platform::spawn(async move {
@@ -775,6 +785,7 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
         let seat = g.peers.iter().position(|p| p.id == id).map_or(1, |k| peer_seat(&g, k));
         Packet::Room(RoomMsg::Welcome(RoomRoster {
             seat,
+            name: g.params.name.clone(),
             players: roster_of(&g),
         }))
     };
@@ -1189,6 +1200,7 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
         g.phase = RoomPhase::Open;
         g.message.clear();
         g.my_seat = welcome.seat as usize;
+        g.room_name = welcome.name;
         g.roster = welcome.players;
         g.to_host = Some(to_host);
         // (a READY pressed before the welcome)
@@ -1246,6 +1258,7 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                     Ok(Packet::Room(RoomMsg::Roster(r))) => {
                         let mut g = inner.lock().unwrap();
                         g.my_seat = r.seat as usize;
+                        g.room_name = r.name;
                         g.roster = r.players;
                     }
                     Ok(Packet::Room(RoomMsg::Start(s))) => {

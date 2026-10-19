@@ -32,6 +32,7 @@
 
 use std::sync::LazyLock;
 pub mod hold;
+pub mod private;
 pub mod save;
 pub use save::{AppliedPatch, PreparedSave, Validation};
 

@@ -52,6 +52,20 @@ pub trait Scratch {
     /// The seat's window is to show the console's own picture of this tick (taken before any scratch run), not the
     /// scratch console's: for a scene every seat that may see it is shown as it is.
     fn show_console(&mut self);
+    /// The session's seat this window is (the game's own count of seats may differ once players have left).
+    fn physical_seat(&self) -> usize;
+    /// The ticks the console has played (the scratch run is made at this one).
+    fn console_tick(&self) -> u32;
+    /// A seat that works in private (a map picked before the others see it) keeps a console of its own between two looks: loads it
+    /// into the scratch console, or false when there is none yet (the scratch console then is the shared console's state as of
+    /// now, the private one's start).
+    fn load_private(&mut self) -> bool;
+    /// Keeps the scratch console as the seat's own private console.
+    fn save_private(&mut self);
+    /// The seat's private console ends.
+    fn drop_private(&mut self);
+    /// The sound the scratch run made is the seat's to hear, in place of the console's for the same time.
+    fn keep_audio(&mut self);
 }
 
 struct ScratchConsole<'a> {
@@ -61,6 +75,10 @@ struct ScratchConsole<'a> {
     memory: &'a mut [i32; 4],
     kept: Option<&'a mgba_rollback::Snapshot>,
     console_pick: bool,
+    private: &'a mut Option<mgba_rollback::Snapshot>,
+    physical: usize,
+    tick: u32,
+    audio: bool,
 }
 
 thread_local! {
@@ -98,6 +116,27 @@ impl Scratch for ScratchConsole<'_> {
     }
     fn show_console(&mut self) {
         self.console_pick = true;
+    }
+    fn physical_seat(&self) -> usize {
+        self.physical
+    }
+    fn console_tick(&self) -> u32 {
+        self.tick
+    }
+    fn load_private(&mut self) -> bool {
+        match self.private.as_ref() {
+            Some(snap) => self.link.load(snap).is_ok(),
+            None => false,
+        }
+    }
+    fn save_private(&mut self) {
+        *self.private = self.link.save().ok();
+    }
+    fn drop_private(&mut self) {
+        *self.private = None;
+    }
+    fn keep_audio(&mut self) {
+        self.audio = true;
     }
 }
 
@@ -349,6 +388,8 @@ pub struct SharedLink {
     /// The console as [`SharedGame::keep_for_view`] last asked to keep it.
     kept: Option<mgba_rollback::Snapshot>,
     keep_was: bool,
+    /// Each seat's private console ([`Scratch::save_private`]): between two looks at a window that works in private.
+    private: [Option<mgba_rollback::Snapshot>; tango_match::MAX_SEATS],
 }
 
 impl SharedLink {
@@ -419,6 +460,7 @@ impl SharedLink {
             view_memory: Default::default(),
             kept: None,
             keep_was: false,
+            private: Default::default(),
         })
     }
 
@@ -469,6 +511,7 @@ impl SharedLink {
             view_memory: Default::default(),
             kept: None,
             keep_was: false,
+            private: Default::default(),
         })
     }
 
@@ -558,10 +601,30 @@ impl SharedLink {
         self.inner.set_frameskip(0, 0);
         let mut frame = None;
         let mut picked = false;
+        let mut own_audio: Option<Vec<i16>> = None;
         {
-            let mut scratch = ScratchConsole { link: &mut self.inner, game, mode, memory: &mut self.view_memory[seat], kept: self.kept.as_ref(), console_pick: false };
+            let mut scratch = ScratchConsole {
+                link: &mut self.inner,
+                game,
+                mode,
+                memory: &mut self.view_memory[seat],
+                kept: self.kept.as_ref(),
+                console_pick: false,
+                private: &mut self.private[seat],
+                physical: seat,
+                tick: self.tick,
+                audio: false,
+            };
             let shown = game.view_as(&mut scratch, game_seat);
             picked = scratch.console_pick;
+            if scratch.audio {
+                // (the sound of the seat's own console: what it heard while working in private, in place of the shared console's)
+                let buf = scratch.link.core_mut(0).audio_buffer();
+                let n = buf.available();
+                let mut v = vec![0i16; n * 2];
+                buf.read(&mut v, n);
+                own_audio = Some(v);
+            }
             if shown {
                 frame = if scratch.console_pick { self.console_frame.as_ref().map(|(f, _)| f.clone()) } else { scratch.link.video_buffer(0).map(to_rgba) };
                 // (a picture caught in a screen fade, forced blank or black is no picture: the last good one stays)
@@ -579,6 +642,16 @@ impl SharedLink {
         self.picked_console = picked;
         let _ = self.inner.load(&snap);
         game.scratch_unstash(stash);
+        let kept = match own_audio {
+            Some(mut own) => {
+                // (as long as what it replaces, so that the sound does not run ahead or behind)
+                if own.len() < kept.len() {
+                    own.extend_from_slice(&kept[own.len()..]);
+                }
+                own
+            }
+            None => kept,
+        };
         {
             let buf = self.inner.core_mut(0).audio_buffer();
             buf.clear();
@@ -755,6 +828,12 @@ impl SharedSide<'_> {
                 self.link.game.overlay_notice(self.link.inner.core(0), &mut f);
                 return Some((f, "watch"));
             }
+        }
+        // (a seat that is not working in private any more has no console of its own, and the pictures it held were its private ones: the
+        // next time its window cannot be made it shows the console's, not the last SELECT MAP it had)
+        if self.link.private[self.player].take().is_some() {
+            self.link.watched[self.player] = None;
+            self.link.watched_at[self.player] = None;
         }
         if debug_view() && self.conceal && self.link.tick % 30 == 0 {
             let w = self.link.game.watching(self.link.inner.core(0), gseat);

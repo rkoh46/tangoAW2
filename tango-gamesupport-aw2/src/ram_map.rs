@@ -53,7 +53,7 @@ pub const DS_AI: Region = (0x0203_C700, 0x100);
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
-    ("the map menu's End row (crate::pvp::END_ROW)", (crate::pvp::END_ROW, 4)),
+    ("the map menu's End row, the item chosen, the last cell and the map menu's own item (crate::pvp::END_ROW)", (crate::pvp::END_ROW, 5)),
     ("the waiting player's fog view: scratch call (crate::fog_view)", (crate::fog_view::CALL, 0x58)),
     ("CO skills' data (crate::co_skills::DATA)", (0x0203_E000, 0x3C6)),
     ("Grand Bolt's borrowed palette (crate::grand_bolt::BORROWED)", (0x0203_E3C8, 0x24)),
@@ -82,7 +82,8 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Dual Strike's CPU", DS_AI),
     ("online: the in-game lobby, its mailbox, an online match's walk (crate::online::STATE)", (crate::online::STATE, crate::online::STATE_LEN)),
     ("a seat that is not there: its yield and the room's host seat (crate::proxy_seat)", (crate::proxy_seat::BASE, crate::proxy_seat::LEN)),
-    ("online: the lobby browser's rows (crate::online_browse::STATE)", (crate::online_browse::STATE, crate::online_browse::STATE_LEN)),
+    ("online: the lobby browser's state (crate::online_browse::STATE)", (crate::online_browse::STATE, crate::online_browse::STATE_LEN)),
+    ("online: the lobby browser's rows (crate::online_browse::ROWS)", (crate::online_browse::ROWS, crate::online_browse::ROWS_LEN)),
     ("online: the gamertag, the record's lines and a room battle's notes (crate::online_stats)", (crate::online_stats::BASE, crate::online_stats::LEN)),
     ("online: the connection status and its page (crate::online_conn)", (crate::online_conn::BASE, crate::online_conn::LEN)),
     ("online: each seat's CO, colour and partner choices in a room (crate::online_teams::SEL)", (crate::online_teams::SEL, crate::online_teams::SEL_LEN)),

@@ -452,6 +452,23 @@ pub fn tab_titles(n: usize) -> (String, String) {
     (format!("{n}P"), format!("{n}P Predeploy"))
 }
 
+/// Whether the map `id` is one a room offers (it is on one of the room's two tabs: its count of armies, plain or pre-deployed): a
+/// private pick is checked with this, since the shared console's list holds only the tab it is on.
+pub fn offered(core: &Core, id: u8) -> bool {
+    if !owns(core) {
+        return false;
+    }
+    let n = crate::online_teams::players(core);
+    let (plain, pre) = tabs_for(n);
+    let table = crate::five_map::table(core);
+    if id as u32 > last_id(table) {
+        return false;
+    }
+    let h = table + 0x5C * id as u32;
+    let tab = core.raw_read_16(h + 0x1A, -1);
+    rom(core.raw_read_32(h, -1)) && (tab == plain || tab == pre)
+}
+
 /// A room's match: every frame (after [`crate::five_map::show_maps`]), every Versus map's tab for the room's count.
 pub fn retab(core: &mut Core) {
     if !owns(core) {

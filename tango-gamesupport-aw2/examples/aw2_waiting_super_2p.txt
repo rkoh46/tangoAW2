@@ -1,0 +1,38 @@
+# 2 seats, Fog on: army 1 has a full CO meter and uses the Super CO Power (the menu's fourth item). Run: AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> this-file; with fog every seat but the mover shows the full-screen cut-in (the console's picture) and, for the rest of the scene, its own map and never the mover's; exit 1 otherwise.
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+until teams 100
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 DOWN
+press 0 A
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+aid meter 1 400
+wait 5
+press 0 B
+wait 20
+press 0 A
+wait 80
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 A
+wait 800
+fv

@@ -461,9 +461,10 @@ impl HostAgg {
         if link >= self.guests || self.gone[link] {
             return Vec::new();
         }
-        // (no pad makes a command word: a real one that looks like it loses a direction)
+        // (no pad makes a command word: a real one that looks like it loses a direction; the words of a guest's own map pick are
+        // the one shape that stays, tangoAW2's simultaneous map picks)
         let mut input = input;
-        input.joyflags = tango_match::keys::command::strip(input.joyflags as u32) as u16;
+        input.joyflags = tango_match::keys::command::strip_unless_pick(input.joyflags as u32) as u16;
         self.queues[link].push_back(input);
         self.heard[link] = true;
         self.complete()
@@ -810,6 +811,11 @@ impl PvpDriver {
                 self.keys_released = true;
             }
             local.keys = 0;
+        }
+        // (the keys the seat holds, for the private view of its window: tangoAW2's simultaneous map picks)
+        tango_gamesupport::private::set_keys(self.ctx.local_player, local.keys);
+        if let Some(word) = tango_gamesupport::private::next_word(self.ctx.local_player) {
+            local.keys = word;
         }
         if std::mem::take(&mut self.host_command) {
             local.keys = tango_match::keys::command::HOST;
@@ -1275,10 +1281,14 @@ mod tests {
         let r = agg.ingest(1, input(0x30));
         assert_eq!(r[0].0.keys, 0, "and is idle after");
         // a guest's real word that looks like a command is not one
-        for forged in [command::YIELD as u16, command::HOST as u16, 0x3FF] {
+        for forged in [command::YIELD as u16, command::HOST as u16, 0x1F0 | 0x08, 0x2F0 | 0x01] {
             let r = agg.ingest(1, input(forged));
             assert!(!command::is(r[0].0.extra[0] as u32), "{forged:#x} got through");
         }
+        // (the one shape a guest does send itself is half of a map pick, which stays: all keys at once is that shape, and a map
+        // that is not in the list is no pick, see `unranked`)
+        let r = agg.ingest(1, input(command::pick_word(0x15) as u16));
+        assert_eq!(r[0].0.extra[0] as u32, command::pick_word(0x15));
         // a host that was out is told to the console as well: it has no armies to yield, but its seat is gone from the room
         let mut agg = HostAgg::migrated(3, 1, 1 << 0, vec![]);
         assert_eq!(agg.ingest(1, input(0x20))[0].0.keys, command::YIELD);

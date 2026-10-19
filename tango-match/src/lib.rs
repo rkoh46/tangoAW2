@@ -123,7 +123,7 @@ pub mod keys {
     /// all four directions down at once, which no pad makes, is a command and not keys. The session strips that shape from
     /// every real word ([`strip`]), so only the host's own joining makes one.
     pub mod command {
-        use super::{A, B, DOWN, LEFT, RIGHT, UP};
+        use super::{A, B, DOWN, L, LEFT, R, RIGHT, START, UP};
 
         /// The four directions together.
         pub const BITS: u32 = UP | DOWN | LEFT | RIGHT;
@@ -131,6 +131,33 @@ pub mod keys {
         pub const HOST: u32 = BITS | A;
         /// Play the seat that sends it: the player is gone, its armies yield when their turns come.
         pub const YIELD: u32 = BITS | B;
+
+        /// A seat's choice of a map, made in private on its own window (tangoAW2's simultaneous map picks): the choice's two halves
+        /// (an id of up to ten bits) follow each other in the seat's own words, five bits each, in the keys that are not
+        /// directions: A, B, START, R and L. The word is [`BITS`] and SELECT with the five bits. Unlike the host's commands, a guest
+        /// sends these itself: the host's session lets them through ([`strip_unless_pick`]).
+        pub const PICK: u32 = BITS | super::SELECT;
+
+        /// The word that carries `half` (five bits) of a pick.
+        pub fn pick_word(half: u8) -> u32 {
+            let h = (half & 0x1F) as u32;
+            PICK | (h & 1) * A | (h >> 1 & 1) * B | (h >> 2 & 1) * START | (h >> 3 & 1) * R | (h >> 4 & 1) * L
+        }
+
+        /// Whether a word carries half of a pick.
+        pub fn is_pick(word: u32) -> bool {
+            word & PICK == PICK
+        }
+
+        /// The five bits a pick word carries.
+        pub fn pick_half(word: u32) -> u8 {
+            ((word & A) | (word & B) | (word & START) >> 1 | (word & R) >> 5 | (word & L) >> 5) as u8
+        }
+
+        /// The two words of a pick of the map `id` (below 1024), high half first.
+        pub fn pick_words(id: u16) -> [u32; 2] {
+            [pick_word((id >> 5 & 0x1F) as u8), pick_word((id & 0x1F) as u8)]
+        }
 
         /// Whether a word is a command.
         pub fn is(word: u32) -> bool {
@@ -145,5 +172,41 @@ pub mod keys {
                 word
             }
         }
+
+        /// [`strip`], but a word that carries half of a pick is a guest's own and stays (a session reads its guests' words with this).
+        pub fn strip_unless_pick(word: u32) -> u32 {
+            if is_pick(word) {
+                word
+            } else {
+                strip(word)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod pick_command_tests {
+    use super::keys::command::*;
+
+    #[test]
+    fn a_pick_is_two_words_and_round_trips_for_every_map_id() {
+        for id in 0u16..1024 {
+            let [hi, lo] = pick_words(id);
+            assert!(is(hi) && is(lo) && is_pick(hi) && is_pick(lo));
+            assert_ne!(hi & super::keys::MASK, HOST);
+            assert_eq!(((pick_half(hi) as u16) << 5) | pick_half(lo) as u16, id, "{id}");
+            // (the words survive the session's reading of a guest's words, and not the stripping of a real pad's)
+            assert_eq!(strip_unless_pick(hi), hi);
+            assert_ne!(strip(hi), hi);
+        }
+    }
+
+    #[test]
+    fn host_and_yield_are_not_picks_and_are_still_stripped_from_a_guest() {
+        assert!(!is_pick(HOST) && !is_pick(YIELD));
+        assert_eq!(strip_unless_pick(HOST), strip(HOST));
+        assert_eq!(strip_unless_pick(YIELD), strip(YIELD));
+        // a plain word is untouched
+        assert_eq!(strip_unless_pick(0x155), 0x155);
     }
 }

@@ -28,6 +28,8 @@ pub struct DebugAids {
     pad: Option<Pad>,
     /// Screenshots a pad script asked for (`shot <path>`).
     script_shots: Vec<PathBuf>,
+    /// Text a pad script typed (`type TEXT`), for the in-game lobby's typing pages.
+    script_typed: Vec<String>,
     /// Test run directory (`TANGOAW2_RUN_DIR`, with `TANGOAW2_RUN_SEAT` and `TANGOAW2_RUN_SHOT_HZ`): the window's
     /// picture `s<seat>_<NNNN>.png` at a steady rate, beside the game state dump (tango-gamesupport-aw2 `run_dump`).
     run: Option<RunDir>,
@@ -61,6 +63,8 @@ enum Op {
     JumpIf(String, String),
     /// Walk the map cursor to the cell (the keys are chosen from where it is), for this many seconds at most.
     Goto(u32, u32, f64),
+    /// `type TEXT`: the characters go into the in-game lobby's typing page as the keyboard's would (an underscore is a space).
+    Type(String),
 }
 
 struct Pad {
@@ -224,6 +228,7 @@ fn parse_script(text: &str) -> Result<Vec<Vec<Op>>, String> {
             },
             ["shot", path] => ops.push(Op::Shot(PathBuf::from(path))),
             ["log", rest @ ..] => ops.push(Op::Log(rest.join(" "))),
+            ["type", text] => ops.push(Op::Type(text.replace('_', " "))),
             _ => return bad("unknown or malformed line"),
         }
     }
@@ -269,6 +274,7 @@ impl DebugAids {
             exit_after: std::env::var("TANGOAW2_SCREENSHOT_EXIT").is_ok_and(|v| v == "1"),
             pad,
             script_shots: Vec::new(),
+            script_typed: Vec::new(),
             run: Self::run_from_env(),
         }
     }
@@ -326,6 +332,11 @@ impl DebugAids {
         self.shots[i].2 = true;
         let last = self.shots.iter().all(|s| s.2);
         Some((self.shots[i].1.clone(), last && self.exit_after))
+    }
+
+    /// Text a pad script typed, if any is waiting.
+    pub fn take_script_typed(&mut self) -> Option<String> {
+        self.script_typed.pop()
     }
 
     /// A screenshot a pad script asked for, if one is waiting.
@@ -474,6 +485,11 @@ impl DebugAids {
                 }
                 Op::Shot(path) => {
                     self.script_shots.push(path.clone());
+                    pad.at += 1;
+                    pad.done = 0;
+                }
+                Op::Type(text) => {
+                    self.script_typed.push(text.clone());
                     pad.at += 1;
                     pad.done = 0;
                 }

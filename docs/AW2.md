@@ -4447,6 +4447,49 @@ tests). Online play starts in the game, played alone:
     ends with the match saved. A host that thaws after the room moved on sees its normal 60 s box and then the saved match.
     The departed seat never READYs, so a migrated room does not start another match (B returns to the lobby).
 
+### 0.8.5: private map picks, room names, rejoining a lobby match, out-of-turn yields (simulation version 25)
+
+- **Private, simultaneous map picks** (`unranked.rs`, `tango-backend-mgba/src/shared.rs`, `tango-gamesupport/src/private.rs`). Every seat picks at
+  the same time. Each window runs a SELECT MAP of its own: `private_view` keeps a console per seat between frames (`Scratch::load_private` /
+  `save_private`, started from the shared console's state, driven by the keys of its own seat only: `private::set_keys` by the session every tick,
+  `take_keys` by the view), so nobody sees another's cursor, tab or pick, and the game's own list, preview, counters and cursor sound are the
+  seat's own (the private console's audio replaces the shared console's for the time it ran). The shared console idles on SELECT MAP (`merge`
+  gives it no keys) and gets only the pick: A on the map under the private cursor queues the map's id as two pad words
+  (`tango_match::keys::command::pick_words`: four directions + SELECT with five bits each, A B START R L), which the session puts in the seat's own
+  input in its next two ticks (`private::next_word`, the driver) and the host's session lets through from guests
+  (`strip_unless_pick`; the host's commands are still stripped). The simulation reads them in `proxy_seat::tick` (`unranked::pick_word`: a word
+  between the halves that is no pick word drops the half), checks the id against the room's two tabs (`online_maps::offered`) and notes it
+  (`PICKED` mask, `PICKS` count); with the last pick the draw is made exactly as before (frame counter and maps mixed) and the roulette
+  is unchanged (????? per gamertag, reveal, 9 s hold). The plate says "Pick a map: press A" or "Waiting for <name>...", "Picks: 2 of 4" and the
+  clock; once a seat has picked its list column is a roster with a tick for each gamertag that has (never a map). The 120 s clock stays: each
+  window picks the map under its cursor when it runs out; a seat whose client never answers is given the list's first map 15 s later by the
+  simulation (`GRACE_SECONDS`). A round counter (`ROUND`) restarts the private views when the seats propose again. UNRANKED uses the same.
+- **Room names.** CREATE asks for a ROOM NAME first (level 13 on the same QWERTY grid, up to 12 characters; nothing typed is "<gamertag>'s
+  room"), then the password. The name is in the Nostr announcement (`"r"`; an announcement without one, 0.8.4's, is listed by its host's
+  gamertag), the roster messages (`RoomRoster::name`), the lobby list's rows, the room page's heading and the rejoin box / JOIN list line.
+  **Spaces** are allowed in room names and gamertags (a SPACE bar between Del and OK on those pages, the keyboard's space bar too); they are
+  kept one at a time, none at either end (`online::clean_name`, the same everywhere: the console, the app, the announcement). Room codes
+  and passwords have no space bar.
+- **R on the lobby browser** looks again, at most once every 5 s (`App::online_browse_refresh`): a press sooner shows "Refreshing..." and
+  reuses the query in flight; the new query replaces the list when a relay has answered; "Updated" shows for two seconds.
+- **Rejoining a lobby match** (`tango/src/unranked_live.rs`, `App::online_rejoin_tick`). The live file now exists for every room match (it
+  holds the room's name). Within the 60 s window the stayers' apps make a way back: the stayer with the lowest seat opens a room with its newest
+  settled console state (`ResumeParams`), the other stayers join it at once and wait ready, the returning player joins it from its new
+  launch (the box "Your match in <room> is still on. Rejoin? A: Rejoin B: Give up START: Later", also "<room> - In progress" above "Enter a
+  code" on the JOIN list); with everybody in, every console goes on from that state in a new session. Works when the host is the one who
+  dropped (the lowest stayer hosts the rejoin room). One player waited for at a time; with a seat that left earlier (`gone`) nobody can be seated as
+  they were, and the window just ends in the yield. After the window: "Your match in <room> ended: your army yielded." once. Started matches
+  are never listed to others.
+- **A yield does not wait for a turn.** A seat under the yield command whose army does not hold the pad is yielded at once
+  (`proxy_seat::force_yield`: the game's own `0x08028874(army, 8)`: day and reason in the player block), and when that leaves one team the
+  console ends the turn of the army that has the pad by itself (a tap at a time, End from the map menu), which is when VICTORY! comes. A 2P
+  lobby match whose host dropped now ends as an UNRANKED one does (every room, of two or more players, can migrate; a room of two
+  plays on alone): the 0.8.4 behaviour left the staying player idle in their own turn for as long as they liked. Harness:
+  `aw2_proxy_yield_idle_2p.txt`; live: `scen.py g2i|g2h|g2k`.
+- **CO SWAP and the Tag Power on the waiting windows.** While one of the tag screens has the display (`tag_extras::screen_up`: full screen, no map) every
+  window shows it as the console draws it, fog or not (`fog_view::view_inner`). Harness: `aw2_waiting_tag_2p.txt`,
+  `aw2_waiting_tagpower_2p.txt` (with `TANGOAW2_DS_ROM`).
+
 ## Across networks (relay, impairment, the room page's link line)
 
 Windows on one machine connect over host and loopback candidates and hide every NAT problem. What is known, and how

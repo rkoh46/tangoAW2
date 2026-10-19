@@ -112,6 +112,7 @@ impl PvpSession {
         let suspend_sink = room.as_ref().and_then(|r| r.suspend_sink.clone());
         let unranked = room.as_ref().is_some_and(|r| r.unranked);
         let on_leave = room.as_ref().and_then(|r| r.on_leave.clone());
+        let rejoin = room.as_ref().is_some_and(|r| r.rejoin);
         let extra_parts = room.map(|r| r.extra_links).unwrap_or_default();
         let mut links = vec![Arc::new(
             tango_net::link::Link::bring_up(pre_match.link_parts, IN_MATCH_HEARTBEAT, cancellation_token.clone())
@@ -125,8 +126,11 @@ impl PvpSession {
         let link = links[0].clone();
         let in_matches: Vec<tango_net::InMatchTx> = links.iter().map(|l| l.in_match().clone()).collect();
 
+        // (no pick or key of an earlier match is left for the private views of this one)
+        tango_gamesupport::private::reset();
         let end = EndState::default();
         end.unranked.store(unranked, Ordering::Release);
+        end.rejoin.store(rejoin, Ordering::Release);
         if let Some(m) = room_meta.as_ref() {
             end.host_seat.store(m.2 as u8, Ordering::Release);
         }
@@ -316,10 +320,10 @@ impl PvpSession {
             })
         });
         let links_shared = Arc::new(Mutex::new(links.clone()));
-        // A room of more than two players whose links come from the matchmaking server can go on without its host.
+        // A room (of two or more players) whose links come from the matchmaking server can go on without its host.
         let mig = room_meta
             .as_ref()
-            .filter(|m| m.0.len() > 2 || unranked)
+            .filter(|m| m.0.len() >= 2)
             .zip(link.matchmaking())
             .map(|(m, (endpoint, use_relay, seed))| {
                 Arc::new(super::migrate::MigHandle {

@@ -139,6 +139,15 @@ impl App {
                 if let Some(keys) = self.debug.pad_keys(seq, &mut cond) {
                     self.session.set_scripted_keys(keys);
                 }
+                if let (Some(text), Some(solo)) = (self.debug.take_script_typed(), solo) {
+                    let mut read = |a: u32, b: &mut [u8]| {
+                        solo.peek(a, b);
+                    };
+                    let mut write = |a: u32, b: &[u8]| {
+                        solo.poke(a, b);
+                    };
+                    tango_library::online::type_chars(&mut read, &mut write, text.as_bytes());
+                }
                 match self.debug.take_script_shot() {
                     Some(path) => iced::window::latest()
                         .and_then(iced::window::screenshot)

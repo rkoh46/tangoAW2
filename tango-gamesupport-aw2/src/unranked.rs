@@ -8,9 +8,7 @@
 //!
 //! 1. **Picks.** The game's own SELECT MAP (its tabs for the room's count, "3P" and "3P Predeploy", the list, the
 //!    picture and the counters: [`crate::online_maps`] shows only the maps for as many armies as there are players)
-//!    is played by the players one after the other: seat 0 first, then seat 1 and so on. While a seat picks, only its
-//!    keys reach the game ([`merge`]; A, B and START are kept from it: A is the pick, recorded by [`tick`] from the
-//!    map under the cursor) and the others watch the same screen with "Waiting for the others..." in the bar.
+//!    is played by every player at the same time, each in private (see below); A picks the map under the cursor.
 //! 2. **The draw.** When every seat has picked, one of the maps is the match's: the seat is drawn from a free-running
 //!    frame counter at the last pick (the console is the same on every peer, so the draw is too, also in a replay and
 //!    a rollback). The map is then walked to in the game's list by pressing for the players ([`drive`]) and chosen
@@ -21,6 +19,14 @@
 //!    presses A ([`RULES`] says which). A room's host plays it.
 //! 5. **Battle**, then the results, and the match ends back at SELECT MAP ([`crate::online::match_over`]; UNRANKED
 //!    logs `unranked: the match ended`). A room goes on to propose again.
+//!
+//! **Private picks** (0.8.5). Every seat picks at the same time and in private: each window runs a SELECT MAP of its own ([`private_view`]: a
+//! console of its own, kept between two frames, started from the shared console's state), driven by the keys of its own seat only, so
+//! that nobody sees another's cursor, tab or pick; the windows show only the plate with the picks made and who is waited for. The shared
+//! console idles on SELECT MAP. Only the final pick, the map's id, reaches it: two pad words in the seat's own input stream
+//! (`tango_match::keys::command::pick_words`, read by [`pick_word`]), so rollback, replays and every peer see the same. Each client picks
+//! the map under its own cursor when the time is up; a seat whose client never answers is given the list's first map a few seconds
+//! later by the simulation itself ([`GRACE_SECONDS`]).
 //!
 //! The state is in EWRAM ([`STATE`]) so that rollback and replays carry it.
 
@@ -73,8 +79,18 @@ const REVEAL_FRAMES: u16 = (REVEAL_SECONDS * 60) as u16;
 const REVEAL_SETTLE: u8 = 45;
 /// Frames the game's cursor sits on the drawn map before the game is told to choose it.
 const REVEAL_AFTER: u8 = 10;
-/// Frames of the current player's pick so far (u16, even address).
+/// Frames the maps have been picked for (u16, even address): the time everyone has.
 const PICK_T: u32 = STATE + 0x46;
+/// The seats that have picked (a bit each, the console's seat order), and which round of picks this is (counts up when the seats
+/// propose again; it is not cleared by [`restart`]).
+const PICKED: u32 = STATE + 0x4C;
+const ROUND: u32 = STATE + 0x4D;
+/// 1 in a window's private console once the seat has picked, before the shared console says so (presentation only).
+const LOCAL_PICKED: u32 = STATE + 0x4E;
+/// The first half of a pick each seat has sent, plus one (0 none; the physical seats).
+const HALF: u32 = STATE + 0x50;
+/// How long past the time a seat whose client has not picked is waited for; then the simulation picks the list's first map for it.
+pub const GRACE_SECONDS: u32 = 15;
 
 fn pick_frames() -> u32 {
     static F: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
@@ -126,10 +142,23 @@ pub fn set_state(core: &mut Core, picks: u8, maps: [u8; 2], phase: u8, pick: u8)
     core.raw_write_8(PHASE, -1, phase);
     core.raw_write_8(PICK, -1, pick);
     core.raw_write_8(PICKS, -1, picks);
+    core.raw_write_8(PICKED, -1, ((1u16 << picks) - 1) as u8);
     core.raw_write_8(CHOSEN, -1, maps[pick as usize % 2]);
     for s in 0..2 {
         core.raw_write_8(seat(s) + S_MAP, -1, maps[s]);
     }
+}
+
+/// Test aid (the text audit): the seats are picking, `mask` have picked (as the shared console has it), this seat has (in its own console)
+/// or not, and `left` seconds of the time are left.
+pub fn set_picking(core: &mut Core, mask: u8, local_picked: bool, left: u32) {
+    core.raw_write_range(STATE, -1, &[0u8; STATE_LEN as usize]);
+    core.raw_write_8(PROPOSE, -1, 1);
+    core.raw_write_8(PHASE, -1, 0);
+    core.raw_write_8(PICKED, -1, mask);
+    core.raw_write_8(PICKS, -1, mask.count_ones() as u8);
+    core.raw_write_8(LOCAL_PICKED, -1, local_picked as u8);
+    core.raw_write_16(PICK_T, -1, (pick_frames() - left * 60) as u16);
 }
 
 /// An UNRANKED match (standard rules, the match ends after one battle).
@@ -142,9 +171,24 @@ pub fn active(core: &Core) -> bool {
     core.raw_read_8(PROPOSE, -1) == 1
 }
 
-/// The seat whose turn it is to propose a map (SELECT MAP is up and the seats are picking).
-pub fn picking(core: &Core) -> Option<usize> {
-    (active(core) && !crate::proxy_seat::alone(core) && phase(core) == 0 && crate::survival_ui::selecting(core)).then(|| (core.raw_read_8(PICKS, -1) as usize).min(seats(core) - 1))
+/// The seats are picking their maps (SELECT MAP is up, the draw not made): every window works in private ([`private_view`]).
+pub fn picking(core: &Core) -> bool {
+    active(core) && !crate::proxy_seat::alone(core) && phase(core) == 0 && crate::survival_ui::selecting(core)
+}
+
+/// The seats that have picked (a bit each, the console's seat order).
+pub fn picked_mask(core: &Core) -> u8 {
+    core.raw_read_8(PICKED, -1)
+}
+
+/// How many seats have picked.
+pub fn picks_made(core: &Core) -> usize {
+    core.raw_read_8(PICKS, -1) as usize
+}
+
+/// The seat has picked, as the shared console has it.
+pub fn has_picked(core: &Core, seat: usize) -> bool {
+    seat < 8 && picked_mask(core) & (1 << seat) != 0
 }
 
 /// The map is drawn and SELECT MAP is still up (walking to it).
@@ -181,7 +225,7 @@ pub fn map_name(core: &Core, id: u8) -> String {
         .collect()
 }
 
-/// Every tick: the seat whose turn it is to pick, from its own keys: A picks the map under the game's cursor.
+/// Every tick: the picking time runs, the host's A on the revealed map goes on, a round of picks that has run out of time is settled.
 pub fn tick(core: &mut Core, inputs: &[u32]) {
     if !active(core) || inputs.len() < 2 {
         return;
@@ -209,33 +253,42 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
     if phase(core) != 0 || !crate::survival_ui::idle(core) {
         return;
     }
-    // (counts frames while picking: the draw's randomness, the same on every peer)
+    // (counts frames while picking: the draw's randomness, the same on every peer, and the time everyone has)
     let t = core.raw_read_16(DRAW_T, -1).wrapping_add(1);
     core.raw_write_16(DRAW_T, -1, t);
-    let who = (core.raw_read_8(PICKS, -1) as usize).min(n - 1);
     let pt = (core.raw_read_16(PICK_T, -1) as u32 + 1).min(65535);
     core.raw_write_16(PICK_T, -1, pt as u16);
-    let timed_out = pt >= pick_frames();
-    if inputs[who] & !was[who] & KEY_A != 0 && std::env::var_os("AW2_PICK_LOG").is_some() {
-        log::info!("unranked: seat {who} pressed A, cursor {:?}, list last {}, keys {:x?}, was {:x?}", crate::online::list_cursor(core), core.raw_read_8(crate::five_map::LIST_LAST, -1), inputs, was);
+    // A seat whose window has not picked by the time (each window picks the map under its own cursor when the time is up, so this is
+    // a client that is frozen or gone): the list's first map is its pick.
+    if pt >= pick_frames() + GRACE_SECONDS * 60 {
+        let first = core.raw_read_8(crate::online::LIST_IDS, -1);
+        for who in 0..n {
+            if !has_picked(core, who) {
+                commit_pick(core, who, first);
+            }
+        }
     }
-    if inputs[who] & !was[who] & KEY_A == 0 && !timed_out {
-        return;
+}
+
+/// Whether `id` is a map the room offers (its tabs for the room's count; the shared console's list holds only the tab it is on).
+fn in_list(core: &Core, id: u8) -> bool {
+    crate::online_maps::offered(core, id)
+}
+
+/// The seat's pick is in: its map is noted, and with the last seat's the draw is made.
+fn commit_pick(core: &mut Core, who: usize, id: u8) -> bool {
+    let n = seats(core);
+    if !picking(core) || who >= n || has_picked(core, who) || !in_list(core, id) {
+        return false;
     }
-    // The map under the cursor (the list holds only the room's count of armies here).
-    // (a row past the list's last is empty: its id is 0, which is Five Seas, a map, only when the list really holds it)
-    let last = core.raw_read_8(crate::five_map::LIST_LAST, -1) as u32;
-    let cursor = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP && c <= last);
-    let id = match cursor {
-        Some(cur) => core.raw_read_8(crate::online::LIST_IDS + cur, -1),
-        None if timed_out => core.raw_read_8(crate::online::LIST_IDS, -1),
-        None => return,
-    };
-    core.raw_write_16(PICK_T, -1, 0);
     core.raw_write_8(seat(who) + S_MAP, -1, id);
-    core.raw_write_8(PICKS, -1, who as u8 + 1);
-    if who + 1 == n {
+    let mask = picked_mask(core) | 1 << who;
+    core.raw_write_8(PICKED, -1, mask);
+    let count = (0..n).filter(|&k| mask & (1 << k) != 0).count();
+    core.raw_write_8(PICKS, -1, count as u8);
+    if count == n {
         // (the frame counter and the maps proposed, mixed)
+        let t = core.raw_read_16(DRAW_T, -1);
         let mix = (0..n).fold(t as usize, |a, k| a.wrapping_mul(31).wrapping_add(core.raw_read_8(seat(k) + S_MAP, -1) as usize));
         let from = mix % n;
         core.raw_write_8(PICK, -1, from as u8);
@@ -247,6 +300,37 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         core.raw_write_16(HOLD_T, -1, 0);
         core.raw_write_8(SKIP, -1, 0);
         core.raw_write_8(PHASE, -1, 1);
+    }
+    true
+}
+
+/// A pick word (half of a pick, five bits) from the physical seat `phys`: the two halves are the seat's own words on two ticks in a
+/// row ([`pick_reset`] is the word between that is none). Called by [`crate::proxy_seat`] for every seat's word.
+pub fn pick_word(core: &mut Core, phys: usize, half: u8) {
+    if phys >= MAX_SEATS || !picking(core) {
+        return;
+    }
+    let first = core.raw_read_8(HALF + phys as u32, -1);
+    if first == 0 {
+        core.raw_write_8(HALF + phys as u32, -1, half + 1);
+        return;
+    }
+    core.raw_write_8(HALF + phys as u32, -1, 0);
+    let id = (((first - 1) as u16) << 5) | half as u16;
+    // (the seat as the console counts them, once players have left)
+    let seat = match crate::proxy_seat::seat_order(core) {
+        Some(order) => order.iter().position(|&p| p == phys),
+        None => Some(phys),
+    };
+    if let (Some(seat), true) = (seat, id < 256) {
+        commit_pick(core, seat, id as u8);
+    }
+}
+
+/// A word that is not half of a pick: a half sent before it is none.
+pub fn pick_reset(core: &mut Core, phys: usize) {
+    if phys < MAX_SEATS && core.raw_read_8(HALF + phys as u32, -1) != 0 {
+        core.raw_write_8(HALF + phys as u32, -1, 0);
     }
 }
 
@@ -307,12 +391,8 @@ pub fn merge(core: &Core, inputs: &[u32]) -> Option<u32> {
     if !active(core) {
         return None;
     }
-    if phase(core) == 0 && crate::survival_ui::selecting(core) {
-        // (the seat picking has the pad, but A, B and START: A is its pick, there is no way back from here)
-        let who = (core.raw_read_8(PICKS, -1) as usize).min(seats(core).min(inputs.len()).max(1) - 1);
-        return Some(inputs.get(who).copied().unwrap_or(0) & !(KEY_A | KEY_B | crate::online::KEY_START));
-    }
     if phase(core) < 3 && crate::survival_ui::selecting(core) {
+        // (the maps are picked in private on each window's own console, [`private_view`]: the shared one has no pad)
         return Some(0);
     }
     if on(core) && rules_rows(core).is_some() {
@@ -521,11 +601,13 @@ pub fn back_from_battle(core: &Core) -> bool {
 
 /// The seats propose maps again (a battle was played, or a player left): everything but the draw's counter starts over.
 pub fn restart(core: &mut Core) {
+    let round = core.raw_read_8(ROUND, -1).wrapping_add(1);
     for k in 0..STATE_LEN {
         if !(PROPOSE - STATE..PROPOSE - STATE + 1).contains(&k) && k != 0x0E && k != 0x0F {
             core.raw_write_8(STATE + k, -1, 0);
         }
     }
+    core.raw_write_8(ROUND, -1, round);
 }
 
 /// A room's SELECT MAP is up and no battle is on (the roster may be made, see [`crate::proxy_seat`]).
@@ -567,29 +649,152 @@ fn paint_box(core: &Core, cv: &mut crate::online::Rgba<'_>, lines: &[(String, cr
     }
 }
 
-/// The picking plate: whose turn it is, the time left and the picks so far. It takes the title's place (top left, the
-/// mirror of the game's counters header): the map's picture can use all of the area under the header and down to the
-/// foot of the screen, so nothing is drawn over it, and the tab box and list are the game's own.
+/// A window's own SELECT MAP while the maps are picked (see the module's docs): the seat's console is kept between two frames
+/// ([`Scratch::save_private`]), started from the shared console's state, and run with the seat's own keys: A picks the map under the
+/// cursor (queued as the two words of its pick, [`tango_gamesupport::private::queue_pick`]), B and START do nothing, and
+/// when the time is up the map under the cursor is the pick. Nothing of it reaches the shared console but that pick. What the shared console
+/// knows (who has picked, the time) is copied into the private console's state each frame, for the plate that shows it.
+pub fn private_view(scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) -> bool {
+    use tango_gamesupport::private;
+    let started = scratch.memory()[1] != 0;
+    if std::env::var_os("AW2_PRIVATE_LOG").is_some() {
+        let core = scratch.core();
+        eprintln!("private view seat {seat}: picking {} seats {} idle {} started {started}", picking(core), seats(core), crate::survival_ui::idle(core));
+    }
+    let shared: Vec<u8> = {
+        let core = scratch.core();
+        // (the list is up and still before the window's console begins, from the shared console's state)
+        if !picking(core) || seat >= seats(core) || (!crate::survival_ui::idle(core) && !started) {
+            return false;
+        }
+        let mut b = vec![0u8; STATE_LEN as usize];
+        core.raw_read_range(STATE, -1, &mut b);
+        b
+    };
+    let at = |off: u32| shared[(off - STATE) as usize];
+    let (round, mask, pick_t) = (at(ROUND), at(PICKED), u16::from_le_bytes([at(PICK_T), at(PICK_T + 1)]) as u32);
+    let phys = scratch.physical_seat();
+    let now = scratch.console_tick();
+    // (a new round of picks, the seats proposing again after a player left or a battle: start over)
+    let mem = *scratch.memory();
+    if mem[1] & 0xFF != round as i32 + 1 {
+        scratch.drop_private();
+        scratch.memory()[1] = round as i32 + 1;
+        scratch.memory()[2] = 0;
+    }
+    let had = scratch.load_private();
+    // (what the shared console knows, over the private console's own state of it)
+    scratch.core_mut().raw_write_range(STATE, -1, &shared);
+    let mem = *scratch.memory();
+    let mut prev_a = mem[1] >> 8 & 1 != 0;
+    let (mut picked, mut since) = (mem[2] & 1 != 0, (mem[2] >> 1 & 0x7FFF) as u32);
+    let last = (mem[2] >> 16) as u16;
+    let ticks = if had { (now as u16).wrapping_sub(last).clamp(1, 4) as usize } else { 1 };
+    let (held, pressed) = private::take_keys(phys);
+    for i in 0..ticks {
+        let keys = if i == 0 { held | pressed } else { held };
+        let a_edge = keys & KEY_A != 0 && !prev_a;
+        prev_a = keys & KEY_A != 0;
+        let core = scratch.core();
+        let (idle, last_row) = (crate::survival_ui::idle(core), core.raw_read_8(crate::five_map::LIST_LAST, -1) as u32);
+        let cursor_id = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP && c <= last_row).map(|c| core.raw_read_8(crate::online::LIST_IDS + c, -1));
+        let confirmed = mask & (1 << seat) != 0;
+        if confirmed {
+            picked = true;
+        }
+        let retry = picked && !confirmed && !private::pending(phys) && since > 180;
+        if idle && !confirmed && (!picked && (a_edge || pick_t >= pick_frames()) || retry) {
+            // (the map under the cursor; a cursor off the list is the list's first map, as the time running out has always been)
+            let id = cursor_id.unwrap_or_else(|| core.raw_read_8(crate::online::LIST_IDS, -1));
+            private::queue_pick(phys, tango_match::keys::command::pick_words(id as u16));
+            picked = true;
+            since = 0;
+        }
+        if picked && !confirmed {
+            since = (since + 1).min(0x7FFF);
+        }
+        scratch.core_mut().raw_write_8(LOCAL_PICKED, -1, picked as u8);
+        // (once picked there is no more browsing, and B and START are no way out of the picks)
+        let keys = if picked { 0 } else { keys & !(KEY_A | KEY_B | crate::online::KEY_START) };
+        scratch.tick(keys);
+        scratch.core_mut().raw_write_range(STATE, -1, &shared);
+        scratch.core_mut().raw_write_8(LOCAL_PICKED, -1, picked as u8);
+    }
+    scratch.save_private();
+    scratch.keep_audio();
+    scratch.memory()[1] = (round as i32 + 1) | (prev_a as i32) << 8;
+    scratch.memory()[2] = picked as i32 | (since as i32) << 1 | (now as u16 as i32) << 16;
+    true
+}
+
+/// A tick mark, 5 wide and 4 tall.
+fn check(cv: &mut crate::online::Rgba<'_>, x: i32, y: i32, ink: crate::online::Rgb) {
+    for (dx, dy) in [(0, 2), (1, 3), (2, 2), (3, 1), (4, 0)] {
+        cv.rect(x + dx, y + dy, 1, 1, ink);
+        cv.rect(x + dx, y + dy + 1, 1, 1, ink);
+    }
+}
+
+/// The picking plate, where the title was (the mirror of the game's counters header; the map's picture can use everything under it and
+/// down to the foot of the screen, so nothing is drawn over it): what to do or who is waited for, and the picks made and the time left.
+/// Once the seat has picked, the list's column says who has picked too (a tick), never which map.
 fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     use crate::online::*;
     let n = seats(core);
-    let who = (core.raw_read_8(PICKS, -1) as usize).min(n - 1);
     let me = room_local_seat();
-    let picked = (core.raw_read_8(PICKS, -1) as usize).min(n);
+    let made = picks_made(core).min(n);
+    let mine = has_picked(core, me) || core.raw_read_8(LOCAL_PICKED, -1) == 1;
+    // (a seat whose pick is in the stream but not counted yet is shown as picked to itself)
+    let made = (made + (mine && !has_picked(core, me)) as usize).min(n);
     let left = pick_frames().saturating_sub(core.raw_read_16(PICK_T, -1) as u32).div_ceil(60);
     let sea: Rgb = (139, 222, 230);
     // (the title's logo goes: the plate covers it, a margin of sea round the plate)
     cv.rect(0, 0, 140, 31, sea);
     let (red, pink, grey): (Rgb, Rgb, Rgb) = ((246, 82, 57), (255, 238, 238), (131, 123, 115));
     let (x, y, w, h) = (4, 2, 132, 27);
+    audit::window(x, y, w, h);
     cv.rect(x - 1, y - 1, w + 2, h + 2, (0, 0, 0));
     cv.rect(x, y, w, h, red);
     cv.rect(x + 2, y + 2, w - 4, h - 4, pink);
-    let line1 = if who == me { "Your pick: press A".to_string() } else { fit(core, &format!("{} is picking", room_name(who)), w - 12) };
-    let line2 = format!("{}:{:02} left   {} of {}", left / 60, left % 60, picked + 1, n);
+    let waiting: Vec<String> = (0..n).filter(|&k| !has_picked(core, k) && (k != me || !mine)).map(room_name).collect();
+    let line1 = if !mine {
+        "Pick a map: press A".to_string()
+    } else {
+        match waiting.as_slice() {
+            [] => "Everyone has picked".to_string(),
+            [one] => fit(core, &format!("Waiting for {one}..."), w - 12),
+            [one, more @ ..] => {
+                let tail = format!(" +{}", more.len());
+                format!("Waiting for {}{tail}", fit(core, one, w - 12 - text_width(core, &format!("Waiting for ..{tail}"))))
+            }
+        }
+    };
+    let line2 = format!("Picks: {made} of {n}   {}:{:02}", left / 60, left % 60);
     let ink: Rgb = if left <= 10 { (200, 40, 24) } else { (88, 72, 150) };
     cv.text(core, x + (w - text_width(core, &line1)) / 2, y + 3, &line1, grey, SHADE);
     cv.text(core, x + (w - text_width(core, &line2)) / 2, y + 13, &line2, ink, SHADE);
+    if mine {
+        // The gamertags with a tick for each that has picked, over the list (the picker has no more use of it).
+        let (bx, by, bw, rh) = (2, 34, 84, 12);
+        let bh = 6 + rh * n as i32;
+        audit::window(bx, by, bw, bh);
+        cv.rect(bx, by, bw, 130, sea);
+        cv.rect(bx - 1, by - 1, bw + 2, bh + 2, (0, 0, 0));
+        cv.rect(bx, by, bw, bh, red);
+        cv.rect(bx + 2, by + 2, bw - 4, bh - 4, pink);
+        for k in 0..n {
+            let ry = by + 3 + rh * k as i32;
+            let done = has_picked(core, k) || (k == me && mine);
+            cv.rect(bx + 4, ry + rh - 2, bw - 8, 1, (255, 230, 213));
+            let name = fit(core, &room_name(k), bw - 26);
+            cv.text(core, bx + 7, ry, &name, if done { (88, 72, 150) } else { grey }, SHADE);
+            if done {
+                check(cv, bx + bw - 14, ry + 3, (88, 72, 150));
+            } else {
+                cv.text(core, bx + bw - 15, ry, "..", grey, SHADE);
+            }
+        }
+    }
 }
 
 /// The picture is fading to black (the notes would hang on the black).

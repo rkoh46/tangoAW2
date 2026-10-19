@@ -149,6 +149,8 @@ struct EndState {
     /// new launch of the app, see [`PvpSession::rejoin_hold`]); when it passes the army yields and the other player wins.
     /// The match is never kept for RESUME.
     unranked: Arc<AtomicBool>,
+    /// A room's match whose players may come back after a crash (every room's: see [`PvpSession::rejoin_holds`]).
+    rejoin: Arc<AtomicBool>,
     /// The app has a returning player on the line (a rejoin is being made): the grace window is not allowed to run out
     /// under it.
     rejoin_busy: Arc<AtomicBool>,
@@ -377,6 +379,8 @@ pub struct RoomArgs {
     pub suspend_sink: Option<Arc<dyn Fn(tango_match::SuspendedMatch) + Send + Sync>>,
     /// UNRANKED: a room of two whose players may come back after a crash (see [`PvpSession::rejoin_hold`]); never kept for RESUME.
     pub unranked: bool,
+    /// A player who drops has the grace window to come back (even from a new launch of the app, see [`PvpSession::rejoin_holds`]).
+    pub rejoin: bool,
     /// Called when the local player closes the session on purpose (the Close button, quitting the app): the match is not one
     /// to come back to. Not called when the session is replaced by a rejoin ([`PvpSession::set_swapped`]).
     pub on_leave: Option<Arc<dyn Fn() + Send + Sync>>,
@@ -493,13 +497,26 @@ impl PvpSession {
         Some((h.name.clone(), left.as_secs_f32().ceil() as u32))
     }
 
-    /// UNRANKED: the player the match waits for to come back, with the seconds left of the window, while the match is
-    /// paused for it (the app makes a room for the returning player then, see [`request_rejoin_state`](Self::request_rejoin_state)).
+    /// The player the match waits for to come back, with the seconds left of the window, while the match is paused for it (a room's
+    /// match, the UNRANKED ones included; the app makes a room for the returning player then, see
+    /// [`request_rejoin_state`](Self::request_rejoin_state)).
     pub fn rejoin_hold(&self) -> Option<(String, u32)> {
-        if !self.end.unranked.load(Ordering::Acquire) || self.completed.load(Ordering::Acquire) {
-            return None;
+        self.rejoin_holds().into_iter().next().map(|(_, name, left)| (name, left))
+    }
+
+    /// Every player the match waits for to come back: their seat, gamertag and the seconds left of their windows, the nearest first.
+    /// Empty when the room's match is not one that can be rejoined, or while a seat that left earlier is gone from it (the rest of the
+    /// room could not be seated as it was).
+    pub fn rejoin_holds(&self) -> Vec<(u8, String, u32)> {
+        if !self.end.rejoin.load(Ordering::Acquire) || self.completed.load(Ordering::Acquire) || self.end.gone.load(Ordering::Acquire) != 0 {
+            return Vec::new();
         }
-        self.waiting_for()
+        let mut holds: Vec<Hold> = self.end.holds.lock().unwrap().clone();
+        holds.sort_by_key(|h| h.deadline);
+        holds
+            .into_iter()
+            .map(|h| (h.seat, h.name, h.deadline.saturating_duration_since(Instant::now()).as_secs_f32().ceil() as u32))
+            .collect()
     }
 
     /// Ask the drive thread for the newest settled state of the console (the returning player is given it).

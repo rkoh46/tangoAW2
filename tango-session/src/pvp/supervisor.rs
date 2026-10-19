@@ -364,7 +364,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             end.hold_add(peer_seat, peer_name.clone(), web_time::Instant::now() + timeout);
             // (a room's guest waiting for its host: the box says the room goes on without it, not that the match is saved)
             end.host_wait
-                .store(mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && (r.players.len() > 2 || end.unranked.load(Ordering::Acquire))), Ordering::Release);
+                .store(mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() >= 2), Ordering::Release);
             pauses.enter();
             wake.notify_one();
             // A room's host tells the other guests who the match waits for, about once a second.
@@ -540,7 +540,11 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 if let Some(s) = silent.take() {
                     s.announce_stop.cancel();
                 }
-                link.send_goodbye().await;
+                // (a session that a rejoin replaces is no leaving: the others' sessions are being replaced too, and a goodbye would
+                // have the host yield this player's army while the way back is being made)
+                if !end.swapped.load(Ordering::Acquire) {
+                    link.send_goodbye().await;
+                }
                 break;
             }
 
@@ -550,7 +554,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // (its army is yielded by the console, see `migrate`); one that is simply lost gets the reconnect window
             // below first and the migration after it.
             let host_link = mig.is_some()
-                && room.as_ref().is_some_and(|r| !r.is_host && (r.players.len() > 2 || end.unranked.load(Ordering::Acquire)));
+                && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() >= 2);
             let host_out = super::is_out(end.seats_out.load(Ordering::Acquire), peer_seat);
             if host_link
                 && matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled | Trip::Silent)

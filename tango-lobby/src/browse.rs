@@ -60,6 +60,8 @@ pub struct Lobby {
     pub code: String,
     /// The host's gamertag.
     pub host: String,
+    /// The room's name (the host's choice). An announcement of a host that has none (a 0.8.4 one) is listed by the host's gamertag.
+    pub name: String,
     /// Players in the room now, host included, and the most it holds.
     pub players: u8,
     pub max: u8,
@@ -85,6 +87,19 @@ pub struct Compat {
     pub pack: bool,
 }
 
+/// Text from the public channel made safe to draw: printable ASCII, runs of spaces made one, none at either end, at most `max`
+/// characters.
+pub fn clean_text(s: &str, max: usize) -> String {
+    let mut out = String::new();
+    for c in s.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()) {
+        if c == ' ' && (out.is_empty() || out.ends_with(' ')) {
+            continue;
+        }
+        out.push(c);
+    }
+    out.chars().take(max).collect::<String>().trim_end().to_string()
+}
+
 /// What a lobby's code may be made of.
 fn code_ok(c: &str) -> bool {
     c.len() == 6 && c.bytes().all(|b| b.is_ascii_alphanumeric())
@@ -96,6 +111,7 @@ impl Lobby {
         json!({
             "c": self.code,
             "h": self.host,
+            "r": self.name,
             "n": self.players,
             "m": self.max,
             "l": self.locked,
@@ -118,13 +134,9 @@ impl Lobby {
         if !code_ok(&code) {
             return Err("bad code");
         }
-        let host: String = s("h")
-            .ok_or("no host")?
-            .chars()
-            .filter(|c| c.is_ascii() && !c.is_ascii_control())
-            .take(12)
-            .collect();
-        let host = host.trim().to_string();
+        let host = clean_text(s("h").ok_or("no host")?, 12);
+        // (an announcement without a name, or with one that is nothing, is listed by its host's gamertag)
+        let name = s("r").map(|r| clean_text(r, 18)).filter(|r| !r.is_empty());
         let (players, max) = (n("n").ok_or("no players")?, n("m").ok_or("no max")?);
         if !(2..=5).contains(&max) || players < 1 || players > max {
             return Err("bad counts");
@@ -133,9 +145,11 @@ impl Lobby {
         if version.is_empty() || version.len() > 24 || !version.bytes().all(|b| b.is_ascii_graphic()) {
             return Err("bad version");
         }
+        let host = if host.is_empty() { "Player".to_string() } else { host };
         Ok(Some(Lobby {
             code,
-            host: if host.is_empty() { "Player".into() } else { host },
+            name: name.unwrap_or_else(|| host.clone()),
+            host,
             players: players as u8,
             max: max as u8,
             locked: v.get("l").and_then(Value::as_bool).unwrap_or(false),
@@ -857,6 +871,7 @@ mod tests {
         Lobby {
             code: code.into(),
             host: "Rkoh".into(),
+            name: "Rkoh's room".into(),
             players: 2,
             max: 5,
             locked: true,
@@ -899,6 +914,26 @@ mod tests {
         // (the host's name may be empty: the screen then says Player)
         let e = Lobby::decode(r#"{"c":"ab12cd","h":"","n":1,"m":5,"v":"1"}"#).unwrap().unwrap();
         assert_eq!((e.code.as_str(), e.host.as_str()), ("AB12CD", "Player"));
+    }
+
+    #[test]
+    fn a_room_has_its_name_and_an_old_announcement_its_host() {
+        let mut l = lobby("AB12CD");
+        l.name = "Big  Pent  Room ".into();
+        // (spaces survive the announcement, one at a time, none at an end)
+        let d = Lobby::decode(&l.encode()).unwrap().unwrap();
+        assert_eq!(d.name, "Big Pent Room");
+        // 0.8.4's announcement has no name: the host's gamertag is listed
+        let old = Lobby::decode(r#"{"c":"AB12CD","h":"Ann Lee","n":1,"m":5,"v":"0.8.4"}"#).unwrap().unwrap();
+        assert_eq!((old.name.as_str(), old.host.as_str()), ("Ann Lee", "Ann Lee"));
+        // an all-space name is no name
+        let blank = Lobby::decode(r#"{"c":"AB12CD","h":"Bo","r":"    ","n":1,"m":5,"v":"1"}"#).unwrap().unwrap();
+        assert_eq!(blank.name, "Bo");
+        // never more than 18 characters, never anything to hurt the screen
+        let long = Lobby::decode(&format!(r#"{{"c":"AB12CD","h":"Bo","r":"{}\u0001é","n":1,"m":5,"v":"1"}}"#, "x".repeat(40))).unwrap().unwrap();
+        assert_eq!(long.name.len(), 18);
+        assert_eq!(clean_text("  a   b  ", 12), "a b");
+        assert_eq!(clean_text("abc def", 4), "abc");
     }
 
     #[test]

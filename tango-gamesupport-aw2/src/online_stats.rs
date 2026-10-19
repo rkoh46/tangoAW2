@@ -188,10 +188,9 @@ pub fn read_gamertag(read: &mut dyn FnMut(u32, &mut [u8])) -> String {
     b.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect()
 }
 
-/// The name as it is kept: printable ASCII, trimmed, at most [`TAG_CHARS`].
+/// The name as it is kept: printable ASCII, spaces inside it (never doubled, none at either end), at most [`TAG_CHARS`].
 pub fn clean(name: &str) -> String {
-    let s: String = name.chars().filter(|c| c.is_ascii_graphic() || *c == ' ').collect();
-    s.trim().chars().take(TAG_CHARS).collect::<String>().trim_end().to_string()
+    crate::online::clean_name(name, TAG_CHARS)
 }
 
 /// The app puts the gamertag and the record's lines in the console's memory (a console just started).

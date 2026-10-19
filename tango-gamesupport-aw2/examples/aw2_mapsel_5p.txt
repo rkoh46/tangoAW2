@@ -1,63 +1,45 @@
-# 5 seats, each proposes a map on its own turn (every window shotall at each step), the draw, the chosen map and the Teams screen. Run: aw2_room_teams <rom> <out> this-file
+# 5 seats pick a map at the same time, each in private on a SELECT MAP of its own (every window shotall at each step: seat k's frames show its own list, the others only the status plate), the draw, the chosen map and the Teams screen. Run: aw2_room_teams <rom> <out> this-file
 n 5
 until maparmies=5 100
 wait 60
-shotall pick0a
+shotall priv_a
 press 0 DOWN
-wait 6
-press 0 DOWN
-wait 6
-press 0 DOWN
-wait 6
-wait 20
-shotall pick0b
-press 0 A
-wait 20
-shotall pick1a
 press 1 RIGHT
+press 2 LEFT
+press 3 DOWN
+press 4 RIGHT
 wait 6
+press 0 DOWN
 press 1 DOWN
+press 2 DOWN
+press 3 DOWN
+press 4 DOWN
+wait 6
+press 0 DOWN
+press 2 DOWN
+press 4 DOWN
+wait 6
+press 2 DOWN
+wait 6
+press 2 DOWN
+wait 6
+press 2 DOWN
 wait 6
 wait 20
-shotall pick1b
+shotall priv_b
+press 0 A
+wait 40
+shotall priv_c
 press 1 A
 wait 20
-shotall pick2a
-press 2 LEFT
-wait 6
-press 2 DOWN
-wait 6
-press 2 DOWN
-wait 6
-press 2 DOWN
-wait 6
-press 2 DOWN
-wait 6
-press 2 DOWN
-wait 6
-wait 20
-shotall pick2b
 press 2 A
 wait 20
-shotall pick3a
-press 3 RIGHT
-wait 6
-press 3 DOWN
-wait 6
-wait 20
-shotall pick3b
 press 3 A
 wait 20
-shotall pick4a
-press 4 DOWN
-wait 6
-press 4 DOWN
-wait 6
-wait 20
-shotall pick4b
+shotall priv_d
 press 4 A
 wait 2
 shotall chosen
-until teams 200
+until teams 600
 wait 30
 shotall teams

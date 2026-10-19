@@ -1,0 +1,68 @@
+# 2 seats, Dual Strike pack (TANGOAW2_DS_ROM), tag pairs chosen on the army page, Fog on: army 1 has both meters full and chooses Tag (the Tag Power) from the map menu. Run: AW2_LEAK_CHECK=1 TANGOAW2_DS_ROM=<nds> aw2_room_teams <rom> <out> this-file; every seat but the mover shows the swap's own full-screen scenes (the console's picture, with no map in it).
+n 2
+until maparmies=2 100
+wait 60
+press 0 A
+wait 20
+press 1 A
+wait 20
+until teams 600
+wait 90
+press 1 DOWN
+press 1 DOWN
+press 1 RIGHT
+wait 10
+press 1 DOWN
+press 1 A
+press 0 DOWN
+press 0 DOWN
+press 0 RIGHT
+wait 10
+press 0 DOWN
+press 0 A
+shotall teams_done
+wait 300
+press 0 A
+until battle 300
+until army=1 60
+wait 400
+aid meter 1 400
+poke 0x0203F404 FFFF0000
+wait 5
+goto 0 3 3
+wait 10
+press 0 A
+wait 60
+shot menu 0
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+press 0 DOWN
+wait 10
+shot menu_tag 0
+press 0 A
+wait 30
+shotall tag_a
+wait 90
+shotall tag_b
+wait 90
+shotall tag_c
+wait 90
+shotall tag_d
+wait 90
+shotall tag_e
+wait 90
+shotall tag_f
+wait 90
+shotall tag_g
+wait 90
+shotall tag_h
+wait 90
+shotall tag_i
+wait 90
+shotall tag_j
+wait 900
+shotall after

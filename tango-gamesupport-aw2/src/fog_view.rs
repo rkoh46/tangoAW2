@@ -365,7 +365,7 @@ pub fn phase(core: &Core) -> Phase {
     // A CO Power just chosen from the map menu: the game's own scene (the CO's lines over the map, the full-screen
     // cut-in). Without fog it is shown as it is; with fog the waiting window holds its last picture (the lines come over
     // the mover's own view of the map); until the plain map is back.
-    if crate::pvp::chosen_item(core) == Some(crate::pvp::MENU_POWER)
+    if power_chosen(core)
         && !running.iter().any(|f| *f == 0x0801_9D0D || *f == 0x0801_9DED)
         && !(running.is_empty() && steady_regs(core))
     {
@@ -606,9 +606,22 @@ pub fn mover_cursor_up(core: &Core) -> bool {
     })
 }
 
+/// The map menu's Power or Super item was chosen (ids 2 and 3; the Tag item is a copy of the Super's, its screens are
+/// [`crate::tag_extras::screen_up`]'s): the game's own scene follows.
+fn power_chosen(core: &Core) -> bool {
+    matches!(crate::pvp::chosen_main_item(core), Some(crate::pvp::MENU_POWER | crate::pvp::MENU_SUPER))
+}
+
+/// The Super CO Power's full-screen scene is up (its banner is the map's, its fire and CO portrait are a screen of their own, between
+/// two of the map's: the main loop's callback is 0 with nothing running): the screen has no map in it, so every window shows it as the
+/// console draws it, fog or not (a Power's cut-in stays on the map's loop: [`power_cutin`]).
+pub fn power_screen(core: &Core) -> bool {
+    power_chosen(core) && core.raw_read_32(MAIN_LOOP, -1) == 0 && procs(core).is_empty() && !crate::pvp::turn_ended(core)
+}
+
 /// A CO Power chosen from the map menu is playing out (its lines over the map, the full-screen cut-in, the fades).
 pub fn power_scene(core: &Core) -> bool {
-    if core.raw_read_32(MAIN_LOOP, -1) != MAP_LOOP || crate::pvp::chosen_item(core) != Some(crate::pvp::MENU_POWER) {
+    if core.raw_read_32(MAIN_LOOP, -1) != MAP_LOOP || !power_chosen(core) {
         return false;
     }
     let running = procs(core);
@@ -683,6 +696,12 @@ pub fn hud_patch(core: &Core, seat: usize, rgba: &mut [u8]) {
 
 fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     WALK_VIEW.store(0, std::sync::atomic::Ordering::Relaxed);
+    if crate::tag_extras::screen_up(scratch.core()) || power_screen(scratch.core()) {
+        // The mover's Dual Strike tag scenes (CO SWAP, the Tag Power's): full screen, the two COs and their words, no map in them:
+        // every seat sees them as the console draws them, with fog or without.
+        scratch.show_console();
+        return Ok(());
+    }
     *WALK_TRACK.lock().unwrap() = (None, false);
     let walk_start = walking(scratch.core());
     WALK_VIEW.store(if walk_start { 1 } else { 2 }, std::sync::atomic::Ordering::Relaxed);

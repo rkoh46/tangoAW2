@@ -6,6 +6,8 @@
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, waiting_for, write_rejoin, Request, SavedRow};
 #[cfg(feature = "gamesupport-aw2")]
+pub use tango_gamesupport_aw2::online_browse::mailbox::{refreshes as browse_refreshes, write_note as write_browse_note, write_room_name, Note as BrowseNote};
+#[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online_browse::{Net as BrowseNet, Row as BrowseRow};
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online::{Status, REJOIN_LEVEL, CODE_ALPHABET, HOST, LINK_DIRECT, LINK_RELAY, MAX_PLAYERS, ONLINE_MATCH, UNRANKED_MATCH, UNRANKED_PICK_GUEST, YOU};
@@ -180,7 +182,19 @@ pub fn write_connection(write: &mut dyn FnMut(u32, &[u8]), state: u8, lines: &[S
     tango_gamesupport_aw2::online_conn::write(write, state, lines)
 }
 
-/// A gamertag as it is kept (printable ASCII, at most ten characters).
+/// A room's name as it is kept (printable ASCII, no space at either end or twice in a row, at most [`ROOM_NAME_CHARS`]).
+#[cfg(feature = "gamesupport-aw2")]
+pub fn clean_room_name(name: &str) -> String {
+    tango_gamesupport_aw2::online::clean_name(name, tango_gamesupport_aw2::online::ROOM_NAME_CHARS)
+}
+
+/// The name a room gets when none is typed: "<gamertag>'s room".
+#[cfg(feature = "gamesupport-aw2")]
+pub fn default_room_name(gamertag: &str) -> String {
+    tango_gamesupport_aw2::online::default_room_name(gamertag)
+}
+
+/// A gamertag as it is kept (printable ASCII, spaces inside but none doubled or at an end, at most ten characters).
 #[cfg(feature = "gamesupport-aw2")]
 pub fn clean_gamertag(name: &str) -> String {
     tango_gamesupport_aw2::online_stats::clean(name)

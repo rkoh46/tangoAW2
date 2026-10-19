@@ -217,6 +217,26 @@ mod tests {
         assert!(judge(&b3, 2, 3).unwrap().won);
     }
 
+    /// Gamertags with spaces in them are kept whole in the record, in its file and on its page.
+    #[test]
+    fn names_with_spaces_survive_the_record() {
+        let mut stats = Stats::default();
+        let v = Verdict { won: true, destroyed: 1, lost: 0, powers: 0, days: 3, opponents: vec![1] };
+        stats.add(&v, vec!["Ann Lee".to_string(), "Bo Ray Jr".to_string()], 100);
+        stats.add(&v, vec!["Cy Tong".to_string()], 200);
+        let dir = std::env::temp_dir().join(format!("taw2-stats-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("online_stats.json");
+        stats.save(&path);
+        let back = Stats::load(&path);
+        assert_eq!(back.last[0].opponents, vec!["Cy Tong".to_string()]);
+        assert_eq!(back.last[1].opponents, vec!["Ann Lee".to_string(), "Bo Ray Jr".to_string()]);
+        let lines = back.lines().join("\n");
+        assert!(lines.contains("  Cy Tong\tWon"), "{lines}");
+        assert!(lines.contains("Ann Lee +1\tWon") || lines.contains("Ann Lee, Bo Ray Jr\tWon"), "{lines}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     /// A room of four that lost its seat 1: the next battle has three armies, played by seats 0, 2 and 3.
     #[test]
     fn a_battle_without_the_seats_that_left_names_the_rooms_seats() {

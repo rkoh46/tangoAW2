@@ -60,6 +60,13 @@ pub const ROOM: u32 = STATE + 0x12;
 pub const MESSAGE: u32 = STATE + 0xD0;
 pub const MESSAGE_LEN: u32 = 0x30;
 /// Characters typed on the keyboard (the app's), and how many.
+/// The name being typed for a room to make ([`NAME_LEVEL`]) and its length: at most [`NAME_TYPED_CHARS`] letters, digits and spaces; none
+/// is the default ("<gamertag>'s room", made by the app).
+pub const NAME_BUF: u32 = STATE + 0x1C;
+pub const NAME_LEN: u32 = STATE + 0x29;
+pub const NAME_TYPED_CHARS: usize = 12;
+/// The most characters a room's name has anywhere (the default "<gamertag>'s room" is longer than a typed one can be).
+pub const ROOM_NAME_CHARS: usize = 18;
 pub const TYPED: u32 = STATE + 0x38;
 pub const TYPED_LEN: u32 = STATE + 0x48;
 pub const TYPED_MAX: u32 = 0x10;
@@ -76,6 +83,8 @@ const MATCH: u32 = STATE + 0x56;
 pub const REJOIN: u32 = 0x0203_D100 + 4;
 /// The level of the rejoin box.
 pub const REJOIN_LEVEL: u8 = 12;
+/// The level of CREATE's first page: the room's name, typed on the same grid as the code and the password.
+pub const NAME_LEVEL: u8 = 13;
 /// The level of RESUME's page (the others' numbers are taken by the other lobby pages).
 pub const SAVED_LEVEL: u8 = 8;
 /// The gamertag's typing page and the STATS page ([`crate::online_stats`]).
@@ -194,6 +203,20 @@ pub fn level(core: &Core) -> u8 {
     core.raw_read_8(LEVEL, -1)
 }
 
+/// A name as it is kept anywhere (a gamertag, a room's name): printable ASCII, runs of spaces made one, none at either end, at most
+/// `max` characters (and none at the end after the cut). An all-space name is nothing.
+pub fn clean_name(name: &str, max: usize) -> String {
+    let mut out = String::new();
+    for c in name.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()) {
+        if c == ' ' && (out.is_empty() || out.ends_with(' ')) {
+            continue;
+        }
+        out.push(c);
+    }
+    let cut: String = out.chars().take(max).collect();
+    cut.trim_end().to_string()
+}
+
 // --- The mailbox (the host app's side) ---------------------------------------------------------------
 
 /// The host app's side of the mailbox, over its own reads and writes of the console's memory (between frames).
@@ -203,9 +226,11 @@ pub mod mailbox {
     /// What the game asks for.
     #[derive(Clone, Debug, PartialEq, Eq)]
     pub enum Request {
-        /// Make a room (the app picks its code: [`write_room`]), with this password (may be empty).
+        /// Make a room (the app picks its code: [`write_room`]), with this password (may be empty) and name (empty: the app's
+        /// default, "<gamertag>'s room").
         Host {
             password: String,
+            name: String,
         },
         /// Join the room with this code and password.
         Join {
@@ -258,7 +283,7 @@ pub mod mailbox {
         let pl = (b[0x59] as usize).min(PASSWORD_CHARS);
         let password = text(0x5A, pl);
         let r = match kind {
-            1 => Request::Host { password },
+            1 => Request::Host { password, name: clean_name(&text(0x1C, (b[0x29] as usize).min(NAME_TYPED_CHARS)), ROOM_NAME_CHARS) },
             2 => Request::Join { code, password },
             4 => Request::Ready,
             5 => Request::NotReady,
@@ -379,8 +404,9 @@ pub mod mailbox {
         write(SAVED, &[rows.len() as u8]);
     }
 
-    /// The rejoin box (see [`REJOIN`]): 0 away, 1 offered, 2 rejoining.
-    pub fn write_rejoin(write: &mut dyn FnMut(u32, &[u8]), state: u8) {
+    /// The rejoin box (see [`REJOIN`]): 0 away, 1 offered, 2 rejoining; the room of the match is named for the page.
+    pub fn write_rejoin(write: &mut dyn FnMut(u32, &[u8]), state: u8, room: &str) {
+        crate::online_browse::mailbox::write_own_name(write, room);
         write(REJOIN, &[state]);
     }
 
@@ -423,7 +449,7 @@ pub mod mailbox {
     /// Characters typed on the keyboard, for the code being typed: letters, 8 to rub one out, 13 to join.
     /// Returns false when the lobby is not taking typing (nothing written).
     pub fn type_chars(read: &mut dyn FnMut(u32, &mut [u8]), write: &mut dyn FnMut(u32, &[u8]), chars: &[u8]) -> bool {
-        if !matches!(level(read), 3 | 5 | TAG_LEVEL) {
+        if !matches!(level(read), 3 | 5 | TAG_LEVEL | NAME_LEVEL) {
             return false;
         }
         let mut n = [0u8];
@@ -624,16 +650,16 @@ pub mod probe {
                     c |= 16;
                 }
             }
-            // (SELECT MAP: it is this seat's turn to propose a map, the list up and still)
-            if crate::unranked::picking(core) == Some(me) && crate::survival_ui::idle(core) {
+            // (SELECT MAP: the maps are being picked, this seat has not picked, and the list is up and still)
+            if crate::unranked::picking(core) && !crate::unranked::has_picked(core, me) && crate::survival_ui::idle(core) {
                 c |= 32;
             }
             if crate::unranked::rules_up(core) {
                 c |= 128;
             }
-            // (whose turn it is to propose: bits 8..11, the seat + 1)
-            if let Some(who) = crate::unranked::picking(core) {
-                c |= (who as u64 + 1) << 8;
+            // (how many seats have picked: bits 8..11, plus one while the maps are being picked)
+            if crate::unranked::picking(core) {
+                c |= (crate::unranked::picks_made(core) as u64 + 1) << 8;
             }
             // (the draw is made: the bar tells whose map is played)
             if crate::unranked::chosen(core) {
@@ -741,7 +767,15 @@ const GRID_INDENT: [usize; 4] = [0, 0, 1, 2];
 const GRID_COLS: usize = 10;
 const GRID_DEL: usize = CODE_ALPHABET.len();
 const GRID_OK: usize = CODE_ALPHABET.len() + 1;
-const GRID_CELLS: usize = CODE_ALPHABET.len() + 2;
+/// The space bar, between Del and OK on the bottom row of the pages that type a name (a gamertag, a room's name): the code and the
+/// password have none.
+const GRID_SPACE: usize = CODE_ALPHABET.len() + 2;
+const GRID_CELLS: usize = CODE_ALPHABET.len() + 3;
+
+/// Whether the page being typed on takes spaces: a gamertag and a room's name do, a room's code and a password do not.
+fn allow_space(core: &Core) -> bool {
+    matches!(level(core), TAG_LEVEL | NAME_LEVEL)
+}
 
 /// The character in cell `g` of the flat order.
 fn grid_char(g: usize) -> u8 {
@@ -772,7 +806,9 @@ fn grid_nearest(r: usize, mid: usize) -> usize {
 /// The text being typed: the room's code (level 3) or a password (level 5): (where, its length's byte, at most,
 /// at least).
 fn field(core: &Core) -> (u32, u32, usize, usize) {
-    if level(core) == TAG_LEVEL {
+    if level(core) == NAME_LEVEL {
+        (NAME_BUF, NAME_LEN, NAME_TYPED_CHARS, 0)
+    } else if level(core) == TAG_LEVEL {
         (
             crate::online_stats::TAG_BUF,
             crate::online_stats::TAG_LEN,
@@ -808,9 +844,24 @@ fn type_char(core: &mut Core, c: u8) {
     let c = c.to_ascii_uppercase();
     let (at, len, max, _) = field(core);
     let n = core.raw_read_8(len, -1) as u32;
-    if CODE_ALPHABET.contains(&c) && (n as usize) < max {
+    // (a space is never first and never twice in a row: a name is whole words)
+    let space_ok = c == b' ' && allow_space(core) && n > 0 && core.raw_read_8(at + n - 1, -1) != b' ';
+    if (CODE_ALPHABET.contains(&c) || space_ok) && (n as usize) < max {
         core.raw_write_8(at + n, -1, c);
         core.raw_write_8(len, -1, n as u8 + 1);
+    }
+}
+
+/// What is typed on the page being typed, whole words only: no space at the end (it was typed to go on with).
+fn trim_typed(core: &mut Core) {
+    loop {
+        let (at, len, _, _) = field(core);
+        let n = core.raw_read_8(len, -1) as u32;
+        if n > 0 && core.raw_read_8(at + n - 1, -1) == b' ' {
+            rub_out(core);
+        } else {
+            break;
+        }
     }
 }
 
@@ -832,8 +883,18 @@ fn clear_field(core: &mut Core, at: u32, len: u32, max: usize) {
 
 /// OK on the typing page: a code goes on to its password; a password makes or joins the room.
 fn accept(core: &mut Core) {
+    trim_typed(core);
     let (_, len, _, min) = field(core);
     if (core.raw_read_8(len, -1) as usize) < min {
+        return;
+    }
+    if level(core) == NAME_LEVEL {
+        // The room's name is typed: the password comes next (none is fine), and B on it comes back here.
+        clear_field(core, PASSWORD, PASSWORD_LEN, PASSWORD_CHARS);
+        core.raw_write_8(ENTRY, -1, 0);
+        core.raw_write_8(GRID, -1, GRID_OK as u8);
+        core.raw_write_8(TYPED_LEN, -1, 0);
+        set_level(core, 5);
         return;
     }
     if level(core) == TAG_LEVEL {
@@ -872,6 +933,10 @@ fn back_from_typing(core: &mut Core) {
         }
         core.raw_write_8(GRID, -1, 0);
         set_level(core, 3);
+    } else if level(core) == 5 {
+        // (the password of a room to make: back to its name)
+        core.raw_write_8(GRID, -1, GRID_OK as u8);
+        set_level(core, NAME_LEVEL);
     } else {
         set_level(core, 1);
     }
@@ -962,7 +1027,7 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
     };
     let pressed = keys & !prev;
     // UNRANKED's match is still on (the app crashed): the rejoin box comes before everything else on the menus.
-    if level(core) <= 1 && core.raw_read_8(REJOIN, -1) != 0 {
+    if level(core) <= 1 && matches!(core.raw_read_8(REJOIN, -1), 1 | 2) {
         set_level(core, REJOIN_LEVEL);
         return keys & !ALL_KEYS;
     }
@@ -1004,12 +1069,13 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             if pressed & (KEY_A | KEY_START) != 0 {
                 match cursor {
                     0 => {
-                        // CREATE: a password first (none is fine: OK or START).
-                        clear_field(core, PASSWORD, PASSWORD_LEN, PASSWORD_CHARS);
+                        // CREATE: the room's name first (none is fine: OK or START takes the default), then a password
+                        // (none is fine too).
+                        clear_field(core, NAME_BUF, NAME_LEN, NAME_TYPED_CHARS + 1);
                         core.raw_write_8(ENTRY, -1, 0);
                         core.raw_write_8(GRID, -1, GRID_OK as u8);
                         core.raw_write_8(TYPED_LEN, -1, 0);
-                        set_level(core, 5);
+                        set_level(core, NAME_LEVEL);
                     }
                     1 => {
                         // JOIN: the public lobbies, with "Enter a code" first.
@@ -1045,7 +1111,7 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
             }
             keys & !ALL_KEYS
         }
-        3 | 5 | TAG_LEVEL => {
+        3 | 5 | TAG_LEVEL | NAME_LEVEL => {
             code_entry(core, pressed);
             keys & !ALL_KEYS
         }
@@ -1066,7 +1132,11 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
         REJOIN_LEVEL => {
             let state = core.raw_read_8(REJOIN, -1);
             let failed = Status::of(core.raw_read_8(STATUS, -1)) == Status::Failed;
-            if state == 1 && pressed & KEY_A != 0 {
+            if state == 1 && pressed & KEY_START != 0 {
+                // (later: the match stays offered, on the JOIN list above "Enter a code")
+                core.raw_write_8(REJOIN, -1, 3);
+                set_level(core, 1);
+            } else if state == 1 && pressed & KEY_A != 0 {
                 core.raw_write_8(REJOIN, -1, 2);
                 core.raw_write_8(STATUS, -1, 0);
                 request(core, 11);
@@ -1131,6 +1201,13 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                 }
                 Pick::Open(c) => join_listed(core, &c, false),
                 Pick::Locked(c) => join_listed(core, &c, true),
+                Pick::Rejoin => {
+                    // (the player's own match that is still on: the same as A on the rejoin box)
+                    core.raw_write_8(REJOIN, -1, 2);
+                    core.raw_write_8(STATUS, -1, 0);
+                    request(core, 11);
+                    set_level(core, REJOIN_LEVEL);
+                }
                 _ => {}
             }
             keys & !ALL_KEYS
@@ -1191,17 +1268,42 @@ fn code_entry(core: &mut Core, pressed: u32) {
         }
     }
     let mut g = (core.raw_read_8(GRID, -1) as usize).min(GRID_CELLS - 1);
-    // Left and Right go round their row; Up and Down keep the nearest column; Del and OK have a row of their own.
-    let last_row_mid = |g: usize| if grid_mid(g) <= 10 { GRID_DEL } else { GRID_OK };
+    // The bottom row: Del and OK (and the space bar between them where a name is typed). Left and Right go round their row; Up
+    // and Down keep the nearest column.
+    let spaces = allow_space(core);
+    if !spaces && g == GRID_SPACE {
+        g = GRID_OK;
+    }
+    let bottom: &[usize] = if spaces { &[GRID_DEL, GRID_SPACE, GRID_OK] } else { &[GRID_DEL, GRID_OK] };
+    // (the cell of the bottom row under a key of the row above, by its middle in half keys)
+    let last_row_mid = |g: usize| {
+        let mid = grid_mid(g);
+        if spaces {
+            if mid <= 6 {
+                GRID_DEL
+            } else if mid <= 13 {
+                GRID_SPACE
+            } else {
+                GRID_OK
+            }
+        } else if mid <= 10 {
+            GRID_DEL
+        } else {
+            GRID_OK
+        }
+    };
     if pressed & (KEY_RIGHT | KEY_LEFT | KEY_UP | KEY_DOWN) != 0 {
         if g >= GRID_DEL {
-            if pressed & (KEY_RIGHT | KEY_LEFT) != 0 {
-                g = if g == GRID_DEL { GRID_OK } else { GRID_DEL };
-            } else if pressed & KEY_UP != 0 {
-                // (Del is under the left of the bottom row, OK under its right)
-                g = if g == GRID_DEL { grid_nearest(3, 5) } else { grid_nearest(3, 13) };
+            let at = bottom.iter().position(|&b| b == g).unwrap_or(0);
+            if pressed & KEY_RIGHT != 0 {
+                g = bottom[(at + 1) % bottom.len()];
+            } else if pressed & KEY_LEFT != 0 {
+                g = bottom[(at + bottom.len() - 1) % bottom.len()];
             } else {
-                g = if g == GRID_DEL { grid_nearest(0, 5) } else { grid_nearest(0, 15) };
+                // (Del is under the left of the row above, OK under its right, the space bar between)
+                let mids: &[usize] = if spaces { &[5, 9, 13] } else { &[5, 13] };
+                let top_mids: &[usize] = if spaces { &[5, 10, 15] } else { &[5, 15] };
+                g = if pressed & KEY_UP != 0 { grid_nearest(3, mids[at]) } else { grid_nearest(0, top_mids[at]) };
             }
         } else {
             let (r, c) = grid_rc(g);
@@ -1227,6 +1329,7 @@ fn code_entry(core: &mut Core, pressed: u32) {
                 rub_out(core);
             }
             GRID_OK => accept(core),
+            GRID_SPACE => type_char(core, b' '),
             _ => {
                 type_char(core, grid_char(g));
                 let (_, len, max, _) = field(core);
@@ -2296,11 +2399,20 @@ fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) 
     let typed: Vec<char> = typed(core).chars().collect();
     let (_, _, max, min) = field(core);
     let full = typed.len() >= min;
+    let spaces = allow_space(core);
     for k in 0..GRID_CELLS {
-        // Del and OK take half the width each of the row of their own.
+        if k == GRID_SPACE && !spaces {
+            continue;
+        }
+        // The bottom row has a row of its own: Del and OK half the width each, or (a name) Del and OK three keys wide and the
+        // space bar four between them.
+        let by = gy + 4 * ch + 2;
         let (cx, cy, cwid, label) = match k {
-            GRID_DEL => (gx, gy + 4 * ch + 2, 5 * cw, "Del".to_string()),
-            GRID_OK => (gx + 5 * cw, gy + 4 * ch + 2, 5 * cw, "OK".to_string()),
+            GRID_DEL if spaces => (gx, by, 3 * cw, "Del".to_string()),
+            GRID_SPACE => (gx + 3 * cw, by, 4 * cw, "Space".to_string()),
+            GRID_OK if spaces => (gx + 7 * cw, by, 3 * cw, "OK".to_string()),
+            GRID_DEL => (gx, by, 5 * cw, "Del".to_string()),
+            GRID_OK => (gx + 5 * cw, by, 5 * cw, "OK".to_string()),
             _ => {
                 let (r, c) = grid_rc(k);
                 (
@@ -2314,6 +2426,7 @@ fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) 
         let ready = match k {
             GRID_OK => full,
             GRID_DEL => true,
+            GRID_SPACE => typed.len() < max && typed.last().is_some_and(|&c| c != ' '),
             _ => typed.len() < max,
         };
         if k == g {
@@ -2325,6 +2438,43 @@ fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) 
         let ink = if k == GRID_OK && full && k != g { WHITE } else if ready { INK } else { SHADE };
         cv.text(core, cx + (cwid - text_width(core, &label)) / 2, cy + 1, &label, ink, SHADE);
     }
+}
+
+/// The name a room gets when none is typed: "<gamertag>'s room" ("Player" while there is no gamertag).
+pub fn default_room_name(gamertag: &str) -> String {
+    let tag = clean_name(gamertag, crate::online_stats::TAG_CHARS);
+    format!("{}'s room", if tag.is_empty() { "Player" } else { &tag })
+}
+
+/// The room's name typing page: the name typed in a box (the default, greyed, while none is typed), the grid with its space bar below.
+fn draw_name_entry(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32)) {
+    let (x, y, w, _) = panel;
+    let head = "Name your room";
+    cv.text(core, x + (w - text_width(core, head)) / 2, y + 5, head, GRAY_INK, SHADE);
+    let name = typed(core);
+    let (bx, by, bw, bh) = (x + 10, y + 19, w - 20, 20);
+    cv.rect(bx, by, bw, bh, LIGHT_GRAY);
+    cv.rect(bx, by + bh - 2, bw, 2, RED);
+    if name.is_empty() {
+        let d = default_room_name(&crate::online_stats::gamertag(core));
+        let shown = fit(core, &d, bw - 8);
+        cv.text(core, bx + (bw - text_width(core, &shown)) / 2, by + 4, &shown, SHADE, LIGHT_GRAY);
+        cv.rect(bx + 3, by + 14, 5, 2, INK);
+    } else {
+        let tw = text_width(core, &name);
+        let nx = bx + (bw - tw - 6) / 2;
+        cv.text(core, nx, by + 4, &name, INK, SHADE);
+        if name.chars().count() < NAME_TYPED_CHARS {
+            cv.rect(nx + tw + 2, by + 14, 5, 2, INK);
+        }
+    }
+}
+
+/// The name shown for the room that is open (the app's), if it has told one.
+pub(crate) fn room_name_shown(core: &Core) -> String {
+    let mut b = [0u8; ROOM_NAME_CHARS + 1];
+    core.raw_read_range(crate::online_browse::ROOM_NAME, -1, &mut b);
+    b.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect()
 }
 
 fn note(core: &Core) -> String {
@@ -2353,29 +2503,33 @@ pub(crate) fn fit(core: &Core, s: &str, width: i32) -> String {
     format!("{t}..")
 }
 
-/// The rejoin box: AW2's message window over the ONLINE screen (the same frame, font and bar as every page here).
+/// The rejoin box: AW2's message window over the ONLINE screen (the same frame, font and bar as every page here). A match of
+/// UNRANKED has no room name; a lobby's room is named.
 pub(crate) fn rejoin_page(cv: &mut Rgba, core: &Core) {
     let (x, y, w, h) = (10, 38, W as i32 - 20, 68);
     cv.window(x, y, w, h);
     let state = core.raw_read_8(REJOIN, -1);
     let status = Status::of(core.raw_read_8(STATUS, -1));
-    cv.text(core, x + 8, y + 6, "Unranked", GRAY_INK, SHADE);
+    let room = crate::online_browse::own(core).unwrap_or_default();
+    let (kind, still_on, over) = if room.is_empty() {
+        ("Unranked", "Your Unranked match is still on.".to_string(), "Your Unranked match is over.")
+    } else {
+        ("Lobby", format!("Your match in {room} is still on."), "Your match is over.")
+    };
+    cv.text(core, x + 8, y + 6, kind, GRAY_INK, SHADE);
     let (lines, ink, hint): (Vec<String>, Rgb, &str) = match (state, status) {
         (1, _) => (
-            wrap(core, "Your Unranked match is still on.", w - 24)
-                .into_iter()
-                .chain(std::iter::once("Rejoin?".to_string()))
-                .collect(),
+            wrap(core, &still_on, w - 24).into_iter().chain(std::iter::once("Rejoin?".to_string())).collect(),
             INK,
-            "A: Rejoin  B: Give up",
+            "A: Rejoin  B: Give up  START: Later",
         ),
         (_, Status::Failed) => {
             let m = message(core);
-            (wrap(core, if m.is_empty() { "Your Unranked match is over." } else { &m }, w - 24), RED, "B: Back")
+            (wrap(core, if m.is_empty() { over } else { &m }, w - 24), RED, "B: Back")
         }
-        (_, Status::Connected) => (vec!["Your opponent is here.".into(), "The match is resuming!".into()], BLUE, "Resuming..."),
+        (_, Status::Connected) => (vec!["The others are here.".into(), "The match is resuming!".into()], BLUE, "Resuming..."),
         _ => (
-            vec!["Rejoining your match...".into(), "Your opponent is waiting for you.".into()],
+            vec!["Rejoining your match...".into(), "The others are waiting for you.".into()],
             INK,
             "B: Give up",
         ),
@@ -2478,7 +2632,17 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             let (x, y, w, h) = PANEL;
             cv.window(x, y, w, h);
             let hosting = level == 2;
-            let head = if hosting { "Your room" } else { "Room" };
+            let name = room_name_shown(core);
+            let fallback = if hosting { "Your room" } else { "Room" };
+            // (what the heading leaves room for: the right side has the host's password, or the guest's "Locked" with its padlock)
+            let right = match (password(core).is_empty(), hosting) {
+                (true, _) => 0,
+                (false, true) => text_width(core, &format!("PW: {}", password(core))) + 8,
+                (false, false) => text_width(core, "Locked") + 8 + 8,
+            };
+            let head_room = w - 12 - right;
+            let head = if name.is_empty() { fallback.to_string() } else { fit(core, &name, head_room) };
+            let head = head.as_str();
             let code = if hosting { room(core) } else { code(core) };
             cv.text(core, x + 6, y + 5, head, GRAY_INK, SHADE);
             let pw = password(core);
@@ -2669,6 +2833,13 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             );
         }
         7 => crate::online_browse::apply(&mut cv, core),
+        NAME_LEVEL => {
+            let (x, y, w, h) = PANEL;
+            cv.window(x, y, w, h);
+            draw_name_entry(&mut cv, core, PANEL);
+            draw_grid(&mut cv, core, PANEL, 44);
+            bar(&mut cv, core, if typed(core).is_empty() { "A: Type  B: Back  START: OK (default)" } else { "A: Type  B: Rub out  START: OK" });
+        }
         TAG_LEVEL => {
             let (x, y, w, h) = PANEL;
             cv.window(x, y, w, h);
@@ -2711,6 +2882,40 @@ mod tests {
         assert!(TYPED + TYPED_MAX <= TYPED_LEN);
         assert!(MESSAGE + MESSAGE_LEN <= STATE + STATE_LEN);
         assert!(MESSAGE >= PLAYERS + PLAYER_SIZE * MAX_PLAYERS as u32);
+    }
+
+    #[test]
+    fn names_keep_their_spaces_one_at_a_time_and_none_at_the_ends() {
+        assert_eq!(clean_name("  Ann   Lee ", 12), "Ann Lee");
+        assert_eq!(clean_name("    ", 12), "");
+        assert_eq!(clean_name("Big Pent Room Today", 12), "Big Pent Roo");
+        // (the cut never leaves a space at the end)
+        assert_eq!(clean_name("ABCDEFGHIJK LMN", 12), "ABCDEFGHIJK");
+        assert_eq!(clean_name("Caf\u{e9} \u{1}Bar", 12), "Caf Bar");
+        assert_eq!(crate::online_stats::clean("Ann  Lee Jr Third"), "Ann Lee Jr");
+        assert_eq!(default_room_name("Ann Lee"), "Ann Lee's room");
+        assert_eq!(default_room_name(""), "Player's room");
+    }
+
+    #[test]
+    fn a_room_made_asks_with_its_name_and_password() {
+        let mut mem = vec![0u8; STATE_LEN as usize];
+        mem[0x0C] = 1; // CREATE
+        mem[0x0D] = 9; // serial
+        for (k, c) in b"BIG ROOM".iter().enumerate() {
+            mem[0x1C + k] = *c;
+        }
+        mem[0x29] = 8;
+        mem[0x59] = 2;
+        mem[0x5A] = b'A';
+        mem[0x5B] = b'B';
+        let mut read = |at: u32, b: &mut [u8]| {
+            let o = (at - STATE) as usize;
+            b.copy_from_slice(&mem[o..o + b.len()]);
+        };
+        let (serial, request) = mailbox::read_request(&mut read, 8).expect("a new request");
+        assert_eq!(serial, 9);
+        assert_eq!(request, mailbox::Request::Host { password: "AB".into(), name: "BIG ROOM".into() });
     }
 
     #[test]

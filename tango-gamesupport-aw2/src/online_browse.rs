@@ -1,8 +1,12 @@
 //! The lobby browser (level 7 of the in-game lobby, [`crate::online`]): JOIN lists the public lobbies, drawn in the
 //! lobby's own window and bar. The first line is "Enter a code" (the code page of old); the others are the lobbies
-//! the app found on the public relays (`tango_lobby::browse`), each with its host's gamertag, a padlock when it has
-//! a password and how many of its seats are taken. UP and DOWN pick, A joins (a locked one asks for its password on
-//! the password page first), B goes back.
+//! the app found on the public relays (`tango_lobby::browse`), each with its room's name (the host's gamertag when the
+//! announcement has none), a padlock when it has a password and how many of its seats are taken. UP and DOWN pick,
+//! A joins (a locked one asks for its password on the password page first), B goes back, R looks again (the app
+//! asks the relays at most once every five seconds, see its `online_browse`).
+//!
+//! A player whose own match is still on (its app was closed, and the window to come back is open) has a line of its
+//! own above "Enter a code": "<room> - In progress", A rejoins. Started matches of other players are never listed.
 //!
 //! The mailbox (EWRAM [`STATE`], the app's half in [`mailbox`]): the app writes the rows and how the search stands;
 //! the game keeps its own cursor and remembers *which lobby* it is on (by code), so a list that changes under the
@@ -11,7 +15,7 @@
 use mgba::core::Core;
 
 use crate::online::{
-    bar, text_width, Rgb, Rgba, BLUE, GRAY_INK, INK, KEY_A, KEY_B, KEY_DOWN, KEY_UP, LIGHT_GRAY, RED, SHADE, WHITE,
+    bar, text_width, Rgb, Rgba, BLUE, GRAY_INK, INK, KEY_A, KEY_B, KEY_DOWN, KEY_R, KEY_UP, LIGHT_GRAY, RED, SHADE, WHITE,
     YELLOW,
 };
 
@@ -27,17 +31,29 @@ const TOP: u32 = STATE + 2;
 const NET: u32 = STATE + 3;
 /// 1 when the code or password page was opened from here (B comes back here).
 pub const FROM: u32 = STATE + 4;
+/// R was pressed: counts the presses, so the app sees each once.
+const REFRESH: u32 = STATE + 5;
 /// The code of the lobby under the cursor (zero-padded; empty on "Enter a code").
 const SELECTED: u32 = STATE + 6;
 /// The game version, drawn in the title line (zero-terminated).
 const VERSION: u32 = STATE + 0x0C;
 const VERSION_LEN: usize = 0x0C;
-/// The rows: [`ROW_SIZE`] bytes each: the code (6), players, seats, flags (1 padlock), the host (zero-terminated).
-const ROWS: u32 = STATE + 0x18;
-pub const ROW_SIZE: u32 = 24;
+/// The app's note on the title line: 0 none, 1 "Refreshing...", 2 "Updated".
+const NOTE: u32 = STATE + 0x18;
+/// The name of the room of the player's own match that is still on (the state is [`crate::online::REJOIN`]: 1 offered, 3 offered
+/// and put off), zero-terminated. The rejoin box reads it here too.
+pub const OWN_NAME: u32 = STATE + 0x1A;
+pub const OWN_NAME_CHARS: usize = 18;
+/// The room that is open now (host or guest): its name, for the room page's heading.
+pub const ROOM_NAME: u32 = STATE + 0x30;
+/// The rows: [`ROW_SIZE`] bytes each: the code (6), players, seats, flags (1 padlock), the room's name (zero-terminated). They have a
+/// block of their own ([`ROWS`], 9 rows of 28 bytes).
+pub const ROWS: u32 = 0x0203_C400;
+pub const ROWS_LEN: u32 = 0x100;
+pub const ROW_SIZE: u32 = 28;
 pub const MAX_ROWS: usize = 9;
-const HOST_AT: usize = 9;
-pub const HOST_CHARS: usize = ROW_SIZE as usize - HOST_AT - 1;
+const NAME_AT: usize = 9;
+pub const NAME_CHARS: usize = ROW_SIZE as usize - NAME_AT - 1;
 
 /// How the search for lobbies stands.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -55,7 +71,8 @@ pub enum Net {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Row {
     pub code: String,
-    pub host: String,
+    /// The room's name (the host's gamertag for an announcement without one).
+    pub name: String,
     pub players: u8,
     pub max: u8,
     pub locked: bool,
@@ -66,6 +83,44 @@ const LOCKED: u8 = 1;
 /// The app's half.
 pub mod mailbox {
     use super::*;
+
+    /// The title line's note: none, "Refreshing..." or "Updated".
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    #[repr(u8)]
+    pub enum Note {
+        None = 0,
+        Refreshing = 1,
+        Updated = 2,
+    }
+
+    pub fn write_note(write: &mut dyn FnMut(u32, &[u8]), note: Note) {
+        write(NOTE, &[note as u8]);
+    }
+
+    /// How many times R has been pressed on the page.
+    pub fn refreshes(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
+        let mut b = [0u8];
+        read(REFRESH, &mut b);
+        b[0]
+    }
+
+    /// The room's name of the player's own match that is still on.
+    pub fn write_own_name(write: &mut dyn FnMut(u32, &[u8]), name: &str) {
+        let mut b = [0u8; OWN_NAME_CHARS + 1];
+        for (i, c) in name.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).take(OWN_NAME_CHARS).enumerate() {
+            b[i] = c as u8;
+        }
+        write(OWN_NAME, &b);
+    }
+
+    /// The room's name for the room page's heading (nothing: the page says "Your room" or "Room").
+    pub fn write_room_name(write: &mut dyn FnMut(u32, &[u8]), name: &str) {
+        let mut b = [0u8; OWN_NAME_CHARS + 1];
+        for (i, c) in name.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).take(OWN_NAME_CHARS).enumerate() {
+            b[i] = c as u8;
+        }
+        write(ROOM_NAME, &b);
+    }
 
     /// Writes the rows (at most [`MAX_ROWS`]), the search's state and the version drawn on the page.
     pub fn write(write: &mut dyn FnMut(u32, &[u8]), rows: &[Row], net: Net, version: &str) {
@@ -79,13 +134,13 @@ pub mod mailbox {
             b[o + 7] = r.max;
             b[o + 8] = if r.locked { LOCKED } else { 0 };
             for (i, c) in r
-                .host
+                .name
                 .chars()
                 .filter(|c| c.is_ascii() && !c.is_ascii_control())
-                .take(HOST_CHARS)
+                .take(NAME_CHARS)
                 .enumerate()
             {
-                b[o + HOST_AT + i] = c as u8;
+                b[o + NAME_AT + i] = c as u8;
             }
         }
         write(ROWS, &b);
@@ -111,7 +166,7 @@ fn rows(core: &Core) -> Vec<Row> {
                 players: b[6],
                 max: b[7],
                 locked: b[8] & LOCKED != 0,
-                host: text(&b[HOST_AT..]),
+                name: text(&b[NAME_AT..]),
             }
         })
         .collect()
@@ -146,16 +201,31 @@ pub fn scroll(cursor: usize, top: usize, items: usize) -> usize {
     }
 }
 
-/// Where the cursor is after the list changed: on the lobby that was selected if it is still there; a vanished one
-/// puts it on "Enter a code" rather than on another lobby by surprise.
-pub fn settle(selected: &str, rows: &[Row]) -> usize {
+/// Where the cursor is after the list changed: on the lobby that was selected if it is still there (`lead` items come first:
+/// the player's own match, "Enter a code"); a vanished one puts it on "Enter a code" rather than on another lobby by
+/// surprise.
+pub fn settle(selected: &str, rows: &[Row], lead: usize) -> usize {
     if selected.is_empty() {
-        return 0;
+        return lead.saturating_sub(1).min(lead);
     }
     match rows.iter().position(|r| r.code == selected) {
-        Some(k) => k + 1,
-        None => 0,
+        Some(k) => lead + k,
+        None => lead.saturating_sub(1).min(lead),
     }
+}
+
+/// Items before the lobbies: "Enter a code", and above it the player's own match when it is still on.
+fn lead(core: &Core) -> usize {
+    1 + own(core).is_some() as usize
+}
+
+/// The player's own match that is still on (its room's name), offered for a rejoin.
+pub fn own(core: &Core) -> Option<String> {
+    matches!(core.raw_read_8(crate::online::REJOIN, -1), 1 | 3).then(|| {
+        let mut b = [0u8; OWN_NAME_CHARS];
+        core.raw_read_range(OWN_NAME, -1, &mut b);
+        b.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect()
+    })
 }
 
 /// Opened from the LOBBY menu's JOIN.
@@ -164,20 +234,25 @@ pub fn open(core: &mut Core) {
     core.raw_write_8(TOP, -1, 0);
     core.raw_write_range(SELECTED, -1, &[0u8; 6]);
     core.raw_write_8(FROM, -1, 0);
+    core.raw_write_8(REFRESH, -1, 0);
+    core.raw_write_8(NOTE, -1, 0);
     core.raw_write_8(crate::online::TYPED_LEN, -1, 0);
+    // (the player's own match comes first: the cursor starts on "Enter a code" below it, as before)
+    core.raw_write_8(CURSOR, -1, lead(core) as u8 - 1);
 }
 
 /// Every frame at level 7: moves the cursor, A and B. Returns what the game should do next.
 pub fn tick(core: &mut Core, pressed: u32) -> Pick {
     let rows = rows(core);
-    let items = rows.len() + 1;
+    let lead = lead(core);
+    let items = lead + rows.len();
     // The lobby that was selected, wherever it is now.
     let mut sel = [0u8; 6];
     core.raw_read_range(SELECTED, -1, &mut sel);
     let selected: String = sel.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect();
     let mut cursor = (core.raw_read_8(CURSOR, -1) as usize).min(items - 1);
     if !selected.is_empty() {
-        cursor = settle(&selected, &rows);
+        cursor = settle(&selected, &rows, lead);
     }
     let mut top = core.raw_read_8(TOP, -1) as usize;
     if pressed & KEY_DOWN != 0 {
@@ -189,19 +264,26 @@ pub fn tick(core: &mut Core, pressed: u32) -> Pick {
     core.raw_write_8(CURSOR, -1, cursor as u8);
     core.raw_write_8(TOP, -1, top as u8);
     let mut s = [0u8; 6];
-    if cursor > 0 {
-        for (k, c) in rows[cursor - 1].code.bytes().take(6).enumerate() {
+    if cursor >= lead {
+        for (k, c) in rows[cursor - lead].code.bytes().take(6).enumerate() {
             s[k] = c;
         }
     }
     core.raw_write_range(SELECTED, -1, &s);
+    if pressed & KEY_R != 0 {
+        let n = core.raw_read_8(REFRESH, -1).wrapping_add(1);
+        core.raw_write_8(REFRESH, -1, n);
+        return Pick::Refresh;
+    }
     if pressed & KEY_B != 0 {
         Pick::Back
     } else if pressed & KEY_A != 0 {
-        if cursor == 0 {
+        if lead == 2 && cursor == 0 {
+            Pick::Rejoin
+        } else if cursor + 1 == lead {
             Pick::Code
         } else {
-            let r = &rows[cursor - 1];
+            let r = &rows[cursor - lead];
             if r.players >= r.max {
                 Pick::Full
             } else if r.locked {
@@ -227,6 +309,10 @@ pub enum Pick {
     Locked(String),
     /// The lobby is full (said in the bar).
     Full,
+    /// R: look at the list again (the app does it, politely).
+    Refresh,
+    /// A on the player's own match that is still on: go back into it.
+    Rejoin,
 }
 
 /// A padlock, 5 wide and 7 tall.
@@ -263,7 +349,8 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
     let (x, y, w, h) = crate::online::PANEL;
     cv.window(x, y, w, h);
     let rows = rows(core);
-    let items = rows.len() + 1;
+    let lead = lead(core);
+    let items = lead + rows.len();
     let cursor = (core.raw_read_8(CURSOR, -1) as usize).min(items - 1);
     let top = scroll(cursor, core.raw_read_8(TOP, -1) as usize, items);
     // The title line: what this is, and the version whose lobbies are listed.
@@ -275,6 +362,15 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
         // (a pre-release suffix is left off: "v0.10.12", never cut)
         let t = format!("v{}", version.split('-').next().unwrap_or(&version));
         cv.text(core, x + w - 6 - text_width(core, &t), y + 5, &t, GRAY_INK, SHADE);
+    }
+    // The app's note after the title ("Refreshing...", then "Updated"); the arrows of a longer list are by the version.
+    let note = match core.raw_read_8(NOTE, -1) {
+        1 => Some(("Refreshing...", GRAY_INK)),
+        2 => Some(("Updated", BLUE)),
+        _ => None,
+    };
+    if let Some((t, ink)) = note {
+        cv.text(core, x + 46, y + 5, t, ink, SHADE);
     }
     let line = 12;
     let ly = y + 17;
@@ -291,11 +387,21 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
         } else {
             cv.rect(x + 4, ry + line - 2, w - 8, 1, LIGHT_GRAY);
         }
-        if item == 0 {
+        if lead == 2 && item == 0 {
+            // (the player's own match, still on: its room and where it stands)
+            let name = own(core).unwrap_or_default();
+            let tail = "In progress";
+            let tw = text_width(core, tail);
+            cv.text(core, x + w - 7 - tw, ry, tail, BLUE, SHADE);
+            let shown = fit(core, if name.is_empty() { "Your match" } else { &name }, w - 7 - tw - 8 - 10);
+            cv.text(core, x + 8, ry, &shown, INK, SHADE);
+            continue;
+        }
+        if item + 1 == lead {
             cv.text(core, x + 8, ry, "Enter a code", INK, SHADE);
             continue;
         }
-        let r = &rows[item - 1];
+        let r = &rows[item - lead];
         let seats = format!("{}/{}", r.players, r.max);
         let full = r.players >= r.max;
         let sw = text_width(core, &seats);
@@ -304,25 +410,25 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
         if r.locked {
             padlock(cv, x + 6, ry + 1, ink);
         }
-        let name = fit(core, &if r.host.is_empty() { "Player".to_string() } else { r.host.clone() }, w - 7 - sw - 8 - 14);
+        let name = fit(core, &if r.name.is_empty() { "Player".to_string() } else { r.name.clone() }, w - 7 - sw - 8 - 14);
         cv.text(core, x + 14, ry, &name, ink, SHADE);
     }
     // More above or below.
     if top > 0 {
-        // (mid-title, clear of the version at the right)
-        let ax = x + w / 2 - 6;
+        // (in the title line, clear of the note and the version at the right)
+        let ax = x + w - 58;
         cv.rect(ax, y + 7, 5, 1, GRAY_INK);
         cv.rect(ax + 1, y + 6, 3, 1, GRAY_INK);
         cv.rect(ax + 2, y + 5, 1, 1, GRAY_INK);
     }
     if top + VISIBLE < items {
         // (in the title line too, beside the up arrow: the last row owns the panel's foot)
-        let ax = x + w / 2 + 4;
+        let ax = x + w - 49;
         cv.rect(ax, y + 5, 5, 1, GRAY_INK);
         cv.rect(ax + 1, y + 6, 3, 1, GRAY_INK);
         cv.rect(ax + 2, y + 7, 1, 1, GRAY_INK);
     }
-    // Only the list itself is empty (the first line is always there): say so under it.
+    // Only the list itself is empty (its first lines are always there): say so under it.
     if rows.is_empty() {
         let (a, ink) = match state {
             Net::Looking => ("Searching for lobbies...", GRAY_INK),
@@ -330,7 +436,7 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
             Net::Offline => ("The lobby list cannot be reached.", RED),
         };
         // (a line that is too long goes to two, whole)
-        let mut at = ly + line + 14;
+        let mut at = ly + line * lead as i32 + 14;
         for t in crate::online::wrap(core, a, w - 12) {
             cv.text(core, x + (w - text_width(core, &t)) / 2, at, &t, ink, SHADE);
             at += 13;
@@ -342,16 +448,21 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
             }
         }
     }
-    let text = if cursor == 0 {
-        bar_text(core, &["A: Type a code  B: Back", "A: Code  B: Back"])
+    let text = if lead == 2 && cursor == 0 {
+        bar_text(core, &["A: Rejoin  R: Refresh  B: Back", "A: Rejoin  B: Back"])
+    } else if cursor + 1 == lead {
+        bar_text(core, &["A: Type a code  R: Refresh  B: Back", "A: Code  R: Refresh  B: Back", "A: Code  B: Back"])
     } else {
-        let r = &rows[cursor - 1];
+        let r = &rows[cursor - lead];
         if r.players >= r.max {
-            bar_text(core, &["This lobby is full.  B: Back", "Full.  B: Back"])
+            bar_text(core, &["This lobby is full.  R: Refresh  B: Back", "Full.  R: Refresh  B: Back", "Full.  B: Back"])
         } else if r.locked {
-            bar_text(core, &["A: Join (needs a password)  B: Back", "A: Join (password)  B: Back", "A: Join  B: Back"])
+            bar_text(
+                core,
+                &["A: Join (password)  R: Refresh  B: Back", "A: Join  R: Refresh  B: Back", "A: Join  B: Back"],
+            )
         } else {
-            bar_text(core, &["A: Join  B: Back"])
+            bar_text(core, &["A: Join  R: Refresh  B: Back"])
         }
     };
     bar(cv, core, &text);
@@ -365,7 +476,7 @@ mod tests {
     fn row(code: &str) -> Row {
         Row {
             code: code.into(),
-            host: "x".into(),
+            name: "x".into(),
             players: 1,
             max: 5,
             locked: false,
@@ -374,11 +485,13 @@ mod tests {
 
     #[test]
     fn layout_fits() {
-        assert!(ROWS + ROW_SIZE * MAX_ROWS as u32 <= STATE + STATE_LEN);
-        assert!(VERSION + VERSION_LEN as u32 <= ROWS);
+        assert!(ROWS_LEN >= ROW_SIZE * MAX_ROWS as u32);
+        assert!(VERSION + VERSION_LEN as u32 <= NOTE);
         assert!(SELECTED + 6 <= VERSION);
-        assert_eq!(HOST_AT, 9);
-        assert!(HOST_CHARS >= 12);
+        assert!(OWN_NAME + OWN_NAME_CHARS as u32 + 1 <= ROOM_NAME);
+        assert!(ROOM_NAME + OWN_NAME_CHARS as u32 + 1 <= STATE + STATE_LEN);
+        assert_eq!(NAME_AT, 9);
+        assert!(NAME_CHARS >= 18);
     }
 
     #[test]
@@ -397,11 +510,14 @@ mod tests {
     #[test]
     fn the_cursor_follows_its_lobby() {
         let rows = vec![row("AAAAAA"), row("BBBBBB"), row("CCCCCC")];
-        assert_eq!(settle("BBBBBB", &rows), 2);
+        assert_eq!(settle("BBBBBB", &rows, 1), 2);
         let after = vec![row("CCCCCC"), row("BBBBBB")];
-        assert_eq!(settle("BBBBBB", &after), 2);
+        assert_eq!(settle("BBBBBB", &after, 1), 2);
         // gone: back on "Enter a code" rather than on someone else's lobby
-        assert_eq!(settle("AAAAAA", &after), 0);
-        assert_eq!(settle("", &after), 0);
+        assert_eq!(settle("AAAAAA", &after, 1), 0);
+        assert_eq!(settle("", &after, 1), 0);
+        // (with the player's own match above "Enter a code": that is item 1, the lobbies follow it)
+        assert_eq!(settle("BBBBBB", &rows, 2), 3);
+        assert_eq!(settle("AAAAAA", &after, 2), 1);
     }
 }

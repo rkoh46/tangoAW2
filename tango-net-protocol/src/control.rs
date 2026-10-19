@@ -191,6 +191,8 @@ pub struct RoomPlayer {
 pub struct RoomRoster {
     /// The receiver's seat (0 is the host).
     pub seat: u8,
+    /// The room's name (the host's choice; "" from a host that has none).
+    pub name: String,
     /// Everyone in seat order, the host first.
     pub players: Vec<RoomPlayer>,
 }
