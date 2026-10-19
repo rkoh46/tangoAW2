@@ -87,7 +87,11 @@ if [ $sim = 1 ]; then
     cp -R "$app" dist/tangoAW2-sim.app
     echo "dist/tangoAW2-sim.app"
 else
-    rm -f dist/tangoaw2-ios.ipa
-    (cd "$work" && zip -qry -X ../../../dist/tangoaw2-ios.ipa Payload)
-    echo "dist/tangoaw2-ios.ipa"
+    # The version is in the file name (tangoaw2-0.8.5-ios.ipa); the updater
+    # looks for any asset ending in "-ios.ipa".
+    ver=$(sed -n 's/^version = "\(.*\)"/\1/p' tango/Cargo.toml | head -1)
+    ipa="tangoaw2-$ver-ios.ipa"
+    rm -f dist/tangoaw2-*ios.ipa
+    (cd "$work" && zip -qry -X "../../../dist/$ipa" Payload)
+    echo "dist/$ipa"
 fi

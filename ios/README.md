@@ -10,7 +10,7 @@ iOS and desktop players match each other.
 ```sh
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 python3 -m pip install pillow          # the icon
-ios/build.sh                           # dist/tangoaw2-ios.ipa
+ios/build.sh                           # dist/tangoaw2-<version>-ios.ipa
 ios/build.sh --sim                     # dist/tangoAW2-sim.app (PROFILE=dev for a quick debug build)
 ios/cargo.sh check --bin tango --target aarch64-apple-ios
 ```
