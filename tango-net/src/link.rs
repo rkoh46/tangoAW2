@@ -195,6 +195,9 @@ pub struct LinkParts {
     /// Recipe for transparently rebuilding the connection if it drops
     /// mid-match, or `None` for a transport that can't be rebuilt.
     pub recipe: Option<ReconnectRecipe>,
+    /// The peer's `Primed` has already arrived (the room's host read it while it still held the control receiver: a match
+    /// resumed from a saved state boots in an instant, so its first words can beat the hand-over).
+    pub peer_primed: bool,
     /// The shared match RNG seed — the unchanging half of the matchmaking
     /// reconnect `session_id` derivation (the DTLS fingerprints are the
     /// per-connection half, refreshed on every rebuild).
@@ -295,7 +298,7 @@ impl Link {
             control_sender: parts.control_sender,
             control_receiver: tokio::sync::Mutex::new(control_receiver),
             match_receiver: std::sync::Mutex::new(Some(parts.in_match_receiver)),
-            peer_primed: Arc::new(AtomicBool::new(false)),
+            peer_primed: Arc::new(AtomicBool::new(parts.peer_primed)),
             notices: Default::default(),
             notice_wake: Arc::new(tokio::sync::Notify::new()),
             recipe: std::sync::Mutex::new(parts.recipe),

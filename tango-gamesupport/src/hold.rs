@@ -41,3 +41,15 @@ pub fn set_host_wait(on: bool) {
 pub fn host_wait() -> bool {
     HOST_WAIT.load(std::sync::atomic::Ordering::Relaxed)
 }
+
+static UNRANKED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// The match is an UNRANKED one: the player waited for may rejoin, and when its window passes its army yields and the other
+/// player wins (the box says so).
+pub fn set_unranked(on: bool) {
+    UNRANKED.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn unranked() -> bool {
+    UNRANKED.load(std::sync::atomic::Ordering::Relaxed)
+}

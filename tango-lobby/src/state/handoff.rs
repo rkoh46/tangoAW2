@@ -130,6 +130,7 @@ impl State {
                 in_match_receiver: handles.in_match_receiver,
                 peer_conn: handles.peer_conn,
                 recipe,
+                peer_primed: false,
                 rng_seed,
             },
             terms: tango_net::handoff::MatchTerms {

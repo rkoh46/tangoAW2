@@ -286,6 +286,24 @@ fn main() {
         level(core, 6);
         status(core, Status::Connected, W12);
     });
+    // --- UNRANKED's rejoin box (the app crashed out of a match that is still on) ---
+    c.page("rejoin_offer", |core| {
+        level(core, tango_gamesupport_aw2::online::REJOIN_LEVEL);
+        mailbox::write_rejoin(&mut w(core), 1);
+    });
+    for (name, st, m) in [
+        ("rejoin_connecting", Status::Connecting, ""),
+        ("rejoin_waiting", Status::Waiting, ""),
+        ("rejoin_connected", Status::Connected, W12),
+        ("rejoin_failed", Status::Failed, "Your Unranked match is over."),
+        ("rejoin_failed_long", Status::Failed, "WWWWWWWW WWWWWWWW WWWWWWWW WWWWWWWW"),
+    ] {
+        c.page(name, |core| {
+            level(core, tango_gamesupport_aw2::online::REJOIN_LEVEL);
+            mailbox::write_rejoin(&mut w(core), 2);
+            status(core, st, m);
+        });
+    }
     // --- code and password entry ---
     c.page("code_empty", |core| level(core, 3));
     c.page("code_full", |core| {

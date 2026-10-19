@@ -71,6 +71,11 @@ const NAV_T: u32 = STATE + 0x52;
 const NAV_TOTAL: u32 = STATE + 0x54;
 /// A netplay console of an online match: 1 once it has started.
 const MATCH: u32 = STATE + 0x56;
+/// UNRANKED's rejoin box (the player's app crashed during an UNRANKED match that is still on): the app's offer in the saved
+/// matches' block, 0 none, 1 offered (A: Rejoin, B: Give up), 2 rejoining (the app is on it, [`STATUS`] says how it goes).
+pub const REJOIN: u32 = 0x0203_D100 + 4;
+/// The level of the rejoin box.
+pub const REJOIN_LEVEL: u8 = 12;
 /// The level of RESUME's page (the others' numbers are taken by the other lobby pages).
 pub const SAVED_LEVEL: u8 = 8;
 /// The gamertag's typing page and the STATS page ([`crate::online_stats`]).
@@ -220,6 +225,10 @@ pub mod mailbox {
         Resume { index: usize },
         /// Delete the saved match at this place in the list.
         DeleteSaved { index: usize },
+        /// UNRANKED: the player's match is still on (their app crashed): go back into it.
+        Rejoin,
+        /// UNRANKED: the player gives up the match that is still on (their army yields).
+        GiveUp,
     }
 
     /// One row of the list of saved matches.
@@ -262,6 +271,8 @@ pub mod mailbox {
             7 => Request::Unranked,
             8 => Request::Resume { index: b[0x6B] as usize },
             9 => Request::DeleteSaved { index: b[0x6B] as usize },
+            11 => Request::Rejoin,
+            12 => Request::GiveUp,
             _ => Request::Leave,
         };
         Some((serial, r))
@@ -366,6 +377,18 @@ pub mod mailbox {
         }
         write(SAVED_AT, &all);
         write(SAVED, &[rows.len() as u8]);
+    }
+
+    /// The rejoin box (see [`REJOIN`]): 0 away, 1 offered, 2 rejoining.
+    pub fn write_rejoin(write: &mut dyn FnMut(u32, &[u8]), state: u8) {
+        write(REJOIN, &[state]);
+    }
+
+    /// What the game shows of the rejoin box.
+    pub fn rejoin(read: &mut dyn FnMut(u32, &mut [u8])) -> u8 {
+        let mut b = [0u8];
+        read(REJOIN, &mut b);
+        b[0]
     }
 
     /// The saved matches the game shows now (their count), for the app to know when to write them again.
@@ -938,6 +961,11 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
         return keys;
     };
     let pressed = keys & !prev;
+    // UNRANKED's match is still on (the app crashed): the rejoin box comes before everything else on the menus.
+    if level(core) <= 1 && core.raw_read_8(REJOIN, -1) != 0 {
+        set_level(core, REJOIN_LEVEL);
+        return keys & !ALL_KEYS;
+    }
     // The first visit asks for a gamertag when none is set.
     // (SELECT on the ONLINE and LOBBY menus sets it, too.)
     if level(core) <= 1 && (crate::online_stats::should_ask(core) || pressed & KEY_SELECT != 0) {
@@ -1032,6 +1060,23 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                 set_level(core, 0);
             } else if pressed & (KEY_UP | KEY_DOWN) != 0 {
                 crate::online_stats::scroll(core, pressed & KEY_DOWN != 0);
+            }
+            keys & !ALL_KEYS
+        }
+        REJOIN_LEVEL => {
+            let state = core.raw_read_8(REJOIN, -1);
+            let failed = Status::of(core.raw_read_8(STATUS, -1)) == Status::Failed;
+            if state == 1 && pressed & KEY_A != 0 {
+                core.raw_write_8(REJOIN, -1, 2);
+                core.raw_write_8(STATUS, -1, 0);
+                request(core, 11);
+            } else if (state != 0 && pressed & KEY_B != 0 && Status::of(core.raw_read_8(STATUS, -1)) != Status::Connected) || state == 0 {
+                // (B: the army yields, unless the way back already failed: then the match is over and it is just left)
+                if !failed && state != 0 {
+                    request(core, 12);
+                }
+                core.raw_write_8(REJOIN, -1, 0);
+                set_level(core, 1);
             }
             keys & !ALL_KEYS
         }
@@ -2308,6 +2353,40 @@ pub(crate) fn fit(core: &Core, s: &str, width: i32) -> String {
     format!("{t}..")
 }
 
+/// The rejoin box: AW2's message window over the ONLINE screen (the same frame, font and bar as every page here).
+pub(crate) fn rejoin_page(cv: &mut Rgba, core: &Core) {
+    let (x, y, w, h) = (10, 38, W as i32 - 20, 68);
+    cv.window(x, y, w, h);
+    let state = core.raw_read_8(REJOIN, -1);
+    let status = Status::of(core.raw_read_8(STATUS, -1));
+    cv.text(core, x + 8, y + 6, "Unranked", GRAY_INK, SHADE);
+    let (lines, ink, hint): (Vec<String>, Rgb, &str) = match (state, status) {
+        (1, _) => (
+            wrap(core, "Your Unranked match is still on.", w - 24)
+                .into_iter()
+                .chain(std::iter::once("Rejoin?".to_string()))
+                .collect(),
+            INK,
+            "A: Rejoin  B: Give up",
+        ),
+        (_, Status::Failed) => {
+            let m = message(core);
+            (wrap(core, if m.is_empty() { "Your Unranked match is over." } else { &m }, w - 24), RED, "B: Back")
+        }
+        (_, Status::Connected) => (vec!["Your opponent is here.".into(), "The match is resuming!".into()], BLUE, "Resuming..."),
+        _ => (
+            vec!["Rejoining your match...".into(), "Your opponent is waiting for you.".into()],
+            INK,
+            "B: Give up",
+        ),
+    };
+    for (k, l) in lines.iter().take(3).enumerate() {
+        let ink = if state == 1 && k + 1 == lines.len() { BLUE } else { ink };
+        cv.text(core, x + (w - text_width(core, l)) / 2, y + 22 + 13 * k as i32, l, ink, SHADE);
+    }
+    bar(cv, core, hint);
+}
+
 /// RESUME: the matches cut short, one under the cursor (UP and DOWN, A resumes it, START deletes it).
 fn saved_page(cv: &mut Rgba, core: &Core) {
     let (x, y, w, h) = (6, 28, W as i32 - 12, 114);
@@ -2552,6 +2631,7 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             );
         }
         SAVED_LEVEL => saved_page(&mut cv, core),
+        REJOIN_LEVEL => rejoin_page(&mut cv, core),
         3 | 5 => {
             let Some(font) = title_font(core) else { return };
             let (x, y, w, h) = PANEL;

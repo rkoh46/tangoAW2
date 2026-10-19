@@ -68,6 +68,8 @@ pub struct RoomParams {
     pub saves: Vec<u64>,
     /// A room made to resume a suspended match (the host's).
     pub resume: Option<ResumeParams>,
+    /// A guest: how long it looks for the host (seconds; 0 is the usual [`GUEST_DEADLINE`]).
+    pub join_seconds: u32,
 }
 
 /// A suspended match a room is made to resume (the host's copy of it).
@@ -157,6 +159,8 @@ pub struct RoomView {
     /// A room resuming a suspended match: the players of it who are not in the room yet.
     pub waiting_for: Vec<String>,
     pub resuming: bool,
+    /// The host: how many guests have said they are leaving (a guest may come and go between two looks at the view).
+    pub said_leave: u32,
 }
 
 /// A room's match, ready to be played: everything the session needs from the lobby.
@@ -236,6 +240,8 @@ struct HostPeer {
     seat: Option<u8>,
     ready: bool,
     loaded: bool,
+    /// Its `Primed` came while this task still held the control receiver (see `LinkParts::peer_primed`).
+    primed: bool,
     content: bool,
     link: LinkView,
     sender: Arc<tokio::sync::Mutex<tango_net::Sender>>,
@@ -268,6 +274,8 @@ struct Inner {
     started: bool,
     /// The host's open dial for the next guest; stopped when the match starts.
     dial: CancellationToken,
+    /// How many guests said they are leaving (an explicit goodbye; a link that broke is not counted).
+    said_leave: u32,
 }
 
 /// A handle on a room. Cheap to hold; dropping it does not close the room, [`leave`](Self::leave) does.
@@ -339,6 +347,7 @@ impl Room {
                 matched: None,
                 started: false,
                 dial: CancellationToken::new(),
+                said_leave: 0,
             })),
             cancel: CancellationToken::new(),
         }
@@ -415,6 +424,7 @@ impl Room {
             all_ready,
             waiting_for,
             resuming: g.params.resume.is_some(),
+            said_leave: g.said_leave,
         }
     }
 
@@ -735,6 +745,7 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
                 seat: resume_seat,
                 ready: false,
                 loaded: false,
+                primed: false,
                 content: join.content,
                 link,
                 sender: sender.clone(),
@@ -834,7 +845,18 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
                             p.loaded = true;
                         }
                     }
-                    Ok(Packet::Room(RoomMsg::Leave)) => break None,
+                    Ok(Packet::Room(RoomMsg::Leave)) => {
+                        inner.lock().unwrap().said_leave += 1;
+                        break None;
+                    }
+                    Ok(Packet::Primed(_)) => {
+                        // (a resumed match boots in an instant: its guest can say it is ready before the match has taken the link)
+                        last_heard = web_time::Instant::now();
+                        let mut g = inner.lock().unwrap();
+                        if let Some(p) = g.peers.iter_mut().find(|p| p.id == id) {
+                            p.primed = true;
+                        }
+                    }
                     Ok(_) => last_heard = web_time::Instant::now(),
                     Err(_) => break None,
                 }
@@ -993,18 +1015,21 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         h.cancel();
     }
     let mut links = Vec::new();
-    let mut taken: Vec<(Arc<tokio::sync::Mutex<tango_net::Sender>>, Parts)> = {
+    let mut taken: Vec<(Arc<tokio::sync::Mutex<tango_net::Sender>>, Parts, bool)> = {
         let mut g = inner.lock().unwrap();
         g.peers
             .iter_mut()
-            .filter_map(|p| p.parts.take().map(|parts| (p.sender.clone(), parts)))
+            .filter_map(|p| {
+                let primed = p.primed;
+                p.parts.take().map(|parts| (p.sender.clone(), parts, primed))
+            })
             .collect()
     };
     let (endpoint, use_relay, code) = {
         let g = inner.lock().unwrap();
         (g.params.endpoint.clone(), g.params.use_relay, g.params.code.clone())
     };
-    for ((sender, parts), back) in taken.drain(..).zip(backs.drain(..)) {
+    for ((sender, parts, primed), back) in taken.drain(..).zip(backs.drain(..)) {
         let (tx, rx) = tokio::sync::oneshot::channel();
         // (the task that owns the receiver sends it back on `back`; forward it to this link's)
         tango_platform::spawn(async move {
@@ -1024,6 +1049,7 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                 session_id,
                 use_relay,
             }),
+            peer_primed: primed,
             rng_seed: seed,
         });
     }
@@ -1048,7 +1074,7 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
 // --- A guest ----------------------------------------------------------------------------------------------
 
 async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
-    let (endpoint, session, use_relay, join) = {
+    let (endpoint, session, use_relay, join, join_seconds) = {
         let g = inner.lock().unwrap();
         (
             g.params.endpoint.clone(),
@@ -1061,9 +1087,11 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                 content: g.params.content,
                 saves: g.params.saves.clone(),
             },
+            g.params.join_seconds,
         )
     };
-    let deadline = web_time::Instant::now() + GUEST_DEADLINE;
+    let look_for = if join_seconds == 0 { GUEST_DEADLINE } else { Duration::from_secs(join_seconds as u64) };
+    let deadline = web_time::Instant::now() + look_for;
     // Looking for the host.
     let (channels, welcome) = loop {
         let left = deadline.saturating_duration_since(web_time::Instant::now());
@@ -1273,6 +1301,7 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                                     in_match_receiver: in_rx,
                                     peer_conn: peer_conn.take().unwrap(),
                                     recipe: Some(ReconnectRecipe::Matchmaking { endpoint, session_id, use_relay }),
+                                    peer_primed: false,
                                     rng_seed: s.seed,
                                 };
                                 let mut g = inner.lock().unwrap();

@@ -58,7 +58,9 @@ fn lines(core: &Core, name: &str, secs: u32, width: i32) -> (Vec<String>, Vec<St
         vec![format!("Waiting for {name}"), format!("to reconnect... {secs}s")],
         wrap(
             core,
-            if tango_gamesupport::hold::host_wait() {
+            if tango_gamesupport::hold::unranked() {
+                "If they do not return, their army yields and you win."
+            } else if tango_gamesupport::hold::host_wait() {
                 "The match goes on without them if they do not return."
             } else {
                 "Your match is saved for RESUME if they do not return."

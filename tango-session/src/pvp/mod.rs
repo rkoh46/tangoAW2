@@ -145,6 +145,20 @@ struct EndState {
     /// The local player pressed B on the game's reconnect box ("B: Disconnect"): the host closes the session as the
     /// Disconnect button does ([`PvpSession::leave_requested`]).
     leave: Arc<AtomicBool>,
+    /// UNRANKED (a room of two made by the pool): a player who drops has the grace window to come back (even from a
+    /// new launch of the app, see [`PvpSession::rejoin_hold`]); when it passes the army yields and the other player wins.
+    /// The match is never kept for RESUME.
+    unranked: Arc<AtomicBool>,
+    /// The app has a returning player on the line (a rejoin is being made): the grace window is not allowed to run out
+    /// under it.
+    rejoin_busy: Arc<AtomicBool>,
+    /// The returning player gave up (B on the rejoin box): the wait for it is over at once.
+    give_up: tokio_util::sync::CancellationToken,
+    /// The drive thread's answer to [`PvpSession::request_rejoin_state`].
+    rejoin_state: Arc<Mutex<Option<tango_match::SuspendedMatch>>>,
+    want_rejoin_state: Arc<AtomicBool>,
+    /// The session is being replaced by a new one of the same match (a rejoin): closing it is no leaving.
+    swapped: Arc<AtomicBool>,
 }
 
 /// A drop of the player in `seat` is no disconnect when the host sees it out of the match.
@@ -302,6 +316,8 @@ pub struct PvpSession {
     wake: Arc<tokio::sync::Notify>,
     /// When the session was built, for the results screen's match duration.
     started_at: web_time::Instant,
+    /// See [`RoomArgs::on_leave`].
+    on_leave: Option<Arc<dyn Fn() + Send + Sync>>,
 }
 
 pub use tango_net::handoff::PreMatchData;
@@ -359,6 +375,11 @@ pub struct RoomArgs {
     pub resume_state: Option<Vec<u8>>,
     /// Where a match cut short by a disconnect is handed over to be kept (called on the drive thread at its end).
     pub suspend_sink: Option<Arc<dyn Fn(tango_match::SuspendedMatch) + Send + Sync>>,
+    /// UNRANKED: a room of two whose players may come back after a crash (see [`PvpSession::rejoin_hold`]); never kept for RESUME.
+    pub unranked: bool,
+    /// Called when the local player closes the session on purpose (the Close button, quitting the app): the match is not one
+    /// to come back to. Not called when the session is replaced by a rejoin ([`PvpSession::set_swapped`]).
+    pub on_leave: Option<Arc<dyn Fn() + Send + Sync>>,
 }
 
 impl PvpSession {
@@ -470,6 +491,42 @@ impl PvpSession {
         let h = holds.iter().min_by_key(|h| h.deadline)?;
         let left = h.deadline.saturating_duration_since(Instant::now());
         Some((h.name.clone(), left.as_secs_f32().ceil() as u32))
+    }
+
+    /// UNRANKED: the player the match waits for to come back, with the seconds left of the window, while the match is
+    /// paused for it (the app makes a room for the returning player then, see [`request_rejoin_state`](Self::request_rejoin_state)).
+    pub fn rejoin_hold(&self) -> Option<(String, u32)> {
+        if !self.end.unranked.load(Ordering::Acquire) || self.completed.load(Ordering::Acquire) {
+            return None;
+        }
+        self.waiting_for()
+    }
+
+    /// Ask the drive thread for the newest settled state of the console (the returning player is given it).
+    pub fn request_rejoin_state(&self) {
+        self.end.want_rejoin_state.store(true, Ordering::Release);
+        self.wake.notify_one();
+    }
+
+    /// The state asked for, once the drive thread has made it (taken once).
+    pub fn take_rejoin_state(&self) -> Option<tango_match::SuspendedMatch> {
+        self.end.rejoin_state.lock().unwrap().take()
+    }
+
+    /// A returning player is being let in: the window of grace is held open until the session is replaced.
+    pub fn set_rejoin_busy(&self, busy: bool) {
+        self.end.rejoin_busy.store(busy, Ordering::Release);
+    }
+
+    /// This session is about to be replaced by a new one of the same match: its closing is no leaving.
+    pub fn set_swapped(&self) {
+        self.end.swapped.store(true, Ordering::Release);
+    }
+
+    /// The returning player gave up: its army yields at once.
+    pub fn rejoin_gave_up(&self) {
+        self.end.give_up.cancel();
+        self.wake.notify_one();
     }
 
     /// The local player asked to leave with B on the game's reconnect box.
@@ -631,6 +688,12 @@ impl crate::Session for PvpSession {
     }
 
     fn request_close(&self) {
+        // (the player closing the match on purpose has nothing to come back to)
+        if !self.end.swapped.load(Ordering::Acquire) {
+            if let Some(f) = self.on_leave.as_ref() {
+                f();
+            }
+        }
         // Cancelling the token is the whole close signal: it stops the
         // drive thread and the supervisor and flips `is_ended`'s
         // cancellation check. The supervisor announces the quit to the

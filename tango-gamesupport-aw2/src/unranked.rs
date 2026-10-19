@@ -45,8 +45,10 @@ const PROPOSE: u32 = STATE + 0x0C;
 const DRAW_T: u32 = STATE + 0x0E;
 /// Frames of the walk (u16, even address).
 const WALK_T: u32 = STATE + 6;
-/// Frames on the Rules screen.
-const RULES_T: u32 = STATE + 8;
+/// Frames on the Rules screen (u16, even address: see [`RULES_SHOW`]).
+const RULES_T: u32 = STATE + 0xE0;
+/// How long an UNRANKED match's standard rules are shown on the Rules screen before it goes on by itself (frames, 3 seconds).
+pub const RULES_SHOW: u16 = 180;
 /// 1 once a battle has been played.
 const BATTLED: u32 = STATE + 9;
 /// Frames settled on the chosen map in the list (u8).
@@ -503,7 +505,8 @@ pub fn rules(core: &mut Core, keys: u32) -> u32 {
     }
     let t = core.raw_read_16(RULES_T, -1).saturating_add(1);
     core.raw_write_16(RULES_T, -1, t);
-    if t >= 40 && t % 12 < 4 {
+    // (shown for the players to see, then A: the page is not skipped, see `paint_rules_banner`)
+    if t >= RULES_SHOW && t % 12 < 4 {
         KEY_A
     } else {
         0
@@ -610,9 +613,11 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
         return;
     }
     if rules_up(core) {
-        // (not over the army page while it finishes: its own title already names the map)
-        if !crate::online_teams::done(core) {
+        // (not over the army page while it finishes: its own title already names the map; and not over the results after
+        // the battle, where the Rules page's rows still stand in memory)
+        if !crate::online_teams::done(core) && core.raw_read_8(BATTLED, -1) == 0 {
             paint_rules_name(core, rgba);
+            paint_rules_banner(core, rgba);
         }
         return;
     }
@@ -632,6 +637,37 @@ pub fn paint_rules_name(core: &Core, rgba: &mut [u8]) {
     let x = 130 - w / 2;
     canvas.plate(x, 2, w, 15);
     canvas.text(core, x + 5, 4, &name, PLATE_INK, SHADE);
+}
+
+/// The seconds the Rules page of an UNRANKED match still shows ("Starting in 3"), after `t` frames on it.
+pub fn rules_countdown(t: u16) -> u16 {
+    RULES_SHOW.saturating_sub(t).div_ceil(60).max(1)
+}
+
+/// The Rules page in a match the players do not set the rules of, over the game's help box: UNRANKED's standard rules, shown
+/// for a moment before the match starts ("Unranked rules", "Starting in 3"), and in a room, on a guest's window, whose they are
+/// ("<host> is setting the rules": the page is read-only there; the host's own window has the game's help line and PRESS A).
+pub fn paint_rules_banner(core: &Core, rgba: &mut [u8]) {
+    use crate::online::*;
+    let lines: Vec<(String, Rgb)> = if on(core) {
+        let left = rules_countdown(core.raw_read_16(RULES_T, -1));
+        vec![("Unranked rules".to_string(), PLATE_INK), (format!("Starting in {left}"), PLATE_GREY)]
+    } else {
+        let n = room_players();
+        let host = crate::proxy_seat::host_index(core, n);
+        if room_local_seat() == host {
+            return;
+        }
+        let who = fit(core, &room_name(host), 120);
+        vec![(format!("{who} is setting the rules"), PLATE_INK), ("The match starts when they go on.".to_string(), PLATE_GREY)]
+    };
+    let mut canvas = Rgba(rgba);
+    let (x, y, w, h) = (4, 126, 232, 31);
+    canvas.plate(x, y, w, h);
+    for (k, (t, ink)) in lines.iter().enumerate() {
+        let tw = text_width(core, t);
+        canvas.text(core, x + (w - tw) / 2, y + 4 + 12 * k as i32, t, *ink, SHADE);
+    }
 }
 
 /// The bar's text (see [`draw`]; the text audit paints it without the game being on SELECT MAP).
@@ -749,4 +785,23 @@ fn play_requested(core: &mut Core) {
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![(LIST_FRAME, Box::new(play_requested))]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_standard_rules_are_shown_for_three_seconds_before_the_match_goes_on() {
+        assert_eq!(RULES_SHOW, 180);
+        assert_eq!(rules_countdown(0), 3);
+        assert_eq!(rules_countdown(59), 3);
+        assert_eq!(rules_countdown(60), 2);
+        assert_eq!(rules_countdown(119), 2);
+        assert_eq!(rules_countdown(120), 1);
+        assert_eq!(rules_countdown(179), 1);
+        // (A is pressed from RULES_SHOW on: the count never says 0)
+        assert_eq!(rules_countdown(180), 1);
+        assert_eq!(rules_countdown(u16::MAX), 1);
+    }
 }

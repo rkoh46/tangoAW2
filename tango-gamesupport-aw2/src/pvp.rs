@@ -575,7 +575,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 22: a room's host seat can change, and a seat whose player is gone can be played by the console to yield (crate::proxy_seat; the commands are words no pad makes, so a match that never uses them runs as before).
         // 23: a seat that left the room is sent the yield command whatever it was doing (a guest who dropped in a battle, one that
         // was out of the match), and the room's next match is played by the seats still there (crate::proxy_seat roster).
-        23
+        // 24: UNRANKED's standard rules stay on the Rules screen for three seconds before the match goes on (crate::unranked::RULES_SHOW).
+        24
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {

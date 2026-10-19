@@ -48,6 +48,11 @@ pub fn successor_order(players: usize, host_seat: usize, seats_out: u8, gone: u8
     left
 }
 
+/// A room of two whose host is gone has no one to migrate to: the guest is the only player left and plays on alone.
+pub(super) fn plays_on_alone(players: usize, order: &[usize], me: usize) -> bool {
+    players == 2 && order == [me]
+}
+
 /// What the migration asks of the drive thread, and what it hands it.
 #[derive(Default)]
 pub(super) struct Mailbox {
@@ -245,6 +250,24 @@ async fn migrate(h: &Arc<MigHandle>, old_host: usize) -> Result<(), String> {
         snapshot.remote,
         snapshot.local
     );
+
+    // A room of two (UNRANKED): the guest is the only player left. It hosts alone; the old host's army yields, the
+    // console plays it out, and the one left wins.
+    if plays_on_alone(h.players.len(), &order, h.my_seat) {
+        let handover = Handover {
+            host_seat: h.my_seat,
+            i_host: true,
+            gone: 1 << old_host,
+            start: snapshot.remote,
+            catchup: Vec::new(),
+            senders: vec![None],
+            in_matches: Vec::new(),
+        };
+        h.links_pending.lock().unwrap().replace(Vec::new());
+        log::info!("pvp: host migration: a room of two: this peer plays on alone, seat {old_host}'s army yields");
+        install(h, handover, old_host, t0).await?;
+        return Ok(());
+    }
 
     for (rank, &cand) in order.iter().enumerate().take(RANKS) {
         if h.cancel.is_cancelled() {
@@ -577,6 +600,7 @@ async fn link_of(
             session_id,
             use_relay: h.use_relay,
         }),
+        peer_primed: false,
         rng_seed: h.seed,
     };
     tango_net::link::Link::bring_up(parts, h.heartbeat, h.cancel.clone())
@@ -673,6 +697,12 @@ mod tests {
         assert_eq!(successor_order(3, 0, 0b110, 0), vec![1, 2]);
         // a room of two has no successor but the guest itself
         assert_eq!(successor_order(2, 0, 0, 0), vec![1]);
+        assert!(plays_on_alone(2, &successor_order(2, 0, 0, 0), 1));
+        // (and a room of more has someone to hand over to)
+        assert!(!plays_on_alone(3, &successor_order(3, 0, 0, 0), 1));
+        assert!(!plays_on_alone(3, &successor_order(3, 0, 0b010, 0), 2));
+        // (a room of two whose host is the guest's own seat does not exist: nobody is left)
+        assert!(!plays_on_alone(2, &successor_order(2, 1, 0, 1 << 0), 0));
     }
 
     /// Every peer computes the order from what it knows alone: the same input gives the same order.

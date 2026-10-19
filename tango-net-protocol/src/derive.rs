@@ -96,9 +96,34 @@ pub fn derive_migration_session_id(rng_seed: &[u8; 16], rank: u8) -> String {
     code
 }
 
+/// The room code a returning UNRANKED player meets the player who stayed in (see the app's `unranked_live`): only the two
+/// players of the match know the seed and the match id, so nobody else can camp the rendezvous. The code is the one the
+/// survivor's room is made with and the returning player joins.
+pub fn derive_rejoin_code(rng_seed: &[u8; 16], match_id: u64) -> String {
+    use sha3::digest::{ExtendableOutput, Update, XofReader};
+    let mut h = sha3::Shake128::default();
+    h.update(b"tangoaw2:rejoin:");
+    h.update(rng_seed);
+    h.update(&match_id.to_le_bytes());
+    let mut out = [0u8; 12];
+    h.finalize_xof().read(&mut out);
+    let mut code: String = "rejoin".into();
+    code.extend(out.iter().map(|b| format!("{b:02x}")));
+    code
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_rejoin_code_is_the_matches_alone() {
+        let seed = [3u8; 16];
+        assert_eq!(derive_rejoin_code(&seed, 7), derive_rejoin_code(&seed, 7));
+        assert_ne!(derive_rejoin_code(&seed, 7), derive_rejoin_code(&seed, 8));
+        assert_ne!(derive_rejoin_code(&seed, 7), derive_rejoin_code(&[4u8; 16], 7));
+        assert!(derive_rejoin_code(&seed, 7).starts_with("rejoin"));
+    }
 
     #[test]
     fn rng_seed_is_commutative() {

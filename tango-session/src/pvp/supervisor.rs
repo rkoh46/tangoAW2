@@ -159,6 +159,9 @@ pub(super) struct SupervisorContext {
 const STALL_QUIET_HOST: std::time::Duration = std::time::Duration::from_secs(3);
 const STALL_QUIET_GUEST: std::time::Duration = std::time::Duration::from_secs(7);
 
+/// How long past the window a returning player who is being let in is waited for.
+const REJOIN_EXTRA: std::time::Duration = std::time::Duration::from_secs(25);
+
 /// The match is paused while anyone is waited for: the drive loop's gate, held by as many reasons as there are
 /// (a link of ours being rebuilt, a player the host says it is waiting for), released with the last.
 pub(super) struct Pauses {
@@ -361,7 +364,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             end.hold_add(peer_seat, peer_name.clone(), web_time::Instant::now() + timeout);
             // (a room's guest waiting for its host: the box says the room goes on without it, not that the match is saved)
             end.host_wait
-                .store(mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() > 2), Ordering::Release);
+                .store(mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && (r.players.len() > 2 || end.unranked.load(Ordering::Acquire))), Ordering::Release);
             pauses.enter();
             wake.notify_one();
             // A room's host tells the other guests who the match waits for, about once a second.
@@ -546,7 +549,8 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // quiet starts the migration at once. A host that is still playing and tells us it is leaving does the same
             // (its army is yielded by the console, see `migrate`); one that is simply lost gets the reconnect window
             // below first and the migration after it.
-            let host_link = mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() > 2);
+            let host_link = mig.is_some()
+                && room.as_ref().is_some_and(|r| !r.is_host && (r.players.len() > 2 || end.unranked.load(Ordering::Acquire)));
             let host_out = super::is_out(end.seats_out.load(Ordering::Acquire), peer_seat);
             if host_link
                 && matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled | Trip::Silent)
@@ -747,6 +751,8 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 let restored = if host_link || yieldable {
                     tokio::select! {
                         restored = tango_platform::timeout(timeout + std::time::Duration::from_secs(2), link.reconnect()) => restored.unwrap_or(false),
+                        // (UNRANKED: the returning player said it gives up)
+                        _ = end.give_up.cancelled() => false,
                         _ = ui_tick => unreachable!(),
                     }
                 } else {
@@ -758,6 +764,20 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 watchdog_done.cancel();
                 restored
             };
+            // UNRANKED: a returning player is being let in when the window runs out: the wait goes on a little (the app
+            // replaces this session as soon as the player is in), unless it gave up.
+            if !restored && (host_link || yieldable) && !end.give_up.is_cancelled() && end.rejoin_busy.load(Ordering::Acquire) {
+                log::info!("pvp: the window is over but {peer_name:?} is being let back in: waiting for it");
+                let until = web_time::Instant::now() + REJOIN_EXTRA;
+                while web_time::Instant::now() < until
+                    && !cancel.is_cancelled()
+                    && end.rejoin_busy.load(Ordering::Acquire)
+                    && !end.give_up.is_cancelled()
+                {
+                    wake.notify_one();
+                    tango_platform::sleep(std::time::Duration::from_millis(100)).await;
+                }
+            }
             announce_stop.cancel();
             end.hold_remove(peer_seat);
             end.host_wait.store(false, Ordering::Release);

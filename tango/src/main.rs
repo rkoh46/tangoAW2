@@ -15,6 +15,7 @@ mod netplay;
 // Attaching the save editor to a prepared save.
 mod selection;
 mod suspended; // matches cut short by a disconnect, kept to be resumed
+mod unranked_live; // an UNRANKED match that is on, kept on disk so that a crashed app can rejoin it
 
 // Screens. Per-game save editors are embedded through tango-gamesupport.
 mod session;

@@ -173,10 +173,16 @@ impl App {
                 );
                 self.restore_selection();
                 self.refresh_loaded();
+                // An UNRANKED match this app crashed out of: the game comes up at the ONLINE screen, which offers to rejoin it
+                // (or says the army yielded).
+                let resumed_unranked = self.online_startup();
                 // Test aid: `TANGOAW2_AUTOSTART=offline` presses Play
                 // offline as soon as the library is ready; `settings` or
                 // `replays` opens that tab (for screenshots).
                 match std::env::var("TANGOAW2_AUTOSTART").as_deref() {
+                    _ if resumed_unranked.is_some() && !std::env::var("TANGOAW2_AUTOSTART").is_ok_and(|v| v == "offline") => {
+                        return resumed_unranked.expect("checked");
+                    }
                     Ok("offline") => {
                         // (`TANGOAW2_BOOT_LOBBY=1`: and the console walks to the ONLINE LOBBY menu by itself)
                         if std::env::var("TANGOAW2_BOOT_LOBBY").is_ok_and(|v| v == "1") {

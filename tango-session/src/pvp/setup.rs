@@ -110,6 +110,8 @@ impl PvpSession {
         let resume_state = room.as_ref().and_then(|r| r.resume_state.clone());
         let resumed_match = resume_state.is_some().then(|| room.as_ref().map_or(0, |r| r.match_id));
         let suspend_sink = room.as_ref().and_then(|r| r.suspend_sink.clone());
+        let unranked = room.as_ref().is_some_and(|r| r.unranked);
+        let on_leave = room.as_ref().and_then(|r| r.on_leave.clone());
         let extra_parts = room.map(|r| r.extra_links).unwrap_or_default();
         let mut links = vec![Arc::new(
             tango_net::link::Link::bring_up(pre_match.link_parts, IN_MATCH_HEARTBEAT, cancellation_token.clone())
@@ -124,6 +126,7 @@ impl PvpSession {
         let in_matches: Vec<tango_net::InMatchTx> = links.iter().map(|l| l.in_match().clone()).collect();
 
         let end = EndState::default();
+        end.unranked.store(unranked, Ordering::Release);
         if let Some(m) = room_meta.as_ref() {
             end.host_seat.store(m.2 as u8, Ordering::Release);
         }
@@ -243,6 +246,8 @@ impl PvpSession {
                 match_type: pre_match.terms.match_type,
                 save: pre_match.terms.local_save_data.clone(),
                 sim_version: local_game.pvp.sim_version(),
+                // (an UNRANKED match is never kept for RESUME: its way back is the returning player's rejoin)
+                keep: !unranked,
                 sink,
             }),
         };
@@ -314,7 +319,7 @@ impl PvpSession {
         // A room of more than two players whose links come from the matchmaking server can go on without its host.
         let mig = room_meta
             .as_ref()
-            .filter(|m| m.0.len() > 2)
+            .filter(|m| m.0.len() > 2 || unranked)
             .zip(link.matchmaking())
             .map(|(m, (endpoint, use_relay, seed))| {
                 Arc::new(super::migrate::MigHandle {
@@ -388,6 +393,7 @@ impl PvpSession {
             screen,
             wake,
             started_at: web_time::Instant::now(),
+            on_leave,
         };
         Ok((session, boot, audio))
     }

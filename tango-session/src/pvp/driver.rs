@@ -38,6 +38,8 @@ pub(super) struct SuspendCtx {
     pub(super) match_type: (u8, u8),
     pub(super) save: Vec<u8>,
     pub(super) sim_version: u32,
+    /// Whether a match cut short is handed to the sink (not UNRANKED's).
+    pub(super) keep: bool,
     pub(super) sink: Arc<dyn Fn(tango_match::SuspendedMatch) + Send + Sync>,
 }
 
@@ -633,6 +635,7 @@ impl PvpDriver {
         tango_gamesupport::hold::set(hold);
         tango_gamesupport::hold::set_migration(migrating);
         tango_gamesupport::hold::set_host_wait(goes_on);
+        tango_gamesupport::hold::set_unranked(self.ctx.end.unranked.load(Ordering::Acquire));
         self.hold_up = true;
         if self.hold_shown.is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100)) {
             self.hold_shown = Some(std::time::Instant::now());
@@ -653,6 +656,7 @@ impl PvpDriver {
             return false;
         }
         self.serve_migration();
+        self.serve_rejoin_state();
         if self.ctx.drive_paused.paused() {
             self.hold_box(true);
             // The reconnect supervisor releases the gate on every
@@ -1018,32 +1022,44 @@ impl PvpDriver {
     /// app's sink (a match not in a battle, or not yet checkpointed, is not worth keeping).
     fn suspend_if_cut_short(&mut self) {
         let Some(ctx) = self.ctx.suspend.as_ref() else { return };
-        if self.ctx.completed.load(Ordering::Acquire)
+        if !ctx.keep
+            || self.ctx.completed.load(Ordering::Acquire)
             || self.ctx.end.aborted.load(Ordering::Acquire)
             || !self.ctx.end.remote_disconnected.load(Ordering::Acquire)
         {
             return;
         }
+        let disconnected = self.ctx.end.dropped.lock().unwrap().clone().unwrap_or_default();
+        let Some(m) = self.suspended_match(disconnected, true) else {
+            log::info!("pvp: the match ended by a disconnect before a battle checkpoint; nothing to keep");
+            return;
+        };
+        log::info!(
+            "pvp: match {:016x} cut short by {:?}: keeping checkpoints {:?}",
+            m.match_id,
+            m.disconnected,
+            m.checkpoints.iter().map(|c| (c.tick, c.image.digest)).collect::<Vec<_>>()
+        );
+        (self.ctx.suspend.as_ref().expect("checked").sink)(m);
+    }
+
+    /// The match as a suspended one: the newest settled checkpoints (those of a battle only when `battle_only`), or
+    /// `None` when there is none.
+    fn suspended_match(&mut self, disconnected: String, battle_only: bool) -> Option<tango_match::SuspendedMatch> {
+        let ctx = self.ctx.suspend.as_ref()?;
         let mut checkpoints: Vec<tango_match::Checkpoint> = self
             .match_
             .checkpoints()
             .into_iter()
-            .filter(|c| c.image.info.is_some())
+            .filter(|c| !battle_only || c.image.info.is_some())
             .collect();
         if checkpoints.len() > tango_match::suspend::CHECKPOINTS_STORED {
             checkpoints.drain(..checkpoints.len() - tango_match::suspend::CHECKPOINTS_STORED);
         }
         if checkpoints.is_empty() {
-            log::info!("pvp: the match ended by a disconnect before a battle checkpoint; nothing to keep");
-            return;
+            return None;
         }
-        let disconnected = self.ctx.end.dropped.lock().unwrap().clone().unwrap_or_default();
-        log::info!(
-            "pvp: match {:016x} cut short by {disconnected:?}: keeping checkpoints {:?}",
-            ctx.match_id,
-            checkpoints.iter().map(|c| (c.tick, c.image.digest)).collect::<Vec<_>>()
-        );
-        (ctx.sink)(tango_match::SuspendedMatch {
+        Some(tango_match::SuspendedMatch {
             version: tango_match::suspend::SUSPENDED_VERSION,
             match_id: ctx.match_id,
             sim_version: ctx.sim_version,
@@ -1057,7 +1073,24 @@ impl PvpDriver {
             match_type: ctx.match_type,
             save: ctx.save.clone(),
             checkpoints,
-        });
+        })
+    }
+
+    /// UNRANKED: the app asks for the newest settled state, to give a returning player (served between ticks, also while
+    /// the match is paused for it).
+    fn serve_rejoin_state(&mut self) {
+        if !self.ctx.end.want_rejoin_state.swap(false, Ordering::AcqRel) {
+            return;
+        }
+        let name = self.ctx.end.holds.lock().unwrap().first().map(|h| h.name.clone()).unwrap_or_default();
+        match self.suspended_match(name, false) {
+            Some(m) => {
+                log::info!("pvp: the newest settled state for a returning player: tick {}", m.newest().map_or(0, |c| c.tick));
+                *self.ctx.end.rejoin_state.lock().unwrap() = Some(m);
+            }
+            None => log::info!("pvp: no settled state yet for a returning player"),
+        }
+        self.ctx.wake.notify_one();
     }
 
     /// One input in from a link: the remote's (two players), the host's one for everyone else (a room's guest), or
@@ -1300,6 +1333,39 @@ mod tests {
         assert_eq!((row.keys, row.extra[0]), (command::YIELD, command::YIELD as u16));
         let (row, _) = agg.alone_row();
         assert_eq!((row.keys, row.extra[0]), (0, 0));
+    }
+
+    /// UNRANKED, the HOST's app crashed and its window passed: the guest left alone (seat 1) takes the host's seat over and plays
+    /// the old host's seat 0 out. The first row it makes says yield to the console; the words of the seat are idle after, and
+    /// the guest's own words are not touched.
+    #[test]
+    fn a_guest_left_alone_in_a_room_of_two_yields_the_hosts_army_once() {
+        use tango_match::keys::command;
+        let own = vec![(tango_match::HostInput::keys(0x10), 1i16)];
+        let mut agg = HostAgg::migrated(2, 1, 1 << 0, own);
+        assert_eq!(agg.guest_seats, vec![0]);
+        assert!(agg.all_gone());
+        let (first, _) = agg.alone_row();
+        assert_eq!(first.keys, command::YIELD, "the old host's army yields");
+        for _ in 0..5 {
+            let (row, _) = agg.alone_row();
+            assert_eq!(row.keys, 0, "and it stays idle");
+        }
+        // nothing the old host's link might still deliver counts
+        assert!(agg.ingest(0, input(0x99)).is_empty());
+        // the guest's own words wait to be sent on to nobody
+        assert_eq!(agg.own.len(), 1);
+    }
+
+    /// The same when the GUEST's app crashed: the host (seat 0) is left alone and yields seat 1.
+    #[test]
+    fn a_host_left_alone_in_a_room_of_two_yields_the_guests_army_once() {
+        use tango_match::keys::command;
+        let mut agg = HostAgg::migrated(2, 0, 1 << 1, vec![]);
+        assert_eq!(agg.guest_seats, vec![1]);
+        let (first, _) = agg.alone_row();
+        assert_eq!(first.keys, command::YIELD);
+        assert_eq!(agg.alone_row().0.keys, 0);
     }
 
     /// The log keeps what a migration needs: the last rows of the stream with this seat's own words beside them, as many as
