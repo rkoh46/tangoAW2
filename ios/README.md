@@ -56,7 +56,7 @@ All of it is `cfg(target_os = "ios")`; the desktop build is unchanged.
   picture by at most a third (never under the Dynamic Island or the rounded
   corners), and the buttons float over the picture on a dark backing. Non-whole
   scales use nearest-neighbour with anti-aliased texel borders
-  (`passthrough_ios.wgsl`), so pixels stay crisp and do not shimmer. Game
+  (`sharp.wgsl`), so pixels stay crisp and do not shimmer. Game
   controllers (MFi, Xbox, PlayStation) and a hardware keyboard are read
   through GameController.framework (`bridge.m`) and go through the normal
   input mapping; the on-screen controls step aside once one is used and
