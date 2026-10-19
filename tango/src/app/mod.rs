@@ -166,7 +166,7 @@ impl App {
         tango_library::set_ds_tilt_amount(config.ds_tilt_amount);
         tango_library::set_ds_tilt_log(config.ds_tilt_log);
         // (the tilted map is drawn at this many times the console's size: crisp when it is shrunk by the tilt)
-        tango_library::set_ds_tilt_scale(if cfg!(target_os = "ios") { 2 } else { 4 });
+        tango_library::set_ds_tilt_scale(if cfg!(target_os = "ios") { 3 } else { 4 });
         tango_library::set_ds_graphics(config.ds_graphics);
 
         let scanners = Catalog::new();

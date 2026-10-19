@@ -87,7 +87,13 @@ impl Presentation {
 /// The frame's on-screen size in a pane of `size`: an exact integer
 /// multiple of `img` (crisp, the default) or, with fractional scaling, a
 /// smooth aspect-fit.
-fn fit(size: iced::Size, (img_w, img_h): (f32, f32), fractional_scaling: bool) -> (f32, f32) {
+fn fit(size: iced::Size, (img_w, img_h): (f32, f32), fractional_scaling: bool, pixel_perfect: bool) -> (f32, f32) {
+    if pixel_perfect {
+        // Whole-number scale only (the largest that fits), centred by the caller: black bars, no blending.
+        let raw = (size.width / img_w).min(size.height / img_h);
+        let scale = if raw >= 1.0 { raw.floor() } else { raw.max(0.0) };
+        return (img_w * scale, img_h * scale);
+    }
     // iOS, sideways, "Stretch": the whole game area (a modestly widened 3:2).
     #[cfg(target_os = "ios")]
     if crate::platform::ios::touch_pad::stretched() {
@@ -179,7 +185,7 @@ pub(super) fn framebuffer_view<'a>(
     vertical_alignment: iced::alignment::Vertical,
 ) -> Element<'a, Message> {
     let state = ctx.state;
-    let (fractional_scaling, effect) = (ctx.fractional_scaling, ctx.effect);
+    let (fractional_scaling, effect, pixel_perfect) = (ctx.fractional_scaling, ctx.effect, ctx.pixel_perfect);
     // Resolved out here, where the language is still in hand; the
     // closure below only lays it out (see `priming_notice`).
     let priming = priming_copy(ctx.lang, state);
@@ -207,7 +213,7 @@ pub(super) fn framebuffer_view<'a>(
     let spot = presentation.spot(touch_spot);
     let touch_screen = presentation.touch_screen;
     iced::widget::responsive(move |size| {
-        let (w, h) = fit(size, img, fractional_scaling);
+        let (w, h) = fit(size, img, fractional_scaling, pixel_perfect);
         let mut frame = base_frame.clone();
         // The uploaded texture is always the native frame; the effect is just
         // the draw-time pipeline pick. Take it live from config here (not from
@@ -215,7 +221,7 @@ pub(super) fn framebuffer_view<'a>(
         // video filter re-renders immediately — even on a paused replay that
         // isn't producing new frames.
         // (a picture the game drew larger than the console's is already sharp: the pixel filters would only enlarge it again)
-        frame.effect = if frame.width > native_w { &crate::platform::video::effects::PASSTHROUGH } else { effect };
+        frame.effect = if frame.width > native_w && !matches!(effect.id, "" | "smooth" | "pixel") { crate::platform::video::effects::scaler_for(if pixel_perfect { "pixel" } else { "" }) } else { effect };
         let fb = iced::widget::shader::Shader::new(crate::platform::video::framebuffer::Program::new(frame))
             .width(Length::Fixed(w))
             .height(Length::Fixed(h));
@@ -268,7 +274,7 @@ fn opponent_framebuffer_view<'a>(
     horizontal_alignment: iced::alignment::Horizontal,
     vertical_alignment: iced::alignment::Vertical,
 ) -> Element<'a, Message> {
-    let (fractional_scaling, effect) = (ctx.fractional_scaling, ctx.effect);
+    let (fractional_scaling, effect, pixel_perfect) = (ctx.fractional_scaling, ctx.effect, ctx.pixel_perfect);
     let presentation = Presentation::of(ctx);
     let (native_w, native_h) = presentation.native;
     let img = ((native_w * effect.scale) as f32, (native_h * effect.scale) as f32);
@@ -284,9 +290,9 @@ fn opponent_framebuffer_view<'a>(
     let spot = presentation.spot(touch_spot);
 
     iced::widget::responsive(move |size| {
-        let (w, h) = fit(size, img, fractional_scaling);
+        let (w, h) = fit(size, img, fractional_scaling, pixel_perfect);
         let mut frame = base_frame.clone();
-        frame.effect = if frame.width > native_w { &crate::platform::video::effects::PASSTHROUGH } else { effect };
+        frame.effect = if frame.width > native_w && !matches!(effect.id, "" | "smooth" | "pixel") { crate::platform::video::effects::scaler_for(if pixel_perfect { "pixel" } else { "" }) } else { effect };
         let fb = iced::widget::shader::Shader::new(crate::platform::video::framebuffer::PipProgram::new(frame))
             .width(Length::Fixed(w))
             .height(Length::Fixed(h));

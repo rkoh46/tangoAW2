@@ -245,6 +245,12 @@ pub struct Config {
     /// letterboxed to a whole multiple.
     #[serde(default = "default_fractional_scaling")]
     pub fractional_scaling: bool,
+    /// How the unfiltered picture is scaled to the screen: `"sharp"` (the default: crisp blocks,
+    /// a one-pixel soft seam at fractional scales), `"smooth"` (bilinear) or `"pixel"`
+    /// (pixel-perfect: whole-number scale only, centred, black bars). Not used by the
+    /// hqx / MMPX / LCD filters.
+    #[serde(default)]
+    pub pixel_scaling: String,
     /// tangoAW2: draw the battle map tilted away from the viewer, as Dual
     /// Strike does (display only; needs the Dual Strike pack and the Dual
     /// Strike graphics mode). Off by default.
@@ -396,6 +402,7 @@ impl Default for Config {
             background_image: None,
             accent: AccentColor::default(),
             video_filter: String::new(),
+            pixel_scaling: String::new(),
             fractional_scaling: default_fractional_scaling(),
             ds_tilt: false,
             ds_tilt_amount: 0,
@@ -691,6 +698,7 @@ mod tests {
                 ("ds_tilt_log", serde_json::json!(true)),
                 ("ds_graphics", serde_json::json!(true)),
                 ("landscape_stretch", serde_json::json!(true)),
+                ("pixel_scaling", serde_json::json!("smooth")),
             ]
             .map(|(k, x)| (k.to_string(), x)),
         );

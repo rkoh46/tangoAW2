@@ -90,6 +90,7 @@ impl App {
                 return self.rescan_off_thread(RescanFollowup::Refresh);
             }
             C::VideoFilter(s) => self.config.video_filter = s,
+            C::PixelScaling(s) => self.config.pixel_scaling = s,
             C::FractionalScaling(b) => self.config.fractional_scaling = b,
             C::DsGraphics(b) => {
                 self.config.ds_graphics = b;

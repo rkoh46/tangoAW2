@@ -13,15 +13,30 @@ pub mod mmpx;
 /// every effect.
 pub(crate) const COMMON: &str = include_str!("common.wgsl");
 
-/// Nearest pass-through — the "—" / no-filter default and the fallback for
-/// unknown keys.
-#[cfg(not(target_os = "ios"))]
-static PASSTHROUGH_RENDERER: WgslRenderer = WgslRenderer::new(&[COMMON, include_str!("passthrough.wgsl")]);
-/// iOS: the same, with anti-aliased texel borders for the fractional scales
-/// a phone screen needs (identical at whole-number scales).
-#[cfg(target_os = "ios")]
-static PASSTHROUGH_RENDERER: WgslRenderer = WgslRenderer::new(&[COMMON, include_str!("passthrough_ios.wgsl")]);
+/// Sharp pass-through, the default ("—" / no filter, and the fallback for
+/// unknown keys). Each source pixel is a flat block and only the one screen
+/// pixel straddling two blocks is blended, so the picture is crisp at any
+/// scale and exactly nearest at a whole-number one.
+static PASSTHROUGH_RENDERER: WgslRenderer = WgslRenderer::new(&[COMMON, include_str!("sharp.wgsl")]);
 pub const PASSTHROUGH: Effect = Effect::new("", "—", 1, &PASSTHROUGH_RENDERER);
+
+/// Settings > Graphics > Pixel scaling "Smooth": plain bilinear.
+static SMOOTH_RENDERER: WgslRenderer = WgslRenderer::new(&[COMMON, include_str!("smooth.wgsl")]);
+pub const SMOOTH: Effect = Effect::new("smooth", "Smooth", 1, &SMOOTH_RENDERER);
+
+/// "Pixel-perfect": nearest (the frame is only ever drawn at a whole-number scale).
+static PIXEL_RENDERER: WgslRenderer = WgslRenderer::new(&[COMMON, include_str!("passthrough.wgsl")]);
+pub const PIXEL: Effect = Effect::new("pixel", "Pixel-perfect", 1, &PIXEL_RENDERER);
+
+/// The effect for the unfiltered picture under `config.pixel_scaling`
+/// (`"smooth"`, `"pixel"`; anything else is Sharp).
+pub fn scaler_for(pixel_scaling: &str) -> &'static Effect {
+    match pixel_scaling {
+        "smooth" => &SMOOTH,
+        "pixel" => &PIXEL,
+        _ => &PASSTHROUGH,
+    }
+}
 
 /// The registry, in pick-list order. The `&str` is the `config.video_filter`
 /// key (unchanged from the old CPU registry, so existing configs keep
@@ -36,4 +51,11 @@ pub fn effect_for(id: &str) -> &'static Effect {
         .find(|effect| effect.id == id)
         .cloned()
         .unwrap_or(&PASSTHROUGH)
+}
+
+/// `config.video_filter` and `config.pixel_scaling` resolved: a pixel filter
+/// (hq2x...) as picked, the unfiltered picture as the pixel-scaling choice.
+pub fn effect_for_config(id: &str, pixel_scaling: &str) -> &'static Effect {
+    let effect = effect_for(id);
+    if effect.id.is_empty() { scaler_for(pixel_scaling) } else { effect }
 }

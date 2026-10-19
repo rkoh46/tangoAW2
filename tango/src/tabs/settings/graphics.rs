@@ -109,6 +109,16 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                 Message::VideoFilterChanged(c.value)
             })
         }),
+        option_row::<Message>(t!(lang, "settings-pixel-scaling"), {
+            let options = vec![
+                Choice::new("pixel".to_string(), t!(lang, "settings-pixel-scaling-pixel")),
+                Choice::new("sharp".to_string(), t!(lang, "settings-pixel-scaling-sharp")),
+                Choice::new("smooth".to_string(), t!(lang, "settings-pixel-scaling-smooth")),
+            ];
+            let current = if config.pixel_scaling.is_empty() { "sharp" } else { config.pixel_scaling.as_str() };
+            let selected = options.iter().find(|c| c.value == current).cloned();
+            widgets::picker(options, selected, |c: Choice<String>| Message::PixelScalingChanged(c.value))
+        }),
         option_row(
             t!(lang, "settings-fractional-scaling"),
             toggle(config.fractional_scaling, Message::ToggleFractionalScaling),

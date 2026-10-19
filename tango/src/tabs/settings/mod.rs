@@ -158,6 +158,7 @@ pub enum Message {
     /// Back to the drawn backdrop.
     ClearBackgroundImage,
     VideoFilterChanged(String),
+    PixelScalingChanged(String),
     ToggleFractionalScaling(bool),
     ToggleDsTilt(bool),
     DsTiltAmountChanged(u8),
@@ -225,6 +226,7 @@ pub enum ConfigChange {
     DataPath(std::path::PathBuf),
     BackgroundImage(Option<std::path::PathBuf>),
     VideoFilter(String),
+    PixelScaling(String),
     FractionalScaling(bool),
     DsTilt(bool),
     DsTiltAmount(u8),
@@ -317,6 +319,7 @@ impl State {
             Message::BackgroundImagePicked(None) => None,
             Message::ClearBackgroundImage => Some(ConfigChange::BackgroundImage(None)),
             Message::VideoFilterChanged(s) => Some(ConfigChange::VideoFilter(s)),
+            Message::PixelScalingChanged(s) => Some(ConfigChange::PixelScaling(s)),
             Message::ToggleFractionalScaling(b) => Some(ConfigChange::FractionalScaling(b)),
             Message::ToggleDsTilt(b) => Some(ConfigChange::DsTilt(b)),
             Message::DsTiltAmountChanged(a) => Some(ConfigChange::DsTiltAmount(a)),

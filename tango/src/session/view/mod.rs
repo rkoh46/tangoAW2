@@ -46,6 +46,8 @@ pub struct Ctx<'a> {
     pub lang: &'a LanguageIdentifier,
     pub state: &'a State,
     pub fractional_scaling: bool,
+    /// `config.pixel_scaling` is "pixel": whole-number scale only, centred.
+    pub pixel_perfect: bool,
     /// iOS landscape "Stretch" (see `config.landscape_stretch`).
     pub landscape_stretch: bool,
     pub show_replay_inputs: bool,

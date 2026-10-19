@@ -73,6 +73,7 @@ impl App {
                 lang,
                 state: &self.session,
                 fractional_scaling: self.config.fractional_scaling,
+                pixel_perfect: self.config.pixel_scaling == "pixel",
                 landscape_stretch: self.config.landscape_stretch,
                 show_replay_inputs: self.config.show_replay_inputs,
                 opponent_view: self.config.opponent_view,
@@ -81,7 +82,7 @@ impl App {
                 clip_export_scale: self.replays.export_settings.scale,
                 clip_job,
                 queued: self.replays.queue.len(),
-                effect: crate::platform::video::effects::effect_for(&self.config.video_filter),
+                effect: crate::platform::video::effects::effect_for_config(&self.config.video_filter, &self.config.pixel_scaling),
             })
             .map(Message::Session);
             // In-session settings modal: floats centered over the
