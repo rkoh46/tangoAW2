@@ -3,7 +3,7 @@ import argparse, sys
 from . import net, audit, build, check, clean, cfg, harness, install, live, profiles, release, sheet, suite, util
 
 
-def main(argv=None):
+def build_parser():
     p = argparse.ArgumentParser(prog="aw2dev", description="tangoAW2 developer CLI: build, test, live-debug, release. Paths come from devkit/config.toml (override: config.local.toml, AW2DEV_* env).")
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -188,6 +188,26 @@ def main(argv=None):
     t.add_argument("--max", type=int, dest="max_s", default=420)
     t.set_defaults(fn=net.cmd_soak)
 
+    discover(sub)
+    return p
+
+
+def discover(sub):
+    """Plugin-style commands: every module in devkit/aw2/commands/ with a `register(sub)` function adds its subcommand(s). A module that fails to
+    import is reported, not fatal, so one broken plugin does not take the CLI down (`aw2dev kit check` lists it)."""
+    import importlib, pkgutil
+    from . import commands
+    for m in pkgutil.iter_modules(commands.__path__):
+        if m.name.startswith("_"):
+            continue
+        try:
+            importlib.import_module(f"{commands.__name__}.{m.name}").register(sub)
+        except Exception as e:
+            print(f"aw2dev: command module {m.name} failed to load: {e!r}", file=sys.stderr)
+
+
+def main(argv=None):
+    p = build_parser()
     a = p.parse_args(argv)
     try:
         rc = a.fn(a)

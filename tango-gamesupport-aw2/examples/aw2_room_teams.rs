@@ -934,10 +934,11 @@ fn main() {
             }
             // vram NAME: the console's VRAM, palette and OAM to NAME.vram (for diffing two runs)
             "vram" => {
-                let mut v = vec![0u8; 0x18000 + 0x400 + 0x400];
+                let mut v = vec![0u8; 0x18000 + 0x400 + 0x400 + 0x60];
                 link.peek(0x0600_0000, &mut v[..0x18000]);
                 link.peek(0x0500_0000, &mut v[0x18000..0x18400]);
-                link.peek(0x0700_0000, &mut v[0x18400..]);
+                link.peek(0x0700_0000, &mut v[0x18400..0x18800]);
+                link.core().raw_read_range(0x0400_0000, -1, &mut v[0x18800..]);   // (the I/O registers: DISPCNT, BGxCNT, scroll; `aw2dev gfx explain` decodes the file)
                 std::fs::write(out.join(format!("{}.vram", p[1])), v).unwrap();
             }
             "hash" => {

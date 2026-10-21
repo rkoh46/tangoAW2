@@ -34,6 +34,7 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [maps.md](maps.md) | map format and pipeline, ids and slots, the pre-deployed rule, how to add a map |
 | [ds-pack.md](ds-pack.md) | how Dual Strike content is converted and gated |
 | [decomp.md](decomp.md) | using ~/advance-wars-dual-strike-decomp (CC0) for DS rules |
+| [graphics.md](graphics.md) | `aw2dev gfx`: detect and debug garbled graphics, the catalogue of screens, past bugs and the detector for each |
 | [release.md](release.md) | the release checklist |
 Older long-form notes: `ARCHITECTURE.md`, `docs/AW2.md` (parts are stale; the docs here follow the code), `docs/MAPS.md`,
 `tools/aw2test/README.md`.
@@ -45,6 +46,7 @@ Older long-form notes: `ARCHITECTURE.md`, `docs/AW2.md` (parts are stale; the do
 Checkers outside devkit that aw2dev calls: `tools/cam_check.py`, `pic_check.py`, `hud_check.py`, `tools/aw2test/`.
 
 ## Adding to the devkit
+Standing rule: every new feature or content type adds its command/scenario/checker, a docs/dev entry, a skill (or an update) and a suite regression test in the same work; see `devkit/CONTRIBUTING-KIT.md`, `aw2dev kit new-command|new-skill|check`. Details:
 New scenario = a function in `scenarios.py` (`SCEN`), nothing else. New checker = a function in `check.py` registered in `CHECKS`.
 Keep Python 3 stdlib + Pillow (+ numpy, already used by the checkers). Never hard-code absolute paths; use `cfg.py`.
 Scenarios coordinate on the first 2P map (Bean Island): every seat proposes it (`--picks` or `AW2DEV_PICK_DOWN` change that), because the draw between

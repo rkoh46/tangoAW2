@@ -66,7 +66,16 @@ def run(jobs=3, only=None, keep=False):
         shutil.rmtree(d, ignore_errors=True)
         return res
 
-    work = [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)]
+    def gfx(name):
+        from .commands import gfx as g
+        fs = g.run_screen(g.load_catalogue()[name], out / "gfx", quiet=True)
+        return [f"FAIL gfx {name}: {f['detector']} {f['shot']}: {f['msg']}" for f in fs if f["severity"] == "fail"][:4]
+
+    def gfx_names():
+        from .commands import gfx as g
+        return list(g.load_catalogue())
+
+    work = [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0

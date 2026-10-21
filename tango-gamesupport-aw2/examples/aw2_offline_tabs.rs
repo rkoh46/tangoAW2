@@ -125,6 +125,17 @@ fn main() {
                         write_bmp(&out.join(format!("f{i:02}.bmp")), &r.link.solo_side().frame().unwrap());
                     }
                 }
+                'G' => {
+                    // A DOWN press and its first 12 frames saved as g<n>_<i>.bmp (n counts the G presses): every scroll step of a long list
+                    // (`aw2dev gfx` catalogue screen maplist_scroll reads the names on each frame)
+                    static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                    let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    for i in 0..12u32 {
+                        r.link.tick([HostInput::keys(if i < 3 { 1 << 7 } else { 0 }), HostInput::keys(0)]);
+                        write_bmp(&out.join(format!("g{n:02}_{i:02}.bmp")), &r.link.solo_side().frame().unwrap());
+                    }
+                    r.wait(8);
+                }
                 'v' => {
                     let core = r.link.core();
                     let io = |a: u32| core.raw_read_16(0x0400_0000 + a, -1);
@@ -135,6 +146,12 @@ fn main() {
                     let mut v = vec![0u8; 0x18000];
                     core.raw_read_range(0x0600_0000, -1, &mut v);
                     std::fs::write(out.join("vram.bin"), v).unwrap();
+                    // (and the palette, OAM and I/O registers: `aw2dev gfx explain` decodes them)
+                    for (name, at, len) in [("pal", 0x0500_0000u32, 0x400usize), ("oam", 0x0700_0000, 0x400), ("io", 0x0400_0000, 0x60)] {
+                        let mut b = vec![0u8; len];
+                        core.raw_read_range(at, -1, &mut b);
+                        std::fs::write(out.join(format!("{name}.bin")), b).unwrap();
+                    }
                 }
                 _ => {}
             }

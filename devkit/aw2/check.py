@@ -6,6 +6,7 @@ and tools/cam_check.py), plus the harness-output checkers. Writes <run>/check.js
   mover   no waiting frame equals the mover's own frame of the same tick (the mover's UI must never be copied to a waiting window)
   cam     the waiting windows' camera does not reverse direction (phase correlation) and tools/cam_check.py passes on the AW2_CAM_LOG lines
   hud     each window shows its own army's HUD header colour, never the other's (2 seats: red/blue)
+  gfx     no frozen window (identical pictures while the game moves on) and no black run; catalogued screens: `aw2dev gfx check`
   black   no black run longer than --black-ms on any window after the battle starts (turn wipes are shorter)
   colours the harness colour scripts and the colour matrix example (not per run)
 FALSE-PASS LESSONS: look at the images too; check the build stamp (meta.json `build`) is the same across runs you compare; use the same build for both fog modes.
@@ -16,7 +17,7 @@ from PIL import Image
 from . import cfg, harness, util
 from .runlib import Run, game
 
-ALL = ["hash", "leak", "mover", "cam", "hud", "black"]
+ALL = ["hash", "leak", "mover", "cam", "hud", "black", "gfx"]
 
 
 def _arr(run, rec, size=(480, 360)):
@@ -263,6 +264,33 @@ def c_black(run, black_ms=4000, **kw):
     return {"pass": ok, "detail": "no long black runs" if ok else f"black for {black_ms} ms or more", "seats": out}
 
 
+def c_gfx(run, frozen_ms=20000, **kw):
+    """Graphics sanity of a live run: black runs (c_black) and FROZEN windows: identical consecutive pictures for longer than `frozen_ms` while the game
+    state still changes (the mover's acts / state lines advance). For tile, text and palette integrity of catalogued screens use `aw2dev gfx check`."""
+    res = {}
+    ok = True
+    st = run.states()
+    for s in run.seats:
+        prev, run_start, worst, spans = None, None, 0, []
+        for x in run.shots(s):
+            a = np.asarray(game(run.image(x["file"])).convert("L").resize((60, 40)), dtype=int)
+            if prev is not None and np.abs(a - prev).max() == 0:
+                run_start = run_start if run_start is not None else x["ms"]
+                length = x["ms"] - run_start
+                if length > frozen_ms:
+                    moving = any(run_start <= r["ms"] <= x["ms"] and (r.get("army"), r.get("mover")) != (st[0].get("army"), st[0].get("mover")) for r in st) if st else False
+                    if moving and (not spans or spans[-1][0] != run_start):
+                        spans.append((run_start, x["ms"]))
+                worst = max(worst, length)
+            else:
+                run_start = None
+            prev = a
+        res[s] = {"longest_identical_ms": worst, "frozen_spans": len(spans)}
+        ok = ok and not spans
+    b = c_black(run, **kw)
+    return {"pass": ok and b["pass"], "detail": "no frozen or black windows" if ok and b["pass"] else "a window froze (identical pictures while the game moved on) or stayed black", "seats": res, "black": b["detail"]}
+
+
 def c_colours(**kw):
     ok = True
     for sc, n in (("aw2_waiting_colours_2p", None), ("aw2_waiting_colours_2p_nofog", None), ("aw2_waiting_colours_ship_5p", None)):
@@ -275,7 +303,7 @@ def c_colours(**kw):
     return {"pass": ok, "detail": "colour scripts and the colour matrix pass" if ok else "a colour script failed"}
 
 
-CHECKS = {"hash": c_hash, "leak": c_leak, "mover": c_mover, "cam": c_cam, "hud": c_hud, "black": c_black}
+CHECKS = {"gfx": c_gfx, "hash": c_hash, "leak": c_leak, "mover": c_mover, "cam": c_cam, "hud": c_hud, "black": c_black}
 
 
 def cmd(args):

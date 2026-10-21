@@ -1,0 +1,51 @@
+# The screens `aw2dev gfx` renders (fast harness runs) and what it checks on them. Nothing here is game data: pictures, dumps and golden frames are made
+# locally from your ROM. Add a screen = add a [[screen]] block (docs/dev/graphics.md); every past graphics bug should have one.
+#
+# runner: harness (tango-gamesupport-aw2/examples/<script>.txt run by aw2_room_teams) | offline_tabs (tokens for aw2_offline_tabs)
+# variants: name -> { ds = true (load the Dual Strike pack), env = {...} }
+# shots: names of the BMPs the run writes; `f{00..29}` expands. vram = true adds `vram NAME` after each shot (dumps for the tile guard / explain)
+# checks: which detectors run (text same golden stray tiles palette frames); a failing harness exit code is always a finding.
+
+[[screen]]
+name = "banner_5p"
+what = "NEXT TURN hand-off banners of the five armies; the font tiles must not be overwritten by the Black Cannon's art (past bug: 'NE RN / ORA TAR / RESS A BUTTO')"
+runner = "harness"
+script = "aw2_banner_5p"
+vram = true
+shots = ["ho{1..5}_s0"]
+checks = ["same", "golden", "tiles", "palette"]
+variants = { plain = {}, pack = { ds = true, env = { AW2_SHARED_ART = "1" } } }
+same = [{ variants = ["plain", "pack"], region = [0, 50, 240, 60], tolerance = 0.0 }]
+golden = { tolerance = 0.002 }
+# OBJ tiles 989..1004 and 1007..1022 are the game's font (OBJ charblock at VRAM 0x10000, 32 bytes a tile)
+guard = [{ name = "font OBJ tiles 989..1022", dump = "ho1", range = [0x17BA0, 0x17FE0] }]
+
+[[screen]]
+name = "maplist_scroll"
+what = "offline Versus SELECT MAP, the 2P list scrolled past row 34 one DOWN at a time, every frame read: names must be whole (past bug: 'erChannel Ci' when the text-tile cache overflowed into the preview tiles)"
+runner = "offline_tabs"
+tokens = "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD GGGGGGGGGGGGGG"
+shots = ["g{00..13}_{00..11}"]
+checks = ["text", "frames"]
+variants = { pack = { ds = true, env = { AW2_SHARED_ART = "1" } } }
+text = [{ region = [5, 72, 72, 78], ink = [131, 123, 115], in_set = "maps", max_unknown = 0 }]
+
+[[screen]]
+name = "colours_ship_5p"
+what = "waiting window of a 5P room: a moved Cruiser keeps its owner's colours (past bug: drawn in the viewer's blue, BG palette banks 8..15 not restored)"
+runner = "harness"
+script = "aw2_waiting_colours_ship_5p"
+checks = ["palette"]
+palette = { rc = true }
+shots = []
+variants = { default = { env = { AW2_SAMPLE = "10" } } }   # (the script is run with AW2_SAMPLE=10: its window checks need the sampled frames)
+
+[[screen]]
+name = "mapsel_logo"
+what = "5P pick screen: nothing but sea between the picking plate and the counters box at the top (past bug: stray tile fragments beside the SELECT*MAP logo during the roulette)"
+runner = "harness"
+script = "aw2_mapsel_5p"
+checks = ["stray"]
+shots = ["priv_a_s0", "priv_b_s0"]
+stray = [{ region = [138, 1, 8, 12], dist = 90, tolerance = 0.02, what = "sea beside the plate" }]
+variants = { pack = { ds = true, env = { AW2_SHARED_ART = "1" } } }

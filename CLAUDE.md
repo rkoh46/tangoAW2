@@ -14,7 +14,7 @@ test, live run and release (never ad-hoc scripts in a scratchpad: they vanish).
 | `devkit/` | `aw2dev` CLI (`./aw2dev`), config, ported test drivers and checkers; output in git-ignored `devkit/work/` |
 | `docs/dev/` | developer knowledge base (index: `docs/dev/README.md`) |
 | `tools/` | older checkers (`cam_check.py`, `pic_check.py`, `hud_check.py`), `aw2test/` scripted battle tests, `maps_doc.py` |
-| `.claude/skills/` | task skills: aw2-test, aw2-live-debug, aw2-release, aw2-add-map, aw2-ui-screen, aw2-waiting-view, aw2-online-debug (+ content-kit placeholders) |
+| `.claude/skills/` | task skills: aw2-test, aw2-live-debug, aw2-release, aw2-add-map, aw2-ui-screen, aw2-waiting-view, aw2-online-debug, aw2-gfx-debug (+ content-kit placeholders) |
 | `ARCHITECTURE.md`, `docs/AW2.md`, `docs/MAPS.md` | long-form notes (parts of AW2.md are stale; docs/dev follows the code) |
 
 ## Rules that never change
@@ -32,6 +32,9 @@ test, live run and release (never ad-hoc scripts in a scratchpad: they vanish).
   rules, with the waiting windows showing what a spectator of that seat should see. Do not invent online-only rules.
 - **Tests, drivers and checkers go in `devkit/` (or the repo's `tools/`, `examples/`), never only in a scratchpad.** A scratchpad vanishes; anything you wrote to
   test, drive, analyse or release must be committed as an `aw2dev` command, scenario or checker (docs/dev/README.md "Adding to the devkit").
+- **The kit grows with the game.** Every new feature or content type adds, in the same work: its `aw2dev` subcommand, scenario or checker; a `docs/dev` entry;
+  a `.claude/skills` skill (or an update to one); a regression test in the suite. Not done until `aw2dev kit check` is clean (templates: `devkit/CONTRIBUTING-KIT.md`;
+  `aw2dev kit new-command|new-skill`).
 - Keep every player-visible string about Advance Wars 2 / tangoAW2 (no Battle Network or Tango branding).
 - Wire format and `sim_version` rules: see docs/dev/architecture-online.md before touching anything both peers must agree on; bump
   `sim_version` when the shared console's behaviour changes.
@@ -58,7 +61,7 @@ test, live run and release (never ad-hoc scripts in a scratchpad: they vanish).
 - Verify before claiming done: look at the pictures (sheets), same build for both fog modes, suite `bad=0` for waiting-view changes.
 
 ## Where to look
-- Debug / test / release: `docs/dev/testing.md`, `online-dev.md`, `release.md`; skills `aw2-test`, `aw2-live-debug`, `aw2-online-debug`.
+- Debug / test / release: `docs/dev/testing.md`, `online-dev.md`, `release.md`; skills `aw2-test`, `aw2-live-debug`, `aw2-online-debug`, `aw2-gfx-debug` (garbled graphics: `docs/dev/graphics.md`).
 - How things work: `architecture-online.md`, `ram-map.md`, `rom-routines.md`, `maps.md`, `ds-pack.md`; test aids: `pad-scripts.md`, `env-aids.md`.
 - The player's logs: `~/Documents/TangoAW2/logs/tango.log` (+ `.1`..`.5`, F8 report marks with `report-<stamp>.png`): read the latest log and any
   `report-*.png` first when the user reports a bug.
