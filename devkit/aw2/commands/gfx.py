@@ -28,9 +28,13 @@ def register(sub):
     a.add_argument("--golden", help="golden set (default: the current one, see `gfx golden`)")
     a.add_argument("--binary-dir", help="another build's target/release/examples (default: this tree)")
     a.add_argument("--examples-dir", help="that build's examples/ (harness scripts)")
+    a.add_argument("--revert", nargs="*", metavar="COMMIT", help="check a build of this tree with those fix commits reverted (proves a detector flags the old bug)")
     a.add_argument("--env", action="append", default=[], metavar="K=V", help="extra environment for the renders (e.g. AW2_RESTORE_BANKS=11 reproduces the unit-recolour bug)")
     a.add_argument("--quiet", action="store_true")
     a.set_defaults(fn=lambda x: check(x))
+    a = gs.add_parser("regress", help="reintroduce each catalogued past bug (a patch / env switch) and require the detectors to flag it")
+    a.add_argument("--bug", nargs="*")
+    a.set_defaults(fn=lambda x: regress(x))
     a = gs.add_parser("golden", help="render reference frames from a known-good build")
     a.add_argument("--from", dest="commit", help="a commit (built in a temporary worktree); default: this tree")
     a.add_argument("--tag", help="name of the set (default: the commit or `current`)")
@@ -55,6 +59,47 @@ def register(sub):
     a.add_argument("--binary-dir", help="another build's target/release/examples (e.g. the build that shows the bug)")
     a.add_argument("--golden")
     a.set_defaults(fn=lambda x: blame(x))
+
+
+def load_bugs():
+    return {b["name"]: b for b in tomllib.loads(CATALOGUE.read_text()).get("bug", [])}
+
+
+def _bug_build(bug):
+    """A worktree at HEAD with the bug's patch applied (devkit/gfx/regressions/<patch>), built with its own target dir."""
+    tag = "bug-" + bug["name"]
+    wt = cfg.work("gfx_wt", tag)
+    if wt.exists():
+        subprocess.run(["git", "worktree", "remove", "--force", str(wt)], cwd=cfg.REPO, capture_output=True)
+        shutil.rmtree(wt, ignore_errors=True)
+    wt.parent.mkdir(parents=True, exist_ok=True)
+    cfg.git("worktree", "add", "--detach", str(wt), "HEAD")
+    r = subprocess.run(["git", "apply", "--whitespace=nowarn", str(cfg.DEVKIT / "gfx" / "regressions" / bug["patch"])], cwd=wt, capture_output=True, text=True)
+    if r.returncode:
+        util.die(f"bug {bug['name']}: patch no longer applies ({r.stderr.strip()[:200]}); regenerate devkit/gfx/regressions/{bug['patch']}")
+    return _worktree_build(tag, wt)
+
+
+def regress(a):
+    """Every [[bug]] of the catalogue: build/run with the bug back, the named screens must produce a failing finding; prints DETECTED / MISSED."""
+    cat, bugs = load_catalogue(), load_bugs()
+    missed = 0
+    for name, b in bugs.items():
+        if a.bug and name not in a.bug:
+            continue
+        bd = ed = None
+        if b.get("patch"):
+            wt, bd = _bug_build(b)
+            ed = wt / "tango-gamesupport-aw2" / "examples"
+        got = []
+        for sn in b["screens"]:
+            fs = run_screen(cat[sn], cfg.work("gfx", "regress_" + name), None, bd, ed, env=b.get("env"))
+            got += [f for f in fs if f["severity"] == "fail"]
+        ok = bool(got)
+        missed += not ok
+        print(f"[{'DETECTED' if ok else 'MISSED '}] {name}: {b.get('what', '')}" + (f"  e.g. {got[0]['detector']}: {got[0]['msg'][:110]}" if got else ""))
+    util.say(f"gfx regress: {missed} bug(s) not detected")
+    return 1 if missed else 0
 
 
 def load_catalogue():
@@ -132,6 +177,10 @@ def check(a):
     cat = load_catalogue()
     names = a.screen or list(cat)
     out_root = cfg.work("gfx", time.strftime("%H%M%S"))
+    if a.revert:
+        wt, a.binary_dir = _revert_build(a.revert)
+        a.examples_dir = str(wt / "tango-gamesupport-aw2" / "examples")
+        util.say("checking a build with reverted:", " ".join(a.revert))
     fails = 0
     report = {}
     for n in names:
@@ -151,12 +200,44 @@ def check(a):
 
 
 # ---- golden ----
-def _worktree_build(commit):
-    wt = cfg.work("gfx_wt", commit[:9])
+def _revert_build(reverts, base="HEAD"):
+    """A worktree at `base` with the given commits reverted (their fixes removed: the bug comes back), built with its own target dir. Used by
+    `gfx check --revert C` to prove a detector flags the old bug. A revert that conflicts stops with the files named (edit by hand)."""
+    tag = "rev-" + "-".join(c[:7] for c in reverts)
+    wt = cfg.work("gfx_wt", tag)
+    if not wt.exists():
+        wt.parent.mkdir(parents=True, exist_ok=True)
+        cfg.git("worktree", "add", "--detach", str(wt), base)
+        for c in reverts:
+            r = subprocess.run(["git", "revert", "--no-commit", c], cwd=wt, capture_output=True, text=True)
+            if r.returncode:
+                conflicts = subprocess.run(["git", "diff", "--name-only", "--diff-filter=U"], cwd=wt, capture_output=True, text=True).stdout.split()
+                outside = [f for f in conflicts if "/src/" not in f]        # (tools/tests the fix touched: keep this tree's)
+                for f in outside:
+                    subprocess.run(["git", "checkout", base, "--", f], cwd=wt, capture_output=True)
+                    subprocess.run(["git", "reset", "-q", "--", f], cwd=wt, capture_output=True)
+                if len(outside) == len(conflicts) and conflicts:
+                    continue
+                util.die(f"reverting {c} conflicts in {conflicts}: worktree {wt} is left for a hand edit; then run `aw2dev gfx check --binary-dir` on its build")
+            # (a revert also undoes tests/examples the fix added: keep this tree's examples and kit files)
+            subprocess.run(["git", "checkout", base, "--", "tango-gamesupport-aw2/examples", "devkit"], cwd=wt, capture_output=True)
+    return _worktree_build(tag, wt)
+
+
+def _worktree_build(commit, wt=None):
+    """Build the harness examples of `commit` in a worktree with ITS OWN cargo target dir (devkit/work/gfx_target/<commit>): cargo keys workspace crates by
+    path, so two worktrees sharing one target dir reuse each other's example binaries (it happened: a "head" build that was another tree's). The target
+    dir starts as an APFS clone of this tree's target/ (instant, no extra space) so only the changed crates rebuild. Returns (worktree, examples dir)."""
+    wt = Path(wt) if wt else cfg.work("gfx_wt", commit[:9])
     if not wt.exists():
         wt.parent.mkdir(parents=True, exist_ok=True)
         cfg.git("worktree", "add", "--detach", str(wt), commit)
-    tgt = cfg.work("gfx_target")
+    tgt = cfg.work("gfx_target", commit[:9])
+    if not tgt.exists():
+        tgt.parent.mkdir(parents=True, exist_ok=True)
+        main = cfg.REPO / "target"
+        if main.exists():
+            subprocess.run(["cp", "-cR", str(main), str(tgt)], check=False)
     util.run(["cargo", "build", "--release", "-p", "tango-gamesupport-aw2", "--examples"], env=cfg.env_with_cargo({"CARGO_TARGET_DIR": str(tgt)}), cwd=wt)
     return wt, tgt / "release" / "examples"
 
@@ -166,6 +247,8 @@ def golden(a):
     names = a.screen or list(cat)
     binary_dir = examples_dir = None
     tag = a.tag or (a.commit[:9] if a.commit else "tree-" + cfg.git("rev-parse", "--short=9", "HEAD"))
+    if a.screen and not a.tag and (GOLDEN / "LATEST.txt").exists() and not a.commit:
+        tag = (GOLDEN / "LATEST.txt").read_text().strip()     # (a partial run adds to the current set)
     if a.commit:
         wt, binary_dir = _worktree_build(a.commit)
         examples_dir = wt / "tango-gamesupport-aw2" / "examples"
@@ -180,7 +263,7 @@ def golden(a):
             shutil.rmtree(dst, ignore_errors=True)
             dst.mkdir(parents=True)
             for f in Path(r["dir"]).iterdir():
-                if f.suffix == ".bmp":
+                if f.suffix in (".bmp", ".ppm"):
                     Image.open(f).convert("RGB").save(dst / (f.stem + ".png"))
                 elif f.suffix == ".vram":
                     shutil.copy2(f, dst / f.name)

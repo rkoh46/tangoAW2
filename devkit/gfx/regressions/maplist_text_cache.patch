@@ -1,0 +1,36 @@
+diff --git a/tango-gamesupport-aw2/src/ds_versus.rs b/tango-gamesupport-aw2/src/ds_versus.rs
+index 36d605213..f08b3ae93 100644
+--- a/tango-gamesupport-aw2/src/ds_versus.rs
++++ b/tango-gamesupport-aw2/src/ds_versus.rs
+@@ -451,24 +451,15 @@ const LIST_DRAWN: u32 = 0x0808_6A6E;
+ const TEXT_CACHE: u32 = 0x0300_2B80;
+ const TEXT_CACHE_NEXT: u32 = TEXT_CACHE + 0x358;
+ const LIST_TEXT_FIRST: u16 = 0x29;
+-/// The tile the preview's start (the text tiles must stay below it), and the tiles the rows of one draw can need (9 names).
+-const LIST_TEXT_END: u16 = 0x1E1;
+-const LIST_TEXT_ROOM: u16 = 9 * 14;
+ fn list_drawn(core: &mut Core) {
+     // (every Versus list: the lists by player count have up to 76 names, a tab of the game's own has 24 at most)
+-    if !(in_use(core) || crate::pvp::in_versus(core)) {
+-        return;
+-    }
+-    if in_use(core) {
+-        // (first, count, top: in sl, r7 and sb by now, for [`REDRAW`])
+-        let cpu = core.gba().cpu();
+-        let args = [cpu.gpr(10) as u8, cpu.gpr(7) as u8, cpu.gpr(9) as u8];
+-        core.raw_write_range(LIST_ARGS, -1, &args);
+-    }
+-    // The cache hands out tiles to the names it has not seen, from LIST_TEXT_FIRST up to the preview's tiles
+-    // (LIST_TEXT_END). It starts over only when the rows about to be drawn would not fit: the rows still on screen
+-    // while the list scrolls then keep their tiles (starting over at every redraw garbled them for a frame or two).
+-    if core.raw_read_16(TEXT_CACHE_NEXT, -1) + LIST_TEXT_ROOM > LIST_TEXT_END {
++    if in_use(core) || crate::pvp::in_versus(core) {
++        if in_use(core) {
++            // (first, count, top: in sl, r7 and sb by now, for [`REDRAW`])
++            let cpu = core.gba().cpu();
++            let args = [cpu.gpr(10) as u8, cpu.gpr(7) as u8, cpu.gpr(9) as u8];
++            core.raw_write_range(LIST_ARGS, -1, &args);
++        }
+         core.raw_write_16(TEXT_CACHE_NEXT, -1, LIST_TEXT_FIRST);
+         core.raw_write_8(TEXT_CACHE, -1, 1);
+     }

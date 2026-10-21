@@ -52,7 +52,11 @@ def _feats(a):
     dark = int((m.sum(axis=2) < 150).sum())
     b = a[285:345, 40:440]
     band = int(((b[:, :, 0] > 225) & (b[:, :, 1] > 220) & (b[:, :, 2] > 215)).sum())
-    cy = int(((m[:, :, 0] < 190) & (m[:, :, 1] > 215) & (m[:, :, 2] > 225) & (m[:, :, 2] - m[:, :, 0] > 45)).sum())
+    # (a move/attack range tints whole map cells cyan: count 16x16 blocks that are almost entirely cyan. Blue Moon's own units and sea sparkle are cyan too, but never fill a block)
+    cyan = (m[:, :, 0] < 190) & (m[:, :, 1] > 215) & (m[:, :, 2] > 225) & (m[:, :, 2] - m[:, :, 0] > 45)
+    h, w = cyan.shape
+    blocks = cyan[:h // 16 * 16, :w // 16 * 16].reshape(h // 16, 16, w // 16, 16).mean(axis=(1, 3))
+    cy = int((blocks > 0.85).sum()) * 300      # (scaled so the old threshold of 1800 means 6 full blocks)
     return white, dark, band, cy
 
 

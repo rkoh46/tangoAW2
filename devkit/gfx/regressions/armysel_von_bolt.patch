@@ -1,0 +1,51 @@
+diff --git a/tango-gamesupport-aw2/src/ds_coselect.rs b/tango-gamesupport-aw2/src/ds_coselect.rs
+index 22c9ef32a..e21fe707b 100644
+--- a/tango-gamesupport-aw2/src/ds_coselect.rs
++++ b/tango-gamesupport-aw2/src/ds_coselect.rs
+@@ -248,7 +248,6 @@ fn ring_background(tiles: &[u8], map: &[u8], pal: &[u16; 16]) -> Vec<u8> {
+ // --- A CO's pictures ------------------------------------------------------------------------------------
+ 
+ /// A CO's 48 x 48 mug (36 tiles in rows of six) and its colours.
+-#[derive(Clone)]
+ pub struct Mug {
+     pub tiles: Vec<u8>,
+     pub pal: [u16; 16],
+@@ -352,17 +351,8 @@ fn mug(core: &Core, co: u8) -> Option<Arc<Mug>> {
+ 
+ /// A CO's mug as the real CO screens draw it (Dual Strike's for the COs it has, the game's own for the rest), as 36 tiles
+ /// in rows of six with the transparent pixels turned into the palette's lightest colour, and the palette as bytes.
+-/// Von Bolt's Dual Strike id.
+-pub const VON_BOLT_DS: u8 = 11;
+-
+ pub fn mug_for_face(core: &Core, co: u8) -> Option<(Vec<u8>, [u8; 32])> {
+-    let mut m = (*mug(core, co)?).clone();
+-    // Von Bolt's select mug is the grid's strip (dark band above the dome); his normal mug has the whole machine.
+-    if crate::tag::ds_id(co) == Some(VON_BOLT_DS) {
+-        if let Some(a) = crate::ds_co_art::co_art(VON_BOLT_DS) {
+-            m.tiles = a.face[0].clone();
+-        }
+-    }
++    let m = mug(core, co)?;
+     let colour = |i: usize| m.pal[i];
+     let lum = |c: u16| (c & 31) as u32 * 3 + ((c >> 5) & 31) as u32 * 6 + ((c >> 10) & 31) as u32;
+     let light = (1..16).max_by_key(|&i| lum(colour(i))).unwrap_or(1) as u8;
+diff --git a/tango-gamesupport-aw2/src/online_teams.rs b/tango-gamesupport-aw2/src/online_teams.rs
+index f70413e3f..d739bbca6 100644
+--- a/tango-gamesupport-aw2/src/online_teams.rs
++++ b/tango-gamesupport-aw2/src/online_teams.rs
+@@ -441,14 +441,7 @@ fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i
+     }
+     let (px, pal, _) = &f[&co];
+     // Sturm's mug is mostly armour: at this size only the cap, visor and eyes read, so those are what is shown.
+-    let (x0, y0, span) = if co == crate::sturm_pairs::STURM {
+-        (6usize, 0usize, 36i32)
+-    } else if crate::tag::ds_id(co) == Some(crate::ds_coselect::VON_BOLT_DS) {
+-        // Von Bolt: the old man in his machine's dome, without the strip above and the floor below.
+-        (0, 10, 36)
+-    } else {
+-        (0, 0, 48)
+-    };
++    let (x0, y0, span) = if co == crate::sturm_pairs::STURM { (6usize, 0usize, 36i32) } else { (0, 0, 48) };
+     for yy in 0..sz {
+         for xx in 0..sz {
+             let (sx, sy) = (x0 + (xx * span / sz) as usize, y0 + (yy * span / sz) as usize);

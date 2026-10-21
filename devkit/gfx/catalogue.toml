@@ -49,3 +49,78 @@ checks = ["stray"]
 shots = ["priv_a_s0", "priv_b_s0"]
 stray = [{ region = [138, 1, 8, 12], dist = 90, tolerance = 0.02, what = "sea beside the plate" }]
 variants = { pack = { ds = true, env = { AW2_SHARED_ART = "1" } } }
+
+[[screen]]
+name = "armysel_faces"
+what = "SELECT YOUR ARMY with every CO's small face and the partner icons (past bugs: Sturm's face, Von Bolt's face (the old man in his machine), the partner icon palette)"
+runner = "example"
+exe = "aw2_armysel_preview"
+checks = ["golden"]
+shots = ["armysel_2", "armysel_3", "armysel_3_partner", "armysel_5", "faces_c{0..5}", "faces_f{0..9}"]
+variants = { pack = { ds = true } }
+golden = { tolerance = 0.0005 }
+
+[[screen]]
+name = "hud_header_2p"
+what = "Fog off, 2 seats: a waiting window's HUD header is its own army's colour in every frame (past bug: the mover's colour on the waiting window)"
+runner = "harness"
+script = "aw2_waiting_hud_2p_nofog"
+checks = ["external"]
+shots = []
+variants = { default = { env = { AW2_SAMPLE = "1", AW2_DUMP = "{out}/dump" } } }
+external = [{ cmd = ["python3", "{repo}/tools/hud_check.py", "{dump}", "1", "red", "945"], what = "seat 1 never shows a red header" },
+            { cmd = ["python3", "{repo}/tools/hud_check.py", "{dump}", "0", "blue", "945"], what = "seat 0 never shows a blue header" }]
+
+[[screen]]
+name = "roulette_5p"
+what = "5P room: the map roulette (the title's place is the plate; nothing of the logo or the map's picture may show round it) and the army page that follows (the Rules map-name plate must not land on it)"
+runner = "harness"
+script = "aw2_mapsel_5p"
+checks = ["golden"]
+shots = ["rl{1..8}_s0", "teams_s0", "ap{1..5}_s0"]
+variants = { pack = { ds = true, env = { AW2_SHARED_ART = "1" } } }
+golden = { tolerance = 0.0005 }
+script_edit = { insert_before = [{ match = "until teams", lines = ["wait 90", "shotall rl1", "wait 90", "shotall rl2", "wait 90", "shotall rl3", "wait 90", "shotall rl4", "wait 90", "shotall rl5", "wait 90", "shotall rl6", "wait 90", "shotall rl7", "wait 90", "shotall rl8"] }], append = ["wait 100", "press 0 A", "press 1 A", "press 2 A", "press 3 A", "press 4 A", "wait 40", "shotall ap1", "press 0 A", "press 1 A", "press 2 A", "press 3 A", "press 4 A", "wait 40", "shotall ap2", "press 0 A", "press 1 A", "press 2 A", "press 3 A", "press 4 A", "wait 40", "shotall ap3", "press 0 A", "press 1 A", "press 2 A", "press 3 A", "press 4 A", "wait 40", "shotall ap4", "wait 200", "shotall ap5"] }
+
+# ---- past bugs brought back (patch = a diff of src/ against HEAD in devkit/gfx/regressions, or env); `aw2dev gfx regress` requires each to be flagged ----
+[[bug]]
+name = "banner_font_clobber"
+what = "the north Black Cannon art written over the font's OBJ tiles (2b4e12a20): garbled NEXT TURN"
+patch = "banner_font_clobber.patch"
+screens = ["banner_5p"]
+
+[[bug]]
+name = "maplist_text_cache"
+what = "the map list's text-tile cache restarting at every redraw (fb91e6d98): garbled rows mid-scroll"
+patch = "maplist_text_cache.patch"
+screens = ["maplist_scroll"]
+
+[[bug]]
+name = "unit_recolour"
+what = "only BG palette bank 11 restored after the waiting view's refresh (a69b1a9ac): ships in the viewer's colours"
+env = { AW2_RESTORE_BANKS = "11" }
+screens = ["colours_ship_5p"]
+
+[[bug]]
+name = "armysel_von_bolt"
+what = "Von Bolt's small face not framed (1e06733a4)"
+patch = "armysel_von_bolt.patch"
+screens = ["armysel_faces"]
+
+[[bug]]
+name = "armysel_sturm"
+what = "Sturm's small face not cropped to cap, visor and eyes (1da361796)"
+patch = "armysel_sturm.patch"
+screens = ["armysel_faces"]
+
+[[bug]]
+name = "hud_header"
+what = "the waiting window's HUD header in the other army's colour (1802d5b35)"
+patch = "hud_header.patch"
+screens = ["hud_header_2p"]
+
+[[bug]]
+name = "rules_plate_on_armypage"
+what = "the Rules map-name plate drawn over the finishing army page (1ab6c1d05)"
+patch = "rules_plate_on_armypage.patch"
+screens = ["roulette_5p"]

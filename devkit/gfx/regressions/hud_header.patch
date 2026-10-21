@@ -1,0 +1,13 @@
+diff --git a/tango-gamesupport-aw2/src/pvp.rs b/tango-gamesupport-aw2/src/pvp.rs
+index b6f5c213d..54ad1a91b 100644
+--- a/tango-gamesupport-aw2/src/pvp.rs
++++ b/tango-gamesupport-aw2/src/pvp.rs
+@@ -765,7 +765,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
+             crate::fog_view::Phase::HandOff => false,
+             crate::fog_view::Phase::Busy => {
+                 crate::fog_view::log_busy(core);
+-                true
++                crate::fog_view::fog(core) || crate::fog_view::mover_cursor_up(core) || crate::fog_view::walking(core)
+             }
+             crate::fog_view::Phase::Map | crate::fog_view::Phase::Page | crate::fog_view::Phase::Moving => true,
+             crate::fog_view::Phase::Scene => crate::fog_view::fog(core),

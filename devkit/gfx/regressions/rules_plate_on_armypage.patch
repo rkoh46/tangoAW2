@@ -1,0 +1,13 @@
+diff --git a/tango-gamesupport-aw2/src/unranked.rs b/tango-gamesupport-aw2/src/unranked.rs
+index 52dd625d3..5c93e7c33 100644
+--- a/tango-gamesupport-aw2/src/unranked.rs
++++ b/tango-gamesupport-aw2/src/unranked.rs
+@@ -820,7 +820,7 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
+     if rules_up(core) {
+         // (not over the army page while it finishes: its own title already names the map; and not over the results after
+         // the battle, where the Rules page's rows still stand in memory)
+-        if !crate::online_teams::done(core) && core.raw_read_8(BATTLED, -1) == 0 {
++        if true {   // (BUG REPRODUCTION: the map-name plate lands on the army page)
+             paint_rules_name(core, rgba);
+             paint_rules_banner(core, rgba);
+         }

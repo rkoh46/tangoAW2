@@ -18,7 +18,8 @@ def render_variant(screen, vname, out, binary_dir=None, examples_dir=None):
     """Returns {"rc": int, "log": path, "dir": out}; shots stay as BMP/dump files in `out`."""
     var = screen.get("variants", {}).get(vname, {})
     env = dict(os.environ)
-    env.update({k: str(v) for k, v in var.get("env", {}).items()})
+    out = Path(out)
+    env.update({k: str(v).replace("{out}", str(out)) for k, v in var.get("env", {}).items()})
     if var.get("ds"):
         env["TANGOAW2_DS_ROM"] = str(cfg.ds_rom())
     out = Path(out)
@@ -32,6 +33,16 @@ def render_variant(screen, vname, out, binary_dir=None, examples_dir=None):
         script = ex / (screen["script"] + ".txt")
         if not script.exists():
             script = resolve_script(screen["script"])
+        edit = screen.get("script_edit")
+        if edit:
+            # insert lines before the first script line starting with `match`, and/or append lines (so a catalogue screen needs no script copy)
+            lines = script.read_text().splitlines()
+            for ins in edit.get("insert_before", []):
+                k = next(i for i, l in enumerate(lines) if l.startswith(ins["match"]))
+                lines[k:k] = ins["lines"]
+            lines += edit.get("append", [])
+            script = out / "script_edited.txt"
+            script.write_text("\n".join(lines) + "\n")
         if screen.get("vram"):
             # (a `vram NAME` line after every `shotall NAME` / `shot NAME`: the dumps the tile guard and `gfx explain` read)
             lines = []
@@ -43,6 +54,10 @@ def render_variant(screen, vname, out, binary_dir=None, examples_dir=None):
             script = out / "script_with_vram.txt"
             script.write_text("\n".join(lines) + "\n")
         cmd = [str(binary), str(cfg.aw2_rom()), str(out), str(script)]
+    elif runner == "example":
+        # any example binary that writes pictures (BMP or PPM) into <out>: aw2_armysel_preview <rom> <out> ...
+        binary = bd / screen["exe"]
+        cmd = [str(binary), str(cfg.aw2_rom()), str(out)] + [str(x) for x in screen.get("args", [])]
     elif runner == "offline_tabs":
         binary = bd / "aw2_offline_tabs"
         cmd = [str(binary), str(cfg.aw2_rom()), str(out), screen["tokens"]]
@@ -58,5 +73,8 @@ def render_variant(screen, vname, out, binary_dir=None, examples_dir=None):
 
 
 def shot_path(out, name):
-    p = Path(out) / f"{name}.bmp"
-    return p if p.exists() else None
+    for ext in (".bmp", ".ppm", ".png"):
+        p = Path(out) / f"{name}{ext}"
+        if p.exists():
+            return p
+    return None
