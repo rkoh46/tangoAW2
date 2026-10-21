@@ -1,5 +1,5 @@
 """aw2dev build: the right toolchain for each target."""
-import json, os, subprocess, time
+import json, os, subprocess, sys, time
 from . import cfg, util
 
 
@@ -35,6 +35,13 @@ def build(args):
 def test(args):
     env = cfg.env_with_cargo()
     rc = 0
+    if not args.package or "python" in args.package:
+        # the map pipeline's tests (no ROM needed): mapsfile merge keeps every map, ids unique and from the pool, room in the data area
+        r = util.run([sys.executable, "-m", "unittest", "test_five", "-v"], cwd=cfg.REPO / "tango-gamesupport-aw2" / "five", check=False)
+        rc |= r.returncode
+        if args.package == ["python"]:
+            return 1 if rc else 0
+    args.package = [p for p in (args.package or []) if p != "python"]
     for pkg in (["tango-gamesupport-aw2", "tango-session", "tango-match"] if not args.package else args.package):
         r = util.run(["cargo", "test", "--release", "-p", pkg, "--lib"], env=env, cwd=cfg.REPO, check=False)
         rc |= r.returncode

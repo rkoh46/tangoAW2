@@ -11,4 +11,6 @@ description: Reproduce a tangoAW2 online bug live on real app clients, then read
    `./aw2dev net trace <run>` merges peers; hashes differ: `./aw2dev net desync <run>`.
 5. Look: `./aw2dev sheet <run> --around N --kind move [--strip]`, `--events`, or contact sheets; view the PNGs yourself and report any bug you see.
 6. Fix, rebuild (same build for both fog modes), rerun from the stuck step, not from the beginning when you can.
-7. Clean up: `./aw2dev clean --runs --yes` when reviewed.
+7. Other drivers: `aw2dev live rejoin <unr-guest|lobby-host|...>` (kill -9 + relaunch + hash check), `aw2dev live ios-gate --kinds mac,iphone` (Simulator peer; `aw2dev build --sim` first),
+   `rules-lobby`, `rules-unranked`, `browse`, `solo` (one offline window); freeze a peer with `aw2dev net sim ... --event @AFTER_TURN_0:stop:1:10` (docs/dev/online-dev.md).
+8. Clean up: `./aw2dev clean --runs --yes` when reviewed.

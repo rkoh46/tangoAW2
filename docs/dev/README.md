@@ -47,6 +47,6 @@ Checkers outside devkit that aw2dev calls: `tools/cam_check.py`, `pic_check.py`,
 ## Adding to the devkit
 New scenario = a function in `scenarios.py` (`SCEN`), nothing else. New checker = a function in `check.py` registered in `CHECKS`.
 Keep Python 3 stdlib + Pillow (+ numpy, already used by the checkers). Never hard-code absolute paths; use `cfg.py`.
-Known scenario caveat: scenarios coordinate on the first 2P map (Bean Island): every seat proposes it (`AW2DEV_PICK_DOWN`, default 0),
-because the draw between proposals is random. `big5`, `hq4`, `hq5` are not verified since the private map picks; see HANDOFF notes in
-architecture-online.md (open items).
+Scenarios coordinate on the first 2P map (Bean Island): every seat proposes it (`--picks` or `AW2DEV_PICK_DOWN` change that), because the draw between
+proposals is random. `hq5` passes (5 seats; army 4 is eliminated by army 3's HQ capture, army 3 by army 1's; hash/leak/mover/cam/black PASS); `hq4` now runs to the end (every army takes its turn, 4P team poke removed) but its two scripted HQ captures do not happen (the Four Corners HQ cells in the poke are not the enemies': unresolved). `big5`
+is blocked: a live 5P room's pick list shows 9 maps and no `5P Predeploy` tab, so Pentagon Atoll (audit: pack, pre-deployed) cannot be proposed (see online-dev.md).

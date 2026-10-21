@@ -99,6 +99,12 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("DS Campaign", (0x0203_FD10, 0x50)),
     ("CPU tactics, heal effect, Oozium, stun, battle distance, Teams list", (0x0203_FD60, 0x1A0)),
     ("design list, joypad and invention picks", (0x0203_FF00, 0x100)),
+    ("five armies: the player table, moved (crate::five::PLAYERS: six 0x3C-byte slots)", (crate::five::PLAYERS, 6 * 0x3C)),
+    ("five armies: army 5's picks and switches (crate::five ARMY5_*, LABEL_PENDING, VISION_DETOUR, FIVE_ON)", (0x0203_0200, 8)),
+    ("five armies: the Teams screen's record, moved (crate::five TEAMS, crate::ds_coselect TEAMS_FIVE)", (0x0203_0300, 0xE0)),
+    ("five armies: the AI's threat maps, 5 x 0xC00 (crate::five THREAT)", (0x0203_1000, 5 * 0xC00)),
+    ("DS Campaign rules: Means to an End / Ring of Fire state, eruption cells, barrier hit points (crate::ds_campaign_rules)", (0x0203_F700, 0x40)),
+    ("CO skills' active bitmaps and the luck / special armies (crate::co_skills::ACTIVE)", (crate::co_skills::ACTIVE, 0x20)),
     ("Teams screen: borrowed tiles while partners show", (0x0203_E800, 0x8A0)),
     ("Rules screen: borrowed label tiles", (0x0203_F100, 0x200)),
     ("Versus rules: saved label tiles", (0x0203_E600, 0x200)),
@@ -174,5 +180,18 @@ mod tests {
         assert!(crate::ds_versus::STATE_LEN <= find("Dual Strike's Versus").1);
         assert_eq!(find("War Room records").0, crate::ds_versus::ROWS);
         assert_eq!(find("War Room records").1, crate::ds_versus::ROWS_LEN);
+        assert_eq!(find("five armies: the player table").0, crate::five::PLAYERS);
+        assert_eq!(find("DS Campaign rules").0, 0x0203_F700);
+        assert_eq!(find("CO skills' active").0, crate::co_skills::ACTIVE);
+    }
+
+    /// Every region lies in EWRAM (0x02000000..0x02040000) and the five-army block ends where its threat maps end.
+    #[test]
+    fn regions_are_in_ewram() {
+        for &(n, (a, l)) in REGIONS {
+            assert!(a >= 0x0200_0000 && a + l <= 0x0204_0000, "{n}: {a:#x}+{l:#x} is outside EWRAM");
+        }
+        let t = REGIONS.iter().find(|r| r.0.starts_with("five armies: the AI's threat")).unwrap().1;
+        assert_eq!(t.0 + t.1, 0x0203_4C00);
     }
 }

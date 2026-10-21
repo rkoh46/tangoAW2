@@ -1,0 +1,24 @@
+# The map-table id of each map in maps.txt (five/map.py reads this and writes IDS into src/five_map_data.rs).
+# `Name = 0xID`. A map not listed here gets the next free id of the pool 0xF2..0xFF by map.py, which appends it below (such a map
+# is Dual Strike pack content: the Versus list walks ids past 0xC0 only with the pack on). The Versus table has 0x100 ids; 0..0xC8
+# are the game's own and tangoAW2's first maps, 0xC9..0xF1 belong to Survival, the campaigns and the Colonel's Vault.
+Five Seas = 0x00
+Iron Crossing = 0xBC
+Magma Crown = 0xBD
+Skyreach = 0xBE
+The Citadel = 0xBF
+Obelisk Duel = 0xB8
+Crystal Isles = 0xB9
+Obelisk Plains = 0xBA
+Black Monolith = 0xBB
+Black Rampart = 0xC0
+Rust Basin = 0xC1
+Dune Fork = 0xC2
+Cinder Flats = 0xC3
+Black Wastes = 0xC4
+Coral Strait = 0xC5
+Trident Isles = 0xC6
+Harbor Cross = 0xC7
+Coral Crown = 0xC8
+The Colonel's Vault = 0xF1
+Pentagon Atoll = 0xC9

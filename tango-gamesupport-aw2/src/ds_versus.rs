@@ -65,6 +65,8 @@ const STRING_SIZE: u32 = 0x20;
 const MAP_DATA: u32 = 0x09C1_0000;
 const MAP_DATA_SIZE: u32 = 0x1000;
 const ROM_END: u32 = 0x09D0_0000;
+/// (crate::five_map's map data starts where this area ends)
+pub(crate) const ROM_END_FOR_MAPS: u32 = ROM_END;
 
 /// Text ids from 0x7200 read their pointer from 0x0862D238 (free ROM; see crate::five_map for why that works).
 const TEXT_TABLE: u32 = crate::campaign_model::TEXT_TABLE;

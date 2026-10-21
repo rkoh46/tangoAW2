@@ -23,11 +23,13 @@ RESULT_SCENARIOS = ("yield", "hq3", "hq3k", "hq3p", "g2k", "g4k")
 
 
 def parse_event(s):
-    """'30:stop:1:10' (seconds) or 't900:kill:2' (tick): AT:ACTION:SEAT[:ARG]; actions kill stop cont relaunch."""
+    """'30:stop:1:10' (seconds), 't900:kill:2' (tick), '@AFTER_TURN_0:stop:1:10' (after a marker the pads log): AT:ACTION:SEAT[:ARG]; actions kill stop cont relaunch."""
     p = s.split(":")
     at, act, seat = p[0], p[1], int(p[2])
     e = {"action": act, "seat": seat}
-    if at.startswith("t"):
+    if at.startswith("@"):
+        e["at_log"] = at[1:]          # when a pad script has logged this text (scenarios log AFTER_TURN_<r> after each turn): freezes in a quiet moment
+    elif at.startswith("t"):
         e["at_tick"] = int(at[1:])
     else:
         e["at_s"] = float(at)

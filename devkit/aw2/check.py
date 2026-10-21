@@ -55,11 +55,32 @@ def _feats(a):
     return white, dark, band, cy
 
 
+def _cream_box(a):
+    """A big filled near-white rectangle (a menu, page or dialog): the white pixels' bounding box is large and mostly white. White buildings scattered
+    over the map (neutral cities at fog off) have a large box but a low fill ratio."""
+    m = a[40:340]
+    mask = (m[:, :, 0] > 238) & (m[:, :, 1] > 238) & (m[:, :, 2] > 238)
+    rows = np.where(mask.sum(axis=1) > 25)[0]
+    cols = np.where(mask.sum(axis=0) > 12)[0]
+    if len(rows) < 25 or len(cols) < 60:
+        return False
+    sub = mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+    return sub.size > 60 * 40 and sub.mean() > 0.5
+
+
 def c_leak(run, allow_ms=2500, **kw):
     acts = run.acts()
     t0 = run.t0()
     # allowed on every window: battle scene, CO power cut-in, narration boxes (elimination), captures seen: stay quiet around those acts
     quiet = [(a["ms"] - allow_ms, a["ms"] + allow_ms) for a in acts if a["what"] in ("attack", "power", "eliminated", "kill", "capture")]
+    # AW2's own reconnect box shows on every other window while a peer is frozen, dropped or rejoining (scripted events): not a leak
+    try:
+        sm = json.loads((run.dir / "summary.json").read_text())
+        for e in sm.get("events", []):
+            ms = sm["t0_epoch_ms"] + int(e["at_s"] * 1000)
+            quiet.append((ms, ms + 150_000 if e["action"] in ("kill", "relaunch") else ms + int(1000 * (e.get("arg") or 10)) + 20_000))
+    except Exception:
+        pass
     eps = []
     for s in run.seats:
         cur = None
@@ -74,7 +95,7 @@ def c_leak(run, allow_ms=2500, **kw):
                 continue
             w, dk, band, cy = _feats(a)
             kinds = []
-            if 2600 < w < 9000 and dk < 9000:
+            if 2600 < w < 9000 and dk < 9000 and _cream_box(a):
                 kinds.append("menu/page")
             if w >= 9000 and dk < 30000:
                 kinds.append("bigmenu")

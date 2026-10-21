@@ -24,7 +24,7 @@ aw2dev net sim lobby --players 3 --event t900:kill:2 --event t900:relaunch:2   #
 ```
 Impairment is `TANGOAW2_NET_IMPAIR=latency_ms,jitter_ms,loss_pct` (tango-net/src/impair.rs), applied to what each peer SENDS (round trip
 = 2x latency); loss only on the unreliable in-match channel; jitter reorders it. `--impair 2=200,80,10` targets one seat. Events:
-`AT:ACTION:SEAT[:ARG]`, AT in seconds or `tN` (seat 0's console ticks); actions kill, stop (ARG seconds, then SIGCONT), cont, relaunch.
+`AT:ACTION:SEAT[:ARG]`, AT in seconds, `tN` (seat 0's console ticks) or `@MARKER` (a text a pad script has logged; scenarios log `AFTER_TURN_<r>` after turn r of the global list, which is the quiet moment to freeze: `--event @AFTER_TURN_0:stop:1:10`); actions kill, stop (ARG seconds, then SIGCONT), cont, relaunch (the rejoin box: A).
 Not offered because they need root (`dnctl`/`pfctl`): bandwidth caps and NAT-type emulation; relay-only needs `--public`.
 Output: a run dir (see devkit/aw2/live.py docstring) and a verdict: stall, hash, leak, result. Scripted `--event`s for 2P scenarios
 reuse scen kinds (`--kill`/`--stop` of `aw2dev live` also exist: `SEATS:WHEN`, `eliminated`, `armyN`, `log:TEXT`).
@@ -62,3 +62,20 @@ Reproduce a failure: `aw2dev net desync <run>`; the record has scenario/players/
 `python3 -m aw2.signal_mock --port N` (from `devkit/`), or in-process. Protocol: vendor/tango-signaling/src/proto/signaling.proto. Pairs
 two connections with the same `session_id` (the first to send `Start` is the impolite side, the later one gets its `Offer`), relays
 `Answer`/`IceCandidate`, echoes `Ping`, sends `Hello` without ICE servers. Profiles point at it through `matchmaking_endpoint`.
+
+## Freezes and the pad scripts
+A frozen peer shows AW2's reconnect box on the other seats after 5 s of silence (`pvp: nothing from ... for 5s`), the match goes on when the peer is heard again
+(a longer outage reconnects the link or yields the army after the 60 s window). Scenario pad scripts are made freeze-safe (`scenarios.freeze_safe`): before every
+step that waits for the game or presses a key they wait `until !reconnect 300` (cue `reconnect` = the box is up), and the app's macros `endturn`, `onbanner`,
+`intro` (short built-in timeouts) are expanded with longer limits. Tested: a 10 s SIGSTOP on seat 1 after seat 0's turn, scripts ran to the end, hashes equal.
+Limit: a key press that lands while the freeze is being detected (before the box appears) can be dropped by the game (an input-drop), leaving a menu open;
+freeze inside a seat's own multi-step action is therefore unreliable. Freeze in a quiet moment (`@AFTER_TURN_0`) or accept a stall as the finding.
+
+## Drivers (ports of the old scratchpad scripts)
+| Command | What |
+|---|---|
+| `aw2dev live <scenario>` | 2P scenarios (`--list`), `lobby` (N seats, rounds of end-turn), `unranked`, `rules-lobby`, `rules-unranked`, `browse` (needs the PUBLIC lobby relays: no `--local`), `solo` (one offline window: `--entry selectmap\|lobby\|title --pad "wait 60;shot a;press A 8"`) |
+| `aw2dev live rejoin <name>` | `unr-guest`, `unr-host`, `unr-guest-gone`, `unr-host-gone`, `unr-late`, `unr-giveup-guest`, `unr-giveup-host`, `unr-rejoin-gone`, `unr-hostrejoin-gone`, `lobby-guest`, `lobby-host`, `lobby-late`, `lobby-giveup`, `lobby-browse` (`--players N` for lobby): the victim is killed -9 six seconds after the battle is ready and relaunched after `REL_DELAY` (14 s; late 75); passes when everyone's script ends and the victim's hashes after the rejoin equal the survivor's from the frame it had reached. Verified: `unr-guest`, `lobby-host` (3P) |
+| `aw2dev live ios-gate --kinds mac,iphone [--event 30:bg:1:10]` | a Simulator peer against Mac peers (`aw2dev build --sim` first); events kill / relaunch / bg / stop; hash check at the end. Verified: mac host + iPhone guest, 2 rounds |
+| `--picks 0,3,5` | per-seat map pick (DOWN presses from the first row; `t1:2` = one RIGHT then two DOWN; negative = UP). Different picks make the draw random; scenarios default to every seat proposing the first 2P map |
+Simulators are booted when needed and left running; only this app is terminated. UNRANKED and rejoin use the matchmaking pairing, which the local mock provides.

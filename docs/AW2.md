@@ -1,5 +1,10 @@
 # Advance Wars 2 support: how it works
 
+> **This is the long-form design history. Addresses, RAM, ROM routines, env aids and test tools are kept current in [docs/dev/](dev/README.md)
+> (ram-map.md, rom-routines.md, architecture-online.md, env-aids.md); where they disagree with this file, docs/dev and the code win.**
+> Known stale spots, corrected below: the battle scenes' palette copy is at `0x0203C000` (`ram_map::BATTLE_MAP_PALETTES`, not `0x0203EC00`),
+> UNRANKED's state is at `unranked::STATE` `0x0203D600` (`0x0203D100` is the saved-matches list, `online::SAVED`), and `sim_version` is 26 (history in `pvp.rs`).
+
 ## Shared console
 
 Tango's original games link two emulated GBAs with a cable. Advance
@@ -1140,7 +1145,7 @@ Campaign's records; 0x0203E000..0x0203F73F was found unwritten at the title, Sel
 (map animations), 0x0203F7A0..0x0203F7DF (power animations), 0x0203F800..0x0203F9FF (battle
 scenes), 0x0203FD60..0x0203FEFF (CPU tactics, heal effect, the Oozium's eat
 0x0203FDC8..0x0203FDFB, stun, battle distance, Teams list),
-0x0203E800..0x0203F09F (the Teams screen's borrowed tiles while partners show); its first 0x150 bytes from 0x0203EC00 also hold the map's OBJ palettes 0-7, 12 and 13 during a Dual Strike battle scene (`ds_battle.rs`: AW2 puts the map's palettes back a few frames before the scene's proc ends and our figure/effect palettes were still being written over them, leaving the cursor, funds and panel text black or tinted; they are held at the scene's start and restored when it is over), 0x0203F100..0x0203F2FF
+0x0203E800..0x0203F09F (the Teams screen's borrowed tiles while partners show); its first 0x150 bytes from 0x0203C000 (they moved: `ram_map::BATTLE_MAP_PALETTES`; the borrowed Teams tiles end below it) also hold the map's OBJ palettes 0-7, 12 and 13 during a Dual Strike battle scene (`ds_battle.rs`: AW2 puts the map's palettes back a few frames before the scene's proc ends and our figure/effect palettes were still being written over them, leaving the cursor, funds and panel text black or tinted; they are held at the scene's start and restored when it is over), 0x0203F100..0x0203F2FF
 (the Rules screen's borrowed label tiles), 0x0203F400..0x0203F4FF (tag pairs), 0x0203F500..0x0203F5D7 (the tag screens, the CO page's TAG box), 0x0203FF00.. (earlier
 features). Free ROM: 0x08780000..0x0878FFFF (the tag map menu, its stubs and strings, the Rules rows' help
 lines), 0x08790000..0x087A042F (what the tag screens cover, while they show). `factory.rs` has a test that no two traps share
@@ -4357,7 +4362,7 @@ tests). Online play starts in the game, played alone:
   five minutes without a pairing, or a server that cannot be reached, says so. The match subtype is
   `ONLINE_MATCH | UNRANKED_MATCH (0x02)`, plus `UNRANKED_PICK_GUEST (0x04)` when the host's draw from the match seed
   (`seed[0] & 1`) picks the guest's proposal: the console reads both from its subtype (`unranked::init` copies them
-  to EWRAM `0x0203D100..`), so both peers and the replay have them. On the console: SELECT MAP's list is not played;
+  to EWRAM `0x0203D600..`, `unranked::STATE`), so both peers and the replay have them. On the console: SELECT MAP's list is not played;
   each player moves a selector over the 2-army maps of the Classic, Vs. Maps and Pre-Deployed tabs (LEFT/RIGHT,
   UP/DOWN six at a time, A confirms, B takes back; both proposals and gamertags shown live); with both confirmed the
   drawn seat's map is walked to in the list (pressed for the players) and chosen; then the room's Teams page (CO and
@@ -4437,7 +4442,7 @@ tests). Online play starts in the game, played alone:
     left while still playing is sent a second command (YIELD) in the first joined row: from then on the console plays
     that seat, a tap at a time with the screen allowed to settle, exactly as a player yields (an empty cell, A, Options,
     Yield, "Yes"), and the army is out. Everything is in the simulation (console RAM, the stream's words), so rollback,
-    snapshots and replays carry it. `SharedGame::sim_version` is 22.
+    snapshots and replays carry it. `SharedGame::sim_version` was 22 here; the current value and its history are in `pvp.rs` (docs/dev/architecture-online.md).
   - *Seen.* The game's box ("Host left. NAME is hosting now... Reconnecting...", `hold_box.rs`, `hold::set_migration`), the
     status bar's "host" mark (`PvpSession::host_seat`).
   - *Checked.* Unit tests (`migrate.rs`, `driver.rs`), the harness (`aw2_proxy_yield_{3p,3p_nofog,5p}`), and live with

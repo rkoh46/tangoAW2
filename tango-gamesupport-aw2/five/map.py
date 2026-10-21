@@ -437,10 +437,46 @@ def sea_edges(rom):
     return lambda mask: struct.unpack_from('<h', rom, 0x485DC4 + 2 * mask)[0]
 
 
+ID_POOL = list(range(0xF2, 0x100))
+
+
+def assign_ids(maps, path):
+    """Each map's table id from five/map_ids.txt; a new map takes the next free id of ID_POOL (and is appended to the file). New maps
+    are marked pack content: the Versus list walks ids past 0xC0 only with the Dual Strike pack on."""
+    ids = {}
+    for line in open(path):
+        if line.startswith('#') or '=' not in line:
+            continue
+        name, _, v = line.rpartition('=')
+        ids[name.strip()] = int(v.strip(), 0)
+    assert len(set(ids.values())) == len(ids), 'duplicate id in map_ids.txt'
+    names = [m['name'] for m in maps]
+    assert len(set(names)) == len(names), 'duplicate map name in maps.txt'
+    added = []
+    for m in maps:
+        if m['name'] not in ids:
+            free = [i for i in ID_POOL if i not in ids.values()]
+            if not free:
+                raise SystemExit('map id space full: ids 0xF2..0xFF are all used (14 new maps); see docs/dev/maps.md')
+            ids[m['name']] = free[0]
+            m['pack'] = True
+            added.append(m['name'])
+    if added:
+        with open(path, 'a') as f:
+            for n in added:
+                f.write(f'{n} = 0x{ids[n]:02X}\n')
+        print('assigned ids:', ', '.join(f'{n} = 0x{ids[n]:02X}' for n in added))
+    for m in maps:
+        if m['name'] in ids and ids[m['name']] >= 0xF2 and m['name'] not in added:
+            m['pack'] = True
+    return [ids[m['name']] for m in maps]
+
+
 def main():
     rom = open(sys.argv[1], 'rb').read()
     edge = sea_edges(rom)
     maps = parse(os.path.join(HERE, 'maps.txt'))
+    ids = assign_ids(maps, os.path.join(HERE, 'map_ids.txt'))
     out = os.path.join(HERE, '..', 'src', 'five_map_data.rs')
     with open(out, 'w') as o:
         o.write('// Generated from five/maps.txt by five/map.py; do not edit.\n\n')
@@ -458,7 +494,9 @@ def main():
                 o.write('            ' + ', '.join(f'0x{b:02X}' for b in units[i:i + 12]) + ',\n')
             o.write('        ],\n    },\n')
             print(f'{m["name"]}: {W}x{H}, {len(lz)} bytes, {(len(units) // 12) - 6} units, properties {counts}')
-        o.write('];\n')
+        o.write('];\n\n')
+        o.write('/// Each map\'s id in the Versus map table, in MAPS order (five/map_ids.txt).\n')
+        o.write('pub const IDS: &[u8] = &[' + ', '.join(f'0x{i:02X}' for i in ids) + '];\n')
     # Every tile as the game's own maps draw it (five/tilecheck.py).
     import tilecheck
     bad = {name: vs for name, vs in tilecheck.check_all(rom).items() if vs}

@@ -234,11 +234,11 @@ def capq(x, y, down=0):
 
 
 def s_hq4(fog):
-    # Four Corners (4P) teams 2v2: armies 1+2 against 3+4 (poked into the battle's player blocks)
-    teams = [f"when army=1 day=1 idle tick>=2300 do poke 0x{0x020232C0 + 0x3C * a + 0x2A:08X} {0 if a < 3 else 1:02X}" for a in range(1, 5)]
-    pokes = teams + ["when army=1 day=1 idle tick>=2300 do unit 1 inf 0 0", "when army=1 day=1 idle tick>=2300 do capture 0 0 15",
-                     "when army=2 day=1 idle do unit 2 inf 14 0", "when army=2 day=1 idle do capture 14 0 15"]
-    turns = [(0, capq(0, 0)), (1, []), (3, []), (0, []), (1, capq(14, 0))]
+    # Four Corners (4P), free for all (the old team poke into the battle's player blocks had no effect since the army-5 table moved: no teams here):
+    # army 1's infantry on (0,0) captures it with the capture points poked to 15, army 2's does the same at (14,0); every army takes its turn in order.
+    pokes = ["when army=1 day=1 idle tick>=2300 do unit 1 inf 0 0", "when army=1 day=1 idle tick>=2300 do capture 0 0 15",
+             "when army=2 day=1 idle do unit 2 inf 14 0", "when army=2 day=1 idle do capture 14 0 15"]
+    turns = [(0, capq(0, 0)), (1, []), (2, []), (3, []), (0, []), (1, capq(14, 0)), (2, []), (3, [])]
     return pokes, turns
 
 
@@ -251,7 +251,8 @@ def s_hq5(fog):
     pokes = ["when army=1 day=1 idle tick>=2300 do unit 1 inf 9 10", "when army=1 day=1 idle tick>=2300 do capture 9 10 15",
              "when army=3 day=1 idle do unit 3 inf 9 37", "when army=3 day=1 idle do capture 9 37 15",
              "when army=1 day=2 idle do unit 1 inf 9 29", "when army=1 day=2 idle do capture 9 29 15"]
-    turns = [(0, capq(9, 10, 1)), (2, capq(9, 37, 1)), (4, []), (0, capq(9, 29, 1))]
+    # (every army takes its turn in order; army 3 taking army 4's HQ at (9,37) eliminates army 4 (seen live). Army 1's capture at (9,10) of army 2's HQ has not been seen to eliminate it)
+    turns = [(0, capq(9, 10, 1)), (1, []), (2, capq(9, 37, 1)), (4, []), (0, capq(9, 29, 1)), (1, []), (4, [])]   # (seat 3's army is out after army 3's capture: no turn for it; seat 2 has none in round 2: army 1's capture at (9,29) takes army 3's HQ, seen live)
     return pokes, turns
 
 
@@ -367,6 +368,62 @@ SCEN = {"swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, 
 
 
 
+BIG5_TAB = 0   # (a 5P room has one tab, "5P" (no tab change by RIGHT/LEFT/L/R); with the pack Pentagon Atoll is its 10th and last row; the list does not wrap)
+BIG5_DOWN = 9
+
+
+def parse_picks(s):
+    """'0,3,5' -> [(0,0),(0,3),(0,5)] (DOWN presses from the first map); 't1:2' = one RIGHT (next tab), then two DOWN. None if s is empty."""
+    if not s:
+        return None
+    out = []
+    for p in s.split(","):
+        tab, _, d = p.partition(":") if ":" in p else ("t0", ":", p)
+        out.append((int(tab.lstrip("t") or 0), int(d or 0)))   # (a negative DOWN count presses UP: -1 = the last row)
+    return out
+
+
+WAIT_BOX = "until !reconnect 300"
+
+
+def freeze_safe(lines):
+    """Let a script ride out a frozen or dropped peer: the reconnect box (AW2's own hold box, cond `reconnect`) is up on the other seats, which must
+    neither time out nor press into it. The app's macros (`endturn`, `onbanner`, `intro`) have short timeouts of their own, so they are expanded here
+    (same steps as debug_aids.rs `expand_macros`, longer limits), and before every step that waits for the game or presses a key we wait until the
+    box is gone (immediate when it is not there). Scripts that wait for the box themselves (`until reconnect`) are left alone."""
+    out, n = [], 0
+
+    def step(l):
+        w = l.split()
+        if w and w[0] in ("until", "seek", "press", "hold", "goto") and "reconnect" not in l and (not out or out[-1] != WAIT_BOX):
+            out.append(WAIT_BOX)
+        out.append(l)
+
+    for l in lines:
+        t = l.strip()
+        if t == "endturn":
+            n += 1
+            for x in ["press B 6", "press B 6", "until acting 10"]:
+                step(x)
+            for _ in range(3):
+                for x in ["until acting 30", "press A 8", "wait 20", "seek DOWN onend 30", "press A 8", "until !myturn 30", f"jumpif !myturn fet{n}", "press B 6", "press B 6", "press B 6"]:
+                    step(x)
+            out.append(f"label fet{n}")
+        elif t == "onbanner":
+            step("until banner 30")
+            step("seek A !banner 30")
+        elif t == "intro":
+            n += 1
+            for _ in range(15):
+                out.append(f"jumpif mapup|over fin{n}")
+                step("press A 8")
+                out.append("wait 50")
+            out.append(f"label fin{n}")
+        else:
+            step(l)
+    return out
+
+
 SEATS = {"p4k": 4, "p2k": 2, "hq3m": 3, "g4k": 4, "g4s": 4, "g2k": 2, "hq3p": 3, "hq3": 3, "hq3k": 3, "hq3h": 3, "hq3l": 3, "hq5h": 5, "hq4": 4,
          "hq5": 5, "big5": 5}
 
@@ -379,7 +436,8 @@ def seats_of(name):
 class Pads:
     """The per-seat pad scripts of a scenario: the lobby prefix (create/join room, pick map in turn, teams, rules), the turn list, the tail."""
 
-    def __init__(self, name, fog, run, killing=False):
+    def __init__(self, name, fog, run, killing=False, picks=None):
+        self.picks = picks      # per-seat (tab presses, DOWN presses); None = the scenario's default
         self.name, self.fog, self.run = name, fog, str(run)
         self.n = seats_of(name)
         self.pokes, self.turns = SCEN[name](fog)
@@ -391,10 +449,10 @@ class Pads:
         # every seat picks at the same time, in private: its own SELECT MAP (each browses its own way), A when it has settled
         # (the draw between the seats' picks is random: scenarios coordinate on one map, so every seat proposes the same one, the first of the
         #  2P tab; big5 proposes the first 5P map from the 5P tab)
+        tab, downs = (self.picks[k % len(self.picks)] if self.picks else ((BIG5_TAB, BIG5_DOWN) if self.name == "big5" else (0, int(os.environ.get("AW2DEV_PICK_DOWN", "0")))))
         s = ["until selectmap 40", "until mypick 60", "wait 30"]
-        s += ["press DOWN 8", "wait 20"] * ((k + 1) if self.name == "big5" else int(os.environ.get("AW2DEV_PICK_DOWN", "0")))
-        if self.name == "big5" and k == 0:
-            s += ["press RIGHT 8", "wait 40"]   # (unverified since the private picks: the draw may pick another seat's map)
+        s += ["press RIGHT 8", "wait 40"] * tab
+        s += (["press DOWN 8", "wait 20"] * downs) if downs >= 0 else (["press UP 8", "wait 20"] * -downs)   # (the list does not wrap)
         s += ["press A 8", "until chosen 300", "wait 75"]
         return s
 
@@ -421,7 +479,7 @@ class Pads:
         for r, (seat, ops) in enumerate(turns_):
             if seat == k:
                 s += [f"until banner|acting|over {self.wait_turn}", f"jumpif over {done}", f"jumpif !banner {pre}b{k}_{r}", "onbanner", f"label {pre}b{k}_{r}",
-                      "until acting 30", "wait 30"] + (ops[:-1] if ops and ops[-1] == "#yield" else ops + ([] if self.n == 5 else goto(8, 5)) + ["endturn"])
+                      "until acting 30", "wait 30"] + (ops[:-1] if ops and ops[-1] == "#yield" else ops + ([] if self.n == 5 else goto(8, 5)) + ["endturn", f"log AFTER_TURN_{r}"])
             elif self.mashing and ops is not None:
                 s += mash(12)   # the waiting seat leans on every key while the other seat plays its turn
         return s
@@ -460,15 +518,15 @@ class Pads:
     def pads(self):
         name = self.name
         if name == "dropb":
-            return {0: self.prefix(0) + [l.replace("RUN", self.run) for l in self.turns[0][1]], 1: self.prefix(1) + ["wait 6000"]}
-        return {k: (self.body(k) if name in ("p4k", "p2k") else self.prefix(k) + self.body(k)) for k in range(self.n)}
+            return {0: self.prefix(0) + [l.replace("RUN", self.run) for l in self.turns[0][1]], 1: self.prefix(1) + ["wait 6000"]}   # (waits for the box itself)
+        return {k: freeze_safe(self.body(k) if name in ("p4k", "p2k") else self.prefix(k) + self.body(k)) for k in range(self.n)}
 
 
 # ---- the plain lobby flow (the old drive.py): N seats, ROUNDS of end-turn, the map picked in turn ----
 MOVES = {0: ["DOWN"] * 3, 1: ["RIGHT", "DOWN"], 2: ["LEFT"] + ["DOWN"] * 5, 3: ["RIGHT", "DOWN"], 4: ["DOWN"] * 2}
 
 
-def lobby_pads(n, rounds, run, fog="on", sim=False, pick_down=0, tab=0, no_pick=None, reveal=False):
+def lobby_pads(n, rounds, run, fog="on", sim=False, pick_down=0, tab=0, no_pick=None, reveal=False, picks=None):
     run = str(run)
 
     def pick(k):
@@ -479,6 +537,8 @@ def lobby_pads(n, rounds, run, fog="on", sim=False, pick_down=0, tab=0, no_pick=
                 s += [f"press {m} 8", "wait 14"]
             s += ["wait 30", f"shot {run}/priv_b_s{k}.png", "wait " + str(60 * k + 30), "press A 8", "wait 40", f"shot {run}/priv_c_s{k}.png", "until chosen 400", "wait 75", f"shot {run}/map_s{k}_chosen.png"]
             return s
+        if picks:
+            return private_pick(picks[k % len(picks)][1], picks[k % len(picks)][0])
         s = ["until selectmap 40"]
         for j in range(n):
             mv = MOVES[j] if rounds == 0 else ["DOWN"] * (j + 1)
@@ -517,7 +577,7 @@ def lobby_pads(n, rounds, run, fog="on", sim=False, pick_down=0, tab=0, no_pick=
     def guest(k):
         return ["until level=1 30", "seek DOWN cursor=1 10", "press A 8", "until level=7 10", "wait 30", "press A 8", "until level=5 15", "wait 20", "press A 8",
                 "until status=3 40", "wait 30", "press A 8", "wait 30", "session", *pick(k), "until teams 60", "wait 40", "press LEFT 8", "wait 10", "press A 8"] + turns(k)
-    return {0: host, **{k: guest(k) for k in range(1, n)}}
+    return {0: freeze_safe(host), **{k: freeze_safe(guest(k)) for k in range(1, n)}}
 
 
 # ---- UNRANKED: two seats find each other by matchmaking, each proposes in turn, army select, rules, two end-turns ----
@@ -529,4 +589,73 @@ UNR_PAD = ["until level=1 120", "wait 100", "press B 8", "until level=0 20", "se
 
 
 def unranked_pads(n):
-    return {k: list(UNR_PAD) for k in range(n)}
+    return {k: freeze_safe(UNR_PAD) for k in range(n)}
+
+
+# ---- more flows (ported from the old rules_lobby.py, rules_unranked.py, browse_names.py, offline.py, lobbyentry.py) ----
+def private_pick(downs=0, tab=0):
+    """The private map pick (every seat at once): `tab` RIGHT presses, then `downs` DOWN presses, then A."""
+    s = ["until selectmap 40", "until mypick 60", "wait 40"]
+    s += ["press RIGHT 8", "wait 40"] * tab
+    s += (["press DOWN 8", "wait 20"] * downs) if downs >= 0 else (["press UP 8", "wait 20"] * -downs)
+    return s + ["press A 8", "until chosen 400", "wait 75"]
+
+
+def lobby_prefix(n, k, pick):
+    """Create (k = 0) or join the lobby room, wait for everyone, pick a map, teams page. Ends after the teams page's A."""
+    if k == 0:
+        return ["until level=1 30", "seek UP cursor=0 10", "press A 8", "until level=13 10", "press A 8", "until level=5 10", "press A 8", "until level=2 10",
+                f"until players={n} 40", f"until ready={n-1} 40", "press START 8", "session", *pick, "until teams 60", "wait 40", "press RIGHT 8", "wait 10", "press A 8"]
+    return ["until level=1 30", "seek DOWN cursor=1 10", "press A 8", "until level=7 10", "wait 30", "press A 8", "until level=5 15", "wait 20", "press A 8",
+            "until status=3 40", "wait 30", "press A 8", "wait 30", "session", *pick, "until teams 60", "wait 40", "press LEFT 8", "wait 10", "press A 8"]
+
+
+def rules_lobby_pads(n, run):
+    """The rules page in a lobby room: the host must be able to set the rules, the guest sees them read-only; nothing may skip the page."""
+    def part(role):
+        s = ["until rules 60", "log RULES UP", f"shot {run}/rules_{role}_a.png", "wait 200", f"shot {run}/rules_{role}_b.png", "jumpif !rules skipped" + role,
+             "log RULES STILL UP AFTER 5 SECONDS"]
+        if role == "host":
+            s += ["press DOWN 8", "wait 30", f"shot {run}/rules_host_changed.png", "wait 120", "press A 8", "until battle 60", "log RULES CONFIRMED BY HOST"]
+        else:
+            s += ["wait 150", f"shot {run}/rules_guest_changed.png", "until battle 60", "log RULES CONFIRMED BY HOST"]
+        return s + ["jump end" + role, "label skipped" + role, "log RULES SKIPPED", "label end" + role, "wait 120", "log SCRIPT END"]
+    return {k: freeze_safe(lobby_prefix(n, k, private_pick()) + part("host" if k == 0 else "guest")) for k in range(n)}
+
+
+def rules_unranked_pads(n, run):
+    """UNRANKED: the standard rules page stays up and the match goes on by itself."""
+    pad = ["until level=1 120", "wait 100", "press B 8", "until level=0 20", "seek UP cursor=0 10", "press A 8", "log searching for an opponent", "session",
+           "until mypick 300", "wait 20", "press A 8", "until chosen 300", "wait 75", "until teams 120", "wait 90", "press A 8", "until rules 300", "log RULES UP",
+           f"shot {run}/ur_0.png", "wait 50", f"shot {run}/ur_1.png", "wait 60", f"shot {run}/ur_2.png", "wait 60", f"shot {run}/ur_3.png", "wait 60", f"shot {run}/ur_4.png",
+           "until battle 120", "log RULES AUTO-STARTED", "wait 200", "log SCRIPT END"]
+    return {k: freeze_safe(pad) for k in range(n)}
+
+
+def browse_pads(run, room="BIG_PENT_ROOM"):
+    """Two clients: the HOST makes a room with a typed name (spaces in it), the GUEST sets a gamertag with a space and browses LOBBY > JOIN: the room is
+    listed by its name; R refreshes (Refreshing..., Updated), a second R within five seconds shows the note without asking the relays again.
+    Needs the PUBLIC lobby relays (Nostr): run it without --local, sparingly."""
+    host = ["until level=1 120", "wait 60", "seek UP cursor=0 10", "press A 8", "until level=13 20", "wait 30", f"shot {run}/name_empty.png", f"type {room}", "wait 30",
+            f"shot {run}/name_typed.png", "press A 8", "until level=5 20", "wait 20", "press A 8", "until level=2 20", "wait 60", f"shot {run}/room_page.png", "wait 3000", "log SCRIPT END"]
+    guest = ["until level=1 120", "wait 60", "press SELECT 8", "until level=9 20", "wait 20", "type ANN_LEE", "wait 20", f"shot {run}/tag_typed.png", "press START 8",
+             "until level=1 20", "wait 30", "seek DOWN cursor=1 10", "press A 8", "until level=7 20", "wait 600", f"shot {run}/browse_1.png", "press R 8", "wait 20",
+             f"shot {run}/refreshing.png", "wait 150", f"shot {run}/updated.png", "press R 8", "wait 6", "press R 8", "wait 20", f"shot {run}/refreshing_again.png", "wait 200",
+             f"shot {run}/updated_again.png", "wait 400", "press R 8", "wait 20", f"shot {run}/refreshing_late.png", "wait 200", f"shot {run}/updated_late.png", "wait 120",
+             f"shot {run}/browse_end.png", "log SCRIPT END"]
+    return {0: host, 1: guest}
+
+
+SOLO_ENTRY = {
+    "selectmap": ["wait 600", "press START 8", "wait 240", "press A 8", "wait 120", "press DOWN 8", "wait 40", "press A 8", "wait 120", "press A 8", "until selectmap 30", "wait 60"],
+    "lobby": ["until level=1 120", "wait 150", "until cursor=1 5", "press A 8", "wait 60", "press A 8", "wait 40"],
+    "title": [],
+}
+
+
+def solo_pads(entry, body, run):
+    """One real window offline: get to `entry` (selectmap = offline Versus SELECT MAP, lobby = the LOBBY menu, title), then `body` (pad lines or a `;`-separated
+    string; `shot NAME` writes <run>/NAME.png)."""
+    lines = body.replace(";", "\n").split("\n") if isinstance(body, str) else list(body)
+    pad = list(SOLO_ENTRY[entry]) + [("shot " + run + "/" + l.strip()[5:] + ".png") if l.strip().startswith("shot ") and "/" not in l else l.strip() for l in lines if l.strip()]
+    return {0: pad + ["log SCRIPT END"]}

@@ -30,6 +30,8 @@ test, live run and release (never ad-hoc scripts in a scratchpad: they vanish).
   text, nothing that looks like a debug menu. Show sheets before release.
 - **Online behaviour = offline AW2.** Netplay must look and play like the same game offline: same screens, same animations, same
   rules, with the waiting windows showing what a spectator of that seat should see. Do not invent online-only rules.
+- **Tests, drivers and checkers go in `devkit/` (or the repo's `tools/`, `examples/`), never only in a scratchpad.** A scratchpad vanishes; anything you wrote to
+  test, drive, analyse or release must be committed as an `aw2dev` command, scenario or checker (docs/dev/README.md "Adding to the devkit").
 - Keep every player-visible string about Advance Wars 2 / tangoAW2 (no Battle Network or Tango branding).
 - Wire format and `sim_version` rules: see docs/dev/architecture-online.md before touching anything both peers must agree on; bump
   `sim_version` when the shared console's behaviour changes.

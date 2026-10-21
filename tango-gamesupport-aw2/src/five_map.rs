@@ -23,7 +23,8 @@ pub(crate) const ENTRY: u32 = 0x5C;
 /// loops that walk it (`sub_080206B0`, find a map by its tiles, and the
 /// map list builder at `0x08037482`), which stop after id 0xBF.
 pub(crate) const MAP_TABLE: u32 = 0x0865_0000;
-pub(crate) const MAP_IDS: u32 = 0xF2;
+/// The table has a row for every byte id (the pool above reaches 0xFF); the copies in crate::survival and crate::ds_versus are sized for it.
+pub(crate) const MAP_IDS: u32 = 0x100;
 pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
     (0x0801_96EC, 0x00),
     (0x0802_06E0, 0x00),
@@ -64,22 +65,21 @@ pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
     (0x0809_0EC0, 0x00),
 ];
 /// `cmp rN, #0xBF` in the two loops: the game's, then the last id without
-/// the Dual Strike pack (0xC0), then with it (0xF1, the Colonel's Vault: the ids between, [`BIG_FIVE_ID`]'s among them,
+/// the Dual Strike pack (0xC0), then with it (0xFF, past the Colonel's Vault at 0xF1 and the pool of new maps: the ids between, [`BIG_FIVE_ID`]'s among them,
 /// are Dual Strike content and walked only with the pack, [`show_maps`]).
 const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
-    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29F1), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CF1)];
-/// Each map's tiles and units: 4 KiB apiece, the first ten from here (up to
-/// the CO texts at 0x0862C000), the rest after the moved map table.
-const MAP_DATA: u32 = 0x0862_2000;
-const MAP_DATA_MORE: u32 = 0x0865_6000;
+    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29FF), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CFF)];
+/// Each map's tiles and units: 4 KiB apiece, in one run from [`MAP_DATA`] in the ROM image's free space past the Dual Strike Versus maps
+/// (0x09C00000..0x09CFFFFF, crate::ds_versus): room for [`MAP_CAPACITY`] maps (0x09D00000..0x09D3FFFF; the free run goes on to the Dual
+/// Strike Normal look at 0x09E00000, so the capacity can grow to 256 by changing one constant).
+const MAP_DATA: u32 = 0x09D0_0000;
 const MAP_DATA_SIZE: u32 = 0x1000;
+pub const MAP_CAPACITY: usize = 64;
+/// The moved map table ends before the next owner of free ROM (the design-map owner table, crate::design5).
+const MAP_TABLE_LIMIT: u32 = 0x0866_0000;
 
 fn map_data(k: usize) -> u32 {
-    if k < 10 {
-        MAP_DATA + MAP_DATA_SIZE * k as u32
-    } else {
-        MAP_DATA_MORE + MAP_DATA_SIZE * (k as u32 - 10)
-    }
+    MAP_DATA + MAP_DATA_SIZE * k as u32
 }
 
 /// Tile -> terrain table (copied to RAM when a map loads) and metatiles.
@@ -111,9 +111,10 @@ pub const CATEGORY: u16 = 9;
 /// game never lists), design-map ids 0xB8..0xBF (the Design Room has three
 /// slots, 0xB4..0xB6, and a suspend copy, 0xB7; the rest serve only
 /// multi-cartridge link play), and 0xC0.., past the game's own table.
-pub const IDS: [u8; 20] = [
-    0, 0xBC, 0xBD, 0xBE, 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, VAULT_ID, BIG_FIVE_ID,
-];
+pub use crate::five_map_data::IDS;
+/// Free ids for new maps: the pool five/map.py hands out (0xF2..=0xFF, five/map_ids.txt). A map there is pack content: the Versus list
+/// walks the ids past 0xC0 only with the Dual Strike pack on.
+pub const NEW_ID_POOL: std::ops::RangeInclusive<u8> = 0xF2..=0xFF;
 /// The big pre-deployed 5-army map (Pentagon Atoll: Megatanks, Stealths and T-Copters, so the pack's): the first id
 /// past the Dual Strike maps'.
 pub const BIG_FIVE_ID: u8 = 0xC9;
@@ -173,11 +174,15 @@ const ORDINARY_IDS: &[(u32, u16, u16)] = &[
 const TAB_TITLES: u32 = 0x0849_9CE4;
 /// The text table has no room to grow, but ids are 16 bits and the table is
 /// read without a bound: id 0x3D72 + k reads its string pointer from
-/// 0x08620000 + 4k, in the ROM image's free space. 0x3D72 is the tab's
-/// title, 0x3D73.. the maps' names; the strings follow from 0x08620100.
+/// 0x08620000 + 4k, in the ROM image's free space. crate::roster has slots 32..56; ours start at 64: [`TAB_TEXT`] is the tab's
+/// title, the next ids the maps' names; the strings are at [`STRINGS`].
 const TEXT_TABLE: u32 = 0x0861_0A38;
-const TAB_TEXT: u16 = 0x3D72;
-const STRINGS: u32 = 0x0862_0100;
+const TAB_TEXT: u16 = 0x3D72 + 64;
+const STRINGS: u32 = 0x0862_2000;
+/// This module's text ids are [`TAB_TEXT`] + slot: their pointers (4 bytes a slot) start at 0x08620100, after the roster's (crate::roster, slots
+/// 32..56 of the 0x3D72 range), and the strings (0x20 a slot from [`STRINGS`], where the first ten maps' data used to be) hold the tab title,
+/// a name per map and two tab titles per player count.
+const TEXT_SLOTS: usize = 1 + MAP_CAPACITY + 8;
 pub const TAB_NAME_TEXT: &str = "5P Maps";
 
 /// Whether a map of tangoAW2's needs the Dual Strike pack (its art, its units or its look): listed online only when
@@ -217,7 +222,7 @@ pub fn name_room_tabs(core: &mut Core, players: usize, plain: &str, pre: &str) {
 
 /// Tab `tab`'s title is the text for `players` players' plain (k 0) or Pre-Deployed (k 1) list. Idempotent.
 pub fn name_tab(core: &mut Core, tab: u32, players: usize, k: usize, text: &str) {
-    let slot_k = 1 + MAPS.len() as u32 + 2 * (players as u32 - 2) + k as u32;
+    let slot_k = 1 + MAP_CAPACITY as u32 + 2 * (players as u32 - 2) + k as u32;
     let at = STRINGS + 0x20 * slot_k;
     let id = TAB_TEXT as u32 + slot_k;
     let slot = TEXT_TABLE + 4 * id;
@@ -341,8 +346,8 @@ pub fn install(core: &mut Core) {
     }
     assert_eq!(MAPS.len(), IDS.len());
     assert!(IDS.iter().all(|&id| (id as u32) < MAP_IDS));
-    assert!(map_data(MAPS.len() - 1) + MAP_DATA_SIZE <= 0x0866_0000);
-    assert!(MAP_TABLE + ENTRY * MAP_IDS <= MAP_DATA_MORE);
+    assert!(MAPS.len() <= MAP_CAPACITY, "more maps than five_map::MAP_CAPACITY");
+    assert!(MAP_TABLE + ENTRY * MAP_IDS <= MAP_TABLE_LIMIT);
     for (k, (map, &id)) in MAPS.iter().zip(IDS.iter()).enumerate() {
         let tiles = map_data(k);
         let units = tiles + map.tiles.len() as u32;
@@ -471,8 +476,21 @@ mod tests {
         ids.dedup();
         assert_eq!(ids.len(), IDS.len(), "every map has its own id");
         assert!(IDS.iter().all(|&id| (id as u32) < MAP_IDS));
-        assert!(map_data(MAPS.len() - 1) + MAP_DATA_SIZE <= 0x0866_0000);
-        assert!(MAP_TABLE + ENTRY * MAP_IDS <= MAP_DATA_MORE);
+        assert!(MAPS.len() <= MAP_CAPACITY);
+        assert!(MAP_TABLE + ENTRY * MAP_IDS <= MAP_TABLE_LIMIT);
+        // the data run stays clear of the Dual Strike Versus maps below it and the Normal look above
+        assert!(MAP_DATA >= crate::ds_versus::ROM_END_FOR_MAPS && map_data(MAP_CAPACITY) <= 0x09E0_0000);
+        // the text slots: pointers after the roster's (slots 32..56) and before its strings (0x08620500), strings in the old first map-data run
+        let ptr0 = TEXT_TABLE + 4 * TAB_TEXT as u32;
+        assert!(ptr0 >= 0x0862_0000 + 4 * 56 && ptr0 + 4 * TEXT_SLOTS as u32 <= 0x0862_0500);
+        assert!(STRINGS >= 0x0862_2000 && STRINGS + 0x20 * TEXT_SLOTS as u32 <= 0x0862_C000);
+        // the new-map pool is inside the table and past every id something else uses
+        assert!(*NEW_ID_POOL.end() as u32 + 1 == MAP_IDS && *NEW_ID_POOL.start() > crate::five_map::VAULT_ID);
+        for (k, &id) in IDS.iter().enumerate() {
+            assert!(!NEW_ID_POOL.contains(&id) || MAPS[k].ds, "{} is in the new-map pool, so it is pack content", MAPS[k].name);
+        }
+        assert_eq!(map_of(BIG_FIVE_ID).map(|m| m.name), Some("Pentagon Atoll"));
+        assert_eq!(map_of(VAULT_ID).map(|m| m.name), Some("The Colonel's Vault"));
         for m in MAPS {
             assert!(m.name.len() < 0x20, "{}", m.name);
             assert!(m.tiles.len() + m.units.len() <= MAP_DATA_SIZE as usize, "{}", m.name);

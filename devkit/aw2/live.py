@@ -11,7 +11,8 @@ A run dir (devkit/work/runs/<tag>_<fog>_<HHMMSS>/) holds:
   shots_s<k>.jsonl   + s<k>_NNNN.png: file, ms, console tick (the sidecar)   tango_s<k>.log  the app log   summary.json
 """
 import json, os, re, shutil, signal, subprocess, sys, time
-from . import cfg, profiles, scenarios, util
+from pathlib import Path
+from . import cfg, profiles, scenarios, session, util
 
 SIGKILL = signal.SIGKILL
 
@@ -47,6 +48,7 @@ class Spec:
         self.impair = impair or {}          # seat -> "latency_ms,jitter_ms,loss_pct" (TANGOAW2_NET_IMPAIR, applied to what that seat SENDS)
         self.local_signal = local_signal    # run a local signalling mock; no traffic to public services
         self.seat_env = seat_env or {}      # seat -> {env}
+        self.boot_lobby = True
 
 
 def _seat_pid(app_exe, profile_path, fallback):
@@ -60,96 +62,19 @@ def _seat_pid(app_exe, profile_path, fallback):
 
 
 def run(spec: Spec, quiet=False):
-    binary = util.release_bin("release")
-    util.check_fresh(binary, "tango")
-    stamp = util.build_stamp(binary)
-    run_dir = cfg.work("runs", f"{spec.tag}_{spec.fog}_{time.strftime('%H%M%S')}")
-    run_dir.mkdir(parents=True, exist_ok=False)
-    names = [spec.profile_override.get(k, profiles.NAMES[k]) for k in range(spec.n)]
-    for k, nm in enumerate(names):
-        profiles.ensure(nm, pack=not nm.endswith("np"))
-    all_pads = spec.pads(run_dir) if callable(spec.pads) else spec.pads
-    for k, nm in enumerate(names):
-        pads = all_pads[k]
-        if names[k].endswith("np"):
-            pads = ["wait 900"] + pads   # (the no-pack client joins last: seats follow the order of arrival)
-        (run_dir / f"pad_s{k}.txt").write_text("\n".join(pads) + "\n")
-    (run_dir / "poke.txt").write_text("\n".join(spec.pokes) + "\n")
-    (run_dir / "meta.json").write_text(json.dumps({
-        "kind": "live", "scenario": spec.name, "flow": spec.kind, "n": spec.n, "fog": spec.fog, "build": stamp, "git": cfg.git("rev-parse", "HEAD"),
-        "dirty": bool(cfg.git("status", "--porcelain", "--untracked-files=no")), "hz": spec.hz, "kill": spec.kill, "stop": spec.stop,
-        "profiles": names, "started": time.strftime("%F %T"),
-    }, indent=1))
-    lock = util.LiveLock()
-    t_lock = time.time()
-    lock.acquire()
-    lock_wait = round(time.time() - t_lock, 1)
-    exe = profiles.test_app(binary)
-    app_exe = str(exe)
-    util.kill_pids(util.pids_for(app_exe))
-    logs = {k: profiles.reset_live_state(names[k]) for k in range(spec.n)}
-    procs = {}
-    code = cfg.C["live"]["room_code"]
-    mock = None
-    endpoint = "wss://matchmaking.tango.n1gp.net"
-    net_env = {}
-    if spec.local_signal:
-        from . import signal_mock, endpoints
-        mock = signal_mock.Server(0)
-        endpoint = mock.start_thread()
-        net_env = endpoints.block_env()
-        util.say("local signalling mock at", endpoint, "(public endpoints blocked for this run)")
-    for nm in set(names):
-        cj = profiles.profile_dir(nm) / "config" / "config.json"
-        c = json.loads(cj.read_text())
-        c["matchmaking_endpoint"] = endpoint
-        cj.write_text(json.dumps(c, indent=2))
-    t0 = time.time()
-    procs_env = {}
     heavy = spec.kind == "scen"
-    try:
-        for k in range(spec.n):
-            prof = str(profiles.profile_dir(names[k]))
-            env = dict(os.environ)
-            env.update({"TANGOAW2_PROFILE": prof, "TANGOAW2_AUTOSTART": "offline", "TANGOAW2_BOOT_LOBBY": "1", "TANGOAW2_PAD_SCRIPT": str(run_dir / f"pad_s{k}.txt"),
-                        "TANGOAW2_ONLINE_LOG": "1", "TANGOAW2_INPUT_LOG": "1", "RUST_LOG": "info", "TANGOAW2_RUN_DIR": str(run_dir), "TANGOAW2_RUN_SEAT": str(k),
-                        "TANGOAW2_RUN_SHOT_HZ": str(spec.hz), "TANGOAW2_BUILD": stamp})
-            if heavy:
-                env.update({"TANGOAW2_TEST_POKE": str(run_dir / "poke.txt"), "AW2_CAM_LOG": "1", "TANGOAW2_HASH_PARTS": "1", "TANGOAW2_ROSTER_LOG": "1",
-                            "TANGOAW2_DUMP_FRAME": os.environ.get("DUMPF", "7260"), "AW2_CONSOLE_PROCS": "1", "AW2_VIEW_DEBUG": "1"})
-            env.update(net_env)
-            env.update(spec.extra_env)
-            env.update(spec.seat_env.get(k, {}))
-            if k in spec.impair:
-                env["TANGOAW2_NET_IMPAIR"] = spec.impair[k]
-            if spec.kind != "unranked":
-                env["TANGOAW2_ONLINE_CODE" if k == 0 else "TANGOAW2_TYPE_CODE"] = code
-            procs_env[k] = dict(env)
-            procs[k] = subprocess.Popen(["perl", "-e", "alarm 900; exec @ARGV", app_exe], env=env, stdout=open(run_dir / f"stdout_s{k}.log", "w"), stderr=subprocess.STDOUT)
-            time.sleep(3 if k == 0 else 1)
+    with session.Session(spec.tag, spec.n, spec.fog, spec.hz, spec.local_signal, spec.profile_override, spec.extra_env, spec.impair, spec.seat_env, heavy,
+                         spec.pokes, spec.kind, spec.name, spec.kill, spec.stop, no_code=(spec.kind in ("unranked", "solo")), boot_lobby=spec.boot_lobby) as ses:
+        all_pads = spec.pads(ses.dir) if callable(spec.pads) else spec.pads
+        ses.launch_all(all_pads)
+
         def launch(k, pad_file, suffix=""):
-            env = dict(procs_env[k])
-            env["TANGOAW2_PAD_SCRIPT"] = str(pad_file)
-            return subprocess.Popen(["perl", "-e", "alarm 900; exec @ARGV", app_exe], env=env, stdout=open(run_dir / f"stdout_s{k}{suffix}.log", "w"), stderr=subprocess.STDOUT)
-        res = _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch)
-        if mock:
-            res["signal_pairs"] = mock.pairs
-    finally:
-        for k in range(spec.n):
-            try:
-                shutil.copy2(logs[k], run_dir / f"tango_s{k}.log")
-            except Exception:
-                pass
-        util.kill_pids(util.pids_for(app_exe))
-        lock.release()
-    res.update({"run": str(run_dir), "scenario": spec.name, "fog": spec.fog, "build": stamp, "lock_wait_s": lock_wait})
-    (run_dir / "summary.json").write_text(json.dumps(res, indent=1))
-    if not quiet:
-        print(json.dumps(res))
-    return res
+            return ses.launch(k, Path(pad_file).read_text().splitlines(), suffix)
+        res = _watch(spec, ses.dir, ses.names, ses.logs, ses.procs, ses.app_exe, ses.t0, launch, ses)
+    return ses.finish(res, quiet)
 
 
-def _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch=None):
+def _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch=None, ses=None):
     n = spec.n
     ended, gave = set(), {}
     deadline = time.time() + spec.max_s
@@ -165,6 +90,8 @@ def _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch=None):
         now = time.time() - t0
         tick = _last_tick(run_dir / "state_s0.jsonl") if any("at_tick" in e for e in pending) else 0
         for e in pending:
+            if "at_log" in e and not e["_done"] and any(e["at_log"] in ses.log_text(k) for k in range(n)):
+                e["at_s"] = now          # (a marker the pad scripts log: `log AFTER_TURN_<r>` after turn r of the global turn list)
             if e["_done"] or not (("at_s" in e and now >= e["at_s"]) or ("at_tick" in e and tick >= e["at_tick"])):
                 continue
             e["_done"] = True
@@ -186,7 +113,7 @@ def _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch=None):
                 shutil.copy2(logs[k], run_dir / f"tango_s{k}_before.log")
                 procs[k] = launch(k, pf, "_b")
                 killed_set.discard(k)
-            fired.append({"action": act, "seat": k, "at_s": round(now, 1), "tick": tick})
+            fired.append({"action": act, "seat": k, "at_s": round(now, 1), "tick": tick, "arg": e.get("arg")})
             util.say(f"event {act} seat {k} at {now:.1f}s tick {tick}")
         for t, pid in list(cont_at):
             if time.time() >= t:
@@ -266,7 +193,7 @@ def _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch=None):
 
 
 # ---- building specs from CLI names ----
-FLOWS = ["lobby", "unranked"]
+FLOWS = ["lobby", "unranked", "browse", "rules-lobby", "rules-unranked", "solo"]
 
 
 def all_names():
@@ -274,7 +201,7 @@ def all_names():
 
 
 def make_spec(name, fog="on", players=None, rounds=2, tag=None, hz=None, max_s=None, kill=None, stop=None, after_kill=None, profile_override=None,
-              reveal=False, sim=False, kill_delay=None):
+              reveal=False, sim=False, kill_delay=None, solo_entry="selectmap", solo_pad="", picks=None):
     """name: a scenario of scenarios.SCEN, or a flow: `lobby` (N seats, ROUNDS of end-turn) or `unranked` (matchmaking pair)."""
     kill = kill or os.environ.get("KILL")
     stop = stop or os.environ.get("STOP")
@@ -282,15 +209,28 @@ def make_spec(name, fog="on", players=None, rounds=2, tag=None, hz=None, max_s=N
         n = players or scenarios.seats_of(name)
         if n != scenarios.seats_of(name):
             util.say(f"warning: scenario {name} is written for {scenarios.seats_of(name)} seats; running with {n}")
-        sp0 = scenarios.Pads(name, fog, "RUN", bool(kill or stop))
-        spec = Spec(name, n, fog, lambda rd: scenarios.Pads(name, fog, rd, bool(kill or stop)).pads(), sp0.pokes, "scen", tag, hz, max_s, kill, stop,
+        pk = scenarios.parse_picks(picks)
+        sp0 = scenarios.Pads(name, fog, "RUN", bool(kill or stop), pk)
+        spec = Spec(name, n, fog, lambda rd: scenarios.Pads(name, fog, rd, bool(kill or stop), pk).pads(), sp0.pokes, "scen", tag, hz, max_s, kill, stop,
                     after_kill if after_kill is not None else int(os.environ.get("AFTER_KILL", 90)), kill_delay if kill_delay is not None else 2, profile_override)
         return spec
     if name == "lobby":
         n = players or 3
-        return Spec("lobby", n, fog, lambda rd: scenarios.lobby_pads(n, rounds, rd, fog, sim, reveal=reveal), [], "lobby", tag or f"lobby{n}p", hz or 1, max_s,
+        return Spec("lobby", n, fog, lambda rd: scenarios.lobby_pads(n, rounds, rd, fog, sim, reveal=reveal, picks=scenarios.parse_picks(picks)), [], "lobby", tag or f"lobby{n}p", hz or 1, max_s,
                     kill, stop, after_kill or 90, 2, profile_override)
     if name == "unranked":
         n = players or 2
         return Spec("unranked", n, fog, scenarios.unranked_pads(n), [], "unranked", tag or "unranked", hz or 1, max_s, kill, stop, after_kill or 90, 2, profile_override)
+    if name == "rules-lobby":
+        n = players or 2
+        return Spec(name, n, fog, lambda rd: scenarios.rules_lobby_pads(n, rd), [], "lobby", tag or f"rules_lobby{n}p", hz or 1, max_s, kill, stop, after_kill or 90, 2, profile_override)
+    if name == "rules-unranked":
+        n = players or 2
+        return Spec(name, n, fog, lambda rd: scenarios.rules_unranked_pads(n, rd), [], "unranked", tag or "rules_unranked", hz or 1, max_s, kill, stop, after_kill or 90, 2, profile_override)
+    if name == "browse":
+        return Spec(name, 2, fog, lambda rd: scenarios.browse_pads(rd), [], "lobby", tag or "browse", hz or 1, max_s or 300, kill, stop, after_kill or 90, 2, profile_override)
+    if name == "solo":
+        spec = Spec(name, 1, fog, lambda rd: scenarios.solo_pads(solo_entry, solo_pad, rd), [], "solo", tag or "solo", hz or 1, max_s or 200, kill, stop, 90, 2, profile_override)
+        spec.boot_lobby = solo_entry == "lobby"
+        return spec
     util.die(f"unknown scenario {name}; choose from: {' '.join(all_names())}")

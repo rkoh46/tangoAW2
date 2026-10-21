@@ -37,7 +37,8 @@ def main(argv=None):
     s.set_defaults(fn=lambda a: suite.run(a.jobs, a.only, a.keep))
 
     s = sub.add_parser("live", help="live scenario on real app clients (loopback + matchmaking server)")
-    s.add_argument("scenario", nargs="?", help="a scenario or flow (see --list)")
+    s.add_argument("scenario", nargs="?", help="a scenario or flow (see --list), `rejoin` (with the driver name next), or `ios-gate`")
+    s.add_argument("pad_or_sub", nargs="?", help="rejoin: the driver (unr-guest, lobby-host, ...)")
     s.add_argument("--players", type=int)
     s.add_argument("--fog", choices=["on", "off"], default="on")
     s.add_argument("--hz", type=int, help="screenshots per second per seat (TANGOAW2_RUN_SHOT_HZ; 60 for walk analysis)")
@@ -51,6 +52,11 @@ def main(argv=None):
     s.add_argument("--local", action="store_true", help="local signalling mock, public endpoints blocked (polite; same as `net sim`)")
     s.add_argument("--reveal", action="store_true", help="lobby: shots through the map reveal")
     s.add_argument("--sim", action="store_true", help="lobby: all seats pick at once in private")
+    s.add_argument("--entry", choices=["selectmap", "lobby", "title"], default="selectmap", help="solo: where the window starts (offline Versus SELECT MAP, the LOBBY menu, the title)")
+    s.add_argument("--pad", default="", help="solo: pad lines separated by ';' (`shot NAME` writes NAME.png into the run dir)")
+    s.add_argument("--kinds", help="ios-gate: seats, e.g. mac,iphone (mac | iphone | iphone2 | ipad)")
+    s.add_argument("--event", action="append", metavar="AT:ACTION:SEAT[:ARG]", help="ios-gate: kill | relaunch | bg | stop (see devkit/aw2/ios.py)")
+    s.add_argument("--picks", help="per-seat map pick, e.g. 0,3,5 (DOWN presses from the first map) or t1:0,0 (tab RIGHT presses : DOWN presses); the draw between different picks is random")
     s.add_argument("--list", action="store_true")
     s.set_defaults(fn=_live)
 
@@ -192,13 +198,23 @@ def main(argv=None):
 
 def _live(a):
     if a.list or not a.scenario:
-        print("scenarios:", " ".join(live.all_names()))
+        print("scenarios:", " ".join(live.all_names()), "rejoin ios-gate")
         return 0
+    if a.scenario == "rejoin":
+        from . import rejoin
+        if not a.pad_or_sub:
+            print("rejoin scenarios:", " ".join(rejoin.NAMES))
+            return 0
+        res = rejoin.run(a.pad_or_sub, a.players, a.local, a.hz, a.max_s, a.tag)
+        return 0 if res.get("ok") else 1
+    if a.scenario == "ios-gate":
+        from . import ios
+        return ios.cmd(a)
     po = {}
     for x in a.profile:
         k, v = x.split("=")
         po[int(k)] = v
-    spec = live.make_spec(a.scenario, a.fog, a.players, a.rounds, a.tag, a.hz, a.max_s, a.kill, a.stop, a.after_kill, po, a.reveal, a.sim)
+    spec = live.make_spec(a.scenario, a.fog, a.players, a.rounds, a.tag, a.hz, a.max_s, a.kill, a.stop, a.after_kill, po, a.reveal, a.sim, None, a.entry, a.pad, a.picks)
     spec.local_signal = a.local
     res = live.run(spec)
     return 0 if res.get("ok") else 1

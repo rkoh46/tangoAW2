@@ -222,9 +222,11 @@ AW2 sound ids not listed here have not been catalogued in the code; to find one,
 
 | Range | Owner | Source |
 |---|---|---|
-| `0x08620000..` | text slots (ids `0x3D72+`), `0x08620100` strings | `five_map.rs`, `roster.rs` |
+| `0x08620000..0x086204FF` | text pointers for ids `0x3D72+k`: roster slots 32..56, five_map's slots from `0x08620100` (`TAB_TEXT = 0x3D72 + 64`) | `five_map.rs`, `roster.rs` |
+| `0x08620500..` | the roster's strings; five_map's strings are at `0x08622000` (73 x 0x20) | `roster.rs`, `five_map.rs` |
 | `0x08618000..` | five-army tables (`ROM_DATA`) | `five.rs` |
-| `0x08622000..`, `0x08650000..0x0865EFFF` | map data (4 KiB/map: first ten from `0x08622000`, rest after the moved map table) | `five_map.rs` |
+| `0x08650000..0x08655FFF` | the moved map table (0x100 ids x 0x5C) | `five_map.rs` |
+| `0x09D00000..0x09D3FFFF` | tangoAW2's map data, 4 KiB per map, room for 64 (`MAP_CAPACITY`) | `five_map.rs` |
 | `0x0862C000..`, `0x0862D000..`, `0x0862DA38..0x08630A37` | text ids: new COs (`0x6D72+`), Survival (`0x7172+`), DS Campaign (`0x7400..0x7FFF`) | `docs/AW2.md` |
 | `0x08640000..0x08672FFF` | obelisk (`0x08640000`; wreck def `0x08648000`), sandstorm (`0x08670000`), wasteland names (`0x08671000`), Com Towers (`0x08672000`) | `obelisk.rs`, `sandstorm.rs`, `wasteland.rs`, `com_tower.rs` |
 | `0x08660000` | design-map owner table | `design5.rs` |

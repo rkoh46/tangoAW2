@@ -11,6 +11,7 @@ EXAMPLES = cfg.REPO / "tango-gamesupport-aw2" / "examples"
 
 
 def resolve_script(s):
+    s = str(s)
     p = Path(s)
     for c in (p, EXAMPLES / s, EXAMPLES / (s + ".txt"), EXAMPLES / ("aw2_" + s + ".txt")):
         if c.is_file():
