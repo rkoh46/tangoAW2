@@ -149,3 +149,7 @@ Library: `d = AiDebug.connect(addr)`; `d.wait_until({"phase":"battle"})`, `d.pre
 * `screenshot raw` is the same as the window picture (the shared console's raw frame is not exposed by the session).
 * `state` is rebuilt every 3 ticks; use `fresh:true` for the very next tick.
 * Online `dropped_ticks` counts include rollback re-simulations.
+
+
+## Running the examples
+The examples expect a clean test profile and no other tangoAW2 instance on the chosen port (a leftover test app can hold it: stop it first). `offline_versus.py` writes its screenshot to the current directory.

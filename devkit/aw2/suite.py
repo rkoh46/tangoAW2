@@ -75,7 +75,12 @@ def run(jobs=3, only=None, keep=False):
         from .commands import gfx as g
         return list(g.load_catalogue())
 
-    work = [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
+    def aidebug_rom(_):
+        # the AI debug channel being on must not change the console (skipped without a ROM)
+        r = subprocess.run(["sh", str(TOOLS / "aidebug" / "rom_tests.sh")], capture_output=True, text=True)
+        return [r.stdout.strip() or "FAIL aidebug rom_tests"] if r.returncode else []
+
+    work = [(aidebug_rom, "aidebug_rom")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0
