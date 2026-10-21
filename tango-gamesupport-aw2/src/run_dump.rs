@@ -1,4 +1,4 @@
-//! Test tools: the game state of a live run as a machine-readable log (`TANGOAW2_RUN_DIR=<fresh dir>`,
+//! Test tools (the decoding is [`crate::inspect`]'s, shared with the AI debug channel): the game state of a live run as a machine-readable log (`TANGOAW2_RUN_DIR=<fresh dir>`,
 //! `TANGOAW2_RUN_SEAT=<k>`), beside the window's frames (`s<k>_<NNNN>.png`) and `meta_s<k>.json` (the build stamp and
 //! the client's start on the shared wall clock) that the app writes. Never drawn, never read back into the game: it is
 //! for tools (QA's leak and claim check) and for the AI-only debug menu to come.
@@ -114,69 +114,45 @@ pub fn tick(core: &Core, keys: u32) {
     if d.tick % 6 != 0 {
         return;
     }
-    const MAP: u32 = 0x0201_E450;
-    let (w, h) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
-    let battle = crate::pvp::in_battle(core);
-    if !battle || w == 0 || w > 64 || h == 0 || h > 64 {
+    // The battle as the one decoder ([`crate::inspect`], also what the AI debug channel answers with) reads it.
+    let snap = crate::inspect::snapshot(core, false);
+    let (w, h) = (snap.width, snap.height);
+    if !snap.in_battle || w == 0 || w > 64 || h == 0 || h > 64 {
         return;
     }
     let n = crate::online::room_players().max(2);
     let me = crate::online::room_local_seat();
-    let army = crate::pvp::current_army(core);
+    let army = snap.active_army;
     let mover = if (1..=5).contains(&army) { crate::pvp::seat_of_n(army, n) as i32 } else { -1 };
-    let armies = crate::five::armies(core).clamp(2, 5);
-    let funds: Vec<u32> = (1..=armies).map(|a| core.raw_read_32(crate::tag::player(core, a as u32), -1)).collect();
+    let armies = snap.armies.len() as u8;
+    let funds: Vec<u32> = snap.armies.iter().map(|a| a.funds).collect();
     let now = ms();
     let _ = writeln!(
         d.file,
         "{{\"ms\":{now},\"tick\":{},\"k\":\"state\",\"seat\":{me},\"army\":{army},\"mover\":{mover},\"mine\":{},\"over\":{},\"ended\":{},\"fog\":{},\"ml\":{},\"menu\":{},\"mstate\":{},\"endrow\":{},\"funds\":{funds:?}}}",
         d.tick,
         mover == me as i32,
-        crate::result_view::decided(core),
-        crate::pvp::turn_ended(core),
-        core.raw_read_8(0x0300_3FCD, -1) != 0,
-        core.raw_read_32(0x0300_0000, -1),
+        snap.decided,
+        snap.turn_ended,
+        snap.fog,
+        snap.main_loop,
         core.raw_read_8(0x0300_14F0, -1),
         core.raw_read_8(0x0300_14E2, -1),
         core.raw_read_8(crate::pvp::END_ROW, -1) & 0xF
     );
     // The unit list and the property owners, compared with the last look.
-    let base = core.raw_read_32(0x0849_9594, -1);
     let mut units = std::collections::BTreeMap::new();
-    for y in 0..h {
-        let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
-        for x in 0..w {
-            let id = core.raw_read_8(MAP + 0x51A + row + x, -1) as u32;
-            if id == 0 {
-                continue;
-            }
-            let u = base + 12 * id;
-            let kind = core.raw_read_8(u, -1) as u32;
-            if kind == 0 {
-                continue;
-            }
-            let hp = core.raw_read_16(u + 4, -1) as u32 & 0x7F;
-            units.insert(id, (kind, crate::five::army_of_index(core, id) as u8, x as i32, y as i32, hp));
+    let mut carried = std::collections::BTreeMap::new();
+    for u in &snap.units {
+        if u.carried() {
+            carried.insert(u.id, (u.kind as u32, u.owner));
+        } else {
+            units.insert(u.id, (u.kind as u32, u.owner, u.x, u.y, u.hp));
         }
     }
     let mut owners = std::collections::BTreeMap::new();
-    for y in 0..h {
-        let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
-        for x in 0..w {
-            let class = core.raw_read_8(MAP + 0x1432 + row + x, -1);
-            if matches!(class & 0x1F, 6 | 8 | 10 | 11 | 14 | 20) {
-                owners.insert(y * 64 + x, class >> 5);
-            }
-        }
-    }
-    // Units a transport carries (the record's flag 0x08 of byte +1): off the map, but not dead.
-    let mut carried = std::collections::BTreeMap::new();
-    for id in 1..320u32 {
-        let u = base + 12 * id;
-        let kind = core.raw_read_8(u, -1) as u32;
-        if kind != 0 && core.raw_read_8(u + 1, -1) & 0x08 != 0 {
-            carried.insert(id, (kind, crate::five::army_of_index(core, id) as u8));
-        }
+    for p in &snap.properties {
+        owners.insert(p.y as u32 * 64 + p.x as u32, p.owner);
     }
     let mut acts: Vec<String> = Vec::new();
     if d.ready {
@@ -217,8 +193,8 @@ pub fn tick(core: &Core, keys: u32) {
         }
     }
     // (an army out of the match: its HQ taken, or all its units gone)
-    for a in 1..=armies as u8 {
-        let alive = crate::result_view::alive(core, a);
+    for a in 1..=armies {
+        let alive = snap.armies[a as usize - 1].alive;
         if d.ready && d.last_alive[a as usize] && !alive {
             acts.push(format!("\"what\":\"eliminated\",\"actor\":{a}"));
         }
@@ -244,13 +220,7 @@ pub fn tick(core: &Core, keys: u32) {
                 .flat_map(|y| (0..w).map(move |x| (x, y)))
                 .map(|(x, y)| if cells.get((y * w + x) as usize).copied().unwrap_or(false) { '1' } else { '0' })
                 .collect(),
-            _ => (0..h)
-                .flat_map(|y| {
-                    let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
-                    (0..w).map(move |x| (row, x))
-                })
-                .map(|(row, x)| if core.raw_read_8(MAP + 0x234A + row + x, -1) != 0 { '1' } else { '0' })
-                .collect(),
+            _ => crate::inspect::seen_plane(core, w, h),
         };
         for a in acts {
             let _ = writeln!(d.file, "{{\"ms\":{now},\"tick\":{},\"k\":\"act\",{a},\"seat\":{me},\"army\":{army}}}", d.tick);

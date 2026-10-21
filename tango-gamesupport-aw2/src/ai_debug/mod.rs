@@ -537,6 +537,8 @@ mod tests {
                 link.tick_n(&[HostInput::keys(keys), HostInput::keys(0)]);
                 if t % 60 == 0 {
                     hashes.push((t, crate::inspect::ram_hash(link.core())));
+                    // (the decoders read every screen the boot passes through without touching it)
+                    let _ = crate::inspect::snapshot(link.core(), false).to_json();
                 }
             }
             stop.store(true, Ordering::Relaxed);

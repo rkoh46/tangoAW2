@@ -49,25 +49,33 @@ Keys: `A B SELECT START RIGHT LEFT UP DOWN R L`.
 Top level: `frame` (console frame counter), `tick`, `seq`, `age_ms`, `mode` (`offline`/`online`), `phase`, `screen`,
 `main_loop`, `in_battle`, `active_army`, `active_seat`, `mine` (this window's seat has the pad), `day`/`turn`,
 `turn_ended`, `decided`, `winner`, `rules` {fog, weather, powers, abilities, game_mode}, `map` {id, name, w, h},
-`cursor` {x,y}, `camera` {px,py}, `menu` {open, state, cursor_row, items, item, end_row}, `selected_unit`,
+`cursor` {x,y}, `camera` {px,py}, `menu` (below), `selected_unit`,
 `armies[]` {army, co, co_name, partner, funds, power_meter, power_cost, super_cost, power_mode, powers_used, team, alive,
 controller, colour, seat, units, properties}, `units[]` {id, owner, type, name, x, y, hp, fuel, ammo, moved/done, carried,
 hidden, capture, cargo[], flags}, `properties[]` {x, y, type, name, owner, capture}, `flags`, `cues`, `screen_info`,
 `last_hash` {frame, h}, `local` {session: none/offline/online/other, seat}, `link`, `online`.
 
 `phase` is the coarse place: `boot`, `title`, `select_mode`, `online_menu`, `room`, `select_map`, `army_select`, `rules`,
-`battle`, `results`, `menu`. `screen` is finer; in a battle: `map`, `map_menu` (the map menu is open), `submenu` (a unit's
-command menu, the production menu or a target being chosen: the screenshot shows which), `hand_off` (NEXT TURN banner),
+`battle`, `results`, `menu`. `screen` is finer; in a battle: `map`, `map_menu` (the map menu is open), `unit_menu` (a unit's
+command menu), `build_menu` (the production menu), `submenu` (the Intel and Options lists, or a target being chosen), `hand_off` (NEXT TURN banner),
 `co_power`, `co_page`, `battle_scene`, `animation`, `transition`, `victory`. `select_mode` has
 `screen_info.wheel_item` (0 Campaign, 1 Versus, 2 Battle Maps, 3 Design Room, 4 Online, 5 War Room, 8 Survival).
 Unit fields: `hp` 1..100, `fuel`, `ammo` (the game's counts), `moved` = the unit has acted this turn.
 `property.capture` is the capture points of the unit standing on it (0: none). Army numbers 1..5; `seat` = army-1 mod players online.
 
 `online`: `room`, `players`, `local_seat`, `gamertags[]`, `picks[]` {team, colour}, `sim_version`, `level` (the in-game lobby's
-page), `lobby` {status, players[] {ready, host, you}, menu_cursor}, `seats_out[]`, `roster_order[]`,
+page), `lobby` {status, message (why a room failed), players[] {ready, host, you}, menu_cursor}, `seats_out[]`, `roster_order[]`,
 `input` {offered_ticks[], dropped_ticks[]} (per seat: ticks it offered keys, and ticks the merge let none of them through;
 console-side counts, rollback re-simulations included). `cues`: `myturn banner acting over mapup mypick chosen rules picks_made`
 (the pad script's `until` words).
+
+### `state.menu`
+
+The menu the player is in, in one shape: `kind` (`map`, `unit`, `build`, `other`; null when none), `rows[]` {id, text, enabled, cost
+(production only)}, `cursor` (index into `rows`), `item` (the cursor's text). `enabled:false` is a greyed row (a command the unit
+cannot do now; a unit the army cannot pay for). `build` also has `property` and `funds` under `menu.build`, and the production rows are
+the units the property builds in the game's order with the game's prices (the CPU's `roster` table). The raw views stay:
+`open`/`items`/`item_ids`/`cursor_row` (the map menu's), `menus[]` (every menu proc the game has up: kind, cursor, rows), `list_ids`.
 
 ### `state.link` (netplay session; `null` offline)
 
@@ -92,7 +100,7 @@ contains exists` (`{"day":{"gte":3}}`). `{"any":[..]}`, `{"all":[..]}`, `{"not":
 * `scene` {phase, screen, from_phase, from_screen}; `turn` {army, seat, day};
   `act` {what: build|move|attack|kill|capture|load|unload|power|eliminated, actor, unit, name, id, owner, to, from, hp, ...}
   (the same acts `TANGOAW2_RUN_DIR`'s `state_s<k>.jsonl` has); `hash` {frame, tick, h} every 60 console frames (peers that play the
-  same match agree at the same frame); `error` {message} for every `log::error!`.
+  same match agree at the same frame; the room's pages before SELECT MAP run on each peer's own offline console, so compare only hash lines after `phase` reaches `select_map`); `error` {message} for every `log::error!`.
 * `rollback` {max_depth, count, ticks_resimulated}: a rollback happened since the last look (16 ms; depth is the deepest).
 * `link` {reconnecting, remote_disconnected, booting, waiting_for_peer, links[]}: a link's health or route changed.
 * `migration` {host_seat, migrations, migrating}; `rejoin` {holds[]}: a seat the match waits for came or went.
@@ -140,5 +148,4 @@ Library: `d = AiDebug.connect(addr)`; `d.wait_until({"phase":"battle"})`, `d.pre
 * One console frame is 1/60 s; `press` frames are wall-clock (like the pad script), a loaded machine can stretch them.
 * `screenshot raw` is the same as the window picture (the shared console's raw frame is not exposed by the session).
 * `state` is rebuilt every 3 ticks; use `fresh:true` for the very next tick.
-* The unit command menu and the production menu are reported as `submenu` without their rows.
 * Online `dropped_ticks` counts include rollback re-simulations.

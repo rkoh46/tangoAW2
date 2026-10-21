@@ -190,9 +190,15 @@ pub fn classify(core: &Core, _online: bool) -> (&'static str, &'static str) {
             Phase::Map => {
                 if map_menu_items(core).is_some() {
                     "map_menu"
+                } else if crate::tag_ui::build_menu_up(core) {
+                    "build_menu"
                 } else if !crate::fog_view::plain_map(core) && core.raw_read_8(MAP_MENU_STATE, -1) == 4 {
-                    // (a unit's command menu, the production menu, a target being chosen: the picture shows which)
-                    "submenu"
+                    // (a unit's command menu, the Intel and Options lists, a target being chosen)
+                    if menus(core).iter().any(|m| m["kind"] == "unit") {
+                        "unit_menu"
+                    } else {
+                        "submenu"
+                    }
                 } else {
                     "map"
                 }
@@ -263,6 +269,98 @@ pub fn map_menu_items(core: &Core) -> Option<Vec<u8>> {
     menu_list(core).filter(|items| items.contains(&6))
 }
 
+/// Every menu the game has up (its menu procs): the map menu, a unit's command menu, the Intel and Options lists. Rows are
+/// `{id, text, enabled}` in the order shown; `cursor` is the row the hand is on.
+pub fn menus(core: &Core) -> Vec<Value> {
+    use crate::ds_menus as m;
+    let mut out = Vec::new();
+    for i in 0..m::SLOT_COUNT {
+        let slot = m::SLOTS + m::SLOT_SIZE * i;
+        if core.raw_read_32(slot, -1) != m::MENU_SCRIPT {
+            continue;
+        }
+        let count = core.raw_read_8(slot + 0x41, -1) as usize;
+        if count == 0 || count > 12 {
+            continue;
+        }
+        let table = core.raw_read_32(slot + 0x20, -1);
+        let kind = if table == core.raw_read_32(m::UNIT_MENU_POOL, -1) {
+            "unit"
+        } else if table == core.raw_read_32(m::MAP_MENU_POOL, -1) {
+            "map"
+        } else {
+            "other"
+        };
+        let rows: Vec<Value> = (0..count as u32)
+            .map(|k| {
+                let idx = core.raw_read_8(slot + 0x31 + k, -1) as u32;
+                let tid = core.raw_read_16(table + m::ENTRY * idx + 0x1C, -1);
+                let (_, _, text) = m::parse_label(&m::label(core, tid));
+                let flags = core.raw_read_8(slot + 0x24 + idx, -1);
+                json!({"id": idx, "text": text, "enabled": flags & 2 == 0})
+            })
+            .collect();
+        let cursor = (core.raw_read_8(slot + 0x42, -1) as usize).min(count - 1);
+        out.push(json!({"kind": kind, "cursor": cursor, "item": rows[cursor]["text"], "rows": rows}));
+    }
+    out
+}
+
+/// The cursor's cell at the last look at the plain map (x, then y << 16), kept for the production menu.
+static LAST_MAP_CURSOR: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// The production menu (a base, airport or port), when it is up: the buildable units in the order shown, each with its price
+/// and whether the active army can pay it (the game greys the rest), and the row the hand is on. The menu is a proc
+/// (`0x0802DA19`) whose halfword at +0x20 indexes the game's full build list ([`crate::roster`]'s `BUILD_LIST_POINTER`); the rows are that
+/// list's units whose domain the property builds (a base: ground; an airport: air; a port: sea).
+pub fn build_menu(core: &Core) -> Option<Value> {
+    const AREA: u32 = 0x0300_0C00;
+    const LIST_POINTER: u32 = 0x0809_0C08;
+    let mut b = vec![0u8; 0x1300];
+    core.raw_read_range(AREA, -1, &mut b);
+    let proc_at = (8..b.len() - 4).step_by(4).find(|&i| {
+        let w = |o: usize| u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]]);
+        w(i) == 0x0802_DA19 && (0x0840_0000..0x0870_0000).contains(&w(i - 8)) && (0x0840_0000..0x0870_0000).contains(&w(i - 4))
+    })?;
+    let base = AREA + proc_at as u32 - 8;
+    let index = core.raw_read_16(base + 0x20, -1) as usize;
+    let list_ptr = core.raw_read_32(LIST_POINTER, -1);
+    let list: Vec<u8> = (0..64u32).map(|k| core.raw_read_8(list_ptr + k, -1)).take_while(|&t| t != 0xFF).collect();
+    // (the cell the cursor was last on while the plain map showed: the property the menu belongs to; the game parks the cursor
+    // elsewhere while a menu is up)
+    let at = LAST_MAP_CURSOR.load(std::sync::atomic::Ordering::Relaxed);
+    let (cx, cy) = ((at & 0xFFFF) as i32, (at >> 16) as i32);
+    let h = core.raw_read_16(MAP + 2, -1) as u32;
+    let class = if cy >= 0 && (cy as u32) < h && cx >= 0 {
+        core.raw_read_8(TERRAIN + core.raw_read_16(ROWS + 2 * cy as u32, -1) as u32 + cx as u32, -1) & 0x1F
+    } else {
+        0
+    };
+    let mask: u8 = match class {
+        14 => 0x0F,
+        10 => 0x10,
+        11 => 0x20,
+        _ => 0xFF,
+    };
+    let army = crate::pvp::current_army(core) as u32;
+    let funds = if (1..=5).contains(&army) { core.raw_read_32(crate::tag::player(core, army), -1) } else { 0 };
+    let table = crate::roster::table(core);
+    let mut rows = Vec::new();
+    let mut cursor = 0usize;
+    for (i, &t) in list.iter().enumerate() {
+        let domain = core.raw_read_8(table + 0x5C * t as u32 + 0x1A, -1);
+        if domain & mask == 0 || (domain == 8 && !crate::cpu_tactics::next_to_pipes(core, cx, cy)) {
+            continue;
+        }
+        if i <= index {
+            cursor = rows.len();
+        }
+        let cost = core.raw_read_16(table + 0x5C * t as u32 + 6, -1) as u32 * 10;
+        rows.push(json!({"id": t, "text": unit_name(t), "cost": cost, "enabled": funds >= cost}));
+    }
+    Some(json!({"kind": "build", "property": property_name(class), "cursor": cursor, "item": rows.get(cursor).map(|r| r["text"].clone()), "funds": funds, "rows": rows}))
+}
+
 fn menu_item_name(id: u8) -> &'static str {
     match id {
         0 => "CO",
@@ -281,6 +379,9 @@ pub fn snapshot(core: &Core, online: bool) -> Snapshot {
     let (phase, screen) = classify(core, online);
     let in_battle = crate::pvp::in_battle(core) && (1..=5).contains(&crate::pvp::current_army(core));
     let main_loop = core.raw_read_32(MAIN_LOOP, -1);
+    if screen == "map" {
+        LAST_MAP_CURSOR.store(core.raw_read_16(CURSOR, -1) as u32 | (core.raw_read_16(CURSOR + 2, -1) as u32) << 16, std::sync::atomic::Ordering::Relaxed);
+    }
     let mut s = Snapshot {
         frame: core.frame_counter(),
         online,
@@ -376,16 +477,38 @@ fn flags(core: &Core) -> Value {
 fn menu_json(core: &Core) -> Value {
     let items = map_menu_items(core);
     let raw = menu_list(core);
-    let cursor = core.raw_read_8(MAP_MENU_CURSOR, -1);
+    let cursor_row = core.raw_read_8(MAP_MENU_CURSOR, -1);
+    let menus = menus(core);
+    let build = build_menu(core);
+    // The menu the player is in, in one shape: `kind` (map, unit, build, other), `rows` [{id, text, enabled, cost?}], `cursor`
+    // (the row index), `item` (its text).
+    let (kind, rows, cursor) = if let Some(b) = build.as_ref() {
+        ("build", b["rows"].clone(), b["cursor"].clone())
+    } else if let Some(m) = menus.iter().find(|m| m["kind"] == "unit") {
+        ("unit", m["rows"].clone(), m["cursor"].clone())
+    } else if let Some(v) = items.as_ref() {
+        let rows: Vec<Value> = v.iter().map(|&i| json!({"id": i, "text": menu_item_name(i), "enabled": true})).collect();
+        ("map", Value::Array(rows), json!(cursor_row))
+    } else if let Some(m) = menus.first() {
+        ("other", m["rows"].clone(), m["cursor"].clone())
+    } else {
+        ("", Value::Null, Value::Null)
+    };
+    let item = rows.get(cursor.as_u64().unwrap_or(u64::MAX) as usize).map(|r| r["text"].clone()).unwrap_or(Value::Null);
     json!({
         "open": items.is_some(),
+        "kind": if kind.is_empty() { Value::Null } else { json!(kind) },
+        "rows": rows,
+        "cursor": cursor,
         "state": core.raw_read_8(MAP_MENU_STATE, -1),
-        "cursor_row": cursor,
+        "cursor_row": cursor_row,
         "items": items.as_ref().map(|v| v.iter().map(|&i| menu_item_name(i)).collect::<Vec<_>>()),
         "item_ids": items,
-        "item": items.as_ref().and_then(|v| v.get(cursor as usize).map(|&i| menu_item_name(i))),
+        "item": if items.is_some() { items.as_ref().and_then(|v| v.get(cursor_row as usize).map(|&i| json!(menu_item_name(i)))).unwrap_or(Value::Null) } else { item },
         "end_row": core.raw_read_8(crate::pvp::END_ROW, -1) & 0xF,
         "list_ids": raw,
+        "menus": menus,
+        "build": build,
     })
 }
 
@@ -488,7 +611,17 @@ fn lobby_json(core: &Core) -> Value {
         "status": status, "status_names": "0 none, 1 waiting, 2 connecting, 3 connected, 4 failed, 5 back",
         "players": players.iter().map(|&(ready, flags)| json!({"ready": ready, "flags": flags, "host": flags & crate::online::HOST != 0, "you": flags & crate::online::YOU != 0})).collect::<Vec<_>>(),
         "menu_cursor": crate::online_menu::cursor(core),
+        "message": lobby_message(core),
     })
+}
+
+fn lobby_message(core: &Core) -> String {
+    (0..crate::online::MESSAGE_LEN)
+        .map(|k| core.raw_read_8(crate::online::MESSAGE + k, -1))
+        .take_while(|&c| c != 0)
+        .filter(|c| (0x20..0x7F).contains(c))
+        .map(|c| c as char)
+        .collect()
 }
 
 /// The cues a pad script waits on (`TANGOAW2_PAD_SCRIPT`'s `until`), as booleans.
@@ -658,6 +791,18 @@ pub fn events(prev: &Snapshot, now: &Snapshot) -> Vec<Value> {
         }
         if b.powers_used > a.powers_used || (b.power_mode != 0 && a.power_mode == 0) {
             out.push(json!({"event": "act", "what": "power", "actor": b.army, "count": b.powers_used, "mode": b.power_mode}));
+        }
+    }
+    out
+}
+
+/// The vision plane the game displays now (`1` seen, `0` fogged), row by row.
+pub fn seen_plane(core: &Core, w: u32, h: u32) -> String {
+    let rows = row_offsets(core, h);
+    let mut out = String::with_capacity((w * h) as usize);
+    for y in 0..h {
+        for x in 0..w {
+            out.push(if core.raw_read_8(MAP + 0x234A + rows[y as usize] + x, -1) != 0 { '1' } else { '0' });
         }
     }
     out

@@ -39,17 +39,17 @@ const H: usize = 160;
 
 /// The menu procs' slot array (`CreateMenu` hands the proc out of it) and
 /// the script every menu proc runs.
-const SLOTS: u32 = 0x0300_1470;
-const SLOT_SIZE: u32 = 0x60;
-const SLOT_COUNT: u32 = 32;
-const MENU_SCRIPT: u32 = 0x0848_A42C;
+pub(crate) const SLOTS: u32 = 0x0300_1470;
+pub(crate) const SLOT_SIZE: u32 = 0x60;
+pub(crate) const SLOT_COUNT: u32 = 32;
+pub(crate) const MENU_SCRIPT: u32 = 0x0848_A42C;
 /// The literal-pool words naming the map menu's and the unit menu's tables
 /// (they point at tangoAW2's copies while those are in use).
-const MAP_MENU_POOL: u32 = 0x0802_D49C;
-const UNIT_MENU_POOL: u32 = 0x0802_D59C;
-const ENTRY: u32 = 0x20;
+pub(crate) const MAP_MENU_POOL: u32 = 0x0802_D49C;
+pub(crate) const UNIT_MENU_POOL: u32 = 0x0802_D59C;
+pub(crate) const ENTRY: u32 = 0x20;
 /// The text table: a pointer per text id.
-const TEXT_TABLE: u32 = 0x0861_0A38;
+pub(crate) const TEXT_TABLE: u32 = 0x0861_0A38;
 const CURSOR_X: u32 = 0x0300_33E4;
 /// The selected unit's record while a unit menu is open.
 const SELECTED_UNIT: u32 = 0x0300_40D8;
@@ -104,7 +104,7 @@ fn r32(core: &Core, a: u32) -> u32 {
     core.raw_read_32(a, -1)
 }
 
-fn label(core: &Core, tid: u16) -> Vec<u8> {
+pub(crate) fn label(core: &Core, tid: u16) -> Vec<u8> {
     let p = r32(core, TEXT_TABLE + 4 * tid as u32);
     if !(0x0800_0000..0x0A00_0000).contains(&p) {
         return Vec::new();
@@ -122,7 +122,7 @@ fn label(core: &Core, tid: u16) -> Vec<u8> {
 
 /// Icon page and code, then the name (control codes dropped; the star
 /// glyph `0x19` takes its operand with it).
-fn parse_label(bytes: &[u8]) -> (u8, u8, String) {
+pub(crate) fn parse_label(bytes: &[u8]) -> (u8, u8, String) {
     let (mut page, mut icon) = (0u8, 0u8);
     let mut text = String::new();
     let mut i = 0;

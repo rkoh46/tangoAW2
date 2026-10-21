@@ -43,12 +43,14 @@ press_through(G, lambda s: s["lobby"]["status"] == 3, 90)
 H.wait_until({"online.lobby.players.1": {"exists": True}}, 30)
 G.press_until("A", {"online.lobby.players.1.ready": True}, 20)
 H.wait_until({"online.lobby.players.1.ready": True}, 20)
-time.sleep(6)                                             # (the peers still set their direct link up behind the room page)
+time.sleep(1)                                             # (let the ready flag settle on both peers)
 H.press("START")
 
 # the maps are picked in turn, one seat at a time
 for c in (H, G):
     c.wait_until({"phase": "select_map"}, 60)
+# (the room's pages ran on each peer's own offline console: only the hash lines from here on are of the one shared match)
+eid0 = (H.call("events", after=0)["last"], G.call("events", after=0)["last"])
 for seat, c in enumerate((H, G)):
     c.wait_until({"cues.picks_made": seat}, 120)
     c.press("DOWN")
@@ -69,9 +71,10 @@ l = hs["link"]["links"][0]
 print("link:", l["path"], "rtt", l["rtt_ms"], "jitter", l["jitter_ms"], "| delay", hs["link"]["input_delay"], "rollbacks", hs["link"]["rollback"])
 
 time.sleep(15)
-hh = {e["frame"]: e["h"] for e in HE.events(timeout=1) if e["event"] == "hash"}
-gg = {e["frame"]: e["h"] for e in GE.events(timeout=1) if e["event"] == "hash"}
-common = sorted(set(hh) & set(gg))
+hh = {e["frame"]: e["h"] for e in HE.events(timeout=1) if e["event"] == "hash" and e["eid"] > eid0[0]}
+gg = {e["frame"]: e["h"] for e in GE.events(timeout=1) if e["event"] == "hash" and e["eid"] > eid0[1]}
+# (the corrected state of a frame is the last hash line it has; a frame near the end may still be a guess: leave it out)
+common = sorted(set(hh) & set(gg))[:-3]
 equal = sum(hh[f] == gg[f] for f in common)
 print(f"hash lines: host {len(hh)} guest {len(gg)} common {len(common)} equal {equal}")
 sys.exit(0 if common and equal == len(common) else 1)

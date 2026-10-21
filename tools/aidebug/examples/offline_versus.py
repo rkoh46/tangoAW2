@@ -34,7 +34,9 @@ print("battle:", s["map"]["name"], "army", s["active_army"], "day", s["day"], "f
 base = next(p for p in s["properties"] if p["owner"] == s["active_army"] and p["name"] == "base")
 d.goto(base["x"], base["y"])
 d.press("A")                                              # the production menu
-d.wait_until({"screen": "submenu"}, 5)
+d.wait_until({"screen": "build_menu"}, 5)
+m = d.state(["menu"])["menu"]
+print("production menu:", [(r["text"], r["cost"], "ok" if r["enabled"] else "greyed") for r in m["rows"]][:6], "...")
 d.press("DOWN")                                           # (the menu remembers its row: whatever is below it)
 d.press("A")
 d.wait_until({"unit_at": [base["x"], base["y"]]}, 10)
@@ -61,9 +63,9 @@ for dx, dy in [(0, -1), (1, -1), (-1, -1), (0, -2), (1, 0), (0, 1), (2, 0)]:
     d.wait_until({"flags.plain_map": False}, 3)          # (the movement range is up)
     cell = (tank["x"] + dx, tank["y"] + dy)
     d.goto(*cell)
-    d.press("A")                                          # the command menu, if the cell can be reached
+    d.press("A")                                          # the command menu, if the cell can be reached (its rows: state.menu.rows)
     try:
-        d.wait_until({"screen": "submenu"}, 2)
+        d.wait_until({"screen": "unit_menu"}, 2)
     except Exception:
         continue
     d.press("A")                                          # Wait

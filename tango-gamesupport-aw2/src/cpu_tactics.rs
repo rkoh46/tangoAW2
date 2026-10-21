@@ -337,7 +337,7 @@ fn count(core: &Core, army: u32, t: u8) -> u32 {
     army_units(core, army).iter().filter(|&&(u, _)| core.raw_read_8(u, -1) == t).count() as u32
 }
 
-fn next_to_pipes(core: &Core, x: i32, y: i32) -> bool {
+pub(crate) fn next_to_pipes(core: &Core, x: i32, y: i32) -> bool {
     let (w, h) = map_size(core);
     [(0, -1), (1, 0), (0, 1), (-1, 0)].iter().any(|&(dx, dy)| {
         let (nx, ny) = (x + dx, y + dy);
