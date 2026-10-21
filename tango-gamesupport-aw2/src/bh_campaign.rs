@@ -82,6 +82,7 @@ pub fn def() -> CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: crate::bh_text::pages("prologue"),
+        prologue_song: crate::bh_text::song("prologue"),
         credits: credits(),
         missions,
         final_mission: "bh30", // the finale (the secret M31 follows the nine bonds)
@@ -738,6 +739,7 @@ pub fn features_def() -> CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: vec![Page { text: "Features.", picture: None, who: None }],
+        prologue_song: None,
         credits: vec![
             CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
             CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
@@ -850,6 +852,7 @@ pub fn inventions_def() -> CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
         prologue: vec![Page { text: "Inventions.", picture: None, who: None }],
+        prologue_song: None,
         credits: vec![CreditSection { heading: "TEST", names: vec!["TEST"], secret: false }],
         missions: vec![a, b],
         final_mission: "i02",

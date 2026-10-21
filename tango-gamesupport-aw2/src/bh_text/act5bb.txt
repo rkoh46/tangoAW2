@@ -6,6 +6,7 @@
 # ----------------------------------------------------------------------------------------------
 
 == m27_pre | LASH
+@SONG enemy1
 NARRATION: Sunrise Plains. Wheat, a / windmill, an Orange Star base.
 NARRATION: The last open field before / the Orange Gate.
 ANDY: I'm not scared! I'm just / double-checking!
@@ -71,6 +72,7 @@ CRUMB: Maybe he did, ma'am.
 LASH: Unscheduled behaviour! Ooh! / ...Somebody put it in the file.
 
 == m27_post | LASH
+@SONG co:clone
 CLONE(s): I lost. I'm... actually / relieved?
 ANDY(s): Clone... come home.
 CLONE: Home is a drawer, Andy. / You know where I sleep.
@@ -115,6 +117,7 @@ ANDY: Next time I won't hold / back. Neither will he. Fair?
 CLONE: Fair, Andy. See you at / the Castle.
 
 == m27_map | LASH
+@SONG enemy2
 STURM: Corporal.
 CLONE: Sir? I'm a Private!
 STURM: Not for long. Walk with me.
@@ -132,6 +135,7 @@ MORTAR: Gerald says a lot of / things.
 
 # On the world map after M27 (appended to m27_map in the Rust).
 == m28_alarm | LASH
+@SONG pinch
 SOLDIER: Sir! Alarm from home! / The depot is surrounded!
 SOLDIER: Four armies at once! / Orange, blue, green, yellow!
 HAWKE: Nell. She sent them the / moment we left.
@@ -146,6 +150,7 @@ CLONE: ...I know Andy's moves. / Okay!
 STURM: Then we take it back. / Prepare my continent for visitors.
 
 == m28_pre
+@SONG sturm
 NARRATION: The Black Hole continent. / The Black Wastes. Home.
 NARRATION: Thirty years dark. A fence / of four banners, one at each shore.
 RACHEL: By the book: surround the / fortress. No gaps. No excuses.
@@ -248,6 +253,7 @@ KANBEI: Kanbei is working on that.
 EAGLE: Work faster, old man!
 
 == m28_post
+@SONG sturm
 RACHEL(s): Rule five. When / outnumbered... retreat.
 RACHEL(s): Rule five is a bad rule. / I wrote it myself.
 RACHEL(s): Sister... I tried. I / really tried.
@@ -274,6 +280,7 @@ SOLDIER(h): And the Gate held, sir! / The Obelisk too!
 STURM: The Gate held.
 
 == m28_map
+@SONG enemy2
 @WITH CLONE ANDY
 CLONE: Sir? That was my first / home defence.
 STURM: It will not be the last.
@@ -295,6 +302,7 @@ LASH: Don't break it, Sturm! It's / the only one we've got!
 @END
 
 == m28_promotion
+@SONG co:crumb co
 NARRATION: The Obelisk, at dusk. The / flag still stands. So does he.
 STURM: Hobb. Step forward.
 CRUMB: Sir! Is it about the flag, / sir? I can explain!
@@ -334,6 +342,7 @@ CRUMB CO: He outranks everybody, sir. / It's the age.
 # ----------------------------------------------------------------------------------------------
 
 == m31_pre
+@SONG enemy1
 NARRATION: Von Bolt's Hall. Night. The / lamps are low. The halls, quiet.
 CRUMB CO(s): Sir! The vault door is / open. And the guard was me.
 CRUMB CO: I only closed my eyes for / a second. Gerald was watching!
@@ -411,6 +420,7 @@ CRUMB CO: Gerald says two to go.
 SONJA: One of those two is all I / need. Do not celebrate.
 
 == m31_post
+@SONG enemy1
 SONJA: You caught me. ...As I / intended.
 VON BOLT: Intended?! You ROBBED / me! I burned three trucks!
 SONJA: Three trucks of sand, / Colonel. Your gold never left.
@@ -439,6 +449,7 @@ SONJA: Then why do you sweat, / Colonel?
 HAWKE: Interesting. And unwelcome.
 
 == m31_map
+@SONG enemy2
 CRUMB CO(s): Gerald? I was bribed by / a better biscuit. Forgive me.
 MORTAR: Crumb. The vault was your / post.
 CRUMB CO(s): I know, Sergeant. I'm / writing it up myself.
@@ -449,6 +460,7 @@ FLAK: Flak not bribed. Flak wants / biscuit anyway.
 CRUMB CO: Gerald, she was lying. It / was only ALMOST better.
 
 == m31_defect
+@SONG enemy1
 NARRATION: Von Bolt's Hall. Dawn. The / trucks are cold. So is the tea.
 SONJA: I did not come to rob you. / I came to be recruited.
 SONJA: I only borrowed your vault. The / receipts are in your drawer, Colonel.
@@ -477,6 +489,7 @@ SONJA: Not yet. It speaks when / you stop being afraid.
 NARRATION: Far below the vault, / the humming changes pitch.
 
 == m31_kanbei
+@SONG ally2
 NARRATION: Comet Keep. A courier brings / a letter marked "S." by hand.
 KANBEI(h): From Sonja! She writes so / rarely. Sensei, listen!
 KANBEI: "Father. I have joined / Black Hole. Do not follow."
@@ -494,6 +507,7 @@ KANBEI: Honour has no manual for / this. Then Kanbei writes one.
 
 # The secret epilogue: the last scene of the campaign (the hook toward BH2).
 == m31_epilogue
+@SONG ending2
 NARRATION: Von Bolt's Hall. Midnight. / The lamps are still lit.
 SONJA: A reply from Father. "Wear / a scarf." ...I will.
 SONJA: He set a place for me at / table. It weighs more than I thought.

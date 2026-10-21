@@ -1,6 +1,7 @@
 # BH dialogue, act5ba (format: README.txt): M23 Laboratory 7, M24 Sky Gala, M25 Twin Harbours, M26 The Last Alliance
 
 == m23_pre
+@SONG enemy2
 NARRATION: Orange Star. Laboratory 7. / Glass halls and humming walls.
 NARRATION: Nell's Accord pays the power / bill. The Ethics Board keeps the key.
 STURM: Orange Star chairs the Accord. / Its quiet weapons were built here.
@@ -110,6 +111,7 @@ KINDLE: Darling, that scream was / flat. Do it again, with feeling.
 @END
 
 == m23_post
+@SONG co:lash
 LASH(s): Oh no! Oh no, oh no... / no, wait. That was excellent!
 LASH: You beat my toys! You beat / MAX! I am so happy! Why?
 MAX(s): Ow. Okay. Fine. We lost. / I'm not saying I'm sorry.
@@ -195,6 +197,7 @@ CRUMB(h): No, sir! Only crumbs.
 STURM: See that it stays so.
 
 == m23_map
+@SONG enemy2
 LASH: Corporal Crumb! Your / biscuit's half-life?
 CRUMB: He's a Private biscuit, ma'am.
 LASH: Ooh, a loophole! I only held / it a second! With very small tongs!
@@ -210,6 +213,7 @@ MORTAR: Crumb. A sale is a trap.
 WICK: ...Both of those are / worrying.
 
 == m24_pre
+@SONG enemy2
 NARRATION: The Orange Star Sky Gala. / Cameras. Banners. Cheering.
 NARRATION: Green Earth's skies burned. / This is the Accord's last air show.
 CRUMB(h): Sir, there are hot dogs! / And a man selling little flags!
@@ -309,6 +313,7 @@ HAWKE: That dive had a tell. Press / the left wing.
 @END
 
 == m24_post
+@SONG co:adder
 ADDER(s): My hair. My perfect hair. / You ruined the shot.
 SAMI(s): Medics! Pull the pilot out! / Hold the line, grunts!
 SAMI: Adder! Get out of the plane! / Quit looking at the camera!
@@ -383,6 +388,7 @@ SAMI: ...That was the open channel. / Wasn't it.
 KINDLE: Do not push your luck, / darling.
 
 == m24_map
+@SONG enemy2
 CRUMB(h): Mr Adder signed my helmet!
 ADDER: I signed it, "Adder, the / star". You are welcome.
 CRUMB: Gerald asked for one, too.
@@ -398,6 +404,7 @@ KINDLE: Darling, step to the side. / I need the good light.
 @END
 
 == m25_pre
+@SONG enemy1
 NARRATION: Port Orange and the Market / Atoll. Two harbours, one sale.
 NARRATION: Orange Star's ships sail from / the port. Its supplies, the shop.
 STURM: One navy and one pantry. Take / both. Orange Star eats from them.
@@ -515,6 +522,7 @@ FLAK: Flak want angry tank. Free?
 @END
 
 == m25_post
+@SONG enemy1
 SAMI(s): Retreat to the Gate! I will / stand there myself!
 HACHI: Sorry, sorry! The shop is / closed! Permanently!
 SAMI: Hachi!
@@ -541,6 +549,7 @@ HACHI: Adequate! Ha! That's a / compliment from him!
 @END
 
 == m25_map
+@SONG enemy2
 CRUMB(h): Sir! I found a hat in the / shop! For Dennis!
 MORTAR: Crumb. That is a colander.
 CRUMB: It's a fancy hat, Sergeant. / For ventilation. Dennis gets warm.
@@ -550,6 +559,7 @@ WICK: Is it all right if I ask / who Andy is?
 MORTAR: An enemy. A mechanic. Don't / ask. Just return the wrench.
 
 == m26_pre
+@SONG enemy1
 NARRATION: The Tri-Border Plains. Three / flags in one field.
 NARRATION: Orange Star. Blue Moon. Yellow / Comet. Thirty years of Accord,
 NARRATION: and their armies have never / stood this close. They do today.
@@ -651,6 +661,7 @@ JUGGER: SEAM LOCATED. COLIN, / FLANK, EASTERN SIDE. LOGGED.
 @END
 
 == m26_post
+@SONG enemy1
 JAKE(s): Fall back! Fall back, guys! / Strategic fall back!
 COLIN: We all fall back? T-together?
 GRIMM: One more punch first! Then / I retreat. Maybe!
@@ -699,6 +710,7 @@ ADDER: Children and their blankets. / How moving. How very, very short.
 STURM: The Orange Gate. Nell stands / there. Take it.
 
 == m26_map
+@SONG enemy2
 CRUMB(s): Sir, that Nell lady scares / me.
 MORTAR: Why?
 CRUMB: She didn't shout. She asked.

@@ -1,6 +1,7 @@
 # BH dialogue, act2b (format: README.txt): M8 The Twin Gates, M9 The Loot Train, M10 Evergreen Citadel, M11 Ashfall Pass
 
 == m08_pre
+@SONG enemy1
 NARRATION: Evergreen Province. Two roads / climb to one capital.
 NARRATION: The Gate of Dawn, above the / river. The Gate of Dusk, by the sea.
 JESS: Two gates, two fronts. / Standard procedure.
@@ -53,6 +54,7 @@ CRUMB: They will, Wick. Gerald says / the sea is only temporarily rude.
 VON BOLT: Kehh... a lost gate is a / lost invoice! Win the other!
 
 == m08_post
+@SONG enemy1
 JESS(s): The dawn gate has fallen. / Javier, fall back. We hold the keep.
 JAVIER: I would like to say I meant / this. I did not. Alas!
 JESS: Back to Evergreen. This was a / delay. It is not a defeat.
@@ -76,6 +78,7 @@ STURM: A fence needs a warden. / Remove the warden. Keep the fence.
 STURM: A fence is more useful / standing than fallen.
 
 == m08_map
+@SONG enemy2
 CRUMB: Marshal! The messages from / both fronts arrived!
 CRUMB(h): One of them was a pigeon. / It saluted. Possibly.
 HAWKE: Add it to the contingency plan.
@@ -87,6 +90,7 @@ HAWKE: I have never asked. It keeps / us friends.
 VON BOLT: Kehh-heh! It keeps you / employed!
 
 == m09_pre | VON BOLT
+@SONG hagevolt
 NARRATION: Evergreen Province. A rail / line crosses the fog, east to the port.
 VON BOLT: Kehh-heh! Three trucks! / Three vaults on wheels!
 VON BOLT: Every coin I own, except / the last shelf. That stays home.
@@ -138,6 +142,7 @@ JAVIER: Drake!
 DRAKE: Sorry, man. It is true.
 
 == m09_all_home | VON BOLT
+@SONG hagevolt
 VON BOLT: All three! Kehh-heh! Not / one coin missing!
 VON BOLT: Interest! Interest is laying / eggs. Golden ones. Perhaps.
 CRUMB(h): Colonel, roosters do not... / never mind. Gerald agrees.
@@ -149,6 +154,7 @@ HAWKE: Colonel, I will say it once. / Three of three was beautiful.
 VON BOLT: Say it again slowly. Kehh... / I will bill you for the praise.
 
 == m09_two_home | VON BOLT
+@SONG hagevolt
 VON BOLT(s): One truck gone... ...my / coins, my poor, poor coins...
 HAWKE: Two in three. Within / tolerance.
 VON BOLT: TOLERANCE?! Tolerance is / what I charge! I do not feel it!
@@ -163,6 +169,7 @@ CRUMB: Colonel, Interest laid an egg. / It is small. It counts.
 VON BOLT: ...That is the best news of / the day. Put it in the ledger.
 
 == m09_map | VON BOLT
+@SONG hagevolt
 CRUMB: Sir, Interest the rooster / pecked the Colonel.
 VON BOLT: For a late fee! He is / good with money. Kehh-heh!
 MORTAR: Crumb. Do not feed the rooster.
@@ -174,6 +181,7 @@ CRUMB: It sounded like humming when / you said shelf, Colonel.
 VON BOLT: ...Old ears. Evergreen is next, / Hawke! Bring the heavy guns.
 
 == m10_pre | STURM
+@SONG sturm
 NARRATION: Evergreen Citadel. Green / Earth's capital, on its plateau.
 NARRATION: Three walls and a river moat. / Never taken.
 JESS: This is Evergreen. It has / never fallen. Not once.
@@ -222,6 +230,7 @@ HAWKE: I know. It is why I stay / where I am. Third wall, Sturm.
 STURM: Break it.
 
 == m10_post | STURM
+@SONG sturm
 JESS(s): The Citadel... has fallen. / I did not think I would say it.
 EAGLE: Fall back east! To the / Comets! Just this once!
 JESS: I do not retreat, Eagle. I / relocate with my troops.
@@ -246,6 +255,7 @@ CRUMB(h): Sir? Do I get to cut the / green flag down?
 MORTAR: Crumb. The Marshal has other / plans for you.
 
 == m10_map | STURM
+@SONG enemy2
 SOLDIER: Hobb! The Marshal says / you carry the flag.
 CRUMB(h): I'm Standard-Bearer?! Gerald, / look!
 MORTAR: By accident. Don't drop it.
@@ -257,6 +267,7 @@ HAWKE: Write down every word. Do not / interrupt. Do not sneeze.
 CRUMB: Yes sir! Gerald, hush.
 
 == m10_warroom | STURM
+@SONG ally1
 NARRATION: Intercept. Allied Accord, / emergency council. Line open.
 NELL: Evergreen has fallen. Green / Earth's wardens are gone.
 NELL: Nobody leaves this table. We / hold together, boys. All of us.
@@ -276,6 +287,7 @@ HAWKE: Twelve. The Accord is a table / with four legs. One was just sawn off.
 MORTAR: Crumb. Pencil down.
 
 == m11_pre | VON BOLT
+@SONG hagevolt
 NARRATION: Ashfall Pass. Yellow Comet's / border. Mount Ember smokes.
 SENSEI: Easy there, youngsters. This / pass is old as I am.
 SENSEI: Green Earth's refugees asked / for a roof. I gave them one.
@@ -335,6 +347,7 @@ VON BOLT: She burned my receipts too. / I want that mountain's address.
 SENSEI: She's a fine lady. Cranky / before lunch.
 
 == m11_post | VON BOLT
+@SONG enemy1
 SENSEI(s): Hmph. Old bones, beaten / by a gale.
 VON BOLT: Kehh-heh! I win on years, / old man! I always do!
 SENSEI: You win on years. I win on / teeth. Call it a draw.
@@ -356,6 +369,7 @@ VON BOLT: A daughter! With a rulebook! / I like her already.
 HAWKE: Sonja. Yellow Comet's eyes. We / will meet her.
 
 == m11_map | VON BOLT
+@SONG enemy1
 HAWKE: Two names on the old rolls. / Koal builds Yellow Comet a road.
 VON BOLT: And Kindle! She owes me / fourteen thousand!
 CRUMB: A farmer says Mr Koal / listens to Sturm and Hawke.

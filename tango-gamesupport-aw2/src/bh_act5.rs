@@ -139,11 +139,7 @@ fn bh29() -> MissionDef {
     m.intro = crate::bh_text::scene("m29_pre");
     m.victory = crate::bh_text::scene("m29_post");
     // The night before the Castle: Crumb and Sturm, Nell's broadcast, then the Allied war room (Black Hole's intercept).
-    m.after = Scene::new({
-        let mut v = crate::bh_text::lines("m29_map");
-        v.extend(crate::bh_text::lines("m29_warroom"));
-        v
-    });
+    m.after = crate::bh_text::chain(&["m29_map", "m29_warroom"]);
     let wave: Vec<UnitDef> = [(21, 22), (22, 22), (23, 22), (24, 22), (25, 22), (26, 22)]
         .iter()
         .map(|&(x, y)| {

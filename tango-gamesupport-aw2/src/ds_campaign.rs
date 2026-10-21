@@ -285,8 +285,17 @@ pub const FLOW_MAP_BACK: u8 = 6;
 /// The staff credits: start the roll (`Proc_Start`), is it running.
 pub const FLOW_CREDITS_START: u8 = 7;
 pub const FLOW_CREDITS_RUNNING: u8 = 8;
+/// The prologue card has run (a custom campaign's New): its flag is set.
+pub const FLOW_PROLOGUE_SEEN: u8 = 9;
 /// Narration picture n (crate::ds_story_art::NARRATION) on the map's layer.
 pub const FLOW_PICTURE: u8 = 16;
+
+/// AW2's own prologue (a child proc of its New: the PROLOGUE card over the Black Hole map, its song 425, then an event script, then the fade-out):
+/// its script, and the literal-pool word where its step `0x0808A844` takes the event script from (AW2's own prologue, Sturm and Hawke, `0x084A0D58`).
+/// A custom campaign's New runs this proc with its own script in that word ([`prologue_pool`]).
+const PROLOGUE_PROC: u32 = 0x0861_6FD4;
+const PROLOGUE_SCRIPT_POOL: u32 = 0x0808_A880;
+const AW2_PROLOGUE_SCRIPT: u32 = 0x084A_0D58;
 
 /// AW2's world map entered from the menu (`gUnknown_0861485C`: fade,
 /// music, `SetupWorldMapForResume`, fade in, the cursor's procs, then the
@@ -294,9 +303,10 @@ pub const FLOW_PICTURE: u8 = 16;
 /// the main loop. The words that point at AW2's script point at the copy
 /// during a session ([`crate::ds_worldmap::tick`]).
 const AW2_MAP_SCRIPT: u32 = 0x0861_485C;
-fn map_script(prologue: u32, save: u32) -> Vec<u8> {
-    // The map's music: Dual Strike's, with a pack that has it.
-    let song = crate::ds_music::story_song(crate::ds_music::WORLD_MAP).unwrap_or(0x1A8);
+fn map_script(prologue: u32, save: u32, omega_land: bool) -> Vec<u8> {
+    // The map's music: Dual Strike's on Omega Land (with a pack that has it); AW2's own on AW2's map, which is also what the game plays when a
+    // mission returns to the map (this copy of the script was entered with another song: the first visit and the returns did not match).
+    let song = crate::campaign_music::world_map_song(omega_land);
     [
         proc_cmd(0x1D, 0x1E, 0),
         proc_cmd(0x1B, song as i16, 0),
@@ -316,20 +326,33 @@ const START_BLOCKING_SCRIPT: u32 = 0x0807_8540;
 /// The prologue has been shown (a flag of the record, past Dual Strike's).
 const PROLOGUE_FLAG: u32 = 0x9E;
 
+/// The record's flag of the prologue.
+fn prologue_flag() -> (u32, u8) {
+    ((PROLOGUE_FLAG - 0x20) / 8, 1u8 << ((PROLOGUE_FLAG - 0x20) % 8))
+}
+
+fn prologue_seen(core: &Core) -> bool {
+    let (at, bit) = prologue_flag();
+    core.raw_read_8(P_FLAGS + at, -1) & bit != 0
+}
+
+fn mark_prologue_seen(core: &mut Core) {
+    let (at, bit) = prologue_flag();
+    for base in [P_FLAGS, FLAGS] {
+        let v = core.raw_read_8(base + at, -1);
+        core.raw_write_8(base + at, -1, v | bit);
+    }
+}
+
 /// On the world map from the menu, before the player has a turn: a new
 /// campaign (nothing won) that has not seen it gets Dual Strike's prologue
 /// (tail-calls `StartBlockingEventScript`, which returns to the proc).
 fn prologue(core: &mut Core) {
     let Some(c) = campaign(core) else { return return_to(core, 0) };
-    let (at, bit) = ((PROLOGUE_FLAG - 0x20) / 8, 1u8 << ((PROLOGUE_FLAG - 0x20) % 8));
-    let seen = core.raw_read_8(P_FLAGS + at, -1) & bit != 0;
-    if !active(core) || core.raw_read_32(P_WON, -1) != 0 || seen || c.model.built.story.prologue == 0 {
+    if !active(core) || core.raw_read_32(P_WON, -1) != 0 || prologue_seen(core) || c.model.built.story.prologue == 0 {
         return return_to(core, 0);
     }
-    for base in [P_FLAGS, FLAGS] {
-        let v = core.raw_read_8(base + at, -1);
-        core.raw_write_8(base + at, -1, v | bit);
-    }
+    mark_prologue_seen(core);
     let proc = core.gba().cpu().gpr(0);
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, c.model.built.story.prologue as i32);
@@ -439,11 +462,26 @@ fn start_proc_script(save: u32) -> Vec<u8> {
     [proc_cmd(0x02, 0, save | 1), proc_cmd(0x0D, 0, WORLD_MAP_PROC), proc_cmd(0x00, 0, 0)].concat()
 }
 
+/// The proc that opens a custom campaign that has not shown its prologue: save the progress, AW2's own prologue card and scene (blocking), the
+/// record's flag, then AW2's world map as [`start_proc_script`] does.
+fn start_new_proc_script(save: u32, seen: u32) -> Vec<u8> {
+    [
+        proc_cmd(0x02, 0, save | 1),
+        proc_cmd(0x06, 1, PROLOGUE_PROC),
+        proc_cmd(0x02, 0, seen | 1),
+        proc_cmd(0x0D, 0, WORLD_MAP_PROC),
+        proc_cmd(0x00, 0, 0),
+    ]
+    .concat()
+}
+
 pub struct Campaign {
     /// The campaign ([`crate::campaign_model`]): its missions, order, story,
     /// staff roll, rules.
     pub model: crate::campaign_model::Model,
     pub start_proc: u32,
+    /// [`start_new_proc_script`] (0: the campaign shows its prologue on the map, [`prologue`]).
+    pub start_new_proc: u32,
     /// The DS session's copy of AW2's world map script ([`map_script`]).
     pub map_script: u32,
     pub hide_stub: u32,
@@ -542,13 +580,16 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let _ = clear;
             let prologue = built.add_magic(data::Magic::Flow(FLOW_PROLOGUE));
             let start_proc = built.add(&start_proc_script(save));
-            let map_script = built.add(&map_script(prologue, save));
+            let seen = built.add_magic(data::Magic::Flow(FLOW_PROLOGUE_SEEN));
+            // (AW2's own map only: Omega Land's prologue is the narration pictures on the map)
+            let start_new_proc = if src.art == crate::campaign_model::WorldArt::Aw2 && built.story.prologue != 0 { built.add(&start_new_proc_script(save, seen)) } else { 0 };
+            let map_script = built.add(&map_script(prologue, save, src.art == crate::campaign_model::WorldArt::OmegaLand));
             let credits_start = built.add_magic(data::Magic::Flow(FLOW_CREDITS_START));
             let credits_running = built.add_magic(data::Magic::Flow(FLOW_CREDITS_RUNNING));
             let ending = built.add(&ending_script(credits_start, credits_running));
             let help = DIFFICULTY_HELP.map(|t| built.add(&[t.as_bytes(), &[0]].concat()));
             assert!(built.base + (built.blob.len() as u32) < DATA_END);
-            Some(Campaign { model, start_proc, map_script, hide_stub, co_setup, ending, help })
+            Some(Campaign { model, start_proc, start_new_proc, map_script, hide_stub, co_setup, ending, help })
         })
         .as_ref()
 }
@@ -764,6 +805,19 @@ pub fn tick(core: &mut Core, ds: bool) {
     }
     let map_script = campaign(core).map_or(AW2_MAP_SCRIPT, |c| c.map_script);
     crate::ds_worldmap::tick(core, on && active(core), AW2_MAP_SCRIPT, map_script);
+    prologue_pool(core, on && active(core));
+}
+
+/// Every frame: AW2's prologue step takes the event script from a literal-pool word. In a custom campaign's session (AW2's map) it is the
+/// campaign's prologue; otherwise AW2's own (Sturm and Hawke).
+fn prologue_pool(core: &mut Core, session: bool) {
+    let script = match campaign(core) {
+        Some(c) if session && !is_ds(core) && c.start_new_proc != 0 => c.model.built.story.prologue,
+        _ => AW2_PROLOGUE_SCRIPT,
+    };
+    if core.raw_read_32(PROLOGUE_SCRIPT_POOL, -1) != script {
+        core.raw_write_32(PROLOGUE_SCRIPT_POOL, -1, script);
+    }
 }
 
 /// The hidden bonds' secret quotes: while a bond is earned in a custom
@@ -1190,7 +1244,9 @@ fn start(core: &mut Core, new: bool) {
         return crate::suspend::resume_mid(core, spec(core).mid_slot);
     }
     let Some(c) = campaign(core) else { return };
-    proc_start_instead(core, c.start_proc);
+    // A campaign on AW2's map that has not shown its prologue starts with AW2's own prologue card, song and scene.
+    let first = c.start_new_proc != 0 && core.raw_read_32(P_WON, -1) == 0 && !prologue_seen(core);
+    proc_start_instead(core, if first { c.start_new_proc } else { c.start_proc });
 }
 
 /// The campaign's end of battle, past `EndOfGame_FinishCampaignMap`'s
@@ -1604,6 +1660,10 @@ fn landing(core: &mut Core) {
         Some(data::Magic::Flow(FLOW_HIDE)) => 1,
         Some(data::Magic::Flow(FLOW_CLEAR)) => return clear_bg0(core),
         Some(data::Magic::Flow(FLOW_PROLOGUE)) => return prologue(core),
+        Some(data::Magic::Flow(FLOW_PROLOGUE_SEEN)) => {
+            mark_prologue_seen(core);
+            0
+        }
         Some(data::Magic::Flow(FLOW_CREDITS_START)) => {
             if let Some(script) = campaign(core).and_then(|c| c.model.credits.as_ref()).map(|c| c.staff_roll) {
                 return proc_start_instead(core, script);

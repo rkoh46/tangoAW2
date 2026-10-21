@@ -33,6 +33,7 @@ pub mod bh_campaign;
 pub mod bh_ai;
 pub mod bh_act1;
 pub mod bh_text;
+pub mod campaign_music;
 pub mod bh_act2;
 pub mod bh_act3;
 pub mod bh_act4;

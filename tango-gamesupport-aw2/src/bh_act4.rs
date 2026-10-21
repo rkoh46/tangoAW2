@@ -144,7 +144,7 @@ fn bh17() -> MissionDef {
     m.rank_days = 14;
     m.intro = crate::bh_text::scene("m17_pre");
     m.victory = crate::bh_text::scene("m17_post");
-    m.after = crate::bh_text::scene("m17_map");
+    m.after = crate::bh_text::chain(&["m17_map", "m17_sturm"]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m17_day4"))]),
         on_day(7, None, vec![Action::Scene(crate::bh_text::scene("m17_day7"))]),
@@ -177,7 +177,7 @@ fn bh18() -> MissionDef {
     m.rank_days = 9;
     m.intro = crate::bh_text::scene("m18_pre");
     m.victory = crate::bh_text::scene("m18_post");
-    m.after = crate::bh_text::scene("m18_map");
+    m.after = crate::bh_text::chain(&["m18_map", "m18_sturm"]);
     m.triggers = vec![
         on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m18_day6"))]),
         on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m18_day10"))]),
@@ -223,7 +223,7 @@ fn bh19() -> MissionDef {
     m.factory = F19.to_vec();
     m.intro = crate::bh_text::scene("m19_pre");
     m.victory = crate::bh_text::scene("m19_post");
-    m.after = crate::bh_text::scene("m19_map");
+    m.after = crate::bh_text::chain(&["m19_map", "m19_sturm"]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m19_day4"))]),
         // Sasha's funds: +6000 on days 8 and 16.
@@ -279,7 +279,7 @@ fn bh20() -> MissionDef {
     });
     m.intro = crate::bh_text::scene("m20_pre");
     m.victory = crate::bh_text::scene("m20_post");
-    m.after = crate::bh_text::scene("m20_map");
+    m.after = crate::bh_text::chain(&["m20_map", "m20_sturm"]);
     // The sea front's winner reports to the main front as the tag partner (any CO the player picked).
     m.triggers = vec![
         Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m20_front2_post"))]),
@@ -450,11 +450,7 @@ fn bh22() -> MissionDef {
     m.intro = crate::bh_text::scene("m22_pre");
     m.victory = crate::bh_text::scene("m22_post");
     // The end of Act IV: the camp, then the Allied council Black Hole's relay overhears.
-    m.after = Scene::new({
-        let mut v = crate::bh_text::lines("m22_map");
-        v.extend(crate::bh_text::lines("m22_warroom"));
-        v
-    });
+    m.after = crate::bh_text::chain(&["m22_map", "m22_warroom", "m22_sturm"]);
     m.triggers = vec![
         on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m22_day6"))]),
         on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m22_day12"))]),

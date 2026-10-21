@@ -13,10 +13,11 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Mutex, OnceLock};
 
 use crate::bh_campaign::{BONDS, ROSTER};
+use crate::campaign_music::Track;
 use crate::custom_campaign::{co, colour, Line, Mood, Page, Scene, Speaker};
 
 /// The text files, in the order they are read.
-const FILES: [(&str, &str); 10] = [
+const FILES: [(&str, &str); 11] = [
     ("act1", include_str!("bh_text/act1.txt")),
     ("act2a", include_str!("bh_text/act2a.txt")),
     ("act2b", include_str!("bh_text/act2b.txt")),
@@ -26,6 +27,7 @@ const FILES: [(&str, &str); 10] = [
     ("act5", include_str!("bh_text/act5.txt")),
     ("act5ba", include_str!("bh_text/act5ba.txt")),
     ("act5bb", include_str!("bh_text/act5bb.txt")),
+    ("sturm", include_str!("bh_text/sturm.txt")),
     ("story", include_str!("bh_text/story.txt")),
 ];
 
@@ -34,6 +36,8 @@ const TROOPER: u8 = 23;
 
 struct Book {
     scenes: HashMap<String, Vec<Line>>,
+    /// A scene's song (`@SONG name`, [`crate::campaign_music`]).
+    songs: HashMap<String, Track>,
     /// The page texts of the scenes of narration (the prologue): the rows as written.
     pages: HashMap<String, Vec<Vec<&'static str>>>,
 }
@@ -41,7 +45,7 @@ struct Book {
 fn book() -> &'static Book {
     static BOOK: OnceLock<Book> = OnceLock::new();
     BOOK.get_or_init(|| {
-        let mut b = Book { scenes: HashMap::new(), pages: HashMap::new() };
+        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
         for (name, src) in FILES {
             if let Err(e) = parse_into(&mut b, name, src) {
                 panic!("bh_text/{name}.txt: {e}");
@@ -56,9 +60,32 @@ fn used() -> &'static Mutex<HashSet<String>> {
     USED.get_or_init(|| Mutex::new(HashSet::new()))
 }
 
-/// The scene with this key (panics with the key when there is none: a missing scene is a bug the tests find).
+/// The scene with this key and its song (panics with the key when there is none: a missing scene is a bug the tests find).
 pub fn scene(key: &str) -> Scene {
-    Scene::new(lines(key))
+    Scene::new(lines(key)).with_song(song(key))
+}
+
+/// The song a scene names with `@SONG`.
+pub fn song(key: &str) -> Option<Track> {
+    book().songs.get(key).copied()
+}
+
+/// The scenes one after the other in one script, each with its own song (a scene on the world map: the troops' talk, the Accord's council, Sturm's
+/// briefing).
+pub fn chain(keys: &[&str]) -> Scene {
+    let mut it = keys.iter();
+    let mut s = scene(it.next().expect("bh_text::chain: no scene"));
+    for k in it {
+        s = s.then(scene(k));
+    }
+    s
+}
+
+/// Every scene key that names a song (the tests and `aw2dev campaign scenes` read them).
+pub fn songs() -> Vec<(String, Track)> {
+    let mut v: Vec<(String, Track)> = book().songs.iter().map(|(k, t)| (k.clone(), *t)).collect();
+    v.sort_by(|a, b| a.0.cmp(&b.0));
+    v
 }
 
 /// The lines of the scene with this key.
@@ -317,8 +344,12 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
     let mut key: Option<(String, Vec<u8>, usize)> = None;
     let mut rows: Vec<(Group, Row)> = Vec::new();
     let mut group = Group::Always;
-    let finish = |b: &mut Book, key: &mut Option<(String, Vec<u8>, usize)>, rows: &mut Vec<(Group, Row)>| -> Result<(), String> {
+    let mut song: Option<Track> = None;
+    let finish = |b: &mut Book, key: &mut Option<(String, Vec<u8>, usize)>, rows: &mut Vec<(Group, Row)>, song: &mut Option<Track>| -> Result<(), String> {
         if let Some((k, pool, _)) = key.take() {
+            if let Some(t) = song.take() {
+                b.songs.insert(k.clone(), t);
+            }
             if b.scenes.contains_key(&k) {
                 return Err(format!("scene {k:?} is defined twice"));
             }
@@ -338,7 +369,7 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
             continue;
         }
         if let Some(h) = l.strip_prefix("== ") {
-            finish(b, &mut key, &mut rows).map_err(at)?;
+            finish(b, &mut key, &mut rows, &mut song).map_err(at)?;
             // "== key" or "== key | STURM, VON BOLT" (the COs the player may lead in the scene).
             let (k, pool) = match h.split_once('|') {
                 Some((k, p)) => (k.trim(), parse_cos(p).map_err(at)?),
@@ -353,6 +384,14 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
         }
         if let Some(d) = l.strip_prefix('@') {
             let (word, rest) = d.split_once(' ').unwrap_or((d, ""));
+            if word == "SONG" {
+                // (a scene's song: not a group of rows; at most one a scene)
+                if song.is_some() {
+                    return Err(at("a scene has one @SONG".into()));
+                }
+                song = Some(crate::campaign_music::parse(rest, co_by_name).ok_or_else(|| at(format!("unknown song {:?}", rest.trim())))?);
+                continue;
+            }
             group = match word {
                 "IF" => Group::If(parse_cos(rest).map_err(at)?),
                 "OTHER" => Group::Other,
@@ -375,7 +414,7 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
         // [CO] in a group means the CO of the group; elsewhere it is expanded for the whole pool.
         rows.push((group.clone(), row));
     }
-    finish(b, &mut key, &mut rows).map_err(|e| format!("{file}: {e}"))?;
+    finish(b, &mut key, &mut rows, &mut song).map_err(|e| format!("{file}: {e}"))?;
     let _ = file;
     Ok(())
 }
@@ -392,10 +431,39 @@ mod tests {
         }
     }
 
+    /// The story scenes (a mission's intro, victory, the scenes on the world map after it, the prologue) all name a song: AW2 plays one under every one of
+    /// its own (docs/dev/campaign-scenes.md). The mid-battle day scenes keep the battle's music.
+    #[test]
+    fn every_story_scene_has_a_song() {
+        let b = book();
+        let needs = |k: &str| {
+            k == "prologue"
+                || k.split_once('_').is_some_and(|(m, rest)| {
+                    m.len() == 3
+                        && m.starts_with('m')
+                        && ["pre", "post", "map", "warroom", "sturm", "alarm", "promotion", "defect", "kanbei", "epilogue", "all_home", "two_home"].contains(&rest)
+                })
+        };
+        let missing: Vec<&String> = b.scenes.keys().filter(|k| needs(k) && !b.songs.contains_key(*k)).collect();
+        assert!(missing.is_empty(), "scenes with no @SONG: {missing:?}");
+        assert!(b.songs.keys().all(|k| b.scenes.contains_key(k)));
+    }
+
+    #[test]
+    fn song_directive_parses_and_is_once_a_scene() {
+        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
+        parse_into(&mut b, "t", "== a\n@SONG sturm\nSTURM: x\n== b\n@SONG co:hawke\nSTURM: y\n== c\nSTURM: z\n").unwrap();
+        assert_eq!(b.songs["a"], Track::Aw2(220));
+        assert_eq!(b.songs["b"], Track::Co(co::HAWKE));
+        assert!(!b.songs.contains_key("c"));
+        assert!(parse_into(&mut b, "t", "== d\n@SONG sturm\n@SONG enemy1\nSTURM: x\n").is_err());
+        assert!(parse_into(&mut b, "t", "== e\n@SONG nonsense\nSTURM: x\n").is_err());
+    }
+
     #[test]
     fn groups_expand_to_the_pool() {
         let src = "== t | STURM, HAWKE, KOAL\nHAWKE: a / b\n@IF STURM\n[CO]: x\n@OTHER\n[CO]: y\n@END\nNARRATION: z\n";
-        let mut b = Book { scenes: HashMap::new(), pages: HashMap::new() };
+        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
         parse_into(&mut b, "t", src).unwrap();
         let l = &b.scenes["t"];
         // Hawke's row, Sturm's x, Hawke's y and Koal's y, the narration.
@@ -409,7 +477,7 @@ mod tests {
 
     #[test]
     fn bad_rows_are_errors() {
-        let mut b = Book { scenes: HashMap::new(), pages: HashMap::new() };
+        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
         assert!(parse_into(&mut b, "t", "== t\nNOBODY: hi\n").is_err());
         assert!(parse_into(&mut b, "t", "== u\nSTURM(x): hi\n").is_err());
         assert!(parse_into(&mut b, "t", "STURM: hi\n").is_err());

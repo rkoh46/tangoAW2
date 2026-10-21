@@ -109,6 +109,8 @@ pub struct CampaignDef {
     pub roster: Vec<(u8, bool)>,
     /// Pages shown on the world map before the first mission.
     pub prologue: Vec<Page>,
+    /// The prologue's song (a scene on the map: the map's song takes over after it).
+    pub prologue_song: Option<crate::campaign_music::Track>,
     /// The staff roll after the last mission's scenes.
     pub credits: Vec<CreditSection>,
     pub missions: Vec<MissionDef>,
@@ -254,20 +256,53 @@ impl Line {
     }
 }
 
-/// A scene: lines, optionally with a song (AW2 song id) for its length.
+/// A scene: lines, optionally with a song for its length ([`crate::campaign_music::Track`]: AW2's op 0x41 hands it to the music proc, which fades the
+/// old song out and starts it; op 0x42 fades it out at the end, or, on the world map, the map's song takes over).
 #[derive(Clone, Debug, Default)]
 pub struct Scene {
     pub lines: Vec<Line>,
-    pub song: Option<u16>,
+    pub song: Option<crate::campaign_music::Track>,
+    /// Scenes that follow in the same script, each with a song of its own (the world map's scene after a win: the troops' talk, the Accord's council,
+    /// Sturm's briefing); the song changes between them (op 0x41 crossfades), and the last one's end is the scene's.
+    pub more: Vec<Scene>,
+    /// The dialogue box's place argument (op 0x17's last word): 0 the game's choice (the top on a map with the cursor), 1 as AW2's prologue sets it
+    /// (the bottom, under the card's title).
+    pub place: u32,
 }
 
 impl Scene {
     pub fn new(lines: Vec<Line>) -> Scene {
-        Scene { lines, song: None }
+        Scene { lines, song: None, more: Vec::new(), place: 0 }
+    }
+    pub fn with_song(mut self, song: Option<crate::campaign_music::Track>) -> Scene {
+        self.song = song;
+        self
+    }
+    /// This scene, then `next`.
+    pub fn then(mut self, next: Scene) -> Scene {
+        self.more.push(next);
+        self
     }
     pub fn is_empty(&self) -> bool {
-        self.lines.is_empty()
+        self.lines.is_empty() && self.more.iter().all(|s| s.is_empty())
     }
+    /// Every line of the scene and of the ones after it.
+    pub fn all_lines(&self) -> Vec<Line> {
+        let mut v = self.lines.clone();
+        for s in &self.more {
+            v.extend(s.all_lines());
+        }
+        v
+    }
+}
+
+/// What a scene's music does when the scene ends.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SceneEnd {
+    /// It fades out (op 0x42): on a battle map the CO's theme comes back with the next turn.
+    Fade,
+    /// This song takes over (op 0x41): the world map's, for a scene shown on the map.
+    Song(u16),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -1012,6 +1047,7 @@ static RULES: [OnceLock<Rules>; 4] = [OnceLock::new(), OnceLock::new(), OnceLock
 pub type Error = String;
 
 struct Compiler<'a> {
+    core: &'a Core,
     art: WorldArt,
     built: Built,
     next_text: u16,
@@ -1085,7 +1121,7 @@ pub fn merged(lines: &[Line]) -> Vec<Merged> {
 pub fn text_ids_used(def: &CampaignDef) -> usize {
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut scene = |s: &Scene| {
-        for m in merged(&s.lines) {
+        for m in merged(&s.all_lines()) {
             seen.insert(m.text);
         }
     };
@@ -1152,16 +1188,42 @@ impl<'a> Compiler<'a> {
         a
     }
 
-    /// A scene as AW2 script commands (no end).
-    fn scene_cmds(&mut self, scene: &Scene) -> Result<Vec<[u8; 16]>, Error> {
+    /// A scene (and the ones after it) as AW2 script commands (no end).
+    fn scene_cmds(&mut self, scene: &Scene, end: SceneEnd) -> Result<Vec<[u8; 16]>, Error> {
+        let mut parts: Vec<&Scene> = Vec::new();
+        fn flatten<'s>(s: &'s Scene, parts: &mut Vec<&'s Scene>) {
+            parts.push(s);
+            for m in &s.more {
+                flatten(m, parts);
+            }
+        }
+        flatten(scene, &mut parts);
+        parts.retain(|p| !p.lines.is_empty());
+        let mut out = Vec::new();
+        for i in 0..parts.len() {
+            // A song that ends before another scene's song begins hands over to it (op 0x41); before one with none it fades out.
+            let seg_end = match parts.get(i + 1) {
+                None => end,
+                Some(next) => match next.song {
+                    Some(t) => SceneEnd::Song(t.resolve(self.core)),
+                    None => SceneEnd::Fade,
+                },
+            };
+            out.extend(self.one_scene(parts[i], seg_end)?);
+        }
+        Ok(out)
+    }
+
+    /// One scene as AW2 script commands (no end).
+    fn one_scene(&mut self, scene: &Scene, end: SceneEnd) -> Result<Vec<[u8; 16]>, Error> {
         let mut out = Vec::new();
         if scene.lines.is_empty() {
             return Ok(out);
         }
-        if let Some(s) = scene.song {
-            out.push(cmd(0x41, 0, s, 0, 0));
+        if let Some(t) = scene.song {
+            out.push(cmd(0x41, 0, t.resolve(self.core), 0, 0));
         }
-        out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, 0));
+        out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, scene.place));
         for l in &merged(&scene.lines) {
             if let Some(co) = l.only {
                 // (jumps over the two commands below unless the player's CO is `co`: a relative
@@ -1190,7 +1252,11 @@ impl<'a> Compiler<'a> {
             out.push(cmd(0x19, 0, id, 0, 0));
         }
         if scene.song.is_some() {
-            out.push(cmd(0x42, 0, 0, 0, 0));
+            // (before the box closes, as AW2's own scenes: `41 17 38 19 ... 42 18`: the song fades out, or the map's song takes over)
+            out.push(match end {
+                SceneEnd::Fade => cmd(0x42, 0, 0, 0, 0),
+                SceneEnd::Song(s) => cmd(0x41, 0, s, 0, 0),
+            });
         }
         out.push(cmd(0x18, 0, 0, 0, 0));
         Ok(out)
@@ -1344,6 +1410,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         unhandled: Default::default(),
     };
     let mut cx = Compiler {
+        core,
         art: source.art,
         built,
         next_text: TEXT_FIRST,
@@ -1399,10 +1466,11 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     }
     // Story: prologue pages, scenes after wins, the staff roll.
     let mut story = Story::default();
-    story.prologue = prologue_script(&mut cx, &def.prologue)?;
+    let map_song = crate::campaign_music::world_map_song(source.art == WorldArt::OmegaLand);
+    story.prologue = prologue_script(&mut cx, &def.prologue, def.prologue_song)?;
     for (i, m) in def.missions.iter().enumerate() {
         if !m.after.is_empty() {
-            let cmds = cx.scene_cmds(&m.after)?;
+            let cmds = cx.scene_cmds(&m.after, SceneEnd::Song(map_song))?;
             let s = cx.script(cmds);
             story.after_win.push((i, s));
         }
@@ -1502,7 +1570,7 @@ enum MissionRecord<'a> {
     Second(usize, &'a FrontDef),
 }
 
-fn prologue_script(cx: &mut Compiler, pages: &[Page]) -> Result<u32, Error> {
+fn prologue_script(cx: &mut Compiler, pages: &[Page], song: Option<crate::campaign_music::Track>) -> Result<u32, Error> {
     if pages.is_empty() {
         return Ok(0);
     }
@@ -1510,7 +1578,7 @@ fn prologue_script(cx: &mut Compiler, pages: &[Page]) -> Result<u32, Error> {
         // AW2's own map: the pages are dialogue boxes (a picture is drawn
         // over Omega Land's map layer only: AW2's is not rebuilt after one).
         let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None, without: None }).collect();
-        let cmds = cx.scene_cmds(&Scene { lines, song: None })?;
+        let cmds = cx.scene_cmds(&Scene { lines, song, more: Vec::new(), place: 1 }, SceneEnd::Fade)?;
         return Ok(cx.script(cmds));
     }
     let mut s = Vec::new();
@@ -1590,7 +1658,7 @@ fn compile_mission(
             intro_cmds.push(cmd(0x00, s, 0, 0, 0));
         }
     }
-    let intro_scene = cx.scene_cmds(&m.intro)?;
+    let intro_scene = cx.scene_cmds(&m.intro, SceneEnd::Fade)?;
     intro_cmds.extend(intro_scene);
     if !intro_cmds.is_empty() {
         let s = cx.script(intro_cmds);
@@ -1683,7 +1751,7 @@ fn compile_mission(
                     let s = cx.stub(Magic::Call(CUSTOM_FN | (cx.fns.len() as u32 - 1), 0));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
-                Action::Scene(s) => cmds.extend(cx.scene_cmds(s)?),
+                Action::Scene(s) => cmds.extend(cx.scene_cmds(s, SceneEnd::Fade)?),
                 Action::AddFunds { army, funds } => {
                     let s = cx.stub(Magic::Call(FUNDS_ADD | *army as u32, *funds as u32));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
@@ -1701,7 +1769,7 @@ fn compile_mission(
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
                 Action::Win => {
-                    cmds.extend(cx.scene_cmds(&m.victory)?);
+                    cmds.extend(cx.scene_cmds(&m.victory, SceneEnd::Fade)?);
                     cmds.push(cmd(0x40, 0, 1, 0, 0));
                     ends = true;
                 }
@@ -1745,7 +1813,7 @@ fn compile_mission(
                 _ => return Err(format!("{}: on_win takes EarnBond and Custom actions", m.key)),
             }
         }
-        cmds.extend(cx.scene_cmds(&m.victory)?);
+        cmds.extend(cx.scene_cmds(&m.victory, SceneEnd::Fade)?);
         let script = cx.script(cmds);
         let won = cx.stub(Magic::Predicate(0x020D_5D2C));
         ev(cx, vec![vec![rec8(5, 0, 0, won), rec8(7, 0xFF, 0, script)]])

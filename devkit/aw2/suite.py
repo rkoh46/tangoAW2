@@ -87,7 +87,15 @@ def run(jobs=3, only=None, keep=False):
         r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "maps", "lint", "--no-png"], capture_output=True, text=True)
         return [f"FAIL maps lint\n" + "\n".join(l for l in r.stdout.splitlines() if "error" in l)[:600]] if r.returncode else []
 
-    work = [(maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
+    def campaign_scenes(_):
+        # every BH story scene names a song (docs/dev/campaign-scenes.md); needs the harness examples and the ROMs
+        if not cfg.aw2_rom().exists() or not util.example_bin("aw2_campaign_scenes").exists():
+            return []
+        r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "campaign", "scenes"], capture_output=True, text=True)
+        lint = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "bhtext" / "lint.py")], capture_output=True, text=True)
+        return ([f"FAIL campaign scenes\n{r.stderr[-400:]}"] if r.returncode else []) + ([f"FAIL bhtext lint\n{lint.stdout[-400:]}"] if lint.returncode else [])
+
+    work = [(campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0

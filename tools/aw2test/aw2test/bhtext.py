@@ -13,12 +13,13 @@ import re
 from . import paths
 
 DIR = os.path.join(paths.REPO, "tango-gamesupport-aw2", "src", "bh_text")
-FILES = ["act1", "act2a", "act2b", "act3", "act4a", "act4b", "act5", "act5ba", "act5bb", "story"]
+FILES = ["act1", "act2a", "act2b", "act3", "act4a", "act4b", "act5", "act5ba", "act5bb", "sturm", "story"]
 ROSTER = ["STURM", "VON BOLT", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "CLONE ANDY", "SONJA", "CRUMB CO"]
 BOND_ORDER = ["VON BOLT", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "CLONE ANDY", "CRUMB CO"]
 MERGE_BOXES = 6
 
 _BOOK = None
+SONGS = {}    # {scene key: the `@SONG` name} (filled by book())
 
 
 def _norm(n):
@@ -48,6 +49,9 @@ def book():
                 continue
             if l.startswith("@"):
                 word, _, rest = l[1:].partition(" ")
+                if word == "SONG":
+                    SONGS[key] = rest.strip()
+                    continue
                 group = (None, []) if word == "END" else (word, [_norm(x) for x in rest.split(",") if x.strip()])
                 continue
             head, _, text = l.partition(": ")
@@ -60,6 +64,12 @@ def book():
 
 def keys():
     return list(book())
+
+
+def song(key):
+    """The song name a scene's `@SONG` gives (src/campaign_music.rs), or None."""
+    book()
+    return SONGS.get(key)
 
 
 def rows(key, lead=None, partner=None, bonds=()):

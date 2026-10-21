@@ -18,7 +18,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.normpath(os.path.join(HERE, "..", "..", "tango-gamesupport-aw2", "src"))
 ROM = os.environ.get("AW2TEST_ROM", os.path.expanduser("~/Documents/TangoAW2/roms/Advance_wars_2.gba"))
-FILES = ["act1", "act2a", "act2b", "act3", "act4a", "act4b", "act5", "act5ba", "act5bb", "story"]
+FILES = ["act1", "act2a", "act2b", "act3", "act4a", "act4b", "act5", "act5ba", "act5bb", "sturm", "story"]
 LIMIT = 176
 
 CO_NAMES = {
@@ -30,6 +30,12 @@ OTHER_NAMES = {"NARRATION", "CRUMB", "MORTAR", "WICK", "SOLDIER", "SOLDIER OS", 
 ROSTER = ["STURM", "VON BOLT", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "CLONE ANDY", "SONJA", "CRUMB CO"]
 NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOAL"}
 CONTRACTION = re.compile(r"\b\w+(n't|'ll|'re|'ve|'m|'d)\b|\b(I|it|that|there|what|he|she|let|here|who)'s\b", re.I)
+
+# the songs a scene may name (`@SONG`): the roles of src/campaign_music.rs NAMED, `aw2:<id>`, `co:<name>`
+SONG_NAMES = set(re.findall(r'^\s*\("(\w+)",\s*Track::', open(os.path.join(SRC, "campaign_music.rs")).read(), re.M))
+# scenes that must have one: the story scenes (intro, victory, the world map's), not the mid-battle day triggers
+NEEDS_SONG = re.compile(r"m\d\d_(pre|post|map|warroom|sturm|alarm|promotion|defect|kanbei|epilogue|all_home|two_home)|prologue")
+songs = set()
 
 W = None
 
@@ -86,6 +92,13 @@ def lint_file(name, errors, warns, counts):
                 group = word
             elif word in ("OTHER", "END"):
                 group = None if word == "END" else "OTHER"
+            elif word == "SONG":
+                sname = rest.strip()
+                if not (sname in SONG_NAMES or re.fullmatch(r"aw2:\d+", sname) or (sname.startswith("co:") and sname[3:].upper() in CO_NAMES)):
+                    errors.append(f"{where}: unknown song {sname!r} (src/campaign_music.rs NAMED, aw2:<id> or co:<name>)")
+                if key in songs:
+                    errors.append(f"{where}: scene {key} names two songs")
+                songs.add(key)
             else:
                 errors.append(f"{where}: unknown directive @{word}")
             continue
@@ -136,6 +149,8 @@ def used_keys():
             s = open(os.path.join(SRC, fn)).read()
             keys |= set(re.findall(r'bh_text::(?:scene|lines|pages)\(\s*"(\w+)"', s))
             keys |= set(re.findall(r'\b(?:scene|lines|pages|txt)\(\s*"(\w+)"\s*\)', s))
+            for chain in re.findall(r'chain\(&\[([^\]]*)\]', s):
+                keys |= set(re.findall(r'"(\w+)"', chain))
     return keys
 
 
@@ -150,6 +165,9 @@ def main():
             if k in allscenes:
                 errors.append(f"scene {k} is in two files")
             allscenes[k] = (n, v)
+    for k in sorted(allscenes):
+        if NEEDS_SONG.fullmatch(k) and k not in songs and not args:
+            errors.append(f"scene {k} has no @SONG (every story scene has music: docs/dev/campaign-scenes.md)")
     if "--counts" in sys.argv:
         tot = 0
         for k, (n, v) in allscenes.items():

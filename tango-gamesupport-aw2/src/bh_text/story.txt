@@ -1,6 +1,7 @@
 # BH dialogue: the prologue and other story pages (format: README.txt)
 
 == prologue
+@SONG prologue
 NARRATION: Once, one black banner / covered half the world.
 NARRATION: It was not loved. It was / obeyed. That was enough.
 NARRATION: Then it burned. Its legions / scattered like ash.

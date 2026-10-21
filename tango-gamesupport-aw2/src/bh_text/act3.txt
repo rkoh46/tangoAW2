@@ -8,6 +8,7 @@
 # ---------------------------------------------------------------------------------------------------
 
 == m12_pre | STURM, VON BOLT, HAWKE
+@SONG enemy2
 NARRATION: The Trans-Comet Highway. / Two thousand miles of road.
 KOAL: Stop. Right there. You / stand on my shoulder.
 KOAL: The hard shoulder. Three / metres wide. Move.
@@ -67,6 +68,7 @@ GRIMM: Smoke? Me? Never. ...Got a / light, anybody? Kidding! Kidding.
 KOAL: Grimm. I have a map of / every fire you ever started.
 
 == m12_post | STURM, VON BOLT, HAWKE
+@SONG co:koal
 KOAL(s): My highway... broken at / the junction. Unforgivable.
 GRIMM: Koal! Up, up! You can't sit / on your own shoulder!
 KOAL: I lost, Grimm. That is a / surface condition, not a verdict.
@@ -115,6 +117,7 @@ KOAL: The next road I build will / run past your door, Grimm.
 GRIMM: Then I'll punch it. Har! / ...It'll be a good punch.
 
 == m12_map
+@SONG enemy1
 KOAL: Corporal. You. Come here.
 CRUMB: Sir? I'm a Private, sir.
 KOAL: Not on my road. You are / my road inspector now.
@@ -132,6 +135,7 @@ CRUMB(s): She looked at Gerald's / wrapper a long time, sir.
 # ---------------------------------------------------------------------------------------------------
 
 == m13_pre | STURM, VON BOLT, HAWKE, KOAL
+@SONG enemy2
 NARRATION: Yellow Comet, the east. / The Flame Festival.
 KINDLE: Darlings! You are late / to my festival!
 KINDLE: The Flame Festival! The / greatest night in the east!
@@ -183,6 +187,7 @@ KINDLE: The towers are my / heartbeat. Do not stop it.
 CRUMB: She's counting, sir. Gerald / says so. He counts too.
 
 == m13_post | STURM, VON BOLT, HAWKE, KOAL
+@SONG co:kindle
 KINDLE(s): My plaza! My lovely / plaza! You... brute.
 KINDLE: The stage is yours and the / towers burn for you. Hm.
 KINDLE: Fine. You impress me. / Slightly. Do continue.
@@ -229,6 +234,7 @@ KINDLE: Tell Kanbei his scroll was / lovely. I shall frame it.
 KINDLE: Then I shall burn the / frame. Ahaha!
 
 == m13_map
+@SONG enemy1
 CRUMB(h): Ma'am Kindle gave me a / sash! It says "Audience"!
 MORTAR: Don't clap unless asked.
 CRUMB(s): ...I clapped.
@@ -243,6 +249,7 @@ CRUMB: Gerald says she counted. / Gerald counts, so he'd know.
 # ---------------------------------------------------------------------------------------------------
 
 == m14_pre
+@SONG pinch
 NARRATION: Yellow Comet highlands. / Night. The radio crackles.
 CRUMB(s): Sir? Crumb here. I am / slightly surrounded.
 HAWKE: Where.
@@ -310,6 +317,7 @@ CRUMB(s): Three days, sir? I can / hear the helicopter.
 CRUMB: It is the loudest thing / I ever heard. I love it.
 
 == m14_post
+@SONG sturm
 CRUMB(s): Is it... is it over?
 STURM: You are extracted.
 CRUMB: Sir, you came for me.
@@ -339,6 +347,7 @@ STURM: He is mine. So is his / biscuit. Close the line.
 SONJA: Gladly. Good night, Private.
 
 == m14_map
+@SONG enemy2
 MORTAR: Medic says one HP is / technically alive.
 CRUMB(h): Technically is my best / rank, Sergeant!
 WICK: I... I was worried. Stupidly / worried. I counted the days.
@@ -355,6 +364,7 @@ STURM: Do not thank me. Win.
 # ---------------------------------------------------------------------------------------------------
 
 == m15_pre | STURM, VON BOLT, HAWKE, KINDLE, KOAL
+@SONG enemy1
 NARRATION: The Skybridge. A road of / stone, a mile above the gorge.
 KANBEI: Black Hole! You tread the / Skybridge of Yellow Comet!
 KANBEI: I, Kanbei, will not yield / a step. Honour demands it!
@@ -421,6 +431,7 @@ KANBEI: Grimm, it is invisible. / That is its entire point.
 GRIMM: Then it can't hide from / punching! Nobody ever tried!
 
 == m15_post
+@SONG enemy1
 KANBEI(s): The mountain falls. / Honour... remains.
 GRIMM(s): I punched a cloud and / it punched back.
 KANBEI: Grimm, you flew well. You / lost well. Both are honour.
@@ -439,6 +450,7 @@ SONJA: Yes, Father. That is the / word I would use.
 KANBEI: Yellow Comet will meet / you at Comet Keep!
 
 == m15_map
+@SONG enemy2
 CRUMB(s): Sir, the sky bridge / wobbles. Is that normal?
 MORTAR: It is a sky bridge, Crumb.
 CRUMB: Gerald is gripping my / pocket very hard.
@@ -454,6 +466,7 @@ CRUMB: The Emperor shouted at a / cloud, sir. I liked him.
 # ---------------------------------------------------------------------------------------------------
 
 == m16_pre
+@SONG enemy1
 NARRATION: Comet Keep. Dusk. The last / gate of Yellow Comet.
 KANBEI: This is Comet Keep. Born / of honour and mountain.
 KANBEI: Come, black storm! Let / honour judge us!
@@ -505,6 +518,7 @@ KANBEI: Honour does not wait!
 SONJA: ...I know.
 
 == m16_post
+@SONG enemy2
 KANBEI(s): Kanbei is beaten. The / Keep is yours.
 KINDLE: Ahaha! Lights! Somebody / bring the lights!
 KANBEI: Spare my people, storm. / That is my only request.
@@ -535,6 +549,7 @@ KANBEI: Sonja! We shall rebuild / the Keep together, you and I!
 SONJA(s): ...Of course, Father.
 
 == m16_map
+@SONG enemy1
 SONJA: Blue Moon is rich, and / afraid. Dangerous together.
 VON BOLT: Rich! Tell me more!
 SONJA: That will be extra. And one / more thing, Colonel. A sealed note.
@@ -549,6 +564,7 @@ CRUMB: It's cold, Gerald. Cold / enough to freeze a biscuit.
 CRUMB: Blue Moon folk whisper that / a tin man hates sloppy talk.
 
 == m16_warroom
+@SONG ally1
 NARRATION: The listening post, / midnight. A relay hums.
 CRUMB: Sergeant! The relay's got the / Accord! All of them at once!
 NELL: Friends, please. One at a / time. We are on the same side.

@@ -5,6 +5,7 @@
 # ---------------------------------------------------------------------------------------------
 
 == m29_pre
+@SONG ally1
 NARRATION: The Orange Gate. Two towers, a / canal, and a woman on the wall.
 NELL: This is the Orange Gate. I'd / rather you turned back, dears.
 NELL: You won't. I know. So I'll ask / you to be careful with each other.
@@ -137,6 +138,7 @@ MAX: And for dinner! Everyone eats / tonight!
 SAMI: That too. Roger.
 
 == m29_post
+@SONG sturm
 NELL(s): The Gate holds no longer. Max, / Sami: fall back. Now.
 MAX: Nell! I'm staying with you! I'm / not leaving you on the wall!
 NELL: Max. Look at me. It isn't a / request.
@@ -180,6 +182,7 @@ JUGGER: GATE: CAPTURED. ENEMY: WITHDRAWN / IN ORDER. SUSPICIOUS: AFFIRMATIVE.
 STURM: Then we empty it.
 
 == m29_map
+@SONG enemy2
 NARRATION: The Orange Gate, after dark. / A radio somewhere is still on.
 CRUMB: Sir? Are you scared, sir? / Gerald is. A bit.
 STURM: No. Tell Gerald fear is a / tool. I use it.
@@ -192,6 +195,7 @@ STURM: Turn that off.
 STURM: ...Leave it on.
 
 == m29_warroom
+@SONG ally1
 NARRATION: A relay from the Orange Castle. / Allied channel, badly scrambled.
 JAKE: Bad news, Nell. Blue Moon pulled / its last tanks out of the line.
 NELL: A man who's lost a fleet counts / his iron. Let him count.
@@ -214,6 +218,7 @@ NELL: Especially. A fence you build / alone. A table isn't.
 # ---------------------------------------------------------------------------------------------
 
 == m30_pre
+@SONG ally1
 NARRATION: The Orange Castle. Three walls, / a moat, and the last light on.
 NELL: Black Hole. You took the Gate. I / didn't stop you. Not really.
 NELL: I held it long enough for the / roads to empty. You know that.
@@ -385,6 +390,7 @@ NELL: Andy, dear. Eat something / between orders.
 ANDY: Yes, Nell! ...Later!
 
 == m30_post
+@SONG sturm
 ANDY(s): The whistle. ...The train / is gone. They're safe.
 ANDY: That's enough. That's more than / enough.
 SOLDIER: Sir, the last train cleared / the east signal.
@@ -413,6 +419,7 @@ NELL(h): A window with a flag in it. / Thank you, dear.
 STURM: I said it was no gift.
 
 == m30_map
+@SONG ending1
 NARRATION: The flags came down, one by / one. Not in fire.
 CRUMB: Orange flag. Folded. Three / corners, four. Done!
 NARRATION: The storm settled. It did not / leave.

@@ -52,7 +52,7 @@ fn bh01() -> MissionDef {
     m.rank_days = 10;
     m.intro = crate::bh_text::scene("m01_pre");
     m.victory = crate::bh_text::scene("m01_post");
-    m.after = crate::bh_text::scene("m01_map");
+    m.after = crate::bh_text::chain(&["m01_map", "m01_sturm"]);
     m.recruits = vec![roster::VON_BOLT];
     // The win (Von Bolt routed or his HQ taken): the bond is earned (Sturm is fixed
     // in this mission, so it is automatic), then the victory scene.
@@ -117,7 +117,7 @@ fn bh02() -> MissionDef {
     m.rank_days = 11;
     m.intro = crate::bh_text::scene("m02_pre");
     m.victory = crate::bh_text::scene("m02_post");
-    m.after = crate::bh_text::scene("m02_map");
+    m.after = crate::bh_text::chain(&["m02_map", "m02_sturm"]);
     // The Foundry wakes on day 3 (table F2, docs/BH_CAMPAIGN.md 3.5): the
     // three doors, left to right.
     m.factory = vec![
@@ -229,11 +229,7 @@ fn bh03() -> MissionDef {
     ];
     m.intro = crate::bh_text::scene("m03_pre");
     m.victory = crate::bh_text::scene("m03_post");
-    m.after = Scene::new({
-        let mut v = crate::bh_text::lines("m03_map");
-        v.extend(crate::bh_text::lines("m03_warroom"));
-        v
-    });
+    m.after = crate::bh_text::chain(&["m03_map", "m03_warroom", "m03_sturm"]);
     m.triggers = vec![
         Trigger::new(When::TurnStart, Cond::DayAtLeast(4), vec![Action::Scene(crate::bh_text::scene("m03_day4"))]),
         Trigger::new(

@@ -90,11 +90,7 @@ fn bh31() -> MissionDef {
     m.victory = crate::bh_text::scene("m31_post");
     // The world map: Crumb's apology to Gerald, Sonja's defection, the letter at Comet Keep, then the secret epilogue
     // (the campaign's last scene).
-    let mut after_lines = crate::bh_text::lines("m31_map");
-    after_lines.extend(crate::bh_text::lines("m31_defect"));
-    after_lines.extend(crate::bh_text::lines("m31_kanbei"));
-    after_lines.extend(crate::bh_text::lines("m31_epilogue"));
-    m.after = Scene::new(after_lines);
+    m.after = crate::bh_text::chain(&["m31_map", "m31_defect", "m31_kanbei", "m31_epilogue"]);
     m.triggers = vec![
         on_day(2, vec![Action::Scene(crate::bh_text::scene("m31_day_2"))]),
         // Day 3: the third truck rolls out of the ford woods (it marches from now on).

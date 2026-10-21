@@ -165,7 +165,7 @@ fn bh12() -> MissionDef {
     m.recruits = vec![roster::KOAL];
     m.intro = crate::bh_text::scene("m12_pre");
     m.victory = crate::bh_text::scene("m12_post");
-    m.after = crate::bh_text::scene("m12_map");
+    m.after = crate::bh_text::chain(&["m12_map", "m12_sturm"]);
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m12_day5"))]),
         on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m12_day12"))]),
@@ -216,7 +216,7 @@ fn bh13() -> MissionDef {
     m.recruits = vec![roster::KINDLE];
     m.intro = crate::bh_text::scene("m13_pre");
     m.victory = crate::bh_text::scene("m13_post");
-    m.after = crate::bh_text::scene("m13_map");
+    m.after = crate::bh_text::chain(&["m13_map", "m13_sturm"]);
     let win = || Cond::All(vec![stage_and_towers(), player_is(&[co::VON_BOLT, co::HAWKE])]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m13_day4"))]),
@@ -293,7 +293,7 @@ fn bh14() -> MissionDef {
     m.rank_days = 12;
     m.intro = crate::bh_text::scene("m14_pre");
     m.victory = crate::bh_text::scene("m14_post");
-    m.after = crate::bh_text::scene("m14_map");
+    m.after = crate::bh_text::chain(&["m14_map", "m14_sturm"]);
     m.triggers = vec![
         // Day 2: an open line between father and daughter (Sonja's cameo).
         on_day(2, None, vec![Action::Scene(crate::bh_text::scene("m14_day2"))]),
@@ -345,7 +345,7 @@ fn bh15() -> MissionDef {
     });
     m.intro = crate::bh_text::scene("m15_pre");
     m.victory = crate::bh_text::scene("m15_post");
-    m.after = crate::bh_text::scene("m15_map");
+    m.after = crate::bh_text::chain(&["m15_map", "m15_sturm"]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m15_day4"))]),
         Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m15_sky_won"))]),
@@ -377,11 +377,7 @@ fn bh16() -> MissionDef {
     m.intro = crate::bh_text::scene("m16_pre");
     m.victory = crate::bh_text::scene("m16_post");
     // The Accord's war room closes the act.
-    m.after = Scene::new({
-        let mut v = crate::bh_text::lines("m16_map");
-        v.extend(crate::bh_text::lines("m16_warroom"));
-        v
-    });
+    m.after = crate::bh_text::chain(&["m16_map", "m16_warroom", "m16_sturm"]);
     // Sensei's paratroopers: nine Infantry land behind the player's line.
     let jump = vec![
         UnitDef::new(2, unit::INFANTRY, 10, 19),

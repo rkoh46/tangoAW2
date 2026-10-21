@@ -6,6 +6,7 @@
 # ---------------------------------------------------------------------------------------------
 
 == m17_pre
+@SONG enemy1
 NARRATION: Blue Moon's northern ridge. / A foundry, cold for eleven years.
 NARRATION: Rails, gantries, silent presses. / Fog rolls off the slag pits.
 JUGGER: INTRUDERS DETECTED. COUNT: / FIVE. OR SIX.
@@ -76,6 +77,7 @@ GRIT: Easy now, tin fella. / Breathe. ...Do you breathe?
 JUGGER: NEGATIVE. I PRETEND. / FOR YOUR BENEFIT.
 
 == m17_post
+@SONG co:jugger
 JUGGER(s): ERROR. DEFEAT. THIS IS / UNEXPECTED.
 JUGGER: RECALCULATING. ODDS WERE 61 / PERCENT. VARIABLE MISSING: YOU.
 GRIT: Ayup. Odds always miss one / thing. Usually the fella shootin'.
@@ -141,6 +143,7 @@ JUGGER: SENTIMENT: DETECTED. / SOURCE: PRIVATE.
 JUGGER: PRIVATE CRUMB: BISCUIT- / DEPENDENT. LOGGED.
 
 == m17_map
+@SONG enemy2
 JUGGER: ADDENDUM: GERALD'S BASE / BEARS A SYMBOL. MATCHES: ZERO.
 CRUMB: It's a maker's mark, sir. / Every biscuit has one.
 JUGGER: NEGATIVE. THIS MARK IS NOT / A BISCUIT'S. QUERY: WHOSE?
@@ -159,6 +162,7 @@ JUGGER: PIT: ARENA. SEATS: 4,100. / EXITS I APPROVE OF: ZERO.
 # ---------------------------------------------------------------------------------------------
 
 == m18_pre
+@SONG enemy2
 NARRATION: Blue Moon's Pit. A ring of / seats, a crowd, a roar.
 NARRATION: Blue Moon sells tickets and / calls it a quiet market.
 FLAK: Hey! Little guys! Flak fights / anything! For money!
@@ -210,6 +214,7 @@ CRUMB: Sir, he is yawning in / the middle of a fight.
 JUGGER: TWO ROUNDS REMAIN. HIS ODDS: / 12 PERCENT. HIS CONFIDENCE: 100.
 
 == m18_post
+@SONG co:flak
 FLAK(s): Ow. Ow... Flak is down. / Flak is on the floor.
 SOLDIER BM: The champion fell! Does / anyone know about refunds?!
 FLAK: Why you hit so good? Why / Flak lose? Flak was biggest.
@@ -260,6 +265,7 @@ CRUMB(h): This way, sir! I think / there's soup!
 FLAK: Small man! Small man is / friend!
 
 == m18_map
+@SONG enemy2
 FLAK: What is this? Looks good! / Flak bites it!
 CRUMB: NO! That is Gerald!
 FLAK(s): ...Hard. Flak cries.
@@ -280,6 +286,7 @@ STURM: Its coin pays for gates and / arenas alike. Cut the coin.
 # ---------------------------------------------------------------------------------------------
 
 == m19_pre
+@SONG enemy1
 NARRATION: Blue Moon's industrial plains. / A river, three bridges, one line.
 NARRATION: A factory the size of a town. / Smoke, rail, a dark Obelisk.
 SASHA: Welcome to my assembly line. / Hands off the wiring.
@@ -354,6 +361,7 @@ SASHA: Do not worry. I will bill / you for the repairs.
 SASHA: Itemised. With interest.
 
 == m19_post
+@SONG enemy1
 SASHA(s): My line... my beautiful / line, stopped.
 SASHA: Four hundred nine days to / build it. Eleven to lose it.
 SASHA: I have been outspent. Just / this once.
@@ -392,6 +400,7 @@ SASHA: Colin has a navy. Olaf has / opinions. Together they have a war.
 SASHA: Do mind the harbour. My / brother was never taught proportion.
 
 == m19_map
+@SONG enemy2
 JUGGER: AUDIT NOTICE RECEIVED. / PLEASE SIGN HERE.
 VON BOLT: Burn it.
 JUGGER: AFFIRMATIVE. BURNING. / ...CORRECTION: FILING.

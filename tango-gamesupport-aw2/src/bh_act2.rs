@@ -181,7 +181,7 @@ fn bh04() -> MissionDef {
     m.rank_days = 12;
     m.intro = crate::bh_text::scene("m04_pre");
     m.victory = crate::bh_text::scene("m04_post");
-    m.after = crate::bh_text::scene("m04_map");
+    m.after = crate::bh_text::chain(&["m04_map", "m04_sturm"]);
     m.triggers = vec![
         // Hawke's Md Tank wedge arrives on day 4 if the Marshal's valley was not scouted.
         on_day(
@@ -242,7 +242,7 @@ fn bh05() -> MissionDef {
     m.rank_days = 7;
     m.intro = crate::bh_text::scene("m05_pre");
     m.victory = crate::bh_text::scene("m05_post");
-    m.after = crate::bh_text::scene("m05_map");
+    m.after = crate::bh_text::chain(&["m05_map", "m05_sturm"]);
     m.triggers = vec![
         // The alarm: two Tanks and an Anti-Air arrive by the east road (the design's three and two, trimmed: measured too strong).
         on_day(
@@ -281,7 +281,7 @@ fn bh06() -> MissionDef {
     m.rank_days = 16;
     m.intro = crate::bh_text::scene("m06_pre");
     m.victory = crate::bh_text::scene("m06_post");
-    m.after = crate::bh_text::scene("m06_map");
+    m.after = crate::bh_text::chain(&["m06_map", "m06_sturm"]);
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m06_day5"))]),
         // The Carrier launches Fighters every third day from day 5 (from its isle's air).
@@ -327,7 +327,7 @@ fn bh07() -> MissionDef {
     m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 20 }];
     m.intro = crate::bh_text::scene("m07_pre");
     m.victory = crate::bh_text::scene("m07_post");
-    m.after = crate::bh_text::scene("m07_map");
+    m.after = crate::bh_text::chain(&["m07_map", "m07_sturm"]);
     m.triggers = vec![
         on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m07_day6"))]),
         // Eagle's funds: +5000 on day 10, a second Bomber on day 12.
@@ -402,7 +402,7 @@ fn bh08() -> MissionDef {
     });
     m.intro = crate::bh_text::scene("m08_pre");
     m.victory = crate::bh_text::scene("m08_post");
-    m.after = crate::bh_text::scene("m08_map");
+    m.after = crate::bh_text::chain(&["m08_map", "m08_sturm"]);
     m.triggers = vec![
         Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m08_front2_post"))]),
         Trigger::new(
@@ -471,7 +471,7 @@ fn bh09() -> MissionDef {
     m.day_limit = 16;
     m.rank_days = 12;
     m.intro = crate::bh_text::scene("m09_pre");
-    m.after = crate::bh_text::scene("m09_map");
+    m.after = crate::bh_text::chain(&["m09_map", "m09_sturm"]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m09_day4"))]),
         on_day(9, None, vec![Action::Scene(crate::bh_text::scene("m09_day9"))]),
@@ -526,11 +526,7 @@ fn bh10() -> MissionDef {
     m.intro = crate::bh_text::scene("m10_pre");
     m.victory = crate::bh_text::scene("m10_post");
     // The end of Act II: Crumb's flag, then the Allied council Hawke's listening post intercepts.
-    m.after = Scene::new({
-        let mut v = crate::bh_text::lines("m10_map");
-        v.extend(crate::bh_text::lines("m10_warroom"));
-        v
-    });
+    m.after = crate::bh_text::chain(&["m10_map", "m10_warroom", "m10_sturm"]);
     m.triggers = vec![
         // Eagle and Jess start with their powers 60% charged.
         on_day(1, None, vec![Action::Custom(charge_army2_60)]),
@@ -560,7 +556,7 @@ fn bh11() -> MissionDef {
     m.rank_days = 16;
     m.intro = crate::bh_text::scene("m11_pre");
     m.victory = crate::bh_text::scene("m11_post");
-    m.after = crate::bh_text::scene("m11_map");
+    m.after = crate::bh_text::chain(&["m11_map", "m11_sturm"]);
     let paratroopers = vec![
         UnitDef::new(3, unit::INFANTRY, 1, 6),
         UnitDef::new(3, unit::INFANTRY, 1, 12),

@@ -2,6 +2,7 @@
 # M20 Moonlit Harbours, M21 Running Dry, M22 Whiteout
 
 == m20_pre
+@SONG enemy2
 NARRATION: Snow Harbour, Blue Moon. / Midnight, and the sea has frozen.
 NARRATION: Every ton of Blue Moon iron / leaves the world from this quay.
 CRUMB(s): Sergeant? My toes have / stopped reporting for duty.
@@ -90,6 +91,7 @@ FLAK: Flak sank big boat! Big boat / was loud! Now it is quiet!
 @END
 
 == m20_post
+@SONG enemy1
 OLAF(s): Gnn! The harbour freezes / and a hero thaws...
 OLAF: This is an outrage! A quay / cannot simply be ... taken!
 STURM: It was taken. You are / standing on it.
@@ -133,6 +135,7 @@ MORTAR: Crumb. You get seasick / in the bath.
 CRUMB: Gerald does not mind, / Sergeant. He floats.
 
 == m20_map
+@SONG enemy1
 NARRATION: Snow Harbour, dawn. / The frozen bay turns to rose.
 CRUMB: Sergeant! There's a flag on / the horizon. Orange!
 STURM: Orange Star chairs the / Accord. Nell keeps its promise.
@@ -143,6 +146,7 @@ CRUMB(s): Oh. Gerald says it looks / very orange.
 MORTAR: Gerald has a lot of / opinions today.
 
 == m21_pre
+@SONG pinch
 NARRATION: Blue Moon, the river valley. / Far from supply. Fog on the water.
 CRUMB(s): Sir... my canteen is / empty. So are the Tanks'.
 MORTAR: Everything is empty, / Crumb. The convoy is late.
@@ -236,6 +240,7 @@ GRIT: Rockets on the ridge. Hold / fire until I say.
 MAX: I never hold fire, Grit! / It is the principle!
 
 == m21_post
+@SONG enemy1
 MAX(s): You ran out of ammo and / still beat me?!
 GRIT: They ran dry, and they got / stubborn. That does it.
 MAX: Argh! That's not fair! / We had them at the bridge!
@@ -263,6 +268,7 @@ WICK: Is it all right if I say / we nearly lost the guns?
 MORTAR: It is. Say it again / tomorrow. Quietly.
 
 == m21_map
+@SONG ally1
 NARRATION: A captured radio. Orange / Star's frequency. Open.
 NELL: This is Nell, Orange Star. / To every nation listening: not alone.
 NELL: There is room inside the / Orange Star gate. Bring your children.
@@ -274,6 +280,7 @@ CRUMB: She would if she knew / Nell, Sergeant.
 STURM: Leave it on. I will hear / what I must break.
 
 == m22_pre
+@SONG enemy1
 NARRATION: The Moon Palace. A white / blizzard on a frozen lake.
 CRUMB: Sir! Flak shared his soup. / It was ... mostly snow.
 FLAK: Soup! Hot soup! Flak's / blanket is hot soup!
@@ -320,6 +327,7 @@ FLAK: Triple is three! Three / more to smash!
 OLAF: Sasha! You bought the / enemies a snack!
 
 == m22_post
+@SONG enemy1
 OLAF(s): My palace... my snow... / my poor fish.
 SASHA: Take it. But spare the / children in the lower hall.
 SASHA: And my brother. Colin. Is / he safe?
@@ -351,6 +359,7 @@ MORTAR: Crumb. Wave back.
 CRUMB: I did, Sergeant. Gerald / waved too.
 
 == m22_map
+@SONG enemy2
 CRUMB: Sir, the Blue Moon people / gave us blankets.
 MORTAR: They are prisoners, / Crumb.
 CRUMB(s): Then it's very polite / of them.
@@ -362,6 +371,7 @@ CRUMB(s): Why would iron go to a / line that's not there, Sergeant?
 MORTAR: Crumb. Because someone / wanted it to.
 
 == m22_warroom
+@SONG ally1
 NARRATION: Black Hole's relay tent. Crumb / caught Accord Band Three by accident.
 NELL: Three flags have fallen. We / hold the fourth. Together.
 MAX: I want the storm in a chair / by sundown! I'll make it sit!

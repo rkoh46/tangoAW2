@@ -3,6 +3,7 @@
 # ---------------------------------------------------------------- M1 Storm Landing (Sturm fixed; enemy Von Bolt)
 
 == m01_pre
+@SONG enemy1
 NARRATION: Cinder Coast. Dawn. / The first storm in years.
 NARRATION: Thirty years ago, this / shore was a war's front door.
 CRUMB(h): Landing complete, sir! / Lost two boots. Only two!
@@ -61,6 +62,7 @@ VON BOLT: Every shell is a coin / thrown at the sky. Kehh...
 VON BOLT: Charge! ...And collect / the brass casings after.
 
 == m01_post
+@SONG hagevolt
 VON BOLT(s): My coast... my paint... / my lovely, cheap tanks...
 VON BOLT: Thirty years I kept it. / Thirty years, nobody took it.
 STURM: Nobody wanted it. I do.
@@ -95,6 +97,7 @@ VON BOLT: Hobb... Hobb. That name / is in a ledger. Somewhere.
 VON BOLT: No matter. Old ledgers / are full of names. Kehh.
 
 == m01_map
+@SONG enemy2
 CRUMB(h): Sergeant! The old man / says second pick is a pick!
 MORTAR: Crumb. Second pick of / vaults. Not of boots.
 CRUMB: Gerald says boots count.
@@ -109,6 +112,7 @@ VON BOLT: Paint costs money. Your / tanks stay green. Kehh.
 # ---------------------------------------------------------------- M2 The Sleeping Foundry (FREE, pool Sturm / Von Bolt; enemy Jess)
 
 == m02_pre | STURM, VON BOLT
+@SONG enemy1
 NARRATION: The Sleeping Foundry. / A hill of black iron and dust.
 VON BOLT: Behold! The Foundry. / Asleep since the Accord.
 VON BOLT: Thirty years of dust, and / not one warden dared knock.
@@ -137,6 +141,7 @@ STURM: Enough. Hold the road and / the doors until it wakes.
 STURM: Then let it answer for me.
 
 == m02_pre_sturm | STURM
+@SONG enemy1
 STURM: Hold the Foundry. Three / days. Then it speaks.
 STURM: Whatever she sends, she / sends it into my storm.
 VON BOLT: And what do I do, / little storm?
@@ -144,6 +149,7 @@ STURM: You count. It is what you / are for.
 VON BOLT: Kehh-heh! My favourite / duty!
 
 == m02_pre_other | VON BOLT
+@SONG enemy1
 VON BOLT: Hold the Foundry for / three days. It will answer.
 VON BOLT: Every shell she spends is / a coin I do not have to spend.
 STURM: Do not lose what is mine.
@@ -165,6 +171,7 @@ JESS: Foundry or no Foundry, they / bleed like everyone else.
 VON BOLT: Kehh... she believes / in bleeding. How quaint.
 
 == m02_post
+@SONG enemy2
 JESS(s): Fall back to the coast. / Fall back!
 JESS: Green Earth will hear of / this. We will return.
 STURM: Return with more. The / Foundry is always hungry.
@@ -189,6 +196,7 @@ STURM: Remember who owns / the Foundry.
 VON BOLT: Kehh... a lease. / Only a long lease.
 
 == m02_map
+@SONG enemy2
 CRUMB(h): Dennis has a hat, Sergeant! / It's a bucket!
 MORTAR: Crumb, that bucket is / Colonel Von Bolt's coin pail.
 VON BOLT: My PAIL?! Fifty years / with me! Dust and optimism!
@@ -202,6 +210,7 @@ WICK(h): ...Thank you, Sergeant.
 # ---------------------------------------------------------------- M3 Blockade Runner (Sturm + Von Bolt fixed pair; enemy Drake + Eagle)
 
 == m03_pre
+@SONG enemy2
 NARRATION: Ember Strait. Green / Earth's sea, patrolled and wired.
 DRAKE: Ahoy, strangers! Welcome / to the Ember Strait!
 DRAKE: Population: me, and a few / hundred ships. Great place.
@@ -239,6 +248,7 @@ EAGLE: Don't compliment them! / Sink them, Drake!
 DRAKE: Dude, it's a good sea. Even / enemies deserve nice words.
 
 == m03_post
+@SONG co:hawke
 DRAKE(s): ...I've been sunk more / gently by a bathtub.
 EAGLE: Drake, pull out! Fall back / and regroup!
 EAGLE: This isn't over. The / mainland has real pilots.
@@ -261,6 +271,7 @@ STURM: I will walk it.
 HAWKE: Splendid. Then I shall / see what you are made of.
 
 == m03_map
+@SONG enemy2
 CRUMB(s): I gave Gerald to a / seagull. Then took him back.
 WICK(s): Is it all right if I / admit I was sick twice?
 MORTAR: Wick. Everybody was sick. / The Colonel, in a helmet. Not his.
@@ -276,6 +287,7 @@ VON BOLT: A crate I never could / price. Every time I lift it, it hums. At you.
 STURM: Then I will see it.
 
 == m03_warroom
+@SONG ally1
 CRUMB(s): Sergeant, Wick says it's / the Accord. All of them. Talking.
 NELL: Order, please, everyone. / Thank you. Drake, report.
 DRAKE: Strait's lost, Nell. They / came through like weather.

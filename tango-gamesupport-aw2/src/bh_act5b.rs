@@ -154,7 +154,7 @@ fn bh23() -> MissionDef {
     m.rank_days = 15;
     m.intro = crate::bh_text::scene("m23_pre");
     m.victory = crate::bh_text::scene("m23_post");
-    m.after = crate::bh_text::scene("m23_map");
+    m.after = crate::bh_text::chain(&["m23_map", "m23_sturm"]);
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m23_day5"))]),
         on_day(11, None, vec![Action::Scene(crate::bh_text::scene("m23_day11"))]),
@@ -192,7 +192,7 @@ fn bh24() -> MissionDef {
     m.rank_days = 9;
     m.intro = crate::bh_text::scene("m24_pre");
     m.victory = crate::bh_text::scene("m24_post");
-    m.after = crate::bh_text::scene("m24_map");
+    m.after = crate::bh_text::chain(&["m24_map", "m24_sturm"]);
     let won = || Cond::Any(vec![Cond::Custom(adders_aircraft_gone), Cond::OwnerAt { x: 19, y: 8, army: 1 }]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m24_day4"))]),
@@ -251,7 +251,7 @@ fn bh25() -> MissionDef {
     });
     m.intro = crate::bh_text::scene("m25_pre");
     m.victory = crate::bh_text::scene("m25_post");
-    m.after = crate::bh_text::scene("m25_map");
+    m.after = crate::bh_text::chain(&["m25_map", "m25_sturm"]);
     m.triggers = vec![
         Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m25_front2_won"))]),
         Trigger::new(When::TurnStart, Cond::Custom(second_front_lost), vec![Action::Scene(crate::bh_text::scene("m25_front2_lost"))]),
@@ -284,7 +284,7 @@ fn bh26() -> MissionDef {
     m.rank_days = 20;
     m.intro = crate::bh_text::scene("m26_pre");
     m.victory = crate::bh_text::scene("m26_post");
-    m.after = crate::bh_text::scene("m26_map");
+    m.after = crate::bh_text::chain(&["m26_map", "m26_sturm"]);
     m.triggers = vec![on_day(8, None, vec![Action::Scene(crate::bh_text::scene("m26_day8"))]), after(
         Cond::All(vec![beaten(2, (4, 4), 1), beaten(3, (4, 23), 1), beaten(4, (33, 14), 1)]),
         vec![Action::Win],
@@ -315,9 +315,7 @@ fn bh27() -> MissionDef {
     m.intro = crate::bh_text::scene("m27_pre");
     m.victory = crate::bh_text::scene("m27_post");
     // (the world-map scenes: this mission's, then the alarm from home that opens M28)
-    let mut after_lines = crate::bh_text::lines("m27_map");
-    after_lines.extend(crate::bh_text::lines("m28_alarm"));
-    m.after = scene(after_lines);
+    m.after = crate::bh_text::chain(&["m27_map", "m28_alarm"]);
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m27_day_5"))]),
         on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m27_day_10"))]),
@@ -365,9 +363,7 @@ fn bh28() -> MissionDef {
     m.intro = crate::bh_text::scene("m28_pre");
     m.victory = crate::bh_text::scene("m28_post");
     // The world map: the MAP scene, then Crumb's promotion at dusk (he is a CO from the win: `recruits`).
-    let mut after_lines = crate::bh_text::lines("m28_map");
-    after_lines.extend(crate::bh_text::lines("m28_promotion"));
-    m.after = scene(after_lines);
+    m.after = crate::bh_text::chain(&["m28_map", "m28_promotion"]);
     m.recruits = vec![roster::CRUMB];
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m28_day_5"))]),
