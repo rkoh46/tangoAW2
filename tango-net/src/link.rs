@@ -222,6 +222,16 @@ pub enum LinkHealth {
     Dead,
 }
 
+/// The selected route of a link: `local_candidates`/`remote_candidates` count host/srflx/prflx/relay candidates as `h/s/p/r`.
+#[derive(Clone, Debug)]
+pub struct RouteInfo {
+    pub relayed: bool,
+    pub local_type: String,
+    pub remote_type: String,
+    pub local_candidates: String,
+    pub remote_candidates: String,
+}
+
 /// A logical connection to the peer that outlives physical transports: owns
 /// the peer connection, both channels' halves, and the mid-match reconnect
 /// mechanism. See the module docs for the design.
@@ -366,6 +376,26 @@ impl Link {
     /// the instrument panel retires rather than sticking at its last reading.
     pub fn retire_latency(&self) {
         *self.latency.lock().unwrap() = None;
+    }
+
+    /// How the selected ICE pair flows and what candidates each side offered (types only, never an address), for the AI
+    /// debug channel: `None` while the peer connection is being rebuilt or the pair cannot be read.
+    pub fn route_info(&self) -> Option<RouteInfo> {
+        let guard = self.peer_conn.lock().unwrap();
+        let pc = guard.as_ref()?;
+        let (local, remote) = super::channel::Channels::route_types(pc)?;
+        Some(RouteInfo {
+            relayed: local == "relay" || remote == "relay",
+            local_type: local,
+            remote_type: remote,
+            local_candidates: super::channel::Channels::candidate_counts(pc.local_description()),
+            remote_candidates: super::channel::Channels::candidate_counts(pc.remote_description()),
+        })
+    }
+
+    /// Jitter of the ping samples (see [`LatencyCounter::jitter`](super::LatencyCounter::jitter)).
+    pub fn jitter(&self) -> Option<std::time::Duration> {
+        self.latency.lock().unwrap().as_ref().map(|c| c.jitter())
     }
 
     /// Snapshot of the link's health, for the reconnect overlay.

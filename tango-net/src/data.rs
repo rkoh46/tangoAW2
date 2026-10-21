@@ -198,6 +198,7 @@ impl InMatchTx {
     /// one frame, and ship it. The state lock is dropped before the await.
     async fn send_frame_with(&self, push: impl FnOnce(&mut OutStream)) -> std::io::Result<()> {
         self.data_sends.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        crate::netdbg::FRAMES_SENT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let frame = {
             let mut st = self.state.lock().unwrap();
             push(&mut st.out);
@@ -264,6 +265,7 @@ impl InMatchTx {
     /// peer keeps acking our resent window, and each returning ack dates a
     /// round-trip.)
     async fn resend_window(&self) -> std::io::Result<()> {
+        crate::netdbg::RESENDS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let frame = {
             let st = self.state.lock().unwrap();
             let ack = st.inn.ack();

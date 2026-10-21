@@ -109,7 +109,7 @@ impl Channels {
     }
 
     /// How many candidates of each type (host, srflx, prflx, relay) a description's SDP carries, as `h/s/p/r`.
-    fn candidate_counts(sdp: Option<datachannel_wrapper::SessionDescription>) -> String {
+    pub(crate) fn candidate_counts(sdp: Option<datachannel_wrapper::SessionDescription>) -> String {
         let sdp = sdp.map(|d| d.sdp).unwrap_or_default();
         let mut n = [0usize; 4];
         for line in sdp.lines().filter(|l| l.starts_with("a=candidate")) {

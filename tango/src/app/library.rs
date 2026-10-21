@@ -179,7 +179,11 @@ impl App {
                 // Test aid: `TANGOAW2_AUTOSTART=offline` presses Play
                 // offline as soon as the library is ready; `settings` or
                 // `replays` opens that tab (for screenshots).
-                match std::env::var("TANGOAW2_AUTOSTART").as_deref() {
+                // (`TANGOAW2_BOOT_CHECKPOINT=NAME` boots straight into a checkpoint: an offline session, the state loaded over it)
+                let autostart = std::env::var("TANGOAW2_AUTOSTART")
+                    .ok()
+                    .or_else(|| std::env::var("TANGOAW2_BOOT_CHECKPOINT").ok().filter(|v| !v.is_empty()).map(|_| "offline".to_string()));
+                match autostart.as_deref().map(Ok::<&str, ()>).unwrap_or(Err(())) {
                     _ if resumed_unranked.is_some() && !std::env::var("TANGOAW2_AUTOSTART").is_ok_and(|v| v == "offline") => {
                         return resumed_unranked.expect("checked");
                     }

@@ -33,6 +33,7 @@ pub mod endpoints;
 /// Debug aid: `TANGOAW2_NET_IMPAIR` delays and drops what this side sends (see the module).
 #[cfg(not(target_arch = "wasm32"))]
 pub mod impair;
+pub mod netdbg;
 /// Signaling-free direct play, over a UDP socket this side owns. Native
 /// by nature: a browser has no UDP, and its peer connections come from
 /// the page's own signaling.
@@ -123,6 +124,15 @@ impl LatencyCounter {
     /// stays the source for the frame-delay suggestion, which wants it smoothed.
     pub fn latest(&self) -> Option<std::time::Duration> {
         self.marks.back().copied()
+    }
+
+    /// Jitter: the mean change between successive ping samples in the window.
+    pub fn jitter(&self) -> std::time::Duration {
+        if self.marks.len() < 2 {
+            return std::time::Duration::ZERO;
+        }
+        let total: f64 = self.marks.iter().zip(self.marks.iter().skip(1)).map(|(a, b)| (b.as_secs_f64() - a.as_secs_f64()).abs()).sum();
+        std::time::Duration::from_secs_f64(total / (self.marks.len() - 1) as f64)
     }
 }
 

@@ -832,6 +832,14 @@ impl PvpDriver {
             .metrics
             .depth
             .store(self.match_.last_rollback_depth(), Ordering::Relaxed);
+        {
+            let d = self.match_.last_rollback_depth();
+            if d > 0 {
+                self.ctx.metrics.rollbacks.fetch_add(1, Ordering::Relaxed);
+                self.ctx.metrics.rolled_ticks.fetch_add(d as u64, Ordering::Relaxed);
+                self.ctx.metrics.depth_max.fetch_max(d, Ordering::Relaxed);
+            }
+        }
 
         // Test aid (`TANGOAW2_STATE_LOG=1`): a checksum of the console's memory every 120 ticks, to compare peers.
         if std::env::var("TANGOAW2_STATE_LOG").is_ok_and(|v| v == "1") && self.confirmed_through % 120 == 0 {

@@ -68,6 +68,8 @@ pub enum Message {
     ReportMark,
     /// Test aids: the scripted pad's next frame.
     PadScriptTick,
+    /// The AI debug channel's tick (only while it is on).
+    AiDebugTick,
     /// Raw window event (open, resize, move, etc.). Filtered in the
     /// handler — only Opened / Resized / Moved trigger anything.
     Window(iced::window::Id, iced::window::Event),

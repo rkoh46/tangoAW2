@@ -295,6 +295,7 @@ fn fail(inner: &Arc<Mutex<Inner>>, message: impl Into<String>) {
     if !matches!(g.phase, RoomPhase::Ready | RoomPhase::Closed) {
         g.phase = RoomPhase::Failed;
         g.message = message.into();
+        log::warn!("room: failed: {}", g.message);
     }
 }
 
@@ -850,6 +851,7 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
                         broadcast_roster(&inner);
                     }
                     Ok(Packet::Room(RoomMsg::Loaded)) => {
+                        log::info!("room: a guest has the start");
                         last_heard = web_time::Instant::now();
                         let mut g = inner.lock().unwrap();
                         if let Some(p) = g.peers.iter_mut().find(|p| p.id == id) {
@@ -973,14 +975,18 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             digest: r.digest,
         }),
     }));
+    log::info!("room: starting for {} guest(s)", senders.len());
     for sender in &senders {
         let mut s = sender.lock().await;
         let sent = async {
             s.send_packet(&start).await?;
+            log::info!("room: start sent");
             s.send_chunk_start(compressed.len() as u64).await?;
+            log::info!("room: save start sent");
             for chunk in compressed.chunks(tango_net_protocol::control::REVEAL_CHUNK_SIZE) {
                 s.send_chunk(chunk.to_vec()).await?;
             }
+            log::info!("room: save sent");
             std::io::Result::Ok(())
         };
         if let Err(e) = sent.await {
@@ -1262,6 +1268,7 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                         g.roster = r.players;
                     }
                     Ok(Packet::Room(RoomMsg::Start(s))) => {
+                        log::info!("room: the host's start came ({} players, {} bytes of save)", s.players.len(), s.save_len);
                         {
                             let mut g = inner.lock().unwrap();
                             g.started = true;
@@ -1269,7 +1276,10 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                         }
                         start = Some(s);
                     }
-                    Ok(Packet::ChunkStart(c)) if start.is_some() => chunks = Some((c.len, Vec::new())),
+                    Ok(Packet::ChunkStart(c)) if start.is_some() => {
+                        log::info!("room: the save starts ({} bytes)", c.len);
+                        chunks = Some((c.len, Vec::new()))
+                    }
                     Ok(Packet::Chunk(c)) if start.is_some() => {
                         if let Some((want, got)) = chunks.as_mut() {
                             got.extend_from_slice(&c.chunk);
@@ -1296,6 +1306,7 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                                 } else {
                                     (payload, None)
                                 };
+                                log::info!("room: the host's save is here; telling the host");
                                 let _ = sender.lock().await.send_packet(&Packet::Room(RoomMsg::Loaded)).await;
                                 // Hand over: the control receiver is ours to give straight away.
                                 let (tx, rx) = tokio::sync::oneshot::channel();
@@ -1343,7 +1354,11 @@ async fn guest_session(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, chan
                         fail(&inner, "The host closed the room.");
                         return;
                     }
-                    Ok(_) => {}
+                    Ok(other) => {
+                        // (a packet nothing here handles: told, so a start that never completes has its trail)
+                        let text = format!("{other:?}");
+                        log::info!("room: the guest ignored {}", text.chars().take(60).collect::<String>());
+                    }
                 }
             }
         }

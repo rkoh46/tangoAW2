@@ -85,6 +85,13 @@ pub fn on_select_mode(core: &Core) -> bool {
     proc_with(core, MAIN_MENU).is_some() || wheel(core).is_some()
 }
 
+/// The carousel wheel for tools: (position, item id at that position, an item box is open).
+pub fn wheel_info(core: &Core) -> Option<(u16, u8, bool)> {
+    let p = wheel(core)?;
+    let index = core.raw_read_16(p + W_INDEX, -1);
+    Some((index, crate::mode_menu::item(core, index as u32), (core.raw_read_16(p + W_BOX, -1) as i16) > 0))
+}
+
 /// The carousel wheel proc, with Campaign's box open.
 fn campaign_box(core: &Core) -> Option<u32> {
     let p = wheel(core)?;

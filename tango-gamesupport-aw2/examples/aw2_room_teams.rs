@@ -20,6 +20,10 @@
 //!   poke ADDR HEX     write bytes (hex string) after a few idle frames
 //!   goto SEAT X Y     walk SEAT's cursor to the cell
 //!   hash              print a hash of the console's work RAM (compare two runs)
+//!   checkpoint save NAME | load NAME   the console's state saved to / loaded from AW2_CKPT_DIR (default <out-dir>/checkpoints), in
+//!                     the AI debug channel's file format (tango-gamesupport-aw2 `ai_debug::checkpoint_save`): a script can
+//!                     resume from a state instead of replaying to it, and every peer of a room that loads the same file at
+//!                     the same tick is the same match; `load` fails the run when the RAM hash is not the saved one
 //!   phase NAME        label the following samples (printed in the black-run report)
 //!   AW2_SAMPLE=N      every N ticks (default off) every seat's window is sampled for blackness; at the end the longest
 //!                     run of black samples (>99% of the picture above the status bar under luma 8) of each seat is
@@ -940,6 +944,23 @@ fn main() {
                 link.peek(0x0700_0000, &mut v[0x18400..0x18800]);
                 link.core().raw_read_range(0x0400_0000, -1, &mut v[0x18800..]);   // (the I/O registers: DISPCNT, BGxCNT, scroll; `aw2dev gfx explain` decodes the file)
                 std::fs::write(out.join(format!("{}.vram", p[1])), v).unwrap();
+            }
+            "checkpoint" => {
+                let dir = std::env::var_os("AW2_CKPT_DIR").map(std::path::PathBuf::from).unwrap_or_else(|| out.join("checkpoints"));
+                match (p.get(1).copied(), p.get(2).copied()) {
+                    (Some("save"), Some(name)) => {
+                        let r = tango_gamesupport_aw2::ai_debug::checkpoint_save(link.core(), &dir, name, true).expect("checkpoint save");
+                        println!("checkpoint {name} saved @{t}: ram hash {}", r["ram_hash"]);
+                    }
+                    (Some("load"), Some(name)) => {
+                        let r = tango_gamesupport_aw2::ai_debug::checkpoint_load(link.core_mut(), &dir, name).expect("checkpoint load");
+                        println!("checkpoint {name} loaded @{t}: ram hash {} (saved {}) match {}", r["ram_hash"], r["expected_hash"], r["match"]);
+                        if r["match"] != true {
+                            std::process::exit(1);
+                        }
+                    }
+                    _ => panic!("checkpoint save NAME | load NAME"),
+                }
             }
             "hash" => {
                 let w = rd(&mut link, 0x0200_0000, 0x40000);

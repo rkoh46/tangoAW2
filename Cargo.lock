@@ -6173,6 +6173,7 @@ dependencies = [
  "mgba",
  "png",
  "rayon",
+ "serde_json",
  "tango-backend-mgba",
  "tango-gamesupport",
  "tango-gamesupport-common-dataview",

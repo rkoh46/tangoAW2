@@ -71,14 +71,20 @@ struct Impaired {
     rng: Mutex<Rng>,
     /// Reliable: the latest release time handed out, so packets leave in order.
     last_due: Mutex<Instant>,
+    /// Reliable: one worker sends in order what is handed to it (a task a packet would let two packets due in the same
+    /// millisecond overtake each other: the control channel's Start, save-start and save chunk arrived out of order).
+    queue: Mutex<Option<tokio::sync::mpsc::UnboundedSender<(Instant, Vec<u8>)>>>,
 }
 
 /// Wrap `sink` in the impairment, if the environment asks for one.
 pub fn wrap(sink: Box<dyn PacketSink>, reliable: bool) -> Box<dyn PacketSink> {
-    let Some(cfg) = Impairment::from_env() else {
-        return sink;
+    let test = super::netdbg::test_mode();
+    let cfg = match Impairment::from_env() {
+        Some(c) => c,
+        None if test => Impairment { latency_ms: 0, jitter_ms: 0, loss_pct: 0.0 },
+        None => return sink,
     };
-    if cfg.latency_ms == 0 && cfg.jitter_ms == 0 && cfg.loss_pct == 0.0 {
+    if !test && cfg.latency_ms == 0 && cfg.jitter_ms == 0 && cfg.loss_pct == 0.0 {
         return sink;
     }
     let seed = std::time::SystemTime::now()
@@ -91,31 +97,75 @@ pub fn wrap(sink: Box<dyn PacketSink>, reliable: bool) -> Box<dyn PacketSink> {
         reliable,
         rng: Mutex::new(Rng(seed)),
         last_due: Mutex::new(Instant::now()),
+        queue: Mutex::new(None),
     })
 }
 
 #[async_trait::async_trait]
 impl PacketSink for Impaired {
     async fn send(&mut self, bytes: &[u8]) -> std::io::Result<()> {
+        // (the AI debug channel's runtime faults, in test mode only: a runtime setting outranks the environment's)
+        let test = super::netdbg::test_mode();
+        if test && super::netdbg::dropping() {
+            super::netdbg::INJECTED_DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            return Ok(());
+        }
+        let cfg = if test {
+            super::netdbg::current().map_or(self.cfg, |(latency_ms, jitter_ms, loss_pct)| Impairment { latency_ms, jitter_ms, loss_pct })
+        } else {
+            self.cfg
+        };
         let (lost, delay) = {
             let mut rng = self.rng.lock().unwrap();
-            let lost = !self.reliable && (rng.below(10_000) as f32) < self.cfg.loss_pct * 100.0;
-            let jitter = rng.below(self.cfg.jitter_ms as u64 + 1);
-            (lost, Duration::from_millis(self.cfg.latency_ms as u64 + jitter))
+            let lost = !self.reliable && (rng.below(10_000) as f32) < cfg.loss_pct * 100.0;
+            let jitter = rng.below(cfg.jitter_ms as u64 + 1);
+            (lost, Duration::from_millis(cfg.latency_ms as u64 + jitter))
         };
         if lost {
+            super::netdbg::INJECTED_DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             return Ok(());
         }
         let mut due = Instant::now() + delay;
+        if test {
+            let held = super::netdbg::frozen_for();
+            if !held.is_zero() {
+                super::netdbg::INJECTED_DELAYED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                due = due.max(Instant::now() + held);
+            }
+        }
         if self.reliable {
             let mut last = self.last_due.lock().unwrap();
             due = due.max(*last + Duration::from_millis(1));
             *last = due;
         }
-        let inner = self.inner.clone();
         let bytes = bytes.to_vec();
-        // (a task a packet; the reliable channel's release times are a millisecond apart at least, so they keep
-        // their order)
+        if self.reliable {
+            let tx = self
+                .queue
+                .lock()
+                .unwrap()
+                .get_or_insert_with(|| {
+                    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<(Instant, Vec<u8>)>();
+                    let inner = self.inner.clone();
+                    tokio::spawn(async move {
+                        while let Some((due, bytes)) = rx.recv().await {
+                            let wait = due.saturating_duration_since(Instant::now());
+                            if !wait.is_zero() {
+                                tokio::time::sleep(wait).await;
+                            }
+                            if let Err(e) = inner.lock().await.send(&bytes).await {
+                                log::debug!("net impair: send failed: {e}");
+                            }
+                        }
+                    });
+                    tx
+                })
+                .clone();
+            let _ = tx.send((due, bytes));
+            return Ok(());
+        }
+        let inner = self.inner.clone();
+        // (the unreliable channel: a task a packet, which reorders freely with the jitter, as UDP does)
         tokio::spawn(async move {
             let wait = due.saturating_duration_since(Instant::now());
             if !wait.is_zero() {
@@ -132,6 +182,38 @@ impl PacketSink for Impaired {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct Recorder(Arc<Mutex<Vec<u8>>>);
+
+    #[async_trait::async_trait]
+    impl PacketSink for Recorder {
+        async fn send(&mut self, bytes: &[u8]) -> std::io::Result<()> {
+            self.0.lock().unwrap().push(bytes[0]);
+            Ok(())
+        }
+    }
+
+    /// Regression: with the AI debug channel's test mode on, the control channel's packets are wrapped even with no fault set;
+    /// they must leave in the order they were sent (a room's Start, the save's start and the save came out of order and the
+    /// guest never got the save).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn the_reliable_channel_keeps_its_order_with_no_delay() {
+        let got = Arc::new(Mutex::new(Vec::new()));
+        let mut sink = Impaired {
+            inner: Arc::new(tokio::sync::Mutex::new(Box::new(Recorder(got.clone())))),
+            cfg: Impairment { latency_ms: 0, jitter_ms: 0, loss_pct: 0.0 },
+            reliable: true,
+            rng: Mutex::new(Rng(7)),
+            last_due: Mutex::new(Instant::now()),
+            queue: Mutex::new(None),
+        };
+        for k in 0..250u8 {
+            sink.send(&[k]).await.unwrap();
+        }
+        tokio::time::sleep(Duration::from_millis(600)).await;
+        let got = got.lock().unwrap().clone();
+        assert_eq!(got, (0..250u8).collect::<Vec<_>>());
+    }
 
     #[test]
     fn parses() {

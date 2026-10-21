@@ -592,7 +592,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 25: the maps are picked at the same time and in private (two pad words a seat, crate::unranked::pick_word), and a seat under the yield
         // command is yielded at once, out of turn, with the last army left ending its own turn (crate::proxy_seat::force_yield).
         // 26: tangoAW2's maps' data moved to one run at 0x09D00000, their text slots to a table of 73 (crate::five_map), and the Versus map table grew to 0x100 ids.
-        26
+        crate::inspect::SIM_VERSION
     }
 
     fn describe(&self, core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<tango_match::StateInfo> {
@@ -690,7 +690,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
     /// else (title, map and CO select, results, the hand-off between
     /// turns) both seats share the pad.
     fn merge(&self, core: &Core, inputs: &[u32]) -> u32 {
-        strip_reset_chord(merge_keys(core, inputs))
+        let merged = strip_reset_chord(merge_keys(core, inputs));
+        crate::ai_debug::note_merge(inputs, merged);
+        merged
     }
 
     fn seat_keys(&self, core: &mut Core, mode: Option<(u8, u8)>, inputs: &[u32]) {
@@ -810,6 +812,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         if !tango_backend_mgba::shared::in_scratch() {
             crate::online::probe::store(core);
             crate::run_dump::tick(core, keys);
+            crate::ai_debug::tick(core, mode, keys);
         }
         if tango_backend_mgba::shared::in_scratch() {
             crate::fog_view::pin_camera(core);

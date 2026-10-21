@@ -228,6 +228,9 @@ pub struct Config {
     /// the drawn backdrop. Read from disk, never copied or shared.
     #[serde(default)]
     pub background_image: Option<std::path::PathBuf>,
+    /// Hidden: turns the AI debug channel on like `TANGOAW2_AI_DEBUG` (a port or a socket path). Not in any UI.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ai_debug: Option<String>,
     pub accent: AccentColor,
     /// GPU upscale effect applied to the emulator frame while it's
     /// drawn (the native frame is uploaded once and magnified in the
@@ -400,6 +403,7 @@ impl Default for Config {
             theme: ThemeMode::default(),
             advance_wars_skin: true,
             background_image: None,
+            ai_debug: None,
             accent: AccentColor::default(),
             video_filter: String::new(),
             pixel_scaling: String::new(),
