@@ -223,6 +223,10 @@ struct Metrics {
     queue_len: AtomicU32,
     /// Speculative ticks the last advance rolled back.
     depth: AtomicU32,
+    /// Advances that rolled back, the ticks they re-simulated, the deepest since the last [`PvpSession::take_depth_max`].
+    rollbacks: std::sync::atomic::AtomicU64,
+    rolled_ticks: std::sync::atomic::AtomicU64,
+    depth_max: AtomicU32,
     /// What the pacing loop currently targets, f32 bits (base rate minus
     /// the throttler's shave).
     fps_target: AtomicU32,
@@ -672,6 +676,111 @@ impl PvpSession {
             lead: self.metrics.queue_len.load(Ordering::Relaxed) as i32,
             depth: self.metrics.depth.load(Ordering::Relaxed),
         })
+    }
+}
+
+/// One link of the match (a guest has one, to the host; a host one per guest) as the AI debug channel reports it.
+#[derive(Clone, Debug)]
+pub struct LinkReport {
+    pub index: usize,
+    pub rtt_ms: Option<f32>,
+    pub rtt_median_ms: Option<f32>,
+    pub jitter_ms: Option<f32>,
+    /// `connected`, `reconnecting` or `dead`, with the seconds until the reconnect gives up.
+    pub health: &'static str,
+    pub give_up_in_s: Option<f32>,
+    pub route: Option<tango_net::link::RouteInfo>,
+    pub given_up: bool,
+}
+
+/// Everything about the netplay session worth a look from a tool: see tools/aidebug/README.md `state.link`.
+#[derive(Clone, Debug)]
+pub struct NetReport {
+    pub links: Vec<LinkReport>,
+    pub skew: i32,
+    pub lead: i32,
+    pub depth: u32,
+    pub rollbacks: u64,
+    pub rolled_ticks: u64,
+    pub frame_delay: u32,
+    pub fps_target: f32,
+    pub tps: f32,
+    pub players: usize,
+    pub local_player: u8,
+    pub host_seat: usize,
+    pub migrations: u32,
+    pub migrating: Option<(String, bool)>,
+    pub waiting_for: Option<(String, u32)>,
+    pub rejoin_holds: Vec<(u8, String, u32)>,
+    pub reconnecting: bool,
+    pub remote_disconnected: bool,
+    pub booting: bool,
+    pub waiting_for_peer: bool,
+    pub gone_mask: u8,
+    pub frames_sent: u64,
+    pub resends: u64,
+}
+
+impl PvpSession {
+    /// Reads and clears the deepest rollback since the last call (for the debug channel's rollback events).
+    pub fn take_depth_max(&self) -> u32 {
+        self.metrics.depth_max.swap(0, Ordering::Relaxed)
+    }
+
+    pub fn net_report(&self) -> NetReport {
+        let given_up = self.end.given_up.lock().unwrap().clone();
+        let links: Vec<LinkReport> = self
+            .links
+            .lock()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(index, l)| {
+                let ms = |d: std::time::Duration| d.as_secs_f32() * 1000.0;
+                let (health, give_up_in_s) = match l.health() {
+                    tango_net::link::LinkHealth::Connected => ("connected", None),
+                    tango_net::link::LinkHealth::Reconnecting { give_up_at, .. } => {
+                        ("reconnecting", Some(give_up_at.saturating_duration_since(web_time::Instant::now()).as_secs_f32()))
+                    }
+                    tango_net::link::LinkHealth::Dead => ("dead", None),
+                };
+                LinkReport {
+                    index,
+                    rtt_ms: l.latency_raw().map(ms),
+                    rtt_median_ms: l.latency().map(ms),
+                    jitter_ms: l.jitter().map(ms),
+                    health,
+                    give_up_in_s,
+                    route: l.route_info(),
+                    given_up: given_up.iter().any(|g| Arc::ptr_eq(g, l)),
+                }
+            })
+            .collect();
+        NetReport {
+            links,
+            skew: self.metrics.skew.load(Ordering::Relaxed),
+            lead: self.metrics.queue_len.load(Ordering::Relaxed) as i32,
+            depth: self.metrics.depth.load(Ordering::Relaxed),
+            rollbacks: self.metrics.rollbacks.load(Ordering::Relaxed),
+            rolled_ticks: self.metrics.rolled_ticks.load(Ordering::Relaxed),
+            frame_delay: self.frame_delay(),
+            fps_target: self.fps_target(),
+            tps: self.tps(),
+            players: self.players,
+            local_player: self.local_player_index,
+            host_seat: self.host_seat(),
+            migrations: self.migrations(),
+            migrating: self.migrating(),
+            waiting_for: self.waiting_for(),
+            rejoin_holds: self.rejoin_holds(),
+            reconnecting: self.is_reconnecting(),
+            remote_disconnected: self.remote_disconnected(),
+            booting: self.is_booting(),
+            waiting_for_peer: self.waiting_for_peer(),
+            gone_mask: self.end.gone.load(Ordering::Acquire),
+            frames_sent: tango_net::netdbg::FRAMES_SENT.load(Ordering::Relaxed),
+            resends: tango_net::netdbg::RESENDS.load(Ordering::Relaxed),
+        }
     }
 }
 

@@ -34,6 +34,11 @@ const OBJ_VRAM: u32 = 0x0601_0000;
 const PAL_BUFFER: u32 = 0x0300_20C0;
 const PAL_RAM: u32 = 0x0500_0000;
 
+/// The title screen (PRESS START) is up.
+pub fn title_up(core: &Core) -> bool {
+    running(core, TITLE_SCREEN)
+}
+
 fn running(core: &Core, script: u32) -> bool {
     (PROCS..PROCS_END)
         .step_by(PROC_SIZE as usize)

@@ -75,10 +75,13 @@ struct Impaired {
 
 /// Wrap `sink` in the impairment, if the environment asks for one.
 pub fn wrap(sink: Box<dyn PacketSink>, reliable: bool) -> Box<dyn PacketSink> {
-    let Some(cfg) = Impairment::from_env() else {
-        return sink;
+    let test = super::netdbg::test_mode();
+    let cfg = match Impairment::from_env() {
+        Some(c) => c,
+        None if test => Impairment { latency_ms: 0, jitter_ms: 0, loss_pct: 0.0 },
+        None => return sink,
     };
-    if cfg.latency_ms == 0 && cfg.jitter_ms == 0 && cfg.loss_pct == 0.0 {
+    if !test && cfg.latency_ms == 0 && cfg.jitter_ms == 0 && cfg.loss_pct == 0.0 {
         return sink;
     }
     let seed = std::time::SystemTime::now()
@@ -97,16 +100,35 @@ pub fn wrap(sink: Box<dyn PacketSink>, reliable: bool) -> Box<dyn PacketSink> {
 #[async_trait::async_trait]
 impl PacketSink for Impaired {
     async fn send(&mut self, bytes: &[u8]) -> std::io::Result<()> {
+        // (the AI debug channel's runtime faults, in test mode only: a runtime setting outranks the environment's)
+        let test = super::netdbg::test_mode();
+        if test && super::netdbg::dropping() {
+            super::netdbg::INJECTED_DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            return Ok(());
+        }
+        let cfg = if test {
+            super::netdbg::current().map_or(self.cfg, |(latency_ms, jitter_ms, loss_pct)| Impairment { latency_ms, jitter_ms, loss_pct })
+        } else {
+            self.cfg
+        };
         let (lost, delay) = {
             let mut rng = self.rng.lock().unwrap();
-            let lost = !self.reliable && (rng.below(10_000) as f32) < self.cfg.loss_pct * 100.0;
-            let jitter = rng.below(self.cfg.jitter_ms as u64 + 1);
-            (lost, Duration::from_millis(self.cfg.latency_ms as u64 + jitter))
+            let lost = !self.reliable && (rng.below(10_000) as f32) < cfg.loss_pct * 100.0;
+            let jitter = rng.below(cfg.jitter_ms as u64 + 1);
+            (lost, Duration::from_millis(cfg.latency_ms as u64 + jitter))
         };
         if lost {
+            super::netdbg::INJECTED_DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             return Ok(());
         }
         let mut due = Instant::now() + delay;
+        if test {
+            let held = super::netdbg::frozen_for();
+            if !held.is_zero() {
+                super::netdbg::INJECTED_DELAYED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                due = due.max(Instant::now() + held);
+            }
+        }
         if self.reliable {
             let mut last = self.last_due.lock().unwrap();
             due = due.max(*last + Duration::from_millis(1));

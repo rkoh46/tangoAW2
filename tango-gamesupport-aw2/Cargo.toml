@@ -17,6 +17,7 @@ mgba.workspace = true
 log.workspace = true
 png = { version = "0.18", default-features = false }
 rayon = "1.11"
+serde_json.workspace = true
 
 tango-gamesupport-common-ui = { path = "../tango-gamesupport-common-ui", optional = true }
 

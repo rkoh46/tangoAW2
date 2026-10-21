@@ -24,6 +24,8 @@ pub mod ds_backdrop;
 pub mod ds_battle;
 pub mod ram_map;
 pub mod fog_view;
+pub mod inspect;
+pub mod ai_debug;
 pub mod test_aid;
 pub mod result_view;
 pub mod ds_campaign;

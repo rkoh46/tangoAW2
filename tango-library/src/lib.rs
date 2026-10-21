@@ -26,6 +26,8 @@ pub mod lang;
 pub mod loadout;
 pub mod marker;
 pub mod online;
+#[cfg(feature = "gamesupport-aw2")]
+pub use tango_gamesupport_aw2::ai_debug;
 pub mod patch;
 pub mod replays;
 pub mod rom;

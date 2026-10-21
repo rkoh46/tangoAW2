@@ -123,6 +123,7 @@ impl App {
                 }
                 iced::Task::none()
             }
+            Message::AiDebugTick => self.ai_debug_tick(),
             Message::PadScriptTick => {
                 let seq = self.session.is_active().then(|| self.session.install_seq());
                 let solo = self

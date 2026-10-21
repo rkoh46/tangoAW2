@@ -215,9 +215,35 @@ fn view_in_safe_area(app: &App) -> iced::Element<'_, app::Message> {
         .into()
 }
 
+/// The process's logger: env_logger's, plus a copy of every record for the AI debug channel's `log_tail`.
+#[cfg(not(target_os = "ios"))]
+struct LogTee(env_logger::Logger);
+
+#[cfg(not(target_os = "ios"))]
+impl log::Log for LogTee {
+    fn enabled(&self, m: &log::Metadata) -> bool {
+        self.0.enabled(m)
+    }
+    fn log(&self, r: &log::Record) {
+        if self.0.matches(r) {
+            #[cfg(feature = "gamesupport-aw2")]
+            tango_library::ai_debug::log_record(r.level(), r.target(), &r.args().to_string());
+        }
+        self.0.log(r);
+    }
+    fn flush(&self) {
+        self.0.flush();
+    }
+}
+
 fn run_app() -> iced::Result {
     #[cfg(not(target_os = "ios"))]
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    {
+        // (the AI debug channel keeps a tail of the log and tells of errors: `ai_debug::log_record` is free while it is off)
+        let inner = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).build();
+        log::set_max_level(inner.filter());
+        let _ = log::set_boxed_logger(Box::new(LogTee(inner)));
+    }
     #[cfg(target_os = "ios")]
     platform::ios::init_logging();
     log::info!("tangoAW2 {} build {}", env!("CARGO_PKG_VERSION"), env!("TANGOAW2_BUILD"));

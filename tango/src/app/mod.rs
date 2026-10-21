@@ -12,6 +12,7 @@ use crate::{config, discord, i18n, netplay, selection, session, tabs, updater, I
 use i18n::t;
 use tabs::replays::ReplaysState;
 
+mod ai_debug;
 mod debug_aids;
 mod desktop;
 mod dispatch;
@@ -32,6 +33,8 @@ pub use message::{Message, RescanFollowup, Tab};
 pub struct App {
     /// Test aids (screenshots of the window, a scripted pad): see [`debug_aids`].
     debug: debug_aids::DebugAids,
+    /// The AI debug channel (off unless asked for): see [`ai_debug`].
+    ai: ai_debug::AiDebug,
     config: config::Config,
     /// Background thread that owns the actual config-file writes; see
     /// [`config::Writer`]. `persist_config` queues snapshots on it.
@@ -219,6 +222,7 @@ impl App {
         }
 
         let background = crate::ui::backdrop::load(config.background_image.as_deref());
+        let ai = ai_debug::AiDebug::start(&config);
         let mut app = Self {
             background,
             config,
@@ -238,6 +242,7 @@ impl App {
             discord: discord::Client::new(),
             session_started_at: None,
             debug: debug_aids::DebugAids::from_env(),
+            ai,
             replay_controller: replay_controller::Controller::default(),
             updater,
             rescans_in_flight: 0,
@@ -311,6 +316,9 @@ impl App {
         ];
         if self.debug.has_pad() {
             subs.push(iced::time::every(std::time::Duration::from_millis(16)).map(|_| Message::PadScriptTick));
+        }
+        if self.ai.enabled() {
+            subs.push(iced::time::every(std::time::Duration::from_millis(16)).map(|_| Message::AiDebugTick));
         }
         if let Some(every) = self.debug.run_shot_every() {
             subs.push(iced::time::every(every).map(|_| Message::RunShotTick));
