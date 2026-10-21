@@ -39,6 +39,9 @@ def test(args):
         # the map pipeline's tests (no ROM needed): mapsfile merge keeps every map, ids unique and from the pool, room in the data area
         r = util.run([sys.executable, "-m", "unittest", "test_five", "-v"], cwd=cfg.REPO / "tango-gamesupport-aw2" / "five", check=False)
         rc |= r.returncode
+        # the map linter's tests (planted rivers, bridges, units, roads; the BH Campaign's maps clean): needs the AW2 ROM
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.maplint.test_maplint"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         from .commands import kit as _kit
         import argparse as _ap
         rc |= _kit.check(_ap.Namespace(strict=False))      # docs, skills and tests must not point at missing commands or files

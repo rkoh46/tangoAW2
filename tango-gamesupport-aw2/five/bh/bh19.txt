@@ -49,9 +49,9 @@ unit 2 10 26 6
 unit 2 16 27 6
 unit 2 16 28 18
 unit 2 17 28 17
-^^................^^^.........^^
-^..................^^.....ffff.^
-^RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR^
+^^.............-..^^^.........^^
+^..............-...^^.....ffff.^
+^RRRRRRRRRRRRRR=RRRRRRRRRRRRRRR^
 ^..ff...Rff^^..-.fff.R..Rfff^.ff
 .......CRRRR...-.fff.RffR..^..ff
 .ff.....RL.RRRR=RRRRRRRRRRRRRC..
@@ -65,7 +65,7 @@ ff..###.Rf..c..-........R...R..^
 ....###.R....E.-.fff^...R...R.C.
 ffRRRRRRRf..c..-.fff...CR...R..^
 ff.....fRf..ff.-.....ff.R..BRB^^
-..C.....RRRRRRRRRRRRRRRRR.....ff
+..C.....RRRRRRR=RRRRRRRRR.....ff
 ...B....R.###..-...^....RC....ff
 ........R.#O#..-..c...C.RRRRA...
 .fff....R.###..-.fff...fR.......
@@ -73,5 +73,5 @@ ff.....fRf..ff.-.....ff.R..BRB^^
 ......CfRf..ff.-.....R..R^ff^^ff
 .^...fffRf..ff.-.....R^^R^^fffff
 ^....ff.R...c..-.....R^^R..fff.^
-^RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR^
-^^^..........................^^^
+^RRRRRRRRRRRRRR=RRRRRRRRRRRRRRR^
+^^^............-.............^^^

@@ -80,7 +80,14 @@ def run(jobs=3, only=None, keep=False):
         r = subprocess.run(["sh", str(TOOLS / "aidebug" / "rom_tests.sh")], capture_output=True, text=True)
         return [r.stdout.strip() or "FAIL aidebug rom_tests"] if r.returncode else []
 
-    work = [(aidebug_rom, "aidebug_rom")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
+    def maps_lint(_):
+        # the BH Campaign's maps have no map-integrity error (docs/dev/map-lint.md); skipped without the AW2 ROM
+        if not cfg.aw2_rom().exists():
+            return []
+        r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "maps", "lint", "--no-png"], capture_output=True, text=True)
+        return [f"FAIL maps lint\n" + "\n".join(l for l in r.stdout.splitlines() if "error" in l)[:600]] if r.returncode else []
+
+    work = [(maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0

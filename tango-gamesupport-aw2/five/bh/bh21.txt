@@ -61,14 +61,14 @@ unit 3 15 26 5
 fff^^^.c^.----ffRfffffRB.R..
 fff^......^^^-^^RRRRRRR..3..
 ...^^^^^^.^c^-^.RfcfffR.....
-..C^^^^^^.c.RRRRR^^^^^RC^^C.
+..C^^^^^^.c.R=RRR^^^^^RC^^C.
 ff......RRRRR-ffR^^^^^R^^^..
 ff.B.cffRc..^-..R^^^^^R..ff.
 ......ccR...^-c.R.....Rc.ff.
 RR1RRRRcRRRRR=RRRRRRRRR.....
 ......ccR....-c.R.~~~~R..ff.
 fffB.~~.Rc...-..R.~~~~R..ff.
-fffff~c^RRRRR-RRR.~~.~R...C.
+fffff~c^RRRRR=RRR.~~.~R...C.
 ..Cff~.^R.ff.-..R.~..~RC....
 ff.ff~~.RRRRR=RRRRRRRRRRRR..
 RRRRRRRRR....-...ffc..^..2..

@@ -92,6 +92,7 @@ RIVER = {'rlrl': 0x18, 'lrlr': 0x19, 'llrr': 0x5B, 'lrrl': 0x58, 'rllr': 0x7B, '
          'slrl': 0x18, 'rlsl': 0x18, 'lslr': 0x19, 'lrls': 0x19,
          'rsss': 0x11C, 'ssrs': 0xFC, 'sssr': 0xFD, 'srss': 0x11D}
 BRIDGE_ACROSS, BRIDGE_DOWN = 0x14, 0x36
+BRIDGE_WIDE_ACROSS, BRIDGE_WIDE_LANE = 0x13, 0x16
 SHOAL = {'shlh': 0x10, 'lhsh': 0x50, 'hlhs': 0x2E, 'hshl': 0x32,
          'shll': 0xF2, 'sllh': 0xF3, 'lhsl': 0x112, 'llsh': 0x113,
          'llhs': 0xB2, 'hlls': 0xD2, 'lshl': 0xB3, 'hsll': 0xD3,
@@ -182,7 +183,12 @@ def water_tile(c, around):
     if c == '=':
         # water above and below: the bridge runs across
         wet = lambda n: n in '~r-'
-        return BRIDGE_ACROSS if wet(around[0]) or wet(around[2]) else BRIDGE_DOWN
+        if wet(around[0]) or wet(around[2]):
+            # (a bridge several cells wide crossing east-west: the game draws every lane 0x13, as Sea Fortress's)
+            return BRIDGE_WIDE_ACROSS if '=' in (around[0], around[2]) else BRIDGE_ACROSS
+        # crossing north-south: a lane with another bridge lane beside it is the game's 0x16, not the single bridge's
+        # 0x36 (which has rails on both sides)
+        return BRIDGE_WIDE_LANE if '=' in (around[1], around[3]) else BRIDGE_DOWN
     key = ''.join('s' if n in '~r' else 'h' if n == ',' else 'l' for n in around)
     if key not in SHOAL:
         # A strip of shoal wider than one cell (a ford across a moat): the cell is drawn as the beach it

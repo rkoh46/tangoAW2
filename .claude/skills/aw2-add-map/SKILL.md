@@ -12,3 +12,4 @@ Read docs/dev/maps.md first (format, ids/slots, 4 KiB per map, the data area hol
    (`every_map_has_the_armies_it_is_listed_for`), update docs/MAPS.md (`tools/maps_doc.py` / `aw2_map_audit --md`).
 5. Play it: `./aw2dev live <scenario> --players N --local`, 2 rounds with fog on and off; every army can move and attack.
 6. Show the SELECT MAP preview and a full-map render to the user; no release before approval. Never commit game-derived art or ROM bytes.
+7. `./aw2dev maps lint --source versus --map "<name>"` must have no error (docs/dev/map-lint.md; skill aw2-map-lint); for a BH Campaign map the same with the default source.
