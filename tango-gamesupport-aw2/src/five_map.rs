@@ -65,10 +65,10 @@ pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
     (0x0809_0EC0, 0x00),
 ];
 /// `cmp rN, #0xBF` in the two loops: the game's, then the last id without
-/// the Dual Strike pack (0xC0), then with it (0xFF, past the Colonel's Vault at 0xF1 and the pool of new maps: the ids between, [`BIG_FIVE_ID`]'s among them,
+/// the Dual Strike pack (0xC0), then with it (0xFD, past the Colonel's Vault at 0xF1 and the pool of new maps; a bound of 0xFF would never end (the id counter is a byte) and 0xFE is ds_versus::BATTLE_ID: the ids between, [`BIG_FIVE_ID`]'s among them,
 /// are Dual Strike content and walked only with the pack, [`show_maps`]).
 const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
-    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29FF), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CFF)];
+    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29FD), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CFD)];
 /// Each map's tiles and units: 4 KiB apiece, in one run from [`MAP_DATA`] in the ROM image's free space past the Dual Strike Versus maps
 /// (0x09C00000..0x09CFFFFF, crate::ds_versus): room for [`MAP_CAPACITY`] maps (0x09D00000..0x09D3FFFF; the free run goes on to the Dual
 /// Strike Normal look at 0x09E00000, so the capacity can grow to 256 by changing one constant).
@@ -112,9 +112,9 @@ pub const CATEGORY: u16 = 9;
 /// slots, 0xB4..0xB6, and a suspend copy, 0xB7; the rest serve only
 /// multi-cartridge link play), and 0xC0.., past the game's own table.
 pub use crate::five_map_data::IDS;
-/// Free ids for new maps: the pool five/map.py hands out (0xF2..=0xFF, five/map_ids.txt). A map there is pack content: the Versus list
+/// Free ids for new maps: the pool five/map.py hands out (0xF2..=0xFD, 12 ids; five/map_ids.txt). A map there is pack content: the Versus list
 /// walks the ids past 0xC0 only with the Dual Strike pack on.
-pub const NEW_ID_POOL: std::ops::RangeInclusive<u8> = 0xF2..=0xFF;
+pub const NEW_ID_POOL: std::ops::RangeInclusive<u8> = 0xF2..=0xFD;
 /// The big pre-deployed 5-army map (Pentagon Atoll: Megatanks, Stealths and T-Copters, so the pack's): the first id
 /// past the Dual Strike maps'.
 pub const BIG_FIVE_ID: u8 = 0xC9;
@@ -485,9 +485,15 @@ mod tests {
         assert!(ptr0 >= 0x0862_0000 + 4 * 56 && ptr0 + 4 * TEXT_SLOTS as u32 <= 0x0862_0500);
         assert!(STRINGS >= 0x0862_2000 && STRINGS + 0x20 * TEXT_SLOTS as u32 <= 0x0862_C000);
         // the new-map pool is inside the table and past every id something else uses
-        assert!(*NEW_ID_POOL.end() as u32 + 1 == MAP_IDS && *NEW_ID_POOL.start() > crate::five_map::VAULT_ID);
+        assert!(*NEW_ID_POOL.end() < crate::ds_versus::BATTLE_ID && *NEW_ID_POOL.end() as u32 + 1 < MAP_IDS && *NEW_ID_POOL.start() > crate::five_map::VAULT_ID);
         for (k, &id) in IDS.iter().enumerate() {
             assert!(!NEW_ID_POOL.contains(&id) || MAPS[k].ds, "{} is in the new-map pool, so it is pack content", MAPS[k].name);
+        }
+        // The list loops' bound with the pack: a byte counter never passes 0xFF, so a bound of 0xFF never ends the walk (the list then fills with
+        // the table over and over, 110 rows, and the tabs cannot be switched: the 5P room lost its "5P Predeploy" tab). It must also stay below
+        // ds_versus::BATTLE_ID (0xFE), and reach every id of the pool.
+        for (_, _, _, with) in TABLE_LOOPS {
+            assert!((with & 0xFF) < 0xFE && (with & 0xFF) as u8 >= *NEW_ID_POOL.end(), "loop bound {:#x}", with & 0xFF);
         }
         assert_eq!(map_of(BIG_FIVE_ID).map(|m| m.name), Some("Pentagon Atoll"));
         assert_eq!(map_of(VAULT_ID).map(|m| m.name), Some("The Colonel's Vault"));

@@ -66,7 +66,7 @@ class Ids(unittest.TestCase):
         self.assertTrue(all(0 <= v <= 0xFF for v in self.ids.values()))
 
     def test_new_maps_come_from_the_pool(self):
-        # the first twenty are the original ids; later ones must be in the pool 0xF2..0xFF
+        # the first twenty are the original ids; later ones must be in the pool 0xF2..0xFD
         orig = {'Five Seas', 'Iron Crossing', 'Magma Crown', 'Skyreach', 'The Citadel', 'Obelisk Duel', 'Crystal Isles', 'Obelisk Plains', 'Black Monolith',
                 'Black Rampart', 'Rust Basin', 'Dune Fork', 'Cinder Flats', 'Black Wastes', 'Coral Strait', 'Trident Isles', 'Harbor Cross', 'Coral Crown',
                 "The Colonel's Vault", 'Pentagon Atoll'}

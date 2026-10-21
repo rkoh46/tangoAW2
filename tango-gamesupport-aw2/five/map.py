@@ -437,7 +437,7 @@ def sea_edges(rom):
     return lambda mask: struct.unpack_from('<h', rom, 0x485DC4 + 2 * mask)[0]
 
 
-ID_POOL = list(range(0xF2, 0x100))
+ID_POOL = list(range(0xF2, 0xFE))   # (0xFE is the two-front battle's id; the list loops' bound can be 0xFD at most: a byte counter never passes 0xFF)
 
 
 def assign_ids(maps, path):
@@ -457,7 +457,7 @@ def assign_ids(maps, path):
         if m['name'] not in ids:
             free = [i for i in ID_POOL if i not in ids.values()]
             if not free:
-                raise SystemExit('map id space full: ids 0xF2..0xFF are all used (14 new maps); see docs/dev/maps.md')
+                raise SystemExit('map id space full: ids 0xF2..0xFD are all used (12 new maps); see docs/dev/maps.md')
             ids[m['name']] = free[0]
             m['pack'] = True
             added.append(m['name'])

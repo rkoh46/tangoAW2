@@ -1,5 +1,5 @@
 # The map-table id of each map in maps.txt (five/map.py reads this and writes IDS into src/five_map_data.rs).
-# `Name = 0xID`. A map not listed here gets the next free id of the pool 0xF2..0xFF by map.py, which appends it below (such a map
+# `Name = 0xID`. A map not listed here gets the next free id of the pool 0xF2..0xFD by map.py, which appends it below (such a map
 # is Dual Strike pack content: the Versus list walks ids past 0xC0 only with the pack on). The Versus table has 0x100 ids; 0..0xC8
 # are the game's own and tangoAW2's first maps, 0xC9..0xF1 belong to Survival, the campaigns and the Colonel's Vault.
 Five Seas = 0x00

@@ -234,11 +234,15 @@ def capq(x, y, down=0):
 
 
 def s_hq4(fog):
-    # Four Corners (4P), free for all (the old team poke into the battle's player blocks had no effect since the army-5 table moved: no teams here):
-    # army 1's infantry on (0,0) captures it with the capture points poked to 15, army 2's does the same at (14,0); every army takes its turn in order.
-    pokes = ["when army=1 day=1 idle tick>=2300 do unit 1 inf 0 0", "when army=1 day=1 idle tick>=2300 do capture 0 0 15",
-             "when army=2 day=1 idle do unit 2 inf 14 0", "when army=2 day=1 idle do capture 14 0 15"]
-    turns = [(0, capq(0, 0)), (1, []), (2, []), (3, []), (0, []), (1, capq(14, 0)), (2, []), (3, [])]
+    # Four Corners (4P), free for all: army 1's infantry takes army 3's HQ and army 2's takes army 4's, the cells read from the map in the ROM
+    # (romtools.hq_cells; no cell is written down here). The capture points are poked to 15 so one turn takes it. Armies 3 and 4 are out before
+    # their turns, so seats 2 and 3 have none; armies 1 and 2 play a second round.
+    from . import romtools
+    cells = romtools.hq_cells(romtools.map_id("Four Corners", 4))
+    (x3, y3), (x4, y4) = cells[3], cells[4]
+    pokes = [f"when army=1 day=1 idle do unit 1 inf {x3} {y3}", f"when army=1 day=1 idle do capture {x3} {y3} 15",
+             f"when army=2 day=1 idle do unit 2 inf {x4} {y4}", f"when army=2 day=1 idle do capture {x4} {y4} 15"]
+    turns = [(0, capq(x3, y3)), (1, capq(x4, y4)), (0, []), (1, [])]
     return pokes, turns
 
 
@@ -257,6 +261,12 @@ def s_hq5(fog):
 
 
 def s_big5(fog):
+    # Pentagon Atoll (5P pre-deployed, the pack's): proposed by every seat (the room's `5P Predeploy` tab), then two rounds of end-turn. This is the regression
+    # for the 5P Predeploy tab (a list-loop bound of 0xFF once made the pre-deployed tab unreachable). `big5attack` has each army's tank attack a neighbour.
+    return [], [(k, []) for k in range(5)] * 2
+
+
+def s_big5attack(fog):
     # Pentagon Atoll (5P predeployed): each army's first tank attacks a neighbour's infantry poked in beside it
     sys.path.insert(0, str(cfg.REPO / "tango-gamesupport-aw2" / "five"))
     import map as mappy
@@ -363,13 +373,14 @@ def s_p2k(fog):
     return [], [(0, [])]
 
 
-SCEN = {"swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, "g2iv": s_g2iv, "g2hv": s_g2hv, "g2h": s_g2h, "p4k": s_p4k, "p2k": s_p2k, "hq3m": s_hq3m, "g4k": s_g4k, "g2k": s_g2k, "g4s": s_g4s, "hq3p": s_hq3p, "dropb": s_dropb, "big5": s_big5, "hq4": s_hq4, "hq5": s_hq5, "hq3k": s_hq3k, "hq3h": s_hq3h, "hq3l": s_hq3l, "hq5h": s_hq5h, "hq3": s_hq3, "moveview": s_moveview, "move": s_move, "capture": s_capture, "build": s_build, "attack": s_attack, "power": s_power,
+SCEN = {"swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, "g2iv": s_g2iv, "g2hv": s_g2hv, "g2h": s_g2h, "p4k": s_p4k, "p2k": s_p2k, "hq3m": s_hq3m, "g4k": s_g4k, "g2k": s_g2k, "g4s": s_g4s, "hq3p": s_hq3p, "dropb": s_dropb, "big5": s_big5, "big5attack": s_big5attack, "hq4": s_hq4, "hq5": s_hq5, "hq3k": s_hq3k, "hq3h": s_hq3h, "hq3l": s_hq3l, "hq5h": s_hq5h, "hq3": s_hq3, "moveview": s_moveview, "move": s_move, "capture": s_capture, "build": s_build, "attack": s_attack, "power": s_power,
         "load": s_load, "yield": s_yield, "mash": s_mash}
 
 
 
-BIG5_TAB = 0   # (a 5P room has one tab, "5P" (no tab change by RIGHT/LEFT/L/R); with the pack Pentagon Atoll is its 10th and last row; the list does not wrap)
-BIG5_DOWN = 9
+MAP_BY_NAME = {"hq4": ("Four Corners", 4)}   # scenarios written for one of the game's own maps: the pick walks to its row
+BIG5_TAB = 1   # a 5P room has two tabs with the pack: "5P" and "5P Predeploy"; RIGHT once from the first shows the latter, whose first (only) map is Pentagon Atoll
+BIG5_DOWN = 0
 
 
 def parse_picks(s):
@@ -425,7 +436,7 @@ def freeze_safe(lines):
 
 
 SEATS = {"p4k": 4, "p2k": 2, "hq3m": 3, "g4k": 4, "g4s": 4, "g2k": 2, "hq3p": 3, "hq3": 3, "hq3k": 3, "hq3h": 3, "hq3l": 3, "hq5h": 5, "hq4": 4,
-         "hq5": 5, "big5": 5}
+         "hq5": 5, "big5": 5, "big5attack": 5}
 
 
 def seats_of(name):
@@ -449,7 +460,11 @@ class Pads:
         # every seat picks at the same time, in private: its own SELECT MAP (each browses its own way), A when it has settled
         # (the draw between the seats' picks is random: scenarios coordinate on one map, so every seat proposes the same one, the first of the
         #  2P tab; big5 proposes the first 5P map from the 5P tab)
-        tab, downs = (self.picks[k % len(self.picks)] if self.picks else ((BIG5_TAB, BIG5_DOWN) if self.name == "big5" else (0, int(os.environ.get("AW2DEV_PICK_DOWN", "0")))))
+        if not self.picks and self.name in MAP_BY_NAME:
+            from . import romtools
+            nm, nn = MAP_BY_NAME[self.name]
+            self.picks = [(0, romtools.pick_index(nm, nn))]    # (the room's list order differs with the pack: look the row up)
+        tab, downs = (self.picks[k % len(self.picks)] if self.picks else ((BIG5_TAB, BIG5_DOWN) if self.name in ("big5", "big5attack") else (0, int(os.environ.get("AW2DEV_PICK_DOWN", "0")))))
         s = ["until selectmap 40", "until mypick 60", "wait 30"]
         s += ["press RIGHT 8", "wait 40"] * tab
         s += (["press DOWN 8", "wait 20"] * downs) if downs >= 0 else (["press UP 8", "wait 20"] * -downs)   # (the list does not wrap)
