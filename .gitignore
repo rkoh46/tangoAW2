@@ -20,3 +20,9 @@ __pycache__/
 # aw2test output (screenshots, saves, logs from the player's own ROMs): never committed
 /tools/aw2test/out*/
 /docs/mapsel/
+
+# aw2dev (devkit/): run dirs, profiles (copies of the ROM), test app, suite and audit output, local config. Never committed.
+/devkit/work/
+/devkit/config.local.toml
+/devkit/**/__pycache__/
+/dist/

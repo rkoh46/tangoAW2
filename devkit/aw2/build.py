@@ -1,0 +1,41 @@
+"""aw2dev build: the right toolchain for each target."""
+import json, os, subprocess, time
+from . import cfg, util
+
+
+def cargo(*args, profile_env=None):
+    env = cfg.env_with_cargo(profile_env)
+    util.run(["cargo", *args], env=env, cwd=cfg.REPO)
+
+
+def build(args):
+    t0 = time.time()
+    if args.ios or args.sim:
+        dev = str(cfg.path("paths", "developer_dir"))
+        env = dict(os.environ, DEVELOPER_DIR=dev)
+        env["PATH"] = str(cfg.path("paths", "cargo_bin")) + os.pathsep + env["PATH"]
+        util.run(["./ios/build.sh"] + (["--sim"] if args.sim else []), env=env, cwd=cfg.REPO)
+        util.say(f"iOS build done in {time.time() - t0:.0f}s: {cfg.REPO / 'dist'}")
+        return 0
+    if args.release:
+        cargo("build", "--profile", "release-dist", "--bin", "tango")
+        binary = util.release_bin("release-dist")
+    else:
+        cargo("build", "--release", "-p", "tango")
+        binary = util.release_bin("release")
+    if args.examples or args.all:
+        cargo("build", "--release", "-p", "tango-gamesupport-aw2", "--examples")
+    stamp = util.build_stamp(binary)
+    cfg.work().mkdir(parents=True, exist_ok=True)
+    (cfg.work() / "build_stamp.json").write_text(json.dumps({"stamp": stamp, "binary": str(binary), "time": time.strftime("%F %T"), "release_dist": bool(args.release)}))
+    util.say(f"built {binary} stamp {stamp} in {time.time() - t0:.0f}s")
+    return 0
+
+
+def test(args):
+    env = cfg.env_with_cargo()
+    rc = 0
+    for pkg in (["tango-gamesupport-aw2", "tango-session", "tango-match"] if not args.package else args.package):
+        r = util.run(["cargo", "test", "--release", "-p", pkg, "--lib"], env=env, cwd=cfg.REPO, check=False)
+        rc |= r.returncode
+    return 1 if rc else 0

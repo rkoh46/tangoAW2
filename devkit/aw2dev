@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+"""aw2dev: the tangoAW2 developer CLI. See docs/dev/README.md."""
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+from aw2.cli import main
+main()

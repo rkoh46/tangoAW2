@@ -1,0 +1,64 @@
+# Developing and debugging the online side
+
+Tools: `aw2dev net sim|matrix|desync|trace|relays|soak` (devkit/aw2/net.py), the local signalling mock (devkit/aw2/signal_mock.py),
+and the app's test aids. Architecture: docs/dev/architecture-online.md. Env aids: docs/dev/env-aids.md.
+
+## Politeness first
+The app depends on free public services: the Tango matchmaking/signalling server, public STUN servers, Cloudflare TURN (credentials
+only from the signalling server) and Nostr relays for the lobby list. Never hammer them (rules in `tango-net/src/endpoints.rs`:
+5 s..10 min backoff, 1 h block on "rate limited", one STUN binding request per probe, no probes within 5 min).
+- `net sim`, `net matrix` and `net soak` run a LOCAL signalling mock and set `TANGOAW2_BLOCK_ENDPOINTS` to every public STUN, Nostr and
+  signalling host plus `TANGOAW2_LOBBY_RELAYS=ws://127.0.0.1:9`, so nothing leaves the Mac. Peers connect over loopback with host
+  candidates.
+- `--public` opts back into the real server (one run, a handful of connections). Relay-only (`TANGOAW2_FORCE_RELAY=1`) needs it,
+  because TURN credentials come only from the real server's `Hello`.
+- `aw2dev live ...` (plain, no `net`) still uses the real matchmaking server: use sparingly.
+- `net relays` is the only tool that probes public endpoints, with the app's own caps, and remembers probes in `~/.aw2dev/relay_probe.json`.
+
+## `net sim`
+```
+aw2dev net sim moveview --level mild                      # 30 ms +-10 ms, 1 % loss each way
+aw2dev net sim lobby --players 4 --latency 80 --jitter 40 --reorder
+aw2dev net sim hq3 --players 3 --event 20:stop:1:10       # freeze seat 1 (SIGSTOP) 20 s in, for 10 s
+aw2dev net sim lobby --players 3 --event t900:kill:2 --event t900:relaunch:2   # kill at tick 900, A on the rejoin box
+```
+Impairment is `TANGOAW2_NET_IMPAIR=latency_ms,jitter_ms,loss_pct` (tango-net/src/impair.rs), applied to what each peer SENDS (round trip
+= 2x latency); loss only on the unreliable in-match channel; jitter reorders it. `--impair 2=200,80,10` targets one seat. Events:
+`AT:ACTION:SEAT[:ARG]`, AT in seconds or `tN` (seat 0's console ticks); actions kill, stop (ARG seconds, then SIGCONT), cont, relaunch.
+Not offered because they need root (`dnctl`/`pfctl`): bandwidth caps and NAT-type emulation; relay-only needs `--public`.
+Output: a run dir (see devkit/aw2/live.py docstring) and a verdict: stall, hash, leak, result. Scripted `--event`s for 2P scenarios
+reuse scen kinds (`--kill`/`--stop` of `aw2dev live` also exist: `SEATS:WHEN`, `eliminated`, `armyN`, `log:TEXT`).
+
+## `net matrix`
+`aw2dev net matrix --players 2,3,4 --fog on,off --levels none,mild,bad` runs each cell as a live run (2P: the scenario, larger rooms: the
+lobby flow) and prints a table with columns stall / hash / leak / result and a verdict, also saved as `devkit/work/matrix/*.md`.
+Each cell is a few minutes; the default grid is small (2,3 players x fog x none,mild). `--route relay` needs `--public`.
+
+## `net desync <run>` (a diverged run)
+1. first frame where the seats' `hash` lines differ after having agreed (the console's FNV hash every 60 frames);
+2. with `TANGOAW2_HASH_PARTS` (set by `net sim`): which 4 KB blocks differ (IWRAM 0x03000000.., EWRAM 0x02000000..);
+3. RAM diff of the two consoles if dumped for that frame: re-run with `--dump-frame F` (`TANGOAW2_DUMP_FRAME`, writes `ram_s<seat>_<F>_i|e.bin`);
+   address ranges are named from `docs/dev/ram-map.md` (add the address there if it prints "unnamed");
+4. the joypad words each peer fed the console within `--window` ticks (`TANGOAW2_INPUT_LOG`, set by live runs) and log lines about
+   rollbacks / input drops.
+Typical causes: state read by one peer and not the other (waiting-view code writing to the shared console), a rule/pack difference (mixed pack room),
+a non-deterministic read. Fix the cause, not the hash.
+
+## `net trace <run>`
+One timeline across peers: inputs, acts, hash lines, selected log lines (link, pvp, rollback, reconnect, rejoin, migration...), time
+relative to the first event, tick of the seat. `--from-tick/--to-tick/--kinds input,act,hash,log,state`. Full output in `<run>/trace.txt`.
+
+## `net relays`
+`aw2dev net relays [--turn] [--all] [--force]`: the app's own learned health (`relay_health.txt` of the test profiles), a signalling
+handshake, optionally one `Hello` (lists ICE/TURN hosts, never credentials), at most 3 STUN binding requests and 3 Nostr handshakes per call
+(`--all` for every endpoint), skipping anything probed in the last 5 min or backing off.
+
+## `net soak --hours H`
+Random rooms (2-4 players, fog, impairment level, scenario, chance of a freeze or kill+rejoin) one after another on local signalling.
+Failures (desync, stall, panic) are logged to `devkit/work/soak/<ts>/soak.jsonl` and their run dirs are kept; passing runs are deleted.
+Reproduce a failure: `aw2dev net desync <run>`; the record has scenario/players/fog/impair/events.
+
+## The local signalling mock
+`python3 -m aw2.signal_mock --port N` (from `devkit/`), or in-process. Protocol: vendor/tango-signaling/src/proto/signaling.proto. Pairs
+two connections with the same `session_id` (the first to send `Start` is the impolite side, the later one gets its `Offer`), relays
+`Answer`/`IceCandidate`, echoes `Ping`, sends `Hello` without ICE servers. Profiles point at it through `matchmaking_endpoint`.

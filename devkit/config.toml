@@ -1,0 +1,35 @@
+# aw2dev defaults. Override per machine in devkit/config.local.toml (git-ignored) or with AW2DEV_<SECTION>_<KEY> env vars,
+# e.g. AW2DEV_PATHS_ROMS=/some/dir. Paths starting with ~ are expanded; relative paths are relative to the repo root.
+
+[paths]
+work = "devkit/work"                 # run dirs, profiles, test app, suite output (git-ignored)
+roms = "~/Documents/TangoAW2/roms"   # READ or copied only, never modified
+aw2_rom = "Advance_wars_2.gba"       # file names inside `roms`
+ds_rom = "Advance Wars - Dual Strike (USA).nds"
+packs = ["Dual Strike pack.tangoaw2"]   # packs copied into every test profile
+cargo_bin = "~/.rustup/toolchains/stable-aarch64-apple-darwin/bin"
+developer_dir = "/Applications/Xcode.app/Contents/Developer"   # iOS builds only
+app = "/Applications/TangoAW2.app"
+downloads = "~/Downloads"
+decomp = "~/advance-wars-dual-strike-decomp"
+lock_dir = "~/.aw2dev"               # the live-run lock lives here
+
+[live]
+room_code = "K7Z2M9"                 # typed by the guests (TANGOAW2_TYPE_CODE)
+max_seconds = 420
+shot_hz = 2
+
+[release]
+dev_branch = "hirestilt"
+remote = "origin"
+push_branches = ["main", "v030", "aw2", "ds-campaign2"]   # pushed as HEAD:<name>
+workflow = "release.yaml"
+tag_prefix = "v"
+ipa_name = "tangoaw2-{version}-ios.ipa"
+# new files matching these are game files unless allowlisted in devkit/release_allow.txt
+forbidden = ["*.gba", "*.nds", "*.sav", "*.srl", "*.png", "tools/aw2test/out*"]
+allowed_dirs = ["docs/screenshots/"]
+
+[clean]
+keep_worktrees = ["~/tangoAW2", "~/tangoAW2-hires"]
+run_days = 3

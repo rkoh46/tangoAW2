@@ -1,0 +1,3 @@
+#!/bin/sh
+# Shim: the developer CLI lives in devkit/.
+exec python3 "$(cd "$(dirname "$0")" && pwd)/devkit/aw2dev" "$@"
