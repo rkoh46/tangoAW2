@@ -31,6 +31,14 @@ def mash(n=30):
     return out
 
 
+def skin_steps(k, default):
+    """AW2DEV_SKIN=1: seat 0 picks Emerald Sun on the army page (its colour field: DOWN, then LEFT once from Orange Star, which wraps to the
+    sixth choice, the skin); the others do `default`."""
+    if os.environ.get("AW2DEV_SKIN") == "1" and k == 0:
+        return ["press DOWN 8", "wait 10", "press LEFT 8", "wait 10"]
+    return default
+
+
 # ---- scenarios: pokes (test-aid lines), turns: list of (seat, ops) in order; fog-specific via function ----
 def s_move(fog):
     pokes = [
@@ -455,6 +463,13 @@ class Pads:
         self.mashing = name == "mash"
         self.part_steps = ["press DOWN 8", "wait 10", "press DOWN 8", "wait 10", "press RIGHT 8", "wait 10"] if name in ("swap", "tagpower") else None
         self.wait_turn = 170 if killing else 90
+        # AW2DEV_SKIN=1: seat 0 picks Emerald Sun on the army page (the colour field, LEFT once from Orange Star wraps to the sixth choice)
+        self.skin = os.environ.get("AW2DEV_SKIN") == "1"
+
+    def teams_steps(self, k, default):
+        if self.skin and k == 0 and not self.part_steps:
+            return ["press DOWN 8", "wait 10", "press LEFT 8", "wait 10"]
+        return self.part_steps or default
 
     def pick(self, k):
         # every seat picks at the same time, in private: its own SELECT MAP (each browses its own way), A when it has settled
@@ -476,7 +491,7 @@ class Pads:
         if k == 0:
             s = ["until level=1 30", "seek UP cursor=0 10", "press A 8", "until level=13 10", "press A 8", "until level=5 10", "press A 8", "until level=2 10",
                  f"until players={n} 40", f"until ready={n-1} 40", "press START 8", "session", *self.pick(0),
-                 "until teams 60", "wait 40", *(self.part_steps or ["press RIGHT 8", "wait 10"]), "press A 8"]
+                 "until teams 60", "wait 40", *self.teams_steps(0, ["press RIGHT 8", "wait 10"]), "press A 8"]
             if ready_only:
                 return s
             s += ["until rules 120", "wait 30"]
@@ -486,7 +501,7 @@ class Pads:
             return s
         return ["until level=1 30", "seek DOWN cursor=1 10", "press A 8", "until level=7 10", "wait 30", "press A 8",
                 "until level=5 15", "wait 20", "press A 8", "until status=3 40", "wait 30", "press A 8", "wait 30", "session",
-                *self.pick(k), "until teams 60", "wait 40", *(self.part_steps or ["press LEFT 8", "wait 10"]), "press A 8"] + ([] if ready_only else ["until mapup 120"])
+                *self.pick(k), "until teams 60", "wait 40", *self.teams_steps(k, ["press LEFT 8", "wait 10"]), "press A 8"] + ([] if ready_only else ["until mapup 120"])
 
     def play(self, k, turns_, pre, done):
         """k's turns of a match: wait for each, take it (compact seat k)."""
@@ -587,11 +602,11 @@ def lobby_pads(n, rounds, run, fog="on", sim=False, pick_down=0, tab=0, no_pick=
         return s
 
     host = ["until level=1 30", "seek UP cursor=0 10", "press A 8", "until level=13 10", "press A 8", "until level=5 10", "press A 8", "until level=2 10",
-            f"until players={n} 40", f"until ready={n-1} 40", "press START 8", "session", *pick(0), "until teams 60", "wait 40", "press RIGHT 8", "wait 10", "press A 8", "intro"] + turns(0)
+            f"until players={n} 40", f"until ready={n-1} 40", "press START 8", "session", *pick(0), "until teams 60", "wait 40", *skin_steps(0, ["press RIGHT 8", "wait 10"]), "press A 8", "intro"] + turns(0)
 
     def guest(k):
         return ["until level=1 30", "seek DOWN cursor=1 10", "press A 8", "until level=7 10", "wait 30", "press A 8", "until level=5 15", "wait 20", "press A 8",
-                "until status=3 40", "wait 30", "press A 8", "wait 30", "session", *pick(k), "until teams 60", "wait 40", "press LEFT 8", "wait 10", "press A 8"] + turns(k)
+                "until status=3 40", "wait 30", "press A 8", "wait 30", "session", *pick(k), "until teams 60", "wait 40", *skin_steps(k, ["press LEFT 8", "wait 10"]), "press A 8"] + turns(k)
     return {0: freeze_safe(host), **{k: freeze_safe(guest(k)) for k in range(1, n)}}
 
 
@@ -620,9 +635,9 @@ def lobby_prefix(n, k, pick):
     """Create (k = 0) or join the lobby room, wait for everyone, pick a map, teams page. Ends after the teams page's A."""
     if k == 0:
         return ["until level=1 30", "seek UP cursor=0 10", "press A 8", "until level=13 10", "press A 8", "until level=5 10", "press A 8", "until level=2 10",
-                f"until players={n} 40", f"until ready={n-1} 40", "press START 8", "session", *pick, "until teams 60", "wait 40", "press RIGHT 8", "wait 10", "press A 8"]
+                f"until players={n} 40", f"until ready={n-1} 40", "press START 8", "session", *pick, "until teams 60", "wait 40", *skin_steps(0, ["press RIGHT 8", "wait 10"]), "press A 8"]
     return ["until level=1 30", "seek DOWN cursor=1 10", "press A 8", "until level=7 10", "wait 30", "press A 8", "until level=5 15", "wait 20", "press A 8",
-            "until status=3 40", "wait 30", "press A 8", "wait 30", "session", *pick, "until teams 60", "wait 40", "press LEFT 8", "wait 10", "press A 8"]
+            "until status=3 40", "wait 30", "press A 8", "wait 30", "session", *pick, "until teams 60", "wait 40", *skin_steps(k, ["press LEFT 8", "wait 10"]), "press A 8"]
 
 
 def rules_lobby_pads(n, run):

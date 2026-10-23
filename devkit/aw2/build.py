@@ -42,6 +42,9 @@ def test(args):
         # the map linter's tests (planted rivers, bridges, units, roads; the BH Campaign's maps clean): needs the AW2 ROM
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.maplint.test_maplint"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode
+        # the army-skin kit's tests (generated scripts, scenario shots, the palette margins refusing a green skin)
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.armyskinlib.test_armyskin"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         from .commands import kit as _kit
         import argparse as _ap
         rc |= _kit.check(_ap.Namespace(strict=False))      # docs, skills and tests must not point at missing commands or files

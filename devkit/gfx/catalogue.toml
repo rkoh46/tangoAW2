@@ -124,3 +124,28 @@ name = "rules_plate_on_armypage"
 what = "the Rules map-name plate drawn over the finishing army page (1ab6c1d05)"
 patch = "rules_plate_on_armypage.patch"
 screens = ["roulette_5p"]
+
+[[screen]]
+name = "emerald_sun_units"
+what = "Emerald Sun (the sixth army, a skin on one of AW2's colours): idle, done and moving units, its HQ, the build menu and the unit panel in its palette; none of the replaced army's colours left (past bug: moved units' outline grey, the battle gauge and the HUD panels stayed in the old army's colours)"
+runner = "harness"
+script = "aw2_skin_units_2p"
+vram = true
+shots = ["units_s0", "done_s0", "hq_s0", "build_s0", "panel_s0"]
+checks = ["golden", "palette", "external"]
+palette = { rc = true }
+variants = { default = {} }
+golden = { tolerance = 0.002 }
+external = [{ cmd = ["python3", "{repo}/devkit/aw2dev", "armyskin", "check"], what = "the skin's data file, palette margins (distance from AW2's five armies, the done greys and the fog's terrain) and every unit's recolouring" }]
+
+[[screen]]
+name = "emerald_sun_5p"
+what = "Emerald Sun on a five-army map beside Green Earth and Black Hole (it stands in for Blue Moon's colour there): properties, ships, units and the HQ in its palette"
+runner = "harness"
+script = "aw2_skin_5p"
+vram = true
+shots = ["map5_s0", "map5_far_s0"]
+checks = ["golden", "palette"]
+palette = { rc = true }
+variants = { default = {} }
+golden = { tolerance = 0.002 }

@@ -61,11 +61,10 @@ const F_READY: u8 = 4;
 /// How many teams the letters run to (A..E).
 const TEAMS: u8 = 5;
 
-/// The choices of an army in the order the pick cycles through them: the five armies' colour codes, then the skin
-/// ([`crate::army_skin`], code 6): a seat's colour field holds its choice, and the game's colour is made of the choices
-/// when the seats are READY ([`write_choices`]).
-const COLOURS: [u8; 6] = crate::army_skin::ORDER;
-const COLOUR_NAMES: [&str; 7] = ["", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole", crate::army_skin::names::EMERALD_SUN];
+/// The five armies' colour codes in the order the pick starts with; a seat's colour field holds its choice (those five, then the
+/// army skins' codes, [`crate::army_skin::order`]), and the game's colour is made of the choices when the seats are READY
+/// ([`write_choices`]).
+const COLOURS: [u8; 5] = [1, 2, 4, 3, 5];
 
 pub fn players(core: &Core) -> usize {
     (core.raw_read_8(PLAYERS, -1) as usize).clamp(2, 5)
@@ -180,7 +179,7 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         for s in 1..n {
             let c = core.raw_read_8(seat(s) + S_COLOUR, -1);
             if (0..s).any(|o| core.raw_read_8(seat(o) + S_COLOUR, -1) == c) {
-                let free = COLOURS[..5].iter().copied().find(|c| !(0..s).any(|o| core.raw_read_8(seat(o) + S_COLOUR, -1) == *c));
+                let free = COLOURS.iter().copied().find(|c| !(0..s).any(|o| core.raw_read_8(seat(o) + S_COLOUR, -1) == *c));
                 if let Some(free) = free {
                     core.raw_write_8(seat(s) + S_COLOUR, -1, free);
                 }
@@ -355,9 +354,11 @@ fn write_choices(core: &mut Core, n: usize) {
     let tag_on = tags(core);
     // (the game's colours of the choices, and the colour the skin sits on)
     let choices: Vec<u8> = (0..n).map(|s| core.raw_read_8(seat(s) + S_COLOUR, -1)).collect();
-    let (values, host) = crate::army_skin::assign(&choices);
-    if crate::army_skin::host(core) != host {
-        crate::army_skin::set_host(core, host);
+    let (values, hosts) = crate::army_skin::assign(&choices);
+    for (i, h) in hosts.iter().enumerate() {
+        if crate::army_skin::host_of(core, i) != *h {
+            crate::army_skin::set_host_of(core, i, *h);
+        }
     }
     for s in 0..n.min(rec.armies as usize).max(n.min(5)) {
         let a = s as u32;
@@ -387,7 +388,7 @@ type Rgb = (u8, u8, u8);
 
 fn colour_rgb(c: u8) -> Rgb {
     match c {
-        crate::army_skin::SKIN => crate::army_skin::swatch(),
+        c if c >= crate::army_skin::SKIN => crate::army_skin::swatch((c - crate::army_skin::SKIN) as usize % crate::army_skin::skins().len()),
         1 => (232, 56, 40),
         2 => (56, 96, 216),
         3 => (48, 168, 72),
@@ -492,8 +493,8 @@ pub fn seat_picks(core: &Core) -> Option<Vec<(u8, u8)>> {
     seat_teams(core).map(|t| {
         // (the game's colours of the choices: the skin's seat has the colour the skin sits on)
         let choices: Vec<u8> = (0..t.len()).map(|s| core.raw_read_8(seat(s) + S_COLOUR, -1)).collect();
-        let (values, host) = crate::army_skin::assign(&choices);
-        crate::army_skin::present(host);
+        let (values, hosts) = crate::army_skin::assign(&choices);
+        crate::army_skin::present(hosts);
         t.into_iter().enumerate().map(|(s, t)| (t, values[s])).collect()
     })
 }
@@ -564,7 +565,6 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
         cands.into_iter().find(|t| fits(t)).unwrap_or("A: READY").into()
     };
     crate::online::bar(cv, core, &text);
-    let _ = COLOUR_NAMES;
 }
 
 /// The fields' columns (the left edge of the colour, team and partner boxes).

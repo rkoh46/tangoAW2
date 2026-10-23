@@ -16,8 +16,8 @@ fn main() {
         Some(p) => Skin::parse(&std::fs::read_to_string(p).expect("skin file")).expect("skin"),
         None => army_skin::emerald_sun().clone(),
     };
-    let patches = army_skin::plan(&RomFile(&rom), &skin, host);
-    let blobs = army_skin::blobs(&RomFile(&rom), &skin);
+    let patches = army_skin::plan(&RomFile(&rom), &skin, 0, host);
+    let blobs = army_skin::blobs(&RomFile(&rom), &skin, 0);
     let hex = |d: &[u8]| d.iter().map(|b| format!("{b:02x}")).collect::<String>();
     let out = serde_json::json!({
         "skin": skin.id,

@@ -12,7 +12,7 @@ PLAIN = """aw2_waiting_pages aw2_waiting_pages_fog aw2_waiting_pages_2p_nofog aw
 aw2_waiting_power_5p aw2_waiting_power_5p_nofog aw2_waiting_power_2p aw2_waiting_power_2p_nofog aw2_waiting_power_4p aw2_waiting_cruiser_5p_nofog
 aw2_waiting_colours_ship_5p aw2_waiting_colours_2p aw2_waiting_colours_2p_nofog aw2_waiting_hostcam_5p aw2_waiting_round_5p aw2_waiting_long_5p
 aw2_waiting_long_4p aw2_waiting_pests_2p aw2_waiting_pests_3p aw2_waiting_pests_4p aw2_waiting_pests_5p aw2_yield_2p aw2_yield_2p_nofog aw2_yield_3p
-aw2_yield_3p_nofog aw2_proxy_yield_3p aw2_proxy_yield_3p_nofog aw2_proxy_yield_5p aw2_banner_5p aw2_roster_3p aw2_roster_setup_3p""".split()
+aw2_yield_3p_nofog aw2_proxy_yield_3p aw2_proxy_yield_3p_nofog aw2_proxy_yield_5p aw2_banner_5p aw2_roster_3p aw2_roster_setup_3p aw2_skin_units_2p aw2_skin_5p""".split()
 LEAK = "aw2_waiting_leak_2p aw2_waiting_leak_3p aw2_waiting_leak_4p aw2_waiting_leak_5p aw2_waiting_leak_2p_nofog aw2_waiting_leak_3p_nofog aw2_waiting_leak_4p_nofog aw2_waiting_leak_5p_nofog".split()
 CAM = "aw2_waiting_cam_2p aw2_waiting_cam_3p aw2_waiting_cam_4p aw2_waiting_cam_5p aw2_waiting_hostcam_5p".split()
 TOOLS = cfg.REPO / "tools"
@@ -80,6 +80,18 @@ def run(jobs=3, only=None, keep=False):
         r = subprocess.run(["sh", str(TOOLS / "aidebug" / "rom_tests.sh")], capture_output=True, text=True)
         return [r.stdout.strip() or "FAIL aidebug rom_tests"] if r.returncode else []
 
+    def armyskin(what):
+        # Emerald Sun: the data file and palette margins, every colour the skin can sit on, then the live walk of the army-coloured screens
+        # (docs/dev/army-packs.md); skipped without the AW2 ROM or the built dump example
+        from .armyskinlib import check as chk
+        if not cfg.aw2_rom().exists() or not util.example_bin("aw2_skin_dump").exists():
+            return []
+        if what == "static":
+            fails, _ = chk.static()
+            return [f"FAIL armyskin: {f}" for f in fails]
+        fails, _ = chk.live(["units", "battle", "turn", "capture", "results"])
+        return [f"FAIL armyskin live: {f}" for f in fails]
+
     def maps_lint(_):
         # the BH Campaign's maps have no map-integrity error (docs/dev/map-lint.md); skipped without the AW2 ROM
         if not cfg.aw2_rom().exists():
@@ -95,7 +107,7 @@ def run(jobs=3, only=None, keep=False):
         lint = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "bhtext" / "lint.py")], capture_output=True, text=True)
         return ([f"FAIL campaign scenes\n{r.stderr[-400:]}"] if r.returncode else []) + ([f"FAIL bhtext lint\n{lint.stdout[-400:]}"] if lint.returncode else [])
 
-    work = [(campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
+    work = [(campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom"), (armyskin, "static"), (armyskin, "live")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0

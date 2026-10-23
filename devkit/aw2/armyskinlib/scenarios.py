@@ -124,6 +124,14 @@ def results():
     )
 
 
+@scenario("lost3p", [6, 2, 3], "a three-army match: the skin's army yields and the game says it has lost", ["lost_msg"])
+def lost3p():
+    return (
+        redraw((3, 3))
+        + "press 0 A\nwait 40\npress 0 DOWN\nwait 10\npress 0 DOWN\nwait 10\npress 0 A\nwait 40\npress 0 DOWN\nwait 10\npress 0 A\nwait 200\npress 0 LEFT\nwait 20\npress 0 A\nwait 60\nshot lost_msg 1\n"
+    )
+
+
 @scenario("dsunits", [6, 2], "Dual Strike's units (with the pack): the map, the build menu's picture and a battle scene", ["ds_parade", "ds_build", "ds_scene1", "ds_scene2"], ds=True)
 def dsunits():
     body = ""

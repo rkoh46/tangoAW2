@@ -11,7 +11,7 @@ and tools/cam_check.py), plus the harness-output checkers. Writes <run>/check.js
   colours the harness colour scripts and the colour matrix example (not per run)
 FALSE-PASS LESSONS: look at the images too; check the build stamp (meta.json `build`) is the same across runs you compare; use the same build for both fog modes.
 """
-import json, subprocess, sys
+import os, json, subprocess, sys
 import numpy as np
 from PIL import Image
 from . import cfg, harness, util
@@ -223,7 +223,9 @@ def c_hud(run, **kw):
     res = {}
     ok = True
     for seat, never in ((0, "blue"), (1, "red")):
-        recs = [x for x in run.shots(seat)[:-1] if (x.get("tick") or 0) >= 2000]
+        # (a run with the army skin picked spends longer on the army page: its Rules page is still up at tick 2000)
+        first = 2600 if os.environ.get("AW2DEV_SKIN") == "1" else 2000
+        recs = [x for x in run.shots(seat)[:-1] if (x.get("tick") or 0) >= first]
         wrong = []
         for x in recs:
             im = run.image(x["file"])

@@ -166,9 +166,13 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             if rc:
                 fails.append(f"{n}/{v}: the harness script failed ({log})")
             runs[v] = d
+        seats = {}
+        for line in scenarios.script(n).splitlines():
+            w = line.split()
+            if len(w) == 3 and w[0] == "shot":
+                seats[w[1]] = int(w[2])
         for shot in sc["shots"]:
-            seat = 1 if shot in ("victory", "nextturn1") else 0
-            f = f"{shot}_s{seat}.bmp"
+            f = f"{shot}_s{seats.get(shot, 0)}.bmp"
             try:
                 skin = _colours(runs["skin"] / f)
             except FileNotFoundError:

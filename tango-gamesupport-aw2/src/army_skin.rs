@@ -21,24 +21,46 @@
 
 use mgba::core::Core;
 
-/// The skin's state: +0 the colour (1..5) it sits on, 0 for none.
+/// The skins' state: +0.. the colour (1..5) each skin sits on, 0 for none ([`MAX_SKINS`] bytes); +4.. what each army of the
+/// Teams screen has chosen (0: its colour as the game has it; else a skin's code, [`SKIN`] + its index); +0xF 1 once the
+/// Teams screen has reset them.
 pub const STATE: u32 = 0x0203_C500;
 pub const STATE_LEN: u32 = 0x10;
+const HOSTS: u32 = STATE;
+const IDENT: u32 = STATE + 4;
+const SEEN: u32 = STATE + 0xF;
 
-/// Free ROM: a marker word, the applied colour, and the originals of everything patched.
+/// How many skins a match can have at once (each has its own colour, its own map sprite slots and its own room in free ROM).
+pub const MAX_SKINS: usize = 3;
+
+/// Free ROM (a word marks it as ours): which skin is patched on each colour, the originals of everything patched (a list
+/// for each colour), and every skin's own pictures and texts.
 const DATA: u32 = 0x09FC_0000;
 const MAGIC: u32 = 0x314B_5345; // "ESK1"
-const APPLIED: u32 = DATA + 4;
-/// Set once the skin's pictures and texts are in free ROM (they follow the army, not the colour, and Crumb uses the HQ with
-/// no skin on).
-const ART_MARK: u32 = DATA + 8;
-/// The colour the Dual Strike pack's picture palettes are patched for, and their backup list.
-const DS_APPLIED: u32 = DATA + 12;
-const DS_BACKUP: u32 = DATA + 0x8000;
-const BACKUP: u32 = DATA + 0x100;
-const BACKUP_MAX: usize = 0x7000;
-/// The skin's own pictures (see [`blobs`]).
-const ART: u32 = DATA + 0x1_0000;
+/// The skin (index + 1) patched on colour 1..5, and (the Dual Strike pack's picture palettes) on which colours.
+fn applied_at(colour: u8) -> u32 {
+    DATA + 0x10 + colour as u32
+}
+fn ds_applied_at(colour: u8) -> u32 {
+    DATA + 0x20 + colour as u32
+}
+/// Set (per skin) once its pictures and texts are in free ROM (they follow the army, not the colour, and Crumb uses the
+/// first skin's HQ with no skin on).
+fn art_mark(skin: usize) -> u32 {
+    DATA + 0x40 + 4 * skin as u32
+}
+fn backup(colour: u8) -> u32 {
+    DATA + 0x100 + 0x1000 * (colour as u32 - 1)
+}
+const BACKUP_MAX: usize = 0xF00;
+fn ds_backup(colour: u8) -> u32 {
+    DATA + 0x6000 + 0x400 * (colour as u32 - 1)
+}
+const DS_BACKUP_MAX: usize = 0x3F0;
+/// A skin's own pictures (see [`blobs`]).
+fn art_at(skin: usize) -> u32 {
+    DATA + 0x1_0000 + 0x4000 * skin as u32
+}
 
 pub mod names {
     pub const EMERALD_SUN: &str = "Emerald Sun";
@@ -131,11 +153,24 @@ pub struct UnitPatch {
     pub rows: Vec<String>,
 }
 
-pub const EMERALD_SUN_TOML: &str = include_str!("../skins/emerald_sun.toml");
+/// The skins' data files, in the order of their choice codes (6, 7, ...). To add an army, add its file here
+/// (docs/dev/army-packs.md); at most [`MAX_SKINS`].
+const FILES: &[&str] = &[include_str!("../skins/emerald_sun.toml")];
+const _: () = assert!(FILES.len() <= MAX_SKINS);
 
+/// Every skin, parsed once.
+pub fn skins() -> &'static [Skin] {
+    static S: std::sync::OnceLock<Vec<Skin>> = std::sync::OnceLock::new();
+    S.get_or_init(|| FILES.iter().map(|t| Skin::parse(t).expect("a skin's data file")).collect())
+}
+
+pub fn skin(i: usize) -> &'static Skin {
+    &skins()[i]
+}
+
+/// Emerald Sun, the first (the one Crumb's HQ borrows).
 pub fn emerald_sun() -> &'static Skin {
-    static S: std::sync::OnceLock<Skin> = std::sync::OnceLock::new();
-    S.get_or_init(|| Skin::parse(EMERALD_SUN_TOML).expect("skins/emerald_sun.toml"))
+    skin(0)
 }
 
 pub fn bgr555(rgb: (u8, u8, u8)) -> u16 {
@@ -386,8 +421,8 @@ fn bytes_of(r: &[u16; 16]) -> Vec<u8> {
     r.iter().flat_map(|c| c.to_le_bytes()).collect()
 }
 
-/// Every write that gives the skin to colour `host` (1..5), as the ROM `rom` (unpatched) needs them.
-pub fn plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
+/// Every write that gives the skin (the `idx`-th of [`skins`]) to colour `host` (1..5), as the ROM `rom` (unpatched) needs them.
+pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
     let mut out = Vec::new();
     if !(1..=5).contains(&host) {
         return out;
@@ -437,7 +472,7 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
         }
     }
     art_plan(rom, skin, host, &mut out);
-    text_plan(host, &mut out);
+    text_plan(idx, host, &mut out);
     out
 }
 
@@ -593,7 +628,7 @@ fn art_plan(rom: &dyn Rom, skin: &Skin, host: u8, out: &mut Vec<Patch>) {
 /// The pictures that follow the army and not the colour (AW2 draws Infantry, Mech and the HQ by the country of the army's
 /// CO): the skin's own copies in free ROM, which the traps below hand to the game for the skinned army. Written when the skin
 /// is installed; (what, address, bytes).
-pub fn blobs(rom: &dyn Rom, skin: &Skin) -> Vec<Patch> {
+pub fn blobs(rom: &dyn Rom, skin: &Skin, idx: usize) -> Vec<Patch> {
     let mut out = Vec::new();
     for unit in [1u8, 2] {
         let art = if unit == 1 { &skin.infantry } else { &skin.mech };
@@ -602,100 +637,137 @@ pub fn blobs(rom: &dyn Rom, skin: &Skin) -> Vec<Patch> {
         for frame in 0..3u32 {
             let pic = rom.read(UNIT_SHEET + FRAME_BYTES * frame + 128 * base, 128);
             let g = skin.foot_grid(&pic, unit, frame as usize);
-            out.push(Patch { what: format!("{} frame {frame}", if unit == 1 { "Infantry" } else { "Mech" }), addr: map_art(unit, frame), data: grid_to_tiles(&g, 2) });
+            out.push(Patch { what: format!("{} frame {frame}", if unit == 1 { "Infantry" } else { "Mech" }), addr: map_art(idx, unit, frame), data: grid_to_tiles(&g, 2) });
         }
     }
-    moving_blobs(rom, skin, &mut out);
-    text_blobs(skin, &mut out);
+    moving_blobs(rom, skin, idx, &mut out);
+    text_blobs(skin, idx, &mut out);
     if let Some(g) = skin.hq_grid() {
         for (i, _) in HQ_ART.iter().enumerate() {
-            out.push(Patch { what: "HQ".to_string(), addr: hq_art(i), data: grid_to_tiles(&g, 2) });
+            out.push(Patch { what: "HQ".to_string(), addr: hq_art(idx, i), data: grid_to_tiles(&g, 2) });
         }
     }
     out
 }
 
-/// Where the skin's picture of Infantry (1) or Mech (2) in an idle frame is kept.
-pub fn map_art(unit: u8, frame: u32) -> u32 {
-    ART + 128 * (2 * frame + unit as u32 - 1)
+/// Where skin `skin`'s picture of Infantry (1) or Mech (2) in an idle frame is kept.
+pub fn map_art(skin: usize, unit: u8, frame: u32) -> u32 {
+    art_at(skin) + 128 * (2 * frame + unit as u32 - 1)
 }
 
-/// Where the skin's HQ picture for clear (0) or snowy (1) weather is kept.
-pub fn hq_art(snow: usize) -> u32 {
-    ART + 0x400 + 0x100 * snow as u32
+/// Where its HQ picture for clear (0) or snowy (1) weather is kept.
+pub fn hq_art(skin: usize, snow: usize) -> u32 {
+    art_at(skin) + 0x400 + 0x100 * snow as usize as u32
 }
 
 // ---------- applying ----------
 
-/// The colour the skin sits on, 0 for none.
-pub fn host(core: &Core) -> u8 {
-    core.raw_read_8(STATE, -1)
-}
-
-/// Put the skin on colour `host` (0: none).
-pub fn set_host(core: &mut Core, host: u8) {
-    core.raw_write_8(STATE, -1, host);
-}
-
-/// The colour the ROM image is patched for (0 none).
-pub fn applied(core: &Core) -> u8 {
-    if core.raw_read_32(DATA, -1) != MAGIC {
-        0
+/// The colour (1..5) skin `skin` sits on, 0 for none.
+pub fn host_of(core: &Core, skin: usize) -> u8 {
+    if skin < MAX_SKINS {
+        core.raw_read_8(HOSTS + skin as u32, -1)
     } else {
-        core.raw_read_8(APPLIED, -1)
+        0
     }
 }
 
-/// Every tick: make the ROM image hold the skin the state asks for.
+/// Put skin `skin` on colour `host` (0: none).
+pub fn set_host_of(core: &mut Core, skin: usize, host: u8) {
+    if skin < MAX_SKINS {
+        core.raw_write_8(HOSTS + skin as u32, -1, host);
+    }
+}
+
+/// Every skin's colour.
+pub fn hosts(core: &Core) -> [u8; MAX_SKINS] {
+    std::array::from_fn(|i| host_of(core, i))
+}
+
+/// The skin (index) the state puts on colour `colour`, if any.
+pub fn skin_on(core: &Core, colour: u8) -> Option<usize> {
+    (colour != 0).then(|| (0..skins().len()).find(|&i| host_of(core, i) == colour)).flatten()
+}
+
+/// The skin the ROM image is patched with on colour `colour` (index), if any.
+pub fn applied_on(core: &Core, colour: u8) -> Option<usize> {
+    if !(1..=5).contains(&colour) || core.raw_read_32(DATA, -1) != MAGIC {
+        return None;
+    }
+    match core.raw_read_8(applied_at(colour), -1) {
+        0 => None,
+        k => Some(k as usize - 1),
+    }
+}
+
+/// Every tick: make the ROM image hold the skins the state asks for.
 pub fn sync(core: &mut Core) {
-    present(host(core));
+    present(hosts(core));
+    init(core);
     ensure_art(core);
-    // (only a Versus match has the skin: the other modes' armies are the story's)
-    let want = if crate::pvp::in_versus(core) { host(core) } else { 0 };
-    let want = if (1..=5).contains(&want) { want } else { 0 };
-    if applied(core) == want {
-        return;
-    }
-    restore(core);
-    if want != 0 {
-        install(core, emerald_sun(), want);
+    // (only a Versus match has skins: the other modes' armies are the story's)
+    let versus = crate::pvp::in_versus(core);
+    for colour in 1..=5u8 {
+        let want = if versus { skin_on(core, colour) } else { None };
+        let have = applied_on(core, colour);
+        if want == have {
+            continue;
+        }
+        if have.is_some() {
+            restore_colour(core, colour);
+        }
+        if let Some(i) = want {
+            install(core, skin(i), i, colour);
+        }
     }
 }
 
+/// The first time on a console: our marker word, nothing patched.
+fn init(core: &mut Core) {
+    if core.raw_read_32(DATA, -1) == MAGIC {
+        return;
+    }
+    core.raw_write_32(DATA, -1, MAGIC);
+    for c in 1..=5u8 {
+        core.raw_write_8(applied_at(c), -1, 0);
+        core.raw_write_8(ds_applied_at(c), -1, 0);
+        core.raw_write_32(backup(c), -1, 0);
+        core.raw_write_32(ds_backup(c), -1, 0);
+    }
+    for i in 0..MAX_SKINS {
+        core.raw_write_32(art_mark(i), -1, 0);
+    }
+}
+
+/// Every skin's pictures, texts and slot lists into free ROM (once).
 fn ensure_art(core: &mut Core) {
-    if core.raw_read_32(ART_MARK, -1) == MAGIC {
-        return;
+    for (i, sk) in skins().iter().enumerate() {
+        if core.raw_read_32(art_mark(i), -1) == MAGIC {
+            continue;
+        }
+        for p in blobs(core, sk, i) {
+            core.raw_write_range(p.addr, -1, &p.data);
+        }
+        for (u, v) in [0u16, slot_of(i, 1), slot_of(i, 2)].iter().enumerate() {
+            core.raw_write_16(slot_list(i) + 2 * u as u32, -1, *v);
+        }
+        core.raw_write_32(art_mark(i), -1, MAGIC);
     }
-    for p in blobs(core, emerald_sun()) {
-        core.raw_write_range(p.addr, -1, &p.data);
-    }
-    for (i, v) in ES_SLOT.iter().enumerate() {
-        core.raw_write_16(SLOT_LIST + 2 * i as u32, -1, *v);
-    }
-    core.raw_write_32(ART_MARK, -1, MAGIC);
 }
 
-fn restore(core: &mut Core) {
-    if core.raw_read_32(DATA, -1) != MAGIC {
-        core.raw_write_32(DATA, -1, MAGIC);
-        core.raw_write_8(APPLIED, -1, 0);
-        core.raw_write_32(BACKUP, -1, 0);
-        core.raw_write_32(BACKUP + 4, -1, 0);
-        core.raw_write_8(DS_APPLIED, -1, 0);
-        return;
-    }
-    restore_backup(core, BACKUP);
-    core.raw_write_8(APPLIED, -1, 0);
+/// Take the skin off colour `colour`: what it patched comes back.
+fn restore_colour(core: &mut Core, colour: u8) {
+    restore_backup(core, backup(colour), BACKUP_MAX);
+    core.raw_write_8(applied_at(colour), -1, 0);
 }
 
 /// Put back what the backup list at `base` holds (entries: address, length, the bytes padded to a word; a zero address ends
-/// the list) and empty the list.
-fn restore_backup(core: &mut Core, base: u32) {
+/// the list, `max` bytes at most) and empty the list.
+fn restore_backup(core: &mut Core, base: u32, max: usize) {
     let mut at = base;
     loop {
         let addr = core.raw_read_32(at, -1);
         let len = core.raw_read_32(at + 4, -1) as usize;
-        if addr == 0 || len == 0 || at as usize + 8 + len > (base as usize + BACKUP_MAX) {
+        if addr == 0 || len == 0 || (at - base) as usize + 8 + len > max {
             break;
         }
         let mut b = vec![0u8; len];
@@ -709,10 +781,10 @@ fn restore_backup(core: &mut Core, base: u32) {
 }
 
 /// Write `patches`, keeping what they replace in the backup list at `base`.
-fn apply_backup(core: &mut Core, base: u32, patches: &[Patch]) {
+fn apply_backup(core: &mut Core, base: u32, max: usize, patches: &[Patch]) {
     let mut at = base;
     for p in patches {
-        if (at - base) as usize + 8 + p.data.len() + 8 > BACKUP_MAX {
+        if (at - base) as usize + 8 + p.data.len() + 8 > max {
             log::error!("army skin: backup area full");
             break;
         }
@@ -730,10 +802,10 @@ fn apply_backup(core: &mut Core, base: u32, patches: &[Patch]) {
     }
 }
 
-fn install(core: &mut Core, skin: &Skin, host: u8) {
-    let patches = plan(core, skin, host);
-    apply_backup(core, BACKUP, &patches);
-    core.raw_write_8(APPLIED, -1, host);
+fn install(core: &mut Core, skin: &Skin, idx: usize, colour: u8) {
+    let patches = plan(core, skin, idx, colour);
+    apply_backup(core, backup(colour), BACKUP_MAX, &patches);
+    core.raw_write_8(applied_at(colour), -1, idx as u8 + 1);
 }
 
 /// The Dual Strike pack's picture palettes of the seven new units (the build menu's panel and the unit pages), copied into free
@@ -757,21 +829,27 @@ pub fn ds_plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
     out
 }
 
-/// After the Dual Strike pack's tables are in (every tick): the skin on those palettes too.
+/// After the Dual Strike pack's tables are in (every tick): the skins on those palettes too.
 pub fn sync_ds(core: &mut Core) {
-    let want = applied(core);
-    if core.raw_read_32(DATA, -1) != MAGIC || core.raw_read_8(DS_APPLIED, -1) == want {
+    if core.raw_read_32(DATA, -1) != MAGIC {
         return;
     }
-    if core.raw_read_8(DS_APPLIED, -1) != 0 {
-        restore_backup(core, DS_BACKUP);
-        core.raw_write_8(DS_APPLIED, -1, 0);
-    }
-    if want != 0 {
-        let patches = ds_plan(core, emerald_sun(), want);
-        if !patches.is_empty() {
-            apply_backup(core, DS_BACKUP, &patches);
-            core.raw_write_8(DS_APPLIED, -1, want);
+    for colour in 1..=5u8 {
+        let want = applied_on(core, colour).map_or(0, |i| i as u8 + 1);
+        let have = core.raw_read_8(ds_applied_at(colour), -1);
+        if want == have {
+            continue;
+        }
+        if have != 0 {
+            restore_backup(core, ds_backup(colour), DS_BACKUP_MAX);
+            core.raw_write_8(ds_applied_at(colour), -1, 0);
+        }
+        if want != 0 {
+            let patches = ds_plan(core, skin(want as usize - 1), colour);
+            if !patches.is_empty() {
+                apply_backup(core, ds_backup(colour), DS_BACKUP_MAX, &patches);
+                core.raw_write_8(ds_applied_at(colour), -1, want);
+            }
         }
     }
 }
@@ -798,80 +876,103 @@ fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
 
 // ---------- choosing the army ----------
 
-/// The identity code of the skin among the choices of an army: the five colours are 1..5.
+/// The code of the first skin among the choices of an army; the five colours are 1..5, skin `i` is `SKIN + i`.
 pub const SKIN: u8 = 6;
-/// The order a seat's choice cycles through: Orange Star, Blue Moon, Yellow Comet, Green Earth, Black Hole, the skin.
-pub const ORDER: [u8; 6] = [1, 2, 4, 3, 5, SKIN];
 
-/// The next choice (`step` +1 or -1 in [`ORDER`]) for a seat whose choice is `current`, skipping what the other seats
-/// (`taken`) have. The skin can be chosen by one seat only.
+/// The order a seat's choice cycles through: Orange Star, Blue Moon, Yellow Comet, Green Earth, Black Hole, then the skins.
+pub fn order() -> Vec<u8> {
+    let mut v = vec![1, 2, 4, 3, 5];
+    v.extend((0..skins().len() as u8).map(|i| SKIN + i));
+    v
+}
+
+/// The next choice (`step` +1 or -1 in [`order`]) for a seat whose choice is `current`, skipping what the other seats
+/// (`taken`) have. A skin can be chosen by one seat only.
 pub fn step_choice(current: u8, taken: &[u8], step: isize) -> u8 {
-    let n = ORDER.len() as isize;
-    let start = ORDER.iter().position(|&c| c == current).unwrap_or(0) as isize;
+    let order = order();
+    let n = order.len() as isize;
+    let start = order.iter().position(|&c| c == current).unwrap_or(0) as isize;
     (1..n)
-        .map(|k| ORDER[(start + step * k).rem_euclid(n) as usize])
+        .map(|k| order[(start + step * k).rem_euclid(n) as usize])
         .find(|c| !taken.contains(c))
         .unwrap_or(current)
 }
 
-/// The colours the game paints the armies with for the seats' choices (distinct, one of the five or the skin): each
-/// choice is its own colour; the skin's seat takes the lowest colour none of the others has, and is the skin's host.
-/// Returns the colour of each seat and the host (0 without the skin).
-pub fn assign(choices: &[u8]) -> (Vec<u8>, u8) {
-    let used = |c: u8| choices.iter().any(|&x| x == c);
-    let host = if used(SKIN) { (1..=5u8).find(|&c| !used(c)).unwrap_or(1) } else { 0 };
-    (choices.iter().map(|&c| if c == SKIN { host } else { c }).collect(), host)
+/// The colours the game paints the armies with for the seats' choices (distinct, one of the five or a skin): each
+/// colour choice is its own colour; a skin's seat takes the lowest colour none of the others has (the colour choices
+/// first, then the skins in order), and is that skin's host. Returns the colour of each seat and every skin's host (0
+/// for a skin nobody chose).
+pub fn assign(choices: &[u8]) -> (Vec<u8>, [u8; MAX_SKINS]) {
+    let mut used: Vec<u8> = choices.iter().copied().filter(|c| (1..=5).contains(c)).collect();
+    let mut hosts = [0u8; MAX_SKINS];
+    for i in 0..MAX_SKINS {
+        if choices.contains(&(SKIN + i as u8)) {
+            let h = (1..=5u8).find(|c| !used.contains(c)).unwrap_or(1);
+            hosts[i] = h;
+            used.push(h);
+        }
+    }
+    let values = choices
+        .iter()
+        .map(|&c| if c >= SKIN { hosts[(c - SKIN) as usize % MAX_SKINS] } else { c })
+        .collect();
+    (values, hosts)
 }
 
-/// The colour the skin sits on as the presentation last saw it (the app's legend, the status bar): a copy of the state
-/// for code that has no console at hand. Presentation only.
-static PRESENT: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+/// The skins' colours as the presentation last saw them (the app's legend, the status bar): a copy of the state for code
+/// that has no console at hand. Presentation only.
+static PRESENT: [std::sync::atomic::AtomicU8; MAX_SKINS] = [const { std::sync::atomic::AtomicU8::new(0) }; MAX_SKINS];
 
-pub fn present(host: u8) {
-    PRESENT.store(host, std::sync::atomic::Ordering::Relaxed);
+pub fn present(hosts: [u8; MAX_SKINS]) {
+    for (p, h) in PRESENT.iter().zip(hosts) {
+        p.store(h, std::sync::atomic::Ordering::Relaxed);
+    }
 }
 
-pub fn present_host() -> u8 {
-    PRESENT.load(std::sync::atomic::Ordering::Relaxed)
+/// The skin (index) the presentation last saw on colour `colour`.
+pub fn present_skin(colour: u8) -> Option<usize> {
+    (colour != 0).then(|| (0..skins().len()).find(|&i| PRESENT[i].load(std::sync::atomic::Ordering::Relaxed) == colour)).flatten()
 }
 
 /// The skin's own colour for chips and legends (a mid tone of its ramp).
-pub fn swatch() -> (u8, u8, u8) {
-    rgb_of(emerald_sun().ramp[2])
+pub fn swatch(skin_index: usize) -> (u8, u8, u8) {
+    rgb_of(skin(skin_index).ramp[2])
 }
 
-/// The skin's name for texts and menus.
-pub fn name() -> &'static str {
-    &emerald_sun().name
-}
-
-/// The colour the game paints (`colour` 1..5) or, as the skin, its name.
-pub fn colour_name(core: &Core, colour: u8) -> &'static str {
-    if host(core) == colour && colour != 0 {
-        return name();
-    }
-    match colour {
+/// A choice's name for the pages: the colour's army, or the skin's.
+pub fn choice_name(code: u8) -> &'static str {
+    match code {
         1 => "Orange Star",
         2 => "Blue Moon",
         3 => "Green Earth",
         4 => "Yellow Comet",
         5 => "Black Hole",
+        c if (c as usize) >= SKIN as usize && ((c - SKIN) as usize) < skins().len() => &skin((c - SKIN) as usize).name,
         _ => "",
     }
 }
 
+/// The name of the army on colour `colour` in this console: the skin's when one sits there.
+pub fn colour_name(core: &Core, colour: u8) -> &'static str {
+    match skin_on(core, colour) {
+        Some(i) => &skin(i).name,
+        None => choice_name(colour),
+    }
+}
 
-/// What the Teams screen of the game's own flow keeps of the choices: +1.. each army's choice (0: its colour as the game has
-/// it), +0xF 1 once the screen's first frame has reset them.
-const IDENT: u32 = STATE + 1;
-const SEEN: u32 = STATE + 0xF;
+/// The skin's name for texts (the first skin's).
+pub fn name() -> &'static str {
+    &emerald_sun().name
+}
 
 /// The first frame of a Teams screen: no skin, every army its colour. Cleared again when the battle starts.
 pub fn teams_frame(core: &mut Core) {
     if core.raw_read_8(SEEN, -1) == 0 {
         core.raw_write_8(SEEN, -1, 1);
         core.raw_write_range(IDENT, -1, &[0u8; 5]);
-        set_host(core, 0);
+        for i in 0..MAX_SKINS {
+            set_host_of(core, i, 0);
+        }
     }
 }
 
@@ -880,7 +981,7 @@ pub fn teams_left(core: &mut Core) {
 }
 
 /// The Teams screen's R / L: army `slot` (0-based) of `armies` takes the next choice of the six (the colours of the
-/// record at `colours_at`, the skin). On a five-army map the colours are the armies' own and R / L only put the skin on
+/// record at `colours_at`, the skins). On a five-army map the colours are the armies' own and R / L only put a skin on
 /// the army or take it off.
 pub fn teams_step(core: &mut Core, colours_at: u32, slot: u32, armies: u32, step: isize, five: bool) {
     let colour = |core: &Core, s: u32| core.raw_read_8(colours_at + s, -1);
@@ -892,28 +993,37 @@ pub fn teams_step(core: &mut Core, colours_at: u32, slot: u32, armies: u32, step
         .collect();
     let taken: Vec<u8> = (0..armies).filter(|&s| s != slot).map(|s| choices[s as usize]).collect();
     if five {
-        let here = choices[slot as usize];
-        choices[slot as usize] = if here == SKIN { colour(core, slot) } else if taken.contains(&SKIN) { here } else { SKIN };
+        // (its colour, then each skin not on another army)
+        let own = colour(core, slot);
+        let mut options = vec![own];
+        options.extend((0..skins().len() as u8).map(|i| SKIN + i));
+        let at = options.iter().position(|&c| c == choices[slot as usize]).unwrap_or(0) as isize;
+        let n = options.len() as isize;
+        if let Some(c) = (1..n).map(|k| options[(at + step * k).rem_euclid(n) as usize]).find(|c| *c == own || !taken.contains(c)) {
+            choices[slot as usize] = c;
+        }
     } else {
         choices[slot as usize] = step_choice(choices[slot as usize], &taken, step);
     }
-    let _ = step;
-    let (values, host) = if five {
-        let es = choices.iter().position(|&c| c == SKIN);
-        (
-            (0..armies).map(|s| colour(core, s)).collect::<Vec<_>>(),
-            es.map(|s| colour(core, s as u32)).unwrap_or(0),
-        )
+    let (values, hosts) = if five {
+        let mut hosts = [0u8; MAX_SKINS];
+        for (i, h) in hosts.iter_mut().enumerate().take(skins().len()) {
+            if let Some(s) = choices.iter().position(|&c| c == SKIN + i as u8) {
+                *h = colour(core, s as u32);
+            }
+        }
+        ((0..armies).map(|s| colour(core, s)).collect::<Vec<_>>(), hosts)
     } else {
         assign(&choices)
     };
     for s in 0..armies {
-        core.raw_write_8(IDENT + s, -1, if choices[s as usize] == SKIN { SKIN } else { 0 });
+        core.raw_write_8(IDENT + s, -1, if choices[s as usize] >= SKIN { choices[s as usize] } else { 0 });
         core.raw_write_8(colours_at + s, -1, values[s as usize]);
     }
-    set_host(core, host);
+    for (i, h) in hosts.iter().enumerate() {
+        set_host_of(core, i, *h);
+    }
 }
-
 
 // ---------- moving pictures ----------
 
@@ -922,9 +1032,11 @@ pub fn teams_step(core: &mut Core, colours_at: u32, slot: u32, armies: u32, step
 /// the 24x24 frame.
 const MOVE_TABLE: u32 = 0x0849_CD88;
 const MOVE_RECORD: u32 = 0x24;
-const MOVE_LIST: u32 = ART + 0x3E0;
-fn move_sheet_at(unit: u8) -> u32 {
-    ART + 0x1000 * unit as u32
+fn move_list(skin: usize) -> u32 {
+    art_at(skin) + 0x3E0
+}
+fn move_sheet_at(skin: usize, unit: u8) -> u32 {
+    art_at(skin) + 0x1000 * unit as u32
 }
 
 /// BIOS LZ77 (type 0x10) decompression.
@@ -1027,7 +1139,7 @@ pub fn crest_frame(g: &mut [u8], side: bool) {
     }
 }
 
-fn moving_blobs(rom: &dyn Rom, skin: &Skin, out: &mut Vec<Patch>) {
+fn moving_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
     for unit in [1u8, 2] {
         let art = if unit == 1 { &skin.infantry } else { &skin.mech };
         let ptr = u32_at(rom, MOVE_TABLE + MOVE_RECORD * unit as u32 + 4 * (art.base as u32 - 1));
@@ -1040,8 +1152,8 @@ fn moving_blobs(rom: &dyn Rom, skin: &Skin, out: &mut Vec<Patch>) {
             }
         }
         let data = lz77_literal(&sheet);
-        out.push(Patch { what: format!("{} moving sheet", if unit == 1 { "Infantry" } else { "Mech" }), addr: move_sheet_at(unit), data });
-        out.push(Patch { what: "moving sheet pointer".to_string(), addr: MOVE_LIST + 4 * unit as u32, data: move_sheet_at(unit).to_le_bytes().to_vec() });
+        out.push(Patch { what: format!("{} moving sheet", if unit == 1 { "Infantry" } else { "Mech" }), addr: move_sheet_at(idx, unit), data });
+        out.push(Patch { what: "moving sheet pointer".to_string(), addr: move_list(idx) + 4 * unit as u32, data: move_sheet_at(idx, unit).to_le_bytes().to_vec() });
     }
 }
 
@@ -1052,17 +1164,19 @@ const MOVE_FN_LOAD: u32 = 0x0803_5B5C;
 
 fn moving_sheet(core: &mut Core) {
     let unit = core.gba().cpu().gpr(0) as u32;
-    if !(0x0200_0000..0x0400_0000).contains(&unit) || !installed(core) {
+    if !(0x0200_0000..0x0400_0000).contains(&unit) {
         return;
     }
     let (army, ty) = (core.raw_read_8(unit + 0x37, -1) as u32 + 1, core.raw_read_8(unit + 0x36, -1));
-    if (1..=2).contains(&ty) && skinned(core, army) {
+    if !(1..=2).contains(&ty) {
+        return;
+    }
+    if let Some(skin) = skin_of_army(core, army) {
         let cpu = core.gba_mut().cpu_mut();
-        cpu.set_gpr(1, (MOVE_LIST + 4 * ty as u32) as i32);
+        cpu.set_gpr(1, (move_list(skin) + 4 * ty as u32) as i32);
         cpu.set_thumb_pc(MOVE_FN_LOAD);
     }
 }
-
 
 // ---------- names ----------
 
@@ -1075,37 +1189,37 @@ const TEXT_LOST: u32 = 3221;
 const TEXT_LISTS: [u32; 2] = [3288, 3311];
 /// By colour (1..5): its place in the lists in the other order.
 const LIST_ORDER: [u32; 5] = [0, 1, 3, 2, 4];
-const TEXT_AT: u32 = ART + 0x3000;
+fn text_at(skin: usize) -> u32 {
+    art_at(skin) + 0x3000
+}
 
-fn text_blobs(skin: &Skin, out: &mut Vec<Patch>) {
+fn text_blobs(skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
     let mut put = |at: u32, s: String| {
         let mut b = s.into_bytes();
         b.push(0);
         out.push(Patch { what: "text".to_string(), addr: at, data: b });
     };
-    put(TEXT_AT, skin.name.clone());
-    put(TEXT_AT + 0x20, format!("The {} Army has lost!\x0e\x0e", skin.name));
+    put(text_at(idx), skin.name.clone());
+    put(text_at(idx) + 0x20, format!("The {} Army has lost!\x0e\x0e", skin.name));
 }
 
-fn text_plan(host: u8, out: &mut Vec<Patch>) {
+fn text_plan(idx: usize, host: u8, out: &mut Vec<Patch>) {
     let mut point = |id: u32, at: u32| {
         out.push(Patch { what: "army name".to_string(), addr: TEXT_TABLE + 4 * id, data: at.to_le_bytes().to_vec() });
     };
     let k = host as u32 - 1;
-    point(TEXT_NAME + k, TEXT_AT);
-    point(TEXT_LOST + k, TEXT_AT + 0x20);
+    point(TEXT_NAME + k, text_at(idx));
+    point(TEXT_LOST + k, text_at(idx) + 0x20);
     for l in TEXT_LISTS {
-        point(l + LIST_ORDER[k as usize], TEXT_AT);
+        point(l + LIST_ORDER[k as usize], text_at(idx));
     }
 }
 
 /// Dual Strike's battle figures keep their palettes in the pack, one set per army (colour - 1): the skin's colours for
-/// the army the skin sits on (`own` its palette halves, `siblings` the first four armies' of the same unit).
+/// the army a skin sits on (`own` its palette halves, `siblings` the first four armies' of the same unit).
 pub fn battle_palettes(core: &Core, army: usize, own: &[[u16; 16]; 2], siblings: &[[[u16; 16]; 2]]) -> [[u16; 16]; 2] {
-    if !installed(core) || host(core) as usize != army + 1 {
-        return *own;
-    }
-    let skin = emerald_sun();
+    let Some(i) = skin_installed_on(core, army as u8 + 1) else { return *own };
+    let skin = skin(i);
     std::array::from_fn(|half| {
         let rows: Vec<[u16; 16]> = siblings.iter().map(|s| s[half]).collect();
         skin.hue_row(&own[half], &rows)
@@ -1114,39 +1228,56 @@ pub fn battle_palettes(core: &Core, army: usize, own: &[[u16; 16]; 2], siblings:
 
 // ---------- the skinned army's pictures ----------
 
-/// Whether army `army` (1..5) wears the skin.
-pub fn skinned(core: &Core, army: u32) -> bool {
-    let host = host(core);
-    if !(1..=5).contains(&host) || !(1..=5).contains(&army) {
-        return false;
+/// The skin (index) on colour `colour` (1..5) in this console's ROM image, if any: chosen and patched in.
+fn skin_installed_on(core: &Core, colour: u8) -> Option<usize> {
+    if !(1..=5).contains(&colour) {
+        return None;
     }
-    core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1A, -1) == host
+    let i = applied_on(core, colour)?;
+    (host_of(core, i) == colour && core.raw_read_32(art_mark(i), -1) == MAGIC).then_some(i)
 }
 
-/// The skin is installed in this console.
-fn installed(core: &Core) -> bool {
-    applied(core) != 0 && core.raw_read_32(ART_MARK, -1) == MAGIC
+/// The skin army `army` (1..5) wears.
+pub fn skin_of_army(core: &Core, army: u32) -> Option<usize> {
+    if !(1..=5).contains(&army) {
+        return None;
+    }
+    skin_installed_on(core, core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1A, -1))
 }
 
-/// The map's unit sprite slots of the skin's Infantry and Mech (the game's go to 26; Dual Strike's new units
-/// use 59..65, `crate::roster`; the BG map memory begins at tile 0x340, slot 66): their tiles are at 0x235 + 4 * slot, put there every frame by [`sync_map_art`].
-const ES_SLOT: [u16; 3] = [0, 52, 53];
-const SLOT_LIST: u32 = ART + 0x3F0;
+/// Whether army `army` (1..5) wears a skin.
+pub fn skinned(core: &Core, army: u32) -> bool {
+    skin_of_army(core, army).is_some()
+}
+
+/// The map's unit sprite slots of a skin's Infantry and Mech (the game's go to 26; Dual Strike's new units use 59..65,
+/// `crate::roster`; the BG map memory begins at tile 0x340): their tiles are at 0x235 + 4 * slot, put there every frame by
+/// [`sync_map_art`]. Two for each skin from 52.
+fn slot_of(skin: usize, unit: u8) -> u16 {
+    52 + 2 * skin as u16 + unit as u16 - 1
+}
+const _: () = assert!(52 + 2 * MAX_SKINS as u16 <= 59);
+/// A skin's slot per unit type (halfwords: 0, Infantry, Mech), for the slot function to read.
+fn slot_list(skin: usize) -> u32 {
+    art_at(skin) + 0x3F0
+}
 const SHEET_TILE: u32 = 0x235;
 const SHEET_VRAM: u32 = 0x0600_0000 + 32 * SHEET_TILE;
 const SLOT_BYTES: u32 = 128;
 
 /// The unit panel and the Design Room's unit bar copy a unit's four tiles of the first frame from the sheet in ROM, the
-/// source being the sheet plus the slot's tiles; for the skin's slots (past the sheet) that is the skin's own picture.
+/// source being the sheet plus the slot's tiles; for a skin's slots (past the sheet) that is the skin's own picture.
 pub fn icon_source(core: &Core, src: u32) -> Option<u32> {
-    if !installed(core) {
-        return None;
-    }
-    (1..=2u8).find(|&u| src == UNIT_SHEET + 128 * ES_SLOT[u as usize] as u32).map(|u| map_art(u, 0))
+    (0..skins().len()).find_map(|i| {
+        if core.raw_read_32(art_mark(i), -1) != MAGIC {
+            return None;
+        }
+        (1..=2u8).find(|&u| src == UNIT_SHEET + 128 * slot_of(i, u) as u32).map(|u| map_art(i, u, 0))
+    })
 }
 
 /// `sub_080261A4(army, type)`: the map sprite slot of a unit, by the country of the army's CO. After its first
-/// instruction (r0 the army, r4 the type): a skinned army's Infantry and Mech take the skin's slot.
+/// instruction (r0 the army, r1 the type): a skinned army's Infantry and Mech take the skin's slot.
 const SLOT_FN: u32 = 0x0802_61A6;
 const SLOT_FN_LOAD: u32 = 0x0802_61BA;
 
@@ -1155,20 +1286,20 @@ fn unit_slot(core: &mut Core) {
         let c = core.gba().cpu();
         (c.gpr(0) as u32 & 0xFFFF, c.gpr(1) as u32 & 0xFFFF)
     };
-    if std::env::var_os("AW2_SKIN_LOG").is_some() {
-        eprintln!("skin: slot army {army} type {ty} r4 {:x} installed {} skinned {} host {}", core.gba().cpu().gpr(4) as u32, installed(core), skinned(core, army), host(core));
+    if !(1..=2).contains(&ty) {
+        return;
     }
-    if (1..=2).contains(&ty) && installed(core) && skinned(core, army) {
+    if let Some(skin) = skin_of_army(core, army) {
         let cpu = core.gba_mut().cpu_mut();
-        cpu.set_gpr(4, (SLOT_LIST + 2 * ty) as i32);
+        cpu.set_gpr(4, (slot_list(skin) + 2 * ty) as i32);
         cpu.set_thumb_pc(SLOT_FN_LOAD);
     }
 }
 
-/// On the battle map the game copies one of the sheet's three idle frames to the VRAM sheet; the skin's slots,
+/// On the battle map the game copies one of the sheet's three idle frames to the VRAM sheet; the skins' slots,
 /// past the sheet, follow it (found by comparing, as `crate::roster` does for Dual Strike's units).
 pub fn sync_map_art(core: &mut Core) {
-    if !installed(core) {
+    if (1..=5u8).all(|c| applied_on(core, c).is_none()) {
         return;
     }
     const FRAME: u32 = 0x6C * 32;
@@ -1184,22 +1315,28 @@ pub fn sync_map_art(core: &mut Core) {
         }
     }
     let Some(f) = frame else { return };
-    for unit in [1u8, 2] {
-        let mut want = [0u8; 128];
-        core.raw_read_range(map_art(unit, f), -1, &mut want);
-        let at = SHEET_VRAM + SLOT_BYTES * ES_SLOT[unit as usize] as u32;
-        let mut have = [0u8; 128];
-        core.raw_read_range(at, -1, &mut have);
-        if have != want {
-            core.raw_write_range(at, -1, &want);
+    for i in 0..skins().len() {
+        if core.raw_read_32(art_mark(i), -1) != MAGIC || !(1..=5u8).any(|c| applied_on(core, c) == Some(i)) {
+            continue;
+        }
+        for unit in [1u8, 2] {
+            let mut want = [0u8; 128];
+            core.raw_read_range(map_art(i, unit, f), -1, &mut want);
+            let at = SHEET_VRAM + SLOT_BYTES * slot_of(i, unit) as u32;
+            let mut have = [0u8; 128];
+            core.raw_read_range(at, -1, &mut have);
+            if have != want {
+                core.raw_write_range(at, -1, &want);
+            }
         }
     }
 }
 
-/// Whether army `army` has the skin's HQ: the skinned army, and (a placeholder for a picture of his own) Crumb's.
-fn wears_hq(core: &Core, army: u32) -> bool {
+/// The skin whose HQ army `army` has: the one it wears, and (a placeholder for a picture of his own) the first skin's for
+/// Crumb's.
+fn hq_skin(core: &Core, army: u32) -> Option<usize> {
     let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
-    skinned(core, army) || co == crate::co_new::CRUMB
+    skin_of_army(core, army).or_else(|| (co == crate::co_new::CRUMB && core.raw_read_32(art_mark(0), -1) == MAGIC).then_some(0))
 }
 
 /// `sub_0803F5E4(weather, base)`: loads the building sheet and each army's HQ picture (by the country of its CO) into
@@ -1210,23 +1347,18 @@ const HQ_TILES: u32 = 0x5C;
 const HQ5_OFFSET: u32 = 0x90 - 0x48;
 
 fn hq_loaded(core: &mut Core) {
-    if core.raw_read_32(ART_MARK, -1) != MAGIC {
-        return;
-    }
     let (base, snow) = {
         let c = core.gba().cpu();
         (c.gpr(6) as u32, (c.gpr(8) as u32 == 1) as usize)
     };
-    let mut art = [0u8; 0x100];
-    core.raw_read_range(hq_art(snow), -1, &mut art);
-    for army in 1..=4u32 {
-        if wears_hq(core, army) {
-            let tile = (base + HQ_TILES + 8 * (army - 1)) & 0x3FF;
-            core.raw_write_range(0x0601_0000 + tile * 32, -1, &art);
+    for army in 1..=5u32 {
+        if army == 5 && !crate::five::active(core) {
+            continue;
         }
-    }
-    if crate::five::active(core) && wears_hq(core, 5) {
-        let tile = (base + HQ5_OFFSET) & 0x3FF;
+        let Some(skin) = hq_skin(core, army) else { continue };
+        let mut art = [0u8; 0x100];
+        core.raw_read_range(hq_art(skin, snow), -1, &mut art);
+        let tile = if army == 5 { base + HQ5_OFFSET } else { base + HQ_TILES + 8 * (army - 1) } & 0x3FF;
         core.raw_write_range(0x0601_0000 + tile * 32, -1, &art);
     }
 }
@@ -1293,10 +1425,42 @@ mod tests {
         assert_eq!(step_choice(2, &[1, 4, 3, 5], 1), SKIN);
         assert_eq!(step_choice(2, &[1, 4, 3, 5, SKIN], 1), 2);
         // the skin on a 5-seat map stands in for the colour nobody else has
-        assert_eq!(assign(&[1, 2, SKIN, 4, 5]), (vec![1, 2, 3, 4, 5], 3));
-        assert_eq!(assign(&[SKIN, 2]), (vec![1, 2], 1));
-        assert_eq!(assign(&[2, SKIN]), (vec![2, 1], 1));
-        assert_eq!(assign(&[1, 2, 3]), (vec![1, 2, 3], 0));
+        assert_eq!(assign(&[1, 2, SKIN, 4, 5]), (vec![1, 2, 3, 4, 5], [3, 0, 0]));
+        assert_eq!(assign(&[SKIN, 2]), (vec![1, 2], [1, 0, 0]));
+        assert_eq!(assign(&[2, SKIN]), (vec![2, 1], [1, 0, 0]));
+        assert_eq!(assign(&[1, 2, 3]), (vec![1, 2, 3], [0, 0, 0]));
+        // two skins (a second army added to the registry) take the colours that are left, in order
+        assert_eq!(assign(&[SKIN + 1, 1, SKIN]), (vec![3, 1, 2], [2, 3, 0]));
+    }
+
+
+    /// With `TANGOAW2_AW2_ROM`: on every colour the plan's writes do not overlap, change what the colour looks like, and put the skin's
+    /// ramp where the unit palette's army colours are. `cargo test -p tango-gamesupport-aw2 army_skin -- --ignored`.
+    #[test]
+    #[ignore]
+    fn the_plan_on_the_real_rom() {
+        let rom = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").expect("TANGOAW2_AW2_ROM")).unwrap();
+        let rom = RomFile(&rom);
+        let skin = emerald_sun();
+        for host in 1..=5u8 {
+            let plan = plan(&rom, skin, 0, host);
+            assert!(plan.len() >= 20, "colour {host}: {} writes", plan.len());
+            let mut spans: Vec<(u32, u32)> = plan.iter().map(|p| (p.addr, p.addr + p.data.len() as u32)).collect();
+            spans.sort();
+            for w in spans.windows(2) {
+                assert!(w[0].1 <= w[1].0, "colour {host}: writes overlap at {:#x}", w[1].0);
+            }
+            let unit = plan.iter().find(|p| p.what == "map units").unwrap();
+            let row: Vec<u16> = unit.data.chunks(2).map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
+            assert_eq!(&row[2..8], &skin.ramp);
+            assert_ne!(unit.data, rom.read(unit.addr, 32), "colour {host}: the unit palette is unchanged");
+            // the colour's own entries are in every table the skin patches
+            for p in &plan {
+                if p.what != "text" && p.what != "army name" {
+                    assert_ne!(p.data, rom.read(p.addr, p.data.len()), "colour {host}: {} unchanged", p.what);
+                }
+            }
+        }
     }
 
     #[test]
