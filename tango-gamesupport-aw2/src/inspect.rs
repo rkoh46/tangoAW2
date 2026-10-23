@@ -109,6 +109,8 @@ impl UnitInfo {
 pub struct ArmyInfo {
     pub army: u8,
     pub colour: u8,
+    /// The army's name: the colour's, or an army skin's (Emerald Sun) where one sits on the colour.
+    pub colour_name: String,
     pub controller: u8,
     pub co: u8,
     pub co_name: Option<String>,
@@ -583,6 +585,7 @@ fn read_board(core: &Core, s: &mut Snapshot, online: bool, players: usize) {
         s.armies.push(ArmyInfo {
             army: a,
             colour: core.raw_read_8(p + 0x1A, -1),
+            colour_name: crate::army_skin::colour_name(core, core.raw_read_8(p + 0x1A, -1)).to_string(),
             controller: core.raw_read_8(p + 0x1B, -1),
             co,
             co_name: crate::co_new::ds_name(co).map(|t| t.iter().filter(|c| (0x20..0x7F).contains(*c)).map(|&c| c as char).collect()),
@@ -698,7 +701,7 @@ impl Snapshot {
                     .iter()
                     .map(|a| {
                         json!({
-                            "army": a.army, "colour": a.colour, "controller": a.controller, "co": a.co, "co_name": a.co_name,
+                            "army": a.army, "colour": a.colour, "colour_name": a.colour_name, "controller": a.controller, "co": a.co, "co_name": a.co_name,
                             "partner": a.partner, "funds": a.funds, "power_meter": a.meter, "power_cost": a.power_cost,
                             "super_cost": a.super_cost, "power_mode": a.power_mode, "powers_used": a.powers_used,
                             "team": a.team, "alive": a.alive, "seat": a.seat, "units": a.units, "properties": a.properties,

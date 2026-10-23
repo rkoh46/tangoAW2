@@ -50,7 +50,7 @@ Top level: `frame` (console frame counter), `tick`, `seq`, `age_ms`, `mode` (`of
 `main_loop`, `in_battle`, `active_army`, `active_seat`, `mine` (this window's seat has the pad), `day`/`turn`,
 `turn_ended`, `decided`, `winner`, `rules` {fog, weather, powers, abilities, game_mode}, `map` {id, name, w, h},
 `cursor` {x,y}, `camera` {px,py}, `menu` (below), `selected_unit`,
-`armies[]` {army, co, co_name, partner, funds, power_meter, power_cost, super_cost, power_mode, powers_used, team, alive,
+`armies[]` {army, colour, colour_name (the army's name: an army skin's, Emerald Sun, where one sits on the colour), co, co_name, partner, funds, power_meter, power_cost, super_cost, power_mode, powers_used, team, alive,
 controller, colour, seat, units, properties}, `units[]` {id, owner, type, name, x, y, hp, fuel, ammo, moved/done, carried,
 hidden, capture, cargo[], flags}, `properties[]` {x, y, type, name, owner, capture}, `flags`, `cues`, `screen_info`,
 `last_hash` {frame, h}, `local` {session: none/offline/online/other, seat}, `link`, `online`.
