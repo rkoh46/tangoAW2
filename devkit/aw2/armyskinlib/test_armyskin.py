@@ -64,3 +64,17 @@ class Originality(unittest.TestCase):
             for y in range(2, 6):
                 c.putpixel((x, y), (60, 70, 55, 255))
         self.assertEqual(check.identical(a, c)[0], 0.0)
+
+
+class Options(unittest.TestCase):
+    def test_a_patch_is_the_difference(self):
+        from . import options
+        base = [[0] * 16 for _ in range(16)]
+        new = [r[:] for r in base]
+        base[2][3] = 7
+        new[2][3] = 0           # cleared
+        new[3][4] = 14          # added
+        x, y, rows = options.patch_rows(base, new)
+        self.assertEqual((x, y), (3, 2))
+        self.assertEqual(rows, ["_.", ".e"])
+

@@ -4,6 +4,7 @@
   armyskin check [--live] [--skin FILE] [--scenario S ...]            the data file, the palette's margins, every unit's recolouring; --live also walks the
                                                                       catalogue of army-coloured screens and fails on any left in the base army's colours
   armyskin catalogue                                                  the screens (scenarios) and what each shows
+  armyskin options --dir DIR [--letters ACF] [--awbw DIR]            a sheet of soldier options (candidate files A.toml ...) to choose from
   armyskin scenario NAME [--ids 6,2] [--ds] [--out DIR]              run one scenario's harness script and keep its shots (for sheets)
   armyskin sheet --out DIR [--awbw DIR] [--ds]                        review sheets: screens from the scenarios, one row per unit, the palette, the art at 4x
   armyskin checkpoint NAME [--scenario S] [--ids ..]                  play a scenario in the harness and save the console's state at its end as a checkpoint
@@ -58,6 +59,14 @@ def register(sub):
     a.add_argument("--ds", action="store_true", help="also the Dual Strike pack's sheet")
     a.add_argument("--prev", action="append", default=[], metavar="LABEL=FILE", help="an earlier data file (v1=/path/x.toml): its helmet and HQ are drawn beside the new ones (sheet 03); repeat for each")
     a.set_defaults(fn=run_sheet)
+    a = ps.add_parser("options", help="a sheet of soldier options (Infantry + Mech designs from candidate files A.toml, B.toml ...) to choose from")
+    a.add_argument("--dir", required=True, help="the candidate files (see armyskinlib/options.py for their format)")
+    a.add_argument("--letters", help="only these (e.g. ACF)")
+    a.add_argument("--awbw", help="a directory with another project's reference pictures to show on top (review only, never committed)")
+    a.add_argument("--skin")
+    a.add_argument("--out", help="the PNG (default devkit/work/armyskin/options.png)")
+    a.add_argument("--no-tile", action="store_true", help="do not run the harness for a real plain map tile (a flat colour instead)")
+    a.set_defaults(fn=run_options)
     a = ps.add_parser("catalogue", help="list the scenarios")
     a.set_defaults(fn=run_catalogue)
     a = ps.add_parser("scenario", help="run one scenario's script, keep the shots")
@@ -121,6 +130,24 @@ def run_look(a):
     for ar in armies:
         print(f"army {ar['army']}: colour {ar['colour']} ({ar.get('colour_name')}) co {ar['co_name'] or ar['co']} units {ar['units']} properties {ar['properties']}")
     util.say("screenshot", shot)
+    return 0
+
+
+def run_options(a):
+    from ..armyskinlib import options as op, sheet as sh
+    tile = None
+    if not a.no_tile:
+        try:
+            util.check_fresh(util.example_bin("aw2_room_teams"), "aw2_room_teams")
+            work = cfg.work("armyskin", "options")
+            dirs = sh.run_scenarios(["units"], work)
+            tile = op.plain_tile(dirs["units"] / "units_s0.bmp")
+        except SystemExit:
+            tile = None
+    out = Path(a.out or cfg.work("armyskin", "options.png"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    op.sheet(a.dir, list(a.letters) if a.letters else None, tile=tile, awbw_dir=a.awbw, skin_path=a.skin).save(out)
+    util.say("wrote", out)
     return 0
 
 
