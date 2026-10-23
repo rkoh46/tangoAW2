@@ -4,7 +4,7 @@ tangoAW2 has a sixth army, **Emerald Sun**, and a general way to add more: an ar
 that the game draws on top of one of AW2's five colours. Everything in the file is original work of this repository (GPL-3.0-or-later): colours and
 pixel art drawn here, applied at run time to AW2's own graphics, which are read from the player's ROM as always. Nothing from any game (or from AWBW)
 is in the repository. Emerald Sun is *inspired by* the Jade Sun army of Advance Wars By Web (AWBW; credited in `CREDITS.md`): its Roman legionaries
-with a red-crested helmet, its temple and its sun; no AWBW picture was copied or traced (it was looked at, and only in review sheets, never committed).
+with a red-crested helmet, its tall domed HQ and its sun; no AWBW picture was copied or traced (it was looked at, and only in review sheets, never committed).
 
 Code: `tango-gamesupport-aw2/src/army_skin.rs`. Kit: `aw2dev armyskin ...` (`devkit/aw2/commands/armyskin.py`, `devkit/aw2/armyskinlib/`), skill `aw2-add-army`.
 
@@ -40,7 +40,7 @@ By **colour** (the colour's rows of tables indexed by colour): `army_skin::TABLE
 
 | Table | Address | What |
 |---|---|---|
-| map units, copy | `0x0810E6E0`, `0x085AD9E8` | unit palette: roles 2..7 the army's ramp, 11..13 trim greys (the helmets' bronze), 14 unused (the skin's crest red) |
+| map units, copy | `0x0810E6E0`, `0x085AD9E8` | unit palette: roles 2..7 the army's ramp, 11..13 trim greys (steel), 14 unused (the skin's crest red) |
 | moved units, copy | `0x0810E780`, `0x085ADA88` | the greys of units that have moved (AW2 tints each army's; the skin's is a neutral grey with a breath of its ramp) |
 | moving units | `0x0810EA60` | the unit roles at other indices (`MOVE_ROLE`) |
 | buildings (two sets) | `0x080D3F04`, `0x080D3E04` | OBJ palettes of the buildings, HQ included (entry 14, magenta and unused in every colour's row, is the skin's gold: `Kind::Building`) |
@@ -74,18 +74,19 @@ Still the colour's: the CO's national emblem on the CO page (it is the CO's coun
 id = "emerald_sun"; name = "Emerald Sun"; short = "ES"
 [colours]                       # RRGGBB
 ramp = [6 colours, light to dark]   # unit roles 2..7, every building, panel and gauge by rank
-trim = [3 colours]                  # unit roles 11..13 (tracks, barrels): bronze
+trim = [3 colours]                  # unit roles 11..13 (tracks, barrels, the cheek plate): steel
+building = [4 colours]              # optional: the buildings' own ramp, light to dark (else the units' ramp)
 crest, gold, gold_dark              # crest red (unit role 14), the sun
 moved_tint = 0.5                    # how much of the ramp's hue the grey of a moved unit keeps
 moved_dim = 0.78                    # how bright it stays (the skin's own dimmed ramp; still readable)
 [infantry] / [mech]
 base = 3                            # AW2's picture of this colour's soldier is the start
-[[infantry.patch]]  frames = [0,1,2]  x = 0  y = 0  rows = [ ... ]   # `.` keep, `_` clear, hex digit = unit palette index (b c d the bronze trim, e crest, f outline)
+[[infantry.patch]]  frames = [0,1,2]  x = 0  y = 0  rows = [ ... ]   # `.` keep, `_` clear, hex digit = unit palette index (b c d the steel trim, e crest, f outline)
   moving = [0,1,2]  anchor = [6,1]   # also on those frames of the moving sheet (0..2 sideways, 3..5 front, 6..8 back), the point `anchor` of `rows`
                                      # lying on the left outline of the helmet's top row (found in the frame); `frames = []` for a moving-only patch
-[infantry.moving] crest = true      # (older way) a plain crest over every moving frame's helmet; Emerald Sun draws its galea with patches instead
+[infantry.moving] crest = true      # (older way) a plain crest over every moving frame's helmet; Emerald Sun draws its crest with patches instead
 [hq]       rows = [32 rows of 16]   # `.` clear, hex digits = the building palette's index (1 white, 2..5 the body ramp light to dark, b shadow)
-[emblem]   rows = [16 rows of 16]   # 1 white, 2 shadow, a b c = the dark, mid, light entry of the emblem colour the skin sits on (Black Hole has one entry: all three); used by the game's own emblem
+[emblem]   rows = [16 rows of 16]   # 1 white, 2 shadow, a b c = the mid, dark and light tones of the skin's ramp (`ramp[2]`, `ramp[4]`, `ramp[0]`; they go to the three emblem entries of the colour the skin sits on; Black Hole has one entry: all three); used by the game's own emblem
                                     # (Teams screens, results) and drawn from the file for Dual Strike's Teams and CO-pick cards; the pick flags are recoloured from the flag's own tiles (`recolour_entries`)
 ```
 
@@ -125,46 +126,53 @@ CIE76 delta E between the skin's **body colours** (ramp 1..4) and:
 
 | Against | Needs | Emerald Sun |
 |---|---|---|
-| each of AW2's five armies' body colours (ramp 2..7 of the unit palette): the closest pair | >= 10 | Orange Star 44.9, Blue Moon 25.5, Green Earth 16.5, Yellow Comet 35.4, Black Hole 13.3 |
-| ... and the mean over the four body colours of the distance to that army's nearest colour | >= 16 | 49.6, 38.2, 29.4, 40.2, 16.8 |
-| chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.21 (21.0 of 97.5) |
-| the greys of units that have moved (all five armies) | >= 9 | 10.0 |
-| the terrain's colours in fog (measured with fog on) | >= 9 | 9.7 |
-| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 12.6 .. 22.2 |
-| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 8.0 .. 22.6 |
+| each of AW2's five armies' body colours (ramp 2..7 of the unit palette): the closest pair | >= 10 | Orange Star 36.2, Blue Moon 35.5, Green Earth 17.5, Yellow Comet 29.7, Black Hole 12.0 |
+| ... and the mean over the four body colours of the distance to that army's nearest colour | >= 16 | 45.4, 46.9, 30.1, 34.2, 18.4 |
+| chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.19 (18.8 of 97.5) |
+| the greys of units that have moved (all five armies) | >= 9 | 14.8 |
+| the terrain's colours in fog (measured with fog on) | >= 9 | 13.8 |
+| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 18.4 .. 24.1 |
+| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 13.4 .. 26.5 |
 
-Emerald Sun is a pale emerald grey: a stone with a faint jade tint (hue 142, chroma about 20, lightness 94 .. 46 down the ramp), with bronze trim and a red crest. It is lighter and much less saturated than Green Earth,
-Black Hole's greys are the nearest colours (its highlights are grey too: the army differs by its purple body, so the mean over its colours is the looser margin), and fog's grey-greens set the floor on
-lightness. A skin that is too grey is read as a done unit or as fogged ground; one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the
-ramp's hue at 78% of its brightness, not a flat grey.
+Emerald Sun's units are a sage stone with a faint jade tint (the tones of AWBW's Jade Sun units, nudged a little greener so Black Hole's greys and fog stay clear of them: `DEE4C0 .. 292C23`), with steel trim and a red crest.
+Its buildings have their own, paler and greener ramp (`building`, four tones `D6FFB8 .. 6C8555`, AWBW's pale-green buildings), used for the building palettes only. Black Hole's greys are the nearest colours (its highlights
+are grey too: the army differs by its purple body, so the mean over its colours is the looser margin), and fog's grey-greens set the floor on lightness. A skin that is too grey is read as a done unit or as fogged ground;
+one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the ramp's hue at 58% of its brightness, not a flat grey.
 
 ### Originality (`check --awbw-ref DIR`, local only)
 
-Emerald Sun is *inspired by* AWBW's Jade Sun; the repository is public and nothing of AWBW's may be in it. The style was taken (a tall red crest on a small stone bowl, a pale square logo with a sun and a frame),
-every pixel is drawn here, and the shapes differ (the crest rises at the front and sweeps back with a tail, the cheek and neck guards are stepped, the logo has eight straight rays, four long and four short,
-round a ring with a dark dot). `aw2dev armyskin check --awbw-ref DIR` measures it: DIR holds the reference pictures (`jsinfantry.gif`, `jsmech.gif`, `jslogo.gif`; fetched by hand, kept outside the repository, never
-committed); the check needs them, so it only runs where they are, and it prints and fails on the share of foreground pixels (colour ignored) two pictures have in common at the best offset (up to 3 pixels, mirrored
-too), the Jaccard ratio of the two masks:
+Emerald Sun is *inspired by* AWBW's Jade Sun and is drawn to read like it at a glance: a sage steel soldier with a red crest, a tall pale-green domed HQ with gold windows and a door, a pale square logo with a soft sun.
+The repository is public and nothing of AWBW's may be in it, so every pixel is drawn here, by hand, looking at the style and never tracing, copying or pasting (the Infantry and Mech start from AW2's own soldier, as
+AWBW's do). The shapes differ in the details: a spiked crest higher at the back, a steel cheek plate, a finial and an arched door on a domed HQ, a twelve-ray sun against their eight.
 
-| What | How | Needs | Emerald Sun |
-|---|---|---|---|
-| helmet (Infantry, Mech) | what each changed in the head's rows 0..8 against AW2's own soldier (both are that soldier with a helmet) | <= 0.60 | 0.21, 0.30 |
-| the whole silhouette | against the reference | no closer than AW2's own soldier is | 0.82 (AW2's 0.89), 0.94 (0.95) |
-| logo | the sun inside the frame (the pale ground is dropped, the frame is drawn differently anyway) | <= 0.60 | 0.44 |
+`aw2dev armyskin check --awbw-ref DIR` measures it. DIR holds the reference pictures (`jsinfantry.gif`, `jsmech.gif`, `jadesunhq.gif`, `jslogo.gif`; fetched by hand, kept outside the repository, never committed);
+the check needs them, so it only runs where they are. What separates a drawing from a copy is how many *pixels* are the same: a hand redraw matches the shapes and rarely the pixels, a copy matches nearly all of them.
+So the check counts the share of **our** foreground pixels that sit where the reference has a pixel of the same **colour class** (clear, red, yellow, or one of five brightness steps; the colour itself is ignored), at the best
+offset (up to 2 pixels, mirrored too), and fails above **0.78**. The threshold sits above what a close hand redraw reaches (the shared AW2 soldier alone gives about 0.5) and below a copy's (about 0.9 and over).
+
+| Picture | Share in the same place and class | Needs |
+|---|---|---|
+| Infantry | 0.53 | <= 0.78 |
+| Mech | 0.51 | <= 0.78 |
+| HQ | 0.63 | <= 0.78 |
+| Logo | 0.40 | <= 0.78 |
+
+Sheet 03 prints the score under each pair of pictures.
 
 ### The HQ's depth (`check`, `hq_metrics`)
 
 An HQ is 16 x 32 palette indices. AW2's five get their depth from one dominant mid shade (62 to 74 % of the pixels) with a lighter lit shade on the left and top, a few bright accents, a few dark details,
-the picture filling from row 1 to 5 down to the bottom, the left columns brighter than the right. The check measures these on the five and the skin's HQ must lie in their range (the allowed band is a little wider):
+the picture filling from row 1 to 5 down to the bottom, the left columns brighter than the right. The check measures these on the five and the skin's HQ must lie in their range (the allowed band is wider: the skin's HQ has a
+dark outline all round, like theirs, and AWBW's own are paler and flatter):
 
-| Measure | AW2's five | Emerald Sun |
-|---|---|---|
-| pixels filled | 367 to 404 (of 512) | 393 |
-| shades used | 6 to 9 | 8 |
-| the commonest shade's share | 0.62 to 0.74 | 0.38 (allowed down to 0.28: ours also has a dark outline and deep gaps) |
-| value contrast (std. dev. of brightness) | 25 to 39 | 65 (allowed up to 1.75 x the strongest: it was asked to be stronger) |
-| first row used | 1 to 5 | 1 |
-| left three columns against the right three | brighter on the left | 138 against 94 |
+| Measure | AW2's five | Allowed | Emerald Sun |
+|---|---|---|---|
+| pixels filled | 367 to 404 (of 512) | 341 to 444 | 428 |
+| shades used | 6 to 9 | 6 to 12 | 7 |
+| the commonest shade's share | 0.62 to 0.74 | 0.28 to 0.89 | 0.33 |
+| value contrast (std. dev. of brightness) | 25 to 39 | 23 to 69 | 41 |
+| first row used | 1 to 5 | at most 5 | 0 |
+| left three columns against the right three | brighter on the left | the left brighter | 169 against 152 |
 
 ## 7. Adding an army (skill `aw2-add-army`)
 
@@ -176,6 +184,6 @@ the picture filling from row 1 to 5 down to the bottom, the left columns brighte
 
 ## 8. Limits
 
-- Battle scenes of Infantry and Mech are AW2's figures in the skin's palette (no helmet, no crest): the figures are OBJ tiles streamed per animation frame and the helmet shares its palette entries with the uniform, so an overlay would need a hook on every tile copy; the idle and moving map pictures, the build menu and the panel icons have the galea.
+- Battle scenes of Infantry and Mech are AW2's figures in the skin's palette (no helmet, no crest): the figures are OBJ tiles streamed per animation frame and the helmet shares its palette entries with the uniform, so an overlay would need a hook on every tile copy; the idle and moving map pictures, the build menu and the panel icons have the crest.
 - Up to three skins at once (slots 52..57, one colour each); more needs more slot room (`slot_of`).
-- The Dual Strike graphics mode and the tilted map (and its hi-res picture) show the skin: the tilt is a host-side overlay of the console's picture, so the palettes, the helmets (the skin's slot instead of the CO's country's), the HQ and the properties are the console's own; the pack's own screens (the CO panel's palette, the CO page's unit chart, the Versus and CO-pick cards with the emblem) take their colours from the skin file. Dual Strike's own pictures of Infantry and Mech are not drawn for the skin (the galea is AW2-style pixel art: the skin's soldiers keep it in every mode).
+- The Dual Strike graphics mode and the tilted map (and its hi-res picture) show the skin: the tilt is a host-side overlay of the console's picture, so the palettes, the helmets (the skin's slot instead of the CO's country's), the HQ and the properties are the console's own; the pack's own screens (the CO panel's palette, the CO page's unit chart, the Versus and CO-pick cards with the emblem) take their colours from the skin file. Dual Strike's own pictures of Infantry and Mech are not drawn for the skin (the crested soldiers are AW2-style pixel art: the skin's soldiers keep them in every mode).

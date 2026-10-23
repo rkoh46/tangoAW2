@@ -123,6 +123,8 @@ pub struct Skin {
     pub short: String,
     /// BGR555.
     pub ramp: [u16; 6],
+    /// The buildings' own ramp (light to dark), when the skin's buildings are not in the units' tones (AWBW's Jade Sun has pale-green buildings and sage-grey units).
+    pub building: Option<Vec<u16>>,
     pub trim: [u16; 3],
     pub crest: u16,
     pub gold: u16,
@@ -264,6 +266,7 @@ impl Skin {
             name: s("name")?,
             short: s("short")?,
             ramp: list("ramp", 6)?.try_into().unwrap(),
+            building: if c.get("building").is_some() { Some(list("building", 4)?) } else { None },
             trim: list("trim", 3)?.try_into().unwrap(),
             crest: one("crest")?,
             gold: one("gold")?,
@@ -367,13 +370,19 @@ impl Skin {
     /// brightness rank (the lightest the ramp's lightest, the darkest its darkest, the rest between), so the skin looks the
     /// same whichever colour it sits on; the rest stay.
     pub fn hue_row(&self, orig: &[u16; 16], rows: &[[u16; 16]]) -> [u16; 16] {
+        self.rank_map(orig, rows, &self.ramp)
+    }
+
+    /// [`Self::hue_row`] with another ramp (light to dark, any length).
+    pub fn rank_map(&self, orig: &[u16; 16], rows: &[[u16; 16]], ramp: &[u16]) -> [u16; 16] {
         let mut out = *orig;
         let mut army: Vec<usize> = (1..16).filter(|&i| orig[i] != 0 && rows.iter().any(|r| r[i] != rows[0][i])).collect();
         army.sort_by(|&a, &b| lum(orig[b]).partial_cmp(&lum(orig[a])).unwrap().then(a.cmp(&b)));
         let m = army.len();
+        let top = ramp.len() - 1;
         for (rank, &i) in army.iter().enumerate() {
-            let at = if m > 1 { (rank * 5 + (m - 1) / 2) / (m - 1) } else { 2 };
-            out[i] = self.ramp[at.min(5)];
+            let at = if m > 1 { (rank * top + (m - 1) / 2) / (m - 1) } else { top / 2 };
+            out[i] = ramp[at.min(top)];
         }
         out
     }
@@ -450,7 +459,10 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
         Kind::Moving => skin.moving_row(orig),
         Kind::Hue => skin.hue_row(orig, siblings),
         Kind::Building => {
-            let mut row = skin.hue_row(orig, siblings);
+            let mut row = match &skin.building {
+                Some(b) => skin.rank_map(orig, siblings, b),
+                None => skin.hue_row(orig, siblings),
+            };
             row[14] = skin.gold;
             row
         }
@@ -761,9 +773,9 @@ pub fn emblem_pixels(skin_index: usize) -> Vec<Option<(u8, u8, u8)>> {
             out.push(match ch {
                 '1' => Some((255, 255, 255)),
                 '2' => Some(rgb_of(sk.ramp[5])),
-                'a' => Some(rgb_of(sk.ramp[4])),
-                'b' => Some(rgb_of(sk.ramp[2])),
-                'c' => Some(rgb_of(sk.ramp[1])),
+                'a' => Some(rgb_of(sk.ramp[2])),
+                'b' => Some(rgb_of(sk.ramp[4])),
+                'c' => Some(rgb_of(sk.ramp[0])),
                 _ => None,
             });
         }

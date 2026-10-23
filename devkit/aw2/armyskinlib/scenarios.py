@@ -126,6 +126,11 @@ def results():
     )
 
 
+@scenario("teams", [6, 2], "the Teams screen (SELECT YOUR ARMY) with the skin: its emblem and chip at actual size", ["teams"], extra="wait 40\nshot teams 0\nwait 5\nshot teams1 1\n")
+def teams():
+    return ""
+
+
 @scenario("rematch", [6, 2], "the room's next match on the same console: the first had the skin, the second has Orange Star and Blue Moon and must look exactly as if there had been no skin before", ["rematch"], compare="rematch")
 def rematch():
     second = [1, 2]

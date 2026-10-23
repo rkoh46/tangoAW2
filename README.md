@@ -60,7 +60,7 @@ your army and kept in your settings).
   (CO, colour, team, partner) on **SELECT YOUR ARMY** and presses READY, and
   the host sets the rules (including battle animations, for everyone).
 - **Emerald Sun**, a sixth army (a pale emerald-grey one with
-  bronze-helmeted, red-crested legionaries and a temple HQ), is a sixth choice next to the five armies'
+  red-crested legionaries and a domed HQ), is a sixth choice next to the five armies'
   colours on SELECT YOUR ARMY, online and offline: any seat on any map can be
   Emerald Sun, with any combination of the others.
 - Maps that need the Dual Strike pack (its units or art, such as the 5-army

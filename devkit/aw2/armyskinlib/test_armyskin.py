@@ -46,11 +46,21 @@ class Skin(unittest.TestCase):
 
 
 class Originality(unittest.TestCase):
-    def test_the_match_ratio(self):
-        from ..armyskinlib import check
-        a = {(x, y) for x in range(4) for y in range(4)}
-        self.assertEqual(check._jaccard(a, a), 1.0)
-        self.assertEqual(check._jaccard(a, {(10, 10)}), 0.0)
-        self.assertEqual(check._best(a, check._shift(a, 2, 1))[0], 1.0)           # found at its offset
-        self.assertEqual(check._best(a, check._shift(a, 0, 0, True, 4))[0], 1.0)   # and mirrored
-
+    def test_identical_share(self):
+        from PIL import Image
+        from . import check
+        a = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+        for x in range(2, 6):
+            for y in range(2, 6):
+                a.putpixel((x, y), (120, 140, 110, 255))
+        self.assertEqual(check.identical(a, a)[0], 1.0)
+        b = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+        for x in range(3, 7):                                   # the same square one pixel over: found at its offset
+            for y in range(2, 6):
+                b.putpixel((x, y), (115, 138, 108, 255))
+        self.assertEqual(check.identical(a, b)[0], 1.0)
+        c = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+        for x in range(2, 6):                                   # the same shape in another brightness step: not the same
+            for y in range(2, 6):
+                c.putpixel((x, y), (60, 70, 55, 255))
+        self.assertEqual(check.identical(a, c)[0], 0.0)

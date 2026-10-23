@@ -12,7 +12,7 @@
   (CC0), the reference for Dual Strike's battle rules, computer player, maps, History, scores and Design Room
   generator as ported in 0.7.0; tangoAW2 reads Dual Strike's data from the player's own ROM and ships none of it.
 - Emulation: [endrift](https://twitter.com/endrift) (mGBA), [Arisotura](https://github.com/Arisotura) (melonDS).
-- Emerald Sun, tangoAW2's sixth army, is inspired by the Jade Sun army of [Advance Wars By Web](https://awbw.amarriner.com) (AWBW) and its community artists: the idea of a Roman-themed army with red-crested legionaries, a temple HQ and a sun for its emblem. The palette and the pixel art are drawn for tangoAW2 and are original work under the repository's licence; no AWBW image or data is used or distributed.
+- Emerald Sun, tangoAW2's sixth army, is inspired by the Jade Sun army of [Advance Wars By Web](https://awbw.amarriner.com) (AWBW) and its community artists: the idea of a Roman-themed army with red-crested legionaries, a pale domed HQ and a sun for its emblem. The palette and the pixel art are drawn for tangoAW2 and are original work under the repository's licence; no AWBW image or data is used or distributed.
 
 Advance Wars is a trademark of Nintendo. tangoAW2 is not affiliated with
 Nintendo or Intelligent Systems.

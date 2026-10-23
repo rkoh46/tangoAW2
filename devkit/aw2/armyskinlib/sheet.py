@@ -272,44 +272,30 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=
 
 
 def _originality_block(sheet, y, sk, host, pal, base, d):
-    """Ours beside the reference at 8x (helmet side and front, logo) with the originality ratios printed under each."""
-    from .check import _fg, _shift, _best, _logo_fg
-    label(sheet, "Ours beside the reference (AWBW's Jade Sun, review only, never committed), 8x; under each the share of the pixels our work changed that it changed too (colour ignored; needs <= 0.60)", (8, y), size=14)
-    y += 24
-    x = 8
-    bpal = base.pal(UNIT_PAL + 32 * (host - 1))
-    for name, unit, who in (("jsinfantry", 1, "Infantry"), ("jsmech", 2, "Mech")):
+    """Ours beside the reference in pairs, at 8x and 1x, with the share of our pixels that are in the same place and colour class printed under each pair."""
+    from .check import identical, MAX_IDENTICAL
+    label(sheet, "Ours beside the reference (AWBW's Jade Sun, review only, never committed): 8x and 1x; under each pair the share of our pixels in the same place and colour class (needs <= %.2f)" % MAX_IDENTICAL, (8, y), size=14)
+    y += 26
+    bpal = sk.pal(BLD_PAL + 32 * (host - 1))
+    items = [("jsinfantry", "Infantry", foot(sk, host, 1, 0, pal, 1, skin=True), 8), ("jsmech", "Mech", foot(sk, host, 2, 0, pal, 1, skin=True), 8),
+             ("jadesunhq", "HQ", hq_img(sk, host, bpal, 1, skin=True), 8), ("jslogo", "Logo", emb_img(sk, host, 1), 8)]
+    x, rowh = 8, 0
+    for name, who, ours, S in items:
         ref = d / f"{name}.gif"
         if not ref.exists():
             continue
-        ours = foot(sk, host, unit, 0, pal, 8, skin=True)
         theirs = Image.open(ref).convert("RGBA")
-        theirs8 = theirs.resize((theirs.width * 8, theirs.height * 8), Image.NEAREST)
-        a, b, aw2 = _fg(foot(sk, host, unit, 0, pal, 1, skin=True), 9), _fg(theirs, 9), _fg(foot(base, host, unit, 0, bpal, 1), 9)
-        _, dx, dy, f = _best(b, aw2, 2)
-        r = _best(a ^ aw2, b ^ _shift(aw2, dx, dy, f))[0]
-        sheet.paste(ours, (x, y), ours)
-        label(sheet, f"ours, {who} side", (x, y + 16 * 8 + 2), size=12)
-        sheet.paste(theirs8, (x + 140, y), theirs8)
-        label(sheet, f"AWBW's {who}: {r:.2f}", (x + 140, y + 16 * 8 + 2), size=12)
-        x += 300
-    front = _moving(sk, host, 1, 8, frame=3, full=True)
-    if front:
-        sheet.paste(front, (x, y), front)
-        label(sheet, "ours, front (no reference front view)", (x, y + 24 * 8 + 2), size=12)
-        x += 230
-    ref = d / "jslogo.gif"
-    if ref.exists():
-        a, b = _logo_fg(emb_img(sk, host, 1), 2), _logo_fg(Image.open(ref), 1)
-        r = _best(a, b, 3, 10)[0]
-        mine = emb_img(sk, host, 8)
-        sheet.paste(mine, (x, y), mine)
-        label(sheet, "our logo", (x, y + 16 * 8 + 2), size=12)
-        t = Image.open(ref).convert("RGBA")
-        t = t.resize((t.width * 8, t.height * 8), Image.NEAREST)
-        sheet.paste(t, (x + 150, y), t)
-        label(sheet, f"AWBW's logo: sun {r:.2f}", (x + 150, y + 16 * 8 + 2), size=12)
-    return y + 24 * 8 + 28
+        r = identical(ours, theirs)[0]
+        o8, t8 = ours.resize((ours.width * S, ours.height * S), Image.NEAREST), theirs.resize((theirs.width * S, theirs.height * S), Image.NEAREST)
+        h = max(o8.height, t8.height)
+        sheet.paste(o8, (x, y), o8)
+        sheet.paste(t8, (x + o8.width + 6, y), t8)
+        sheet.paste(ours, (x, y + h + 8), ours)
+        sheet.paste(theirs, (x + o8.width + 6, y + h + 8), theirs)
+        label(sheet, f"{who}: ours | AWBW's  {r:.2f}", (x, y + h + 8 + max(ours.height, theirs.height) + 4), size=12)
+        x += o8.width + t8.width + 30
+        rowh = max(rowh, h + 8 + max(ours.height, theirs.height) + 24)
+    return y + rowh + 12
 
 
 def tilt_sheet(shots):
