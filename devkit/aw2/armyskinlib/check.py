@@ -3,7 +3,31 @@ screen in the catalogue is left in the colours of the army the skin sits on."""
 import math, tomllib
 from pathlib import Path
 from PIL import Image
-from . import (BLD_PAL, NAMES, UNIT_PAL, UNIT_SHEET, FRAME, SLOT_TABLE, Rom, dump, toml_art)
+from . import (HQ_ART, BLD_PAL, NAMES, UNIT_PAL, UNIT_SHEET, FRAME, SLOT_TABLE, Rom, dump, toml_art)
+
+def hq_metrics(grid, pal):
+    """How an HQ picture (16x32 palette indices) builds its depth: pixels filled, the first row used, the shades used, the share of the commonest shade, the
+    value contrast (standard deviation of brightness) and the brightness of the left against the right three columns."""
+    import statistics, collections
+    px = [(x, y, v) for y, r in enumerate(grid) for x, v in enumerate(r) if v]
+    L = [0.299 * pal[v][0] + 0.587 * pal[v][1] + 0.114 * pal[v][2] for x, y, v in px]
+    cnt = collections.Counter(v for _, _, v in px)
+    side = lambda xs: (lambda sel: sum(sel) / max(1, len(sel)))([0.299 * pal[v][0] + 0.587 * pal[v][1] + 0.114 * pal[v][2] for x, y, v in px if x in xs])
+    return dict(fill=len(px), top=min(y for _, y, _ in px), shades=len(cnt), dominant=max(cnt.values()) / len(px), contrast=statistics.pstdev(L),
+                left=side((0, 1, 2)), right=side((12, 13, 14)))
+
+
+def aw2_hq_grid(base, c):
+    from . import tile_px
+    raw = base.raw(HQ_ART + 0x100 * (c - 1), 0x100)
+    g = [[0] * 16 for _ in range(32)]
+    for k in range(8):
+        px = tile_px(raw, 32 * k)
+        for y in range(8):
+            for x in range(8):
+                g[(k // 2) * 8 + y][(k % 2) * 8 + x] = px[y][x]
+    return g
+
 
 # ---- thresholds (CIE76 delta E; docs/dev/army-packs.md "The palette's margins") ----
 MIN_ARMY = 10.0      # the skin's body colours (ramp 1..4) against every body colour of each of AW2's five armies: the closest pair
@@ -12,6 +36,7 @@ MIN_GREY = 9.0       # ... against the greys of units that have moved
 MIN_FOG = 9.0        # ... against the colours the fog gives the terrain
 MIN_DONE = 10.0      # the skin's own done unit against its live unit
 MAX_CHROMA = 0.4     # the skin's body chroma as a share of Green Earth's: a stone, not a leaf green
+MAX_CONTRAST = 1.75  # the HQ's value contrast (std. dev. of brightness) as a multiple of the strongest of AW2's five (it is asked to be stronger than theirs, not wilder)
 MIN_DONE_OWN = 6.0   # the skin's done ramp against the other armies' done greys (a done skin unit is still the skin's)
 # The terrain's colours under fog (rendered with fog on, Bean Island: grass, road, forest, mountain, sea ...): what a unit stands on in the fog of war.
 FOG_TERRAIN = [(131, 156, 148), (148, 164, 148), (98, 98, 123), (106, 131, 148), (57, 123, 123), (82, 131, 106), (115, 90, 139), (74, 74, 197), (82, 57, 172)]
@@ -105,6 +130,22 @@ def static(skin_path=None, say=print):
     rep.append(f"  chroma {cs:4.1f} = {cs / cg:.2f} of Green Earth's {cg:.1f}  (<= {MAX_CHROMA})")
     if cs / cg > MAX_CHROMA:
         fails.append(f"palette: too saturated, near Green Earth's leaf green ({cs / cg:.2f} > {MAX_CHROMA})")
+    # -- the HQ's depth against AW2's five HQs (measured from the ROM)
+    aw = [hq_metrics(aw2_hq_grid(base, c), base.pal(BLD_PAL + 32 * (c - 1))) for c in range(1, 6)]
+    mine = hq_metrics([[0 if ch == "." else int(ch, 16) for ch in r] for r in hq], Rom(3).pal(BLD_PAL + 64))
+    rng = lambda k: (min(a[k] for a in aw), max(a[k] for a in aw))
+    rep.append("HQ picture (ours | AW2's five: min..max):")
+    for k, lo_t, hi_t in (("fill", 0.93, 1.1), ("shades", 1.0, 1.4), ("dominant", 0.45, 1.2), ("contrast", 0.9, MAX_CONTRAST)):
+        lo, hi = rng(k)
+        ok = lo * lo_t <= mine[k] <= hi * hi_t
+        rep.append(f"  {k:9s} {mine[k]:7.2f} | {lo:7.2f} .. {hi:7.2f}  (allowed {lo * lo_t:.2f} .. {hi * hi_t:.2f})")
+        if not ok:
+            fails.append(f"hq: {k} {mine[k]:.2f} is outside AW2's HQs ({lo:.2f}..{hi:.2f}, allowed {lo * lo_t:.2f}..{hi * hi_t:.2f})")
+    rep.append(f"  first row {mine['top']} (AW2: {rng('top')[0]}..{rng('top')[1]}, needs <= {rng('top')[1]}); left {mine['left']:.0f} vs right {mine['right']:.0f} (the left is the lit side)")
+    if mine["top"] > rng("top")[1]:
+        fails.append(f"hq: the picture starts at row {mine['top']}: AW2's HQs fill the frame from row {rng('top')[1]} at the latest")
+    if mine["left"] < mine["right"]:
+        fails.append("hq: the right side is lighter than the left (light comes from the top left)")
     # -- every colour the skin can sit on: the dump works, the rows differ from the colour's own, the done row differs from the live row
     for host in range(1, 6):
         sk = Rom(host)
@@ -159,7 +200,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
     out = Path(out or cfg.work("armyskin", "live"))
     out.mkdir(parents=True, exist_ok=True)
     fails, rep = [], []
-    names = names or [n for n, sc in scenarios.SCENARIOS.items() if not sc["five"] and (ds or not sc["ds"])]
+    names = names or [n for n, sc in scenarios.SCENARIOS.items() if not sc["five"] and not sc["sheet_only"] and (ds or not sc["ds"])]
     forbidden_all = {}
     for n in names:
         sc = scenarios.SCENARIOS[n]
@@ -183,6 +224,27 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             rep.append(f"  {n}/{sc['compare']}: {diff} pixels differ from a match that never had the skin before")
             if diff > 150:
                 fails.append(f"{n}: the second match differs from a plain one in {diff} pixels (the skin was not taken off)")
+            continue
+        if sc.get("look"):
+            # the real app's tilted picture (not a harness frame): the same three runs, compared the same way
+            from . import look as lk
+            ids = sc["ids"]
+            pics = {}
+            for v, vids in (("base", [1] + ids[1:]), ("other", [3] + ids[1:]), ("skin", ids)):
+                rc, log = lk.checkpoint(f"live_{n}_{v}", n, vids, True)
+                if rc:
+                    fails.append(f"{n}/{v}: the harness script failed ({log})")
+                    continue
+                pics[v] = out / f"{n}_{v}.png"
+                lk.look(f"live_{n}_{v}", pics[v], tilt=True)
+            if len(pics) < 3:
+                continue
+            skin, base, other = (_colours(pics[k]) for k in ("skin", "base", "other"))
+            forb = {c: k for c, k in base.items() if c not in other and k >= tolerance}
+            left = {c: skin[c] for c in forb if skin.get(c, 0) >= tolerance}
+            rep.append(f"  {n}/tilt: {len(forb)} colours only the base army had, {sum(left.values())} pixels of them left in the skin's tilted picture" + (f"  {sorted(left.items(), key=lambda x: -x[1])[:3]}" if left else ""))
+            if left:
+                fails.append(f"{n}/tilt: base army colours left: {sorted(left.items(), key=lambda x: -x[1])[:4]}")
             continue
         runs = {}
         if sc["five"]:

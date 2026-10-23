@@ -31,24 +31,24 @@ moved_dim = 0.78
 [infantry]
 base = 3
 
-# side view: a rounded bronze bowl, a red horsehair crest along its top and down behind, a brow band, a cheek guard
-# and a neck guard
+# side view: a rounded bronze bowl with a brow ridge, a thin red horsehair crest along its top (a slight arc), a cheek guard hanging in front of the ear and a
+# neck guard flaring at the back
 [[infantry.patch]]
 x = 0
 y = 0
 moving = [0, 1, 2]
 anchor = [6, 1]
 rows = [
-  ".......eeee.....",
-  "......eeeeeef...",
-  ".....fceeeeecf..",
-  ".....fcb1bccddf.",
-  "....fcbbbcccddfe",
-  "....fbbbbbbbbdfe",
-  ".....ff.f...bcdf",
-  ".....f..f..cdf..",
-  "......f.....cdd.",
-  ".......f.....df.",
+  "........eee.....",
+  ".....feeeeeeef..",
+  ".....fb1bbbcddf.",
+  "....fbbbbbbccddf",
+  "....fbbbbbbcccdf",
+  "...fbbbbbbbbbbdf",
+  "...fcdddddd.bcdf",
+  "...........fbcdf",
+  "...........fcddf",
+  "............fddf",
 ]
 
 # front: the crest seen head on, the dome with the crest's line down it, the brow band and the cheek guards
@@ -58,7 +58,7 @@ moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
   ".....ee.....",
-  "....eeee....",
+  "............",
   "...fceecf...",
   "..fbbeeccf..",
   "..fbbeeccf..",
@@ -67,27 +67,25 @@ rows = [
   "..c......c..",
 ]
 
-# back: the crest with its tail hanging down the back, the neck guard
+# back: the crest's line down the dome, the neck guard
 [[infantry.patch]]
 frames = []
 moving = [6, 7, 8]
 anchor = [3, 2]
 rows = [
   ".....ee.....",
-  "....feef....",
+  "............",
   "...fceecf...",
   "..fbbeeccf..",
   "..fbbeeccf..",
   ".fcccccccdf.",
   "..ccceeccd..",
-  ".....ee.....",
-  ".....ee.....",
 ]
 
 [mech]
 base = 3
 
-# the Mech's head sits a pixel left and up of the Infantry's, with the launcher on its right: no tail behind
+# the Mech's head sits a pixel left and up of the Infantry's, with the launcher on its right: no neck guard
 [[mech.patch]]
 frames = [0, 1]
 x = 0
@@ -96,9 +94,9 @@ moving = [0, 1, 2]
 anchor = [5, 0]
 rows = [
   ".....feeeeef....",
-  "....feeeeeeef...",
-  "...ffcb1bccddf..",
-  "....cbbbcccddf..",
+  "....fb1bbbcdf...",
+  ".....bbbbccd....",
+  "....bbbbbbcd....",
   "....bbbbbbbbd...",
   "..........bcd...",
   "..........cdd...",
@@ -110,9 +108,9 @@ x = 0
 y = 1
 rows = [
   ".....feeeeef....",
-  "....feeeeeeef...",
-  "...ffcb1bccddf..",
-  "....cbbbcccddf..",
+  "....fb1bbbcdf...",
+  ".....bbbbccd....",
+  "....bbbbbbcd....",
   "....bbbbbbbbd...",
   "..........bcd...",
   "..........cdd...",
@@ -124,7 +122,7 @@ moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
   ".....ee.....",
-  "....eeee....",
+  "............",
   "...fceecf...",
   "..fbbeeccf..",
   "..fbbeeccf..",
@@ -145,42 +143,43 @@ rows = [
   "fcccdf",
 ]
 
-# ---- The HQ: a temple seen from above and the right: the gable with the sun, the roof's shaded slope behind it, columns with
-# dark gaps between them, steps, the side wall in shadow; light from the top left. 16x32, `.` clear, hex digits are the building
+# ---- The HQ: a tall temple on a three-step podium, seen from above and the right: a dark outline all round, the roof's lit slopes behind the
+# shaded gable with its gold sun, columns with a highlight and a shadow stripe and deep gaps between them, the side wall in shadow, each step with a lit top and a dark
+# riser; light from the top left. Built to AW2's HQ rules (`aw2dev armyskin check` measures them). 16x32, `.` clear, hex digits are the building
 # palette's indices (1 white, 2..5 the body ramp light to dark, b AW2's pale strip, c d cream, e the skin's gold).
 [hq]
 rows = [
-  "..............2.",
-  "......ee...2225.",
-  "......ed2223345.",
-  "......133334445.",
-  ".....1245443345.",
-  "....12344534445.",
-  "...12ee44454445.",
-  "..12deee4445345.",
-  ".12dceeee444545.",
-  "123eeeeee444545.",
-  "1234eeee4444545.",
-  "12344ee44444545.",
-  "122222222222255.",
-  "33e33e33e33e345.",
-  "555555555555545.",
-  "413213213213545.",
-  "424524524524545.",
-  "424524524524545.",
-  "424524524524545.",
-  "424524524524545.",
-  "424524924924545.",
-  "424524924924545b",
-  "424524924924545b",
-  "424524924924545b",
-  "424524924924545b",
-  "424524924924545b",
-  "424524924924545b",
-  "122222222222225b",
-  "3e33e33e33e33e5b",
-  "122222222222225b",
-  "444444444444445.",
+  "................",
+  ".......ee.......",
+  ".......ed.......",
+  "......5225......",
+  "......5245......",
+  ".....524335.....",
+  "....52334445....",
+  "...5233534445...",
+  "..524453453335..",
+  "..52323ce45445..",
+  ".52323dcee55445.",
+  ".5223deeeee5535.",
+  ".52344eeee44555.",
+  ".23444444444455.",
+  "522222222222225.",
+  "54e44e44e44e445.",
+  "555555555555555.",
+  "523323323323545.",
+  "524524524524545.",
+  "524524524524545.",
+  "524524524524545.",
+  "524524524524545b",
+  "524524524524545b",
+  "524524524524545b",
+  "524524524524545b",
+  "535535535535545b",
+  ".22333333333335b",
+  ".45545545545545b",
+  "223333333333335b",
+  "555555555555555b",
+  "223333333333335.",
   "555555555555555.",
 ]
 

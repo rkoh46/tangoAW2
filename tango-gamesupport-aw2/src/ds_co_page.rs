@@ -331,6 +331,8 @@ pub struct View {
     pub portrait: Option<Portrait>,
     /// The unit chart: the army's colour (0 Orange Star .. 4 Black Hole) and a row for each unit.
     pub colour: usize,
+    /// The skin (index of `crate::army_skin`'s) the army wears: the chart's pictures take its colours.
+    pub skin: Option<usize>,
     pub chart: Vec<ChartUnit>,
 }
 
@@ -1008,6 +1010,9 @@ fn bank_palettes(a: &Art, v: &View) -> Vec<[u16; 16]> {
     p[DIGITS as usize] = a.digit_pal;
     p[BACK as usize] = a.back_pal;
     p[UNIT as usize] = a.unit_pals.get(v.colour).copied().unwrap_or(a.unit_pals[0]);
+    if let Some(i) = v.skin {
+        p[UNIT as usize] = crate::army_skin::ds_row(i, &p[UNIT as usize], &a.unit_pals);
+    }
     p[HEAD as usize] = HEAD_PALETTE;
     if let Some((_, pal)) = crate::skills_panel::icon_pixels(0x20) {
         p[SKILL as usize] = pal;
@@ -1174,9 +1179,10 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         _ => core.and_then(|c| game_art(c, co)),
     };
     // (the army's colour, and the power the page's CO is in: a partner's page shows its day to day numbers)
-    let (mut colour, mut mode) = (0usize, 0u8);
+    let (mut colour, mut mode, mut skin) = (0usize, 0u8, None);
     if let (Some(c), Some(army)) = (core, army) {
         colour = (c.raw_read_8(crate::five::players(c) + 0x3C * army + 0x1A, -1).clamp(1, 5) - 1) as usize;
+        skin = crate::army_skin::skin_on(c, colour as u8 + 1);
         let (active, m) = crate::co_roster::army_co(c, army);
         if active == co {
             mode = m;
@@ -1216,6 +1222,7 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         skills,
         portrait: art.as_ref().map(portrait_of),
         colour,
+        skin,
         chart: chart_for(co, mode),
     }
 }

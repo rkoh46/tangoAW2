@@ -225,8 +225,13 @@ mod on {
 
         fn ai_screenshot(&self) -> Result<Value, String> {
             let s = self.session.active().ok_or("no session")?;
-            let (w, h) = s.frame_size();
+            let (mut w, mut h) = s.frame_size();
             let rgba = s.frame();
+            // (the Dual Strike tilt draws a larger picture: a whole multiple of the console's)
+            if rgba.len() != (w * h * 4) as usize && w * h > 0 {
+                let k = ((rgba.len() as f64 / (w * h * 4) as f64).sqrt().round()) as u32;
+                (w, h) = (w * k, h * k);
+            }
             let img = image::RgbaImage::from_raw(w, h, rgba).ok_or("the frame is not (yet) w x h")?;
             let mut png = Vec::new();
             img.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).map_err(|e| e.to_string())?;

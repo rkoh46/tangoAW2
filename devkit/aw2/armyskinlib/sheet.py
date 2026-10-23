@@ -155,15 +155,15 @@ def _hq_rows(rows, pal, S):
     return sprite(grid_to_tiles(rows, 16, 2), 2, 4, pal, S)
 
 
-def compare_strip(host, awbw_dir=None, S=4, v1_toml=None, map_shot=None):
-    """Sheet 03: the skin's helmet (idle and moving, 4x and 8x), HQ (4x and 8x) beside AW2's five HQs and the previous HQ, a map screenshot with the HQs and, with
-    `awbw_dir` (reference pictures kept outside the repository), the same of the project it was inspired by, for review only."""
-    import tomllib
+def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None):
+    """Sheet 03: the skin's helmet (idle and moving, 4x and 8x) beside the earlier versions', the HQ (4x and 8x) beside AW2's five HQs and the earlier ones, map
+    screenshots of the HQs and, with `awbw_dir` (reference pictures kept outside the repository), the same of the project it was inspired by, for review only.
+    `prev`: [(label, data file)] of earlier versions, drawn by the engine from their files."""
     sk, base = Rom(host), Rom()
     pal = sk.pal(UNIT_PAL + 32 * (host - 1))
     mpal = sk.pal(BLD_PAL + 32 * (host - 1))
     W = 1500
-    sheet = Image.new("RGB", (W, 2300), BG)
+    sheet = Image.new("RGB", (W, 2600), BG)
     y = 8
     label(sheet, "Emerald Sun: the galea (Roman helmet) on Infantry and Mech, at 4x and 8x (idle side view, then the moving frames: side, front, back)", (8, y), size=16)
     y += 28
@@ -180,45 +180,56 @@ def compare_strip(host, awbw_dir=None, S=4, v1_toml=None, map_shot=None):
                 if im:
                     sheet.paste(im, (x, y), im)
                     x += im.width + 8
-            label(sheet, f"{name} {scale}x", (x + 20, y + 4), size=14)
+            label(sheet, f"{name} {scale}x (new)", (x + 20, y + 4), size=14)
             y += 24 * scale + 8
-    # the helmets in AW2's own colours for reference (Green Earth)
+    # the earlier versions' helmets, 8x, side view, to compare
+    olds = []
+    for lab, path in (prev or []):
+        r = Rom(host, path)
+        olds.append((lab, r, r.pal(UNIT_PAL + 32 * (host - 1)), r.pal(BLD_PAL + 32 * (host - 1))))
+    label(sheet, "For comparison at 8x: " + ", ".join(l for l, *_ in olds) + " helmets (Infantry, Mech), AW2's Green Earth soldiers they start from, and the new ones", (8, y), size=14)
+    y += 22
     x = 8
-    label(sheet, "AW2's Green Earth soldiers (the pictures the skin starts from), 8x", (8, y), size=14)
-    y += 20
+    for lab, r, p, _ in olds + [("new", sk, pal, mpal)]:
+        for unit in (1, 2):
+            im = foot(r, host, unit, 0, p, 8, skin=True)
+            sheet.paste(im, (x, y), im)
+            x += im.width + 8
+        label(sheet, lab, (x - 130, y + 16 * 8 + 2), size=12)
+        x += 24
     gpal = base.pal(UNIT_PAL + 64)
     for unit in (1, 2):
         im = foot(base, 3, unit, 0, gpal, 8)
         sheet.paste(im, (x, y), im)
-        x += im.width + 16
-    y += 16 * 8 + 24
+        x += im.width + 8
+    label(sheet, "Green Earth", (x - 250, y + 16 * 8 + 2), size=12)
+    y += 16 * 8 + 28
     # HQ
-    label(sheet, "HQ: AW2's five (Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole), the previous Emerald Sun HQ (v1), the new one at 4x and 8x", (8, y), size=16)
+    label(sheet, "HQ: AW2's five (Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole), the earlier Emerald Sun HQs, the new one at 4x and 8x", (8, y), size=16)
     y += 26
     x = 8
     for c in (1, 2, 3, 4, 5):
         im = hq_img(base, c, base.pal(BLD_PAL + 32 * (c - 1)), 4)
         sheet.paste(im, (x, y), im)
         x += im.width + 14
-    if v1_toml:
-        rows = tomllib.loads(Path(v1_toml).read_text())["hq"]["rows"]
-        im = _hq_rows(rows, mpal, 4)
+    for lab, r, p, bp in olds:
+        im = hq_img(r, host, bp, 4, skin=True)
         sheet.paste(im, (x, y), im)
-        label(sheet, "v1", (x, y + im.height + 2), size=12)
+        label(sheet, lab, (x, y + im.height + 2), size=12)
         x += im.width + 14
     im = hq_img(sk, host, mpal, 4, skin=True)
     sheet.paste(im, (x, y), im)
     label(sheet, "new 4x", (x, y + im.height + 2), size=12)
     x += im.width + 30
+    for lab, r, p, bp in olds[-1:]:
+        im8 = hq_img(r, host, bp, 8, skin=True)
+        sheet.paste(im8, (x, y), im8)
+        label(sheet, lab + " 8x", (x, y + im8.height + 2), size=12)
+        x += im8.width + 30
     im8 = hq_img(sk, host, mpal, 8, skin=True)
     sheet.paste(im8, (x, y), im8)
     label(sheet, "new 8x", (x, y + im8.height + 2), size=12)
     x += im8.width + 30
-    if v1_toml:
-        im8 = _hq_rows(rows, mpal, 8)
-        sheet.paste(im8, (x, y), im8)
-        label(sheet, "v1 8x", (x, y + im8.height + 2), size=12)
-        x += im8.width + 30
     if awbw_dir:
         p = Path(awbw_dir) / "jadesunhq.gif"
         if p.exists():
@@ -235,7 +246,6 @@ def compare_strip(host, awbw_dir=None, S=4, v1_toml=None, map_shot=None):
             big = im.resize((im.width * 2, im.height * 2), Image.NEAREST)
             sheet.paste(big, (8 + (i % 3) * (big.width + 8), y + (i // 3) * (big.height + 8)))
         y += ((len(shots) + 2) // 3) * (shots[0].height * 2 + 8) + 10
-    x = 8
     label(sheet, "Emblem (logo) 8x", (8, y), size=14)
     y += 20
     im = emb_img(sk, host, 8)
@@ -252,6 +262,20 @@ def compare_strip(host, awbw_dir=None, S=4, v1_toml=None, map_shot=None):
                 xx += g.width + 16
     y += 16 * 8 + 30
     return sheet.crop((0, 0, W, y))
+
+
+def tilt_sheet(shots):
+    """Sheet 07: the Dual Strike tilted map (the app's own pictures, the hi-res ones): [(title, PIL image)]."""
+    w = max(im.width for _, im in shots)
+    h = sum(im.height + 26 for _, im in shots)
+    sheet = Image.new("RGB", (w + 16, h + 36), BG)
+    label(sheet, "Dual Strike's tilted map, hi-res (ground colours are off in a checkpoint boot: look at units and properties)", (8, 6), size=16)
+    y = 32
+    for t, im in shots:
+        label(sheet, t, (8, y), size=14)
+        sheet.paste(im, (8, y + 22))
+        y += im.height + 26
+    return sheet
 
 
 def swatches(host):

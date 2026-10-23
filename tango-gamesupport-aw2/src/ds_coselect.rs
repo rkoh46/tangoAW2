@@ -407,6 +407,8 @@ pub enum Tab {
 pub struct VersusArmy {
     /// 0 Orange Star .. 4 Black Hole.
     pub colour: u8,
+    /// The skin (`crate::army_skin`) the army has chosen: its colours and its emblem on the card.
+    pub skin: Option<usize>,
     pub main: Option<Arc<Mug>>,
     pub partner: Option<Arc<Mug>>,
     pub tab: Tab,
@@ -455,7 +457,8 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
     for (i, army) in armies.iter().take(5).enumerate() {
         let x = card_x(n, i);
         let c = (army.colour as usize).min(4);
-        let pal = &a.versus_pal[c];
+        let skinned = army.skin.map(|i| crate::army_skin::ds_row(i, &a.versus_pal[c], &a.versus_pal));
+        let pal = skinned.as_ref().unwrap_or(&a.versus_pal[c]);
         // The tab: a rounded box (tiles 1..4: corners 3, edges 4, sides 1, fill 2) with its label.
         let (bx, by) = (x + 8, TAB_Y);
         for r in 0..4usize {
@@ -474,8 +477,14 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
         let head = [[7, 8, e, e + 1, 8, 7], [10, 11, e + 2, e + 3, 11, 10]];
         for (r, row) in head.iter().enumerate() {
             for (col, &t) in row.iter().enumerate() {
+                if army.skin.is_some() && (2..4).contains(&col) {
+                    continue; // (the skin's own emblem, below)
+                }
                 cv.tile(&a.versus, t, x + 8 * col as i32, CARD_Y + 8 * r as i32, pal, (col >= 4, false), false);
             }
+        }
+        if let Some(i) = army.skin {
+            skin_emblem(cv, i, x + 16, CARD_Y);
         }
         for r in 0..6usize {
             for col in 0..6usize {
@@ -542,6 +551,8 @@ pub struct Slot {
 
 pub struct Card {
     pub colour: u8,
+    /// The skin the army has chosen (its colours and its emblem on the card).
+    pub skin: Option<usize>,
     pub main: Slot,
     pub partner: Option<Slot>,
 }
@@ -601,8 +612,18 @@ fn card_left(n: usize) -> i32 {
     (W as i32 - seen) / 2 - (CARD_W - CARD_SEEN) / 2
 }
 
+/// A skin's emblem (16 x 16, from the skin file) at (x, y).
+fn skin_emblem(cv: &mut Canvas, skin: usize, x: i32, y: i32) {
+    for (i, px) in crate::army_skin::emblem_pixels(skin).into_iter().enumerate() {
+        if let Some((r, g, b)) = px {
+            cv.put(x + (i % 16) as i32, y + (i / 16) as i32, [r, g, b, 255]);
+        }
+    }
+}
+
 fn card(cv: &mut Canvas, a: &Art, x: i32, c: &Card, active: Option<bool>) {
-    let pal = &a.versus_pal[(c.colour as usize).min(4)];
+    let skinned = c.skin.map(|i| crate::army_skin::ds_row(i, &a.versus_pal[(c.colour as usize).min(4)], &a.versus_pal));
+    let pal = skinned.as_ref().unwrap_or(&a.versus_pal[(c.colour as usize).min(4)]);
     let e = 21 + 4 * (c.colour as usize).min(4);
     let rows: Vec<usize> = if c.partner.is_some() { (0..7).collect() } else { vec![0, 1, 2, 3, 6] };
     for (k, &r) in rows.iter().enumerate() {
@@ -610,12 +631,17 @@ fn card(cv: &mut Canvas, a: &Art, x: i32, c: &Card, active: Option<bool>) {
             let cx = x + 8 * col as i32;
             let cy = 8 * k as i32;
             if r < 2 && (3..5).contains(&col) {
-                // The emblem: the Versus file's tiles in the army's colours.
-                cv.tile(&a.versus, e + 2 * r + (col - 3), cx, cy, pal, (false, false), false);
+                // The emblem: the Versus file's tiles in the army's colours (a skin draws its own, below).
+                if c.skin.is_none() {
+                    cv.tile(&a.versus, e + 2 * r + (col - 3), cx, cy, pal, (false, false), false);
+                }
             } else if t != 0 {
                 cv.tile(&a.lang, t, cx, cy, pal, (hf, false), false);
             }
         }
+    }
+    if let Some(i) = c.skin {
+        skin_emblem(cv, i, x + 24, 0);
     }
     for (k, slot) in [Some(&c.main), c.partner.as_ref()].into_iter().enumerate() {
         let Some(nm) = slot.and_then(|s| s.name.as_ref()) else { continue };
@@ -749,7 +775,7 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
 pub fn render_cell(rgba: &mut [u8], ds: u8) -> bool {
     let Some(a) = art() else { return false };
     let Some(m) = art_mug(ds) else { return false };
-    let army = VersusArmy { colour: 0, main: Some(m), partner: None, tab: Tab::Player(1) };
+    let army = VersusArmy { colour: 0, skin: None, main: Some(m), partner: None, tab: Tab::Player(1) };
     let mut full = vec![0u8; W * H * 4];
     draw_versus(a, &mut Canvas { rgba: &mut full }, &[army], Stop::None);
     let x0 = card_x(1, 0);
@@ -808,7 +834,7 @@ fn versus_view(core: &Core) -> Option<(Vec<VersusArmy>, Stop)> {
             0xFF => None,
             co => mug(core, co),
         };
-        armies.push(VersusArmy { colour, main, partner, tab });
+        armies.push(VersusArmy { colour, skin: crate::army_skin::teams_skin(core, k as u32), main, partner, tab });
     }
     let cursor = core.raw_read_8(rec + 0x32, -1) as usize;
     let army = cursor / 2;
@@ -930,7 +956,7 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
                 });
                 (main, partner)
             };
-            out.push(Card { colour, main, partner });
+            out.push(Card { colour, skin: crate::army_skin::teams_skin(core, a as u32), main, partner });
         }
         if n > 0 && !out.is_empty() {
             return (out, active, flags);
@@ -954,7 +980,7 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
                 }
             };
             let active = (done < 2).then_some((0, done == 1));
-            return (vec![Card { colour, main: plate(0), partner: Some(plate(1)) }], active, flags);
+            return (vec![Card { colour, skin: None, main: plate(0), partner: Some(plate(1)) }], active, flags);
         }
     }
     // Survival's first map: one card, the run's CO on its first plate and its partner on the second (Dual Strike's
@@ -974,7 +1000,7 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
             }
         };
         let active = (done < 2).then_some((0, done == 1));
-        return (vec![Card { colour, main: plate(0), partner: Some(plate(1)) }], active, flags);
+        return (vec![Card { colour, skin: None, main: plate(0), partner: Some(plate(1)) }], active, flags);
     }
     // The War Room, AW2's campaign: one army, one CO; its colour its CO's country.
     let co = if done > 0 { picks[0] } else { cur };
@@ -982,7 +1008,7 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
     if done > 0 {
         flags.push((colour, picks[0], 1));
     }
-    (vec![Card { colour, main: pic(if done == 0 { cur } else { picks[0] }), partner: None }], (done == 0).then_some((0, false)), flags)
+    (vec![Card { colour, skin: None, main: pic(if done == 0 { cur } else { picks[0] }), partner: None }], (done == 0).then_some((0, false)), flags)
 }
 
 /// The CO screen's proc and what it offers, with Dual Strike's grid of every CO (by country, then id; four to a row).
@@ -1254,7 +1280,7 @@ mod tests {
         assert!(crate::ds_pack::offer_rom(&rom));
         let a = art().expect("art");
         assert_eq!(a.versus_pal.len(), 5);
-        let armies: Vec<VersusArmy> = (0..5).map(|c| VersusArmy { colour: c, main: art_mug(2), partner: None, tab: Tab::Cpu }).collect();
+        let armies: Vec<VersusArmy> = (0..5).map(|c| VersusArmy { colour: c, skin: None, main: art_mug(2), partner: None, tab: Tab::Cpu }).collect();
         let mut buf = vec![0u8; W * H * 4];
         draw_versus(a, &mut Canvas { rgba: &mut buf }, &armies, Stop::None);
         // The fifth card's foot line is Black Hole's grey, the first's Orange Star's red.

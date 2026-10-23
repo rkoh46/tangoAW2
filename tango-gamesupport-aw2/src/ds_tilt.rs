@@ -2432,7 +2432,7 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         if std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
             dbg_line(&format!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs));
         }
-        if bad * 12 > seen {
+        if bad * 12 > seen && std::env::var_os("TANGOAW2_TILT_NO_GROUNDCHECK").is_none() {
             { skip_log(line!()); return None; }
         }
     }
@@ -3688,7 +3688,9 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
             } else {
                 0
             };
-            0x235 + 4 * core.raw_read_16(slots + stride * cty + 2 * buf[0] as u32, -1)
+            // (an army wearing a skin has its own Infantry and Mech pictures: `crate::army_skin`)
+            let slot = crate::army_skin::map_slot(core, army as u32, buf[0]).unwrap_or_else(|| core.raw_read_16(slots + stride * cty + 2 * buf[0] as u32, -1));
+            0x235 + 4 * slot
         };
         let icon4 = not_ours
             && core.raw_read_8(0x0300_3FC0 + 0xD, -1) != 0

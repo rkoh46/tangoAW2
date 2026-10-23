@@ -73,6 +73,7 @@ Pass variables to a Simulator app as `SIMCTL_CHILD_<name>` (`ios/README.md`).
 | `TANGOAW2_TILT_CAM_LOG` | Tilt scroll registers per frame | `ds_tilt.rs` | set |
 | `TANGOAW2_TILT_SKIP_LOG` | Logs when BG3 is parked away from the camera | `ds_tilt.rs` | set |
 | `TANGOAW2_TILT_PLAN_LOG` | Logs per-object lines while the tilt renderer builds its object plan | `ds_tilt.rs` | set |
+| `TANGOAW2_TILT_NO_GROUNDCHECK` | Tilt even where the RAM-drawn ground differs from BG3 (a test boot from a checkpoint: the sea's palette is not the live one); the ground's colours may be off, the units and buildings are what is looked at | `ds_tilt.rs` | `1` |
 | `TANGOAW2_TILT_BOARD_LOG` | Logs board-sprite white pixel counts | `ds_tilt.rs` | set |
 | `TANGOAW2_TILT_LEAK_LOG` | Logs pixels the console picture keeps (HUD) although an effect blends over the ground | `ds_tilt.rs` | set |
 | `TANGOAW2_TILT_US_LOG` | Every tilted picture's time in microseconds | `ds_tilt.rs` | set |

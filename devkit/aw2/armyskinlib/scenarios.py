@@ -39,9 +39,10 @@ def redraw(cell):
 SCENARIOS = {}
 
 
-def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None):
+def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None, look=False, sheet_only=False):
+    """`look`: the shots are the real app's pictures with the Dual Strike tilt (`look.py`), not harness frames; `sheet_only`: left out of `check --live`."""
     def wrap(fn):
-        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, body=fn)
+        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, look=look, sheet_only=sheet_only, body=fn)
         return fn
     return wrap
 
@@ -162,7 +163,7 @@ def dsunits():
 
 # Crumb is index 26 of the Teams screen's CO list with the Dual Strike pack (`aw2dev harness --ds` with the `cos` command lists it); seat 0's CO is
 # the first byte of its selector (0x0203CB10). His HQ is the skin's, a placeholder for one of his own.
-@scenario("crumb", [1, 2], "Crumb leads Orange Star (no skin on): his HQ is Emerald Sun's, the placeholder (with the Dual Strike pack)", ["crumb_hq", "crumb_map"], ds=True, extra="poke 0203CB10 1a\n")
+@scenario("crumb", [1, 2], "Crumb leads Orange Star (no skin on): his HQ is Emerald Sun's, the placeholder (with the Dual Strike pack)", ["crumb_hq", "crumb_map"], ds=True, extra="poke 0203CB10 1a\n", sheet_only=True)   # (no skin on: Orange Star's own colours are right there)
 def crumb():
     return "goto 0 1 7\nwait 40\nshot crumb_hq 0\ngoto 0 8 5\nwait 30\nshot crumb_map 0\n"
 
@@ -184,6 +185,23 @@ def hqs():
     for shot_name, y in (("hq_os", 2), ("hq_es", 10), ("hq_bh", 19), ("hq_ge", 29), ("hq_yc", 37)):
         body += f"goto 0 12 {y + 1}\nwait 50\nshot {shot_name} 0\n"
     return body
+
+
+@scenario("tilt", [6, 2], "the Dual Strike tilted map (pack; the app's own picture through the AI debug channel): the skin's idle and done units, properties and HQ in the tilt",
+          ["tilt"], ds=True, look=True)
+def tilt():
+    return (
+        "aid unit 1 inf 8 4\naid unit 1 mech 9 4\naid unit 1 tank 8 5\naid unit 1 recon 10 5\naid unit 2 inf 7 4\naid unit 2 tank 6 5\n"
+        + redraw((8, 4))
+        + "aid done 9 4\naid done 10 5\n"
+        + redraw((6, 6))
+        + "goto 0 3 7\nwait 40\n"
+    )
+
+
+@scenario("tilt5p", [1, 6, 3, 4, 5], "the Dual Strike tilted map on the five-army map: the skin beside Green Earth and Black Hole (for the sheet)", ["tilt5p"], seats_five=True, ds=True, look=True, sheet_only=True)
+def tilt5p():
+    return "aid unit 2 inf 8 17\naid unit 2 mech 10 17\naid unit 3 inf 12 17\naid unit 5 inf 9 17\naid unit 5 mech 11 17\n" + redraw((9, 19))
 
 
 def script(name, identities=None, fog=None, vram=False, checkpoint=None):

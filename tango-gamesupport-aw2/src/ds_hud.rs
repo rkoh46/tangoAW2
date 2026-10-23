@@ -440,6 +440,10 @@ fn borrow(core: &mut Core, a: &Art, colour: u8, step: usize) {
     }
     write_tiles(core, T0 as u32, &a.sheet);
     let mut pal = a.palettes[(colour.clamp(1, 5) - 1) as usize];
+    // (an army wearing a skin: the skin's colours in Dual Strike's panel)
+    if let Some(i) = crate::army_skin::skin_on(core, colour) {
+        pal = crate::army_skin::ds_row_bytes(i, &pal, &a.palettes);
+    }
     pal[30..32].copy_from_slice(&a.pulse[step % 16].to_le_bytes());
     // The sandstorm's grains are drawn in this palette's colours 5 to 7 ([`crate::sandstorm`]).
     if crate::sandstorm::active(core) {

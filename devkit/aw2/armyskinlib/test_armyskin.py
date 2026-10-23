@@ -17,7 +17,7 @@ class Scripts(unittest.TestCase):
     def test_every_scenario_takes_the_shots_it_names(self):
         for n, sc in scenarios.SCENARIOS.items():
             text = scenarios.script(n)
-            for shot in sc["shots"]:
+            for shot in ([] if sc["look"] else sc["shots"]):   # (a look scenario's picture is the app's, not a harness shot)
                 self.assertRegex(text, rf"shot {shot} \d", f"{n}: shot {shot} is never taken")
             self.assertRegex(text.splitlines()[0], r"^n \d$")
 

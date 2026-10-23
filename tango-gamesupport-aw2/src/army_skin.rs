@@ -709,6 +709,54 @@ pub fn skin_on(core: &Core, colour: u8) -> Option<usize> {
     (colour != 0).then(|| (0..skins().len()).find(|&i| host_of(core, i) == colour)).flatten()
 }
 
+/// Dual Strike's 16-colour army palette `own` (one of `all`, the five armies' in order) as the skin `skin_index` has it: the entries the
+/// armies differ in take the skin's ramp by brightness, exactly as the game's own tables ([`Skin::hue_row`]). The skin file is the one source of
+/// the colours; the Dual Strike screens ask for them here.
+pub fn ds_row(skin_index: usize, own: &[u16; 16], all: &[[u16; 16]]) -> [u16; 16] {
+    skin(skin_index).hue_row(own, &all[..all.len().min(4)])
+}
+
+/// The same for a palette as bytes (BGR555, little endian, 32 bytes).
+pub fn ds_row_bytes(skin_index: usize, own: &[u8; 32], all: &[[u8; 32]]) -> [u8; 32] {
+    let w = |b: &[u8; 32]| -> [u16; 16] { std::array::from_fn(|i| u16::from_le_bytes([b[2 * i], b[2 * i + 1]])) };
+    let (own16, all16): ([u16; 16], Vec<[u16; 16]>) = (w(own), all.iter().map(w).collect());
+    let out = ds_row(skin_index, &own16, &all16);
+    let mut bytes = [0u8; 32];
+    for (i, c) in out.iter().enumerate() {
+        bytes[2 * i..2 * i + 2].copy_from_slice(&c.to_le_bytes());
+    }
+    bytes
+}
+
+/// The skin (index) the Teams screen's army `slot` (0-based) has chosen.
+pub fn teams_skin(core: &Core, slot: u32) -> Option<usize> {
+    match core.raw_read_8(IDENT + slot, -1) {
+        c if c >= SKIN && ((c - SKIN) as usize) < skins().len() => Some((c - SKIN) as usize),
+        _ => None,
+    }
+}
+
+/// The skin's emblem as 16 x 16 pixels (None clear): white, the shadow and the emblem's three tones from the skin's ramp, for the screens that draw
+/// it themselves (Dual Strike's Teams cards).
+pub fn emblem_pixels(skin_index: usize) -> Vec<Option<(u8, u8, u8)>> {
+    let sk = skin(skin_index);
+    let mut out = Vec::with_capacity(256);
+    for row in &sk.emblem {
+        for ch in row.chars() {
+            out.push(match ch {
+                '1' => Some((255, 255, 255)),
+                '2' => Some(rgb_of(sk.ramp[5])),
+                'a' => Some(rgb_of(sk.ramp[4])),
+                'b' => Some(rgb_of(sk.ramp[2])),
+                'c' => Some(rgb_of(sk.ramp[1])),
+                _ => None,
+            });
+        }
+    }
+    out.resize(256, None);
+    out
+}
+
 /// The skin the ROM image is patched with on colour `colour` (index), if any.
 pub fn applied_on(core: &Core, colour: u8) -> Option<usize> {
     if !(1..=5).contains(&colour) || core.raw_read_32(DATA, -1) != MAGIC {
@@ -1320,6 +1368,15 @@ fn slot_of(skin: usize, unit: u8) -> u16 {
     52 + 2 * skin as u16 + unit as u16 - 1
 }
 const _: () = assert!(52 + 2 * MAX_SKINS as u16 <= 59);
+/// The map sprite slot a skinned army's unit of type `ty` has (Infantry and Mech: the skin's own pictures), for the renderers that work out
+/// a unit's tiles themselves (the Dual Strike tilt reads the unit layer by slot, as `sub_080261A4` does); `None` for any other unit or army.
+pub fn map_slot(core: &Core, army: u32, ty: u8) -> Option<u16> {
+    if !(1..=2).contains(&ty) {
+        return None;
+    }
+    skin_of_army(core, army).map(|skin| slot_of(skin, ty))
+}
+
 /// A skin's slot per unit type (halfwords: 0, Infantry, Mech), for the slot function to read.
 fn slot_list(skin: usize) -> u32 {
     art_at(skin) + 0x3F0
@@ -1456,6 +1513,25 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Dual Strike's screens ask the skin for their palettes: the entries the armies differ in take the ramp by brightness, the rest stay.
+    #[test]
+    fn a_dual_strike_palette_takes_the_skins_ramp() {
+        let mut rows = [[0u16; 16]; 5];
+        for (c, row) in rows.iter_mut().enumerate() {
+            row[1] = 0x7FFF; // white: the same in every army
+            for k in 0..4 {
+                row[2 + k] = bgr555(((200 - 40 * k) as u8, (20 * (c + 1)) as u8, 30)); // the army's four tones, light to dark
+            }
+        }
+        let out = ds_row(0, &rows[2], &rows);
+        assert_eq!(out[1], 0x7FFF, "a shared colour stays");
+        let ramp = &skin(0).ramp;
+        assert_eq!(out[2], ramp[0], "the lightest army tone is the ramp's lightest");
+        assert_eq!(out[5], ramp[5], "the darkest is the ramp's darkest");
+        assert!(lum(out[2]) > lum(out[3]) && lum(out[3]) > lum(out[4]) && lum(out[4]) > lum(out[5]));
+        assert_eq!(emblem_pixels(0).len(), 256);
+    }
 
     #[test]
     fn the_skin_parses() {

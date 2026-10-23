@@ -51,6 +51,7 @@ By **colour** (the colour's rows of tables indexed by colour): `army_skin::TABLE
 | emblem | the sprite group 1's art of colour `c` and its palette `0x081018E4` (entries per colour) | the army's logo (Teams screens, results) |
 | texts | the text table `0x08610A38`, ids 2269.. (names), 3221.. (`The ... Army has lost!`), 3288, 3311 | "Emerald Sun" wherever the game names an army |
 | Dual Strike | `ds_unit_pictures::PALETTES`, the pack's battle figures | the new units' pictures and battle scenes (with the pack) |
+| Dual Strike graphics and tilt | the console's own palettes and tiles (the tilt reads them), `ds_hud` panel palette 7, `ds_co_page` unit chart, `ds_coselect` Teams/CO cards | the same tables as the normal map (the tilt draws the console's picture), the skin's Infantry/Mech slot (`army_skin::map_slot`, read by `ds_tilt::ram_units`), and for the screens that draw from the pack's own palettes `army_skin::ds_row` (`Skin::hue_row` on the pack's five rows) and the emblem from the skin file (`emblem_pixels`) |
 
 A palette that carries the army's colours among others' (buildings, panels) is recoloured by `Skin::hue_row`: the entries that differ between the colours' versions of the table are the army's;
 they take the skin's ramp **by brightness rank** (so the skin looks the same on whichever colour it sits).
@@ -105,8 +106,9 @@ Register the file in `FILES` (`army_skin.rs`, at most `MAX_SKINS` = 3): its choi
 | `preview [--colour N] [--fast]` | the skin's pictures (Infantry, Mech, HQ, emblem) next to AW2's at 8x, and its palettes, as one PNG (`--fast` draws the art straight from the data file: no rebuild while drawing) |
 | `check [--live] [--scenario S ..] [--ds]` | **static**: the data file's shapes; the palette's margins; every unit 1..24 on every colour is recoloured and its done grey differs from its live colours. **`--live`**: runs the catalogue's scenarios three times (the base army, another colour, the skin) and fails on any screen where a colour only the base army had is still there |
 | `sources [--a 1,2 --b 3,4]` | renders the screens with two armies, finds the palette banks that differ, searches the ROM for their colours and prints the **ROM palettes the skin does not patch yet** (the way to find the next table) |
-| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Emerald Sun Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `hqs` (the five HQs on the map, side by side), `dsunits` and `crumb` (with the pack) |
+| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Emerald Sun Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `hqs` (the five HQs on the map, side by side), `dsunits` and `crumb` (with the pack), `tilt` and `tilt5p` (the Dual Strike tilted map from the real app, with the pack: `check --live --ds` compares its picture the same way) |
 | `scenario NAME [--ids 6,2] [--ds]` | runs one scenario and keeps its shots (for sheets) |
+| `checkpoint NAME [--scenario S] [--ids ..] [--ds]` and `look NAME [--ds] [--tilt] [--tilt-scale N]` | save a scenario's end state, then boot the real app from it through the AI debug channel and take its own picture (`--tilt`: the Dual Strike tilted map, `--tilt-scale 4` the hi-res picture; it needs the pack and sets `TANGOAW2_TILT_NO_GROUNDCHECK`, see `env-aids.md`) |
 
 Scenario scripts are generated (`armyskinlib/scenarios.py`; identities are poked into the army page: 1..5 the colours, 6 the first skin) and run by the harness (`aw2_room_teams`, no network). The units a script places with
 the test aid appear once the map has been redrawn (it opens and closes the map menu). `aw2dev live ... ` with `AW2DEV_SKIN=1` has seat 0 pick the skin (LEFT on its colour field) in real app clients:
@@ -135,6 +137,20 @@ Black Hole's greys are the nearest colours (its highlights are grey too: the arm
 lightness. A skin that is too grey is read as a done unit or as fogged ground; one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the
 ramp's hue at 78% of its brightness, not a flat grey.
 
+### The HQ's depth (`check`, `hq_metrics`)
+
+An HQ is 16 x 32 palette indices. AW2's five get their depth from one dominant mid shade (62 to 74 % of the pixels) with a lighter lit shade on the left and top, a few bright accents, a few dark details,
+the picture filling from row 1 to 5 down to the bottom, the left columns brighter than the right. The check measures these on the five and the skin's HQ must lie in their range (the allowed band is a little wider):
+
+| Measure | AW2's five | Emerald Sun |
+|---|---|---|
+| pixels filled | 367 to 404 (of 512) | 393 |
+| shades used | 6 to 9 | 8 |
+| the commonest shade's share | 0.62 to 0.74 | 0.38 (allowed down to 0.28: ours also has a dark outline and deep gaps) |
+| value contrast (std. dev. of brightness) | 25 to 39 | 65 (allowed up to 1.75 x the strongest: it was asked to be stronger) |
+| first row used | 1 to 5 | 1 |
+| left three columns against the right three | brighter on the left | 138 against 94 |
+
 ## 7. Adding an army (skill `aw2-add-army`)
 
 1. `aw2dev armyskin preview --fast` while you draw: write `skins/<id>.toml` (copy Emerald Sun's), start with the ramp and trim.
@@ -147,4 +163,4 @@ ramp's hue at 78% of its brightness, not a flat grey.
 
 - Battle scenes of Infantry and Mech are AW2's figures in the skin's palette (no helmet, no crest): the figures are OBJ tiles streamed per animation frame and the helmet shares its palette entries with the uniform, so an overlay would need a hook on every tile copy; the idle and moving map pictures, the build menu and the panel icons have the galea.
 - Up to three skins at once (slots 52..57, one colour each); more needs more slot room (`slot_of`).
-- The Dual Strike graphics preview mode (`ds_graphics`, `ds_tilt`) draws its own pictures from the pack's palettes of the five armies: the skin's colours are not applied there.
+- The Dual Strike graphics mode and the tilted map (and its hi-res picture) show the skin: the tilt is a host-side overlay of the console's picture, so the palettes, the helmets (the skin's slot instead of the CO's country's), the HQ and the properties are the console's own; the pack's own screens (the CO panel's palette, the CO page's unit chart, the Versus and CO-pick cards with the emblem) take their colours from the skin file. Dual Strike's own pictures of Infantry and Mech are not drawn for the skin (the galea is AW2-style pixel art: the skin's soldiers keep it in every mode).

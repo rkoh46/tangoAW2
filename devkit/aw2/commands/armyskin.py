@@ -47,12 +47,15 @@ def register(sub):
     a.add_argument("name")
     a.add_argument("--shot", help="PNG path for the app's own picture (default devkit/work/armyskin/look_<name>.png)")
     a.add_argument("--wait", type=float, default=60.0)
+    a.add_argument("--ds", action="store_true", help="with the Dual Strike pack and its graphics (the checkpoint made with --ds)")
+    a.add_argument("--tilt", action="store_true", help="and the Dual Strike tilted map (implies --ds)")
+    a.add_argument("--tilt-scale", type=int, help="the tilt's picture scale (the hi-res picture), 1..8")
     a.set_defaults(fn=run_look)
     a = ps.add_parser("sheet", help="review sheets (pictures from the scenarios, one row per unit, the palette, the art at 4x) into a directory")
     a.add_argument("--out", required=True)
     a.add_argument("--awbw", help="a directory with another project's reference pictures to show beside ours (review only, never committed)")
     a.add_argument("--ds", action="store_true", help="also the Dual Strike pack's sheet")
-    a.add_argument("--v1-toml", help="an earlier data file: its HQ is drawn beside the new one (sheet 03)")
+    a.add_argument("--prev", action="append", default=[], metavar="LABEL=FILE", help="an earlier data file (v1=/path/x.toml): its helmet and HQ are drawn beside the new ones (sheet 03); repeat for each")
     a.set_defaults(fn=run_sheet)
     a = ps.add_parser("catalogue", help="list the scenarios")
     a.set_defaults(fn=run_catalogue)
@@ -99,55 +102,20 @@ CKPT = lambda: cfg.work("armyskin", "checkpoints")
 
 
 def run_checkpoint(a):
+    from ..armyskinlib import look as lk
     ids = [int(x) for x in a.ids.split(",")] if a.ids else None
-    out = cfg.work("armyskin", f"ckpt_{a.name}")
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "script.txt").write_text(scenarios.script(a.scenario, ids, checkpoint=a.name))
-    CKPT().mkdir(parents=True, exist_ok=True)
-    rc, log = harness.run_script(out / "script.txt", out, ds=a.ds, env_extra={"AW2_CKPT_DIR": str(CKPT())})
+    rc, log = lk.checkpoint(a.name, a.scenario, ids, a.ds)
     util.say(("saved" if rc == 0 else "FAILED") + f" checkpoint {a.name} in {CKPT()} (scenario {a.scenario}; log {log})")
     return rc
 
 
 def run_look(a):
-    import json, os, shutil, subprocess, sys, time
-    from .. import profiles
-    util.check_fresh(cfg.REPO / "target" / "release" / "tango", "tango")
-    ck = CKPT()
-    if not (ck / f"{a.name}.state").exists():
-        util.die(f"no checkpoint {a.name}: `aw2dev armyskin checkpoint {a.name}` first")
-    profiles.ensure("skin", pack=False)
-    data = profiles.profile_dir("skin") / "data" / "checkpoints"
-    data.mkdir(parents=True, exist_ok=True)
-    for ext in ("state", "json"):
-        shutil.copy2(ck / f"{a.name}.{ext}", data / f"{a.name}.{ext}")
-    app = profiles.test_app(cfg.REPO / "target" / "release" / "tango")
-    env = dict(os.environ, TANGOAW2_PROFILE=str(profiles.profile_dir("skin")), TANGOAW2_AI_DEBUG="0", TANGOAW2_BOOT_CHECKPOINT=a.name, AW2DEV_LOOK="1")
-    proc = subprocess.Popen([str(app)], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cfg.REPO)
-    try:
-        addr, t0 = None, time.time()
-        while time.time() - t0 < 60 and addr is None:
-            line = proc.stdout.readline()
-            if not line:
-                break
-            if "AI_DEBUG_LISTENING" in line:
-                addr = line.split()[-1]
-        if not addr:
-            util.die("the app did not open the AI debug channel")
-        sys.path.insert(0, str(cfg.REPO / "tools" / "aidebug"))
-        from client import AiDebug
-        d = AiDebug.connect(addr)
-        d.wait_until({"phase": "battle"}, a.wait)
-        time.sleep(1.0)
-        st = d.state(["armies", "map", "day", "active_army"])
-        for ar in st["armies"]:
-            print(f"army {ar['army']}: colour {ar['colour']} ({ar.get('colour_name')}) co {ar['co_name'] or ar['co']} units {ar['units']} properties {ar['properties']}")
-        shot = Path(a.shot or cfg.work("armyskin", f"look_{a.name}.png"))
-        shot.parent.mkdir(parents=True, exist_ok=True)
-        d.screenshot(str(shot))
-        util.say("screenshot", shot)
-    finally:
-        proc.terminate()
+    from ..armyskinlib import look as lk
+    shot = Path(a.shot or cfg.work("armyskin", f"look_{a.name}.png"))
+    armies = lk.look(a.name, shot, ds=a.ds, tilt=a.tilt, scale=a.tilt_scale, wait=a.wait)
+    for ar in armies:
+        print(f"army {ar['army']}: colour {ar['colour']} ({ar.get('colour_name')}) co {ar['co_name'] or ar['co']} units {ar['units']} properties {ar['properties']}")
+    util.say("screenshot", shot)
     return 0
 
 
@@ -182,8 +150,8 @@ def run_sheet(a):
     ds_dirs = sh.run_scenarios(["dsunits", "crumb"], work / "ds", ds=True) if a.ds else {}
     host = 1
     sh.unit_rows(host).save(out / "02_every_unit.png")
-    v1 = getattr(a, "v1_toml", None)
-    sh.compare_strip(host, a.awbw, v1_toml=v1, map_shot=[sh.shot(dirs, "hqs", n) for n in ("hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc")]).save(out / "03_art_4x.png")
+    prev = [tuple(x.split("=", 1)) for x in a.prev]
+    sh.compare_strip(host, a.awbw, prev=prev, map_shot=[sh.shot(dirs, "hqs", n) for n in ("hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc")]).save(out / "03_art_4x.png")
     sh.swatches(host).save(out / "04_palette.png")
     m5 = [("5 armies: Emerald Sun (stands in for Blue Moon's colour), Orange Star, Green Earth, Yellow Comet, Black Hole", sh.shot(dirs, "map5p", "map5")), ("same map, far side", sh.shot(dirs, "map5p", "map5_far"))]
     sh.grid(m5, 2, 3).save(out / "01_five_armies.png")
@@ -198,5 +166,18 @@ def run_sheet(a):
         ds = [("DS units on the map", sh.shot(ds_dirs, "dsunits", "ds_parade")), ("build menu: Megatank", sh.shot(ds_dirs, "dsunits", "ds_build")),
               ("battle scene: Megatank", sh.shot(ds_dirs, "dsunits", "ds_scene2")), ("Crumb leads: his HQ (placeholder)", sh.shot(ds_dirs, "crumb", "crumb_hq"))]
         sh.grid(ds, 2, 3, caption="With the Dual Strike pack").save(out / "06_dual_strike.png")
+        # the Dual Strike tilted map, from the real app (hi-res)
+        from ..armyskinlib import look as lk
+        from PIL import Image
+        pics = []
+        for scen, title in (("tilt", "2 armies: Emerald Sun (idle and done units, properties, the HQ at the left) against Blue Moon"),
+                            ("tilt5p", "5 armies: Emerald Sun beside Green Earth and Black Hole")):
+            rc, log = lk.checkpoint(f"sheet_{scen}", scen, None, True)
+            png = work / f"{scen}.png"
+            if rc == 0:
+                lk.look(f"sheet_{scen}", png, tilt=True, scale=4)
+                pics.append((title, Image.open(png).convert("RGB")))
+        if pics:
+            sh.tilt_sheet(pics).save(out / "07_tilt.png")
     util.say("sheets in", out)
     return 0
