@@ -124,6 +124,18 @@ def results():
     )
 
 
+@scenario("dsunits", [6, 2], "Dual Strike's units (with the pack): the map, the build menu's picture and a battle scene", ["ds_parade", "ds_build", "ds_scene1", "ds_scene2"], ds=True)
+def dsunits():
+    body = ""
+    for x, k in enumerate(DS_KINDS):
+        body += f"aid unit 1 {k} {x} 4\n"
+    body += "aid unit 1 4 8 6\naid unit 2 inf 7 6\n"
+    body += redraw((7, 0)) + "shot ds_parade 0\n"
+    body += "goto 0 1 6\nwait 10\npress 0 A\nwait 40\n" + "press 0 DOWN\nwait 5\n" * 6 + "wait 20\nshot ds_build 0\npress 0 B\nwait 20\n"
+    body += "goto 0 8 6\nwait 10\npress 0 A\nwait 30\npress 0 A\nwait 30\npress 0 A\nwait 20\npress 0 A\nwait 40\nshot ds_scene1 0\nwait 80\nshot ds_scene2 0\n"
+    return body
+
+
 @scenario("map5p", [1, 6, 3, 4, 5], "a five-army map: the skin with Green Earth and Black Hole on the same map", ["map5", "map5_far"], seats_five=True)
 def map5p():
     return (

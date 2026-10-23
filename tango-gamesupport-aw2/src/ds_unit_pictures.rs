@@ -33,11 +33,11 @@ use crate::roster::{ds_id, NEW_UNITS};
 const OVERLAY_BASE: u32 = 0x022A_D560;
 const DS_TABLE: u32 = 0x0234_F384;
 const DS_ROW: u32 = 60;
-const ARMIES: usize = 5;
+pub const ARMIES: usize = 5;
 /// AW2 copies this much of a decompressed picture to OBJ tiles.
 const PICTURE_MAX: usize = 0x800;
 /// Palettes: two halves of 16 colours.
-const PALETTE: usize = 0x40;
+pub const PALETTE: usize = 0x40;
 /// OAM layouts: a count and at most this many sprites (the ships' 5).
 const MAX_SPRITES: usize = 8;
 
@@ -45,7 +45,7 @@ const MAX_SPRITES: usize = 8;
 pub const DATA: u32 = 0x087D_0000;
 const LAYOUTS: u32 = DATA;
 const LAYOUT_SIZE: u32 = 2 + 6 * MAX_SPRITES as u32;
-const PALETTES: u32 = DATA + 0x0800;
+pub const PALETTES: u32 = DATA + 0x0800;
 const PICTURES: u32 = DATA + 0x1800;
 pub const DATA_END: u32 = DATA + 0x1_0000;
 

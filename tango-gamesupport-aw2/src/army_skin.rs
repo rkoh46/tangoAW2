@@ -32,8 +32,11 @@ const APPLIED: u32 = DATA + 4;
 /// Set once the skin's pictures and texts are in free ROM (they follow the army, not the colour, and Crumb uses the HQ with
 /// no skin on).
 const ART_MARK: u32 = DATA + 8;
+/// The colour the Dual Strike pack's picture palettes are patched for, and their backup list.
+const DS_APPLIED: u32 = DATA + 12;
+const DS_BACKUP: u32 = DATA + 0x8000;
 const BACKUP: u32 = DATA + 0x100;
-const BACKUP_MAX: usize = 0x10000 - 0x100;
+const BACKUP_MAX: usize = 0x7000;
 /// The skin's own pictures (see [`blobs`]).
 const ART: u32 = DATA + 0x1_0000;
 
@@ -678,14 +681,21 @@ fn restore(core: &mut Core) {
         core.raw_write_8(APPLIED, -1, 0);
         core.raw_write_32(BACKUP, -1, 0);
         core.raw_write_32(BACKUP + 4, -1, 0);
+        core.raw_write_8(DS_APPLIED, -1, 0);
         return;
     }
-    // (entries: address, length, the bytes padded to a word; a zero address ends them)
-    let mut at = BACKUP;
+    restore_backup(core, BACKUP);
+    core.raw_write_8(APPLIED, -1, 0);
+}
+
+/// Put back what the backup list at `base` holds (entries: address, length, the bytes padded to a word; a zero address ends
+/// the list) and empty the list.
+fn restore_backup(core: &mut Core, base: u32) {
+    let mut at = base;
     loop {
         let addr = core.raw_read_32(at, -1);
         let len = core.raw_read_32(at + 4, -1) as usize;
-        if addr == 0 || len == 0 || at as usize + 8 + len > (BACKUP as usize + BACKUP_MAX) {
+        if addr == 0 || len == 0 || at as usize + 8 + len > (base as usize + BACKUP_MAX) {
             break;
         }
         let mut b = vec![0u8; len];
@@ -695,15 +705,14 @@ fn restore(core: &mut Core) {
         refresh_palettes(core, &before, &b);
         at += 8 + ((len as u32 + 3) & !3);
     }
-    core.raw_write_32(BACKUP, -1, 0);
-    core.raw_write_8(APPLIED, -1, 0);
+    core.raw_write_32(base, -1, 0);
 }
 
-fn install(core: &mut Core, skin: &Skin, host: u8) {
-    let patches = plan(core, skin, host);
-    let mut at = BACKUP;
-    for p in &patches {
-        if (at - BACKUP) as usize + 8 + p.data.len() + 8 > BACKUP_MAX {
+/// Write `patches`, keeping what they replace in the backup list at `base`.
+fn apply_backup(core: &mut Core, base: u32, patches: &[Patch]) {
+    let mut at = base;
+    for p in patches {
+        if (at - base) as usize + 8 + p.data.len() + 8 > BACKUP_MAX {
             log::error!("army skin: backup area full");
             break;
         }
@@ -714,12 +723,57 @@ fn install(core: &mut Core, skin: &Skin, host: u8) {
         at += 8 + ((p.data.len() as u32 + 3) & !3);
     }
     core.raw_write_32(at, -1, 0);
-    for p in &patches {
+    for p in patches {
         let before = Rom::read(core, p.addr, p.data.len());
         core.raw_write_range(p.addr, -1, &p.data);
         refresh_palettes(core, &before, &p.data);
     }
+}
+
+fn install(core: &mut Core, skin: &Skin, host: u8) {
+    let patches = plan(core, skin, host);
+    apply_backup(core, BACKUP, &patches);
     core.raw_write_8(APPLIED, -1, host);
+}
+
+/// The Dual Strike pack's picture palettes of the seven new units (the build menu's panel and the unit pages), copied into free
+/// ROM by `crate::ds_unit_pictures` once the pack is on: the skin's colours for the colour it sits on.
+pub fn ds_plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
+    use crate::ds_unit_pictures::{ARMIES, PALETTE, PALETTES};
+    let mut out = Vec::new();
+    for k in 0..crate::roster::NEW_UNITS.len() as u32 {
+        let at = |a: u32| PALETTES + PALETTE as u32 * (k * ARMIES as u32 + a);
+        let mut data = Vec::new();
+        for half in 0..2u32 {
+            let rows: Vec<[u16; 16]> = (0..4).map(|a| row_of(rom, at(a) + 32 * half)).collect();
+            if rows.iter().all(|r| r.iter().all(|&c| c == 0xFFFF || c == 0)) {
+                return Vec::new();
+            }
+            let own = row_of(rom, at(host as u32 - 1) + 32 * half);
+            data.extend(bytes_of(&skin.hue_row(&own, &rows)));
+        }
+        out.push(Patch { what: "Dual Strike unit picture".to_string(), addr: at(host as u32 - 1), data });
+    }
+    out
+}
+
+/// After the Dual Strike pack's tables are in (every tick): the skin on those palettes too.
+pub fn sync_ds(core: &mut Core) {
+    let want = applied(core);
+    if core.raw_read_32(DATA, -1) != MAGIC || core.raw_read_8(DS_APPLIED, -1) == want {
+        return;
+    }
+    if core.raw_read_8(DS_APPLIED, -1) != 0 {
+        restore_backup(core, DS_BACKUP);
+        core.raw_write_8(DS_APPLIED, -1, 0);
+    }
+    if want != 0 {
+        let patches = ds_plan(core, emerald_sun(), want);
+        if !patches.is_empty() {
+            apply_backup(core, DS_BACKUP, &patches);
+            core.raw_write_8(DS_APPLIED, -1, want);
+        }
+    }
 }
 
 /// A palette the game has loaded already (the Teams screen loads its emblems' on entry) keeps the colours of the ROM it
@@ -1043,6 +1097,19 @@ fn text_plan(host: u8, out: &mut Vec<Patch>) {
     for l in TEXT_LISTS {
         point(l + LIST_ORDER[k as usize], TEXT_AT);
     }
+}
+
+/// Dual Strike's battle figures keep their palettes in the pack, one set per army (colour - 1): the skin's colours for
+/// the army the skin sits on (`own` its palette halves, `siblings` the first four armies' of the same unit).
+pub fn battle_palettes(core: &Core, army: usize, own: &[[u16; 16]; 2], siblings: &[[[u16; 16]; 2]]) -> [[u16; 16]; 2] {
+    if !installed(core) || host(core) as usize != army + 1 {
+        return *own;
+    }
+    let skin = emerald_sun();
+    std::array::from_fn(|half| {
+        let rows: Vec<[u16; 16]> = siblings.iter().map(|s| s[half]).collect();
+        skin.hue_row(&own[half], &rows)
+    })
 }
 
 // ---------- the skinned army's pictures ----------

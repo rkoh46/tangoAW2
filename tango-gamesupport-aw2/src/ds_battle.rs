@@ -1392,10 +1392,11 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         own.draw(pieces, o, mirror, 2);
         other.draw(pieces, o, mirror, 2);
     }
-    put_palette(core, 4 * side, &fig.palettes[0]);
-    put_palette(core, 4 * side + 1, &fig.palettes[1]);
-    put_palette(core, 4 * side + 2, &fig.palettes[0].map(lighten));
-    put_palette(core, 4 * side + 3, &fig.palettes[1].map(lighten));
+    let pals = crate::army_skin::battle_palettes(core, army, &fig.palettes, &(0..4).filter_map(|a| aw2_figure(unit, a).map(|f| f.palettes)).collect::<Vec<_>>());
+    put_palette(core, 4 * side, &pals[0]);
+    put_palette(core, 4 * side + 1, &pals[1]);
+    put_palette(core, 4 * side + 2, &pals[0].map(lighten));
+    put_palette(core, 4 * side + 3, &pals[1].map(lighten));
     if let Some(p) = FX_PALETTES.get_or_init(|| palette_file(FX_PALETTE)) {
         put_palette(core, FX_PAL as u32, &p[0]);
         put_palette(core, FX_PAL as u32 + 1, &p[1]);
@@ -2136,10 +2137,11 @@ fn flush(core: &mut Core) {
             own.draw(pieces, o, mirror, 2);
             other.draw(pieces, o, mirror, 2);
         }
-        put_palette(core, 4 * side, &fig.palettes[0]);
-        put_palette(core, 4 * side + 1, &fig.palettes[1]);
-        put_palette(core, 4 * side + 2, &fig.palettes[0].map(lighten));
-        put_palette(core, 4 * side + 3, &fig.palettes[1].map(lighten));
+        let pals = crate::army_skin::battle_palettes(core, army, &fig.palettes, &(0..4).filter_map(|a| figure(unit, a).map(|f| f.palettes)).collect::<Vec<_>>());
+        put_palette(core, 4 * side, &pals[0]);
+        put_palette(core, 4 * side + 1, &pals[1]);
+        put_palette(core, 4 * side + 2, &pals[0].map(lighten));
+        put_palette(core, 4 * side + 3, &pals[1].map(lighten));
         if let Some(p) = FX_PALETTES.get_or_init(|| palette_file(FX_PALETTE)) {
             put_palette(core, FX_PAL as u32, &p[0]);
             put_palette(core, FX_PAL as u32 + 1, &p[1]);

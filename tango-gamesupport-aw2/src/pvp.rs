@@ -865,6 +865,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::design_bar::patch_rom(core, ds_features, ds);
         crate::design5::patch_rom(core);
         crate::roster::tick(core, ds);
+        crate::army_skin::sync_ds(core);
         crate::ds_music::tick(core, ds);
         crate::co_roster::tick(core, ds);
         crate::co_new::tick(core, ds);
