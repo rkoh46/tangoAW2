@@ -596,6 +596,16 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
 }
 
 /// The legend; `two` is the two-player view's (local seat is P1, seats colour the armies), all a pvp session adds.
+/// A seat's army colour in the legends: the army's own `normal`, or the army skin's (Emerald Sun) when the seat's army
+/// colour (its pick's, else the seat's own number) is the colour the skin sits on.
+fn army_colour(normal: Color, picks: &[(u8, u8)], n: usize, seat: usize) -> Color {
+    let code = if picks.len() == n { picks[seat].1 } else { seat as u8 + 1 };
+    match tango_library::online::skin_accent(code) {
+        Some((r, g, b)) => Color::from_rgb8(r, g, b),
+        None => normal,
+    }
+}
+
 fn legend_view<'a>(
     lang: &'a LanguageIdentifier,
     two: (bool, bool),
@@ -640,8 +650,9 @@ fn legend_view<'a>(
         // The armies' dots alone: names and seat markers do not fit a phone's bar.
         let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
         let mut r = row![].spacing(4).align_y(Alignment::Center);
+        let picks = tango_library::online::room_picks();
         for k in 0..n.clamp(2, 5) {
-            let c = colors[k];
+            let c = army_colour(colors[k], &picks, n, k);
             r = r.push(container(iced::widget::Space::new().width(Length::Fixed(8.0)).height(Length::Fixed(8.0))).style(
                 move |theme: &iced::Theme| iced::widget::container::Style {
                     background: Some(iced::Background::Color(c)),
@@ -659,6 +670,7 @@ fn legend_view<'a>(
         let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
         let me = tango_library::online::room_local_seat();
         let seats: [&'static str; 5] = ["P1", "P2", "P3", "P4", "P5"];
+        // (a seat's army colour is its pick's once the room has them)
         let you = t!(lang, "play-you");
         let names: Vec<String> = (0..n).map(|k| tango_library::online::room_name(k)).collect();
         let full: Vec<String> = names
@@ -686,7 +698,7 @@ fn legend_view<'a>(
                     .spacing(4)
                     .align_y(Alignment::Center);
                 for (i, &k) in members.iter().enumerate() {
-                    let accent = colors[(picks[k].1 as usize).clamp(1, 5) - 1];
+                    let accent = army_colour(colors[(picks[k].1 as usize).clamp(1, 5) - 1], &picks, n, k);
                     let name = if i + 1 < members.len() { format!("{},", shown[k]) } else { shown[k].clone() };
                     g = g.push(side(accent, "", name, host == Some(k)));
                 }
@@ -704,7 +716,7 @@ fn legend_view<'a>(
         let (shown, cut) = legend_names(&names, me, &you, &full, budget);
         let mut r = row![].spacing(12).align_y(Alignment::Center);
         for k in 0..n {
-            r = r.push(side(colors[k], seats[k], shown[k].clone(), host == Some(k)));
+            r = r.push(side(army_colour(colors[k], &tango_library::online::room_picks(), n, k), seats[k], shown[k].clone(), host == Some(k)));
         }
         if !cut {
             return r.into();

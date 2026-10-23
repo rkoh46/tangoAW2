@@ -61,18 +61,25 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("map units", 0x0810_E6E0, 5, 1, Kind::Unit),
     ("map units (copy)", 0x085A_D9E8, 5, 1, Kind::Unit),
     ("moved units", 0x0810_E780, 5, 1, Kind::Moved),
+    ("moved units (copy)", 0x085A_DA88, 5, 1, Kind::Moved),
     ("moving units", 0x0810_EA60, 5, 1, Kind::Moving),
     ("buildings", 0x080D_3F04, 5, 1, Kind::Hue),
     ("CO panel", 0x080D_4188, 5, 1, Kind::Hue),
     ("table 8104264", 0x0810_4264, 5, 1, Kind::Hue),
     ("table 8106984", 0x0810_6984, 5, 1, Kind::Hue),
-    ("power colours", 0x084F_2BC8, 4, 2, Kind::Hue),
+    ("power colours", 0x084F_2BC8, 5, 2, Kind::Hue),
+    ("buildings (second set)", 0x080D_3E04, 5, 1, Kind::Hue),
+    ("battle gauge", 0x0816_D498, 5, 1, Kind::Hue),
+    ("HUD panel (BG 8)", 0x0818_3C28, 5, 1, Kind::Hue),
+    ("table 85A9BBC", 0x085A_9BBC, 5, 1, Kind::Hue),
+    ("table 85AC8BC", 0x085A_C8BC, 5, 1, Kind::Hue),
     ("turn banner", 0x080A_1238, 4, 1, Kind::Banner),
 ];
 
 /// Black Hole's own copies where the game's table has four (see `crate::five`, `crate::co_new`): (name, address, rows,
 /// kind, the game's table, its colours).
 const BLACK_HOLE_EXTRAS: &[(&str, u32, usize, Kind, u32, usize)] = &[
+    ("power colours (5, battle)", 0x0857_65A0, 2, Kind::Hue, 0x084F_2BC8, 4),
     ("power colours (5)", 0x0857_66A0, 2, Kind::Hue, 0x084F_2BC8, 4),
     ("turn banner (5)", crate::five::BANNER5, 1, Kind::Banner, 0x080A_1238, 4),
 ];
@@ -290,10 +297,10 @@ impl Skin {
     }
 
     /// The grey of a unit that has moved: AW2 tints each colour's greys with the army's hue, so every entry of the row
-    /// (but the clear one and the outline) is made neutral and then given a breath of the skin's ramp at its brightness.
+    /// (but the clear one) is made neutral and then given a breath of the skin's ramp at its brightness.
     pub fn moved_row(&self, orig: &[u16; 16]) -> [u16; 16] {
         let mut out = *orig;
-        for i in 1..15 {
+        for i in 1..16 {
             let l = lum(orig[i]);
             let g = (l * 255.0).round().clamp(0.0, 255.0) as u8;
             out[i] = mix(bgr555((g, g, g)), self.ramp_at(l), self.moved_tint);
