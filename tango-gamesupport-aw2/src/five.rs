@@ -609,7 +609,13 @@ fn routine(core: &mut Core, r: Routine) -> Option<u32> {
         }
         Routine::UnitPalette => {
             let mut pal = [0u8; 0x20];
-            core.raw_read_range(UNIT_PALETTES + (BLACK_HOLE as u32 - 1) * 0x20, -1, &mut pal);
+            // (army 5's own colour, Black Hole's unless the seats picked others: the skin may sit on Black Hole's
+            // colour, which is then not army 5's)
+            let colour = match core.raw_read_8(player(5) + 0x1A, -1) {
+                c @ 1..=5 => c,
+                _ => BLACK_HOLE,
+            };
+            core.raw_read_range(UNIT_PALETTES + (colour as u32 - 1) * 0x20, -1, &mut pal);
             // Colour 15 as sub_08024720 sets it every frame.
             pal[30..32].copy_from_slice(&outline_colour(core, 5).to_le_bytes());
             // The game's palette buffer (copied to palette RAM each frame)

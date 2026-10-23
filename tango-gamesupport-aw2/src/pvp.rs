@@ -172,7 +172,7 @@ pub struct Aw2;
 
 pub static AW2E: Aw2 = Aw2;
 
-pub(crate) fn in_battle(core: &Core) -> bool {
+pub fn in_battle(core: &Core) -> bool {
     core.raw_read_32(BATTLE_SCENE, -1) != 0 || core.raw_read_32(MAIN_LOOP, -1) == CO_PAGE_LOOP
 }
 
@@ -181,7 +181,7 @@ pub(crate) fn current_army(core: &Core) -> u8 {
     core.raw_read_8(CURRENT_PLAYER, -1)
 }
 
-pub(crate) fn in_versus(core: &Core) -> bool {
+pub fn in_versus(core: &Core) -> bool {
     core.raw_read_8(GAME_MODE, -1) == VERSUS
 }
 

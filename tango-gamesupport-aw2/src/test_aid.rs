@@ -19,7 +19,7 @@
 //! - `unit ARMY KIND X Y [HP]`: a new ready unit of the army (KIND: the game's number or a name: inf, mech, tank,
 //!   recon, apc, artillery, rockets, lander, cruiser, battleship, sub, copter, ...) at the empty cell, HP 1..100;
 //! - `move X Y X2 Y2`: the unit at one cell to another empty cell, ready again;
-//! - `ready X Y`: the unit at the cell may act again;
+//! - `ready X Y`: the unit at the cell may act again; `done X Y`: it has acted (greyed);
 //! - `hp X Y N`: its hit points (1..100);
 //! - `kill X Y`: it is gone;
 //! - `capture X Y N`: the unit at the cell has N capture points already;
@@ -265,6 +265,14 @@ pub fn run(core: &mut Core, tick: u32, cmd: &[String]) {
                 core.raw_write_8(record(core, id) + 1, -1, 0);
             }
             log::info!("test-aid @{tick}: unit {id} ready");
+        }
+        Some("done") => {
+            let id = unit_id_at(core, a(1), a(2));
+            if id != 0 {
+                let r = record(core, id) + 1;
+                core.raw_write_8(r, -1, core.raw_read_8(r, -1) | 1);
+            }
+            log::info!("test-aid @{tick}: unit {id} done");
         }
         Some("hp") => {
             let id = unit_id_at(core, a(1), a(2));

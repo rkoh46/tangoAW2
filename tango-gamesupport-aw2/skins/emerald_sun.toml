@@ -19,7 +19,7 @@ crest = "D02C3C"
 gold = "E8C25A"
 gold_dark = "A87C2C"
 # How much of the ramp the grey of a unit that has moved keeps (0..1).
-moved_tint = 0.3
+moved_tint = 0.4
 
 # ---- Infantry and Mech: AW2's Green Earth soldiers with a legion crest -----------------------
 # The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a

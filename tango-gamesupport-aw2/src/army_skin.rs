@@ -70,10 +70,11 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("turn banner", 0x080A_1238, 4, 1, Kind::Banner),
 ];
 
-/// Black Hole's own copies where the game's table has four (see `crate::five`, `crate::co_new`): (name, address, kind).
-const BLACK_HOLE_EXTRAS: &[(&str, u32, usize, Kind)] = &[
-    ("power colours (5)", 0x0857_66A0, 2, Kind::Hue),
-    ("turn banner (5)", crate::five::BANNER5, 1, Kind::Banner),
+/// Black Hole's own copies where the game's table has four (see `crate::five`, `crate::co_new`): (name, address, rows,
+/// kind, the game's table, its colours).
+const BLACK_HOLE_EXTRAS: &[(&str, u32, usize, Kind, u32, usize)] = &[
+    ("power colours (5)", 0x0857_66A0, 2, Kind::Hue, 0x084F_2BC8, 4),
+    ("turn banner (5)", crate::five::BANNER5, 1, Kind::Banner, 0x080A_1238, 4),
 ];
 
 /// AW2's moving-unit palette index of each map-unit role (see `ds_unit_art::MOVE_ROLES`).
@@ -288,29 +289,30 @@ impl Skin {
         out
     }
 
-    /// The grey of a unit that has moved: the colour's own grey with a breath of the ramp.
+    /// The grey of a unit that has moved: AW2 tints each colour's greys with the army's hue, so every entry of the row
+    /// (but the clear one and the outline) is made neutral and then given a breath of the skin's ramp at its brightness.
     pub fn moved_row(&self, orig: &[u16; 16]) -> [u16; 16] {
         let mut out = *orig;
-        for i in (2..8).chain(11..14) {
-            out[i] = mix(orig[i], self.ramp_at(lum(orig[i])), self.moved_tint);
+        for i in 1..15 {
+            let l = lum(orig[i]);
+            let g = (l * 255.0).round().clamp(0.0, 255.0) as u8;
+            out[i] = mix(bgr555((g, g, g)), self.ramp_at(l), self.moved_tint);
         }
         out
     }
 
-    /// A palette of the army's hue (`army` is the colour's unit row, to know which hue is its): the entries
-    /// of that hue take the skin's ramp at their brightness, the rest stay.
-    pub fn hue_row(&self, orig: &[u16; 16], army_unit_row: &[u16; 16]) -> [u16; 16] {
-        let (ah, _, _) = hsv(army_unit_row[4]);
-        let near = |h: f32| {
-            let d = (h - ah).abs();
-            d.min(360.0 - d) <= 30.0
-        };
+    /// A palette that has the army's colours among others': the entries that differ between the colours' versions of
+    /// the palette (`rows`, the first four colours' rows of the table) are the army's; they take the skin's ramp by
+    /// brightness rank (the lightest the ramp's lightest, the darkest its darkest, the rest between), so the skin looks the
+    /// same whichever colour it sits on; the rest stay.
+    pub fn hue_row(&self, orig: &[u16; 16], rows: &[[u16; 16]]) -> [u16; 16] {
         let mut out = *orig;
-        for i in 1..16 {
-            let (h, s, v) = hsv(orig[i]);
-            if s >= 0.22 && v >= 0.15 && near(h) {
-                out[i] = self.ramp_at(lum(orig[i]));
-            }
+        let mut army: Vec<usize> = (1..16).filter(|&i| orig[i] != 0 && rows.iter().any(|r| r[i] != rows[0][i])).collect();
+        army.sort_by(|&a, &b| lum(orig[b]).partial_cmp(&lum(orig[a])).unwrap().then(a.cmp(&b)));
+        let m = army.len();
+        for (rank, &i) in army.iter().enumerate() {
+            let at = if m > 1 { (rank * 5 + (m - 1) / 2) / (m - 1) } else { 2 };
+            out[i] = self.ramp[at.min(5)];
         }
         out
     }
@@ -381,12 +383,11 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
         return out;
     }
     let i = host as u32 - 1;
-    let unit_orig = row_of(rom, 0x0810_E6E0 + 32 * i);
-    let make = |kind: Kind, orig: &[u16; 16]| match kind {
+    let make = |kind: Kind, orig: &[u16; 16], siblings: &[[u16; 16]]| match kind {
         Kind::Unit => skin.unit_row(orig),
         Kind::Moved => skin.moved_row(orig),
         Kind::Moving => skin.moving_row(orig),
-        Kind::Hue => skin.hue_row(orig, &unit_orig),
+        Kind::Hue => skin.hue_row(orig, siblings),
         Kind::Banner => skin.banner_row(orig),
     };
     for &(what, base, colours, span, kind) in TABLES {
@@ -396,7 +397,11 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
         let at = base + 32 * (span as u32 * i);
         let mut data = Vec::new();
         for r in 0..span as u32 {
-            data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r))));
+            // (the same row of the other colours' versions)
+            let siblings: Vec<[u16; 16]> = (0..colours.min(4) as u32)
+                .map(|c| row_of(rom, base + 32 * (span as u32 * c + r)))
+                .collect();
+            data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r), &siblings)));
         }
         out.push(Patch {
             what: what.to_string(),
@@ -405,10 +410,14 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
         });
     }
     if host == 5 {
-        for &(what, at, span, kind) in BLACK_HOLE_EXTRAS {
+        // (Black Hole's own copies: the game's table has the other four colours' rows)
+        for &(what, at, span, kind, table, colours) in BLACK_HOLE_EXTRAS {
             let mut data = Vec::new();
             for r in 0..span as u32 {
-                data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r))));
+                let siblings: Vec<[u16; 16]> = (0..colours.min(4) as u32)
+                    .map(|c| row_of(rom, table + 32 * (span as u32 * c + r)))
+                    .collect();
+                data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r), &siblings)));
             }
             out.push(Patch {
                 what: what.to_string(),
@@ -661,21 +670,25 @@ fn restore(core: &mut Core) {
         core.raw_write_32(DATA, -1, MAGIC);
         core.raw_write_8(APPLIED, -1, 0);
         core.raw_write_32(BACKUP, -1, 0);
+        core.raw_write_32(BACKUP + 4, -1, 0);
         return;
     }
+    // (entries: address, length, the bytes padded to a word; a zero address ends them)
     let mut at = BACKUP;
     loop {
-        let len = core.raw_read_16(at, -1) as usize;
-        if len == 0 {
+        let addr = core.raw_read_32(at, -1);
+        let len = core.raw_read_32(at + 4, -1) as usize;
+        if addr == 0 || len == 0 || at as usize + 8 + len > (BACKUP as usize + BACKUP_MAX) {
             break;
         }
-        let addr = core.raw_read_32(at + 2, -1);
         let mut b = vec![0u8; len];
-        core.raw_read_range(at + 6, -1, &mut b);
+        core.raw_read_range(at + 8, -1, &mut b);
+        let before = Rom::read(core, addr, len);
         core.raw_write_range(addr, -1, &b);
-        at += 6 + len as u32;
+        refresh_palettes(core, &before, &b);
+        at += 8 + ((len as u32 + 3) & !3);
     }
-    core.raw_write_16(BACKUP, -1, 0);
+    core.raw_write_32(BACKUP, -1, 0);
     core.raw_write_8(APPLIED, -1, 0);
 }
 
@@ -683,21 +696,42 @@ fn install(core: &mut Core, skin: &Skin, host: u8) {
     let patches = plan(core, skin, host);
     let mut at = BACKUP;
     for p in &patches {
-        if (at - BACKUP) as usize + 6 + p.data.len() + 2 > BACKUP_MAX {
+        if (at - BACKUP) as usize + 8 + p.data.len() + 8 > BACKUP_MAX {
             log::error!("army skin: backup area full");
             break;
         }
         let orig = Rom::read(core, p.addr, p.data.len());
-        core.raw_write_16(at, -1, p.data.len() as u16);
-        core.raw_write_32(at + 2, -1, p.addr);
-        core.raw_write_range(at + 6, -1, &orig);
-        at += 6 + p.data.len() as u32;
+        core.raw_write_32(at, -1, p.addr);
+        core.raw_write_32(at + 4, -1, p.data.len() as u32);
+        core.raw_write_range(at + 8, -1, &orig);
+        at += 8 + ((p.data.len() as u32 + 3) & !3);
     }
-    core.raw_write_16(at, -1, 0);
+    core.raw_write_32(at, -1, 0);
     for p in &patches {
+        let before = Rom::read(core, p.addr, p.data.len());
         core.raw_write_range(p.addr, -1, &p.data);
+        refresh_palettes(core, &before, &p.data);
     }
     core.raw_write_8(APPLIED, -1, host);
+}
+
+/// A palette the game has loaded already (the Teams screen loads its emblems' on entry) keeps the colours of the ROM it
+/// was loaded from: where the palette buffer or palette RAM holds a bank equal to `before`, `after` goes in its place.
+fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
+    if before.len() != after.len() || before.len() % 32 != 0 || before == after {
+        return;
+    }
+    for base in [0x0300_20C0u32, 0x0500_0000] {
+        let mut ram = [0u8; 0x400];
+        core.raw_read_range(base, -1, &mut ram);
+        for (b, a) in before.chunks(32).zip(after.chunks(32)) {
+            for bank in 0..32usize {
+                if ram[bank * 32..bank * 32 + 32] == *b {
+                    core.raw_write_range(base + bank as u32 * 32, -1, a);
+                }
+            }
+        }
+    }
 }
 
 
