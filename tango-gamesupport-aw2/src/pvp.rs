@@ -592,6 +592,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 25: the maps are picked at the same time and in private (two pad words a seat, crate::unranked::pick_word), and a seat under the yield
         // command is yielded at once, out of turn, with the last army left ending its own turn (crate::proxy_seat::force_yield).
         // 26: tangoAW2's maps' data moved to one run at 0x09D00000, their text slots to a table of 73 (crate::five_map), and the Versus map table grew to 0x100 ids.
+        // 27: Emerald Sun, a sixth army on one of AW2's colours: its colour in EWRAM, the Teams page's sixth choice, the ROM image's palettes and pictures (crate::army_skin).
         crate::inspect::SIM_VERSION
     }
 

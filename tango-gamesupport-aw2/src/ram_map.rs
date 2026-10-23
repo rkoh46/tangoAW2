@@ -50,9 +50,13 @@ pub const STRIKE_SITE: Region = (0x0203_C840, 8);
 /// development switches.
 pub const DS_AI: Region = (0x0203_C700, 0x100);
 
+/// The army skin (crate::army_skin): the colour it sits on, each Teams-screen army's choice, a flag.
+pub const ARMY_SKIN: Region = (0x0203_C500, 0x10);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
+    ("army skin: the colour it sits on and the Teams screen's choices (crate::army_skin::STATE)", ARMY_SKIN),
     ("the map menu's End row, the item chosen, the last cell and the map menu's own item (crate::pvp::END_ROW)", (crate::pvp::END_ROW, 5)),
     ("the waiting player's fog view: scratch call (crate::fog_view)", (crate::fog_view::CALL, 0x58)),
     ("CO skills' data (crate::co_skills::DATA)", (0x0203_E000, 0x3C6)),
@@ -180,6 +184,7 @@ mod tests {
         assert!(crate::ds_versus::STATE_LEN <= find("Dual Strike's Versus").1);
         assert_eq!(find("War Room records").0, crate::ds_versus::ROWS);
         assert_eq!(find("War Room records").1, crate::ds_versus::ROWS_LEN);
+        assert_eq!(ARMY_SKIN, (crate::army_skin::STATE, crate::army_skin::STATE_LEN));
         assert_eq!(find("five armies: the player table").0, crate::five::PLAYERS);
         assert_eq!(find("DS Campaign rules").0, 0x0203_F700);
         assert_eq!(find("CO skills' active").0, crate::co_skills::ACTIVE);
@@ -195,3 +200,4 @@ mod tests {
         assert_eq!(t.0 + t.1, 0x0203_4C00);
     }
 }
+

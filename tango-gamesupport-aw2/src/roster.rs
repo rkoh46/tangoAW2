@@ -658,10 +658,14 @@ fn sync_map_art(core: &mut Core) {
 /// r0): the new units' from tangoAW2's.
 const ICON_COPIES: [u32; 2] = [0x0802_BA9C, 0x0800_289C];
 fn panel_icon(core: &mut Core) {
+    let src = core.gba().cpu().gpr(0) as u32;
+    if let Some(art) = crate::army_skin::icon_source(core, src) {
+        core.gba_mut().cpu_mut().set_gpr(0, art as i32);
+        return;
+    }
     if !is_on(core) {
         return;
     }
-    let src = core.gba().cpu().gpr(0) as u32;
     let first = crate::ds_graphics::unit_sheet(core) + SLOT_BYTES * FIRST_SLOT as u32;
     if (first..first + ART_FRAME).contains(&src) {
         core.gba_mut().cpu_mut().set_gpr(0, (ART_MAP + (src - first)) as i32);

@@ -17,12 +17,14 @@ fn main() {
         None => army_skin::emerald_sun().clone(),
     };
     let patches = army_skin::plan(&RomFile(&rom), &skin, host);
+    let blobs = army_skin::blobs(&RomFile(&rom), &skin);
     let hex = |d: &[u8]| d.iter().map(|b| format!("{b:02x}")).collect::<String>();
     let out = serde_json::json!({
         "skin": skin.id,
         "name": skin.name,
         "host": host,
         "ramp": skin.ramp.iter().map(|&c| { let (r, g, b) = army_skin::rgb_of(c); [r, g, b] }).collect::<Vec<_>>(),
+        "blobs": blobs.iter().map(|p| serde_json::json!({"what": p.what, "addr": p.addr, "hex": hex(&p.data)})).collect::<Vec<_>>(),
         "patches": patches.iter().map(|p| serde_json::json!({"what": p.what, "addr": p.addr, "hex": hex(&p.data)})).collect::<Vec<_>>(),
     });
     println!("{out}");

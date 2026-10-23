@@ -13,11 +13,12 @@ def register(sub):
     a.add_argument("--colour", type=int, default=3, help="the colour (1..5) the skin sits on")
     a.add_argument("--skin")
     a.add_argument("--out")
+    a.add_argument("--fast", action="store_true", help="draw the art straight from the data file (no rebuild of the examples)")
     a.set_defaults(fn=run_preview)
 
 
 def run_preview(a):
     out = a.out or str(cfg.work("armyskin", f"preview_{a.colour}.png"))
-    preview(a.colour, out, a.skin)
+    preview(a.colour, out, a.skin, fast=a.fast)
     util.say("wrote", out)
     return 0
