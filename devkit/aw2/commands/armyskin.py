@@ -177,7 +177,7 @@ def run_sheet(a):
     out.mkdir(parents=True, exist_ok=True)
     util.check_fresh(util.example_bin("aw2_room_teams"), "aw2_room_teams")
     work = cfg.work("armyskin", "sheet")
-    names = ["units", "battle", "power", "capture", "turn", "results", "lost3p", "map5p", "rematch", "hqs"]
+    names = ["units", "battle", "battle_mech", "power", "capture", "turn", "results", "lost3p", "map5p", "rematch", "hqs"]
     dirs = sh.run_scenarios(names, work)
     ds_dirs = sh.run_scenarios(["dsunits", "crumb"], work / "ds", ds=True) if a.ds else {}
     host = 1
@@ -196,10 +196,12 @@ def run_sheet(a):
                 tilt_pics.append((title, _Image.open(png).convert("RGB")))
     sh.compare_strip(host, a.awbw, prev=prev, tilt_shot=(tilt_pics[0][1] if tilt_pics else None), map_shot=[sh.shot(dirs, "hqs", n) for n in ("hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc")]).save(out / "03_art_4x.png")
     sh.swatches(host).save(out / "04_palette.png")
+    from ..armyskinlib import figures as fg
+    fg.battle_sheet(host).save(out / "10_battle_portrait.png")
     m5 = [("5 armies: Emerald Sun (stands in for Blue Moon's colour), Orange Star, Green Earth, Yellow Comet, Black Hole", sh.shot(dirs, "map5p", "map5")), ("same map, far side", sh.shot(dirs, "map5p", "map5_far"))]
     sh.grid(m5, 2, 3).save(out / "01_five_armies.png")
     screens = [("idle units", sh.shot(dirs, "units", "units")), ("done units", sh.shot(dirs, "units", "done")), ("HQ", sh.shot(dirs, "units", "hq")), ("build menu", sh.shot(dirs, "units", "build")),
-               ("unit panel", sh.shot(dirs, "units", "panel")), ("battle", sh.shot(dirs, "battle", "scene2")), ("power menu", sh.shot(dirs, "power", "power_menu")),
+               ("unit panel", sh.shot(dirs, "units", "panel")), ("build menu: Mech portrait", sh.shot(dirs, "units", "build_mech")), ("battle: Infantry", sh.shot(dirs, "battle", "scene2")), ("battle: Mech against a Tank", sh.shot(dirs, "battle_mech", "scene3")), ("power menu", sh.shot(dirs, "power", "power_menu")),
                ("power dialogue", sh.shot(dirs, "power", "power_say")), ("capturing", sh.shot(dirs, "capture", "capture2")), ("NEXT TURN", sh.shot(dirs, "turn", "nextturn")),
                ("DAY banner", sh.shot(dirs, "turn", "day")), ("end-turn menu", sh.shot(dirs, "turn", "endturn")), ("DEFEAT", sh.shot(dirs, "results", "defeat")),
                ("VICTORY (other seat)", sh.shot(dirs, "results", "victory", 1)), ("The Emerald Sun Army has lost!", sh.shot(dirs, "lost3p", "lost_msg", 1)),

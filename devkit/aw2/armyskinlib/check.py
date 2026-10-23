@@ -180,6 +180,18 @@ def static(skin_path=None, say=print):
                 fails.append(f"unit {t}: its map pictures use no army colour at all")
             elif any(live[i] == own[i] for i in roles):
                 fails.append(f"unit {t} on colour {host}: left in the army's colours")
+    # -- the battle figures and portraits: the engine's patched frames are the data file's rules applied (Python twin), and most frames have a helmet
+    if "battle" in data or "portrait" in data:
+        from . import figures
+        skf = Rom(3)
+        pf = figures.check_parity(base, skf, data)
+        fails += pf
+        sh = figures.sheets_of(base, skf)
+        have = sum(1 for (u, w), (o, m) in sh.items() for a, b in zip(o, m) if a != b)
+        total = sum(len(o) for (u, w), (o, m) in sh.items())
+        rep.append(f"  battle figures and portraits: the helmet is on {have} of {total} frames (the falling ones have no helmet block); the engine's frames equal the data file's rules: {'yes' if not pf else 'NO'}")
+        if have < total // 2:
+            fails.append(f"battle figures: the helmet is on only {have} of {total} frames")
     rep.append(f"  every unit (1..24) on every colour: recoloured map pictures; the done grey differs from the live colours by >= {MIN_DONE}")
     return fails, rep
 
@@ -279,6 +291,13 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             else:
                 forb = {c: k for c, k in forbidden_all.items()}
             left = {c: skin[c] for c in forb if skin.get(c, 0) >= tolerance}
+            need = sc.get("crest", {}).get(shot)
+            if need:
+                # the skin's own art must be there: the plume's red (the battle figures' and the portraits' helmets are drawn by the skin file)
+                reds = sum(k for c, k in skin.items() if c[0] > 150 and c[1] < 100 and c[2] < 100 and c[0] - c[1] > 80)
+                rep.append(f"  {n}/{shot}: {reds} pixels of the skin's crest red (needs >= {need})")
+                if reds < need:
+                    fails.append(f"{n}/{shot}: only {reds} pixels of the skin's crest red (>= {need}): the helmet is missing")
             rep.append(f"  {n}/{shot}: {len(forb)} colours only the base army had, {sum(left.values())} pixels of them left in the skin's shot" + (f"  {sorted(left.items(), key=lambda x: -x[1])[:3]}" if left else ""))
             if left:
                 fails.append(f"{n}/{shot}: base army colours left: {sorted(left.items(), key=lambda x: -x[1])[:4]}")

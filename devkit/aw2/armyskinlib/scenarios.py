@@ -39,15 +39,15 @@ def redraw(cell):
 SCENARIOS = {}
 
 
-def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None, look=False, sheet_only=False):
-    """`look`: the shots are the real app's pictures with the Dual Strike tilt (`look.py`), not harness frames; `sheet_only`: left out of `check --live`."""
+def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None, look=False, sheet_only=False, crest=None):
+    """`crest`: {shot: at least this many pixels of the skin's crest red} (the plume of the battle figures and the portraits); `look`: the shots are the real app's pictures with the Dual Strike tilt (`look.py`), not harness frames; `sheet_only`: left out of `check --live`."""
     def wrap(fn):
-        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, look=look, sheet_only=sheet_only, body=fn)
+        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, look=look, sheet_only=sheet_only, crest=crest or {}, body=fn)
         return fn
     return wrap
 
 
-@scenario("units", [6, 2], "idle, done and moving units, the cursor panel, the build menu, the HQ and a city", ["units", "done", "hq", "build", "panel"])
+@scenario("units", [6, 2], "idle, done and moving units, the cursor panel, the build menu, the HQ and a city", ["units", "done", "hq", "build", "build_mech", "panel"], crest={"units": 10, "build": 25, "build_mech": 25})
 def units():
     return (
         "aid unit 1 inf 8 4\naid unit 1 mech 9 4\naid unit 1 tank 8 5\naid unit 1 recon 10 5\naid unit 2 inf 7 4\naid unit 2 tank 6 5\n"
@@ -57,7 +57,7 @@ def units():
         + redraw((8, 4))
         + "shot done 0\n"
         + "goto 0 1 7\nwait 30\nshot hq 0\n"
-        + "goto 0 1 6\nwait 10\npress 0 A\nwait 40\nshot build 0\npress 0 B\nwait 20\n"
+        + "goto 0 1 6\nwait 10\npress 0 A\nwait 40\nshot build 0\npress 0 DOWN\nwait 20\nshot build_mech 0\npress 0 B\nwait 20\n"
     )
 
 
@@ -81,10 +81,19 @@ def parade(kinds=None):
     return body
 
 
-@scenario("battle", [6, 2], "a battle scene (the army attacks)", ["scene1", "scene2", "scene3"])
+@scenario("battle", [6, 2], "a battle scene (the army attacks): the figures wear the skin's plumed helmet", ["scene1", "scene2", "scene3"], crest={"scene1": 15, "scene2": 80, "scene3": 80})
 def battle():
     return (
         "aid unit 1 inf 8 4\naid unit 2 inf 7 4\n"
+        + redraw((8, 4))
+        + "press 0 A\nwait 30\npress 0 A\nwait 30\npress 0 A\nwait 20\npress 0 A\nwait 40\nshot scene1 0\nwait 60\nshot scene2 0\nwait 60\nshot scene3 0\n"
+    )
+
+
+@scenario("battle_mech", [6, 2], "a Mech attacking a Tank: the bazooka frames of the battle scene", ["scene1", "scene2", "scene3"], crest={"scene1": 15, "scene2": 80, "scene3": 80})
+def battle_mech():
+    return (
+        "aid unit 1 mech 8 4\naid unit 2 tank 7 4\n"
         + redraw((8, 4))
         + "press 0 A\nwait 30\npress 0 A\nwait 30\npress 0 A\nwait 20\npress 0 A\nwait 40\nshot scene1 0\nwait 60\nshot scene2 0\nwait 60\nshot scene3 0\n"
     )

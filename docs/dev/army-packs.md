@@ -45,7 +45,7 @@ By **colour** (the colour's rows of tables indexed by colour): `army_skin::TABLE
 | moving units | `0x0810EA60` | the unit roles at other indices (`MOVE_ROLE`) |
 | buildings (two sets) | `0x080D3F04`, `0x080D3E04` | OBJ palettes of the buildings, HQ included (entry 14, magenta and unused in every colour's row, is the skin's gold: `Kind::Building`) |
 | CO panel, HUD panels | `0x080D4188`, `0x08183C28`, `0x085A9BBC`, `0x085AC8BC`, `0x08104264`, `0x08106984` | the CO panel, windows and menus, the HUD |
-| power colours | `0x084F2BC8` (2 rows a colour), Black Hole's copies `0x085765A0`, `0x085766A0` | the battle scenes' unit palettes and the build menu's pictures |
+| power colours | `0x084F2BC8` (2 rows a colour), Black Hole's copies `0x085765A0`, `0x085766A0` | the battle scenes' unit palettes, the unit panel's portrait and the build menu's pictures (`Kind::Power`: as `Hue`, and entries 14 and 15 of the first row, which no soldier uses, are the skin's `crest` and `crest_dark`: the plume's reds) |
 | battle gauge | `0x0816D498` | the HP gauge of a battle scene |
 | turn banner | `0x080A1238` (four colours; Black Hole's is `five::BANNER5`) | NEXT TURN banner |
 | emblem | the sprite group 1's art of colour `c` and its palette `0x081018E4` (entries per colour) | the army's logo (Teams screens, results) |
@@ -62,6 +62,8 @@ By **army** (AW2 draws these by the country of the army's CO, `sub_08042DE0`, no
 |---|---|---|
 | Infantry and Mech, idle (map) | slot per (country, unit) `u16[5][25]` at `0x08499608`, tiles of the sheet `0x0810BE60` (3 frames), function `sub_080261A4` | trap at `0x080261A6` makes the slot 52 + 2 i (`slot_of`); the pictures are put into VRAM past the sheet every frame (`sync_map_art`); the panel icon (`roster::panel_icon`) reads them through `icon_source` |
 | Infantry and Mech, moving | LZ77 sheet per (unit, country) in the table `0x0849CD88`, function `sub_08035B3C` | trap at `0x08035B40` returns the skin's sheet (the country's with the helmet patches laid on the frames: `moving_patches`, found by the helmet's top row) |
+| Battle-scene Infantry and Mech | LZ77 sheets of 32x32 frames (16 tiles, 1D) per country, `0x085D64A8[5 * type + country]` (15 words; the soldiers are type 1 for both units: words 0 and 4 are the two sheets, the rifle's and the bazooka's), decompressed to a staging buffer and copied to the OBJ tiles; `FIG_LOAD` `0x080568E2` holds the sheet's address in `r0` | trap at `FIG_LOAD`: for a skinned side (`SIDE_COLOURS` `0x03004500`, `SIDE_UNITS` `0x03004528`) the sheet becomes the skin's (Green Earth's with the helmet laid on every frame, `patch_figures`, compressed with `lz77_compress` into free ROM; the table of their addresses is read from the ROM image) |
+| the unit panel's portrait | one LZ77 32x32 picture per (type, country), `0x0849DC18 + 0x14 + 4 * (15 * type + country)`, loaded by `sub_0803A190` to OBJ tile `0x2E8` | trap at `PORTRAIT_LOAD` `0x0803A1D8`: `r0` becomes the skin's patched portrait (the army is at `*[*0x08090F70] + 8`) |
 | HQ | art per country at `0x080D16C4` / `0x080D1BC4` (snow), loaded by `sub_0803F5E4` | trap at its end (`0x0803F698`) puts the skin's 16x32 art into the army's tiles (and army 5's lab tiles in a five-army game) |
 
 Crumb (CO 82, Dual Strike pack) uses the **first skin's HQ** as a placeholder for one of his own (`hq_skin`).
@@ -79,18 +81,28 @@ building = [4 colours]              # optional: the buildings' own ramp, light t
 crest, gold, gold_dark              # crest red (unit role 14), the sun
 moved_tint = 0.5                    # how much of the ramp's hue the grey of a moved unit keeps
 moved_dim = 0.64                    # how bright it stays (the skin's own dimmed ramp; still readable)
+moved_lift = 0.3                    # the darker entries of a moved unit's greys (6..14) are lifted by this much first: a done unit is not black
 [infantry] / [mech]
 base = 3                            # AW2's picture of this colour's soldier is the start
 [[infantry.patch]]  frames = [0,1,2]  x = 0  y = 0  rows = [ ... ]   # `.` keep, `_` clear, hex digit = unit palette index (b c d the steel trim, e crest, f outline)
   moving = [0,1,2]  anchor = [6,1]   # also on those frames of the moving sheet (0..2 sideways, 3..5 front, 6..8 back), the point `anchor` of `rows`
                                      # lying on the left outline of the helmet's top row (found in the frame); `frames = []` for a moving-only patch
 [infantry.moving] crest = true      # (older way) a plain crest over every moving frame's helmet; Emerald Sun draws its crest with patches instead
+[battle.infantry]  dome = [12, 9]  x = 2  y = -3  rows = [ ... ]   # the helmet at the battle figures' size (see below); also [battle.mech], [portrait.infantry], [portrait.mech]
 [hq]       rows = [32 rows of 16]   # `.` clear, hex digits = the building palette's index (1 white, 2..5 the body ramp light to dark, b shadow)
 [emblem]   rows = [16 rows of 16]   # 1 white, 2 shadow, a b c = the mid, dark and light tones of the skin's ramp (`ramp[2]`, `ramp[4]`, `ramp[0]`; they go to the three emblem entries of the colour the skin sits on; Black Hole has one entry: all three); used by the game's own emblem
                                     # (Teams screens, results) and drawn from the file for Dual Strike's Teams and CO-pick cards; the pick flags are recoloured from the flag's own tiles (`recolour_entries`)
 ```
 
 Register the file in `FILES` (`army_skin.rs`, at most `MAX_SKINS` = 3): its choice code is `SKIN + index`, shown on the army pages and cycled with the five armies.
+
+**Battle figures and portraits** (`[battle.infantry]`, `[battle.mech]`, `[portrait.infantry]`, `[portrait.mech]`). The battle scene's soldiers and the unit panel's portrait are 32 x 32 pictures drawn from AW2's
+LZ77 sheets, so a skin's helmet is laid on them as data too: `dome = [w, h]` is the size of the helmet block (the soldiers' 12 x 9 army-coloured pixels, palette entries 2..5, above the face: the first row with a skin
+tone, entries 8..10), `x`, `y` where `rows` start from that block's top-left corner (they may be negative: the plume rises above it), and `rows` are hex digits (a figure palette entry: 7 the outline, 1 white,
+b c d the steel greys, e the skin's `crest`, f its `crest_dark`: entries 14 and 15, free in the soldiers' palette), `.` keep, `_` clear. The engine finds the block on each frame of the soldiers' two sheets (Green Earth's, as
+the map pictures' `base`) and lays the rows there; a frame without such a block (a soldier falling over) is left as it is. `[battle.infantry]` and `[battle.mech]` both end up on the same sheets (the Mech uses the soldiers'
+frames): the Mech's own is used for the Mech's side, and one copy is kept when they are equal. `crest_dark` is optional in `[colours]` (default: the crest darkened). `armyskin check` compares the engine's frames with the rules
+applied in Python (`armyskinlib/figures.py`), and `check --live` needs the plume's red in the battle and build-menu screens.
 
 ## 5. Choosing the army
 
@@ -109,7 +121,7 @@ Register the file in `FILES` (`army_skin.rs`, at most `MAX_SKINS` = 3): its choi
 | `check [--live] [--scenario S ..] [--ds]` | **static**: the data file's shapes; the palette's margins; every unit 1..24 on every colour is recoloured and its done grey differs from its live colours. **`--live`**: runs the catalogue's scenarios three times (the base army, another colour, the skin) and fails on any screen where a colour only the base army had is still there |
 | `sources [--a 1,2 --b 3,4]` | renders the screens with two armies, finds the palette banks that differ, searches the ROM for their colours and prints the **ROM palettes the skin does not patch yet** (the way to find the next table) |
 | `options --dir DIR [--letters ACF] [--awbw DIR]` | a sheet of **soldier options**: several complete Infantry + Mech designs (idle side frame) from candidate files `A.toml`, `B.toml` ... in DIR, one row per letter with a description, each at 8x and 1x and on a plain map tile at 2x beside Green Earth's and Black Hole's Infantry (and AWBW's pair on top with `--awbw`, review only). A candidate is a skin fragment: `name`, `description`, optional `[colours]` overrides (`trim`, `crest`, `ramp`) and the skin file's own `[infantry]` / `[mech]` patch tables, so the chosen letter is merged into `skins/<id>.toml` as it is. `armyskinlib/options.py` has `grid_of` (AW2's soldier as a grid), `patch_rows` (draw on a copy and let the difference become the patch) and `toml_for` to author them; candidates stay out of the repository until one is chosen |
-| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Emerald Sun Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `hqs` (the five HQs on the map, side by side), `dsunits` and `crumb` (with the pack), `tilt` and `tilt5p` (the Dual Strike tilted map from the real app, with the pack: `check --live --ds` compares its picture the same way) |
+| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Emerald Sun Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `hqs` (the five HQs on the map, side by side), `battle_mech` (a Mech against a Tank), `dsunits` and `crumb` (with the pack), `tilt` and `tilt5p` (the Dual Strike tilted map from the real app, with the pack: `check --live --ds` compares its picture the same way) |
 | `scenario NAME [--ids 6,2] [--ds]` | runs one scenario and keeps its shots (for sheets) |
 | `checkpoint NAME [--scenario S] [--ids ..] [--ds]` and `look NAME [--ds] [--tilt] [--tilt-scale N]` | save a scenario's end state, then boot the real app from it through the AI debug channel and take its own picture (`--tilt`: the Dual Strike tilted map, `--tilt-scale 4` the hi-res picture; it needs the pack and sets `TANGOAW2_TILT_NO_GROUNDCHECK`, see `env-aids.md`) |
 
@@ -185,6 +197,7 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 
 ## 8. Limits
 
-- Battle scenes of Infantry and Mech are AW2's figures in the skin's palette (no helmet, no crest): the figures are OBJ tiles streamed per animation frame and the helmet shares its palette entries with the uniform, so an overlay would need a hook on every tile copy; the idle and moving map pictures, the build menu and the panel icons have the crest.
+- The battle-scene soldiers and the portraits have the helmet on every frame that has a helmet block; the falling-over frames (three of each sheet) keep AW2's helmet in the skin's colours. The figures' sheets are patched where the scene loads them rather than on the tile copy, so every frame, terrain and scale has them (the scene has one figure size).
+- Free ROM ends at `0x09FE0000` (the console's ROM image): the skins' room for battle pictures is the 36 KB between the backups and the map pictures, 12 KB a skin, which is why the sheets are compressed.
 - Up to three skins at once (slots 52..57, one colour each); more needs more slot room (`slot_of`).
 - The Dual Strike graphics mode and the tilted map (and its hi-res picture) show the skin: the tilt is a host-side overlay of the console's picture, so the palettes, the helmets (the skin's slot instead of the CO's country's), the HQ and the properties are the console's own; the pack's own screens (the CO panel's palette, the CO page's unit chart, the Versus and CO-pick cards with the emblem) take their colours from the skin file. Dual Strike's own pictures of Infantry and Mech are not drawn for the skin (the crested soldiers are AW2-style pixel art: the skin's soldiers keep them in every mode).

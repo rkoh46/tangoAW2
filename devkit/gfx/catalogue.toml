@@ -131,12 +131,24 @@ what = "Emerald Sun (the sixth army, a skin on one of AW2's colours): idle, done
 runner = "harness"
 script = "aw2_skin_units_2p"
 vram = true
-shots = ["units_s0", "done_s0", "hq_s0", "build_s0", "panel_s0"]
+shots = ["units_s0", "done_s0", "hq_s0", "build_s0", "build_mech_s0", "panel_s0"]
 checks = ["golden", "palette", "external"]
 palette = { rc = true }
 variants = { default = {} }
 golden = { tolerance = 0.002 }
 external = [{ cmd = ["python3", "{repo}/devkit/aw2dev", "armyskin", "check"], what = "the skin's data file, palette margins (distance from AW2's five armies, the done greys and the fog's terrain) and every unit's recolouring" }]
+
+[[screen]]
+name = "emerald_sun_battle"
+what = "Emerald Sun's soldiers in a battle scene: the plumed helmet with its steel face guard on every figure (palette entries 14 and 15 are the plume's reds), the skin's colours on the figures"
+runner = "harness"
+script = "aw2_skin_battle_2p"
+vram = true
+shots = ["scene2_s0", "scene3_s0"]
+checks = ["golden", "palette"]
+palette = { rc = true }
+variants = { default = {} }
+golden = { tolerance = 0.002 }
 
 [[screen]]
 name = "emerald_sun_5p"

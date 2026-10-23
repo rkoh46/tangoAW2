@@ -59,5 +59,8 @@ wait 10
 press 0 A
 wait 40
 shot build 0
+press 0 DOWN
+wait 20
+shot build_mech 0
 press 0 B
 wait 20

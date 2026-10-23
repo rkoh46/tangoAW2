@@ -266,3 +266,14 @@ AW2 sound ids not listed here have not been catalogued in the code; to find one,
 | `0x0816D498` | battle gauge palettes by colour; `0x08183C28` HUD panel BG 8; `0x085A9BBC`, `0x085AC8BC` BG 9 / BG 8 tables; `0x080D3E04` the second building set; `0x084F2BC8` (2 rows a colour) the battle scenes' unit palettes, Black Hole's `0x085765A0`, `0x085766A0` | `army_skin::TABLES` |
 
 Traps run **after** the displaced instruction (`mgba-rs` trapper) and panic on a second trap at one address; the registers an instruction would have written are not reliably visible to the handler, so read the arguments the function was called with (r0, r1) and set what the function's next instruction needs.
+
+## Battle-scene figures and portraits (`army_skin.rs`)
+
+| Address | What |
+|---|---|
+| `0x0805_68E2` | the scene's figure loader, just before it decompresses a side's sheet to the staging buffer (`0x0200FC50` left, `0x02013050` right): `r0` the LZ77 sheet, `sp + 0x20` the side; trap `fig_sheet` |
+| `0x085D_64A8` | the figure records `[5 * type + country]` (15 words each: words 0..3 the first sheet, 4..5 the second, then descriptors): Infantry and Mech both use type 1; a sheet is 14 or 16 frames of 512 bytes (32x32, 16 tiles in rows of four) |
+| `0x0300_4528`, `0x0300_4500` | the scene's two sides' unit records (first byte the unit type) and colours (0..4) |
+| `0x0849_DC18 + 0x14` | the portraits `[15 * type + country]` (LZ77, 512 bytes); `sub_0803A190` loads one to OBJ tile `0x2E8` (bank 3); trap `portrait_blob` at `0x0803_A1D8` (`r8` the type byte; the army at `*[*0x08090F70] + 8`) |
+| `0x0855_5D30` | the panel's palette pointers `[(type - 1) * 5 + colour]` into `0x084F2BC8` rows (two rows of 16 colours: the figures', then another) |
+| `0x0801_1FF0`, `0x0200_B3B4` | the deferred copy queue drained at VBlank (12 bytes an entry: source, destination, size, kind), by which a frame's 512 bytes go from the staging buffer to the figure's tiles |

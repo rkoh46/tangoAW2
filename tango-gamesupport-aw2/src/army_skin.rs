@@ -80,6 +80,9 @@ pub enum Kind {
     /// The buildings' OBJ palettes: as `Hue`, and entry 14 (magenta in every colour's row: no building uses it) is the skin's gold,
     /// which the skin's HQ uses for its trim.
     Building,
+    /// The battle scenes' and the unit portraits' palettes (two rows a colour, the first the figures'): as `Hue`, and entries 14 and 15 of the first row (unused by the soldiers) are the
+    /// skin's crest red and its dark, which its helmet's plume is drawn in.
+    Power,
     /// The turn banner's stripe (entries 1..5, bright to dark).
     Banner,
 }
@@ -95,7 +98,7 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("CO panel", 0x080D_4188, 5, 1, Kind::Hue),
     ("table 8104264", 0x0810_4264, 5, 1, Kind::Hue),
     ("table 8106984", 0x0810_6984, 5, 1, Kind::Hue),
-    ("power colours", 0x084F_2BC8, 5, 2, Kind::Hue),
+    ("power colours", 0x084F_2BC8, 5, 2, Kind::Power),
     ("buildings (second set)", 0x080D_3E04, 5, 1, Kind::Building),
     ("battle gauge", 0x0816_D498, 5, 1, Kind::Hue),
     ("HUD panel (BG 8)", 0x0818_3C28, 5, 1, Kind::Hue),
@@ -107,8 +110,8 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
 /// Black Hole's own copies where the game's table has four (see `crate::five`, `crate::co_new`): (name, address, rows,
 /// kind, the game's table, its colours).
 const BLACK_HOLE_EXTRAS: &[(&str, u32, usize, Kind, u32, usize)] = &[
-    ("power colours (5, battle)", 0x0857_65A0, 2, Kind::Hue, 0x084F_2BC8, 4),
-    ("power colours (5)", 0x0857_66A0, 2, Kind::Hue, 0x084F_2BC8, 4),
+    ("power colours (5, battle)", 0x0857_65A0, 2, Kind::Power, 0x084F_2BC8, 4),
+    ("power colours (5)", 0x0857_66A0, 2, Kind::Power, 0x084F_2BC8, 4),
     ("turn banner (5)", crate::five::BANNER5, 1, Kind::Banner, 0x080A_1238, 4),
 ];
 
@@ -127,18 +130,37 @@ pub struct Skin {
     pub building: Option<Vec<u16>>,
     pub trim: [u16; 3],
     pub crest: u16,
+    /// The crest's dark (palette entry 15 of the battle palette): the shade of its plume.
+    pub crest_dark: u16,
     pub gold: u16,
     pub gold_dark: u16,
     pub moved_tint: f32,
     /// How bright a unit that has moved stays (0..1 of its live colour's brightness): the skin's own dimmed ramp.
     pub moved_dim: f32,
+    /// How much the darker entries (6 to 14) of a moved unit's greys are lifted before they take the ramp (0..1: 0 none): the done unit is not black.
+    pub moved_lift: f32,
     pub infantry: UnitArt,
     pub mech: UnitArt,
+    /// The helmet drawn over the Infantry's and the Mech's battle-scene figures (`[battle.infantry]`, `[battle.mech]`) and over their portraits (`[portrait.infantry]`, `[portrait.mech]`).
+    pub battle: [Option<FigPatch>; 2],
+    pub portrait: [Option<FigPatch>; 2],
     /// The HQ's picture: 32 rows of 16 characters, `.` clear, a hex digit the building palette's index.
     pub hq: Vec<String>,
     /// The emblem: 16 rows of 16; `1` white, `2` shadow, `a`, `b`, `c` the dark, mid and light colour of the emblem
     /// colour the skin sits on (Black Hole has one: all three are it).
     pub emblem: Vec<String>,
+}
+
+/// A helmet for a battle-scene figure or a portrait (32 x 32 pictures of 16 tiles): the figure's helmet is its army-coloured
+/// block of `dome` (w, h) pixels above the face; `rows` (hex digits are the figure palette's entries, `.` keeps the pixel, `_`
+/// clears it) are laid with their top-left at (`x`, `y`) from the helmet's top-left corner. Frames without such a block (a figure
+/// falling) are left as they are.
+#[derive(Clone, Debug, PartialEq)]
+pub struct FigPatch {
+    pub dome: (usize, usize),
+    pub x: i32,
+    pub y: i32,
+    pub rows: Vec<String>,
 }
 
 /// A foot unit's picture: AW2's own picture of the colour `base`, then patches on top.
@@ -261,6 +283,18 @@ impl Skin {
             let moving_crest = u.get("moving").and_then(|m| m.get("crest")).and_then(|c| c.as_bool()).unwrap_or(false);
             Ok(UnitArt { base, patches, moving_crest })
         };
+        let fig = |section: &str, name: &str| -> Result<Option<FigPatch>, String> {
+            let Some(t) = v.get(section).and_then(|b| b.get(name)) else { return Ok(None) };
+            let int = |k: &str| t.get(k).and_then(|x| x.as_integer());
+            let dome = t.get("dome").and_then(|d| d.as_array()).ok_or(format!("missing {section}.{name}.dome"))?;
+            let d = |i: usize| dome.get(i).and_then(|x| x.as_integer()).ok_or(format!("{section}.{name}.dome needs [width, height]"));
+            Ok(Some(FigPatch { dome: (d(0)? as usize, d(1)? as usize), x: int("x").unwrap_or(0) as i32, y: int("y").unwrap_or(0) as i32, rows: strings(t.get("rows"), &format!("{section}.{name}.rows"))? }))
+        };
+        let crest = one("crest")?;
+        let crest_dark = match c.get("crest_dark").and_then(|x| x.as_str()) {
+            Some(h) => hex(h)?,
+            None => mix(0, crest, 0.6),
+        };
         Ok(Skin {
             id: s("id")?,
             name: s("name")?,
@@ -268,13 +302,17 @@ impl Skin {
             ramp: list("ramp", 6)?.try_into().unwrap(),
             building: if c.get("building").is_some() { Some(list("building", 4)?) } else { None },
             trim: list("trim", 3)?.try_into().unwrap(),
-            crest: one("crest")?,
+            crest,
+            crest_dark,
             gold: one("gold")?,
             gold_dark: one("gold_dark")?,
             moved_tint: c.get("moved_tint").and_then(|x| x.as_float()).unwrap_or(0.3) as f32,
             moved_dim: c.get("moved_dim").and_then(|x| x.as_float()).unwrap_or(1.0) as f32,
+            moved_lift: c.get("moved_lift").and_then(|x| x.as_float()).unwrap_or(0.0) as f32,
             infantry: unit("infantry")?,
             mech: unit("mech")?,
+            battle: [fig("battle", "infantry")?, fig("battle", "mech")?],
+            portrait: [fig("portrait", "infantry")?, fig("portrait", "mech")?],
             hq: strings(v.get("hq").and_then(|h| h.get("rows")), "hq.rows")?,
             emblem: strings(v.get("emblem").and_then(|h| h.get("rows")), "emblem.rows")?,
         })
@@ -357,7 +395,9 @@ impl Skin {
     pub fn moved_row(&self, orig: &[u16; 16]) -> [u16; 16] {
         let mut out = *orig;
         for i in 1..16 {
-            let l = lum(orig[i]);
+            // (the darker entries, from 6 but the outline, are lifted: the three body tones the check compares keep their place)
+            let lift = if (6..15).contains(&i) { self.moved_lift } else { 0.0 };
+            let l = lift + (1.0 - lift) * lum(orig[i]);
             let g = (l * 255.0).round().clamp(0.0, 255.0) as u8;
             let c = mix(bgr555((g, g, g)), self.ramp_at(l), self.moved_tint);
             out[i] = if self.moved_dim < 1.0 { mix(0, c, self.moved_dim) } else { c };
@@ -453,11 +493,19 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
         return out;
     }
     let i = host as u32 - 1;
-    let make = |kind: Kind, orig: &[u16; 16], siblings: &[[u16; 16]]| match kind {
+    let make = |kind: Kind, orig: &[u16; 16], siblings: &[[u16; 16]], r: u32| match kind {
         Kind::Unit => skin.unit_row(orig),
         Kind::Moved => skin.moved_row(orig),
         Kind::Moving => skin.moving_row(orig),
         Kind::Hue => skin.hue_row(orig, siblings),
+        Kind::Power => {
+            let mut row = skin.hue_row(orig, siblings);
+            if r == 0 {
+                row[14] = skin.crest;
+                row[15] = skin.crest_dark;
+            }
+            row
+        }
         Kind::Building => {
             let mut row = match &skin.building {
                 Some(b) => skin.rank_map(orig, siblings, b),
@@ -479,7 +527,7 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
             let siblings: Vec<[u16; 16]> = (0..colours.min(4) as u32)
                 .map(|c| row_of(rom, base + 32 * (span as u32 * c + r)))
                 .collect();
-            data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r), &siblings)));
+            data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r), &siblings, r)));
         }
         out.push(Patch {
             what: what.to_string(),
@@ -495,7 +543,7 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
                 let siblings: Vec<[u16; 16]> = (0..colours.min(4) as u32)
                     .map(|c| row_of(rom, table + 32 * (span as u32 * c + r)))
                     .collect();
-                data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r), &siblings)));
+                data.extend(bytes_of(&make(kind, &row_of(rom, at + 32 * r), &siblings, r)));
             }
             out.push(Patch {
                 what: what.to_string(),
@@ -674,6 +722,7 @@ pub fn blobs(rom: &dyn Rom, skin: &Skin, idx: usize) -> Vec<Patch> {
         }
     }
     moving_blobs(rom, skin, idx, &mut out);
+    figure_blobs(rom, skin, idx, &mut out);
     text_blobs(skin, idx, &mut out);
     if let Some(g) = skin.hq_grid() {
         for (i, _) in HQ_ART.iter().enumerate() {
@@ -1270,6 +1319,230 @@ pub fn moving_patches(g: &mut [u8], art: &UnitArt, f: usize) {
     }
 }
 
+// ---------- battle figures and portraits ----------
+
+/// AW2's battle-scene figures: the pictures a unit type (Infantry and Mech both use the soldier's, type 1) has for a country are
+/// two LZ77 sheets of 32 x 32 frames (16 tiles in rows of four) at the first and the fifth word of its record, `FIG_TABLE[5 * type + country]`
+/// (15 words); the scene decompresses the one it needs at `FIG_LOAD` (`sub_08056...`: r0 holds the sheet). The portrait on the unit panel is
+/// a 32 x 32 LZ77 picture at `PORTRAIT_TABLE[15 * type + country]` (`sub_0803A190` loads it).
+const FIG_TABLE: u32 = 0x085D_64A8;
+const PORTRAIT_TABLE: u32 = 0x0849_DC18 + 0x14;
+/// The country whose figures the skin's soldiers start from (Green Earth, as the map pictures' `base = 3`).
+const FIG_BASE_COUNTRY: u32 = 2;
+/// A skin's battle sheets and portraits in free ROM (12 KB each, in the room between the backups and the pictures of [`art_at`]; the ROM image
+/// ends at `0x09FE0000`): a table of six words (for Infantry, then Mech: its two sheets and its portrait, 0 for none) and the compressed
+/// pictures after it.
+fn fig_at(skin: usize) -> u32 {
+    DATA + 0x7000 + 0x3000 * skin as u32
+}
+const FIG_DATA: u32 = 0x20;
+const FIG_LIMIT: usize = 0x3000;
+
+/// Where skin `skin`'s sheet `which` (0, 1) of the soldiers of `unit` (1 Infantry, 2 Mech) or its portrait (`which` 2) is, from the table in the ROM image.
+fn fig_slot(core: &Core, skin: usize, unit: u8, which: u32) -> u32 {
+    core.raw_read_32(fig_at(skin) + 4 * (3 * (unit as u32 - 1) + which), -1)
+}
+
+/// GBA LZ77 (type 0x10) compression: greedy, a hash chain of earlier places of the next three bytes; the same bytes every time.
+pub fn lz77_compress(data: &[u8]) -> Vec<u8> {
+    let n = data.len();
+    let mut out = vec![0x10, n as u8, (n >> 8) as u8, (n >> 16) as u8];
+    let mut head = vec![usize::MAX; 1 << 12];
+    let mut prev = vec![usize::MAX; n];
+    let hash = |i: usize| ((data[i] as usize) << 4 ^ (data[i + 1] as usize) << 2 ^ data[i + 2] as usize) & 0xFFF;
+    let mut i = 0;
+    let mut flags_at = 0;
+    let mut bit = 0;
+    let insert = |i: usize, head: &mut Vec<usize>, prev: &mut Vec<usize>| {
+        if i + 2 < n {
+            let h = hash(i);
+            prev[i] = head[h];
+            head[h] = i;
+        }
+    };
+    while i < n {
+        if bit == 0 {
+            flags_at = out.len();
+            out.push(0);
+        }
+        let (mut best_len, mut best_at) = (0usize, 0usize);
+        if i + 2 < n {
+            let mut cand = head[hash(i)];
+            let mut tries = 0;
+            while cand != usize::MAX && i - cand <= 4096 && tries < 64 {
+                let max = (n - i).min(18);
+                let len = (0..max).take_while(|&k| data[cand + k] == data[i + k]).count();
+                if len > best_len {
+                    best_len = len;
+                    best_at = cand;
+                }
+                cand = prev[cand];
+                tries += 1;
+            }
+        }
+        if best_len >= 3 {
+            out[flags_at] |= 0x80 >> bit;
+            let d = i - best_at - 1;
+            out.push(((best_len - 3) << 4 | d >> 8) as u8);
+            out.push(d as u8);
+            for k in 0..best_len {
+                insert(i + k, &mut head, &mut prev);
+            }
+            i += best_len;
+        } else {
+            out.push(data[i]);
+            insert(i, &mut head, &mut prev);
+            i += 1;
+        }
+        bit = (bit + 1) % 8;
+    }
+    while out.len() % 4 != 0 {
+        out.push(0);
+    }
+    out
+}
+
+/// The block of army-coloured pixels (entries 2..5 of the figure palette) above the face (the first row with a skin tone, entries 8..10)
+/// of a 32 x 32 frame (`g`), when it is `size` big: its top-left corner. A figure without one (falling over) has none.
+pub fn dome_of(g: &[u8], size: (usize, usize)) -> Option<(usize, usize)> {
+    let top = (0..32).find(|&y| g[y * 32..y * 32 + 32].iter().any(|&v| v != 0))?;
+    let face = (0..32).find(|&y| g[y * 32..y * 32 + 32].iter().any(|&v| (8..=10).contains(&v)))?;
+    if face < top + 7 {
+        return None;
+    }
+    let pts: Vec<(usize, usize)> = (top..face).flat_map(|y| (0..32).map(move |x| (x, y))).filter(|&(x, y)| (2..=5).contains(&g[y * 32 + x])).collect();
+    let (x0, x1) = (pts.iter().map(|p| p.0).min()?, pts.iter().map(|p| p.0).max()?);
+    let (y0, y1) = (pts.iter().map(|p| p.1).min()?, pts.iter().map(|p| p.1).max()?);
+    (x1 - x0 + 1 == size.0 && (size.1 - 1..=size.1).contains(&(y1 - y0 + 1))).then_some((x0, y0))
+}
+
+/// Lay `p`'s rows on the 32 x 32 frame `g` at the helmet `at`.
+pub fn put_fig(g: &mut [u8], at: (usize, usize), p: &FigPatch) {
+    for (dy, row) in p.rows.iter().enumerate() {
+        for (dx, ch) in row.chars().enumerate() {
+            let (x, y) = (at.0 as i32 + p.x + dx as i32, at.1 as i32 + p.y + dy as i32);
+            if ch == '.' || !(0..32).contains(&x) || !(0..32).contains(&y) {
+                continue;
+            }
+            g[y as usize * 32 + x as usize] = if ch == '_' { 0 } else { digit(ch).unwrap_or(0) };
+        }
+    }
+}
+
+/// A sheet (or one portrait) of 512-byte frames with the helmet `p` on each frame that has a helmet block.
+pub fn patch_figures(sheet: &[u8], p: &FigPatch) -> Vec<u8> {
+    let mut out = sheet.to_vec();
+    for f in 0..sheet.len() / 512 {
+        let mut g = tiles_to_grid(&sheet[f * 512..f * 512 + 512], 4);
+        if let Some(at) = dome_of(&g, p.dome) {
+            put_fig(&mut g, at, p);
+            out[f * 512..f * 512 + 512].copy_from_slice(&grid_to_tiles(&g, 4));
+        }
+    }
+    out
+}
+
+fn figure_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
+    let record = u32_at(rom, FIG_TABLE + 4 * (5 + FIG_BASE_COUNTRY));
+    let mut table = [0u32; 6];
+    let mut data: Vec<u8> = Vec::new();
+    let place = |bytes: Vec<u8>, data: &mut Vec<u8>| -> u32 {
+        let at = fig_at(idx) + FIG_DATA + data.len() as u32;
+        data.extend(&bytes);
+        at
+    };
+    for unit in [1u8, 2] {
+        let u = unit as usize - 1;
+        if let Some(p) = &skin.battle[u] {
+            for which in 0..2u32 {
+                if unit == 2 && skin.battle[1] == skin.battle[0] {
+                    // (the same helmet on the same sheets: one copy)
+                    table[3 + which as usize] = table[which as usize];
+                    continue;
+                }
+                let sheet = lz77_decode(rom, u32_at(rom, record + 16 * which));
+                table[3 * u + which as usize] = place(lz77_compress(&patch_figures(&sheet, p)), &mut data);
+            }
+        }
+        if let Some(p) = &skin.portrait[u] {
+            let pic = lz77_decode(rom, u32_at(rom, PORTRAIT_TABLE + 4 * (15 * unit as u32 + FIG_BASE_COUNTRY)));
+            table[3 * u + 2] = place(lz77_compress(&patch_figures(&pic, p)), &mut data);
+        }
+    }
+    if table.iter().all(|&t| t == 0) {
+        return;
+    }
+    assert!(FIG_DATA as usize + data.len() <= FIG_LIMIT, "the skin's battle pictures do not fit their room");
+    let mut head: Vec<u8> = table.iter().flat_map(|t| t.to_le_bytes()).collect();
+    head.resize(FIG_DATA as usize, 0);
+    out.push(Patch { what: "battle figures: table".to_string(), addr: fig_at(idx), data: head });
+    out.push(Patch { what: "battle figures and portraits".to_string(), addr: fig_at(idx) + FIG_DATA, data });
+}
+
+/// The scene decompresses a figure sheet (`r0`) for a side (the loop's counter at `sp + 0x20`): a skinned army's soldiers (Infantry and Mech)
+/// get the skin's sheet in its place.
+const FIG_LOAD: u32 = 0x0805_68E2;
+const SIDE_UNITS: u32 = 0x0300_4528;
+const SIDE_COLOURS: u32 = 0x0300_4500;
+
+fn fig_sheet(core: &mut Core) {
+    let (sp, r0) = {
+        let c = core.gba().cpu();
+        (c.gpr(13) as u32, c.gpr(0) as u32)
+    };
+    let side = core.raw_read_32(sp + 0x20, -1);
+    if side > 1 {
+        return;
+    }
+    let unit = core.raw_read_32(SIDE_UNITS + 4 * side, -1);
+    if !(0x0200_0000..0x0400_0000).contains(&unit) {
+        return;
+    }
+    let ty = core.raw_read_8(unit, -1);
+    if !(1..=2).contains(&ty) {
+        return;
+    }
+    let colour = core.raw_read_16(SIDE_COLOURS + 2 * side, -1) as u8 + 1;
+    let Some(skin) = skin_installed_on(core, colour) else { return };
+    for c in 0..5u32 {
+        let record = core.raw_read_32(FIG_TABLE + 4 * (5 + c), -1);
+        for which in 0..2u32 {
+            if core.raw_read_32(record + 16 * which, -1) == r0 {
+                let at = fig_slot(core, skin, ty, which);
+                if at != 0 {
+                    core.gba_mut().cpu_mut().set_gpr(0, at as i32);
+                }
+                return;
+            }
+        }
+    }
+}
+
+/// The unit panel's portrait (`sub_0803A190`): after it reads the picture's pointer (`r0`); `r8` points at the unit type, the army is in the
+/// panel's state (at `*[*0x08090F70] + 8`).
+const PORTRAIT_LOAD: u32 = 0x0803_A1D8;
+
+fn portrait_blob(core: &mut Core) {
+    let (r8, r6) = {
+        let c = core.gba().cpu();
+        (c.gpr(8) as u32, c.gpr(6) as u32)
+    };
+    let ty = core.raw_read_8(r8, -1);
+    if !(1..=2).contains(&ty) {
+        return;
+    }
+    let state = core.raw_read_32(core.raw_read_32(r6, -1), -1);
+    if !(0x0200_0000..0x0400_0000).contains(&state) {
+        return;
+    }
+    let army = core.raw_read_8(state + 8, -1) as u32;
+    let Some(skin) = skin_of_army(core, army) else { return };
+    let at = fig_slot(core, skin, ty, 2);
+    if at != 0 {
+        core.gba_mut().cpu_mut().set_gpr(0, at as i32);
+    }
+}
+
 fn moving_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
     for unit in [1u8, 2] {
         let art = if unit == 1 { &skin.infantry } else { &skin.mech };
@@ -1528,8 +1801,14 @@ const LOAD_PALETTE: u32 = 0x0801_35F4;
 const LOAD_PALETTE_FLUSH: u32 = 0x0801_3618;
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![(SLOT_FN, Box::new(unit_slot)), (MOVE_FN, Box::new(moving_sheet)), (HQ_LOADER_END, Box::new(hq_loaded))];
+    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![(SLOT_FN, Box::new(unit_slot)), (MOVE_FN, Box::new(moving_sheet)), (HQ_LOADER_END, Box::new(hq_loaded)), (FIG_LOAD, Box::new(fig_sheet)), (PORTRAIT_LOAD, Box::new(portrait_blob))];
     // `AW2_PAL_LOG=1`: every palette the game loads, with its source (to find what an army's colour reaches).
+    if std::env::var_os("AW2_LZ_LOG").is_some() {
+        t.push((0x0801_1CAC, Box::new(|core: &mut Core| {
+            let c = core.gba().cpu();
+            eprintln!("lz src {:08x} dst {:08x} lr {:08x}", c.gpr(0) as u32, c.gpr(1) as u32, c.gpr(14) as u32);
+        })));
+    }
     if std::env::var_os("AW2_PAL_LOG").is_some() {
         t.push((LOAD_PALETTE, Box::new(log_load)));
         t.push((LOAD_PALETTE_FLUSH, Box::new(log_load)));
@@ -1558,6 +1837,46 @@ mod tests {
         assert_eq!(out[5], ramp[5], "the darkest is the ramp's darkest");
         assert!(lum(out[2]) > lum(out[3]) && lum(out[3]) > lum(out[4]) && lum(out[4]) > lum(out[5]));
         assert_eq!(emblem_pixels(0).len(), 256);
+    }
+
+    /// The compressor's output decompresses to its input (and is smaller for a picture).
+    #[test]
+    fn lz77_round_trips() {
+        struct Mem(Vec<u8>);
+        impl Rom for Mem {
+            fn read(&self, addr: u32, len: usize) -> Vec<u8> {
+                let a = addr as usize;
+                (a..a + len).map(|i| self.0.get(i).copied().unwrap_or(0)).collect()
+            }
+        }
+        let mut data = Vec::new();
+        for i in 0..2000u32 {
+            data.push(((i / 7) % 5) as u8 * 3 + (i % 3 == 0) as u8);
+        }
+        data.extend((0..300u32).map(|i| (i * 2654435761u32 >> 24) as u8));
+        let packed = lz77_compress(&data);
+        assert!(packed.len() < data.len());
+        assert_eq!(lz77_decode(&Mem(packed), 0), data);
+    }
+
+    /// A helmet is found on a standing figure's frame and laid at its corner; a frame without one is left alone.
+    #[test]
+    fn a_helmet_is_laid_on_the_figures_dome() {
+        let mut g = vec![0u8; 32 * 32];
+        for y in 4..13 {
+            for x in 10..22 {
+                g[y * 32 + x] = 3;
+            }
+        }
+        for x in 12..15 {
+            g[13 * 32 + x] = 9; // skin
+        }
+        assert_eq!(dome_of(&g, (12, 9)), Some((10, 4)));
+        assert_eq!(dome_of(&g, (11, 9)), None);
+        let p = FigPatch { dome: (12, 9), x: 1, y: -2, rows: vec!["ee".to_string(), "_.".to_string()] };
+        put_fig(&mut g, (10, 4), &p);
+        assert_eq!((g[2 * 32 + 11], g[2 * 32 + 12], g[3 * 32 + 11]), (14, 14, 0));
+        assert_eq!(g[3 * 32 + 12], 0);
     }
 
     #[test]

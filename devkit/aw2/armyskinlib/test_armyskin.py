@@ -10,7 +10,7 @@ EX = cfg.REPO / "tango-gamesupport-aw2" / "examples"
 
 class Scripts(unittest.TestCase):
     def test_committed_scripts_match_the_generators(self):
-        for fname, name in (("aw2_skin_units_2p.txt", "units"), ("aw2_skin_5p.txt", "map5p")):
+        for fname, name in (("aw2_skin_units_2p.txt", "units"), ("aw2_skin_5p.txt", "map5p"), ("aw2_skin_battle_2p.txt", "battle")):
             text = (EX / fname).read_text().split("\n", 1)[1]
             self.assertEqual(text, scenarios.script(name), f"{fname} is out of date: `aw2dev armyskin scenario {name}` and copy, or regenerate (docs/dev/army-packs.md)")
 

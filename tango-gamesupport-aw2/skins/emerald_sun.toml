@@ -18,12 +18,15 @@ building = ["D6FFB8", "B7E396", "90AB78", "6C8555"]
 trim = ["BDBBA8", "8F8D7F", "665E53"]
 # Crests, plumes and sun rays: legion red.
 crest = "D02C3C"
+# The crest's dark, the plume's shade in the battle scenes.
+crest_dark = "8E1B28"
 # The sun itself on the emblem and the HQ (also entry 14 of every building palette).
 gold = "E8C25A"
 gold_dark = "A87C2C"
 # A unit that has moved: its own dimmed ramp (how much of the ramp's hue the grey keeps, and how bright it stays).
 moved_tint = 0.4
 moved_dim = 0.64
+moved_lift = 0.3
 
 # ---- Infantry and Mech: AW2's soldiers in the stone ramp in a closed Roman galea: a steel face guard with an eye slit and a long red plume sweeping back ---------
 # The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a unit palette index
@@ -147,6 +150,107 @@ rows = [
   "f2eecf",
   "f3eecf",
   "fcbbdf",
+]
+
+# ---- Battle scenes and the unit panel's portrait: the same helmet at the figures' size ---------------------------------------------------------------------
+# The figures are 32x32 pictures (16 tiles) whose helmet is a block of 12x9 army-coloured pixels (palette entries 2..5) above the face (the skin tones,
+# entries 8..10); `rows` (a hex digit is the figure palette's entry: 7 the outline, b c d the steel greys, e the skin's crest red, f its dark; `.` keeps the pixel)
+# are laid at (x, y) from that block's top-left corner on every frame that has one (a figure falling over has none and is left as it is).
+
+# Infantry in battle: the plume sweeps back from the crown, a steel face guard with a dark eye slit
+[battle.infantry]
+dome = [12, 9]
+x = 2
+y = -3
+rows = [
+  ".....eeeef.....",
+  "..eeeeeeeeff...",
+  "eeeeeeeeeeeff..",
+  "..........eeff.",
+  "...........eeff",
+  "............eef",
+  "............eff",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "7bbbcc7........",
+  "7777777........",
+  "7bbccd7........",
+  ".7ccd7.........",
+]
+
+# Mech in battle (its figures are the soldiers' too)
+[battle.mech]
+dome = [12, 9]
+x = 2
+y = -3
+rows = [
+  ".....eeeef.....",
+  "..eeeeeeeeff...",
+  "eeeeeeeeeeeff..",
+  "..........eeff.",
+  "...........eeff",
+  "............eef",
+  "............eff",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "7bbbcc7........",
+  "7777777........",
+  "7bbccd7........",
+  ".7ccd7.........",
+]
+
+# Infantry's portrait on the unit panel
+[portrait.infantry]
+dome = [12, 9]
+x = 1
+y = -3
+rows = [
+  "......eeeef.....",
+  "...eefeeeeeff...",
+  ".eeefeefeeeeff..",
+  "...........efef.",
+  "............eeff",
+  ".............efe",
+  ".............eff",
+  "..............ef",
+  "................",
+  "................",
+  "................",
+  "7bbbbbbbc7......",
+  ".7bbbbbcc7......",
+  ".7777777........",
+  ".7bbbccd7.......",
+  "..7ccdd7........",
+]
+
+# Mech's portrait on the unit panel
+[portrait.mech]
+dome = [12, 9]
+x = 1
+y = -3
+rows = [
+  "......eeeef.....",
+  "...eefeeeeeff...",
+  ".eeefeefeeeeff..",
+  "...........efef.",
+  "............eeff",
+  ".............efe",
+  ".............eff",
+  "..............ef",
+  "................",
+  "................",
+  "................",
+  "7bbbbbbbc7......",
+  ".7bbbbbcc7......",
+  ".7777777........",
+  ".7bbbccd7.......",
+  "..7ccdd7........",
 ]
 
 # ---- The HQ: a tall domed tower on a facade with gold windows and an arched door, a dark outline all round, light from the top left (a lit left, a shaded right).

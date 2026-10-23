@@ -149,6 +149,7 @@ Pass variables to a Simulator app as `SIMCTL_CHILD_<name>` (`ios/README.md`).
 
 | Aid | Effect |
 |---|---|
+| `AW2_LZ_LOG=1` | logs every LZ77 decompression the game starts (`lz src ... dst ... lr ...`; `army_skin::traps`): where its sheets and pictures come from (the battle figures were found with it) |
 | `AW2_PAL_LOG=1` | logs every palette the game loads (`palload src ... off ... size ... lr ...`; `army_skin::traps`): where an army's colours come from (`aw2dev armyskin sources` automates it) |
 | `AW2DEV_SKIN=1` | `aw2dev live ...`: seat 0 picks Emerald Sun on the army page (docs/dev/army-packs.md) |
 | `aid done X Y` | test aid (`TANGOAW2_TEST_POKE` / harness `aid`): the unit at the cell has acted (greyed) |
