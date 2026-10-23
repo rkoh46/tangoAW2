@@ -7,8 +7,8 @@ from . import (BLD_PAL, NAMES, UNIT_PAL, UNIT_SHEET, FRAME, SLOT_TABLE, Rom, dum
 
 # ---- thresholds (CIE76 delta E; docs/dev/army-packs.md "The palette's margins") ----
 MIN_ARMY = 22.0      # the skin's body colours (ramp 1..4) against every body colour of each of AW2's five armies
-MIN_GREY = 9.0       # ... against the greys of units that have moved
-MIN_FOG = 10.0       # ... against the colours the fog gives the terrain
+MIN_GREY = 8.0       # ... against the greys of units that have moved
+MIN_FOG = 8.0       # ... against the colours the fog gives the terrain
 MIN_DONE = 10.0      # the skin's own done unit against its live unit
 MIN_HUE = 20.0       # degrees between the skin's main hue and Green Earth's
 # The terrain's colours under fog (rendered with fog on, Bean Island: grass, road, forest, mountain, sea ...): what a unit stands on in the fog of war.

@@ -8,7 +8,7 @@ game's colours when every seat is READY, so identity 6 is a skin whose colour is
 SEL = 0x0203CB10
 
 
-def header(identities, fog=False, five=False):
+def header(identities, fog=False, five=False, extra=""):
     n = len(identities)
     pokes = "".join(f"poke {SEL + 0x10 * s + 1:08X} {c:02x}\n" for s, c in enumerate(identities))
     picks = "".join(f"press {s} A\nwait 20\n" for s in range(n))
@@ -20,6 +20,7 @@ def header(identities, fog=False, five=False):
         + picks
         + "until teams 100\nwait 90\n"
         + pokes
+        + extra
         + "wait 10\n"
         + ready
         + "wait 300\n"
@@ -38,9 +39,9 @@ def redraw(cell):
 SCENARIOS = {}
 
 
-def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False):
+def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra=""):
     def wrap(fn):
-        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, body=fn)
+        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, body=fn)
         return fn
     return wrap
 
@@ -144,6 +145,13 @@ def dsunits():
     return body
 
 
+# Crumb is index 26 of the Teams screen's CO list with the Dual Strike pack (`aw2dev harness --ds` with the `cos` command lists it); seat 0's CO is
+# the first byte of its selector (0x0203CB10). His HQ is the skin's, a placeholder for one of his own.
+@scenario("crumb", [1, 2], "Crumb leads Orange Star (no skin on): his HQ is Emerald Sun's, the placeholder (with the Dual Strike pack)", ["crumb_hq", "crumb_map"], ds=True, extra="poke 0203CB10 1a\n")
+def crumb():
+    return "goto 0 1 7\nwait 40\nshot crumb_hq 0\ngoto 0 8 5\nwait 30\nshot crumb_map 0\n"
+
+
 @scenario("map5p", [1, 6, 3, 4, 5], "a five-army map: the skin with Green Earth and Black Hole on the same map", ["map5", "map5_far"], seats_five=True)
 def map5p():
     return (
@@ -157,7 +165,7 @@ def script(name, identities=None, fog=None, vram=False):
     """The harness script; with `vram` every shot also dumps its video memory (NAME.vram: palettes, tiles, OAM)."""
     sc = SCENARIOS[name]
     ids = identities or sc["ids"]
-    text = header(ids, fog=sc["fog"] if fog is None else fog, five=sc["five"]) + sc["body"]()
+    text = header(ids, fog=sc["fog"] if fog is None else fog, five=sc["five"], extra=sc["extra"]) + sc["body"]()
     if vram:
         text = "".join(l + ("vram " + l.split()[1] + "\n" if l.startswith("shot ") else "") for l in text.splitlines(True))
     return text

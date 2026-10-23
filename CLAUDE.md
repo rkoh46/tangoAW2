@@ -8,13 +8,13 @@ test, live run and release (never ad-hoc scripts in a scratchpad: they vanish).
 | Path | What |
 |---|---|
 | `tango/` | the desktop app (iced UI, session wiring, `src/app/debug_aids.rs` = pad scripts and other test aids) |
-| `tango-gamesupport-aw2/` | all AW2 logic: `pvp.rs` (netplay rules, waiting views), `fog_view.rs`, `online*.rs`, `unranked.rs`, `result_view.rs`, `five*.rs` (5-army support, maps in `five/maps.txt`), `ds_*.rs` (Dual Strike pack), `run_dump.rs` (test dumps), `examples/` (offline harness, audits) |
+| `tango-gamesupport-aw2/` | all AW2 logic: `pvp.rs` (netplay rules, waiting views), `fog_view.rs`, `online*.rs`, `unranked.rs`, `result_view.rs`, `five*.rs` (5-army support, maps in `five/maps.txt`), `army_skin.rs` + `skins/*.toml` (Emerald Sun, the sixth army: a data file on one of AW2's colours, docs/dev/army-packs.md), `ds_*.rs` (Dual Strike pack), `run_dump.rs` (test dumps), `examples/` (offline harness, audits) |
 | `tango-session/`, `tango-match/`, `tango-net/`, `tango-lobby/`, `tango-backend-mgba/` | session drivers (`pvp/`), match engine, transport (`impair.rs`, `endpoints.rs`), lobby, mGBA shared console |
 | `ios/`, `macos/`, `linux/`, `win/` | platform packaging (`ios/build.sh` builds the IPA) |
 | `devkit/` | `aw2dev` CLI (`./aw2dev`), config, ported test drivers and checkers; output in git-ignored `devkit/work/` |
 | `docs/dev/` | developer knowledge base (index: `docs/dev/README.md`) |
 | `tools/` | older checkers (`cam_check.py`, `pic_check.py`, `hud_check.py`), `aw2test/` scripted battle tests, `maps_doc.py` |
-| `.claude/skills/` | task skills: aw2-test, aw2-live-debug, aw2-release, aw2-add-map, aw2-ui-screen, aw2-waiting-view, aw2-online-debug, aw2-gfx-debug (+ content-kit placeholders) |
+| `.claude/skills/` | task skills: aw2-test, aw2-live-debug, aw2-release, aw2-add-map, aw2-add-army, aw2-ui-screen, aw2-waiting-view, aw2-online-debug, aw2-gfx-debug (+ content-kit placeholders) |
 | `ARCHITECTURE.md`, `docs/AW2.md`, `docs/MAPS.md` | long-form notes (parts of AW2.md are stale; docs/dev follows the code) |
 
 ## Rules that never change
@@ -65,6 +65,6 @@ test, live run and release (never ad-hoc scripts in a scratchpad: they vanish).
 - How things work: `architecture-online.md`, `ram-map.md`, `rom-routines.md`, `maps.md`, `ds-pack.md`; test aids: `pad-scripts.md`, `env-aids.md`.
 - The player's logs: `~/Documents/TangoAW2/logs/tango.log` (+ `.1`..`.5`, F8 report marks with `report-<stamp>.png`): read the latest log and any
   `report-*.png` first when the user reports a bug.
-- Content kits (COs, armies, units, terrain, weather, music, campaigns, modes) are planned but not built: the skills `aw2-add-*` are
-  placeholders. Art is composed from AW2/DS assets read from the user's ROMs at runtime, never drawn or committed. Keep the campaign
+- Content kits (COs, units, terrain, weather, music, campaigns, modes) are planned but not built: the skills `aw2-add-*` are
+  placeholders; the army kit exists (`aw2dev armyskin`, skill `aw2-add-army`). Art composed from AW2/DS assets is read from the user's ROMs at runtime and never committed; an army skin's own colours and pixel art (original work, `skins/*.toml`) are committed data applied on top of it. Keep the campaign
   engine data-driven. AI debug channel and checkpoints are being built in the `aidebug` branch (`~/tangoAW2-aidebug`).

@@ -252,3 +252,17 @@ AW2 sound ids not listed here have not been catalogued in the code; to find one,
 - Anything a hook writes is console state: keep it in EWRAM (registered in `ram_map.rs`), and bump `sim_version` (`pvp.rs`) because peers must patch alike.
 - The scratch console runs `before_tick` (and its traps) too; guard host-side effects with `tango_backend_mgba::shared::in_scratch()`.
 - For a new waiting-view rule, find the proc with `AW2_PROC_LOG=1` on a harness script (`aw2_room_teams ... script`), then add it to `UI_PROCS` (mover's own UI, closed with B on the scratch), `ANIMATION_PROCS` (turn animations, shown when no fog) or the narration/capture lists in `fog_view.rs`; anything unlisted falls to `Phase::Moving` (the window holds its last clean picture), which is the safe default.
+
+## Army skins (docs/dev/army-packs.md)
+
+| Address | What | Used by |
+|---|---|---|
+| `0x080261A4` (trap at `0x080261A6`, load at `0x080261BA`) | `sub_080261A4(army, type)`: a map unit's sprite slot by the country of the army's CO (`sub_08042DE0`); the skin's Infantry and Mech take their own slot | `army_skin::unit_slot` |
+| `0x08035B3C` (trap `0x08035B40`, load `0x08035B5C`) | `sub_08035B3C(unit)`: the moving unit's sheet by (type, country) from the table `0x0849CD88` (9 words a type: five countries' sheets, the animation, 3 words) | `army_skin::moving_sheet` |
+| `0x0803F5E4` (trap at its end `0x0803F698`) | `sub_0803F5E4(weather, base)`: loads the building sheet and each army's HQ art (by country) into OBJ VRAM at tiles `base + 0x5C + 8 (army - 1)` | `army_skin::hq_loaded` |
+| `0x080135F4`, `0x08013618` | palette loaders (r0 source, r1 byte offset in the palette buffer `0x030020C0`, r2 size); `0x080135A4` copies the buffer to palette RAM | `AW2_PAL_LOG=1` logs the loaders' calls (`army_skin::traps`) |
+| `0x0802BA9C`, `0x0800289C` | the unit panel's and the unit bar's copy of a unit's four tiles from the sheet (r0 the source) | `roster::panel_icon` -> `army_skin::icon_source` |
+| `0x08610A38` | text table (word per id); army names 2269.. (by colour), "The ... Army has lost!" 3221.., lists 3288 and 3311 (order OS, BM, YC, GE, BH) | `army_skin::text_plan` |
+| `0x0816D498` | battle gauge palettes by colour; `0x08183C28` HUD panel BG 8; `0x085A9BBC`, `0x085AC8BC` BG 9 / BG 8 tables; `0x080D3E04` the second building set; `0x084F2BC8` (2 rows a colour) the battle scenes' unit palettes, Black Hole's `0x085765A0`, `0x085766A0` | `army_skin::TABLES` |
+
+Traps run **after** the displaced instruction (`mgba-rs` trapper) and panic on a second trap at one address; the registers an instruction would have written are not reliably visible to the handler, so read the arguments the function was called with (r0, r1) and set what the function's next instruction needs.

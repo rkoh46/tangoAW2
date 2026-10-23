@@ -14,6 +14,7 @@ All commands are `aw2dev <cmd>` (repo root shim, `devkit/aw2dev`). Paths and ROM
 | maps (`five/maps.txt`, `online_maps.rs`, `five_map.rs`) | `aw2dev test python` (map pipeline), `aw2dev audit maps` (also `--ds`), `cargo test -p tango-gamesupport-aw2 --lib five_map` | audit exit 0 |
 | session, lobby, rooms, rejoin, host migration, `tango-net` | `aw2dev net sim ...` / `aw2dev net matrix` (see online-dev.md); `aw2dev live lobby --players 3` | hashes equal, no stall, results right |
 | save format, game rules, DS content | `python3 tools/aw2test/run.py` (see `tools/aw2test/README.md`); `tools/mixed_pack_check.sh` for pack-vs-no-pack rooms | all tests pass |
+| army skins (`army_skin.rs`, `skins/*.toml`, a palette table, a trap) | `cargo test -p tango-gamesupport-aw2 --lib army_skin`, `aw2dev armyskin check --live`, `aw2dev armyskin sources`, `aw2dev test`, then `AW2DEV_SKIN=1 aw2dev live moveview --local` and `lobby --players 3 --local`; look at `aw2dev armyskin scenario NAME` (docs/dev/army-packs.md) | check bad=0, sources prints nothing, hashes agree |
 | a release | `aw2dev release <ver> --notes FILE --dry-run`, then docs/dev/release.md | |
 
 A small fix the user will playtest: build, `aw2dev install-mac`, let them test. Do NOT run suites while they are playtesting (their rule).

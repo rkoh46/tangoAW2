@@ -143,3 +143,12 @@ Pass variables to a Simulator app as `SIMCTL_CHILD_<name>` (`ios/README.md`).
 - Desync hunt: `TANGOAW2_RUN_DIR` + `TANGOAW2_HASH_PARTS=1` on both peers, compare the `hash` lines of `state_s<k>.jsonl` (`parts` shows which 4 KiB differ), `TANGOAW2_DUMP_FRAME=<frame>` for the RAM; or `TANGOAW2_STATE_LOG=1`.
 - Black-frame / leak regression (harness): `AW2_SAMPLE=1 AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> <script>`; add `AW2_DUMP=<dir>` to keep frames for `tools/pic_check.py` and `tools/hud_check.py`.
 - Mixed pack room: `tools/mixed_pack_check.sh <aw2.gba> <ds.nds> <script> [out]` (sets `AW2_PACK_ONLY`, `AW2_HASH_LOG`, `TANGOAW2_DS_ROM`).
+
+## Army skins
+
+| Aid | Effect |
+|---|---|
+| `AW2_PAL_LOG=1` | logs every palette the game loads (`palload src ... off ... size ... lr ...`; `army_skin::traps`): where an army's colours come from (`aw2dev armyskin sources` automates it) |
+| `AW2DEV_SKIN=1` | `aw2dev live ...`: seat 0 picks Emerald Sun on the army page (docs/dev/army-packs.md) |
+| `aid done X Y` | test aid (`TANGOAW2_TEST_POKE` / harness `aid`): the unit at the cell has acted (greyed) |
+| harness `cos` | prints the Teams screen's CO list (index: id name), for poking a seat's CO |

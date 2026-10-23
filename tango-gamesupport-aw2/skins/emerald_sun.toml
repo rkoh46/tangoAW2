@@ -10,7 +10,7 @@ short = "ES"
 # Colours are RRGGBB. The body ramp of every unit and building, light to dark: weathered jade,
 # a cool grey-green (verdigris stone), far from Green Earth's leaf green.
 [colours]
-ramp = ["94D5BD", "5AAC8B", "318B6A", "087352", "005241", "003929"]
+ramp = ["9CCDBD", "62A494", "398373", "296A5A", "104A41", "003129"]
 # The trim greys of AW2's unit palette (tracks, barrels, metal): bronze.
 trim = ["C4AC74", "967C4C", "685430"]
 # Crests, plumes and sun rays: legion red.

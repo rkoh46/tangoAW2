@@ -35,6 +35,7 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [map-lint.md](map-lint.md) | `aw2dev maps lint`: rivers, bridges, puddles, joins, units, reachability; what AW2 and Dual Strike allow; before / after pictures |
 | [campaign-scenes.md](campaign-scenes.md) | `aw2dev campaign` / `aw2dev sound`: how AW2 presents story scenes, the BH Campaign's prologue card, songs per scene, Sturm's scenes |
 | [ds-pack.md](ds-pack.md) | how Dual Strike content is converted and gated |
+| [army-packs.md](army-packs.md) | army skins: Emerald Sun, the sixth army (a data file on one of AW2's colours), what it patches, `aw2dev armyskin`, adding the next army |
 | [decomp.md](decomp.md) | using ~/advance-wars-dual-strike-decomp (CC0) for DS rules |
 | [graphics.md](graphics.md) | `aw2dev gfx`: detect and debug garbled graphics, the catalogue of screens, past bugs and the detector for each |
 | [release.md](release.md) | the release checklist |

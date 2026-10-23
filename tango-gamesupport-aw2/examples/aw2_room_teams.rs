@@ -20,6 +20,7 @@
 //!   poke ADDR HEX     write bytes (hex string) after a few idle frames
 //!   goto SEAT X Y     walk SEAT's cursor to the cell
 //!   hash              print a hash of the console's work RAM (compare two runs)
+//!   cos               print the Teams screen's CO list (index: id name)
 //!   checkpoint save NAME | load NAME   the console's state saved to / loaded from AW2_CKPT_DIR (default <out-dir>/checkpoints), in
 //!                     the AI debug channel's file format (tango-gamesupport-aw2 `ai_debug::checkpoint_save`): a script can
 //!                     resume from a state instead of replaying to it, and every peer of a room that loads the same file at
@@ -960,6 +961,13 @@ fn main() {
                         }
                     }
                     _ => panic!("checkpoint save NAME | load NAME"),
+                }
+            }
+            // cos: the Teams screen's CO list (index: id name), for picking a CO by poking a seat's CO index (0x0203CB10 + 0x10 seat)
+            "cos" => {
+                let core = link.core();
+                for (i, &co) in tango_gamesupport_aw2::tag_ui::teams_list(core).iter().enumerate() {
+                    println!("co {i}: id {co} {}", tango_gamesupport_aw2::online_teams::co_label(core, co));
                 }
             }
             "hash" => {
