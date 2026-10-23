@@ -6,6 +6,9 @@
   net trace    one merged timeline of every peer (inputs, acts, hashes, link events, log lines)
   net relays   polite health report of the public endpoints (signalling, STUN, TURN info, Nostr)
   net soak     hours of random play across peers; logs every desync, stall or crash
+  net roundtrip  does mgba's savestate load put the console back exactly? (it does not: architecture-online.md 6.1)
+  net repeat   one scenario N times (default: 2P Unranked with the Emerald Sun seat), every run's hashes must agree: the regression for state
+               that differs between peers by timing (docs/dev/online-dev.md 'net repeat')
 
 Politeness: sim / matrix / soak use a LOCAL signalling mock (aw2.signal_mock) and block every public endpoint through
 TANGOAW2_BLOCK_ENDPOINTS, so they never touch the real matchmaking server, STUN or Nostr relays. `--public` opts back in (one run,
@@ -13,7 +16,7 @@ a handful of connections) and is required for relay-only (TURN) tests, whose cre
 Not possible without root (dnctl/pfctl) and therefore not offered: bandwidth caps, NAT-type emulation. Latency, jitter, loss and
 reordering come from TANGOAW2_NET_IMPAIR (tango-net/src/impair.rs): jitter makes the in-match channel reorder.
 """
-import json, os, random, re, shutil, socket, struct, sys, time
+import argparse, json, os, random, re, shutil, socket, struct, sys, time
 from pathlib import Path
 from . import cfg, check, endpoints, live, scenarios, util, wsmini
 from .runlib import Run
@@ -116,6 +119,52 @@ def cmd_sim(a):
     (run.dir / "net_verdict.json").write_text(json.dumps(out, indent=1, default=str))
     util.say(("PASS " if ok else "FAIL ") + run.dir.name + ("  -> aw2dev net desync " + run.dir.name if not out["hash"]["pass"] else ""))
     return 0 if ok else 1
+
+
+# ---- repeat ----
+def cmd_repeat(a):
+    """`net repeat`: the same story N times; the verdict is `N of N runs with equal hashes`. A desync that shows on only some runs (a timing
+    race between peers) cannot be seen by one run; this is the check for it. Passing runs are deleted (their PNGs are large) unless --keep."""
+    if a.skin:
+        os.environ["AW2DEV_SKIN"] = "1"      # seat 0 picks Emerald Sun on the army page (scenarios.py)
+    else:
+        os.environ.pop("AW2DEV_SKIN", None)
+    rows = []
+    for i in range(a.runs):
+        ns = argparse.Namespace(scenario=a.scenario, players=a.players, fog=a.fog, rounds=a.rounds, tag=f"{a.tag or 'repeat_' + a.scenario}{i + 1}", hz=a.hz, max_s=a.max_s,
+                                event=a.event, level=a.level, latency=a.latency, jitter=a.jitter, loss=a.loss, impair=None, reorder=False, public=False, relay=False,
+                                dump_frame=a.dump_frame)
+        util.say(f"repeat {i + 1}/{a.runs}: {a.scenario}{' + Emerald Sun' if a.skin else ''}")
+        res = live.run(sim_spec(ns))
+        run = Run(res["run"])
+        ok, out = judge(run, res)
+        h = out["hash"]
+        rows.append((run.dir.name, ok, h["pass"], out["stall"]["pass"], h.get("detail", "")))
+        if ok and not a.keep:
+            shutil.rmtree(run.dir, ignore_errors=True)
+    print()
+    for name, ok, hp, sp, detail in rows:
+        print(f"  {'PASS' if ok else 'FAIL'}  {name}  hash={'equal' if hp else 'DIVERGED'}  scripts={'ran to the end' if sp else 'stalled'}" + ("" if ok else f"  -> aw2dev net desync {name}"))
+    good = sum(1 for r in rows if r[1])
+    equal = sum(1 for r in rows if r[2])
+    print(f"{equal} of {len(rows)} runs with equal hashes; {good} of {len(rows)} runs passed ({a.scenario}{', Emerald Sun' if a.skin else ''}, fog {a.fog})")
+    return 0 if good == len(rows) else 1
+
+
+# ---- roundtrip ----
+def cmd_roundtrip(a):
+    """`net roundtrip`: does mgba's savestate load put the console back exactly? (tango-backend-mgba/examples/roundtrip_probe.rs): two consoles on the
+    same keys, one saving + loading every PERIOD ticks; prints the first tick they differ, which registers, and what a load changes in the saved
+    header. A diagnostic of the emulator (architecture-online.md 6.1): it reports `digests differ` on today's mgba, and the match's console must
+    not depend on a load being exact (the waiting pictures are made on a separate machine)."""
+    env = cfg.env_with_cargo()
+    util.run(["cargo", "build", "--release", "-p", "tango-backend-mgba", "--example", "roundtrip_probe"], env=env, cwd=cfg.REPO)
+    exe = cfg.REPO / "target" / "release" / "examples" / "roundtrip_probe"
+    rom = cfg.aw2_rom()
+    if not rom.exists():
+        util.die(f"AW2 ROM not found at {rom}")
+    r = util.run([str(exe), str(rom), str(a.ticks), str(a.period)], check=False)
+    return 0
 
 
 # ---- matrix ----
@@ -241,6 +290,23 @@ def cmd_desync(a):
             ba = block_addr(i)
             inside = sorted({n[2] for n in names if n[0] <= ba + 0xfff and n[1] >= ba})[:6]
             print(f"    block {i:2} {ba:#010x}-{ba + 0xfff:#010x}  known here: " + ("; ".join(inside) if inside else "(nothing in docs/dev/ram-map.md)"))
+    # does the divergence ever reach game state? every later common frame, the blocks that differ
+    ever = {}
+    for f in common[idx:]:
+        for s_ in seats[1:]:
+            pa, pc = H[base][f].get("parts", ""), H[s_][f].get("parts", "")
+            for k in range(min(len(pa), len(pc)) // 4):
+                if pa[4 * k:4 * k + 4] != pc[4 * k:4 * k + 4]:
+                    ever.setdefault(k, []).append(f)
+    if ever:
+        ew = sorted(k for k in ever if k >= 8)
+        print(f"  from frame {first} to {common[-1]}: blocks that ever differ: " + ", ".join(f"{block_addr(k):#010x}" for k in sorted(ever)))
+        print("  EWRAM (units, funds, map, RNG, menus) " + ("differs in " + ", ".join(f"{block_addr(k):#010x}" for k in ew) if ew else "stays equal"))
+        if set(ever) <= {7}:
+            print("  -> only the IWRAM stack/interrupt block 0x03007000-0x03007FFF (user, IRQ and SVC stacks, BIOS flags): the consoles ran a few cycles apart,\n"
+                  "     a timing skew (what the last interrupt interrupted, dead stack data), not a game-state desync. Still a defect to fix: see\n"
+                  "     docs/dev/architecture-online.md 'Savestate loads are not cycle-exact'.")
+
     # RAM diff when dumps exist for that frame
     for s in seats[1:]:
         for part, region in (("i", 0x03000000), ("e", 0x02000000)):

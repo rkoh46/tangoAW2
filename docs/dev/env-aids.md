@@ -35,7 +35,7 @@ Pass variables to a Simulator app as `SIMCTL_CHILD_<name>` (`ios/README.md`).
 | `TANGOAW2_RUN_DIR` | Enables the run dump: `meta_s<k>.json` (build stamp, start on the wall clock, pid), steady frames `s<k>_<NNNN>.png` with `shots_s<k>.jsonl` sidecar (file, ms, console tick), and `state_s<k>.jsonl` (10 Hz state, `act` events, `hash` lines, `keys` lines). Use a fresh directory per run | `debug_aids.rs` (`run_from_env`), `tango-gamesupport-aw2/src/run_dump.rs` | directory |
 | `TANGOAW2_RUN_SEAT` | The seat number k in the file names (default 0) | `debug_aids.rs`, `run_dump.rs` | integer |
 | `TANGOAW2_RUN_SHOT_HZ` | Steady-frame rate (default 1; above 1 Hz a dedicated timer fires every half period) | `debug_aids.rs` | number |
-| `TANGOAW2_DUMP_FRAME` | Keeps the console's IWRAM/EWRAM at that frame as `ram_s<k>_<frame>_i.bin` / `_e.bin` in the run dir (needs `TANGOAW2_RUN_DIR` and `TANGOAW2_RUN_SEAT`); frames are the hash frames (multiples of 60) | `run_dump.rs` | frame number |
+| `TANGOAW2_DUMP_FRAME` | Keeps the console's IWRAM/EWRAM at that frame as `ram_s<k>_<frame>_i.bin` / `_e.bin` in the run dir (needs `TANGOAW2_RUN_DIR` and `TANGOAW2_RUN_SEAT`); frames are the hash frames (multiples of 60), or any frame when it is a range `A-B`: then every frame of the range is hashed (with `TANGOAW2_HASH_PARTS`) and dumped, the way to find the first frame a divergence starts at | `run_dump.rs` | frame number or `A-B` |
 | `TANGOAW2_HASH_PARTS` | Adds `parts` to each `hash` line: a 16-bit hash of every 4 KiB of IWRAM then EWRAM, to find where two peers differ | `run_dump.rs` | any (set) |
 | `TANGOAW2_TEST_POKE` | Rule file applied to every peer's simulation (see `pad-scripts.md` section 2) | `tango-gamesupport-aw2/src/test_aid.rs` | file path |
 | `TANGOAW2_BH_FEATURES` | Plays a test campaign instead of the BH Campaign: `inventions` = the CPU-vs-human-inventions mission, any other value = `features_def` (exercises the format's fields). Not shipped content | `bh_campaign.rs` `load` | `inventions` or any |
@@ -140,7 +140,7 @@ Pass variables to a Simulator app as `SIMCTL_CHILD_<name>` (`ios/README.md`).
 
 - Two local players: two terminals, `TANGOAW2_PROFILE=/tmp/p1` and `/tmp/p2`; host `TANGOAW2_AUTOSTART=link:/host`, other `TANGOAW2_AUTOSTART=link:/connect 127.0.0.1` (ios README), or `TANGOAW2_ONLINE_CODE` on the host with `TANGOAW2_TYPE_CODE` on the guest.
 - A recorded live run: `TANGOAW2_RUN_DIR=<fresh>`, `TANGOAW2_RUN_SEAT=<k>`, `TANGOAW2_RUN_SHOT_HZ=2`, plus a `TANGOAW2_PAD_SCRIPT` and, for setups, the same `TANGOAW2_TEST_POKE` file on every client; rebuild first so build stamps match across clients.
-- Desync hunt: `TANGOAW2_RUN_DIR` + `TANGOAW2_HASH_PARTS=1` on both peers, compare the `hash` lines of `state_s<k>.jsonl` (`parts` shows which 4 KiB differ), `TANGOAW2_DUMP_FRAME=<frame>` for the RAM; or `TANGOAW2_STATE_LOG=1`.
+- Desync hunt: `TANGOAW2_RUN_DIR` + `TANGOAW2_HASH_PARTS=1` on both peers, compare the `hash` lines of `state_s<k>.jsonl` (`parts` shows which 4 KiB differ), `TANGOAW2_DUMP_FRAME=<frame>` (or a range `A-B`) for the RAM; or `TANGOAW2_STATE_LOG=1`.
 - Black-frame / leak regression (harness): `AW2_SAMPLE=1 AW2_LEAK_CHECK=1 aw2_room_teams <rom> <out> <script>`; add `AW2_DUMP=<dir>` to keep frames for `tools/pic_check.py` and `tools/hud_check.py`.
 - Mixed pack room: `tools/mixed_pack_check.sh <aw2.gba> <ds.nds> <script> [out]` (sets `AW2_PACK_ONLY`, `AW2_HASH_LOG`, `TANGOAW2_DS_ROM`).
 

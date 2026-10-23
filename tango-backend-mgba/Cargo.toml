@@ -22,3 +22,5 @@ workspace = true
 # The examples re-simulate recorded matches, so they read replay files.
 [dev-dependencies]
 tango-replay = { path = "../tango-replay" }
+# (the same git source as `mgba`: the C-side GBA struct that examples/roundtrip_probe.rs reads)
+mgba-sys = { git = "https://github.com/tangobattle/mgba-rs" }

@@ -79,6 +79,10 @@ struct ScratchConsole<'a> {
     physical: usize,
     tick: u32,
     audio: bool,
+    /// The scratch machine has run a tick since it was loaded (until then its video buffer is whatever an earlier picture left).
+    ticked: bool,
+    /// The match console's own picture of this tick (RGBA8): what the scratch machine shows until it has run a tick.
+    console: Option<&'a [u8]>,
 }
 
 thread_local! {
@@ -100,6 +104,7 @@ impl Scratch for ScratchConsole<'_> {
     }
     fn tick(&mut self, keys: u32) -> bool {
         IN_SCRATCH.with(|c| c.set(true));
+        self.ticked = true;
         let word = self.game.before_tick(self.link.core_mut(0), self.mode, keys & JOYFLAGS_MASK) & JOYFLAGS_MASK;
         let ok = self.link.try_tick(&[word]).is_ok();
         IN_SCRATCH.with(|c| c.set(false));
@@ -109,6 +114,9 @@ impl Scratch for ScratchConsole<'_> {
         self.memory
     }
     fn frame(&self) -> Option<Vec<u8>> {
+        if !self.ticked {
+            return self.console.map(<[u8]>::to_vec);
+        }
         self.link.video_buffer(0).map(to_rgba)
     }
     fn load_kept(&mut self) -> bool {
@@ -358,6 +366,14 @@ struct SharedSnapshot {
 /// One console, both seats.
 pub struct SharedLink {
     inner: mgba_rollback::Link,
+    /// The machine every waiting seat's picture is made on ([`Self::scratch_frame`]): a second console of the same
+    /// ROM, loaded from the match's console each time it is used, and never loaded back. The match's own console is only
+    /// ever loaded by a rollback or a resume: mgba's savestate load is not cycle-exact (see `docs/dev/architecture-online.md`,
+    /// "Savestate loads are not cycle-exact"), so a console that loaded a snapshot every other tick for its seat's
+    /// picture ran a few cycles off the other peers' (the stack and interrupt area of IWRAM differed between peers).
+    scratch: mgba_rollback::Link,
+    /// How many snapshots the match's console has loaded (rollbacks): never one for a waiting seat's picture.
+    console_loads: u32,
     game: &'static (dyn SharedGame + Send + Sync),
     mode: Option<(u8, u8)>,
     /// What each seat last asked for; the console renders if either does.
@@ -406,6 +422,28 @@ impl SharedLink {
         }
     }
 
+    /// The scratch machine ([`Self::scratch`]): the same ROM, save and clock as the match's console, the game's traps, drawing
+    /// every frame; its state is whatever [`Self::scratch_frame`] loads into it.
+    fn scratch_machine(
+        rom: &[u8],
+        save: Option<&[u8]>,
+        rtc: Option<std::time::SystemTime>,
+        game: &'static (dyn SharedGame + Send + Sync),
+    ) -> Result<mgba_rollback::Link, crate::Error> {
+        let mut link = mgba_rollback::Link::with_options(LinkOptions {
+            sides: vec![SideOptions {
+                rom: rom.to_vec(),
+                save: save.map(<[u8]>::to_vec),
+            }],
+            rtc,
+            peripheral: Peripheral::Cable,
+        })?;
+        link.set_traps(0, game.traps());
+        link.set_frameskip(0, 0);
+        link.core_mut(0).set_audio_buffer_size(16384);
+        Ok(link)
+    }
+
     pub fn boot(
         rom: &[u8],
         save: Option<&[u8]>,
@@ -414,6 +452,7 @@ impl SharedLink {
         mode: Option<(u8, u8)>,
         cancel: Option<&AtomicBool>,
     ) -> Result<Self, crate::Error> {
+        let scratch = Self::scratch_machine(rom, save, rtc, game)?;
         let mut inner = mgba_rollback::Link::with_options(LinkOptions {
             sides: vec![SideOptions {
                 rom: rom.to_vec(),
@@ -444,6 +483,8 @@ impl SharedLink {
         core.audio_buffer().clear();
         Ok(SharedLink {
             inner,
+            scratch,
+            console_loads: 0,
             game,
             mode,
             render: [true; tango_match::MAX_SEATS],
@@ -478,6 +519,7 @@ impl SharedLink {
         if state.len() != std::mem::size_of::<mgba::state::State>() {
             return Err(mgba::Error::CallFailed("the saved state is not this emulator's").into());
         }
+        let scratch = Self::scratch_machine(rom, save, rtc, game)?;
         let mut inner = mgba_rollback::Link::with_options(LinkOptions {
             sides: vec![SideOptions {
                 rom: rom.to_vec(),
@@ -495,6 +537,8 @@ impl SharedLink {
         core.audio_buffer().clear();
         Ok(SharedLink {
             inner,
+            scratch,
+            console_loads: 0,
             game,
             mode,
             render: [true; tango_match::MAX_SEATS],
@@ -588,23 +632,17 @@ impl SharedLink {
             self.console_frame = self.inner.video_buffer(0).map(to_rgba).map(|f| (f, self.tick));
         }
         let snap = self.inner.save().ok()?;
+        self.scratch.load(&snap).ok()?;
+        self.scratch.core_mut(0).audio_buffer().clear();
         let game = self.game;
         let mode = self.mode;
-        let kept = {
-            let buf = self.inner.core_mut(0).audio_buffer();
-            let n = buf.available();
-            let mut kept = vec![0i16; n * 2];
-            buf.read(&mut kept, n);
-            kept
-        };
         let stash = game.scratch_stash();
-        self.inner.set_frameskip(0, 0);
         let mut frame = None;
-        let mut picked = false;
+        let picked;
         let mut own_audio: Option<Vec<i16>> = None;
         {
             let mut scratch = ScratchConsole {
-                link: &mut self.inner,
+                link: &mut self.scratch,
                 game,
                 mode,
                 memory: &mut self.view_memory[seat],
@@ -614,6 +652,8 @@ impl SharedLink {
                 physical: seat,
                 tick: self.tick,
                 audio: false,
+                ticked: false,
+                console: self.console_frame.as_ref().map(|(f, _)| f.as_slice()),
             };
             let shown = game.view_as(&mut scratch, game_seat);
             picked = scratch.console_pick;
@@ -626,7 +666,7 @@ impl SharedLink {
                 own_audio = Some(v);
             }
             if shown {
-                frame = if scratch.console_pick { self.console_frame.as_ref().map(|(f, _)| f.clone()) } else { scratch.link.video_buffer(0).map(to_rgba) };
+                frame = if scratch.console_pick { self.console_frame.as_ref().map(|(f, _)| f.clone()) } else { scratch.frame() };
                 // (a picture caught in a screen fade, forced blank or black is no picture: the last good one stays)
                 if frame.as_ref().is_some_and(|f| dark(f)) {
                     frame = None;
@@ -640,25 +680,20 @@ impl SharedLink {
             }
         }
         self.picked_console = picked;
-        let _ = self.inner.load(&snap);
         game.scratch_unstash(stash);
-        let kept = match own_audio {
-            Some(mut own) => {
-                // (as long as what it replaces, so that the sound does not run ahead or behind)
-                if own.len() < kept.len() {
-                    own.extend_from_slice(&kept[own.len()..]);
-                }
-                own
-            }
-            None => kept,
-        };
-        {
+        if let Some(mut own) = own_audio {
+            // (as long as what it replaces, so that the sound does not run ahead or behind)
             let buf = self.inner.core_mut(0).audio_buffer();
+            let n = buf.available();
+            let mut kept = vec![0i16; n * 2];
+            buf.read(&mut kept, n);
+            if own.len() < kept.len() {
+                own.extend_from_slice(&kept[own.len()..]);
+            }
             buf.clear();
-            let n = kept.len() / 2;
-            buf.write(&kept, n);
+            let n = own.len() / 2;
+            buf.write(&own, n);
         }
-        self.apply_render();
         frame
     }
 
@@ -729,6 +764,7 @@ impl tango_match::Link for SharedLink {
             .downcast_ref::<SharedSnapshot>()
             .expect("a shared link can only restore its own snapshots");
         self.inner.load(&snapshot.snap).map_err(crate::Error::from)?;
+        self.console_loads += 1;
         self.tick = snapshot.tick;
         self.keep_was = false;
         if let Some(telemetry) = self.telemetry.as_mut() {
@@ -1094,5 +1130,53 @@ impl tango_match::Console for SharedSolo {
     fn poke(&mut self, addr: u32, bytes: &[u8]) -> bool {
         self.0.inner.core_mut(0).raw_write_range(addr, -1, bytes);
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tango_match::{HostInput, Link as _};
+
+    struct Idle;
+
+    impl SharedGame for Idle {
+        fn sim_version(&self) -> u16 {
+            0
+        }
+        /// A waiting seat's picture that runs the scratch console for a few ticks, as the real one does.
+        fn view_as(&self, scratch: &mut dyn Scratch, _seat: usize) -> bool {
+            for _ in 0..3 {
+                scratch.tick(0);
+            }
+            true
+        }
+    }
+
+    static GAME: Idle = Idle;
+
+    fn link() -> SharedLink {
+        SharedLink::boot(&mgba_rollback::testrom::build_idle(), None, None, &GAME, None, None).expect("boot")
+    }
+
+    /// Waiting seats' pictures are made on the scratch machine: the match's console is never loaded for one, and runs
+    /// exactly as it does when nobody looks (mgba's savestate load is not cycle-exact, so a console that took part in
+    /// every other peer's picture ran a few cycles off theirs).
+    #[test]
+    fn a_waiting_picture_never_touches_the_match_console() {
+        let (mut looked, mut alone) = (link(), link());
+        for t in 0..120u32 {
+            looked.tick_n(&[HostInput::keys(0), HostInput::keys(0)]);
+            alone.tick_n(&[HostInput::keys(0), HostInput::keys(0)]);
+            if t % 2 == 1 {
+                looked.scratch_frame(1);
+            }
+        }
+        assert_eq!(looked.console_loads, 0, "a picture loaded the match's console");
+        let (a, b) = (looked.inner.save().unwrap(), alone.inner.save().unwrap());
+        assert_eq!(a.digest(), b.digest(), "the console that was looked at runs differently");
+        assert_eq!(looked.inner.core(0).frame_counter(), alone.inner.core(0).frame_counter());
+        // (the scratch machine did run: it is a second console)
+        assert!(looked.scratch.core(0).frame_counter() > 0);
     }
 }

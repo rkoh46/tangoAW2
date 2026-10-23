@@ -107,7 +107,7 @@ Register the file in `FILES` (`army_skin.rs`, at most `MAX_SKINS` = 3): its choi
 
 Scenario scripts are generated (`armyskinlib/scenarios.py`; identities are poked into the army page: 1..5 the colours, 6 the first skin) and run by the harness (`aw2_room_teams`, no network). The units a script places with
 the test aid appear once the map has been redrawn (it opens and closes the map menu). `aw2dev live ... ` with `AW2DEV_SKIN=1` has seat 0 pick the skin (LEFT on its colour field) in real app clients:
-`AW2DEV_SKIN=1 aw2dev live moveview --local`, `AW2DEV_SKIN=1 aw2dev live lobby --players 3 --local` (hashes agree, no leak, no stall).
+`AW2DEV_SKIN=1 aw2dev live moveview --local`, `AW2DEV_SKIN=1 aw2dev live lobby --players 3 --local` (hashes agree, no leak, no stall). The skin code writes only to the match's console through `plan`/`apply` on the simulation's own tick (peers apply the same writes); `aw2dev net repeat` (2P Unranked, 8 runs, hashes equal on every run) is the regression for a skin that makes peers differ.
 Offline: `aw2_skin_offline <rom> <out> [cpu]` walks the game's own Teams screen to the skin (and with `cpu` lets the CPU play it).
 
 Tests: `cargo test -p tango-gamesupport-aw2 --lib army_skin` (+ `-- --ignored` with `TANGOAW2_AW2_ROM` for the plan on the real ROM), `aw2dev test` (the kit's python tests: committed scripts equal their generators, a green skin is refused),

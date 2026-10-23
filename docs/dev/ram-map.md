@@ -75,6 +75,10 @@ Original sources of AW2's layout: Xenesis' RAM notes (Wars World News), the Code
 | `0x030030CC` | | `DISPCNT` shadow; `0x030030E0` BLDCNT, `0x03002020` EVA, `0x03002B28` EVB, `0x03001FFC` BLDY, `0x03002B6C` BG0CNT, `0x03001FF8` BG0HOFS, `0x03001418` BG0VOFS, `0x030030D0`/`0x03002B20` scroll shift x/y, `0x03002F00` BG flush, `0x03001FE8` BG1CNT shadow, `0x03002B40/4C/EFC/B44` window 0 shadows | `tag_screens.rs`, `power_anim.rs`, `ds_hud.rs`, `ds_worldmap.rs` |
 | `0x03002B80` | | Text tile cache (`gUnknown_03002B80`) | `ds_versus.rs` `TEXT_CACHE` |
 | `0x03007FF0` / `0x03005AE0` | | `SoundInfo` pointer / music player the CO themes play on | `ds_music.rs` |
+| `0x03007B00..0x03007F00` | | The user/system stack (SP starts at `0x03007F00`, grows down; AW2 reaches about `0x03007BFC`). Everything below the current SP is dead data. Not game state; sits in the 4 KB hash block 7 | `net desync` (docs/dev/architecture-online.md 6.1) |
+| `0x03007F00..0x03007FA0` | | The IRQ stack (top `0x03007FA0`, grows down). `0x03007F9C` is the `lr` of the last interrupt (the PC it interrupted + 4): differs between two consoles that ran a few cycles apart | same |
+| `0x03007FA0..0x03007FE0` | | The SVC (BIOS call) stack, top `0x03007FE0` | same |
+| `0x03007FE0..0x03008000` | | BIOS variables: `0x03007FF8` the interrupt flags the BIOS waits on, `0x03007FFC` the IRQ handler pointer (and `0x03007FF0` above) | |
 
 ## 3. EWRAM (`0x02xx_xxxx`): AW2's own structures
 

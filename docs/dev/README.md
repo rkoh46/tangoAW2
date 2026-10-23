@@ -10,6 +10,7 @@ session scratchpad.
 ./aw2dev test                        # lib tests
 ./aw2dev suite                       # offline waiting-view suite, must end `suite done bad=0`
 ./aw2dev net sim moveview            # 2 real clients, local signalling mock, verdict: stall / hash / leak / result
+./aw2dev net repeat                  # 2P Unranked with Emerald Sun, 8 runs: `8 of 8 runs with equal hashes` (a timing race passes single runs by chance)
 ./aw2dev live lobby --players 3 --local
 ./aw2dev check latest                # pass/fail JSON report (check.json) of the newest live run
 ./aw2dev sheet latest --around 0 --kind move --strip     # then LOOK at the PNG

@@ -45,6 +45,9 @@ def test(args):
         # the army-skin kit's tests (generated scripts, scenario shots, the palette margins refusing a green skin)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.armyskinlib.test_armyskin"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode
+        # the online tools' tests (`net desync` tells a stack-only timing skew from a real state desync; `net repeat` is registered)
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_net"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         from .commands import kit as _kit
         import argparse as _ap
         rc |= _kit.check(_ap.Namespace(strict=False))      # docs, skills and tests must not point at missing commands or files

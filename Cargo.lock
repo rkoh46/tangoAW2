@@ -6145,6 +6145,7 @@ dependencies = [
  "log",
  "mgba",
  "mgba-rollback",
+ "mgba-sys",
  "num-rational",
  "tango-match",
  "tango-replay",

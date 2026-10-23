@@ -1,6 +1,6 @@
 # Developing and debugging the online side
 
-Tools: `aw2dev net sim|matrix|desync|trace|relays|soak` (devkit/aw2/net.py), the local signalling mock (devkit/aw2/signal_mock.py),
+Tools: `aw2dev net sim|repeat|matrix|desync|trace|relays|soak` (devkit/aw2/net.py), the local signalling mock (devkit/aw2/signal_mock.py),
 and the app's test aids. Architecture: docs/dev/architecture-online.md. Env aids: docs/dev/env-aids.md.
 
 ## Politeness first
@@ -29,6 +29,20 @@ Not offered because they need root (`dnctl`/`pfctl`): bandwidth caps and NAT-typ
 Output: a run dir (see devkit/aw2/live.py docstring) and a verdict: stall, hash, leak, result. Scripted `--event`s for 2P scenarios
 reuse scen kinds (`--kill`/`--stop` of `aw2dev live` also exist: `SEATS:WHEN`, `eliminated`, `armyN`, `log:TEXT`).
 
+## `net repeat` (a desync that shows on some runs only)
+```
+aw2dev net repeat                         # 2P Unranked with the Emerald Sun seat, 8 runs (the default story)
+aw2dev net repeat unranked --runs 12 --no-skin
+aw2dev net repeat moveview --runs 6 --level mild --fog off
+```
+`net sim` N times in a row on local signalling (the same options: `--level/--latency/--jitter/--loss/--event/--dump-frame/--fog/--players`), then
+`N of N runs with equal hashes`. Exit 0 only if every run passes (stall, hash, leak, result). Failing runs are kept (`aw2dev net desync <run>`),
+passing ones deleted unless `--keep`. A race between peers (state that depends on cycle timing, what a waiting seat's picture does to its
+console) fails on a fraction of runs, so one passing run proves nothing: this is the regression for it. History: with the waiting picture made
+on the match's console, about half of the 2P Unranked runs diverged at frame 1684 in the IWRAM stack block (architecture-online.md 6.1);
+`net repeat` is what showed it reliably (v0.8.6 and the Emerald Sun branch alike) and what shows it fixed. `AW2DEV_SKIN=1` is what makes seat 0 pick
+Emerald Sun on the army page; `--no-skin` plays the plain army. Each run is about a minute.
+
 ## `net matrix`
 `aw2dev net matrix --players 2,3,4 --fog on,off --levels none,mild,bad` runs each cell as a live run (2P: the scenario, larger rooms: the
 lobby flow) and prints a table with columns stall / hash / leak / result and a verdict, also saved as `devkit/work/matrix/*.md`.
@@ -37,11 +51,13 @@ Each cell is a few minutes; the default grid is small (2,3 players x fog x none,
 ## `net desync <run>` (a diverged run)
 1. first frame where the seats' `hash` lines differ after having agreed (the console's FNV hash every 60 frames);
 2. with `TANGOAW2_HASH_PARTS` (set by `net sim`): which 4 KB blocks differ (IWRAM 0x03000000.., EWRAM 0x02000000..);
-3. RAM diff of the two consoles if dumped for that frame: re-run with `--dump-frame F` (`TANGOAW2_DUMP_FRAME`, writes `ram_s<seat>_<F>_i|e.bin`);
+3. RAM diff of the two consoles if dumped for that frame: re-run with `--dump-frame F` (`TANGOAW2_DUMP_FRAME`, writes `ram_s<seat>_<F>_i|e.bin`); `--dump-frame A-B` hashes and dumps every frame of a range, so the first differing frame is exact (60-frame hashes only say "between two grid frames");
    address ranges are named from `docs/dev/ram-map.md` (add the address there if it prints "unnamed");
 4. the joypad words each peer fed the console within `--window` ticks (`TANGOAW2_INPUT_LOG`, set by live runs) and log lines about
    rollbacks / input drops.
-Typical causes: state read by one peer and not the other (waiting-view code writing to the shared console), a rule/pack difference (mixed pack room),
+`net desync` also prints, for every later frame, which blocks ever differ and whether EWRAM (the game's variables) stays equal; when only IWRAM block 7
+(`0x03007000..0x03007FFF`, the stacks) differs it says "timing skew": the two consoles ran a few cycles apart (architecture-online.md 6.1, ram-map.md 2.2), not a game-state desync, but still a defect.
+Typical causes: state read by one peer and not the other (waiting-view code writing to the shared console), a console that loaded a savestate for presentation, a rule/pack difference (mixed pack room),
 a non-deterministic read. Fix the cause, not the hash.
 
 ## `net trace <run>`

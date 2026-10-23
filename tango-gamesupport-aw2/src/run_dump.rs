@@ -41,6 +41,18 @@ fn enabled() -> Option<&'static (std::path::PathBuf, u32)> {
         .as_ref()
 }
 
+/// `TANGOAW2_DUMP_FRAME=<n>` or `<a>-<b>`: the frames whose RAM is kept (and hashed even off the 60-frame grid).
+fn dump_range() -> Option<(u32, u32)> {
+    static R: std::sync::OnceLock<Option<(u32, u32)>> = std::sync::OnceLock::new();
+    *R.get_or_init(|| {
+        let v = std::env::var("TANGOAW2_DUMP_FRAME").ok()?;
+        match v.split_once('-') {
+            Some((a, b)) => Some((a.trim().parse().ok()?, b.trim().parse().ok()?)),
+            None => v.trim().parse().ok().map(|n| (n, n)),
+        }
+    })
+}
+
 fn ms() -> u128 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -79,14 +91,16 @@ pub fn tick(core: &Core, keys: u32) {
         d.last_hash_frame = 0;
     }
     d.prev_fc = fc;
-    if fc % 60 == 0 && fc != d.last_hash_frame {
+    // (TANGOAW2_DUMP_FRAME=<a>-<b> hashes and dumps every frame of the range, to find the frame a desync starts at)
+    let in_range = dump_range().is_some_and(|(a, b)| (a..=b).contains(&fc));
+    if (fc % 60 == 0 || in_range) && fc != d.last_hash_frame {
         d.last_hash_frame = fc;
         let mut iw = vec![0u8; 0x8000];
         core.raw_read_range(0x0300_0000, -1, &mut iw);
         let mut ew = vec![0u8; 0x40000];
         core.raw_read_range(0x0200_0000, -1, &mut ew);
         // (test aid: TANGOAW2_DUMP_FRAME=<n> keeps the console's RAM at that frame, to find where two peers differ)
-        if std::env::var("TANGOAW2_DUMP_FRAME").ok().and_then(|v| v.parse::<u32>().ok()) == Some(fc) {
+        if dump_range().is_some_and(|(a, b)| (a..=b).contains(&fc)) {
             if let (Ok(dir), Ok(seat)) = (std::env::var("TANGOAW2_RUN_DIR"), std::env::var("TANGOAW2_RUN_SEAT")) {
                 let _ = std::fs::write(format!("{dir}/ram_s{seat}_{fc}_i.bin"), &iw);
                 let _ = std::fs::write(format!("{dir}/ram_s{seat}_{fc}_e.bin"), &ew);
