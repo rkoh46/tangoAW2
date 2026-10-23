@@ -52,6 +52,7 @@ def register(sub):
     a.add_argument("--out", required=True)
     a.add_argument("--awbw", help="a directory with another project's reference pictures to show beside ours (review only, never committed)")
     a.add_argument("--ds", action="store_true", help="also the Dual Strike pack's sheet")
+    a.add_argument("--v1-toml", help="an earlier data file: its HQ is drawn beside the new one (sheet 03)")
     a.set_defaults(fn=run_sheet)
     a = ps.add_parser("catalogue", help="list the scenarios")
     a.set_defaults(fn=run_catalogue)
@@ -176,12 +177,13 @@ def run_sheet(a):
     out.mkdir(parents=True, exist_ok=True)
     util.check_fresh(util.example_bin("aw2_room_teams"), "aw2_room_teams")
     work = cfg.work("armyskin", "sheet")
-    names = ["units", "battle", "power", "capture", "turn", "results", "lost3p", "map5p", "rematch"]
+    names = ["units", "battle", "power", "capture", "turn", "results", "lost3p", "map5p", "rematch", "hqs"]
     dirs = sh.run_scenarios(names, work)
     ds_dirs = sh.run_scenarios(["dsunits", "crumb"], work / "ds", ds=True) if a.ds else {}
     host = 1
     sh.unit_rows(host).save(out / "02_every_unit.png")
-    sh.compare_strip(host, a.awbw).save(out / "03_art_4x.png")
+    v1 = getattr(a, "v1_toml", None)
+    sh.compare_strip(host, a.awbw, v1_toml=v1, map_shot=[sh.shot(dirs, "hqs", n) for n in ("hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc")]).save(out / "03_art_4x.png")
     sh.swatches(host).save(out / "04_palette.png")
     m5 = [("5 armies: Emerald Sun (stands in for Blue Moon's colour), Orange Star, Green Earth, Yellow Comet, Black Hole", sh.shot(dirs, "map5p", "map5")), ("same map, far side", sh.shot(dirs, "map5p", "map5_far"))]
     sh.grid(m5, 2, 3).save(out / "01_five_armies.png")

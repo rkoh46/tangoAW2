@@ -77,6 +77,9 @@ pub enum Kind {
     Moving,
     /// Any palette whose army-coloured entries share the army's hue: recoloured by brightness.
     Hue,
+    /// The buildings' OBJ palettes: as `Hue`, and entry 14 (magenta in every colour's row: no building uses it) is the skin's gold,
+    /// which the skin's HQ uses for its trim.
+    Building,
     /// The turn banner's stripe (entries 1..5, bright to dark).
     Banner,
 }
@@ -88,12 +91,12 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("moved units", 0x0810_E780, 5, 1, Kind::Moved),
     ("moved units (copy)", 0x085A_DA88, 5, 1, Kind::Moved),
     ("moving units", 0x0810_EA60, 5, 1, Kind::Moving),
-    ("buildings", 0x080D_3F04, 5, 1, Kind::Hue),
+    ("buildings", 0x080D_3F04, 5, 1, Kind::Building),
     ("CO panel", 0x080D_4188, 5, 1, Kind::Hue),
     ("table 8104264", 0x0810_4264, 5, 1, Kind::Hue),
     ("table 8106984", 0x0810_6984, 5, 1, Kind::Hue),
     ("power colours", 0x084F_2BC8, 5, 2, Kind::Hue),
-    ("buildings (second set)", 0x080D_3E04, 5, 1, Kind::Hue),
+    ("buildings (second set)", 0x080D_3E04, 5, 1, Kind::Building),
     ("battle gauge", 0x0816_D498, 5, 1, Kind::Hue),
     ("HUD panel (BG 8)", 0x0818_3C28, 5, 1, Kind::Hue),
     ("table 85A9BBC", 0x085A_9BBC, 5, 1, Kind::Hue),
@@ -125,6 +128,8 @@ pub struct Skin {
     pub gold: u16,
     pub gold_dark: u16,
     pub moved_tint: f32,
+    /// How bright a unit that has moved stays (0..1 of its live colour's brightness): the skin's own dimmed ramp.
+    pub moved_dim: f32,
     pub infantry: UnitArt,
     pub mech: UnitArt,
     /// The HQ's picture: 32 rows of 16 characters, `.` clear, a hex digit the building palette's index.
@@ -151,6 +156,10 @@ pub struct UnitPatch {
     pub x: usize,
     pub y: usize,
     pub rows: Vec<String>,
+    /// The moving-sheet frames (0..9: 0..3 facing sideways, 3..6 front, 6..9 back) the patch is also laid on, anchored
+    /// at the left outline of the helmet's top row (found in the frame); `anchor` is where that point lies in `rows`.
+    pub moving: Vec<usize>,
+    pub anchor: (usize, usize),
 }
 
 /// The skins' data files, in the order of their choice codes (6, 7, ...). To add an army, add its file here
@@ -231,12 +240,17 @@ impl Skin {
                 .unwrap_or(&[])
             {
                 let n = |k: &str| p.get(k).and_then(|x| x.as_integer()).unwrap_or(0) as usize;
-                patches.push(UnitPatch {
-                    frames: p
-                        .get("frames")
+                let list = |k: &str, default: Vec<usize>| -> Vec<usize> {
+                    p.get(k)
                         .and_then(|x| x.as_array())
                         .map(|a| a.iter().filter_map(|f| f.as_integer()).map(|f| f as usize).collect())
-                        .unwrap_or_else(|| vec![0, 1, 2]),
+                        .unwrap_or(default)
+                };
+                let anchor = list("anchor", vec![0, 0]);
+                patches.push(UnitPatch {
+                    frames: list("frames", vec![0, 1, 2]),
+                    moving: list("moving", vec![]),
+                    anchor: (anchor.first().copied().unwrap_or(0), anchor.get(1).copied().unwrap_or(0)),
                     x: n("x"),
                     y: n("y"),
                     rows: strings(p.get("rows"), &format!("{name}.patch.rows"))?,
@@ -255,6 +269,7 @@ impl Skin {
             gold: one("gold")?,
             gold_dark: one("gold_dark")?,
             moved_tint: c.get("moved_tint").and_then(|x| x.as_float()).unwrap_or(0.3) as f32,
+            moved_dim: c.get("moved_dim").and_then(|x| x.as_float()).unwrap_or(1.0) as f32,
             infantry: unit("infantry")?,
             mech: unit("mech")?,
             hq: strings(v.get("hq").and_then(|h| h.get("rows")), "hq.rows")?,
@@ -341,7 +356,8 @@ impl Skin {
         for i in 1..16 {
             let l = lum(orig[i]);
             let g = (l * 255.0).round().clamp(0.0, 255.0) as u8;
-            out[i] = mix(bgr555((g, g, g)), self.ramp_at(l), self.moved_tint);
+            let c = mix(bgr555((g, g, g)), self.ramp_at(l), self.moved_tint);
+            out[i] = if self.moved_dim < 1.0 { mix(0, c, self.moved_dim) } else { c };
         }
         out
     }
@@ -433,6 +449,11 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
         Kind::Moved => skin.moved_row(orig),
         Kind::Moving => skin.moving_row(orig),
         Kind::Hue => skin.hue_row(orig, siblings),
+        Kind::Building => {
+            let mut row = skin.hue_row(orig, siblings);
+            row[14] = skin.gold;
+            row
+        }
         Kind::Banner => skin.banner_row(orig),
     };
     for &(what, base, colours, span, kind) in TABLES {
@@ -1139,11 +1160,53 @@ pub fn crest_frame(g: &mut [u8], side: bool) {
     }
 }
 
+/// The helmet's top row in a 24x24 moving frame: AW2's outline (moving index 9) and four or more body pixels of the
+/// darkest role (5), the first such row from the top; the position of its left outline.
+fn helmet_anchor(g: &[u8]) -> Option<(usize, usize)> {
+    for y in 0..24 {
+        for x in 0..20 {
+            if g[y * 24 + x] == 9 && g[y * 24 + x + 1..y * 24 + x + 4].iter().all(|&v| v == 5) {
+                return Some((x, y));
+            }
+        }
+    }
+    None
+}
+
+/// The patches of a foot unit that are laid on moving frame `f`, anchored at the helmet (their hex digits are unit
+/// palette roles; the moving sheet keeps them at other indices).
+pub fn moving_patches(g: &mut [u8], art: &UnitArt, f: usize) {
+    let Some((ax, ay)) = helmet_anchor(g) else { return };
+    for p in art.patches.iter().filter(|p| p.moving.contains(&f)) {
+        for (dy, row) in p.rows.iter().enumerate() {
+            for (dx, c) in row.chars().enumerate() {
+                let (x, y) = ((ax + dx) as i32 - p.anchor.0 as i32, (ay + dy) as i32 - p.anchor.1 as i32);
+                if !(0..24).contains(&x) || !(0..24).contains(&y) {
+                    continue;
+                }
+                let at = y as usize * 24 + x as usize;
+                match c {
+                    '.' => {}
+                    '_' => g[at] = 0,
+                    c => g[at] = MOVE_ROLE[digit(c).unwrap_or(0) as usize] as u8,
+                }
+            }
+        }
+    }
+}
+
 fn moving_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
     for unit in [1u8, 2] {
         let art = if unit == 1 { &skin.infantry } else { &skin.mech };
         let ptr = u32_at(rom, MOVE_TABLE + MOVE_RECORD * unit as u32 + 4 * (art.base as u32 - 1));
         let mut sheet = lz77_decode(rom, ptr);
+        for f in 0..sheet.len() / (9 * 32) {
+            if art.patches.iter().any(|p| p.moving.contains(&f)) {
+                let mut g = frame_grid(&sheet, f);
+                moving_patches(&mut g, art, f);
+                put_frame(&mut sheet, f, &g);
+            }
+        }
         if art.moving_crest {
             for f in 0..sheet.len() / (9 * 32) {
                 let mut g = frame_grid(&sheet, f);

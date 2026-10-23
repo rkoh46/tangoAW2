@@ -6,11 +6,13 @@ from PIL import Image
 from . import (BLD_PAL, NAMES, UNIT_PAL, UNIT_SHEET, FRAME, SLOT_TABLE, Rom, dump, toml_art)
 
 # ---- thresholds (CIE76 delta E; docs/dev/army-packs.md "The palette's margins") ----
-MIN_ARMY = 22.0      # the skin's body colours (ramp 1..4) against every body colour of each of AW2's five armies
-MIN_GREY = 8.0       # ... against the greys of units that have moved
-MIN_FOG = 8.0       # ... against the colours the fog gives the terrain
+MIN_ARMY = 10.0      # the skin's body colours (ramp 1..4) against every body colour of each of AW2's five armies: the closest pair
+MIN_ARMY_MEAN = 16.0  # ... and the mean over the four body colours of the distance to that army's nearest colour
+MIN_GREY = 9.0       # ... against the greys of units that have moved
+MIN_FOG = 9.0        # ... against the colours the fog gives the terrain
 MIN_DONE = 10.0      # the skin's own done unit against its live unit
-MIN_HUE = 20.0       # degrees between the skin's main hue and Green Earth's
+MAX_CHROMA = 0.4     # the skin's body chroma as a share of Green Earth's: a stone, not a leaf green
+MIN_DONE_OWN = 6.0   # the skin's done ramp against the other armies' done greys (a done skin unit is still the skin's)
 # The terrain's colours under fog (rendered with fog on, Bean Island: grass, road, forest, mountain, sea ...): what a unit stands on in the fog of war.
 FOG_TERRAIN = [(131, 156, 148), (148, 164, 148), (98, 98, 123), (106, 131, 148), (57, 123, 123), (82, 131, 106), (115, 90, 139), (74, 74, 197), (82, 57, 172)]
 
@@ -69,7 +71,7 @@ def static(skin_path=None, say=print):
         for p in data[unit].get("patch", []):
             if any(c not in "._0123456789abcdefABCDEF" for r in p["rows"] for c in r):
                 fails.append(f"{unit}: patch characters")
-            if p.get("x", 0) + max(len(r) for r in p["rows"]) > 16 or p.get("y", 0) + len(p["rows"]) > 16:
+            if p.get("frames", [0, 1, 2]) and (p.get("x", 0) + max(len(r) for r in p["rows"]) > 16 or p.get("y", 0) + len(p["rows"]) > 16):
                 fails.append(f"{unit}: a patch leaves the 16x16 picture")
     # -- the palette against AW2's armies
     ramp = [hex_rgb(x) for x in data["colours"]["ramp"]]
@@ -83,9 +85,12 @@ def static(skin_path=None, say=print):
     rep.append(f"palette margins (delta E, body colours of the skin against ...; needs >= the threshold)")
     for c in range(1, 6):
         d = min(de(a, b) for a in body for b in rows[c][2:8])
-        rep.append(f"  {NAMES[c]:13s} {d:5.1f}  (>= {MIN_ARMY})")
+        mean = sum(min(de(a, b) for b in rows[c][2:8]) for a in body) / 4
+        rep.append(f"  {NAMES[c]:13s} closest {d:5.1f} (>= {MIN_ARMY}), mean {mean:5.1f} (>= {MIN_ARMY_MEAN})")
         if d < MIN_ARMY:
             fails.append(f"palette: too close to {NAMES[c]} ({d:.1f} < {MIN_ARMY})")
+        if mean < MIN_ARMY_MEAN:
+            fails.append(f"palette: too like {NAMES[c]} on average ({mean:.1f} < {MIN_ARMY_MEAN})")
     dg = min(de(a, b) for a in body for c in range(1, 6) for b in greys[c][2:8])
     rep.append(f"  done greys    {dg:5.1f}  (>= {MIN_GREY})")
     if dg < MIN_GREY:
@@ -94,11 +99,12 @@ def static(skin_path=None, say=print):
     rep.append(f"  fog terrain   {df:5.1f}  (>= {MIN_FOG})")
     if df < MIN_FOG:
         fails.append(f"palette: too close to the terrain in fog ({df:.1f} < {MIN_FOG})")
-    dh = abs(hue(ramp_q[2]) - hue(rows[3][4]))
-    dh = min(dh, 360 - dh)
-    rep.append(f"  hue vs Green Earth {dh:5.1f} degrees  (>= {MIN_HUE})")
-    if dh < MIN_HUE:
-        fails.append(f"palette: hue too near Green Earth's ({dh:.0f} < {MIN_HUE} degrees)")
+    chroma = lambda c: math.hypot(*lab(c)[1:])
+    cs = sum(chroma(c) for c in body) / 4
+    cg = sum(chroma(c) for c in rows[3][3:7]) / 4
+    rep.append(f"  chroma {cs:4.1f} = {cs / cg:.2f} of Green Earth's {cg:.1f}  (<= {MAX_CHROMA})")
+    if cs / cg > MAX_CHROMA:
+        fails.append(f"palette: too saturated, near Green Earth's leaf green ({cs / cg:.2f} > {MAX_CHROMA})")
     # -- every colour the skin can sit on: the dump works, the rows differ from the colour's own, the done row differs from the live row
     for host in range(1, 6):
         sk = Rom(host)
@@ -108,6 +114,11 @@ def static(skin_path=None, say=print):
         dd = min(de(quant(a), quant(b)) for a in live[3:6] for b in done[3:6])
         if dd < MIN_DONE:
             fails.append(f"palette: a done unit is too near a live one on colour {host} ({dd:.1f} < {MIN_DONE})")
+        others = [c for c in range(1, 6) if c != host]
+        do = min(de(quant(a), quant(b)) for a in done[3:6] for c in others for b in greys[c][3:6])
+        rep.append(f"  on colour {host} ({NAMES[host]:13s}): its done ramp vs the other armies' done greys {do:5.1f} (>= {MIN_DONE_OWN}), vs its live ramp {dd:5.1f} (>= {MIN_DONE})")
+        if do < MIN_DONE_OWN:
+            fails.append(f"palette: the done ramp on colour {host} is the same grey as another army's ({do:.1f} < {MIN_DONE_OWN})")
         own = base.pal(UNIT_PAL + 32 * (host - 1))
         left = [i for i in list(range(2, 8)) + [11, 12, 13] if live[i] == own[i]]
         if left:

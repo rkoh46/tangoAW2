@@ -10,96 +10,180 @@ short = "ES"
 # Colours are RRGGBB. The body ramp of every unit and building, light to dark: weathered jade,
 # a cool grey-green (verdigris stone), far from Green Earth's leaf green.
 [colours]
-ramp = ["9CCDBD", "62A494", "398373", "296A5A", "104A41", "003129"]
-# The trim greys of AW2's unit palette (tracks, barrels, metal): bronze.
+# Pale emerald grey: a stone with a faint jade tint (greyer and lighter than leaf green or teal).
+ramp = ["D8F6D6", "B6D4B4", "96B394", "779375", "597458", "2F482F"]
+# The trim greys of AW2's unit palette (tracks, barrels, metal, and the helmets): bronze.
 trim = ["C4AC74", "967C4C", "685430"]
 # Crests, plumes and sun rays: legion red.
 crest = "D02C3C"
-# The sun itself on the emblem and the HQ.
+# The sun itself on the emblem and the HQ (also entry 14 of every building palette).
 gold = "E8C25A"
 gold_dark = "A87C2C"
-# How much of the ramp the grey of a unit that has moved keeps (0..1).
-moved_tint = 0.4
+# A unit that has moved: its own dimmed ramp (how much of the ramp's hue the grey keeps, and how bright it stays).
+moved_tint = 0.5
+moved_dim = 0.78
 
-# ---- Infantry and Mech: AW2's Green Earth soldiers with a legion crest -----------------------
-# The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a
-# unit palette index (2..7 the body ramp light to dark, e the crest red, f the outline).
+# ---- Infantry and Mech: AW2's soldiers wearing a galea (a Roman helmet) ----------------------------
+# The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a unit palette index
+# (2..7 the stone ramp light to dark, b c d the bronze light to dark, 1 white, e the crest red, f the outline). A patch
+# with `moving = [..]` is also laid on those frames of the moving sheet (0..2 facing sideways, 3..5 front, 6..8 back),
+# placed so its `anchor` (a point of `rows`) lies on the left outline of the helmet's top row.
 [infantry]
 base = 3
-[infantry.moving]
-crest = true
+
+# side view: a rounded bronze bowl, a red horsehair crest along its top and down behind, a brow band, a cheek guard
+# and a neck guard
 [[infantry.patch]]
 x = 0
 y = 0
+moving = [0, 1, 2]
+anchor = [6, 1]
 rows = [
-  ".......fffffff..",
-  "......feeeeeeef.",
-  ".....f4213446fef",
-  ".....f4212345fef",
+  ".......eeee.....",
+  "......eeeeeef...",
+  ".....fceeeeecf..",
+  ".....fcb1bccddf.",
+  "....fcbbbcccddfe",
+  "....fbbbbbbbbdfe",
+  ".....ff.f...bcdf",
+  ".....f..f..cdf..",
+  "......f.....cdd.",
+  ".......f.....df.",
+]
+
+# front: the crest seen head on, the dome with the crest's line down it, the brow band and the cheek guards
+[[infantry.patch]]
+frames = []
+moving = [3, 4, 5]
+anchor = [3, 2]
+rows = [
+  ".....ee.....",
+  "....eeee....",
+  "...fceecf...",
+  "..fbbeeccf..",
+  "..fbbeeccf..",
+  ".fbbbeeccdf.",
+  ".fcccccccdf.",
+  "..c......c..",
+]
+
+# back: the crest with its tail hanging down the back, the neck guard
+[[infantry.patch]]
+frames = []
+moving = [6, 7, 8]
+anchor = [3, 2]
+rows = [
+  ".....ee.....",
+  "....feef....",
+  "...fceecf...",
+  "..fbbeeccf..",
+  "..fbbeeccf..",
+  ".fcccccccdf.",
+  "..ccceeccd..",
+  ".....ee.....",
+  ".....ee.....",
 ]
 
 [mech]
 base = 3
-[mech.moving]
-crest = true
+
+# the Mech's head sits a pixel left and up of the Infantry's, with the launcher on its right: no tail behind
 [[mech.patch]]
 frames = [0, 1]
 x = 0
 y = 0
+moving = [0, 1, 2]
+anchor = [5, 0]
 rows = [
-  ".....feeeeeeef..",
-  "....f4213446fef.",
+  ".....feeeeef....",
+  "....feeeeeeef...",
+  "...ffcb1bccddf..",
+  "....cbbbcccddf..",
+  "....bbbbbbbbd...",
+  "..........bcd...",
+  "..........cdd...",
 ]
+
 [[mech.patch]]
 frames = [2]
 x = 0
-y = 0
+y = 1
 rows = [
-  "......fffffff...",
-  ".....feeeeeeef..",
-  "....f4213446fef.",
+  ".....feeeeef....",
+  "....feeeeeeef...",
+  "...ffcb1bccddf..",
+  "....cbbbcccddf..",
+  "....bbbbbbbbd...",
+  "..........bcd...",
+  "..........cdd...",
 ]
 
-# ---- The HQ: a temple with a sun in its pediment. 16x32, `.` clear, hex digits are the building
-# palette's indices (1 white, 2..5 the body ramp light to dark, b shadow).
+[[mech.patch]]
+frames = []
+moving = [3, 4, 5]
+anchor = [3, 2]
+rows = [
+  ".....ee.....",
+  "....eeee....",
+  "...fceecf...",
+  "..fbbeeccf..",
+  "..fbbeeccf..",
+  ".fbbbeeccdf.",
+  ".fcccccccdf.",
+  "..c......c..",
+]
+
+# back: the launcher hides the right of the head
+[[mech.patch]]
+frames = []
+moving = [6, 7, 8]
+anchor = [1, 1]
+rows = [
+  ".feeef",
+  "fbeeccf",
+  "fbeeccf",
+  "fcccdf",
+]
+
+# ---- The HQ: a temple seen from above and the right: the gable with the sun, the roof's shaded slope behind it, columns with
+# dark gaps between them, steps, the side wall in shadow; light from the top left. 16x32, `.` clear, hex digits are the building
+# palette's indices (1 white, 2..5 the body ramp light to dark, b AW2's pale strip, c d cream, e the skin's gold).
 [hq]
 rows = [
-  "................",
-  "................",
-  ".......11.......",
-  "......1221......",
-  ".......22.......",
-  ".......33.......",
-  "......3443......",
-  ".....344443.....",
-  "....34411443....",
-  "...3441111443...",
-  "..344411114443..",
-  ".34444111144443.",
-  "2222222222222222",
-  "5555555555555555",
-  "5235235235235235",
-  "5235235235235235",
-  "5235235235235235",
-  "5235235235235235",
-  "5235235235235235",
-  "5235235235235235",
-  "5235235235235235",
-  "5235235235235235",
-  "2222222222222222",
-  "333333333333333b",
-  "344444444444443b",
-  "444444555544444b",
-  "334444555544433b",
-  "444444555544444b",
-  "444444cc5544444b",
-  "555555555555555b",
-  "4444444444444444",
-  "4444444444444444",
+  "..............2.",
+  "......ee...2225.",
+  "......ed2223345.",
+  "......133334445.",
+  ".....1245443345.",
+  "....12344534445.",
+  "...12ee44454445.",
+  "..12deee4445345.",
+  ".12dceeee444545.",
+  "123eeeeee444545.",
+  "1234eeee4444545.",
+  "12344ee44444545.",
+  "122222222222255.",
+  "33e33e33e33e345.",
+  "555555555555545.",
+  "413213213213545.",
+  "424524524524545.",
+  "424524524524545.",
+  "424524524524545.",
+  "424524524524545.",
+  "424524924924545.",
+  "424524924924545b",
+  "424524924924545b",
+  "424524924924545b",
+  "424524924924545b",
+  "424524924924545b",
+  "424524924924545b",
+  "122222222222225b",
+  "3e33e33e33e33e5b",
+  "122222222222225b",
+  "444444444444445.",
+  "555555555555555.",
 ]
 
-# ---- The emblem: a sun. 16x16; 1 white, 2 shadow; a, b, c the dark, mid and light of the emblem
-# colour the skin sits on.
 [emblem]
 rows = [
   "................",

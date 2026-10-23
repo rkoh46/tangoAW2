@@ -62,9 +62,9 @@ def unit_rows(host, skin_path=None):
              22: "Cruiser", 23: "Lander", 24: "Sub"}
     units = [t for t in range(1, 25) if not names[t].startswith("(")]
     S, cell = 4, 16 * 4 + 6
-    W = 150 + cell * 9
+    W = 150 + cell * 10
     sheet = Image.new("RGB", (W, 32 + len(units) * (16 * S + 4)), BG)
-    heads = ["Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole", "Emerald Sun", "ES done", "ES moving"]
+    heads = ["Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole", "Emerald Sun", "ES done", "OS moving", "ES moving"]
     for i, hname in enumerate(heads):
         label(sheet, hname, (150 + i * cell, 8), size=10)
     for r, t in enumerate(units):
@@ -83,6 +83,10 @@ def unit_rows(host, skin_path=None):
         g = foot(sk, host, t, 0, done, S, skin=True) if t in (1, 2) else _unit(sk, host, t, done, S)
         sheet.paste(g, (x, y), g)
         x += cell
+        g = _moving(base, 1, t, S) if t > 2 else None
+        if g:
+            sheet.paste(g, (x, y), g)
+        x += cell
         g = _moving(sk, host, t, S)
         if g:
             sheet.paste(g, (x, y), g)
@@ -97,7 +101,7 @@ def _unit(rom, colour, t, pal, S):
 MOVE_TABLE = 0x0849CD88
 
 
-def _moving(sk, host, t, S):
+def _moving(sk, host, t, S, frame=0, full=False):
     """The unit's moving picture, side view first frame, in the skin's moving palette (the sheet LZ77; foot units from the skin's own)."""
     from .. import cfg as _c
     if t in (1, 2) and getattr(sk, "blobs", None) is not None:
@@ -112,13 +116,15 @@ def _moving(sk, host, t, S):
     im = Image.new("RGBA", (24, 24), (0, 0, 0, 0))
     for k in range(9):
         cx, cy = 2 - k % 3, 2 - k // 3
-        tile = sheet[k * 32:(k + 1) * 32]
+        tile = sheet[(frame * 9 + k) * 32:(frame * 9 + k + 1) * 32]
         for y in range(8):
             for x in range(8):
                 b = tile[y * 4 + x // 2]
                 v = (b >> (4 * (x & 1))) & 15
                 if v:
                     im.putpixel((cx * 8 + x, cy * 8 + y), pal[v] + (255,))
+    if full:
+        return im.resize((24 * S, 24 * S), Image.NEAREST)
     return im.resize((24 * S * 2 // 3, 24 * S * 2 // 3), Image.NEAREST)
 
 
@@ -144,38 +150,108 @@ def lz77(buf, off):
     return bytes(out[:n])
 
 
-def compare_strip(host, awbw_dir=None, S=4):
-    """The skin's Infantry, Mech, HQ, emblem at 4x; with `awbw_dir` (reference pictures kept outside the repository) the same of the project it was inspired by,
-    beside them, for review only."""
+def _hq_rows(rows, pal, S):
+    from . import grid_to_tiles
+    return sprite(grid_to_tiles(rows, 16, 2), 2, 4, pal, S)
+
+
+def compare_strip(host, awbw_dir=None, S=4, v1_toml=None, map_shot=None):
+    """Sheet 03: the skin's helmet (idle and moving, 4x and 8x), HQ (4x and 8x) beside AW2's five HQs and the previous HQ, a map screenshot with the HQs and, with
+    `awbw_dir` (reference pictures kept outside the repository), the same of the project it was inspired by, for review only."""
+    import tomllib
     sk, base = Rom(host), Rom()
-    items = []
     pal = sk.pal(UNIT_PAL + 32 * (host - 1))
-    bpal = sk.pal(BLD_PAL + 32 * (host - 1))
-    mine = {
-        "infantry": foot(sk, host, 1, 0, pal, S, skin=True),
-        "mech": foot(sk, host, 2, 0, pal, S, skin=True),
-        "HQ": hq_img(sk, host, bpal, S, skin=True),
-        "emblem": emb_img(sk, host, S * 2),
-    }
-    sheet = Image.new("RGB", (16 * S * 10 + 40, 44 + 2 * (32 * S + 40)), BG)
-    label(sheet, "Emerald Sun (drawn for tangoAW2, original)", (8, 6), size=16)
+    mpal = sk.pal(BLD_PAL + 32 * (host - 1))
+    W = 1500
+    sheet = Image.new("RGB", (W, 2300), BG)
+    y = 8
+    label(sheet, "Emerald Sun: the galea (Roman helmet) on Infantry and Mech, at 4x and 8x (idle side view, then the moving frames: side, front, back)", (8, y), size=16)
+    y += 28
+    for unit, name in ((1, "Infantry"), (2, "Mech")):
+        for scale in (4, 8):
+            x = 8
+            for f in (0, 1, 2):
+                im = foot(sk, host, unit, f, pal, scale, skin=True)
+                sheet.paste(im, (x, y), im)
+                x += im.width + 8
+            x += 20
+            for f in (0, 3, 6):
+                im = _moving(sk, host, unit, scale, frame=f, full=True)
+                if im:
+                    sheet.paste(im, (x, y), im)
+                    x += im.width + 8
+            label(sheet, f"{name} {scale}x", (x + 20, y + 4), size=14)
+            y += 24 * scale + 8
+    # the helmets in AW2's own colours for reference (Green Earth)
     x = 8
-    for k, im in mine.items():
-        sheet.paste(im, (x, 40), im)
-        label(sheet, k, (x, 40 + im.height + 2), size=12)
-        x += im.width + 24
+    label(sheet, "AW2's Green Earth soldiers (the pictures the skin starts from), 8x", (8, y), size=14)
+    y += 20
+    gpal = base.pal(UNIT_PAL + 64)
+    for unit in (1, 2):
+        im = foot(base, 3, unit, 0, gpal, 8)
+        sheet.paste(im, (x, y), im)
+        x += im.width + 16
+    y += 16 * 8 + 24
+    # HQ
+    label(sheet, "HQ: AW2's five (Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole), the previous Emerald Sun HQ (v1), the new one at 4x and 8x", (8, y), size=16)
+    y += 26
+    x = 8
+    for c in (1, 2, 3, 4, 5):
+        im = hq_img(base, c, base.pal(BLD_PAL + 32 * (c - 1)), 4)
+        sheet.paste(im, (x, y), im)
+        x += im.width + 14
+    if v1_toml:
+        rows = tomllib.loads(Path(v1_toml).read_text())["hq"]["rows"]
+        im = _hq_rows(rows, mpal, 4)
+        sheet.paste(im, (x, y), im)
+        label(sheet, "v1", (x, y + im.height + 2), size=12)
+        x += im.width + 14
+    im = hq_img(sk, host, mpal, 4, skin=True)
+    sheet.paste(im, (x, y), im)
+    label(sheet, "new 4x", (x, y + im.height + 2), size=12)
+    x += im.width + 30
+    im8 = hq_img(sk, host, mpal, 8, skin=True)
+    sheet.paste(im8, (x, y), im8)
+    label(sheet, "new 8x", (x, y + im8.height + 2), size=12)
+    x += im8.width + 30
+    if v1_toml:
+        im8 = _hq_rows(rows, mpal, 8)
+        sheet.paste(im8, (x, y), im8)
+        label(sheet, "v1 8x", (x, y + im8.height + 2), size=12)
+        x += im8.width + 30
     if awbw_dir:
-        label(sheet, "For comparison only: AWBW's Jade Sun, fetched to the scratchpad, never committed", (8, 40 + 32 * S + 44), size=16)
-        x = 8
-        for n, key in (("jsinfantry", "infantry"), ("jsmech", "mech"), ("jadesunhq", "HQ"), ("jslogo", "emblem"), ("jadesuncity", "city"), ("jadesunbase", "base")):
+        p = Path(awbw_dir) / "jadesunhq.gif"
+        if p.exists():
+            im = Image.open(p).convert("RGBA")
+            im = im.resize((im.width * 4, im.height * 4), Image.NEAREST)
+            sheet.paste(im, (x, y), im)
+            label(sheet, "AWBW's (reference only)", (x, y + im.height + 2), size=12)
+    y += 32 * 8 + 30
+    if map_shot is not None:
+        label(sheet, "On the map (harness frames at 2x, the cursor beside each HQ): Orange Star's, Emerald Sun's, Black Hole's, Green Earth's, Yellow Comet's", (8, y), size=16)
+        y += 26
+        shots = map_shot if isinstance(map_shot, list) else [map_shot]
+        for i, im in enumerate(shots):
+            big = im.resize((im.width * 2, im.height * 2), Image.NEAREST)
+            sheet.paste(big, (8 + (i % 3) * (big.width + 8), y + (i // 3) * (big.height + 8)))
+        y += ((len(shots) + 2) // 3) * (shots[0].height * 2 + 8) + 10
+    x = 8
+    label(sheet, "Emblem (logo) 8x", (8, y), size=14)
+    y += 20
+    im = emb_img(sk, host, 8)
+    sheet.paste(im, (8, y), im)
+    if awbw_dir:
+        label(sheet, "Reference only: AWBW's Jade Sun infantry, mech, logo, city, base (never committed)", (400, y), size=14)
+        xx = 400
+        for n in ("jsinfantry", "jsmech", "jslogo", "jadesuncity", "jadesunbase"):
             p = Path(awbw_dir) / f"{n}.gif"
             if p.exists():
-                im = Image.open(p).convert("RGBA")
-                im = im.resize((im.width * S * (2 if key == "emblem" else 1), im.height * S * (2 if key == "emblem" else 1)), Image.NEAREST)
-                sheet.paste(im, (x, 40 + 32 * S + 80), im)
-                label(sheet, key, (x, 40 + 32 * S + 80 + im.height + 2), size=12)
-                x += im.width + 24
-    return sheet
+                g = Image.open(p).convert("RGBA")
+                g = g.resize((g.width * 4, g.height * 4), Image.NEAREST)
+                sheet.paste(g, (xx, y + 22), g)
+                xx += g.width + 16
+    y += 16 * 8 + 30
+    return sheet.crop((0, 0, W, y))
 
 
 def swatches(host):

@@ -4,7 +4,7 @@ tangoAW2 has a sixth army, **Emerald Sun**, and a general way to add more: an ar
 that the game draws on top of one of AW2's five colours. Everything in the file is original work of this repository (GPL-3.0-or-later): colours and
 pixel art drawn here, applied at run time to AW2's own graphics, which are read from the player's ROM as always. Nothing from any game (or from AWBW)
 is in the repository. Emerald Sun is *inspired by* the Jade Sun army of Advance Wars By Web (AWBW; credited in `CREDITS.md`): its Roman legionaries
-with red crests, its temple and its sun; no AWBW picture was copied or traced (it was looked at, and only in review sheets, never committed).
+with red-crested helmets, its temple and its sun; no AWBW picture was copied or traced (it was looked at, and only in review sheets, never committed).
 
 Code: `tango-gamesupport-aw2/src/army_skin.rs`. Kit: `aw2dev armyskin ...` (`devkit/aw2/commands/armyskin.py`, `devkit/aw2/armyskinlib/`), skill `aw2-add-army`.
 
@@ -40,10 +40,10 @@ By **colour** (the colour's rows of tables indexed by colour): `army_skin::TABLE
 
 | Table | Address | What |
 |---|---|---|
-| map units, copy | `0x0810E6E0`, `0x085AD9E8` | unit palette: roles 2..7 the army's ramp, 11..13 trim greys, 14 unused (the skin's crest red) |
+| map units, copy | `0x0810E6E0`, `0x085AD9E8` | unit palette: roles 2..7 the army's ramp, 11..13 trim greys (the helmets' bronze), 14 unused (the skin's crest red) |
 | moved units, copy | `0x0810E780`, `0x085ADA88` | the greys of units that have moved (AW2 tints each army's; the skin's is a neutral grey with a breath of its ramp) |
 | moving units | `0x0810EA60` | the unit roles at other indices (`MOVE_ROLE`) |
-| buildings (two sets) | `0x080D3F04`, `0x080D3E04` | OBJ palettes of the buildings, HQ included |
+| buildings (two sets) | `0x080D3F04`, `0x080D3E04` | OBJ palettes of the buildings, HQ included (entry 14, magenta and unused in every colour's row, is the skin's gold: `Kind::Building`) |
 | CO panel, HUD panels | `0x080D4188`, `0x08183C28`, `0x085A9BBC`, `0x085AC8BC`, `0x08104264`, `0x08106984` | the CO panel, windows and menus, the HUD |
 | power colours | `0x084F2BC8` (2 rows a colour), Black Hole's copies `0x085765A0`, `0x085766A0` | the battle scenes' unit palettes and the build menu's pictures |
 | battle gauge | `0x0816D498` | the HP gauge of a battle scene |
@@ -60,7 +60,7 @@ By **army** (AW2 draws these by the country of the army's CO, `sub_08042DE0`, no
 | Picture | AW2 | The skin |
 |---|---|---|
 | Infantry and Mech, idle (map) | slot per (country, unit) `u16[5][25]` at `0x08499608`, tiles of the sheet `0x0810BE60` (3 frames), function `sub_080261A4` | trap at `0x080261A6` makes the slot 52 + 2 i (`slot_of`); the pictures are put into VRAM past the sheet every frame (`sync_map_art`); the panel icon (`roster::panel_icon`) reads them through `icon_source` |
-| Infantry and Mech, moving | LZ77 sheet per (unit, country) in the table `0x0849CD88`, function `sub_08035B3C` | trap at `0x08035B40` returns the skin's sheet (the country's with a crest on the helmet's top row, `crest_frame`) |
+| Infantry and Mech, moving | LZ77 sheet per (unit, country) in the table `0x0849CD88`, function `sub_08035B3C` | trap at `0x08035B40` returns the skin's sheet (the country's with the helmet patches laid on the frames: `moving_patches`, found by the helmet's top row) |
 | HQ | art per country at `0x080D16C4` / `0x080D1BC4` (snow), loaded by `sub_0803F5E4` | trap at its end (`0x0803F698`) puts the skin's 16x32 art into the army's tiles (and army 5's lab tiles in a five-army game) |
 
 Crumb (CO 82, Dual Strike pack) uses the **first skin's HQ** as a placeholder for one of his own (`hq_skin`).
@@ -75,11 +75,14 @@ id = "emerald_sun"; name = "Emerald Sun"; short = "ES"
 ramp = [6 colours, light to dark]   # unit roles 2..7, every building, panel and gauge by rank
 trim = [3 colours]                  # unit roles 11..13 (tracks, barrels): bronze
 crest, gold, gold_dark              # crest red (unit role 14), the sun
-moved_tint = 0.4                    # how much of the ramp the grey of a moved unit keeps
+moved_tint = 0.5                    # how much of the ramp's hue the grey of a moved unit keeps
+moved_dim = 0.78                    # how bright it stays (the skin's own dimmed ramp; still readable)
 [infantry] / [mech]
 base = 3                            # AW2's picture of this colour's soldier is the start
-[[infantry.patch]]  frames = [0,1,2]  x = 0  y = 0  rows = [ ... ]   # `.` keep, `_` clear, hex digit = unit palette index (e crest, f outline)
-[infantry.moving] crest = true      # the moving pictures: a crest over the helmet's top row
+[[infantry.patch]]  frames = [0,1,2]  x = 0  y = 0  rows = [ ... ]   # `.` keep, `_` clear, hex digit = unit palette index (b c d the bronze trim, e crest, f outline)
+  moving = [0,1,2]  anchor = [6,1]   # also on those frames of the moving sheet (0..2 sideways, 3..5 front, 6..8 back), the point `anchor` of `rows`
+                                     # lying on the left outline of the helmet's top row (found in the frame); `frames = []` for a moving-only patch
+[infantry.moving] crest = true      # (older way) a plain crest over every moving frame's helmet; Emerald Sun draws its galea with patches instead
 [hq]       rows = [32 rows of 16]   # `.` clear, hex digits = the building palette's index (1 white, 2..5 the body ramp light to dark, b shadow)
 [emblem]   rows = [16 rows of 16]   # 1 white, 2 shadow, a b c = the dark, mid, light entry of the emblem colour the skin sits on (Black Hole has one entry: all three)
 ```
@@ -102,7 +105,7 @@ Register the file in `FILES` (`army_skin.rs`, at most `MAX_SKINS` = 3): its choi
 | `preview [--colour N] [--fast]` | the skin's pictures (Infantry, Mech, HQ, emblem) next to AW2's at 8x, and its palettes, as one PNG (`--fast` draws the art straight from the data file: no rebuild while drawing) |
 | `check [--live] [--scenario S ..] [--ds]` | **static**: the data file's shapes; the palette's margins; every unit 1..24 on every colour is recoloured and its done grey differs from its live colours. **`--live`**: runs the catalogue's scenarios three times (the base army, another colour, the skin) and fails on any screen where a colour only the base army had is still there |
 | `sources [--a 1,2 --b 3,4]` | renders the screens with two armies, finds the palette banks that differ, searches the ROM for their colours and prints the **ROM palettes the skin does not patch yet** (the way to find the next table) |
-| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Emerald Sun Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `dsunits` and `crumb` (with the pack) |
+| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Emerald Sun Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `hqs` (the five HQs on the map, side by side), `dsunits` and `crumb` (with the pack) |
 | `scenario NAME [--ids 6,2] [--ds]` | runs one scenario and keeps its shots (for sheets) |
 
 Scenario scripts are generated (`armyskinlib/scenarios.py`; identities are poked into the army page: 1..5 the colours, 6 the first skin) and run by the harness (`aw2_room_teams`, no network). The units a script places with
@@ -119,14 +122,18 @@ CIE76 delta E between the skin's **body colours** (ramp 1..4) and:
 
 | Against | Needs | Emerald Sun |
 |---|---|---|
-| each of AW2's five armies' body colours (ramp 2..7 of the unit palette) | >= 22 | Green Earth 29.6, Black Hole 23.0, the others over 33 |
-| the greys of units that have moved (all five armies) | >= 8 | 8.2 |
-| the terrain's colours in fog (measured with fog on) | >= 8 | 8.1 |
-| the skin's own done unit against its live unit | >= 10 | |
-| main hue against Green Earth's | >= 20 degrees | 47 |
+| each of AW2's five armies' body colours (ramp 2..7 of the unit palette): the closest pair | >= 10 | Orange Star 44.9, Blue Moon 25.5, Green Earth 16.5, Yellow Comet 35.4, Black Hole 13.3 |
+| ... and the mean over the four body colours of the distance to that army's nearest colour | >= 16 | 49.6, 38.2, 29.4, 40.2, 16.8 |
+| chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.21 (21.0 of 97.5) |
+| the greys of units that have moved (all five armies) | >= 9 | 10.0 |
+| the terrain's colours in fog (measured with fog on) | >= 9 | 9.7 |
+| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 12.6 .. 22.2 |
+| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 8.0 .. 22.6 |
 
-A skin that is too grey is read as a done unit or as fogged ground; one too green is Green Earth. The values are the ones that pass with this margin: Emerald Sun is a muted jade-teal
-(hue 176 degrees, chroma 26), not leaf green, with bronze trim and a red crest.
+Emerald Sun is a pale emerald grey: a stone with a faint jade tint (hue 142, chroma about 20, lightness 94 .. 46 down the ramp), with bronze trim and a red crest. It is lighter and much less saturated than Green Earth,
+Black Hole's greys are the nearest colours (its highlights are grey too: the army differs by its purple body, so the mean over its colours is the looser margin), and fog's grey-greens set the floor on
+lightness. A skin that is too grey is read as a done unit or as fogged ground; one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the
+ramp's hue at 78% of its brightness, not a flat grey.
 
 ## 7. Adding an army (skill `aw2-add-army`)
 
@@ -138,6 +145,6 @@ A skin that is too grey is read as a done unit or as fogged ground; one too gree
 
 ## 8. Limits
 
-- Battle scenes of Infantry and Mech are AW2's figures in the skin's palette (no crest); the moving and idle map pictures have it.
+- Battle scenes of Infantry and Mech are AW2's figures in the skin's palette (no helmet, no crest): the figures are OBJ tiles streamed per animation frame and the helmet shares its palette entries with the uniform, so an overlay would need a hook on every tile copy; the idle and moving map pictures, the build menu and the panel icons have the galea.
 - Up to three skins at once (slots 52..57, one colour each); more needs more slot room (`slot_of`).
 - The Dual Strike graphics preview mode (`ds_graphics`, `ds_tilt`) draws its own pictures from the pack's palettes of the five armies: the skin's colours are not applied there.

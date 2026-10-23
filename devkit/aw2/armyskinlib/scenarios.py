@@ -176,6 +176,16 @@ def map5p():
     )
 
 
+@scenario("hqs", [1, 6, 3, 4, 5], "the five-army map's five HQs on the map: Orange Star's, Emerald Sun's, Black Hole's, Green Earth's, Yellow Comet's (depth and scale beside each other)",
+          ["hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc"], seats_five=True)
+def hqs():
+    body = ""
+    # the map's HQs (the harness `hq` command lists them): column 9 at rows 2 (army 1), 10 (army 2), 19 (army 5), 29 (army 3), 37 (army 4)
+    for shot_name, y in (("hq_os", 2), ("hq_es", 10), ("hq_bh", 19), ("hq_ge", 29), ("hq_yc", 37)):
+        body += f"goto 0 12 {y + 1}\nwait 50\nshot {shot_name} 0\n"
+    return body
+
+
 def script(name, identities=None, fog=None, vram=False, checkpoint=None):
     """The harness script; with `vram` every shot also dumps its video memory (NAME.vram: palettes, tiles, OAM)."""
     sc = SCENARIOS[name]
