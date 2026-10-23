@@ -152,6 +152,27 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
     forbidden_all = {}
     for n in names:
         sc = scenarios.SCENARIOS[n]
+        if sc.get("compare"):
+            # a scenario whose second match must look as if the first never had the skin: run it with and without, compare the named shot
+            shots = {}
+            for tag, ids in (("skin", sc["ids"]), ("plain", [1] + sc["ids"][1:])):
+                d = out / f"{n}_{tag}"
+                d.mkdir(parents=True, exist_ok=True)
+                (d / "script.txt").write_text(scenarios.script(n, ids))
+                rc, log = harness.run_script(d / "script.txt", d, ds=ds)
+                if rc:
+                    fails.append(f"{n}/{tag}: the harness script failed ({log})")
+                shots[tag] = d / f"{sc['compare']}_s0.bmp"
+            try:
+                a, b = Image.open(shots["skin"]).convert("RGB"), Image.open(shots["plain"]).convert("RGB")
+                diff = sum(1 for p, q in zip(a.getdata(), b.getdata()) if p != q)
+            except FileNotFoundError:
+                fails.append(f"{n}: shot {sc['compare']} was not taken")
+                continue
+            rep.append(f"  {n}/{sc['compare']}: {diff} pixels differ from a match that never had the skin before")
+            if diff > 150:
+                fails.append(f"{n}: the second match differs from a plain one in {diff} pixels (the skin was not taken off)")
+            continue
         runs = {}
         if sc["five"]:
             variants = {"skin": sc["ids"]}

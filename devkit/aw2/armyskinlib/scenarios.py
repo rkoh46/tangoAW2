@@ -39,9 +39,9 @@ def redraw(cell):
 SCENARIOS = {}
 
 
-def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra=""):
+def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None):
     def wrap(fn):
-        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, body=fn)
+        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, body=fn)
         return fn
     return wrap
 
@@ -125,6 +125,21 @@ def results():
     )
 
 
+@scenario("rematch", [6, 2], "the room's next match on the same console: the first had the skin, the second has Orange Star and Blue Moon and must look exactly as if there had been no skin before", ["rematch"], compare="rematch")
+def rematch():
+    second = [1, 2]
+    pokes = "".join(f"poke {SEL + 0x10 * s_ + 1:08X} {c:02x}\n" for s_, c in enumerate(second))
+    ready = "".join(f"press {s_} DOWN\npress {s_} DOWN\npress {s_} DOWN\npress {s_} A\n" for s_ in reversed(range(2)))
+    return (
+        redraw((3, 3))
+        + "press 0 A\nwait 40\npress 0 DOWN\nwait 10\npress 0 DOWN\nwait 10\npress 0 A\nwait 40\npress 0 DOWN\nwait 10\npress 0 A\nwait 200\npress 0 LEFT\nwait 20\npress 0 A\nwait 20\n"
+        + "waitfor victory 60\nwait 100\nwaitfor selectmap 120 pressA 0,1\nwait 60\npress 0 A\nwait 20\npress 1 A\nwait 20\nuntil teams 100\nwait 90\n"
+        + pokes + "wait 10\n" + ready + "wait 300\npress 0 DOWN\nwait 10\npress 0 A\nuntil battle 300\nuntil army=1 60\nwait 400\n"
+        + "aid unit 1 inf 8 4\naid unit 1 mech 9 4\naid unit 2 inf 7 4\n"
+        + redraw((8, 4)) + "shot rematch 0\n"
+    )
+
+
 @scenario("lost3p", [6, 2, 3], "a three-army match: the skin's army yields and the game says it has lost", ["lost_msg"])
 def lost3p():
     return (
@@ -161,11 +176,13 @@ def map5p():
     )
 
 
-def script(name, identities=None, fog=None, vram=False):
+def script(name, identities=None, fog=None, vram=False, checkpoint=None):
     """The harness script; with `vram` every shot also dumps its video memory (NAME.vram: palettes, tiles, OAM)."""
     sc = SCENARIOS[name]
     ids = identities or sc["ids"]
     text = header(ids, fog=sc["fog"] if fog is None else fog, five=sc["five"], extra=sc["extra"]) + sc["body"]()
+    if checkpoint:
+        text += f"checkpoint save {checkpoint}\n"
     if vram:
         text = "".join(l + ("vram " + l.split()[1] + "\n" if l.startswith("shot ") else "") for l in text.splitlines(True))
     return text
