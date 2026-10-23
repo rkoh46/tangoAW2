@@ -335,8 +335,9 @@ def originality(awbw_dir, host=3, skin_path=None):
     fails, rep = [], ["originality against the reference pictures (share of our foreground pixels in the same place and the same colour class; needs <= %.2f):" % MAX_IDENTICAL]
     sk = Rom(host, skin_path)
     pal = sk.pal(UNIT_PAL + 32 * (host - 1))
-    items = [("jsinfantry", "Infantry", foot(sk, host, 1, 0, pal, 1, skin=True)), ("jsmech", "Mech", foot(sk, host, 2, 0, pal, 1, skin=True)),
-             ("jadesunhq", "HQ", hq_img(sk, host, sk.pal(BLD_PAL + 32 * (host - 1)), 1, skin=True)), ("jslogo", "Logo", emblem(sk, host, 1))]
+    items = [(f"jsinfantry", f"Infantry f{f}", foot(sk, host, 1, f, pal, 1, skin=True)) for f in range(3)]
+    items += [(f"jsmech", f"Mech f{f}", foot(sk, host, 2, f, pal, 1, skin=True)) for f in range(3)]
+    items += [("jadesunhq", "HQ", hq_img(sk, host, sk.pal(BLD_PAL + 32 * (host - 1)), 1, skin=True)), ("jslogo", "Logo", emblem(sk, host, 1))]
     for name, who, ours in items:
         ref = d / f"{name}.gif"
         if not ref.exists():

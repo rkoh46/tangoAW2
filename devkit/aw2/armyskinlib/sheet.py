@@ -165,7 +165,7 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=
     W = 1500
     sheet = Image.new("RGB", (W, 3600), BG)
     y = 8
-    label(sheet, "Emerald Sun: the galea (Roman helmet) on Infantry and Mech, at 4x and 8x (idle side view, then the moving frames: side, front, back)", (8, y), size=16)
+    label(sheet, "Emerald Sun: the plumed galea on Infantry and Mech, at 4x (the three idle frames, then all nine moving frames: side, front, back) and 8x (idle, then side, front, back)", (8, y), size=16)
     y += 28
     for unit, name in ((1, "Infantry"), (2, "Mech")):
         for scale in (4, 8):
@@ -175,7 +175,7 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=
                 sheet.paste(im, (x, y), im)
                 x += im.width + 8
             x += 20
-            for f in (0, 3, 6):
+            for f in (range(9) if scale == 4 else (0, 3, 6)):
                 im = _moving(sk, host, unit, scale, frame=f, full=True)
                 if im:
                     sheet.paste(im, (x, y), im)
@@ -187,10 +187,10 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=
     for lab, path in (prev or []):
         r = Rom(host, path)
         olds.append((lab, r, r.pal(UNIT_PAL + 32 * (host - 1)), r.pal(BLD_PAL + 32 * (host - 1))))
-    label(sheet, "For comparison at 8x: " + ", ".join(l for l, *_ in olds) + " helmets (Infantry, Mech), AW2's Green Earth soldiers they start from, and the new ones", (8, y), size=14)
+    label(sheet, "For comparison at 8x: " + ", ".join(l for l, *_ in olds[-3:]) + " helmets (Infantry, Mech), AW2's Green Earth soldiers they start from, and the new ones", (8, y), size=14)
     y += 22
     x = 8
-    for lab, r, p, _ in olds + [("new", sk, pal, mpal)]:
+    for lab, r, p, _ in olds[-3:] + [("new", sk, pal, mpal)]:
         for unit in (1, 2):
             im = foot(r, host, unit, 0, p, 8, skin=True)
             sheet.paste(im, (x, y), im)

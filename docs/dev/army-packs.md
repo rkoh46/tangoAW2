@@ -78,7 +78,7 @@ trim = [3 colours]                  # unit roles 11..13 (tracks, barrels, the ch
 building = [4 colours]              # optional: the buildings' own ramp, light to dark (else the units' ramp)
 crest, gold, gold_dark              # crest red (unit role 14), the sun
 moved_tint = 0.5                    # how much of the ramp's hue the grey of a moved unit keeps
-moved_dim = 0.78                    # how bright it stays (the skin's own dimmed ramp; still readable)
+moved_dim = 0.64                    # how bright it stays (the skin's own dimmed ramp; still readable)
 [infantry] / [mech]
 base = 3                            # AW2's picture of this colour's soldier is the start
 [[infantry.patch]]  frames = [0,1,2]  x = 0  y = 0  rows = [ ... ]   # `.` keep, `_` clear, hex digit = unit palette index (b c d the steel trim, e crest, f outline)
@@ -132,19 +132,19 @@ CIE76 delta E between the skin's **body colours** (ramp 1..4) and:
 | chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.19 (18.8 of 97.5) |
 | the greys of units that have moved (all five armies) | >= 9 | 14.8 |
 | the terrain's colours in fog (measured with fog on) | >= 9 | 13.8 |
-| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 18.4 .. 24.1 |
-| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 13.4 .. 26.5 |
+| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 10.8 .. 21.3 |
+| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 11.7 .. 24.9 |
 
 Emerald Sun's units are a sage stone with a faint jade tint (the tones of AWBW's Jade Sun units, nudged a little greener so Black Hole's greys and fog stay clear of them: `DEE4C0 .. 292C23`), with steel trim and a red crest.
 Its buildings have their own, paler and greener ramp (`building`, four tones `D6FFB8 .. 6C8555`, AWBW's pale-green buildings), used for the building palettes only. Black Hole's greys are the nearest colours (its highlights
 are grey too: the army differs by its purple body, so the mean over its colours is the looser margin), and fog's grey-greens set the floor on lightness. A skin that is too grey is read as a done unit or as fogged ground;
-one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the ramp's hue at 58% of its brightness, not a flat grey.
+one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the ramp's hue at 64% of its brightness, not a flat grey.
 
 ### Originality (`check --awbw-ref DIR`, local only)
 
-Emerald Sun is *inspired by* AWBW's Jade Sun and is drawn to read like it at a glance: a sage steel soldier with a red crest, a tall pale-green domed HQ with gold windows and a door, a pale square logo with a soft sun.
+Emerald Sun is *inspired by* AWBW's Jade Sun and is drawn to read like it at a glance: a sage steel soldier in a red-plumed helmet, a tall pale-green domed HQ with gold windows and a door, a pale square logo with a soft sun.
 The repository is public and nothing of AWBW's may be in it, so every pixel is drawn here, by hand, looking at the style and never tracing, copying or pasting (the Infantry and Mech start from AW2's own soldier, as
-AWBW's do). The shapes differ in the details: a spiked crest higher at the back, a steel cheek plate, a finial and an arched door on a domed HQ, a twelve-ray sun against their eight.
+AWBW's do). The shapes differ in the details: a closed galea with a steel face guard and an eye slit under a long plume that sweeps back, a finial and an arched door on a domed HQ, a twelve-ray sun against their eight.
 
 `aw2dev armyskin check --awbw-ref DIR` measures it. DIR holds the reference pictures (`jsinfantry.gif`, `jsmech.gif`, `jadesunhq.gif`, `jslogo.gif`; fetched by hand, kept outside the repository, never committed);
 the check needs them, so it only runs where they are. What separates a drawing from a copy is how many *pixels* are the same: a hand redraw matches the shapes and rarely the pixels, a copy matches nearly all of them.
@@ -153,8 +153,8 @@ offset (up to 2 pixels, mirrored too), and fails above **0.78**. The threshold s
 
 | Picture | Share in the same place and class | Needs |
 |---|---|---|
-| Infantry | 0.53 | <= 0.78 |
-| Mech | 0.51 | <= 0.78 |
+| Infantry (idle frames 0, 1, 2) | 0.42, 0.36, 0.34 | <= 0.78 |
+| Mech (idle frames 0, 1, 2) | 0.53, 0.53, 0.44 | <= 0.78 |
 | HQ | 0.63 | <= 0.78 |
 | Logo | 0.40 | <= 0.78 |
 

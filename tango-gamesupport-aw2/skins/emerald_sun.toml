@@ -23,9 +23,9 @@ gold = "E8C25A"
 gold_dark = "A87C2C"
 # A unit that has moved: its own dimmed ramp (how much of the ramp's hue the grey keeps, and how bright it stays).
 moved_tint = 0.4
-moved_dim = 0.58
+moved_dim = 0.64
 
-# ---- Infantry and Mech: AW2's soldiers in the stone ramp wearing a Roman crested helmet ----------------------------
+# ---- Infantry and Mech: AW2's soldiers in the stone ramp in a closed Roman galea: a steel face guard with an eye slit and a long red plume sweeping back ---------
 # The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a unit palette index
 # (2..7 the stone ramp light to dark, b c d the steel trim light to dark, 1 white, e the crest red, f the outline). A patch
 # with `moving = [..]` is also laid on those frames of the moving sheet (0..2 facing sideways, 3..5 front, 6..8 back),
@@ -33,80 +33,92 @@ moved_dim = 0.58
 [infantry]
 base = 3
 
-# side view: AW2's soldier in the stone ramp, a red crest across the top of the helmet (spiked, higher at the back) and a steel cheek plate down the side of the face
+# side view: the plume sweeps back in one diagonal blade over the helmet, the face guard covers the face down to the chin with a dark eye slit
 [[infantry.patch]]
-x = 0
+x = 4
 y = 0
 moving = [0, 1, 2]
-anchor = [6, 1]
+anchor = [2, 1]
 rows = [
-  "........e.ee.e..",
-  "......eeeeeeeee.",
-  ".....feefeefeef.",
-  "................",
-  "................",
-  "................",
-  "................",
-  "...........cd...",
-  "...........cd...",
+  "......eee.",
+  "....eeee..",
+  "..eeee....",
+  "..........",
+  "..........",
+  ".bbbbbbbcd",
+  "fccccccccd",
+  "..bf.bbcd.",
+  "..bbbbcd..",
 ]
 
-# front: the crest seen head on
+# front: the plume is a thin fin over the helmet, the face guard a steel plate with the eye slit
 [[infantry.patch]]
 frames = []
 moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
-  "....e.e.e...",
-  "...eeeeeee..",
-  "...feefeef..",
+  ".....ee.....",
+  ".....ee.....",
+  "...f2ee3f...",
+  "..f23ee34f..",
+  "..f33ee44f..",
+  ".fcbbbbbbcf.",
+  ".fcccccccdf.",
+  ".fbffffffbf.",
+  "..cbbbbbcd..",
 ]
 
-# back: the same crest from behind
+# back: the plume's fin and its tail over the neck guard
 [[infantry.patch]]
 frames = []
 moving = [6, 7, 8]
 anchor = [3, 2]
 rows = [
-  "....e.e.e...",
-  "...eeeeeee..",
-  "...feefeef..",
+  ".....ee.....",
+  ".....ee.....",
+  "...f2ee3f...",
+  "..f23ee34f..",
+  "..f33ee44f..",
+  ".fbbbbbbbbf.",
+  ".fcccceccdf.",
+  ".....ee.....",
+  ".....e......",
 ]
 
 [mech]
 base = 3
 
-# the Mech's head sits a pixel left and up of the Infantry's, with the launcher on its right
+# the Mech's head sits a pixel left and up of the Infantry's, with the launcher on its right: a shorter plume
 [[mech.patch]]
 frames = [0, 1]
-x = 0
+x = 3
 y = 0
 moving = [0, 1, 2]
-anchor = [5, 0]
+anchor = [2, 0]
 rows = [
-  "......e.ee.e....",
-  ".....eeeeeeeee..",
-  ".....eefeefe....",
-  "................",
-  "................",
-  "................",
-  "..........cd....",
-  "..........cd....",
+  "....eeee.",
+  "..eeee...",
+  ".........",
+  ".........",
+  "fbbbbbbbc",
+  "fcccccccc",
+  "..bf.bbcd",
+  "..bbbbcd.",
 ]
 
 [[mech.patch]]
 frames = [2]
-x = 0
+x = 3
 y = 1
 rows = [
-  "......e.ee.e....",
-  ".....eeeeeeeee..",
-  ".....eefeefe....",
-  "................",
-  "................",
-  "................",
-  "..........cd....",
-  "..........cd....",
+  "....eeee.",
+  "..eeee...",
+  ".........",
+  ".........",
+  "fbbbbbbbc",
+  "fcccccccc",
+  "..bf.bbcd",
+  "..bbbbcd.",
 ]
 
 [[mech.patch]]
@@ -114,9 +126,15 @@ frames = []
 moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
-  "....e.e.e...",
-  "...eeeeeee..",
-  "...feefeef..",
+  ".....ee.....",
+  ".....ee.....",
+  "...f2ee3f...",
+  "..f23ee34f..",
+  "..f33ee44f..",
+  ".fcbbbbbbcf.",
+  ".fcccccccdf.",
+  ".fbffffffbf.",
+  "..cbbbbbcd..",
 ]
 
 # back: the launcher hides the right of the head
@@ -125,9 +143,10 @@ frames = []
 moving = [6, 7, 8]
 anchor = [1, 1]
 rows = [
-  "..e.e.",
-  ".eeeee.",
-  ".feefe.",
+  ".feef",
+  "f2eecf",
+  "f3eecf",
+  "fcbbdf",
 ]
 
 # ---- The HQ: a tall domed tower on a facade with gold windows and an arched door, a dark outline all round, light from the top left (a lit left, a shaded right).
