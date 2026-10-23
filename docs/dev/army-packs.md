@@ -4,7 +4,7 @@ tangoAW2 has a sixth army, **Emerald Sun**, and a general way to add more: an ar
 that the game draws on top of one of AW2's five colours. Everything in the file is original work of this repository (GPL-3.0-or-later): colours and
 pixel art drawn here, applied at run time to AW2's own graphics, which are read from the player's ROM as always. Nothing from any game (or from AWBW)
 is in the repository. Emerald Sun is *inspired by* the Jade Sun army of Advance Wars By Web (AWBW; credited in `CREDITS.md`): its Roman legionaries
-with red-crested helmets, its temple and its sun; no AWBW picture was copied or traced (it was looked at, and only in review sheets, never committed).
+with a red-crested helmet, its temple and its sun; no AWBW picture was copied or traced (it was looked at, and only in review sheets, never committed).
 
 Code: `tango-gamesupport-aw2/src/army_skin.rs`. Kit: `aw2dev armyskin ...` (`devkit/aw2/commands/armyskin.py`, `devkit/aw2/armyskinlib/`), skill `aw2-add-army`.
 
@@ -85,7 +85,8 @@ base = 3                            # AW2's picture of this colour's soldier is 
                                      # lying on the left outline of the helmet's top row (found in the frame); `frames = []` for a moving-only patch
 [infantry.moving] crest = true      # (older way) a plain crest over every moving frame's helmet; Emerald Sun draws its galea with patches instead
 [hq]       rows = [32 rows of 16]   # `.` clear, hex digits = the building palette's index (1 white, 2..5 the body ramp light to dark, b shadow)
-[emblem]   rows = [16 rows of 16]   # 1 white, 2 shadow, a b c = the dark, mid, light entry of the emblem colour the skin sits on (Black Hole has one entry: all three)
+[emblem]   rows = [16 rows of 16]   # 1 white, 2 shadow, a b c = the dark, mid, light entry of the emblem colour the skin sits on (Black Hole has one entry: all three); used by the game's own emblem
+                                    # (Teams screens, results) and drawn from the file for Dual Strike's Teams and CO-pick cards; the pick flags are recoloured from the flag's own tiles (`recolour_entries`)
 ```
 
 Register the file in `FILES` (`army_skin.rs`, at most `MAX_SKINS` = 3): its choice code is `SKIN + index`, shown on the army pages and cycled with the five armies.
@@ -136,6 +137,20 @@ Emerald Sun is a pale emerald grey: a stone with a faint jade tint (hue 142, chr
 Black Hole's greys are the nearest colours (its highlights are grey too: the army differs by its purple body, so the mean over its colours is the looser margin), and fog's grey-greens set the floor on
 lightness. A skin that is too grey is read as a done unit or as fogged ground; one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the
 ramp's hue at 78% of its brightness, not a flat grey.
+
+### Originality (`check --awbw-ref DIR`, local only)
+
+Emerald Sun is *inspired by* AWBW's Jade Sun; the repository is public and nothing of AWBW's may be in it. The style was taken (a tall red crest on a small stone bowl, a pale square logo with a sun and a frame),
+every pixel is drawn here, and the shapes differ (the crest rises at the front and sweeps back with a tail, the cheek and neck guards are stepped, the logo has eight straight rays, four long and four short,
+round a ring with a dark dot). `aw2dev armyskin check --awbw-ref DIR` measures it: DIR holds the reference pictures (`jsinfantry.gif`, `jsmech.gif`, `jslogo.gif`; fetched by hand, kept outside the repository, never
+committed); the check needs them, so it only runs where they are, and it prints and fails on the share of foreground pixels (colour ignored) two pictures have in common at the best offset (up to 3 pixels, mirrored
+too), the Jaccard ratio of the two masks:
+
+| What | How | Needs | Emerald Sun |
+|---|---|---|---|
+| helmet (Infantry, Mech) | what each changed in the head's rows 0..8 against AW2's own soldier (both are that soldier with a helmet) | <= 0.60 | 0.21, 0.30 |
+| the whole silhouette | against the reference | no closer than AW2's own soldier is | 0.82 (AW2's 0.89), 0.94 (0.95) |
+| logo | the sun inside the frame (the pale ground is dropped, the frame is drawn differently anyway) | <= 0.60 | 0.44 |
 
 ### The HQ's depth (`check`, `hq_metrics`)
 

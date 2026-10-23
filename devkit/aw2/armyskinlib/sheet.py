@@ -155,7 +155,7 @@ def _hq_rows(rows, pal, S):
     return sprite(grid_to_tiles(rows, 16, 2), 2, 4, pal, S)
 
 
-def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None):
+def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=None):
     """Sheet 03: the skin's helmet (idle and moving, 4x and 8x) beside the earlier versions', the HQ (4x and 8x) beside AW2's five HQs and the earlier ones, map
     screenshots of the HQs and, with `awbw_dir` (reference pictures kept outside the repository), the same of the project it was inspired by, for review only.
     `prev`: [(label, data file)] of earlier versions, drawn by the engine from their files."""
@@ -163,7 +163,7 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None):
     pal = sk.pal(UNIT_PAL + 32 * (host - 1))
     mpal = sk.pal(BLD_PAL + 32 * (host - 1))
     W = 1500
-    sheet = Image.new("RGB", (W, 2600), BG)
+    sheet = Image.new("RGB", (W, 3600), BG)
     y = 8
     label(sheet, "Emerald Sun: the galea (Roman helmet) on Infantry and Mech, at 4x and 8x (idle side view, then the moving frames: side, front, back)", (8, y), size=16)
     y += 28
@@ -204,6 +204,8 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None):
         x += im.width + 8
     label(sheet, "Green Earth", (x - 250, y + 16 * 8 + 2), size=12)
     y += 16 * 8 + 28
+    if awbw_dir:
+        y = _originality_block(sheet, y, sk, host, pal, base, Path(awbw_dir))
     # HQ
     label(sheet, "HQ: AW2's five (Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole), the earlier Emerald Sun HQs, the new one at 4x and 8x", (8, y), size=16)
     y += 26
@@ -246,6 +248,11 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None):
             big = im.resize((im.width * 2, im.height * 2), Image.NEAREST)
             sheet.paste(big, (8 + (i % 3) * (big.width + 8), y + (i // 3) * (big.height + 8)))
         y += ((len(shots) + 2) // 3) * (shots[0].height * 2 + 8) + 10
+    if tilt_shot is not None:
+        label(sheet, "On the Dual Strike tilted map (hi-res, from the real app; ground colours are off in a checkpoint boot)", (8, y), size=16)
+        y += 26
+        sheet.paste(tilt_shot, (8, y))
+        y += tilt_shot.height + 14
     label(sheet, "Emblem (logo) 8x", (8, y), size=14)
     y += 20
     im = emb_img(sk, host, 8)
@@ -262,6 +269,47 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None):
                 xx += g.width + 16
     y += 16 * 8 + 30
     return sheet.crop((0, 0, W, y))
+
+
+def _originality_block(sheet, y, sk, host, pal, base, d):
+    """Ours beside the reference at 8x (helmet side and front, logo) with the originality ratios printed under each."""
+    from .check import _fg, _shift, _best, _logo_fg
+    label(sheet, "Ours beside the reference (AWBW's Jade Sun, review only, never committed), 8x; under each the share of the pixels our work changed that it changed too (colour ignored; needs <= 0.60)", (8, y), size=14)
+    y += 24
+    x = 8
+    bpal = base.pal(UNIT_PAL + 32 * (host - 1))
+    for name, unit, who in (("jsinfantry", 1, "Infantry"), ("jsmech", 2, "Mech")):
+        ref = d / f"{name}.gif"
+        if not ref.exists():
+            continue
+        ours = foot(sk, host, unit, 0, pal, 8, skin=True)
+        theirs = Image.open(ref).convert("RGBA")
+        theirs8 = theirs.resize((theirs.width * 8, theirs.height * 8), Image.NEAREST)
+        a, b, aw2 = _fg(foot(sk, host, unit, 0, pal, 1, skin=True), 9), _fg(theirs, 9), _fg(foot(base, host, unit, 0, bpal, 1), 9)
+        _, dx, dy, f = _best(b, aw2, 2)
+        r = _best(a ^ aw2, b ^ _shift(aw2, dx, dy, f))[0]
+        sheet.paste(ours, (x, y), ours)
+        label(sheet, f"ours, {who} side", (x, y + 16 * 8 + 2), size=12)
+        sheet.paste(theirs8, (x + 140, y), theirs8)
+        label(sheet, f"AWBW's {who}: {r:.2f}", (x + 140, y + 16 * 8 + 2), size=12)
+        x += 300
+    front = _moving(sk, host, 1, 8, frame=3, full=True)
+    if front:
+        sheet.paste(front, (x, y), front)
+        label(sheet, "ours, front (no reference front view)", (x, y + 24 * 8 + 2), size=12)
+        x += 230
+    ref = d / "jslogo.gif"
+    if ref.exists():
+        a, b = _logo_fg(emb_img(sk, host, 1), 2), _logo_fg(Image.open(ref), 1)
+        r = _best(a, b, 3, 10)[0]
+        mine = emb_img(sk, host, 8)
+        sheet.paste(mine, (x, y), mine)
+        label(sheet, "our logo", (x, y + 16 * 8 + 2), size=12)
+        t = Image.open(ref).convert("RGBA")
+        t = t.resize((t.width * 8, t.height * 8), Image.NEAREST)
+        sheet.paste(t, (x + 150, y), t)
+        label(sheet, f"AWBW's logo: sun {r:.2f}", (x + 150, y + 16 * 8 + 2), size=12)
+    return y + 24 * 8 + 28
 
 
 def tilt_sheet(shots):

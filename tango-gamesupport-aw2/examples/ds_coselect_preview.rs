@@ -56,7 +56,7 @@ fn main() {
         let cells: Vec<Cell> = order
             .iter()
             .enumerate()
-            .map(|(k, &d)| Cell { mug: if k % 5 == 4 { None } else { art_mug(d) }, flag: match k { 0 => Some((0, 1)), 1 => Some((0, 2)), 2 => Some((1, 1)), _ => None } })
+            .map(|(k, &d)| Cell { mug: if k % 5 == 4 { None } else { art_mug(d) }, flag: match k { 0 => Some((0, 1, skin(0))), 1 => Some((0, 2, skin(0))), 2 => Some((1, 1, skin(1))), _ => None } })
             .collect();
         let v = PickView { cards, active: Some((0, false)), cells, cursor: 5 };
         assert!(render_pick(&mut buf, &v));

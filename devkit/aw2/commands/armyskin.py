@@ -27,6 +27,7 @@ def register(sub):
     a = ps.add_parser("check", help="the data file, the palette's margins, the coverage of every unit; --live walks the screens")
     a.add_argument("--skin")
     a.add_argument("--live", action="store_true", help="run the catalogue's scenarios and fail on base-army colours left")
+    a.add_argument("--awbw-ref", metavar="DIR", help="a directory with the reference pictures (jsinfantry.gif, jsmech.gif, jslogo.gif; local only, never committed): fails if our helmet or logo is too like them")
     a.add_argument("--scenario", nargs="*")
     a.add_argument("--ds", action="store_true", help="with the Dual Strike pack (its units too)")
     a.add_argument("--keep", action="store_true")
@@ -77,6 +78,10 @@ def run_preview(a):
 def run_check(a):
     fails, rep = chk.static(a.skin)
     print("\n".join(rep))
+    if a.awbw_ref:
+        f3, r3 = chk.originality(a.awbw_ref, skin_path=a.skin)
+        print("\n".join(r3))
+        fails += f3
     if a.live:
         util.check_fresh(util.example_bin("aw2_room_teams"), "aw2_room_teams")
         f2, r2 = chk.live(a.scenario, ds=a.ds, keep=a.keep)
@@ -151,7 +156,18 @@ def run_sheet(a):
     host = 1
     sh.unit_rows(host).save(out / "02_every_unit.png")
     prev = [tuple(x.split("=", 1)) for x in a.prev]
-    sh.compare_strip(host, a.awbw, prev=prev, map_shot=[sh.shot(dirs, "hqs", n) for n in ("hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc")]).save(out / "03_art_4x.png")
+    tilt_pics = []
+    if a.ds:
+        from ..armyskinlib import look as lk
+        from PIL import Image as _Image
+        for scen, title in (("tilt", "2 armies: Emerald Sun (idle and done units, properties, the HQ at the left) against Blue Moon"),
+                            ("tilt5p", "5 armies: Emerald Sun beside Green Earth and Black Hole")):
+            rc, log = lk.checkpoint(f"sheet_{scen}", scen, None, True)
+            png = work / f"{scen}.png"
+            if rc == 0:
+                lk.look(f"sheet_{scen}", png, tilt=True, scale=4)
+                tilt_pics.append((title, _Image.open(png).convert("RGB")))
+    sh.compare_strip(host, a.awbw, prev=prev, tilt_shot=(tilt_pics[0][1] if tilt_pics else None), map_shot=[sh.shot(dirs, "hqs", n) for n in ("hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc")]).save(out / "03_art_4x.png")
     sh.swatches(host).save(out / "04_palette.png")
     m5 = [("5 armies: Emerald Sun (stands in for Blue Moon's colour), Orange Star, Green Earth, Yellow Comet, Black Hole", sh.shot(dirs, "map5p", "map5")), ("same map, far side", sh.shot(dirs, "map5p", "map5_far"))]
     sh.grid(m5, 2, 3).save(out / "01_five_armies.png")
@@ -166,18 +182,7 @@ def run_sheet(a):
         ds = [("DS units on the map", sh.shot(ds_dirs, "dsunits", "ds_parade")), ("build menu: Megatank", sh.shot(ds_dirs, "dsunits", "ds_build")),
               ("battle scene: Megatank", sh.shot(ds_dirs, "dsunits", "ds_scene2")), ("Crumb leads: his HQ (placeholder)", sh.shot(ds_dirs, "crumb", "crumb_hq"))]
         sh.grid(ds, 2, 3, caption="With the Dual Strike pack").save(out / "06_dual_strike.png")
-        # the Dual Strike tilted map, from the real app (hi-res)
-        from ..armyskinlib import look as lk
-        from PIL import Image
-        pics = []
-        for scen, title in (("tilt", "2 armies: Emerald Sun (idle and done units, properties, the HQ at the left) against Blue Moon"),
-                            ("tilt5p", "5 armies: Emerald Sun beside Green Earth and Black Hole")):
-            rc, log = lk.checkpoint(f"sheet_{scen}", scen, None, True)
-            png = work / f"{scen}.png"
-            if rc == 0:
-                lk.look(f"sheet_{scen}", png, tilt=True, scale=4)
-                pics.append((title, Image.open(png).convert("RGB")))
-        if pics:
-            sh.tilt_sheet(pics).save(out / "07_tilt.png")
+        if tilt_pics:
+            sh.tilt_sheet(tilt_pics).save(out / "07_tilt.png")
     util.say("sheets in", out)
     return 0

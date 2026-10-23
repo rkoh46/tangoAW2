@@ -45,5 +45,12 @@ class Skin(unittest.TestCase):
         self.assertTrue(any("Green Earth" in x for x in fails), fails)
 
 
-if __name__ == "__main__":
-    unittest.main()
+class Originality(unittest.TestCase):
+    def test_the_match_ratio(self):
+        from ..armyskinlib import check
+        a = {(x, y) for x in range(4) for y in range(4)}
+        self.assertEqual(check._jaccard(a, a), 1.0)
+        self.assertEqual(check._jaccard(a, {(10, 10)}), 0.0)
+        self.assertEqual(check._best(a, check._shift(a, 2, 1))[0], 1.0)           # found at its offset
+        self.assertEqual(check._best(a, check._shift(a, 0, 0, True, 4))[0], 1.0)   # and mirrored
+

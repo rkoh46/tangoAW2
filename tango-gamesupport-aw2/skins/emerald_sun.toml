@@ -31,24 +31,24 @@ moved_dim = 0.78
 [infantry]
 base = 3
 
-# side view: a rounded bronze bowl with a brow ridge, a thin red horsehair crest along its top (a slight arc), a cheek guard hanging in front of the ear and a
-# neck guard flaring at the back
+# side view: a small stone bowl close to the head under a bronze brow, a tall red crest that rises at the front and sweeps back (a tail behind), a cheek guard
+# down the side of the face and a stepped neck guard
 [[infantry.patch]]
 x = 0
 y = 0
 moving = [0, 1, 2]
 anchor = [6, 1]
 rows = [
-  "........eee.....",
-  ".....feeeeeeef..",
-  ".....fb1bbbcddf.",
-  "....fbbbbbbccddf",
-  "....fbbbbbbcccdf",
-  "...fbbbbbbbbbbdf",
-  "...fcdddddd.bcdf",
-  "...........fbcdf",
-  "...........fcddf",
-  "............fddf",
+  ".......ee.......",
+  "......_eeee__...",
+  ".....__eeeeee_..",
+  "....._fffffffee.",
+  "...._f2333445fe.",
+  "...._f233344cfe.",
+  "....fbbbbbbccdf.",
+  "...........cd...",
+  "...........ccd..",
+  "............dd..",
 ]
 
 # front: the crest seen head on, the dome with the crest's line down it, the brow band and the cheek guards
@@ -58,12 +58,12 @@ moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
   ".....ee.....",
-  "............",
-  "...fceecf...",
-  "..fbbeeccf..",
-  "..fbbeeccf..",
-  ".fbbbeeccdf.",
-  ".fcccccccdf.",
+  "....eeee....",
+  "...f2ee3f...",
+  "..f23ee34f..",
+  "..f33ee44f..",
+  ".f333ee444f.",
+  ".fbbbbbbccf.",
   "..c......c..",
 ]
 
@@ -74,12 +74,14 @@ moving = [6, 7, 8]
 anchor = [3, 2]
 rows = [
   ".....ee.....",
-  "............",
-  "...fceecf...",
-  "..fbbeeccf..",
-  "..fbbeeccf..",
-  ".fcccccccdf.",
-  "..ccceeccd..",
+  "....eeee....",
+  "...f2ee3f...",
+  "..f23ee34f..",
+  "..f33ee44f..",
+  ".fcccceeccf",
+  ".....ee.....",
+  ".....ee.....",
+  "......e.....",
 ]
 
 [mech]
@@ -93,11 +95,11 @@ y = 0
 moving = [0, 1, 2]
 anchor = [5, 0]
 rows = [
-  ".....feeeeef....",
-  "....fb1bbbcdf...",
-  ".....bbbbccd....",
-  "....bbbbbbcd....",
-  "....bbbbbbbbd...",
+  ".....eee____....",
+  "...._eeeeee__...",
+  ".....fffffff....",
+  "....23334455....",
+  "....bbbbbbbcd...",
   "..........bcd...",
   "..........cdd...",
 ]
@@ -107,11 +109,11 @@ frames = [2]
 x = 0
 y = 1
 rows = [
-  ".....feeeeef....",
-  "....fb1bbbcdf...",
-  ".....bbbbccd....",
-  "....bbbbbbcd....",
-  "....bbbbbbbbd...",
+  ".....eee____....",
+  "...._eeeeee__...",
+  ".....fffffff....",
+  "....23334455....",
+  "....bbbbbbbcd...",
   "..........bcd...",
   "..........cdd...",
 ]
@@ -122,12 +124,12 @@ moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
   ".....ee.....",
-  "............",
-  "...fceecf...",
-  "..fbbeeccf..",
-  "..fbbeeccf..",
-  ".fbbbeeccdf.",
-  ".fcccccccdf.",
+  "....eeee....",
+  "...f2ee3f...",
+  "..f23ee34f..",
+  "..f33ee44f..",
+  ".f333ee444f.",
+  ".fbbbbbbccf.",
   "..c......c..",
 ]
 
@@ -137,16 +139,16 @@ frames = []
 moving = [6, 7, 8]
 anchor = [1, 1]
 rows = [
-  ".feeef",
-  "fbeeccf",
-  "fbeeccf",
+  ".feef",
+  "f2eecf",
+  "f3eecf",
   "fcccdf",
 ]
 
 # ---- The HQ: a tall temple on a three-step podium, seen from above and the right: a dark outline all round, the roof's lit slopes behind the
 # shaded gable with its gold sun, columns with a highlight and a shadow stripe and deep gaps between them, the side wall in shadow, each step with a lit top and a dark
 # riser; light from the top left. Built to AW2's HQ rules (`aw2dev armyskin check` measures them). 16x32, `.` clear, hex digits are the building
-# palette's indices (1 white, 2..5 the body ramp light to dark, b AW2's pale strip, c d cream, e the skin's gold).
+# palette's indices (1 white, 2..5 the body ramp light to dark, c d cream, e the skin's gold).
 [hq]
 rows = [
   "................",
@@ -159,46 +161,48 @@ rows = [
   "...5233534445...",
   "..524453453335..",
   "..52323ce45445..",
-  ".52323dcee55445.",
-  ".5223deeeee5535.",
-  ".52344eeee44555.",
-  ".23444444444455.",
-  "522222222222225.",
-  "54e44e44e44e445.",
-  "555555555555555.",
-  "523323323323545.",
-  "524524524524545.",
-  "524524524524545.",
-  "524524524524545.",
-  "524524524524545b",
-  "524524524524545b",
-  "524524524524545b",
-  "524524524524545b",
-  "535535535535545b",
-  ".22333333333335b",
-  ".45545545545545b",
-  "223333333333335b",
-  "555555555555555b",
-  "223333333333335.",
-  "555555555555555.",
+  ".52234dcee45545.",
+  "52234deeeee45535",
+  "523444eeee444555",
+  "2344444444444455",
+  "5222222222222225",
+  "54e44e44e44e44e5",
+  "5555555555555555",
+  "5233233233235445",
+  "5245245245245445",
+  "5245245245245445",
+  "5245245245245445",
+  "5245245245245445",
+  "5245245245245445",
+  "5245245245245445",
+  "5245245245245445",
+  "5355355355355445",
+  ".223333333333335",
+  ".455455455455455",
+  "2233333333333335",
+  "5555555555555555",
+  "2233333333333335",
+  "5555555555555555",
 ]
 
+# ---- The emblem: a sun on a pale square: a dark frame with a light inner line and a shadow, eight straight rays (four long, on the axes, and four short, on
+# the diagonals) round an eight-pixel ring with a dark dot. 16x16; 1 white, 2 shadow; a, b, c the dark, mid and light of the emblem colour the skin sits on.
 [emblem]
 rows = [
-  "................",
-  "aaaaaaaaaaaaa...",
-  "a11111a11111a2..",
-  "a1a111a111a1a2..",
-  "a11a11111a11a2..",
-  "a1111aaa1111a2..",
-  "a111aabaa111a2..",
-  "aaa1abbba1aaa2..",
-  "a111aabaa111a2..",
-  "a1111aaa1111a2..",
-  "a11a11111a11a2..",
-  "a1a111a111a1a2..",
-  "a11111a11111a2..",
-  "aaaaaaaaaaaaa2..",
-  ".2222222222222..",
+  "aaaaaaaaaaaaaa..",
+  "acccccccccccca2.",
+  "ac1111bb1111ca2.",
+  "ac1b11bb11b1ca2.",
+  "ac11b1bb1b11ca2.",
+  "ac1111bb1111ca2.",
+  "acbbbbaabbbbca2.",
+  "acbbbbaabbbbca2.",
+  "ac1111bb1111ca2.",
+  "ac11b1bb1b11ca2.",
+  "ac1b11bb11b1ca2.",
+  "ac1111bb1111ca2.",
+  "acccccccccccca2.",
+  "aaaaaaaaaaaaaa2.",
+  ".22222222222222.",
   "................",
 ]

@@ -286,3 +286,81 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
         import shutil
         shutil.rmtree(out, ignore_errors=True)
     return fails, rep
+
+
+# ---------------------------------------------------------------------------------------------------------------- originality
+MAX_LOOK_ALIKE = 0.60   # the share of foreground pixels (colour ignored) our helmet's additions or our logo's sun may share with the reference picture's
+
+
+def _fg(im, rows=None):
+    """A unit picture's silhouette (alpha), optionally only its first `rows` rows."""
+    im = im.convert("RGBA")
+    return {(x, y) for y in range(im.height if rows is None else rows) for x in range(im.width) if im.getpixel((x, y))[3] > 0}
+
+
+def _shift(m, dx, dy, flip=False, w=16):
+    return {((w - 1 - x if flip else x) + dx, y + dy) for x, y in m}
+
+
+def _jaccard(a, b):
+    u = len(a | b)
+    return len(a & b) / u if u else 0.0
+
+
+def _best(a, b, reach=3, w=16):
+    """The best Jaccard ratio of `a` with `b` over every offset up to `reach` and both mirrorings: (ratio, dx, dy, mirrored)."""
+    return max((_jaccard(a, _shift(b, dx, dy, f, w)), dx, dy, f) for dx in range(-reach, reach + 1) for dy in range(-reach, reach + 1) for f in (False, True))
+
+
+def _logo_fg(im, margin):
+    """The sun of a logo: the pixels inside the frame that are not the commonest colour there (the pale ground), so frames and square backgrounds do not count."""
+    from collections import Counter
+    im = im.convert("RGBA")
+    inner = [(x, y, im.getpixel((x, y))) for y in range(margin, im.height - margin - 1) for x in range(margin, im.width - margin - 1) if im.getpixel((x, y))[3] > 0]
+    common = Counter(p[:3] for _, _, p in inner).most_common(1)[0][0]
+    return {(x - margin, y - margin) for x, y, p in inner if p[:3] != common}
+
+
+def originality(awbw_dir, host=3, skin_path=None):
+    """Local only: needs the reference pictures (never committed). How much of our helmets and logo is the reference's, by pixel masks, colour ignored, at the best
+    offset (mirrored too):
+    - helmet: both pictures are AW2's soldier with a helmet, so what is compared is what each changed in the head's rows 0..8 against AW2's own soldier
+      (the added and removed pixels), and the whole silhouette must be no closer to the reference than AW2's own soldier is;
+    - logo: the sun inside the frame (the frame is drawn differently anyway)."""
+    from pathlib import Path
+    from . import foot, emblem
+    d = Path(awbw_dir)
+    fails, rep = [], ["originality against the reference pictures (share of the foreground pixels two pictures have in common at the best offset, colour ignored; needs <= %.2f):" % MAX_LOOK_ALIKE]
+    sk, base = Rom(host, skin_path), Rom()
+    pal = sk.pal(UNIT_PAL + 32 * (host - 1))
+    bpal = base.pal(UNIT_PAL + 32 * (host - 1))
+    for name, unit in (("jsinfantry", 1), ("jsmech", 2)):
+        ref = d / f"{name}.gif"
+        who = ("Infantry", "Mech")[unit - 1]
+        if not ref.exists():
+            rep.append(f"  {name}: no reference file ({ref})")
+            continue
+        ours, aw2 = _fg(foot(sk, host, unit, 0, pal, 1, skin=True), 9), _fg(foot(base, host, unit, 0, bpal, 1), 9)
+        theirs = _fg(Image.open(ref), 9)
+        # (the reference's soldier is AW2's, mirrored: align AW2's to it, then what it changed)
+        _, dx, dy, f = _best(theirs, aw2, 2)
+        theirs_changed = theirs ^ _shift(aw2, dx, dy, f)
+        ours_changed = ours ^ aw2
+        r, ox, oy, of = _best(ours_changed, theirs_changed)
+        sil, _, _, _ = _best(ours, theirs)
+        own = _best(aw2, theirs)[0]
+        rep.append(f"  helmet {who:8s} what we changed against what it changed: {r:.2f} (offset {ox},{oy}{', mirrored' if of else ''}); whole silhouette {sil:.2f}, AW2's own soldier {own:.2f}")
+        if r > MAX_LOOK_ALIKE:
+            fails.append(f"originality: the {who}'s helmet changes {r:.2f} of the same pixels as the reference ({MAX_LOOK_ALIKE} at most)")
+        if sil > own + 0.02:
+            fails.append(f"originality: the {who}'s silhouette ({sil:.2f}) is closer to the reference than AW2's own soldier is ({own:.2f})")
+    ref = d / "jslogo.gif"
+    if ref.exists():
+        a, b = _logo_fg(emblem(sk, host, 1), 2), _logo_fg(Image.open(ref), 1)
+        r, ox, oy, of = _best(a, b, 3, 10)
+        rep.append(f"  logo (the sun inside the frame) {r:.2f} (offset {ox},{oy}{', mirrored' if of else ''})")
+        if r > MAX_LOOK_ALIKE:
+            fails.append(f"originality: the logo's sun shares {r:.2f} of its pixels with the reference ({MAX_LOOK_ALIKE} at most)")
+    else:
+        rep.append(f"  logo: no reference file ({ref})")
+    return fails, rep

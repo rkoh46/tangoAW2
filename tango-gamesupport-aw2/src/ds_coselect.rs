@@ -561,7 +561,7 @@ pub struct Cell {
     /// None: a locked CO (a black cell).
     pub mug: Option<Arc<Mug>>,
     /// The pick's flag: (army colour 0..4, 1 or 2).
-    pub flag: Option<(u8, u8)>,
+    pub flag: Option<(u8, u8, Option<usize>)>,
 }
 
 pub struct PickView {
@@ -619,6 +619,13 @@ fn skin_emblem(cv: &mut Canvas, skin: usize, x: i32, y: i32) {
             cv.put(x + (i % 16) as i32, y + (i / 16) as i32, [r, g, b, 255]);
         }
     }
+}
+
+/// The skin the Teams screen's army of colour `colour` (0..4) has chosen.
+fn teams_skin_of_colour(core: &Core, colour: u8) -> Option<usize> {
+    let five = crate::five::active(core);
+    let colours = if five { TEAMS_FIVE + 0x98 } else { TEAMS + 0x0D };
+    (0..crate::tag_ui::armies(core)).find(|&k| core.raw_read_8(colours + k, -1).clamp(1, 5) - 1 == colour).and_then(|k| crate::army_skin::teams_skin(core, k))
 }
 
 fn card(cv: &mut Canvas, a: &Art, x: i32, c: &Card, active: Option<bool>) {
@@ -693,7 +700,26 @@ fn panel(cv: &mut Canvas, a: &Art, x: i32, y: i32, body: usize) {
     }
 }
 
-fn flag(cv: &mut Canvas, a: &Art, x: i32, y: i32, colour: u8, number: u8) {
+/// The palette entries the flags of one army use that no other army's flags do (an army's colours): found from the tiles.
+fn flag_army_entries(a: &Art, colour: u8) -> u16 {
+    let used = |set: usize| -> u16 {
+        let mut m = 0u16;
+        for t in 0..4usize {
+            for y in 0..8 {
+                for x in 0..8 {
+                    m |= 1 << tile_px(&a.badges, 12 + 4 * set + t, x, y);
+                }
+            }
+        }
+        m & !1
+    };
+    let own = (colour as usize).min(3) * 2;
+    let mine = used(own) | used(own + 1);
+    let others = (0..8usize).filter(|k| k / 2 != own / 2).fold(0u16, |m, k| m | used(k));
+    mine & !others
+}
+
+fn flag(cv: &mut Canvas, a: &Art, x: i32, y: i32, colour: u8, number: u8, skin: Option<usize>) {
     let mut pal = a.badge_pal;
     let k = if colour >= 4 {
         // Black Hole's flag: the red one in Black Hole's dark purple (Dual Strike has none; its card's grey did not show on
@@ -703,6 +729,10 @@ fn flag(cv: &mut Canvas, a: &Art, x: i32, y: i32, colour: u8, number: u8) {
     } else {
         colour as usize * 2 + (number as usize - 1)
     };
+    if let Some(i) = skin {
+        // (an army wearing a skin: its flag in the skin's colours)
+        pal = crate::army_skin::recolour_entries(i, &pal, flag_army_entries(a, colour.min(3)));
+    }
     cv.sprite(&a.badges, 12 + 4 * k, 2, 2, x, y, &pal);
 }
 
@@ -732,8 +762,8 @@ fn cell(cv: &mut Canvas, a: &Art, x: i32, y: i32, c: &Cell) {
         cv.put(x, y + j, black);
         cv.put(x + 47, y + j, black);
     }
-    if let Some((colour, n)) = c.flag {
-        flag(cv, a, x + 32, y, colour, n);
+    if let Some((colour, n, skin)) = c.flag {
+        flag(cv, a, x + 32, y, colour, n, skin);
     }
 }
 
@@ -1070,7 +1100,7 @@ fn pick_view(core: &Core) -> Option<PickView> {
         .all
         .iter()
         .map(|&c| {
-            let flag = flags.iter().find(|f| f.1 == c).map(|f| (f.0, f.2));
+            let flag = flags.iter().find(|f| f.1 == c).map(|f| (f.0, f.2, teams_skin_of_colour(core, f.0)));
             Cell { mug: g.offered.contains(&c).then(|| mug(core, c)).flatten(), flag }
         })
         .collect();

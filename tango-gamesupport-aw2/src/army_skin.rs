@@ -716,6 +716,21 @@ pub fn ds_row(skin_index: usize, own: &[u16; 16], all: &[[u16; 16]]) -> [u16; 16
     skin(skin_index).hue_row(own, &all[..all.len().min(4)])
 }
 
+/// The entries `mask` (bit i: entry i) of a palette are the army's: they take the skin's ramp by brightness rank, the rest stay. For art whose army-coloured entries
+/// are found by what the tiles use (Dual Strike's pick flags).
+pub fn recolour_entries(skin_index: usize, orig: &[u16; 16], mask: u16) -> [u16; 16] {
+    let sk = skin(skin_index);
+    let mut out = *orig;
+    let mut army: Vec<usize> = (0..16).filter(|&i| mask >> i & 1 == 1).collect();
+    army.sort_by(|&a, &b| lum(orig[b]).partial_cmp(&lum(orig[a])).unwrap().then(a.cmp(&b)));
+    let m = army.len();
+    for (rank, &i) in army.iter().enumerate() {
+        let at = if m > 1 { (rank * 5 + (m - 1) / 2) / (m - 1) } else { 2 };
+        out[i] = sk.ramp[at.min(5)];
+    }
+    out
+}
+
 /// The same for a palette as bytes (BGR555, little endian, 32 bytes).
 pub fn ds_row_bytes(skin_index: usize, own: &[u8; 32], all: &[[u8; 32]]) -> [u8; 32] {
     let w = |b: &[u8; 32]| -> [u16; 16] { std::array::from_fn(|i| u16::from_le_bytes([b[2 * i], b[2 * i + 1]])) };
