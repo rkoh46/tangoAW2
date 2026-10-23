@@ -49,7 +49,7 @@ const DATA_SENTINEL: u32 = ROM_DATA + 0xFC;
 /// Black Hole's turn-banner colours (BG palette 9), next to the game's four
 /// (`0x080A1238`, by colour; AW2 has none for Black Hole, and colour 5 read
 /// past the table: a near-black stripe).
-const BANNER5: u32 = ROM_DATA + 0x100;
+pub const BANNER5: u32 = ROM_DATA + 0x100;
 const BANNER_PALETTES: u32 = 0x080A_1238;
 const DATA_MAGIC: u32 = 0x3541_5754; // "TWA5"
 

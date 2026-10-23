@@ -846,6 +846,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         let ds_features = crate::ds_art::features(mode);
         core.raw_write_8(crate::ds_art::ART_ON, -1, ds_features as u8);
         crate::five::sync(core);
+        crate::army_skin::sync(core);
+        crate::army_skin::sync_map_art(core);
         crate::obelisk::install(core);
         crate::branding::tick(core);
         // Dual Strike's unit stats and damage chart, with the pack on.
@@ -928,6 +930,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         }
         if in_battle(core) {
             core.raw_write_8(DESIGN_PRESET_DONE, -1, 0);
+            crate::army_skin::teams_left(core);
         }
         // Dual Strike's Survival (offline: its War Room is single-player).
         keys = crate::survival::tick(core, ds && mode.is_none(), keys, prev);
@@ -945,9 +948,15 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 0.4.0); with it, SELECT opens the Set Skills panel
         // (crate::skills_panel). Campaign and War Room never reach this
         // screen, so their story armies are untouched.
-        if in_versus(core) && on_teams_screen(core) && !crate::five::active(core) {
-            let armies = (core.raw_read_8(TEAMS_ARMIES, -1) as u32).clamp(1, 4);
-            first_teams_frame(core, armies);
+        if in_versus(core) && on_teams_screen(core) {
+            let five = crate::five::active(core);
+            let armies = crate::tag_ui::armies(core);
+            let rec = crate::tag_ui::record(core);
+            let colours_at = rec + if five { 0x98 } else { 0x0D };
+            crate::army_skin::teams_frame(core);
+            if !five {
+                first_teams_frame(core, armies);
+            }
             let pressed = keys & !prev;
             let forward = if ds { KEY_R } else { KEY_R | KEY_SELECT };
             let step = if pressed & forward != 0 {
@@ -958,11 +967,12 @@ impl tango_backend_mgba::SharedGame for Aw2 {
                 0
             };
             if step != 0 {
-                let slot = (core.raw_read_8(TEAMS_CURSOR, -1) as u32 / 2).min(armies - 1);
-                let colour = cycle_colour(core, slot, armies, step);
-                core.raw_write_8(TEAMS_COLOUR + slot, -1, colour);
+                let slot = (core.raw_read_8(rec + 0x32, -1) as u32 / 2).min(armies - 1);
+                crate::army_skin::teams_step(core, colours_at, slot, armies, step, five);
             }
-            show_emblems(core, armies);
+            if !five {
+                show_emblems(core, armies);
+            }
             // The Teams screen has no use for these; keep them ours.
             keys &= !(KEY_SELECT | KEY_L | KEY_R);
         }

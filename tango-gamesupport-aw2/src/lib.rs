@@ -11,6 +11,7 @@ pub mod ui {
 }
 
 pub mod battle_points;
+pub mod army_skin;
 pub mod branding;
 pub mod history;
 pub mod history_ui;

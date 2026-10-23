@@ -1,0 +1,117 @@
+# Emerald Sun: tangoAW2's own sixth army, inspired by the Jade Sun of Advance Wars By Web.
+# Everything in this file is original work of this repository (GPL-3.0-or-later): colours and
+# pixel art drawn here, applied at run time on top of Advance Wars 2's own graphics read from
+# the player's ROM. Nothing from AWBW or from any game is copied. Format: docs/dev/army-packs.md.
+
+id = "emerald_sun"
+name = "Emerald Sun"
+short = "ES"
+
+# Colours are RRGGBB. The body ramp of every unit and building, light to dark: weathered jade,
+# a cool grey-green (verdigris stone), far from Green Earth's leaf green.
+[colours]
+ramp = ["B4D6C6", "8CBCAA", "689E8C", "4A8070", "326055", "20413B"]
+# The trim greys of AW2's unit palette (tracks, barrels, metal): bronze.
+trim = ["C4AC74", "967C4C", "685430"]
+# Crests, plumes and sun rays: legion red.
+crest = "D02C3C"
+# The sun itself on the emblem and the HQ.
+gold = "E8C25A"
+gold_dark = "A87C2C"
+# How much of the ramp the grey of a unit that has moved keeps (0..1).
+moved_tint = 0.3
+
+# ---- Infantry and Mech: AW2's Green Earth soldiers with a legion crest -----------------------
+# The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a
+# unit palette index (2..7 the body ramp light to dark, e the crest red, f the outline).
+[infantry]
+base = 3
+[[infantry.patch]]
+x = 0
+y = 0
+rows = [
+  ".......fffffff..",
+  "......feeeeeeef.",
+  ".....f4213446fef",
+  ".....f4212345fef",
+]
+
+[mech]
+base = 3
+[[mech.patch]]
+frames = [0, 1]
+x = 0
+y = 0
+rows = [
+  ".....feeeeeeef..",
+  "....f4213446fef.",
+]
+[[mech.patch]]
+frames = [2]
+x = 0
+y = 0
+rows = [
+  "......fffffff...",
+  ".....feeeeeeef..",
+  "....f4213446fef.",
+]
+
+# ---- The HQ: a temple with a sun in its pediment. 16x32, `.` clear, hex digits are the building
+# palette's indices (1 white, 2..5 the body ramp light to dark, b shadow).
+[hq]
+rows = [
+  "................",
+  "................",
+  ".......11.......",
+  "......1221......",
+  ".......33.......",
+  "......3333......",
+  ".....334433.....",
+  "....33441133....",
+  "...3344111133...",
+  "..334441111433..",
+  ".33444411114433.",
+  "2222222222222222",
+  "5555555555555555",
+  "5235235235235235",
+  "5235235235235235",
+  "5235235235235235",
+  "5235235235235235",
+  "5235235235235235",
+  "5235235235235235",
+  "5235235235235235",
+  "2222222222222222",
+  "3333333333333333",
+  "3344444444444443",
+  "4444444444444444",
+  "3333333333333333",
+  "4444444444444444",
+  "4444444444444444",
+  "4444444444444444",
+  "4444444444444444",
+  "5555555555555555",
+  "4444444444444444",
+  "4444444444444444",
+]
+
+# ---- The emblem: a sun. 16x16; 1 white, 2 shadow; a, b, c the dark, mid and light of the emblem
+# colour the skin sits on.
+[emblem]
+rows = [
+  "................",
+  "aaaaaaaaaaaaa...",
+  "a11111111111a2..",
+  "a11111a11111a2..",
+  "a11a11a11a11a2..",
+  "a111aaaaa111a2..",
+  "a11aabbbaa11a2..",
+  "a1aabbcbbaa1a2..",
+  "a11aabbbaa11a2..",
+  "a111aaaaa111a2..",
+  "a11a11a11a11a2..",
+  "a11111a11111a2..",
+  "a11111111111a2..",
+  "aaaaaaaaaaaaa2..",
+  ".2222222222222..",
+  "................",
+]

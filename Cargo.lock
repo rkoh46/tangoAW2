@@ -6179,6 +6179,7 @@ dependencies = [
  "tango-gamesupport-common-dataview",
  "tango-gamesupport-common-ui",
  "tango-match",
+ "toml 0.8.23",
 ]
 
 [[package]]
