@@ -98,6 +98,7 @@ fn es14() -> MissionDef {
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(scene("m14_day4")), Action::Custom(cassius_changes_sides)]),
         after(Cond::All(vec![owns(DOCK1.0, DOCK1.1), owns(DOCK2.0, DOCK2.1)]), vec![Action::Win]),
+        on_day(m.day_limit + 1, None, vec![Action::Lose]),
     ];
     m.flag = region::ACT4[1];
     m.stars = 4;

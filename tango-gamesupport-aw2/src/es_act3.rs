@@ -109,6 +109,8 @@ fn es11() -> MissionDef {
         on_day(5, None, vec![Action::Scene(scene("m11_day5"))]),
         after(Cond::All(APCS.iter().map(|&n| Cond::NamedIn { name: n, area: CAMP }).collect()), vec![Action::Win]),
         after(Cond::Any(APCS.iter().map(|&n| Cond::UnitGone(n)).collect()), vec![Action::Lose]),
+        // (the header's day limit is only shown: the rule is a trigger)
+        on_day(m.day_limit + 1, None, vec![Action::Lose]),
     ];
     m.flag = region::ACT3[2];
     m.stars = 3;
