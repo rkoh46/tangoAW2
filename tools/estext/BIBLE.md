@@ -41,7 +41,9 @@ Klaus, Aurelia, Cassius and Livia speak in camp scenes ungated whoever the playe
 - M3: Aurelia's first scene as a commander. M4: Cassius appears in person as the rival (the Second Legion) and joins in M4's post. M5: Cassius leads. M6: Livia leads.
 - M7: any of the four. M8: Klaus + Cassius (forced pair, the first Tag). M9, M10, M11: any (the player's pick). M10's post: Kanbei becomes a Tag partner.
 - M12: Klaus + Aurelia (forced pair). M13: any pair. M14: Klaus + a free partner. M15: any pair. M16: Klaus + a free partner.
-- Varro appears by radio from M5 on (the Senate's letters), in person in M14 (on the Praetorian flagship's radio), M15 and M16.
+- Varro appears by radio and letter from M5 on (the Senate's letters), on the radio in M14's briefing and in person in M14's post (he falls in M14: the legion storms his camp, Castra Maxima). **He never appears after M14**: not in M15, not in M16, not in the epilogue.
+- Cassius changes sides on day 4 of M14 (after Livia's page of the Free Port book, with HOBB's stamp on Varro's gold, M13 post) and is Klaus's ally for good from then on.
+- M15: Drake (Green Earth, ships) and Sensei (Yellow Comet, air) hold the Strait of Elms for the Accord; Nell calls on day 6. No Eagle, no Varro, no allied relief fleets. M16: Eagle (Green Earth) and Hachi (Orange Star) hold Stormhold; Nell arrives at the gate in the post scene.
 
 ## Voices (one file of rules per speaker; keep them distinct on the page)
 - **KLAUS**, Legate, the player's chief commander: stern, fair, dry, a veteran. NEVER contractions in his speech, no exclamation marks, short orders, gives credit last. A man who reads a crime scene
@@ -52,8 +54,9 @@ Klaus, Aurelia, Cassius and Livia speak in camp scenes ungated whoever the playe
   about anything unwelcome. Calls Klaus "old man" and "Klaus". Under the vanity he is honest; his sealed letter (take the north's granaries) is what he is ashamed of from M8 on.
 - **LIVIA**, Quaestor (treasurer): poised, polite, exact, calculating, a little frightening about money. NEVER contractions. Never raises her voice. Says "Legate", "Prefect", "Chief". Everything is
   a ledger, a due date, an interest rate; a threat is a statement of terms. The campaign's one joke a mission is hers, and it is dry as paper.
-- **VARRO**, Consul, Klaus's old patron, antagonist: smooth, paternal, senatorial periods; kind to everyone he is about to use; never shouts; says "my boy" to Klaus. Money for the legions came from him
+- **VARRO**, Consul, Klaus's old patron, the Senate's war-hawk, antagonist until M14 (then arrested; his last scene is a resigned "my boy"): smooth, paternal, senatorial periods; kind to everyone he is about to use; never shouts; says "my boy" to Klaus. Money for the legions came from him
   and he did not ask where it came from; he reads every hunger as an opportunity. Menace by courtesy.
+- **HACHI**, Orange Star's veteran who runs the general store: a merchant-veteran, dry, practical, haggling talk, calls Klaus "customer" or "friend" sarcastically, hates waste, sold the whole army its nails, fights with cheap units and deep stores (Barter, Merchant Union). **EAGLE** is proud and cocky, "Death from above!", Green Earth does not kneel; the two talk to each other like an Advance Wars double act. They defend their homes: not villains.
 - **Allies and others** are in their own Advance Wars voices (Jess plain-spoken and cheerful about the Green Earth coast; Eagle "Death from above!" cocky; Drake "dude" surfer calm; Javier chivalrous, oaths of
   the towers; Grimm loud; Sensei an old man who needles; Kanbei formal honour, no contractions; Sonja cool, mocks gently, keeps a black book signed "S."; Colin rich and brash; Sasha cold and clipped;
   Olaf booming optimist; Grit slow drawl, loves a long shot; Max blunt; Jake keen; Nell the diplomat who chairs the Accord; Adder flourishes his cape; Flak is simple, hungry and loyal to whoever pays;
@@ -61,6 +64,10 @@ Klaus, Aurelia, Cassius and Livia speak in camp scenes ungated whoever the playe
 - **NARRATION** is spare: place and time, one or two images.
 
 ## The story rules (continuity, in short; the outline has the rest)
+- **The theme is conquest.** The legion is invading: landings, marches, sieges, cities and HQs taken, provinces falling, the frontier moving outward from Green Earth's south coast to Stormhold. Say what falls, how far the frontier has
+  moved, what the next gate is, how the locals and officers feel about being conquered or conquerors. Only M2 (hold the ridge) and M11 (the convoy) are defensive. Underneath runs the inquiry: Klaus conquers because the trail leads through
+  the Accord's archives. M6 is capture-only (14 properties at once by day 16; the audit is day 17). M14 is an assault on Castra Maxima. Stormhold (M16) has the Salt Road (coast), the Weir Valley (river), Needle Pass (high pass),
+  the Quay Ward, Falcon Field (the airfield), the Market Ward (Hachi's store), the Sunrise Gate, the Citadel and the Hall of Records (the archives).
 - Aurea starves: three grey harvests, ash on the wind. The relief grain came from **HOBB Grain & Freight**: no office, no owner, a stencil on every crate, a creditor's stamp on every bill. The Senate split
   its orders: find who feeds us (Klaus, in writing) and, if there is nobody, take the north's granaries (Cassius, a sealed letter). **Never reveal who HOBB is.** The BH2 hooks are the **HOBB stencil** (Livia
   recognises the mark from a bill and never says where; the same mark is on Black Hole's crates) and the **black light on the northern horizon** the night the campaign ends (nobody knows what it is). Plant them; do not explain them.
@@ -68,7 +75,7 @@ Klaus, Aurelia, Cassius and Livia speak in camp scenes ungated whoever the playe
   cargo against what they read as raiders. Adder and Flak (M9), Kindle (M13) are officers of the freight yards, with their own manners; no event of the BH Campaign is referred to, no spoilers for BH2.
 - The Allies (Orange Star, Blue Moon, Green Earth, Yellow Comet) are jumpy after the Cinder Coast fence fell; everyone assumes the green fleet is Black Hole's next trick. Each nation's scene shows it misreading the legion,
   and Klaus, over the campaign, making himself understood.
-- Cassius is the antagonist of M4 only; then a rival who becomes an ally in his own time (M8 reluctantly, M14 by choice).
+- Cassius is the antagonist of M4 only; then a rival who becomes an ally in his own time (M8 reluctantly, M14 by choice, on day 4, for good).
 - Klaus's tone about the grain: he has seen the ash too; "someone is feeding us on purpose."
 - No scene may state an objective that the mission does not have. The objectives are in the table of outline section 4 (and the mission list below).
 
@@ -91,9 +98,9 @@ Every mission has `mNN_pre` (the briefing and the stakes), `mNN_post` (after the
 | 11 | The Treasure Train | marauders: Lash, Flak | `m11_day5`: the ford; Cassius's choice, the shortcut or the road |
 | 12 | Siege of Iron (tag) | Blue Moon: Olaf, Grit | `m12_day5`: Grit's guns; Aurelia's plan |
 | 13 | The Free Port | Green Earth (Javier), Yellow Comet (Sonja), Black Hole (Kindle), four armies, no alliances | `m13_day4`: Kindle burns a dock; Sonja moves in |
-| 14 | Varro's Gambit | Varro's Praetorians; Cassius changes sides | `m14_day4`: Cassius changes sides on the radio |
-| 15 | Pax Romana (tag) | Varro's navy and air wing; the Accord's ships come | `m15_day6`: Nell's fleet arrives |
-| 16 | Sol Invictus | Varro, boss, in Port Aurelium | `m16_phase2` (the walls), `m16_phase3` (the keep), `m16_varro` (Varro's Super Power is ready), then post, `m16_map` (the council), `m16_epilogue` |
+| 14 | Varro's Gambit | Varro's Praetorians in Castra Maxima, their seaside camp (the legion storms it) | `m14_day4`: Cassius changes sides on the radio; `m14_post`: Varro falls |
+| 15 | Pax Romana (tag) | the Accord's strait fleet: Drake (ships) and Sensei (air) | `m15_day6`: Nell offers the table; the fleet fights on |
+| 16 | Sol Invictus | Eagle and Hachi, allied, at Stormhold | `m16_phase2` (the outer wards), `m16_phase3` (the Citadel), `m16_reserves` (day 6: the defenders unleash their reserves), then `m16_post`, `m16_post2` (the Hall of Records), `m16_map` (the Accord's table), `m16_epilogue`, `m16_epilogue2` |
 Plus `prologue` (narration only, rows by NARRATION: the grey harvest, the Senate's two letters; 8 to 14 pages; song `opening`).
 
 What each scene should do (beats in the outline's table of section 5, column by column): the **pre** gives place, danger, the plan and a relationship moment; the **post** closes the fight, reveals one
@@ -103,7 +110,7 @@ new fact about the grain trail or the war, and moves a relationship; the **map**
 `opening enemy1 enemy2 ally1 ally2 entry pinch hagevolt red blue sturm doom final ending1 ending2`, `world_map`, `aw2:<id>`, `co:<name>` (that CO's theme). Plan (outline section 7):
 camp scenes (Klaus and his officers) `ally2`; the Senate and Varro `enemy1` (cold) or `enemy2` (when he gloats); a new CO's introduction `entry`; the Accord's council `ally1`; a nation's scene `aw2:421` Green Earth,
 `aw2:422` Yellow Comet, `aw2:423` Blue Moon, Orange Star `ally1`; Kanbei's scene `co:kanbei`; Sonja `enemy2`; the HOBB ledger scenes (M6 map, M9 post, M13 post) `hagevolt`; crises `pinch`; the Black Hole yards
-(M9, M13) `enemy1`; M16 pre and post `sturm`, Varro's last words `doom`; the ending `ending1`, the black light on the horizon `ending2`. A scene on the world map after a win starts with the
+(M9, M13) `enemy1`; M16 pre and post `sturm`, Varro's fall (M14 post) `doom`; the ending `ending1`, the black light on the horizon `ending2`. A scene on the world map after a win starts with the
 song of its speakers; the engine puts the map's song after it.
 In one file a `map` scene can be chained of several parts: write separate scenes `m06_map`, `m06_map2` ... each with its own @SONG; the code plays them one after another. Say in your report which keys you used.
 

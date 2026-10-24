@@ -14,6 +14,7 @@ AURELIA: He gave you a road and a / clock. Read the clock first.
 CASSIUS: Chief, I read nothing. I / ride. Reading is for old men.
 KLAUS: Then I will read it for you. / The Comet border guard will blow
 KLAUS: the three bridges on day ten. / Beyond the river stand the posts.
+KLAUS: Beyond them lies Yellow Comet. We cross / as conquerors, so we cross fast.
 KLAUS: Take all three. If the bridges / fall, the legion waits for thaw.
 LIVIA: Which costs, for every day of / delay, four hundred measures
 LIVIA: of grain we do not have. I / shall not repeat the figure.
@@ -56,6 +57,8 @@ CASSIUS(h): He said it. Did you hear? / A stranger! A Comet man!
 AURELIA: We heard. The whole valley / heard. Please stop repeating it.
 SENSEI: Your people march because / the bread stopped, they say.
 SENSEI: My villages say the same of / winter. Hm. Strange company.
+KLAUS: The border is behind us. The / first Comet province lies open.
+SENSEI: Open, yes. Whether it welcomes / you is another matter. Hm.
 KLAUS: Cassius. The posts were taken / with two days in hand.
 CASSIUS: Say it, old man. Go on.
 KLAUS: ...It was well ridden.
@@ -76,6 +79,7 @@ KLAUS: Consul. You are kind. I would / ask who pays for the road.
 VARRO: Aurea pays, my boy. It always / has. Take what you need.
 VARRO: The treasury is open. Ask / nothing about the coin. Ask
 VARRO: only for more road. A hungry / people forgives a long march.
+VARRO: Every province you take is a / granary I can name to the Senate.
 LIVIA: He did not say where the / treasury is coming from.
 KLAUS: No. He was careful. Very / careful, for a man who is kind.
 KLAUS: Write the figure down. We / will ask again, in person.
@@ -95,10 +99,10 @@ COLIN: Counterfeit! Bold of you to / pay in it, honestly.
 LIVIA: The coin is struck by the / Senate's mint. I can show you.
 SASHA: You can show us a receipt. / We do not accept receipts.
 LIVIA: Then I shall show you what / I do accept. Legate, the map.
-KLAUS: The market square is the / key. Fourteen properties held at once,
-KLAUS: or the square held for sixteen / days, when the Senate audits.
-LIVIA: The auditors inspect my books / on day sixteen. If the square
-LIVIA: is not mine, the credit is / withdrawn. All of it.
+KLAUS: The whole town is the target. / Fourteen properties, owned at once,
+KLAUS: at the end of any day before / the sixteenth. Capture, nothing else.
+LIVIA: The Senate's auditors arrive on / day seventeen. If I cannot show
+LIVIA: fourteen properties on my books, / the credit is withdrawn. All of it.
 COLIN: Ha! And we out-produce you / three to one! Look at my factories!
 SASHA: Colin. Do not show them / the factories.
 LIVIA: Thank you, Colin. You have / just told me three things.
@@ -106,8 +110,9 @@ COLIN: ...Did I? Sasha, did I?
 SASHA: Yes. You always do.
 LIVIA: Your hours, your output and / your temper. I shall use all three.
 LIVIA: A tank is a debt with a gun / on it. I have settled larger.
-SASHA: Then settle this one. We / hold the square. Come and take it.
-LIVIA: Gladly. At the usual rate / of exchange. Legate, advance.
+SASHA: Then settle this one. We hold every / deed in Halcyon. Come and take them.
+LIVIA: Gladly. Each capture is a deed / transferred, at the usual rate.
+KLAUS: Advance.
 
 == m06_day6
 LEGIONARY: Quaestor! A crowd at the / counting house! They want coin!
@@ -119,7 +124,7 @@ LIVIA: A run is a queue. A queue / is a schedule. I keep schedules.
 
 == m06_post
 @SONG aw2:423
-NARRATION: Day thirteen. Halcyon market / square. Fourteen properties.
+NARRATION: Day thirteen. Halcyon is taken. / Fourteen properties on the ledger.
 COLIN: Wowee. Fourteen. She counted / them like beans, Sasha.
 SASHA: She counted them like debts. / It is worse.
 COLIN: Quaestor Livia! No hard / feelings! I make you an offer!
@@ -143,6 +148,7 @@ KLAUS: I have lost a Quaestor to a / guild. Or perhaps gained a guild.
 == m06_map
 @SONG hagevolt
 NARRATION: Halcyon. Night. The clearing / house, after closing.
+KLAUS: Halcyon is taken. A trade town, / and its guild answers to Aurea now.
 LIVIA: The first bills arrived by / noon. Eleven hundred, in all.
 KLAUS: Is the coin accepted?
 LIVIA: Accepted. Even praised. Colin / has hung one on his wall.
@@ -165,6 +171,7 @@ KLAUS: When you are certain. I will / hold you to it. Not before.
 NARRATION: The Strait of Verdant. / Grey sea, grey ships, grey sky.
 NARRATION: Isle Verdant ahead. A harbour, / an airfield, a fleet.
 KLAUS: The island commands the strait. / Whoever holds the harbour holds it.
+KLAUS: And the sea-lane north with it. The / coast is ours. Now we take the water.
 AURELIA: Sea wall is rock, forty / paces thick. Cannon will not do.
 LIVIA: The Green Earth fleet is the / largest within two hundred leagues.
 CASSIUS: I want it noted that horses / and boats are not friends.
@@ -198,7 +205,7 @@ NARRATION: Isle Verdant. The harbour / gates are open. The sea is quiet.
 DRAKE: Dude. That was a real mess. / I mean that in a good way.
 EAGLE: I lost! Lost to a bunch of / sailors with shovels! Aargh!
 DRAKE: Eagle. Chill. They were not / sailors. They were cruisers.
-KLAUS: Drake. The harbour is open. / Your ships may leave.
+KLAUS: Drake. The harbour is Aurea's / now. Your ships may leave.
 DRAKE: Dude. I want to say / something first, okay?
 DRAKE: You kept the lanes clean. / You did not sink one fisher.
 DRAKE: You did not mine the strait. / My cousins fish there. Thanks.
@@ -208,7 +215,7 @@ DRAKE: So I think you are not / Black Hole. Black Hole mines things.
 KLAUS: We are not. We march on / our own account, and for bread.
 DRAKE: Bread. Dude. The nets came / up grey this spring. Ash. Weird.
 KLAUS: The same grey ash. It fell / on our fields for three years.
-DRAKE: Dude. For real? Then you are / not invading. You are... scared.
+DRAKE: Dude. For real? Then you are / invading, and scared. New one.
 KLAUS: I am hunting someone. When / I find him I will be less scared.
 EAGLE: Hey! Drake! Are we being / nice to them now?
 DRAKE: Yeah, Eagle. A bit. Nell is / going to want a word with them.
@@ -223,7 +230,8 @@ KLAUS: Speak, Madam Chair. I am / listening.
 NELL: Thank you. First: the Accord / has noticed the green fleet.
 NELL: Four reports, four theories. / All of them end with "invasion."
 KLAUS: Madam. The fleet sails openly. / We kept the fishing lanes clear.
-NELL: Armies that invade do not tell / the fishermen to stay home.
+NELL: Armies that invade seldom tell / the fishermen to stay home.
+NELL: You have taken three harbours of / ours, Legate. I do not forget it.
 NELL: I would like to believe you. / Truly. But Max will not.
 NELL: Orange Star's border force sits / at Ironhold. It will meet you.
 KLAUS: Then Max will meet me. I do / not want a fight with Orange Star.
@@ -237,6 +245,7 @@ KLAUS: Cassius. Be quiet. She is / being generous.
 @SONG ally1
 NARRATION: Ironhold, Orange Star. / A stone fort on an open plain.
 KLAUS: Ironhold. Stone walls, a / canal, a causeway. Three gates.
+KLAUS: Ironhold is the gate of Orange / Star. Take it and the frontier moves.
 CASSIUS: Then I take the plain! / A flank run, round the canal!
 KLAUS: No. You hold the causeway / and wait for the line.
 CASSIUS: Wait! I do not wait, old man! / I am the cavalry!
@@ -278,7 +287,7 @@ MAX: Jake. Be quiet. Legate Klaus. / I fought with my whole force.
 MAX: You beat me clean. I respect / that. I respect the legion.
 KLAUS: Commander Max. Your men / fought well. I regret the loss.
 MAX: Do not be sorry. I would have / done the same. What do you want?
-KLAUS: To pass north. And to know / who feeds my people.
+KLAUS: To take Ironhold, and pass / north. And to know who feeds my people.
 MAX: Bread? That is your war? Huh. / My sister would say that is odd.
 NELL: Hello, Max. Your sister / is on the line. Are you hurt?
 MAX: Nell! No. Only proud. Mostly.
@@ -305,6 +314,5 @@ LIVIA: Freight yards run it. Our / crates cross it twice a year.
 AURELIA: Then we do not sit down / yet. We go and look at the depot.
 KLAUS: Yes. First the trail. Then / the table. I will say so to Nell.
 CASSIUS(s): ...Klaus. About the table. / I should say something.
-KLAUS: Say it.
 CASSIUS: Never mind. The next time. / When I know how to say it.
 KLAUS: Then I will wait. I am / good at it. You know that.

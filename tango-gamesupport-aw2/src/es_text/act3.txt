@@ -10,6 +10,7 @@ LIVIA: The bill of lading says grain. / The creditor's stamp is the usual.
 KLAUS: Then the barges are the road. / Whoever loads them, we meet.
 AURELIA: The yards sit under a plateau. / A depot, an airfield, a ridge.
 AURELIA: Take Kite Hill and you own / every approach to the water.
+KLAUS: A hill, a depot, a coast. Take / them and the northern shore falls.
 CASSIUS: Wings! You have an airport / and I have a bad feeling.
 CASSIUS: Nobody taught my horses to / climb a plateau at a gallop.
 KLAUS: Your horses hold the coast / road. Someone must.
@@ -78,6 +79,7 @@ FLAK: I opened one once. It was sad. / I closed it. I gave it back.
 KLAUS: Quartermaster. Who ships it / into Aurea?
 ADDER: A very large account and a very / small stencil. Good day.
 LIVIA: I will check every bill we / have paid since the first spring.
+KLAUS: Raise the sun over the depot. / The northern coast is ours.
 
 == m09_map
 @SONG hagevolt
@@ -109,6 +111,7 @@ CASSIUS: It is perfect for cavalry. / No one sees you coming.
 CASSIUS: They also cannot see the / hole in the road. Details.
 KLAUS: Three roads and a goat track. / One summit. The Comet Pass.
 KLAUS: Whoever holds the summit / holds the road to the next sea.
+KLAUS: We have taken a coast, a fort and an / island. This is the roof of the frontier.
 LIVIA: And the road to the next / ledger. The trail goes north.
 LIVIA: A free port in the north buys / its grain through this pass.
 KLAUS: Then we climb. Recons first. / Copters above the ridge line.
@@ -149,7 +152,7 @@ KLAUS: They were in the way. I do / not leave men on a road.
 SONJA: Do continue. This is the first / duel I have enjoyed all month.
 KANBEI: One question, Legate, and I / ask it once. Why do you march?
 KLAUS: Because the bread stopped. And / because someone made it stop.
-KANBEI: Then you are no conqueror. / I still will not give you my pass.
+KANBEI: A conqueror who asks why. / I still will not give you my pass.
 KANBEI: Noon. We resume at noon, and / the best of us wins.
 
 == m10_post
@@ -157,6 +160,7 @@ KANBEI: Noon. We resume at noon, and / the best of us wins.
 NARRATION: The summit. The fog thins / and the Comet banner comes down.
 KANBEI: The pass is yours, Legate. I / was taught that a pass falls once.
 KANBEI: It is a hard lesson. I / thank you for the mountain.
+KLAUS: I take the pass, Commander. I do / not take your honour.
 KLAUS: You held it well. Eleven years / is a long time to hold anything.
 KANBEI: I held it badly for the last / one. I knew it, and I held it.
 KANBEI: My men followed me because / they trusted my face. I wronged them.
@@ -218,6 +222,8 @@ KLAUS: Then it is settled. The / road runs to the north Free Port.
 NARRATION: The harbour road, northern coast. / Twenty-six tiles to the relay camp.
 LIVIA: Four APCs. One chest. Eleven / ledgers from Kite Hill.
 LIVIA: The Senate's relay camp is at / the end of this road. We deliver.
+KLAUS: A conquest eats grain. Behind us lie five / provinces, and every one is hungry.
+KLAUS: The chest feeds the garrisons. It / arrives, or the frontier starves.
 CASSIUS: You are riding in a truck, / Quaestor. A truck!
 LIVIA: A truck is dignified, Prefect. / It has a roof, and a ledger rail.
 AURELIA: The road is a ribbon through / forest, one ford, one ruin.
@@ -304,8 +310,10 @@ KLAUS: It is a Tag. You hold the / hammer and I hold the line.
 OLAF: Wah-ha-ha! Visitors! Snow / and visitors! My two favourites!
 OLAF: Olaf of Blue Moon! Welcome to / the Bastion! Mind the cold!
 OLAF: I hear you bought half of / Colin's market. Wonderful!
-KLAUS: Commander Olaf. I am Legate / Klaus of Aurea. We seek a road.
-OLAF: A road! There is only one / road here. It goes up. Wah-ha!
+KLAUS: Commander Olaf. I am Legate Klaus of / Aurea. We come for the Bastion.
+OLAF: My Bastion! There is only one / road in. It goes up. Wah-ha!
+KLAUS: It guards Blue Moon's northern march. / Take it and the frontier stands at the
+KLAUS: Accord's door.
 GRIT: Hold yer horses, Olaf. Let / the man finish his sentence.
 GRIT: Name's Grit. Pleased to / meet ya. Don't mind the guns.
 GRIT: Every approach to this hill is / covered. Every one. I counted.
@@ -354,7 +362,7 @@ OLAF: Tell her I lost the Bastion / to honest folk. She will smile.
 NARRATION: The Accord's council hall, / Orange Star. Nell presides.
 NELL: Order, please. The Allied / Accord hears Legate Klaus of Aurea.
 NELL: Legate, you have the floor. / Please do not take all night.
-KLAUS: Thank you, Chair. I will be / brief. We came for bread.
+KLAUS: I will be brief, Chair. We came for / bread, and took your forts on the way.
 KLAUS: Three summers ago our harvest / failed. Ash fell on our fields.
 KLAUS: Relief came from a freight / house. We followed its stencil.
 KLAUS: It led to Black Hole's yards. / Jars of ash, not grain.
