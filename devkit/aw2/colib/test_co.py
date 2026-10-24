@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from .. import cfg
-from . import data, importer as I, namefont
+from . import data, importer as I, namefont, style
 
 COS = ("klaus", "aurelia", "cassius", "livia")
 
@@ -84,6 +84,32 @@ class Art(unittest.TestCase):
             msg = " ".join(I.lint_art("klaus", root))
             self.assertIn("without an outline", msg)
             self.assertIn("40 x 48", msg)
+
+
+@unittest.skipUnless(cfg.aw2_rom().exists(), "needs the AW2 ROM (AW2's own art is the yardstick)")
+class Style(unittest.TestCase):
+    def test_the_committed_art_is_in_aw2s_style(self):
+        r = style.aw2_ranges()[0]
+        for co in COS:
+            pics, pal = I.read_art(co)
+            rows, bad = style.lint(pics, pal, r)
+            self.assertEqual(bad, [], co)
+
+    def test_a_dark_painterly_picture_fails_the_style_lint(self):
+        # the previous import (a faithful downscale of the painterly picture) is the example the user rejected: dark and textured
+        r = style.aw2_ranges()[0]
+        cos, _ = data.load_all()
+        im = I.import_co({"source": cos["aurelia"]["portrait"]["source"]}, painterly=True)
+        pics = {"large": im.large, "face_normal": im.faces["normal"]}
+        rows, bad = style.lint(pics, im.palette, r)
+        self.assertTrue(bad, "the painterly import should be out of AW2's range somewhere")
+
+    def test_aw2s_own_art_passes_its_own_lint(self):
+        r, figs, faces = style.aw2_ranges()
+        n, idx, pal = style.aw2_figures()[1]            # Andy
+        f = style.aw2_faces()[1]
+        rows, bad = style.lint({"large": idx, "face_normal": f[1]}, pal, r)
+        self.assertEqual(bad, [])
 
 
 class Steps(unittest.TestCase):

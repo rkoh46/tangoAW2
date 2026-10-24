@@ -23,8 +23,12 @@ def register(sub):
     a.add_argument("co", nargs="*")
     a.add_argument("--check", action="store_true")
     a.set_defaults(fn=pimport)
+    a = pq.add_parser("stylise", help="redraw the supplied pictures in AW2's CO style (import with the CO's palette and zones) and report the style numbers")
+    a.add_argument("co", nargs="*")
+    a.set_defaults(fn=pstylise)
     a = pq.add_parser("lint", help="lint the committed art")
     a.add_argument("co", nargs="*")
+    a.add_argument("--style", choices=["aw2"], help="also measure the art against AW2's own range (brightness, saturation, contrast, flatness, regions, head)")
     a.set_defaults(fn=plint)
     a = pq.add_parser("ingame", help="photograph the CO in the real app: CO select, HUD, CO page, power cut-in, dialogue")
     a.add_argument("co", nargs="*")
@@ -32,6 +36,7 @@ def register(sub):
     a = pq.add_parser("sheet", help="the review sheet")
     a.add_argument("co", nargs="*")
     a.add_argument("--out")
+    a.add_argument("--style", action="store_true", help="the AW2-style review: add the previous (faithful) import beside the new art")
     a.set_defaults(fn=psheet)
     b = ps.add_parser("balance", help="average firepower / defence / move / range per power level against Dual Strike's COs")
     b.add_argument("co", nargs="*")
@@ -89,13 +94,28 @@ def pingame(a):
     return 1 if bad else 0
 
 
+def pstylise(a):
+    a.check = False
+    rc = pimport(a)
+    a.style = "aw2"
+    return rc | plint(a)
+
+
 def plint(a):
-    from ..colib import importer as I
+    from ..colib import importer as I, style
     sel, _ = _cos(a.co)
     bad = 0
+    ranges = style.aw2_ranges()[0] if getattr(a, "style", None) else None
     for co in sel:
         probs = I.lint_art(co)
-        print(f"{'FAIL' if probs else 'PASS'} {co}: " + ("; ".join(probs) if probs else "sizes, one palette, outline and noise are right"))
+        if ranges:
+            pics, pal = I.read_art(co)
+            rows, sp = style.lint(pics, pal, ranges)
+            probs = probs + sp
+        print(f"{'FAIL' if probs else 'PASS'} {co}: " + ("; ".join(probs) if probs else "sizes, one palette, outline and noise are right" + (", and the style is AW2's" if ranges else "")))
+        if ranges:
+            for name, v, lo, hi, mean, ok in rows:
+                print(f"    {name:24s} {v:8.2f}   AW2 range {lo:7.2f} .. {hi:7.2f} (mean {mean:6.2f})  {'ok' if ok else 'OUT'}")
         bad += bool(probs)
     return 1 if bad else 0
 
@@ -106,7 +126,7 @@ def psheet(a):
     sel, _ = _cos(a.co)
     out = Path(a.out or cfg.work("co", "co_portraits_user.png"))
     out.parent.mkdir(parents=True, exist_ok=True)
-    S.sheet(list(sel), sel).save(out)
+    S.sheet(list(sel), sel, previous=a.style, title="AW2-style portraits: the owner's pictures are the design reference, the art is redrawn in AW2's CO style (flat tones from the CO's own palette, outline, AW2's brightness and framing)" if a.style else None).save(out)
     util.say("wrote", out)
     return 0
 

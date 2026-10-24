@@ -1,8 +1,32 @@
-# Framing of klaus_user.jpg for `aw2dev co portrait import` (pixel positions in the 784 x 1168 picture). The picture is the project owner's art; this file goes with the picture, so
-# swapping two pictures between COs (`source` in cos/<id>.toml) keeps their framing.
-scale = 0.145           # output pixels per source pixel of the large figure (AW2's head is about 46 px tall)
+# Framing and AW2-style redraw of klaus_user.jpg for `aw2dev co portrait import` (pixel positions in the 784 x 1168 picture). The picture is the project owner's art and the DESIGN REFERENCE:
+# who Klaus is (face, hair, laurel, toga, cloak, cuirass); the game art is redrawn from it in AW2's CO style (flat tones from the CO's own palette). This file goes with the picture, so swapping two
+# pictures between COs (`source` in cos/<id>.toml) keeps their framing, palette and material seeds.
+scale = 0.135           # output pixels per source pixel of the large figure
 crop_top = 40           # source rows above the head to leave out
 top = 3                 # rows of empty space above the figure
 face = [190, 70, 380]   # the CO select mug's square (x, y, side) in the source
 eyes = [285, 272, 395, 258]    # the two eyes' centres: x1 y1 x2 y2
 mouth = [350, 375]
+brow_index = 8          # the palette index of the brows (the hair's dark grey)
+
+# the CO's palette, AW2's layout: 1 white, 2..6 skin (light to dark), 7..14 the CO's colours, 15 the outline
+palette = ["ffffff",
+           "ffcd8b", "ffac73", "e6946a", "b4624a", "5a2c20",
+           "dcd8d0", "9c98a4", "ffe65a", "e8a010", "a8660c", "ff5a41", "c8283a", "78182a",
+           "201820"]
+contrast = 1.2
+lift = [0.72, 1.25]
+crease = 5
+crease_index = 6
+
+# zones (polygons in source pixels; `only` = the palette indexes allowed inside; `exclusive`: nothing outside may use them): the skin tones stay on the skin, the hair's tones on the hair and the laurel
+[[zone]]
+name = "skin"
+line = 6
+only = [2, 3, 4, 5, 6]
+exclusive = true
+polys = [[[250,165],[300,118],[390,112],[455,150],[475,230],[490,250],[525,265],[535,330],[520,365],[490,380],[480,420],[500,480],[520,540],[525,585],[430,600],[330,605],[235,590],[228,540],[265,480],[240,420],[225,330],[225,235]]]
+[[zone]]
+name = "hair and laurel"
+only = [7, 8, 9, 10, 11, 15]
+polys = [[[230,100],[290,75],[380,60],[470,90],[540,140],[560,240],[540,300],[500,235],[470,160],[390,112],[300,118],[250,165],[225,235],[200,170]]]

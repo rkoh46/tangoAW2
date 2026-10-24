@@ -132,16 +132,15 @@ Sturm's own table, `sturm_pairs.rs`: 110 is 1 star, 115 to 120 is 2, 125 is 3). 
 
 Each pair also needs its four victory lines and two Tag-in lines like Sturm's pairs have (phase 2, written in the BH voice). Tag Power names: Roman-flavoured, 20 letters at most.
 
-### 2.4 Portraits: the owner's own art
+### 2.4 Portraits: the owner's pictures, redrawn in AW2's style
 
 The four portraits are **the project owner's art** ("portrait art provided by the project owner", `CREDITS.md`): `art-src/cos/<co>_user.jpg` (784 x 1168 busts), mapped one data line a CO
 (`[portrait] source` in `cos/<id>.toml`; the best guess: Klaus the grey-haired laurelled man, Aurelia the helmeted woman, Cassius the stern man with the helmet under his arm, Livia the woman in white with the
-red cloak). The two earlier attempts (recipes on AW2 / Dual Strike parts, then portraits drawn by us) were rejected and removed. `aw2dev co portrait import` converts each into AW2's CO art: the 128 x 160 figure, the
-48 x 48 CO select mug, the Teams mini, the HUD face, four expression faces, one palette of 15 colours + transparent, outlined; `docs/dev/co-kit.md` has the method. The sheet is `co_portraits_user.png`
-(source, large art 1x and 2x beside AW2's own, faces, and the game's own screens). **In the game** with `TANGOAW2_ES_COS=1` (the four are ids 86..89 with Andy's numbers until phase 2): the CO select card, the HUD
-face, the Power's dialogue box and its cut-in (the large figure), and the CO page show them.
-The happy, sad and angry faces are edits of the neutral picture's eyes, brows and mouth; if the owner can supply expression variants they replace them (`art-src/cos/<id>_<expression>.jpg`, the importer
-would take them).
+red cloak). The pictures are the **design reference**; the game art is **redrawn in AW2's own CO style** (a faithful downscale was rejected: dark and painterly, not an AW2 CO): flat tones from each CO's own
+bright, saturated palette in AW2's layout, a clean outline, simple line art, AW2's framing (`aw2dev co portrait stylise`, `docs/dev/co-kit.md`), measured against AW2's own 19 COs (`co portrait lint --style aw2`).
+The sheet is `co_portraits_aw2style.png` (source, the previous import, the new art 1x and 2x beside Hawke, Kanbei and Sonja, the faces, the CO select row and the game's own screens). **In the game** with
+`TANGOAW2_ES_COS=1` (the four are ids 86..89 with Andy's numbers until phase 2): the CO select card, the HUD face, the Power's dialogue box and its cut-in (the large figure), and the CO page show them.
+The happy, sad and angry faces are edits of the neutral face's eyes, brows and mouth in the same style; if the owner can supply expression variants they replace them.
 
 ## 3. Who joins when
 

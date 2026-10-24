@@ -1,7 +1,25 @@
-# Framing of livia_user.jpg (see klaus_user.toml).
-scale = 0.145
+# Framing and AW2-style redraw of livia_user.jpg (see klaus_user.toml for the keys). The picture is the design reference: the senator-treasurer with the gold laurel, long dark hair, a white robe with gold trim and a red cloak.
+scale = 0.135
 crop_top = 40
 top = 3
 face = [200, 70, 400]
 eyes = [280, 278, 385, 265]
 mouth = [330, 380]
+brow_index = 8
+contrast = 1.15
+lift = [0.68, 1.25]
+crease = 4
+palette = ["ffffff",
+           "ffd0a0", "f0a878", "d4805a", "a45a48", "6c3a30",
+           "5a4848", "342828", "e8dcd0", "b8aca8", "ffd860", "d89828", "c02838", "781828",
+           "201820"]
+
+[[zone]]
+name = "skin"
+line = 6
+only = [2, 3, 4, 5, 6]
+exclusive = true
+ban = [2, 3, 4, 5]
+polys = [[[262,200],[300,185],[340,195],[390,235],[430,265],[440,330],[420,390],[390,410],[340,430],[305,425],[270,390],[262,330],[255,260]],
+         [[330,425],[445,425],[450,470],[330,470]],
+         [[465,270],[510,265],[520,310],[500,335],[470,330]]]

@@ -1,7 +1,31 @@
-# Framing of cassius_user.jpg (see klaus_user.toml).
-scale = 0.145
+# Framing and AW2-style redraw of cassius_user.jpg (see klaus_user.toml for the keys). The picture is the design reference: the stern dark-haired legionary in lorica segmentata and red cloak, a crested helmet under his arm.
+scale = 0.135
+flat_passes = 0
 crop_top = 45
 top = 3
 face = [190, 70, 420]
 eyes = [275, 268, 390, 263]
 mouth = [340, 385]
+brow_index = 15
+contrast = 1.4
+lift = [0.6, 1.25]
+crease = 4
+palette = ["ffffff",
+           "f6bd8b", "f6a473", "cd7b5a", "a45a4a", "734131",
+           "dce0f0", "9098b4", "586080", "ffe070", "c88c24", "e84438", "bc2c38", "7c1c2c",
+           "201820"]
+
+[[zone]]
+name = "skin"
+line = 15
+only = [2, 3, 4, 5, 6]
+exclusive = true
+ban = [2, 3, 4, 5, 6]
+polys = [[[250,160],[300,150],[420,150],[480,170],[495,230],[495,300],[490,370],[470,430],[430,465],[360,478],[300,470],[270,440],[250,380],[245,290],[247,210]],
+         [[300,480],[470,480],[490,530],[480,590],[330,590],[300,540]],
+         [[500,245],[540,245],[548,300],[540,340],[500,335],[495,290]]]
+[[zone]]
+name = "hair"
+only = [9, 14, 15]
+exclusive = false
+polys = [[[240,130],[260,85],[330,60],[430,65],[500,100],[545,180],[550,250],[500,250],[480,200],[450,150],[300,150],[250,170]]]
