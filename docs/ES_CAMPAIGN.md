@@ -138,13 +138,16 @@ Sturm's own table, `sturm_pairs.rs`: 110 is 1 star, 115 to 120 is 2, 125 is 3). 
 
 Each pair also needs its four victory lines and two Tag-in lines like Sturm's pairs have (phase 2, written in the BH voice). Tag Power names: Roman-flavoured, 20 letters at most.
 
-### 2.4 Portraits
+### 2.4 Portraits: the owner's own art
 
-Four to six lettered options per CO from AW2 / Dual Strike donor parts (read at run time), recoloured to the Emerald Sun palette, plus original overlays (laurel wreath, plumed galea, sash, phalera).
-No game or AWBW pixels are committed: a recipe is a donor name, palette-index recolour rules and overlay placements. Donors: Klaus A Hawke, B Kanbei, C Dual Strike Flak, D Javier, E Olaf, F Max;
-Aurelia A Lash, B Sami, C Sonja, D Sasha, E Rachel, F Jess; Cassius A Eagle, B Jake, C Adder, D Andy, E Colin, F Hachi; Livia A Kindle, B Nell, C Sonja, D Sasha, E Rachel, F Jess.
-Limits seen on the sheets (all fixable once a letter is picked): Dual Strike donors keep their white outline; a helmet over long hair reads as a cap (so women have laurels instead); names of seven letters
-(Aurelia, Cassius) must be checked against the 48 x 16 name graphic when the CO is built in.
+The four portraits are **the project owner's art** ("portrait art provided by the project owner", `CREDITS.md`): `art-src/cos/<co>_user.jpg` (784 x 1168 busts), mapped one data line a CO
+(`[portrait] source` in `cos/<id>.toml`; the best guess: Klaus the grey-haired laurelled man, Aurelia the helmeted woman, Cassius the stern man with the helmet under his arm, Livia the woman in white with the
+red cloak). The two earlier attempts (recipes on AW2 / Dual Strike parts, then portraits drawn by us) were rejected and removed. `aw2dev co portrait import` converts each into AW2's CO art: the 128 x 160 figure, the
+48 x 48 CO select mug, the Teams mini, the HUD face, four expression faces, one palette of 15 colours + transparent, outlined; `docs/dev/co-kit.md` has the method. The sheet is `co_portraits_user.png`
+(source, large art 1x and 2x beside AW2's own, faces, and the game's own screens). **In the game** with `TANGOAW2_ES_VERSUS=1` (the four are ids 86..89 with Andy's numbers until phase 2): the CO select card, the HUD
+face, the Power's dialogue box and its cut-in (the large figure), and the CO page show them.
+The happy, sad and angry faces are edits of the neutral picture's eyes, brows and mouth; if the owner can supply expression variants they replace them (`art-src/cos/<id>_<expression>.jpg`, the importer
+would take them).
 
 ## 3. Who joins when
 
@@ -279,7 +282,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. New CO batt
 
 ## 10. Open questions for the user
 
-1. **Portraits:** which letter for each CO (sheets in the scratchpad: `sheets/escampaign/co_klaus.png` ...). Any donor you want swapped?
+1. **Portraits:** is the picture-to-CO mapping right (Klaus / Aurelia / Cassius / Livia as in section 2.4)? Can the owner supply happy, sad and angry variants of each picture (the faces are edited from the neutral one now)?
 2. **Klaus's stars:** 4 / 8 (the doc's recommendation) or 4 / 9 as in your proposal? (8 is Kanbei's price plus one; 9 is Hawke's.)
 3. **Livia's income:** +25% (the doc's change; +10% with +10% unit cost buys nothing) or your +10% income?
 4. **Varro:** the final boss needs a CO that is not one of the four. Options: (a) a fifth Emerald Sun CO, boss only, built with the same kit (portrait options like the others); (b) Varro as a story-only
@@ -287,7 +290,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. New CO batt
 5. **Black Hole** (M9, M13): decided (the user): a real enemy army with its own COs, properties and inventions in those two missions only; no other mission has inventions.
 6. **Second skin colour for Cassius:** his Second Legion is red (Orange Star's colour). Fine, or would you rather have a second Emerald Sun variant (a crimson one) built as a second skin file?
 7. **Tag missions:** three (M8, M12, M15); are the forced pairs right (Klaus + Cassius reluctantly, Klaus + Aurelia for the siege, a free pair at the end)?
-8. **Names:** the seven-letter names (Aurelia, Cassius) may not fit the 48 x 16 name graphic cleanly; shorter alternatives if they do not: "Aurel", "Cass".
+8. **Names:** keep the full names (Klaus, Aurelia, Cassius, Livia) wherever they fit; the short forms ("Aurel", "Cass", `short` in the CO file) only on a plate that clips. `aw2dev co check` measures them in AW2's font against the widest plate (28 px, Von Bolt): Klaus 19, Livia 17, Aurelia 24, Cassius 27 all fit, so no plate needs the short form by that measure; the in-game check at 1x happens when the COs are built in.
 
 ## 11. As built (phase 2, `docs/dev/es-campaign.md`)
 
@@ -299,7 +302,7 @@ the skin on the player's army, a record in Flash slot 11. Differences from the o
 - **Enemy pairs**: M2 Jess + Eagle, M5 Grimm + Sensei and M9 Adder + Flak are enemy tag pairs on one army; M6, M7, M8, M10, M11, M12 have two allied enemy armies; M15's Accord fleet is an allied army (Nell) with no units until day 6; Cassius's M14 army changes teams on day 4.
 - **M11**: the four APCs are the player's own (the escort is a race with a day limit of 14, not a scripted march).
 - **Powers not built** (they need new engine hooks): Klaus's "counterattacks do 25% less", Aurelia's splash, Cassius's "move again after attacking"; their numbers are kept (docs/dev/es-campaign.md).
-- Portraits are Dual Strike donors until the portrait branch lands; the CO names on the HUD are the donors' graphics.
+- Portraits: the four are the project owner's (branch `escampaign`, merged: `es_cos.rs`, `art/cos/`, `cos/*.toml`), always in the game; Varro keeps a Dual Strike face as a placeholder (he has one mission, M14).
 
 ## 12. Rework for the user's rules (conquest, room to fight, the new finale)
 - **Colours fixed.** A mission in which the player picks a CO started with the game's own colours for that case (player Black Hole, the rest shuffled): Black Hole drew Orange Star red, and the skin landed on

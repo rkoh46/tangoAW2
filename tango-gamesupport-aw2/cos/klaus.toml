@@ -36,66 +36,6 @@ tag_in = ["Hold the line."]
 victory = "Order restored. March at dawn."
 defeat = "The legion... will remember."
 
-[[portrait.option]]
-letter = "A"
-description = "Hawke's grizzled greatcoat in legion stone, a red-plumed galea over the grey crop, a red sash across the chest."
-donor = "aw2:hawke"
-ramp = [{ indices = [9, 10], ramp = "sage" }]
-[[portrait.option.place]]
-shape = "helmet"
-anchor = "brow"
-[[portrait.option.place]]
-anchor = "neck"
-line = [26, 14, -30, 80]
-width = 5
-colours = ["E8C25A", "D02C3C", "D02C3C", "8E1B28"]
-
-[[portrait.option]]
-letter = "B"
-description = "Kanbei's stately cloak in crimson over a stone cuirass, a laurel wreath on the topknot: the commander as a triumphator."
-donor = "aw2:kanbei"
-ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [13, 14], ramp = "red" }]
-[[portrait.option.place]]
-shape = "laurel"
-anchor = "brow"
-dy = 0
-
-[[portrait.option]]
-letter = "C"
-description = "Dual Strike's Flak, bare-armed gladiator-general: crimson jerkin, stone helmet, a gold phalera on the chest."
-donor = "ds:flak"
-ramp = [{ indices = [9, 10], ramp = "red" }, { indices = [7], ramp = "sage" }]
-[[portrait.option.place]]
-anchor = "neck"
-dy = 30
-motif = "phalera"
-clip = true
-
-[[portrait.option]]
-letter = "D"
-description = "Javier's plate and moustache: stone coat and hat, crimson lining, the steel cuirass kept bright. An old soldier-statesman."
-donor = "ds:javier"
-ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [12], ramp = "red" }, { indices = [11, 13, 14], ramp = "steel" }]
-
-[[portrait.option]]
-letter = "E"
-description = "Olaf's beard and fur, turned to a Gallic-fighting legate: stone coat, white fur kept, a galea with a red plume."
-donor = "ds:olaf"
-ramp = [{ indices = [9, 10, 11], ramp = "sage" }]
-[[portrait.option.place]]
-shape = "helmet"
-anchor = "brow"
-
-[[portrait.option]]
-letter = "F"
-description = "Max's heavy frame in a cream tunic with a crimson sash and a laurel: a centurion who came up through the ranks."
-donor = "aw2:max"
-ramp = [{ indices = [7, 8], ramp = "darkhair" }, { indices = [9, 10], ramp = "cream" }]
-[[portrait.option.place]]
-shape = "laurel"
-anchor = "brow"
-[[portrait.option.place]]
-anchor = "neck"
-line = [26, 8, -34, 70]
-width = 6
-colours = ["E8C25A", "D02C3C", "D02C3C", "8E1B28"]
+[portrait]
+# The picture the project owner supplied for this CO: the one data line of the mapping (swap two lines to swap two COs; the framing is in the picture's own `.toml`).
+source = "art-src/cos/klaus_user.jpg"

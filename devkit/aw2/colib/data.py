@@ -1,7 +1,10 @@
 """`aw2dev co check`: the CO data files (tango-gamesupport-aw2/cos/*.toml and tags.toml) against AW2's design space (docs/dev/co-kit.md)."""
 import itertools, tomllib
+from pathlib import Path
 from .. import cfg, util
-from . import compose as cp, roms
+from . import roms
+
+COS_DIR = cfg.REPO / "tango-gamesupport-aw2" / "cos"
 
 UNITS = {"all", "foot", "vehicle", "direct", "indirect", "naval", "air", "artillery", "rockets", "artillery rockets"}
 KEYS = {"units", "attack", "defence", "move", "range", "cost"}
@@ -17,11 +20,11 @@ def aw2_stars():
 
 def load_all():
     cos = {}
-    for f in sorted(cp.COS_DIR.glob("*.toml")):
+    for f in sorted(COS_DIR.glob("*.toml")):
         if f.stem == "tags":
             continue
         cos[f.stem] = tomllib.loads(f.read_text())
-    tags = tomllib.loads((cp.COS_DIR / "tags.toml").read_text()) if (cp.COS_DIR / "tags.toml").exists() else {}
+    tags = tomllib.loads((COS_DIR / "tags.toml").read_text()) if (COS_DIR / "tags.toml").exists() else {}
     return cos, tags
 
 
@@ -60,16 +63,13 @@ def problems(cos, tags, ref=None):
                     p(co, f"{sect} quote line {line!r} is longer than {MAX_QUOTE}")
         if len(d.get("name", "")) > 7:
             p(co, "name longer than 7 letters (the 48 x 16 name graphic)")
-        opts = d.get("portrait", {}).get("option", [])
-        letters = [o.get("letter") for o in opts]
-        if not 4 <= len(opts) <= 6 or len(set(letters)) != len(letters):
-            p(co, f"portrait options: 4..6 lettered, distinct (have {letters})")
-        for o in opts:
-            if "donor" not in o or "description" not in o:
-                p(co, f"option {o.get('letter')}: donor and description are required")
-        chosen = d.get("portrait", {}).get("chosen")
-        if chosen and chosen not in letters:
-            p(co, f"portrait.chosen {chosen} is not an option")
+        src = d.get("portrait", {}).get("source")
+        if not src:
+            p(co, "portrait.source missing (the picture the project owner supplied)")
+        elif not (cfg.REPO / src).exists():
+            p(co, f"portrait.source {src} does not exist")
+        elif not (cfg.REPO / src).with_suffix(".toml").exists():
+            p(co, f"{src}: no framing file ({Path(src).with_suffix('.toml').name})")
     names = list(cos)
     seen = {}
     for pr in tags.get("pair", []):
@@ -94,6 +94,29 @@ def problems(cos, tags, ref=None):
     return out
 
 
+# Name plates. The name is drawn in AW2's text font on most screens (Teams cards, results, the CO page header, tag screens) and as a 48 x 16 name graphic on the Teams cards and CO select.
+# Every plate already takes AW2's widest names (23 px: Kanbei, Adder, Hawke) and, with the Dual Strike pack, Von Bolt (28 px); Clone Andy (38 px) only on the plates that were widened for him.
+# So a name up to WIDEST_PLATE px fits every plate that takes Von Bolt; wider needs the short form (`short = ...` in the CO file). This is a measurement in the font, not a look at the game:
+# the plates are checked at 1x in the game when the CO is built in (phase 2: `aw2dev co check --live`).
+WIDEST_PLATE = 28
+
+
+def text_width(s):
+    from ..gfxlib import font
+    f = font.load()
+    return sum(f[c][0] for c in s if c in f)
+
+
+def name_plates(cos):
+    out = []
+    for co, d in cos.items():
+        full = d["name"]
+        w = text_width(full)
+        short = d.get("short")
+        out.append((co, full, w, short, text_width(short) if short else None, w <= WIDEST_PLATE))
+    return out
+
+
 def check(a):
     cos, tags = load_all()
     names = a.co or list(cos)
@@ -112,6 +135,10 @@ def check(a):
             flag = " <- above Kanbei's" if fp + df > cap else ""
             print(f"  {co:9} {lvl:5} firepower {fp:+6.1f}  defence {df:+6.1f}  move {mv:+.2f}  range {rg:+.2f}{flag}")
             bad += [f"{co}: {lvl} averages {fp + df:.0f} points of firepower + defence, above Kanbei's {cap}"] if fp + df > cap else []
+    for co, full, w, short, sw, fits in name_plates({k: v for k, v in cos.items() if k in names}):
+        print(f"  name {full}: {w} px in AW2's font (widest plate 28, Von Bolt); " + ("fits every plate" if fits else f"TOO WIDE: use the short form {short} ({sw} px)" if short else "TOO WIDE and no short form"))
+        if not fits:
+            bad += [f"{co}: name is {w} px, the plates take {WIDEST_PLATE}" + ("" if short else " and the file has no `short`")]
     for pr in tags.get("pair", []):
         print(f"tag {pr['a']}+{pr['b']}: {pr['name']} {pr['compat']}% {pr['stars']} stars")
     for b in bad:

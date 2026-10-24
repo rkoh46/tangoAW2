@@ -115,6 +115,15 @@ pub const DIFFICULTY: u32 = 0x0203_FD5F;
 const HELP_WORDS: [u32; 2] = [0x0861_3140, 0x0861_3144];
 const AW2_HELP: [u32; 2] = [0x0860_7684, 0x0860_76A8];
 
+/// Whether the chooser's cursor is on a campaign that is not playable yet.
+fn on_placeholder(core: &Core) -> bool {
+    if !crate::ds_weather::is_on(core) || campaign_box(core).is_none() || core.raw_read_8(LEVEL, -1) != 0 {
+        return false;
+    }
+    let sources = crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).count();
+    core.raw_read_8(CHOICE, -1) as usize > sources
+}
+
 fn help_lines(core: &mut Core) {
     let ds = (core.raw_read_8(LEVEL, -1) == 3).then(|| crate::ds_campaign::campaign(core).map(|c| c.help)).flatten();
     for (k, &at) in HELP_WORDS.iter().enumerate() {
@@ -171,12 +180,19 @@ static NOTICE_FACE: std::sync::Mutex<Option<(Vec<u8>, [u8; 32])>> = std::sync::M
 
 /// The "Coming soon" box over a 240 x 160 picture, in AW2's window frame with Nell's face and the game's font (presentation only).
 pub fn draw_notice(core: &Core, rgba: &mut [u8]) {
-    use crate::online::{text_width, Rgba, BLUE, GRAY_INK, H, INK, LIGHT_GRAY, SHADE, W};
-    let Some(k) = notice(core) else { return };
+    use crate::online::{text_width, Rgba, BLUE, GRAY_INK, H, INK, LIGHT_GRAY, SHADE, W, WHITE};
     if rgba.len() != W * H * 4 {
         return;
     }
     let mut cv = Rgba(rgba);
+    // On a campaign that is not playable yet the help line under the menu says so: the game's own line ("Start a new campaign.") is covered.
+    if on_placeholder(core) || notice(core).is_some() {
+        let t = "Coming soon.";
+        crate::online::audit::cover(0, 144, W as i32, 16);
+        cv.rect(0, 144, W as i32, 16, (0, 0, 0));
+        cv.text(core, (W as i32 - text_width(core, t)) / 2, 147, t, WHITE, (0, 0, 0));
+    }
+    let Some(k) = notice(core) else { return };
     let (x, y, w, h) = (16, 40, W as i32 - 32, 80);
     crate::online::audit::cover(x, y, w, h);
     cv.window(x, y, w, h);

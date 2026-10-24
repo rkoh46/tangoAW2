@@ -2,6 +2,9 @@
 
 ## tangoAW2
 
+- Emerald Sun's four COs (Klaus, Aurelia, Cassius, Livia): portrait art provided by the project owner (`art-src/cos/`, converted to the game's formats in `tango-gamesupport-aw2/art/cos/`).
+  The name graphics are set in letters drawn for this project (`devkit/aw2/colib/namefont.py`).
+
 - Advance Wars 2 RAM and ROM research: Xenesis and the
   [Wars World News](https://www.warsworldnews.com) hacking community, the
   [aw2bhr decompilation](https://github.com/Eebit/aw2bhr) (Eebit, npiriou,

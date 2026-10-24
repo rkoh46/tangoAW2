@@ -92,6 +92,10 @@ fn turn_hue(c: u16, to: f32) -> u16 {
     q(r2) | q(g2) << 5 | q(b2) << 10
 }
 
+/// Emerald Sun's COs start here (ids 86..=90: Klaus, Aurelia, Cassius, Livia, Varro; `crate::es_co`); the first four wear the project owner's portraits (`crate::es_cos`).
+pub const ES_FIRST: u8 = FIRST + 14;
+pub const ES_COUNT: u8 = 5;
+
 /// The Dual Strike CO whose record fills the fields of Crumb's row nothing
 /// of his own is set for (Andy's neutral numbers, as Clone Andy's).
 const CRUMB_BASE: u8 = 2;
@@ -426,8 +430,8 @@ pub fn ds_name(co: u8) -> Option<Vec<u8>> {
     if co == CRUMB {
         return Some(crate::crumb::NAME.to_vec());
     }
-    if let Some(n) = crate::es_co::name(co) {
-        return Some(n.to_vec());
+    if let Some(n) = crate::es_cos::name(co).or_else(|| crate::es_co::name(co).map(|n| n.to_vec())) {
+        return Some(n);
     }
     ds_text(record_ref(crate::co_roster::ds_co(co)?, 0x00)).filter(|t| !t.is_empty())
 }
@@ -443,7 +447,7 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
     } else if crumb {
         crate::crumb::NAME.to_vec()
     } else if es {
-        crate::es_co::name(co).unwrap_or_default().to_vec()
+        crate::es_cos::name(co).or_else(|| crate::es_co::name(co).map(|n| n.to_vec())).unwrap_or_default()
     } else {
         ds_text(record_ref(ds, 0x00)).unwrap_or_default()
     };
@@ -455,7 +459,7 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
         } else if crumb {
             crate::crumb::text(which)
         } else if es {
-            crate::es_co::text(co, which)
+            crate::es_co::text_of(co, which)
         } else {
             None
         };
@@ -715,8 +719,15 @@ fn build(core: &Core) -> Option<Built> {
     let mut slots: Vec<(u32, u32)> = Vec::new();
     for (co, ds, like) in all() {
         // (an Emerald Sun CO wears a Dual Strike CO's pictures until its own are composed)
+        // (the first four wear the project owner's portraits; Varro keeps a Dual Strike CO's face as a placeholder)
         let ds = crate::es_co::info(co).map_or(ds, |i| i.donor);
-        let mut art = if co == CRUMB { crate::crumb_art::art(core)? } else { crate::ds_co_art::co_art(ds)? };
+        let mut art = if co == CRUMB {
+            crate::crumb_art::art(core)?
+        } else if let Some(a) = crate::es_cos::art(co) {
+            a
+        } else {
+            crate::ds_co_art::co_art(ds)?
+        };
         if co == CLONE_ANDY {
             // His name graphic reads "Clone", cut from AW2's own letters.
             if let Some(n) = clone_name(core) {
@@ -1060,6 +1071,9 @@ mod tests {
         assert_eq!(ds_id(CRUMB), None, "Crumb has no Dual Strike twin");
         assert_eq!(like(CRUMB), 13);
         assert!(is_new(CRUMB) && !is_new(CRUMB + 1));
+        assert_eq!(ES_FIRST, 86, "after the face-only portraits");
+        assert!(ES_FIRST as u32 + ES_COUNT as u32 <= ROOM);
+        assert!(TEXT_TABLE + 4 * text_id(ES_FIRST + ES_COUNT - 1, TEXTS_PER_CO) as u32 <= 0x0863_0000);
         assert!(TEXT_TABLE + 4 * text_id(CRUMB, TEXTS_PER_CO) as u32 <= 0x0863_0000);
         assert!(HUD + HUD_FACE * ROOM <= DOSSIER && PRESENTATION + PRESENTATION_ROW * ROOM <= BODY_PAIRS);
     }

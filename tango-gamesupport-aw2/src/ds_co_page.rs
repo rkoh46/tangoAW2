@@ -1149,13 +1149,15 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         scop = crate::crumb::SCOP_PAGE.to_vec();
         cop_name = string(Some(crate::crumb::COP_NAME.to_vec()));
         scop_name = string(Some(crate::crumb::SCOP_NAME.to_vec()));
-    } else if let Some(i) = crate::es_co::info(co) {
-        bio = i.bio.as_bytes().to_vec();
-        d2d = i.d2d.as_bytes().to_vec();
-        cop = i.cop.as_bytes().to_vec();
-        scop = i.scop.as_bytes().to_vec();
-        cop_name = string(Some(i.cop_name.as_bytes().to_vec()));
-        scop_name = string(Some(i.scop_name.as_bytes().to_vec()));
+    } else if crate::es_co::info(co).is_some() {
+        // (the project owner's names, bio and quotes where she has written them, this campaign's numbers in the descriptions: `es_co::text_of`)
+        let t = |w: u16| crate::es_co::text_of(co, w).unwrap_or_default();
+        bio = t(co_new::T_BIO);
+        d2d = t(co_new::T_D2D);
+        cop = t(co_new::T_COP);
+        scop = t(co_new::T_SCOP);
+        cop_name = string(Some(t(co_new::T_COP_NAME)));
+        scop_name = string(Some(t(co_new::T_SCOP_NAME)));
     } else if co == CLONE_ANDY {
         bio = co_new::CLONE_ANDY_BIO.to_vec();
     } else if co == crate::sturm_pairs::STURM {

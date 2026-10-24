@@ -34,53 +34,6 @@ tag_in = ["A moment. I am counting."]
 victory = "The books balance. So does the war."
 defeat = "Impossible. I audited this."
 
-[[portrait.option]]
-letter = "A"
-description = "Kindle's sleek up-swept hair in senatorial purple and cream, a gold laurel across the brow: elegant, unhurried, adding sums."
-donor = "ds:kindle"
-ramp = [{ indices = [7, 8], ramp = "tyrian" }, { indices = [9, 10], ramp = "cream" }]
-[[portrait.option.place]]
-shape = "laurel"
-target = "face"
-anchor = "brow"
-leaf = "E8C25A"
-leaf_dark = "A87C2C"
-
-[[portrait.option]]
-letter = "B"
-description = "Nell's golden hair and tailored suit, the suit now a purple-hemmed stola. The face that sells a war loan."
-donor = "aw2:nell"
-ramp = [{ indices = [9, 10], ramp = "tyrian" }, { indices = [7, 8], ramp = "gold" }]
-
-[[portrait.option]]
-letter = "C"
-description = "Sonja's composure in a cream toga with a crimson border and a gold clasp. The ledger is her clipboard."
-donor = "aw2:sonja"
-ramp = [{ indices = [9, 10], ramp = "cream" }, { indices = [12], ramp = "red" }]
-[[portrait.option.place]]
-anchor = "neck"
-dy = 14
-dx = 10
-motif = "phalera"
-clip = true
-
-[[portrait.option]]
-letter = "D"
-description = "Sasha's straight brown hair and officer's coat in senatorial purple with gold buttons."
-donor = "ds:sasha"
-ramp = [{ indices = [9, 10], ramp = "tyrian" }, { indices = [13, 12, 14], ramp = "gold" }]
-
-[[portrait.option]]
-letter = "E"
-description = "Rachel's cap and bright jacket in crimson-and-cream with a gold sun pin: the treasurer who keeps the army in good spirits."
-donor = "ds:rachel"
-ramp = [{ indices = [9, 10], ramp = "cream" }, { indices = [7, 8], ramp = "gold" }]
-
-[[portrait.option]]
-letter = "F"
-description = "Jess's teal uniform in purple and gold, her streak of hair in cream: the junior senator's first season as quaestor."
-donor = "aw2:jess"
-ramp = [{ indices = [9, 10], ramp = "tyrian" }, { indices = [7, 8], ramp = "gold" }]
-[[portrait.option.place]]
-shape = "laurel"
-anchor = "brow"
+[portrait]
+# The picture the project owner supplied for this CO: the one data line of the mapping (swap two lines to swap two COs; the framing is in the picture's own `.toml`).
+source = "art-src/cos/livia_user.jpg"

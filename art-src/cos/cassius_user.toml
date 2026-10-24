@@ -1,0 +1,7 @@
+# Framing of cassius_user.jpg (see klaus_user.toml).
+scale = 0.145
+crop_top = 45
+top = 3
+face = [190, 70, 420]
+eyes = [275, 268, 390, 263]
+mouth = [340, 385]

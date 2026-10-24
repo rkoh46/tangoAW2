@@ -122,10 +122,19 @@ def menu(a):
         time.sleep(1.0)
         d.screenshot(str(out / "chooser_0_aw2.png"))
         names = ["aw2", "ds", "bh", "bh2", "emerald_sun"]
+        def entry():
+            got = d.peek(0x0203FD14, 1)
+            return int(str(got.get("hex", got)), 16) if isinstance(got, dict) else -1
         for k in range(1, 5):
-            d.press("DOWN")
-            time.sleep(0.8)
+            # (a loaded machine can take a press twice: press until the chooser is on the entry, and say how many presses it took)
+            presses = 0
+            while entry() != k and presses < 8:
+                d.press("DOWN")
+                time.sleep(0.8)
+                presses += 1
             d.screenshot(str(out / f"chooser_{k}_{names[k]}.png"))
+            util.say(f"entry {k} ({names[k]}): {'reached' if entry() == k else 'NOT reached'} in {presses} press(es)")
+            bad += entry() != k
         # the Emerald Sun box (the last entry, the cursor is on it)
         d.press("A")
         time.sleep(0.8)

@@ -166,6 +166,16 @@ pub fn name(co: u8) -> Option<&'static [u8]> {
 }
 
 /// A text by [`crate::co_new`]'s slot (the six quotes are the CO Power's, the Super Power's and the Tag Power's, twice).
+/// A CO's text as the page shows it: the project owner's words (names, bio, power names, quotes, lines) where she has them, this campaign's own numbers in the
+/// descriptions of what the CO and the powers do.
+pub fn text_of(co: u8, which: u16) -> Option<Vec<u8>> {
+    use crate::co_new::*;
+    match which {
+        T_D2D | T_COP | T_SCOP => text(co, which),
+        _ => crate::es_cos::text(co, which).or_else(|| text(co, which)),
+    }
+}
+
 pub fn text(co: u8, which: u16) -> Option<Vec<u8>> {
     use crate::co_new::*;
     let i = info(co)?;

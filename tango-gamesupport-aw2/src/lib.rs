@@ -84,6 +84,7 @@ pub mod es_co;
 pub mod es_map_data;
 pub mod es_text;
 pub mod crumb_art;
+pub mod es_cos;
 pub mod cpu_tactics;
 pub mod ds_ai;
 pub mod ds_ai_build;
