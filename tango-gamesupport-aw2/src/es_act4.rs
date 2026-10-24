@@ -69,8 +69,10 @@ fn es13() -> MissionDef {
 
 // --- M14 Varro's Gambit ------------------------------------------------------------------------
 
-const DOCK1: (u8, u8) = (27, 5);
-const DOCK2: (u8, u8) = (27, 12);
+/// The legion's own reserves come up the camp road beside the player's HQ on days 5 and 8.
+const LEGION: [(u8, u8); 4] = [(7, 14), (8, 14), (6, 14), (9, 15)];
+/// Castra Maxima's reserve road, inside the camp's east side (`five/es/spec/es14.py`): the Consul's reserves reach the HQ from here on days 5 and 8.
+const RESERVE: [(u8, u8); 4] = [(40, 12), (40, 13), (40, 15), (40, 16)];
 
 /// Day 4: Cassius's army (army 3) goes over to the player's side (AW2's team byte of its player block).
 fn cassius_changes_sides(core: &mut Core) {
@@ -81,27 +83,26 @@ fn cassius_changes_sides(core: &mut Core) {
 
 fn es14() -> MissionDef {
     let mut m = MissionDef::new("es14", "Varro's Gambit");
-    m.objective = "Hold the quay's HQ, then break out and take both docks by day 14.";
+    m.objective = "Storm Castra Maxima: take the Consul's HQ or rout his army.";
     m.map = MapSrc::Built("es14");
     m.armies = vec![
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(4000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(6000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(12000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(CASSIUS)).funds(5000),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
     m.units = deployment("es14");
-    m.day_limit = 14;
-    m.rank_days = 11;
+    m.rank_days = 12;
     m.intro = scene("m14_pre");
     m.victory = scene("m14_post");
     m.after = chain(&["m14_map"]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(scene("m14_day4")), Action::Custom(cassius_changes_sides)]),
-        after(Cond::All(vec![owns(DOCK1.0, DOCK1.1), owns(DOCK2.0, DOCK2.1)]), vec![Action::Win]),
-        // The legion's reserves land at the quay on days 5 and 8 (the pocket's free cells).
-        on_day(5, None, vec![Action::Spawn(wave(1, unit::MD_TANK, &[(1, 11), (3, 11)]))]),
-        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &[(1, 10)]), wave(1, unit::MD_TANK, &[(0, 11)])].concat())]),
-        on_day(m.day_limit + 1, None, vec![Action::Lose]),
+        // The legion's convoy reaches the camp road on days 5 and 8, and the Consul's reserves march in from the camp's east road.
+        on_day(5, None, vec![Action::Spawn(wave(1, unit::MD_TANK, &LEGION[0..2]))]),
+        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &LEGION[2..3]), wave(1, unit::MD_TANK, &LEGION[3..4])].concat())]),
+        on_day(5, None, vec![Action::Spawn(wave(2, unit::MD_TANK, &RESERVE[0..2]))]),
+        on_day(8, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RESERVE[2..3]), wave(2, unit::MD_TANK, &RESERVE[3..4])].concat())]),
     ];
     m.flag = region::ACT4[1];
     m.stars = 4;

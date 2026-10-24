@@ -29,8 +29,8 @@ BOT = {
     11: {"goals": [(24, 6)]},
     13: {"goals": [(19, 15)]},
     15: {"goals": [(23, 10)]},
-    # (M16 and M14: hold the line while the computer's waves break on it, then go for the keep)
-    14: [{"stance": "defend", "days": 5, "goals": [(27, 5), (27, 12)]}, {"goals": [(27, 5), (27, 12)]}],
+    # (M14 storms the camp: Varro's HQ; M16: hold the line while the computer's waves break on it, then go for the keep)
+    14: {"goals": [(38, 12)]},
     16: [{"stance": "defend", "days": 18, "goals": [(15, 8)], "nearest": True, "hunt": True}, {"goals": [(15, 8)]}],
 }
 
