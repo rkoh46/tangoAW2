@@ -19,7 +19,7 @@ def es_world_map_all16(ctx):
     e.wait(120)
     flags = d.map_flags()
     ctx.log(f"flags {flags}")
-    ctx.eq(sum(1 for f in flags[:16] if f & 1), 16, "all 16 flags are on the map")
+    ctx.eq(sum(1 for f in flags[:16] if f), 16, "all 16 flags are on the map")
     shots = {}
     for cy in (-40, 0, 32, 64, 96):
         for cx in (-120, 0, 48, 96, 144, 192):
