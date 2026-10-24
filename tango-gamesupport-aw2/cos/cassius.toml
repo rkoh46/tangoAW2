@@ -1,0 +1,79 @@
+# Cassius, the cavalry commander and Klaus's rival (docs/dev/co-kit.md).
+id = "cassius"
+name = "Cassius"
+army = "emerald_sun"
+role = "Emerald Sun's cavalry commander, a reckless rival"
+
+full_name = "Cassius Rufus"
+theme = "co:eagle"
+bio = "Commander of the Emerald Sun cavalry and the Senate's favourite, who thinks the legion should be his. Hit: Speed. Miss: Patience."
+luck = [10, 10, 10]
+stars = { cop = 3, scop = 7 }
+
+[d2d]
+name = "Impetus"
+text = "My vehicles move 1 space more and hit 10% harder, but their armour is 10% thinner."
+mods = [ { units = "vehicle", move = 1, attack = 10, defence = -10 } ]
+
+[cop]
+name = "Charge"
+text = "Vehicles move 1 more space and attack 30% harder."
+mods = [ { units = "vehicle", move = 1, attack = 30 } ]
+quote = ["With me! Ride them down!", "Glory is a short road!"]
+
+[scop]
+name = "Triumph"
+text = "Vehicles move 1 more space, attack 40% harder, and can move again after attacking, once."
+mods = [ { units = "vehicle", move = 1, attack = 40 } ]
+rules = [ "a vehicle that has attacked may move once more (not attack again) in the same turn" ]
+quote = ["Strike, and strike again!", "They will sing of this!"]
+
+[lines]
+tag_in = ["Try to keep up, Klaus."]
+victory = "Ha! Write it down, scribe. Write it down!"
+defeat = "Not like this. NOT like this!"
+
+[[portrait.option]]
+letter = "A"
+description = "Eagle's silver hair and flying jacket, the jacket in crimson with a stone-steel galea: all swagger and no plan."
+donor = "aw2:eagle"
+ramp = [{ indices = [9, 10], ramp = "red" }, { indices = [12], ramp = "gold" }]
+[[portrait.option.place]]
+shape = "helmet"
+anchor = "brow"
+
+[[portrait.option]]
+letter = "B"
+description = "Jake's headphones and open shirt: a young cavalryman with a red cloak-clasp and a laurel he did not earn yet."
+donor = "ds:jake"
+ramp = [{ indices = [9, 10], ramp = "cream" }, { indices = [12], ramp = "red" }]
+[[portrait.option.place]]
+shape = "laurel"
+anchor = "brow"
+
+[[portrait.option]]
+letter = "C"
+description = "Adder's thin purple-haired duellist in a crimson cavalry tunic and cold stone cloak: charm and contempt."
+donor = "aw2:adder"
+ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [7, 8], ramp = "red" }]
+
+[[portrait.option]]
+letter = "D"
+description = "Andy's grin and wrench, the wrench a spear shaft in the mind: red tunic kept, stone vest, a plumed galea. Eager, loud, loved."
+donor = "aw2:andy"
+ramp = [{ indices = [9, 10], ramp = "red" }, { indices = [7, 8], ramp = "leather" }]
+[[portrait.option.place]]
+shape = "helmet"
+anchor = "brow"
+
+[[portrait.option]]
+letter = "E"
+description = "Colin's cap and cheek, young and rich: a crimson officer's coat and gold braid. The rival who thinks he already won."
+donor = "aw2:colin"
+ramp = [{ indices = [9, 10], ramp = "red" }, { indices = [13, 14], ramp = "gold" }]
+
+[[portrait.option]]
+letter = "F"
+description = "Hachi's folded arms and headband: a stone tunic, a crimson headband and a gold arm-ring. The cavalry's drill-master turned rival."
+donor = "aw2:hachi"
+ramp = [{ indices = [9, 10], ramp = "sage" }]

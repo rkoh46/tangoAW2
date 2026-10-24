@@ -1,0 +1,86 @@
+# Livia, senator and treasurer (docs/dev/co-kit.md).
+id = "livia"
+name = "Livia"
+army = "emerald_sun"
+role = "Emerald Sun's senator and treasurer"
+
+full_name = "Livia Valeria"
+theme = "co:colin"
+bio = "Senator and quaestor of the Emerald Sun. She keeps the army's purse and the Senate's secrets. Hit: Accounts. Miss: Mud."
+luck = [10, 10, 10]
+stars = { cop = 3, scop = 6 }
+
+[d2d]
+name = "Ledger"
+text = "My properties yield 25% more funds, but my units cost 10% more."
+mods = [ { units = "all", cost = 10 } ]
+income = 25
+
+[cop]
+name = "Tribute"
+text = "I collect 200 funds for every property I own."
+tribute = 200
+quote = ["Thank you for your", "generous contribution."]
+
+[scop]
+name = "Mare Nostrum"
+text = "Naval units move 2 spaces more and attack 30% harder. I also collect 100 funds for every property I own."
+mods = [ { units = "naval", move = 2, attack = 30 } ]
+tribute = 100
+quote = ["The sea is ours. Again.", "Send the fleet!"]
+
+[lines]
+tag_in = ["A moment. I am counting."]
+victory = "The books balance. So does the war."
+defeat = "Impossible. I audited this."
+
+[[portrait.option]]
+letter = "A"
+description = "Kindle's sleek up-swept hair in senatorial purple and cream, a gold laurel across the brow: elegant, unhurried, adding sums."
+donor = "ds:kindle"
+ramp = [{ indices = [7, 8], ramp = "tyrian" }, { indices = [9, 10], ramp = "cream" }]
+[[portrait.option.place]]
+shape = "laurel"
+target = "face"
+anchor = "brow"
+leaf = "E8C25A"
+leaf_dark = "A87C2C"
+
+[[portrait.option]]
+letter = "B"
+description = "Nell's golden hair and tailored suit, the suit now a purple-hemmed stola. The face that sells a war loan."
+donor = "aw2:nell"
+ramp = [{ indices = [9, 10], ramp = "tyrian" }, { indices = [7, 8], ramp = "gold" }]
+
+[[portrait.option]]
+letter = "C"
+description = "Sonja's composure in a cream toga with a crimson border and a gold clasp. The ledger is her clipboard."
+donor = "aw2:sonja"
+ramp = [{ indices = [9, 10], ramp = "cream" }, { indices = [12], ramp = "red" }]
+[[portrait.option.place]]
+anchor = "neck"
+dy = 14
+dx = 10
+motif = "phalera"
+clip = true
+
+[[portrait.option]]
+letter = "D"
+description = "Sasha's straight brown hair and officer's coat in senatorial purple with gold buttons."
+donor = "ds:sasha"
+ramp = [{ indices = [9, 10], ramp = "tyrian" }, { indices = [13, 12, 14], ramp = "gold" }]
+
+[[portrait.option]]
+letter = "E"
+description = "Rachel's cap and bright jacket in crimson-and-cream with a gold sun pin: the treasurer who keeps the army in good spirits."
+donor = "ds:rachel"
+ramp = [{ indices = [9, 10], ramp = "cream" }, { indices = [7, 8], ramp = "gold" }]
+
+[[portrait.option]]
+letter = "F"
+description = "Jess's teal uniform in purple and gold, her streak of hair in cream: the junior senator's first season as quaestor."
+donor = "aw2:jess"
+ramp = [{ indices = [9, 10], ramp = "tyrian" }, { indices = [7, 8], ramp = "gold" }]
+[[portrait.option.place]]
+shape = "laurel"
+anchor = "brow"

@@ -1,0 +1,69 @@
+# Tag Powers of the Emerald Sun pairs (docs/dev/co-kit.md, docs/ES_CAMPAIGN.md). `compat` is the firepower the Tag Power gives in percent (Dual Strike's
+# compatibility byte, 65..130; the Tag Power itself fires both Super Powers); `stars` the pair's rating, 1..3, as in Sturm's table
+# (`sturm_pairs.rs`: 110 is 1 star, 115 and 118 and 120 are 2, 125 is 3). A pair of two CO ids from the roster; `ds:`/`aw2:` ids name an existing CO.
+# Every unlisted pair is 95.
+
+[[pair]]
+a = "klaus"
+b = "aurelia"
+compat = 120
+stars = 2
+name = "Siege of Iron"
+why = "teacher and engineer: his line holds, her engines walk the wall down"
+
+[[pair]]
+a = "klaus"
+b = "cassius"
+compat = 108
+stars = 1
+name = "Hammer and Anvil"
+why = "rivals: the textbook tactic, performed with ill grace"
+
+[[pair]]
+a = "klaus"
+b = "livia"
+compat = 125
+stars = 3
+name = "Pax Romana"
+why = "old friends and the army's two pillars: the sword and the purse"
+
+[[pair]]
+a = "aurelia"
+b = "cassius"
+compat = 115
+stars = 2
+name = "Triumphal Road"
+why = "her roads and bridges under his wheels"
+
+[[pair]]
+a = "aurelia"
+b = "livia"
+compat = 118
+stars = 2
+name = "Aqueduct"
+why = "engineering paid for in full and on time"
+
+[[pair]]
+a = "cassius"
+b = "livia"
+compat = 110
+stars = 1
+name = "Gilded Chariot"
+why = "she funds his recklessness and audits every denarius of it"
+
+# Cross-army specials (the story's allies, `aw2:` = an AW2 / Dual Strike CO by name):
+[[pair]]
+a = "klaus"
+b = "aw2:kanbei"
+compat = 120
+stars = 2
+name = "Two Banners"
+why = "two old commanders who read each other's honour at once (after M10)"
+
+[[pair]]
+a = "livia"
+b = "aw2:colin"
+compat = 116
+stars = 2
+name = "Merchant Princes"
+why = "two treasurers comparing ledgers (after M6)"

@@ -1,0 +1,12 @@
+# Original pixel art of this repository (GPL-3.0-or-later), overlays for Roman portraits. '.' leaves the pixel, a letter is the colour in `colours`.
+[motif.phalera]
+colours = { g = "E8C25A", d = "A87C2C", l = "FFF0A0", r = "D02C3C" }
+oy = "centre"
+rows = [
+  ".dgggd.",
+  "dglllgd",
+  "gglrrgg",
+  "gglrrgg",
+  "dggggdd",
+  ".dgggd.",
+]

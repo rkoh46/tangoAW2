@@ -25,6 +25,7 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 ## Index
 | File | What |
 |---|---|
+| [co-kit.md](co-kit.md) | custom COs as data files: `aw2dev co` (portraits composed from the ROMs' parts + our overlays, stars and powers checked against AW2's table, Tag Powers) |
 | [testing.md](testing.md) | what to run for which change; false-pass lessons; politeness rules |
 | [online-dev.md](online-dev.md) | `aw2dev net` tools, impairment, desync workflow, soak, the signalling mock, public-service politeness |
 | [architecture-online.md](architecture-online.md) | shared console, star topology, HostAgg, waiting view and allowlist, migration, rejoin, UNRANKED, sim_version rules |

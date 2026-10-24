@@ -1,0 +1,79 @@
+# Aurelia, the siege engineer (docs/dev/co-kit.md).
+id = "aurelia"
+name = "Aurelia"
+army = "emerald_sun"
+role = "Emerald Sun's siege engineer"
+
+full_name = "Aurelia Faustina"
+theme = "co:grit"
+bio = "Chief engineer of the Emerald Sun. If a wall stands, she knows how it falls. Hit: Range. Miss: Walking."
+luck = [10, 10, 10]
+stars = { cop = 3, scop = 7 }
+
+[d2d]
+name = "Ballistics"
+text = "My Artillery and Rockets reach 1 space farther, and my indirect units hit 10% harder. My tanks and other vehicles hit 10% softer."
+mods = [ { units = "artillery rockets", range = 1 }, { units = "indirect", attack = 10 }, { units = "vehicle", attack = -10 } ]
+
+[cop]
+name = "Ballista"
+text = "Indirect units reach 1 more space and attack 30% harder."
+mods = [ { units = "indirect", range = 1, attack = 30 } ]
+quote = ["Wind the windlass!", "Let the walls hear it!"]
+
+[scop]
+name = "Onager"
+text = "Indirect units reach 1 more space and attack 30% harder, and each of their hits also costs enemy units next to the target 1 HP."
+mods = [ { units = "indirect", range = 1, attack = 30 } ]
+rules = [ "an indirect hit deals 1 HP of splash to every enemy unit adjacent to the target (hidden units too, never below 1 HP)" ]
+quote = ["Loose the onagers!", "Stone for every wall!"]
+
+[lines]
+tag_in = ["Measure twice. Fire once."]
+victory = "The wall is down. Fetch the ladders."
+defeat = "Bad footing. Next time, higher ground."
+
+[[portrait.option]]
+letter = "A"
+description = "Lash's spiky crop and long coat, the coat in legion stone with a red scarf of rank: a sapper who drew the walls herself."
+donor = "aw2:lash"
+ramp = [{ indices = [12, 13], ramp = "sage" }, { indices = [9], ramp = "red" }]
+
+[[portrait.option]]
+letter = "B"
+description = "Sami's soldier's build and rifle swapped for a bronze-and-stone kit: stone vest, olive trousers kept, a red headband and a laurel."
+donor = "aw2:sami"
+ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [7], ramp = "red" }]
+[[portrait.option.place]]
+shape = "laurel"
+anchor = "brow"
+
+[[portrait.option]]
+letter = "C"
+description = "Sonja's long black hair and clipboard, now the army's architect: a cream tunic, crimson belt and a gold hairpin."
+donor = "aw2:sonja"
+ramp = [{ indices = [9, 10], ramp = "cream" }, { indices = [12], ramp = "red" }]
+
+[[portrait.option]]
+letter = "D"
+description = "Sasha's long chestnut hair and hands-on-hips stance in a stone-coloured officer's coat with a crimson trim."
+donor = "ds:sasha"
+ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [13, 12, 14], ramp = "red" }]
+
+[[portrait.option]]
+letter = "E"
+description = "Rachel's cap and bright jacket, the jacket in legion red with gold buttons and a laurel on the cap: the hot-headed ballista crew chief."
+donor = "ds:rachel"
+ramp = [{ indices = [9, 10], ramp = "red" }, { indices = [7, 8], ramp = "gold" }]
+[[portrait.option.place]]
+shape = "laurel"
+anchor = "brow"
+
+[[portrait.option]]
+letter = "F"
+description = "Jess's teal uniform in stone and cream, her hair streak in red: the youngest engineer, a laurel, and the plans of the next siege under her arm."
+donor = "aw2:jess"
+ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [7, 8], ramp = "red" }]
+[[portrait.option.place]]
+shape = "laurel"
+anchor = "brow"

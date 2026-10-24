@@ -1,0 +1,101 @@
+# Klaus, the Legate: Emerald Sun's chief commander (docs/dev/co-kit.md). Portrait recipes: donor parts from the player's ROMs + our own overlays.
+id = "klaus"
+name = "Klaus"
+army = "emerald_sun"
+role = "the Legate, Emerald Sun's chief commander"
+
+full_name = "Klaus Aurelius Varo"
+theme = "co:kanbei"          # placeholder: AW2's own song until the music kit makes one
+bio = "Legate of the Emerald Sun, sent across the sea to find who starved his homeland. Stern, fair, tireless. Hit: Discipline. Miss: Being doubted."
+luck = [10, 10, 10]           # AW2 rows are 0..9 percent most days
+# Stars: the CO Power's, and the Super Power's in all (Dual Strike's convention; AW2's Hawke is 5 / 9, Kanbei 4 / 7, Eagle 3 / 9, Sturm 0 / 10).
+# A power's `mods` are on top of the day-to-day ones; every power also adds Dual Strike's own +10% firepower.
+stars = { cop = 4, scop = 8 }
+
+[d2d]
+name = "Imperium"
+text = "My legions fight and hold a little better. Infantry and Mech fight best of all."
+mods = [ { units = "all", attack = 10, defence = 10 }, { units = "foot", attack = 10, defence = 10 } ]
+
+[cop]
+name = "Testudo"
+text = "All units take 20% less damage, and my Infantry and Mech move 1 space more. Counterattacks against my attacks are weaker."
+mods = [ { units = "all", defence = 20 }, { units = "foot", move = 1 } ]
+rules = [ "enemy counterattacks against Klaus's attacks deal 25% less damage" ]
+quote = ["Shields up! Close ranks,", "and not one step back!"]
+
+[scop]
+name = "Legio Aeterna"
+text = "All units recover 3 HP, move 1 space more and attack 20% harder. Infantry and Mech gain 40% attack and defence on top."
+mods = [ { units = "all", attack = 20, move = 1 }, { units = "foot", attack = 40, defence = 40 } ]
+heal = 3
+quote = ["The legion does not fall.", "Rise, and march again!"]
+
+[lines]
+tag_in = ["Hold the line."]
+victory = "Order restored. March at dawn."
+defeat = "The legion... will remember."
+
+[[portrait.option]]
+letter = "A"
+description = "Hawke's grizzled greatcoat in legion stone, a red-plumed galea over the grey crop, a red sash across the chest."
+donor = "aw2:hawke"
+ramp = [{ indices = [9, 10], ramp = "sage" }]
+[[portrait.option.place]]
+shape = "helmet"
+anchor = "brow"
+[[portrait.option.place]]
+anchor = "neck"
+line = [26, 14, -30, 80]
+width = 5
+colours = ["E8C25A", "D02C3C", "D02C3C", "8E1B28"]
+
+[[portrait.option]]
+letter = "B"
+description = "Kanbei's stately cloak in crimson over a stone cuirass, a laurel wreath on the topknot: the commander as a triumphator."
+donor = "aw2:kanbei"
+ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [13, 14], ramp = "red" }]
+[[portrait.option.place]]
+shape = "laurel"
+anchor = "brow"
+dy = 0
+
+[[portrait.option]]
+letter = "C"
+description = "Dual Strike's Flak, bare-armed gladiator-general: crimson jerkin, stone helmet, a gold phalera on the chest."
+donor = "ds:flak"
+ramp = [{ indices = [9, 10], ramp = "red" }, { indices = [7], ramp = "sage" }]
+[[portrait.option.place]]
+anchor = "neck"
+dy = 30
+motif = "phalera"
+clip = true
+
+[[portrait.option]]
+letter = "D"
+description = "Javier's plate and moustache: stone coat and hat, crimson lining, the steel cuirass kept bright. An old soldier-statesman."
+donor = "ds:javier"
+ramp = [{ indices = [9, 10], ramp = "sage" }, { indices = [12], ramp = "red" }, { indices = [11, 13, 14], ramp = "steel" }]
+
+[[portrait.option]]
+letter = "E"
+description = "Olaf's beard and fur, turned to a Gallic-fighting legate: stone coat, white fur kept, a galea with a red plume."
+donor = "ds:olaf"
+ramp = [{ indices = [9, 10, 11], ramp = "sage" }]
+[[portrait.option.place]]
+shape = "helmet"
+anchor = "brow"
+
+[[portrait.option]]
+letter = "F"
+description = "Max's heavy frame in a cream tunic with a crimson sash and a laurel: a centurion who came up through the ranks."
+donor = "aw2:max"
+ramp = [{ indices = [7, 8], ramp = "darkhair" }, { indices = [9, 10], ramp = "cream" }]
+[[portrait.option.place]]
+shape = "laurel"
+anchor = "brow"
+[[portrait.option.place]]
+anchor = "neck"
+line = [26, 8, -34, 70]
+width = 6
+colours = ["E8C25A", "D02C3C", "D02C3C", "8E1B28"]

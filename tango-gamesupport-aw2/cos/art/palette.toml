@@ -1,0 +1,12 @@
+# Emerald Sun's portrait ramps (light to dark), original colours of this repository (GPL-3.0-or-later). Recipes name them in `[[portrait.option.ramp]]`.
+[ramp]
+sage = ["DEE4C0", "BECB9E", "A0AB85", "7E8769", "464A3B", "292C23"]     # the army's stone-steel
+red = ["F08A8A", "E0505E", "D02C3C", "A81E2E", "8E1B28", "5A101A"]      # legion red
+cream = ["FFF8E8", "F0E6CC", "D8CBA8", "B8A880", "8A7A5A"]               # undyed linen, a toga
+gold = ["FFF0A0", "E8C25A", "C9A040", "A87C2C", "6E4E18"]
+leather = ["C89860", "A06C3C", "74482A", "4A2C1C"]
+darkhair = ["7A5A48", "4A2E24", "2E1A18"]
+silver = ["F4F4F8", "C8C8D8", "8E8EA8"]
+tyrian = ["B878B0", "92488E", "74307A", "4E1E52"]                       # senatorial purple
+steel = ["F4F4F0", "C8CCBC", "8E9482", "5C6254"]
+ink = ["5A6E66", "3C4A44", "262E2A"]
