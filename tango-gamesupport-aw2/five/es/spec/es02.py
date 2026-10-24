@@ -43,11 +43,11 @@ def build():
     m.unit(1, RECON, 13, 11)
     # Eagle's wing and Jess's column
     m.units(2, INF, [(12, 2), (13, 3), (16, 3), (18, 3)])
-    m.units(2, TANK, [(9, 3), (11, 3), (15, 3), (17, 3)])
-    m.units(2, MDT, [(10, 2), (16, 2)])
-    m.units(2, RECON, [(8, 3), (14, 3)])
-    m.units(2, ART, [(14, 1), (15, 1)])
-    m.units(2, FTR, [(11, 1), (13, 1)])
+    m.units(2, TANK, [(9, 3), (11, 3), (15, 3)])
+    m.units(2, MDT, [(10, 2)])
+    m.units(2, RECON, [(8, 3)])
+    m.units(2, ART, [(14, 1)])
+    m.units(2, FTR, [(11, 1)])
     m.unit(2, BMB, 11, 0)
     # named places
     m.note("hq", 4, 12, "the legion's HQ: lose it and the mission is lost")

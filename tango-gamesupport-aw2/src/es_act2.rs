@@ -55,8 +55,8 @@ fn es06() -> MissionDef {
     m.map = MapSrc::Built("es06");
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(LIVIA)).funds(3000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(8000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(2).funds(8000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(5000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(2).funds(5000),
     ];
     m.units = deployment("es06");
     m.rank_days = 14;
@@ -86,7 +86,7 @@ fn es07() -> MissionDef {
     m.objective = "Sink the Warden flagship and take Isle Verdant's harbour.";
     m.map = MapSrc::Built("es07");
     m.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(6000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(8000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(10000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(8000),
     ];

@@ -74,14 +74,14 @@ def build():
     put(1, ART, 9, 15, 2, **S); put(1, AA, 11, 15, **S); put(1, BCO, 8, 15, **S); put(1, TCO, 12, 15, **S)
     # Kanbei: summit garrison (hold), the three passes' ambushes (advance)
     put(2, MECH, 9, 2, 2, lo=(8, 1), hi=(12, 3), hold=True)
-    put(2, ART, 8, 3, 1, lo=(7, 2), hi=(9, 3), hold=True); put(2, ART, 12, 3, 1, lo=(11, 2), hi=(13, 3), hold=True)
+    put(2, ART, 8, 3, 1, lo=(7, 2), hi=(9, 3), hold=True)
     put(2, ROCK, 10, 3, 1, lo=(9, 3), hi=(11, 4), hold=True); put(2, AA, 11, 3, 1, lo=(10, 2), hi=(12, 4))
     put(2, INF, 4, 3, 2, lo=(0, 2), hi=(8, 4)); put(2, INF, 14, 4, 2, lo=(11, 2), hi=(14, 4))
-    put(2, TANK, 4, 4, 1, lo=(3, 3), hi=(6, 4)); put(2, TANK, 9, 4, 1, lo=(8, 3), hi=(11, 4)); put(2, TANK, 13, 4, 1, lo=(12, 3), hi=(14, 4))
-    put(2, MDT, 3, 4, 1, lo=(0, 3), hi=(6, 4)); put(2, MDT, 12, 3, 1, lo=(11, 2), hi=(14, 4))
+    put(2, TANK, 4, 4, 1, lo=(3, 3), hi=(6, 4)); put(2, TANK, 9, 4, 1, lo=(8, 3), hi=(11, 4))
+    put(2, MDT, 12, 3, 1, lo=(11, 2), hi=(14, 4))
     # Sonja
     put(3, INF, 17, 3, 2, lo=(16, 2), hi=(18, 4), hold=True)
-    put(3, TANK, 16, 3, 2, lo=(16, 2), hi=(18, 4)); put(3, RECON, 18, 2, 2, lo=(16, 2), hi=(18, 4)); put(3, BCO, 18, 4, 1, lo=(16, 2), hi=(18, 4))
+    put(3, TANK, 16, 3, 2, lo=(16, 2), hi=(18, 4)); put(3, RECON, 18, 2, 1, lo=(16, 2), hi=(18, 4)); put(3, BCO, 18, 4, 1, lo=(16, 2), hi=(18, 4))
 
     m.note("hq1", 10, 14, "player HQ (south)").note("base1", 8, 14, "player base")
     m.note("hq2", 10, 1, "Kanbei's summit HQ: the objective").note("hq3", 17, 3, "Sonja's HQ in the east-ridge pocket")

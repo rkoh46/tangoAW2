@@ -72,9 +72,9 @@ fn es02() -> MissionDef {
             ],
         ),
         // Day 4: Eagle's wing.
-        on_day(4, None, vec![Action::Scene(scene("m02_day4")), Action::Spawn(wave(2, unit::FIGHTER, &[(19, 8), (19, 9)]))]),
+        on_day(4, None, vec![Action::Scene(scene("m02_day4")), Action::Spawn(wave(2, unit::FIGHTER, &[(19, 8)]))]),
         on_day(5, None, vec![Action::Spawn([wave(2, unit::TANK, &[(4, 0), (6, 0)]), wave(2, unit::INFANTRY, &[(19, 5)])].concat())]),
-        on_day(7, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &[(4, 0)]), wave(2, unit::TANK, &[(6, 0), (8, 0)])].concat())]),
+        on_day(7, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &[(4, 0)]), wave(2, unit::TANK, &[(6, 0)])].concat())]),
         // Day 9: the causeway is open. (The HQ falling is the match's own defeat.)
         on_day(9, None, vec![Action::Win]),
     ];

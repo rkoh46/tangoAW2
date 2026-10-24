@@ -36,7 +36,7 @@ def build():
     m.units(1, INF, [(8, 8), (10, 8), (8, 10), (10, 10)])
     m.units(1, MECH, [(9, 8), (9, 10)])
     m.units(1, TANK, [(8, 9), (10, 9)])
-    m.unit(1, RECON, 7, 9)
+    m.unit(1, RECON, 7, 9).unit(1, MDT, 9, 11).unit(1, ART, 11, 9)
     m.unit(1, ART, 9, 7)
     # Colin (north-west) and Sasha (south-east)
     m.units(2, INF, [(2, 2), (2, 3), (3, 2)]).units(2, TANK, [(4, 3), (3, 4)]).unit(2, RECON, 5, 4).unit(2, ART, 2, 4)

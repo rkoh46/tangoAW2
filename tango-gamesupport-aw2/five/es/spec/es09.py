@@ -89,9 +89,9 @@ def build():
     m.unit(2, ART, 9, 5, **H); m.unit(2, AA, 7, 5, **H); m.unit(2, FTR, 9, 3, hold=True)
     m.unit(2, AA, 13, 5, **H); m.unit(2, BCO, 13, 7)
     m.unit(2, LAN, 17, 2, hold=True, name="barge1").unit(2, LAN, 18, 5, hold=True, name="barge2").unit(2, LAN, 17, 8, hold=True, name="barge3")
-    m.unit(2, TANK, 12, 7).unit(2, TANK, 10, 8).unit(2, TANK, 11, 10).unit(2, MDT, 13, 10)
-    m.unit(2, INF, 13, 3).unit(2, INF, 9, 8).unit(2, MECH, 14, 10).unit(2, AA, 14, 11)
-    m.unit(2, MIS, 12, 11).unit(2, ART, 11, 12)
+    m.unit(2, TANK, 12, 7).unit(2, TANK, 11, 10).unit(2, MDT, 13, 10)
+    m.unit(2, INF, 13, 3).unit(2, INF, 9, 8).unit(2, MECH, 14, 10)
+    m.unit(2, ART, 11, 12)
     # notes for the mission code
     m.note("depot", 8, 4, "Kite Hill air depot (enemy airport, capture it)")
     m.note("barge1", 17, 2, "HOBB barge (Lander, on the sea)").note("barge2", 18, 5, "HOBB barge").note("barge3", 17, 8, "HOBB barge")

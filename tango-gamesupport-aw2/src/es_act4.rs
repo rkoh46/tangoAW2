@@ -81,7 +81,7 @@ fn cassius_changes_sides(core: &mut Core) {
 
 fn es14() -> MissionDef {
     let mut m = MissionDef::new("es14", "Varro's Gambit");
-    m.objective = "Hold the quay's HQ, then break out and take both docks by day 12.";
+    m.objective = "Hold the quay's HQ, then break out and take both docks by day 14.";
     m.map = MapSrc::Built("es14");
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(4000),
@@ -90,7 +90,7 @@ fn es14() -> MissionDef {
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
     m.units = deployment("es14");
-    m.day_limit = 12;
+    m.day_limit = 14;
     m.rank_days = 11;
     m.intro = scene("m14_pre");
     m.victory = scene("m14_post");

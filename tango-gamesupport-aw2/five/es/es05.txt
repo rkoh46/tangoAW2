@@ -35,13 +35,10 @@ unit 2 1 15 10 hold
 unit 2 2 16 2 hold
 unit 2 2 16 11 hold
 unit 2 5 17 5
-unit 2 5 17 8
 unit 2 6 18 6
 unit 2 10 18 4 hold
-unit 2 10 18 9 hold
 unit 2 11 19 6 hold
 unit 2 14 22 7 hold
-unit 2 19 21 10
 unit 2 19 22 11
 unit 2 20 22 9
 ............-.............

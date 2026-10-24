@@ -35,9 +35,9 @@ def build():
     m.units(1, TCO, [(4, 6), (4, 10)]).units(1, BCO, [(2, 6), (2, 12)])
     m.units(1, INF, [(6, 7), (5, 6), (5, 10)]).units(1, MECH, [(6, 9), (5, 11)])
     # Green Earth: Drake's ships off the west coast, Eagle's wing around the airport
-    m.unit(2, BS, 12, 8, name="flagship").units(2, CR, [(12, 6), (12, 10)]).units(2, SUB, [(13, 7), (13, 9)])
+    m.unit(2, BS, 12, 8, name="flagship").units(2, CR, [(12, 6)]).units(2, SUB, [(13, 7)])
     m.unit(2, LAN, 14, 6).units(2, INF, [(16, 8), (16, 9)], hold=True)
-    m.units(3, FTR, [(16, 5), (16, 6), (17, 6)]).units(3, BCO, [(18, 6), (18, 5)])
+    m.units(3, FTR, [(16, 5), (16, 6)]).units(3, BCO, [(18, 6), (18, 5)])
     m.note("flagship", 12, 8, "the Warden flagship (Battleship, named flagship)").note("harbour", 15, 8, "the port to capture (west coast notch of Isle Verdant)")
     m.note("hq1", 3, 8).note("hq2", 20, 10, "Drake's HQ").note("hq3", 19, 4, "Eagle's HQ")
     m.note("port_n", 3, 2, "player port, sea at (3, 1)").note("port_s", 3, 13, "player port, sea at (3, 14)").note("airport", 5, 8, "player airport")

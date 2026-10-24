@@ -69,10 +69,10 @@ def build():
     put(1, ART, 5, 6, 2, **P); put(1, MECH, 5, 8, 2, **P); put(1, INF, 5, 4, 2, **P); put(1, AA, 4, 6, **P)
     taken.update([(15, 5), (15, 7), (17, 7), (16, 5)])
     # Flak and Lash hold the ford; the rest advance from the camps
-    m.unit(3, MDT, 15, 5, hold=True).unit(3, MDT, 15, 7, hold=True).unit(3, ROCK, 17, 7, hold=True).unit(2, ART, 16, 5, hold=True)
-    put(2, INF, 21, 3, 3, lo=(19, 1), hi=(25, 4)); put(2, TANK, 20, 3, 3, lo=(18, 1), hi=(25, 5)); put(2, RECON, 22, 5, 2, lo=(19, 3), hi=(25, 5))
+    m.unit(3, MDT, 15, 5, hold=True).unit(3, ROCK, 17, 7, hold=True).unit(2, ART, 16, 5, hold=True)
+    put(2, INF, 21, 3, 3, lo=(19, 1), hi=(25, 4)); put(2, TANK, 20, 3, 2, lo=(18, 1), hi=(25, 5)); put(2, RECON, 22, 5, 2, lo=(19, 3), hi=(25, 5))
     put(2, MECH, 16, 6, 2, lo=(15, 5), hi=(19, 7))
-    put(3, INF, 21, 9, 3, lo=(19, 8), hi=(25, 11)); put(3, TANK, 20, 8, 2, lo=(18, 7), hi=(25, 11))
+    put(3, INF, 21, 9, 3, lo=(19, 8), hi=(25, 11)); put(3, TANK, 20, 8, 1, lo=(18, 7), hi=(25, 11))
 
     m.note("apc1", 3, 4, "convoy APC 1 (also apc2 (3,5), apc3 (3,6), apc4 (3,7)); must arrive in `camp`")
     m.note("hq1", 4, 5, "player HQ at the harbour, base (4,7), ports (2,3) and (2,8)")

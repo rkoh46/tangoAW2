@@ -34,11 +34,11 @@ def build():
     m.units(1, ART, [(3, 6), (3, 9)]).unit(1, AA, 4, 10)
     # Max in Ironhold
     m.units(2, INF, [(12, 6), (13, 7), (12, 9)], hold=True).units(2, MECH, [(13, 6), (13, 9)], hold=True)
-    m.units(2, MDT, [(14, 7), (14, 8), (15, 8)]).units(2, TANK, [(15, 6), (15, 9)])
+    m.units(2, MDT, [(14, 7), (14, 8)]).units(2, TANK, [(15, 6)])
     m.units(2, ART, [(17, 6), (17, 9)]).unit(2, AA, 15, 5)
     # Jake on the south-east plain
-    m.units(3, INF, [(18, 13), (20, 12)]).units(3, TANK, [(19, 10), (20, 9), (19, 9)]).units(3, RECON, [(21, 12), (19, 12)])
-    m.unit(3, ROCK, 20, 13).unit(3, BCO, 21, 10)
+    m.units(3, INF, [(18, 13), (20, 12)]).units(3, TANK, [(19, 10), (20, 9)]).units(3, RECON, [(21, 12), (19, 12)])
+    m.unit(3, ROCK, 20, 13)
     m.note("causeway", 8, 7, "wide bridge x=8, y 7..8 (the only crossing of the canal)").note("fort_gate", 12, 7, "front gate cell (12, 7), road from the causeway")
     m.note("rear_gate", 18, 7, "rear gate cell (18, 7), road to the east road x=20")
     m.note("hq1", 2, 7).note("hq2", 16, 7, "Max's HQ, inside the fort").note("hq3", 19, 13, "Jake's HQ")

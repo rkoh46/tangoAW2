@@ -36,13 +36,10 @@ unit 2 1 16 8 hold
 unit 2 1 16 9 hold
 unit 2 21 12 8 name=flagship
 unit 2 22 12 6
-unit 2 22 12 10
 unit 2 23 14 6
 unit 2 24 13 7
-unit 2 24 13 9
 unit 3 16 16 5
 unit 3 16 16 6
-unit 3 16 17 6
 unit 3 19 18 5
 unit 3 19 18 6
 ~~~~~~~~~~~~~~~~~~~~~~

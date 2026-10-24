@@ -39,17 +39,12 @@ unit 2 1 13 3
 unit 2 1 16 3
 unit 2 1 18 3
 unit 2 3 10 2
-unit 2 3 16 2
 unit 2 5 9 3
 unit 2 5 11 3
 unit 2 5 15 3
-unit 2 5 17 3
 unit 2 6 8 3
-unit 2 6 14 3
 unit 2 10 14 1
-unit 2 10 15 1
 unit 2 16 11 1
-unit 2 16 13 1
 unit 2 17 11 0
 ....................
 ............A....2..
