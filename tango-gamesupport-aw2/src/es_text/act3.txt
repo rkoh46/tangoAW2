@@ -146,8 +146,6 @@ KANBEI: Let us see who breaks the / silence. It will not be me.
 NARRATION: Day four. The guns fall / silent. A white cloth on the spur.
 KANBEI: Legate. My scouts say your / men carried my wounded downhill.
 KLAUS: They were in the way. I do / not leave men on a road.
-KANBEI: In the way. You say that as / though it were not honour.
-KLAUS: Honour is a word for people / with leisure. I have a schedule.
 SONJA: Do continue. This is the first / duel I have enjoyed all month.
 KANBEI: One question, Legate, and I / ask it once. Why do you march?
 KLAUS: Because the bread stopped. And / because someone made it stop.
@@ -184,7 +182,7 @@ KLAUS: Two banners. I accept. / On the day my army is wrong,
 KLAUS: you will say so aloud, in front / of everyone. That is the price.
 KANBEI: That is the least I would / do. I accept the price gladly.
 CASSIUS(h): I told you! He is better / than you. Give him a horse!
-KLAUS: He has been given a / Tag. That is better than a horse.
+KLAUS: He has the Tag. That is a / better gift than a horse.
 SOLDIER YC: Commander! A rider from / the ridge. A letter for the Legate.
 KANBEI: From Sonja. She never / signs. She only initials.
 KLAUS: "The grey falls on my / mountains too. You are not alone.
@@ -207,12 +205,10 @@ LIVIA: The banner budget is closed, / Prefect. I have closed it myself.
 KLAUS: Livia. A moment. This note / from Sonja.
 LIVIA: A black book. Her black book / is a ledger in all but name.
 LIVIA: A creditor who writes down / every debt of honour. How elegant.
-KANBEI: She wrote my name there / at my christening, I think.
 KANBEI: She does not forgive and / she does not forget. I trust her.
 KLAUS: You trust Sonja.
 KANBEI: I trust that she will do / exactly what she says she will do.
 KANBEI: That is the whole of trust. / It is not warmth. It is reliability.
-LIVIA: A definition I could print / on a bill.
 KLAUS: Then it is settled. The / road runs to the north Free Port.
 
 # ---------------------------------------------------------------- M11 The Treasure Train (marauders: Lash, Flak)
@@ -290,8 +286,84 @@ CASSIUS: a country for a barn of / dust. I was proud of it.
 KLAUS: I know what it says, Cassius.
 CASSIUS: Of course you do. I showed / you. In the fog, like a fool.
 KLAUS: I know what it says. I also / know what you did at the ford.
-CASSIUS: I took the road. It was / slow. I did not enjoy it.
 KLAUS: You took the road because the / ruin was a lie. That was your decision.
 CASSIUS: ...Do not make it a / speech, old man.
 KLAUS: I will not. Go to sleep.
 CASSIUS: I will keep the letter. In / case I need to remember what I was.
+
+# ---------------------------------------------------------------- M12 Siege of Iron (Blue Moon: Olaf, Grit; Klaus + Aurelia)
+
+== m12_pre
+@SONG aw2:423
+NARRATION: The Iron Bastion, Blue Moon. / Snow to the knee, three walls high.
+AURELIA: Three rings, Legate. The / outer is dressed granite.
+AURELIA: The middle is iron plate. / The inner is a wall of wall.
+AURELIA: I have never wanted to / be a rock more than I do now.
+KLAUS: You are not a rock. You are / the one who knows rocks.
+KLAUS: It is a Tag. You hold the / hammer and I hold the line.
+OLAF: Wah-ha-ha! Visitors! Snow / and visitors! My two favourites!
+OLAF: Olaf of Blue Moon! Welcome to / the Bastion! Mind the cold!
+OLAF: I hear you bought half of / Colin's market. Wonderful!
+KLAUS: Commander Olaf. I am Legate / Klaus of Aurea. We seek a road.
+OLAF: A road! There is only one / road here. It goes up. Wah-ha!
+GRIT: Hold yer horses, Olaf. Let / the man finish his sentence.
+GRIT: Name's Grit. Pleased to / meet ya. Don't mind the guns.
+GRIT: Every approach to this hill is / covered. Every one. I counted.
+GRIT: Twice. Once with the eyes. Once / with the elbow.
+GRIT: If a Roman sneezes at three / thousand paces, I will say bless you.
+LIVIA: A hobby, Commander. How / expensive is your ammunition?
+GRIT: Bout the price of a good / horse, ma'am. A shell a day.
+LIVIA: I see. I shall be pleased / to bill you for the delay.
+OLAF: I know, I know! But the Bastion / is on a map, and maps are my job!
+OLAF: Take the hill if you can! I / will wave to you from the top!
+KLAUS: Aurelia. Plan the climb.
+
+== m12_day5
+NARRATION: Day five. The outer ring / is cracked. The guns answer.
+GRIT: There! A shell for the lady / on the spur. Bless you, ma'am.
+AURELIA: Legate, he hit the spur. / He hit my spur. At that range.
+AURELIA: Fine. A gun that hits / twice is a gun that sits still.
+AURELIA: Recons to the flanks. Make / him shoot. Mark every flash.
+AURELIA: Then the guns answer back / from one tile further than his.
+KLAUS: Tag Power on my word. You / hold the line. I hold the hammer.
+GRIT: Hee-hee! That is a clever / lady. I do love a clever lady.
+
+== m12_post
+@SONG ally2
+NARRATION: The inner ring. The iron / plate comes down in the snow.
+OLAF: Wah-ha-ha! The inner ring! You / took it, you rascals! Magnificent!
+OLAF: Honestly, I thought you would / sneeze at the outer gate.
+KLAUS: We did not sneeze. We / counted.
+GRIT: Hee. That was a fair siege. / Never seen one done so neat.
+GRIT: Ma'am, your guns are one tile / longer than mine. Cheater.
+AURELIA: One tile. The Legate pays me / in tiles.
+OLAF: I surrender! Consider it a / kindness! The snow is melting!
+OLAF: A commander who loses a hill / learns the price of hills!
+OLAF: I have an Accord to explain to. / They are not so merry.
+KLAUS: Commander Olaf. I will say / in the Accord that you held well.
+OLAF: Say that I held badly and laughed! / It is more truthful! Wah-ha!
+GRIT: I will vouch for you, Roman. / You shot straight.
+GRIT: You never fired at my medics. / I counted. Twice.
+LIVIA: Commander Grit. The / invoice for the delay.
+GRIT: I will frame it, ma'am.
+OLAF: Go to the council! Nell is / waiting! Tell her Olaf sent you!
+OLAF: Tell her I lost the Bastion / to honest folk. She will smile.
+
+== m12_map
+@SONG ally1
+NARRATION: The Accord's council hall, / Orange Star. Nell presides.
+NELL: Order, please. The Allied / Accord hears Legate Klaus of Aurea.
+NELL: Legate, you have the floor. / Please do not take all night.
+KLAUS: Thank you, Chair. I will be / brief. We came for bread.
+KLAUS: Three summers ago our harvest / failed. Ash fell on our fields.
+KLAUS: Relief came from a freight / house. We followed its stencil.
+KLAUS: It led to Black Hole's yards. / Jars of ash, not grain.
+SASHA: Counterfeit coin. Counterfeit / story. Your Quaestor has charm.
+LIVIA: Commander Sasha. I would / be glad to compare ledgers.
+SASHA: ...That will not be necessary.
+JESS: He kept the lanes clean at Isle / Verdant. Drake said so. I believe it.
+MAX: I don't trust talkers. I saw / him at Ironhold. He fights fair.
+NELL: The Accord has heard Legate / Klaus. We do not yet vote.
+NELL: Legate, you are granted safe / passage in our waters. Not our trust.
+NELL: Bring me the one thing I can / read. A ledger, a name, a seal.
+KLAUS: The trail runs to the Free / Port. I will bring you the book.
