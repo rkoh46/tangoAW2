@@ -22,7 +22,7 @@ fn everyone() -> Vec<u8> {
 // --- M13 The Free Port (Black Hole's yard: inventions allowed) ---------------------------------
 
 /// The Harbour Office, the neutral city in the middle of the port.
-const OFFICE: (u8, u8) = (12, 10);
+const OFFICE: (u8, u8) = (19, 15);
 
 fn reset_hold(core: &mut Core) {
     core.raw_write_8(STATE, -1, 0);
