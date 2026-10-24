@@ -22,6 +22,7 @@ SCALE = int(os.environ.get("AW2TEST_ES_SCALE", "100"))
 BOT = {
     1: {"goals": [(15, 4)]},
     2: {"stance": "defend"},
+    3: {"goals": [(16, 12)]},
     5: {"goals": [(15, 2), (15, 6), (15, 11)], "rush": True},
     7: {"goals": [(15, 8)]},
     9: {"goals": [(8, 4)]},

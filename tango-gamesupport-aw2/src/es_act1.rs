@@ -102,7 +102,7 @@ fn es03() -> MissionDef {
     m.recruits = vec![roster::AURELIA];
     m.triggers = vec![
         // Day 2: the engineers' Bomber.
-        on_day(2, None, vec![Action::Spawn(wave(1, unit::BOMBER, &[(9, 15)]))]),
+        on_day(2, None, vec![Action::Spawn(wave(1, unit::BOMBER, &[(11, 22)]))]),
         on_day(3, None, vec![Action::Scene(scene("m03_day3"))]),
     ];
     m.flag = region::ACT1[2];
