@@ -41,7 +41,8 @@ def save_es_campaign_record_and_a_mission_saved_halfway(ctx):
     ctx.eq(int.from_bytes(won.slot(ES_RECORD)[8:12], "little"), 1, "mission 1 won, saved")
     ctx.eq(sorted(won.tags()), [0, ES_RECORD], "only the profile and the record")
     # Mission 2 (Klaus fixed) saved from its map menu.
-    d.pick_mission()
+    from aw2test import bhact2 as a2
+    a2.open_mission(ctx, e, g, d, 1, [], "m2")
     g._units_base = g._players_base = None
     d.wait_control()
     names = saves.suspend(g)
