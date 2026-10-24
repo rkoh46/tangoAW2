@@ -1,82 +1,91 @@
-"""M12 Siege of Iron (Act III, tag mission, snow): the Iron Bastion, Olaf's HQ inside three rings of mountains, Grit's guns in the corridors and his HQ on the east spur."""
+"""M12 Siege of Iron (Act III, tag mission, snow): the Iron Bastion of the Blue Moon marches, Olaf's HQ inside three rings of mountain walls, Grit's guns in the corridors and his HQ on the east spur."""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
 
 
 def build():
-    m = Canvas("es12", 24, 17)
+    m = Canvas("es12", 42, 30)
     m.header(armies=3, colours=(OS, BM, BM), team=[1, 2, 2], objective=[1],
-             comment="M12 Siege of Iron (tag, snow): take Olaf's HQ 2 (9,6) in the heart of three mountain rings (outer x1..17,y0..13; middle x4..14,y3..10; inner x6..12,y5..8). "
-                     "Gaps: outer (5,13) (13,13) south and (17,8) east (toward Grit's spur); middle (9,10) south, (4,5) west, (14,8) east; inner (7,8) (11,8) south and (6,6) west. "
-                     "The gaps never line up: every ring forces a zigzag along a 1-2 cell corridor under the guns. Grit's HQ 3 (21,7) on the east spur (plain pocket x20..22,y5..9; "
-                     "mountain walls, entered from the south at (21,11) or from the outer ring's east gap at (17,8) through (18,8)..(19,8)). The player must reach both HQs (objective). "
-                     "Threat/answer: Grit's Artillery and Rockets (hold) in the corridors -> Aurelia's extra range, Recons to find them, Bombers from the airport (12,15) (the Missiles (9,1) and AA (3,11) "
-                     "are far from the south corridor: strike the guns there first), Mechs and Infantry over the mountains straight to the guns; Olaf's Tanks and Md Tanks pour out of the gaps -> "
+             comment="M12 Siege of Iron (tag, snow; province: the Iron Bastion, Blue Moon's fortress on the Frost March): the Aurean legion crosses the snowfield and takes Olaf's HQ 2 (17,13) in the heart of three rings of mountain walls "
+                     "(outer about x4..30,y3..23; middle x9..25,y7..19; inner x12..22,y10..16); Grit's HQ 3 (37,13) sits on the east spur. "
+                     "Gaps: outer SW (10,23) SE (24,23) and E (30,13); middle S (17,19) W (9,13) E (25,10); inner SW (13,16) SE (21,16) and N (17,10). "
+                     "The gaps never line up: every ring forces a zigzag along a 3-4 cell corridor under the guns. "
+                     "Threat/answer: Grit's Artillery and Rockets (hold) in the corridors -> Aurelia's extra range, Recons to find them, Bombers from the airport (20,27) (the Missiles (17,5) and AA are far from the south corridor: "
+                     "strike the guns there first), Mechs and Infantry over the mountains straight to the guns; Olaf's Tanks and Md Tanks pour out of the gaps -> "
                      "Tanks/Md Tanks and Artillery hold the gaps, Rockets/Artillery fire at the choke; Olaf's AA vs the Bomber -> use Artillery on it or Bombers where it cannot reach. "
-                     "Player start: ART3 ROCK2 RECON3 INF4 MECH3 TANK3 MDT2 AA1 BMB1 (21 units), HQ (9,15), base (7,15), airport (12,15), funds 5000. "
+                     "Player start: ART3 ROCK2 RECON3 INF4 MECH3 TANK3 MDT2 AA1 BMB1 (22 units), HQ (17,27), base (13,27), airport (20,27), funds 5000. "
                      "Olaf: INF4 + MECH2 hold the inner ring, MDT3 TANK3 AA1 advance, ART1 holds; Grit: ART4 ROCK2 MIS1 hold, INF2 MECH1 hold at the spur (24 units, about 1.3x).")
-    # the three rings of mountains
-    m.frame("^", 1, 0, 17, 13).frame("^", 4, 3, 14, 10).frame("^", 6, 5, 12, 8)
-    m.put(".", 5, 13).put(".", 13, 13).put(".", 17, 8)
-    m.put(".", 9, 10).put(".", 4, 5).put(".", 14, 8)
-    m.put(".", 7, 8).put(".", 11, 8).put(".", 6, 6)
-    # the east spur: walls of mountain around Grit's pocket, entered from the south (21,11) and from the outer ring's gap (the road (18,8)..(19,8))
-    m.rect("^", 19, 3, 23, 3).rect("^", 19, 3, 19, 11).rect("^", 23, 3, 23, 11).rect("^", 19, 11, 23, 11)
-    m.put(".", 21, 11).put(".", 19, 8)
-    # the south field: woods for the player's cover, a ridge on the west
-    m.rect("f", 15, 14, 18, 15).rect("f", 2, 14, 3, 15).put("f", 14, 12).put("f", 0, 11)
-    # roads: the south field, then the gaps up to the bastion (no road inside the rings, snow)
-    m.road([(5, 13), (5, 14)]).road([(13, 13), (13, 14)]).road([(3, 14), (21, 14)]).road([(21, 12), (21, 14)])
-    m.road([(17, 8), (19, 8)])
-    # properties
-    m.put("1", 9, 15).put("B", 7, 15).put("A", 12, 15).put("C", 5, 15).put("C", 15, 13).put("C", 10, 15)
-    m.put("c", 1, 15).put("c", 22, 14).put("c", 0, 8).put("c", 19, 14)
-    m.put("2", 9, 6).put("B", 8, 2).put("B", 10, 2).put("C", 3, 2).put("C", 15, 2).put("c", 3, 11).put("c", 15, 11).put("C", 9, 9)
-    m.put("3", 21, 7).put("C", 20, 5).put("C", 22, 9)
-    # make sure the HQs have ground beside them
-    taken = set()
+    cx, cy = 17, 12
+    import math, random
 
-    def spot(cx, cy, n, lo, hi, kinds=".f"):
-        out = []
-        for r in range(0, 14):
+    def ring(rx, ry, seed, thick):
+        """A wall of mountain round (cx, cy): an ellipse whose radius wanders smoothly with the angle, `thick` cells wide."""
+        rnd = random.Random(f"es12/ring{seed}")
+        ph = [rnd.random() * 6.28 for _ in range(3)]
+        amp = (0.05, 0.04, 0.03)
+        t = thick / ((rx + ry) / 2)
+        for y in range(cy - ry - 3, cy + ry + 4):
+            for x in range(cx - rx - 3, cx + rx + 4):
+                if not m.inside(x, y):
+                    continue
+                d = math.hypot((x - cx) / rx, (y - cy) / ry)
+                th = math.atan2(y - cy, x - cx)
+                r = 1 + sum(a_ * math.sin(k * th + p_) for a_, k, p_ in zip(amp, (2, 3, 5), ph))
+                if abs(d - r) <= t / 2:
+                    m.put("^", x, y)
+    ring(14, 11, 1, 2); ring(9, 8, 2, 2); ring(5, 4, 3, 1.4)
+    # the gaps (never in line): outer SW / SE / E, middle S / W / E, inner SW / SE / N
+    for x0, y0, x1, y1 in ((10, 21, 11, 25), (23, 21, 24, 25), (29, 12, 34, 13), (17, 18, 18, 21), (4, 12, 9, 13), (25, 9, 29, 10),
+                           (13, 15, 14, 19), (20, 15, 21, 19), (17, 6, 18, 10)):
+        m.rect(".", x0, y0, x1, y1, only="^")
+    # the east spur: walls of mountain around Grit's pocket
+    m.blob("^", 37, 12, 5, 6, seed=7, wobble=0.15); m.blob(".", 37, 12, 3, 4, seed=8, wobble=0.1)
+    m.rect(".", 31, 12, 35, 13, only="^").rect(".", 37, 16, 37, 20, only="^")
+    # the snowfield: drifts of wood and rocky outcrops
+    for cx2, cy2, n, s in ((4, 27, 7, 10), (28, 28, 8, 11), (9, 28, 5, 12), (36, 26, 7, 13), (2, 19, 6, 14), (3, 7, 7, 15), (14, 0, 6, 16), (24, 1, 7, 17), (33, 3, 6, 18), (39, 22, 5, 19), (31, 18, 6, 26), (33, 21, 5, 27)):
+        m.cluster("f", cx2, cy2, n, seed=s)
+    for cx2, cy2, n, s in ((6, 24, 5, 20), (31, 25, 5, 21), (38, 2, 5, 22), (1, 2, 5, 23), (21, 29, 4, 24), (40, 28, 4, 25)):
+        m.cluster("^", cx2, cy2, n, seed=s)
+    # ---- roads ----
+    m.road([(5, 26), (10, 26), (14, 26), (14, 24), (20, 24), (20, 26), (31, 26), (36, 26), (37, 21)])   # the south field's road
+    m.road([(10, 26), (10, 22), (24, 22), (24, 26)])                           # through both outer south gaps along the first corridor
+    m.road([(17, 22), (17, 19), (21, 19), (21, 15)]).road([(17, 19), (14, 19), (14, 15)])
+    m.road([(10, 22), (6, 22), (6, 13), (10, 13)])                             # the west corridor
+    m.road([(6, 13), (6, 8), (13, 8), (17, 8), (17, 6)])                       # the north corridor, up to the inner N gap
+    m.road([(27, 10), (27, 12), (31, 12), (35, 12)]).road([(27, 12), (27, 18), (24, 22)])
+    m.road([(27, 10), (22, 10) if False else (25, 10)])
+    # ---- properties ----
+    m.put("1", 17, 28).put("B", 13, 27).put("A", 21, 28).put("C", 9, 27).put("C", 26, 27).put("C", 17, 25).put("c", 3, 25).put("c", 33, 27).put("c", 4, 14).put("c", 38, 23)
+    m.put("2", 17, 12).put("B", 15, 11).put("B", 19, 13).put("C", 10, 9).put("C", 24, 17).put("c", 6, 6).put("c", 28, 8).put("C", 12, 19).put("C", 22, 6)
+    m.put("3", 37, 12).put("C", 36, 10).put("C", 38, 14)
+    m.rect(".", 35, 10, 39, 14, only="^").put("3", 37, 12)
+    # ---- units ----
+    H = dict(hold=True)
+    m.spread(1, {BMB: 1}, (18, 26, 22, 28), seed=1, gap=0)
+    m.spread(1, {ART: 3, ROCK: 2, MDT: 2, AA: 1}, (8, 25, 26, 28), seed=2, gap=1)
+    m.spread(1, {RECON: 3, TANK: 3}, (5, 23, 30, 26), seed=3, gap=1)
+    m.spread(1, {INF: 4, MECH: 3}, (4, 24, 30, 28), seed=4, gap=1)
+    # Olaf: the inner ring (hold), the corridors (advance); Grit's guns (hold) in the corridors
+    for kind, x, y in ((INF, 15, 11), (INF, 19, 11), (INF, 16, 15), (INF, 19, 15), (MECH, 14, 13), (MECH, 20, 12), (ART, 17, 12)):
+        m.unit(2, kind, x, y, **H)
+    m.spread(2, {MDT: 3, TANK: 3, AA: 1}, (6, 8, 28, 21), seed=5, gap=2)
+    def near(x, y):
+        occ = {(u["x"], u["y"]) for u in m.u}
+        for r in range(0, 6):
             for dy in range(-r, r + 1):
                 for dx in range(-r, r + 1):
-                    if max(abs(dx), abs(dy)) != r:
-                        continue
-                    x, y = cx + dx, cy + dy
-                    if lo[0] <= x <= hi[0] and lo[1] <= y <= hi[1] and m.inside(x, y) and m.get(x, y) in kinds and (x, y) not in taken and (x, y) not in out:
-                        out.append((x, y))
-                        if len(out) == n:
-                            taken.update(out)
-                            return out
-        raise RuntimeError(f"no room near {cx},{cy}")
-
-    def put(army, kind, cx, cy, n=1, lo=(0, 0), hi=(99, 99), kinds=".f", **kw):
-        for x, y in spot(cx, cy, n, lo, hi, kinds):
-            m.unit(army, kind, x, y, **kw)
-
-    S = dict(lo=(0, 14), hi=(23, 16))
-    put(1, BMB, 11, 14, **S); put(1, ART, 8, 14, 3, **S); put(1, ROCK, 10, 14, 2, **S)
-    put(1, RECON, 6, 16, 3, **S); put(1, INF, 4, 14, 4, **S); put(1, MECH, 14, 15, 3, **S)
-    put(1, TANK, 9, 16, 3, **S); put(1, MDT, 13, 16, 2, **S); put(1, AA, 12, 16, **S)
-    # Olaf: the inner ring (hold), the corridors (advance), Grit's guns (hold) in the corridors
-    I = dict(lo=(7, 6), hi=(11, 7), hold=True)
-    put(2, INF, 8, 6, 4, **I); put(2, MECH, 9, 7, 2, **I)
-    put(2, MDT, 9, 11, 3, lo=(2, 11), hi=(16, 12)); put(2, TANK, 3, 6, 2, lo=(2, 4), hi=(3, 9)); put(2, TANK, 15, 6, 1, lo=(15, 4), hi=(16, 9))
-    put(2, AA, 3, 11, 1, lo=(2, 10), hi=(4, 12)); put(2, ART, 9, 4, 1, lo=(5, 4), hi=(13, 4), hold=True)
-    put(3, ART, 3, 4, 1, lo=(2, 3), hi=(3, 5), hold=True); put(3, ART, 15, 4, 1, lo=(15, 3), hi=(16, 5), hold=True)
-    put(3, ART, 3, 9, 1, lo=(2, 8), hi=(3, 10), hold=True); put(3, ART, 15, 9, 1, lo=(15, 8), hi=(16, 10), hold=True)
-    put(3, ROCK, 6, 12, 1, lo=(4, 11), hi=(8, 12), hold=True); put(3, ROCK, 12, 12, 1, lo=(10, 11), hi=(14, 12), hold=True)
-    put(3, MIS, 9, 1, 1, lo=(8, 1), hi=(10, 2), hold=True)
-    put(3, INF, 21, 6, 2, lo=(20, 5), hi=(22, 9), hold=True); put(3, MECH, 21, 8, 1, lo=(20, 5), hi=(22, 9), hold=True)
-
-    m.note("hq1", 9, 15, "player HQ; base (7,15), airport (12,15) (BMB production)").note("hq2", 9, 6, "Olaf's HQ in the inner ring: the final objective")
-    m.note("hq3", 21, 7, "Grit's HQ on the east spur (a second objective)")
-    m.note("ring_outer", 1, 0, "outer ring x1..17,y0..13; gaps (5,13) (13,13) (17,8)")
-    m.note("ring_middle", 4, 3, "middle ring x4..14,y3..10; gaps (9,10) (4,5) (14,8)")
-    m.note("ring_inner", 6, 5, "inner ring x6..12,y5..8; gaps (7,8) (11,8) (6,6)")
-    m.note("spur", 19, 3, "east spur mountains x19..23,y3..11; pocket x20..22,y4..10; entries (21,11) south and (19,8) west")
-    m.note("guns", 3, 4, "Grit's guns (hold): ART (3,4)-ish NW, (15,4) NE, (3,9) SW, (15,9) SE corridors; ROCK in the south corridor near (6,12) and (12,12); MIS (9,1) north")
-    m.note("airport", 12, 15, "player airport: Bombers")
+                    c = (x + dx, y + dy)
+                    if max(abs(dx), abs(dy)) == r and m.inside(*c) and m.get(*c) in ".f" and c not in occ:
+                        return c
+    for kind, x, y in ((ART, 7, 20), (ART, 27, 19), (ART, 6, 9), (ART, 26, 7), (ROCK, 13, 21), (ROCK, 22, 21), (MIS, 17, 6), (INF, 36, 11), (INF, 38, 11), (MECH, 37, 14)):
+        m.unit(3, kind, *near(x, y), **H)
+    m.note("hq1", 17, 27, "player HQ; base (13,27), airport (20,27) (BMB production)").note("hq2", 17, 13, "Olaf's HQ in the inner ring: the final objective")
+    m.note("hq3", 37, 13, "Grit's HQ on the east spur (a second objective)")
+    m.note("ring_outer", 4, 3, "outer ring about x4..30,y3..23; gaps (10,23) (24,23) (30,13)")
+    m.note("ring_middle", 9, 7, "middle ring about x9..25,y7..19; gaps (17,19) (9,13) (25,10)")
+    m.note("ring_inner", 12, 10, "inner ring about x12..22,y10..16; gaps (13,16) (21,16) (17,10)")
+    m.note("spur", 32, 8, "east spur mountains about x32..42,y7..19; pocket around (37,13); entries (37,19) south and (32,13) west")
+    m.note("guns", 7, 20, "Grit's guns (hold): ART (7,20) SW, (27,20) SE, (6,9) NW, (26,8) NE corridors; ROCK in the south corridor near (13,21) and (22,21); MIS (17,6) north")
+    m.note("airport", 20, 27, "player airport: Bombers")
     return m
