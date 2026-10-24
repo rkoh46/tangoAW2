@@ -8,15 +8,15 @@ NARRATION: Aurea, behind the Mare / Nostrum. Two hundred years unseen.
 NARRATION: Then the first harvest / came up grey.
 NARRATION: Ash on the wind, from the / north. Fields dusted like hearths.
 NARRATION: The second harvest was / greyer. The third did not come.
-NARRATION: Granaries emptied one by / one. Bread was sold by weight.
 NARRATION: Then the relief grain / arrived. Cheap. On time.
-NARRATION: Crates from HOBB Grain / and Freight. No office.
-NARRATION: No owner. A stencil on every / crate, a stamp on every bill.
+NARRATION: Crates from HOBB Grain / and Freight. No office, no owner.
+NARRATION: A stencil on every crate, / a stamp on every bill.
+NARRATION: The Consul Varro found the / money, and did not ask whence.
 NARRATION: The Senate was in debt to / a name, and it sent two letters.
 NARRATION: To the Legate Klaus, in / writing: find who feeds us.
 NARRATION: To the Prefect Cassius, / sealed: if there is nobody,
 NARRATION: take the north's granaries. / Do not wait for permission.
-NARRATION: The legions sailed under a / green sun on white.
+NARRATION: The legions sailed under a / green sun on white, to conquer a road.
 NARRATION: They marched because / the bread stopped.
 
 # ---------------------------------------------------------------- M1 Landfall (Klaus; enemy Jess)
@@ -36,6 +36,7 @@ AURELIA: The fleet sits on a sandbar / a mile out. Past it, shoals.
 AURELIA: So: barges from the bar, / forty paces of surf, then sand.
 AURELIA: Behind the sand, a sea-wall. / Behind the wall, the fort.
 KLAUS: Cape Astra. The only deep / harbour in three hundred miles.
+KLAUS: Whoever owns it owns the coast. / A landing is a claim. Make it.
 LIVIA: It is also the last port of / call on every bill I own.
 KLAUS: Explain, Quaestor.
 LIVIA: The grain ships that fed us / all sailed past this cape.
@@ -47,7 +48,8 @@ LIVIA: that has not complained.
 KLAUS: I sent a white flag at dawn. / The cape answered with a cruiser.
 AURELIA: Two. Green Earth paint, and / they keep the lane well shut.
 AURELIA: So the barges zigzag. Nobody / goes in a straight line today.
-KLAUS: Hear me, all of you. We are / not here for land.
+KLAUS: Hear me, all of you. This / coast is the first province.
+KLAUS: We take the cape, then the road / behind it. Province by province.
 KLAUS: These people have never seen / our flag. They see a fleet.
 KLAUS: They will fight as any man / fights for his own front door.
 KLAUS: I do not blame them. I will / still go through that door.
@@ -71,8 +73,8 @@ KLAUS: The sun is not who I worry / about. That is a wall. Move.
 == m01_day2
 JESS: Hey, you down on my beach! / Who are you folks, anyway?
 JESS: Flag's got a sun on it. Ours / has a sun on it. Mine's greener.
-KLAUS: We are Aurea. We come for / grain, not for your land.
-JESS: Grain? Honey, you landed with / tanks on a farm coast.
+KLAUS: We are Aurea. We come for / answers. We will take the coast.
+JESS: Answers? Honey, you landed with / tanks on a farm coast.
 JESS: Take it up with the Co-op. / Politely. Not off a barge.
 KLAUS: I tried the white flag. / Your cruiser read it as a target.
 JESS: ...Yeah. That one's on Drake. / Still not getting past me.
@@ -85,7 +87,8 @@ KLAUS: Lay down your arms. You will / be treated as a soldier.
 JESS: Nope. I am going out the back / door, too. Reload and come back.
 KLAUS: I will not stop you. I do not / hunt a retreating warden.
 JESS: Huh. That is not how invaders / do it. They chase.
-KLAUS: I am not an invader. I am / looking for a cargo.
+KLAUS: I am an invader, Warden. I / will not pretend otherwise.
+KLAUS: I am also looking for a cargo. / Your coast is the first place I look.
 JESS: You came from the sea. So did / the last invasion.
 KLAUS: I am not the last one.
 JESS: Everybody says that, Legate. / Everybody. See you in the dunes.
@@ -99,6 +102,7 @@ LIVIA: A fee paid early is a / welcome guest anywhere.
 KLAUS: Then somebody paid to be / unseen. Keep the book.
 CASSIUS(h): The fort fell and I missed / it! I am furious. Delighted.
 KLAUS: The fort fell, Prefect. You / may land your horses now.
+AURELIA: The sun is on the tower. Cape / Astra is ours, and the coast with it.
 CASSIUS: About time! Third hold, / bring them up! Gently!
 
 == m01_map
@@ -109,9 +113,9 @@ KLAUS: You have two weeks. Take the / engineers and the stone.
 CASSIUS: Look at this beast! Four / days in a hold, and he bites me.
 LIVIA: He bit the quartermaster. I / have added a line for it.
 KLAUS: Quaestor, take a letter. To / the Senate, and to the Consul.
-KLAUS: Cape Astra is held. A harbour / of our own, for the first time.
+KLAUS: Cape Astra is taken. A harbour / of our own, and a coast behind it.
 KLAUS: No granary seen. No captain / found. The trail runs north.
-LIVIA: "Held" is a short word for / a fort that was shelled twice.
+LIVIA: "Taken" is a short word for / a fort that was shelled twice.
 LIVIA: And Consul Varro?
 KLAUS: He will want it before the / Senate does.
 LIVIA: He will have it before the / Senate does, regardless.
@@ -136,6 +140,9 @@ CASSIUS: You want me to stand still, / on a dune, for eight days?
 KLAUS: I want the Prefect to ride / where he is told, when he is told.
 CASSIUS: So, reserve. Last bench of / the theatre. The horses will mutiny.
 KLAUS: Then the horses may mutiny / quietly. Come and watch the drill.
+KLAUS: Behind this ridge lies the causeway / into the heart of the province.
+KLAUS: The wardens have called a relief army / to throw us back into the sea.
+KLAUS: A conquest is a landing until it is held. / Hold.
 LEGIONARY: Legate, the line is / formed on the crest. Waiting.
 KLAUS: Shields to the front. Rear / rank, lift. Roof them over.
 LEGIONARY: Tortoise formation! / Locked shields, sir!
@@ -166,7 +173,7 @@ JESS: We pull back. Dunes are yours. / Do not get comfortable.
 AURELIA: Radio, Legate. Causeway is / open. Eight days to the hour.
 KLAUS: To the hour. Good.
 CASSIUS: Now? May I ride, finally?
-KLAUS: Over the causeway, in good / order. Then you may ride.
+KLAUS: Over the causeway, in good / order. Then you may ride inland.
 KLAUS: Aurelia, hear me. By the / authority the Senate gave me,
 KLAUS: I name you Chief Engineer / of the Legion. Effective now.
 AURELIA: Right now? Standing in the / mud? No parade?
@@ -181,6 +188,7 @@ LIVIA: It says, quote, "Unknown green / fleet. Assume Black Hole."
 KLAUS: Black Hole. I do not know / the name. They fear it.
 CASSIUS: We are blamed for a / stranger's crimes! How flattering.
 KLAUS: It means they will not hear / us until we prove otherwise.
+KLAUS: The coast is ours to the ridge. / Now we march into the province.
 KLAUS: The road is long. The war has / just become a conversation.
 
 == m02_map
@@ -193,7 +201,7 @@ LIVIA: Four denarii, for one bowl / of mercy. Charged to the Senate.
 KLAUS: Charged to me. What is your / name, soldier?
 KLAUS: Corporal. You said you were / told we ate our captives.
 SOLDIER GE: That's the story in the / barracks, sir. Raiders. Green fleet.
-KLAUS: We want to find the fields. / Ours are grey.
+KLAUS: We take towns and forts, not farms. / We want the fields. Ours are grey.
 SOLDIER GE: Grey? Ours too, sir. At / the cape. Two summers, now.
 SOLDIER GE: Ash on the wind. The old / folks say it comes from the north.
 KLAUS: Two summers. Ours was three. / ...You had it after us.
@@ -207,6 +215,7 @@ SOLDIER GE: ...I'll try, sir. Thank you / for the bread.
 == m03_pre
 @SONG entry
 NARRATION: The Shield Pass. A fortress / of towers across the road.
+KLAUS: The Shield Pass is the gate of the next / province. Take it and the road opens.
 KLAUS: Aurelia. The wall is yours. / I take the main body round
 KLAUS: and hold the road behind you. / You lead the siege.
 AURELIA: Me? Lead? I count loads. I / do not give orders.
@@ -237,6 +246,7 @@ JAVIER: The gate is broken. Yet I / swear by the oath of the towers.
 JAVIER: No tower falls while a knight / stands in its door.
 AURELIA: The gate's gone, Lord Javier. / What does the oath say about that?
 JAVIER: It says to stand in the / doorway. Which I am doing.
+AURELIA: Behind that door is the whole / province, my lord. I need the door.
 AURELIA: Fair enough. I will hit / the doorway, then. Politely.
 JAVIER: Courtesy is the soul of a / siege. Come, Chief. Come.
 
@@ -254,10 +264,12 @@ JAVIER: The trees blossom grey. The / scholars say the wind brings it.
 JAVIER: They cannot say from where. / It troubles me more than any siege.
 KLAUS: It troubles me, also. In my / country it has eaten the harvest.
 JAVIER: Then we are not enemies in / this, Legate. Only neighbours.
+KLAUS: And conquerors, my lord. I will not burn / your orchards, or your villages.
 KLAUS: I would like to believe so. / Will you tell your Accord?
 JAVIER: I shall tell them a legion / took a wall and spared a garrison.
 JAVIER: It is not much. It is a / beginning.
 KLAUS: Many men are. That is why / we do not judge them by walls.
+JAVIER: The province is yours to keep. / Keep it better than I did.
 
 == m03_map
 @SONG ally2
@@ -290,6 +302,7 @@ AURELIA: It was supposed to join us / at the cape. Where has it been?
 LIVIA: At the Mistvale, Chief. It / took the old road north.
 KLAUS: Without a word. Why is the / Second at the head of my road?
 LIVIA: Because its commander wished / to be there first.
+KLAUS: First into the next province. / Glory, not grain. He wants to conquer it.
 KLAUS: Its commander is Cassius.
 AURELIA: Cassius? But he is... he / was on our radio at the cape.
 KLAUS: He left after the dunes. The / cavalry rode to meet his legion.
@@ -384,13 +397,13 @@ CASSIUS(h): Mud! I love mud! Horses / love mud! Fetch the banners!
 == m04_map | KLAUS, AURELIA
 @SONG ally2
 NARRATION: The Mistvale camp. Both / legions share a fire.
+KLAUS: The frontier stands forty leagues / north of the cape. Both legions hold it.
 CASSIUS: I propose I ride at the / head of the column. Naturally.
 KLAUS: You will ride behind the / vanguard. In the second rank.
 CASSIUS: Second rank! You are / keeping me out of the glory.
 KLAUS: I am keeping you alive. It / is the same thing, most days.
 CASSIUS: Old man, you are exactly / the sort who rides in front.
 KLAUS: Yes. And I am older, so I / bury fewer people.
-KLAUS: It is how experience works.
 CASSIUS: Then I will ride between. / Third rank. Second and a half.
 LIVIA: Gentlemen. Your quarrel has / cost the Legion four hours.
 LIVIA: I bill it equally. Half to the / Legate, half to the Prefect.

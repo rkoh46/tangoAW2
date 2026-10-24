@@ -197,7 +197,7 @@ fn es16() -> MissionDef {
         Trigger::new(When::AfterAction, units_in(5, 2, 24, 15), vec![Action::Scene(scene("m16_phase2"))]),
         Trigger::new(When::AfterAction, units_in(12, 7, 17, 10), vec![Action::Scene(scene("m16_phase3"))]),
         // Day 6: Varro's meter is full.
-        on_day(6, None, vec![Action::Scene(scene("m16_varro")), Action::Custom(charge_varro)]),
+        on_day(6, None, vec![Action::Scene(scene("m16_reserves")), Action::Custom(charge_varro)]),
         // Varro's waves come down the north rim: armour, aircraft, then the fleet.
         on_day(3, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &RIM[0..1]), wave(2, unit::TANK, &RIM[2..3])].concat())]),
         on_day(5, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RIM[3..4]), wave(2, unit::MD_TANK, &RIM[5..6])].concat())]),
