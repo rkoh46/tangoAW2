@@ -1,1 +1,314 @@
-# Emerald Sun dialogue, act4 (format: README.txt)
+# Emerald Sun dialogue, act4: M13 The Free Port, M14 Varro's Gambit, M15 Pax Romana, M16 Sol Invictus, epilogue (format: README.txt)
+
+# ---------------------------------------------------------------- M13 The Free Port (four armies, no alliances)
+
+== m13_pre
+@SONG enemy1
+NARRATION: The Free Port of Calderon. / Midsummer, a hot grey haze.
+NARRATION: No nation owns the bay. / Every nation owns a warehouse.
+AURELIA: Four flags on one harbour. / I have never seen a worse plan.
+LIVIA: Four flags and, by my count, / eleven creditors, Prefect.
+LIVIA: The port charges a berth fee / per flag. We have not raised one.
+LIVIA: I am told that is what makes / it free. The fee is for later.
+CASSIUS(h): A joke! Livia made a joke! / Somebody write down the date!
+LIVIA: It was a statement of terms, / Prefect. The date is in the bill.
+KLAUS: Report, Prefect.
+CASSIUS: Green Earth holds the west / quay. Javier's banners, and a lot
+CASSIUS: of towers he built in a week. / The man swears oaths at bricks.
+AURELIA: He builds fast and he builds / thin. I like him already.
+CASSIUS: Yellow Comet took the east / mole before dawn. Sonja's work.
+CASSIUS: Nobody saw them land. The / sentries woke up in a ditch.
+KLAUS: And the north dock.
+CASSIUS(s): Black Hole. Real ones, old / Legate. Not a stray banner.
+CASSIUS: Walls, cranes, a signal tower / and a proper garrison. Kindle.
+LIVIA: The trail ends there, Legate. / Every barge we have chased
+LIVIA: was loaded at the north dock. / The yard keeps its own books.
+KLAUS: Black Hole is not at war / with Aurea. Remember that.
+AURELIA: Somebody should tell their / guns. They have not noticed.
+KLAUS: They defend cargo. They take / us for raiders. They are half right.
+KLAUS: We came for a ledger, not a / fight. Today we may get both.
+CASSIUS: Where is the ledger? / Which warehouse? Which crate?
+LIVIA: The Harbour Office, in the / middle of the port. The harbour
+LIVIA: master files every bill of / lading. The stencil will be there.
+KLAUS: Then the Harbour Office is / the objective. Take it.
+KLAUS: And hold it for three days. / A file is not read in an hour.
+AURELIA: Three days in the middle of / four armies. In a bowl. Lovely.
+AURELIA: Everyone will shell the one / roof. I will bring stone anyway.
+KLAUS: There are no alliances in the / port. Every flag fights every flag.
+KLAUS: That is also our chance. Let / them spend themselves on each other.
+LIVIA: I have noted who owes whom. / Javier owes Sonja. Sonja owes no one.
+LIVIA: Kindle owes everyone, and / collects from everyone besides.
+CASSIUS: So we hit whoever gets close / and let the rest bleed? Easy!
+KLAUS: Not easy. Patient. You will / learn it in a week, Prefect.
+CASSIUS: A week? I will learn it by / noon, and be bored by one!
+KLAUS: Then be bored carefully.
+KLAUS: Quaestor, count what we have. / Prefect, ready the horses.
+KLAUS: Engineer, find me a roof / that holds. We move at first light.
+AURELIA(h): Aye, Legate. I always / wanted a view of a siege.
+
+== m13_day4
+KINDLE: Fire the north dock! Burn / every crane and every plank!
+SOLDIER BH: Ma'am, that is the / cargo wharf. We were told
+KINDLE: Cargo can be rebought. A / dock I cannot defend is a dock
+KINDLE: nobody else will use. Let them / have ashes. I love a good flame.
+SONJA: A pity. I wanted that dock. / Still, I shall take the east side.
+SONJA: Smoke is the best cover there / is. Thank you, Kindle. Truly.
+KLAUS: The fire moves toward the / Harbour Office. Pull the line back.
+
+== m13_post
+@SONG hagevolt
+NARRATION: Day three. The Harbour / Office is quiet, and ours.
+AURELIA: Roof held. Two shells and a / lot of dust. Stone does not lie.
+CASSIUS: Javier retreated to his / towers. Sonja simply vanished.
+CASSIUS: Kindle is still in the north / dock. She waves. I hate her.
+LIVIA: Legate. The master's strong / room. It was not even locked.
+LIVIA: A single book on the table. / Black cloth. Bills of lading.
+KLAUS: Read it aloud, Quaestor.
+LIVIA: Grain. Three harvests of it, / ship by ship. Paid in advance.
+LIVIA: Every entry carries the same / stencil in the margin. And a second
+LIVIA: column the harvest never / mentioned. Jars. Sealed, grey.
+LIVIA: Delivered to the northern / granaries on the same dates.
+KLAUS: Grain in one hold, ash in / the next. Same barge, same bill.
+AURELIA: You do not feed a country / and poison its fields by accident.
+KLAUS: No. Someone is feeding Aurea / on purpose. I said it. Now it is on paper.
+CASSIUS(s): Then my letter was right / about one thing. The grain is up north.
+CASSIUS: Just not where I was told / to take it from. Who wrote that book?
+KLAUS: Quaestor, the hand.
+LIVIA: A clerk's hand. Small, even, / very old school. Not a Senate hand.
+KLAUS: I know the Consul's writing. / I have had forty years of letters.
+KLAUS: This is not Varro's. The / approvals bear his name. Not his pen.
+AURELIA: Someone signs for the / Consul? Or the Consul signs for them?
+KLAUS: I do not know. I intend to ask.
+LIVIA: Legate. The stencil.
+LIVIA: I have seen this mark before. / On a bill. I will say no more.
+KLAUS: You do not need to. Not yet.
+LIVIA: I thank you. When I know, you / will be the first, in writing.
+KINDLE: Cough. Excuse me. Radio. I / do hope I am not interrupting.
+KINDLE: You have the Harbour Office. / Congratulations. Keep the book.
+KINDLE: The crates, the cranes and / the north dock stay mine. Paid for.
+KLAUS: By whom, Kindle?
+KINDLE: By someone who pays in / advance. I never ask for names. Names
+KINDLE: are for the unpaid. Go home, / green soldier. You frighten my dock.
+
+== m13_map
+@SONG ally1
+NARRATION: The Accord's radio, / two days after the Free Port.
+NELL: Legate, the Accord is in / session. You are heard.
+JESS: Green Earth first. Javier is / alive, so is his pride. Mostly.
+JESS: He says you fought the way / a warden would. That is a thing
+JESS: coming from him. Plain talk: / you are no invader, Legate.
+JAVIER: By the oath of the towers, / I owe you an honest account.
+JAVIER: You held the Harbour Office / and you did not pillage it.
+JAVIER: You spared my wounded at / the west quay. An invader does not.
+SONJA: Yellow Comet agrees, / reluctantly and with notes.
+SONJA: Your Quaestor reads a ledger / as I read a face. I like her.
+SONJA: I also read the book before / you did. Do not ask how. S.
+KLAUS: I did not ask.
+NELL: Then the Accord agrees. The / legion is a guest at the table,
+NELL: not a trespasser on it. The / port is a free port again.
+NELL: And Black Hole sits at the / north dock, selling to anyone.
+NELL: We will watch it. You have / more urgent trouble, Legate.
+NELL: Aurea's Senate is sending / ships. They are not for show.
+KLAUS: I know. I have read it in / three letters since spring.
+NELL: Then the Accord's council / will stand beside you when they come.
+
+# ---------------------------------------------------------------- M14 Varro's Gambit (hold the quay, then break out)
+
+== m14_pre
+@SONG enemy1
+NARRATION: Port Quirinal, the Aurean / garrison town on Green Earth's coast.
+NARRATION: Sails off the point at / dawn. Hundreds. All of them red.
+LEGIONARY: Legate! A fleet, forty / hulls at least. Senate colours!
+LEGIONARY: Praetorian banners on the / lead ships. And a herald's boat.
+CASSIUS(s): The Praetorians. Varro's / own guard. They never leave Aurelium.
+AURELIA: They have left now. With / marines, siege rams and a barge
+AURELIA: of ladders. They did not / pack that for a polite chat.
+LIVIA: The herald carries a letter / for the Legate. The Consul's ring.
+KLAUS: Read it.
+LIVIA: The Senate recalls Legate / Klaus to Aurelium to answer for
+LIVIA: his failure to take the north. / The legions pass to the Consul.
+LIVIA: Signed Varro, with the full / Senate's seal beneath. All of it.
+CASSIUS: Recalls. It is an arrest, / old man. Politely written.
+KLAUS: I can read the difference, / Prefect.
+VARRO: Klaus, my boy. I hoped the / herald would arrive before I did.
+KLAUS: Consul. You crossed the sea / for a letter.
+VARRO: I crossed the sea for you. / Do not scowl. It ages a man.
+VARRO: You have done splendid work. / Three nations beaten, an Accord
+VARRO: shaken. But the road ends. / The north will be taken, with or
+VARRO: without your scruples. Aurea / will not starve while I am Consul.
+KLAUS: Someone feeds Aurea on purpose, / Consul. I have the ledger.
+VARRO: A ledger. How good. In whose / hand, my boy?
+KLAUS: Not yours.
+VARRO: Then it is a clerk's fancy. / Burn it, and come home. All is
+VARRO: forgiven. I found you money / when no one else would. I never
+VARRO: asked for gratitude. I ask / for obedience. It is a smaller thing.
+KLAUS: You never asked where the / money came from either.
+VARRO: A father does not ask where / the bread comes from, my boy. He
+VARRO: gives thanks and eats. You / should try it. Fewer nightmares.
+LIVIA: I have kept the Consul's / accounts for six years. Never once
+LIVIA: has the Senate's treasury / explained a gift. I should like to.
+VARRO: Quaestor Livia. Brilliant / girl. Your debts are forgiven too.
+LIVIA: I did not ask to be forgiven. / I asked a question. Terms differ.
+LIVIA: He forgave a debt I never / owed. I shall invoice him for it.
+VARRO: And Prefect Cassius. You still / carry my letter, do you not?
+CASSIUS: I... what letter would that / be, Consul? I have many.
+VARRO: The one that says what you / must do if the old man falters.
+VARRO: He has faltered. Bring him in. / You will be Consul-elect by spring.
+CASSIUS(s): Consul-elect. Hear that, / Klaus? He has a whole speech ready.
+KLAUS: What will you do, Cassius?
+CASSIUS: I do not know yet, / damn it. Give me until I do.
+VARRO: A sensible young man. Take / your time. Take until nightfall.
+VARRO: The Praetorians land at / noon. Hold your quay, if you can.
+KLAUS: Engineer. Plan.
+AURELIA: The quay is a bottle with / one neck. Hold the HQ six days
+AURELIA: until the transports are / ready to leave. Then fight out to
+AURELIA: the docks. Two of them. / That is the neck, and I will build it.
+KLAUS: Six days. Then we leave.
+KLAUS: Quaestor, give me their numbers. / Prefect, ride the east gate.
+CASSIUS: The east gate. Right. / Where I am useful and out of sight.
+KLAUS: Where you can think. Go.
+
+== m14_day4
+CASSIUS: Consul. Do you hear me? / This is Prefect Cassius.
+VARRO: Splendid. Which of my boys / is on the radio? The sensible one?
+CASSIUS: The sealed one. I am done / reading your letter. I know what
+CASSIUS: it says, and I know what you / meant by it. And I am ashamed.
+CASSIUS: My horses ride with the / Legate now. Mine, not yours.
+VARRO: A pity. I had such plans. / Take his flank, then, Praetors.
+KLAUS: Welcome back, Prefect.
+CASSIUS: Do not be nice. I will cry / and the horses will see.
+
+== m14_post
+@SONG ally2
+NARRATION: Day seven. The breakout / ships ride at the end of the quay.
+AURELIA: Both docks are ours. The / neck is open. Ropes are cut.
+LIVIA: The transports hold two / thousand each. We have three.
+LIVIA: Legate, the wounded go first. / That is not a question. It is a ledger.
+KLAUS: Granted. Prefect, you board / last. Your horses are the rearguard.
+CASSIUS(h): Rearguard! At last, / somebody is honest about my talent.
+CASSIUS: Old man. About the letter. / I owe you the longest apology.
+KLAUS: You owe me a day of rearguard. / Begin it.
+CASSIUS: Done. And a drink after. / Do not look at me like that.
+LEGIONARY: Legate! Soldiers on the / pier. They want to hear you.
+KLAUS: Then I will speak.
+KLAUS: Legion. I am a traitor. The / Senate says so in writing.
+KLAUS: I have never broken an order / in thirty years. I break this one.
+KLAUS: We did not come to conquer. / We came because the bread stopped.
+KLAUS: Somebody wants us hungry. / Somebody wants us marching.
+KLAUS: I will not march for a man / who profits from our hunger.
+KLAUS: Whoever follows me, follows / me for the bread. Not for a Consul.
+KLAUS: Whoever stays is no enemy. / Go home with my thanks.
+LEGIONARY: Legate, we are the First / Legion. We sailed behind you.
+LEGIONARY: We will sail behind you / again. Give the order.
+KLAUS: Cast off. Quaestor, plot the / Strait of Elms. The Accord waits.
+LIVIA: The Accord has not said / it waits. It will. I wrote them.
+
+== m14_map
+@SONG ally2
+NARRATION: The deck of the Mare / Amicus. Evening. A red horizon.
+AURELIA: Forty-one sails behind us. / Varro does not believe in a lead.
+LIVIA: Forty-three, Chief. Two have / joined since sunset.
+CASSIUS: You count his sails like / a man counts the bill.
+LIVIA: That is what a count is for.
+CASSIUS: Here. Take it.
+LIVIA: A sealed letter. Have you / opened it?
+CASSIUS: I never did. That is what / I could not forgive. Burn it.
+LIVIA: I will keep it. A letter is / evidence. We will need evidence.
+CASSIUS(s): Evidence. Of course. You / are a terrible comfort, Livia.
+KLAUS: Prefect. The sea at night / is quiet. Learn from it.
+CASSIUS: You are quiet in every / weather, old man. It is unnatural.
+AURELIA: Sails dead ahead. Thirty / more. The Consul's second wing.
+KLAUS: Then the straits will be / hard. We turn for Elms at dawn.
+KLAUS: Prefect, take the helm. You / wanted a fast road. Here it is.
+
+# ---------------------------------------------------------------- M15 Pax Romana (the Strait of Elms)
+
+== m15_pre
+@SONG enemy1
+NARRATION: The Strait of Elms. Two / islands, one narrow, deep channel.
+NARRATION: Varro's navy sits at the / far end. His air wing circles.
+AURELIA: Battleships at the mouth. / Cruisers on the flanks. Carriers.
+AURELIA: And the wing is Bombers and / Fighters. All of it overhead.
+CASSIUS: He emptied Aurelium into / this strait. Every ship we own.
+LIVIA: Every ship the Senate owns. / I have a list. The list is long.
+KLAUS: What do we have?
+LIVIA: Cruisers, a Battleship, two / Subs and a dozen transports,
+LIVIA: Legate. Fuel for six days. / And an Accord that has not replied.
+KLAUS: Then we use what we have. / This is a pair's fight.
+KLAUS: Tag Power on the screen. / Anti-air and Cruisers first.
+KLAUS: Fire both Powers and bring the / line through together. Together.
+CASSIUS: Pax Romana! Say it with / me, Quaestor. It rolls off the tongue.
+LIVIA: I do not roll, Prefect. I / disburse. The Power is a good price.
+AURELIA: Grandiose name, honest / numbers. Two stars. Let us spend it.
+VARRO: Klaus, my boy. You are late. / I have waited since dawn.
+KLAUS: Consul. You commanded the / sea. You may lose it.
+VARRO: I command nothing, dear boy. I / merely supply. The Senate commands.
+VARRO: Pull back to Elms, surrender / the fleet, and I will see that
+VARRO: the grain flows north again. / No one dies. Not a legionary.
+KLAUS: No one dies. And the grain / flows. From whose hand, Consul?
+VARRO: From the hand that has always / fed you. You know better than to ask.
+LIVIA: I know exactly what to ask. / The fee for that hand is the war.
+VARRO: Quaestor. Clever, clever. / Always counting what is not yours.
+NELL: Legate Klaus. This is Nell, / on the Accord's channel. Can you hear?
+KLAUS: I hear you, Nell.
+NELL: The Accord has voted. Orange / Star, Green Earth, Blue Moon and
+NELL: Yellow Comet are all sailing. / We reach you on the sixth day.
+NELL: Hold the straits that long, / and you will not hold them alone.
+EAGLE: Death from above! Hey, / Legate, wait for the wing, huh?
+DRAKE: Dude. We are coming. The seas / will be fine. Just breathe.
+VARRO: Ah. The Accord. Always late, / always sure it is invited.
+VARRO: Hold the straits six days, / then. Admiral, release the wing.
+KLAUS: Six days. Quaestor, what do / we sell to buy them?
+LIVIA: Time, Legate. It is the only / currency in short supply.
+KLAUS: Then spend it well.
+
+== m15_day6
+@SONG ally1
+NARRATION: Sixth day, noon. Sails / on the western horizon. Many.
+NELL: Orange Star fleet, entering the / straits. Gallant Legate, you
+NELL: look terrible. We will take / the north channel. You the south.
+JESS: Green Earth coast guard is / here! Aim the guns, everyone!
+COLIN: Blue Moon's biggest checkbook / has just arrived. Hello, Livia!
+LIVIA: Colin. Your fleet is late. I / will bill the interest.
+KLAUS: You are welcome in my line, / all of you. Form on the Tag.
+EAGLE: Death from above! Well, / now it really is.
+
+== m15_post
+@SONG ally2
+NARRATION: The flagship burns at its / moorings. The water is orange.
+AURELIA: Magazine hit. The whole / amidships went up like a lamp.
+CASSIUS: Look at that. Look at the / fire. The Consul's pride.
+LIVIA: The Accord's captains are / sending their thanks. And a bill.
+LIVIA: I will frame it, and pay it / last. That seems fair to the tide.
+KLAUS: Prisoners.
+AURELIA: Four hundred. They say / they were told it was a drill.
+AURELIA: They say the Consul was on / the bridge when it started.
+KLAUS: And now?
+LEGIONARY: Legate, a light cutter / slipped the harbour mouth, east.
+LEGIONARY: The Consul's banner on its / mast. It runs for Port Aurelium.
+CASSIUS: He ran! The great man ran / from his own flagship!
+KLAUS: He runs to a citadel. He / will not run from that one.
+KLAUS: Port Aurelium has three walls, / a harbour and an airfield.
+KLAUS: It is the best fortress ever / built. Aurelia built half of it.
+AURELIA: Nobody told me what it was / for, Legate. I was nineteen.
+AURELIA: I know every bolt. I also / know what it costs to break it.
+KLAUS: Then we will count the cost / together. Rest tonight. We sail.
+
+== m15_map
+@SONG ally1
+NARRATION: The Accord's flagship. / Candles, charts, and tired faces.
+NELL: Order, please. This is the last / council before the citadel.
+NELL: Legate, you have the floor, / and the Accord's attention.
+KLAUS: I thank the council. I ask / nothing for myself.
+KLAUS: Varro's citadel holds the / Senate, and the grain, and the truth.
+KLAUS: I ask the Accord to cut the / sea behind me. Nothing more.
+JESS: Green Earth will close the / channel. Not a rowboat gets out.
+KANBEI: Yellow Comet will hold the / north road. I give my word.
+KANBEI: Legate, we fought at the pass. / I have not forgotten your honour.
+COLIN: Blue Moon will stand the bill. / Oh, and every tanker I own.
+COLIN: Livia, I will take ten per / cent. As a friend.
+LIVIA: Colin, I will charge you / twelve. As a friend.
+NELL: Orange Star sends the Hammer / of the Border, and a request.
+NELL: When it is over, come to the / table again. As peace, not war.
+KLAUS: When it is over, Nell, I will / bring the grain and the ledger.
+KLAUS: And a question for everyone / in this room. Who feeds the world?

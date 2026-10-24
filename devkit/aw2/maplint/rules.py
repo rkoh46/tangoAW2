@@ -481,7 +481,16 @@ def _unit_problem(G, u, bh, rule_prefix=""):
 
 @functools.lru_cache(maxsize=2)
 def _bh_grids(source="bh"):
-    return {m.name: Grid(m) for m in (load.es_maps() if source == "es" else load.bh_maps())}
+    if source != "es":
+        return {m.name: Grid(m) for m in load.bh_maps()}
+    out = {}
+    for p in sorted((load.FIVE / "es").glob("es[0-9][0-9]*.txt")):
+        try:
+            for m in load.es_maps(files=[p]):
+                out[m.name] = Grid(m)
+        except Exception:      # (a map still being written by its author)
+            pass
+    return out
 
 
 def spawned(G):
@@ -521,7 +530,10 @@ def inventions(G):
         x, y = tiles[0]
         out.append(Problem("ES01", x, y, f"{len(tiles)} invention tiles on a map with no `blackhole` line (only the missions against Black Hole may have them)"))
     if G.m.meta.get("blackhole"):
-        n = sum(1 for m in load.es_maps() if m.meta.get("blackhole"))
+        try:
+            n = sum(1 for p in sorted((load.FIVE / "es").glob("es[0-9][0-9]*.txt")) if "\nblackhole\n" in p.read_text())
+        except OSError:
+            n = 0
         if n > 2:
             out.append(Problem("ES01", -1, -1, f"{n} maps are tagged `blackhole` (at most two missions fight Black Hole)"))
     return out

@@ -50,7 +50,10 @@ def _lib():
     return load, rules, render
 
 
-def _maps(load, source):
+def _maps(load, source, names=None):
+    if source == "es" and names:
+        # (only the named maps' files: another author's half-written map must not stop yours)
+        return load.es_maps(files=[load.FIVE / "es" / f"{n}.txt" for n in names if (load.FIVE / "es" / f"{n}.txt").exists()])
     out = []
     for s in (["bh", "es", "versus", "aw2", "ds"] if source == "all" else [source]):
         out += {"bh": load.bh_maps, "es": load.es_maps, "versus": load.versus_maps, "aw2": load.aw2_maps, "ds": load.ds_maps}[s]()
@@ -59,7 +62,7 @@ def _maps(load, source):
 
 def lint(a):
     load, rules, render = _lib()
-    maps = _maps(load, a.source)
+    maps = _maps(load, a.source, a.map)
     if a.map:
         maps = [m for m in maps if m.name in a.map]
         if not maps:
