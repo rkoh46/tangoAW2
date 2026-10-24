@@ -254,7 +254,7 @@ pub struct Source {
 pub const TAIL_CALLED: u32 = u32::MAX;
 
 /// The sources, in the sub-menu's order (after AW2's own campaign).
-pub static SOURCES: [Source; 2] = [
+pub static SOURCES: [Source; 3] = [
     Source {
         label: "DS CAMPAIGN",
         available: crate::ds_weather::is_on,
@@ -274,6 +274,17 @@ pub static SOURCES: [Source; 2] = [
         save_slot: 13,
         mid_slot: 12,
         progress_magic: 0x4342_5741, // "AWBC"
+        art: WorldArt::Aw2,
+        has_hard: false,
+    },
+    Source {
+        label: "EMERALD SUN",
+        available: crate::es_campaign::available,
+        load: crate::es_campaign::load,
+        rules: crate::custom_campaign::rules,
+        save_slot: 11,
+        mid_slot: 10,
+        progress_magic: 0x4345_5741, // "AWEC"
         art: WorldArt::Aw2,
         has_hard: false,
     },

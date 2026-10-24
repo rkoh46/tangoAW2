@@ -874,6 +874,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::co_grid::tick(core, ds);
         crate::co_powers::tick(core, ds);
         crate::crumb::tick(core, ds);
+        crate::es_co::tick(core, ds);
         crate::map_anim::tick(core, ds);
         crate::unit_actions::tick(core, ds);
         crate::cpu_tactics::tick(core, ds);

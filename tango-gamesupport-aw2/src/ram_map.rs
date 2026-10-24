@@ -69,6 +69,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("tag pairs (crate::tag::STATE)", (0x0203_F400, 0x100)),
     ("tag screens and the CO page's TAG box (crate::tag_extras::STATE)", (0x0203_F500, 0xD8)),
     ("Crumb's healed units", (0x0203_F5D8, 0x28)),
+    ("Emerald Sun Campaign: a mission's own counters (crate::es_campaign::STATE)", (0x0203_C9F0, 0x10)),
     ("smart Black Factory: picks and savings", FACTORY),
     ("CO screen: picks seen", CO_SCREEN_PICKS),
     ("Tag Power's thunder: what it covers is kept aside (crate::tag_thunder::STATE)", (0x0203_C600, 1)),

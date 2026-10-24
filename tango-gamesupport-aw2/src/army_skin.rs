@@ -849,8 +849,13 @@ pub fn sync(core: &mut Core) {
     present(hosts(core));
     init(core);
     ensure_art(core);
-    // (only a Versus match has skins: the other modes' armies are the story's)
-    let versus = crate::pvp::in_versus(core);
+    // (only a Versus match has skins, and the Emerald Sun Campaign's battles, where the player's army wears the first skin: the other modes' armies are
+    // the story's)
+    let campaign = crate::es_campaign::skin_colour(core);
+    if let Some(c) = campaign {
+        set_host_of(core, 0, c);
+    }
+    let versus = crate::pvp::in_versus(core) || campaign.is_some();
     for colour in 1..=5u8 {
         let want = if versus { skin_on(core, colour) } else { None };
         let have = applied_on(core, colour);

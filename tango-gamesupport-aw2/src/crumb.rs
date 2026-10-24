@@ -142,26 +142,26 @@ pub fn each_unit(power: u8) -> u32 {
 
 /// A far call through r3 with r5 as the return scratch (`bl` does not reach
 /// from here): `ldr r3, =f; mov r5, pc; adds r5, #5; mov lr, r5; bx r3`.
-struct Asm {
+pub(crate) struct Asm {
     code: Vec<u16>,
     lits: Vec<u32>,
     fixups: Vec<(usize, usize)>,
 }
 
 impl Asm {
-    fn new() -> Asm {
+    pub(crate) fn new() -> Asm {
         Asm { code: Vec::new(), lits: Vec::new(), fixups: Vec::new() }
     }
-    fn op(&mut self, h: u16) {
+    pub(crate) fn op(&mut self, h: u16) {
         self.code.push(h);
     }
-    fn call(&mut self, f: u32) {
+    pub(crate) fn call(&mut self, f: u32) {
         let lit = self.lits.len();
         self.lits.push(f);
         self.fixups.push((self.code.len(), lit));
         self.code.extend_from_slice(&[0x4B00, 0x467D, 0x3505, 0x46AE, 0x4718]);
     }
-    fn finish(mut self) -> Vec<u8> {
+    pub(crate) fn finish(mut self) -> Vec<u8> {
         if self.code.len() % 2 == 1 {
             self.code.push(0x46C0); // nop, to align the literals
         }

@@ -166,6 +166,8 @@ pub fn stat(co: u8, mode: u8, t: u8, field: usize) -> Option<i32> {
     if co == crate::co_new::CRUMB {
         // His numbers are his own (crate::crumb): no Dual Strike block.
         v += crate::crumb::bonus(mode, t, field);
+    } else if crate::es_co::is_es(co) {
+        v += crate::es_co::bonus(co, mode, t, field);
     } else {
         let b = block(ds_co(co)?, mode)?;
         let unit = crate::roster::ds_record(t)?;
@@ -403,9 +405,9 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         // Upgrade, the row Dual Strike's record names for them)
         let power = if co == crate::co_new::CLONE_ANDY {
             u32::from_le_bytes(andy[at + 4..at + 8].try_into().unwrap())
-        } else if co == crate::co_new::CRUMB {
+        } else if co == crate::co_new::CRUMB || crate::es_co::is_es(co) {
             // (AW2's usual power procedure: the sparkle; the effect on the
-            // units is the presentation row's, crate::crumb)
+            // units is the presentation row's, crate::crumb, crate::es_co)
             DEFAULT_POWER
         } else {
             crate::co_powers::power_assembly(co, mode).unwrap_or(DEFAULT_POWER)
@@ -428,6 +430,16 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
             row[at + 0x0E..at + 0x10].copy_from_slice(&crate::crumb::LUCK[mode as usize].to_le_bytes());
             row[at + 0x10..at + 0x12].copy_from_slice(&crate::crumb::BAD_LUCK[mode as usize].to_le_bytes());
         }
+        if let Some(i) = crate::es_co::info(co) {
+            // Luck, no bad luck, and the unit cost (Livia's +10%).
+            row[at + 0x0E..at + 0x10].copy_from_slice(&i.luck[mode as usize].to_le_bytes());
+            row[at + 0x10..at + 0x12].copy_from_slice(&0i16.to_le_bytes());
+            row[at + 0x14..at + 0x16].copy_from_slice(&i.cost[mode as usize].to_le_bytes());
+        }
+    }
+    if let Some(i) = crate::es_co::info(co) {
+        row[0x0C..0x10].copy_from_slice(&i.stars.0.to_le_bytes());
+        row[0x10..0x14].copy_from_slice(&i.stars.1.to_le_bytes());
     }
     if co == crate::co_new::CRUMB {
         // His meters: 3 stars for the CO Power, 6 in all for the Super Power.

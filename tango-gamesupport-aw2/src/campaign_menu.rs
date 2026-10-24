@@ -136,7 +136,7 @@ pub fn entries(core: &Core) -> Vec<&'static str> {
     v.extend(crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).map(|s| s.label));
     // The campaigns still to come, shown but not playable: BH2 directly under the BH Campaign, Emerald Sun last.
     if crate::ds_weather::is_on(core) {
-        v.extend(COMING.iter().map(|c| c.label));
+        v.extend(coming(core).iter().map(|c| c.label));
     }
     v
 }
@@ -150,6 +150,11 @@ pub struct Coming {
 /// The placeholders, in the sub-menu's order after the sources (BH2 under the BH Campaign, Emerald Sun at the bottom).
 pub const COMING: [Coming; 2] = [Coming { label: "BH2 CAMPAIGN", title: "BH2 Campaign" }, Coming { label: "EMERALD SUN", title: "Emerald Sun Campaign" }];
 
+/// The placeholders still shown: Emerald Sun's goes once it is a source (the development flag, [`crate::es_campaign::dev_flag`]).
+pub fn coming(core: &Core) -> Vec<&'static Coming> {
+    COMING.iter().filter(|c| !(c.label == "EMERALD SUN" && crate::es_campaign::available(core))).collect()
+}
+
 /// The sub-menu level of the "Coming soon" box.
 const NOTICE: u8 = 4;
 
@@ -159,7 +164,7 @@ pub fn notice(core: &Core) -> Option<usize> {
         return None;
     }
     let sources = crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).count();
-    (core.raw_read_8(CHOICE, -1) as usize).checked_sub(1 + sources).filter(|&k| k < COMING.len())
+    (core.raw_read_8(CHOICE, -1) as usize).checked_sub(1 + sources).filter(|&k| k < coming(core).len())
 }
 
 static NOTICE_FACE: std::sync::Mutex<Option<(Vec<u8>, [u8; 32])>> = std::sync::Mutex::new(None);
@@ -196,7 +201,7 @@ pub fn draw_notice(core: &Core, rgba: &mut [u8]) {
     }
     let tx = fx + fs + 10;
     let tw = x + w - 8 - tx;
-    let title = crate::online::fit(core, COMING[k].title, tw);
+    let title = crate::online::fit(core, coming(core)[k].title, tw);
     cv.text(core, tx, y + 14, &title, INK, SHADE);
     cv.text(core, tx, y + 28, "Coming soon.", GRAY_INK, SHADE);
     cv.text(core, tx, y + 40, "Not playable yet.", GRAY_INK, SHADE);

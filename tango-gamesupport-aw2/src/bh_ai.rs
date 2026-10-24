@@ -56,7 +56,7 @@ pub fn orders(units: Vec<UnitDef>, player: u8, armour: u8, holds: impl Fn(&UnitD
 
 /// The units of a built map's text file (the map's `hold` flag is AW2's role 1, "go for the HQ": [`orders`] replaces it).
 pub fn built_units(name: &str) -> Vec<UnitDef> {
-    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else { return Vec::new() };
+    let Some(m) = crate::custom_campaign::built_map(name) else { return Vec::new() };
     m.units
         .iter()
         .map(|u| {

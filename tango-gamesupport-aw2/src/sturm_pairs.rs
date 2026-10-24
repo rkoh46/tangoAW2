@@ -169,7 +169,8 @@ pub const SONJA: u8 = 7;
 /// AW2's Von Bolt.
 pub const VON_BOLT: u8 = 75;
 
-pub const DUOS: [Duo; 1] = [Duo {
+pub const DUOS: [Duo; 9] = [
+Duo {
     a: VON_BOLT,
     b: SONJA,
     compatibility: 115,
@@ -177,7 +178,26 @@ pub const DUOS: [Duo; 1] = [Duo {
     name: "Vault Breakers",
     a_first: [("Kehh! Count it twice!", "Counted. Twice."), ("Everything is mine!", "Fifty-fifty, Colonel.")],
     b_first: [("Overdrawn, dears.", "Kehh! Exquisite."), ("Audit complete.", "Keep the change.")],
-}];
+},
+// The Emerald Sun Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
+es_duo(KLAUS, AURELIA, 120, 2, "Siege of Iron", [("The wall falls.", "On schedule."), ("Hold, then breach.", "Stone, Legate.")], [("Wall's down. Legate?", "Well built."), ("Fetch the ladders.", "March.")]),
+es_duo(KLAUS, CASSIUS, 108, 1, "Hammer and Anvil", [("Order restored.", "Ha! Mine too!"), ("Hold. Then strike.", "Fine. Fine!")], [("Ha! Did you see?", "I saw."), ("Write it down!", "No.")]),
+es_duo(KLAUS, LIVIA, 125, 3, "Pax Romana", [("Terms are mine.", "Paid in full."), ("The line holds.", "Audited.")], [("Books are closed.", "So is the war."), ("The ledger balances.", "March at dawn.")]),
+es_duo(AURELIA, CASSIUS, 115, 2, "Triumphal Road", [("Road is open.", "Faster than planned!"), ("Span holds.", "I will not slow.")], [("Ha! Ride, ride!", "Mind the bridge."), ("Out of my way!", "Your road, Prefect.")]),
+es_duo(AURELIA, LIVIA, 118, 2, "Aqueduct", [("Paid. In full.", "Built. On time."), ("Stone and silver.", "Both hold.")], [("Accounts settled.", "So are the foundations."), ("Do not waste it.", "Never.")]),
+es_duo(CASSIUS, LIVIA, 110, 1, "Gilded Chariot", [("Glory!", "Itemised."), ("Look at me go!", "I am counting.")], [("Invoice sent.", "Ha! Worth it!"), ("Your horses cost.", "Priceless!")]),
+es_duo(KLAUS, KANBEI, 120, 2, "Two Banners", [("Honour holds.", "Honour answers."), ("Two lines, one wall.", "Well said.")], [("A worthy ally.", "As are you."), ("Banners high.", "Banners high.")]),
+es_duo(LIVIA, COLIN, 116, 2, "Merchant Princes", [("Settled. Exactly.", "Hey! Fine print!"), ("A fair margin.", "Fair? Hah!")], [("I win! Cha-ching!", "Check the books."), ("Pay up!", "Already did.")]),
+];
+
+use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA};
+/// AW2's Kanbei and Colin, the campaign's two cross-army partners.
+const KANBEI: u8 = 6;
+const COLIN: u8 = 16;
+
+const fn es_duo(a: u8, b: u8, compatibility: u8, stars: u8, name: &'static str, a_first: [(&'static str, &'static str); 2], b_first: [(&'static str, &'static str); 2]) -> Duo {
+    Duo { a, b, compatibility, stars, name, a_first, b_first }
+}
 
 /// The made-up pair of two COs, in either order.
 pub fn duo(a: u8, b: u8) -> Option<&'static Duo> {

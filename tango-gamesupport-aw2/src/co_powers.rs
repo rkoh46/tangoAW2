@@ -229,6 +229,11 @@ fn class_at(core: &Core, x: u32, y: u32) -> u8 {
     core.raw_read_8(m + CLASSES + row + x, -1)
 }
 
+/// Properties of an army that earn funds.
+pub fn earners(core: &Core, army: u32) -> i32 {
+    owned(core, army, &EARNERS)
+}
+
 /// Properties of `kinds` an army owns.
 fn owned(core: &Core, army: u32, kinds: &[u8]) -> i32 {
     let m = map(core);
@@ -782,6 +787,7 @@ fn income(core: &mut Core) {
     if army_co(core, army).0 == SASHA {
         add += 100 * earners;
     }
+    add += crate::es_co::income_bonus(army_co(core, army).0, earners);
     if add == 0 {
         return;
     }

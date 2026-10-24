@@ -355,8 +355,9 @@ pub struct BuiltUnit {
     pub name: &'static str,
 }
 
-fn built_map(name: &str) -> Option<&'static BuiltMap> {
-    crate::bh_map_data::MAPS.iter().find(|m| m.name == name)
+/// A map built by `five/bhmap.py`, from the BH Campaign's or the Emerald Sun Campaign's table.
+pub fn built_map(name: &str) -> Option<&'static BuiltMap> {
+    crate::bh_map_data::MAPS.iter().chain(crate::es_map_data::MAPS.iter()).find(|m| m.name == name)
 }
 
 /// A built map's units as the mission's.
@@ -2138,7 +2139,7 @@ pub fn day(core: &Core) -> u16 {
 const MAP: u32 = 0x0201_E450;
 
 /// The owner of the cell (0 neutral, 1..4): the terrain class byte's bits 5..7.
-fn owner_at(core: &Core, x: u8, y: u8) -> u8 {
+pub fn owner_at(core: &Core, x: u8, y: u8) -> u8 {
     let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
     core.raw_read_8(MAP + 0x1432 + row + x as u32, -1) >> 5
 }
