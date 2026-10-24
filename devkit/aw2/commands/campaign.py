@@ -20,28 +20,46 @@ def register(sub):
     a = cs.add_parser("scenes", help="every scene with its song")
     a.add_argument("--md", action="store_true")
     a.add_argument("--mission")
+    a.add_argument("--campaign", default="bh", choices=["bh", "es"])
     a.set_defaults(fn=scenes)
     a = cs.add_parser("menu", help="photograph the Campaign sub-menu of the real app")
     a.add_argument("--out")
     a.set_defaults(fn=menu)
+    a = cs.add_parser("sheets", help="the Emerald Sun missions' review pictures with MISSION N - Title burned in, and a contact sheet per act")
+    a.add_argument("--mission", nargs="*", type=int)
+    a.add_argument("--out")
+    a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).sheets(a))
+    a = cs.add_parser("sim", help="the mission sim: the test player or the computer plays an Emerald Sun mission in the harness")
+    a.add_argument("--mission", nargs="+", type=int, required=True)
+    a.add_argument("--player", nargs="+", default=["bot"], choices=["bot", "cpu"])
+    a.add_argument("--seeds", type=int, default=1)
+    a.add_argument("--days", type=int, default=25)
+    a.add_argument("-j", "--jobs", type=int, default=0, help="missions played at once (default: half the cores)")
+    a.add_argument("-v", "--verbose", action="store_true")
+    a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).sim(a))
+    a = cs.add_parser("difficulty", help="the Emerald Sun missions' difficulty scores (static numbers and the sims' results)")
+    a.add_argument("--require-final", action="store_true", help="exit 1 unless M16 is clearly the hardest")
+    a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).difficulty_cmd(a))
+    a = cs.add_parser("check", help="the Emerald Sun Campaign's static rules (inventions only in the Black Hole missions, unit caps, dialogue)")
+    a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).check(a))
     a = cs.add_parser("trace", help="play missions in the harness and trace song / fade / silence")
     a.add_argument("--mission", nargs="*", type=int, default=[1])
     a.add_argument("--out")
     a.set_defaults(fn=trace)
 
 
-def scene_rows():
+def scene_rows(campaign="bh"):
     exe = util.example_bin("aw2_campaign_scenes")
     util.check_fresh(exe, "aw2_campaign_scenes")
     env = dict(os.environ, TANGOAW2_DS_ROM=str(cfg.ds_rom()))
-    r = subprocess.run([str(exe), str(cfg.aw2_rom())], capture_output=True, text=True, env=env)
+    r = subprocess.run([str(exe), str(cfg.aw2_rom()), campaign], capture_output=True, text=True, env=env)
     if r.returncode:
         util.die("aw2_campaign_scenes failed: " + r.stderr[-300:])
     return [l.split("\t") for l in r.stdout.splitlines()]
 
 
 def scenes(a):
-    rows = scene_rows()
+    rows = scene_rows(a.campaign)
     if a.mission:
         rows = [r for r in rows if r[0] == a.mission]
     bad = [r for r in rows if r[1] != "trigger" and r[3] == "-"]
