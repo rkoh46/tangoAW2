@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es01", 18, 15)
-    m.header(armies=2, colours=(BH, GE), objective=[1], comment="M1 Landfall: land from the sandbar (south), cross the beach, take the fort HQ (north).")
+    m.header(armies=2, colours=(OS, GE), objective=[1], comment="M1 Landfall: land from the sandbar (south), cross the beach, take the fort HQ (north).")
     # the ridge behind the fort and the fort's walls (a gate on the road at x 8..9)
     m.rect("^", 0, 0, 17, 1)
     m.frame("^", 4, 2, 13, 6)

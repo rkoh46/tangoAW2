@@ -12,7 +12,7 @@ def mir(x, y):
 
 def build():
     m = Canvas("es04", W, H)
-    m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
+    m.header(armies=2, colours=(BM, OS), objective=[1], comment=(
         "M4 The Second Legion (FOG): take Cassius's camp HQ 2 (15,1) or rout his army. River y8 (x0..17) with two bridges (5,8) west and (13,8) east (the game's tiles allow no shoal ford in a river); "
         "marsh (the woods x7..12 on both banks, the tiles allow no river pools) is slow ground for his vehicles. Camps mirror each other (player HQ (2,14), Cassius HQ (15,1)). "
         "Player start: INF4 MECH2 TANK3 MDT2 RECON2 ART2 AA1 APC1 (about 105000); Cassius: TANK4 RECON3 MDT2 INF3 MECH1 APC1 ART1 (about 95000), 4000 funds each. "

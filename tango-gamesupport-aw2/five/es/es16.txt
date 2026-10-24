@@ -61,7 +61,7 @@
 # player_reinf6: (18, 29) player reinforcement cell (south camp)
 
 map es16
-armies 3 5 5 1 4
+armies 3 5 2 1 4
 team 1 2 2
 unit 1 1 3 24
 unit 1 1 4 24

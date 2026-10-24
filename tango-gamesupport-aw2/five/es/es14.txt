@@ -15,7 +15,7 @@
 # nest: (17, 7) mountain nest at the causeway head (17..18 x 7..8)
 
 map es14
-armies 3 5 5 1 4
+armies 3 5 2 1 4
 team 1 2 3
 unit 1 1 5 10
 unit 1 1 2 11

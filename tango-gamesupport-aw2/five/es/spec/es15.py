@@ -8,7 +8,7 @@ W, H = 32, 20
 
 def build():
     m = Canvas("es15", W, H, fill="~")
-    m.header(armies=3, colours=(BH, OS, BM), team=[1, 2, 1], objective=[1],
+    m.header(armies=3, colours=(GE, OS, BM), team=[1, 2, 1], objective=[1],
              comment="M15 Pax Romana (tag): rout Varro's fleet and take flagship_port (23,10) on the east island. Army 3 (the Accord) has NO units at the start and joins on day 6. "
                      "Start forces: player CR3 BS1 SUB1 LAN2 TCO1 BCO2 FTR2 BMB1 INF3 MECH2 AA1 (18), funds 8000; Varro BS2 CR3 SUB2 LAN2 FTR3 BMB2 BCO2 INF3 MECH2 TANK2 (21), builds at 3 ports and the airport. "
                      "Threat/answer: Fighters and Bombers -> the three Cruisers (AA screen at x 8), the AA on the beach, own Fighters; Battleships -> Bombers and Submarines (the strait is open sea: "

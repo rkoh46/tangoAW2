@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es11", 26, 12)
-    m.header(armies=3, colours=(BH, YC, YC), team=[1, 2, 2], objective=[1],
+    m.header(armies=3, colours=(OS, YC, YC), team=[1, 2, 2], objective=[1],
              comment="M11 The Treasure Train (escort): the four APCs apc1..apc4 start at the harbour (3,4)..(3,7) and must reach the relay camp rectangle (22,5)-(25,7) at the east end; "
                      "the camp's city c (24,6) is neutral on the map and the mission gives it to the player. The road y6 crosses a forest (x7..11), the river x14 at ONE bridge (the ford, (14,6)) "
                      "and a ruin (x15..19). Lash's HQ 2 (23,1) is the NE camp, Flak's HQ 3 (23,10) the SE camp. "

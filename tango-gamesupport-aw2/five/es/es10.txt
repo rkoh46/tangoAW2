@@ -14,7 +14,7 @@
 # sonja_ridge: (15, 3) east ridge mountains x15..19, y1..6; Sonja's pocket x16..18, y2..4
 
 map es10
-armies 3 5 5 4 4
+armies 3 5 1 4 4
 team 1 2 2
 unit 1 1 8 12
 unit 1 1 9 12

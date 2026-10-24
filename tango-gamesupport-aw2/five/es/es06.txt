@@ -10,7 +10,7 @@
 # neutral_sw: (3, 14) neutral cities (3,14) and (2,12)
 
 map es06
-armies 3 5 5 2 2
+armies 3 5 1 2 2
 team 1 2 2
 unit 1 1 8 8
 unit 1 1 10 8

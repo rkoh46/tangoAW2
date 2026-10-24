@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es05", 26, 14)
-    m.header(armies=2, colours=(BH, YC), objective=[1], comment=(
+    m.header(armies=2, colours=(OS, YC), objective=[1], comment=(
         "M5 Dust and Wheels: own all three signal posts (post1..3) by the end of day 9; the bridges are blown on day 10. "
         "Start forces: player RECON3 TANK3 MDT2 APC2 MECH3 AA2 (15 units), 1 base, funds 3000; "
         "Yellow Comet INF4 MECH2 TANK2 RECON1 ART2 ROCK1 BCO2 TCO1 AA1 (16 units), 2 bases + 1 airport. "

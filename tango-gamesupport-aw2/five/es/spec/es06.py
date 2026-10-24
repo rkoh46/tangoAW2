@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es06", 18, 18)
-    m.header(armies=3, colours=(BH, BM, BM), team=[1, 2, 2], objective=[1], comment=(
+    m.header(armies=3, colours=(OS, BM, BM), team=[1, 2, 2], objective=[1], comment=(
         "M6 Tribute: own 14 properties at the end of a day, or hold the square HQ '1' (9, 9) through the 16-day audit (HQ falls = defeat). "
         "Properties by owner (cells): player HQ(9,9) B(7,11) B(11,7) A(9,12) P(2,8) P(2,11) C(9,6) C(6,9) = 8 with the HQ; "
         "Colin (army 2) HQ(1,1) B(3,3) B(5,3) B(2,5) A(4,5) = 5; Sasha (army 3) HQ(16,16) B(14,14) B(12,14) B(15,12) A(14,12) = 5; "

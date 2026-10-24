@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es03", 22, 16)
-    m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
+    m.header(armies=2, colours=(OS, GE), objective=[1], comment=(
         "M3 The Wall: take HQ 2 (10,9) inside the keep. Outer ring wall x3..18 y5..13 with gates gate1 (10,5) N, gate2 (3,9) W, gate3 (18,9) E; "
         "keep ring x7..14 y7..11, one gate (10,11) S. Vehicles must use the gates, foot soldiers climb mountains. Sea y0..1 north, shoal y2: Drake's BS (hold) shells the coast road y3 "
         "and the north gate approach. Player funds 2000, start: ART3 ROCK2 RECON2 INF4 MECH2 TANK2 AA1 (about 90000 value); "

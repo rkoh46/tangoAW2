@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es07", 22, 16, fill="~")
-    m.header(armies=3, colours=(BH, GE, GE), team=[1, 2, 2], objective=[1], comment=(
+    m.header(armies=3, colours=(OS, GE, GE), team=[1, 2, 2], objective=[1], comment=(
         "M7 Mare Nostrum: sink the Warden flagship (Battleship 'flagship') and capture the harbour port (15, 8) of Isle Verdant. "
         "Start forces: player LAN2 CR2 BS1 SUB1 TCO2 BCO2 INF3 MECH2 (15 units), 2 ports + 1 airport + 1 base, funds 6000; "
         "Green Earth Drake (army 2) BS1 (flagship) CR2 SUB2 LAN1 INF2 (hold) (8) + Eagle (army 3) FTR3 BCO2 (5), ports + airport to build. "

@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es08", 22, 16)
-    m.header(armies=3, colours=(BH, OS, OS), team=[1, 2, 2], objective=[1], comment=(
+    m.header(armies=3, colours=(BM, OS, OS), team=[1, 2, 2], objective=[1], comment=(
         "M8 Hammer and Anvil (tag mission, Klaus + Cassius): rout both Orange Star armies or capture Max's HQ '2' (16, 7). "
         "Start forces: player INF4 MECH3 TANK4 MDT2 RECON2 ART2 AA1 (18 units), 1 base (3, 5), funds 4000; "
         "Max (army 2, in the fort) INF3 (hold) MECH2 (hold) MDT3 TANK2 ART2 AA1 (13), Jake (army 3, south-east plain) INF2 TANK3 RECON2 ROCK1 BCO1 (9). "

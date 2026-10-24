@@ -22,7 +22,7 @@
 # mid_ports: (15, 7) neutral ports (15,7) and (15,13) on the middle island
 
 map es15
-armies 3 5 5 1 2
+armies 3 5 3 1 2
 team 1 2 1
 unit 1 1 4 5
 unit 1 1 4 7

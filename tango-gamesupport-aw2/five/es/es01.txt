@@ -2,7 +2,7 @@
 # M1 Landfall: land from the sandbar (south), cross the beach, take the fort HQ (north).
 
 map es01
-armies 2 3 5 3
+armies 2 3 1 3
 unit 1 1 5 13
 unit 1 1 6 13
 unit 1 1 10 13

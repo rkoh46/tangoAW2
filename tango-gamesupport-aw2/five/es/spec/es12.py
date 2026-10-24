@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es12", 24, 17)
-    m.header(armies=3, colours=(BH, BM, BM), team=[1, 2, 2], objective=[1],
+    m.header(armies=3, colours=(OS, BM, BM), team=[1, 2, 2], objective=[1],
              comment="M12 Siege of Iron (tag, snow): take Olaf's HQ 2 (9,6) in the heart of three mountain rings (outer x1..17,y0..13; middle x4..14,y3..10; inner x6..12,y5..8). "
                      "Gaps: outer (5,13) (13,13) south and (17,8) east (toward Grit's spur); middle (9,10) south, (4,5) west, (14,8) east; inner (7,8) (11,8) south and (6,6) west. "
                      "The gaps never line up: every ring forces a zigzag along a 1-2 cell corridor under the guns. Grit's HQ 3 (21,7) on the east spur (plain pocket x20..22,y5..9; "

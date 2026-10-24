@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es02", 20, 14)
-    m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
+    m.header(armies=2, colours=(OS, GE), objective=[1], comment=(
         "M2 Testudo: survive to day 9; lose if HQ 1 (4,12) falls. Enemy HQ 2 (17,1) is far NE. Three ridges (y 4, 7, 10) with road gaps: "
         "ridge1 x2 (TRAP: leads into a walled pocket x0..5, y5..6 with no way on south), x10, x17; ridge2 x9, x16; ridge3 x5, x12. "
         "Player start: INF4 MECH2 TANK3 MDT1 ART2 RECON1 (63000 value); enemy: INF4 TANK4 MDT2 RECON2 ART2 FTR2 BMB1 (146000, air included). "

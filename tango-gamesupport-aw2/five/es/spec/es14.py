@@ -8,7 +8,7 @@ W, H = 30, 18
 
 def build():
     m = Canvas("es14", W, H)
-    m.header(armies=3, colours=(BH, OS, YC), team=[1, 2, 3], objective=[1],
+    m.header(armies=3, colours=(BM, OS, YC), team=[1, 2, 3], objective=[1],
              comment="M14 Varro's Gambit: phase 1 hold the quay HQ (1), phase 2 take dock1 and dock2 (ports on the east bank) before the ships leave. "
                      "Army 3 (Cassius) is hostile to both until day 4 (mission code). Start forces: player INF4 MECH3 TANK3 MDT2 RECON1 ART2 AA1 (16), funds 4000; "
                      "Varro INF4 MECH2 TANK3 MDT3 ART2 ROCK1 AA1 FTR1 (17, of which INF2 MDT2 ROCK1 hold the docks); Cassius TANK3 RECON2 MDT1 INF2 (8). "

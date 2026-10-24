@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es10", 20, 16)
-    m.header(armies=3, colours=(BH, YC, YC), team=[1, 2, 2], objective=[1],
+    m.header(armies=3, colours=(OS, YC, YC), team=[1, 2, 2], objective=[1],
              comment="M10 The Quiet Pass (FOG): cross the gorge (y 11) at the three bridges, climb a pass road (x4 west, x10 centre, x14 east) or the goat track (foot only, x1..2) "
                      "and take Kanbei's summit HQ '2' (10,1); Sonja's HQ '3' (18,3) sits in a pocket of the east ridge. "
                      "Threat/answer: ambushes at the pass mouths in the fog -> Recons (vision 5?) and the B Copter/T Copter scout ahead, the APC and Infantry hold the bridge heads; "

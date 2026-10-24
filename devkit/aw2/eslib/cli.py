@@ -117,5 +117,23 @@ def check(a):
         if foes and key not in ("es09", "es13"):
             say(False, f"{key}: a Black Hole army (colour 5) is an enemy")
             bad += 1
+    # the map files' colours are the Rust missions' (the maps are linted by them), and Black Hole's inventions belong to an enemy army of Black Hole's colour
+    from aw2.maplint import load
+    maps = {m.name: m for m in load.es_maps()}
+    for key, d in ms.items():
+        m = maps.get(key)
+        if m is None:
+            continue
+        rust = [a["colour"] for a in sorted(d["armies"], key=lambda a: a["n"])]
+        if list(m.meta.get("colours", []))[:len(rust)] != rust:
+            say(False, f"{key}: the map file's colours {m.meta.get('colours')} are not the mission's {rust} (fix the spec's `colours=`)")
+            bad += 1
+        if m.meta.get("blackhole"):
+            owner = [a for a in d["armies"] if a["colour"] == 5 and a["n"] != 1]
+            if not owner:
+                say(False, f"{key}: Black Hole's inventions have no Black Hole enemy army (colour 5) to own them")
+                bad += 1
+            else:
+                say(True, f"{key}: the inventions belong to army {owner[0]['n']} (Black Hole)")
     say(bad == 0, f"campaign check: {bad} problems")
     return 1 if bad else 0
