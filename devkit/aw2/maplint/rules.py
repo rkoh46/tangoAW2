@@ -40,6 +40,18 @@ RULES = {
     "RC04": ("error", "a Lander with no beach or port to load or unload at"),
     "GB01": ("error", "a tile id no game map uses (drawn as garbage)"),
     "GB02": ("error", "a building or structure with part of its footprint missing or wrong"),
+    "DQ01": ("warn", "a long river with no bend: rivers wander"),
+    "DQ02": ("warn", "most mountain or wood patches are exact rectangles: drawn blocks, not terrain"),
+    "DQ03": ("warn", "blocks of parallel identical rows of mountains or woods: the procedural look"),
+    "DQ04": ("warn", "too little of the land is anything but plain: empty fields and decorative filler"),
+    "DQ05": ("warn", "a big empty plain field: a dead corner"),
+    "DQ06": ("warn", "a very long straight road with no bend or junction"),
+    "DQ07": ("warn", "an army's units start as a solid block (a blob, not a formation)"),
+    "DQ08": ("warn", "a property with no road or other property near it: no reason to go there"),
+    "DQ09": ("warn", "an HQ in a pocket: little walkable ground around it"),
+    "DQ10": ("warn", "a Lander with too few shore cells to unload on"),
+    "DQ11": ("warn", "a map meant to be fair (Versus, or a `fair` line) with unequal properties per army"),
+    "SP01": ("warn", "not enough room to fight: too many units for the walkable ground or for the frontage between the sides"),
     "ES01": ("error", "Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line)"),
 }
 
@@ -539,7 +551,12 @@ def inventions(G):
     return out
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions]
+def design_checks(G):
+    from . import design
+    return design.checks(G)
+
+
+CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, design_checks]
 
 
 def lint(m, only=None):

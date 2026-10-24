@@ -74,7 +74,7 @@ def lint(a):
     report = {}
     for m in maps:
         probs = rules.lint(m, set(a.rule) if a.rule else None)
-        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds")]
+        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source == "es" and p.rule.startswith(("DQ", "SP")))]
         report[m.name] = [str(p) for p in probs]
         if not a.json:
             if probs:
@@ -85,6 +85,9 @@ def lint(a):
                 print(f"{m.name}: clean")
         if m.source in ("bh", "es", "versus"):
             bad += sum(p.level == "error" for p in probs)
+        if m.source == "es":
+            # (the Emerald Sun maps are held to the design-quality rules too: DQ.. and SP.. findings fail, `--rule` or the map's own comment cannot waive them)
+            bad += sum(p.rule.startswith(("DQ", "SP")) for p in probs)
         if out and (probs or m.source in ("bh", "es", "versus")):
             render.draw_map(m, probs).save(out / f"{m.name.replace(' ', '_')}.png")
     if a.json:
@@ -119,7 +122,7 @@ def gen(a):
 
 def rules_table(a):
     load, rules, render = _lib()
-    srcs = {"aw2": load.aw2_maps(), "ds": load.ds_maps(), "versus": load.versus_maps(), "bh": load.bh_maps()}
+    srcs = {"aw2": load.aw2_maps(), "ds": load.ds_maps(), "versus": load.versus_maps(), "bh": load.bh_maps(), "es": load.es_maps()}
     hits = {}
     for s, ms in srcs.items():
         c = collections.defaultdict(set)
@@ -128,8 +131,8 @@ def rules_table(a):
                 c[p.rule].add(m.name)
         hits[s] = c
     if a.md:
-        print("| Rule | Level | What | AW2 (%d maps) | DS (%d) | Versus (%d) | BH (%d) |" % tuple(len(srcs[s]) for s in srcs))
-        print("|---|---|---|---|---|---|---|")
+        print("| Rule | Level | What | AW2 (%d maps) | DS (%d) | Versus (%d) | BH (%d) | ES (%d) |" % tuple(len(srcs[s]) for s in srcs))
+        print("|---|---|---|---|---|---|---|---|")
     for r, (lv, text) in rules.RULES.items():
         cols = [f"{len(hits[s].get(r, ()))}" for s in srcs]
         if a.md:

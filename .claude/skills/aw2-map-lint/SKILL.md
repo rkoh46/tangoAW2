@@ -15,3 +15,7 @@ Read docs/dev/map-lint.md (rules, what the games allow, how to fix each).
    a row in docs/dev/map-lint.md (`aw2dev maps rules --md`), and run `./aw2dev test python`. Calibrate the level on AW2's and DS's own maps (`maps rules`): do they do it? then warn, else error.
 6. Emerald Sun maps (`--source es`): they are generated from Python specs (`five/es/spec/esNN.py`, `aw2dev maps gen`), so fix the spec, not the txt; rule ES01 allows Black Hole's inventions only on the two maps
    tagged `blackhole` (M9, M13). See skill aw2-es-campaign.
+7. Design quality (docs/dev/map-lint.md, "Design quality"): `DQ01`..`DQ11` and `SP01` ask whether a map looks machine-made or is too cramped (straight rivers, rectangle patches, stripes, sparse land, big empty fields,
+   unit blobs, pointless properties, HQ pockets, beaches, density and frontage). Emerald Sun maps must pass them (the lint fails on a finding); the BH Campaign's and Versus maps only report. Fix a finding by changing
+   the terrain (bend the river, round the patch, mix the kinds, cluster and vary), never by raising `design.LIMITS`; a limit moves only with new calibration on the games' maps.
+

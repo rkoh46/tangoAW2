@@ -32,35 +32,48 @@ Tables found in the ROM and used:
   `five/map.py water_tile` follows this since the BH Campaign's 3-wide bridge of M29 was drawn with 0x36 on every lane (a TJ02 hit).
 
 ## The rules (hits per source: how many maps of each trip it)
-| Rule | Level | What | AW2 (179 maps) | DS (256) | Versus (20) | BH (35) |
-|---|---|---|---|---|---|---|
-| RV01 | error | river ends dry against plain, wood, road, pipe or a building: a river runs from a source (map edge or mountain) to the sea | 4 | 3 | 4 | 0 |
-| RV02 | error | a single river cell with no river or water beside it | 0 | 0 | 0 | 0 |
-| RV03 | error | a river that reaches neither the sea or a lake nor the map edge | 4 | 5 | 1 | 0 |
-| RV04 | error | a road meets a river with no bridge (road on both sides of a river cell, or a road running into a river's end) | 1 | 0 | 1 | 0 |
-| BR01 | error | a bridge end meets water or a tile no unit can stand on, not ground | 0 | 1 | 0 | 0 |
-| BR02 | warn | a bridge end meets a mountain, a wood, a pipe or a structure: vehicles cannot cross | 35 | 43 | 0 | 0 |
-| BR03 | error | a bridge with no water beside it | 0 | 0 | 0 | 0 |
-| SE01 | error | a one-tile sea or reef with no bridge over it, not at the map edge (a puddle) | 2 | 11 | 0 | 0 |
-| SE02 | warn | shoal that touches no sea, reef or river | 1 | 2 | 0 | 0 |
-| SE03 | error | a sea cell is not drawn with the coast tile AW2's table gives for the land around it | 0 | 0 | 1 | 0 |
-| TJ01 | error | two neighbouring tiles that no AW2 map places side by side (a broken join) | 0 | 107 | 0 | 0 |
-| TJ02 | error | a river, shoal, bridge or sea tile that no game map uses for these neighbours (wrong transition tile) | 0 | 0 | 0 | 0 |
-| TJ03 | warn | a mountain or the plain over it not drawn as the game draws it | 21 | 0 | 0 | 0 |
-| RD01 | warn | a single road tile that joins no road, bridge or property | 12 | 5 | 0 | 0 |
-| RD02 | warn | two road ends one or two tiles apart in line, the gap left plain | 9 | 4 | 0 | 0 |
-| PP01 | error | a pipe tile that opens onto a tile it does not join | 0 | 1 | 0 | 0 |
-| PP02 | error | a pipe seam that is not inside a straight run | 0 | 0 | 0 | 0 |
-| UN01 | error | a unit on terrain its kind cannot occupy | 0 | 0 | 0 | 0 |
-| UN02 | error | two units on one cell | 0 | 0 | 0 | 0 |
-| UN03 | error | a unit boxed in with no free neighbour to move to | 0 | 0 | 0 | 0 |
-| UN04 | error | a unit off the map | 0 | 0 | 0 | 0 |
-| RC01 | error | a property or unit on land that no army or Lander can reach | 0 | 0 | 0 | 0 |
-| RC02 | error | an army cannot reach an enemy HQ it must take | 0 | 0 | 0 | 0 |
-| RC03 | error | an HQ or production property no unit can leave (no ground, or no sea for a port) | 0 | 7 | 1 | 0 |
-| RC04 | error | a Lander with no beach or port to load or unload at | 0 | 0 | 0 | 0 |
-| GB01 | error | a tile id no game map uses (drawn as garbage) | 0 | 0 | 0 | 0 |
-| GB02 | error | a building or structure with part of its footprint missing or wrong | 0 | 2 | 0 | 0 |
+| Rule | Level | What | AW2 (179 maps) | DS (256) | Versus (20) | BH (35) | ES (16) |
+|---|---|---|---|---|---|---|---|
+| RV01 | error | river ends dry against plain, wood, road, pipe or a building: a river runs from a source (map edge or mountain) to the sea | 4 | 3 | 4 | 0 | 0 |
+| RV02 | error | a single river cell with no river or water beside it | 0 | 0 | 0 | 0 | 0 |
+| RV03 | error | a river that reaches neither the sea or a lake nor the map edge | 4 | 5 | 1 | 0 | 0 |
+| RV04 | error | a road meets a river with no bridge (road on both sides of a river cell, or a road running into a river's end) | 1 | 0 | 1 | 0 | 0 |
+| BR01 | error | a bridge end meets water or a tile no unit can stand on, not ground | 0 | 1 | 0 | 0 | 0 |
+| BR02 | warn | a bridge end meets a mountain, a wood, a pipe or a structure: vehicles cannot cross | 35 | 43 | 0 | 0 | 0 |
+| BR03 | error | a bridge with no water beside it | 0 | 0 | 0 | 0 | 0 |
+| SE01 | error | a one-tile sea or reef with no bridge over it, not at the map edge (a puddle) | 2 | 11 | 0 | 0 | 0 |
+| SE02 | warn | shoal that touches no sea, reef or river | 1 | 2 | 0 | 0 | 0 |
+| SE03 | error | a sea cell is not drawn with the coast tile AW2's table gives for the land around it | 0 | 0 | 1 | 0 | 0 |
+| TJ01 | error | two neighbouring tiles that no AW2 map places side by side (a broken join) | 0 | 107 | 0 | 0 | 0 |
+| TJ02 | error | a river, shoal, bridge or sea tile that no game map uses for these neighbours (wrong transition tile) | 0 | 0 | 0 | 0 | 0 |
+| TJ03 | warn | a mountain or the plain over it not drawn as the game draws it | 21 | 0 | 0 | 0 | 0 |
+| RD01 | warn | a single road tile that joins no road, bridge or property | 12 | 5 | 0 | 0 | 0 |
+| RD02 | warn | two road ends one or two tiles apart in line, the gap left plain | 9 | 4 | 0 | 0 | 0 |
+| PP01 | error | a pipe tile that opens onto a tile it does not join | 0 | 1 | 0 | 0 | 0 |
+| PP02 | error | a pipe seam that is not inside a straight run | 0 | 0 | 0 | 0 | 0 |
+| UN01 | error | a unit on terrain its kind cannot occupy | 0 | 0 | 0 | 0 | 0 |
+| UN02 | error | two units on one cell | 0 | 0 | 0 | 0 | 0 |
+| UN03 | error | a unit boxed in with no free neighbour to move to | 0 | 0 | 0 | 0 | 0 |
+| UN04 | error | a unit off the map | 0 | 0 | 0 | 0 | 0 |
+| RC01 | error | a property or unit on land that no army or Lander can reach | 0 | 0 | 0 | 0 | 0 |
+| RC02 | error | an army cannot reach an enemy HQ it must take | 0 | 0 | 0 | 0 | 0 |
+| RC03 | error | an HQ or production property no unit can leave (no ground, or no sea for a port) | 0 | 7 | 1 | 0 | 0 |
+| RC04 | error | a Lander with no beach or port to load or unload at | 0 | 0 | 0 | 0 | 0 |
+| GB01 | error | a tile id no game map uses (drawn as garbage) | 0 | 0 | 0 | 0 | 0 |
+| GB02 | error | a building or structure with part of its footprint missing or wrong | 0 | 2 | 0 | 0 | 0 |
+| DQ01 | warn | a long river with no bend: rivers wander | 8 | 9 | 3 | 13 | 8 |
+| DQ02 | warn | most mountain or wood patches are exact rectangles: drawn blocks, not terrain | 1 | 2 | 1 | 13 | 2 |
+| DQ03 | warn | blocks of parallel identical rows of mountains or woods: the procedural look | 1 | 2 | 0 | 5 | 2 |
+| DQ04 | warn | too little of the land is anything but plain: empty fields and decorative filler | 6 | 12 | 8 | 1 | 5 |
+| DQ05 | warn | a big empty plain field: a dead corner | 0 | 5 | 1 | 1 | 0 |
+| DQ06 | warn | a very long straight road with no bend or junction | 1 | 2 | 0 | 3 | 1 |
+| DQ07 | warn | an army's units start as a solid block (a blob, not a formation) | 0 | 0 | 0 | 6 | 5 |
+| DQ08 | warn | a property with no road or other property near it: no reason to go there | 3 | 10 | 3 | 1 | 1 |
+| DQ09 | warn | an HQ in a pocket: little walkable ground around it | 4 | 9 | 0 | 0 | 0 |
+| DQ10 | warn | a Lander with too few shore cells to unload on | 0 | 0 | 0 | 0 | 0 |
+| DQ11 | warn | a map meant to be fair (Versus, or a `fair` line) with unequal properties per army | 0 | 0 | 0 | 0 | 0 |
+| SP01 | warn | not enough room to fight: too many units for the walkable ground or for the frontage between the sides | 0 | 0 | 0 | 7 | 4 |
+| ES01 | error | Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line) | 0 | 0 | 0 | 0 | 0 |
 
 Levels: **error** = AW2 and Dual Strike do it in at most a few percent of their maps (the rule's hits there are listed above, they are the games' own slips or deliberate shapes;
 `aw2dev maps lint --source aw2 --rule RV01` names them); **warn** = the games do it regularly, reported with `--warn` only (bridge ends in woods, single road tiles, mountains drawn
@@ -96,3 +109,33 @@ becomes a bridge on the road cell and runs on to the edge; a spring with no outl
 Before: bh07 (two aircraft on one cell), bh10 (a river from mountain to mountain with no outlet), bh19 (a river cut into four by three roads with no bridge, ending dry), bh21 (the same, twice, and a
 road crossing with no bridge), bh29 / bh30 (3- and 2-wide bridges drawn with the single-lane tile), bh31 (a river cut by a road), M20's Carrier spawned on a shoal. All fixed; the other 25 maps were clean.
 Limits: the linter reads a map as its tiles; mission-level data that is not a literal (computed spawn cells) is not checked, and fairness (distance, funds) is not a rule.
+
+## Design quality ("bad game design"): `maplint/design.py`
+The integrity rules ask whether a map is *broken*; these ask whether it looks machine-made or plays cramped. All are warnings (the Emerald Sun maps are held to them: a
+DQ.. or SP.. finding fails `maps lint --source es`; the BH Campaign's and Versus maps only report). Every threshold (`design.LIMITS`) sits where AW2's and Dual Strike's own
+maps (435 of them) almost never go; the unit rules are calibrated on the BH Campaign's 35 maps, the only source with unit positions in the files.
+
+| Rule | Measures | Limit | Games' hits (AW2 / DS / BH) |
+|---|---|---|---|
+| DQ01 | a river of 10+ cells with no bend (bends per 10 cells: AW2 median 1.5) | 0 bends | 8 / 9 / 13 |
+| DQ02 | mountain or wood patches (6+ cells) that are exact rectangles: 3+ and half of them | 3 | 1 / 2 / 13 |
+| DQ03 | blocks of 3+ parallel runs of 4+ identical mountain or wood cells | 3 blocks | 1 / 2 / 5 |
+| DQ04 | share of land that is not plain (AW2 p10 .43) | .36 | 6 / 12 / 1 |
+| DQ05 | the largest empty plain window (AW2 p99 5) | 6 | 0 / 5 / 1 |
+| DQ06 | a straight road run with no bend (AW2 max 27) | 27 | 1 / 2 / 3 |
+| DQ07 | an army's units as a solid rectangle (9+ cells), or 10+ units filling 75% of their box | 9 | - / - / 6 |
+| DQ08 | a property with no road or property within 5 cells (HQs excepted) | - | 3 / 10 / 1 |
+| DQ09 | an HQ with fewer than 7 walkable cells within 2 | 7 | 4 / 9 / 0 |
+| DQ10 | a Lander with fewer than 6 shore cells to unload on | 6 | 0 / 0 / 0 |
+| DQ11 | Versus (or `fair`) maps with unequal properties per army (more than a third apart) | 1.34 | 0 / 0 / 0 |
+| SP01 | room to fight: units per vehicle-walkable cell, and the smaller ground side's units per cell of the narrowest frontage between the sides; no vehicle crossing at all | .17 and 1.25 | - / - / 9 |
+
+Room to fight (SP01): the density is all units over all cells a vehicle can drive on (BH Campaign: .07 to .23, median .12). The frontage runs the axis between the two strongest
+sides' unit centroids and counts, at nine points between 30% and 70% of it, the cells (any ground a foot soldier can cross) within half a cell of the perpendicular; the units of the smaller
+side divided by the narrowest count must not pass 1.25 (BH median .8). Fleets and air wings are exempt (they cross water and sky): the rule looks at maps where ground units are 60% or more.
+For the Emerald Sun maps the aim is stricter than the limits: density .12 or less, so a 40-unit army has room to flank and to put its artillery behind a line.
+
+Calibration, what was tried: the mirror symmetry of a map is no sign of a machine (a quarter of AW2's own maps are mirrored, 19 of 20 Versus maps), so it is not a rule. Diagonal neighbours for
+river, road and shoal tile choice (to catch a wrong autotile the 4-neighbour key misses) found 4409 distinct contexts in the games' maps and would flag hand-made Versus maps by the dozen:
+the learned 4-neighbour key of TJ02 stays the check of what the game draws (the picture of a cell is a function of its tile id alone: the review pictures of
+`aw2dev campaign sheets` are the render check by eye).

@@ -22,8 +22,12 @@ def build(rows, units=()):
     return load.MapData("t", "bh", mappy.tiles(m, edge), units=list(units), text=rows, meta=m)
 
 
-def ids(m):
-    return {p.rule for p in rules.lint(m)}
+DESIGN = ("DQ", "SP")
+
+
+def ids(m, design=False):
+    """The rules a map trips (the integrity rules; `design=True`: only the design-quality rules, DQ.. and SP..)."""
+    return {p.rule for p in rules.lint(m) if p.rule.startswith(DESIGN) == design}
 
 
 FLAT = ["1" + "." * 10, *["." * 11] * 7, "." * 10 + "2"]
@@ -96,6 +100,95 @@ class Lint(unittest.TestCase):
         self.assertIn("RD01", ids(build(rows)))
         rows[4] = "RRRR.RRRR.."
         self.assertIn("RD02", ids(build(rows)))
+
+    # ---- design-quality rules: a planted bad map for each, the same map finished properly
+
+    def wide(self, f=None, units=(), w=30, h=20):
+        rows = [["."] * w for _ in range(h)]
+        if f:
+            f(rows)
+        rows[0][0] = "1"
+        rows[-1][-1] = "2"
+        # (a diagonal scatter of woods, in runs of three at most, so the plain-field and sparse-map rules stay quiet unless the test is about them)
+        base = [["f" if (x + 2 * y) % 5 < 3 else "." for x in range(w)] for y in range(h)]
+        for y in range(h):
+            for x in range(w):
+                if rows[y][x] == ".":
+                    rows[y][x] = base[y][x]
+        return build(["".join(r) for r in rows], units)
+
+    def test_design_clean_control(self):
+        self.assertEqual(ids(self.wide(), design=True), set())
+
+    def test_dq01_straight_river(self):
+        def river(rows):
+            for y in range(len(rows)):
+                rows[y][14] = "-"
+        got = ids(self.wide(river), design=True)
+        self.assertIn("DQ01", got)
+
+        def bent(rows):
+            for y in range(len(rows)):
+                rows[y][14 + (3 if 6 < y < 14 else 0)] = "-"
+            for x in range(14, 18):
+                rows[6][x] = "-"
+                rows[14][x] = "-"
+        self.assertNotIn("DQ01", ids(self.wide(bent), design=True))
+
+    def test_dq02_dq03_drawn_blocks_and_stripes(self):
+        def blocks(rows):
+            for k in range(4):
+                for y in range(3 + k * 4, 6 + k * 4):
+                    for x in range(3 + k * 6, 8 + k * 6):
+                        rows[y][x] = "^"
+        got = ids(self.wide(blocks), design=True)
+        self.assertIn("DQ02", got)
+        self.assertIn("DQ03", got)
+
+    def test_dq04_dq05_empty_land(self):
+        got = ids(build(["1" + "." * 29] + ["." * 30] * 18 + ["." * 29 + "2"]), design=True)
+        self.assertTrue({"DQ04", "DQ05"} <= got, got)
+
+    def test_dq06_dq08_dq09_roads_and_properties(self):
+        def road(rows):
+            for x in range(1, 29):
+                rows[10][x] = "R"
+        self.assertIn("DQ06", ids(self.wide(road), design=True))
+
+        def lone(rows):
+            rows[10][20] = "C"
+        self.assertIn("DQ08", ids(self.wide(lone), design=True))
+
+        def pocket(rows):
+            rows[10][10] = "1"
+            for y in range(7, 14):
+                for x in range(7, 14):
+                    if (x, y) != (10, 10) and max(abs(x - 10), abs(y - 10)) <= 2:
+                        rows[y][x] = "~"
+        self.assertIn("DQ09", ids(self.wide(pocket), design=True))
+
+    def test_dq07_unit_blob_and_sp01_room(self):
+        blob = [{"army": 1, "kind": 1, "x": 4 + i % 4, "y": 4 + i // 4, "hp": 100, "hold": False, "name": ""} for i in range(16)]
+        self.assertIn("DQ07", ids(self.wide(units=blob), design=True))
+        spread = [dict(u, x=3 + 2 * (i % 5), y=3 + 3 * (i // 5)) for i, u in enumerate(blob)]
+        self.assertNotIn("DQ07", ids(self.wide(units=spread), design=True))
+        packed = [{"army": 1 + i % 2, "kind": 5, "x": 1 + i % 8, "y": 1 + (i // 8) * 2, "hp": 100, "hold": False, "name": ""} for i in range(40)]
+        small = build(["1" + "." * 7] + ["........"] * 6 + ["." * 7 + "2"], packed)
+        self.assertIn("SP01", ids(small, design=True))
+
+    def test_dq10_lander_needs_a_beach(self):
+        def sea(rows):
+            for y in range(len(rows)):
+                for x in range(20, 30):
+                    rows[y][x] = "~"
+        lander = {"army": 1, "kind": 23, "x": 25, "y": 10, "hp": 100, "hold": False, "name": ""}
+        self.assertNotIn("DQ10", ids(self.wide(sea, [lander]), design=True))
+
+        def island(rows):
+            sea(rows)
+            for y in range(len(rows)):
+                rows[y][19] = "^"
+        self.assertIn("DQ10", ids(self.wide(island, [lander]), design=True))
 
     def test_bh_campaign_maps_are_clean(self):
         bad = [(m.name, str(p)) for m in load.bh_maps() for p in rules.lint(m) if p.level == "error"]
