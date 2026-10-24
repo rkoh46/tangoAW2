@@ -18,10 +18,10 @@ in a normal build; the flag turns it into a source of `campaign_model::SOURCES`)
 ## Rules the campaign keeps (the user's)
 - One battlefield a mission: **no two-front engine**. Tag missions (pairs) are fine (M8, M12, M13, M15).
 - **Black Hole's inventions only in the two missions against Black Hole** (M9 Grain Ships, M13 The Free Port): the map file's `blackhole` line tags them; rule **ES01** of `aw2dev maps lint --source es`
-  fails an invention tile anywhere else and a third tagged map; `aw2dev campaign check` repeats it. M16's toughness comes from army size, production, funds, unit quality, fortified terrain, waves, Varro's powers.
+  fails an invention tile anywhere else and a third tagged map; `aw2dev campaign check` repeats it. M16's toughness comes from two allied armies (Eagle and Hachi) with real production, funds, unit quality, reserve waves and CO powers; there are no inventions in it.
 - **M16 is the hardest mission by a clear margin** (`aw2dev campaign difficulty --require-final`); M14 and M15 ramp up to it.
 - **An army stops at 50 units** (AW2: its production and a trigger's reinforcements stop there; the sim saw Varro, started at 50, build and receive nothing): no deployment above 40 (the Rust test `no_army_starts_with_more_than_40_units`, the python test, `campaign check`).
-- The player's army wears the Emerald Sun skin on army 1's colour, always one of AW2's four (Orange Star's mostly, Blue Moon's or Green Earth's where an enemy wears red) and never one an enemy or ally wears: a skin on colour 5 in a
+- **The player is Emerald Sun in every mission**: its skin sits on army 1's colour, always one of AW2's four (Orange Star's mostly, Blue Moon's or Green Earth's where an enemy wears red) and never one an enemy or ally wears: a skin on colour 5 in a
   game that is not five-army corrupted memory when the army bought a unit (found by the mission sim, test `no_army...` / `the_player_wears_a_colour_of_its_own`). Only one army wears it: Cassius's Second Legion (M4), Varro's Praetorians and
   the Accord's fleet wear the stand-in colours.
 - Every unit deployed starts at full HP, ammo and fuel (`es_boot_m*` checks it); beaches are generous (RC04); every mission's story scenes have a song (`tools/estext/lint.py`, `campaign scenes --campaign es`).
@@ -30,7 +30,7 @@ in a normal build; the flag turns it into a source of `campaign_model::SOURCES`)
 | Command | What |
 |---|---|
 | `aw2dev maps gen [--map es01 ..] [--no-build] [--check]` | runs the specs (`five/es/spec/*.py`: `Canvas` paints terrain, roads, rivers, blobs, scatter, properties, units, notes), writes `five/es/esNN.txt`, builds `src/es_map_data.rs` (tile joins checked as for the BH maps). `--check` fails when a text map differs from its spec |
-| `aw2dev maps lint --source es [--map esNN] [--warn]` | the BH Campaign's rules on the ES maps (+ ES01); the picture is `devkit/work/maps/lint/es/esNN.png` |
+| `aw2dev maps lint --source es [--map esNN] [--warn]` | the BH Campaign's rules on the ES maps (+ ES01) and the design-quality rules DQ01..DQ11 and SP01 (a finding fails: docs/dev/map-lint.md); the picture is `devkit/work/maps/lint/es/esNN.png` |
 | `python3 tools/estext/lint.py [act1..act4] [--counts]` | the dialogue linter: grammar, every box two lines of 176 px (AW2's font from your ROM), voice slips (Klaus and Livia never shout or contract, Varro never shouts, nobody says who HOBB is), songs known and present, every key asked for by the code |
 | `aw2dev campaign scenes --campaign es` | every scene with its song and box count |
 | `aw2dev campaign sheets [--mission N ..]` | **review sheets**: the game's own whole-map picture of every mission (fog OFF; a fog mission also fogged), "MISSION N - Title" burned in, a contact sheet per act (`devkit/work/campaign/es/sheets/`) |
@@ -54,3 +54,14 @@ The five are listed in Versus only with `TANGOAW2_ES_VERSUS` (a development aid)
 
 ## Saves
 The record is Flash slot 11 ("AWEC"). A mission saved halfway shares the BH Campaign's slot 12: the saved mission byte carries the campaign in its top three bits (`suspend::source_tag`; the DS and BH Campaigns keep 0, so their old saves stay valid), `saved_mission_of` / `drop_mid_of` only see their own campaign's save, so one slot serves both (a saved BH mission is replaced by an ES one and the other way round). That keeps the Flash at fourteen of its sixteen sectors with every slot in use; see docs/AW2.md "Saves" before adding another slot.
+
+## Colours, the skin and the design rules (the rework)
+- **Colours.** A mission in which the player picks a CO started with the game's own colours for that case (the player in Black Hole's colour 5, the others shuffled), so Black Hole drew in Orange Star's red and the
+  skin landed on Black Hole's inventions (the user saw it on the M13 sheet). `es_campaign::sync_colours` (called from the tick before `army_skin::sync`) writes the mission's colour to every army's player block; after
+  the skin is installed `reload_palettes` puts the army's rows on the screen. **Test `python3 tools/aw2test/run.py -k es_colours_m`** boots all 16 missions and checks: each army's colour byte is the mission's
+  (parsed from `es_act*.rs`), the Emerald Sun skin is installed on the player's colour alone, each army's palette row is its colour's, and on the real screen the skin's colours are drawn and none of the player's
+  nation's own. `aw2dev campaign check` ties the map files' colours to the missions, the inventions to a Black Hole enemy army, and prints the player's slot per mission.
+- **The player's slot per mission** (Emerald Sun skin on): OS in M1-M3, M5-M7, M9-M13; BM in M4, M8, M14, M16 (and M15 after its rework); never GE or OS where an enemy wears it; never Black Hole's.
+- **Map design rules** DQ01..DQ11 and SP01 (docs/dev/map-lint.md): winding rivers, irregular patches, no unit blocks, room to fight (density .17, frontage 1.25; aim .12 and .9). `esmaplib` has `meander`, `cluster` and `spread`.
+- **M14 to M16** after the rework: M14 storms Varro's camp (his arc ends there), M15 breaks the Accord's strait fleet (Drake and Sensei), M16 Stormhold against Eagle and Hachi (`es16.py`, 44x28, no fog).
+
