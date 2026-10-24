@@ -145,7 +145,7 @@ def lint_file(name, errors, warns, counts):
 def used_keys():
     keys = set()
     for fn in os.listdir(SRC):
-        if fn.endswith(".rs"):
+        if fn.endswith(".rs") and not fn.startswith("es_"):     # (the Emerald Sun code asks tools/estext/lint.py for its own scenes)
             s = open(os.path.join(SRC, fn)).read()
             keys |= set(re.findall(r'bh_text::(?:scene|lines|pages)\(\s*"(\w+)"', s))
             keys |= set(re.findall(r'\b(?:scene|lines|pages|txt)\(\s*"(\w+)"\s*\)', s))
