@@ -15,7 +15,7 @@ fn owns(x: u8, y: u8) -> Cond {
 // --- M9 Grain Ships (Black Hole's freight yards: inventions allowed) ----------------------------
 
 /// Kite Hill's air depot (the airport on the plateau).
-const DEPOT: (u8, u8) = (8, 4);
+const DEPOT: (u8, u8) = (12, 4);
 
 fn barges_gone() -> Cond {
     Cond::All(vec![Cond::UnitGone("barge1"), Cond::UnitGone("barge2"), Cond::UnitGone("barge3")])
