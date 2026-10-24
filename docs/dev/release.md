@@ -29,3 +29,9 @@ their approval of any new visuals; show sheets before release).
 9. watch the `release.yaml` run (`gh run watch`), rerun failed jobs once, list assets
 Expect assets: macOS dmg, Windows exe + pdb, Linux AppImage + debug, iOS ipa. Use `--skip build tests ipa ...` to leave steps out,
 `--dry-run` to only list them.
+
+## Playtest bundle (`aw2dev playtest-app`)
+`aw2dev playtest-app` builds `dist/TangoAW2-Playtest.app` (release-dist, cargo feature `playtest`, into `target/playtest`): this checkout with the Emerald Sun Campaign (`es_campaign::dev_flag`) and its
+COs in Versus (`es_co::in_versus`) **on by default, no environment variables**, the self-updater off, and everything of its own so it installs beside the real app: bundle id `net.n1gp.TangoAW2Playtest`,
+name "TangoAW2 Playtest", settings under `net.n1gp.tangoaw2-playtest`, data under `~/Documents/TangoAW2-Playtest` (a fresh install: point it at your ROMs once, in its Settings). It installs nothing
+and never touches `/Applications/TangoAW2.app` or its settings, ROMs and saves. The campaign's save slot (Flash slot 11) lives in the playtest's own saves.

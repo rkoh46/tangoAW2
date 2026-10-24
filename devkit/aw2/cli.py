@@ -94,6 +94,8 @@ def build_parser():
     s.add_argument("--full", action="store_true")
     s.set_defaults(fn=lambda a: audit.text(a) if a.what == "text" else audit.maps(a))
 
+    s = sub.add_parser("playtest-app", help="build dist/TangoAW2-Playtest.app: the Emerald Sun Campaign on by default, its own bundle id, settings and data folders (installs nothing)")
+    s.set_defaults(fn=lambda a: __import__("aw2.playtest", fromlist=["build"]).build(a))
     s = sub.add_parser("install-mac", help="copy release-dist into /Applications/TangoAW2.app (never closes a running app)")
     s.set_defaults(fn=install.install)
 

@@ -185,7 +185,8 @@ impl Updater {
     }
 
     fn start(&mut self) {
-        if self.cancellation_token.is_some() {
+        // (the playtest bundle never replaces itself with a release)
+        if cfg!(feature = "playtest") || self.cancellation_token.is_some() {
             return;
         }
 

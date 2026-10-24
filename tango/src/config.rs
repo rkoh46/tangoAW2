@@ -14,13 +14,20 @@ use serde::{Deserialize, Serialize};
 
 /// The folder a fresh install keeps its data in, under the user's
 /// documents directory.
+/// (the playtest bundle keeps its own folders: it installs beside the real app and never touches its settings, ROMs or saves)
+#[cfg(not(feature = "playtest"))]
 const DATA_DIR_NAME: &str = "TangoAW2";
+#[cfg(feature = "playtest")]
+const DATA_DIR_NAME: &str = "TangoAW2-Playtest";
 /// File name of the config within the platform config directory.
 const FILE_NAME: &str = "config.json";
 
 const QUALIFIER: &str = "net";
 const ORGANIZATION: &str = "n1gp";
+#[cfg(not(feature = "playtest"))]
 const APPLICATION: &str = "tangoaw2";
+#[cfg(feature = "playtest")]
+const APPLICATION: &str = "tangoaw2-playtest";
 
 fn default_true() -> bool {
     true

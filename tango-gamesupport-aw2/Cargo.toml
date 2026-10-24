@@ -23,6 +23,8 @@ toml = "0.8"
 tango-gamesupport-common-ui = { path = "../tango-gamesupport-common-ui", optional = true }
 
 [features]
+# The playtest build (`aw2dev playtest-app`): the Emerald Sun Campaign, its five COs in Versus and the playtest data folders are on without environment variables.
+playtest = []
 ui = ["tango-gamesupport/ui", "dep:tango-gamesupport-common-ui"]
 
 [lints]

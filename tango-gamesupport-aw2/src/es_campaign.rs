@@ -45,7 +45,7 @@ pub const SOURCE: usize = 2;
 
 /// The development flag: the campaign is playable (and the menu's "Coming soon" entry is replaced) when it is set.
 pub fn dev_flag() -> bool {
-    std::env::var_os("TANGOAW2_ES_CAMPAIGN").is_some()
+    cfg!(feature = "playtest") || std::env::var_os("TANGOAW2_ES_CAMPAIGN").is_some()
 }
 
 /// The campaign's own EWRAM (registered in `ram_map.rs`): +0 a mission's hold counter (M13: turns the player has held the Harbour Office).

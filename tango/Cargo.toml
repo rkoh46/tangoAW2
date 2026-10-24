@@ -99,6 +99,8 @@ clap.workspace = true
 # tangoAW2 supports one game, Advance Wars 2.
 default = ["gamesupport-aw2"]
 gamesupport-aw2 = ["tango-library/gamesupport-aw2"]
+# The playtest app bundle: Emerald Sun Campaign on by default, its own settings and data folders (see `aw2dev playtest-app`).
+playtest = ["tango-library/playtest"]
 gamesupport-all = [
     "gamesupport-aw2",
 ]

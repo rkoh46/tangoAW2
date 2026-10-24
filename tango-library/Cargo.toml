@@ -62,6 +62,7 @@ ui = [
 # turns this off and supplies its own IndexedDB / fetch implementations.
 native = ["dep:futures", "dep:reqwest", "dep:tokio", "dep:walkdir", "reqwest/native-tls"]
 gamesupport-aw2 = ["dep:tango-gamesupport-aw2"]
+playtest = ["tango-gamesupport-aw2?/playtest"]
 gamesupport-all = [
     "gamesupport-aw2",
 ]

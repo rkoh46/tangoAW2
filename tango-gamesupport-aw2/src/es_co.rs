@@ -36,7 +36,7 @@ pub fn is_es(co: u8) -> bool {
 
 /// Whether the five are in Versus' CO lists. Until the campaign is approved they are not (nobody should see placeholder faces in a Versus room): a development aid.
 pub fn in_versus() -> bool {
-    std::env::var_os("TANGOAW2_ES_VERSUS").is_some()
+    cfg!(feature = "playtest") || std::env::var_os("TANGOAW2_ES_VERSUS").is_some()
 }
 
 /// A CO's text, numbers and borrowed look.
