@@ -28,7 +28,7 @@ BOT = {
     10: {"goals": [(10, 1)]},
     11: {"goals": [(24, 6)]},
     13: {"goals": [(19, 15)]},
-    15: {"goals": [(23, 10)]},
+    15: {"goals": [(39, 13)]},
     # (M14 storms the camp: Varro's HQ; M16: hold the line while the computer's waves break on it, then go for the keep)
     14: {"goals": [(38, 12)]},
     16: [{"stance": "defend", "days": 18, "goals": [(15, 8)], "nearest": True, "hunt": True}, {"goals": [(15, 8)]}],
@@ -43,7 +43,7 @@ def handicap(ctx, e, g, d, n):
         if e.u8(p + 0x3C * a + 0x1B) == 0 or e.u8(p + 0x3C * a + 0x2A) == team:
             continue
         # (the units a mission's rules name stay: M7's flagship, M9's barges)
-        units = sorted((u for u in g.units(a) if u["type"] not in {7: (21,), 9: (23,)}.get(n, ())), key=lambda u: (u["type"], u["y"], u["x"]))
+        units = sorted((u for u in g.units(a) if u["type"] not in {7: (21,), 9: (23,), 15: (21,)}.get(n, ())), key=lambda u: (u["type"], u["y"], u["x"]))
         keep, seen = [], {}
         for u in units:
             k = seen.get(u["type"], 0)

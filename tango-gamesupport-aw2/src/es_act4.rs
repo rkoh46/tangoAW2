@@ -112,44 +112,29 @@ fn es14() -> MissionDef {
 
 // --- M15 Pax Romana ----------------------------------------------------------------------------
 
-/// Varro's flagship harbour, on the east island.
-const FLAGSHIP_PORT: (u8, u8) = (23, 10);
+/// The Strait Fort's harbour, in the inlet of the east shore (`five/es/spec/es15.py`): the port to take once the flagship is sunk.
+const HARBOUR: (u8, u8) = (39, 13);
 
 fn es15() -> MissionDef {
     let mut m = MissionDef::new("es15", "Pax Romana");
-    m.objective = "Rout Varro's fleet and take his flagship harbour. The Accord's ships join on day 6.";
+    m.objective = "Break the blockade: sink the flagship and take the Strait Fort's harbour.";
     m.map = MapSrc::Built("es15");
     m.armies = vec![
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::PickPair).funds(8000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(14000),
-        // The relief fleet: Nell's, with nothing until day 6.
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::NELL)).team(1).funds(0),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPair).funds(10000),
+        // The Accord's strait fleet: Drake's ships and the fort, and Sensei's air wing, allied (the same team).
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(10000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(8000),
     ];
     m.pool = everyone();
     m.units = deployment("es15");
-    m.rank_days = 14;
+    m.rank_days = 16;
     m.intro = scene("m15_pre");
     m.victory = scene("m15_post");
     m.after = chain(&["m15_map"]);
     m.triggers = vec![
-        on_day(
-            6,
-            None,
-            vec![
-                Action::Scene(scene("m15_day6")),
-                Action::Spawn(
-                    [
-                        wave(3, unit::CRUISER, &[(8, 17), (8, 18)]),
-                        wave(3, unit::BATTLESHIP, &[(8, 19)]),
-                        wave(3, unit::SUB, &[(9, 18)]),
-                        wave(3, unit::FIGHTER, &[(2, 17), (4, 17), (1, 18)]),
-                        wave(3, unit::B_COPTER, &[(5, 18), (2, 19), (4, 19)]),
-                    ]
-                    .concat(),
-                ),
-            ],
-        ),
-        after(Cond::All(vec![owns(FLAGSHIP_PORT.0, FLAGSHIP_PORT.1), Cond::ArmyUnitsAtMost { army: 2, n: 6 }]), vec![Action::Win]),
+        // Day 6: Nell's call offers the Accord's table; the fleet fights on.
+        on_day(6, None, vec![Action::Scene(scene("m15_day6"))]),
+        after(Cond::All(vec![Cond::UnitGone("flagship"), owns(HARBOUR.0, HARBOUR.1)]), vec![Action::Win]),
     ];
     m.flag = region::ACT4[2];
     m.stars = 4;

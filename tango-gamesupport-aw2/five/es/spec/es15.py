@@ -1,83 +1,161 @@
-"""M15 Pax Romana (Act III, tag mission): a strait with a stepping-stone island between the player's west shore and Varro's flagship island."""
+"""M15 Pax Romana (Act IV, tag mission): the Accord's strait fleet bars the Strait of Elms: Drake's ships and Sensei's air wing, with a fortified shore and the Strait Fort's harbour."""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
 
-W, H = 32, 20
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+import map as fivemap          # (five/map.py: the tile joins the game draws)
+
+W, H = 46, 27
+# the west shore (the legion's landfall): land is x <= WEST[y]; the east shore (the Strait Fort): land is x >= EAST[y]
+WEST = [8, 8, 9, 9, 10, 10, 9, 9, 10, 11, 11, 10, 9, 9, 10, 11, 11, 10, 10, 9, 9, 10, 9, 8, 8, 8, 7]
+EAST = [39, 38, 38, 37, 37, 36, 37, 37, 36, 35, 35, 35, 35, 35, 35, 35, 36, 37, 36, 36, 37, 38, 38, 39, 39, 40, 40]
+AVOID = "~r=-^IZ#,12345BAPSNWELvnFDXO"
 
 
 def build():
     m = Canvas("es15", W, H, fill="~")
-    m.header(armies=3, colours=(GE, OS, BM), team=[1, 2, 1], objective=[1],
-             comment="M15 Pax Romana (tag): rout Varro's fleet and take flagship_port (23,10) on the east island. Army 3 (the Accord) has NO units at the start and joins on day 6. "
-                     "Start forces: player CR3 BS1 SUB1 LAN2 TCO1 BCO2 FTR2 BMB1 INF3 MECH2 AA1 (18), funds 8000; Varro BS2 CR3 SUB2 LAN2 FTR3 BMB2 BCO2 INF3 MECH2 TANK2 (21), builds at 3 ports and the airport. "
-                     "Threat/answer: Fighters and Bombers -> the three Cruisers (AA screen at x 8), the AA on the beach, own Fighters; Battleships -> Bombers and Submarines (the strait is open sea: "
-                     "a Sub can dive and hunt them); Submarines -> Cruisers; Landers/ground -> beaches: shoal x=22 rows 3..8 and 12..16 on the east island, x=7 rows 3..10 on the west shore, "
-                     "x=11 / x=19 rows 8..12 on the middle island.")
-    # --- the player's west shore (x 0..6, rows 0..12) ---
-    m.rect(".", 0, 0, 6, 12)
-    m.rect(",", 7, 3, 7, 10)                       # the beach strip, sand behind it x 3..6
-    m.put("1", 2, 6).put("A", 3, 2).put("B", 3, 9).put("P", 6, 2).put("P", 6, 11)
-    m.puts("c", [(1, 4), (1, 8), (2, 11)])
-    m.line("R", [(2, 6), (2, 2)], over=".").line("R", [(2, 6), (2, 9), (3, 9)], over=".")
-    m.line("R", [(3, 2), (6, 2)], over=".").line("R", [(2, 11), (6, 11)], over=".")
-    m.line("R", [(2, 6), (6, 6)], over=".")
-    m.puts("f", [(0, 0), (1, 0), (0, 1), (0, 12), (1, 12), (5, 0), (5, 12)])
-    # --- the Accord's islet (south-west) ---
-    m.rect(".", 1, 16, 6, 19)
-    m.rect(",", 1, 15, 6, 15).rect(",", 7, 18, 7, 19)
-    m.put("3", 3, 18).put("P", 6, 17)
-    m.puts("f", [(1, 16), (1, 19), (5, 19)])
-    # --- the stepping-stone island (middle) ---
-    m.rect(".", 12, 7, 18, 13)
-    m.rect("~", 12, 7, 12, 7).rect("~", 18, 7, 18, 7).rect("~", 12, 13, 12, 13).rect("~", 18, 13, 18, 13)
-    m.rect(",", 11, 8, 11, 12).rect(",", 19, 8, 19, 12)
-    m.put("p", 15, 7).put("p", 15, 13)
-    m.puts("c", [(13, 10), (17, 10), (14, 8), (16, 12)])
-    m.put("^", 15, 10)
-    m.puts("f", [(14, 12), (16, 8), (14, 11), (16, 9)])
-    m.line("R", [(15, 7), (15, 9)]).line("R", [(15, 11), (15, 13)])
-    m.line("R", [(13, 10), (14, 10)]).line("R", [(16, 10), (17, 10)])
-    # --- Varro's flagship island (east, x 23..31, rows 2..17) ---
-    m.rect(".", 23, 2, 31, 17)
-    m.rect(",", 22, 3, 22, 8).rect(",", 22, 12, 22, 16)
-    m.put("2", 28, 10).put("A", 28, 4).put("B", 26, 6).put("B", 26, 14)
-    m.put("P", 23, 2).put("P", 23, 10).put("P", 23, 17)
-    m.puts("c", [(30, 7), (30, 13), (26, 10)])
-    m.line("R", [(23, 10), (28, 10)]).line("R", [(26, 6), (26, 14)]).line("R", [(28, 4), (28, 10)])
-    m.line("R", [(23, 2), (26, 2), (26, 6)]).line("R", [(23, 17), (26, 17), (26, 14)])
-    m.puts("f", [(30, 3), (30, 16), (31, 10), (29, 15), (29, 2)])
-    m.rect("^", 30, 9, 31, 9).rect("^", 30, 11, 31, 11)
-    # --- player's units ---
-    m.units(1, CR, [(8, 4), (8, 6), (8, 8)])
-    m.unit(1, BS, 9, 6).unit(1, SUB, 8, 10)
-    m.units(1, LAN, [(7, 5), (7, 8)])
-    m.unit(1, TCO, 4, 4).units(1, BCO, [(4, 3), (5, 3)]).units(1, FTR, [(4, 2), (5, 2)]).unit(1, BMB, 3, 3)
-    m.units(1, INF, [(4, 5), (4, 7), (5, 8)])
-    m.units(1, MECH, [(5, 5), (5, 7)])
-    m.unit(1, AA, 4, 6)
-    # --- Varro's units ---
-    m.units(2, BS, [(21, 6), (21, 13)])
-    m.units(2, CR, [(20, 4), (20, 10), (20, 15)])
-    m.units(2, SUB, [(19, 6), (19, 14)])
-    m.units(2, LAN, [(22, 10), (22, 2)])
-    m.units(2, FTR, [(27, 3), (29, 3), (27, 5)])
-    m.units(2, BMB, [(29, 5), (28, 6)])
-    m.units(2, BCO, [(26, 4), (30, 4)])
-    m.units(2, INF, [(24, 6), (24, 14), (25, 10)])
-    m.units(2, MECH, [(24, 8), (24, 12)])
-    m.units(2, TANK, [(25, 8), (25, 12)])
-    # --- places ---
-    m.note("hq1", 2, 6, "the player's HQ"); m.note("hq2", 28, 10, "Varro's HQ"); m.note("hq3", 3, 18, "the Accord's HQ (islet, no units until day 6)")
-    m.note("flagship_port", 23, 10, "Varro's flagship harbour: the objective (capture)")
-    m.note("airport2", 28, 4, "Varro's airport")
-    for i, (x, y) in enumerate([(2, 17), (4, 17), (1, 18), (5, 18), (2, 19), (4, 19)], 1):
-        m.note(f"accord{i}", x, y, "ground cell for an Accord aircraft")
-    for i, (x, y) in enumerate([(8, 17), (8, 18), (8, 19), (9, 18)], 7):
-        m.note(f"accord{i}", x, y, "sea cell for an Accord ship")
-    m.note("accord_port", 6, 17, "the Accord's port")
-    m.note("beach_w", 7, 3, "player's beach: shoal x=7 rows 3..10, sand x 3..6")
-    m.note("beach_mid_w", 11, 8, "middle island beach west (x=11 rows 8..12), east beach x=19")
-    m.note("beach_e", 22, 3, "east island beach: shoal x=22 rows 3..8 and 12..16, sand x 23..26")
-    m.note("mid_ports", 15, 7, "neutral ports (15,7) and (15,13) on the middle island")
+    m.header(armies=3, colours=(BM, GE, YC), team=[1, 2, 2], objective=[1],
+             comment="M15 Pax Romana (tag; province: the Strait of Elms, the Accord's Strait Fort): break the blockade: sink the flagship (Drake's Battleship, named 'flagship', at the harbour mouth (34,13)) and take the Strait Fort's harbour port (39,13). "
+                     "Army 2 = Drake (Green Earth: ships + the fort's garrison, HQ (43,13)); army 3 = Sensei (Yellow Comet: the air wing on Elm Isle, HQ (23,13)); the two are allied. The player (army 1, west shore, HQ (3,13)) picks a free tag pair. "
+                     "Start forces: player CR3 BS1 SUB1 LAN2 TCO1 BCO2 FTR2 BMB1 INF3 MECH2 AA1 (18), funds 10000; Drake BS2 CR3 SUB2 LAN2 INF3 MECH2 TANK2 ART2 AA1 (19); Sensei FTR3 BMB2 BCO2 INF2 AA1 MIS1 (11). "
+                     "Threat/answer: Sensei's Fighters and Bombers -> the Cruisers' AA, own Fighters, AA and the Missiles from the airport; Sensei's Copters -> Fighters and AA; Drake's Battleships -> Bombers (the airport (4,7)), Submarines "
+                     "and own Battleship; Submarines -> Cruisers; the fort's Artillery and AA cover the harbour -> land from the beach (shoal x=39..40 on rows 7..9 and 17..20) or sink the fleet first, Bombers on the Artillery; Landers -> beaches and ports on both shores and Salt Isle.")
+    # --- the shores ---
+    for y in range(H):
+        m.rect(".", 0, y, WEST[y], y)
+        m.rect(".", EAST[y], y, W - 1, y)
+    # the Strait Fort's harbour: an inlet cut into the east shore
+    for x, ys in ((38, (13, 13)), (37, (12, 14)), (36, (11, 15)), (35, (11, 15))):
+        m.rect("~", x, ys[0], x, ys[1])
+    # Elm Isle (Sensei's air base), Salt Isle (south-west islet), Reed Isle (north islet)
+    m.blob(".", 23, 13, 6, 4, seed=1, wobble=0.3)
+    m.blob(".", 15, 21, 4, 2, seed=2, wobble=0.3)
+    m.blob(".", 30, 6, 3, 2, seed=3, wobble=0.3)
+    # reefs in the shallows
+    for x, y in ((12, 15), (13, 16), (12, 9), (31, 11), (32, 10), (31, 19), (30, 20), (18, 18), (27, 1), (20, 5), (16, 8)):
+        m.put("r", x, y)
+    # --- mountains and woods ---
+    for i, (cx, cy, n) in enumerate([(3, 3, 10), (6, 22, 9), (2, 18, 6), (23, 10, 5), (25, 15, 5), (41, 5, 12), (43, 21, 11), (38, 24, 6), (37, 7, 7), (44, 14, 5), (22, 10, 6), (27, 15, 6), (14, 21, 3), (3, 8, 5), (12, 1, 4)], 10):
+        m.cluster("^", cx, cy, n, seed=i)
+    for i, (cx, cy, n) in enumerate([(6, 8, 9), (4, 15, 5), (7, 17, 6), (3, 23, 8), (21, 14, 7), (26, 12, 7), (15, 20, 4), (29, 3, 3), (40, 11, 6), (41, 18, 6),
+                                     (44, 9, 8), (44, 24, 6), (8, 2, 7), (10, 12, 4), (36, 22, 5), (20, 16, 5), (24, 9, 5), (38, 3, 5), (1, 12, 5), (9, 20, 4), (44, 17, 5)], 40):
+        m.cluster("f", cx, cy, n, seed=i)
+    keep = set("12345BCAPTQbcapt") | INVENTION_CHARS
+
+    def rd(pts, over=None):
+        for x, y in m.path(pts):
+            c = m.get(x, y)
+            if c not in keep and c != "=" and c not in "~r,^" and (over is None or c in over):
+                m.put("R", x, y)
+
+    def at(ch, x, y):
+        if m.get(x, y) in "-=~r,":
+            print("BAD", ch, x, y, m.get(x, y))
+        return m.put(ch, x, y)
+
+    def ats(ch, cells):
+        for x, y in cells:
+            at(ch, x, y)
+        return m
+    def coast_port(ch, x, y, radius=5):
+        """A port on the land cell nearest (x, y) that has open sea (not shoal) beside it."""
+        best = None
+        for py in range(max(0, y - radius), min(H, y + radius + 1)):
+            for px in range(max(0, x - radius), min(W, x + radius + 1)):
+                if m.get(px, py) in ".f" and sum(m.get(px + dx, py + dy) == "~" for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)) if m.inside(px + dx, py + dy)) >= 1 \
+                        and 0 < px < W - 1 and 0 < py < H - 1:
+                    d = abs(px - x) + abs(py - y)
+                    if best is None or d < best[0]:
+                        best = (d, px, py)
+        assert best, ("no coast for a port", x, y)
+        m.put(ch, best[1], best[2])
+        return best[1], best[2]
+    # --- the west shore: the legion's camp ---
+    at("1", 3, 13); at("A", 4, 7); at("B", 4, 10); at("B", 4, 17)
+    pw1 = coast_port("P", 8, 5); pw2 = coast_port("P", 8, 19)
+    ats("c", [(2, 9), (2, 16), (8, 12), (3, 21)])
+    rd([(3, 13), (7, 13), (7, 12)]); rd([(3, 13), (3, 10), (4, 10)]); rd([(3, 13), (3, 17), (4, 17)]); rd([(4, 10), (4, 7)]); rd([(4, 7), (6, 6), pw1])
+    rd([(4, 17), (7, 18), pw2])
+    # --- Elm Isle: Sensei's air base ---
+    at("3", 23, 13); at("A", 21, 11); at("B", 25, 14)
+    ats("c", [(22, 15), (24, 11)])
+    rd([(23, 13), (23, 11), (21, 11)]); rd([(23, 13), (24, 14), (25, 14)]); rd([(23, 13), (22, 15)])
+    # --- Salt Isle and Reed Isle: neutral ports and a city each ---
+    ps = coast_port("p", 15, 20, 4); pr = coast_port("p", 29, 5, 4)
+    at("c", 14, 22); at("c", 31, 6)
+    rd([ps, (14, 22)]); rd([pr, (31, 6)])
+    # --- the Strait Fort: Drake's shore ---
+    at("2", 43, 13); at("B", 41, 9); at("B", 41, 17); at("P", 39, 13)
+    pe1 = coast_port("P", 40, 5); pe2 = coast_port("P", 40, 21)
+    ats("c", [(42, 11), (42, 15), (38, 9), (38, 19), (44, 5)])
+    rd([(39, 13), (43, 13)]); rd([(43, 13), (43, 9), (41, 9)]); rd([(43, 13), (43, 17), (41, 17)]); rd([(41, 9), (41, 6), pe1])
+    rd([(41, 17), (41, 19), pe2]); rd([(38, 9), (40, 9)]); rd([(38, 19), (41, 19)])
+    # beaches: shoal strips where Landers and the Fort's attackers go ashore (the ports' neighbours stay open sea)
+    for y in range(8, 18):
+        m.put(",", WEST[y] + 1, y)
+    for y in list(range(21, 26)) + [1, 2, 3]:
+        m.put(",", WEST[y] + 1, y)
+    for y in list(range(6, 10)) + list(range(16, 21)):
+        m.put(",", EAST[y] - 1, y)
+    ports = [(x, y) for y in range(H) for x in range(W) if m.get(x, y) in "Pp"]
+    wet = {(px + dx, py + dy) for px, py in ports for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)) if m.get(px + dx, py + dy) == "~"}
+    m.beach(11, 19, 19, 24); m.beach(20, 8, 28, 19); m.beach(26, 3, 34, 9)
+    for x, y in wet:
+        m.put("~", x, y)
+    # a shoal cell must touch the sea (else the game has no tile for it): the stray ones become sand
+    for _ in range(4):
+        for y in range(H):
+            for x in range(W):
+                if m.get(x, y) == ",":
+                    around = [m.get(x + dx, y + dy) if m.inside(x + dx, y + dy) else "~" for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0))]
+                    try:
+                        fivemap.water_tile(",", around)
+                    except AssertionError:
+                        m.put(".", x, y)
+    def sea_near(x, y, deep=True):
+        taken = {(u["x"], u["y"]) for u in m.u}
+        for r in range(0, 8):
+            for dy in range(-r, r + 1):
+                for dx in range(-r, r + 1):
+                    c = (x + dx, y + dy)
+                    if m.inside(*c) and m.get(*c) == "~" and c not in taken and all(m.get(c[0] + a, c[1] + b) in "~," for a in (-1, 0, 1) for b in (-1, 0, 1) if m.inside(c[0] + a, c[1] + b)):
+                        return c
+        raise ValueError(("no sea", x, y))
+
+    def ship(army, kind, x, y, **kw):
+        m.unit(army, kind, *sea_near(x, y), **kw)
+    # --- units ---
+    for x, y in [(WEST[6] + 4, 6), (WEST[11] + 4, 11), (WEST[15] + 4, 16)]:
+        ship(1, CR, x, y)
+    ship(1, BS, WEST[10] + 6, 13); ship(1, SUB, 12, 22)
+    for x, y in [(WEST[10] + 2, 10), (WEST[16] + 2, 16)]:
+        ship(1, LAN, x, y)
+    m.unit(1, TCO, 5, 12).units(1, BCO, [(5, 8), (5, 18)]).units(1, FTR, [(5, 6), (6, 9)]).unit(1, BMB, 5, 7)
+    m.spread(1, {INF: 3, MECH: 2, AA: 1}, (2, 8, 8, 18), seed=1, gap=1, avoid=AVOID)
+    # Drake: the fleet in the strait, the fort's garrison
+    m.unit(2, BS, 34, 13, name="flagship")
+    ship(2, BS, 33, 18)
+    for x, y in [(32, 10), (33, 16), (30, 13)]:
+        ship(2, CR, x, y)
+    for x, y in [(31, 15), (31, 11)]:
+        ship(2, SUB, x, y)
+    for x, y in [(EAST[7] - 2, 7), (EAST[18] - 2, 18)]:
+        ship(2, LAN, x, y)
+    m.units(2, ART, [(41, 12), (41, 15)], hold=True)
+    m.units(2, INF, [(40, 8), (40, 18)], hold=True)
+    m.unit(2, AA, 42, 10, hold=True)
+    m.spread(2, {INF: 1, MECH: 2, TANK: 2}, (38, 6, 44, 20), seed=2, gap=1, avoid=AVOID)
+    # Sensei: the air wing on Elm Isle
+    m.spread(3, {FTR: 3, BMB: 2, BCO: 2, INF: 2, AA: 1, MIS: 1}, (19, 9, 27, 17), seed=3, gap=0, avoid=AVOID)
+    for u in m.u:
+        if u["kind"] in (BS, CR, SUB, LAN) and m.get(u["x"], u["y"]) not in "~,":
+            print("BAD ship", u)
+    # places
+    m.note("hq1", 3, 13, "the legion's HQ"); m.note("hq2", 43, 13, "Drake's HQ in the Strait Fort"); m.note("hq3", 23, 13, "Sensei's HQ on Elm Isle")
+    m.note("harbour", 39, 13, "the Strait Fort's harbour (port): take it")
+    m.note("flagship", 34, 13, "Drake's flagship (Battleship named flagship) at the harbour mouth")
+    m.note("airfield", 21, 11, "Sensei's airport on Elm Isle"); m.note("airport1", 4, 7, "the legion's airport")
+    m.note("beach_w", WEST[8] + 1, 8, "west beach: shoal on rows 8..17, ports at the ends"); m.note("beach_e", EAST[6] - 1, 6, "east beaches: shoal x 35..37 rows 6..9 and 16..20")
+    m.note("salt_isle", 15, 20, "Salt Isle: neutral port (15,20), city (14,22)"); m.note("reed_isle", 29, 5, "Reed Isle: neutral port (29,5), city (31,6)")
     return m
