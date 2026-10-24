@@ -1,25 +1,86 @@
-# Framing and AW2-style redraw of livia_user.jpg (see klaus_user.toml for the keys). The picture is the design reference: the senator-treasurer with the gold laurel, long dark hair, a white robe with gold trim and a red cloak.
+# Livia, redrawn in AW2's CO style from livia_user.jpg (the design reference: the long-haired senator in a white toga with gold trim, a gold laurel and a red cloak).
+# Palette: 1 white, 2..6 skin (6 also the hair), 7..8 toga shade light/dark, 9..11 gold dark/base/light, 12..13 red dark/base, 14 leather, 15 the outline. See devkit/aw2/colib/cel.py for the keys.
 scale = 0.135
 crop_top = 40
 top = 3
-face = [200, 70, 400]
-eyes = [280, 278, 385, 265]
-mouth = [330, 380]
-brow_index = 8
-contrast = 1.15
-lift = [0.68, 1.25]
-crease = 4
-palette = ["ffffff",
-           "ffd0a0", "f0a878", "d4805a", "a45a48", "6c3a30",
-           "5a4848", "342828", "e8dcd0", "b8aca8", "ffd860", "d89828", "c02838", "781828",
-           "201820"]
+flip = true
+face = [195, 125, 340]
+eyes = [285, 272, 385, 262]
+mouth = [327, 378]
+nose = [300, 338]
+fallback = "white"
+default_variant = "B"
 
-[[zone]]
+[params]
+label_passes = 1
+
+[face_style]
+iris = 15
+brow = 6
+mouth = 5
+lip = 4
+
+[variant.A]
+palette = ["ffffff",
+           "d8a070", "b88050", "946040", "683828", "2c2024",
+           "c8c0b8", "908880", "6c4410", "a87820", "d8b040", "501418", "842828", "5c3c28",
+           "201820"]
+[variant.B]
+palette = ["ffffff",
+           "ffd0a0", "f0a878", "d08060", "a85a48", "3a2430",
+           "e0d8ec", "a8a0c4", "9c6418", "e0a828", "ffe070", "8c1c34", "c83040", "8a5a3a",
+           "201820"]
+[variant.C]
+palette_from = "B"
+tones = 2
+min_blob = 5
+tone_passes = 2
+bold = true
+
+[[material]]
+name = "hair"
+ramp = [15, 6]
+rule = { val = [0.0, 0.3] }
+within = [[[190,50],[420,40],[570,140],[610,330],[630,470],[690,570],[670,630],[600,610],[530,500],[500,400],[470,330],[440,250],[330,190],[260,200],[225,300],[200,400],[250,470],[270,500],[230,505],[185,380]]]
+shine = true
+[[material]]
 name = "skin"
-line = 6
-only = [2, 3, 4, 5, 6]
-exclusive = true
-ban = [2, 3, 4, 5]
-polys = [[[262,200],[300,185],[340,195],[390,235],[430,265],[440,330],[420,390],[390,410],[340,430],[305,425],[270,390],[262,330],[255,260]],
-         [[330,425],[445,425],[450,470],[330,470]],
-         [[465,270],[510,265],[520,310],[500,335],[470,330]]]
+ramp = [4, 3, 2]
+outlined = true
+edge = 5
+z = 5
+[[material]]
+name = "white"
+ramp = [8, 7, 1]
+two = [1, 2]
+rule = { sat = [0.0, 0.3], val = [0.5, 1.0] }
+frac = [0.15, 0.3, 0.55]
+outlined = true
+edge = 8
+z = 2
+[[material]]
+name = "gold"
+ramp = [9, 10, 11]
+rule = { hue = [20, 62], sat = [0.4, 1.0] }
+outlined = true
+edge = 9
+shine = true
+z = 3
+[[material]]
+name = "red"
+ramp = [12, 13]
+rule = { hue = [338, 22], sat = [0.4, 1.0] }
+[[material]]
+name = "leather"
+ramp = [14]
+rule = { hue = [8, 45], sat = [0.2, 1.0], val = [0.1, 0.55] }
+[[material]]
+name = "ink"
+ramp = [15]
+rule = { val = [0.0, 0.09] }
+
+[[region]]
+material = "skin"
+polys = [[[255,180],[330,170],[420,200],[440,260],[430,330],[400,400],[360,440],[320,455],[290,440],[270,380],[255,300],[250,240]],
+         [[320,445],[420,425],[470,470],[480,505],[330,505],[310,480]],
+         [[445,265],[505,268],[512,330],[470,345],[443,310]]]

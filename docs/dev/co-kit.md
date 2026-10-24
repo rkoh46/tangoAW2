@@ -15,7 +15,23 @@ Earlier attempts (portraits composed from AW2 / Dual Strike parts, then drawn by
 `cos/<id>.toml` has `[portrait] source = "art-src/cos/<id>_user.jpg"`. Swapping two COs' pictures is swapping two lines. The framing of a picture (scale, the top crop, the mug's square, the eyes and the mouth,
 in the picture's own pixels) is in the `.toml` beside it (`art-src/cos/<id>_user.toml`), so it follows the picture.
 
-## What `co portrait import` / `stylise` does (`importer.py`, `stylise.py`)
+## The cel route (`cel.py`), the one in use (replaces the palette-zone route below it)
+
+The first two attempts (a faithful downscale, then a colour-reduction with zones) read as posterised paintings. `co portrait import` now redraws the picture the way AW2's artists drew theirs:
+
+1. area-average to the output size, **bilateral smoothing** (kills the painterly texture, keeps edges);
+2. a **material** per pixel (skin, hair, steel, bronze, red cloth, white cloth ...) from hue/saturation/value rules (`[[material]] rule`) plus hand-made polygons that force a material (`[[region]]`), both in the picture's framing file
+   `art-src/cos/<co>_user.toml`; the label map gets a majority filter. No clustering;
+3. **cel shading** per material: a ramp of palette indexes (dark to light, 2 to 4 tones, a highlight for metal and hair), cut by quantiles of the smoothed lightness of that material, then a majority filter and
+   no blobs below `min_blob` px (`smooth = [sx, sy]` stretches the shapes, e.g. horizontal bands for plate armour);
+4. **line art**: the silhouette outline plus a line along the edge of materials marked `outlined` (jaw, plates, laurel), never from texture; `bold` (variant C) outlines every material;
+5. the **faces redrawn** in AW2's face style (stamped eyes, brows, nose notch, mouth) for normal/happy/sad/angry in the mug and the figure; the mini and the HUD face are windows of the mug;
+6. the picture is mirrored (`flip`) so the CO looks right, like AW2's COs.
+
+`[variant.A]`, `[variant.B]`, `[variant.C]` hold palette and rendering choices (A: the picture's own colours; B: AW2's brighter palette, the committed default; C: two tones and bold lines).
+`aw2dev co portrait import --variant X` writes one, `aw2dev co portrait options` draws the options sheet (source, A/B/C at 1x and 2x beside Hawke, Kanbei and Sonja, faces, CO select row). The style lint remains a report, not the judge: look at the sheet.
+
+## The earlier routes: `co portrait import` / `stylise` (palette and zones; kept for reference) (`importer.py`, `stylise.py`)
 The supplied picture is the **design reference** (who the character is: face, hair, armour, colours); the CO's art is **redrawn in AW2's own CO style** from it. A faithful downscale (the first import: dark,
 textured, painterly) was rejected: it did not look like an AW2 CO. `co portrait import` (alias `stylise`) now does:
 1. **Clean the source:** the dark background is a flood fill from the top edge (tolerance 18), so the JPEG noise and the background's texture go and dark shadows inside the figure stay; specks are dropped.

@@ -101,3 +101,66 @@ def sheet(cos, specs, previous=False, title=None):
             g = g.resize((g.width * 3 // 2, g.height * 3 // 2), Image.NEAREST)
             img.paste(g, (fx + (i % 3) * 372, gy + 20 + (i // 3) * 250))
     return img
+
+
+def options_sheet(cos, specs, variants=("A", "B", "C"), notes=None, title=None):
+    """The options sheet (docs/dev/co-kit.md): per CO the source, then each rendering variant (A, B, C) as the large art at 1x and 2x beside AW2's own Hawke, Kanbei and Sonja, the four expression faces, the
+    Teams mini and the HUD face, and the CO select row and HUD strip with real COs."""
+    cw, ch = 2350, 600
+    img = Image.new("RGB", (cw, ch * len(cos) + 50), rd.BG)
+    rd.text(img, (14, 10), title or "CO portraits, options A / B / C (redrawn in AW2's CO style; the owner's pictures are the design reference)", size=17)
+    reals = [_real(n) for n in REAL_FIG]
+    bg = (36, 40, 52)
+    for r, co in enumerate(cos):
+        y0 = 50 + r * ch
+        ImageDraw.Draw(img).rounded_rectangle((6, y0, cw - 6, y0 + ch - 8), 8, fill=rd.PANEL)
+        rd.text(img, (16, y0 + 8), co.title(), size=22)
+        spec = {"source": specs[co]["portrait"]["source"]}
+        src = Image.open(cfg.REPO / spec["source"]).convert("RGB")
+        s = src.resize((src.width * 520 // src.height, 520), Image.LANCZOS)
+        img.paste(s, (16, y0 + 40))
+        rd.text(img, (16, y0 + 566), "source: the design reference (as supplied)", size=12)
+        ims = {v: I.import_co(spec, variant=v) for v in variants}
+        for v, im in ims.items():
+            I.all_expressions(im, im.spec)
+        x = 16 + s.width + 24
+        rd.text(img, (x, y0 + 8), "1x: Hawke, Kanbei, Sonja (AW2), then ours A, B, C", size=13)
+        row = Image.new("RGB", (136 * (3 + len(variants)), 164), bg)
+        for i, d in enumerate(reals):
+            im1 = rd.to_image(_px(d.body, d.palettes[0]), 1)
+            row.paste(im1, (i * 136 + 4, 2), im1)
+        for j, v in enumerate(variants):
+            big = I.to_image(ims[v].large, ims[v].palette, 1)
+            row.paste(big, ((3 + j) * 136 + 4, 2), big)
+        img.paste(row, (x, y0 + 28))
+        rd.text(img, (x, y0 + 200), "2x: Hawke (AW2), then ours A, B, C", size=13)
+        row2 = Image.new("RGB", (268 * (1 + len(variants)), 324), bg)
+        h2 = rd.to_image(_px(reals[0].body, reals[0].palettes[0]), 2)
+        row2.paste(h2, (4, 2), h2)
+        for j, v in enumerate(variants):
+            big = I.to_image(ims[v].large, ims[v].palette, 2)
+            row2.paste(big, ((1 + j) * 268 + 4, 2), big)
+        img.paste(row2, (x, y0 + 220))
+        fx = x + 268 * (1 + len(variants)) + 24
+        for j, v in enumerate(variants):
+            im = ims[v]
+            by = y0 + 8 + j * 190
+            rd.text(img, (fx, by), f"option {v}: faces 2x (normal, happy, sad, angry), mini, HUD face" + (f" - {notes[v]}" if notes and v in notes else ""), size=13)
+            for i, n in enumerate(("normal", "happy", "sad", "angry")):
+                img.paste(I.to_image(im.faces[n], im.palette, 2, bg), (fx + i * 100, by + 20))
+            img.paste(I.to_image(im.mini, im.palette, 2, bg), (fx + 410, by + 20))
+            img.paste(I.to_image(im.hud, im.palette, 2, bg), (fx + 410, by + 76))
+            order = REAL_FACES[:4] + ["me"] + REAL_FACES[4:]
+            strip = Image.new("RGB", (len(order) * 52, 52), bg)
+            hs = Image.new("RGB", (len(order) * 36, 20), bg)
+            for i, n in enumerate(order):
+                if n == "me":
+                    f, h = I.to_image(im.faces["normal"], im.palette, 1), I.to_image(im.hud, im.palette, 1)
+                else:
+                    d = _real(n)
+                    f, h = rd.to_image(_px(d.faces[0], d.palettes[0]), 1), rd.to_image(_px(d.hud, d.palettes[0]), 1)
+                strip.paste(f, (i * 52 + 2, 2), f)
+                hs.paste(h, (i * 36 + 2, 2), h)
+            img.paste(strip, (fx, by + 120))
+            img.paste(hs, (fx + 480, by + 134))
+    return img

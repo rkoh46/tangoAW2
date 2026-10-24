@@ -1,32 +1,87 @@
-# Framing and AW2-style redraw of klaus_user.jpg for `aw2dev co portrait import` (pixel positions in the 784 x 1168 picture). The picture is the project owner's art and the DESIGN REFERENCE:
-# who Klaus is (face, hair, laurel, toga, cloak, cuirass); the game art is redrawn from it in AW2's CO style (flat tones from the CO's own palette). This file goes with the picture, so swapping two
-# pictures between COs (`source` in cos/<id>.toml) keeps their framing, palette and material seeds.
-scale = 0.135           # output pixels per source pixel of the large figure
-crop_top = 40           # source rows above the head to leave out
-top = 3                 # rows of empty space above the figure
-face = [190, 70, 380]   # the CO select mug's square (x, y, side) in the source
-eyes = [285, 272, 395, 258]    # the two eyes' centres: x1 y1 x2 y2
-mouth = [350, 375]
-brow_index = 8          # the palette index of the brows (the hair's dark grey)
+# Klaus, redrawn in AW2's CO style from klaus_user.jpg (the design reference: the grey-haired legate with a gold laurel, a gold muscle cuirass, a white toga and a red cloak).
+# Palette: 1 white, 2..6 skin, 7..8 hair/cloth greys (light, dark), 9..11 gold dark/base/light, 12..14 red dark/base/light, 15 the outline. See devkit/aw2/colib/cel.py for the keys.
+scale = 0.135
+crop_top = 40
+top = 3
+flip = true
+face = [180, 60, 400]
+eyes = [285, 268, 385, 258]
+mouth = [350, 372]
+nose = [322, 328]
+fallback = "red"
+default_variant = "B"
 
-# the CO's palette, AW2's layout: 1 white, 2..6 skin (light to dark), 7..14 the CO's colours, 15 the outline
+[face_style]
+iris = 15
+brow = 15
+mouth = 5
+lip = 4
+
+[variant.A]
 palette = ["ffffff",
-           "ffcd8b", "ffac73", "e6946a", "b4624a", "5a2c20",
-           "dcd8d0", "9c98a4", "ffe65a", "e8a010", "a8660c", "ff5a41", "c8283a", "78182a",
+           "d49868", "b87c50", "905838", "683020", "3a2018",
+           "a8a8a8", "686878", "6c4410", "b08020", "e0b848", "4c1018", "801c24", "b43434",
            "201820"]
-contrast = 1.2
-lift = [0.72, 1.25]
-crease = 5
-crease_index = 6
+[variant.B]
+palette = ["ffffff",
+           "ffcd8b", "ffac73", "cd7b5a", "a45a4a", "5a2c20",
+           "c5c5d5", "7c7c9a", "9c5c18", "e0a020", "ffe060", "7c1830", "c42838", "f04848",
+           "201820"]
+[variant.C]
+palette_from = "B"
+tones = 2
+min_blob = 5
+tone_passes = 2
+bold = true
 
-# zones (polygons in source pixels; `only` = the palette indexes allowed inside; `exclusive`: nothing outside may use them): the skin tones stay on the skin, the hair's tones on the hair and the laurel
-[[zone]]
+[[material]]
+name = "hair"
+ramp = [8, 7, 1]
+two = [0, 1]
+rule = { sat = [0.0, 0.22], val = [0.3, 1.0] }
+within = [[[225,80],[420,80],[470,150],[525,200],[535,330],[500,395],[470,300],[440,210],[400,140],[330,125],[270,140],[235,200],[222,260]]]
+shine = true
+[[material]]
 name = "skin"
-line = 6
-only = [2, 3, 4, 5, 6]
-exclusive = true
-polys = [[[250,165],[300,118],[390,112],[455,150],[475,230],[490,250],[525,265],[535,330],[520,365],[490,380],[480,420],[500,480],[520,540],[525,585],[430,600],[330,605],[235,590],[228,540],[265,480],[240,420],[225,330],[225,235]]]
-[[zone]]
-name = "hair and laurel"
-only = [7, 8, 9, 10, 11, 15]
-polys = [[[230,100],[290,75],[380,60],[470,90],[540,140],[560,240],[540,300],[500,235],[470,160],[390,112],[300,118],[250,165],[225,235],[200,170]]]
+ramp = [4, 3, 2]
+outlined = true
+edge = 5
+z = 5
+[[material]]
+name = "white"
+ramp = [8, 7, 1]
+two = [1, 2]
+rule = { sat = [0.0, 0.3], val = [0.55, 1.0] }
+frac = [0.12, 0.33, 0.55]
+outlined = true
+edge = 7
+z = 2
+[[material]]
+name = "gold"
+ramp = [9, 10, 11]
+rule = { hue = [20, 62], sat = [0.4, 1.0] }
+outlined = true
+edge = 9
+shine = true
+smooth = [1.0, 1.0]
+z = 3
+[[material]]
+name = "ink"
+ramp = [15]
+rule = { val = [0.0, 0.09] }
+[[material]]
+name = "red"
+ramp = [12, 13, 14]
+frac = [0.3, 0.55, 0.15]
+rule = { hue = [338, 22], sat = [0.4, 1.0] }
+
+[[region]]
+material = "skin"
+polys = [[[240,130],[300,100],[380,110],[440,150],[470,230],[500,260],[495,360],[470,430],[430,470],[360,490],[300,470],[270,420],[245,350],[235,250]],
+         [[300,450],[500,430],[535,500],[525,590],[470,610],[300,615],[290,540]],
+         [[490,245],[540,245],[548,330],[512,380],[490,330]]]
+[[region]]
+material = "hair"
+polys = [[[268,95],[330,82],[400,92],[445,140],[425,175],[335,150],[270,168]],
+         [[440,150],[500,185],[522,290],[500,335],[470,300],[455,230]],
+         [[232,190],[262,185],[262,260],[236,262]]]

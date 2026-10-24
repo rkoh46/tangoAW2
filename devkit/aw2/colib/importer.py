@@ -183,7 +183,7 @@ class Imported:
         self.hud = None
 
 
-def import_co(spec, root=None, painterly=False):
+def import_co(spec, root=None, painterly=False, variant=None):
     """spec: dict with source, scale (output px per source px of the large picture), top (rows above the figure), face = [x, y, size] (the mug's square in the source), and optional eyes / brows / mouth for the
     expression faces. -> Imported."""
     root = root or cfg.REPO
@@ -192,6 +192,9 @@ def import_co(spec, root=None, painterly=False):
     if side.exists():
         spec = {**tomllib.loads(side.read_text()), **spec}
     src = Source(root / spec["source"], spec.get("bg_tolerance", 18))
+    if spec.get("material") and not painterly:
+        from . import cel
+        return cel.styled(spec, src, variant)
     if spec.get("palette") and not painterly:
         from . import stylise
         return stylise.styled(spec, src)
@@ -415,7 +418,8 @@ def expression(mug, spec, kind):
 def all_expressions(im, spec):
     mug = im.faces["normal"]
     for kind in ("happy", "sad", "angry"):
-        im.faces[kind] = expression(mug, spec, kind)
+        if kind not in im.faces:
+            im.faces[kind] = expression(mug, spec, kind)
 
 
 # --- the committed art: indexed PNGs ----------------------------------------------------------------------------------------------------------------------------------
