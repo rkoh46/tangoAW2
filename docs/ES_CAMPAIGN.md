@@ -308,3 +308,23 @@ the skin on the player's army, a record in Flash slot 11. Differences from the o
 - **Room to fight**: every map is rebuilt bigger with the design-quality lint (docs/dev/map-lint.md): density at most .17 units per walkable cell, frontage ratio at most 1.25, no straight rivers, no rectangle patches, no unit blocks.
 - **Finale**: M16 is Eagle (Green Earth) and Hachi (Orange Star) as allied enemy armies in their own colours, the player on Blue Moon's colour with the Emerald Sun skin.
 
+### Maps as rebuilt (sizes and what is where; the specs are `five/es/spec/esNN.py`)
+| # | Size | The land and its lanes |
+|---|---|---|
+| 1 | 30x27 | jagged coast with two coves and a headland; the fleet's sandbar (ports at both ends); a coast road with junctions climbs to the fort; the Astra river from the NE hills to the east cove |
+| 2 | 28x19 | three curving ridges with passes; the legion in the SW, the enemy from the far NE; waves from the north and east edges; the Dune river |
+| 3 | 32x24 | Muro Alto: a ragged rock wall with three gates, a keep with one south gate, towers, the Muro river, a coast road, Drake's battleship offshore |
+| 4 | 32x22 (fog) | the Verna river runs north to south; camps SW and NE; three bridges (north, centre in a marsh of woods, south) |
+| 5 | 42x24 | the Sable river with three bridges; Dunmere (home), the posts Highwatch, Crossways, Lowmere, Fort Amberlea |
+| 6 | 30x26 | the market town: Guildhall (Colin, NW), the Counting House (Sasha, SE), Salt Row cut off by the Mill Water canal, eight neutral cities; capture only |
+| 7 | 38x24 | Cape Fidelis, the Twin Sisters, Isle Verdant's harbour bay |
+| 8 | 38x24 | Ironhold, a ring of crags behind the Brimwater canal (a two-lane causeway), a front and a rear gate, flank roads |
+| 9 | 34x22 | Kite Hill's plateau depot, a river with three bridges, the freight barges in the east bay by a grain isle; Black Hole's army and inventions |
+| 10 | 34x26 (fog) | three winding pass roads over a river, the summit HQ in the north, a foot-only goat track |
+| 11 | 40x22 | one long road through the Pinewood, a hamlet, the ford, a ruin, the relay camp in the east |
+| 12 | 42x30 (snow) | three smooth mountain rings with staggered gaps, Grit's guns in the corridors |
+| 13 | 38x33 | the octagonal square round the Harbour Office; two rivers; Kindle's dock and the Black Factory in the north |
+| 14 | 46x28 | Castra Maxima with a moat river, three lanes (coast road, valley, ridge track via Cassius's plateau) |
+| 15 | 46x27 | the Strait of Elms: Elm Isle (Sensei), Salt and Reed Isles, the Strait Fort in the east |
+| 16 | 44x28 | Stormhold: the legion's beachhead SW, the plateau city NE with three gates; the Salt Road, the Weir Valley, Needle Pass |
+
