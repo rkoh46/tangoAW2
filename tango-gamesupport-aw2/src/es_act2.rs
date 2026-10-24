@@ -15,7 +15,7 @@ fn owns(x: u8, y: u8) -> Cond {
 // --- M5 Dust and Wheels ----------------------------------------------------------------------
 
 /// The three signal-posts (the cities beyond the bridges).
-const POSTS: [(u8, u8); 3] = [(15, 2), (15, 6), (15, 11)];
+const POSTS: [(u8, u8); 3] = [(27, 5), (27, 12), (27, 21)];
 
 fn all_posts() -> Cond {
     Cond::All(POSTS.iter().map(|&(x, y)| owns(x, y)).collect())
