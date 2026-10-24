@@ -117,6 +117,18 @@ def check(a):
         if foes and key not in ("es09", "es13"):
             say(False, f"{key}: a Black Hole army (colour 5) is an enemy")
             bad += 1
+    # the player is Emerald Sun in every mission: the colour slot its skin sits on is the player's alone (no enemy or ally of the mission wears it)
+    names = {1: "Orange Star", 2: "Blue Moon", 3: "Green Earth", 4: "Yellow Comet", 5: "Black Hole"}
+    slots = []
+    for key, d in ms.items():
+        arm = sorted(d["armies"], key=lambda a: a["n"])
+        pc = arm[0]["colour"]
+        clash = [a["n"] for a in arm[1:] if a["colour"] == pc]
+        if clash or pc == 5:
+            say(False, f"{key}: the player's colour slot {names[pc]} is shared with army {clash} or is Black Hole's")
+            bad += 1
+        slots.append(f"{key[2:]}:{names[pc][:2].upper()}")
+    say(True, "the player (Emerald Sun skin) sits in the slot " + " ".join(slots))
     # the map files' colours are the Rust missions' (the maps are linted by them), and Black Hole's inventions belong to an enemy army of Black Hole's colour
     from aw2.maplint import load
     maps = {m.name: m for m in load.es_maps()}

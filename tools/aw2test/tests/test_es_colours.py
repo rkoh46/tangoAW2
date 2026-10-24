@@ -5,7 +5,7 @@ an army drawn in another's colours (the bug of M9 and M13: the player picked a C
 import os
 import re
 
-from aw2test import escampaign as es
+from aw2test import escampaign as es, paths
 from aw2test.harness import test
 
 SRC = os.path.join(os.path.dirname(__file__), "..", "..", "..", "tango-gamesupport-aw2", "src")
@@ -31,6 +31,35 @@ def keep(row):
     return bytes(b for i, b in enumerate(row) if i // 2 not in (0, 6, 13, 14, 15))
 
 
+def rgb(c):
+    r, g, b = c & 31, c >> 5 & 31, c >> 10 & 31
+    return (r, g, b)
+
+
+def colours_of(data):
+    return {rgb(data[i] | data[i + 1] << 8) for i in range(2, 24, 2)}
+
+
+def check_pixels(ctx, e, n, want, base):
+    """What the player sees: the screen shows the skin's unit colours and none of the nation's own, and no other army wears the skin."""
+    from PIL import Image
+    rom = open(paths.aw2_rom(), "rb").read()
+    orig = lambda c: colours_of(rom[0xD3F04 + 0x20 * (c - 1):][:32]) if c != 5 else colours_of(rom[0xD3E84:][:32])
+    now = lambda c: colours_of(e.read(BH_UNIT_PALETTE if c == 5 else UNIT_PALETTES + 0x20 * (c - 1), 32))
+    path = e.shot(f"/tmp/es_colours_m{n}")
+    im = Image.open(path).convert("RGB")
+    px = [(r >> 3, g >> 3, b >> 3) for r, g, b in im.getdata()]
+    mine_now, mine_orig = now(want[0]), orig(want[0])
+    others = set().union(*[orig(c) | now(c) for c in want[1:]], *[orig(c) for c in range(1, 6) if c != want[0]])
+    skin_only = mine_now - mine_orig - others
+    nation_only = mine_orig - mine_now - others
+    seen_skin = sum(1 for p in px if p in skin_only)
+    seen_nation = sum(1 for p in px if p in nation_only)
+    ctx.log(f"M{n}: {seen_skin} skin pixels, {seen_nation} of the nation's own colours on the screen")
+    ctx.require(seen_skin >= 15, f"M{n}: the player's units and buildings are drawn in the Emerald Sun colours ({seen_skin} pixels)")
+    ctx.eq(seen_nation, 0, f"M{n}: none of the player's nation's colours are drawn for the player")
+
+
 def check(ctx, n):
     e, g, d = es.enter(ctx, n)
     want = spec_colours(n)
@@ -39,10 +68,12 @@ def check(ctx, n):
     ctx.eq(have, want, f"M{n}: the armies' colours are the mission's")
     skinned = [c for c in range(1, 6) if e.u8(SKIN_APPLIED + c)]
     ctx.eq(skinned, [want[0]], f"M{n}: the Emerald Sun skin is on the player's colour alone")
+    ctx.eq(e.u8(SKIN_APPLIED + want[0]), 1, f"M{n}: it is the Emerald Sun skin (the campaign's only one) on colour {want[0]}")
     e.wait(30)
     for slot, c in enumerate(want):
         rom = BH_UNIT_PALETTE if c == 5 else UNIT_PALETTES + 0x20 * (c - 1)
         ctx.eq(keep(e.read(PAL_RAM + (25 + slot) * 32, 32)), keep(e.read(rom, 32)), f"M{n}: army {slot + 1}'s unit palette is colour {c}'s")
+    check_pixels(ctx, e, n, want, base)
     e.close()
 
 

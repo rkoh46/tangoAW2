@@ -849,8 +849,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         let ds_features = crate::ds_art::features(mode);
         core.raw_write_8(crate::ds_art::ART_ON, -1, ds_features as u8);
         crate::five::sync(core);
-        crate::es_campaign::sync_colours(core);
+        let es_fix = crate::es_campaign::sync_colours(core);
         crate::army_skin::sync(core);
+        crate::es_campaign::reload_palettes(core, &es_fix);
         crate::army_skin::sync_map_art(core);
         crate::obelisk::install(core);
         crate::branding::tick(core);

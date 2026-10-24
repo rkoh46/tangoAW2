@@ -70,12 +70,13 @@ pub fn skin_colour(core: &Core) -> Option<u8> {
 /// army in Black Hole's colour 5, the others' shuffled to the free ones: the BH Campaign's player is always Black Hole), not the mission's. Found in
 /// the real game: M13's player wore Black Hole's colour and Kindle Orange Star's, and the Emerald Sun skin landed on Black Hole's inventions. Every
 /// tick of such a battle the colour bytes are set to the mission's and the army's palette rows reloaded when one changes.
-pub fn sync_colours(core: &mut Core) {
+pub fn sync_colours(core: &mut Core) -> Vec<(u32, u8)> {
+    let mut changed = Vec::new();
     if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::pvp::in_battle(core) {
-        return;
+        return changed;
     }
     let Some(m) = crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(crate::ds_campaign::MISSION, -1) as usize)) else {
-        return;
+        return changed;
     };
     let players = crate::five::players(core);
     for k in 0..m.armies.min(4) as u32 {
@@ -84,8 +85,16 @@ pub fn sync_colours(core: &mut Core) {
         let have = core.raw_read_8(at, -1);
         if have != 0 && have != want {
             core.raw_write_8(at, -1, want);
-            crate::pvp::force_slot_palettes(core, k, want);
+            changed.push((k, want));
         }
+    }
+    changed
+}
+
+/// After the skin is installed on the corrected colours: the army's palette rows on the screen take the (skinned) palettes of its colour.
+pub fn reload_palettes(core: &mut Core, changed: &[(u32, u8)]) {
+    for &(k, want) in changed {
+        crate::pvp::force_slot_palettes(core, k, want);
     }
 }
 
