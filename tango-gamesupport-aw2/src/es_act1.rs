@@ -32,9 +32,9 @@ fn es01() -> MissionDef {
             3,
             None,
             vec![Action::Spawn(vec![
-                UnitDef::new(1, unit::ANTI_AIR, 4, 14),
-                UnitDef::new(1, unit::TANK, 5, 14),
-                UnitDef::new(1, unit::TANK, 12, 14),
+                UnitDef::new(1, unit::ANTI_AIR, 12, 26),
+                UnitDef::new(1, unit::TANK, 15, 26),
+                UnitDef::new(1, unit::TANK, 18, 26),
             ])],
         ),
     ];
