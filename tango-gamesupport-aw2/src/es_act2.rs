@@ -26,7 +26,7 @@ fn es05() -> MissionDef {
     m.objective = "Take the three signal-posts by day 9, before the bridges are blown.";
     m.map = MapSrc::Built("es05");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(CASSIUS)).funds(3000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(CASSIUS)).funds(3000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Pair(co::GRIMM, co::SENSEI)).funds(9000),
     ];
     m.units = deployment("es05");
@@ -54,7 +54,7 @@ fn es06() -> MissionDef {
     m.objective = "Own 14 properties at once, or hold the market square for 16 days.";
     m.map = MapSrc::Built("es06");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(LIVIA)).funds(3000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(LIVIA)).funds(3000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(8000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(2).funds(8000),
     ];
@@ -86,7 +86,7 @@ fn es07() -> MissionDef {
     m.objective = "Sink the Warden flagship and take Isle Verdant's harbour.";
     m.map = MapSrc::Built("es07");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(6000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(6000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(10000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(8000),
     ];
@@ -113,7 +113,7 @@ fn es08() -> MissionDef {
     m.objective = "Defeat the Orange Star border force at Ironhold. Klaus and Cassius fight as a pair.";
     m.map = MapSrc::Built("es08");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(KLAUS, CASSIUS)).funds(4000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(KLAUS, CASSIUS)).funds(4000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX)).team(2).funds(9000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(7000),
     ];

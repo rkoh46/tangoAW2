@@ -17,7 +17,7 @@ fn es01() -> MissionDef {
     m.map = MapSrc::Built("es01");
     m.armies = vec![
         // Klaus's legion is pre-deployed on the fleet's sandbar: no production, no funds.
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(KLAUS)).funds(0),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(KLAUS)).funds(0),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(8000),
     ];
     m.units = deployment("es01");
@@ -51,7 +51,7 @@ fn es02() -> MissionDef {
     m.objective = "Hold the ridge until day 9. Do not lose the HQ.";
     m.map = MapSrc::Built("es02");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(KLAUS)).funds(3000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(KLAUS)).funds(3000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::JESS, co::EAGLE)).funds(14000),
     ];
     m.units = deployment("es02");
@@ -91,7 +91,7 @@ fn es03() -> MissionDef {
     m.objective = "Breach the wall and take the keep's HQ.";
     m.map = MapSrc::Built("es03");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(AURELIA)).funds(2000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(AURELIA)).funds(2000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).funds(6000),
     ];
     m.units = deployment("es03");
@@ -119,7 +119,7 @@ fn es04() -> MissionDef {
     m.map = MapSrc::Built("es04");
     m.fog = true;
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pick).funds(4000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(CASSIUS)).funds(4000),
     ];
     m.pool = vec![KLAUS, AURELIA];

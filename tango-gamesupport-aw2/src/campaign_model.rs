@@ -283,7 +283,7 @@ pub static SOURCES: [Source; 3] = [
         load: crate::es_campaign::load,
         rules: crate::custom_campaign::rules,
         save_slot: 11,
-        mid_slot: 10,
+        mid_slot: 12, // (shared with the BH Campaign's: a saved mission names its campaign, `suspend::source_tag`)
         progress_magic: 0x4345_5741, // "AWEC"
         art: WorldArt::Aw2,
         has_hard: false,

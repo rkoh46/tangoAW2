@@ -60,7 +60,7 @@ fn es10() -> MissionDef {
     m.map = MapSrc::Built("es10");
     m.fog = true;
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(4000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(2).funds(6000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SONJA)).team(2).funds(3000),
     ];
@@ -92,7 +92,7 @@ fn es11() -> MissionDef {
     m.objective = "Bring all four APCs to the relay camp. Lose none; the day limit is 14.";
     m.map = MapSrc::Built("es11");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(3000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(3000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::LASH)).team(2).funds(5000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::FLAK)).team(2).funds(5000),
     ];
@@ -125,7 +125,7 @@ fn es12() -> MissionDef {
     m.look = 1; // snow
     m.weather = Weather::Snow;
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(KLAUS, AURELIA)).funds(5000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(KLAUS, AURELIA)).funds(5000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(2).funds(7000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT)).team(2).funds(4000),
     ];

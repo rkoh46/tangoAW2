@@ -11,7 +11,7 @@ from .game import Game, NavError
 SOURCE = 0x0203FD57               # crate::ds_campaign::SOURCE (0 DS, 1 BH, 2 Emerald Sun)
 ES = 2
 ES_MAGIC = 0x43455741             # "AWEC"
-ES_SLOT, ES_MID_SLOT = 11, 10
+ES_SLOT, ES_MID_SLOT = 11, 12     # (the mid-mission slot is the BH Campaign's, told apart by the saved mission's top bits)
 CHOOSER_ROW = 3                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN, EMERALD SUN
 P_UNLOCKED = dc.PROGRESS + 0x0D
 ENV = {"TANGOAW2_ES_CAMPAIGN": "1"}
@@ -74,6 +74,31 @@ class EsCampaign(BhCampaign):
             e.press("A", 8)
         else:
             raise NavError("the Emerald Sun Campaign did not start (is TANGOAW2_ES_CAMPAIGN set?)")
+
+
+def _start_es(self, new=True, from_title=True, pick=True):
+    """From the title: Campaign -> EMERALD SUN -> New or Continue (BhCampaign.start_bh on this entry)."""
+    e = self.e
+    if from_title:
+        self.open_campaign_box()
+    self.chooser_row(CHOOSER_ROW)
+    e.press("A", 8)
+    e.wait(30)
+    if e.u8(dc.MENU_LEVEL) != 2 or e.u8(SOURCE) != ES:
+        raise NavError(f"not in the Emerald Sun box (level {e.u8(dc.MENU_LEVEL)}, source {e.u8(SOURCE)})")
+    self.box_row(1 if new else 0)
+    e.press("A", 8)
+    for _ in range(40):
+        if e.wait_until(self.active, 30, step=5):
+            break
+        e.press("A", 8)
+    else:
+        raise NavError("the Emerald Sun Campaign did not start")
+    if pick:
+        self.pick_mission()
+
+
+EsCampaign.start_es = _start_es
 
 
 def boot(ctx, n, env=None):

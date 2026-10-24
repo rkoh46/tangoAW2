@@ -959,7 +959,7 @@ pub fn unlocked_cos(core: &Core) -> Vec<u8> {
 }
 
 fn new_progress(core: &mut Core) {
-    crate::suspend::drop_mid(core, spec(core).mid_slot);
+    crate::suspend::drop_mid_of(core, source(core));
     let clears = if progress_valid(core) { core.raw_read_8(P_CLEARS, -1) } else { 0 };
     for a in (PROGRESS..PROGRESS + SAVE_SIZE).step_by(4) {
         core.raw_write_32(a, -1, 0);
@@ -1212,7 +1212,7 @@ fn start(core: &mut Core, new: bool) {
     // Continue over a mission saved halfway: that mission, resumed
     // ([`crate::suspend`]).
     let missions = campaign(core).map_or(0, |c| c.model.missions);
-    let resume = if req == 2 { crate::suspend::saved_mission(core, spec(core).mid_slot).filter(|&m| (m as usize) < missions) } else { None };
+    let resume = if req == 2 { crate::suspend::saved_mission_of(core, source(core)).filter(|&m| (m as usize) < missions) } else { None };
     // A record saved by 0.4.0 kept the lab missions' flags at 0x60..0x62
     // (AW2's Hard Campaign flag among them): they move to 0x90..0x92.
     for k in 0..3u32 {
@@ -1265,7 +1265,7 @@ fn end_of_battle(core: &mut Core) {
     // (the patched five-army game is for the battle only)
     crate::five::set_campaign(core, false, 0, 0);
     // A save of this mission made halfway is over with it.
-    crate::suspend::drop_mid(core, spec(core).mid_slot);
+    crate::suspend::drop_mid_of(core, source(core));
     // The outcome, for the tests and logs: 1 won, 2 lost, and the day.
     core.raw_write_8(LAST_RESULT, -1, if won { 1 } else { 2 });
     core.raw_write_8(LAST_RESULT + 1, -1, index);

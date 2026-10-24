@@ -84,7 +84,7 @@ fn es14() -> MissionDef {
     m.objective = "Hold the quay's HQ, then break out and take both docks by day 12.";
     m.map = MapSrc::Built("es14");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(KLAUS)).funds(4000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(4000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(12000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(CASSIUS)).funds(5000),
     ];
@@ -115,7 +115,7 @@ fn es15() -> MissionDef {
     m.objective = "Rout Varro's fleet and take his flagship harbour. The Accord's ships join on day 6.";
     m.map = MapSrc::Built("es15");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(8000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::PickPair).funds(8000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(14000),
         // The relief fleet: Nell's, with nothing until day 6.
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::NELL)).team(1).funds(0),
@@ -176,7 +176,7 @@ fn es16() -> MissionDef {
     m.objective = "Take Port Aurelium's keep: Varro's HQ.";
     m.map = MapSrc::Built("es16");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(KLAUS)).funds(15000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(15000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(40000),
         // The Praetorian Guard: Varro's lieutenants hold the harbour and the east flank, no CO of their own.
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::None).team(2).funds(20000),

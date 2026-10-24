@@ -5,9 +5,9 @@
 //!
 //! Until the user approves it the campaign is behind a development flag (`TANGOAW2_ES_CAMPAIGN`): the Campaign sub-menu still says "Coming soon".
 //!
-//! The player's army wears the Emerald Sun skin ([`crate::army_skin`]): it takes the colour the mission gives army 1 (Black Hole's, 5, unless an enemy of
-//! the mission wears that one: M9 and M13 fight Black Hole itself and the player is Orange Star's there). Black Hole's inventions appear only in those two
-//! missions (rule ES01 of `aw2dev maps lint`).
+//! The player's army wears the Emerald Sun skin ([`crate::army_skin`]): it takes the colour the mission gives army 1, always one of the four of a normal game
+//! (1..4) that no enemy or ally wears (a skin on colour 5 in a game that is not five-army corrupts the build menu: found by the mission sim). Black Hole's
+//! inventions appear only in M9 and M13, the two missions against Black Hole (rule ES01 of `aw2dev maps lint`).
 
 use mgba::core::Core;
 
@@ -181,6 +181,16 @@ mod tests {
                 let n = units.iter().filter(|u| u.army == a).count();
                 assert!(n <= 56, "{}: army {a} starts with {n} units", m.key);
             }
+        }
+    }
+
+    /// The skin sits on army 1's colour: one of AW2's four, worn by no other army of the mission.
+    #[test]
+    fn the_player_wears_a_colour_of_its_own() {
+        for m in &def().missions {
+            let p = m.armies[0].colour;
+            assert!((1..=4).contains(&p), "{}: the player's colour {p}", m.key);
+            assert!(m.armies[1..].iter().all(|a| a.colour != p), "{}: another army wears the player's colour {p}", m.key);
         }
     }
 

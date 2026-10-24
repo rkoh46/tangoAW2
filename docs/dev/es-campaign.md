@@ -21,7 +21,8 @@ in a normal build; the flag turns it into a source of `campaign_model::SOURCES`)
   fails an invention tile anywhere else and a third tagged map; `aw2dev campaign check` repeats it. M16's toughness comes from army size, production, funds, unit quality, fortified terrain, waves, Varro's powers.
 - **M16 is the hardest mission by a clear margin** (`aw2dev campaign difficulty --require-final`); M14 and M15 ramp up to it.
 - An army has 63 unit slots: no deployment above 56 (the Rust test `no_army_starts_with_more_than_56_units`, the python test, `campaign check`).
-- The player's army wears the Emerald Sun skin on army 1's colour (Black Hole's, 5; Orange Star's in M9 and M13 where Black Hole is an enemy). Only one army wears it: Cassius's Second Legion (M4), Varro's Praetorians and
+- The player's army wears the Emerald Sun skin on army 1's colour, always one of AW2's four (Orange Star's mostly, Blue Moon's or Green Earth's where an enemy wears red) and never one an enemy or ally wears: a skin on colour 5 in a
+  game that is not five-army corrupted memory when the army bought a unit (found by the mission sim, test `no_army...` / `the_player_wears_a_colour_of_its_own`). Only one army wears it: Cassius's Second Legion (M4), Varro's Praetorians and
   the Accord's fleet wear the stand-in colours.
 - Every unit deployed starts at full HP, ammo and fuel (`es_boot_m*` checks it); beaches are generous (RC04); every mission's story scenes have a song (`tools/estext/lint.py`, `campaign scenes --campaign es`).
 
@@ -52,4 +53,4 @@ splash (1 HP to units beside a target), Cassius's Triumph "move again after atta
 The five are listed in Versus only with `TANGOAW2_ES_VERSUS` (a development aid).
 
 ## Saves
-The record is Flash slot 11 ("AWEC"), a mission saved halfway slot 10. With the BH and DS slots that is fifteen of the sixteen sectors; see docs/AW2.md "Saves" before adding another slot.
+The record is Flash slot 11 ("AWEC"). A mission saved halfway shares the BH Campaign's slot 12: the saved mission byte carries the campaign in its top three bits (`suspend::source_tag`; the DS and BH Campaigns keep 0, so their old saves stay valid), `saved_mission_of` / `drop_mid_of` only see their own campaign's save, so one slot serves both (a saved BH mission is replaced by an ES one and the other way round). That keeps the Flash at fourteen of its sixteen sectors with every slot in use; see docs/AW2.md "Saves" before adding another slot.

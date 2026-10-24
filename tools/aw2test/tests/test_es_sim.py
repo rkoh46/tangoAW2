@@ -5,6 +5,7 @@ the computer and another style for the bot), AW2TEST_ES_DAYS=<max days>, AW2TEST
 import json
 import os
 
+from aw2test import dscampaign as dc
 from aw2test import escampaign as es
 from aw2test.harness import test
 
@@ -42,6 +43,8 @@ def run(ctx, n):
         if SEED:
             opts["seed"] = SEED
         r = d.play(DAYS, log=log, **opts)
+    ctx.log(f"after play: result byte {e.u8(dc.LAST_RESULT)} day {e.u16(dc.DAY)} in_battle {d.in_battle()} main {e.u32(0x03000000):#x}")
+    ctx.shot(g, "end")
     units = {}
     for u in g.units():
         units.setdefault(u["army"], []).append(u["type"])

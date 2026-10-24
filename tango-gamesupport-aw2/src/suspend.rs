@@ -223,7 +223,8 @@ fn save_write(core: &mut Core) {
     core.raw_write_8(CAMPAIGN_MARK, -1, saving & 0x7F);
     let mut b = vec![0u8; DS_LEN as usize];
     b[0..2].copy_from_slice(&DS_MARK.to_le_bytes());
-    b[2] = core.raw_read_8(crate::ds_campaign::MISSION, -1);
+    // (the mission in the low five bits; a campaign after the BH Campaign shares slot 12 with it and says which one it is in the top three)
+    b[2] = core.raw_read_8(crate::ds_campaign::MISSION, -1) | source_tag(crate::ds_campaign::source(core));
     b[3] = VERSION;
     b[4..8].copy_from_slice(&core.raw_read_32(crate::ds_campaign::COUNTDOWN, -1).to_le_bytes());
     core.raw_read_range(crate::ds_campaign::FLAGS, -1, &mut b[8..24]);
@@ -276,10 +277,40 @@ fn mid_sector(core: &Core, slot: u8) -> Option<u32> {
     (0..16).find(|&i| core.raw_read_8(DIRECTORY + i, -1) == slot && core.raw_read_8(FLASH + 0x1000 * i + 0x0C, -1) >> 4 == 0)
 }
 
-/// The DS mission saved halfway (its index), read from Flash.
+/// The top three bits of a saved mission byte name the campaign when it is neither the DS Campaign's nor the BH Campaign's (those keep 0: their old
+/// saves stay valid): the Emerald Sun Campaign (source 2) shares the BH Campaign's slot 12, so the flash keeps fifteen of its sixteen sectors at most.
+fn source_tag(source: usize) -> u8 {
+    if source >= 2 {
+        (source as u8) << 5
+    } else {
+        0
+    }
+}
+
+/// The DS mission saved halfway (its index) in `slot`, read from Flash, whatever campaign saved it.
 pub fn saved_mission(core: &Core, slot: u8) -> Option<u8> {
+    saved_raw(core, slot).map(|b| b & 0x1F)
+}
+
+fn saved_raw(core: &Core, slot: u8) -> Option<u8> {
     let at = FLASH + 0x1000 * mid_sector(core, slot)? + 0x52 + (DS_AT - BLOCK);
     (core.raw_read_16(at, -1) == DS_MARK).then(|| core.raw_read_8(at + 2, -1))
+}
+
+/// The mission campaign `source` saved halfway (its slot may be shared with another campaign's: only a save of its own counts).
+pub fn saved_mission_of(core: &Core, source: usize) -> Option<u8> {
+    let slot = crate::campaign_model::SOURCES[source].mid_slot;
+    let b = saved_raw(core, slot)?;
+    (b & 0xE0 == source_tag(source)).then_some(b & 0x1F)
+}
+
+/// [`drop_mid`] for campaign `source`'s own save only (a shared slot may hold another campaign's).
+pub fn drop_mid_of(core: &mut Core, source: usize) {
+    let slot = crate::campaign_model::SOURCES[source].mid_slot;
+    match saved_raw(core, slot) {
+        Some(b) if b & 0xE0 != source_tag(source) => {}
+        _ => drop_mid(core, slot),
+    }
 }
 
 /// DS CAMPAIGN's Continue over a mission saved halfway (the session set
