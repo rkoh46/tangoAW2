@@ -178,7 +178,7 @@ class Canvas:
                 self.g[y][x] = ch
         return sorted(cells)
 
-    def spread(self, army, kinds, box, seed=0, gap=1, avoid="~r=-^IZ#", prefer="fRC"):
+    def spread(self, army, kinds, box, seed=0, gap=1, avoid="~r=-^IZ#", prefer="fRC", **kw):
         """Place `kinds` ({kind: count}) for `army` inside `box` (x0, y0, x1, y1) in a loose formation instead of a block: no two units closer than `gap`
         cells (Chebyshev, 1 = never side by side on a row... 2 leaves a cell between), on ground their kind can stand on, woods and roads preferred for the
         heavy kinds. Deterministic for `seed`. Returns the cells."""
@@ -195,11 +195,19 @@ class Canvas:
                         c = self.g[y][x] if self.inside(x, y) else "~"
                         if (x, y) in taken or c in avoid or c in "12345" and False:
                             continue
-                        if c in "f^" and kind not in foot:
+                        air = kind in (STEALTH, FTR, BMB, BCO, TCO)
+                        if air:
+                            if c in "~r" or (x, y) in taken:
+                                continue
+                        elif c in "f^" and kind not in foot:
                             continue
                         if c == "f" and kind in foot:
                             pass
                         if any(max(abs(x - a), abs(y - b)) < gap + 1 for a, b in placed):
+                            continue
+                        # (a unit needs ground to move on: two walkable neighbours for a vehicle, one for a foot soldier)
+                        ok = ".R=,HBCAPTM" if kind not in foot else ".R=,HBCAPTMf"
+                        if not air and sum(1 for a, b in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) if self.get(a, b) in ok and (a, b) not in taken) < (1 if kind in foot else 2) and c not in "~":
                             continue
                         w = 1 + (3 if c in prefer and kind not in foot else 0) + (2 if c == "f" and kind in foot else 0)
                         cand.append(((x, y), w))
@@ -211,7 +219,7 @@ class Canvas:
                     r -= w
                     if r <= 0:
                         break
-                self.unit(army, kind, c[0], c[1])
+                self.unit(army, kind, c[0], c[1], **kw)
                 placed.append(c)
                 taken.add(c)
         return placed

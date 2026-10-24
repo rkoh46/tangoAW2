@@ -31,7 +31,7 @@ BOT = {
     15: {"goals": [(23, 10)]},
     # (M16 and M14: hold the line while the computer's waves break on it, then go for the keep)
     14: [{"stance": "defend", "days": 5, "goals": [(27, 5), (27, 12)]}, {"goals": [(27, 5), (27, 12)]}],
-    16: [{"stance": "defend", "days": 18, "goals": [(15, 8)], "nearest": True, "hunt": True}, {"goals": [(15, 8)]}],
+    16: [{"stance": "defend", "days": 10, "goals": [(34, 10)], "nearest": True, "hunt": True}, {"goals": [(34, 10), (31, 2)]}],
 }
 
 

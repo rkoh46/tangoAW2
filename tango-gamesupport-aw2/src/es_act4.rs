@@ -159,9 +159,9 @@ fn es15() -> MissionDef {
 
 // --- M16 Sol Invictus --------------------------------------------------------------------------
 
-/// Varro's meter is filled for his Super Power on day 6 (the warning scene says so): AW2's meter at the player block +0x20.
-fn charge_varro(core: &mut Core) {
-    let p = crate::tag::player(core, 2);
+/// Day 6: both defenders' power meters are full (the reserves scene says so): AW2's meter at the player block +0x20, for the army `army`.
+fn charge(core: &mut Core, army: u32) {
+    let p = crate::tag::player(core, army);
     let (co, uses) = (core.raw_read_8(p + 0x1D, -1), core.raw_read_8(p + 0x25, -1));
     let full = crate::tag::scop_cost(core, co, uses);
     if core.raw_read_32(p + 0x20, -1) < full {
@@ -169,21 +169,29 @@ fn charge_varro(core: &mut Core) {
     }
 }
 
-/// Varro's reinforcement cells on the north rim road (ground) and in the inlet (sea): `five/es/spec/es16.py`.
-const RIM: [(u8, u8); 10] = [(5, 0), (7, 0), (9, 0), (11, 0), (13, 0), (15, 0), (17, 0), (19, 0), (21, 0), (23, 0)];
-const INLET: [(u8, u8); 3] = [(30, 1), (31, 3), (30, 5)];
-/// The player's reinforcement cells at the south camp.
-const CAMP: [(u8, u8); 6] = [(7, 25), (9, 24), (17, 26), (16, 25), (6, 29), (18, 29)];
+fn charge_defenders(core: &mut Core) {
+    charge(core, 2);
+    charge(core, 3);
+}
+
+/// Eagle's air wing's reserve cells along the north airfield, and the cruisers' in the inlet (`five/es/spec/es16.py`).
+const AIRFIELD: [(u8, u8); 10] = [(27, 0), (28, 0), (29, 0), (30, 0), (31, 0), (32, 0), (33, 0), (34, 0), (32, 1), (33, 1)];
+const INLET: [(u8, u8); 2] = [(39, 1), (40, 2)];
+/// Hachi's reserves come out of the south gate and the west gate.
+const SOUTH_GATE: [(u8, u8); 5] = [(33, 13), (34, 13), (36, 13), (36, 14), (35, 15)];
+const WEST_GATE: [(u8, u8); 6] = [(27, 9), (28, 9), (26, 10), (28, 10), (27, 11), (28, 11)];
+/// The legion's own reinforcements land at the beachhead.
+const CAMP: [(u8, u8); 6] = [(2, 19), (3, 19), (4, 19), (2, 20), (3, 20), (2, 21)];
 
 fn es16() -> MissionDef {
     let mut m = MissionDef::new("es16", "Sol Invictus");
-    m.objective = "Take Port Aurelium's keep: Varro's HQ.";
+    m.objective = "Break Stormhold: take Eagle's and Hachi's HQs or rout their armies.";
     m.map = MapSrc::Built("es16");
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(15000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(24000),
-        // The Praetorian Guard: Varro's lieutenants, a garrison that holds the harbour and the east flank (no production of its own), no CO.
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::None).team(2).funds(0),
+        // The Allied last stand: Eagle's air wing and Hachi's deep stores, allies with real production.
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(14000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI)).team(2).funds(14000),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
     m.units = crate::es_campaign::deployment_hq("es16");
@@ -193,19 +201,19 @@ fn es16() -> MissionDef {
     m.after = chain(&["m16_map", "m16_epilogue", "m16_epilogue2"]);
     let units_in = |x0, y0, x1, y1| Cond::UnitsIn { army: 1, area: Rect::new(x0, y0, x1, y1), at_least: 1 };
     m.triggers = vec![
-        // The walls: a unit inside the outer ring; the keep: a unit inside the inner ring.
-        Trigger::new(When::AfterAction, units_in(5, 2, 24, 15), vec![Action::Scene(scene("m16_phase2"))]),
-        Trigger::new(When::AfterAction, units_in(12, 7, 17, 10), vec![Action::Scene(scene("m16_phase3"))]),
-        // Day 6: Varro's meter is full.
-        on_day(6, None, vec![Action::Scene(scene("m16_varro")), Action::Custom(charge_varro)]),
-        // Varro's waves come down the north rim: armour, aircraft, then the fleet.
-        on_day(3, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &RIM[0..1]), wave(2, unit::TANK, &RIM[2..3])].concat())]),
-        on_day(5, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RIM[3..4]), wave(2, unit::MD_TANK, &RIM[5..6])].concat())]),
-        on_day(6, None, vec![Action::Spawn([wave(2, unit::BATTLESHIP, &INLET[0..1]), wave(2, unit::CRUISER, &INLET[1..2])].concat())]),
-        on_day(7, None, vec![Action::Spawn([wave(2, unit::MEGATANK, &RIM[6..7]), wave(2, unit::NEOTANK, &RIM[8..9])].concat())]),
-        on_day(9, None, vec![Action::Spawn([wave(2, unit::FIGHTER, &RIM[0..1]), wave(2, unit::BOMBER, &RIM[2..3])].concat())]),
-        on_day(10, None, vec![Action::Spawn(wave(2, unit::NEOTANK, &RIM[3..5]))]),
-        on_day(12, None, vec![Action::Spawn(wave(2, unit::MEGATANK, &RIM[6..8]))]),
+        // The approaches: a unit at the walls of the plateau; inside the city.
+        Trigger::new(When::AfterAction, units_in(22, 5, 33, 17), vec![Action::Scene(scene("m16_phase2"))]),
+        Trigger::new(When::AfterAction, units_in(30, 6, 39, 14), vec![Action::Scene(scene("m16_phase3"))]),
+        // Day 6: the defenders' meters are full and Eagle's air wing comes in from the north.
+        on_day(6, None, vec![Action::Scene(scene("m16_reserves")), Action::Custom(charge_defenders), Action::Spawn(
+            [wave(2, unit::FIGHTER, &AIRFIELD[0..3]), wave(2, unit::BOMBER, &AIRFIELD[3..5]), wave(2, unit::B_COPTER, &AIRFIELD[5..6])].concat())]),
+        // Hachi's reserves: armour out of the south gate and the west gate, foot behind it.
+        on_day(3, None, vec![Action::Spawn([wave(3, unit::MD_TANK, &SOUTH_GATE[0..1]), wave(3, unit::TANK, &SOUTH_GATE[1..2])].concat())]),
+        on_day(5, None, vec![Action::Spawn([wave(3, unit::NEOTANK, &WEST_GATE[0..1]), wave(3, unit::MD_TANK, &WEST_GATE[1..2])].concat())]),
+        on_day(7, None, vec![Action::Spawn([wave(3, unit::MEGATANK, &SOUTH_GATE[2..3]), wave(3, unit::NEOTANK, &SOUTH_GATE[3..4])].concat())]),
+        on_day(9, None, vec![Action::Spawn([wave(2, unit::FIGHTER, &AIRFIELD[6..8]), wave(2, unit::CRUISER, &INLET[0..1])].concat()),
+                             Action::Spawn(wave(3, unit::INFANTRY, &WEST_GATE[2..5]))]),
+        on_day(11, None, vec![Action::Spawn([wave(3, unit::MEGATANK, &WEST_GATE[0..1]), wave(3, unit::ARTILLERY, &WEST_GATE[1..2])].concat())]),
         // The legion's own reinforcements: the Quaestor's second convoy, on days 4 and 8.
         on_day(4, None, vec![Action::Spawn([wave(1, unit::ANTI_AIR, &CAMP[0..1]), wave(1, unit::MD_TANK, &CAMP[1..2]), wave(1, unit::ARTILLERY, &CAMP[2..3])].concat())]),
         on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),
