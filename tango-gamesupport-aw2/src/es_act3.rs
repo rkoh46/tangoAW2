@@ -15,7 +15,7 @@ fn owns(x: u8, y: u8) -> Cond {
 // --- M9 Grain Ships (Black Hole's freight yards: inventions allowed) ----------------------------
 
 /// Kite Hill's air depot (the airport on the plateau).
-const DEPOT: (u8, u8) = (8, 4);
+const DEPOT: (u8, u8) = (12, 4);
 
 fn barges_gone() -> Cond {
     Cond::All(vec![Cond::UnitGone("barge1"), Cond::UnitGone("barge2"), Cond::UnitGone("barge3")])
@@ -84,7 +84,7 @@ fn es10() -> MissionDef {
 
 // --- M11 The Treasure Train ---------------------------------------------------------------
 
-const CAMP: Rect = Rect::new(22, 5, 25, 7);
+const CAMP: Rect = Rect::new(35, 9, 38, 11);
 const APCS: [&str; 4] = ["apc1", "apc2", "apc3", "apc4"];
 
 fn es11() -> MissionDef {
@@ -99,7 +99,7 @@ fn es11() -> MissionDef {
     m.pool = leads();
     m.units = deployment("es11");
     // The relay camp's city is the Senate's: the player's from the start.
-    m.props = vec![Prop { kind: PropKind::City, owner: 1, x: 24, y: 6 }];
+    m.props = vec![Prop { kind: PropKind::City, owner: 1, x: 37, y: 10 }];
     m.day_limit = 14;
     m.rank_days = 10;
     m.intro = scene("m11_pre");
