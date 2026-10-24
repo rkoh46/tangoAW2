@@ -40,6 +40,7 @@ RULES = {
     "RC04": ("error", "a Lander with no beach or port to load or unload at"),
     "GB01": ("error", "a tile id no game map uses (drawn as garbage)"),
     "GB02": ("error", "a building or structure with part of its footprint missing or wrong"),
+    "ES01": ("error", "Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line)"),
 }
 
 
@@ -288,7 +289,7 @@ def joins(G):
     skip = tc.structure_cells(G.t) | tc.editor_sea(G.t, L["rom"])
     for x, y, p in tc.violations(G.t, L["pairs"], skip):
         out.append(Problem("TJ01", x, y, tc.describe((x, y, p)).split(") ", 1)[1]))
-    if G.m.source in ("bh", "versus", "aw2"):
+    if G.m.source in ("bh", "es", "versus", "aw2"):
         for x, y, p in tc.mountain_violations(G.t, L["mountain"]):
             out.append(Problem("TJ03", x, y, tc.describe((x, y, p)).split(") ", 1)[1]))
     for y in range(G.h):
@@ -454,7 +455,7 @@ def _desc(c):
 def reach(G):
     """The BH Campaign's reachability checks (five/bhmap.py check_reach), on a text map; needs the map's text rows."""
     bh = _bh()
-    if G.m.source != "bh":
+    if G.m.source not in ("bh", "es"):
         return []
     out = []
     for p in bh.check_reach(G.m.meta):
@@ -478,22 +479,22 @@ def _unit_problem(G, u, bh, rule_prefix=""):
     return None
 
 
-@functools.lru_cache(maxsize=1)
-def _bh_grids():
-    return {m.name: Grid(m) for m in load.bh_maps()}
+@functools.lru_cache(maxsize=2)
+def _bh_grids(source="bh"):
+    return {m.name: Grid(m) for m in (load.es_maps() if source == "es" else load.bh_maps())}
 
 
 def spawned(G):
     """Units the mission's code places by literal coordinates (spawns.py): on terrain they can enter, and not on a unit of the map file.
     A mission with a second front (`bh08` and `bh08b`) is checked against both maps: the spawn must fit at least one."""
     from . import spawns as sp
-    if G.m.source != "bh":
+    if G.m.source not in ("bh", "es"):
         return []
     bh = _bh()
     name = G.m.name
-    base = name[:-1] if name.endswith("b") and name[:-1] in _bh_grids() else name
-    mine = sp.spawns().get(base, [])
-    sibs = [g for n, g in _bh_grids().items() if n == base or n == base + "b"]
+    base = name[:-1] if name.endswith("b") and name[:-1] in _bh_grids(G.m.source) else name
+    mine = sp.spawns(G.m.source).get(base, [])
+    sibs = [g for n, g in _bh_grids(G.m.source).items() if n == base or n == base + "b"]
     out = []
     occupied = {(u["x"], u["y"]) for u in G.m.units}
     for u in mine:
@@ -510,7 +511,23 @@ def spawned(G):
     return out
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach]
+def inventions(G):
+    """ES01: Black Hole's inventions only on the (at most two) Emerald Sun maps that fight Black Hole."""
+    if G.m.source != "es":
+        return []
+    out = []
+    tiles = [(x, y) for y in range(G.h) for x in range(G.w) if G.g[y][x] == "#" or 0x180 <= G.t[y][x] <= 0x1A9]
+    if tiles and not G.m.meta.get("blackhole"):
+        x, y = tiles[0]
+        out.append(Problem("ES01", x, y, f"{len(tiles)} invention tiles on a map with no `blackhole` line (only the missions against Black Hole may have them)"))
+    if G.m.meta.get("blackhole"):
+        n = sum(1 for m in load.es_maps() if m.meta.get("blackhole"))
+        if n > 2:
+            out.append(Problem("ES01", -1, -1, f"{n} maps are tagged `blackhole` (at most two missions fight Black Hole)"))
+    return out
+
+
+CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions]
 
 
 def lint(m, only=None):

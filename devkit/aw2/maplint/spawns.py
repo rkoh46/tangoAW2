@@ -8,19 +8,19 @@ KINDS = {"INFANTRY": 1, "MECH": 2, "MD_TANK": 3, "MEGATANK": 4, "TANK": 5, "RECO
          "ROCKETS": 11, "STEALTH": 12, "BLACK_BOMB": 13, "ANTI_AIR": 14, "MISSILES": 15, "FIGHTER": 16, "BOMBER": 17, "BLACK_BOAT": 18,
          "B_COPTER": 19, "T_COPTER": 20, "BATTLESHIP": 21, "CRUISER": 22, "LANDER": 23, "SUB": 24, "CARRIER": 26, "OOZIUM": 27}
 FN = re.compile(r"^(?:pub )?fn (\w+)\(", re.M)
-MISSION = re.compile(r"^bh\d\d$")
+MISSION = {"bh": re.compile(r"^bh\d\d$"), "es": re.compile(r"^es\d\d$")}
 UD = re.compile(r"UnitDef::new\(\s*(\d+)\s*,\s*unit::([A-Z_]+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)")
 
 
-def spawns():
+def spawns(source="bh"):
     """{map name: [unit dicts like the map file's, plus 'line' and 'spawn': True]}"""
     out = {}
-    for f in sorted(SRC.glob("bh_act*.rs")):
+    for f in sorted(SRC.glob(f"{source}_act*.rs")):
         text = f.read_text()
         fns = list(FN.finditer(text))
         for i, m in enumerate(fns):
             end = fns[i + 1].start() if i + 1 < len(fns) else len(text)
-            if not MISSION.match(m.group(1)):
+            if not MISSION[source].match(m.group(1)):
                 continue
             body = text[m.start():end]
             for u in UD.finditer(body):

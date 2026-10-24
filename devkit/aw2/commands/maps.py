@@ -1,6 +1,7 @@
 """aw2dev maps: map integrity (docs/dev/map-lint.md, skill aw2-map-lint).
 
-  maps lint [--source bh|versus|aw2|ds|all] [--map NAME ...] [--rule ID ...] [--png DIR] [--json]
+  maps gen [--map es01 ..] [--check]  the Emerald Sun Campaign's text maps from their specs (five/es/spec/esNN.py), then es_map_data.rs (bhmap.py --campaign es)
+  maps lint [--source bh|es|versus|aw2|ds|all] [--map NAME ...] [--rule ID ...] [--png DIR] [--json]
                                    check maps for unfinished rivers, orphan sea/shoal, broken joins, bad bridges and roads, pipes, units on terrain
                                    they cannot enter, unreachable properties, HQs with no access, tiles drawn as garbage; exit 1 on an error in
                                    bh / versus maps (aw2 and ds are the reference: their hits are only reported)
@@ -17,7 +18,7 @@ def register(sub):
     m = sub.add_parser("maps", help="map integrity: lint, rules, compare, boot (docs/dev/map-lint.md)")
     ms = m.add_subparsers(dest="mapscmd", required=True)
     a = ms.add_parser("lint", help="check maps (default: the BH Campaign's) and render an annotated picture per map")
-    a.add_argument("--source", default="bh", choices=["bh", "versus", "aw2", "ds", "all"])
+    a.add_argument("--source", default="bh", choices=["bh", "es", "versus", "aw2", "ds", "all"])
     a.add_argument("--map", nargs="*", help="only these map names (bh01, 'Pentagon Atoll', aw2_1F, ds_0B4)")
     a.add_argument("--rule", nargs="*", help="only these rule ids")
     a.add_argument("--png", metavar="DIR", help="write annotated pictures here (default devkit/work/maps/lint/<source>)")
@@ -25,6 +26,11 @@ def register(sub):
     a.add_argument("--json", action="store_true")
     a.add_argument("--warn", action="store_true", help="show warnings too (default: errors only for bh / versus)")
     a.set_defaults(fn=lint)
+    a = ms.add_parser("gen", help="write the Emerald Sun text maps (five/es/esNN.txt) from their specs (five/es/spec/esNN.py), then build es_map_data.rs")
+    a.add_argument("--map", nargs="*", help="only these (es01 es02 ...)")
+    a.add_argument("--no-build", action="store_true", help="only write the text maps")
+    a.add_argument("--check", action="store_true", help="fail if a text map differs from what its spec makes (nothing written)")
+    a.set_defaults(fn=gen)
     a = ms.add_parser("rules", help="the rules and what the games' own maps do under each")
     a.add_argument("--md", action="store_true")
     a.set_defaults(fn=rules_table)
@@ -46,8 +52,8 @@ def _lib():
 
 def _maps(load, source):
     out = []
-    for s in (["bh", "versus", "aw2", "ds"] if source == "all" else [source]):
-        out += {"bh": load.bh_maps, "versus": load.versus_maps, "aw2": load.aw2_maps, "ds": load.ds_maps}[s]()
+    for s in (["bh", "es", "versus", "aw2", "ds"] if source == "all" else [source]):
+        out += {"bh": load.bh_maps, "es": load.es_maps, "versus": load.versus_maps, "aw2": load.aw2_maps, "ds": load.ds_maps}[s]()
     return out
 
 
@@ -72,17 +78,40 @@ def lint(a):
                 print(f"{m.name} ({m.source} {m.w}x{m.h}): {sum(p.level == 'error' for p in probs)} errors, {sum(p.level == 'warn' for p in probs)} warnings")
                 for p in (probs if a.warn else shown):
                     print("   ", p)
-            elif m.source in ("bh", "versus"):
+            elif m.source in ("bh", "es", "versus"):
                 print(f"{m.name}: clean")
-        if m.source in ("bh", "versus"):
+        if m.source in ("bh", "es", "versus"):
             bad += sum(p.level == "error" for p in probs)
-        if out and (probs or m.source in ("bh", "versus")):
+        if out and (probs or m.source in ("bh", "es", "versus")):
             render.draw_map(m, probs).save(out / f"{m.name.replace(' ', '_')}.png")
     if a.json:
         print(json.dumps(report, indent=1))
     else:
         util.say(f"maps lint {a.source}: {len(maps)} maps, {bad} errors in tangoAW2's maps" + (f"; pictures in {out}" if out else ""))
     return 1 if bad else 0
+
+
+def gen(a):
+    """Run the specs, write their text maps, build `src/es_map_data.rs` with bhmap.py --campaign es (tile joins checked as for the BH maps)."""
+    sys.path.insert(0, str(cfg.DEVKIT))
+    from ..esmaplib import load_spec, specs, ES_DIR
+    bad = 0
+    for p in specs():
+        if a.map and p.stem not in a.map:
+            continue
+        m = load_spec(p)
+        if a.check:
+            f = ES_DIR / f"{m.name}.txt"
+            if not f.exists() or f.read_text() != m.text():
+                print(f"{m.name}: the text map differs from its spec (run aw2dev maps gen)")
+                bad += 1
+            continue
+        m.write()
+    if a.check or a.no_build:
+        return 1 if bad else 0
+    five = cfg.REPO / "tango-gamesupport-aw2" / "five"
+    r = subprocess.run([sys.executable, str(five / "bhmap.py"), "--campaign", "es", str(cfg.aw2_rom())], cwd=cfg.REPO)
+    return r.returncode
 
 
 def rules_table(a):

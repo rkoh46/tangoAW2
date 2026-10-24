@@ -128,6 +128,19 @@ def bh_maps(rom=None, files=None):
     return out
 
 
+def es_maps(rom=None, files=None):
+    """The Emerald Sun Campaign's maps (five/es/es*.txt, built by bhmap.py --campaign es): the same MapData as the BH Campaign's, source "es"."""
+    mappy, tc, bhmap = _five()
+    rom = rom or rom_bytes()
+    edge = mappy.sea_edges(rom)
+    paths = files or sorted((FIVE / "es").glob("es[0-9][0-9]*.txt"))
+    out = []
+    for m in bhmap.parse([str(p) for p in paths]):
+        rows = mappy.tiles(m, edge)
+        out.append(MapData(m["name"], "es", rows, units=m["units"], text=m["rows"], meta=m))
+    return out
+
+
 def versus_maps(rom=None):
     mappy, tc, _ = _five()
     rom = rom or rom_bytes()
