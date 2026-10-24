@@ -53,10 +53,15 @@ fn backup(colour: u8) -> u32 {
     DATA + 0x100 + 0x1000 * (colour as u32 - 1)
 }
 const BACKUP_MAX: usize = 0xF00;
+/// (The Dual Strike picture palettes' backups: 0x400 a colour, five colours from `DATA + 0x5000` to `DATA + 0x6400`, below the skins' figures at
+/// `DATA + 0x7000`. They began at `DATA + 0x6000`, and colour 5's list (`DATA + 0x7000`) was written over the first skin's table of battle
+/// figures and portraits: see [`portrait_blob`].)
 fn ds_backup(colour: u8) -> u32 {
-    DATA + 0x6000 + 0x400 * (colour as u32 - 1)
+    DATA + 0x5000 + 0x400 * (colour as u32 - 1)
 }
 const DS_BACKUP_MAX: usize = 0x3F0;
+const _: () = assert!(0x100 + 0x1000 * 4 + BACKUP_MAX <= 0x5000, "the colours' backups reach the Dual Strike backups");
+const _: () = assert!(0x5000 + 0x400 * 4 + DS_BACKUP_MAX <= 0x7000, "the Dual Strike backups reach the skins' figures");
 /// A skin's own pictures (see [`blobs`]).
 fn art_at(skin: usize) -> u32 {
     DATA + 0x1_0000 + 0x4000 * skin as u32
@@ -1345,7 +1350,13 @@ const FIG_LIMIT: usize = 0x3000;
 
 /// Where skin `skin`'s sheet `which` (0, 1) of the soldiers of `unit` (1 Infantry, 2 Mech) or its portrait (`which` 2) is, from the table in the ROM image.
 fn fig_slot(core: &Core, skin: usize, unit: u8, which: u32) -> u32 {
-    core.raw_read_32(fig_at(skin) + 4 * (3 * (unit as u32 - 1) + which), -1)
+    let at = core.raw_read_32(fig_at(skin) + 4 * (3 * (unit as u32 - 1) + which), -1);
+    // (a word of the table's own room and a LZ77 header only: anything else is not ours, and the game's decompressor would run over its memory with it)
+    let room = fig_at(skin) + FIG_DATA..fig_at(skin) + FIG_LIMIT as u32;
+    if at % 4 != 0 || !room.contains(&at) || core.raw_read_8(at, -1) != 0x10 {
+        return 0;
+    }
+    at
 }
 
 /// GBA LZ77 (type 0x10) compression: greedy, a hash chain of earlier places of the next three bytes; the same bytes every time.
@@ -1523,21 +1534,24 @@ fn fig_sheet(core: &mut Core) {
     }
 }
 
-/// The unit panel's portrait (`sub_0803A190`): after it reads the picture's pointer (`r0`); `r8` points at the unit type, the army is in the
-/// panel's state (at `*[*0x08090F70] + 8`).
+/// The unit panel's and the build menu's portrait (`sub_0803A190`): after it reads the picture's pointer (`r0`); `r8` points at the unit type (a unit's
+/// record on the cursor panel, `0x03004100` on the build menu's, the record the menu makes of the unit it shows: the type is its first byte either way),
+/// the army is in the panel's state (at `*[*0x08090F70] + 8`). The callers are `0x0803A3FE` and `0x0803A4D0` (the panels opening) and `0x0803AA48` and
+/// `0x0803AA9A` (a unit chosen).
+///
+/// The build menu's call was once left out (a guard on `r8`) because an Emerald Sun army that bought an Infantry or a Mech corrupted the game's memory
+/// (the day, the mission's result byte). The call was not the cause: the skin's portrait is the right size for the game's buffer (`0x0200FD50`, 32 x 32 at 4 bits),
+/// and the game decompresses it with the same routine as its own. The cause was the skin's room in free ROM: with the skin on colour 5 (a Black Hole
+/// army outside a five-army game) the Dual Strike picture palettes' backup of colour 5 sat at `DATA + 0x7000`, over the table of the skin's figures and portraits
+/// (`fig_at(0)`); the table's word read as an address in the middle of a palette backup, and the decompressor, handed that, ran over memory. The backups
+/// moved below the figures (`ds_backup`, with compile-time checks of the layout) and `fig_slot` takes only a pointer into the skin's own room that starts a
+/// LZ77 stream.
 const PORTRAIT_LOAD: u32 = 0x0803_A1D8;
-/// The pointer to the unit records (12 bytes each, up to 320).
-const UNITS_TABLE: u32 = 0x0849_9594;
 
 fn portrait_blob(core: &mut Core) {
-    let (r8, r6) = {
-        let c = core.gba().cpu();
-        (c.gpr(8) as u32, c.gpr(6) as u32)
-    };
-    // (a unit's record only: the build menu's panel reaches this code with another pointer in r8, and a skin's picture put in its place made the
-    // game decompress the wrong data over its own memory when an Emerald Sun army bought an Infantry or a Mech)
-    let units = core.raw_read_32(UNITS_TABLE, -1);
-    if !(units..units + 12 * 320).contains(&r8) {
+    let r6 = core.gba().cpu().gpr(6) as u32;
+    let r8 = core.gba().cpu().gpr(8) as u32;
+    if !(0x0200_0000..0x0400_0000).contains(&r8) {
         return;
     }
     let ty = core.raw_read_8(r8, -1);
@@ -1832,6 +1846,26 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The rooms of the skins' free ROM never overlap (the Dual Strike backup of colour 5 once sat on the first skin's table of figures: a build menu
+    /// portrait made the game decompress a palette over its memory).
+    #[test]
+    fn the_rooms_in_free_rom_are_apart() {
+        let mut rooms: Vec<(u32, u32, String)> = vec![(DATA, DATA + 0x100, "header".into())];
+        for c in 1..=5u8 {
+            rooms.push((backup(c), backup(c) + BACKUP_MAX as u32, format!("backup {c}")));
+            rooms.push((ds_backup(c), ds_backup(c) + DS_BACKUP_MAX as u32, format!("Dual Strike backup {c}")));
+        }
+        for k in 0..MAX_SKINS {
+            rooms.push((fig_at(k), fig_at(k) + FIG_LIMIT as u32, format!("figures {k}")));
+            rooms.push((art_at(k), art_at(k) + 0x4000, format!("art {k}")));
+        }
+        for (i, a) in rooms.iter().enumerate() {
+            for b in &rooms[i + 1..] {
+                assert!(a.1 <= b.0 || b.1 <= a.0, "{} ({:#x}..{:#x}) overlaps {} ({:#x}..{:#x})", a.2, a.0, a.1, b.2, b.0, b.1);
+            }
+        }
+    }
 
     /// Dual Strike's screens ask the skin for their palettes: the entries the armies differ in take the ramp by brightness, the rest stay.
     #[test]
