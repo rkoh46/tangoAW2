@@ -174,9 +174,8 @@ fn charge_defenders(core: &mut Core) {
     charge(core, 3);
 }
 
-/// Eagle's air wing's reserve cells along the north airfield, and the cruisers' in the inlet (`five/es/spec/es16.py`).
+/// Eagle's air wing's reserve cells along the north airfield (`five/es/spec/es16.py`).
 const AIRFIELD: [(u8, u8); 10] = [(27, 0), (28, 0), (29, 0), (30, 0), (31, 0), (32, 0), (33, 0), (34, 0), (32, 1), (33, 1)];
-const INLET: [(u8, u8); 2] = [(39, 1), (40, 2)];
 /// Hachi's reserves come out of the south gate and the west gate.
 const SOUTH_GATE: [(u8, u8); 5] = [(33, 13), (34, 13), (36, 13), (36, 14), (35, 15)];
 const WEST_GATE: [(u8, u8); 6] = [(27, 9), (28, 9), (26, 10), (28, 10), (27, 11), (28, 11)];
@@ -190,11 +189,11 @@ fn es16() -> MissionDef {
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(15000),
         // The Allied last stand: Eagle's air wing and Hachi's deep stores, allies with real production.
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(14000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI)).team(2).funds(14000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(11000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI)).team(2).funds(11000),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
-    m.units = crate::es_campaign::deployment_hq("es16");
+    m.units = crate::es_campaign::deployment("es16");
     m.rank_days = 20;
     m.intro = scene("m16_pre");
     m.victory = chain(&["m16_post", "m16_post2"]);
@@ -210,10 +209,9 @@ fn es16() -> MissionDef {
         // Hachi's reserves: armour out of the south gate and the west gate, foot behind it.
         on_day(3, None, vec![Action::Spawn([wave(3, unit::MD_TANK, &SOUTH_GATE[0..1]), wave(3, unit::TANK, &SOUTH_GATE[1..2])].concat())]),
         on_day(5, None, vec![Action::Spawn([wave(3, unit::NEOTANK, &WEST_GATE[0..1]), wave(3, unit::MD_TANK, &WEST_GATE[1..2])].concat())]),
-        on_day(7, None, vec![Action::Spawn([wave(3, unit::MEGATANK, &SOUTH_GATE[2..3]), wave(3, unit::NEOTANK, &SOUTH_GATE[3..4])].concat())]),
-        on_day(9, None, vec![Action::Spawn([wave(2, unit::FIGHTER, &AIRFIELD[6..8]), wave(2, unit::CRUISER, &INLET[0..1])].concat()),
+        on_day(7, None, vec![Action::Spawn([wave(3, unit::MD_TANK, &SOUTH_GATE[2..3]), wave(3, unit::NEOTANK, &SOUTH_GATE[3..4])].concat())]),
+        on_day(9, None, vec![Action::Spawn(wave(2, unit::FIGHTER, &AIRFIELD[6..7])),
                              Action::Spawn(wave(3, unit::INFANTRY, &WEST_GATE[2..5]))]),
-        on_day(11, None, vec![Action::Spawn([wave(3, unit::MEGATANK, &WEST_GATE[0..1]), wave(3, unit::ARTILLERY, &WEST_GATE[1..2])].concat())]),
         // The legion's own reinforcements: the Quaestor's second convoy, on days 4 and 8.
         on_day(4, None, vec![Action::Spawn([wave(1, unit::ANTI_AIR, &CAMP[0..1]), wave(1, unit::MD_TANK, &CAMP[1..2]), wave(1, unit::ARTILLERY, &CAMP[2..3])].concat())]),
         on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),
