@@ -103,7 +103,7 @@ fn campaign_box(core: &Core) -> Option<u32> {
 
 /// Whether the chooser (AW2 / DS, or Normal / Hard) is showing.
 pub fn chooser(core: &Core) -> bool {
-    crate::ds_weather::is_on(core) && campaign_box(core).is_some() && matches!(core.raw_read_8(LEVEL, -1), 0 | 3)
+    crate::ds_weather::is_on(core) && campaign_box(core).is_some() && matches!(core.raw_read_8(LEVEL, -1), 0 | 3 | NOTICE)
 }
 
 /// The Normal / Hard choice's row (0 Normal, 1 Hard).
@@ -134,7 +134,76 @@ fn help_lines(core: &mut Core) {
 pub fn entries(core: &Core) -> Vec<&'static str> {
     let mut v = vec![LABELS[0]];
     v.extend(crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).map(|s| s.label));
+    // The campaigns still to come, shown but not playable: BH2 directly under the BH Campaign, Emerald Sun last.
+    if crate::ds_weather::is_on(core) {
+        v.extend(COMING.iter().map(|c| c.label));
+    }
     v
+}
+
+/// A campaign in the sub-menu that is not playable yet: its label and the words of the box that opens instead.
+pub struct Coming {
+    pub label: &'static str,
+    pub title: &'static str,
+}
+
+/// The placeholders, in the sub-menu's order after the sources (BH2 under the BH Campaign, Emerald Sun at the bottom).
+pub const COMING: [Coming; 2] = [Coming { label: "BH2 CAMPAIGN", title: "BH2 Campaign" }, Coming { label: "EMERALD SUN", title: "Emerald Sun Campaign" }];
+
+/// The sub-menu level of the "Coming soon" box.
+const NOTICE: u8 = 4;
+
+/// The placeholder whose box is open (an index of [`COMING`]).
+pub fn notice(core: &Core) -> Option<usize> {
+    if !crate::ds_weather::is_on(core) || campaign_box(core).is_none() || core.raw_read_8(LEVEL, -1) != NOTICE {
+        return None;
+    }
+    let sources = crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).count();
+    (core.raw_read_8(CHOICE, -1) as usize).checked_sub(1 + sources).filter(|&k| k < COMING.len())
+}
+
+static NOTICE_FACE: std::sync::Mutex<Option<(Vec<u8>, [u8; 32])>> = std::sync::Mutex::new(None);
+
+/// The "Coming soon" box over a 240 x 160 picture, in AW2's window frame with Nell's face and the game's font (presentation only).
+pub fn draw_notice(core: &Core, rgba: &mut [u8]) {
+    use crate::online::{text_width, Rgba, BLUE, GRAY_INK, H, INK, LIGHT_GRAY, SHADE, W};
+    let Some(k) = notice(core) else { return };
+    if rgba.len() != W * H * 4 {
+        return;
+    }
+    let mut cv = Rgba(rgba);
+    let (x, y, w, h) = (16, 40, W as i32 - 32, 80);
+    crate::online::audit::cover(x, y, w, h);
+    cv.window(x, y, w, h);
+    let (fx, fy, fs) = (x + 8, y + 10, 48);
+    cv.rect(fx - 2, fy - 2, fs + 4, fs + 4, INK);
+    {
+        let mut face = NOTICE_FACE.lock().unwrap();
+        if face.is_none() {
+            *face = Some(crate::tag_ui::portrait48(core, 0));
+        }
+        let (px, pal) = face.as_ref().unwrap();
+        for yy in 0..fs {
+            for xx in 0..fs {
+                let (sx, sy) = (xx as usize, yy as usize);
+                let t = 6 * (sy / 8) + sx / 8;
+                let b = px.get(32 * t + 4 * (sy % 8) + (sx % 8) / 2).copied().unwrap_or(0);
+                let v = ((b >> (4 * (sx & 1))) & 15) as usize;
+                let c = u16::from_le_bytes([pal[2 * v], pal[2 * v + 1]]);
+                cv.put(fx + xx, fy + yy, crate::online::bgr(c));
+            }
+        }
+    }
+    let tx = fx + fs + 10;
+    let tw = x + w - 8 - tx;
+    let title = crate::online::fit(core, COMING[k].title, tw);
+    cv.text(core, tx, y + 14, &title, INK, SHADE);
+    cv.text(core, tx, y + 28, "Coming soon.", GRAY_INK, SHADE);
+    cv.text(core, tx, y + 40, "Not playable yet.", GRAY_INK, SHADE);
+    let by = y + h - 17;
+    cv.rect(x + 6, by - 3, w - 12, 1, LIGHT_GRAY);
+    let t = "A: Back";
+    cv.text(core, x + (w - text_width(core, t)) / 2, by, t, BLUE, SHADE);
 }
 
 /// The source (an index of `SOURCES`) the chooser's entry `choice` is
@@ -215,6 +284,12 @@ fn tick_menu(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
             core.raw_write_8(TOP, -1, top as u8);
             core.raw_write_16(p + W_CURSOR, -1, ROW0 + (row as u16).min(1));
             if pressed & KEY_A != 0 {
+                if choice > 0 && source_of(core, choice).is_none() {
+                    // A campaign still to come: its box, nothing requested.
+                    core.raw_write_8(LEVEL, -1, NOTICE);
+                    keys &= !(KEY_UP | KEY_DOWN | KEY_A);
+                    return keys;
+                }
                 if let Some(s) = source_of(core, choice) {
                     core.raw_write_8(crate::ds_campaign::SOURCE, -1, s as u8);
                 }
@@ -246,6 +321,18 @@ fn tick_menu(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
             } else {
                 keys &= !(KEY_UP | KEY_DOWN | KEY_A);
             }
+        }
+        NOTICE => {
+            // The "Coming soon" box: A or B closes it, the chooser stays on its entry.
+            let n = entries(core).len().max(1);
+            let choice = (core.raw_read_8(CHOICE, -1) as usize).min(n - 1);
+            let (top, row) = window(choice, core.raw_read_8(TOP, -1) as usize, n);
+            core.raw_write_16(p + W_CURSOR, -1, ROW0 + (row as u16).min(1));
+            if pressed & (KEY_A | KEY_B) != 0 {
+                core.raw_write_8(LEVEL, -1, 0);
+                core.raw_write_8(TOP, -1, top as u8);
+            }
+            keys &= !(KEY_UP | KEY_DOWN | KEY_A | KEY_B);
         }
         level => {
             if pressed & KEY_B != 0 {
@@ -312,6 +399,8 @@ fn glyph(c: char) -> &'static [&'static str] {
         'O' => &[".###.", "#####", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", ".###."],
         'R' => &["####.", "#####", "##.##", "##.##", "#####", "####.", "##.##", "##.##", "##.##", "##.##"],
         'L' => &["##...", "##...", "##...", "##...", "##...", "##...", "##...", "##...", "#####", "#####"],
+        'E' => &["#####", "#####", "##...", "##...", "####.", "####.", "##...", "##...", "#####", "#####"],
+        'U' => &["##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", ".###."],
         'H' => &["##.##", "##.##", "##.##", "##.##", "#####", "#####", "##.##", "##.##", "##.##", "##.##"],
         _ => &["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
     }
@@ -499,7 +588,7 @@ mod tests {
     #[test]
     fn labels_fit() {
         let sources = crate::campaign_model::SOURCES.iter().map(|s| s.label);
-        for t in LABELS.iter().copied().chain(DIFFICULTY_LABELS).chain(sources) {
+        for t in LABELS.iter().copied().chain(DIFFICULTY_LABELS).chain(sources).chain(COMING.iter().map(|c| c.label)) {
             let w: usize = t.chars().map(|c| glyph(c)[0].len() + 1).sum::<usize>() - 1;
             assert!(w + 6 <= LABEL_W, "{t}");
             assert_eq!(label_tiles(t).len(), LABEL_TILES as usize * 32);

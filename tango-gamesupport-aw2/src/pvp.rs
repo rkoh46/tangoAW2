@@ -633,6 +633,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::result_view::serve(_seat, rgba);
         crate::fog_view::hud_patch(core, _seat, rgba);
         crate::hold_box::draw(core, rgba);
+        crate::campaign_menu::draw_notice(core, rgba);
     }
 
     fn overlay_notice(&self, core: &Core, rgba: &mut [u8]) {
@@ -669,6 +670,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::ds_menus::apply(core, &mut lo);
         crate::ds_coselect::apply(core, &mut lo);
         crate::hold_box::draw(core, &mut lo);
+        crate::campaign_menu::draw_notice(core, &mut lo);
         if lo != before {
             for i in 0..240 * 160 {
                 if lo[i * 4..i * 4 + 4] != before[i * 4..i * 4 + 4] {

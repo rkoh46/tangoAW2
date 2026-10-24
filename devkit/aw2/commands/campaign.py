@@ -2,6 +2,8 @@
 
   campaign scenes [--md] [--mission bh05]   every scene of the BH Campaign with its song (role, AW2 song id) and box count: prologue, intro, victory, the scenes on
                                             the world map after a win, mid-battle triggers; scenes with no song are marked `-` (story scenes without one fail)
+  campaign menu [--out DIR]                 start the real app offline with the Dual Strike pack through the AI debug channel, open Select Mode > Campaign and
+                                            photograph the chooser at each entry (AW2, DS, BH, BH2 and Emerald Sun placeholders) and the "Coming soon" boxes
   campaign trace [--mission N ...]          play the missions in the offline harness (CO screen, card, intro, forced win, victory, results, map scenes) and
                                             sample every 20 frames: song, fade, text, screen, the sound's loudness; prints scene -> song and flags silent gaps
 """
@@ -19,6 +21,9 @@ def register(sub):
     a.add_argument("--md", action="store_true")
     a.add_argument("--mission")
     a.set_defaults(fn=scenes)
+    a = cs.add_parser("menu", help="photograph the Campaign sub-menu of the real app")
+    a.add_argument("--out")
+    a.set_defaults(fn=menu)
     a = cs.add_parser("trace", help="play missions in the harness and trace song / fade / silence")
     a.add_argument("--mission", nargs="*", type=int, default=[1])
     a.add_argument("--out")
@@ -47,6 +52,75 @@ def scenes(a):
     for r in bad:
         print("NO SONG:", r[0], r[1], file=sys.stderr)
     return 1 if bad else 0
+
+
+def menu(a):
+    """The Campaign chooser of the real app, entry by entry (the placeholders' boxes too); exit 1 if an entry or a box is missing."""
+    import json, time, subprocess
+    from .. import profiles
+    out = Path(a.out) if a.out else cfg.work("campaign", "menu")
+    out.mkdir(parents=True, exist_ok=True)
+    binary = cfg.REPO / "target" / "release" / "tango"
+    util.check_fresh(binary, "tango")
+    profiles.ensure("skinds", pack=True)
+    cj = profiles.profile_dir("skinds") / "config" / "config.json"
+    conf = json.loads(cj.read_text())
+    conf.update({"ds_graphics": True, "ds_tilt": False})
+    cj.write_text(json.dumps(conf, indent=2))
+    app = profiles.test_app(binary)
+    env = dict(os.environ, TANGOAW2_PROFILE=str(profiles.profile_dir("skinds")), TANGOAW2_AI_DEBUG="0", AW2DEV_LOOK="1")
+    proc = subprocess.Popen([str(app)], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cfg.REPO)
+    bad = 0
+    try:
+        addr, t0 = None, time.time()
+        while time.time() - t0 < 60 and addr is None:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            if "AI_DEBUG_LISTENING" in line:
+                addr = line.split()[-1]
+        if not addr:
+            util.die("the app did not open the AI debug channel")
+        sys.path.insert(0, str(cfg.REPO / "tools" / "aidebug"))
+        from client import AiDebug
+        d = AiDebug.connect(addr)
+        for _ in range(40):
+            if d.hello().get("session") not in (None, "none"):
+                break
+            time.sleep(1)
+        d.start_offline()
+        d.wait_until({"phase": {"in": ["title", "select_mode"]}}, 60)
+        time.sleep(1.0)
+        d.press_until("START", {"phase": "select_mode"}, timeout=40)
+        time.sleep(1.5)
+        d.press_until("A", {"screen_info.box_open": True}, timeout=30, gap=1.0)
+        time.sleep(1.0)
+        d.screenshot(str(out / "chooser_0_aw2.png"))
+        names = ["aw2", "ds", "bh", "bh2", "emerald_sun"]
+        for k in range(1, 5):
+            d.press("DOWN")
+            time.sleep(0.8)
+            d.screenshot(str(out / f"chooser_{k}_{names[k]}.png"))
+        # the Emerald Sun box (the last entry, the cursor is on it)
+        d.press("A")
+        time.sleep(0.8)
+        d.screenshot(str(out / "box_emerald_sun.png"))
+        d.press("A")
+        time.sleep(0.6)
+        d.press("UP")
+        time.sleep(0.6)
+        d.press("A")
+        time.sleep(0.8)
+        d.screenshot(str(out / "box_bh2.png"))
+        d.press("B")
+        time.sleep(0.6)
+        d.screenshot(str(out / "chooser_after_box.png"))
+    finally:
+        proc.kill()
+        proc.wait()
+        subprocess.run(["pkill", "-9", "-f", str(app)])
+    util.say("pictures in", out)
+    return bad
 
 
 def trace(a):
