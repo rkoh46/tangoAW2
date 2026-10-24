@@ -23,6 +23,23 @@ class Paint(unittest.TestCase):
         self.assertEqual(a.rows(), b.rows())
         self.assertIn("^", "".join(a.rows()))
 
+    def test_meander_is_one_connected_winding_line(self):
+        m = Canvas("t", 30, 20)
+        cells = m.meander("-", (0, 5), (29, 12), seed=3, amp=3)
+        self.assertEqual(cells[0], (0, 5))
+        self.assertEqual(cells[-1], (29, 12))
+        self.assertTrue(all(abs(a[0] - b[0]) + abs(a[1] - b[1]) == 1 for a, b in zip(cells, cells[1:])))
+        self.assertGreater(sum(1 for a, b, c in zip(cells, cells[1:], cells[2:]) if (b[0] - a[0], b[1] - a[1]) != (c[0] - b[0], c[1] - b[1])), 3)
+        self.assertEqual(Canvas("t", 30, 20).meander("-", (0, 5), (29, 12), seed=3, amp=3), cells)
+
+    def test_cluster_and_spread(self):
+        m = Canvas("t", 30, 20)
+        cells = m.cluster("^", 10, 10, 14, seed=1)
+        self.assertTrue(10 <= len(cells) <= 14)
+        placed = m.spread(1, {INF: 4, TANK: 3}, (2, 2, 12, 8), seed=2, gap=1)
+        self.assertEqual(len(placed), 7)
+        self.assertTrue(all(max(abs(a[0] - b[0]), abs(a[1] - b[1])) >= 2 for i, a in enumerate(placed) for b in placed[i + 1:]))
+
     def test_text_has_header_units_and_rows(self):
         m = Canvas("t", 4, 3).header(armies=2, colours=(5, 3), objective=[1]).put("1", 0, 0).put("2", 3, 2)
         m.unit(1, INF, 1, 0, name="a").unit(2, INF, 2, 2, hold=True)

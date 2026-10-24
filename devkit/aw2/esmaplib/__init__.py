@@ -121,6 +121,101 @@ class Canvas:
                     self.g[y][x] = ch
         return self
 
+    def meander(self, ch, a, b, seed=0, amp=2, only=None):
+        """A winding line of `ch` from `a` to `b` (4-connected, so a river or a road is one piece): it heads for `b` but steps sideways now and then, up to `amp`
+        cells off the straight line, giving the bends AW2's rivers and roads have. Returns its cells in order (put bridges on some of them)."""
+        rnd = random.Random(f"{self.name}/m{seed}")
+        (x, y), (bx, by) = a, b
+        cells = [(x, y)]
+        horiz = abs(bx - x) >= abs(by - y)
+        off = 0
+        guard = 0
+        while (x, y) != (bx, by) and guard < 4000:
+            guard += 1
+            along_done = (x == bx) if horiz else (y == by)
+            across_done = (y == by) if horiz else (x == bx)
+            r = rnd.random()
+            step_across = (not across_done) and (along_done or r < 0.28) or (across_done and not along_done and r < 0.22 and abs(off) < amp)
+            if step_across and not across_done:
+                d = (1 if by > y else -1) if horiz else (1 if bx > x else -1)
+            elif step_across and across_done:
+                d = rnd.choice((-1, 1))
+                if abs(off + d) > amp:
+                    d = -d
+                off += d
+                # (a wander away from the line is walked back by the next across steps)
+                x, y = (x, y + d) if horiz else (x + d, y)
+                cells.append((x, y))
+                continue
+            else:
+                d = None
+            if d is not None:
+                x, y = (x, y + d) if horiz else (x + d, y)
+            else:
+                x, y = (x + (1 if bx > x else -1), y) if horiz else (x, y + (1 if by > y else -1))
+            cells.append((x, y))
+        for cx, cy in cells:
+            if self.inside(cx, cy) and (only is None or self.g[cy][cx] in only):
+                keep = set("12345BCAPTQbcapt") | INVENTION_CHARS
+                if self.g[cy][cx] not in keep:
+                    self.g[cy][cx] = ch
+        return cells
+
+    def cluster(self, ch, cx, cy, n, seed=0, only="."):
+        """About `n` cells of `ch` grown outward from (cx, cy) by a random walk: an irregular wood or mountain patch with no straight edge."""
+        rnd = random.Random(f"{self.name}/c{seed}")
+        cells = {(cx, cy)}
+        todo = [(cx, cy)]
+        while len(cells) < n and todo:
+            x, y = rnd.choice(todo)
+            dx, dy = rnd.choice(((1, 0), (-1, 0), (0, 1), (0, -1)))
+            c = (x + dx, y + dy)
+            if self.inside(*c) and c not in cells:
+                cells.add(c)
+                todo.append(c)
+        for x, y in cells:
+            if self.g[y][x] in only:
+                self.g[y][x] = ch
+        return sorted(cells)
+
+    def spread(self, army, kinds, box, seed=0, gap=1, avoid="~r=-^IZ#", prefer="fRC"):
+        """Place `kinds` ({kind: count}) for `army` inside `box` (x0, y0, x1, y1) in a loose formation instead of a block: no two units closer than `gap`
+        cells (Chebyshev, 1 = never side by side on a row... 2 leaves a cell between), on ground their kind can stand on, woods and roads preferred for the
+        heavy kinds. Deterministic for `seed`. Returns the cells."""
+        rnd = random.Random(f"{self.name}/u{seed}")
+        x0, y0, x1, y1 = box
+        taken = {(u["x"], u["y"]) for u in self.u}
+        placed = []
+        foot = {INF, MECH}
+        for kind, count in kinds.items():
+            for _ in range(count):
+                cand = []
+                for y in range(y0, y1 + 1):
+                    for x in range(x0, x1 + 1):
+                        c = self.g[y][x] if self.inside(x, y) else "~"
+                        if (x, y) in taken or c in avoid or c in "12345" and False:
+                            continue
+                        if c in "f^" and kind not in foot:
+                            continue
+                        if c == "f" and kind in foot:
+                            pass
+                        if any(max(abs(x - a), abs(y - b)) < gap + 1 for a, b in placed):
+                            continue
+                        w = 1 + (3 if c in prefer and kind not in foot else 0) + (2 if c == "f" and kind in foot else 0)
+                        cand.append(((x, y), w))
+                if not cand:
+                    raise ValueError(f"{self.name}: no room for {count} x unit {kind} in {box}")
+                tot = sum(w for _, w in cand)
+                r = rnd.random() * tot
+                for c, w in cand:
+                    r -= w
+                    if r <= 0:
+                        break
+                self.unit(army, kind, c[0], c[1])
+                placed.append(c)
+                taken.add(c)
+        return placed
+
     def scatter(self, ch, box, p, seed=0, on="."):
         """`ch` on a share `p` of the cells of `box` (x0, y0, x1, y1) that hold one of `on`."""
         rnd = random.Random(f"{self.name}/s{seed}")
