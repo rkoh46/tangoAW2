@@ -36,7 +36,7 @@ class Paint(unittest.TestCase):
         m = Canvas("t", 30, 20)
         cells = m.cluster("^", 10, 10, 14, seed=1)
         self.assertTrue(10 <= len(cells) <= 14)
-        placed = m.spread(1, {INF: 4, TANK: 3}, (2, 2, 12, 8), seed=2, gap=1)
+        placed = m.spread(1, {1: 4, 5: 3}, (2, 2, 12, 8), seed=2, gap=1)
         self.assertEqual(len(placed), 7)
         self.assertTrue(all(max(abs(a[0] - b[0]), abs(a[1] - b[1])) >= 2 for i, a in enumerate(placed) for b in placed[i + 1:]))
 
