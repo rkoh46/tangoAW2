@@ -131,4 +131,6 @@ def build():
     m.note("harbour", 40, 17, "Varro's port in the camp harbour"); m.note("airfield", 40, 8, "Varro's airport")
     m.note("reserve1", 40, 12, "Varro's reserve column road (day 5, 8)")
     m.note("port1", 4, 22, "the legion's port")
+    m.ragged("^", 6, seed=1).ragged("^", 6, seed=2)               # (no drawn wall of mountains: lint DQ12)
+    m.lake(12, 11, 9, seed=0, river_end=(13, 11))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

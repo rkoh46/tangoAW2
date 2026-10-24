@@ -88,4 +88,5 @@ def build():
     m.note("spur", 32, 8, "east spur mountains about x32..42,y7..19; pocket around (37,13); entries (37,19) south and (32,13) west")
     m.note("guns", 7, 20, "Grit's guns (hold): ART (7,20) SW, (27,20) SE, (6,9) NW, (26,8) NE corridors; ROCK in the south corridor near (13,21) and (22,21); MIS (17,6) north")
     m.note("airport", 20, 27, "player airport: Bombers")
+    m.ragged("^", 6, seed=1).ragged("^", 6, seed=2)               # (no drawn wall of mountains: lint DQ12)
     return m

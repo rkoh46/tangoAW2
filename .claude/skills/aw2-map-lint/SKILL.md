@@ -18,4 +18,7 @@ Read docs/dev/map-lint.md (rules, what the games allow, how to fix each).
 7. Design quality (docs/dev/map-lint.md, "Design quality"): `DQ01`..`DQ11` and `SP01` ask whether a map looks machine-made or is too cramped (straight rivers, rectangle patches, stripes, sparse land, big empty fields,
    unit blobs, pointless properties, HQ pockets, beaches, density and frontage). Emerald Sun maps must pass them (the lint fails on a finding); the BH Campaign's and Versus maps only report. Fix a finding by changing
    the terrain (bend the river, round the patch, mix the kinds, cluster and vary), never by raising `design.LIMITS`; a limit moves only with new calibration on the games' maps.
+8. Rivers (RV05): both ends of every river must reach the map edge, the sea, a shoal or a lake, never a mountain or any land (AW2 has no source tile). Give a river a source with `Canvas.lake(cx, cy, n, seed, river_end=(x, y))`
+   (the cell beyond the river's last cell; the lake's shore must be straight where the river enters) or run it to the edge. `bh10` and `bh31` break it and are in `rules.KNOWN` (not to be changed without the user's approval).
+9. Look at every rebuilt map at 2x in the game's own picture (`aw2dev campaign sheets`, then `aw2dev maps render-check`): the lint was green once while rivers still ended mid-land and mountain lines still marched.
 

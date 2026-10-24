@@ -33,6 +33,30 @@ def longest_run(G, chars):
     return best
 
 
+def inner_run(G, chars):
+    """The longest straight run of `chars` that does not lie along the map's edge row or column: (length, x, y)."""
+    best = (0, -1, -1)
+    for y in range(1, G.h - 1):
+        n = 0
+        for x in range(G.w + 1):
+            if x < G.w and G.g[y][x] in chars:
+                n += 1
+                if n > best[0]:
+                    best = (n, x - n + 1, y)
+            else:
+                n = 0
+    for x in range(1, G.w - 1):
+        n = 0
+        for y in range(G.h + 1):
+            if y < G.h and G.g[y][x] in chars:
+                n += 1
+                if n > best[0]:
+                    best = (n, x, y - n + 1)
+            else:
+                n = 0
+    return best
+
+
 def parallel_rows(G, ch, span=4):
     """Rows (or columns) of `span`+ identical cells `ch` that lie side by side in a block of 3+ lines: the machine-made stripe of mountains or woods.
     Returns [(x, y, lines)] one per block (top-left cell)."""
@@ -223,6 +247,7 @@ LIMITS = {
     "blob_fill": 0.75,          # an army of 10+ units filling this much of its bounding box
     "density": 0.17,            # units per vehicle-walkable cell (BH p70; the campaign's own big battles .07 to .17)
     "front_ratio": 1.25,        # units of the smaller side per cell of frontage (BH median .8)
+    "mountain_run": 11,         # a straight line of mountains this long away from the map edge (AW2 p95 10)
     "landing": 6,               # shore cells a Lander can unload on
 }
 
@@ -271,6 +296,9 @@ def checks(G):
         for a, fill, area, x0, y0 in blobs(units, 10):
             if fill >= L["blob_fill"]:
                 out.append(_p("DQ07", x0, y0, f"army {a}'s units fill {fill:.0%} of their bounding box"))
+    mr = inner_run(G, "^")
+    if mr[0] >= L["mountain_run"]:
+        out.append(_p("DQ12", mr[1], mr[2], f"a straight line of {mr[0]} mountains: a drawn wall, not a range (AW2's lines are at most {L['mountain_run'] - 1} away from the edge in 95% of its maps)"))
     out += pointless(G)
     out += fairness(G)
     out += hq_pockets(G)

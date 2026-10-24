@@ -16,6 +16,7 @@ RULES = {
     "RV01": ("error", "river ends dry against plain, wood, road, pipe or a building: a river runs from a source (map edge or mountain) to the sea"),
     "RV02": ("error", "a single river cell with no river or water beside it"),
     "RV03": ("error", "a river that reaches neither the sea or a lake nor the map edge"),
+    "RV05": ("error", "a river ends on land against a mountain: AW2 has no source or end tile, so a river must run from the map edge, the sea, a shoal or a lake to the map edge, the sea, a shoal or a lake"),
     "RV04": ("error", "a road meets a river with no bridge (road on both sides of a river cell, or a road running into a river's end)"),
     "BR01": ("error", "a bridge end meets water or a tile no unit can stand on, not ground"),
     "BR02": ("warn", "a bridge end meets a mountain, a wood, a pipe or a structure: vehicles cannot cross"),
@@ -50,6 +51,8 @@ RULES = {
     "DQ08": ("warn", "a property with no road or other property near it: no reason to go there"),
     "DQ09": ("warn", "an HQ in a pocket: little walkable ground around it"),
     "DQ10": ("warn", "a Lander with too few shore cells to unload on"),
+    "RN01": ("error", "a river, shoal, bridge or coast tile drawn in the game's picture in a way none of the games' drawings of that tile and 4-neighbour class is (`aw2dev maps render-check`)"),
+    "DQ12": ("warn", "a long straight line of mountains away from the map edge: a drawn wall, not a range"),
     "DQ11": ("warn", "a map meant to be fair (Versus, or a `fair` line) with unequal properties per army"),
     "SP01": ("warn", "not enough room to fight: too many units for the walkable ground or for the frontage between the sides"),
     "ES01": ("error", "Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line)"),
@@ -169,7 +172,10 @@ def river(G):
         if sum(riv) + sum(sea) == 1 and not any(sea):
             i = riv.index(True)
             opp = nb[(i + 2) % 4]
-            if opp == "|" or opp == "^":
+            if opp == "|":
+                continue
+            if opp == "^":
+                out.append(Problem("RV05", x, y, "river ends against a mountain (a 'spring' is a cut-off end: AW2 has no source tile)"))
                 continue
             names = {".": "plain", "f": "wood", "R": "road", "I": "pipe", "Z": "pipe", "#": "a structure", "M": "a silo", "-": "river"}
             out.append(Problem("RV01", x, y, f"river ends dry against {names.get(opp, 'a building' if opp in 'HBCAPT' else repr(opp))}"))
@@ -554,6 +560,10 @@ def inventions(G):
 def design_checks(G):
     from . import design
     return design.checks(G)
+
+
+# Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for an Emerald Sun map.
+KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}}
 
 
 CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, design_checks]

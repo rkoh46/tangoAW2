@@ -98,4 +98,5 @@ def build():
     m.note("hq1", 4, 20, "the legion's HQ").note("hq2", 31, 2, "Eagle's HQ (north airfield)").note("hq3", 34, 10, "Hachi's HQ (the city)")
     m.note("gate_w", 26, 9, "the west gate (the valley road)").note("gate_n", 31, 4, "the north gate (the pass)").note("gate_s", 35, 15, "the south gate (the coast road)")
     m.note("camp", 8, 19, "the legion's beachhead camp; reinforcement cells at the cove").note("airfield", 31, 1, "Eagle's air wing reserve cells along y=0..1 x 27..36")
+    m.lake(15, 9, 9, seed=0, river_end=(15, 10))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

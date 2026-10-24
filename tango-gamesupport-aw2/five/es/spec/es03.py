@@ -108,4 +108,6 @@ def build():
     m.note("battleship", 16, 0, "Drake's Battleship (hold)")
     m.note("airport", 10, 22, "player airport"); m.note("bomber_cell", 11, 22, "day-2 Bomber reinforcement cell (free ground beside the airport)")
     m.note("muro_river", 4, 8, "the Muro river, SW hills to the sea at x5, bridge (5,3)")
+    m.ragged("^", 6, seed=1).ragged("^", 6, seed=2)               # (no drawn wall of mountains: lint DQ12)
+    m.lake(3, 18, 9, seed=0, river_end=(3, 17))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

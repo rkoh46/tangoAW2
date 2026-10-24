@@ -37,6 +37,7 @@ Tables found in the ROM and used:
 | RV01 | error | river ends dry against plain, wood, road, pipe or a building: a river runs from a source (map edge or mountain) to the sea | 4 | 3 | 4 | 0 | 0 |
 | RV02 | error | a single river cell with no river or water beside it | 0 | 0 | 0 | 0 | 0 |
 | RV03 | error | a river that reaches neither the sea or a lake nor the map edge | 4 | 5 | 1 | 0 | 0 |
+| RV05 | error | a river ends on land against a mountain: AW2 has no source or end tile, so a river must run from the map edge, the sea, a shoal or a lake to the map edge, the sea, a shoal or a lake | 3 | 2 | 0 | 2 | 0 |
 | RV04 | error | a road meets a river with no bridge (road on both sides of a river cell, or a road running into a river's end) | 1 | 0 | 1 | 0 | 0 |
 | BR01 | error | a bridge end meets water or a tile no unit can stand on, not ground | 0 | 1 | 0 | 0 | 0 |
 | BR02 | warn | a bridge end meets a mountain, a wood, a pipe or a structure: vehicles cannot cross | 35 | 43 | 0 | 0 | 0 |
@@ -61,18 +62,20 @@ Tables found in the ROM and used:
 | RC04 | error | a Lander with no beach or port to load or unload at | 0 | 0 | 0 | 0 | 0 |
 | GB01 | error | a tile id no game map uses (drawn as garbage) | 0 | 0 | 0 | 0 | 0 |
 | GB02 | error | a building or structure with part of its footprint missing or wrong | 0 | 2 | 0 | 0 | 0 |
-| DQ01 | warn | a long river with no bend: rivers wander | 8 | 9 | 3 | 13 | 8 |
-| DQ02 | warn | most mountain or wood patches are exact rectangles: drawn blocks, not terrain | 1 | 2 | 1 | 13 | 2 |
-| DQ03 | warn | blocks of parallel identical rows of mountains or woods: the procedural look | 1 | 2 | 0 | 5 | 2 |
-| DQ04 | warn | too little of the land is anything but plain: empty fields and decorative filler | 6 | 12 | 8 | 1 | 5 |
+| DQ01 | warn | a long river with no bend: rivers wander | 8 | 9 | 3 | 13 | 0 |
+| DQ02 | warn | most mountain or wood patches are exact rectangles: drawn blocks, not terrain | 1 | 2 | 1 | 13 | 0 |
+| DQ03 | warn | blocks of parallel identical rows of mountains or woods: the procedural look | 1 | 2 | 0 | 5 | 0 |
+| DQ04 | warn | too little of the land is anything but plain: empty fields and decorative filler | 6 | 12 | 8 | 1 | 0 |
 | DQ05 | warn | a big empty plain field: a dead corner | 0 | 5 | 1 | 1 | 0 |
-| DQ06 | warn | a very long straight road with no bend or junction | 1 | 2 | 0 | 3 | 1 |
-| DQ07 | warn | an army's units start as a solid block (a blob, not a formation) | 0 | 0 | 0 | 6 | 5 |
-| DQ08 | warn | a property with no road or other property near it: no reason to go there | 3 | 10 | 3 | 1 | 1 |
+| DQ06 | warn | a very long straight road with no bend or junction | 1 | 2 | 0 | 3 | 0 |
+| DQ07 | warn | an army's units start as a solid block (a blob, not a formation) | 0 | 0 | 0 | 6 | 0 |
+| DQ08 | warn | a property with no road or other property near it: no reason to go there | 3 | 10 | 3 | 1 | 0 |
 | DQ09 | warn | an HQ in a pocket: little walkable ground around it | 4 | 9 | 0 | 0 | 0 |
 | DQ10 | warn | a Lander with too few shore cells to unload on | 0 | 0 | 0 | 0 | 0 |
+| RN01 | error | a river, shoal, bridge or coast tile drawn in the game's picture in a way none of the games' drawings of that tile and 4-neighbour class is (`aw2dev maps render-check`) | 0 | 0 | 0 | 0 | 0 |
+| DQ12 | warn | a long straight line of mountains away from the map edge: a drawn wall, not a range | 9 | 10 | 0 | 5 | 0 |
 | DQ11 | warn | a map meant to be fair (Versus, or a `fair` line) with unequal properties per army | 0 | 0 | 0 | 0 | 0 |
-| SP01 | warn | not enough room to fight: too many units for the walkable ground or for the frontage between the sides | 0 | 0 | 0 | 7 | 4 |
+| SP01 | warn | not enough room to fight: too many units for the walkable ground or for the frontage between the sides | 0 | 0 | 0 | 7 | 0 |
 | ES01 | error | Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line) | 0 | 0 | 0 | 0 | 0 |
 
 Levels: **error** = AW2 and Dual Strike do it in at most a few percent of their maps (the rule's hits there are listed above, they are the games' own slips or deliberate shapes;
@@ -139,3 +142,18 @@ Calibration, what was tried: the mirror symmetry of a map is no sign of a machin
 river, road and shoal tile choice (to catch a wrong autotile the 4-neighbour key misses) found 4409 distinct contexts in the games' maps and would flag hand-made Versus maps by the dozen:
 the learned 4-neighbour key of TJ02 stays the check of what the game draws (the picture of a cell is a function of its tile id alone: the review pictures of
 `aw2dev campaign sheets` are the render check by eye).
+
+## The river rule (RV05), and the render check (RN01)
+- **Both ends of every river reach the map edge, the sea, a shoal or a lake.** AW2 has no river source or end tile, so a river that stops on land always looks cut off, and a mountain "spring" is no exception
+  (RV01 already refused plain, wood, road, pipe and buildings; RV05 refuses a mountain). AW2's and Dual Strike's own maps break it in 3 + 2 of 435 (about 1%): `aw2_69`, `aw2_7A`, `aw2_92`, `ds_07D`, `ds_099`.
+  It is an **error** for the BH Campaign, the Emerald Sun Campaign and Versus. The BH Campaign trips it in `bh10` and `bh31`, Versus in none; the user has not approved changing the BH maps, so those two are
+  listed in `rules.KNOWN` (reported by every lint, not failing the suite; nothing may be added there for an Emerald Sun map). Emerald Sun: M1, M2, M3, M13 (two), M14 and M16 broke it; each river now starts in a
+  small lake (`Canvas.lake`: the map builder draws a river mouth only on a straight shore, so the lake has a flat 3-cell shore row at the river's end) or runs to the edge.
+- **Render check (RN01), `aw2dev maps render-check [--source es|bh] [--pictures DIR] [--corpus DIR ...]`.** For river, shoal, bridge and coast tiles only: every cell of the game's own picture of a map (the
+  `m<N>_full.png` pictures of `aw2dev campaign sheets` or `maps boot`, 16 pixels a cell, no unit on the cell) is compared with the drawings the reference pictures have of the same tile id, 4-neighbour class
+  (`rules.trans_key`), shade (a tall neighbour on its left) and look (the plain's colour). The pixels all reference drawings agree on must agree; water is animated, so a cell is flagged only when more than 30%
+  of those pixels differ (a wrongly drawn tile differs in most of them; a phase of the animation in a few). The reference is the BH Campaign's 35 pictures (`maps boot`, about 8 minutes) and, for Emerald Sun, the
+  other Emerald Sun pictures. A key with fewer than 6 reference drawings has no verdict. Result: 0 findings in the BH and Emerald Sun pictures. A planted wrong drawing is flagged by the unit test.
+  The diagonal-neighbour variant (which flagged hand-made maps) is not used.
+- **DQ12:** a straight line of 11 or more mountains away from the map edge (AW2 and Dual Strike have one in about 5% of their maps). `Canvas.ragged` breaks such lines.
+

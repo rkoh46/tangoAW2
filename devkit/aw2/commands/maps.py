@@ -9,7 +9,7 @@
   maps compare --base REV [--out DIR]   BH maps at git REV against the working tree: changed cells and before/after pictures
   maps boot [--mission N ...]      enter BH missions in the offline harness and photograph them (tools/aw2test bh_review_m*); the real game's map picture
 """
-import collections, json, os, subprocess, sys, tempfile
+import collections, json, os, re, subprocess, sys, tempfile
 from pathlib import Path
 from .. import cfg, util
 
@@ -38,6 +38,11 @@ def register(sub):
     a.add_argument("--base", required=True)
     a.add_argument("--out", help="folder for the before/after pictures")
     a.set_defaults(fn=compare)
+    a = ms.add_parser("render-check", help="the game's own pictures of maps against the drawings the games use for river, shoal, bridge and coast tiles (RN01)")
+    a.add_argument("--source", default="es", choices=["es", "bh", "versus"], help="the maps to check (their pictures: --pictures)")
+    a.add_argument("--pictures", metavar="DIR", help="the folder of m<N>_full.png pictures of the maps to check (default: es devkit/work/campaign/es/review_raw, bh devkit/work/maps/boot)")
+    a.add_argument("--corpus", metavar="DIR", nargs="*", help="the reference pictures (default: devkit/work/maps/boot, the BH Campaign's, and the other maps of the check itself)")
+    a.set_defaults(fn=render_check)
     a = ms.add_parser("boot", help="enter BH missions in the offline harness and keep the map pictures")
     a.add_argument("--mission", nargs="*", type=int)
     a.add_argument("--out")
@@ -84,7 +89,14 @@ def lint(a):
             elif m.source in ("bh", "es", "versus"):
                 print(f"{m.name}: clean")
         if m.source in ("bh", "es", "versus"):
-            bad += sum(p.level == "error" for p in probs)
+            known = dict(rules.KNOWN.get(m.name, {})) if m.source != "es" else {}
+            for p in probs:
+                if p.level != "error":
+                    continue
+                if known.get(p.rule, 0) > 0:
+                    known[p.rule] -= 1          # (a finding the user has not approved changing: reported below, not failing)
+                    continue
+                bad += 1
         if m.source == "es":
             # (the Emerald Sun maps are held to the design-quality rules too: DQ.. and SP.. findings fail, `--rule` or the map's own comment cannot waive them)
             bad += sum(p.rule.startswith(("DQ", "SP")) for p in probs)
@@ -186,6 +198,36 @@ def compare(a):
         print(f"{name}: {len(cells)} tiles changed, errors {sum(p.level == 'error' for p in po)} -> {sum(p.level == 'error' for p in pn)}")
     util.say(f"{changed} maps changed; pictures in {out}")
     return 0
+
+
+def render_check(a):
+    """RN01: see maplint/render_check.py."""
+    sys.path.insert(0, str(cfg.DEVKIT))
+    from ..maplint import load, render_check as rc
+    maps = {"es": load.es_maps, "bh": load.bh_maps, "versus": load.versus_maps}[a.source]()
+    check_dir = a.pictures or str(cfg.work("campaign", "es", "review_raw") if a.source == "es" else cfg.work("maps", "boot"))
+    corpus_dirs = a.corpus or [str(cfg.work("maps", "boot"))]
+    bh = [(m, rc.picture_for(corpus_dirs, m.name)) for m in load.bh_maps() if not re.search(r"[a-z]$", m.name)]
+    bh = [(m, p) for m, p in bh if p]
+    todo = [(m, rc.picture_for([check_dir], m.name)) for m in maps]
+    todo = [(m, p) for m, p in todo if p]
+    if not todo:
+        util.die(f"no pictures of the {a.source} maps in {check_dir} (aw2dev campaign sheets / maps boot)")
+    bad = 0
+    for m, p in todo:
+        # (the reference is the corpus minus the map itself: a map is never its own witness)
+        ref = rc.learn([(mm, pp) for mm, pp in bh + [x for x in todo if a.source == "es"] if mm.name != m.name])
+        probs = rc.check(m, p, ref)
+        if probs is None:
+            print(f"{m.name}: the picture {p.name} is not {m.w * 16}x{m.h * 16}: skipped")
+            continue
+        for x, y, t in probs:
+            print(f"{m.name} RN01 error ({x},{y}) {t}")
+        bad += len(probs)
+        if not probs:
+            print(f"{m.name}: clean")
+    util.say(f"maps render-check {a.source}: {len(todo)} pictures, {bad} drawings no game picture shows")
+    return 1 if bad and a.source == "es" else 0
 
 
 def boot(a):

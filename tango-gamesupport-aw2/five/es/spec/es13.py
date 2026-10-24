@@ -151,4 +151,7 @@ def build():
     m.note("gate_w", 7, 10, "Javier's north gate (road through the ridge)"); m.note("gate_e", 31, 11, "Sonja's north gate")
     m.note("port_player", 18, 26, "player's port on the south bay"); m.note("port_kindle", 13, 5, "Kindle's port on the north bay"); m.note("port_free", 25, 5, "neutral port on the bay (east shore)")
     m.note("port_javier", 4, 17, "Javier's port (west sea)"); m.note("port_sonja", 32, 17, "Sonja's port (east sea)")
+    m.lake(10, 10, 9, seed=0, river_end=(10, 11))          # (a river starts in water or at the map edge: AW2 has no source tile)
+    m.put(".", 27, 11)
+    m.lake(27, 11, 10, seed=1, river_end=(27, 12))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

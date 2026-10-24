@@ -224,6 +224,64 @@ class Canvas:
                 taken.add(c)
         return placed
 
+    def lake(self, cx, cy, n=12, seed=0, river_end=None):
+        """A small lake of about `n` sea cells for a river to start in (AW2 has no source tile: a river starts at the map edge or in water). (cx, cy) is the cell beyond the river's
+        last cell `river_end`. The map builder only draws a river mouth on a straight shore (the games' maps open their beach line for the river), so the lake has a
+        flat 3-wide shore row at (cx, cy) with two rows of water behind it, and grows irregularly from there, never beside the river's last cell."""
+        rnd = random.Random(f"{self.name}/l{seed}")
+        ex, ey = river_end if river_end else (cx, cy + 1)
+        dx, dy = cx - ex, cy - ey
+        px, py = (dy, dx) if dx == 0 else (0, 1)          # (the shore row runs across the river's direction)
+        px, py = abs(px), abs(py)
+        occupied = {(u["x"], u["y"]) for u in self.u}
+        cells = {(cx + dx * t + px * s, cy + dy * t + py * s) for t in range(2) for s in (-1, 0, 1)} - occupied
+        todo = list(cells)
+        guard = 0
+        while len(cells) < n and todo and guard < 400:
+            guard += 1
+            x, y = rnd.choice(todo)
+            ddx, ddy = rnd.choice(((1, 0), (-1, 0), (0, 1), (0, -1)))
+            c = (x + ddx, y + ddy)
+            ahead = (c[0] - ex) * dx + (c[1] - ey) * dy          # steps along the river's direction from its last cell
+            if self.inside(*c) and c not in cells and ahead >= 2 and self.g[c[1]][c[0]] not in "12345BCAPTQbcapt-=RIZ#" and c not in occupied:
+                cells.add(c)
+                todo.append(c)
+        for x, y in cells:
+            if self.inside(x, y) and self.g[y][x] not in "12345BCAPTQbcapt-=RIZ#":
+                self.g[y][x] = "~"
+        return sorted(cells)
+
+    def ragged(self, ch="^", longest=8, seed=0):
+        """Breaks every straight line of `ch` longer than `longest` (away from the map edge) into a range: every few cells one is opened to plain and its mountain moves to the
+        row (or column) beside it, so the line wanders instead of marching. Deterministic for `seed`."""
+        rnd = random.Random(f"{self.name}/g{seed}")
+        occupied = {(u["x"], u["y"]) for u in self.u}
+        keep = set("12345BCAPTQbcapt-=RI")
+        for horiz in (True, False):
+            A, B = (self.w, self.h) if horiz else (self.h, self.w)
+            for b in range(1, B - 1):
+                a = 0
+                while a < A:
+                    cell = lambda aa: (aa, b) if horiz else (b, aa)
+                    if self.g[cell(a)[1]][cell(a)[0]] == ch:
+                        s0 = a
+                        while a < A and self.g[cell(a)[1]][cell(a)[0]] == ch:
+                            a += 1
+                        if a - s0 > longest:
+                            k = s0 + rnd.randint(3, 4)
+                            while k < a - 1:
+                                x, y = cell(k)
+                                d = rnd.choice((-1, 1))
+                                nx, ny = (x, y + d) if horiz else (x + d, y)
+                                if (x, y) not in occupied:
+                                    self.g[y][x] = "."
+                                    if self.inside(nx, ny) and self.g[ny][nx] == "." and (nx, ny) not in occupied:
+                                        self.g[ny][nx] = ch
+                                k += rnd.randint(3, 5)
+                    else:
+                        a += 1
+        return self
+
     def scatter(self, ch, box, p, seed=0, on="."):
         """`ch` on a share `p` of the cells of `box` (x0, y0, x1, y1) that hold one of `on`."""
         rnd = random.Random(f"{self.name}/s{seed}")

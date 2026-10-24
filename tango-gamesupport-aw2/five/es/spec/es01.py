@@ -92,4 +92,5 @@ def build():
     m.note("enemy_hq", 15, 4, "Fort Astra's HQ on the ridge (objective)")
     m.note("cove_w", 6, 16, "west cove"); m.note("cove_e", 21, 16, "east cove")
     m.note("river", 25, 10, "the Astra river, to the sea at the east cove")
+    m.lake(24, 4, 9, seed=0, river_end=(24, 5))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

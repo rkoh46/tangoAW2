@@ -190,8 +190,75 @@ class Lint(unittest.TestCase):
                 rows[y][19] = "^"
         self.assertIn("DQ10", ids(self.wide(island, [lander]), design=True))
 
+    def test_render_check_flags_a_wrong_drawing_and_forgives_animation(self):
+        import random, tempfile
+        from PIL import Image
+        from aw2.maplint import render_check as rc
+        rows = list(FLAT)
+        for y in range(0, 9):
+            rows[y] = rows[y][:5] + "-" + rows[y][6:]
+        m = build(rows)
+        G = rules.Grid(m)
+        rnd = random.Random(5)
+        base = {}                                    # one made-up drawing a tile id, so every river cell of the map is drawn alike
+
+        def picture(tweak=None, animate=False):
+            im = Image.new("RGB", (G.w * 16, G.h * 16), (150, 200, 90))
+            for y in range(G.h):
+                for x in range(G.w):
+                    if G.g[y][x] == "-":
+                        t = G.t[y][x]
+                        if t not in base:
+                            base[t] = [tuple(rnd.randrange(256) for _ in range(3)) for _ in range(256)]
+                        px = list(base[t])
+                        if animate:
+                            for k in range(10):
+                                px[rnd.randrange(256)] = (1, 2, 3)           # (a few moving pixels)
+                        if tweak and (x, y) == tweak:
+                            px = [(200, 0, 0)] * 256                          # a tile that is not the river's drawing
+                        tile = Image.new("RGB", (16, 16))
+                        tile.putdata(px)
+                        im.paste(tile, (x * 16, y * 16))
+            return im
+        with tempfile.TemporaryDirectory() as d:
+            ref = []
+            for k in range(8):
+                f = f"{d}/r{k}.png"
+                picture(animate=True).save(f)
+                ref.append((m, f))
+            r = rc.learn(ref)
+            good, bad, moving = f"{d}/good.png", f"{d}/bad.png", f"{d}/moving.png"
+            picture().save(good)
+            picture(tweak=(5, 4)).save(bad)
+            picture(animate=True).save(moving)
+            self.assertEqual(rc.check(m, good, r), [])
+            self.assertEqual(rc.check(m, moving, r), [])
+            self.assertEqual([(x, y) for x, y, _ in rc.check(m, bad, r)], [(5, 4)])
+
+    def test_a_river_ends_in_water_or_at_the_edge_never_on_land(self):
+        rows = list(FLAT)
+        for y in range(3, 9):
+            rows[y] = rows[y][:5] + "-" + rows[y][6:]
+        rows[2] = rows[2][:5] + "^" + rows[2][6:]            # a mountain 'spring': AW2 has no source tile, the river looks cut off
+        rows[8] = rows[8][:5] + "~" + rows[8][6:]
+        for x in range(4, 7):
+            rows[8] = rows[8][:x] + "~" + rows[8][x + 1:]
+        self.assertIn("RV05", ids(build(rows)))
+        rows[2] = rows[2][:5] + "." + rows[2][6:]
+        self.assertIn("RV01", ids(build(rows)))            # (on plain it is the old rule)
+        rows = list(FLAT)
+        for y in range(0, 9):
+            rows[y] = rows[y][:5] + "-" + rows[y][6:]
+        for x in range(4, 7):
+            rows[8] = rows[8][:x] + "~" + rows[8][x + 1:]
+        self.assertFalse(ids(build(rows)) & {"RV01", "RV03", "RV05"})   # (edge to sea)
+
+    def test_emerald_sun_rivers_all_end_in_water_or_at_the_edge(self):
+        bad = [(m.name, str(p)) for m in load.es_maps() for p in rules.lint(m, {"RV01", "RV03", "RV05"})]
+        self.assertEqual(bad, [])
+
     def test_bh_campaign_maps_are_clean(self):
-        bad = [(m.name, str(p)) for m in load.bh_maps() for p in rules.lint(m) if p.level == "error"]
+        bad = [(m.name, str(p)) for m in load.bh_maps() for p in rules.lint(m) if p.level == "error" and p.rule not in rules.KNOWN.get(m.name, {})]
         self.assertEqual(bad, [])
 
     def test_games_own_maps_stay_quiet_on_the_joins_we_learned_from(self):

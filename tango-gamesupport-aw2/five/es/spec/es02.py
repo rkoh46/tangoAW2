@@ -92,4 +92,5 @@ def build():
     m.note("pass2a", 9, 11, "ridge2 west-centre pass"); m.note("pass2b", 19, 11, "ridge2 east pass")
     m.note("pass3a", 6, 14, "ridge3 west pass (road to the HQ)"); m.note("pass3b", 15, 14, "ridge3 east pass")
     m.note("dune_river", 25, 14, "the Dune river, bridged at (25,12)")
+    m.lake(26, 7, 9, seed=0, river_end=(26, 8))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m
