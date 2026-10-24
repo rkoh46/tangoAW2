@@ -32,9 +32,9 @@ fn es01() -> MissionDef {
             3,
             None,
             vec![Action::Spawn(vec![
-                UnitDef::new(1, unit::ANTI_AIR, 4, 14),
-                UnitDef::new(1, unit::TANK, 5, 14),
-                UnitDef::new(1, unit::TANK, 12, 14),
+                UnitDef::new(1, unit::ANTI_AIR, 12, 26),
+                UnitDef::new(1, unit::TANK, 15, 26),
+                UnitDef::new(1, unit::TANK, 18, 26),
             ])],
         ),
     ];
@@ -66,15 +66,15 @@ fn es02() -> MissionDef {
             None,
             vec![
                 Action::Spawn(
-                    [wave(1, unit::ANTI_AIR, &[(3, 13), (5, 13)]), wave(1, unit::MISSILES, &[(2, 12)])].concat(),
+                    [wave(1, unit::ANTI_AIR, &[(4, 17), (5, 17)]), wave(1, unit::MISSILES, &[(3, 17)])].concat(),
                 ),
-                Action::Spawn([wave(2, unit::TANK, &[(4, 0), (6, 0)]), wave(2, unit::MD_TANK, &[(8, 0)])].concat()),
+                Action::Spawn([wave(2, unit::TANK, &[(11, 0), (12, 0)]), wave(2, unit::MD_TANK, &[(13, 0)])].concat()),
             ],
         ),
         // Day 4: Eagle's wing.
-        on_day(4, None, vec![Action::Scene(scene("m02_day4")), Action::Spawn(wave(2, unit::FIGHTER, &[(19, 8)]))]),
-        on_day(5, None, vec![Action::Spawn([wave(2, unit::TANK, &[(4, 0), (6, 0)]), wave(2, unit::INFANTRY, &[(19, 5)])].concat())]),
-        on_day(7, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &[(4, 0)]), wave(2, unit::TANK, &[(6, 0)])].concat())]),
+        on_day(4, None, vec![Action::Scene(scene("m02_day4")), Action::Spawn(wave(2, unit::FIGHTER, &[(27, 3)]))]),
+        on_day(5, None, vec![Action::Spawn([wave(2, unit::TANK, &[(11, 0), (12, 0)]), wave(2, unit::INFANTRY, &[(27, 4)])].concat())]),
+        on_day(7, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &[(11, 0)]), wave(2, unit::TANK, &[(12, 0)])].concat())]),
         // Day 9: the causeway is open. (The HQ falling is the match's own defeat.)
         on_day(9, None, vec![Action::Win]),
     ];
@@ -102,7 +102,7 @@ fn es03() -> MissionDef {
     m.recruits = vec![roster::AURELIA];
     m.triggers = vec![
         // Day 2: the engineers' Bomber.
-        on_day(2, None, vec![Action::Spawn(wave(1, unit::BOMBER, &[(9, 15)]))]),
+        on_day(2, None, vec![Action::Spawn(wave(1, unit::BOMBER, &[(11, 22)]))]),
         on_day(3, None, vec![Action::Scene(scene("m03_day3"))]),
     ];
     m.flag = region::ACT1[2];

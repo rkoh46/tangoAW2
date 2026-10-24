@@ -9,25 +9,17 @@ from aw2test import escampaign as es
 from aw2test.harness import test
 from tests.test_bh_review import deviations
 
-# mission: (armies, width, height)
-SHAPE = {
-    1: (2, 18, 15),
-    2: (2, 20, 14),
-    3: (2, 22, 16),
-    4: (2, 18, 16),
-    5: (2, 26, 14),
-    6: (3, 18, 18),
-    7: (3, 22, 16),
-    8: (3, 22, 16),
-    9: (2, 34, 22),
-    10: (3, 34, 26),
-    11: (3, 40, 22),
-    12: (3, 42, 30),
-    13: (4, 25, 22),
-    14: (3, 30, 18),
-    15: (3, 32, 20),
-    16: (3, 44, 28),
-}
+# mission: (armies, width, height), read from the committed text map (the spec's output), so a rebuilt map needs no edit here
+def _shape(n):
+    import os
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "tango-gamesupport-aw2", "five", "es", f"es{n:02d}.txt")
+    lines = [l.rstrip("\n") for l in open(path)]
+    armies = next(int(l.split()[1]) for l in lines if l.startswith("armies "))
+    rows = [l for l in lines if len(l) >= 8 and " " not in l and set(l) <= set(".fR^-=~,rIZ1234bBcCaApPtTqQSNWELvnFVDXOM#")]
+    return armies, max(len(r) for r in rows), len(rows)
+
+
+SHAPE = {n: _shape(n) for n in range(1, 17)}
 # units that do not start at full HP, ammo or fuel by design: none yet
 
 
