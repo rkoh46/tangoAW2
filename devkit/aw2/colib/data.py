@@ -94,6 +94,29 @@ def problems(cos, tags, ref=None):
     return out
 
 
+# Name plates. The name is drawn in AW2's text font on most screens (Teams cards, results, the CO page header, tag screens) and as a 48 x 16 name graphic on the Teams cards and CO select.
+# Every plate already takes AW2's widest names (23 px: Kanbei, Adder, Hawke) and, with the Dual Strike pack, Von Bolt (28 px); Clone Andy (38 px) only on the plates that were widened for him.
+# So a name up to WIDEST_PLATE px fits every plate that takes Von Bolt; wider needs the short form (`short = ...` in the CO file). This is a measurement in the font, not a look at the game:
+# the plates are checked at 1x in the game when the CO is built in (phase 2: `aw2dev co check --live`).
+WIDEST_PLATE = 28
+
+
+def text_width(s):
+    from ..gfxlib import font
+    f = font.load()
+    return sum(f[c][0] for c in s if c in f)
+
+
+def name_plates(cos):
+    out = []
+    for co, d in cos.items():
+        full = d["name"]
+        w = text_width(full)
+        short = d.get("short")
+        out.append((co, full, w, short, text_width(short) if short else None, w <= WIDEST_PLATE))
+    return out
+
+
 def check(a):
     cos, tags = load_all()
     names = a.co or list(cos)
@@ -112,6 +135,10 @@ def check(a):
             flag = " <- above Kanbei's" if fp + df > cap else ""
             print(f"  {co:9} {lvl:5} firepower {fp:+6.1f}  defence {df:+6.1f}  move {mv:+.2f}  range {rg:+.2f}{flag}")
             bad += [f"{co}: {lvl} averages {fp + df:.0f} points of firepower + defence, above Kanbei's {cap}"] if fp + df > cap else []
+    for co, full, w, short, sw, fits in name_plates({k: v for k, v in cos.items() if k in names}):
+        print(f"  name {full}: {w} px in AW2's font (widest plate 28, Von Bolt); " + ("fits every plate" if fits else f"TOO WIDE: use the short form {short} ({sw} px)" if short else "TOO WIDE and no short form"))
+        if not fits:
+            bad += [f"{co}: name is {w} px, the plates take {WIDEST_PLATE}" + ("" if short else " and the file has no `short`")]
     for pr in tags.get("pair", []):
         print(f"tag {pr['a']}+{pr['b']}: {pr['name']} {pr['compat']}% {pr['stars']} stars")
     for b in bad:

@@ -55,5 +55,55 @@ class Portraits(unittest.TestCase):
         self.assertTrue(any(any(r) for r in a.body) and any(any(r) for r in d.faces[0]))
 
 
+@unittest.skipUnless(ROMS, "needs the AW2 ROM and the Dual Strike .nds (the similarity check reads the donors)")
+class Originals(unittest.TestCase):
+    """The v2 portraits: drawn by us (draw.py, heads.py, bodies.py, designs.py)."""
+
+    def test_four_designs_per_co_all_pass_the_lint(self):
+        from . import portraits as P
+        ds = P.all_designs()
+        for co in ("klaus", "aurelia", "cassius", "livia"):
+            self.assertEqual(sorted(L for (c, L) in ds if c == co), ["A", "B", "C", "D"])
+        for key, d in ds.items():
+            bad, _ = P.lint(d)
+            self.assertEqual(bad, [], key)
+
+    def test_each_design_has_the_four_expressions_and_the_game_sizes(self):
+        from . import portraits as P
+        pics, pal, merged, (fig, faces) = P.make(next(iter(P.all_designs().values())))
+        self.assertEqual(len(faces), 4)
+        self.assertEqual((fig.w, fig.h), (128, 160))
+        self.assertEqual((pics["mini"].w, pics["mini"].h, pics["hud"].w, pics["hud"].h), (32, 24, 32, 16))
+        self.assertLessEqual(len(pal), 15)
+
+    def test_the_similarity_check_catches_a_copy(self):
+        from . import portraits as P, roms
+        d = roms.aw2_portrait(14)    # Hawke, recoloured: the same picture must fail
+        from .portraits import RPic
+        from .draw import Art
+        import numpy as np
+        art = Art(128, 160)
+        for y in range(160):
+            for x in range(128):
+                if d.body[y][x]:
+                    art.g[y, x] = "ol"
+        face = Art(48, 48)
+        for y in range(48):
+            for x in range(48):
+                if d.faces[0][y][x]:
+                    face.g[y, x] = "ol" if d.faces[0][y][x] in (15, 7, 8, 9) else "sk_m"
+        cols = {"ol": "000000", "sk_m": "c08060"}
+        pics = {"body": RPic(art, cols), "face": [RPic(face, cols)] * 4, "mini": RPic(face.crop(0, 0, 32, 24), cols), "hud": RPic(face.crop(0, 0, 32, 16), cols)}
+        sim = P.similarity(pics)
+        best = max(sim, key=lambda t: t[1])
+        self.assertEqual(best[0], "aw2:Hawke")
+        self.assertGreater(best[1], P.MAX_IOU)
+
+    def test_names_fit_the_plates(self):
+        cos, _ = data.load_all()
+        for co, full, w, short, sw, fits in data.name_plates(cos):
+            self.assertTrue(fits, f"{full} is {w} px")
+
+
 if __name__ == "__main__":
     unittest.main()

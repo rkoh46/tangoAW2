@@ -132,7 +132,17 @@ Sturm's own table, `sturm_pairs.rs`: 110 is 1 star, 115 to 120 is 2, 125 is 3). 
 
 Each pair also needs its four victory lines and two Tag-in lines like Sturm's pairs have (phase 2, written in the BH voice). Tag Power names: Roman-flavoured, 20 letters at most.
 
-### 2.4 Portraits
+### 2.4 Portraits (v2: original designs)
+
+The first sheets (recolours of AW2 and Dual Strike COs with overlays) were rejected as "just a recolour". The portraits are now **drawn by us**: four lettered designs per CO (A to D, each a different
+outfit, hair, headgear, pose and expression), in AW2's portrait grammar (outline, three-tone cel shading, 15 colours), with four expressions each (normal, happy, sad, angry), and sheets that put them beside the
+real COs at 1x (`co_klaus_v2.png`, `co_aurelia_v2.png`, `co_cassius_v2.png`, `co_livia_v2.png`). `aw2dev co portrait lint` fails a design that is too like any single donor. Klaus: A The Legate (grey beard, lorica
+segmentata, crimson cloak), B The Centurion (crested galea, bronze cuirass, folded arms), C The Triumphator (laurel, toga, orders in hand), D The Marshal (scale armour, pointing). Aurelia: A The Sapper (topknot, apron,
+dividers), B The Architect (red-banded tail, sash, plans), C The Siege-Master (mallet, one mail guard), D The Surveyor (braid, circlet, tablet). Cassius: A The Rival (curls, bronze cuirass, hand on hip), B The Champion
+(laurel, phalerae harness), C The Cavalryman (plumed galea, reins), D The Heir (tunic with purple stripes, gold cup). Livia: A The Quaestor (braided crown, stola, tablet), B The Matron (palla, coin purse), C The Senator
+(laurel, toga, abacus), D The Treasurer (diadem, red stola, scales). The old recipe sheets are kept for reference.
+
+#### (the first version, kept for reference)
 
 Four to six lettered options per CO from AW2 / Dual Strike donor parts (read at run time), recoloured to the Emerald Sun palette, plus original overlays (laurel wreath, plumed galea, sash, phalera).
 No game or AWBW pixels are committed: a recipe is a donor name, palette-index recolour rules and overlay placements. Donors: Klaus A Hawke, B Kanbei, C Dual Strike Flak, D Javier, E Olaf, F Max;
@@ -269,7 +279,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. New CO batt
 
 ## 10. Open questions for the user
 
-1. **Portraits:** which letter for each CO (sheets in the scratchpad: `sheets/escampaign/co_klaus.png` ...). Any donor you want swapped?
+1. **Portraits:** which letter for each CO (the v2 sheets `sheets/escampaign/co_<name>_v2.png`; the first sheets `co_<name>.png` were rejected). Be frank about the quality: the original designs are drawn sprites in AW2's grammar but simpler than the shipped art (the real COs on the sheets show the gap); say which designs to push further or drop.
 2. **Klaus's stars:** 4 / 8 (the doc's recommendation) or 4 / 9 as in your proposal? (8 is Kanbei's price plus one; 9 is Hawke's.)
 3. **Livia's income:** +25% (the doc's change; +10% with +10% unit cost buys nothing) or your +10% income?
 4. **Varro:** the final boss needs a CO that is not one of the four. Options: (a) a fifth Emerald Sun CO, boss only, built with the same kit (portrait options like the others); (b) Varro as a story-only
@@ -277,4 +287,4 @@ fades into the next song with op 0x41, the way the BH Campaign does. New CO batt
 5. **Black Hole cameos** (M9, M13): Adder, Flak, Kindle as hired freight guards is the lightest touch that stays clear of the BH Campaign's events; is that the line you want, or no Black Hole until BH2?
 6. **Second skin colour for Cassius:** his Second Legion is red (Orange Star's colour). Fine, or would you rather have a second Emerald Sun variant (a crimson one) built as a second skin file?
 7. **Tag missions:** three (M8, M12, M15); are the forced pairs right (Klaus + Cassius reluctantly, Klaus + Aurelia for the siege, a free pair at the end)?
-8. **Names:** the seven-letter names (Aurelia, Cassius) may not fit the 48 x 16 name graphic cleanly; shorter alternatives if they do not: "Aurel", "Cass".
+8. **Names:** keep the full names (Klaus, Aurelia, Cassius, Livia) wherever they fit; the short forms ("Aurel", "Cass", `short` in the CO file) only on a plate that clips. `aw2dev co check` measures them in AW2's font against the widest plate (28 px, Von Bolt): Klaus 19, Livia 17, Aurelia 24, Cassius 27 all fit, so no plate needs the short form by that measure; the in-game check at 1x happens when the COs are built in.

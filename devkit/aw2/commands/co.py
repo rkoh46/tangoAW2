@@ -1,6 +1,10 @@
 """aw2dev co: custom COs as data files (docs/dev/co-kit.md, skill aw2-add-co). Data: tango-gamesupport-aw2/cos/<id>.toml, motifs: cos/art/*.toml.
 
   co portrait donors [--source aw2|ds] [--out PNG]       every donor CO's figure and faces from the ROMs, with the palette's swatches (to choose a base and see which palette entries are what)
+  co portrait draw CO LETTER [--scale N]                an ORIGINAL design (docs/dev/co-kit.md, v2): the figure, four expression faces, small face and HUD face, drawn by us
+  co portrait layers CO LETTER                          the design as it is built: back, torso and arms, head, front pieces, and the 15-colour result
+  co portrait lint [CO ...]                             every original design: 15 colours, outline, three tones a material, and not too like any single AW2 / Dual Strike CO
+  co portrait sheet CO [--letters ABCD]                 the review sheet of a CO's original designs, with the real COs beside at 1x (CO select, HUD, CO page)
   co portrait palette DONOR                             a donor's 15 palette entries with hue, saturation, value and how many pixels use each (to write a recipe's `ramp` rules)
   co portrait compose CO [--option A] [--scale N] [--out PNG]   one option of a CO's recipe composed and drawn (figure, three faces, small face, HUD face)
   co portrait options CO [--letters ABC] [--out PNG]     the lettered options of a CO on one sheet: large portrait, small faces, a line about each
@@ -22,6 +26,25 @@ def register(sub):
     a.add_argument("--source", default="aw2", choices=["aw2", "ds"])
     a.add_argument("--out")
     a.set_defaults(fn=donors)
+    a = pq.add_parser("draw", help="an original design")
+    a.add_argument("co")
+    a.add_argument("letter")
+    a.add_argument("--scale", type=int, default=3)
+    a.add_argument("--out")
+    a.set_defaults(fn=pdraw)
+    a = pq.add_parser("layers", help="the design's build stages")
+    a.add_argument("co")
+    a.add_argument("letter")
+    a.add_argument("--out")
+    a.set_defaults(fn=players)
+    a = pq.add_parser("lint", help="lint the original designs")
+    a.add_argument("co", nargs="*")
+    a.set_defaults(fn=plint)
+    a = pq.add_parser("sheet", help="the review sheet of original designs")
+    a.add_argument("co")
+    a.add_argument("--letters")
+    a.add_argument("--out")
+    a.set_defaults(fn=psheet)
     a = pq.add_parser("palette", help="a donor's palette entries")
     a.add_argument("donor", help="aw2:name or ds:name")
     a.set_defaults(fn=palette)
@@ -89,3 +112,63 @@ def datacheck(a):
 def balance(a):
     from ..colib import data
     return data.balance(a)
+
+
+def _port():
+    from ..colib import portraits
+    return portraits
+
+
+def pdraw(a):
+    from PIL import Image
+    P = _port()
+    from ..colib import render as rd
+    d = P.all_designs()[(a.co, a.letter.upper())]
+    pics, pal, merged, _ = P.make(d)
+    big = rd.to_image(pics["body"].px, a.scale, rd.BG)
+    sh = Image.new("RGB", (big.width + 48 * a.scale * 2 + 30, big.height), rd.BG)
+    sh.paste(big, (0, 0))
+    for k in range(4):
+        f = rd.to_image(pics["face"][k].px, a.scale, rd.BG)
+        sh.paste(f, (big.width + 10 + (k % 2) * (48 * a.scale + 6), (k // 2) * (48 * a.scale + 6)))
+    m = rd.to_image(pics["mini"].px, a.scale, rd.BG)
+    sh.paste(m, (big.width + 10, 2 * (48 * a.scale + 6)))
+    h = rd.to_image(pics["hud"].px, a.scale, rd.BG)
+    sh.paste(h, (big.width + 10, 2 * (48 * a.scale + 6) + 24 * a.scale + 6))
+    out = Path(a.out or cfg.work("co", f"draw_{a.co}_{a.letter}.png"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    sh.save(out)
+    util.say(f"wrote {out} ({len(pal)} colours, {merged} merged)")
+    return 0
+
+
+def players(a):
+    P = _port()
+    d = P.all_designs()[(a.co, a.letter.upper())]
+    out = Path(a.out or cfg.work("co", f"layers_{a.co}_{a.letter}.png"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    P.layers_sheet(d).save(out)
+    util.say("wrote", out)
+    return 0
+
+
+def plint(a):
+    P = _port()
+    bad = 0
+    for (co, L), d in sorted(P.all_designs().items()):
+        if a.co and co not in a.co:
+            continue
+        probs, sim = P.lint(d)
+        best = max(sim, key=lambda t: max(t[1] / P.MAX_IOU, t[2] / P.MAX_FACE))
+        print(f"{'FAIL' if probs else 'PASS'} {co} {L} {d.title}: closest donor {best[0]} (silhouette {best[1]:.2f}, face {best[2]:.2f}) " + "; ".join(probs))
+        bad += bool(probs)
+    return 1 if bad else 0
+
+
+def psheet(a):
+    P = _port()
+    out = Path(a.out or cfg.work("co", f"co_{a.co}_v2.png"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    P.design_sheet(a.co, list(a.letters.upper()) if a.letters else None).save(out)
+    util.say("wrote", out)
+    return 0

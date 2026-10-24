@@ -4,6 +4,7 @@ name = "Aurelia"
 army = "emerald_sun"
 role = "Emerald Sun's siege engineer"
 
+short = "Aurel"          # used only on a plate the full name does not fit (see `aw2dev co check`)
 full_name = "Aurelia Faustina"
 theme = "co:grit"
 bio = "Chief engineer of the Emerald Sun. If a wall stands, she knows how it falls. Hit: Range. Miss: Walking."
