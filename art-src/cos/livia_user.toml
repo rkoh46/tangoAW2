@@ -1,0 +1,7 @@
+# Framing of livia_user.jpg (see klaus_user.toml).
+scale = 0.145
+crop_top = 40
+top = 3
+face = [200, 70, 400]
+eyes = [280, 278, 385, 265]
+mouth = [330, 380]

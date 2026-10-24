@@ -1,0 +1,516 @@
+"""`aw2dev co portrait import`: turns a supplied portrait picture (a bust on a dark background, any size) into game-ready AW2 CO art (docs/dev/co-kit.md):
+the large figure (128 x 160), the CO select mug (48 x 48), the Teams mini (32 x 24) and the HUD face (32 x 16), expression faces, one shared palette of 15 colours + transparent
+with the outline in index 15, the way AW2's CO presentation rows are (the CO's palette serves every picture of it).
+
+Method: the background is cut out by a flood fill from the picture's top edge; each picture is area-averaged from the source (premultiplied, so the dark background does not bleed into
+the edges), the colours of all of a CO's pictures are quantised together (k-means in Lab, the faces weighted up) to 14 colours + the outline, isolated pixels are removed, the silhouette is
+cleaned (specks and pinholes) and outlined. The small faces are cut again from the source, not shrunk from the large art. Art credits: CREDITS.md."""
+import math
+import numpy as np
+from PIL import Image
+from .. import cfg
+
+
+# --- source ------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def shift(m, dx, dy):
+    o = np.zeros_like(m)
+    h, w = m.shape
+    ys, yd = slice(max(0, dy), h + min(0, dy)), slice(max(0, -dy), h + min(0, -dy))
+    xs, xd = slice(max(0, dx), w + min(0, dx)), slice(max(0, -dx), w + min(0, -dx))
+    o[ys, xs] = m[yd, xd]
+    return o
+
+
+def flood(seed, cand):
+    m = seed & cand
+    while True:
+        n = m | ((shift(m, 1, 0) | shift(m, -1, 0) | shift(m, 0, 1) | shift(m, 0, -1)) & cand)
+        if (n == m).all():
+            return m
+        m = n
+
+
+class Source:
+    """The picture with its background cut out: `rgb` (float, h x w x 3) and `alpha` (bool foreground, h x w)."""
+
+    def __init__(self, path, tol=18):
+        im = Image.open(path).convert("RGB")
+        self.rgb = np.array(im).astype(np.float32)
+        h, w, _ = self.rgb.shape
+        bg = np.median(self.rgb[:30].reshape(-1, 3), axis=0)
+        d = np.sqrt(((self.rgb - bg) ** 2).sum(2))
+        seed = np.zeros((h, w), bool)
+        seed[:6, :] = True
+        back = flood(seed, d < tol)
+        fg = ~back
+        # specks of the background's texture: keep only what is joined (by 8 x 8 blocks) to the figure at the bottom centre
+        bh, bw = h // 8, w // 8
+        blocks = fg[:bh * 8, :bw * 8].reshape(bh, 8, bw, 8).any((1, 3))
+        seedb = np.zeros_like(blocks)
+        seedb[-4, bw // 2] = True
+        keep = np.kron(flood(seedb, blocks), np.ones((8, 8), bool))
+        out = np.zeros((h, w), bool)
+        out[:bh * 8, :bw * 8] = fg[:bh * 8, :bw * 8] & keep
+        self.alpha = out
+        self.h, self.w = h, w
+
+    def region(self, x0, y0, bw, bh, ow, oh):
+        """Area-average the source rectangle (x0, y0, bw, bh) to ow x oh: (rgb float ow x oh x 3, coverage 0..1). Colours are premultiplied, so the background does not bleed in."""
+        a = self.alpha.astype(np.float32)
+        chans = [self.rgb[:, :, c] * a for c in range(3)] + [a]
+        outs = []
+        for ch in chans:
+            im = Image.fromarray(ch.astype(np.float32), mode="F")
+            outs.append(np.array(im.resize((ow, oh), Image.BOX, box=(x0, y0, x0 + bw, y0 + bh))))
+        cov = outs[3]
+        rgb = np.stack(outs[:3], axis=2) / np.maximum(cov, 1e-6)[:, :, None]
+        return rgb, cov
+
+
+# --- colour ------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def to_lab(rgb):
+    c = rgb / 255.0
+    c = np.where(c > 0.04045, ((c + 0.055) / 1.055) ** 2.4, c / 12.92)
+    m = np.array([[0.4124, 0.3576, 0.1805], [0.2126, 0.7152, 0.0722], [0.0193, 0.1192, 0.9505]])
+    xyz = c @ m.T / np.array([0.95047, 1.0, 1.08883])
+    f = np.where(xyz > 0.008856, np.cbrt(xyz), 7.787 * xyz + 16 / 116)
+    return np.stack([116 * f[..., 1] - 16, 500 * (f[..., 0] - f[..., 1]), 200 * (f[..., 1] - f[..., 2])], axis=-1)
+
+
+def kmeans(lab, weights, k, iters=30, seed=3):
+    rng = np.random.default_rng(seed)
+    n = len(lab)
+    cent = [lab[rng.choice(n, p=weights / weights.sum())]]
+    for _ in range(1, k):
+        d = np.min([((lab - c) ** 2).sum(1) for c in cent], axis=0) * weights
+        cent.append(lab[rng.choice(n, p=d / d.sum())])
+    cent = np.array(cent)
+    for _ in range(iters):
+        d = ((lab[:, None, :] - cent[None]) ** 2).sum(2)
+        lab_id = d.argmin(1)
+        for j in range(k):
+            m = lab_id == j
+            if m.any():
+                cent[j] = (lab[m] * weights[m][:, None]).sum(0) / weights[m].sum()
+    return cent
+
+
+def lab_to_rgb(lab):
+    fy = (lab[..., 0] + 16) / 116
+    fx = fy + lab[..., 1] / 500
+    fz = fy - lab[..., 2] / 200
+    f = np.stack([fx, fy, fz], axis=-1)
+    xyz = np.where(f ** 3 > 0.008856, f ** 3, (f - 16 / 116) / 7.787) * np.array([0.95047, 1.0, 1.08883])
+    m = np.array([[3.2406, -1.5372, -0.4986], [-0.9689, 1.8758, 0.0415], [0.0557, -0.2040, 1.0570]])
+    lin = xyz @ m.T
+    c = np.where(lin > 0.0031308, 1.055 * np.clip(lin, 0, None) ** (1 / 2.4) - 0.055, 12.92 * lin)
+    return np.clip(c * 255, 0, 255)
+
+
+def snap555(rgb):
+    return (np.round(np.clip(rgb, 0, 255) / 255 * 31) * 255 / 31).round().astype(int)
+
+
+# --- cleanup -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+def clean_silhouette(mask, min_speck=8, max_hole=6):
+    """Remove specks (4-connected components below min_speck pixels) and fill pinholes (background components fully enclosed and below max_hole)."""
+    def comps(m):
+        out = []
+        seen = np.zeros_like(m)
+        for y, x in zip(*np.nonzero(m)):
+            if seen[y, x]:
+                continue
+            seed = np.zeros_like(m)
+            seed[y, x] = True
+            c = flood(seed, m)
+            seen |= c
+            out.append(c)
+        return out
+    m = mask.copy()
+    for c in comps(m):
+        if c.sum() < min_speck:
+            m &= ~c
+    inv = ~m
+    for c in comps(inv):
+        touches = c[0].any() or c[-1].any() or c[:, 0].any() or c[:, -1].any()
+        if not touches and c.sum() <= max_hole:
+            m |= c
+    return m
+
+
+def despeckle(idx, passes=2):
+    """A pixel whose colour no 4-neighbour shares (and which is not the outline) takes the commonest colour of its neighbours: the noise of a downscale."""
+    idx = idx.copy()
+    h, w = idx.shape
+    for _ in range(passes):
+        out = idx.copy()
+        for y in range(h):
+            for x in range(w):
+                v = idx[y, x]
+                if v == 0 or v == 15:
+                    continue
+                nb = [idx[yy, xx] for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)) if 0 <= yy < h and 0 <= xx < w]
+                if v not in nb:
+                    cand = [n for n in nb if n not in (0, 15)]
+                    if len(cand) >= 3:
+                        out[y, x] = max(set(cand), key=cand.count)
+        idx = out
+    return idx
+
+
+def outline(idx, sides=(True, True, True, False)):
+    """Draw the outline (index 15) on every transparent pixel next to an opaque one, inside the picture. `sides`: (left, right, top, bottom) edges the picture may be outlined along."""
+    opaque = idx != 0
+    edge = np.zeros_like(opaque)
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        edge |= shift(opaque, dx, dy)
+    out = idx.copy()
+    out[edge & ~opaque] = 15
+    return out
+
+
+# --- the import ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+class Imported:
+    def __init__(self):
+        self.palette = []        # 16 RGB, index 0 unused (transparent)
+        self.large = None        # 160 x 128 indexes
+        self.faces = {}          # expression -> 48 x 48 indexes
+        self.mini = None
+        self.hud = None
+
+
+def import_co(spec, root=None):
+    """spec: dict with source, scale (output px per source px of the large picture), top (rows above the figure), face = [x, y, size] (the mug's square in the source), and optional eyes / brows / mouth for the
+    expression faces. -> Imported."""
+    root = root or cfg.REPO
+    import tomllib
+    side = (root / spec["source"]).with_suffix(".toml")
+    if side.exists():
+        spec = {**tomllib.loads(side.read_text()), **spec}
+    src = Source(root / spec["source"], spec.get("bg_tolerance", 18))
+    s = spec.get("scale", 0.1275)
+    # --- the large picture: the source scaled by s, the top margin `top`, centred; what falls below 160 or outside 128 is cut
+    cut = spec.get("crop_top", 0)
+    ow, oh = round(src.w * s), round((src.h - cut) * s)
+    top = spec.get("top", 3)
+    ox = (128 - ow) // 2 + spec.get("dx", 0)
+    rgb, cov = src.region(0, cut, src.w, src.h - cut, ow, oh)
+    L = np.zeros((160, 128, 3), np.float32)
+    C = np.zeros((160, 128), np.float32)
+    ys, xs = slice(top, min(160, top + oh)), slice(max(0, ox), min(128, ox + ow))
+    L[ys, xs] = rgb[: ys.stop - top, max(0, -ox): max(0, -ox) + (xs.stop - xs.start)]
+    C[ys, xs] = cov[: ys.stop - top, max(0, -ox): max(0, -ox) + (xs.stop - xs.start)]
+    # --- the faces: the mug's square, 48 x 48; the mini and the HUD face are windows of it (cut at the same scale from the same source: nothing is shrunk twice)
+    fx, fy, fs = spec["face"]
+    frgb, fcov = src.region(fx, fy, fs, fs, 48, 48)
+    pics = {"large": (L, C), "mug": (frgb, fcov)}
+    # --- one palette for all of it: 14 colours (the faces weigh more: they are small and carry the eyes) and the outline
+    px, wt = [], []
+    for name, (r, c) in pics.items():
+        m = c >= 0.5
+        px.append(r[m])
+        wt.append(np.full(m.sum(), spec.get("face_weight", 6.0) if name == "mug" else 1.0))
+    px, wt = np.concatenate(px), np.concatenate(wt)
+    lab = to_lab(px)
+    cent = kmeans(lab, wt, 13)
+    # AW2's art is bright and saturated; the supplied pictures are painterly and dark. A mild lift of the palette (lightness, chroma) brings them to the game's pitch (spec lift = [light gamma, chroma gain]).
+    gam, gain = spec.get("lift", [0.88, 1.12])
+    cent = cent.copy()
+    cent[:, 0] = 100 * (np.clip(cent[:, 0], 0, 100) / 100) ** gam
+    cent[:, 1:] *= gain
+    rgbc = snap555(lab_to_rgb(cent))
+    white = np.array(spec.get("white", [248, 244, 236]))
+    rgbc = np.vstack([rgbc, snap555(white)[None]])          # a true white for eyes, teeth and highlights
+    dark = snap555(np.array([np.percentile(px[:, c], 1) for c in range(3)]) * 0.45)
+    order = np.argsort(-(0.299 * rgbc[:, 0] + 0.587 * rgbc[:, 1] + 0.114 * rgbc[:, 2]))
+    pal = [(0, 0, 0)] + [tuple(int(v) for v in rgbc[i]) for i in order] + [tuple(int(v) for v in dark)]
+    palab = to_lab(np.array(pal[1:15], float))
+
+    plum = np.array([0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] for c in pal], float)
+
+    def feature_pass(idx, x0, y0, bw, bh, ow, oh, ox=0, oy=0):
+        """The eyes keep their whites and darks: max-pooling instead of averaging inside each eye's box (a small white or dark stroke would otherwise vanish in the mean)."""
+        lum = src.rgb.mean(2)
+        wmask = ((lum > 165) & (src.rgb.max(2) - src.rgb.min(2) < 60) & src.alpha).astype(np.float32)
+        dmask = ((lum < 55) & src.alpha).astype(np.float32)
+        out = idx.copy()
+        e = spec["eyes"]
+        for (cx, cy, rx, ry) in ((e[0], e[1], 52, 24), (e[2], e[3], 52, 24)):
+            def pool(mk):
+                im = Image.fromarray(mk, mode="F")
+                return np.array(im.resize((ow, oh), Image.BOX, box=(x0, y0, x0 + bw, y0 + bh)))
+            wf, df = pool(wmask), pool(dmask)
+            k = ow / bw
+            ax0, ax1 = int((cx - rx - x0) * k), int((cx + rx - x0) * k) + 1
+            ay0, ay1 = int((cy - ry - y0) * k), int((cy + ry - y0) * k) + 1
+            for y in range(max(0, ay0), min(oh, ay1)):
+                for x in range(max(0, ax0), min(ow, ax1)):
+                    yy, xx = y + oy, x + ox
+                    if not (0 <= yy < out.shape[0] and 0 <= xx < out.shape[1]) or out[yy, xx] == 0:
+                        continue
+                    if wf[y, x] > spec.get("eye_white", 0.22) and df[y, x] < 0.5:
+                        out[yy, xx] = 1
+                    elif df[y, x] > spec.get("eye_dark", 0.45) and plum[out[yy, xx]] > 75:
+                        out[yy, xx] = 15
+        return out
+
+    def index(r, c, sides):
+        m = clean_silhouette(c >= 0.5)
+        flat = r.reshape(-1, 3)
+        d = ((to_lab(flat)[:, None, :] - palab[None]) ** 2).sum(2)
+        idx = (d.argmin(1) + 1).reshape(r.shape[:2]).astype(np.uint8)
+        idx[~m] = 0
+        idx = despeckle(idx)
+        return outline(idx, sides)
+    im = Imported()
+    im.spec = spec
+    im.palette = pal
+    im.large = index(*pics["large"], (True, True, True, False))
+    mug = index(*pics["mug"], (True, True, True, False))
+    mug = feature_pass(mug, fx, fy, fs, fs, 48, 48)
+    im.large = feature_pass(im.large, 0, cut, src.w, src.h - cut, ow, oh, max(0, ox), top)
+    im.faces["normal"] = mug
+    k = 48.0 / fs
+    e = spec["eyes"]       # the two eyes' centres in the source: x1 y1 x2 y2
+    ex, ey = round(((e[0] + e[2]) / 2 - fx) * k), round(((e[1] + e[3]) / 2 - fy) * k)
+    im.eye = (ex, ey)
+    im.mini = _window(mug, ex - 16, ey - 10, 32, 24)
+    im.hud = _window(mug, ex - 16, ey - 6, 32, 16)
+    return im
+
+
+def _window(a, x0, y0, w, h):
+    out = np.zeros((h, w), np.uint8)
+    for y in range(h):
+        for x in range(w):
+            yy, xx = y0 + y, x0 + x
+            if 0 <= yy < a.shape[0] and 0 <= xx < a.shape[1]:
+                out[y, x] = a[yy, xx]
+    return out
+
+
+def to_image(idx, palette, scale=1, bg=None):
+    h, w = idx.shape
+    im = Image.new("RGBA", (w, h), (0, 0, 0, 0) if bg is None else bg + (255,))
+    for y in range(h):
+        for x in range(w):
+            v = idx[y, x]
+            if v:
+                im.putpixel((x, y), tuple(palette[v]) + (255,))
+    return im.resize((w * scale, h * scale), Image.NEAREST) if scale != 1 else im
+
+
+# --- expressions ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+def _mug_xy(spec, x, y):
+    fx, fy, fs = spec["face"]
+    k = 48.0 / fs
+    return int(round((x - fx) * k)), int(round((y - fy) * k))
+
+
+def _skin_near(mug, cx, cy):
+    vals = []
+    for y in range(cy - 7, cy + 8):
+        for x in range(cx - 8, cx + 9):
+            if 0 <= y < 48 and 0 <= x < 48 and mug[y, x] not in (0, 1, 15):
+                vals.append(int(mug[y, x]))
+    # the commonest colour of the ring around the eye that is not the darkest few (hair, brows)
+    from collections import Counter
+    c = Counter(v for v in vals)
+    return c.most_common(1)[0][0] if c else 2
+
+
+PROTECT = None      # the pixels an expression edit must not touch: the silhouette's outline and what lies against it
+
+
+def _protect(mug):
+    t = mug == 0
+    near = np.zeros_like(t)
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        near |= shift(t, dx, dy)
+    return near & ~t | (mug == 15) & near
+
+
+def _fill(mug, x0, y0, x1, y1, v, ref=None):
+    """Paint the box with skin: each column takes the colour just above the box (`ref` = "above") or below it, so the shading of the face runs on through the patch; `v` is the fallback."""
+    for x in range(max(0, x0), min(48, x1 + 1)):
+        for y in range(max(0, y0), min(48, y1 + 1)):
+            if mug[y, x] == 0 or (PROTECT is not None and PROTECT[y, x]):
+                continue
+            c = v
+            if ref:
+                yy = y0 - 1 if ref == "above" else y1 + 1
+                if 0 <= yy < 48 and mug[yy, x] not in (0, 1, 15):
+                    c = int(mug[yy, x])
+            mug[y, x] = c
+
+
+def _line(mug, pts, v, thick=1):
+    for (x, y) in pts:
+        for t in range(thick):
+            if 0 <= y + t < 48 and 0 <= x < 48 and mug[y + t, x] != 0 and not (PROTECT is not None and PROTECT[y + t, x]):
+                mug[y + t, x] = v
+
+
+def _slant(x0, y0, x1, y1):
+    n = max(abs(x1 - x0), 1)
+    return [(x0 + i, int(round(y0 + (y1 - y0) * i / n))) for i in range(n + 1)]
+
+
+def expression(mug, spec, kind):
+    """The mug with its eyes, brows and mouth edited: happy (closed, smiling eyes; a grin), sad (brows up at the nose; a frown), angry (brows down at the nose; narrowed eyes; gritted teeth).
+    The neutral face is the source's own."""
+    global PROTECT
+    PROTECT = _protect(mug)
+    m = mug.copy()
+    e = spec["eyes"]
+    (e1x, e1y), (e2x, e2y) = _mug_xy(spec, e[0], e[1]), _mug_xy(spec, e[2], e[3])
+    mx, my = _mug_xy(spec, *spec["mouth"])
+    skin1, skin2 = _skin_near(mug, e1x, e1y), _skin_near(mug, e2x, e2y)
+    dark = 15
+    hair_dark = spec.get("brow_index", 15)
+    eyes = ((e1x, e1y, skin1, 1), (e2x, e2y, skin2, -1))
+    if kind == "happy":
+        for (ex, ey, sk, side) in eyes:
+            _fill(m, ex - 4, ey - 2, ex + 4, ey + 2, sk, "below")
+            _line(m, [(ex - 3, ey + 1), (ex - 2, ey), (ex - 1, ey - 1), (ex, ey - 1), (ex + 1, ey - 1), (ex + 2, ey), (ex + 3, ey + 1)], dark)
+        _fill(m, mx - 6, my - 2, mx + 6, my + 3, _skin_near(mug, mx, my - 6), "above")
+        sk = _skin_near(mug, mx, my - 6)
+        _line(m, [(mx - 5, my - 1), (mx - 4, my), (mx - 3, my + 1), (mx - 2, my + 1), (mx - 1, my + 1), (mx, my + 1), (mx + 1, my + 1), (mx + 2, my + 1), (mx + 3, my + 1), (mx + 4, my), (mx + 5, my - 1)], dark)
+        _line(m, [(mx - 3, my + 2), (mx - 2, my + 2), (mx - 1, my + 2), (mx, my + 2), (mx + 1, my + 2), (mx + 2, my + 2), (mx + 3, my + 2)], 1)
+        _line(m, [(mx - 2, my + 3), (mx - 1, my + 3), (mx, my + 3), (mx + 1, my + 3), (mx + 2, my + 3)], dark)
+    elif kind in ("sad", "angry"):
+        for (ex, ey, sk, side) in eyes:
+            # the old brow goes (a band of skin above the eye), the new one is drawn
+            _fill(m, ex - 6, ey - 7, ex + 6, ey - 3, sk, "above")
+            inner_up = (-2 if kind == "sad" else 3)       # inner end of the brow: raised (sad) or lowered (angry), relative to the outer end
+            x_out, x_in = ex - 4 * side, ex + 4 * side
+            y_out, y_in = ey - 5, ey - 5 - inner_up if kind == "sad" else ey - 5 + 3
+            if kind == "sad":
+                y_out, y_in = ey - 4, ey - 7
+            else:
+                y_out, y_in = ey - 7, ey - 4
+            pts = _slant(min(x_out, x_in), y_out if x_out < x_in else y_in, max(x_out, x_in), y_in if x_out < x_in else y_out)
+            _line(m, pts, hair_dark, 2)
+            if kind == "angry":
+                _line(m, [(ex - 3, ey - 1), (ex - 2, ey - 1), (ex - 1, ey - 1), (ex, ey - 1), (ex + 1, ey - 1), (ex + 2, ey - 1), (ex + 3, ey - 1)], dark)
+        sk = _skin_near(mug, mx, my - 6)
+        _fill(m, mx - 6, my - 2, mx + 6, my + 3, sk, "above")
+        if kind == "sad":
+            _line(m, [(mx - 4, my + 2), (mx - 3, my + 1), (mx - 2, my), (mx - 1, my), (mx, my), (mx + 1, my), (mx + 2, my), (mx + 3, my + 1), (mx + 4, my + 2)], dark)
+        else:
+            _line(m, [(mx - 4 + i, my) for i in range(9)], dark)
+            _line(m, [(mx - 3 + i, my + 1) for i in range(7)], 1)
+            _line(m, [(mx - 4 + i, my + 2) for i in range(9)], dark)
+    return m
+
+
+def all_expressions(im, spec):
+    mug = im.faces["normal"]
+    for kind in ("happy", "sad", "angry"):
+        im.faces[kind] = expression(mug, spec, kind)
+
+
+# --- the committed art: indexed PNGs ----------------------------------------------------------------------------------------------------------------------------------
+
+ART_DIR = cfg.REPO / "tango-gamesupport-aw2" / "art" / "cos"
+FILES = {"large": (128, 160), "face_normal": (48, 48), "face_happy": (48, 48), "face_sad": (48, 48), "face_angry": (48, 48), "mini": (32, 24), "hud": (32, 16)}
+
+
+def _png(idx, palette):
+    im = Image.fromarray(idx.astype(np.uint8), mode="P")
+    flat = []
+    for c in palette[:16]:
+        flat += list(c)
+    flat += [0] * (48 - len(flat))
+    im.putpalette(flat[:48])
+    im.info["transparency"] = 0
+    return im
+
+
+def pictures(im):
+    return {"large": im.large, "face_normal": im.faces["normal"], "face_happy": im.faces["happy"], "face_sad": im.faces["sad"], "face_angry": im.faces["angry"], "mini": im.mini, "hud": im.hud}
+
+
+def write_art(co, im, root=None, name=None):
+    """The pictures as indexed PNGs (one palette), and the name graphic (48 x 16, the fixed name palette) set in our own letters (namefont.py)."""
+    from . import namefont
+    d = (root or ART_DIR) / co
+    d.mkdir(parents=True, exist_ok=True)
+    for pic, idx in pictures(im).items():
+        _png(idx, im.palette).save(d / f"{pic}.png", optimize=True, transparency=0, bits=4)
+    ex, ey = im.eye
+    (d / "crop.toml").write_text(f"# where the 24-pixel cell of Versus' cards and the 16-row strip of the CO grid start in the mug so that the eyes show (made by `aw2dev co portrait import`)\ncell_x = {max(0, min(24, ex - 12))}\nstrip_y = {max(0, min(32, ey - 8))}\n")
+    if name:
+        _png(namefont.name_grid(name), [(0, 0, 0)] + namefont.name_rgb()[1:]).save(d / "name.png", optimize=True, transparency=0, bits=4)
+    return d
+
+
+def read_art(co, root=None):
+    """-> ({name: indexes}, palette) from the committed PNGs."""
+    d = (root or ART_DIR) / co
+    out, pal = {}, None
+    for name in FILES:
+        im = Image.open(d / f"{name}.png")
+        out[name] = np.array(im)
+        p = im.getpalette()[:48]
+        pal = [(0, 0, 0)] + [tuple(p[3 * i:3 * i + 3]) for i in range(1, 16)]
+    return out, pal
+
+
+def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
+    """-> list of problems of a CO's committed art: sizes, one palette of at most 15 colours + transparent shared by every picture, a solid outline (index 15) wherever the silhouette meets
+    transparency inside the picture (no coloured pixel touches transparency), and no noise: opaque pixels no 4-neighbour shares the colour of. AW2's own 19 figures have 183 to 562 of those
+    (shading is made of them) and their faces 102 to 202, so the limits are 600 and 220: the check is for a speckled JPEG, not for detail."""
+    bad = []
+    try:
+        pics, pal = read_art(co, root)
+    except Exception as e:
+        return [f"cannot read the art: {e}"]
+    d = (root or ART_DIR) / co
+    pals = {tuple(Image.open(d / f"{n}.png").getpalette()[:48]) for n in FILES}
+    if (d / "name.png").exists():
+        nm = np.array(Image.open(d / "name.png"))
+        if nm.shape != (16, 48):
+            bad.append(f"name: {nm.shape[1]} x {nm.shape[0]}, wanted 48 x 16")
+    else:
+        bad.append("name.png missing")
+    if len(pals) != 1:
+        bad.append("the pictures do not share one palette")
+    for name, (w, h) in FILES.items():
+        a = pics[name]
+        if a.shape != (h, w):
+            bad.append(f"{name}: {a.shape[1]} x {a.shape[0]}, wanted {w} x {h}")
+            continue
+        if int(a.max()) > 15:
+            bad.append(f"{name}: palette index {int(a.max())} (at most 15)")
+        if not (a != 0).any():
+            bad.append(f"{name}: empty")
+        if name in ("large", "face_normal", "face_happy", "face_sad", "face_angry"):
+            transparent = a == 0
+            near = np.zeros_like(transparent)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                near |= shift(transparent, dx, dy)
+            # the picture's own border is not transparency: a pixel at the edge is not open
+            open_px = near & ~transparent & (a != 15)
+            if name == "large":
+                open_px[-1, :] = False
+            if open_px.any():
+                bad.append(f"{name}: {int(open_px.sum())} coloured pixels touch transparency without an outline")
+            specks = 0
+            for y in range(a.shape[0]):
+                for x in range(a.shape[1]):
+                    v = a[y, x]
+                    if v in (0, 15):
+                        continue
+                    nb = [a[yy, xx] for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)) if 0 <= yy < a.shape[0] and 0 <= xx < a.shape[1]]
+                    if v not in nb:
+                        specks += 1
+            limit = max_specks_large if name == "large" else max_specks_small
+            if specks > limit:
+                bad.append(f"{name}: {specks} isolated pixels (at most {limit})")
+    return bad

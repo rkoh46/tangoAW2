@@ -1,7 +1,10 @@
 """`aw2dev co check`: the CO data files (tango-gamesupport-aw2/cos/*.toml and tags.toml) against AW2's design space (docs/dev/co-kit.md)."""
 import itertools, tomllib
+from pathlib import Path
 from .. import cfg, util
-from . import compose as cp, roms
+from . import roms
+
+COS_DIR = cfg.REPO / "tango-gamesupport-aw2" / "cos"
 
 UNITS = {"all", "foot", "vehicle", "direct", "indirect", "naval", "air", "artillery", "rockets", "artillery rockets"}
 KEYS = {"units", "attack", "defence", "move", "range", "cost"}
@@ -17,11 +20,11 @@ def aw2_stars():
 
 def load_all():
     cos = {}
-    for f in sorted(cp.COS_DIR.glob("*.toml")):
+    for f in sorted(COS_DIR.glob("*.toml")):
         if f.stem == "tags":
             continue
         cos[f.stem] = tomllib.loads(f.read_text())
-    tags = tomllib.loads((cp.COS_DIR / "tags.toml").read_text()) if (cp.COS_DIR / "tags.toml").exists() else {}
+    tags = tomllib.loads((COS_DIR / "tags.toml").read_text()) if (COS_DIR / "tags.toml").exists() else {}
     return cos, tags
 
 
@@ -60,16 +63,13 @@ def problems(cos, tags, ref=None):
                     p(co, f"{sect} quote line {line!r} is longer than {MAX_QUOTE}")
         if len(d.get("name", "")) > 7:
             p(co, "name longer than 7 letters (the 48 x 16 name graphic)")
-        opts = d.get("portrait", {}).get("option", [])
-        letters = [o.get("letter") for o in opts]
-        if not 4 <= len(opts) <= 6 or len(set(letters)) != len(letters):
-            p(co, f"portrait options: 4..6 lettered, distinct (have {letters})")
-        for o in opts:
-            if "donor" not in o or "description" not in o:
-                p(co, f"option {o.get('letter')}: donor and description are required")
-        chosen = d.get("portrait", {}).get("chosen")
-        if chosen and chosen not in letters:
-            p(co, f"portrait.chosen {chosen} is not an option")
+        src = d.get("portrait", {}).get("source")
+        if not src:
+            p(co, "portrait.source missing (the picture the project owner supplied)")
+        elif not (cfg.REPO / src).exists():
+            p(co, f"portrait.source {src} does not exist")
+        elif not (cfg.REPO / src).with_suffix(".toml").exists():
+            p(co, f"{src}: no framing file ({Path(src).with_suffix('.toml').name})")
     names = list(cos)
     seen = {}
     for pr in tags.get("pair", []):

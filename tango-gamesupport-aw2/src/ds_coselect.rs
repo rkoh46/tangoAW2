@@ -269,6 +269,9 @@ const STRIP_Y: [(u8, usize); 8] = [(16, 8), (6, 8), (23, 8), (25, 8), (26, 8), (
 const OWN_CROPS: [(u8, usize, usize); 1] = [(crate::co_new::CRUMB, 24, 20)];
 
 fn own_crop(co: u8) -> (usize, usize) {
+    if let Some(c) = crate::es_cos::crop(co).filter(|_| crate::co_new::is_es(co)) {
+        return c;
+    }
     OWN_CROPS.iter().find(|e| e.0 == co).map_or_else(|| crop_of(None), |e| (e.1, e.2))
 }
 

@@ -76,6 +76,7 @@ pub mod co_grid;
 pub mod co_new;
 pub mod crumb;
 pub mod crumb_art;
+pub mod es_cos;
 pub mod cpu_tactics;
 pub mod ds_ai;
 pub mod ds_ai_build;

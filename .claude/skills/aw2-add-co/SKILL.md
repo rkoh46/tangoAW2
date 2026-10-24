@@ -1,16 +1,16 @@
 ---
 name: aw2-add-co
-description: Add a custom CO: its data file, lettered portrait options composed from the ROMs' parts plus our overlays, balance against AW2's stars, Tag Powers; then the engine side (co_new.rs, crumb.rs).
+description: Add a custom CO: its data file, its supplied portrait imported into AW2's CO art (figure, mug, mini, HUD face, expressions, name), balance against AW2's stars, Tag Powers, a look at it in the real game; then the engine side (co_new.rs, es_cos.rs, crumb.rs).
 ---
 
-Read docs/dev/co-kit.md first. The worked engine example is Crumb (`co_new.rs`, `crumb.rs`, `crumb_art.rs`); the data-first example is Emerald Sun's four (`tango-gamesupport-aw2/cos/`).
-1. Write `tango-gamesupport-aw2/cos/<id>.toml` (copy `klaus.toml`): name, army, role, `stars`, `[d2d]`, `[cop]`, `[scop]`, quotes, theme; list the Tag Powers in `cos/tags.toml` (every pair of the army).
-   Compare the stars with AW2's own: `aw2dev co check` prints the nearest AW2 COs; keep the CO Power 2..5 and the Super Power (in all) 5..10.
-2. Portrait (original art, the way to go): write designs in `colib/designs.py` (heads and bodies from `heads.py` / `bodies.py`, new garments or props go in `bodies.py`), `aw2dev co portrait draw|layers|lint|sheet`; the lint fails a design too like any one AW2 / Dual Strike CO or over 15 colours. LOOK at the sheet (it has the real COs beside). The older donor-recipe route below was rejected by the user as "just a recolour".
-   Old route: `aw2dev co portrait donors` and `aw2dev co portrait palette aw2:<donor>` to choose bases and indices, write 4 to 6 `[[portrait.option]]` (letters A..F) with `ramp` and overlays,
-   then `aw2dev co portrait options <id> --out <sheet.png>` and LOOK at it (large figure, faces, small face, HUD face). Show the sheet to the user; set `[portrait] chosen = "C"` only when they pick.
-   New overlay art goes in `cos/art/*.toml` (original pixel art only; never copy a picture from another game or from AWBW).
-3. `aw2dev co check`, `aw2dev co portrait check`, `aw2dev test` (runs `aw2.colib.test_co`), `aw2dev kit check`.
-4. Engine work after the data is approved (not part of the data kit): a CO id after `co_new::CRUMB`, its presentation row from the chosen recipe (`crumb_art.rs` shows how a composed figure becomes the
-   128 x 160 body, the 48 x 48 faces, the mini and the HUD face), texts, powers' effect on each unit (`crumb.rs` `each_unit`, `bonus`), its CO table row (`co_roster.rs`), Tag data (`sturm_pairs.rs`),
-   a regression test in `tools/aw2test/tests/test_all_cos.py`, `ram_map.rs` for new state, `sim_version` when the sim changes.
+Read docs/dev/co-kit.md first. The worked engine example is Crumb (`co_new.rs`, `crumb.rs`, `crumb_art.rs`); the data-and-art-first example is Emerald Sun's four (`tango-gamesupport-aw2/cos/`, `es_cos.rs`).
+1. Write `tango-gamesupport-aw2/cos/<id>.toml` (copy `klaus.toml`): name, army, role, `stars`, `[d2d]`, `[cop]`, `[scop]`, quotes, theme, and `[portrait] source = "art-src/cos/<id>_user.jpg"`
+   (the one data line of the picture-to-CO mapping). List the Tag Powers in `cos/tags.toml` (every pair of the army). Compare the stars with AW2's: `aw2dev co check` prints the nearest AW2 COs
+   and the name plates; `aw2dev co balance <id>` the averages against Dual Strike's COs. Keep the CO Power 2..5 and the Super Power (in all) 5..10.
+2. Portrait: the picture is supplied by the owner (never draw, compose from donors or recolour AW2's COs: the user rejected all three). Put it in `art-src/cos/`, write its framing file beside it
+   (`<id>_user.toml`: scale, crop_top, top, face = [x, y, side], eyes = [x1 y1 x2 y2], mouth = [x y], in the picture's pixels), then `aw2dev co portrait import <id>`, `aw2dev co portrait lint`,
+   `aw2dev co portrait sheet` and LOOK at it beside the real COs (large figure 1x and 2x, faces, strips). Credit it in `CREDITS.md` ("portrait art provided by the project owner").
+3. Engine: an id in `co_new.rs` (see `ES_FIRST`), its art and texts in a module like `es_cos.rs` (the PNGs become tile data through `crumb_art::body_files` / `Px::to_tiles`), a regression
+   test, `ram_map.rs` for new state, `sim_version` when the sim changes. Then `cargo build`, `aw2dev build`, and `aw2dev co portrait ingame <id>`: it photographs the CO on the game's own screens
+   through the AI debug channel (CO select, HUD, the Power's dialogue box and cut-in, the CO page) and checks they show the committed art.
+4. `aw2dev co check`, `aw2dev co portrait lint`, `aw2dev test` (runs `aw2.colib.test_co`), `aw2dev kit check`.

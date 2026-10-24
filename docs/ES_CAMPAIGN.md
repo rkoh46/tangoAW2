@@ -132,23 +132,16 @@ Sturm's own table, `sturm_pairs.rs`: 110 is 1 star, 115 to 120 is 2, 125 is 3). 
 
 Each pair also needs its four victory lines and two Tag-in lines like Sturm's pairs have (phase 2, written in the BH voice). Tag Power names: Roman-flavoured, 20 letters at most.
 
-### 2.4 Portraits (v2: original designs)
+### 2.4 Portraits: the owner's own art
 
-The first sheets (recolours of AW2 and Dual Strike COs with overlays) were rejected as "just a recolour". The portraits are now **drawn by us**: four lettered designs per CO (A to D, each a different
-outfit, hair, headgear, pose and expression), in AW2's portrait grammar (outline, three-tone cel shading, 15 colours), with four expressions each (normal, happy, sad, angry), and sheets that put them beside the
-real COs at 1x (`co_klaus_v2.png`, `co_aurelia_v2.png`, `co_cassius_v2.png`, `co_livia_v2.png`). `aw2dev co portrait lint` fails a design that is too like any single donor. Klaus: A The Legate (grey beard, lorica
-segmentata, crimson cloak), B The Centurion (crested galea, bronze cuirass, folded arms), C The Triumphator (laurel, toga, orders in hand), D The Marshal (scale armour, pointing). Aurelia: A The Sapper (topknot, apron,
-dividers), B The Architect (red-banded tail, sash, plans), C The Siege-Master (mallet, one mail guard), D The Surveyor (braid, circlet, tablet). Cassius: A The Rival (curls, bronze cuirass, hand on hip), B The Champion
-(laurel, phalerae harness), C The Cavalryman (plumed galea, reins), D The Heir (tunic with purple stripes, gold cup). Livia: A The Quaestor (braided crown, stola, tablet), B The Matron (palla, coin purse), C The Senator
-(laurel, toga, abacus), D The Treasurer (diadem, red stola, scales). The old recipe sheets are kept for reference.
-
-#### (the first version, kept for reference)
-
-Four to six lettered options per CO from AW2 / Dual Strike donor parts (read at run time), recoloured to the Emerald Sun palette, plus original overlays (laurel wreath, plumed galea, sash, phalera).
-No game or AWBW pixels are committed: a recipe is a donor name, palette-index recolour rules and overlay placements. Donors: Klaus A Hawke, B Kanbei, C Dual Strike Flak, D Javier, E Olaf, F Max;
-Aurelia A Lash, B Sami, C Sonja, D Sasha, E Rachel, F Jess; Cassius A Eagle, B Jake, C Adder, D Andy, E Colin, F Hachi; Livia A Kindle, B Nell, C Sonja, D Sasha, E Rachel, F Jess.
-Limits seen on the sheets (all fixable once a letter is picked): Dual Strike donors keep their white outline; a helmet over long hair reads as a cap (so women have laurels instead); names of seven letters
-(Aurelia, Cassius) must be checked against the 48 x 16 name graphic when the CO is built in.
+The four portraits are **the project owner's art** ("portrait art provided by the project owner", `CREDITS.md`): `art-src/cos/<co>_user.jpg` (784 x 1168 busts), mapped one data line a CO
+(`[portrait] source` in `cos/<id>.toml`; the best guess: Klaus the grey-haired laurelled man, Aurelia the helmeted woman, Cassius the stern man with the helmet under his arm, Livia the woman in white with the
+red cloak). The two earlier attempts (recipes on AW2 / Dual Strike parts, then portraits drawn by us) were rejected and removed. `aw2dev co portrait import` converts each into AW2's CO art: the 128 x 160 figure, the
+48 x 48 CO select mug, the Teams mini, the HUD face, four expression faces, one palette of 15 colours + transparent, outlined; `docs/dev/co-kit.md` has the method. The sheet is `co_portraits_user.png`
+(source, large art 1x and 2x beside AW2's own, faces, and the game's own screens). **In the game** with `TANGOAW2_ES_COS=1` (the four are ids 86..89 with Andy's numbers until phase 2): the CO select card, the HUD
+face, the Power's dialogue box and its cut-in (the large figure), and the CO page show them.
+The happy, sad and angry faces are edits of the neutral picture's eyes, brows and mouth; if the owner can supply expression variants they replace them (`art-src/cos/<id>_<expression>.jpg`, the importer
+would take them).
 
 ## 3. Who joins when
 
@@ -279,7 +272,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. New CO batt
 
 ## 10. Open questions for the user
 
-1. **Portraits:** which letter for each CO (the v2 sheets `sheets/escampaign/co_<name>_v2.png`; the first sheets `co_<name>.png` were rejected). Be frank about the quality: the original designs are drawn sprites in AW2's grammar but simpler than the shipped art (the real COs on the sheets show the gap); say which designs to push further or drop.
+1. **Portraits:** is the picture-to-CO mapping right (Klaus / Aurelia / Cassius / Livia as in section 2.4)? Can the owner supply happy, sad and angry variants of each picture (the faces are edited from the neutral one now)?
 2. **Klaus's stars:** 4 / 8 (the doc's recommendation) or 4 / 9 as in your proposal? (8 is Kanbei's price plus one; 9 is Hawke's.)
 3. **Livia's income:** +25% (the doc's change; +10% with +10% unit cost buys nothing) or your +10% income?
 4. **Varro:** the final boss needs a CO that is not one of the four. Options: (a) a fifth Emerald Sun CO, boss only, built with the same kit (portrait options like the others); (b) Varro as a story-only

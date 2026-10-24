@@ -1151,6 +1151,14 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         scop_name = string(Some(crate::crumb::SCOP_NAME.to_vec()));
     } else if co == CLONE_ANDY {
         bio = co_new::CLONE_ANDY_BIO.to_vec();
+    } else if co_new::is_es(co) {
+        let t = |w: u16| crate::es_cos::text(co, w).unwrap_or_default();
+        bio = t(co_new::T_BIO);
+        d2d = t(co_new::T_D2D);
+        cop = t(co_new::T_COP);
+        scop = t(co_new::T_SCOP);
+        cop_name = string(Some(t(co_new::T_COP_NAME)));
+        scop_name = string(Some(t(co_new::T_SCOP_NAME)));
     } else if co == crate::sturm_pairs::STURM {
         if let Some(c) = core {
             bio = aw2_text(c, STURM_TEXTS[0]);
