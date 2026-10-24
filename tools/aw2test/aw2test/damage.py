@@ -51,6 +51,34 @@ def crumb_bonus(mode, unit_type, which):
     return v
 
 
+# The Emerald Sun COs (crate::es_co, ids 86..90): the same numbers in Python, for the calculator.
+KLAUS, AURELIA, CASSIUS, LIVIA, VARRO = 86, 87, 88, 89, 90
+ES_LUCK = {KLAUS: (10, 10, 10), AURELIA: (10, 10, 10), CASSIUS: (10, 10, 10), LIVIA: (10, 10, 10), VARRO: (10, 10, 20)}
+_FOOT, _VEHICLE, _INDIRECT, _NAVAL = (1, 2), (3, 4, 5, 6, 7, 8, 9, 14), (10, 11, 15, 21), (18, 21, 22, 23, 24, 26)
+
+
+def es_bonus(co, mode, t, which):
+    """crate::es_co::bonus (+ the 10% every power adds to firepower)."""
+    m = min(mode, 2)
+    on = lambda b, v: v if b else 0
+    foot, veh, ind, nav = t in _FOOT, t in _VEHICLE, t in _INDIRECT, t in _NAVAL
+    v = 0
+    if co == KLAUS:
+        v = {0: 10 + on(foot, 10) + on(m == 2, 20 + on(foot, 40)), 1: 10 + on(foot, 10) + on(m == 1, 20) + on(m == 2, on(foot, 40)),
+             2: on(m == 1, on(foot, 1)) + on(m == 2, 1)}.get(which, 0)
+    elif co == AURELIA:
+        v = {0: on(ind, 10 + on(m > 0, 30)) - on(veh, 10), 3: on(t in (10, 11), 1) + on(m > 0, on(ind, 1))}.get(which, 0)
+    elif co == CASSIUS:
+        v = {0: on(veh, 10 + on(m == 1, 30) + on(m == 2, 40)), 1: -on(veh, 10), 2: on(veh, 1 + on(m > 0, 1))}.get(which, 0)
+    elif co == LIVIA:
+        v = {0: on(m == 2, on(nav, 30)), 2: on(m == 2, on(nav, 2))}.get(which, 0)
+    elif co == VARRO:
+        v = {0: 15 + on(m == 1, 25) + on(m == 2, 45), 1: 15 + on(m == 1, 15) + on(m == 2, 30), 2: on(m > 0, 1)}.get(which, 0)
+    if which == 0 and mode > 0:
+        v += 10
+    return v
+
+
 def hp_bars(hp):
     return div(hp - 1, 10) + 1 if hp > 0 else 0
 
@@ -88,6 +116,8 @@ class Rules:
             return 0  # no CO changes an Oozium (Dual Strike: its class, 6, gets 0)
         if self.chart is not None and co == CRUMB:
             return crumb_bonus(mode, unit_type, which)
+        if self.chart is not None and KLAUS <= co <= VARRO:
+            return es_bonus(co, mode, unit_type, which)
         if self.chart is not None:
             v = self.chart.co_stat(co, mode, unit_type, which)
             if v is not None:
@@ -101,6 +131,12 @@ class Rules:
         if co == CRUMB and self.chart is not None:
             # Crumb (crate::crumb): his own luck; Andy's counter; no skills.
             m["luck"], m["neg_luck"] = CRUMB_LUCK[min(mode, 2)], 0
+            m["counter"] = self.chart.co_field(81, mode, 0x20)
+            m["abilities"] = 0
+            return m
+        if KLAUS <= co <= VARRO and self.chart is not None:
+            # (the Emerald Sun five: their own luck, no bad luck, Andy's counter, no skills)
+            m["luck"], m["neg_luck"] = ES_LUCK[co][min(mode, 2)], 0
             m["counter"] = self.chart.co_field(81, mode, 0x20)
             m["abilities"] = 0
             return m

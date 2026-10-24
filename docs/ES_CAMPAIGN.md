@@ -4,8 +4,8 @@ Sixteen missions played as **Emerald Sun**, tangoAW2's sixth army (Roman-themed,
 `docs/dev/army-packs.md`), with four new Roman COs. It is the second custom campaign on the BH Campaign's data-driven engine (`docs/AW2.md` "BH Campaign", `docs/dev/campaign-scenes.md`) and the
 Campaign sub-menu already has its entry (opens "Coming soon" until phase 2) and the BH2 placeholder above it.
 
-Status: **phase 1 only.** Nothing below is built: no missions, maps or dialogue exist. What exists is the menu, the CO data files and portrait options
-(`tango-gamesupport-aw2/cos/`, `aw2dev co ...`, `docs/dev/co-kit.md`), and this outline. Everything marked "proposal" waits for the user.
+Status: **phase 2 built, awaiting approval** (branch `esmissions`, behind the development flag `TANGOAW2_ES_CAMPAIGN`; see section 11 for what was built and where it differs from this outline). Phase 1 gave the menu, the CO data files and portrait options
+(`tango-gamesupport-aw2/cos/`, `aw2dev co ...`, `docs/dev/co-kit.md`) and this outline. Everything marked "proposal" still waits for the user.
 
 Contents: 1 Premise and story spine - 2 The four COs (numbers, balance note, Tag Powers) - 3 Who joins when - 4 The sixteen missions - 5 Scenes and how much is said - 6 Variety, threats and answers -
 7 Music plan - 8 Rules carried over from the BH Campaign - 9 Building it (phase 2 plan) - 10 Open questions.
@@ -282,3 +282,15 @@ fades into the next song with op 0x41, the way the BH Campaign does. New CO batt
 6. **Second skin colour for Cassius:** his Second Legion is red (Orange Star's colour). Fine, or would you rather have a second Emerald Sun variant (a crimson one) built as a second skin file?
 7. **Tag missions:** three (M8, M12, M15); are the forced pairs right (Klaus + Cassius reluctantly, Klaus + Aurelia for the siege, a free pair at the end)?
 8. **Names:** the seven-letter names (Aurelia, Cassius) may not fit the 48 x 16 name graphic cleanly; shorter alternatives if they do not: "Aurel", "Cass".
+
+## 11. As built (phase 2, `docs/dev/es-campaign.md`)
+
+All sixteen missions are playable: maps (`five/es/spec/es01.py` .. `es16.py`), mission rules (`es_act1.rs` .. `es_act4.rs`), the prologue, 71 dialogue scenes and the epilogue, the five COs (`es_co.rs`), the eight Tag pairs,
+the skin on the player's army, a record in Flash slot 11. Differences from the outline above, all by the user's later rules or by the engine:
+- **No two-front engine**: M8's split line and M14's two phases are one map. **Black Hole inventions only in M9 and M13** (Black Hole is a real enemy army there); none in M16.
+- **M13 has four armies** (the player, Javier, Sonja, Kindle's Black Hole): the fifth army slot is Black Hole's and the player's, so a five-army mission could not also have Black Hole as an enemy; Blue Moon (Sasha) is absent from the port.
+- **M16 is the hardest** (Varro with 40,000 funds, 55 start units, two production armies, five reinforcement waves, a charged Super Power from day 6): `aw2dev campaign difficulty`.
+- **Enemy pairs**: M2 Jess + Eagle, M5 Grimm + Sensei and M9 Adder + Flak are enemy tag pairs on one army; M6, M7, M8, M10, M11, M12 have two allied enemy armies; M15's Accord fleet is an allied army (Nell) with no units until day 6; Cassius's M14 army changes teams on day 4.
+- **M11**: the four APCs are the player's own (the escort is a race with a day limit of 14, not a scripted march).
+- **Powers not built** (they need new engine hooks): Klaus's "counterattacks do 25% less", Aurelia's splash, Cassius's "move again after attacking"; their numbers are kept (docs/dev/es-campaign.md).
+- Portraits are Dual Strike donors until the portrait branch lands; the CO names on the HUD are the donors' graphics.
