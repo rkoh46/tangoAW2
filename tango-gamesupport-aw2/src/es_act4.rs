@@ -152,7 +152,67 @@ fn es15() -> MissionDef {
     m
 }
 
-/// Act IV's missions (M16 follows when its map is done).
+
+// --- M16 Sol Invictus --------------------------------------------------------------------------
+
+/// Varro's meter is filled for his Super Power on day 6 (the warning scene says so): AW2's meter at the player block +0x20.
+fn charge_varro(core: &mut Core) {
+    let p = crate::tag::player(core, 2);
+    let (co, uses) = (core.raw_read_8(p + 0x1D, -1), core.raw_read_8(p + 0x25, -1));
+    let full = crate::tag::scop_cost(core, co, uses);
+    if core.raw_read_32(p + 0x20, -1) < full {
+        core.raw_write_32(p + 0x20, -1, full);
+    }
+}
+
+/// Varro's reinforcement cells on the north rim road (ground) and in the inlet (sea): `five/es/spec/es16.py`.
+const RIM: [(u8, u8); 10] = [(5, 0), (7, 0), (9, 0), (11, 0), (13, 0), (15, 0), (17, 0), (19, 0), (21, 0), (23, 0)];
+const INLET: [(u8, u8); 3] = [(30, 1), (31, 3), (30, 5)];
+/// The player's reinforcement cells at the south camp.
+const CAMP: [(u8, u8); 6] = [(7, 25), (9, 24), (17, 26), (16, 25), (6, 29), (18, 29)];
+
+fn es16() -> MissionDef {
+    let mut m = MissionDef::new("es16", "Sol Invictus");
+    m.objective = "Take Port Aurelium's keep: Varro's HQ.";
+    m.map = MapSrc::Built("es16");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(KLAUS)).funds(15000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(40000),
+        // The Praetorian Guard: Varro's lieutenants hold the harbour and the east flank, no CO of their own.
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::None).team(2).funds(20000),
+    ];
+    m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
+    m.units = crate::es_campaign::deployment_hq("es16");
+    m.rank_days = 20;
+    m.intro = scene("m16_pre");
+    m.victory = chain(&["m16_post", "m16_post2"]);
+    m.after = chain(&["m16_map", "m16_epilogue", "m16_epilogue2"]);
+    let units_in = |x0, y0, x1, y1| Cond::UnitsIn { army: 1, area: Rect::new(x0, y0, x1, y1), at_least: 1 };
+    m.triggers = vec![
+        // The walls: a unit inside the outer ring; the keep: a unit inside the inner ring.
+        Trigger::new(When::AfterAction, units_in(5, 2, 24, 15), vec![Action::Scene(scene("m16_phase2"))]),
+        Trigger::new(When::AfterAction, units_in(12, 7, 17, 10), vec![Action::Scene(scene("m16_phase3"))]),
+        // Day 6: Varro's meter is full.
+        on_day(6, None, vec![Action::Scene(scene("m16_varro")), Action::Custom(charge_varro)]),
+        // Varro's waves come down the north rim: armour, aircraft, then the fleet.
+        on_day(3, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &RIM[0..2]), wave(2, unit::TANK, &RIM[2..3])].concat())]),
+        on_day(5, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RIM[3..5]), wave(2, unit::MD_TANK, &RIM[5..6])].concat())]),
+        on_day(6, None, vec![Action::Spawn([wave(2, unit::BATTLESHIP, &INLET[0..1]), wave(2, unit::CRUISER, &INLET[1..2])].concat())]),
+        on_day(7, None, vec![Action::Spawn([wave(2, unit::MEGATANK, &RIM[6..8]), wave(2, unit::NEOTANK, &RIM[8..9])].concat())]),
+        on_day(9, None, vec![Action::Spawn([wave(2, unit::FIGHTER, &RIM[0..2]), wave(2, unit::BOMBER, &RIM[2..3])].concat())]),
+        on_day(10, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RIM[3..6]), wave(2, unit::BATTLESHIP, &INLET[2..3])].concat())]),
+        on_day(12, None, vec![Action::Spawn(wave(2, unit::MEGATANK, &RIM[6..9]))]),
+        // The legion's own reinforcements: the Quaestor's second convoy, on days 4 and 8.
+        on_day(4, None, vec![Action::Spawn([wave(1, unit::ANTI_AIR, &CAMP[0..1]), wave(1, unit::MD_TANK, &CAMP[1..2]), wave(1, unit::ARTILLERY, &CAMP[2..3])].concat())]),
+        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),
+    ];
+    m.flag = region::ACT4[3];
+    m.stars = 5;
+    m.needs = Needs::All(vec!["es15"]);
+    m
+}
+
+/// Act IV's missions.
 pub fn missions() -> Vec<MissionDef> {
-    vec![es13(), es14(), es15()]
+    vec![es13(), es14(), es15(), es16()]
 }

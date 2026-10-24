@@ -258,7 +258,6 @@ LIVIA: Time, Legate. It is the only / currency in short supply.
 KLAUS: Then spend it well.
 
 == m15_day6
-@SONG ally1
 NARRATION: Sixth day, noon. Sails / on the western horizon. Many.
 NELL: Orange Star fleet, entering the / straits. Gallant Legate, you
 NELL: look terrible. We will take / the north channel. You the south.
@@ -372,7 +371,6 @@ AURELIA: Do not give me orders, / Prefect. I am doing the stone.
 KLAUS: Together.
 
 == m16_phase3
-@SONG pinch
 KLAUS: The inner ring has fallen. / The keep stands.
 LEGIONARY: Legate! Fire on the / eastern stair! The bastion is lost!
 AURELIA: The east bastion will take / the stair with it. Fall back!

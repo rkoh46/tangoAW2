@@ -152,7 +152,7 @@ def used_keys():
         if fn.startswith("es_") and fn.endswith(".rs"):
             s = open(os.path.join(SRC, fn)).read()
             keys |= set(re.findall(r'es_text::(?:scene|lines|pages)\(\s*"(\w+)"', s))
-            keys |= set(re.findall(r'es_text::(?:scene|lines|pages)\(\s*"(\w+)"\s*\)', s))
+            keys |= set(re.findall(r'\b(?:scene|lines|pages)\(\s*"(\w+)"\s*\)', s))
             for chain in re.findall(r'chain\(&\[([^\]]*)\]', s):
                 keys |= set(re.findall(r'"(\w+)"', chain))
     return keys

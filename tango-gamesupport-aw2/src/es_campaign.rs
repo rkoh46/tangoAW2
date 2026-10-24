@@ -172,6 +172,18 @@ mod tests {
         assert!(ROSTER.len() as u32 <= crate::ds_campaign::BOND_SHIFT);
     }
 
+    /// An army has 63 unit slots: a deployment of more would spill into the next army's.
+    #[test]
+    fn no_army_starts_with_more_than_56_units() {
+        for m in &def().missions {
+            let units = if m.units.is_empty() { Vec::new() } else { m.units.clone() };
+            for a in 1..=m.armies.len() as u8 {
+                let n = units.iter().filter(|u| u.army == a).count();
+                assert!(n <= 56, "{}: army {a} starts with {n} units", m.key);
+            }
+        }
+    }
+
     #[test]
     fn every_mission_has_its_own_world_map_flag_and_a_map() {
         let d = def();
