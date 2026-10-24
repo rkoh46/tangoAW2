@@ -43,13 +43,19 @@ in a normal build; the flag turns it into a source of `campaign_model::SOURCES`)
 | `python3 tools/estext/render.py` / `aw2dev campaign dialogue` | the dialogue as one readable Markdown file for review |
 Tests: `aw2dev test python` (`aw2.esmaplib.test_esmaplib`, `aw2.eslib.test_eslib`), `cargo test --lib es_` (`es_co` numbers and texts, `es_text` parsing, `es_campaign`: roster, flags, unit caps).
 
-Known harness limit: the Versus-based tests of the older kit (`ctx.start`, e.g. `crumb_is_pickable_in_versus`) fail on this branch with "map has 5 armies" (the harness's Design Maps navigation; the same on the base commit): the Emerald Sun tests use the campaign's own battles instead.
+Harness note: offline Versus lists maps by player count and shows the game's own tabs (Design Maps among them) only after L and R together, so `Game.boot_to_teams` presses `L+R` first (before that the Versus-based tests of the older kit failed with "map has 5 armies"). `online_maps::ORIGINAL_VIEW` is a process-wide static, so `aw2_netplay_script` (two peers and a straight replay in one process) cannot replay a run that pressed it: the powers' determinism tests (`test_es_powers.py`) play each scenario twice on two consoles and compare the whole RAM instead.
 
 ## The COs (what is built, what is not)
 Numbers (firepower, defence, move, range) are `es_co::bonus`, read by `co_roster::stat`; luck, stars and unit cost are in the CO's table row. Klaus's Legio Aeterna heals 3 HP on every unit (a Thumb function
 in free ROM, `es_co::heal3`); Livia's Ledger (+25% income) hooks `co_powers::income`, her Tribute and Mare Nostrum collect funds when the power is paid (`es_co::power_paid`, called from the one PayForPower trap
-in `crumb.rs`); Varro's Sol Invictus heals 2. **Not built** (the design's rules that need new engine hooks; the numbers keep the powers strong): Klaus's COP "counterattacks against him do 25% less", Aurelia's Onager
-splash (1 HP to units beside a target), Cassius's Triumph "move again after attacking". Pictures are placeholders (Dual Strike donors); the portrait work is the branch `escampaign`.
+in `crumb.rs`); Varro's Sol Invictus heals 2. The three rules the numbers cannot say are built as engine hooks (`es_co.rs`, "The powers' rules"; tests `tools/aw2test/tests/test_es_powers.py`): **Testudo**: a counterattack against one of Klaus's attacks deals 25% less
+(`sub_08024DDC`'s entry trap cuts the counter's damage number and forecast to 75% when the battle's defender record strikes the attacker record of Klaus's army in his CO Power); **Onager**: an indirect hit
+from Aurelia's army in her Super Power costs every enemy unit orthogonally next to the target 1 HP (10 points, a unit on its last HP stays; the trap on the battle's meter charge, `co_powers::attacker_charged`
+-> `es_co::onager`; the attacker's cell is the move's destination `0x03003100`); **Triumph**: a human-played Cassius's vehicle that attacks in his Super Power is left not done by `sub_080424FC`'s
+`orrs` (trap `0x08042532`, the battle's return addresses only), its bit is set in `es_co::MOVED_AFTER_ATTACK` (`0x0203C980`, one bit a unit slot, +0x28 the army of the last tick, registered in `ram_map`), the two Fire rows'
+show tests (`0x0802CA78`, `0x0802CB20`) hide Fire for such a unit, any ordinary end of its action clears the bit, and the bits are cleared when the turn changes hands. The computer's Cassius gets no extra
+move (its unit loop would fire the unit again). All three are pure functions of emulated memory (no statics, no host state), so both peers and any rollback agree.
+Pictures are placeholders (Dual Strike donors); the portrait work is the branch `escampaign`.
 The five are listed in Versus only with `TANGOAW2_ES_VERSUS` (a development aid).
 
 ## Saves

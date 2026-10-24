@@ -904,6 +904,8 @@ fn attacker_charged(core: &mut Core) {
     if !is_on(core) {
         return;
     }
+    // (Aurelia's Onager: the units beside the target lose 1 HP, crate::es_co)
+    crate::es_co::onager(core, core.raw_read_8(BATTLE_DEFENDER_INDEX, -1) as u32);
     if let Some((a, _)) = battle_charges(core) {
         core.gba_mut().cpu_mut().set_gpr(1, (a * METER_SCALE) as i32);
     }

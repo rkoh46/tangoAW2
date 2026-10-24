@@ -80,6 +80,7 @@ Other helpers:
 
 - `g.set_teams(cos, humans)` on the Teams screen picks each army's CO with the pad, five armies too (the five-army record's CO cursors at +0xA8, controllers at +0x90; `tests/test_five_fog.py` opens a 5P map with `test_ds_maps`' `select_map`). `DsCampaign.start(step=n, hard=True)` starts a mission of a Hard DS Campaign.
 - `ctx.start(m, cos, humans=(1,), fog=False, weather="clear"|"rain"|"snow"|"random"|"sandstorm", power=True, visuals="off", trace=None)`: `trace` is a file of ROM addresses (`AW2_TRACE`); each time the game reaches one the runner prints a `trap` line, collected in `g.e.traps` (no tangoAW2 trap may sit at the same address)
+- `ctx.attack(..., counter_keep=75)`: the counterattack's share the calculator allows (Klaus's Testudo); `ctx.netplay_replay(g, peeks, env=...)`.
 - `ctx.power(g, army, "power"|"super")`: fills the meter to the exact cost, fires the power from the map menu, checks the mode and the spent meter; returns the units before and after. `ctx.expect_hp_change(before, after, {army: +/-hp}, label, repair=False)`.
 - `ctx.set_hp(g, x, y, hp)` (internal HP 0..100), `ctx.side(g, unit)` for the calculator, `ctx.check/eq/log`, `ctx.shot(g, name)`.
 - `ctx.netplay_replay(g, [(addr, len), ...])`: replays the run so far on two rollback peers.

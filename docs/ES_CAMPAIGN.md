@@ -301,7 +301,7 @@ the skin on the player's army, a record in Flash slot 11. Differences from the o
 - **M16 is the hardest** (Varro with 40,000 funds, 38 start units (an army stops at 50), two production armies, five reinforcement waves, a charged Super Power from day 6): `aw2dev campaign difficulty`.
 - **Enemy pairs**: M2 Jess + Eagle, M5 Grimm + Sensei and M9 Adder + Flak are enemy tag pairs on one army; M6, M7, M8, M10, M11, M12 have two allied enemy armies; M15's Accord fleet is an allied army (Nell) with no units until day 6; Cassius's M14 army changes teams on day 4.
 - **M11**: the four APCs are the player's own (the escort is a race with a day limit of 14, not a scripted march).
-- **Powers not built** (they need new engine hooks): Klaus's "counterattacks do 25% less", Aurelia's splash, Cassius's "move again after attacking"; their numbers are kept (docs/dev/es-campaign.md).
+- **Powers built** (engine hooks in `es_co.rs`, docs/dev/es-campaign.md): Klaus's Testudo "counterattacks against his attacks do 25% less", Aurelia's Onager splash (1 HP to every enemy unit beside the target, never below 1 HP), Cassius's Triumph (a vehicle that attacked may move once more, not fire again; the computer's Cassius does not get it).
 - Portraits: the four are the project owner's (branch `escampaign`, merged: `es_cos.rs`, `art/cos/`, `cos/*.toml`), always in the game; Varro keeps a Dual Strike face as a placeholder (he has one mission, M14).
 
 ## 12. Rework for the user's rules (conquest, room to fight, the new finale)

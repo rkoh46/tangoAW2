@@ -232,8 +232,9 @@ class Ctx:
                     "attack_type": struct.unpack_from("<h", b, 0x18)[0]}
         return rec(ram.BATTLE_ATTACKER), rec(ram.BATTLE_DEFENDER)
 
-    def attack(self, g, src, dst, target, expect_base=None, expect_weapon=None):
-        """Move src -> dst, fire at target, and check every number the game produced."""
+    def attack(self, g, src, dst, target, expect_base=None, expect_weapon=None, counter_keep=100):
+        """Move src -> dst, fire at target, and check every number the game produced (`counter_keep`: the percent of the counterattack that gets
+        through, Klaus's Testudo 75)."""
         att0 = g.unit_at(*src)
         dfd0 = g.unit_at(*target)
         self.require(att0 is not None and dfd0 is not None, f"units at {src} and {target}")
@@ -246,7 +247,7 @@ class Ctx:
         ta0, td0 = (tag.partner(g.e, att0["army"]), tag.partner(g.e, dfd0["army"])) if self.ds else (None, None)
         (_, att1), (_, dfd1) = g.attack(src, dst, target)
         ra, rd = self.battle_records(g)
-        first, counter = damage.battle(self.rules, a_side, d_side, dist, dfd_hp_after=dfd1["hp"])
+        first, counter = damage.battle(self.rules, a_side, d_side, dist, dfd_hp_after=dfd1["hp"], counter_keep=counter_keep)
         an, dn = romlib.UNIT_NAMES[att0["type"]], romlib.UNIT_NAMES[dfd0["type"]]
         label = f"{an} ({romlib.co_name(a_side.co)}, mode {a_side.co_mode}) -> {dn} ({romlib.co_name(d_side.co)})"
         self.log(f"{label} at distance {dist}; attacker {att0['hp']}->{att1['hp']}, defender {dfd0['hp']}->{dfd1['hp']}")
@@ -404,15 +405,16 @@ class Ctx:
                              env=env, timeout=1800, cwd=self.out)
         return out.stdout + out.stderr
 
-    def netplay_replay(self, g, peeks):
+    def netplay_replay(self, g, peeks, env=None):
         """Replay this run's inputs on two rollback peers (aw2_netplay_script, seat 0
-        pressing) and return (all_identical, {addr: bytes on peer 0}, output)."""
+        pressing) and return (all_identical, {addr: bytes on peer 0}, output). `env`: variables for the peers (the ones the run's console had)."""
         # Pokes (a filled power meter) are replayed on both peers on the same
         # tick, with idle frames after them (aw2_netplay_script).
         lines = ["seat 0"] + list(g.e.timeline) + ["wait 60"] + [f"peek {a:08x} {n}" for a, n in peeks]
         path = os.path.join(self.out, "netplay.txt")
         with open(path, "w") as f:
             f.write("\n".join(lines) + "\n")
+        extra_env = env
         env = dict(os.environ)
         if self.ds:
             env["TANGOAW2_DS_ROM"] = paths.ds_rom()
@@ -420,6 +422,7 @@ class Ctx:
         else:
             env.pop("TANGOAW2_DS_ROM", None)
             env.pop("AW2_SHARED_ART", None)
+        env.update(extra_env or {})
         out = subprocess.run([paths.runner("aw2_netplay_script"), g.e.rom, os.path.join(self.out, "map.sav"), path,
                               os.path.join(self.out, "netplay")], capture_output=True, text=True, env=env, timeout=1800)
         text = out.stdout + out.stderr

@@ -132,6 +132,9 @@ Proc scripts (data) that mark screens:
 | `0x08029AF8`, `0x08029978`, `0x08029A48` | `RepairUnit(unit, hp, pay)`; ammo to full; fuel to full | `co_powers.rs`, `crumb.rs` |
 | `0x080253B0` / `0x08025434` / `0x08025B80` | daily fuel burn / fuel in r5 / `SubtractFuel` | `ds_weather.rs` |
 | `0x080251BC`, `0x08024ABC`, `0x08024C58`, `0x08024DDC` | battle work-out; `CalcDamage`; defence store; apply a hit | `co_powers.rs`, `co_roster.rs` |
+| `0x08024DDE` | `sub_08024DDC(target, attacker)` just after its push: a strike's damage applied; Testudo cuts the counterattack's `+0x0C`/`+0x14` to 75% | `es_co.rs` |
+| `0x08042532` | `sub_080424FC` (the selected unit's action ends) at the `orrs` that sets done (r1 = 1; the return address at `[sp + 4]`): Triumph leaves a vehicle not done after a battle (return addresses `0x08041A01`, `0x08041E05`, `0x08041E55`, `0x08040977`) | `es_co.rs` |
+| `0x0802CA78`, `0x0802CB20` | the command menu's two Fire rows' show tests (r0 = 1 hides): hidden for a unit that has used Triumph's extra move | `es_co.rs` |
 | `0x08043070`, `0x080433F8` | CO-scaled damage chart read / raw chart read | `roster.rs` |
 | `0x08042CF8`, `0x08042D42`, `0x08042DA6`, `0x08042D76`, `0x08042CC0`, `0x08042E64`, `0x08043050` | Trap sites in `GetUnitDefenceWithCoBonus` (entry), `GetUnitMovementWithCoBonus` (at its return), `GetUnitVisionWithCoBonus` (after the CO's vision is added), `GetUnitFiringRangeWithCoBonus` (max range in r4), `GetCoPriceMultiplier`, `GetPlayerCoLuckBonus` (entry/return), `GetPlayerSpecialAbilities` (entry/return) | `co_skills.rs`, `co_roster.rs`, `sandstorm.rs` |
 | `0x08044B28` | `ActivateCoPower(army, mode, proc)` | `co_powers.rs`, `online_stats.rs` |

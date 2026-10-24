@@ -7,9 +7,9 @@
 //!
 //! | CO | Day to day | CO Power | Super Power |
 //! |---|---|---|---|
-//! | **Klaus** 4/8 | Imperium: all units +10% attack and defence, Infantry and Mech +10% more | Testudo: +20% defence on top, Infantry and Mech +1 move | Legio Aeterna: heal 3 HP, +1 move, +20% attack, Infantry and Mech +40% attack and defence |
-//! | **Aurelia** 3/7 | Ballistics: Artillery and Rockets +1 range, indirect units +10% attack, vehicles -10% attack | Ballista: indirect +1 range more, +30% attack | Onager: the same (the splash rule is not built: see docs/dev/es-campaign.md) |
-//! | **Cassius** 3/7 | Impetus: vehicles +1 move, +10% attack, -10% defence | Charge: vehicles +1 move more, +30% attack | Triumph: +40% attack (the move-again rule is not built) |
+//! | **Klaus** 4/8 | Imperium: all units +10% attack and defence, Infantry and Mech +10% more | Testudo: +20% defence on top, Infantry and Mech +1 move, counterattacks against his attacks do 25% less | Legio Aeterna: heal 3 HP, +1 move, +20% attack, Infantry and Mech +40% attack and defence |
+//! | **Aurelia** 3/7 | Ballistics: Artillery and Rockets +1 range, indirect units +10% attack, vehicles -10% attack | Ballista: indirect +1 range more, +30% attack | Onager: the same, and each indirect hit costs the enemy units beside the target 1 HP (never below 1 HP) |
+//! | **Cassius** 3/7 | Impetus: vehicles +1 move, +10% attack, -10% defence | Charge: vehicles +1 move more, +30% attack | Triumph: +40% attack, a vehicle that has attacked may move once more |
 //! | **Livia** 3/6 | Ledger: income +25%, units cost 10% more | Tribute: 200 funds a property | Mare Nostrum: ships +2 move, +30% attack, 100 funds a property |
 //! | **Varro** 4/8 | Imperator: all units +15% attack and defence | Edict: +25% attack, +15% defence on top, +1 move | Sol Invictus: +45% attack, +30% defence, +1 move, heal 2 HP |
 //!
@@ -69,7 +69,7 @@ pub const INFO: [Info; 5] = [
         name: "Klaus",
         bio: "Legate of the Emerald Sun, sent across the sea to find who starved his homeland. Stern, fair, tireless. Hit: Discipline Miss: Being doubted",
         d2d: "My legions fight and hold a little better. Infantry and Mech fight best of all.",
-        cop: "All units take 20% less damage on top, and my Infantry and Mech move 1 space more.",
+        cop: "All units take 20% less damage on top, and my Infantry and Mech move 1 space more. Counterattacks against my attacks are weaker.",
         scop: "All units recover 3 HP, move 1 space more and attack 20% harder. Infantry and Mech gain 40% attack and defence on top.",
         cop_name: "Testudo",
         scop_name: "Legio Aeterna",
@@ -87,7 +87,7 @@ pub const INFO: [Info; 5] = [
         bio: "Chief engineer of the Emerald Sun. If a wall stands, she knows how it falls. Hit: Range Miss: Walking",
         d2d: "My Artillery and Rockets reach 1 space farther, and indirect units hit 10% harder. Vehicles hit 10% softer.",
         cop: "Indirect units reach 1 more space and attack 30% harder.",
-        scop: "Indirect units reach 1 more space and attack 30% harder.",
+        scop: "Indirect units reach 1 more space and attack 30% harder, and each of their hits also costs enemy units next to the target 1 HP.",
         cop_name: "Ballista",
         scop_name: "Onager",
         quotes: ["Wind the windlass!\rLet the walls hear it!", "Loose the onagers!\rStone for every wall!", "Measure twice.\rFire once."],
@@ -104,7 +104,7 @@ pub const INFO: [Info; 5] = [
         bio: "Commander of the Emerald Sun cavalry and the Senate's favourite, who thinks the legion should be his. Hit: Speed Miss: Patience",
         d2d: "My vehicles move 1 space more and hit 10% harder, but their armour is 10% thinner.",
         cop: "Vehicles move 1 more space and attack 30% harder.",
-        scop: "Vehicles move 1 more space and attack 40% harder.",
+        scop: "Vehicles move 1 more space and attack 40% harder, and can move again after attacking, once.",
         cop_name: "Charge",
         scop_name: "Triumph",
         quotes: ["With me! Ride them down!\rGlory is a short road!", "Strike, and strike again!\rThey will sing of this!", "Try to keep up, Klaus!\rI am already ahead."],
@@ -330,10 +330,224 @@ pub fn power_paid(core: &mut Core) {
 /// `PayForPower(army, mode)`'s entry is trapped once, by [`crate::crumb::traps`] (one trap an address): it calls this.
 pub const POWER_PAID_AT: u32 = PAY_FOR_POWER;
 
+
+// --- The powers' rules: Testudo, Onager, Triumph ------------------------------------------------
+//
+// Three effects the numbers cannot say, each a trap at a game routine and each a pure function of emulated memory (the units, the player blocks, the
+// battle records), so every peer and every rollback works them out alike:
+//
+// - **Testudo** (Klaus's CO Power): the enemy's counterattack against one of his attacks does 25% less damage. `sub_08024DDC(target, attacker)` applies a
+//   strike's damage (`+0xC` is the attacker's damage before the target's defence, `+0x14` the forecast's); the trap sits at its first instruction after the
+//   push. A counterattack is the strike of the battle's defender record (`0x030013B0`) at the attacker's (`0x030013D0`); when the attacker's army is Klaus
+//   in his CO Power both numbers are cut to 75% (whole numbers, rounded down), so the forecast and the hit agree.
+// - **Onager** (Aurelia's Super Power): `sub_08041978` has worked a battle out and is about to charge the power meters (the trap `co_powers::attacker_charged`
+//   at `0x08041CB8` calls [`onager`]): when the attacker is an indirect unit of Aurelia's army in her Super Power and struck from range, every unit of another team
+//   on a cell next to the target (the four cells beside it, hidden units too, never an Oozium) loses 1 HP, and a unit on 1 HP stays on 1. The attacker's cell is the
+//   move's destination (`0x03003100`), because the work-out puts the unit back on its old cell.
+// - **Triumph** (Cassius's Super Power): `sub_080424FC` ends the selected unit's action (`+1` bit 0 = done). Called from a battle's end (the four return
+//   addresses in [`BATTLE_ENDS`], the calls at `0x080419FC`, `0x08041E00`, `0x08041E50`, `0x08040972`) for a vehicle of a human-played Cassius army in his Super Power that has not yet had its extra move, the trap at `0x08042532` (the
+//   `orrs` that sets done) leaves the unit not done and sets its bit in [`MOVED_AFTER_ATTACK`]. The unit can be picked up again; while its bit is set Fire is
+//   hidden (the two Fire rows' show tests are trapped), so it can move and do anything but attack, and any ordinary end of its action (Wait, ...) clears the bit
+//   and finishes it as always. The bits are cleared when the turn changes hands ([`tick`]). The computer's Cassius does not get the extra move (its unit loop would
+//   fire the unit again).
+
+const BATTLE_ATTACKER: u32 = 0x0300_13D0;
+const BATTLE_DEFENDER: u32 = 0x0300_13B0;
+const CO_ABILITIES: u32 = 0x0300_3FC8;
+const UNITS_POINTER: u32 = 0x0849_9594;
+const UNIT: u32 = 12;
+const SELECTED_UNIT: u32 = 0x0300_40D8;
+const DESTINATION: u32 = 0x0300_3100;
+const MAP: u32 = 0x0201_E450;
+const PLAYER_TEAM: u32 = 0x2A;
+const SLOTS: u32 = 320;
+
+fn abilities_on(core: &Core) -> bool {
+    core.raw_read_8(CO_ABILITIES, -1) != 0
+}
+
+/// Testudo keeps this share (percent) of a counterattack's damage.
+pub const TESTUDO_KEEPS: i32 = 75;
+
+/// `sub_08024DDC(target r0, attacker r1)` after its push: the counterattack's damage numbers.
+const STRIKE_APPLIED: u32 = 0x0802_4DDE;
+fn strike_applied(core: &mut Core) {
+    if !is_on(core) || !abilities_on(core) {
+        return;
+    }
+    let cpu = core.gba().cpu();
+    let (target, attacker) = (cpu.gpr(0) as u32, cpu.gpr(1) as u32);
+    if attacker != BATTLE_DEFENDER || target != BATTLE_ATTACKER {
+        return;
+    }
+    let army = crate::co_roster::battle_army(core, target);
+    if !(1..=5).contains(&army) || crate::co_roster::army_co(core, army) != (KLAUS, 1) {
+        return;
+    }
+    for at in [0x0C, 0x14] {
+        let v = core.raw_read_16(attacker + at, -1) as i16 as i32;
+        core.raw_write_16(attacker + at, -1, (v * TESTUDO_KEEPS / 100) as u16);
+    }
+}
+
+fn army_at(core: &Core, unit: u32) -> u32 {
+    crate::five::army_of_index(core, unit.wrapping_sub(core.raw_read_32(UNITS_POINTER, -1)) / UNIT)
+}
+
+fn team_of(core: &Core, army: u32) -> u8 {
+    core.raw_read_8(crate::five::players(core) + 0x3C * army + PLAYER_TEAM, -1)
+}
+
+/// The HP (tenths) a unit with `hp` is left with after Onager's splash: 1 shown HP less, a unit on its last stays.
+pub fn splash_hp(hp: u16) -> u16 {
+    if hp > 10 {
+        hp - 10
+    } else {
+        hp
+    }
+}
+
+/// The battle `sub_08041978` has worked out (attacker: the selected unit, defender index in `defender`) is about to charge the meters.
+pub fn onager(core: &mut Core, defender: u32) {
+    if !abilities_on(core) || defender == 0 || defender >= SLOTS {
+        return;
+    }
+    let units = core.raw_read_32(UNITS_POINTER, -1);
+    let att = core.raw_read_32(SELECTED_UNIT, -1);
+    if att < units || att >= units + UNIT * SLOTS {
+        return;
+    }
+    let army = army_at(core, att);
+    if !(1..=5).contains(&army) || crate::co_roster::army_co(core, army) != (AURELIA, 2) || !indirect(core.raw_read_8(att, -1)) {
+        return;
+    }
+    let dfd = units + UNIT * defender;
+    if core.raw_read_8(dfd, -1) == 0 {
+        return;
+    }
+    let (tx, ty) = (core.raw_read_8(dfd + 2, -1) as i32, core.raw_read_8(dfd + 3, -1) as i32);
+    let (ax, ay) = (core.raw_read_16(DESTINATION, -1) as i16 as i32, core.raw_read_16(DESTINATION + 2, -1) as i16 as i32);
+    if (ax - tx).abs() + (ay - ty).abs() < 2 {
+        return;
+    }
+    let mine = team_of(core, army);
+    for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
+        let Some(u) = crate::unit_actions::unit_at(core, tx + dx, ty + dy) else { continue };
+        if u == dfd || team_of(core, army_at(core, u)) == mine || crate::oozium::immune(core, u) {
+            continue;
+        }
+        let w = core.raw_read_16(u + 4, -1);
+        let hp = w & 0x7F;
+        let left = splash_hp(hp);
+        if left != hp {
+            core.raw_write_16(u + 4, -1, (w & !0x7F) | left);
+        }
+    }
+}
+
+/// One bit per unit slot (320): the unit attacked under Triumph and has its extra move left. EWRAM `ram_map::REGIONS`; +0x28 the army whose turn it was last tick.
+pub const MOVED_AFTER_ATTACK: u32 = 0x0203_C980;
+pub const MOVED_BYTES: u32 = 40;
+pub const MOVED_LEN: u32 = MOVED_BYTES + 1;
+const MOVED_TURN: u32 = MOVED_AFTER_ATTACK + MOVED_BYTES;
+
+fn moved_bit(core: &Core, i: u32) -> bool {
+    core.raw_read_8(MOVED_AFTER_ATTACK + i / 8, -1) & (1 << (i % 8)) != 0
+}
+
+fn set_moved_bit(core: &mut Core, i: u32, on: bool) {
+    let b = core.raw_read_8(MOVED_AFTER_ATTACK + i / 8, -1);
+    let v = if on { b | 1 << (i % 8) } else { b & !(1 << (i % 8)) };
+    if v != b {
+        core.raw_write_8(MOVED_AFTER_ATTACK + i / 8, -1, v);
+    }
+}
+
+/// The unit slot of a unit record (None for a pointer outside gUnits).
+fn slot_of(core: &Core, unit: u32) -> Option<u32> {
+    let units = core.raw_read_32(UNITS_POINTER, -1);
+    let i = unit.wrapping_sub(units) / UNIT;
+    (unit >= units && i != 0 && i < SLOTS).then_some(i)
+}
+
+/// The return addresses (Thumb) with which a battle ends a unit's action by `sub_080424FC`: no defender, the map-only battle, the scene's
+/// end, an attack on a structure.
+const BATTLE_ENDS: [u32; 4] = [0x0804_1A01, 0x0804_1E05, 0x0804_1E55, 0x0804_0977];
+/// `sub_080424FC` at its `orrs r0, r1` (r0 the unit's flags, r1 = 1) that sets the unit's done bit.
+const ACTION_DONE: u32 = 0x0804_2532;
+fn action_done(core: &mut Core) {
+    if !is_on(core) {
+        return;
+    }
+    let unit = core.raw_read_32(SELECTED_UNIT, -1);
+    let Some(i) = slot_of(core, unit) else { return };
+    let sp = core.gba().cpu().gpr(13) as u32;
+    let lr = core.raw_read_32(sp + 4, -1);
+    if !BATTLE_ENDS.contains(&lr) {
+        // Any other end of the action (Wait, ...) finishes the unit for good.
+        set_moved_bit(core, i, false);
+        return;
+    }
+    let army = army_at(core, unit);
+    let (flags, hp) = (core.raw_read_8(unit + 1, -1), core.raw_read_8(unit + 4, -1) & 0x7F);
+    if !abilities_on(core)
+        || !(1..=5).contains(&army)
+        || crate::co_roster::army_co(core, army) != (CASSIUS, 2)
+        || crate::ds_ai::is_cpu(core, army)
+        || !vehicle(core.raw_read_8(unit, -1))
+        || flags & 0x08 != 0
+        || hp == 0
+        || moved_bit(core, i)
+    {
+        return;
+    }
+    set_moved_bit(core, i, true);
+    core.gba_mut().cpu_mut().set_gpr(1, 0);
+}
+
+/// The two Fire rows' show tests (`0x0802CA78` direct, `0x0802CB20` ranged; r0 = 1 hides): the selected unit has had its extra move, it may not fire again.
+const FIRE_SHOWN: [u32; 2] = [0x0802_CA78, 0x0802_CB20];
+fn fire_shown(core: &mut Core) {
+    if !is_on(core) {
+        return;
+    }
+    let Some(i) = slot_of(core, core.raw_read_32(SELECTED_UNIT, -1)) else { return };
+    if !moved_bit(core, i) {
+        return;
+    }
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(0, 1);
+    let lr = cpu.gpr(14) as u32;
+    cpu.set_thumb_pc(lr & !1);
+}
+
+/// Every frame: when the turn passes to another army the extra moves are forgotten.
+fn forget_moves(core: &mut Core) {
+    let army = core.raw_read_16(CURRENT_ARMY, -1) as u8;
+    if core.raw_read_8(MOVED_TURN, -1) == army {
+        return;
+    }
+    for k in 0..MOVED_BYTES {
+        if core.raw_read_8(MOVED_AFTER_ATTACK + k, -1) != 0 {
+            core.raw_write_8(MOVED_AFTER_ATTACK + k, -1, 0);
+        }
+    }
+    core.raw_write_8(MOVED_TURN, -1, army);
+}
+
+pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
+    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![(STRIKE_APPLIED, Box::new(strike_applied)), (ACTION_DONE, Box::new(action_done))];
+    for at in FIRE_SHOWN {
+        t.push((at, Box::new(fire_shown)));
+    }
+    t
+}
+
 /// Every frame with the pack: the code is in ROM.
 pub fn tick(core: &mut Core, on: bool) {
     if on {
         install(core);
+        forget_moves(core);
     }
 }
 
@@ -390,6 +604,25 @@ mod tests {
             let fp = bonus(VARRO, mode, 5, FIREPOWER) + if mode > 0 { 10 } else { 0 };
             assert!(fp + bonus(VARRO, mode, 5, DEFENCE) <= cap, "mode {mode}");
         }
+    }
+
+    #[test]
+    fn onager_takes_one_hp_and_never_the_last() {
+        assert_eq!((splash_hp(100), splash_hp(55), splash_hp(11)), (90, 45, 1));
+        assert_eq!((splash_hp(10), splash_hp(7), splash_hp(1)), (10, 7, 1), "a unit on its last HP keeps it");
+    }
+
+    #[test]
+    fn triumph_keeps_a_bit_for_every_unit_slot() {
+        assert!(MOVED_BYTES * 8 >= SLOTS);
+        assert_eq!(MOVED_LEN, MOVED_BYTES + 1);
+        // The traps sit at distinct game addresses (the factory's test checks them against every module's).
+        let at: Vec<u32> = traps().iter().map(|t| t.0).collect();
+        let mut sorted = at.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), at.len());
+        assert!(BATTLE_ENDS.iter().all(|a| a & 1 == 1), "return addresses are Thumb");
     }
 
     #[test]
