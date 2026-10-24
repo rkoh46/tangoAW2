@@ -62,7 +62,7 @@ importer's steps). Rust: `cargo test -p tango-gamesupport-aw2 --lib es_cos` (the
 
 ## In the game (`es_cos.rs`, `co_new.rs`)
 The four are CO ids 86..89 (`co_new::ES_FIRST`), filled like Clone Andy's row (Andy's numbers) with their own art, name graphic, texts and quotes: **in the campaign always, in Versus only with `TANGOAW2_ES_VERSUS=1`** (docs/dev/env-aids.md),
-because the tables of the console are built from it (both peers of a match must agree) and their powers are not built yet (phase 2). On: the Teams list, the CO select cards, the HUD, the dialogue
+because the tables of the console are built from it (both peers of a match must agree) and their powers' rules are engine hooks (`es_co.rs`) that both peers must run alike. On: the Teams list, the CO select cards, the HUD, the dialogue
 boxes (Power quotes), the power and tag cut-ins, and the CO page show them.
 
 ## Name plates

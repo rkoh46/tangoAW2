@@ -365,8 +365,9 @@ def total_defence(rules, s: Side, cut=0, dist=1):
     return total
 
 
-def strike(rules, a: Side, b: Side, dist, is_attacker, a_hp_now):
-    """Possible HP losses of `b` when `a` (now at `a_hp_now` HP) strikes it."""
+def strike(rules, a: Side, b: Side, dist, is_attacker, a_hp_now, keep=100):
+    """Possible HP losses of `b` when `a` (now at `a_hp_now` HP) strikes it. `keep`: the percent of the damage that gets through (Klaus's Testudo
+    cuts a counterattack to 75, crate::es_co::strike_applied: after the shown-HP scaling, before the defence)."""
     weapon, base = choose_weapon(rules, a, b, dist, is_attacker)
     m = rules.co_mode(a.co, a.co_mode)
     acc = 100 + (0 if rules.chart is not None else step2_extra(rules, a))
@@ -383,11 +384,12 @@ def strike(rules, a: Side, b: Side, dist, is_attacker, a_hp_now):
         rolls = sorted({max(0, dmg0 + r - q) for r in range(luck[0]) for q in range(max(luck[1], 1))})
     for d in rolls:
         d = div(d * hp_bars(a_hp_now), 10)
+        d = div(d * keep, 100)
         losses.add(div((200 - defence) * d, 100))
     return Outcome(weapon, base, acc, luck, defence, losses)
 
 
-def battle(rules, att: Side, dfd: Side, dist, dfd_hp_after=None):
+def battle(rules, att: Side, dfd: Side, dist, dfd_hp_after=None, counter_keep=100):
     """The attack and the counter.
 
     Returns (attack Outcome, counter Outcome or None). The counter depends on the
@@ -403,7 +405,7 @@ def battle(rules, att: Side, dfd: Side, dist, dfd_hp_after=None):
         for h in after:
             if h <= 0:
                 continue
-            out = strike(rules, dfd, att, dist, False, h)
+            out = strike(rules, dfd, att, dist, False, h, counter_keep)
             losses |= out.losses
         if out is not None and out.weapon:
             out.losses = losses

@@ -110,6 +110,10 @@ class Game:
         e.wait(150)
         e.press("A", 8)  # New -> Select Map
         e.wait(150)
+        # Offline Versus lists maps by player count; L and R together (held past the combo's delay) show the game's own tabs, Design Maps among them
+        # (crate::online_maps::offline_before).
+        e.press("L+R", 12)
+        e.wait(120)
         if not self.press_until("LEFT", lambda: e.u8(MAP_TAB) == MAP_TAB_DESIGN, tries=12, hold=8, settle=50):
             raise NavError(f"Design Maps tab not reached (tab {e.u8(MAP_TAB)})")
         e.wait(30)
