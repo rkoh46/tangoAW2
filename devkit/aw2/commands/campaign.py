@@ -4,6 +4,8 @@
                                             the world map after a win, mid-battle triggers; scenes with no song are marked `-` (story scenes without one fail)
   campaign menu [--out DIR]                 start the real app offline with the Dual Strike pack through the AI debug channel, open Select Mode > Campaign and
                                             photograph the chooser at each entry (AW2, DS, BH, BH2 and Emerald Sun placeholders) and the "Coming soon" boxes
+  campaign sheets | sim | difficulty | check | dialogue   the Emerald Sun Campaign (docs/dev/es-campaign.md): review pictures, the mission sim, the difficulty score,
+                                            the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`
   campaign trace [--mission N ...]          play the missions in the offline harness (CO screen, card, intro, forced win, victory, results, map scenes) and
                                             sample every 20 frames: song, fade, text, screen, the sound's loudness; prints scene -> song and flags silent gaps
 """
@@ -48,6 +50,7 @@ def register(sub):
     a = cs.add_parser("trace", help="play missions in the harness and trace song / fade / silence")
     a.add_argument("--mission", nargs="*", type=int, default=[1])
     a.add_argument("--out")
+    a.add_argument("--campaign", default="bh", choices=["bh", "es"])
     a.set_defaults(fn=trace)
 
 
@@ -151,11 +154,11 @@ def trace(a):
     from .maps import _bases
     _bases()
     env = dict(os.environ, AW2TEST_STORY_DIR=str(out), AW2TEST_STORY_MISSIONS=",".join(map(str, a.mission)))
-    r = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "aw2test" / "run.py"), "-k", "story_trace_bh_missions"], env=env, cwd=cfg.REPO)
+    r = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "aw2test" / "run.py"), "-k", f"story_trace_{a.campaign}_missions"], env=env, cwd=cfg.REPO)
     from aw2test import story
     bad = 0
     for n in a.mission:
-        f = out / f"bh_m{n:02d}.json"
+        f = out / f"{a.campaign}_m{n:02d}.json"
         if not f.exists():
             continue
         print(f"--- M{n}")
