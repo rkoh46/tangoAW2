@@ -22,7 +22,7 @@ fn everyone() -> Vec<u8> {
 // --- M13 The Free Port (Black Hole's yard: inventions allowed) ---------------------------------
 
 /// The Harbour Office, the neutral city in the middle of the port.
-const OFFICE: (u8, u8) = (12, 10);
+const OFFICE: (u8, u8) = (19, 15);
 
 fn reset_hold(core: &mut Core) {
     core.raw_write_8(STATE, -1, 0);
@@ -69,8 +69,10 @@ fn es13() -> MissionDef {
 
 // --- M14 Varro's Gambit ------------------------------------------------------------------------
 
-const DOCK1: (u8, u8) = (27, 5);
-const DOCK2: (u8, u8) = (27, 12);
+/// The legion's own reserves come up the camp road beside the player's HQ on days 5 and 8.
+const LEGION: [(u8, u8); 4] = [(7, 14), (8, 14), (6, 14), (9, 15)];
+/// Castra Maxima's reserve road, inside the camp's east side (`five/es/spec/es14.py`): the Consul's reserves reach the HQ from here on days 5 and 8.
+const RESERVE: [(u8, u8); 4] = [(40, 12), (40, 13), (40, 15), (40, 16)];
 
 /// Day 4: Cassius's army (army 3) goes over to the player's side (AW2's team byte of its player block).
 fn cassius_changes_sides(core: &mut Core) {
@@ -81,27 +83,26 @@ fn cassius_changes_sides(core: &mut Core) {
 
 fn es14() -> MissionDef {
     let mut m = MissionDef::new("es14", "Varro's Gambit");
-    m.objective = "Hold the quay's HQ, then break out and take both docks by day 14.";
+    m.objective = "Storm Castra Maxima: take the Consul's HQ or rout his army.";
     m.map = MapSrc::Built("es14");
     m.armies = vec![
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(4000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(6000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(12000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(CASSIUS)).funds(5000),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
     m.units = deployment("es14");
-    m.day_limit = 14;
-    m.rank_days = 11;
+    m.rank_days = 12;
     m.intro = scene("m14_pre");
     m.victory = scene("m14_post");
     m.after = chain(&["m14_map"]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(scene("m14_day4")), Action::Custom(cassius_changes_sides)]),
-        after(Cond::All(vec![owns(DOCK1.0, DOCK1.1), owns(DOCK2.0, DOCK2.1)]), vec![Action::Win]),
-        // The legion's reserves land at the quay on days 5 and 8 (the pocket's free cells).
-        on_day(5, None, vec![Action::Spawn(wave(1, unit::MD_TANK, &[(1, 11), (3, 11)]))]),
-        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &[(1, 10)]), wave(1, unit::MD_TANK, &[(0, 11)])].concat())]),
-        on_day(m.day_limit + 1, None, vec![Action::Lose]),
+        // The legion's convoy reaches the camp road on days 5 and 8, and the Consul's reserves march in from the camp's east road.
+        on_day(5, None, vec![Action::Spawn(wave(1, unit::MD_TANK, &LEGION[0..2]))]),
+        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &LEGION[2..3]), wave(1, unit::MD_TANK, &LEGION[3..4])].concat())]),
+        on_day(5, None, vec![Action::Spawn(wave(2, unit::MD_TANK, &RESERVE[0..2]))]),
+        on_day(8, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RESERVE[2..3]), wave(2, unit::MD_TANK, &RESERVE[3..4])].concat())]),
     ];
     m.flag = region::ACT4[1];
     m.stars = 4;
@@ -111,44 +112,29 @@ fn es14() -> MissionDef {
 
 // --- M15 Pax Romana ----------------------------------------------------------------------------
 
-/// Varro's flagship harbour, on the east island.
-const FLAGSHIP_PORT: (u8, u8) = (23, 10);
+/// The Strait Fort's harbour, in the inlet of the east shore (`five/es/spec/es15.py`): the port to take once the flagship is sunk.
+const HARBOUR: (u8, u8) = (39, 13);
 
 fn es15() -> MissionDef {
     let mut m = MissionDef::new("es15", "Pax Romana");
-    m.objective = "Rout Varro's fleet and take his flagship harbour. The Accord's ships join on day 6.";
+    m.objective = "Break the blockade: sink the flagship and take the Strait Fort's harbour.";
     m.map = MapSrc::Built("es15");
     m.armies = vec![
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::PickPair).funds(8000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(14000),
-        // The relief fleet: Nell's, with nothing until day 6.
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::NELL)).team(1).funds(0),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPair).funds(10000),
+        // The Accord's strait fleet: Drake's ships and the fort, and Sensei's air wing, allied (the same team).
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(10000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(8000),
     ];
     m.pool = everyone();
     m.units = deployment("es15");
-    m.rank_days = 14;
+    m.rank_days = 16;
     m.intro = scene("m15_pre");
     m.victory = scene("m15_post");
     m.after = chain(&["m15_map"]);
     m.triggers = vec![
-        on_day(
-            6,
-            None,
-            vec![
-                Action::Scene(scene("m15_day6")),
-                Action::Spawn(
-                    [
-                        wave(3, unit::CRUISER, &[(8, 17), (8, 18)]),
-                        wave(3, unit::BATTLESHIP, &[(8, 19)]),
-                        wave(3, unit::SUB, &[(9, 18)]),
-                        wave(3, unit::FIGHTER, &[(2, 17), (4, 17), (1, 18)]),
-                        wave(3, unit::B_COPTER, &[(5, 18), (2, 19), (4, 19)]),
-                    ]
-                    .concat(),
-                ),
-            ],
-        ),
-        after(Cond::All(vec![owns(FLAGSHIP_PORT.0, FLAGSHIP_PORT.1), Cond::ArmyUnitsAtMost { army: 2, n: 6 }]), vec![Action::Win]),
+        // Day 6: Nell's call offers the Accord's table; the fleet fights on.
+        on_day(6, None, vec![Action::Scene(scene("m15_day6"))]),
+        after(Cond::All(vec![Cond::UnitGone("flagship"), owns(HARBOUR.0, HARBOUR.1)]), vec![Action::Win]),
     ];
     m.flag = region::ACT4[2];
     m.stars = 4;

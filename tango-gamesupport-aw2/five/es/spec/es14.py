@@ -1,94 +1,134 @@
-"""M14 Varro's Gambit (Act III): hold the quay HQ against the Praetorians and Cassius, then break out along the causeway to the east docks."""
+"""M14 Varro's Gambit (Act IV): the legion storms Castra Maxima, the Consul's fortified camp on the Aurean shore, by three lanes: the coast road, the river valley and the ridge track."""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
 
-W, H = 30, 18
+W, H = 46, 28
+AVOID = "~r=-^IZ#,12345BAPSNWELvnFDXO"
+# where the south sea starts in each column (the coast has coves and spits)
+COAST = [24, 24, 24, 24, 23, 23, 24, 24, 25, 25, 25, 24, 24, 25, 25, 26, 26, 25, 25, 24, 24, 25, 25, 26, 26, 25, 25, 24, 24, 25,
+         25, 25, 25, 25, 25, 25, 24, 24, 25, 25, 24, 24, 24, 24, 24, 24]
+# where the east sea starts in each row
+EAST = [41, 41, 42, 43, 43, 43, 42, 42, 42, 43, 43, 43, 44, 44, 42, 41, 41, 41, 41, 42, 43, 43, 43, 42, 42, 42, 42, 42]
 
 
 def build():
     m = Canvas("es14", W, H)
     m.header(armies=3, colours=(BM, OS, YC), team=[1, 2, 3], objective=[1],
-             comment="M14 Varro's Gambit: phase 1 hold the quay HQ (1), phase 2 take dock1 and dock2 (ports on the east bank) before the ships leave. "
-                     "Army 3 (Cassius) is hostile to both until day 4 (mission code). Start forces: player INF4 MECH3 TANK3 MDT2 RECON1 ART2 AA1 (16), funds 4000; "
-                     "Varro INF4 MECH2 TANK3 MDT3 ART2 ROCK1 AA1 FTR1 (17, of which INF2 MDT2 ROCK1 hold the docks); Cassius TANK3 RECON2 MDT1 INF2 (8). "
-                     "Threat/answer: marine tanks and Md Tanks on the causeway -> the two bridges (8,9) (8,12) are the pocket's only gates besides the north gap (4,7): "
-                     "hold them with Tanks/MDT, ARTs behind the river; marine ART and Rockets on the east bank hit the causeway (range 4) -> Recon sees them, the mountain nest (17,6..8) "
-                     "gives cover, ART answers; the Fighter -> the AA and the quay's roads; Cassius's tank rush down the gap (4,7) -> ridge choke with ART behind.")
-    # sea: south of the quay, the channel across the whole map, the east sea
-    m.rect("~", 0, 15, 22, 17)
-    m.rect("~", 19, 0, 22, 17)
-    m.rect("~", 28, 0, 29, 17)
-    # ridge between Cassius's plain and the quay pocket, gap at x=4; river along the pocket's east side
-    m.rect("^", 0, 7, 3, 7).rect("^", 5, 7, 8, 7)
-    m.river([(8, 8), (8, 14)])
-    # camp ridge (Varro's) with its gate at x 13, and the mountain nest at the causeway head
-    m.rect("^", 10, 6, 12, 6).rect("^", 14, 6, 18, 6)
-    m.rect("^", 17, 7, 18, 8)
+             comment="M14 Varro's Gambit (province: the Aurean shore, the Consul's camp Castra Maxima): storm the camp, take Varro's HQ 2 (38,12) or rout his army. "
+                     "Three lanes: the coast road (south, over the river's mouth bridge), the river valley (centre road beside the moat river, gate bridge), the ridge track (north, through Cassius's hill camp to the north gate). "
+                     "Army 3 (Cassius, Yellow Comet, HQ (21,4) on the ridge plateau) is hostile to both until day 4 (mission code), then fights for the player. "
+                     "Start forces: player INF4 MECH3 TANK3 MDT2 RECON1 ART2 AA1 (16), funds 6000; Varro INF5 MECH2 TANK4 MDT3 ART3 ROCK1 AA1 MIS1 FTR1 RECON1 (22, of which INF3 ART3 ROCK1 hold) + reserves on days 5 and 8 at the camp's east road; "
+                     "Cassius TANK3 RECON2 MDT1 INF2 (8). Threat/answer: Varro's Fighter -> AA and Missiles in the player's reinforcements and the player's AA on the road, woods cover; "
+                     "entrenched Artillery and Rockets behind the wall (range 3..5) -> Recon to find them, Tanks close fast through the gates, own Artillery behind the moat; Md Tank counter-attacks from the gates -> "
+                     "own Tanks/MDT, bridges are the choke; Cassius's early tank rush on the ridge track -> hold the ridge pass with Tanks and ART until he changes sides.")
+    # --- the sea ---
+    for x in range(W):
+        m.rect("~", x, COAST[x], x, H - 1)
+    for y in range(H):
+        m.rect("~", EAST[y], y, W - 1, y)
+    m.cluster("~", 0, 14, 5, seed=1, only=".")          # a cove on the west coast
+    m.cluster("~", 0, 19, 3, seed=2, only=".")
+    # --- the mountains: the ridge in the north, the camp's wall, the sea wall ---
+    for i, (cx, cy, rx, ry) in enumerate([(14, 7, 4, 3), (22, 3, 7, 3), (27, 8, 3, 3), (18, 9, 3, 1), (12, 2, 3, 2), (6, 3, 3, 2), (40, 3, 3, 2), (36, 1, 2, 1)], 30):
+        m.blob("^", cx, cy, rx, ry, seed=i, wobble=0.3)
+    # Cassius's plateau: open ground inside the ridge, a pass on each side
+    for i, (cx, cy, rx, ry) in enumerate([(21, 4, 4, 1), (17, 5, 2, 1), (26, 5, 2, 1)]):
+        m.blob(".", cx, cy, rx, ry, seed=40 + i, wobble=0.2, only="^")
+    m.rect(".", 20, 6, 21, 9)                               # the plateau's south pass to the valley
+    m.rect(".", 11, 5, 15, 5)                               # the track enters the ridge
+    m.rect(".", 26, 5, 31, 6)                               # ... and leaves it for the north gate
+    # the camp's wall: a broken line of mountains along the moat, with the gates open
+    for y in (12, 13, 14, 15, 17, 18, 19, 20, 22, 23):
+        m.put("^", 33, y)
+    for y in (2, 3, 4, 5, 6, 8, 9, 10, 11):
+        m.put("^", 32 + (y % 3 == 0), y)
+    for i, (cx, cy, n) in enumerate([(41, 21, 7), (41, 10, 6), (38, 24, 4), (35, 10, 3), (36, 19, 3), (38, 5, 3), (41, 15, 2)], 60):
+        m.cluster("^", cx, cy, n, seed=i)
+    # --- woods: hedgerows, copses, the dunes of the coast ---
+    for i, (cx, cy, n) in enumerate([(6, 12, 8), (8, 20, 9), (4, 8, 6), (11, 15, 7), (15, 14, 6), (18, 17, 9), (24, 18, 9), (27, 14, 6), (22, 12, 6), (16, 20, 6),
+                                     (20, 22, 7), (26, 22, 6), (35, 7, 7), (38, 18, 6), (36, 22, 5), (35, 14, 5), (10, 24, 4), (12, 6, 6)], 100):
+        m.cluster("f", cx, cy, n, seed=i)
+    # --- the river: spring in the western hills, along the valley, then the moat down the camp's west side to the south sea ---
+    def hriver(y, x0, x1, shifts):
+        for x in range(x0, x1 + 1):
+            m.put("-", x, y)
+            if x in shifts:
+                y += shifts[x]
+                m.put("-", x, y)
+        return y
+
+    def vriver(x, y0, y1, shifts):
+        for y in range(y0, y1 + 1):
+            m.put("-", x, y)
+            if y in shifts:
+                x += shifts[y]
+                m.put("-", x, y)
+        return x
+    m.put("^", 12, 11).put("^", 12, 10).put("^", 11, 11)
+    yend = hriver(11, 13, 30, {15: 1, 20: 1, 26: 1})
+    xend = vriver(30, yend, 24, {19: 1})
+    keep = set("12345BCAPTQbcapt") | INVENTION_CHARS
+
+    def rd(pts, over=None):
+        for x, y in m.path(pts):
+            c = m.get(x, y)
+            if c == "-":
+                m.put("=", x, y)
+            elif c not in keep and c != "=" and (over is None or c in over):
+                m.put("R", x, y)
+
+    def at(ch, x, y):
+        if m.get(x, y) in "-=~":
+            print("BAD", ch, x, y, m.get(x, y))
+        return m.put(ch, x, y)
+
+    def ats(ch, cells):
+        for x, y in cells:
+            at(ch, x, y)
+        return m
     # --- roads ---
-    m.line("R", [(4, 4), (4, 9), (7, 9)])
-    m.line("R", [(9, 9), (18, 9)])
-    m.line("R", [(23, 9), (26, 9)])
-    m.bridge(8, 9).bridge(19, 9, 22, 9)
-    m.line("R", [(5, 12), (7, 12)]).bridge(8, 12).line("R", [(9, 12), (13, 12), (13, 9)])
-    m.line("R", [(13, 6), (13, 9)])
-    m.line("R", [(1, 14), (7, 14)])
-    m.line("R", [(4, 9), (4, 14)])
-    # --- the player's quay ---
-    m.put("1", 3, 13).put("B", 5, 13).put("P", 6, 14)
-    m.puts("c", [(2, 10), (10, 13)])
-    m.puts("f", [(1, 9), (6, 10), (2, 12), (7, 14), (0, 12)])
-    # --- Cassius's NW plain ---
-    m.put("3", 3, 3).put("B", 5, 3)
-    m.puts("f", [(1, 2), (2, 5), (6, 5), (7, 3), (0, 4)])
-    m.puts("c", [(6, 1)])
-    # --- Varro's camp, north ---
-    m.put("2", 15, 2).put("B", 12, 2).put("B", 17, 2).put("A", 15, 4)
-    m.line("R", [(13, 2), (13, 6)], over=".f")
-    m.line("R", [(14, 4), (14, 4)]) if False else None
-    m.puts("c", [(12, 4), (17, 4)])
-    # the city in the middle
-    m.puts("c", [(13, 8), (11, 8), (15, 8), (11, 10), (15, 10)])
-    m.puts("f", [(10, 11), (16, 11), (12, 11), (14, 11), (9, 7)])
-    m.note("city", 13, 8, "the contested city (five neutral cities 11..15 x 8..10)")
-    # --- the east bank and the docks ---
-    m.put("P", 27, 5).put("P", 27, 12)
-    m.rect(",", 28, 3, 28, 14)
-    m.line("R", [(26, 5), (26, 13)])
-    m.line("R", [(23, 3), (23, 9)])
-    m.bridge(19, 3, 22, 3)
-    m.line("R", [(17, 3), (18, 3)], over=".fc")
-    m.puts("f", [(24, 6), (24, 12), (25, 2), (24, 15)])
-    # --- units: player (pocket) ---
-    m.units(1, INF, [(2, 11), (5, 10), (3, 14), (6, 13)])
-    m.units(1, MECH, [(4, 11), (3, 9), (6, 11)])
-    m.units(1, TANK, [(5, 9), (7, 11), (7, 13)])
-    m.units(1, MDT, [(3, 10), (5, 11)])
-    m.unit(1, RECON, 2, 13)
-    m.units(1, ART, [(4, 12), (6, 12)])
-    m.unit(1, AA, 4, 13)
-    # Varro: camp and city advance, docks hold
-    m.units(2, INF, [(14, 5), (12, 5)])
-    m.units(2, INF, [(25, 5), (25, 13)], hold=True)
-    m.units(2, MECH, [(13, 3), (16, 5)])
-    m.units(2, TANK, [(14, 3), (13, 5), (15, 5)])
-    m.unit(2, MDT, 16, 3)
-    m.units(2, MDT, [(25, 7), (25, 11)], hold=True)
-    m.units(2, ART, [(11, 3), (16, 4)])
-    m.unit(2, ROCK, 25, 9, hold=True)
-    m.unit(2, AA, 12, 3).unit(2, FTR, 14, 4)
-    # Cassius
-    m.units(3, TANK, [(4, 2), (4, 5), (5, 5)])
-    m.units(3, RECON, [(2, 3), (3, 5)])
-    m.unit(3, MDT, 3, 4)
-    m.units(3, INF, [(5, 4), (2, 4)])
+    rd([(7, 17), (7, 20), (11, 20), (11, 21), (20, 21), (20, 22), (27, 22), (27, 21), (35, 21)], over=".f")      # the coast road
+    rd([(6, 14), (9, 15), (14, 15), (14, 17), (22, 17), (24, 16), (35, 16)], over=".f")                           # the valley road
+    rd([(7, 11), (8, 8), (11, 5), (21, 4), (27, 5), (29, 6), (35, 7)], over=".f^")                                # the ridge track
+    rd([(5, 14), (6, 14)], over=".f")
+    rd([(21, 5), (21, 9), (18, 10), (18, 15)], over=".f^")                                                         # down from Cassius's plateau
+    rd([(35, 7), (38, 7), (38, 21)], over=".f")
+    rd([(35, 16), (38, 16)], over=".f")
+    rd([(35, 21), (38, 21)], over=".f")
+    rd([(38, 12), (40, 12), (40, 17)], over=".f")
+    # --- properties ---
+    at("1", 5, 14); at("B", 7, 11); at("B", 7, 17); at("P", 4, 22)
+    ats("c", [(3, 10), (9, 14), (6, 20), (2, 17)])
+    at("3", 21, 4); at("B", 18, 4); at("B", 24, 5)
+    ats("c", [(16, 5), (27, 4)])
+    ats("c", [(17, 15), (24, 16), (14, 19), (22, 20), (28, 18)])
+    at("2", 38, 12); at("B", 36, 9); at("B", 36, 17); at("A", 40, 8); at("P", 40, 17)
+    ats("c", [(35, 12), (39, 10), (37, 19), (35, 5), (40, 14), (39, 21)])
+    # --- units ---
+    m.spread(1, {INF: 4, MECH: 3, TANK: 3, MDT: 2, RECON: 1, ART: 2, AA: 1}, (2, 9, 10, 20), seed=1, gap=1, avoid=AVOID)
+    m.spread(3, {TANK: 3, RECON: 2, MDT: 1, INF: 2}, (16, 2, 27, 6), seed=3, gap=1, avoid=AVOID)
+    def stand(army, kind, x, y, **kw):
+        taken = {(u["x"], u["y"]) for u in m.u}
+        for r in range(0, 5):
+            for dy in range(-r, r + 1):
+                for dx in range(-r, r + 1):
+                    c = (x + dx, y + dy)
+                    if m.inside(*c) and m.get(*c) in ".fR" and c not in taken:
+                        return m.unit(army, kind, *c, **kw)
+        raise ValueError(("no ground", x, y))
+    for x, y in [(36, 11), (36, 14), (37, 18)]:
+        stand(2, ART, x, y, hold=True)
+    stand(2, ROCK, 36, 13, hold=True)
+    for x, y in [(34, 7), (34, 16), (34, 21)]:
+        stand(2, INF, x, y, hold=True)
+    m.spread(2, {INF: 2, MECH: 2, TANK: 4, MDT: 3, AA: 1, MIS: 1, FTR: 1, RECON: 1}, (34, 4, 41, 22), seed=2, gap=1, avoid=AVOID)
     # named places
-    m.note("hq1", 3, 13, "the quay HQ (must not fall in phase 1)"); m.note("hq2", 15, 2, "Varro's HQ"); m.note("hq3", 3, 3, "Cassius's HQ")
-    m.note("dock1", 27, 5, "east dock, north (Varro's port): breakout target"); m.note("dock2", 27, 12, "east dock, south: breakout target")
-    m.note("causeway", 19, 9, "causeway bridge x 19..22 on row 9 (4 cells, one lane); the north bridge x 19..22 on row 3 is the second crossing")
-    m.note("bridge_w1", 8, 9, "pocket gate bridge (river x=8)"); m.note("bridge_w2", 8, 12, "pocket gate bridge (south)")
-    m.note("gap_n", 4, 7, "the one gap in the ridge between Cassius's plain and the quay pocket")
-    m.note("camp_gate", 13, 6, "gate of Varro's camp ridge")
-    m.note("airport", 15, 4, "Varro's airport")
-    m.note("nest", 17, 7, "mountain nest at the causeway head (17..18 x 7..8)")
+    m.note("hq1", 5, 14, "the legion's camp HQ"); m.note("hq2", 38, 12, "Varro's HQ in Castra Maxima: the objective"); m.note("hq3", 21, 4, "Cassius's HQ on the ridge plateau")
+    m.note("gate_n", 33, 7, "Castra Maxima's north gate (end of the ridge track)"); m.note("gate_c", 33, 16, "the valley gate"); m.note("gate_s", 33, 21, "the coast gate")
+    m.note("moat_bridge_c", 30, 16, "valley road bridge over the moat"); m.note("moat_bridge_s", 31, 21, "coast road bridge near the river mouth")
+    m.note("pass_w", 12, 5, "the ridge track's west pass"); m.note("pass_s", 21, 8, "Cassius's plateau south pass to the valley")
+    m.note("harbour", 40, 17, "Varro's port in the camp harbour"); m.note("airfield", 40, 8, "Varro's airport")
+    m.note("reserve1", 40, 12, "Varro's reserve column road (day 5, 8)")
+    m.note("port1", 4, 22, "the legion's port")
     return m

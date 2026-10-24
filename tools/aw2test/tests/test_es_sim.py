@@ -30,10 +30,11 @@ BOT = {
     10: {"goals": [(16, 2)]},
     11: {"goals": [(37, 10)]},
     12: {"goals": [(17, 12)]},
-    13: {"goals": [(12, 10)]},
-    15: {"goals": [(23, 10)]},
-    # (M16 and M14: hold the line while the computer's waves break on it, then go for the keep)
-    14: [{"stance": "defend", "days": 5, "goals": [(27, 5), (27, 12)]}, {"goals": [(27, 5), (27, 12)]}],
+    13: {"goals": [(19, 15)]},
+    # (M14 storms the camp: Varro's HQ)
+    14: {"goals": [(38, 12)]},
+    15: {"goals": [(39, 13)]},
+    # (M16: hold the line while the computer's waves break on it, then go for the enemy HQs)
     16: [{"stance": "defend", "days": 10, "goals": [(34, 10)], "nearest": True, "hunt": True}, {"goals": [(34, 10), (31, 2)]}],
 }
 
@@ -46,7 +47,7 @@ def handicap(ctx, e, g, d, n):
         if e.u8(p + 0x3C * a + 0x1B) == 0 or e.u8(p + 0x3C * a + 0x2A) == team:
             continue
         # (the units a mission's rules name stay: M7's flagship, M9's barges)
-        units = sorted((u for u in g.units(a) if u["type"] not in {7: (21,), 9: (23,)}.get(n, ())), key=lambda u: (u["type"], u["y"], u["x"]))
+        units = sorted((u for u in g.units(a) if u["type"] not in {7: (21,), 9: (23,), 15: (21,)}.get(n, ())), key=lambda u: (u["type"], u["y"], u["x"]))
         keep, seen = [], {}
         for u in units:
             k = seen.get(u["type"], 0)
