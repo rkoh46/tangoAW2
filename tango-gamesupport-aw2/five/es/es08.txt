@@ -14,21 +14,21 @@
 map es08
 armies 3 5 2 1 1
 team 1 2 2
-unit 1 1 6 7
+unit 1 1 7 7
 unit 1 1 11 13
-unit 1 1 6 15
+unit 1 1 5 15
 unit 1 1 8 16
 unit 1 2 12 6
 unit 1 2 5 11
-unit 1 2 5 13
+unit 1 2 4 13
 unit 1 3 6 9
 unit 1 3 9 14
-unit 1 5 12 8
+unit 1 5 11 8
 unit 1 5 8 9
-unit 1 5 12 10
-unit 1 5 7 11
+unit 1 5 10 10
+unit 1 5 12 11
 unit 1 6 8 6
-unit 1 6 10 11
+unit 1 6 10 12
 unit 1 10 2 8
 unit 1 10 5 9
 unit 1 14 6 12

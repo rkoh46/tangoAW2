@@ -40,12 +40,22 @@ def colours_of(data):
     return {rgb(data[i] | data[i + 1] << 8) for i in range(2, 24, 2)}
 
 
-def check_pixels(ctx, e, n, want, base):
+def check_pixels(ctx, e, g, n, want, base):
     """What the player sees: the screen shows the skin's unit colours and none of the nation's own, and no other army wears the skin."""
     from PIL import Image
     rom = open(paths.aw2_rom(), "rb").read()
     orig = lambda c: colours_of(rom[0xD3F04 + 0x20 * (c - 1):][:32]) if c != 5 else colours_of(rom[0xD3E84:][:32])
     now = lambda c: colours_of(e.read(BH_UNIT_PALETTE if c == 5 else UNIT_PALETTES + 0x20 * (c - 1), 32))
+    # (the cursor on the middle of the player's army: the screen shows it)
+    mine = g.units(1)
+    if mine:
+        xs = sorted(u["x"] for u in mine)
+        ys = sorted(u["y"] for u in mine)
+        try:
+            g.goto(xs[len(xs) // 2], ys[len(ys) // 2])
+        except Exception:
+            pass
+        e.wait(40)
     path = e.shot(f"/tmp/es_colours_m{n}")
     im = Image.open(path).convert("RGB")
     px = [(r >> 3, g >> 3, b >> 3) for r, g, b in im.getdata()]
@@ -73,7 +83,7 @@ def check(ctx, n):
     for slot, c in enumerate(want):
         rom = BH_UNIT_PALETTE if c == 5 else UNIT_PALETTES + 0x20 * (c - 1)
         ctx.eq(keep(e.read(PAL_RAM + (25 + slot) * 32, 32)), keep(e.read(rom, 32)), f"M{n}: army {slot + 1}'s unit palette is colour {c}'s")
-    check_pixels(ctx, e, n, want, base)
+    check_pixels(ctx, e, g, n, want, base)
     e.close()
 
 
