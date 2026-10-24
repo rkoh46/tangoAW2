@@ -289,7 +289,7 @@ All sixteen missions are playable: maps (`five/es/spec/es01.py` .. `es16.py`), m
 the skin on the player's army, a record in Flash slot 11. Differences from the outline above, all by the user's later rules or by the engine:
 - **No two-front engine**: M8's split line and M14's two phases are one map. **Black Hole inventions only in M9 and M13** (Black Hole is a real enemy army there); none in M16.
 - **M13 has four armies** (the player, Javier, Sonja, Kindle's Black Hole): the fifth army slot is Black Hole's and the player's, so a five-army mission could not also have Black Hole as an enemy; Blue Moon (Sasha) is absent from the port.
-- **M16 is the hardest** (Varro with 40,000 funds, 55 start units, two production armies, five reinforcement waves, a charged Super Power from day 6): `aw2dev campaign difficulty`.
+- **M16 is the hardest** (Varro with 40,000 funds, 38 start units (an army stops at 50), two production armies, five reinforcement waves, a charged Super Power from day 6): `aw2dev campaign difficulty`.
 - **Enemy pairs**: M2 Jess + Eagle, M5 Grimm + Sensei and M9 Adder + Flak are enemy tag pairs on one army; M6, M7, M8, M10, M11, M12 have two allied enemy armies; M15's Accord fleet is an allied army (Nell) with no units until day 6; Cassius's M14 army changes teams on day 4.
 - **M11**: the four APCs are the player's own (the escort is a race with a day limit of 14, not a scripted march).
 - **Powers not built** (they need new engine hooks): Klaus's "counterattacks do 25% less", Aurelia's splash, Cassius's "move again after attacking"; their numbers are kept (docs/dev/es-campaign.md).

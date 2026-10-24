@@ -172,14 +172,15 @@ mod tests {
         assert!(ROSTER.len() as u32 <= crate::ds_campaign::BOND_SHIFT);
     }
 
-    /// An army has 63 unit slots: a deployment of more would spill into the next army's.
+    /// AW2 stops an army's production, and a reinforcement a trigger spawns, at 50 units (found by the sim: Varro, at 50, built and received nothing): a start of
+    /// more than 40 leaves too little to build and to send.
     #[test]
-    fn no_army_starts_with_more_than_56_units() {
+    fn no_army_starts_with_more_than_40_units() {
         for m in &def().missions {
             let units = if m.units.is_empty() { Vec::new() } else { m.units.clone() };
             for a in 1..=m.armies.len() as u8 {
                 let n = units.iter().filter(|u| u.army == a).count();
-                assert!(n <= 56, "{}: army {a} starts with {n} units", m.key);
+                assert!(n <= 40, "{}: army {a} starts with {n} units", m.key);
             }
         }
     }

@@ -104,8 +104,8 @@ def check(a):
     bad += not (len(bh) <= 2 and set(bh) <= {"es09", "es13"})
     for key, d in ms.items():
         for a, n in ((a, sum(d['units'][a].values())) for a in range(1, d["n_armies"] + 1)):
-            if n > 56:
-                say(False, f"{key}: army {a} starts with {n} units (56 at most)")
+            if n > 40:
+                say(False, f"{key}: army {a} starts with {n} units (40 at most: AW2 stops an army's production and reinforcements at 50 units)")
                 bad += 1
         cap = {a["n"]: a for a in d["armies"]}
         if d["boxes"] < 20:

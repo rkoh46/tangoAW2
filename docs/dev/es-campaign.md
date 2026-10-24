@@ -20,7 +20,7 @@ in a normal build; the flag turns it into a source of `campaign_model::SOURCES`)
 - **Black Hole's inventions only in the two missions against Black Hole** (M9 Grain Ships, M13 The Free Port): the map file's `blackhole` line tags them; rule **ES01** of `aw2dev maps lint --source es`
   fails an invention tile anywhere else and a third tagged map; `aw2dev campaign check` repeats it. M16's toughness comes from army size, production, funds, unit quality, fortified terrain, waves, Varro's powers.
 - **M16 is the hardest mission by a clear margin** (`aw2dev campaign difficulty --require-final`); M14 and M15 ramp up to it.
-- An army has 63 unit slots: no deployment above 56 (the Rust test `no_army_starts_with_more_than_56_units`, the python test, `campaign check`).
+- **An army stops at 50 units** (AW2: its production and a trigger's reinforcements stop there; the sim saw Varro, started at 50, build and receive nothing): no deployment above 40 (the Rust test `no_army_starts_with_more_than_40_units`, the python test, `campaign check`).
 - The player's army wears the Emerald Sun skin on army 1's colour, always one of AW2's four (Orange Star's mostly, Blue Moon's or Green Earth's where an enemy wears red) and never one an enemy or ally wears: a skin on colour 5 in a
   game that is not five-army corrupted memory when the army bought a unit (found by the mission sim, test `no_army...` / `the_player_wears_a_colour_of_its_own`). Only one army wears it: Cassius's Second Legion (M4), Varro's Praetorians and
   the Accord's fleet wear the stand-in colours.

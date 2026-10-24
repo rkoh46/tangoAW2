@@ -65,12 +65,10 @@ armies 3 5 5 1 4
 team 1 2 2
 unit 1 1 3 24
 unit 1 1 4 24
-unit 1 1 5 24
 unit 1 1 4 25
 unit 1 2 2 25
 unit 1 2 2 26
 unit 1 2 3 26
-unit 1 2 4 26
 unit 1 3 14 24
 unit 1 3 15 24
 unit 1 3 14 25
@@ -80,7 +78,6 @@ unit 1 5 13 24
 unit 1 5 12 25
 unit 1 6 16 24
 unit 1 6 17 25
-unit 1 7 8 24
 unit 1 7 9 25
 unit 1 8 10 24
 unit 1 8 11 25
@@ -97,7 +94,6 @@ unit 1 15 14 27
 unit 1 16 4 27
 unit 1 16 5 28
 unit 1 17 6 28
-unit 1 19 3 27
 unit 1 19 4 28
 unit 1 22 23 24
 unit 1 22 24 25
@@ -105,15 +101,11 @@ unit 1 23 23 26
 unit 1 24 25 27
 unit 2 1 12 7 hold
 unit 2 1 13 8 hold
-unit 2 1 7 14 hold
-unit 2 1 20 19
 unit 2 1 10 20
 unit 2 1 4 21
 unit 2 2 16 9 hold
-unit 2 2 22 13 hold
-unit 2 2 3 18
 unit 2 2 14 21
-unit 2 3 8 14
+unit 2 3 7 14
 unit 2 3 3 15
 unit 2 3 8 15
 unit 2 3 12 17
@@ -121,23 +113,17 @@ unit 2 4 9 14
 unit 2 4 21 14
 unit 2 5 2 17
 unit 2 5 14 18
-unit 2 6 3 16
 unit 2 6 15 18
-unit 2 7 12 21
 unit 2 8 23 12
 unit 2 8 5 13
 unit 2 8 20 14
 unit 2 8 15 15
-unit 2 10 15 2 hold
-unit 2 10 6 5 hold
 unit 2 10 6 12 hold
 unit 2 10 22 12 hold
 unit 2 10 11 14 hold
 unit 2 10 14 14 hold
 unit 2 11 23 7 hold
 unit 2 11 7 10 hold
-unit 2 11 18 15 hold
-unit 2 14 24 10 hold
 unit 2 14 18 12 hold
 unit 2 14 5 14 hold
 unit 2 14 13 15 hold
@@ -147,14 +133,10 @@ unit 2 16 9 2
 unit 2 16 10 2
 unit 2 17 18 2
 unit 2 17 19 2
-unit 2 19 14 2
-unit 2 19 16 2
 unit 2 21 29 2
 unit 2 21 30 3
 unit 2 22 28 0
 unit 2 22 29 1
-unit 2 23 27 3
-unit 2 24 33 6
 unit 3 1 29 10 hold
 unit 3 1 30 10 hold
 unit 3 1 30 11 hold

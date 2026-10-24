@@ -57,7 +57,7 @@ class Committed(unittest.TestCase):
         for p in specs():
             m = load_spec(p)
             for a in range(1, m.hdr["armies"] + 1):
-                self.assertLessEqual(sum(1 for u in m.u if u["army"] == a), 56, f"{m.name} army {a}")
+                self.assertLessEqual(sum(1 for u in m.u if u["army"] == a), 40, f"{m.name} army {a}")
 
 
 @unittest.skipUnless(HAVE, "needs the AW2 ROM")
