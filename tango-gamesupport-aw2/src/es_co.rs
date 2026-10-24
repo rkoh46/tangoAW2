@@ -297,7 +297,7 @@ const PLAYER: u32 = 0x3C;
 /// `PayForPower(army, mode)`'s entry (the map menu's Power and Super, the computer's choice).
 const PAY_FOR_POWER: u32 = 0x0804_438C;
 
-fn power_paid(core: &mut Core) {
+pub fn power_paid(core: &mut Core) {
     if !is_on(core) {
         return;
     }
@@ -317,9 +317,8 @@ fn power_paid(core: &mut Core) {
     core.raw_write_32(p, -1, funds.clamp(0, 999_999) as u32);
 }
 
-pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(PAY_FOR_POWER, Box::new(power_paid))]
-}
+/// `PayForPower(army, mode)`'s entry is trapped once, by [`crate::crumb::traps`] (one trap an address): it calls this.
+pub const POWER_PAID_AT: u32 = PAY_FOR_POWER;
 
 /// Every frame with the pack: the code is in ROM.
 pub fn tick(core: &mut Core, on: bool) {
