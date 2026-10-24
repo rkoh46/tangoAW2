@@ -27,7 +27,7 @@ def build():
     m.put("P", 3, 13).put("P", 14, 13)
     m.put("1", 8, 14)
     # the fort: the enemy HQ, its city and a base; a neutral city on the west shoulder of the beach
-    m.put("2", 9, 3).put("C", 6, 4).put("C", 11, 4).put("B", 6, 3)
+    m.put("2", 9, 3).put("C", 6, 4).put("C", 11, 4)
     m.put("c", 2, 8).put("c", 15, 8)
     m.scatter("f", (4, 7, 13, 8), 0.08, seed=3)
     m.put(".", 8, 7).put(".", 9, 7)

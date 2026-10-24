@@ -98,6 +98,9 @@ fn es14() -> MissionDef {
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(scene("m14_day4")), Action::Custom(cassius_changes_sides)]),
         after(Cond::All(vec![owns(DOCK1.0, DOCK1.1), owns(DOCK2.0, DOCK2.1)]), vec![Action::Win]),
+        // The legion's reserves land at the quay on days 5 and 8 (the pocket's free cells).
+        on_day(5, None, vec![Action::Spawn(wave(1, unit::MD_TANK, &[(1, 11), (3, 11)]))]),
+        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &[(1, 10)]), wave(1, unit::MD_TANK, &[(0, 11)])].concat())]),
         on_day(m.day_limit + 1, None, vec![Action::Lose]),
     ];
     m.flag = region::ACT4[1];
