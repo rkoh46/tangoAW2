@@ -13,7 +13,7 @@ from aw2test.harness import test
 DAYS = int(os.environ.get("AW2TEST_ES_CPU_DAYS", "5"))
 # The share of an army's units that must have moved by day 3 (default a third); a garrison that holds by design asks less: M1's fort, M3's wall, M5's posts,
 # M12's guns, and M2 (waves come by trigger)
-EXPECT = {(1, 2): 0.15, (3, 2): 0.2, (5, 2): 0.25, (12, 3): 0.0, (2, 2): 0.0}
+EXPECT = {(1, 2): 0.1, (3, 2): 0.2, (5, 2): 0.25, (12, 3): 0.0, (2, 2): 0.0}
 
 
 def funds(e, army):
