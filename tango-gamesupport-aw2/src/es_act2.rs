@@ -15,7 +15,7 @@ fn owns(x: u8, y: u8) -> Cond {
 // --- M5 Dust and Wheels ----------------------------------------------------------------------
 
 /// The three signal-posts (the cities beyond the bridges).
-const POSTS: [(u8, u8); 3] = [(15, 2), (15, 6), (15, 11)];
+const POSTS: [(u8, u8); 3] = [(27, 5), (27, 12), (27, 21)];
 
 fn all_posts() -> Cond {
     Cond::All(POSTS.iter().map(|&(x, y)| owns(x, y)).collect())
@@ -51,7 +51,7 @@ fn es05() -> MissionDef {
 
 fn es06() -> MissionDef {
     let mut m = MissionDef::new("es06", "Tribute");
-    m.objective = "Own 14 properties at once, or hold the market square for 16 days.";
+    m.objective = "Own 14 properties at once by day 16.";
     m.map = MapSrc::Built("es06");
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(LIVIA)).funds(3000),
@@ -67,8 +67,8 @@ fn es06() -> MissionDef {
     m.triggers = vec![
         on_day(6, None, vec![Action::Scene(scene("m06_day6"))]),
         after(Cond::PropertiesAtLeast { army: 1, n: 14 }, vec![Action::Win]),
-        // The audit: day 17 begins, the square still stands (losing it is the match's own defeat).
-        on_day(17, None, vec![Action::Win]),
+        // The audit: day 17 begins and the tribute is not in hand (losing the square is the match's own defeat).
+        on_day(17, Some(Cond::Not(Box::new(Cond::PropertiesAtLeast { army: 1, n: 14 }))), vec![Action::Lose]),
     ];
     m.flag = region::ACT2[1];
     m.stars = 2;
@@ -79,7 +79,7 @@ fn es06() -> MissionDef {
 // --- M7 Mare Nostrum -----------------------------------------------------------------------
 
 /// Isle Verdant's harbour (the port to take).
-const HARBOUR: (u8, u8) = (15, 8);
+const HARBOUR: (u8, u8) = (34, 12);
 
 fn es07() -> MissionDef {
     let mut m = MissionDef::new("es07", "Mare Nostrum");

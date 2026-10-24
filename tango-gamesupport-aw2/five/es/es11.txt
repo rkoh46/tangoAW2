@@ -37,11 +37,11 @@ unit 1 14 6 6
 unit 2 1 29 3
 unit 2 1 36 6
 unit 2 1 38 8
-unit 2 2 36 2
-unit 2 2 33 11
+unit 2 2 35 2
+unit 2 2 34 11
 unit 2 5 34 4
-unit 2 5 38 4
-unit 2 5 27 10
+unit 2 5 37 4
+unit 2 5 28 10
 unit 2 6 31 11
 unit 2 6 27 14
 unit 2 10 25 8 hold
