@@ -45,7 +45,7 @@ def sim(a):
         for seed in range(a.seeds):
             # (one harness run for all the named missions: they play in parallel)
             env = dict(os.environ, AW2TEST_ES_SIM=" ".join(map(str, a.mission)), AW2TEST_ES_PLAYER=player, AW2TEST_ES_SEED=str(seed), AW2TEST_ES_DAYS=str(a.days),
-                       AW2TEST_ES_OUT=str(out))
+                       AW2TEST_ES_OUT=str(out), AW2TEST_ES_SCALE=str(a.scale))
             before = out.read_text().count("\n") if out.exists() else 0
             subprocess.run([sys.executable, str(run), "-k", "es_sim_m"] + (["-j", str(a.jobs)] if a.jobs else []), env=env, cwd=cfg.REPO, capture_output=not a.verbose)
             lines = out.read_text().splitlines()[before:] if out.exists() else []

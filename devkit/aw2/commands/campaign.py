@@ -36,6 +36,7 @@ def register(sub):
     a.add_argument("--player", nargs="+", default=["bot"], choices=["bot", "cpu"])
     a.add_argument("--seeds", type=int, default=1)
     a.add_argument("--days", type=int, default=25)
+    a.add_argument("--scale", type=int, default=100, help="the enemy's strength in percent (a handicap run: its units thinned and its funds scaled)")
     a.add_argument("-j", "--jobs", type=int, default=0, help="missions played at once (default: half the cores)")
     a.add_argument("-v", "--verbose", action="store_true")
     a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).sim(a))

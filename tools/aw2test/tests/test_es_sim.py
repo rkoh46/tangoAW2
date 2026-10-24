@@ -14,6 +14,9 @@ PLAYER = os.environ.get("AW2TEST_ES_PLAYER", "bot")
 SEED = int(os.environ.get("AW2TEST_ES_SEED", "0"))
 DAYS = int(os.environ.get("AW2TEST_ES_DAYS", "25"))
 OUT = os.environ.get("AW2TEST_ES_OUT")
+# AW2TEST_ES_SCALE=<percent>: the enemy's strength for a handicap run: only that share of each enemy army's units is deployed (every unit kind thinned alike) and its funds are
+# scaled; the largest scale a player still wins at is a measure of how hard the mission is (`aw2dev campaign sim --scale`).
+SCALE = int(os.environ.get("AW2TEST_ES_SCALE", "100"))
 
 # The test player's own settings by mission (aw2test.bot.Bot): the cells a mission is won on, a stance, a rush on the HQ.
 BOT = {
@@ -24,8 +27,39 @@ BOT = {
 }
 
 
+def handicap(ctx, e, g, d, n):
+    """Thins the enemy armies (the ones on another team than army 1) to SCALE percent."""
+    p = e.u32(0x08499598)
+    team = e.u8(p + 0x3C + 0x2A)
+    for a in range(2, 5):
+        if e.u8(p + 0x3C * a + 0x1B) == 0 or e.u8(p + 0x3C * a + 0x2A) == team:
+            continue
+        # (the units a mission's rules name stay: M7's flagship, M9's barges)
+        units = sorted((u for u in g.units(a) if u["type"] not in {7: (21,), 9: (23,)}.get(n, ())), key=lambda u: (u["type"], u["y"], u["x"]))
+        keep, seen = [], {}
+        for u in units:
+            k = seen.get(u["type"], 0)
+            seen[u["type"]] = k + 1
+        # (every kind thinned alike: the units of a kind are dropped evenly)
+        per = {}
+        for u in units:
+            per.setdefault(u["type"], []).append(u)
+        gone = 0
+        for t, us in per.items():
+            want = max(1, round(len(us) * SCALE / 100)) if SCALE > 0 else 0
+            drop = len(us) - want
+            for i in range(drop):
+                d.remove_unit(us[(i * len(us)) // max(drop, 1)])
+                gone += 1
+        e.w32(p + 0x3C * a, e.u32(p + 0x3C * a) * SCALE // 100)
+        ctx.log(f"handicap {SCALE}%: army {a} loses {gone} of {len(units)} units")
+    g._units_base = g._players_base = None
+
+
 def run(ctx, n):
     e, g, d = es.enter(ctx, n)
+    if SCALE != 100:
+        handicap(ctx, e, g, d, n)
     if SEED:
         e.wait(11 * SEED)            # (another frame: another run of the game's own dice)
     log = lambda s: ctx.log(f"M{n} {s}")
@@ -50,7 +84,7 @@ def run(ctx, n):
         units.setdefault(u["army"], []).append(u["type"])
     p = e.u32(0x08499598)
     funds = {a: e.u32(p + 0x3C * a) for a in range(1, 6)}
-    row = {"mission": n, "title": es.TITLES[n], "player": PLAYER, "seed": SEED, "result": {1: "won", 2: "lost"}.get(r.get("result"), "none"),
+    row = {"mission": n, "title": es.TITLES[n], "player": PLAYER, "seed": SEED, "scale": SCALE, "result": {1: "won", 2: "lost"}.get(r.get("result"), "none"),
            "days": r.get("days"), "reason": r.get("reason"), "units": {a: len(v) for a, v in units.items()}, "funds": funds}
     ctx.log(json.dumps(row))
     if OUT:
