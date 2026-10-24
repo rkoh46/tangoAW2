@@ -41,7 +41,7 @@ def build():
     # Jess's wardens: the fort, the sea-wall, two cruisers offshore (Drake's)
     m.units(2, INF, [(7, 3), (10, 3), (5, 8), (12, 8)], hold=True)
     m.units(2, MECH, [(7, 5), (12, 5)], hold=True)
-    m.units(2, TANK, [(8, 7), (9, 7), (6, 8)], hold=True)
+    m.units(2, TANK, [(8, 7), (9, 7), (6, 8)])
     m.units(2, ART, [(6, 5), (11, 5)], hold=True)
     m.unit(2, RECON, 13, 8)
     m.unit(2, CR, 1, 11).unit(2, CR, 16, 11)

@@ -24,9 +24,9 @@ unit 2 1 5 8 hold
 unit 2 1 12 8 hold
 unit 2 2 7 5 hold
 unit 2 2 12 5 hold
-unit 2 5 8 7 hold
-unit 2 5 9 7 hold
-unit 2 5 6 8 hold
+unit 2 5 8 7
+unit 2 5 9 7
+unit 2 5 6 8
 unit 2 6 13 8
 unit 2 10 6 5 hold
 unit 2 10 11 5 hold
