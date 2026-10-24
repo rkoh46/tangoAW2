@@ -20,10 +20,17 @@ SCALE = int(os.environ.get("AW2TEST_ES_SCALE", "100"))
 
 # The test player's own settings by mission (aw2test.bot.Bot): the cells a mission is won on, a stance, a rush on the HQ.
 BOT = {
+    1: {"goals": [(9, 3)]},
     2: {"stance": "defend"},
     5: {"goals": [(15, 2), (15, 6), (15, 11)], "rush": True},
-    6: {},
+    7: {"goals": [(15, 8)]},
+    9: {"goals": [(8, 4)]},
+    10: {"goals": [(10, 1)]},
     11: {"goals": [(24, 6)]},
+    13: {"goals": [(12, 10)]},
+    14: {"goals": [(27, 5), (27, 12)]},
+    15: {"goals": [(23, 10)]},
+    16: {"goals": [(15, 8)]},
 }
 
 
