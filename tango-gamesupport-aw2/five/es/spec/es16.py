@@ -50,12 +50,12 @@ def build():
     # ---- the lower town: six neutral cities ----
     m.puts("c", [(5, 21), (8, 18), (11, 21), (16, 19), (21, 21), (22, 18)])
     # ---- Praetorian Guard: the east flank and the harbour ----
-    m.put("3", 29, 21).puts("B", [(27, 13), (28, 16), (30, 18)]).put("A", 29, 9).put("P", 31, 11)
+    m.put("3", 29, 21)
     m.puts("C", [(28, 11), (27, 19), (25, 22)])
     # ---- Varro: quays on the inlet, bases and airports around the second ring, keep cities ----
     m.put("2", 15, 8).puts("C", [(13, 7), (16, 7), (13, 10), (16, 10)])
-    m.puts("P", [(26, 2), (26, 4), (28, 6)])
-    m.puts("B", [(5, 7), (5, 10), (24, 6), (24, 12)]).puts("A", [(10, 3), (19, 3)])
+    m.puts("P", [(26, 2), (28, 6)])
+    m.puts("B", [(5, 7), (24, 6), (24, 12)]).puts("A", [(10, 3)])
     m.puts("C", [(6, 14), (22, 14), (6, 3), (23, 3), (22, 8), (10, 14)])
     # ---- places Varro / units ----
     taken = {(u["x"], u["y"]) for u in m.u}

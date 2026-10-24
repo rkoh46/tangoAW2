@@ -181,9 +181,9 @@ fn es16() -> MissionDef {
     m.map = MapSrc::Built("es16");
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(15000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(40000),
-        // The Praetorian Guard: Varro's lieutenants hold the harbour and the east flank, no CO of their own.
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::None).team(2).funds(20000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(24000),
+        // The Praetorian Guard: Varro's lieutenants, a garrison that holds the harbour and the east flank (no production of its own), no CO.
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::None).team(2).funds(0),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
     m.units = crate::es_campaign::deployment_hq("es16");
@@ -199,13 +199,13 @@ fn es16() -> MissionDef {
         // Day 6: Varro's meter is full.
         on_day(6, None, vec![Action::Scene(scene("m16_varro")), Action::Custom(charge_varro)]),
         // Varro's waves come down the north rim: armour, aircraft, then the fleet.
-        on_day(3, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &RIM[0..2]), wave(2, unit::TANK, &RIM[2..3])].concat())]),
-        on_day(5, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RIM[3..5]), wave(2, unit::MD_TANK, &RIM[5..6])].concat())]),
+        on_day(3, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &RIM[0..1]), wave(2, unit::TANK, &RIM[2..3])].concat())]),
+        on_day(5, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RIM[3..4]), wave(2, unit::MD_TANK, &RIM[5..6])].concat())]),
         on_day(6, None, vec![Action::Spawn([wave(2, unit::BATTLESHIP, &INLET[0..1]), wave(2, unit::CRUISER, &INLET[1..2])].concat())]),
-        on_day(7, None, vec![Action::Spawn([wave(2, unit::MEGATANK, &RIM[6..8]), wave(2, unit::NEOTANK, &RIM[8..9])].concat())]),
-        on_day(9, None, vec![Action::Spawn([wave(2, unit::FIGHTER, &RIM[0..2]), wave(2, unit::BOMBER, &RIM[2..3])].concat())]),
-        on_day(10, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RIM[3..6]), wave(2, unit::BATTLESHIP, &INLET[2..3])].concat())]),
-        on_day(12, None, vec![Action::Spawn(wave(2, unit::MEGATANK, &RIM[6..9]))]),
+        on_day(7, None, vec![Action::Spawn([wave(2, unit::MEGATANK, &RIM[6..7]), wave(2, unit::NEOTANK, &RIM[8..9])].concat())]),
+        on_day(9, None, vec![Action::Spawn([wave(2, unit::FIGHTER, &RIM[0..1]), wave(2, unit::BOMBER, &RIM[2..3])].concat())]),
+        on_day(10, None, vec![Action::Spawn(wave(2, unit::NEOTANK, &RIM[3..5]))]),
+        on_day(12, None, vec![Action::Spawn(wave(2, unit::MEGATANK, &RIM[6..8]))]),
         // The legion's own reinforcements: the Quaestor's second convoy, on days 4 and 8.
         on_day(4, None, vec![Action::Spawn([wave(1, unit::ANTI_AIR, &CAMP[0..1]), wave(1, unit::MD_TANK, &CAMP[1..2]), wave(1, unit::ARTILLERY, &CAMP[2..3])].concat())]),
         on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),

@@ -71,7 +71,7 @@ def domain(t):
 
 class Bot:
     def __init__(self, d, log=None, protect=(), hold=(), goals=(), structures=False, stance="auto", rush=False, seed=None, build=None,
-                 finish=None, garrison=False, ooze=False, hazards=(), seams=(), nearest=False, hunt=False):
+                 finish=None, garrison=False, ooze=False, hazards=(), seams=(), nearest=False, hunt=False, cap=20):
         """`protect`: unit types to keep out of harm (they wait where they
         are, or step away from enemies); `hold`: types that never move;
         `goals`: cells the mission is won on (capturers head there first);
@@ -106,6 +106,8 @@ class Bot:
         # `nearest`: a unit that captures makes for the properties nearest
         # it (a race for properties), not the map's first ones.
         self.nearest = nearest
+        # `cap`: the factories stop building at this many units (more only block each other on a small map; a big map with big armies wants more).
+        self.cap = cap
         # `hunt`: the enemy's units that capture are worth hunting down (a
         # race for properties).
         self.hunt = hunt
@@ -877,7 +879,7 @@ class Bot:
         """Every free factory of ours builds the best unit the funds allow
         (an Anti-Air first while the enemy has more aircraft than we have
         anti-air units; an Infantry while we have fewer than two units that
-        capture and there is something to capture). No more than 20 units:
+        capture and there is something to capture). No more than `cap` units (20):
         more only block each other."""
         w, h = self.size()
         occ = self.occupied()
@@ -897,7 +899,7 @@ class Bot:
             if kind == BASE and need_capt and capt < 2:
                 order = [2, 1]
                 capt += 1
-            elif count >= 20:
+            elif count >= self.cap:
                 continue
             elif kind == BASE and air > aa:
                 order = [14] + order

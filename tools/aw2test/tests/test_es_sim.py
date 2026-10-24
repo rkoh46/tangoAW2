@@ -28,9 +28,10 @@ BOT = {
     10: {"goals": [(10, 1)]},
     11: {"goals": [(24, 6)]},
     13: {"goals": [(12, 10)]},
-    14: {"goals": [(27, 5), (27, 12)]},
     15: {"goals": [(23, 10)]},
-    16: {"goals": [(15, 8)]},
+    # (M16 and M14: hold the line while the computer's waves break on it, then go for the keep)
+    14: [{"stance": "defend", "days": 5, "goals": [(27, 5), (27, 12)]}, {"goals": [(27, 5), (27, 12)]}],
+    16: [{"stance": "defend", "days": 10, "goals": [(15, 8)]}, {"goals": [(15, 8)]}],
 }
 
 
@@ -69,7 +70,22 @@ def run(ctx, n):
         handicap(ctx, e, g, d, n)
     if SEED:
         e.wait(11 * SEED)            # (another frame: another run of the game's own dice)
-    log = lambda s: ctx.log(f"M{n} {s}")
+    dump = {int(x) for x in os.environ.get("AW2TEST_ES_DUMP", "").split(",") if x}
+
+    def log(t):
+        ctx.log(f"M{n} {t}")
+        if t.startswith("day ") and int(t.split(":")[0].split()[1]) in {int(x) for x in os.environ.get("AW2TEST_ES_SHOTS", "").split(",") if x}:
+            try:
+                for k, (cx, cy) in enumerate(((13, 24), (13, 17), (24, 22))):
+                    g.goto(cx, cy)
+                    e.wait(30)
+                    ctx.shot(g, f"day{t.split(':')[0].split()[1]}_{k}")
+            except Exception as ex:
+                ctx.log(f"(no pictures: {ex})")
+        if t.startswith("day ") and int(t.split(":")[0].split()[1]) in dump:
+            for a in (1, 2, 3):
+                ctx.log(f"M{n}   army {a}: " + " ".join(f"{u['type']}@{u['x']},{u['y']}:{u['hp']}" for u in g.units(a)))
+
     if PLAYER == "cpu":
         if not d.in_setup():
             # (a mission with no Setup phase is already in the player's first turn: the computer takes the army over and the turn is ended)
@@ -80,10 +96,20 @@ def run(ctx, n):
             d.end_turn()
         r = d.autoplay(DAYS, log=log)
     else:
-        opts = dict(BOT.get(n, {}))
-        if SEED:
-            opts["seed"] = SEED
-        r = d.play(DAYS, log=log, **opts)
+        plan = BOT.get(n, {})
+        # (a list is phases: each one's options and the days it lasts; the last runs to the end)
+        phases = plan if isinstance(plan, list) else [dict(plan, days=DAYS)]
+        total, r = 0, None
+        for k, ph in enumerate(phases):
+            opts = {key: v for key, v in ph.items() if key != "days"}
+            opts.setdefault("cap", 42)          # (the campaign's armies are bigger than the bot's default of 20: it keeps buying)
+            if SEED:
+                opts["seed"] = SEED
+            span = DAYS - total if k == len(phases) - 1 else ph.get("days", DAYS)
+            r = d.play(span, log=log, **opts)
+            total += r.get("days") or span
+            if e.u8(dc.LAST_RESULT) or total >= DAYS:
+                break
     ctx.log(f"after play: result byte {e.u8(dc.LAST_RESULT)} day {e.u16(dc.DAY)} in_battle {d.in_battle()} main {e.u32(0x03000000):#x}")
     ctx.shot(g, "end")
     units = {}
