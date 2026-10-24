@@ -247,7 +247,7 @@ AW2 sound ids not listed here have not been catalogued in the code; to find one,
 | `0x08E80000..0x08EFFFFF` | Dual Strike looks (0x20000 each) | `docs/AW2.md` |
 | `0x08EF0000..` | what the Set Skills panel covers while it shows | `docs/AW2.md` (CO skills) |
 | `0x08F00000..0x08FFFFFF` | DS Campaign data (~360 KB) | `docs/AW2.md` |
-| `0x09000000..0x09BFFFFF`, `0x09C00000..0x09CFFFFF`, `0x09E00000` | DS story songs/power themes; DS Versus and War Room maps; DS Normal look | `ds_music.rs`, `ds_versus.rs`, `docs/AW2.md` |
+| `0x09000000..0x09BFFFFF`, `0x09C00000..0x09CFFFFF`, `0x09E00000` | DS story songs/power themes, then the Emerald Sun themes (voice groups, tracks, headers: about 30 KB, after the power themes; their song-table rows are the table's last five); DS Versus and War Room maps; DS Normal look | `ds_music.rs`, `es_music.rs`, `ds_versus.rs`, `docs/AW2.md` |
 
 ## 9. Notes for new work
 

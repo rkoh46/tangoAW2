@@ -155,4 +155,5 @@ Pass variables to a Simulator app as `SIMCTL_CHILD_<name>` (`ios/README.md`).
 | `aid done X Y` | test aid (`TANGOAW2_TEST_POKE` / harness `aid`): the unit at the cell has acted (greyed) |
 | harness `cos` | prints the Teams screen's CO list (index: id name), for poking a seat's CO |
 
+- `TANGOAW2_ES_MUSIC=<dir>`: reads the Emerald Sun themes from `<dir>/<name>.m4t` (klaus, aurelia, cassius, livia, varro) instead of the text built into the app, so a song can be rewritten and heard without a rebuild (`aw2dev sound render --dir`, docs/dev/music-kit.md). A test aid: both peers of a match must agree (or not set it).
 - `TANGOAW2_ES_VERSUS=1`: puts Emerald Sun's four COs (Klaus, Aurelia, Cassius, Livia: ids 86..89, `es_cos.rs`) in the game with the Dual Strike pack: Andy's numbers under their names, their own art, name, texts and quotes. Off by default (their powers are phase 2); a test aid, so both peers of a match must agree. `aw2dev co portrait ingame` sets it.

@@ -233,7 +233,7 @@ Forced picks only where the story needs them (M1-M3, M5, M6, M8, M12, M14-M16 le
 ## 7. Music plan (scene to track role)
 
 Roles are those of `aw2dev campaign scenes` (`campaign_music.rs`): `opening enemy1 enemy2 ally1 ally2 entry pinch hagevolt red blue sturm doom final ending1 ending2`, `world_map`, or `co:<name>` (that CO's theme). A scene's last box
-fades into the next song with op 0x41, the way the BH Campaign does. New CO battle themes are borrowed AW2 themes until the music kit exists: **Klaus = Kanbei's, Aurelia = Grit's, Cassius = Eagle's, Livia = Colin's.**
+fades into the next song with op 0x41, the way the BH Campaign does. Each CO has a **theme of their own**, composed for the campaign and played by AW2's own sound engine (`docs/dev/music-kit.md`): Klaus a legion march, Aurelia an engine of plucks and brass, Cassius a cavalry gallop, Livia a waltz with a harp, Varro a slow dark imperial theme. They play on the CO's turn and as `co:klaus` ... `co:varro` in scenes.
 
 | Scene | Track role |
 |---|---|
@@ -249,7 +249,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. New CO batt
 | crises (M2 day 4, M14 day 4, M16 phase 3) | `pinch` |
 | Black Hole freight guard (M9, M13) | `enemy1` |
 | the world map after each win | `world_map` |
-| Klaus + Cassius forced pair (M8 pre) | `ally1`, then Cassius's `co:eagle` |
+| Klaus + Cassius forced pair (M8 pre) | `ally1`, then Cassius's `co:cassius` |
 | M16 pre and post, Varro's last words | `sturm` (his citadel), then `doom` |
 | M16's battle | `final` over the CO theme; the keep phase |
 | ending, epilogue | `ending1`; the black light on the horizon: `ending2` |

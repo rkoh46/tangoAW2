@@ -121,7 +121,7 @@ NELL: Then the council will not stand / in your way. I will see to it.
 # ---------------------------------------------------------------- M14 Varro's Gambit (the storming of Castra Maxima; Varro falls)
 
 == m14_pre
-@SONG enemy1
+@SONG co:varro
 NARRATION: Castra Maxima, the Consul's / camp on the sea. Dawn, low mist.
 NARRATION: Walls, a moat river, a harbour / and three roads in. All guarded.
 AURELIA: Nine thousand men landed in / eleven days. They walled a coast.

@@ -107,7 +107,22 @@ def run(jobs=3, only=None, keep=False):
         lint = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "bhtext" / "lint.py")], capture_output=True, text=True)
         return ([f"FAIL campaign scenes\n{r.stderr[-400:]}"] if r.returncode else []) + ([f"FAIL bhtext lint\n{lint.stdout[-400:]}"] if lint.returncode else [])
 
-    work = [(campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom"), (armyskin, "static"), (armyskin, "live")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
+    def es_music(_):
+        # the Emerald Sun themes (docs/dev/music-kit.md): the song files compile and keep the rules, and in the game each CO's song is registered, intact in ROM and
+        # plays through its loop (needs the AW2 ROM, the Dual Strike ROM and the built examples; skipped without)
+        if not cfg.aw2_rom().exists() or not cfg.ds_rom().exists() or not util.example_bin("aw2_es_music").exists():
+            return []
+        res = []
+        r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "sound", "compose"], capture_output=True, text=True)
+        if r.returncode:
+            res.append("FAIL sound compose\n" + "\n".join(l for l in r.stdout.splitlines() if "FAIL" in l)[:600] + r.stderr[-300:])
+        for k in ("es_themes_are_registered", "es_theme_plays_on_the_cos_turn_and_loops"):
+            t = subprocess.run([sys.executable, str(TOOLS / "aw2test" / "run.py"), "--mode", "ds", "-k", k], capture_output=True, text=True, env=dict(__import__("os").environ, AW2TEST_OUT=str(out / "aw2test")))
+            if t.returncode or "1/1 passed" not in t.stdout:
+                res.append(f"FAIL {k}\n" + "\n".join(t.stdout.splitlines()[-6:]))
+        return res
+
+    work = [(es_music, "es_music"), (campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom"), (armyskin, "static"), (armyskin, "live")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0

@@ -52,8 +52,9 @@ def example_bin(name):
 
 
 def newest_source_mtime():
-    """mtime of the newest tracked source file (rs, toml; not Cargo.lock, which any cargo command touches), to catch stale binaries."""
-    files = [f for f in cfg.git("ls-files", "*.rs", "*.toml").splitlines() if not f.startswith(("devkit/", ".claude/", "docs/"))]
+    """mtime of the newest source file (rs, toml, m4t song files: tracked or new; not Cargo.lock, which any cargo command touches), to catch stale binaries."""
+    files = [f for f in cfg.git("ls-files", "*.rs", "*.toml", "*.m4t").splitlines() + cfg.git("ls-files", "--others", "--exclude-standard", "*.rs", "*.toml", "*.m4t").splitlines()
+             if not f.startswith(("devkit/", ".claude/", "docs/"))]
     m = 0.0
     for f in files:
         try:
