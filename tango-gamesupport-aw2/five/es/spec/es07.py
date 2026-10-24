@@ -1,48 +1,68 @@
-"""M7 Mare Nostrum: the Emerald Sun's fleet crosses open sea from the home island, past two atolls, to Isle Verdant, the fortress island of Green Earth."""
+"""M7 Mare Nostrum: the Emerald Sun's fleet crosses open sea from the home island (Cape Fidelis), past two atolls (the Twin Sisters), to Isle Verdant, the fortress island of Green Earth,
+and storms its harbour (Verdant Roads)."""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
 
+HARBOUR = (34, 12)
+
+HOME = ["~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~", "~~~.....~~~~~~", "~~.........~~~", "~...........,~", "............,~", "..........f,,~", "...........,~~", "..........,,,~", "...........,~~",
+        "..........f,,~", "............,~", "...........,,~", "............,~", "..........f,,~", "...........,~~", "............,~", "..........,,~~", "~.........,~~~", "~~........~~~~",
+        "~~~......~~~~~", "~~~~..~~~~~~~~", "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~"]
+MID = ["~~~~~~~~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~", "~~~,,~~~~~~", "~,.f.,~~~~~", "~,..^.,~~~~", "~~,...,~~~~", "~~~,,,~~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~",
+       "~~~~~~~~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~", "~~~~,,~~~~~", "~~~,..f,~~~", "~~,..^..,~~", "~~~,...,~~~",
+       "~~~~,,,~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~", "~~~~~~~~~~~"]
+EAST = ["~~~~~~~~~~~~~", "~~~~~~~~~~~~~", "~~~~~~~~~~~~~", "~~~~~~~~..~~~", "~~~~~~~,....~", "~~~~~~,......", "~~~~~,,......", "~~~~~,.......", "~~~~,,.......", "~~~~,........",
+        "~~~,,,,,,,...", "~~~,~~~~~,...", "~~~~~~~~~....", "~~~,~~~~~,...", "~~~,,,,,,,...", "~~~~,,,......", "~~~~~,,......", "~~~~~,.......", "~~~~~~,,.....", "~~~~~~~,,....",
+        "~~~~~~~~,,...", "~~~~~~~~~..~~", "~~~~~~~~~~~~~", "~~~~~~~~~~~~~"]
+
 
 def build():
-    m = Canvas("es07", 22, 16, fill="~")
+    m = Canvas("es07", 38, 24, fill="~")
+    rows = [(h + a + b).replace(",", "~") for h, a, b in zip(HOME, MID, EAST)]
+    m.set_rows(rows)
+    m.beach(8, 2, 14, 20).beach(14, 2, 22, 8).beach(14, 15, 23, 21).beach(26, 2, 34, 20)
+    road = lambda pts: m.line("R", pts, over=".fR")
     m.header(armies=3, colours=(OS, GE, GE), team=[1, 2, 2], objective=[1], comment=(
-        "M7 Mare Nostrum: sink the Warden flagship (Battleship 'flagship') and capture the harbour port (15, 8) of Isle Verdant. "
-        "Start forces: player LAN2 CR2 BS1 SUB1 TCO2 BCO2 INF3 MECH2 (15 units), 2 ports + 1 airport + 1 base, funds 6000; "
+        "M7 Mare Nostrum: sink the Warden flagship (Battleship 'flagship') and capture the harbour port (34, 12) of Isle Verdant (Verdant Roads). "
+        "Start forces: player LAN2 CR2 BS1 SUB1 TCO2 BCO2 INF3 MECH2 (15 units), 2 ports + 1 airport + 1 base, funds 8000; "
         "Green Earth Drake (army 2) BS1 (flagship) CR2 SUB2 LAN1 INF2 (hold) (8) + Eagle (army 3) FTR3 BCO2 (5), ports + airport to build. "
-        "Threat -> answer: Eagle's Fighters and Copters -> the two Cruisers (AA) and Fighters built at the player's airport (5, 8); "
+        "Threat -> answer: Eagle's Fighters and Copters -> the two Cruisers (AA) and Fighters built at the player's airport (6, 12); "
         "Drake's Battleship -> the player's Battleship and Sub, Bombers from the airport; Subs -> Cruisers (the only ships that see and hit them); "
-        "landing: shoal beaches on the home island (x=7), the atolls and the whole west coast of Isle Verdant (x=14, y 5..11) with sand (x 15..18) behind."))
-    # home island (west): cut corners, ports on the north and south coasts, a shoal beach on the east coast
-    m.rect(".", 0, 4, 6, 11).rect(".", 1, 3, 6, 3).rect(".", 1, 12, 6, 12).rect(".", 2, 2, 5, 2).rect(".", 2, 13, 5, 13)
-    m.rect(",", 7, 4, 7, 11)
-    # two atolls with their own shoal ring
-    m.rect(".", 10, 2, 12, 3).beach(9, 1, 13, 4)
-    m.rect(".", 10, 12, 12, 13).beach(9, 11, 13, 14)
-    # Isle Verdant (east): fortress ridge, harbour notch on the west coast
-    m.rect(".", 15, 5, 21, 11).rect(".", 18, 3, 20, 3).rect(".", 17, 4, 21, 4).rect(".", 17, 12, 21, 12).rect(".", 18, 13, 20, 13)
-    m.rect(",", 14, 5, 14, 7).rect(",", 14, 9, 14, 11)
-    m.rect("^", 20, 6, 21, 7)
-    m.rect("f", 16, 11, 17, 12)
+        "landing: shoal beaches on the home island's east coast (x 11..13), the Twin Sisters atolls and the whole west coast of Isle Verdant (x 28..34) with sand behind."))
+    # terrain
+    for cx, cy, n, sd, ch in [(5, 6, 9, 1, "f"), (7, 16, 8, 2, "f"), (3, 15, 6, 3, "f"), (8, 3, 5, 4, "^"), (2, 9, 5, 5, "^"), (9, 12, 4, 6, "f"),
+                              (36, 8, 10, 7, "^"), (35, 17, 9, 8, "^"), (33, 6, 6, 9, "f"), (31, 18, 6, 10, "f"), (36, 13, 5, 11, "f"), (32, 9, 4, 12, "f")]:
+        m.cluster(ch, cx, cy, n, seed=sd)
     # properties
-    m.put("1", 3, 8).put("B", 3, 6).put("A", 5, 8).put("P", 3, 2).put("P", 3, 13).put("C", 2, 10)
-    m.put("2", 20, 10).put("3", 19, 4).put("P", 15, 8).put("P", 19, 13).put("A", 17, 5).puts("C", [(18, 9), (20, 8), (17, 11)])
-    # roads: the home island's spine, the fortress's spine
-    m.road([(3, 3), (3, 12)]).road([(3, 8), (4, 8)])
-    m.road([(16, 8), (19, 8)]).road([(19, 5), (19, 10)]).road([(19, 10), (19, 12)])
+    m.put("1", 4, 11).put("B", 4, 8).put("A", 6, 12).put("P", 2, 3).put("P", 3, 20).puts("C", [(3, 6), (7, 17), (8, 7)])
+    m.put("2", 36, 16).put("3", 35, 5).put("P", *HARBOUR).put("P", 34, 21).put("A", 33, 7).puts("C", [(35, 10), (33, 17), (36, 12), (32, 4)])
+    m.put("~", 1, 3).put("~", 2, 20).put("~", 33, 12).put("~", 33, 21).put("~", 34, 11).put("~", 34, 13)
+    # roads: the home island's spine, the fortress's lanes
+    road([(3, 3), (3, 6), (4, 6), (4, 11), (5, 11), (6, 11), (6, 12)])
+    road([(4, 11), (4, 14), (5, 14), (5, 17), (7, 17)])
+    road([(5, 17), (5, 19), (3, 19), (3, 20)])
+    road([(4, 6), (8, 6), (8, 7)])
+    road([(2, 3), (3, 3)])
+    road([(34, 12), (35, 12), (36, 12), (36, 16)])
+    road([(35, 12), (35, 10)])
+    road([(36, 12), (36, 10), (34, 10), (34, 8), (33, 7), (33, 5), (35, 5)])
+    road([(33, 5), (32, 5), (32, 4)])
+    road([(36, 16), (35, 16), (35, 17), (33, 17)])
+    road([(35, 17), (35, 19), (34, 19), (34, 21)])
     # player
-    m.units(1, LAN, [(7, 6), (7, 9)]).units(1, CR, [(8, 5), (8, 11)]).unit(1, BS, 8, 8).unit(1, SUB, 3, 14)
-    m.units(1, TCO, [(4, 6), (4, 10)]).units(1, BCO, [(2, 6), (2, 12)])
-    m.units(1, INF, [(6, 7), (5, 6), (5, 10)]).units(1, MECH, [(6, 9), (5, 11)])
-    # Green Earth: Drake's ships off the west coast, Eagle's wing around the airport
-    m.unit(2, BS, 12, 8, name="flagship").units(2, CR, [(12, 6)]).units(2, SUB, [(13, 7)])
-    m.unit(2, LAN, 14, 6).units(2, INF, [(16, 8), (16, 9)], hold=True)
-    m.units(3, FTR, [(16, 5), (16, 6)]).units(3, BCO, [(18, 6), (18, 5)])
-    m.note("flagship", 12, 8, "the Warden flagship (Battleship, named flagship)").note("harbour", 15, 8, "the port to capture (west coast notch of Isle Verdant)")
-    m.note("hq1", 3, 8).note("hq2", 20, 10, "Drake's HQ").note("hq3", 19, 4, "Eagle's HQ")
-    m.note("port_n", 3, 2, "player port, sea at (3, 1)").note("port_s", 3, 13, "player port, sea at (3, 14)").note("airport", 5, 8, "player airport")
-    m.note("beach_home", 7, 4, "home shoal strip x=7, y 4..11 (Lander load / unload)")
-    m.note("atoll_n", 10, 2, "north atoll land x 10..12, y 2..3").note("atoll_s", 10, 12, "south atoll land x 10..12, y 12..13")
-    m.note("beach_verdant", 14, 5, "Isle Verdant shoal strip x=14, y 5..7 and 9..11; sand x 15..18 behind")
-    m.note("eagle_airport", 17, 5, "Eagle's airport")
+    m.units(1, LAN, [(11, 6), (11, 15)]).units(1, CR, [(13, 9), (13, 13)]).unit(1, BS, 14, 11).unit(1, SUB, 12, 18)
+    m.units(1, TCO, [(5, 9), (5, 13)]).units(1, BCO, [(2, 10), (3, 13)])
+    m.units(1, INF, [(9, 8), (9, 14), (8, 11)]).units(1, MECH, [(8, 9), (8, 14)])
+    # Green Earth: Drake's ships off the west coast of Verdant, Eagle's wing around the airport
+    m.unit(2, BS, 26, 10, name="flagship").units(2, CR, [(26, 7), (27, 14)]).units(2, SUB, [(24, 12), (23, 8)])
+    m.unit(2, LAN, 29, 12).units(2, INF, [(35, 14), (35, 13)], hold=True)
+    m.units(3, FTR, [(34, 6), (32, 8), (35, 8)]).units(3, BCO, [(33, 15), (35, 18)])
+    m.note("flagship", 26, 10, "the Warden flagship (Battleship, named flagship)").note("harbour", 34, 12, "the port to capture (west coast bay of Isle Verdant, sea channel at y=12)")
+    m.note("hq1", 4, 11).note("hq2", 36, 16, "Drake's HQ").note("hq3", 35, 5, "Eagle's HQ")
+    m.note("port_n", 2, 3, "player port, sea at (1, 3)").note("port_s", 3, 20, "player port, sea at (2, 20)").note("airport", 6, 12, "player airport")
+    m.note("beach_home", 11, 5, "home shoal strip x 11..13, y 4..17 (Lander load / unload)")
+    m.note("atoll_n", 16, 4, "Twin Sisters, north atoll x 16..19, y 4..6").note("atoll_s", 17, 17, "Twin Sisters, south atoll x 17..20, y 17..19")
+    m.note("beach_verdant", 30, 5, "Isle Verdant shoal strip along the west coast x 28..32, y 5..9 and 15..19")
+    m.note("eagle_airport", 33, 7, "Eagle's airport")
     return m

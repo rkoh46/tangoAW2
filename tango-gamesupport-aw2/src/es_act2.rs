@@ -79,7 +79,7 @@ fn es06() -> MissionDef {
 // --- M7 Mare Nostrum -----------------------------------------------------------------------
 
 /// Isle Verdant's harbour (the port to take).
-const HARBOUR: (u8, u8) = (15, 8);
+const HARBOUR: (u8, u8) = (34, 12);
 
 fn es07() -> MissionDef {
     let mut m = MissionDef::new("es07", "Mare Nostrum");
