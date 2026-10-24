@@ -886,6 +886,9 @@ class DsCampaign:
                         break
                 try:
                     b.play_turn(army)
+                    # (the turn ends: let the next army's turn begin before the loop looks at whose it is; its probes of the cursor during the
+                    # computer's long turn pressed A and B on a map the computer was playing, and "Return to Select Mode?" was answered Yes)
+                    e.wait(40)
                 except NavError as ex:
                     if e.u8(LAST_RESULT):
                         break
