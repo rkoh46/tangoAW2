@@ -1526,12 +1526,20 @@ fn fig_sheet(core: &mut Core) {
 /// The unit panel's portrait (`sub_0803A190`): after it reads the picture's pointer (`r0`); `r8` points at the unit type, the army is in the
 /// panel's state (at `*[*0x08090F70] + 8`).
 const PORTRAIT_LOAD: u32 = 0x0803_A1D8;
+/// The pointer to the unit records (12 bytes each, up to 320).
+const UNITS_TABLE: u32 = 0x0849_9594;
 
 fn portrait_blob(core: &mut Core) {
     let (r8, r6) = {
         let c = core.gba().cpu();
         (c.gpr(8) as u32, c.gpr(6) as u32)
     };
+    // (a unit's record only: the build menu's panel reaches this code with another pointer in r8, and a skin's picture put in its place made the
+    // game decompress the wrong data over its own memory when an Emerald Sun army bought an Infantry or a Mech)
+    let units = core.raw_read_32(UNITS_TABLE, -1);
+    if !(units..units + 12 * 320).contains(&r8) {
+        return;
+    }
     let ty = core.raw_read_8(r8, -1);
     if !(1..=2).contains(&ty) {
         return;
