@@ -29,6 +29,13 @@ def run(ctx, n):
         e.wait(11 * SEED)            # (another frame: another run of the game's own dice)
     log = lambda s: ctx.log(f"M{n} {s}")
     if PLAYER == "cpu":
+        if not d.in_setup():
+            # (a mission with no Setup phase is already in the player's first turn: the computer takes the army over and the turn is ended)
+            p = e.u32(0x08499598)
+            for a in range(1, 5):
+                if e.u8(p + 0x3C * a + 0x1B) == 1:
+                    e.w8(p + 0x3C * a + 0x1B, 2)
+            d.end_turn()
         r = d.autoplay(DAYS, log=log)
     else:
         opts = dict(BOT.get(n, {}))
