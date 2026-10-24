@@ -37,7 +37,12 @@ in a normal build; the flag turns it into a source of `campaign_model::SOURCES`)
 | `aw2dev campaign difficulty [--require-final]` | the **difficulty score**: static (enemy start + reinforcement value against the player's, funds and ten days' income, the share that holds, lanes of attack) blended with the sims' results (CPU-vs-CPU win rate, days the test player needs); M16 must lead by 10% |
 | `aw2dev campaign check` | the static rules: 16 missions, inventions only in M9 and M13, unit caps, a Black Hole army only in those two |
 | `python3 tools/aw2test/run.py -k es_boot_m` | every mission boots through its CO screens (the armies, the map's size, units at full HP / ammo / fuel) |
+| `python3 tools/aw2test/run.py -k es_cpu_m -j 5` | the computer's armies act: with the player passive for five days every enemy army moves (a third of its units by day 3, less where a garrison holds by design) and builds |
+| `python3 tools/aw2test/run.py -k es_cos -k es_klaus -k es_livia` | the five COs in game: rows, texts, stars, unit cost, in a battle of the campaign; Klaus's Legio Aeterna heals 3 HP, Livia's Tribute collects 200 a property; Teams list only with `TANGOAW2_ES_VERSUS` |
+| `python3 tools/estext/render.py` / `aw2dev campaign dialogue` | the dialogue as one readable Markdown file for review |
 Tests: `aw2dev test python` (`aw2.esmaplib.test_esmaplib`, `aw2.eslib.test_eslib`), `cargo test --lib es_` (`es_co` numbers and texts, `es_text` parsing, `es_campaign`: roster, flags, unit caps).
+
+Known harness limit: the Versus-based tests of the older kit (`ctx.start`, e.g. `crumb_is_pickable_in_versus`) fail on this branch with "map has 5 armies" (the harness's Design Maps navigation; the same on the base commit): the Emerald Sun tests use the campaign's own battles instead.
 
 ## The COs (what is built, what is not)
 Numbers (firepower, defence, move, range) are `es_co::bonus`, read by `co_roster::stat`; luck, stars and unit cost are in the CO's table row. Klaus's Legio Aeterna heals 3 HP on every unit (a Thumb function
