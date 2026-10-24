@@ -26,13 +26,22 @@ const OFFICE: (u8, u8) = (19, 15);
 
 fn reset_hold(core: &mut Core) {
     core.raw_write_8(STATE, -1, 0);
+    core.raw_write_8(STATE + 1, -1, 0);
 }
 
-/// At each of the player's turn starts: one more turn if the player holds the Office, else none.
+/// At each of the player's turn starts: one more turn if the player holds the Office, else none. The counter (STATE) belongs to the battle that
+/// wrote it: it counts on only if the last count was the day before (STATE + 1), so memory left by an earlier battle never wins the mission.
 fn count_hold(core: &mut Core) {
     let army = crate::ds_campaign::player_army(core);
-    let n = if owner_at(core, OFFICE.0, OFFICE.1) == army { core.raw_read_8(STATE, -1).saturating_add(1) } else { 0 };
+    let day = crate::custom_campaign::day(core).min(255) as u8;
+    let last = core.raw_read_8(STATE + 1, -1);
+    if last == day {
+        return;
+    }
+    let before = if last != 0 && last + 1 == day { core.raw_read_8(STATE, -1) } else { 0 };
+    let n = if owner_at(core, OFFICE.0, OFFICE.1) == army { before.saturating_add(1) } else { 0 };
     core.raw_write_8(STATE, -1, n);
+    core.raw_write_8(STATE + 1, -1, day);
 }
 
 fn held_three(core: &mut Core) -> bool {
