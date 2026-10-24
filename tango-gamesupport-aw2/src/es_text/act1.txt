@@ -33,9 +33,9 @@ LIVIA: He is on the radio. / Pretend not to hear him.
 CASSIUS(h): I heard that. Klaus, one day / you will say "well done, Cassius."
 KLAUS: When I do, I will mean it. / Aurelia, show me the shore.
 AURELIA: The fleet sits on a sandbar / a mile out. Past it, shoals.
-AURELIA: So: barges from the bar, / forty paces of surf, then sand.
-AURELIA: Behind the sand, a sea-wall. / Behind the wall, the fort.
-KLAUS: Cape Astra. The only deep / harbour in three hundred miles.
+AURELIA: Ports at both ends of the / bar. Then forty paces of surf.
+AURELIA: Behind the sand, a coast road. / It climbs, with junctions, to the fort.
+KLAUS: Cape Astra. Two coves, a headland / and the only deep harbour for miles.
 KLAUS: Whoever owns it owns the coast. / A landing is a claim. Make it.
 LIVIA: It is also the last port of / call on every bill I own.
 KLAUS: Explain, Quaestor.
@@ -61,14 +61,14 @@ CASSIUS: Do not "Prefect" me with that / face, Aurelia. I can hear it.
 AURELIA: I did not say it. I was / thinking it very loudly.
 KLAUS: Infantry and Mech first, with / the Recon beside them.
 KLAUS: APCs carry the wounded. The / Anti-Air tank follows. Wings may come.
-LEGIONARY: Legate! Banners on the / wall. Green, with a sun on them.
+LEGIONARY: Legate! Banners on the ridge / fort. Green, with a sun on them.
 AURELIA: Two suns on one coast. / Somebody is going to be confused.
 CASSIUS: Me. I am going to be / confused. Which one do I hit?
 KLAUS: The one shooting.
 LIVIA: Legate. When this is over, the / Senate will ask what it cost.
 KLAUS: Tell them it cost less than / hunger. Aurelia, signal the ramps.
 AURELIA: Ramps down. May the sun / be kind to the first man ashore.
-KLAUS: The sun is not who I worry / about. That is a wall. Move.
+KLAUS: The sun is not who I worry / about. That is a fort. Move.
 
 == m01_day2
 JESS: Hey, you down on my beach! / Who are you folks, anyway?
@@ -81,7 +81,7 @@ JESS: ...Yeah. That one's on Drake. / Still not getting past me.
 
 == m01_post
 @SONG ally2
-JESS(s): Okay. Okay! You got the wall, / the gate, the whole fort.
+JESS(s): Okay. Okay! You got the road, / the gate, the whole fort.
 JESS: My boys are out the back door. / I am the last one in.
 KLAUS: Lay down your arms. You will / be treated as a soldier.
 JESS: Nope. I am going out the back / door, too. Reload and come back.
@@ -108,7 +108,7 @@ CASSIUS: About time! Third hold, / bring them up! Gently!
 == m01_map
 @SONG ally2
 NARRATION: Cape Astra. Evening. / The pier is Aurea's.
-AURELIA: Pier is sound. The sea-wall / will want a month of mortar.
+AURELIA: Both sandbar ports are sound. The / fort gate wants a month of mortar.
 KLAUS: You have two weeks. Take the / engineers and the stone.
 CASSIUS: Look at this beast! Four / days in a hold, and he bites me.
 LIVIA: He bit the quartermaster. I / have added a line for it.
@@ -132,23 +132,24 @@ NARRATION: The Dune Road ridge. / Eight days to hold.
 AURELIA: Radio check. Can you hear / the saw? That is the causeway.
 KLAUS: I can hear it. Barely.
 AURELIA: The marsh swallowed the / road. I need eight days for piles.
+AURELIA: Down at the south edge, where / the Dune river meets the marsh.
 AURELIA: Eight if nobody sneezes. / Ten if somebody sneezes twice.
 KLAUS: Then nobody sneezes. We hold / the ridge until you finish.
-LIVIA: The ridge, Legate, has a / single HQ. If it falls, we lose.
+LIVIA: We have a single HQ, Legate, in / the south-west. If it falls, we lose.
 LIVIA: The Senate has a word for a / hill held eight days. "Expensive."
 CASSIUS: You want me to stand still, / on a dune, for eight days?
 KLAUS: I want the Prefect to ride / where he is told, when he is told.
 CASSIUS: So, reserve. Last bench of / the theatre. The horses will mutiny.
 KLAUS: Then the horses may mutiny / quietly. Come and watch the drill.
 KLAUS: Behind this ridge lies the causeway / into the heart of the province.
-KLAUS: The wardens have called a relief army / to throw us back into the sea.
+KLAUS: The wardens' relief army comes from / the north edge and the east edge.
 KLAUS: A conquest is a landing until it is held. / Hold.
 LEGIONARY: Legate, the line is / formed on the crest. Waiting.
 KLAUS: Shields to the front. Rear / rank, lift. Roof them over.
 LEGIONARY: Tortoise formation! / Locked shields, sir!
 CASSIUS: A turtle. You have built / a turtle. On a dune.
 KLAUS: A dune that does not run. / Arrows come off it like rain.
-KLAUS: Eagle's wings and Jess's tanks / will break on this crest.
+KLAUS: Three ridges, three passes. Eagle's / wings and Jess's tanks break on them.
 AURELIA: I am just an engineer, but / a turtle is a load-bearing animal.
 KLAUS: Then we are in good hands. / Each man holds his square of sand.
 KLAUS: No one leaves a square. Not / one pace, not for glory.
@@ -214,10 +215,10 @@ SOLDIER GE: ...I'll try, sir. Thank you / for the bread.
 
 == m03_pre
 @SONG entry
-NARRATION: The Shield Pass. A fortress / of towers across the road.
-KLAUS: The Shield Pass is the gate of the next / province. Take it and the road opens.
+NARRATION: Muro Alto, a walled town. / Rock, towers, and a keep.
+KLAUS: Muro Alto is the gate of the next / province. Take it and the road opens.
 KLAUS: Aurelia. The wall is yours. / I take the main body round
-KLAUS: and hold the road behind you. / You lead the siege.
+KLAUS: and hold the coast road behind / you. You lead the siege.
 AURELIA: Me? Lead? I count loads. I / do not give orders.
 KLAUS: You give orders to stone. / Stone is harder than men.
 AURELIA: ...Stone does not talk back. / All right. What do I have?
@@ -227,16 +228,16 @@ CASSIUS: You have a Bomber? Take the / Tanks. A good charge cracks a wall!
 AURELIA: Horses against stone, / Prefect? Have you met stone?
 CASSIUS: Prefect again! That is the / third time today.
 AURELIA: I have a list.
-AURELIA: The fortress is Javier's. / Four towers, each with a Com Tower.
-AURELIA: Every tower he holds makes / his men sharper. So: his teeth first.
-AURELIA: Three gates. One keep. And / a Battleship off the coast.
-KLAUS: Drake's coast guns. You will / have shells from the sea.
+AURELIA: The town is Javier's. A ragged / rock wall, towers, Com Towers.
+AURELIA: Every Com Tower he holds makes / his men sharper. His teeth first.
+AURELIA: Gates north, west and east. The / keep has one gate, to the south.
+KLAUS: Drake's Battleship, offshore in / the north. Shells from the sea.
 AURELIA: Range is eleven. My Rockets / reach nine and a half, with luck.
 AURELIA: So I need the Recon to find / the guns, and the Bomber to kill them.
 KLAUS: That is a plan.
 AURELIA: It is a start. A plan has / more steps, usually a ladder.
 KLAUS: This is not a promotion. It / is a ladder. Climb.
-AURELIA: Climbing. Breach the gates, / take the towers, take the keep.
+AURELIA: Climbing. Gates, the Muro river, / the towers, the keep.
 LIVIA: A wall costs more to build / than to knock down. This is true
 LIVIA: of most things the Senate / loves. Proceed, Chief.
 AURELIA: Thank you, Quaestor. That / was almost kind.
@@ -273,7 +274,7 @@ JAVIER: The province is yours to keep. / Keep it better than I did.
 
 == m03_map
 @SONG ally2
-NARRATION: The Shield Pass. A tent / full of crates and paper.
+NARRATION: Muro Alto. A tent / full of crates and paper.
 AURELIA: Quaestor, I found something / in the fort's store. Look.
 LIVIA: ...Grain crates. Stencilled.
 AURELIA: Same stencil as the relief / crates at home. I checked the nails.
@@ -294,8 +295,8 @@ LIVIA: I know. I have been practising.
 
 == m04_pre | KLAUS, AURELIA
 @SONG enemy1
-NARRATION: The Mistvale. A river valley / under fog. Day one.
-LEGIONARY: Legate! Banners on the / far bank. A legion, in the fog.
+NARRATION: The Mistvale, along the Verna. / A river under fog. Day one.
+LEGIONARY: Legate! Banners on the east / bank. A legion, in the fog.
 LEGIONARY: Red plumes, sir. Red / cloaks. The eagle of the Second.
 KLAUS: The Second Legion. I know it. / It sailed a week behind us.
 AURELIA: It was supposed to join us / at the cape. Where has it been?
@@ -338,7 +339,7 @@ KLAUS: I did not ask what the Senate / says. I asked what it orders.
 CASSIUS: Fog is thick, Klaus. Hard / to see who wears which red.
 KLAUS: Then be careful where you / aim, Prefect.
 AURELIA: Legate, he is not going to / move. What are our orders?
-KLAUS: Rout the Second Legion, or / take its camp. Spare the men.
+KLAUS: Three bridges, no ford. Rout the / Second or take its camp. Spare men.
 LIVIA: I have estimated the cost of / fighting our own colours.
 LIVIA: It is high, Legate. It is / always high.
 

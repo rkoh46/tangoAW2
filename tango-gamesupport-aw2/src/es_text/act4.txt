@@ -13,14 +13,14 @@ LIVIA: I am told that is what makes / it free. The fee is for later.
 CASSIUS(h): A joke! Livia made a joke! / Somebody write down the date!
 LIVIA: It was a statement of terms, / Prefect. The date is in the bill.
 KLAUS: Report, Prefect.
-CASSIUS: Green Earth holds the west / quay. Javier's banners, and a lot
+CASSIUS: Green Earth holds the west, past / the Rio Sale. Javier's banners, a lot
 CASSIUS: of towers he built in a week. / The man swears oaths at bricks.
 AURELIA: He builds fast and he builds / thin. I like him already.
-CASSIUS: Yellow Comet took the east / mole before dawn. Sonja's work.
+CASSIUS: Yellow Comet took the east, by the / Rio Dolce, before dawn. Sonja's work.
 CASSIUS: Nobody saw them land. The / sentries woke up in a ditch.
-KLAUS: And the north dock.
+KLAUS: And the north-east dock.
 CASSIUS(s): Black Hole. Real ones, old / Legate. Not a stray banner.
-CASSIUS: Walls, cranes, a signal tower / and a proper garrison. Kindle.
+CASSIUS: Walls, cranes, the Black Factory / and a proper garrison. Kindle.
 LIVIA: The trail ends there, Legate. / Every barge we have chased
 LIVIA: was loaded at the north dock. / The yard keeps its own books.
 KLAUS: Black Hole is not at war / with Aurea. Remember that.
@@ -28,13 +28,13 @@ AURELIA: Somebody should tell their / guns. They have not noticed.
 KLAUS: They defend cargo. They take / us for raiders. They are half right.
 KLAUS: We came for a ledger, not a / fight. Today we may get both.
 CASSIUS: Where is the ledger? / Which warehouse? Which crate?
-LIVIA: The Harbour Office, in the / middle of the port. The harbour
+LIVIA: The Harbour Office, in the middle / of the octagonal square. The harbour
 LIVIA: master files every bill of / lading. The stencil will be there.
 KLAUS: Then the Harbour Office is / the objective. Take it.
 KLAUS: Calderon calls itself free. / Today it answers to the road.
 KLAUS: Four provinces behind us. This / port is the gate of the northern coast.
 KLAUS: And hold it for three days. / A file is not read in an hour.
-AURELIA: Three days in the middle of / four armies. In a bowl. Lovely.
+AURELIA: Three days in the middle of / four armies. In an octagon. Lovely.
 AURELIA: Everyone will shell the one / roof. I will bring stone anyway.
 KLAUS: There are no alliances in the / port. Every flag fights every flag.
 KLAUS: That is also our chance. Let / them spend themselves on each other.
@@ -123,10 +123,10 @@ NELL: Then the council will not stand / in your way. I will see to it.
 == m14_pre
 @SONG enemy1
 NARRATION: Castra Maxima, the Consul's / camp on the sea. Dawn, low mist.
-NARRATION: A sea wall, a harbour and / three roads in. All of them guarded.
+NARRATION: Walls, a moat river, a harbour / and three roads in. All guarded.
 AURELIA: Nine thousand men landed in / eleven days. They walled a coast.
-AURELIA: Coast road under the wall / guns. River valley behind the weirs.
-AURELIA: And a ridge track over the / top, with a tower on every bend.
+AURELIA: Coast road to the south gate, over / a moat bridge. The valley road, east.
+AURELIA: And a ridge track: west pass, then / Cassius's plateau camp, north gate.
 LIVIA: The Consul's herald reached us / at midnight, Legate. A sealed letter.
 KLAUS: Read it.
 LIVIA: "The Senate recalls the Legate / Klaus, to answer for the north."
@@ -165,7 +165,7 @@ KLAUS: Then we will teach them, / Consul. Politely.
 AURELIA: Plan. Three lanes, one camp. / Heavy guns take the coast road.
 AURELIA: Rockets and engineers up the valley. / Light units and Copters on the ridge.
 AURELIA: Warning: reserves land on day / five and again on day eight.
-AURELIA: If we are not through the sea wall by / the fifth, we fight a second army.
+AURELIA: If we are not through the walls by / the fifth, we fight a second army.
 KLAUS: Then we do not wait for them. / We have taken a coast, a pass, a port.
 KLAUS: We will take this camp, and the man in it. / Quaestor, funds. Engineer, ladders.
 LEGIONARY: The legion is formed, / Legate. All three lanes.
@@ -176,7 +176,7 @@ CASSIUS: Consul. Do you hear me? / This is Prefect Cassius.
 VARRO: Splendid. Which of my boys is / on the radio? The sensible one?
 CASSIUS: I read the page, Consul. Nine hundred / talents. HOBB's stamp on every coin.
 VARRO: A prudent man does not turn a / coin over to see who minted it, Prefect.
-CASSIUS: Then I am not prudent! My / horses ride with the Legate now. Mine!
+CASSIUS: Then I am not prudent! My / plateau camp rides with the Legate!
 VARRO: A pity. I had such plans. / Praetors, take his flank.
 KLAUS: Welcome back, Prefect.
 CASSIUS: Do not be nice. I will cry / and the horses will see.
@@ -239,16 +239,17 @@ KLAUS: I know. That is why I asked.
 
 == m15_pre
 @SONG enemy1
-NARRATION: The Strait of Elms. Two / islands, one narrow, deep channel.
-NARRATION: The Accord's fleet bars the / far end. A wing circles above it.
-AURELIA: Battleships at the mouth, / cruisers on the flanks. Carriers behind.
+NARRATION: The Strait of Elms. Three / isles in one long, deep channel.
+NARRATION: The Accord's fleet bars the east. / Sensei's wing circles Elm Isle.
+AURELIA: Elm Isle in the middle, Sensei's air / base. Drake's fort lies to the east.
 AURELIA: And above them, Fighters and / Bombers in a wall. Gold and green.
 CASSIUS: Green Earth's grey sea and Yellow / Comet's gold sky. Pretty. Terrible.
 LIVIA: The Accord closed the strait nine days / ago. Our road north runs through it.
-LIVIA: On the far shore, the harbour of the / Strait Fort. Every grain bill ends there.
+LIVIA: In the east, the Strait Fort, with / its inlet harbour. Every bill ends there.
 KLAUS: What do we have?
 LIVIA: Cruisers, a Battleship, two / Subs, ships taken at Castra Maxima,
-LIVIA: and a dozen transports. Fuel for six / days. Then we are a fleet at anchor.
+LIVIA: and a dozen transports. Fuel for six / days. Salt Isle and Reed Isle hold free
+LIVIA: ports. Ours, if we take them. Then / we are a fleet at anchor.
 KLAUS: Then we take the strait and the / fort in six days. This is a pair's fight.
 KLAUS: Anti-air and Cruisers first. The / Tag Power on the screen. Together.
 CASSIUS: Pax Romana! Say it with me, / Quaestor. It rolls off the tongue.
@@ -331,10 +332,10 @@ KLAUS: Then we begin it. At dawn.
 @SONG sturm
 NARRATION: Stormhold, the Accord's last / stronghold. Dawn, no fog.
 NARRATION: A city on a plateau above the / sea. Three roads climb to it.
-AURELIA: Salt Road along the cliff, under / the harbour guns. The coast road.
-AURELIA: Weir Valley, a river in a gorge, / walls at both ends. The river road.
-AURELIA: And Needle Pass, the high road. / Goat width, then the Sunrise Gate.
-AURELIA: Above the lot, the plateau. Quay / Ward below, Falcon Field above.
+AURELIA: The Salt Road, the coast road, to the / harbour district and the south gate.
+AURELIA: Weir Valley, the Stormwater river / valley, up to the west gate.
+AURELIA: And Needle Pass, the high road over / the north mountains to Falcon Field.
+AURELIA: Above the lot, the escarpment: three / gates. Hachi's Market Ward behind it.
 CASSIUS: Six provinces in a year, old / man, and now the seventh gate.
 KLAUS: The last gate. Beyond it are the / Accord's archives, and our answer.
 LIVIA: The harbour book from the Strait / Fort names the Hall of Records.
@@ -344,9 +345,9 @@ KLAUS: The door will be asked. By us.
 LIVIA: I have also audited the garrison, / Legate. Half of it owes Hachi money.
 LIVIA: It is the most loyal army I have ever / costed. I do not know how to beat it.
 KLAUS: Quiet, both of you.
-KLAUS: Three lanes. Cassius, the Salt Road / and the harbour. Take the Quay Ward.
+KLAUS: Three lanes. Cassius, the Salt Road / and the harbour district.
 KLAUS: Aurelia, the Weir Valley. Bring / the walls down in order.
-KLAUS: I take the Needle Pass, and the / Sunrise Gate. Quaestor, funds.
+KLAUS: I take the Needle Pass, the airfield / and the Sunrise Gate. Quaestor, funds.
 LIVIA: Enough for one more wave. Not / two. I counted. I recount.
 EAGLE: Death from above! Legion! You came / all this way for a visit?
 EAGLE: Falcon Field is mine, Legate! The / wing is ready! Green Earth stands!
@@ -376,10 +377,10 @@ LIVIA: He has stocked an army, Prefect. / It is a serious threat.
 KLAUS: Then we begin. Three lanes. Move.
 
 == m16_phase2
-KLAUS: The outer wall is behind us. The / Quay Ward is ours. The Market stands.
+KLAUS: The escarpment is behind us. The / harbour district is ours. Market next.
 HACHI: Customer, you broke the shop window. / That comes out of your account.
 EAGLE: Wing up! Falcon Field is not / done yet! Death from above!
-AURELIA: Market Ward next. Give me eight turns / and three guns on the south bastion.
+AURELIA: Market Ward next. Give me eight turns / and three guns at the west gate.
 CASSIUS: I will keep the Eagles off your / guns. Hurry up.
 AURELIA: Do not give me orders, Prefect. / I am doing the stone.
 KLAUS: Together.
@@ -389,7 +390,7 @@ KLAUS: The Market Ward has fallen. The / Citadel and the Sunrise Gate stand.
 HACHI: Last chance sale, friend! Barter! / Everything half price, everything goes!
 EAGLE: Wing up! All of it! Let them look / at the sky! Death from above!
 AURELIA: Both Powers are lit. Watch the / cliff guns. They will have the range.
-CASSIUS: My men are pinned at Falcon Field, old / man! Let me ride the hangars!
+CASSIUS: My men are pinned under the cliff, old / man! Let me ride up to the hangars!
 KLAUS: Then ride, Prefect. Take the / field. Do not die in it.
 LIVIA: The repair lane is ours, Legate. / It will heal anything that reaches it.
 KLAUS: Then reach it. Take the gate.

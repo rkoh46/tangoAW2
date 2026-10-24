@@ -5,7 +5,7 @@
 == m05_pre
 @SONG entry
 NARRATION: The Comet Road, Yellow Comet. / Day one of nine.
-NARRATION: Three bridges over the river. / Three signal-posts beyond.
+NARRATION: Three bridges over the Sable. / Posts: Highwatch, Crossways, Lowmere.
 KLAUS: Prefect Cassius. The legion / has rested. The road is yours.
 CASSIUS(h): Say that again. Slowly. I / want the whole camp to hear.
 KLAUS: I will say it once. You have / the command. The cavalry leads.
@@ -13,9 +13,10 @@ CASSIUS(h): He said it! Did you hear? / Klaus gave me an army!
 AURELIA: He gave you a road and a / clock. Read the clock first.
 CASSIUS: Chief, I read nothing. I / ride. Reading is for old men.
 KLAUS: Then I will read it for you. / The Comet border guard will blow
-KLAUS: the three bridges on day ten. / Beyond the river stand the posts.
+KLAUS: the three bridges after day nine. / Beyond the Sable stand the posts.
 KLAUS: Beyond them lies Yellow Comet. We cross / as conquerors, so we cross fast.
 KLAUS: Take all three. If the bridges / fall, the legion waits for thaw.
+AURELIA: Dunmere is home. Our depot sits / at the forward crossroads.
 LIVIA: Which costs, for every day of / delay, four hundred measures
 LIVIA: of grain we do not have. I / shall not repeat the figure.
 CASSIUS: Then do not! You are ruining / a perfectly good charge.
@@ -43,13 +44,13 @@ CASSIUS: Well, I am running toward / the third post. Keep up, if you can!
 
 == m05_post
 @SONG ally2
-NARRATION: Day eight. The last post / is taken. The bridges still stand.
+NARRATION: Day eight. Lowmere, the last / post, is taken. The bridges stand.
 CASSIUS(h): The clock! Aurelia! Tell / me the clock, loudly, to everyone!
-AURELIA: Day eight, Prefect. Two days / to spare. I counted twice.
-CASSIUS: Two days! Livia, how many / measures of grain is that?
-LIVIA: Eight hundred. I have written / it down. It is a good number.
+AURELIA: Day eight, Prefect. One day / to spare. I counted twice.
+CASSIUS: A day! Livia, how many / measures of grain is that?
+LIVIA: Four hundred. I have written / it down. It is a good number.
 GRIMM: Grimm lost! Grimm has never / lost a bridge! Grimm is angry!
-SENSEI: Grimm, hush. The man rode / three hundred leagues in nine days.
+SENSEI: Grimm, hush. The man rode / three hundred leagues in eight days.
 SENSEI: Cassius of Aurea. In forty / years I have not seen that ride.
 CASSIUS: ...You mean that? You are / not just being kind?
 SENSEI: I am old and cruel. I do not / do kind. I say what I saw.
@@ -59,7 +60,7 @@ SENSEI: Your people march because / the bread stopped, they say.
 SENSEI: My villages say the same of / winter. Hm. Strange company.
 KLAUS: The border is behind us. The / first Comet province lies open.
 SENSEI: Open, yes. Whether it welcomes / you is another matter. Hm.
-KLAUS: Cassius. The posts were taken / with two days in hand.
+KLAUS: Cassius. The posts were taken / with a day in hand.
 CASSIUS: Say it, old man. Go on.
 KLAUS: ...It was well ridden.
 CASSIUS(h): HA! That is the best / sentence you have ever said!
@@ -67,7 +68,7 @@ KLAUS: It is the only one. Do not / wear it out.
 
 == m05_map
 @SONG enemy1
-NARRATION: A camp on the far bank. / A dispatch from the Senate.
+NARRATION: Fort Amberlea's road, past the / Sable. A dispatch from the Senate.
 LIVIA: A reply, Legate. It came / in half the usual time.
 KLAUS: "The Consul Varro to the / Legate Klaus, greeting. The Senate
 KLAUS: approves the road north, and / the cavalry's ride." There is more.
@@ -88,7 +89,7 @@ KLAUS: Write the figure down. We / will ask again, in person.
 
 == m06_pre
 @SONG aw2:423
-NARRATION: The market town of Halcyon, / Blue Moon. Sixteen days.
+NARRATION: The market town of Aurelhaven, / Blue Moon. Sixteen days.
 KLAUS: Quaestor. You asked for me. / I would rather be at the front.
 LIVIA: I asked you to be silent, / Legate. It will be difficult.
 COLIN: Wowee! So you are the Aurean / treasurer! I thought you'd be taller!
@@ -100,7 +101,10 @@ LIVIA: The coin is struck by the / Senate's mint. I can show you.
 SASHA: You can show us a receipt. / We do not accept receipts.
 LIVIA: Then I shall show you what / I do accept. Legate, the map.
 KLAUS: The whole town is the target. / Fourteen properties, owned at once,
-KLAUS: at the end of any day before / the sixteenth. Capture, nothing else.
+KLAUS: at the end of any day by the / sixteenth. Capture, nothing else.
+KLAUS: Guildhall, north-west: Colin. Counting / House, south-east: Sasha.
+KLAUS: Salt Row, south-west, is cut off by / the Mill Water. Two bridges.
+KLAUS: Eight neutral cities between us. Take / them first, and the harbour inlet.
 LIVIA: The Senate's auditors arrive on / day seventeen. If I cannot show
 LIVIA: fourteen properties on my books, / the credit is withdrawn. All of it.
 COLIN: Ha! And we out-produce you / three to one! Look at my factories!
@@ -110,7 +114,7 @@ COLIN: ...Did I? Sasha, did I?
 SASHA: Yes. You always do.
 LIVIA: Your hours, your output and / your temper. I shall use all three.
 LIVIA: A tank is a debt with a gun / on it. I have settled larger.
-SASHA: Then settle this one. We hold every / deed in Halcyon. Come and take them.
+SASHA: Then settle this one. We hold the / deeds in Aurelhaven. Come take them.
 LIVIA: Gladly. Each capture is a deed / transferred, at the usual rate.
 KLAUS: Advance.
 
@@ -124,7 +128,7 @@ LIVIA: A run is a queue. A queue / is a schedule. I keep schedules.
 
 == m06_post
 @SONG aw2:423
-NARRATION: Day thirteen. Halcyon is taken. / Fourteen properties on the ledger.
+NARRATION: Day thirteen. Aurelhaven is taken. / Fourteen properties on the ledger.
 COLIN: Wowee. Fourteen. She counted / them like beans, Sasha.
 SASHA: She counted them like debts. / It is worse.
 COLIN: Quaestor Livia! No hard / feelings! I make you an offer!
@@ -134,7 +138,7 @@ LIVIA: I am already as rich as the / Senate permits. But I am touched.
 SASHA: The offer has a clause. You / sell your grain contracts to us.
 LIVIA: Which tells me your guild has / wanted them for months.
 SASHA: ...We have an interest.
-LIVIA: Then here is mine. No sale. / A clearing house, here, at Halcyon.
+LIVIA: Then here is mine. No sale. / A clearing house, here, at Aurelhaven.
 LIVIA: Aurean grain bought and sold / in guild coin. Your name on my bills.
 LIVIA: You gain a customer who pays. / I gain a currency people accept.
 COLIN: Hm. Hm. Sasha, is that a / good deal?
@@ -147,8 +151,8 @@ KLAUS: I have lost a Quaestor to a / guild. Or perhaps gained a guild.
 
 == m06_map
 @SONG hagevolt
-NARRATION: Halcyon. Night. The clearing / house, after closing.
-KLAUS: Halcyon is taken. A trade town, / and its guild answers to Aurea now.
+NARRATION: Aurelhaven. Night. The clearing / house, after closing.
+KLAUS: Aurelhaven is taken. A trade town, / and its guild answers to Aurea now.
 LIVIA: The first bills arrived by / noon. Eleven hundred, in all.
 KLAUS: Is the coin accepted?
 LIVIA: Accepted. Even praised. Colin / has hung one on his wall.
@@ -168,12 +172,13 @@ KLAUS: When you are certain. I will / hold you to it. Not before.
 
 == m07_pre
 @SONG ally2
-NARRATION: The Strait of Verdant. / Grey sea, grey ships, grey sky.
-NARRATION: Isle Verdant ahead. A harbour, / an airfield, a fleet.
-KLAUS: The island commands the strait. / Whoever holds the harbour holds it.
+NARRATION: Verdant Roads. Grey sea, / grey ships, grey sky.
+NARRATION: Isle Verdant ahead. A harbour / bay, an airport, a flagship.
+KLAUS: Isle Verdant commands the Roads. / Whoever holds its harbour holds them.
 KLAUS: And the sea-lane north with it. The / coast is ours. Now we take the water.
-AURELIA: Sea wall is rock, forty / paces thick. Cannon will not do.
+AURELIA: The Twin Sisters are two atolls. / Stepping stones from Cape Fidelis.
 LIVIA: The Green Earth fleet is the / largest within two hundred leagues.
+KLAUS: Its flagship is a Battleship, mid-Roads. / Sink it, and take the harbour bay.
 CASSIUS: I want it noted that horses / and boats are not friends.
 KLAUS: It is noted. Why are you / green, Prefect?
 CASSIUS: I am not green. I am / thinking. In a very quiet way.
@@ -201,14 +206,14 @@ KLAUS: Hold the line. The wing has / one pass and one tank of fuel.
 
 == m07_post
 @SONG aw2:421
-NARRATION: Isle Verdant. The harbour / gates are open. The sea is quiet.
+NARRATION: Isle Verdant. The harbour / bay is ours. The sea is quiet.
 DRAKE: Dude. That was a real mess. / I mean that in a good way.
 EAGLE: I lost! Lost to a bunch of / sailors with shovels! Aargh!
 DRAKE: Eagle. Chill. They were not / sailors. They were cruisers.
 KLAUS: Drake. The harbour is Aurea's / now. Your ships may leave.
 DRAKE: Dude. I want to say / something first, okay?
 DRAKE: You kept the lanes clean. / You did not sink one fisher.
-DRAKE: You did not mine the strait. / My cousins fish there. Thanks.
+DRAKE: You did not mine the Roads. / My cousins fish there. Thanks.
 LIVIA: We have no quarrel with / fishermen, Drake. They pay taxes.
 DRAKE: Ha. See, dude? That is / almost a joke.
 DRAKE: So I think you are not / Black Hole. Black Hole mines things.
@@ -243,11 +248,12 @@ KLAUS: Cassius. Be quiet. She is / being generous.
 
 == m08_pre
 @SONG ally1
-NARRATION: Ironhold, Orange Star. / A stone fort on an open plain.
-KLAUS: Ironhold. Stone walls, a / canal, a causeway. Three gates.
+NARRATION: Ironhold, Orange Star. / A ring of crags on an open plain.
+KLAUS: Ironhold. Crags round Max's HQ, / the Brimwater canal, a causeway.
+KLAUS: Front gate in the west, rear gate / in the east. Two lanes, one causeway.
 KLAUS: Ironhold is the gate of Orange / Star. Take it and the frontier moves.
-CASSIUS: Then I take the plain! / A flank run, round the canal!
-KLAUS: No. You hold the causeway / and wait for the line.
+CASSIUS: Then I take the plain! A flank / run, by the northern road!
+KLAUS: No. You hold the northern road / and wait for the line.
 CASSIUS: Wait! I do not wait, old man! / I am the cavalry!
 KLAUS: The Senate has made us one / pair. We share a plan or we lose.
 CASSIUS: One pair! Ha! We could not / share a plate of dates!
@@ -256,7 +262,7 @@ KLAUS: No.
 CASSIUS: Yes! Please! Livia, / begin with Klaus!
 LIVIA: Cassius. You charge when you / are afraid. Klaus, you wait.
 LIVIA: Together, one waits and / one charges. That is a pair.
-KLAUS: The Quaestor has made a / point. I hold the centre.
+KLAUS: The Quaestor has made a point. / I hold the front gate.
 CASSIUS: And I flank. Fast. Like / a hammer.
 KLAUS: And I am the anvil. If / you land on me, I will not move.
 CASSIUS: Hammer and Anvil! I like / it! It sounds like a tavern!
@@ -264,8 +270,9 @@ MAX: Who commands on the field of / Ironhold? Come out and say it!
 KLAUS: I do.
 CASSIUS: I do! No, wait. We do!
 MAX: Two of them. Two heads, one / army. I have seen that fail.
+JAKE: Sir, I hold the south-east. Shall / I flank the southern road?
 JAKE: Sir, I like their banner. / It is green. Is that allowed?
-MAX: Jake. Not now. Aureans! You / will not cross this plain!
+MAX: Jake. Not now. Aureans! You / will not cross this causeway!
 KLAUS: We will see.
 
 == m08_day3
@@ -280,7 +287,7 @@ NARRATION: The cavalry strikes the line. / The centre does not move.
 
 == m08_post
 @SONG ally1
-NARRATION: Ironhold. The fort stands. / The plain is quiet.
+NARRATION: Ironhold. The crags stand. / The causeway is quiet.
 MAX: Blast. I lost. To two men / who argued the whole time.
 JAKE: But sir! The flank! The / hammer! That was... incredible!
 MAX: Jake. Be quiet. Legate Klaus. / I fought with my whole force.
@@ -300,7 +307,7 @@ CASSIUS(h): HA! A kid! A kid said it!
 
 == m08_map
 @SONG ally2
-NARRATION: Ironhold. Dusk. The Aurean / camp inside the old walls.
+NARRATION: Ironhold. Dusk. The Aurean / camp among the crags.
 LIVIA: A letter from the Accord, / sealed in orange wax. For you.
 KLAUS: "The Allied Accord invites / the Legate Klaus to its council."
 KLAUS: "It will hear him. It will / hear the grain. It asks for peace."
