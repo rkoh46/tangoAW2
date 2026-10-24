@@ -26,7 +26,7 @@ BOT = {
     7: {"goals": [(15, 8)]},
     9: {"goals": [(12, 4)]},
     10: {"goals": [(16, 2)]},
-    11: {"goals": [(24, 6)]},
+    11: {"goals": [(37, 10)]},
     13: {"goals": [(12, 10)]},
     15: {"goals": [(23, 10)]},
     # (M16 and M14: hold the line while the computer's waves break on it, then go for the keep)
