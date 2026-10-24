@@ -96,9 +96,9 @@ def build():
     put(2, INF, 13, 8, 2, **K); put(2, MECH, 16, 9, 1, **K)
     # gate guns and walls (hold): artillery and rockets in the corridors behind the rings, missiles near the keep, AA at the gates
     put(2, ART, 6, 12, 1, lo=(5, 11), hi=(7, 14), hold=True); put(2, ART, 22, 12, 1, lo=(22, 10), hi=(24, 14), hold=True)
-    put(2, ART, 11, 14, 1, lo=(9, 14), hi=(15, 15), hold=True)
-    put(2, ART, 14, 14, 1, lo=(13, 14), hi=(20, 15), hold=True)
-    put(2, ROCK, 7, 10, 1, lo=(6, 8), hi=(7, 12), hold=True); put(2, ROCK, 23, 7, 1, lo=(22, 5), hi=(24, 8), hold=True)
+    pass
+    pass
+    put(2, ROCK, 7, 10, 1, lo=(6, 8), hi=(7, 12), hold=True)
     put(2, MIS, 14, 12, 1, lo=(10, 12), hi=(17, 12), hold=True); put(2, MIS, 20, 12, 1, lo=(19, 12), hi=(20, 12), hold=True)
     put(2, AA, 5, 14, 1, lo=(5, 12), hi=(7, 15), hold=True); put(2, AA, 13, 15, 1, lo=(12, 14), hi=(14, 15), hold=True)
     put(2, AA, 18, 12, 1, lo=(17, 12), hi=(19, 12), hold=True)
@@ -108,20 +108,20 @@ def build():
     put(2, INF, 4, 21, 1, lo=(0, 17), hi=(12, 22)); put(2, MECH, 14, 21, 1, lo=(5, 17), hi=(22, 22)); put(2, INF, 10, 20, 1, lo=(5, 17), hi=(22, 22))
     pass
     put(2, TANK, 2, 17, 1, lo=(0, 14), hi=(3, 22)); put(2, TANK, 14, 18, 1, lo=(10, 17), hi=(22, 22))
-    put(2, MDT, 3, 15, 1, lo=(0, 12), hi=(3, 22)); put(2, MDT, 12, 17, 1, lo=(10, 17), hi=(22, 22)); put(2, MDT, 8, 15, 2, lo=(5, 14), hi=(15, 15))
-    put(2, NEO, 5, 14, 1, lo=(5, 12), hi=(7, 15)); put(2, NEO, 15, 15, 1, lo=(13, 14), hi=(20, 15)); put(2, NEO, 20, 14, 1, lo=(18, 14), hi=(24, 15)); put(2, NEO, 23, 12, 1, lo=(22, 10), hi=(24, 13))
-    put(2, MEGA, 9, 14, 1, lo=(8, 14), hi=(12, 15)); put(2, MEGA, 21, 14, 1, lo=(19, 14), hi=(23, 15))
+    put(2, MDT, 3, 15, 1, lo=(0, 12), hi=(3, 22)); put(2, MDT, 8, 15, 1, lo=(5, 14), hi=(15, 15))
+    put(2, NEO, 5, 14, 1, lo=(5, 12), hi=(7, 15)); put(2, NEO, 15, 15, 1, lo=(13, 14), hi=(20, 15))
+    put(2, MEGA, 9, 14, 1, lo=(8, 14), hi=(12, 15))
     put(2, RECON, 15, 18, 1, lo=(10, 17), hi=(22, 22))
-    put(2, FTR, 10, 2, 2, lo=(8, 2), hi=(21, 3)); put(2, BMB, 19, 2, 2, lo=(8, 2), hi=(21, 3))
+    put(2, FTR, 10, 2, 1, lo=(8, 2), hi=(21, 3)); put(2, BMB, 19, 2, 1, lo=(8, 2), hi=(21, 3))
     S = dict(kinds=sea, lo=(27, 0), hi=(35, 11))
-    put(2, BS, 30, 3, 2, **S); put(2, CR, 29, 1, 2, **S)
+    put(2, BS, 30, 3, 1, **S); put(2, CR, 29, 1, 2, **S)
     # PRAETORIAN GUARD: gate guns hold at the east gate and the harbour, the strike force advances
     E = dict(lo=(26, 6), hi=(31, 22))
-    put(3, ART, 27, 9, 2, hold=True, **E); put(3, ART, 29, 13, 1, hold=True, **E)
+    put(3, ART, 27, 9, 1, hold=True, **E); put(3, ART, 29, 13, 1, hold=True, **E)
     put(3, AA, 28, 8, 1, hold=True, **E); put(3, AA, 30, 14, 1, hold=True, **E)
     put(3, INF, 30, 11, 3, hold=True, **E); put(3, INF, 29, 20, 3, **E)
     put(3, MECH, 27, 15, 2, hold=True, **E); put(3, MECH, 27, 18, 2, **E)
-    put(3, NEO, 27, 21, 3, **E); put(3, MDT, 28, 17, 4, **E); put(3, TANK, 26, 14, 3, **E)
+    put(3, NEO, 27, 21, 1, **E); put(3, MDT, 28, 17, 2, **E); put(3, TANK, 26, 14, 2, **E)
     put(3, FTR, 29, 10, 2, lo=(26, 7), hi=(31, 10)); put(3, BCO, 27, 7, 1, lo=(26, 6), hi=(31, 8))
     # ---- notes ----
     m.note("hq1", 11, 27, "the player's HQ").note("hq2", 15, 8, "Varro's HQ in the keep: the victory (capture)").note("hq3", 29, 21, "the Praetorian Guard's HQ (east flank)")
