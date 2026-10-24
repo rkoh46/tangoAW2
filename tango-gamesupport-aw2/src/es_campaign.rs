@@ -66,6 +66,29 @@ pub fn skin_colour(core: &Core) -> Option<u8> {
     (1..=5).contains(&c).then_some(c)
 }
 
+/// Army colours in an Emerald Sun battle. A mission in which the player picks a CO starts with the game's own colours for that case (the player's
+/// army in Black Hole's colour 5, the others' shuffled to the free ones: the BH Campaign's player is always Black Hole), not the mission's. Found in
+/// the real game: M13's player wore Black Hole's colour and Kindle Orange Star's, and the Emerald Sun skin landed on Black Hole's inventions. Every
+/// tick of such a battle the colour bytes are set to the mission's and the army's palette rows reloaded when one changes.
+pub fn sync_colours(core: &mut Core) {
+    if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::pvp::in_battle(core) {
+        return;
+    }
+    let Some(m) = crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(crate::ds_campaign::MISSION, -1) as usize)) else {
+        return;
+    };
+    let players = crate::five::players(core);
+    for k in 0..m.armies.min(4) as u32 {
+        let want = m.colours[k as usize].clamp(1, 5);
+        let at = players + 0x3C * (k + 1) + 0x1A;
+        let have = core.raw_read_8(at, -1);
+        if have != 0 && have != want {
+            core.raw_write_8(at, -1, want);
+            crate::pvp::force_slot_palettes(core, k, want);
+        }
+    }
+}
+
 /// The world map's flags (map pixels on AW2's own map, 432 x 256): the legion's march from Green Earth's south coast round the continent, then
 /// the home sea and Port Aurelium at the south edge.
 pub mod region {
