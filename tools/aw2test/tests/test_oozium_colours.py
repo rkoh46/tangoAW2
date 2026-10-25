@@ -310,7 +310,9 @@ def oozium_immune_five_armies(ctx):
     after = cell_pixels(ctx, g, "five_immune_after", 12, 10)
     control1 = cell_pixels(ctx, g, "five_immune_control1", 15, 8)
     ctx.eq(g.unit_at(12, 10)["hp"], 100, "Black Hole's Oozium is untouched")
-    ctx.check(before is not None and before == control0 and after == control1, "and keeps its colours (as its other Oozium)")
+    # (the Oozium's shine moves between pictures: its white and the pure black beside it are left out of the comparison)
+    plain = lambda cs: cs and [c for c in cs if min(c) < 240 and max(c) > 0]
+    ctx.check(before is not None and before == control0 and plain(after) == plain(control1), "and keeps its colours (as its other Oozium)")
 
 
 for _c in COLOURS:
