@@ -546,7 +546,8 @@ def inventions(G):
     if G.m.source != "es":
         return []
     out = []
-    tiles = [(x, y) for y in range(G.h) for x in range(G.w) if G.g[y][x] == "#" or 0x180 <= G.t[y][x] <= 0x1A9]
+    # (a missile silo, tile 0x180, is AW2's own terrain, not an invention: it is fine in any mission)
+    tiles = [(x, y) for y in range(G.h) for x in range(G.w) if G.g[y][x] == "#" or 0x181 <= G.t[y][x] <= 0x1A9]
     if tiles and not G.m.meta.get("blackhole"):
         x, y = tiles[0]
         out.append(Problem("ES01", x, y, f"{len(tiles)} invention tiles on a map with no `blackhole` line (only the missions against Black Hole may have them)"))
@@ -557,6 +558,29 @@ def inventions(G):
             n = 0
         if n > 2:
             out.append(Problem("ES01", -1, -1, f"{n} maps are tagged `blackhole` (at most two missions fight Black Hole)"))
+    return out
+
+
+def reachables(G):
+    """AR03: a missile silo and an airport must be reachable on foot from some army's HQ (infantry capture the airport, a foot soldier on the silo launches it): a flood from the HQs over
+    every cell a foot soldier can stand on (plain, wood, mountain, road, bridge, shoal, river ford, property, silo). Reported once per cell."""
+    out = []
+    targets = [(x, y) for y in range(G.h) for x in range(G.w) if G.g[y][x] in "MAa"]
+    if not targets:
+        return out
+    foot = set(".fR^=-,HBCAPTMbcapt")
+    seen, todo = set(), [(x, y) for y in range(G.h) for x in range(G.w) if G.g[y][x] == "H"]
+    seen.update(todo)
+    while todo:
+        x, y = todo.pop()
+        for dx, dy in D4:
+            c = (x + dx, y + dy)
+            if c not in seen and G.at(*c) in foot:
+                seen.add(c)
+                todo.append(c)
+    for x, y in targets:
+        if (x, y) not in seen:
+            out.append(Problem("AR03", x, y, f"the {'silo' if G.g[y][x] == 'M' else 'airport'} cannot be reached on foot from any HQ"))
     return out
 
 
@@ -589,7 +613,7 @@ def design_checks(G):
 KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}, "bh30": {"AR02": 1}}
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, design_checks]
+CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, reachables, design_checks]
 
 
 def lint(m, only=None):
