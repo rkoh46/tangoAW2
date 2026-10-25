@@ -89,7 +89,7 @@ LIVIA: He did not say where the / treasury is coming from.
 KLAUS: No. He was careful. Very / careful, for a man who is kind.
 KLAUS: Write the figure down. We / will ask again, in person.
 
-# ---------------------------------------------------------------- M6 Tribute (Livia leads; enemy Colin and Sasha)
+# ---------------------------------------------------------------- M6 Tribute (Livia leads; enemy Colin and Hachi)
 
 == m06_pre
 @SONG co:livia
@@ -98,58 +98,60 @@ KLAUS: Quaestor. You asked for me. / I would rather be at the front.
 LIVIA: I asked you to be silent, / Legate. It will be difficult.
 COLIN: Wowee! So you are the Aurean / treasurer! I thought you'd be taller!
 LIVIA: And I thought the Blue Moon / guild would be punctual.
-SASHA: The guild is always on time. / It is your coin that is late.
-SASHA: We have examined it. Aurean / silver is not silver. It is lead.
+HACHI: Guild's always on time, friend. / It's your coin that's late.
+HACHI: We bit it. Aurean silver / is lead with good manners.
 COLIN: Counterfeit! Bold of you to / pay in it, honestly.
 LIVIA: The coin is struck by the / Senate's mint. I can show you.
-SASHA: You can show us a receipt. / We do not accept receipts.
+HACHI: Show me a receipt. Rival or not, / I don't take receipts. Nails, yes.
 LIVIA: Then I shall show you what / I do accept. Legate, the map.
-KLAUS: The whole town is the target. / Fourteen properties, owned at once,
+KLAUS: The whole town is the target. / Sixteen properties, owned at once,
 KLAUS: at the end of any day by the / sixteenth. Capture, nothing else.
-KLAUS: Guildhall, north-west: Colin. Counting / House, south-east: Sasha.
+KLAUS: Guildhall, north-west: Colin. Counting / House quarter, south-east: Hachi.
 KLAUS: Salt Row, south-west, is cut off by / the Mill Water. Two bridges.
-KLAUS: Eight neutral cities between us. Take / them first, and the harbour inlet.
+KLAUS: Nearly twenty neutral cities lie / between us. Take them, and the inlet.
 LIVIA: The Senate's auditors arrive on / day seventeen. If I cannot show
-LIVIA: fourteen properties on my books, / the credit is withdrawn. All of it.
+LIVIA: sixteen properties on my books, / the credit is withdrawn. All of it.
 COLIN: Ha! And we out-produce you / three to one! Look at my factories!
-SASHA: Colin. Do not show them / the factories.
+HACHI: Colin. Don't show 'em / the factories.
 LIVIA: Thank you, Colin. You have / just told me three things.
-COLIN: ...Did I? Sasha, did I?
-SASHA: Yes. You always do.
+COLIN: ...Did I? Hachi, did I?
+HACHI: Yep. Every time. You leak / worse than a cheap barrel.
 LIVIA: Your hours, your output and / your temper. I shall use all three.
 LIVIA: A tank is a debt with a gun / on it. I have settled larger.
-SASHA: Then settle this one. We hold the / deeds in Aurelhaven. Come take them.
+HACHI: Big talk, rival merchant. The deeds / are ours, and I don't discount.
 LIVIA: Gladly. Each capture is a deed / transferred, at the usual rate.
+HACHI: I'll haggle every one of 'em. / Come take your twenty cities, friend.
 KLAUS: Advance.
 
 == m06_day6
 LEGIONARY: Quaestor! A crowd at the / counting house! They want coin!
 LEGIONARY: They say Colin's heralds / told them our bills are paper!
 COLIN: Bank run! Ha! One rumour, and / your bills are dust, Quaestor!
+HACHI: My till's been counting your / bills all week, rival. Slowly.
 LIVIA: Open every window. Pay every / bill, in full. In silver. Slowly.
 LEGIONARY: Slowly, Quaestor? The chest / will empty in a day!
 LIVIA: A run is a queue. A queue / is a schedule. I keep schedules.
 
 == m06_post
 @SONG aw2:423
-NARRATION: Day thirteen. Aurelhaven is taken. / Fourteen properties on the ledger.
-COLIN: Wowee. Fourteen. She counted / them like beans, Sasha.
-SASHA: She counted them like debts. / It is worse.
+NARRATION: Day fifteen. Aurelhaven is taken. / Sixteen properties on the ledger.
+COLIN: Wowee. Sixteen. She counted / them like beans, Hachi.
+HACHI: She counted 'em like debts. / That's worse. I know debts.
 COLIN: Quaestor Livia! No hard / feelings! I make you an offer!
 COLIN: Come to Blue Moon! A seat in / the guild! Half the profits!
 COLIN: You could be richer! The / richest woman on the coast!
 LIVIA: I am already as rich as the / Senate permits. But I am touched.
-SASHA: The offer has a clause. You / sell your grain contracts to us.
+HACHI: The offer's got a clause, rival. / You sell your grain contracts to us.
 LIVIA: Which tells me your guild has / wanted them for months.
-SASHA: ...We have an interest.
+HACHI: ...We got an interest. A / merchant's allowed one.
 LIVIA: Then here is mine. No sale. / A clearing house, here, at Aurelhaven.
 LIVIA: Aurean grain bought and sold / in guild coin. Your name on my bills.
 LIVIA: You gain a customer who pays. / I gain a currency people accept.
-COLIN: Hm. Hm. Sasha, is that a / good deal?
-SASHA: It is an excellent deal. I / dislike how excellent it is.
+COLIN: Hm. Hm. Hachi, is that a / good deal?
+HACHI: It's an excellent deal. I / dislike how excellent it is.
 LIVIA: I considered adding an apology / clause. I removed it for space.
-COLIN: HA! She jokes! Sasha, the / Quaestor is funny!
-SASHA: She is terrifying. Sign it.
+COLIN: HA! She jokes! Hachi, the / Quaestor is funny!
+HACHI: She's terrifying. Sign it, / friend. Before she raises the rate.
 COLIN: Done! The Merchant Princes! / Livia and Colin! Best pair at sea!
 KLAUS: I have lost a Quaestor to a / guild. Or perhaps gained a guild.
 
@@ -172,48 +174,52 @@ LIVIA: The room is cold, Chief.
 LIVIA: A mark is a mark, Legate. I / shall tell you when I am certain.
 KLAUS: When you are certain. I will / hold you to it. Not before.
 
-# ---------------------------------------------------------------- M7 Mare Nostrum (any lead; enemy Drake and Eagle)
+# ---------------------------------------------------------------- M7 Mare Nostrum (any lead; enemy Drake and Sensei)
 
 == m07_pre
 @SONG ally2
 NARRATION: Verdant Roads. Grey sea, / grey ships, grey sky.
 NARRATION: Isle Verdant ahead. A harbour / bay, an airport, a flagship.
 KLAUS: Isle Verdant commands the Roads. / Whoever holds its harbour holds them.
-KLAUS: And the sea-lane north with it. The / coast is ours. Now we take the water.
-AURELIA: The Twin Sisters are two atolls. / Stepping stones from Cape Fidelis.
+KLAUS: The coast is ours. Now we take / the water, and the sea-lane north.
+AURELIA: The Twin Sisters are two atolls, / stepping stones from Cape Fidelis.
+AURELIA: Each holds a free airport. One / also holds a missile silo.
+KLAUS: A silo is a single shot. It takes / three points from every unit around it.
+KLAUS: Friend and foe alike. We fire it / only when the enemy stands thickest.
 LIVIA: The Green Earth fleet is the / largest within two hundred leagues.
 KLAUS: Its flagship is a Battleship, mid-Roads. / Sink it, and take the harbour bay.
 CASSIUS: I want it noted that horses / and boats are not friends.
 KLAUS: It is noted. Why are you / green, Prefect?
 CASSIUS: I am not green. I am / thinking. In a very quiet way.
-LIVIA: He is ill, Legate. I have / seen the look. It is cheaper than
-LIVIA: a surgeon. Bring a bucket. / Do not charge him for the bucket.
+LIVIA: He is ill, Legate. I have / seen the look. Bring a bucket.
+LIVIA: Do not charge him for the / bucket.
 DRAKE: Dude. The radio is on, you / know. I can hear your seasick man.
 CASSIUS: I am NOT seasick, you sea / lizard! It is a fine day!
 DRAKE: Dude. Chill. I just want to / know why a green fleet shows up.
 DRAKE: Everybody on this coast thinks / you are the next big bad guy.
 KLAUS: Then everybody is mistaken. / We want the harbour. No more.
 DRAKE: Nobody wants a harbour for / "no more", dude. Cannons say more.
-KLAUS: Then we will answer with the / guns. Drake, stand by.
-DRAKE: Ha! Stand by, yeah. Eagle / will have your sky by lunch.
-EAGLE: Death from above! Hey! I / am in the cockpit already!
-EAGLE: Anything flying in this strait / belongs to me! You hear? Me!
+SENSEI: Hmph. A harbour. Young man, I / watched your grandfather want one.
+SENSEI: Yellow Comet's wing flies from / Isle Verdant's airport. Mind your hats.
+KLAUS: Then we will answer with the / guns. Drake, Sensei, stand by.
+SENSEI: Stand by? I have stood by / since before you could walk. Come.
 AURELIA: Anti-air cruisers on the / left wing, Legate. If you please.
 KLAUS: Forward. And keep the lanes / clear. There are fishing boats.
 
 == m07_day5
-EAGLE: Death from above! Eagle / has arrived with the whole wing!
-EAGLE: Sixteen fighters! Look up, / Aureans! Look up and despair!
-LIVIA: Sixteen. The wing was nine / on my last count. Impressive.
-AURELIA: Anti-air cruisers! Bring / them round! Eagle, you are late!
+SENSEI: Hmph. The wing has arrived, / young ones. Look up. Do not trip.
+SENSEI: Twelve fighters, and one old / man who has seen your tricks.
+LIVIA: Twelve. The wing was nine on / my last count. Impressive.
+AURELIA: Anti-air cruisers! Bring / them round! Sensei, you are late!
+SENSEI: Late? I am exactly on time. / It is the young who are early.
 KLAUS: Hold the line. The wing has / one pass and one tank of fuel.
 
 == m07_post
 @SONG aw2:421
 NARRATION: Isle Verdant. The harbour / bay is ours. The sea is quiet.
 DRAKE: Dude. That was a real mess. / I mean that in a good way.
-EAGLE: I lost! Lost to a bunch of / sailors with shovels! Aargh!
-DRAKE: Eagle. Chill. They were not / sailors. They were cruisers.
+SENSEI: Hmph. Beaten by sailors with / shovels. I have lost to worse. Rarely.
+DRAKE: Sensei. Chill. They were not / sailors. They were cruisers.
 KLAUS: Drake. The harbour is Aurea's / now. Your ships may leave.
 DRAKE: Dude. I want to say / something first, okay?
 DRAKE: You kept the lanes clean. / You did not sink one fisher.
@@ -226,8 +232,8 @@ DRAKE: Bread. Dude. The nets came / up grey this spring. Ash. Weird.
 KLAUS: The same grey ash. It fell / on our fields for three years.
 DRAKE: Dude. For real? Then you are / invading, and scared. New one.
 KLAUS: I am hunting someone. When / I find him I will be less scared.
-EAGLE: Hey! Drake! Are we being / nice to them now?
-DRAKE: Yeah, Eagle. A bit. Nell is / going to want a word with them.
+SENSEI: Hmph. Drake. Are we being / polite to them now? How novel.
+DRAKE: Yeah, Sensei. A bit. Nell is / going to want a word with them.
 
 == m07_map
 @SONG ally1
@@ -248,7 +254,7 @@ NELL: Then do not give him one. I / will hold the council. Come north.
 CASSIUS: "Come north", she says! The / Accord invites us to be hit!
 KLAUS: Cassius. Be quiet. She is / being generous.
 
-# ---------------------------------------------------------------- M8 Hammer and Anvil (Klaus + Cassius; enemy Max and Jake)
+# ---------------------------------------------------------------- M8 Hammer and Anvil (Klaus + Cassius; enemy Max and Sasha)
 
 == m08_pre
 @SONG ally1
@@ -256,6 +262,8 @@ NARRATION: Ironhold, Orange Star. / A ring of crags on an open plain.
 KLAUS: Ironhold. Crags round Max's HQ, / the Brimwater canal, a causeway.
 KLAUS: Front gate in the west, rear gate / in the east. Two lanes, one causeway.
 KLAUS: Ironhold is the gate of Orange / Star. Take it and the frontier moves.
+AURELIA: A missile silo stands by the / causeway, Legate. In the middle.
+KLAUS: One shot, three points from every / unit around it. Whoever fires it first.
 NARRATION: Rain on the crags. A grey fog / lies along the plain.
 CASSIUS: Fog! My northern road is a ghost / road. Nobody will see me coming!
 KLAUS: Nor will you see them. The fog / covers both flanks. Keep to the road.
@@ -278,9 +286,9 @@ MAX: Who commands on the field of / Ironhold? Come out and say it!
 KLAUS: I do.
 CASSIUS: I do! No, wait. We do!
 MAX: Two of them. Two heads, one / army. I have seen that fail.
-JAKE: Sir, I hold the south-east. Shall / I flank the southern road?
-JAKE: Sir, I like their banner. / It is green. Is that allowed?
-MAX: Jake. Not now. Aureans! You / will not cross this causeway!
+SASHA: Blue Moon holds the south-east / road for the Accord. Note it.
+SASHA: Their banner is green. They / argue. That is a weakness.
+MAX: Sasha. Not now. Aureans! You / will not cross this causeway!
 KLAUS: We will see.
 
 == m08_day3
@@ -297,8 +305,8 @@ NARRATION: The cavalry strikes the line. / The centre does not move.
 @SONG ally1
 NARRATION: Ironhold. The crags stand. / The causeway is quiet.
 MAX: Blast. I lost. To two men / who argued the whole time.
-JAKE: But sir! The flank! The / hammer! That was... incredible!
-MAX: Jake. Be quiet. Legate Klaus. / I fought with my whole force.
+SASHA: The flank was well timed. The / hammer was precise. I note it.
+MAX: Sasha. Be quiet. Legate Klaus. / I fought with my whole force.
 MAX: You beat me clean. I respect / that. I respect the legion.
 KLAUS: Commander Max. Your men / fought well. I regret the loss.
 MAX: Do not be sorry. I would have / done the same. What do you want?
@@ -310,8 +318,8 @@ NELL: Legate Klaus. I ask your terms. / What does Aurea want from us?
 KLAUS: Nothing from you, Madam Chair. / We want passage and an answer.
 NELL: Passage is easy. The answer / may be harder. The council meets soon.
 CASSIUS: I should say I was a / good flank. Nobody has said it.
-JAKE: You were great, sir! Really!
-CASSIUS(h): HA! A kid! A kid said it!
+SASHA: You were adequate, Prefect. / I do not say it twice.
+CASSIUS(h): HA! The ice queen said it! / The ice queen said it!
 
 == m08_map
 @SONG ally2
