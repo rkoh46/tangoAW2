@@ -569,6 +569,10 @@ def reachables(G):
     if not targets:
         return out
     foot = set(".fR^=-,HBCAPTMbcapt")
+    if not G.cells("H"):
+        return out                       # (a second front has no HQ of its own: its units arrive from the other front)
+    if G.cells("Pp") or any(u.get("kind") == 23 for u in (G.m.units or [])):
+        foot = foot | set("~r")          # (a port or a Lander: infantry cross the water by transport and land on any shore)
     seen, todo = set(), [(x, y) for y in range(G.h) for x in range(G.w) if G.g[y][x] == "H"]
     seen.update(todo)
     while todo:

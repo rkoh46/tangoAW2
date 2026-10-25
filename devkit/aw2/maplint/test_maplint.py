@@ -253,6 +253,35 @@ class Lint(unittest.TestCase):
             rows[8] = rows[8][:x] + "~" + rows[8][x + 1:]
         self.assertFalse(ids(build(rows)) & {"RV01", "RV03", "RV05"})   # (edge to sea)
 
+    def test_armies_have_their_own_colour_and_one_hq(self):
+        m = build(FLAT)
+        m.meta["colours"] = [1, 1]
+        self.assertIn("AR01", ids(m))
+        m.meta["colours"] = [1, 2]
+        self.assertNotIn("AR01", ids(m))
+        rows = list(FLAT)
+        rows[4] = rows[4][:5] + "1" + rows[4][6:]              # a second HQ of army 1
+        self.assertIn("AR02", ids(build(rows)))
+
+    def test_a_silo_and_an_airport_must_be_reachable_on_foot(self):
+        rows = [r for r in FLAT]
+        for y in range(2, 5):
+            rows[y] = rows[y][:6] + "~~~" + rows[y][9:]            # a lake with an island in it
+        rows[3] = rows[3][:7] + "M" + rows[3][8:]
+        self.assertIn("AR03", ids(build(rows)))                   # (the silo is cut off by water)
+        rows = list(FLAT)
+        rows[3] = rows[3][:7] + "M" + rows[3][8:]
+        self.assertNotIn("AR03", ids(build(rows)))
+        rows[5] = rows[5][:3] + "a" + rows[5][4:]
+        self.assertNotIn("AR03", ids(build(rows)))
+
+    def test_a_silo_is_not_an_invention(self):
+        rows = list(FLAT)
+        rows[3] = rows[3][:7] + "M" + rows[3][8:]
+        m = build(rows)
+        m.source = "es"
+        self.assertNotIn("ES01", ids(m))
+
     def test_emerald_sun_rivers_all_end_in_water_or_at_the_edge(self):
         bad = [(m.name, str(p)) for m in load.es_maps() for p in rules.lint(m, {"RV01", "RV03", "RV05"})]
         self.assertEqual(bad, [])
