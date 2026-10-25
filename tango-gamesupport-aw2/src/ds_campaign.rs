@@ -1502,6 +1502,7 @@ fn best_score(core: &mut Core) {
 /// AW2's save prompt after a mission (`SaveScreenCampaign_StartMessage`): in a DS or BH session AW2 asks as it does
 /// in its own campaign ("Save current data?"), and a Yes saves the session's own record ([`save_game`]).
 fn save_prompt(core: &mut Core) {
+    crate::suspend::note_aw2_mark(core);
     if active(core) {
         PROMPTED.store(true, std::sync::atomic::Ordering::Relaxed);
     }

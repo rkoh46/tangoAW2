@@ -516,7 +516,7 @@ def settle_texts(ctx, e, d, frames=1500):
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 5 and "Save current data?" not in t and (not texts or texts[-1] != t):
+        if t and stable == 5 and "Save current data" not in t and (not texts or texts[-1] != t):
             texts.append(t.replace("\\x0f", " ").replace("\\r", " "))
         if d.scripts_running():
             quiet = 0

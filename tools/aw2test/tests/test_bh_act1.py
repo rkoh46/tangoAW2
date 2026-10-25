@@ -171,7 +171,7 @@ def collect_texts(e, d, until, max_frames=40000, seen=None, snap=None, tick=None
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 12 and "Save current data?" not in t:       # (AW2 asks it after a mission's win: it needs its A, but it is not a scene)
+        if t and stable == 12 and "Save current data" not in t:       # (AW2 asks it after a mission's win: it needs its A, but it is not a scene)
             t1 = bhtext.clean(t)
             if not texts or texts[-1] != t1:
                 texts.append(t1)

@@ -367,13 +367,23 @@ pub fn drop_mid(core: &mut Core, slot: u8) {
     }
 }
 
-/// `SaveScreenCampaign_StartMessage` after its call of `sub_08016CEC(2, 0)`, the clearing of AW2's campaign suspend mark
-/// (the prompt after a mission clears it, as AW2's own campaign's save replaces the old one): in a DS, BH or Emerald Sun session the
-/// mission AW2 saved halfway in slot 2 is still there, so the mark stays while the slot is in AW2's directory.
+/// `SaveScreenCampaign_StartMessage` clears AW2's campaign suspend mark (`sub_08016CEC(2, 0)`: the prompt after a mission, as AW2's own campaign's
+/// save replaces the old one). In a DS, BH or Emerald Sun session the mission AW2 saved halfway in slot 2 is still there: the mark is noted at the
+/// prompt's start ([`note_aw2_mark`]) and put back after the clearing ([`keep_aw2_mark`], at [`AFTER_MARK_CLEAR`]).
 pub const AFTER_MARK_CLEAR: u32 = 0x0803_D944;
+/// 0x80 | AW2's campaign mark at the prompt's start, while a session's prompt is up.
+const NOTED_MARK: u32 = 0x0203_FFAE;
+pub fn note_aw2_mark(core: &mut Core) {
+    if crate::ds_campaign::active(core) {
+        let mark = core.raw_read_8(CAMPAIGN_MARK, -1);
+        core.raw_write_8(NOTED_MARK, -1, 0x80 | mark);
+    }
+}
 pub fn keep_aw2_mark(core: &mut Core) {
-    if crate::ds_campaign::active(core) && (0..16).any(|i| core.raw_read_8(DIRECTORY + i, -1) as u32 == CAMPAIGN_SLOT) {
-        core.raw_write_8(CAMPAIGN_MARK, -1, 1);
+    let noted = core.raw_read_8(NOTED_MARK, -1);
+    if noted & 0x80 != 0 {
+        core.raw_write_8(NOTED_MARK, -1, 0);
+        core.raw_write_8(CAMPAIGN_MARK, -1, noted & 0x7F);
     }
 }
 
