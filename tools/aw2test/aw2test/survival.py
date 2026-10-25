@@ -522,7 +522,7 @@ def course_text(kind, budget_text, ds=None):
 
 
 # The budget on the battle map (survival_ui.rs's hud, as two_front's text is drawn):
-HUD_TILES = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)]
+HUD_TILES = [(0x1F9, 17), (0x26A, 20), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)]
 HUD_WHITE = 6
 FONT_TOP, FONT_ROWS = 2, 14
 
