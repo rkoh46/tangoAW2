@@ -794,8 +794,11 @@ def skills_none_without_pack(ctx):
         e.wait(10)
         seen.append(e.u8(TEAMS_COLOUR))
         ctx.eq(e.u8(PANEL), 0, "SELECT: no panel")
-    ctx.check(all(a != b for a, b in zip(seen, seen[1:])) and 5 in seen,
-              f"SELECT changes the colour each press, Black Hole included ({seen})")
+    # (the choices are the colours army 2 does not have, Black Hole included, and a skin: the skin keeps the colour it is put on, so one press in
+    # five leaves the colour as it was, crate::army_skin::teams_step)
+    stays = [i for i, (a, b) in enumerate(zip(seen, seen[1:])) if a == b]
+    ctx.check({1, 3, 4, 5} <= set(seen) and 5 in seen and len(stays) <= 1,
+              f"SELECT changes the colour each press, Black Hole included, and the skin once ({seen})")
     before = e.u8(TEAMS_COLOUR)
     e.press("R", 4)
     e.wait(10)
