@@ -34,7 +34,7 @@ def credit_sections():
     body = body[:body.index("\n}\n")]
     q = r'"((?:[^"\\]|\\.)*)"'
     out = []
-    for m in re.finditer(r'sec\(' + q + r',\s*&\[(.*?)\],\s*(true|false)\)', body, re.S):
+    for m in re.finditer(r'sec\(\s*' + q + r',\s*&\[(.*?)\],\s*(true|false),?\s*\)', body, re.S):
         names = [n.replace('\\"', '"') for n in re.findall(q, m.group(2))]
         out.append((m.group(1), names, m.group(3) == "true"))
     return out
