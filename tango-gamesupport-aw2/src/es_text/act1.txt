@@ -132,7 +132,7 @@ NARRATION: The Dune Road ridge. / Eight days to hold.
 AURELIA: Radio check. Can you hear / the saw? That is the causeway.
 KLAUS: I can hear it. Barely.
 AURELIA: The marsh swallowed the / road. I need eight days for piles.
-AURELIA: Down at the south edge, where / the Dune river meets the marsh.
+AURELIA: Down at the south edge, where / the Dune hills meet the marsh.
 AURELIA: Eight if nobody sneezes. / Ten if somebody sneezes twice.
 KLAUS: Then nobody sneezes. We hold / the ridge until you finish.
 LIVIA: We have a single HQ, Legate, in / the south-west. If it falls, we lose.
@@ -230,7 +230,7 @@ CASSIUS: Prefect again! That is the / third time today.
 AURELIA: I have a list.
 AURELIA: The town is Javier's. A ragged / rock wall, towers, Com Towers.
 AURELIA: Every Com Tower he holds makes / his men sharper. His teeth first.
-AURELIA: Gates north, west and east. The / keep has one gate, to the south.
+AURELIA: Four gates in the wall. The / keep has one gate, to the south.
 AURELIA: One more thing. A missile silo / stands outside the wall, west road.
 AURELIA: Neutral. Whoever steps on it / fires it. One shot, three points
 AURELIA: to every unit around it. Javier's / men can step on it as well.

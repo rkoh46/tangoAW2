@@ -1,4 +1,17 @@
-"""M14 Varro's Gambit (Act IV): the legion storms Castra Maxima, the Consul's fortified camp on the Aurean shore, by three lanes: the coast road, the river valley and the ridge track."""
+"""M14 Varro's Gambit (Act IV): the legion storms Castra Maxima, the Consul's fortified camp on the Aurean shore; Cassius changes sides on day 4.
+
+Design (docs/dev/map-design.md). The situation: the legion's camp in the west (HQ, two factories, a port on the open south coast); Castra Maxima in the
+east behind a moat river and a broken wall of rock, with its gates, two factories, an airfield and a harbour on the open east sea; Cassius's army
+on the ridge plateau in the north, hostile until day 4, then the player's.
+- Lanes: the ridge track (north, through Cassius's plateau to the north gate), the valley road (centre, along the river to the valley gate) and the
+  coast road (south, to the coast gate), joined by the plateau's south pass and a farm road across the valley; the river is crossed every few cells.
+- Where the fight happens: the valley villages between the two camps (the contested middle, with the neutral base (24,19)), the moat's bridges and
+  the three gates; the plateau's passes while Cassius is still hostile.
+- Properties: villages three cells apart in the valley and on the coast plain, the plateau's hamlets (Cassius's), the camp's town (Varro's); a neutral
+  base in the middle and the legion's reinforcement road (6..9,14..15) beside its HQ, the Consul's reserve road (40,12..16) inside the camp.
+- Threats and answers: Varro's fighter -> AA and the missiles, woods; entrenched guns behind the wall -> recons, tanks through the gates, own artillery
+  behind the moat; Md tanks out of the gates -> tanks and Md tanks at the bridges; Cassius's early rush -> hold the plateau's south pass until day 4.
+"""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
@@ -6,7 +19,7 @@ from aw2.esmaplib import *
 W, H = 46, 28
 AVOID = "~r=-^IZ#,12345BAPSNWELvnFDXO"
 # where the south sea starts in each column (the coast has coves and spits)
-COAST = [24, 24, 24, 24, 23, 23, 24, 24, 25, 25, 25, 24, 24, 25, 25, 26, 26, 25, 25, 24, 24, 25, 25, 26, 26, 25, 25, 24, 24, 25,
+COAST = [24, 24, 24, 24, 24, 24, 24, 24, 25, 25, 25, 24, 24, 25, 25, 26, 26, 25, 25, 24, 24, 25, 25, 26, 26, 25, 25, 24, 24, 25,
          25, 25, 25, 25, 25, 25, 24, 24, 25, 25, 24, 24, 24, 24, 24, 24]
 # where the east sea starts in each row
 EAST = [41, 41, 42, 43, 43, 43, 42, 42, 42, 43, 43, 43, 44, 44, 42, 41, 41, 41, 41, 42, 43, 43, 43, 42, 42, 42, 42, 42]
@@ -27,8 +40,7 @@ def build():
         m.rect("~", x, COAST[x], x, H - 1)
     for y in range(H):
         m.rect("~", EAST[y], y, W - 1, y)
-    m.cluster("~", 0, 14, 5, seed=1, only=".")          # a cove on the west coast
-    m.cluster("~", 0, 19, 3, seed=2, only=".")
+    # (no coves on the west edge: two- and three-cell inlets there read as ponds in the game's picture)
     # --- the mountains: the ridge in the north, the camp's wall, the sea wall ---
     for i, (cx, cy, rx, ry) in enumerate([(14, 7, 4, 3), (22, 3, 7, 3), (27, 8, 3, 3), (18, 9, 3, 1), (12, 2, 3, 2), (6, 3, 3, 2), (40, 3, 3, 2), (36, 1, 2, 1)], 30):
         m.blob("^", cx, cy, rx, ry, seed=i, wobble=0.3)
@@ -47,7 +59,7 @@ def build():
         m.cluster("^", cx, cy, n, seed=i)
     # --- woods: hedgerows, copses, the dunes of the coast ---
     for i, (cx, cy, n) in enumerate([(6, 12, 8), (8, 20, 9), (4, 8, 6), (11, 15, 7), (15, 14, 6), (18, 17, 9), (24, 18, 9), (27, 14, 6), (22, 12, 6), (16, 20, 6),
-                                     (20, 22, 7), (26, 22, 6), (35, 7, 7), (38, 18, 6), (36, 22, 5), (35, 14, 5), (10, 24, 4), (12, 6, 6)], 100):
+                                     (20, 22, 7), (26, 22, 6), (35, 7, 7), (38, 18, 6), (36, 22, 5), (35, 14, 5), (10, 24, 4), (12, 6, 6), (1, 14, 4), (1, 19, 4), (21, 15, 4), (28, 20, 4)], 100):
         m.cluster("f", cx, cy, n, seed=i)
     # --- the river: spring in the western hills, along the valley, then the moat down the camp's west side to the south sea ---
     def hriver(y, x0, x1, shifts):
@@ -97,15 +109,25 @@ def build():
     rd([(35, 16), (38, 16)], over=".f")
     rd([(35, 21), (38, 21)], over=".f")
     rd([(38, 12), (40, 12), (40, 17)], over=".f")
+    rd([(24, 16), (24, 9), (27, 5)], over=".f^")                                                                   # the farm road across the valley
     # --- properties ---
-    at("1", 5, 14); at("B", 7, 11); at("B", 7, 17); at("P", 4, 22)
+    at("1", 5, 14); at("B", 7, 11); at("B", 7, 17); at("P", 9, 24)
     ats("c", [(3, 10), (9, 14), (6, 20), (2, 17)])
     at("3", 21, 4); at("B", 18, 4); at("B", 24, 5)
     ats("c", [(16, 5), (27, 4)])
     ats("c", [(17, 15), (24, 16), (14, 19), (22, 20), (28, 18)])
     at("2", 38, 12); at("B", 36, 9); at("B", 36, 17); at("A", 40, 8); at("P", 40, 17)
     ats("c", [(35, 12), (39, 10), (37, 19), (35, 5), (40, 14), (39, 21)])
+    # the valley's and the coast plain's villages, the plateau's hamlets (MD01, MD02), a neutral base in the middle
+    for x, y in [(3, 5), (8, 2), (2, 2), (14, 1), (29, 1), (33, 2), (12, 8), (9, 9), (3, 13), (10, 13), (15, 11), (20, 13), (26, 10), (28, 13), (31, 9),
+                 (11, 17), (14, 23), (18, 24), (22, 23), (26, 24), (30, 23), (17, 18), (20, 19), (27, 19), (31, 14), (4, 19), (8, 22), (2, 21), (12, 21),
+                 (25, 13), (35, 24), (43, 1), (42, 26), (16, 13), (6, 6)]:
+        if m.get(x, y) in ".f":
+            at("c", x, y)
+    at("b", 24, 19)
     # --- units ---
+    # (the mission's reinforcement cells stay free: LEGION and RESERVE in es_act4.rs)
+    m.reserve([(7, 14), (8, 14), (6, 14), (9, 15), (40, 12), (40, 13), (40, 15), (40, 16)])
     m.spread(1, {INF: 4, MECH: 3, TANK: 3, MDT: 2, RECON: 1, ART: 2, AA: 1}, (2, 9, 10, 20), seed=1, gap=1, avoid=AVOID)
     m.spread(3, {TANK: 3, RECON: 2, MDT: 1, INF: 2}, (16, 2, 27, 6), seed=3, gap=1, avoid=AVOID)
     def stand(army, kind, x, y, **kw):
@@ -130,7 +152,9 @@ def build():
     m.note("pass_w", 12, 5, "the ridge track's west pass"); m.note("pass_s", 21, 8, "Cassius's plateau south pass to the valley")
     m.note("harbour", 40, 17, "Varro's port in the camp harbour"); m.note("airfield", 40, 8, "Varro's airport")
     m.note("reserve1", 40, 12, "Varro's reserve column road (day 5, 8)")
-    m.note("port1", 4, 22, "the legion's port")
+    m.note("port1", 9, 24, "the legion's port on the open south coast")
+    m.note("mid_base", 24, 19, "neutral base in the valley")
+    m.note("legion_road", 7, 14, "the legion's reinforcements on days 5 and 8 at (6..9,14..15)")
     m.ragged("^", 6, seed=1).ragged("^", 6, seed=2)               # (no drawn wall of mountains: lint DQ12)
     m.lake(12, 11, 9, seed=0, river_end=(13, 11))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

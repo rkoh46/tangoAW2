@@ -49,6 +49,24 @@ class Paint(unittest.TestCase):
         self.assertIn("unit 2 1 2 2 hold", t)
         self.assertTrue(t.rstrip().endswith("..2"))
 
+    def test_ascii_checks_the_size(self):
+        m = Canvas("t", 4, 2).ascii(["1..c", "...2"])
+        self.assertEqual(m.rows(), ["1..c", "...2"])
+        with self.assertRaises(ValueError):
+            Canvas("t", 4, 2).ascii(["1..", "...2"])
+
+    def test_reserved_cells_stay_free(self):
+        m = Canvas("t", 6, 3)
+        m.reserve([(x, y) for x in range(5) for y in range(3)])
+        placed = m.spread(1, {INF: 1}, (0, 0, 5, 2), seed=1, gap=0)
+        self.assertEqual(placed[0][0], 5)
+
+    def test_principles_while_drawing(self):
+        sparse = Canvas("t", 15, 9).put("1", 0, 0).put("2", 14, 8)
+        self.assertTrue(any(p.startswith("MD01") for p in sparse.principles()))
+        sm = sparse.study()
+        self.assertEqual((sm.g[0][0], sm.own[0][0], sm.own[8][14]), ("H", 1, 2))
+
     def test_off_the_map_is_refused(self):
         with self.assertRaises(ValueError):
             Canvas("t", 3, 3).put(".", 3, 0)
@@ -69,6 +87,21 @@ class Committed(unittest.TestCase):
         self.assertEqual(names, [f"es{n:02d}" for n in range(1, 17)])
         bh = [load_spec(p).name for p in specs() if load_spec(p).hdr["blackhole"]]
         self.assertEqual(bh, ["es09", "es13"])
+
+    def test_the_maps_follow_the_design_principles(self):
+        # (docs/dev/map-design.md: MD01..MD08; the lint fails them too, this keeps the specs honest without the ROM)
+        for p in specs():
+            m = load_spec(p)
+            self.assertEqual(m.principles(), [], m.name)
+
+    def test_mount_sol_and_its_eruption_ring(self):
+        # M16's volcano (anchor (22,14), footprint x21..24, y12..15) sits in rock; the ring es_act4.rs erupts (19..26, 10..17) is open ground
+        m = load_spec(ES_DIR / "spec" / "es16.py")
+        self.assertEqual(m.get(22, 14), "V")
+        ring = [(x, 10) for x in range(19, 27)] + [(x, 17) for x in range(19, 27)] + [(19, y) for y in range(11, 17)] + [(26, y) for y in range(11, 17)]
+        self.assertTrue(all(m.get(x, y) not in "#V~" for x, y in ring))
+        others = [load_spec(q) for q in specs() if q.stem != "es16"]
+        self.assertFalse(any("V" in "".join(o.rows()) for o in others))
 
     def test_no_army_starts_over_the_cap(self):
         for p in specs():

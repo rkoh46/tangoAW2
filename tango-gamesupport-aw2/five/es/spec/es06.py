@@ -1,8 +1,22 @@
-"""M6 Tribute: the market town of Aurelhaven and its fields, in Blue Moon's border province. The player (Green Earth colour, Livia) holds the central market square; Colin's guild (Blue Moon)
-holds the north-west quarter (Guildhall), Hachi's (Orange Star) the south-east (Counting House); the harbour is on the west edge and the Mill Water canal runs from the harbour to the south edge, cutting off the
-south-west quarter (Salt Row). Fifteen neutral properties lie between: the race is for them."""
+"""M6 Tribute (Act II): Livia's race for the market city of Aurelhaven: own twenty-four properties at once by day 16.
+
+Design (docs/dev/map-design.md). The situation: Livia holds the market square in the middle of the city with a little army and two factories; Colin's
+guild holds the Guildhall quarter in the north-west, Hachi's the Counting House in the south-east, each with factories and an airfield; between them
+is a city of neutral houses, about one every three cells. It is a capture race against two allied rivals, not a siege.
+- Lanes: four avenues leave the square (north, west to the docks, east to the gardens, south over the Mill Water canal); the dock street, the mill street
+  and the east streets cross the canal on their own bridges (seven in all), and the north-east road joins the Guildhall to the gardens. Every quarter has
+  two ways in.
+- Where the fight happens: in the quarters between the square and the two guilds (the north market, the docks, the gardens, the mill quarter and Salt
+  Row across the canal), each a cluster of houses round a crossing; the neutral bases at the docks (8,20) and in the gardens (31,13) are forward
+  factories for whoever takes them.
+- Properties: 79 in all, 63 of them neutral: the race is real for both guilds too (the computer captures). Livia's two bases and airport build the
+  infantry for it; the guilds' airfields send copters at her capturers.
+- Threats and answers: the guilds' tanks at the capturers -> Livia's tanks and artillery on the avenues' crossings, mechs in the houses; copters -> keep
+  the capturers under the tank screen; losing houses back -> hold the quarters next to the square first, then reach out.
+"""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from aw2.esmaplib import *
 
 W, H = 40, 32
@@ -10,77 +24,65 @@ W, H = 40, 32
 
 def build():
     m = Canvas("es06", W, H)
-    road = lambda pts: m.line("R", pts, over=".fR")
     m.header(armies=3, colours=(GE, BM, OS), team=[1, 2, 2], objective=[1], comment=(
-        "M6 Tribute (Aurelhaven): own 16 properties at once by the end of day 16 (a day-17 loss when not; HQ falls = defeat). "
-        "Properties (33 in all): player HQ(20,16) B(17,19) B(23,13) A(20,20) P(3,14) P(3,18) C(16,16) C(20,12) = 8; "
-        "Colin (army 2, NW Guildhall) HQ(3,3) B(7,3) B(3,7) B(8,7) A(11,4) = 5; Hachi (army 3, SE Counting House) HQ(36,28) B(32,28) B(36,24) B(30,26) A(32,22) = 5; "
-        "neutral c x12: (17,2) (30,3) (26,8) (36,9) (37,16) (28,19) (10,12) (13,22) (24,28) (7,21) in the open town and fields, (5,28) (8,29) in Salt Row across the Mill Water; "
-        "neutral b x2: (28,12) (12,17); neutral a x1: (24,23); neutral missile silo M (15,11) on the avenue between the square and the Guildhall. "
-        "16 means eight more than the start: about half of the 15 neutrals, or fewer with a guild outpost taken. "
-        "Start forces: player INF4 MECH2 TANK2 RECON1 MDT1 ART2 (12 units), 2 bases + 1 airport + 2 ports; Colin INF3 TANK2 RECON1 ART1 (7), Hachi the same (7), advancing. "
-        "Threat -> answer: two allied armies out-producing the player -> the avenues meet at the square (ART on the square, Tanks in the parks); "
-        "enemy air from the two airports (and the neutral one) -> the player's own airport (Fighters) and AA from the bases; ART duels -> Recon to find them, Tanks to close; "
-        "the missile silo (3 HP to everything within 3 cells) can be fired by anyone with a foot soldier on it; "
-        "the race is won by taking the neutral towns first."))
-    # the harbour on the west edge: a ragged bay with an inlet for the two ports
-    m.rect("~", 0, 6, 1, 27).rect("~", 2, 9, 2, 23).rect("~", 0, 4, 0, 5).rect("~", 3, 15, 3, 17).rect("~", 0, 28, 0, 29).rect("~", 2, 7, 2, 8).rect("~", 2, 24, 2, 25)
-    # the Mill Water: from the harbour east, then south to the south edge, two bridges
-    m.river([(2, 24), (8, 24), (8, 26), (11, 26), (11, 31)])
-    m.put("=", 4, 24).put("=", 11, 29)
-    # properties
-    m.put("1", 20, 16).puts("B", [(17, 19), (23, 13)]).put("A", 20, 20).puts("P", [(3, 14), (3, 18)]).puts("C", [(16, 16), (20, 12)])
-    m.put("2", 3, 3).puts("B", [(7, 3), (3, 7), (8, 7)]).put("A", 11, 4)
-    m.put("3", 36, 28).puts("B", [(32, 28), (36, 24), (30, 26)]).put("A", 32, 22)
-    m.puts("c", [(17, 2), (30, 3), (26, 8), (36, 9), (37, 16), (28, 19), (10, 12), (13, 22), (24, 28), (7, 21), (5, 28), (8, 29)])
-    m.puts("b", [(28, 12), (12, 17)]).put("a", 24, 23)
-    m.put("M", 15, 11)
-    # roads
-    road([(3, 3), (17, 3), (17, 5), (20, 5), (20, 12)])                 # Colin's north road and the north avenue
-    road([(17, 3), (17, 2)])
-    road([(3, 3), (3, 7), (8, 7), (8, 12), (10, 12)])                   # the Guildhall to the western city
-    road([(8, 7), (8, 3)])
-    road([(11, 3), (11, 4)])
-    road([(10, 12), (15, 12), (20, 12)])                                # the contested avenue past the silo
-    road([(10, 12), (10, 16), (20, 16)])                                # the west avenue into the square
-    road([(12, 17), (12, 16)])
-    road([(20, 12), (20, 16), (20, 26), (13, 26), (13, 22)])            # north and south avenues
-    road([(13, 26), (12, 26), (12, 29), (9, 29), (8, 29)])              # over the Mill Water bridge into Salt Row
-    road([(17, 19), (17, 16)])
-    road([(20, 26), (20, 28), (24, 28)])
-    road([(3, 14), (4, 14), (4, 28), (5, 28)])                          # harbour road and Salt Row
-    road([(3, 18), (4, 18)])
-    road([(4, 16), (10, 16)])
-    road([(4, 21), (7, 21)])
-    road([(5, 28), (8, 28), (8, 29)])
-    road([(20, 8), (26, 8), (26, 3), (30, 3)])                          # north-east
-    road([(26, 8), (32, 8), (36, 8), (36, 9), (36, 16), (37, 16)])
-    road([(20, 16), (23, 16), (23, 13)])
-    road([(23, 16), (28, 16), (28, 12)])
-    road([(28, 16), (28, 19), (28, 22), (32, 22), (32, 24), (36, 24), (36, 28), (30, 28), (30, 26)])   # the Counting House
-    road([(32, 28), (32, 24)])
-    road([(28, 22), (25, 22), (25, 26), (30, 26)])
-    road([(25, 22), (25, 23)])
-    # terrain on what is left: the town's parks and hedgerows, ridges, a hill in Salt Row
-    for cx, cy, n, sd, ch in [(14, 8, 10, 1, "f"), (24, 20, 10, 2, "f"), (15, 21, 9, 3, "f"), (24, 5, 8, 4, "f"), (32, 15, 9, 5, "f"), (7, 14, 7, 6, "f"), (23, 2, 7, 7, "f"),
-                              (17, 29, 8, 8, "f"), (33, 26, 7, 9, "f"), (38, 4, 6, 10, "f"), (6, 10, 5, 11, "f"), (13, 1, 5, 12, "f"), (22, 30, 8, 13, "f"), (2, 30, 6, 14, "f"),
-                              (31, 7, 9, 15, "^"), (34, 20, 8, 16, "^"), (6, 30, 7, 17, "^"), (14, 7, 5, 18, "^"), (17, 23, 6, 19, "^"), (27, 28, 6, 20, "f"), (38, 22, 6, 21, "^"),
-                              (18, 9, 6, 22, "^"), (38, 31, 5, 23, "f"), (6, 18, 4, 24, "f"), (30, 12, 6, 25, "f"), (9, 19, 5, 26, "f"), (22, 17, 5, 27, "f"), (28, 24, 5, 28, "f"),
-                              (33, 11, 9, 29, "f"), (22, 24, 8, 30, "f"), (9, 24, 6, 31, "^"), (16, 12, 6, 32, "f"), (34, 3, 9, 33, "f"), (12, 14, 8, 34, "f"), (7, 5, 7, 35, "f"),
-                              (26, 12, 7, 36, "f"), (30, 30, 8, 37, "^"), (19, 26, 8, 38, "f"), (35, 18, 7, 39, "f"), (21, 8, 9, 40, "f"), (5, 22, 7, 41, "^"), (11, 10, 6, 42, "f"),
-                              (27, 3, 9, 43, "f"), (38, 12, 7, 44, "^"), (14, 28, 7, 45, "f"), (31, 19, 6, 46, "f")]:
-        m.cluster(ch, cx, cy, n, seed=sd)
-    # the garrison of the square, a screen to the east and west, guns behind the parks
-    m.spread(1, {INF: 4, MECH: 2, TANK: 2, RECON: 1, MDT: 1, ART: 2}, (14, 12, 26, 21), seed=1, gap=1)
-    m.spread(2, {INF: 3, TANK: 2, RECON: 1, ART: 1}, (1, 1, 11, 9), seed=2, gap=1)
-    m.spread(3, {INF: 3, TANK: 2, RECON: 1, ART: 1}, (29, 22, 38, 30), seed=3, gap=1)
-    m.note("square", 20, 16, "the market square: the player's HQ, must not fall")
-    m.note("hq2", 3, 3, "Colin's HQ (Guildhall)").note("hq3", 36, 28, "Hachi's HQ (Counting House)")
-    m.note("silo", 15, 11, "neutral missile silo beside the contested avenue (15,12) between the square and the Guildhall")
-    m.note("harbour", 1, 16, "sea of the harbour (west edge); ports (3, 14) and (3, 18)")
-    m.note("canal", 2, 24, "the Mill Water, harbour to south edge, bridges (4, 24) and (11, 29)")
-    m.note("salt_row", 6, 28, "Salt Row: the south-west quarter across the Mill Water, neutral cities (5, 28) and (8, 29)")
-    m.note("neutral_ne", 30, 3, "neutral cities (30, 3) and (26, 8) and (36, 9)").note("neutral_e", 37, 16, "neutral cities (37, 16), (28, 19), bases (28, 12)")
-    m.note("neutral_n", 17, 2, "neutral city (17, 2)").note("neutral_w", 10, 12, "neutral cities (10, 12), (7, 21), base (12, 17)")
-    m.note("neutral_s", 24, 28, "neutral cities (24, 28), (13, 22), airport (24, 23)")
+        "M6 Tribute (Aurelhaven): own 24 properties at once by the end of day 16 (capture only). Player (Livia) HQ 1 (20,16) in the square, bases (18,14) (22,18), airport (18,19); "
+        "Colin HQ 2 (4,3) in the Guildhall quarter; Hachi HQ 3 (35,28) in the Counting House quarter. The harbour on the west edge (ports (3,9) Colin's, (3,19) neutral); "
+        "the Mill Water canal from the harbour (3,22) to the east edge (39,24), bridged at x6, 12, 20, 24, 31, 36. Neutral forward bases (8,20) (31,13). "
+        "Player INF4 MECH2 TANK2 RECON1 MDT1 ART2; Colin INF3 TANK2 RECON1 ART1; Hachi the same."))
+    # --- the harbour (west) with its beach
+    m.rect("~", 0, 5, 2, 31)
+    m.puts("~", [(3, 26), (3, 27), (3, 28), (4, 27), (0, 4), (1, 4), (0, 3)])
+    # --- parks, hills and gardens
+    for cx, cy, n, sd in ((13, 8, 6, 1), (9, 12, 5, 2), (26, 5, 6, 3), (33, 4, 6, 4), (28, 11, 5, 5), (35, 12, 5, 6), (12, 18, 5, 7), (25, 20, 5, 8), (8, 26, 6, 9),
+                          (16, 27, 6, 10), (29, 29, 5, 11), (37, 20, 5, 12), (14, 2, 4, 13), (2, 13, 3, 14), (22, 7, 4, 15), (17, 22, 4, 16), (33, 18, 4, 17),
+                          (5, 30, 4, 18), (24, 30, 4, 19), (38, 5, 4, 20), (9, 5, 3, 21),
+                          (17, 4, 7, 22), (23, 10, 6, 23), (10, 17, 6, 24), (4, 23, 5, 25), (9, 23, 6, 26), (15, 29, 6, 27), (27, 26, 6, 28), (33, 22, 6, 29),
+                          (37, 25, 5, 30), (30, 18, 6, 40), (35, 7, 5, 41), (29, 3, 5, 42), (4, 7, 4, 43), (10, 27, 5, 44), (19, 25, 5, 45), (22, 30, 4, 46),
+                          (13, 15, 4, 47), (26, 15, 4, 48), (38, 13, 4, 49), (33, 30, 4, 50), (1, 18, 3, 51),
+                          (8, 14, 4, 52), (15, 7, 4, 53), (25, 1, 4, 54), (32, 15, 4, 55), (28, 21, 4, 56), (14, 24, 4, 57), (3, 29, 3, 58), (38, 30, 3, 59),
+                          (21, 6, 4, 60), (10, 10, 3, 61), (34, 12, 3, 62), (26, 31, 3, 63), (11, 2, 3, 64), (38, 18, 3, 65)):
+        m.cluster("f", cx, cy, n, seed=sd)
+    for cx, cy, n, sd in ((30, 1, 6, 31), (37, 1, 5, 32), (24, 2, 4, 33), (36, 9, 4, 34), (11, 30, 4, 35), (21, 29, 3, 36), (27, 17, 3, 37), (1, 1, 3, 38), (16, 6, 3, 39), (33, 17, 4, 70), (9, 31, 3, 71), (39, 11, 3, 72)):
+        m.cluster("^", cx, cy, n, seed=sd)
+    # --- the Mill Water canal: harbour to the east edge, stepping south twice
+    m.river([(3, 22), (14, 22), (14, 23), (27, 23), (27, 24), (39, 24)])
+    # --- streets
+    for pts in ([(16, 12), (24, 12), (24, 20), (16, 20), (16, 12)],                     # the square's ring
+                [(20, 12), (20, 3), (5, 3)], [(16, 16), (4, 16)], [(24, 16), (39, 16)], [(20, 20), (20, 28), (34, 28)],
+                [(6, 4), (6, 30)], [(12, 16), (12, 30)], [(31, 8), (31, 30)], [(36, 16), (36, 27)], [(20, 8), (31, 8)], [(31, 8), (38, 8)],
+                [(6, 9), (4, 9)], [(6, 19), (4, 19)], [(12, 9), (6, 9)], [(24, 12), (28, 12), (28, 8)], [(12, 26), (6, 26)], [(31, 21), (36, 21)],
+                [(12, 11), (16, 11)], [(25, 26), (31, 26)]):
+        m.road(pts)
+    for x in (6, 12, 20, 24, 31, 36):
+        y = 22 if x < 14 else 23 if x < 27 else 24
+        m.put("=", x, y)
+    m.road([(24, 20), (24, 22)]).road([(24, 24), (24, 26)])
+    # --- properties
+    m.put("1", 20, 16).puts("B", [(18, 14), (22, 18)]).put("A", 18, 19).puts("C", [(22, 14), (18, 17)])
+    m.put("2", 4, 3).puts("B", [(8, 4), (10, 2)]).put("A", 13, 4).puts("C", [(3, 6), (7, 7)]).put("P", 3, 9)
+    m.put("3", 35, 28).puts("B", [(32, 26), (37, 30)]).put("A", 28, 27).puts("C", [(34, 25), (38, 27)])
+    m.puts("b", [(8, 20), (31, 13)]).put("p", 3, 19).put("M", 15, 10)
+    m.puts("c", [
+        # the north market (between the square and the Guildhall)
+        (17, 2), (22, 4), (18, 6), (21, 10), (17, 9), (13, 12), (10, 8), (14, 5), (8, 11), (4, 12), (10, 14),
+        # the docks
+        (5, 14), (8, 17), (4, 21), (7, 23), (10, 20),
+        # Salt Row and the mill quarter (across the canal)
+        (4, 25), (8, 28), (5, 31), (10, 25), (14, 25), (13, 28), (15, 31), (17, 25), (19, 30), (22, 26), (18, 22),
+        # the gardens (east) and the north-east road
+        (26, 14), (29, 15), (33, 14), (37, 13), (27, 10), (33, 10), (38, 10), (34, 6), (25, 7), (29, 5), (35, 2), (27, 2), (39, 2), (22, 1),
+        # between the square and the Counting House
+        (26, 18), (29, 20), (33, 20), (38, 18), (26, 21), (29, 21), (34, 23), (38, 22), (26, 28), (23, 30), (29, 31), (33, 31),
+        # round the square
+        (14, 14), (14, 19), (25, 10), (15, 21), (22, 21)])
+    m.tidy()
+    # --- the armies
+    m.spread(1, {INF: 4, MECH: 2, TANK: 2, RECON: 1, MDT: 1, ART: 2}, (14, 11, 26, 21), seed=1, gap=1)
+    m.spread(2, {INF: 3, TANK: 2, RECON: 1, ART: 1}, (3, 1, 13, 9), seed=2, gap=1)
+    m.spread(3, {INF: 3, TANK: 2, RECON: 1, ART: 1}, (29, 24, 39, 31), seed=3, gap=1)
+    m.note("square", 20, 16, "the market square: Livia's HQ")
+    m.note("hq2", 4, 3, "Colin's HQ (the Guildhall)").note("hq3", 35, 28, "Hachi's HQ (the Counting House)")
+    m.note("canal", 3, 22, "the Mill Water, harbour to the east edge, seven bridges")
+    m.note("salt_row", 8, 28, "Salt Row across the canal").note("gardens", 31, 13, "the gardens' neutral base")
+    m.note("docks", 8, 20, "the docks' neutral base").note("silo", 15, 10, "neutral silo in the north market")
     return m

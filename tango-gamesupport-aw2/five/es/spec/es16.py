@@ -1,5 +1,20 @@
-"""M16 Sol Invictus (finale): Stormhold, the Allied stronghold. The legion's beachhead is in the south-west; the city stands on a plateau in the north-east; three lanes lead to it: the coast road to the
-harbour district, the river valley to the west gate, the high pass over the northern mountains to Eagle's airfield. Eagle (Green Earth, army 2) and Hachi (Orange Star, army 3) hold it together."""
+"""M16 Sol Invictus (Act IV, the finale): break Stormhold, Eagle's and Hachi's stronghold on its plateau; Mount Sol smokes beside the west gate.
+
+Design (docs/dev/map-design.md). The situation: the legion's beachhead in the south-west (HQ, two factories, an airport, a port on the cove); the
+city on the plateau in the north-east behind an escarpment with three gates (west, north, south), Hachi's town and harbour district inside it,
+Eagle's airfield and his own HQ beyond the north gate. Mount Sol (a volcano, Dual Strike's rules as the BH Campaign has them) stands in the valley
+below the west gate: from day 3 it erupts every day on three cells of the ring round its rock (19..26, 10..17), hurting whoever is there, the legion or the city's sally.
+- Lanes: the Salt Road along the south coast (two bridges) to the harbour district and the south gate; the Weir Valley (the Stormwater river, bridged
+  three times) past Mount Sol to the west gate; the Needle Pass over the northern mountains to Eagle's airfield and the north gate; farm tracks join
+  them so a column can switch lanes.
+- Where the fight happens: the valley villages and the neutral bases (16,19) and (24,8) in the middle, the volcano's ring before the west gate, the
+  three gates, then the city.
+- Properties: villages three cells apart on the plain and in the valley (money for the legion's waves and cover for its infantry), the city's houses
+  (Hachi's), the airfield (Eagle's); the neutral port on the south coast for a second fleet.
+- Threats and answers: Eagle's fighters, bombers and copters and the day-6 air wing -> anti-air, missiles and fighters with the column; Hachi's Md
+  tanks and neotanks out of the gates -> Md tanks, neotanks, artillery behind the river; the guns in the walls -> recons, bombers, infantry over the rock;
+  cruisers in the inlet and the harbour -> bombers and missiles on the quay; the volcano -> do not stand in its ring on an eruption day.
+"""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
@@ -64,7 +79,22 @@ def build():
             m.put("=", x, y)
         elif n in "R" and so in "R" and e in "-=~" and w in "-=~":
             m.put("=", x, y)
+    # ---- Mount Sol: a volcano (4x4: anchor V on the second column, third row) below the west gate; its ring is erupted from day 3 (es_act4.rs)
+    m.frame("^", 20, 11, 25, 16)                                                      # (the cone's rock: the game draws a volcano among mountains)
+    for y in range(12, 16):
+        for x in range(21, 25):
+            m.put("#", x, y)
+    m.put("V", 22, 14)
+    m.road([(14, 15), (16, 15)]).road([(18, 15), (19, 15), (19, 16)]).road([(19, 18), (19, 20)])   # the weir track across the valley (two bridges)
+    m.put("=", 17, 15).put("=", 19, 17)
+    m.road([(24, 10), (24, 8)])
     # ---- properties ----
+    # the valley's and the plain's villages (MD01, MD02), two neutral bases in the middle
+    for x, y in [(2, 13), (6, 9), (2, 6), (7, 3), (12, 6), (17, 5), (14, 10), (11, 13), (7, 15), (2, 23), (12, 19), (14, 23), (19, 14), (18, 9), (22, 18),
+                 (26, 17), (26, 23), (30, 17), (33, 18), (27, 15), (22, 3), (26, 1), (38, 6), (40, 14), (36, 17), (32, 23), (29, 22), (10, 1), (19, 21)]:
+        if m.get(x, y) in ".f":
+            m.put("c", x, y)
+    m.puts("b", [(16, 19), (24, 8)])
     # the legion: HQ, two bases, an airport, a port on the cove, cities
     m.put("1", 4, 20).puts("B", [(7, 19), (3, 17)]).put("A", 9, 20).put("P", 8, 24).puts("C", [(5, 22), (11, 16)])
     # neutral provinces along the lanes
@@ -76,6 +106,9 @@ def build():
     # Eagle: the north airfield and a base, a port in the inlet
     m.put("2", 31, 2).puts("A", [(28, 1), (35, 1)]).put("B", 33, 2).put("P", 40, 3).puts("C", [(36, 6), (29, 6)])
     # ---- units ----
+    # (the mission's reinforcement cells stay free: AIRFIELD, SOUTH_GATE, WEST_GATE and CAMP in es_act4.rs)
+    m.reserve([(x, 0) for x in range(27, 35)] + [(32, 1), (33, 1)] + [(33, 13), (34, 13), (36, 13), (36, 14), (35, 15)]
+              + [(27, 9), (28, 9), (26, 10), (28, 10), (27, 11), (28, 11)] + [(2, 19), (3, 19), (4, 19), (2, 20), (3, 20), (2, 21)])
     LAND_AVOID = "~r=-^IZ#"
     SEA_ONLY = ".fR^-=,IZ#HBCAPTbcap12345"
     # the legion's beachhead camp (south-west): foot at the front, armour on the roads, artillery and AA behind, the air wing at the airport
@@ -98,5 +131,7 @@ def build():
     m.note("hq1", 4, 20, "the legion's HQ").note("hq2", 31, 2, "Eagle's HQ (north airfield)").note("hq3", 34, 10, "Hachi's HQ (the city)")
     m.note("gate_w", 26, 9, "the west gate (the valley road)").note("gate_n", 31, 4, "the north gate (the pass)").note("gate_s", 35, 15, "the south gate (the coast road)")
     m.note("camp", 8, 19, "the legion's beachhead camp; reinforcement cells at the cove").note("airfield", 31, 1, "Eagle's air wing reserve cells along y=0..1 x 27..36")
+    m.note("volcano", 22, 14, "Mount Sol (x21..24, y12..15, its rock x20..25, y11..16): erupts on the ring (19..26, 10..17) from day 3")
+    m.note("fwd", 16, 19, "neutral bases (16,19) by the weir track and (24,8) below the west gate")
     m.lake(15, 9, 9, seed=0, river_end=(15, 10))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

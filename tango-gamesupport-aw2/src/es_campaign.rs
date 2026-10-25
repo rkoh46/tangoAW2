@@ -252,4 +252,20 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn only_the_finale_has_a_volcano_and_it_erupts_round_mount_sol() {
+        // M16's Mount Sol (five/es/spec/es16.py: the cone x21..24, y12..15 in its rock x20..25, y11..16): from day 3, every day, 3 cells of the ring round
+        // the rock; no other Emerald Sun mission has a volcano.
+        for m in &def().missions {
+            if m.key == "es16" {
+                let v = m.volcano.as_ref().expect("M16 has Mount Sol");
+                assert_eq!((v.first, v.interval, v.per_eruption), (3, 1, 3));
+                assert!(v.cells.iter().all(|&(x, y)| (19..=26).contains(&x) && (10..=17).contains(&y)));
+                assert!(v.cells.iter().all(|&(x, y)| !((20..=25).contains(&x) && (11..=16).contains(&y))), "an eruption cell inside the rock");
+            } else {
+                assert!(m.volcano.is_none(), "{} has a volcano", m.key);
+            }
+        }
+    }
 }

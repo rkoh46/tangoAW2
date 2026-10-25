@@ -38,10 +38,10 @@ KLAUS: Four provinces behind us. This / port is the gate of the northern coast.
 KLAUS: And hold it for three days. / A file is not read in an hour.
 AURELIA: Three days in the middle of / four armies. In an octagon. Lovely.
 AURELIA: Everyone will shell the one / roof. I will bring stone anyway.
-AURELIA: Kindle's quarter, north. A pipeline / on the west beach, and a seam in it.
-AURELIA: One hit on the seam opens her / quarter. A Piperunner guards it.
-AURELIA: A pipe base beside it builds / more. Tanks, Md Tanks, Artillery
-AURELIA: And Bombers answer it, over / the reefs. Nothing sails that glow.
+AURELIA: Kindle's quarter, north. The / bays glow: no ship sails them.
+AURELIA: Every quay has a factory or an / airfield instead. Hers too.
+AURELIA: Tanks, Md Tanks and Artillery / answer her armour. The AA, her wing.
+AURELIA: The Black Factory feeds her. / Bombers answer it, over the reefs.
 KLAUS: There are no alliances in the / port. Every flag fights every flag.
 KLAUS: That is also our chance. Let / them spend themselves on each other.
 LIVIA: I have noted who owes whom. / Javier owes Sonja. Sonja owes no one.
@@ -340,6 +340,7 @@ NARRATION: Stormhold, the Accord's last / stronghold. Dawn, no fog.
 NARRATION: A city on a plateau above the / sea. Three roads climb to it.
 AURELIA: The Salt Road, the coast road, to the / harbour district and the south gate.
 AURELIA: Weir Valley, the Stormwater river / valley, up to the west gate.
+AURELIA: Mount Sol smokes below that / gate. From day three, it spits fire.
 AURELIA: And Needle Pass, the high road over / the north mountains to Falcon Field.
 AURELIA: Above the lot, the escarpment: three / gates. Hachi's Market Ward behind it.
 CASSIUS: Six provinces in a year, old / man, and now the seventh gate.

@@ -1,4 +1,16 @@
-"""M15 Pax Romana (Act IV, tag mission): the Accord's strait fleet bars the Strait of Elms: Drake's ships and Sensei's air wing, with a fortified shore and the Strait Fort's harbour."""
+"""M15 Pax Romana (Act IV, tag): break the Accord's blockade of the Strait of Elms: sink the flagship and take the Strait Fort's harbour.
+
+Design (docs/dev/map-design.md). The situation: the legion holds the west shore (HQ, factories, an airport, two ports on the strait); Drake's fleet
+bars the strait in front of the Strait Fort on the east shore (his HQ, the harbour (39,13), factories); Sensei's air wing sits on Elm Isle in the middle
+of the strait (her HQ and airfield). Salt Isle (south-west) and Reed Isle (north-east) each have a neutral port and a hamlet.
+- Lanes: the north and the south channels round Elm Isle (reefs narrow them) and the open water in front of the harbour; for the land army, landings on
+  Elm Isle and on the fort shore's beaches north and south of the harbour.
+- Where the fight happens: Elm Isle (the contested middle: Sensei's field and the hamlets round it), the two channels, then the harbour mouth.
+- Properties: villages three cells apart on both shores and the isles (each landing has something to take and cover), the two isles' neutral ports
+  (a ship factory for whoever lands there), the fort's town on the east shore.
+- Threats and answers: Sensei's fighters, bombers and copters -> cruisers, the AA and missiles, fighters from the legion's airport; the flagship and the
+  subs -> the legion's battleship, sub and bombers, cruisers against the subs; the fort's garrison -> landers on the beaches with mechs and tanks.
+"""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
@@ -89,6 +101,12 @@ def build():
     at("2", 43, 13); at("B", 41, 9); at("B", 41, 17); at("P", 39, 13)
     pe1 = coast_port("P", 40, 5); pe2 = coast_port("P", 40, 21)
     ats("c", [(42, 11), (42, 15), (38, 9), (38, 19), (44, 5)])
+    # villages three cells apart on both shores and the isles (MD01, MD02)
+    for x, y in [(5, 1), (1, 3), (6, 5), (1, 11), (5, 10), (5, 15), (1, 19), (6, 18), (2, 24), (6, 22), (7, 25), (9, 20),
+                 (41, 1), (44, 2), (40, 6), (44, 9), (39, 16), (44, 17), (41, 21), (44, 23), (42, 25), (37, 23), (40, 3),
+                 (20, 14), (26, 12), (23, 9), (25, 16), (12, 24), (17, 23), (28, 3), (33, 4)]:
+        if m.get(x, y) in ".f":
+            at("c", x, y)
     rd([(39, 13), (43, 13)]); rd([(43, 13), (43, 9), (41, 9)]); rd([(43, 13), (43, 17), (41, 17)]); rd([(41, 9), (41, 6), pe1])
     rd([(41, 17), (41, 19), pe2]); rd([(38, 9), (40, 9)]); rd([(38, 19), (41, 19)])
     # beaches: shoal strips where Landers and the Fort's attackers go ashore (the ports' neighbours stay open sea)

@@ -32,6 +32,7 @@ def register(sub):
     a.add_argument("--map", nargs="*", help="only these (es01 es02 ...)")
     a.add_argument("--no-build", action="store_true", help="only write the text maps")
     a.add_argument("--check", action="store_true", help="fail if a text map differs from what its spec makes (nothing written)")
+    a.add_argument("--principles", action="store_true", help="print each map's design measures and MD findings (docs/dev/map-design.md; no ROM needed)")
     a.set_defaults(fn=gen)
     a = ms.add_parser("rules", help="the rules and what the games' own maps do under each")
     a.add_argument("--md", action="store_true")
@@ -138,6 +139,13 @@ def gen(a):
                 bad += 1
             continue
         m.write()
+        if a.principles:
+            from ..maplint import study as st
+            r = st.measure(m.study())
+            print(f"   {m.name}: {r['props']} properties, {r['props_per100_land']} per 100 land, farthest ground {r['prop_gap']}, plain {r['t_plain']:.0%} wood {r['t_wood']:.0%} "
+                  f"mountain {r['t_mountain']:.0%} road {r['t_road']:.0%}, river run {r['river_run']}, approach roads {r.get('road_lanes')}, middle {r.get('contested_centre')}")
+            for p in m.principles():
+                print("   ", p)
     if a.check or a.no_build:
         return 1 if bad else 0
     five = cfg.REPO / "tango-gamesupport-aw2" / "five"

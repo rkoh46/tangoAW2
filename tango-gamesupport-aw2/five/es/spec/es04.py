@@ -1,53 +1,71 @@
-"""M4 The Second Legion (Act I, fog): the Verna valley. A winding river across the middle with three bridges, marshy woods on both banks around the middle one, two camps."""
+"""M4 The Second Legion (Act I, fog): the Verna valley, legion against legion.
+
+Design (docs/dev/map-design.md). The situation: two Aurean legions of equal funds (4000 each) meet in a foggy valley: Klaus's (or Aurelia's) camp in the
+south-west, Cassius's in the north-east, the Verna river winding north to south between them. It is the campaign's one even fight, so the valley is
+laid out point-symmetric (every village, base, wood and hill has its twin turned half round the centre); only the river's line differs.
+- Lanes: three crossings: the north bridge (15,3) on the north road, the marsh bridge (15,10) on the valley road, the south bridge (16,18) on the south
+  road; each camp's road ring reaches two of them directly. The marsh woods around the middle bridge hide infantry in the fog.
+- Where the fight happens: the forward bases (11,7) and (20,14) on each bank, and the villages along the river (the contested middle).
+- Properties: each camp has its HQ, a base and three cities; 26 neutral villages and two neutral bases, three cells apart, pay whoever pushes out.
+- Threats and answers: Cassius's fast vehicles -> woods on the banks (infantry ambush cover), artillery behind the bridges; fog -> a recon each side and the
+  villages as vision; his artillery -> recons find it, tanks cross at the far bridge.
+"""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from aw2.esmaplib import *
 
 W, H = 32, 22
 
 
+def twin(cells):
+    """The cells and their twins turned half round the valley's centre."""
+    return list(cells) + [(W - 1 - x, H - 1 - y) for x, y in cells]
+
+
 def build():
     m = Canvas("es04", W, H)
     m.header(armies=2, colours=(BM, OS), objective=[1], comment=(
-        "M4 The Second Legion (FOG, the Verna valley): take Cassius's camp HQ 2 (28,3) or rout his army. The Verna river winds north to south across the middle, "
-        "with three bridges: bridge_n (15,3), bridge_c (15,12) and bridge_s (16,17). The marsh (dense woods on both banks around the central bridge, x11..20, y9..15) slows his vehicles. "
-        "The camps sit in opposite corners (player HQ (3,18) south-west, Cassius HQ (28,3) north-east). "
-        "Player start: INF4 MECH2 TANK3 MDT2 RECON2 ART2 AA1 APC1 ; Cassius: TANK4 RECON3 MDT2 INF3 MECH1 APC1 ART1, 4000 funds each. "
-        "Threat->answer: his fast vehicle rush -> woods banks (infantry/mech ambush cover), the three bridge chokes with ART behind; fog -> a RECON on each side; "
-        "his ART -> RECONs spot it, tanks cross the bridges to hit it. Day 5 scene is mission code."))
-    # hills and ridges
-    for cx, cy, n, sd in ((2, 3, 12, 1), (9, 1, 8, 2), (7, 9, 6, 3), (30, 11, 8, 4), (24, 15, 8, 5), (20, 20, 8, 6), (29, 20, 7, 7), (21, 1, 7, 8), (1, 12, 6, 9), (12, 20, 5, 10)):
-        m.cluster("^", cx, cy, n, seed=sd)
-    # woods: copses and the marsh around the central bridge
-    for cx, cy, n, sd in ((13, 11, 14, 1), (18, 13, 14, 2), (6, 15, 8, 3), (26, 10, 8, 4), (11, 5, 7, 5), (23, 5, 6, 6), (5, 20, 5, 7), (27, 18, 6, 8), (9, 12, 5, 9),
-                          (21, 9, 5, 10), (4, 8, 5, 11), (24, 12, 5, 12), (18, 5, 5, 13), (11, 17, 5, 14)):
-        m.cluster("f", cx, cy, n, seed=sd)
-    # the Verna river: north to south, stepping a cell sideways between long runs
-    rv = m.path([(15, 0), (15, 5), (16, 5), (16, 9), (15, 9), (15, 14), (16, 14), (16, 18), (17, 18), (17, 21)])
-    for x, y in rv:
+        "M4 The Second Legion (FOG, the Verna valley): take Cassius's camp HQ 2 (28,3) or rout his army. Point-symmetric valley; the Verna river winds north to south, "
+        "bridged at (15,3), (15,10), (16,18). Forward neutral bases (11,7) and (20,14). Player start: INF4 MECH2 TANK3 MDT2 RECON2 ART2 AA1 APC1; "
+        "Cassius: TANK4 RECON3 MDT2 INF3 MECH1 APC1 ART1; 4000 funds each."))
+    # --- hills and woods (each with its twin)
+    hills = [(0, 0), (1, 0), (0, 1), (2, 0), (5, 0), (6, 0), (6, 1), (0, 4), (0, 5), (1, 5), (9, 2), (10, 2), (3, 9), (4, 9), (3, 10), (13, 5), (14, 6),
+             (8, 13), (9, 12), (0, 16), (1, 16), (0, 17), (10, 21), (11, 21), (11, 20)]
+    woods = [(3, 1), (4, 1), (8, 4), (8, 5), (7, 5), (3, 7), (4, 6), (13, 1), (12, 2), (11, 10), (12, 10), (12, 11), (13, 11), (13, 9), (14, 8), (14, 12),
+             (6, 11), (7, 12), (2, 11), (1, 12), (10, 15), (11, 16), (6, 14), (5, 13), (14, 15), (14, 16), (2, 19), (3, 20), (8, 20), (9, 19), (13, 18), (12, 19),
+             # the marsh (west bank of the middle), the copses between the villages, the hedges along the roads
+             (13, 12), (14, 13), (13, 14), (12, 14), (11, 12), (14, 9), (13, 7), (12, 6), (9, 7), (9, 8), (7, 8), (6, 9), (2, 8), (2, 3), (3, 3), (6, 4), (7, 3),
+             (9, 1), (12, 4), (13, 3), (1, 14), (0, 13), (3, 15), (6, 16), (7, 16), (9, 17), (10, 18), (12, 17), (5, 20), (1, 21), (9, 21), (14, 20), (8, 11),
+             (2, 17), (6, 19), (11, 14)]
+    for x, y in twin(hills):
+        m.put("^", x, y)
+    for x, y in twin(woods):
+        m.put("f", x, y)
+    # --- roads: each camp's ring (its own column road and the road across the top or bottom), and the valley road
+    for pts in ([(4, 17), (4, 3), (27, 3)], [(27, 4), (27, 18), (4, 18)], [(4, 11), (10, 11), (10, 10), (21, 10), (21, 9), (26, 9)],
+                [(5, 15), (5, 16)], [(26, 6), (26, 5)], [(7, 19), (7, 18)], [(24, 2), (24, 3)], [(11, 7), (11, 3)], [(20, 14), (20, 18)]):
+        m.road(pts)
+    # --- the Verna river: north to south, three bridges
+    for x, y in m.path([(15, 0), (15, 6), (16, 6), (16, 9), (15, 9), (15, 12), (16, 12), (16, 21)]):
         m.put("-", x, y)
-    m.put("^", 14, 0).put("^", 16, 0)
-    # roads: from the camps to the three bridges
-    m.road([(4, 18), (9, 18), (9, 3), (21, 3), (21, 4), (24, 4)])           # west road north over the north bridge to Cassius's camp
-    m.road([(7, 18), (7, 12), (21, 12), (21, 8), (26, 8), (26, 7)])           # centre route over the marsh bridge
-    m.road([(11, 18), (11, 17), (24, 17), (24, 13)])                  # south route over the south bridge
-    m.bridge(15, 3).bridge(15, 12).bridge(16, 17)
-    # properties: player, Cassius, neutral villages by the bridges
-    m.put("1", 3, 18).put("B", 7, 19).put("C", 5, 15).put("C", 12, 18).put("C", 2, 13)
-    m.put("2", 28, 3).put("B", 24, 5).put("C", 26, 6).put("C", 21, 6).put("C", 29, 7)
-    m.put("c", 12, 4).put("c", 22, 14).put("c", 18, 8).put("c", 12, 14)
-    # player legion: spread over the west bank
-    m.spread(1, {MDT: 2, ART: 2, AA: 1, APC: 1}, (2, 14, 10, 20), seed=1, gap=1)
-    m.spread(1, {TANK: 3, RECON: 2}, (5, 8, 13, 19), seed=2, gap=2)
-    m.spread(1, {INF: 4, MECH: 2}, (3, 11, 12, 18), seed=3, gap=1)
-    # Cassius's cavalry on the east bank
+    m.bridge(15, 3).bridge(15, 10).bridge(16, 18)
+    # --- properties
+    m.put("1", 3, 18).put("2", 28, 3)
+    for x, y in twin([(7, 19), (11, 7)]):
+        m.put("B" if (x, y) in ((7, 19), (24, 2)) else "b", x, y)
+    for x, y in twin([(5, 15), (2, 13), (8, 17)]):
+        m.put("C", x, y)
+    for x, y in twin([(7, 2), (10, 0), (2, 6), (6, 7), (10, 5), (12, 8), (8, 9), (1, 9), (12, 13), (9, 14), (13, 16), (11, 19), (13, 21), (3, 4), (5, 10), (9, 16), (14, 1)]):
+        m.put("c", x, y)
+    # --- the legions
+    m.spread(1, {MDT: 2, ART: 2, AA: 1, APC: 1}, (1, 14, 9, 20), seed=1, gap=1)
+    m.spread(1, {TANK: 3, RECON: 2}, (3, 9, 12, 19), seed=2, gap=2)
+    m.spread(1, {INF: 4, MECH: 2}, (2, 10, 12, 18), seed=3, gap=1)
     m.spread(2, {MDT: 2, ART: 1, APC: 1}, (22, 1, 30, 7), seed=4, gap=1)
-    m.spread(2, {TANK: 4, RECON: 3}, (18, 2, 28, 13), seed=5, gap=2)
-    m.spread(2, {INF: 3, MECH: 1}, (18, 1, 27, 9), seed=6, gap=1)
+    m.spread(2, {TANK: 4, RECON: 3}, (19, 2, 28, 12), seed=5, gap=2)
+    m.spread(2, {INF: 3, MECH: 1}, (19, 1, 29, 10), seed=6, gap=1)
     m.note("hq", 3, 18, "player HQ"); m.note("enemy_hq", 28, 3, "Cassius's camp HQ")
-    m.note("bridge_n", 15, 3, "the north bridge (road to Cassius's camp)"); m.note("bridge_c", 15, 12, "the central bridge in the marsh")
-    m.note("bridge_s", 16, 17, "the south bridge")
-    m.note("marsh", 15, 11, "marsh: dense woods on both banks around the central bridge (x11..20, y9..15)")
-    m.note("village_n", 12, 4, "neutral village by the north road (west bank)"); m.note("village_e", 22, 14, "neutral village on the east bank")
-    m.note("player_camp", 7, 19, "player base"); m.note("enemy_camp", 24, 5, "Cassius's base")
+    m.note("bridge_n", 15, 3, "the north bridge"); m.note("bridge_c", 15, 10, "the marsh bridge"); m.note("bridge_s", 16, 18, "the south bridge")
+    m.note("fwd_w", 11, 7, "neutral forward base, west bank"); m.note("fwd_e", 20, 14, "neutral forward base, east bank")
     return m

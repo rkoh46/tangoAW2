@@ -41,7 +41,9 @@ def main():
     ap.add_argument("-v", action="store_true", help="print each test's log")
     a = ap.parse_args()
 
-    tests = [t for t in load_tests() if a.k in t["name"] and not (a.x and a.x in t["name"])]
+    # (-k NAME$ matches a name that ends with NAME: `-k es_review_m1$` is mission 1 alone, not 10..16)
+    want = (lambda n: n.endswith(a.k[:-1]) and a.k[:-1] in n) if a.k.endswith("$") else (lambda n: a.k in n)
+    tests = [t for t in load_tests() if want(t["name"]) and not (a.x and a.x in t["name"])]
     modes = ("aw2", "ds") if a.mode == "both" else (a.mode,)
     if "ds" in modes and not os.path.exists(paths.ds_rom()):
         print(f"no Dual Strike ROM at {paths.ds_rom()} (set TANGOAW2_DS_ROM); running AW2 only")

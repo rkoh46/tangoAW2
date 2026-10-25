@@ -10,7 +10,7 @@ LIVIA: The bay glows red, Legate. I will / not guess what the water is.
 LIVIA: The bill of lading says grain. / The creditor's stamp is the usual.
 KLAUS: Then the barges are the road. / Whoever loads them, we meet.
 AURELIA: The depot is Kite Hill's plateau / airport. A long march from our landing.
-AURELIA: Take Kite Hill and you own every / approach. One river, three bridges.
+AURELIA: Take Kite Hill and you own every / approach. One river, four bridges.
 NARRATION: Kite Hill is scorched wasteland. / Ash, cinders, ruins, rough rock.
 AURELIA: Cinders underfoot, ruins for cover, / rock that rings. I can work so.
 AURELIA: The river runs red and glowing, / like lava. Do not wade it.
@@ -18,7 +18,7 @@ KLAUS: Clear air lets our wing see far / from the plateau. Use it well.
 KLAUS: A hill, a depot, a coast. Take / them and the northern shore falls.
 CASSIUS: Wings! You have an airport / and I have a bad feeling.
 CASSIUS: Nobody taught my horses to / climb a plateau at a gallop.
-KLAUS: Your horses hold the river and / its three bridges. Someone must.
+KLAUS: Your horses hold the river and / its four bridges. Someone must.
 CASSIUS(h): Holding. Splendid. I have / always wanted to be a gate.
 LIVIA: Gates are paid by the day, / Prefect. I will see to yours.
 AURELIA: Legate, look at the ridge. / Missiles, and flak tanks at the gate.
@@ -26,14 +26,14 @@ AURELIA: If the sky is theirs, we / are standing on stone.
 KLAUS: Then we fight the ground / first and the sky second.
 AURELIA: Bombs have a trajectory too. / Give me the angle and a map.
 AURELIA: A bomber is only a very / expensive, very hurried shell.
-AURELIA: Now look at the freight yard. / A pipeline runs straight across it.
+AURELIA: Now look at the freight yard. / A pipeline walls it off from the road.
 AURELIA: One seam in the pipe. One hit / on the seam and the yard opens.
 AURELIA: A Black Hole Piperunner guards it. / Fast, armoured, runs through the pipes.
 AURELIA: The base beside the pipe builds / more. Rockets and Tanks answer.
 AURELIA: Bombers answer it from above. / Pick the answer, Legate.
 KLAUS: Break the seam early, Engineer, / before the second one rolls.
 KLAUS: You will have both. And / remember: these are not raiders.
-KLAUS: Black Hole's HQ, ports and inventions / lie east. It sells to whoever pays.
+KLAUS: Black Hole's HQ, quay and inventions / lie east. It sells to whoever pays.
 LIVIA: I offered. They declined, / politely, and in advance.
 KLAUS: Then it is a hill. Take the / depot. Sink the barges.
 
@@ -245,11 +245,11 @@ KLAUS: The chest feeds the garrisons. It / arrives, or the frontier starves.
 CASSIUS: You are riding in a truck, / Quaestor. A truck!
 LIVIA: A truck is dignified, Prefect. / It has a roof, and a ledger rail.
 AURELIA: The road winds through the Pinewood, / past a hamlet, a ford, a ruin.
-AURELIA: The ford is the knot. One bridge / over the river, mid-road.
+AURELIA: The ford is the knot: the / Marrow road's bridge, mid-map.
 AURELIA: An APC stalled on the bridge / blocks all the others. Remember that.
-AURELIA: A pipeline runs beside the road in / the pinewood. A seam at its side.
-AURELIA: Break it and a south track opens, / past Flak's camp, to a second bridge
-AURELIA: over the Marrow. The ford is not / the only crossing. The convoy may.
+AURELIA: Three roads cross the Marrow: / the north road, ours, and the south.
+AURELIA: Each has a bridge, and a camp / road joins all three by the camp.
+AURELIA: The ford is not the only / crossing. The convoy may choose.
 NARRATION: The pines gave out. Sand, scrub, / and a ruin by the ford. A storm blows.
 LIVIA: Grit in the engines of four grain / carriers. I have begun a column.
 AURELIA: Few trees, so little cover. The / ruin is only a ruin in sand.
@@ -328,12 +328,12 @@ CASSIUS: I will keep the letter. In / case I need to remember what I was.
 == m12_pre
 @SONG aw2:423
 NARRATION: The Iron Bastion, Blue Moon. / Snow to the knee, three rings high.
-AURELIA: Three rings, Legate. The / outer is smooth mountain.
-AURELIA: The middle is smooth mountain. / The inner, a mountain of mountain.
+AURELIA: Two rings, Legate. The outer / is iron: a pipeline wall.
+AURELIA: Five gates in it. The inner / ring is the keep's rock, four gates.
 AURELIA: The gaps are staggered. I have never / wanted to be a rock more than now.
-AURELIA: A pipe wall closes the first south / corridor between outer and middle.
-AURELIA: Break the seam and the south-west / lane opens for a flank. Foot can
-AURELIA: climb the rocks beside it. And a / silo guards the east approach.
+AURELIA: The town lies between. The wall / has one seam, on the south road.
+AURELIA: Break the seam and the road is / open. Foot can climb the keep's
+AURELIA: rock anywhere. And a missile / silo guards the east approach.
 KLAUS: You are not a rock. You are / the one who knows rocks.
 KLAUS: It is a Tag. You hold the / hammer and I hold the line.
 OLAF: Wah-ha-ha! Visitors! Snow / and visitors! My two favourites!

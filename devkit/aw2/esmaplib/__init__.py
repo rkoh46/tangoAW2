@@ -42,6 +42,7 @@ class Canvas:
         self.hdr = {"armies": 2, "colours": (5, 3), "tab": 3, "team": None, "objective": [1], "owners": None, "split": None, "blackhole": False,
                     "comment": ""}
         self.notes = []                   # (key, x, y, text): named places, printed with the map and written as comments
+        self.reserved = set()             # cells `spread` leaves free (a mission's reinforcement cells: `reserve`)
 
     # ---- painting ----
     def inside(self, x, y):
@@ -184,7 +185,7 @@ class Canvas:
         heavy kinds. Deterministic for `seed`. Returns the cells."""
         rnd = random.Random(f"{self.name}/u{seed}")
         x0, y0, x1, y1 = box
-        taken = {(u["x"], u["y"]) for u in self.u}
+        taken = {(u["x"], u["y"]) for u in self.u} | self.reserved
         placed = []
         foot = {INF, MECH}
         for kind, count in kinds.items():
@@ -223,6 +224,11 @@ class Canvas:
                 placed.append(c)
                 taken.add(c)
         return placed
+
+    def reserve(self, cells):
+        """Cells a mission spawns reinforcements on (the Rust's cell constants): `spread` never puts a start unit there."""
+        self.reserved |= set(map(tuple, cells))
+        return self
 
     def lake(self, cx, cy, n=12, seed=0, river_end=None):
         """A small lake of about `n` sea cells for a river to start in (AW2 has no source tile: a river starts at the map edge or in water). (cx, cy) is the cell beyond the river's
@@ -333,6 +339,78 @@ class Canvas:
         self.h, self.w = len(rows), len(rows[0])
         self.g = [list(r) for r in rows]
         return self
+
+    def ascii(self, rows):
+        """The whole map drawn by hand: one text row per map row, all `self.w` wide (the size given to the Canvas is kept and checked)."""
+        rows = [r for r in rows]
+        bad = [(i, len(r)) for i, r in enumerate(rows) if len(r) != self.w]
+        if len(rows) != self.h or bad:
+            raise ValueError(f"{self.name}: drawn rows are {len(rows)} (want {self.h}); rows of the wrong width (want {self.w}): {bad}")
+        self.g = [list(r) for r in rows]
+        return self
+
+    def tidy(self):
+        """Shoal cells the game has no tile for (a lone ford, shoal with land all round) become plain (five/map.py water_tile)."""
+        import sys as _sys
+        five = str(ES_DIR.parent)
+        if five not in _sys.path:
+            _sys.path.insert(0, five)
+        import map as mappy
+        for _ in range(30):
+            bad = False
+            for y in range(self.h):
+                for x in range(self.w):
+                    if self.g[y][x] == ",":
+                        look = [self.get(a, b) if self.inside(a, b) else "," for a, b in ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))]
+                        try:
+                            mappy.water_tile(",", look)
+                        except AssertionError:
+                            self.g[y][x] = "."
+                            bad = True
+            if not bad:
+                break
+        return self
+
+    def study(self):
+        """The map as the design study sees it (devkit/aw2/maplint/study.py): no ROM needed, so a spec can be checked against the principles while it is drawn."""
+        from ..maplint import study as st
+        hq = {int(c): (x, y) for y, r in enumerate(self.g) for x, c in enumerate(r) if c in "12345"}
+        owning = self.hdr.get("owners") or sorted(hq)
+        split = self.hdr.get("split")
+
+        def owner(x, y):
+            if not hq:
+                return 0
+            if split:
+                first, second = sorted(hq)[:2]
+                return first if (y if split[0] == "y" else x) <= split[1] else second
+            return min(owning, key=lambda a: (abs(hq[a][0] - x) + abs(hq[a][1] - y), a))
+        g, own = [], []
+        for y, r in enumerate(self.g):
+            gr, orow = [], []
+            for x, c in enumerate(r):
+                if c in "12345":
+                    gr.append("H"); orow.append(int(c))
+                elif c == "Q":
+                    gr.append("H"); orow.append(owner(x, y))
+                elif c in "BCAPT":
+                    gr.append(c); orow.append(owner(x, y))
+                elif c in "bcapt":
+                    gr.append(c.upper()); orow.append(0)
+                elif c in INVENTION_CHARS and c != "M":
+                    gr.append("#"); orow.append(0)
+                else:
+                    gr.append(c); orow.append(0)
+            g.append(gr)
+            own.append(orow)
+        team = self.hdr.get("team")
+        side = {i + 1: t for i, t in enumerate(team)} if team else {}
+        return st.StudyMap(self.name, "es", g, own, side, list(self.u), 1, meta={"title": self.name})
+
+    def principles(self):
+        """The design-principle findings (MD01..MD08, docs/dev/map-design.md) of the map as drawn: a list of strings."""
+        from ..maplint import principles
+        return [str(p) for p in principles.check_study(self.study())]
 
     def patch(self, x, y, rows):
         """Stamp text rows with their top-left at (x, y); a space leaves the cell alone."""

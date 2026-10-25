@@ -5,7 +5,7 @@
 == m05_pre
 @SONG co:cassius
 NARRATION: The Comet Road, Yellow Comet. / Day one of nine.
-NARRATION: Three bridges over the Sable. / Posts: Highwatch, Crossways, Lowmere.
+NARRATION: Four bridges over the Sable. / Posts: Highwatch, Crossways, Lowmere.
 KLAUS: Prefect Cassius. The legion / has rested. The road is yours.
 CASSIUS(h): Say that again. Slowly. I / want the whole camp to hear.
 KLAUS: I will say it once. You have / the command. The cavalry leads.
@@ -13,7 +13,7 @@ CASSIUS(h): He said it! Did you hear? / Klaus gave me an army!
 AURELIA: He gave you a road and a / clock. Read the clock first.
 CASSIUS: Chief, I read nothing. I / ride. Reading is for old men.
 KLAUS: Then I will read it for you. / The Comet border guard will blow
-KLAUS: the three bridges after day nine. / Beyond the Sable stand the posts.
+KLAUS: the four bridges after day nine. / Beyond the Sable stand the posts.
 KLAUS: Beyond them lies Yellow Comet. We cross / as conquerors, so we cross fast.
 KLAUS: Take all three. If the bridges / fall, the legion waits for thaw.
 NARRATION: Dry sand country, scrub and rock. / A sandstorm walks along the road.
@@ -109,18 +109,18 @@ COLIN: Counterfeit! Bold of you to / pay in it, honestly.
 LIVIA: The coin is struck by the / Senate's mint. I can show you.
 HACHI: Show me a receipt. Rival or not, / I don't take receipts. Nails, yes.
 LIVIA: Then I shall show you what / I do accept. Legate, the map.
-KLAUS: The whole town is the target. / About thirty properties in all.
-KLAUS: Capture, nothing else. Sixteen owned / at once, at the end of any day by
+KLAUS: The whole town is the target. / About eighty properties in all.
+KLAUS: Capture, nothing else. Twenty-four / at once, at the end of any day by
 KLAUS: the sixteenth day. Guildhall, / north-west: Colin.
 KLAUS: Counting House quarter, south-east: / Hachi.
-KLAUS: Salt Row, south-west, is cut off by / the Mill Water. Two bridges.
-KLAUS: A dozen neutral cities lie between / us. Take them, and the inlet.
+KLAUS: Salt Row, south of the square, is cut / off by the Mill Water. Seven bridges.
+KLAUS: Sixty neutral houses lie between / us. Take them, street by street.
 AURELIA: The Mill Water is a canal, Legate. / Bridges, and a wall of sluice gates.
-KLAUS: A neutral missile silo stands on / the avenue toward the Guildhall.
-COLIN: Ooh, the silo! Mine, I think. / Wowee, I love that avenue!
+KLAUS: A neutral missile silo stands in / the market toward the Guildhall.
+COLIN: Ooh, the silo! Mine, I think. / Wowee, I love that market!
 LIVIA: Stepping on it is not owning it, / Colin. Properties are my concern.
 LIVIA: The Senate's auditors arrive on / day seventeen. If I cannot show
-LIVIA: sixteen properties on my books, / the credit is withdrawn. All of it.
+LIVIA: twenty-four properties on my books, / the credit is withdrawn. All of it.
 COLIN: Ha! And we out-produce you / three to one! Look at my factories!
 HACHI: Colin. Don't show 'em / the factories.
 LIVIA: Thank you, Colin. You have / just told me three things.
@@ -130,7 +130,7 @@ LIVIA: Your hours, your output and / your temper. I shall use all three.
 LIVIA: A tank is a debt with a gun / on it. I have settled larger.
 HACHI: Big talk, rival merchant. The deeds / are ours, and I don't discount.
 LIVIA: Gladly. Each capture is a deed / transferred, at the usual rate.
-HACHI: I'll haggle every one of 'em. / Come take your dozen cities, friend.
+HACHI: I'll haggle every one of 'em. / Come take your houses, friend.
 KLAUS: Advance.
 
 == m06_day6
@@ -144,8 +144,8 @@ LIVIA: A run is a queue. A queue / is a schedule. I keep schedules.
 
 == m06_post
 @SONG aw2:423
-NARRATION: Day fifteen. Aurelhaven is taken. / Sixteen properties on the ledger.
-COLIN: Wowee. Sixteen. She counted / them like beans, Hachi.
+NARRATION: Day fifteen. Aurelhaven is taken. / Twenty-four properties on the ledger.
+COLIN: Wowee. Twenty-four. She counted / them like beans, Hachi.
 HACHI: She counted 'em like debts. / That's worse. I know debts.
 COLIN: Quaestor Livia! No hard / feelings! I make you an offer!
 COLIN: Come to Blue Moon! A seat in / the guild! Half the profits!
@@ -273,7 +273,7 @@ KLAUS: Cassius. Be quiet. She is / being generous.
 @SONG ally1
 NARRATION: Ironhold, Orange Star. / A ring of crags on an open plain.
 KLAUS: Ironhold. Crags round Max's HQ, / the Brimwater canal, a causeway.
-KLAUS: Front gate in the west, rear gate / in the east. Two lanes, one causeway.
+KLAUS: Front gate in the west, rear gate / in the east. Three ways over the canal.
 KLAUS: Ironhold is the gate of Orange / Star. Take it and the frontier moves.
 AURELIA: A missile silo stands by the / causeway, Legate. Neutral.
 KLAUS: One shot, three points from every / unit around it. Whoever fires it first.

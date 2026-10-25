@@ -20,18 +20,20 @@ SCALE = int(os.environ.get("AW2TEST_ES_SCALE", "100"))
 
 # The test player's own settings by mission (aw2test.bot.Bot): the cells a mission is won on, a stance, a rush on the HQ.
 BOT = {
-    1: {"goals": [(15, 4)]},
+    1: {"goals": [(14, 4)]},
     2: {"stance": "defend"},
     3: {"goals": [(16, 12)]},
     4: {"goals": [(28, 3)]},
-    5: {"goals": [(27, 5), (27, 12), (27, 21)], "rush": True},
-    6: {"goals": [(10, 12), (12, 17), (17, 2), (13, 22), (28, 12), (24, 23), (28, 19), (26, 8), (24, 28), (30, 3), (36, 9), (37, 16)]},
+    5: {"goals": [(27, 5), (27, 12), (27, 21)], "rush": True, "seams": [(25, 12)]},
+    # (M6 is a race for properties: capturers take the nearest houses, the rest hunt the guilds' capturers)
+    6: {"nearest": True, "hunt": True, "garrison": True},
     7: {"goals": [(34, 12)]},
     8: {"goals": [(26, 10)]},
-    9: {"goals": [(12, 4), (25, 9), (25, 4)]},
+    9: {"goals": [(12, 4), (25, 9), (25, 4)], "hunt": True},
     10: {"goals": [(16, 2)]},
     11: {"goals": [(37, 10)]},
-    12: {"goals": [(17, 12)]},
+    # (M12: the Iron Wall's seam on the south road is the siege's shortcut)
+    12: {"goals": [(17, 12)], "seams": [(17, 20)]},
     13: {"goals": [(19, 15)]},
     # (M14 storms the camp: Varro's HQ)
     14: {"goals": [(38, 12)]},

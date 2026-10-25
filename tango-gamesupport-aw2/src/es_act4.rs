@@ -5,6 +5,7 @@
 
 use mgba::core::Core;
 
+use crate::campaign_model::VolcanoDef;
 use crate::custom_campaign::{co, colour, unit, *};
 use crate::es_campaign::{after, deployment, leads, on_day, region, roster, wave, STATE};
 use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA, VARRO};
@@ -213,6 +214,9 @@ fn es16() -> MissionDef {
         on_day(4, None, vec![Action::Spawn([wave(1, unit::ANTI_AIR, &CAMP[0..1]), wave(1, unit::MD_TANK, &CAMP[1..2]), wave(1, unit::ARTILLERY, &CAMP[2..3])].concat())]),
         on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),
     ];
+    // Mount Sol below the west gate (`five/es/spec/es16.py`): from day 3 it erupts every day on 3 cells of the ring round its rock, 4 HP to any army's
+    // units there (Dual Strike's volcano, as the BH Campaign's M11 has it): a hazard for the legion's column and the city's sallies alike.
+    m.volcano = Some(VolcanoDef::new(3, 1, 4, &crate::campaign_model::ring(19, 10, 26, 17)).per_eruption(3));
     m.flag = region::ACT4[3];
     m.style = 8; // the last mission's marker
     m.stars = 5;

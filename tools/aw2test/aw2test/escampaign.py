@@ -28,6 +28,7 @@ TITLES = {
     14: "Varro's Gambit", 15: "Pax Romana", 16: "Sol Invictus",
 }
 FOG = {4, 10}
+RAIN = {3, 8}                     # (rain brings fog: their review pictures are taken fogged and with the fog off, as a fog mission's)
 ARMIES = {1: (1, 2), 2: (1, 2), 3: (1, 2), 4: (1, 2), 5: (1, 2), 6: (1, 2, 3), 7: (1, 2, 3), 8: (1, 2, 3), 9: (1, 2), 10: (1, 2, 3), 11: (1, 2, 3), 12: (1, 2, 3),
           13: (1, 2, 3, 4), 14: (1, 2, 3), 15: (1, 2, 3), 16: (1, 2, 3)}      # the armies of each mission (the player is army 1)
 # The COs a test player picks (none: a fixed army), in the order the CO screens ask: a lead, then a tag partner where the mission has one.

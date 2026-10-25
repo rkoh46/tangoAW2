@@ -13,7 +13,9 @@
 # harbour: (40, 17) Varro's port in the camp harbour
 # airfield: (40, 8) Varro's airport
 # reserve1: (40, 12) Varro's reserve column road (day 5, 8)
-# port1: (4, 22) the legion's port
+# port1: (9, 24) the legion's port on the open south coast
+# mid_base: (24, 19) neutral base in the valley
+# legion_road: (7, 14) the legion's reinforcements on days 5 and 8 at (6..9,14..15)
 
 map es14
 armies 3 5 2 1 4
@@ -21,74 +23,74 @@ team 1 2 3
 unit 1 1 6 10
 unit 1 1 10 11
 unit 1 1 6 12
-unit 1 1 9 18
+unit 1 1 2 19
 unit 1 2 10 9
 unit 1 2 8 12
-unit 1 2 10 14
-unit 1 3 7 18
+unit 1 2 4 15
+unit 1 3 4 19
 unit 1 3 7 20
 unit 1 5 3 9
-unit 1 5 3 16
-unit 1 5 3 18
+unit 1 5 10 16
+unit 1 5 7 18
 unit 1 6 8 10
-unit 1 10 3 14
+unit 1 10 2 13
 unit 1 10 10 20
-unit 1 14 7 15
+unit 1 14 6 16
 unit 2 1 34 7 hold
-unit 2 1 39 15
+unit 2 1 38 15
 unit 2 1 34 16 hold
 unit 2 1 34 21 hold
 unit 2 1 35 22
-unit 2 2 34 8
+unit 2 2 41 7
 unit 2 2 39 8
-unit 2 3 39 6
-unit 2 3 36 7
-unit 2 3 41 13
-unit 2 5 37 10
-unit 2 5 35 17
+unit 2 3 35 7
+unit 2 3 35 9
+unit 2 3 35 16
+unit 2 5 37 8
+unit 2 5 38 17
 unit 2 5 38 19
 unit 2 5 37 21
-unit 2 6 34 13
+unit 2 6 38 11
 unit 2 10 36 11 hold
 unit 2 10 36 14 hold
 unit 2 10 37 17 hold
 unit 2 11 36 13 hold
-unit 2 14 35 19
+unit 2 14 40 19
 unit 2 15 39 21
-unit 2 16 38 13
+unit 2 16 34 12
 unit 3 1 20 3
-unit 3 1 23 6
+unit 3 1 21 6
 unit 3 3 22 4
 unit 3 5 19 5
-unit 3 5 27 5
-unit 3 5 21 6
-unit 3 6 25 4
-unit 3 6 17 5
+unit 3 5 17 6
+unit 3 5 23 6
+unit 3 6 25 5
+unit 3 6 27 5
 ...........^.........^^^.^..........^....~~~~~
-......^...^^^^^.^.^^^.^^^.^^^......^^^^..~~~~~
-....^^^^^.^^^.^^^^.^^^.^^^^^.^..^...^.^^^^^~~~
+......^...^^^^^.^.^^^.^^^.^^^c.....^^^^..~~~~~
+..c.^^^^^.^^^.^^^^.^^^.^^^^^.^..^c..^.^^^^^~~~
 ....^^^^.^^.^^^.^^^^.^^^^.^^^....^...^^^^^^~~~
 ....^^^^^..^.^^^^^B..3RRRRRc^...^.....^^^^^~~~
-.....f....fRRRRRcRRRRR.^B..RRR..^..cf^^^.^.~~~
-...fff...f^R^^^^^....R..^^...RRRRRRR......~~~~
-....f......R^^^^^^...R...^^^^^...ffRRRR...~~~~
-....f...RRRR^^^^^^...R..^^^.^^^.^f....R.A.~~~~
-.....f..R..~^^.^^^RRRR...^^^^^...^..B.R....~~~
-...c.ff.R..~~^^...R^.....^^^^...^^^^..Rc.^^~~~
-.....ffBR..~~---..R..ff.........^.....R^^^^~~~
-.....ff..~~~~..---=--.ff.........^.c..2RR...~~
-~~~...f...........R.-------......^..f.R.R...~~
-~~...1RRRc....fff.Rf.....f-----..^.ff.R.c^~~~~
-........fRRRRRRffcRf..........-..^.f..R.R~~~~~
-........ff....R..fff...fcRRRRR=RRRRRRRR.R~~~~~
-~.c....B.f....RRRRRRRRRRRf....-..^..B.RfP~~~~~
-~......R.......f......fff...c.-..^..^^Rf.~~~~~
-~......R......cf.......f......--.^..^cR...~~~~
-......cRRRRR...ff.....c........-.^..f.R....~~~
-......f.f..RRRRRRRRRRf.....RRRR=RRRRRRRc^^^~~~
-....P.f............fRRRRRRRRf..-.^.ff....^^~~~
-....~~..............ff.....ff..-.^..f.^...~~~~
-~~~~~~~~.ff~~......~~f.....~~..-....~~^.~~~~~~
+...c.f....fRRRRRcRRRRR.^B..RRR..^..cf^^^.^.~~~
+...fffc..f^R^^^^^....R..^^.R.RRRRRRR......~~~~
+....f......R^^^^^^...R...^^R^^...ffRRRR...~~~~
+....f...RRRR^^^^^^...R..^^^R^^^.^f....R.A.~~~~
+.....f..Rc.~^^.^^^RRRR..RRRR^^.c.^..B.R....~~~
+...c.ff.R..~~^^...R^....R^^^^...^^^^..Rc.^^~~~
+.....ffBR..~~---..R..ff.R.......^.....R^^^^~~~
+.....ff..~~~~..---=--.ffR........^.c..2RR...~~
+...c..f...c.....c.R.----=--.c....^..f.R.R...~~
+ff...1RRRc....fff.Rf.ff.Rf-----c.^.ff.R.c^~~~~
+ff......fRRRRRRffcRf.f..R.....-..^.f..R.R~~~~~
+........ff....R..fff.f.fcRRRRR=RRRRRRRR.R~~~~~
+.fc....B.f.c..RRRRRRRRRRRf....-..^..B.RfP~~~~~
+.f.....R.......f.c....fff...c.-..^..^^Rf.~~~~~
+.ff.c..R......cf....c..fb..c..--.^..^cR...~~~~
+......cRRRRR...ff.....c.....f..-.^..f.R....~~~
+..c...f.f..RRRRRRRRRRf.....RRRR=RRRRRRRc^^^~~~
+......f.c..........fRRRRRRRRf..-.^.ff....^^~~~
+..............c.....ffc....ff.c-.^..f.^...~~~~
+~~~~~~~~.Pf~~.....c~~f....c~~..-...c~~^.~~~~~~
 ~~~~~~~~~~~~~~~..~~~~~~..~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

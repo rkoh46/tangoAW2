@@ -77,6 +77,11 @@ def build():
         m.cluster(ch, cx, cy, n, seed=sd)
     # properties
     m.put("1", 4, 11).put("B", 4, 8).put("A", 6, 12).put("P", 2, 3).put("P", 3, 20).puts("C", [(3, 6), (7, 17), (8, 7)])
+    # villages on every island, about three cells apart (MD01, MD02)
+    m.puts("c", [(6, 2), (11, 4), (1, 7), (7, 8), (2, 13), (9, 10), (6, 15), (9, 16), (2, 17), (6, 20), (8, 19),
+                 (20, 3), (16, 7), (22, 7), (23, 3), (22, 16), (16, 18), (17, 20), (22, 19),
+                 (34, 3), (37, 6), (31, 9), (37, 11), (33, 15), (28, 17), (37, 19), (35, 21)])
+    m.put("b", 8, 5)
     m.put("2", 36, 16).put("3", 35, 5).put("P", *HARBOUR).put("P", 34, 21).put("A", 33, 7).puts("C", [(35, 10), (33, 17), (36, 12), (32, 4)])
     m.put("~", 1, 3).put("~", 2, 20).put("~", 33, 12).put("~", 33, 21).put("~", 34, 11).put("~", 34, 13)
     # roads: the home island's spine, the fortress's lanes

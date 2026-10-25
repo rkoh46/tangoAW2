@@ -21,7 +21,9 @@ def sheets(a):
     raw = cfg.work("campaign", "es", "review_raw")
     raw.mkdir(parents=True, exist_ok=True)
     for f in raw.glob("*.png"):
-        f.unlink()
+        # (with --mission only those missions' pictures are taken again: the others stay for the contact sheets)
+        if not a.mission or any(f.name.startswith(f"m{n}_") for n in a.mission):
+            f.unlink()
     out = Path(a.out) if a.out else cfg.work("campaign", "es", "sheets")
     env = dict(os.environ, AW2TEST_REVIEW_DIR=str(raw))
     keys = [f"es_review_m{n}$" for n in a.mission] if a.mission else ["es_review_m"]

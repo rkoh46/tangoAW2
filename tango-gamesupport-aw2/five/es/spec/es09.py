@@ -1,4 +1,19 @@
-"""M9 Grain Ships (Act III): the HOBB freight yards at Kite Hill, a Black Hole province. Take the depot airport on the plateau and sink the three barges in the harbour bay by day 10."""
+"""M9 Grain Ships (Act III, wasteland: the bay is lava): take the Kite Hill air depot and sink the three HOBB barges before day 11.
+
+Design (docs/dev/map-design.md). The situation: Black Hole's freight yards: Kite Hill, a plateau crowned with rock and guarded by minicannons, holds
+the air depot (12,4); the HOBB harbour on the east (the barges moored on the lava bay, the HQ, a factory and an airfield on the quay); the walled
+freight yard in the south-east with the Black Cannon and the pipe factory. The legion lands in the south-west with an airport, a base and a strong
+air wing; the clock is ten days.
+- Lanes: the Kite river runs west to east across the map with four bridges (the west road, the farm track, the centre road, the east road); north of it
+  three roads climb to the plateau's three gaps (west, south, east) and the harbour road; south of it the south road runs to the freight yard, which
+  the HOBB pipeline walls off: its seam (22,19) is the only land gate.
+- Where the fight happens: the river crossings and the ruined hamlets between the river and the hill (the contested middle), the hill's gaps under the
+  minicannons, the quay.
+- Properties: ruins (neutral cities) every few cells on both banks, a neutral base (16,15) south of the river for the infantry the captures need, the
+  depot and the harbour; the Black Crystals heal Black Hole's units beside the quay.
+- Threats and answers: the minicannons, Black Cannon and Deathray hit ground and sea only -> fighters, bombers and copters; AA tanks and missiles ->
+  fighters first, own AA and missiles; tanks and the Piperunner -> rockets, tanks, artillery, bombers; the barges -> bombers, copters, or guns from the shore.
+"""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
@@ -17,7 +32,7 @@ def build():
                      "Player start: FTR3 BMB3 BCO2 AA2 MIS2 ART2 ROCKETS1 TANK3 MECH2 INF3 (23 units), funds 5000. "
                      "Black Hole start: INF5 MECH2 TANK3 MDT1 AA3 MIS2 ART2 FTR1 BCO1 + 3 barges (Landers) + 1 Piperunner on the pipeline = 24 units, about 1.2x the player's ground value. All inventions are Black Hole's.")
     # ---- the bay (east, open sea to the edge) with a lighthouse isle; the coast: first sea column of each row ----
-    coast = [24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 27, 28, 28, 28, 28, 28, 28, 28]
+    coast = [24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 28, 28]
     for y, x0 in enumerate(coast):
         m.rect("~", x0, y, 33, y)
     for x, y in ((30, 6), (29, 7), (30, 7), (31, 7), (30, 8)):
@@ -29,27 +44,29 @@ def build():
     m.cluster("^", 3, 5, 7, seed=13); m.cluster("^", 19, 8, 6, seed=14); m.cluster("^", 7, 8, 5, seed=15)
     # ---- the Kite river: a spring in the western hills, bends, a mouth in the bay ----
     m.cluster("^", 0, 6, 6, seed=20)
-    m.river([(0, 8), (5, 8), (5, 10), (11, 10), (11, 12), (18, 12), (18, 13), (25, 13)])
-    bw, bs, be = (3, 8), (13, 12), (22, 13)
+    m.river([(0, 9), (6, 9), (6, 11), (12, 11), (12, 13), (19, 13), (19, 14), (26, 14)])
+    bw, bs, be = (3, 9), (13, 13), (21, 14)
     # ---- woods and hedgerows ----
     for cx, cy, n, s in ((3, 12, 8, 30), (21, 2, 6, 32), (22, 9, 5, 33), (7, 15, 6, 34), (14, 19, 6, 35), (11, 20, 7, 36), (7, 20, 4, 37),
                          (22, 19, 5, 38), (28, 20, 6, 39), (18, 20, 4, 40), (2, 16, 4, 41), (16, 1, 4, 42), (9, 7, 3, 43), (26, 17, 3, 44), (16, 14, 5, 45)):
         m.cluster("f", cx, cy, n, seed=s)
     # ---- roads ----
-    m.road([(5, 17), (9, 17), (9, 16), (17, 16), (17, 17), (20, 17), (20, 15), (25, 15)])      # the south road through the freight yard
-    m.road([(13, 16), (13, 13)]).road([(22, 15), (22, 14)])
-    m.road([(5, 17), (3, 17), (3, 9)])
-    m.put("=", *bw).put("=", *bs).put("=", *be)
-    m.road([(3, 7), (3, 4), (11, 4)])                                    # west bridge -> the hill's west gap
-    m.road([(13, 11), (13, 5), (12, 5)])                                  # centre bridge -> south gap -> depot
-    m.road([(22, 12), (22, 9), (21, 7)])                                  # east bridge -> harbour
+    m.road([(5, 17), (9, 17), (9, 16), (17, 16), (17, 17), (21, 17)])      # the south road to the freight yard's pipe
+    m.road([(13, 16), (13, 14)]).road([(21, 15), (21, 17)])
+    m.road([(5, 17), (3, 17), (3, 10)])
+    m.road([(9, 16), (9, 12)]).road([(9, 10), (9, 8)])                    # the farm track over the fourth bridge
+    m.put("=", *bw).put("=", *bs).put("=", *be).put("=", 9, 11)
+    m.road([(3, 8), (3, 4), (11, 4)])                                    # west bridge -> the hill's west gap
+    m.road([(13, 12), (13, 5), (12, 5)])                                  # centre bridge -> south gap -> depot
+    m.road([(21, 13), (21, 7)])                                             # east bridge -> harbour
     m.road([(13, 4), (20, 4), (20, 5)])                                   # east gap -> HQ
     m.road([(22, 7), (23, 7), (23, 2)])
     # ---- properties ----
     m.put("A", 12, 4)                                                # Kite Hill's depot airport
     m.put("2", 21, 5).put("B", 21, 8).put("C", 18, 7).put("C", 19, 2).put("C", 10, 6).put("C", 15, 6)
-    m.put("c", 6, 7).put("c", 16, 14)                                # neutral hamlets
-    m.put("B", 24, 14).put("C", 27, 15).put("C", 21, 16)             # the freight yard
+    m.puts("c", [(6, 7), (15, 15), (1, 3), (5, 2), (2, 12), (7, 13), (11, 9), (16, 10), (19, 10), (24, 11), (20, 2), (17, 1),
+                 (1, 19), (4, 21), (12, 21), (19, 19), (15, 12), (20, 12), (26, 17), (25, 20), (8, 1)])   # ruined hamlets
+    m.put("b", 16, 16)                                               # a neutral base south of the river
     m.put("1", 5, 17).put("A", 8, 19).put("B", 6, 15).put("C", 10, 18).put("C", 3, 15).put("c", 13, 18)
     # ---- Black Hole's inventions (all of them the enemy's: near its HQ and yard) ----
     m.put("W", 8, 5).put("E", 16, 5).put("S", 14, 8)                # minicannons on the depot's west, east and south gaps
@@ -59,10 +76,11 @@ def build():
             m.put("#", 24 + dx, 19 + dy).put("#", 20 + dx, 1 + dy)
     m.put("n", 24, 19).put("D", 20, 1)                               # the Black Cannon over the bay's south shore, the Deathray on the top edge
     m.beach(22, 0, 31, 21)
-    m.put("P", 25, 9).put("P", 25, 4)                                # the HOBB harbour (sea beside each)
+    m.put("B", 25, 9).put("A", 25, 4)                                # the HOBB quay: a factory and an airfield (the bay is lava: no ports)
+    m.puts("~", [(27, 13), (27, 14), (27, 15)])                         # (the river's mouth: open lava, a straight shore)
     # ---- the pipeline ----
     # the HOBB pipeline: a wall of pipe from the south edge up to the south road, across Black Hole's freight yard; the seam (22,19) is the breakable gate
-    m.pipe([(22, 16), (22, 21)]).put("Z", 22, 19)
+    m.pipe([(22, 16), (22, 21)]).put("Z", 22, 19).puts("^", [(23, 15), (24, 15)])
     m.put("B", 23, 17)                                               # Black Hole's pipe base: connected to the pipeline, it builds Piperunners
 
     # ---- units ----
@@ -90,9 +108,9 @@ def build():
     m.note("crystals", 23, 4, "Black Crystals (23,4) and (23,9) beside the ports")
     m.note("black_cannon", 24, 19, "Black Cannon facing up over the bay's south shore; the south-east freight yard is Black Hole's")
     m.note("deathray", 20, 1, "Deathray on the top edge (x19..21,y0..2), covers the harbour road; far from the player")
-    m.note("isle", 29, 3, "grain isle: neutral city on a sea-only islet").note("ports", 25, 9, "ports (25,9) and (25,4)")
+    m.note("isle", 29, 3, "grain isle: neutral city on a lava-locked islet").note("quay", 25, 9, "the quay's factory (25,9) and airfield (25,4): no ports on lava")
     # ---- wasteland (look 3): ruins, rough ground; the bay is lava ----
     m.puts("c", [(16, 19), (10, 13), (17, 9)])                           # more ruins (neutral cities in the wasteland)
     m.put("r", 29, 13).put("r", 30, 14).put("r", 29, 17).put("r", 31, 11)        # reefs (lava rocks) in the bay
-    m.desertify(keep=0.15, rocks=9, size=5, seed=9)                  # (the wasteland look: sparse scrub, rock outcrops)
+    m.desertify(keep=0.3, rocks=13, size=5, seed=9)                  # (the wasteland look: sparse scrub, rock outcrops)
     return m

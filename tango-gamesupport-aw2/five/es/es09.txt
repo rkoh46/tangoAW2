@@ -8,32 +8,32 @@
 # hq2: (21, 5) Black Hole HQ (not an objective)
 # airport1: (8, 19) player airport (FTR/BMB/BCO)
 # base1: (6, 15) player base
-# bridges: (3, 8) west bridge (3,8), centre (13,12), east (22,13)
+# bridges: (3, 9) west bridge (3,9), centre (13,13), east (21,14)
 # minicannons: (8, 5) W (8,5) covers the west gap, E (16,5) the east gap, S (13,8) the south gap
 # crystals: (23, 4) Black Crystals (23,4) and (23,9) beside the ports
 # black_cannon: (24, 19) Black Cannon facing up over the bay's south shore; the south-east freight yard is Black Hole's
 # deathray: (20, 1) Deathray on the top edge (x19..21,y0..2), covers the harbour road; far from the player
-# isle: (29, 3) grain isle: neutral city on a sea-only islet
-# ports: (25, 9) ports (25,9) and (25,4)
+# isle: (29, 3) grain isle: neutral city on a lava-locked islet
+# quay: (25, 9) the quay's factory (25,9) and airfield (25,4): no ports on lava
 
 map es09
 armies 2 3 1 5
 blackhole
-unit 1 1 10 15
-unit 1 1 8 16
-unit 1 1 13 16
+unit 1 1 7 15
+unit 1 1 5 16
+unit 1 1 10 16
 unit 1 2 5 12
-unit 1 2 8 18
-unit 1 5 8 12
+unit 1 2 5 18
+unit 1 5 11 12
 unit 1 5 13 14
-unit 1 5 6 17
-unit 1 10 5 14
+unit 1 5 8 17
+unit 1 10 9 13
 unit 1 10 3 17
 unit 1 11 10 18
-unit 1 14 12 15
+unit 1 14 6 16
 unit 1 14 9 16
 unit 1 15 3 14
-unit 1 15 7 18
+unit 1 15 12 16
 unit 1 16 12 18
 unit 1 16 6 19
 unit 1 16 7 19
@@ -45,20 +45,20 @@ unit 1 19 11 18
 unit 2 1 7 4 hold
 unit 2 1 15 4 hold
 unit 2 1 20 4
-unit 2 1 20 12
-unit 2 1 15 14
+unit 2 1 16 12
+unit 2 1 23 13
 unit 2 2 12 8 hold
-unit 2 2 17 14
-unit 2 3 22 14
-unit 2 5 22 11
-unit 2 5 16 17
-unit 2 5 20 17
+unit 2 2 15 14
+unit 2 3 21 13
+unit 2 5 20 11
+unit 2 5 18 17
+unit 2 5 21 17
 unit 2 9 22 17 hold
 unit 2 10 13 3 hold
-unit 2 10 24 16
+unit 2 10 23 16
 unit 2 14 10 4 hold
 unit 2 14 20 6
-unit 2 14 18 17
+unit 2 14 16 17
 unit 2 15 11 5 hold
 unit 2 15 19 7
 unit 2 16 14 5 hold
@@ -67,24 +67,24 @@ unit 2 23 26 4 hold name=barge3
 unit 2 23 27 7 hold name=barge2
 unit 2 23 26 9 hold name=barge1
 .........^^^^^^.^^.###f.,~~~~~~~~~
-.......^^^^^..^^^^.#D#..,~~~~~~~~~
-......^^^.......^^^###.R,~~~~~~~~~
-...^^^^^^.......^^^^...R.,~~~~~~~~
-^..RRRRRRRRRARRRRRRRR..R.P~~~~~~~~
+.......^c^^^..^^^c.#D#..,~~~~~~~~~
+.....c^^^.......^^^###.R,~~~~~~~~~
+.c.^^^^^^.......^^^^...R.,~~~~~~~~
+^..RRRRRRRRRARRRRRRRR..R.A~~~~~~~~
 ^..R^^^^W...RR..E^^.R2.R.,~~~~,~~~
 ^^^R..^^^^C..R.C^^.....RX,~~~,.,~~
 ^..R..c^^^^^.R^^^^C.^RRR.,~~,.c.~~
----=--.^^.^^^RS^^..^^B...,~~~,.,~~
-...R.-^^....^R...c..^RR..P~~~~,~~~
-...R.-------.R........R...,~~~~~~~
-...R.......-.R........R.X.,~~~~r~~
-...R.......--=-----...R...,~~~~~~~
-...R......c..R....----=---,~~r~~~~
-...R.........R..c.....R.B..,~~r~~~
-...C..B.f....R.f....RRRRRR.C,~~~~~
-...R.....RRRRRRRRR..RCI.....,~~~~~
-...RR1RRRR.......RRRR.IB.f..,r~~~~
-..........C..c........I###..,~~~~~
-........A....f..c...f.Z#n#..,~~~~~
-.......f..............I###..,~~~~~
-..................f...I.....,~~~~~
+...R...^^R^^^RS^^..^^B...,~~~,.,~~
+---=---^.R.c^R...c..^R...B~~~~,~~~
+...R..-..R...R..c..c.Rf...,~~~~~~~
+...R..---=---R.......R..X.,~~~~r~~
+..cR.....R..-R.c....cR.....,~~~~~~
+...R...c.Rc.-=------.R.....~~r~~~~
+...R.....R...R..f..--=-----~~~r~~~
+...C..B..R...R.cf....R.^^..~~~~~~~
+..fR.....RRRRRRRbR...RI.....,~~~~~
+...RR1RRRR.......RRRRRIB..c.,r~~~~
+..........C.fc........I###..,~~~~~
+.c......A.......c.fc..Z#n#..,~~~~~
+.......f..f.f.....f...I###.f,~~~~~
+....c.f.....c.........I.....,~~~~~
