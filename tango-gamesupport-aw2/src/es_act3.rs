@@ -77,7 +77,7 @@ fn es10() -> MissionDef {
     m.recruits = vec![roster::KANBEI];
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(scene("m10_day4"))]),
-        // Kanbei's summit taken: his army falls, Sonja's ridge is left to its watching.
+        // Kanbei's summit taken: his army falls, Sami's ridge is left to its watching.
         after(Cond::ArmyDefeated(2), vec![Action::Win]),
     ];
     m.flag = region::ACT3[1];
@@ -144,7 +144,7 @@ fn es12() -> MissionDef {
     m.after = chain(&["m12_map"]);
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(scene("m12_day5"))]),
-        // The bastion's HQ (Olaf's) taken: the siege is won, Grit's spur is left.
+        // The bastion's HQ (Olaf's) taken: the siege is won, Andy's spur is left.
         after(Cond::ArmyDefeated(2), vec![Action::Win]),
     ];
     m.flag = region::ACT3[3];

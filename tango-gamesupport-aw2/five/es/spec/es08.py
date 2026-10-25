@@ -1,5 +1,5 @@
 """M8 Hammer and Anvil: Ironhold, an Orange Star border fort in a ring of crags on the Marches plain, behind the Brimwater canal. One wide causeway crosses the canal; flank roads run round the crags to the
-fort's rear gate. Klaus holds the front (the hammer), Cassius rides the flank (the anvil); Jake's relief column camps on the south-east plain."""
+fort's rear gate. Klaus holds the front (the hammer), Cassius rides the flank (the anvil); Sasha's Blue Moon relief column camps on the south-east plain."""
 import math
 import random
 import sys, pathlib
@@ -12,11 +12,11 @@ def build():
     road = lambda pts: m.line("R", pts, over=".fR")
     m.header(armies=3, colours=(GE, OS, BM), team=[1, 2, 2], objective=[1], comment=(
         "M8 Hammer and Anvil (tag mission, Klaus + Cassius): rout both Orange Star armies or capture Max's HQ '2' (26, 10). "
-        "Start forces: player INF4 MECH3 TANK4 MDT2 RECON2 ART2 AA1 (18 units), 1 base (4, 8), funds 4000; "
-        "Max (army 2, in the fort) INF3 (hold) MECH2 (hold) MDT2 TANK1 ART2 AA1 (11), Jake (army 3, south-east plain) INF2 TANK2 RECON2 ROCK1 (7). "
+        "Line-up: player Green Earth (Klaus + Cassius), Max Orange Star, Sasha Blue Moon. Start forces: player INF4 MECH3 TANK4 MDT2 RECON2 ART2 AA1 (18 units), 1 base (4, 8), funds 4000; "
+        "Max (army 2, Orange Star, in the fort) INF3 (hold) MECH2 (hold) MDT2 TANK1 ART2 AA1 (11), Sasha (army 3, Blue Moon, south-east plain) INF2 TANK2 RECON2 ROCK1 (7). "
         "Threat -> answer: Max's ARTs behind the crags shell the causeway -> Recon spots, the player's two ARTs and Tanks rush the gate, or Cassius's flank takes the rear; "
-        "Jake's Rocket -> the player's Tanks and AA; Md Tanks at the gate -> player Md Tanks + ART + the Tag Power (day 3 lesson). "
-        "Forced routes: the Brimwater canal is crossed only by the causeway (15, 8..9); the crags ring (centre (26, 10)) opens at the front gate (19..21, 9..10) and the rear gate (32..35, 10)."))
+        "Sasha's Rocket -> the player's Tanks and AA; Md Tanks at the gate -> player Md Tanks + ART + the Tag Power (day 3 lesson). "
+        "Neutral missile silo 'M' (16, 7) on the east bank by the causeway head: foot soldiers from either side reach it over the causeway (one 3 HP blast in a 3-cell radius covers the gate road and the causeway; a shot at the causeway crowd cuts both ways). Forced routes: the Brimwater canal is crossed only by the causeway (15, 8..9); the crags ring (centre (26, 10)) opens at the front gate (19..21, 9..10) and the rear gate (32..35, 10)."))
     # the fort: an organic ring of crags (an ellipse eaten by noise) with a front gate west and a rear gate east
     cx, cy, rx, ry = 26.0, 10.0, 7.6, 6.2
     ph1, ph2 = 0.9, 2.1
@@ -36,6 +36,7 @@ def build():
     # the Brimwater canal, three reaches, spring at the north edge, mouth at the south edge; the causeway is two lanes wide
     m.river([(13, 0), (13, 5), (15, 5), (15, 12), (16, 12), (16, 23)])
     m.put("=", 15, 8).put("=", 15, 9)
+    m.put("M", 16, 7)
     # properties
     m.put("1", 3, 11).put("B", 4, 8).puts("C", [(3, 15), (3, 6)]).puts("c", [(8, 4), (9, 18)])
     m.put("2", 26, 10).puts("B", [(23, 8), (23, 12)]).put("C", 28, 14).put("c", 24, 2)
@@ -72,11 +73,12 @@ def build():
     m.units(2, INF, [(22, 9), (21, 11), (24, 8)], hold=True).units(2, MECH, [(23, 13), (25, 9)], hold=True)
     m.units(2, MDT, [(24, 10), (27, 9)]).unit(2, TANK, 27, 12)
     m.units(2, ART, [(29, 8), (29, 12)], hold=True).unit(2, AA, 26, 7)
-    # Jake on the south-east plain
+    # Sasha on the south-east plain
     m.units(3, INF, [(33, 19), (35, 18)]).units(3, TANK, [(30, 18), (33, 21)]).units(3, RECON, [(31, 17), (36, 20)]).unit(3, ROCK, 35, 21)
+    m.note("silo", 16, 7, "neutral missile silo by the causeway head (east bank)")
     m.note("causeway", 15, 8, "wide bridge x=15, y 8..9 (the only crossing of the canal)").note("fort_gate", 20, 9, "front gate (x 17..22, y 9..10), road from the causeway")
     m.note("rear_gate", 32, 10, "rear gate (x 31..36, y 10), road to the east road x=35")
-    m.note("hq1", 3, 11).note("hq2", 26, 10, "Max's HQ, inside the fort").note("hq3", 34, 20, "Jake's HQ")
+    m.note("hq1", 3, 11).note("hq2", 26, 10, "Max's HQ, inside the fort").note("hq3", 34, 20, "Sasha's HQ")
     m.note("flank_n", 18, 4, "north flank road (y 2..4, x 18..35), Cassius's northern route").note("flank_s", 18, 17, "south flank road (y 17..19, x 18..35)")
     m.note("flank_n_start", 18, 8, "north flank branch point on the east bank (road x=18)").note("flank_s_start", 18, 10, "south flank branch point")
     return m
