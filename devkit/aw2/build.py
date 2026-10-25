@@ -51,6 +51,9 @@ def test(args):
         # `aw2dev art repal`'s tests (palette files round trip, slot order, luma vs rgb nearest, the transparent slot, a CO palette, the importer's match hook)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.artlib.test_repal"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode
+        # recolour-based COs in `co portrait import` (Clone Andy: no picture, his recolour checked on Andy's palette)
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.colib.test_recolour"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         # `aw2dev co verify`'s tests (the specification read from the data files, the table builder, the net scenarios of every power and pair)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.colib.test_verify"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode

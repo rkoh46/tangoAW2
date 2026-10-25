@@ -77,15 +77,23 @@ def register(sub):
 def _cos(names):
     from ..colib import data
     cos, _ = data.load_all()
-    return {k: v for k, v in cos.items() if not names or k in names and v.get("portrait", {}).get("source")}, cos
+    # (only COs with a picture of their own: a recolour-based CO (`portrait.base`) or a placeholder has no committed art to import, lint or show)
+    return {k: v for k, v in cos.items() if (not names or k in names) and v.get("portrait", {}).get("source")}, cos
 
 
 def pimport(a):
     from pathlib import Path
     import numpy as np
     from ..colib import importer as I
-    sel, _ = _cos(a.co)
+    from ..colib import recolour
+    sel, cos = _cos(a.co)
     bad = 0
+    # a recolour-based CO has no picture: its recolour is checked instead (the table, and its output on the donor's palette)
+    for co, d in cos.items():
+        if recolour.is_recolour(d) and (not a.co or co in a.co):
+            probs, summary = recolour.check(co, d)
+            util.say(f"{co}: {summary}" + ("; PROBLEMS " + "; ".join(probs) if probs else "") + " (nothing to import or compare: no committed art)")
+            bad += bool(probs)
     for co, d in sel.items():
         spec = {"source": d["portrait"]["source"]}
         if getattr(a, "pixelart", False):

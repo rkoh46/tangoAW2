@@ -61,7 +61,7 @@ hq = "emerald_sun"                  # the HQ the CO's army shows on the map: an 
 ## Commands
 | Command | What |
 |---|---|
-| `aw2dev co portrait import [CO ...] [--check] [--pixelart]` | picture -> AW2 art (above); `--check` only compares with the committed art (exit 1 if different) |
+| `aw2dev co portrait import [CO ...] [--check] [--pixelart]` | picture -> AW2 art (above); `--check` only compares with the committed art (exit 1 if different). A recolour-based CO (Clone Andy) has no picture: its recolour is checked instead (`colib/recolour.py`: a valid table; on Andy's palette from the .nds every listed entry becomes its colour in all eight schemes, the rest stay Andy's, every listed entry is drawn on the figure). Placeholders (Crumb, Varro) are skipped |
 | `aw2dev co portrait grid PICTURE [--flip]` | a pixel-art picture's native grid, the figure's box and a numbered debug picture |
 | `aw2dev co portrait lint [CO ...] [--style aw2]` | the committed art: sizes, one shared palette of at most 15 colours + transparent, an outline wherever a coloured pixel meets transparency, no speckle (AW2's own figures have 183 to 562 isolated pixels and faces 102 to 202; the limits are 600 and 220: the check is for a speckled JPEG, not for detail), the name graphic present |
 | `aw2dev co portrait sheet [CO ...]` | the review sheet: source, large art 1x and 2x beside AW2's own, the four expressions, mini, HUD face, CO select and HUD strips with real COs, the game's own screens |
