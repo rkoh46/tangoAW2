@@ -138,15 +138,15 @@ KANBEI: Grimm shouts at everyone. / That is his gift to us.
 KANBEI: I am quieter. You will find / my walls quieter still.
 KLAUS: I do not seek your walls. I / seek the road through them.
 KANBEI: Then we are agreed on the / difficulty. I will meet you at the top.
-SONJA: Always so formal, Kanbei. / You will frighten the Romans.
-SONJA: Greetings, travellers. I am / only watching from the north-east.
-SONJA: A fog is a lovely thing. It / hides a great deal of dishonesty.
-KLAUS: Whose, Madam?
-SONJA: Everyone's. It is why I like / it. I shall be taking notes.
-LIVIA: Notes, Madam, are a / liability. Mine are in cipher.
-SONJA: Charming. Mine are in a black / book. You are in it already.
-CASSIUS: I am famous! In a black / book! Put me on page one.
-SONJA: You are on page three, / Prefect. Behind the legate.
+SAMI: Kanbei! Don't scare them off / before I've had a go at them!
+SAMI: Sami, Orange Star infantry. The / Accord sent me to hold your west road.
+SAMI: Fog's no trouble. Boots find the / road. Infantry never needed eyes.
+KLAUS: Commander Sami. We seek no quarrel / with Orange Star.
+SAMI: Then stay off my road, Legate. / I'll be polite once. After that, no.
+LIVIA: Politeness, Commander, is a / debt too. Mine are in cipher.
+SAMI: Ha! I keep a march-roll. You're / on it. All of you. Names, ranks.
+CASSIUS: I am famous! On a march-roll! / Put me on line one.
+SAMI: You are on line one, Prefect. / Under "loud".
 KLAUS: We will climb at first light. / Aurelia, set the guns on the spur.
 AURELIA: Setting them. If the fog / lifts I want to see him first.
 KANBEI: Come, then. The pass has / been quiet for eleven years.
@@ -156,7 +156,8 @@ KANBEI: Let us see who breaks the / silence. It will not be me.
 NARRATION: Day four, the centre road. The guns / fall silent. A white cloth on the spur.
 KANBEI: Legate. My scouts say your / men carried my wounded downhill.
 KLAUS: They were in the way. I do / not leave men on a road.
-SONJA: Do continue. This is the first / duel I have enjoyed all month.
+SAMI: Well, go on, you two! First / duel I've watched all month!
+SAMI: Talk or fight! But pick one, / and keep it short! I'm freezing!
 KANBEI: One question, Legate, and I / ask it once. Why do you march?
 KLAUS: Because the bread stopped. And / because someone made it stop.
 KANBEI: A conqueror who asks why. / I still will not give you my pass.
@@ -177,6 +178,8 @@ AURELIA: Legate, he is crying. Is / that allowed in the Comet army?
 KANBEI: In my army, it is a / courtesy to the dead. I am not ashamed.
 CASSIUS: He is the best loser I have / ever met. I want lessons.
 LIVIA: I do not think the lesson / is transferable, Prefect.
+SAMI: Pass is yours, Legate. Infantry / don't cry. We just march home and eat.
+SAMI: Good fight, though. Next time / bring more soup. It's cold up here.
 KANBEI: Klaus. I have heard you / on the radio, through the fog.
 KANBEI: You said, "because someone / made it stop." I believe you.
 KANBEI: My own northern farms are / grey. My fields in Comet Pass
@@ -245,6 +248,7 @@ AURELIA: I can put guns on the east / bank. They will cover the crossing.
 KLAUS: Cassius, you screen the road / ahead of the convoy.
 CASSIUS: I am a screen. A glorious, / galloping screen. Tell me the enemy.
 KLAUS: Marauders. Lash holds the north-east, / Flak the south-east. Guns by the week.
+KLAUS: One wears Yellow Comet coats, one / Green Earth. Neither army sent them.
 CASSIUS: Which week is this?
 LIVIA: A paid one. I have heard the / price. Someone is paying them well.
 FLAK: Hello, Aureans! Everyone call / me Flak. It is nice to see a convoy.
@@ -325,17 +329,17 @@ KLAUS: Commander Olaf. I am Legate Klaus of / Aurea. We come for the Bastion.
 OLAF: My Bastion! No gap lines up with / the next one. Wah-ha!
 KLAUS: It guards Blue Moon's northern march. / Take it and the frontier stands at the
 KLAUS: Accord's door.
-GRIT: Hold yer horses, Olaf. Let / the man finish his sentence.
-GRIT: Name's Grit. Pleased to meet ya. / HQ's out east. Don't mind the guns.
-GRIT: Every corridor between the rings is / covered. Every one. I counted.
-GRIT: Twice. Once with the eyes. Once / with the elbow.
-GRIT: If a Roman sneezes at three / thousand paces, I will say bless you.
+ANDY: Hi there! Andy, Orange Star! The / Accord lent me to the Bastion.
+ANDY: I repair the walls and the guns / in the corridors. Overnight, mostly!
+ANDY: Hit a wall today, and tomorrow / it's good as new. No trouble at all!
+ANDY: Every corridor between the rings is / covered. And a missile silo guards
+ANDY: the eastern approach. One big / shot! Three points off all near it.
 NARRATION: Snow is falling now, thick / across all three rings.
 AURELIA: A snowfall. The march slows and / fuel burns twice as fast.
-GRIT: Cold makes the barrels sing, ma'am. / Snow don't stop a shell. Just you.
+ANDY: Cold's easy on the guns, ma'am! / Snow slows you. It never slows a wrench.
 KLAUS: Then we climb in the snow and / let them count the minutes.
-LIVIA: A hobby, Commander. How / expensive is your ammunition?
-GRIT: Bout the price of a good / horse, ma'am. A shell a day.
+LIVIA: A hobby, Commander. How / expensive are your repairs?
+ANDY: Cheaper than you'd think, ma'am! / Spare parts, elbow grease, a smile!
 LIVIA: I see. I shall be pleased / to bill you for the delay.
 OLAF: I know, I know! But the Bastion / is on a map, and maps are my job!
 OLAF: Take the hill if you can! I / will wave to you from the top!
@@ -343,13 +347,13 @@ KLAUS: Aurelia. Plan the climb.
 
 == m12_day5
 NARRATION: Day five. The outer ring / is passed. The guns answer.
-GRIT: There! A shell for the lady / on the spur. Bless you, ma'am.
-AURELIA: Legate, he hit the spur. / He hit my spur. At that range.
-AURELIA: Fine. A gun that hits / twice is a gun that sits still.
-AURELIA: Recons to the flanks. Make / him shoot. Mark every flash.
-AURELIA: Then the guns answer back / from one tile further than his.
+ANDY: There! The gun's back up! A / little oil and it sings. Bless you, ma'am!
+AURELIA: Legate, he mended the gun I / broke at noon. In one afternoon.
+AURELIA: Fine. A gun that mends is a / gun that must be hit twice in a day.
+AURELIA: Recons to the flanks. Mark every / flash. Break the walls by dusk.
+AURELIA: Then the crews cannot mend them / overnight. Hit the repairmen first.
 KLAUS: Tag Power on my word. You / hold the line. I hold the hammer.
-GRIT: Hee-hee! That is a clever / lady. I do love a clever lady.
+ANDY: Aw, that's a clever lady! Okay! / I'll fix twice as fast! Watch me!
 
 == m12_post
 @SONG ally2
@@ -357,18 +361,18 @@ NARRATION: The inner ring. The last gap / opens in the snow.
 OLAF: Wah-ha-ha! The inner ring! You / took it, you rascals! Magnificent!
 OLAF: Honestly, I thought you would / sneeze at the outer gap.
 KLAUS: We did not sneeze. We / counted.
-GRIT: Hee. That was a fair siege. / Never seen one done so neat.
-GRIT: Ma'am, your guns are one tile / longer than mine. Cheater.
-AURELIA: One tile. The Legate pays me / in tiles.
+ANDY: That was a great siege! I fixed / that wall five times. Five!
+ANDY: Ma'am, your guns hit my walls so / well I'm a little jealous.
+AURELIA: The walls mend overnight, he / tells me. Not these. I made sure.
 OLAF: I surrender! Consider it a / kindness! The snow is melting!
 OLAF: A commander who loses a hill / learns the price of hills!
 OLAF: I have an Accord to explain to. / They are not so merry.
 KLAUS: Commander Olaf. I will say / in the Accord that you held well.
 OLAF: Say that I held badly and laughed! / It is more truthful! Wah-ha!
-GRIT: I will vouch for you, Roman. / You shot straight.
-GRIT: You never fired at my medics. / I counted. Twice.
-LIVIA: Commander Grit. The / invoice for the delay.
-GRIT: I will frame it, ma'am.
+ANDY: I'll vouch for you too, friend. / You never shot my repair crews.
+ANDY: That's good manners. I counted. / Twice. Well, once. I got busy!
+LIVIA: Commander Andy. The / invoice for the delay.
+ANDY: I'll frame it, ma'am! Right / next to my favourite wrench!
 OLAF: Go to the council! Nell is / waiting! Tell her Olaf sent you!
 OLAF: Tell her I lost the Bastion / to honest folk. She will smile.
 
