@@ -5,7 +5,9 @@
 == m13_pre
 @SONG enemy1
 NARRATION: The Free Port of Calderon. / Midsummer, a hot grey haze.
+NARRATION: Scorched wasteland all around. / The bays glow like lava.
 NARRATION: No nation owns the bay. / Every nation owns a warehouse.
+NARRATION: Reefs break the glowing bays. / The rivers run red, not blue.
 AURELIA: Four flags on one harbour. / I have never seen a worse plan.
 LIVIA: Four flags and, by my count, / eleven creditors, Prefect.
 LIVIA: The port charges a berth fee / per flag. We have not raised one.
@@ -36,6 +38,10 @@ KLAUS: Four provinces behind us. This / port is the gate of the northern coast.
 KLAUS: And hold it for three days. / A file is not read in an hour.
 AURELIA: Three days in the middle of / four armies. In an octagon. Lovely.
 AURELIA: Everyone will shell the one / roof. I will bring stone anyway.
+AURELIA: Kindle's quarter, north. A pipeline / on the west beach, and a seam in it.
+AURELIA: One hit on the seam opens her / quarter. A Piperunner guards it.
+AURELIA: A pipe base beside it builds / more. Tanks, Md Tanks, Artillery
+AURELIA: And Bombers answer it, over / the reefs. Nothing sails that glow.
 KLAUS: There are no alliances in the / port. Every flag fights every flag.
 KLAUS: That is also our chance. Let / them spend themselves on each other.
 LIVIA: I have noted who owes whom. / Javier owes Sonja. Sonja owes no one.
