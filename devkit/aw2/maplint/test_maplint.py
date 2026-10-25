@@ -258,7 +258,9 @@ class Lint(unittest.TestCase):
         self.assertEqual(bad, [])
 
     def test_bh_campaign_maps_are_clean(self):
-        bad = [(m.name, str(p)) for m in load.bh_maps() for p in rules.lint(m) if p.level == "error" and p.rule not in rules.KNOWN.get(m.name, {})]
+        # (nothing is excused: bh10 and bh31 once were, with a river cut off against a mountain; their rivers now run to the edge and the sea)
+        self.assertEqual(rules.KNOWN, {})
+        bad = [(m.name, str(p)) for m in load.bh_maps() for p in rules.lint(m) if p.level == "error"]
         self.assertEqual(bad, [])
 
     def test_games_own_maps_stay_quiet_on_the_joins_we_learned_from(self):

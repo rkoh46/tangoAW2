@@ -563,7 +563,7 @@ def design_checks(G):
 
 
 # Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for an Emerald Sun map.
-KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}}
+KNOWN = {}
 
 
 CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, design_checks]

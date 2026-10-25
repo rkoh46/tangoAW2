@@ -37,7 +37,7 @@ Tables found in the ROM and used:
 | RV01 | error | river ends dry against plain, wood, road, pipe or a building: a river runs from a source (map edge or mountain) to the sea | 4 | 3 | 4 | 0 | 0 |
 | RV02 | error | a single river cell with no river or water beside it | 0 | 0 | 0 | 0 | 0 |
 | RV03 | error | a river that reaches neither the sea or a lake nor the map edge | 4 | 5 | 1 | 0 | 0 |
-| RV05 | error | a river ends on land against a mountain: AW2 has no source or end tile, so a river must run from the map edge, the sea, a shoal or a lake to the map edge, the sea, a shoal or a lake | 3 | 2 | 0 | 2 | 0 |
+| RV05 | error | a river ends on land against a mountain: AW2 has no source or end tile, so a river must run from the map edge, the sea, a shoal or a lake to the map edge, the sea, a shoal or a lake | 3 | 2 | 0 | 0 | 0 |
 | RV04 | error | a road meets a river with no bridge (road on both sides of a river cell, or a road running into a river's end) | 1 | 0 | 1 | 0 | 0 |
 | BR01 | error | a bridge end meets water or a tile no unit can stand on, not ground | 0 | 1 | 0 | 0 | 0 |
 | BR02 | warn | a bridge end meets a mountain, a wood, a pipe or a structure: vehicles cannot cross | 35 | 43 | 0 | 0 | 0 |
@@ -146,8 +146,9 @@ the learned 4-neighbour key of TJ02 stays the check of what the game draws (the 
 ## The river rule (RV05), and the render check (RN01)
 - **Both ends of every river reach the map edge, the sea, a shoal or a lake.** AW2 has no river source or end tile, so a river that stops on land always looks cut off, and a mountain "spring" is no exception
   (RV01 already refused plain, wood, road, pipe and buildings; RV05 refuses a mountain). AW2's and Dual Strike's own maps break it in 3 + 2 of 435 (about 1%): `aw2_69`, `aw2_7A`, `aw2_92`, `ds_07D`, `ds_099`.
-  It is an **error** for the BH Campaign, the Emerald Sun Campaign and Versus. The BH Campaign trips it in `bh10` and `bh31`, Versus in none; the user has not approved changing the BH maps, so those two are
-  listed in `rules.KNOWN` (reported by every lint, not failing the suite; nothing may be added there for an Emerald Sun map). Emerald Sun: M1, M2, M3, M13 (two), M14 and M16 broke it; each river now starts in a
+  It is an **error** for the BH Campaign, the Emerald Sun Campaign and Versus. No tangoAW2 map trips it any more: `bh10`'s river now runs on to the east edge and `bh31`'s turns east at its top, under the road's bridge, into the shoal
+  (the generator draws a straight east-west run in the phase of the bend it leaves, `map.py river_phase`: 0x58 -> 0x39 -> 0x7B), so `rules.KNOWN` is empty (a mechanism for a finding the user excuses; the test fails while it is not).
+  Emerald Sun: M1, M2, M3, M13 (two), M14 and M16 broke it; each river now starts in a
   small lake (`Canvas.lake`: the map builder draws a river mouth only on a straight shore, so the lake has a flat 3-cell shore row at the river's end) or runs to the edge.
 - **Render check (RN01), `aw2dev maps render-check [--source es|bh] [--pictures DIR] [--corpus DIR ...]`.** For river, shoal, bridge and coast tiles only: every cell of the game's own picture of a map (the
   `m<N>_full.png` pictures of `aw2dev campaign sheets` or `maps boot`, 16 pixels a cell, no unit on the cell) is compared with the drawings the reference pictures have of the same tile id, 4-neighbour class
