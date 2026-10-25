@@ -374,6 +374,65 @@ def read_art(co, root=None):
     return out, pal
 
 
+def _is_illustration(co):
+    """Whether the CO's picture is imported in illustration mode (its framing file says `illustration = true`): its outline gets the stricter checks."""
+    import tomllib
+    try:
+        d = tomllib.loads((cfg.REPO / "tango-gamesupport-aw2" / "cos" / f"{co}.toml").read_text())
+        side = (cfg.REPO / d["portrait"]["source"]).with_suffix(".toml")
+        return bool(tomllib.loads(side.read_text()).get("illustration"))
+    except Exception:
+        return False
+
+
+def outline_problems(name, a, pal):
+    """The outline of an illustration import against Kanbei's (AW2's own figures): continuous in 8-connectivity (no opaque pixel that is not outline touches a transparent one, corners included), one pixel
+    wide (every outline pixel touching the empty side is a single layer: no empty pixel is two layers deep in outline), outline colour only (index 15), no fringe (the darkest other tone of the palette is clearly
+    lighter than the outline, so the uniform's black does not blend into it), and the outline colour is hardly used inside the figure (at most 3% of its pixels)."""
+    bad = []
+    t = a == 0
+    opaque = ~t
+    near8 = np.zeros_like(t)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dx or dy:
+                near8 |= shift(t, dx, dy)
+    gaps = near8 & opaque & (a != 15)
+    if name == "large":
+        gaps[-1, :] = False
+    if gaps.any():
+        bad.append(f"{name}: {int(gaps.sum())} figure pixels touch transparency (diagonals included) without being outline: the outline has gaps")
+    layer = np.zeros_like(t)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dx or dy:
+                layer |= shift(a == 15, dx, dy)
+    # a pixel of the outline whose every 8 neighbours are outline or transparent and which touches no figure colour is a second layer
+    inner = (a == 15)
+    figure = opaque & (a != 15)
+    figure_near = np.zeros_like(t)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            figure_near |= shift(figure, dx, dy)
+    double = inner & ~figure_near & ~(near8 & False)
+    if name == "large":
+        double[-1, :] = False
+    if double.sum() > 0:
+        bad.append(f"{name}: {int(double.sum())} outline pixels with no figure colour beside them: the outline is more than one pixel wide")
+    interior = inner & ~near8
+    if figure.sum() and interior.sum() > 0.03 * opaque.sum():
+        bad.append(f"{name}: {int(interior.sum())} outline-coloured pixels inside the figure (more than 3%): the uniform's black blends into the outline")
+    if pal is not None:
+        lab = lambda c: to_lab(np.array([c], float))[0]
+        o = lab(pal[15])
+        used = sorted(set(np.unique(a).tolist()) - {0, 15})
+        if used:
+            d = min(float(np.linalg.norm(lab(pal[i]) - o)) for i in used)
+            if d < 8.0:
+                bad.append(f"{name}: the darkest tone beside the outline is only {d:.1f} Lab away from it (at least 8): it blends in")
+    return bad
+
+
 def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
     """-> list of problems of a CO's committed art: sizes, one palette of at most 15 colours + transparent shared by every picture, a solid outline (index 15) wherever the silhouette meets
     transparency inside the picture (no coloured pixel touches transparency), and no noise: opaque pixels no 4-neighbour shares the colour of. AW2's own 19 figures have 183 to 562 of those
@@ -384,6 +443,7 @@ def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
     except Exception as e:
         return [f"cannot read the art: {e}"]
     d = (root or ART_DIR) / co
+    illus = _is_illustration(co)
     pals = {tuple(Image.open(d / f"{n}.png").getpalette()[:48]) for n in FILES}
     if (d / "name.png").exists():
         nm = np.array(Image.open(d / "name.png"))
@@ -422,6 +482,8 @@ def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
                     nb = [a[yy, xx] for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)) if 0 <= yy < a.shape[0] and 0 <= xx < a.shape[1]]
                     if v not in nb:
                         specks += 1
+            if illus:
+                bad += outline_problems(name, a, pal)
             limit = max_specks_large if name == "large" else max_specks_small
             if specks > limit:
                 bad.append(f"{name}: {specks} isolated pixels (at most {limit})")

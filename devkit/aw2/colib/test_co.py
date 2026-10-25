@@ -325,3 +325,43 @@ class Verify(unittest.TestCase):
 def json_copy(x):
     import json
     return json.loads(json.dumps(x))
+
+
+class OutlineLint(unittest.TestCase):
+    """The outline checks of an illustration import (importer.outline_problems): continuity in 8-connectivity, one pixel wide, no blending into the figure's darks."""
+
+    @staticmethod
+    def figure():
+        a = np.zeros((16, 16), np.uint8)
+        a[3:13, 3:13] = 3
+        ring = np.zeros_like(a, bool)
+        ring[2:14, 2:14] = True
+        ring[3:13, 3:13] = False
+        a[ring] = 15
+        pal = [(0, 0, 0)] + [(200, 180, 170)] * 14 + [(32, 24, 32)]
+        pal[3] = (90, 70, 60)
+        return a, pal
+
+    def test_a_clean_ring_passes(self):
+        a, pal = self.figure()
+        self.assertEqual(I.outline_problems("large", a, pal), [])
+
+    def test_a_missing_corner_is_a_gap(self):
+        a, pal = self.figure()
+        a[2, 2] = 0
+        a[3, 2] = 0                       # a hole in the ring: the figure's corner pixel now touches the empty side
+        self.assertTrue(any("gaps" in b for b in I.outline_problems("large", a, pal)))
+
+    def test_a_second_layer_is_too_wide(self):
+        a, pal = self.figure()
+        a[1, 1:15] = 15
+        a[2, 1] = 15
+        self.assertTrue(any("one pixel" in b for b in I.outline_problems("large", a, pal)))
+
+    def test_a_dark_that_blends_into_the_outline_is_caught(self):
+        a, pal = self.figure()
+        pal[3] = (34, 26, 34)
+        self.assertTrue(any("blends in" in b for b in I.outline_problems("large", a, pal)))
+
+    def test_asuka_has_a_continuous_outline_apart_from_kanbeis_standard(self):
+        self.assertEqual(I.lint_art("asuka"), [])

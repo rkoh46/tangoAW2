@@ -5,6 +5,9 @@ under the names the sheet looks for."""
 
 import os
 import shutil
+import sys
+
+sys.path.insert(0, "/Users/danielc/tangoAW2-asuka/devkit")
 
 from aw2test import rom as romlib
 from aw2test import tag
@@ -41,17 +44,59 @@ def pick(ctx, names, prefix):
     def dark(n):
         rows = read_bmp(n)
         return sum(1 for r in rows for (x, y, z) in r if max(x, y, z) < 60)
-    most = max(dark(n) for n in names)
-    cut = [n for n in names if dark(n) >= 0.97 * most][-1]          # (her black uniform on the red or the flames: the last frame with the whole figure in, the power's name typed out by then)
+    def name_extent(n):
+        """The width of the power's name on show: its blue outline's leftmost to rightmost column (the letters are typed in one by one, so the widest frame has the whole name)."""
+        rows = read_bmp(n)
+        xs = [x for r in rows[30:120] for x, (a, b, c) in enumerate(r[:160]) if c > a + 60 and c > b + 20]
+        return (max(xs) - min(xs)) if xs else 0
+    darks = {n: dark(n) for n in names}
+    most = max(darks.values())
+    figure_in = [n for n in names if darks[n] >= 0.8 * most]          # her whole figure in (most of her black uniform)
+
+    def name_mask(n):
+        rows = read_bmp(n)
+        return tuple((x, y) for y in range(30, 120) for x, (a, b, c) in enumerate(rows[y][:160]) if c > a + 60 and c > b + 20)
+    masks = {n: name_mask(n) for n in figure_in}
+    # the name's row: where most of the blue outline sits over all frames; the frame with the most of it inside that row has the whole name on one line (a falling letter or a sliding bar is outside it)
+    from collections import Counter
+    rows_seen = Counter(y for m in masks.values() for (x, y) in m)
+    row = rows_seen.most_common(1)[0][0]
+    inband = {n: sum(1 for (x, y) in m if row - 9 <= y <= row + 9) for n, m in masks.items()}
+    # (a bar of blue wiping across the screen as the name leaves is a row of 200 blue pixels or more: those frames are not the name held still)
+    def barred(n):
+        rows = read_bmp(n)
+        return any(sum(1 for (a, b, c) in r if c > a + 60 and c > b + 20) >= 200 for r in rows)
+    first_bar = next((n for n in figure_in if barred(n)), None)          # (the name is typed in before its bars wipe it out)
+    clear = figure_in[:figure_in.index(first_bar)] if first_bar else figure_in
+    clear = clear or figure_in
+    best = max(inband[n] for n in clear)
+    cut = [n for n in clear if inband[n] >= 0.99 * best][0]
     quote = [n for n in names if st[n][2] > 0.9 and st[n][0] < 0.07]
-    flash = max(names, key=lambda n: st[n][1])
-    out = {"cutin": cut, "flash": flash}
+    # the power's flash (AW2's, the same length for Hawke, Sonja and Kanbei: the screen goes white for about 14 emulated frames, twice): the frames just before and just after the first white
+    # run are the steps to show, never the white itself
+    means = [st[n][1] for n in names]
+    white = [k for k, m in enumerate(means) if m >= 250]
+    if white:
+        k0 = white[0]
+        k1 = k0
+        while k1 + 1 < len(means) and means[k1 + 1] >= 250:
+            k1 += 1
+        pre = [k for k in range(k0) if means[k] <= 200]
+        post = [k for k in range(k1 + 1, len(names)) if means[k] <= 200]
+        before, after = names[pre[-1] if pre else max(0, k0 - 1)], names[post[0] if post else min(len(names) - 1, k1 + 1)]
+    else:
+        peak = max(range(len(names)), key=lambda k: means[k])          # (no white: the brightest frame, a wash of light)
+        before, after = names[max(0, peak - 6)], names[peak]
+    flash = after
+    out = {"cutin": cut, "preflash": before, "postflash": after, "quotes": quote}
+    ctx.log(f"{prefix}: the white run is {len(white)} frames of {len(names)} (2 emulated frames apart each)")
     if quote:
-        out["quote"] = quote[len(quote) // 2]
+        out["quote"] = quote[-1]          # (the last frame the box is up: the text is typed out by then)
     d = os.path.dirname(cut)
     for k, n in out.items():
-        shutil.copyfile(n, os.path.join(d, f"{prefix}_{k}.bmp"))
-    ctx.log(f"{prefix}: " + ", ".join(f"{k} = {os.path.basename(v)} {tuple(round(x, 2) for x in st[v])}" for k, v in out.items()))
+        if k != "quotes":
+            shutil.copyfile(n, os.path.join(d, f"{prefix}_{k}.bmp"))
+    ctx.log(f"{prefix}: " + ", ".join(f"{k} = {os.path.basename(v)} {tuple(round(x, 2) for x in st[v])}" for k, v in out.items() if k != "quotes"))
     return out
 
 
@@ -71,6 +116,35 @@ def asuka_pics_power_bar(ctx):
     ctx.check(True, "bar shots taken")
 
 
+def quote_extent(path):
+    """The pixel width of each of the dialogue box's text lines in a frame (dark pixels of the box's text rows, the lines told apart by their rows): [w1, w2]."""
+    rows = read_bmp(path)
+    lines, cur, last = [], None, -9
+    for y in range(124, 158):
+        xs = [x for x in range(52, 236) if sum(rows[y][x]) < 230]
+        if not xs:
+            continue
+        if cur and y - last <= 2:
+            cur = (cur[0], y, min(cur[2], xs[0]), max(cur[3], xs[-1]))
+        else:
+            if cur:
+                lines.append(cur)
+            cur = (y, y, xs[0], xs[-1])
+        last = y
+    if cur:
+        lines.append(cur)
+    return [(b[3] - b[2] + 1) for b in lines if b[1] - b[0] >= 4]
+
+
+def expected_quote(which):
+    import tomllib
+    from aw2.gfxlib import font
+    d = tomllib.loads(open("/Users/danielc/tangoAW2-asuka/tango-gamesupport-aw2/cos/asuka.toml").read())
+    f = font.load()
+    lines = d["scop" if which == "super" else "cop"]["quote"]
+    return lines, [sum(f[c][0] for c in l if c in f) + len(l) - 1 for l in lines]
+
+
 def activation(ctx, which, prefix):
     g = hp_battle(ctx, which, visuals="off")
     ctx.shot(g, f"{prefix}_before")
@@ -78,8 +152,17 @@ def activation(ctx, which, prefix):
     g.e.wait(10)
     g.open_map_menu()
     g.choose("Super" if which == "super" else "Power", g.MAP_MENU)
-    shots = burst(ctx, g, f"{prefix}_f", 130, 4)
-    pick(ctx, shots, prefix)
+    shots = burst(ctx, g, f"{prefix}_f", 300, 2)
+    out = pick(ctx, shots, prefix)
+    lines, widths = expected_quote(which)
+    # the last frame whose box shows both lines (the box closes into the next scene on the frames after the text)
+    full = [q for q in out["quotes"] if len(quote_extent(q)) == 2]
+    if full:
+        out["quote"] = full[-1]
+        shutil.copyfile(full[-1], os.path.join(os.path.dirname(full[-1]), f"{prefix}_quote.bmp"))
+    got = quote_extent(out["quote"])
+    ctx.log(f"{prefix}: the typed-out quote box {out['quote']}: line widths {got}, the text {lines} is {widths} px in AW2's font")
+    ctx.check(len(got) == len(lines) and all(abs(a - b) <= 3 for a, b in zip(got, widths)), f"{prefix}: both quote lines are typed out in full and are the power's own ({lines}): {got} vs {widths}")
     mode = 2 if which == "super" else 1
     ctx.require(g.e.wait_until(lambda: g.player(1)["co_mode"] == mode, 3000, step=10), "the power is on")
     g.wait_for_input()

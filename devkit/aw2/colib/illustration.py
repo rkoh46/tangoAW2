@@ -160,7 +160,7 @@ def rare_weights(rgb, power=0.5, bin=10.0):
     return 1.0 / cnt[inv] ** power
 
 
-def palette_for(px, wt, k=14, dark_k=3, dark_l=32.0, outline=(32, 24, 32)):
+def palette_for(px, wt, k=14, dark_k=3, dark_l=32.0, outline=(32, 24, 32), ramp=6.5):
     """k colours + the outline: `dark_k` of the k for the dark pixels (Lab lightness below `dark_l`: black cloth and hair, which would otherwise merge into one flat brown), the rest for everything else
     (weighted k-means in Lab each). -> 15 RGB, lightest first, the outline last."""
     from . import importer as I
@@ -175,12 +175,106 @@ def palette_for(px, wt, k=14, dark_k=3, dark_l=32.0, outline=(32, 24, 32)):
         n = min(n, len(np.unique(l.round(1), axis=0)))
         parts.append(I.kmeans(l, w, n, iters=40, seed=5))
     cent = np.concatenate(parts)
+    # the uniform's own dark ramp: its tones sit above the outline's lightness by at least `ramp` (6, 13 and 20 Lab lightness steps up from the outline's), keeping their hue, so the outline reads against
+    # black cloth and hair as it does on Hawke's dark coat (a downscaled black is as dark as the outline and the two blend)
+    ol = I.to_lab(np.array([outline], float))[0]
+    if dark_k:
+        darks = sorted([i for i in range(len(cent)) if cent[i][0] < dark_l], key=lambda i: cent[i][0])
+        for rank, i in enumerate(darks):
+            cent[i][0] = max(cent[i][0], ol[0] + ramp * (rank + 1))
     rgb = I.snap555(I.lab_to_rgb(cent))
     cols = [tuple(int(v) for v in c) for c in rgb]
     cols.sort(key=lambda c: -(0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]))
     while len(cols) < k:
         cols.append(cols[-1])
     return cols[:k] + [tuple(int(v) for v in I.snap555(np.array(outline, float)))]
+
+
+def smooth_edge(m):
+    """The silhouette's fringe off: a pixel with fewer than two 4-neighbours in the figure (a one-pixel spike or a corner of the downscale's anti-aliasing) goes, an empty pixel with three comes in."""
+    def count(a):
+        n = np.zeros(a.shape, np.int8)
+        n[1:, :] += a[:-1, :]
+        n[:-1, :] += a[1:, :]
+        n[:, 1:] += a[:, :-1]
+        n[:, :-1] += a[:, 1:]
+        return n
+    m = m & ~(count(m) < 2)
+    m = m | (~m & (count(m) >= 3))
+    return m
+
+
+def ring8(m, idx):
+    """The outline (index 15), one pixel wide and unbroken in 8-connectivity, on every empty pixel next to the figure including its diagonal corners."""
+    out = idx.copy()
+    near = np.zeros_like(m)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dx or dy:
+                near |= I_shift(m, dx, dy)
+    out[near & ~m] = 15
+    return out
+
+
+def I_shift(a, dx, dy):
+    o = np.zeros_like(a)
+    h, w = a.shape
+    ys, yd = slice(max(0, dy), h + min(0, dy)), slice(max(0, -dy), h + min(0, -dy))
+    xs, xd = slice(max(0, dx), w + min(0, dx)), slice(max(0, -dx), w + min(0, -dx))
+    o[ys, xs] = a[yd, xd]
+    return o
+
+
+def families(pal):
+    """The palette's 14 colours by material: 0 dark (black cloth, hair), 1 skin, 2 red, 3 white / grey (metal, eye whites), 4 brown / gold. -> (family per index 1..14, mean lightness per family)."""
+    from . import importer as I
+    lab = I.to_lab(np.array(pal, float))
+    fam = []
+    for L, a, b in lab:
+        chroma = (a * a + b * b) ** 0.5
+        hue = np.degrees(np.arctan2(b, a)) % 360
+        if L < 36:
+            fam.append(0)
+        elif chroma < 10:
+            fam.append(3)
+        elif L >= 60 and 20 <= hue <= 80:
+            fam.append(1)
+        elif chroma >= 25 and (hue < 25 or hue > 330):
+            fam.append(2)
+        else:
+            fam.append(4)
+    return fam, lab[:, 0]
+
+
+def seams(idx, pal14, min_body=14):
+    """Where two materials meet (skin / collar, neckerchief / uniform, hand / sleeve, book edge) a one-pixel line in the darker material's shadow tone, on the lighter material's pixel: the way AW2's own figures
+    have a dark seam between cloth and cloth. Only where the lighter material has body there (at least `min_body` of the 25 pixels round the pixel are its own): an eye's white or a button is not cut."""
+    fam, lum = families(pal14)
+    fam = np.array(fam)
+    h, w = idx.shape
+    out = idx.copy()
+    f = np.full(idx.shape, -1)
+    inner = (idx >= 1) & (idx <= 14)
+    f[inner] = fam[idx[inner] - 1]
+    fam_l = {k: lum[fam == k].mean() for k in set(fam.tolist())}
+    shadow = {k: 1 + int(np.argmin(np.where(fam == k, lum, 1e9))) for k in fam_l}
+    for y in range(1, h - 1):
+        for x in range(1, w - 1):
+            a = f[y, x]
+            if a < 0:
+                continue
+            best = None
+            for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                b = f[y + dy, x + dx]
+                if b >= 0 and b != a and fam_l[b] < fam_l[a]:
+                    best = b
+            if best is None:
+                continue
+            win = f[max(0, y - 2):y + 3, max(0, x - 2):x + 3]
+            if (win == a).sum() < min_body or (win == best).sum() < min_body:
+                continue          # both materials need body here: a seam between two big areas, not an edge of a detail
+            out[y, x] = shadow[best]
+    return out
 
 
 def styled(spec, path):
@@ -215,16 +309,18 @@ def styled(spec, path):
     px, wt = np.concatenate(px), np.concatenate(wt)
     pal = palette_for(px, wt, dark_k=spec.get("dark_colours", 3), dark_l=spec.get("dark_below", 32.0), outline=tuple(spec.get("outline", (32, 24, 32))))
 
-    def index(r, c, bottom_cut):
-        m = I.clean_silhouette(c >= 0.5)
+    def index(r, c, bottom_cut, with_seams=True):
+        m = smooth_edge(I.clean_silhouette(c >= 0.5))          # a hard silhouette: the coverage cut at one half, its spikes and fringe off
         idx = P.quantise(r, m, pal[:14])
         idx = I.despeckle(idx)
-        return P.ring(m, idx, (True, True, True, True))
+        if with_seams and spec.get("seams", True):
+            idx = seams(idx, pal[:14])
+        return ring8(m, idx)
     im = I.Imported()
     im.spec = spec
     im.palette = [(0, 0, 0)] + pal[:14] + [pal[14]]
     im.large = index(L, C, True)
-    face = index(M, MC, False)
+    face = index(M, MC, False, with_seams=False)          # (no seams on the faces: the eyes and the brows are already the lines)
     im.faces["normal"] = face
     e = spec["eyes"]
     k = 48.0 / ms

@@ -180,7 +180,7 @@ def _photograph(co, out_dir):
             own = {tuple(int(v) for v in c) for c in rgb[mask]}
         except FileNotFoundError:
             own = None          # no committed picture to match: the cut-in frame is the one with the most of the figure's black uniform
-        best, best_n, quote, quote_n = None, 0, None, 0
+        best, quote, quote_n, cands = None, None, 0, []
         for k in range(26):
             p = out / f"{co}_power{k}.png"
             app.shot(p)
@@ -190,13 +190,17 @@ def _photograph(co, out_dir):
                 n = int((im.max(2) < 60).sum())          # dark pixels: the figure's black uniform
             else:
                 n = sum(1 for c in {tuple(int(v) for v in px) for px in im.reshape(-1, 3)} if c in own)
-            if red > 0.03 and n >= best_n:
-                best, best_n = p, n
+            if red > 0.03:
+                cands.append((n, p))
             box = (im[124:152, 70:230].min(2) > 205).mean()       # the dialogue box's cream band at the foot
             if red < 0.07 and box > 0.9:
                 quote = p          # (the last such frame: the text is typed out by then)
             time.sleep(0.12)
         import shutil
+        if cands:
+            top = max(n for n, _ in cands)
+            best = [q for n, q in cands if n >= 0.95 * top][-1]      # the last frame with the whole figure: the power's name has finished sliding in
+            best_n = top
         if best:
             shutil.copy(best, out / f"{co}_figure.png")
         if quote:
@@ -268,7 +272,7 @@ def verify(co, out_dir):
     out = Path(out_dir)
     res = {}
     res["CO select"] = find_on(out / f"{co}_select.png", co, 0.9, 2, "face_normal")
-    res["HUD"] = best_match(out / f"{co}_hud.png", co, "hud", (200, 0, 212, 2)) >= 0.15      # (a weak check: the game draws the HUD face brighter and cut at the top; look at the shot)
+    res["HUD"] = best_match(out / f"{co}_hud.png", co, "hud", (150, 0, 212, 6)) >= 0.15      # (a weak check: the game draws the HUD face brighter and cut at the top; look at the shot)
     fig = out / f"{co}_figure.png"
     res["power cut-in (large art)"] = fig.exists() and figure_seen(fig, co)
     res["CO page"] = (out / f"{co}_page.png").exists()
