@@ -323,6 +323,16 @@ class Lint(unittest.TestCase):
         bad = [(m.name, str(p)) for m in load.bh_maps() for p in rules.lint(m) if p.level == "error" and p.rule not in rules.KNOWN.get(m.name, {})]
         self.assertEqual(bad, [])
 
+    def test_reinforcement_waves_are_checked_like_the_map_files_units(self):
+        # `wave(army, unit::KIND, &CELLS[a..b])` in es_act*.rs is read with its cell table, so a wave on a cell its unit cannot enter is UN01
+        from . import spawns
+        es = spawns.spawns("es")
+        waves = {(u["kind"], u["x"], u["y"]) for u in es["es15"] if u.get("wave")}
+        self.assertIn((spawns.KINDS["CRUISER"], 33, 0), waves)         # the Accord's first ship, STRAIT[0]
+        self.assertIn((spawns.KINDS["NEOTANK"], 28, 11), {(u["kind"], u["x"], u["y"]) for u in es["es16"] if u.get("wave")})  # WEST_GATE[5]
+        bad = [(m.name, str(p)) for m in load.es_maps() for p in rules.lint(m) if p.rule in ("UN01", "UN04")]
+        self.assertEqual(bad, [])
+
     def test_games_own_maps_stay_quiet_on_the_joins_we_learned_from(self):
         # (the pair and transition rules are learned from AW2's maps: they must not flag AW2 itself)
         for m in load.aw2_maps():

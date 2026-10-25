@@ -3,7 +3,7 @@
 `aw2dev maps lint` finds what makes a map look or play broken before a player does: unfinished rivers, puddles, joins the game never draws, bridges that end
 in water, units on ground they cannot stand on, properties nobody reaches, tiles the game would draw as garbage. It reads the user's ROMs at run time and stores
 nothing from them. Code: `devkit/aw2/commands/maps.py` (CLI), `devkit/aw2/maplint/` (`load.py` sources, `terrain.py` tile -> terrain, `rules.py` the rules,
-`spawns.py` units the BH missions place from Rust, `render.py` pictures, `test_maplint.py` tests). Skill: `.claude/skills/aw2-map-lint`.
+`spawns.py` units the BH and Emerald Sun missions place from Rust (`UnitDef::new` and `wave(army, unit::KIND, &CELLS[a..b])`), `render.py` pictures, `test_maplint.py` tests). Skill: `.claude/skills/aw2-map-lint`.
 
 ## Commands
 | Command | What |
@@ -98,7 +98,7 @@ What each rule looks at (all on tiles, so the same code reads a text map, a Vers
 - **Roads and pipes.** RD01 (warn): a single road tile; RD02 (warn): two road ends in line one or two plain tiles apart; PP01: a pipe tile that opens onto a tile it does not join;
   PP02: a seam outside a straight run. Dead-end roads are NOT a rule: the games end roads against plain, wood, mountains and the sea all the time (measured: 54 plain, 54 wood, 19 mountain
   ends in 179 maps).
-- **Units** (BH maps: the `unit` lines of the map file and every `UnitDef::new(army, unit::KIND, x, y)` a mission places from `bh_act*.rs`: reinforcements, paratroopers, scripted columns;
+- **Units** (BH maps: the `unit` lines of the map file and every `UnitDef::new(army, unit::KIND, x, y)` a mission places from `bh_act*.rs` / `es_act*.rs`: reinforcements, paratroopers, scripted columns, and every cell of an Emerald Sun `wave(...)` over its `const` cell table;
   a second-front pair `bh08` / `bh08b` is checked against both maps, a unit must fit at least one): UN01 on terrain its kind cannot occupy (`bhmap.py passable`: foot, tires, treads, sea,
   Lander, air), UN02 two on one cell (a spawn on a unit of the map file), UN03 boxed in, UN04 off the map.
 - **Reachability** (`bhmap.py check_reach`): RC01 land with properties or units no army or Lander reaches, RC02 an army that must take an enemy HQ and cannot by land, Lander or aircraft,
