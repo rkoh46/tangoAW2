@@ -47,10 +47,10 @@ unit 2 22 26 19
 ...cR..f.^^..f.f..^^.f..-..R.c
 f...R.c....c.RRR.c...c.--.fR..
 ^.f.R.f...f..fR..f..f.f-..c.R.
-..RRRRRRc..RRRRRRRRc..f-.f..R.
+..RRRRRR...RRRRRRRR...f-.f..R.
 .c..f..R..fR..f...R..c.-..RRRc
 ..f^f..R.c.R.^.fc.R.f..-.f.R.f
-.f.c..fR...R.f..c.RRRRR=RRRR.f
+.f....fR...R.f....RRRRR=RRRR.f
 ..^.b.RR.c.RRRbRRRR.f.c-..c.R.
 .......R..f.c..R..c.f..-.f..R.
 ~,,,.c.R..,,.c.R.c.,,f.-.,,,R,

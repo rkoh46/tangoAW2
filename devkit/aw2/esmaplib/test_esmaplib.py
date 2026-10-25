@@ -67,6 +67,16 @@ class Paint(unittest.TestCase):
         sm = sparse.study()
         self.assertEqual((sm.g[0][0], sm.own[0][0], sm.own[8][14]), ("H", 1, 2))
 
+    def test_thinning_neutral_cities(self):
+        rows = ["1.c.c.c.c.c.c.c", "RRRRRRRRRRRRRRR", ".c.c.c.c.c.c.c.", "...............", "c.c.c.c.c.c.c.2"]
+        m = Canvas("t", 15, 5).ascii(rows)
+        before, after, gone = m.thin_neutral_cities(0.25, keep=[(2, 0)])
+        self.assertEqual(before, 21)
+        self.assertLessEqual(before - after, round(0.25 * 21))
+        self.assertGreater(before - after, 0)
+        self.assertNotIn((2, 0), gone)
+        self.assertEqual(sum(r.count("c") for r in m.rows()), after)
+
     def test_off_the_map_is_refused(self):
         with self.assertRaises(ValueError):
             Canvas("t", 3, 3).put(".", 3, 0)

@@ -176,4 +176,6 @@ def build():
     m.note("airfield", 21, 11, "Sensei's airport on Elm Isle"); m.note("airport1", 4, 7, "the legion's airport")
     m.note("beach_w", WEST[8] + 1, 8, "west beach: shoal on rows 8..17, ports at the ends"); m.note("beach_e", EAST[6] - 1, 6, "east beaches: shoal x 35..37 rows 6..9 and 16..20")
     m.note("salt_isle", 15, 20, "Salt Isle: neutral port (15,20), city (14,22)"); m.note("reed_isle", 29, 5, "Reed Isle: neutral port (29,5), city (31,6)")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

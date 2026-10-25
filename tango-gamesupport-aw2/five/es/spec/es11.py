@@ -77,4 +77,6 @@ def build():
     m.note("hq1", 7, 9, "player HQ at the harbour"); m.note("camp_nw", 35, 9, "relay camp rectangle top-left"); m.note("camp_se", 38, 11, "relay camp bottom-right")
     m.note("ford", 23, 10, "the Marrow road's bridge (the ford town)"); m.note("bridge_n", 23, 4, "the north road's bridge"); m.note("bridge_s", 24, 17, "the south road's bridge")
     m.note("ruin", 30, 11, "the ruin and its neutral base (27,12)"); m.note("hq2", 37, 3, "Lash's camp"); m.note("hq3", 37, 18, "Flak's camp")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=[(37, 10)])
     return m

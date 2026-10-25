@@ -76,4 +76,6 @@ def build():
     m.note("keep_gate", 16, 15, "the keep's only gate")
     m.note("silo", 3, 13, "neutral missile silo by the west road")
     m.note("airport", 10, 22, "player airport"); m.note("bomber_cell", 11, 22, "day-2 Bomber cell")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

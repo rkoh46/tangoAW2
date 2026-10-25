@@ -1,4 +1,4 @@
-"""M6 Tribute (Act II): Livia's race for the market city of Aurelhaven: own twenty-four properties at once by day 16.
+"""M6 Tribute (Act II): Livia's race for the market city of Aurelhaven: own twenty-two properties at once by day 16.
 
 Design (docs/dev/map-design.md). The situation: Livia holds the market square in the middle of the city with a little army and two factories; Colin's
 guild holds the Guildhall quarter in the north-west, Hachi's the Counting House in the south-east, each with factories and an airfield; between them
@@ -9,7 +9,7 @@ is a city of neutral houses, about one every three cells. It is a capture race a
 - Where the fight happens: in the quarters between the square and the two guilds (the north market, the docks, the gardens, the mill quarter and Salt
   Row across the canal), each a cluster of houses round a crossing; the neutral bases at the docks (8,20) and in the gardens (31,13) are forward
   factories for whoever takes them.
-- Properties: 79 in all, 63 of them neutral: the race is real for both guilds too (the computer captures). Livia's two bases and airport build the
+- Properties: 73 in all, 54 of them neutral (after the 12% cut of neutral cities): the race is real for both guilds too (the computer captures). Livia's two bases and airport build the
   infantry for it; the guilds' airfields send copters at her capturers.
 - Threats and answers: the guilds' tanks at the capturers -> Livia's tanks and artillery on the avenues' crossings, mechs in the houses; copters -> keep
   the capturers under the tank screen; losing houses back -> hold the quarters next to the square first, then reach out.
@@ -25,7 +25,7 @@ W, H = 40, 32
 def build():
     m = Canvas("es06", W, H)
     m.header(armies=3, colours=(GE, BM, OS), team=[1, 2, 2], objective=[1], comment=(
-        "M6 Tribute (Aurelhaven): own 24 properties at once by the end of day 16 (capture only). Player (Livia) HQ 1 (20,16) in the square, bases (18,14) (22,18), airport (18,19); "
+        "M6 Tribute (Aurelhaven): own 22 properties at once by the end of day 16 (capture only). Player (Livia) HQ 1 (20,16) in the square, bases (18,14) (22,18), airport (18,19); "
         "Colin HQ 2 (4,3) in the Guildhall quarter; Hachi HQ 3 (35,28) in the Counting House quarter. The harbour on the west edge (ports (3,9) Colin's, (3,19) neutral); "
         "the Mill Water canal from the harbour (3,22) to the east edge (39,24), bridged at x6, 12, 20, 24, 31, 36. Neutral forward bases (8,20) (31,13). "
         "Player INF4 MECH2 TANK2 RECON1 MDT1 ART2; Colin INF3 TANK2 RECON1 ART1; Hachi the same."))
@@ -85,4 +85,6 @@ def build():
     m.note("canal", 3, 22, "the Mill Water, harbour to the east edge, seven bridges")
     m.note("salt_row", 8, 28, "Salt Row across the canal").note("gardens", 31, 13, "the gardens' neutral base")
     m.note("docks", 8, 20, "the docks' neutral base").note("silo", 15, 10, "neutral silo in the north market")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

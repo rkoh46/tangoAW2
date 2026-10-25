@@ -68,4 +68,6 @@ def build():
     m.note("hq", 3, 18, "player HQ"); m.note("enemy_hq", 28, 3, "Cassius's camp HQ")
     m.note("bridge_n", 15, 3, "the north bridge"); m.note("bridge_c", 15, 10, "the marsh bridge"); m.note("bridge_s", 16, 18, "the south bridge")
     m.note("fwd_w", 11, 7, "neutral forward base, west bank"); m.note("fwd_e", 20, 14, "neutral forward base, east bank")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

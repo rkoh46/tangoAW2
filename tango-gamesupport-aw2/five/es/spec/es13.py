@@ -189,4 +189,6 @@ def build():
     m.put(".", 27, 11)
     m.puts("r", [(17, 4), (21, 3), (22, 6), (17, 28), (21, 28), (25, 29)])      # reefs in the north and south bays
     m.lake(27, 11, 10, seed=1, river_end=(27, 12))          # (a river starts in water or at the map edge: AW2 has no source tile)
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=[(19, 15), (17, 13), (21, 13), (17, 17), (21, 17)])
     return m

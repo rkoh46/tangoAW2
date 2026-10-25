@@ -25,14 +25,14 @@ from 149 the later armies in groups of seven (airport, base, city, com tower, HQ
 instead of HQs: the study seats an army at its lab then.
 
 ## The numbers (p10 / median / p90)
-| Measure | AWBW HoF 2P (23) | AWBW S/A 4P (20) | AW2 (179) | Dual Strike (256) | BH Campaign (35) | Emerald Sun before (16) | Emerald Sun after (16) |
+| Measure | AWBW HoF 2P (23) | AWBW S/A 4P (20) | AW2 (179) | Dual Strike (256) | BH Campaign (35) | Emerald Sun before (16) | Emerald Sun after (16, with the 12% cut) |
 |---|---|---|---|---|---|---|---|
-| properties per 100 cells | 9.5 / 11.5 / 13.7 | 10.4 / 13.2 / 15.2 | 4.0 / 8.4 / 13.3 | 2.4 / 8.5 / 13.5 | 2.4 / 4.6 / 5.9 | 1.7 / 2.2 / 3.0 | 4.5 / 5.7 / 8.1 |
-| properties per 100 land cells | 10.3 / 12.3 / 15.0 | 10.9 / 13.9 / 16.0 | 5.3 / 11.6 / 22.7 | 4.2 / 11.5 / 21.9 | 2.4 / 4.9 / 10.6 | 1.9 / 2.6 / 4.2 | 5.6 / 6.6 / 9.2 |
+| properties per 100 cells | 9.5 / 11.5 / 13.7 | 10.4 / 13.2 / 15.2 | 4.0 / 8.4 / 13.3 | 2.4 / 8.5 / 13.5 | 2.4 / 4.6 / 5.9 | 1.7 / 2.2 / 3.0 | 4.1 / 5.2 / 7.2 |
+| properties per 100 land cells | 10.3 / 12.3 / 15.0 | 10.9 / 13.9 / 16.0 | 5.3 / 11.6 / 22.7 | 4.2 / 11.5 / 21.9 | 2.4 / 4.9 / 10.6 | 1.9 / 2.6 / 4.2 | 5.2 / 6.0 / 8.3 |
 | nearest property (cells, median) | 3 | 3 | 2 | 2 | 3 | 4 | 3 |
-| farthest ground from any property | 2 / 2 / 3 (max 5) | 2 / 2 / 3 | 3 / 4 / 7 | 3 / 4 / 7 | 3 / 5.5 / 9 | 7 / 10 / 11.5 | 3.5 / 4 / 5.5 |
+| farthest ground from any property | 2 / 2 / 3 (max 5) | 2 / 2 / 3 | 3 / 4 / 7 | 3 / 4 / 7 | 3 / 5.5 / 9 | 7 / 10 / 11.5 | 4 / 5 / 6 |
 | cities / bases / airports / ports (share) | .70 / .14 / .05 / 0-.11 | .64 / .14 / .06 / 0-.09 | .57 / .25 / 0-.17 / 0-.14 | .55 / .23 / 0-.15 / 0-.13 | .66 / .17 / .03 / 0-.2 | .52 / .16 / .07 / .07 | .80 / .10 / .02 / 0-.08 |
-| neutral share of the properties | .83 / .86 / .89 | .73 / .81 / .83 | .18 / .50 / .67 | 0 / .48 / .68 | .17 / .33 / .49 | .19 / .30 / .51 | .64 / .73 / .81 |
+| neutral share of the properties | .83 / .86 / .89 | .73 / .81 / .83 | .18 / .50 / .67 | 0 / .48 / .68 | .17 / .33 / .49 | .19 / .30 / .51 | .60 / .72 / .80 |
 | income per side on day 1 | 3000 (HQ + 2 bases) | 3250 | 6500 | 6000 | 7500 | 5750 | 7000 |
 | HQ to HQ (cells, Manhattan) | 10 / 16 / 22 | 6 / 15 / 25 | 8 / 19 / 32 | 7 / 17 / 28 | 17 / 21 / 35 | 19 / 30 / 40 | 19 / 30 / 40 |
 | base to base (tank moves) | 15 / 18 / 30 | 5 / 14 / 19 | 11 / 21 / 40 | 9 / 21 / 36 | 13 / 19 / 27 | 19 / 25 / 34 | 19 / 25 / 34 |
@@ -140,27 +140,33 @@ the camp) are kept, so the mission code did not move; `Canvas.reserve` keeps the
 
 | Map | Size | Props before / after | per 100 land | farthest from a property | plain | wood | mountain | road | river run | road approaches | middle property |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| es01 | 30x27 | 14 / 45 | 2.4 / 8.0 | 10 / 5 | 51% / 50% | 12% / 9% | 13% / 6% | 10% / 16% | 12 / 7 | 1 / 2 | no / yes |
-| es02 | 28x19 | 12 / 47 | 2.3 / 8.8 | 12 / 3 | 42% / 53% | 12% / 10% | 27% / 12% | 15% / 16% | 7 / 0 | 2 / 2 | yes / yes |
-| es03 | 32x24 | 14 / 67 | 2.0 / 9.6 | 10 / 4 | 49% / 46% | 6% / 5% | 18% / 14% | 19% / 18% | 16 / 9 | 3 / 3 | yes / yes |
-| es04 | 32x22 | 14 / 46 | 2.0 / 6.5 | 12 / 4 | 62% / 51% | 10% / 17% | 10% / 7% | 12% / 15% | 10 / 8 | 3 / 3 | yes / yes |
-| es05 | 42x24 | 20 / 54 | 2.0 / 5.4 | 10 / 5 | 62% / 52% | 7% / 9% | 10% / 15% | 12% / 12% | 11 / 7 | 3 / 4 | yes / yes |
-| es06 | 40x32 | 33 / 80 | 2.7 / 6.7 | 9 / 4 | 57% / 52% | 18% / 15% | 4% / 3% | 16% / 19% | 11 / 8 | 4 / 3 | yes / yes |
-| es07 | 38x24 | 19 / 47 | 4.1 / 10.0 | 7 / 4 | 44% / 39% | 14% / 13% | 8% / 8% | 10% / 10% | - | sea | yes / yes |
-| es08 | 38x24 | 15 / 52 | 1.6 / 5.7 | 11 / 4 | 63% / 53% | 10% / 13% | 9% / 8% | 14% / 18% | 15 / 6 | 1 / 4 | no / yes |
-| es09 | 34x22 | 24 / 38 | 3.9 / 6.3 | 7 / 4 | 55% / 52% | 1% / 2% | 12% / 12% | 13% / 13% | 13 / 8 | 2 / 3 | yes / yes |
-| es10 | 34x26 | 18 / 66 | 2.0 / 7.5 | 9 / 5 | 48% / 44% | 8% / 6% | 27% / 29% | 11% / 10% | 13 / 9 | 3 / 3 | no / yes |
-| es11 | 40x22 | 22 / 50 | 2.7 / 6.0 | 8 / 3 | 60% / 52% | 6% / 13% | 12% / 9% | 12% / 14% | 12 / 7 | 2 / 3 | yes / yes |
-| es12 | 42x30 | 22 / 72 | 1.7 / 5.7 | 10 / 4 | 57% / 51% | 5% / 17% | 24% / 10% | 11% / 11% | - | 3 / 4 | no / yes |
-| es13 | 38x33 | 42 / 58 | 5.3 / 7.3 | 6 / 5 | 62% / 52% | 6% / 11% | 4% / 6% | 15% / 15% | 9 / 9 | 3 / 3 | yes / yes |
-| es14 | 46x28 | 29 / 55 | 2.8 / 5.3 | 10 / 6 | 56% / 52% | 7% / 8% | 18% / 18% | 13% / 14% | 15 / 8 | 3.5 / 3.5 | yes / yes |
-| es15 | 46x27 | 30 / 49 | 4.2 / 6.9 | 7 / 6 | 55% / 53% | 11% / 10% | 11% / 11% | 8% / 8% | - | sea | yes / yes |
-| es16 | 44x28 | 34 / 60 | 3.6 / 6.4 | 10 / 5 | 53% / 46% | 6% / 5% | 18% / 20% | 15% / 16% | 14 / 5 | 3 / 3 | yes / yes |
+| es01 | 30x27 | 14 / 41 | 2.4 / 7.3 | 10 / 5 | 51% / 50% | 12% / 9% | 13% / 6% | 10% / 16% | 12 / 7 | 1 / 2 | no / yes |
+| es02 | 28x19 | 12 / 43 | 2.3 / 8.1 | 12 / 3 | 42% / 53% | 12% / 10% | 27% / 12% | 15% / 16% | 7 / 0 | 2 / 2 | yes / yes |
+| es03 | 32x24 | 14 / 60 | 2.0 / 8.6 | 10 / 4 | 49% / 47% | 6% / 5% | 18% / 14% | 19% / 18% | 16 / 9 | 3 / 3 | yes / yes |
+| es04 | 32x22 | 14 / 42 | 2.0 / 6.0 | 12 / 4 | 62% / 52% | 10% / 17% | 10% / 7% | 12% / 15% | 10 / 8 | 3 / 3 | yes / yes |
+| es05 | 42x24 | 20 / 51 | 2.0 / 5.1 | 10 / 5 | 62% / 52% | 7% / 9% | 10% / 15% | 12% / 12% | 11 / 7 | 3 / 4 | yes / yes |
+| es06 | 40x32 | 33 / 73 | 2.7 / 6.1 | 9 / 4 | 57% / 53% | 18% / 15% | 4% / 3% | 16% / 19% | 11 / 8 | 4 / 3 | yes / yes |
+| es07 | 38x24 | 19 / 44 | 4.1 / 9.4 | 7 / 4 | 44% / 40% | 14% / 13% | 8% / 8% | 10% / 10% | - | sea | yes / yes |
+| es08 | 38x24 | 15 / 48 | 1.6 / 5.3 | 11 / 4 | 63% / 53% | 10% / 13% | 9% / 8% | 14% / 18% | 15 / 6 | 1 / 4 | no / yes |
+| es09 | 34x22 | 24 / 35 | 3.9 / 5.8 | 7 / 6 | 55% / 53% | 1% / 2% | 12% / 12% | 13% / 13% | 13 / 8 | 2 / 3 | yes / yes |
+| es10 | 34x26 | 18 / 59 | 2.0 / 6.7 | 9 / 5 | 48% / 45% | 8% / 6% | 27% / 29% | 11% / 10% | 13 / 9 | 3 / 3 | no / yes |
+| es11 | 40x22 | 22 / 46 | 2.7 / 5.5 | 8 / 5 | 60% / 52% | 6% / 13% | 12% / 9% | 12% / 14% | 12 / 7 | 2 / 3 | yes / yes |
+| es12 | 42x30 | 22 / 66 | 1.7 / 5.2 | 10 / 4 | 57% / 52% | 5% / 17% | 24% / 10% | 11% / 11% | - | 3 / 4 | no / yes |
+| es13 | 38x33 | 42 / 53 | 5.3 / 6.7 | 6 / 5 | 62% / 53% | 6% / 11% | 4% / 6% | 15% / 15% | 9 / 9 | 3 / 3 | yes / yes |
+| es14 | 46x28 | 29 / 52 | 2.8 / 5.0 | 10 / 6 | 56% / 52% | 7% / 8% | 18% / 18% | 13% / 14% | 15 / 8 | 3.5 / 3.5 | yes / yes |
+| es15 | 46x27 | 30 / 45 | 4.2 / 6.4 | 7 / 6 | 55% / 53% | 11% / 11% | 11% / 11% | 8% / 8% | - | sea | yes / yes |
+| es16 | 44x28 | 34 / 56 | 3.6 / 6.0 | 10 / 5 | 53% / 46% | 6% / 5% | 18% / 20% | 15% / 16% | 14 / 5 | 3 / 3 | yes / yes |
 
-0 MD findings. Where the maps still differ from the Hall of Fame, on purpose or not: they are sparser (6.6 properties per 100 land cells against 12;
+0 MD findings. Where the maps still differ from the Hall of Fame, on purpose or not: they are sparser (6.1 properties per 100 land cells, after the 12% cut of neutral cities, against 12;
 a campaign mission's armies are pre-deployed and its funds are set, so the economy is not the whole game) and plainer (52% plain against 31%: the rule's
 limit is AW2's 90th percentile, and most of the maps sit just under it; a future pass could thin the plains further). The middle is always contested and
 the rivers are crossed every 7 cells or so (HoF: 2.4).
+
+## Then 12% fewer neutral cities (the user's rule, Oct 2026)
+Each spec ends with `m.thin_neutral_cities(0.12, keep=...)` (the objectives as `keep`): neutral cities before -> after: M1 31->27, M2 35->31, M3 58->51,
+M4 34->30, M5 38->35, M6 58->51, M7 27->24, M8 33->29, M9 23->20, M10 55->48, M11 33->29, M12 54->48, M13 38->33, M14 42->39, M15 32->28, M16 31->27.
+M5 and M14 lose 3 instead of 5: one more would take them under MD01's 5 properties per 100 land cells. M6's target falls with its houses: 22 of 73
+(it was 24 of 80).
 
 ## Building a map to the principles (the kit)
 - `Canvas.ascii(rows)` draws a whole map by hand (rows checked for size; drawing in groups of eight columns `|`-separated keeps the count: see `es03.py`, `es10.py`);

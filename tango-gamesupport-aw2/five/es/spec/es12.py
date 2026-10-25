@@ -97,4 +97,6 @@ def build():
     m.note("iron_wall", 8, 4, "the Iron Wall: pipe ring x8..26, y4..20, gates N (17,4), W (8,12), E (26,12), SW (11,20), SE (23,20)")
     m.note("seam", 17, 20, "the Iron Wall's seam on the south road")
     m.note("fwd", 12, 22, "forward neutral bases (12,22) and (22,22)").note("silo", 28, 14, "neutral missile silo on the east approach")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

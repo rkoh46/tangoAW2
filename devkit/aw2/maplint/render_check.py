@@ -37,6 +37,9 @@ def cells(m, picture):
         for x in range(G.w):
             if G.g[y][x] not in CLASSES or (x, y) in units:
                 continue
+            # (a building's picture is taller than its cell: its roof covers the bottom of the cell above, as a unit's overlay does)
+            if G.at(x, y + 1) in "HBCAPT":
+                continue
             key = rules.trans_key(G, x, y)
             if key is None:
                 continue

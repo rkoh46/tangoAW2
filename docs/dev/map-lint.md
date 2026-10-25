@@ -153,7 +153,7 @@ the learned 4-neighbour key of TJ02 stays the check of what the game draws (the 
   small lake (`Canvas.lake`: the map builder draws a river mouth only on a straight shore, so the lake has a flat 3-cell shore row at the river's end) or runs to the edge.
 - **Render check (RN01), `aw2dev maps render-check [--source es|bh] [--pictures DIR] [--corpus DIR ...]`.** For river, shoal, bridge and coast tiles only: every cell of the game's own picture of a map (the
   `m<N>_full.png` pictures of `aw2dev campaign sheets` or `maps boot`, 16 pixels a cell, no unit on the cell) is compared with the drawings the reference pictures have of the same tile id, 4-neighbour class
-  (`rules.trans_key`), shade (a tall neighbour on its left) and look (the plain's colour). The pixels all reference drawings agree on must agree; water is animated, so a cell is flagged only when more than 30%
+  (`rules.trans_key`), shade (a tall neighbour on its left) and look (the plain's colour). The pixels all reference drawings agree on must agree (a cell under a building is skipped, as one under a unit: the building's roof covers it); water is animated, so a cell is flagged only when more than 30%
   of those pixels differ (a wrongly drawn tile differs in most of them; a phase of the animation in a few). The reference is the BH Campaign's 35 pictures (`maps boot`, about 8 minutes) and, for Emerald Sun, the
   other Emerald Sun pictures. A key with fewer than 6 reference drawings has no verdict. Result: 0 findings in the BH and Emerald Sun pictures. A planted wrong drawing is flagged by the unit test.
   The diagonal-neighbour variant (which flagged hand-made maps) is not used.

@@ -157,4 +157,6 @@ def build():
     m.note("legion_road", 7, 14, "the legion's reinforcements on days 5 and 8 at (6..9,14..15)")
     m.ragged("^", 6, seed=1).ragged("^", 6, seed=2)               # (no drawn wall of mountains: lint DQ12)
     m.lake(12, 11, 9, seed=0, river_end=(13, 11))          # (a river starts in water or at the map edge: AW2 has no source tile)
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

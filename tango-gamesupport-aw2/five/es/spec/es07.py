@@ -112,4 +112,6 @@ def build():
     m.note("beach_verdant", 30, 5, "Isle Verdant shoal strip along the west coast x 28..32, y 5..9 and 15..19")
     m.note("atoll_airport_n", 19, 5, "neutral airport on the north atoll").note("atoll_airport_s", 19, 18, "neutral airport on the south atoll").note("silo", 21, 4, "neutral missile silo on the north atoll")
     m.note("eagle_airport", 33, 7, "Sensei's airport")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

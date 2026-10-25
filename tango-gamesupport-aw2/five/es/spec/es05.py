@@ -82,4 +82,6 @@ def build():
     m.note("post1", 27, 5, "Highwatch").note("post2", 27, 12, "Crossways (behind the seam)").note("post3", 27, 21, "Lowmere")
     m.note("seam", 25, 12, "the Comet Pipe's seam on the Crossways road")
     m.note("fwd_n", 22, 6, "neutral forward base by the north road").note("fwd_s", 22, 17, "neutral forward base by the farm track")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=POSTS)
     return m

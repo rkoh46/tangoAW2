@@ -51,7 +51,7 @@ unit 3 6 36 20
 unit 3 11 35 21
 ...^......^..-.......^..............f.
 ..c^^..c..^^.-..c....^^^.c...c...c..ff
-...^......^..-.....c.....ffff........f
+...^......^..-...........ffff........f
 .ff^RRRRRRRRR=RRRRRRRRRRRRRRRRRRRRRR..
 ....Rff......-.......b.......fff.f.R..
 .c..R...cf...--.cff...f........ffffR.c
@@ -63,12 +63,12 @@ unit 3 11 35 21
 .f.1RRRRR..ff.--.cf..^.R....R..^.R....
 ff..R.C.R..cf..-..ff^^.RC...B..^^R.c^^
 f...Rff.R.f....-...f.^^^.....^^RRR.ff^
-..C.Rff.RRRRRRR=RRRRR..^^^^^^^cR...fff
-....Rf...ff....-..f.R..c^.^f^..R......
+..C.Rff.RRRRRRR=RRRRR..^^^^^^^.R...fff
+....Rf...ff....-..f.R..f^.^f^..R......
 ....Rffc.f..f..--fffR..ff.c.^^^R...B..
 ..c.R.f..f.fff.f-...RbRRRRRRRRRRRRRR.c
 ....Rfff..c....f-c.............B...R..
-....R...........-.f....c...ff......RC.
+....R...........-.f........ff......RC.
 .ff.RRRRRRRRRRRR=RRRRRRRRRRRRRRRRR3R..
 ..f...cf...ff...-..f..^.ff.f.C......^.
 .cff...ff..ff...-f...^^^^f.ffff.C..^^.

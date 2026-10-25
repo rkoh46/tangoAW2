@@ -134,4 +134,6 @@ def build():
     m.note("volcano", 22, 14, "Mount Sol (x21..24, y12..15, its rock x20..25, y11..16): erupts on the ring (19..26, 10..17) from day 3")
     m.note("fwd", 16, 19, "neutral bases (16,19) by the weir track and (24,8) below the west gate")
     m.lake(15, 9, 9, seed=0, river_end=(15, 10))          # (a river starts in water or at the map edge: AW2 has no source tile)
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

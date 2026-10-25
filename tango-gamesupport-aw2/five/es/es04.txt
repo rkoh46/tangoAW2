@@ -47,7 +47,7 @@ unit 2 10 30 1
 .......c.^^.f..-...fc.f.Bf...f..
 ..ffRRRRRRRRRRR=RRRRRRRRRRRR2...
 ^..cR.f.f..Rf..-...f..fC...R.f.^
-^^..R..ff.cR.^.-.fc.f.c.ffRR..^^
+^^..R..ff.cR.^.-.fc.f...ffRR..^^
 ..c.R......Rf.^--f...f....CRf...
 ...fR.c..f.b.f..-.fff.c..f.R..f.
 ..f.R..f.f..c.f.-f.c...^..fR.C.f
@@ -58,9 +58,9 @@ unit 2 10 30 1
 f.C.Rf..^...c.f.-f.c..f.f..R.f..
 .f..R.f..c.fff..-.f.b.f..c.Rf...
 ...fRC....f...f.-^.fR......R.c..
-^^..RRff.c.f.cf.-.^.Rc.ff..R..^^
+^^..RRff...f.cf.-.^.R..ff..R..^^
 ^.f.R...Cf..f...-..fR..f.f.Rc..^
 ...1RRRRRRRRRRRR=RRRRRRRRRRRff..
-..f...fB.f.cf...-..f.^^.c.......
+..f...fB.f..f...-..f.^^.c.......
 ...f.f..f..^..f.-cf...f..^.ff..^
 .f.......f^^.c..-....c...^^..^^^

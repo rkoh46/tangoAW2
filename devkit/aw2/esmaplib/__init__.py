@@ -412,6 +412,89 @@ class Canvas:
         from ..maplint import principles
         return [str(p) for p in principles.check_study(self.study())]
 
+    def thin_neutral_cities(self, fraction=0.12, keep=()):
+        """Removes round(fraction x the neutral cities) (`c` only: no base, airport, port, tower, silo or owned property), the ones that add least:
+        a city crowded by other properties (two cells or less) and lying by a road goes first; never one in `keep`, one on the coast, one in the contested middle
+        (MD05's ring between two sides), or one whose loss breaks MD01 or MD02 (or MD06: then the cell becomes wood). The sides stay balanced: each removal is taken from the side
+        (nearest HQ or start units) that holds more of the neutral cities left. The cell becomes wood if two or more woods are beside it, else plain.
+        Deterministic. Returns (before, after, removed cells)."""
+        from ..maplint import study as st
+        from ..maplint import principles as pr
+        cities = [(x, y) for y in range(self.h) for x in range(self.w) if self.g[y][x] == "c"]
+        want = round(fraction * len(cities))
+        sm = self.study()
+        sd = st.sides_of(sm)
+        anc = {s: st.anchor(sm, a) for s, a in sd.items()}
+        anc = {s: p for s, p in anc.items() if p}
+        mid = set()
+        for s1, s2 in st.pairs(sm):
+            a, b = anc.get(s1), anc.get(s2)
+            if not a or not b:
+                continue
+            mx, my = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+            rad = max(3, 0.2 * (abs(a[0] - b[0]) + abs(a[1] - b[1])))
+            mid |= {c for c in cities if abs(c[0] - mx) + abs(c[1] - my) <= rad}
+        # (a coast village is the landing's objective and its drawing is the coast's: kept)
+        coast = {c for c in cities if any(self.get(c[0] + dx, c[1] + dy) in "~r," for dx in (-1, 0, 1) for dy in (-1, 0, 1))}
+        keep = set(map(tuple, keep)) | mid | coast
+        props = set(self.study().cells(st.PROPS))
+
+        def side(c):
+            return min(anc, key=lambda s: abs(anc[s][0] - c[0]) + abs(anc[s][1] - c[1])) if anc else 0
+
+        def crowd(c):
+            x, y = c
+            n = sum(1 for X, Y in props if (X, Y) != c and max(abs(X - x), abs(Y - y)) <= 2)
+            road = any(self.get(x + dx, y + dy) in "R=" for dx, dy in ((0, 1), (1, 0), (0, -1), (-1, 0)))
+            return (n + (1 if road else 0), n, -x - y * self.w)
+
+        def lonely():
+            # (DQ08: a property with no road or other property within 5 cells)
+            sm2 = self.study()
+            ps = sm2.cells(st.PROPS)
+            for x, y in ps:
+                if sm2.g[y][x] == "H":
+                    continue
+                if not any(sm2.at(X, Y) in "R=" or ((X, Y) != (x, y) and (X, Y) in ps) for X in range(x - 5, x + 6) for Y in range(y - 5, y + 6)):
+                    return True
+            return False
+
+        def passes():
+            found = {p.split()[0] for p in self.principles()}
+            return not ({"MD01", "MD02", "MD06"} & found) and not lonely()
+
+        base_ok = passes()
+        removed = []
+        while len(removed) < want:
+            left = [c for c in cities if c not in removed and c not in keep]
+            if not left:
+                break
+            count = {}
+            for c in left + [c for c in cities if c in keep and c not in removed]:
+                count[side(c)] = count.get(side(c), 0) + 1
+            rich = max(count, key=lambda s: count[s]) if count else None
+            order = sorted(left, key=lambda c: (side(c) != rich, tuple(-v for v in crowd(c)[:2]), crowd(c)[2]))
+            done = False
+            for c in order:
+                x, y = c
+                woods = sum(1 for dx, dy in ((0, 1), (1, 0), (0, -1), (-1, 0)) if self.get(x + dx, y + dy) == "f")
+                n_, e_, s_, w_ = (self.get(x, y - 1) in "R=", self.get(x + 1, y) in "R=", self.get(x, y + 1) in "R=", self.get(x - 1, y) in "R=")
+                # (a city standing in a road's line gives its cell back to the road: no gap is left in it)
+                covers = ("R",) if (n_ and s_) or (e_ and w_) else (("f", ".") if woods >= 2 else (".", "f"))
+                for cover in covers:
+                    self.g[y][x] = cover          # (plain, or wood where the woods are, or where plain would leave too open a field: MD06)
+                    if not base_ok or passes():
+                        removed.append(c)
+                        props.discard(c)
+                        done = True
+                        break
+                if done:
+                    break
+                self.g[y][x] = "c"
+            if not done:
+                break
+        return len(cities), len(cities) - len(removed), removed
+
     def patch(self, x, y, rows):
         """Stamp text rows with their top-left at (x, y); a space leaves the cell alone."""
         for dy, r in enumerate(rows):

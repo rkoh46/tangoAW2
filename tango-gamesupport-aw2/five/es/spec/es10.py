@@ -78,4 +78,6 @@ def build():
     m.note("pass_w", 7, 9, "west pass road"); m.note("pass_c", 16, 9, "centre pass road"); m.note("pass_e", 25, 9, "east pass road")
     m.note("goat_track", 1, 9, "goat track (foot only), x1..3")
     m.note("mid_base", 15, 13, "neutral base at the centre pass's foot")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

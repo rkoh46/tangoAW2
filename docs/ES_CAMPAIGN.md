@@ -338,7 +338,7 @@ the skin on the player's army, a record in Flash slot 11. Differences from the o
 | 3 | 32x24 | Muro Alto: a walled town with four gates and a keep with one, three towers, the town's houses, the Muro river bridged three times, the silo by the west road, Drake's battleship offshore |
 | 4 | 32x22 (fog) | the Verna valley, point-symmetric: two camps, three bridges, forward neutral bases on each bank, 26 villages |
 | 5 | 42x24 | the Sable (four bridges), three canyon roads to the posts, the Comet Pipe (two gates, a seam on the Crossways road), forward bases and the silo in the ruins |
-| 6 | 40x32 | Aurelhaven: the square, four avenues, the Mill Water canal (seven bridges), the Guildhall and the Counting House quarters, 63 neutral houses; own 24 properties |
+| 6 | 40x32 | Aurelhaven: the square, four avenues, the Mill Water canal (seven bridges), the Guildhall and the Counting House quarters, 54 neutral properties; own 22 properties |
 | 7 | 38x24 | Cape Fidelis, the Twin Sisters (neutral airports, the silo), Isle Verdant's harbour; villages on every island |
 | 8 | 38x24 | Ironhold's crags ring (front and rear gates), the Brimwater canal (three crossings), Sasha's camp, forward neutral bases north and south |
 | 9 | 34x22 | Kite Hill (the depot, minicannons), the Kite river (four bridges), the HOBB quay (factory and airfield on the lava bay), the walled freight yard (pipeline, seam), ruined hamlets |

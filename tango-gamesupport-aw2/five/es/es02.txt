@@ -36,13 +36,13 @@ unit 2 17 22 1
 ^^.f..c..f.R....^^..c.f..^^^
 ^.c...^^..cR..c...^^.RRRRR.^
 ..f..f..^.fR.f...^B..B.f.2..
-.c..^^..c..RRRRRRRRRRRRR.R..
+.c..^^..f..RRRRRRRRRRRRR.R..
 ...f..^f.c.R..f..C..f..R.A.f
 .f..c..f...R.c...f.c...R.f..
 ^^^^..^^^..R.^^^...^^^.R.^^^
-.c..f.c.f..R..f.c..f.c.R..c.
+.c..f.f.f..R..f.c..f.c.R..c.
 ..f..^...RRR..c..f..^..R.f..
-.c..ff..cR.f.b...RRRRRRR.c.f
+.f..ff..cR.f.b...RRRRRRR.c.f
 ^..c..f..R.f...c.R..c..f..f.
 RRRRRRRRRR.c..f..R.c..f..^^.
 ^^..^^^..R..^^^..R.^^^...^f.
@@ -50,5 +50,5 @@ RRRRRRRRRR.c..f..R.c..f..^^.
 ..^..f...RRRRRRRRR..f..f..f.
 ...RRRRRRR.C..f..c..C....f..
 ^..1.f.B..C...c..RRRRRRRRRRR
-^^......c..f..C...f..c..f.^c
+^^.........f..C...f..c..f.^c
 ^^^..f...^^..f...^^..^..f^^.

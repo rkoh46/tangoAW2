@@ -81,4 +81,6 @@ def build():
     m.note("cove_w", 3, 15, "west cove"); m.note("strand", 14, 15, "Astra strand below the town"); m.note("cove_e", 26, 15, "east cove at the river mouth")
     m.note("town", 14, 13, "Astra town: the contested middle, a neutral base (14,12)")
     m.note("reinforce", 15, 26, "day-3 AA and tanks land at (12,26) (15,26) (18,26)")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

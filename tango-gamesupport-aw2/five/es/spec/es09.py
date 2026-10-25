@@ -113,4 +113,6 @@ def build():
     m.puts("c", [(16, 19), (10, 13), (17, 9)])                           # more ruins (neutral cities in the wasteland)
     m.put("r", 29, 13).put("r", 30, 14).put("r", 29, 17).put("r", 31, 11)        # reefs (lava rocks) in the bay
     m.desertify(keep=0.3, rocks=13, size=5, seed=9)                  # (the wasteland look: sparse scrub, rock outcrops)
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

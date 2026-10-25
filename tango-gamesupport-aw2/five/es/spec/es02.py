@@ -72,4 +72,6 @@ def build():
     m.note("mid_base", 13, 9, "neutral base between the ridges: the contested middle")
     m.note("dune_hills", 26, 13, "the Dune hills over the east road")
     m.note("waves", 12, 0, "enemy waves at (11..13,0) and (27,3..4)")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

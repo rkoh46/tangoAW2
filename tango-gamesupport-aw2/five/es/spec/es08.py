@@ -75,4 +75,6 @@ def build():
     m.note("causeway", 14, 8, "the two-lane causeway (14,8..9)").note("silo", 16, 7, "neutral missile silo by the causeway head")
     m.note("fort_gate", 20, 10, "front gate").note("rear_gate", 32, 10, "rear gate")
     m.note("fwd_n", 21, 4, "neutral base on the north road").note("fwd_s", 21, 17, "neutral base on the south ring road")
+    # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
+    m.thinned = m.thin_neutral_cities(0.12, keep=())
     return m

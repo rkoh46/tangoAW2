@@ -109,18 +109,18 @@ COLIN: Counterfeit! Bold of you to / pay in it, honestly.
 LIVIA: The coin is struck by the / Senate's mint. I can show you.
 HACHI: Show me a receipt. Rival or not, / I don't take receipts. Nails, yes.
 LIVIA: Then I shall show you what / I do accept. Legate, the map.
-KLAUS: The whole town is the target. / About eighty properties in all.
-KLAUS: Capture, nothing else. Twenty-four / at once, at the end of any day by
+KLAUS: The whole town is the target. / About seventy properties in all.
+KLAUS: Capture, nothing else. Twenty-two / at once, at the end of any day by
 KLAUS: the sixteenth day. Guildhall, / north-west: Colin.
 KLAUS: Counting House quarter, south-east: / Hachi.
 KLAUS: Salt Row, south of the square, is cut / off by the Mill Water. Seven bridges.
-KLAUS: Sixty neutral houses lie between / us. Take them, street by street.
+KLAUS: Some fifty neutral houses lie / between us. Take them street by street.
 AURELIA: The Mill Water is a canal, Legate. / Bridges, and a wall of sluice gates.
 KLAUS: A neutral missile silo stands in / the market toward the Guildhall.
 COLIN: Ooh, the silo! Mine, I think. / Wowee, I love that market!
 LIVIA: Stepping on it is not owning it, / Colin. Properties are my concern.
 LIVIA: The Senate's auditors arrive on / day seventeen. If I cannot show
-LIVIA: twenty-four properties on my books, / the credit is withdrawn. All of it.
+LIVIA: twenty-two properties on my books, / the credit is withdrawn. All of it.
 COLIN: Ha! And we out-produce you / three to one! Look at my factories!
 HACHI: Colin. Don't show 'em / the factories.
 LIVIA: Thank you, Colin. You have / just told me three things.
@@ -144,8 +144,8 @@ LIVIA: A run is a queue. A queue / is a schedule. I keep schedules.
 
 == m06_post
 @SONG aw2:423
-NARRATION: Day fifteen. Aurelhaven is taken. / Twenty-four properties on the ledger.
-COLIN: Wowee. Twenty-four. She counted / them like beans, Hachi.
+NARRATION: Day fifteen. Aurelhaven is taken. / Twenty-two properties on the ledger.
+COLIN: Wowee. Twenty-two. She counted / them like beans, Hachi.
 HACHI: She counted 'em like debts. / That's worse. I know debts.
 COLIN: Quaestor Livia! No hard / feelings! I make you an offer!
 COLIN: Come to Blue Moon! A seat in / the guild! Half the profits!
