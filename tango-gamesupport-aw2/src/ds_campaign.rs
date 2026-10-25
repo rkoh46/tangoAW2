@@ -1253,6 +1253,10 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         ),
         (MISSION_NUMBER, Box::new(mission_number)),
         (crate::ds_worldmap::SAVE_PROMPT, Box::new(save_prompt)),
+        (
+            crate::suspend::AFTER_MARK_CLEAR,
+            Box::new(crate::suspend::keep_aw2_mark),
+        ),
         (SAVE_GAME, Box::new(save_game)),
         (BEST_SCORE, Box::new(best_score)),
         (SCRIPT_END_MATCH, Box::new(script_end_match)),
