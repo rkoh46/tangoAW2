@@ -132,15 +132,15 @@ Sturm's own table, `sturm_pairs.rs`: 110 is 1 star, 115 to 120 is 2, 125 is 3). 
 
 Each pair also needs its four victory lines and two Tag-in lines like Sturm's pairs have (phase 2, written in the BH voice). Tag Power names: Roman-flavoured, 20 letters at most.
 
-### 2.4 Portraits: the owner's pictures, redrawn in AW2's style
+### 2.4 Portraits: the owner's pixel art, imported faithfully
 
-The four portraits are **the project owner's art** ("portrait art provided by the project owner", `CREDITS.md`): `art-src/cos/<co>_user.jpg` (784 x 1168 busts), mapped one data line a CO
-(`[portrait] source` in `cos/<id>.toml`; the best guess: Klaus the grey-haired laurelled man, Aurelia the helmeted woman, Cassius the stern man with the helmet under his arm, Livia the woman in white with the
-red cloak). The pictures are the **design reference**; the game art is **redrawn in AW2's own CO style** (a faithful downscale was rejected: dark and painterly, not an AW2 CO): flat tones from each CO's own
-bright, saturated palette in AW2's layout, a clean outline, simple line art, AW2's framing (`aw2dev co portrait stylise`, `docs/dev/co-kit.md`), measured against AW2's own 19 COs (`co portrait lint --style aw2`).
-The sheet is `co_portraits_aw2style.png` (source, the previous import, the new art 1x and 2x beside Hawke, Kanbei and Sonja, the faces, the CO select row and the game's own screens). **In the game** with
-`TANGOAW2_ES_COS=1` (the four are ids 86..89 with Andy's numbers until phase 2): the CO select card, the HUD face, the Power's dialogue box and its cut-in (the large figure), and the CO page show them.
-The happy, sad and angry faces are edits of the neutral face's eyes, brows and mouth in the same style; if the owner can supply expression variants they replace them.
+The four portraits are **the project owner's art** ("portrait art provided by the project owner", `CREDITS.md`): `art-src/cos/<co>_v5.jpg` (784 x 1168 full-body pixel art on a near-black background), mapped one data
+line a CO (`[portrait] source` in `cos/<id>.toml`; the best guess: Klaus the grey-haired man with the moustache and the navy coat, Aurelia the woman with the tiara and the white tunic, Cassius the young man in the
+black uniform with gold pauldrons, Livia the woman in the white robe with the red sash; the two women may be swapped). They are imported **faithfully** (`aw2dev co portrait import --pixelart`, `docs/dev/co-kit.md`): the
+native pixel grid is found, the picture is resampled on the cell centres, the figure is framed waist-up like AW2's COs and scaled 2x by whole cells (facing right: Cassius and Klaus are mirrored), the palette is
+the picture's own 14 colours + the outline, and the mugs are the heads at 2x. The sheet is `co_portraits_v5.png` (source, the large art 1x and 2x beside Hawke, Kanbei and Sonja, the faces with expressions, the CO select
+row and the game's own screens). **In the game** with `TANGOAW2_ES_COS=1` (the four are ids 86..89 with Andy's numbers until phase 2): the CO select card, the HUD face, the Power's dialogue box and its cut-in (the large
+figure), and the CO page show them. The happy, sad and angry faces are edits of the neutral face's eyes, brows and mouth in whole cells; if the owner can supply expression variants they replace them.
 
 ## 3. Who joins when
 

@@ -1,0 +1,7 @@
+# Klaus, imported faithfully from klaus_v5.jpg (pixel art, native cells of 5.33 px). Coordinates are native cells (of the mirrored grid when `flip`).
+pixelart = true
+flip = true
+frame = [48, 15]
+mug = [68, 18]
+eyes = [77, 30, 83, 30]
+mouth = [82, 41]

@@ -1,0 +1,7 @@
+# Aurelia, imported faithfully from aurelia_v5.jpg (pixel art, native cells of 4 px). Coordinates are native cells (of the mirrored grid when `flip`).
+pixelart = true
+flip = false
+frame = [70, 31]
+mug = [87, 46]
+eyes = [94, 57, 104, 57]
+mouth = [100, 64]

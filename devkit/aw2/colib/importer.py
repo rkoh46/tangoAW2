@@ -183,7 +183,7 @@ class Imported:
         self.hud = None
 
 
-def import_co(spec, root=None, painterly=False, variant=None):
+def import_co(spec, root=None, painterly=False):
     """spec: dict with source, scale (output px per source px of the large picture), top (rows above the figure), face = [x, y, size] (the mug's square in the source), and optional eyes / brows / mouth for the
     expression faces. -> Imported."""
     root = root or cfg.REPO
@@ -191,13 +191,10 @@ def import_co(spec, root=None, painterly=False, variant=None):
     side = (root / spec["source"]).with_suffix(".toml")
     if side.exists():
         spec = {**tomllib.loads(side.read_text()), **spec}
+    if spec.get("pixelart"):
+        from . import pixelart
+        return pixelart.styled(spec, root / spec["source"])
     src = Source(root / spec["source"], spec.get("bg_tolerance", 18))
-    if spec.get("material") and not painterly:
-        from . import cel
-        return cel.styled(spec, src, variant)
-    if spec.get("palette") and not painterly:
-        from . import stylise
-        return stylise.styled(spec, src)
     s = spec.get("scale", 0.1275)
     # --- the large picture: the source scaled by s, the top margin `top`, centred; what falls below 160 or outside 128 is cut
     cut = spec.get("crop_top", 0)
