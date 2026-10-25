@@ -13,8 +13,8 @@ def build():
              comment="M13 The Free Port (province: the Free Port of Mercato on the Bay of Salt): capture the Harbour Office (neutral city, centre) and hold it 3 days. Everyone fights everyone. "
                      "Quarters: Kindle's Black Hole dock in the north (bay, Black Factory, crystals, minicannons), Javier's Green Earth west quarter on the sea, Sonja's Yellow Comet east quarter on the sea, "
                      "the player's south quarter on the south bay; two winding rivers (Rio Sale west, Rio Dolce east) cut the quarters from the central square, crossed by bridges. "
-                     "Start forces: player INF4 MECH2 TANK3 MDT2 RECON2 ART2 AA1 APC1 (17); Javier and Sonja each INF3 MECH1 TANK3 MDT1 RECON1 ART1 AA1 (11); Kindle the same + FTR1 BCO1 (13). "
-                     "Threat/answer: tanks and Md Tanks -> own Tanks/MDT/ARTs behind the rivers; Kindle's Fighter and Copter -> AA on the line + the bases; minicannons (17,8) (21,8) cover the north road to "
+                     "Start forces: player INF4 MECH2 TANK3 MDT2 RECON2 ART2 AA1 APC1 (17); Javier and Sonja each INF3 MECH1 TANK3 MDT1 RECON1 ART1 AA1 (11); Kindle the same + FTR1 BCO1 + a Piperunner on her pipeline (14); the pipeline (y9, x0..6, seam at (4,9)) walls the west beach between her quarter and Javier's, her base (2,8) builds Piperunners (Black Hole rules). "
+                     "Threat/answer: tanks and Md Tanks -> own Tanks/MDT/ARTs behind the rivers; Kindle's Fighter and Copter -> AA on the line + the bases; Piperunner -> Tanks/MDT/ART and Bombers; minicannons (17,8) (21,8) cover the north road to "
                      "the square only: go round by the ridge gates or take them with ART; ART -> Recon to see, tanks to close; Landers/ships (ports on the north bay, the south bay and both sea coasts) -> Tanks/ART on the quay.")
     # --- water: the silhouette is drawn row by row (sea spans), so the coast has coves, spits and a bay ---
     SEA = {0: [(0, 37)], 1: [(0, 37)], 2: [(0, 5), (12, 26), (32, 37)], 3: [(0, 2), (12, 26), (35, 37)], 4: [(0, 1), (13, 25)],
@@ -132,6 +132,9 @@ def build():
             if (x, y) != (31, 6):
                 m.put("#", x, y)
     m.pipe([(31, 2), (31, 3)])
+    # Kindle's pipeline: a wall of pipe along the west beach (0..6, 9) between her quarter and Javier's; the seam (4,9) is the breakable gate; her base (2,8) is connected to it
+    m.pipe([(0, 9), (6, 9)]).put("Z", 4, 9)
+    at("B", 2, 8)
     at("X", 27, 5); at("X", 10, 9)       # two Black Crystals
     at("S", 17, 9); at("S", 22, 8)       # two minicannons facing the road south
     at("W", 12, 10); at("E", 29, 10)     # flank minicannons on the ridge gates
@@ -140,6 +143,7 @@ def build():
     for army, box, seed in ((2, (4, 13, 11, 25), 2), (3, (26, 13, 33, 25), 3)):
         m.spread(army, {INF: 3, MECH: 1, TANK: 3, MDT: 1, RECON: 1, ART: 1, AA: 1}, box, seed=seed, gap=1, avoid=AVOID)
     m.spread(4, {INF: 3, MECH: 1, TANK: 3, MDT: 1, RECON: 1, ART: 1, AA: 1, FTR: 1, BCO: 1}, (4, 3, 35, 9), seed=4, gap=1, avoid=AVOID)
+    m.unit(4, PIPER, 1, 9, hold=True)       # Kindle's Piperunner on her pipeline
     # named places
     m.note("hq1", 19, 21, "player HQ"); m.note("hq2", 6, 18, "Javier's HQ (Green Earth)"); m.note("hq3", 31, 18, "Sonja's HQ (Yellow Comet)"); m.note("hq4", 8, 6, "Kindle's HQ (Black Hole)")
     m.note("factory", 31, 6, "Black Factory, Kindle's (anchor; footprint 30..32 x 4..7)")
@@ -153,5 +157,6 @@ def build():
     m.note("port_javier", 4, 17, "Javier's port (west sea)"); m.note("port_sonja", 32, 17, "Sonja's port (east sea)")
     m.lake(10, 10, 9, seed=0, river_end=(10, 11))          # (a river starts in water or at the map edge: AW2 has no source tile)
     m.put(".", 27, 11)
+    m.puts("r", [(17, 4), (21, 3), (22, 6), (17, 28), (21, 28), (25, 29)])      # reefs in the north and south bays
     m.lake(27, 11, 10, seed=1, river_end=(27, 12))          # (a river starts in water or at the map edge: AW2 has no source tile)
     return m

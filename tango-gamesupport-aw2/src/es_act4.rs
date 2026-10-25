@@ -52,6 +52,8 @@ fn es13() -> MissionDef {
     let mut m = MissionDef::new("es13", "The Free Port");
     m.objective = "Take the Harbour Office and hold it for 3 days. Four flags, no friends.";
     m.map = MapSrc::Built("es13");
+    m.look = 3; // wasteland (the bays are lava)
+    m.weather = Weather::Clear;
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::PickPair).funds(6000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).funds(7000),
