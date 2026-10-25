@@ -3,9 +3,12 @@ five COs): Klaus's Testudo (a counterattack against his attack does 25% less), A
 and Cassius's Triumph (a vehicle that has attacked may move once more, not attack again). Each also has its off case (no power: the plain rule) and a
 determinism case: the same scenario played twice from the same start ends with the same RAM, which is what both peers of a match need."""
 
-from aw2test import damage
+import os
+
+from aw2test import damage, ram, saves, tag
 from aw2test import rom as romlib
-from aw2test.game import NavError
+from aw2test.emu import Emu
+from aw2test.game import Game, NavError
 from aw2test.harness import test
 from tests.test_crumb import set_unit
 
@@ -301,8 +304,8 @@ def es_cassius_triumph_an_unused_extra_move_ends_with_the_turn(ctx):
 # Both peers of a match run the game from identical inputs (docs/dev/architecture-online.md); each rule reads and writes only emulated memory (units, player
 # blocks, battle records, the bits in `ram_map`), so two consoles given the same inputs must end with the same RAM. Each scenario is played twice on two consoles
 # (each its own process) and the whole of EWRAM and IWRAM is compared; the first run's frame count is the second's.
-# (aw2_netplay_script, which replays on two rollback peers in one process, is not used: offline Versus' L+R view switch that the harness presses to reach the
-# Design Maps list is a process-wide static, `online_maps::ORIGINAL_VIEW`, which three consoles in one process would flip three times.)
+# (`netplay_triumph` below replays a run on two rollback peers as well: offline Versus' L+R view that the harness presses to reach the Design Maps list was a
+# process-wide static, `online_maps::ORIGINAL_VIEW`, which the peers flipped for each other; it is a byte of the console's memory now.)
 
 def ram_dump(g):
     return g.e.read(0x02000000, 0x40000) + g.e.read(0x03000000, 0x7E00)
@@ -361,3 +364,192 @@ def es_cassius_triumph_is_deterministic(ctx):
         g.wait_idle()
         return g
     twice(ctx, run, "Triumph")
+
+
+# --- Triumph beyond the plain case: the computer's Cassius, a suspended game, a Tag Power's Change ---------------------------------------------------
+
+def triumph_tank_moves_on(g, start, to):
+    """The tank at `start` (extra move left) is picked up again, moved to `to` and Waits."""
+    g.select(*start)
+    g.move_to(*to)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+
+
+@test(modes=("ds",))
+def es_cassius_triumph_the_computers_cassius_moves_once_more_and_never_fires_twice(ctx):
+    """The computer plays Cassius (army 2) in his Super Power: its Tank attacks an Infantry and is left not done with its bit set (it had none: the computer's
+    Cassius got no extra move), a later pass of the unit queue moves it on, the executor turns its second attack into a Wait, and the Tank ends done with the bit
+    cleared, standing nowhere near its first target; the other Infantry, which the second move ends beside, is not fired on."""
+    m = ctx.map()
+    m.unit(1, "infantry", 13, 10).unit(1, "infantry", 13, 17).unit(1, "infantry", 3, 3).unit(2, "tank", 15, 10)
+    g = ctx.start(m, ["andy", CASSIUS], env=ENV)
+    foes = [g.unit_at(13, 10)["id"], g.unit_at(13, 17)["id"]]
+    seen = []
+
+    def hp(gg, uid):
+        u = gg.unit(uid)
+        return u["hp"] if u["type"] else 0
+
+    def watch(gg):
+        uid = gg.unit_at(15, 10)["id"]
+        gg.e.w8(gg.player(2)["addr"] + ram.P_CO_MODE, 2)         # (his Super Power for the turn: the computer's own use of it is another test's)
+        for _ in range(900):
+            gg.e.wait(2)
+            u = gg.unit(uid)
+            row = (u["x"], u["y"], u["flags"] & FLAG_DONE, moved_bit(gg, uid), hp(gg, foes[0]), hp(gg, foes[1]))
+            if not seen or row != seen[-1]:
+                seen.append(row)
+            if gg.current_army() != 2:
+                break
+
+    g.end_turn(human=1, observe=watch)
+    ctx.log(f"samples (x, y, done, bit, hp of the two Infantry): {seen}")
+    first = next((i for i, r in enumerate(seen) if r[3]), None)
+    ctx.check(first is not None, "its extra-move bit was set after the attack (the computer's Cassius gets Triumph)")
+    ctx.check(any(r[4] < 100 or r[5] < 100 for r in seen), "the computer's Tank attacked an Infantry")
+    if first is None:
+        return
+    ctx.check(not seen[first][2], "and the Tank was not done then")
+    hit = [k for k in (4, 5) if min(r[k] for r in seen) < 100]
+    ctx.eq(len(hit), 1, "exactly one Infantry was hit (by the first attack)")
+    stays = [k for k in (4, 5) if k not in hit][0] if len(hit) == 1 else 5
+    ctx.check(any((r[0], r[1]) != (seen[first][0], seen[first][1]) for r in seen[first:]), "the Tank moved on after its attack (the extra move)")
+    ctx.eq([r[stays] for r in seen], [100] * len(seen), "the other Infantry was never fired on (the Tank cannot fire again)")
+    ctx.check(any(not r[3] and r[2] == FLAG_DONE and (r[0], r[1]) != (seen[first][0], seen[first][1]) for r in seen[first:]),
+              "the extra move ended with the Tank done and the bit cleared")
+
+
+def suspended_triumph_game(ctx):
+    g = triumph_game(ctx, True)
+    uid = g.unit_at(*CASSIUS_AT)["id"]
+    g.attack(CASSIUS_AT, (11, 10), TARGET_AT)
+    ctx.check(moved_bit(g, uid), "the bit is set after the attack")
+    return g, uid
+
+
+@test(modes=("ds",))
+def es_cassius_triumph_a_suspended_game_keeps_the_extra_move(ctx):
+    """Save from the map menu with a Tank's extra move pending, reboot, Versus > Continue: the Tank is still not done, its bit is set, Fire is not offered, and
+    its move on ends it for good (it used to come back as a unit that could fire again: the bits were not in the save)."""
+    g, uid = suspended_triumph_game(ctx)
+    e = g.e
+    saves.suspend(g)
+    path = e.save(os.path.join(ctx.out, "saved"))
+    e2 = Emu(save=path, ds=True, env=ENV)
+    g2 = Game(e2)
+    ctx.games.append(g2)
+    saves.to_select_mode(e2)
+    saves.versus_continue(g2)
+    u = g2.unit(uid)
+    ctx.eq((u["x"], u["y"], u["flags"] & FLAG_DONE), (11, 10, 0), "the Tank stands where it attacked from, not done")
+    ctx.check(moved_bit(g2, uid), "its extra-move bit came back with the game")
+    g2.select(11, 10)
+    names = g2.move_to(11, 13)["names"]
+    ctx.check(not any(n.lower().startswith("fire") for n in names), f"and Fire is not offered ({names})")
+    g2.choose("Wait", g2.ACTION_MENU)
+    g2.wait_idle()
+    ctx.eq(g2.unit(uid)["flags"] & FLAG_DONE, FLAG_DONE, "the move on ends it")
+    ctx.check(not moved_bit(g2, uid), "and the bit is gone")
+
+
+@test(modes=("ds",))
+def es_cassius_triumph_a_suspended_game_without_it_has_no_bits(ctx):
+    """A game saved with no extra move pending has no bits after Continue (the tail is only written when something rides in it)."""
+    g = triumph_game(ctx, True)
+    uid = g.unit_at(*CASSIUS_AT)["id"]
+    saves.suspend(g)
+    path = g.e.save(os.path.join(ctx.out, "saved"))
+    e2 = Emu(save=path, ds=True, env=ENV)
+    g2 = Game(e2)
+    ctx.games.append(g2)
+    saves.to_select_mode(e2)
+    saves.versus_continue(g2)
+    ctx.check(not any(g2.e.u8(MOVED_BITS + k) for k in range(40)), "no bit is set")
+    ctx.check(not moved_bit(g2, uid), "not the Tank's")
+
+
+def tag_triumph_game(ctx, cos, partner):
+    m = ctx.map()
+    m.unit(1, "tank", *CASSIUS_AT).unit(2, "infantry", *TARGET_AT).unit(2, "infantry", 11, 14).unit(1, "infantry", 3, 3)
+    g = ctx.boot_teams(m, env=ENV)
+    tag.set_teams_partner(g.e, 1, partner)
+    g.set_teams(cos, {1})
+    g.teams_to_rules()
+    g.set_rules()
+    g.start_battle()
+    g.wait_for_input()
+    return g
+
+
+def fill_both(g):
+    e = g.e
+    p = g.player(1)
+    e.w32(p["addr"] + ram.P_CHARGE, tag.star_cost(p["powers_used"]) * g.co_stars(p["co"])[1])
+    t = tag.partner(e, 1)
+    e.w32(tag.rec(1) + tag.P_CHARGE, tag.star_cost(t["uses"]) * g.co_stars(t["co"])[1])
+
+
+@test(modes=("ds",))
+def es_cassius_triumph_a_tag_change_hands_the_units_to_the_partner(ctx):
+    """Cassius leads a pair with Andy. Tag Power, first half: Cassius's Super Power, his Tank attacks and has its extra move. Change: Andy's Super Power, every
+    unit moves again; the Tank's bit is gone with Cassius's power and it may fire (it was barred from Fire by a bit that outlived the power)."""
+    g = tag_triumph_game(ctx, [CASSIUS, "andy"], "andy")
+    e = g.e
+    fill_both(g)
+    g.open_map_menu()
+    g.choose("Tag", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the first half: Cassius's Super Power")
+    g.wait_for_input()
+    uid = g.unit_at(*CASSIUS_AT)["id"]
+    ctx.eq(g.player(1)["co"], CASSIUS, "Cassius is the active CO")
+    g.attack(CASSIUS_AT, (11, 10), TARGET_AT)
+    ctx.check(moved_bit(g, uid), "Triumph: the Tank has its extra move")
+    g.open_map_menu()
+    g.choose("Change", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: g.player(1)["co"] == romlib.co_id("andy") and g.player(1)["co_mode"] == 2, 3000, step=10), "the second half: Andy's Super Power")
+    g.wait_for_input()
+    ctx.check(not moved_bit(g, uid), "Cassius's power is over: the bit is gone")
+    ctx.eq(g.unit(uid)["flags"] & FLAG_DONE, 0, "every unit may move again")
+    g.select(11, 10)
+    names = g.move_to(11, 13)["names"]
+    ctx.check(any(n.lower().startswith("fire") for n in names), f"Andy's second half: the Tank is offered Fire beside the second Infantry ({names})")
+
+
+@test(modes=("ds",))
+def es_cassius_triumph_the_partner_has_it_in_the_second_half(ctx):
+    """Cassius is the partner of Andy. Tag Power: Andy's Super Power first, then Change puts Cassius in his place with his Super Power on: his Tank's attack
+    gives it the extra move as for any Cassius."""
+    g = tag_triumph_game(ctx, ["andy", CASSIUS], CASSIUS)
+    e = g.e
+    fill_both(g)
+    g.open_map_menu()
+    g.choose("Tag", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), "the first half: Andy's Super Power")
+    g.wait_for_input()
+    uid = g.unit_at(*CASSIUS_AT)["id"]
+    g.open_map_menu()
+    g.choose("Change", g.MAP_MENU)
+    ctx.require(e.wait_until(lambda: g.player(1)["co"] == CASSIUS and g.player(1)["co_mode"] == 2, 3000, step=10), "the second half: Cassius's Super Power")
+    g.wait_for_input()
+    g.attack(CASSIUS_AT, (11, 10), TARGET_AT)
+    u = g.unit(uid)
+    ctx.eq(u["flags"] & FLAG_DONE, 0, "the partner's Tank is not done after attacking")
+    ctx.check(moved_bit(g, uid), "its extra-move bit is set")
+
+
+@test(modes=("ds",), netplay=True)
+def netplay_triumph(ctx):
+    """A Tank attacks under Triumph, moves on and Waits, then the turn ends and comes back: replayed on two rollback peers, identical (EWRAM, IWRAM), the bits
+    as played."""
+    g = triumph_game(ctx, True)
+    g.attack(CASSIUS_AT, (11, 10), TARGET_AT)
+    g.select(11, 10)
+    g.move_to(11, 13)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+    g.end_turn(human=1)
+    identical, values, text = ctx.netplay_replay(g, [(MOVED_BITS, 41)], env=ENV)
+    ctx.log("\n".join(l for l in text.splitlines() if not l.startswith("peek")))
+    ctx.check(identical, "both peers and the straight replay identical")
+    ctx.eq(values.get(MOVED_BITS), g.e.read(MOVED_BITS, 41), "the extra-move bits as played")

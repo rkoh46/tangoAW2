@@ -86,11 +86,13 @@ const VERSUS: u8 = 3;
 /// buffer is 0x2000 bytes; AW2's reader takes the slot's whole length back).
 /// A mark, a hash of AW2's part of the block (+0..+0xDAC, so a stale copy
 /// from another save is never taken), the rule (and three spare bytes),
-/// then the pairs.
+/// then the pairs, then Cassius's extra moves ([`crate::es_co::moved_state`]:
+/// the units that attacked under Triumph and may still move once; the block's
+/// own tail has no room left).
 const TAG_AT: u32 = BLOCK + 0xE28;
 const TAG_MARK: u32 = 0x3247_4154; // "TAG2"
 const RULES: [u32; 1] = [crate::co_skills::VERSUS_RULE];
-pub const TAG_LEN: u32 = 8 + 4 + crate::tag::SAVED_LEN as u32;
+pub const TAG_LEN: u32 = 8 + 4 + crate::tag::SAVED_LEN as u32 + crate::es_co::MOVED_LEN;
 
 fn block_hash(core: &Core) -> u32 {
     let mut b = vec![0u8; 0xDAC];
@@ -108,12 +110,13 @@ fn captured(core: &mut Core) {
     }
     let rules = RULES.map(|r| core.raw_read_8(r, -1) & 1);
     let versus = core.raw_read_8(GAME_MODE, -1) == VERSUS;
-    if crate::tag::any(core) || (versus && rules != [0]) {
+    if crate::tag::any(core) || (versus && rules != [0]) || crate::es_co::moved_any(core) {
         let mut t = Vec::with_capacity(TAG_LEN as usize);
         t.extend_from_slice(&TAG_MARK.to_le_bytes());
         t.extend_from_slice(&block_hash(core).to_le_bytes());
         t.extend_from_slice(&[rules[0], 0, 0, 0]);
         t.extend_from_slice(&crate::tag::saved(core));
+        t.extend_from_slice(&crate::es_co::moved_state(core));
         core.raw_write_range(TAG_AT, -1, &t);
     }
     let mut b = vec![0u8; TAIL_LEN as usize];
@@ -157,6 +160,9 @@ fn applied(core: &mut Core) {
         let mut t = vec![0u8; crate::tag::SAVED_LEN];
         core.raw_read_range(TAG_AT + 12, -1, &mut t);
         crate::tag::restore(core, Some(&t));
+        let mut m = vec![0u8; crate::es_co::MOVED_LEN as usize];
+        core.raw_read_range(TAG_AT + 12 + crate::tag::SAVED_LEN as u32, -1, &mut m);
+        crate::es_co::set_moved_state(core, &m);
         // Read once: a later Continue of a game saved without pairs does
         // not take these.
         core.raw_write_32(TAG_AT, -1, 0);

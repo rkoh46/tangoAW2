@@ -345,11 +345,15 @@ pub const POWER_PAID_AT: u32 = PAY_FOR_POWER;
 //   on a cell next to the target (the four cells beside it, hidden units too, never an Oozium) loses 1 HP, and a unit on 1 HP stays on 1. The attacker's cell is the
 //   move's destination (`0x03003100`), because the work-out puts the unit back on its old cell.
 // - **Triumph** (Cassius's Super Power): `sub_080424FC` ends the selected unit's action (`+1` bit 0 = done). Called from a battle's end (the four return
-//   addresses in [`BATTLE_ENDS`], the calls at `0x080419FC`, `0x08041E00`, `0x08041E50`, `0x08040972`) for a vehicle of a human-played Cassius army in his Super Power that has not yet had its extra move, the trap at `0x08042532` (the
+//   addresses in [`BATTLE_ENDS`], the calls at `0x080419FC`, `0x08041E00`, `0x08041E50`, `0x08040972`) for a vehicle of a Cassius army in his Super Power that has not yet had its extra move, the trap at `0x08042532` (the
 //   `orrs` that sets done) leaves the unit not done and sets its bit in [`MOVED_AFTER_ATTACK`]. The unit can be picked up again; while its bit is set Fire is
 //   hidden (the two Fire rows' show tests are trapped), so it can move and do anything but attack, and any ordinary end of its action (Wait, ...) clears the bit
-//   and finishes it as always. The bits are cleared when the turn changes hands ([`tick`]). The computer's Cassius does not get the extra move (its unit loop would
-//   fire the unit again).
+//   and finishes it as always. The bits are cleared when the turn changes hands and as soon as the army's active CO is not Cassius in his Super Power
+//   ([`forget_moves`]: a Tag Power's Change puts the partner in his place and every unit may move again, and the partner's units may fire). They ride in a
+//   suspended game after the tag tail ([`moved_state`], `crate::suspend`). The computer's Cassius gets the extra move too: its unit queue (`sub_0805D438`)
+//   takes a unit that is not done, checks for an attack and runs the pass's routine, which moves it (and fires when the move ends beside a foe); the action executor
+//   (`sub_0805FD64`) then carries out the action the step set up. For a unit with its bit set an attack action is turned into a Wait where the unit goes
+//   ([`ai_executor`]), so a later pass of the queue moves it without a shot and the Wait ends it as for a person.
 
 const BATTLE_ATTACKER: u32 = 0x0300_13D0;
 const BATTLE_DEFENDER: u32 = 0x0300_13B0;
@@ -493,7 +497,6 @@ fn action_done(core: &mut Core) {
     if !abilities_on(core)
         || !(1..=5).contains(&army)
         || crate::co_roster::army_co(core, army) != (CASSIUS, 2)
-        || crate::ds_ai::is_cpu(core, army)
         || !vehicle(core.raw_read_8(unit, -1))
         || flags & 0x08 != 0
         || hp == 0
@@ -502,7 +505,10 @@ fn action_done(core: &mut Core) {
         return;
     }
     set_moved_bit(core, i, true);
-    core.gba_mut().cpu_mut().set_gpr(1, 0);
+    // (r1 = 0: the `orrs` sets nothing; r0, the unit's flags, loses bit 0 too: the computer's action executor has set it while the unit moved, a person's flags have none yet)
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(1, 0);
+    cpu.set_gpr(0, cpu.gpr(0) & !1);
 }
 
 /// The two Fire rows' show tests (`0x0802CA78` direct, `0x0802CB20` ranged; r0 = 1 hides): the selected unit has had its extra move, it may not fire again.
@@ -521,10 +527,32 @@ fn fire_shown(core: &mut Core) {
     cpu.set_thumb_pc(lr & !1);
 }
 
-/// Every frame: when the turn passes to another army the extra moves are forgotten.
+/// The computer's action executor `sub_0805FD64` (driver state 3) takes the action the unit queue's step has set up at `AI_ACTION` (byte 0 the kind: 4 a move that ends in
+/// an attack in the direction of byte 6, 2 a move that ends in Wait; byte 1 the unit's slot, bytes 2 and 3 where it goes). A unit with its extra move left has fired already:
+/// its attack becomes a Wait where it goes (a later pass of the queue moves it; the Wait ends it as for a person).
+const AI_EXECUTOR: u32 = 0x0805_FD64;
+const AI_ACTION: u32 = 0x0300_46C0;
+const AI_ATTACK: u8 = 4;
+const AI_WAIT: u8 = 2;
+
+fn ai_executor(core: &mut Core) {
+    if !is_on(core) || core.raw_read_8(AI_ACTION, -1) != AI_ATTACK {
+        return;
+    }
+    let slot = core.raw_read_8(AI_ACTION + 1, -1) as u32;
+    if slot == 0 || slot >= SLOTS || !moved_bit(core, slot) {
+        return;
+    }
+    core.raw_write_8(AI_ACTION, -1, AI_WAIT);
+    core.raw_write_8(AI_ACTION + 6, -1, 0);
+    core.raw_write_8(AI_ACTION + 7, -1, 0);
+}
+
+/// Every frame: the extra moves are forgotten when the turn passes to another army and when the army's active CO is no longer Cassius in his Super Power (a Tag Power's
+/// Change swaps in the partner: his units, free to move again, may fire).
 fn forget_moves(core: &mut Core) {
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u8;
-    if core.raw_read_8(MOVED_TURN, -1) == army {
+    if core.raw_read_8(MOVED_TURN, -1) == army && (!(1..=5).contains(&(army as u32)) || crate::co_roster::army_co(core, army as u32) == (CASSIUS, 2)) {
         return;
     }
     for k in 0..MOVED_BYTES {
@@ -535,8 +563,28 @@ fn forget_moves(core: &mut Core) {
     core.raw_write_8(MOVED_TURN, -1, army);
 }
 
+/// The extra-move bits and the army whose turn they belong to, for a suspended game ([`crate::suspend`]): [`MOVED_LEN`] bytes.
+pub fn moved_state(core: &Core) -> Vec<u8> {
+    let mut b = vec![0u8; MOVED_LEN as usize];
+    core.raw_read_range(MOVED_AFTER_ATTACK, -1, &mut b);
+    b
+}
+
+/// Whether any unit has its extra move left (a suspended game then carries the bits).
+pub fn moved_any(core: &Core) -> bool {
+    moved_state(core)[..MOVED_BYTES as usize].iter().any(|&b| b != 0)
+}
+
+/// The bits of a suspended game, put back after Continue (the same army's turn: the units are in the same slots).
+pub fn set_moved_state(core: &mut Core, b: &[u8]) {
+    if b.len() == MOVED_LEN as usize {
+        core.raw_write_range(MOVED_AFTER_ATTACK, -1, b);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![(STRIKE_APPLIED, Box::new(strike_applied)), (ACTION_DONE, Box::new(action_done))];
+    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> =
+        vec![(STRIKE_APPLIED, Box::new(strike_applied)), (ACTION_DONE, Box::new(action_done)), (AI_EXECUTOR, Box::new(ai_executor))];
     for at in FIRE_SHOWN {
         t.push((at, Box::new(fire_shown)));
     }
