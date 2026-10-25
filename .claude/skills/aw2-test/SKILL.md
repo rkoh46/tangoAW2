@@ -14,3 +14,4 @@ description: Pick and run the right tangoAW2 checks for a change (lib tests, off
 3. LOOK at pictures: `./aw2dev sheet latest --around 0 --kind move --strip`. A pass on a checker is not proof; check `meta.json` build stamps match across compared runs.
 4. A small fix the user will playtest: skip suites; `./aw2dev build --release && ./aw2dev install-mac`.
 5. Respect politeness (one live run at a time, local signalling, never close the user's app, delete captures and `target/` when done).
+6. Waiting for a long run: `./aw2dev wait PID` or `./aw2dev wait LOG --text "passed in"` (never `until ! pgrep -f ...`: it matches its own shell and never ends).

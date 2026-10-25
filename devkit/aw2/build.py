@@ -61,6 +61,8 @@ def test(args):
         # `aw2dev ci`'s reader of the checks workflow, the workspace conventions it holds, tango-library's feature gates
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_ci"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_wait"], cwd=cfg.DEVKIT, check=False)   # `aw2dev wait`
+        rc |= r.returncode
         from .commands import kit as _kit
         import argparse as _ap
         rc |= _kit.check(_ap.Namespace(strict=False))      # docs, skills and tests must not point at missing commands or files

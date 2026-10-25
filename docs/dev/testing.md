@@ -50,3 +50,9 @@ A small fix the user will playtest: build, `aw2dev install-mac`, let them test. 
 - Disk: `aw2dev clean` (dry run by default), keep only ~/tangoAW2 and ~/tangoAW2-hires checked out, delete `target/` of your worktree
   when you are done, delete captures once reviewed. Nothing from the games is ever committed.
 - Sound: test profiles start with volume 0.
+
+## Waiting for a long run
+
+Start it with its output in a file (`python3 tools/aw2test/run.py ... > /tmp/run.log 2>&1 &`) and wait with `aw2dev wait`: `aw2dev wait PID`, `aw2dev wait /tmp/run.log --text "passed in"`
+(`--timeout`, `--poll`). Never `until ! pgrep -f "run.py ..."; do sleep 20; done`: `pgrep -f` matches the waiting shell's own command line, which holds the same words, so the loop never ends and
+a pile of them builds up (use `pgrep -f "[r]un.py ..."` if you must).
