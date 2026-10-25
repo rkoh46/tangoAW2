@@ -203,16 +203,19 @@ def water_tile(c, around):
 
 
 def river_phase(ch, x, y):
-    """The tile of a straight east-west river cell: the game draws a straight run in one of two phases, 0x19 (after a bend that
-    turns in from the north, 0x78, towards one that turns away to the south, 0x5B) and 0x39 (after the bend from the south, 0x58, towards
-    0x7B): the run's west end decides (a bridge, the map edge or the sea at the west end: 0x19, as the games' runs from the edge)."""
+    """The tile of a straight east-west river cell. The games draw a straight run in one of two phases: 0x19 between the bends 0x78 (river from
+    the north turning east) and 0x5B (turning south), and 0x39 between 0x58 (from the south turning east) and 0x7B (turning north): the bend at
+    either end of the run decides (0x19 where neither end is a bend: a bridge, the map edge or the sea)."""
     wet = lambda X, Y: ch(X, Y) in '-='
-    X = x - 1
-    while ch(X, y) == '-' and not wet(X, y - 1) and not wet(X, y + 1):
-        X -= 1
-    if ch(X, y) == '-' and wet(X + 1, y) and wet(X, y + 1) and not wet(X, y - 1) and not wet(X - 1, y):
-        return 0x39
-    return 0x19
+    X0 = x - 1
+    while ch(X0, y) == '-' and not wet(X0, y - 1) and not wet(X0, y + 1):
+        X0 -= 1
+    X1 = x + 1
+    while ch(X1, y) == '-' and not wet(X1, y - 1) and not wet(X1, y + 1):
+        X1 += 1
+    west_from_south = ch(X0, y) == '-' and wet(X0 + 1, y) and wet(X0, y + 1) and not wet(X0, y - 1) and not wet(X0 - 1, y)
+    east_to_north = ch(X1, y) == '-' and wet(X1 - 1, y) and wet(X1, y - 1) and not wet(X1, y + 1) and not wet(X1 + 1, y)
+    return 0x39 if west_from_south or east_to_north else 0x19
 
 
 def grid(m):

@@ -258,7 +258,7 @@ for hq, (cx, cy) in isles.items():
     for dx, dy, c in [(-3, -2, 'B'), (3, -2, 'C'), (-3, 2, 'C'), (2, 2, 'A'), (0, -3, 'C')]:
         g[cy + dy][cx + dx] = c
 g[6][11] = 'P'; g[6][18] = 'P'; g[15][15] = 'P'
-g[9][6] = 'P'; g[9][23] = 'P'; g[22][15] = 'P'
+g[10][6] = 'P'; g[10][23] = 'P'; g[23][15] = 'P'    # (on each island's south shore: a port needs sea beside it)
 for x, y in [(14, 3), (4, 16), (26, 16), (15, 11)]:
     for dy in range(-1, 2):
         for dx in range(-2, 3):

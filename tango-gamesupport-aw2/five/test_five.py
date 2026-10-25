@@ -61,6 +61,10 @@ class RiverPhase(unittest.TestCase):
         rows = ['^^^^^^', '^--=,~', '^-.^^^', '^-^^^^']
         self.assertEqual(self.phase(rows, 2, 1), 0x39)
 
+    def test_a_run_before_the_bend_to_the_north_is_0x39(self):
+        # (a river from the lagoon on the west runs east and turns north: 0x39 .. 0x7B)
+        self.assertEqual(self.phase(['~--^', '^^-^'][::-1], 1, 1), 0x39)
+
     def test_a_run_from_the_edge_or_a_bridge_stays_0x19(self):
         self.assertEqual(self.phase(['------'], 3, 0), 0x19)
         self.assertEqual(self.phase(['^=--=^'], 2, 0), 0x19)
