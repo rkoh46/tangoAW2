@@ -64,6 +64,10 @@ def problems(cos, tags, ref=None):
         if len(d.get("name", "")) > 7:
             p(co, "name longer than 7 letters (the 48 x 16 name graphic)")
         port = d.get("portrait", {})
+        if d.get("hq", "default") not in ("default", "emerald_sun", "black_hole"):
+            p(co, f"hq {d.get('hq')!r}: an army skin's id or \"default\"")
+        if port.get("placeholder"):
+            continue
         if port.get("base"):          # a recolour of another CO's art: the palette entries are index 1..15 = "RRGGBB"
             rc = port.get("recolour", {})
             if port["base"] not in ("andy",):

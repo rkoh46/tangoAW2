@@ -455,3 +455,68 @@ def capture(name, out, parts=("page", "hud", "cop", "scop", "effect", "tag")):
     cap.save()
     ctx.finish()
     return cap
+
+
+# --- the HQ of the Roman COs (`aw2dev co sheet hq`) --------------------------------------------------------------------------------------
+
+def hq_cell(g, army):
+    from . import ram
+    w = g.e.u16(0x0201E450) or 30
+    h = g.e.u16(0x0201E452) or 20
+    for y in range(h):
+        for x in range(w):
+            c = g.terrain_class(x, y)
+            if c & 0x1F == 8 and c >> 5 == army:
+                return x, y
+    return None
+
+
+def hq_frame(g, out, key, army):
+    cell = hq_cell(g, army)
+    if cell is None:
+        return None
+    g.goto(*cell)
+    g.e.wait(60)
+    g.e.shot(os.path.join(out, key))
+    from PIL import Image
+    Image.open(os.path.join(out, key + ".bmp")).convert("RGB").save(os.path.join(out, key + ".png"))
+    os.remove(os.path.join(out, key + ".bmp"))
+    return key
+
+
+def capture_hq(out):
+    """Frames of the HQ on the map: each Roman CO's in Versus (its own army, beside Andy's plain one) and in the missions M1, M7, M8, M11, M14, M16 (every army led by a CO with an Emerald Sun HQ
+    and the player's). Returns {key: caption}."""
+    from . import escampaign as es
+    os.makedirs(out, exist_ok=True)
+    ctx = new_ctx("copics_hq", os.path.join(out, "_work"))
+    caps = {}
+    for name in ("klaus", "aurelia", "cassius", "livia", "varro", "andy"):
+        spec = cospec.get(name)
+        m = ctx.map(hq=((1, 5, 5), (2, 24, 12)), spare=False)
+        m.unit(1, "infantry", 3, 3).unit(2, "infantry", 20, 12)
+        g = ctx.start(m, [spec.id, "andy"], env=ENV)
+        k = hq_frame(g, out, f"versus_{name}", 1)
+        caps[k] = f"Versus: {NAMES[name]}'s HQ" + (" (the game's own, for comparison)" if name == "andy" else "")
+        g.e.close()
+    for n in (1, 7, 8, 11, 14, 16):
+        e, g, d = es.enter(ctx, n)
+        g.e.wait(30)
+        for a in range(1, 6):
+            try:
+                p = g.player(a)
+            except Exception:
+                continue
+            if not p["raw"][0x1B]:
+                continue
+            style = cospec.hq_style_of_id(p["co"])
+            if a == 1 or style == "emerald_sun":
+                k = hq_frame(g, out, f"m{n}_army{a}", a)
+                if k:
+                    nm = next((c for c, i in cospec.IDS.items() if i == p["co"]), f"CO {p['co']}")
+                    caps[k] = f"M{n}: army {a}'s HQ (CO {NAMES.get(nm, nm)})"
+        e.close()
+    ctx.finish()
+    with open(os.path.join(out, "hq_captions.json"), "w") as f:
+        json.dump(caps, f, indent=1)
+    return caps

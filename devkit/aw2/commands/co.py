@@ -12,6 +12,7 @@
   co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Crumb, Varro, Clone Andy) in real battles against the specification: day to day,
                                            CO Power, Super Power (attack, defence, move, range, cost, income, funds, heal, the special rules), meters and star costs, Tag Powers, CPU use;
                                            prints the pass / fail table (docs/dev/co-verify.md); with `--net` also plays each power through `net repeat`
+  co sheet hq                              the HQ of the Roman COs on the map: Versus, the tilted map (the real app), the missions (`hq_check.png`)
   co sheet powers [CO ...] [--out DIR]     real-game pictures of each CO's powers (select card, CO page, HUD, activations, tag powers, effects) as `<co>_powers.png` and `all_cos_overview.png`
 """
 import sys
@@ -68,6 +69,9 @@ def register(sub):
     sp.add_argument("--only", nargs="*", help="parts: page hud cop scop effect tag")
     sp.add_argument("-j", "--jobs", type=int, default=3)
     sp.set_defaults(fn=sheet_powers)
+    sq = shs.add_parser("hq", help="the HQ of the Roman COs on the map (Versus, the tilted map, the missions): `hq_check.png`")
+    sq.add_argument("--out")
+    sq.set_defaults(fn=sheet_hq)
 
 
 def _cos(names):
@@ -214,4 +218,19 @@ def sheet_powers(a):
             util.say("wrote", out / f"{co}_powers.png")
     powersheet.overview(raw, out / "all_cos_overview.png", cos)
     util.say("wrote", out / "all_cos_overview.png")
+    return 0
+
+
+def sheet_hq(a):
+    from ..colib import powersheet, ingame
+    import subprocess
+    out = Path(a.out) if a.out else cfg.work("co_sheets")
+    raw = out / "hqraw"
+    raw.mkdir(parents=True, exist_ok=True)
+    code = "import sys; sys.path.insert(0, %r); from aw2test import copics; copics.capture_hq(%r)" % (str(cfg.REPO / "tools" / "aw2test"), str(raw))
+    subprocess.run([sys.executable, "-c", code], cwd=cfg.REPO, check=True)
+    for co in ("klaus", "aurelia", "cassius", "livia", "varro", "andy"):
+        ingame.photograph_hq(co, raw)
+    powersheet.hq_sheet(raw, out / "hq_check.png")
+    util.say("wrote", out / "hq_check.png")
     return 0

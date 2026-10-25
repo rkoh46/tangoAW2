@@ -48,7 +48,8 @@ def register(sub):
     a.add_argument("--out")
     a.set_defaults(fn=lambda a: subprocess.run([sys.executable, str(cfg.REPO / "tools" / "estext" / "render.py")] + ([a.out] if a.out else [])).returncode)
     a = cs.add_parser("check", help="the Emerald Sun Campaign's static rules (inventions only in the Black Hole missions, unit caps, dialogue)")
-    a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).check(a))
+    a.add_argument("--hq", action="store_true", help="also boot every mission and compare the drawn HQ pictures with the Emerald Sun HQ art (the `co_verify_hq_m*` scenarios; needs the ROMs and the built examples)")
+    a.set_defaults(fn=check_with_hq)
     a = cs.add_parser("worldmap", help="the Emerald Sun world map on Omega Land: runs the map and progression tests with pictures and writes es_world_map.png (the map at three stages with the nodes labelled, the flag states, the unlock moments)")
     a.add_argument("--out")
     a.add_argument("--no-run", action="store_true", help="only compose the sheet from the last run's pictures")
@@ -204,3 +205,14 @@ def trace(a):
             bad += gap
             print(f"{s['start']:6}-{s['end']:6} song {s['song']:5} {s['kind']:9} silent {s['silent']}/{s['samples']} {'SILENT DIALOGUE' if gap else ''} {(s['text'] or '')[:40]}")
     return 1 if (r.returncode or bad) else 0
+
+
+def check_with_hq(a):
+    """`campaign check`: the static rules; with `--hq` also the live HQ check of every mission (fails when an army that should show the Emerald Sun HQ does not)."""
+    rc = __import__("aw2.eslib.cli", fromlist=["x"]).check(a)
+    if getattr(a, "hq", False):
+        import subprocess
+        r = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "aw2test" / "run.py"), "--mode", "ds", "-j", "4", "-k", "co_verify_hq_m"], capture_output=True, text=True)
+        print("\n".join(l for l in r.stdout.splitlines() if l.startswith(("PASS", "FAIL")) or l.strip().startswith("-") or "passed" in l))
+        rc = rc or r.returncode
+    return rc

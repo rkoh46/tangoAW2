@@ -165,3 +165,30 @@ def pin(name):
 
 for _n in ("cassius", "aurelia"):
     pin(_n)
+
+
+def hq(name):
+    def fn(ctx):
+        cv.hq_versus(ctx, name)
+    fn.__name__ = f"co_verify_hq_{name}"
+    test(modes=("ds",))(fn)
+
+
+for _n in NAMES + ("cloneandy",):
+    hq(_n)
+
+
+@test(modes=("ds",))
+def co_verify_hq_tag(ctx):
+    cv.hq_tag(ctx)
+
+
+def hq_m(n):
+    def fn(ctx):
+        cv.hq_mission(ctx, n)
+    fn.__name__ = f"co_verify_hq_m{n}"
+    test(modes=("ds",))(fn)
+
+
+for _k in range(1, 17):
+    hq_m(_k)

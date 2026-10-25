@@ -125,3 +125,42 @@ def overview(raw, out_path, cos, scale=1.5):
         y += th + pad + 4
     im.save(out_path)
     return out_path
+
+
+def hq_sheet(raw, out_path, cols=3):
+    """`hq_check.png`: the HQ of the Roman COs on the map: in Versus (beside Andy's, the game's own), on the Dual Strike tilted map (the real app) and in the Emerald Sun missions."""
+    raw = Path(raw)
+    caps = json.loads((raw / "hq_captions.json").read_text())
+    versus = [(k, raw / f"{k}.png", caps[k]) for k in caps if k.startswith("versus_")]
+    tilt = [(p.stem, p, f"Tilted map (the app): {p.stem.split('_')[0].capitalize()}'s HQ" + (" (the game's own)" if p.stem.startswith('andy') else "")) for p in sorted(raw.glob("*_hq_tilt.png"))]
+    missions = [(k, raw / f"{k}.png", caps[k]) for k in caps if k.startswith("m")]
+    secs = [("Versus: each CO's own army (Andy's is the game's plain HQ). The Emerald Sun HQ is the domed tower with gold windows and a finial, drawn in the army's own building colours", versus),
+            ("Dual Strike tilted map, the real app", tilt), ("Emerald Sun Campaign missions: the player's HQ and the HQ of every army led by a Roman CO", missions)]
+    tw, th, pad = 480, 320, 14
+    W = cols * (tw + pad) + pad
+    y = pad + 48
+    placed = []
+    for title, tiles in secs:
+        if not tiles:
+            continue
+        placed.append(("head", title, y))
+        y += 36
+        for r in range(0, len(tiles), cols):
+            for k, t in enumerate(tiles[r:r + cols]):
+                placed.append(("tile", t, (pad + k * (tw + pad), y)))
+            y += th + 40
+    im = Image.new("RGB", (W, y + pad), BG)
+    d = ImageDraw.Draw(im)
+    d.text((pad, 10), "HQ of the Roman COs on the map", font=font(30, True), fill=HEAD)
+    for kind, a, b in placed:
+        if kind == "head":
+            d.rectangle([pad, b + 2, W - pad, b + 3], fill=(60, 68, 90))
+            d.text((pad, b + 8), a, font=font(17, True), fill=INK)
+        else:
+            _, path, cap = a
+            x, yy = b
+            im.paste(Image.open(path).convert("RGB").resize((tw, th), Image.NEAREST), (x, yy))
+            d.rectangle([x - 1, yy - 1, x + tw, yy + th], outline=(70, 78, 100))
+            d.text((x, yy + th + 6), cap, font=font(15), fill=INK)
+    im.save(out_path)
+    return out_path

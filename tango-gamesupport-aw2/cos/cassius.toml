@@ -13,6 +13,10 @@ stars = { cop = 3, scop = 7 }
 
 # "vehicle" = the ground vehicles: Recon, APC, Tank, Md. Tank, Megatank, Neotank, Piperunner and Anti-Air (the Megatank and the Piperunner count as vehicles, not as indirect units: the owner's ruling; pinned by `aw2dev co verify` `vehicles`).
 
+# The HQ the army of this CO shows on the map (docs/dev/army-packs.md): the id of an army skin (`skins/<id>.toml`), whose HQ picture (in the army's own building colours) replaces
+# the HQ of the CO's country. "default" keeps the game's. The HQ follows the CO that starts the battle (a Tag pair: the lead). Checked by `aw2dev co verify` (facet `hq`).
+hq = "emerald_sun"
+
 [d2d]
 name = "Impetus"
 text = "My vehicles move 1 space more and hit 10% harder, but their armour is 10% thinner."

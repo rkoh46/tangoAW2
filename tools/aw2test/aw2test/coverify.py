@@ -888,3 +888,70 @@ def pin_vehicles(ctx, name):
             want_base = max(1, damage.div(base["base"][t] * (100 + spec.bonus(mode, 5, 0)), 100))
             chk(ctx, label, got["base"][t] == want_base, f"{name_of(t)}'s base damage {got['base'][t]} (Andy {base['base'][t]}, a Tank's {spec.bonus(mode, 5, 0):+d}% -> {want_base})", "vehicles")
         chk(ctx, label, got["range"] == {5: True, 6: False}, f"the Piperunner's range is Andy's (reaches 5 {got['range'][5]}, 6 {got['range'][6]})", "vehicles")
+
+
+# --- the HQ follows the CO (`hq = "emerald_sun"` in the CO's data file) ----------------------------------------------------------------------
+
+SKIN_HQ = {"emerald_sun": 0x09FD0400}        # army_skin::hq_art(skin, clear): where the committed HQ picture (8 tiles) of the skin is kept in the ROM image
+OBJ_VRAM = 0x06010000
+
+
+def hq_tiles(g):
+    """The OBJ tile memory as 32-byte tiles."""
+    return g.e.read(OBJ_VRAM, 0x8000)
+
+
+def find_art(vram, art):
+    return [i for i in range(0, len(vram) - len(art) + 1, 32) if vram[i:i + len(art)] == art]
+
+
+def hq_check(ctx, g, label, skin_armies=()):
+    """The HQ pictures in OBJ VRAM: every army whose CO's data file names a skin HQ (and every army in `skin_armies`, those wearing the skin) has that skin's HQ picture in its slot of the
+    sheet; the picture is in VRAM exactly as many times as armies show it. Returns the number of armies expected to show it."""
+    vram = hq_tiles(g)
+    shown = 0
+    for a in range(1, 6):
+        try:
+            p = g.player(a)
+        except Exception:
+            continue
+        if not p["raw"][0x1B]:                  # (no such army in this game)
+            continue
+        if cospec.hq_style_of_id(p["co"]) == "emerald_sun" or a in skin_armies:
+            shown += 1
+    expected = g.e.read(SKIN_HQ["emerald_sun"], 0x100)
+    found = find_art(vram, expected)
+    chk(ctx, label, len(found) == shown, f"the Emerald Sun HQ picture is in the OBJ tiles {len(found)} time(s) (tiles {[f // 32 for f in found]}); armies whose CO's data file says hq = emerald_sun"
+        f"{' or that wear the skin' if skin_armies else ''}: {shown}", "hq")
+    chk(ctx, label, len(set(expected)) > 3, "the skin's committed HQ picture is there to compare with (not empty)", "hq")
+    return shown
+
+
+def hq_versus(ctx, name):
+    """A Versus game with `name` leading army 1 against Andy: the HQ matches the CO's data file."""
+    spec = cospec.get(name)
+    g = ctx.start(ctx.map(), [spec.id, "andy"], env=ENV)
+    hq_check(ctx, g, f"{name} d2d")
+    g.e.close()
+    # Tag: the HQ follows the lead CO
+    return g
+
+
+def hq_tag(ctx):
+    """Tag pairs: the lead CO decides (Klaus leading with Andy, Andy leading with Klaus)."""
+    for lead, par, want in (("klaus", 1, 1), ("andy", 86, 0)):
+        g = tag_battle(ctx, [cospec.IDS[lead], "andy"], [par, None], units=[(1, "tank", 10, 10), (2, "tank", 11, 10)])
+        vram = hq_tiles(g)
+        found = find_art(vram, g.e.read(SKIN_HQ["emerald_sun"], 0x100))
+        chk(ctx, f"{lead} d2d", len(found) == want, f"{lead} leading a pair: the Emerald Sun HQ is in the tiles {len(found)} time(s), expected {want} (the HQ follows the lead CO)", "hq")
+        g.e.close()
+
+
+def hq_mission(ctx, n):
+    """Emerald Sun Campaign mission n: the player's army (it wears the skin) and every army led by a CO with hq = emerald_sun show the Emerald Sun HQ."""
+    from . import escampaign as es
+    e, g, d = es.enter(ctx, n)
+    g.e.wait(60)
+    shown = hq_check(ctx, g, "klaus d2d", skin_armies=(1,))
+    chk(ctx, "klaus d2d", shown >= 1, f"M{n}: {shown} army/armies show the Emerald Sun HQ", "hq")
+    e.close()

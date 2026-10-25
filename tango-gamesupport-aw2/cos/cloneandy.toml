@@ -11,6 +11,9 @@ luck = [10, 10, 10]
 bio = "Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up"
 stars = { cop = 3, scop = 6 }
 
+# The HQ of his country (Black Hole's own), as Andy's data gives it: "default".
+hq = "default"
+
 [d2d]
 name = "Andy's own"
 text = "No real weaknesses. Proficient with air, sea, and land units. Ready to fight wherever and whenever."

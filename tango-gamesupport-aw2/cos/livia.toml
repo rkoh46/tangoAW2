@@ -10,6 +10,10 @@ bio = "Senator and quaestor of the Emerald Sun. She keeps the army's purse and t
 luck = [10, 10, 10]
 stars = { cop = 3, scop = 6 }
 
+# The HQ the army of this CO shows on the map (docs/dev/army-packs.md): the id of an army skin (`skins/<id>.toml`), whose HQ picture (in the army's own building colours) replaces
+# the HQ of the CO's country. "default" keeps the game's. The HQ follows the CO that starts the battle (a Tag pair: the lead). Checked by `aw2dev co verify` (facet `hq`).
+hq = "emerald_sun"
+
 [d2d]
 name = "Ledger"
 text = "My properties yield 25% more funds, but my units cost 10% more."

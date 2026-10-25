@@ -49,6 +49,7 @@ stars = { cop = 4, scop = 8 }        # CO Power, Super Power in all (AW2's table
 [d2d]  name, text, mods = [{ units = "foot", attack = 10, defence = 10 }]   # units: all foot vehicle direct indirect naval air artillery rockets
 [cop]  name, text, mods, rules = ["..."], quote = ["line 1", "line 2"]      # a rule is a sentence the engine work implements (phase 2)
 [scop] name, text, mods, heal = 3, tribute = 100, quote
+hq = "emerald_sun"                  # the HQ the CO's army shows on the map: an army skin's id (`skins/<id>.toml`), or "default" (the game's own). The HQ follows the lead CO; docs/dev/army-packs.md
 [lines] tag_in, victory, defeat
 [portrait] source = "art-src/cos/klaus_v5.jpg"
 ```

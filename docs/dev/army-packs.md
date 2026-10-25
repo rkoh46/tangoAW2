@@ -201,3 +201,11 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 - Free ROM ends at `0x09FE0000` (the console's ROM image): the skins' room for battle pictures is the 36 KB between the backups and the map pictures, 12 KB a skin, which is why the sheets are compressed.
 - Up to three skins at once (slots 52..57, one colour each); more needs more slot room (`slot_of`).
 - The Dual Strike graphics mode and the tilted map (and its hi-res picture) show the skin: the tilt is a host-side overlay of the console's picture, so the palettes, the helmets (the skin's slot instead of the CO's country's), the HQ and the properties are the console's own; the pack's own screens (the CO panel's palette, the CO page's unit chart, the Versus and CO-pick cards with the emblem) take their colours from the skin file. Dual Strike's own pictures of Infantry and Mech are not drawn for the skin (the crested soldiers are AW2-style pixel art: the skin's soldiers keep them in every mode).
+
+
+## The HQ follows the CO (`hq = "<skin id>"` in `cos/<id>.toml`)
+An army shows a skin's HQ picture (the domed tower, `[hq] rows` of `skins/<id>.toml`) when it wears the skin **or** when its CO's data file says `hq = "<skin id>"` (`army_skin::hq_style`, `hq_skin`, put into OBJ VRAM at the end of the game's HQ loader,
+`hq_loaded`). Klaus, Aurelia, Cassius, Livia, Varro and (a placeholder) Crumb have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
+The picture is indexed in the building palette, so it is drawn in the **army's own building colours** (red for Orange Star, a Black Hole army's purple, the skin's green on the skin's army). Without this the HQ came from the country
+of the CO the data was based on (Klaus: Kanbei's, Yellow Comet's pale-green tower). `aw2dev co verify` (facet `hq`), `aw2dev campaign check --hq` and `aw2dev co sheet hq` check and show it. Not covered: the cursor's info panel
+draws its own small HQ icon, which stays the game's.

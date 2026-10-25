@@ -44,6 +44,15 @@ class Spec(unittest.TestCase):
         self.assertEqual(pairs[frozenset(("crumb", "aw2:sturm"))]["compat"], 115)
 
 
+class Hq(unittest.TestCase):
+    def test_the_hq_follows_the_data_file(self):
+        for co in ("klaus", "aurelia", "cassius", "livia", "varro", "crumb"):
+            self.assertEqual(cospec.hq_style(co), "emerald_sun", co)
+        self.assertEqual(cospec.hq_style("cloneandy"), "default")
+        self.assertEqual(cospec.hq_style_of_id(86), "emerald_sun")
+        self.assertEqual(cospec.hq_style_of_id(1), "default")
+
+
 class Table(unittest.TestCase):
     def test_columns(self):
         self.assertEqual(V.column("tag", ""), "tag")

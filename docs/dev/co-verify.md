@@ -22,6 +22,7 @@ Andy": the two play the same fights and moves and must agree unit for unit.
 | `hooks` | Testudo (counter cut to 75%: damage number and forecast), Onager (splash 1 HP to the enemy units beside the target, never the last, never her own, diagonals or two cells away), Triumph (a Tank that attacked is not done, no Fire, one move, then done) | the rule's sentence in the data file |
 | `tag` | both meters full: the map menu offers Tag; the tag screen shows POWER n% (Dual Strike's digits cell by cell); the first half is the active CO's Super Power with the pair's firepower and luck (5 per star), then Change: the partner's; heal and funds of each half; Onager and Triumph inside a half; the TAG page lists the partners with their stars | `cos/tags.toml` |
 | `cpu` | the computer plays the CO with the power paid for: it uses it within three turns (CO Power and Super Power), its hurt units are healed; with a partner and both meters full it uses the Tag Power and both Super Powers run | |
+| `hq` | the HQ of each CO's army on the map: a Versus game per CO, the pairs (the lead decides) and each Emerald Sun mission (M1..M16): the OBJ tiles hold the Emerald Sun HQ picture (`army_skin::hq_art`) once for every army whose CO's data file says `hq = "emerald_sun"` or that wears the skin, and not otherwise; `aw2dev campaign check --hq` runs the missions | `hq` of `cos/<id>.toml` |
 | `vehicles` | Megatank and Piperunner of Cassius and Aurelia against Andy's: move, base damage and the Piperunner's range at each power level | the vehicle bonus / penalty of the data file |
 | `cloneandy` | Andy and Clone Andy play the same fights and moves | each other |
 | `limits` | Cassius's Triumph for the computer and after suspend and continue: measured and reported as LIMIT lines | |
@@ -38,6 +39,7 @@ aw2dev co verify --quick                # one scenario per facet and CO: the sui
 aw2dev co verify --net --net-runs 3     # plus the online runs (about 90 s each, one live run at a time)
 python3 tools/aw2test/run.py -k co_verify_stats_klaus -v     # one scenario with its log
 aw2dev co sheet powers [CO ...]         # the pictures (below)
+aw2dev co sheet hq                      # the Roman COs' HQ on the map: Versus, the tilted map (the real app), the missions (hq_check.png)
 ```
 Pass means exit 0 and `co verify done bad=0`. Every check in a log is tagged `[<co> <ability>] <detail>: ...`; the table groups them by CO and ability (Day to day, CO Power, Super Power, Meter / stars, Tag Powers,
 CPU use, Online determinism) and `report.md` lists the first line of every kind of check, with its numbers.

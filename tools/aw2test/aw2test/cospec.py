@@ -151,3 +151,21 @@ def co_id(ref):
     if ref.startswith("aw2:"):
         return AW2_IDS[ref[4:]]
     return IDS[ref]
+
+
+# --- the HQ each CO's army shows (`hq = "..."` in cos/<id>.toml; docs/dev/army-packs.md) ---------------------------------------------------------
+
+def hq_style(name):
+    """The skin id the CO's data file gives its HQ ("default": the game's own), from the file."""
+    f = COS_DIR / f"{name}.toml"
+    if not f.exists():
+        return "default"
+    with open(f, "rb") as fh:
+        return tomllib.load(fh).get("hq", "default")
+
+
+def hq_style_of_id(co):
+    for n, i in IDS.items():
+        if i == co:
+            return hq_style(n)
+    return "default"
