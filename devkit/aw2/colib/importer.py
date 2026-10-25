@@ -183,7 +183,7 @@ class Imported:
         self.hud = None
 
 
-def import_co(spec, root=None):
+def import_co(spec, root=None, painterly=False):
     """spec: dict with source, scale (output px per source px of the large picture), top (rows above the figure), face = [x, y, size] (the mug's square in the source), and optional eyes / brows / mouth for the
     expression faces. -> Imported."""
     root = root or cfg.REPO
@@ -191,6 +191,9 @@ def import_co(spec, root=None):
     side = (root / spec["source"]).with_suffix(".toml")
     if side.exists():
         spec = {**tomllib.loads(side.read_text()), **spec}
+    if spec.get("pixelart"):
+        from . import pixelart
+        return pixelart.styled(spec, root / spec["source"])
     src = Source(root / spec["source"], spec.get("bg_tolerance", 18))
     s = spec.get("scale", 0.1275)
     # --- the large picture: the source scaled by s, the top margin `top`, centred; what falls below 160 or outside 128 is cut
@@ -412,7 +415,8 @@ def expression(mug, spec, kind):
 def all_expressions(im, spec):
     mug = im.faces["normal"]
     for kind in ("happy", "sad", "angry"):
-        im.faces[kind] = expression(mug, spec, kind)
+        if kind not in im.faces:
+            im.faces[kind] = expression(mug, spec, kind)
 
 
 # --- the committed art: indexed PNGs ----------------------------------------------------------------------------------------------------------------------------------

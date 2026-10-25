@@ -1,7 +1,0 @@
-# Framing of aurelia_user.jpg (see klaus_user.toml).
-scale = 0.145
-crop_top = 0
-top = 3
-face = [185, 150, 390]
-eyes = [265, 350, 355, 335]
-mouth = [310, 425]

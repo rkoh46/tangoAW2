@@ -1,3 +1,3 @@
 # where the 24-pixel cell of Versus' cards and the 16-row strip of the CO grid start in the mug so that the eyes show (made by `aw2dev co portrait import`)
-cell_x = 3
-strip_y = 16
+cell_x = 12
+strip_y = 14

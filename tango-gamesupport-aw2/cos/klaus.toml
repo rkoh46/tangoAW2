@@ -38,4 +38,4 @@ defeat = "The legion... will remember."
 
 [portrait]
 # The picture the project owner supplied for this CO: the one data line of the mapping (swap two lines to swap two COs; the framing is in the picture's own `.toml`).
-source = "art-src/cos/klaus_user.jpg"
+source = "art-src/cos/klaus_v5.jpg"

@@ -36,4 +36,4 @@ defeat = "Not like this. NOT like this!"
 
 [portrait]
 # The picture the project owner supplied for this CO: the one data line of the mapping (swap two lines to swap two COs; the framing is in the picture's own `.toml`).
-source = "art-src/cos/cassius_user.jpg"
+source = "art-src/cos/cassius_v5.jpg"

@@ -138,16 +138,15 @@ Sturm's own table, `sturm_pairs.rs`: 110 is 1 star, 115 to 120 is 2, 125 is 3). 
 
 Each pair also needs its four victory lines and two Tag-in lines like Sturm's pairs have (phase 2, written in the BH voice). Tag Power names: Roman-flavoured, 20 letters at most.
 
-### 2.4 Portraits: the owner's own art
+### 2.4 Portraits: the owner's pixel art, imported faithfully
 
-The four portraits are **the project owner's art** ("portrait art provided by the project owner", `CREDITS.md`): `art-src/cos/<co>_user.jpg` (784 x 1168 busts), mapped one data line a CO
-(`[portrait] source` in `cos/<id>.toml`; the best guess: Klaus the grey-haired laurelled man, Aurelia the helmeted woman, Cassius the stern man with the helmet under his arm, Livia the woman in white with the
-red cloak). The two earlier attempts (recipes on AW2 / Dual Strike parts, then portraits drawn by us) were rejected and removed. `aw2dev co portrait import` converts each into AW2's CO art: the 128 x 160 figure, the
-48 x 48 CO select mug, the Teams mini, the HUD face, four expression faces, one palette of 15 colours + transparent, outlined; `docs/dev/co-kit.md` has the method. The sheet is `co_portraits_user.png`
-(source, large art 1x and 2x beside AW2's own, faces, and the game's own screens). **In the game** with `TANGOAW2_ES_VERSUS=1` (the four are ids 86..89 with Andy's numbers until phase 2): the CO select card, the HUD
-face, the Power's dialogue box and its cut-in (the large figure), and the CO page show them.
-The happy, sad and angry faces are edits of the neutral picture's eyes, brows and mouth; if the owner can supply expression variants they replace them (`art-src/cos/<id>_<expression>.jpg`, the importer
-would take them).
+The four portraits are **the project owner's art** ("portrait art provided by the project owner", `CREDITS.md`): `art-src/cos/<co>_v5.jpg` (784 x 1168 full-body pixel art on a near-black background), mapped one data
+line a CO (`[portrait] source` in `cos/<id>.toml`; the best guess: Klaus the grey-haired man with the moustache and the navy coat, Aurelia the woman with the tiara and the white tunic, Cassius the young man in the
+black uniform with gold pauldrons, Livia the woman in the white robe with the red sash; the two women may be swapped). They are imported **faithfully** (`aw2dev co portrait import --pixelart`, `docs/dev/co-kit.md`): the
+native pixel grid is found, the picture is resampled on the cell centres, the figure is framed waist-up like AW2's COs and scaled 2x by whole cells (facing right: Cassius and Klaus are mirrored), the palette is
+the picture's own 14 colours + the outline, and the mugs are the heads at 2x. The sheet is `co_portraits_v5.png` (source, the large art 1x and 2x beside Hawke, Kanbei and Sonja, the faces with expressions, the CO select
+row and the game's own screens). **In the game** with `TANGOAW2_ES_VERSUS=1` (the four are ids 86..89 with this campaign's powers): the CO select card, the HUD face, the Power's dialogue box and its cut-in (the large
+figure), and the CO page show them. The happy, sad and angry faces are edits of the neutral face's eyes, brows and mouth in whole cells; if the owner can supply expression variants they replace them.
 
 ## 3. Who joins when
 

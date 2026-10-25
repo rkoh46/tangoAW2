@@ -24,11 +24,11 @@ def _arr(a, pal, scale=1, bg=None):
     return I.to_image(a, pal, scale, bg)
 
 
-def sheet(cos, specs):
+def sheet(cos, specs, title=None):
     """cos: [CO ids]; specs: {co: data file dict}. -> PIL image."""
-    cw, ch = 2200, 830
+    cw, ch = 2350, 830
     img = Image.new("RGB", (cw, ch * len(cos) + 50), rd.BG)
-    rd.text(img, (14, 10), "Imported portraits: the project owner's art as AW2 CO art (one palette of 15 colours + transparent, outline, 128 x 160 figure, 48 x 48 mugs, 32 x 24 mini, 32 x 16 HUD face)", size=17)
+    rd.text(img, (14, 10), title or "Imported portraits: the project owner's pixel art as AW2 CO art (native grid, 2x, one palette of 15 colours + transparent, outline, 128 x 160 figure, 48 x 48 mugs, 32 x 24 mini, 32 x 16 HUD face)", size=17)
     reals = [_real(n) for n in REAL_FIG]
     for r, co in enumerate(cos):
         pics, pal = I.read_art(co)
@@ -39,10 +39,10 @@ def sheet(cos, specs):
         src = Image.open(cfg.REPO / specs[co]["portrait"]["source"]).convert("RGB")
         s = src.resize((src.width * 560 // src.height, 560), Image.LANCZOS)
         img.paste(s, (16, y0 + 40))
-        rd.text(img, (16, y0 + 604), "source (as supplied)", size=12)
+        rd.text(img, (16, y0 + 604), "source: the design reference (as supplied)", size=12)
         x = 16 + s.width + 20
         # the large art next to AW2's own: 1x row, then 2x
-        rd.text(img, (x, y0 + 8), "large art, 1x: Hawke, Kanbei, Sonja (AW2), ours", size=13)
+        rd.text(img, (x, y0 + 8), "1x: Hawke, Kanbei, Sonja (AW2), ours", size=13)
         row = Image.new("RGB", (136 * 4, 164), (36, 40, 52))
         for i, d in enumerate(reals):
             im = rd.to_image(_px(d.body, d.palettes[0]), 1)

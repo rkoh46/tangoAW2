@@ -1,8 +1,0 @@
-# Framing of klaus_user.jpg for `aw2dev co portrait import` (pixel positions in the 784 x 1168 picture). The picture is the project owner's art; this file goes with the picture, so
-# swapping two pictures between COs (`source` in cos/<id>.toml) keeps their framing.
-scale = 0.145           # output pixels per source pixel of the large figure (AW2's head is about 46 px tall)
-crop_top = 40           # source rows above the head to leave out
-top = 3                 # rows of empty space above the figure
-face = [190, 70, 380]   # the CO select mug's square (x, y, side) in the source
-eyes = [285, 272, 395, 258]    # the two eyes' centres: x1 y1 x2 y2
-mouth = [350, 375]
