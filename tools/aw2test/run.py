@@ -37,6 +37,7 @@ def main():
     ap.add_argument("-k", default="", help="only tests whose name contains this")
     ap.add_argument("-x", default="", help="leave out tests whose name contains this (ds_campaign_win_: the long pad-won missions)")
     ap.add_argument("-j", type=int, default=max(1, (os.cpu_count() or 2) // 2))
+    ap.add_argument("--resume", metavar="LOG", action="append", default=[], help="a log of an earlier run: the tests that PASSed there are not run again (a long run stopped half way goes on from where it was)")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("-v", action="store_true", help="print each test's log")
     a = ap.parse_args()
@@ -47,6 +48,15 @@ def main():
         print(f"no Dual Strike ROM at {paths.ds_rom()} (set TANGOAW2_DS_ROM); running AW2 only")
         modes = ("aw2",)
     jobs = [(t, m) for t in tests for m in modes if m in t["modes"]]
+    if a.resume:
+        done = set()
+        for path in a.resume:
+            for line in open(path, errors="replace"):
+                w = line.split()
+                if len(w) >= 3 and w[0] == "PASS":
+                    done.add((w[1], w[2]))
+        jobs = [(t, m) for t, m in jobs if (m, t["name"]) not in done]
+        print(f"resuming: {len(done)} tests passed in the earlier log(s), {len(jobs)} left")
     if a.list:
         for t, m in jobs:
             print(f"{m:4} {t['name']}")
