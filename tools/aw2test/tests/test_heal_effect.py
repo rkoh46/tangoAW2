@@ -11,7 +11,7 @@ def heal_map(ctx):
     m.terrain(15, 10, 0x1B4)   # Black Hole's HQ
     m.terrain(8, 6, CRYSTAL)
     m.terrain(18, 6, OBELISK)
-    m.unit(5, "infantry", 16, 11).unit(5, "tank", 8, 7).unit(5, "mech", 20, 9).unit(5, "recon", 2, 15)
+    m.unit(5, "infantry", 16, 11).unit(5, "tank", 8, 7).unit(5, "mech", 20, 9).unit(5, "recon", 6, 13)
     m.colours = [5, 1, 2, 3, 4]
     return m
 
@@ -20,7 +20,7 @@ def watch_heal(ctx, g, prefix):
     """End army 1's turn and watch Black Hole's turn start: each structure's
     animation (every other frame saved as {prefix}_crystal_*, {prefix}_obelisk_*)
     and the heal."""
-    for x, y in ((8, 7), (20, 9), (2, 15)):
+    for x, y in ((8, 7), (20, 9), (6, 13)):
         ctx.set_hp(g, x, y, 40)
     g.goto(12, 8)
     g.open_map_menu()
@@ -41,7 +41,7 @@ def watch_heal(ctx, g, prefix):
             shows.append((k, kind, state[5], state[6]))
             n = 0
             if hp is None:
-                hp = {p: (g.unit_at(*p) or {}).get("hp") for p in ((8, 7), (20, 9), (2, 15))}
+                hp = {p: (g.unit_at(*p) or {}).get("hp") for p in ((8, 7), (20, 9), (6, 13))}
         last = kind
         if kind in names:
             ctx.shot(g, f"{prefix}_{names[kind]}_{n:03d}")
@@ -55,7 +55,7 @@ def watch_heal(ctx, g, prefix):
     ctx.require(hp is not None, "units read during the heal")
     ctx.eq(hp[(8, 7)], 60, "Crystal: +2 HP within 2")
     ctx.eq(hp[(20, 9)], 60, "Obelisk: +2 HP within 4 (Dual Strike)")
-    ctx.eq(hp[(2, 15)], 40, "far away: nothing")
+    ctx.eq(hp[(6, 13)], 40, "far away: nothing")
     return shows
 
 
