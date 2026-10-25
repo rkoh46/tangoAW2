@@ -4,13 +4,20 @@
 //! memory. Without the game compiled in, nothing is ever asked.
 
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::mailbox::{boot_to_lobby, link_code, new_code, waiting_for, write_rejoin, Request, SavedRow};
+pub use tango_gamesupport_aw2::online::mailbox::{
+    boot_to_lobby, link_code, new_code, waiting_for, write_rejoin, Request, SavedRow,
+};
 #[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online_browse::mailbox::{refreshes as browse_refreshes, write_note as write_browse_note, write_room_name, Note as BrowseNote};
+pub use tango_gamesupport_aw2::online::{
+    Status, CODE_ALPHABET, HOST, LINK_DIRECT, LINK_RELAY, MAX_PLAYERS, ONLINE_MATCH, REJOIN_LEVEL, UNRANKED_MATCH,
+    UNRANKED_PICK_GUEST, YOU,
+};
+#[cfg(feature = "gamesupport-aw2")]
+pub use tango_gamesupport_aw2::online_browse::mailbox::{
+    refreshes as browse_refreshes, write_note as write_browse_note, write_room_name, Note as BrowseNote,
+};
 #[cfg(feature = "gamesupport-aw2")]
 pub use tango_gamesupport_aw2::online_browse::{Net as BrowseNet, Row as BrowseRow};
-#[cfg(feature = "gamesupport-aw2")]
-pub use tango_gamesupport_aw2::online::{Status, REJOIN_LEVEL, CODE_ALPHABET, HOST, LINK_DIRECT, LINK_RELAY, MAX_PLAYERS, ONLINE_MATCH, UNRANKED_MATCH, UNRANKED_PICK_GUEST, YOU};
 
 /// The match type a room made in the in-game lobby is played as.
 #[cfg(feature = "gamesupport-aw2")]

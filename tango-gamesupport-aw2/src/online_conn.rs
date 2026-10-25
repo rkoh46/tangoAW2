@@ -26,7 +26,12 @@ pub fn write(write: &mut dyn FnMut(u32, &[u8]), state: u8, lines: &[String]) {
     let mut block = vec![0u8; LINE_SIZE as usize * MAX_LINES];
     let n = lines.len().min(MAX_LINES);
     for (k, l) in lines.iter().take(MAX_LINES).enumerate() {
-        for (i, c) in l.chars().filter(|c| (c.is_ascii() && !c.is_ascii_control()) || *c == '\t').take(LINE_SIZE as usize - 1).enumerate() {
+        for (i, c) in l
+            .chars()
+            .filter(|c| (c.is_ascii() && !c.is_ascii_control()) || *c == '\t')
+            .take(LINE_SIZE as usize - 1)
+            .enumerate()
+        {
             block[LINE_SIZE as usize * k + i] = c as u8;
         }
     }
@@ -106,7 +111,9 @@ pub fn draw_page(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32)) {
     }
     for k in 0..n {
         let l = line(core, k);
-        let (t, rest) = l.split_once('|').map_or(('g', l.as_str()), |(t, r)| (t.chars().next().unwrap_or('g'), r));
+        let (t, rest) = l
+            .split_once('|')
+            .map_or(('g', l.as_str()), |(t, r)| (t.chars().next().unwrap_or('g'), r));
         let (label, value) = rest.split_once('\t').unwrap_or((rest, ""));
         let ry = y + 22 + 16 * k as i32;
         cv.rect(x + 4, ry + 13, w - 8, 1, crate::online::LIGHT_GRAY);

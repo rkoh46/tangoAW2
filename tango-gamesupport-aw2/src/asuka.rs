@@ -61,21 +61,40 @@ mod tests {
         assert!((ASUKA as u32) < crate::co_roster::ROOM);
         assert_eq!(crate::co_roster::ds_co(ASUKA), Some(SONJA_DS));
         assert!(crate::co_new::is_new(ASUKA) && crate::co_new::is_own(ASUKA) && !crate::es_co::is_es(ASUKA));
-        assert!(crate::co_new::listed(ASUKA), "in every Versus list, not behind the playtest flag");
+        assert!(
+            crate::co_new::listed(ASUKA),
+            "in every Versus list, not behind the playtest flag"
+        );
         assert_eq!(crate::co_new::like(ASUKA), 14);
     }
 
     #[test]
     fn her_texts_fit_the_game() {
         use crate::co_new::*;
-        for w in [T_NAME, T_BIO, T_D2D, T_COP, T_SCOP, T_COP_NAME, T_SCOP_NAME, T_VICTORY, T_DEFEAT] {
+        for w in [
+            T_NAME,
+            T_BIO,
+            T_D2D,
+            T_COP,
+            T_SCOP,
+            T_COP_NAME,
+            T_SCOP_NAME,
+            T_VICTORY,
+            T_DEFEAT,
+        ] {
             assert!(crate::es_cos::text(ASUKA, w).is_some(), "text slot {w}");
         }
         for q in 0..6 {
             let t = String::from_utf8(crate::es_cos::text(ASUKA, T_QUOTES + q).unwrap()).unwrap();
-            assert!(t.split('\r').count() <= 2 && t.split('\r').all(|l| l.len() <= 26), "{t:?}");
+            assert!(
+                t.split('\r').count() <= 2 && t.split('\r').all(|l| l.len() <= 26),
+                "{t:?}"
+            );
         }
         assert_eq!(crate::es_cos::name(ASUKA), Some(b"Asuka".to_vec()));
-        assert!(0x0861_0A38 + 4 * (text_id(ASUKA, 16) as u32) <= 0x0863_0000, "her text slots stay inside the table's free ROM");
+        assert!(
+            0x0861_0A38 + 4 * (text_id(ASUKA, 16) as u32) <= 0x0863_0000,
+            "her text slots stay inside the table's free ROM"
+        );
     }
 }

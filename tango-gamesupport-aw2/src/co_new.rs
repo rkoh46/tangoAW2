@@ -64,11 +64,20 @@ pub const MORTAR_FACE: u8 = FIRST + 11;
 pub const WICK_FACE: u8 = FIRST + 12;
 pub const NARRATOR_FACE: u8 = FIRST + 13;
 /// (face id, the hue the trooper's blue goes to in degrees, `None` for the blank face)
-const FACE_ONLY: [(u8, Option<f32>); 4] = [(MORTAR_FACE, Some(110.0)), (WICK_FACE, Some(38.0)), (NARRATOR_FACE, None), (crate::es_co::LEGIONARY_FACE, Some(150.0))];
+const FACE_ONLY: [(u8, Option<f32>); 4] = [
+    (MORTAR_FACE, Some(110.0)),
+    (WICK_FACE, Some(38.0)),
+    (NARRATOR_FACE, None),
+    (crate::es_co::LEGIONARY_FACE, Some(150.0)),
+];
 
 /// A BGR555 colour with its hue moved so that the trooper's blue (about 220 degrees) lands on `to`.
 fn turn_hue(c: u16, to: f32) -> u16 {
-    let (b, g, r) = (((c >> 10) & 31) as f32 / 31.0, ((c >> 5) & 31) as f32 / 31.0, (c & 31) as f32 / 31.0);
+    let (b, g, r) = (
+        ((c >> 10) & 31) as f32 / 31.0,
+        ((c >> 5) & 31) as f32 / 31.0,
+        (c & 31) as f32 / 31.0,
+    );
     let (mx, mn) = (r.max(g).max(b), r.min(g).min(b));
     let d = mx - mn;
     if d < 0.02 {
@@ -127,7 +136,8 @@ pub fn clone_andy_bonus(mode: u8, field: usize) -> i32 {
     }
 }
 /// His CO page's day to day and CO Power, tangoAW2's own (the Super Power's is Andy's).
-pub const CLONE_ANDY_D2D: &[u8] = b"Andy, copied and tuned a little. All units have 2% more firepower and 2% more defence.";
+pub const CLONE_ANDY_D2D: &[u8] =
+    b"Andy, copied and tuned a little. All units have 2% more firepower and 2% more defence.";
 pub const CLONE_ANDY_COP: &[u8] = b"Restores two HP to all units. Firepower and defence rise by 10%.";
 pub const CLONE_ANDY_SCOP: &[u8] = b"Restores four HP to all units. Firepower rises by 40% and defence by 30%.";
 
@@ -162,7 +172,11 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
         .enumerate()
         .map(|(k, &(ds, like))| (FIRST + k as u8, ds, like))
         .chain([(CRUMB, CRUMB_BASE, CRUMB_LIKE)])
-        .chain(crate::es_co::ALL.iter().map(|&co| (co, CRUMB_BASE, crate::es_co::like(co))))
+        .chain(
+            crate::es_co::ALL
+                .iter()
+                .map(|&co| (co, CRUMB_BASE, crate::es_co::like(co))),
+        )
         .chain([(ASUKA, crate::asuka::SONJA_DS, crate::asuka::LIKE)])
 }
 
@@ -201,8 +215,19 @@ const AW2_PRESENTATION: u32 = 0x084A_0090;
 const PRESENTATION_ROW: u32 = 0x44;
 const AW2_PRESENTATION_ROWS: u32 = 24;
 const PRESENTATION_POOL: [u32; 13] = [
-    0x0803_9B7C, 0x0804_3AF8, 0x0804_3B38, 0x0804_3BEC, 0x0804_3C1C, 0x0804_3E88, 0x0804_3FA4, 0x0804_3FD4,
-    0x0804_45E8, 0x0804_4720, 0x0804_4B04, 0x0804_4B98, 0x0809_1384,
+    0x0803_9B7C,
+    0x0804_3AF8,
+    0x0804_3B38,
+    0x0804_3BEC,
+    0x0804_3C1C,
+    0x0804_3E88,
+    0x0804_3FA4,
+    0x0804_3FD4,
+    0x0804_45E8,
+    0x0804_4720,
+    0x0804_4B04,
+    0x0804_4B98,
+    0x0809_1384,
 ];
 const AW2_HUD: u32 = 0x0810_2F64;
 const HUD_FACE: u32 = 0x100;
@@ -210,8 +235,16 @@ const HUD_POOL: u32 = 0x0804_37EC;
 const AW2_DOSSIER: u32 = 0x0861_6F0C;
 const DOSSIER_POOL: u32 = 0x0808_53A0;
 const AW2_BATTLE_STYLE: u32 = 0x0856_2128;
-const BATTLE_STYLE_POOL: [u32; 8] =
-    [0x0804_C564, 0x0804_CFE4, 0x0804_D0E8, 0x0804_DC48, 0x0804_FFD8, 0x0805_0DF4, 0x0805_0EB4, 0x0805_6B14];
+const BATTLE_STYLE_POOL: [u32; 8] = [
+    0x0804_C564,
+    0x0804_CFE4,
+    0x0804_D0E8,
+    0x0804_DC48,
+    0x0804_FFD8,
+    0x0805_0DF4,
+    0x0805_0EB4,
+    0x0805_6B14,
+];
 const AW2_ORDER: u32 = 0x084A_077C;
 const ORDER_POOL: u32 = 0x0809_1378;
 /// `sub_08043CA0`'s loop over the order: `cmp r5, #0x12`.
@@ -276,7 +309,10 @@ pub(crate) fn ds_text(r: u32) -> Option<Vec<u8>> {
     let mut p = DS_TEXT_GROUPS;
     let group = loop {
         let e = ov(p, 8)?;
-        let (key, ptr) = (u32::from_le_bytes(e[0..4].try_into().ok()?), u32::from_le_bytes(e[4..8].try_into().ok()?));
+        let (key, ptr) = (
+            u32::from_le_bytes(e[0..4].try_into().ok()?),
+            u32::from_le_bytes(e[4..8].try_into().ok()?),
+        );
         if key == u32::MAX {
             return None;
         }
@@ -338,7 +374,11 @@ fn wrap_pixels(paragraphs: &[String], widths: &[u8], limit: u32) -> Vec<String> 
     for p in paragraphs.iter().filter(|p| !p.is_empty()) {
         let mut line = String::new();
         for word in p.split(' ') {
-            let longer = if line.is_empty() { word.to_string() } else { format!("{line} {word}") };
+            let longer = if line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{line} {word}")
+            };
             if !line.is_empty() && pixels(&longer, widths) > limit {
                 lines.push(std::mem::replace(&mut line, word.to_string()));
             } else {
@@ -359,7 +399,11 @@ pub const QUOTE_LINES: usize = 3;
 
 /// A quote as plain words in single spaces (breaks and pauses dropped).
 pub fn quote_text(t: &[u8]) -> String {
-    let flat: String = t.iter().filter(|&&c| c == b'\r' || (0x20..0x7F).contains(&c)).map(|&c| if c == b'\r' { ' ' } else { c as char }).collect();
+    let flat: String = t
+        .iter()
+        .filter(|&&c| c == b'\r' || (0x20..0x7F).contains(&c))
+        .map(|&c| if c == b'\r' { ' ' } else { c as char })
+        .collect();
     flat.split(' ').filter(|w| !w.is_empty()).collect::<Vec<_>>().join(" ")
 }
 
@@ -388,7 +432,10 @@ pub fn wrap_quote(t: &[u8], widths: &[u8]) -> Vec<u8> {
 
 /// Shorter wordings, tried in turn while a page is too long.
 const SHORTER: [(&str, &str); 7] = [
-    ("Adept at making quick decisions, he stores up energy", "He stores up energy"),
+    (
+        "Adept at making quick decisions, he stores up energy",
+        "He stores up energy",
+    ),
     (" at a faster rate than", " faster than"),
     (" is greatly increased", " rises greatly"),
     (" is increased", " rises"),
@@ -481,7 +528,9 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
     } else if crumb {
         crate::crumb::NAME.to_vec()
     } else if es {
-        crate::es_cos::name(co).or_else(|| crate::es_co::name(co).map(|n| n.to_vec())).unwrap_or_default()
+        crate::es_cos::name(co)
+            .or_else(|| crate::es_co::name(co).map(|n| n.to_vec()))
+            .unwrap_or_default()
     } else {
         ds_text(record_ref(ds, 0x00)).unwrap_or_default()
     };
@@ -499,15 +548,18 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
         } else {
             None
         };
-        let t = own.or_else(|| ds_text(record_ref(ds, off))).filter(|t| !t.is_empty()).unwrap_or_else(|| {
-            if which == T_COP {
-                // As AW2 says of Sturm, who has none either.
-                let n = String::from_utf8_lossy(&name);
-                format!("{n} has no CO Power. He saves all his energy for his Super CO Power.").into_bytes()
-            } else {
-                Vec::new()
-            }
-        });
+        let t = own
+            .or_else(|| ds_text(record_ref(ds, off)))
+            .filter(|t| !t.is_empty())
+            .unwrap_or_else(|| {
+                if which == T_COP {
+                    // As AW2 says of Sturm, who has none either.
+                    let n = String::from_utf8_lossy(&name);
+                    format!("{n} has no CO Power. He saves all his energy for his Super CO Power.").into_bytes()
+                } else {
+                    Vec::new()
+                }
+            });
         let page = [T_BIO, T_D2D, T_COP, T_SCOP].contains(&which);
         out.push((
             which,
@@ -592,7 +644,12 @@ fn power_effect(core: &Core, ds: u8, power: u32) -> Option<(u8, u8)> {
     };
     let pictures = crate::ds_art::lz10(pack.file(&name(anim, 1)?)?)?;
     let palette = pack.file(&name(pal, 2)?)?.get(..32)?.to_vec();
-    let entry = |k: u32| (core.raw_read_32(AW2_POWER_EFFECTS + 8 * k, -1), core.raw_read_32(AW2_POWER_EFFECTS + 8 * k + 4, -1));
+    let entry = |k: u32| {
+        (
+            core.raw_read_32(AW2_POWER_EFFECTS + 8 * k, -1),
+            core.raw_read_32(AW2_POWER_EFFECTS + 8 * k + 4, -1),
+        )
+    };
     let rom = |at: u32, n: usize| {
         let mut b = vec![0u8; n];
         core.raw_read_range(at, -1, &mut b);
@@ -684,7 +741,13 @@ fn clone_name(core: &Core) -> Option<Vec<u8>> {
     if lc.len() != 5 || le.len() != 5 {
         return None;
     }
-    let pick = [(&colin, lc[0]), (&colin, lc[2]), (&colin, lc[1]), (&colin, lc[4]), (&eagle, le[4])];
+    let pick = [
+        (&colin, lc[0]),
+        (&colin, lc[2]),
+        (&colin, lc[1]),
+        (&colin, lc[4]),
+        (&eagle, le[4]),
+    ];
     // The glyph columns left to right: the first letter's left outline, then
     // each letter's fill and its right outline (merged with the next
     // letter's left outline, the taller showing).
@@ -827,7 +890,11 @@ fn build(core: &Core) -> Option<Built> {
         }
         let ds_style = crate::ds_pack::pack()?.arm9_at(0x0215_360C + 0x220 * ds as u32 + 0x25, 1)?[0];
         // (Clone Andy and Crumb fight in Black Hole's style)
-        style[co as usize] = if is_own(co) { BLACK_HOLE_STYLE } else { ds_style.min(BLACK_HOLE_STYLE) };
+        style[co as usize] = if is_own(co) {
+            BLACK_HOLE_STYLE
+        } else {
+            ds_style.min(BLACK_HOLE_STYLE)
+        };
         for (which, text) in texts(co, ds, &widths) {
             let at = STRINGS + strings.len() as u32;
             strings.extend_from_slice(&text);
@@ -853,9 +920,17 @@ fn build(core: &Core) -> Option<Built> {
             }
             None => {
                 for f in 0..3 {
-                    put32(&mut pres, row + 0x0C + 4 * f, picture(&vec![0u8; crate::ds_co_art::FACE_LEN], true));
+                    put32(
+                        &mut pres,
+                        row + 0x0C + 4 * f,
+                        picture(&vec![0u8; crate::ds_co_art::FACE_LEN], true),
+                    );
                 }
-                put32(&mut pres, row + 0x18, picture(&vec![0u8; crate::ds_co_art::MINI_LEN], false));
+                put32(
+                    &mut pres,
+                    row + 0x18,
+                    picture(&vec![0u8; crate::ds_co_art::MINI_LEN], false),
+                );
             }
         }
     }
@@ -866,7 +941,11 @@ fn build(core: &Core) -> Option<Built> {
     // after (in NEW's order).
     let mut order = read(core, AW2_ORDER, AW2_COS);
     for (co, _, like) in all().filter(|&(co, _, _)| listed(co)) {
-        let mut at = order.iter().position(|&c| c == like).map(|p| p + 1).unwrap_or(order.len());
+        let mut at = order
+            .iter()
+            .position(|&c| c == like)
+            .map(|p| p + 1)
+            .unwrap_or(order.len());
         while at < order.len() && is_new(order[at]) {
             at += 1;
         }
@@ -995,7 +1074,11 @@ fn decode(core: &mut Core, quotient: bool) {
     if a < FIRST as u32 {
         return;
     }
-    let v = if quotient { (a - FIRST as u32) / 24 } else { FIRST as u32 + (a - FIRST as u32) % 24 };
+    let v = if quotient {
+        (a - FIRST as u32) / 24
+    } else {
+        FIRST as u32 + (a - FIRST as u32) % 24
+    };
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, v as i32);
     cpu.set_thumb_pc(pc + 6);
@@ -1092,7 +1175,10 @@ mod tests {
     #[test]
     fn war_room_groups_hold_every_co() {
         // AW2's table: Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole.
-        let aw2 = [1, 2, 4, 0, 15, 0xFF, 0, 3, 5, 16, 0xFF, 1, 8, 9, 17, 0xFF, 2, 6, 7, 18, 0xFF, 3, 11, 12, 13, 14, 10, 0xFF, 4, 0xFF];
+        let aw2 = [
+            1, 2, 4, 0, 15, 0xFF, 0, 3, 5, 16, 0xFF, 1, 8, 9, 17, 0xFF, 2, 6, 7, 18, 0xFF, 3, 11, 12, 13, 14, 10, 0xFF,
+            4, 0xFF,
+        ];
         let g = war_room_groups(&aw2).unwrap();
         assert_eq!(g.len(), 5);
         let all_ids: Vec<u8> = g.iter().flat_map(|x| x.0.clone()).collect();
@@ -1145,11 +1231,22 @@ mod tests {
         assert_eq!(up.len(), 1);
         assert_eq!(up[0]["units"].as_str(), Some("all"));
         let (fp, df, mv) = CLONE_ANDY_UPGRADE;
-        assert_eq!((up[0]["attack"].as_integer(), up[0]["defence"].as_integer(), up[0].get("move").and_then(|m| m.as_integer()).unwrap_or(0)), (Some(fp as i64), Some(df as i64), mv as i64));
+        assert_eq!(
+            (
+                up[0]["attack"].as_integer(),
+                up[0]["defence"].as_integer(),
+                up[0].get("move").and_then(|m| m.as_integer()).unwrap_or(0)
+            ),
+            (Some(fp as i64), Some(df as i64), mv as i64)
+        );
         use crate::co_roster::{DEFENCE, FIREPOWER, MOVE, RANGE};
         assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, FIREPOWER)), [2, 2, 32]);
         assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, DEFENCE)), [2, 2, 22]);
-        assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, MOVE)), [0, 0, 0], "no move bonus (Andy's Hyper Upgrade has +1)");
+        assert_eq!(
+            [0u8, 1, 2].map(|m| clone_andy_bonus(m, MOVE)),
+            [0, 0, 0],
+            "no move bonus (Andy's Hyper Upgrade has +1)"
+        );
         assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, RANGE)), [0, 0, 0]);
         assert_eq!(d["scop"]["text"].as_str().unwrap().as_bytes(), CLONE_ANDY_SCOP);
         assert_eq!(d["stars"]["cop"].as_integer(), Some(3));

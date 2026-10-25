@@ -56,7 +56,15 @@ use std::sync::OnceLock;
 
 const OBJ_VRAM: u32 = 0x0601_0000;
 /// Free OBJ tiles: (first, count).
-const TILE_RUNS: [(u16, u16); 7] = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)];
+const TILE_RUNS: [(u16, u16); 7] = [
+    (0x1F9, 17),
+    (0x2D2, 9),
+    (0x2E4, 4),
+    (0x2EC, 4),
+    (0x2F4, 4),
+    (0x2FC, 4),
+    (0x309, 9),
+];
 /// OBJ palette 15: unused on the map (8..13 are the buildings', 8 + owner).
 const PALETTE: u16 = 15;
 const PAL_BUFFER: u32 = 0x0300_20C0;
@@ -158,7 +166,12 @@ fn art() -> Option<&'static Art> {
             if sequence.iter().any(|&(_, c)| c >= frames.len()) {
                 return None;
             }
-            Some(Anim { frames, sequence, palette, anchor })
+            Some(Anim {
+                frames,
+                sequence,
+                palette,
+                anchor,
+            })
         };
         Some(Art {
             crystal: load(CRYSTAL_ANIM, "bmap/06c", "bmap/06e", (8, 16))?,
@@ -283,11 +296,15 @@ fn compile(pixels: &[u8], cell: &[Piece]) -> Frame {
     let mut squares: Vec<(i32, i32, Square, bool)> = Vec::new();
     for p in cell {
         let px = |x: usize, y: usize| -> u8 {
-            let (sx, sy) = (if p.hflip { p.w - 1 - x } else { x }, if p.vflip { p.h - 1 - y } else { y });
+            let (sx, sy) = (
+                if p.hflip { p.w - 1 - x } else { x },
+                if p.vflip { p.h - 1 - y } else { y },
+            );
             let i = 64 * p.at + p.w * sy + sx;
             pixels.get(i / 2).map_or(0, |b| (b >> (4 * (i & 1))) & 15)
         };
-        let square = |x0: usize, y0: usize, n: usize| -> Square { (0..n * n).map(|i| px(x0 + i % n, y0 + i / n)).collect() };
+        let square =
+            |x0: usize, y0: usize, n: usize| -> Square { (0..n * n).map(|i| px(x0 + i % n, y0 + i / n)).collect() };
         let empty = |sq: &Square| sq.iter().all(|&v| v == 0);
         let big = p.w >= 16 && p.h >= 16;
         let step = if big { 16 } else { 8 };
@@ -357,10 +374,20 @@ fn compile(pixels: &[u8], cell: &[Piece]) -> Frame {
                     t
                 }
             };
-            placed[i] = Some(Sprite { dx: *x as i16, dy: *y as i16, big: *big, tile, hflip: h, vflip: v });
+            placed[i] = Some(Sprite {
+                dx: *x as i16,
+                dy: *y as i16,
+                big: *big,
+                tile,
+                hflip: h,
+                vflip: v,
+            });
         }
     }
-    Frame { tiles, sprites: placed.into_iter().flatten().collect() }
+    Frame {
+        tiles,
+        sprites: placed.into_iter().flatten().collect(),
+    }
 }
 
 fn anim(kind: u8) -> Option<&'static Anim> {
@@ -466,7 +493,10 @@ pub fn draw(core: &mut Core) {
     for (tile, bytes) in &frame.tiles {
         write_if_changed(core, OBJ_VRAM + 32 * *tile as u32, bytes);
     }
-    let (sx, sy) = (core.raw_read_16(map + 4, -1) as i32, core.raw_read_16(map + 6, -1) as i32);
+    let (sx, sy) = (
+        core.raw_read_16(map + 4, -1) as i32,
+        core.raw_read_16(map + 6, -1) as i32,
+    );
     let (x, y) = (core.raw_read_8(POS_X, -1) as i32, core.raw_read_8(POS_Y, -1) as i32);
     let (ax, ay) = (16 * x + anim.anchor.0 - sx, 16 * y + anim.anchor.1 - sy);
     // The map's own sprites are already in the list, from entry 16 on (the
@@ -676,14 +706,25 @@ mod tests {
             6, 14, // the cells at table+6 (+10) and table+14 (+18)
             12, // the pairs at sequence table+12 (+20)
             1, 0x80E0, 0x81F8, 0x0008, // one 16x32 piece at (-8, -32), unit 8
-            0, // an empty cell
+            0,      // an empty cell
             3, 0, 5, 1, 0, 0,
         ];
         let base = 0x0200_0000;
         let hw = |a: u32| words.get(((a - base) / 2) as usize).map(|&v| v as u32);
         let (cells, seq) = parse(&hw, base).unwrap();
         assert_eq!(cells.len(), 2);
-        assert_eq!(cells[0], vec![Piece { x: -8, y: -32, w: 16, h: 32, at: 8, hflip: false, vflip: false }]);
+        assert_eq!(
+            cells[0],
+            vec![Piece {
+                x: -8,
+                y: -32,
+                w: 16,
+                h: 32,
+                at: 8,
+                hflip: false,
+                vflip: false
+            }]
+        );
         assert!(cells[1].is_empty());
         assert_eq!(seq, vec![(3, 0), (5, 1)]);
     }
@@ -695,8 +736,26 @@ mod tests {
         for (i, b) in pixels.iter_mut().enumerate() {
             *b = (i % 7) as u8 | 0x10;
         }
-        let p = Piece { x: 0, y: 0, w: 16, h: 16, at: 0, hflip: false, vflip: false };
-        let f = compile(&pixels, &[p, Piece { x: 16, hflip: true, ..p }]);
+        let p = Piece {
+            x: 0,
+            y: 0,
+            w: 16,
+            h: 16,
+            at: 0,
+            hflip: false,
+            vflip: false,
+        };
+        let f = compile(
+            &pixels,
+            &[
+                p,
+                Piece {
+                    x: 16,
+                    hflip: true,
+                    ..p
+                },
+            ],
+        );
         assert_eq!(f.sprites.len(), 2);
         assert_eq!(f.tiles.len(), 4);
         assert_eq!(f.sprites[0].tile, f.sprites[1].tile);

@@ -38,7 +38,14 @@ fn after(cond: Cond, then: Vec<Action>) -> Trigger {
 
 /// The enemy army is as good as routed: at most one unit left, or its HQ is the player's.
 fn beaten(enemy: u8, hq: (u8, u8)) -> Cond {
-    Cond::Any(vec![Cond::ArmyUnitsAtMost { army: enemy, n: 1 }, Cond::OwnerAt { x: hq.0, y: hq.1, army: 1 }])
+    Cond::Any(vec![
+        Cond::ArmyUnitsAtMost { army: enemy, n: 1 },
+        Cond::OwnerAt {
+            x: hq.0,
+            y: hq.1,
+            army: 1,
+        },
+    ])
 }
 
 /// The player's CO is one of these (a recruit's affinity COs).
@@ -71,7 +78,9 @@ fn second_front_won(core: &mut Core) -> bool {
 
 /// The units of a built map's text file, for a second front (whose deployment is the front's own).
 fn built_units(name: &str) -> Vec<UnitDef> {
-    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else { return Vec::new() };
+    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else {
+        return Vec::new();
+    };
     m.units
         .iter()
         .map(|u| {
@@ -170,8 +179,17 @@ fn bh12() -> MissionDef {
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m12_day5"))]),
         on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m12_day12"))]),
         // The win: Koal's bond is earned with Sturm or Hawke anywhere in the pair (the pitch is the victory scene).
-        after(Cond::All(vec![beaten(2, (34, 9)), player_has(&[co::STURM, co::HAWKE])]), vec![Action::EarnBond(2), Action::Win]),
-        after(Cond::All(vec![beaten(2, (34, 9)), Cond::Not(Box::new(player_has(&[co::STURM, co::HAWKE])))]), vec![Action::Win]),
+        after(
+            Cond::All(vec![beaten(2, (34, 9)), player_has(&[co::STURM, co::HAWKE])]),
+            vec![Action::EarnBond(2), Action::Win],
+        ),
+        after(
+            Cond::All(vec![
+                beaten(2, (34, 9)),
+                Cond::Not(Box::new(player_has(&[co::STURM, co::HAWKE]))),
+            ]),
+            vec![Action::Win],
+        ),
     ];
     m.needs = Needs::All(vec!["bh11"]);
     m.flag = FLAGS[0];
@@ -191,7 +209,14 @@ fn stage_and_towers() -> Cond {
     let owns = |(x, y): (u8, u8)| Cond::OwnerAt { x, y, army: 1 };
     let mut triples = Vec::new();
     for skip in 0..4 {
-        triples.push(Cond::All(TOWERS.iter().enumerate().filter(|(i, _)| *i != skip).map(|(_, &t)| owns(t)).collect()));
+        triples.push(Cond::All(
+            TOWERS
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i != skip)
+                .map(|(_, &t)| owns(t))
+                .collect(),
+        ));
     }
     Cond::All(vec![owns(STAGE), Cond::Any(triples)])
 }
@@ -209,7 +234,12 @@ fn bh13() -> MissionDef {
     ];
     m.pool = POOL13.to_vec();
     // The stage is a city of Kindle's (no HQ to capture: the win is the stage and the Towers together).
-    m.props = vec![Prop { kind: PropKind::City, owner: 2, x: STAGE.0, y: STAGE.1 }];
+    m.props = vec![Prop {
+        kind: PropKind::City,
+        owner: 2,
+        x: STAGE.0,
+        y: STAGE.1,
+    }];
     m.day_limit = 14;
     m.rank_days = 10;
     m.units = roles(built_units("bh13"), at_cells(&STAGE_GUARD));
@@ -223,7 +253,13 @@ fn bh13() -> MissionDef {
         on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m13_day10"))]),
         // The win: the stage and three Towers; Kindle's bond is earned with Von Bolt or Hawke leading.
         after(win(), vec![Action::EarnBond(3), Action::Win]),
-        after(Cond::All(vec![stage_and_towers(), Cond::Not(Box::new(player_is(&[co::VON_BOLT, co::HAWKE])))]), vec![Action::Win]),
+        after(
+            Cond::All(vec![
+                stage_and_towers(),
+                Cond::Not(Box::new(player_is(&[co::VON_BOLT, co::HAWKE]))),
+            ]),
+            vec![Action::Win],
+        ),
     ];
     m.needs = Needs::All(vec!["bh12"]);
     m.flag = FLAGS[1];
@@ -247,7 +283,11 @@ fn in_basin(x: u8, y: u8) -> bool {
 fn release_ring(core: &mut Core) {
     for (addr, kind, x, y) in units_of(core, 2) {
         if in_basin(x, y) {
-            let role = if kind == unit::INFANTRY || kind == unit::MECH { 3 } else { 4 };
+            let role = if kind == unit::INFANTRY || kind == unit::MECH {
+                3
+            } else {
+                4
+            };
             core.raw_write_8(addr + 0x0B, -1, role);
             crate::custom_campaign::unfreeze(core, addr);
         }
@@ -256,7 +296,9 @@ fn release_ring(core: &mut Core) {
 
 /// Crumb is on Pad Echo, on foot or inside a Transport Copter standing there.
 fn crumb_extracted(core: &mut Core) -> bool {
-    let Some((a, true)) = unit_by_name(core, "crumb") else { return false };
+    let Some((a, true)) = unit_by_name(core, "crumb") else {
+        return false;
+    };
     if core.raw_read_8(a + 2, -1) == PAD_ECHO.0 && core.raw_read_8(a + 3, -1) == PAD_ECHO.1 {
         return true;
     }
@@ -278,16 +320,29 @@ fn bh14() -> MissionDef {
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SONJA)).funds(0),
     ];
     // Yellow Comet's post in the north-east is a city, not an HQ: the only win is the evacuation.
-    m.props = vec![Prop { kind: PropKind::City, owner: 2, x: SONJA_POST.0, y: SONJA_POST.1 }];
+    m.props = vec![Prop {
+        kind: PropKind::City,
+        owner: 2,
+        x: SONJA_POST.0,
+        y: SONJA_POST.1,
+    }];
     // The ring round Crumb and the gap guards hold (the ring is released on day 3), the rest hunts the column.
     const GUARDS: [(u8, u8); 9] = [(7, 3), (3, 9), (8, 9), (9, 7), (8, 5), (9, 5), (9, 4), (11, 6), (11, 7)];
     // (the ring is frozen with full tanks until day 3: the computer's own moves skip every one of them, Recon and tanks
     // included, unless an enemy is next to it; a plain role 0 lets a Recon sally and kill Crumb, who has 1 HP;
     // `release_ring` frees them)
-    m.units = roles(built_units("bh14"), |u| u.kind == unit::ANTI_AIR || in_basin(u.x, u.y) || GUARDS.contains(&(u.x, u.y)))
-        .into_iter()
-        .map(|u| if u.army == 2 && in_basin(u.x, u.y) { u.freeze() } else { u })
-        .collect();
+    m.units = roles(built_units("bh14"), |u| {
+        u.kind == unit::ANTI_AIR || in_basin(u.x, u.y) || GUARDS.contains(&(u.x, u.y))
+    })
+    .into_iter()
+    .map(|u| {
+        if u.army == 2 && in_basin(u.x, u.y) {
+            u.freeze()
+        } else {
+            u
+        }
+    })
+    .collect();
     m.fog = true;
     m.day_limit = 15;
     m.rank_days = 12;
@@ -297,13 +352,26 @@ fn bh14() -> MissionDef {
     m.triggers = vec![
         // Day 2: an open line between father and daughter (Sonja's cameo).
         on_day(2, None, vec![Action::Scene(crate::bh_text::scene("m14_day2"))]),
-        on_day(3, None, vec![Action::Custom(release_ring), Action::Scene(crate::bh_text::scene("m14_day3"))]),
+        on_day(
+            3,
+            None,
+            vec![
+                Action::Custom(release_ring),
+                Action::Scene(crate::bh_text::scene("m14_day3")),
+            ],
+        ),
         on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m14_day6"))]),
         on_day(8, None, vec![Action::Scene(crate::bh_text::scene("m14_day8"))]),
         on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m14_day12"))]),
         // The win: Crumb on Pad Echo (or carried onto it). On day 12 or sooner Crumb's secret quote is earned
         // (bond 9: the CO page's tenth secret quote, needs a tenth entry in `bh_campaign::BONDS`).
-        after(Cond::All(vec![Cond::Custom(crumb_extracted), Cond::Not(Box::new(Cond::DayAtLeast(13)))]), vec![Action::EarnBond(9), Action::Win]),
+        after(
+            Cond::All(vec![
+                Cond::Custom(crumb_extracted),
+                Cond::Not(Box::new(Cond::DayAtLeast(13))),
+            ]),
+            vec![Action::EarnBond(9), Action::Win],
+        ),
         after(Cond::Custom(crumb_extracted), vec![Action::Win]),
         after(Cond::UnitGone("crumb"), vec![Action::Lose]),
     ];
@@ -336,7 +404,13 @@ fn bh15() -> MissionDef {
         // every unit of one side destroyed; its air units all take AI role 4 (attack units), none goes for an HQ.
         props: Vec::new(),
         structures: Vec::new(),
-        units: built_units("bh15b").into_iter().map(|mut u| { u.ai = 4; u }).collect(),
+        units: built_units("bh15b")
+            .into_iter()
+            .map(|mut u| {
+                u.ai = 4;
+                u
+            })
+            .collect(),
         cos: [CoSpec::Pick, CoSpec::Fixed(co::GRIMM), CoSpec::None, CoSpec::None],
         send: SendRule::Air,
         sky: true,
@@ -348,7 +422,11 @@ fn bh15() -> MissionDef {
     m.after = crate::bh_text::chain(&["m15_map", "m15_sturm"]);
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m15_day4"))]),
-        Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m15_sky_won"))]),
+        Trigger::new(
+            When::TurnStart,
+            Cond::Custom(second_front_won),
+            vec![Action::Scene(crate::bh_text::scene("m15_sky_won"))],
+        ),
         on_day(8, None, vec![Action::Scene(crate::bh_text::scene("m15_day8"))]),
         after(beaten(2, (22, 10)), vec![Action::Win]),
     ];
@@ -389,8 +467,14 @@ fn bh16() -> MissionDef {
         UnitDef::new(2, unit::INFANTRY, 11, 20),
         UnitDef::new(2, unit::INFANTRY, 12, 20),
         UnitDef::new(2, unit::INFANTRY, 14, 20),
-    ];    // (they capture: the default role would march them at the player's HQ)
-    let jump: Vec<UnitDef> = jump.into_iter().map(|mut u| { u.ai = 3; u }).collect();
+    ]; // (they capture: the default role would march them at the player's HQ)
+    let jump: Vec<UnitDef> = jump
+        .into_iter()
+        .map(|mut u| {
+            u.ai = 3;
+            u
+        })
+        .collect();
 
     m.triggers = vec![
         // The first power is charged from the start (the Keep's pair).
@@ -420,7 +504,15 @@ pub fn missions() -> Vec<MissionDef> {
     // The day limit loses: the day after the last is the defeat (the header's counter only shows it).
     for m in v.iter_mut().filter(|m| m.key >= "bh12") {
         if m.day_limit > 0 {
-            let up = Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: m.day_limit + 1 }, vec![Action::Lose]).repeating();
+            let up = Trigger::new(
+                When::TurnStart,
+                Cond::EveryDays {
+                    n: 1000,
+                    from: m.day_limit + 1,
+                },
+                vec![Action::Lose],
+            )
+            .repeating();
             m.triggers.push(up);
         }
     }
@@ -433,7 +525,11 @@ mod tests {
     use crate::ds_campaign_data::wrap_dialogue;
 
     fn scenes(m: &MissionDef) -> Vec<(String, &Scene)> {
-        let mut v = vec![(format!("{} intro", m.key), &m.intro), (format!("{} victory", m.key), &m.victory), (format!("{} after", m.key), &m.after)];
+        let mut v = vec![
+            (format!("{} intro", m.key), &m.intro),
+            (format!("{} victory", m.key), &m.victory),
+            (format!("{} after", m.key), &m.after),
+        ];
         for (i, t) in m.triggers.iter().enumerate() {
             for a in &t.then {
                 if let Action::Scene(s) = a {
@@ -453,15 +549,32 @@ mod tests {
     #[test]
     fn every_map_is_built_and_every_mission_has_scenes_and_a_flag_in_yellow_comet() {
         for m in missions().iter().filter(|m| m.key >= "bh12") {
-            let MapSrc::Built(name) = &m.map else { panic!("{}: not a built map", m.key) };
-            assert!(crate::bh_map_data::MAPS.iter().any(|b| b.name == *name), "{}: map {name} is not built (five/bhmap.py)", m.key);
+            let MapSrc::Built(name) = &m.map else {
+                panic!("{}: not a built map", m.key)
+            };
+            assert!(
+                crate::bh_map_data::MAPS.iter().any(|b| b.name == *name),
+                "{}: map {name} is not built (five/bhmap.py)",
+                m.key
+            );
             if let Some(f) = &m.front2 {
-                let MapSrc::Built(n2) = &f.map else { panic!("{}: second front not built", m.key) };
-                assert!(crate::bh_map_data::MAPS.iter().any(|b| b.name == *n2), "{}: map {n2}", m.key);
+                let MapSrc::Built(n2) = &f.map else {
+                    panic!("{}: second front not built", m.key)
+                };
+                assert!(
+                    crate::bh_map_data::MAPS.iter().any(|b| b.name == *n2),
+                    "{}: map {n2}",
+                    m.key
+                );
             }
             assert!(!m.intro.is_empty() && !m.after.is_empty(), "{}: scenes", m.key);
             // AW2's Yellow Comet, the centre land
-            assert!((225..=300).contains(&m.flag.0) && (50..=180).contains(&m.flag.1), "{}: flag {:?} off Yellow Comet", m.key, m.flag);
+            assert!(
+                (225..=300).contains(&m.flag.0) && (50..=180).contains(&m.flag.1),
+                "{}: flag {:?} off Yellow Comet",
+                m.key,
+                m.flag
+            );
         }
     }
 
@@ -473,7 +586,12 @@ mod tests {
         assert_eq!(get("bh13").recruits, vec![roster::KINDLE]);
         assert_eq!(get("bh13").needs, Needs::All(vec!["bh12"]));
         assert_eq!(get("bh16").needs, Needs::All(vec!["bh15"]));
-        let earns = |k: &str, b: u8| get(k).triggers.iter().any(|t| t.then.iter().any(|a| matches!(a, Action::EarnBond(x) if *x == b)));
+        let earns = |k: &str, b: u8| {
+            get(k)
+                .triggers
+                .iter()
+                .any(|t| t.then.iter().any(|a| matches!(a, Action::EarnBond(x) if *x == b)))
+        };
         assert!(earns("bh12", 2) && earns("bh13", 3) && earns("bh14", 9));
         // (the pools hold only COs unlocked by then: Koal is not in M12's, Kindle not in M13's)
         assert!(!get("bh12").pool.contains(&co::KOAL) && !get("bh13").pool.contains(&co::KINDLE));

@@ -362,7 +362,11 @@ fn build_art() -> Option<Art> {
         let b = n(pack.overlay_at(0, OV0_BASE, FONT_TABLE + 4 * i, 4), "font table")?;
         ptrs.push(u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
     }
-    let mut order: Vec<u32> = ptrs.iter().copied().filter(|p| (OV0_BASE..OV0_BASE + ov.len() as u32).contains(p)).collect();
+    let mut order: Vec<u32> = ptrs
+        .iter()
+        .copied()
+        .filter(|p| (OV0_BASE..OV0_BASE + ov.len() as u32).contains(p))
+        .collect();
     order.sort_unstable();
     order.dedup();
     let mut glyphs = Vec::new();
@@ -394,7 +398,11 @@ fn build_art() -> Option<Art> {
         glyphs.push(Some(Glyph { cols, px, adv }));
     }
     // Icons.
-    let sheet = n(pack.file("icon/res_icon0_cg_E").or_else(|| pack.file("icon/res_icon0_cg")), "icon sheet")?;
+    let sheet = n(
+        pack.file("icon/res_icon0_cg_E")
+            .or_else(|| pack.file("icon/res_icon0_cg")),
+        "icon sheet",
+    )?;
     let cl = n(pack.file("icon/res_icon_cl"), "icon colours")?;
     let mut ipal = [[0u8; 4]; 16];
     for (i, p) in ipal.iter_mut().enumerate() {
@@ -535,7 +543,9 @@ impl Canvas<'_> {
 }
 
 fn text_width(a: &Art, s: &str) -> i32 {
-    s.bytes().map(|b| a.glyphs[b as usize].as_ref().map_or(4, |g| g.adv)).sum()
+    s.bytes()
+        .map(|b| a.glyphs[b as usize].as_ref().map_or(4, |g| g.adv))
+        .sum()
 }
 
 fn draw_text(cv: &mut Canvas, a: &Art, x: i32, y: i32, s: &str, grey: bool) {
@@ -580,7 +590,11 @@ fn draw_frame(cv: &mut Canvas, a: &Art, x: i32, y: i32, w: i32, h: i32) {
             let tile = &a.frame[t];
             for py in 0..8 {
                 for px in 0..8 {
-                    cv.put(x + 8 * tx + px, y + 8 * ty + py, a.pal[tile[(py * 8 + px) as usize] as usize]);
+                    cv.put(
+                        x + 8 * tx + px,
+                        y + 8 * ty + py,
+                        a.pal[tile[(py * 8 + px) as usize] as usize],
+                    );
                 }
             }
         }
@@ -689,13 +703,23 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     // stays clear of it, and Dual Strike's help box (bottom right) is left out under a bottom one.
     let talking = crate::tag_ui::dialogue_up(core);
     let top_box = talking && crate::tag_ui::top_box_rows(core) > 0;
-    let (lo, hi) = (if top_box { 46 } else { 0 }, if talking && !top_box { BOX_BOTTOM_TOP } else { H as i32 });
+    let (lo, hi) = (
+        if top_box { 46 } else { 0 },
+        if talking && !top_box { BOX_BOTTOM_TOP } else { H as i32 },
+    );
     let (bx, by) = match menu.kind {
         Kind::Map => (72, within(TAG_H.max(lo), lo, hi - bh)),
         Kind::Unit => {
             let (ux, uy) = unit_screen(core);
-            let x = if ux + 16 + 4 + bw <= W as i32 { ux + 20 } else { ux - bw - 4 };
-            (within(x, 0, W as i32 - bw), within(uy + 8 - bh / 2, (TAG_H - 6).max(lo), hi - bh))
+            let x = if ux + 16 + 4 + bw <= W as i32 {
+                ux + 20
+            } else {
+                ux - bw - 4
+            };
+            (
+                within(x, 0, W as i32 - bw),
+                within(uy + 8 - bh / 2, (TAG_H - 6).max(lo), hi - bh),
+            )
         }
     };
     draw_frame(&mut cv, a, bx, by, wt, 2 * n + 2);
@@ -759,7 +783,14 @@ mod tests {
         let a = build_art().expect("art");
         let mut buf = vec![0u8; W * H * 4];
         let mut cv = Canvas { rgba: &mut buf };
-        let rows = [("CO", 0x94u8, false), ("Intel", 0x86, false), ("Options", 0x88, false), ("Load", 0x83, true), ("Save", 0x87, false), ("End", 0x8b, false)];
+        let rows = [
+            ("CO", 0x94u8, false),
+            ("Intel", 0x86, false),
+            ("Options", 0x88, false),
+            ("Load", 0x83, true),
+            ("Save", 0x87, false),
+            ("End", 0x8b, false),
+        ];
         draw_frame(&mut cv, &a, 88, 16, 8, 14);
         for (i, (t, code, grey)) in rows.iter().enumerate() {
             let ry = 16 + 8 + 16 * i as i32;

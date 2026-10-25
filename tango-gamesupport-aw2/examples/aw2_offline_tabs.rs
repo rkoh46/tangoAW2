@@ -51,8 +51,20 @@ fn main() {
     if std::env::var_os("AW2_DS_PACK").is_some() {
         tango_gamesupport_aw2::ds_pack::pack();
     }
-    let shared = if std::env::var_os("AW2_SHARED_ART").is_some() { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 };
-    let link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), None, &tango_gamesupport_aw2::pvp::AW2E, Some((0, shared)), None).expect("boot");
+    let shared = if std::env::var_os("AW2_SHARED_ART").is_some() {
+        tango_gamesupport_aw2::ds_art::SHARED_ART
+    } else {
+        0
+    };
+    let link = tango_backend_mgba::SharedLink::boot(
+        &rom,
+        Some(&save),
+        None,
+        &tango_gamesupport_aw2::pvp::AW2E,
+        Some((0, shared)),
+        None,
+    )
+    .expect("boot");
     let mut r = Run { link };
     r.wait(700);
     r.press(START);
@@ -113,15 +125,34 @@ fn main() {
                         let tab = seen.get(&row.id).and_then(|t| t.first()).copied().unwrap_or(0);
                         let expect = 2 + 2 * (row.armies as u16 - 2) + row.predeployed as u16;
                         if tab != expect {
-                            println!("DIFF {:02x} {} armies {} pre {} (bases {} air {} ports {} placed {}) on tab {}", row.id, row.name, row.armies, row.predeployed, row.bases, row.airports, row.ports, row.placed, tab);
+                            println!(
+                                "DIFF {:02x} {} armies {} pre {} (bases {} air {} ports {} placed {}) on tab {}",
+                                row.id,
+                                row.name,
+                                row.armies,
+                                row.predeployed,
+                                row.bases,
+                                row.airports,
+                                row.ports,
+                                row.placed,
+                                tab
+                            );
                         }
                     }
-                    println!("check: {} audited, {} listed, missing {:?}, twice {:?}, not audited {:?}", want.len(), seen.len(), missing, twice, extra);
+                    println!(
+                        "check: {} audited, {} listed, missing {:?}, twice {:?}, not audited {:?}",
+                        want.len(),
+                        seen.len(),
+                        missing,
+                        twice,
+                        extra
+                    );
                 }
                 'F' => {
                     // A DOWN press, then every frame of it saved (f<n>.bmp).
                     for i in 0..30u32 {
-                        r.link.tick([HostInput::keys(if i < 3 { 1 << 7 } else { 0 }), HostInput::keys(0)]);
+                        r.link
+                            .tick([HostInput::keys(if i < 3 { 1 << 7 } else { 0 }), HostInput::keys(0)]);
                         write_bmp(&out.join(format!("f{i:02}.bmp")), &r.link.solo_side().frame().unwrap());
                     }
                 }
@@ -131,15 +162,27 @@ fn main() {
                     static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
                     let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     for i in 0..12u32 {
-                        r.link.tick([HostInput::keys(if i < 3 { 1 << 7 } else { 0 }), HostInput::keys(0)]);
-                        write_bmp(&out.join(format!("g{n:02}_{i:02}.bmp")), &r.link.solo_side().frame().unwrap());
+                        r.link
+                            .tick([HostInput::keys(if i < 3 { 1 << 7 } else { 0 }), HostInput::keys(0)]);
+                        write_bmp(
+                            &out.join(format!("g{n:02}_{i:02}.bmp")),
+                            &r.link.solo_side().frame().unwrap(),
+                        );
                     }
                     r.wait(8);
                 }
                 'v' => {
                     let core = r.link.core();
                     let io = |a: u32| core.raw_read_16(0x0400_0000 + a, -1);
-                    println!("dispcnt {:04x} bgcnt {:04x} {:04x} {:04x} {:04x} hofs/vofs {:?}", io(0), io(8), io(0xA), io(0xC), io(0xE), (0..8).map(|k| io(0x10 + 2 * k)).collect::<Vec<_>>());
+                    println!(
+                        "dispcnt {:04x} bgcnt {:04x} {:04x} {:04x} {:04x} hofs/vofs {:?}",
+                        io(0),
+                        io(8),
+                        io(0xA),
+                        io(0xC),
+                        io(0xE),
+                        (0..8).map(|k| io(0x10 + 2 * k)).collect::<Vec<_>>()
+                    );
                 }
                 'V' => {
                     let core = r.link.core();
@@ -147,7 +190,11 @@ fn main() {
                     core.raw_read_range(0x0600_0000, -1, &mut v);
                     std::fs::write(out.join("vram.bin"), v).unwrap();
                     // (and the palette, OAM and I/O registers: `aw2dev gfx explain` decodes them)
-                    for (name, at, len) in [("pal", 0x0500_0000u32, 0x400usize), ("oam", 0x0700_0000, 0x400), ("io", 0x0400_0000, 0x60)] {
+                    for (name, at, len) in [
+                        ("pal", 0x0500_0000u32, 0x400usize),
+                        ("oam", 0x0700_0000, 0x400),
+                        ("io", 0x0400_0000, 0x60),
+                    ] {
                         let mut b = vec![0u8; len];
                         core.raw_read_range(at, -1, &mut b);
                         std::fs::write(out.join(format!("{name}.bin")), b).unwrap();

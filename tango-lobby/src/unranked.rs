@@ -92,7 +92,13 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
         };
         // Paired. Draw lots.
         let mine: u64 = rand::random();
-        if channels.control.0.send_packet(&Packet::Room(RoomMsg::Pool(mine))).await.is_err() {
+        if channels
+            .control
+            .0
+            .send_packet(&Packet::Room(RoomMsg::Pool(mine)))
+            .await
+            .is_err()
+        {
             continue;
         }
         match tango_platform::timeout(FIRST_WORDS, channels.control.1.receive()).await {
@@ -103,7 +109,10 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
             }
         }
     };
-    log::info!("unranked: paired; {} hosts", if mine < theirs { "this peer" } else { "the other" });
+    log::info!(
+        "unranked: paired; {} hosts",
+        if mine < theirs { "this peer" } else { "the other" }
+    );
     {
         let mut g = inner.lock().unwrap();
         g.message.clear();
@@ -126,7 +135,14 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
                 seen_guest && g.peers.is_empty()
             };
             if gone || (!seen_guest && paired.elapsed() > FIRST_WORDS * 2) {
-                fail(&inner, if gone { "The other player left." } else { "The other player left." });
+                fail(
+                    &inner,
+                    if gone {
+                        "The other player left."
+                    } else {
+                        "The other player left."
+                    },
+                );
                 return;
             }
             start_room(&inner, &cancel);
@@ -136,7 +152,13 @@ pub(super) async fn unranked_main(inner: Arc<Mutex<Inner>>, cancel: Cancellation
             }
         }
     } else {
-        if channels.control.0.send_packet(&Packet::Room(RoomMsg::Join(join))).await.is_err() {
+        if channels
+            .control
+            .0
+            .send_packet(&Packet::Room(RoomMsg::Join(join)))
+            .await
+            .is_err()
+        {
             fail(&inner, "The other player left.");
             return;
         }

@@ -42,7 +42,11 @@ struct Book {
 fn book() -> &'static Book {
     static BOOK: OnceLock<Book> = OnceLock::new();
     BOOK.get_or_init(|| {
-        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
+        let mut b = Book {
+            scenes: HashMap::new(),
+            songs: HashMap::new(),
+            pages: HashMap::new(),
+        };
         for (name, src) in FILES {
             if let Err(e) = parse_into(&mut b, name, src) {
                 panic!("es_text/{name}.txt: {e}");
@@ -97,8 +101,16 @@ pub fn lines(key: &str) -> Vec<Line> {
 /// The pages of a scene of narration (the prologue), one per row, as the world map shows them.
 pub fn pages(key: &str) -> Vec<Page> {
     used().lock().unwrap().insert(key.to_string());
-    let Some(rows) = book().pages.get(key) else { panic!("es_text: no scene {key:?}") };
-    rows.iter().map(|r| Page { text: r[0], picture: None, who: Some(Speaker::Narrator) }).collect()
+    let Some(rows) = book().pages.get(key) else {
+        panic!("es_text: no scene {key:?}")
+    };
+    rows.iter()
+        .map(|r| Page {
+            text: r[0],
+            picture: None,
+            who: Some(Speaker::Narrator),
+        })
+        .collect()
 }
 
 /// Every key the files define.
@@ -220,15 +232,21 @@ struct Row {
 
 fn parse_cos(rest: &str) -> Result<Vec<u8>, String> {
     // Names are separated by commas ("@IF STURM, VON BOLT").
-    rest.split(',').map(|n| co_by_name(n.trim()).ok_or(format!("unknown CO {:?}", n.trim()))).collect()
+    rest.split(',')
+        .map(|n| co_by_name(n.trim()).ok_or(format!("unknown CO {:?}", n.trim())))
+        .collect()
 }
 
 fn parse_row(l: &str) -> Result<Row, String> {
-    let Some(i) = l.find(": ") else { return Err(format!("not a row: {l:?}")) };
+    let Some(i) = l.find(": ") else {
+        return Err(format!("not a row: {l:?}"));
+    };
     let (head, text) = (&l[..i], l[i + 2..].trim());
     let (name, mood) = match head.strip_suffix(')') {
         Some(h) => {
-            let Some(j) = h.rfind('(') else { return Err(format!("bad expression: {l:?}")) };
+            let Some(j) = h.rfind('(') else {
+                return Err(format!("bad expression: {l:?}"));
+            };
             let m = match &h[j + 1..] {
                 "h" => Mood::Happy,
                 "s" => Mood::Sad,
@@ -243,12 +261,20 @@ fn parse_row(l: &str) -> Result<Row, String> {
         return Err(format!("empty row: {l:?}"));
     }
     let text = text.replace(" / ", "\r").replace("{p}", "\x0e");
-    Ok(Row { who, mood, text: leak(text) })
+    Ok(Row {
+        who,
+        mood,
+        text: leak(text),
+    })
 }
 
 /// A scene's rows into lines: each group's rows once for each CO it is shown for.
 fn build(rows: &[(Group, Row)], pool: &[u8]) -> Result<Vec<Line>, String> {
-    let named: Vec<u8> = rows.iter().filter_map(|(g, _)| if let Group::If(v) = g { Some(v.clone()) } else { None }).flatten().collect();
+    let named: Vec<u8> = rows
+        .iter()
+        .filter_map(|(g, _)| if let Group::If(v) = g { Some(v.clone()) } else { None })
+        .flatten()
+        .collect();
     let mut out = Vec::new();
     let mut i = 0;
     while i < rows.len() {
@@ -342,7 +368,11 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
     let mut rows: Vec<(Group, Row)> = Vec::new();
     let mut group = Group::Always;
     let mut song: Option<Track> = None;
-    let finish = |b: &mut Book, key: &mut Option<(String, Vec<u8>, usize)>, rows: &mut Vec<(Group, Row)>, song: &mut Option<Track>| -> Result<(), String> {
+    let finish = |b: &mut Book,
+                  key: &mut Option<(String, Vec<u8>, usize)>,
+                  rows: &mut Vec<(Group, Row)>,
+                  song: &mut Option<Track>|
+     -> Result<(), String> {
         if let Some((k, pool, _)) = key.take() {
             if let Some(t) = song.take() {
                 b.songs.insert(k.clone(), t);
@@ -351,7 +381,8 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
                 return Err(format!("scene {k:?} is defined twice"));
             }
             if rows.iter().all(|(g, r)| *g == Group::Always && r.who == Who::Narrator) && !rows.is_empty() {
-                b.pages.insert(k.clone(), rows.iter().map(|(_, r)| vec![r.text]).collect());
+                b.pages
+                    .insert(k.clone(), rows.iter().map(|(_, r)| vec![r.text]).collect());
             }
             let lines = build(rows, &pool).map_err(|e| format!("{k}: {e}"))?;
             b.scenes.insert(k, lines);
@@ -386,7 +417,10 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
                 if song.is_some() {
                     return Err(at("a scene has one @SONG".into()));
                 }
-                song = Some(crate::campaign_music::parse(rest, co_by_name).ok_or_else(|| at(format!("unknown song {:?}", rest.trim())))?);
+                song = Some(
+                    crate::campaign_music::parse(rest, co_by_name)
+                        .ok_or_else(|| at(format!("unknown song {:?}", rest.trim())))?,
+                );
                 continue;
             }
             group = match word {
@@ -401,7 +435,19 @@ fn parse_into(b: &mut Book, file: &str, src: &str) -> Result<(), String> {
                     }
                     Group::Without(v[0])
                 }
-                "BOND" => Group::Bond(parse_cos(rest).map_err(at)?.into_iter().map(|c| BONDS.iter().position(|b| b.co == c).map(|k| k as u8).ok_or(at(format!("{c} has no bond")))).collect::<Result<_, _>>()?),
+                "BOND" => Group::Bond(
+                    parse_cos(rest)
+                        .map_err(at)?
+                        .into_iter()
+                        .map(|c| {
+                            BONDS
+                                .iter()
+                                .position(|b| b.co == c)
+                                .map(|k| k as u8)
+                                .ok_or(at(format!("{c} has no bond")))
+                        })
+                        .collect::<Result<_, _>>()?,
+                ),
                 "END" => Group::Always,
                 w => return Err(at(format!("unknown directive @{w}"))),
             };
@@ -441,15 +487,28 @@ mod tests {
                         && ["pre", "post", "map", "epilogue", "epilogue2", "pre2", "post2", "map2"].contains(&rest)
                 })
         };
-        let missing: Vec<&String> = b.scenes.keys().filter(|k| needs(k) && !b.songs.contains_key(*k)).collect();
+        let missing: Vec<&String> = b
+            .scenes
+            .keys()
+            .filter(|k| needs(k) && !b.songs.contains_key(*k))
+            .collect();
         assert!(missing.is_empty(), "scenes with no @SONG: {missing:?}");
         assert!(b.songs.keys().all(|k| b.scenes.contains_key(k)));
     }
 
     #[test]
     fn song_directive_parses_and_is_once_a_scene() {
-        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
-        parse_into(&mut b, "t", "== a\n@SONG sturm\nKLAUS: x\n== b\n@SONG co:klaus\nKLAUS: y\n== c\nKLAUS: z\n").unwrap();
+        let mut b = Book {
+            scenes: HashMap::new(),
+            songs: HashMap::new(),
+            pages: HashMap::new(),
+        };
+        parse_into(
+            &mut b,
+            "t",
+            "== a\n@SONG sturm\nKLAUS: x\n== b\n@SONG co:klaus\nKLAUS: y\n== c\nKLAUS: z\n",
+        )
+        .unwrap();
         assert_eq!(b.songs["a"], Track::Aw2(220));
         assert_eq!(b.songs["b"], Track::Co(crate::es_co::KLAUS));
         assert!(!b.songs.contains_key("c"));
@@ -460,8 +519,13 @@ mod tests {
     #[test]
     fn groups_expand_to_the_pool() {
         use crate::es_co::*;
-        let src = "== t | KLAUS, AURELIA, CASSIUS\nAURELIA: a / b\n@IF KLAUS\n[CO]: x\n@OTHER\n[CO]: y\n@END\nNARRATION: z\n";
-        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
+        let src =
+            "== t | KLAUS, AURELIA, CASSIUS\nAURELIA: a / b\n@IF KLAUS\n[CO]: x\n@OTHER\n[CO]: y\n@END\nNARRATION: z\n";
+        let mut b = Book {
+            scenes: HashMap::new(),
+            songs: HashMap::new(),
+            pages: HashMap::new(),
+        };
         parse_into(&mut b, "t", src).unwrap();
         let l = &b.scenes["t"];
         assert_eq!(l.len(), 5);
@@ -474,7 +538,11 @@ mod tests {
 
     #[test]
     fn bad_rows_are_errors() {
-        let mut b = Book { scenes: HashMap::new(), songs: HashMap::new(), pages: HashMap::new() };
+        let mut b = Book {
+            scenes: HashMap::new(),
+            songs: HashMap::new(),
+            pages: HashMap::new(),
+        };
         assert!(parse_into(&mut b, "t", "== t\nNOBODY: hi\n").is_err());
         assert!(parse_into(&mut b, "t", "== u\nKLAUS(x): hi\n").is_err());
         assert!(parse_into(&mut b, "t", "KLAUS: hi\n").is_err());

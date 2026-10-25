@@ -60,13 +60,25 @@ pub fn judge(b: &BattleSummary, seat: usize, players: usize) -> Option<Verdict> 
     if b.seats.len() >= 2 && b.seats.len() < players {
         let room = b.seats.iter().map(|&s| s as usize).collect::<Vec<_>>();
         let at = room.iter().position(|&s| s == seat)?;
-        let mut v = judge(&BattleSummary { seats: Vec::new(), ..b.clone() }, at, room.len())?;
+        let mut v = judge(
+            &BattleSummary {
+                seats: Vec::new(),
+                ..b.clone()
+            },
+            at,
+            room.len(),
+        )?;
         v.opponents = v.opponents.iter().filter_map(|&o| room.get(o).copied()).collect();
         return Some(v);
     }
     // (the room has an army a player: any others in the console's table are not in the battle)
     let b = &BattleSummary {
-        armies: b.armies.iter().filter(|a| a.army as usize <= players).cloned().collect(),
+        armies: b
+            .armies
+            .iter()
+            .filter(|a| a.army as usize <= players)
+            .cloned()
+            .collect(),
         ..b.clone()
     };
     let mine: Vec<&ArmySummary> = b.armies.iter().filter(|a| seat_of(a, players) == seat).collect();
@@ -98,7 +110,10 @@ impl Stats {
     pub fn load(path: &std::path::Path) -> Stats {
         match std::fs::read(path) {
             Ok(b) => serde_json::from_slice(&b).unwrap_or_else(|e| {
-                log::warn!("online stats: {} could not be read ({e}); starting again", path.display());
+                log::warn!(
+                    "online stats: {} could not be read ({e}); starting again",
+                    path.display()
+                );
                 Stats::default()
             }),
             Err(_) => Stats::default(),
@@ -160,12 +175,20 @@ impl Stats {
             "Last opponents".to_string(),
         ];
         for b in &self.last {
-            let who = if b.opponents.is_empty() { "?".to_string() } else { b.opponents.join(", ") };
+            let who = if b.opponents.is_empty() {
+                "?".to_string()
+            } else {
+                b.opponents.join(", ")
+            };
             // (whole names: the first, and how many more)
             let who: String = if who.chars().count() <= 17 {
                 who
             } else if b.opponents.len() > 1 {
-                format!("{} +{}", b.opponents[0].chars().take(12).collect::<String>(), b.opponents.len() - 1)
+                format!(
+                    "{} +{}",
+                    b.opponents[0].chars().take(12).collect::<String>(),
+                    b.opponents.len() - 1
+                )
             } else {
                 who.chars().take(17).collect()
             };
@@ -201,7 +224,10 @@ mod tests {
         };
         let host = judge(&b, 0, 2).unwrap();
         assert!(host.won);
-        assert_eq!((host.destroyed, host.lost, host.days, host.opponents.clone()), (7, 3, 9, vec![1]));
+        assert_eq!(
+            (host.destroyed, host.lost, host.days, host.opponents.clone()),
+            (7, 3, 9, vec![1])
+        );
         assert!(!judge(&b, 1, 2).unwrap().won);
         // Not played to the end: both still in.
         let b2 = BattleSummary {
@@ -221,7 +247,14 @@ mod tests {
     #[test]
     fn names_with_spaces_survive_the_record() {
         let mut stats = Stats::default();
-        let v = Verdict { won: true, destroyed: 1, lost: 0, powers: 0, days: 3, opponents: vec![1] };
+        let v = Verdict {
+            won: true,
+            destroyed: 1,
+            lost: 0,
+            powers: 0,
+            days: 3,
+            opponents: vec![1],
+        };
         stats.add(&v, vec!["Ann Lee".to_string(), "Bo Ray Jr".to_string()], 100);
         stats.add(&v, vec!["Cy Tong".to_string()], 200);
         let dir = std::env::temp_dir().join(format!("taw2-stats-{}", std::process::id()));
@@ -230,10 +263,16 @@ mod tests {
         stats.save(&path);
         let back = Stats::load(&path);
         assert_eq!(back.last[0].opponents, vec!["Cy Tong".to_string()]);
-        assert_eq!(back.last[1].opponents, vec!["Ann Lee".to_string(), "Bo Ray Jr".to_string()]);
+        assert_eq!(
+            back.last[1].opponents,
+            vec!["Ann Lee".to_string(), "Bo Ray Jr".to_string()]
+        );
         let lines = back.lines().join("\n");
         assert!(lines.contains("  Cy Tong\tWon"), "{lines}");
-        assert!(lines.contains("Ann Lee +1\tWon") || lines.contains("Ann Lee, Bo Ray Jr\tWon"), "{lines}");
+        assert!(
+            lines.contains("Ann Lee +1\tWon") || lines.contains("Ann Lee, Bo Ray Jr\tWon"),
+            "{lines}"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

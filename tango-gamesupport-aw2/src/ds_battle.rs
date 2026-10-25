@@ -128,7 +128,12 @@ struct LayerSpec {
 }
 
 const fn layer(set: u32, weapon: u8, fire: Option<u8>, dead: Option<u8>) -> LayerSpec {
-    LayerSpec { set, weapon, fire, dead }
+    LayerSpec {
+        set,
+        weapon,
+        fire,
+        dead,
+    }
 }
 
 /// How a unit's shots leave: the event in its firing script that fires
@@ -146,7 +151,13 @@ struct Shots {
 }
 
 const fn shots(event: u8, w1: std::ops::Range<usize>, w2: std::ops::Range<usize>, speed: i32) -> Shots {
-    Shots { event, points: [w1, w2], speed, launch: (0, 0, 0), burst: (0, 0) }
+    Shots {
+        event,
+        points: [w1, w2],
+        speed,
+        launch: (0, 0, 0),
+        burst: (0, 0),
+    }
 }
 
 /// A new unit: its AW2 id, Dual Strike record (and the record whose
@@ -174,7 +185,11 @@ const UNITS: [UnitSpec; 7] = [
         id: MEGATANK,
         record: 3,
         ground_record: 0,
-        layers: &[layer(1, 0, None, Some(1)), layer(3, 1, Some(1), Some(2)), layer(4, 2, Some(1), Some(2))],
+        layers: &[
+            layer(1, 0, None, Some(1)),
+            layer(3, 1, Some(1), Some(2)),
+            layer(4, 2, Some(1), Some(2)),
+        ],
         shots: shots(FIRE_EVENT, 0..5, 0..5, 0),
         wait: [14, 2],
         air: false,
@@ -197,7 +212,13 @@ const UNITS: [UnitSpec; 7] = [
         record: 11,
         ground_record: 0,
         layers: &[layer(1, 0, None, None)],
-        shots: Shots { event: 0, points: [0..5, 0..5], speed: 7, launch: (3, 1, 6), burst: (5, 5) },
+        shots: Shots {
+            event: 0,
+            points: [0..5, 0..5],
+            speed: 7,
+            launch: (3, 1, 6),
+            burst: (5, 5),
+        },
         wait: [63, 63],
         air: true,
         outwards: 0,
@@ -230,7 +251,13 @@ const UNITS: [UnitSpec; 7] = [
         record: 24,
         ground_record: 0,
         layers: &[layer(1, 0, Some(1), None), layer(5, 0, None, None)],
-        shots: Shots { event: 0x05, points: [0..5, 0..5], speed: 7, launch: (2, -5, 10), burst: (0, 0) },
+        shots: Shots {
+            event: 0x05,
+            points: [0..5, 0..5],
+            speed: 7,
+            launch: (2, -5, 10),
+            burst: (0, 0),
+        },
         wait: [0, 0],
         air: false,
         outwards: -24,
@@ -265,13 +292,23 @@ struct Aw2Layer {
 }
 
 const fn al(set: u32, weapon: u8, fire: Option<u8>, drive: Option<u8>) -> Aw2Layer {
-    Aw2Layer { set, weapon, fire, drive }
+    Aw2Layer {
+        set,
+        weapon,
+        fire,
+        drive,
+    }
 }
 
 /// A weapon's layer that is part of the unit's picture whichever weapon fires (the Cruiser's missile launcher and its
 /// gun): shown always, firing with its weapon only ([`ALWAYS`] in the layer's weapon).
 const fn aw(set: u32, weapon: u8, fire: Option<u8>) -> Aw2Layer {
-    Aw2Layer { set, weapon: ALWAYS | weapon, fire, drive: None }
+    Aw2Layer {
+        set,
+        weapon: ALWAYS | weapon,
+        fire,
+        drive: None,
+    }
 }
 
 /// In a layer's weapon: shown with either weapon (the low bits: the weapon it fires with).
@@ -311,8 +348,22 @@ const AW2_ART: [(u8, u32, &[Aw2Layer]); 20] = [
     (17, 16, BODY_IDLE),
     (19, 18, &[al(1, 1, None, None), al(2, 2, Some(1), None)]),
     (20, 19, BODY_IDLE),
-    (21, 20, &[al(1, 0, None, None), al(3, 0, Some(1), None), al(5, 0, None, None)]),
-    (22, 21, &[al(1, 1, None, None), al(2, 2, None, None), aw(3, 1, Some(1)), aw(4, 2, Some(1)), al(5, 0, None, None)]),
+    (
+        21,
+        20,
+        &[al(1, 0, None, None), al(3, 0, Some(1), None), al(5, 0, None, None)],
+    ),
+    (
+        22,
+        21,
+        &[
+            al(1, 1, None, None),
+            al(2, 2, None, None),
+            aw(3, 1, Some(1)),
+            aw(4, 2, Some(1)),
+            al(5, 0, None, None),
+        ],
+    ),
     (23, 22, &[al(1, 0, None, None), al(5, 0, None, None)]),
     (24, 23, &[al(1, 0, None, None), al(5, 0, None, None)]),
     // (a dived Sub: Dual Strike's periscope and its wake, record 31)
@@ -378,7 +429,10 @@ impl Fx {
             return 0;
         }
         let drawn = |f: u8| self.frames.get(f as usize).is_some_and(|p| !p.is_empty());
-        self.script.iter().position(|&(_, f)| f < EVENT && drawn(f)).unwrap_or(0)
+        self.script
+            .iter()
+            .position(|&(_, f)| f < EVENT && drawn(f))
+            .unwrap_or(0)
     }
 }
 
@@ -466,7 +520,13 @@ fn frame(addr: u32, sheet: &[u8]) -> Option<Vec<Piece>> {
             .collect();
         // x: 9 bits signed; y: 8 bits signed.
         let x = ((h0 & 0x1FF) as i32 ^ 0x100) - 0x100;
-        out.push(Piece { x, y: h1 as u8 as i8 as i32, w, half: (h2 >> 12) as u8 & 1, texels });
+        out.push(Piece {
+            x,
+            y: h1 as u8 as i8 as i32,
+            w,
+            half: (h2 >> 12) as u8 & 1,
+            texels,
+        });
     }
     Some(out)
 }
@@ -494,7 +554,12 @@ fn palette(addr: u32) -> Option<[[u16; 16]; 2]> {
 
 /// The frames a set of scripts uses, from a frame table.
 fn frames_for(table: u32, scripts: &[&[(u8, u8)]], sheet: &[u8]) -> Option<Vec<Vec<Piece>>> {
-    let count = scripts.iter().flat_map(|s| s.iter()).filter(|&&(_, f)| f < EVENT).map(|&(_, f)| f as u32 + 1).max()?;
+    let count = scripts
+        .iter()
+        .flat_map(|s| s.iter())
+        .filter(|&&(_, f)| f < EVENT)
+        .map(|&(_, f)| f as u32 + 1)
+        .max()?;
     (0..count).map(|f| frame(word(table + 4 * f)?, sheet)).collect()
 }
 
@@ -530,7 +595,11 @@ fn convert(u: &UnitSpec, army: usize) -> Option<Figure> {
             l.dead.map_or(Some(Vec::new()), script_at)?,
         ];
         let frames = frames_for(word(anim)?, &[&scripts[0], &scripts[1], &scripts[2]], &sheet)?;
-        layers.push(Layer { weapon: l.weapon, frames, scripts });
+        layers.push(Layer {
+            weapon: l.weapon,
+            frames,
+            scripts,
+        });
     }
     // The drawn pixels' bounds (pieces carry margins).
     let mut b = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
@@ -552,10 +621,17 @@ fn convert(u: &UnitSpec, army: usize) -> Option<Figure> {
     let mut points = [(0, 0); 5];
     for (k, p) in points.iter_mut().enumerate() {
         let b = bytes(numbers + POINTS + 4 * k as u32, 4)?;
-        *p = (i16::from_le_bytes([b[0], b[1]]) as i32, i16::from_le_bytes([b[2], b[3]]) as i32);
+        *p = (
+            i16::from_le_bytes([b[0], b[1]]) as i32,
+            i16::from_le_bytes([b[2], b[3]]) as i32,
+        );
     }
     let muzzle = |w: usize| word(rec + 4 * MUZZLES[w]).and_then(effect_at);
-    let projectile = |rec: u32| word(rec + 4 * PROJECTILE).filter(|&a| a != 0).and_then(|a| effect(&name(a + 4 * army as u32)?, word(a + 0x14)?));
+    let projectile = |rec: u32| {
+        word(rec + 4 * PROJECTILE)
+            .filter(|&a| a != 0)
+            .and_then(|a| effect(&name(a + 4 * army as u32)?, word(a + 0x14)?))
+    };
     let hit = hit_of(u.record, 1);
     let blast = word(rec + 4 * BLAST).and_then(effect_at);
     let (ground, air) = if u.ground_record != 0 {
@@ -564,7 +640,13 @@ fn convert(u: &UnitSpec, army: usize) -> Option<Figure> {
         (projectile(rec), None)
     };
     let fx = [muzzle(0), muzzle(1), ground, hit, blast, air];
-    Some(Figure { layers, palettes, bounds: b, fx, points })
+    Some(Figure {
+        layers,
+        palettes,
+        bounds: b,
+        fx,
+        points,
+    })
 }
 
 /// One of AW2's own units converted for one army: its layers, scripts [idle, firing, driving], no effects.
@@ -586,7 +668,11 @@ fn convert_aw2(record: u32, layers_spec: &[Aw2Layer], army: usize) -> Option<Fig
             l.drive.map_or(Some(Vec::new()), script_at)?,
         ];
         let frames = frames_for(word(anim)?, &[&scripts[0], &scripts[1], &scripts[2]], &sheet)?;
-        layers.push(Layer { weapon: l.weapon, frames, scripts });
+        layers.push(Layer {
+            weapon: l.weapon,
+            frames,
+            scripts,
+        });
     }
     let mut b = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
     for l in layers.iter().filter(|l| l.weapon & 0xF <= 1) {
@@ -604,8 +690,17 @@ fn convert_aw2(record: u32, layers_spec: &[Aw2Layer], army: usize) -> Option<Fig
         return None;
     }
     let muzzle = |w: usize| word(rec + 4 * MUZZLES[w]).and_then(effect_at);
-    let projectile = word(rec + 4 * PROJECTILE).filter(|&a| a != 0).and_then(|a| effect(&name(a + 4 * army as u32)?, word(a + 0x14)?));
-    let fx = [muzzle(0), muzzle(1), projectile, hit_of(record, 1), word(rec + 4 * BLAST).and_then(effect_at), None];
+    let projectile = word(rec + 4 * PROJECTILE)
+        .filter(|&a| a != 0)
+        .and_then(|a| effect(&name(a + 4 * army as u32)?, word(a + 0x14)?));
+    let fx = [
+        muzzle(0),
+        muzzle(1),
+        projectile,
+        hit_of(record, 1),
+        word(rec + 4 * BLAST).and_then(effect_at),
+        None,
+    ];
     // (the indirect units: Artillery, Rockets, Missiles, and the Battleship's guns)
     let indirect = matches!(record, 9 | 10 | 14 | 20);
     let mut points = [(0, 0); 5];
@@ -622,11 +717,21 @@ fn convert_aw2(record: u32, layers_spec: &[Aw2Layer], army: usize) -> Option<Fig
                     }
                 }
             }
-            if x1 == i32::MIN { (0, 0) } else { (x1, (y0 + y1) / 2) }
+            if x1 == i32::MIN {
+                (0, 0)
+            } else {
+                (x1, (y0 + y1) / 2)
+            }
         });
         points[w] = (tx - fx1, ty - fy);
     }
-    Some(Figure { layers, palettes, bounds: b, fx, points })
+    Some(Figure {
+        layers,
+        palettes,
+        bounds: b,
+        fx,
+        points,
+    })
 }
 
 static AW2_FIGURES: OnceLock<Vec<Option<Figure>>> = OnceLock::new();
@@ -688,7 +793,12 @@ fn gun_tip(layers: &[Layer], weapon: u8, indirect: bool) -> (i32, i32) {
 }
 
 fn aw2_figure(unit: usize, army: usize) -> Option<&'static Figure> {
-    let all = AW2_FIGURES.get_or_init(|| AW2_ART.iter().flat_map(|a| (0..ARMIES).map(move |army| convert_aw2(a.1, a.2, army))).collect());
+    let all = AW2_FIGURES.get_or_init(|| {
+        AW2_ART
+            .iter()
+            .flat_map(|a| (0..ARMIES).map(move |army| convert_aw2(a.1, a.2, army)))
+            .collect()
+    });
     all.get(unit * ARMIES + army.min(ARMIES - 1))?.as_ref()
 }
 
@@ -697,7 +807,9 @@ fn aw2_figure(unit: usize, army: usize) -> Option<&'static Figure> {
 fn hit_of(record: u32, weapon: u8) -> Option<Fx> {
     let rec = RECORDS + RECORD * record;
     let own = if weapon == 2 { HIT + 1 } else { HIT };
-    word(rec + 4 * own).and_then(effect_at).or_else(|| word(rec + 4 * INDIRECT_HIT).and_then(effect_at))
+    word(rec + 4 * own)
+        .and_then(effect_at)
+        .or_else(|| word(rec + 4 * INDIRECT_HIT).and_then(effect_at))
 }
 
 static FIGURES: OnceLock<Vec<Option<Figure>>> = OnceLock::new();
@@ -720,7 +832,15 @@ fn own_hit(record: u32, weapon: u8) -> bool {
 /// the air: `0c7`).
 fn hit_on(record: u32, weapon: u8, air_target: Option<u32>) -> Option<&'static Fx> {
     let all = HITS.get_or_init(|| {
-        (0..SCENE_RECORDS).map(|r| [hit_of(r, 1), hit_of(r, 2), word(RECORDS + RECORD * r + 4 * BLAST).and_then(effect_at)]).collect()
+        (0..SCENE_RECORDS)
+            .map(|r| {
+                [
+                    hit_of(r, 1),
+                    hit_of(r, 2),
+                    word(RECORDS + RECORD * r + 4 * BLAST).and_then(effect_at),
+                ]
+            })
+            .collect()
     });
     match air_target {
         Some(t) if !own_hit(record, weapon) => all.get(t as usize)?[2].as_ref(),
@@ -729,7 +849,12 @@ fn hit_on(record: u32, weapon: u8, air_target: Option<u32>) -> Option<&'static F
 }
 
 fn figure(unit: usize, army: usize) -> Option<&'static Figure> {
-    let all = FIGURES.get_or_init(|| UNITS.iter().flat_map(|u| (0..ARMIES).map(move |a| convert(u, a))).collect());
+    let all = FIGURES.get_or_init(|| {
+        UNITS
+            .iter()
+            .flat_map(|u| (0..ARMIES).map(move |a| convert(u, a)))
+            .collect()
+    });
     all.get(unit * ARMIES + army.min(ARMIES - 1))?.as_ref()
 }
 
@@ -895,7 +1020,9 @@ const AREA_GAP: u8 = 6;
 /// callback is not back yet (the proc outlives the scene by a few frames).
 fn scene_running(core: &Core) -> bool {
     core.raw_read_32(MAIN_CALLBACK, -1) != MAP_CALLBACK
-        && (PROCS..PROCS_END).step_by(PROC_SIZE as usize).any(|p| core.raw_read_32(p, -1) == SCENE_PROC)
+        && (PROCS..PROCS_END)
+            .step_by(PROC_SIZE as usize)
+            .any(|p| core.raw_read_32(p, -1) == SCENE_PROC)
 }
 
 fn side_unit_type(core: &Core, side: u32) -> u8 {
@@ -1052,7 +1179,11 @@ fn figure_count(core: &mut Core) {
         }
     );
     // (a dived Sub is shown dived: its periscope)
-    let t = if t == 24 && side_unit_dived(core, side) { DIVED_SUB } else { t };
+    let t = if t == 24 && side_unit_dived(core, side) {
+        DIVED_SUB
+    } else {
+        t
+    };
     if let Some(unit) = aw2_art_of(t).filter(|_| AW2_UNITS_IN_DS_ART && crate::wasteland::ds_graphics(core)) {
         // One of AW2's own units, with Dual Strike's map graphics on: its figures stay AW2's, drawn in Dual Strike's art.
         let army = core.raw_read_8(SIDE_COLOURS + side, -1).min(ARMIES as u8 - 1) as usize;
@@ -1064,7 +1195,11 @@ fn figure_count(core: &mut Core) {
         let enemy = side_unit_type(core, 1 - side);
         if let Some(ds) = crate::roster::ds_id(enemy) {
             core.raw_write_8(state + S_ENEMY, -1, ds);
-            core.raw_write_8(state + S_ENEMY_WEAPON, -1, core.raw_read_16(ROWS + ROW * (1 - side) + 4, -1) as u8);
+            core.raw_write_8(
+                state + S_ENEMY_WEAPON,
+                -1,
+                core.raw_read_16(ROWS + ROW * (1 - side) + 4, -1) as u8,
+            );
         }
         core.raw_write_8(state + S_ENEMY_AIR, -1, matches!(class_of(core, enemy), 2 | 3) as u8);
         for (l, layer) in fig.layers.iter().enumerate() {
@@ -1090,11 +1225,23 @@ fn figure_count(core: &mut Core) {
     let enemy = side_unit_type(core, 1 - side);
     if let Some(ds) = crate::roster::ds_id(enemy) {
         core.raw_write_8(state + S_ENEMY, -1, ds);
-        core.raw_write_8(state + S_ENEMY_WEAPON, -1, core.raw_read_16(ROWS + ROW * (1 - side) + 4, -1) as u8);
+        core.raw_write_8(
+            state + S_ENEMY_WEAPON,
+            -1,
+            core.raw_read_16(ROWS + ROW * (1 - side) + 4, -1) as u8,
+        );
     }
     core.raw_write_8(state + S_ENEMY_AIR, -1, matches!(class_of(core, enemy), 2 | 3) as u8);
-    core.raw_write_8(state + S_STRUCK, -1, core.raw_read_16(FIGURE_HITS + SIDE_HITS * side, -1) as u8);
-    core.raw_write_8(state + S_AREA, -1, (core.raw_read_16(DRAINING + 2 * side, -1) != 0) as u8);
+    core.raw_write_8(
+        state + S_STRUCK,
+        -1,
+        core.raw_read_16(FIGURE_HITS + SIDE_HITS * side, -1) as u8,
+    );
+    core.raw_write_8(
+        state + S_AREA,
+        -1,
+        (core.raw_read_16(DRAINING + 2 * side, -1) != 0) as u8,
+    );
     core.raw_write_8(state + S_UNIT, -1, unit as u8 + 1);
     core.raw_write_8(state + S_ARMY, -1, army as u8);
     core.raw_write_8(state + S_WEAPON, -1, weapon);
@@ -1196,9 +1343,34 @@ pub fn drain(core: &mut Core) {
 
 /// Unit names by AW2 type, for the log.
 const UNIT_NAMES: [&str; 28] = [
-    "-", "Infantry", "Mech", "Md Tank", "Megatank", "Tank", "Recon", "APC", "Neotank", "Piperunner", "Artillery", "Rockets",
-    "Stealth", "Black Bomb", "Anti-Air", "Missiles", "Fighter", "Bomber", "Black Boat", "B Copter", "T Copter",
-    "Battleship", "Cruiser", "Lander", "Sub", "dived Sub", "Carrier", "Oozium",
+    "-",
+    "Infantry",
+    "Mech",
+    "Md Tank",
+    "Megatank",
+    "Tank",
+    "Recon",
+    "APC",
+    "Neotank",
+    "Piperunner",
+    "Artillery",
+    "Rockets",
+    "Stealth",
+    "Black Bomb",
+    "Anti-Air",
+    "Missiles",
+    "Fighter",
+    "Bomber",
+    "Black Boat",
+    "B Copter",
+    "T Copter",
+    "Battleship",
+    "Cruiser",
+    "Lander",
+    "Sub",
+    "dived Sub",
+    "Carrier",
+    "Oozium",
 ];
 
 /// Blocks left out in this battle (logged once a battle).
@@ -1227,7 +1399,12 @@ static EXTRA_FREE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::
 /// A side's extra tiles, in AW2's effect tiles, while both sides are drawn here: what the frame has left of them.
 fn extra_tiles(core: &Core, _side: u32) -> (u32, u32) {
     if both_drawn(core) {
-        (EXTRA_FREE.load(std::sync::atomic::Ordering::Relaxed).max(EFFECT_TILES as u32), FX_TILES)
+        (
+            EXTRA_FREE
+                .load(std::sync::atomic::Ordering::Relaxed)
+                .max(EFFECT_TILES as u32),
+            FX_TILES,
+        )
     } else {
         (0, 0)
     }
@@ -1269,10 +1446,20 @@ fn put_palette(core: &mut Core, pal: u32, colours: &[u16; 16]) {
 /// slide-in, hit shakes and falls), driving while the figures move, firing at each of the side's shots; its shots, hits
 /// and blasts are Dual Strike's effects (AW2's are dropped).
 #[allow(clippy::too_many_arguments)]
-fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, mine: &mut Vec<[u16; 3]>, fx_mine: &mut Vec<[u16; 3]>) {
+fn aw2_side(
+    core: &mut Core,
+    side: u32,
+    unit: usize,
+    prio: u16,
+    kept: usize,
+    mine: &mut Vec<[u16; 3]>,
+    fx_mine: &mut Vec<[u16; 3]>,
+) {
     let state = STATE + SIDE_STATE * side;
     let army = core.raw_read_8(state + S_ARMY, -1) as usize;
-    let (Some(fig), Some(spec)) = (aw2_figure(unit, army), aw2_spec(unit)) else { return };
+    let (Some(fig), Some(spec)) = (aw2_figure(unit, army), aw2_spec(unit)) else {
+        return;
+    };
     let weapon = core.raw_read_8(state + S_WEAPON, -1).max(1);
     let t = AW2_ART[unit].0;
     let one = AW2_ONE.contains(&t);
@@ -1292,8 +1479,16 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
     let row = FIGURES_BY_HP + 55 * side + 5 * hp.div_ceil(10);
     for k in 0..5u32 {
         let rec = FIGURE_RECORDS + SIDE_FIGURES * side + FIGURE_RECORD * k;
-        let st = if core.raw_read_8(row + k, -1) != 0 { core.raw_read_8(rec, -1).max(2) } else { 0 };
-        let st = if st == 2 && core.raw_read_8(rec, -1) == 1 { 1 } else { st };
+        let st = if core.raw_read_8(row + k, -1) != 0 {
+            core.raw_read_8(rec, -1).max(2)
+        } else {
+            0
+        };
+        let st = if st == 2 && core.raw_read_8(rec, -1) == 1 {
+            1
+        } else {
+            st
+        };
         let (px, py) = (s16(core, rec + 8), s16(core, rec + 0xA));
         let last = state + S_AW2_LAST + 2 * k;
         let lx = s16(core, last);
@@ -1304,7 +1499,11 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         if (px, py) == (0, 0) {
             continue;
         }
-        let origin = if mirror { (px + 1, py) } else { (px - AW2_RIGHT_SHIFT, py) };
+        let origin = if mirror {
+            (px + 1, py)
+        } else {
+            (px - AW2_RIGHT_SHIFT, py)
+        };
         if st != 0 {
             alive_now |= 1 << k;
             // (no flash: AW2 leaves a damaged figure's state at 1 for the rest of the battle, and Dual Strike flashes none)
@@ -1319,8 +1518,15 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         // moved as AW2's first standing figure is moved from its own place (the slide-in, the hit shakes).
         let middle = if mirror { 60 } else { 180 };
         let centre_y = if spec.air { SKY } else { GROUND - (b3 - cy) };
-        let rec = (0..5u32).map(|k| FIGURE_RECORDS + SIDE_FIGURES * side + FIGURE_RECORD * k).find(|&r| core.raw_read_8(r, -1) != 0);
-        let (dx, dy) = rec.map_or((0, 0), |r| (s16(core, r + 8) - s16(core, r + 4), s16(core, r + 0xA) - s16(core, r + 6)));
+        let rec = (0..5u32)
+            .map(|k| FIGURE_RECORDS + SIDE_FIGURES * side + FIGURE_RECORD * k)
+            .find(|&r| core.raw_read_8(r, -1) != 0);
+        let (dx, dy) = rec.map_or((0, 0), |r| {
+            (
+                s16(core, r + 8) - s16(core, r + 4),
+                s16(core, r + 0xA) - s16(core, r + 6),
+            )
+        });
         let (px, py) = (middle + dx, centre_y + dy);
         let o = (if mirror { px + cx + 1 } else { px - cx }, py - cy);
         let hit = figs.iter().any(|f| f.1);
@@ -1345,7 +1551,10 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         }
     }
     for &o in &died {
-        let at = (o.0 + if mirror { -(b2 + b0) / 2 } else { (b0 + b2) / 2 }, o.1 + (b1 + b3) / 2 + 12);
+        let at = (
+            o.0 + if mirror { -(b2 + b0) / 2 } else { (b0 + b2) / 2 },
+            o.1 + (b1 + b3) / 2 + 12,
+        );
         spawn(core, side, fig, FX_BLAST, at, (0, 0, 0), 1, at);
     }
     step_fx(core, side, fig, spec);
@@ -1386,13 +1595,24 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         if kind == 0 || core.raw_read_8(at + 0xB, -1) != 0 {
             continue;
         }
-        let Some(fx) = fx_of(core, side, fig, kind - 1) else { continue };
-        let Some(pieces) = fx.frames.get(core.raw_read_8(at + 3, -1) as usize) else { continue };
+        let Some(fx) = fx_of(core, side, fig, kind - 1) else {
+            continue;
+        };
+        let Some(pieces) = fx.frames.get(core.raw_read_8(at + 3, -1) as usize) else {
+            continue;
+        };
         let o = (s16(core, at + 4), s16(core, at + 6));
         own.draw(pieces, o, mirror, 2);
         other.draw(pieces, o, mirror, 2);
     }
-    let pals = crate::army_skin::battle_palettes(core, army, &fig.palettes, &(0..4).filter_map(|a| aw2_figure(unit, a).map(|f| f.palettes)).collect::<Vec<_>>());
+    let pals = crate::army_skin::battle_palettes(
+        core,
+        army,
+        &fig.palettes,
+        &(0..4)
+            .filter_map(|a| aw2_figure(unit, a).map(|f| f.palettes))
+            .collect::<Vec<_>>(),
+    );
     put_palette(core, 4 * side, &pals[0]);
     put_palette(core, 4 * side + 1, &pals[1]);
     put_palette(core, 4 * side + 2, &pals[0].map(lighten));
@@ -1409,12 +1629,22 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
         ],
     };
     // The figures in the side's own tiles (and the extra room), then the effects in what is left.
-    let groups: [&[(&Canvas, u8)]; 2] = [&[(&own, 0), (&own, 1), (&own, 4), (&own, 5)], &[(&own, 2), (&own, 3), (&other, 2), (&other, 3)]];
+    let groups: [&[(&Canvas, u8)]; 2] = [
+        &[(&own, 0), (&own, 1), (&own, 4), (&own, 5)],
+        &[(&own, 2), (&own, 3), (&other, 2), (&other, 3)],
+    ];
     for (g, group) in groups.iter().enumerate() {
-        let room = if g == 0 { tiles.ranges[0].1 - tiles.ranges[0].0 + tiles.ranges[1].1 - tiles.ranges[1].0 } else { tiles.left() };
+        let room = if g == 0 {
+            tiles.ranges[0].1 - tiles.ranges[0].0 + tiles.ranges[1].1 - tiles.ranges[1].0
+        } else {
+            tiles.left()
+        };
         let mut blocks: Vec<(&Canvas, u8, (usize, usize, usize))> = Vec::new();
         for need in &COVERS {
-            blocks = group.iter().flat_map(|&(c, p)| c.cover(p, need).into_iter().map(move |b| (c, p, b))).collect();
+            blocks = group
+                .iter()
+                .flat_map(|&(c, p)| c.cover(p, need).into_iter().map(move |b| (c, p, b)))
+                .collect();
             if blocks.iter().map(|b| (b.2 .2 * b.2 .2) as u32).sum::<u32>() <= room {
                 break;
             }
@@ -1438,7 +1668,11 @@ fn aw2_side(core: &mut Core, side: u32, unit: usize, prio: u16, kept: usize, min
                 4 | 5 => (4 * side as u16 + plane as u16 - 2, prio),
                 _ => (FX_PAL + plane as u16 - 2, FX_PRIORITY),
             };
-            let attrs = [(sp.y as u16) & 0xFF, (sp.x as u16 & 0x1FF) | size << 14, tile as u16 | pr << 10 | pal << 12];
+            let attrs = [
+                (sp.y as u16) & 0xFF,
+                (sp.x as u16 & 0x1FF) | size << 14,
+                tile as u16 | pr << 10 | pal << 12,
+            ];
             if plane == 2 || plane == 3 {
                 fx_mine.push(attrs);
             } else {
@@ -1465,7 +1699,14 @@ impl Canvas {
         let r0 = (0 - grid.1).div_euclid(8);
         let r1 = (SCREEN_H - grid.1 + 7).div_euclid(8);
         let (cols, rows) = ((c1 - c0).max(0) as usize, (r1 - r0).max(0) as usize);
-        Canvas { half, gx: grid.0 + 8 * c0, gy: grid.1 + 8 * r0, cols, rows, buf: vec![0; cols * rows * 64] }
+        Canvas {
+            half,
+            gx: grid.0 + 8 * c0,
+            gy: grid.1 + 8 * r0,
+            cols,
+            rows,
+            buf: vec![0; cols * rows * 64],
+        }
     }
 
     /// Draw pieces with their origin at `(ox, oy)`, mirrored or not.
@@ -1513,8 +1754,9 @@ impl Canvas {
     /// becomes one sprite when enough of its cells are used (`need` per
     /// size), else splits in four.
     fn cover(&self, plane: u8, need: &[usize; 4]) -> Vec<(usize, usize, usize)> {
-        let used: Vec<bool> =
-            (0..self.rows * self.cols).map(|k| self.tile(k % self.cols, k / self.cols, plane).is_some()).collect();
+        let used: Vec<bool> = (0..self.rows * self.cols)
+            .map(|k| self.tile(k % self.cols, k / self.cols, plane).is_some())
+            .collect();
         let mut out = Vec::new();
         let mut stack = Vec::new();
         for by in (0..self.rows).step_by(8) {
@@ -1549,7 +1791,12 @@ impl Canvas {
                 tiles.push(self.tile(x0 + x, y0 + y, plane).unwrap_or([0u8; 32]));
             }
         }
-        Sprite { x: self.gx + 8 * x0 as i32, y: self.gy + 8 * y0 as i32, size: 8 * n, tiles }
+        Sprite {
+            x: self.gx + 8 * x0 as i32,
+            y: self.gy + 8 * y0 as i32,
+            size: 8 * n,
+            tiles,
+        }
     }
 }
 
@@ -1603,7 +1850,11 @@ fn fx_of(core: &Core, side: u32, fig: &'static Figure, kind: u8) -> Option<&'sta
     let spec = side_spec(core, side)?;
     let enemy = (core.raw_read_8(state + S_ENEMY, -1) as u32).checked_sub(1);
     match kind {
-        FX_STRUCK => hit_on(enemy?, core.raw_read_8(state + S_ENEMY_WEAPON, -1), spec.air.then_some(spec.record)),
+        FX_STRUCK => hit_on(
+            enemy?,
+            core.raw_read_8(state + S_ENEMY_WEAPON, -1),
+            spec.air.then_some(spec.record),
+        ),
         FX_HIT => {
             let air = enemy.filter(|_| core.raw_read_8(state + S_ENEMY_AIR, -1) != 0);
             hit_on(spec.record, core.raw_read_8(state + S_WEAPON, -1).max(1), air).or(fig.fx[kind as usize].as_ref())
@@ -1622,7 +1873,16 @@ fn landed(core: &mut Core, side: u32) {
 /// Start effect `kind` of the side's figure at `(x, y)`, after `delay`
 /// frames, flying at `(dx, dy)` for `launch` frames and then at `target`.
 #[allow(clippy::too_many_arguments)]
-fn spawn(core: &mut Core, side: u32, fig: &'static Figure, kind: u8, (x, y): (i32, i32), d: (i32, i32, u8), delay: u8, target: (i32, i32)) {
+fn spawn(
+    core: &mut Core,
+    side: u32,
+    fig: &'static Figure,
+    kind: u8,
+    (x, y): (i32, i32),
+    d: (i32, i32, u8),
+    delay: u8,
+    target: (i32, i32),
+) {
     let Some(fx) = fx_of(core, side, fig, kind) else { return };
     // A hit or projectile takes a muzzle flash's slot if none is free.
     let free = |core: &Core, muzzle: bool| {
@@ -1631,7 +1891,9 @@ fn spawn(core: &mut Core, side: u32, fig: &'static Figure, kind: u8, (x, y): (i3
             n => muzzle && n <= FX_MUZZLE + 2,
         })
     };
-    let Some(k) = free(core, false).or_else(|| free(core, kind > FX_MUZZLE + 1 && kind != FX_BLAST)) else { return };
+    let Some(k) = free(core, false).or_else(|| free(core, kind > FX_MUZZLE + 1 && kind != FX_BLAST)) else {
+        return;
+    };
     let at = fx_slot(side, k);
     let mut b = [0u8; FX_SIZE as usize];
     b[0] = kind + 1;
@@ -1689,12 +1951,29 @@ fn target(core: &Core, side: u32, n: usize) -> (i32, i32) {
 /// The side's unit fires one shot of its volley (the `n`-th) from its
 /// origin `o`: a muzzle flash at the next point, and a projectile or, for a
 /// direct shot, a hit on the target.
-fn shoot(core: &mut Core, side: u32, fig: &'static Figure, spec: &UnitSpec, weapon: u8, n: usize, o: (i32, i32), delay: u8) {
+fn shoot(
+    core: &mut Core,
+    side: u32,
+    fig: &'static Figure,
+    spec: &UnitSpec,
+    weapon: u8,
+    n: usize,
+    o: (i32, i32),
+    delay: u8,
+) {
     let w = (weapon.max(1) - 1).min(1) as usize;
     let pts = spec.shots.points[w].clone();
-    let p = if pts.is_empty() { (0, 0) } else { fig.points[pts.start + n % pts.len()] };
+    let p = if pts.is_empty() {
+        (0, 0)
+    } else {
+        fig.points[pts.start + n % pts.len()]
+    };
     // Mirrored on the left: the effect's own pixels mirror about this point.
-    let at = if side == 0 { (o.0 - p.0, o.1 + p.1) } else { (o.0 + p.0, o.1 + p.1) };
+    let at = if side == 0 {
+        (o.0 - p.0, o.1 + p.1)
+    } else {
+        (o.0 + p.0, o.1 + p.1)
+    };
     let t = target(core, side, n);
     let muzzle = fig.fx[w].as_ref().map(|m| (FX_MUZZLE + w as u8, m.fires));
     if let Some((kind, _)) = muzzle {
@@ -1710,10 +1989,18 @@ fn shoot(core: &mut Core, side: u32, fig: &'static Figure, spec: &UnitSpec, weap
 fn fly(core: &mut Core, side: u32, fig: &'static Figure, spec: &UnitSpec, at: (i32, i32), delay: u8, t: (i32, i32)) {
     let dir = if side == 0 { 1 } else { -1 };
     let air = core.raw_read_8(STATE + SIDE_STATE * side + S_ENEMY_AIR, -1) != 0;
-    let kind = if air && fig.fx[FX_AIR as usize].is_some() { FX_AIR } else { FX_PROJECTILE };
+    let kind = if air && fig.fx[FX_AIR as usize].is_some() {
+        FX_AIR
+    } else {
+        FX_PROJECTILE
+    };
     if fig.fx[kind as usize].is_some() && spec.shots.speed > 0 {
         let (lx, ly, lf) = spec.shots.launch;
-        let d = if lf > 0 { (dir * lx, ly, lf) } else { aim(at, t, dir * spec.shots.speed) };
+        let d = if lf > 0 {
+            (dir * lx, ly, lf)
+        } else {
+            aim(at, t, dir * spec.shots.speed)
+        };
         spawn(core, side, fig, kind, at, d, delay, t);
     } else {
         spawn(core, side, fig, FX_HIT, t, (0, 0, 0), delay + HIT_DELAY, t);
@@ -1758,7 +2045,10 @@ fn step_fx(core: &mut Core, side: u32, fig: &'static Figure, spec: &UnitSpec) {
         let (x, y) = (s16(core, at + 4), s16(core, at + 6));
         let t = (s16(core, at + 0xC), s16(core, at + 0xE));
         if is_projectile(kind) {
-            let (mut dx, mut dy) = (core.raw_read_8(at + 8, -1) as i8 as i32, core.raw_read_8(at + 9, -1) as i8 as i32);
+            let (mut dx, mut dy) = (
+                core.raw_read_8(at + 8, -1) as i8 as i32,
+                core.raw_read_8(at + 9, -1) as i8 as i32,
+            );
             let launch = core.raw_read_8(at + 0xA, -1);
             if launch > 0 {
                 core.raw_write_8(at + 0xA, -1, launch - 1);
@@ -1811,7 +2101,9 @@ fn emit(core: &mut Core, side: u32, fig: &'static Figure, spec: &UnitSpec, at: u
 
 /// Where the figure's origin is on screen (from its record's position).
 fn origin_of(core: &Core, side: u32, fig: &Figure) -> (i32, i32) {
-    let rec = FIGURE_RECORDS + SIDE_FIGURES * side + FIGURE_RECORD * core.raw_read_8(STATE + SIDE_STATE * side + S_FIGURE, -1) as u32;
+    let rec = FIGURE_RECORDS
+        + SIDE_FIGURES * side
+        + FIGURE_RECORD * core.raw_read_8(STATE + SIDE_STATE * side + S_FIGURE, -1) as u32;
     let (b0, b1, b2, b3) = fig.bounds;
     let (cx, cy) = ((b0 + b2) / 2, (b1 + b3) / 2);
     let (px, py) = (s16(core, rec + 8), s16(core, rec + 0xA));
@@ -1821,7 +2113,11 @@ fn origin_of(core: &Core, side: u32, fig: &Figure) -> (i32, i32) {
 /// The figure's idle picture on screen: x0, y0, x1, y1.
 fn screen_box(side: u32, fig: &Figure, o: (i32, i32)) -> (i32, i32, i32, i32) {
     let (b0, b1, b2, b3) = fig.bounds;
-    let (x0, x1) = if side == 0 { (o.0 - b2, o.0 - b0) } else { (o.0 + b0, o.0 + b2) };
+    let (x0, x1) = if side == 0 {
+        (o.0 - b2, o.0 - b0)
+    } else {
+        (o.0 + b0, o.0 + b2)
+    };
     (x0, o.1 + b1, x1, o.1 + b3)
 }
 
@@ -1841,7 +2137,12 @@ fn volley_hits(fig: &Figure, spec: &UnitSpec, weapon: u8) -> u8 {
         .layers
         .iter()
         .filter(|l| l.weapon == 0 || l.weapon == weapon.max(1))
-        .map(|l| l.scripts[1].iter().filter(|&&(d, f)| f == EVENT && d == spec.shots.event && d != 0).count())
+        .map(|l| {
+            l.scripts[1]
+                .iter()
+                .filter(|&&(d, f)| f == EVENT && d == spec.shots.event && d != 0)
+                .count()
+        })
         .max()
         .unwrap_or(0);
     if events > 0 {
@@ -1871,15 +2172,26 @@ pub fn hp_drain(core: &mut Core) {
         let enemy = 1 - side;
         let landed = (core.raw_read_8(state + S_LANDED, -1) as u32).min(n);
         let done = landed >= n || core.raw_read_8(state + S_TIME, -1) >= VOLLEY_FRAMES;
-        let (hp0, after) = (core.raw_read_16(state + S_HP0, -1) as u32, core.raw_read_16(HP_AFTER + 2 * enemy, -1) as u32);
-        if core.raw_read_16(DRAINING + 2 * enemy, -1) == 0 || core.raw_read_16(HP_SHOWN + 2 * enemy, -1) as u32 == after {
+        let (hp0, after) = (
+            core.raw_read_16(state + S_HP0, -1) as u32,
+            core.raw_read_16(HP_AFTER + 2 * enemy, -1) as u32,
+        );
+        if core.raw_read_16(DRAINING + 2 * enemy, -1) == 0 || core.raw_read_16(HP_SHOWN + 2 * enemy, -1) as u32 == after
+        {
             if done {
                 core.raw_write_8(state + S_HITS, -1, 0);
             }
             continue;
         }
-        let goal = if done || after >= hp0 { after } else { hp0 - (hp0 - after) * landed / n };
-        let (value, rate) = (core.raw_read_32(DRAIN_VALUE + 4 * enemy, -1), core.raw_read_32(DRAIN_RATE + 4 * enemy, -1));
+        let goal = if done || after >= hp0 {
+            after
+        } else {
+            hp0 - (hp0 - after) * landed / n
+        };
+        let (value, rate) = (
+            core.raw_read_32(DRAIN_VALUE + 4 * enemy, -1),
+            core.raw_read_32(DRAIN_RATE + 4 * enemy, -1),
+        );
         if value.saturating_sub(rate) < goal << 16 {
             core.raw_write_32(DRAIN_VALUE + 4 * enemy, -1, (goal << 16) + rate);
         }
@@ -1930,7 +2242,11 @@ fn flush(core: &mut Core) {
     let mut kept: Vec<[u16; 3]> = Vec::new();
     for k in 0..SHADOW_ENTRIES {
         let e = SHADOW + 8 * k;
-        let attrs = [core.raw_read_16(e, -1), core.raw_read_16(e + 2, -1), core.raw_read_16(e + 4, -1)];
+        let attrs = [
+            core.raw_read_16(e, -1),
+            core.raw_read_16(e + 2, -1),
+            core.raw_read_16(e + 4, -1),
+        ];
         let (a0, a1, a2) = (attrs[0], attrs[1], attrs[2]);
         let affine = a0 & 0x100 != 0;
         let shown = a0 & 0x300 != 0x200 && (affine || (a0 & 0xFF) < SCREEN_H as u16);
@@ -1961,7 +2277,9 @@ fn flush(core: &mut Core) {
                 let y = (a0 & 0xFF) as i32 - if (a0 & 0xFF) as i32 >= SCREEN_H { 256 } else { 0 };
                 let (mx, my) = (x + w / 2, y + h / 2);
                 if let Some((x0, y0, x1, y1)) = boxes[1 - o] {
-                    if (x0 - IMPACT_MARGIN..x1 + IMPACT_MARGIN).contains(&mx) && (y0 - IMPACT_MARGIN..y1 + IMPACT_MARGIN).contains(&my) {
+                    if (x0 - IMPACT_MARGIN..x1 + IMPACT_MARGIN).contains(&mx)
+                        && (y0 - IMPACT_MARGIN..y1 + IMPACT_MARGIN).contains(&my)
+                    {
                         let i = &mut impacts[1 - o];
                         *i = (i.0 + mx, i.1 + my, i.2 + 1);
                         continue;
@@ -1985,7 +2303,11 @@ fn flush(core: &mut Core) {
         // Where the unit stands: its centre, mirrored for the left half.
         let (b0, b1, b2, b3) = fig.bounds;
         let (cx, cy) = ((b0 + b2) / 2, (b1 + b3) / 2);
-        let middle = if side == 0 { 60 - spec.outwards } else { 180 + spec.outwards };
+        let middle = if side == 0 {
+            60 - spec.outwards
+        } else {
+            180 + spec.outwards
+        };
         let centre_y = if spec.air { SKY } else { GROUND - spec.lift - (b3 - cy) };
         let (hx, hy) = (s16(core, rec + 4), s16(core, rec + 6));
         let placed = hx != 0 || hy != 0;
@@ -2037,7 +2359,10 @@ fn flush(core: &mut Core) {
                 volley = 0;
                 starts = true;
                 // From its first shot: AW2's shell is leaving now.
-                let first = layer.scripts[1].iter().position(|&(d, f)| f == EVENT && d == event).unwrap_or(0);
+                let first = layer.scripts[1]
+                    .iter()
+                    .position(|&(d, f)| f == EVENT && d == event)
+                    .unwrap_or(0);
                 fired += start(core, at, &layer.scripts, 1, first, event);
                 continue;
             }
@@ -2083,7 +2408,10 @@ fn flush(core: &mut Core) {
         // An AW2 enemy's hits: Dual Strike's, where AW2's landed (inside the
         // unit); an indirect or area shot's (no figure hits, the HP drain
         // starts) a few over its body.
-        let (hits, area) = (core.raw_read_16(FIGURE_HITS + SIDE_HITS * side, -1) as u8, core.raw_read_16(DRAINING + 2 * side, -1) != 0);
+        let (hits, area) = (
+            core.raw_read_16(FIGURE_HITS + SIDE_HITS * side, -1) as u8,
+            core.raw_read_16(DRAINING + 2 * side, -1) != 0,
+        );
         let new = hits.saturating_sub(core.raw_read_8(state + S_STRUCK, -1));
         let area_starts = area && core.raw_read_8(state + S_AREA, -1) == 0;
         core.raw_write_8(state + S_STRUCK, -1, hits);
@@ -2092,7 +2420,11 @@ fn flush(core: &mut Core) {
             let (x0, y0, x1, y1) = screen_box(side, fig, origin);
             let (w, h) = (x1 - x0, y1 - y0);
             let (ix, iy, n) = impacts[side as usize];
-            let (mx, my) = if n > 0 { (ix / n, iy / n) } else { ((x0 + x1) / 2, (y0 + y1) / 2) };
+            let (mx, my) = if n > 0 {
+                (ix / n, iy / n)
+            } else {
+                ((x0 + x1) / 2, (y0 + y1) / 2)
+            };
             let inside = |(x, y): (i32, i32)| (x.clamp(x0 + w / 4, x1 - w / 4), y.clamp(y0 + h / 4, y1 - h / 4));
             if new > 0 {
                 spawn(core, side, fig, FX_STRUCK, inside((mx, my)), (0, 0, 0), 0, (0, 0));
@@ -2131,13 +2463,24 @@ fn flush(core: &mut Core) {
             if kind == 0 || core.raw_read_8(at + 0xB, -1) != 0 {
                 continue;
             }
-            let Some(fx) = fx_of(core, side, fig, kind - 1) else { continue };
-            let Some(pieces) = fx.frames.get(core.raw_read_8(at + 3, -1) as usize) else { continue };
+            let Some(fx) = fx_of(core, side, fig, kind - 1) else {
+                continue;
+            };
+            let Some(pieces) = fx.frames.get(core.raw_read_8(at + 3, -1) as usize) else {
+                continue;
+            };
             let o = (s16(core, at + 4), s16(core, at + 6));
             own.draw(pieces, o, mirror, 2);
             other.draw(pieces, o, mirror, 2);
         }
-        let pals = crate::army_skin::battle_palettes(core, army, &fig.palettes, &(0..4).filter_map(|a| figure(unit, a).map(|f| f.palettes)).collect::<Vec<_>>());
+        let pals = crate::army_skin::battle_palettes(
+            core,
+            army,
+            &fig.palettes,
+            &(0..4)
+                .filter_map(|a| figure(unit, a).map(|f| f.palettes))
+                .collect::<Vec<_>>(),
+        );
         put_palette(core, 4 * side, &pals[0]);
         put_palette(core, 4 * side + 1, &pals[1]);
         put_palette(core, 4 * side + 2, &pals[0].map(lighten));
@@ -2155,14 +2498,24 @@ fn flush(core: &mut Core) {
         };
         // The unit, then its effects: each the loosest cover that fits the
         // tiles left, biggest sprites first (so they find room).
-        let groups: [&[(&Canvas, u8)]; 2] = [&[(&own, 0), (&own, 1)], &[(&own, 2), (&own, 3), (&other, 2), (&other, 3)]];
+        let groups: [&[(&Canvas, u8)]; 2] = [
+            &[(&own, 0), (&own, 1)],
+            &[(&own, 2), (&own, 3), (&other, 2), (&other, 3)],
+        ];
         for (g, group) in groups.iter().enumerate() {
             // The unit's sprites in its own tiles (the effect tiles are too
             // few for its big ones).
-            let room = if g == 0 { tiles.ranges[0].1 - tiles.ranges[0].0 + tiles.ranges[1].1 - tiles.ranges[1].0 } else { tiles.left() };
+            let room = if g == 0 {
+                tiles.ranges[0].1 - tiles.ranges[0].0 + tiles.ranges[1].1 - tiles.ranges[1].0
+            } else {
+                tiles.left()
+            };
             let mut blocks: Vec<(&Canvas, u8, (usize, usize, usize))> = Vec::new();
             for need in &COVERS {
-                blocks = group.iter().flat_map(|&(c, p)| c.cover(p, need).into_iter().map(move |b| (c, p, b))).collect();
+                blocks = group
+                    .iter()
+                    .flat_map(|&(c, p)| c.cover(p, need).into_iter().map(move |b| (c, p, b)))
+                    .collect();
                 if blocks.iter().map(|b| (b.2 .2 * b.2 .2) as u32).sum::<u32>() <= room {
                     break;
                 }
@@ -2183,11 +2536,18 @@ fn flush(core: &mut Core) {
                 core.raw_write_range(OBJ_VRAM + 32 * tile, -1, &data);
                 let size = s.size.trailing_zeros() as u16 - 3;
                 let (pal, pr) = if plane < 2 {
-                    (4 * side as u16 + plane as u16 + if flash[side as usize] { 2 } else { 0 }, prio[side as usize])
+                    (
+                        4 * side as u16 + plane as u16 + if flash[side as usize] { 2 } else { 0 },
+                        prio[side as usize],
+                    )
                 } else {
                     (FX_PAL + plane as u16 - 2, FX_PRIORITY)
                 };
-                let attrs = [(s.y as u16) & 0xFF, (s.x as u16 & 0x1FF) | size << 14, tile as u16 | pr << 10 | pal << 12];
+                let attrs = [
+                    (s.y as u16) & 0xFF,
+                    (s.x as u16 & 0x1FF) | size << 14,
+                    tile as u16 | pr << 10 | pal << 12,
+                ];
                 if plane < 2 {
                     mine.push(attrs);
                 } else {
@@ -2199,7 +2559,15 @@ fn flush(core: &mut Core) {
     }
     for side in 0..2u32 {
         if let Some(unit) = aw2[side as usize] {
-            aw2_side(core, side, unit, prio[side as usize], kept.len(), &mut mine, &mut fx_mine);
+            aw2_side(
+                core,
+                side,
+                unit,
+                prio[side as usize],
+                kept.len(),
+                &mut mine,
+                &mut fx_mine,
+            );
         }
     }
     // The units first, as AW2's figures come first: a line's sprite time
@@ -2239,7 +2607,9 @@ mod tests {
     fn helpers() {
         assert_eq!(lighten(0x0421), 0x4210);
         assert_eq!(aim((0, 0), (40, 20), 8), (8, 4, 0));
-        let mut t = Tiles { ranges: [(0, 20), (0, 0), (100, 116)] };
+        let mut t = Tiles {
+            ranges: [(0, 20), (0, 0), (100, 116)],
+        };
         assert_eq!(t.take(16), Some(0));
         assert_eq!(t.take(16), Some(100));
         assert_eq!(t.take(8), None);
@@ -2254,7 +2624,9 @@ pub fn preview_idle(record: u32, army: usize) -> Option<(i32, i32, usize, usize,
     let palettes = palette(word(word(rec + 4 * PALETTE_TABLE)? + 4 * army as u32)?)?;
     let mut pieces: Vec<Piece> = Vec::new();
     for set_word in [1u32, 3] {
-        let Some(set) = word(rec + 4 * set_word).filter(|&s| s != 0) else { continue };
+        let Some(set) = word(rec + 4 * set_word).filter(|&s| s != 0) else {
+            continue;
+        };
         let sheet = sheet(&name(set + 4 * army as u32)?)?;
         let anim = word(set + 20 + 4 * army as u32)?;
         let idle = script(word(anim + 4)?)?;

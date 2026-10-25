@@ -508,7 +508,10 @@ mod tests {
     #[async_trait::async_trait]
     impl crate::PacketStream for ChanStream {
         async fn recv(&mut self) -> std::io::Result<Vec<u8>> {
-            self.0.recv().await.ok_or_else(|| std::io::ErrorKind::UnexpectedEof.into())
+            self.0
+                .recv()
+                .await
+                .ok_or_else(|| std::io::ErrorKind::UnexpectedEof.into())
         }
     }
 
@@ -518,11 +521,19 @@ mod tests {
     async fn an_idle_peer_keeps_the_link_alive_and_the_receiver_hears_it() {
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
         let cancel = tokio_util::sync::CancellationToken::new();
-        let _idle = InMatchTx::new(Sender::new(Box::new(ChanSink(tx))), Duration::from_millis(10), cancel.clone());
+        let _idle = InMatchTx::new(
+            Sender::new(Box::new(ChanSink(tx))),
+            Duration::from_millis(10),
+            cancel.clone(),
+        );
 
         // the other end: its own (unused) send side, and the receiver of the idle peer's frames
         let (tx2, _rx2) = tokio::sync::mpsc::unbounded_channel();
-        let ours = InMatchTx::new(Sender::new(Box::new(ChanSink(tx2))), Duration::from_millis(10), cancel.clone());
+        let ours = InMatchTx::new(
+            Sender::new(Box::new(ChanSink(tx2))),
+            Duration::from_millis(10),
+            cancel.clone(),
+        );
         let heard = Arc::new(AtomicU32::new(0));
         let h = heard.clone();
         let mut recv = PvpReceiver::new(
@@ -540,7 +551,11 @@ mod tests {
         let got = tokio::time::timeout(Duration::from_millis(300), recv.receive()).await;
         assert!(got.is_err(), "an idle peer yields no input");
         // ... yet the frames kept coming (about one per heartbeat)
-        assert!(heard.load(Ordering::Relaxed) >= 10, "heard {} frames", heard.load(Ordering::Relaxed));
+        assert!(
+            heard.load(Ordering::Relaxed) >= 10,
+            "heard {} frames",
+            heard.load(Ordering::Relaxed)
+        );
         cancel.cancel();
     }
 
@@ -551,9 +566,17 @@ mod tests {
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
         let cancel = tokio_util::sync::CancellationToken::new();
         let hb = tokio_util::sync::CancellationToken::new();
-        let _idle = InMatchTx::new(Sender::new(Box::new(ChanSink(tx))), Duration::from_millis(10), hb.clone());
+        let _idle = InMatchTx::new(
+            Sender::new(Box::new(ChanSink(tx))),
+            Duration::from_millis(10),
+            hb.clone(),
+        );
         let (tx2, _rx2) = tokio::sync::mpsc::unbounded_channel();
-        let ours = InMatchTx::new(Sender::new(Box::new(ChanSink(tx2))), Duration::from_millis(10), cancel.clone());
+        let ours = InMatchTx::new(
+            Sender::new(Box::new(ChanSink(tx2))),
+            Duration::from_millis(10),
+            cancel.clone(),
+        );
         let heard = Arc::new(AtomicU32::new(0));
         let h = heard.clone();
         let mut recv = PvpReceiver::new(

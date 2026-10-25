@@ -151,7 +151,13 @@ pub fn firepower(core: &Core, army: u32, t: u8, flags: u8, terrain: u8) -> i32 {
     if is_indirect(t) {
         v += if on(SHARPSHOOTER) { 5 } else { 0 } + if on(SNIPER) { 8 } else { 0 };
     }
-    for (id, class) in [(ROAD_RAGE, ROAD), (RANGER, WOOD), (URBAN_FIGHTER, CITY), (MOUNTAINEER, MOUNTAIN), (SEAMANSHIP, SEA)] {
+    for (id, class) in [
+        (ROAD_RAGE, ROAD),
+        (RANGER, WOOD),
+        (URBAN_FIGHTER, CITY),
+        (MOUNTAINEER, MOUNTAIN),
+        (SEAMANSHIP, SEA),
+    ] {
         if on(id) && terrain & 0x1F == class {
             v += 10;
         }
@@ -161,7 +167,8 @@ pub fn firepower(core: &Core, army: u32, t: u8, flags: u8, terrain: u8) -> i32 {
     }
     let weather = core.raw_read_8(WEATHER, -1);
     let sandstorm = crate::sandstorm::active(core);
-    if (on(HIGH_AND_DRY) && weather == RAIN) || (on(ICEBREAKER) && weather == SNOW) || (on(SAND_SCORPION) && sandstorm) {
+    if (on(HIGH_AND_DRY) && weather == RAIN) || (on(ICEBREAKER) && weather == SNOW) || (on(SAND_SCORPION) && sandstorm)
+    {
         v += 20;
     }
     v += if lent(core, army, TEAMWORK) { 5 } else { 0 } + if lent(core, army, SYNERGY) { 8 } else { 0 };
@@ -210,19 +217,31 @@ pub fn repair_bonus(core: &Core, army: u32) -> i32 {
 
 /// Funds a day on top of the income: Gold Rush's 100 per property that earns.
 pub fn income_bonus(core: &Core, army: u32, earners: i32) -> i32 {
-    if has(core, army, GOLD_RUSH) { 100 * earners } else { 0 }
+    if has(core, army, GOLD_RUSH) {
+        100 * earners
+    } else {
+        0
+    }
 }
 
 /// Combat Pay: funds for taking `bars` HP (display) off a unit costing
 /// `cost`: 2% of that HP's value.
 pub fn combat_pay(core: &Core, army: u32, bars: u32, cost: u32) -> u32 {
-    if has(core, army, COMBAT_PAY) { bars * cost / 10 * 2 / 100 } else { 0 }
+    if has(core, army, COMBAT_PAY) {
+        bars * cost / 10 * 2 / 100
+    } else {
+        0
+    }
 }
 
 /// HP points (of 100) a silo's blast takes off army `army`'s unit: Missile
 /// Guard takes 10 off `hit`.
 pub fn blast(core: &Core, army: u32, hit: i32) -> i32 {
-    if has(core, army, MISSILE_GUARD) { (hit - 10).max(0) } else { hit }
+    if has(core, army, MISSILE_GUARD) {
+        (hit - 10).max(0)
+    } else {
+        hit
+    }
 }
 
 pub const TOWER_POWER: u8 = 0x3A;
@@ -243,7 +262,11 @@ pub const SOUL_OF_HACHI: u8 = 0x4A;
 
 /// Firepower per Com Tower on top of the CO's (Tower Power: 10 -> 15).
 pub fn tower_bonus(core: &Core, army: u32) -> i32 {
-    if has(core, army, TOWER_POWER) { 5 } else { 0 }
+    if has(core, army, TOWER_POWER) {
+        5
+    } else {
+        0
+    }
 }
 
 /// A dived Sub's or hidden Stealth's daily fuel less (Sneaky 1, Stealthy 2).
@@ -393,7 +416,11 @@ fn meter_charge(core: &mut Core) {
     let (army, amount) = (cpu.gpr(0) as u32, cpu.gpr(1));
     if has(core, army, STAR_POWER) && amount > 0 {
         let scale = crate::co_powers::METER_SCALE as i32;
-        let v = if crate::ds_weather::is_on(core) { amount / scale * 110 / 100 * scale } else { amount * 110 / 100 };
+        let v = if crate::ds_weather::is_on(core) {
+            amount / scale * 110 / 100 * scale
+        } else {
+            amount * 110 / 100
+        };
         core.gba_mut().cpu_mut().set_gpr(1, v);
     }
 }
@@ -420,7 +447,8 @@ fn special_done(core: &mut Core) {
     if !(1..=5).contains(&army) || crate::co_roster::army_co(core, army).1 != SCOP {
         return;
     }
-    let bits = (if has(core, army, MISTWALKER) { 0x04 } else { 0 }) | (if has(core, army, SOUL_OF_HACHI) { 0x02 } else { 0 });
+    let bits =
+        (if has(core, army, MISTWALKER) { 0x04 } else { 0 }) | (if has(core, army, SOUL_OF_HACHI) { 0x02 } else { 0 });
     if bits != 0 {
         let cpu = core.gba_mut().cpu_mut();
         let r0 = cpu.gpr(0);
@@ -568,7 +596,9 @@ fn mode_set(core: &Core) -> Option<(Set, bool)> {
 /// the player's armies their COs' set for the mode; in Versus with its
 /// Skills rule on, every army (the computer's too) its CO's Versus set.
 pub fn battle_start(core: &mut Core) {
-    let Some((which, everyone)) = mode_set(core) else { return };
+    let Some((which, everyone)) = mode_set(core) else {
+        return;
+    };
     crate::ds_campaign::skills_loaded(core);
     let last = if crate::five::active(core) { 5 } else { 4 };
     for a in 1..=last {
@@ -596,7 +626,9 @@ pub fn ids_for(core: &mut Core, army: u32, co: u8) -> Vec<u8> {
         crate::ds_campaign::skills_loaded(core);
         return usable(core, co, Set::Campaign);
     }
-    let Some((which, everyone)) = mode_set(core) else { return Vec::new() };
+    let Some((which, everyone)) = mode_set(core) else {
+        return Vec::new();
+    };
     if !(everyone || human(core, army)) {
         return Vec::new();
     }
@@ -817,7 +849,10 @@ mod tests {
 
     #[test]
     fn ram_fits() {
-        assert!(ACTIVE >= 0x0203_F7E0 && ACTIVE + ACTIVE_LEN * 5 <= LUCK_ARMY, "between crate::power_anim's and crate::ds_battle's state");
+        assert!(
+            ACTIVE >= 0x0203_F7E0 && ACTIVE + ACTIVE_LEN * 5 <= LUCK_ARMY,
+            "between crate::power_anim's and crate::ds_battle's state"
+        );
         assert!(SPECIAL_ARMY < 0x0203_F800);
         assert!((LAST - FIRST) as u32 / 8 < ACTIVE_LEN);
     }
@@ -835,7 +870,10 @@ mod tests {
     #[test]
     fn classes() {
         for t in 1..=27u8 {
-            let n = [is_direct(t), is_indirect(t), is_transport(t)].iter().filter(|&&b| b).count();
+            let n = [is_direct(t), is_indirect(t), is_transport(t)]
+                .iter()
+                .filter(|&&b| b)
+                .count();
             assert!(n <= 1, "type {t} in one class at most");
         }
         assert!(is_direct(1) && is_direct(24) && is_direct(12) && is_indirect(10) && is_transport(7));

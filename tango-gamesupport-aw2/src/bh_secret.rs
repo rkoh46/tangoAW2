@@ -7,21 +7,51 @@
 
 use mgba::core::Core;
 
-use crate::bh_campaign::{region, roster};
 use crate::bh_act5b::{built_units, meter, roles};
+use crate::bh_campaign::{region, roster};
 use crate::custom_campaign::{co, colour, unit, *};
 
 /// The dock tiles: one truck here and the heist is lost.
-const DOCK: Rect = Rect::new(38, 9, 40, 11);   // (the dock's land is x 38..39; x 40 is the sea beside it)
+const DOCK: Rect = Rect::new(38, 9, 40, 11); // (the dock's land is x 38..39; x 40 is the sea beside it)
 /// Where truck C appears on day 3: the ford road's east side (C's first leg).
 const TRUCK_C: (u8, u8) = (24, 9);
 const TRUCKS: [&str; 3] = ["vault1", "vault2", "vault3"];
 
 /// The trucks' roads, as corner points (`five/bh/bh31.txt`): A the hill switchbacks and the east leg (55 move points from its start to the
 /// dock), B the south serpentine (56), C the middle zone's three legs (41, from day 3).
-const A_ROAD: [(u8, u8); 9] = [(9, 2), (18, 2), (18, 4), (9, 4), (9, 6), (20, 6), (37, 6), (37, 10), (38, 10)];
-const B_ROAD: [(u8, u8); 9] = [(16, 16), (34, 16), (34, 18), (24, 18), (24, 20), (34, 20), (37, 20), (37, 10), (38, 10)];
-const C_ROAD: [(u8, u8); 9] = [(24, 9), (34, 9), (34, 11), (24, 11), (24, 13), (34, 13), (37, 13), (37, 10), (38, 10)];
+const A_ROAD: [(u8, u8); 9] = [
+    (9, 2),
+    (18, 2),
+    (18, 4),
+    (9, 4),
+    (9, 6),
+    (20, 6),
+    (37, 6),
+    (37, 10),
+    (38, 10),
+];
+const B_ROAD: [(u8, u8); 9] = [
+    (16, 16),
+    (34, 16),
+    (34, 18),
+    (24, 18),
+    (24, 20),
+    (34, 20),
+    (37, 20),
+    (37, 10),
+    (38, 10),
+];
+const C_ROAD: [(u8, u8); 9] = [
+    (24, 9),
+    (34, 9),
+    (34, 11),
+    (24, 11),
+    (24, 13),
+    (34, 13),
+    (37, 13),
+    (37, 10),
+    (38, 10),
+];
 
 /// Every cell of a road given by its corners.
 fn cells(corners: &[(u8, u8)]) -> Vec<(u8, u8)> {
@@ -29,8 +59,20 @@ fn cells(corners: &[(u8, u8)]) -> Vec<(u8, u8)> {
     for w in corners.windows(2) {
         let (mut x, mut y) = w[0];
         while (x, y) != w[1] {
-            x = if x < w[1].0 { x + 1 } else if x > w[1].0 { x - 1 } else { x };
-            y = if y < w[1].1 { y + 1 } else if y > w[1].1 { y - 1 } else { y };
+            x = if x < w[1].0 {
+                x + 1
+            } else if x > w[1].0 {
+                x - 1
+            } else {
+                x
+            };
+            y = if y < w[1].1 {
+                y + 1
+            } else if y > w[1].1 {
+                y - 1
+            } else {
+                y
+            };
             v.push((x, y));
         }
     }
@@ -62,7 +104,43 @@ fn bh31() -> MissionDef {
     m.units = roles(
         built_units("bh31"),
         1,
-        &[(9, 2), (10, 1), (8, 3), (16, 16), (17, 15), (15, 17), (14, 3), (17, 5), (19, 3), (19, 7), (24, 4), (25, 4), (30, 3), (30, 4), (33, 4), (35, 5), (31, 7), (22, 10), (25, 5), (31, 12), (36, 11), (36, 8), (20, 13), (24, 17), (25, 22), (36, 18), (29, 19), (30, 22), (37, 22), (36, 14), (36, 7), (30, 8), (32, 15), (41, 10), (35, 27)],
+        &[
+            (9, 2),
+            (10, 1),
+            (8, 3),
+            (16, 16),
+            (17, 15),
+            (15, 17),
+            (14, 3),
+            (17, 5),
+            (19, 3),
+            (19, 7),
+            (24, 4),
+            (25, 4),
+            (30, 3),
+            (30, 4),
+            (33, 4),
+            (35, 5),
+            (31, 7),
+            (22, 10),
+            (25, 5),
+            (31, 12),
+            (36, 11),
+            (36, 8),
+            (20, 13),
+            (24, 17),
+            (25, 22),
+            (36, 18),
+            (29, 19),
+            (30, 22),
+            (37, 22),
+            (36, 14),
+            (36, 7),
+            (30, 8),
+            (32, 15),
+            (41, 10),
+            (35, 27),
+        ],
     );
     // The trucks drive their roads at full APC speed (6 move points a day), A and B from day 1, C from day 3.
     m.marches = vec![
@@ -75,8 +153,14 @@ fn bh31() -> MissionDef {
     // day 4 and fire from day 4's Black Hole turn (measured with the fog off: first hits on day 4; with `DayAtLeast(3)` they
     // fired on day 3). In the fog a cannon only fires at what Black Hole sees.
     m.jams = vec![
-        JamDef { at: (26, 2), until: Cond::DayAtLeast(4) },
-        JamDef { at: (26, 22), until: Cond::DayAtLeast(4) },
+        JamDef {
+            at: (26, 2),
+            until: Cond::DayAtLeast(4),
+        },
+        JamDef {
+            at: (26, 22),
+            until: Cond::DayAtLeast(4),
+        },
     ];
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(4000),
@@ -105,21 +189,57 @@ fn bh31() -> MissionDef {
         // Day 4: the cannons are online.
         on_day(4, vec![Action::Scene(crate::bh_text::scene("m31_day_4"))]),
         // Day 5: Sonja's power (her meter is full: the fog thickens as her vision grows).
-        on_day(5, vec![Action::Scene(crate::bh_text::scene("m31_day_5")), Action::Custom(charge_sonja)]),
+        on_day(
+            5,
+            vec![
+                Action::Scene(crate::bh_text::scene("m31_day_5")),
+                Action::Custom(charge_sonja),
+            ],
+        ),
         Trigger::new(
             When::AfterAction,
             any_truck(Cond::UnitGone),
             vec![Action::Scene(crate::bh_text::scene("m31_first_truck"))],
         ),
         // The win: all three trucks destroyed (truck C is not "gone" before it has appeared, so never before day 3).
-        Trigger::new(When::AfterAction, Cond::All(TRUCKS.iter().map(|n| Cond::UnitGone(n)).collect()), vec![Action::Win]).repeating(),
-        Trigger::new(When::TurnStart, Cond::All(TRUCKS.iter().map(|n| Cond::UnitGone(n)).collect()), vec![Action::Win]).repeating(),
+        Trigger::new(
+            When::AfterAction,
+            Cond::All(TRUCKS.iter().map(|n| Cond::UnitGone(n)).collect()),
+            vec![Action::Win],
+        )
+        .repeating(),
+        Trigger::new(
+            When::TurnStart,
+            Cond::All(TRUCKS.iter().map(|n| Cond::UnitGone(n)).collect()),
+            vec![Action::Win],
+        )
+        .repeating(),
         // The losses: a truck on a dock tile (also seen when the player's turn starts, after Sonja's), the Black Hole HQ
         // captured, day 12 starting.
-        Trigger::new(When::AfterAction, any_truck(|n| Cond::NamedIn { name: n, area: DOCK }), vec![Action::Lose]).repeating(),
-        Trigger::new(When::TurnStart, any_truck(|n| Cond::NamedIn { name: n, area: DOCK }), vec![Action::Lose]).repeating(),
-        Trigger::new(When::AfterAction, Cond::Not(Box::new(Cond::OwnerAt { x: 3, y: 20, army: 1 })), vec![Action::Lose]).repeating(),
-        Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: 12 }, vec![Action::Lose]).repeating(),
+        Trigger::new(
+            When::AfterAction,
+            any_truck(|n| Cond::NamedIn { name: n, area: DOCK }),
+            vec![Action::Lose],
+        )
+        .repeating(),
+        Trigger::new(
+            When::TurnStart,
+            any_truck(|n| Cond::NamedIn { name: n, area: DOCK }),
+            vec![Action::Lose],
+        )
+        .repeating(),
+        Trigger::new(
+            When::AfterAction,
+            Cond::Not(Box::new(Cond::OwnerAt { x: 3, y: 20, army: 1 })),
+            vec![Action::Lose],
+        )
+        .repeating(),
+        Trigger::new(
+            When::TurnStart,
+            Cond::EveryDays { n: 1000, from: 12 },
+            vec![Action::Lose],
+        )
+        .repeating(),
     ];
     // After the war: the finale (M30) won and all nine recruit bonds earned.
     m.needs = Needs::Bonds(vec!["bh30"]);
@@ -133,4 +253,3 @@ fn bh31() -> MissionDef {
 pub fn missions() -> Vec<MissionDef> {
     vec![bh31()]
 }
-

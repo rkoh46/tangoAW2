@@ -62,7 +62,11 @@ pub struct Px {
 
 impl Px {
     pub fn new(w: usize, h: usize) -> Px {
-        Px { w, h, v: vec![0; w * h] }
+        Px {
+            w,
+            h,
+            v: vec![0; w * h],
+        }
     }
     pub fn at(&self, x: usize, y: usize) -> u8 {
         self.v[y * self.w + x]
@@ -139,10 +143,18 @@ impl Px {
             p.set(0, y, OUTLINE);
             p.set(w - 1, y, OUTLINE);
         }
-        for (cx, cy, dx, dy) in [(0, 0, 1i32, 1i32), (w - 1, 0, -1, 1), (0, h - 1, 1, -1), (w - 1, h - 1, -1, -1)] {
+        for (cx, cy, dx, dy) in [
+            (0, 0, 1i32, 1i32),
+            (w - 1, 0, -1, 1),
+            (0, h - 1, 1, -1),
+            (w - 1, h - 1, -1, -1),
+        ] {
             for (i, len) in [2usize, 1].into_iter().enumerate() {
                 for k in 0..len {
-                    let (x, y) = ((cx as i32 + dx * k as i32) as usize, (cy as i32 + dy * i as i32) as usize);
+                    let (x, y) = (
+                        (cx as i32 + dx * k as i32) as usize,
+                        (cy as i32 + dy * i as i32) as usize,
+                    );
                     p.set(x, y, 0);
                 }
             }
@@ -208,7 +220,10 @@ fn letters(p: &Px) -> Vec<(usize, usize)> {
 /// centred in the six sprites.
 pub fn name(core: &Core) -> Option<Vec<u8>> {
     let pick = [(COLIN, 0usize), (STURM, 3), (STURM, 2), (STURM, 4), (KANBEI, 3)];
-    let imgs: Vec<(Px, usize)> = pick.iter().map(|&(co, k)| Some((name_of(core, co)?, k))).collect::<Option<_>>()?;
+    let imgs: Vec<(Px, usize)> = pick
+        .iter()
+        .map(|&(co, k)| Some((name_of(core, co)?, k)))
+        .collect::<Option<_>>()?;
     let column = |img: &Px, x: usize| -> Vec<u8> { (0..16).map(|y| img.at(x, y)).collect() };
     let mut cols: Vec<Vec<u8>> = Vec::new();
     let first = letters(&imgs[0].0).get(imgs[0].1).copied()?;
@@ -253,7 +268,14 @@ pub fn figure(face: &Px) -> Px {
 
 /// The six sprites of a full body: (x, y, tiles across, tiles down), in the
 /// order of the two body files ([`crate::ds_co_art`]).
-const SPRITES: [(usize, usize, usize, usize); 6] = [(0, 0, 8, 8), (64, 0, 8, 8), (0, 64, 8, 8), (64, 64, 8, 8), (0, 128, 8, 4), (64, 128, 8, 4)];
+const SPRITES: [(usize, usize, usize, usize); 6] = [
+    (0, 0, 8, 8),
+    (64, 0, 8, 8),
+    (0, 64, 8, 8),
+    (64, 64, 8, 8),
+    (0, 128, 8, 4),
+    (64, 128, 8, 4),
+];
 
 /// A 128 x 160 picture as the body's two files (4096 and 6144 bytes).
 pub fn body_files(body: &Px) -> (Vec<u8>, Vec<u8>) {
@@ -292,11 +314,18 @@ pub fn decode(bytes: &[u8]) -> Option<(Px, Vec<u16>)> {
         let row = &buf[y * info.line_size..][..info.line_size];
         for x in 0..w {
             let bit = x * bits;
-            p.set(x, y, (row[bit / 8] >> (8 - bits - bit % 8)) & ((1u16 << bits) - 1) as u8);
+            p.set(
+                x,
+                y,
+                (row[bit / 8] >> (8 - bits - bit % 8)) & ((1u16 << bits) - 1) as u8,
+            );
         }
     }
     let pal = reader.info().palette.as_ref()?;
-    let colours = pal.chunks(3).map(|c| (c[0] as u16 >> 3) | (c[1] as u16 >> 3) << 5 | (c[2] as u16 >> 3) << 10).collect();
+    let colours = pal
+        .chunks(3)
+        .map(|c| (c[0] as u16 >> 3) | (c[1] as u16 >> 3) << 5 | (c[2] as u16 >> 3) << 10)
+        .collect();
     Some((p, colours))
 }
 
@@ -327,7 +356,10 @@ pub fn user(core: &Core) -> Option<CoArt> {
         return None;
     }
     // the trooper's palette to the drawing's
-    let trooper: Vec<u16> = read(core, word(core, row + 0x08), 0x20).chunks(2).map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
+    let trooper: Vec<u16> = read(core, word(core, row + 0x08), 0x20)
+        .chunks(2)
+        .map(|b| u16::from_le_bytes([b[0], b[1]]))
+        .collect();
     let map: Vec<u8> = (0..16)
         .map(|k| {
             if k == 0 {
@@ -348,7 +380,12 @@ pub fn user(core: &Core) -> Option<CoArt> {
     };
     let px = |t: &[u8]| remap(Px::from_tiles(t, 6, 6, face_place));
     let face = px(&faces[0]);
-    let mini = remap(Px::from_tiles(&read(core, word(core, row + 0x18), crate::ds_co_art::MINI_LEN), 4, 3, mini_place));
+    let mini = remap(Px::from_tiles(
+        &read(core, word(core, row + 0x18), crate::ds_co_art::MINI_LEN),
+        4,
+        3,
+        mini_place,
+    ));
     let mut body = Px::new(128, 160);
     body.put(&sprite, (128 - sprite.w) / 2, 158 - sprite.h);
     let (body_top, body_bottom) = body_files(&body);
@@ -359,7 +396,11 @@ pub fn user(core: &Core) -> Option<CoArt> {
         }
     }
     Some(CoArt {
-        face: [face.to_tiles(6, 6, face_place), px(&faces[1]).to_tiles(6, 6, face_place), px(&faces[2]).to_tiles(6, 6, face_place)],
+        face: [
+            face.to_tiles(6, 6, face_place),
+            px(&faces[1]).to_tiles(6, 6, face_place),
+            px(&faces[2]).to_tiles(6, 6, face_place),
+        ],
         mini: mini.to_tiles(4, 3, mini_place),
         hud: hud(&face),
         body_top,
@@ -416,7 +457,10 @@ mod tests {
         body.put(&p, (128 - p.w) / 2, 158 - p.h);
         assert!((0..128).all(|x| body.at(x, 158) == 0 && body.at(x, 159) == 0));
         let (top, bottom) = body_files(&body);
-        assert_eq!((top.len(), bottom.len()), (crate::ds_co_art::BODY_TOP_LEN, crate::ds_co_art::BODY_BOTTOM_LEN));
+        assert_eq!(
+            (top.len(), bottom.len()),
+            (crate::ds_co_art::BODY_TOP_LEN, crate::ds_co_art::BODY_BOTTOM_LEN)
+        );
     }
 
     #[test]
@@ -443,7 +487,10 @@ mod tests {
             assert_eq!(bottom.len(), crate::ds_co_art::BODY_BOTTOM_LEN);
             // The last two rows are empty (the tag screens carry the last
             // row down).
-            assert!((0..128).all(|x| f.at(x, 159) == 0 && f.at(x, 158) == 0), "the last rows");
+            assert!(
+                (0..128).all(|x| f.at(x, 159) == 0 && f.at(x, 158) == 0),
+                "the last rows"
+            );
         }
         let t = face.to_tiles(6, 6, face_place);
         assert_eq!(Px::from_tiles(&t, 6, 6, face_place).v, face.v);

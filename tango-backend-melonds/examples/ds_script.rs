@@ -77,7 +77,11 @@ fn main() {
     let mut out = std::io::stdout();
     let mut run = |solo: &mut melonds_rollback::Solo, frame: &mut u64, keys: u32, touch: Option<(u16, u16)>, n: u32| {
         for _ in 0..n {
-            solo.tick(melonds_rollback::Input { keys, touch, mic: false });
+            solo.tick(melonds_rollback::Input {
+                keys,
+                touch,
+                mic: false,
+            });
             *frame += 1;
         }
     };
@@ -87,13 +91,25 @@ fn main() {
         match p.first().copied().unwrap_or("") {
             "wait" => run(&mut solo, &mut frame, 0, None, p[1].parse().unwrap_or(1)),
             "press" => {
-                run(&mut solo, &mut frame, key_bits(p[1]), None, p.get(2).and_then(|n| n.parse().ok()).unwrap_or(2));
+                run(
+                    &mut solo,
+                    &mut frame,
+                    key_bits(p[1]),
+                    None,
+                    p.get(2).and_then(|n| n.parse().ok()).unwrap_or(2),
+                );
                 run(&mut solo, &mut frame, 0, None, 6);
             }
             "hold" => run(&mut solo, &mut frame, key_bits(p[1]), None, p[2].parse().unwrap_or(1)),
             "touch" => {
                 let (x, y) = (p[1].parse().unwrap_or(0), p[2].parse().unwrap_or(0));
-                run(&mut solo, &mut frame, 0, Some((x, y)), p.get(3).and_then(|n| n.parse().ok()).unwrap_or(4));
+                run(
+                    &mut solo,
+                    &mut frame,
+                    0,
+                    Some((x, y)),
+                    p.get(3).and_then(|n| n.parse().ok()).unwrap_or(4),
+                );
                 run(&mut solo, &mut frame, 0, None, 6);
             }
             "shot" => {
@@ -165,7 +181,13 @@ fn main() {
                     Box::new(move |nds: &mut melonds::Nds| {
                         if !d2.get() {
                             d2.set(true);
-                            eprintln!("trapjump {at:08x} -> {to:08x} lr {:08x} r0 {:08x} r1 {:08x} r2 {:08x}", nds.reg(14), nds.reg(0), nds.reg(1), nds.reg(2));
+                            eprintln!(
+                                "trapjump {at:08x} -> {to:08x} lr {:08x} r0 {:08x} r1 {:08x} r2 {:08x}",
+                                nds.reg(14),
+                                nds.reg(0),
+                                nds.reg(1),
+                                nds.reg(2)
+                            );
                             nds.jump(to);
                         }
                     }),
@@ -234,7 +256,10 @@ fn main() {
                             left.set(left.get() - 1);
                             let old = nds.read8(wh) as u32 | (nds.read8(wh + 1) as u32) << 8;
                             nds.write8(wh, v as u8);
-                            eprintln!("trappoke {at:08x}: [{wh:08x}] {old:04x} -> {v:04x} lr {:08x}", nds.reg(14));
+                            eprintln!(
+                                "trappoke {at:08x}: [{wh:08x}] {old:04x} -> {v:04x} lr {:08x}",
+                                nds.reg(14)
+                            );
                         }
                     }),
                 )]);

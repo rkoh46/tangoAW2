@@ -197,8 +197,10 @@ impl TickLog {
     }
 
     fn push_remote(&mut self, input: tango_match::HostInput) {
-        self.remote
-            .push_back((self.remote_count, [input.keys as u16, input.extra[0], input.extra[1], input.extra[2]]));
+        self.remote.push_back((
+            self.remote_count,
+            [input.keys as u16, input.extra[0], input.extra[1], input.extra[2]],
+        ));
         self.remote_count += 1;
         while self.remote.len() > LOG_KEEP {
             self.remote.pop_front();
@@ -207,12 +209,18 @@ impl TickLog {
 
     fn local_at(&self, tick: u32) -> Option<tango_match::HostInput> {
         let first = self.local.front()?.0;
-        self.local.get(tick.checked_sub(first)? as usize).filter(|e| e.0 == tick).map(|e| e.1)
+        self.local
+            .get(tick.checked_sub(first)? as usize)
+            .filter(|e| e.0 == tick)
+            .map(|e| e.1)
     }
 
     fn remote_at(&self, tick: u32) -> Option<[u16; 4]> {
         let first = self.remote.front()?.0;
-        self.remote.get(tick.checked_sub(first)? as usize).filter(|e| e.0 == tick).map(|e| e.1)
+        self.remote
+            .get(tick.checked_sub(first)? as usize)
+            .filter(|e| e.0 == tick)
+            .map(|e| e.1)
     }
 
     /// The last [`MIGRATE_TAIL`](tango_net_protocol::control::MIGRATE_TAIL) ticks before `remote_count` that both logs hold.
@@ -222,7 +230,10 @@ impl TickLog {
         let mut rows = Vec::new();
         for t in from..to {
             match (self.remote_at(t), self.local_at(t)) {
-                (Some(view), Some(own)) => rows.push(tango_net_protocol::control::MigrateRow { view, own: own.keys as u16 }),
+                (Some(view), Some(own)) => rows.push(tango_net_protocol::control::MigrateRow {
+                    view,
+                    own: own.keys as u16,
+                }),
                 // (a hole: only what follows it is contiguous)
                 _ => rows.clear(),
             }
@@ -505,14 +516,20 @@ impl HostAgg {
             }
         }
         let get = |k: usize| words.get(k).copied().unwrap_or(0);
-        let row = tango_match::HostInput { keys: get(0) as u32, touch: None, extra: [get(1), get(2), get(3)] };
+        let row = tango_match::HostInput {
+            keys: get(0) as u32,
+            touch: None,
+            extra: [get(1), get(2), get(3)],
+        };
         self.rows.push_back((words, 0));
         (row, 0)
     }
 
     fn complete(&mut self) -> Vec<(tango_match::HostInput, i16)> {
         let mut done = Vec::new();
-        while (0..self.guests).all(|k| self.gone[k] || !self.queues[k].is_empty()) && (0..self.guests).any(|k| !self.gone[k]) {
+        while (0..self.guests).all(|k| self.gone[k] || !self.queues[k].is_empty())
+            && (0..self.guests).any(|k| !self.gone[k])
+        {
             let mut words = vec![0u16; self.guests];
             let mut advs = Vec::new();
             for k in 0..self.guests {
@@ -551,7 +568,14 @@ impl HostAgg {
         }
         self.guest_seats
             .iter()
-            .map(|&me| by_seat.iter().enumerate().filter(|&(s, _)| s != me).map(|(_, &w)| w).collect())
+            .map(|&me| {
+                by_seat
+                    .iter()
+                    .enumerate()
+                    .filter(|&(s, _)| s != me)
+                    .map(|(_, &w)| w)
+                    .collect()
+            })
             .collect()
     }
 
@@ -587,7 +611,11 @@ impl PvpDriver {
     /// loop makes none) and B to leave. A pause with nobody named (a plain link being rebuilt) has the host's modal.
     fn hold_box(&mut self, paused: bool) {
         // A host migration in progress outranks a wait for a player (the old host's own wait has ended by then).
-        let migrating = if paused { self.ctx.end.migrating.lock().unwrap().clone() } else { None };
+        let migrating = if paused {
+            self.ctx.end.migrating.lock().unwrap().clone()
+        } else {
+            None
+        };
         let hold = if paused && migrating.is_none() {
             let holds = self.ctx.end.holds.lock().unwrap();
             holds.iter().min_by_key(|h| h.deadline).map(|h| {
@@ -601,7 +629,9 @@ impl PvpDriver {
         // (a guest who is waited for in a battle has its armies yielded if it does not return, and a host's guests go on under
         // a successor: the box says the match goes on without them)
         let goes_on = self.ctx.end.host_wait.load(Ordering::Acquire)
-            || hold.as_ref().is_some_and(|h| self.ctx.end.running.load(Ordering::Acquire) && h.2 != self.ctx.end.host_seat.load(Ordering::Acquire));
+            || hold.as_ref().is_some_and(|h| {
+                self.ctx.end.running.load(Ordering::Acquire) && h.2 != self.ctx.end.host_seat.load(Ordering::Acquire)
+            });
         let hold = hold.map(|(n, secs, _)| (n, secs));
         if hold.is_none() && migrating.is_none() {
             if self.hold_up {
@@ -638,7 +668,10 @@ impl PvpDriver {
         tango_gamesupport::hold::set_host_wait(goes_on);
         tango_gamesupport::hold::set_unranked(self.ctx.end.unranked.load(Ordering::Acquire));
         self.hold_up = true;
-        if self.hold_shown.is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100)) {
+        if self
+            .hold_shown
+            .is_none_or(|t| t.elapsed() >= std::time::Duration::from_millis(100))
+        {
             self.hold_shown = Some(std::time::Instant::now());
             if let Some(buf) = self.match_.frame() {
                 let buf = self.guard.filter(buf);
@@ -932,7 +965,10 @@ impl PvpDriver {
         // both peers see it at the same pair tick). No runout needed:
         // the anchor fires after the result screens have played.
         if match_ended {
-            log::info!("pvp: the console says the match is over (tick {})", self.confirmed_through);
+            log::info!(
+                "pvp: the console says the match is over (tick {})",
+                self.confirmed_through
+            );
             self.ctx.completed.store(true, Ordering::Release);
         }
         if self.ctx.completed.load(Ordering::Acquire) && !self.fired_end_of_match {
@@ -1052,7 +1088,10 @@ impl PvpDriver {
             "pvp: match {:016x} cut short by {:?}: keeping checkpoints {:?}",
             m.match_id,
             m.disconnected,
-            m.checkpoints.iter().map(|c| (c.tick, c.image.digest)).collect::<Vec<_>>()
+            m.checkpoints
+                .iter()
+                .map(|c| (c.tick, c.image.digest))
+                .collect::<Vec<_>>()
         );
         (self.ctx.suspend.as_ref().expect("checked").sink)(m);
     }
@@ -1096,10 +1135,21 @@ impl PvpDriver {
         if !self.ctx.end.want_rejoin_state.swap(false, Ordering::AcqRel) {
             return;
         }
-        let name = self.ctx.end.holds.lock().unwrap().first().map(|h| h.name.clone()).unwrap_or_default();
+        let name = self
+            .ctx
+            .end
+            .holds
+            .lock()
+            .unwrap()
+            .first()
+            .map(|h| h.name.clone())
+            .unwrap_or_default();
         match self.suspended_match(name, false) {
             Some(m) => {
-                log::info!("pvp: the newest settled state for a returning player: tick {}", m.newest().map_or(0, |c| c.tick));
+                log::info!(
+                    "pvp: the newest settled state for a returning player: tick {}",
+                    m.newest().map_or(0, |c| c.tick)
+                );
                 *self.ctx.end.rejoin_state.lock().unwrap() = Some(m);
             }
             None => log::info!("pvp: no settled state yet for a returning player"),
@@ -1162,7 +1212,11 @@ impl PvpDriver {
         self.ctx.end.gone.fetch_or(h.gone, Ordering::AcqRel);
         let lacking = h.catchup.len();
         for row in h.catchup {
-            let joined = tango_match::HostInput { keys: row[0] as u32, touch: None, extra: [row[1], row[2], row[3]] };
+            let joined = tango_match::HostInput {
+                keys: row[0] as u32,
+                touch: None,
+                extra: [row[1], row[2], row[3]],
+            };
             self.add_remote(joined, 0);
         }
         log::info!(
@@ -1173,8 +1227,13 @@ impl PvpDriver {
             h.host_seat,
             if h.i_host { " (us)" } else { "" }
         );
-        let words: Vec<(tango_match::HostInput, i16)> =
-            self.log.local.iter().filter(|(t, ..)| *t >= h.start).map(|(_, i, a)| (*i, *a)).collect();
+        let words: Vec<(tango_match::HostInput, i16)> = self
+            .log
+            .local
+            .iter()
+            .filter(|(t, ..)| *t >= h.start)
+            .map(|(_, i, a)| (*i, *a))
+            .collect();
         if h.i_host {
             self.host_command = true;
             self.agg = Some(HostAgg::migrated(
@@ -1226,7 +1285,13 @@ mod tests {
     use super::*;
 
     fn input(keys: u16) -> tango_net::data::Input {
-        tango_net::data::Input { joyflags: keys, touch: None, tick_advantage: 0, extra: [0; 3], others: 0 }
+        tango_net::data::Input {
+            joyflags: keys,
+            touch: None,
+            tick_advantage: 0,
+            extra: [0; 3],
+            others: 0,
+        }
     }
 
     /// A room of 3 and of 5: every guest's word reaches the host's engine as seat order, and every guest hears
@@ -1239,7 +1304,11 @@ mod tests {
         let done = agg.set_gone(1 << 2);
         assert_eq!(done.len(), 1, "the row that waited for the gone seat is done");
         assert_eq!(done[0].0.keys, 0x10);
-        assert_eq!(done[0].0.extra[0], tango_match::keys::command::YIELD as u16, "the gone seat says so once");
+        assert_eq!(
+            done[0].0.extra[0],
+            tango_match::keys::command::YIELD as u16,
+            "the gone seat says so once"
+        );
         // from now on guest 1's inputs alone make rows, the gone seat is idle and its link is ignored
         assert_eq!(agg.ingest(0, input(0x20)).len(), 1);
         assert!(agg.ingest(1, input(0x40)).is_empty());
@@ -1314,7 +1383,11 @@ mod tests {
         let done = agg.set_gone(1 << 2);
         assert_eq!(done.len(), 1, "the row that waited for it is done");
         assert_eq!(done[0].0.keys, 0x10);
-        assert_eq!(done[0].0.extra, [command::YIELD as u16, 0x30, 0], "seat 2 yields, in the same row");
+        assert_eq!(
+            done[0].0.extra,
+            [command::YIELD as u16, 0x30, 0],
+            "seat 2 yields, in the same row"
+        );
         // and from then on it is idle
         assert!(agg.ingest(0, input(0x11)).is_empty());
         let r = agg.ingest(2, input(0x31));
@@ -1395,7 +1468,11 @@ mod tests {
             log.push_local(t, tango_match::HostInput::keys(0x100 + (t % 16)), 0);
         }
         for t in 0..290u32 {
-            log.push_remote(tango_match::HostInput { keys: t, touch: None, extra: [t as u16 + 1, 0, 0] });
+            log.push_remote(tango_match::HostInput {
+                keys: t,
+                touch: None,
+                extra: [t as u16 + 1, 0, 0],
+            });
         }
         assert_eq!((log.remote_count, log.local_count), (290, 300));
         let tail = log.tail();
@@ -1416,8 +1493,14 @@ mod tests {
     fn only_a_host_lets_an_out_seat_leave() {
         use super::super::is_benign_drop;
         assert!(is_benign_drop(true, 0b100, 2));
-        assert!(!is_benign_drop(true, 0b100, 1), "a seat still in the match is a disconnect");
-        assert!(!is_benign_drop(false, 0b100, 2), "a guest cannot go on without the host's join");
+        assert!(
+            !is_benign_drop(true, 0b100, 1),
+            "a seat still in the match is a disconnect"
+        );
+        assert!(
+            !is_benign_drop(false, 0b100, 2),
+            "a guest cannot go on without the host's join"
+        );
         assert!(!is_benign_drop(true, 0xFF, 9));
     }
 
@@ -1435,10 +1518,14 @@ mod tests {
                 }
                 assert_eq!(rows.len(), 1);
                 // The host's engine: seat_inputs puts the composite back into seats.
-                let seats = tango_match::seat_inputs(host_seat, players, tango_match::HostInput::keys(own as u32), rows[0].0);
+                let seats =
+                    tango_match::seat_inputs(host_seat, players, tango_match::HostInput::keys(own as u32), rows[0].0);
                 assert_eq!(seats[host_seat].keys, own as u32);
                 for (k, &s) in guest_seats.iter().enumerate() {
-                    assert_eq!(seats[s].keys, words[k] as u32, "host hears seat {s} ({players} players)");
+                    assert_eq!(
+                        seats[s].keys, words[k] as u32,
+                        "host hears seat {s} ({players} players)"
+                    );
                 }
                 // Each guest's engine: the same seats' words.
                 let views = agg.guest_views(own, &words);
@@ -1454,7 +1541,10 @@ mod tests {
                     let seats = tango_match::seat_inputs(me, players, local, remote);
                     assert_eq!(seats[host_seat].keys, own as u32);
                     for (k, &s) in guest_seats.iter().enumerate() {
-                        assert_eq!(seats[s].keys, words[k] as u32, "guest {me} hears seat {s} ({players} players)");
+                        assert_eq!(
+                            seats[s].keys, words[k] as u32,
+                            "guest {me} hears seat {s} ({players} players)"
+                        );
                     }
                 }
             }

@@ -99,7 +99,9 @@ fn build() -> Option<Sky> {
     };
     let mut colours_ = colours(&file(CLOUD_PALETTE)?)?;
     // Colour 0: Dual Strike's ground shows through; here, the closest other.
-    let near0 = (1..16).min_by_key(|&k| crate::ds_look::dist(colours_[0], colours_[k])).unwrap_or(1) as u8;
+    let near0 = (1..16)
+        .min_by_key(|&k| crate::ds_look::dist(colours_[0], colours_[k]))
+        .unwrap_or(1) as u8;
     let mut tiles = file(CLOUD_TILES)?;
     tiles.truncate(tiles.len() / 32 * 32);
     for b in tiles.iter_mut() {
@@ -113,7 +115,9 @@ fn build() -> Option<Sky> {
     let mut n = 0u32;
     for e in gm.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])) {
         let (t, row) = ((e & 0x3FF) as usize, (e >> 12) as usize);
-        let Some(tile) = gt.get(32 * t..32 * t + 32) else { continue };
+        let Some(tile) = gt.get(32 * t..32 * t + 32) else {
+            continue;
+        };
         for i in 0..64 {
             let ci = (tile[i / 2] >> (4 * (i & 1))) & 15;
             let at = 2 * (16 * row + ci as usize);
@@ -139,7 +143,11 @@ fn build() -> Option<Sky> {
         *c = out;
     }
     let m = file(CLOUD_MAP)?;
-    let map: Vec<u16> = m.chunks_exact(2).take(32 * 32).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+    let map: Vec<u16> = m
+        .chunks_exact(2)
+        .take(32 * 32)
+        .map(|c| u16::from_le_bytes([c[0], c[1]]))
+        .collect();
     if map.len() != 32 * 32 || map.iter().any(|&e| (e & 0x3FF) as usize >= tiles.len() / 32) {
         return None;
     }
@@ -259,8 +267,17 @@ mod tests {
     #[test]
     fn data() {
         let Some(s) = sky() else { return };
-        assert!(SLOT0 as usize + s.tiles.len() / 32 <= 0x100, "{} tiles", s.tiles.len() / 32);
+        assert!(
+            SLOT0 as usize + s.tiles.len() / 32 <= 0x100,
+            "{} tiles",
+            s.tiles.len() / 32
+        );
         assert_ne!(s.arc, s.fortress);
-        assert!(s.tiles.chunks(32).all(|t| t.iter().all(|&b| b & 15 != 0 && b >> 4 != 0)), "no see-through pixel");
+        assert!(
+            s.tiles
+                .chunks(32)
+                .all(|t| t.iter().all(|&b| b & 15 != 0 && b >> 4 != 0)),
+            "no see-through pixel"
+        );
     }
 }

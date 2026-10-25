@@ -75,7 +75,12 @@ pub fn sync_colours(core: &mut Core) -> Vec<(u32, u8)> {
     if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::pvp::in_battle(core) {
         return changed;
     }
-    let Some(m) = crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(crate::ds_campaign::MISSION, -1) as usize)) else {
+    let Some(m) = crate::ds_campaign::campaign(core).and_then(|c| {
+        c.model
+            .built
+            .missions
+            .get(core.raw_read_8(crate::ds_campaign::MISSION, -1) as usize)
+    }) else {
         return changed;
     };
     let players = crate::five::players(core);
@@ -110,7 +115,13 @@ pub mod region {
 
 /// The campaign.
 pub fn def() -> CampaignDef {
-    let mut missions: Vec<MissionDef> = [crate::es_act1::missions(), crate::es_act2::missions(), crate::es_act3::missions(), crate::es_act4::missions()].concat();
+    let mut missions: Vec<MissionDef> = [
+        crate::es_act1::missions(),
+        crate::es_act2::missions(),
+        crate::es_act3::missions(),
+        crate::es_act4::missions(),
+    ]
+    .concat();
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     let last = missions.last().map_or("es01", |m| m.key);
     CampaignDef {
@@ -129,21 +140,71 @@ pub fn def() -> CampaignDef {
 
 /// The staff roll (lines at most 21 characters).
 fn credits() -> Vec<CreditSection> {
-    let sec = |heading: &'static str, names: &[&'static str]| CreditSection { heading, names: names.to_vec(), secret: false };
+    let sec = |heading: &'static str, names: &[&'static str]| CreditSection {
+        heading,
+        names: names.to_vec(),
+        secret: false,
+    };
     vec![
         sec("EMERALD SUN", &["A tangoAW2 story", "Sol invictus"]),
         sec("THE LEGION", &["KLAUS", "The Legate", "AURELIA", "The Engineer"]),
         sec("THE LEGION", &["CASSIUS", "The Cavalry", "LIVIA", "The Quaestor"]),
         sec("THE SENATE", &["VARRO", "The Consul"]),
-        sec("THE ACCORD", &["NELL, MAX, JAKE", "COLIN, SASHA, OLAF", "GRIT, KANBEI, SONJA", "GRIMM, SENSEI"]),
+        sec(
+            "THE ACCORD",
+            &[
+                "NELL, MAX, JAKE",
+                "COLIN, SASHA, OLAF",
+                "GRIT, KANBEI, SONJA",
+                "GRIMM, SENSEI",
+            ],
+        ),
         sec("THE ACCORD", &["JESS, EAGLE, DRAKE", "JAVIER"]),
         sec("THE FREE PORT", &["ADDER, FLAK", "KINDLE, LASH"]),
-        sec("ORIGINAL GAMES", &["Intelligent Systems", "Nintendo", "Advance Wars 2:", "Black Hole Rising", "Advance Wars:", "Dual Strike"]),
+        sec(
+            "ORIGINAL GAMES",
+            &[
+                "Intelligent Systems",
+                "Nintendo",
+                "Advance Wars 2:",
+                "Black Hole Rising",
+                "Advance Wars:",
+                "Dual Strike",
+            ],
+        ),
         sec("INSPIRED BY", &["The Jade Sun of", "Advance Wars By Web"]),
-        sec("RESEARCH", &["The aw2bhr", "decompilation:", "Eebit, npiriou,", "Mad-Man-Dan,", "Veslyquix"]),
-        sec("EMULATION", &["endrift (mGBA)", "Arisotura (melonDS)", "weenie, GreigaMaster", "and everyone in the", "Tango credits"]),
+        sec(
+            "RESEARCH",
+            &[
+                "The aw2bhr",
+                "decompilation:",
+                "Eebit, npiriou,",
+                "Mad-Man-Dan,",
+                "Veslyquix",
+            ],
+        ),
+        sec(
+            "EMULATION",
+            &[
+                "endrift (mGBA)",
+                "Arisotura (melonDS)",
+                "weenie, GreigaMaster",
+                "and everyone in the",
+                "Tango credits",
+            ],
+        ),
         sec("SPECIAL THANKS", &["Playtesting:", "the tangoAW2", "players"]),
-        sec("NOTICE", &["Advance Wars is a", "trademark of", "Nintendo. tangoAW2", "is not affiliated", "with Nintendo or", "Intelligent Systems."]),
+        sec(
+            "NOTICE",
+            &[
+                "Advance Wars is a",
+                "trademark of",
+                "Nintendo. tangoAW2",
+                "is not affiliated",
+                "with Nintendo or",
+                "Intelligent Systems.",
+            ],
+        ),
         sec("THE END", &["The sun does not set.", "The grain is paid."]),
     ]
 }
@@ -210,7 +271,11 @@ mod tests {
     #[test]
     fn no_army_starts_with_more_than_40_units() {
         for m in &def().missions {
-            let units = if m.units.is_empty() { Vec::new() } else { m.units.clone() };
+            let units = if m.units.is_empty() {
+                Vec::new()
+            } else {
+                m.units.clone()
+            };
             for a in 1..=m.armies.len() as u8 {
                 let n = units.iter().filter(|u| u.army == a).count();
                 assert!(n <= 40, "{}: army {a} starts with {n} units", m.key);
@@ -235,7 +300,11 @@ mod tests {
         for m in &def().missions {
             let p = m.armies[0].colour;
             assert!((1..=4).contains(&p), "{}: the player's colour {p}", m.key);
-            assert!(m.armies[1..].iter().all(|a| a.colour != p), "{}: another army wears the player's colour {p}", m.key);
+            assert!(
+                m.armies[1..].iter().all(|a| a.colour != p),
+                "{}: another army wears the player's colour {p}",
+                m.key
+            );
         }
     }
 
@@ -261,8 +330,16 @@ mod tests {
             if m.key == "es16" {
                 let v = m.volcano.as_ref().expect("M16 has Mount Sol");
                 assert_eq!((v.first, v.interval, v.per_eruption), (3, 1, 3));
-                assert!(v.cells.iter().all(|&(x, y)| (19..=26).contains(&x) && (10..=17).contains(&y)));
-                assert!(v.cells.iter().all(|&(x, y)| !((20..=25).contains(&x) && (11..=16).contains(&y))), "an eruption cell inside the rock");
+                assert!(v
+                    .cells
+                    .iter()
+                    .all(|&(x, y)| (19..=26).contains(&x) && (10..=17).contains(&y)));
+                assert!(
+                    v.cells
+                        .iter()
+                        .all(|&(x, y)| !((20..=25).contains(&x) && (11..=16).contains(&y))),
+                    "an eruption cell inside the rock"
+                );
             } else {
                 assert!(m.volcano.is_none(), "{} has a volcano", m.key);
             }

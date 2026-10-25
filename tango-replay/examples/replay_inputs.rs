@@ -21,7 +21,14 @@ fn main() {
                 marks.push(format!("{:08x}", h as u32));
             }
         }
-        println!("{f}: players {} local {} ticks {} complete {} marks {}", r.players(), r.local_player_index, r.inputs.len(), r.is_complete, marks.join(","));
+        println!(
+            "{f}: players {} local {} ticks {} complete {} marks {}",
+            r.players(),
+            r.local_player_index,
+            r.inputs.len(),
+            r.is_complete,
+            marks.join(",")
+        );
         all.push(r);
     }
     for i in 1..all.len() {
@@ -33,7 +40,13 @@ fn main() {
         });
         match first {
             None => println!("{} vs {}: the first {n} ticks are identical", files[0], files[i]),
-            Some(t) => println!("{} vs {}: DIFFER at tick {t} (of {n}): {:?} / {:?}", files[0], files[i], a.inputs[t].map(|p| (p.keys, p.extra)), b.inputs[t].map(|p| (p.keys, p.extra))),
+            Some(t) => println!(
+                "{} vs {}: DIFFER at tick {t} (of {n}): {:?} / {:?}",
+                files[0],
+                files[i],
+                a.inputs[t].map(|p| (p.keys, p.extra)),
+                b.inputs[t].map(|p| (p.keys, p.extra))
+            ),
         }
     }
 }

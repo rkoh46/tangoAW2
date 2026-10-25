@@ -180,11 +180,16 @@ impl App {
                 // offline as soon as the library is ready; `settings` or
                 // `replays` opens that tab (for screenshots).
                 // (`TANGOAW2_BOOT_CHECKPOINT=NAME` boots straight into a checkpoint: an offline session, the state loaded over it)
-                let autostart = std::env::var("TANGOAW2_AUTOSTART")
-                    .ok()
-                    .or_else(|| std::env::var("TANGOAW2_BOOT_CHECKPOINT").ok().filter(|v| !v.is_empty()).map(|_| "offline".to_string()));
+                let autostart = std::env::var("TANGOAW2_AUTOSTART").ok().or_else(|| {
+                    std::env::var("TANGOAW2_BOOT_CHECKPOINT")
+                        .ok()
+                        .filter(|v| !v.is_empty())
+                        .map(|_| "offline".to_string())
+                });
                 match autostart.as_deref().map(Ok::<&str, ()>).unwrap_or(Err(())) {
-                    _ if resumed_unranked.is_some() && !std::env::var("TANGOAW2_AUTOSTART").is_ok_and(|v| v == "offline") => {
+                    _ if resumed_unranked.is_some()
+                        && !std::env::var("TANGOAW2_AUTOSTART").is_ok_and(|v| v == "offline") =>
+                    {
                         return resumed_unranked.expect("checked");
                     }
                     Ok("offline") => {
@@ -192,7 +197,7 @@ impl App {
                         if std::env::var("TANGOAW2_BOOT_LOBBY").is_ok_and(|v| v == "1") {
                             tango_library::online::boot_to_lobby();
                         }
-                        return iced::Task::done(Message::Play(crate::tabs::play::Message::PlayOfflinePressed))
+                        return iced::Task::done(Message::Play(crate::tabs::play::Message::PlayOfflinePressed));
                     }
                     Ok("settings") => return iced::Task::done(Message::TabSelected(super::Tab::Settings)),
                     // (the Graphics pane, for screenshots)

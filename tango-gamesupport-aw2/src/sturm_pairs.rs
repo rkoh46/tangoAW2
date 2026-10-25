@@ -49,15 +49,24 @@ pub const PAIRS: [Pair; 8] = [
         compatibility: 125,
         stars: 3,
         name: "Black Apocalypse",
-        sturm_first: [("Bow before Black Hole!", "Delicious."), ("Your world is ours.", "Hhhh... yes.")],
-        partner_first: [("Hhhh... your despair...", "Delicious."), ("The world withers.", "As it should.")],
+        sturm_first: [
+            ("Bow before Black Hole!", "Delicious."),
+            ("Your world is ours.", "Hhhh... yes."),
+        ],
+        partner_first: [
+            ("Hhhh... your despair...", "Delicious."),
+            ("The world withers.", "As it should."),
+        ],
     },
     Pair {
         partner: 14, // Hawke
         compatibility: 120,
         stars: 2,
         name: "Storm Front",
-        sturm_first: [("Pathetic. As expected.", "Too easy."), ("Kneel, worms!", "Hmph. Over.")],
+        sturm_first: [
+            ("Pathetic. As expected.", "Too easy."),
+            ("Kneel, worms!", "Hmph. Over."),
+        ],
         partner_first: [("A fitting end.", "Ha! Worms."), ("Black Hole prevails.", "Naturally.")],
     },
     Pair {
@@ -65,7 +74,10 @@ pub const PAIRS: [Pair; 8] = [
         compatibility: 115,
         stars: 2,
         name: "Mad Genius",
-        sturm_first: [("Fools! Black Hole wins!", "Ha! Fun!"), ("Your end has come.", "Told you!")],
+        sturm_first: [
+            ("Fools! Black Hole wins!", "Ha! Fun!"),
+            ("Your end has come.", "Told you!"),
+        ],
         partner_first: [("Ha! Too easy!", "Of course."), ("Genius, right?", "Hmph. Yes.")],
     },
     Pair {
@@ -73,7 +85,10 @@ pub const PAIRS: [Pair; 8] = [
         compatibility: 110,
         stars: 1,
         name: "Iron Fist",
-        sturm_first: [("Crushed like insects.", "Har! Easy!"), ("Despair, fools!", "Smashed 'em!")],
+        sturm_first: [
+            ("Crushed like insects.", "Har! Easy!"),
+            ("Despair, fools!", "Smashed 'em!"),
+        ],
         partner_first: [("Har! Smashed 'em!", "Good."), ("Who's next, boss?", "Everyone.")],
     },
     Pair {
@@ -81,7 +96,10 @@ pub const PAIRS: [Pair; 8] = [
         compatibility: 110,
         stars: 1,
         name: "Viper's Nest",
-        sturm_first: [("Black Hole is eternal!", "Sss... slow."), ("Grovel before me!", "Hssss!")],
+        sturm_first: [
+            ("Black Hole is eternal!", "Sss... slow."),
+            ("Grovel before me!", "Hssss!"),
+        ],
         partner_first: [("Sss... too slow.", "Pathetic."), ("Such fragile prey.", "Crush them.")],
     },
     Pair {
@@ -89,7 +107,10 @@ pub const PAIRS: [Pair; 8] = [
         compatibility: 118,
         stars: 2,
         name: "Perfect Copy",
-        sturm_first: [("Flawless. As built.", "Orders done!"), ("Hold nothing back.", "Yes, sir!")],
+        sturm_first: [
+            ("Flawless. As built.", "Orders done!"),
+            ("Hold nothing back.", "Yes, sir!"),
+        ],
         partner_first: [("Mission complete!", "Acceptable."), ("Who's next, sir?", "Anyone.")],
     },
     Pair {
@@ -97,16 +118,28 @@ pub const PAIRS: [Pair; 8] = [
         compatibility: 115,
         stars: 2,
         name: "No One Left Behind",
-        sturm_first: [("Kneel. It is mine.", "Sir! Gerald agrees!"), ("Nothing is left behind.", "Not one boot, sir!")],
-        partner_first: [("We did it, sir!", "Silence. It is mine."), ("Gerald won it, sir!", "The biscuit serves me.")],
+        sturm_first: [
+            ("Kneel. It is mine.", "Sir! Gerald agrees!"),
+            ("Nothing is left behind.", "Not one boot, sir!"),
+        ],
+        partner_first: [
+            ("We did it, sir!", "Silence. It is mine."),
+            ("Gerald won it, sir!", "The biscuit serves me."),
+        ],
     },
     Pair {
         partner: crate::co_new::ASUKA,
         compatibility: 118,
         stars: 2,
         name: "Perfect Intel",
-        sturm_first: [("Nothing is hidden.", "As projected."), ("Report.", "Their line is open.")],
-        partner_first: [("Analysis complete.", "Acceptable."), ("As projected.", "Then it is done.")],
+        sturm_first: [
+            ("Nothing is hidden.", "As projected."),
+            ("Report.", "Their line is open."),
+        ],
+        partner_first: [
+            ("Analysis complete.", "Acceptable."),
+            ("As projected.", "Then it is done."),
+        ],
     },
 ];
 
@@ -184,70 +217,182 @@ pub const VON_BOLT: u8 = 75;
 use crate::co_new::ASUKA;
 
 pub const DUOS: [Duo; 14] = [
-Duo {
-    a: VON_BOLT,
-    b: SONJA,
-    compatibility: 115,
-    stars: 2,
-    name: "Vault Breakers",
-    a_first: [("Kehh! Count it twice!", "Counted. Twice."), ("Everything is mine!", "Fifty-fifty, Colonel.")],
-    b_first: [("Overdrawn, dears.", "Kehh! Exquisite."), ("Audit complete.", "Keep the change.")],
-},
-// Asuka's pairs with Black Hole's COs (cos/tags.toml; the pair with Sturm is in PAIRS). VON_BOLT + SONJA above is the BH Campaign's prize; hers is the BH2 seed with the same name.
-Duo {
-    a: VON_BOLT,
-    b: ASUKA,
-    compatibility: 115,
-    stars: 2,
-    name: "Vault Breakers",
-    a_first: [("Kehh! Count it twice!", "Counted. Twice."), ("The vault is open!", "Inventory logged.")],
-    b_first: [("Audit complete.", "Kehh! Exquisite."), ("As projected.", "Keep the change.")],
-},
-Duo {
-    a: 14,
-    b: ASUKA,
-    compatibility: 120,
-    stars: 2,
-    name: "Black Eclipse",
-    a_first: [("The tide takes them.", "Predicted."), ("Nothing remains.", "Confirmed.")],
-    b_first: [("As projected.", "Hmph. Fine."), ("Their line is gone.", "Black Hole.")],
-},
-Duo {
-    a: 12,
-    b: ASUKA,
-    compatibility: 115,
-    stars: 2,
-    name: "Grand Design",
-    a_first: [("Ha! My plan works!", "Our plan."), ("Genius, right?", "Adequate.")],
-    b_first: [("Plan executed.", "Told you! Genius!"), ("As projected.", "Ha! Of course!")],
-},
-Duo {
-    a: 11,
-    b: ASUKA,
-    compatibility: 110,
-    stars: 1,
-    name: "Dead Reckoning",
-    a_first: [("Smashed 'em!", "Bearing correct."), ("Next target?", "Marked.")],
-    b_first: [("Target neutralised.", "Har! Boom!"), ("As projected.", "Har! Again!")],
-},
-Duo {
-    a: 13,
-    b: ASUKA,
-    compatibility: 110,
-    stars: 1,
-    name: "Quiet Knife",
-    a_first: [("Sss... swift.", "Silent."), ("Too slow, fools.", "Logged.")],
-    b_first: [("Their line fell.", "Sss. Neat."), ("As projected.", "Hssss.")],
-},
-// The Emerald Sun Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
-es_duo(KLAUS, AURELIA, 120, 2, "Siege of Iron", [("The wall falls.", "On schedule."), ("Hold, then breach.", "Stone, Legate.")], [("Wall's down. Legate?", "Well built."), ("Fetch the ladders.", "March.")]),
-es_duo(KLAUS, CASSIUS, 108, 1, "Hammer and Anvil", [("Order restored.", "Ha! Mine too!"), ("Hold. Then strike.", "Fine. Fine!")], [("Ha! Did you see?", "I saw."), ("Write it down!", "No.")]),
-es_duo(KLAUS, LIVIA, 125, 3, "Pax Romana", [("Terms are mine.", "Paid in full."), ("The line holds.", "Audited.")], [("Books are closed.", "So is the war."), ("The ledger balances.", "March at dawn.")]),
-es_duo(AURELIA, CASSIUS, 115, 2, "Triumphal Road", [("Road is open.", "Faster than planned!"), ("Span holds.", "I will not slow.")], [("Ha! Ride, ride!", "Mind the bridge."), ("Out of my way!", "Your road, Prefect.")]),
-es_duo(AURELIA, LIVIA, 118, 2, "Aqueduct", [("Paid. In full.", "Built. On time."), ("Stone and silver.", "Both hold.")], [("Accounts settled.", "So are the foundations."), ("Do not waste it.", "Never.")]),
-es_duo(CASSIUS, LIVIA, 110, 1, "Gilded Chariot", [("Glory!", "Itemised."), ("Look at me go!", "I am counting.")], [("Invoice sent.", "Ha! Worth it!"), ("Your horses cost.", "Priceless!")]),
-es_duo(KLAUS, KANBEI, 120, 2, "Two Banners", [("Honour holds.", "Honour answers."), ("Two lines, one wall.", "Well said.")], [("A worthy ally.", "As are you."), ("Banners high.", "Banners high.")]),
-es_duo(LIVIA, COLIN, 116, 2, "Merchant Princes", [("Settled. Exactly.", "Hey! Fine print!"), ("A fair margin.", "Fair? Hah!")], [("I win! Cha-ching!", "Check the books."), ("Pay up!", "Already did.")]),
+    Duo {
+        a: VON_BOLT,
+        b: SONJA,
+        compatibility: 115,
+        stars: 2,
+        name: "Vault Breakers",
+        a_first: [
+            ("Kehh! Count it twice!", "Counted. Twice."),
+            ("Everything is mine!", "Fifty-fifty, Colonel."),
+        ],
+        b_first: [
+            ("Overdrawn, dears.", "Kehh! Exquisite."),
+            ("Audit complete.", "Keep the change."),
+        ],
+    },
+    // Asuka's pairs with Black Hole's COs (cos/tags.toml; the pair with Sturm is in PAIRS). VON_BOLT + SONJA above is the BH Campaign's prize; hers is the BH2 seed with the same name.
+    Duo {
+        a: VON_BOLT,
+        b: ASUKA,
+        compatibility: 115,
+        stars: 2,
+        name: "Vault Breakers",
+        a_first: [
+            ("Kehh! Count it twice!", "Counted. Twice."),
+            ("The vault is open!", "Inventory logged."),
+        ],
+        b_first: [
+            ("Audit complete.", "Kehh! Exquisite."),
+            ("As projected.", "Keep the change."),
+        ],
+    },
+    Duo {
+        a: 14,
+        b: ASUKA,
+        compatibility: 120,
+        stars: 2,
+        name: "Black Eclipse",
+        a_first: [
+            ("The tide takes them.", "Predicted."),
+            ("Nothing remains.", "Confirmed."),
+        ],
+        b_first: [("As projected.", "Hmph. Fine."), ("Their line is gone.", "Black Hole.")],
+    },
+    Duo {
+        a: 12,
+        b: ASUKA,
+        compatibility: 115,
+        stars: 2,
+        name: "Grand Design",
+        a_first: [("Ha! My plan works!", "Our plan."), ("Genius, right?", "Adequate.")],
+        b_first: [
+            ("Plan executed.", "Told you! Genius!"),
+            ("As projected.", "Ha! Of course!"),
+        ],
+    },
+    Duo {
+        a: 11,
+        b: ASUKA,
+        compatibility: 110,
+        stars: 1,
+        name: "Dead Reckoning",
+        a_first: [("Smashed 'em!", "Bearing correct."), ("Next target?", "Marked.")],
+        b_first: [("Target neutralised.", "Har! Boom!"), ("As projected.", "Har! Again!")],
+    },
+    Duo {
+        a: 13,
+        b: ASUKA,
+        compatibility: 110,
+        stars: 1,
+        name: "Quiet Knife",
+        a_first: [("Sss... swift.", "Silent."), ("Too slow, fools.", "Logged.")],
+        b_first: [("Their line fell.", "Sss. Neat."), ("As projected.", "Hssss.")],
+    },
+    // The Emerald Sun Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
+    es_duo(
+        KLAUS,
+        AURELIA,
+        120,
+        2,
+        "Siege of Iron",
+        [
+            ("The wall falls.", "On schedule."),
+            ("Hold, then breach.", "Stone, Legate."),
+        ],
+        [
+            ("Wall's down. Legate?", "Well built."),
+            ("Fetch the ladders.", "March."),
+        ],
+    ),
+    es_duo(
+        KLAUS,
+        CASSIUS,
+        108,
+        1,
+        "Hammer and Anvil",
+        [
+            ("Order restored.", "Ha! Mine too!"),
+            ("Hold. Then strike.", "Fine. Fine!"),
+        ],
+        [("Ha! Did you see?", "I saw."), ("Write it down!", "No.")],
+    ),
+    es_duo(
+        KLAUS,
+        LIVIA,
+        125,
+        3,
+        "Pax Romana",
+        [("Terms are mine.", "Paid in full."), ("The line holds.", "Audited.")],
+        [
+            ("Books are closed.", "So is the war."),
+            ("The ledger balances.", "March at dawn."),
+        ],
+    ),
+    es_duo(
+        AURELIA,
+        CASSIUS,
+        115,
+        2,
+        "Triumphal Road",
+        [
+            ("Road is open.", "Faster than planned!"),
+            ("Span holds.", "I will not slow."),
+        ],
+        [
+            ("Ha! Ride, ride!", "Mind the bridge."),
+            ("Out of my way!", "Your road, Prefect."),
+        ],
+    ),
+    es_duo(
+        AURELIA,
+        LIVIA,
+        118,
+        2,
+        "Aqueduct",
+        [
+            ("Paid. In full.", "Built. On time."),
+            ("Stone and silver.", "Both hold."),
+        ],
+        [
+            ("Accounts settled.", "So are the foundations."),
+            ("Do not waste it.", "Never."),
+        ],
+    ),
+    es_duo(
+        CASSIUS,
+        LIVIA,
+        110,
+        1,
+        "Gilded Chariot",
+        [("Glory!", "Itemised."), ("Look at me go!", "I am counting.")],
+        [("Invoice sent.", "Ha! Worth it!"), ("Your horses cost.", "Priceless!")],
+    ),
+    es_duo(
+        KLAUS,
+        KANBEI,
+        120,
+        2,
+        "Two Banners",
+        [
+            ("Honour holds.", "Honour answers."),
+            ("Two lines, one wall.", "Well said."),
+        ],
+        [("A worthy ally.", "As are you."), ("Banners high.", "Banners high.")],
+    ),
+    es_duo(
+        LIVIA,
+        COLIN,
+        116,
+        2,
+        "Merchant Princes",
+        [
+            ("Settled. Exactly.", "Hey! Fine print!"),
+            ("A fair margin.", "Fair? Hah!"),
+        ],
+        [("I win! Cha-ching!", "Check the books."), ("Pay up!", "Already did.")],
+    ),
 ];
 
 use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA};
@@ -255,8 +400,24 @@ use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA};
 const KANBEI: u8 = 6;
 const COLIN: u8 = 16;
 
-const fn es_duo(a: u8, b: u8, compatibility: u8, stars: u8, name: &'static str, a_first: [(&'static str, &'static str); 2], b_first: [(&'static str, &'static str); 2]) -> Duo {
-    Duo { a, b, compatibility, stars, name, a_first, b_first }
+const fn es_duo(
+    a: u8,
+    b: u8,
+    compatibility: u8,
+    stars: u8,
+    name: &'static str,
+    a_first: [(&'static str, &'static str); 2],
+    b_first: [(&'static str, &'static str); 2],
+) -> Duo {
+    Duo {
+        a,
+        b,
+        compatibility,
+        stars,
+        name,
+        a_first,
+        b_first,
+    }
 }
 
 /// The made-up pair of two COs, in either order.
@@ -274,7 +435,17 @@ pub fn duo_texts(a: u8, b: u8) -> Option<(Vec<u8>, [Vec<u8>; 4])> {
 
 /// The duo partners of a CO with their stars (TAG box).
 pub fn duo_partners(co: u8) -> Vec<(u8, u8)> {
-    DUOS.iter().filter_map(|d| if d.a == co { Some((d.b, d.stars)) } else if d.b == co { Some((d.a, d.stars)) } else { None }).collect()
+    DUOS.iter()
+        .filter_map(|d| {
+            if d.a == co {
+                Some((d.b, d.stars))
+            } else if d.b == co {
+                Some((d.a, d.stars))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -308,7 +479,11 @@ mod tests {
             let field = |k: &str| -> String {
                 block
                     .lines()
-                    .find_map(|l| l.strip_prefix(k).and_then(|r| r.trim_start().strip_prefix('=')).map(|v| v.trim().to_string()))
+                    .find_map(|l| {
+                        l.strip_prefix(k)
+                            .and_then(|r| r.trim_start().strip_prefix('='))
+                            .map(|v| v.trim().to_string())
+                    })
                     .unwrap_or_else(|| panic!("no {k} in {block}"))
             };
             let (a, b) = (id(&field("a")), id(&field("b")));
@@ -328,7 +503,12 @@ mod tests {
             }
         }
         assert_eq!(n, 8);
-        assert_eq!(DUOS.iter().filter(|d| crate::es_co::has_pairs(d.a) || crate::es_co::has_pairs(d.b)).count(), n);
+        assert_eq!(
+            DUOS.iter()
+                .filter(|d| crate::es_co::has_pairs(d.a) || crate::es_co::has_pairs(d.b))
+                .count(),
+            n
+        );
     }
 
     #[test]
@@ -336,7 +516,10 @@ mod tests {
         assert_eq!(PAIRS.len(), 8);
         for p in &PAIRS {
             assert!((1..=3).contains(&p.stars));
-            assert!(p.name.bytes().all(|c| c.is_ascii_alphabetic() || c == b' ' || c == b'\''));
+            assert!(p
+                .name
+                .bytes()
+                .all(|c| c.is_ascii_alphabetic() || c == b' ' || c == b'\''));
         }
         // Symmetric, and Sturm with himself or a stranger: 95.
         assert_eq!(compatibility(STURM, STURM), Some(95));

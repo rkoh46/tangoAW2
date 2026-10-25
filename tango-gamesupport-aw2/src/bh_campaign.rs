@@ -76,7 +76,16 @@ pub mod region {
 
 /// The campaign.
 pub fn def() -> CampaignDef {
-    let mut missions = [bh_act1::missions(), bh_act2::missions(), bh_act3::missions(), bh_act4::missions(), bh_act5b::missions(), bh_act5::missions(), bh_secret::missions()].concat();
+    let mut missions = [
+        bh_act1::missions(),
+        bh_act2::missions(),
+        bh_act3::missions(),
+        bh_act4::missions(),
+        bh_act5b::missions(),
+        bh_act5::missions(),
+        bh_secret::missions(),
+    ]
+    .concat();
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
         source: 1,
@@ -96,7 +105,11 @@ pub fn def() -> CampaignDef {
 /// are at most 21 characters (the page's width, stars included); the secret sections show once the
 /// secret mission is won.
 fn credits() -> Vec<CreditSection> {
-    let sec = |heading: &'static str, names: &[&'static str], secret: bool| CreditSection { heading, names: names.to_vec(), secret };
+    let sec = |heading: &'static str, names: &[&'static str], secret: bool| CreditSection {
+        heading,
+        names: names.to_vec(),
+        secret,
+    };
     vec![
         sec("BH CAMPAIGN", &["A tangoAW2 story", "The storm came ashore"], false),
         sec("THE CAST", &["STURM", "The Storm", "VON BOLT", "The Ledger"], false),
@@ -105,19 +118,82 @@ fn credits() -> Vec<CreditSection> {
         sec("THE CAST", &["FLAK", "The Appetite", "LASH", "The Experiment"], false),
         sec("THE CAST", &["ADDER", "The Profile", "CLONE ANDY", "The Name"], false),
         sec("THE CAST", &["NELL", "The Gate", "ANDY", "The Wrench"], false),
-        sec("ALSO STARRING", &["CMDR. PIP \"CRUMB\"", "HOBB", "GERALD", "The Biscuit"], false),
-        sec("ALSO STARRING", &["SGT. MORTAR", "PVT. WICK", "DENNIS", "INTEREST THE ROOSTER"], false),
+        sec(
+            "ALSO STARRING",
+            &["CMDR. PIP \"CRUMB\"", "HOBB", "GERALD", "The Biscuit"],
+            false,
+        ),
+        sec(
+            "ALSO STARRING",
+            &["SGT. MORTAR", "PVT. WICK", "DENNIS", "INTEREST THE ROOSTER"],
+            false,
+        ),
         sec("THE AUDITOR", &["SONJA", "Who read every ledger", "S."], true),
-        sec("THE ACCORD", &["MAX, SAMI, GRIT", "KANBEI, SENSEI", "GRIMM, JAVIER", "JESS, EAGLE, DRAKE"], false),
+        sec(
+            "THE ACCORD",
+            &[
+                "MAX, SAMI, GRIT",
+                "KANBEI, SENSEI",
+                "GRIMM, JAVIER",
+                "JESS, EAGLE, DRAKE",
+            ],
+            false,
+        ),
         sec("THE ACCORD", &["OLAF, SASHA, COLIN", "JAKE, RACHEL, HACHI"], false),
-        sec("THE NATIONS", &["Orange Star", "Blue Moon", "Green Earth", "Yellow Comet"], false),
-        sec("ORIGINAL GAMES", &["Intelligent Systems", "Nintendo", "Advance Wars 2:", "Black Hole Rising", "Advance Wars:", "Dual Strike"], false),
+        sec(
+            "THE NATIONS",
+            &["Orange Star", "Blue Moon", "Green Earth", "Yellow Comet"],
+            false,
+        ),
+        sec(
+            "ORIGINAL GAMES",
+            &[
+                "Intelligent Systems",
+                "Nintendo",
+                "Advance Wars 2:",
+                "Black Hole Rising",
+                "Advance Wars:",
+                "Dual Strike",
+            ],
+            false,
+        ),
         sec("WITH THANKS", &["With thanks and", "respect."], false),
         sec("RESEARCH", &["Xenesis and the", "Wars World News", "community"], false),
-        sec("RESEARCH", &["The aw2bhr", "decompilation:", "Eebit, npiriou,", "Mad-Man-Dan,", "Veslyquix"], false),
-        sec("EMULATION", &["endrift (mGBA)", "Arisotura (melonDS)", "weenie, GreigaMaster", "and everyone in the", "Tango credits"], false),
+        sec(
+            "RESEARCH",
+            &[
+                "The aw2bhr",
+                "decompilation:",
+                "Eebit, npiriou,",
+                "Mad-Man-Dan,",
+                "Veslyquix",
+            ],
+            false,
+        ),
+        sec(
+            "EMULATION",
+            &[
+                "endrift (mGBA)",
+                "Arisotura (melonDS)",
+                "weenie, GreigaMaster",
+                "and everyone in the",
+                "Tango credits",
+            ],
+            false,
+        ),
         sec("SPECIAL THANKS", &["Playtesting:", "the tangoAW2", "players"], false),
-        sec("NOTICE", &["Advance Wars is a", "trademark of", "Nintendo. tangoAW2", "is not affiliated", "with Nintendo or", "Intelligent Systems."], false),
+        sec(
+            "NOTICE",
+            &[
+                "Advance Wars is a",
+                "trademark of",
+                "Nintendo. tangoAW2",
+                "is not affiliated",
+                "with Nintendo or",
+                "Intelligent Systems.",
+            ],
+            false,
+        ),
         sec("THE END", &["The storm is calm.", "For now."], false),
     ]
 }
@@ -144,17 +220,47 @@ pub mod bond {
 /// opens when all nine are earned (and the tenth, Crumb's page quote, is its
 /// own: [`bond::CRUMB_QUOTE`]).
 pub const BONDS: [Bond; 10] = [
-    Bond { co: co::VON_BOLT, quote: "I got second pick. Second! Best bargain of my life." },
-    Bond { co: co::HAWKE, quote: "I advise. He listens. ...Mostly. I count it." },
-    Bond { co: co::KOAL, quote: "He said the road has no end. I believe him." },
-    Bond { co: co::KINDLE, quote: "He gave me a stage. I will be gracious. Once." },
-    Bond { co: co::JUGGER, quote: "PURPOSE: ASSIGNED. FEELING: UNCATALOGUED." },
-    Bond { co: co::FLAK, quote: "Boss feeds Flak. Boss good. Flak stays." },
-    Bond { co: co::LASH, quote: "No board! No limits! Just me, my toys and Gerald." },
-    Bond { co: co::ADDER, quote: "My cape fits the dark side perfectly. Obviously." },
-    Bond { co: co::CLONE_ANDY, quote: "I'm Clone Andy. I picked it myself. That counts." },
+    Bond {
+        co: co::VON_BOLT,
+        quote: "I got second pick. Second! Best bargain of my life.",
+    },
+    Bond {
+        co: co::HAWKE,
+        quote: "I advise. He listens. ...Mostly. I count it.",
+    },
+    Bond {
+        co: co::KOAL,
+        quote: "He said the road has no end. I believe him.",
+    },
+    Bond {
+        co: co::KINDLE,
+        quote: "He gave me a stage. I will be gracious. Once.",
+    },
+    Bond {
+        co: co::JUGGER,
+        quote: "PURPOSE: ASSIGNED. FEELING: UNCATALOGUED.",
+    },
+    Bond {
+        co: co::FLAK,
+        quote: "Boss feeds Flak. Boss good. Flak stays.",
+    },
+    Bond {
+        co: co::LASH,
+        quote: "No board! No limits! Just me, my toys and Gerald.",
+    },
+    Bond {
+        co: co::ADDER,
+        quote: "My cape fits the dark side perfectly. Obviously.",
+    },
+    Bond {
+        co: co::CLONE_ANDY,
+        quote: "I'm Clone Andy. I picked it myself. That counts.",
+    },
     // Crumb's: an extra (M14, a win by day 12), not one of the nine of the secret mission.
-    Bond { co: co::CRUMB, quote: crate::crumb::SECRET_QUOTE },
+    Bond {
+        co: co::CRUMB,
+        quote: crate::crumb::SECRET_QUOTE,
+    },
 ];
 
 /// A campaign that exercises the format's fields (funds, weather, fog, a
@@ -183,7 +289,12 @@ pub fn features_def() -> CampaignDef {
     a.weather = Weather::Rain;
     a.fog = true;
     a.day_limit = 6;
-    a.structures = vec![(Structure::BlackFactory, 6, 4), (Structure::BlackCrystal, 3, 3), (Structure::BlackObelisk, 9, 2), (Structure::Laser, 1, 6)];
+    a.structures = vec![
+        (Structure::BlackFactory, 6, 4),
+        (Structure::BlackCrystal, 3, 3),
+        (Structure::BlackObelisk, 9, 2),
+        (Structure::Laser, 1, 6),
+    ];
     a.units = vec![
         UnitDef::new(1, unit::INFANTRY, 1, 1),
         UnitDef::new(2, unit::INFANTRY, 10, 7).hold(),
@@ -233,27 +344,58 @@ pub fn features_def() -> CampaignDef {
         Trigger {
             once: true,
             when: When::AfterAction,
-            cond: Cond::UnitAt { name: "courier", x: 10, y: 5 },
-            then: vec![Action::Scene(Scene::new(vec![Line::say(co::STURM, "The courier is out.")])), Action::Win],
+            cond: Cond::UnitAt {
+                name: "courier",
+                x: 10,
+                y: 5,
+            },
+            then: vec![
+                Action::Scene(Scene::new(vec![Line::say(co::STURM, "The courier is out.")])),
+                Action::Win,
+            ],
         },
         Trigger {
             once: true,
             when: When::TurnStart,
-            cond: Cond::All(vec![Cond::DayAtLeast(4), Cond::Not(Box::new(Cond::UnitAt { name: "courier", x: 10, y: 5 }))]),
+            cond: Cond::All(vec![
+                Cond::DayAtLeast(4),
+                Cond::Not(Box::new(Cond::UnitAt {
+                    name: "courier",
+                    x: 10,
+                    y: 5,
+                })),
+            ]),
             then: vec![Action::Lose],
         },
     ];
     b.triggers.push(Trigger::new(
         When::AfterAction,
-        Cond::PlayerPair { a: co::STURM, b: co::HAWKE },
+        Cond::PlayerPair {
+            a: co::STURM,
+            b: co::HAWKE,
+        },
         vec![Action::Scene(Scene::new(vec![Line::say(co::HAWKE, "Together.")]))],
     ));
     b.triggers.push(Trigger::new(
         When::AfterAction,
-        Cond::UnitAt { name: "courier", x: 5, y: 5 },
-        vec![Action::Spawn(vec![UnitDef::new(1, unit::INFANTRY, 3, 3), UnitDef::new(1, unit::TANK, 4, 3)]), Action::AddFunds { army: 1, funds: 500 }],
+        Cond::UnitAt {
+            name: "courier",
+            x: 5,
+            y: 5,
+        },
+        vec![
+            Action::Spawn(vec![
+                UnitDef::new(1, unit::INFANTRY, 3, 3),
+                UnitDef::new(1, unit::TANK, 4, 3),
+            ]),
+            Action::AddFunds { army: 1, funds: 500 },
+        ],
     ));
-    b.triggers.push(Trigger::new(When::TurnStart, Cond::UnitGone("courier"), vec![Action::Lose]));
+    b.triggers.push(Trigger::new(
+        When::TurnStart,
+        Cond::UnitGone("courier"),
+        vec![Action::Lose],
+    ));
     b.victory = Scene::new(vec![Line::say(co::STURM, "Extracted.")]);
     b.needs = Needs::All(vec!["f01"]);
     b.pool = vec![co::STURM, co::VON_BOLT, co::HAWKE];
@@ -268,12 +410,18 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JUGGER)),
     ];
-    c.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 2).hold()];
+    c.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 8, 2).hold(),
+    ];
     c.front2 = Some(FrontDef {
         map: MapSrc::Ascii(&["1......", ".......", "......2"]),
         props: Vec::new(),
         structures: Vec::new(),
-        units: vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 5, 1).hold()],
+        units: vec![
+            UnitDef::new(1, unit::INFANTRY, 1, 1),
+            UnitDef::new(2, unit::INFANTRY, 5, 1).hold(),
+        ],
         cos: [CoSpec::Pick, CoSpec::Fixed(co::KOAL), CoSpec::None, CoSpec::None],
         send: SendRule::Ground,
         sky: false,
@@ -298,13 +446,25 @@ pub fn features_def() -> CampaignDef {
         Trigger::new(
             When::AfterAction,
             Cond::ArmyDefeated(2),
-            vec![Action::SetCo { army: 3, co: co::HAWKE }, Action::Spawn(vec![UnitDef::new(3, unit::TANK, 0, 0)])],
+            vec![
+                Action::SetCo { army: 3, co: co::HAWKE },
+                Action::Spawn(vec![UnitDef::new(3, unit::TANK, 0, 0)]),
+            ],
         ),
-        Trigger::new(When::TurnStart, Cond::EveryDays { n: 5, from: 5 }, vec![Action::Strike { hp: 8 }]).repeating(),
+        Trigger::new(
+            When::TurnStart,
+            Cond::EveryDays { n: 5, from: 5 },
+            vec![Action::Strike { hp: 8 }],
+        )
+        .repeating(),
         Trigger::new(
             When::AfterAction,
             Cond::Any(vec![
-                Cond::UnitsIn { army: 1, area: Rect::new(0, 0, 3, 3), at_least: 2 },
+                Cond::UnitsIn {
+                    army: 1,
+                    area: Rect::new(0, 0, 3, 3),
+                    at_least: 2,
+                },
                 Cond::OwnerAt { x: 1, y: 1, army: 1 },
                 Cond::Custom(|core| day(core) > 99),
             ]),
@@ -351,7 +511,14 @@ pub fn features_def() -> CampaignDef {
     // unit and an HQ of its own) takes over with reinforcements.
     let mut i = MissionDef::new("f08", "Features Stage Two");
     i.objective = "Test: when army 2 falls, army 3 takes over.";
-    i.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..2.......", "........3."]);
+    i.map = MapSrc::Ascii(&[
+        "1.........",
+        "..........",
+        "..........",
+        "..........",
+        "..2.......",
+        "........3.",
+    ]);
     i.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).team(2),
@@ -367,7 +534,10 @@ pub fn features_def() -> CampaignDef {
         When::AfterAction,
         Cond::ArmyDefeated(2),
         vec![
-            Action::Spawn(vec![UnitDef::new(3, unit::TANK, 7, 5), UnitDef::new(3, unit::TANK, 8, 4)]),
+            Action::Spawn(vec![
+                UnitDef::new(3, unit::TANK, 7, 5),
+                UnitDef::new(3, unit::TANK, 8, 4),
+            ]),
             Action::AddFunds { army: 3, funds: 9000 },
             Action::Scene(Scene::new(vec![Line::say(co::ANDY, "Stage two.")])),
         ],
@@ -393,7 +563,10 @@ pub fn features_def() -> CampaignDef {
     j.triggers = vec![Trigger::new(
         When::AfterAction,
         Cond::Not(Box::new(Cond::OwnerAt { x: 5, y: 0, army: 1 })),
-        vec![Action::Scene(Scene::new(vec![Line::say(co::STURM, "The Gate has fallen.")])), Action::Lose],
+        vec![
+            Action::Scene(Scene::new(vec![Line::say(co::STURM, "The Gate has fallen.")])),
+            Action::Lose,
+        ],
     )];
     j.needs = Needs::All(vec!["f01"]);
     j.flag = region::BLACK_HOLE[4];
@@ -422,8 +595,16 @@ pub fn features_def() -> CampaignDef {
     ];
     k.onyx = Some(OnyxDef::new((5, 7)));
     k.triggers = vec![
-        Trigger::new(When::AfterAction, Cond::OnyxHitsAtMost(3), vec![Action::Scene(Scene::new(vec![Line::say(co::EAGLE, "One down.")]))]),
-        Trigger::new(When::AfterAction, Cond::OnyxDestroyed, vec![Action::Scene(Scene::new(vec![Line::say(co::STURM, "The Onyx falls.")]))]),
+        Trigger::new(
+            When::AfterAction,
+            Cond::OnyxHitsAtMost(3),
+            vec![Action::Scene(Scene::new(vec![Line::say(co::EAGLE, "One down.")]))],
+        ),
+        Trigger::new(
+            When::AfterAction,
+            Cond::OnyxDestroyed,
+            vec![Action::Scene(Scene::new(vec![Line::say(co::STURM, "The Onyx falls.")]))],
+        ),
     ];
     k.needs = Needs::All(vec!["f01"]);
     k.flag = region::BLACK_HOLE[2];
@@ -438,7 +619,11 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
     ];
     // (a Md Tank on the player's HQ: the computer's soldier cannot capture it)
-    m.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 3).hold()];
+    m.units = vec![
+        UnitDef::new(1, unit::MD_TANK, 0, 0),
+        UnitDef::new(1, unit::MD_TANK, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 8, 3).hold(),
+    ];
     m.needs = Needs::All(vec!["f01"]);
     m.flag = region::BLACK_HOLE[1];
 
@@ -452,13 +637,26 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JUGGER)),
     ];
     n.structures = vec![(Structure::BlackFactory, 5, 2)];
-    n.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::MD_TANK, 8, 3).hold()];
+    n.units = vec![
+        UnitDef::new(1, unit::MD_TANK, 0, 0),
+        UnitDef::new(1, unit::MD_TANK, 1, 1),
+        UnitDef::new(2, unit::MD_TANK, 8, 3).hold(),
+    ];
     n.front2 = Some(FrontDef {
         map: MapSrc::Ascii(&["1......", ".......", "......2"]),
         props: Vec::new(),
         structures: Vec::new(),
-        units: vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::MD_TANK, 1, 1), UnitDef::new(2, unit::MD_TANK, 5, 1).hold().named("carrier")],
-        cos: [CoSpec::Fixed(co::HAWKE), CoSpec::Fixed(co::KOAL), CoSpec::None, CoSpec::None],
+        units: vec![
+            UnitDef::new(1, unit::MD_TANK, 0, 0),
+            UnitDef::new(1, unit::MD_TANK, 1, 1),
+            UnitDef::new(2, unit::MD_TANK, 5, 1).hold().named("carrier"),
+        ],
+        cos: [
+            CoSpec::Fixed(co::HAWKE),
+            CoSpec::Fixed(co::KOAL),
+            CoSpec::None,
+            CoSpec::None,
+        ],
         send: SendRule::Ground,
         sky: false,
         weather: Weather::Clear,
@@ -468,7 +666,10 @@ pub fn features_def() -> CampaignDef {
     n.front2_triggers = vec![Trigger::new(
         When::TurnStart,
         Cond::UnitGone("carrier"),
-        vec![Action::Scene(Scene::new(vec![Line::say(co::HAWKE, "The carrier is down.")])), Action::Win],
+        vec![
+            Action::Scene(Scene::new(vec![Line::say(co::HAWKE, "The carrier is down.")])),
+            Action::Win,
+        ],
     )];
     n.front2_victory = Scene::new(vec![Line::say(co::HAWKE, "The east is ours.")]);
     n.needs = Needs::All(vec!["f01"]);
@@ -479,13 +680,23 @@ pub fn features_def() -> CampaignDef {
     let factory_mission = |key: &'static str, enemy: u8| {
         let mut q = MissionDef::new(key, "Features Factory");
         q.objective = "Test: the smart Black Factory.";
-        q.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..........", ".........2"]);
+        q.map = MapSrc::Ascii(&[
+            "1.........",
+            "..........",
+            "..........",
+            "..........",
+            "..........",
+            ".........2",
+        ]);
         q.armies = vec![
             ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
             ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
         ];
         q.structures = vec![(Structure::BlackFactory, 5, 2)];
-        let mut units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(1, unit::INFANTRY, 1, 1)];
+        let mut units = vec![
+            UnitDef::new(1, unit::MD_TANK, 0, 0),
+            UnitDef::new(1, unit::INFANTRY, 1, 1),
+        ];
         for k in 0..6u8 {
             units.push(UnitDef::new(2, enemy, 6 + k % 4, 5 - k / 4).hold());
         }
@@ -501,7 +712,15 @@ pub fn features_def() -> CampaignDef {
     // they fire at the enemy on the player's turn.
     let mut u = MissionDef::new("f15", "Features Cannons");
     u.objective = "Test: the player's Laser and minicannon fire.";
-    u.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..........", "..........", ".........2"]);
+    u.map = MapSrc::Ascii(&[
+        "1.........",
+        "..........",
+        "..........",
+        "..........",
+        "..........",
+        "..........",
+        ".........2",
+    ]);
     u.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
@@ -560,7 +779,10 @@ pub fn features_def() -> CampaignDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
     ];
-    y.units = vec![UnitDef::new(1, unit::MD_TANK, 0, 0), UnitDef::new(2, unit::TANK, 9, 3).hold().ammo(0)];
+    y.units = vec![
+        UnitDef::new(1, unit::MD_TANK, 0, 0),
+        UnitDef::new(2, unit::TANK, 9, 3).hold().ammo(0),
+    ];
     y.needs = Needs::All(vec!["f01"]);
     y.flag = region::BLACK_HOLE[1];
 
@@ -578,7 +800,15 @@ pub fn features_def() -> CampaignDef {
                 ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)),
                 ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
             ];
-            q.structures = vec![(Structure::MiniCannonRight, 5, 7), (Structure::MiniCannonLeft, 9, 9), (Structure::Laser, 3, 5), (Structure::BlackCannonDown, 7, 3), (Structure::BlackCannonUp, 8, 12), (Structure::Deathray, 13, 8), (Structure::Volcano, 12, 4)];
+            q.structures = vec![
+                (Structure::MiniCannonRight, 5, 7),
+                (Structure::MiniCannonLeft, 9, 9),
+                (Structure::Laser, 3, 5),
+                (Structure::BlackCannonDown, 7, 3),
+                (Structure::BlackCannonUp, 8, 12),
+                (Structure::Deathray, 13, 8),
+                (Structure::Volcano, 12, 4),
+            ];
             q.units = vec![
                 // (APCs: no weapon at all; a Tank's machine gun needs no ammo)
                 UnitDef::new(1, unit::APC, 3, 2).hold(),
@@ -591,12 +821,25 @@ pub fn features_def() -> CampaignDef {
                 UnitDef::new(5, unit::INFANTRY, 4, 7),
             ];
         } else {
-            q.map = MapSrc::Ascii(&["1.........", "..........", "..........", "..........", "..........", "..........", ".........2"]);
+            q.map = MapSrc::Ascii(&[
+                "1.........",
+                "..........",
+                "..........",
+                "..........",
+                "..........",
+                "..........",
+                ".........2",
+            ]);
             q.armies = vec![
                 ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
                 ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
             ];
-            q.structures = vec![(Structure::MiniCannonRight, 0, 2), (Structure::Laser, 2, 4), (Structure::BlackCannonDown, 6, 1), (Structure::Deathray, 8, 3)];
+            q.structures = vec![
+                (Structure::MiniCannonRight, 0, 2),
+                (Structure::Laser, 2, 4),
+                (Structure::BlackCannonDown, 6, 1),
+                (Structure::Deathray, 8, 3),
+            ];
             q.units = vec![
                 UnitDef::new(1, unit::MD_TANK, 0, 0),
                 UnitDef::new(1, unit::TANK, 1, 1),
@@ -614,10 +857,18 @@ pub fn features_def() -> CampaignDef {
     z.objective = "Test: the fortress of five armies.";
     z.map = MapSrc::Built("bh28");
     z.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::RACHEL)).team(1).funds(12000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1).funds(12000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(1).funds(12000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1).funds(12000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::RACHEL))
+            .team(1)
+            .funds(12000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF))
+            .team(1)
+            .funds(12000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE))
+            .team(1)
+            .funds(12000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI))
+            .team(1)
+            .funds(12000),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::STURM, co::CLONE_ANDY)).funds(16000),
     ];
     z.look = 2;
@@ -630,7 +881,13 @@ pub fn features_def() -> CampaignDef {
     // (0,2) is jammed until day 4.
     let mut v = MissionDef::new("f21", "Features March");
     v.objective = "Test: marches, a named spawn, a jammed cannon.";
-    v.map = MapSrc::Ascii(&["1........c..", "......f.....", "............", "........c...", "..........2."]);
+    v.map = MapSrc::Ascii(&[
+        "1........c..",
+        "......f.....",
+        "............",
+        "........c...",
+        "..........2.",
+    ]);
     v.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::VON_BOLT)),
@@ -645,13 +902,30 @@ pub fn features_def() -> CampaignDef {
         // (held foot soldiers with a neutral city in reach: they stay, with full fuel)
         UnitDef::new(2, unit::MECH, 6, 3),
     ];
-    v.triggers = vec![on_day_spawn(2, vec![UnitDef::new(2, unit::APC, 4, 1).named("truck"), UnitDef::new(2, unit::INFANTRY, 7, 3).stand()])];
+    v.triggers = vec![on_day_spawn(
+        2,
+        vec![
+            UnitDef::new(2, unit::APC, 4, 1).named("truck"),
+            UnitDef::new(2, unit::INFANTRY, 7, 3).stand(),
+        ],
+    )];
     v.marches = vec![
-        MarchDef::new("walker", &[(4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0)], 2),
-        MarchDef::speed("truck", &[(4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1), (10, 1), (11, 1)], 6),
+        MarchDef::new(
+            "walker",
+            &[(4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0)],
+            2,
+        ),
+        MarchDef::speed(
+            "truck",
+            &[(4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1), (10, 1), (11, 1)],
+            6,
+        ),
     ];
     v.marches.push(MarchDef::driven("driven", &[(1, 4), (11, 3)], 1));
-    v.jams = vec![JamDef { at: (0, 2), until: Cond::DayAtLeast(4) }];
+    v.jams = vec![JamDef {
+        at: (0, 2),
+        until: Cond::DayAtLeast(4),
+    }];
     v.needs = Needs::All(vec!["f01"]);
     v.flag = region::BLACK_HOLE[3];
     // A five-army mission whose player (army 5, Black Hole) picks a pair on the CO screen.
@@ -719,7 +993,13 @@ pub fn features_def() -> CampaignDef {
     // Infantry beside the APC for it to load if it ever moved.
     let mut fz = MissionDef::new("f24", "Features Freeze");
     fz.objective = "Test: frozen transports keep no phantom cargo and stay.";
-    fz.map = MapSrc::Ascii(&["1...........", "............", "............", "............", "...........2"]);
+    fz.map = MapSrc::Ascii(&[
+        "1...........",
+        "............",
+        "............",
+        "............",
+        "...........2",
+    ]);
     fz.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)),
@@ -738,15 +1018,38 @@ pub fn features_def() -> CampaignDef {
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
-        prologue: vec![Page { text: "Features.", picture: None, who: None }],
+        prologue: vec![Page {
+            text: "Features.",
+            picture: None,
+            who: None,
+        }],
         prologue_song: None,
         credits: vec![
-            CreditSection { heading: "FEATURES", names: vec!["TEST"], secret: false },
-            CreditSection { heading: "SECRET LINE", names: vec!["THE AUDITOR"], secret: true },
+            CreditSection {
+                heading: "FEATURES",
+                names: vec!["TEST"],
+                secret: false,
+            },
+            CreditSection {
+                heading: "SECRET LINE",
+                names: vec!["THE AUDITOR"],
+                secret: true,
+            },
         ],
-        missions: vec![a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v, pp, fv, fz],
+        missions: vec![
+            a, b, c, d, f, g, h, i, j, k, m, n, o, r, u, w, y, own2, own5, z, v, pp, fv, fz,
+        ],
         final_mission: "f24",
-        bonds: vec![Bond { co: co::HAWKE, quote: "Bond test: Hawke's secret page." }, Bond { co: co::KOAL, quote: "Bond test: an extra." }],
+        bonds: vec![
+            Bond {
+                co: co::HAWKE,
+                quote: "Bond test: Hawke's secret page.",
+            },
+            Bond {
+                co: co::KOAL,
+                quote: "Bond test: an extra.",
+            },
+        ],
         extra_bonds: 1,
         secret_mission: "f06",
     }
@@ -754,7 +1057,12 @@ pub fn features_def() -> CampaignDef {
 
 /// A trigger that spawns units at the start of the player's turn on day `d`.
 fn on_day_spawn(d: u16, units: Vec<UnitDef>) -> Trigger {
-    Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, vec![Action::Spawn(units)]).repeating()
+    Trigger::new(
+        When::TurnStart,
+        Cond::EveryDays { n: 1000, from: d },
+        vec![Action::Spawn(units)],
+    )
+    .repeating()
 }
 
 /// A test mission for the computer's attack on a human's inventions
@@ -798,15 +1106,42 @@ pub fn inventions_def() -> CampaignDef {
     a.units = vec![
         UnitDef::new(1, unit::INFANTRY, 3, 13),
         UnitDef::new(1, unit::INFANTRY, 3, 14),
-        UnitDef { ai: 4, ..UnitDef::new(2, unit::TANK, 19, 2) },
-        UnitDef { ai: 4, ..UnitDef::new(2, unit::TANK, 20, 3) },
-        UnitDef { ai: 1, ..UnitDef::new(2, unit::TANK, 21, 4) },
-        UnitDef { ai: 3, ..UnitDef::new(2, unit::MD_TANK, 22, 3) },
-        UnitDef { ai: 5, ..UnitDef::new(2, unit::ARTILLERY, 20, 1) },
-        UnitDef { ai: 6, ..UnitDef::new(2, unit::ARTILLERY, 21, 2) },
-        UnitDef { ai: 2, ..UnitDef::new(2, unit::ROCKETS, 23, 4) },
-        UnitDef { ai: 4, ..UnitDef::new(2, unit::INFANTRY, 18, 3) },
-        UnitDef { ai: 7, ..UnitDef::new(2, unit::INFANTRY, 19, 4) },
+        UnitDef {
+            ai: 4,
+            ..UnitDef::new(2, unit::TANK, 19, 2)
+        },
+        UnitDef {
+            ai: 4,
+            ..UnitDef::new(2, unit::TANK, 20, 3)
+        },
+        UnitDef {
+            ai: 1,
+            ..UnitDef::new(2, unit::TANK, 21, 4)
+        },
+        UnitDef {
+            ai: 3,
+            ..UnitDef::new(2, unit::MD_TANK, 22, 3)
+        },
+        UnitDef {
+            ai: 5,
+            ..UnitDef::new(2, unit::ARTILLERY, 20, 1)
+        },
+        UnitDef {
+            ai: 6,
+            ..UnitDef::new(2, unit::ARTILLERY, 21, 2)
+        },
+        UnitDef {
+            ai: 2,
+            ..UnitDef::new(2, unit::ROCKETS, 23, 4)
+        },
+        UnitDef {
+            ai: 4,
+            ..UnitDef::new(2, unit::INFANTRY, 18, 3)
+        },
+        UnitDef {
+            ai: 7,
+            ..UnitDef::new(2, unit::INFANTRY, 19, 4)
+        },
     ];
     a.flag = region::BLACK_HOLE[0];
 
@@ -841,9 +1176,18 @@ pub fn inventions_def() -> CampaignDef {
         UnitDef::new(1, unit::MD_TANK, 17, 12),
         UnitDef::new(1, unit::MD_TANK, 19, 12),
         UnitDef::new(1, unit::MD_TANK, 18, 11),
-        UnitDef { ai: 1, ..UnitDef::new(2, unit::TANK, 14, 2) },
-        UnitDef { ai: 1, ..UnitDef::new(2, unit::TANK, 15, 3) },
-        UnitDef { ai: 5, ..UnitDef::new(2, unit::ARTILLERY, 13, 2) },
+        UnitDef {
+            ai: 1,
+            ..UnitDef::new(2, unit::TANK, 14, 2)
+        },
+        UnitDef {
+            ai: 1,
+            ..UnitDef::new(2, unit::TANK, 15, 3)
+        },
+        UnitDef {
+            ai: 5,
+            ..UnitDef::new(2, unit::ARTILLERY, 13, 2)
+        },
     ];
     b.needs = Needs::All(vec!["i01"]);
     b.flag = region::BLACK_HOLE[1];
@@ -851,9 +1195,17 @@ pub fn inventions_def() -> CampaignDef {
     CampaignDef {
         source: 1,
         roster: ROSTER.to_vec(),
-        prologue: vec![Page { text: "Inventions.", picture: None, who: None }],
+        prologue: vec![Page {
+            text: "Inventions.",
+            picture: None,
+            who: None,
+        }],
         prologue_song: None,
-        credits: vec![CreditSection { heading: "TEST", names: vec!["TEST"], secret: false }],
+        credits: vec![CreditSection {
+            heading: "TEST",
+            names: vec!["TEST"],
+            secret: false,
+        }],
         missions: vec![a, b],
         final_mission: "i02",
         bonds: Vec::new(),
@@ -889,7 +1241,10 @@ mod tests {
         assert_eq!(ROSTER[roster::CLONE_ANDY as usize].0, co::CLONE_ANDY);
         assert_eq!(ROSTER[roster::CRUMB as usize].0, co::CRUMB);
         assert_eq!(BONDS[bond::CRUMB_QUOTE as usize].co, co::CRUMB);
-        assert!(ROSTER.len() as u32 <= crate::ds_campaign::BOND_SHIFT, "the roster's bits stay under the bonds'");
+        assert!(
+            ROSTER.len() as u32 <= crate::ds_campaign::BOND_SHIFT,
+            "the roster's bits stay under the bonds'"
+        );
     }
 
     #[test]
@@ -927,7 +1282,10 @@ mod tests {
         let all = (crate::campaign_model::TEXT_LAST - crate::campaign_model::TEXT_FIRST + 1) as usize;
         const RESERVE: usize = 150;
         eprintln!("text ids used by the scenes: {used} of {all} ({RESERVE} kept in reserve)");
-        assert!(used + RESERVE <= all, "the BH Campaign's scenes use {used} of {all} text ids (reserve {RESERVE}): pack or trim");
+        assert!(
+            used + RESERVE <= all,
+            "the BH Campaign's scenes use {used} of {all} text ids (reserve {RESERVE}): pack or trim"
+        );
     }
 
     /// Every scene of the text files is asked for by the code, and every scene the code asks for exists
@@ -936,7 +1294,13 @@ mod tests {
     fn every_dialogue_scene_is_used() {
         let _ = def();
         let used = crate::bh_text::keys_used();
-        let unused: Vec<String> = crate::bh_text::keys().into_iter().filter(|k| !used.contains(k)).collect();
-        assert!(unused.is_empty(), "scenes in src/bh_text/*.txt that no mission asks for: {unused:?}");
+        let unused: Vec<String> = crate::bh_text::keys()
+            .into_iter()
+            .filter(|k| !used.contains(k))
+            .collect();
+        assert!(
+            unused.is_empty(),
+            "scenes in src/bh_text/*.txt that no mission asks for: {unused:?}"
+        );
     }
 }

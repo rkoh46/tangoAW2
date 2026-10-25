@@ -221,7 +221,11 @@ pub(super) fn framebuffer_view<'a>(
         // video filter re-renders immediately — even on a paused replay that
         // isn't producing new frames.
         // (a picture the game drew larger than the console's is already sharp: the pixel filters would only enlarge it again)
-        frame.effect = if frame.width > native_w && !matches!(effect.id, "" | "smooth" | "pixel") { crate::platform::video::effects::scaler_for(if pixel_perfect { "pixel" } else { "" }) } else { effect };
+        frame.effect = if frame.width > native_w && !matches!(effect.id, "" | "smooth" | "pixel") {
+            crate::platform::video::effects::scaler_for(if pixel_perfect { "pixel" } else { "" })
+        } else {
+            effect
+        };
         let fb = iced::widget::shader::Shader::new(crate::platform::video::framebuffer::Program::new(frame))
             .width(Length::Fixed(w))
             .height(Length::Fixed(h));
@@ -292,7 +296,11 @@ fn opponent_framebuffer_view<'a>(
     iced::widget::responsive(move |size| {
         let (w, h) = fit(size, img, fractional_scaling, pixel_perfect);
         let mut frame = base_frame.clone();
-        frame.effect = if frame.width > native_w && !matches!(effect.id, "" | "smooth" | "pixel") { crate::platform::video::effects::scaler_for(if pixel_perfect { "pixel" } else { "" }) } else { effect };
+        frame.effect = if frame.width > native_w && !matches!(effect.id, "" | "smooth" | "pixel") {
+            crate::platform::video::effects::scaler_for(if pixel_perfect { "pixel" } else { "" })
+        } else {
+            effect
+        };
         let fb = iced::widget::shader::Shader::new(crate::platform::video::framebuffer::PipProgram::new(frame))
             .width(Length::Fixed(w))
             .height(Length::Fixed(h));

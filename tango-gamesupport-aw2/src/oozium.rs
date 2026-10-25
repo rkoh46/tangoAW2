@@ -129,7 +129,11 @@ fn pos(core: &Core, u: u32) -> (i32, i32) {
 }
 
 fn bars(hp: u16) -> u32 {
-    if hp == 0 { 0 } else { (hp as u32 - 1) / 10 + 1 }
+    if hp == 0 {
+        0
+    } else {
+        (hp as u32 - 1) / 10 + 1
+    }
 }
 
 /// A unit an Oozium of `army` would eat: alive, on the map, another team's.
@@ -176,8 +180,13 @@ fn block_test(core: &mut Core) {
     if core.raw_read_16(fill + 0x22, -1) == 0 {
         return;
     }
-    let (sx, sy) = (core.raw_read_8(FLOOD + 1, -1) as i32, core.raw_read_8(FLOOD + 2, -1) as i32);
-    let Some(me) = unit_on(core, ALL_PLANE, sx, sy) else { return };
+    let (sx, sy) = (
+        core.raw_read_8(FLOOD + 1, -1) as i32,
+        core.raw_read_8(FLOOD + 2, -1) as i32,
+    );
+    let Some(me) = unit_on(core, ALL_PLANE, sx, sy) else {
+        return;
+    };
     let army = army_of(core, me);
     let from = core.raw_read_32(FLOOD_FROM, -1);
     let (fx, fy) = (core.raw_read_8(from, -1) as i32, core.raw_read_8(from + 1, -1) as i32);
@@ -198,7 +207,10 @@ fn victim_at_destination(core: &Core) -> Option<u32> {
     if me == 0 || core.raw_read_8(me, -1) != OOZIUM {
         return None;
     }
-    let (x, y) = (core.raw_read_16(DESTINATION, -1) as i32, core.raw_read_16(DESTINATION + 2, -1) as i32);
+    let (x, y) = (
+        core.raw_read_16(DESTINATION, -1) as i32,
+        core.raw_read_16(DESTINATION + 2, -1) as i32,
+    );
     let u = unit_on(core, ALL_PLANE, x, y)?;
     (u != me && edible(core, army_of(core, me), u)).then_some(u)
 }
@@ -335,7 +347,12 @@ fn eat_next(core: &mut Core) {
             let t = core.raw_read_8(victim, -1);
             let value = crate::co_powers::charge_per_hp(t) * bars(core.raw_read_16(victim + 4, -1) & 0x7F);
             core.raw_write_32(VALUE, -1, value);
-            call(core, CHARGE, &[killer, (value >> 1) * crate::co_powers::METER_SCALE], next);
+            call(
+                core,
+                CHARGE,
+                &[killer, (value >> 1) * crate::co_powers::METER_SCALE],
+                next,
+            );
         }
         1 => {
             let value = core.raw_read_32(VALUE, -1);
@@ -364,7 +381,11 @@ pub(crate) fn move_cost(core: &Core, army: u32, t: u8, x: i32, y: i32) -> u8 {
     let Some(c) = cell(core, x, y) else { return 0xFF };
     let terrain = core.raw_read_8(TERRAIN_PLANE + c, -1) as u32 & 0x1F;
     let p = players(core) + 0x3C * army;
-    let row = if core.raw_read_8(0x0300_3FC8, -1) != 0 { core.raw_read_8(p + 0x1D, -1) as u32 } else { 1 };
+    let row = if core.raw_read_8(0x0300_3FC8, -1) != 0 {
+        core.raw_read_8(p + 0x1D, -1) as u32
+    } else {
+        1
+    };
     let mode = core.raw_read_8(p + 0x1E, -1) as u32;
     let weather = core.raw_read_8(crate::ds_weather::WEATHER, -1) as u32;
     let cos = core.raw_read_32(0x0801_F8E4, -1);
@@ -377,7 +398,11 @@ pub(crate) fn move_cost(core: &Core, army: u32, t: u8, x: i32, y: i32) -> u8 {
 /// [`move_cost`] reads them, 0xFF where it cannot enter.
 pub(crate) fn move_row(core: &Core, army: u32, t: u8) -> [u8; 32] {
     let p = players(core) + 0x3C * army;
-    let row = if core.raw_read_8(0x0300_3FC8, -1) != 0 { core.raw_read_8(p + 0x1D, -1) as u32 } else { 1 };
+    let row = if core.raw_read_8(0x0300_3FC8, -1) != 0 {
+        core.raw_read_8(p + 0x1D, -1) as u32
+    } else {
+        1
+    };
     let mode = core.raw_read_8(p + 0x1E, -1) as u32;
     let weather = core.raw_read_8(crate::ds_weather::WEATHER, -1) as u32;
     let cos = core.raw_read_32(0x0801_F8E4, -1);
@@ -401,12 +426,16 @@ fn value(core: &Core, u: u32) -> u32 {
 /// left).
 fn best_meal(core: &Core, oozium: u32, army: u32) -> Option<u32> {
     let (x, y) = pos(core, oozium);
-    let reach = core.raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1).max(1);
+    let reach = core
+        .raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1)
+        .max(1);
     // (its fuel / the snow's rate: Dual Strike's `Unit_GetMovePoints`)
     let fuel = crate::ds_weather::reach(core, oozium) as u8;
     let mut best: Option<(u32, u32)> = None;
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-        let Some(u) = unit_on(core, ALL_PLANE, x + dx, y + dy) else { continue };
+        let Some(u) = unit_on(core, ALL_PLANE, x + dx, y + dy) else {
+            continue;
+        };
         if !edible(core, army, u) {
             continue;
         }
@@ -466,7 +495,9 @@ fn advance(core: &mut Core, u: u32, army: u32) {
         .collect();
     let dist = |p: (i32, i32)| foes.iter().map(|f| (f.0 - p.0).abs() + (f.1 - p.1).abs()).min();
     let Some(now) = dist((x, y)) else { return };
-    let reach = core.raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1).max(1);
+    let reach = core
+        .raw_read_8(crate::roster::table(core) + 0x5C * OOZIUM as u32 + 0x0A, -1)
+        .max(1);
     let fuel = crate::ds_weather::reach(core, u) as u8;
     let mut best: Option<(i32, (i32, i32), u8)> = None;
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
@@ -555,7 +586,11 @@ pub fn immune(core: &Core, unit: u32) -> bool {
 /// (`sub_08026100`), a power's heal of its own army (`sub_08044E10`:
 /// Hawke's), each. (Mass damage, `sub_08044F24`, is [`crate::co_powers`]'s
 /// trap.)
-const SKIPS: [(u32, u32); 3] = [(0x0804_48A2, 0x0804_48DE), (0x0802_614E, 0x0802_618A), (0x0804_4EA0, 0x0804_4EEE)];
+const SKIPS: [(u32, u32); 3] = [
+    (0x0804_48A2, 0x0804_48DE),
+    (0x0802_614E, 0x0802_618A),
+    (0x0804_4EA0, 0x0804_4EEE),
+];
 fn skip(core: &mut Core, to: u32) {
     if immune(core, core.gba().cpu().gpr(4) as u32) {
         core.gba_mut().cpu_mut().set_thumb_pc(to);

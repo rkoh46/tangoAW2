@@ -2,7 +2,9 @@
 
 use super::driver::{BootPieces, DriveContext};
 use super::recording::build_replay_writer;
-use super::supervisor::{spawn_primed_announcer, spawn_room_primed_announcer, spawn_supervisor, Pauses, RoomCtx, SupGroup, SupervisorContext};
+use super::supervisor::{
+    spawn_primed_announcer, spawn_room_primed_announcer, spawn_supervisor, Pauses, RoomCtx, SupGroup, SupervisorContext,
+};
 use super::{EndState, Metrics, PvpBoot, PvpSession, PvpSessionArgs, Seat, TpsCounter};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
@@ -53,7 +55,9 @@ impl PvpSession {
         // the awaits below (handoff, transport bring-up) are where a
         // browser's worker threads get the event-loop turns their
         // startup needs.
-        let players = room.as_ref().map_or(2, |r| r.players.len().clamp(2, tango_match::MAX_SEATS));
+        let players = room
+            .as_ref()
+            .map_or(2, |r| r.players.len().clamp(2, tango_match::MAX_SEATS));
         local_game.pvp.prepare(2);
 
         // Player index off the shared RNG seed, same negotiation as ever:
@@ -106,7 +110,9 @@ impl PvpSession {
         // retransmit heartbeat.
         let room_host = room.as_ref().is_some_and(|r| r.is_host) && players > 2;
         let solo_host = room.as_ref().is_some_and(|r| r.is_host) && players == 2;
-        let room_meta = room.as_ref().map(|r| (r.players.clone(), r.seat, r.host_seat, r.is_host, r.match_id));
+        let room_meta = room
+            .as_ref()
+            .map(|r| (r.players.clone(), r.seat, r.host_seat, r.is_host, r.match_id));
         let resume_state = room.as_ref().and_then(|r| r.resume_state.clone());
         let resumed_match = resume_state.is_some().then(|| room.as_ref().map_or(0, |r| r.match_id));
         let suspend_sink = room.as_ref().and_then(|r| r.suspend_sink.clone());
@@ -172,8 +178,10 @@ impl PvpSession {
 
         // The sender pump: the drive thread pushes one Input per advance;
         // the pump ships each as a rennet frame over the unreliable channel.
-        let senders: Vec<Option<tango_net::PvpSender>> =
-            in_matches.iter().map(|im| Some(tango_net::PvpSender::new(im.clone()))).collect();
+        let senders: Vec<Option<tango_net::PvpSender>> = in_matches
+            .iter()
+            .map(|im| Some(tango_net::PvpSender::new(im.clone())))
+            .collect();
 
         // Pair-order arrays: core 0 always runs player 0's game, on both
         // peers, so priming and simulation are bit-identical across the pair.
@@ -242,18 +250,21 @@ impl PvpSession {
             local_player: local_player_index as usize,
             boot_cancel: boot_cancel.clone(),
             host_seat: room_meta.as_ref().map_or(0, |m| m.2),
-            suspend: room_meta.as_ref().zip(suspend_sink).map(|(m, sink)| super::driver::SuspendCtx {
-                match_id: m.4,
-                players: m.0.clone(),
-                seat: m.1,
-                match_ts: pre_match.terms.match_ts,
-                match_type: pre_match.terms.match_type,
-                save: pre_match.terms.local_save_data.clone(),
-                sim_version: local_game.pvp.sim_version(),
-                // (an UNRANKED match is never kept for RESUME: its way back is the returning player's rejoin)
-                keep: !unranked,
-                sink,
-            }),
+            suspend: room_meta
+                .as_ref()
+                .zip(suspend_sink)
+                .map(|(m, sink)| super::driver::SuspendCtx {
+                    match_id: m.4,
+                    players: m.0.clone(),
+                    seat: m.1,
+                    match_ts: pre_match.terms.match_ts,
+                    match_type: pre_match.terms.match_type,
+                    save: pre_match.terms.local_save_data.clone(),
+                    sim_version: local_game.pvp.sim_version(),
+                    // (an UNRANKED match is never kept for RESUME: its way back is the returning player's rejoin)
+                    keep: !unranked,
+                    sink,
+                }),
         };
 
         // The session's audio ring, made before the pair that feeds it

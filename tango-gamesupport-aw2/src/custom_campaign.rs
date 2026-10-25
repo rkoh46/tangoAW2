@@ -217,13 +217,37 @@ pub struct Line {
 /// `Line::say(co::STURM, "...")`.
 impl Line {
     pub const fn say(co: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, Mood::Normal), text, only: None, partner: None, with: None, bond: None, without: None }
+        Line {
+            who: Speaker::Co(co, Mood::Normal),
+            text,
+            only: None,
+            partner: None,
+            with: None,
+            bond: None,
+            without: None,
+        }
     }
     pub const fn feel(co: u8, mood: Mood, text: &'static str) -> Line {
-        Line { who: Speaker::Co(co, mood), text, only: None, partner: None, with: None, bond: None, without: None }
+        Line {
+            who: Speaker::Co(co, mood),
+            text,
+            only: None,
+            partner: None,
+            with: None,
+            bond: None,
+            without: None,
+        }
     }
     pub const fn soldier(colour: u8, text: &'static str) -> Line {
-        Line { who: Speaker::Trooper(colour), text, only: None, partner: None, with: None, bond: None, without: None }
+        Line {
+            who: Speaker::Trooper(colour),
+            text,
+            only: None,
+            partner: None,
+            with: None,
+            bond: None,
+            without: None,
+        }
     }
     /// The line is shown only when the player's CO is `co`.
     pub const fn only(mut self, co: u8) -> Line {
@@ -252,7 +276,15 @@ impl Line {
     }
     /// A narration box with no speaker.
     pub const fn narrate(text: &'static str) -> Line {
-        Line { who: Speaker::Narrator, text, only: None, partner: None, with: None, bond: None, without: None }
+        Line {
+            who: Speaker::Narrator,
+            text,
+            only: None,
+            partner: None,
+            with: None,
+            bond: None,
+            without: None,
+        }
     }
 }
 
@@ -272,7 +304,12 @@ pub struct Scene {
 
 impl Scene {
     pub fn new(lines: Vec<Line>) -> Scene {
-        Scene { lines, song: None, more: Vec::new(), place: 0 }
+        Scene {
+            lines,
+            song: None,
+            more: Vec::new(),
+            place: 0,
+        }
     }
     pub fn with_song(mut self, song: Option<crate::campaign_music::Track>) -> Scene {
         self.song = song;
@@ -357,7 +394,10 @@ pub struct BuiltUnit {
 
 /// A map built by `five/bhmap.py`, from the BH Campaign's or the Emerald Sun Campaign's table.
 pub fn built_map(name: &str) -> Option<&'static BuiltMap> {
-    crate::bh_map_data::MAPS.iter().chain(crate::es_map_data::MAPS.iter()).find(|m| m.name == name)
+    crate::bh_map_data::MAPS
+        .iter()
+        .chain(crate::es_map_data::MAPS.iter())
+        .find(|m| m.name == name)
 }
 
 /// A built map's units as the mission's.
@@ -450,7 +490,18 @@ pub const FULL: u8 = 99;
 
 impl UnitDef {
     pub const fn new(army: u8, kind: u8, x: u8, y: u8) -> UnitDef {
-        UnitDef { army, kind, x, y, hp: 100, ai: 0, name: None, ammo: FULL, fuel: FULL, freeze: false }
+        UnitDef {
+            army,
+            kind,
+            x,
+            y,
+            hp: 100,
+            ai: 0,
+            name: None,
+            ammo: FULL,
+            fuel: FULL,
+            freeze: false,
+        }
     }
     pub const fn hp(mut self, hp: u8) -> UnitDef {
         self.hp = hp;
@@ -528,7 +579,12 @@ pub struct ArmyDef {
 
 impl ArmyDef {
     pub const fn new(colour: u8, co: CoSpec) -> ArmyDef {
-        ArmyDef { colour, team: 0, co, funds: None }
+        ArmyDef {
+            colour,
+            team: 0,
+            co,
+            funds: None,
+        }
     }
     pub const fn team(mut self, team: u8) -> ArmyDef {
         self.team = team;
@@ -562,23 +618,39 @@ pub enum Cond {
     /// The day is this or later.
     DayAtLeast(u16),
     /// The named unit stands on (x, y).
-    UnitAt { name: &'static str, x: u8, y: u8 },
+    UnitAt {
+        name: &'static str,
+        x: u8,
+        y: u8,
+    },
     /// The named unit is still alive / is gone.
     UnitAlive(&'static str),
     UnitGone(&'static str),
     /// An army has at most this many units.
-    ArmyUnitsAtMost { army: u8, n: u8 },
+    ArmyUnitsAtMost {
+        army: u8,
+        n: u8,
+    },
     /// An army owns at least this many properties.
-    PropertiesAtLeast { army: u8, n: u8 },
+    PropertiesAtLeast {
+        army: u8,
+        n: u8,
+    },
     Not(Box<Cond>),
     /// All of these.
     All(Vec<Cond>),
     /// Any of these.
     Any(Vec<Cond>),
     /// Every `n` days from day `from` (that day included): `Trigger::repeating`.
-    EveryDays { n: u16, from: u16 },
+    EveryDays {
+        n: u16,
+        from: u16,
+    },
     /// The player's tag pair (army 1's CO and partner) is this pair, in either order.
-    PlayerPair { a: u8, b: u8 },
+    PlayerPair {
+        a: u8,
+        b: u8,
+    },
     /// The player's (main) CO is this one.
     PlayerCo(u8),
     /// The player's tag partner is this CO.
@@ -588,14 +660,25 @@ pub enum Cond {
     /// Hidden bond `k` is earned.
     BondEarned(u8),
     /// The cell (x, y) belongs to this army (0 neutral).
-    OwnerAt { x: u8, y: u8, army: u8 },
+    OwnerAt {
+        x: u8,
+        y: u8,
+        army: u8,
+    },
     /// An army is defeated (its HQ taken or its units gone).
     ArmyDefeated(u8),
     /// At least `n` of an army's units stand in the rectangle (the escort and
     /// evacuation missions' "everyone is out").
-    UnitsIn { army: u8, area: Rect, at_least: u8 },
+    UnitsIn {
+        army: u8,
+        area: Rect,
+        at_least: u8,
+    },
     /// The named unit stands in the rectangle.
-    NamedIn { name: &'static str, area: Rect },
+    NamedIn {
+        name: &'static str,
+        area: Rect,
+    },
     /// The mission's reversed Black Onyx ([`MissionDef::onyx`]) has at most
     /// this many hits left / is destroyed.
     OnyxHitsAtMost(u8),
@@ -635,9 +718,15 @@ pub enum Action {
     Win,
     Lose,
     /// An army's funds are set to this.
-    SetFunds { army: u8, funds: u32 },
+    SetFunds {
+        army: u8,
+        funds: u32,
+    },
     /// Funds are added (negative: taken).
-    AddFunds { army: u8, funds: i32 },
+    AddFunds {
+        army: u8,
+        funds: i32,
+    },
     /// Hidden bond `k` is earned ([`CampaignDef::bonds`]).
     EarnBond(u8),
     /// The CO with this roster index is unlocked now, in the middle of a
@@ -650,16 +739,25 @@ pub enum Action {
     Spawn(Vec<UnitDef>),
     /// An army's CO becomes this one (the second stage of a mission: Nell,
     /// then Andy; keep the power meter as it is).
-    SetCo { army: u8, co: u8 },
+    SetCo {
+        army: u8,
+        co: u8,
+    },
     /// The same army goes on under another CO (the second stage: Nell, then Andy): no power in
     /// effect, `co`'s own meter at `meter_pct` percent of its first power's bar, no power used
     /// ([`crate::tag::replace_co`]; works with or without a tag pair, deterministic).
-    TakeOver { army: u8, co: u8, meter_pct: u8 },
+    TakeOver {
+        army: u8,
+        co: u8,
+        meter_pct: u8,
+    },
     /// AW2's meteor strike (Von Bolt's Ex Machina) of `hp` on the spot the
     /// CPU's scorer picks best for the army whose turn it is now (the
     /// player's, at a turn-start trigger: the Black Onyx turned on the
     /// enemy), every unit within two cells, never below 1 HP.
-    Strike { hp: u8 },
+    Strike {
+        hp: u8,
+    },
     /// A function of the mission's own.
     Custom(fn(&mut Core)),
 }
@@ -686,7 +784,12 @@ pub struct Trigger {
 
 impl Trigger {
     pub fn new(when: When, cond: Cond, then: Vec<Action>) -> Trigger {
-        Trigger { when, cond, then, once: true }
+        Trigger {
+            when,
+            cond,
+            then,
+            once: true,
+        }
     }
     pub fn repeating(mut self) -> Trigger {
         self.once = false;
@@ -796,16 +899,37 @@ pub struct MarchDef {
 
 impl MarchDef {
     pub fn new(name: &'static str, path: &[(u8, u8)], per_day: u8) -> MarchDef {
-        MarchDef { name, path: path.to_vec(), per_day, points: 0, from: 1, role: 0 }
+        MarchDef {
+            name,
+            path: path.to_vec(),
+            per_day,
+            points: 0,
+            from: 1,
+            role: 0,
+        }
     }
     /// A march the computer's own movement does (see [`MarchDef::role`]): `role` is
     /// the AI role byte that goes to a place (1).
     pub fn driven(name: &'static str, path: &[(u8, u8)], role: u8) -> MarchDef {
-        MarchDef { name, path: path.to_vec(), per_day: 0, points: 0, from: 1, role }
+        MarchDef {
+            name,
+            path: path.to_vec(),
+            per_day: 0,
+            points: 0,
+            from: 1,
+            role,
+        }
     }
     /// A march at a unit's full speed: `points` move points a day (an APC's 6).
     pub fn speed(name: &'static str, path: &[(u8, u8)], points: u8) -> MarchDef {
-        MarchDef { name, path: path.to_vec(), per_day: 0, points, from: 1, role: 0 }
+        MarchDef {
+            name,
+            path: path.to_vec(),
+            per_day: 0,
+            points,
+            from: 1,
+            role: 0,
+        }
     }
     pub fn from(mut self, day: u16) -> MarchDef {
         self.from = day;
@@ -883,7 +1007,9 @@ const CLASS_REEF: u8 = 19;
 
 /// The first tile whose class is `class` (AW2's tile table).
 fn tile_of_class(core: &Core, class: u8) -> u16 {
-    (0..0x180u32).find(|&t| core.raw_read_8(TILE_CLASS + t, -1) & 0x1F == class).map_or(PLAIN, |t| t as u16)
+    (0..0x180u32)
+        .find(|&t| core.raw_read_8(TILE_CLASS + t, -1) & 0x1F == class)
+        .map_or(PLAIN, |t| t as u16)
 }
 
 /// A text picture of terrain as tiles: `.` plain, `f` forest, `m`
@@ -938,10 +1064,23 @@ fn footprint(s: Structure) -> (i32, i32, Vec<Vec<u16>>) {
         Structure::Laser => (0, 0, vec![vec![0x181]]),
         Structure::BlackCannonDown => (-1, -1, vec![vec![u; 3], vec![0x186, 0x187, 0x188], vec![u; 3]]),
         Structure::BlackCannonUp => (-1, -1, vec![vec![u; 3], vec![0x189, 0x18A, 0x18B], vec![u; 3]]),
-        Structure::BlackFactory => (-1, -2, vec![vec![u, 0x143, u], vec![u; 3], vec![0x18C, 0x18D, 0x18E], vec![u; 3]]),
+        Structure::BlackFactory => (
+            -1,
+            -2,
+            vec![vec![u, 0x143, u], vec![u; 3], vec![0x18C, 0x18D, 0x18E], vec![u; 3]],
+        ),
         Structure::Volcano => {
             let r = VOLCANO_RIM;
-            (-1, -2, vec![vec![r; 4], vec![r, u, u, r], vec![0x1A6, 0x1A7, 0x1A8, 0x1A9], vec![u; 4]])
+            (
+                -1,
+                -2,
+                vec![
+                    vec![r; 4],
+                    vec![r, u, u, r],
+                    vec![0x1A6, 0x1A7, 0x1A8, 0x1A9],
+                    vec![u; 4],
+                ],
+            )
         }
         Structure::Deathray => (-1, -1, vec![vec![u; 3], vec![0x18F, 0x190, 0x191], vec![u; 3]]),
         Structure::BlackCrystal => (0, 0, vec![vec![0x192]]),
@@ -1104,14 +1243,29 @@ pub fn merged(lines: &[Line]) -> Vec<Merged> {
     for l in lines {
         let n = l.text.split('\x0f').filter(|b| !b.is_empty()).count().max(1);
         if let Some(m) = out.last_mut() {
-            if m.who == l.who && m.only == l.only && m.partner == l.partner && m.with == l.with && m.bond == l.bond && m.without == l.without && boxes + n <= MERGE_BOXES {
+            if m.who == l.who
+                && m.only == l.only
+                && m.partner == l.partner
+                && m.with == l.with
+                && m.bond == l.bond
+                && m.without == l.without
+                && boxes + n <= MERGE_BOXES
+            {
                 m.text.push('\x0f');
                 m.text.push_str(l.text);
                 boxes += n;
                 continue;
             }
         }
-        out.push(Merged { who: l.who, text: l.text.to_string(), only: l.only, partner: l.partner, with: l.with, bond: l.bond, without: l.without });
+        out.push(Merged {
+            who: l.who,
+            text: l.text.to_string(),
+            only: l.only,
+            partner: l.partner,
+            with: l.with,
+            bond: l.bond,
+            without: l.without,
+        });
         boxes = n;
     }
     out
@@ -1139,7 +1293,19 @@ pub fn text_ids_used(def: &CampaignDef) -> usize {
             }
         }
     }
-    let prologue: Vec<Line> = def.prologue.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None, without: None }).collect();
+    let prologue: Vec<Line> = def
+        .prologue
+        .iter()
+        .map(|p| Line {
+            who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)),
+            text: p.text,
+            only: None,
+            partner: None,
+            with: None,
+            bond: None,
+            without: None,
+        })
+        .collect();
     scene(&Scene::new(prologue));
     seen.len() + 2 * def.missions.len()
 }
@@ -1170,10 +1336,16 @@ impl<'a> Compiler<'a> {
         let as_written = raw.contains('\r')
             && boxes.iter().all(|b| {
                 let lines: Vec<&[u8]> = b.split(|&c| c == b'\r').collect();
-                lines.len() <= 2 && lines.iter().all(|l| crate::ds_campaign_data::width(self.widths, l) <= crate::ds_campaign_data::LINE_PIXELS)
+                lines.len() <= 2
+                    && lines
+                        .iter()
+                        .all(|l| crate::ds_campaign_data::width(self.widths, l) <= crate::ds_campaign_data::LINE_PIXELS)
             });
         let t = if as_written {
-            boxes.iter().flat_map(|b| b.iter().copied().chain(std::iter::once(0x0F))).collect()
+            boxes
+                .iter()
+                .flat_map(|b| b.iter().copied().chain(std::iter::once(0x0F)))
+                .collect()
         } else {
             wrap_dialogue(raw.as_bytes(), self.widths)
         };
@@ -1280,7 +1452,11 @@ impl<'a> Compiler<'a> {
 
     /// The pseudo-predicate for a condition of `mission`.
     fn cond(&mut self, mission: usize, c: &Cond) -> u32 {
-        let idx = self.conds.iter().filter(|(k, _)| (k >> 16) & 0xFF == mission as u32).count() as u32;
+        let idx = self
+            .conds
+            .iter()
+            .filter(|(k, _)| (k >> 16) & 0xFF == mission as u32)
+            .count() as u32;
         let code = PRED | (mission as u32) << 16 | idx;
         self.conds.push((code, c.clone()));
         self.stub(Magic::Predicate(code))
@@ -1314,7 +1490,20 @@ fn deployment(
                 return Err(format!("unit hp {} out of 1..=100", u.hp));
             }
             // (the map record: +4 HP, +5 ammo, +6 fuel, as five/map.py writes it)
-            out.extend_from_slice(&[u.x, u.y, u.kind, 0, u.hp, u.ammo, u.fuel, 0, 0, if u.ai == STAND { 0 } else { u.ai }, 0, 0]);
+            out.extend_from_slice(&[
+                u.x,
+                u.y,
+                u.kind,
+                0,
+                u.hp,
+                u.ammo,
+                u.fuel,
+                0,
+                0,
+                if u.ai == STAND { 0 } else { u.ai },
+                0,
+                0,
+            ]);
         }
     }
     out.extend_from_slice(&[0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
@@ -1362,7 +1551,8 @@ fn load_map(core: &Core, src: &MapSrc) -> Result<(u8, u8, Vec<u16>, Option<Vec<u
             let pack = crate::ds_pack::pack().ok_or("no Dual Strike pack")?;
             let ds = Ds::from_pack(pack).ok_or("no Dual Strike data")?;
             let rec = crate::ds_campaign_data::record(&ds, *record as usize).ok_or("no such Dual Strike record")?;
-            let (w, h, t) = crate::ds_campaign_data::convert_map(&ds, rec.maps.0).ok_or("Dual Strike map unreadable")?;
+            let (w, h, t) =
+                crate::ds_campaign_data::convert_map(&ds, rec.maps.0).ok_or("Dual Strike map unreadable")?;
             Ok((w, h, t, Some(crate::ds_campaign_data::convert_units(&ds, rec.units.0))))
         }
     }
@@ -1378,7 +1568,10 @@ fn read_map(core: &Core, at: u32) -> Option<(u8, u8, Vec<u16>)> {
     core.raw_read_range(at, -1, &mut b);
     let raw = crate::ds_art::lz10(&b)?;
     let (w, h) = (*raw.first()?, *raw.get(1)?);
-    let tiles: Vec<u16> = raw[2..].chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+    let tiles: Vec<u16> = raw[2..]
+        .chunks_exact(2)
+        .map(|c| u16::from_le_bytes([c[0], c[1]]))
+        .collect();
     (tiles.len() == w as usize * h as usize).then_some((w, h, tiles))
 }
 
@@ -1477,7 +1670,12 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         }
     }
     cx.built.story = story;
-    let pictures = if SOURCES[def.source].art == WorldArt::OmegaLand && def.prologue.iter().any(|p| p.picture.is_some()) { crate::ds_story_art::narration_pictures() } else { Vec::new() };
+    let pictures = if SOURCES[def.source].art == WorldArt::OmegaLand && def.prologue.iter().any(|p| p.picture.is_some())
+    {
+        crate::ds_story_art::narration_pictures()
+    } else {
+        Vec::new()
+    };
     let credits = if def.credits.is_empty() {
         None
     } else {
@@ -1503,7 +1701,13 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     if def.bonds.len() > 12 {
         return Err("at most 12 bonds".into());
     }
-    let index_of = |k: &str| def.missions.iter().position(|m| m.key == k).map(|i| i as u8).ok_or(format!("no mission with the key {k:?}"));
+    let index_of = |k: &str| {
+        def.missions
+            .iter()
+            .position(|m| m.key == k)
+            .map(|i| i as u8)
+            .ok_or(format!("no mission with the key {k:?}"))
+    };
     let keys = |v: &[&str]| v.iter().map(|k| index_of(k)).collect::<Result<Vec<u8>, String>>();
     let mut requires = Vec::new();
     for m in &def.missions {
@@ -1521,7 +1725,11 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     }
     let final_mission = index_of(def.final_mission)?;
     let mut built = cx.built;
-    let rules = Rules { conds: cx.conds, units: cx.units, fns: cx.fns };
+    let rules = Rules {
+        conds: cx.conds,
+        units: cx.units,
+        fns: cx.fns,
+    };
     let _ = RULES[def.source].set(rules);
     let order: Vec<u8> = (0..n as u8).collect();
     if built.base + (built.blob.len() as u32) >= crate::ds_worldmap::BASE {
@@ -1532,7 +1740,12 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         points: def
             .missions
             .iter()
-            .map(|m| MapPoint { x: m.flag.0, y: m.flag.1, style: m.style, stars: m.stars })
+            .map(|m| MapPoint {
+                x: m.flag.0,
+                y: m.flag.1,
+                style: m.style,
+                stars: m.stars,
+            })
             .collect(),
         requires,
         roster,
@@ -1543,13 +1756,23 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         counted: def.bonds.len().saturating_sub(def.extra_bonds),
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
-        factory: (0..n).map(|i| cx.factory.iter().find(|f| f.0 == i).map_or(0, |f| f.1)).collect(),
+        factory: (0..n)
+            .map(|i| cx.factory.iter().find(|f| f.0 == i).map_or(0, |f| f.1))
+            .collect(),
         volcano: def.missions.iter().map(|m| m.volcano.clone()).collect(),
         marches: def.missions.iter().map(|m| m.marches.clone()).collect(),
-        frozen: def.missions.iter().map(|m| m.units.iter().filter(|u| u.freeze).map(|u| (u.x, u.y)).collect()).collect(),
+        frozen: def
+            .missions
+            .iter()
+            .map(|m| m.units.iter().filter(|u| u.freeze).map(|u| (u.x, u.y)).collect())
+            .collect(),
         jams: def.missions.iter().map(|m| m.jams.clone()).collect(),
         held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
-        secret: if def.secret_mission.is_empty() { None } else { Some(index_of(def.secret_mission)?) },
+        secret: if def.secret_mission.is_empty() {
+            None
+        } else {
+            Some(index_of(def.secret_mission)?)
+        },
     };
     built.unhandled.clear();
     Ok(Model {
@@ -1571,15 +1794,38 @@ enum MissionRecord<'a> {
     Second(usize, &'a FrontDef),
 }
 
-fn prologue_script(cx: &mut Compiler, pages: &[Page], song: Option<crate::campaign_music::Track>) -> Result<u32, Error> {
+fn prologue_script(
+    cx: &mut Compiler,
+    pages: &[Page],
+    song: Option<crate::campaign_music::Track>,
+) -> Result<u32, Error> {
     if pages.is_empty() {
         return Ok(0);
     }
     if cx.art != WorldArt::OmegaLand {
         // AW2's own map: the pages are dialogue boxes (a picture is drawn
         // over Omega Land's map layer only: AW2's is not rebuilt after one).
-        let lines = pages.iter().map(|p| Line { who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)), text: p.text, only: None, partner: None, with: None, bond: None, without: None }).collect();
-        let cmds = cx.scene_cmds(&Scene { lines, song, more: Vec::new(), place: 1 }, SceneEnd::Fade)?;
+        let lines = pages
+            .iter()
+            .map(|p| Line {
+                who: p.who.unwrap_or(Speaker::Trooper(colour::BLACK_HOLE)),
+                text: p.text,
+                only: None,
+                partner: None,
+                with: None,
+                bond: None,
+                without: None,
+            })
+            .collect();
+        let cmds = cx.scene_cmds(
+            &Scene {
+                lines,
+                song,
+                more: Vec::new(),
+                place: 1,
+            },
+            SceneEnd::Fade,
+        )?;
         return Ok(cx.script(cmds));
     }
     let mut s = Vec::new();
@@ -1618,7 +1864,10 @@ fn list(groups: Vec<Vec<[u8; 8]>>) -> Vec<u8> {
 fn check_frozen(m: &MissionDef) -> Result<(), Error> {
     let frozen = m.units.iter().filter(|u| u.freeze).count();
     if frozen > FREEZE_SLOTS as usize {
-        return Err(format!("{}: {frozen} frozen units (at most {FREEZE_SLOTS}: the side table's pairs)", m.key));
+        return Err(format!(
+            "{}: {frozen} frozen units (at most {FREEZE_SLOTS}: the side table's pairs)",
+            m.key
+        ));
     }
     Ok(())
 }
@@ -1641,7 +1890,10 @@ fn compile_mission(
     // Black Hole, the player's: set up from `Native::five`.
     let five = armies == 5;
     if five && m.armies[4].colour != colour::BLACK_HOLE {
-        return Err(format!("{}: in a five-army mission the player's army (the fifth) is Black Hole's", m.key));
+        return Err(format!(
+            "{}: in a five-army mission the player's army (the fifth) is Black Hole's",
+            m.key
+        ));
     }
     let player = if five { 5usize } else { 1 };
     cx.player = player as u8;
@@ -1665,9 +1917,17 @@ fn compile_mission(
         let s = cx.script(intro_cmds);
         turn_start.push(vec![rec8(0, player as u8, 1, 0), rec8(7, 0xFF, 0, s)]);
     }
-    let team_of = |a: usize| if m.armies[a - 1].team == 0 { a as u8 } else { m.armies[a - 1].team };
+    let team_of = |a: usize| {
+        if m.armies[a - 1].team == 0 {
+            a as u8
+        } else {
+            m.armies[a - 1].team
+        }
+    };
     let player_team = team_of(player);
-    let enemy = (1..=armies).find(|&a| team_of(a) != player_team && a != player).unwrap_or(2) as u16;
+    let enemy = (1..=armies)
+        .find(|&a| team_of(a) != player_team && a != player)
+        .unwrap_or(2) as u16;
     for t in &m.triggers {
         let mut cmds = Vec::new();
         let mut ends = false;
@@ -1697,19 +1957,29 @@ fn compile_mission(
                         let s = cx.stub(Magic::Call(SET_ARMY | army as u32, 0));
                         cmds.push(cmd(0x00, s, 0, 0, 0));
                         for u in mine {
-                            let s = cx.stub(Magic::Call(SPAWN, u.x as u32 | (u.y as u32) << 8 | (u.kind as u32) << 16));
+                            let s = cx.stub(Magic::Call(
+                                SPAWN,
+                                u.x as u32 | (u.y as u32) << 8 | (u.kind as u32) << 16,
+                            ));
                             cmds.push(cmd(0x00, s, 0, 0, 0));
                             if u.hp != 100 || u.ammo != FULL || u.fuel != FULL {
-                                let s = cx.stub(Magic::Call(FIELDS_UNIT | u.hp as u32, u.x as u32 | (u.y as u32) << 8 | (u.fuel as u32) << 16 | (u.ammo as u32) << 24));
+                                let s = cx.stub(Magic::Call(
+                                    FIELDS_UNIT | u.hp as u32,
+                                    u.x as u32 | (u.y as u32) << 8 | (u.fuel as u32) << 16 | (u.ammo as u32) << 24,
+                                ));
                                 cmds.push(cmd(0x00, s, 0, 0, 0));
                             }
                             if u.name.is_none() && u.ai != 0 {
-                                let s = cx.stub(Magic::Call(TAG_UNIT | army as u32, u.x as u32 | (u.y as u32) << 8 | (u.ai as u32) << 24));
+                                let s = cx.stub(Magic::Call(
+                                    TAG_UNIT | army as u32,
+                                    u.x as u32 | (u.y as u32) << 8 | (u.ai as u32) << 24,
+                                ));
                                 cmds.push(cmd(0x00, s, 0, 0, 0));
                             }
                             if let Some(n) = u.name {
                                 // (a name for the spawned unit: its tag, written into its record)
-                                let tag = cx.units.iter().filter(|(k, v)| k.0 == index && v.1 >= SPAWNED).count() as u8 + 1;
+                                let tag =
+                                    cx.units.iter().filter(|(k, v)| k.0 == index && v.1 >= SPAWNED).count() as u8 + 1;
                                 let bit = cx.units.keys().filter(|k| k.0 == index).count() as u8;
                                 if bit >= 23 || tag > 100 {
                                     return Err(format!("{}: too many named units", m.key));
@@ -1718,8 +1988,14 @@ fn compile_mission(
                                     return Err(format!("unit name {n} used twice in mission {index}"));
                                 }
                                 // (its bit is "seen", the next "gone": a placeholder takes the second)
-                                cx.units.insert((index, Box::leak(format!("{n}#gone").into_boxed_str())), (army, 0, bit + 1));
-                                let s = cx.stub(Magic::Call(TAG_UNIT | army as u32, u.x as u32 | (u.y as u32) << 8 | (tag as u32) << 16 | (u.ai as u32) << 24));
+                                cx.units.insert(
+                                    (index, Box::leak(format!("{n}#gone").into_boxed_str())),
+                                    (army, 0, bit + 1),
+                                );
+                                let s = cx.stub(Magic::Call(
+                                    TAG_UNIT | army as u32,
+                                    u.x as u32 | (u.y as u32) << 8 | (tag as u32) << 16 | (u.ai as u32) << 24,
+                                ));
                                 cmds.push(cmd(0x00, s, 0, 0, 0));
                             }
                         }
@@ -1732,7 +2008,10 @@ fn compile_mission(
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
                 Action::TakeOver { army, co, meter_pct } => {
-                    let s = cx.stub(Magic::Call(TAKE_OVER | *army as u32, *co as u32 | (*meter_pct as u32) << 8));
+                    let s = cx.stub(Magic::Call(
+                        TAKE_OVER | *army as u32,
+                        *co as u32 | (*meter_pct as u32) << 8,
+                    ));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
                 Action::Strike { hp } => {
@@ -1793,11 +2072,20 @@ fn compile_mission(
             When::AfterAction => after_action.push(group),
         }
     }
-    let ev = |cx: &mut Compiler, groups: Vec<Vec<[u8; 8]>>| if groups.is_empty() { 0 } else { cx.built.add(&list(groups)) };
+    let ev = |cx: &mut Compiler, groups: Vec<Vec<[u8; 8]>>| {
+        if groups.is_empty() {
+            0
+        } else {
+            cx.built.add(&list(groups))
+        }
+    };
     let l0 = ev(cx, turn_start);
     let l3 = ev(cx, after_action);
     // The match-end list: the player's team has won by AW2's rules.
-    let has_win = m.triggers.iter().any(|t| t.then.iter().any(|a| matches!(a, Action::Win)));
+    let has_win = m
+        .triggers
+        .iter()
+        .any(|t| t.then.iter().any(|a| matches!(a, Action::Win)));
     let l5 = if !has_win && (!m.victory.is_empty() || !m.on_win.is_empty()) {
         let mut cmds = Vec::new();
         for a in &m.on_win {
@@ -1828,7 +2116,12 @@ fn compile_mission(
     let events = cx.built.add(&hdr6);
     // Objective script (the map menu's objective): the objective text.
     let obj_id = cx.dialogue(m.objective)?;
-    let obj = cx.script(vec![cmd(0x17, 0, 19, 0, 0), cmd(0x38, 0, 19, 0, 0), cmd(0x19, 0, obj_id, 0, 0), cmd(0x18, 0, 0, 0, 0)]);
+    let obj = cx.script(vec![
+        cmd(0x17, 0, 19, 0, 0),
+        cmd(0x38, 0, 19, 0, 0),
+        cmd(0x19, 0, obj_id, 0, 0),
+        cmd(0x18, 0, 0, 0, 0),
+    ]);
     let map = cx.built.add(&crate::ds_campaign_data::map_blob(w, h, &tiles));
     // The Black Factory's own schedule (32 days x 3 doors).
     let table = if m.factory.is_empty() {
@@ -1923,15 +2216,27 @@ fn compile_mission(
             CoSpec::Pick | CoSpec::PickPair => {
                 // (the player picks on the CO screen's army 1 pick; army 1 is a fixed ally)
                 let CoSpec::Fixed(ally) = m.armies[0].co else {
-                    return Err(format!("{}: a five-army mission whose player picks has a fixed CO for army 1", m.key));
+                    return Err(format!(
+                        "{}: a five-army mission whose player picks has a fixed CO for army 1",
+                        m.key
+                    ));
                 };
                 native.five_pick = Some(ally);
                 native.cos[0] = (NO_CO, NO_CO);
                 hd[0x3C] = NO_CO;
-                cos[0] = if m.armies[4].co == CoSpec::PickPair { (0x1C, 0x1C) } else { (0x1C, 0) };
+                cos[0] = if m.armies[4].co == CoSpec::PickPair {
+                    (0x1C, 0x1C)
+                } else {
+                    (0x1C, 0)
+                };
                 (NO_CO, NO_CO)
             }
-            _ => return Err(format!("{}: a five-army mission's player has a CO, a pair or a pick", m.key)),
+            _ => {
+                return Err(format!(
+                    "{}: a five-army mission's player has a CO, a pair or a pick",
+                    m.key
+                ))
+            }
         };
         native.five = Some((co, partner, team_of(5) - 1));
     }
@@ -2152,7 +2457,9 @@ pub fn tick(core: &mut Core) {
         return;
     }
     let src = crate::ds_campaign::source(core);
-    let Some(rules) = RULES.get(src).and_then(|r| r.get()) else { return };
+    let Some(rules) = RULES.get(src).and_then(|r| r.get()) else {
+        return;
+    };
     let mission = crate::ds_campaign::mission(core) as usize;
     let mut latch = core.raw_read_32(LATCH, -1);
     let before = latch;
@@ -2243,7 +2550,10 @@ pub fn ai_unit(core: &mut Core) {
     let mission = crate::ds_campaign::mission(core) as usize;
     if let Some(list) = custom_of(core).and_then(|c| c.marches.get(mission)) {
         let names: Vec<&'static str> = list.iter().filter(|m| m.role == 0).map(|m| m.name).collect();
-        if names.iter().any(|n| unit_info(core, n).is_some_and(|(a, alive, _)| alive && a == u)) {
+        if names
+            .iter()
+            .any(|n| unit_info(core, n).is_some_and(|(a, alive, _)| alive && a == u))
+        {
             core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
             return;
         }
@@ -2253,7 +2563,8 @@ pub fn ai_unit(core: &mut Core) {
         return;
     }
     let kind = core.raw_read_8(u, -1);
-    if !army_out(core) && (kind == 1 || kind == 2) && core.raw_read_8(u + ROLE_AT, -1) == 0 && !enemy_adjacent(core, u) {
+    if !army_out(core) && (kind == 1 || kind == 2) && core.raw_read_8(u + ROLE_AT, -1) == 0 && !enemy_adjacent(core, u)
+    {
         core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
     }
 }
@@ -2282,7 +2593,10 @@ fn enemy_adjacent(core: &Core, u: u32) -> bool {
         }
         let row = core.raw_read_16(MAP + 0x417A + 2 * ny as u32, -1) as u32;
         let id = core.raw_read_8(MAP + 0x12 + row + nx as u32, -1) as u32;
-        id != 0 && (1..=5).contains(&(id / stride + 1)) && id / stride + 1 != mine && team(id / stride + 1) != team(mine)
+        id != 0
+            && (1..=5).contains(&(id / stride + 1))
+            && id / stride + 1 != mine
+            && team(id / stride + 1) != team(mine)
     })
 }
 
@@ -2309,7 +2623,10 @@ fn custom_of(core: &Core) -> Option<&crate::campaign_model::Custom> {
 pub fn is_frozen(core: &Core, a: u32) -> bool {
     let id = (a.wrapping_sub(core.raw_read_32(UNITS_PTR, -1)) / UNIT) as u8;
     let kind = core.raw_read_8(a, -1);
-    id != 0 && (0..FREEZE_SLOTS).any(|k| core.raw_read_8(SIDE_FREEZE + 2 * k, -1) == id && core.raw_read_8(SIDE_FREEZE + 2 * k + 1, -1) == kind)
+    id != 0
+        && (0..FREEZE_SLOTS).any(|k| {
+            core.raw_read_8(SIDE_FREEZE + 2 * k, -1) == id && core.raw_read_8(SIDE_FREEZE + 2 * k + 1, -1) == kind
+        })
 }
 
 /// Frees the unit record at `a` (a trigger's: the ring round Crumb on day 3).
@@ -2337,7 +2654,9 @@ fn freezes(core: &mut Core) {
     let base = core.raw_read_32(UNITS_PTR, -1);
     for (x, y) in cells {
         // (found by the records' own cells: the map's unit layer can lack an entry for a deployed unit)
-        let found = (1..256u32).map(|id| base + UNIT * id).find(|&a| core.raw_read_8(a, -1) != 0 && core.raw_read_8(a + 2, -1) == x && core.raw_read_8(a + 3, -1) == y);
+        let found = (1..256u32).map(|id| base + UNIT * id).find(|&a| {
+            core.raw_read_8(a, -1) != 0 && core.raw_read_8(a + 2, -1) == x && core.raw_read_8(a + 3, -1) == y
+        });
         let Some(a) = found else { continue };
         if is_frozen(core, a) {
             continue;
@@ -2362,7 +2681,9 @@ fn marches(core: &mut Core) {
     }
     let (day, army) = (day(core), core.raw_read_16(CURRENT_ARMY, -1) as u8);
     for (k, m) in list.into_iter().enumerate().take(32) {
-        let Some((a, alive, owner)) = unit_info(core, m.name) else { continue };
+        let Some((a, alive, owner)) = unit_info(core, m.name) else {
+            continue;
+        };
         let day_at = SIDE_MARCH + k as u32;
         if m.role != 0 {
             if alive && a != 0 && core.raw_read_8(a + ROLE_AT, -1) != m.role {
@@ -2375,9 +2696,13 @@ fn marches(core: &mut Core) {
         }
         core.raw_write_8(day_at, -1, day as u8);
         let at = (core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1));
-        let Some(i) = m.path.iter().position(|&p| p == at) else { continue };
+        let Some(i) = m.path.iter().position(|&p| p == at) else {
+            continue;
+        };
         let id = ((a - core.raw_read_32(UNITS_PTR, -1)) / UNIT) as u8;
-        let plane = |core: &Core, (x, y): (u8, u8)| MAP + 0x12 + core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32 + x as u32;
+        let plane = |core: &Core, (x, y): (u8, u8)| {
+            MAP + 0x12 + core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32 + x as u32
+        };
         let mut here = at;
         let kind = core.raw_read_8(a, -1);
         let mut left = m.points;
@@ -2414,7 +2739,9 @@ pub fn is_jammed(core: &Core, e: u32) -> bool {
     }
     let mission = crate::ds_campaign::mission(core) as usize;
     let at = (core.raw_read_8(e, -1), core.raw_read_8(e + 1, -1));
-    custom_of(core).and_then(|c| c.jams.get(mission)).is_some_and(|l| l.iter().any(|j| j.at == at))
+    custom_of(core)
+        .and_then(|c| c.jams.get(mission))
+        .is_some_and(|l| l.iter().any(|j| j.at == at))
 }
 
 /// The mission's jams ([`JamDef`]): the structure's counter is held while its
@@ -2427,7 +2754,9 @@ fn jams(core: &mut Core) {
     };
     for j in list {
         let Some(e) = (0..16u32).map(|k| INVENTIONS + 8 * k).find(|&e| {
-            core.raw_read_16(e + 2, -1) >> 6 & 15 != 0 && core.raw_read_8(e, -1) == j.at.0 && core.raw_read_8(e + 1, -1) == j.at.1
+            core.raw_read_16(e + 2, -1) >> 6 & 15 != 0
+                && core.raw_read_8(e, -1) == j.at.0
+                && core.raw_read_8(e + 1, -1) == j.at.1
         }) else {
             continue;
         };
@@ -2451,7 +2780,12 @@ pub fn music_tick(core: &mut Core, session: bool) {
     let want = if session {
         crate::ds_campaign::campaign(core)
             .and_then(|c| c.model.custom.as_ref())
-            .and_then(|c| c.music.get(crate::ds_campaign::mission(core) as usize).copied().flatten())
+            .and_then(|c| {
+                c.music
+                    .get(crate::ds_campaign::mission(core) as usize)
+                    .copied()
+                    .flatten()
+            })
     } else {
         None
     };
@@ -2484,7 +2818,10 @@ pub fn music_tick(core: &mut Core, session: bool) {
 /// schedule, [`MissionDef::factory`]), if it has one.
 pub fn factory_table(core: &Core) -> Option<u32> {
     let c = crate::ds_campaign::campaign(core)?.model.custom.as_ref()?;
-    c.factory.get(crate::ds_campaign::mission(core) as usize).copied().filter(|&a| a != 0)
+    c.factory
+        .get(crate::ds_campaign::mission(core) as usize)
+        .copied()
+        .filter(|&a| a != 0)
 }
 
 /// Evaluates a condition on the live battle.
@@ -2495,24 +2832,30 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
             // (on the player's turn of the day only: the turn-start rules are checked at every army's turn, and a day's
             // scene was shown, and its units sent, once per army)
             let d = core.raw_read_16(DAY, -1);
-            d >= *from && *n > 0 && (d - from) % n == 0 && core.raw_read_16(0x0300_33EC, -1) == crate::ds_campaign::player_army(core) as u16
+            d >= *from
+                && *n > 0
+                && (d - from) % n == 0
+                && core.raw_read_16(0x0300_33EC, -1) == crate::ds_campaign::player_army(core) as u16
         }
-        Cond::UnitAt { name, x, y } => {
-            named(core, name).is_some_and(|(a, alive)| alive && core.raw_read_8(a + 2, -1) == *x && core.raw_read_8(a + 3, -1) == *y)
-        }
-        Cond::NamedIn { name, area } => {
-            named(core, name).is_some_and(|(a, alive)| alive && area.has(core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1)))
-        }
+        Cond::UnitAt { name, x, y } => named(core, name)
+            .is_some_and(|(a, alive)| alive && core.raw_read_8(a + 2, -1) == *x && core.raw_read_8(a + 3, -1) == *y),
+        Cond::NamedIn { name, area } => named(core, name)
+            .is_some_and(|(a, alive)| alive && area.has(core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1))),
         Cond::UnitAlive(n) => named(core, n).is_some_and(|(_, alive)| alive),
         Cond::UnitGone(n) => named(core, n).is_some_and(|(_, alive)| !alive),
         Cond::ArmyUnitsAtMost { army, n } => units_of(core, *army).len() <= *n as usize,
-        Cond::UnitsIn { army, area, at_least } => units_of(core, *army).iter().filter(|u| area.has(u.2, u.3)).count() >= *at_least as usize,
-        Cond::PropertiesAtLeast { army, n } => {
-            crate::ds_campaign_rules::predicate(core, crate::ds_campaign_data::PROPERTY_COUNT | (*army as u32) << 8 | *n as u32)
+        Cond::UnitsIn { army, area, at_least } => {
+            units_of(core, *army).iter().filter(|u| area.has(u.2, u.3)).count() >= *at_least as usize
         }
+        Cond::PropertiesAtLeast { army, n } => crate::ds_campaign_rules::predicate(
+            core,
+            crate::ds_campaign_data::PROPERTY_COUNT | (*army as u32) << 8 | *n as u32,
+        ),
         Cond::PlayerHas(c) => {
             let army = crate::ds_campaign::player_army(core) as u32;
-            crate::tag::army_co_of(core, army) == *c || crate::tag::partner(core, army) == Some(*c) || crate::two_front::second_front_co(core, army) == Some(*c)
+            crate::tag::army_co_of(core, army) == *c
+                || crate::tag::partner(core, army) == Some(*c)
+                || crate::two_front::second_front_co(core, army) == Some(*c)
         }
         Cond::BondEarned(k) => crate::ds_campaign::bonds_earned(core) >> *k & 1 != 0,
         Cond::PartnerCo(c) => {
@@ -2554,7 +2897,11 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
     match *m {
         Magic::Predicate(code) if code & 0xFF00_0000 == PRED => {
             let src = crate::ds_campaign::source(core);
-            let cond = RULES.get(src).and_then(|r| r.get()).and_then(|r| r.conds.iter().find(|c| c.0 == code)).map(|c| c.1.clone());
+            let cond = RULES
+                .get(src)
+                .and_then(|r| r.get())
+                .and_then(|r| r.conds.iter().find(|c| c.0 == code))
+                .map(|c| c.1.clone());
             cond.is_some_and(|c| holds(core, &c)) as u32
         }
         // The match-end list's "the player's team has won" (a mission's `on_win`).
@@ -2598,7 +2945,12 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             crate::campaign_model::TAIL_CALLED
         }
         Magic::Call(f, packed) if f & 0xFFF0_0000 == TAG_UNIT => {
-            let (x, y, tag, ai) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8, (packed >> 24) as u8);
+            let (x, y, tag, ai) = (
+                packed as u8,
+                (packed >> 8) as u8,
+                (packed >> 16) as u8,
+                (packed >> 24) as u8,
+            );
             if let Some(a) = unit_on(core, x, y) {
                 if tag != 0 {
                     let slot = (a - core.raw_read_32(UNITS_PTR, -1)) / UNIT;
@@ -2612,12 +2964,21 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             0
         }
         Magic::Call(f, packed) if f & 0xFFF0_0000 == FIELDS_UNIT => {
-            let (x, y, fuel, ammo) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8, (packed >> 24) as u8);
+            let (x, y, fuel, ammo) = (
+                packed as u8,
+                (packed >> 8) as u8,
+                (packed >> 16) as u8,
+                (packed >> 24) as u8,
+            );
             if let Some(a) = unit_on(core, x, y) {
                 let hp = (f & 0xFF) as u16;
                 let w = core.raw_read_16(a + 4, -1);
                 let w = if hp != 0 && hp != 100 { (w & !0x7F) | hp } else { w };
-                let w = if ammo != FULL { (w & !0x780) | (ammo.min(15) as u16) << 7 } else { w };
+                let w = if ammo != FULL {
+                    (w & !0x780) | (ammo.min(15) as u16) << 7
+                } else {
+                    w
+                };
                 core.raw_write_16(a + 4, -1, w);
                 if fuel != FULL {
                     core.raw_write_8(a + 6, -1, fuel);
@@ -2643,7 +3004,10 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
         }
         Magic::Call(f, _) if f & 0xFFF0_0000 == CUSTOM_FN => {
             let src = crate::ds_campaign::source(core);
-            let func = RULES.get(src).and_then(|r| r.get()).and_then(|r| r.fns.get((f & 0xFFFF) as usize).copied());
+            let func = RULES
+                .get(src)
+                .and_then(|r| r.get())
+                .and_then(|r| r.fns.get((f & 0xFFFF) as usize).copied());
             if let Some(func) = func {
                 func(core);
             }
@@ -2685,13 +3049,18 @@ mod tests {
     #[test]
     fn freezing_more_than_the_side_table_holds_is_an_error() {
         let mut m = MissionDef::new("t01", "Freeze");
-        m.armies = vec![ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)), ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE))];
+        m.armies = vec![
+            ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+            ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)),
+        ];
         m.units = (0..9).map(|k| UnitDef::new(2, unit::TANK, k, 1).freeze()).collect();
-        assert!(check_frozen(&m).unwrap_err().contains("9 frozen units"), "nine frozen units are refused");
+        assert!(
+            check_frozen(&m).unwrap_err().contains("9 frozen units"),
+            "nine frozen units are refused"
+        );
         m.units.pop();
         assert!(check_frozen(&m).is_ok(), "eight are fine");
     }
-
 
     #[test]
     fn property_tiles() {

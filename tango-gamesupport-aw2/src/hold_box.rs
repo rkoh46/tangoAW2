@@ -75,7 +75,10 @@ fn migration_lines(core: &Core, name: &str, you: bool, width: i32) -> (Vec<Strin
     let line = if you {
         "You are hosting now".to_string()
     } else {
-        format!("{} is hosting now", crate::online::fit(core, name, width - text_width(core, " is hosting now")))
+        format!(
+            "{} is hosting now",
+            crate::online::fit(core, name, width - text_width(core, " is hosting now"))
+        )
     };
     (
         vec!["Host left.".to_string(), line, "Reconnecting...".to_string()],

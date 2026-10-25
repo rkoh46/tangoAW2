@@ -66,7 +66,14 @@ const BOLTS: [(i32, usize, i32); 3] = [(173, 0, 36), (209, 1, 10), (219, 0, 36)]
 const LAST_FRAME: i32 = 256;
 /// The bursts: the bolt's frame, the centre (Dual Strike's screen), the
 /// wait before it.
-const BURSTS: [(i32, i32, i32, i32); 6] = [(173, 42, 146, 3), (173, 172, 112, 0), (209, 40, 48, 0), (209, 158, 86, 0), (219, 42, 146, 3), (219, 172, 112, 0)];
+const BURSTS: [(i32, i32, i32, i32); 6] = [
+    (173, 42, 146, 3),
+    (173, 172, 112, 0),
+    (209, 40, 48, 0),
+    (209, 158, 86, 0),
+    (219, 42, 146, 3),
+    (219, 172, 112, 0),
+];
 /// A burst's first frame after its start (the script's 1-frame wait and its
 /// init) and its last frame.
 const BURST_DELAY: i32 = 2;
@@ -116,7 +123,11 @@ fn spark(offsets: &[(i8, i8); SPARKS], i: usize, s: usize, t: i32) -> Option<(i3
         return None;
     }
     let (ox, oy) = offsets[i];
-    Some((ease_out(0, ox as i32, k, d), ease_out(0, oy as i32, k, d), ease_out(0, 5, k, d) as usize))
+    Some((
+        ease_out(0, ox as i32, k, d),
+        ease_out(0, oy as i32, k, d),
+        ease_out(0, 5, k, d) as usize,
+    ))
 }
 
 // --- The pack's pieces -------------------------------------------------------------
@@ -179,11 +190,18 @@ fn load() -> Option<Art> {
     let bolts = [layer(0x2254, pal(0x280C)?)?, layer(0x252C, pal(0x282C)?)?];
     // The sparks' sheet: a picture every two tiles.
     let s = lz(0x284C)?;
-    let spark_tiles: Vec<u8> = (0..6).flat_map(|k| s.get(64 * k..64 * k + 32).unwrap_or(&[0; 32]).to_vec()).collect();
+    let spark_tiles: Vec<u8> = (0..6)
+        .flat_map(|k| s.get(64 * k..64 * k + 32).unwrap_or(&[0; 32]).to_vec())
+        .collect();
     let spark_colour = pal(0x28A8)?[SPARK_COLOUR as usize];
     let o = pack.arm9_at(SPARK_OFFSETS, 2 * SPARKS)?;
     let offsets = std::array::from_fn(|i| (o[2 * i] as i8, o[2 * i + 1] as i8));
-    Some(Art { bolts, spark_tiles, spark_colour, offsets })
+    Some(Art {
+        bolts,
+        spark_tiles,
+        spark_colour,
+        offsets,
+    })
 }
 
 fn art() -> Option<&'static Art> {
@@ -333,7 +351,11 @@ pub fn frame(core: &mut Core, f: i32, dim: u8) -> bool {
         .map
         .iter()
         .flat_map(|&m| {
-            let e = if m & 0x3FF == 0 { 0 } else { (m & 0xFFF) + first | (BG_PALETTE as u16) << 12 };
+            let e = if m & 0x3FF == 0 {
+                0
+            } else {
+                (m & 0xFFF) + first | (BG_PALETTE as u16) << 12
+            };
             e.to_le_bytes()
         })
         .collect();
@@ -374,7 +396,9 @@ fn sparks(core: &mut Core, art: &Art, f: i32) {
         .enumerate()
         .filter_map(|(n, &(b, x, y, wait))| {
             let t = f - (b + BURST_DELAY + wait);
-            (0..=BURST_FRAMES).contains(&t).then_some((n, x - WINDOW_X, y - WINDOW_Y, t))
+            (0..=BURST_FRAMES)
+                .contains(&t)
+                .then_some((n, x - WINDOW_X, y - WINDOW_Y, t))
         })
         .collect();
     // As crate::power_anim: entries the map left parked this frame (y = 160)
@@ -388,7 +412,9 @@ fn sparks(core: &mut Core, art: &Art, f: i32) {
     'all: for j in 0..SPARKS {
         let i = j * 7 % SPARKS;
         for &(n, x, y, t) in &live {
-            let Some((dx, dy, pic)) = spark(&art.offsets, i, style(n, i), t) else { continue };
+            let Some((dx, dy, pic)) = spark(&art.offsets, i, style(n, i), t) else {
+                continue;
+            };
             let (sx, sy) = (x + dx - 4, y + dy - 4);
             if !(-8..240).contains(&sx) || !(-8..160).contains(&sy) {
                 continue;
@@ -431,12 +457,18 @@ mod tests {
         // Every style is used, each burst its own.
         let s: std::collections::HashSet<usize> = (0..SPARKS).map(|i| style(0, i)).collect();
         assert!(s.len() >= 12);
-        assert_ne!((0..SPARKS).map(|i| style(0, i)).collect::<Vec<_>>(), (0..SPARKS).map(|i| style(1, i)).collect::<Vec<_>>());
+        assert_ne!(
+            (0..SPARKS).map(|i| style(0, i)).collect::<Vec<_>>(),
+            (0..SPARKS).map(|i| style(1, i)).collect::<Vec<_>>()
+        );
     }
 
     #[test]
     fn room() {
-        assert!(SAVE_END <= crate::tag_screens::BACKUP + 0x1_0000, "inside the screen's VRAM copy");
+        assert!(
+            SAVE_END <= crate::tag_screens::BACKUP + 0x1_0000,
+            "inside the screen's VRAM copy"
+        );
         assert!(OBJ_TILE + 6 <= 0x209, "the meteor's tiles");
     }
 

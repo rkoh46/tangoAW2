@@ -49,8 +49,26 @@ pub enum Verdict {
 }
 
 impl Live {
-    pub fn new(match_id: u64, code: String, seat: usize, players: Vec<String>, match_type: (u8, u8), room_name: String, now_ms: u64) -> Self {
-        Self { version: VERSION, match_id, code, seat, players, match_type, started_ms: now_ms, touched_ms: now_ms, room_name }
+    pub fn new(
+        match_id: u64,
+        code: String,
+        seat: usize,
+        players: Vec<String>,
+        match_type: (u8, u8),
+        room_name: String,
+        now_ms: u64,
+    ) -> Self {
+        Self {
+            version: VERSION,
+            match_id,
+            code,
+            seat,
+            players,
+            match_type,
+            started_ms: now_ms,
+            touched_ms: now_ms,
+            room_name,
+        }
     }
 
     /// An UNRANKED match (it has no room).
@@ -70,7 +88,9 @@ impl Live {
     pub fn verdict(&self, now_ms: u64) -> Verdict {
         let age = now_ms.saturating_sub(self.touched_ms);
         if age < GRACE_MS {
-            Verdict::Rejoin { left_ms: GRACE_MS - age }
+            Verdict::Rejoin {
+                left_ms: GRACE_MS - age,
+            }
         } else {
             Verdict::Ended
         }
@@ -78,7 +98,12 @@ impl Live {
 
     /// The opponent's gamertag (the other seat of a match of two).
     pub fn opponent(&self) -> String {
-        self.players.iter().enumerate().find(|&(k, _)| k != self.seat).map(|(_, n)| n.clone()).unwrap_or_default()
+        self.players
+            .iter()
+            .enumerate()
+            .find(|&(k, _)| k != self.seat)
+            .map(|(_, n)| n.clone())
+            .unwrap_or_default()
     }
 }
 
@@ -126,7 +151,9 @@ pub fn rejoin_maker(players: usize, held_seat: usize) -> usize {
 }
 
 pub fn now_ms() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_millis() as u64)
 }
 
 #[cfg(test)]
@@ -134,7 +161,15 @@ mod tests {
     use super::*;
 
     fn live(now: u64) -> Live {
-        Live::new(7, "rejoinabc".into(), 1, vec!["Ann".into(), "Bo".into()], (0, 3), "Ann's room".into(), now)
+        Live::new(
+            7,
+            "rejoinabc".into(),
+            1,
+            vec!["Ann".into(), "Bo".into()],
+            (0, 3),
+            "Ann's room".into(),
+            now,
+        )
     }
 
     fn dir(tag: &str) -> PathBuf {

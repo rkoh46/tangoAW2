@@ -131,11 +131,16 @@ fn supply_selected(core: &mut Core) {
 /// count), and the unit ends on a whole HP. The units repaired.
 pub(crate) fn repair_around(core: &mut Core, boat: u32) -> Vec<u32> {
     let mut repaired = Vec::new();
-    let (x, y) = (core.raw_read_8(boat + 2, -1) as i32, core.raw_read_8(boat + 3, -1) as i32);
+    let (x, y) = (
+        core.raw_read_8(boat + 2, -1) as i32,
+        core.raw_read_8(boat + 3, -1) as i32,
+    );
     let army = army_of(core, boat);
     let funds_at = core.raw_read_32(PLAYERS_POINTER, -1) + PLAYER_SIZE * army;
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-        let Some(u) = unit_at(core, x + dx, y + dy) else { continue };
+        let Some(u) = unit_at(core, x + dx, y + dy) else {
+            continue;
+        };
         if army_of(core, u) != army {
             continue;
         }
@@ -159,7 +164,11 @@ pub(crate) fn repair_around(core: &mut Core, boat: u32) -> Vec<u32> {
 
 /// HP as the map shows it (1..10, rounded up; 0 for none).
 fn shown(hp: u16) -> u16 {
-    if hp == 0 { 0 } else { (hp - 1) / 10 + 1 }
+    if hp == 0 {
+        0
+    } else {
+        (hp - 1) / 10 + 1
+    }
 }
 
 // --- Black Bomb ---------------------------------------------------------------
@@ -204,7 +213,10 @@ const BOMB_RETURN: u32 = 0x0203_FFC4;
 
 fn explode_selected(core: &mut Core) {
     let bomb = core.raw_read_32(SELECTED, -1);
-    let (bx, by) = (core.raw_read_16(DESTINATION, -1) as i32, core.raw_read_16(DESTINATION + 2, -1) as i32);
+    let (bx, by) = (
+        core.raw_read_16(DESTINATION, -1) as i32,
+        core.raw_read_16(DESTINATION + 2, -1) as i32,
+    );
     blast(core, bomb, bx, by);
     // Then the game's Wait (the move ends as usual), then its destruction.
     let lr = core.gba().cpu().gpr(14) as u32;
@@ -295,7 +307,9 @@ fn cpu_record_copied(core: &mut Core) {
     }
     let base = core.raw_read_32(CPU_RECORD_POINTER, -1);
     for t in CPU_BUILDS {
-        let Some(like) = crate::roster::template(t) else { continue };
+        let Some(like) = crate::roster::template(t) else {
+            continue;
+        };
         let mut row = [0u8; 12];
         core.raw_read_range(base + 4 + 12 * like as u32, -1, &mut row);
         core.raw_write_range(base + 4 + 12 * t as u32, -1, &row);
@@ -318,7 +332,12 @@ static GAME_LABELS: OnceLock<Vec<u32>> = OnceLock::new();
 /// Every frame: while a Stealth, a Black Boat or a Black Bomb is selected,
 /// its commands carry its own names.
 pub fn tick(core: &mut Core, on: bool) {
-    let game = GAME_LABELS.get_or_init(|| LABELS.iter().map(|l| core.raw_read_32(TEXT_TABLE + 4 * l.0, -1)).collect());
+    let game = GAME_LABELS.get_or_init(|| {
+        LABELS
+            .iter()
+            .map(|l| core.raw_read_32(TEXT_TABLE + 4 * l.0, -1))
+            .collect()
+    });
     let t = if on { selected_type(core) } else { None };
     for (k, &(id, unit, text)) in LABELS.iter().enumerate() {
         let ours = LABELS_AT + 0x10 * k as u32;

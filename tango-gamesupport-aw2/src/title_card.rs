@@ -46,7 +46,9 @@ static CUM: Mutex<Vec<i32>> = Mutex::new(Vec::new());
 
 /// The advances (width + 1) of the glyphs a text makes: characters the font has, as the card's loader takes them.
 pub fn advances(width_of: impl Fn(u8) -> Option<u32>, text: &[u8]) -> Vec<(u8, i32)> {
-    text.iter().filter_map(|&c| width_of(c).map(|w| (c, w as i32 + 1))).collect()
+    text.iter()
+        .filter_map(|&c| width_of(c).map(|w| (c, w as i32 + 1)))
+        .collect()
 }
 
 /// Where a title breaks: the glyph index of the space, or `None` for one line.

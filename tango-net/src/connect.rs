@@ -189,7 +189,10 @@ async fn dial_signaling(
                     endpoints::record_fail(&url, &e.to_string());
                 }
                 Err(_) => {
-                    log::warn!("online: matchmaking {url}: no answer in {} s; trying the next", endpoints::SIGNALING_TIMEOUT_SECS);
+                    log::warn!(
+                        "online: matchmaking {url}: no answer in {} s; trying the next",
+                        endpoints::SIGNALING_TIMEOUT_SECS
+                    );
                     endpoints::record_fail(&url, "timed out");
                 }
             }

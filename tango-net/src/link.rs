@@ -325,7 +325,9 @@ impl Link {
     /// was made that way, and the match's RNG seed.
     pub fn matchmaking(&self) -> Option<(String, Option<bool>, [u8; 16])> {
         match self.recipe.lock().unwrap().as_ref()? {
-            ReconnectRecipe::Matchmaking { endpoint, use_relay, .. } => Some((endpoint.clone(), *use_relay, self.rng_seed)),
+            ReconnectRecipe::Matchmaking {
+                endpoint, use_relay, ..
+            } => Some((endpoint.clone(), *use_relay, self.rng_seed)),
             ReconnectRecipe::Direct(_) => None,
         }
     }
@@ -436,7 +438,10 @@ impl Link {
                 // supervisor and go on watching.
                 Ok(tango_net_protocol::control::Packet::Room(msg)) => {
                     use tango_net_protocol::control::RoomMsg;
-                    if matches!(msg, RoomMsg::Hold(_) | RoomMsg::Unhold { .. } | RoomMsg::GiveUp { .. } | RoomMsg::Gone { .. }) {
+                    if matches!(
+                        msg,
+                        RoomMsg::Hold(_) | RoomMsg::Unhold { .. } | RoomMsg::GiveUp { .. } | RoomMsg::Gone { .. }
+                    ) {
                         self.notices.lock().unwrap().push_back(msg);
                         self.notice_wake.notify_one();
                     }
@@ -466,7 +471,9 @@ impl Link {
     /// Say something to the peer on the reliable control channel (a room's host to its guests mid-match).
     pub async fn send_room(&self, msg: tango_net_protocol::control::RoomMsg) -> std::io::Result<()> {
         let mut sender = self.control_sender.lock().await;
-        sender.send_packet(&tango_net_protocol::control::Packet::Room(msg)).await
+        sender
+            .send_packet(&tango_net_protocol::control::Packet::Room(msg))
+            .await
     }
 
     /// The peer-primed latch, for the match's ready gate. Survives a

@@ -202,7 +202,9 @@ pub fn install(core: &mut Core) {
     }
     core.raw_write_range(CRYSTAL_NAME_AT, -1, &CRYSTAL_NAME);
     core.raw_write_range(OBELISK_NAME_AT, -1, &OBELISK_NAME);
-    let part = crate::unit_names::picture(core, "G Bolt").or_else(|| crate::unit_names::picture(core, "Bolt")).unwrap_or([0; 256]);
+    let part = crate::unit_names::picture(core, "G Bolt")
+        .or_else(|| crate::unit_names::picture(core, "Bolt"))
+        .unwrap_or([0; 256]);
     core.raw_write_range(PART_NAME_AT, -1, &part);
     core.raw_write_range(PART_PICTURE_AT, -1, &[0u8; 256]);
     let blocked = crate::unit_names::picture(core, "Blocked").unwrap_or([0; 256]);
@@ -325,19 +327,28 @@ pub fn north_swap(core: &mut Core, start: u32, end: u32) {
         return;
     };
     // The picture's three groups of tiles that are the font's too (its fourth, at 914, is no font's).
-    let groups = [(NORTH_OBJ_TILES[0], 0usize, 16usize), (NORTH_OBJ_TILES[1], 16, 8), (NORTH_OBJ_TILES[2], 24, 8)];
+    let groups = [
+        (NORTH_OBJ_TILES[0], 0usize, 16usize),
+        (NORTH_OBJ_TILES[1], 16, 8),
+        (NORTH_OBJ_TILES[2], 24, 8),
+    ];
     let mut cannon = false;
     let mut letters = false;
     let mut s = start;
     while s < end {
-        let (a0, a1, a2) = (core.raw_read_16(s, -1), core.raw_read_16(s + 2, -1), core.raw_read_16(s + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(s, -1),
+            core.raw_read_16(s + 2, -1),
+            core.raw_read_16(s + 4, -1),
+        );
         let tile = (a2 & 0x3FF) as u32;
         if a0 & 0x300 != 0x200 {
             if a0 >> 14 != 0 || a1 >> 14 != 0 {
                 // (a sprite of more than one tile on the cannon's tiles; the font's are 8x8)
                 cannon |= groups.iter().any(|g| g.0 == tile);
             } else {
-                letters |= (NORTH_OBJ_TILES[0]..NORTH_OBJ_TILES[1] + 16).contains(&tile) || (NORTH_OBJ_TILES[2]..NORTH_OBJ_TILES[2] + 8).contains(&tile);
+                letters |= (NORTH_OBJ_TILES[0]..NORTH_OBJ_TILES[1] + 16).contains(&tile)
+                    || (NORTH_OBJ_TILES[2]..NORTH_OBJ_TILES[2] + 8).contains(&tile);
             }
         }
         s += 8;

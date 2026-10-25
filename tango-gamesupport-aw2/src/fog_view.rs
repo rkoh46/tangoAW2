@@ -18,7 +18,13 @@ use mgba::core::Core;
 
 /// The game's choice of which armies' vision the next refresh builds (`sub_08020984`: from the current army and its
 /// controller, which armies are viewers), then the map refresh, as a turn start runs them.
-const CALLS: [(u32, bool); 5] = [(0x0802_0984, false), (0x0801_A548, true), (0x0801_A57C, true), (0x0804_3834, true), (REFRESH, false)];
+const CALLS: [(u32, bool); 5] = [
+    (0x0802_0984, false),
+    (0x0801_A548, true),
+    (0x0801_A57C, true),
+    (0x0804_3834, true),
+    (REFRESH, false),
+];
 /// The game's map refresh: vision planes of every army, then the terrain and unit layers redrawn.
 const REFRESH: u32 = 0x0802_58CC;
 /// Alignment padding between two functions (`movs r0, r0`), never executed: the refresh returns here.
@@ -41,7 +47,10 @@ fn viewer_army(core: &Core, seat: usize) -> Option<u8> {
     let current = crate::pvp::current_army(core) as usize;
     let armies = crate::five::armies(core) as usize;
     let alive = |a: usize| a <= armies;
-    (1..=5).map(|k| (current + k - 1) % 5 + 1).find(|&a| alive(a) && crate::pvp::seat_of_n(a as u8, crate::online::room_players()) == seat).map(|a| a as u8)
+    (1..=5)
+        .map(|k| (current + k - 1) % 5 + 1)
+        .find(|&a| alive(a) && crate::pvp::seat_of_n(a as u8, crate::online::room_players()) == seat)
+        .map(|a| a as u8)
 }
 
 const FOG: u32 = 0x0300_3FCD;
@@ -88,13 +97,20 @@ fn settle_panel(core: &mut Core, last: i32) -> i32 {
     };
     core.raw_write_8(PANEL_STATE, -1, right as u8);
     core.raw_write_32(PANEL_STATE + 4, -1, if right { PANEL_X_RIGHT } else { PANEL_X_LEFT });
-    if right { 2 } else { 1 }
+    if right {
+        2
+    } else {
+        1
+    }
 }
 
 /// The cursor parked at the middle of the screen, so the CO panel's side (which the game chooses from where the cursor
 /// is) is the same every frame: a waiting window has no cursor of its own and the mover's must not move the panel.
 fn park_cursor(core: &mut Core) {
-    let (cx, cy) = ((core.raw_read_16(MAP + 4, -1) as i16 as i32) / 16 + 7, (core.raw_read_16(MAP + 6, -1) as i16 as i32) / 16 + 4);
+    let (cx, cy) = (
+        (core.raw_read_16(MAP + 4, -1) as i16 as i32) / 16 + 7,
+        (core.raw_read_16(MAP + 6, -1) as i16 as i32) / 16 + 4,
+    );
     core.raw_write_16(CURSOR, -1, cx as u16);
     core.raw_write_16(CURSOR + 2, -1, cy as u16);
     core.raw_write_16(CURSOR_PX, -1, (cx * 16) as u16);
@@ -155,7 +171,12 @@ pub fn procs(core: &Core) -> Vec<u32> {
             }
             let (s0, s1, f) = (word(i), word(i + 4), word(i + 8));
             let script = |v: u32| (0x0840_0000..0x0870_0000).contains(&v);
-            if script(s0) && script(s1) && (0x0800_0001..0x0810_0000).contains(&f) && f & 1 == 1 && !BACKGROUND.contains(&f) {
+            if script(s0)
+                && script(s1)
+                && (0x0800_0001..0x0810_0000).contains(&f)
+                && f & 1 == 1
+                && !BACKGROUND.contains(&f)
+            {
                 out.push(f);
             }
         }
@@ -183,13 +204,30 @@ fn put_unit_at(core: &mut Core, id: u32, to: (i32, i32)) -> bool {
     let rec = core.raw_read_32(UNITS_PTR, -1) + 12 * id;
     let from = (core.raw_read_8(rec + 2, -1) as i32, core.raw_read_8(rec + 3, -1) as i32);
     if std::env::var_os("AW2_CAM_LOG").is_some() {
-        let p = |c: (i32, i32), plane: u32| core.raw_read_8(MAP + plane + core.raw_read_16(MAP + 0x417A + 2 * c.1 as u32, -1) as u32 + c.0 as u32, -1);
-        eprintln!("put unit {id}: record at {from:?} flags {:02x}, planes at from {} {} at to {} {}", core.raw_read_8(rec + 1, -1), p(from, 0x12), p(from, 0x51A), p(to, 0x12), p(to, 0x51A));
+        let p = |c: (i32, i32), plane: u32| {
+            core.raw_read_8(
+                MAP + plane + core.raw_read_16(MAP + 0x417A + 2 * c.1 as u32, -1) as u32 + c.0 as u32,
+                -1,
+            )
+        };
+        eprintln!(
+            "put unit {id}: record at {from:?} flags {:02x}, planes at from {} {} at to {} {}",
+            core.raw_read_8(rec + 1, -1),
+            p(from, 0x12),
+            p(from, 0x51A),
+            p(to, 0x12),
+            p(to, 0x51A)
+        );
     }
     if from == to || to.0 < 0 || to.1 < 0 || to.0 >= w || to.1 >= h {
         return false;
     }
-    let at = |core: &Core, c: (i32, i32), plane: u32| core.raw_read_8(MAP + plane + core.raw_read_16(MAP + 0x417A + 2 * c.1 as u32, -1) as u32 + c.0 as u32, -1);
+    let at = |core: &Core, c: (i32, i32), plane: u32| {
+        core.raw_read_8(
+            MAP + plane + core.raw_read_16(MAP + 0x417A + 2 * c.1 as u32, -1) as u32 + c.0 as u32,
+            -1,
+        )
+    };
     if at(core, to, UNIT_PLANES[0]) != 0 || at(core, from, UNIT_PLANES[0]) as u32 != id {
         return false;
     }
@@ -219,8 +257,23 @@ fn ui_open(core: &Core) -> bool {
 /// and a unit's (`0x0803A69D`, `0x0803A5B9`), the Save question (`0x08014401`, `0x080195F9`), the map overview START
 /// opens (`0x0802C391`, `0x0802C3D1`, `0x080375D5`) and the Intel table (`0x080466DD`).
 const UI_PROCS: [u32; 17] = [
-    0x0802_28D9, 0x0803_63D1, 0x0803_5E25, 0x0801_9D0D, 0x0801_9DED, 0x0802_DA19, 0x0803_A441, 0x0804_6D31, 0x0804_7079, 0x0803_A69D, 0x0803_A5B9,
-    0x0801_4401, 0x0801_95F9, 0x0802_C391, 0x0802_C3D1, 0x0803_75D5, 0x0804_66DD,
+    0x0802_28D9,
+    0x0803_63D1,
+    0x0803_5E25,
+    0x0801_9D0D,
+    0x0801_9DED,
+    0x0802_DA19,
+    0x0803_A441,
+    0x0804_6D31,
+    0x0804_7079,
+    0x0803_A69D,
+    0x0803_A5B9,
+    0x0801_4401,
+    0x0801_95F9,
+    0x0802_C391,
+    0x0802_C3D1,
+    0x0803_75D5,
+    0x0804_66DD,
 ];
 /// Whether a proc belongs to the Rules page and its wipes (its own: `0x0806D000..0x0806E000`, and `0x08065961`).
 fn rules_proc(f: u32) -> bool {
@@ -237,7 +290,14 @@ pub fn log_busy(core: &Core) {
     p.sort();
     let mut seen = SEEN.lock().unwrap();
     if !seen.contains(&p) {
-        eprintln!("busy procs {:x?} loop {:08x} fog {} menu {} chosen {:?}", p, core.raw_read_32(MAIN_LOOP, -1), fog(core), core.raw_read_8(MAP_MENU_STATE, -1), crate::pvp::chosen_item(core));
+        eprintln!(
+            "busy procs {:x?} loop {:08x} fog {} menu {} chosen {:?}",
+            p,
+            core.raw_read_32(MAIN_LOOP, -1),
+            fog(core),
+            core.raw_read_8(MAP_MENU_STATE, -1),
+            crate::pvp::chosen_item(core)
+        );
         seen.push(p);
     }
 }
@@ -266,7 +326,8 @@ pub enum Phase {
 const SCENE_PROC: u32 = 0x0805_01DD;
 
 /// What each seat's window last saw of the map (width, height, cells seen), for the seats' share of a battle scene.
-static VISION: std::sync::Mutex<[Option<(i32, i32, Vec<bool>)>; 5]> = std::sync::Mutex::new([None, None, None, None, None]);
+static VISION: std::sync::Mutex<[Option<(i32, i32, Vec<bool>)>; 5]> =
+    std::sync::Mutex::new([None, None, None, None, None]);
 
 /// What `seat`'s window last saw of the map: width, height and the cells it saw (for the test tools).
 pub fn seat_vision(seat: usize) -> Option<(i32, i32, Vec<bool>)> {
@@ -345,22 +406,41 @@ pub fn phase(core: &Core) -> Phase {
         let now = (running.clone(), moving(core));
         let mut last = LAST.lock().unwrap();
         if *last != now {
-            eprintln!("procs {:x?} moving {} main loop {:08x} menu {}", now.0, now.1, core.raw_read_32(MAIN_LOOP, -1), core.raw_read_8(MAP_MENU_STATE, -1));
+            eprintln!(
+                "procs {:x?} moving {} main loop {:08x} menu {}",
+                now.0,
+                now.1,
+                core.raw_read_32(MAIN_LOOP, -1),
+                core.raw_read_8(MAP_MENU_STATE, -1)
+            );
             *last = now;
         }
     }
     if crate::online::input_log_on() {
         static LAST: std::sync::Mutex<(bool, u8, usize)> = std::sync::Mutex::new((false, 0, 0));
-        let now = (crate::pvp::turn_ended(core), core.raw_read_8(MAP_MENU_STATE, -1), running.len());
+        let now = (
+            crate::pvp::turn_ended(core),
+            core.raw_read_8(MAP_MENU_STATE, -1),
+            running.len(),
+        );
         let mut last = LAST.lock().unwrap();
         if *last != now {
-            log::info!("fog-phase: turn_ended {} menu_state {} procs {:x?}", now.0, now.1, running);
+            log::info!(
+                "fog-phase: turn_ended {} menu_state {} procs {:x?}",
+                now.0,
+                now.1,
+                running
+            );
             *last = now;
         }
     }
     if running.is_empty() && crate::pvp::turn_ended(core) {
         // (the hand-off screen is a fade and a banner, not the plain map: the last frame of the mover's menu before it is held)
-        return if steady_regs(core) && (core.raw_read_8(MAP_MENU_STATE, -1) == 5 || fog(core)) { Phase::Moving } else { Phase::HandOff };
+        return if steady_regs(core) && (core.raw_read_8(MAP_MENU_STATE, -1) == 5 || fog(core)) {
+            Phase::Moving
+        } else {
+            Phase::HandOff
+        };
     }
     // A CO Power just chosen from the map menu: the game's own scene (the CO's lines over the map, the full-screen
     // cut-in). Without fog it is shown as it is; with fog the waiting window holds its last picture (the lines come over
@@ -407,7 +487,10 @@ fn walker_pixels(core: &Core) -> Option<(i32, i32)> {
             let word = |o: usize| u32::from_le_bytes(buf[o..o + 4].try_into().unwrap());
             if word(i + 8) == WALK_PROC && (0x0840_0000..0x0870_0000).contains(&word(i)) {
                 let at = base + i as u32;
-                let (x, y) = (core.raw_read_16(at + 0x3E, -1) as i32, core.raw_read_16(at + 0x40, -1) as i32);
+                let (x, y) = (
+                    core.raw_read_16(at + 0x3E, -1) as i32,
+                    core.raw_read_16(at + 0x40, -1) as i32,
+                );
                 return ((0..2048).contains(&x) && (0..2048).contains(&y)).then_some((x, y));
             }
         }
@@ -441,11 +524,16 @@ const CAPTURE_PROCS: [u32; 2] = [0x0804_0C89, 0x0804_0AFD];
 /// The game's narration over the map ("The Green Earth Army has lost!") as opposed to the mover's own questions (Yield, Save, End
 /// turn, CO Power: they come from a map-menu item, which is still the chosen one while they are up): only narration reaches every window.
 fn dialog_for(core: &Core, running: &[u32]) -> bool {
-    running.contains(&DIALOG_PROC) && !running.contains(&0x0801_95F9) && !matches!(crate::pvp::chosen_item(core), Some(0..=5))
+    running.contains(&DIALOG_PROC)
+        && !running.contains(&0x0801_95F9)
+        && !matches!(crate::pvp::chosen_item(core), Some(0..=5))
 }
 
 fn capturing(running: &[u32]) -> bool {
-    running.iter().any(|f| CAPTURE_PROCS.contains(f)) && running.iter().all(|f| UI_PROCS.contains(f) || CAPTURE_PROCS.contains(f))
+    running.iter().any(|f| CAPTURE_PROCS.contains(f))
+        && running
+            .iter()
+            .all(|f| UI_PROCS.contains(f) || CAPTURE_PROCS.contains(f))
 }
 
 /// A unit picked up is walking (see [`WALK_PROC`]).
@@ -455,7 +543,14 @@ pub fn walking(core: &Core) -> bool {
 
 /// The animations of the mover's turn that may be shown as they are (without fog; with fog the window holds its picture):
 /// the procs seen while units walk, capture, are built and fight on the map.
-const ANIMATION_PROCS: [u32; 6] = [0x0802_A509, 0x0802_7DD9, 0x0802_7905, 0x0802_788D, 0x0802_9FE5, 0x0802_A3FD];
+const ANIMATION_PROCS: [u32; 6] = [
+    0x0802_A509,
+    0x0802_7DD9,
+    0x0802_7905,
+    0x0802_788D,
+    0x0802_9FE5,
+    0x0802_A3FD,
+];
 
 /// Test aid (`TANGOAW2_INPUT_LOG=1`): where the cursor is and which cells the army owns (HQ, factory, ...), for scripting.
 pub(crate) fn log_cells(core: &Core, army: u8) {
@@ -534,7 +629,15 @@ fn step(n: usize) -> Option<(u32, Option<i32>, Option<i32>)> {
         return prog.get(n).map(|&(f, r0, r1)| (f, Some(r0), Some(r1)));
     }
     // (only the CO panel's calls: its colours, face and palettes for the army)
-    let n = if PANEL_ONLY.load(std::sync::atomic::Ordering::Relaxed) { if n < 3 { n + 1 } else { return None } } else { n };
+    let n = if PANEL_ONLY.load(std::sync::atomic::Ordering::Relaxed) {
+        if n < 3 {
+            n + 1
+        } else {
+            return None;
+        }
+    } else {
+        n
+    };
     CALLS.get(n).map(|&(f, army_arg)| (f, army_arg.then_some(ARMY), None))
 }
 
@@ -575,10 +678,19 @@ pub fn view(scratch: Scratch, seat: usize) -> bool {
 /// attacker's cell (where the cursor is now) or the target's (where it was last on the map).
 fn scene_view(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let core = scratch.core();
-    let attacker = (core.raw_read_8(CURSOR, -1) as i32, core.raw_read_8(CURSOR + 2, -1) as i32);
-    let target = (core.raw_read_8(crate::pvp::LAST_CELL, -1) as i32, core.raw_read_8(crate::pvp::LAST_CELL + 1, -1) as i32);
+    let attacker = (
+        core.raw_read_8(CURSOR, -1) as i32,
+        core.raw_read_8(CURSOR + 2, -1) as i32,
+    );
+    let target = (
+        core.raw_read_8(crate::pvp::LAST_CELL, -1) as i32,
+        core.raw_read_8(crate::pvp::LAST_CELL + 1, -1) as i32,
+    );
     let vision = VISION.lock().unwrap();
-    let (w, h, seen) = vision.get(seat).and_then(|v| v.as_ref()).ok_or("no view of the map yet")?;
+    let (w, h, seen) = vision
+        .get(seat)
+        .and_then(|v| v.as_ref())
+        .ok_or("no view of the map yet")?;
     let sees = |(x, y): (i32, i32)| x >= 0 && y >= 0 && x < *w && y < *h && seen[(y * w + x) as usize];
     if sees(attacker) || sees(target) {
         scratch.show_console();
@@ -609,14 +721,20 @@ pub fn mover_cursor_up(core: &Core) -> bool {
 /// The map menu's Power or Super item was chosen (ids 2 and 3; the Tag item is a copy of the Super's, its screens are
 /// [`crate::tag_extras::screen_up`]'s): the game's own scene follows.
 fn power_chosen(core: &Core) -> bool {
-    matches!(crate::pvp::chosen_main_item(core), Some(crate::pvp::MENU_POWER | crate::pvp::MENU_SUPER))
+    matches!(
+        crate::pvp::chosen_main_item(core),
+        Some(crate::pvp::MENU_POWER | crate::pvp::MENU_SUPER)
+    )
 }
 
 /// The Super CO Power's full-screen scene is up (its banner is the map's, its fire and CO portrait are a screen of their own, between
 /// two of the map's: the main loop's callback is 0 with nothing running): the screen has no map in it, so every window shows it as the
 /// console draws it, fog or not (a Power's cut-in stays on the map's loop: [`power_cutin`]).
 pub fn power_screen(core: &Core) -> bool {
-    power_chosen(core) && core.raw_read_32(MAIN_LOOP, -1) == 0 && procs(core).is_empty() && !crate::pvp::turn_ended(core)
+    power_chosen(core)
+        && core.raw_read_32(MAIN_LOOP, -1) == 0
+        && procs(core).is_empty()
+        && !crate::pvp::turn_ended(core)
 }
 
 /// A CO Power chosen from the map menu is playing out (its lines over the map, the full-screen cut-in, the fades).
@@ -643,7 +761,10 @@ pub fn power_cutin(core: &Core) -> bool {
 const UNIT_BANKS: [usize; 8] = [8, 9, 10, 11, 12, 13, 14, 15];
 
 fn banks_env() -> Vec<usize> {
-    std::env::var("AW2_RESTORE_BANKS").ok().map(|v| v.split(',').filter_map(|x| x.parse().ok()).collect()).unwrap_or_else(|| UNIT_BANKS.to_vec())
+    std::env::var("AW2_RESTORE_BANKS")
+        .ok()
+        .map(|v| v.split(',').filter_map(|x| x.parse().ok()).collect())
+        .unwrap_or_else(|| UNIT_BANKS.to_vec())
 }
 
 fn restore_unit_palettes(core: &mut Core, buffer: &[u8], ram: &[u8]) {
@@ -663,7 +784,11 @@ const HUD_W: usize = 76;
 const HUD_H: usize = 26;
 
 fn hud_x(right: bool) -> usize {
-    if right { 240 - HUD_W } else { 0 }
+    if right {
+        240 - HUD_W
+    } else {
+        0
+    }
 }
 
 /// Display side: after the window's picture is made, the seat's own CO panel is put back over a walk's frames (the game
@@ -756,7 +881,10 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         }
         run(scratch, &[0; 30])?;
     }
-    if scratch.memory()[0] == 0 && matches!(phase(scratch.core()), Phase::Busy | Phase::Moving) && scratch.core().raw_read_8(FOG, -1) != 0 {
+    if scratch.memory()[0] == 0
+        && matches!(phase(scratch.core()), Phase::Busy | Phase::Moving)
+        && scratch.core().raw_read_8(FOG, -1) != 0
+    {
         // A seat with no picture of its own yet (the battle has just begun) while the turn's banners run: they are the
         // mover's view of the map, which is not to be shown; on the scratch A skips them, up to a few seconds of them.
         for _ in 0..360 {
@@ -769,11 +897,15 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     // A unit's own animation of the turn (walking, capturing, being built, an attack's result) in a fog match: made on
     // the scratch like the map, for the waiting army's own fog; the sprites out of its sight are hidden at the flush
     // (`hide_fogged_sprites`), so a walk is seen while the sprite is on cells the seat sees and never where it does not.
-    let anim = scratch.core().raw_read_8(FOG, -1) != 0 && phase(scratch.core()) == Phase::Busy && scratch.memory()[0] != 0;
+    let anim =
+        scratch.core().raw_read_8(FOG, -1) != 0 && phase(scratch.core()) == Phase::Busy && scratch.memory()[0] != 0;
     let running_now = procs(scratch.core());
     let (dialog_up, capture_up) = (dialog_for(scratch.core(), &running_now), capturing(&running_now));
     if std::env::var_os("AW2_VIEW_DEBUG").is_some() && (dialog_up || capture_up) {
-        eprintln!("view seat {seat}: dialog {dialog_up} capture {capture_up} anim {anim} phase {:?}", phase(scratch.core()));
+        eprintln!(
+            "view seat {seat}: dialog {dialog_up} capture {capture_up} anim {anim} phase {:?}",
+            phase(scratch.core())
+        );
     }
     // (a message box over the map is no fogged sprite: its portrait is not hidden)
     scratch.core_mut().raw_write_8(CALL + 3, -1, (anim && !dialog_up) as u8);
@@ -781,14 +913,21 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         return Err("not the plain map");
     }
     let fog = scratch.core().raw_read_8(FOG, -1) != 0;
-    let mover_cell = (scratch.core().raw_read_16(CURSOR, -1) as i32, scratch.core().raw_read_16(CURSOR + 2, -1) as i32);
+    let mover_cell = (
+        scratch.core().raw_read_16(CURSOR, -1) as i32,
+        scratch.core().raw_read_16(CURSOR + 2, -1) as i32,
+    );
     // (a unit that has walked to the cell the mover chose and waits for its command: B closes the menu and puts it back
     // where it was, so it is put on its cell again after)
     let sel_before = selected_unit(scratch.core());
     let walked = {
         // (the selection's own proc is not up: the destination is chosen and the unit has walked, not the cursor browsing)
         let running = procs(scratch.core());
-        if running.contains(&WALK_PROC) && !running.contains(&0x0802_28D9) { sel_before } else { None }
+        if running.contains(&WALK_PROC) && !running.contains(&0x0802_28D9) {
+            sel_before
+        } else {
+            None
+        }
     };
     // (a menu that has only just opened takes no button for a dozen frames: up to eighty ticks are tried)
     for _ in 0..16 {
@@ -797,7 +936,12 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         }
         run(scratch, &[KEY_B, 0, KEY_B, 0, 0])?;
         if std::env::var_os("AW2_CAM_LOG").is_some() {
-            eprintln!("  after B: procs {:x?} menu {} main loop {:08x}", procs(scratch.core()), scratch.core().raw_read_8(MAP_MENU_STATE, -1), scratch.core().raw_read_32(MAIN_LOOP, -1));
+            eprintln!(
+                "  after B: procs {:x?} menu {} main loop {:08x}",
+                procs(scratch.core()),
+                scratch.core().raw_read_8(MAP_MENU_STATE, -1),
+                scratch.core().raw_read_32(MAIN_LOOP, -1)
+            );
         }
     }
     if std::env::var_os("AW2_CAM_LOG").is_some() {
@@ -872,7 +1016,16 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let place = |scratch: Scratch, px: i32, py: i32, cursor: (i32, i32)| {
         let core = scratch.core_mut();
         // (the pixels, their copy, the camera's cell and the remainder of a scroll the console had begun: none)
-        for (at, v) in [(4u32, px), (6, py), (8, px), (0xA, py), (0xC, (px + 8) / 16), (0xE, (py + 8) / 16), (0x10, 0), (0x12, 0)] {
+        for (at, v) in [
+            (4u32, px),
+            (6, py),
+            (8, px),
+            (0xA, py),
+            (0xC, (px + 8) / 16),
+            (0xE, (py + 8) / 16),
+            (0x10, 0),
+            (0x12, 0),
+        ] {
             core.raw_write_16(MAP + at, -1, v as u16);
         }
         core.raw_write_16(CURSOR, -1, cursor.0 as u16);
@@ -903,14 +1056,22 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     // target: when the mover goes out of sight the camera stays where the last action was (never back to the HQ,
     // never between two places), apart from a window that sees nothing at all (the HQ).
     // (the cell the action is at: the walking unit's, else the cursor's)
-    let (x, y) = match (anim || walked.is_some()).then(|| walker_pixels(scratch.core())).flatten() {
+    let (x, y) = match (anim || walked.is_some())
+        .then(|| walker_pixels(scratch.core()))
+        .flatten()
+    {
         Some((wx, wy)) => ((wx + 8).div_euclid(16), (wy + 8).div_euclid(16)),
         None => mover_cell,
     };
     // (only an action moves it: the walk and what follows it, never the cursor browsing)
     let follow = (anim || walked.is_some()) && x < w && y < h && seen(scratch.core(), x, y);
     if std::env::var_os("AW2_VIEW_DEBUG").is_some() {
-        eprintln!("follow seat {seat}: mover cell ({x},{y}) map {w}x{h} seen {follow} plane byte {:02x} army {army}", scratch.core().raw_read_8(MAP + 0x234A + cell(scratch.core(), x.min(w - 1), y.min(h - 1)), -1));
+        eprintln!(
+            "follow seat {seat}: mover cell ({x},{y}) map {w}x{h} seen {follow} plane byte {:02x} army {army}",
+            scratch
+                .core()
+                .raw_read_8(MAP + 0x234A + cell(scratch.core(), x.min(w - 1), y.min(h - 1)), -1)
+        );
     }
     let mut reason = "none";
     if follow {
@@ -918,8 +1079,22 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         // (the game's own camera scrolls after a unit that comes within a few cells of the window's edge, which on the
         // scratch console would carry the picture past the window's own camera: the target keeps the unit that far in)
         const MARGIN: i32 = 3;
-        tx = if x < tx + MARGIN { x - MARGIN } else if x > tx + 14 - MARGIN { x - 14 + MARGIN } else { tx }.clamp(0, (w - 15).max(0));
-        ty = if y < ty + MARGIN { y - MARGIN } else if y > ty + 9 - MARGIN { y - 9 + MARGIN } else { ty }.clamp(0, (h - 10).max(0));
+        tx = if x < tx + MARGIN {
+            x - MARGIN
+        } else if x > tx + 14 - MARGIN {
+            x - 14 + MARGIN
+        } else {
+            tx
+        }
+        .clamp(0, (w - 15).max(0));
+        ty = if y < ty + MARGIN {
+            y - MARGIN
+        } else if y > ty + 9 - MARGIN {
+            y - 9 + MARGIN
+        } else {
+            ty
+        }
+        .clamp(0, (h - 10).max(0));
     } else if !window_sees(scratch.core(), (px + 8) / 16, (py + 8) / 16, w, h) && (tx * 16, ty * 16) == (px, py) {
         // (nothing in the window is seen and it is at rest: grey fogged terrain and no units; the army's own HQ)
         reason = "hq";
@@ -934,7 +1109,11 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     let on_cell = px % 16 == 0 && py % 16 == 0;
     let moving_now = (px, py) != (tx * 16, ty * 16);
     let step = |from: i32, to: i32| -> i32 {
-        if from == to { from } else { from + (to - from).signum() * CAMERA_STEP.min((to - from).abs()) }
+        if from == to {
+            from
+        } else {
+            from + (to - from).signum() * CAMERA_STEP.min((to - from).abs())
+        }
     };
     let (nx, ny) = if on_cell && rest > 0 && moving_now {
         rest -= 1;
@@ -955,7 +1134,13 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
     scratch.core_mut().raw_write_8(FAKE, -1, sliding as u8);
     scratch.core_mut().raw_write_16(FAKE + 2, -1, ((nx + 112) / 16) as u16);
     scratch.core_mut().raw_write_16(FAKE + 4, -1, ((ny + 72) / 16) as u16);
-    if capture_up && !seen(scratch.core(), mover_cell.0.clamp(0, w - 1), mover_cell.1.clamp(0, h - 1)) {
+    if capture_up
+        && !seen(
+            scratch.core(),
+            mover_cell.0.clamp(0, w - 1),
+            mover_cell.1.clamp(0, h - 1),
+        )
+    {
         // (a capture where the seat sees nothing: no card, no picture)
         return Err("the capture is out of sight");
     }
@@ -987,8 +1172,19 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         for bg in 0..4u32 {
             let cnt = c.raw_read_16(0x0400_0008 + 2 * bg, -1) as u32;
             let base = 0x0600_0000 + ((cnt >> 8) & 31) * 0x800;
-            let ents: Vec<String> = [(0, 0), (1, 0), (0, 1), (1, 1)].iter().map(|(dx, dy)| format!("{:04x}", c.raw_read_16(base + 2 * (((sy + dy) % 32) * 32 + (sx + dx) % 32), -1))).collect();
-            eprintln!("tiles seat {seat} bg{bg} cnt {cnt:04x} at ({sx},{sy}): {}", ents.join(" "));
+            let ents: Vec<String> = [(0, 0), (1, 0), (0, 1), (1, 1)]
+                .iter()
+                .map(|(dx, dy)| {
+                    format!(
+                        "{:04x}",
+                        c.raw_read_16(base + 2 * (((sy + dy) % 32) * 32 + (sx + dx) % 32), -1)
+                    )
+                })
+                .collect();
+            eprintln!(
+                "tiles seat {seat} bg{bg} cnt {cnt:04x} at ({sx},{sy}): {}",
+                ents.join(" ")
+            );
         }
     }
     if let Some((a0, b0)) = pal_before {
@@ -998,12 +1194,25 @@ fn view_inner(scratch: Scratch, seat: usize) -> Result<(), &'static str> {
         scratch.core().raw_read_range(0x0300_20C0, -1, &mut a);
         let mut b = vec![0u8; 0x400];
         scratch.core().raw_read_range(0x0500_0000, -1, &mut b);
-        let banks = |x: &[u8], y: &[u8]| (0..32).filter(|k| x[k * 32..k * 32 + 32] != y[k * 32..k * 32 + 32]).collect::<Vec<_>>();
-        if std::env::var_os("AW2_PAL_DEBUG").is_some() { eprintln!("pal seat {seat}: buffer banks changed {:?}, pal ram banks changed {:?} (0-15 BG, 16-31 OBJ)", banks(&a0, &a), banks(&b0, &b)); }
+        let banks = |x: &[u8], y: &[u8]| {
+            (0..32)
+                .filter(|k| x[k * 32..k * 32 + 32] != y[k * 32..k * 32 + 32])
+                .collect::<Vec<_>>()
+        };
+        if std::env::var_os("AW2_PAL_DEBUG").is_some() {
+            eprintln!(
+                "pal seat {seat}: buffer banks changed {:?}, pal ram banks changed {:?} (0-15 BG, 16-31 OBJ)",
+                banks(&a0, &a),
+                banks(&b0, &b)
+            );
+        }
     }
     if seat < 5 {
         let core = scratch.core();
-        let seen_cells: Vec<bool> = (0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| seen(core, x, y)).collect();
+        let seen_cells: Vec<bool> = (0..h)
+            .flat_map(|y| (0..w).map(move |x| (x, y)))
+            .map(|(x, y)| seen(core, x, y))
+            .collect();
         VISION.lock().unwrap()[seat] = Some((w, h, seen_cells));
     }
     scratch.core_mut().raw_write_8(CALL + 3, -1, 0);
@@ -1060,14 +1269,19 @@ fn hide_cursor(core: &mut Core) {
     let sy = core.raw_read_16(CURSOR_PX + 2, -1) as i32 - core.raw_read_16(MAP + 6, -1) as i16 as i32;
     let mut at = start;
     while at + 8 <= end {
-        let (a0, a1, a2) = (core.raw_read_16(at, -1), core.raw_read_16(at + 2, -1), core.raw_read_16(at + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(at, -1),
+            core.raw_read_16(at + 2, -1),
+            core.raw_read_16(at + 4, -1),
+        );
         let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
         let y = (a0 & 0xFF) as i32;
         let small = a0 >> 14 != 2 && a1 >> 14 < 2; // (not a tall sprite, not 32 wide or more)
-        // (the cursor's four corner sprites are tiles 0x365 and 0x369 of palette 1, wherever they are: the game draws them
-        // at its own scroll, which a scratch camera that is still sliding to the mover's cell does not match)
+                                                   // (the cursor's four corner sprites are tiles 0x365 and 0x369 of palette 1, wherever they are: the game draws them
+                                                   // at its own scroll, which a scratch camera that is still sliding to the mover's cell does not match)
         let corner = a2 >> 12 == 1 && matches!(a2 & 0x3FF, 0x365 | 0x369);
-        let cursor = corner || (a2 >> 12 == 1 && small && (sx - 12..sx + 24).contains(&x) && (sy - 12..sy + 24).contains(&y));
+        let cursor =
+            corner || (a2 >> 12 == 1 && small && (sx - 12..sx + 24).contains(&x) && (sy - 12..sy + 24).contains(&y));
         // The info panel of the cell under it (terrain, unit), in the lower corners: sprites in the units' and
         // cursor's palettes, not the buildings' (8 to 13).
         let panel = y >= 88 && (a2 >> 12 < 8 || (a0 >> 10) & 3 == 1) && (x < 72 || x >= 168);
@@ -1122,7 +1336,12 @@ fn hide_fogged_sprites(core: &mut Core) {
             if !in_panel {
                 let (mx, my) = (x + sw / 2 + scroll_x, y + sh / 2 + scroll_y);
                 let (cx, cy) = (mx.div_euclid(16), my.div_euclid(16));
-                let fake = core.raw_read_8(FAKE, -1) == 1 && (cx, cy) == (core.raw_read_16(FAKE + 2, -1) as i32, core.raw_read_16(FAKE + 4, -1) as i32);
+                let fake = core.raw_read_8(FAKE, -1) == 1
+                    && (cx, cy)
+                        == (
+                            core.raw_read_16(FAKE + 2, -1) as i32,
+                            core.raw_read_16(FAKE + 4, -1) as i32,
+                        );
                 let sees = !fake && cx >= 0 && cy >= 0 && cx < w && cy < h && seen(core, cx, cy);
                 if !sees && (0..240).contains(&(x + sw / 2)) && (0..160).contains(&(y + sh / 2)) {
                     core.raw_write_16(at, -1, (a0 & !0x300) | 0x200);
@@ -1136,7 +1355,10 @@ fn hide_fogged_sprites(core: &mut Core) {
 /// The camera pinned (see [`PIN`]): on the scratch console, before every tick and at every flush.
 pub fn pin_camera(core: &mut Core) {
     if core.raw_read_8(FAKE, -1) == 1 {
-        let (cx, cy) = (core.raw_read_16(FAKE + 2, -1) as i32, core.raw_read_16(FAKE + 4, -1) as i32);
+        let (cx, cy) = (
+            core.raw_read_16(FAKE + 2, -1) as i32,
+            core.raw_read_16(FAKE + 4, -1) as i32,
+        );
         set_walker_pixels(core, (cx * 16, cy * 16));
     }
     if core.raw_read_8(PIN, -1) == 1 {

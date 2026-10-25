@@ -159,7 +159,11 @@ fn frame_sprites(core: &Core, start: u32, at: u32) -> (u16, bool) {
     let mut title = false;
     let mut p = start;
     while p + 8 <= at {
-        let (a0, a1, a2) = (core.raw_read_16(p, -1), core.raw_read_16(p + 2, -1), core.raw_read_16(p + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(p, -1),
+            core.raw_read_16(p + 2, -1),
+            core.raw_read_16(p + 4, -1),
+        );
         if a0 & 0x300 != 0x200 {
             banks |= 1 << (a2 >> 12);
             let (y, x) = ((a0 & 0xFF) as i32, (a1 & 0x1FF) as i32);
@@ -191,11 +195,18 @@ fn bonds_shown(earned: u32, total: usize) -> u32 {
 /// At the sprite flush on the world map: the legend, from the first earned
 /// bond on, while no dialogue runs.
 pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
-    if !crate::ds_worldmap::map_screen_up(core) || !crate::ds_campaign::active(core) || crate::onyx::events_running_pub(core) {
+    if !crate::ds_worldmap::map_screen_up(core)
+        || !crate::ds_campaign::active(core)
+        || crate::onyx::events_running_pub(core)
+    {
         return at;
     }
-    let Some(c) = crate::ds_campaign::campaign(core) else { return at };
-    let Some(custom) = c.model.custom.as_ref() else { return at };
+    let Some(c) = crate::ds_campaign::campaign(core) else {
+        return at;
+    };
+    let Some(custom) = c.model.custom.as_ref() else {
+        return at;
+    };
     // (every bond shows, the extras too: the secret mission counts only the
     // first `counted`, `ds_campaign::bonds_all`)
     let total = custom.bonds.len();
@@ -204,7 +215,9 @@ pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
         return at;
     }
     let (banks, title) = frame_sprites(core, start, at);
-    let Some(&bank) = BANKS.iter().find(|&&b| banks >> b & 1 == 0) else { return at };
+    let Some(&bank) = BANKS.iter().find(|&&b| banks >> b & 1 == 0) else {
+        return at;
+    };
     let mut pal = [0u8; 32];
     for &(i, col) in &COLOURS {
         pal[2 * i..2 * i + 2].copy_from_slice(&col.to_le_bytes());
@@ -219,10 +232,15 @@ pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
         for y in 0..16 {
             sub[y * 32..y * 32 + 32].copy_from_slice(&px[y * LEGEND_W + 32 * s..y * LEGEND_W + 32 * s + 32]);
         }
-        write_if_changed(core, OBJ_TILES + 32 * (LEGEND_A + 8 * s as u32), &to_tiles(&sub, 32, 16));
+        write_if_changed(
+            core,
+            OBJ_TILES + 32 * (LEGEND_A + 8 * s as u32),
+            &to_tiles(&sub, 32, 16),
+        );
         let mut sub = vec![0u8; 32 * 8];
         for y in 0..8 {
-            sub[y * 32..y * 32 + 32].copy_from_slice(&px[(16 + y) * LEGEND_W + 32 * s..(16 + y) * LEGEND_W + 32 * s + 32]);
+            sub[y * 32..y * 32 + 32]
+                .copy_from_slice(&px[(16 + y) * LEGEND_W + 32 * s..(16 + y) * LEGEND_W + 32 * s + 32]);
         }
         write_if_changed(core, OBJ_TILES + 32 * (LEGEND_B + 4 * s as u32), &to_tiles(&sub, 32, 8));
     }
@@ -230,8 +248,28 @@ pub fn flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
     // (the star first: an earlier sprite draws over a later one)
     sprite(core, &mut at, end, LEGEND_X + 1, y - 2, 0, 1, STAR, bank);
     for s in 0..4i32 {
-        sprite(core, &mut at, end, LEGEND_X + 32 * s, y, 1, 2, LEGEND_A + 8 * s as u32, bank);
-        sprite(core, &mut at, end, LEGEND_X + 32 * s, y + 16, 1, 1, LEGEND_B + 4 * s as u32, bank);
+        sprite(
+            core,
+            &mut at,
+            end,
+            LEGEND_X + 32 * s,
+            y,
+            1,
+            2,
+            LEGEND_A + 8 * s as u32,
+            bank,
+        );
+        sprite(
+            core,
+            &mut at,
+            end,
+            LEGEND_X + 32 * s,
+            y + 16,
+            1,
+            1,
+            LEGEND_B + 4 * s as u32,
+            bank,
+        );
     }
     at
 }

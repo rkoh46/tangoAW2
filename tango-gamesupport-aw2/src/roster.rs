@@ -126,21 +126,121 @@ pub fn table(core: &Core) -> u32 {
 /// agbcc's `-fforce-addr` pool words). The first is `sub_08043070`'s, which
 /// [`table`] reads.
 const TABLE_POINTERS: [u32; 115] = [
-    0x0804_30A4, 0x0800_0A48, 0x0800_8A6C, 0x0800_8C30, 0x0801_9814, 0x0801_F8F4, 0x0802_0268, 0x0802_03BC,
-    0x0802_0DB8, 0x0802_4A20, 0x0802_4B98, 0x0802_5C48, 0x0802_5F64, 0x0802_5FB4, 0x0802_70B0, 0x0802_9AEC,
-    0x0802_A0F0, 0x0802_A384, 0x0802_AF58, 0x0802_CB80, 0x0802_D274, 0x0802_D708, 0x0802_D908, 0x0803_87A4,
-    0x0803_8958, 0x0803_8F00, 0x0803_A06C, 0x0803_A168, 0x0803_A334, 0x0803_A610, 0x0803_A658, 0x0803_E9D0,
-    0x0804_01F8, 0x0804_1F2C, 0x0804_202C, 0x0804_2148, 0x0804_21B8, 0x0804_2224, 0x0804_2290, 0x0804_2354,
-    0x0804_2C90, 0x0804_30F8, 0x0804_3168, 0x0804_31D8, 0x0804_3248, 0x0804_32F4, 0x0804_33C4, 0x0804_33D4,
-    0x0804_33E4, 0x0804_33F4, 0x0804_3414, 0x0804_4480, 0x0804_44AC, 0x0804_44E4, 0x0804_7348, 0x0804_74EC,
-    0x0804_7A34, 0x0805_7F50, 0x0805_7FA4, 0x0805_8314, 0x0805_83D8, 0x0805_8B7C, 0x0805_8C38, 0x0805_8CC8,
-    0x0805_8DD8, 0x0805_8E64, 0x0805_8F24, 0x0805_8F80, 0x0805_928C, 0x0805_944C, 0x0805_9640, 0x0805_9B48,
-    0x0805_B4C8, 0x0805_BAD8, 0x0805_BB88, 0x0805_BC70, 0x0805_BDD0, 0x0805_C8EC, 0x0805_CA54, 0x0805_CB08,
-    0x0805_CBBC, 0x0805_CC74, 0x0805_CDDC, 0x0805_CEF8, 0x0805_CFAC, 0x0805_D064, 0x0805_D120, 0x0805_D1DC,
-    0x0805_D290, 0x0805_ED38, 0x0805_EDC4, 0x0805_EEA4, 0x0805_EF38, 0x0805_F24C, 0x0805_F414, 0x0805_F888,
-    0x0805_FAF0, 0x0806_0D10, 0x0806_12C0, 0x0806_1E7C, 0x0806_2554, 0x0806_2650, 0x0806_2724, 0x0806_28AC,
-    0x0806_2A20, 0x0809_09AC, 0x0809_0A48, 0x0809_0B6C, 0x0809_0BA4, 0x0809_0BDC, 0x0809_1368, 0x0812_A138,
-    0x0816_DAB4, 0x0816_DADC, 0x0816_DB0C,
+    0x0804_30A4,
+    0x0800_0A48,
+    0x0800_8A6C,
+    0x0800_8C30,
+    0x0801_9814,
+    0x0801_F8F4,
+    0x0802_0268,
+    0x0802_03BC,
+    0x0802_0DB8,
+    0x0802_4A20,
+    0x0802_4B98,
+    0x0802_5C48,
+    0x0802_5F64,
+    0x0802_5FB4,
+    0x0802_70B0,
+    0x0802_9AEC,
+    0x0802_A0F0,
+    0x0802_A384,
+    0x0802_AF58,
+    0x0802_CB80,
+    0x0802_D274,
+    0x0802_D708,
+    0x0802_D908,
+    0x0803_87A4,
+    0x0803_8958,
+    0x0803_8F00,
+    0x0803_A06C,
+    0x0803_A168,
+    0x0803_A334,
+    0x0803_A610,
+    0x0803_A658,
+    0x0803_E9D0,
+    0x0804_01F8,
+    0x0804_1F2C,
+    0x0804_202C,
+    0x0804_2148,
+    0x0804_21B8,
+    0x0804_2224,
+    0x0804_2290,
+    0x0804_2354,
+    0x0804_2C90,
+    0x0804_30F8,
+    0x0804_3168,
+    0x0804_31D8,
+    0x0804_3248,
+    0x0804_32F4,
+    0x0804_33C4,
+    0x0804_33D4,
+    0x0804_33E4,
+    0x0804_33F4,
+    0x0804_3414,
+    0x0804_4480,
+    0x0804_44AC,
+    0x0804_44E4,
+    0x0804_7348,
+    0x0804_74EC,
+    0x0804_7A34,
+    0x0805_7F50,
+    0x0805_7FA4,
+    0x0805_8314,
+    0x0805_83D8,
+    0x0805_8B7C,
+    0x0805_8C38,
+    0x0805_8CC8,
+    0x0805_8DD8,
+    0x0805_8E64,
+    0x0805_8F24,
+    0x0805_8F80,
+    0x0805_928C,
+    0x0805_944C,
+    0x0805_9640,
+    0x0805_9B48,
+    0x0805_B4C8,
+    0x0805_BAD8,
+    0x0805_BB88,
+    0x0805_BC70,
+    0x0805_BDD0,
+    0x0805_C8EC,
+    0x0805_CA54,
+    0x0805_CB08,
+    0x0805_CBBC,
+    0x0805_CC74,
+    0x0805_CDDC,
+    0x0805_CEF8,
+    0x0805_CFAC,
+    0x0805_D064,
+    0x0805_D120,
+    0x0805_D1DC,
+    0x0805_D290,
+    0x0805_ED38,
+    0x0805_EDC4,
+    0x0805_EEA4,
+    0x0805_EF38,
+    0x0805_F24C,
+    0x0805_F414,
+    0x0805_F888,
+    0x0805_FAF0,
+    0x0806_0D10,
+    0x0806_12C0,
+    0x0806_1E7C,
+    0x0806_2554,
+    0x0806_2650,
+    0x0806_2724,
+    0x0806_28AC,
+    0x0806_2A20,
+    0x0809_09AC,
+    0x0809_0A48,
+    0x0809_0B6C,
+    0x0809_0BA4,
+    0x0809_0BDC,
+    0x0809_1368,
+    0x0812_A138,
+    0x0816_DAB4,
+    0x0816_DADC,
+    0x0816_DB0C,
 ];
 /// Words holding `&table[0].transportTable` and `&table[0].repairTable`.
 const FIELD_POINTERS: [(u32, u32); 5] = [
@@ -234,13 +334,90 @@ const PIPE: u8 = 7;
 const OOZE: u8 = 8;
 
 const NEW: [New; 7] = [
-    New { id: MEGATANK, like: 3, name: 0, weapons: (Text::Ours(7), M_GUN), class: 1, movement: 2, domain: 4, role: 5, threatens: 4, target: 4 },
-    New { id: PIPERUNNER, like: 11, name: 1, weapons: (Text::Ours(8), NONE), class: 1, movement: PIPE, domain: 8, role: 4, threatens: 7, target: 4 },
-    New { id: STEALTH, like: 16, name: 2, weapons: (Text::Ours(9), NONE), class: 2, movement: 4, domain: 0x10, role: 5, threatens: 7, target: 1 },
-    New { id: BLACK_BOMB, like: 17, name: 3, weapons: (NONE, NONE), class: 2, movement: 4, domain: 0x10, role: 5, threatens: 0, target: 1 },
-    New { id: BLACK_BOAT, like: 23, name: 4, weapons: (NONE, NONE), class: 4, movement: 6, domain: 0x20, role: 2, threatens: 0, target: 2 },
-    New { id: CARRIER, like: 21, name: 5, weapons: (MISSILES, NONE), class: 4, movement: 5, domain: 0x20, role: 4, threatens: 1, target: 2 },
-    New { id: OOZIUM, like: 3, name: 6, weapons: (NONE, NONE), class: 1, movement: OOZE, domain: 4, role: 5, threatens: 4, target: 4 },
+    New {
+        id: MEGATANK,
+        like: 3,
+        name: 0,
+        weapons: (Text::Ours(7), M_GUN),
+        class: 1,
+        movement: 2,
+        domain: 4,
+        role: 5,
+        threatens: 4,
+        target: 4,
+    },
+    New {
+        id: PIPERUNNER,
+        like: 11,
+        name: 1,
+        weapons: (Text::Ours(8), NONE),
+        class: 1,
+        movement: PIPE,
+        domain: 8,
+        role: 4,
+        threatens: 7,
+        target: 4,
+    },
+    New {
+        id: STEALTH,
+        like: 16,
+        name: 2,
+        weapons: (Text::Ours(9), NONE),
+        class: 2,
+        movement: 4,
+        domain: 0x10,
+        role: 5,
+        threatens: 7,
+        target: 1,
+    },
+    New {
+        id: BLACK_BOMB,
+        like: 17,
+        name: 3,
+        weapons: (NONE, NONE),
+        class: 2,
+        movement: 4,
+        domain: 0x10,
+        role: 5,
+        threatens: 0,
+        target: 1,
+    },
+    New {
+        id: BLACK_BOAT,
+        like: 23,
+        name: 4,
+        weapons: (NONE, NONE),
+        class: 4,
+        movement: 6,
+        domain: 0x20,
+        role: 2,
+        threatens: 0,
+        target: 2,
+    },
+    New {
+        id: CARRIER,
+        like: 21,
+        name: 5,
+        weapons: (MISSILES, NONE),
+        class: 4,
+        movement: 5,
+        domain: 0x20,
+        role: 4,
+        threatens: 1,
+        target: 2,
+    },
+    New {
+        id: OOZIUM,
+        like: 3,
+        name: 6,
+        weapons: (NONE, NONE),
+        class: 1,
+        movement: OOZE,
+        domain: 4,
+        role: 5,
+        threatens: 4,
+        target: 4,
+    },
 ];
 
 fn text_id(t: Text) -> u16 {
@@ -357,7 +534,12 @@ fn raw(core: &mut Core) {
         return;
     }
     let cpu = core.gba().cpu();
-    let (att, def, w, lr) = (cpu.gpr(0) as u8, cpu.gpr(1) as u8, cpu.gpr(2) as u32, cpu.gpr(14) as u32);
+    let (att, def, w, lr) = (
+        cpu.gpr(0) as u8,
+        cpu.gpr(1) as u8,
+        cpu.gpr(2) as u32,
+        cpu.gpr(14) as u32,
+    );
     let v = chart(att, def, w);
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, v as i32);
@@ -484,35 +666,138 @@ struct Small {
 
 const SMALL: [Small; 9] = [
     // Can be resupplied (by an APC, a Black Boat).
-    Small { at: 0x0849_95A8, entries: 25, first: 0, refs: &[0x0802_A2D4, 0x0804_2144, 0x0805_A310, 0x0805_A478, 0x0805_A6C8],
-        values: &[(MEGATANK, 1), (PIPERUNNER, 1), (STEALTH, 1), (BLACK_BOMB, 1), (BLACK_BOAT, 1), (CARRIER, 1), (OOZIUM, 1)] },
+    Small {
+        at: 0x0849_95A8,
+        entries: 25,
+        first: 0,
+        refs: &[0x0802_A2D4, 0x0804_2144, 0x0805_A310, 0x0805_A478, 0x0805_A6C8],
+        values: &[
+            (MEGATANK, 1),
+            (PIPERUNNER, 1),
+            (STEALTH, 1),
+            (BLACK_BOMB, 1),
+            (BLACK_BOAT, 1),
+            (CARRIER, 1),
+            (OOZIUM, 1),
+        ],
+    },
     // Supplies others: the APC and the Black Boat (not id 9's leftover).
-    Small { at: 0x0849_95C1, entries: 25, first: 0, refs: &[0x0804_2094],
-        values: &[(PIPERUNNER, 0), (BLACK_BOAT, 1)] },
+    Small {
+        at: 0x0849_95C1,
+        entries: 25,
+        first: 0,
+        refs: &[0x0804_2094],
+        values: &[(PIPERUNNER, 0), (BLACK_BOAT, 1)],
+    },
     // Home facility (no daily fuel there): airport, port.
-    Small { at: 0x0849_95DA, entries: 25, first: 0, refs: &[0x0802_5460],
-        values: &[(STEALTH, 0x0A), (BLACK_BOMB, 0x0A), (BLACK_BOAT, 0x0B), (CARRIER, 0x0B)] },
+    Small {
+        at: 0x0849_95DA,
+        entries: 25,
+        first: 0,
+        refs: &[0x0802_5460],
+        values: &[(STEALTH, 0x0A), (BLACK_BOMB, 0x0A), (BLACK_BOAT, 0x0B), (CARRIER, 0x0B)],
+    },
     // AI: factory kind (2 base, 4 airport, 6 port).
-    Small { at: 0x0857_680F, entries: 25, first: 0,
-        refs: &[0x0805_8310, 0x0805_83D4, 0x0805_8484, 0x0805_873C, 0x0805_A118, 0x0806_12C4, 0x0806_13B8, 0x0806_16DC, 0x0816_D9A4, 0x0816_DAE4],
-        values: &[(MEGATANK, 2), (PIPERUNNER, 2), (STEALTH, 4), (BLACK_BOMB, 4), (BLACK_BOAT, 6), (CARRIER, 6), (OOZIUM, 2)] },
+    Small {
+        at: 0x0857_680F,
+        entries: 25,
+        first: 0,
+        refs: &[
+            0x0805_8310,
+            0x0805_83D4,
+            0x0805_8484,
+            0x0805_873C,
+            0x0805_A118,
+            0x0806_12C4,
+            0x0806_13B8,
+            0x0806_16DC,
+            0x0816_D9A4,
+            0x0816_DAE4,
+        ],
+        values: &[
+            (MEGATANK, 2),
+            (PIPERUNNER, 2),
+            (STEALTH, 4),
+            (BLACK_BOMB, 4),
+            (BLACK_BOAT, 6),
+            (CARRIER, 6),
+            (OOZIUM, 2),
+        ],
+    },
     // AI: rank (planes 5, copters 2, ships 1).
-    Small { at: 0x0857_6828, entries: 25, first: 0, refs: &[0x0805_A6D4],
-        values: &[(STEALTH, 5), (BLACK_BOMB, 5), (BLACK_BOAT, 1), (CARRIER, 1)] },
+    Small {
+        at: 0x0857_6828,
+        entries: 25,
+        first: 0,
+        refs: &[0x0805_A6D4],
+        values: &[(STEALTH, 5), (BLACK_BOMB, 5), (BLACK_BOAT, 1), (CARRIER, 1)],
+    },
     // AI: domain (1 ground, 2 air, 3 sea).
-    Small { at: 0x0857_6841, entries: 25, first: 0, refs: &[0x0805_A3C8],
-        values: &[(MEGATANK, 1), (PIPERUNNER, 1), (STEALTH, 2), (BLACK_BOMB, 2), (BLACK_BOAT, 3), (CARRIER, 3), (OOZIUM, 1)] },
+    Small {
+        at: 0x0857_6841,
+        entries: 25,
+        first: 0,
+        refs: &[0x0805_A3C8],
+        values: &[
+            (MEGATANK, 1),
+            (PIPERUNNER, 1),
+            (STEALTH, 2),
+            (BLACK_BOMB, 2),
+            (BLACK_BOAT, 3),
+            (CARRIER, 3),
+            (OOZIUM, 1),
+        ],
+    },
     // AI: counted in its tallies.
-    Small { at: 0x0857_6877, entries: 25, first: 0, refs: &[0x0806_07E0],
-        values: &[(MEGATANK, 1), (PIPERUNNER, 1), (STEALTH, 1), (BLACK_BOMB, 1), (BLACK_BOAT, 1), (CARRIER, 1), (OOZIUM, 1)] },
+    Small {
+        at: 0x0857_6877,
+        entries: 25,
+        first: 0,
+        refs: &[0x0806_07E0],
+        values: &[
+            (MEGATANK, 1),
+            (PIPERUNNER, 1),
+            (STEALTH, 1),
+            (BLACK_BOMB, 1),
+            (BLACK_BOAT, 1),
+            (CARRIER, 1),
+            (OOZIUM, 1),
+        ],
+    },
     // AI: ground unit (from type 1).
-    Small { at: 0x0857_67A0, entries: 24, first: 1, refs: &[0x0805_F668, 0x0806_1650],
-        values: &[(MEGATANK, 1), (PIPERUNNER, 1), (STEALTH, 0), (BLACK_BOMB, 0), (BLACK_BOAT, 0), (CARRIER, 0), (OOZIUM, 1)] },
+    Small {
+        at: 0x0857_67A0,
+        entries: 24,
+        first: 1,
+        refs: &[0x0805_F668, 0x0806_1650],
+        values: &[
+            (MEGATANK, 1),
+            (PIPERUNNER, 1),
+            (STEALTH, 0),
+            (BLACK_BOMB, 0),
+            (BLACK_BOAT, 0),
+            (CARRIER, 0),
+            (OOZIUM, 1),
+        ],
+    },
     // Battle scene per unit: the donor whose scene plays (Neotank, Rockets,
     // Bomber, Bomber, Lander, Cruiser, Tank); `crate::ds_battle` picks it
     // per battle and draws Dual Strike's unit in it.
-    Small { at: 0x0809_131E, entries: 26, first: 0, refs: &[0x0804_1C04],
-        values: &[(MEGATANK, 7), (PIPERUNNER, 10), (STEALTH, 16), (BLACK_BOMB, 16), (BLACK_BOAT, 22), (CARRIER, 21), (OOZIUM, 4)] },
+    Small {
+        at: 0x0809_131E,
+        entries: 26,
+        first: 0,
+        refs: &[0x0804_1C04],
+        values: &[
+            (MEGATANK, 7),
+            (PIPERUNNER, 10),
+            (STEALTH, 16),
+            (BLACK_BOMB, 16),
+            (BLACK_BOAT, 22),
+            (CARRIER, 21),
+            (OOZIUM, 4),
+        ],
+    },
 ];
 const SMALL_SIZE: u32 = ROOM_TYPES;
 
@@ -532,19 +817,58 @@ struct Clone {
 
 const CLONE: [Clone; 5] = [
     // Moving unit sprites and animation.
-    Clone { at: 0x0849_CD88, stride: 36, entries: 25, first: 0,
-        refs: &[0x0803_5B24, 0x0803_5B38, 0x0803_5B64, 0x0803_5B7C, 0x0803_5F94, 0x0803_60CC, 0x0809_0EB0, 0x0809_0EB4, 0x0809_0EB8] },
+    Clone {
+        at: 0x0849_CD88,
+        stride: 36,
+        entries: 25,
+        first: 0,
+        refs: &[
+            0x0803_5B24,
+            0x0803_5B38,
+            0x0803_5B64,
+            0x0803_5B7C,
+            0x0803_5F94,
+            0x0803_60CC,
+            0x0809_0EB0,
+            0x0809_0EB4,
+            0x0809_0EB8,
+        ],
+    },
     // Unit information: sprites and pictures per country.
-    Clone { at: 0x0849_DC18, stride: 60, entries: 25, first: 0, refs: &[0x0803_A15C, 0x0803_A2A8] },
+    Clone {
+        at: 0x0849_DC18,
+        stride: 60,
+        entries: 25,
+        first: 0,
+        refs: &[0x0803_A15C, 0x0803_A2A8],
+    },
     // Unit information: picture palettes (from unit 1). The battle scene
     // reads the same table by scene id (`sub_0804BD20`, pool word
     // 0x0804BD54), whose rows 3 and 17 (the second B Copter and the dived
     // Sub) are units 4 and 18 here: it keeps the game's table.
-    Clone { at: 0x0855_5D30, stride: 20, entries: 24, first: 1, refs: &[0x0803_A2B4] },
+    Clone {
+        at: 0x0855_5D30,
+        stride: 20,
+        entries: 24,
+        first: 1,
+        refs: &[0x0803_A2B4],
+    },
     // Unit information: class icon.
-    Clone { at: 0x0849_E224, stride: 1, entries: 25, first: 0, refs: &[0x0803_A164] },
+    Clone {
+        at: 0x0849_E224,
+        stride: 1,
+        entries: 25,
+        first: 0,
+        refs: &[0x0803_A164],
+    },
     // Unit information: its byte script.
-    Clone { at: 0x0849_97C8, stride: 4, entries: 25, first: 0, refs: &[0x0803_AB6C] },
+    Clone {
+        at: 0x0849_97C8,
+        stride: 4,
+        entries: 25,
+        first: 0,
+        refs: &[0x0803_AB6C],
+    },
 ];
 /// Where each clone goes in [`CLONES`] (64 units each).
 fn clone_at(k: usize) -> u32 {
@@ -602,7 +926,12 @@ fn map_art() -> Option<Vec<[u8; 128]>> {
 /// LZ77 (type 0x10) of `data` with literal blocks only (the game's
 /// decompressor takes any valid stream).
 fn lz77_literal(data: &[u8]) -> Vec<u8> {
-    let mut out = vec![0x10, data.len() as u8, (data.len() >> 8) as u8, (data.len() >> 16) as u8];
+    let mut out = vec![
+        0x10,
+        data.len() as u8,
+        (data.len() >> 8) as u8,
+        (data.len() >> 16) as u8,
+    ];
     for block in data.chunks(8) {
         out.push(0);
         out.extend_from_slice(block);
@@ -685,8 +1014,33 @@ const PANEL_NAMES: [&str; 7] = ["Megatnk", "Pipernr", "Stealth", "B Bomb", "B Bo
 /// The Design Room's unit bar (the game's, 0x08488856, with the new units
 /// beside their relatives; 25 is the eraser), ended by 0xFF.
 pub const UNIT_BAR_UNITS: [u16; 27] = [
-    23, 24, BLACK_BOAT as u16, CARRIER as u16, 25, 1, 2, 6, 5, 3, 8, MEGATANK as u16, 7, 10, 11, PIPERUNNER as u16, 14,
-    15, 16, 17, STEALTH as u16, BLACK_BOMB as u16, 19, 20, 21, 22, OOZIUM as u16,
+    23,
+    24,
+    BLACK_BOAT as u16,
+    CARRIER as u16,
+    25,
+    1,
+    2,
+    6,
+    5,
+    3,
+    8,
+    MEGATANK as u16,
+    7,
+    10,
+    11,
+    PIPERUNNER as u16,
+    14,
+    15,
+    16,
+    17,
+    STEALTH as u16,
+    BLACK_BOMB as u16,
+    19,
+    20,
+    21,
+    22,
+    OOZIUM as u16,
 ];
 
 // --- Build menu --------------------------------------------------------------
@@ -696,8 +1050,8 @@ pub const UNIT_BAR_UNITS: [u16; 27] = [
 const AW2_BUILD_LIST: u32 = 0x081B_A054;
 const BUILD_LIST_POINTER: u32 = 0x0809_0C08;
 const BUILD: [u8; 26] = [
-    1, 2, 6, 5, 3, 8, MEGATANK, 7, 10, 11, 14, 15, PIPERUNNER, OOZIUM, 16, 17, 19, 20, STEALTH, BLACK_BOMB, 21, 22,
-    23, 24, BLACK_BOAT, CARRIER,
+    1, 2, 6, 5, 3, 8, MEGATANK, 7, 10, 11, 14, 15, PIPERUNNER, OOZIUM, 16, 17, 19, 20, STEALTH, BLACK_BOMB, 21, 22, 23,
+    24, BLACK_BOAT, CARRIER,
 ];
 /// A base builds units whose domain has any of these bits (`sub_0802D5E8`,
 /// `movs r4, #7`): with the Piperunner's pipe bit (8) too.
@@ -717,7 +1071,9 @@ fn install(core: &mut Core) -> bool {
     }
     let mut transports = Vec::new();
     for &(t, drops) in TRANSPORTERS.iter() {
-        let Some(tt) = transport_table(core, t, drops) else { return false };
+        let Some(tt) = transport_table(core, t, drops) else {
+            return false;
+        };
         transports.push(tt);
     }
     for (t, r) in records.iter().enumerate() {
@@ -729,7 +1085,11 @@ fn install(core: &mut Core) -> bool {
     core.raw_write_range(CHARTS, -1, &c);
     for (k, s) in SMALL.iter().enumerate() {
         let mut t = vec![0u8; SMALL_SIZE as usize];
-        core.raw_read_range(s.at, -1, &mut t[s.first as usize..s.first as usize + s.entries as usize]);
+        core.raw_read_range(
+            s.at,
+            -1,
+            &mut t[s.first as usize..s.first as usize + s.entries as usize],
+        );
         for &(id, v) in s.values {
             t[id as usize] = v;
         }
@@ -898,7 +1258,15 @@ pub fn tick(core: &mut Core, on: bool) {
     }
     switch32(core, SLOTS_REF, if on { SLOTS } else { AW2_SLOTS });
     switch32(core, NAME_INDEX_REF, if on { NAME_INDEX } else { AW2_NAME_INDEX });
-    switch32(core, NAME_PICTURES_REF, if on { NAME_PICTURES } else { crate::unit_names::AW2_PICTURES });
+    switch32(
+        core,
+        NAME_PICTURES_REF,
+        if on {
+            NAME_PICTURES
+        } else {
+            crate::unit_names::AW2_PICTURES
+        },
+    );
     let (at, aw2, ds) = SLOTS_STRIDE;
     let want = if on { ds } else { aw2 };
     let now = core.raw_read_16(at, -1);

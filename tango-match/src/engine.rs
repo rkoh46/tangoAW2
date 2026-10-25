@@ -91,7 +91,12 @@ pub fn seat_inputs(local_player: usize, players: usize, local: HostInput, remote
         return inputs;
     }
     inputs[local_player] = local;
-    let words = [remote.keys, remote.extra[0] as u32, remote.extra[1] as u32, remote.extra[2] as u32];
+    let words = [
+        remote.keys,
+        remote.extra[0] as u32,
+        remote.extra[1] as u32,
+        remote.extra[2] as u32,
+    ];
     for (k, seat) in (0..players).filter(|&s| s != local_player).enumerate() {
         inputs[seat] = HostInput::keys(words[k]);
     }
@@ -351,7 +356,8 @@ impl Match {
             .iter()
             .filter(|(t, _)| *t <= self.settled)
             .filter_map(|(tick, snap)| {
-                link.state_image(snap).map(|image| crate::suspend::Checkpoint { tick: *tick, image })
+                link.state_image(snap)
+                    .map(|image| crate::suspend::Checkpoint { tick: *tick, image })
             })
             .collect()
     }

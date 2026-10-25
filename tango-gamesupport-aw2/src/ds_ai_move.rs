@@ -83,7 +83,10 @@ fn visible(b: &Board, sight: &[bool], army: u32, e: &Unit) -> bool {
     let i = b.idx(e.x, e.y);
     let close = matches!(b.class[i], 4 | 19) || e.flags & 0x20 != 0;
     if close {
-        return b.units.iter().any(|u| !u.carried() && b.same_team(u.army, army) && (u.x - e.x).abs() + (u.y - e.y).abs() == 1);
+        return b
+            .units
+            .iter()
+            .any(|u| !u.carried() && b.same_team(u.army, army) && (u.x - e.x).abs() + (u.y - e.y).abs() == 1);
     }
     sight[i]
 }
@@ -111,7 +114,11 @@ pub(crate) fn threat_maps(core: &Core, b: &Board, army: u32, t: u8, x: i32, y: i
     }
     let sight = seen(b, army);
     let me_direct = matches!(attack(t), Attack::Direct | Attack::None);
-    for e in b.units.iter().filter(|e| !e.carried() && b.playing[e.army as usize % 6] && !b.same_team(e.army, army)) {
+    for e in b
+        .units
+        .iter()
+        .filter(|e| !e.carried() && b.playing[e.army as usize % 6] && !b.same_team(e.army, army))
+    {
         if !visible(b, &sight, army, e) {
             continue;
         }
@@ -121,7 +128,11 @@ pub(crate) fn threat_maps(core: &Core, b: &Board, army: u32, t: u8, x: i32, y: i
         }
         let kind = attack(e.t);
         let em = b.moves(e.army, e.t);
-        let reach = if kind == Attack::Indirect { b.max_range(e.army, e.t) } else { em + 1 };
+        let reach = if kind == Attack::Indirect {
+            b.max_range(e.army, e.t)
+        } else {
+            em + 1
+        };
         if (e.x - x).abs() + (e.y - y).abs() > moves + reach + 1 {
             continue;
         }
@@ -201,17 +212,39 @@ fn target_cells(b: &Board, army: u32, u: &Unit, role: u8, sight: &[bool]) -> Opt
     let reach = b.flood(army, u.t, u.x, u.y, FAR, false);
     let near = |i: usize| reach[i] as i32;
     let adjacent = |x: i32, y: i32| -> Vec<usize> {
-        [(0, -1), (1, 0), (0, 1), (-1, 0)].iter().filter(|&&(dx, dy)| b.inside(x + dx, y + dy)).map(|&(dx, dy)| b.idx(x + dx, y + dy)).collect()
+        [(0, -1), (1, 0), (0, 1), (-1, 0)]
+            .iter()
+            .filter(|&&(dx, dy)| b.inside(x + dx, y + dy))
+            .map(|&(dx, dy)| b.idx(x + dx, y + dy))
+            .collect()
     };
-    let best_of = |cands: Vec<(i32, Vec<usize>)>| cands.into_iter().filter(|c| c.0 >= 0).min_by_key(|c| c.0).map(|c| c.1);
+    let best_of =
+        |cands: Vec<(i32, Vec<usize>)>| cands.into_iter().filter(|c| c.0 >= 0).min_by_key(|c| c.0).map(|c| c.1);
     let enemy_units = || -> Option<Vec<usize>> {
         let cands = b
             .units
             .iter()
-            .filter(|e| !e.carried() && b.playing[e.army as usize % 6] && !b.same_team(e.army, army) && visible(b, sight, army, e))
-            .filter(|e| base_damage(u.t, if e.t == SUB && e.flags & 0x20 != 0 { crate::roster::DIVED_SUB } else { e.t }) > 0)
+            .filter(|e| {
+                !e.carried()
+                    && b.playing[e.army as usize % 6]
+                    && !b.same_team(e.army, army)
+                    && visible(b, sight, army, e)
+            })
+            .filter(|e| {
+                base_damage(
+                    u.t,
+                    if e.t == SUB && e.flags & 0x20 != 0 {
+                        crate::roster::DIVED_SUB
+                    } else {
+                        e.t
+                    },
+                ) > 0
+            })
             .map(|e| {
-                let cells: Vec<usize> = adjacent(e.x, e.y).into_iter().filter(|&i| b.at[i] == 0 || (b.idx(u.x, u.y) == i)).collect();
+                let cells: Vec<usize> = adjacent(e.x, e.y)
+                    .into_iter()
+                    .filter(|&i| b.at[i] == 0 || (b.idx(u.x, u.y) == i))
+                    .collect();
                 let c = cells.iter().map(|&i| near(i)).filter(|&d| d >= 0).min().unwrap_or(-1);
                 (c, cells)
             })
@@ -220,10 +253,20 @@ fn target_cells(b: &Board, army: u32, u: &Unit, role: u8, sight: &[bool]) -> Opt
     };
     let properties = |hq_only: bool| -> Option<Vec<usize>> {
         let cands = (0..b.class.len())
-            .filter(|&i| if hq_only { b.class[i] == C_HQ && b.owner[i] != 0 && !b.team_owns(i, army) } else { PROPERTIES.contains(&b.class[i]) && !b.team_owns(i, army) })
+            .filter(|&i| {
+                if hq_only {
+                    b.class[i] == C_HQ && b.owner[i] != 0 && !b.team_owns(i, army)
+                } else {
+                    PROPERTIES.contains(&b.class[i]) && !b.team_owns(i, army)
+                }
+            })
             .map(|i| {
                 let (x, y) = (i as i32 % b.w, i as i32 / b.w);
-                let cells: Vec<usize> = if b.at[i] == 0 || b.idx(u.x, u.y) == i { vec![i] } else { adjacent(x, y) };
+                let cells: Vec<usize> = if b.at[i] == 0 || b.idx(u.x, u.y) == i {
+                    vec![i]
+                } else {
+                    adjacent(x, y)
+                };
                 let c = cells.iter().map(|&j| near(j)).filter(|&d| d >= 0).min().unwrap_or(-1);
                 (c, cells)
             })
@@ -231,9 +274,15 @@ fn target_cells(b: &Board, army: u32, u: &Unit, role: u8, sight: &[bool]) -> Opt
         best_of(cands)
     };
     match role {
-        4 => enemy_units().map(|c| (c, "enemy unit")).or_else(|| properties(true).map(|c| (c, "enemy HQ"))),
-        1 => properties(true).map(|c| (c, "enemy HQ")).or_else(|| enemy_units().map(|c| (c, "enemy unit"))),
-        _ => properties(false).map(|c| (c, "property")).or_else(|| enemy_units().map(|c| (c, "enemy unit"))),
+        4 => enemy_units()
+            .map(|c| (c, "enemy unit"))
+            .or_else(|| properties(true).map(|c| (c, "enemy HQ"))),
+        1 => properties(true)
+            .map(|c| (c, "enemy HQ"))
+            .or_else(|| enemy_units().map(|c| (c, "enemy unit"))),
+        _ => properties(false)
+            .map(|c| (c, "property"))
+            .or_else(|| enemy_units().map(|c| (c, "enemy unit"))),
     }
 }
 
@@ -247,12 +296,17 @@ pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll
     let reach = b.flood(army, u.t, u.x, u.y, moves, false);
     let prof = profile(army_co(core, army).0)?;
     let up = prof.unit(u.t);
-    let (max_limit, sum_limit) = (randomise(up.threat_max.0, up.threat_max.1, roll), randomise(up.threat_sum.0, up.threat_sum.1, roll));
+    let (max_limit, sum_limit) = (
+        randomise(up.threat_max.0, up.threat_max.1, roll),
+        randomise(up.threat_sum.0, up.threat_sum.1, roll),
+    );
     let (tmax, tsum) = threat_maps(core, b, army, u.t, u.x, u.y, moves);
     let here = b.idx(u.x, u.y);
     let danger = |i: usize| tmax[i] as i32 + 2 * tsum[i] as i32;
     let safe = |i: usize| tmax[i] < max_limit && tsum[i] < sum_limit;
-    let cells: Vec<usize> = (0..reach.len()).filter(|&i| reach[i] >= 0 && (b.at[i] == 0 || i == here)).collect();
+    let cells: Vec<usize> = (0..reach.len())
+        .filter(|&i| reach[i] >= 0 && (b.at[i] == 0 || i == here))
+        .collect();
     let progress = |i: usize| to[i] >= 0 && (to[here] < 0 || to[i] < to[here]);
     let star = |i: usize| stars(core, b.class[i]);
     let pick = cells
@@ -280,7 +334,11 @@ pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll
     } else if safe(here) {
         (here, "holds: nothing nearer is safe")
     } else {
-        let i = cells.iter().copied().min_by_key(|&i| (danger(i), -star(i), reach[i], i)).unwrap_or(here);
+        let i = cells
+            .iter()
+            .copied()
+            .min_by_key(|&i| (danger(i), -star(i), reach[i], i))
+            .unwrap_or(here);
         (i, "safest cell")
     };
     let note = format!(
@@ -314,16 +372,28 @@ pub fn role_move(core: &mut Core) -> bool {
     // (the army's behaviour's role where it has one: Strike the nearest enemy units, Assault the properties)
     let own = core.raw_read_8(rec + 0x0B, -1);
     let role = crate::ally_posture::role(behaviour(core, army)).map_or(own, |r| r as u8);
-    if !matches!(role, 1 | 3 | 4) || t <= MECH || attack(t) != Attack::Direct || crate::custom_campaign::driven_goal(core, rec).is_some() {
+    if !matches!(role, 1 | 3 | 4)
+        || t <= MECH
+        || attack(t) != Attack::Direct
+        || crate::custom_campaign::driven_goal(core, rec).is_some()
+    {
         return false;
     }
     let started = std::time::Instant::now();
     let roll = profile_roll(core, army);
     let b = Board::read(core);
-    let Some(u) = b.units.iter().find(|u| u.rec == rec).copied() else { return false };
-    let Some((cell, note)) = choose(core, &b, army, &u, role, roll) else { return false };
+    let Some(u) = b.units.iter().find(|u| u.rec == rec).copied() else {
+        return false;
+    };
+    let Some((cell, note)) = choose(core, &b, army, &u, role, roll) else {
+        return false;
+    };
     if logging() {
-        log(&format!("dsai move day {} army {army} {note}, {} us", b.day, started.elapsed().as_micros()));
+        log(&format!(
+            "dsai move day {} army {army} {note}, {} us",
+            b.day,
+            started.elapsed().as_micros()
+        ));
     }
     // Staying where it is is AW2's role 0 (hold: the unit waits there, an action like any other, so the turn's
     // checks after actions run and the unit is done); going somewhere is role 1 with the place replaced.
@@ -345,7 +415,10 @@ pub fn goal_hook(core: &mut Core) {
         return;
     }
     core.raw_write_8(GOAL, -1, 0);
-    let (x, y) = (core.raw_read_8(GOAL + 1, -1) as u16, core.raw_read_8(GOAL + 2, -1) as u16);
+    let (x, y) = (
+        core.raw_read_8(GOAL + 1, -1) as u16,
+        core.raw_read_8(GOAL + 2, -1) as u16,
+    );
     let out = core.gba().cpu().gpr(4) as u32;
     core.raw_write_16(out, -1, x);
     core.raw_write_16(out + 2, -1, y);

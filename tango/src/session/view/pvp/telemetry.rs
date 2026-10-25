@@ -267,7 +267,10 @@ struct Readout {
 
 impl Readout {
     fn view<'a>(self) -> Element<'a, Message> {
-        Canvas::new(self).width(Length::Fill).height(Length::Fixed(SPARK_H)).into()
+        Canvas::new(self)
+            .width(Length::Fill)
+            .height(Length::Fixed(SPARK_H))
+            .into()
     }
 }
 
@@ -303,13 +306,19 @@ impl canvas::Program<Message> for Readout {
 
 /// A right-aligned monospace value readout, tinted by `tone`.
 fn value_text<'a>(s: String, tone: Option<StatTone>) -> Element<'a, Message> {
-    Readout { segments: vec![(s, tone)] }.view()
+    Readout {
+        segments: vec![(s, tone)],
+    }
+    .view()
 }
 
 /// TPS readout: current rate over its live cap, compressed to fit a status lane.
 fn tps_value<'a>(tps: f32, fps_target: f32, tone: StatTone) -> Element<'a, Message> {
     Readout {
-        segments: vec![(format!("/{:5.2}", fps_target), Some(StatTone::Muted)), (format!("{:5.2}", tps), Some(tone))],
+        segments: vec![
+            (format!("/{:5.2}", fps_target), Some(StatTone::Muted)),
+            (format!("{:5.2}", tps), Some(tone)),
+        ],
     }
     .view()
 }
@@ -585,10 +594,18 @@ fn fmt_ping(ping_ms: u128) -> String {
 /// Persistent player/seat legend above the charts. Red and blue describe field
 /// halves everywhere except games that color players by seat; those keep the
 /// game-native P1/P2 color assignment while You/Opponent follows the local seat.
-fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget: f32, compact: bool) -> Element<'a, Message> {
+fn players_header<'a>(
+    lang: &'a LanguageIdentifier,
+    pvp: &'a PvpSession,
+    budget: f32,
+    compact: bool,
+) -> Element<'a, Message> {
     legend_view(
         lang,
-        (pvp.local_player_index() == 0, pvp.local_game().family.players_colored_by_seat),
+        (
+            pvp.local_player_index() == 0,
+            pvp.local_game().family.players_colored_by_seat,
+        ),
         budget,
         compact,
         Some(pvp.host_seat()),
@@ -599,7 +616,11 @@ fn players_header<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, budget:
 /// A seat's army colour in the legends: the army's own `normal`, or the army skin's (Emerald Sun) when the seat's army
 /// colour (its pick's, else the seat's own number) is the colour the skin sits on.
 fn army_colour(normal: Color, picks: &[(u8, u8)], n: usize, seat: usize) -> Color {
-    let code = if picks.len() == n { picks[seat].1 } else { seat as u8 + 1 };
+    let code = if picks.len() == n {
+        picks[seat].1
+    } else {
+        seat as u8 + 1
+    };
     match tango_library::online::skin_accent(code) {
         Some((r, g, b)) => Color::from_rgb8(r, g, b),
         None => normal,
@@ -626,7 +647,10 @@ fn legend_view<'a>(
             border: iced::Border {
                 radius: 999.0.into(),
                 width: 1.0,
-                color: Color { a: 0.55, ..theme.palette().text },
+                color: Color {
+                    a: 0.55,
+                    ..theme.palette().text
+                },
             },
             ..Default::default()
         });
@@ -638,7 +662,8 @@ fn legend_view<'a>(
         .spacing(4)
         .align_y(Alignment::Center);
         if host {
-            r.push(text("host").size(TEXT_CAPTION).font(iced::Font::MONOSPACE)).into()
+            r.push(text("host").size(TEXT_CAPTION).font(iced::Font::MONOSPACE))
+                .into()
         } else {
             r.into()
         }
@@ -648,18 +673,36 @@ fn legend_view<'a>(
     let n = tango_library::online::room_players();
     if compact {
         // The armies' dots alone: names and seat markers do not fit a phone's bar.
-        let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
+        let colors = [
+            FIELD_RED,
+            FIELD_BLUE,
+            Color::from_rgb8(0x4c, 0xaf, 0x50),
+            Color::from_rgb8(0xe0, 0xb0, 0x20),
+            Color::from_rgb8(0x30, 0x30, 0x30),
+        ];
         let mut r = row![].spacing(4).align_y(Alignment::Center);
         let picks = tango_library::online::room_picks();
         for k in 0..n.clamp(2, 5) {
             let c = army_colour(colors[k], &picks, n, k);
-            r = r.push(container(iced::widget::Space::new().width(Length::Fixed(8.0)).height(Length::Fixed(8.0))).style(
-                move |theme: &iced::Theme| iced::widget::container::Style {
+            r = r.push(
+                container(
+                    iced::widget::Space::new()
+                        .width(Length::Fixed(8.0))
+                        .height(Length::Fixed(8.0)),
+                )
+                .style(move |theme: &iced::Theme| iced::widget::container::Style {
                     background: Some(iced::Background::Color(c)),
-                    border: iced::Border { radius: 999.0.into(), width: 1.0, color: Color { a: 0.55, ..theme.palette().text } },
+                    border: iced::Border {
+                        radius: 999.0.into(),
+                        width: 1.0,
+                        color: Color {
+                            a: 0.55,
+                            ..theme.palette().text
+                        },
+                    },
                     ..Default::default()
-                },
-            ));
+                }),
+            );
         }
         return r.into();
     }
@@ -667,7 +710,13 @@ fn legend_view<'a>(
         // A room of 3-5: every seat, in its army's colour, with its gamertag. The legend takes what the numbers beside
         // it leave (`budget`): the full names while they fit, else shorter and shorter ones, and last only the seat
         // markers (the local seat says "You"); the full legend is in a tooltip whenever anything is cut.
-        let colors = [FIELD_RED, FIELD_BLUE, Color::from_rgb8(0x4c, 0xaf, 0x50), Color::from_rgb8(0xe0, 0xb0, 0x20), Color::from_rgb8(0x30, 0x30, 0x30)];
+        let colors = [
+            FIELD_RED,
+            FIELD_BLUE,
+            Color::from_rgb8(0x4c, 0xaf, 0x50),
+            Color::from_rgb8(0xe0, 0xb0, 0x20),
+            Color::from_rgb8(0x30, 0x30, 0x30),
+        ];
         let me = tango_library::online::room_local_seat();
         let seats: [&'static str; 5] = ["P1", "P2", "P3", "P4", "P5"];
         // (a seat's army colour is its pick's once the room has them)
@@ -676,14 +725,27 @@ fn legend_view<'a>(
         let full: Vec<String> = names
             .iter()
             .enumerate()
-            .map(|(k, name)| if k == me { format!("{name} ({you})") } else { name.clone() })
+            .map(|(k, name)| {
+                if k == me {
+                    format!("{name} ({you})")
+                } else {
+                    name.clone()
+                }
+            })
             .collect();
         // Teams (any team of two or more): "A: Host, Guest2  B: Guest", each in its army's colour. The names are cut
         // to the budget as the seats' legend's are (less the room the team letters take).
         let picks = tango_library::online::room_picks();
         if picks.len() == n && (0..n).any(|a| (0..n).any(|b| a != b && picks[a].0 == picks[b].0)) {
             let teams = (0..5u8).filter(|&t| picks.iter().any(|p| p.0 == t)).count() as f32;
-            let (shown, cut) = legend_names_in(&names, me, &you, &full, budget - 22.0 * teams - if host.is_some() { 32.0 } else { 0.0 }, 0.0);
+            let (shown, cut) = legend_names_in(
+                &names,
+                me,
+                &you,
+                &full,
+                budget - 22.0 * teams - if host.is_some() { 32.0 } else { 0.0 },
+                0.0,
+            );
             let mut r = row![].spacing(12).align_y(Alignment::Center);
             // (the letters count the teams in use: A, A, C, C reads A, A, B, B)
             let mut used: Vec<u8> = picks.iter().map(|p| p.0).collect();
@@ -694,12 +756,21 @@ fn legend_view<'a>(
                 if members.is_empty() {
                     continue;
                 }
-                let mut g = row![text(format!("{}:", (b'A' + used.iter().position(|&t| t == team).unwrap_or(0) as u8) as char)).size(TEXT_CAPTION).font(iced::Font::MONOSPACE)]
-                    .spacing(4)
-                    .align_y(Alignment::Center);
+                let mut g = row![text(format!(
+                    "{}:",
+                    (b'A' + used.iter().position(|&t| t == team).unwrap_or(0) as u8) as char
+                ))
+                .size(TEXT_CAPTION)
+                .font(iced::Font::MONOSPACE)]
+                .spacing(4)
+                .align_y(Alignment::Center);
                 for (i, &k) in members.iter().enumerate() {
                     let accent = army_colour(colors[(picks[k].1 as usize).clamp(1, 5) - 1], &picks, n, k);
-                    let name = if i + 1 < members.len() { format!("{},", shown[k]) } else { shown[k].clone() };
+                    let name = if i + 1 < members.len() {
+                        format!("{},", shown[k])
+                    } else {
+                        shown[k].clone()
+                    };
                     g = g.push(side(accent, "", name, host == Some(k)));
                 }
                 r = r.push(g);
@@ -707,7 +778,12 @@ fn legend_view<'a>(
             if !cut {
                 return r.into();
             }
-            let who = full.iter().enumerate().map(|(k, f)| format!("{} {f}", seats[k])).collect::<Vec<_>>().join("\n");
+            let who = full
+                .iter()
+                .enumerate()
+                .map(|(k, f)| format!("{} {f}", seats[k]))
+                .collect::<Vec<_>>()
+                .join("\n");
             return iced::widget::tooltip(r, widgets::tooltip_bubble(who), iced::widget::tooltip::Position::Top)
                 .gap(5)
                 .into();
@@ -716,12 +792,22 @@ fn legend_view<'a>(
         let (shown, cut) = legend_names(&names, me, &you, &full, budget);
         let mut r = row![].spacing(12).align_y(Alignment::Center);
         for k in 0..n {
-            r = r.push(side(army_colour(colors[k], &tango_library::online::room_picks(), n, k), seats[k], shown[k].clone(), host == Some(k)));
+            r = r.push(side(
+                army_colour(colors[k], &tango_library::online::room_picks(), n, k),
+                seats[k],
+                shown[k].clone(),
+                host == Some(k),
+            ));
         }
         if !cut {
             return r.into();
         }
-        let who = full.iter().enumerate().map(|(k, f)| format!("{} {f}", seats[k])).collect::<Vec<_>>().join("\n");
+        let who = full
+            .iter()
+            .enumerate()
+            .map(|(k, f)| format!("{} {f}", seats[k]))
+            .collect::<Vec<_>>()
+            .join("\n");
         return iced::widget::tooltip(r, widgets::tooltip_bubble(who), iced::widget::tooltip::Position::Top)
             .gap(5)
             .into();
@@ -751,7 +837,13 @@ fn legend_entry_width(name_chars: usize) -> f32 {
 
 /// [`legend_entry_width`] with the seat marker's `marker` width (none in the teams' legend).
 fn legend_entry_width_in(name_chars: usize, marker: f32) -> f32 {
-    8.0 + 4.0 + marker + if name_chars > 0 { 4.0 + name_chars as f32 * 6.5 } else { 0.0 }
+    8.0 + 4.0
+        + marker
+        + if name_chars > 0 {
+            4.0 + name_chars as f32 * 6.5
+        } else {
+            0.0
+        }
 }
 
 /// The names the legend shows in `budget` pixels, and whether any was cut: the full ones ("Name (You)") if they fit,
@@ -761,10 +853,22 @@ fn legend_names(names: &[String], me: usize, you: &str, full: &[String], budget:
     legend_names_in(names, me, you, full, budget, 15.0)
 }
 
-fn legend_names_in(names: &[String], me: usize, you: &str, full: &[String], budget: f32, marker: f32) -> (Vec<String>, bool) {
+fn legend_names_in(
+    names: &[String],
+    me: usize,
+    you: &str,
+    full: &[String],
+    budget: f32,
+    marker: f32,
+) -> (Vec<String>, bool) {
     let n = names.len();
     let gaps = 12.0 * (n as f32 - 1.0);
-    let width = |texts: &[String]| gaps + texts.iter().map(|t| legend_entry_width_in(t.chars().count(), marker)).sum::<f32>();
+    let width = |texts: &[String]| {
+        gaps + texts
+            .iter()
+            .map(|t| legend_entry_width_in(t.chars().count(), marker))
+            .sum::<f32>()
+    };
     if width(full) <= budget {
         return (full.to_vec(), false);
     }
@@ -789,7 +893,9 @@ fn legend_names_in(names: &[String], me: usize, you: &str, full: &[String], budg
             return (texts, true);
         }
     }
-    let marks: Vec<String> = (0..n).map(|k| if k == me { you.to_string() } else { String::new() }).collect();
+    let marks: Vec<String> = (0..n)
+        .map(|k| if k == me { you.to_string() } else { String::new() })
+        .collect();
     (marks, true)
 }
 
@@ -816,7 +922,11 @@ fn frame_delay_chip<'a>(lang: &'a LanguageIdentifier, pvp: &'a PvpSession, open:
     frame_delay_chip_of(lang, pvp.frame_delay(), open)
 }
 
-fn frame_delay_chip_of<'a>(lang: &'a LanguageIdentifier, frame_delay: impl ToString, open: bool) -> Element<'a, Message> {
+fn frame_delay_chip_of<'a>(
+    lang: &'a LanguageIdentifier,
+    frame_delay: impl ToString,
+    open: bool,
+) -> Element<'a, Message> {
     let chip = button(
         row![
             Icon::Turtle.widget().size(14.0),
@@ -935,10 +1045,22 @@ mod legend_tests {
     use super::*;
 
     fn names(n: usize, len: usize) -> Vec<String> {
-        (0..n).map(|k| format!("{}{}", "Gamertag".repeat(2).chars().take(len - 1).collect::<String>(), k)).collect()
+        (0..n)
+            .map(|k| {
+                format!(
+                    "{}{}",
+                    "Gamertag".repeat(2).chars().take(len - 1).collect::<String>(),
+                    k
+                )
+            })
+            .collect()
     }
     fn full(names: &[String], me: usize) -> Vec<String> {
-        names.iter().enumerate().map(|(k, n)| if k == me { format!("{n} (You)") } else { n.clone() }).collect()
+        names
+            .iter()
+            .enumerate()
+            .map(|(k, n)| if k == me { format!("{n} (You)") } else { n.clone() })
+            .collect()
     }
     fn width(texts: &[String]) -> f32 {
         12.0 * (texts.len() as f32 - 1.0) + texts.iter().map(|t| legend_entry_width(t.chars().count())).sum::<f32>()
@@ -954,7 +1076,11 @@ mod legend_tests {
         for n in 3..=5 {
             let nm = names(n, 10);
             let (shown, _) = legend_names(&nm, 1, "You", &full(&nm, 1), budget);
-            assert!(width(&shown) <= budget, "{n} players: {} > {budget}: {shown:?}", width(&shown));
+            assert!(
+                width(&shown) <= budget,
+                "{n} players: {} > {budget}: {shown:?}",
+                width(&shown)
+            );
         }
     }
 
@@ -966,7 +1092,11 @@ mod legend_tests {
             let nm = names(5, 10);
             let room = budget - 22.0 * teams;
             let (shown, _) = legend_names_in(&nm, 1, "You", &full(&nm, 1), room, 0.0);
-            let w = 12.0 * 4.0 + shown.iter().map(|t| legend_entry_width_in(t.chars().count(), 0.0)).sum::<f32>();
+            let w = 12.0 * 4.0
+                + shown
+                    .iter()
+                    .map(|t| legend_entry_width_in(t.chars().count(), 0.0))
+                    .sum::<f32>();
             assert!(w <= room, "{teams} teams: {w} > {room}: {shown:?}");
         }
     }
@@ -1047,7 +1177,13 @@ mod render_tests {
         .expect("headless renderer")
     }
 
-    fn render(renderer: &mut iced::Renderer, width: u32, players: usize, name_len: usize, history: &VecDeque<MetricSample>) -> (Vec<u8>, u32, u32) {
+    fn render(
+        renderer: &mut iced::Renderer,
+        width: u32,
+        players: usize,
+        name_len: usize,
+        history: &VecDeque<MetricSample>,
+    ) -> (Vec<u8>, u32, u32) {
         render_cached(renderer, &mut Cache::default(), width, players, name_len, history, None)
     }
 
@@ -1084,7 +1220,9 @@ mod render_tests {
         static ROOM: std::sync::Mutex<()> = std::sync::Mutex::new(());
         let _room = ROOM.lock().unwrap_or_else(|e| e.into_inner());
         let lang: LanguageIdentifier = "en-US".parse().unwrap();
-        let names: Vec<String> = (0..players).map(|k| format!("{}{}", "Gamertagxyz".chars().take(name_len - 1).collect::<String>(), k)).collect();
+        let names: Vec<String> = (0..players)
+            .map(|k| format!("{}{}", "Gamertagxyz".chars().take(name_len - 1).collect::<String>(), k))
+            .collect();
         tango_library::online::set_room(names, 1);
         let theme = iced::Theme::Dark;
         let h = BAR_H as u32 + 12;
@@ -1093,7 +1231,9 @@ mod render_tests {
         ui.draw(
             renderer,
             &theme,
-            &iced::advanced::renderer::Style { text_color: theme.palette().text },
+            &iced::advanced::renderer::Style {
+                text_color: theme.palette().text,
+            },
             iced::mouse::Cursor::Unavailable,
         );
         let bg = theme.palette().background;
@@ -1101,7 +1241,10 @@ mod render_tests {
             None => (renderer.screenshot(iced::Size::new(width, h), 1.0, bg), ui.into_cache()),
             Some(next) => {
                 let ui2 = UserInterface::build(root_for(&lang, next), size, ui.into_cache(), renderer);
-                (renderer.screenshot(iced::Size::new(width, h), 1.0, bg), ui2.into_cache())
+                (
+                    renderer.screenshot(iced::Size::new(width, h), 1.0, bg),
+                    ui2.into_cache(),
+                )
             }
         };
         *cache = c;
@@ -1133,7 +1276,10 @@ mod render_tests {
                 let (px, w, h) = render(&mut renderer, width, players, 10, &samples());
                 // the ping readout ("12 ms") sits just left of the last divider, which is left of the frame-delay chip
                 let right = w - 99;
-                assert!(ink(&px, w, h, right - 48, right) > 25, "{players} players at {width}: the ping readout is missing");
+                assert!(
+                    ink(&px, w, h, right - 48, right) > 25,
+                    "{players} players at {width}: the ping readout is missing"
+                );
                 if let Some(dir) = &out {
                     let img = image::RgbaImage::from_raw(w, h, px.clone()).unwrap();
                     img.save(format!("{dir}/bar_{players}p_{width}.png")).unwrap();
@@ -1168,7 +1314,10 @@ mod render_tests {
                     best = best.max(n);
                     if let Ok(dir) = std::env::var("BAR_OUT") {
                         if frame % 30 == 0 {
-                            image::RgbaImage::from_raw(w, h, px).unwrap().save(format!("{dir}/live_{frame:03}.png")).unwrap();
+                            image::RgbaImage::from_raw(w, h, px)
+                                .unwrap()
+                                .save(format!("{dir}/live_{frame:03}.png"))
+                                .unwrap();
                         }
                     }
                 }
@@ -1186,16 +1335,30 @@ mod render_tests {
         let a = samples();
         let mut b = samples();
         b.pop_front();
-        b.push_back(MetricSample { tps: 58.9, fps_target: 59.73, ping_ms: Some(77), round: a.back().unwrap().round });
+        b.push_back(MetricSample {
+            tps: 58.9,
+            fps_target: 59.73,
+            ping_ms: Some(77),
+            round: a.back().unwrap().round,
+        });
         let (live, w, h) = render_cached(&mut renderer, &mut Cache::default(), 1100, 3, 10, &a, None);
         let (late, _, _) = render_cached(&mut renderer, &mut Cache::default(), 1100, 3, 10, &a, Some(&b));
         let right = w - 99;
         let (a, b) = (ink(&live, w, h, right - 48, right), ink(&late, w, h, right - 48, right));
         assert!(a > 25 && b > 25, "ping readout: live ink {a}, late-screenshot ink {b}");
-        assert!(ink(&live, w, h, 0, w).abs_diff(ink(&late, w, h, 0, w)) < 200, "the late screenshot differs from the live frame");
+        assert!(
+            ink(&live, w, h, 0, w).abs_diff(ink(&late, w, h, 0, w)) < 200,
+            "the late screenshot differs from the live frame"
+        );
         if let Ok(dir) = std::env::var("BAR_OUT") {
-            image::RgbaImage::from_raw(w, h, live).unwrap().save(format!("{dir}/shot_live.png")).unwrap();
-            image::RgbaImage::from_raw(w, h, late).unwrap().save(format!("{dir}/shot_late.png")).unwrap();
+            image::RgbaImage::from_raw(w, h, live)
+                .unwrap()
+                .save(format!("{dir}/shot_live.png"))
+                .unwrap();
+            image::RgbaImage::from_raw(w, h, late)
+                .unwrap()
+                .save(format!("{dir}/shot_late.png"))
+                .unwrap();
         }
     }
 }

@@ -74,14 +74,23 @@ impl Recolour {
     /// Parses a CO file's `[portrait.recolour]` ("index" = "RRGGBB"); `None` if the file has no recolour. Index 0 (transparent) is not allowed.
     pub fn parse(text: &str) -> Result<Option<Recolour>, String> {
         let v: toml::Value = toml::from_str(text).map_err(|e| e.to_string())?;
-        let Some(t) = v.get("portrait").and_then(|p| p.get("recolour")).and_then(|r| r.as_table()) else { return Ok(None) };
+        let Some(t) = v
+            .get("portrait")
+            .and_then(|p| p.get("recolour"))
+            .and_then(|r| r.as_table())
+        else {
+            return Ok(None);
+        };
         let mut out = [None; 16];
         for (k, c) in t {
             let i: usize = k.parse().map_err(|_| format!("recolour index {k:?}"))?;
             if !(1..16).contains(&i) {
                 return Err(format!("recolour index {i} is not 1..15"));
             }
-            let h = c.as_str().filter(|h| h.len() == 6).ok_or_else(|| format!("recolour {k}: {c} is not \"RRGGBB\""))?;
+            let h = c
+                .as_str()
+                .filter(|h| h.len() == 6)
+                .ok_or_else(|| format!("recolour {k}: {c} is not \"RRGGBB\""))?;
             let n = u32::from_str_radix(h, 16).map_err(|_| format!("recolour {k}: {h} is not hex"))?;
             let (r, g, b) = ((n >> 16) & 255, (n >> 8) & 255, n & 255);
             out[i] = Some((r >> 3 | (g >> 3) << 5 | (b >> 3) << 10) as u16);
@@ -112,10 +121,15 @@ impl Recolour {
 /// The recolour of CO `co` (None for a CO that wears its donor's palette as it is).
 pub fn recolour(co: u8) -> Option<&'static Recolour> {
     static ALL: std::sync::OnceLock<Vec<(u8, Recolour)>> = std::sync::OnceLock::new();
-    ALL.get_or_init(|| RECOLOUR_FILES.iter().filter_map(|(co, text)| Some((*co, Recolour::parse(text).expect("a CO file's recolour")?))).collect())
-        .iter()
-        .find(|(c, _)| *c == co)
-        .map(|(_, r)| r)
+    ALL.get_or_init(|| {
+        RECOLOUR_FILES
+            .iter()
+            .filter_map(|(co, text)| Some((*co, Recolour::parse(text).expect("a CO file's recolour")?)))
+            .collect()
+    })
+    .iter()
+    .find(|(c, _)| *c == co)
+    .map(|(_, r)| r)
 }
 
 /// [`co_art`] of Dual Strike CO `ds` for game CO `co`: with the CO's recolour applied to the palette.
@@ -189,7 +203,10 @@ pub fn co_art(ds_co: u8) -> Option<CoArt> {
         return None;
     }
     let pack = crate::ds_pack::pack()?;
-    let rec = pack.arm9_at(APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1), APPEARANCE_LEN as usize)?;
+    let rec = pack.arm9_at(
+        APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1),
+        APPEARANCE_LEN as usize,
+    )?;
     let word = |i: usize| u32::from_le_bytes(rec[4 * i..4 * i + 4].try_into().unwrap());
     // A `syogun/` file named by a word of the record, decompressed to `len`.
     let file = |i: usize, len: usize| -> Option<Vec<u8>> {
@@ -246,7 +263,10 @@ pub fn full_figure(ds_co: u8) -> Option<(Vec<u8>, [u16; 16])> {
         return None;
     }
     let pack = crate::ds_pack::pack()?;
-    let rec = pack.arm9_at(APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1), APPEARANCE_LEN as usize)?;
+    let rec = pack.arm9_at(
+        APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1),
+        APPEARANCE_LEN as usize,
+    )?;
     let word = |i: usize| u32::from_le_bytes(rec[4 * i..4 * i + 4].try_into().unwrap());
     let file = |i: usize, len: usize| -> Option<Vec<u8>> {
         let name = pack.arm9_at(word(i), 4)?;
@@ -283,7 +303,13 @@ pub fn full_figure(ds_co: u8) -> Option<(Vec<u8>, [u16; 16])> {
         }
         let strip = 2 * rows * BLOCK;
         for s in 0..2 * rows {
-            put(&data[strip + 8 * TILE * s..strip + 8 * TILE * (s + 1)], 16, 32, 128, y0 + 32 * s);
+            put(
+                &data[strip + 8 * TILE * s..strip + 8 * TILE * (s + 1)],
+                16,
+                32,
+                128,
+                y0 + 32 * s,
+            );
         }
     }
     Some((px, pal))
@@ -304,11 +330,17 @@ mod recolour_tests {
         let blue = |c: u16| (c >> 10) & 31 > (c & 31) + 4;
         let skin: Vec<u16> = (2..=6).map(|i| r.0[i].unwrap()).collect();
         assert!(skin.iter().all(|&c| blue(c)), "{skin:?}");
-        assert!(skin.windows(2).all(|w| lum(w[0]) > lum(w[1])), "five tones, light to dark");
+        assert!(
+            skin.windows(2).all(|w| lum(w[0]) > lum(w[1])),
+            "five tones, light to dark"
+        );
         let (jacket, shade, shirt) = (r.0[9].unwrap(), r.0[10].unwrap(), r.0[12].unwrap());
         for c in [jacket, shade, shirt] {
             let (b, g, rr) = ((c >> 10) & 31, (c >> 5) & 31, c & 31);
-            assert!(b.abs_diff(rr) < 5 && g.abs_diff(rr) < 5 && lum(c) < lum(skin[4]) + 60, "charcoal: {c:04x}");
+            assert!(
+                b.abs_diff(rr) < 5 && g.abs_diff(rr) < 5 && lum(c) < lum(skin[4]) + 60,
+                "charcoal: {c:04x}"
+            );
         }
         assert!(lum(shirt) > lum(jacket) && lum(jacket) > lum(shade));
         // hair (7, 8), rim (1), buckle (11, 14), star (13) and the outline (15) are kept
@@ -342,8 +374,15 @@ mod tests {
         crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
         for id in 1..=27u8 {
             let (px, _) = full_figure(id).unwrap_or_else(|| panic!("CO {id}"));
-            let rows: Vec<usize> = (0..FIGURE_H).filter(|&y| px[FIGURE_W * y..FIGURE_W * (y + 1)].iter().any(|&v| v != 0)).collect();
-            assert!(rows[0] < 32 && *rows.last().unwrap() > 240, "CO {id}: rows {}..{}", rows[0], rows.last().unwrap());
+            let rows: Vec<usize> = (0..FIGURE_H)
+                .filter(|&y| px[FIGURE_W * y..FIGURE_W * (y + 1)].iter().any(|&v| v != 0))
+                .collect();
+            assert!(
+                rows[0] < 32 && *rows.last().unwrap() > 240,
+                "CO {id}: rows {}..{}",
+                rows[0],
+                rows.last().unwrap()
+            );
         }
     }
 
@@ -382,7 +421,9 @@ mod tests {
         let row = 0x084A_0090 + 0x44;
         let own = at(word(row + 8), 0x20);
         let andy = co_art(2).unwrap();
-        let same = (0..16).filter(|&i| own[2 * i..2 * i + 2] == andy.palette[2 * i..2 * i + 2]).count();
+        let same = (0..16)
+            .filter(|&i| own[2 * i..2 * i + 2] == andy.palette[2 * i..2 * i + 2])
+            .count();
         eprintln!("Andy scheme 0: {same}/16 colours as AW2's");
         assert!(same >= 14);
         let own_name = lz10(&aw2[(word(row + 4) - 0x0800_0000) as usize..]).unwrap();

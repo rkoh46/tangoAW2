@@ -23,12 +23,23 @@ fn row(rom: &[u8], m: &str, kind: &str, s: &Scene) {
 }
 
 fn main() {
-    let rom = std::fs::read(std::env::args().nth(1).expect("usage: aw2_campaign_scenes <aw2.gba> [bh|es]")).unwrap();
+    let rom = std::fs::read(
+        std::env::args()
+            .nth(1)
+            .expect("usage: aw2_campaign_scenes <aw2.gba> [bh|es]"),
+    )
+    .unwrap();
     let def = match std::env::args().nth(2).as_deref() {
         Some("es") => tango_gamesupport_aw2::es_campaign::def(),
         _ => tango_gamesupport_aw2::bh_campaign::def(),
     };
-    println!("prologue\tprologue\t{}\t{}\t{}", def.prologue.len(), def.prologue_song.map_or("-".into(), |t| t.label()), def.prologue_song.map_or("-".into(), |t| t.resolve_rom(&rom).to_string()));
+    println!(
+        "prologue\tprologue\t{}\t{}\t{}",
+        def.prologue.len(),
+        def.prologue_song.map_or("-".into(), |t| t.label()),
+        def.prologue_song
+            .map_or("-".into(), |t| t.resolve_rom(&rom).to_string())
+    );
     for m in &def.missions {
         row(&rom, m.key, "intro", &m.intro);
         row(&rom, m.key, "victory", &m.victory);

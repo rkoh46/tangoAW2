@@ -58,14 +58,24 @@ pub struct LocalInfo {
 
 /// A command the console must run itself (at a tick boundary, on its own thread).
 pub enum CoreReq {
-    Peek { addr: u32, len: usize },
-    Poke { addr: u32, bytes: Vec<u8> },
+    Peek {
+        addr: u32,
+        len: usize,
+    },
+    Poke {
+        addr: u32,
+        bytes: Vec<u8>,
+    },
     Hash,
     Procs,
     /// A fresh decoded state, made at the next tick.
     State,
-    CheckpointSave { name: String },
-    CheckpointLoad { name: String },
+    CheckpointSave {
+        name: String,
+    },
+    CheckpointLoad {
+        name: String,
+    },
 }
 
 struct Pending {
@@ -112,7 +122,10 @@ fn hub() -> &'static Hub {
             next_event: 1,
             logs: VecDeque::new(),
             link: Value::Null,
-            local: LocalInfo { session: "none".into(), seat: 0 },
+            local: LocalInfo {
+                session: "none".into(),
+                seat: 0,
+            },
             last_hash: None,
             checkpoint_dir: PathBuf::from("checkpoints"),
             boot_checkpoint: None,
@@ -130,7 +143,10 @@ pub fn enable(checkpoint_dir: &Path) {
     let h = hub();
     h.inner.lock().unwrap().checkpoint_dir = checkpoint_dir.to_path_buf();
     if !ENABLED.swap(true, Ordering::Relaxed) {
-        log::warn!("ai-debug: the debug hook is ON (checkpoints in {})", checkpoint_dir.display());
+        log::warn!(
+            "ai-debug: the debug hook is ON (checkpoints in {})",
+            checkpoint_dir.display()
+        );
     }
 }
 
@@ -144,7 +160,8 @@ pub fn take_boot_checkpoint() -> Option<String> {
 }
 
 pub fn boot_checkpoint_pending() -> bool {
-    HUB.get().is_some_and(|h| h.inner.lock().unwrap().boot_checkpoint.is_some())
+    HUB.get()
+        .is_some_and(|h| h.inner.lock().unwrap().boot_checkpoint.is_some())
 }
 
 /// The app's view of itself (see [`LocalInfo`]) and of the netplay link (a JSON object for `state.link`).
@@ -252,7 +269,10 @@ impl Hub {
                 g.last_hash = Some((fc, h));
                 let id = g.next_event;
                 g.next_event += 1;
-                g.events.push_back((id, json!({"event": "hash", "frame": fc, "tick": tick, "h": format!("{h:016x}")})));
+                g.events.push_back((
+                    id,
+                    json!({"event": "hash", "frame": fc, "tick": tick, "h": format!("{h:016x}")}),
+                ));
                 if g.events.len() > EVENT_KEEP {
                     g.events.pop_front();
                 }
@@ -271,7 +291,10 @@ impl Hub {
             m.insert("tick".into(), json!(tick));
             m.insert("seq".into(), json!(seq));
             m.insert("link".into(), g.link.clone());
-            m.insert("local".into(), json!({"session": g.local.session, "seat": g.local.seat}));
+            m.insert(
+                "local".into(),
+                json!({"session": g.local.session, "seat": g.local.seat}),
+            );
             if let Some((f, h)) = g.last_hash {
                 m.insert("last_hash".into(), json!({"frame": f, "h": format!("{h:016x}")}));
             }
@@ -292,7 +315,13 @@ impl Hub {
             g.events.pop_front();
         }
         g.prev = Some(snap);
-        g.latest = Some(std::sync::Arc::new(Latest { seq, tick, at: Instant::now(), online, json }));
+        g.latest = Some(std::sync::Arc::new(Latest {
+            seq,
+            tick,
+            at: Instant::now(),
+            online,
+            json,
+        }));
         drop(g);
         self.changed.notify_all();
     }
@@ -306,7 +335,11 @@ impl Hub {
             }
             CoreReq::Poke { addr, bytes } => {
                 core.raw_write_range(*addr, -1, bytes);
-                log::warn!("ai-debug: poke {addr:08x} {} bytes{}", bytes.len(), if online { " ONLINE (desync risk)" } else { "" });
+                log::warn!(
+                    "ai-debug: poke {addr:08x} {} bytes{}",
+                    bytes.len(),
+                    if online { " ONLINE (desync risk)" } else { "" }
+                );
                 Ok(json!({"addr": addr, "len": bytes.len(), "desync_risk": online}))
             }
             CoreReq::Hash => {
@@ -344,7 +377,8 @@ pub fn ask_console(req: CoreReq, timeout: Duration) -> Result<Value, String> {
     }
     let (tx, rx) = channel();
     hub().reqs.lock().unwrap().push_back(Pending { req, reply: tx });
-    rx.recv_timeout(timeout).map_err(|_| "no console is ticking (no session, or it is paused)".to_string())?
+    rx.recv_timeout(timeout)
+        .map_err(|_| "no console is ticking (no session, or it is paused)".to_string())?
 }
 
 /// The latest decoded state, if the console has ticked.
@@ -363,7 +397,12 @@ pub fn wait_changed(timeout: Duration) -> bool {
 /// Events after `after` (ids rise), at most `max`.
 pub fn events_after(after: u64, max: usize) -> Vec<(u64, Value)> {
     let g = hub().inner.lock().unwrap();
-    g.events.iter().filter(|(id, _)| *id > after).take(max).cloned().collect()
+    g.events
+        .iter()
+        .filter(|(id, _)| *id > after)
+        .take(max)
+        .cloned()
+        .collect()
 }
 
 /// The id of the newest event (0: none yet).
@@ -384,7 +423,10 @@ pub fn push_event(ev: Value) {
 
 /// A checkpoint's name: letters, digits, `_`, `-`, `.`; no path.
 pub fn valid_name(name: &str) -> bool {
-    !name.is_empty() && name.len() <= 64 && !name.starts_with('.') && name.bytes().all(|c| c.is_ascii_alphanumeric() || b"_-.".contains(&c))
+    !name.is_empty()
+        && name.len() <= 64
+        && !name.starts_with('.')
+        && name.bytes().all(|c| c.is_ascii_alphanumeric() || b"_-.".contains(&c))
 }
 
 fn state_size() -> usize {
@@ -432,9 +474,18 @@ pub fn checkpoint_save(core: &Core, dir: &Path, name: &str, online: bool) -> Res
     let tmp = dir.join(format!("{name}.state.tmp"));
     std::fs::write(&tmp, bytes).map_err(|e| format!("{}: {e}", tmp.display()))?;
     std::fs::rename(&tmp, dir.join(format!("{name}.state"))).map_err(|e| e.to_string())?;
-    std::fs::write(dir.join(format!("{name}.json")), serde_json::to_vec_pretty(&meta).unwrap_or_default()).map_err(|e| e.to_string())?;
-    log::info!("ai-debug: checkpoint {name} saved at frame {} (ram hash {hash:016x})", core.frame_counter());
-    Ok(json!({"name": name, "frame": core.frame_counter(), "ram_hash": format!("{hash:016x}"), "bytes": bytes.len(), "dir": dir.display().to_string(), "meta": meta}))
+    std::fs::write(
+        dir.join(format!("{name}.json")),
+        serde_json::to_vec_pretty(&meta).unwrap_or_default(),
+    )
+    .map_err(|e| e.to_string())?;
+    log::info!(
+        "ai-debug: checkpoint {name} saved at frame {} (ram hash {hash:016x})",
+        core.frame_counter()
+    );
+    Ok(
+        json!({"name": name, "frame": core.frame_counter(), "ram_hash": format!("{hash:016x}"), "bytes": bytes.len(), "dir": dir.display().to_string(), "meta": meta}),
+    )
 }
 
 pub fn checkpoint_load(core: &mut Core, dir: &Path, name: &str) -> Result<Value, String> {
@@ -447,13 +498,20 @@ pub fn checkpoint_load(core: &mut Core, dir: &Path, name: &str) -> Result<Value,
         .and_then(|b| serde_json::from_slice(&b).ok())
         .unwrap_or(Value::Null);
     if bytes.len() != state_size() {
-        return Err(format!("checkpoint {name}: {} bytes, this emulator's state is {}", bytes.len(), state_size()));
+        return Err(format!(
+            "checkpoint {name}: {} bytes, this emulator's state is {}",
+            bytes.len(),
+            state_size()
+        ));
     }
     let now = setup_flags(core);
     for key in ["ds_features", "rom_title"] {
         let was = &meta["setup"][key];
         if !was.is_null() && was != &now[key] {
-            return Err(format!("checkpoint {name} was saved with {key}={was}, this session has {}: boot the app the same way", now[key]));
+            return Err(format!(
+                "checkpoint {name} was saved with {key}={was}, this session has {}: boot the app the same way",
+                now[key]
+            ));
         }
     }
     // (sound: exactly a state's size, from `save_state` of a console of this build)
@@ -464,7 +522,9 @@ pub fn checkpoint_load(core: &mut Core, dir: &Path, name: &str) -> Result<Value,
     let expected = meta["ram_hash"].as_str().map(str::to_string);
     let same = expected.as_deref() == Some(format!("{hash:016x}").as_str());
     log::info!("ai-debug: checkpoint {name} loaded (ram hash {hash:016x}, saved {expected:?}, same {same})");
-    Ok(json!({"name": name, "frame": core.frame_counter(), "ram_hash": format!("{hash:016x}"), "expected_hash": expected, "match": same, "meta": meta}))
+    Ok(
+        json!({"name": name, "frame": core.frame_counter(), "ram_hash": format!("{hash:016x}"), "expected_hash": expected, "match": same, "meta": meta}),
+    )
 }
 
 /// The checkpoints in a directory (their metadata).
@@ -474,7 +534,10 @@ pub fn checkpoint_list(dir: &Path) -> Vec<Value> {
         for e in rd.flatten() {
             let p = e.path();
             if p.extension().is_some_and(|x| x == "json") {
-                if let Some(v) = std::fs::read(&p).ok().and_then(|b| serde_json::from_slice::<Value>(&b).ok()) {
+                if let Some(v) = std::fs::read(&p)
+                    .ok()
+                    .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+                {
                     out.push(v);
                 }
             }
@@ -511,14 +574,24 @@ mod tests {
         let save = vec![0xffu8; crate::SAVE_SIZE];
         let rtc = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
         let run = |watched: bool| -> Vec<(u32, u64)> {
-            let mut link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &crate::pvp::AW2E, None, None).expect("boot");
+            let mut link =
+                tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &crate::pvp::AW2E, None, None)
+                    .expect("boot");
             let stop = std::sync::Arc::new(AtomicBool::new(false));
             let client = watched.then(|| {
                 let stop = stop.clone();
                 std::thread::spawn(move || {
                     let mut n = 0;
                     while !stop.load(Ordering::Relaxed) {
-                        for req in [CoreReq::State, CoreReq::Peek { addr: 0x0300_0000, len: 64 }, CoreReq::Hash, CoreReq::Procs] {
+                        for req in [
+                            CoreReq::State,
+                            CoreReq::Peek {
+                                addr: 0x0300_0000,
+                                len: 64,
+                            },
+                            CoreReq::Hash,
+                            CoreReq::Procs,
+                        ] {
                             let _ = ask_console(req, Duration::from_millis(200));
                         }
                         let _ = latest();
@@ -531,7 +604,13 @@ mod tests {
             for t in 0..1800u32 {
                 // (taps of START and A: through the title and into the menus)
                 let keys = match t % 90 {
-                    0..=5 => if t % 180 < 90 { 8 } else { 1 },
+                    0..=5 => {
+                        if t % 180 < 90 {
+                            8
+                        } else {
+                            1
+                        }
+                    }
                     _ => 0,
                 };
                 link.tick_n(&[HostInput::keys(keys), HostInput::keys(0)]);

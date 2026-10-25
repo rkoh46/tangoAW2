@@ -32,7 +32,10 @@ pub fn take_keys(seat: usize) -> (u32, u32) {
     if seat >= SEATS {
         return (0, 0);
     }
-    (HELD[seat].load(Ordering::Relaxed), PRESSED[seat].swap(0, Ordering::Relaxed))
+    (
+        HELD[seat].load(Ordering::Relaxed),
+        PRESSED[seat].swap(0, Ordering::Relaxed),
+    )
 }
 
 /// The seat's choice is made: its words go out in the seat's next two inputs.

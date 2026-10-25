@@ -82,7 +82,10 @@ impl App {
                 clip_export_scale: self.replays.export_settings.scale,
                 clip_job,
                 queued: self.replays.queue.len(),
-                effect: crate::platform::video::effects::effect_for_config(&self.config.video_filter, &self.config.pixel_scaling),
+                effect: crate::platform::video::effects::effect_for_config(
+                    &self.config.video_filter,
+                    &self.config.pixel_scaling,
+                ),
             })
             .map(Message::Session);
             // In-session settings modal: floats centered over the

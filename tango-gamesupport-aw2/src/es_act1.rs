@@ -66,15 +66,48 @@ fn es02() -> MissionDef {
             None,
             vec![
                 Action::Spawn(
-                    [wave(1, unit::ANTI_AIR, &[(4, 17), (5, 17)]), wave(1, unit::MISSILES, &[(3, 17)])].concat(),
+                    [
+                        wave(1, unit::ANTI_AIR, &[(4, 17), (5, 17)]),
+                        wave(1, unit::MISSILES, &[(3, 17)]),
+                    ]
+                    .concat(),
                 ),
-                Action::Spawn([wave(2, unit::TANK, &[(11, 0), (12, 0)]), wave(2, unit::MD_TANK, &[(13, 0)])].concat()),
+                Action::Spawn(
+                    [
+                        wave(2, unit::TANK, &[(11, 0), (12, 0)]),
+                        wave(2, unit::MD_TANK, &[(13, 0)]),
+                    ]
+                    .concat(),
+                ),
             ],
         ),
         // Day 4: Eagle's wing.
-        on_day(4, None, vec![Action::Scene(scene("m02_day4")), Action::Spawn(wave(2, unit::FIGHTER, &[(27, 3)]))]),
-        on_day(5, None, vec![Action::Spawn([wave(2, unit::TANK, &[(11, 0), (12, 0)]), wave(2, unit::INFANTRY, &[(27, 4)])].concat())]),
-        on_day(7, None, vec![Action::Spawn([wave(2, unit::MD_TANK, &[(11, 0)]), wave(2, unit::TANK, &[(12, 0)])].concat())]),
+        on_day(
+            4,
+            None,
+            vec![
+                Action::Scene(scene("m02_day4")),
+                Action::Spawn(wave(2, unit::FIGHTER, &[(27, 3)])),
+            ],
+        ),
+        on_day(
+            5,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(2, unit::TANK, &[(11, 0), (12, 0)]),
+                    wave(2, unit::INFANTRY, &[(27, 4)]),
+                ]
+                .concat(),
+            )],
+        ),
+        on_day(
+            7,
+            None,
+            vec![Action::Spawn(
+                [wave(2, unit::MD_TANK, &[(11, 0)]), wave(2, unit::TANK, &[(12, 0)])].concat(),
+            )],
+        ),
         // Day 9: the causeway is open. (The HQ falling is the match's own defeat.)
         on_day(9, None, vec![Action::Win]),
     ];

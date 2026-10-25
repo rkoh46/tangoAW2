@@ -77,7 +77,9 @@ fn build() -> Option<Bolt> {
     }
     // Colour 0 is drawn by Dual Strike's textures; on AW2's map it would be
     // see-through: such pixels take the closest other colour.
-    let near0 = (1..16).min_by_key(|&k| crate::ds_look::dist(colours[0], colours[k])).unwrap_or(1) as u8;
+    let near0 = (1..16)
+        .min_by_key(|&k| crate::ds_look::dist(colours[0], colours[k]))
+        .unwrap_or(1) as u8;
     let mut textures = Vec::with_capacity(TEXTURES);
     for t in 0..TEXTURES {
         let mut px = [0u8; 256];
@@ -108,7 +110,11 @@ fn build() -> Option<Bolt> {
             }
         }
     }
-    Some(Bolt { textures, colours, cells })
+    Some(Bolt {
+        textures,
+        colours,
+        cells,
+    })
 }
 
 pub fn bolt() -> Option<&'static Bolt> {
@@ -176,7 +182,10 @@ pub fn panel_picture(core: &Core, x: u32, y: u32) -> Option<[u8; 256]> {
         let (tile, flips) = b.tile(c, q);
         for ty in 0..8 {
             for tx in 0..8 {
-                let (sx, sy) = (if flips & 0x400 != 0 { 7 - tx } else { tx }, if flips & 0x800 != 0 { 7 - ty } else { ty });
+                let (sx, sy) = (
+                    if flips & 0x400 != 0 { 7 - tx } else { tx },
+                    if flips & 0x800 != 0 { 7 - ty } else { ty },
+                );
                 let v = (tile[4 * sy + sx / 2] >> (4 * (sx & 1))) & 15;
                 px[16 + oy + ty][ox + tx] = v;
             }
@@ -217,7 +226,10 @@ pub fn flush_panel(core: &mut Core, start: u32, at: u32) {
             core.raw_write_range(SAVED, -1, &p);
             core.raw_write_8(BORROWED, -1, 1);
         }
-        let colours: Vec<u8> = with_ground(core, b.colours).iter().flat_map(|c| c.to_le_bytes()).collect();
+        let colours: Vec<u8> = with_ground(core, b.colours)
+            .iter()
+            .flat_map(|c| c.to_le_bytes())
+            .collect();
         for base in [PAL_BUFFER, PAL_RAM] {
             core.raw_write_range(pal(base), -1, &colours);
         }
@@ -277,7 +289,9 @@ const VRAM_TILES: u32 = 0x0600_8000;
 const PLAIN: u16 = 1;
 
 fn with_ground(core: &Core, mut colours: [u16; 16]) -> [u16; 16] {
-    let Some(l) = crate::wasteland::drawn(core).and_then(crate::wasteland::look) else { return colours };
+    let Some(l) = crate::wasteland::drawn(core).and_then(crate::wasteland::look) else {
+        return colours;
+    };
     let mut count: BTreeMap<u16, u32> = BTreeMap::new();
     for e in l.look.entries(PLAIN, 0, 0) {
         let (t, p) = ((e & 0x3FF) as u32, (e >> 12) as u32);
@@ -285,7 +299,9 @@ fn with_ground(core: &Core, mut colours: [u16; 16]) -> [u16; 16] {
             let b = core.raw_read_8(VRAM_TILES + 32 * t + i, -1);
             for v in [b & 15, b >> 4] {
                 if v != 0 {
-                    *count.entry(core.raw_read_16(PAL_BUFFER + 32 * p + 2 * v as u32, -1)).or_default() += 1;
+                    *count
+                        .entry(core.raw_read_16(PAL_BUFFER + 32 * p + 2 * v as u32, -1))
+                        .or_default() += 1;
                 }
             }
         }

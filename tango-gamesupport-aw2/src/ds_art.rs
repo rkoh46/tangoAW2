@@ -208,7 +208,11 @@ fn extract<'a>(file: &dyn Fn(&str) -> Option<&'a [u8]>) -> Option<Art> {
         }
     }
     let obelisk_small = tiles(&small, 16, &[(0, 0, 16, 32)]);
-    let cannon_north = tiles(&north_bmp, 64, &[(8, 0, 32, 32), (40, 0, 16, 32), (8, 32, 32, 16), (40, 32, 16, 16)]);
+    let cannon_north = tiles(
+        &north_bmp,
+        64,
+        &[(8, 0, 32, 32), (40, 0, 16, 32), (8, 32, 32, 16), (40, 32, 16, 16)],
+    );
     Some(Art {
         crystal,
         obelisk,

@@ -65,7 +65,14 @@ fn units(core: &Core, army: u32) -> Vec<(u32, u8, u8, u8, u8, u8)> {
             let a = base + UNIT * ((army - 1) * 64 + slot);
             let t = core.raw_read_8(a, -1);
             (t != 0).then(|| {
-                (a, t, core.raw_read_8(a + 1, -1), core.raw_read_8(a + 2, -1), core.raw_read_8(a + 3, -1), core.raw_read_8(a + 6, -1) & 0x7F)
+                (
+                    a,
+                    t,
+                    core.raw_read_8(a + 1, -1),
+                    core.raw_read_8(a + 2, -1),
+                    core.raw_read_8(a + 3, -1),
+                    core.raw_read_8(a + 6, -1) & 0x7F,
+                )
             })
         })
         .collect()
@@ -91,7 +98,10 @@ fn action_cell(core: &Core) -> (u32, u32) {
     if (0x0200_0000..0x0204_0000).contains(&u) {
         (core.raw_read_8(u + 2, -1) as u32, core.raw_read_8(u + 3, -1) as u32)
     } else {
-        (core.raw_read_16(CURSOR_X, -1) as u32, core.raw_read_16(CURSOR_Y, -1) as u32)
+        (
+            core.raw_read_16(CURSOR_X, -1) as u32,
+            core.raw_read_16(CURSOR_Y, -1) as u32,
+        )
     }
 }
 
@@ -132,7 +142,8 @@ fn alive_inventions(core: &Core, ds_kind: u8) -> usize {
 pub fn player_won(core: &Core) -> bool {
     let p = players(core);
     let team = core.raw_read_8(p + PLAYER + 0x2A, -1);
-    let alive = |a: u32| core.raw_read_8(p + PLAYER * a + 0x1B, -1) != 0 && core.raw_read_16(p + PLAYER * a + 0x14, -1) == 0;
+    let alive =
+        |a: u32| core.raw_read_8(p + PLAYER * a + 0x1B, -1) != 0 && core.raw_read_16(p + PLAYER * a + 0x14, -1) == 0;
     (1..=4u32).any(|a| alive(a) && core.raw_read_8(p + PLAYER * a + 0x2A, -1) == team)
         && !(1..=4u32).any(|a| alive(a) && core.raw_read_8(p + PLAYER * a + 0x2A, -1) != team)
 }
@@ -160,7 +171,11 @@ pub fn run(core: &mut Core, m: &Magic) -> u32 {
             held as u32
         }
         Magic::CoPair { army, a, b } => {
-            let army = if army == 5 { core.raw_read_16(CURRENT_ARMY, -1) as u32 } else { army as u32 };
+            let army = if army == 5 {
+                core.raw_read_16(CURRENT_ARMY, -1) as u32
+            } else {
+                army as u32
+            };
             let co = core.raw_read_8(players(core) + PLAYER * army + CO, -1);
             // AW2 armies have one CO: the tag partner (b) is not checked.
             let _ = b;
@@ -186,7 +201,8 @@ pub fn run(core: &mut Core, m: &Magic) -> u32 {
 /// ARM9 image). Unknown ones are false.
 pub fn predicate(core: &mut Core, f: u32) -> bool {
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-    let all_owned = |core: &Core, cells: &[(u32, u32)], owner: u8| cells.iter().all(|&(x, y)| owner_at(core, x, y) == owner);
+    let all_owned =
+        |core: &Core, cells: &[(u32, u32)], owner: u8| cells.iter().all(|&(x, y)| owner_at(core, x, y) == owner);
     match f {
         // The match is won by the player's team (the match-end lists).
         0x020D_5D2C => player_won(core),
@@ -230,7 +246,9 @@ pub fn predicate(core: &mut Core, f: u32) -> bool {
         0x0235_1744 => all_owned(core, &[(8, 2), (8, 15)], 1),
         0x0235_1804 => all_owned(core, &[(7, 7), (7, 12), (12, 7), (12, 12)], 1),
         // None of the four silo bases is Black Hole's (army 3) any more.
-        0x0235_1B88 => ![(1, 4), (16, 1), (4, 16), (19, 13)].iter().any(|&(x, y)| owner_at(core, x, y) == 3),
+        0x0235_1B88 => ![(1, 4), (16, 1), (4, 16), (19, 13)]
+            .iter()
+            .any(|&(x, y)| owner_at(core, x, y) == 3),
         // Structures: one gone (count changed), all gone, one damaged.
         0x0235_0CD4 => alive_inventions(core, 4) != 4,
         0x0235_10FC => inventions(core, 4).iter().filter(|(hp, _)| *hp >= 99).count() != 4,
@@ -262,7 +280,9 @@ pub fn predicate(core: &mut Core, f: u32) -> bool {
         0x0235_0610 => alive_inventions(core, 4) == 0,
         // A stealth of the army moving now (or the one acting) on half its
         // fuel or less; the acting unit a carrier that has moved.
-        0x0235_1174 => units(core, army.clamp(1, 4)).iter().any(|u| u.1 == 12 && u.5 <= max_fuel(core, 12) / 2),
+        0x0235_1174 => units(core, army.clamp(1, 4))
+            .iter()
+            .any(|u| u.1 == 12 && u.5 <= max_fuel(core, 12) / 2),
         0x0235_1268 => {
             let u = core.raw_read_32(ACTING_UNIT, -1);
             (0x0200_0000..0x0204_0000).contains(&u)
@@ -271,7 +291,9 @@ pub fn predicate(core: &mut Core, f: u32) -> bool {
         }
         0x0235_12EC => {
             let u = core.raw_read_32(ACTING_UNIT, -1);
-            (0x0200_0000..0x0204_0000).contains(&u) && core.raw_read_8(u, -1) == crate::roster::CARRIER && core.raw_read_8(u + 1, -1) & 1 != 0
+            (0x0200_0000..0x0204_0000).contains(&u)
+                && core.raw_read_8(u, -1) == crate::roster::CARRIER
+                && core.raw_read_8(u + 1, -1) & 1 != 0
         }
         // An oozium in sight of the player (within 4 cells of a unit of army 1).
         0x0235_1444 => {
@@ -279,7 +301,9 @@ pub fn predicate(core: &mut Core, f: u32) -> bool {
             (2..=4).any(|a| {
                 units(core, a).iter().any(|o| {
                     o.1 == crate::roster::OOZIUM
-                        && mine.iter().any(|m| (m.3 as i32 - o.3 as i32).abs() + (m.4 as i32 - o.4 as i32).abs() <= 4)
+                        && mine
+                            .iter()
+                            .any(|m| (m.3 as i32 - o.3 as i32).abs() + (m.4 as i32 - o.4 as i32).abs() <= 4)
                 })
             })
         }
@@ -325,7 +349,91 @@ fn properties_owned(core: &Core, a: u32) -> u32 {
 /// The predicates and calls [`predicate`] and [`call`] know (the rest are
 /// false / do nothing); a test lists the campaign's others.
 #[cfg(test)]
-pub const KNOWN: &[u32] = &[crate::ds_campaign_data::HARD_CAMPAIGN, 0x0200_0000, 0x0204_0000, 0x020D_5D2C, 0x0235_05C0, 0x0235_05E8, 0x0235_0610, 0x0235_0638, 0x0235_066C, 0x0235_0708, 0x0235_0824, 0x0235_0940, 0x0235_0A1C, 0x0235_0B28, 0x0235_0BE4, 0x0235_0C60, 0x0235_0CD4, 0x0235_0D60, 0x0235_0DDC, 0x0235_0E6C, 0x0235_0EC4, 0x0235_0F28, 0x0235_0FF0, 0x0235_106C, 0x0235_10FC, 0x0235_1174, 0x0235_1268, 0x0235_12EC, 0x0235_1444, 0x0235_1640, 0x0235_1708, 0x0235_1744, 0x0235_1804, 0x0235_1B88, 0x0235_1C58, 0x0235_1CC8, 0x0235_07A8, 0x0201_99A4, 0x0235_0560, 0x0235_21A4, 0x0235_20F8, 0x0235_204C, 0x0235_1F34, 0x0235_1EB8, 0x0235_1E3C, 0x0235_2018, 0x0235_1FE4, 0x0235_1FB0, 0x0235_0E34, 0x0235_0FA8, 0x0235_0FB8, 0x0235_10C4, 0x0235_16B8, 0x0235_17C4, 0x0235_17F4, 0x0235_172C, 0x0235_1738, 0x0235_16C8, 0x020F_216C, 0x020F_2134, 0x0235_0D44, 0x0235_1988, 0x0235_18CC, 0x0235_1D28, 0x0235_1D3C, 0x0235_16A4, 0x0235_1334, 0x0235_1538, 0x0235_17D4, 0x0235_17E4, 0x0235_1A4C, 0x0235_1AF0, 0x0235_1D50, 0x0235_1D74, 0x0235_1D9C, 0x0235_1DC8, 0x0235_1DD8, 0x0235_1DE8, 0x0235_1E04, 0x0235_1E20, 0x0200_3F8C, 0x0201_993C, 0x0201_9950];
+pub const KNOWN: &[u32] = &[
+    crate::ds_campaign_data::HARD_CAMPAIGN,
+    0x0200_0000,
+    0x0204_0000,
+    0x020D_5D2C,
+    0x0235_05C0,
+    0x0235_05E8,
+    0x0235_0610,
+    0x0235_0638,
+    0x0235_066C,
+    0x0235_0708,
+    0x0235_0824,
+    0x0235_0940,
+    0x0235_0A1C,
+    0x0235_0B28,
+    0x0235_0BE4,
+    0x0235_0C60,
+    0x0235_0CD4,
+    0x0235_0D60,
+    0x0235_0DDC,
+    0x0235_0E6C,
+    0x0235_0EC4,
+    0x0235_0F28,
+    0x0235_0FF0,
+    0x0235_106C,
+    0x0235_10FC,
+    0x0235_1174,
+    0x0235_1268,
+    0x0235_12EC,
+    0x0235_1444,
+    0x0235_1640,
+    0x0235_1708,
+    0x0235_1744,
+    0x0235_1804,
+    0x0235_1B88,
+    0x0235_1C58,
+    0x0235_1CC8,
+    0x0235_07A8,
+    0x0201_99A4,
+    0x0235_0560,
+    0x0235_21A4,
+    0x0235_20F8,
+    0x0235_204C,
+    0x0235_1F34,
+    0x0235_1EB8,
+    0x0235_1E3C,
+    0x0235_2018,
+    0x0235_1FE4,
+    0x0235_1FB0,
+    0x0235_0E34,
+    0x0235_0FA8,
+    0x0235_0FB8,
+    0x0235_10C4,
+    0x0235_16B8,
+    0x0235_17C4,
+    0x0235_17F4,
+    0x0235_172C,
+    0x0235_1738,
+    0x0235_16C8,
+    0x020F_216C,
+    0x020F_2134,
+    0x0235_0D44,
+    0x0235_1988,
+    0x0235_18CC,
+    0x0235_1D28,
+    0x0235_1D3C,
+    0x0235_16A4,
+    0x0235_1334,
+    0x0235_1538,
+    0x0235_17D4,
+    0x0235_17E4,
+    0x0235_1A4C,
+    0x0235_1AF0,
+    0x0235_1D50,
+    0x0235_1D74,
+    0x0235_1D9C,
+    0x0235_1DC8,
+    0x0235_1DD8,
+    0x0235_1DE8,
+    0x0235_1E04,
+    0x0235_1E20,
+    0x0200_3F8C,
+    0x0201_993C,
+    0x0201_9950,
+];
 
 /// Weak point `k` of the Grand Bolt still stands (crate::grand_bolt).
 fn weak_point_alive(core: &Core, k: usize) -> bool {
@@ -370,21 +478,29 @@ pub fn crystal_alive(core: &Core, k: usize) -> bool {
 
 fn crystal_alive_here(core: &Core, k: usize) -> bool {
     let (x, y) = MTE_CRYSTALS[k];
-    (0..16).map(|i| INVENTIONS + 8 * i).take_while(|&a| (core.raw_read_16(a + 2, -1) >> 6) & 0xF != 0).any(|a| {
-        (core.raw_read_16(a + 2, -1) >> 6) & 0xF == 4
-            && core.raw_read_8(a, -1) as u32 == x
-            && core.raw_read_8(a + 1, -1) as u32 == y
-            && core.raw_read_8(a + 4, -1) > 0
-    })
+    (0..16)
+        .map(|i| INVENTIONS + 8 * i)
+        .take_while(|&a| (core.raw_read_16(a + 2, -1) >> 6) & 0xF != 0)
+        .any(|a| {
+            (core.raw_read_16(a + 2, -1) >> 6) & 0xF == 4
+                && core.raw_read_8(a, -1) as u32 == x
+                && core.raw_read_8(a + 1, -1) as u32 == y
+                && core.raw_read_8(a + 4, -1) > 0
+        })
 }
 
 /// Every frame of a two-front battle (crate::two_front): Means to an End's
 /// crystals as they stand on its second front, while it is on the screen.
 pub fn mte_crystals_tick(core: &mut Core) {
-    if crate::ds_campaign::ds_mission(core) != MEANS_TO_AN_END as u8 || !crate::two_front::second_live(core) || crate::two_front::swapping(core) {
+    if crate::ds_campaign::ds_mission(core) != MEANS_TO_AN_END as u8
+        || !crate::two_front::second_live(core)
+        || crate::two_front::swapping(core)
+    {
         return;
     }
-    let down = (0..3).filter(|&k| !crystal_alive_here(core, k)).fold(0u8, |m, k| m | 1 << k);
+    let down = (0..3)
+        .filter(|&k| !crystal_alive_here(core, k))
+        .fold(0u8, |m, k| m | 1 << k);
     let now = core.raw_read_8(CRYSTALS_DOWN, -1);
     if down | now != now {
         core.raw_write_8(CRYSTALS_DOWN, -1, down | now);
@@ -421,7 +537,10 @@ fn fortress(core: &Core) -> Vec<u32> {
 /// lands (its events see it: "Hey! What gives? We can't seem to damage
 /// it.") and is undone once the action and its events are over.
 pub fn omens_barrier_tick(core: &mut Core) {
-    if crate::ds_campaign::ds_mission(core) != OMENS_AND_SIGNS || crate::two_front::live(core) != Some(0) || crate::two_front::swapping(core) {
+    if crate::ds_campaign::ds_mission(core) != OMENS_AND_SIGNS
+        || crate::two_front::live(core) != Some(0)
+        || crate::two_front::swapping(core)
+    {
         return;
     }
     let up = !crate::two_front::second_front_result(core).is_some_and(|r| r.0);
@@ -442,7 +561,9 @@ pub fn omens_barrier_tick(core: &mut Core) {
 
 /// Means to an End in a session.
 fn means_to_an_end(core: &Core) -> bool {
-    crate::ds_campaign::active(core) && crate::ds_campaign::ds_mission(core) == MEANS_TO_AN_END as u8 && crate::ds_campaign::in_battle(core)
+    crate::ds_campaign::active(core)
+        && crate::ds_campaign::ds_mission(core) == MEANS_TO_AN_END as u8
+        && crate::ds_campaign::in_battle(core)
 }
 
 /// Every frame in Means to an End: the Grand Bolt (crate::grand_bolt: its
@@ -501,7 +622,12 @@ pub fn eruption(core: &mut Core) {
     let Some(pack) = crate::ds_pack::pack() else { return };
     // Dual Strike's lists by front: 1 the main front's, 2 the second's.
     let front = crate::two_front::second_live(core) as u32;
-    let Some(list) = pack.arm9_at(DS_ERUPTION_LISTS + 4 * (1 + front), 4).map(|b| u32::from_le_bytes(b.try_into().unwrap())) else { return };
+    let Some(list) = pack
+        .arm9_at(DS_ERUPTION_LISTS + 4 * (1 + front), 4)
+        .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
+    else {
+        return;
+    };
     let mut at = ERUPTION_CELLS;
     for k in 0..ERUPTION_CELLS_LEN / 4 - 1 {
         let Some(c) = pack.arm9_at(list + 4 * k, 4) else { break };
@@ -555,7 +681,11 @@ pub fn invention_at(core: &mut Core) {
         return;
     }
     let cpu = core.gba().cpu();
-    let (x, y, lr) = (cpu.gpr(0) as u32 & 0xFFFF, cpu.gpr(1) as u32 & 0xFFFF, cpu.gpr(14) as u32);
+    let (x, y, lr) = (
+        cpu.gpr(0) as u32 & 0xFFFF,
+        cpu.gpr(1) as u32 & 0xFFFF,
+        cpu.gpr(14) as u32,
+    );
     if !TARGET_CALLERS.contains(&lr) {
         return;
     }
@@ -681,7 +811,10 @@ mod ram_tests {
         assert!(VOLCANO_STILL < MISSION_STATE.0 + MISSION_STATE.1);
         assert!(MTE_TOLD + MTE_LEN <= ERUPTION_CELLS);
         assert!(ERUPTION_CELLS + ERUPTION_CELLS_LEN <= BARRIER_HP);
-        assert!(BARRIER_HP + BARRIER_LEN <= 0x0203_F740, "before crate::map_anim's state");
+        assert!(
+            BARRIER_HP + BARRIER_LEN <= 0x0203_F740,
+            "before crate::map_anim's state"
+        );
         assert!(CRYSTALS_DOWN < MTE_TOLD + MTE_LEN && CRYSTALS_DOWN > VOLCANO_STILL);
     }
 }

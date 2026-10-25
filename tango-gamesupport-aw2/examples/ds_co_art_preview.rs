@@ -78,7 +78,14 @@ impl Image {
         }
     }
     /// Tiles in rows `tw` wide, from `tiles`, tile k at `place(k)`.
-    fn tiles(&mut self, x: usize, y: usize, tiles: &[u8], place: impl Fn(usize) -> (usize, usize), pal: &[[u8; 3]; 16]) {
+    fn tiles(
+        &mut self,
+        x: usize,
+        y: usize,
+        tiles: &[u8],
+        place: impl Fn(usize) -> (usize, usize),
+        pal: &[[u8; 3]; 16],
+    ) {
         for k in 0..tiles.len() / 32 {
             let (cx, cy) = place(k);
             for py in 0..8 {
@@ -107,7 +114,14 @@ impl Image {
     fn body(&mut self, x: usize, y: usize, a: &CoArt, pal: &[[u8; 3]; 16]) {
         self.fill(x, y, 128, 160);
         let all: Vec<u8> = a.body_top.iter().chain(&a.body_bottom).copied().collect();
-        let sprites = [(0, 0, 8, 8), (64, 0, 8, 8), (0, 64, 8, 8), (64, 64, 8, 8), (0, 128, 8, 4), (64, 128, 8, 4)];
+        let sprites = [
+            (0, 0, 8, 8),
+            (64, 0, 8, 8),
+            (0, 64, 8, 8),
+            (64, 64, 8, 8),
+            (0, 128, 8, 4),
+            (64, 128, 8, 4),
+        ];
         let mut t = 0;
         for (sx, sy, tw, th) in sprites {
             let n = tw * th;
@@ -209,7 +223,14 @@ fn main() {
     for (i, &id) in NEW_COS.iter().enumerate() {
         let a = co_art(id).unwrap();
         for s in 0..8 {
-            im.rows(4 + s * 52, i * 52 + 2, 48, 48, &a.face[0], &palette(&a.palette[0x20 * s..]));
+            im.rows(
+                4 + s * 52,
+                i * 52 + 2,
+                48,
+                48,
+                &a.face[0],
+                &palette(&a.palette[0x20 * s..]),
+            );
         }
     }
     im.save(&out.join("ds_co_schemes.png"));

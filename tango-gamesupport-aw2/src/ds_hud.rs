@@ -158,9 +158,20 @@ static ART: OnceLock<Option<Art>> = OnceLock::new();
 fn art() -> Option<&'static Art> {
     ART.get_or_init(|| {
         let pack = crate::ds_pack::pack()?;
-        let sheet = pack.overlays.first()?.get(SHEET_AT..SHEET_AT + 32 * SHEET_TILES)?.to_vec();
-        let label = pack.overlays.first()?.get(LABEL_AT..LABEL_AT + 32 * LABEL_TILES)?.to_vec();
-        let digits = pack.file(DIGITS_FILE)?.get(DIGITS_AT..DIGITS_AT + 32 * DIGIT_TILES)?.to_vec();
+        let sheet = pack
+            .overlays
+            .first()?
+            .get(SHEET_AT..SHEET_AT + 32 * SHEET_TILES)?
+            .to_vec();
+        let label = pack
+            .overlays
+            .first()?
+            .get(LABEL_AT..LABEL_AT + 32 * LABEL_TILES)?
+            .to_vec();
+        let digits = pack
+            .file(DIGITS_FILE)?
+            .get(DIGITS_AT..DIGITS_AT + 32 * DIGIT_TILES)?
+            .to_vec();
         let mut palettes = [[0u8; 32]; 5];
         for (i, p) in palettes.iter_mut().enumerate() {
             p.copy_from_slice(pack.arm9_at(ARMY_PALETTES + 0x20 * i as u32, 32)?);
@@ -170,8 +181,17 @@ fn art() -> Option<&'static Art> {
             let b = pack.arm9_at(STAR_PULSE + 2 * i as u32, 2)?;
             *c = u16::from_le_bytes([b[0], b[1]]);
         }
-        let damage = crate::ds_art::lz10(pack.file(DAMAGE_FILE)?)?.get(..32 * DAMAGE_TILES)?.to_vec();
-        Some(Art { sheet, label, digits, palettes, pulse, damage })
+        let damage = crate::ds_art::lz10(pack.file(DAMAGE_FILE)?)?
+            .get(..32 * DAMAGE_TILES)?
+            .to_vec();
+        Some(Art {
+            sheet,
+            label,
+            digits,
+            palettes,
+            pulse,
+            damage,
+        })
     })
     .as_ref()
 }
@@ -183,10 +203,13 @@ fn face(core: &Core, co: u8) -> ([u8; 256], [u8; 32]) {
     let cache = CACHE.get_or_init(Default::default);
     let ds = crate::co_roster::ds_co(co).and_then(|d| {
         let mut g = cache.lock().ok()?;
-        g.entry(co)        // (by CO, not by Dual Strike id: Clone Andy wears Andy's picture in other colours)
+        g.entry(co) // (by CO, not by Dual Strike id: Clone Andy wears Andy's picture in other colours)
             .or_insert_with(|| {
                 let a = crate::ds_co_art::co_art_for(co, d)?;
-                Some((a.hud.get(..256)?.try_into().ok()?, a.palette.get(..32)?.try_into().ok()?))
+                Some((
+                    a.hud.get(..256)?.try_into().ok()?,
+                    a.palette.get(..32)?.try_into().ok()?,
+                ))
             })
             .clone()
     });
@@ -215,7 +238,17 @@ struct Spr {
 
 impl Spr {
     fn new(x: i32, y: i32, w: i32, h: i32, tile: u16, pal: u16) -> Spr {
-        Spr { x, y, w, h, tile, pal, hflip: false, vflip: false, mode: 0 }
+        Spr {
+            x,
+            y,
+            w,
+            h,
+            tile,
+            pal,
+            hflip: false,
+            vflip: false,
+            mode: 0,
+        }
     }
     fn flip(mut self, h: bool, v: bool) -> Spr {
         self.hflip = h;
@@ -469,7 +502,11 @@ pub fn note_panel(core: &Core) {
         return;
     }
     let cpu = core.gba().cpu();
-    let (x, y, a) = (cpu.gpr(0) as u16 as i16 as i32, cpu.gpr(1) as u16 as i16 as i32, cpu.gpr(2) as u32);
+    let (x, y, a) = (
+        cpu.gpr(0) as u16 as i16 as i32,
+        cpu.gpr(1) as u16 as i16 as i32,
+        cpu.gpr(2) as u32,
+    );
     PANEL_X.store(x, Ordering::Relaxed);
     PANEL_Y.store(y, Ordering::Relaxed);
     PANEL_ARMY.store(a, Ordering::Relaxed);
@@ -546,7 +583,9 @@ fn co_panel(left: bool, rows: &[Row], funds: Option<u32>, powers: bool) -> Vec<S
     let mx = |x: i32, w: i32| if left { x } else { W - x - w };
     // The funds: "G." and the digits, right-aligned to the panel's inner
     // edge (60 pixels in).
-    let digits: Vec<u32> = funds.map_or(Vec::new(), |f| f.to_string().bytes().map(|b| (b - b'0') as u32).collect());
+    let digits: Vec<u32> = funds.map_or(Vec::new(), |f| {
+        f.to_string().bytes().map(|b| (b - b'0') as u32).collect()
+    });
     let n = digits.len().min(6) as i32;
     let fy = 14;
     let gx = if left { 0 } else { W - 60 };
@@ -605,7 +644,11 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     if !PANEL_DRAWN.swap(false, Ordering::Relaxed) {
         return None;
     }
-    let (px, py, army) = (PANEL_X.load(Ordering::Relaxed), PANEL_Y.load(Ordering::Relaxed), PANEL_ARMY.load(Ordering::Relaxed));
+    let (px, py, army) = (
+        PANEL_X.load(Ordering::Relaxed),
+        PANEL_Y.load(Ordering::Relaxed),
+        PANEL_ARMY.load(Ordering::Relaxed),
+    );
     // The map's panel only (the CO page draws one at its foot).
     if !(0..64).contains(&py) || !(1..=5).contains(&army) {
         return None;
@@ -617,7 +660,11 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     let funds = core.raw_read_32(player + PL_FUNDS, -1);
     let mode = core.raw_read_8(player + PL_MODE, -1);
     let uses = core.raw_read_8(player + PL_USES, -1);
-    let charge = if mode == 0 { core.raw_read_32(player + PL_CHARGE, -1) } else { 0 };
+    let charge = if mode == 0 {
+        core.raw_read_32(player + PL_CHARGE, -1)
+    } else {
+        0
+    };
     let powers = core.raw_read_8(PLAY_ST_POWERS, -1) != 0;
     let (cop, scop) = crate::tag::co_stars(core, co);
     let tag_phase = crate::tag::phase(core, army);
@@ -668,14 +715,20 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     // the funds' digits.
     // (AW2 can draw a second panel in a frame as it slides one out and the next in: its header at another x. It is
     // AW2's art: it is hidden whole, or its edge shows on the map's side for a frame)
-    let others: Vec<i32> = list.iter().filter(|e| is_header(e) && (e.x() - px).abs() > 2).map(|e| e.x()).collect();
+    let others: Vec<i32> = list
+        .iter()
+        .filter(|e| is_header(e) && (e.x() - px).abs() > 2)
+        .map(|e| e.x())
+        .collect();
     for e in list {
         if e.hidden() {
             continue;
         }
         let (w, h) = e.dims();
         let inside = e.x() >= px - 4 && e.x() + w <= px + 70 && e.y() >= py - 4 && e.y() + h <= py + 40
-            || others.iter().any(|&ox| e.x() >= ox - 4 && e.x() + w <= ox + 70 && e.y() >= py - 4 && e.y() + h <= py + 40);
+            || others
+                .iter()
+                .any(|&ox| e.x() >= ox - 4 && e.x() + w <= ox + 70 && e.y() >= py - 4 && e.y() + h <= py + 40);
         let ours = (e.pal() == 7 && (e.a0 >> 8) & 3 != 2 && inside)
             || (e.pal() == 14 && e.tile() == ACTIVE_FACE_TILE && inside)
             || (e.pal() == 1 && (976..986).contains(&e.tile()) && w == 8 && h == 8 && inside && e.y() == py + 3);
@@ -702,7 +755,14 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     // are not either, so the real number is never shown.
     let aw2_digits = list.iter().any(|e| {
         let (w, h) = e.dims();
-        !e.hidden() && e.pal() == 1 && (976..986).contains(&e.tile()) && w == 8 && h == 8 && e.x() >= px - 4 && e.x() + w <= px + 70 && e.y() == py + 3
+        !e.hidden()
+            && e.pal() == 1
+            && (976..986).contains(&e.tile())
+            && w == 8
+            && h == 8
+            && e.x() >= px - 4
+            && e.x() + w <= px + 70
+            && e.y() == py + 3
     });
     let mut sprites = co_panel(left, &rows, aw2_digits.then_some(funds), powers);
     // AW2 slides its panel in and out (its x and y move): ours with it, from
@@ -720,7 +780,13 @@ fn co_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     // The "?" AW2 shows for funds hidden by fog: in our funds row, where the last digit would be (AW2 leaves it at its own
     // panel's place, over our face).
     if let Some(q) = list.iter().find(|e| {
-        !e.hidden() && e.tile() == T_QUESTION && e.pal() == 1 && e.dims() == (8, 8) && e.y() == py + 3 && e.x() >= px - 4 && e.x() + 8 <= px + 70
+        !e.hidden()
+            && e.tile() == T_QUESTION
+            && e.pal() == 1
+            && e.dims() == (8, 8)
+            && e.y() == py + 3
+            && e.x() >= px - 4
+            && e.x() + 8 <= px + 70
     }) {
         move_to(core, q, if left { 60 - 8 } else { 240 - 8 } + dx, 14 + dy);
     }
@@ -756,7 +822,8 @@ const MARGIN: i32 = 2;
 const TOP: i32 = 160 - PANEL_H - MARGIN;
 
 fn digit_value(e: &Entry) -> Option<u32> {
-    (e.pal() == 1 && e.mode() == 1 && (976..986).contains(&e.tile()) && e.dims() == (8, 8)).then(|| (e.tile() - 976) as u32)
+    (e.pal() == 1 && e.mode() == 1 && (976..986).contains(&e.tile()) && e.dims() == (8, 8))
+        .then(|| (e.tile() - 976) as u32)
 }
 
 /// A number's digit sprites, right-aligned to `right` (each 7 pixels, a
@@ -777,7 +844,10 @@ fn number(v: &mut Vec<Spr>, value: u32, pad: usize, right: i32, y: i32) {
 }
 
 fn unit_hp(core: &Core) -> Option<u32> {
-    let (x, y) = (core.raw_read_8(CURSOR_X, -1) as i32, core.raw_read_8(CURSOR_Y, -1) as i32);
+    let (x, y) = (
+        core.raw_read_8(CURSOR_X, -1) as i32,
+        core.raw_read_8(CURSOR_Y, -1) as i32,
+    );
     let u = crate::unit_actions::unit_at(core, x, y)?;
     Some((core.raw_read_16(u + 4, -1) & 0x7F) as u32)
 }
@@ -785,7 +855,10 @@ fn unit_hp(core: &Core) -> Option<u32> {
 fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32> {
     let a = art()?;
     // AW2's panel: its semi-transparent sprites in the lower corners.
-    let panel: Vec<&Entry> = list.iter().filter(|e| e.mode() == 1 && !e.hidden() && e.y() >= 90 && e.y() < 160).collect();
+    let panel: Vec<&Entry> = list
+        .iter()
+        .filter(|e| e.mode() == 1 && !e.hidden() && e.y() >= 90 && e.y() < 160)
+        .collect();
     if panel.is_empty() {
         return None;
     }
@@ -793,12 +866,24 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     let terrain_name = find(T_TERRAIN_NAME);
     let unit_name = find(T_UNIT_NAME);
     let terrain_pic = panel.iter().find(|e| e.pal() == 6 && e.dims() == (16, 32)).copied();
-    let unit_pic = panel.iter().find(|e| e.tile() == T_UNIT_PIC && e.dims() == (16, 16)).copied();
+    let unit_pic = panel
+        .iter()
+        .find(|e| e.tile() == T_UNIT_PIC && e.dims() == (16, 16))
+        .copied();
     let icon = |t: u16| panel.iter().find(|e| e.tile() == t && e.pal() == 1).copied();
-    let (star, cap, heart, fuel, ammo) = (icon(T_STAR_ICON), icon(T_CAP_ICON), icon(T_HEART), icon(T_FUEL), icon(T_AMMO));
+    let (star, cap, heart, fuel, ammo) = (
+        icon(T_STAR_ICON),
+        icon(T_CAP_ICON),
+        icon(T_HEART),
+        icon(T_FUEL),
+        icon(T_AMMO),
+    );
     let struct_heart = icon(T_STRUCT_HEART);
     // A unit whose hit points AW2 hides (Sonja's) shows a "?" where the number would be.
-    let hidden_hp = panel.iter().find(|e| e.tile() == T_QUESTION && e.pal() == 1 && e.dims() == (8, 8)).copied();
+    let hidden_hp = panel
+        .iter()
+        .find(|e| e.tile() == T_QUESTION && e.pal() == 1 && e.dims() == (8, 8))
+        .copied();
     // (a panel has its terrain's name or picture)
     if terrain_name.is_none() && terrain_pic.is_none() {
         return None;
@@ -813,13 +898,26 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     let w = if with_unit { PANEL_W_UNIT } else { PANEL_W_TERRAIN };
     let px = if left { MARGIN } else { 240 - MARGIN - w };
     // Blocks' origins: the terrain's and the unit's.
-    let (tx, ux) = if left { (px, px + 34) } else if with_unit { (px + 41, px + 3) } else { (px + 4, 0) };
+    let (tx, ux) = if left {
+        (px, px + 34)
+    } else if with_unit {
+        (px + 41, px + 3)
+    } else {
+        (px + 4, 0)
+    };
     // The numbers AW2 shows, by the icon they follow.
     // (the structure's heart comes after the star: the later icon wins a tie of x, and its row is the lower)
-    let icons: Vec<(&str, &Entry)> = [("star", star), ("cap", cap), ("heart", heart), ("fuel", fuel), ("ammo", ammo), ("shp", struct_heart)]
-        .into_iter()
-        .filter_map(|(n, e)| e.map(|e| (n, e)))
-        .collect();
+    let icons: Vec<(&str, &Entry)> = [
+        ("star", star),
+        ("cap", cap),
+        ("heart", heart),
+        ("fuel", fuel),
+        ("ammo", ammo),
+        ("shp", struct_heart),
+    ]
+    .into_iter()
+    .filter_map(|(n, e)| e.map(|e| (n, e)))
+    .collect();
     let mut shown: HashMap<&str, Vec<(i32, u32)>> = HashMap::new();
     for e in &panel {
         let Some(d) = digit_value(e) else { continue };
@@ -866,7 +964,9 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     if let Some(e) = struct_heart {
         move_to(core, e, tx + 4, y0 + 40);
         // AW2 blinks the hit points' digits off for a few frames now and then: the last number stands in for those.
-        let v = value("shp").or_else(|| LAST_STRUCT_HP.lock().ok().and_then(|l| *l)).unwrap_or(0);
+        let v = value("shp")
+            .or_else(|| LAST_STRUCT_HP.lock().ok().and_then(|l| *l))
+            .unwrap_or(0);
         if let Ok(mut l) = LAST_STRUCT_HP.lock() {
             *l = Some(v);
         }
@@ -895,7 +995,11 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
                 continue;
             }
             // (Dual Strike shows a unit's hit points as 1 to 10, rounded up, and no number is padded with zeros)
-            let v = if n == "heart" { unit_hp(core).or(value(n).map(|d| d * 10)).unwrap_or(0).div_ceil(10) } else { value(n).unwrap_or(0) };
+            let v = if n == "heart" {
+                unit_hp(core).or(value(n).map(|d| d * 10)).unwrap_or(0).div_ceil(10)
+            } else {
+                value(n).unwrap_or(0)
+            };
             if n == "heart" {
                 number(&mut mine, v, pad, ux + 31, y + 1);
             } else {
@@ -911,7 +1015,6 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
     // is priority: the map's cursor and units stay behind the panel).
     Some(insert(core, first, at, end, &mine))
 }
-
 
 // --- The damage forecast box --------------------------------------------------------------------------
 
@@ -936,7 +1039,9 @@ fn box_restore(core: &mut Core) {
 /// number AW2's.
 fn box_flush(core: &mut Core, list: &[Entry]) -> bool {
     let Some(a) = art() else { return false };
-    let frame = list.iter().find(|e| e.tile() == T_BOX_FRAME && e.pal() == 1 && e.dims() == (32, 32) && !e.hidden());
+    let frame = list
+        .iter()
+        .find(|e| e.tile() == T_BOX_FRAME && e.pal() == 1 && e.dims() == (32, 32) && !e.hidden());
     let Some(frame) = frame else { return false };
     let side = PANEL_SIDE.load(Ordering::Relaxed);
     let left = match side {
@@ -953,11 +1058,17 @@ fn box_flush(core: &mut Core, list: &[Entry]) -> bool {
         }
     }
     write_tiles(core, T_BOX_DIGITS as u32, &a.damage);
-    let (fx, fy) = if left { (34, TOP - 28) } else { (240 - 35 - 32, TOP - 26) };
+    let (fx, fy) = if left {
+        (34, TOP - 28)
+    } else {
+        (240 - 35 - 32, TOP - 26)
+    };
     let (ox, oy) = (fx - frame.x(), fy - frame.y());
     for e in list {
         let t = e.tile();
-        let ours = e.pal() == 1 && !e.hidden() && (e.at == frame.at || ((T_BOX_DIGITS..T_BOX_FRAME).contains(&t) && e.dims() == (8, 16)));
+        let ours = e.pal() == 1
+            && !e.hidden()
+            && (e.at == frame.at || ((T_BOX_DIGITS..T_BOX_FRAME).contains(&t) && e.dims() == (8, 16)));
         if ours {
             move_to(core, e, e.x() + ox, e.y() + oy);
         }

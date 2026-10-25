@@ -61,7 +61,14 @@ const AW2_SONG_TABLE: u32 = 0x0824_238C;
 const AW2_SONGS: u32 = 505;
 /// Every ROM word holding the song table's address (a full scan finds these
 /// six, in m4aSongNumStart and its siblings).
-const SONG_POOL: [u32; 6] = [0x0807_04A0, 0x0807_04D4, 0x0807_0520, 0x0807_0574, 0x0807_05A8, 0x0807_2B9C];
+const SONG_POOL: [u32; 6] = [
+    0x0807_04A0,
+    0x0807_04D4,
+    0x0807_0520,
+    0x0807_0574,
+    0x0807_05A8,
+    0x0807_2B9C,
+];
 /// The first new song's id.
 pub const FIRST_SONG: u16 = AW2_SONGS as u16;
 /// The music player the CO themes use (player 0 of `0x08242314`: 8 tracks).
@@ -100,7 +107,14 @@ const DS_PLAY_SE: u32 = 0x0200_B76C;
 /// count), `SE_TAG_BREAK_TYPE2` (187, each letter of the power's name),
 /// `SE_TAG_BREAK_EXPLOSE2` (189, the closing burst), `SE_SYOGUN_CHANGE` (81,
 /// CO SWAP).
-const TAG_SE_CALLS: [u32; 6] = [0x0205_B368, 0x0205_8134, 0x0205_8098, 0x0205_9B94, 0x0205_93E0, 0x0205_CCBC];
+const TAG_SE_CALLS: [u32; 6] = [
+    0x0205_B368,
+    0x0205_8134,
+    0x0205_8098,
+    0x0205_9B94,
+    0x0205_93E0,
+    0x0205_CCBC,
+];
 
 /// The tag screens' sounds, [`TAG_SE_CALLS`]' order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -182,7 +196,12 @@ fn u32_at(b: &[u8], o: usize) -> Option<u32> {
 fn theme_ids(arm9: &[u8]) -> Option<Vec<u16>> {
     crate::co_new::NEW
         .iter()
-        .map(|&(ds, _)| u16_at(arm9, (DS_RECORDS - 0x0200_0000 + DS_RECORD * ds as u32 + DS_MUSIC) as usize))
+        .map(|&(ds, _)| {
+            u16_at(
+                arm9,
+                (DS_RECORDS - 0x0200_0000 + DS_RECORD * ds as u32 + DS_MUSIC) as usize,
+            )
+        })
         .collect()
 }
 
@@ -195,7 +214,10 @@ fn heal_se_ids(arm9: &[u8]) -> Option<[u16; 2]> {
         let (mov, bl) = (u32_at(arm9, o)?, u32_at(arm9, o + 4)?);
         // mov r0, #imm8; bl (ARM, always).
         let off = ((bl & 0x00FF_FFFF) << 8) as i32 >> 6;
-        if mov & 0xFFFF_FF00 != 0xE3A0_0000 || bl & 0xFF00_0000 != 0xEB00_0000 || (at + 12).wrapping_add(off as u32) != DS_PLAY_SE {
+        if mov & 0xFFFF_FF00 != 0xE3A0_0000
+            || bl & 0xFF00_0000 != 0xEB00_0000
+            || (at + 12).wrapping_add(off as u32) != DS_PLAY_SE
+        {
             return None;
         }
         *id = (mov & 0xFF) as u16;
@@ -244,7 +266,12 @@ pub fn keep(sdat: &[u8], arm9: &[u8]) -> Option<Vec<(String, Vec<u8>)>> {
     let mut have = std::collections::HashSet::new();
     let tag = tag_se_ids(arm9)?;
     let songs = STORY_SONGS.iter().chain(POWER_SONGS.iter()).map(|s| s.0);
-    for id in theme_ids(arm9)?.into_iter().chain(heal_se_ids(arm9)?).chain(songs).chain(tag) {
+    for id in theme_ids(arm9)?
+        .into_iter()
+        .chain(heal_se_ids(arm9)?)
+        .chain(songs)
+        .chain(tag)
+    {
         let seq = record(0, id)?;
         let bank = u16_at(seq, 4)?;
         if have.insert(format!("s{id}")) {
@@ -390,7 +417,11 @@ fn walk(d: &[u8], start: usize) -> Option<Track> {
                 // A random (the middle of its range is taken) or variable
                 // (read as 0) last argument.
                 let cmd = r.byte(&mut p)?;
-                let vel = if cmd < 0x80 || (0xB0..=0xBD).contains(&cmd) { r.byte(&mut p)? } else { 0 };
+                let vel = if cmd < 0x80 || (0xB0..=0xBD).contains(&cmd) {
+                    r.byte(&mut p)?
+                } else {
+                    0
+                };
                 let v = if c == 0xA0 {
                     let (lo, hi) = (r.u16(&mut p)? as i16 as i32, r.u16(&mut p)? as i16 as i32);
                     ((lo + hi) / 2).max(0) as u32
@@ -400,7 +431,15 @@ fn walk(d: &[u8], start: usize) -> Option<Track> {
                 };
                 match cmd {
                     0x00..=0x7F => {
-                        t.evs.push((tick, Ev::Note { key: cmd, vel: vel & 0x7F, len: v, prog }));
+                        t.evs.push((
+                            tick,
+                            Ev::Note {
+                                key: cmd,
+                                vel: vel & 0x7F,
+                                len: v,
+                                prog,
+                            },
+                        ));
                         if note_wait {
                             tick += v;
                         }
@@ -585,17 +624,21 @@ struct Sample {
 }
 
 const ADPCM_STEP: [i32; 89] = [
-    7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97, 107, 118, 130, 143,
-    157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552,
-    1707, 1878, 2066, 2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487,
-    12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
+    7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97, 107,
+    118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494, 544, 598, 658, 724, 796, 876, 963,
+    1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894,
+    6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794,
+    32767,
 ];
 const ADPCM_INDEX: [i32; 8] = [-1, -1, -1, -1, 2, 4, 6, 8];
 
 /// IMA-ADPCM as the DS plays it: a header (first sample, step index), then
 /// two samples a byte, low nibble first.
 fn adpcm(d: &[u8]) -> Option<Vec<i16>> {
-    let (mut s, mut idx) = (i16::from_le_bytes([*d.first()?, *d.get(1)?]) as i32, (*d.get(2)? as i32).min(88));
+    let (mut s, mut idx) = (
+        i16::from_le_bytes([*d.first()?, *d.get(1)?]) as i32,
+        (*d.get(2)? as i32).min(88),
+    );
     let mut out = Vec::with_capacity(d.len().saturating_sub(4) * 2);
     for &b in d.get(4..)? {
         for n in [b & 15, b >> 4] {
@@ -644,8 +687,14 @@ fn stream(strm: &[u8]) -> Option<Sample> {
         }
     }
     let n = ch.iter().map(|c| c.len()).min()?.min(total);
-    let pcm = (0..n).map(|i| (ch.iter().map(|c| c[i] as i32).sum::<i32>() / chans as i32) as i16).collect();
-    Some(Sample { pcm, rate: rate.max(1), loop_start: (looped && loop_at < n).then_some(loop_at) })
+    let pcm = (0..n)
+        .map(|i| (ch.iter().map(|c| c[i] as i32).sum::<i32>() / chans as i32) as i16)
+        .collect();
+    Some(Sample {
+        pcm,
+        rate: rate.max(1),
+        loop_start: (looped && loop_at < n).then_some(loop_at),
+    })
 }
 
 /// Sample `i` of a SWAR.
@@ -659,12 +708,19 @@ fn sample(swar: &[u8], i: u16) -> Option<Sample> {
     let d = swar.get(o + 12..o + 12 + ls + ll)?;
     let (pcm, loop_start) = match kind {
         0 => (d.iter().map(|&b| (b as i8 as i16) << 8).collect(), ls),
-        1 => (d.chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect(), ls / 2),
+        1 => (
+            d.chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect(),
+            ls / 2,
+        ),
         2 => (adpcm(d)?, ls.saturating_sub(4) * 2),
         _ => return None,
     };
     let loop_start = (looped && loop_start < pcm.len()).then_some(loop_start);
-    Some(Sample { pcm, rate: rate.max(1), loop_start })
+    Some(Sample {
+        pcm,
+        rate: rate.max(1),
+        loop_start,
+    })
 }
 
 /// An MP2K sample: 8-bit, at `rate` Hz, looping from `loop_start`.
@@ -709,7 +765,9 @@ fn convert_sample(s: &Sample) -> Wave {
         }
     };
     let data: Vec<i8> = if ratio >= 0.999 {
-        (0..out_len).map(|j| ((at(j as i64) / 256.0).round().clamp(-128.0, 127.0)) as i8).collect()
+        (0..out_len)
+            .map(|j| ((at(j as i64) / 256.0).round().clamp(-128.0, 127.0)) as i8)
+            .collect()
     } else {
         // Windowed sinc, cut off at 90% of the new Nyquist.
         let cutoff = 0.9 * ratio * 0.5; // cycles per source sample
@@ -769,10 +827,18 @@ fn psg_noise() -> Wave {
         .map(|_| {
             let bit = (lfsr ^ (lfsr >> 1)) & 1;
             lfsr = (lfsr >> 1) | (bit << 14);
-            if lfsr & 1 != 0 { 40 } else { -40 }
+            if lfsr & 1 != 0 {
+                40
+            } else {
+                -40
+            }
         })
         .collect();
-    Wave { data, rate: MIX_RATE, loop_start: Some(0) }
+    Wave {
+        data,
+        rate: MIX_RATE,
+        loop_start: Some(0),
+    }
 }
 
 /// An MP2K sample: header (type, loop flag, rate * 1024, loop start,
@@ -803,7 +869,10 @@ fn square(v: u8) -> f64 {
 
 /// Dual Strike's attack: per step, attenuation * rate / 256.
 fn ds_attack_rate(a: u8) -> u32 {
-    const TOP: [u32; 19] = [0x00, 0x01, 0x05, 0x0E, 0x1A, 0x26, 0x33, 0x3F, 0x49, 0x54, 0x5C, 0x64, 0x6D, 0x74, 0x7B, 0x7F, 0x84, 0x89, 0x8F];
+    const TOP: [u32; 19] = [
+        0x00, 0x01, 0x05, 0x0E, 0x1A, 0x26, 0x33, 0x3F, 0x49, 0x54, 0x5C, 0x64, 0x6D, 0x74, 0x7B, 0x7F, 0x84, 0x89,
+        0x8F,
+    ];
     let a = a.min(127);
     if a < 109 {
         255 - a as u32
@@ -864,8 +933,8 @@ fn adsr(r: &Region) -> [u8; 4] {
 
 /// Note and wait lengths MP2K has commands for (`N01..N96`, `W01..W96`).
 pub(crate) const LENGTHS: [u32; 48] = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 30, 32, 36, 40, 42, 44, 48, 52, 54, 56, 60,
-    64, 66, 68, 72, 76, 78, 80, 84, 88, 90, 92, 96,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 30, 32, 36, 40, 42, 44,
+    48, 52, 54, 56, 60, 64, 66, 68, 72, 76, 78, 80, 84, 88, 90, 92, 96,
 ];
 pub(crate) const WAIT: u8 = 0x80; // W00; W(LENGTHS[i]) is 0x81 + i
 pub(crate) const NOTE: u8 = 0xD0; // N(LENGTHS[i]) is 0xD0 + i
@@ -1085,7 +1154,9 @@ fn write_track(seq: &Seq, srcs: &[usize], song_loop: Option<(u32, u32)>, tick_ra
                         t = tick;
                         // Dual Strike: 0.8 ticks per beat-per-minute a second;
                         // MP2K: 2 * byte * fps / 150 ticks a second.
-                        let byte = (bpm as f64 * (1.0 / (240.0 * DS_UPDATE)) * 150.0 / (2.0 * GBA_FPS)).round().clamp(1.0, 255.0);
+                        let byte = (bpm as f64 * (1.0 / (240.0 * DS_UPDATE)) * 150.0 / (2.0 * GBA_FPS))
+                            .round()
+                            .clamp(1.0, 255.0);
                         out.extend([TEMPO, byte as u8]);
                         continue;
                     }
@@ -1132,7 +1203,10 @@ fn write_track(seq: &Seq, srcs: &[usize], song_loop: Option<(u32, u32)>, tick_ra
     let Some(_) = song_loop else {
         emit(&mut out, &body, t, &mut srcst, &mut cur, &mut owner);
         out.push(FINE);
-        return TrackOut { bytes: out, goto_at: None };
+        return TrackOut {
+            bytes: out,
+            goto_at: None,
+        };
     };
     waits(&mut out, loop_start.saturating_sub(t));
     // The loop's later passes start from the state the loop ends with: a
@@ -1150,7 +1224,10 @@ fn write_track(seq: &Seq, srcs: &[usize], song_loop: Option<(u32, u32)>, tick_ra
     out.push(GOTO);
     let at = out.len();
     out.extend([0; 4]);
-    TrackOut { bytes: out, goto_at: Some((at, label)) }
+    TrackOut {
+        bytes: out,
+        goto_at: Some((at, label)),
+    }
 }
 
 /// Sounding time two sets of tracks share (ticks), for choosing merges.
@@ -1199,7 +1276,9 @@ fn plan_tracks(seq: &Seq, until: u32) -> Vec<Vec<usize>> {
         .collect();
     // Tempo lives on a track without notes sometimes: keep its events.
     for t in 0..seq.tracks.len() {
-        if !groups.iter().any(|g| g.contains(&t)) && seq.tracks[t].evs.iter().any(|e| matches!(e.1, Ev::Ctl(Ctl::Tempo(_)))) {
+        if !groups.iter().any(|g| g.contains(&t))
+            && seq.tracks[t].evs.iter().any(|e| matches!(e.1, Ev::Ctl(Ctl::Tempo(_))))
+        {
             groups.insert(0, vec![t]);
         }
     }
@@ -1288,7 +1367,10 @@ fn build() -> Option<Music> {
     let pack = crate::ds_pack::pack()?;
     let ids = theme_ids(&pack.arm9)?;
     let se_ids = heal_se_ids(&pack.arm9)?;
-    let mut blob = Blob { bytes: vec![0; (TABLE - BASE) as usize], base: BASE };
+    let mut blob = Blob {
+        bytes: vec![0; (TABLE - BASE) as usize],
+        base: BASE,
+    };
     // The song table: AW2's, then ours (filled in below).
     let mut distinct: Vec<u16> = Vec::new();
     for &id in &ids {
@@ -1305,7 +1387,11 @@ fn build() -> Option<Music> {
     // The DS Campaign's songs the pack has, after the heal sounds, in a
     // ROM range of their own ([`STORY_BASE`]).
     let effects = distinct.len();
-    let story_ids: Vec<u16> = STORY_SONGS.iter().map(|s| s.0).filter(|&id| pack.file(&format!("sound/seq/{id}")).is_some()).collect();
+    let story_ids: Vec<u16> = STORY_SONGS
+        .iter()
+        .map(|s| s.0)
+        .filter(|&id| pack.file(&format!("sound/seq/{id}")).is_some())
+        .collect();
     for &id in &story_ids {
         if !distinct[effects..].contains(&id) {
             distinct.push(id);
@@ -1327,13 +1413,20 @@ fn build() -> Option<Music> {
     }
     // The power themes the pack has, after them (music).
     let tag_end = distinct.len();
-    let power_ids: Vec<u16> = POWER_SONGS.iter().map(|s| s.0).filter(|&id| pack.file(&format!("sound/seq/{id}")).is_some()).collect();
+    let power_ids: Vec<u16> = POWER_SONGS
+        .iter()
+        .map(|s| s.0)
+        .filter(|&id| pack.file(&format!("sound/seq/{id}")).is_some())
+        .collect();
     for &id in &power_ids {
         if !distinct[tag_end..].contains(&id) {
             distinct.push(id);
         }
     }
-    let mut story_blob = Blob { bytes: Vec::new(), base: STORY_BASE };
+    let mut story_blob = Blob {
+        bytes: Vec::new(),
+        base: STORY_BASE,
+    };
     let table_at = TABLE;
     // The staff roll's stream, a song after the others.
     let roll = pack.file(STAFF_ROLL_STREAM).and_then(stream);
@@ -1345,7 +1438,10 @@ fn build() -> Option<Music> {
             Vec::new()
         }
     };
-    blob.bytes.resize((TABLE - BASE) as usize + 8 * (AW2_SONGS as usize + distinct.len() + roll.is_some() as usize + es_list.len()), 0);
+    blob.bytes.resize(
+        (TABLE - BASE) as usize + 8 * (AW2_SONGS as usize + distinct.len() + roll.is_some() as usize + es_list.len()),
+        0,
+    );
     let mut headers = Vec::new();
     let mut waves: HashMap<(u16, u16), u32> = HashMap::new();
     let silent = {
@@ -1377,8 +1473,17 @@ fn build() -> Option<Music> {
         let se = (n >= themes && n < effects) || (n >= story_end && n < tag_end);
         let out: &mut Blob = if n >= effects { &mut story_blob } else { &mut blob };
         let mut seq = parse_seq(pack_file(&format!("sound/seq/{sid}"))?)?;
-        if se && !seq.tracks.iter().flat_map(|t| t.evs.iter()).any(|e| matches!(e.1, Ev::Ctl(Ctl::Tempo(_)))) {
-            seq.tracks.first_mut()?.evs.insert(0, (0, Ev::Ctl(Ctl::Tempo(DS_DEFAULT_TEMPO))));
+        if se
+            && !seq
+                .tracks
+                .iter()
+                .flat_map(|t| t.evs.iter())
+                .any(|e| matches!(e.1, Ev::Ctl(Ctl::Tempo(_))))
+        {
+            seq.tracks
+                .first_mut()?
+                .evs
+                .insert(0, (0, Ev::Ctl(Ctl::Tempo(DS_DEFAULT_TEMPO))));
         }
         let bank = pack_file(&format!("sound/bank/{}", seq.bank))?;
         let (binfo, sbnk) = bank.split_at(12);
@@ -1415,7 +1520,9 @@ fn build() -> Option<Music> {
                             let arc = *arcs.get(r.arc as usize)?;
                             let s = sample(pack_file(&format!("sound/wave/{arc}"))?, r.wave)?;
                             let pitch = 2f64.powf((*key as f64 - r.root as f64) / 12.0);
-                            s.loop_start.is_none().then(|| s.pcm.len() as f64 / s.rate as f64 / pitch)
+                            s.loop_start
+                                .is_none()
+                                .then(|| s.pcm.len() as f64 / s.rate as f64 / pitch)
                         })
                         .unwrap_or(1.0);
                     *len = (secs * tick_rate).ceil() as u32;
@@ -1447,7 +1554,11 @@ fn build() -> Option<Music> {
                     continue;
                 };
                 let mut v = [0u8; 12];
-                let pan = if r.pan != 64 { 0x80 | (0x40 + r.pan as i32 - 64).clamp(0, 0x7F) as u8 } else { 0 };
+                let pan = if r.pan != 64 {
+                    0x80 | (0x40 + r.pan as i32 - 64).clamp(0, 0x7F) as u8
+                } else {
+                    0
+                };
                 match r.kind {
                     1..=3 => {
                         // PCM regions play their sample; Dual Strike's PSG
@@ -1464,7 +1575,9 @@ fn build() -> Option<Music> {
                             Some(&w) => w,
                             None => {
                                 let w = match r.kind {
-                                    1 => pack_file(&format!("sound/wave/{arc}")).and_then(|f| sample(f, r.wave)).map(|s| convert_sample(&s)),
+                                    1 => pack_file(&format!("sound/wave/{arc}"))
+                                        .and_then(|f| sample(f, r.wave))
+                                        .map(|s| convert_sample(&s)),
                                     2 => Some(psg_square(key.1)),
                                     _ => Some(psg_noise()),
                                 };
@@ -1510,7 +1623,11 @@ fn build() -> Option<Music> {
             out.put(&bytes);
             track_at.push(at);
         }
-        let (priority, reverb, player) = if se { (SE_PRIORITY, 0, SE_PLAYER) } else { (0, REVERB, PLAYER) };
+        let (priority, reverb, player) = if se {
+            (SE_PRIORITY, 0, SE_PLAYER)
+        } else {
+            (0, REVERB, PLAYER)
+        };
         let mut header = vec![track_at.len() as u8, 0, priority, reverb];
         header.extend_from_slice(&group_at.to_le_bytes());
         for a in &track_at {
@@ -1581,22 +1698,54 @@ fn build() -> Option<Music> {
         blob.bytes[e..e + 4].copy_from_slice(&header_at.to_le_bytes());
         blob.bytes[e + 4..e + 6].copy_from_slice(&PLAYER.to_le_bytes());
         blob.bytes[e + 6..e + 8].copy_from_slice(&PLAYER.to_le_bytes());
-        es.push(EsSong { co: *co, song: FIRST_SONG + (es_row + k) as u16, header: header_at, group_at, voices: c.voices.clone() });
+        es.push(EsSong {
+            co: *co,
+            song: FIRST_SONG + (es_row + k) as u16,
+            header: header_at,
+            group_at,
+            voices: c.voices.clone(),
+        });
     }
     blob.bytes[0..4].copy_from_slice(&MAGIC.to_le_bytes());
-    let song_of = |id: u16, from: usize| FIRST_SONG + (from + distinct[from..].iter().position(|&d| d == id).unwrap()) as u16;
+    let song_of =
+        |id: u16, from: usize| FIRST_SONG + (from + distinct[from..].iter().position(|&d| d == id).unwrap()) as u16;
     let songs = ids.iter().map(|&id| song_of(id, 0)).collect();
     let heal_se = se_ids.map(|id| song_of(id, themes));
     let story = story_ids.iter().map(|&id| (id, song_of(id, effects))).collect();
     let mut tag_se = [None; 6];
     if let Some(all) = tag_se_ids(&pack.arm9) {
         for (k, id) in all.iter().enumerate() {
-            tag_se[k] = distinct[story_end..].iter().position(|d| d == id).map(|p| FIRST_SONG + table_index(story_end + p) as u16);
+            tag_se[k] = distinct[story_end..]
+                .iter()
+                .position(|d| d == id)
+                .map(|p| FIRST_SONG + table_index(story_end + p) as u16);
         }
     }
-    let power = power_ids.iter().map(|&id| (id, FIRST_SONG + table_index(tag_end + distinct[tag_end..].iter().position(|&d| d == id).unwrap()) as u16)).collect();
-    debug_assert!(STORY_BASE as usize + story_blob.bytes.len() <= STORY_END as usize, "the story's songs pass {STORY_END:#x}");
-    Some(Music { blob: blob.bytes, story_blob: story_blob.bytes, songs, headers, heal_se, story, staff_roll, tag_se, power, es })
+    let power = power_ids
+        .iter()
+        .map(|&id| {
+            (
+                id,
+                FIRST_SONG + table_index(tag_end + distinct[tag_end..].iter().position(|&d| d == id).unwrap()) as u16,
+            )
+        })
+        .collect();
+    debug_assert!(
+        STORY_BASE as usize + story_blob.bytes.len() <= STORY_END as usize,
+        "the story's songs pass {STORY_END:#x}"
+    );
+    Some(Music {
+        blob: blob.bytes,
+        story_blob: story_blob.bytes,
+        songs,
+        headers,
+        heal_se,
+        story,
+        staff_roll,
+        tag_se,
+        power,
+        es,
+    })
 }
 
 static BUILT: OnceLock<Option<Music>> = OnceLock::new();
@@ -1622,7 +1771,9 @@ pub fn song(co: u8) -> Option<u16> {
     if let Some(e) = music()?.es.iter().find(|e| e.co == co) {
         return Some(e.song);
     }
-    let i = crate::co_new::NEW.iter().position(|&(ds, _)| Some(ds) == crate::co_new::ds_id(co))?;
+    let i = crate::co_new::NEW
+        .iter()
+        .position(|&(ds, _)| Some(ds) == crate::co_new::ds_id(co))?;
     music()?.songs.get(i).copied()
 }
 
@@ -1757,13 +1908,30 @@ mod tests {
         assert_eq!(mp2k_fall(127), 0);
         // Slower releases keep more each frame.
         assert!(mp2k_fall(60) > mp2k_fall(100) && mp2k_fall(100) > mp2k_fall(120));
-        assert_eq!(adsr(&Region { kind: 1, wave: 0, arc: 0, root: 60, attack: 127, decay: 127, sustain: 127, release: 127, pan: 64 })[2], 255);
+        assert_eq!(
+            adsr(&Region {
+                kind: 1,
+                wave: 0,
+                arc: 0,
+                root: 60,
+                attack: 127,
+                decay: 127,
+                sustain: 127,
+                release: 127,
+                pan: 64
+            })[2],
+            255
+        );
     }
 
     #[test]
     fn resampling_keeps_loops_whole() {
         let pcm: Vec<i16> = (0..3000).map(|i| ((i as f64 * 0.05).sin() * 20000.0) as i16).collect();
-        let w = convert_sample(&Sample { pcm, rate: 22050, loop_start: Some(1000) });
+        let w = convert_sample(&Sample {
+            pcm,
+            rate: 22050,
+            loop_start: Some(1000),
+        });
         let ls = w.loop_start.unwrap();
         let new_ll = w.data.len() - ls;
         assert!((w.rate * 2000.0 / 22050.0 - new_ll as f64).abs() < 1e-6);
@@ -1812,9 +1980,18 @@ mod pack_tests {
         let pack = crate::ds_pack::pack().unwrap();
         assert_eq!(heal_se_ids(&pack.arm9), Some([175, 176]));
         let m = music().expect("music");
-        assert_eq!(m.heal_se, [FIRST_SONG + crate::co_new::NEW.len() as u16, FIRST_SONG + crate::co_new::NEW.len() as u16 + 1]);
+        assert_eq!(
+            m.heal_se,
+            [
+                FIRST_SONG + crate::co_new::NEW.len() as u16,
+                FIRST_SONG + crate::co_new::NEW.len() as u16 + 1
+            ]
+        );
         eprintln!("heal sounds: music ends at {:#010x}", BASE + m.blob.len() as u32);
-        assert!(BASE + m.blob.len() as u32 <= 0x08E0_0000, "inside the music's ROM range, before Survival's (docs/AW2.md)");
+        assert!(
+            BASE + m.blob.len() as u32 <= 0x08E0_0000,
+            "inside the music's ROM range, before Survival's (docs/AW2.md)"
+        );
         for (i, song) in m.heal_se.iter().enumerate() {
             let e = (TABLE - BASE) as usize + 8 * *song as usize;
             let header = u32_at(&m.blob, e).unwrap();
@@ -1868,15 +2045,25 @@ mod pack_tests {
             let e = (TABLE - BASE) as usize + 8 * song as usize;
             assert_eq!(u16_at(&m.blob, e + 4), Some(PLAYER));
             let header = u32_at(&m.blob, e).unwrap();
-            assert!(header >= STORY_BASE && m.headers.contains(&header), "{song}: header {header:#x}");
+            assert!(
+                header >= STORY_BASE && m.headers.contains(&header),
+                "{song}: header {header:#x}"
+            );
             let h = (header - STORY_BASE) as usize;
             let tracks = m.story_blob[h] as usize;
-            assert!((1..=MAX_TRACKS).contains(&tracks), "{}: {tracks} tracks", POWER_SONGS[k].1);
+            assert!(
+                (1..=MAX_TRACKS).contains(&tracks),
+                "{}: {tracks} tracks",
+                POWER_SONGS[k].1
+            );
             assert_eq!(m.story_blob[h + 3], REVERB);
         }
         assert_eq!(power_song(PowerSong::Tag, false), Some(m.power[5].1));
         assert_eq!(power_song(PowerSong::CoPower, true), Some(m.power[0].1));
-        eprintln!("the story's songs end at {:#010x}", STORY_BASE as usize + m.story_blob.len());
+        eprintln!(
+            "the story's songs end at {:#010x}",
+            STORY_BASE as usize + m.story_blob.len()
+        );
         assert!(STORY_BASE as usize + m.story_blob.len() <= STORY_END as usize);
     }
 
@@ -1890,16 +2077,28 @@ mod pack_tests {
         let m = music().expect("music");
         assert_eq!(m.es.len(), crate::es_music::SOURCES.len(), "every theme compiled");
         let end = STORY_BASE + m.story_blob.len() as u32;
-        assert!(end <= STORY_END, "the story's songs end at {end:#x}, past {STORY_END:#x} (the maps' table)");
+        assert!(
+            end <= STORY_END,
+            "the story's songs end at {end:#x}, past {STORY_END:#x} (the maps' table)"
+        );
         let last_power = m.power.iter().map(|p| p.1).max().expect("the power themes");
         let mut ranges: Vec<(u32, u32, String)> = Vec::new();
         for (e, (_, c)) in m.es.iter().zip(crate::es_music::compile_all().unwrap()) {
-            assert!(e.song > last_power, "{}: song {} after the power themes ({last_power}), so every earlier id keeps its number", e.co, e.song);
+            assert!(
+                e.song > last_power,
+                "{}: song {} after the power themes ({last_power}), so every earlier id keeps its number",
+                e.co,
+                e.song
+            );
             let h = (e.header - STORY_BASE) as usize;
             let n = m.story_blob[h] as usize;
             assert_eq!(n, c.tracks.len());
             ranges.push((e.header, e.header + 8 + 4 * n as u32, format!("{} header", e.co)));
-            ranges.push((e.group_at, e.group_at + 12 * e.voices.len() as u32, format!("{} voices", e.co)));
+            ranges.push((
+                e.group_at,
+                e.group_at + 12 * e.voices.len() as u32,
+                format!("{} voices", e.co),
+            ));
             for (k, t) in c.tracks.iter().enumerate() {
                 let at = u32_at(&m.story_blob, h + 8 + 4 * k).unwrap();
                 ranges.push((at, at + t.bytes.len() as u32, format!("{} track {k}", e.co)));
@@ -1909,9 +2108,24 @@ mod pack_tests {
             }
         }
         for (i, a) in ranges.iter().enumerate() {
-            assert!(a.0 >= STORY_BASE && a.1 <= end, "{} ({:#x}..{:#x}) outside the story's data", a.2, a.0, a.1);
+            assert!(
+                a.0 >= STORY_BASE && a.1 <= end,
+                "{} ({:#x}..{:#x}) outside the story's data",
+                a.2,
+                a.0,
+                a.1
+            );
             for b in &ranges[i + 1..] {
-                assert!(a.1 <= b.0 || b.1 <= a.0, "{} ({:#x}..{:#x}) overlaps {} ({:#x}..{:#x})", a.2, a.0, a.1, b.2, b.0, b.1);
+                assert!(
+                    a.1 <= b.0 || b.1 <= a.0,
+                    "{} ({:#x}..{:#x}) overlaps {} ({:#x}..{:#x})",
+                    a.2,
+                    a.0,
+                    a.1,
+                    b.2,
+                    b.0,
+                    b.1
+                );
             }
         }
         // The rows: the table's last five entries, on the themes' player.

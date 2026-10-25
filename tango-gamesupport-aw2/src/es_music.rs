@@ -62,13 +62,37 @@ pub struct Source {
 }
 
 pub const SOURCES: [Source; 6] = [
-    Source { co: 86, name: "klaus", text: include_str!("../music/es/klaus.m4t") },
-    Source { co: 87, name: "aurelia", text: include_str!("../music/es/aurelia.m4t") },
-    Source { co: 88, name: "cassius", text: include_str!("../music/es/cassius.m4t") },
-    Source { co: 89, name: "livia", text: include_str!("../music/es/livia.m4t") },
-    Source { co: 90, name: "varro", text: include_str!("../music/es/varro.m4t") },
+    Source {
+        co: 86,
+        name: "klaus",
+        text: include_str!("../music/es/klaus.m4t"),
+    },
+    Source {
+        co: 87,
+        name: "aurelia",
+        text: include_str!("../music/es/aurelia.m4t"),
+    },
+    Source {
+        co: 88,
+        name: "cassius",
+        text: include_str!("../music/es/cassius.m4t"),
+    },
+    Source {
+        co: 89,
+        name: "livia",
+        text: include_str!("../music/es/livia.m4t"),
+    },
+    Source {
+        co: 90,
+        name: "varro",
+        text: include_str!("../music/es/varro.m4t"),
+    },
     // Asuka (CO 92, crate::asuka): her theme is in Versus for everyone, like her.
-    Source { co: 92, name: "asuka", text: include_str!("../music/es/asuka.m4t") },
+    Source {
+        co: 92,
+        name: "asuka",
+        text: include_str!("../music/es/asuka.m4t"),
+    },
 ];
 
 /// The source text of a song: the dev aid's file if the variable names a folder with one, else the built-in text.
@@ -185,7 +209,11 @@ fn err<T>(line: usize, msg: impl std::fmt::Display) -> Result<T, String> {
 
 fn parse_int(s: &str, line: usize, what: &str) -> Result<i32, String> {
     let t = s.trim();
-    let v = if let Some(h) = t.strip_prefix("0x") { i64::from_str_radix(h, 16).ok() } else { t.parse::<i64>().ok() };
+    let v = if let Some(h) = t.strip_prefix("0x") {
+        i64::from_str_radix(h, 16).ok()
+    } else {
+        t.parse::<i64>().ok()
+    };
     match v {
         Some(v) => Ok(v as i32),
         None => err(line, format!("{what}: '{s}' is not a number")),
@@ -299,11 +327,17 @@ fn parse(text: &str) -> Result<Parsed, String> {
             "tempo" => {
                 p.bpm = parse_int(rest.first().unwrap_or(&""), ln, "tempo")? as u32;
                 if p.bpm < 40 || p.bpm > 250 || p.bpm % 2 != 0 {
-                    return err(ln, "tempo must be an even number of beats a minute, 40 to 250 (the engine stores half)");
+                    return err(
+                        ln,
+                        "tempo must be an even number of beats a minute, 40 to 250 (the engine stores half)",
+                    );
                 }
             }
             "meter" => {
-                let (a, b) = rest.first().and_then(|m| m.split_once('/')).ok_or(format!("line {ln}: meter wants n/d"))?;
+                let (a, b) = rest
+                    .first()
+                    .and_then(|m| m.split_once('/'))
+                    .ok_or(format!("line {ln}: meter wants n/d"))?;
                 let (a, b) = (parse_int(a, ln, "meter")? as u32, parse_int(b, ln, "meter")? as u32);
                 if a == 0 || b == 0 || 96 % b != 0 {
                     return err(ln, "meter denominator must divide 96 (1 2 4 8 16 32)");
@@ -335,7 +369,14 @@ fn parse(text: &str) -> Result<Parsed, String> {
                 if !(0..128).contains(&index) || !(0x0800_0000..0x0880_0000).contains(&group) {
                     return err(ln, "voice group must be A, B or a ROM address, program 0..127");
                 }
-                p.insts.push((name.trim().to_string(), VoiceRef { group, index: index as u8 }, shift));
+                p.insts.push((
+                    name.trim().to_string(),
+                    VoiceRef {
+                        group,
+                        index: index as u8,
+                    },
+                    shift,
+                ));
             }
             "hit" => {
                 for h in rest {
@@ -346,9 +387,24 @@ fn parse(text: &str) -> Result<Parsed, String> {
             }
             "track" => {
                 let n = parse_int(rest.first().unwrap_or(&""), ln, "track number")? as u32;
-                let mut s = TrackSpec { n, inst: String::new(), vol: 100, pan: 0, vel: 100, gate: 90, bendr: 2, modd: 0, lfos: 22, lfodl: 0, trans: 0, gain: 1.0 };
+                let mut s = TrackSpec {
+                    n,
+                    inst: String::new(),
+                    vol: 100,
+                    pan: 0,
+                    vel: 100,
+                    gate: 90,
+                    bendr: 2,
+                    modd: 0,
+                    lfos: 22,
+                    lfodl: 0,
+                    trans: 0,
+                    gain: 1.0,
+                };
                 for kv in &rest[1..] {
-                    let (k, v) = kv.split_once('=').ok_or(format!("line {ln}: track options are key=value"))?;
+                    let (k, v) = kv
+                        .split_once('=')
+                        .ok_or(format!("line {ln}: track options are key=value"))?;
                     match k {
                         "inst" => s.inst = v.to_string(),
                         "vol" => s.vol = parse_int(v, ln, k)?,
@@ -360,7 +416,11 @@ fn parse(text: &str) -> Result<Parsed, String> {
                         "lfos" => s.lfos = parse_int(v, ln, k)?,
                         "lfodl" => s.lfodl = parse_int(v, ln, k)?,
                         "trans" => s.trans = parse_int(v, ln, k)?,
-                        "gain" => s.gain = v.parse::<f64>().map_err(|_| format!("line {ln}: gain: '{v}' is not a number"))?,
+                        "gain" => {
+                            s.gain = v
+                                .parse::<f64>()
+                                .map_err(|_| format!("line {ln}: gain: '{v}' is not a number"))?
+                        }
                         _ => return err(ln, format!("unknown track option '{k}'")),
                     }
                 }
@@ -370,11 +430,17 @@ fn parse(text: &str) -> Result<Parsed, String> {
                 p.tracks.push(s);
             }
             "def" => {
-                let name = rest.first().map(|s| s.trim_end_matches(':').to_string()).ok_or(format!("line {ln}: def NAME:"))?;
+                let name = rest
+                    .first()
+                    .map(|s| s.trim_end_matches(':').to_string())
+                    .ok_or(format!("line {ln}: def NAME:"))?;
                 mode = Mode::Def(name, String::new());
             }
             "section" => {
-                let name = rest.first().ok_or(format!("line {ln}: section NAME [bars=N]"))?.to_string();
+                let name = rest
+                    .first()
+                    .ok_or(format!("line {ln}: section NAME [bars=N]"))?
+                    .to_string();
                 let mut sec = Section::default();
                 for kv in &rest[1..] {
                     if let Some(v) = kv.strip_prefix("bars=") {
@@ -544,7 +610,19 @@ fn duration(s: &str) -> Result<u32, String> {
 impl<'a> Eval<'a> {
     fn new(p: &'a Parsed, track: &'a TrackSpec, first: bool, start: u32) -> Self {
         let shift = p.insts.iter().find(|i| i.0 == track.inst).map_or(0, |i| i.2);
-        Eval { p, track, first, evs: Vec::new(), tick: start, bar_start: start, bars: 0, vel: track.vel, gate: track.gate, dur: 24, shift }
+        Eval {
+            p,
+            track,
+            first,
+            evs: Vec::new(),
+            tick: start,
+            bar_start: start,
+            bars: 0,
+            vel: track.vel,
+            gate: track.gate,
+            dur: 24,
+            shift,
+        }
     }
 
     fn hit_or_pitch(&self, head: &str, trans: i32) -> Result<i32, String> {
@@ -572,7 +650,12 @@ impl<'a> Eval<'a> {
             if self.tick != self.bar_start {
                 let len = self.tick - self.bar_start;
                 if len != self.p.bar_ticks {
-                    return Err(format!("bar {} is {} ticks, a bar is {}", self.bars + 1, len, self.p.bar_ticks));
+                    return Err(format!(
+                        "bar {} is {} ticks, a bar is {}",
+                        self.bars + 1,
+                        len,
+                        self.p.bar_ticks
+                    ));
                 }
                 self.bars += 1;
                 self.bar_start = self.tick;
@@ -653,7 +736,10 @@ impl<'a> Eval<'a> {
         }
         let keys: Vec<i32> = if let Some(inner) = head.strip_prefix('[') {
             let inner = inner.strip_suffix(']').ok_or("missing ]")?;
-            inner.split_whitespace().map(|k| self.hit_or_pitch(k, trans)).collect::<Result<_, _>>()?
+            inner
+                .split_whitespace()
+                .map(|k| self.hit_or_pitch(k, trans))
+                .collect::<Result<_, _>>()?
         } else {
             vec![self.hit_or_pitch(head, trans)?]
         };
@@ -689,7 +775,12 @@ impl<'a> Eval<'a> {
                 return Ok(());
             }
             "inst" => {
-                let slot = self.p.insts.iter().position(|(n, _, _)| n == arg).ok_or(format!("no inst '{arg}'"))?;
+                let slot = self
+                    .p
+                    .insts
+                    .iter()
+                    .position(|(n, _, _)| n == arg)
+                    .ok_or(format!("no inst '{arg}'"))?;
                 self.shift = self.p.insts[slot].2;
                 self.evs.push((self.tick, Ev::Ctl(Ctl::Voice, slot as i32)));
                 return Ok(());
@@ -713,10 +804,30 @@ impl<'a> Eval<'a> {
             let steps = (d / 4).max(1);
             for k in 0..=steps {
                 let v = a + (b - a) * k as i32 / steps as i32;
-                self.evs.push((self.tick + (d as u32 * k as u32) / steps as u32, Ev::Ctl(ctl, if ctl == Ctl::Vol { scale(v) } else { (v + off).clamp(0, 127) })));
+                self.evs.push((
+                    self.tick + (d as u32 * k as u32) / steps as u32,
+                    Ev::Ctl(
+                        ctl,
+                        if ctl == Ctl::Vol {
+                            scale(v)
+                        } else {
+                            (v + off).clamp(0, 127)
+                        },
+                    ),
+                ));
             }
         } else {
-            self.evs.push((self.tick, Ev::Ctl(ctl, if ctl == Ctl::Vol { scale(num(arg)?) } else { (num(arg)? + off).clamp(0, 127) })));
+            self.evs.push((
+                self.tick,
+                Ev::Ctl(
+                    ctl,
+                    if ctl == Ctl::Vol {
+                        scale(num(arg)?)
+                    } else {
+                        (num(arg)? + off).clamp(0, 127)
+                    },
+                ),
+            ));
         }
         Ok(())
     }
@@ -752,7 +863,15 @@ fn state_commands(out: &mut Vec<u8>, st: &[i32; CTLS], touched: &[bool; CTLS], f
     }
 }
 
-fn write_track(spec: &TrackSpec, slot: i32, first: bool, bpm: u32, evs: &[(u32, Ev)], loop_tick: u32, end: u32) -> Result<TrackBytes, String> {
+fn write_track(
+    spec: &TrackSpec,
+    slot: i32,
+    first: bool,
+    bpm: u32,
+    evs: &[(u32, Ev)],
+    loop_tick: u32,
+    end: u32,
+) -> Result<TrackBytes, String> {
     let mut st = [0i32; CTLS];
     st[Ctl::Voice as usize] = slot;
     st[Ctl::Vol as usize] = ((spec.vol as f64 * spec.gain).round() as i32).clamp(0, 127);
@@ -800,7 +919,10 @@ fn write_track(spec: &TrackSpec, slot: i32, first: bool, bpm: u32, evs: &[(u32, 
     with_eot.sort_by_key(|(t, e)| (*t, e.order()));
     for (t, e) in with_eot {
         if t >= end {
-            return Err(format!("track {}: an event at tick {t} lies past the end ({end})", spec.n));
+            return Err(format!(
+                "track {}: an event at tick {t} lies past the end ({end})",
+                spec.n
+            ));
         }
         if label.is_none() && t >= loop_tick {
             waits(&mut out, loop_tick - cur);
@@ -844,7 +966,11 @@ fn write_track(spec: &TrackSpec, slot: i32, first: bool, bpm: u32, evs: &[(u32, 
     out.push(GOTO);
     let goto = out.len();
     out.extend([0u8; 4]);
-    Ok(TrackBytes { bytes: out, label: label.unwrap(), goto })
+    Ok(TrackBytes {
+        bytes: out,
+        label: label.unwrap(),
+        goto,
+    })
 }
 
 /// Compile a song file's text.
@@ -862,7 +988,10 @@ pub fn compile(text: &str) -> Result<Compiled, String> {
         if p.loop_at == Some(i) {
             loop_tick = at;
         }
-        let sec = p.sections.get(n).ok_or(format!("form names the section '{n}' but there is none"))?;
+        let sec = p
+            .sections
+            .get(n)
+            .ok_or(format!("form names the section '{n}' but there is none"))?;
         let len = match sec.bars {
             Some(b) => b * p.bar_ticks,
             None => return Err(format!("section {n} needs bars=N")),
@@ -884,14 +1013,18 @@ pub fn compile(text: &str) -> Result<Compiled, String> {
         let slot = if spec.inst.is_empty() {
             0
         } else {
-            p.insts.iter().position(|(n, _, _)| *n == spec.inst).ok_or(format!("track {}: no inst '{}'", spec.n, spec.inst))? as i32
+            p.insts
+                .iter()
+                .position(|(n, _, _)| *n == spec.inst)
+                .ok_or(format!("track {}: no inst '{}'", spec.n, spec.inst))? as i32
         };
         let mut evs: Vec<(u32, Ev)> = Vec::new();
         for (name, start, len) in &starts {
             let sec = &p.sections[name];
             let Some(text) = sec.lines.get(&spec.n) else { continue };
             let mut ev = Eval::new(&p, spec, ti == 0, *start);
-            ev.run(text, 0, 0).map_err(|e| format!("section {name} (tick {start}), track {}: {e}", spec.n))?;
+            ev.run(text, 0, 0)
+                .map_err(|e| format!("section {name} (tick {start}), track {}: {e}", spec.n))?;
             if ev.tick != start + len {
                 return Err(format!(
                     "section {name}, track {}: {} ticks ({:.2} bars), the section has {} ({} bars)",
@@ -951,7 +1084,14 @@ pub fn compile(text: &str) -> Result<Compiled, String> {
 
 /// Every song of [`SOURCES`] compiled, in order.
 pub fn compile_all() -> Result<Vec<(u8, Compiled)>, String> {
-    SOURCES.iter().map(|s| compile(&text(s)).map(|c| (s.co, c)).map_err(|e| format!("{}: {e}", s.name))).collect()
+    SOURCES
+        .iter()
+        .map(|s| {
+            compile(&text(s))
+                .map(|c| (s.co, c))
+                .map_err(|e| format!("{}: {e}", s.name))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -996,7 +1136,11 @@ form A loop A A
     fn a_short_bar_is_an_error_with_its_place() {
         let e = compile(&TINY.replace("| C4/2 r/2 |", "| C4/2 r/4 |")).unwrap_err();
         assert!(e.contains("bar") || e.contains("ticks"), "{e}");
-        let e = compile(&TINY.replace("2: | kick/4 snare/4 kick/4 snare/4 | kick/2 r/2 |", "2: | kick/4 snare/4 kick/4 snare/4 |")).unwrap_err();
+        let e = compile(&TINY.replace(
+            "2: | kick/4 snare/4 kick/4 snare/4 | kick/2 r/2 |",
+            "2: | kick/4 snare/4 kick/4 snare/4 |",
+        ))
+        .unwrap_err();
         assert!(e.contains("track 2"), "{e}");
     }
 
@@ -1021,7 +1165,10 @@ form A loop A A
 
     #[test]
     fn transposed_patterns_and_repeats() {
-        let t = TINY.replace("1: @riff |", "1: @riff+2*2 |").replace("section A bars=2", "section A bars=3").replace("| kick/2 r/2 |", "| kick/2 r/2 | kick/1 |");
+        let t = TINY
+            .replace("1: @riff |", "1: @riff+2*2 |")
+            .replace("section A bars=2", "section A bars=3")
+            .replace("| kick/2 r/2 |", "| kick/2 r/2 | kick/1 |");
         let t = t.replace("C4/2 r/2 |", "C4/2 r/2 |");
         let c = compile(&t);
         // two riffs (2 bars) + one bar: 3 bars
@@ -1053,8 +1200,17 @@ form A loop A A
             assert_eq!(c.name, s.name);
             assert!(c.tracks.len() <= MAX_TRACKS);
             let secs = c.loop_seconds();
-            assert!((45.0..=90.0).contains(&secs), "{}: the loop is {secs:.1} s, AW2's themes are 45 to 90 s", s.name);
-            assert!(c.peak_voices <= MAX_VOICES, "{}: {} notes at once, AW2 mixes {MAX_VOICES}", s.name, c.peak_voices);
+            assert!(
+                (45.0..=90.0).contains(&secs),
+                "{}: the loop is {secs:.1} s, AW2's themes are 45 to 90 s",
+                s.name
+            );
+            assert!(
+                c.peak_voices <= MAX_VOICES,
+                "{}: {} notes at once, AW2 mixes {MAX_VOICES}",
+                s.name,
+                c.peak_voices
+            );
             assert!(c.bytes() <= MAX_BYTES);
             assert!(c.voices.len() <= 128);
             for t in &c.tracks {
@@ -1067,7 +1223,17 @@ form A loop A A
     fn songs_are_the_new_cos_and_distinct() {
         let cos: Vec<u8> = SOURCES.iter().map(|s| s.co).collect();
         assert_eq!(cos, vec![86, 87, 88, 89, 90, 92], "the five Emerald Sun COs and Asuka");
-        let all: Vec<Vec<u8>> = SOURCES.iter().map(|s| compile(s.text).unwrap().tracks.iter().flat_map(|t| t.bytes.clone()).collect()).collect();
+        let all: Vec<Vec<u8>> = SOURCES
+            .iter()
+            .map(|s| {
+                compile(s.text)
+                    .unwrap()
+                    .tracks
+                    .iter()
+                    .flat_map(|t| t.bytes.clone())
+                    .collect()
+            })
+            .collect();
         for i in 0..all.len() {
             for j in i + 1..all.len() {
                 assert_ne!(all[i], all[j]);

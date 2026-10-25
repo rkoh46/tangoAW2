@@ -75,26 +75,59 @@ fn main() {
     let out = std::path::PathBuf::from(&args[2]);
     std::fs::create_dir_all(&out).unwrap();
     let script = std::fs::read_to_string(&args[3]).expect("script");
-    let mut lines = script.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#'));
-    let n: usize = lines.next().and_then(|l| l.strip_prefix("n ")).expect("first line: n N").parse().unwrap();
+    let mut lines = script
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#'));
+    let n: usize = lines
+        .next()
+        .and_then(|l| l.strip_prefix("n "))
+        .expect("first line: n N")
+        .parse()
+        .unwrap();
     let ds = std::env::var_os("TANGOAW2_DS_ROM").is_some();
     if ds {
         tango_gamesupport_aw2::ds_pack::pack();
     }
     // (AW2_PACK_ONLY: this peer has the pack but the match does not, as in a room with a player who has none)
     let shared = ds && std::env::var_os("AW2_PACK_ONLY").is_none();
-    let mode = (0u8, tango_gamesupport_aw2::online::ONLINE_MATCH | if shared { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 });
-    let names: Vec<String> = ["Hostname", "Guest", "Guest3", "Guest4", "Guest5"][..n].iter().map(|s| s.to_string()).collect();
+    let mode = (
+        0u8,
+        tango_gamesupport_aw2::online::ONLINE_MATCH
+            | if shared {
+                tango_gamesupport_aw2::ds_art::SHARED_ART
+            } else {
+                0
+            },
+    );
+    let names: Vec<String> = ["Hostname", "Guest", "Guest3", "Guest4", "Guest5"][..n]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     tango_gamesupport_aw2::online::set_room(names.clone(), 0);
     let save = vec![0xffu8; tango_gamesupport_aw2::SAVE_SIZE];
     let rtc = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
-    let mut link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &tango_gamesupport_aw2::pvp::AW2E, Some(mode), None).expect("boot");
+    let mut link = tango_backend_mgba::SharedLink::boot(
+        &rom,
+        Some(&save),
+        Some(rtc),
+        &tango_gamesupport_aw2::pvp::AW2E,
+        Some(mode),
+        None,
+    )
+    .expect("boot");
     link.set_players(n);
     for seat in 0..n {
         link.side(seat).set_render(true);
     }
-    let sample_every: usize = std::env::var("AW2_SAMPLE").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
-    let max_black: usize = std::env::var("AW2_MAX_BLACK").ok().and_then(|v| v.parse().ok()).unwrap_or(20);
+    let sample_every: usize = std::env::var("AW2_SAMPLE")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let max_black: usize = std::env::var("AW2_MAX_BLACK")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(20);
     let dump = std::env::var_os("AW2_DUMP").map(std::path::PathBuf::from);
     if let Some(d) = &dump {
         std::fs::create_dir_all(d).unwrap();
@@ -123,7 +156,8 @@ fn main() {
     let super_nofog = std::cell::Cell::new((0usize, 0usize));
     let vram_last: std::cell::RefCell<(Vec<u8>, Vec<u8>)> = Default::default();
     // (watch BASE TOL: every tick, until unwatch, the waiting seats' pictures are compared with the BASE shotall's)
-    let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> = std::cell::RefCell::new(None);
+    let watch: std::cell::RefCell<Option<(String, Vec<Vec<u8>>, usize, Vec<(usize, usize, usize)>, usize)>> =
+        std::cell::RefCell::new(None);
     let tick = |link: &mut tango_backend_mgba::SharedLink, keys: &[u32]| {
         // (the maps are picked in private: every seat's window keeps a console of its own, driven by its keys, and the pick it makes
         // goes out as two words of the seat's input, as the session sends them)
@@ -152,7 +186,11 @@ fn main() {
             // (test aid: one line per tick, FNV hashes of the console's IWRAM and EWRAM, and every 30 ticks of its ROM, VRAM, palette and OAM;
             // run the same script with and without the Dual Strike pack (AW2_PACK_ONLY) and diff the two files: they must be equal)
             use std::io::Write;
-            let fnv = |b: &[u8]| b.iter().fold(0xcbf29ce484222325u64, |h, x| (h ^ *x as u64).wrapping_mul(0x100000001b3));
+            let fnv = |b: &[u8]| {
+                b.iter().fold(0xcbf29ce484222325u64, |h, x| {
+                    (h ^ *x as u64).wrapping_mul(0x100000001b3)
+                })
+            };
             let c = link.core();
             let mut line = String::new();
             let mut buf = vec![0u8; 0x8000];
@@ -162,7 +200,12 @@ fn main() {
             c.raw_read_range(0x0200_0000, -1, &mut buf);
             line += &format!(" ew {:016x}", fnv(&buf));
             if t % 30 == 0 {
-                for (name, at, len) in [("rom", 0x0800_0000u32, 0x0080_0000usize), ("vram", 0x0600_0000, 0x18000), ("pal", 0x0500_0000, 0x400), ("oam", 0x0700_0000, 0x400)] {
+                for (name, at, len) in [
+                    ("rom", 0x0800_0000u32, 0x0080_0000usize),
+                    ("vram", 0x0600_0000, 0x18000),
+                    ("pal", 0x0500_0000, 0x400),
+                    ("oam", 0x0700_0000, 0x400),
+                ] {
                     let mut buf = vec![0u8; len];
                     c.raw_read_range(at, -1, &mut buf);
                     line += &format!(" {name} {:016x}", fnv(&buf));
@@ -172,11 +215,22 @@ fn main() {
                 let _ = writeln!(f, "{line}");
             }
         }
-        if let Some(t0) = std::env::var("AW2_RAM_DUMP").ok().and_then(|v| v.parse::<usize>().ok()).filter(|&a| a == t) {
+        if let Some(t0) = std::env::var("AW2_RAM_DUMP")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .filter(|&a| a == t)
+        {
             // (test aid: the whole console at that tick, in AW2_RAM_DIR)
             if let Ok(dir) = std::env::var("AW2_RAM_DIR") {
                 let c = link.core();
-                for (name, at, len) in [("rom", 0x0800_0000u32, 0x0080_0000usize), ("vram", 0x0600_0000, 0x18000), ("pal", 0x0500_0000, 0x400), ("oam", 0x0700_0000, 0x400), ("iw", 0x0300_0000, 0x8000), ("ew", 0x0200_0000, 0x40000)] {
+                for (name, at, len) in [
+                    ("rom", 0x0800_0000u32, 0x0080_0000usize),
+                    ("vram", 0x0600_0000, 0x18000),
+                    ("pal", 0x0500_0000, 0x400),
+                    ("oam", 0x0700_0000, 0x400),
+                    ("iw", 0x0300_0000, 0x8000),
+                    ("ew", 0x0200_0000, 0x40000),
+                ] {
                     let mut buf = vec![0u8; len];
                     c.raw_read_range(at, -1, &mut buf);
                     let _ = std::fs::write(format!("{dir}/{name}_{t0}.bin"), &buf);
@@ -185,7 +239,10 @@ fn main() {
         }
         if let Ok(range) = std::env::var("AW2_MEMSCAN") {
             // (test aid: "from-to": the console's IWRAM and EWRAM every tick in that range, files in /tmp/memscan)
-            let (a, b) = range.split_once('-').map(|(x, y)| (x.parse::<usize>().unwrap_or(0), y.parse::<usize>().unwrap_or(0))).unwrap_or((0, 0));
+            let (a, b) = range
+                .split_once('-')
+                .map(|(x, y)| (x.parse::<usize>().unwrap_or(0), y.parse::<usize>().unwrap_or(0)))
+                .unwrap_or((0, 0));
             if (a..=b).contains(&(t as usize)) {
                 let c = link.core();
                 let mut iw = vec![0u8; 0x8000];
@@ -198,7 +255,10 @@ fn main() {
                 let _ = std::fs::write(dir.join(format!("e{t}.bin")), &ew);
             }
         }
-        if let Some((a, b)) = std::env::var("AW2_WATCH_LOG").ok().and_then(|v| v.split_once('-').map(|(a, b)| (a.parse::<usize>().unwrap_or(0), b.parse::<usize>().unwrap_or(0)))) {
+        if let Some((a, b)) = std::env::var("AW2_WATCH_LOG").ok().and_then(|v| {
+            v.split_once('-')
+                .map(|(a, b)| (a.parse::<usize>().unwrap_or(0), b.parse::<usize>().unwrap_or(0)))
+        }) {
             // (test aid: "from-to": what the game says about the waiting seats' pictures, tick by tick)
             if (a..=b).contains(&t) {
                 use tango_backend_mgba::SharedGame;
@@ -220,7 +280,10 @@ fn main() {
         if std::env::var_os("AW2_CAM_LOG").is_some() {
             // (the console's own camera: where it moves, tick by tick, as the game scrolls to the mover)
             let c = link.core();
-            let now = (c.raw_read_16(0x0201_E454, -1) as i16, c.raw_read_16(0x0201_E456, -1) as i16);
+            let now = (
+                c.raw_read_16(0x0201_E454, -1) as i16,
+                c.raw_read_16(0x0201_E456, -1) as i16,
+            );
             thread_local!(static LAST: std::cell::Cell<(i16, i16)> = const { std::cell::Cell::new((0, 0)) });
             if LAST.with(|l| l.replace(now)) != now {
                 eprintln!("concam tick {t} px ({}, {})", now.0, now.1);
@@ -230,15 +293,29 @@ fn main() {
             // a seat the game says is watching must never show the console's own picture (the mover's) unless that is dark
             use tango_backend_mgba::SharedGame;
             let console = link.solo_side().frame().unwrap_or_default();
-            let dark = console.chunks(4).filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30).count() * 10 > 9 * 38400;
+            let dark = console
+                .chunks(4)
+                .filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30)
+                .count()
+                * 10
+                > 9 * 38400;
             // (a seat the game says is NOT watching shows the console's own picture: any other picture is stale)
             for seat in 0..n {
-                if (1..=5).contains(&link.core().raw_read_8(0x0300_33EC, -1)) && !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat) {
+                if (1..=5).contains(&link.core().raw_read_8(0x0300_33EC, -1))
+                    && !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat)
+                {
                     tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                     let f = link.side(seat).frame().unwrap_or_default();
                     let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
                     if diff > 3000 {
-                        leaks.borrow_mut().push((t, seat, format!("not watching but shows another picture ({diff} px) {:?}", tango_gamesupport_aw2::fog_view::phase(link.core()))));
+                        leaks.borrow_mut().push((
+                            t,
+                            seat,
+                            format!(
+                                "not watching but shows another picture ({diff} px) {:?}",
+                                tango_gamesupport_aw2::fog_view::phase(link.core())
+                            ),
+                        ));
                     }
                 }
             }
@@ -258,7 +335,10 @@ fn main() {
             let army = link.core().raw_read_8(0x0300_33EC, -1);
             // (a CO Power with fog: the cut-in frames are the console's for everybody, every other frame of the scene is a seat's
             // own map, never the console's)
-            let (scene, cutin) = (tango_gamesupport_aw2::fog_view::power_scene(link.core()), tango_gamesupport_aw2::fog_view::power_cutin(link.core()));
+            let (scene, cutin) = (
+                tango_gamesupport_aw2::fog_view::power_scene(link.core()),
+                tango_gamesupport_aw2::fog_view::power_cutin(link.core()),
+            );
             if scene && link.core().raw_read_8(0x0300_3FCD, -1) == 0 {
                 // (without fog the scene is the console's for everybody)
                 power_ticks_nofog.set(power_ticks_nofog.get() + 1);
@@ -272,16 +352,23 @@ fn main() {
                     // (a Super CO Power without fog: its scene is the console's picture; the banner wipes in over the map and the scene
                     // fades out into it, frames that differ from the console's by the seat's own CO panel or a frame's lag: most of
                     // the scene's ticks must be equal, see the end)
-                    if tango_gamesupport_aw2::pvp::chosen_main_item(link.core()) == Some(tango_gamesupport_aw2::pvp::MENU_SUPER) {
+                    if tango_gamesupport_aw2::pvp::chosen_main_item(link.core())
+                        == Some(tango_gamesupport_aw2::pvp::MENU_SUPER)
+                    {
                         super_nofog.set((super_nofog.get().0 + 1, super_nofog.get().1 + (diff <= 3000) as usize));
                     } else if diff > 3000 {
-                        leaks.borrow_mut().push((t, seat, format!("power scene (no fog) not the console's ({diff} px)")));
+                        leaks.borrow_mut().push((
+                            t,
+                            seat,
+                            format!("power scene (no fog) not the console's ({diff} px)"),
+                        ));
                     }
                 }
             }
             // (a tag screen, CO SWAP or the Tag Power's: full screen, no map in it: every seat but the mover shows the console's picture; the
             // maps are picked in private: the windows are not the console's, see `private_picks`)
-            let tag_screen = tango_gamesupport_aw2::tag_extras::screen_up(link.core()) || tango_gamesupport_aw2::fog_view::power_screen(link.core());
+            let tag_screen = tango_gamesupport_aw2::tag_extras::screen_up(link.core())
+                || tango_gamesupport_aw2::fog_view::power_screen(link.core());
             if tag_screen {
                 tag_ticks.set(tag_ticks.get() + 1);
                 if tango_gamesupport_aw2::fog_view::power_screen(link.core()) {
@@ -296,11 +383,15 @@ fn main() {
                     let f = link.side(seat).frame().unwrap_or_default();
                     let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
                     if diff > 300 && !dark {
-                        leaks.borrow_mut().push((t, seat, format!("tag screen not shown ({diff} px)")));
+                        leaks
+                            .borrow_mut()
+                            .push((t, seat, format!("tag screen not shown ({diff} px)")));
                     }
                 }
             }
-            let skip_generic = tag_screen || tango_gamesupport_aw2::unranked::picking(link.core()) || (scene && link.core().raw_read_8(0x0300_3FCD, -1) != 0);
+            let skip_generic = tag_screen
+                || tango_gamesupport_aw2::unranked::picking(link.core())
+                || (scene && link.core().raw_read_8(0x0300_3FCD, -1) != 0);
             if skip_generic && !tag_screen && scene && link.core().raw_read_8(0x0300_3FCD, -1) != 0 {
                 power_ticks.set((power_ticks.get().0 + 1, power_ticks.get().1 + cutin as usize));
                 for seat in 0..n {
@@ -311,10 +402,14 @@ fn main() {
                     let f = link.side(seat).frame().unwrap_or_default();
                     let diff = f.chunks(4).zip(console.chunks(4)).filter(|(x, y)| x != y).count();
                     if cutin && diff > 3000 {
-                        leaks.borrow_mut().push((t, seat, format!("power cut-in not shown ({diff} px)")));
+                        leaks
+                            .borrow_mut()
+                            .push((t, seat, format!("power cut-in not shown ({diff} px)")));
                     }
                     if !cutin && !dark && diff <= 300 {
-                        leaks.borrow_mut().push((t, seat, "power scene frame is the mover's map".to_string()));
+                        leaks
+                            .borrow_mut()
+                            .push((t, seat, "power scene frame is the mover's map".to_string()));
                     }
                 }
             }
@@ -324,19 +419,36 @@ fn main() {
                     tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                     let f = link.side(seat).frame().unwrap_or_default();
                     if f == console {
-                        leaks.borrow_mut().push((t, seat, format!("cursor shown {:?} army {army}", tango_gamesupport_aw2::fog_view::phase(link.core()))));
+                        leaks.borrow_mut().push((
+                            t,
+                            seat,
+                            format!(
+                                "cursor shown {:?} army {army}",
+                                tango_gamesupport_aw2::fog_view::phase(link.core())
+                            ),
+                        ));
                     }
                     continue;
                 }
                 // (with fog: a watching seat never shows the console's picture; without it the game's animations are shown as they
                 // are and only the mover's cursor above is checked)
-                if link.core().raw_read_8(0x0300_3FCD, -1) == 0 || !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat) {
+                if link.core().raw_read_8(0x0300_3FCD, -1) == 0
+                    || !tango_gamesupport_aw2::pvp::AW2E.watching(link.core(), seat)
+                {
                     continue;
                 }
                 tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                 let f = link.side(seat).frame().unwrap_or_default();
                 if !dark && f == console {
-                    leaks.borrow_mut().push((t, seat, format!("{:?} army {}", tango_gamesupport_aw2::fog_view::phase(link.core()), link.core().raw_read_8(0x0300_33EC, -1))));
+                    leaks.borrow_mut().push((
+                        t,
+                        seat,
+                        format!(
+                            "{:?} army {}",
+                            tango_gamesupport_aw2::fog_view::phase(link.core()),
+                            link.core().raw_read_8(0x0300_33EC, -1)
+                        ),
+                    ));
                 }
             }
         }
@@ -346,10 +458,23 @@ fn main() {
             let seats: Vec<u32> = (0..n).map(|i| 1u32 << i).collect();
             let real = tango_gamesupport_aw2::online::merge(c, keys);
             if real.is_some_and(|w| w != 0) {
-                println!("  t{t}: keys {:?} -> console word {:x} cursor y {}", keys, real.unwrap(), c.raw_read_16(0x0300_33E6, -1));
+                println!(
+                    "  t{t}: keys {:?} -> console word {:x} cursor y {}",
+                    keys,
+                    real.unwrap(),
+                    c.raw_read_16(0x0300_33E6, -1)
+                );
             }
             let word = tango_gamesupport_aw2::online::merge(c, &seats);
-            let src = word.map(|w| if w == 0 { "none".to_string() } else { format!("{}", w.trailing_zeros()) }).unwrap_or_else(|| "pass".into());
+            let src = word
+                .map(|w| {
+                    if w == 0 {
+                        "none".to_string()
+                    } else {
+                        format!("{}", w.trailing_zeros())
+                    }
+                })
+                .unwrap_or_else(|| "pass".into());
             let ph = tango_gamesupport_aw2::fog_view::phase(c);
             let army = c.raw_read_8(0x0300_33EC, -1);
             let key = format!("src {src} army {army} phase {ph:?}");
@@ -359,16 +484,25 @@ fn main() {
                 *last = key;
             }
         }
-        if let Some((a, b)) = std::env::var("AW2_TRACE").ok().and_then(|v| v.split_once('-').map(|(a, b)| (a.parse::<usize>().unwrap(), b.parse::<usize>().unwrap()))) {
+        if let Some((a, b)) = std::env::var("AW2_TRACE").ok().and_then(|v| {
+            v.split_once('-')
+                .map(|(a, b)| (a.parse::<usize>().unwrap(), b.parse::<usize>().unwrap()))
+        }) {
             if (a..b).contains(&t) {
                 let c = link.core();
-                let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c).iter().map(|f| format!("{:x}", f & 0xFFFFFF)).collect();
+                let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c)
+                    .iter()
+                    .map(|f| format!("{:x}", f & 0xFFFFFF))
+                    .collect();
                 let io = |o: u32| c.raw_read_16(0x0400_0000 + o, -1);
                 println!("trace t{t} army {} mm {}/{} keys {:03x} loop {:08x} phase {:?} disp {:04x} win {:04x}/{:04x} bld {:04x}/{:04x}/{:02x} mos {:04x} procs [{}]", c.raw_read_8(0x0300_33EC, -1), c.raw_read_8(0x0300_14E2, -1), c.raw_read_8(0x0300_14F0, -1), keys.iter().fold(0, |a, b| a | b), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), io(0), io(0x48), io(0x4A), io(0x50), io(0x52), io(0x54), io(0x4C), procs.join(" "));
             }
         }
         // AW2_VRAMDIFF=A-B: every tick in A..B, the VRAM tiles (32 bytes) and palette entries that changed since the tick before
-        if let Some((a, b)) = std::env::var("AW2_VRAMDIFF").ok().and_then(|v| v.split_once('-').map(|(a, b)| (a.parse::<usize>().unwrap(), b.parse::<usize>().unwrap()))) {
+        if let Some((a, b)) = std::env::var("AW2_VRAMDIFF").ok().and_then(|v| {
+            v.split_once('-')
+                .map(|(a, b)| (a.parse::<usize>().unwrap(), b.parse::<usize>().unwrap()))
+        }) {
             if (a..b).contains(&t) {
                 let mut now = vec![0u8; 0x18000];
                 link.peek(0x0600_0000, &mut now);
@@ -376,11 +510,27 @@ fn main() {
                 link.peek(0x0500_0000, &mut pal);
                 let mut last = vram_last.borrow_mut();
                 if !last.0.is_empty() {
-                    let ch: Vec<String> = (0..0x18000 / 32).filter(|i| now[i * 32..i * 32 + 32] != last.0[i * 32..i * 32 + 32]).map(|i| format!("{:x}", i)).collect();
-                    let pc: Vec<String> = (0..0x200).filter(|i| pal[i * 2..i * 2 + 2] != last.1[i * 2..i * 2 + 2]).map(|i| format!("{:x}", i)).collect();
+                    let ch: Vec<String> = (0..0x18000 / 32)
+                        .filter(|i| now[i * 32..i * 32 + 32] != last.0[i * 32..i * 32 + 32])
+                        .map(|i| format!("{:x}", i))
+                        .collect();
+                    let pc: Vec<String> = (0..0x200)
+                        .filter(|i| pal[i * 2..i * 2 + 2] != last.1[i * 2..i * 2 + 2])
+                        .map(|i| format!("{:x}", i))
+                        .collect();
                     if !ch.is_empty() || !pc.is_empty() {
-                        let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(link.core()).iter().map(|f| format!("{:x}", f & 0xFFFFFF)).collect();
-                        println!("vram t{t} loop {:08x} procs [{}] tiles({}) {} pal {}", link.core().raw_read_32(0x0300_0000, -1), procs.join(" "), ch.len(), ch.iter().take(40).cloned().collect::<Vec<_>>().join(","), pc.join(","));
+                        let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(link.core())
+                            .iter()
+                            .map(|f| format!("{:x}", f & 0xFFFFFF))
+                            .collect();
+                        println!(
+                            "vram t{t} loop {:08x} procs [{}] tiles({}) {} pal {}",
+                            link.core().raw_read_32(0x0300_0000, -1),
+                            procs.join(" "),
+                            ch.len(),
+                            ch.iter().take(40).cloned().collect::<Vec<_>>().join(","),
+                            pc.join(",")
+                        );
                     }
                 }
                 *last = (now, pal);
@@ -405,13 +555,20 @@ fn main() {
                 tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                 let Some(f) = link.side(seat).frame() else { continue };
                 let top = &f[..f.len() * 140 / 160];
-                let dark = top.chunks(4).filter(|p| (p[0] as u32 * 30 + p[1] as u32 * 59 + p[2] as u32 * 11) / 100 < 8).count();
+                let dark = top
+                    .chunks(4)
+                    .filter(|p| (p[0] as u32 * 30 + p[1] as u32 * 59 + p[2] as u32 * 11) / 100 < 8)
+                    .count();
                 let frac = dark as f64 / (top.len() / 4) as f64;
                 // (a fault: the seat's picture is black and the console's own is not; the game's wipes are black everywhere)
                 let console_black = {
                     let c = link.solo_side().frame().unwrap_or_default();
                     let top = &c[..c.len() * 140 / 160];
-                    top.chunks(4).filter(|p| (p[0] as u32 * 30 + p[1] as u32 * 59 + p[2] as u32 * 11) / 100 < 8).count() * 100 > (top.len() / 4) * 99
+                    top.chunks(4)
+                        .filter(|p| (p[0] as u32 * 30 + p[1] as u32 * 59 + p[2] as u32 * 11) / 100 < 8)
+                        .count()
+                        * 100
+                        > (top.len() / 4) * 99
                 };
                 let black = frac > 0.99 && !console_black;
                 if frac > 0.99 && console_black {
@@ -433,10 +590,19 @@ fn main() {
                 } else {
                     r.cur = 0;
                 }
-                let from: usize = std::env::var("AW2_DUMP_FROM").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
-                let to: usize = std::env::var("AW2_DUMP_TO").ok().and_then(|v| v.parse().ok()).unwrap_or(usize::MAX);
+                let from: usize = std::env::var("AW2_DUMP_FROM")
+                    .ok()
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(0);
+                let to: usize = std::env::var("AW2_DUMP_TO")
+                    .ok()
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(usize::MAX);
                 if let Some(d) = dump.as_ref().filter(|_| (from..to).contains(&t)) {
-                    write_bmp(&d.join(format!("t{t:06}_s{seat}{}.bmp", if black { "_BLACK" } else { "" })), &f);
+                    write_bmp(
+                        &d.join(format!("t{t:06}_s{seat}{}.bmp", if black { "_BLACK" } else { "" })),
+                        &f,
+                    );
                 }
             }
         }
@@ -516,45 +682,82 @@ fn main() {
             // same NAME1 NAME2 SEATS(comma list or all): the seats' pictures of the two shotall/shot names are identical
             // (a waiting seat's picture must not change with what the mover has open); exits 1 at the end when not
             "same" => {
-                let seats: Vec<usize> = if p[3] == "all" { (0..n).collect() } else { p[3].split(',').map(|v| v.parse().unwrap()).collect() };
+                let seats: Vec<usize> = if p[3] == "all" {
+                    (0..n).collect()
+                } else {
+                    p[3].split(',').map(|v| v.parse().unwrap()).collect()
+                };
                 for seat in seats {
-                    let (a, b) = (shots.get(&format!("{}_s{seat}", p[1])), shots.get(&format!("{}_s{seat}", p[2])));
+                    let (a, b) = (
+                        shots.get(&format!("{}_s{seat}", p[1])),
+                        shots.get(&format!("{}_s{seat}", p[2])),
+                    );
                     let diff = match (a, b) {
                         (Some(a), Some(b)) => a.chunks(4).zip(b.chunks(4)).filter(|(x, y)| x != y).count(),
                         _ => usize::MAX,
                     };
                     let tol: usize = p.get(4).map_or(300, |v| v.parse().unwrap());
-                    println!("same {} {} seat {seat}: {} differing pixels {}", p[1], p[2], diff, if diff <= tol { "ok" } else { "FAIL" });
+                    println!(
+                        "same {} {} seat {seat}: {} differing pixels {}",
+                        p[1],
+                        p[2],
+                        diff,
+                        if diff <= tol { "ok" } else { "FAIL" }
+                    );
                     failed |= diff > tol;
                 }
             }
             // watch LABEL BASE TOL: from now every tick the seats 1.. pictures are compared with the shotall BASE (dumped to
             // the out dir when AW2_DUMP is set, as LABEL_tTICK_sSEAT_DIFFn.bmp); unwatch LABEL: the report, exit 1 at the end
             "watch" => {
-                let base: Vec<Vec<u8>> = (0..n).map(|seat| shots.get(&format!("{}_s{seat}", p[2])).cloned().unwrap_or_default()).collect();
+                let base: Vec<Vec<u8>> = (0..n)
+                    .map(|seat| shots.get(&format!("{}_s{seat}", p[2])).cloned().unwrap_or_default())
+                    .collect();
                 *watch.borrow_mut() = Some((p[1].to_string(), base, p[3].parse().unwrap(), Vec::new(), 0));
             }
             "unwatch" => {
                 if let Some((label, _, tol, bad, count)) = watch.borrow_mut().take() {
-                    let first = bad.first().map_or(String::new(), |b| format!(" first at tick {} seat {}", b.0, b.1));
+                    let first = bad
+                        .first()
+                        .map_or(String::new(), |b| format!(" first at tick {} seat {}", b.0, b.1));
                     let worst = bad.iter().map(|b| b.2).max().unwrap_or(0);
-                    println!("watch {label}: {count} ticks, {} frames over {tol} differing pixels (worst {worst}){first} {}", bad.len(), if bad.is_empty() { "ok" } else { "FAIL" });
+                    println!(
+                        "watch {label}: {count} ticks, {} frames over {tol} differing pixels (worst {worst}){first} {}",
+                        bad.len(),
+                        if bad.is_empty() { "ok" } else { "FAIL" }
+                    );
                     failed |= !bad.is_empty();
                 }
             }
             // region NAME1 NAME2 SEATS(comma list or all) X0 Y0 X1 Y1 [TOL]: the seats' pictures of two shotall/shot names are identical
             // within the pixel box (240x160 screen); like `same` for a part of the picture (a banner's text row between armies)
             "region" => {
-                let seats: Vec<usize> = if p[3] == "all" { (0..n).collect() } else { p[3].split(',').map(|v| v.parse().unwrap()).collect() };
+                let seats: Vec<usize> = if p[3] == "all" {
+                    (0..n).collect()
+                } else {
+                    p[3].split(',').map(|v| v.parse().unwrap()).collect()
+                };
                 let b: Vec<usize> = p[4..8].iter().map(|v| v.parse().unwrap()).collect();
                 let tol: usize = p.get(8).map_or(20, |v| v.parse().unwrap());
                 for seat in seats {
-                    let (a, c) = (shots.get(&format!("{}_s{seat}", p[1])), shots.get(&format!("{}_s{seat}", p[2])));
+                    let (a, c) = (
+                        shots.get(&format!("{}_s{seat}", p[1])),
+                        shots.get(&format!("{}_s{seat}", p[2])),
+                    );
                     let diff = match (a, c) {
-                        (Some(a), Some(c)) => (b[1]..b[3]).flat_map(|y| (b[0]..b[2]).map(move |x| y * 240 + x)).filter(|&i| a[i * 4..i * 4 + 4] != c[i * 4..i * 4 + 4]).count(),
+                        (Some(a), Some(c)) => (b[1]..b[3])
+                            .flat_map(|y| (b[0]..b[2]).map(move |x| y * 240 + x))
+                            .filter(|&i| a[i * 4..i * 4 + 4] != c[i * 4..i * 4 + 4])
+                            .count(),
                         _ => usize::MAX,
                     };
-                    println!("region {} {} seat {seat}: {} differing pixels {}", p[1], p[2], diff, if diff <= tol { "ok" } else { "FAIL" });
+                    println!(
+                        "region {} {} seat {seat}: {} differing pixels {}",
+                        p[1],
+                        p[2],
+                        diff,
+                        if diff <= tol { "ok" } else { "FAIL" }
+                    );
                     failed |= diff > tol;
                 }
             }
@@ -570,7 +773,11 @@ fn main() {
                     let tol: usize = p.get(2).map_or(0, |v| v.parse().unwrap());
                     let same = diff <= tol;
                     let ok = same == (p[0] == "consoleis");
-                    println!("{} seat {seat}: {diff} pixels from the console's {}", p[0], if ok { "ok" } else { "FAIL" });
+                    println!(
+                        "{} seat {seat}: {diff} pixels from the console's {}",
+                        p[0],
+                        if ok { "ok" } else { "FAIL" }
+                    );
                     failed |= !ok;
                 }
             }
@@ -590,9 +797,17 @@ fn main() {
                     let mut v = Vec::new();
                     let mut at = start;
                     while at + 8 <= end && end - start <= 1024 {
-                        let (a0, a1, a2) = (c.raw_read_16(at, -1), c.raw_read_16(at + 2, -1), c.raw_read_16(at + 4, -1));
+                        let (a0, a1, a2) = (
+                            c.raw_read_16(at, -1),
+                            c.raw_read_16(at + 2, -1),
+                            c.raw_read_16(at + 4, -1),
+                        );
                         let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
-                        if a2 >> 12 <= 3 && (a2 & 0x3FF) < 0x3C0 && (a2 & 0x3FF) != 0x352 && !(0x35e..=0x360).contains(&(a2 & 0x3FF)) {
+                        if a2 >> 12 <= 3
+                            && (a2 & 0x3FF) < 0x3C0
+                            && (a2 & 0x3FF) != 0x352
+                            && !(0x35e..=0x360).contains(&(a2 & 0x3FF))
+                        {
                             v.push(format!("{:03x}p{}@{},{}", a2 & 0x3FF, a2 >> 12, x, a0 & 0xFF));
                         }
                         at += 8;
@@ -602,7 +817,11 @@ fn main() {
                 }
                 let mut at = start;
                 while at + 8 <= end && end - start <= 1024 {
-                    let (a0, a1, a2) = (c.raw_read_16(at, -1), c.raw_read_16(at + 2, -1), c.raw_read_16(at + 4, -1));
+                    let (a0, a1, a2) = (
+                        c.raw_read_16(at, -1),
+                        c.raw_read_16(at + 2, -1),
+                        c.raw_read_16(at + 4, -1),
+                    );
                     let x = ((a1 & 0x1FF) as i32) << 23 >> 23;
                     println!("  spr x {x:4} y {:3} a0 {a0:04x} a1 {a1:04x} a2 {a2:04x} shape {} size {} tile {:03x} pal {} prio {} mode {}", a0 & 0xFF, a0 >> 14, a1 >> 14, a2 & 0x3FF, a2 >> 12, (a2 >> 10) & 3, (a0 >> 8) & 3);
                     at += 8;
@@ -614,7 +833,10 @@ fn main() {
                 for k in 0..n_shots {
                     let army = link.core().raw_read_8(0x0300_33EC, -1);
                     if let Some(f) = link.solo_side().frame() {
-                        let dark = f.chunks(4).filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30).count();
+                        let dark = f
+                            .chunks(4)
+                            .filter(|px| (px[0] as u32 + px[1] as u32 + px[2] as u32) < 30)
+                            .count();
                         println!("console {} {k} @{t}: dark {dark}/38400 army {army}", p[1]);
                         write_bmp(&out.join(format!("{}_{k}.bmp", p[1])), &f);
                     }
@@ -723,22 +945,37 @@ fn main() {
                     "winner" => diff <= 3000,
                     // (the game counts the seats still in the room)
                     "loser" => {
-                        let game_seat = tango_gamesupport_aw2::online::room_seats().iter().position(|&p| p == seat).unwrap_or(seat);
+                        let game_seat = tango_gamesupport_aw2::online::room_seats()
+                            .iter()
+                            .position(|&p| p == seat)
+                            .unwrap_or(seat);
                         tango_gamesupport_aw2::result_view::loser(link.core(), game_seat) && diff > 3000
                     }
                     other => panic!("expect {other}"),
                 };
-                println!("expect {} seat {seat}: {diff} px from the console's {}", p[1], if ok { "ok" } else { "FAIL" });
+                println!(
+                    "expect {} seat {seat}: {diff} px from the console's {}",
+                    p[1],
+                    if ok { "ok" } else { "FAIL" }
+                );
                 failed |= !ok;
             }
             // unitcolours X Y SEAT MIN_PERCENT: the colours of the 16 x 16 pixels of cell (X, Y) in the console's picture (the mover's
             // unit, as the console has it) must appear on SEAT's window as often as MIN_PERCENT of their count on the console: the unit moved or done is drawn in
             // its owner's colours there too, not recoloured for the window's own army
             "unitcolours" => {
-                let (x, y, seat, min): (i32, i32, usize, usize) = (p[1].parse().unwrap(), p[2].parse().unwrap(), p[3].parse().unwrap(), p[4].parse().unwrap());
+                let (x, y, seat, min): (i32, i32, usize, usize) = (
+                    p[1].parse().unwrap(),
+                    p[2].parse().unwrap(),
+                    p[3].parse().unwrap(),
+                    p[4].parse().unwrap(),
+                );
                 let (sx, sy) = {
                     let c = link.core();
-                    (x * 16 - c.raw_read_16(0x0201_E454, -1) as i16 as i32, y * 16 - c.raw_read_16(0x0201_E456, -1) as i16 as i32)
+                    (
+                        x * 16 - c.raw_read_16(0x0201_E454, -1) as i16 as i32,
+                        y * 16 - c.raw_read_16(0x0201_E456, -1) as i16 as i32,
+                    )
                 };
                 let console = link.solo_side().frame().unwrap_or_default();
                 let mut set = std::collections::HashSet::new();
@@ -767,7 +1004,10 @@ fn main() {
                 tango_gamesupport_aw2::online::set_room(names.clone(), seat);
                 let f = link.side(seat).frame().unwrap_or_default();
                 let n = f.chunks(4).filter(|px| set.contains(&[px[0], px[1], px[2]])).count();
-                let n_console = console.chunks(4).filter(|px| set.contains(&[px[0], px[1], px[2]])).count();
+                let n_console = console
+                    .chunks(4)
+                    .filter(|px| set.contains(&[px[0], px[1], px[2]]))
+                    .count();
                 // (MIN percent of the console's own count)
                 let ok = n * 100 >= n_console * min;
                 println!("unitcolours ({x},{y}) seat {seat}: {} unit colours, {n} pixels on the window, {n_console} on the console (need {min}%) {}", set.len(), if ok { "ok" } else { "FAIL" });
@@ -776,13 +1016,32 @@ fn main() {
             // fv: the game's state the waiting view decides from
             "fv" => {
                 let c = link.core();
-                let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c).iter().map(|f| format!("{f:08x}")).collect();
+                let procs: Vec<String> = tango_gamesupport_aw2::fog_view::procs(c)
+                    .iter()
+                    .map(|f| format!("{f:08x}"))
+                    .collect();
                 {
                     use tango_backend_mgba::SharedGame;
-                    let w: Vec<bool> = (0..n).map(|s| tango_gamesupport_aw2::pvp::AW2E.watching(c, s)).collect();
-                    println!("watching {w:?} alive {:?} decided {}", tango_gamesupport_aw2::result_view::alive_armies(c), tango_gamesupport_aw2::result_view::decided(c));
+                    let w: Vec<bool> = (0..n)
+                        .map(|s| tango_gamesupport_aw2::pvp::AW2E.watching(c, s))
+                        .collect();
+                    println!(
+                        "watching {w:?} alive {:?} decided {}",
+                        tango_gamesupport_aw2::result_view::alive_armies(c),
+                        tango_gamesupport_aw2::result_view::decided(c)
+                    );
                 }
-                println!("fv @{t} tick {} army {}: fog {} loop {:08x} phase {:?} procs [{}] dispcnt {:04x} menu {}", ticks.get(), c.raw_read_8(0x0300_33EC, -1), c.raw_read_8(0x0300_3FCD, -1), c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::fog_view::phase(c), procs.join(" "), c.raw_read_16(0x0400_0000, -1), c.raw_read_8(0x0300_14E2, -1));
+                println!(
+                    "fv @{t} tick {} army {}: fog {} loop {:08x} phase {:?} procs [{}] dispcnt {:04x} menu {}",
+                    ticks.get(),
+                    c.raw_read_8(0x0300_33EC, -1),
+                    c.raw_read_8(0x0300_3FCD, -1),
+                    c.raw_read_32(0x0300_0000, -1),
+                    tango_gamesupport_aw2::fog_view::phase(c),
+                    procs.join(" "),
+                    c.raw_read_16(0x0400_0000, -1),
+                    c.raw_read_8(0x0300_14E2, -1)
+                );
             }
             "status" => {
                 let b = tango_gamesupport_aw2::online::probe::bits();
@@ -790,17 +1049,40 @@ fn main() {
             }
             "sel" => {
                 for s in 0..n {
-                    let b = rd(&mut link, tango_gamesupport_aw2::online_teams::SEL + 0x10 + 0x10 * s as u32, 6);
-                    println!("seat {s}: co {} colour {} partner {:02x} field {} ready {} team {}", b[0], b[1], b[2], b[3], b[4], b[5]);
+                    let b = rd(
+                        &mut link,
+                        tango_gamesupport_aw2::online_teams::SEL + 0x10 + 0x10 * s as u32,
+                        6,
+                    );
+                    println!(
+                        "seat {s}: co {} colour {} partner {:02x} field {} ready {} team {}",
+                        b[0], b[1], b[2], b[3], b[4], b[5]
+                    );
                 }
-                println!("note {}", rd(&mut link, tango_gamesupport_aw2::online_teams::SEL + 4, 1)[0]);
+                println!(
+                    "note {}",
+                    rd(&mut link, tango_gamesupport_aw2::online_teams::SEL + 4, 1)[0]
+                );
             }
             "rec" => {
                 let five = tango_gamesupport_aw2::five::active(link.core());
-                let (team, colour, ctl) = if five { (0x0203_0300 + 0xA0, 0x0203_0300 + 0x98, 0x0203_0300 + 0x90) } else { (0x0201_7C50 + 0x11, 0x0201_7C50 + 0x0D, 0x0201_7C50 + 9) };
-                println!("record: five {five} controller {} colour {} team {}", hex(&rd(&mut link, ctl, 5)), hex(&rd(&mut link, colour, 5)), hex(&rd(&mut link, team, 5)));
+                let (team, colour, ctl) = if five {
+                    (0x0203_0300 + 0xA0, 0x0203_0300 + 0x98, 0x0203_0300 + 0x90)
+                } else {
+                    (0x0201_7C50 + 0x11, 0x0201_7C50 + 0x0D, 0x0201_7C50 + 9)
+                };
+                println!(
+                    "record: five {five} controller {} colour {} team {}",
+                    hex(&rd(&mut link, ctl, 5)),
+                    hex(&rd(&mut link, colour, 5)),
+                    hex(&rd(&mut link, team, 5))
+                );
                 for a in 1..=5u32 {
-                    let base = if five { 0x0203_0000 + 0x3C * a } else { 0x0202_32C0 + 0x3C * a };
+                    let base = if five {
+                        0x0203_0000 + 0x3C * a
+                    } else {
+                        0x0202_32C0 + 0x3C * a
+                    };
                     println!("army {a}: block {}", hex(&rd(&mut link, base, 0x3C)));
                 }
             }
@@ -811,7 +1093,10 @@ fn main() {
                     let cur = rd(&mut link, 0x0300_14F0, 1)[0] as u32;
                     let item = rd(&mut link, 0x0300_14A1 + cur.min(7), 1)[0];
                     if std::env::var_os("AW2_MENU_LOG").is_some() {
-                        eprintln!("menu cursor {cur} item {item} items {:?}", rd(&mut link, 0x0300_14A1, 8));
+                        eprintln!(
+                            "menu cursor {cur} item {item} items {:?}",
+                            rd(&mut link, 0x0300_14A1, 8)
+                        );
                     }
                     let want: u8 = p.get(2).and_then(|v| v.parse().ok()).unwrap_or(6);
                     let mut k = vec![0; n];
@@ -837,12 +1122,18 @@ fn main() {
                 let _ = std::fs::write(format!("/tmp/dump_{}_i.bin", p[1]), &iw);
                 let _ = std::fs::write(format!("/tmp/dump_{}_e.bin", p[1]), &ew);
             }
-            "peek" => println!("{} @{t}: {}", p[1], hex(&rd(&mut link, parse(p[1]), p[2].parse().unwrap()))),
+            "peek" => println!(
+                "{} @{t}: {}",
+                p[1],
+                hex(&rd(&mut link, parse(p[1]), p[2].parse().unwrap()))
+            ),
             "poke" => {
                 for _ in 0..4 {
                     tick(&mut link, &keys);
                 }
-                let bytes: Vec<u8> = (0..p[2].len() / 2).map(|i| u8::from_str_radix(&p[2][2 * i..2 * i + 2], 16).unwrap()).collect();
+                let bytes: Vec<u8> = (0..p[2].len() / 2)
+                    .map(|i| u8::from_str_radix(&p[2][2 * i..2 * i + 2], 16).unwrap())
+                    .collect();
                 link.poke(parse(p[1]), &bytes);
             }
             "goto" => {
@@ -851,7 +1142,17 @@ fn main() {
                 for _ in 0..40 {
                     let c = rd(&mut link, 0x0300_33E4, 4);
                     let (cx, cy) = (c[0] as i32 | (c[1] as i32) << 8, c[2] as i32 | (c[3] as i32) << 8);
-                    let key = if cx < x { "RIGHT" } else if cx > x { "LEFT" } else if cy < y { "DOWN" } else if cy > y { "UP" } else { break };
+                    let key = if cx < x {
+                        "RIGHT"
+                    } else if cx > x {
+                        "LEFT"
+                    } else if cy < y {
+                        "DOWN"
+                    } else if cy > y {
+                        "UP"
+                    } else {
+                        break;
+                    };
                     let mut k = vec![0; n];
                     k[seat] = key_bits(key);
                     for _ in 0..4 {
@@ -869,7 +1170,14 @@ fn main() {
                     let u = base + 12 * id;
                     let c = link.core();
                     if c.raw_read_8(u, -1) != 0 {
-                        println!("unit id {id} army {} kind {} at ({},{}) hp {}", tango_gamesupport_aw2::five::army_of_index(c, id), c.raw_read_8(u, -1), c.raw_read_8(u + 2, -1), c.raw_read_8(u + 3, -1), c.raw_read_16(u + 4, -1) & 0x7f);
+                        println!(
+                            "unit id {id} army {} kind {} at ({},{}) hp {}",
+                            tango_gamesupport_aw2::five::army_of_index(c, id),
+                            c.raw_read_8(u, -1),
+                            c.raw_read_8(u + 2, -1),
+                            c.raw_read_8(u + 3, -1),
+                            c.raw_read_16(u + 4, -1) & 0x7f
+                        );
                     }
                 }
             }
@@ -880,7 +1188,10 @@ fn main() {
                 let m = 0x0201_E450u32;
                 let base = link.core().raw_read_32(0x0849_9594, -1);
                 let u = base + 12 * id;
-                let (ox, oy) = (link.core().raw_read_8(u + 2, -1) as u32, link.core().raw_read_8(u + 3, -1) as u32);
+                let (ox, oy) = (
+                    link.core().raw_read_8(u + 2, -1) as u32,
+                    link.core().raw_read_8(u + 3, -1) as u32,
+                );
                 let row = |c: &mgba::core::Core, y: u32| c.raw_read_16(m + 0x417A + 2 * y, -1) as u32;
                 let core = link.core_mut();
                 for plane in [m + 0x12, m + 0x51A] {
@@ -899,7 +1210,10 @@ fn main() {
                 let m = 0x0201_E450u32;
                 let base = link.core().raw_read_32(0x0849_9594, -1);
                 let u = base + 12 * id;
-                let (ox, oy) = (link.core().raw_read_8(u + 2, -1) as u32, link.core().raw_read_8(u + 3, -1) as u32);
+                let (ox, oy) = (
+                    link.core().raw_read_8(u + 2, -1) as u32,
+                    link.core().raw_read_8(u + 3, -1) as u32,
+                );
                 let row = link.core().raw_read_16(m + 0x417A + 2 * oy, -1) as u32;
                 let core = link.core_mut();
                 for plane in [m + 0x12, m + 0x51A] {
@@ -943,19 +1257,26 @@ fn main() {
                 link.peek(0x0600_0000, &mut v[..0x18000]);
                 link.peek(0x0500_0000, &mut v[0x18000..0x18400]);
                 link.peek(0x0700_0000, &mut v[0x18400..0x18800]);
-                link.core().raw_read_range(0x0400_0000, -1, &mut v[0x18800..]);   // (the I/O registers: DISPCNT, BGxCNT, scroll; `aw2dev gfx explain` decodes the file)
+                link.core().raw_read_range(0x0400_0000, -1, &mut v[0x18800..]); // (the I/O registers: DISPCNT, BGxCNT, scroll; `aw2dev gfx explain` decodes the file)
                 std::fs::write(out.join(format!("{}.vram", p[1])), v).unwrap();
             }
             "checkpoint" => {
-                let dir = std::env::var_os("AW2_CKPT_DIR").map(std::path::PathBuf::from).unwrap_or_else(|| out.join("checkpoints"));
+                let dir = std::env::var_os("AW2_CKPT_DIR")
+                    .map(std::path::PathBuf::from)
+                    .unwrap_or_else(|| out.join("checkpoints"));
                 match (p.get(1).copied(), p.get(2).copied()) {
                     (Some("save"), Some(name)) => {
-                        let r = tango_gamesupport_aw2::ai_debug::checkpoint_save(link.core(), &dir, name, true).expect("checkpoint save");
+                        let r = tango_gamesupport_aw2::ai_debug::checkpoint_save(link.core(), &dir, name, true)
+                            .expect("checkpoint save");
                         println!("checkpoint {name} saved @{t}: ram hash {}", r["ram_hash"]);
                     }
                     (Some("load"), Some(name)) => {
-                        let r = tango_gamesupport_aw2::ai_debug::checkpoint_load(link.core_mut(), &dir, name).expect("checkpoint load");
-                        println!("checkpoint {name} loaded @{t}: ram hash {} (saved {}) match {}", r["ram_hash"], r["expected_hash"], r["match"]);
+                        let r = tango_gamesupport_aw2::ai_debug::checkpoint_load(link.core_mut(), &dir, name)
+                            .expect("checkpoint load");
+                        println!(
+                            "checkpoint {name} loaded @{t}: ram hash {} (saved {}) match {}",
+                            r["ram_hash"], r["expected_hash"], r["match"]
+                        );
                         if r["match"] != true {
                             std::process::exit(1);
                         }
@@ -967,12 +1288,17 @@ fn main() {
             "cos" => {
                 let core = link.core();
                 for (i, &co) in tango_gamesupport_aw2::tag_ui::teams_list(core).iter().enumerate() {
-                    println!("co {i}: id {co} {}", tango_gamesupport_aw2::online_teams::co_label(core, co));
+                    println!(
+                        "co {i}: id {co} {}",
+                        tango_gamesupport_aw2::online_teams::co_label(core, co)
+                    );
                 }
             }
             "hash" => {
                 let w = rd(&mut link, 0x0200_0000, 0x40000);
-                let h = w.iter().fold(0xcbf29ce484222325u64, |h, &b| (h ^ b as u64).wrapping_mul(0x100000001b3));
+                let h = w.iter().fold(0xcbf29ce484222325u64, |h, &b| {
+                    (h ^ b as u64).wrapping_mul(0x100000001b3)
+                });
                 println!("hash @{t}: {h:016x}");
             }
             other => panic!("unknown command {other}"),
@@ -983,7 +1309,11 @@ fn main() {
             let (total, same) = super_nofog.get();
             println!("super power without fog: {same} of {total} scene ticks equal to the console's picture");
             if same * 2 < total {
-                leaks.borrow_mut().push((0, 0, format!("super power without fog: only {same} of {total} ticks show the console's picture")));
+                leaks.borrow_mut().push((
+                    0,
+                    0,
+                    format!("super power without fog: only {same} of {total} ticks show the console's picture"),
+                ));
             }
         }
         let l = leaks.borrow();
@@ -998,7 +1328,12 @@ fn main() {
             println!("power scene: {pt} ticks, {pc} of them the full cut-in");
             failed |= pc == 0;
         }
-        println!("leak check: {} ticks where a watching seat showed the console's picture{}", l.len(), l.first().map_or(String::new(), |(t, s, _)| format!(" (first tick {t} seat {s})")));
+        println!(
+            "leak check: {} ticks where a watching seat showed the console's picture{}",
+            l.len(),
+            l.first()
+                .map_or(String::new(), |(t, s, _)| format!(" (first tick {t} seat {s})"))
+        );
         let mut by: std::collections::BTreeMap<String, (usize, usize, usize)> = Default::default();
         for (t, _, ph) in l.iter() {
             let e = by.entry(ph.clone()).or_insert((0, *t, *t));
@@ -1017,10 +1352,16 @@ fn main() {
     if sample_every > 0 {
         let mut bad = false;
         for (seat, r) in runs.borrow().iter().enumerate() {
-            println!("black seat {seat}: longest run {} ticks at tick {} (phase {})", r.longest, r.at, r.phase);
+            println!(
+                "black seat {seat}: longest run {} ticks at tick {} (phase {})",
+                r.longest, r.at, r.phase
+            );
             bad |= r.longest > max_black;
         }
-        println!("native black (console's own picture black too): {} seat-ticks", native.get());
+        println!(
+            "native black (console's own picture black too): {} seat-ticks",
+            native.get()
+        );
         if bad {
             println!("BLACK RUN OVER {max_black} TICKS");
             std::process::exit(1);

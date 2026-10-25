@@ -71,7 +71,11 @@ fn call(core: &mut Core, mode: u8) {
     // (the caller's return address, pushed by the function's `push {lr}`)
     let sp = core.gba().cpu().gpr(13) as u32;
     let back = core.raw_read_32(sp, -1) & !1;
-    let army = if FROM_PICK.contains(&back) { core.raw_read_8(ARMY, -1) } else { core.raw_read_8(CURRENT_ARMY, -1) } as u32;
+    let army = if FROM_PICK.contains(&back) {
+        core.raw_read_8(ARMY, -1)
+    } else {
+        core.raw_read_8(CURRENT_ARMY, -1)
+    } as u32;
     if let Some(s) = song(core, army, mode) {
         core.gba_mut().cpu_mut().set_gpr(0, s as i32);
     }

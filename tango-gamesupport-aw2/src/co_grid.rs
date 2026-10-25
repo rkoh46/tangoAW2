@@ -210,7 +210,9 @@ fn list(core: &mut Core) {
     }
     let second = (page(core) == GRID2) as u32;
     let hide = (core.gba().cpu().gpr(1) as u32 == AW2_LIST_NO_NEOTANK) as u32;
-    core.gba_mut().cpu_mut().set_gpr(1, (LISTS + 40 * (2 * second + hide)) as i32);
+    core.gba_mut()
+        .cpu_mut()
+        .set_gpr(1, (LISTS + 40 * (2 * second + hide)) as i32);
 }
 
 /// `sub_08085950(pal, army)`: the map sheet's address in r0 (army in r8).
@@ -221,7 +223,9 @@ fn sheet(core: &mut Core) {
     }
     let army = core.gba().cpu().gpr(8) as u32;
     let c = country(core, army).clamp(1, COUNTRIES);
-    core.gba_mut().cpu_mut().set_gpr(0, (SHEETS + SHEET_SIZE * (c - 1)) as i32);
+    core.gba_mut()
+        .cpu_mut()
+        .set_gpr(0, (SHEETS + SHEET_SIZE * (c - 1)) as i32);
 }
 
 /// `sub_080859A0`: the unit's sheet tile (4 * slot) in r0, the army in r9
@@ -248,10 +252,7 @@ pub const BAR_LEVELS: [i32; 13] = [-30, -20, -10, 0, 10, 15, 20, 30, 40, 50, 60,
 
 /// The bar for a bonus: the nearest level, away from 0 between two.
 pub fn bar_level(v: i32) -> i32 {
-    *BAR_LEVELS
-        .iter()
-        .min_by_key(|&&l| ((l - v).abs(), -(l.abs())))
-        .unwrap()
+    *BAR_LEVELS.iter().min_by_key(|&&l| ((l - v).abs(), -(l.abs()))).unwrap()
 }
 
 fn bar(core: &mut Core) {
@@ -283,7 +284,12 @@ mod tests {
 
     #[test]
     fn every_unit_once() {
-        let mut all: Vec<u16> = GROUND.iter().chain(AIR_SEA.iter()).copied().filter(|&u| u != 0).collect();
+        let mut all: Vec<u16> = GROUND
+            .iter()
+            .chain(AIR_SEA.iter())
+            .copied()
+            .filter(|&u| u != 0)
+            .collect();
         all.sort();
         let want: Vec<u16> = (1..=24).chain([26, 27]).collect();
         assert_eq!(all, want);

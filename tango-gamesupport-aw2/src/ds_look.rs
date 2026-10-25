@@ -244,7 +244,11 @@ impl Look {
         let best = (0..4).min_by_key(|&i| (hist_error(&h, blocks[i]), i))?;
         let mut t = [0u8; TILE];
         for (k, &c) in px.iter().enumerate() {
-            let i = if c == TRANSPARENT { 0 } else { nearest(blocks[best], c) as u8 + 1 };
+            let i = if c == TRANSPARENT {
+                0
+            } else {
+                nearest(blocks[best], c) as u8 + 1
+            };
             set_px(&mut t, k % 8, k / 8, i);
         }
         Some((t, best as u16))
@@ -281,7 +285,9 @@ fn u16s(b: &[u8]) -> Vec<u16> {
 }
 
 fn tpx(tiles: &[u8], t: usize, x: usize, y: usize) -> u8 {
-    tiles.get(TILE * t + 4 * y + x / 2).map_or(0, |b| (b >> (4 * (x & 1))) & 15)
+    tiles
+        .get(TILE * t + 4 * y + x / 2)
+        .map_or(0, |b| (b >> (4 * (x & 1))) & 15)
 }
 
 fn quad_px(tiles: &[u8], v: u16, x: usize, y: usize) -> u8 {
@@ -392,7 +398,13 @@ fn hist_error(h: &BTreeMap<u16, u64>, block: &[u16]) -> u64 {
     let n: u64 = h.values().sum();
     let e: u64 = h
         .iter()
-        .map(|(&c, &k)| k * block.iter().map(|&b| dist(b, c) as u64).min().unwrap_or(u32::MAX as u64))
+        .map(|(&c, &k)| {
+            k * block
+                .iter()
+                .map(|&b| dist(b, c) as u64)
+                .min()
+                .unwrap_or(u32::MAX as u64)
+        })
         .sum();
     256 * e / n.max(1)
 }
@@ -460,18 +472,38 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
     let derived = dt != ds.normal_tiles;
     let (sea, river) = if derived {
         (
-            derive_frames(ds.normal_tiles, dt, &ds.sea[..SEA_FRAMES * SEA_FRAME], SEA0, SEA_N, SEA_FRAME),
-            derive_frames(ds.normal_tiles, dt, &ds.river[..RIVER_FRAMES * RIVER_FRAME], RIVER0, RIVER_N, RIVER_FRAME),
+            derive_frames(
+                ds.normal_tiles,
+                dt,
+                &ds.sea[..SEA_FRAMES * SEA_FRAME],
+                SEA0,
+                SEA_N,
+                SEA_FRAME,
+            ),
+            derive_frames(
+                ds.normal_tiles,
+                dt,
+                &ds.river[..RIVER_FRAMES * RIVER_FRAME],
+                RIVER0,
+                RIVER_N,
+                RIVER_FRAME,
+            ),
         )
     } else {
-        (ds.sea[..SEA_FRAMES * SEA_FRAME].to_vec(), ds.river[..RIVER_FRAMES * RIVER_FRAME].to_vec())
+        (
+            ds.sea[..SEA_FRAMES * SEA_FRAME].to_vec(),
+            ds.river[..RIVER_FRAMES * RIVER_FRAME].to_vec(),
+        )
     };
     let colour = |v: u16, i: u8| dp.get(16 * (v >> 12) as usize + i as usize).copied().unwrap_or(0);
     let quad = |t: &[u16], m: usize| [t[4 * m], t[4 * m + 1], t[4 * m + 2], t[4 * m + 3]];
     let ds_quads = |m: usize| -> Vec<Quad> {
         quad(ds.lower, m)
             .iter()
-            .map(|&v| Quad { unit: Unit::Ds(v & 0x3FF, (v >> 12) as u8), flips: v & 0xC00 })
+            .map(|&v| Quad {
+                unit: Unit::Ds(v & 0x3FF, (v >> 12) as u8),
+                flips: v & 0xC00,
+            })
             .collect()
     };
 
@@ -497,7 +529,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
     }
     let amap: BTreeMap<(u16, u8), u16> = count
         .iter()
-        .filter_map(|(k, seen)| seen.iter().max_by(|a, b| a.1.cmp(b.1).then(b.0.cmp(a.0))).map(|(&c, _)| (*k, c)))
+        .filter_map(|(k, seen)| {
+            seen.iter()
+                .max_by(|a, b| a.1.cmp(b.1).then(b.0.cmp(a.0)))
+                .map(|(&c, _)| (*k, c))
+        })
         .collect();
     let aw2_quads = |m: usize| -> Vec<Quad> {
         quad(&aw2.metatiles, m)
@@ -517,7 +553,10 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                         });
                     }
                 }
-                Quad { unit: Unit::Px(px), flips: v & 0xC00 }
+                Quad {
+                    unit: Unit::Px(px),
+                    flips: v & 0xC00,
+                }
             })
             .collect()
     };
@@ -548,7 +587,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
         } else if let Some(&(_, d)) = AS.iter().find(|&&(x, _)| x == m) {
             (Kind::Ds, Some(ds_quads(d)))
         } else if !quad(ds.lower, m).contains(&EMPTY) && class(m) == ROAD_CLASS && ROAD_SHADE > 0 {
-            let shade = |c: u16| (0..3).map(|j| ((c >> (5 * j)) & 31).saturating_sub(ROAD_SHADE) << (5 * j)).sum::<u16>();
+            let shade = |c: u16| {
+                (0..3)
+                    .map(|j| ((c >> (5 * j)) & 31).saturating_sub(ROAD_SHADE) << (5 * j))
+                    .sum::<u16>()
+            };
             let q = quad(ds.lower, m)
                 .iter()
                 .map(|&v| {
@@ -562,7 +605,10 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                         *shaded.entry((v >> 12) as u8).or_default().entry(c).or_default() += 1;
                     }
                     road_src.insert(Unit::Px(px.clone()), v);
-                    Quad { unit: Unit::Px(px), flips: v & 0xC00 }
+                    Quad {
+                        unit: Unit::Px(px),
+                        flips: v & 0xC00,
+                    }
                 })
                 .collect();
             (Kind::Ds, Some(q))
@@ -632,7 +678,10 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
         }
     }
     // The upper parts' colours count too (their own sub-palettes).
-    let uppers: Vec<[u16; 2]> = TALL.iter().map(|&d| [ds.upper[4 * d + 2], ds.upper[4 * d + 3]]).collect();
+    let uppers: Vec<[u16; 2]> = TALL
+        .iter()
+        .map(|&d| [ds.upper[4 * d + 2], ds.upper[4 * d + 3]])
+        .collect();
     for &v in uppers.iter().flatten() {
         if v != EMPTY {
             let h = ds_hist((v & 0x3FF) as usize, (v >> 12) as u8, false);
@@ -646,9 +695,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
     for (u, h) in &hist {
         if let Unit::Px(_) = u {
             for (&c, &n) in h {
-                let p = by_pal.iter().find(|(_, w)| w.contains_key(&c)).map(|(&p, _)| p).or_else(|| {
-                    (0..9u8).find(|&p| (1..16).any(|i| dp.get(16 * p as usize + i) == Some(&c)))
-                });
+                let p = by_pal
+                    .iter()
+                    .find(|(_, w)| w.contains_key(&c))
+                    .map(|(&p, _)| p)
+                    .or_else(|| (0..9u8).find(|&p| (1..16).any(|i| dp.get(16 * p as usize + i) == Some(&c))));
                 if let Some(p) = p {
                     *by_pal.entry(p).or_default().entry(c).or_default() += n;
                 }
@@ -705,9 +756,19 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
     for (&p, w) in &by_pal {
         let Some(b) = block_of(p) else { continue };
         for (&c, &n) in w {
-            let Some(i) = (1..16).find(|&i| dp.get(16 * p as usize + i) == Some(&c)) else { continue };
-            let f = if (p as usize) < FOG_PALETTE { dp.get(16 * FOG_PALETTE + i).copied().unwrap_or(c) } else { c };
-            *votes.entry(16 * b + 1 + nearest(&blocks[b], c)).or_default().entry(f).or_default() += n;
+            let Some(i) = (1..16).find(|&i| dp.get(16 * p as usize + i) == Some(&c)) else {
+                continue;
+            };
+            let f = if (p as usize) < FOG_PALETTE {
+                dp.get(16 * FOG_PALETTE + i).copied().unwrap_or(c)
+            } else {
+                c
+            };
+            *votes
+                .entry(16 * b + 1 + nearest(&blocks[b], c))
+                .or_default()
+                .entry(f)
+                .or_default() += n;
         }
     }
     let mut fog = vec![NO_FOG; 64];
@@ -756,7 +817,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                     if i != 0 {
                         full[64 * t + k] = 0x8000 | colour((*p as u16) << 12, i);
                         full_fog[64 * t + k] = 0x8000
-                            | if (*p as usize) < FOG_PALETTE { dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0) } else { colour((*p as u16) << 12, i) };
+                            | if (*p as usize) < FOG_PALETTE {
+                                dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0)
+                            } else {
+                                colour((*p as u16) << 12, i)
+                            };
                     }
                 }
             }
@@ -765,13 +830,20 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
             slot.insert(u.clone(), (t, b));
         }
     }
-    let mut free: Vec<usize> = (0..SEA0).chain(RIVER0 + RIVER_N..TILES).filter(|&s| !used[s] && s != EMPTY as usize).collect();
+    let mut free: Vec<usize> = (0..SEA0)
+        .chain(RIVER0 + RIVER_N..TILES)
+        .filter(|&s| !used[s] && s != EMPTY as usize)
+        .collect();
     free.reverse();
     let mut placed: BTreeMap<(Vec<u8>, usize), usize> = BTreeMap::new();
     let mut place = |tiles: &mut Vec<u8>, px: &[u16], b: usize| -> Option<usize> {
         let mut t = [0u8; TILE];
         for (k, &c) in px.iter().enumerate() {
-            let i = if c == TRANSPARENT { 0 } else { nearest(&blocks[b], c) as u8 + 1 };
+            let i = if c == TRANSPARENT {
+                0
+            } else {
+                nearest(&blocks[b], c) as u8 + 1
+            };
             set_px(&mut t, k % 8, k / 8, i);
         }
         let key = (t.to_vec(), b);
@@ -792,7 +864,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                 let px = (0..64)
                     .map(|k| {
                         let i = tpx(dt, *t as usize, k % 8, k / 8);
-                        if i == 0 { TRANSPARENT } else { colour((*p as u16) << 12, i) }
+                        if i == 0 {
+                            TRANSPARENT
+                        } else {
+                            colour((*p as u16) << 12, i)
+                        }
                     })
                     .collect();
                 (px, b)
@@ -808,7 +884,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                 if i != 0 {
                     full[64 * s + k] = 0x8000 | colour(p << 12, i);
                     full_fog[64 * s + k] = 0x8000
-                        | if (p as usize) < FOG_PALETTE { dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0) } else { colour(p << 12, i) };
+                        | if (p as usize) < FOG_PALETTE {
+                            dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0)
+                        } else {
+                            colour(p << 12, i)
+                        };
                 }
             }
         }
@@ -818,7 +898,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                 if i != 0 {
                     full[64 * s + k] = 0x8000 | colour((*p as u16) << 12, i);
                     full_fog[64 * s + k] = 0x8000
-                        | if (*p as usize) < FOG_PALETTE { dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0) } else { colour((*p as u16) << 12, i) };
+                        | if (*p as usize) < FOG_PALETTE {
+                            dp.get(16 * FOG_PALETTE + i as usize).copied().unwrap_or(0)
+                        } else {
+                            colour((*p as u16) << 12, i)
+                        };
                 }
             }
         }
@@ -879,7 +963,11 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
                 (0..64)
                     .map(|k| {
                         let i = if v == EMPTY { 0 } else { quad_px(dt, v, k % 8, k / 8) };
-                        if i == 0 { TRANSPARENT } else { colour(v, i) }
+                        if i == 0 {
+                            TRANSPARENT
+                        } else {
+                            colour(v, i)
+                        }
                     })
                     .collect()
             })
@@ -913,7 +1001,23 @@ pub fn build(aw2: &Aw2, ds: &Pack) -> Option<Look> {
         let id = ds.mountain_pick.get(i).copied().unwrap_or(TALL[0] as u16) as usize;
         *p = TALL[..MOUNTAINS].iter().position(|&d| d == id).unwrap_or(0) as u8;
     }
-    Some(Look { tiles, sea: sea_out, river: river_out, metatiles, colours, fog, kinds, tall, mountains, mountain_pick, overlays, pool, full, full_fog, overlays_fog })
+    Some(Look {
+        tiles,
+        sea: sea_out,
+        river: river_out,
+        metatiles,
+        colours,
+        fog,
+        kinds,
+        tall,
+        mountains,
+        mountain_pick,
+        overlays,
+        pool,
+        full,
+        full_fog,
+        overlays_fog,
+    })
 }
 
 #[cfg(test)]

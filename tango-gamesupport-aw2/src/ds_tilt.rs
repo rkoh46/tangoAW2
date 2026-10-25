@@ -144,7 +144,18 @@ struct CamParams {
 fn cp() -> &'static CamParams {
     static P: OnceLock<CamParams> = OnceLock::new();
     P.get_or_init(|| {
-        let mut p = CamParams { focal: FOCAL, pitch: PITCH, height: HEIGHT, cx: CX, cy: CY, bias: CAM_BIAS, foot_drop: FOOT_DROP, terrain_drop: TERRAIN_DROP, prop_drop: PROP_DROP, tall_lift: TALL_LIFT };
+        let mut p = CamParams {
+            focal: FOCAL,
+            pitch: PITCH,
+            height: HEIGHT,
+            cx: CX,
+            cy: CY,
+            bias: CAM_BIAS,
+            foot_drop: FOOT_DROP,
+            terrain_drop: TERRAIN_DROP,
+            prop_drop: PROP_DROP,
+            tall_lift: TALL_LIFT,
+        };
         if let Ok(v) = std::env::var("TANGOAW2_TILT_CAM") {
             let f: Vec<Option<f32>> = v.split(',').map(|t| t.trim().parse::<f32>().ok()).collect();
             let g = |i: usize| f.get(i).copied().flatten();
@@ -194,15 +205,35 @@ fn follow(cursor: (f32, f32), w: i32, h: i32, now: u32) -> (f32, f32) {
     let (cx, cy) = cursor;
     let clamp_to_map = |x: f32, y: f32| {
         (
-            if w >= 16 { x.clamp(8.0, (w - 8) as f32) } else { w as f32 / 2.0 },
-            if h >= 12 { y.clamp(6.0, (h - 6) as f32) } else { h as f32 / 2.0 },
+            if w >= 16 {
+                x.clamp(8.0, (w - 8) as f32)
+            } else {
+                w as f32 / 2.0
+            },
+            if h >= 12 {
+                y.clamp(6.0, (h - 6) as f32)
+            } else {
+                h as f32 / 2.0
+            },
         )
     };
     let mut st = FOLLOW.lock().unwrap();
     let fresh = st.as_ref().map_or(true, |f| f.map != (w, h));
-    let f = st.get_or_insert(Follow { logical: (cx, cy), eased: (0.0, 0.0), shown: (0.0, 0.0), map: (w, h), at: now });
+    let f = st.get_or_insert(Follow {
+        logical: (cx, cy),
+        eased: (0.0, 0.0),
+        shown: (0.0, 0.0),
+        map: (w, h),
+        at: now,
+    });
     if fresh {
-        *f = Follow { logical: (cx, cy), eased: (0.0, 0.0), shown: (0.0, 0.0), map: (w, h), at: now };
+        *f = Follow {
+            logical: (cx, cy),
+            eased: (0.0, 0.0),
+            shown: (0.0, 0.0),
+            map: (w, h),
+            at: now,
+        };
         f.logical = (
             f.logical.0.clamp(cx - 5.0, cx + 6.0),
             f.logical.1.clamp(cy - 3.0, cy + 4.0),
@@ -269,7 +300,13 @@ struct Cam {
 
 impl Cam {
     fn new(cu: f32, cv: f32) -> Cam {
-        Cam { cu, cv, sin: pitch().sin(), cos: pitch().cos(), tan: pitch().tan() }
+        Cam {
+            cu,
+            cv,
+            sin: pitch().sin(),
+            cos: pitch().cos(),
+            tan: pitch().tan(),
+        }
     }
 
     /// The screen position of the ground point (u, v) in cells, and the size
@@ -279,7 +316,11 @@ impl Cam {
         let dy = v - self.cv - cp().height * self.tan;
         let depth = cp().height * self.cos - dy * self.sin;
         let up = -dy * self.cos - cp().height * self.sin;
-        (cp().cx + cp().focal * dx / depth, cp().cy - cp().focal * up / depth, cp().focal / depth)
+        (
+            cp().cx + cp().focal * dx / depth,
+            cp().cy - cp().focal * up / depth,
+            cp().focal / depth,
+        )
     }
 
     /// The ground point (cells) under a screen position.
@@ -287,7 +328,10 @@ impl Cam {
         let a = (xs - cp().cx) / cp().focal;
         let b = -(ys - cp().cy) / cp().focal;
         let lam = -cp().height / (b * self.sin - self.cos);
-        (self.cu + lam * a, self.cv + cp().height * self.tan + lam * (-b * self.cos - self.sin))
+        (
+            self.cu + lam * a,
+            self.cv + cp().height * self.tan + lam * (-b * self.cos - self.sin),
+        )
     }
 
     /// How far the screen reaches from the looked-at point: left, right, up,
@@ -623,7 +667,6 @@ static ABSENT: std::sync::LazyLock<std::sync::Mutex<Absent>> =
 static SPRITES: std::sync::LazyLock<std::sync::Mutex<SpriteCache>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new((0, std::collections::HashMap::new())));
 
-
 /// The pixels of a sprite picture (0 transparent, else 0x8000 | colour); its
 /// tiles are read from the console first.
 #[allow(clippy::too_many_arguments)]
@@ -688,7 +731,11 @@ fn obj_pixels_ro(
                         (if sx & 1 == 0 { b & 15 } else { b >> 4 }) as usize
                     };
                     if c != 0 {
-                        let color = if color8 { v.pal[256 + c] } else { v.pal[256 + pal_bank * 16 + c] };
+                        let color = if color8 {
+                            v.pal[256 + c]
+                        } else {
+                            v.pal[256 + pal_bank * 16 + c]
+                        };
                         pix[(ty * 8 + py) * w as usize + tx * 8 + pxl] = 0x8000 | (color & 0x7fff);
                     }
                 }
@@ -697,7 +744,6 @@ fn obj_pixels_ro(
     }
     pix
 }
-
 
 /// The moving unit's sprite as the console last showed it: the nine pieces' places and flips
 /// (its facing) relative to the picture's corner, and where that corner was against the
@@ -751,7 +797,10 @@ fn resolve_groups(mut objs: Vec<Obj>) -> Vec<Obj> {
     if pieces.is_empty() {
         return rest;
     }
-    let (x0, y0) = (pieces.iter().map(|o| o.x).min().unwrap(), pieces.iter().map(|o| o.y).min().unwrap());
+    let (x0, y0) = (
+        pieces.iter().map(|o| o.x).min().unwrap(),
+        pieces.iter().map(|o| o.y).min().unwrap(),
+    );
     let (x1, y1) = (
         pieces.iter().map(|o| o.x + o.w).max().unwrap(),
         pieces.iter().map(|o| o.y + o.h).max().unwrap(),
@@ -771,10 +820,17 @@ fn resolve_groups(mut objs: Vec<Obj>) -> Vec<Obj> {
     if pieces.len() == 9 {
         // The picture's layout and facing (the pieces' flips), kept for when the game
         // parks the sprites (the unit is off the console's picture).
-        let mut seen: Vec<(u16, i32, i32, bool, bool)> =
-            pieces.iter().map(|o| (o.tile, o.x - x0, o.y - y0, o.flip.0, o.flip.1)).collect();
+        let mut seen: Vec<(u16, i32, i32, bool, bool)> = pieces
+            .iter()
+            .map(|o| (o.tile, o.x - x0, o.y - y0, o.flip.0, o.flip.1))
+            .collect();
         seen.sort();
-        *MOVER_SEEN.lock().unwrap() = Some(MoverSeen { pieces: seen, w, h, delta: None });
+        *MOVER_SEEN.lock().unwrap() = Some(MoverSeen {
+            pieces: seen,
+            w,
+            h,
+            delta: None,
+        });
     }
     let first = pieces.iter().min_by_key(|o| o.idx).unwrap();
     rest.push(Obj {
@@ -876,7 +932,18 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             let par = |k: usize| v.oam[16 * g + 4 * k + 3] as i16 as i32;
             let (pa, pb, pc, pd) = (par(0), par(1), par(2), par(3));
             let color8 = a0 & 0x2000 != 0;
-            let src = obj_pixels(core, v, one_d, (a2 & 0x3ff) as usize, (a2 >> 12) as usize, w, h, false, false, color8);
+            let src = obj_pixels(
+                core,
+                v,
+                one_d,
+                (a2 & 0x3ff) as usize,
+                (a2 >> 12) as usize,
+                w,
+                h,
+                false,
+                false,
+                color8,
+            );
             let mut pix = vec![0u16; (bw * bh) as usize];
             for dy in 0..bh {
                 for dx in 0..bw {
@@ -894,7 +961,11 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
                 h: bh,
                 pri: ((a2 >> 10) & 3) as u8,
                 idx,
-                class: if (a0 >> 10) & 3 == 1 && v.dispcnt() & 0xE000 == 0 { Class::Shade } else { Class::Hud },
+                class: if (a0 >> 10) & 3 == 1 && v.dispcnt() & 0xE000 == 0 {
+                    Class::Shade
+                } else {
+                    Class::Hud
+                },
                 pix,
                 tile: a2 & 0x3ff,
                 pal: (a2 >> 12) as u8,
@@ -943,8 +1014,16 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             // glow, the moving unit) are kept where the game put them, unless the game has
             // parked them (x 0, y 160) or they are far away.
             let parked = (a1 & 511) == 0 && (a0 & 255) == 160;
-            let near_x = if (a1 & 511) >= 256 { (a1 & 511) as i32 - 512 } else { (a1 & 511) as i32 };
-            let near_y = if (a0 & 255) >= 224 { (a0 & 255) as i32 - 256 } else { (a0 & 255) as i32 };
+            let near_x = if (a1 & 511) >= 256 {
+                (a1 & 511) as i32 - 512
+            } else {
+                (a1 & 511) as i32
+            };
+            let near_y = if (a0 & 255) >= 224 {
+                (a0 & 255) as i32 - 256
+            } else {
+                (a0 & 255) as i32
+            };
             let wanted = matches!(class, Class::Piece | Class::Ground | Class::Pointer)
                 && !parked
                 && near_x + w > -48
@@ -962,7 +1041,18 @@ fn read_objs(core: &Core, v: &mut Vid) -> Option<Vec<Obj>> {
             continue;
         }
         let color8 = a0 & 0x2000 != 0;
-        let pix = obj_pixels(core, v, one_d, (a2 & 0x3ff) as usize, (a2 >> 12) as usize, w, h, a1 & 0x1000 != 0, a1 & 0x2000 != 0, color8);
+        let pix = obj_pixels(
+            core,
+            v,
+            one_d,
+            (a2 & 0x3ff) as usize,
+            (a2 >> 12) as usize,
+            w,
+            h,
+            a1 & 0x1000 != 0,
+            a1 & 0x2000 != 0,
+            color8,
+        );
         out.push(Obj {
             x,
             y,
@@ -1093,7 +1183,11 @@ fn range_look(p: Px, t: Px, lx: i32, ly: i32, upright: bool) -> Px {
                 let target = 31.0 + (far - 31.0) * k;
                 (c as f32 + (target - c as f32) * ATTACK_COVER + 0.5) as u32
             };
-            (r, g, b) = (to(r, PINK_FAR.0).min(31), to(g, PINK_FAR.1).min(31), to(b, PINK_FAR.2).min(31));
+            (r, g, b) = (
+                to(r, PINK_FAR.0).min(31),
+                to(g, PINK_FAR.1).min(31),
+                to(b, PINK_FAR.2).min(31),
+            );
             return 0x8000 | (r | g << 5 | b << 10) as u16;
         }
         let far = (10.0, 12.0, 5.0);
@@ -1164,7 +1258,9 @@ fn rgba_lut_3d() -> &'static Vec<[u8; 4]> {
     static LUT: OnceLock<Vec<[u8; 4]>> = OnceLock::new();
     LUT.get_or_init(|| {
         let ch = |c: usize| (((2 * c + 1) * 255) / 63) as u8;
-        (0..0x8000usize).map(|i| [ch(i & 31), ch((i >> 5) & 31), ch((i >> 10) & 31), 255]).collect()
+        (0..0x8000usize)
+            .map(|i| [ch(i & 31), ch((i >> 5) & 31), ch((i >> 10) & 31), 255])
+            .collect()
     })
 }
 
@@ -1248,9 +1344,14 @@ fn clear_quarter(pix: &mut [Px], k: usize) {
 
 /// Dual Strike's 16 x 16 unit tiles by (Dual Strike id, frame, country), as the unit art conversion makes them.
 fn ds_tiles(ds: u8, frame: usize, country: usize) -> Option<[u8; 128]> {
-    static CACHE: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<(u8, usize, usize), Option<[u8; 128]>>>> =
-        std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
-    *CACHE.lock().unwrap().entry((ds, frame, country)).or_insert_with(|| crate::ds_unit_art::map_tiles_ds(ds, frame, country))
+    static CACHE: std::sync::LazyLock<
+        std::sync::Mutex<std::collections::HashMap<(u8, usize, usize), Option<[u8; 128]>>>,
+    > = std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+    *CACHE
+        .lock()
+        .unwrap()
+        .entry((ds, frame, country))
+        .or_insert_with(|| crate::ds_unit_art::map_tiles_ds(ds, frame, country))
 }
 
 /// Dual Strike's own 32 x 32 picture of a unit the console draws from the four tiles at `base`
@@ -1261,7 +1362,9 @@ fn ds_unit_art(v: &Vid, bg: &Bg, kind: u8, base: u16, mirrored: bool, bank: u16)
     let ds = crate::roster::ds_id(kind)?;
     let at = bg.char_base + 32 * base as usize;
     let have = v.vram.get(at..at + 128)?;
-    let found = (0..3).flat_map(|f| (0..5).map(move |c| (f, c))).find(|&(f, c)| ds_tiles(ds, f, c).map_or(false, |t| t[..] == *have));
+    let found = (0..3)
+        .flat_map(|f| (0..5).map(move |c| (f, c)))
+        .find(|&(f, c)| ds_tiles(ds, f, c).map_or(false, |t| t[..] == *have));
     let (frame, country) = found?;
     let bmp = crate::ds_unit_art::idle_bitmap(ds, frame, country)?;
     let mut out = vec![0u16; 1024];
@@ -1345,8 +1448,13 @@ pub fn set_hires_scale(n: u8) {
 
 pub fn hires_scale() -> usize {
     static ENV: OnceLock<Option<usize>> = OnceLock::new();
-    ENV.get_or_init(|| std::env::var("TANGOAW2_TILT_SCALE").ok().and_then(|v| v.parse::<usize>().ok()).map(|n| n.clamp(1, 8)))
-        .unwrap_or_else(|| HIRES.load(Ordering::Relaxed) as usize)
+    ENV.get_or_init(|| {
+        std::env::var("TANGOAW2_TILT_SCALE")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .map(|n| n.clamp(1, 8))
+    })
+    .unwrap_or_else(|| HIRES.load(Ordering::Relaxed) as usize)
 }
 
 /// What a picture is made at: `hires_scale()` less the steps the machine's load has cost. The tilted picture is made on a few
@@ -1363,7 +1471,9 @@ static ADAPT: std::sync::Mutex<(usize, f32, u32)> = std::sync::Mutex::new((0, 0.
 pub fn adaptive_scale() -> usize {
     let base = hires_scale();
     static FIXED: OnceLock<bool> = OnceLock::new();
-    let fixed = *FIXED.get_or_init(|| std::env::var_os("TANGOAW2_TILT_SCALE").is_some() && std::env::var_os("TANGOAW2_TILT_ADAPT").is_none());
+    let fixed = *FIXED.get_or_init(|| {
+        std::env::var_os("TANGOAW2_TILT_SCALE").is_some() && std::env::var_os("TANGOAW2_TILT_ADAPT").is_none()
+    });
     if fixed || base <= 2 {
         return base;
     }
@@ -1400,7 +1510,10 @@ pub fn apply_flat_cursor(core: &Core, rgba: &mut [u8]) {
     if tilted() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
         return;
     }
-    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
+    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN
+        || !crate::wasteland::ds_graphics(core)
+        || crate::design::in_map_editor(core)
+    {
         return;
     }
     let Some(art) = crate::ds_cursor::art() else { return };
@@ -1425,12 +1538,14 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
     if (((bldcnt >> 6) & 3) >= 2 && (!win.any() || win.outside & 0x20 != 0)) || v.io[0x26] & 0xff != 0 {
         return;
     }
-    let (Some(b0), Some(b1), Some(b2), Some(b3)) = (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3)) else {
+    let (Some(b0), Some(b1), Some(b2), Some(b3)) = (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3))
+    else {
         return;
     };
     let bgs = [b0, b1, b2, b3];
     let Some(objs) = read_objs(core, &mut v) else { return };
-    let is_cursor_piece = |o: &Obj| o.class == Class::Pointer || (o.class == Class::Ground && (o.tile == 873 || is_crosshair(o.tile)));
+    let is_cursor_piece =
+        |o: &Obj| o.class == Class::Pointer || (o.class == Class::Ground && (o.tile == 873 || is_crosshair(o.tile)));
     if !objs.iter().any(|o| is_cursor_piece(o)) {
         return;
     }
@@ -1489,7 +1604,11 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
         if !covered[i] {
             continue;
         }
-        let bits = if any_win { win.bits((i % W) as i32, (i / W) as i32) } else { 0x3f };
+        let bits = if any_win {
+            win.bits((i % W) as i32, (i / W) as i32)
+        } else {
+            0x3f
+        };
         let obj = if bits & 0x10 != 0 { obj_top[i] } else { u32::MAX };
         let obj_pri = if obj == u32::MAX { 9 } else { (obj >> 8) as u8 };
         let mut color = backdrop;
@@ -1515,13 +1634,28 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
         rgba[i * 4..i * 4 + 4].copy_from_slice(&lut[(color & 0x7fff) as usize]);
     }
     // Dual Strike's cursor, flat: a cell is 16 pixels, the map's scroll puts it on the picture.
-    let cam = (core.raw_read_16(MAP + 4, -1) as i16 as f32, core.raw_read_16(MAP + 6, -1) as i16 as f32);
-    let cursor = (core.raw_read_8(CURSOR_X, -1) as i32, core.raw_read_8(CURSOR_Y, -1) as i32);
+    let cam = (
+        core.raw_read_16(MAP + 4, -1) as i16 as f32,
+        core.raw_read_16(MAP + 6, -1) as i16 as f32,
+    );
+    let cursor = (
+        core.raw_read_8(CURSOR_X, -1) as i32,
+        core.raw_read_8(CURSOR_Y, -1) as i32,
+    );
     let mut map = vec![0u16; W * H];
     let flat = |u: f32, v: f32| (u * 16.0 - cam.0, v * 16.0 - cam.1, 16.0);
     if targeting {
         // (Dual Strike's ring is 30 pixels across where its cell is 15)
-        crate::ds_cursor::draw_crosshair(&mut map, W, H, art, cursor, Some(30.0), crate::ds_cursor::next_tick(), flat);
+        crate::ds_cursor::draw_crosshair(
+            &mut map,
+            W,
+            H,
+            art,
+            cursor,
+            Some(30.0),
+            crate::ds_cursor::next_tick(),
+            flat,
+        );
     } else {
         crate::ds_cursor::draw(&mut map, W, H, art, cursor, flat);
     }
@@ -1532,8 +1666,6 @@ fn flat_cursor(core: &Core, rgba: &mut [u8], art: &crate::ds_cursor::Art) {
         }
     }
 }
-
-
 
 /// The game's reach table at a map cell (0xFF: the selected unit cannot go there).
 fn reach_at(core: &Core, w: i32, h: i32, x: i32, y: i32) -> u8 {
@@ -1576,10 +1708,16 @@ fn attack_cells(core: &Core, w: i32, h: i32) -> std::collections::HashMap<(i32, 
         return out;
     }
     let reach = |x: i32, y: i32| reach_at(core, w, h, x, y);
-    let Some((ox, oy)) = reach_origin(core, w, h) else { return out };
+    let Some((ox, oy)) = reach_origin(core, w, h) else {
+        return out;
+    };
     // (the selected unit: the game's pointer, or the one on the origin cell)
     let sel = core.raw_read_32(0x0300_40D8, -1);
-    let u = if (0x0200_0000..0x0400_0000).contains(&sel) { sel } else { crate::unit_actions::unit_at(core, ox, oy).unwrap_or(0) };
+    let u = if (0x0200_0000..0x0400_0000).contains(&sel) {
+        sel
+    } else {
+        crate::unit_actions::unit_at(core, ox, oy).unwrap_or(0)
+    };
     if u == 0 {
         return out;
     }
@@ -1588,14 +1726,21 @@ fn attack_cells(core: &Core, w: i32, h: i32) -> std::collections::HashMap<(i32, 
         return out;
     }
     let rec = crate::ds_units::UNITS + 0x5C * kind;
-    let (min, max) = (core.raw_read_8(rec + 0x0E, -1) as i32, core.raw_read_8(rec + 0x0F, -1) as i32);
+    let (min, max) = (
+        core.raw_read_8(rec + 0x0E, -1) as i32,
+        core.raw_read_8(rec + 0x0F, -1) as i32,
+    );
     if max == 0 {
         return out;
     }
     if max == 1 {
         for y in 0..h {
             for x in 0..w {
-                if reach(x, y) == 0xff && [(1, 0), (-1, 0), (0, 1), (0, -1)].iter().any(|(dx, dy)| reach(x + dx, y + dy) != 0xff) {
+                if reach(x, y) == 0xff
+                    && [(1, 0), (-1, 0), (0, 1), (0, -1)]
+                        .iter()
+                        .any(|(dx, dy)| reach(x + dx, y + dy) != 0xff)
+                {
                     out.insert((x, y), ATTACK_TINT);
                 }
             }
@@ -1632,7 +1777,10 @@ impl FlatRange {
         if !(bgs[0].on && bgs[0].pri > bgs[1].pri) || target_ring_up(core) {
             return None;
         }
-        let cam = (core.raw_read_16(MAP + 4, -1) as i16 as i32, core.raw_read_16(MAP + 6, -1) as i16 as i32);
+        let cam = (
+            core.raw_read_16(MAP + 4, -1) as i16 as i32,
+            core.raw_read_16(MAP + 6, -1) as i16 as i32,
+        );
         let mut cells = std::collections::HashMap::new();
         for (i, &t) in layers[0].iter().enumerate() {
             if t != 0 {
@@ -1650,7 +1798,11 @@ impl FlatRange {
         let (w, h) = (core.raw_read_16(MAP, -1) as i32, core.raw_read_16(MAP + 2, -1) as i32);
         if reach_origin(core, w, h).is_some() && cells.keys().any(|&(cx, cy)| reach_at(core, w, h, cx, cy) != 0xff) {
             for (&(cx, cy), t) in cells.iter_mut() {
-                *t = if reach_at(core, w, h, cx, cy) == 0xff { ATTACK_TINT } else { 0x7fff };
+                *t = if reach_at(core, w, h, cx, cy) == 0xff {
+                    ATTACK_TINT
+                } else {
+                    0x7fff
+                };
             }
             // (the computed pink cells are cells the unit cannot move to)
             for (c, t) in attack_cells(core, w, h) {
@@ -1662,7 +1814,11 @@ impl FlatRange {
 
     fn look(&self, i: usize, p: Px, upright: bool) -> Px {
         let (gx, gy) = ((i % W) as i32 + self.cam.0, (i / W) as i32 + self.cam.1);
-        let t = self.cells.get(&(gx.div_euclid(16), gy.div_euclid(16))).copied().unwrap_or(0);
+        let t = self
+            .cells
+            .get(&(gx.div_euclid(16), gy.div_euclid(16)))
+            .copied()
+            .unwrap_or(0);
         range_look(p, t, gx.rem_euclid(16), gy.rem_euclid(16), upright)
     }
 }
@@ -1676,7 +1832,10 @@ pub fn apply_flat_range(core: &Core, rgba: &mut [u8]) {
     if tilted() || FAILED.load(Ordering::Relaxed) || rgba.len() != W * H * 4 {
         return;
     }
-    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
+    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN
+        || !crate::wasteland::ds_graphics(core)
+        || crate::design::in_map_editor(core)
+    {
         return;
     }
     let before = rgba.to_vec();
@@ -1698,7 +1857,8 @@ fn flat_range(core: &Core, rgba: &mut [u8]) {
     if (((bldcnt >> 6) & 3) >= 2 && (!win.any() || win.outside & 0x20 != 0)) || v.io[0x26] & 0xff != 0 {
         return;
     }
-    let (Some(b0), Some(b1), Some(b2), Some(b3)) = (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3)) else {
+    let (Some(b0), Some(b1), Some(b2), Some(b3)) = (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3))
+    else {
         return;
     };
     let bgs = [b0, b1, b2, b3];
@@ -1719,7 +1879,9 @@ fn flat_range(core: &Core, rgba: &mut [u8]) {
         }
         layers.push(l);
     }
-    let Some(fr) = FlatRange::new(core, &bgs, &layers) else { return };
+    let Some(fr) = FlatRange::new(core, &bgs, &layers) else {
+        return;
+    };
     // The top sprite per pixel.
     let mut obj_top: Vec<u32> = vec![u32::MAX; W * H];
     for o in &objs {
@@ -1746,7 +1908,11 @@ fn flat_range(core: &Core, rgba: &mut [u8]) {
     let any_win = win.any();
     let lut = rgba_lut();
     for i in 0..W * H {
-        let bits = if any_win { win.bits((i % W) as i32, (i / W) as i32) } else { 0x3f };
+        let bits = if any_win {
+            win.bits((i % W) as i32, (i / W) as i32)
+        } else {
+            0x3f
+        };
         // (a window with the colour effects off is a panel's: it keeps the console's picture)
         if any_win && bits & 0x20 == 0 {
             continue;
@@ -1776,8 +1942,19 @@ fn flat_range(core: &Core, rgba: &mut [u8]) {
 fn run_in_pool<R: Send>(f: impl FnOnce() -> R + Send) -> R {
     static POOL: OnceLock<Option<rayon::ThreadPool>> = OnceLock::new();
     let pool = POOL.get_or_init(|| {
-        let n = std::env::var("TANGOAW2_TILT_THREADS").ok().and_then(|v| v.parse::<usize>().ok()).unwrap_or(3);
-        (n > 0).then(|| rayon::ThreadPoolBuilder::new().num_threads(n).thread_name(|i| format!("ds-tilt-{i}")).build().ok()).flatten()
+        let n = std::env::var("TANGOAW2_TILT_THREADS")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .unwrap_or(3);
+        (n > 0)
+            .then(|| {
+                rayon::ThreadPoolBuilder::new()
+                    .num_threads(n)
+                    .thread_name(|i| format!("ds-tilt-{i}"))
+                    .build()
+                    .ok()
+            })
+            .flatten()
     });
     match pool {
         Some(p) => p.install(f),
@@ -1811,7 +1988,11 @@ fn apply_timed(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         // (a debug aid: every picture's time, for a profile)
         let t = std::time::Instant::now();
         let out = apply_inner(core, rgba, ss);
-        dbg_line(&format!("ds_tilt us {}{}", t.elapsed().as_micros(), if out.is_some() { "" } else { " flat" }));
+        dbg_line(&format!(
+            "ds_tilt us {}{}",
+            t.elapsed().as_micros(),
+            if out.is_some() { "" } else { " flat" }
+        ));
         out
     } else {
         apply_inner(core, rgba, ss)
@@ -1821,11 +2002,20 @@ fn apply_timed(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
 fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let (ow, oh) = (W * ss, H * ss);
     if !enabled() || rgba.len() != W * H * 4 {
-        { skip_log(line!()); return None; }
+        {
+            skip_log(line!());
+            return None;
+        }
     }
     // (the Design Room's map editor runs the battle map's loop over records it does not keep)
-    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN || !crate::wasteland::ds_graphics(core) || crate::design::in_map_editor(core) {
-        { skip_log(line!()); return None; }
+    if core.raw_read_32(MAIN_LOOP, -1) != BATTLE_MAIN
+        || !crate::wasteland::ds_graphics(core)
+        || crate::design::in_map_editor(core)
+    {
+        {
+            skip_log(line!());
+            return None;
+        }
     }
     let t0 = std::time::Instant::now();
     let mut v = Vid::read(core);
@@ -1871,12 +2061,18 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let d = v.dispcnt();
     // Tile mode 0, display on, BG1-3 and OBJ on.
     if d & 7 != 0 || d & 0x80 != 0 || d & 0x0e00 != 0x0e00 || d & 0x1000 == 0 {
-        { skip_log(line!()); return None; }
+        {
+            skip_log(line!());
+            return None;
+        }
     }
     let (Some(bgs0), Some(bgs1), Some(bgs2), Some(bgs3)) =
         (Bg::new(&v, 0), Bg::new(&v, 1), Bg::new(&v, 2), Bg::new(&v, 3))
     else {
-        { skip_log(line!()); return None; }
+        {
+            skip_log(line!());
+            return None;
+        }
     };
     let bgs = [bgs0, bgs1, bgs2, bgs3];
     let win = Windows::new(&v);
@@ -1888,7 +2084,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // darkened or lightened as the console does its own. Only when it takes the map's layers (BG1-3 and the sprites).
     let fade_all = bld_mode >= 2 && (!win.any() || win.outside & 0x20 != 0);
     if (fade_all && bldcnt & 0x1e != 0x1e) || v.io[0x26] & 0xff != 0 {
-        { skip_log(line!()); return None; }
+        {
+            skip_log(line!());
+            return None;
+        }
     }
     for bg in &bgs {
         if bg.on {
@@ -1897,7 +2096,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     }
     let t_load = t0.elapsed();
     let Some(mut objs) = read_objs(core, &mut v) else {
-        { skip_log(line!()); return None; }
+        {
+            skip_log(line!());
+            return None;
+        }
     };
     // A structure's heal effect: its pieces (OBJ palette 15) stand at the structure, whichever way the console's camera looks.
     let heal_at = crate::heal_effect::anchor_world(core);
@@ -1934,7 +2136,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     }
     // A screen the console lays over the map with BG0 (a CO's power, with its portrait and name drawn by sprites of the same palettes
     // as the map's effects): those sprites are its own.
-    if (!bg0_ground && layers[0].iter().filter(|&&p| p != 0).count() * 5 > W * H * 2) || (bld_mode == 1 && bldcnt & 1 != 0 && bgs[0].on && !bg0_ground) {
+    if (!bg0_ground && layers[0].iter().filter(|&&p| p != 0).count() * 5 > W * H * 2)
+        || (bld_mode == 1 && bldcnt & 1 != 0 && bgs[0].on && !bg0_ground)
+    {
         for o in objs.iter_mut().filter(|o| o.class == Class::Billboard && o.pri == 0) {
             o.class = Class::Hud;
         }
@@ -1949,7 +2153,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     } else {
         Vec::new()
     };
-    let foreign1 = if bgs[1].on { bgs[1].foreign(&v, UNIT_TILES_LO, UNIT_TILES_HI) } else { Vec::new() };
+    let foreign1 = if bgs[1].on {
+        bgs[1].foreign(&v, UNIT_TILES_LO, UNIT_TILES_HI)
+    } else {
+        Vec::new()
+    };
     let t_layers = t0.elapsed();
     // Top sprite per pixel: (priority, index) lowest wins.
     let mut obj_top: Vec<u32> = vec![u32::MAX; W * H];
@@ -2031,30 +2239,34 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             let bg_above =
                 (1..4).any(|b| bgs[b].on && bits & (1 << b) != 0 && bgs[b].pri < bgs[0].pri && layers[b][i] != 0);
             if !sprite_above && !bg_above {
-                owner[i] = if bg0_alpha && bits & 0x20 != 0 { Owner::HudAlpha } else { Owner::Hud };
+                owner[i] = if bg0_alpha && bits & 0x20 != 0 {
+                    Owner::HudAlpha
+                } else {
+                    Owner::Hud
+                };
             }
         }
     }
     for (fb, fm) in [(1usize, &foreign1), (2usize, &foreign2)] {
-    if !fm.is_empty() {
-        for i in 0..W * H {
-            if fm[i] && layers[fb][i] != 0 {
-                let (x, y) = ((i % W) as i32, (i / W) as i32);
-                let bits = bits_at(x, y);
-                if bits & (1 << fb) == 0 {
-                    continue;
-                }
-                let obj = if bits & 0x10 != 0 { obj_top[i] } else { u32::MAX };
-                let sprite_above = obj != u32::MAX && ((obj >> 8) as u8) <= bgs[fb].pri;
-                let bg_above = [0usize, 1, 2, 3].iter().filter(|&&b| b != fb).any(|&b| {
-                    bgs[b].on && bits & (1 << b) != 0 && layers[b][i] != 0 && (bgs[b].pri, b) < (bgs[fb].pri, fb)
-                });
-                if !sprite_above && !bg_above {
-                    owner[i] = Owner::Hud;
+        if !fm.is_empty() {
+            for i in 0..W * H {
+                if fm[i] && layers[fb][i] != 0 {
+                    let (x, y) = ((i % W) as i32, (i / W) as i32);
+                    let bits = bits_at(x, y);
+                    if bits & (1 << fb) == 0 {
+                        continue;
+                    }
+                    let obj = if bits & 0x10 != 0 { obj_top[i] } else { u32::MAX };
+                    let sprite_above = obj != u32::MAX && ((obj >> 8) as u8) <= bgs[fb].pri;
+                    let bg_above = [0usize, 1, 2, 3].iter().filter(|&&b| b != fb).any(|&b| {
+                        bgs[b].on && bits & (1 << b) != 0 && layers[b][i] != 0 && (bgs[b].pri, b) < (bgs[fb].pri, fb)
+                    });
+                    if !sprite_above && !bg_above {
+                        owner[i] = Owner::Hud;
+                    }
                 }
             }
         }
-    }
     }
     // A window effect on the pixel.
     if any_win && bld_mode != 0 {
@@ -2098,7 +2310,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let mut out = format!("P6\n{W} {H}\n255\n").into_bytes();
         for i in 0..W * H {
             let c = layers[3][i];
-            let (r, g, b) = (((c & 31) << 3) as u8, (((c >> 5) & 31) << 3) as u8, (((c >> 10) & 31) << 3) as u8);
+            let (r, g, b) = (
+                ((c & 31) << 3) as u8,
+                (((c >> 5) & 31) << 3) as u8,
+                (((c >> 10) & 31) << 3) as u8,
+            );
             match owner[i] {
                 Owner::Map => out.extend_from_slice(&[r / 2, g / 2, b / 2]),
                 _ => out.extend_from_slice(&[255, 0, 0]),
@@ -2117,7 +2333,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     && !(0..3).any(|b| bgs[b].on && layers[b][i] != 0 && bits_at((i % W) as i32, (i / W) as i32) & (1 << b) != 0 && (bgs[b].pri, b) < (bgs[3].pri, 3))
             })
             .count();
-        dbg_line(&format!("ds_tilt leak {leak} mode {bld_mode} bldcnt {bldcnt:04x} alpha {:04x} win {} {}", v.io[0x29], win.on[0], win.on[1]));
+        dbg_line(&format!(
+            "ds_tilt leak {leak} mode {bld_mode} bldcnt {bldcnt:04x} alpha {:04x} win {} {}",
+            v.io[0x29], win.on[0], win.on[1]
+        ));
     }
 
     if debug_check() {
@@ -2178,7 +2397,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     Ground::load(core, &mut v);
     v.ensure(core, OBJ_TILES, 0x8000);
     let Some(mut ground) = Ground::new(core, &v) else {
-        { skip_log(line!()); return None; }
+        {
+            skip_log(line!());
+            return None;
+        }
     };
     let cam_px = (
         core.raw_read_16(MAP + 4, -1) as i16 as i32,
@@ -2190,7 +2412,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let near = |ram: i32, shown: i32| {
             let d = (shown - ram).rem_euclid(512);
             let d = if d >= 256 { d - 512 } else { d };
-            if d.abs() <= 9 { ram + d } else { ram }
+            if d.abs() <= 9 {
+                ram + d
+            } else {
+                ram
+            }
         };
         (near(cam_px.0, bgs[3].hofs), near(cam_px.1, bgs[3].vofs))
     };
@@ -2198,16 +2424,25 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // Where BG3 is parked (the second army's turn, a banner) there is no scroll to read, and the word of the frame before is used: with
     // the current one a walking unit jumped a step when the camera started or stopped.
     let cam_px = {
-        static HIST: std::sync::Mutex<(u32, (i32, i32), (i32, i32))> = std::sync::Mutex::new((u32::MAX, (0, 0), (0, 0)));
+        static HIST: std::sync::Mutex<(u32, (i32, i32), (i32, i32))> =
+            std::sync::Mutex::new((u32::MAX, (0, 0), (0, 0)));
         let now = core.frame_counter();
         let mut h = HIST.lock().unwrap();
-        let ram = (core.raw_read_16(MAP + 4, -1) as i16 as i32, core.raw_read_16(MAP + 6, -1) as i16 as i32);
+        let ram = (
+            core.raw_read_16(MAP + 4, -1) as i16 as i32,
+            core.raw_read_16(MAP + 6, -1) as i16 as i32,
+        );
         let parked = cam_px == ram;
         let mut used = cam_px;
         if h.0 != now {
             // (a new frame: what was current is the previous one's)
             let (before_frame, before) = (h.0, h.1);
-            if parked && before_frame != u32::MAX && now.wrapping_sub(before_frame) == 1 && (before.0 - ram.0).abs() <= 12 && (before.1 - ram.1).abs() <= 12 {
+            if parked
+                && before_frame != u32::MAX
+                && now.wrapping_sub(before_frame) == 1
+                && (before.0 - ram.0).abs() <= 12
+                && (before.1 - ram.1).abs() <= 12
+            {
                 used = before;
             }
             h.2 = used;
@@ -2227,7 +2462,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     );
     // (When the console's own camera is somewhere the cursor is not (a structure's heal effect, the turn's pan, a scripted camera),
     // the tilted camera follows the console's: the cell at the middle of its window stands for the cursor.)
-    let in_window = cursor.0 * 16 + 8 >= cam_px.0 && cursor.0 * 16 + 8 < cam_px.0 + 240 && cursor.1 * 16 + 8 >= cam_px.1 && cursor.1 * 16 + 8 < cam_px.1 + 160;
+    let in_window = cursor.0 * 16 + 8 >= cam_px.0
+        && cursor.0 * 16 + 8 < cam_px.0 + 240
+        && cursor.1 * 16 + 8 >= cam_px.1
+        && cursor.1 * 16 + 8 < cam_px.1 + 160;
     let effects_up = objs.iter().any(|o| o.class == Class::Billboard && o.pri == 0);
     // (a pan the cursor did not make: the console's camera is more than a cell from where it was when the cursor last moved)
     let panned = {
@@ -2242,11 +2480,27 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let look = if in_window && heal_at.is_none() && !effects_up && !panned {
         (cursor.0 as f32, cursor.1 as f32)
     } else {
-        ((cam_px.0 + 120) as f32 / 16.0 - 0.5, (cam_px.1 + 80) as f32 / 16.0 - 0.5)
+        (
+            (cam_px.0 + 120) as f32 / 16.0 - 0.5,
+            (cam_px.1 + 80) as f32 / 16.0 - 0.5,
+        )
     };
     let (fx, fy) = follow(look, ground.w, ground.h, core.frame_counter());
     if std::env::var_os("TANGOAW2_TILT_CAM_LOG").is_some() {
-        dbg_line(&format!("ds_tilt scrolls: bg3 ({},{}) bg2 ({},{}) bg1 ({},{}) ram {:?} fc {}", bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs, bgs[1].hofs, bgs[1].vofs, (core.raw_read_16(MAP + 4, -1) as i16, core.raw_read_16(MAP + 6, -1) as i16), core.frame_counter()));
+        dbg_line(&format!(
+            "ds_tilt scrolls: bg3 ({},{}) bg2 ({},{}) bg1 ({},{}) ram {:?} fc {}",
+            bgs[3].hofs,
+            bgs[3].vofs,
+            bgs[2].hofs,
+            bgs[2].vofs,
+            bgs[1].hofs,
+            bgs[1].vofs,
+            (
+                core.raw_read_16(MAP + 4, -1) as i16,
+                core.raw_read_16(MAP + 6, -1) as i16
+            ),
+            core.frame_counter()
+        ));
         dbg_line(&format!("ds_tilt cam: cursor {cursor:?} cam_px {cam_px:?} look {look:?} in_window {in_window} panned {panned} effects {effects_up} -> ({fx:.3}, {fy:.3})"));
     }
     let cam = Cam::new(fx + cp().bias.0, fy + cp().bias.1);
@@ -2277,7 +2531,12 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 if ground.tile(mx, my) != 0x193 {
                     continue;
                 }
-                for &(dx, dy, w, h, tile) in &[(-16, -16, 32, 32, 374u16), (16, -16, 16, 32, 390), (-16, 16, 32, 16, 398), (16, 16, 16, 16, 406)] {
+                for &(dx, dy, w, h, tile) in &[
+                    (-16, -16, 32, 32, 374u16),
+                    (16, -16, 16, 32, 390),
+                    (-16, 16, 32, 16, 398),
+                    (16, 16, 16, 16, 406),
+                ] {
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal, w, h, false, false, false);
                     if pix.iter().all(|&p| p == 0) {
                         continue;
@@ -2304,7 +2563,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let ds_bases = crate::wasteland::ds_graphics(core);
     if ds_bases {
         let base_cell = |o: &Obj| {
-            let (mx, my) = ((o.x + cam_px.0 + 8).div_euclid(16), (o.y + o.h + cam_px.1 - 1).div_euclid(16));
+            let (mx, my) = (
+                (o.x + cam_px.0 + 8).div_euclid(16),
+                (o.y + o.h + cam_px.1 - 1).div_euclid(16),
+            );
             mx >= 0 && my >= 0 && mx < ground.w && my < ground.h && is_base(ground.tile(mx, my))
         };
         objs.retain(|o| !(o.class == Class::Billboard && o.pri == 3 && base_cell(o)));
@@ -2317,11 +2579,17 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 if !is_base(t) {
                     continue;
                 }
-                let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else { continue };
+                let Ok(i) = crate::ds_plans::PLANS.binary_search_by_key(&t, |p| p.0) else {
+                    continue;
+                };
                 for (k, &(dx, dy, w, h, tile, pal, hf, vf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
                     let (tile, pal, (hf, vf)) = cache.1.get(&(t, k as u8)).copied().unwrap_or((tile, pal, (hf, vf)));
                     let fp = FOG_PAL.load(Ordering::Relaxed);
-                    let pal = if ground.fogged(mx, my) && fp != u32::MAX { fp as u8 } else { pal };
+                    let pal = if ground.fogged(mx, my) && fp != u32::MAX {
+                        fp as u8
+                    } else {
+                        pal
+                    };
                     let (w, h) = (w as i32, h as i32);
                     let pix = obj_pixels_ro(&v, one_d, tile as usize, pal as usize, w, h, hf, vf, false);
                     objs.push(Obj {
@@ -2346,10 +2614,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     const DM: i32 = 144;
     const DW: usize = W + 2 * DM as usize;
     let mut decal = vec![0u16; DW * (H + 2 * DM as usize)];
-    for o in objs
-        .iter()
-        .filter(|o| (o.class == Class::Ground || is_obelisk_part(o)) && !(cursor_shown && is_cursor_piece(o)) && !(ring_shown && is_ring_piece(o)))
-    {
+    for o in objs.iter().filter(|o| {
+        (o.class == Class::Ground || is_obelisk_part(o))
+            && !(cursor_shown && is_cursor_piece(o))
+            && !(ring_shown && is_ring_piece(o))
+    }) {
         for y in 0..o.h {
             let sy = o.y + y;
             if !(-DM..H as i32 + DM).contains(&sy) {
@@ -2381,20 +2650,36 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     };
     // The console's tint on the cells the unit can reach is the move range; with none there (a target choice: the
     // table is stale) the tinted cells are an attack range already.
-    let move_stage = tint.is_some() && reach_origin(core, ground.w, ground.h).is_some()
+    let move_stage = tint.is_some()
+        && reach_origin(core, ground.w, ground.h).is_some()
         && layers[0].iter().enumerate().any(|(i, &t)| {
-            let (cx, cy) = (((i % W) as i32 + cam_px.0).div_euclid(16), ((i / W) as i32 + cam_px.1).div_euclid(16));
-            t != 0 && cx >= 0 && cy >= 0 && cx < ground.w && cy < ground.h && reach[(cy * ground.w + cx) as usize] != 0xff
+            let (cx, cy) = (
+                ((i % W) as i32 + cam_px.0).div_euclid(16),
+                ((i / W) as i32 + cam_px.1).div_euclid(16),
+            );
+            t != 0
+                && cx >= 0
+                && cy >= 0
+                && cx < ground.w
+                && cy < ground.h
+                && reach[(cy * ground.w + cx) as usize] != 0xff
         });
     // The cells it can attack beyond them, in pink.
-    let pink = if move_stage { attack_cells(core, ground.w, ground.h) } else { std::collections::HashMap::new() };
+    let pink = if move_stage {
+        attack_cells(core, ground.w, ground.h)
+    } else {
+        std::collections::HashMap::new()
+    };
 
     // A menu that covers the map with a backing of its own (the build menu at a factory, airport or port, the Intel, Options and unit
     // lists ...) is drawn on the unit layers; the console's picture is kept whole, or the tilted ground would show through it.
     {
         let covered = (0..W * H).filter(|&i| layers[1][i] != 0 || layers[2][i] != 0).count();
         if covered * 5 > W * H * 2 || crate::tag_ui::build_menu_up(core) {
-            { skip_log(line!()); return None; }
+            {
+                skip_log(line!());
+                return None;
+            }
         }
     }
 
@@ -2405,7 +2690,18 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // the map's RAM, the banner is the console's own pixels over it).
     let bg3_parked = (bgs[3].hofs - cam_px.0).abs() > 16 || (bgs[3].vofs - cam_px.1).abs() > 16;
     if bg3_parked && std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
-        dbg_line(&format!("ds_tilt bg3 parked cam={:?} bg3=({},{}) bg2=({},{}) bg1=({},{}) bg0=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs, bgs[1].hofs, bgs[1].vofs, bgs[0].hofs, bgs[0].vofs));
+        dbg_line(&format!(
+            "ds_tilt bg3 parked cam={:?} bg3=({},{}) bg2=({},{}) bg1=({},{}) bg0=({},{})",
+            cam_px,
+            bgs[3].hofs,
+            bgs[3].vofs,
+            bgs[2].hofs,
+            bgs[2].vofs,
+            bgs[1].hofs,
+            bgs[1].vofs,
+            bgs[0].hofs,
+            bgs[0].vofs
+        ));
     }
     if !bg3_parked {
         let mut bad = 0;
@@ -2427,13 +2723,22 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
         }
         if debug_check() && bad > 0 {
-            eprintln!("ds_tilt: ground from RAM differs from BG3 at {} of {} sampled pixels", bad, seen);
+            eprintln!(
+                "ds_tilt: ground from RAM differs from BG3 at {} of {} sampled pixels",
+                bad, seen
+            );
         }
         if std::env::var_os("TANGOAW2_TILT_SKIP_LOG").is_some() {
-            dbg_line(&format!("ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})", cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs));
+            dbg_line(&format!(
+                "ds_tilt camcheck bad={bad} seen={seen} cam={:?} bg3=({},{}) bg2=({},{})",
+                cam_px, bgs[3].hofs, bgs[3].vofs, bgs[2].hofs, bgs[2].vofs
+            ));
         }
         if bad * 12 > seen && std::env::var_os("TANGOAW2_TILT_NO_GROUNDCHECK").is_none() {
-            { skip_log(line!()); return None; }
+            {
+                skip_log(line!());
+                return None;
+            }
         }
     }
 
@@ -2444,7 +2749,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // (a unit that has set off but whose moving sprite the console has not drawn yet: still on its own cell, drawn from its record, or
     // it was gone for the first frames of every move)
     static NO_RAM_MOVER: OnceLock<bool> = OnceLock::new();
-    let mover = if env_on("TANGOAW2_TILT_NO_RAM_MOVER", &NO_RAM_MOVER) { None } else { find_mover(core) };
+    let mover = if env_on("TANGOAW2_TILT_NO_RAM_MOVER", &NO_RAM_MOVER) {
+        None
+    } else {
+        find_mover(core)
+    };
     let console_mover = objs.iter().any(|o| o.class == Class::Mover);
     let setting_off = |u: &RamUnit| !console_mover && mover == Some((u.x as i32 * 16, u.y as i32 * 16));
     let mover_at_home = records.iter().any(|u| u.flags & 0x0a != 0 && setting_off(u));
@@ -2463,9 +2772,16 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let plane_off = |bg: &Bg| {
         let wrap = |d: i32| {
             let d = d.rem_euclid(512);
-            if d >= 256 { d - 512 } else { d }
+            if d >= 256 {
+                d - 512
+            } else {
+                d
+            }
         };
-        ((wrap(bg.hofs - bgs[3].hofs) + 8).div_euclid(16), (wrap(bg.vofs - bgs[3].vofs) + 8).div_euclid(16))
+        (
+            (wrap(bg.hofs - bgs[3].hofs) + 8).div_euclid(16),
+            (wrap(bg.vofs - bgs[3].vofs) + 8).div_euclid(16),
+        )
     };
     // (the peaks' and treetops' plane, BG2, holds nothing else: they are drawn from the map below; what the plane showed beyond them
     // was peaks put in the wrong cells while it was parked)
@@ -2485,11 +2801,12 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     (0..16).any(|k| {
                         let (x, y) = (sx0 + k, sy0 + k);
                         (0..W as i32).contains(&x) && (0..H as i32).contains(&y) && fm[y as usize * W + x as usize]
-                    }) || b == 1 && (0..4).any(|k| {
-                        let e = bg.entry(&v, cx * 2 + k % 2, cy * 2 + k / 2);
-                        let t = (e & 0x3ff) as usize;
-                        !bg.tile_blank(&v, t) && !(UNIT_TILES_LO..UNIT_TILES_HI).contains(&t)
-                    })
+                    }) || b == 1
+                        && (0..4).any(|k| {
+                            let e = bg.entry(&v, cx * 2 + k % 2, cy * 2 + k / 2);
+                            let t = (e & 0x3ff) as usize;
+                            !bg.tile_blank(&v, t) && !(UNIT_TILES_LO..UNIT_TILES_HI).contains(&t)
+                        })
                 } {
                     continue;
                 }
@@ -2560,7 +2877,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                                         if u.mirrored { "mirrored" } else { "as stored" }
                                     ));
                                 }
-                                let tiles = if mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
+                                let tiles = if mirrored {
+                                    [u.base + 1, u.base, u.base + 3, u.base + 2]
+                                } else {
+                                    [u.base, u.base + 1, u.base + 2, u.base + 3]
+                                };
                                 for (k, &t) in tiles.iter().enumerate() {
                                     let e = bg.entry(&v, cx * 2 + (k as i32 % 2), cy * 2 + (k as i32 / 2));
                                     if e & 0x3ff == t {
@@ -2587,10 +2908,23 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     // it does the ground they stand on.
                     if tint.is_some() && mx >= 0 && my >= 0 && mx < ground.w && my < ground.h {
                         let on = reach[(my * ground.w + mx) as usize] != 0xff;
-                        let sample = layers[0].get(((sy0 + 8).max(0) as usize) * W + (sx0 + 8).max(0) as usize).copied().unwrap_or(0);
+                        let sample = layers[0]
+                            .get(((sy0 + 8).max(0) as usize) * W + (sx0 + 8).max(0) as usize)
+                            .copied()
+                            .unwrap_or(0);
                         let t = match pink.get(&(mx, my)) {
                             Some(&q) => q,
-                            None => if on { if sample != 0 && !move_stage { sample } else { 0x7fff } } else { 0 },
+                            None => {
+                                if on {
+                                    if sample != 0 && !move_stage {
+                                        sample
+                                    } else {
+                                        0x7fff
+                                    }
+                                } else {
+                                    0
+                                }
+                            }
                         };
                         for (i, p) in pix.iter_mut().enumerate().filter(|(_, p)| **p != 0) {
                             *p = range_look(*p, t, i as i32 % 16, i as i32 / 16, true);
@@ -2646,16 +2980,32 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // Peaks and treetops, from the map: every cell in view whose cell below is a mountain or a wood.
     for my in map_y0 - 1..=map_y0 + 10 {
         for mx in map_x0 - 1..=map_x0 + 15 {
-            let Some(up) = ground.upper_pixels(mx, my) else { continue };
+            let Some(up) = ground.upper_pixels(mx, my) else {
+                continue;
+            };
             let mut pix: Vec<u16> = up.to_vec();
             let (sx0, sy0) = (mx * 16 - cam_px.0, my * 16 - cam_px.1);
             if tint.is_some() && mx >= 0 && my >= 0 && mx < ground.w && my < ground.h {
                 let on = reach[(my * ground.w + mx) as usize] != 0xff;
                 let (qx, qy) = (sx0 + 8, sy0 + 8);
-                let sample = if (0..W as i32).contains(&qx) && (0..H as i32).contains(&qy) { layers[0][qy as usize * W + qx as usize] } else { 0 };
+                let sample = if (0..W as i32).contains(&qx) && (0..H as i32).contains(&qy) {
+                    layers[0][qy as usize * W + qx as usize]
+                } else {
+                    0
+                };
                 let t = match pink.get(&(mx, my)) {
                     Some(&q) => q,
-                    None => if on { if sample != 0 && !move_stage { sample } else { 0x7fff } } else { 0 },
+                    None => {
+                        if on {
+                            if sample != 0 && !move_stage {
+                                sample
+                            } else {
+                                0x7fff
+                            }
+                        } else {
+                            0
+                        }
+                    }
                 };
                 for (i, p) in pix.iter_mut().enumerate().filter(|(_, p)| **p != 0) {
                     *p = range_look(*p, t, i as i32 % 16, i as i32 / 16, true);
@@ -2701,17 +3051,20 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 }
                 let got: Vec<u16> = (0..4)
                     // (the console's plane cell of a map cell: its place in the window
-                        // plus where the plane's scroll puts the window)
-                        .map(|k| {
-                            bgs[1].entry(
-                                &v,
-                                2 * ((mx - map_x0 + ground_cx0) & 15) + k % 2,
-                                2 * ((my - map_y0 + ground_cy0) & 15) + k / 2,
-                            )
-                        })
+                    // plus where the plane's scroll puts the window)
+                    .map(|k| {
+                        bgs[1].entry(
+                            &v,
+                            2 * ((mx - map_x0 + ground_cx0) & 15) + k % 2,
+                            2 * ((my - map_y0 + ground_cy0) & 15) + k / 2,
+                        )
+                    })
                     .collect();
                 let drawn = got.iter().any(|&e| !bgs[1].tile_blank(&v, (e & 0x3ff) as usize));
-                let want = cells.get(&(mx, my)).filter(|_| !ground.fogged(mx, my)).and_then(|u| u.entries());
+                let want = cells
+                    .get(&(mx, my))
+                    .filter(|_| !ground.fogged(mx, my))
+                    .and_then(|u| u.entries());
                 if drawn || want.is_some() {
                     checked += 1;
                 }
@@ -2734,7 +3087,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                             ground.fogged(mx, my),
                             cells
                                 .get(&(mx, my))
-                                .map(|u| format!("kind {} flags {:02x} hp {} army {} colour {} country {} raw {:02x?}", u.kind, u.flags, u.hp, u.army, u.colour, u.country, u.raw))
+                                .map(|u| format!(
+                                    "kind {} flags {:02x} hp {} army {} colour {} country {} raw {:02x?}",
+                                    u.kind, u.flags, u.hp, u.army, u.colour, u.country, u.raw
+                                ))
                                 .unwrap_or_default()
                         ));
                     }
@@ -2769,7 +3125,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         };
         let bob = {
             let d = (bgs[1].vofs - bgs[3].vofs).rem_euclid(512);
-            if d < 16 { d } else { 0 }
+            if d < 16 {
+                d
+            } else {
+                0
+            }
         };
         // A hidden unit (a dived Sub, a hidden Stealth) is shown, as the console shows it, only to its own side and to a side with a
         // unit next to it. The side looking is the army moving if a human plays it, else the humans'.
@@ -2781,13 +3141,18 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             vec![team(moving)]
         } else {
             let h: Vec<u8> = (1..=5u8).filter(|&a| human(a)).map(team).collect();
-            if h.is_empty() { vec![team(moving)] } else { h }
+            if h.is_empty() {
+                vec![team(moving)]
+            } else {
+                h
+            }
         };
         let hidden_from_view = |u: &RamUnit| {
             u.flags & 0x20 != 0
                 && !viewers.contains(&team(u.army))
                 && !records.iter().any(|o| {
-                    (o.x as i32 - u.x as i32).abs() + (o.y as i32 - u.y as i32).abs() == 1 && viewers.contains(&team(o.army))
+                    (o.x as i32 - u.x as i32).abs() + (o.y as i32 - u.y as i32).abs() == 1
+                        && viewers.contains(&team(o.army))
                 })
         };
         for u in records.iter() {
@@ -2813,7 +3178,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             }
             let art = ds_unit_art(&v, &bgs[1], u.kind, u.base, u.mirrored, u.bank);
             if art.is_some() {
-                let tiles = if u.mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
+                let tiles = if u.mirrored {
+                    [u.base + 1, u.base, u.base + 3, u.base + 2]
+                } else {
+                    [u.base, u.base + 1, u.base + 2, u.base + 3]
+                };
                 for (k, &t) in tiles.iter().enumerate() {
                     if entries[k] & 0x3ff == t {
                         clear_quarter(&mut pix, k);
@@ -2828,7 +3197,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         continue;
                     }
                     let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
-                    let filled = (0..8usize).flat_map(|y| (0..8usize).map(move |x| (x, y))).filter(|&(x, y)| pix[(qy + y) * 16 + qx + x] != 0).count();
+                    let filled = (0..8usize)
+                        .flat_map(|y| (0..8usize).map(move |x| (x, y)))
+                        .filter(|&(x, y)| pix[(qy + y) * 16 + qx + x] != 0)
+                        .count();
                     if filled > 58 {
                         clear_quarter(&mut pix, k);
                     }
@@ -2838,7 +3210,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             let art_here = art.is_some();
             if let Some(a) = art {
                 if debug_check() {
-                    dbg_line(&format!("ds_tilt: unit art: Dual Strike's 32 x 32 at ({ux}, {uy}) from its record"));
+                    dbg_line(&format!(
+                        "ds_tilt: unit art: Dual Strike's 32 x 32 at ({ux}, {uy}) from its record"
+                    ));
                 }
                 boards.push(Billboard {
                     pix: a,
@@ -2916,9 +3290,9 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 for (k, &(dx, dy, w, h, pt, pp, _phf, _pvf)) in crate::ds_plans::PLANS[i].1.iter().enumerate() {
                     let (px, py) = (mx * 16 - cam_px.0 + dx as i32, my * 16 - cam_px.1 + dy as i32);
                     let on_screen = px + w as i32 > 0 && py + h as i32 > 0 && px < W as i32 && py < H as i32;
-                    let found = objs.iter().find(|o| {
-                        o.class == Class::Billboard && (o.x, o.y, o.w, o.h) == (px, py, w as i32, h as i32)
-                    });
+                    let found = objs
+                        .iter()
+                        .find(|o| o.class == Class::Billboard && (o.x, o.y, o.w, o.h) == (px, py, w as i32, h as i32));
                     if found.is_some() {
                         seen.push((t, k as u8));
                     } else if on_screen && !ground.fogged(mx, my) {
@@ -2982,7 +3356,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                         // Not drawn by the console yet: the sprite plan's own tiles (the
                         // loader's slots are the same in every mission; the palette may
                         // be another one until the console shows one).
-                        let pal = if pal == 13 { STRUCT_PAL.load(Ordering::Relaxed) as u8 } else { pal };
+                        let pal = if pal == 13 {
+                            STRUCT_PAL.load(Ordering::Relaxed) as u8
+                        } else {
+                            pal
+                        };
                         // (With a Volcano in the mission the loader puts the Factory's
                         // pictures at 786, 818 and 826 instead of 304, 336 and 344.)
                         let tile = if volcano_here && t == 0x18d {
@@ -3041,29 +3419,62 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                 // (the console's pieces are on screen, and a few wrapped round its 512 pixels: the ends kept are the outermost on screen)
                 let lim = if across { W as i32 } else { H as i32 };
                 let on: Vec<&&Obj> = ps.iter().filter(|o| along(o) > -32 && along(o) < lim).collect();
-                let (Some(first), Some(last)) = (on.first(), on.last()) else { continue };
+                let (Some(first), Some(last)) = (on.first(), on.last()) else {
+                    continue;
+                };
                 let (lo_end, hi_end) = if across { (-cam_px.0, mw) } else { (-cam_px.1, mh) };
                 let mut at = along(first) - 32;
                 while at + 32 > lo_end {
-                    extra.push(if across { (at, first.y, 32, 8, first.pix.clone()) } else { (first.x, at, 8, 32, first.pix.clone()) });
+                    extra.push(if across {
+                        (at, first.y, 32, 8, first.pix.clone())
+                    } else {
+                        (first.x, at, 8, 32, first.pix.clone())
+                    });
                     at -= 32;
                 }
                 let mut at = along(last) + 32;
                 while at < hi_end {
-                    extra.push(if across { (at, last.y, 32, 8, last.pix.clone()) } else { (last.x, at, 8, 32, last.pix.clone()) });
+                    extra.push(if across {
+                        (at, last.y, 32, 8, last.pix.clone())
+                    } else {
+                        (last.x, at, 8, 32, last.pix.clone())
+                    });
                     at += 32;
                 }
             }
         }
         // (the console's wrapped pieces off screen are left out: they are drawn again above at their places)
-        objs.retain(|o| !(beam_piece(o) && (if o.w == 32 { o.x <= -32 || o.x >= W as i32 } else { o.y <= -32 || o.y >= H as i32 })));
+        objs.retain(|o| {
+            !(beam_piece(o)
+                && (if o.w == 32 {
+                    o.x <= -32 || o.x >= W as i32
+                } else {
+                    o.y <= -32 || o.y >= H as i32
+                }))
+        });
         for (x, y, w, h, pix) in extra {
-            objs.push(Obj { x, y, w, h, pri: 0, idx: usize::MAX, class: Class::Billboard, pix, tile: 0, pal: 3, flip: (false, false) });
+            objs.push(Obj {
+                x,
+                y,
+                w,
+                h,
+                pri: 0,
+                idx: usize::MAX,
+                class: Class::Billboard,
+                pix,
+                tile: 0,
+                pal: 3,
+                flip: (false, false),
+            });
         }
     }
     for o in objs
         .iter()
-        .filter(|o| matches!(o.class, Class::Billboard | Class::Pointer | Class::Mover | Class::Shade) && !is_obelisk_part(o) && !(cursor_shown && is_cursor_piece(o)))
+        .filter(|o| {
+            matches!(o.class, Class::Billboard | Class::Pointer | Class::Mover | Class::Shade)
+                && !is_obelisk_part(o)
+                && !(cursor_shown && is_cursor_piece(o))
+        })
         // (a building's sprite in the console's window: drawn from the map, where it does not drop out for a frame or lag the camera)
         .filter(|o| !(o.class == Class::Billboard && o.pri == 3 && from_map.contains(&o.tile)))
     {
@@ -3085,13 +3496,27 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             tag: None,
             // (a property's sprite 32 tall reaches into the cell above its own, where a unit may stand: the console draws the unit over
             // it, so the sprite is drawn before the units of that cell, not after)
-            lift: if o.class == Class::Billboard && o.pri == 3 && o.h >= 32 { 0.9 } else { 0.0 },
-            blend: if o.class == Class::Shade { ((v.io[0x29] & 31).min(16) as u32, ((v.io[0x29] >> 8) & 31).min(16) as u32) } else { (0, 0) },
+            lift: if o.class == Class::Billboard && o.pri == 3 && o.h >= 32 {
+                0.9
+            } else {
+                0.0
+            },
+            blend: if o.class == Class::Shade {
+                (
+                    (v.io[0x29] & 31).min(16) as u32,
+                    ((v.io[0x29] >> 8) & 31).min(16) as u32,
+                )
+            } else {
+                (0, 0)
+            },
         });
     }
     if let Some((ax, ay)) = heal_at {
         // (the pieces' places on the console's screen are from its camera word in RAM: the offset from the anchor is theirs)
-        let ram = (core.raw_read_16(MAP + 4, -1) as i16 as i32, core.raw_read_16(MAP + 6, -1) as i16 as i32);
+        let ram = (
+            core.raw_read_16(MAP + 4, -1) as i16 as i32,
+            core.raw_read_16(MAP + 6, -1) as i16 as i32,
+        );
         for o in objs.iter().filter(|o| o.class == Class::Effect) {
             boards.push(Billboard {
                 pix: o.pix.clone(),
@@ -3116,8 +3541,18 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // game's record of the move, with the pieces and facing the console last showed.
     // (`TANGOAW2_TILT_NO_RAM_MOVER=1` leaves it out, for a test's comparison)
     if std::env::var_os("TANGOAW2_TILT_CAM_LOG").is_some() {
-        let off: Vec<_> = records.iter().filter(|u| u.flags & 0x0e != 0).map(|u| (u.id, u.flags, u.x, u.y)).collect();
-        dbg_line(&format!("ds_tilt mover: ram {:?} console_mover {} seen {} off {:?}", mover, objs.iter().any(|o| o.class == Class::Mover), MOVER_SEEN.lock().unwrap().is_some(), off));
+        let off: Vec<_> = records
+            .iter()
+            .filter(|u| u.flags & 0x0e != 0)
+            .map(|u| (u.id, u.flags, u.x, u.y))
+            .collect();
+        dbg_line(&format!(
+            "ds_tilt mover: ram {:?} console_mover {} seen {} off {:?}",
+            mover,
+            objs.iter().any(|o| o.class == Class::Mover),
+            MOVER_SEEN.lock().unwrap().is_some(),
+            off
+        ));
     }
     {
         let mut seen = MOVER_SEEN.lock().unwrap();
@@ -3183,7 +3618,10 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     const SHADOW_DARK: f32 = 0.12;
     let (rl, rr, rt, rb) = cam.reach();
     let (su0, sv0) = ((cam.cu - rl - 1.0).floor(), (cam.cv - rt - 1.0).floor());
-    let (sw, sh) = (((rl + rr + 2.0) / SHADOW_STEP) as usize + 4, ((rt + rb + 2.0) / SHADOW_STEP) as usize + 4);
+    let (sw, sh) = (
+        ((rl + rr + 2.0) / SHADOW_STEP) as usize + 4,
+        ((rt + rb + 2.0) / SHADOW_STEP) as usize + 4,
+    );
     let mut shadow = vec![0f32; sw * sh];
     for j in 0..sh {
         let v = sv0 + j as f32 * SHADOW_STEP;
@@ -3242,102 +3680,108 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     let tall: Vec<bool> = (0..(ground.w * ground.h) as usize).map(|i| ground.is_tall(i)).collect();
     let lift = cp().tall_lift;
     run_in_pool(|| {
-    map.par_chunks_mut(ow).enumerate().for_each(|(y, row)| {
-        // (Along a row the ground's v and the scale are constant; u runs on.)
-        let yy = (y as f32 + 0.5) / sf;
-        let (u_mid, vv) = cam.unproject(cp().cx, yy);
-        let (u_edge, _) = cam.unproject(cp().cx + 1.0, yy);
-        let du = u_edge - u_mid;
-        let gy = (vv * 16.0).floor() as i32;
-        let sy = gy - cam_px.1;
-        // (the ground's pixel column of the row's first output pixel, and how far the next is)
-        let g0 = (u_mid + du * (0.5 / sf - cp().cx)) * 16.0;
-        let gstep = du * 16.0 / sf;
-        let lifted = lift != 0 && gy + lift < ground.h * 16;
-        let (cy, cy2) = (gy >> 4, (gy + lift) >> 4);
-        // (a row wholly inside the map's cells takes the quick way; the rest, the reflected edges, the general one)
-        let inside_row = (0..ground.h).contains(&cy) && (!lifted || (0..ground.h).contains(&cy2));
-        let mut shade_here = 0.0f32;
-        let mut cur = (usize::MAX, [0u16; 256]);
-        for (x, out) in row.iter_mut().enumerate() {
-            let gf = g0 + gstep * x as f32;
-            let gx = gf.floor() as i32;
-            let cx = gx >> 4;
-            let (outer, mut p) = if inside_row && (0..ground.w).contains(&cx) {
-                let (mut ci, mut ly) = ((cy * ground.w + cx) as usize, (gy & 15) as usize);
-                if lifted {
-                    let c2 = (cy2 * ground.w + cx) as usize;
-                    if tall[c2] {
-                        (ci, ly) = (c2, ((gy + lift) & 15) as usize);
+        map.par_chunks_mut(ow).enumerate().for_each(|(y, row)| {
+            // (Along a row the ground's v and the scale are constant; u runs on.)
+            let yy = (y as f32 + 0.5) / sf;
+            let (u_mid, vv) = cam.unproject(cp().cx, yy);
+            let (u_edge, _) = cam.unproject(cp().cx + 1.0, yy);
+            let du = u_edge - u_mid;
+            let gy = (vv * 16.0).floor() as i32;
+            let sy = gy - cam_px.1;
+            // (the ground's pixel column of the row's first output pixel, and how far the next is)
+            let g0 = (u_mid + du * (0.5 / sf - cp().cx)) * 16.0;
+            let gstep = du * 16.0 / sf;
+            let lifted = lift != 0 && gy + lift < ground.h * 16;
+            let (cy, cy2) = (gy >> 4, (gy + lift) >> 4);
+            // (a row wholly inside the map's cells takes the quick way; the rest, the reflected edges, the general one)
+            let inside_row = (0..ground.h).contains(&cy) && (!lifted || (0..ground.h).contains(&cy2));
+            let mut shade_here = 0.0f32;
+            let mut cur = (usize::MAX, [0u16; 256]);
+            for (x, out) in row.iter_mut().enumerate() {
+                let gf = g0 + gstep * x as f32;
+                let gx = gf.floor() as i32;
+                let cx = gx >> 4;
+                let (outer, mut p) = if inside_row && (0..ground.w).contains(&cx) {
+                    let (mut ci, mut ly) = ((cy * ground.w + cx) as usize, (gy & 15) as usize);
+                    if lifted {
+                        let c2 = (cy2 * ground.w + cx) as usize;
+                        if tall[c2] {
+                            (ci, ly) = (c2, ((gy + lift) & 15) as usize);
+                        }
                     }
-                }
-                if cur.0 != ci {
-                    cur = (ci, *ground.cell_ref(ci));
-                }
-                (None, cur.1[ly * 16 + (gx & 15) as usize])
-            } else if let Some(c) = ground.outside(gx, gy) {
-                (Some(c), c)
-            } else {
-                let (mut ci, mut lx, mut ly) = ground.locate(gx, gy);
-                if lifted {
-                    let (c2, x2, y2) = ground.locate(gx, gy + lift);
-                    if ground.is_tall(c2) {
-                        (ci, lx, ly) = (c2, x2, y2);
+                    if cur.0 != ci {
+                        cur = (ci, *ground.cell_ref(ci));
                     }
+                    (None, cur.1[ly * 16 + (gx & 15) as usize])
+                } else if let Some(c) = ground.outside(gx, gy) {
+                    (Some(c), c)
+                } else {
+                    let (mut ci, mut lx, mut ly) = ground.locate(gx, gy);
+                    if lifted {
+                        let (c2, x2, y2) = ground.locate(gx, gy + lift);
+                        if ground.is_tall(c2) {
+                            (ci, lx, ly) = (c2, x2, y2);
+                        }
+                    }
+                    if cur.0 != ci {
+                        cur = (ci, *ground.cell_ref(ci));
+                    }
+                    (None, cur.1[ly * 16 + lx])
+                };
+                // (the console has put its ground out, as the Laser's firing does, by drawing none of BG3: the backdrop's colour)
+                let mut p = p;
+                if ground_dark
+                    && !(inside_row && (0..ground.w).contains(&cx) && ground.is_tall((cy * ground.w + cx) as usize))
+                {
+                    p = backdrop;
                 }
-                if cur.0 != ci {
-                    cur = (ci, *ground.cell_ref(ci));
+                if x % shade_step == 0 {
+                    shade_here = shade(gf / 16.0, vv);
                 }
-                (None, cur.1[ly * 16 + lx])
-            };
-            // (the console has put its ground out, as the Laser's firing does, by drawing none of BG3: the backdrop's colour)
-            let mut p = p;
-            if ground_dark && !(inside_row && (0..ground.w).contains(&cx) && ground.is_tall((cy * ground.w + cx) as usize)) {
-                p = backdrop;
-            }
-            if x % shade_step == 0 {
-                shade_here = shade(gf / 16.0, vv);
-            }
-            if shade_here > 0.0 {
-                let k = 1.0 - SHADOW_DARK * shade_here;
-                let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k + 0.5) as u32;
-                p = 0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16;
-            }
-            // The console's overlays, where it drew them.
-            let sx = gx - cam_px.0;
-            if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
-                let i = sy as usize * W + sx as usize;
-                if tint.is_some() && outer.is_none() {
-                    let mut t = layers[0][i];
+                if shade_here > 0.0 {
+                    let k = 1.0 - SHADOW_DARK * shade_here;
+                    let ch = |s: u32| (((p as u32 >> s) & 31) as f32 * k + 0.5) as u32;
+                    p = 0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16;
+                }
+                // The console's overlays, where it drew them.
+                let sx = gx - cam_px.0;
+                if (0..W as i32).contains(&sx) && (0..H as i32).contains(&sy) {
+                    let i = sy as usize * W + sx as usize;
+                    if tint.is_some() && outer.is_none() {
+                        let mut t = layers[0][i];
+                        let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
+                        if t != 0 && move_stage && cx >= 0 && cy >= 0 && cx < ground.w && cy < ground.h {
+                            // (a move cell's tint is the move glow's whatever colour the console gave it)
+                            t = if reach[(cy * ground.w + cx) as usize] == 0xff {
+                                ATTACK_TINT
+                            } else {
+                                0x7fff
+                            };
+                        }
+                        if let Some(&q) = pink.get(&(cx, cy)) {
+                            t = q;
+                        }
+                        p = range_look(p, t, gx.rem_euclid(16), gy.rem_euclid(16), false);
+                    }
+                } else if tint.is_some() && outer.is_none() {
                     let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
-                    if t != 0 && move_stage && cx >= 0 && cy >= 0 && cx < ground.w && cy < ground.h {
-                        // (a move cell's tint is the move glow's whatever colour the console gave it)
-                        t = if reach[(cy * ground.w + cx) as usize] == 0xff { ATTACK_TINT } else { 0x7fff };
-                    }
-                    if let Some(&q) = pink.get(&(cx, cy)) {
-                        t = q;
-                    }
+                    let on = cx >= 0
+                        && cy >= 0
+                        && cx < ground.w
+                        && cy < ground.h
+                        && reach[(cy * ground.w + cx) as usize] != 0xff;
+                    let t = pink.get(&(cx, cy)).copied().unwrap_or(if on { 0x7fff } else { 0 });
                     p = range_look(p, t, gx.rem_euclid(16), gy.rem_euclid(16), false);
                 }
-            } else if tint.is_some() && outer.is_none() {
-                let (cx, cy) = (gx.div_euclid(16), gy.div_euclid(16));
-                let on = cx >= 0
-                    && cy >= 0
-                    && cx < ground.w
-                    && cy < ground.h
-                    && reach[(cy * ground.w + cx) as usize] != 0xff;
-                let t = pink.get(&(cx, cy)).copied().unwrap_or(if on { 0x7fff } else { 0 });
-                p = range_look(p, t, gx.rem_euclid(16), gy.rem_euclid(16), false);
-            }
-            if (-DM..W as i32 + DM).contains(&sx) && (-DM..H as i32 + DM).contains(&sy) {
-                let d = decal[(sy + DM) as usize * DW + (sx + DM) as usize];
-                if d != 0 {
-                    p = d;
+                if (-DM..W as i32 + DM).contains(&sx) && (-DM..H as i32 + DM).contains(&sy) {
+                    let d = decal[(sy + DM) as usize * DW + (sx + DM) as usize];
+                    if d != 0 {
+                        p = d;
+                    }
                 }
+                *out = p;
             }
-            *out = p;
-        }
-    });
+        });
     });
     let t_ground = t0.elapsed();
     let mut placed = Vec::with_capacity(boards.len());
@@ -3346,7 +3790,11 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
         let sc = cell / 16.0;
         // (an upright mark keeps the console's pixel size, growing only once a cell is bigger than 16 pixels)
         let up = bb.upright && ss > 1;
-        let (osc, ssc) = if up { (sc.max(1.0), sc.max(1.0)) } else { (sc, sc * bb.scale) };
+        let (osc, ssc) = if up {
+            (sc.max(1.0), sc.max(1.0))
+        } else {
+            (sc, sc * bb.scale)
+        };
         // (in output pixels from here on)
         // (a picture moves by whole output pixels at one scale between its depth's steps, so it translates as a rigid piece and does not
         // shimmer: with a fractional place and scale each step of the camera duplicated or dropped other rows and columns of it)
@@ -3361,7 +3809,14 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             // (a test finds a unit's picture on the screen by its cell: `fu`, `fv` are its foot)
             dbg_line(&format!(
                 "ds_tilt: board {:.2} {:.2} {}x{} at ({:.0}, {:.0}) to ({:.0}, {:.0})",
-                bb.fu, bb.fv, bb.w, bb.h, left / sf, top / sf, right / sf, bottom / sf
+                bb.fu,
+                bb.fv,
+                bb.w,
+                bb.h,
+                left / sf,
+                top / sf,
+                right / sf,
+                bottom / sf
             ));
         }
         if let (true, Some((cx, cy, low))) = (debug_check(), bb.tag) {
@@ -3378,49 +3833,77 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
             ));
         }
         if std::env::var_os("TANGOAW2_TILT_BOARD_LOG").is_some() {
-            let white = bb.pix.iter().filter(|&&p| p != 0 && ((p >> 10) & 31) >= 24 && ((p >> 5) & 31) >= 22 && (p & 31) >= 22).count();
-            dbg_line(&format!("ds_tilt: bb foot ({:.2}, {:.2}) {}x{} rank {} last {} tag {:?} whitish {} at ({:.0}, {:.0})", bb.fu, bb.fv, bb.w, bb.h, bb.rank, bb.last, bb.tag, white, left / sf, top / sf));
+            let white = bb
+                .pix
+                .iter()
+                .filter(|&&p| p != 0 && ((p >> 10) & 31) >= 24 && ((p >> 5) & 31) >= 22 && (p & 31) >= 22)
+                .count();
+            dbg_line(&format!(
+                "ds_tilt: bb foot ({:.2}, {:.2}) {}x{} rank {} last {} tag {:?} whitish {} at ({:.0}, {:.0})",
+                bb.fu,
+                bb.fv,
+                bb.w,
+                bb.h,
+                bb.rank,
+                bb.last,
+                bb.tag,
+                white,
+                left / sf,
+                top / sf
+            ));
         }
         placed.push((bb, left, top, ssc, x0, x1, y0, y1));
     }
     // (drawn in bands of rows on all cores, each board in order within a band)
     const BAND: usize = 16;
     run_in_pool(|| {
-    map.par_chunks_mut(ow * BAND).enumerate().for_each(|(band, chunk)| {
-        let (by0, by1) = ((band * BAND) as i32, ((band * BAND) + chunk.len() / ow) as i32);
-        for &(bb, left, top, ssc, x0, x1, y0, y1) in placed.iter() {
-            for y in y0.max(by0)..y1.min(by1) {
-                let v = ((y as f32 + 0.5 - top) / ssc).floor() as i32;
-                if !(0..bb.h).contains(&v) {
-                    continue;
-                }
-                for x in x0..x1 {
-                    let u = ((x as f32 + 0.5 - left) / ssc).floor() as i32;
-                    if !(0..bb.w).contains(&u) {
+        map.par_chunks_mut(ow * BAND).enumerate().for_each(|(band, chunk)| {
+            let (by0, by1) = ((band * BAND) as i32, ((band * BAND) + chunk.len() / ow) as i32);
+            for &(bb, left, top, ssc, x0, x1, y0, y1) in placed.iter() {
+                for y in y0.max(by0)..y1.min(by1) {
+                    let v = ((y as f32 + 0.5 - top) / ssc).floor() as i32;
+                    if !(0..bb.h).contains(&v) {
                         continue;
                     }
-                    let p = bb.pix[(v * bb.w + u) as usize];
-                    if p != 0 {
-                        let at = (y - by0) as usize * ow + x as usize;
-                        chunk[at] = if bb.blend.0 + bb.blend.1 > 0 {
-                            let d = if chunk[at] != 0 { chunk[at] } else { backdrop };
-                            let ch = |s: u32| ((((p as u32 >> s) & 31) * bb.blend.0 + ((d as u32 >> s) & 31) * bb.blend.1) / 16).min(31);
-                            0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16
-                        } else {
-                            p
-                        };
+                    for x in x0..x1 {
+                        let u = ((x as f32 + 0.5 - left) / ssc).floor() as i32;
+                        if !(0..bb.w).contains(&u) {
+                            continue;
+                        }
+                        let p = bb.pix[(v * bb.w + u) as usize];
+                        if p != 0 {
+                            let at = (y - by0) as usize * ow + x as usize;
+                            chunk[at] = if bb.blend.0 + bb.blend.1 > 0 {
+                                let d = if chunk[at] != 0 { chunk[at] } else { backdrop };
+                                let ch = |s: u32| {
+                                    ((((p as u32 >> s) & 31) * bb.blend.0 + ((d as u32 >> s) & 31) * bb.blend.1) / 16)
+                                        .min(31)
+                                };
+                                0x8000 | (ch(0) | ch(5) << 5 | ch(10) << 10) as u16
+                            } else {
+                                p
+                            };
+                        }
                     }
                 }
             }
-        }
-    });
+        });
     });
 
     if let (Some(art), true) = (ds_cursor, cursor_shown) {
         crate::ds_cursor::draw(&mut map, ow, oh, art, cursor, |u, v| cam.project(u, v));
     }
     if let (Some(art), true) = (ds_cursor, ring_shown) {
-        crate::ds_cursor::draw_crosshair(&mut map, ow, oh, art, cursor, None, crate::ds_cursor::next_tick(), |u, v| cam.project(u, v));
+        crate::ds_cursor::draw_crosshair(
+            &mut map,
+            ow,
+            oh,
+            art,
+            cursor,
+            None,
+            crate::ds_cursor::next_tick(),
+            |u, v| cam.project(u, v),
+        );
     }
 
     // A sandstorm (Dual Strike's fourth weather; AW2 draws no particles for it): drifting grains over
@@ -3434,33 +3917,65 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
     // (what the map does not own is the console's picture, each pixel ss x ss times)
     let mut out = vec![0u8; ow * oh * 4];
     run_in_pool(|| {
-    out.par_chunks_mut(ow * 4).enumerate().for_each(|(y, orow)| {
-        let ly = y / ss;
-        for x in 0..ow {
-            let i = ly * W + x / ss;
-            let px = &mut orow[x * 4..x * 4 + 4];
-            let p = match owner[i] {
-                _ if ly < keep_rows || ly >= keep_from => None,
-                Owner::Hud => None,
-                Owner::HudAlpha => {
-                    let (a, b) = (layers[0][i], { let q = map[y * ow + x]; if q != 0 { q } else { backdrop } });
-                    let (eva, evb) = ((v.io[0x29] & 31).min(16) as u32, ((v.io[0x29] >> 8) & 31).min(16) as u32);
-                    let ch = |sh: u32| (((a as u32 >> sh) & 31) * eva + ((b as u32 >> sh) & 31) * evb) / 16;
-                    Some(0x8000 | (ch(0).min(31) | ch(5).min(31) << 5 | ch(10).min(31) << 10) as u16)
+        out.par_chunks_mut(ow * 4).enumerate().for_each(|(y, orow)| {
+            let ly = y / ss;
+            for x in 0..ow {
+                let i = ly * W + x / ss;
+                let px = &mut orow[x * 4..x * 4 + 4];
+                let p = match owner[i] {
+                    _ if ly < keep_rows || ly >= keep_from => None,
+                    Owner::Hud => None,
+                    Owner::HudAlpha => {
+                        let (a, b) = (layers[0][i], {
+                            let q = map[y * ow + x];
+                            if q != 0 {
+                                q
+                            } else {
+                                backdrop
+                            }
+                        });
+                        let (eva, evb) = (
+                            (v.io[0x29] & 31).min(16) as u32,
+                            ((v.io[0x29] >> 8) & 31).min(16) as u32,
+                        );
+                        let ch = |sh: u32| (((a as u32 >> sh) & 31) * eva + ((b as u32 >> sh) & 31) * evb) / 16;
+                        Some(0x8000 | (ch(0).min(31) | ch(5).min(31) << 5 | ch(10).min(31) << 10) as u16)
+                    }
+                    Owner::Map => {
+                        // (a pixel the ground did not reach, at the edge of a wipe: the backdrop)
+                        let p = {
+                            let q = map[y * ow + x];
+                            if q != 0 {
+                                q
+                            } else {
+                                backdrop
+                            }
+                        };
+                        Some(if sand {
+                            sand_grain(p, (i % W) as u32, ly as u32, clock as u32)
+                        } else {
+                            p
+                        })
+                    }
+                    Owner::MapFx => Some(brightness(
+                        {
+                            let q = map[y * ow + x];
+                            if q != 0 {
+                                q
+                            } else {
+                                backdrop
+                            }
+                        },
+                        bld_mode,
+                        evy,
+                    )),
+                };
+                match p {
+                    Some(p) => px.copy_from_slice(&lut[(p & 0x7fff) as usize]),
+                    None => px.copy_from_slice(&rgba[i * 4..i * 4 + 4]),
                 }
-                Owner::Map => {
-                    // (a pixel the ground did not reach, at the edge of a wipe: the backdrop)
-                    let p = { let q = map[y * ow + x]; if q != 0 { q } else { backdrop } };
-                    Some(if sand { sand_grain(p, (i % W) as u32, ly as u32, clock as u32) } else { p })
-                }
-                Owner::MapFx => Some(brightness({ let q = map[y * ow + x]; if q != 0 { q } else { backdrop } }, bld_mode, evy)),
-            };
-            match p {
-                Some(p) => px.copy_from_slice(&lut[(p & 0x7fff) as usize]),
-                None => px.copy_from_slice(&rgba[i * 4..i * 4 + 4]),
             }
-        }
-    });
+        });
     });
     if debug_time() {
         dbg_line(&format!(
@@ -3609,11 +4124,23 @@ impl RamUnit {
 /// For the menus' Drop icon (the cargo's picture); no HP digit or marks.
 pub(crate) fn unit_picture(core: &Core, id: u8) -> Option<Vec<u16>> {
     let u = ram_units(core).into_iter().find(|u| u.id == id)?;
-    let tiles = if u.mirrored { [u.base + 1, u.base, u.base + 3, u.base + 2] } else { [u.base, u.base + 1, u.base + 2, u.base + 3] };
+    let tiles = if u.mirrored {
+        [u.base + 1, u.base, u.base + 3, u.base + 2]
+    } else {
+        [u.base, u.base + 1, u.base + 2, u.base + 3]
+    };
     let mut out = vec![0u16; 256];
     // (BG1's tiles; the army's own colours, not the greyed ones a unit that has moved wears)
     let char_base = 0x0600_0000 + ((core.raw_read_16(0x0400_000A, -1) as u32 >> 2) & 3) * 0x4000;
-    let bank = if u.five { if u.army >= 5 { 11 } else { 12 + (u.army as u32 - 1).min(3) } } else { 12 + ((u.army as u32 - 1) & 3) };
+    let bank = if u.five {
+        if u.army >= 5 {
+            11
+        } else {
+            12 + (u.army as u32 - 1).min(3)
+        }
+    } else {
+        12 + ((u.army as u32 - 1) & 3)
+    };
     for (k, &t) in tiles.iter().enumerate() {
         let mut data = [0u8; 32];
         core.raw_read_range(char_base + 32 * t as u32, -1, &mut data);
@@ -3665,9 +4192,22 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
         };
         let moved = buf[1] & 1 != 0;
         let (bank, shown_by) = if five {
-            (if moved { 9 } else if army >= 5 { 11 } else { 12 + (army as u16 - 1).min(3) }, army)
+            (
+                if moved {
+                    9
+                } else if army >= 5 {
+                    11
+                } else {
+                    12 + (army as u16 - 1).min(3)
+                },
+                army,
+            )
         } else {
-            let r2 = if moved { core.raw_read_16(0x0300_3F2C, -1) as u32 } else { 64 * (army as u32 - 1) };
+            let r2 = if moved {
+                core.raw_read_16(0x0300_3F2C, -1) as u32
+            } else {
+                64 * (army as u32 - 1)
+            };
             let idx = (r2 >> 6) & 3;
             (if moved { 11 } else { 12 + idx as u16 }, idx as u8 + 1)
         };
@@ -3689,7 +4229,8 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
                 0
             };
             // (an army wearing a skin has its own Infantry and Mech pictures: `crate::army_skin`)
-            let slot = crate::army_skin::map_slot(core, army as u32, buf[0]).unwrap_or_else(|| core.raw_read_16(slots + stride * cty + 2 * buf[0] as u32, -1));
+            let slot = crate::army_skin::map_slot(core, army as u32, buf[0])
+                .unwrap_or_else(|| core.raw_read_16(slots + stride * cty + 2 * buf[0] as u32, -1));
             0x235 + 4 * slot
         };
         let icon4 = not_ours
@@ -3699,7 +4240,10 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
         // and +0x10 are the types' own, 0 for none.)
         let low = {
             let t = crate::roster::table(core) + 0x5C * buf[0] as u32;
-            let (max_ammo, max_fuel) = (core.raw_read_8(t + 0xB, -1) as i32, core.raw_read_8(t + 0x10, -1) as i32);
+            let (max_ammo, max_fuel) = (
+                core.raw_read_8(t + 0xB, -1) as i32,
+                core.raw_read_8(t + 0x10, -1) as i32,
+            );
             let ammo = ((u16::from_le_bytes([buf[4], buf[5]]) >> 7) & 0xF) as i32;
             let fuel = (buf[6] & 0x7f) as i32;
             (max_ammo != 0 && ammo <= max_ammo / 3) as u8 + 2 * (max_fuel != 0 && fuel <= max_fuel / 3) as u8

@@ -39,7 +39,10 @@ fn an_older_pack_is_rebuilt_from_the_nds_in_the_folder() {
         assert!(ds_music::tag_se(se).is_some(), "{se:?}: the tag screens' sound");
     }
     for (which, allied) in [(ds_music::PowerSong::CoPower, true), (ds_music::PowerSong::Tag, false)] {
-        assert!(ds_music::power_song(which, allied).is_some(), "{which:?}: Dual Strike's power theme");
+        assert!(
+            ds_music::power_song(which, allied).is_some(),
+            "{which:?}: Dual Strike's power theme"
+        );
     }
     eprintln!(
         "pack version {old_version} -> {saved}; tag sounds: {:?}; power themes: {:?}",

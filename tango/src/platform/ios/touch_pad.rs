@@ -134,12 +134,18 @@ pub fn place(size: Size, stretch: bool) -> Placement {
         shift = Vector::new(il, it);
         let margin = il.max(ir) + pad + d + 8.0;
         let pw = (fw - 2.0 * margin).min(fh * 1.5).max(0.0);
-        let fit = Rectangle::new(Point::new((fw - pw) / 2.0, (fh - pw / 1.5) / 2.0), Size::new(pw, pw / 1.5));
+        let fit = Rectangle::new(
+            Point::new((fw - pw) / 2.0, (fh - pw / 1.5) / 2.0),
+            Size::new(pw, pw / 1.5),
+        );
         // Stretch: the full screen height, widened by at most a third (a 3:2
         // picture on a 19.5:9 phone would otherwise look squashed) and kept
         // clear of the Dynamic Island and the rounded corners, which the
         // insets cover on the sides.
-        let sw = (fh * 1.5 * STRETCH_MAX_WIDEN).min(fw - 2.0 * il.max(ir)).max(fh * 1.5).min(fw);
+        let sw = (fh * 1.5 * STRETCH_MAX_WIDEN)
+            .min(fw - 2.0 * il.max(ir))
+            .max(fh * 1.5)
+            .min(fw);
         let wide = Rectangle::new(Point::new((fw - sw) / 2.0, 0.0), Size::new(sw, fh));
         game = if stretch { wide } else { fit };
         picture = Some(game);
@@ -401,7 +407,12 @@ impl<Message> Widget<Message, iced::Theme, iced::Renderer> for TouchPad<'_, Mess
         }
         let bounds = layout.children().next().unwrap().bounds();
         match cursor.position() {
-            Some(p) if bits_at(&place(layout.bounds().size(), self.stretch), Point::new(p.x - bounds.x, p.y - bounds.y)) != 0 => {
+            Some(p)
+                if bits_at(
+                    &place(layout.bounds().size(), self.stretch),
+                    Point::new(p.x - bounds.x, p.y - bounds.y),
+                ) != 0 =>
+            {
                 mouse::Interaction::Grab
             }
             _ => mouse::Interaction::None,
@@ -477,24 +488,25 @@ fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle
             );
         };
         // Centered in `r`.
-        let label = |renderer: &mut iced::Renderer, text: &str, r: Rectangle, size: f32, font: iced::Font, held: bool| {
-            renderer.fill_text(
-                iced::advanced::Text {
-                    content: text.to_string(),
-                    bounds: r.size(),
-                    size: iced::Pixels(size),
-                    line_height: iced::widget::text::LineHeight::default(),
-                    font,
-                    align_x: iced::advanced::text::Alignment::Center,
-                    align_y: iced::alignment::Vertical::Center,
-                    shaping: iced::advanced::text::Shaping::Advanced,
-                    wrapping: iced::advanced::text::Wrapping::None,
-                },
-                r.center(),
-                label_color(held),
-                bounds,
-            );
-        };
+        let label =
+            |renderer: &mut iced::Renderer, text: &str, r: Rectangle, size: f32, font: iced::Font, held: bool| {
+                renderer.fill_text(
+                    iced::advanced::Text {
+                        content: text.to_string(),
+                        bounds: r.size(),
+                        size: iced::Pixels(size),
+                        line_height: iced::widget::text::LineHeight::default(),
+                        font,
+                        align_x: iced::advanced::text::Alignment::Center,
+                        align_y: iced::alignment::Vertical::Center,
+                        shaping: iced::advanced::text::Shaping::Advanced,
+                        wrapping: iced::advanced::text::Wrapping::None,
+                    },
+                    r.center(),
+                    label_color(held),
+                    bounds,
+                );
+            };
         let bold = iced::Font {
             weight: iced::font::Weight::Bold,
             ..crate::ui::style::DEFAULT_FONT
@@ -533,7 +545,14 @@ fn draw_controls(state: &State, renderer: &mut iced::Renderer, bounds: Rectangle
                     ] {
                         let a = arm(dx, dy);
                         quad(renderer, a, radius, state.bits & bit != 0);
-                        label(renderer, &char::from(icon).to_string(), a, cell * 0.5, icons, state.bits & bit != 0);
+                        label(
+                            renderer,
+                            &char::from(icon).to_string(),
+                            a,
+                            cell * 0.5,
+                            icons,
+                            state.bits & bit != 0,
+                        );
                     }
                 }
             }

@@ -74,7 +74,9 @@ const TABLE_ONLY: u32 = 0x0203_E3FF;
 fn in_scope(core: &Core) -> bool {
     // Versus with the pack, and a custom campaign's missions (the BH
     // Campaign): not the DS Campaign nor AW2's own campaign.
-    is_on(core) && ((crate::pvp::in_versus(core) && !crate::ds_campaign::active(core)) || (crate::ds_campaign::active(core) && !crate::ds_campaign::is_ds(core)))
+    is_on(core)
+        && ((crate::pvp::in_versus(core) && !crate::ds_campaign::active(core))
+            || (crate::ds_campaign::active(core) && !crate::ds_campaign::is_ds(core)))
 }
 
 fn hash(parts: &[u32]) -> u32 {
@@ -119,7 +121,10 @@ fn around(door_x: i32, y: i32) -> Vec<(i32, i32)> {
 /// (x, y).
 fn squares(core: &Core, army: u32, t: u8, door_x: i32, x: i32, y: i32) -> Vec<(i32, i32)> {
     if SHIPS.contains(&t) {
-        around(door_x, y).into_iter().filter(|&(sx, sy)| open(core, army, t, sx, sy)).collect()
+        around(door_x, y)
+            .into_iter()
+            .filter(|&(sx, sy)| open(core, army, t, sx, sy))
+            .collect()
     } else if open(core, army, t, x, y) {
         vec![(x, y)]
     } else {
@@ -204,7 +209,11 @@ fn at_create(core: &mut Core) {
         }
         let cost = price(core, t);
         // (the factory's units cost a quarter less than the list price: a slot buys what costs 4/3 of it)
-        let allowed = if HEAVY.contains(&t) { cost * 3 * 10 <= cap * 4 * 13 } else { cost * 3 <= cap * 4 };
+        let allowed = if HEAVY.contains(&t) {
+            cost * 3 * 10 <= cap * 4 * 13
+        } else {
+            cost * 3 <= cap * 4
+        };
         if !allowed {
             continue;
         }
@@ -213,7 +222,10 @@ fn at_create(core: &mut Core) {
             options.push((t, spots));
         }
     }
-    let recent: Vec<u8> = (0..4).map(|k| core.raw_read_8(hist + k, -1)).take_while(|&t| t != 0).collect();
+    let recent: Vec<u8> = (0..4)
+        .map(|k| core.raw_read_8(hist + k, -1))
+        .take_while(|&t| t != 0)
+        .collect();
     let started = std::time::Instant::now();
     let decision = crate::bh_smart::choose(core, army, door_x, y, &options, &HEAVY, &recent, seed);
     let micros = started.elapsed().as_micros();
@@ -226,9 +238,23 @@ fn at_create(core: &mut Core) {
         None => (table_unit, x, y),
     };
     if let Some(d) = &decision {
-        let why: Vec<String> = d.best.parts.iter().take(3).map(|p| format!("{} {:+}", p.0, p.1)).collect();
-        let pool: Vec<String> = d.pool.iter().map(|p| format!("{} {} w{}", crate::bh_smart::NAMES[p.0 as usize], p.1, p.2)).collect();
-        let next: Vec<String> = d.next.iter().map(|n| format!("{} {}", crate::bh_smart::NAMES[n.0 as usize], n.1)).collect();
+        let why: Vec<String> = d
+            .best
+            .parts
+            .iter()
+            .take(3)
+            .map(|p| format!("{} {:+}", p.0, p.1))
+            .collect();
+        let pool: Vec<String> = d
+            .pool
+            .iter()
+            .map(|p| format!("{} {} w{}", crate::bh_smart::NAMES[p.0 as usize], p.1, p.2))
+            .collect();
+        let next: Vec<String> = d
+            .next
+            .iter()
+            .map(|n| format!("{} {}", crate::bh_smart::NAMES[n.0 as usize], n.1))
+            .collect();
         log(&format!(
             "day {day} army {army} slot {slot} table {} -> {} at ({px},{py}) score {} | {} | pool {} | then {} | {} | {micros} us",
             crate::bh_smart::NAMES[table_unit as usize],
@@ -243,7 +269,10 @@ fn at_create(core: &mut Core) {
     if let Some(d) = &decision {
         if std::env::var_os("TANGOAW2_BH_LOG_ALL").is_some() {
             for (t, v, why) in &d.all {
-                log(&format!("    cand day {day} slot {slot} {} {v} | {why}", crate::bh_smart::NAMES[*t as usize]));
+                log(&format!(
+                    "    cand day {day} slot {slot} {} {v} | {why}",
+                    crate::bh_smart::NAMES[*t as usize]
+                ));
             }
         }
     }
@@ -251,7 +280,10 @@ fn at_create(core: &mut Core) {
     if decision.as_ref().is_some_and(|d| d.skip) {
         // No foot soldier where nothing needs capturing: the slot's value is saved for the next slot.
         set_bank(core, bank + slot_price);
-        log(&format!("day {day} army {army} slot {slot}: no foot soldier needed, {slot_price} saved (bank {})", (bank + slot_price).min(BANK_MAX)));
+        log(&format!(
+            "day {day} army {army} slot {slot}: no foot soldier needed, {slot_price} saved (bank {})",
+            (bank + slot_price).min(BANK_MAX)
+        ));
         core.gba_mut().cpu_mut().set_thumb_pc(NEXT_SLOT);
         return;
     }
@@ -270,7 +302,10 @@ fn at_create(core: &mut Core) {
     // reef, a ship (the table's too) only where its chart lets it in. A
     // Piperunner (never the factory's) is dropped as well.
     let on_water = (!SHIPS.contains(&t) && matches!(terrain(core, px, py), Some(SEA) | Some(REEF)))
-        || (decision.is_none() && (t == crate::roster::PIPERUNNER || t == OOZIUM || (SHIPS.contains(&t) && crate::oozium::move_cost(core, army, t, px, py) == NO_ENTRY)));
+        || (decision.is_none()
+            && (t == crate::roster::PIPERUNNER
+                || t == OOZIUM
+                || (SHIPS.contains(&t) && crate::oozium::move_cost(core, army, t, px, py) == NO_ENTRY)));
     let cpu = core.gba_mut().cpu_mut();
     if on_water {
         cpu.set_thumb_pc(NEXT_SLOT);

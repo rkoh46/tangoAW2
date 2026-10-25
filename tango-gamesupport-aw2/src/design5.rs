@@ -358,7 +358,9 @@ const ALL_HQS: u8 = 0x1F;
 /// when all five do (the army count is the HQ count; a Black Hole property
 /// or unit alone does not make one).
 fn hq_owners(tiles: impl Iterator<Item = u16>) -> u8 {
-    tiles.fold(0, |m, t| m | HQ_TILES.iter().position(|&h| h == t).map_or(0, |k| 1 << k))
+    tiles.fold(0, |m, t| {
+        m | HQ_TILES.iter().position(|&h| h == t).map_or(0, |k| 1 << k)
+    })
 }
 
 pub fn editor_tick(core: &mut Core) {
@@ -387,7 +389,11 @@ pub fn editor_tick(core: &mut Core) {
     }
     // The five-army mark goes with the map when it is saved.
     let (w, h) = map_size(core);
-    let owners = hq_owners((0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| tile_at(core, x, y)));
+    let owners = hq_owners(
+        (0..h)
+            .flat_map(|y| (0..w).map(move |x| (x, y)))
+            .map(|(x, y)| tile_at(core, x, y)),
+    );
     let mark = if owners == ALL_HQS { crate::five::DESIGN_FIVE } else { 0 };
     if core.raw_read_8(MARK, -1) != mark {
         core.raw_write_8(MARK, -1, mark);

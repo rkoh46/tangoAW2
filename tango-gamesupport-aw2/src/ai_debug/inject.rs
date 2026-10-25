@@ -67,17 +67,37 @@ pub struct Injector {
 
 impl Injector {
     pub fn new(now: Instant) -> Self {
-        Injector { queue: VecDeque::new(), done: 0, started: None, sticky: 0, last: now, carry: 0.0, active: false }
+        Injector {
+            queue: VecDeque::new(),
+            done: 0,
+            started: None,
+            sticky: 0,
+            last: now,
+            carry: 0.0,
+            active: false,
+        }
     }
 
     /// Queues keys held for `frames`, then released for six; `done` hears when both are over.
     pub fn press(&mut self, keys: u32, frames: u32, done: Option<Sender<Outcome>>) {
-        self.queue.push_back(Item { ops: VecDeque::from([Op::Hold { keys, frames: frames.max(1) }, Op::Gap { frames: 6 }]), done });
+        self.queue.push_back(Item {
+            ops: VecDeque::from([
+                Op::Hold {
+                    keys,
+                    frames: frames.max(1),
+                },
+                Op::Gap { frames: 6 },
+            ]),
+            done,
+        });
     }
 
     /// Queues the cursor walk to a cell.
     pub fn goto(&mut self, x: u16, y: u16, timeout: Duration, done: Option<Sender<Outcome>>) {
-        self.queue.push_back(Item { ops: VecDeque::from([Op::Goto { x, y, timeout }]), done });
+        self.queue.push_back(Item {
+            ops: VecDeque::from([Op::Goto { x, y, timeout }]),
+            done,
+        });
     }
 
     pub fn hold(&mut self, keys: u32) {
@@ -179,7 +199,11 @@ impl Injector {
                             }
                             // (as the pad script walks: a key for 4 frames of 12, x first)
                             let k = if cx != x {
-                                if cx < x { KEYS[4].1 } else { KEYS[5].1 }
+                                if cx < x {
+                                    KEYS[4].1
+                                } else {
+                                    KEYS[5].1
+                                }
                             } else if cy < y {
                                 KEYS[7].1
                             } else {
@@ -205,7 +229,12 @@ mod tests {
     use super::*;
 
     fn run(inj: &mut Injector, t0: Instant, frames: u32, cursor: Option<(u16, u16)>) -> Vec<u32> {
-        (1..=frames).map(|f| inj.poll(t0 + Duration::from_secs_f64(f as f64 / 60.0 + 0.0001), cursor).unwrap_or(u32::MAX)).collect()
+        (1..=frames)
+            .map(|f| {
+                inj.poll(t0 + Duration::from_secs_f64(f as f64 / 60.0 + 0.0001), cursor)
+                    .unwrap_or(u32::MAX)
+            })
+            .collect()
     }
 
     #[test]

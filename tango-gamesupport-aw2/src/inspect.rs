@@ -207,7 +207,9 @@ pub fn classify(core: &Core, _online: bool) -> (&'static str, &'static str) {
             }
             Phase::HandOff => "hand_off",
             Phase::Busy => {
-                if crate::pvp::chosen_main_item(core).is_some_and(|i| i == crate::pvp::MENU_POWER || i == crate::pvp::MENU_SUPER) {
+                if crate::pvp::chosen_main_item(core)
+                    .is_some_and(|i| i == crate::pvp::MENU_POWER || i == crate::pvp::MENU_SUPER)
+                {
                     "co_power"
                 } else {
                     "animation"
@@ -223,14 +225,22 @@ pub fn classify(core: &Core, _online: bool) -> (&'static str, &'static str) {
         return ("rules", "rules");
     }
     if crate::pvp::on_teams_screen(core) {
-        return if core.raw_read_8(rules_record(core) + 0x30, -1) == 0 { ("rules", "rules") } else { ("army_select", "army_select") };
+        return if core.raw_read_8(rules_record(core) + 0x30, -1) == 0 {
+            ("rules", "rules")
+        } else {
+            ("army_select", "army_select")
+        };
     }
     if crate::survival_ui::selecting(core) {
         return ("select_map", "select_map");
     }
     let level = crate::online::level(core);
     if online_menu_pending(core) {
-        return if level >= 2 { ("room", "room") } else { ("online_menu", "online_menu") };
+        return if level >= 2 {
+            ("room", "room")
+        } else {
+            ("online_menu", "online_menu")
+        };
     }
     if crate::branding::title_up(core) {
         return ("title", "title");
@@ -261,7 +271,10 @@ fn menu_list(core: &Core) -> Option<Vec<u8>> {
     if core.raw_read_8(MAP_MENU_STATE, -1) != 4 || core.raw_read_8(MAP_MENU_ITEMS - 1, -1) != 0xFF {
         return None;
     }
-    let items: Vec<u8> = (0..8u32).map(|r| core.raw_read_8(MAP_MENU_ITEMS + r, -1)).take_while(|&i| i != 0xFF).collect();
+    let items: Vec<u8> = (0..8u32)
+        .map(|r| core.raw_read_8(MAP_MENU_ITEMS + r, -1))
+        .take_while(|&i| i != 0xFF)
+        .collect();
     (!items.is_empty()).then_some(items)
 }
 
@@ -322,19 +335,27 @@ pub fn build_menu(core: &Core) -> Option<Value> {
     core.raw_read_range(AREA, -1, &mut b);
     let proc_at = (8..b.len() - 4).step_by(4).find(|&i| {
         let w = |o: usize| u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]]);
-        w(i) == 0x0802_DA19 && (0x0840_0000..0x0870_0000).contains(&w(i - 8)) && (0x0840_0000..0x0870_0000).contains(&w(i - 4))
+        w(i) == 0x0802_DA19
+            && (0x0840_0000..0x0870_0000).contains(&w(i - 8))
+            && (0x0840_0000..0x0870_0000).contains(&w(i - 4))
     })?;
     let base = AREA + proc_at as u32 - 8;
     let index = core.raw_read_16(base + 0x20, -1) as usize;
     let list_ptr = core.raw_read_32(LIST_POINTER, -1);
-    let list: Vec<u8> = (0..64u32).map(|k| core.raw_read_8(list_ptr + k, -1)).take_while(|&t| t != 0xFF).collect();
+    let list: Vec<u8> = (0..64u32)
+        .map(|k| core.raw_read_8(list_ptr + k, -1))
+        .take_while(|&t| t != 0xFF)
+        .collect();
     // (the cell the cursor was last on while the plain map showed: the property the menu belongs to; the game parks the cursor
     // elsewhere while a menu is up)
     let at = LAST_MAP_CURSOR.load(std::sync::atomic::Ordering::Relaxed);
     let (cx, cy) = ((at & 0xFFFF) as i32, (at >> 16) as i32);
     let h = core.raw_read_16(MAP + 2, -1) as u32;
     let class = if cy >= 0 && (cy as u32) < h && cx >= 0 {
-        core.raw_read_8(TERRAIN + core.raw_read_16(ROWS + 2 * cy as u32, -1) as u32 + cx as u32, -1) & 0x1F
+        core.raw_read_8(
+            TERRAIN + core.raw_read_16(ROWS + 2 * cy as u32, -1) as u32 + cx as u32,
+            -1,
+        ) & 0x1F
     } else {
         0
     };
@@ -345,7 +366,11 @@ pub fn build_menu(core: &Core) -> Option<Value> {
         _ => 0xFF,
     };
     let army = crate::pvp::current_army(core) as u32;
-    let funds = if (1..=5).contains(&army) { core.raw_read_32(crate::tag::player(core, army), -1) } else { 0 };
+    let funds = if (1..=5).contains(&army) {
+        core.raw_read_32(crate::tag::player(core, army), -1)
+    } else {
+        0
+    };
     let table = crate::roster::table(core);
     let mut rows = Vec::new();
     let mut cursor = 0usize;
@@ -360,7 +385,9 @@ pub fn build_menu(core: &Core) -> Option<Value> {
         let cost = core.raw_read_16(table + 0x5C * t as u32 + 6, -1) as u32 * 10;
         rows.push(json!({"id": t, "text": unit_name(t), "cost": cost, "enabled": funds >= cost}));
     }
-    Some(json!({"kind": "build", "property": property_name(class), "cursor": cursor, "item": rows.get(cursor).map(|r| r["text"].clone()), "funds": funds, "rows": rows}))
+    Some(
+        json!({"kind": "build", "property": property_name(class), "cursor": cursor, "item": rows.get(cursor).map(|r| r["text"].clone()), "funds": funds, "rows": rows}),
+    )
 }
 
 fn menu_item_name(id: u8) -> &'static str {
@@ -382,7 +409,10 @@ pub fn snapshot(core: &Core, online: bool) -> Snapshot {
     let in_battle = crate::pvp::in_battle(core) && (1..=5).contains(&crate::pvp::current_army(core));
     let main_loop = core.raw_read_32(MAIN_LOOP, -1);
     if screen == "map" {
-        LAST_MAP_CURSOR.store(core.raw_read_16(CURSOR, -1) as u32 | (core.raw_read_16(CURSOR + 2, -1) as u32) << 16, std::sync::atomic::Ordering::Relaxed);
+        LAST_MAP_CURSOR.store(
+            core.raw_read_16(CURSOR, -1) as u32 | (core.raw_read_16(CURSOR + 2, -1) as u32) << 16,
+            std::sync::atomic::Ordering::Relaxed,
+        );
     }
     let mut s = Snapshot {
         frame: core.frame_counter(),
@@ -408,7 +438,10 @@ pub fn snapshot(core: &Core, online: bool) -> Snapshot {
         width: 0,
         height: 0,
         cursor: (core.raw_read_16(CURSOR, -1), core.raw_read_16(CURSOR + 2, -1)),
-        camera: (core.raw_read_16(MAP + 4, -1) as i16, core.raw_read_16(MAP + 6, -1) as i16),
+        camera: (
+            core.raw_read_16(MAP + 4, -1) as i16,
+            core.raw_read_16(MAP + 6, -1) as i16,
+        ),
         menu: Value::Null,
         selected_unit: None,
         armies: Vec::new(),
@@ -426,7 +459,11 @@ pub fn snapshot(core: &Core, online: bool) -> Snapshot {
         s.turn_ended = crate::pvp::turn_ended(core);
         s.decided = crate::result_view::decided(core);
         s.winner = crate::result_view::winner(core).filter(|_| s.decided);
-        let seat = if online { crate::pvp::seat_of_n(army, players) } else { 0 };
+        let seat = if online {
+            crate::pvp::seat_of_n(army, players)
+        } else {
+            0
+        };
         s.active_seat = Some(seat);
         s.mine = !online || seat == me;
         s.menu = menu_json(core);
@@ -489,14 +526,20 @@ fn menu_json(core: &Core) -> Value {
     } else if let Some(m) = menus.iter().find(|m| m["kind"] == "unit") {
         ("unit", m["rows"].clone(), m["cursor"].clone())
     } else if let Some(v) = items.as_ref() {
-        let rows: Vec<Value> = v.iter().map(|&i| json!({"id": i, "text": menu_item_name(i), "enabled": true})).collect();
+        let rows: Vec<Value> = v
+            .iter()
+            .map(|&i| json!({"id": i, "text": menu_item_name(i), "enabled": true}))
+            .collect();
         ("map", Value::Array(rows), json!(cursor_row))
     } else if let Some(m) = menus.first() {
         ("other", m["rows"].clone(), m["cursor"].clone())
     } else {
         ("", Value::Null, Value::Null)
     };
-    let item = rows.get(cursor.as_u64().unwrap_or(u64::MAX) as usize).map(|r| r["text"].clone()).unwrap_or(Value::Null);
+    let item = rows
+        .get(cursor.as_u64().unwrap_or(u64::MAX) as usize)
+        .map(|r| r["text"].clone())
+        .unwrap_or(Value::Null);
     json!({
         "open": items.is_some(),
         "kind": if kind.is_empty() { Value::Null } else { json!(kind) },
@@ -564,7 +607,12 @@ fn read_board(core: &Core, s: &mut Snapshot, online: bool, players: usize) {
         s.units.push(u);
     }
     // cargo: a carried unit rides the transport on the cell it is recorded at
-    let carried: Vec<(u32, i32, i32)> = s.units.iter().filter(|u| u.carried()).map(|u| (u.id, u.x, u.y)).collect();
+    let carried: Vec<(u32, i32, i32)> = s
+        .units
+        .iter()
+        .filter(|u| u.carried())
+        .map(|u| (u.id, u.x, u.y))
+        .collect();
     for (id, x, y) in carried {
         if let Some(&t) = by_cell.get(&(x, y)) {
             if let Some(tu) = s.units.iter_mut().find(|u| u.id == t) {
@@ -573,22 +621,39 @@ fn read_board(core: &Core, s: &mut Snapshot, online: bool, players: usize) {
         }
     }
     for (x, y, class, owner) in owner_cells {
-        let capture = by_cell.get(&(x, y)).and_then(|id| s.units.iter().find(|u| u.id == *id)).map_or(0, |u| u.capture);
-        s.properties.push(PropertyInfo { x, y, class, owner, capture });
+        let capture = by_cell
+            .get(&(x, y))
+            .and_then(|id| s.units.iter().find(|u| u.id == *id))
+            .map_or(0, |u| u.capture);
+        s.properties.push(PropertyInfo {
+            x,
+            y,
+            class,
+            owner,
+            capture,
+        });
     }
     let n = crate::five::armies(core).clamp(2, 5);
     for a in 1..=n {
         let p = crate::tag::player(core, a as u32);
         let co = crate::tag::army_co_of(core, a as u32);
         let uses = core.raw_read_8(p + 0x25, -1);
-        let (cop, scop) = (crate::tag::cop_cost(core, co, uses), crate::tag::scop_cost(core, co, uses));
+        let (cop, scop) = (
+            crate::tag::cop_cost(core, co, uses),
+            crate::tag::scop_cost(core, co, uses),
+        );
         s.armies.push(ArmyInfo {
             army: a,
             colour: core.raw_read_8(p + 0x1A, -1),
             colour_name: crate::army_skin::colour_name(core, core.raw_read_8(p + 0x1A, -1)).to_string(),
             controller: core.raw_read_8(p + 0x1B, -1),
             co,
-            co_name: crate::co_new::ds_name(co).map(|t| t.iter().filter(|c| (0x20..0x7F).contains(*c)).map(|&c| c as char).collect()),
+            co_name: crate::co_new::ds_name(co).map(|t| {
+                t.iter()
+                    .filter(|c| (0x20..0x7F).contains(*c))
+                    .map(|&c| c as char)
+                    .collect()
+            }),
             partner: crate::tag::partner(core, a as u32),
             funds: core.raw_read_32(p, -1),
             meter: core.raw_read_32(p + 0x20, -1),
@@ -646,7 +711,11 @@ fn online_json(core: &Core, online: bool, players: usize, me: usize) -> Value {
     let names: Vec<String> = (0..players).map(crate::online::room_name).collect();
     let picks = crate::online::room_picks();
     use tango_backend_mgba::SharedGame as _;
-    let out = if crate::pvp::in_battle(core) { crate::pvp::AW2E.seats_out(core) } else { 0 };
+    let out = if crate::pvp::in_battle(core) {
+        crate::pvp::AW2E.seats_out(core)
+    } else {
+        0
+    };
     json!({
         "room": named > 0,
         "seats_out": (0..8).filter(|s| out & (1 << s) != 0).collect::<Vec<_>>(),
@@ -689,7 +758,10 @@ impl Snapshot {
                 "powers": self.powers_on, "abilities": self.abilities_on, "game_mode": self.game_mode,
             }),
         );
-        put("map", json!({"id": self.map_id, "name": self.map_name, "w": self.width, "h": self.height}));
+        put(
+            "map",
+            json!({"id": self.map_id, "name": self.map_name, "w": self.width, "h": self.height}),
+        );
         put("cursor", json!({"x": self.cursor.0, "y": self.cursor.1}));
         put("camera", json!({"px": self.camera.0, "py": self.camera.1}));
         put("menu", self.menu.clone());
@@ -779,12 +851,19 @@ pub fn events(prev: &Snapshot, now: &Snapshot) -> Vec<Value> {
             out.push(act("kill", now.active_army, o, json!({"hp_before": o.hp})));
         }
     }
-    let owners = |s: &Snapshot| s.properties.iter().map(|p| ((p.x, p.y), p.owner)).collect::<BTreeMap<_, _>>();
+    let owners = |s: &Snapshot| {
+        s.properties
+            .iter()
+            .map(|p| ((p.x, p.y), p.owner))
+            .collect::<BTreeMap<_, _>>()
+    };
     let (po, pn) = (owners(prev), owners(now));
     for (cell, o) in &pn {
         if let Some(old) = po.get(cell) {
             if old != o {
-                out.push(json!({"event": "act", "what": "capture", "actor": o, "to": [cell.0, cell.1], "from_owner": old}));
+                out.push(
+                    json!({"event": "act", "what": "capture", "actor": o, "to": [cell.0, cell.1], "from_owner": old}),
+                );
             }
         }
     }
@@ -793,7 +872,9 @@ pub fn events(prev: &Snapshot, now: &Snapshot) -> Vec<Value> {
             out.push(json!({"event": "act", "what": "eliminated", "actor": b.army}));
         }
         if b.powers_used > a.powers_used || (b.power_mode != 0 && a.power_mode == 0) {
-            out.push(json!({"event": "act", "what": "power", "actor": b.army, "count": b.powers_used, "mode": b.power_mode}));
+            out.push(
+                json!({"event": "act", "what": "power", "actor": b.army, "count": b.powers_used, "mode": b.power_mode}),
+            );
         }
     }
     out
@@ -805,7 +886,11 @@ pub fn seen_plane(core: &Core, w: u32, h: u32) -> String {
     let mut out = String::with_capacity((w * h) as usize);
     for y in 0..h {
         for x in 0..w {
-            out.push(if core.raw_read_8(MAP + 0x234A + rows[y as usize] + x, -1) != 0 { '1' } else { '0' });
+            out.push(if core.raw_read_8(MAP + 0x234A + rows[y as usize] + x, -1) != 0 {
+                '1'
+            } else {
+                '0'
+            });
         }
     }
     out
@@ -866,7 +951,19 @@ mod tests {
     }
 
     fn unit(id: u32, x: i32, y: i32, hp: u32) -> UnitInfo {
-        UnitInfo { id, owner: 1, kind: 1, x, y, hp, fuel: 99, ammo: 0, flags: 0, capture: 0, cargo: vec![] }
+        UnitInfo {
+            id,
+            owner: 1,
+            kind: 1,
+            x,
+            y,
+            hp,
+            fuel: 99,
+            ammo: 0,
+            flags: 0,
+            capture: 0,
+            cargo: vec![],
+        }
     }
 
     #[test]
@@ -875,7 +972,10 @@ mod tests {
         let b = snap(vec![unit(1, 1, 0, 100), unit(2, 3, 3, 60), unit(4, 7, 7, 100)]);
         let ev = events(&a, &b);
         let what: Vec<&str> = ev.iter().filter_map(|e| e["what"].as_str()).collect();
-        assert!(what.contains(&"move") && what.contains(&"attack") && what.contains(&"kill") && what.contains(&"build"), "{what:?}");
+        assert!(
+            what.contains(&"move") && what.contains(&"attack") && what.contains(&"kill") && what.contains(&"build"),
+            "{what:?}"
+        );
     }
 
     #[test]

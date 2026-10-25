@@ -13,7 +13,13 @@ use crate::crumb_art::{body_files, decode, Px};
 use crate::ds_co_art::CoArt;
 
 /// The five with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`).
-const IDS: [(u8, &str); 5] = [(86, "klaus"), (87, "aurelia"), (88, "cassius"), (89, "livia"), (92, "asuka")];
+const IDS: [(u8, &str); 5] = [
+    (86, "klaus"),
+    (87, "aurelia"),
+    (88, "cassius"),
+    (89, "livia"),
+    (92, "asuka"),
+];
 
 macro_rules! pics {
     ($co:literal) => {
@@ -46,7 +52,13 @@ struct Pics {
 }
 
 fn all() -> [Pics; 5] {
-    [pics!("klaus"), pics!("aurelia"), pics!("cassius"), pics!("livia"), pics!("asuka")]
+    [
+        pics!("klaus"),
+        pics!("aurelia"),
+        pics!("cassius"),
+        pics!("livia"),
+        pics!("asuka"),
+    ]
 }
 
 /// The data files of the five, in [`IDS`]' order.
@@ -66,7 +78,12 @@ pub fn index(co: u8) -> Option<usize> {
 /// The data file of CO `k` parsed.
 fn data(k: usize) -> Option<&'static toml::Value> {
     static D: OnceLock<Vec<toml::Value>> = OnceLock::new();
-    D.get_or_init(|| DATA.iter().map(|d| toml::from_str(d).expect("a CO data file")).collect()).get(k)
+    D.get_or_init(|| {
+        DATA.iter()
+            .map(|d| toml::from_str(d).expect("a CO data file"))
+            .collect()
+    })
+    .get(k)
 }
 
 fn s(v: &toml::Value, path: &[&str]) -> Option<String> {
@@ -82,7 +99,11 @@ fn quote(v: &toml::Value, path: &[&str]) -> Option<String> {
     for p in path {
         v = v.get(p)?;
     }
-    let lines: Vec<String> = v.as_array()?.iter().filter_map(|l| l.as_str().map(str::to_string)).collect();
+    let lines: Vec<String> = v
+        .as_array()?
+        .iter()
+        .filter_map(|l| l.as_str().map(str::to_string))
+        .collect();
     Some(lines.join("\r"))
 }
 
@@ -124,7 +145,10 @@ pub fn text(co: u8, which: u16) -> Option<Vec<u8>> {
 pub fn crop(co: u8) -> Option<(usize, usize)> {
     let p = all().into_iter().nth(index(co)?)?;
     let v: toml::Value = toml::from_str(p.crop).ok()?;
-    Some((v.get("cell_x")?.as_integer()? as usize, v.get("strip_y")?.as_integer()? as usize))
+    Some((
+        v.get("cell_x")?.as_integer()? as usize,
+        v.get("strip_y")?.as_integer()? as usize,
+    ))
 }
 
 fn px(bytes: &[u8]) -> Option<(Px, Vec<u16>)> {
@@ -159,7 +183,13 @@ pub fn art(co: u8) -> Option<CoArt> {
     Some(CoArt {
         face: [face(p.faces[0])?, face(p.faces[1])?, face(p.faces[2])?],
         // the mini is a 48 x 16 strip: its 12 tiles are the left 32 x 16 in rows of four, then the right 16 x 16 in rows of two (the battle scene's header, AW2's own layout)
-        mini: mini.to_tiles(6, 2, |k| if k < 8 { (k % 4, k / 4) } else { (4 + (k - 8) % 2, (k - 8) / 2) }),
+        mini: mini.to_tiles(6, 2, |k| {
+            if k < 8 {
+                (k % 4, k / 4)
+            } else {
+                (4 + (k - 8) % 2, (k - 8) / 2)
+            }
+        }),
         hud: hud.to_tiles(4, 2, |k| (k % 4, k / 4)),
         body_top: top,
         body_bottom: bottom,

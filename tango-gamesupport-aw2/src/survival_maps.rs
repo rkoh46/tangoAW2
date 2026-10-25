@@ -157,9 +157,13 @@ fn read(pack: &crate::ds_pack::Pack) -> Option<Survival> {
     }
     ids.sort();
     ids.dedup();
-    let maps: Vec<Map> = ids.iter().map(|&id| r.map(id).map(survival_map)).collect::<Option<_>>()?;
+    let maps: Vec<Map> = ids
+        .iter()
+        .map(|&id| r.map(id).map(survival_map))
+        .collect::<Option<_>>()?;
     let budget = |k: u32| -> Option<u32> {
-        pack.arm9_at(BUDGETS + 4 * k, 4).map(|b| u32::from_le_bytes(b.try_into().unwrap()))
+        pack.arm9_at(BUDGETS + 4 * k, 4)
+            .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
     };
     let run = |kind: Kind| -> Option<Run> {
         let l = &lists[kind as usize];
@@ -167,19 +171,28 @@ fn read(pack: &crate::ds_pack::Pack) -> Option<Survival> {
         for (k, id) in l.iter().enumerate() {
             m[k] = ids.iter().position(|x| x == id)?;
         }
-        Some(Run { kind, budget: budget(kind as u32)?, champion_budget: budget(3 + kind as u32)?, maps: m })
+        Some(Run {
+            kind,
+            budget: budget(kind as u32)?,
+            champion_budget: budget(3 + kind as u32)?,
+            maps: m,
+        })
     };
-    let help = r.text(HELP_TEXT).unwrap_or_else(|| "Fight through a series of maps with three limitations.".into());
-    Some(Survival { runs: [run(Kind::Time)?, run(Kind::Money)?, run(Kind::Turn)?], maps, help })
+    let help = r
+        .text(HELP_TEXT)
+        .unwrap_or_else(|| "Fight through a series of maps with three limitations.".into());
+    Some(Survival {
+        runs: [run(Kind::Time)?, run(Kind::Money)?, run(Kind::Turn)?],
+        maps,
+        help,
+    })
 }
 
 static SURVIVAL: OnceLock<Option<Survival>> = OnceLock::new();
 
 /// Dual Strike's Survival, from the pack (None without it).
 pub fn survival() -> Option<&'static Survival> {
-    SURVIVAL
-        .get_or_init(|| crate::ds_pack::pack().and_then(read))
-        .as_ref()
+    SURVIVAL.get_or_init(|| crate::ds_pack::pack().and_then(read)).as_ref()
 }
 
 // --- Dual Strike's rank and score rules -----------------------------------
@@ -274,8 +287,24 @@ mod tests {
     #[test]
     fn champion_rules() {
         assert_eq!((champion_rank(0), champion_rank(9), champion_rank(10)), (2, 2, 3));
-        assert_eq!((champion_rank(14), champion_rank(15), champion_rank(19), champion_rank(20)), (3, 4, 4, 5));
-        assert_eq!((champion_bonus(0), champion_bonus(1), champion_bonus(2), champion_bonus(11)), (0, 5, 15, 330));
+        assert_eq!(
+            (
+                champion_rank(14),
+                champion_rank(15),
+                champion_rank(19),
+                champion_rank(20)
+            ),
+            (3, 4, 4, 5)
+        );
+        assert_eq!(
+            (
+                champion_bonus(0),
+                champion_bonus(1),
+                champion_bonus(2),
+                champion_bonus(11)
+            ),
+            (0, 5, 15, 330)
+        );
         assert_eq!(champion_bonus(255), 9999);
     }
 
@@ -290,7 +319,9 @@ mod tests {
     /// Dual Strike has them.
     #[test]
     fn runs_from_the_rom() {
-        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else { return };
+        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else {
+            return;
+        };
         let Ok(buf) = std::fs::read(path) else { return };
         crate::ds_art::offer(&buf);
         let s = survival().expect("survival data");
@@ -318,7 +349,11 @@ mod tests {
         for m in &s.maps {
             // A map with a structure names its picture, the one its tiles show.
             assert_eq!(m.structure, Structure::of_tiles(&m.tiles), "{}", m.name);
-            assert!(m.width as usize * m.height as usize <= 0x508 && m.height <= 40, "{}", m.name);
+            assert!(
+                m.width as usize * m.height as usize <= 0x508 && m.height <= 40,
+                "{}",
+                m.name
+            );
             assert!(m.tiles.iter().all(|&t| t < 0x200), "{}", m.name);
             assert!(m.cos[0].is_some(), "{} has a computer CO", m.name);
         }

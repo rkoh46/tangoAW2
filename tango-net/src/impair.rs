@@ -81,7 +81,11 @@ pub fn wrap(sink: Box<dyn PacketSink>, reliable: bool) -> Box<dyn PacketSink> {
     let test = super::netdbg::test_mode();
     let cfg = match Impairment::from_env() {
         Some(c) => c,
-        None if test => Impairment { latency_ms: 0, jitter_ms: 0, loss_pct: 0.0 },
+        None if test => Impairment {
+            latency_ms: 0,
+            jitter_ms: 0,
+            loss_pct: 0.0,
+        },
         None => return sink,
     };
     if !test && cfg.latency_ms == 0 && cfg.jitter_ms == 0 && cfg.loss_pct == 0.0 {
@@ -111,7 +115,11 @@ impl PacketSink for Impaired {
             return Ok(());
         }
         let cfg = if test {
-            super::netdbg::current().map_or(self.cfg, |(latency_ms, jitter_ms, loss_pct)| Impairment { latency_ms, jitter_ms, loss_pct })
+            super::netdbg::current().map_or(self.cfg, |(latency_ms, jitter_ms, loss_pct)| Impairment {
+                latency_ms,
+                jitter_ms,
+                loss_pct,
+            })
         } else {
             self.cfg
         };
@@ -201,7 +209,11 @@ mod tests {
         let got = Arc::new(Mutex::new(Vec::new()));
         let mut sink = Impaired {
             inner: Arc::new(tokio::sync::Mutex::new(Box::new(Recorder(got.clone())))),
-            cfg: Impairment { latency_ms: 0, jitter_ms: 0, loss_pct: 0.0 },
+            cfg: Impairment {
+                latency_ms: 0,
+                jitter_ms: 0,
+                loss_pct: 0.0,
+            },
             reliable: true,
             rng: Mutex::new(Rng(7)),
             last_due: Mutex::new(Instant::now()),
@@ -225,7 +237,10 @@ mod tests {
                 loss_pct: 5.0
             })
         );
-        assert_eq!(Impairment::parse("40").map(|i| (i.jitter_ms, i.loss_pct)), Some((0, 0.0)));
+        assert_eq!(
+            Impairment::parse("40").map(|i| (i.jitter_ms, i.loss_pct)),
+            Some((0, 0.0))
+        );
         assert_eq!(Impairment::parse("x"), None);
     }
 }

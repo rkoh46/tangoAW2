@@ -48,7 +48,8 @@ use web_time::Instant;
 /// the engines' real rates differ from it by well under a percent, which loss recovery doesn't care about. Keeps the
 /// unacked redundancy window flowing while the local sim is throttled or stalled, so recovery isn't coupled to the
 /// frame rate (see [`tango_net::InMatchTx`]).
-pub(crate) const IN_MATCH_HEARTBEAT: std::time::Duration = std::time::Duration::from_nanos((1_000_000_000.0 / 60.0) as u64);
+pub(crate) const IN_MATCH_HEARTBEAT: std::time::Duration =
+    std::time::Duration::from_nanos((1_000_000_000.0 / 60.0) as u64);
 
 pub const MIN_FRAME_DELAY: u32 = 0;
 pub const MAX_FRAME_DELAY: u32 = 10;
@@ -505,21 +506,36 @@ impl PvpSession {
     /// match, the UNRANKED ones included; the app makes a room for the returning player then, see
     /// [`request_rejoin_state`](Self::request_rejoin_state)).
     pub fn rejoin_hold(&self) -> Option<(String, u32)> {
-        self.rejoin_holds().into_iter().next().map(|(_, name, left)| (name, left))
+        self.rejoin_holds()
+            .into_iter()
+            .next()
+            .map(|(_, name, left)| (name, left))
     }
 
     /// Every player the match waits for to come back: their seat, gamertag and the seconds left of their windows, the nearest first.
     /// Empty when the room's match is not one that can be rejoined, or while a seat that left earlier is gone from it (the rest of the
     /// room could not be seated as it was).
     pub fn rejoin_holds(&self) -> Vec<(u8, String, u32)> {
-        if !self.end.rejoin.load(Ordering::Acquire) || self.completed.load(Ordering::Acquire) || self.end.gone.load(Ordering::Acquire) != 0 {
+        if !self.end.rejoin.load(Ordering::Acquire)
+            || self.completed.load(Ordering::Acquire)
+            || self.end.gone.load(Ordering::Acquire) != 0
+        {
             return Vec::new();
         }
         let mut holds: Vec<Hold> = self.end.holds.lock().unwrap().clone();
         holds.sort_by_key(|h| h.deadline);
         holds
             .into_iter()
-            .map(|h| (h.seat, h.name, h.deadline.saturating_duration_since(Instant::now()).as_secs_f32().ceil() as u32))
+            .map(|h| {
+                (
+                    h.seat,
+                    h.name,
+                    h.deadline
+                        .saturating_duration_since(Instant::now())
+                        .as_secs_f32()
+                        .ceil() as u32,
+                )
+            })
             .collect()
     }
 
@@ -739,9 +755,14 @@ impl PvpSession {
                 let ms = |d: std::time::Duration| d.as_secs_f32() * 1000.0;
                 let (health, give_up_in_s) = match l.health() {
                     tango_net::link::LinkHealth::Connected => ("connected", None),
-                    tango_net::link::LinkHealth::Reconnecting { give_up_at, .. } => {
-                        ("reconnecting", Some(give_up_at.saturating_duration_since(web_time::Instant::now()).as_secs_f32()))
-                    }
+                    tango_net::link::LinkHealth::Reconnecting { give_up_at, .. } => (
+                        "reconnecting",
+                        Some(
+                            give_up_at
+                                .saturating_duration_since(web_time::Instant::now())
+                                .as_secs_f32(),
+                        ),
+                    ),
                     tango_net::link::LinkHealth::Dead => ("dead", None),
                 };
                 LinkReport {

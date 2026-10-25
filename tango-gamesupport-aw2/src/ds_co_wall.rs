@@ -219,11 +219,21 @@ fn build() -> Option<Wall> {
     for b in 0..8 {
         let bank = banks.get(b).cloned().unwrap_or_default();
         for i in 0..16 {
-            let c = if i == 0 { bank.first().copied().unwrap_or(0) } else { bank.get(i - 1).copied().unwrap_or(0) };
+            let c = if i == 0 {
+                bank.first().copied().unwrap_or(0)
+            } else {
+                bank.get(i - 1).copied().unwrap_or(0)
+            };
             pal.extend_from_slice(&c.to_le_bytes());
         }
     }
-    Some(Wall { chars: tiles.concat(), map, pal, pix: made, banks: of.iter().map(|&b| 8 + b as u8).collect() })
+    Some(Wall {
+        chars: tiles.concat(),
+        map,
+        pal,
+        pix: made,
+        banks: of.iter().map(|&b| 8 + b as u8).collect(),
+    })
 }
 
 /// BG2's char block (0x8000) holds this many tiles before BG3's screen block.

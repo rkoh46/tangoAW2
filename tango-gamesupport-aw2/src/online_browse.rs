@@ -15,8 +15,8 @@
 use mgba::core::Core;
 
 use crate::online::{
-    bar, text_width, Rgb, Rgba, BLUE, GRAY_INK, INK, KEY_A, KEY_B, KEY_DOWN, KEY_R, KEY_UP, LIGHT_GRAY, RED, SHADE, WHITE,
-    YELLOW,
+    bar, text_width, Rgb, Rgba, BLUE, GRAY_INK, INK, KEY_A, KEY_B, KEY_DOWN, KEY_R, KEY_UP, LIGHT_GRAY, RED, SHADE,
+    WHITE, YELLOW,
 };
 
 pub const STATE: u32 = 0x0203_D500;
@@ -107,7 +107,12 @@ pub mod mailbox {
     /// The room's name of the player's own match that is still on.
     pub fn write_own_name(write: &mut dyn FnMut(u32, &[u8]), name: &str) {
         let mut b = [0u8; OWN_NAME_CHARS + 1];
-        for (i, c) in name.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).take(OWN_NAME_CHARS).enumerate() {
+        for (i, c) in name
+            .chars()
+            .filter(|c| c.is_ascii() && !c.is_ascii_control())
+            .take(OWN_NAME_CHARS)
+            .enumerate()
+        {
             b[i] = c as u8;
         }
         write(OWN_NAME, &b);
@@ -116,7 +121,12 @@ pub mod mailbox {
     /// The room's name for the room page's heading (nothing: the page says "Your room" or "Room").
     pub fn write_room_name(write: &mut dyn FnMut(u32, &[u8]), name: &str) {
         let mut b = [0u8; OWN_NAME_CHARS + 1];
-        for (i, c) in name.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).take(OWN_NAME_CHARS).enumerate() {
+        for (i, c) in name
+            .chars()
+            .filter(|c| c.is_ascii() && !c.is_ascii_control())
+            .take(OWN_NAME_CHARS)
+            .enumerate()
+        {
             b[i] = c as u8;
         }
         write(ROOM_NAME, &b);
@@ -145,7 +155,12 @@ pub mod mailbox {
         }
         write(ROWS, &b);
         let mut v = [0u8; VERSION_LEN];
-        for (i, c) in version.bytes().filter(|c| c.is_ascii_graphic()).take(VERSION_LEN - 1).enumerate() {
+        for (i, c) in version
+            .bytes()
+            .filter(|c| c.is_ascii_graphic())
+            .take(VERSION_LEN - 1)
+            .enumerate()
+        {
             v[i] = c;
         }
         write(VERSION, &v);
@@ -160,7 +175,12 @@ fn rows(core: &Core) -> Vec<Row> {
         .map(|k| {
             let mut b = [0u8; ROW_SIZE as usize];
             core.raw_read_range(ROWS + ROW_SIZE * k as u32, -1, &mut b);
-            let text = |s: &[u8]| s.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect::<String>();
+            let text = |s: &[u8]| {
+                s.iter()
+                    .take_while(|&&c| c != 0)
+                    .map(|&c| c as char)
+                    .collect::<String>()
+            };
             Row {
                 code: text(&b[..6]),
                 players: b[6],
@@ -185,7 +205,11 @@ pub const VISIBLE: usize = 8;
 
 /// The cursor after a move (wrapping), and the first item shown.
 pub fn step(cursor: usize, top: usize, items: usize, down: bool) -> (usize, usize) {
-    let cursor = if down { (cursor + 1) % items } else { (cursor + items - 1) % items };
+    let cursor = if down {
+        (cursor + 1) % items
+    } else {
+        (cursor + items - 1) % items
+    };
     (cursor, scroll(cursor, top, items))
 }
 
@@ -393,7 +417,11 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
             let tail = "In progress";
             let tw = text_width(core, tail);
             cv.text(core, x + w - 7 - tw, ry, tail, BLUE, SHADE);
-            let shown = fit(core, if name.is_empty() { "Your match" } else { &name }, w - 7 - tw - 8 - 10);
+            let shown = fit(
+                core,
+                if name.is_empty() { "Your match" } else { &name },
+                w - 7 - tw - 8 - 10,
+            );
             cv.text(core, x + 8, ry, &shown, INK, SHADE);
             continue;
         }
@@ -410,7 +438,15 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
         if r.locked {
             padlock(cv, x + 6, ry + 1, ink);
         }
-        let name = fit(core, &if r.name.is_empty() { "Player".to_string() } else { r.name.clone() }, w - 7 - sw - 8 - 14);
+        let name = fit(
+            core,
+            &if r.name.is_empty() {
+                "Player".to_string()
+            } else {
+                r.name.clone()
+            },
+            w - 7 - sw - 8 - 14,
+        );
         cv.text(core, x + 14, ry, &name, ink, SHADE);
     }
     // More above or below.
@@ -451,15 +487,33 @@ pub(crate) fn apply(cv: &mut Rgba, core: &Core) {
     let text = if lead == 2 && cursor == 0 {
         bar_text(core, &["A: Rejoin  R: Refresh  B: Back", "A: Rejoin  B: Back"])
     } else if cursor + 1 == lead {
-        bar_text(core, &["A: Type a code  R: Refresh  B: Back", "A: Code  R: Refresh  B: Back", "A: Code  B: Back"])
+        bar_text(
+            core,
+            &[
+                "A: Type a code  R: Refresh  B: Back",
+                "A: Code  R: Refresh  B: Back",
+                "A: Code  B: Back",
+            ],
+        )
     } else {
         let r = &rows[cursor - lead];
         if r.players >= r.max {
-            bar_text(core, &["This lobby is full.  R: Refresh  B: Back", "Full.  R: Refresh  B: Back", "Full.  B: Back"])
+            bar_text(
+                core,
+                &[
+                    "This lobby is full.  R: Refresh  B: Back",
+                    "Full.  R: Refresh  B: Back",
+                    "Full.  B: Back",
+                ],
+            )
         } else if r.locked {
             bar_text(
                 core,
-                &["A: Join (password)  R: Refresh  B: Back", "A: Join  R: Refresh  B: Back", "A: Join  B: Back"],
+                &[
+                    "A: Join (password)  R: Refresh  B: Back",
+                    "A: Join  R: Refresh  B: Back",
+                    "A: Join  B: Back",
+                ],
             )
         } else {
             bar_text(core, &["A: Join  R: Refresh  B: Back"])

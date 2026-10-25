@@ -48,7 +48,9 @@ fn build() -> Option<Art> {
     if pal.len() < 32 || tex.len() < 160 {
         return None;
     }
-    let colour: Vec<u16> = (0..16).map(|i| u16::from_le_bytes([pal[2 * i], pal[2 * i + 1]]) & 0x7fff).collect();
+    let colour: Vec<u16> = (0..16)
+        .map(|i| u16::from_le_bytes([pal[2 * i], pal[2 * i + 1]]) & 0x7fff)
+        .collect();
     let decode = |at: usize, n: usize| -> Vec<u16> {
         (0..n)
             .map(|i| {
@@ -96,7 +98,14 @@ fn arrow_box(left: bool, up: bool) -> (f32, f32, f32, f32) {
 /// Draws the cursor over `map` (`w` x `h`, 0x8000 | RGB555) for the cell
 /// `(cx, cy)`; `project` gives a ground point's screen position and the cell's
 /// size there, in the picture's own pixels.
-pub fn draw(map: &mut [u16], w: usize, h: usize, art: &Art, cell: (i32, i32), project: impl Fn(f32, f32) -> (f32, f32, f32)) {
+pub fn draw(
+    map: &mut [u16],
+    w: usize,
+    h: usize,
+    art: &Art,
+    cell: (i32, i32),
+    project: impl Fn(f32, f32) -> (f32, f32, f32),
+) {
     // Dual Strike's 256-wide picture is shown 240 wide.
     const S: f32 = 240.0 / 256.0;
     let (cu, cv) = (cell.0 as f32, cell.1 as f32);
@@ -108,19 +117,48 @@ pub fn draw(map: &mut [u16], w: usize, h: usize, art: &Art, cell: (i32, i32), pr
     for (dx, dy) in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0)] {
         let (fx, fy, c) = project(cu + dx, cv + dy);
         let q = 8.0 * S;
-        blit(map, &art.dot, 8, fx + 0.064 * c - q / 2.0, fy - 0.009 * c - q / 2.0, q, q, (false, false));
+        blit(
+            map,
+            &art.dot,
+            8,
+            fx + 0.064 * c - q / 2.0,
+            fy - 0.009 * c - q / 2.0,
+            q,
+            q,
+            (false, false),
+        );
     }
     let (fx, fy, c) = project(cu, cv);
     let (xd, yd) = ((fx - 120.0) / S + 128.0, (fy - 80.0) / S + 96.0);
     let (left, up) = arrow_side(xd, yd);
     let (bx, by, bw, bh) = arrow_box(left, up);
-    blit(map, &art.arrow, 16, fx + bx * c, fy + by * c, bw * c, bh * c, (left, up));
+    blit(
+        map,
+        &art.arrow,
+        16,
+        fx + bx * c,
+        fy + by * c,
+        bw * c,
+        bh * c,
+        (left, up),
+    );
 }
 
 /// Draws an `n` x `n` picture stretched over the quad (`x0`, `y0`, `qw`, `qh`) of `map`, nearest pixel, mirrored as
 /// told.
 #[allow(clippy::too_many_arguments)]
-fn blit_quad(map: &mut [u16], w: usize, h: usize, pix: &[u16], n: usize, x0: f32, y0: f32, qw: f32, qh: f32, flip: (bool, bool)) {
+fn blit_quad(
+    map: &mut [u16],
+    w: usize,
+    h: usize,
+    pix: &[u16],
+    n: usize,
+    x0: f32,
+    y0: f32,
+    qw: f32,
+    qh: f32,
+    flip: (bool, bool),
+) {
     for y in (y0.floor() as i32).max(0)..((y0 + qh).ceil() as i32).min(h as i32) {
         let mut v = (((y as f32 + 0.5 - y0) / qh) * n as f32).floor() as i32;
         if !(0..n as i32).contains(&v) {
@@ -176,9 +214,42 @@ pub fn draw_crosshair(
     let (cx, cy, side) = (cx * sc, cy * sc, side * sc);
     let half = side / 2.0;
     let k = ring_frame(tick);
-    blit_quad(map, w, h, &art.ring_arc[k], 16, cx - half, cy - half, half, half, (false, false));
-    blit_quad(map, w, h, &art.ring_arc[k], 16, cx, cy - half, half, half, (true, false));
-    blit_quad(map, w, h, &art.ring_arc[k], 16, cx - half, cy, half, half, (false, true));
+    blit_quad(
+        map,
+        w,
+        h,
+        &art.ring_arc[k],
+        16,
+        cx - half,
+        cy - half,
+        half,
+        half,
+        (false, false),
+    );
+    blit_quad(
+        map,
+        w,
+        h,
+        &art.ring_arc[k],
+        16,
+        cx,
+        cy - half,
+        half,
+        half,
+        (true, false),
+    );
+    blit_quad(
+        map,
+        w,
+        h,
+        &art.ring_arc[k],
+        16,
+        cx - half,
+        cy,
+        half,
+        half,
+        (false, true),
+    );
     blit_quad(map, w, h, &art.ring_tip[k], 16, cx, cy, half, half, (false, false));
 }
 

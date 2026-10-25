@@ -378,7 +378,11 @@ fn install(core: &mut Core) {
     for s in STUBS {
         core.raw_write_range(stub_at(s), -1, &stub_code(s as u32));
     }
-    for (at, kind) in [(SCRIPT_ROUND, Stub::BeginRound), (SCRIPT_VIEW, Stub::BeginViewIn), (SCRIPT_OVER, Stub::BeginOver)] {
+    for (at, kind) in [
+        (SCRIPT_ROUND, Stub::BeginRound),
+        (SCRIPT_VIEW, Stub::BeginViewIn),
+        (SCRIPT_OVER, Stub::BeginOver),
+    ] {
         core.raw_write_range(at, -1, &swap_script(kind));
     }
     // The map menu: the game's seven items, Front after Options, Save's
@@ -392,7 +396,13 @@ fn install(core: &mut Core) {
         }
         menu.extend_from_slice(&e);
         if k == OPTIONS_AT {
-            menu.extend_from_slice(&menu_entry(core, OPTIONS_AT, Stub::FrontUsable, Stub::FrontChosen, TEXT_FRONT));
+            menu.extend_from_slice(&menu_entry(
+                core,
+                OPTIONS_AT,
+                Stub::FrontUsable,
+                Stub::FrontChosen,
+                TEXT_FRONT,
+            ));
         }
     }
     let mut end = vec![0u8; MENU_ENTRY as usize];
@@ -402,7 +412,13 @@ fn install(core: &mut Core) {
     // The unit menu: Send in the starred Capt's slot.
     let mut units = vec![0u8; (MENU_ENTRY * (UNIT_MENU_LEN + 1)) as usize];
     core.raw_read_range(UNIT_MENU, -1, &mut units);
-    let send = menu_entry_from(core, UNIT_MENU + MENU_ENTRY * SEND_AT, Stub::SendUsable, Stub::SendChosen, TEXT_SEND);
+    let send = menu_entry_from(
+        core,
+        UNIT_MENU + MENU_ENTRY * SEND_AT,
+        Stub::SendUsable,
+        Stub::SendChosen,
+        TEXT_SEND,
+    );
     units[(MENU_ENTRY * SEND_AT) as usize..(MENU_ENTRY * (SEND_AT + 1)) as usize].copy_from_slice(&send);
     core.raw_write_range(UNIT_MENU_COPY, -1, &units);
     // The Intel menu: the game's four items, then General (Strike,
@@ -410,11 +426,31 @@ fn install(core: &mut Core) {
     // Strike's order).
     let mut intel = vec![0u8; (MENU_ENTRY * INTEL_MENU_LEN) as usize];
     core.raw_read_range(INTEL_MENU, -1, &mut intel);
-    for (k, usable) in [Stub::StrikeUsable, Stub::AssaultUsable, Stub::GeneralUsable, Stub::DefenseUsable].into_iter().enumerate() {
-        intel.extend(menu_entry_from(core, INTEL_MENU + MENU_ENTRY * TERMS_AT, usable, Stub::PostureChosen, TEXT_POSTURES + k as u16));
+    for (k, usable) in [
+        Stub::StrikeUsable,
+        Stub::AssaultUsable,
+        Stub::GeneralUsable,
+        Stub::DefenseUsable,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        intel.extend(menu_entry_from(
+            core,
+            INTEL_MENU + MENU_ENTRY * TERMS_AT,
+            usable,
+            Stub::PostureChosen,
+            TEXT_POSTURES + k as u16,
+        ));
     }
     for (usable, text) in [(Stub::AutoOnUsable, TEXT_AUTO_ON), (Stub::AutoOffUsable, TEXT_AUTO_OFF)] {
-        intel.extend(menu_entry_from(core, INTEL_MENU + MENU_ENTRY * TERMS_AT, usable, Stub::AutoChosen, text));
+        intel.extend(menu_entry_from(
+            core,
+            INTEL_MENU + MENU_ENTRY * TERMS_AT,
+            usable,
+            Stub::AutoChosen,
+            text,
+        ));
     }
     let mut end = vec![0u8; MENU_ENTRY as usize];
     core.raw_read_range(INTEL_MENU + MENU_ENTRY * INTEL_MENU_LEN, -1, &mut end);
@@ -638,7 +674,11 @@ pub fn live_info(core: &Core) -> Option<&'static MissionInfo> {
     }
     let b = battle(core)?;
     if core.raw_read_8(LIVE, -1) == 1 {
-        crate::ds_campaign::campaign(core)?.model.built.missions.get(b.fronts.second as usize)
+        crate::ds_campaign::campaign(core)?
+            .model
+            .built
+            .missions
+            .get(b.fronts.second as usize)
     } else {
         Some(b.main)
     }
@@ -649,7 +689,13 @@ fn header(core: &Core, index: u8) -> Option<[u8; 0x5C]> {
     if crate::ds_versus::two_fronts(core).is_some() {
         return crate::ds_versus::front_header(core, index);
     }
-    crate::ds_campaign::campaign(core)?.model.built.headers.iter().find(|h| h.0 == index).map(|h| h.1)
+    crate::ds_campaign::campaign(core)?
+        .model
+        .built
+        .headers
+        .iter()
+        .find(|h| h.0 == index)
+        .map(|h| h.1)
 }
 
 /// The map table entry the battle is played on (tangoAW2's table with
@@ -665,8 +711,14 @@ fn table_entry(core: &Core) -> Option<u32> {
 /// The live front's header in the battle's map table entry (the game reads
 /// the map, the deployment and the events from it).
 fn sync_header(core: &mut Core, b: &Battle) {
-    let index = if core.raw_read_8(LIVE, -1) == 1 { b.fronts.second } else { b.main.index as u8 };
-    let (Some(at), Some(h)) = (table_entry(core), header(core, index)) else { return };
+    let index = if core.raw_read_8(LIVE, -1) == 1 {
+        b.fronts.second
+    } else {
+        b.main.index as u8
+    };
+    let (Some(at), Some(h)) = (table_entry(core), header(core, index)) else {
+        return;
+    };
     let mut now = [0u8; 0x5C];
     core.raw_read_range(at, -1, &mut now);
     if now != h {
@@ -710,7 +762,9 @@ pub fn tick(core: &mut Core, on_: bool) {
         core.raw_write_8(SECOND, -1, SECOND_ON);
         fill_second_cos(core, &b);
         // Auto CO as the description starts it, per army.
-        let manual = (0..4).filter(|&k| b.fronts.control[k] == FrontControl::AutoCo { on: false }).fold(0u8, |m, k| m | 1 << k);
+        let manual = (0..4)
+            .filter(|&k| b.fronts.control[k] == FrontControl::AutoCo { on: false })
+            .fold(0u8, |m, k| m | 1 << k);
         core.raw_write_8(MANUAL, -1, manual);
         // General as Dual Strike starts it: each human army's last choice
         // (Dual Strike keeps the player's in its save data), General for
@@ -762,7 +816,15 @@ pub fn menus(core: &mut Core, on_: bool) {
     }
     // The labels: text ids from the free tail of the text table.
     let postures = (0..4u16).map(|k| (TEXT_POSTURES + k, TEXTS + 0x40 + 0x10 * k as u32));
-    for (id, at) in [(TEXT_FRONT, TEXTS), (TEXT_SEND, TEXTS + 0x10), (TEXT_AUTO_ON, TEXTS + 0x20), (TEXT_AUTO_OFF, TEXTS + 0x30)].into_iter().chain(postures) {
+    for (id, at) in [
+        (TEXT_FRONT, TEXTS),
+        (TEXT_SEND, TEXTS + 0x10),
+        (TEXT_AUTO_ON, TEXTS + 0x20),
+        (TEXT_AUTO_OFF, TEXTS + 0x30),
+    ]
+    .into_iter()
+    .chain(postures)
+    {
         let entry = TEXT_TABLE + 4 * id as u32;
         if ours && core.raw_read_32(entry, -1) != at {
             core.raw_write_32(entry, -1, at);
@@ -806,7 +868,13 @@ fn fill_second_cos(core: &mut Core, b: &Battle) {
 /// The picks the CO screen asks for: the main front's (the header's leading
 /// "player picks"), then the second front's.
 fn picks(b: &Battle) -> (u32, u32) {
-    let main = b.main.cos.iter().take(b.main.armies as usize).take_while(|c| c.0 == 0x1C).count() as u32;
+    let main = b
+        .main
+        .cos
+        .iter()
+        .take(b.main.armies as usize)
+        .take_while(|c| c.0 == 0x1C)
+        .count() as u32;
     let second = b.fronts.cos.iter().take_while(|&&c| c == PICK).count() as u32;
     (main, second)
 }
@@ -1014,7 +1082,11 @@ pub fn second_front_result(core: &Core) -> Option<(bool, u32, u8)> {
         return None;
     }
     let winner = core.raw_read_8(WINNER, -1) as u32;
-    let co = if (1..=4).contains(&winner) { core.raw_read_8(SECOND_COS + winner - 1, -1) } else { 0xFF };
+    let co = if (1..=4).contains(&winner) {
+        core.raw_read_8(SECOND_COS + winner - 1, -1)
+    } else {
+        0xFF
+    };
     Some((s == SECOND_WON, winner, co))
 }
 
@@ -1024,10 +1096,17 @@ pub fn second_front_result(core: &Core) -> Option<(bool, u32, u8)> {
 /// (crate::ds_campaign). Returns r0 (or does its own tail call).
 pub fn magic(core: &mut Core, id: u32) {
     let n = id & 0xFF;
-    let Some(&s) = STUBS.iter().find(|s| **s as u32 == n) else { return return_to(core, 0) };
+    let Some(&s) = STUBS.iter().find(|s| **s as u32 == n) else {
+        return return_to(core, 0);
+    };
     let b = battle(core);
     if std::env::var_os("TWO_FRONT_DEBUG").is_some() {
-        eprintln!("two_front magic {s:?} battle {} busy {} r2 {:x}", b.is_some(), core.raw_read_8(BUSY, -1), core.gba().cpu().gpr(2));
+        eprintln!(
+            "two_front magic {s:?} battle {} busy {} r2 {:x}",
+            b.is_some(),
+            core.raw_read_8(BUSY, -1),
+            core.gba().cpu().gpr(2)
+        );
     }
     match (s, b) {
         (Stub::FrontUsable, Some(_)) => {
@@ -1243,7 +1322,15 @@ fn swap_step(core: &mut Core, s: Stub, b: &Battle) {
         Stub::End => {
             // (again at the swap's end: AW2's unit reset and the map's graphics, after the arrival, put stale ids back)
             unit_planes(core);
-            core.raw_write_8(BUSY, -1, if kind == Stub::BeginViewIn as u32 { kind as u8 } else { 0 });
+            core.raw_write_8(
+                BUSY,
+                -1,
+                if kind == Stub::BeginViewIn as u32 {
+                    kind as u8
+                } else {
+                    0
+                },
+            );
             if kind != Stub::BeginViewIn as u32 {
                 core.raw_write_8(VIEW, -1, 0);
                 core.raw_write_8(FRESH, -1, 0);
@@ -1268,20 +1355,29 @@ fn swap_step(core: &mut Core, s: Stub, b: &Battle) {
 fn checksum(core: &Core, at: u32, len: u32) -> u32 {
     let mut b = vec![0u8; len as usize];
     core.raw_read_range(at, -1, &mut b);
-    b.iter().fold(0x811C_9DC5u32, |h, &x| (h ^ x as u32).wrapping_mul(0x0100_0193))
+    b.iter()
+        .fold(0x811C_9DC5u32, |h, &x| (h ^ x as u32).wrapping_mul(0x0100_0193))
 }
 
 fn extras(core: &Core) -> Vec<u8> {
     let mut e = vec![0u8; EXTRA_LEN as usize];
     e[EX_FOG as usize] = crate::ds_weather::rule_fog(core);
-    core.raw_read_range(crate::co_skills::ACTIVE, -1, &mut e[EX_SKILLS as usize..(EX_SKILLS + SKILLS_LEN) as usize]);
+    core.raw_read_range(
+        crate::co_skills::ACTIVE,
+        -1,
+        &mut e[EX_SKILLS as usize..(EX_SKILLS + SKILLS_LEN) as usize],
+    );
     e[EX_STUN as usize..].copy_from_slice(&crate::co_powers::stun_state(core));
     e
 }
 
 fn set_extras(core: &mut Core, e: &[u8]) {
     crate::ds_weather::set_rule_fog(core, e[EX_FOG as usize]);
-    core.raw_write_range(crate::co_skills::ACTIVE, -1, &e[EX_SKILLS as usize..(EX_SKILLS + SKILLS_LEN) as usize]);
+    core.raw_write_range(
+        crate::co_skills::ACTIVE,
+        -1,
+        &e[EX_SKILLS as usize..(EX_SKILLS + SKILLS_LEN) as usize],
+    );
     let army = core.raw_read_8(CURRENT_ARMY, -1);
     crate::co_powers::set_stun_state(core, Some(&e[EX_STUN as usize..]), army);
 }
@@ -1337,10 +1433,11 @@ const EXTRA_PENDING: u32 = STAGING + 0x1F90;
 fn setup_second(core: &mut Core, b: &Battle) {
     let Some(h) = header(core, b.fronts.second) else { return };
     // (a Versus or War Room battle's second front: its header's armies)
-    let armies = match crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(b.fronts.second as usize)) {
-        Some(info) if crate::ds_versus::two_fronts(core).is_none() => info.armies,
-        _ => h[0x18],
-    };
+    let armies =
+        match crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(b.fronts.second as usize)) {
+            Some(info) if crate::ds_versus::two_fronts(core).is_none() => info.armies,
+            _ => h[0x18],
+        };
     for k in 0..4u32 {
         let present = k < armies as u32;
         core.raw_write_8(COLOURS + 1 + k, -1, h[0x40 + k as usize]);
@@ -1463,7 +1560,10 @@ fn auto_co_army(core: &Core, b: &Battle) -> Option<u32> {
         return None;
     }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-    (1..=4).contains(&army).then_some(army).filter(|&a| matches!(b.fronts.control[a as usize - 1], FrontControl::AutoCo { .. }))
+    (1..=4)
+        .contains(&army)
+        .then_some(army)
+        .filter(|&a| matches!(b.fronts.control[a as usize - 1], FrontControl::AutoCo { .. }))
 }
 
 /// Dual Strike's postures (Intel > General): its numbers, the order its
@@ -1493,7 +1593,11 @@ fn set_posture(core: &mut Core, army: u32, p: u8) {
 /// has the item; with Auto CO's item (on or off), or else while the
 /// computer directs the army there.
 fn posture_army(core: &Core, b: &Battle) -> Option<u32> {
-    if !b.fronts.posture || core.raw_read_8(LIVE, -1) != 0 || core.raw_read_8(SECOND, -1) != SECOND_ON || core.raw_read_8(BUSY, -1) != 0 {
+    if !b.fronts.posture
+        || core.raw_read_8(LIVE, -1) != 0
+        || core.raw_read_8(SECOND, -1) != SECOND_ON
+        || core.raw_read_8(BUSY, -1) != 0
+    {
         return None;
     }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
@@ -1615,9 +1719,13 @@ fn send_kind_ok(core: &Core, b: &Battle, unit: u32, x: u32, y: u32) -> bool {
 /// The second front's units of `army` now (its live state or its store).
 fn second_units(core: &Core, b: &Battle, army: u32) -> u32 {
     if core.raw_read_8(STARTED, -1) == 1 && core.raw_read_8(STORE_KIND, -1) == 1 {
-        (0..SLOTS).filter(|&j| core.raw_read_8(STORE + B_UNITS + 12 * ((army - 1) * SLOTS + j), -1) != 0).count() as u32
+        (0..SLOTS)
+            .filter(|&j| core.raw_read_8(STORE + B_UNITS + 12 * ((army - 1) * SLOTS + j), -1) != 0)
+            .count() as u32
     } else {
-        let queued = (0..core.raw_read_8(QUEUED, -1) as u32).filter(|&k| core.raw_read_8(QUEUE_ARMY + k, -1) as u32 == army).count();
+        let queued = (0..core.raw_read_8(QUEUED, -1) as u32)
+            .filter(|&k| core.raw_read_8(QUEUE_ARMY + k, -1) as u32 == army)
+            .count();
         (deployed(core, b.fronts.second, army).len() + queued) as u32
     }
 }
@@ -1633,7 +1741,10 @@ fn send_usable(core: &Core, b: &Battle) -> u32 {
     if !(0x0200_0000..0x0204_0000).contains(&u) {
         return 1;
     }
-    let (x, y) = (core.raw_read_16(DESTINATION, -1) as u32, core.raw_read_16(DESTINATION + 2, -1) as u32);
+    let (x, y) = (
+        core.raw_read_16(DESTINATION, -1) as u32,
+        core.raw_read_16(DESTINATION + 2, -1) as u32,
+    );
     if !send_kind_ok(core, b, u, x, y) {
         return 1;
     }
@@ -1742,7 +1853,10 @@ impl Ground {
         let cos = core.raw_read_32(0x0801_F8E4, -1);
         let chart = core.raw_read_32(cos + 0x50 + 0x104, -1);
         let movement = core.raw_read_8(crate::roster::table(core) + 0x5C * t as u32 + 0x19, -1) as u32;
-        core.raw_read_8(chart + 32 * movement + (self.class[(y * self.w + x) as usize] & 0x1F) as u32, -1)
+        core.raw_read_8(
+            chart + 32 * movement + (self.class[(y * self.w + x) as usize] & 0x1F) as u32,
+            -1,
+        )
     }
 
     /// The free cell nearest `from` a unit of type `t` can stand on
@@ -1756,7 +1870,10 @@ impl Ground {
                         continue;
                     }
                     let (ux, uy) = (x as u32, y as u32);
-                    if !self.taken[(uy * self.w + ux) as usize] && self.cost(core, t, ux, uy) != 0xFF && self.cost(core, t, ux, uy) != 0 {
+                    if !self.taken[(uy * self.w + ux) as usize]
+                        && self.cost(core, t, ux, uy) != 0xFF
+                        && self.cost(core, t, ux, uy) != 0
+                    {
                         return Some((ux, uy));
                     }
                 }
@@ -1804,10 +1921,17 @@ fn place_live(core: &mut Core, army: u32, rec: &[u8; 12]) {
         return;
     }
     let g = live_ground(core);
-    let mine: Vec<(u32, u32)> = live_units(core, army).iter().map(|&(_, u)| (core.raw_read_8(u + 2, -1) as u32, core.raw_read_8(u + 3, -1) as u32)).collect();
-    let Some((x, y)) = g.near(core, rec[0], g.home(army, &mine)) else { return };
+    let mine: Vec<(u32, u32)> = live_units(core, army)
+        .iter()
+        .map(|&(_, u)| (core.raw_read_8(u + 2, -1) as u32, core.raw_read_8(u + 3, -1) as u32))
+        .collect();
+    let Some((x, y)) = g.near(core, rec[0], g.home(army, &mine)) else {
+        return;
+    };
     let base = core.raw_read_32(UNITS_PTR, -1);
-    let Some(j) = (1..SLOTS).find(|&j| core.raw_read_8(base + 12 * ((army - 1) * 64 + j), -1) == 0) else { return };
+    let Some(j) = (1..SLOTS).find(|&j| core.raw_read_8(base + 12 * ((army - 1) * 64 + j), -1) == 0) else {
+        return;
+    };
     let mut r = *rec;
     r[2] = x as u8;
     r[3] = y as u8;
@@ -1821,14 +1945,20 @@ fn place_live(core: &mut Core, army: u32, rec: &[u8; 12]) {
 /// header with the block's changed tiles, the block's units).
 fn place_stored(core: &mut Core, army: u32, rec: &[u8; 12]) -> bool {
     let Some(b) = battle(core) else { return false };
-    let Some(h) = header(core, b.fronts.second) else { return false };
+    let Some(h) = header(core, b.fronts.second) else {
+        return false;
+    };
     let map = u32::from_le_bytes(h[0..4].try_into().unwrap());
     let size = core.raw_read_32(map, -1) >> 8;
     let mut lz = vec![0u8; (size as usize) * 2 + 64];
     core.raw_read_range(map, -1, &mut lz);
-    let Some(raw) = crate::ds_art::lz10(&lz) else { return false };
+    let Some(raw) = crate::ds_art::lz10(&lz) else {
+        return false;
+    };
     let (w, hh) = (raw[0] as u32, raw[1] as u32);
-    let mut tiles: Vec<u16> = (0..(w * hh) as usize).map(|i| u16::from_le_bytes([raw[2 + 2 * i], raw[3 + 2 * i]])).collect();
+    let mut tiles: Vec<u16> = (0..(w * hh) as usize)
+        .map(|i| u16::from_le_bytes([raw[2 + 2 * i], raw[3 + 2 * i]]))
+        .collect();
     let mut p = STORE + B_TILES;
     while p + 4 <= STORE + B_TILES_END {
         let t = core.raw_read_16(p + 2, -1);
@@ -1867,8 +1997,16 @@ fn place_stored(core: &mut Core, army: u32, rec: &[u8; 12]) -> bool {
     let Some(free) = free else { return false };
     let g = Ground { w, h: hh, class, taken };
     // (the army's home there: from its first deployed unit when it has no HQ)
-    let home = g.home(army, &deployed(core, b.fronts.second, army).into_iter().chain(mine).collect::<Vec<_>>());
-    let Some((x, y)) = g.near(core, rec[0], home) else { return false };
+    let home = g.home(
+        army,
+        &deployed(core, b.fronts.second, army)
+            .into_iter()
+            .chain(mine)
+            .collect::<Vec<_>>(),
+    );
+    let Some((x, y)) = g.near(core, rec[0], home) else {
+        return false;
+    };
     let mut r = *rec;
     r[2] = x as u8;
     r[3] = y as u8;
@@ -1879,7 +2017,9 @@ fn place_stored(core: &mut Core, army: u32, rec: &[u8; 12]) -> bool {
 
 /// An army's deployed cells on a front (its header's deployment).
 fn deployed(core: &Core, front: u8, army: u32) -> Vec<(u32, u32)> {
-    let Some(h) = header(core, front) else { return Vec::new() };
+    let Some(h) = header(core, front) else {
+        return Vec::new();
+    };
     let mut p = u32::from_le_bytes(h[0x34..0x38].try_into().unwrap());
     let mut out = Vec::new();
     let mut cur = 0u32;
@@ -1973,7 +2113,11 @@ impl Panel {
             Panel::SetupHelp => vec![(px + 12, py + 9, crate::setup_phase::DEPLOY_HELP, false)],
             Panel::AutoHelp => {
                 let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-                let t = if auto_co(core, army) { AUTO_ON_HELP } else { AUTO_OFF_HELP };
+                let t = if auto_co(core, army) {
+                    AUTO_ON_HELP
+                } else {
+                    AUTO_OFF_HELP
+                };
                 vec![(px + 12, py + 9, t, false)]
             }
             Panel::PostureHelp => {
@@ -1982,11 +2126,19 @@ impl Panel {
             }
             Panel::View | Panel::ViewLow => {
                 // (the front looked at: the main one from a second-front turn)
-                let t = if core.raw_read_8(LIVE, -1) == 0 { VIEW_MAIN_TITLE } else { VIEW_TITLE };
+                let t = if core.raw_read_8(LIVE, -1) == 0 {
+                    VIEW_MAIN_TITLE
+                } else {
+                    VIEW_TITLE
+                };
                 vec![(px + 10, py + 9, t, false), (px + 10, py + 25, VIEW_BACK, true)]
             }
             Panel::Result => {
-                let t = if core.raw_read_8(SECOND, -1) == SECOND_WON { RESULT_WON } else { RESULT_LOST };
+                let t = if core.raw_read_8(SECOND, -1) == SECOND_WON {
+                    RESULT_WON
+                } else {
+                    RESULT_LOST
+                };
                 let tw = font_width(core, t) as i32;
                 vec![(px + (8 * w as i32 - tw) / 2, py + 9, t, false)]
             }
@@ -2024,7 +2176,11 @@ fn want_panel(core: &Core) -> Option<Panel> {
         // offset on some maps)
         let camera_y = core.raw_read_16(core.raw_read_32(MAP_POINTER, -1) + 6, -1) as i16 as i32;
         let cursor_y = 16 * core.raw_read_16(MAP_CURSOR_Y, -1) as i32 - camera_y;
-        return Some(if cursor_y < VIEW_LOW_BELOW { Panel::ViewLow } else { Panel::View });
+        return Some(if cursor_y < VIEW_LOW_BELOW {
+            Panel::ViewLow
+        } else {
+            Panel::View
+        });
     }
     if core.raw_read_8(BANNER, -1) > 0 && busy == 0 && core.raw_read_16(MAP_STATE, -1) == STATE_CURSOR {
         return Some(Panel::Result);
@@ -2101,13 +2257,27 @@ fn panel_tick(core: &mut Core) {
     if !(0x0200_0000..0x0204_0000).contains(&buffer) {
         return;
     }
-    let (hofs, vofs) = (core.raw_read_16(BG2HOFS, -1) as u32 & 0x1FF, core.raw_read_16(BG2VOFS, -1) as u32 & 0x1FF);
+    let (hofs, vofs) = (
+        core.raw_read_16(BG2HOFS, -1) as u32 & 0x1FF,
+        core.raw_read_16(BG2VOFS, -1) as u32 & 0x1FF,
+    );
     let aligned = hofs % 8 == 0 && vofs % 8 == 0;
     let at = ((hofs / 8) % 32, (vofs / 8) % 32);
-    let drawn = [Panel::Help, Panel::View, Panel::Result, Panel::SetupHelp, Panel::ViewLow, Panel::AutoHelp, Panel::PostureHelp]
-        .into_iter()
-        .find(|p| *p as u8 == now);
-    let drawn_at = (core.raw_read_8(PANEL_AT, -1) as u32, core.raw_read_8(PANEL_AT + 1, -1) as u32);
+    let drawn = [
+        Panel::Help,
+        Panel::View,
+        Panel::Result,
+        Panel::SetupHelp,
+        Panel::ViewLow,
+        Panel::AutoHelp,
+        Panel::PostureHelp,
+    ]
+    .into_iter()
+    .find(|p| *p as u8 == now);
+    let drawn_at = (
+        core.raw_read_8(PANEL_AT, -1) as u32,
+        core.raw_read_8(PANEL_AT + 1, -1) as u32,
+    );
     let keep = drawn.is_some() && drawn == want && aligned && drawn_at == at;
     if let Some(d) = drawn.filter(|_| !keep) {
         // Put back the rows it covered.
@@ -2130,7 +2300,11 @@ fn panel_tick(core: &mut Core) {
         let mut rows = vec![0u8; (64 * h) as usize];
         for r in 0..h {
             let row = (at.1 + y + r) % 32;
-            core.raw_read_range(buffer + 64 * row, -1, &mut rows[(64 * r) as usize..(64 * r + 64) as usize]);
+            core.raw_read_range(
+                buffer + 64 * row,
+                -1,
+                &mut rows[(64 * r) as usize..(64 * r + 64) as usize],
+            );
         }
         core.raw_write_range(PANEL_SAVED, -1, &rows);
         core.raw_write_8(PANEL, -1, p as u8);
@@ -2208,7 +2382,10 @@ fn label_colours(core: &mut Core) {
 }
 
 fn font_width(core: &Core, s: &str) -> u32 {
-    s.bytes().map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as u32 + 1).sum::<u32>().saturating_sub(1)
+    s.bytes()
+        .map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as u32 + 1)
+        .sum::<u32>()
+        .saturating_sub(1)
 }
 
 /// A line drawn into a 16-pixel-high strip: its columns of pixels.
@@ -2302,8 +2479,19 @@ pub(crate) fn outlined(core: &Core, s: &str) -> Vec<[u8; 16]> {
 /// Survival's budget lines above the map stay out of it (they drew over the
 /// arrow's corner piece, tile 514).
 pub(crate) fn free_tile_pairs() -> Vec<u16> {
-    const RUNS: [(u16, u16); 8] = [(0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9), (0x26A, 48), (0x1F9, 17)];
-    RUNS.iter().flat_map(|&(t, n)| (0..n / 2).map(move |k| t + 2 * k)).collect()
+    const RUNS: [(u16, u16); 8] = [
+        (0x2D2, 9),
+        (0x2E4, 4),
+        (0x2EC, 4),
+        (0x2F4, 4),
+        (0x2FC, 4),
+        (0x309, 9),
+        (0x26A, 48),
+        (0x1F9, 17),
+    ];
+    RUNS.iter()
+        .flat_map(|&(t, n)| (0..n / 2).map(move |k| t + 2 * k))
+        .collect()
 }
 
 const OBJ_TILES: u32 = 0x0601_0000;
@@ -2394,7 +2582,8 @@ pub fn flush_sprites(core: &mut Core, at: u32, end: u32) -> u32 {
 /// its lines are drawn ([`flush_sprites`]; crate::panel_sprites takes the
 /// game's sprites out of its window).
 pub fn drawn_panel(core: &Core) -> Option<(i32, i32, i32, i32)> {
-    if (on(core).is_none() && !crate::setup_phase::active(core)) || core.raw_read_32(MAIN_CALLBACK, -1) != MAP_CALLBACK {
+    if (on(core).is_none() && !crate::setup_phase::active(core)) || core.raw_read_32(MAIN_CALLBACK, -1) != MAP_CALLBACK
+    {
         return None;
     }
     let p = want_panel(core).filter(|p| core.raw_read_8(PANEL, -1) == *p as u8)?;
@@ -2457,7 +2646,11 @@ pub fn restore_saved(core: &mut Core, b: &[u8]) {
     // (saved outside any swap: on the main front, or on the second during
     // a player's turn there, [`continue_on`]; the block AW2 restored is the
     // live front's, its look set before the map's graphics load)
-    let live = if b[0] == 1 && core.raw_read_8(STORE_KIND, -1) == 1 { 1 } else { 0 };
+    let live = if b[0] == 1 && core.raw_read_8(STORE_KIND, -1) == 1 {
+        1
+    } else {
+        0
+    };
     core.raw_write_8(LIVE, -1, live);
     core.raw_write_8(CONTINUED, -1, live);
     if let Some(m) = live_info(core) {

@@ -28,7 +28,6 @@ fn write_bmp(path: &std::path::Path, rgba: &[u8]) {
     std::fs::write(path, out).unwrap();
 }
 
-
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let rom = std::fs::read(&args[1]).expect("rom");
@@ -74,7 +73,10 @@ fn main() {
         failed |= !ok;
     };
     shot(&mut link, "teams_0");
-    expect(tango_gamesupport_aw2::army_skin::host_of(link.core(), 0) == 0, "no skin to begin with");
+    expect(
+        tango_gamesupport_aw2::army_skin::host_of(link.core(), 0) == 0,
+        "no skin to begin with",
+    );
     // R on army 1: Blue Moon, Yellow Comet, Green Earth, Black Hole, then the skin
     for i in 1..=4 {
         press(&mut link, R);
@@ -86,8 +88,20 @@ fn main() {
             c.raw_read_range(a, -1, &mut b);
             b == rom[(a & 0x01FF_FFFF) as usize..][..n]
         };
-        println!("R {i}: rom emblem original {} palette original {}", same(0x080F_8984, 128), same(0x0810_18E4, 32));
-        println!("R {i}: host {} applied {} colour1 {} ident {:?}", tango_gamesupport_aw2::army_skin::host_of(c, 0), tango_gamesupport_aw2::army_skin::applied_on(c, 1).map_or(0, |i| i + 1), c.raw_read_8(0x0201_7C50 + 0x0D, -1), (0..4).map(|k| c.raw_read_8(tango_gamesupport_aw2::army_skin::STATE + 4 + k, -1)).collect::<Vec<_>>());
+        println!(
+            "R {i}: rom emblem original {} palette original {}",
+            same(0x080F_8984, 128),
+            same(0x0810_18E4, 32)
+        );
+        println!(
+            "R {i}: host {} applied {} colour1 {} ident {:?}",
+            tango_gamesupport_aw2::army_skin::host_of(c, 0),
+            tango_gamesupport_aw2::army_skin::applied_on(c, 1).map_or(0, |i| i + 1),
+            c.raw_read_8(0x0201_7C50 + 0x0D, -1),
+            (0..4)
+                .map(|k| c.raw_read_8(tango_gamesupport_aw2::army_skin::STATE + 4 + k, -1))
+                .collect::<Vec<_>>()
+        );
     }
     let host = tango_gamesupport_aw2::army_skin::host_of(link.core(), 0);
     expect(host != 0, "army 1 has the skin after four presses of R");
@@ -102,7 +116,10 @@ fn main() {
         println!("army 2 colour after R {}: {colours}", i + 1);
         let now = tango_gamesupport_aw2::army_skin::host_of(link.core(), 0);
         let c1 = link.core().raw_read_8(0x0201_7C50 + 0x0D, -1);
-        expect(colours != 0 && colours != c1 && now == c1, "army 2 never has army 1's colour, and the skin sits on army 1's colour");
+        expect(
+            colours != 0 && colours != c1 && now == c1,
+            "army 2 never has army 1's colour, and the skin sits on army 1's colour",
+        );
     }
     shot(&mut link, "teams_army2");
     if cpu {
@@ -121,18 +138,35 @@ fn main() {
             let c = link.core();
             let h = tango_gamesupport_aw2::army_skin::host_of(c, 0);
             if h == 0 && std::env::var_os("SKIN_TRACE").is_some() {
-                println!("trace: host 0 at k {k}, loop {:08x} versus {} teams {}", c.raw_read_32(0x0300_0000, -1), tango_gamesupport_aw2::pvp::in_versus(c), tango_gamesupport_aw2::pvp::on_teams_screen(c));
+                println!(
+                    "trace: host 0 at k {k}, loop {:08x} versus {} teams {}",
+                    c.raw_read_32(0x0300_0000, -1),
+                    tango_gamesupport_aw2::pvp::in_versus(c),
+                    tango_gamesupport_aw2::pvp::on_teams_screen(c)
+                );
             }
         }
         wait(&mut link, 60);
-        println!("flow: host {} seen {} teams {}", tango_gamesupport_aw2::army_skin::host_of(link.core(), 0), link.core().raw_read_8(tango_gamesupport_aw2::army_skin::STATE + 0xF, -1), tango_gamesupport_aw2::pvp::on_teams_screen(link.core()));
+        println!(
+            "flow: host {} seen {} teams {}",
+            tango_gamesupport_aw2::army_skin::host_of(link.core(), 0),
+            link.core()
+                .raw_read_8(tango_gamesupport_aw2::army_skin::STATE + 0xF, -1),
+            tango_gamesupport_aw2::pvp::on_teams_screen(link.core())
+        );
     }
     wait(&mut link, 600);
     shot(&mut link, "battle");
     let (mode, colours) = tango_gamesupport_aw2::pvp::army_state(link.core());
-    println!("mode {mode}, battle army colours {colours:?}, host {}", tango_gamesupport_aw2::army_skin::host_of(link.core(), 0));
+    println!(
+        "mode {mode}, battle army colours {colours:?}, host {}",
+        tango_gamesupport_aw2::army_skin::host_of(link.core(), 0)
+    );
     let host_now = tango_gamesupport_aw2::army_skin::host_of(link.core(), 0);
-    expect(host_now != 0 && colours[0] == host_now, "army 1's colour in the battle is the colour the skin sits on");
+    expect(
+        host_now != 0 && colours[0] == host_now,
+        "army 1's colour in the battle is the colour the skin sits on",
+    );
     for t in 0..(if cpu { 6 } else { 1 }) {
         wait(&mut link, 500);
         shot(&mut link, &format!("later_{t}"));

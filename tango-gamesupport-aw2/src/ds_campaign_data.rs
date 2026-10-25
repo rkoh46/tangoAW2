@@ -40,7 +40,9 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use mgba::core::Core;
 
-pub use crate::campaign_model::{stub, Built, Magic, MissionInfo, Story, LANDING, MAP_ID, TEXT_FIRST, TEXT_LAST, TEXT_TABLE};
+pub use crate::campaign_model::{
+    stub, Built, Magic, MissionInfo, Story, LANDING, MAP_ID, TEXT_FIRST, TEXT_LAST, TEXT_TABLE,
+};
 
 pub const OV0: u32 = 0x022A_D560;
 pub const OV1: u32 = 0x0235_0560;
@@ -51,7 +53,6 @@ pub const MISSIONS: usize = 28;
 pub const SECOND_FRONTS: usize = 5;
 const TEXT_GROUPS: u32 = OV0 + 0x49690;
 const MAP_NAMES_BASE: u32 = 0x022F_6BF8; // the 0xC0 bank (general texts)
-
 
 /// A view of Dual Strike's memory from the pack.
 #[derive(Clone, Copy)]
@@ -68,7 +69,12 @@ pub struct Ds<'a> {
 impl<'a> Ds<'a> {
     pub fn from_pack(p: &'a crate::ds_pack::Pack) -> Option<Self> {
         let ov5 = p.overlays.get(5).map(|v| &v[..]).unwrap_or(&[]);
-        Some(Ds { arm9: &p.arm9, ov0: p.overlays.first()?, ov1: p.overlays.get(1)?, ov5 })
+        Some(Ds {
+            arm9: &p.arm9,
+            ov0: p.overlays.first()?,
+            ov1: p.overlays.get(1)?,
+            ov5,
+        })
     }
 
     /// The same, with overlay 5 where overlay 1 was (its scripts' view).
@@ -229,7 +235,12 @@ pub fn aw2_co(ds_co: u8) -> Option<u8> {
     }
     (0..crate::co_roster::AW2_COS)
         .find(|&a| crate::co_roster::ds_co(a) == Some(c))
-        .or_else(|| crate::co_new::NEW.iter().position(|&(d, _)| d == c).map(|k| crate::co_new::FIRST + k as u8))
+        .or_else(|| {
+            crate::co_new::NEW
+                .iter()
+                .position(|&(d, _)| d == c)
+                .map(|k| crate::co_new::FIRST + k as u8)
+        })
 }
 
 /// AW2's troopers (faces 19..23), for Dual Strike's soldiers 0x1C..0x20
@@ -297,11 +308,15 @@ pub fn convert_map(ds: &Ds, at: u32) -> Option<(u8, u8, Vec<u16>)> {
 pub fn raw_map(ds: &Ds, at: u32) -> Option<(u8, u8, Vec<u16>)> {
     let head = ds.u32(at)?;
     let size = (head >> 8) as usize;
-    let comp = ds.bytes(at, 4 + size * 2 + 64).or_else(|| ds.bytes(at, 4 + size + 64))?;
+    let comp = ds
+        .bytes(at, 4 + size * 2 + 64)
+        .or_else(|| ds.bytes(at, 4 + size + 64))?;
     let raw = crate::ds_art::lz10(comp)?;
     let (w, h) = (raw[0], raw[1]);
     let n = w as usize * h as usize;
-    let tiles: Vec<u16> = (0..n).map(|i| Some(u16::from_le_bytes([*raw.get(2 + 2 * i)?, *raw.get(3 + 2 * i)?]))).collect::<Option<_>>()?;
+    let tiles: Vec<u16> = (0..n)
+        .map(|i| Some(u16::from_le_bytes([*raw.get(2 + 2 * i)?, *raw.get(3 + 2 * i)?])))
+        .collect::<Option<_>>()?;
     Some((w, h, tiles))
 }
 
@@ -395,7 +410,9 @@ fn grand_bolt(ds: &Ds, tiles: &mut [u16], w: usize, h: usize) {
             *counts.entry(key(tiles, x, y)).or_default() += 1;
         }
     }
-    let Some((&base, &n)) = counts.iter().max_by_key(|e| *e.1) else { return };
+    let Some((&base, &n)) = counts.iter().max_by_key(|e| *e.1) else {
+        return;
+    };
     if n < 40 || base < 0 {
         return;
     }
@@ -472,7 +489,11 @@ pub const PANEL_PIXELS: u32 = 168;
 const BOX_LINES: usize = 2;
 
 pub(crate) fn width(widths: &[u8], s: &[u8]) -> u32 {
-    let w: u32 = s.iter().filter(|&&c| c >= 0x20).map(|&c| *widths.get(c as usize).unwrap_or(&6) as u32).sum();
+    let w: u32 = s
+        .iter()
+        .filter(|&&c| c >= 0x20)
+        .map(|&c| *widths.get(c as usize).unwrap_or(&6) as u32)
+        .sum();
     w + s.iter().filter(|&&c| c >= 0x20).count().saturating_sub(1) as u32
 }
 
@@ -503,7 +524,12 @@ fn wrap_boxes(t: &[u8], widths: &[u8]) -> Vec<u8> {
         let words: Vec<Vec<u8>> = b
             .split(|&c| c == b' ' || c == b'\r')
             .filter(|w| !w.is_empty())
-            .map(|w| w.iter().copied().filter(|&c| c == 0x0E || (0x20..0x7F).contains(&c)).collect())
+            .map(|w| {
+                w.iter()
+                    .copied()
+                    .filter(|&c| c == 0x0E || (0x20..0x7F).contains(&c))
+                    .collect()
+            })
             .collect();
         let wrap = |limit: u32| {
             let mut lines: Vec<Vec<u8>> = vec![Vec::new()];
@@ -591,7 +617,12 @@ pub fn two_lines(t: &[u8], widths: &[u8]) -> Vec<u8> {
     let words: Vec<Vec<u8>> = t
         .split(|&c| c == b' ' || c == b'\r' || c == 0x0E || c == 0x0F)
         .filter(|w| !w.is_empty())
-        .map(|w| w.iter().copied().filter(|&c| (0x20..0x7F).contains(&c)).collect::<Vec<u8>>())
+        .map(|w| {
+            w.iter()
+                .copied()
+                .filter(|&c| (0x20..0x7F).contains(&c))
+                .collect::<Vec<u8>>()
+        })
         .filter(|w| !w.is_empty())
         .collect();
     let mut lines: Vec<Vec<u8>> = vec![Vec::new()];
@@ -640,7 +671,6 @@ pub fn plain(t: &[u8]) -> Vec<u8> {
 }
 
 // --- Events --------------------------------------------------------------------
-
 
 /// The story's scenes as overlay 5 runs them: its proc scripts' steps
 /// (0x023682E0 the party, 0x02368AF8 the ending) in order, each one
@@ -696,7 +726,10 @@ fn story_scripts<'a>(cx: &mut Ctx<'a>, story: Ds<'a>, scripts: &[u32]) -> u32 {
     cx.ds = story;
     cx.story = true;
     convert_scripts(cx, scripts);
-    let starts: Vec<u32> = scripts.iter().map(|s| cx.cmd_map.get(s).copied().unwrap_or(0)).collect();
+    let starts: Vec<u32> = scripts
+        .iter()
+        .map(|s| cx.cmd_map.get(s).copied().unwrap_or(0))
+        .collect();
     for (k, &s) in scripts.iter().enumerate().take(scripts.len().saturating_sub(1)) {
         let mut a = s;
         for _ in 0..400 {
@@ -727,10 +760,14 @@ fn convert_story_scenes<'a>(cx: &mut Ctx<'a>, ds: &Ds<'a>) -> Story {
         let s = [cmd(0x41, 0, m, 0, 0), cmd(0x1D, ending, 0, 0, 0)].concat();
         ending = cx.blob.push(&s);
     }
-    let after_win = [(AFTER_VICTORY_OR_DEATH, interlude), (AFTER_CRYSTAL_CALAMITY, party), (AFTER_MEANS_TO_AN_END, ending)]
-        .into_iter()
-        .filter(|&(_, s)| s != 0)
-        .collect();
+    let after_win = [
+        (AFTER_VICTORY_OR_DEATH, interlude),
+        (AFTER_CRYSTAL_CALAMITY, party),
+        (AFTER_MEANS_TO_AN_END, ending),
+    ]
+    .into_iter()
+    .filter(|&(_, s)| s != 0)
+    .collect();
     Story { prologue, after_win }
 }
 
@@ -738,8 +775,12 @@ fn convert_story_scenes<'a>(cx: &mut Ctx<'a>, ds: &Ds<'a>) -> Story {
 fn lab_cells(ds: &Ds, at: u32) -> Vec<(u8, u8)> {
     let Some(head) = ds.u32(at) else { return Vec::new() };
     let size = (head >> 8) as usize;
-    let Some(comp) = ds.bytes(at, 4 + size * 2 + 64).or_else(|| ds.bytes(at, 4 + size + 64)) else { return Vec::new() };
-    let Some(raw) = crate::ds_art::lz10(comp) else { return Vec::new() };
+    let Some(comp) = ds.bytes(at, 4 + size * 2 + 64).or_else(|| ds.bytes(at, 4 + size + 64)) else {
+        return Vec::new();
+    };
+    let Some(raw) = crate::ds_art::lz10(comp) else {
+        return Vec::new();
+    };
     let (w, h) = (raw[0] as usize, raw[1] as usize);
     (0..w * h)
         .filter(|&i| (0x1D9..=0x1DD).contains(&u16::from_le_bytes([raw[2 + 2 * i], raw[3 + 2 * i]])))
@@ -1010,7 +1051,9 @@ fn convert_command(cx: &mut Ctx, at: u32, c: &[u8]) -> ([u8; 16], Option<(usize,
                 army
             } else {
                 let team = cx.teams[army - 1];
-                (1..=4).find(|&a| cx.teams[a - 1] != team && cx.teams[a - 1] != 0).unwrap_or(1)
+                (1..=4)
+                    .find(|&a| cx.teams[a - 1] != team && cx.teams[a - 1] != 0)
+                    .unwrap_or(1)
             };
             cmd(0x40, 0, winner as u16, 0, 0)
         }
@@ -1051,7 +1094,11 @@ fn convert_scripts(cx: &mut Ctx, entries: &[u32]) {
         }
         for (k, &a) in run.iter().enumerate() {
             let at = start + 16 * k as u32;
-            let c = cx.ds.bytes(a, 16).unwrap_or(&[4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).to_vec();
+            let c = cx
+                .ds
+                .bytes(a, 16)
+                .unwrap_or(&[4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                .to_vec();
             let (out, fix) = convert_command(cx, at, &c);
             let o = (at - cx.blob.base) as usize;
             cx.blob.bytes[o..o + 16].copy_from_slice(&out);
@@ -1097,7 +1144,15 @@ fn property_win(cx: &mut Ctx, rec: &Record) -> Vec<u8> {
         cx.blob.align(4);
         let fire = cx.blob.push(&script);
         for (n, only) in [(normal, Some(false)), (hard, Some(true))] {
-            let only = if normal == hard { if only == Some(true) { continue } else { None } } else { only };
+            let only = if normal == hard {
+                if only == Some(true) {
+                    continue;
+                } else {
+                    None
+                }
+            } else {
+                only
+            };
             if n == 0 {
                 continue;
             }
@@ -1157,7 +1212,11 @@ fn convert_triggers(cx: &mut Ctx, at: u32, front: u8) -> Vec<u8> {
             record.push(x);
             continue;
         }
-        let (kind, of) = if (0x17..=0x19).contains(&op) { (7, op - 0x17) } else { (op / 3, op % 3) };
+        let (kind, of) = if (0x17..=0x19).contains(&op) {
+            (7, op - 0x17)
+        } else {
+            (op / 3, op % 3)
+        };
         second |= of == 1;
         let rec = |o: u8, a: u8, b: u16, p: u32| {
             let mut x = [0u8; 8];
@@ -1276,7 +1335,10 @@ pub const SKY_UNITS: [u8; 4] = [16, 17, crate::roster::STEALTH, crate::roster::B
 /// Death!'s and Omens and Signs' second fronts: the Black Arc's).
 fn in_the_sky(ds: &Ds, front: &Record) -> bool {
     let units = convert_units(ds, front.units.0);
-    units.chunks(12).filter(|u| u[0] < 0xFE).all(|u| SKY_UNITS.contains(&u[2]) || matches!(u[2], 19 | 20))
+    units
+        .chunks(12)
+        .filter(|u| u[0] < 0xFE)
+        .all(|u| SKY_UNITS.contains(&u[2]) || matches!(u[2], 19 | 20))
 }
 
 /// Dual Strike's Intel > Auto CO item: its test (arm9 `0x020BE908`, "Auto CO
@@ -1345,7 +1407,10 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
         ds: *ds,
         story: false,
         widths,
-        blob: Blob { base, bytes: Vec::new() },
+        blob: Blob {
+            base,
+            bytes: Vec::new(),
+        },
         texts: Vec::new(),
         text_ids: HashMap::new(),
         magic: Vec::new(),
@@ -1358,7 +1423,9 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
         mission: 0,
     };
     cx.blob.push(b"DSCAMPGN");
-    let recs: Vec<Record> = (0..MISSIONS + SECOND_FRONTS).map(|i| record(ds, i)).collect::<Option<_>>()?;
+    let recs: Vec<Record> = (0..MISSIONS + SECOND_FRONTS)
+        .map(|i| record(ds, i))
+        .collect::<Option<_>>()?;
     let mut headers = Vec::new();
     let mut missions = Vec::new();
     for rec in &recs {
@@ -1366,8 +1433,20 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
         cx.teams = rec.teams;
         cx.mission = rec.index;
         // Scripts: every fire record's, and the objective.
-        let lists: Vec<u32> = (0..6).map(|k| if rec.header != 0 { ds.u32(rec.header + 4 * k).unwrap_or(0) } else { 0 }).collect();
-        let mut entries: Vec<u32> = lists.iter().filter(|&&l| l != 0).flat_map(|&l| trigger_scripts(ds, l)).collect();
+        let lists: Vec<u32> = (0..6)
+            .map(|k| {
+                if rec.header != 0 {
+                    ds.u32(rec.header + 4 * k).unwrap_or(0)
+                } else {
+                    0
+                }
+            })
+            .collect();
+        let mut entries: Vec<u32> = lists
+            .iter()
+            .filter(|&&l| l != 0)
+            .flat_map(|&l| trigger_scripts(ds, l))
+            .collect();
         if rec.objective != 0 {
             entries.push(rec.objective);
         }
@@ -1389,11 +1468,19 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
         // its own events are that header's second-front records
         // ([`convert_triggers`]), the main front's the rest.
         let front = if rec.index < MISSIONS { 0 } else { 1 };
-        let wins = if front == 0 { property_win(&mut cx, rec) } else { Vec::new() };
+        let wins = if front == 0 {
+            property_win(&mut cx, rec)
+        } else {
+            Vec::new()
+        };
         for (k, &l) in lists.iter().enumerate() {
             // (the after-action list, 3, also tests the property-count win)
             if l != 0 || (k == 3 && !wins.is_empty()) {
-                let mut t = if l != 0 { convert_triggers(&mut cx, l, front) } else { vec![8, 0, 0, 0, 0, 0, 0, 0] };
+                let mut t = if l != 0 {
+                    convert_triggers(&mut cx, l, front)
+                } else {
+                    vec![8, 0, 0, 0, 0, 0, 0, 0]
+                };
                 if k == 3 {
                     let end = t.len() - 8;
                     t.splice(end..end, wins.iter().copied());
@@ -1424,10 +1511,19 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
             },
         };
         let units = cx.blob.push(&convert_units(ds, rec.units.0));
-        let units_hard = if rec.units.1 != 0 { cx.blob.push(&convert_units(ds, rec.units.1)) } else { 0 };
-        let name = ds.name(rec.name).map(|n| plain(&n)).unwrap_or_else(|| format!("Mission {}", rec.index + 1).into_bytes());
+        let units_hard = if rec.units.1 != 0 {
+            cx.blob.push(&convert_units(ds, rec.units.1))
+        } else {
+            0
+        };
+        let name = ds
+            .name(rec.name)
+            .map(|n| plain(&n))
+            .unwrap_or_else(|| format!("Mission {}", rec.index + 1).into_bytes());
         let name_id = cx.text_id(name.clone());
-        let info = objective_text(ds, rec.objective).map(|t| two_lines(objective_box(&t), cx.widths)).unwrap_or_else(|| name.clone());
+        let info = objective_text(ds, rec.objective)
+            .map(|t| two_lines(objective_box(&t), cx.widths))
+            .unwrap_or_else(|| name.clone());
         let info_text = cx.text_id(info);
 
         let mut hd = [0u8; 0x5C];
@@ -1511,7 +1607,11 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
             look: if front == 0 { rec.look } else { 0 },
             // A front in the sky has clear weather (Dual Strike's top screen
             // draws no sandstorm there; crate::sky_front).
-            weather: if front == 1 && in_the_sky(ds, rec) { 0 } else { rec.weather },
+            weather: if front == 1 && in_the_sky(ds, rec) {
+                0
+            } else {
+                rec.weather
+            },
             fog: rec.fog,
             labs: lab_cells(ds, rec.maps.0),
             realtime,
@@ -1588,7 +1688,13 @@ mod tests {
                 if r[0] == 8 {
                     break;
                 }
-                out.push((k as usize, r[0], r[1], u16::from_le_bytes([r[2], r[3]]), u32::from_le_bytes(r[4..8].try_into().unwrap())));
+                out.push((
+                    k as usize,
+                    r[0],
+                    r[1],
+                    u16::from_le_bytes([r[2], r[3]]),
+                    u32::from_le_bytes(r[4..8].try_into().unwrap()),
+                ));
                 p += 8;
             }
         }
@@ -1601,7 +1707,9 @@ mod tests {
     /// Strike's own, Means to an End's 24 included.
     #[test]
     fn day_limits_are_dual_strikes() {
-        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else { return };
+        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else {
+            return;
+        };
         let Ok(rom) = std::fs::read(path) else { return };
         crate::ds_art::offer(&rom);
         let Some(pack) = crate::ds_pack::pack() else { return };
@@ -1611,7 +1719,11 @@ mod tests {
         for i in 0..MISSIONS {
             let rec = record(&ds, i).unwrap();
             let hd = header(i);
-            assert_eq!(u16::from_le_bytes([hd[0x24], hd[0x25]]), rec.day_limit.0, "mission {i}: the day limit");
+            assert_eq!(
+                u16::from_le_bytes([hd[0x24], hd[0x25]]),
+                rec.day_limit.0,
+                "mission {i}: the day limit"
+            );
             // The days the triggers fire on (kind 0, a day): Dual Strike's.
             let ds_days: Vec<u16> = (0..6)
                 .filter_map(|k| ds.u32(rec.header + 4 * k).filter(|&l| l != 0))
@@ -1646,7 +1758,10 @@ mod tests {
             a.dedup();
             c.sort();
             c.dedup();
-            assert!(a.iter().all(|d| c.contains(d)) && c.iter().all(|d| a.contains(d)), "mission {i}: trigger days {c:?}, Dual Strike's {a:?}");
+            assert!(
+                a.iter().all(|d| c.contains(d)) && c.iter().all(|d| a.contains(d)),
+                "mission {i}: trigger days {c:?}, Dual Strike's {a:?}"
+            );
         }
         // Means to an End's texts are Dual Strike's own: its briefing, Von
         // Bolt's 24 days, Lash's crystals on the second front.
@@ -1658,7 +1773,9 @@ mod tests {
             (0x2600_0046, "24 days"),
             (0x2600_0045, "on the second front"),
         ] {
-            let t = String::from_utf8_lossy(&ds.text(r).unwrap()).replace('\r', " ").to_string();
+            let t = String::from_utf8_lossy(&ds.text(r).unwrap())
+                .replace('\r', " ")
+                .to_string();
             assert!(t.contains(raw), "text {r:#x} keeps Dual Strike's {raw}: {t}");
         }
     }
@@ -1672,14 +1789,19 @@ mod tests {
     #[test]
     fn two_fronts_are_dual_strikes() {
         use crate::campaign_model::{FrontControl, SendRule, PICK};
-        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else { return };
+        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else {
+            return;
+        };
         let Ok(rom) = std::fs::read(path) else { return };
         crate::ds_art::offer(&rom);
         let Some(pack) = crate::ds_pack::pack() else { return };
         let ds = Ds::from_pack(pack).unwrap();
         let b = build(&ds, 0x08E0_0000, &[6u8; 256]).unwrap();
         // (below the fixed ids of crate::two_front and crate::setup_phase)
-        assert!(b.texts.iter().all(|t| t.0 < crate::two_front::TEXT_IDS_FROM), "the campaign's texts below the menus' own ids");
+        assert!(
+            b.texts.iter().all(|t| t.0 < crate::two_front::TEXT_IDS_FROM),
+            "the campaign's texts below the menus' own ids"
+        );
         assert_eq!(auto_co_records(&ds), vec![0xEA, 0xF5], "Dual Strike's Auto CO missions");
         let fronts: Vec<(usize, u8, SendRule)> = b
             .missions
@@ -1702,21 +1824,38 @@ mod tests {
             let t = b.missions[i].two_front.clone().unwrap();
             // Intel > Auto CO (on at the start) in Lightning Strikes and Ring
             // of Fire, as Dual Strike's item; the computer's elsewhere.
-            let want = if matches!(i, 10 | 21) { FrontControl::AutoCo { on: true } } else { FrontControl::Cpu };
+            let want = if matches!(i, 10 | 21) {
+                FrontControl::AutoCo { on: true }
+            } else {
+                FrontControl::Cpu
+            };
             assert_eq!(t.control, [want; 4], "mission {i}: who directs the second front");
-            assert_eq!(b.missions[second as usize].look, 0, "mission {i}: the second front in the Normal look (Dual Strike's top screen)");
+            assert_eq!(
+                b.missions[second as usize].look, 0,
+                "mission {i}: the second front in the Normal look (Dual Strike's top screen)"
+            );
             // The Black Arc's fronts are in the sky, with clear weather.
             assert_eq!(t.sky, matches!(i, 8 | 14), "mission {i}: in the sky");
             if t.sky {
-                assert_eq!(b.missions[second as usize].weather, 0, "mission {i}: clear weather in the sky");
+                assert_eq!(
+                    b.missions[second as usize].weather, 0,
+                    "mission {i}: clear weather in the sky"
+                );
             }
             assert!(!t.powers);
             assert!(t.posture, "mission {i}: Intel > General");
             let rec = record(&ds, i).unwrap();
-            assert_eq!(t.cos[0] == PICK, rec.cos[0].1 == 0x1C, "mission {i}: the player's tag CO is picked");
+            assert_eq!(
+                t.cos[0] == PICK,
+                rec.cos[0].1 == 0x1C,
+                "mission {i}: the player's tag CO is picked"
+            );
             // Each front's events: Dual Strike's records for it.
             let main = header_records(&b, u32::from_le_bytes(header(i)[4..8].try_into().unwrap()));
-            let sec = header_records(&b, u32::from_le_bytes(header(second as usize)[4..8].try_into().unwrap()));
+            let sec = header_records(
+                &b,
+                u32::from_le_bytes(header(second as usize)[4..8].try_into().unwrap()),
+            );
             let fires = |rs: &[(usize, u8, u8, u16, u32)]| rs.iter().filter(|r| r.1 == 7).count();
             let ds_fires = |front: u8| {
                 (0..6)
@@ -1740,7 +1879,11 @@ mod tests {
             assert_eq!(fires(&sec), ds_fires(1), "mission {i}: the second front's events");
             assert!(fires(&main) >= ds_fires(0), "mission {i}: the main front's events");
             assert_ne!(header(i)[0..4], header(second as usize)[0..4], "mission {i}: two maps");
-            assert_eq!(u16::from_le_bytes([header(second as usize)[0x24], header(second as usize)[0x25]]), 0, "no day limit on the second front");
+            assert_eq!(
+                u16::from_le_bytes([header(second as usize)[0x24], header(second as usize)[0x25]]),
+                0,
+                "no day limit on the second front"
+            );
         }
         for m in &b.missions {
             if !fronts.iter().any(|f| f.0 == m.index) {
@@ -1756,7 +1899,11 @@ mod tests {
         assert!(!main.contains(&CRYSTAL), "no Black Crystal on the main map");
         let (w2, _, sec) = tiles(32);
         for &(x, y) in &MTE_CRYSTALS {
-            assert_eq!(sec[(y * w2 as u32 + x) as usize], CRYSTAL, "a Black Crystal at ({x}, {y}) on the second front");
+            assert_eq!(
+                sec[(y * w2 as u32 + x) as usize],
+                CRYSTAL,
+                "a Black Crystal at ({x}, {y}) on the second front"
+            );
         }
         assert_eq!(sec.iter().filter(|&&t| t == CRYSTAL).count(), 3);
         let _ = w;
@@ -1772,13 +1919,21 @@ mod tests {
         let ds = Ds::from_pack(pack).unwrap();
         let widths = [6u8; 256];
         let b = build(&ds, 0x08E0_0000, &widths).unwrap();
-        eprintln!("blob {} KB, {} texts, {} magic, unhandled {:?}", b.blob.len() / 1024, b.texts.len(), b.magic.len(), b.unhandled);
+        eprintln!(
+            "blob {} KB, {} texts, {} magic, unhandled {:?}",
+            b.blob.len() / 1024,
+            b.texts.len(),
+            b.magic.len(),
+            b.unhandled
+        );
         let mut unknown: Vec<String> = b
             .magic
             .iter()
             .filter_map(|m| match *m {
                 Magic::Predicate(f) if f & 0xFF00_0000 == PROPERTY_COUNT => None,
-                Magic::Predicate(f) | Magic::Call(f, _) if !crate::ds_campaign_rules::KNOWN.contains(&f) => Some(format!("{m:x?}")),
+                Magic::Predicate(f) | Magic::Call(f, _) if !crate::ds_campaign_rules::KNOWN.contains(&f) => {
+                    Some(format!("{m:x?}"))
+                }
                 _ => None,
             })
             .collect();
@@ -1786,7 +1941,10 @@ mod tests {
         unknown.dedup();
         eprintln!("not implemented: {unknown:?}");
         for m in &b.missions {
-            eprintln!("{:2} {:20} front {:?} {}x{} cos {:?} pool {:?}", m.index, m.name, m.two_front, m.width, m.height, m.cos, m.pool);
+            eprintln!(
+                "{:2} {:20} front {:?} {}x{} cos {:?} pool {:?}",
+                m.index, m.name, m.two_front, m.width, m.height, m.cos, m.pool
+            );
         }
         assert_eq!(b.missions.len(), MISSIONS + SECOND_FRONTS);
         assert_eq!(b.missions[0].name, "Jake's Trial");

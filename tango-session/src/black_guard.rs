@@ -29,7 +29,10 @@ pub fn is_black(rgba: &[u8]) -> bool {
 }
 
 fn brightness(rgba: &[u8]) -> u64 {
-    rgba.chunks_exact(4).step_by(7).map(|p| p[0] as u64 + p[1] as u64 + p[2] as u64).sum()
+    rgba.chunks_exact(4)
+        .step_by(7)
+        .map(|p| p[0] as u64 + p[1] as u64 + p[2] as u64)
+        .sum()
 }
 
 #[derive(Default)]
@@ -60,11 +63,19 @@ impl BlackGuard {
             return frame;
         }
         // (the brightest of the last few: the newest can be the first step of a fade)
-        match self.ring.iter().filter(|f| f.len() == frame.len()).max_by_key(|f| brightness(f)) {
+        match self
+            .ring
+            .iter()
+            .filter(|f| f.len() == frame.len())
+            .max_by_key(|f| brightness(f))
+        {
             Some(best) => {
                 if self.black_ticks == 1 {
                     self.held += 1;
-                    log::warn!("a black picture was held back (#{}): showing the last one that was not", self.held);
+                    log::warn!(
+                        "a black picture was held back (#{}): showing the last one that was not",
+                        self.held
+                    );
                 }
                 best.clone()
             }

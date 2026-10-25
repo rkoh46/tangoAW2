@@ -48,9 +48,7 @@ const RNG: u32 = 0x0300_1FD4;
 
 /// Whether a sandstorm is blowing now.
 pub fn active(core: &Core) -> bool {
-    is_on(core)
-        && core.raw_read_8(WEATHER, -1) == 0
-        && (fixed(core) || one_day(core))
+    is_on(core) && core.raw_read_8(WEATHER, -1) == 0 && (fixed(core) || one_day(core))
 }
 
 fn fixed(core: &Core) -> bool {
@@ -122,11 +120,7 @@ fn draw(core: &mut Core) {
 }
 
 fn day_checked(core: &mut Core) {
-    if is_on(core)
-        && one_day(core)
-        && core.raw_read_8(WEATHER, -1) == 0
-        && core.gba().cpu().gpr(0) & 0xFF != 0
-    {
+    if is_on(core) && one_day(core) && core.raw_read_8(WEATHER, -1) == 0 && core.gba().cpu().gpr(0) & 0xFF != 0 {
         set_one_day(core, false);
     }
 }
@@ -404,10 +398,21 @@ fn ds_sand() -> Option<&'static Vec<u8>> {
         .get_or_init(|| {
             let pack = crate::ds_pack::pack()?;
             let t = crate::ds_art::lz10(pack.file("bmap/0b2")?)?;
-            let dots = |k: usize| t[32 * k..32 * k + 32].iter().map(|b| (b & 15 != 0) as u32 + (b >> 4 != 0) as u32).sum::<u32>();
+            let dots = |k: usize| {
+                t[32 * k..32 * k + 32]
+                    .iter()
+                    .map(|b| (b & 15 != 0) as u32 + (b >> 4 != 0) as u32)
+                    .sum::<u32>()
+            };
             let mut order: Vec<usize> = (0..t.len() / 32).collect();
             order.sort_by_key(|&k| (std::cmp::Reverse(dots(k)), k));
-            Some(order.iter().take(3).flat_map(|&k| t[32 * k..32 * k + 32].to_vec()).collect())
+            Some(
+                order
+                    .iter()
+                    .take(3)
+                    .flat_map(|&k| t[32 * k..32 * k + 32].to_vec())
+                    .collect(),
+            )
         })
         .as_ref()
 }
@@ -510,11 +515,14 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (DRAW, Box::new(draw)),
         (DAY_CHECKED, Box::new(day_checked)),
         (MAP_START, Box::new(map_start)),
-        (TO_PLAY, Box::new(|core: &mut Core| {
-            if is_on(core) {
-                to_play(core)
-            }
-        })),
+        (
+            TO_PLAY,
+            Box::new(|core: &mut Core| {
+                if is_on(core) {
+                    to_play(core)
+                }
+            }),
+        ),
         (TO_RULES, Box::new(to_rules)),
         (WORD, Box::new(word)),
         (WORD_DRAWN, Box::new(word_drawn)),

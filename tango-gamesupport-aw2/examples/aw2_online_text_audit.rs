@@ -38,11 +38,19 @@ impl Ctx {
     fn page(&mut self, name: &str, set: impl FnOnce(&mut mgba::core::Core)) {
         let core = self.link.core_mut();
         core.raw_write_range(STATE, -1, &[0u8; 0x100]);
-        core.raw_write_range(tango_gamesupport_aw2::online::SAVED, -1, &vec![0u8; tango_gamesupport_aw2::online::SAVED_LEN as usize]);
+        core.raw_write_range(
+            tango_gamesupport_aw2::online::SAVED,
+            -1,
+            &vec![0u8; tango_gamesupport_aw2::online::SAVED_LEN as usize],
+        );
         core.raw_write_range(tango_gamesupport_aw2::online_browse::STATE, -1, &[0u8; 0x100]);
         core.raw_write_range(tango_gamesupport_aw2::online_browse::ROWS, -1, &[0u8; 0x100]);
         // (the record's lines and the gamertag)
-        core.raw_write_range(tango_gamesupport_aw2::online_stats::BASE, -1, &vec![0u8; 0x100 + 0x20 * 24]);
+        core.raw_write_range(
+            tango_gamesupport_aw2::online_stats::BASE,
+            -1,
+            &vec![0u8; 0x100 + 0x20 * 24],
+        );
         set(core);
         // (the console's own screen follows the level: the menu's words and help)
         for _ in 0..3 {
@@ -109,7 +117,15 @@ fn main() {
     mailbox::boot_to_lobby();
     let save = vec![0xffu8; tango_gamesupport_aw2::SAVE_SIZE];
     let rtc = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
-    let link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &tango_gamesupport_aw2::pvp::AW2E, None, None).expect("boot");
+    let link = tango_backend_mgba::SharedLink::boot(
+        &rom,
+        Some(&save),
+        Some(rtc),
+        &tango_gamesupport_aw2::pvp::AW2E,
+        None,
+        None,
+    )
+    .expect("boot");
     let mut c = Ctx { link, out, problems: 0 };
     let mut t = 0;
     while t < 3000 && tango_gamesupport_aw2::online_menu::cursor(c.link.core()).is_none() {
@@ -119,7 +135,10 @@ fn main() {
     for _ in 0..120 {
         c.link.tick([HostInput::keys(0), HostInput::keys(0)]);
     }
-    assert!(tango_gamesupport_aw2::online_menu::cursor(c.link.core()).is_some(), "the ONLINE screen did not come up");
+    assert!(
+        tango_gamesupport_aw2::online_menu::cursor(c.link.core()).is_some(),
+        "the ONLINE screen did not come up"
+    );
 
     // --- gamertag corner, ONLINE hub ---
     for (name, tagname) in [("hub_tag_w", W10), ("hub_tag_none", "")] {
@@ -145,9 +164,39 @@ fn main() {
     }
     // --- connection status and page ---
     let conn_cases: [(&str, u8, [&str; 5]); 3] = [
-        ("ok", 1, ["g|Matchmaking\tOK (Tango)", "g|Lobby browser\t3 of 3 OK", "g|Direct (STUN)\tOK", "g|Relay (TURN)\tOK", "g|Last check\t2 min ago"]),
-        ("limited", 2, ["y|Matchmaking\tTrying next...", "y|Lobby browser\t1 of 3 OK", "g|Direct (STUN)\tOK", "r|Relay (TURN)\tUnavailable", "g|Last check\tjust now"]),
-        ("offline", 3, ["r|Matchmaking\tUnreachable", "r|Lobby browser\t0 of 3 OK", "r|Direct (STUN)\tUnreachable", "r|Relay (TURN)\tUnavailable", "g|Last check\t12 min ago"]),
+        (
+            "ok",
+            1,
+            [
+                "g|Matchmaking\tOK (Tango)",
+                "g|Lobby browser\t3 of 3 OK",
+                "g|Direct (STUN)\tOK",
+                "g|Relay (TURN)\tOK",
+                "g|Last check\t2 min ago",
+            ],
+        ),
+        (
+            "limited",
+            2,
+            [
+                "y|Matchmaking\tTrying next...",
+                "y|Lobby browser\t1 of 3 OK",
+                "g|Direct (STUN)\tOK",
+                "r|Relay (TURN)\tUnavailable",
+                "g|Last check\tjust now",
+            ],
+        ),
+        (
+            "offline",
+            3,
+            [
+                "r|Matchmaking\tUnreachable",
+                "r|Lobby browser\t0 of 3 OK",
+                "r|Direct (STUN)\tUnreachable",
+                "r|Relay (TURN)\tUnavailable",
+                "g|Last check\t12 min ago",
+            ],
+        ),
     ];
     for (name, st, lines) in &conn_cases {
         let l: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
@@ -190,7 +239,13 @@ fn main() {
     }
     // --- the room pages (host: level 2, guest: level 4) ---
     let names5 = [W12, "Gamertag10", "Nell", W12, "Fifth"];
-    let kinds = [(0, 0), (LINK_RELAY, 255), (LINK_DIRECT, 23), (LINK_RELAY, 140), (LINK_DIRECT, 7)];
+    let kinds = [
+        (0, 0),
+        (LINK_RELAY, 255),
+        (LINK_DIRECT, 23),
+        (LINK_RELAY, 140),
+        (LINK_DIRECT, 7),
+    ];
     for (lvl, who) in [(2u8, "host"), (4u8, "guest")] {
         for n in 2..=5usize {
             for (variant, pw, st, msg) in [
@@ -202,7 +257,14 @@ fn main() {
                     level(core, lvl);
                     tag(core, W10, &[]);
                     let me = if lvl == 2 { 0 } else { n - 1 };
-                    room(core, lvl == 2, me, &names5[..n], &[false, true, false, true, false], &kinds);
+                    room(
+                        core,
+                        lvl == 2,
+                        me,
+                        &names5[..n],
+                        &[false, true, false, true, false],
+                        &kinds,
+                    );
                     typed(core, STATE + 0x5A, STATE + 0x59, pw);
                     if lvl == 2 {
                         mailbox::write_room(&mut w(core), "WWWWWW");
@@ -265,7 +327,11 @@ fn main() {
                 "@waiting1" => w1.as_str(),
                 m => m,
             };
-            let st = if m.starts_with("Waiting for") { Status::Waiting } else { Status::Failed };
+            let st = if m.starts_with("Waiting for") {
+                Status::Waiting
+            } else {
+                Status::Failed
+            };
             c.page(&format!("msg{k:02}_{who}"), |core| {
                 level(core, lvl);
                 if lvl != 6 {
@@ -292,7 +358,11 @@ fn main() {
         level(core, tango_gamesupport_aw2::online::REJOIN_LEVEL);
         mailbox::write_rejoin(&mut w(core), 1, "WWWWWWWWWWWWWWWWWW");
     });
-    for (name, room) in [("rejoin_offer_short", "Ann's room"), ("rejoin_offer_spaces", "Big Pent Room"), ("rejoin_offer_unranked", "")] {
+    for (name, room) in [
+        ("rejoin_offer_short", "Ann's room"),
+        ("rejoin_offer_spaces", "Big Pent Room"),
+        ("rejoin_offer_unranked", ""),
+    ] {
         c.page(name, |core| {
             level(core, tango_gamesupport_aw2::online::REJOIN_LEVEL);
             mailbox::write_rejoin(&mut w(core), 1, room);
@@ -303,7 +373,11 @@ fn main() {
         ("rejoin_waiting", Status::Waiting, ""),
         ("rejoin_connected", Status::Connected, W12),
         ("rejoin_failed", Status::Failed, "Your Unranked match is over."),
-        ("rejoin_failed_long", Status::Failed, "WWWWWWWW WWWWWWWW WWWWWWWW WWWWWWWW"),
+        (
+            "rejoin_failed_long",
+            Status::Failed,
+            "WWWWWWWW WWWWWWWW WWWWWWWW WWWWWWWW",
+        ),
     ] {
         c.page(name, |core| {
             level(core, tango_gamesupport_aw2::online::REJOIN_LEVEL);
@@ -337,34 +411,92 @@ fn main() {
         })
         .collect();
     for (name, rows, net, ver, cur) in [
-        ("browse_full", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.10.12-beta", 0usize),
-        ("browse_full_c1", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.10.12-beta.3", 1),
-        ("browse_full_c2", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 2),
-        ("browse_full_c3", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 3),
-        ("browse_full_c9", long_rows.clone(), tango_gamesupport_aw2::online_browse::Net::Ok, "0.10.12-beta.3", 9),
-        ("browse_empty", vec![], tango_gamesupport_aw2::online_browse::Net::Ok, "0.7.1", 0),
-        ("browse_looking", vec![], tango_gamesupport_aw2::online_browse::Net::Looking, "0.7.1", 0),
-        ("browse_offline", vec![], tango_gamesupport_aw2::online_browse::Net::Offline, "0.7.1", 0),
+        (
+            "browse_full",
+            long_rows.clone(),
+            tango_gamesupport_aw2::online_browse::Net::Ok,
+            "0.10.12-beta",
+            0usize,
+        ),
+        (
+            "browse_full_c1",
+            long_rows.clone(),
+            tango_gamesupport_aw2::online_browse::Net::Ok,
+            "0.10.12-beta.3",
+            1,
+        ),
+        (
+            "browse_full_c2",
+            long_rows.clone(),
+            tango_gamesupport_aw2::online_browse::Net::Ok,
+            "0.7.1",
+            2,
+        ),
+        (
+            "browse_full_c3",
+            long_rows.clone(),
+            tango_gamesupport_aw2::online_browse::Net::Ok,
+            "0.7.1",
+            3,
+        ),
+        (
+            "browse_full_c9",
+            long_rows.clone(),
+            tango_gamesupport_aw2::online_browse::Net::Ok,
+            "0.10.12-beta.3",
+            9,
+        ),
+        (
+            "browse_empty",
+            vec![],
+            tango_gamesupport_aw2::online_browse::Net::Ok,
+            "0.7.1",
+            0,
+        ),
+        (
+            "browse_looking",
+            vec![],
+            tango_gamesupport_aw2::online_browse::Net::Looking,
+            "0.7.1",
+            0,
+        ),
+        (
+            "browse_offline",
+            vec![],
+            tango_gamesupport_aw2::online_browse::Net::Offline,
+            "0.7.1",
+            0,
+        ),
     ] {
         c.page(name, |core| {
             level(core, 7);
             tango_gamesupport_aw2::online_browse::mailbox::write(&mut w(core), &rows, net, ver);
             core.raw_write_8(tango_gamesupport_aw2::online_browse::STATE + 1, -1, cur as u8);
-            core.raw_write_8(tango_gamesupport_aw2::online_browse::STATE + 2, -1, cur.saturating_sub(7) as u8);
+            core.raw_write_8(
+                tango_gamesupport_aw2::online_browse::STATE + 2,
+                -1,
+                cur.saturating_sub(7) as u8,
+            );
         });
     }
     // --- the browser's own match, R's notes, names with spaces ---
-    let named_rows: Vec<tango_gamesupport_aw2::online_browse::Row> = ["Big Pent Room", "WWWWWWWWWWWW", "Ann's room", "A B C D E F G H", "WWWWWWWWWWWWWWWWWW"]
-        .iter()
-        .enumerate()
-        .map(|(k, n)| tango_gamesupport_aw2::online_browse::Row {
-            code: format!("ABCD{k:02}"),
-            name: n.to_string(),
-            players: [5u8, 1, 3, 4, 2][k % 5],
-            max: 5,
-            locked: k % 2 == 0,
-        })
-        .collect();
+    let named_rows: Vec<tango_gamesupport_aw2::online_browse::Row> = [
+        "Big Pent Room",
+        "WWWWWWWWWWWW",
+        "Ann's room",
+        "A B C D E F G H",
+        "WWWWWWWWWWWWWWWWWW",
+    ]
+    .iter()
+    .enumerate()
+    .map(|(k, n)| tango_gamesupport_aw2::online_browse::Row {
+        code: format!("ABCD{k:02}"),
+        name: n.to_string(),
+        players: [5u8, 1, 3, 4, 2][k % 5],
+        max: 5,
+        locked: k % 2 == 0,
+    })
+    .collect();
     for (name, own, note, cur) in [
         ("browse_own", Some("WWWWWWWWWWWWWWWWWW"), 0u8, 0usize),
         ("browse_own_code", Some("Big Pent Room"), 0, 1),
@@ -375,8 +507,17 @@ fn main() {
     ] {
         c.page(name, |core| {
             level(core, 7);
-            let rows = if name.ends_with("full") { long_rows.clone() } else { named_rows.clone() };
-            tango_gamesupport_aw2::online_browse::mailbox::write(&mut w(core), &rows, tango_gamesupport_aw2::online_browse::Net::Ok, "0.8.5");
+            let rows = if name.ends_with("full") {
+                long_rows.clone()
+            } else {
+                named_rows.clone()
+            };
+            tango_gamesupport_aw2::online_browse::mailbox::write(
+                &mut w(core),
+                &rows,
+                tango_gamesupport_aw2::online_browse::Net::Ok,
+                "0.8.5",
+            );
             if let Some(room) = own {
                 mailbox::write_rejoin(&mut w(core), 1, room);
             }
@@ -417,7 +558,11 @@ fn main() {
         });
     }
     for (lvl, who) in [(2u8, "host"), (4u8, "guest")] {
-        for (variant, room_name, pw) in [("long", "WWWWWWWWWWWWWWWWWW", "UT"), ("short", "Ann's room", ""), ("spaces", "Big Pent Room", "WWWW")] {
+        for (variant, room_name, pw) in [
+            ("long", "WWWWWWWWWWWWWWWWWW", "UT"),
+            ("short", "Ann's room", ""),
+            ("spaces", "Big Pent Room", "WWWW"),
+        ] {
             c.page(&format!("roomname_{who}_{variant}"), |core| {
                 level(core, lvl);
                 tag(core, W10, &[]);
@@ -487,8 +632,20 @@ fn main() {
     });
     // The Teams screen's own record (the CO list): the console as Play offline reaches Versus' Teams.
     let save = vec![0xffu8; tango_gamesupport_aw2::SAVE_SIZE];
-    let link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &tango_gamesupport_aw2::pvp::AW2E, None, None).expect("boot");
-    let mut c = Ctx { link, out: c.out.clone(), problems: c.problems };
+    let link = tango_backend_mgba::SharedLink::boot(
+        &rom,
+        Some(&save),
+        Some(rtc),
+        &tango_gamesupport_aw2::pvp::AW2E,
+        None,
+        None,
+    )
+    .expect("boot");
+    let mut c = Ctx {
+        link,
+        out: c.out.clone(),
+        problems: c.problems,
+    };
     {
         let (a, b, d, e) = (1u32, 1u32 << 3, 1u32 << 7, 0u32);
         let wait = |c: &mut Ctx, n: u32| {
@@ -542,7 +699,9 @@ fn armies(c: &mut Ctx) {
     let core = c.link.core_mut();
     let list = tango_gamesupport_aw2::tag_ui::teams_list(core);
     let labels: Vec<String> = list.iter().map(|&co| ot::co_label(core, co)).collect();
-    let widest = (0..list.len()).max_by_key(|&i| tango_gamesupport_aw2::online::text_width(core, &labels[i])).unwrap();
+    let widest = (0..list.len())
+        .max_by_key(|&i| tango_gamesupport_aw2::online::text_width(core, &labels[i]))
+        .unwrap();
     println!("armies: {} COs, widest {:?}", list.len(), labels[widest]);
     let by_name = |n: &str| labels.iter().position(|l| l == n);
     let names = [W12, "Gamertag10", "Nell", W10, "Xx"];
@@ -555,7 +714,9 @@ fn armies(c: &mut Ctx) {
                 }
                 // every CO in seat 0..n (the widest first), so each is drawn on each seat's row
                 let mut cos: Vec<usize> = (0..list.len()).collect();
-                cos.sort_by_key(|&i| std::cmp::Reverse(tango_gamesupport_aw2::online::text_width(c.link.core(), &labels[i])));
+                cos.sort_by_key(|&i| {
+                    std::cmp::Reverse(tango_gamesupport_aw2::online::text_width(c.link.core(), &labels[i]))
+                });
                 for (k, chunk) in cos.chunks(n).enumerate() {
                     for local in 0..n {
                         if k > 0 && local != n - 1 {
@@ -569,16 +730,29 @@ fn armies(c: &mut Ctx) {
                             let b = 0x10 + 0x10 * s;
                             ram[b] = chunk[s % chunk.len()] as u8;
                             ram[b + 1] = colours[s];
-                            ram[b + 2] = if tags_on { list[(chunk[s % chunk.len()] + 1) % list.len()] } else { 0xFF };
+                            ram[b + 2] = if tags_on {
+                                list[(chunk[s % chunk.len()] + 1) % list.len()]
+                            } else {
+                                0xFF
+                            };
                             ram[b + 5] = [0u8, 0, 1, 1, 2][s];
                             ram[b + 3] = if s == local { field } else { 0 };
                             ram[b + 4] = (field == 4 && s != local) as u8;
                         }
                         core.raw_write_range(ot::SEL, -1, &ram);
-                        tango_gamesupport_aw2::online::set_room(names[..n].iter().map(|s| s.to_string()).collect(), local);
+                        tango_gamesupport_aw2::online::set_room(
+                            names[..n].iter().map(|s| s.to_string()).collect(),
+                            local,
+                        );
                         core.raw_write_8(tango_gamesupport_aw2::ds_weather::DS_ON, -1, tags_on as u8);
                         let save = k == 0 && local == n - 1 || (k == 0 && local == 0 && n == 5);
-                        let tag = format!("army_{}p_{}{}_s{local}_{}", n, fname, if tags_on { "_tag" } else { "" }, labels[chunk[0]].replace(' ', ""));
+                        let tag = format!(
+                            "army_{}p_{}{}_s{local}_{}",
+                            n,
+                            fname,
+                            if tags_on { "_tag" } else { "" },
+                            labels[chunk[0]].replace(' ', "")
+                        );
                         paint(c, &tag, save, |core, rgba| ot::draw(core, rgba));
                     }
                 }
@@ -586,7 +760,11 @@ fn armies(c: &mut Ctx) {
         }
     }
     // the notes and bars
-    for (n, local, ready, note, tag) in [(3usize, 0usize, false, true, "note"), (3, 2, true, false, "waiting"), (2, 1, false, false, "bar_guest")] {
+    for (n, local, ready, note, tag) in [
+        (3usize, 0usize, false, true, "note"),
+        (3, 2, true, false, "waiting"),
+        (2, 1, false, false, "bar_guest"),
+    ] {
         let core = c.link.core_mut();
         let mut ram = vec![0u8; 0x100];
         ram[0] = 1;
@@ -622,28 +800,47 @@ fn proposals(c: &mut Ctx) {
     println!("unranked: widest map name #{} ({} px)", widest.1, widest.0);
     for local in 0..2usize {
         tango_gamesupport_aw2::online::set_room(vec![W12.to_string(), W12.to_string()], local);
-        for (picks, phase, tag) in [(0u8, 0u8, "first"), (1, 0, "second"), (2, 1, "played0"), (2, 1, "played1"), (2, 2, "chosen")] {
+        for (picks, phase, tag) in [
+            (0u8, 0u8, "first"),
+            (1, 0, "second"),
+            (2, 1, "played0"),
+            (2, 1, "played1"),
+            (2, 2, "chosen"),
+        ] {
             let core = c.link.core_mut();
             un::set_state(core, picks, [widest.1, widest.1], phase, tag.ends_with('1') as u8);
-            paint(c, &format!("unranked_s{local}_{tag}"), true, |core, rgba| un::paint_bar(core, rgba));
+            paint(c, &format!("unranked_s{local}_{tag}"), true, |core, rgba| {
+                un::paint_bar(core, rgba)
+            });
         }
-        paint(c, &format!("unranked_s{local}_rules"), true, |core, rgba| un::paint_rules_name(core, rgba));
+        paint(c, &format!("unranked_s{local}_rules"), true, |core, rgba| {
+            un::paint_rules_name(core, rgba)
+        });
     }
     // The maps are picked in private: the plate with who has picked (never which map), for each count of seats and every combination
     // of the seats that have picked, with long gamertags, seconds on the clock and spaces in a name.
     let names = [W12, "Ann Lee", "Gamertag10", "Bo Ray Jr", "Nell Q"];
     for n in 2..=5usize {
         for local in 0..n {
-            for (mask, picked, tag) in [(0u8, false, "none"), (1 << local, true, "mine"), ((1u8 << n) - 1 & !(1 << local), false, "others"), ((1u8 << n) - 1, true, "all")] {
+            for (mask, picked, tag) in [
+                (0u8, false, "none"),
+                (1 << local, true, "mine"),
+                ((1u8 << n) - 1 & !(1 << local), false, "others"),
+                ((1u8 << n) - 1, true, "all"),
+            ] {
                 let mut ram = vec![0u8; 0x100];
                 ram[0] = 1;
                 ram[2] = n as u8;
-                c.link.core_mut().raw_write_range(tango_gamesupport_aw2::online_teams::SEL, -1, &ram);
+                c.link
+                    .core_mut()
+                    .raw_write_range(tango_gamesupport_aw2::online_teams::SEL, -1, &ram);
                 tango_gamesupport_aw2::online::set_room(names[..n].iter().map(|s| s.to_string()).collect(), local);
                 for left in [119u32, 9] {
                     un::set_picking(c.link.core_mut(), mask, picked, left);
                     let save = n >= 3 && local == 1 && left == 119 || n == 5 && local == 4;
-                    paint(c, &format!("picks_{n}p_s{local}_{tag}_{left}"), save, |core, rgba| un::paint_bar(core, rgba));
+                    paint(c, &format!("picks_{n}p_s{local}_{tag}_{left}"), save, |core, rgba| {
+                        un::paint_bar(core, rgba)
+                    });
                 }
             }
         }

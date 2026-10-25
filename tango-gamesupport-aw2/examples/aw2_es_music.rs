@@ -25,7 +25,11 @@ fn main() {
                 eprintln!("{f}: {e}");
                 std::process::exit(1)
             });
-            let name = std::path::Path::new(f).file_stem().unwrap().to_string_lossy().into_owned();
+            let name = std::path::Path::new(f)
+                .file_stem()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned();
             let co = es_music::SOURCES.iter().find(|s| s.name == name).map_or(0, |s| s.co);
             songs.push((name, co, text));
         }
@@ -34,7 +38,11 @@ fn main() {
     for (name, co, text) in songs {
         match es_music::compile(&text) {
             Ok(c) => {
-                let tracks: Vec<String> = c.tracks.iter().map(|t| format!("{{\"bytes\":{},\"label\":{}}}", t.bytes.len(), t.label)).collect();
+                let tracks: Vec<String> = c
+                    .tracks
+                    .iter()
+                    .map(|t| format!("{{\"bytes\":{},\"label\":{}}}", t.bytes.len(), t.label))
+                    .collect();
                 let voices: Vec<String> = c.voices.iter().map(|v| format!("[{},{}]", v.group, v.index)).collect();
                 println!(
                     "{{\"name\":\"{name}\",\"co\":{co},\"bpm\":{},\"bar_ticks\":{},\"reverb\":{},\"priority\":{},\"intro_s\":{:.3},\"loop_s\":{:.3},\"intro_ticks\":{},\"loop_ticks\":{},\"peak_voices\":{},\"peak_at\":{},\"notes\":{},\"bytes\":{},\"tracks\":[{}],\"voices\":[{}]}}",

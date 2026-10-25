@@ -49,7 +49,11 @@ fn mark_pixels(phase: bool) -> Vec<u8> {
             px[(y * 16 + x) as usize] = if d == 7 || d == 8 {
                 1
             } else if d == 5 || d == 6 {
-                if phase { 3 } else { 2 }
+                if phase {
+                    3
+                } else {
+                    2
+                }
             } else if d <= 1 {
                 2
             } else {
@@ -87,7 +91,9 @@ pub fn flush_sprites(core: &mut Core, at: u32, end: u32) -> u32 {
     if std::env::var_os("NO_HAZARD").is_some() {
         return at;
     }
-    let Some(v) = crate::ds_campaign::volcano_spec(core) else { return at };
+    let Some(v) = crate::ds_campaign::volcano_spec(core) else {
+        return at;
+    };
     if core.raw_read_32(0x0300_0000, -1) != 0x0802_2049 {
         return at;
     }
@@ -107,7 +113,10 @@ pub fn flush_sprites(core: &mut Core, at: u32, end: u32) -> u32 {
     }
     write_if_changed(core, OBJ_TILES + 32 * TILE, &to_tiles(&mark_pixels(pulse)));
     let map = core.raw_read_32(MAP_POINTER, -1);
-    let (sx, sy) = (core.raw_read_16(map + 4, -1) as i16 as i32, core.raw_read_16(map + 6, -1) as i16 as i32);
+    let (sx, sy) = (
+        core.raw_read_16(map + 4, -1) as i16 as i32,
+        core.raw_read_16(map + 6, -1) as i16 as i32,
+    );
     let mut at = at;
     for (x, y) in v.cells_on(day + 1) {
         let (px, py) = (x as i32 * 16 - sx, y as i32 * 16 - sy);

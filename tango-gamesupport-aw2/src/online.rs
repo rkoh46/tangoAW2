@@ -247,9 +247,13 @@ pub mod mailbox {
         /// UNRANKED: look for an opponent.
         Unranked,
         /// Make a room to resume the saved match at this place in the list ([`write_saved`]).
-        Resume { index: usize },
+        Resume {
+            index: usize,
+        },
         /// Delete the saved match at this place in the list.
-        DeleteSaved { index: usize },
+        DeleteSaved {
+            index: usize,
+        },
         /// UNRANKED: the player's match is still on (their app crashed): go back into it.
         Rejoin,
         /// UNRANKED: the player gives up the match that is still on (their army yields).
@@ -283,7 +287,10 @@ pub mod mailbox {
         let pl = (b[0x59] as usize).min(PASSWORD_CHARS);
         let password = text(0x5A, pl);
         let r = match kind {
-            1 => Request::Host { password, name: clean_name(&text(0x1C, (b[0x29] as usize).min(NAME_TYPED_CHARS)), ROOM_NAME_CHARS) },
+            1 => Request::Host {
+                password,
+                name: clean_name(&text(0x1C, (b[0x29] as usize).min(NAME_TYPED_CHARS)), ROOM_NAME_CHARS),
+            },
             2 => Request::Join { code, password },
             4 => Request::Ready,
             5 => Request::NotReady,
@@ -294,8 +301,12 @@ pub mod mailbox {
                 Request::SetGamertag(tag.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect())
             }
             7 => Request::Unranked,
-            8 => Request::Resume { index: b[0x6B] as usize },
-            9 => Request::DeleteSaved { index: b[0x6B] as usize },
+            8 => Request::Resume {
+                index: b[0x6B] as usize,
+            },
+            9 => Request::DeleteSaved {
+                index: b[0x6B] as usize,
+            },
             11 => Request::Rejoin,
             12 => Request::GiveUp,
             _ => Request::Leave,
@@ -348,13 +359,21 @@ pub mod mailbox {
     /// "+N" for the names that do not fit.
     pub fn waiting_for(names: &[String]) -> String {
         const MAX: usize = MESSAGE_LEN as usize - 1;
-        let name = |n: &String| n.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).collect::<String>();
+        let name = |n: &String| {
+            n.chars()
+                .filter(|c| c.is_ascii() && !c.is_ascii_control())
+                .collect::<String>()
+        };
         let full = format!("Waiting for {}", names.iter().map(name).collect::<Vec<_>>().join(", "));
         if full.len() <= MAX {
             return full;
         }
         for shown in (1..names.len()).rev() {
-            let t = format!("Waiting for {} +{}", names[..shown].iter().map(name).collect::<Vec<_>>().join(", "), names.len() - shown);
+            let t = format!(
+                "Waiting for {} +{}",
+                names[..shown].iter().map(name).collect::<Vec<_>>().join(", "),
+                names.len() - shown
+            );
             if t.len() <= MAX {
                 return t;
             }
@@ -366,7 +385,10 @@ pub mod mailbox {
     /// with ".." (the pages show a message whole or not at all).
     pub fn message_text(message: &str) -> String {
         const MAX: usize = MESSAGE_LEN as usize - 1;
-        let s: String = message.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).collect();
+        let s: String = message
+            .chars()
+            .filter(|c| c.is_ascii() && !c.is_ascii_control())
+            .collect();
         if s.len() <= MAX {
             return s;
         }
@@ -389,7 +411,12 @@ pub mod mailbox {
         let rows = &rows[..rows.len().min(SAVED_MAX)];
         let put = |b: &mut [u8], s: &str| {
             let n = b.len() - 1;
-            for (k, c) in s.chars().filter(|c| c.is_ascii() && !c.is_ascii_control()).take(n).enumerate() {
+            for (k, c) in s
+                .chars()
+                .filter(|c| c.is_ascii() && !c.is_ascii_control())
+                .take(n)
+                .enumerate()
+            {
                 b[k] = c as u8;
             }
         };
@@ -398,7 +425,10 @@ pub mod mailbox {
             let e = &mut all[k * SAVED_SIZE as usize..(k + 1) * SAVED_SIZE as usize];
             put(&mut e[..SAVED_PLAYERS], &r.players);
             put(&mut e[SAVED_PLAYERS..SAVED_PLAYERS + SAVED_MAP], &r.map);
-            put(&mut e[SAVED_PLAYERS + SAVED_MAP..SAVED_PLAYERS + SAVED_MAP + SAVED_TAIL], &r.tail);
+            put(
+                &mut e[SAVED_PLAYERS + SAVED_MAP..SAVED_PLAYERS + SAVED_MAP + SAVED_TAIL],
+                &r.tail,
+            );
         }
         write(SAVED_AT, &all);
         write(SAVED, &[rows.len() as u8]);
@@ -493,7 +523,9 @@ pub mod mailbox {
         }
         let bits = probe::bits();
         let flag = |f: u64| bits & f != 0;
-        let (name, value) = cond.split_once('=').map_or((cond, None), |(n, v)| (n, v.parse::<u32>().ok()));
+        let (name, value) = cond
+            .split_once('=')
+            .map_or((cond, None), |(n, v)| (n, v.parse::<u32>().ok()));
         match (name, value) {
             ("onmenu", None) => flag(probe::ONLINE_MENU),
             ("selectmode", None) => flag(probe::SELECT_MODE),
@@ -510,7 +542,9 @@ pub mod mailbox {
             // (the reconnect box is up: a test cue)
             ("reconnect", None) => crate::hold_box::shown(),
             ("mapup", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 16 != 0,
-            ("pickturn", Some(v)) => (probe::CUES.load(std::sync::atomic::Ordering::Relaxed) >> 8) & 0xF == v as u64 + 1,
+            ("pickturn", Some(v)) => {
+                (probe::CUES.load(std::sync::atomic::Ordering::Relaxed) >> 8) & 0xF == v as u64 + 1
+            }
             ("rules", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 128 != 0,
             ("chosen", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 64 != 0,
             ("mypick", None) => probe::CUES.load(std::sync::atomic::Ordering::Relaxed) & 32 != 0,
@@ -526,7 +560,11 @@ pub mod mailbox {
             ("cxlt" | "cxgt" | "cylt" | "cygt", Some(v)) => {
                 let c = probe::CURSOR_CELL.load(std::sync::atomic::Ordering::Relaxed);
                 let at = (if name.starts_with("cy") { c >> 16 } else { c } & 0xFFFF) as u32;
-                if name.ends_with("lt") { at < v } else { at > v }
+                if name.ends_with("lt") {
+                    at < v
+                } else {
+                    at > v
+                }
             }
             // the map waits for the cursor and nothing runs (a test script's cue to press)
             ("idle", None) => bits >> 63 & 1 != 0,
@@ -651,7 +689,10 @@ pub mod probe {
                 }
             }
             // (SELECT MAP: the maps are being picked, this seat has not picked, and the list is up and still)
-            if crate::unranked::picking(core) && !crate::unranked::has_picked(core, me) && crate::survival_ui::idle(core) {
+            if crate::unranked::picking(core)
+                && !crate::unranked::has_picked(core, me)
+                && crate::survival_ui::idle(core)
+            {
                 c |= 32;
             }
             if crate::unranked::rules_up(core) {
@@ -713,7 +754,13 @@ pub mod probe {
             Ordering::Relaxed,
         );
         LIST_DEBUG.store(
-            first as u64 | (cur as u64) << 8 | (pcur as u64) << 16 | (id_a as u64) << 24 | (id_b as u64) << 32 | arm(id_a) << 40 | arm(id_b) << 48,
+            first as u64
+                | (cur as u64) << 8
+                | (pcur as u64) << 16
+                | (id_a as u64) << 24
+                | (id_b as u64) << 32
+                | arm(id_a) << 40
+                | arm(id_b) << 48,
             Ordering::Relaxed,
         );
     }
@@ -947,7 +994,11 @@ fn player(core: &Core, slot: usize) -> Option<(String, bool, u8)> {
     core.raw_read_range(PLAYERS + PLAYER_SIZE * slot as u32, -1, &mut b);
     (b[1] & PRESENT != 0).then(|| {
         (
-            b[2..2 + NAME_CHARS].iter().take_while(|&&c| c != 0).map(|&c| c as char).collect(),
+            b[2..2 + NAME_CHARS]
+                .iter()
+                .take_while(|&&c| c != 0)
+                .map(|&c| c as char)
+                .collect(),
             b[0] == 1,
             b[1],
         )
@@ -977,7 +1028,11 @@ fn link_label(core: &Core, kind: u8, rtt: u8, avail: i32) -> Option<String> {
         LINK_RELAY => "R",
         _ => "",
     };
-    let rtt = if rtt == 255 { "255+".to_string() } else { rtt.to_string() };
+    let rtt = if rtt == 255 {
+        "255+".to_string()
+    } else {
+        rtt.to_string()
+    };
     let forms = [
         format!("{word} {rtt}ms"),
         format!("{word} {rtt}"),
@@ -1140,7 +1195,11 @@ pub fn tick(core: &mut Core, offline: bool, keys: u32, prev: u32) -> u32 {
                 core.raw_write_8(REJOIN, -1, 2);
                 core.raw_write_8(STATUS, -1, 0);
                 request(core, 11);
-            } else if (state != 0 && pressed & KEY_B != 0 && Status::of(core.raw_read_8(STATUS, -1)) != Status::Connected) || state == 0 {
+            } else if (state != 0
+                && pressed & KEY_B != 0
+                && Status::of(core.raw_read_8(STATUS, -1)) != Status::Connected)
+                || state == 0
+            {
                 // (B: the army yields, unless the way back already failed: then the match is over and it is just left)
                 if !failed && state != 0 {
                     request(core, 12);
@@ -1274,7 +1333,11 @@ fn code_entry(core: &mut Core, pressed: u32) {
     if !spaces && g == GRID_SPACE {
         g = GRID_OK;
     }
-    let bottom: &[usize] = if spaces { &[GRID_DEL, GRID_SPACE, GRID_OK] } else { &[GRID_DEL, GRID_OK] };
+    let bottom: &[usize] = if spaces {
+        &[GRID_DEL, GRID_SPACE, GRID_OK]
+    } else {
+        &[GRID_DEL, GRID_OK]
+    };
     // (the cell of the bottom row under a key of the row above, by its middle in half keys)
     let last_row_mid = |g: usize| {
         let mid = grid_mid(g);
@@ -1303,7 +1366,11 @@ fn code_entry(core: &mut Core, pressed: u32) {
                 // (Del is under the left of the row above, OK under its right, the space bar between)
                 let mids: &[usize] = if spaces { &[5, 9, 13] } else { &[5, 13] };
                 let top_mids: &[usize] = if spaces { &[5, 10, 15] } else { &[5, 15] };
-                g = if pressed & KEY_UP != 0 { grid_nearest(3, mids[at]) } else { grid_nearest(0, top_mids[at]) };
+                g = if pressed & KEY_UP != 0 {
+                    grid_nearest(3, mids[at])
+                } else {
+                    grid_nearest(0, top_mids[at])
+                };
             }
         } else {
             let (r, c) = grid_rc(g);
@@ -1315,10 +1382,18 @@ fn code_entry(core: &mut Core, pressed: u32) {
                 g = GRID_START[r] + (c + len - 1) % len;
             }
             if pressed & KEY_DOWN != 0 {
-                g = if r == 3 { last_row_mid(g) } else { grid_nearest(r + 1, grid_mid(g)) };
+                g = if r == 3 {
+                    last_row_mid(g)
+                } else {
+                    grid_nearest(r + 1, grid_mid(g))
+                };
             }
             if pressed & KEY_UP != 0 {
-                g = if r == 0 { last_row_mid(g) } else { grid_nearest(r - 1, grid_mid(g)) };
+                g = if r == 0 {
+                    last_row_mid(g)
+                } else {
+                    grid_nearest(r - 1, grid_mid(g))
+                };
             }
         }
         core.raw_write_8(GRID, -1, g as u8);
@@ -1502,7 +1577,9 @@ fn waiting_for_room(core: &Core) -> bool {
 /// (netplay: to SELECT MAP) or of a console asked to boot to the lobby.
 pub fn boot_more(core: &Core, mode: Option<(u8, u8)>) -> bool {
     match mode {
-        Some((_, sub)) if sub & ONLINE_MATCH != 0 => core.raw_read_8(MATCH, -1) == 0 || (navigating(core) && !waiting_for_room(core)),
+        Some((_, sub)) if sub & ONLINE_MATCH != 0 => {
+            core.raw_read_8(MATCH, -1) == 0 || (navigating(core) && !waiting_for_room(core))
+        }
         None => BOOT_TO_LOBBY.load(Ordering::Relaxed) || navigating(core),
         _ => false,
     }
@@ -1524,7 +1601,10 @@ pub fn before(core: &mut Core, mode: Option<(u8, u8)>, keys: u32) -> u32 {
                 return k;
             }
             // (a room that has fallen to one player ends too, crate::proxy_seat)
-            if crate::campaign_menu::on_select_mode(core) || crate::unranked::finished(core) || crate::proxy_seat::alone(core) {
+            if crate::campaign_menu::on_select_mode(core)
+                || crate::unranked::finished(core)
+                || crate::proxy_seat::alone(core)
+            {
                 core.raw_write_8(OVER, -1, 1);
             }
             let unranked = crate::unranked::on(core);
@@ -1668,7 +1748,10 @@ fn map_armies(core: &Core, pack: bool) -> Option<u8> {
 pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     // The walk to SELECT MAP presses the game's own menus (Select Mode, Versus): the players see none of it.
     // (a room that has fallen to one player is over: SELECT MAP is not shown to it, the lobby follows)
-    if rgba.len() == W * H * 4 && core.raw_read_8(MATCH, -1) == 1 && (navigating(core) || crate::proxy_seat::alone(core)) {
+    if rgba.len() == W * H * 4
+        && core.raw_read_8(MATCH, -1) == 1
+        && (navigating(core) || crate::proxy_seat::alone(core))
+    {
         for px in rgba.chunks_exact_mut(4) {
             px.copy_from_slice(&[0, 0, 0, 255]);
         }
@@ -1681,7 +1764,11 @@ pub fn apply_match(core: &Core, rgba: &mut [u8]) {
         if let Some(seat) = crate::proxy_seat::left_note(core) {
             let mut cv = Rgba(rgba);
             let name = room_physical_name(seat);
-            let name = fit(core, &name, W as i32 - 2 * 8 - text_width(core, " left the room. Pick a map again."));
+            let name = fit(
+                core,
+                &name,
+                W as i32 - 2 * 8 - text_width(core, " left the room. Pick a map again."),
+            );
             bar(&mut cv, core, &format!("{name} left the room. Pick a map again."));
             return;
         }
@@ -1691,7 +1778,11 @@ pub fn apply_match(core: &Core, rgba: &mut [u8]) {
     }
     if crate::survival_ui::selecting(core) {
         let mut cv = Rgba(rgba);
-        bar(&mut cv, core, &format!("Pick a map for {} players.", crate::online_teams::players(core)));
+        bar(
+            &mut cv,
+            core,
+            &format!("Pick a map for {} players.", crate::online_teams::players(core)),
+        );
     }
 }
 
@@ -1720,7 +1811,10 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
         if !battle {
             core.raw_write_8(BATTLE, -1, 1);
             if input_log_on() {
-                log::info!("input-drop: battle started, Teams record controller bytes (1 = human) {:?}", crate::online_teams::controller_bytes(core));
+                log::info!(
+                    "input-drop: battle started, Teams record controller bytes (1 = human) {:?}",
+                    crate::online_teams::controller_bytes(core)
+                );
             }
             crate::online_stats::battle_started(core);
         }
@@ -1730,7 +1824,9 @@ pub fn seat_keys(core: &mut Core, _mode: Option<(u8, u8)>, inputs: &[u32]) {
         // Out of the battle for good (results, the save prompt, SELECT MAP again), not for a moment between its screens.
         let t = core.raw_read_8(OUT_T, -1).saturating_add(1);
         core.raw_write_8(OUT_T, -1, t);
-        let menus = crate::survival_ui::selecting(core) || crate::pvp::on_teams_screen(core) || crate::campaign_menu::on_select_mode(core);
+        let menus = crate::survival_ui::selecting(core)
+            || crate::pvp::on_teams_screen(core)
+            || crate::campaign_menu::on_select_mode(core);
         if !menus {
             crate::online_stats::track(core);
         }
@@ -1803,20 +1899,31 @@ pub fn room_seats() -> Vec<usize> {
 
 /// The gamertag of a seat of the room itself (not counted without the players who left).
 pub fn room_physical_name(seat: usize) -> String {
-    ROOM_INFO.lock().unwrap().names.get(seat).cloned().unwrap_or_else(|| format!("Player {}", seat + 1))
+    ROOM_INFO
+        .lock()
+        .unwrap()
+        .names
+        .get(seat)
+        .cloned()
+        .unwrap_or_else(|| format!("Player {}", seat + 1))
 }
 
 /// A seat of the console (counted without the players who left) as the room's name for it.
 pub fn room_name(seat: usize) -> String {
     let info = ROOM_INFO.lock().unwrap();
     let physical = order().and_then(|o| o.get(seat).copied()).unwrap_or(seat);
-    info.names.get(physical).cloned().unwrap_or_else(|| format!("Player {}", physical + 1))
+    info.names
+        .get(physical)
+        .cloned()
+        .unwrap_or_else(|| format!("Player {}", physical + 1))
 }
 
 /// The console's seat of this peer (its place among the players still in the room).
 pub fn room_local_seat() -> usize {
     let local = ROOM_INFO.lock().unwrap().local_seat;
-    order().and_then(|o| o.iter().position(|&p| p == local)).unwrap_or(local)
+    order()
+        .and_then(|o| o.iter().position(|&p| p == local))
+        .unwrap_or(local)
 }
 
 /// How many gamertags the room's match has (0: none were told, e.g. a link-code game).
@@ -1845,12 +1952,25 @@ pub(crate) fn input_log_on() -> bool {
 
 fn log_dropped(active: usize, army: u8, inputs: &[u32]) {
     static LAST: std::sync::Mutex<Vec<u32>> = std::sync::Mutex::new(Vec::new());
-    let dropped: Vec<u32> = inputs.iter().enumerate().map(|(k, &v)| if k == active { 0 } else { v & 0x3FF }).collect();
+    let dropped: Vec<u32> = inputs
+        .iter()
+        .enumerate()
+        .map(|(k, &v)| if k == active { 0 } else { v & 0x3FF })
+        .collect();
     let mut last = LAST.lock().unwrap();
     if *last != dropped {
         if dropped.iter().any(|&v| v != 0) {
-            let list: Vec<String> = dropped.iter().enumerate().filter(|(_, &v)| v != 0).map(|(k, v)| format!("seat{k}={v:#05x}")).collect();
-            log::info!("input-drop: active seat {active} (army {army}) kept {:#05x}; dropped {}", inputs[active] & 0x3FF, list.join(" "));
+            let list: Vec<String> = dropped
+                .iter()
+                .enumerate()
+                .filter(|(_, &v)| v != 0)
+                .map(|(k, v)| format!("seat{k}={v:#05x}"))
+                .collect();
+            log::info!(
+                "input-drop: active seat {active} (army {army}) kept {:#05x}; dropped {}",
+                inputs[active] & 0x3FF,
+                list.join(" ")
+            );
         } else if !last.is_empty() {
             log::info!("input-drop: none (active seat {active}, army {army})");
         }
@@ -1904,7 +2024,10 @@ fn log_units(core: &Core) {
             }
             let hp = core.raw_read_16(u + 4, -1) & 0x7F;
             let name = crate::bh_smart::NAMES.get(t).copied().unwrap_or("?");
-            out.push_str(&format!(" A{} {name}({x},{y}) hp{hp};", crate::five::army_of_index(core, id)));
+            out.push_str(&format!(
+                " A{} {name}({x},{y}) hp{hp};",
+                crate::five::army_of_index(core, id)
+            ));
         }
     }
     static TERRAIN_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -1912,7 +2035,9 @@ fn log_units(core: &Core) {
         // (once per run: the terrain class of every cell, two hex digits each, for working out routes offline)
         for y in 0..h {
             let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
-            let line: String = (0..w).map(|x| format!("{:02x} ", core.raw_read_8(MAP + 0x1432 + row + x, -1) & 0x1F)).collect();
+            let line: String = (0..w)
+                .map(|x| format!("{:02x} ", core.raw_read_8(MAP + 0x1432 + row + x, -1) & 0x1F))
+                .collect();
             log::info!("terrain y={y:02}: {line}");
         }
     }
@@ -1936,7 +2061,12 @@ fn log_scene(core: &Core) {
     if ml == 0x0802_2049 {
         return;
     }
-    let words = |at: u32| (0..8).map(|k| format!("{:08x}", core.raw_read_32(at + 4 * k, -1))).collect::<Vec<_>>().join(" ");
+    let words = |at: u32| {
+        (0..8)
+            .map(|k| format!("{:08x}", core.raw_read_32(at + 4 * k, -1)))
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
     log::info!(
         "scene: loop {ml:08x} fog byte {} attacker record {} | defender record {}",
         core.raw_read_8(0x0300_3FCD, -1),
@@ -2125,7 +2255,10 @@ pub mod audit {
     /// A box drawn over what is under it: the strings that start in it are hidden.
     pub(crate) fn cover(x: i32, y: i32, w: i32, h: i32) {
         if ON.load(Ordering::Relaxed) {
-            LOG.lock().unwrap().1.retain(|&(tx, ty, _, _)| !(tx >= x && tx < x + w && ty >= y && ty < y + h));
+            LOG.lock()
+                .unwrap()
+                .1
+                .retain(|&(tx, ty, _, _)| !(tx >= x && tx < x + w && ty >= y && ty < y + h));
         }
     }
 
@@ -2168,9 +2301,16 @@ pub mod audit {
                 continue;
             }
             // (the innermost window: the last drawn that holds the string's start)
-            if let Some(&(wx, wy, ww, wh)) = wins.iter().rev().find(|&&(wx, wy, ww, wh)| x >= wx && x < wx + ww && y >= wy && y < wy + wh) {
+            if let Some(&(wx, wy, ww, wh)) = wins
+                .iter()
+                .rev()
+                .find(|&&(wx, wy, ww, wh)| x >= wx && x < wx + ww && y >= wy && y < wy + wh)
+            {
                 if end > wx + ww - 2 {
-                    bad.push(format!("leaves its window: {s:?} x {x}..{end}, window {wx}..{}", wx + ww));
+                    bad.push(format!(
+                        "leaves its window: {s:?} x {x}..{end}, window {wx}..{}",
+                        wx + ww
+                    ));
                 }
             }
         }
@@ -2179,7 +2319,17 @@ pub mod audit {
         for (i, a) in ts.iter().enumerate() {
             for b in &ts[i + 1..] {
                 if (a.1 - b.1).abs() < 9 && a.0 < b.0 + b.2 && b.0 < a.0 + a.2 {
-                    bad.push(format!("overlap: {:?} x {}..{} and {:?} x {}..{} (y {}/{})", a.3, a.0, a.0 + a.2, b.3, b.0, b.0 + b.2, a.1, b.1));
+                    bad.push(format!(
+                        "overlap: {:?} x {}..{} and {:?} x {}..{} (y {}/{})",
+                        a.3,
+                        a.0,
+                        a.0 + a.2,
+                        b.3,
+                        b.0,
+                        b.0 + b.2,
+                        a.1,
+                        b.1
+                    ));
                 }
             }
         }
@@ -2189,7 +2339,13 @@ pub mod audit {
 
 pub fn text_width(core: &Core, s: &str) -> i32 {
     s.bytes()
-        .map(|c| if c.is_ascii_digit() { DIGIT_W as i32 + 1 } else { core.raw_read_8(FONT_WIDTHS + c as u32, -1) as i32 + 1 })
+        .map(|c| {
+            if c.is_ascii_digit() {
+                DIGIT_W as i32 + 1
+            } else {
+                core.raw_read_8(FONT_WIDTHS + c as u32, -1) as i32 + 1
+            }
+        })
         .sum::<i32>()
         - 1
 }
@@ -2202,16 +2358,36 @@ pub(crate) fn bgr(c: u16) -> Rgb {
 /// The digits, thin as the text font's letters (its own digits are bold): 6 wide, 9 tall, on the letters' rows.
 const DIGIT_W: usize = 6;
 const DIGITS: [[&str; 9]; 10] = [
-    [".###..", "#...#.", "#..##.", "#.#.#.", "##..#.", "#...#.", "#...#.", "#...#.", ".###.."],
-    ["..#...", ".##...", "#.#...", "..#...", "..#...", "..#...", "..#...", "..#...", "#####."],
-    [".###..", "#...#.", "....#.", "....#.", "...#..", "..#...", ".#....", "#.....", "#####."],
-    [".###..", "#...#.", "....#.", "....#.", "..##..", "....#.", "....#.", "#...#.", ".###.."],
-    ["...#..", "..##..", ".#.#..", "#..#..", "#..#..", "#####.", "...#..", "...#..", "...#.."],
-    ["#####.", "#.....", "#.....", "####..", "....#.", "....#.", "....#.", "#...#.", ".###.."],
-    [".###..", "#.....", "#.....", "####..", "#...#.", "#...#.", "#...#.", "#...#.", ".###.."],
-    ["#####.", "....#.", "....#.", "...#..", "...#..", "..#...", "..#...", ".#....", ".#...."],
-    [".###..", "#...#.", "#...#.", "#...#.", ".###..", "#...#.", "#...#.", "#...#.", ".###.."],
-    [".###..", "#...#.", "#...#.", "#...#.", ".####.", "....#.", "....#.", "....#.", ".###.."],
+    [
+        ".###..", "#...#.", "#..##.", "#.#.#.", "##..#.", "#...#.", "#...#.", "#...#.", ".###..",
+    ],
+    [
+        "..#...", ".##...", "#.#...", "..#...", "..#...", "..#...", "..#...", "..#...", "#####.",
+    ],
+    [
+        ".###..", "#...#.", "....#.", "....#.", "...#..", "..#...", ".#....", "#.....", "#####.",
+    ],
+    [
+        ".###..", "#...#.", "....#.", "....#.", "..##..", "....#.", "....#.", "#...#.", ".###..",
+    ],
+    [
+        "...#..", "..##..", ".#.#..", "#..#..", "#..#..", "#####.", "...#..", "...#..", "...#..",
+    ],
+    [
+        "#####.", "#.....", "#.....", "####..", "....#.", "....#.", "....#.", "#...#.", ".###..",
+    ],
+    [
+        ".###..", "#.....", "#.....", "####..", "#...#.", "#...#.", "#...#.", "#...#.", ".###..",
+    ],
+    [
+        "#####.", "....#.", "....#.", "...#..", "...#..", "..#...", "..#...", ".#....", ".#....",
+    ],
+    [
+        ".###..", "#...#.", "#...#.", "#...#.", ".###..", "#...#.", "#...#.", "#...#.", ".###..",
+    ],
+    [
+        ".###..", "#...#.", "#...#.", "#...#.", ".####.", "....#.", "....#.", "....#.", ".###..",
+    ],
 ];
 
 /// A digit's rows (bit x set: a pixel at x), in the 11 rows the text font's glyphs use, the digit's top on the
@@ -2225,7 +2401,9 @@ fn digit_glyph(core: &Core, c: u8) -> (usize, [u16; 11]) {
         let stride = w.div_ceil(2);
         top = (0..11)
             .find(|&r| {
-                (0..w).any(|cx| (core.raw_read_8(at + (stride * (3 + r) + cx / 2) as u32, -1) >> (4 * (cx & 1))) & 15 != 0)
+                (0..w).any(|cx| {
+                    (core.raw_read_8(at + (stride * (3 + r) + cx / 2) as u32, -1) >> (4 * (cx & 1))) & 15 != 0
+                })
             })
             .unwrap_or(1);
     }
@@ -2435,8 +2613,21 @@ fn draw_grid(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32), top: i32) 
             // (an OK that can be pressed: a blue plate)
             cv.rect(cx + 1, cy, cwid - 2, ch, BLUE);
         }
-        let ink = if k == GRID_OK && full && k != g { WHITE } else if ready { INK } else { SHADE };
-        cv.text(core, cx + (cwid - text_width(core, &label)) / 2, cy + 1, &label, ink, SHADE);
+        let ink = if k == GRID_OK && full && k != g {
+            WHITE
+        } else if ready {
+            INK
+        } else {
+            SHADE
+        };
+        cv.text(
+            core,
+            cx + (cwid - text_width(core, &label)) / 2,
+            cy + 1,
+            &label,
+            ink,
+            SHADE,
+        );
     }
 }
 
@@ -2458,7 +2649,14 @@ fn draw_name_entry(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32)) {
     if name.is_empty() {
         let d = default_room_name(&crate::online_stats::gamertag(core));
         let shown = fit(core, &d, bw - 8);
-        cv.text(core, bx + (bw - text_width(core, &shown)) / 2, by + 4, &shown, SHADE, LIGHT_GRAY);
+        cv.text(
+            core,
+            bx + (bw - text_width(core, &shown)) / 2,
+            by + 4,
+            &shown,
+            SHADE,
+            LIGHT_GRAY,
+        );
         cv.rect(bx + 3, by + 14, 5, 2, INK);
     } else {
         let tw = text_width(core, &name);
@@ -2487,8 +2685,18 @@ fn note(core: &Core) -> String {
 fn saved_row(core: &Core, k: usize) -> (String, String, String) {
     let mut b = [0u8; SAVED_SIZE as usize];
     core.raw_read_range(SAVED_AT + SAVED_SIZE * k as u32, -1, &mut b);
-    let text = |a: usize, n: usize| -> String { b[a..a + n].iter().take_while(|&&c| c != 0).map(|&c| c as char).collect() };
-    (text(0, SAVED_PLAYERS), text(SAVED_PLAYERS, SAVED_MAP), text(SAVED_PLAYERS + SAVED_MAP, SAVED_TAIL))
+    let text = |a: usize, n: usize| -> String {
+        b[a..a + n]
+            .iter()
+            .take_while(|&&c| c != 0)
+            .map(|&c| c as char)
+            .collect()
+    };
+    (
+        text(0, SAVED_PLAYERS),
+        text(SAVED_PLAYERS, SAVED_MAP),
+        text(SAVED_PLAYERS + SAVED_MAP, SAVED_TAIL),
+    )
 }
 
 /// `s` cut with ".." to fit `width` pixels.
@@ -2512,14 +2720,25 @@ pub(crate) fn rejoin_page(cv: &mut Rgba, core: &Core) {
     let status = Status::of(core.raw_read_8(STATUS, -1));
     let room = crate::online_browse::own(core).unwrap_or_default();
     let (kind, still_on, over) = if room.is_empty() {
-        ("Unranked", "Your Unranked match is still on.".to_string(), "Your Unranked match is over.")
+        (
+            "Unranked",
+            "Your Unranked match is still on.".to_string(),
+            "Your Unranked match is over.",
+        )
     } else {
-        ("Lobby", format!("Your match in {room} is still on."), "Your match is over.")
+        (
+            "Lobby",
+            format!("Your match in {room} is still on."),
+            "Your match is over.",
+        )
     };
     cv.text(core, x + 8, y + 6, kind, GRAY_INK, SHADE);
     let (lines, ink, hint): (Vec<String>, Rgb, &str) = match (state, status) {
         (1, _) => (
-            wrap(core, &still_on, w - 24).into_iter().chain(std::iter::once("Rejoin?".to_string())).collect(),
+            wrap(core, &still_on, w - 24)
+                .into_iter()
+                .chain(std::iter::once("Rejoin?".to_string()))
+                .collect(),
             INK,
             "A: Rejoin  B: Give up  START: Later",
         ),
@@ -2527,16 +2746,30 @@ pub(crate) fn rejoin_page(cv: &mut Rgba, core: &Core) {
             let m = message(core);
             (wrap(core, if m.is_empty() { over } else { &m }, w - 24), RED, "B: Back")
         }
-        (_, Status::Connected) => (vec!["The others are here.".into(), "The match is resuming!".into()], BLUE, "Resuming..."),
+        (_, Status::Connected) => (
+            vec!["The others are here.".into(), "The match is resuming!".into()],
+            BLUE,
+            "Resuming...",
+        ),
         _ => (
-            vec!["Rejoining your match...".into(), "The others are waiting for you.".into()],
+            vec![
+                "Rejoining your match...".into(),
+                "The others are waiting for you.".into(),
+            ],
             INK,
             "B: Give up",
         ),
     };
     for (k, l) in lines.iter().take(3).enumerate() {
         let ink = if state == 1 && k + 1 == lines.len() { BLUE } else { ink };
-        cv.text(core, x + (w - text_width(core, l)) / 2, y + 22 + 13 * k as i32, l, ink, SHADE);
+        cv.text(
+            core,
+            x + (w - text_width(core, l)) / 2,
+            y + 22 + 13 * k as i32,
+            l,
+            ink,
+            SHADE,
+        );
     }
     bar(cv, core, hint);
 }
@@ -2553,7 +2786,14 @@ fn saved_page(cv: &mut Rgba, core: &Core) {
         let t2 = "A match is kept when a player's connection drops.";
         let lines = wrap(core, t2, w - 20);
         for (k, l) in lines.iter().enumerate() {
-            cv.text(core, x + (w - text_width(core, l)) / 2, y + 64 + 12 * k as i32, l, SHADE, LIGHT_GRAY);
+            cv.text(
+                core,
+                x + (w - text_width(core, l)) / 2,
+                y + 64 + 12 * k as i32,
+                l,
+                SHADE,
+                LIGHT_GRAY,
+            );
         }
         bar(cv, core, "B: Back");
         return;
@@ -2606,7 +2846,9 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             }
         }
         1 => {
-            let note = (Status::of(core.raw_read_8(STATUS, -1)) == Status::Back).then(|| note(core)).filter(|m| !m.is_empty());
+            let note = (Status::of(core.raw_read_8(STATUS, -1)) == Status::Back)
+                .then(|| note(core))
+                .filter(|m| !m.is_empty());
             let help = [
                 "Make a room and give its code to a friend.",
                 "Find a lobby, or type in a room's code.",
@@ -2641,7 +2883,11 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 (false, false) => text_width(core, "Locked") + 8 + 8,
             };
             let head_room = w - 12 - right;
-            let head = if name.is_empty() { fallback.to_string() } else { fit(core, &name, head_room) };
+            let head = if name.is_empty() {
+                fallback.to_string()
+            } else {
+                fit(core, &name, head_room)
+            };
             let head = head.as_str();
             let code = if hosting { room(core) } else { code(core) };
             cv.text(core, x + 6, y + 5, head, GRAY_INK, SHADE);
@@ -2672,7 +2918,14 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     SHADE,
                 );
             } else {
-                title(&mut cv, core, font, x + (w - title_width(core, font, &code)) / 2, y + 18, &code);
+                title(
+                    &mut cv,
+                    core,
+                    font,
+                    x + (w - title_width(core, font, &code)) / 2,
+                    y + 18,
+                    &code,
+                );
             }
             // The players: a row a slot.
             let status = Status::of(core.raw_read_8(STATUS, -1));
@@ -2739,7 +2992,11 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                     if text_width(core, &l) > W as i32 - 8 {
                         // (a saved match's "Waiting for ..." is shown nowhere else: it goes before the key)
                         let alone = lines.join(" ");
-                        l = if status == Status::Waiting && text_width(core, &alone) <= W as i32 - 8 { alone } else { b.to_string() };
+                        l = if status == Status::Waiting && text_width(core, &alone) <= W as i32 - 8 {
+                            alone
+                        } else {
+                            b.to_string()
+                        };
                     }
                     l
                 }
@@ -2781,8 +3038,19 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 ),
             };
             for (k, l) in lines.iter().take(6).enumerate() {
-                let ink = if k > 0 && status != Status::Connected && status != Status::Failed { GRAY_INK } else { ink };
-                cv.text(core, x + (w - text_width(core, l)) / 2, y + 28 + 13 * k as i32, l, ink, SHADE);
+                let ink = if k > 0 && status != Status::Connected && status != Status::Failed {
+                    GRAY_INK
+                } else {
+                    ink
+                };
+                cv.text(
+                    core,
+                    x + (w - text_width(core, l)) / 2,
+                    y + 28 + 13 * k as i32,
+                    l,
+                    ink,
+                    SHADE,
+                );
             }
             bar(
                 &mut cv,
@@ -2818,7 +3086,14 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
                 cv.rect(cx, y + 43, bw, 2, if here { RED } else { SHADE });
                 if let Some(&c) = typed.get(k as usize) {
                     let s = c.to_string();
-                    title(&mut cv, core, font, cx + (bw - title_width(core, font, &s)) / 2, y + 22, &s);
+                    title(
+                        &mut cv,
+                        core,
+                        font,
+                        cx + (bw - title_width(core, font, &s)) / 2,
+                        y + 22,
+                        &s,
+                    );
                 }
             }
             draw_grid(&mut cv, core, PANEL, 49);
@@ -2838,7 +3113,15 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
             cv.window(x, y, w, h);
             draw_name_entry(&mut cv, core, PANEL);
             draw_grid(&mut cv, core, PANEL, 44);
-            bar(&mut cv, core, if typed(core).is_empty() { "A: Type  B: Back  START: OK (default)" } else { "A: Type  B: Rub out  START: OK" });
+            bar(
+                &mut cv,
+                core,
+                if typed(core).is_empty() {
+                    "A: Type  B: Back  START: OK (default)"
+                } else {
+                    "A: Type  B: Rub out  START: OK"
+                },
+            );
         }
         TAG_LEVEL => {
             let (x, y, w, h) = PANEL;
@@ -2870,7 +3153,11 @@ mod tests {
         for n in 2..=5usize {
             for current in 1..=n as u8 {
                 let next = incoming_army(current, n);
-                assert_eq!(crate::pvp::seat_of_n(next, n), (crate::pvp::seat_of_n(current, n) + 1) % n, "n {n} army {current}");
+                assert_eq!(
+                    crate::pvp::seat_of_n(next, n),
+                    (crate::pvp::seat_of_n(current, n) + 1) % n,
+                    "n {n} army {current}"
+                );
             }
             assert_eq!(incoming_army(n as u8, n), 1);
         }
@@ -2915,7 +3202,13 @@ mod tests {
         };
         let (serial, request) = mailbox::read_request(&mut read, 8).expect("a new request");
         assert_eq!(serial, 9);
-        assert_eq!(request, mailbox::Request::Host { password: "AB".into(), name: "BIG ROOM".into() });
+        assert_eq!(
+            request,
+            mailbox::Request::Host {
+                password: "AB".into(),
+                name: "BIG ROOM".into()
+            }
+        );
     }
 
     #[test]
@@ -2936,8 +3229,14 @@ mod tests {
             assert!(t.len() < MESSAGE_LEN as usize, "{t}");
             assert!(t.starts_with("Waiting for "), "{t}");
         }
-        assert_eq!(mailbox::waiting_for(&["Ann".into(), "Bo".into()]), "Waiting for Ann, Bo");
-        assert_eq!(mailbox::waiting_for(&n(4, 12)), "Waiting for WWWWWWWWWWWW, WWWWWWWWWWWW +2");
+        assert_eq!(
+            mailbox::waiting_for(&["Ann".into(), "Bo".into()]),
+            "Waiting for Ann, Bo"
+        );
+        assert_eq!(
+            mailbox::waiting_for(&n(4, 12)),
+            "Waiting for WWWWWWWWWWWW, WWWWWWWWWWWW +2"
+        );
     }
 
     #[test]

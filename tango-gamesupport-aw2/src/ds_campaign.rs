@@ -160,7 +160,10 @@ pub fn is_ds(core: &Core) -> bool {
 /// The army the player commands in the mission being played: 1, or 5 in a
 /// custom campaign's five-army mission ([`crate::five`]).
 pub fn player_army(core: &Core) -> u8 {
-    if mission_info(core).and_then(|m| m.native.as_ref()).is_some_and(|n| n.five.is_some()) {
+    if mission_info(core)
+        .and_then(|m| m.native.as_ref())
+        .is_some_and(|n| n.five.is_some())
+    {
         5
     } else {
         1
@@ -173,7 +176,13 @@ pub fn onyx_spec(core: &Core) -> Option<crate::campaign_model::OnyxDef> {
         return None;
     }
     let c = campaign(core)?;
-    c.model.custom.as_ref()?.onyx.get(mission(core) as usize).copied().flatten()
+    c.model
+        .custom
+        .as_ref()?
+        .onyx
+        .get(mission(core) as usize)
+        .copied()
+        .flatten()
 }
 
 /// The mission's volcano hazard (a custom campaign's, crate::hazard).
@@ -182,7 +191,13 @@ pub fn volcano_spec(core: &Core) -> Option<crate::campaign_model::VolcanoDef> {
         return None;
     }
     let c = campaign(core)?;
-    c.model.custom.as_ref()?.volcano.get(mission(core) as usize).cloned().flatten()
+    c.model
+        .custom
+        .as_ref()?
+        .volcano
+        .get(mission(core) as usize)
+        .cloned()
+        .flatten()
 }
 
 /// The mission's held HQ: capturing it does not defeat its army (a custom campaign's).
@@ -191,7 +206,13 @@ pub fn held_hq(core: &Core) -> Option<(u8, u8)> {
         return None;
     }
     let c = campaign(core)?;
-    c.model.custom.as_ref()?.held_hq.get(mission(core) as usize).copied().flatten()
+    c.model
+        .custom
+        .as_ref()?
+        .held_hq
+        .get(mission(core) as usize)
+        .copied()
+        .flatten()
 }
 
 /// The DS Campaign's mission being played (Dual Strike's own missions have
@@ -240,7 +261,10 @@ fn mission_start(core: &mut Core) {
             }
         }
     }
-    let five = campaign(core).and_then(|c| c.model.built.missions.get(index)).and_then(|m| m.native.as_ref()).and_then(|n| n.five);
+    let five = campaign(core)
+        .and_then(|c| c.model.built.missions.get(index))
+        .and_then(|m| m.native.as_ref())
+        .and_then(|n| n.five);
     match five {
         Some((co, _, team)) => crate::five::set_campaign(core, true, co, team),
         None => crate::five::set_campaign(core, false, 0, 0),
@@ -348,7 +372,9 @@ fn mark_prologue_seen(core: &mut Core) {
 /// campaign (nothing won) that has not seen it gets Dual Strike's prologue
 /// (tail-calls `StartBlockingEventScript`, which returns to the proc).
 fn prologue(core: &mut Core) {
-    let Some(c) = campaign(core) else { return return_to(core, 0) };
+    let Some(c) = campaign(core) else {
+        return return_to(core, 0);
+    };
     if !active(core) || core.raw_read_32(P_WON, -1) != 0 || prologue_seen(core) || c.model.built.story.prologue == 0 {
         return return_to(core, 0);
     }
@@ -384,7 +410,11 @@ const STAGING: u32 = 0x0200_0000;
 /// writer, `sub_0801A7D8(SAVE_SLOT, buffer, SAVE_SIZE)`, which returns to
 /// the proc.
 fn save(core: &mut Core) {
-    let (slot, buffer, len) = if is_ds(core) { stage_slot(core) } else { stage_custom(core) };
+    let (slot, buffer, len) = if is_ds(core) {
+        stage_slot(core)
+    } else {
+        stage_custom(core)
+    };
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, slot as i32);
     cpu.set_gpr(1, buffer as i32);
@@ -459,7 +489,12 @@ fn proc_cmd(op: u16, arg: i16, ptr: u32) -> [u8; 8] {
 /// screen, `ResetRulesAfterCampaignMap`, the mission title, the battle).
 fn start_proc_script(save: u32) -> Vec<u8> {
     let _ = (CO_SELECT_PROC, RESET_RULES, MISSION_PROC);
-    [proc_cmd(0x02, 0, save | 1), proc_cmd(0x0D, 0, WORLD_MAP_PROC), proc_cmd(0x00, 0, 0)].concat()
+    [
+        proc_cmd(0x02, 0, save | 1),
+        proc_cmd(0x0D, 0, WORLD_MAP_PROC),
+        proc_cmd(0x00, 0, 0),
+    ]
+    .concat()
 }
 
 /// The proc that opens a custom campaign that has not shown its prologue: save the progress, AW2's own prologue card and scene (blocking), the
@@ -582,14 +617,31 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let start_proc = built.add(&start_proc_script(save));
             let seen = built.add_magic(data::Magic::Flow(FLOW_PROLOGUE_SEEN));
             // (AW2's own map only: Omega Land's prologue is the narration pictures on the map)
-            let start_new_proc = if src.art == crate::campaign_model::WorldArt::Aw2 && built.story.prologue != 0 { built.add(&start_new_proc_script(save, seen)) } else { 0 };
-            let map_script = built.add(&map_script(prologue, save, src.art == crate::campaign_model::WorldArt::OmegaLand));
+            let start_new_proc = if src.art == crate::campaign_model::WorldArt::Aw2 && built.story.prologue != 0 {
+                built.add(&start_new_proc_script(save, seen))
+            } else {
+                0
+            };
+            let map_script = built.add(&map_script(
+                prologue,
+                save,
+                src.art == crate::campaign_model::WorldArt::OmegaLand,
+            ));
             let credits_start = built.add_magic(data::Magic::Flow(FLOW_CREDITS_START));
             let credits_running = built.add_magic(data::Magic::Flow(FLOW_CREDITS_RUNNING));
             let ending = built.add(&ending_script(credits_start, credits_running));
             let help = DIFFICULTY_HELP.map(|t| built.add(&[t.as_bytes(), &[0]].concat()));
             assert!(built.base + (built.blob.len() as u32) < DATA_END);
-            Some(Campaign { model, start_proc, start_new_proc, map_script, hide_stub, co_setup, ending, help })
+            Some(Campaign {
+                model,
+                start_proc,
+                start_new_proc,
+                map_script,
+                hide_stub,
+                co_setup,
+                ending,
+                help,
+            })
         })
         .as_ref()
 }
@@ -634,10 +686,15 @@ fn install_world_map(core: &mut Core) -> bool {
 fn sync_mission(core: &mut Core) {
     let m = core.raw_read_32(crate::ds_worldmap::S_MISSION, -1);
     let Some(c) = campaign(core) else { return };
-    if m as usize >= c.model.missions || core.raw_read_8(MISSION, -1) as u32 == m && core.raw_read_8(MISSION_SET, -1) == 1 {
+    if m as usize >= c.model.missions
+        || core.raw_read_8(MISSION, -1) as u32 == m && core.raw_read_8(MISSION_SET, -1) == 1
+    {
         return;
     }
-    let (Some(table), Some((_, header))) = (big_table(core), c.model.built.headers.iter().find(|h| h.0 as u32 == m)) else { return };
+    let (Some(table), Some((_, header))) = (big_table(core), c.model.built.headers.iter().find(|h| h.0 as u32 == m))
+    else {
+        return;
+    };
     core.raw_write_range(table + ENTRY * data::MAP_ID as u32, -1, header);
     core.raw_write_8(MISSION, -1, m as u8);
     core.raw_write_8(MISSION_SET, -1, 1);
@@ -668,7 +725,10 @@ pub fn panel_enemy(core: &Core) -> Option<(u8, u8)> {
         .filter(|&k| enemy(k))
         .map(|k| {
             // (a five-army mission whose player picks: the header's army 1 is the CO screen's slot, its real CO is kept apart)
-            let co = native.and_then(|n| n.five_pick).filter(|_| k == 0).unwrap_or_else(|| core.raw_read_8(header + 0x3C + k as u32, -1));
+            let co = native
+                .and_then(|n| n.five_pick)
+                .filter(|_| k == 0)
+                .unwrap_or_else(|| core.raw_read_8(header + 0x3C + k as u32, -1));
             (k as u8, co)
         })
         .find(|&(_, co)| co <= crate::co_new::CRUMB)
@@ -717,7 +777,12 @@ pub fn free_play(core: &Core) -> bool {
 /// The campaign's secret mission is won (the staff roll shows its secret
 /// sections).
 pub fn secret_won(core: &Core) -> bool {
-    let Some(i) = campaign(core).and_then(|c| c.model.custom.as_ref()).and_then(|c| c.secret) else { return false };
+    let Some(i) = campaign(core)
+        .and_then(|c| c.model.custom.as_ref())
+        .and_then(|c| c.secret)
+    else {
+        return false;
+    };
     progress_valid(core) && won(core, i)
 }
 
@@ -766,7 +831,12 @@ pub fn tick(core: &mut Core, ds: bool) {
         crate::five::set_campaign(core, false, 0, 0);
     }
     let secret = secret_won(core);
-    crate::ds_credits::tick(core, session, campaign(core).and_then(|c| c.model.credits.as_ref()), secret);
+    crate::ds_credits::tick(
+        core,
+        session,
+        campaign(core).and_then(|c| c.model.credits.as_ref()),
+        secret,
+    );
     {
         // The map menu's Save item: AW2's own, a session's too (a DS
         // mission is saved in its own slot, crate::suspend).
@@ -825,7 +895,9 @@ fn prologue_pool(core: &mut Core, session: bool) {
 /// +0x2C) reads the quote; the page's own text is put back otherwise.
 fn bond_pages(core: &mut Core, session: bool) {
     static ORIGINAL: std::sync::Mutex<Vec<(u32, u32)>> = std::sync::Mutex::new(Vec::new());
-    let Some(c) = campaign(core).and_then(|c| c.model.custom.as_ref()) else { return };
+    let Some(c) = campaign(core).and_then(|c| c.model.custom.as_ref()) else {
+        return;
+    };
     let earned = bonds_earned(core);
     let mut originals = ORIGINAL.lock().unwrap();
     for (k, &(co, quote)) in c.bonds.iter().enumerate() {
@@ -847,7 +919,11 @@ fn bond_pages(core: &mut Core, session: bool) {
                 now
             }
         };
-        let want = if session && earned >> k & 1 != 0 { quote } else { original };
+        let want = if session && earned >> k & 1 != 0 {
+            quote
+        } else {
+            original
+        };
         if now != want {
             core.raw_write_32(slot, -1, want);
         }
@@ -898,7 +974,6 @@ fn mission_number(core: &mut Core) {
     return_to(core, if own { mission as u32 + 1 } else { won.count_ones() + 1 });
 }
 
-
 // --- Progress --------------------------------------------------------------------
 
 fn progress_valid(core: &Core) -> bool {
@@ -921,7 +996,9 @@ pub fn bonds_earned(core: &Core) -> u32 {
 
 /// Every bond of the campaign is earned.
 pub fn bonds_all(core: &Core) -> bool {
-    let n = campaign(core).and_then(|c| c.model.custom.as_ref()).map_or(0, |c| c.counted);
+    let n = campaign(core)
+        .and_then(|c| c.model.custom.as_ref())
+        .map_or(0, |c| c.counted);
     n > 0 && bonds_earned(core) & ((1 << n) - 1) == (1 << n) - 1
 }
 
@@ -953,14 +1030,28 @@ fn set_unlocked_mask(core: &mut Core, mask: u32) {
 
 /// The roster's COs unlocked (AW2 ids), in roster order.
 pub fn unlocked_cos(core: &Core) -> Vec<u8> {
-    let (Some(c), mask) = (campaign(core), unlocked_mask(core)) else { return Vec::new() };
-    let Some(custom) = &c.model.custom else { return Vec::new() };
-    custom.roster.iter().enumerate().filter(|(k, _)| mask >> k & 1 != 0 && (*k as u32) < BOND_SHIFT).map(|(_, r)| r.0).collect()
+    let (Some(c), mask) = (campaign(core), unlocked_mask(core)) else {
+        return Vec::new();
+    };
+    let Some(custom) = &c.model.custom else {
+        return Vec::new();
+    };
+    custom
+        .roster
+        .iter()
+        .enumerate()
+        .filter(|(k, _)| mask >> k & 1 != 0 && (*k as u32) < BOND_SHIFT)
+        .map(|(_, r)| r.0)
+        .collect()
 }
 
 fn new_progress(core: &mut Core) {
     crate::suspend::drop_mid_of(core, source(core));
-    let clears = if progress_valid(core) { core.raw_read_8(P_CLEARS, -1) } else { 0 };
+    let clears = if progress_valid(core) {
+        core.raw_read_8(P_CLEARS, -1)
+    } else {
+        0
+    };
     for a in (PROGRESS..PROGRESS + SAVE_SIZE).step_by(4) {
         core.raw_write_32(a, -1, 0);
     }
@@ -969,7 +1060,12 @@ fn new_progress(core: &mut Core) {
     core.raw_write_8(P_CLEARS, -1, clears);
     // A custom campaign starts with its open COs; its records are new.
     if let Some(custom) = campaign(core).and_then(|c| c.model.custom.as_ref()) {
-        let open = custom.roster.iter().enumerate().filter(|(_, r)| r.1).fold(0u32, |m, (k, _)| m | 1 << k);
+        let open = custom
+            .roster
+            .iter()
+            .enumerate()
+            .filter(|(_, r)| r.1)
+            .fold(0u32, |m, (k, _)| m | 1 << k);
         set_unlocked_mask(core, open);
         for a in (RECORDS..RECORDS + RECORDS_SIZE).step_by(4) {
             core.raw_write_32(a, -1, 0);
@@ -1070,7 +1166,8 @@ fn read_slot(core: &Core, slot: u8) -> Option<Vec<u8>> {
         }
     }
     let (_, at) = best?;
-    let len = (core.raw_read_16(at + 0x50, -1) as u32).min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN + crate::history::SAVED_LEN);
+    let len = (core.raw_read_16(at + 0x50, -1) as u32)
+        .min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN + crate::history::SAVED_LEN);
     let mut b = vec![0u8; len as usize];
     core.raw_read_range(at + 0x52, -1, &mut b);
     Some(b)
@@ -1090,7 +1187,9 @@ pub fn skills_loaded(core: &mut Core) {
 /// The History's record as saved after the skill data (crate::history), if the slot has one.
 pub fn saved_history(core: &Core) -> Option<Vec<u8>> {
     let at = (SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN) as usize;
-    read_slot(core, SAVE_SLOT).filter(|b| b.len() > at).map(|b| b[at..].to_vec())
+    read_slot(core, SAVE_SLOT)
+        .filter(|b| b.len() > at)
+        .map(|b| b[at..].to_vec())
 }
 
 /// A campaign (Normal, or Hard) has been cleared in the saved record.
@@ -1101,7 +1200,9 @@ pub fn cleared(core: &mut Core, hard: bool) -> bool {
 /// Reads the chosen campaign's progress record from the newest sector of
 /// its slot (the records with it).
 fn load_from_flash(core: &mut Core) {
-    let Some(b) = read_slot(core, spec(core).save_slot) else { return };
+    let Some(b) = read_slot(core, spec(core).save_slot) else {
+        return;
+    };
     if b.len() >= 4 && u32::from_le_bytes(b[0..4].try_into().unwrap()) == spec(core).progress_magic {
         // (the other campaign's records in RAM are not this one's)
         core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
@@ -1146,7 +1247,10 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (RESET_RULES_ENTRY, Box::new(mission_start)),
         (SET_FLAG, Box::new(set_flag)),
         (IS_FLAG, Box::new(is_flag)),
-        (crate::campaign_menu::SAVE_FLAG, Box::new(crate::campaign_menu::save_flag)),
+        (
+            crate::campaign_menu::SAVE_FLAG,
+            Box::new(crate::campaign_menu::save_flag),
+        ),
         (MISSION_NUMBER, Box::new(mission_number)),
         (crate::ds_worldmap::SAVE_PROMPT, Box::new(save_prompt)),
         (SAVE_GAME, Box::new(save_game)),
@@ -1154,12 +1258,21 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (SCRIPT_END_MATCH, Box::new(script_end_match)),
         (MAP_CURSOR_LOOP, Box::new(cursor_loop)),
         (SELECT_MODE_START, Box::new(select_mode_start)),
-        (crate::ds_campaign_rules::GET_INVENTION_AT, Box::new(crate::ds_campaign_rules::invention_at)),
-        (crate::ds_campaign_rules::ERUPTION_CALL, Box::new(crate::ds_campaign_rules::eruption)),
-        (crate::ds_credits::ROLL_SONG_CALL, Box::new(|core: &mut Core| {
-            let s = active(core);
-            crate::ds_credits::roll_song(core, s)
-        })),
+        (
+            crate::ds_campaign_rules::GET_INVENTION_AT,
+            Box::new(crate::ds_campaign_rules::invention_at),
+        ),
+        (
+            crate::ds_campaign_rules::ERUPTION_CALL,
+            Box::new(crate::ds_campaign_rules::eruption),
+        ),
+        (
+            crate::ds_credits::ROLL_SONG_CALL,
+            Box::new(|core: &mut Core| {
+                let s = active(core);
+                crate::ds_credits::roll_song(core, s)
+            }),
+        ),
     ]
 }
 
@@ -1212,7 +1325,11 @@ fn start(core: &mut Core, new: bool) {
     // Continue over a mission saved halfway: that mission, resumed
     // ([`crate::suspend`]).
     let missions = campaign(core).map_or(0, |c| c.model.missions);
-    let resume = if req == 2 { crate::suspend::saved_mission_of(core, source(core)).filter(|&m| (m as usize) < missions) } else { None };
+    let resume = if req == 2 {
+        crate::suspend::saved_mission_of(core, source(core)).filter(|&m| (m as usize) < missions)
+    } else {
+        None
+    };
     // A record saved by 0.4.0 kept the lab missions' flags at 0x60..0x62
     // (AW2's Hard Campaign flag among them): they move to 0x90..0x92.
     for k in 0..3u32 {
@@ -1231,9 +1348,15 @@ fn start(core: &mut Core, new: bool) {
     let open = available(core);
     // The cursor on the mission at the progress's step if it is open (a
     // lab mission), else the first open one.
-    let Some(order) = campaign(core).map(|c| c.model.order.clone()) else { return };
+    let Some(order) = campaign(core).map(|c| c.model.order.clone()) else {
+        return;
+    };
     let at_step = order[next_step(core) as usize];
-    let focus = resume.unwrap_or(if open.contains(&at_step) { at_step } else { open.first().copied().unwrap_or(0) });
+    let focus = resume.unwrap_or(if open.contains(&at_step) {
+        at_step
+    } else {
+        open.first().copied().unwrap_or(0)
+    });
     crate::ds_worldmap::write_state(core, &open, &won_list(core), focus);
     core.raw_write_8(ACTIVE, -1, 1);
     core.raw_write_8(MISSION_SET, -1, 0);
@@ -1270,7 +1393,12 @@ fn end_of_battle(core: &mut Core) {
     core.raw_write_8(LAST_RESULT, -1, if won { 1 } else { 2 });
     core.raw_write_8(LAST_RESULT + 1, -1, index);
     core.raw_write_16(LAST_RESULT + 2, -1, core.raw_read_16(0x0300_4080, -1));
-    log::info!("campaign: mission {} {} on day {}", index as u32 + 1, if won { "won" } else { "lost" }, core.raw_read_16(0x0300_4080, -1));
+    log::info!(
+        "campaign: mission {} {} on day {}",
+        index as u32 + 1,
+        if won { "won" } else { "lost" },
+        core.raw_read_16(0x0300_4080, -1)
+    );
     if replay {
         flags_from_record(core);
     } else if won {
@@ -1300,8 +1428,14 @@ fn end_of_battle(core: &mut Core) {
         .collect();
     // The progress's step: the next story mission (or, when every mission
     // is won, the campaign is over).
-    let (order, last) = campaign(core).map_or((Vec::new(), u8::MAX), |c| (c.model.order.clone(), c.model.final_mission));
-    let next = after.iter().filter(|&&m| !self::won(core, m)).filter_map(|m| order.iter().position(|o| o == m)).min();
+    let (order, last) = campaign(core).map_or((Vec::new(), u8::MAX), |c| {
+        (c.model.order.clone(), c.model.final_mission)
+    });
+    let next = after
+        .iter()
+        .filter(|&&m| !self::won(core, m))
+        .filter_map(|m| order.iter().position(|o| o == m))
+        .min();
     if !replay {
         match next {
             Some(s) => core.raw_write_8(P_NEXT, -1, s as u8),
@@ -1342,7 +1476,11 @@ fn best_score(core: &mut Core) {
     if active(core) && core.raw_read_8(MAP_ID, -1) == data::MAP_ID {
         // The session's own records ([`RECORDS`], AW2's layout and rule: kept unless the new score is lower).
         let cpu = core.gba().cpu();
-        let (co, score, days) = (cpu.gpr(0) as u32 & 0xFF, cpu.gpr(2) as u32 & 0xFFF, cpu.gpr(3) as u32 & 0xFFF);
+        let (co, score, days) = (
+            cpu.gpr(0) as u32 & 0xFF,
+            cpu.gpr(2) as u32 & 0xFFF,
+            cpu.gpr(3) as u32 & 0xFFF,
+        );
         let index = core.raw_read_8(MISSION, -1) as u32;
         if (index as usize) < campaign(core).map_or(0, |c| c.model.missions) && !won(core, index as u8) {
             let at = RECORDS + 8 * index + 4 * hard(core) as u32;
@@ -1413,7 +1551,10 @@ pub fn map_start(core: &mut Core) {
     if !active(core) || core.raw_read_8(MAP_ID, -1) != data::MAP_ID {
         return;
     }
-    let Some(main) = campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(MISSION, -1) as usize)) else { return };
+    let Some(main) = campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(MISSION, -1) as usize))
+    else {
+        return;
+    };
     // On a two-front battle's second front, that front's own rules
     // (crate::two_front).
     let m = crate::two_front::live_info(core).unwrap_or(main);
@@ -1514,7 +1655,11 @@ pub fn mission_info(core: &Core) -> Option<&'static data::MissionInfo> {
 /// not in Black Hole's colours.
 fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
     let players = core.raw_read_32(0x0849_9598, -1);
-    let player = if m.native.as_ref().is_some_and(|n| n.five.is_some()) { 5 } else { 1 };
+    let player = if m.native.as_ref().is_some_and(|n| n.five.is_some()) {
+        5
+    } else {
+        1
+    };
     for a in 1..=5u32 {
         let p = players + 0x3C * a + 0x1B;
         if a > m.armies as u32 || core.raw_read_8(p, -1) == 0 {
@@ -1540,7 +1685,9 @@ fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
 /// 0x1C), or for a second front (crate::two_front).
 pub fn player_picks(m: &data::MissionInfo) -> bool {
     m.cos.iter().take(m.armies as usize).any(|&(co, _)| co == 0x1C)
-        || m.two_front.as_ref().is_some_and(|t| t.cos.contains(&crate::campaign_model::PICK))
+        || m.two_front
+            .as_ref()
+            .is_some_and(|t| t.cos.contains(&crate::campaign_model::PICK))
 }
 
 /// The mission's armies the player picks a CO for (Dual Strike's 0x1C), and
@@ -1549,7 +1696,9 @@ pub fn player_picks(m: &data::MissionInfo) -> bool {
 fn co_setup(core: &mut Core) -> u32 {
     let Some(c) = campaign(core) else { return 0 };
     let index = core.raw_read_8(MISSION, -1) as usize;
-    let Some(m) = c.model.built.missions.get(index) else { return 0 };
+    let Some(m) = c.model.built.missions.get(index) else {
+        return 0;
+    };
 
     if !player_picks(m) {
         return 0;
@@ -1561,9 +1710,18 @@ fn co_setup(core: &mut Core) -> u32 {
         // A custom campaign: the mission's pool (else the roster) among the
         // COs unlocked so far.
         let unlocked = unlocked_cos(core);
-        let pool = c.model.custom.as_ref().and_then(|x| x.pools.get(index)).cloned().unwrap_or_default();
+        let pool = c
+            .model
+            .custom
+            .as_ref()
+            .and_then(|x| x.pools.get(index))
+            .cloned()
+            .unwrap_or_default();
         let lock = m.native.as_ref().and_then(|n| n.lead_lock);
-        for co in unlocked.into_iter().filter(|c| (pool.is_empty() || pool.contains(c)) && Some(*c) != lock) {
+        for co in unlocked
+            .into_iter()
+            .filter(|c| (pool.is_empty() || pool.contains(c)) && Some(*c) != lock)
+        {
             let country = crate::custom_campaign::country(co);
             match groups.iter_mut().find(|g| g.0 == country) {
                 Some(g) => g.1.push(co),
@@ -1571,7 +1729,11 @@ fn co_setup(core: &mut Core) -> u32 {
             }
         }
     } else {
-        let pool: Vec<u8> = if m.pool.is_empty() { vec![0x14, 0x15, 0x03] } else { m.pool.clone() };
+        let pool: Vec<u8> = if m.pool.is_empty() {
+            vec![0x14, 0x15, 0x03]
+        } else {
+            m.pool.clone()
+        };
         for &ds in &pool {
             let Some(co) = data::aw2_co(ds) else { continue };
             let country = crate::ds_campaign_rules::country(ds);
@@ -1607,12 +1769,16 @@ fn battle_won(core: &Core) -> bool {
     let team = core.raw_read_8(players + 0x3C * player + 0x2A, -1);
     (1..=5u32).any(|a| {
         let p = players + 0x3C * a;
-        core.raw_read_8(p + 0x1B, -1) != 0 && core.raw_read_16(p + 0x14, -1) == 0 && core.raw_read_8(p + 0x2A, -1) == team
+        core.raw_read_8(p + 0x1B, -1) != 0
+            && core.raw_read_16(p + 0x14, -1) == 0
+            && core.raw_read_8(p + 0x2A, -1) == team
     })
 }
 
 fn flag_bit(id: u32) -> Option<(u32, u8)> {
-    (0x20..0xA0).contains(&id).then(|| (FLAGS + (id - 0x20) / 8, 1u8 << ((id - 0x20) % 8)))
+    (0x20..0xA0)
+        .contains(&id)
+        .then(|| (FLAGS + (id - 0x20) / 8, 1u8 << ((id - 0x20) % 8)))
 }
 
 fn set_flag(core: &mut Core) {
@@ -1654,7 +1820,10 @@ fn landing(core: &mut Core) {
     if id & 0xFF00_0000 == crate::onyx::MAGIC {
         return crate::onyx::magic(core, id);
     }
-    let r = match campaign(core).and_then(|c| c.model.built.magic.get(id as usize)).cloned() {
+    let r = match campaign(core)
+        .and_then(|c| c.model.built.magic.get(id as usize))
+        .cloned()
+    {
         Some(data::Magic::Flow(FLOW_CO_SETUP)) => co_setup(core),
         Some(data::Magic::Flow(FLOW_SAVE)) => return save(core),
         Some(data::Magic::Flow(FLOW_HIDE)) => 1,
@@ -1665,13 +1834,18 @@ fn landing(core: &mut Core) {
             0
         }
         Some(data::Magic::Flow(FLOW_CREDITS_START)) => {
-            if let Some(script) = campaign(core).and_then(|c| c.model.credits.as_ref()).map(|c| c.staff_roll) {
+            if let Some(script) = campaign(core)
+                .and_then(|c| c.model.credits.as_ref())
+                .map(|c| c.staff_roll)
+            {
                 return proc_start_instead(core, script);
             }
             0
         }
         Some(data::Magic::Flow(FLOW_CREDITS_RUNNING)) => {
-            let script = campaign(core).and_then(|c| c.model.credits.as_ref()).map(|c| c.staff_roll);
+            let script = campaign(core)
+                .and_then(|c| c.model.credits.as_ref())
+                .map(|c| c.staff_roll);
             script.is_some_and(|s| proc_running(core, s)) as u32
         }
         Some(data::Magic::Flow(FLOW_MAP_BACK)) => {
@@ -1706,7 +1880,10 @@ mod tests {
         assert!(PROGRESS + SAVE_SIZE <= RAM_END);
         assert!(FLAGS + 16 <= PROGRESS);
         assert!(P_FLAGS + 16 <= PROGRESS + SAVE_SIZE);
-        assert!(P_POSTURE >= P_WON + 4 && P_POSTURE < P_FLAGS, "past the missions won (32 bits)");
+        assert!(
+            P_POSTURE >= P_WON + 4 && P_POSTURE < P_FLAGS,
+            "past the missions won (32 bits)"
+        );
         assert!(COUNTDOWN + 4 <= FLAGS);
         // Past Survival's RAM (0x0203FA00..0x0203FD0F) and before the CPU
         // tactics' (0x0203FD60..).

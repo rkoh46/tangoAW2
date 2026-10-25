@@ -18,7 +18,11 @@ fn owns(x: u8, y: u8) -> Cond {
 const DEPOT: (u8, u8) = (12, 4);
 
 fn barges_gone() -> Cond {
-    Cond::All(vec![Cond::UnitGone("barge1"), Cond::UnitGone("barge2"), Cond::UnitGone("barge3")])
+    Cond::All(vec![
+        Cond::UnitGone("barge1"),
+        Cond::UnitGone("barge2"),
+        Cond::UnitGone("barge3"),
+    ])
 }
 
 fn depot_and_barges() -> Cond {
@@ -65,8 +69,12 @@ fn es10() -> MissionDef {
     m.fog = true;
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Pick).funds(4000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(2).funds(6000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::SAMI)).team(2).funds(3000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI))
+            .team(2)
+            .funds(6000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::SAMI))
+            .team(2)
+            .funds(3000),
     ];
     m.pool = leads();
     m.units = deployment("es10");
@@ -99,13 +107,22 @@ fn es11() -> MissionDef {
     m.weather = Weather::Sandstorm; // the treasure road in the desert, a sandstorm blowing
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(3000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::LASH)).team(2).funds(5000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::FLAK)).team(2).funds(5000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::LASH))
+            .team(2)
+            .funds(5000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::FLAK))
+            .team(2)
+            .funds(5000),
     ];
     m.pool = leads();
     m.units = deployment("es11");
     // The relay camp's city is the Senate's: the player's from the start.
-    m.props = vec![Prop { kind: PropKind::City, owner: 1, x: 37, y: 10 }];
+    m.props = vec![Prop {
+        kind: PropKind::City,
+        owner: 1,
+        x: 37,
+        y: 10,
+    }];
     m.day_limit = 14;
     m.rank_days = 10;
     m.intro = scene("m11_pre");
@@ -113,8 +130,14 @@ fn es11() -> MissionDef {
     m.after = chain(&["m11_map"]);
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(scene("m11_day5"))]),
-        after(Cond::All(APCS.iter().map(|&n| Cond::NamedIn { name: n, area: CAMP }).collect()), vec![Action::Win]),
-        after(Cond::Any(APCS.iter().map(|&n| Cond::UnitGone(n)).collect()), vec![Action::Lose]),
+        after(
+            Cond::All(APCS.iter().map(|&n| Cond::NamedIn { name: n, area: CAMP }).collect()),
+            vec![Action::Win],
+        ),
+        after(
+            Cond::Any(APCS.iter().map(|&n| Cond::UnitGone(n)).collect()),
+            vec![Action::Lose],
+        ),
         // (the header's day limit is only shown: the rule is a trigger)
         on_day(m.day_limit + 1, None, vec![Action::Lose]),
     ];
@@ -134,8 +157,12 @@ fn es12() -> MissionDef {
     m.weather = Weather::Snow;
     m.armies = vec![
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(KLAUS, AURELIA)).funds(5000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(2).funds(7000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).team(2).funds(4000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF))
+            .team(2)
+            .funds(7000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY))
+            .team(2)
+            .funds(4000),
     ];
     m.units = deployment("es12");
     m.rank_days = 16;

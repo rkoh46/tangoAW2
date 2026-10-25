@@ -114,7 +114,6 @@ pub trait Link: Send + 'static {
         0
     }
 
-
     /// A capture as bytes that can be stored and later started from ([`Backend::start_resumed`]), with a digest of
     /// the state that matters. Engines that cannot say leave the default: their matches cannot be suspended.
     fn state_image(&mut self, snapshot: &Snapshot) -> Option<crate::suspend::StateImage> {

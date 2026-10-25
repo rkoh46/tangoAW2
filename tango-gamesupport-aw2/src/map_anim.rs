@@ -174,7 +174,9 @@ impl Anim {
     }
 
     fn length(&self, seq: usize) -> u32 {
-        self.sequences.get(seq).map_or(0, |s| s.iter().map(|&(d, _)| d as u32).sum())
+        self.sequences
+            .get(seq)
+            .map_or(0, |s| s.iter().map(|&(d, _)| d as u32).sum())
     }
 }
 
@@ -376,7 +378,12 @@ fn destroying(core: &mut Core) {
         core.raw_write_32(BOMB, -1, 0);
     }
     let army = crate::unit_actions::army_of(core, u);
-    let bytes = [kind, core.raw_read_8(u + 2, -1), core.raw_read_8(u + 3, -1), country(core, army)];
+    let bytes = [
+        kind,
+        core.raw_read_8(u + 2, -1),
+        core.raw_read_8(u + 3, -1),
+        country(core, army),
+    ];
     core.raw_write_range(GOING, -1, &bytes);
 }
 
@@ -410,9 +417,7 @@ fn explosion(core: &mut Core) {
 }
 
 fn stealth_ripple(core: &Core) -> bool {
-    is_on(core)
-        && available()
-        && (core.raw_read_8(CONTEXT, -1) == CTX_STEALTH || selected_type(core) == Some(STEALTH))
+    is_on(core) && available() && (core.raw_read_8(CONTEXT, -1) == CTX_STEALTH || selected_type(core) == Some(STEALTH))
 }
 
 /// `sub_0802BFD0` (the Dive/Rise ripple): its pictures (r0, with r1 the
@@ -497,7 +502,14 @@ fn turn_end(core: &mut Core) {
             core.raw_write_8(QUEUE + 2 * k as u32, -1, id);
             core.raw_write_8(QUEUE + 2 * k as u32 + 1, -1, a);
         }
-        for (at, v) in [(PLANNED, army as u8), (QUEUE_LEN, n as u8), (INDEX, 0), (STEP, 0), (TIMER, 0), (CONTEXT, 0)] {
+        for (at, v) in [
+            (PLANNED, army as u8),
+            (QUEUE_LEN, n as u8),
+            (INDEX, 0),
+            (STEP, 0),
+            (TIMER, 0),
+            (CONTEXT, 0),
+        ] {
             core.raw_write_8(at, -1, v);
         }
     }
@@ -567,7 +579,10 @@ fn turn_end(core: &mut Core) {
             let k = core.raw_read_8(LABEL_INDEX, -1) as u32;
             if k < core.raw_read_8(LABELS, -1) as u32 {
                 core.raw_write_8(LABEL_INDEX, -1, k as u8 + 1);
-                let (lx, ly) = (core.raw_read_8(LABEL_AT + 2 * k, -1), core.raw_read_8(LABEL_AT + 2 * k + 1, -1));
+                let (lx, ly) = (
+                    core.raw_read_8(LABEL_AT + 2 * k, -1),
+                    core.raw_read_8(LABEL_AT + 2 * k + 1, -1),
+                );
                 call(core, SUPPLY_LABEL, lx as u32, ly as u32);
             } else {
                 core.raw_write_8(STEP, -1, 3);
@@ -637,7 +652,10 @@ mod tests {
 
     #[test]
     fn anim_bytes_round_trip() {
-        let a = Anim { frames: vec![vec![[0xF0, 0x81F0, 4]], vec![]], sequences: vec![vec![(3, 0), (2, 1)]] };
+        let a = Anim {
+            frames: vec![vec![[0xF0, 0x81F0, 4]], vec![]],
+            sequences: vec![vec![(3, 0), (2, 1)]],
+        };
         let b = a.bytes(2);
         let hw = |o: usize| u16::from_le_bytes([b[o], b[o + 1]]) as usize;
         let (ft, st) = (hw(0), hw(2));

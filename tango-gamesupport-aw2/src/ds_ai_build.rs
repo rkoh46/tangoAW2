@@ -260,7 +260,12 @@ impl<'a> Plan<'a> {
     }
 
     fn harmless(&self, u: &Unit) -> bool {
-        attack(u.t) == Attack::None && !self.b.units.iter().any(|c| c.carried() && c.army == u.army && (c.x, c.y) == (u.x, u.y))
+        attack(u.t) == Attack::None
+            && !self
+                .b
+                .units
+                .iter()
+                .any(|c| c.carried() && c.army == u.army && (c.x, c.y) == (u.x, u.y))
     }
 
     // --- Step 0 -------------------------------------------------------------------------
@@ -285,7 +290,13 @@ impl<'a> Plan<'a> {
         self.own_factories = own;
         for u in &b.units {
             let g = stats(u.t).group;
-            let bit = if g & SEA != 0 { D_SEA } else if g & AIR != 0 { D_AIR } else { 0 };
+            let bit = if g & SEA != 0 {
+                D_SEA
+            } else if g & AIR != 0 {
+                D_AIR
+            } else {
+                0
+            };
             any |= bit;
             if u.army == army {
                 own |= bit;
@@ -328,7 +339,10 @@ impl<'a> Plan<'a> {
                     *by.entry((b.owner[i], b.at[i] != 0)).or_insert(0) += 1;
                 }
             }
-            self.notes.push(format!("sites {} (factories by (owner, taken) {by:?})", self.sites.len()));
+            self.notes.push(format!(
+                "sites {} (factories by (owner, taken) {by:?})",
+                self.sites.len()
+            ));
         }
         self.build_groups();
         // Own units and the repair reserve (`AiEndActions_Start`).
@@ -419,7 +433,13 @@ impl<'a> Plan<'a> {
             if g & GROUND != 0 && reach[self.b.idx(u.x, u.y)] < 0 {
                 return false;
             }
-            if g & SEA != 0 && !self.b.units.iter().any(|c| c.carried() && c.army == u.army && (c.x, c.y) == (u.x, u.y)) {
+            if g & SEA != 0
+                && !self
+                    .b
+                    .units
+                    .iter()
+                    .any(|c| c.carried() && c.army == u.army && (c.x, c.y) == (u.x, u.y))
+            {
                 return false;
             }
         }
@@ -431,7 +451,13 @@ impl<'a> Plan<'a> {
         // (Dual Strike's range map is the group's first site's Tank reach here, left by `AiSite_RateLandmass`.)
         let reach = self.flood(army, TANK, fx, fy, FAR, true);
         let r = self.header(8) as i32;
-        let enemies: Vec<Unit> = self.b.units.iter().filter(|u| !u.carried() && self.enemy(u.army)).copied().collect();
+        let enemies: Vec<Unit> = self
+            .b
+            .units
+            .iter()
+            .filter(|u| !u.carried() && self.enemy(u.army))
+            .copied()
+            .collect();
         for s in 0..self.sites.len() {
             if self.sites[s].group != g {
                 continue;
@@ -495,7 +521,9 @@ impl<'a> Plan<'a> {
             if class == C_SEAM {
                 return 0;
             }
-            let unit = Some(self.b.at[i]).filter(|&k| k != 0).map(|k| self.b.units[k as usize - 1]);
+            let unit = Some(self.b.at[i])
+                .filter(|&k| k != 0)
+                .map(|k| self.b.units[k as usize - 1]);
             if d as i32 > FAR {
                 if unit.is_some_and(|u| !self.b.same_team(u.army, army) && u.t == PIPERUNNER) {
                     return 0;
@@ -584,10 +612,14 @@ impl<'a> Plan<'a> {
         }
         [(0, -1), (1, 0), (0, 1), (-1, 0)].iter().any(|&(dx, dy)| {
             let (ox, oy) = (x + dx, y + dy);
-            self.b.unit_at(ox, oy).is_some_and(|u| u.t == OOZIUM && !self.b.same_team(u.army, self.army))
-                && ![(0, -1), (1, 0), (0, 1), (-1, 0)]
-                    .iter()
-                    .any(|&(ex, ey)| self.b.unit_at(ox + ex, oy + ey).is_some_and(|v| self.b.same_team(v.army, self.army)))
+            self.b
+                .unit_at(ox, oy)
+                .is_some_and(|u| u.t == OOZIUM && !self.b.same_team(u.army, self.army))
+                && ![(0, -1), (1, 0), (0, 1), (-1, 0)].iter().any(|&(ex, ey)| {
+                    self.b
+                        .unit_at(ox + ex, oy + ey)
+                        .is_some_and(|v| self.b.same_team(v.army, self.army))
+                })
         })
     }
 
@@ -647,7 +679,14 @@ impl<'a> Plan<'a> {
         if let Some(s) = self.pick_min(
             kind,
             None,
-            |s| s.enemy_distance + if s.kind == BASE && groups.get(s.group).is_some_and(|g| g.quiet) { 255 } else { 0 },
+            |s| {
+                s.enemy_distance
+                    + if s.kind == BASE && groups.get(s.group).is_some_and(|g| g.quiet) {
+                        255
+                    } else {
+                        0
+                    }
+            },
             0x7FFF,
         ) {
             return Some(s);
@@ -679,14 +718,24 @@ impl<'a> Plan<'a> {
         let mut cover = 0;
         if air {
             let reach = self.flood(self.army, FIGHTER, x, y, self.b.moves(self.army, FIGHTER), true);
-            for u in self.b.units.iter().filter(|u| !u.carried() && u.t == FIGHTER && self.b.same_team(u.army, self.army)) {
+            for u in self
+                .b
+                .units
+                .iter()
+                .filter(|u| !u.carried() && u.t == FIGHTER && self.b.same_team(u.army, self.army))
+            {
                 if reach[self.b.idx(u.x, u.y)] >= 0 {
                     cover += u.hp;
                 }
             }
         }
         let (mut total, mut air_max) = (0, 0);
-        for u in self.b.units.iter().filter(|u| !u.carried() && !self.b.same_team(u.army, self.army)) {
+        for u in self
+            .b
+            .units
+            .iter()
+            .filter(|u| !u.carried() && !self.b.same_team(u.army, self.army))
+        {
             let d = (u.x - x).abs() + (u.y - y).abs();
             if !(1..=9).contains(&d) {
                 continue;
@@ -707,11 +756,18 @@ impl<'a> Plan<'a> {
                 }
                 continue;
             }
-            if ((air || t == BLACK_BOAT) && u.t == CRUISER) || (air && u.t == ANTI_AIR) || ((t == BATTLESHIP || t == CARRIER) && u.t == SUB) {
+            if ((air || t == BLACK_BOAT) && u.t == CRUISER)
+                || (air && u.t == ANTI_AIR)
+                || ((t == BATTLESHIP || t == CARRIER) && u.t == SUB)
+            {
                 if !hits_next_to(self) {
                     continue;
                 }
-                total += if (t == BOMBER || t == STEALTH) && u.t == ANTI_AIR { damage >> 1 } else { damage };
+                total += if (t == BOMBER || t == STEALTH) && u.t == ANTI_AIR {
+                    damage >> 1
+                } else {
+                    damage
+                };
                 continue;
             }
             let range = self.b.max_range(u.army, u.t);
@@ -839,9 +895,17 @@ impl<'a> Plan<'a> {
         if aa < 0 && cruiser < 0 {
             AA_NONE
         } else if aa > cruiser {
-            if air_hp > 0 { AA_AA_MORE } else { AA_AA }
+            if air_hp > 0 {
+                AA_AA_MORE
+            } else {
+                AA_AA
+            }
         } else if aa < cruiser {
-            if air_hp > 0 { AA_CRUISER_MORE } else { AA_CRUISER }
+            if air_hp > 0 {
+                AA_CRUISER_MORE
+            } else {
+                AA_CRUISER
+            }
         } else {
             AA_NONE
         }
@@ -853,7 +917,13 @@ impl<'a> Plan<'a> {
         self.enemy_hp = [0; 28];
         self.own_hp = [0; 28];
         let r = self.header(8) as i32;
-        let near = site.map(|s| (self.sites[s].x, self.sites[s].y, self.flood(self.army, TANK, self.sites[s].x, self.sites[s].y, r, false)));
+        let near = site.map(|s| {
+            (
+                self.sites[s].x,
+                self.sites[s].y,
+                self.flood(self.army, TANK, self.sites[s].x, self.sites[s].y, r, false),
+            )
+        });
         for u in &self.b.units {
             if !self.b.playing[u.army as usize % 6] {
                 continue;
@@ -892,7 +962,11 @@ impl<'a> Plan<'a> {
                     continue;
                 }
                 let rep = GROUPS[k];
-                let base = if rep == SUB { self.best_damage_dived(a, 0, false) } else { self.best_damage(a, rep, 0, false) };
+                let base = if rep == SUB {
+                    self.best_damage_dived(a, 0, false)
+                } else {
+                    self.best_damage(a, rep, 0, false)
+                };
                 let mut d = self.scale_by_reach(base * self.own_hp[a as usize], a);
                 if stats(rep).group & AIR != 0 {
                     if a == ANTI_AIR && (self.aa_pick == AA_CRUISER || self.aa_pick == AA_CRUISER_MORE) {
@@ -906,10 +980,15 @@ impl<'a> Plan<'a> {
             }
         }
         let has_air = self.any & D_AIR != 0;
-        let candidates: Vec<u8> = types().filter(|&t| self.allows(t) && (t != ANTI_AIR || has_air)).collect();
+        let candidates: Vec<u8> = types()
+            .filter(|&t| self.allows(t) && (t != ANTI_AIR || has_air))
+            .collect();
         if g.iter().any(|&v| v > 0) {
             for &c in &candidates {
-                let mut s: i64 = (0..9).filter(|&k| g[k] > 0).map(|k| self.rate(c, GROUPS[k]) * g[k]).sum();
+                let mut s: i64 = (0..9)
+                    .filter(|&k| g[k] > 0)
+                    .map(|k| self.rate(c, GROUPS[k]) * g[k])
+                    .sum();
                 for _ in 0..self.count(c) {
                     s -= s >> 3;
                 }
@@ -920,7 +999,10 @@ impl<'a> Plan<'a> {
         let least = g.iter().copied().min().unwrap_or(0).min(0);
         if least != 0 {
             for &c in &candidates {
-                let mut s: i64 = (0..9).filter(|&k| g[k] != 0).map(|k| self.rate(c, GROUPS[k]) * (g[k] - (least - 1))).sum();
+                let mut s: i64 = (0..9)
+                    .filter(|&k| g[k] != 0)
+                    .map(|k| self.rate(c, GROUPS[k]) * (g[k] - (least - 1)))
+                    .sum();
                 for _ in 0..self.count(c) {
                     s -= s >> 2;
                 }
@@ -950,11 +1032,24 @@ impl<'a> Plan<'a> {
         let role = order.map_or(NO_ROLE, role_of);
         self.funds -= self.price(t);
         self.own += 1;
-        self.b.units.push(Unit { rec: 0, army: self.army, t, x: site.x, y: site.y, hp: 100, flags: 0 });
+        self.b.units.push(Unit {
+            rec: 0,
+            army: self.army,
+            t,
+            x: site.x,
+            y: site.y,
+            hp: 100,
+            flags: 0,
+        });
         let k = self.b.units.len() as u16;
         let i = self.b.idx(site.x, site.y);
         self.b.at[i] = k;
-        self.builds.push(Build { t, x: site.x, y: site.y, role });
+        self.builds.push(Build {
+            t,
+            x: site.x,
+            y: site.y,
+            role,
+        });
         if logging() {
             self.notes.push(format!(
                 "step {step} {} at ({},{}) order {} role {} funds left {}",
@@ -962,7 +1057,11 @@ impl<'a> Plan<'a> {
                 site.x,
                 site.y,
                 order.map_or("-".to_string(), |o| o.to_string()),
-                if role == NO_ROLE { "AW2".to_string() } else { role.to_string() },
+                if role == NO_ROLE {
+                    "AW2".to_string()
+                } else {
+                    role.to_string()
+                },
                 self.funds
             ));
         }
@@ -980,16 +1079,22 @@ impl<'a> Plan<'a> {
                 let (x, y) = (i as i32 % self.b.w, i as i32 / self.b.w);
                 self.b.class[i] == C_BASE && self.b.owns(i, self.army) && (x - hx).abs() + (y - hy).abs() <= 4
             });
-            let enemy_near = self
-                .b
-                .units
-                .iter()
-                .any(|u| !u.carried() && !self.b.same_team(u.army, self.army) && (u.x - hx).abs() + (u.y - hy).abs() <= 6);
+            let enemy_near = self.b.units.iter().any(|u| {
+                !u.carried() && !self.b.same_team(u.army, self.army) && (u.x - hx).abs() + (u.y - hy).abs() <= 6
+            });
             if base_near && !enemy_near {
                 excluded |= 1 << 6;
             }
         }
-        let weights: Vec<u32> = (0..7).map(|i| if excluded & (1 << i) != 0 { 0 } else { w[i].max(0) as u32 }).collect();
+        let weights: Vec<u32> = (0..7)
+            .map(|i| {
+                if excluded & (1 << i) != 0 {
+                    0
+                } else {
+                    w[i].max(0) as u32
+                }
+            })
+            .collect();
         let total: u32 = weights.iter().sum();
         if total == 0 {
             return Some(0);
@@ -1027,7 +1132,9 @@ impl<'a> Plan<'a> {
                 continue;
             }
             // (Dual Strike asks for the most enemies, then, if that found one, for the nearest enemy.)
-            let s = self.most_enemies(BASE, Some(g)).and_then(|_| self.pick_min(BASE, Some(g), |s| s.enemy_distance, 0x7FFF));
+            let s = self
+                .most_enemies(BASE, Some(g))
+                .and_then(|_| self.pick_min(BASE, Some(g), |s| s.enemy_distance, 0x7FFF));
             if let Some(s) = s {
                 let i = self.b.idx(self.sites[s].x, self.sites[s].y);
                 if self.threat.0[i] < 50 && self.threat.1[i] < 50 {
@@ -1042,7 +1149,9 @@ impl<'a> Plan<'a> {
 
     /// Step 2 (`AiTurn_TrySiteAction`): a unit for the site with the most enemies against friends around it.
     fn step_site(&mut self) -> bool {
-        let Some(s) = self.pick_min(ANY, None, |s| -s.balance, 0) else { return false };
+        let Some(s) = self.pick_min(ANY, None, |s| -s.balance, 0) else {
+            return false;
+        };
         self.weigh(Some(s));
         match self.choose_for_site(s) {
             Some(t) => self.queue(s, t, 2),
@@ -1096,7 +1205,12 @@ impl<'a> Plan<'a> {
         if self.own_units().any(|u| u.t == FIGHTER && u.hp >= 50) {
             return false;
         }
-        if !self.b.units.iter().any(|u| self.enemy(u.army) && stats(u.t).group & AIR != 0) {
+        if !self
+            .b
+            .units
+            .iter()
+            .any(|u| self.enemy(u.army) && stats(u.t).group & AIR != 0)
+        {
             return false;
         }
         let threat = self.threat_maps(FIGHTER);
@@ -1131,10 +1245,19 @@ impl<'a> Plan<'a> {
     /// cost of one (127: none); a Sub with a Cruiser of the team (40 hp or more) in its reach is left out.
     fn sub_reach(&self, count: bool) -> Vec<i32> {
         let mut out = vec![if count { 0 } else { 127 }; self.b.class.len()];
-        for u in self.b.units.iter().filter(|u| !u.carried() && u.t == SUB && u.hp > 20 && self.enemy(u.army)) {
+        for u in self
+            .b
+            .units
+            .iter()
+            .filter(|u| !u.carried() && u.t == SUB && u.hp > 20 && self.enemy(u.army))
+        {
             let reach = self.flood(u.army, SUB, u.x, u.y, FAR, true);
             let guarded = self.b.units.iter().any(|c| {
-                !c.carried() && c.t == CRUISER && c.hp >= 40 && self.b.same_team(c.army, self.army) && reach[self.b.idx(c.x, c.y)] >= 0
+                !c.carried()
+                    && c.t == CRUISER
+                    && c.hp >= 40
+                    && self.b.same_team(c.army, self.army)
+                    && reach[self.b.idx(c.x, c.y)] >= 0
             });
             if guarded {
                 continue;
@@ -1196,7 +1319,9 @@ impl<'a> Plan<'a> {
                 break;
             }
         }
-        let s = s.or_else(|| self.pick_min(BASE, None, |s| s.property_moves, 0x7FFF)).or_else(|| self.first(BASE));
+        let s = s
+            .or_else(|| self.pick_min(BASE, None, |s| s.property_moves, 0x7FFF))
+            .or_else(|| self.first(BASE));
         let Some(s) = s else { return false };
         let g = self.sites[s].group;
         if !self.groups[g].skip_foot {
@@ -1208,20 +1333,33 @@ impl<'a> Plan<'a> {
         let chance = if day > 3 { (self.header(2) * day).min(80) } else { 0 };
         self.k += 1;
         let r = roll(self.core, self.army, Roll::Mech, self.k, 100) as i64;
-        let t = if r < chance && self.funds >= self.price(MECH) * 2 { MECH } else { INFANTRY };
+        let t = if r < chance && self.funds >= self.price(MECH) * 2 {
+            MECH
+        } else {
+            INFANTRY
+        };
         self.queue(s, t, 6);
         true
     }
 
     /// Step 7 (`func_02092134`): each site's Infantry moves to the nearest own foot unit.
     fn foot_distances(&mut self) {
-        let feet: Vec<(i32, i32)> = self.own_units().filter(|u| u.t <= MECH && !u.carried()).map(|u| (u.x, u.y)).collect();
+        let feet: Vec<(i32, i32)> = self
+            .own_units()
+            .filter(|u| u.t <= MECH && !u.carried())
+            .map(|u| (u.x, u.y))
+            .collect();
         for s in 0..self.sites.len() {
             if feet.is_empty() {
                 break;
             }
             let reach = self.flood(self.army, INFANTRY, self.sites[s].x, self.sites[s].y, FAR, false);
-            self.sites[s].foot = feet.iter().map(|&(x, y)| reach[self.b.idx(x, y)] as i32).filter(|&d| d >= 0).min().unwrap_or(0xFF);
+            self.sites[s].foot = feet
+                .iter()
+                .map(|&(x, y)| reach[self.b.idx(x, y)] as i32)
+                .filter(|&d| d >= 0)
+                .min()
+                .unwrap_or(0xFF);
         }
     }
 
@@ -1231,7 +1369,9 @@ impl<'a> Plan<'a> {
         let day = self.b.day as i64;
         // T-Copter (`AiTurn_TryBuildTCopter`; propertyRegions taken as 1).
         if self.afford(T_COPTER) && !(self.header(11) != 0 && day > self.header(11)) {
-            let s = self.pick_min(AIRPORT, None, |s| s.foot, 0x7FFF).or_else(|| self.first(AIRPORT));
+            let s = self
+                .pick_min(AIRPORT, None, |s| s.foot, 0x7FFF)
+                .or_else(|| self.first(AIRPORT));
             if let Some(s) = s {
                 if foot != 0 && self.count(T_COPTER) * 100 / foot < self.header(3) {
                     self.queue(s, T_COPTER, 8);
@@ -1242,7 +1382,10 @@ impl<'a> Plan<'a> {
         // Black Boat for the fleet (`AiTurn_TryBuildBlackBoat`).
         if self.flag(4) && self.afford(BLACK_BOAT) {
             if let Some(s) = self.pick_for_build(PORT) {
-                let armed = self.own_units().filter(|u| stats(u.t).group & SEA != 0 && attack(u.t) != Attack::None).count() as i64;
+                let armed = self
+                    .own_units()
+                    .filter(|u| stats(u.t).group & SEA != 0 && attack(u.t) != Attack::None)
+                    .count() as i64;
                 if armed + 1 >= (self.count(BLACK_BOAT) + 1) * 3 {
                     self.queue(s, BLACK_BOAT, 8);
                     return true;
@@ -1252,7 +1395,18 @@ impl<'a> Plan<'a> {
         // APC (`AiTurn_TryBuildApc`).
         if self.afford(APC) && !(self.header(10) != 0 && day > self.header(10)) {
             let groups = &self.groups;
-            let s = self.pick_min(BASE, None, |s| if groups.get(s.group).is_some_and(|g| g.properties > 0) { s.foot } else { 0x7FFF }, 0x7FFF);
+            let s = self.pick_min(
+                BASE,
+                None,
+                |s| {
+                    if groups.get(s.group).is_some_and(|g| g.properties > 0) {
+                        s.foot
+                    } else {
+                        0x7FFF
+                    }
+                },
+                0x7FFF,
+            );
             if let Some(s) = s {
                 let transports = self.count(APC) + self.count(T_COPTER);
                 if foot != 0 && transports * 100 / foot < self.header(4) {
@@ -1273,9 +1427,9 @@ impl<'a> Plan<'a> {
             if self.sites[s].mark == USED || self.sites[s].kind != BASE {
                 continue;
             }
-            let by_pipe = [(0, -1), (1, 0), (0, 1), (-1, 0)]
-                .iter()
-                .any(|&(dx, dy)| self.b.inside(x + dx, y + dy) && matches!(self.b.class[self.b.idx(x + dx, y + dy)], C_PIPE | C_SEAM));
+            let by_pipe = [(0, -1), (1, 0), (0, 1), (-1, 0)].iter().any(|&(dx, dy)| {
+                self.b.inside(x + dx, y + dy) && matches!(self.b.class[self.b.idx(x + dx, y + dy)], C_PIPE | C_SEAM)
+            });
             // (and tangoAW2's rule for a base's Piperunners: a network of at least six cells,
             // crate::cpu_tactics::MIN_PIPE_NETWORK)
             if !by_pipe || self.pipe_network(x, y) < crate::cpu_tactics::MIN_PIPE_NETWORK {
@@ -1316,7 +1470,11 @@ impl<'a> Plan<'a> {
     fn pipe_network(&self, x: i32, y: i32) -> usize {
         let pipe = |x: i32, y: i32| self.b.inside(x, y) && matches!(self.b.class[self.b.idx(x, y)], C_PIPE | C_SEAM);
         let mut seen = std::collections::HashSet::new();
-        let mut stack: Vec<(i32, i32)> = [(0, -1), (1, 0), (0, 1), (-1, 0)].iter().map(|&(dx, dy)| (x + dx, y + dy)).filter(|&(a, b)| pipe(a, b)).collect();
+        let mut stack: Vec<(i32, i32)> = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+            .iter()
+            .map(|&(dx, dy)| (x + dx, y + dy))
+            .filter(|&(a, b)| pipe(a, b))
+            .collect();
         while let Some((a, b)) = stack.pop() {
             if !seen.insert((a, b)) {
                 continue;
@@ -1349,7 +1507,14 @@ impl<'a> Plan<'a> {
             self.threat.0[i] as i32 + self.threat.1[i] as i32 <= 50
         };
         self.pick_min(AIRPORT, None, |s| if safe(s) { -s.enemies } else { 0 }, 0)
-            .or_else(|| self.pick_min(AIRPORT, None, |s| if safe(s) { s.enemy_distance } else { 0x7FFF }, 0x7FFF))
+            .or_else(|| {
+                self.pick_min(
+                    AIRPORT,
+                    None,
+                    |s| if safe(s) { s.enemy_distance } else { 0x7FFF },
+                    0x7FFF,
+                )
+            })
     }
 
     /// `AiBuild_ShouldSaveFunds`.
@@ -1377,8 +1542,13 @@ impl<'a> Plan<'a> {
             }
         }
         let range_co = self.b.abilities
-            && crate::co_roster::stat(self.b.co[self.army as usize], self.b.mode[self.army as usize], ARTILLERY, crate::co_roster::RANGE)
-                .unwrap_or(0)
+            && crate::co_roster::stat(
+                self.b.co[self.army as usize],
+                self.b.mode[self.army as usize],
+                ARTILLERY,
+                crate::co_roster::RANGE,
+            )
+            .unwrap_or(0)
                 > 0;
         if artillery {
             if range_co {
@@ -1399,7 +1569,9 @@ impl<'a> Plan<'a> {
             return false;
         }
         self.weigh(None);
-        let info = self.pick_for_build(BASE).map_or(0, |s| self.rate_landmass(self.sites[s].x, self.sites[s].y));
+        let info = self
+            .pick_for_build(BASE)
+            .map_or(0, |s| self.rate_landmass(self.sites[s].x, self.sites[s].y));
         let (flag, count) = (info & 0x100 != 0, info & 0xFF);
         loop {
             let mut best = 0u8;
@@ -1429,7 +1601,10 @@ impl<'a> Plan<'a> {
                     if self.has_enough_indirects(true) {
                         continue;
                     }
-                } else if attack(t) == Attack::Indirect && stats(t).group & GROUND != 0 && self.has_enough_indirects(false) {
+                } else if attack(t) == Attack::Indirect
+                    && stats(t).group & GROUND != 0
+                    && self.has_enough_indirects(false)
+                {
                     continue;
                 }
                 best = t;
@@ -1464,7 +1639,11 @@ impl<'a> Plan<'a> {
                 if self.should_save(cost) {
                     self.saving = cost - (self.income - self.reserve);
                     if logging() {
-                        self.notes.push(format!("saving {} for a {}", self.saving, crate::bh_smart::NAMES[best as usize % 28]));
+                        self.notes.push(format!(
+                            "saving {} for a {}",
+                            self.saving,
+                            crate::bh_smart::NAMES[best as usize % 28]
+                        ));
                     }
                 }
                 reject(self, best);
@@ -1575,7 +1754,9 @@ pub(crate) fn plan(core: &Core, army: u32) -> (Vec<Build>, Vec<String>) {
 
 /// Dual Strike's production is playing this pass of state 5 (its list is for the army moving now).
 pub(crate) fn active(core: &Core) -> bool {
-    core.raw_read_8(BUILDS, -1) != 0 && core.raw_read_8(BUILDS + 2, -1) as u32 == current_army(core) && core.raw_read_16(AI_STATE, -1) == 5
+    core.raw_read_8(BUILDS, -1) != 0
+        && core.raw_read_8(BUILDS + 2, -1) as u32 == current_army(core)
+        && core.raw_read_16(AI_STATE, -1) == 5
 }
 
 fn entry(core: &Core, k: u32) -> Build {
@@ -1625,7 +1806,10 @@ fn pick_type(core: &mut Core) {
     if !active(core) {
         return;
     }
-    let (n, next) = (core.raw_read_8(BUILDS, -1) as u32, core.raw_read_8(BUILDS + 1, -1) as u32);
+    let (n, next) = (
+        core.raw_read_8(BUILDS, -1) as u32,
+        core.raw_read_8(BUILDS + 1, -1) as u32,
+    );
     let t = if next < n { entry(core, next).t } else { 0 };
     core.raw_write_8(BUILDS + 1, -1, (next + 1).min(255) as u8);
     core.raw_write_8(ACTION + 6, -1, t);
@@ -1633,7 +1817,10 @@ fn pick_type(core: &mut Core) {
 }
 
 fn current(core: &Core) -> Option<Build> {
-    let (n, next) = (core.raw_read_8(BUILDS, -1) as u32, core.raw_read_8(BUILDS + 1, -1) as u32);
+    let (n, next) = (
+        core.raw_read_8(BUILDS, -1) as u32,
+        core.raw_read_8(BUILDS + 1, -1) as u32,
+    );
     (next >= 1 && next <= n).then(|| entry(core, next - 1))
 }
 
@@ -1665,7 +1852,12 @@ fn pick_site(core: &mut Core) {
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(START, Box::new(start)), (TYPE, Box::new(pick_type)), (ROLE, Box::new(pick_role)), (SITE, Box::new(pick_site))]
+    vec![
+        (START, Box::new(start)),
+        (TYPE, Box::new(pick_type)),
+        (ROLE, Box::new(pick_role)),
+        (SITE, Box::new(pick_site)),
+    ]
 }
 
 #[cfg(test)]

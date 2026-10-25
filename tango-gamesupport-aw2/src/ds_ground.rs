@@ -79,12 +79,26 @@ impl<'a> Ground<'a> {
         // (measured on real Dual Strike frames: a flat pale colour, not the map repeated)
         let rgb = match biome {
             crate::wasteland::SNOW => (252u32, 252u32, 252u32),
-            crate::wasteland::WASTELAND | crate::wasteland::DESERT | crate::wasteland::GRAND_BOLT_LOOK => (252, 244, 148),
+            crate::wasteland::WASTELAND | crate::wasteland::DESERT | crate::wasteland::GRAND_BOLT_LOOK => {
+                (252, 244, 148)
+            }
             _ => (220, 244, 124),
         };
         let px = |(r, g, b): (u32, u32, u32)| 0x8000 | ((r >> 3) | (g >> 3) << 5 | (b >> 3) << 10) as u16;
         let fogged = ((rgb.0 + 90) / 2, (rgb.1 + 34) / 2, (rgb.2 + 205) / 2);
-        Some(Ground { look, w, h, v, base: char_base(v), tiles, fog, cache: vec![None; (w * h) as usize], bolt, sky, outer: [px(rgb), px(fogged)] })
+        Some(Ground {
+            look,
+            w,
+            h,
+            v,
+            base: char_base(v),
+            tiles,
+            fog,
+            cache: vec![None; (w * h) as usize],
+            bolt,
+            sky,
+            outer: [px(rgb), px(fogged)],
+        })
     }
 
     /// Loads what [`Ground::new`] needs into `v`.
@@ -96,7 +110,9 @@ impl<'a> Ground<'a> {
     pub fn signature(&self) -> u64 {
         self.tiles
             .iter()
-            .fold(((self.w as u64) << 32) | self.h as u64, |a, &t| a.wrapping_mul(1_000_003).wrapping_add(t as u64))
+            .fold(((self.w as u64) << 32) | self.h as u64, |a, &t| {
+                a.wrapping_mul(1_000_003).wrapping_add(t as u64)
+            })
     }
 
     /// The metatile id of a cell.
@@ -107,7 +123,13 @@ impl<'a> Ground<'a> {
     /// Whether the cell (by index, as [`Ground::locate`] gives it) is a wood or a mountain, which
     /// Dual Strike draws upright.
     pub fn is_tall(&self, ci: usize) -> bool {
-        self.look.look.tall.get(self.tiles[ci] as usize).copied().unwrap_or(crate::ds_look::NOT_TALL) != crate::ds_look::NOT_TALL
+        self.look
+            .look
+            .tall
+            .get(self.tiles[ci] as usize)
+            .copied()
+            .unwrap_or(crate::ds_look::NOT_TALL)
+            != crate::ds_look::NOT_TALL
     }
 
     /// Whether the cell is hidden by fog.
@@ -134,11 +156,19 @@ impl<'a> Ground<'a> {
         let t = (e & 0x3ff) as usize;
         let k = 64 * t + sy * 8 + sx;
         let (full, merged) = if bank < 4 {
-            (self.look.look.full.get(k).copied().unwrap_or(0), self.look.look.colours.get(16 * bank + c).copied().unwrap_or(0))
+            (
+                self.look.look.full.get(k).copied().unwrap_or(0),
+                self.look.look.colours.get(16 * bank + c).copied().unwrap_or(0),
+            )
         } else {
             (
                 self.look.look.full_fog.get(k).copied().unwrap_or(0),
-                self.look.look.fog.get(16 * (bank & 3) + c).copied().unwrap_or(crate::ds_look::NO_FOG),
+                self.look
+                    .look
+                    .fog
+                    .get(16 * (bank & 3) + c)
+                    .copied()
+                    .unwrap_or(crate::ds_look::NO_FOG),
             )
         };
         if full & 0x8000 == 0 || merged == crate::ds_look::NO_FOG {
@@ -179,7 +209,9 @@ impl<'a> Ground<'a> {
         let sky = self.sky.get((y * self.w + x) as usize).copied();
         let q = match sky {
             Some(q) => q.map(|e| e.wrapping_add(fog_add)),
-            None => l.entries(self.tile(x, y), x as u32, y as u32).map(|e| e.wrapping_add(fog_add)),
+            None => l
+                .entries(self.tile(x, y), x as u32, y as u32)
+                .map(|e| e.wrapping_add(fog_add)),
         };
         for (k, &e) in q.iter().enumerate() {
             let (qx, qy) = ((k % 2) * 8, (k / 2) * 8);
@@ -215,7 +247,11 @@ impl<'a> Ground<'a> {
         }
         let l = &self.look.look;
         let o = l.upper_at(self.tile(x, y + 1), x as u32, (y + 1) as u32)?;
-        let src = if self.fogged(x, y) { &l.overlays_fog } else { &l.overlays };
+        let src = if self.fogged(x, y) {
+            &l.overlays_fog
+        } else {
+            &l.overlays
+        };
         let mut out = [0u16; 256];
         for side in 0..2usize {
             if let Some(over) = src.get(o as usize).and_then(|v| v.get(side)) {
@@ -283,10 +319,25 @@ impl<'a> Ground<'a> {
     /// The ground pixel at map pixel (gx, gy) (16 per cell); the map's edge
     /// repeats beyond it.
     pub fn px(&mut self, gx: i32, gy: i32) -> u16 {
-        let (cx, cy) = ((gx.div_euclid(16)).clamp(0, self.w - 1), (gy.div_euclid(16)).clamp(0, self.h - 1));
+        let (cx, cy) = (
+            (gx.div_euclid(16)).clamp(0, self.w - 1),
+            (gy.div_euclid(16)).clamp(0, self.h - 1),
+        );
         let (lx, ly) = (
-            if gx < 0 { 0 } else if gx >= self.w * 16 { 15 } else { gx.rem_euclid(16) },
-            if gy < 0 { 0 } else if gy >= self.h * 16 { 15 } else { gy.rem_euclid(16) },
+            if gx < 0 {
+                0
+            } else if gx >= self.w * 16 {
+                15
+            } else {
+                gx.rem_euclid(16)
+            },
+            if gy < 0 {
+                0
+            } else if gy >= self.h * 16 {
+                15
+            } else {
+                gy.rem_euclid(16)
+            },
         );
         let i = (cy * self.w + cx) as usize;
         if self.cache[i].is_none() {

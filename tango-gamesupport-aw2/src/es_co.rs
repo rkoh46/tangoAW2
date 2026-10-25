@@ -346,7 +346,6 @@ pub fn power_paid(core: &mut Core) {
 /// `PayForPower(army, mode)`'s entry is trapped once, by [`crate::crumb::traps`] (one trap an address): it calls this.
 pub const POWER_PAID_AT: u32 = PAY_FOR_POWER;
 
-
 // --- The powers' rules: Testudo, Onager, Triumph ------------------------------------------------
 //
 // Three effects the numbers cannot say, each a trap at a game routine and each a pure function of emulated memory (the units, the player blocks, the
@@ -434,7 +433,10 @@ pub fn onager(core: &mut Core, defender: u32) {
         return;
     }
     let army = army_at(core, att);
-    if !(1..=5).contains(&army) || crate::co_roster::army_co(core, army) != (AURELIA, 2) || !indirect(core.raw_read_8(att, -1)) {
+    if !(1..=5).contains(&army)
+        || crate::co_roster::army_co(core, army) != (AURELIA, 2)
+        || !indirect(core.raw_read_8(att, -1))
+    {
         return;
     }
     let dfd = units + UNIT * defender;
@@ -442,13 +444,18 @@ pub fn onager(core: &mut Core, defender: u32) {
         return;
     }
     let (tx, ty) = (core.raw_read_8(dfd + 2, -1) as i32, core.raw_read_8(dfd + 3, -1) as i32);
-    let (ax, ay) = (core.raw_read_16(DESTINATION, -1) as i16 as i32, core.raw_read_16(DESTINATION + 2, -1) as i16 as i32);
+    let (ax, ay) = (
+        core.raw_read_16(DESTINATION, -1) as i16 as i32,
+        core.raw_read_16(DESTINATION + 2, -1) as i16 as i32,
+    );
     if (ax - tx).abs() + (ay - ty).abs() < 2 {
         return;
     }
     let mine = team_of(core, army);
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-        let Some(u) = crate::unit_actions::unit_at(core, tx + dx, ty + dy) else { continue };
+        let Some(u) = crate::unit_actions::unit_at(core, tx + dx, ty + dy) else {
+            continue;
+        };
         if u == dfd || team_of(core, army_at(core, u)) == mine || crate::oozium::immune(core, u) {
             continue;
         }
@@ -527,7 +534,9 @@ fn fire_shown(core: &mut Core) {
     if !is_on(core) {
         return;
     }
-    let Some(i) = slot_of(core, core.raw_read_32(SELECTED_UNIT, -1)) else { return };
+    let Some(i) = slot_of(core, core.raw_read_32(SELECTED_UNIT, -1)) else {
+        return;
+    };
     if !moved_bit(core, i) {
         return;
     }
@@ -552,7 +561,10 @@ fn forget_moves(core: &mut Core) {
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![(STRIKE_APPLIED, Box::new(strike_applied)), (ACTION_DONE, Box::new(action_done))];
+    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![
+        (STRIKE_APPLIED, Box::new(strike_applied)),
+        (ACTION_DONE, Box::new(action_done)),
+    ];
     for at in FIRE_SHOWN {
         t.push((at, Box::new(fire_shown)));
     }
@@ -581,7 +593,14 @@ mod tests {
             assert_eq!((bonus(KLAUS, 0, t, FIREPOWER), bonus(KLAUS, 0, t, DEFENCE)), (20, 20));
             assert_eq!(bonus(KLAUS, 1, t, DEFENCE), 40);
             assert_eq!(bonus(KLAUS, 1, t, MOVE), 1);
-            assert_eq!((bonus(KLAUS, 2, t, FIREPOWER), bonus(KLAUS, 2, t, DEFENCE), bonus(KLAUS, 2, t, MOVE)), (80, 60, 1));
+            assert_eq!(
+                (
+                    bonus(KLAUS, 2, t, FIREPOWER),
+                    bonus(KLAUS, 2, t, DEFENCE),
+                    bonus(KLAUS, 2, t, MOVE)
+                ),
+                (80, 60, 1)
+            );
         }
         assert_eq!((bonus(KLAUS, 0, 5, FIREPOWER), bonus(KLAUS, 0, 5, DEFENCE)), (10, 10));
         assert_eq!(bonus(KLAUS, 1, 5, MOVE), 0);
@@ -595,7 +614,14 @@ mod tests {
         assert_eq!(bonus(AURELIA, 1, 15, RANGE), 1, "Missiles gain the power's range only");
         assert_eq!(bonus(AURELIA, 0, 5, FIREPOWER), -10);
         assert_eq!(bonus(AURELIA, 2, 10, FIREPOWER), 40);
-        assert_eq!((bonus(CASSIUS, 0, 5, MOVE), bonus(CASSIUS, 1, 5, MOVE), bonus(CASSIUS, 0, 5, DEFENCE)), (1, 2, -10));
+        assert_eq!(
+            (
+                bonus(CASSIUS, 0, 5, MOVE),
+                bonus(CASSIUS, 1, 5, MOVE),
+                bonus(CASSIUS, 0, 5, DEFENCE)
+            ),
+            (1, 2, -10)
+        );
         assert_eq!(bonus(CASSIUS, 2, 5, FIREPOWER), 50);
         assert_eq!(bonus(CASSIUS, 2, 1, FIREPOWER), 0, "foot soldiers are not vehicles");
         assert_eq!(bonus(CASSIUS, 2, 10, MOVE), 0, "nor is Artillery");
@@ -607,9 +633,20 @@ mod tests {
             assert_eq!(bonus(LIVIA, 0, t, FIREPOWER), 0);
             assert_eq!(bonus(LIVIA, 1, t, MOVE), 0);
         }
-        assert_eq!((bonus(LIVIA, 2, 22, MOVE), bonus(LIVIA, 2, 22, FIREPOWER), bonus(LIVIA, 2, 5, MOVE)), (2, 30, 0));
+        assert_eq!(
+            (
+                bonus(LIVIA, 2, 22, MOVE),
+                bonus(LIVIA, 2, 22, FIREPOWER),
+                bonus(LIVIA, 2, 5, MOVE)
+            ),
+            (2, 30, 0)
+        );
         assert_eq!(income_bonus(LIVIA, 12, 1000), 3000);
-        assert_eq!(income_bonus(LIVIA, 12, 2000), 6000, "25% of what a property pays under the Funds rule");
+        assert_eq!(
+            income_bonus(LIVIA, 12, 2000),
+            6000,
+            "25% of what a property pays under the Funds rule"
+        );
         assert_eq!(income_bonus(LIVIA, 12, 0), 0, "no income, no bonus");
         assert_eq!(income_bonus(KLAUS, 12, 1000), 0);
         assert_eq!((tribute(LIVIA, 1), tribute(LIVIA, 2), tribute(LIVIA, 0)), (200, 100, 0));
@@ -643,7 +680,11 @@ mod tests {
     #[test]
     fn onager_takes_one_hp_and_never_the_last() {
         assert_eq!((splash_hp(100), splash_hp(55), splash_hp(11)), (90, 45, 1));
-        assert_eq!((splash_hp(10), splash_hp(7), splash_hp(1)), (10, 7, 1), "a unit on its last HP keeps it");
+        assert_eq!(
+            (splash_hp(10), splash_hp(7), splash_hp(1)),
+            (10, 7, 1),
+            "a unit on its last HP keeps it"
+        );
     }
 
     #[test]
@@ -663,7 +704,17 @@ mod tests {
     fn texts_exist_and_the_code_fits() {
         use crate::co_new::*;
         for co in ALL {
-            for w in [T_NAME, T_BIO, T_D2D, T_COP, T_SCOP, T_COP_NAME, T_SCOP_NAME, T_VICTORY, T_DEFEAT] {
+            for w in [
+                T_NAME,
+                T_BIO,
+                T_D2D,
+                T_COP,
+                T_SCOP,
+                T_COP_NAME,
+                T_SCOP_NAME,
+                T_VICTORY,
+                T_DEFEAT,
+            ] {
                 assert!(text(co, w).is_some(), "{co} {w}");
             }
             for q in 0..6 {
@@ -672,7 +723,10 @@ mod tests {
             let i = info(co).unwrap();
             assert!(i.name.len() <= 7);
             for q in i.quotes {
-                assert!(q.split('\r').count() <= 2 && q.split('\r').all(|l| l.len() <= 28), "{q:?}");
+                assert!(
+                    q.split('\r').count() <= 2 && q.split('\r').all(|l| l.len() <= 28),
+                    "{q:?}"
+                );
             }
         }
         assert!(text(KLAUS, 15).is_none());

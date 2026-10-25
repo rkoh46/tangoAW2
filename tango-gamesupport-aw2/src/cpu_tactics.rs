@@ -79,7 +79,11 @@ fn price(core: &Core, t: u8) -> u32 {
 }
 
 fn bars(hp: u16) -> u32 {
-    if hp == 0 { 0 } else { (hp as u32 - 1) / 10 + 1 }
+    if hp == 0 {
+        0
+    } else {
+        (hp as u32 - 1) / 10 + 1
+    }
 }
 
 fn teams(core: &Core, a: u32, b: u32) -> bool {
@@ -185,9 +189,19 @@ fn bombs(core: &mut Core, army: u32) {
         // Nothing worth it: towards the nearest enemy.
         let foes: Vec<(i32, i32)> = (1..=5u32)
             .filter(|&a| a != army && !teams(core, a, army))
-            .flat_map(|a| army_units(core, a).into_iter().map(|(v, _)| pos(core, v)).collect::<Vec<_>>())
+            .flat_map(|a| {
+                army_units(core, a)
+                    .into_iter()
+                    .map(|(v, _)| pos(core, v))
+                    .collect::<Vec<_>>()
+            })
             .collect();
-        let dist = |p: (i32, i32)| foes.iter().map(|f| (f.0 - p.0).abs() + (f.1 - p.1).abs()).min().unwrap_or(0);
+        let dist = |p: (i32, i32)| {
+            foes.iter()
+                .map(|f| (f.0 - p.0).abs() + (f.1 - p.1).abs())
+                .min()
+                .unwrap_or(0)
+        };
         if let Some(&to) = options.iter().min_by_key(|&&p| (dist(p), p.1 * 64 + p.0)) {
             if to != (x, y) && dist(to) >= 2 {
                 move_unit(core, u, id, to);
@@ -214,7 +228,9 @@ pub fn cpu_unit(core: &mut Core) {
         // hits those in reach of its units ([`crate::cpu_inventions`]).
         crate::cpu_inventions::turn_begins(core, army);
         for (u, aim) in crate::cpu_inventions::plan(core, army) {
-            let Some(k) = (0..crate::cpu_inventions::SLOTS).find(|&k| core.raw_read_32(slot(k), -1) == 0) else { break };
+            let Some(k) = (0..crate::cpu_inventions::SLOTS).find(|&k| core.raw_read_32(slot(k), -1) == 0) else {
+                break;
+            };
             let f = core.raw_read_8(u + 1, -1);
             core.raw_write_8(u + 1, -1, f | MOVED);
             core.raw_write_32(slot(k), -1, crate::cpu_inventions::encode(core, u, aim));
@@ -223,7 +239,9 @@ pub fn cpu_unit(core: &mut Core) {
     }
     // Units in range of an enemy factory hit it (Versus, [`crate::factory_hp`]).
     for u in crate::factory_hp::cpu_strikers(core, army) {
-        let Some(k) = (0..PENDING_SLOTS).find(|&k| core.raw_read_32(PENDING + 4 * k, -1) == 0) else { break };
+        let Some(k) = (0..PENDING_SLOTS).find(|&k| core.raw_read_32(PENDING + 4 * k, -1) == 0) else {
+            break;
+        };
         let f = core.raw_read_8(u + 1, -1);
         core.raw_write_8(u + 1, -1, f | MOVED);
         core.raw_write_32(PENDING + 4 * k, -1, u | crate::factory_hp::STRIKE);
@@ -233,7 +251,11 @@ pub fn cpu_unit(core: &mut Core) {
 /// Pending slot `k`: the first [`PENDING_SLOTS`] are [`PENDING`], the rest
 /// [`crate::cpu_inventions::EXTRA`].
 fn slot(k: u32) -> u32 {
-    if k < PENDING_SLOTS { PENDING + 4 * k } else { crate::cpu_inventions::EXTRA + 4 * (k - PENDING_SLOTS) }
+    if k < PENDING_SLOTS {
+        PENDING + 4 * k
+    } else {
+        crate::cpu_inventions::EXTRA + 4 * (k - PENDING_SLOTS)
+    }
 }
 
 /// The frame's effects pass (`sub_0803550C`, weather in r0, trapped by
@@ -249,7 +271,11 @@ pub fn effects_pass(core: &mut Core) -> bool {
         return false;
     }
     // (the second half of the queue exists where a human owns inventions)
-    let slots = if crate::cpu_inventions::owner(core).is_some() { crate::cpu_inventions::SLOTS } else { PENDING_SLOTS };
+    let slots = if crate::cpu_inventions::owner(core).is_some() {
+        crate::cpu_inventions::SLOTS
+    } else {
+        PENDING_SLOTS
+    };
     for k in 0..slots {
         let bomb = core.raw_read_32(slot(k), -1);
         if bomb == 0 {
@@ -334,7 +360,10 @@ const SWAPS: [(u8, u8); 6] = [
 ];
 
 fn count(core: &Core, army: u32, t: u8) -> u32 {
-    army_units(core, army).iter().filter(|&&(u, _)| core.raw_read_8(u, -1) == t).count() as u32
+    army_units(core, army)
+        .iter()
+        .filter(|&&(u, _)| core.raw_read_8(u, -1) == t)
+        .count() as u32
 }
 
 pub(crate) fn next_to_pipes(core: &Core, x: i32, y: i32) -> bool {
@@ -361,8 +390,11 @@ fn pipe_network(core: &Core, x: i32, y: i32) -> usize {
         PIPES.contains(&(core.raw_read_8(MAP + 0x1432 + row + x as u32, -1) & 0x1F))
     };
     let mut seen = std::collections::HashSet::new();
-    let mut stack: Vec<(i32, i32)> =
-        [(0, -1), (1, 0), (0, 1), (-1, 0)].iter().map(|&(dx, dy)| (x + dx, y + dy)).filter(|&(a, b)| is_pipe(a, b)).collect();
+    let mut stack: Vec<(i32, i32)> = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+        .iter()
+        .map(|&(dx, dy)| (x + dx, y + dy))
+        .filter(|&(a, b)| is_pipe(a, b))
+        .collect();
     while let Some((a, b)) = stack.pop() {
         if !seen.insert((a, b)) {
             continue;
@@ -416,7 +448,9 @@ fn build_domains(core: &mut Core) {
     if !is_on(core) || mask & PIPE_DOMAIN == 0 {
         return;
     }
-    let Some(off) = cell.checked_sub(MAP + 0x1432) else { return };
+    let Some(off) = cell.checked_sub(MAP + 0x1432) else {
+        return;
+    };
     let (w, h) = map_size(core);
     let Some((x, y)) = (0..h).find_map(|y| {
         let row = core.raw_read_16(ROWS + 2 * y as u32, -1) as u32;
@@ -430,8 +464,10 @@ fn build_domains(core: &mut Core) {
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> =
-        BUYS.iter().map(|&at| (at, Box::new(buy) as Box<dyn Fn(&mut Core)>)).collect();
+    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = BUYS
+        .iter()
+        .map(|&at| (at, Box::new(buy) as Box<dyn Fn(&mut Core)>))
+        .collect();
     t.push((BUILD_DOMAINS, Box::new(build_domains)));
     t
 }
@@ -443,7 +479,9 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 fn resupply_around(core: &mut Core, boat: u32, army: u32) {
     let (x, y) = pos(core, boat);
     for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-        let Some(u) = unit_at(core, x + dx, y + dy) else { continue };
+        let Some(u) = unit_at(core, x + dx, y + dy) else {
+            continue;
+        };
         if army_of(core, u) != army {
             continue;
         }
@@ -476,7 +514,10 @@ fn end_of_turn_plan(core: &Core, army: u32) -> Vec<(u32, u32, u8)> {
     let foes: Vec<(u8, (i32, i32))> = (1..=5u32)
         .filter(|&a| a != army && !teams(core, a, army))
         .flat_map(|a| {
-            army_units(core, a).into_iter().map(|(v, _)| (core.raw_read_8(v, -1), pos(core, v))).collect::<Vec<_>>()
+            army_units(core, a)
+                .into_iter()
+                .map(|(v, _)| (core.raw_read_8(v, -1), pos(core, v)))
+                .collect::<Vec<_>>()
         })
         .collect();
     let mut plan = Vec::new();
@@ -486,13 +527,25 @@ fn end_of_turn_plan(core: &Core, army: u32) -> Vec<(u32, u32, u8)> {
                 let p = pos(core, u);
                 let near = |r: i32, q: (i32, i32)| (q.0 - p.0).abs() + (q.1 - p.1).abs() <= r;
                 let threat = foes.iter().any(|&(t, q)| near(THREAT_RANGE, q) && can_hit_air(t));
-                let hunter = foes.iter().any(|&(t, q)| near(HUNTER_RANGE, q) && (t == FIGHTER || t == STEALTH));
+                let hunter = foes
+                    .iter()
+                    .any(|&(t, q)| near(HUNTER_RANGE, q) && (t == FIGHTER || t == STEALTH));
                 let fuel = core.raw_read_8(u + 6, -1) & 0x7F;
                 let f = core.raw_read_8(u + 1, -1);
                 let hide = threat && !hunter && fuel > HIDE_FUEL;
-                let want = if hide { f | HIDDEN } else if fuel <= HIDE_FUEL || hunter { f & !HIDDEN } else { f };
+                let want = if hide {
+                    f | HIDDEN
+                } else if fuel <= HIDE_FUEL || hunter {
+                    f & !HIDDEN
+                } else {
+                    f
+                };
                 if want != f {
-                    let action = if want & HIDDEN != 0 { crate::map_anim::HIDE } else { crate::map_anim::APPEAR };
+                    let action = if want & HIDDEN != 0 {
+                        crate::map_anim::HIDE
+                    } else {
+                        crate::map_anim::APPEAR
+                    };
                     plan.push((u, id, action));
                 }
             }
@@ -509,7 +562,11 @@ fn end_of_turn(core: &mut Core, army: u32) {
             repair_now(core, u);
         } else {
             let f = core.raw_read_8(u + 1, -1);
-            let want = if action == crate::map_anim::HIDE { f | HIDDEN } else { f & !HIDDEN };
+            let want = if action == crate::map_anim::HIDE {
+                f | HIDDEN
+            } else {
+                f & !HIDDEN
+            };
             core.raw_write_8(u + 1, -1, want);
         }
     }

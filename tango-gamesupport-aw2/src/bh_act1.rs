@@ -88,7 +88,11 @@ fn bh01() -> MissionDef {
             ])],
         ),
         // Day 7: everything must go.
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(7), vec![Action::Scene(crate::bh_text::scene("m01_day7"))]),
+        Trigger::new(
+            When::TurnStart,
+            Cond::DayAtLeast(7),
+            vec![Action::Scene(crate::bh_text::scene("m01_day7"))],
+        ),
     ];
     m.flag = region::BLACK_HOLE[0];
     m.stars = 1;
@@ -112,7 +116,15 @@ fn bh02() -> MissionDef {
     m.units = crate::bh_ai::orders_at(crate::bh_ai::built_units("bh02"), 1, crate::bh_ai::ATTACK, &[(10, 20)]);
     // Three of Green Earth's cities in the front lines start unclaimed: its Infantry and Mechs take them on days 2 to 4 (the
     // neutral cities in the middle are five days off), then march on.
-    m.props = [(12, 14), (6, 20), (16, 20)].iter().map(|&(x, y)| Prop { kind: PropKind::City, owner: 0, x, y }).collect();
+    m.props = [(12, 14), (6, 20), (16, 20)]
+        .iter()
+        .map(|&(x, y)| Prop {
+            kind: PropKind::City,
+            owner: 0,
+            x,
+            y,
+        })
+        .collect();
     m.day_limit = 0;
     m.rank_days = 11;
     m.intro = crate::bh_text::scene("m02_pre");
@@ -152,7 +164,11 @@ fn bh02() -> MissionDef {
             vec![Action::Scene(crate::bh_text::scene("m02_pre_other"))],
         ),
         // Day 3: the Foundry wakes; Green Earth's first wave comes up the road.
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(3), vec![Action::Scene(crate::bh_text::scene("m02_day3"))]),
+        Trigger::new(
+            When::TurnStart,
+            Cond::DayAtLeast(3),
+            vec![Action::Scene(crate::bh_text::scene("m02_day3"))],
+        ),
         Trigger::new(
             When::TurnStart,
             Cond::DayAtLeast(3),
@@ -163,7 +179,11 @@ fn bh02() -> MissionDef {
             ]),
         ),
         // Day 6: two Md Tanks and two Infantry.
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(6), vec![Action::Scene(crate::bh_text::scene("m02_day6"))]),
+        Trigger::new(
+            When::TurnStart,
+            Cond::DayAtLeast(6),
+            vec![Action::Scene(crate::bh_text::scene("m02_day6"))],
+        ),
         Trigger::new(
             When::TurnStart,
             Cond::DayAtLeast(6),
@@ -223,15 +243,28 @@ fn bh03() -> MissionDef {
     // shoot the first enemy in reach at the first Black Hole turn start (a Submarine at (17,13) lost half its HP before
     // the player could act): jammed until day 2, they fire from day 3.
     m.jams = vec![
-        JamDef { at: (11, 5), until: Cond::DayAtLeast(2) },
-        JamDef { at: (12, 9), until: Cond::DayAtLeast(2) },
-        JamDef { at: (14, 9), until: Cond::DayAtLeast(2) },
+        JamDef {
+            at: (11, 5),
+            until: Cond::DayAtLeast(2),
+        },
+        JamDef {
+            at: (12, 9),
+            until: Cond::DayAtLeast(2),
+        },
+        JamDef {
+            at: (14, 9),
+            until: Cond::DayAtLeast(2),
+        },
     ];
     m.intro = crate::bh_text::scene("m03_pre");
     m.victory = crate::bh_text::scene("m03_post");
     m.after = crate::bh_text::chain(&["m03_map", "m03_warroom", "m03_sturm"]);
     m.triggers = vec![
-        Trigger::new(When::TurnStart, Cond::DayAtLeast(4), vec![Action::Scene(crate::bh_text::scene("m03_day4"))]),
+        Trigger::new(
+            When::TurnStart,
+            Cond::DayAtLeast(4),
+            vec![Action::Scene(crate::bh_text::scene("m03_day4"))],
+        ),
         Trigger::new(
             When::TurnStart,
             Cond::All(vec![Cond::DayAtLeast(8), holds_the_isle()]),

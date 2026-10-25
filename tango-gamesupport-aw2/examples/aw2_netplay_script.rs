@@ -122,10 +122,23 @@ fn main() {
     let online = std::env::var("AW2_ONLINE").is_ok_and(|v| v == "1") || unranked.is_some();
     let match_type = (
         0u8,
-        if shared_art { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 }
-            | if online { tango_gamesupport_aw2::online::ONLINE_MATCH } else { 0 }
-            | if unranked.is_some() { tango_gamesupport_aw2::online::UNRANKED_MATCH } else { 0 }
-            | if unranked.as_deref() == Some("guest") { tango_gamesupport_aw2::online::UNRANKED_PICK_GUEST } else { 0 },
+        if shared_art {
+            tango_gamesupport_aw2::ds_art::SHARED_ART
+        } else {
+            0
+        } | if online {
+            tango_gamesupport_aw2::online::ONLINE_MATCH
+        } else {
+            0
+        } | if unranked.is_some() {
+            tango_gamesupport_aw2::online::UNRANKED_MATCH
+        } else {
+            0
+        } | if unranked.as_deref() == Some("guest") {
+            tango_gamesupport_aw2::online::UNRANKED_PICK_GUEST
+        } else {
+            0
+        },
     );
 
     // `AW2_TILT=1`: the Dual Strike tilt on the console's own size (needs the pack: TANGOAW2_DS_ROM).
@@ -137,21 +150,21 @@ fn main() {
     let game = &tango_gamesupport_aw2::AW2;
     let start = |local_player: usize, resume: Option<&[u8]>| {
         let config = tango_match::StartConfig {
-                roms: [&rom, &rom],
-                saves: [Some(&save), Some(&save)],
-                rng_seed: [0; 16],
-                rtc,
-                match_type,
-                peer_rom: tango_match::PeerRom {
-                    code: *b"AW2E",
-                    revision: 0,
-                },
-                local_player,
-                players: 2,
-                present_delay: 2,
-                disable_bgm: false,
-                audio: None,
-                cancel: None,
+            roms: [&rom, &rom],
+            saves: [Some(&save), Some(&save)],
+            rng_seed: [0; 16],
+            rtc,
+            match_type,
+            peer_rom: tango_match::PeerRom {
+                code: *b"AW2E",
+                revision: 0,
+            },
+            local_player,
+            players: 2,
+            present_delay: 2,
+            disable_bgm: false,
+            audio: None,
+            cancel: None,
         };
         match resume {
             Some(state) => game.pvp.start_resumed(config, state),
@@ -281,7 +294,11 @@ fn main() {
                     // back.
                     (0..16).for_each(|_| rows.push_back(Row::Keys([0, 0])));
                     let v = hex(p[2]);
-                    let n = match p[0] { "poke8" => 1, "poke16" => 2, _ => 4 };
+                    let n = match p[0] {
+                        "poke8" => 1,
+                        "poke16" => 2,
+                        _ => 4,
+                    };
                     rows.push_back(Row::Poke(hex(p[1]), v.to_le_bytes()[..n].to_vec()));
                     (0..20).for_each(|_| rows.push_back(Row::Keys([0, 0])));
                 }
@@ -312,7 +329,10 @@ fn main() {
                     }
                 }
                 println!("  {common} checkpoints held by both, digests agree: {agree}");
-                assert!(common > 0 && agree, "no common settled checkpoint, or the peers disagree");
+                assert!(
+                    common > 0 && agree,
+                    "no common settled checkpoint, or the peers disagree"
+                );
                 let newest = before[0]
                     .iter()
                     .rev()
@@ -327,9 +347,13 @@ fn main() {
                 peers = [start(0, Some(&state)), start(1, Some(&state))];
                 let restored = {
                     let st = unsafe { mgba::state::State::from_slice(&state) };
-                    peek(&peers[0], 0x0200_0000, 0x4_0000) == st.wram() && peek(&peers[0], 0x0300_0000, 0x8000) == st.iwram()
+                    peek(&peers[0], 0x0200_0000, 0x4_0000) == st.wram()
+                        && peek(&peers[0], 0x0300_0000, 0x8000) == st.iwram()
                 };
-                println!("  resumed: both consoles hold the saved state's RAM: {}", restored && peek(&peers[1], 0x0200_0000, 0x4_0000) == peek(&peers[0], 0x0200_0000, 0x4_0000));
+                println!(
+                    "  resumed: both consoles hold the saved state's RAM: {}",
+                    restored && peek(&peers[1], 0x0200_0000, 0x4_0000) == peek(&peers[0], 0x0200_0000, 0x4_0000)
+                );
                 assert!(restored, "the restored console differs from the saved state");
                 wire = [VecDeque::new(), VecDeque::new()];
                 confirmed.clear();
@@ -448,7 +472,12 @@ fn main() {
     // picture runs a scratch console and must leave the real one as it was.
     let video = |peer: &tango_match::Match| -> Vec<u8> {
         let mut v = Vec::new();
-        for (base, len) in [(0x0600_0000u32, 0x1_8000usize), (0x0500_0000, 0x400), (0x0700_0000, 0x400), (0x0400_0000, 0x400)] {
+        for (base, len) in [
+            (0x0600_0000u32, 0x1_8000usize),
+            (0x0500_0000, 0x400),
+            (0x0700_0000, 0x400),
+            (0x0400_0000, 0x400),
+        ] {
             v.extend(peek(peer, base, len));
         }
         v
@@ -496,7 +525,10 @@ fn main() {
             println!("  (setup pokes: the stack from {STACK_FROM:08x} is left out of the straight comparison)");
         }
         let diff = |x: &[u8], y: &[u8]| x.iter().zip(y).filter(|(p, q)| p != q).count();
-        println!("{name}: bytes differing peer0/peer1 {peers_differ}, peer0/straight {}", diff(&a, &s));
+        println!(
+            "{name}: bytes differing peer0/peer1 {peers_differ}, peer0/straight {}",
+            diff(&a, &s)
+        );
         let first: Vec<String> = a
             .iter()
             .zip(&s)
@@ -511,16 +543,14 @@ fn main() {
         all &= peers_equal && a == s;
     }
     for (k, p) in peers.iter().enumerate() {
-        let ended = p
-            .telemetry()
-            .and_then(|h| {
-                h.lock()
-                    .unwrap()
-                    .events()
-                    .iter()
-                    .find(|(_, e)| matches!(e, tango_match::telemetry::Event::MatchEnded))
-                    .map(|(t, _)| *t)
-            });
+        let ended = p.telemetry().and_then(|h| {
+            h.lock()
+                .unwrap()
+                .events()
+                .iter()
+                .find(|(_, e)| matches!(e, tango_match::telemetry::Event::MatchEnded))
+                .map(|(t, _)| *t)
+        });
         println!("peer {k}: match ended at {ended:?}");
     }
     println!("all identical: {all}");
