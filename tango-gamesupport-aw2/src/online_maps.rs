@@ -522,15 +522,16 @@ const OFF_LR: u32 = OFF + 0x0A;
 const OFF_COMBO: u32 = OFF + 0x0B;
 const OFF_LR_KEY: u32 = OFF + 0x0C;
 const OFF_TAP: u32 = OFF + 0x0D;
+/// 1 while the game's own lists are shown, 0 for the lists by number of players: kept in the console (it was a process-wide static: two consoles in one
+/// process, a netplay test's two peers and the replay they are compared with, shared it and toggled it for each other).
+const OFF_VIEW: u32 = OFF + 0x0E;
 /// A map's own tab, by id.
 const OFF_SHADOW: u32 = OFF + 0x10;
 pub const OFF_LEN: u32 = 0x110;
 
-/// The list by number of players (false) or the game's own (true): kept for the session.
-static ORIGINAL_VIEW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
-pub fn original_view() -> bool {
-    ORIGINAL_VIEW.load(std::sync::atomic::Ordering::Relaxed)
+/// The list by number of players (false) or the game's own (true): kept in the console's memory, for as long as it runs.
+pub fn original_view(core: &Core) -> bool {
+    core.raw_read_8(OFF_VIEW, -1) != 0
 }
 
 /// The tab of a map for `armies` players in the player-count view: 2P 2, 2P Predeploy 3, .. 5P Predeploy 9.
@@ -572,7 +573,7 @@ pub fn offline_before(core: &mut Core, keys: u32) -> u32 {
         }
     } else if lr == KEY_L | KEY_R && crate::survival_ui::idle(core) {
         core.raw_write_8(OFF_COMBO, -1, 1);
-        ORIGINAL_VIEW.fetch_xor(true, std::sync::atomic::Ordering::Relaxed);
+        core.raw_write_8(OFF_VIEW, -1, !original_view(core) as u8);
         // (the game's tab cursor to the last tab, its memory of each tab's row cleared: RIGHT then wraps to the first non-empty tab)
         core.raw_write_16(TAB_VAR, -1, 9);
         for t in 0..10 {
@@ -621,7 +622,7 @@ const TAB_ROWS: u32 = 0x0300_5990;
 
 /// The maps' tabs for the view in use.
 fn offline_apply(core: &mut Core) {
-    if original_view() {
+    if original_view(core) {
         offline_restore(core);
         return;
     }
@@ -687,7 +688,7 @@ pub fn draw_hint(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != W * H * 4 || !offline_versus(core) || !crate::survival_ui::selecting(core) {
         return;
     }
-    let mut lines = vec![if original_view() { "L+R: Filter by players" } else { "L+R: Show all lists" }];
+    let mut lines = vec![if original_view(core) { "L+R: Filter by players" } else { "L+R: Show all lists" }];
     if crate::ds_versus::wants_select(core) {
         lines.insert(0, "SELECT: Second map");
     }
