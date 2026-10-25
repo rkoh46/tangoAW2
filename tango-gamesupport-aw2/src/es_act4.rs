@@ -96,7 +96,7 @@ fn es14() -> MissionDef {
     m.map = MapSrc::Built("es14");
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(6000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(12000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(14000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(CASSIUS)).funds(5000),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
@@ -112,6 +112,9 @@ fn es14() -> MissionDef {
         on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &LEGION[2..3]), wave(1, unit::MD_TANK, &LEGION[3..4])].concat())]),
         on_day(5, None, vec![Action::Spawn(wave(2, unit::MD_TANK, &RESERVE[0..2]))]),
         on_day(8, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RESERVE[2..3]), wave(2, unit::MD_TANK, &RESERVE[3..4])].concat())]),
+        // The Consul's second line (the ramp towards Stormhold): Tanks on day 3, Md Tanks on day 6.
+        on_day(3, None, vec![Action::Spawn(wave(2, unit::TANK, &RESERVE[0..2]))]),
+        on_day(6, None, vec![Action::Spawn(wave(2, unit::MD_TANK, &RESERVE[2..4]))]),
     ];
     m.flag = region::ACT4[1];
     m.stars = 4;
@@ -123,6 +126,8 @@ fn es14() -> MissionDef {
 
 /// The Strait Fort's harbour, in the inlet of the east shore (`five/es/spec/es15.py`): the port to take once the flagship is sunk.
 const HARBOUR: (u8, u8) = (39, 13);
+/// Open water along the strait's top edge (`five/es/spec/es15.py`: rows 0 and 1 are sea from x = 9 to 38): where the Accord's reinforcements appear.
+const STRAIT: [(u8, u8); 7] = [(33, 0), (35, 0), (30, 0), (31, 0), (34, 1), (32, 0), (37, 0)];
 
 fn es15() -> MissionDef {
     let mut m = MissionDef::new("es15", "Pax Romana");
@@ -131,8 +136,8 @@ fn es15() -> MissionDef {
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPair).funds(10000),
         // The Accord's strait fleet: Drake's ships and the fort, and Sensei's air wing, allied (the same team).
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(10000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(8000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(14000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(12000),
     ];
     m.pool = everyone();
     m.units = deployment("es15");
@@ -143,6 +148,10 @@ fn es15() -> MissionDef {
     m.triggers = vec![
         // Day 6: Nell's call offers the Accord's table; the fleet fights on.
         on_day(6, None, vec![Action::Scene(scene("m15_day6"))]),
+        // The Accord's reinforcements come in from the north sea (the strait's open water along the top edge): Drake's ships and Sensei's air wing.
+        on_day(3, None, vec![Action::Spawn(wave(2, unit::CRUISER, &STRAIT[0..1]))]),
+        on_day(5, None, vec![Action::Spawn([wave(2, unit::BATTLESHIP, &STRAIT[1..2]), wave(3, unit::FIGHTER, &STRAIT[2..4])].concat())]),
+        on_day(8, None, vec![Action::Spawn([wave(2, unit::BATTLESHIP, &STRAIT[4..5]), wave(3, unit::BOMBER, &STRAIT[5..6]), wave(3, unit::B_COPTER, &STRAIT[6..7])].concat())]),
         after(Cond::All(vec![Cond::UnitGone("flagship"), owns(HARBOUR.0, HARBOUR.1)]), vec![Action::Win]),
     ];
     m.flag = region::ACT4[2];
@@ -184,8 +193,8 @@ fn es16() -> MissionDef {
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(15000),
         // The Allied last stand: Eagle's air wing and Hachi's deep stores, allies with real production.
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(11000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI)).team(2).funds(11000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(13000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI)).team(2).funds(13000),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
     m.units = crate::es_campaign::deployment("es16");
@@ -207,6 +216,10 @@ fn es16() -> MissionDef {
         on_day(7, None, vec![Action::Spawn([wave(3, unit::MD_TANK, &SOUTH_GATE[2..3]), wave(3, unit::NEOTANK, &SOUTH_GATE[3..4])].concat())]),
         on_day(9, None, vec![Action::Spawn(wave(2, unit::FIGHTER, &AIRFIELD[6..7])),
                              Action::Spawn(wave(3, unit::INFANTRY, &WEST_GATE[2..5]))]),
+        // The last stand's second wave (the ramp ends here): Hachi's Neotanks on day 6, Eagle's Fighters on day 8, Md Tanks again out of the south gate on day 10.
+        on_day(6, None, vec![Action::Spawn([wave(3, unit::NEOTANK, &SOUTH_GATE[4..5]), wave(3, unit::NEOTANK, &WEST_GATE[5..6])].concat())]),
+        on_day(8, None, vec![Action::Spawn(wave(2, unit::FIGHTER, &AIRFIELD[7..9]))]),
+        on_day(10, None, vec![Action::Spawn(wave(3, unit::MD_TANK, &SOUTH_GATE[0..2]))]),
         // The legion's own reinforcements: the Quaestor's second convoy, on days 4 and 8.
         on_day(4, None, vec![Action::Spawn([wave(1, unit::ANTI_AIR, &CAMP[0..1]), wave(1, unit::MD_TANK, &CAMP[1..2]), wave(1, unit::ARTILLERY, &CAMP[2..3])].concat())]),
         on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),

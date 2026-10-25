@@ -25,6 +25,9 @@ class Score(unittest.TestCase):
         cpu = lambda r: {"player": "cpu", "result": r, "days": 9}
         self.assertLess(difficulty.dynamic_score([cpu("won")]), difficulty.dynamic_score([cpu("lost")]))
         self.assertIsNone(difficulty.dynamic_score([]))
+        # (a computer-vs-computer run that ends with no winner proves nothing about the player's side)
+        self.assertIsNone(difficulty.dynamic_score([cpu("none")]))
+        self.assertEqual(difficulty.dynamic_score([cpu("none"), cpu("won")]), difficulty.dynamic_score([cpu("won")]))
 
     def test_every_unit_has_a_price(self):
         for k in range(1, 28):
@@ -43,6 +46,15 @@ class Campaign(unittest.TestCase):
         self.assertEqual(top, 16, scores)
         second = max(v for k, v in scores.items() if k != 16)
         self.assertGreaterEqual(scores[16], second * 1.10, scores)
+
+    def test_the_last_missions_ramp_up_to_the_final_one(self):
+        """M13 < M14 < M15 < M16 in the static score, each step at least a point, and M16 more than any step."""
+        ms = report.missions()
+        sc = [difficulty.static_score(difficulty.numbers(d)) for d in ms.values()]
+        m13, m14, m15, m16 = sc[12:16]
+        self.assertLess(m13 + 1, m14, sc)
+        self.assertLess(m14 + 1, m15, sc)
+        self.assertGreater(m16 - m15, max(m14 - m13, m15 - m14), sc)
 
     def test_only_the_two_black_hole_missions_have_inventions(self):
         ms = report.missions()
