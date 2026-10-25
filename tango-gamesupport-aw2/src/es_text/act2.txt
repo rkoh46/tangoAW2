@@ -89,7 +89,7 @@ LIVIA: He did not say where the / treasury is coming from.
 KLAUS: No. He was careful. Very / careful, for a man who is kind.
 KLAUS: Write the figure down. We / will ask again, in person.
 
-# ---------------------------------------------------------------- M6 Tribute (Livia leads; enemy Colin and Sasha)
+# ---------------------------------------------------------------- M6 Tribute (Livia leads; enemy Colin and Hachi)
 
 == m06_pre
 @SONG co:livia
@@ -174,7 +174,7 @@ LIVIA: The room is cold, Chief.
 LIVIA: A mark is a mark, Legate. I / shall tell you when I am certain.
 KLAUS: When you are certain. I will / hold you to it. Not before.
 
-# ---------------------------------------------------------------- M7 Mare Nostrum (any lead; enemy Drake and Eagle)
+# ---------------------------------------------------------------- M7 Mare Nostrum (any lead; enemy Drake and Sensei)
 
 == m07_pre
 @SONG ally2
@@ -254,7 +254,7 @@ NELL: Then do not give him one. I / will hold the council. Come north.
 CASSIUS: "Come north", she says! The / Accord invites us to be hit!
 KLAUS: Cassius. Be quiet. She is / being generous.
 
-# ---------------------------------------------------------------- M8 Hammer and Anvil (Klaus + Cassius; enemy Max and Jake)
+# ---------------------------------------------------------------- M8 Hammer and Anvil (Klaus + Cassius; enemy Max and Sasha)
 
 == m08_pre
 @SONG ally1

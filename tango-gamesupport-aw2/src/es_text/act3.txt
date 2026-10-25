@@ -312,7 +312,7 @@ CASSIUS: ...Do not make it a / speech, old man.
 KLAUS: I will not. Go to sleep.
 CASSIUS: I will keep the letter. In / case I need to remember what I was.
 
-# ---------------------------------------------------------------- M12 Siege of Iron (Blue Moon: Olaf, Grit; Klaus + Aurelia)
+# ---------------------------------------------------------------- M12 Siege of Iron (Blue Moon: Olaf, Andy; Klaus + Aurelia)
 
 == m12_pre
 @SONG aw2:423
