@@ -25,6 +25,8 @@ The owner's pictures are already pixel art, upscaled by a (fractional) factor an
    lighter than the background, so it stays; dark pockets not connected to the border stay; specks go. The figure's own dark contour is not needed: the importer draws AW2's outline (index 15) one cell wide round the figure.
 4. **Palette**: at most 15 colours + transparent from the native cells of the figure frame and the mug (the mug weighs 3x), weighted k-means in Lab (JPEG near-duplicates merge), snapped to 5 bits per channel,
    lightest first, index 15 the outline `201820`. The gold, red and white ramps come out as 2 to 3 clean steps each. No dithering: every cell goes to its nearest colour.
+   The nearest-colour rule is the framing file's `match`: `luma` (30/59/11-weighted RGB, the default for a new CO), `rgb` or `lab` (the approved four pin `lab`: luma shifted their hues; compare with
+   `aw2dev art repal importsheet <id>`, docs/dev/art-repal.md).
 5. **The large art** 128 x 160 is a 64 x 80 cell frame (`frame = [x, y]`, or automatic: the head's top two rows from the top, centred on the upper body) scaled **2x by whole cells** (no resampling): head, shoulders
    and chest as AW2 frames its COs (waist-up, head 45 to 65 px, the cut at the waist or the hips). `flip = true` mirrors the grid so the CO faces right like AW2's (Cassius and Klaus are drawn facing left).
 6. **The mug** 48 x 48 is a 24 x 24 cell square of the head (`mug = [x, y]`) scaled 2x; the Teams mini 32 x 24 and the HUD face 32 x 16 are windows of it round the eyes (`eyes = [x1, y1, x2, y2]`).

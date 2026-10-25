@@ -177,7 +177,15 @@ def palette_for(pixels_rgb, weights, k=14, outline=(32, 24, 32)):
     return cols + [tuple(int(v) for v in I.snap555(np.array(outline, float)))]
 
 
-def quantise(nat, fg, pal):
+def quantise(nat, fg, pal, match="lab"):
+    # --- art repal hook (devkit/aw2/artlib/repal.py, docs/dev/art-repal.md): `match` picks the nearest-colour rule; `styled` passes the framing file's
+    # `match`, default "luma" (smallest 30/59/11-weighted absolute RGB difference); "rgb": unweighted; "lab": the Lab distance the approved COs were imported
+    # with (their framing files pin it). A caller that passes no `match` keeps "lab".
+    if match != "lab":
+        from ..artlib import repal
+        idx = repal.nearest(nat.reshape(-1, 3).round(), np.array(pal), repal.weights(match)).reshape(nat.shape[:2]) + 1
+        return np.where(fg, idx, 0).astype(np.uint8)
+    # --- end of the art repal hook
     from . import importer as I
     lab = I.to_lab(nat.reshape(-1, 3).astype(float))
     pl = I.to_lab(np.array(pal, float))
@@ -237,7 +245,7 @@ def styled(spec, path):
     px = np.concatenate([nat[fr][fg[fr]], nat[mu][fg[mu]]])
     wt = np.concatenate([np.ones(fg[fr].sum()), np.full(fg[mu].sum(), spec.get("face_weight", 3.0))])
     pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))))
-    full = quantise(nat, fg, pal[:14])
+    full = quantise(nat, fg, pal[:14], spec.get("match", "luma"))      # art repal hook: the framing file's `match`
     full = ring(fg, full)
     # the ring is index 15; nothing else uses index 15 (the palette has 14 clusters, indexes 1..14)
     pal16 = [(0, 0, 0)] + pal[:14] + [pal[14]]
@@ -271,7 +279,7 @@ def styled(spec, path):
         fg2, _ = cut_background(nat2, spec.get("bg_tolerance", 9.0))
         fg2 = np.pad(keep_main(fg2), P, constant_values=False)
         nat2 = np.pad(nat2, ((P, P), (P, P), (0, 0)), mode="edge")
-        f2 = ring(fg2, quantise(nat2, fg2, pal[:14]))
+        f2 = ring(fg2, quantise(nat2, fg2, pal[:14], spec.get("match", "luma")))      # art repal hook
         im.faces[kind] = np.kron(f2[mu], np.ones((S, S), np.uint8))
     return im
 
