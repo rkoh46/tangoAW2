@@ -37,9 +37,11 @@ def register(sub):
     a = ms.add_parser("rules", help="the rules and what the games' own maps do under each")
     a.add_argument("--md", action="store_true")
     a.set_defaults(fn=rules_table)
-    a = ms.add_parser("compare", help="BH maps at a git revision against the working tree")
+    a = ms.add_parser("compare", help="BH (or Emerald Sun) maps at a git revision against the working tree")
     a.add_argument("--base", required=True)
+    a.add_argument("--source", default="bh", choices=["bh", "es"])
     a.add_argument("--out", help="folder for the before/after pictures")
+    a.add_argument("--sheet", metavar="FILE", help="also one sheet of every changed map, before beside after, half size")
     a.set_defaults(fn=compare)
     a = ms.add_parser("ports", help="every port of the maps (map, army, cell, the sea beside it) with its status (PT01): a table")
     a.add_argument("--source", default="all", choices=["bh", "es", "versus", "all"])
@@ -175,25 +177,26 @@ def rules_table(a):
     return 0
 
 
-def _bh_at(rev):
-    """The BH maps as they were at git REV (files read with `git show` into a temp folder)."""
+def _bh_at(rev, source="bh"):
+    """The BH (or Emerald Sun) maps as they were at git REV (files read with `git show` into a temp folder)."""
     load, rules, render = _lib()
     d = Path(tempfile.mkdtemp(prefix="aw2maps_"))
-    names = cfg.git("ls-tree", "--name-only", rev, "tango-gamesupport-aw2/five/bh/").split()
+    names = cfg.git("ls-tree", "--name-only", rev, f"tango-gamesupport-aw2/five/{source}/").split()
     files = []
     for n in names:
-        if Path(n).name.startswith("bh") and n.endswith(".txt"):
+        if Path(n).name.startswith(source) and n.endswith(".txt"):
             p = d / Path(n).name
             p.write_text(cfg.git("show", f"{rev}:{n}"))
             files.append(p)
-    return load.bh_maps(files=sorted(files))
+    return (load.es_maps if source == "es" else load.bh_maps)(files=sorted(files))
 
 
 def compare(a):
     from PIL import Image, ImageDraw
     load, rules, render = _lib()
-    old = {m.name: m for m in _bh_at(a.base)}
-    new = {m.name: m for m in load.bh_maps()}
+    old = {m.name: m for m in _bh_at(a.base, a.source)}
+    new = {m.name: m for m in (load.es_maps() if a.source == "es" else load.bh_maps())}
+    sheets = []
     out = Path(a.out) if a.out else cfg.work("maps", "compare")
     out.mkdir(parents=True, exist_ok=True)
     changed = 0
@@ -207,8 +210,13 @@ def compare(a):
             continue
         changed += 1
         po, pn = rules.lint(o), rules.lint(n)
-        io, im = render.draw_map(o, po, legend=False, title=f"{name} before: {sum(p.level == 'error' for p in po)} errors"), \
-            render.draw_map(n, pn, legend=False, title=f"{name} after: {sum(p.level == 'error' for p in pn)} errors")
+        def label(m, ps, when):
+            md = sum(p.rule.startswith("MD") for p in ps)
+            from ..maplint import study as st
+            r = st.measure(st.from_mapdata(m))
+            return (f"{name} {when}: {sum(p.level == 'error' for p in ps)} errors, {md} MD; {r['props']} props ({r['props_per100_land']}/100 land), "
+                    f"gap {r['prop_gap']}, plain {r['t_plain']:.0%}")
+        io, im = render.draw_map(o, po, legend=False, title=label(o, po, "before")), render.draw_map(n, pn, legend=False, title=label(n, pn, "after"))
         d = ImageDraw.Draw(im)
         for x, y in cells:
             d.rectangle([x * 16 + 1, y * 16 + 22 + 1, x * 16 + 14, y * 16 + 22 + 14], outline=(255, 255, 255), width=1)
@@ -216,8 +224,17 @@ def compare(a):
         sheet.paste(io, (0, 0))
         sheet.paste(im, (io.width + 8, 0))
         sheet.save(out / f"{name}.png")
+        sheets.append(sheet)
         print(f"{name}: {len(cells)} tiles changed, errors {sum(p.level == 'error' for p in po)} -> {sum(p.level == 'error' for p in pn)}")
-    util.say(f"{changed} maps changed; pictures in {out}")
+    if a.sheet and sheets:
+        small = [s_.resize((s_.width // 2, s_.height // 2)) for s_ in sheets]
+        big = Image.new("RGB", (max(s_.width for s_ in small), sum(s_.height + 6 for s_ in small)), (0, 0, 0))
+        y = 0
+        for s_ in small:
+            big.paste(s_, (0, y))
+            y += s_.height + 6
+        big.save(a.sheet)
+    util.say(f"{changed} maps changed; pictures in {out}" + (f"; the sheet {a.sheet}" if a.sheet else ""))
     return 0
 
 

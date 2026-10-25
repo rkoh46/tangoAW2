@@ -330,23 +330,23 @@ the skin on the player's army, a record in Flash slot 11. Differences from the o
 - **Room to fight**: every map is rebuilt bigger with the design-quality lint (docs/dev/map-lint.md): density at most .17 units per walkable cell, frontage ratio at most 1.25, no straight rivers, no rectangle patches, no unit blocks.
 - **Finale**: M16 is Eagle (Green Earth) and Hachi (Orange Star) as allied enemy armies in their own colours, the player on Blue Moon's colour with the Emerald Sun skin.
 
-### Maps as rebuilt (sizes and what is where; the specs are `five/es/spec/esNN.py`)
+### Maps as rebuilt (sizes and what is where; the specs are `five/es/spec/esNN.py`, each with its design note; the principles: `docs/dev/map-design.md`)
 | # | Size | The land and its lanes |
 |---|---|---|
-| 1 | 30x27 | jagged coast with two coves and a headland; the fleet's sandbar (ports at both ends); a coast road with junctions climbs to the fort; the Astra river from the NE hills to the east cove |
-| 2 | 28x19 | three curving ridges with passes; the legion in the SW, the enemy from the far NE; waves from the north and east edges; the Dune river |
-| 3 | 32x24 | Muro Alto: a ragged rock wall with three gates, a keep with one south gate, towers, the Muro river, a coast road, Drake's battleship offshore |
-| 4 | 32x22 (fog) | the Verna river runs north to south; camps SW and NE; three bridges (north, centre in a marsh of woods, south) |
-| 5 | 42x24 | the Sable river with three bridges; Dunmere (home), the posts Highwatch, Crossways, Lowmere, Fort Amberlea |
-| 6 | 30x26 | the market town: Guildhall (Colin, NW), the Counting House (Sasha, SE), Salt Row cut off by the Mill Water canal, eight neutral cities; capture only |
-| 7 | 38x24 | Cape Fidelis, the Twin Sisters, Isle Verdant's harbour bay |
-| 8 | 38x24 | Ironhold, a ring of crags behind the Brimwater canal (a two-lane causeway), a front and a rear gate, flank roads |
-| 9 | 34x22 | Kite Hill's plateau depot, a river with three bridges, the freight barges in the east bay by a grain isle; Black Hole's army and inventions |
-| 10 | 34x26 (fog) | three winding pass roads over a river, the summit HQ in the north, a foot-only goat track |
-| 11 | 40x22 | one long road through the Pinewood, a hamlet, the ford, a ruin, the relay camp in the east |
-| 12 | 42x30 (snow) | three smooth mountain rings with staggered gaps, Grit's guns in the corridors |
-| 13 | 38x33 | the octagonal square round the Harbour Office; two rivers; Kindle's dock and the Black Factory in the north |
-| 14 | 46x28 | Castra Maxima with a moat river, three lanes (coast road, valley, ridge track via Cassius's plateau) |
-| 15 | 46x27 | the Strait of Elms: Elm Isle (Sensei), Salt and Reed Isles, the Strait Fort in the east |
-| 16 | 44x28 | Stormhold: the legion's beachhead SW, the plateau city NE with three gates; the Salt Road, the Weir Valley, Needle Pass |
+| 1 | 30x27 | Cape Astra: the fleet's sandbar (two ports), three beaches (west cove, Astra strand under the town, east cove at the river mouth), forward neutral bases in the beach towns, farm villages, the fort on the ridge |
+| 2 | 28x19 | the Dune Road ridges: the north ridge (five gaps) and the legion's ridge (four), the farm track behind it, villages between, a neutral base in the middle, the Dune hills on the east flank |
+| 3 | 32x24 | Muro Alto: a walled town with four gates and a keep with one, three towers, the town's houses, the Muro river bridged three times, the silo by the west road, Drake's battleship offshore |
+| 4 | 32x22 (fog) | the Verna valley, point-symmetric: two camps, three bridges, forward neutral bases on each bank, 26 villages |
+| 5 | 42x24 | the Sable (four bridges), three canyon roads to the posts, the Comet Pipe (two gates, a seam on the Crossways road), forward bases and the silo in the ruins |
+| 6 | 40x32 | Aurelhaven: the square, four avenues, the Mill Water canal (seven bridges), the Guildhall and the Counting House quarters, 63 neutral houses; own 24 properties |
+| 7 | 38x24 | Cape Fidelis, the Twin Sisters (neutral airports, the silo), Isle Verdant's harbour; villages on every island |
+| 8 | 38x24 | Ironhold's crags ring (front and rear gates), the Brimwater canal (three crossings), Sasha's camp, forward neutral bases north and south |
+| 9 | 34x22 | Kite Hill (the depot, minicannons), the Kite river (four bridges), the HOBB quay (factory and airfield on the lava bay), the walled freight yard (pipeline, seam), ruined hamlets |
+| 10 | 34x26 (fog) | three pass roads and the goat track over the massif, the Quiet river (three bridges), alpine hamlets, a neutral base at the centre pass's foot, Sami's pocket |
+| 11 | 40x22 | three roads east (north, the Marrow road, south) each with its bridge, the camp road, forward neutral bases at the south road and the ruin, airfields at the harbour |
+| 12 | 42x30 (snow) | the Iron Bastion: the keep (four gates), the bastion town, the Iron Wall (a pipe ring, five gates, a seam), Andy's spur, forward neutral bases before the side gates |
+| 13 | 38x33 | the Free Port: the Harbour Office's square, two rivers, four quarters with quay factories (no ports on lava), market houses, Kindle's dock and the Black Factory |
+| 14 | 46x28 | Castra Maxima behind its moat river, three lanes and a farm road, valley villages and a neutral base, the legion's port on the open coast |
+| 15 | 46x27 | the Strait of Elms: Elm Isle, Salt and Reed Isles (neutral ports), the Strait Fort's harbour; villages on both shores |
+| 16 | 44x28 | Stormhold: the beachhead, the Salt Road, the Weir Valley (three bridges, the weir track), Needle Pass, Mount Sol below the west gate, neutral bases in the middle, the city on its plateau |
 

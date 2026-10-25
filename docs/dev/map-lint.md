@@ -10,7 +10,7 @@ nothing from them. Code: `devkit/aw2/commands/maps.py` (CLI), `devkit/aw2/maplin
 |---|---|
 | `aw2dev maps lint [--source bh\|versus\|aw2\|ds\|all] [--map NAME ...] [--rule ID ...] [--warn] [--png DIR \| --no-png] [--json]` | lint the BH Campaign's maps (default), tangoAW2's Versus maps, AW2's own (ROM) or Dual Strike's (the .nds); one line per problem (rule id, level, cell, text); an annotated picture per map in `devkit/work/maps/lint/<source>/` (errors red, warnings amber, rule list beside the map); exit 1 on an error in a bh / versus map (AW2's and DS's own hits are reference, only reported) |
 | `aw2dev maps rules [--md]` | every rule with the number of maps of each source that trip it: what the games themselves do |
-| `aw2dev maps compare --base REV [--out DIR]` | BH maps at git REV against the working tree: tiles changed per map and a before / after picture (changed cells outlined white) |
+| `aw2dev maps compare --base REV [--source bh\|es] [--out DIR] [--sheet FILE]` | BH (or Emerald Sun) maps at git REV against the working tree: tiles changed per map and a before / after picture (changed cells outlined white; titles with errors, MD findings, properties, the farthest ground from a property and the plain share); `--sheet` one picture of them all |
 | `aw2dev maps study [DIR] [--source es bh versus aw2 ds] [--rows] [--png DIR] [--json FILE]` | the design study: AWBW grids from a scratchpad folder and our maps measured, per map and per set, with the MD rules' hits (docs/dev/map-design.md) |
 | `aw2dev maps boot [--mission N ...]` | enter BH missions in the offline harness (`tools/aw2test` `bh_review_m*`) and keep the game's own whole-map picture of each: the proof that a mission loads |
 

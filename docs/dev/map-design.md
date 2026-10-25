@@ -25,30 +25,30 @@ from 149 the later armies in groups of seven (airport, base, city, com tower, HQ
 instead of HQs: the study seats an army at its lab then.
 
 ## The numbers (p10 / median / p90)
-| Measure | AWBW HoF 2P (23) | AWBW S/A 4P (20) | AW2 (179) | Dual Strike (256) | BH Campaign (35) | Emerald Sun before (16) |
-|---|---|---|---|---|---|---|
-| properties per 100 cells | 9.5 / 11.5 / 13.7 | 10.4 / 13.2 / 15.2 | 4.0 / 8.4 / 13.3 | 2.4 / 8.5 / 13.5 | 2.4 / 4.6 / 5.9 | 1.7 / 2.2 / 3.0 |
-| properties per 100 land cells | 10.3 / 12.3 / 15.0 | 10.9 / 13.9 / 16.0 | 5.3 / 11.6 / 22.7 | 4.2 / 11.5 / 21.9 | 2.4 / 4.9 / 10.6 | 1.9 / 2.6 / 4.2 |
-| nearest property (cells, median) | 3 | 3 | 2 | 2 | 3 | 4 |
-| farthest ground from any property | 2 / 2 / 3 (max 5) | 2 / 2 / 3 | 3 / 4 / 7 | 3 / 4 / 7 | 3 / 5.5 / 9 | 7 / 10 / 11.5 |
-| cities / bases / airports / ports (share) | .70 / .14 / .05 / 0-.11 | .64 / .14 / .06 / 0-.09 | .57 / .25 / 0-.17 / 0-.14 | .55 / .23 / 0-.15 / 0-.13 | .66 / .17 / .03 / 0-.2 | .52 / .16 / .07 / .07 |
-| neutral share of the properties | .83 / .86 / .89 | .73 / .81 / .83 | .18 / .50 / .67 | 0 / .48 / .68 | .17 / .33 / .49 | .19 / .30 / .51 |
-| income per side on day 1 | 3000 (HQ + 2 bases) | 3000 | 6500 | 6000 | 7500 | 5750 |
-| HQ to HQ (cells, Manhattan) | 10 / 16 / 22 | 2 / 10 / 19 | 8 / 19 / 32 | 7 / 17 / 28 | 17 / 21 / 35 | 19 / 30 / 40 |
-| base to base (tank moves) | 15 / 18 / 30 | 11 / 18 / 24 | 11 / 21 / 40 | 9 / 21 / 36 | 13 / 19 / 27 | 19 / 25 / 34 |
-| days an enemy infantry needs to reach your base | 4 / 5.5 / 8 (min 3.5) | 3 / 4 / 6 | 4 / 6 / 12 | 2 / 6 / 10 | 5 / 7 / 9 | 4 / 8.5 / 11 |
-| roads crossing the middle (approach roads) | 1 / 3 / 3 | 2 / 2.5 / 4 | 0 / 1 / 2 | 0 / 1 / 2 | 1 / 3 / 4 | 0.5 / 3 / 3 |
-| walled-off lanes (split by mountains, water, rivers) | 1 / 1 / 3 | 1 / 1 / 2 | 1 / 2 / 3 | 1 / 2 / 3 | 1 / 1 / 3 | 1.5 / 2 / 3 |
-| narrowest single corridor (if the only way) | never under 8 | never under 8 | 0 in 5 maps | 0 in many | 0 in 4 | 1 (the sea maps) |
-| forward bases (35%+ of the way to the enemy) | 2 / 6 / 6 | 6 / 8 / 12 | 0 / 3 / 11 | 0 / 3 / 11 | 0 / 0 / 3 | 0 / 1 / 3 |
-| a property in the middle between the sides | 100% of maps | 95% | 65% | 57% | 83% | 75% |
-| plain / wood / mountain (share of land) | .31 / .11 / .08 | .33 / .10 / .06 | .39 / .15 / .05 | .36 / .13 / .04 | .45 / .13 / .10 | .55 / .07 / .12 |
-| road / river / shoal (share of land) | .15 / .03 / .08 | .15 / .04 / .08 | .14 / .01 / 0 | .13 / 0 / .02 | .16 / .02 / 0 | .13 / .03 / .01 |
-| river cells per bridge | 1.5 / 2.4 / 6.3 | 0.5 / 1.7 / 4 | 1.9 / 6.3 / 15 | 2 / 5.8 / 17 | 3.9 / 6.9 / 10.5 | 7.9 / 9.7 / 13.7 |
-| longest river with no crossing | max 9 (p90 8) | p90 6 | p90 10 | p90 8 | p90 8 | 0 / 11.5 / 15 |
-| coast that is beach (shoal) | 0 / .45 / .82 | .21 / .40 / .61 | 0 / .10 / .47 | 0 / .16 / .54 | 0 / .07 / .69 | 0 / .57 / .93 |
-| properties with a road within 2 cells | .65 / .83 / 1 | .78 / .92 / 1 | 0 / .81 / 1 | 0 / .70 / 1 | .62 / .87 / 1 | .74 / .86 / 1 |
-| maps with com towers / silos / pipes / airports / ports / rivers | 78 / 61 / 39 / 91 / 39 / 65% | 85 / 80 / 75 / 90 / 40 / 80% | 3 / 19 / 10 / 44 / 34 / 55% | 18 / 24 / 20 / 41 / 32 / 48% | 11 / 3 / 23 / 51 / 29 / 60% | 6 / 38 / 31 / 75 / 56 / 81% |
+| Measure | AWBW HoF 2P (23) | AWBW S/A 4P (20) | AW2 (179) | Dual Strike (256) | BH Campaign (35) | Emerald Sun before (16) | Emerald Sun after (16) |
+|---|---|---|---|---|---|---|---|
+| properties per 100 cells | 9.5 / 11.5 / 13.7 | 10.4 / 13.2 / 15.2 | 4.0 / 8.4 / 13.3 | 2.4 / 8.5 / 13.5 | 2.4 / 4.6 / 5.9 | 1.7 / 2.2 / 3.0 | 4.5 / 5.7 / 8.1 |
+| properties per 100 land cells | 10.3 / 12.3 / 15.0 | 10.9 / 13.9 / 16.0 | 5.3 / 11.6 / 22.7 | 4.2 / 11.5 / 21.9 | 2.4 / 4.9 / 10.6 | 1.9 / 2.6 / 4.2 | 5.6 / 6.6 / 9.2 |
+| nearest property (cells, median) | 3 | 3 | 2 | 2 | 3 | 4 | 3 |
+| farthest ground from any property | 2 / 2 / 3 (max 5) | 2 / 2 / 3 | 3 / 4 / 7 | 3 / 4 / 7 | 3 / 5.5 / 9 | 7 / 10 / 11.5 | 3.5 / 4 / 5.5 |
+| cities / bases / airports / ports (share) | .70 / .14 / .05 / 0-.11 | .64 / .14 / .06 / 0-.09 | .57 / .25 / 0-.17 / 0-.14 | .55 / .23 / 0-.15 / 0-.13 | .66 / .17 / .03 / 0-.2 | .52 / .16 / .07 / .07 | .80 / .10 / .02 / 0-.08 |
+| neutral share of the properties | .83 / .86 / .89 | .73 / .81 / .83 | .18 / .50 / .67 | 0 / .48 / .68 | .17 / .33 / .49 | .19 / .30 / .51 | .64 / .73 / .81 |
+| income per side on day 1 | 3000 (HQ + 2 bases) | 3250 | 6500 | 6000 | 7500 | 5750 | 7000 |
+| HQ to HQ (cells, Manhattan) | 10 / 16 / 22 | 6 / 15 / 25 | 8 / 19 / 32 | 7 / 17 / 28 | 17 / 21 / 35 | 19 / 30 / 40 | 19 / 30 / 40 |
+| base to base (tank moves) | 15 / 18 / 30 | 5 / 14 / 19 | 11 / 21 / 40 | 9 / 21 / 36 | 13 / 19 / 27 | 19 / 25 / 34 | 19 / 25 / 34 |
+| days an enemy infantry needs to reach your base | 4 / 5.5 / 8 (min 3.5) | 2 / 3 / 6 | 4 / 6 / 12 | 2 / 6 / 10 | 5 / 7 / 9 | 4 / 8.5 / 11 | 4.4 / 8 / 11.8 |
+| roads crossing the middle (approach roads) | 1 / 3 / 3 | 1 / 2 / 4 | 0 / 1 / 2 | 0 / 1 / 2 | 1 / 3 / 4 | 0.5 / 3 / 3 | 1 / 3 / 4 |
+| walled-off lanes (split by mountains, water, rivers) | 1 / 1 / 3 | 1 / 1.5 / 3 | 1 / 2 / 3 | 1 / 2 / 3 | 1 / 1 / 3 | 1.5 / 2 / 3 | 1 / 2 / 3 |
+| narrowest single corridor (if the only way) | never under 8 | never under 8 | 0 in 5 maps | 0 in many | 0 in 4 | 1 (the sea maps) | never under 6 on land |
+| forward bases (35%+ of the way to the enemy) | 2 / 6 / 6 | 6 / 8 / 12 | 0 / 3 / 11 | 0 / 3 / 11 | 0 / 0 / 3 | 0 / 1 / 3 | 0.5 / 2 / 4 |
+| a property in the middle between the sides | 100% of maps | 95% | 65% | 57% | 83% | 75% | 100% |
+| plain / wood / mountain (share of land) | .31 / .11 / .08 | .33 / .10 / .06 | .39 / .15 / .05 | .36 / .13 / .04 | .45 / .13 / .10 | .55 / .07 / .12 | .52 / .10 / .11 |
+| road / river / shoal (share of land) | .15 / .03 / .08 | .15 / .04 / .08 | .14 / .01 / 0 | .13 / 0 / .02 | .16 / .02 / 0 | .13 / .03 / .01 | .15 / .03 / .01 |
+| river cells per bridge | 1.5 / 2.4 / 6.3 | 0.5 / 1.7 / 4 | 1.9 / 6.3 / 15 | 2 / 5.8 / 17 | 3.9 / 6.9 / 10.5 | 7.9 / 9.7 / 13.7 | 4.5 / 7 / 8.7 |
+| longest river with no crossing | max 9 (p90 8) | p90 6 | p90 10 | p90 8 | p90 8 | 0 / 11.5 / 15 | 0 / 7 / 9 |
+| coast that is beach (shoal) | 0 / .45 / .82 | .21 / .40 / .61 | 0 / .10 / .47 | 0 / .16 / .54 | 0 / .07 / .69 | 0 / .57 / .93 | 0 / .69 / 1 |
+| properties with a road within 2 cells | .65 / .83 / 1 | .78 / .92 / 1 | 0 / .81 / 1 | 0 / .70 / 1 | .62 / .87 / 1 | .74 / .86 / 1 | .66 / .76 / .86 |
+| maps with com towers / silos / pipes / airports / ports / rivers | 78 / 61 / 39 / 91 / 39 / 65% | 85 / 80 / 75 / 90 / 40 / 80% | 3 / 19 / 10 / 44 / 34 / 55% | 18 / 24 / 20 / 41 / 32 / 48% | 11 / 3 / 23 / 51 / 29 / 60% | 6 / 38 / 31 / 75 / 56 / 81% | 6 / 38 / 25 / 75 / 38 / 75% |
 
 (The four-player maps' teams are not in the grid: the study pairs the seats of a "2v2" map by mutual nearness and treats the rest as free-for-all, so
 their distance and base-safety rows are rougher.)
@@ -96,16 +96,16 @@ A campaign map is the player against the mission's enemies, never mirrored, but 
 - **Room** (SP01): units per vehicle cell .12 or less.
 
 ## The rules (warnings everywhere; failing for the Emerald Sun maps, like the DQ rules)
-| Rule | Measures | Limit | AWBW 2P / 4P | AW2 / DS | BH / Versus | ES before |
-|---|---|---|---|---|---|---|
-| MD01 | properties per 100 land cells (maps of 60+ land cells) | at least 5 | 0 / 0 | 17 / 34 | 19 / 1 | 15 |
-| MD02 | the farthest ground cell from any property (Chebyshev; the inside of a mountain mass excepted) | at most 6 | 0 / 0 | 20 / 30 | 11 / 0 | 15 |
-| MD03 | the only way across a cut between two sides is one corridor (cuts mostly over water: a naval front, skipped) | at least 6 wide, or two ways | 0 / 0 | 9 / 15 | 0 / 0 | 0 |
-| MD04 | days an infantry from an enemy base needs to reach your base or HQ; an enemy foot soldier starting a day from it | at least 2 | 0 / 3* | 1 / 1 | 0 / 0 | 0 |
-| MD05 | a property within a fifth of the HQ distance (at least 3) of the middle between two sides | one | 0 / 1* | 44 / 78 | 6 / 8 | 5 |
-| MD06 | plain share of the land | at most 53% | 0 / 0 | 19 / 26 | 8 / 13 | 10 |
-| MD07 | river cells with no bridge or ford | at most 10 | 0 / 0 | 18 / 17 | 2 / 1 | 10 |
-| MD08 | properties with a road within 2 cells (6+ properties) | at least 50% | 0 / 0 | 40 / 68 | 0 / 8 | 0 |
+| Rule | Measures | Limit | AWBW 2P / 4P | AW2 / DS | BH / Versus | ES before | ES after |
+|---|---|---|---|---|---|---|---|
+| MD01 | properties per 100 land cells (maps of 60+ land cells) | at least 5 | 0 / 0 | 17 / 34 | 19 / 1 | 15 | 0 |
+| MD02 | the farthest ground cell from any property (Chebyshev; the inside of a mountain mass excepted) | at most 6 | 0 / 0 | 20 / 30 | 11 / 0 | 15 | 0 |
+| MD03 | the only way across a cut between two sides is one corridor (cuts mostly over water: a naval front, skipped) | at least 6 wide, or two ways | 0 / 0 | 9 / 15 | 0 / 0 | 0 | 0 |
+| MD04 | days an infantry from an enemy base needs to reach your base or HQ; an enemy foot soldier starting a day from it | at least 2 | 0 / 3* | 1 / 1 | 0 / 0 | 0 | 0 |
+| MD05 | a property within a fifth of the HQ distance (at least 3) of the middle between two sides | one | 0 / 1* | 44 / 78 | 6 / 8 | 5 | 0 |
+| MD06 | plain share of the land | at most 53% | 0 / 0 | 19 / 26 | 8 / 13 | 10 | 0 |
+| MD07 | river cells with no bridge or ford | at most 10 | 0 / 0 | 18 / 17 | 2 / 1 | 10 | 0 |
+| MD08 | properties with a road within 2 cells (6+ properties) | at least 50% | 0 / 0 | 40 / 68 | 0 / 8 | 0 | 0 |
 
 \* team-mates' bases: the four-player grids do not say who is allied (see above). Every two-player Hall of Fame map passes every rule.
 The Emerald Sun maps must pass all eight (`aw2dev maps lint --source es` counts an MD finding as a failure); the BH Campaign, Versus and the games' maps only report them.
@@ -131,5 +131,41 @@ The Emerald Sun maps must pass all eight (`aw2dev maps lint --source es` counts 
 | es16 | 44x28 | 34 | 3.6 | 10 | 53% | 6% | 18% | 15% | 14 | 3 | yes |
 
 The pattern: big fields with a property every 10 cells (a fifth of the Hall of Fame's density and a quarter of AW2's), more than half the land open plain,
-long rivers with a bridge or two, mountains drawn as long ranges. 55 MD findings (map and rule) in 16 maps; the rework (`five/es/spec/esNN.py`, one design note per spec)
-answers them.
+long rivers with a bridge or two, mountains drawn as long ranges. 55 MD findings (map and rule) in 16 maps.
+
+## After the rework (Oct 2026, branch `esmaps`)
+Every spec (`five/es/spec/esNN.py`) was drawn again by hand with a design note in its docstring (the situation, the lanes, where the fight happens, what
+each property is for, the answer to each threat). Sizes, HQs and every cell a mission's Rust names (spawn cells, objectives, the harbours, the Office,
+the camp) are kept, so the mission code did not move; `Canvas.reserve` keeps the reinforcement cells free of start units.
+
+| Map | Size | Props before / after | per 100 land | farthest from a property | plain | wood | mountain | road | river run | road approaches | middle property |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| es01 | 30x27 | 14 / 45 | 2.4 / 8.0 | 10 / 5 | 51% / 50% | 12% / 9% | 13% / 6% | 10% / 16% | 12 / 7 | 1 / 2 | no / yes |
+| es02 | 28x19 | 12 / 47 | 2.3 / 8.8 | 12 / 3 | 42% / 53% | 12% / 10% | 27% / 12% | 15% / 16% | 7 / 0 | 2 / 2 | yes / yes |
+| es03 | 32x24 | 14 / 67 | 2.0 / 9.6 | 10 / 4 | 49% / 46% | 6% / 5% | 18% / 14% | 19% / 18% | 16 / 9 | 3 / 3 | yes / yes |
+| es04 | 32x22 | 14 / 46 | 2.0 / 6.5 | 12 / 4 | 62% / 51% | 10% / 17% | 10% / 7% | 12% / 15% | 10 / 8 | 3 / 3 | yes / yes |
+| es05 | 42x24 | 20 / 54 | 2.0 / 5.4 | 10 / 5 | 62% / 52% | 7% / 9% | 10% / 15% | 12% / 12% | 11 / 7 | 3 / 4 | yes / yes |
+| es06 | 40x32 | 33 / 80 | 2.7 / 6.7 | 9 / 4 | 57% / 52% | 18% / 15% | 4% / 3% | 16% / 19% | 11 / 8 | 4 / 3 | yes / yes |
+| es07 | 38x24 | 19 / 47 | 4.1 / 10.0 | 7 / 4 | 44% / 39% | 14% / 13% | 8% / 8% | 10% / 10% | - | sea | yes / yes |
+| es08 | 38x24 | 15 / 52 | 1.6 / 5.7 | 11 / 4 | 63% / 53% | 10% / 13% | 9% / 8% | 14% / 18% | 15 / 6 | 1 / 4 | no / yes |
+| es09 | 34x22 | 24 / 38 | 3.9 / 6.3 | 7 / 4 | 55% / 52% | 1% / 2% | 12% / 12% | 13% / 13% | 13 / 8 | 2 / 3 | yes / yes |
+| es10 | 34x26 | 18 / 66 | 2.0 / 7.5 | 9 / 5 | 48% / 44% | 8% / 6% | 27% / 29% | 11% / 10% | 13 / 9 | 3 / 3 | no / yes |
+| es11 | 40x22 | 22 / 50 | 2.7 / 6.0 | 8 / 3 | 60% / 52% | 6% / 13% | 12% / 9% | 12% / 14% | 12 / 7 | 2 / 3 | yes / yes |
+| es12 | 42x30 | 22 / 72 | 1.7 / 5.7 | 10 / 4 | 57% / 51% | 5% / 17% | 24% / 10% | 11% / 11% | - | 3 / 4 | no / yes |
+| es13 | 38x33 | 42 / 58 | 5.3 / 7.3 | 6 / 5 | 62% / 52% | 6% / 11% | 4% / 6% | 15% / 15% | 9 / 9 | 3 / 3 | yes / yes |
+| es14 | 46x28 | 29 / 55 | 2.8 / 5.3 | 10 / 6 | 56% / 52% | 7% / 8% | 18% / 18% | 13% / 14% | 15 / 8 | 3.5 / 3.5 | yes / yes |
+| es15 | 46x27 | 30 / 49 | 4.2 / 6.9 | 7 / 6 | 55% / 53% | 11% / 10% | 11% / 11% | 8% / 8% | - | sea | yes / yes |
+| es16 | 44x28 | 34 / 60 | 3.6 / 6.4 | 10 / 5 | 53% / 46% | 6% / 5% | 18% / 20% | 15% / 16% | 14 / 5 | 3 / 3 | yes / yes |
+
+0 MD findings. Where the maps still differ from the Hall of Fame, on purpose or not: they are sparser (6.6 properties per 100 land cells against 12;
+a campaign mission's armies are pre-deployed and its funds are set, so the economy is not the whole game) and plainer (52% plain against 31%: the rule's
+limit is AW2's 90th percentile, and most of the maps sit just under it; a future pass could thin the plains further). The middle is always contested and
+the rivers are crossed every 7 cells or so (HoF: 2.4).
+
+## Building a map to the principles (the kit)
+- `Canvas.ascii(rows)` draws a whole map by hand (rows checked for size; drawing in groups of eight columns `|`-separated keeps the count: see `es03.py`, `es10.py`);
+  `Canvas.tidy()` turns shoal cells the game has no tile for into plain; `Canvas.reserve(cells)` keeps a mission's reinforcement cells free of start units.
+- `Canvas.study()` / `Canvas.principles()` measure the map as drawn (no ROM): `aw2dev maps gen --map esNN --no-build --principles` prints the measures and the MD findings of each spec.
+- Tile joins the games never draw (TJ01, learned from AW2's maps) bite most on rivers and roads: a river's horizontal run must come from a bend that turns east from the
+  north (a river going east, then south, then east again is fine; one going west and then south is not); a road bend or T-junction right under a north-south bridge,
+  and two parallel roads side by side, are joins AW2 never has; a volcano stands among mountains (its rim beside plain is not a join of the games).
