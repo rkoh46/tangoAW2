@@ -1900,7 +1900,7 @@ mod tests {
         for i in 0..2000u32 {
             data.push(((i / 7) % 5) as u8 * 3 + (i % 3 == 0) as u8);
         }
-        data.extend((0..300u32).map(|i| (i * 2654435761u32 >> 24) as u8));
+        data.extend((0..300u32).map(|i| i.wrapping_mul(2654435761u32).wrapping_shr(24) as u8));
         let packed = lz77_compress(&data);
         assert!(packed.len() < data.len());
         assert_eq!(lz77_decode(&Mem(packed), 0), data);
