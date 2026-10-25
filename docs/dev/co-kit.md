@@ -29,13 +29,24 @@ The owner's pictures are already pixel art, upscaled by a (fractional) factor an
    `aw2dev art repal importsheet <id>`, docs/dev/art-repal.md).
 5. **The large art** 128 x 160 is a 64 x 80 cell frame (`frame = [x, y]`, or automatic: the head's top two rows from the top, centred on the upper body) scaled **2x by whole cells** (no resampling): head, shoulders
    and chest as AW2 frames its COs (waist-up, head 45 to 65 px, the cut at the waist or the hips). `flip = true` mirrors the grid so the CO faces right like AW2's (Cassius and Klaus are drawn facing left).
-6. **The mug** 48 x 48 is a 24 x 24 cell square of the head (`mug = [x, y]`) scaled 2x; the Teams mini 32 x 24 and the HUD face 32 x 16 are windows of it round the eyes (`eyes = [x1, y1, x2, y2]`).
+6. **The mug** 48 x 48 is a 24 x 24 cell square of the head (`mug = [x, y]`) scaled 2x; the mini (a 48 x 16 strip of the whole mug width, 12 tiles: the left 32 x 16 in rows of four, the right 16 x 16 in rows of two; what the battle scene's header draws) and the HUD face 32 x 16 are windows of it round the eyes (`eyes = [x1, y1, x2, y2]`).
 7. **Expressions**: nothing is drawn or edited (the owner rejected the edited faces). Every expression slot the game uses (happy, sad, angry) shows the neutral mug, the picture's own. If the owner
    supplies real expression pictures, `art-src/cos/<id>_<expression>.jpg|png` (`happy`, `sad`, `angry`; same grid, size and framing as `<id>_v5.jpg`) are picked up by the importer: the mug is cut from them with
    the CO's palette. `eyes = [x1, y1, x2, y2]` is only used to place the Teams mini and the HUD face.
 8. **The name graphic** 48 x 16 is set in our own letters (`namefont.py`); `crop.toml` says where Versus' 24-pixel cell and the grid's 16-row strip start.
 Output: `art/cos/<id>/{large,face_normal,face_happy,face_sad,face_angry,mini,hud,name}.png` (4-bit indexed, index 0 transparent) and `crop.toml`; deterministic. The AW2 figures are 1:1 pixels and ours are 2x
 cells, so ours look chunkier beside Hawke's 1-px detail; that is the picture's own pixel size. The older painterly import (`importer.import_co` without `pixelart`) remains for pictures that are not pixel art.
+
+## The illustration import (`illustration.py`, `co portrait import --illustration` or `illustration = true` in the framing file)
+For a **clean drawing** that is not upscaled pixel art (Asuka's `art-src/cos/asuka_v1.jpg`, 1136 x 1744, a full-body anime illustration on white; framing file `art-src/cos/asuka_v1.toml`). Nothing is drawn, stylised or retouched:
+1. **Background cut**: a flood fill from the border over pixels within `bg_tolerance` (42, an RGB distance from the border's median colour; wide enough to take the JPEG's pale fringe); gaps of the pure background colour
+   (`hole_tolerance` 12, at least `hole_min` 25 pixels) enclosed by the figure (between an arm and the body, between the hair and the neck) are background too, with their fringe; the off-white of an eye or a highlight is not that pure and stays.
+2. **Downscale**: coverage by area average (silhouette opaque from 0.5), colour by Lanczos over the figure's own pixels only (the mask eroded `halo` pixels; the figure's colours extended outwards so the kernel never reads the white), area average at the edges where Lanczos overshoots.
+3. **Frame**: `scale` output pixels per source pixel (0.22: the head 63 px, waist-up like AW2's), `frame = [x, y]` the source pixel of the output's top left, `mug = [x, y, size]` the source square of the head for the 48 x 48 faces, `eyes = [x1, y1, x2, y2]` for the 48 x 16 mini strip and the 32 x 16 HUD window (cut from the mug at the same scale: nothing resampled twice). `flip` mirrors (she already looks right).
+4. **One palette** (<= 15 + transparent, index 15 the outline `201820`): k-means in Lab with `dark_colours` (3) of the 14 kept for the dark pixels (black cloth and hair would otherwise merge into one brown), the pixels weighted against the big flat colours (`rare`), snapped to 5 bits, lightest first, no dithering; isolated pixels removed; outline one pixel wide.
+5. Expressions: the neutral face in every slot. `aw2dev co portrait lint --style aw2` will say a black-clad figure is darker and less saturated than AW2's range (her figure value 0.26, dark share 0.83): that is the picture's own colouring, kept.
+6. **Edges** (compared with Kanbei's): a hard silhouette (coverage at one half, spikes off), an outline one pixel wide and unbroken in 8-connectivity, the uniform's black on its own dark ramp above the outline, a one-pixel seam in the darker material's shadow tone where two big materials meet (not on the faces). `co portrait lint` checks illustration imports for outline gaps, a second layer, outline colour inside the figure and tones blending into the outline (`importer.outline_problems`).
+Tests: `aw2.colib.test_co.Illustration` and `OutlineLint` (the cut, enclosed gaps, no white bleed, sizes, outline, determinism, flip, the committed art equals a fresh import, the outline checks).
 
 ## AW2's style as numbers (`style.py`, `co portrait lint --style aw2`)
 Measured from AW2's 19 large figures and 19 faces (read from the player's ROM): mean value (brightness) 0.37 to 0.82 (mean 0.61), saturation 0.20 to 0.78 (0.48), luminance contrast 39 to 77 (60), flatness
@@ -69,6 +80,7 @@ hq = "emerald_sun"                  # the HQ the CO's army shows on the map: an 
 | `aw2dev co balance [CO ...] [--vs Kanbei ...]` | each power level's average firepower / defence / move / range over a typical army, the CO next to Dual Strike's own COs (read from the .nds: class stats at record +0xA0 + 0x80 * level, `co_roster.rs`) |
 | `aw2dev co verify [CO ...] [--quick] [--net]` | every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Varro, Crumb, Clone Andy) played in real battles against the specification: attack, defence, move, range, cost, income, funds, heal, the special rules, meters and star costs, Tag Powers, CPU use, online determinism; prints the pass / fail table (docs/dev/co-verify.md) |
 | `aw2dev co sheet powers [CO ...]` | real-game pictures of each CO's powers: select card, CO page, HUD, activations, tag powers, effects (`<co>_powers.png`, `all_cos_overview.png`) |
+| `aw2dev co verify sonja [--build-baseline]` | Sonja is exactly as in the v0.8.7 build: `tests/test_sonja_untouched.py` (run on the reference build's example binaries and on this tree's) writes her CO row, presentation pictures, HUD face, texts, battle numbers in her three levels as attacker and defender, fog vision, place in the Teams list, Tag page and Tag Power numbers and the frames of her screens (hashes only) to `sonja.json`; any difference fails; the reference is built once from the tag (`devkit/work/baseline`) |
 | `aw2dev co check [CO ...]` | the data files: fields, stars against AW2's own table (printed with the nearest AW2 COs), day-to-day and power totals no higher than Kanbei's (40 / 90 / 120 points of firepower plus defence), modifier ranges, quote line lengths, name plates, tag pairs complete and consistent, the picture and its framing file exist |
 
 Pass means exit 0. `aw2dev test` runs `aw2.colib.test_co` (valid files, six pairs, a bad file is caught, the committed art equals a fresh import and passes the lint, the lint catches bad art, the
@@ -93,6 +105,9 @@ skin and anything else. Tests: `ds_co_art::recolour_tests`, `test_co.py::test_cl
 ## Name plates
 `aw2dev co check` measures each name in AW2's text font against the widest plate (28 px, Von Bolt): Klaus 19, Livia 17, Aurelia 24, Cassius 27, all within. The 48 x 16 name graphic is our own set of letters:
 Klaus, Aurelia, Livia fit with room, Cassius fills all 48 columns. No plate needed the short form (`short = "Aurel"` / `"Cass"` in the CO files are for a plate that clips).
+
+## Asuka
+CO 92 (`crate::asuka`, docs/dev/asuka.md): the first CO of the kit that is in **every** Versus list (no playtest flag), a Black Hole CO whose numbers are Sonja's, whose powers add Hawke's HP swing and Drake's halving, and whose picture is the owner's illustration (imported by the illustration mode above). Her data file carries the optional keys `vision`, `hidden_hp`, `terrain_cut`, `strike_first`, `hp_own`, `hp_enemy` (checked by `co check`; the numbers themselves live in the game's tables).
 
 ## Limits
 The supplied pictures are one expression each: the happy, sad and angry slots show the neutral face (edited faces were rejected; real expression pictures from the owner are picked up as `art-src/cos/<id>_<expression>.*`). The importer expects a bust on a

@@ -135,6 +135,8 @@ class Rules:
         if self.chart is not None:
             v = self.chart.co_stat(co, mode, unit_type, which)
             if v is not None:
+                if co == 92 and which in (0, 1):
+                    v += 5          # Asuka's day to day: +5% attack and defence (crate::asuka::DAY_BONUS)
                 return v
         return romlib.co_stat(self.image, co, mode, unit_type, which)
 
@@ -163,6 +165,8 @@ class Rules:
             m["luck"] = self.chart.co_field(co, mode, 0x1C)
             m["neg_luck"] = self.chart.co_field(co, mode, 0x1E)
             m["counter"] = self.chart.co_field(co, mode, 0x20)
+            if co == 92:
+                m["luck"], m["neg_luck"] = 20, 0        # Asuka: Nell's day-to-day luck, no bad luck (crate::asuka::LUCK)
         return m
 
     def terrain_firepower(self, co, mode, terrain):

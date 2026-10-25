@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .. import cfg, util
 
-COS = ["klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy"]
+COS = ["klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy", "asuka"]
 COLUMNS = ["d2d", "cop", "scop", "meter", "tag", "cpu", "net"]
 TITLES = {"d2d": "Day to day", "cop": "CO Power", "scop": "Super Power", "meter": "Meter / stars", "tag": "Tag Powers", "cpu": "CPU use", "net": "Online determinism"}
 # Tests of the older suites that are also evidence for a cell of the table (the same CO and ability, played by the same harness).
@@ -29,6 +29,17 @@ LEGACY = {
     ("cassius", "scop"): ["es_cassius_triumph_a_vehicle_that_attacked_moves_once_more_but_cannot_fire", "es_cassius_triumph_is_for_vehicles_only",
                           "es_cassius_triumph_an_unused_extra_move_ends_with_the_turn"],
     ("livia", "cop"): ["es_livia_collects_funds_when_she_pays_for_a_power"],
+    # Asuka (CO 92) has no co_verify_* scenarios: her own suite (tools/aw2test/tests/test_asuka.py) proves every ability with numbers.
+    ("asuka", "d2d"): ["asuka_row_is_sonjas_numbers_with_hawkes_powers", "asuka_d2d_vision_is_one_more", "asuka_enemy_terrain_cover_is_cut_one_two_three_stars",
+                       "asuka_luck_is_nells_and_there_is_no_bad_luck", "asuka_ground_units_pay_one_movement_point_for_every_terrain", "asuka_hp_is_hidden_from_the_enemy",
+                       "asuka_day_to_day_adds_five_percent_attack_and_defence_and_it_stacks_with_the_powers"],
+    ("asuka", "cop"): ["asuka_cop_vision_two_more_and_sees_into_woods", "asuka_cop_black_analysis_heals_one_and_costs_the_enemy_one",
+                       "asuka_powers_halve_the_enemys_ammo_and_fuel_rounded_down", "asuka_fuel_and_ammo_halving_with_a_unit_in_a_transport_and_none_for_an_ally",
+                       "asuka_powers_last_until_her_next_turn_and_hold_through_the_enemys"],
+    ("asuka", "scop"): ["asuka_scop_vision_two_more_and_sees_into_woods", "asuka_scop_counter_storm_heals_two_and_costs_the_enemy_two", "asuka_counter_break_her_units_strike_first"],
+    ("asuka", "meter"): ["asuka_powers_cost_more_each_use_and_the_meter_charges"],
+    ("asuka", "tag"): ["asuka_tag_compatibility_and_names", "asuka_tag_power_with_von_bolt", "asuka_tag_power_with_hawke"],
+    ("asuka", "cpu"): ["asuka_cpu_uses_her_powers"],
 }
 LINE = re.compile(r"^(ok|FAIL)\s+\[(\S+) (\S+)\] (.*)$")
 

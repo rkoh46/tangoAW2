@@ -1,0 +1,12 @@
+# Asuka, imported from asuka_v1.jpg: a clean anime illustration on white (not pixel art), see devkit/aw2/colib/illustration.py. Coordinates are source pixels of the picture
+# (of the mirrored picture when `flip`). She already looks to the right, as AW2's COs do.
+illustration = true
+flip = false
+scale = 0.22
+frame = [318, 0]
+mug = [452, 20, 330]
+eyes = [607, 187, 668, 205]
+bg_tolerance = 42
+halo = 3
+hole_min = 25
+hole_tolerance = 12

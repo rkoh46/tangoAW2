@@ -228,6 +228,16 @@ fn is_crumb(core: &Core, army: u32) -> bool {
     (1..=5).contains(&army) && crate::co_roster::army_co(core, army).0 == CRUMB
 }
 
+/// A CO of tangoAW2's own whose six quotes are in the order CO Power, Super Power, Tag Power, twice (Crumb, the Emerald Sun COs, Asuka): the game's random pick of
+/// one of six (AW2 and Dual Strike write their COs' quotes as six lines, any of which any power may say) is replaced by the power's own.
+fn has_own_quotes(core: &Core, army: u32) -> bool {
+    if !(1..=5).contains(&army) {
+        return false;
+    }
+    let co = crate::co_roster::army_co(core, army).0;
+    co == CRUMB || crate::es_co::is_es(co) || co == crate::co_new::ASUKA
+}
+
 fn abilities_on(core: &Core) -> bool {
     core.raw_read_8(CO_ABILITIES, -1) != 0
 }
@@ -410,7 +420,7 @@ fn quote_pick(core: &mut Core) {
         return;
     }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-    if !is_crumb(core, army) {
+    if !has_own_quotes(core, army) {
         return;
     }
     let power = core.raw_read_8(POWER_MODE, -1);

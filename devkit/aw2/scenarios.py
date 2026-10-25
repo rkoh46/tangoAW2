@@ -102,6 +102,19 @@ def s_power(fog):
     return pokes, turns
 
 
+def s_asuka(fog):
+    # Asuka (CO 92) for both armies (the CO byte of each player block, +0x1D of 0x02030000 + 0x3C an army: the five-army table rooms use), units of different HP on both sides, then her CO Power
+    # (Dark Intel: +1 / -1 HP) on day 1 and her Super Power (Event Horizon: +2 / -2 HP, strike first) on day 2, each army in turn: every peer must hash alike through the HP changes
+    pokes = ["when army=1 day=1 idle do poke 0x02030059 5C", "when army=1 day=1 idle do poke 0x02030095 5C",
+             "when army=1 day=1 idle do unit 1 inf 5 3 45", "when army=1 day=1 idle do unit 1 tank 6 3 95", "when army=1 day=1 idle do unit 2 inf 10 3 55", "when army=1 day=1 idle do unit 2 tank 9 11 5",
+             "when army=1 day=1 idle do meter 1 100", "when army=2 day=1 idle do meter 2 100",
+             "when army=1 day=2 idle do meter 1 400", "when army=2 day=2 idle do meter 2 400"]
+    slow = lambda k: ["press DOWN 8", "wait 24"] * k
+    sup = goto(8, 5) + A(100) + slow(3) + A(60) + ["wait 800"]
+    turns = [(0, power(8, 5)), (1, power(8, 5)), (0, sup), (1, sup), (0, []), (1, [])]
+    return pokes, turns
+
+
 def s_swap(fog):
     # 2P with Dual Strike tag pairs: army 1 chooses Change (CO SWAP) from the map menu (CO, Intel, Options, Save, Change, End): the swap plays on
     # the mover's window and must show on the waiting window; army 2 does the same on its turn
@@ -381,7 +394,7 @@ def s_p2k(fog):
     return [], [(0, [])]
 
 
-SCEN = {"swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, "g2iv": s_g2iv, "g2hv": s_g2hv, "g2h": s_g2h, "p4k": s_p4k, "p2k": s_p2k, "hq3m": s_hq3m, "g4k": s_g4k, "g2k": s_g2k, "g4s": s_g4s, "hq3p": s_hq3p, "dropb": s_dropb, "big5": s_big5, "big5attack": s_big5attack, "hq4": s_hq4, "hq5": s_hq5, "hq3k": s_hq3k, "hq3h": s_hq3h, "hq3l": s_hq3l, "hq5h": s_hq5h, "hq3": s_hq3, "moveview": s_moveview, "move": s_move, "capture": s_capture, "build": s_build, "attack": s_attack, "power": s_power,
+SCEN = {"asuka": s_asuka, "swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, "g2iv": s_g2iv, "g2hv": s_g2hv, "g2h": s_g2h, "p4k": s_p4k, "p2k": s_p2k, "hq3m": s_hq3m, "g4k": s_g4k, "g2k": s_g2k, "g4s": s_g4s, "hq3p": s_hq3p, "dropb": s_dropb, "big5": s_big5, "big5attack": s_big5attack, "hq4": s_hq4, "hq5": s_hq5, "hq3k": s_hq3k, "hq3h": s_hq3h, "hq3l": s_hq3l, "hq5h": s_hq5h, "hq3": s_hq3, "moveview": s_moveview, "move": s_move, "capture": s_capture, "build": s_build, "attack": s_attack, "power": s_power,
         "load": s_load, "yield": s_yield, "mash": s_mash}
 
 

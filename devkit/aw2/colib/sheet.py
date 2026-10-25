@@ -26,9 +26,9 @@ def _arr(a, pal, scale=1, bg=None):
 
 def sheet(cos, specs, title=None):
     """cos: [CO ids]; specs: {co: data file dict}. -> PIL image."""
-    cw, ch = 2350, 830
+    cw, ch = 2700, 830
     img = Image.new("RGB", (cw, ch * len(cos) + 50), rd.BG)
-    rd.text(img, (14, 10), title or "Imported portraits: the project owner's pixel art as AW2 CO art (native grid, 2x, one palette of 15 colours + transparent, outline, 128 x 160 figure, 48 x 48 mugs, 32 x 24 mini, 32 x 16 HUD face)", size=17)
+    rd.text(img, (14, 10), title or "Imported portraits: the project owner's art as AW2 CO art (one palette of 15 colours + transparent, outline, 128 x 160 figure, 48 x 48 mugs, 48 x 16 mini, 32 x 16 HUD face)", size=17)
     reals = [_real(n) for n in REAL_FIG]
     for r, co in enumerate(cos):
         pics, pal = I.read_art(co)
@@ -50,15 +50,16 @@ def sheet(cos, specs, title=None):
         big = _arr(pics["large"], pal, 1)
         row.paste(big, (3 * 136 + 4, 2), big)
         img.paste(row, (x, y0 + 28))
-        rd.text(img, (x, y0 + 200), "large art, 2x: Hawke (AW2) and ours", size=13)
-        row2 = Image.new("RGB", (268 * 2, 324), (36, 40, 52))
-        im = rd.to_image(_px(reals[0].body, reals[0].palettes[0]), 2)
-        row2.paste(im, (4, 2), im)
+        rd.text(img, (x, y0 + 200), "large art, 2x: Sonja, Hawke, Kanbei (AW2) and ours", size=13)
+        row2 = Image.new("RGB", (268 * 4, 324), (36, 40, 52))
+        for i, k in enumerate((2, 0, 1)):           # Sonja, Hawke, Kanbei
+            im = rd.to_image(_px(reals[k].body, reals[k].palettes[0]), 2)
+            row2.paste(im, (i * 268 + 4, 2), im)
         big2 = _arr(pics["large"], pal, 2)
-        row2.paste(big2, (272, 2), big2)
+        row2.paste(big2, (3 * 268 + 4, 2), big2)
         img.paste(row2, (x, y0 + 220))
         # faces, small faces, strips
-        fx = x + 560
+        fx = x + 1100
         rd.text(img, (fx, y0 + 8), "expression faces 2x: normal, happy, sad, angry", size=13)
         for i, n in enumerate(("face_normal", "face_happy", "face_sad", "face_angry")):
             f = _arr(pics[n], pal, 2, (36, 40, 52))

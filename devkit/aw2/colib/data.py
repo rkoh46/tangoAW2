@@ -57,6 +57,11 @@ def problems(cos, tags, ref=None):
                 for k in ("attack", "defence"):
                     if abs(m.get(k, 0)) > 50:
                         p(co, f"{sect}: {k} {m[k]} is beyond AW2's range (+-50)")
+        for sect in ("d2d", "cop", "scop"):
+            s = d.get(sect, {})
+            for k, hi in (("hp_own", 3), ("hp_enemy", 3), ("vision", 3), ("terrain_cut", 5)):
+                if not 0 <= s.get(k, 0) <= hi:
+                    p(co, f"{sect}.{k} {s.get(k)} outside 0..{hi}")
         for sect in ("cop", "scop"):
             for line in d.get(sect, {}).get("quote", []):
                 if len(line) > MAX_QUOTE:
@@ -205,21 +210,42 @@ def summary(lv, mode):
     return fp, df, mv, rg
 
 
+def swing(own, enemy):
+    """The HP a power moves, as points of firepower + defence it is worth over a typical army: every 1 HP is 10% of a unit's strength, so a unit that gains 1 HP fights 10% longer
+    (+10 durability) and one that loses 1 HP is 10% weaker (it deals 10% less and takes 10% more): +10 for the gain and about +10 more for the loss. A rough yardstick, not a rule."""
+    return 10 * own + 10 * enemy
+
+
 def balance(a):
     cos, _ = load_all()
-    refs = [(n, roms.DS_NAMES_REV[n]) for n in (a.vs or ["Kanbei", "Hawke", "Max", "Grit", "Eagle", "Sami", "Jess", "Colin", "Olaf", "Drake"])]
+    names = a.vs or ["Kanbei", "Hawke", "Sturm", "Eagle", "Nell", "Sonja", "Drake", "Max", "Grit", "Sami", "Jess", "Colin", "Olaf"]
+    refs = [(n, roms.DS_NAMES_REV[n]) for n in names if n in roms.DS_NAMES_REV]
     st = aw2_stars()
-    print(f"{'CO':10} {'stars':6} {'level':6} {'firepower':>10} {'defence':>8} {'move':>6} {'range':>6}   (averages over a typical army: foot 30%, direct vehicles 27%, indirect 12%, planes 9%, copters 5%, navy 17%; powers include DS's +10% firepower)")
+    print(f"{'CO':10} {'stars':6} {'level':6} {'firepower':>10} {'defence':>8} {'move':>6} {'range':>6} {'vision':>6} {'cut':>4} {'hp own/foe':>11} {'luck':>8} {'worth':>6}   (averages over a typical army: foot 30%, direct vehicles 27%, indirect 12%, planes 9%, copters 5%, navy 17%; powers include DS's +10% firepower; hp = HP a power gives every unit / takes from every enemy unit; luck = the maximum roll / the bad luck; worth = firepower + defence + 10 per HP moved + 10 for halving the enemy's fuel (Drake) or fuel and ammo (Asuka) + 10 for every terrain costing 1 (Sturm, Asuka) + (luck - bad luck - 10) / 2, a yardstick)")
     rows = []
-    for n, i in refs:
+    for n in names:
+        if n == "Sturm":          # AW2's only: not in Dual Strike (his numbers are AW2's table: no firepower, luck 10, every terrain costs 1 and the Meteor Strike's damage in his Super Power)
+            for mode, lvl in enumerate(("d2d", "cop", "scop")):
+                rows.append(("Sturm", st.get("Sturm", ("", ""))[:2], lvl, (0.0, 0.0, 0.0, 0.0), 0, 0, (0, 0), False, (10, 0), True))
+            continue
+        i = roms.DS_NAMES_REV.get(n)
+        if i is None:
+            continue
         for mode, lvl in enumerate(("d2d", "cop", "scop")):
-            rows.append((n, st.get(n, ("", ""))[:2], lvl, summary(ds_levels(i)[mode], mode), mode))
+            ex = roms.ds_extras(i, mode)
+            hp = roms.HP_EFFECTS.get(n, [(0, 0)] * 3)[mode]
+            rows.append((n, st.get(n, ("", ""))[:2], lvl, summary(ds_levels(i)[mode], mode), ex["vision"], ex["terrain_cut"], hp, n in roms.HALVES and mode > 0, (ex["luck"], ex["bad_luck"]), False))
     for co in (a.co or list(cos)):
-        if cos[co].get("army") == "emerald_sun" or a.co:
+        if cos[co].get("army") in ("emerald_sun", "black_hole") or a.co:
             s = cos[co]["stars"]
             for mode, lvl in enumerate(("d2d", "cop", "scop")):
-                rows.append((cos[co]["name"] + "*", (s["cop"], s["scop"]), lvl, summary(file_levels(cos[co])[mode], mode), mode))
-    for n, s, lvl, (fp, df, mv, rg), mode in rows:
+                sect = cos[co].get(lvl, {})
+                luck = (cos[co].get("luck", [10] * 3)[mode], cos[co].get("bad_luck", [0] * 3)[mode])
+                rows.append((cos[co]["name"] + "*", (s["cop"], s["scop"]), lvl, summary(file_levels(cos[co])[mode], mode), sect.get("vision", 0), sect.get("terrain_cut", 0), (sect.get("hp_own", 0), sect.get("hp_enemy", 0)), bool(sect.get("halve_enemy_ammo_fuel")), luck, cos[co].get("movement") == "sturm"))
+    for n, s, lvl, (fp, df, mv, rg), vis, cut, hp, halve, luck, terr in rows:
         stars = f"{s[0]}/{s[1]}" if s[0] != "" else "-"
-        print(f"{n:10} {stars:6} {lvl:6} {fp:+10.1f} {df:+8.1f} {mv:+6.2f} {rg:+6.2f}")
+        worth = fp + df + swing(*hp) + (10 if halve else 0) + (10 if terr else 0) + (luck[0] - luck[1] - 10) / 2
+        note = ("  (halves enemy fuel" + (" and ammo)" if n.endswith("*") else ")")) if halve else ""
+        note += "  (every terrain costs 1)" if terr else ""
+        print(f"{n:10} {stars:6} {lvl:6} {fp:+10.1f} {df:+8.1f} {mv:+6.2f} {rg:+6.2f} {vis:+6d} {cut:4d} {f'+{hp[0]}/-{hp[1]}':>11} {f'{luck[0]}/{luck[1]}':>8} {worth:+6.0f}{note}")
     return 0

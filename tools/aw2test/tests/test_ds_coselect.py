@@ -407,7 +407,7 @@ def selectable_by_cycling(e):
 def universe(e):
     """Every CO the screen draws a cell for, in Dual Strike's way (ds_coselect.rs: by country, then id)."""
     table = e.u32(CO_TABLE_POOL)
-    ids = list(range(19)) + list(range(72, 83))
+    ids = list(range(19)) + list(range(72, 83)) + [92]
     return sorted(ids, key=lambda c: (e.u8(table + c * 0x104 + 0x15), c))
 
 

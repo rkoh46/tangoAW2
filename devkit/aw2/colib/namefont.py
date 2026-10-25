@@ -1,5 +1,5 @@
 """The CO name graphic (48 x 16, six 8 x 16 sprites): a blocky italic-free capital-and-lowercase face of our own (original art, GPL-3.0-or-later) in the style of AW2's names: white fill (index 1),
-a dark outline (15) and a drop shadow (14), drawn with the fixed name palette (0x080F6164). The letters the four Emerald Sun names need: A C K L, a e i l r s u v."""
+a dark outline (15) and a drop shadow (14), drawn with the fixed name palette (0x080F6164). The letters the Emerald Sun names and Asuka need: A C K L, a e i k l r s u v."""
 import numpy as np
 
 G = {
@@ -7,6 +7,7 @@ G = {
     "C": [".11111.", "1111111", "11...11", "11.....", "11.....", "11.....", "11.....", "11.....", "11...11", "1111111", ".11111."],
     "K": ["11...11", "11..11.", "11.11..", "1111...", "111....", "111....", "1111...", "11.11..", "11..11.", "11...11", "11...11"],
     "L": ["11.....", "11.....", "11.....", "11.....", "11.....", "11.....", "11.....", "11.....", "11.....", "1111111", "1111111"],
+    "k": ["11....", "11....", "11....", "11..11", "11.11.", "1111..", "1111..", "11.11.", "11..11", "11..11", "11..11"],
     "l": ["111", "111", "111", "111", "111", "111", "111", "111", "111", "111", "111"],
     "i": ["111", "111", "...", "111", "111", "111", "111", "111", "111", "111", "111"],
     "a": ["......", "......", "......", ".1111.", "111111", ".....11", ".11111", "111111", "11..11", "111111", ".11111"],

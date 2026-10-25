@@ -5,7 +5,7 @@ Code: `devkit/aw2/colib/verify.py` (runs the scenarios, collects the tags, print
 `tools/aw2test/aw2test/copics.py`. Unit tests (no ROM): `devkit/aw2/colib/test_verify.py` (run by `aw2dev test`). Skill: `aw2-add-co` (step 5).
 
 ## What is checked, and against what
-The COs: Klaus, Aurelia, Cassius, Livia (Emerald Sun), Varro (boss only), Crumb (Black Hole) and Clone Andy. **Every number is played in a real Versus battle on the harness console (the Dual Strike pack,
+The COs: Klaus, Aurelia, Cassius, Livia (Emerald Sun), Varro (boss only), Crumb (Black Hole), Clone Andy and Asuka (Black Hole; her cells are filled from her own suite, `tests/test_asuka.py`, through `LEGACY`). `aw2dev co verify sonja` is a different check (`colib/verify_sonja.py`): Sonja against the v0.8.7 build. **Every number is played in a real Versus battle on the harness console (the Dual Strike pack,
 `TANGOAW2_ES_VERSUS=1`) and compared with the SPECIFICATION, never with the engine's own tables** (`es_co::bonus`, `crumb::bonus`) and not with `damage.es_bonus` (the Python mirror of the
 engine, still used by the older tests). `cospec.py` reads the data files `cos/<id>.toml` (`mods`, `income`, `tribute`, `heal`, `stars`, `luck`), `cos/tags.toml`, and for Crumb and Varro the numbers in
 `crumb.rs` / `es_co.rs`'s module docs (they have no data file). A class word of a `mods` line means (docs/ES_CAMPAIGN.md 2.1): `foot` Infantry and Mech; `vehicle` Recon, APC, Tank, Md. Tank, Neotank and

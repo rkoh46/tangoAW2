@@ -189,7 +189,21 @@ def ds_class_stats(co, mode):
     return out
 
 
+def ds_extras(co, mode):
+    """Dual Strike CO `co`'s non-class numbers at power level `mode`: {vision, luck, bad_luck, terrain_cut, skills (the block's first byte)}."""
+    nds = _nds()
+    rec = nds.arm9(DS_CO_RECORD + DS_CO_RECORD_LEN * co, DS_CO_RECORD_LEN)
+    b = rec[0xA0 + 0x80 * mode:0xA0 + 0x80 * mode + 0x80]
+    i16 = lambda o: struct.unpack_from("<h", b, o)[0]
+    return {"vision": i16(0x18), "luck": i16(0x1C), "bad_luck": i16(0x1E), "terrain_cut": max(0, i16(0x2A)), "skills": b[8]}
+
+
+# The HP every unit gains / the enemy's lose in a power (AW2's and tangoAW2's own mass-HP powers), per level (d2d, CO Power, Super Power): Hawke's Black Wave and Black Storm.
+HP_EFFECTS = {"Hawke": [(0, 0), (1, 1), (2, 2)], "Drake": [(0, 0), (0, 1), (0, 2)]}
+HALVES = {"Drake"}      # powers that halve the enemy's fuel (Tsunami, Typhoon)
+
 DS_NAMES_REV = {}
 for _k, _v in DS_NAMES.items():
     DS_NAMES_REV[_v] = _k
 DS_NAMES_REV["Andy"] = 2
+DS_NAMES_REV["Nell"] = 1          # (DS_NAMES names id 1 "Andy" too: Dual Strike's record 1 is Nell, 2 Andy)

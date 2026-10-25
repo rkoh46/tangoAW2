@@ -360,6 +360,9 @@ pub fn compatibility(a: u8, b: u8) -> u8 {
         if crate::es_co::has_pairs(a) || crate::es_co::has_pairs(b) {
             return crate::es_co::UNLISTED_PAIR;
         }
+        if let Some(c) = crate::sturm_pairs::asuka_compatibility(a, b) {
+            return c;
+        }
     }
     let (Some(da), Some(db)) = (ds_id(a), ds_id(b)) else { return 100 };
     crate::ds_pack::pack()

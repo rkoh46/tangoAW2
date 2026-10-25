@@ -170,6 +170,10 @@ class Ctx:
                     return stars
         if pair == set(tag.VAULT_BREAKERS[:2]):
             return tag.VAULT_BREAKERS[3]
+        asuka = romlib.co_id("asuka")
+        if asuka in pair:
+            o = (pair - {asuka} or {asuka}).pop()
+            return next((v[1] for name, v in tag.ASUKA_DUOS.items() if romlib.co_id(name) == o), 0)
         if romlib.co_id("cloneandy") in pair:
             return 0
         if not hasattr(self, "_ds"):

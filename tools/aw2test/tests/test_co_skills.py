@@ -134,7 +134,7 @@ def skills_off_change_nothing(ctx):
 DATA = 0x0203E000      # crate::co_skills::DATA: "SKL1", then 32 bytes per CO
 CO_LEN = 32
 PLAYERS = 0x08499598
-CO_SLOTS = list(range(19)) + list(range(72, 83))
+CO_SLOTS = list(range(19)) + list(range(72, 83)) + [92]
 
 
 def co_slot(co):

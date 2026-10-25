@@ -1,0 +1,150 @@
+; Asuka, Black Hole's intelligence chief: "Cold Reckoning", a cold, exact strategist's theme in A Phrygian (A Bb C D E F G, with a B natural now and then for the dominant).
+; Original composition for tangoAW2 (not Sonja's tune and not Hawke's): a hollow clarinet speaks over a plucked ostinato that ticks like a clock (a closed hat on every eighth), a pick bass
+; keeps the flat second (Bb) in its harmony and low brass answers in stabs, the way Black Hole's own themes lean on dark brass. Nothing is warm: the strings only hold fifths.
+;
+; Form: two bars of the ticking ostinato, then the loop: the clarinet's statement (A), a higher answer over brass stabs (B), the statement again with a flute above and strings (A2) and the
+; closing of the ledger (C). 32 bars at 112 beats a minute: about 69 s.
+song asuka
+tempo 112
+meter 4/4
+reverb 173
+priority 0
+
+inst clar    = A.71  shift=-12      ; hollow, odd harmonics: the analyst's voice
+inst pluck   = A.117 shift=0        ; the clock
+inst strings = A.48                 ; held fifths, cold
+inst bass    = A.36  shift=24       ; pick bass
+inst horns   = A.111 shift=-12      ; Black Hole's dark brass
+inst kit     = A.120
+inst flute   = A.77  shift=-12
+
+hit kick=36 rim=37 snare=40 hat=44 ohat=46 tom1=45 tom2=48 crash=49
+
+track 1 inst=clar    vol=84 pan=-4  vel=104 gate=90 gain=1.35
+track 2 inst=pluck   vol=70 pan=16  vel=88  gate=60 gain=1.0
+track 3 inst=strings vol=50 pan=-22 vel=84  gate=100 gain=1.7
+track 4 inst=bass    vol=86 pan=0   vel=112 gate=92 gain=0.85
+track 5 inst=horns   vol=74 pan=8   vel=108 gate=70 gain=1.1
+track 6 inst=kit     vol=62 pan=0   vel=100 gate=100 gain=1.2
+track 7 inst=flute   vol=60 pan=22  vel=92  gate=88 gain=1.2
+
+; ---- the clarinet's statement: Am Am F E | Am Am Bb E ----
+def thA:
+  | A4/4. Bb4/8 A4/4 E4/4 |
+  | C5/2 Bb4/4 A4/4 |
+  | G4/4. A4/8 G4/4 E4/4 |
+  | F4/2 E4/2 |
+  | A4/4. Bb4/8 A4/4 E5/4 |
+  | D5/4. C5/8 Bb4/4 A4/4 |
+  | Bb4/4 A4/4 G4/4 F4/4 |
+  | E4/1 |
+end
+; ---- the answer, higher: Am Am Dm G | Am F Bb E ----
+def thB:
+  | E5/4. F5/8 E5/4 C5/4 |
+  | A4/2 C5/2 |
+  | D5/4. E5/8 D5/4 Bb4/4 |
+  | G4/2 B4/2 |
+  | E5/4. F5/8 E5/4 A5/4 |
+  | G5/4. F5/8 E5/4 C5/4 |
+  | Bb4/4 C5/4 D5/4 B4/4 |
+  | E5/2 r/2 |
+end
+; ---- the ledger closes: Am Am G F | Am Bb E E ----
+def thC:
+  | A4/8 A4/8 E5/4 A4/8 A4/8 E5/4 |
+  | C5/4 Bb4/4 A4/2 |
+  | G4/8 G4/8 D5/4 G4/8 G4/8 D5/4 |
+  | F4/4 E4/4 F4/2 |
+  | A4/8 A4/8 E5/4 A4/8 A4/8 E5/4 |
+  | Bb4/4 A4/4 G4/4 F4/4 |
+  | E4/4. F4/8 E4/4 D4/4 |
+  | E4/2 r/4 E4/4 |
+end
+; ---- the flute above the statement (a third higher, answering) ----
+def flA:
+  | r/1 |
+  | E5/2 D5/2 |
+  | r/1 |
+  | A5/2 G5/2 |
+  | r/1 |
+  | F5/2 E5/2 |
+  | r/1 |
+  | B4/2 E5/2 |
+end
+; ---- the clock: a plucked arpeggio of sixteenths (Am written; -4 is F, -5 E, +1 Bb, +5 Dm, -2 G) ----
+def ost:
+  | A3/16 E4/16 A4/16 E4/16 C4/16 E4/16 A4/16 E4/16 A3/16 E4/16 A4/16 E4/16 Bb3/16 E4/16 Bb4/16 E4/16 |
+end
+; ---- the pick bass (A written) ----
+def bs:
+  | A1/8 A1/8 A2/8 A1/8 A1/8 A1/8 A2/8 A1/8 |
+end
+def bsh:
+  | A1/4 r/8 A1/8 r/4 A2/4 |
+end
+; ---- brass stabs (A written) ----
+def stab:
+  | A2/4. r/8 A2/4 r/4 |
+end
+; ---- the fifths (A written) ----
+def pad:
+  | A3/1 |
+end
+; ---- drums: the tick, then the tick with kick and snare ----
+def tick:
+  | hat/8 hat/8 hat/8 hat/8 hat/8 hat/8 hat/8 hat/8 |
+end
+def kd:
+  | kick/4 hat/8 hat/8 snare/4 hat/8 hat/8 |
+end
+def kdr:
+  | kick/4 hat/8 hat/8 snare/4 snare/16 snare/16 snare/8 |
+end
+def kdc:
+  | kick/8 kick/8 hat/8 hat/8 snare/4 hat/8 ohat/8 |
+end
+
+section intro bars=2
+  2: {vol 60>72/192} @ost @ost
+  6: @tick @tick
+end
+
+; ---- A: the statement ----
+section A bars=8
+  1: {vol 84} @thA
+  2: @ost @ost @ost-4 @ost-5 @ost @ost @ost+1 @ost-5
+  4: {vol 86} @bs @bs @bs-4 @bs-5 @bs @bs @bs+1 @bs-5
+  6: {vol 62} @kd @kd @kd @kd @kd @kd @kd @kdr
+end
+
+; ---- B: the answer over the stabs ----
+section B bars=8
+  1: {vol 78} @thB
+  2: @ost @ost @ost+5 @ost-2 @ost @ost-4 @ost+1 @ost-5
+  4: {vol 86} @bs @bs @bs+5 @bs-2 @bs @bs-4 @bs+1 @bs-5
+  5: {vol 74} @stab @stab @stab+5 @stab-2 @stab @stab-4 @stab+1 @stab-5
+  6: {vol 64} @kd @kd @kd @kd @kd @kd @kd @kdr
+end
+
+; ---- A2: the statement again, the flute above, the strings holding ----
+section A2 bars=8
+  1: {vol 84} @thA
+  7: @flA
+  2: @ost @ost @ost-4 @ost-5 @ost @ost @ost+1 @ost-5
+  3: {vol 52} @pad @pad @pad-4 @pad-5 @pad @pad @pad+1 @pad-5
+  4: {vol 86} @bsh @bsh @bsh-4 @bsh-5 @bsh @bsh @bsh+1 @bsh-5
+  6: {vol 64} @kd @kd @kd @kd @kd @kd @kd @kdr
+end
+
+; ---- C: the ledger closes, the brass and everything ----
+section C bars=8
+  1: {vol 88} @thC
+  2: @ost @ost @ost-2 @ost-4 @ost @ost+1 @ost-5 @ost-5
+  3: {vol 52} @pad @pad @pad-2 @pad-4 @pad @pad+1 @pad-5 @pad-5
+  4: {vol 88} @bs @bs @bs-2 @bs-4 @bs @bs+1 @bs-5 @bs-5
+  5: {vol 78} @stab @stab @stab-2 @stab-4 @stab @stab+1 @stab-5 @stab-5
+  6: {vol 68} @kdc @kdc @kdc @kdc @kdc @kdc @kdc @kdr
+end
+
+form intro loop A B A2 C

@@ -596,6 +596,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 28: custom COs checked against their specification (aw2dev co verify): Clone Andy's powers heal as Andy's do, the Emerald Sun COs' unit cost is 100% (Livia's 110%; it was doubled), Livia's income is 25% of what a property pays,
         // an Emerald Sun CO's tag pair with a CO the file does not list is 95% (crate::es_co::UNLISTED_PAIR), and an army shows the HQ its CO's data file names (crate::army_skin::hq_style: the Roman COs' Emerald Sun HQ).
         // 29: Clone Andy's own numbers (crate::co_new::clone_andy_bonus): day to day +2% firepower and defence on every unit, Hyper Upgrade +30% / +20% with no move bonus, healing 4 HP (crate::es_co::HEAL4).
+        // 28 (asuka branch, merged as 30): Asuka (CO 92, crate::asuka) joins the roster in every Versus list: the CO table, the Teams order and the texts the pack writes are 92 rows long and her powers are Black Wave / Black Storm with Sonja's vision, hidden HP and strike-first (a merge with another bump must take the next free number).
+        // 30: the cotest (29) and asuka (28) branches merged: Clone Andy's numbers, the HQ that follows the CO, Asuka (CO 92) in every Versus list.
         crate::inspect::SIM_VERSION
     }
 

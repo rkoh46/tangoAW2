@@ -61,12 +61,14 @@ pub struct Source {
     pub text: &'static str,
 }
 
-pub const SOURCES: [Source; 5] = [
+pub const SOURCES: [Source; 6] = [
     Source { co: 86, name: "klaus", text: include_str!("../music/es/klaus.m4t") },
     Source { co: 87, name: "aurelia", text: include_str!("../music/es/aurelia.m4t") },
     Source { co: 88, name: "cassius", text: include_str!("../music/es/cassius.m4t") },
     Source { co: 89, name: "livia", text: include_str!("../music/es/livia.m4t") },
     Source { co: 90, name: "varro", text: include_str!("../music/es/varro.m4t") },
+    // Asuka (CO 92, crate::asuka): her theme is in Versus for everyone, like her.
+    Source { co: 92, name: "asuka", text: include_str!("../music/es/asuka.m4t") },
 ];
 
 /// The source text of a song: the dev aid's file if the variable names a folder with one, else the built-in text.
@@ -1062,9 +1064,9 @@ form A loop A A
     }
 
     #[test]
-    fn songs_are_the_five_new_cos_and_distinct() {
+    fn songs_are_the_new_cos_and_distinct() {
         let cos: Vec<u8> = SOURCES.iter().map(|s| s.co).collect();
-        assert_eq!(cos, vec![86, 87, 88, 89, 90]);
+        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92], "the five Emerald Sun COs and Asuka");
         let all: Vec<Vec<u8>> = SOURCES.iter().map(|s| compile(s.text).unwrap().tracks.iter().flat_map(|t| t.bytes.clone()).collect()).collect();
         for i in 0..all.len() {
             for j in i + 1..all.len() {

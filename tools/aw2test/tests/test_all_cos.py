@@ -1,8 +1,8 @@
 """Every CO is on every screen where the player picks one freely: Versus' Teams
 screen, the War Room's CO screen, Survival's and Champion's (the same screen),
 and the tag partner pick (the Teams list). With the Dual Strike pack that is
-AW2's 19 (Sturm included) and the 11 new ones (crate::co_new: Dual Strike's nine,
-Clone Andy, Crumb), 30; without it AW2's 19. The War Room's records (the best
+AW2's 19 (Sturm included) and the 12 new ones (crate::co_new: Dual Strike's nine,
+Clone Andy, Crumb, Asuka), 31; without it AW2's 19. The War Room's records (the best
 five of a map, each with its CO's id) are saved and loaded back for a new CO."""
 
 import os
@@ -16,7 +16,7 @@ from aw2test.game import Game
 from aw2test.harness import test
 
 AW2 = list(range(19))
-NEW = list(range(72, 83))
+NEW = list(range(72, 83)) + [92]      # (92: Asuka, in every list; the Emerald Sun five 86..90 only with TANGOAW2_ES_VERSUS)
 
 
 def boot(ctx, save=None):
@@ -45,12 +45,12 @@ def check_lists(ctx, e, what):
 def co_new_all():
     # (CO id, Dual Strike id, the CO it takes after): crate::co_new::NEW, then Crumb
     like = [11, 13, 12, 10, 18, 17, 16, 15, 15, 13, 13]
-    return [(72 + k, 0, like[k]) for k in range(11)]
+    return [(72 + k, 0, like[k]) for k in range(11)] + [(92, 0, 14)]
 
 
 @test()
 def war_room_offers_every_co(ctx):
-    """The War Room's CO screen: AW2's 19 without the pack, 30 with it (the
+    """The War Room's CO screen: AW2's 19 without the pack, 31 with it (the
     Teams list's COs), each reachable with the pad."""
     e, g = boot(ctx)
     wr.open_war_room(e)
@@ -69,26 +69,27 @@ def war_room_offers_every_co(ctx):
 
 @test(modes=("ds",))
 def survival_offers_every_co(ctx):
-    """Survival's CO screen (the War Room's) offers the same 30, on a basic
+    """Survival's CO screen (the War Room's) offers the same 31, on a basic
     course and on a Champion course (open once a basic course has a record,
-    here a Money record by Crumb: a new CO's id is in the record's seven bits and
+    here a Money record by Asuka: a new CO's id is in the record's seven bits and
     its face is drawn on SELECT MAP)."""
     e, g = boot(ctx)
     wr.open_survival(e)
     check_lists(ctx, e, "Survival")
     wr.go_to(e, 82)
+    wr.go_to(e, 92)
     wr.go_to(e, 75)
     e.shot(os.path.join(ctx.out, "survival_vonbolt"))
     e.close()
     e, g = boot(ctx)
-    recs = {sv.MONEY: (82, 60000), sv.TURN: (10, 20), sv.TIME: (75, 20000)}
+    recs = {sv.MONEY: (92, 60000), sv.TURN: (10, 20), sv.TIME: (75, 20000)}
     ctx.require(sv.open_survival(e, lambda e: sv.set_records(e, recs)), "Survival's SELECT MAP")
     ctx.eq({k: v[1] for k, v in sv.records(e).items()}, {k: v[0] for k, v in recs.items()}, "the records' COs")
     e.press("R", 8)
     e.wait(20)
     shot = sv.bg0(e)
     e.shot(os.path.join(ctx.out, "survival_records_new_cos"))
-    for row, (k, name) in enumerate([(sv.MONEY, "Crumb"), (sv.TURN, "Sturm"), (sv.TIME, "Von Bolt")]):
+    for row, (k, name) in enumerate([(sv.MONEY, "Asuka"), (sv.TURN, "Sturm"), (sv.TIME, "Von Bolt")]):
         ctx.check(sv.text_on(shot, name, 138, 70 + 12 * row), f"{sv.NAMES[k]}'s record names its CO, {name}")
     e.press("B", 8)
     e.wait(30)
@@ -161,7 +162,7 @@ def war_room_record_with_new_cos(ctx):
     that save has it again; the other maps' rows stay empty. Without the pack
     Sturm, who the War Room already offered, is the check. (Dual Strike's COs
     play a battle with their own numbers: tests/test_new_cos.py.)"""
-    for co in ([72, 75, 81, 82] if ctx.ds else [10]):
+    for co in ([72, 75, 81, 82, 92] if ctx.ds else [10]):
         play_and_save(ctx, co, romlib.co_name(co).lower().replace(" ", "_"))
 
 

@@ -94,7 +94,7 @@ def find_on(shot, co, need=0.93, patches=2, pic="face_normal"):
 # The Teams screen keeps the P1 card's place in this list at 0x02017C6C (found by diffing EWRAM while UP walked the list): the walk presses UP or DOWN until it is on the CO, so a press
 # a busy machine drops or doubles does not matter.
 # The game's own list of the Teams screen is at TEAMS_ORDER (CO ids, 0xFF-ended): the CO's place in it is read from there, since each new CO stands after the one it takes after.
-ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "cloneandy": 81, "varro": 90, "andy": 1}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
+ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "cloneandy": 81, "varro": 90, "asuka": 92, "andy": 1}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
 TEAMS_ORDER = 0x0203FE80
 TEAMS_CURSOR = 0x02017C6C
 TEAMS_LEN = 34
@@ -205,22 +205,29 @@ def _photograph(co, out_dir):
         try:
             mask, rgb = mug_rgb(co, "large")
             own = {tuple(int(v) for v in c) for c in rgb[mask]}
-        except FileNotFoundError:         # (a recolour of another CO's art: no committed art; the middle frame of the red cut-in stands in)
-            own = set()
-        best, best_n, quote, quote_n = None, 0, None, 0
+        except FileNotFoundError:
+            own = None          # no committed picture to match (a recolour of another CO's art, e.g. Clone Andy): the cut-in frame is the one with the most dark pixels (outline, uniform)
+        best, quote, quote_n, cands = None, None, 0, []
         for k in range(26):
             p = out / f"{co}_power{k}.png"
             app.shot(p)
             im = np.array(Image.open(p).convert("RGB"))
             red = ((im[:, :, 0] > 200) & (im[:, :, 1] < 90) & (im[:, :, 2] < 70)).mean()
-            n = sum(1 for c in {tuple(int(v) for v in px) for px in im.reshape(-1, 3)} if c in own)
-            if red > 0.03 and n >= best_n:
-                best, best_n = p, n
+            if own is None:
+                n = int((im.max(2) < 60).sum())          # dark pixels: the figure's black uniform
+            else:
+                n = sum(1 for c in {tuple(int(v) for v in px) for px in im.reshape(-1, 3)} if c in own)
+            if red > 0.03:
+                cands.append((n, p))
             box = (im[124:152, 70:230].min(2) > 205).mean()       # the dialogue box's cream band at the foot
             if red < 0.07 and box > 0.9:
                 quote = p          # (the last such frame: the text is typed out by then)
             time.sleep(0.12)
         import shutil
+        if cands:
+            top = max(n for n, _ in cands)
+            best = [q for n, q in cands if n >= 0.95 * top][-1]      # the last frame with the whole figure: the power's name has finished sliding in
+            best_n = top
         if best:
             shutil.copy(best, out / f"{co}_figure.png")
         if quote:
@@ -292,7 +299,7 @@ def verify(co, out_dir):
     out = Path(out_dir)
     res = {}
     res["CO select"] = find_on(out / f"{co}_select.png", co, 0.9, 2, "face_normal")
-    res["HUD"] = best_match(out / f"{co}_hud.png", co, "hud", (200, 0, 212, 2)) >= 0.15      # (a weak check: the game draws the HUD face brighter and cut at the top; look at the shot)
+    res["HUD"] = best_match(out / f"{co}_hud.png", co, "hud", (150, 0, 212, 6)) >= 0.15      # (a weak check: the game draws the HUD face brighter and cut at the top; look at the shot)
     fig = out / f"{co}_figure.png"
     res["power cut-in (large art)"] = fig.exists() and figure_seen(fig, co)
     res["CO page"] = (out / f"{co}_page.png").exists()

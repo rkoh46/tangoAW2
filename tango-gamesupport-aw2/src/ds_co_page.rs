@@ -1158,6 +1158,15 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         scop = t(co_new::T_SCOP);
         cop_name = string(Some(t(co_new::T_COP_NAME)));
         scop_name = string(Some(t(co_new::T_SCOP_NAME)));
+    } else if co == co_new::ASUKA {
+        // (Asuka's own words, cos/asuka.toml: her numbers are Sonja's, her texts are not)
+        let t = |w: u16| crate::es_cos::text(co, w).unwrap_or_default();
+        bio = t(co_new::T_BIO);
+        d2d = t(co_new::T_D2D);
+        cop = t(co_new::T_COP);
+        scop = t(co_new::T_SCOP);
+        cop_name = string(Some(t(co_new::T_COP_NAME)));
+        scop_name = string(Some(t(co_new::T_SCOP_NAME)));
     } else if co == CLONE_ANDY {
         bio = co_new::CLONE_ANDY_BIO.to_vec();
         d2d = co_new::CLONE_ANDY_D2D.to_vec();

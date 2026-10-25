@@ -269,7 +269,7 @@ const STRIP_Y: [(u8, usize); 8] = [(16, 8), (6, 8), (23, 8), (25, 8), (26, 8), (
 const OWN_CROPS: [(u8, usize, usize); 1] = [(crate::co_new::CRUMB, 24, 20)];
 
 fn own_crop(co: u8) -> (usize, usize) {
-    if let Some(c) = crate::es_cos::crop(co).filter(|_| crate::es_co::is_es(co)) {
+    if let Some(c) = crate::es_cos::crop(co) {
         return c;
     }
     OWN_CROPS.iter().find(|e| e.0 == co).map_or_else(|| crop_of(None), |e| (e.1, e.2))
@@ -1080,7 +1080,8 @@ fn grid(core: &Core) -> Option<Grid> {
     let k = core.raw_read_16(proc + 0x52, -1) as usize % size + core.raw_read_32(proc + 0x5C, -1) as usize;
     let cur = *offered.get(k)?;
     // Every CO of the roster, Dual Strike's way: by country, a CO the screen does not offer locked.
-    let mut all: Vec<u8> = (0..19u8).chain(crate::co_new::all().map(|n| n.0)).collect();
+    // (the Emerald Sun COs only where the roster lists them: Versus' grid has no black cells for COs it does not have; the campaign's screen offers them and adds them below)
+    let mut all: Vec<u8> = (0..19u8).chain(crate::co_new::all().map(|n| n.0).filter(|&c| crate::co_new::listed(c))).collect();
     for &c in &offered {
         if !all.contains(&c) {
             all.push(c);
