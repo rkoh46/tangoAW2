@@ -119,7 +119,7 @@ class Survival:
             p += 13
         return {
             "name": self.text(self.u16(e + 0x2C)), "w": w, "h": h, "tiles": tiles, "units": units,
-            "armies": self.u8(e + 0x3C), "colours": [self.u8(e + k) for k in range(1, 5)],
+            "armies": self.u8(e + 0x3C), "colours": [self.u8(e + 0xA0 + k) for k in range(1, 5)],   # (MAPS is header 0 + 0x88 and e the previous map's: its tiles are read at +0x5C = the next header's +0x44; the colours of this map are one header on)
             "look": self.u8(e + 0x32), "weather": self.u8(e + 0x33), "fog": self.u8(e + 0x34),
             "cos": (self.u8(e + 0x70), self.u8(e + 0x72)),
             "structure": self.structure_file(e),
