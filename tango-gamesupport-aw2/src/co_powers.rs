@@ -777,6 +777,8 @@ fn super_cost(core: &Core, army: u32) -> u32 {
 /// `AddPlayerIncomeToFunds`: the day's income in r1 just before it is
 /// added. Sasha gets 100 more per property that earns.
 const INCOME: u32 = 0x0802_6F18;
+/// gPlaySt's funds per property (the Rules screen's Funds, 1000 by default; 0 when a mode pays no income).
+const FUNDS_PER_PROPERTY: u32 = 0x0300_3FE8;
 fn income(core: &mut Core) {
     if !is_on(core) {
         return;
@@ -787,7 +789,7 @@ fn income(core: &mut Core) {
     if army_co(core, army).0 == SASHA {
         add += 100 * earners;
     }
-    add += crate::es_co::income_bonus(army_co(core, army).0, earners);
+    add += crate::es_co::income_bonus(army_co(core, army).0, earners, core.raw_read_32(FUNDS_PER_PROPERTY, -1) as i32);
     if add == 0 {
         return;
     }

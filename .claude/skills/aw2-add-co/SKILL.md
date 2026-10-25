@@ -16,3 +16,6 @@ Read docs/dev/co-kit.md first. The worked engine example is Crumb (`co_new.rs`, 
    test, `ram_map.rs` for new state, `sim_version` when the sim changes. Then `cargo build`, `aw2dev build`, and `aw2dev co portrait ingame <id>`: it photographs the CO on the game's own screens
    through the AI debug channel (CO select, HUD, the Power's dialogue box and cut-in, the CO page) and checks they show the committed art.
 4. `aw2dev co check`, `aw2dev co portrait lint`, `aw2dev test` (runs `aw2.colib.test_co`), `aw2dev kit check`.
+5. Verify every ability in real battles: add the CO's numbers to `tools/aw2test/aw2test/cospec.py` (the specification, from the data file), its name to `COS` in `devkit/aw2/colib/verify.py` and `NAMES` in `tools/aw2test/tests/test_co_verify.py`,
+   then `aw2dev co verify <id>` (attack, defence, move, range, cost, income, funds, heal, the special rules, meters, Tag Powers, CPU use; `--net` plays each power on two real clients) and fix what the table says FAILs.
+   `aw2dev co sheet powers <id>` makes the real-game pictures (select card, CO page, HUD, each power and Tag Power, the effect): look at every one. docs/dev/co-verify.md.

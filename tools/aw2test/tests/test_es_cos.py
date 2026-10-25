@@ -37,7 +37,7 @@ def es_cos_rows_texts_and_meters(ctx):
         ctx.eq(text(e, e.u32(row + 0x38 + 0x44)), COP_NAMES[co], f"{who}: CO Power's name")
         ctx.eq(text(e, e.u32(row + 0x38 + 0x88)), SCOP_NAMES[co], f"{who}: Super Power's name")
         for mode in range(3):
-            ctx.eq(e.u16(row + 0x38 + 0x44 * mode + 0x14), 110 if co == LIVIA else 100, f"{who}: unit cost at power level {mode}")
+            ctx.eq(e.u16(row + 0x38 + 0x44 * mode + 0x14), 10 if co == LIVIA else 0, f"{who}: unit cost change (added to 100) at power level {mode}")
     e.close()
 
 

@@ -12,6 +12,10 @@ luck = [10, 10, 10]           # AW2 rows are 0..9 percent most days
 # A power's `mods` are on top of the day-to-day ones; every power also adds Dual Strike's own +10% firepower.
 stars = { cop = 4, scop = 8 }
 
+# The HQ the army of this CO shows on the map (docs/dev/army-packs.md): the id of an army skin (`skins/<id>.toml`), whose HQ picture (in the army's own building colours) replaces
+# the HQ of the CO's country. "default" keeps the game's. The HQ follows the CO that starts the battle (a Tag pair: the lead). Checked by `aw2dev co verify` (facet `hq`).
+hq = "emerald_sun"
+
 [d2d]
 name = "Imperium"
 text = "My legions fight and hold a little better. Infantry and Mech fight best of all."

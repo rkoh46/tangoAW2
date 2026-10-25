@@ -168,6 +168,9 @@ pub fn stat(co: u8, mode: u8, t: u8, field: usize) -> Option<i32> {
         v += crate::crumb::bonus(mode, t, field);
     } else if crate::es_co::is_es(co) {
         v += crate::es_co::bonus(co, mode, t, field);
+    } else if co == crate::co_new::CLONE_ANDY {
+        // His numbers are his own (crate::co_new::clone_andy_bonus), not Andy's block.
+        v += crate::co_new::clone_andy_bonus(mode, field);
     } else {
         let b = block(ds_co(co)?, mode)?;
         let unit = crate::roster::ds_record(t)?;

@@ -25,6 +25,17 @@ class Data(unittest.TestCase):
                 if a < b:
                     self.assertIn(frozenset((a, b)), pairs)
 
+    def test_clone_andy_is_a_recolour_of_andy(self):
+        cos, _ = data.load_all()
+        c = cos["cloneandy"]
+        self.assertEqual(c["portrait"]["base"], "andy")
+        rc = c["portrait"]["recolour"]
+        self.assertEqual(sorted(int(k) for k in rc), [2, 3, 4, 5, 6, 9, 10, 12])      # skin ramp (5 tones), jacket, its shade, shirt: nothing else (hair, rim, buckle, star, outline are Andy's)
+        self.assertEqual(data.problems({"cloneandy": c}, {}), [])
+        bad = copy.deepcopy(c)
+        bad["portrait"]["recolour"]["0"] = "FFFFFF"
+        self.assertIn("want an index 1..15", " ".join(data.problems({"cloneandy": bad}, {})))
+
     def test_a_bad_file_is_caught(self):
         cos, tags = data.load_all()
         cos = copy.deepcopy(cos)

@@ -63,6 +63,21 @@ def problems(cos, tags, ref=None):
                     p(co, f"{sect} quote line {line!r} is longer than {MAX_QUOTE}")
         if len(d.get("name", "")) > 7:
             p(co, "name longer than 7 letters (the 48 x 16 name graphic)")
+        port = d.get("portrait", {})
+        if d.get("hq", "default") not in ("default", "emerald_sun", "black_hole"):
+            p(co, f"hq {d.get('hq')!r}: an army skin's id or \"default\"")
+        if port.get("placeholder"):
+            continue
+        if port.get("base"):          # a recolour of another CO's art: the palette entries are index 1..15 = "RRGGBB"
+            rc = port.get("recolour", {})
+            if port["base"] not in ("andy",):
+                p(co, f"portrait.base {port['base']!r}: only Dual Strike's Andy is wired")
+            for k, v in rc.items():
+                if not (k.isdigit() and 1 <= int(k) <= 15) or len(str(v)) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in str(v)):
+                    p(co, f"portrait.recolour {k} = {v!r}: want an index 1..15 and RRGGBB")
+            if not rc:
+                p(co, "portrait.base without a portrait.recolour is just the donor's picture")
+            continue
         src = d.get("portrait", {}).get("source")
         if not src:
             p(co, "portrait.source missing (the picture the project owner supplied)")

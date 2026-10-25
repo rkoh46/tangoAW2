@@ -6,13 +6,13 @@ from .. import cfg, profiles, util
 
 
 class App:
-    def __init__(self, extra_env=None):
+    def __init__(self, extra_env=None, tilt=False):
         binary = cfg.REPO / "target" / "release" / "tango"
         util.check_fresh(binary, "tango")
         profiles.ensure("skinds", pack=True)
         cj = profiles.profile_dir("skinds") / "config" / "config.json"
         conf = json.loads(cj.read_text())
-        conf.update({"ds_graphics": True, "ds_tilt": False})
+        conf.update({"ds_graphics": True, "ds_tilt": tilt})
         cj.write_text(json.dumps(conf, indent=2))
         self.app = profiles.test_app(binary)
         env = dict(os.environ, TANGOAW2_PROFILE=str(profiles.profile_dir("skinds")), TANGOAW2_AI_DEBUG="0", AW2DEV_LOOK="1", TANGOAW2_ES_VERSUS="1")
@@ -94,7 +94,7 @@ def find_on(shot, co, need=0.93, patches=2, pic="face_normal"):
 # The Teams screen keeps the P1 card's place in this list at 0x02017C6C (found by diffing EWRAM while UP walked the list): the walk presses UP or DOWN until it is on the CO, so a press
 # a busy machine drops or doubles does not matter.
 # The game's own list of the Teams screen is at TEAMS_ORDER (CO ids, 0xFF-ended): the CO's place in it is read from there, since each new CO stands after the one it takes after.
-ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89}
+ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "cloneandy": 81, "varro": 90, "andy": 1}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
 TEAMS_ORDER = 0x0203FE80
 TEAMS_CURSOR = 0x02017C6C
 TEAMS_LEN = 34
@@ -127,6 +127,33 @@ def photograph(co, out_dir, tries=3):
         except Exception as e:
             util.say(f"{co}: try {k + 1} failed: {str(e)[:120]}")
     util.die(f"{co}: could not be photographed")
+
+
+def photograph_hq(co, out_dir, tilt=True):
+    """The battle's first map view (army 1's HQ in the corner) with the Dual Strike tilt: `<co>_hq_tilt.png`."""
+    import time
+    app = App(tilt=tilt)
+    d = app.d
+    try:
+        d.wait_until({"phase": {"in": ["title", "select_mode"]}}, 90)
+        d.press_until("START", {"phase": "select_mode"}, 40)
+        for _ in range(12):
+            s = d.state(["screen_info"])["screen_info"]
+            if s.get("wheel_item") == 1 and s.get("box_open") is False:
+                break
+            d.press("DOWN")
+            time.sleep(0.8)
+        d.press_until("A", {"phase": "select_map"}, 30)
+        d.press_until("A", {"phase": "army_select"}, 30)
+        time.sleep(2)
+        if not walk_to(d, teams_index(d, co)):
+            util.die(f"the Teams screen did not reach {co}")
+        d.press_until("A", {"phase": "battle"}, 60)
+        d.press_until("A", {"screen": "map", "cues.mapup": True}, 60, gap=1.5)
+        time.sleep(2.5)
+        app.shot(Path(out_dir) / f"{co}_hq_tilt.png")
+    finally:
+        app.stop()
 
 
 def _photograph(co, out_dir):
@@ -175,8 +202,11 @@ def _photograph(co, out_dir):
         # the cut-in comes a moment after the quote: shoot fast, keep the frame with the most of the figure's own colours on the red
         import numpy as np
         from PIL import Image
-        mask, rgb = mug_rgb(co, "large")
-        own = {tuple(int(v) for v in c) for c in rgb[mask]}
+        try:
+            mask, rgb = mug_rgb(co, "large")
+            own = {tuple(int(v) for v in c) for c in rgb[mask]}
+        except FileNotFoundError:         # (a recolour of another CO's art: no committed art; the middle frame of the red cut-in stands in)
+            own = set()
         best, best_n, quote, quote_n = None, 0, None, 0
         for k in range(26):
             p = out / f"{co}_power{k}.png"

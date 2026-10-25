@@ -4,6 +4,8 @@
 
 - Emerald Sun's four COs (Klaus, Aurelia, Cassius, Livia): portrait art provided by the project owner (`art-src/cos/`, converted to the game's formats in `tango-gamesupport-aw2/art/cos/`).
   The name graphics are set in letters drawn for this project (`devkit/aw2/colib/namefont.py`).
+- Palette replacement (aw2dev art repal) follows the method of PalReplacer by Hendrik Iben (2012, MIT): weighted nearest-colour mapping onto a fixed palette in slot order.
+  Nothing of the jar is copied (`devkit/aw2/artlib/repal.py` is our own code).
 
 - Advance Wars 2 RAM and ROM research: Xenesis and the
   [Wars World News](https://www.warsworldnews.com) hacking community, the

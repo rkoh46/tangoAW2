@@ -1160,6 +1160,9 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         scop_name = string(Some(t(co_new::T_SCOP_NAME)));
     } else if co == CLONE_ANDY {
         bio = co_new::CLONE_ANDY_BIO.to_vec();
+        d2d = co_new::CLONE_ANDY_D2D.to_vec();
+        cop = co_new::CLONE_ANDY_COP.to_vec();
+        scop = co_new::CLONE_ANDY_SCOP.to_vec();
     } else if co == crate::sturm_pairs::STURM {
         if let Some(c) = core {
             bio = aw2_text(c, STURM_TEXTS[0]);
@@ -1184,7 +1187,7 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         }
     }
     let art = match ds {
-        Some(d) if !co_new::is_own(co) || co == CLONE_ANDY => crate::ds_co_art::co_art(d),
+        Some(d) if !co_new::is_own(co) || co == CLONE_ANDY => crate::ds_co_art::co_art_for(co, d),
         _ => core.and_then(|c| game_art(c, co)),
     };
     // (the army's colour, and the power the page's CO is in: a partner's page shows its day to day numbers)

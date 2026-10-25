@@ -1,5 +1,8 @@
 # Livia, imported faithfully from livia_v5.jpg (pixel art, native cells of 4 px). Coordinates are native cells (of the mirrored grid when `flip`).
 pixelart = true
+# nearest-colour rule of the import (docs/dev/art-repal.md): this approved art was made with the Lab distance; luma matching shifted its hues
+# (`aw2dev art repal importsheet`)
+match = "lab"
 flip = false
 frame = [62, 30]
 mug = [80, 40]

@@ -222,6 +222,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_emerald_sun_pairs_are_the_data_file() {
+        // cos/tags.toml is the specification (aw2dev co check): every [[pair]] is a duo here with the same name, compatibility and stars, and no duo is missing.
+        let text = include_str!("../cos/tags.toml");
+        let id = |s: &str| -> u8 {
+            match s.trim_matches('"') {
+                "klaus" => KLAUS,
+                "aurelia" => AURELIA,
+                "cassius" => CASSIUS,
+                "livia" => LIVIA,
+                "aw2:kanbei" => KANBEI,
+                "aw2:colin" => COLIN,
+                other => panic!("unknown CO {other}"),
+            }
+        };
+        let mut n = 0;
+        for block in text.split("[[pair]]").skip(1) {
+            let field = |k: &str| -> String {
+                block
+                    .lines()
+                    .find_map(|l| l.strip_prefix(k).and_then(|r| r.trim_start().strip_prefix('=')).map(|v| v.trim().to_string()))
+                    .unwrap_or_else(|| panic!("no {k} in {block}"))
+            };
+            let (a, b) = (id(&field("a")), id(&field("b")));
+            let d = duo(a, b).unwrap_or_else(|| panic!("{} + {} has no duo", field("a"), field("b")));
+            assert_eq!(d.compatibility as u32, field("compat").parse::<u32>().unwrap(), "{}", d.name);
+            assert_eq!(d.stars as u32, field("stars").parse::<u32>().unwrap(), "{}", d.name);
+            assert_eq!(d.name, field("name").trim_matches('"'));
+            n += 1;
+        }
+        assert_eq!(n, 8);
+        assert_eq!(DUOS.iter().filter(|d| crate::es_co::has_pairs(d.a) || crate::es_co::has_pairs(d.b)).count(), n);
+    }
+
+    #[test]
     fn table() {
         assert_eq!(PAIRS.len(), 7);
         for p in &PAIRS {

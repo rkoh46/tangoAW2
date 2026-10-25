@@ -10,3 +10,5 @@ Every new feature or content type adds, in the same work: (1) its `aw2dev` subco
 skill or an update to one, (4) a regression test in the suite. A task is not done until that is in and `aw2dev kit check` is clean. How: `CONTRIBUTING-KIT.md`
 (templates for a command module in `aw2/commands/`, a live scenario, a checker, a suite entry, a skill), `aw2dev kit new-command <name>`,
 `aw2dev kit new-skill <name>`, `aw2dev kit check`.
+
+Art tools: `aw2dev art repal` puts pictures onto a fixed palette in its slot order (luma-weighted nearest colour; palettes from .gpl, .pal, PNGs, COs, skins and AW2's army rows): `docs/dev/art-repal.md`.

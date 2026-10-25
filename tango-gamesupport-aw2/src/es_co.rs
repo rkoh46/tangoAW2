@@ -60,7 +60,7 @@ pub struct Info {
     pub stars: (u32, u32),
     /// Luck per power level (AW2's rows: 10 is 0..9%) and bad luck.
     pub luck: [i16; 3],
-    /// Unit cost per power level in percent.
+    /// Unit cost per power level as a percentage *change* (the CO table's field is added to 100: Livia's +10% is 10, a CO with no change 0).
     pub cost: [i16; 3],
 }
 
@@ -80,7 +80,7 @@ pub const INFO: [Info; 5] = [
         donor: 7,
         stars: (4, 8),
         luck: [10, 10, 10],
-        cost: [100, 100, 100],
+        cost: [0, 0, 0],
     },
     Info {
         name: "Aurelia",
@@ -97,7 +97,7 @@ pub const INFO: [Info; 5] = [
         donor: 6,
         stars: (3, 7),
         luck: [10, 10, 10],
-        cost: [100, 100, 100],
+        cost: [0, 0, 0],
     },
     Info {
         name: "Cassius",
@@ -114,7 +114,7 @@ pub const INFO: [Info; 5] = [
         donor: 9,
         stars: (3, 7),
         luck: [10, 10, 10],
-        cost: [100, 100, 100],
+        cost: [0, 0, 0],
     },
     Info {
         name: "Livia",
@@ -131,7 +131,7 @@ pub const INFO: [Info; 5] = [
         donor: 17,
         stars: (3, 6),
         luck: [10, 10, 10],
-        cost: [110, 110, 110],
+        cost: [10, 10, 10],
     },
     Info {
         name: "Varro",
@@ -148,7 +148,7 @@ pub const INFO: [Info; 5] = [
         donor: 15,
         stars: (4, 8),
         luck: [10, 10, 20],
-        cost: [100, 100, 100],
+        cost: [0, 0, 0],
     },
 ];
 
@@ -238,13 +238,21 @@ pub fn bonus(co: u8, mode: u8, t: u8, field: usize) -> i32 {
     }
 }
 
-/// Funds a day on top of the income: Livia's Ledger, 25% (250 a property that earns).
-pub fn income_bonus(co: u8, earners: i32) -> i32 {
+/// Funds a day on top of the income: Livia's Ledger, 25% of what a property pays (`per_property`, the Rules screen's Funds: 1000 by default, so 250 a property that earns).
+pub fn income_bonus(co: u8, earners: i32, per_property: i32) -> i32 {
     if co == LIVIA {
-        250 * earners
+        per_property.max(0) / 4 * earners
     } else {
         0
     }
+}
+
+/// The Tag Power's compatibility of a pair of an Emerald Sun CO (Klaus .. Livia) with a CO that `cos/tags.toml` does not list ("Every unlisted pair is 95"; Dual Strike's own default).
+pub const UNLISTED_PAIR: u8 = 95;
+
+/// Whether `co` is one of the four of the data files (Klaus, Aurelia, Cassius, Livia: the ones `cos/tags.toml` has pairs for; Varro is boss-only).
+pub fn has_pairs(co: u8) -> bool {
+    (KLAUS..=LIVIA).contains(&co)
 }
 
 /// Funds her powers collect for each property that earns: Tribute 200, Mare Nostrum 100.
@@ -261,8 +269,10 @@ pub fn tribute(co: u8, power: u8) -> i32 {
 /// Free ROM in `co_new`'s data area (+0x2400, after the body pictures' pairs, before the HUD faces).
 const ROM: u32 = 0x0874_2400;
 const HEAL3: u32 = ROM;
+/// Clone Andy's Hyper Upgrade unit effect: heal 4 HP, for free (`crate::co_new`'s presentation row).
+pub const HEAL4: u32 = ROM + 0x100;
 const SENTINEL: u32 = ROM + 0x3FC;
-const MAGIC: u32 = 0x4553_434F; // "ESCO"
+const MAGIC: u32 = 0x4553_4331; // "1CSE"
 /// AW2's `RepairUnit(unit, hp, pay)`, Thumb.
 const REPAIR: u32 = 0x0802_9AF9;
 /// Andy's CO Power unit effect: `RepairUnit(unit, 2, 0)`.
@@ -272,9 +282,14 @@ const NOTHING: u32 = 0x0804_4531;
 
 /// Legio Aeterna's unit effect: heal 3 HP, for free.
 fn heal3() -> Vec<u8> {
+    heal(3)
+}
+
+/// A power's unit effect: `RepairUnit(unit, hp, 0)`, for free.
+fn heal(hp: u8) -> Vec<u8> {
     let mut a = crate::crumb::Asm::new();
     a.op(0xB530); // push {r4, r5, lr}
-    a.op(0x2103); // movs r1, #3
+    a.op(0x2100 | hp as u16); // movs r1, #hp
     a.op(0x2200); // movs r2, #0
     a.call(REPAIR);
     a.op(0xBC30); // pop {r4, r5}
@@ -288,6 +303,7 @@ pub fn install(core: &mut Core) {
         return;
     }
     core.raw_write_range(HEAL3, -1, &heal3());
+    core.raw_write_range(HEAL4, -1, &heal(4));
     core.raw_write_32(SENTINEL, -1, MAGIC);
 }
 
@@ -592,9 +608,27 @@ mod tests {
             assert_eq!(bonus(LIVIA, 1, t, MOVE), 0);
         }
         assert_eq!((bonus(LIVIA, 2, 22, MOVE), bonus(LIVIA, 2, 22, FIREPOWER), bonus(LIVIA, 2, 5, MOVE)), (2, 30, 0));
-        assert_eq!(income_bonus(LIVIA, 12), 3000);
-        assert_eq!(income_bonus(KLAUS, 12), 0);
+        assert_eq!(income_bonus(LIVIA, 12, 1000), 3000);
+        assert_eq!(income_bonus(LIVIA, 12, 2000), 6000, "25% of what a property pays under the Funds rule");
+        assert_eq!(income_bonus(LIVIA, 12, 0), 0, "no income, no bonus");
+        assert_eq!(income_bonus(KLAUS, 12, 1000), 0);
         assert_eq!((tribute(LIVIA, 1), tribute(LIVIA, 2), tribute(LIVIA, 0)), (200, 100, 0));
+    }
+
+    #[test]
+    fn unit_cost_is_a_change_added_to_100() {
+        // (the CO table's field: AW2's Kanbei is +20 and Colin -20; 100 once doubled every Emerald Sun price)
+        for co in ALL {
+            let i = info(co).unwrap();
+            let want = if co == LIVIA { 10 } else { 0 };
+            assert_eq!(i.cost, [want; 3], "{}", i.name);
+        }
+    }
+
+    #[test]
+    fn pairs_belong_to_the_four() {
+        assert!(has_pairs(KLAUS) && has_pairs(LIVIA) && !has_pairs(VARRO) && !has_pairs(crate::co_new::CRUMB));
+        assert_eq!(UNLISTED_PAIR, 95);
     }
 
     #[test]
@@ -644,6 +678,8 @@ mod tests {
         assert!(text(KLAUS, 15).is_none());
         let c = heal3();
         assert!(c.len() <= 0x100 && c.len() % 4 == 0);
+        assert_eq!(heal(4).len(), c.len());
+        assert_eq!(heal(4)[2], 4, "movs r1, #4");
         assert!(!is_es(crate::co_new::CRUMB) && is_es(KLAUS) && is_es(VARRO) && !is_es(LEGIONARY_FACE));
     }
 }

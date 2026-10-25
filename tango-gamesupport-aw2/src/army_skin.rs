@@ -206,7 +206,7 @@ pub fn skin(i: usize) -> &'static Skin {
     &skins()[i]
 }
 
-/// Emerald Sun, the first (the one Crumb's HQ borrows).
+/// Emerald Sun, the first (the HQ of the Roman COs and Crumb's placeholder).
 pub fn emerald_sun() -> &'static Skin {
     skin(0)
 }
@@ -1779,11 +1779,42 @@ pub fn sync_map_art(core: &mut Core) {
     }
 }
 
-/// The skin whose HQ army `army` has: the one it wears, and (a placeholder for a picture of his own) the first skin's for
-/// Crumb's.
+/// The CO data files' `hq` lines (`cos/<id>.toml`: the id of the army skin whose HQ the CO's army shows, "default" for the game's own): the HQ follows the CO.
+const HQ_FILES: [(u8, &str); 7] = [
+    (crate::es_co::KLAUS, include_str!("../cos/klaus.toml")),
+    (crate::es_co::AURELIA, include_str!("../cos/aurelia.toml")),
+    (crate::es_co::CASSIUS, include_str!("../cos/cassius.toml")),
+    (crate::es_co::LIVIA, include_str!("../cos/livia.toml")),
+    (crate::es_co::VARRO, include_str!("../cos/varro.toml")),
+    (crate::co_new::CRUMB, include_str!("../cos/crumb.toml")),
+    (crate::co_new::CLONE_ANDY, include_str!("../cos/cloneandy.toml")),
+];
+
+/// The skin id CO `co`'s data file gives its HQ (None: the game's own HQ).
+pub fn hq_style(co: u8) -> Option<&'static str> {
+    static ALL: std::sync::OnceLock<Vec<(u8, Option<String>)>> = std::sync::OnceLock::new();
+    ALL.get_or_init(|| {
+        HQ_FILES
+            .iter()
+            .map(|(co, text)| {
+                let v: toml::Value = toml::from_str(text).expect("a CO's data file");
+                (*co, v.get("hq").and_then(|h| h.as_str()).filter(|h| *h != "default").map(str::to_string))
+            })
+            .collect()
+    })
+    .iter()
+    .find(|(c, _)| *c == co)
+    .and_then(|(_, h)| h.as_deref())
+}
+
+/// The skin whose HQ army `army` has: the one it wears, else the one its CO's data file names (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro, and Crumb as a
+/// placeholder for a picture of his own); the picture takes the army's own building colours.
 fn hq_skin(core: &Core, army: u32) -> Option<usize> {
     let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
-    skin_of_army(core, army).or_else(|| (co == crate::co_new::CRUMB && core.raw_read_32(art_mark(0), -1) == MAGIC).then_some(0))
+    skin_of_army(core, army).or_else(|| {
+        let i = skins().iter().position(|s| Some(s.id.as_str()) == hq_style(co))?;
+        (core.raw_read_32(art_mark(i), -1) == MAGIC).then_some(i)
+    })
 }
 
 /// `sub_0803F5E4(weather, base)`: loads the building sheet and each army's HQ picture (by the country of its CO) into
@@ -1845,6 +1876,17 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_cos_data_files_name_their_hq() {
+        use crate::es_co::*;
+        for co in [KLAUS, AURELIA, CASSIUS, LIVIA, VARRO, crate::co_new::CRUMB] {
+            assert_eq!(super::hq_style(co), Some("emerald_sun"), "{co}");
+        }
+        assert_eq!(super::hq_style(crate::co_new::CLONE_ANDY), None);
+        assert_eq!(super::hq_style(1), None);
+        assert!(super::skins().iter().any(|s| s.id == "emerald_sun"));
+    }
+
     use super::*;
 
     /// The rooms of the skins' free ROM never overlap (the Dual Strike backup of colour 5 once sat on the first skin's table of figures: a build menu

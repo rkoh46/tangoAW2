@@ -85,7 +85,7 @@ Klaus was **Marcus** in the first proposal; he is Klaus everywhere now and a muc
 
 Changes from the first proposal (all are suggestions, reasons in 2.2): Klaus much stronger (the user's brief); Aurelia gets Grit's own pattern (a firepower bonus on indirect and a penalty on vehicles) and
 a bigger COP; Cassius gets +10% attack at day to day and +30% / +40% in his powers (the first proposal's +20% was weaker than Jess's, AW2's vehicle CO); Livia's income is +25% instead of +10% (see below).
-"Vehicles" means ground vehicles (Recon, APC, Tank, Md. Tank, Neotank, Anti-Air) and not artillery or the indirect group; "foot" is Infantry and Mech; "indirect" is Artillery, Rockets, Missiles and the
+"Vehicles" means ground vehicles (Recon, APC, Tank, Md. Tank, Megatank, Neotank, Piperunner, Anti-Air) and not artillery or the indirect group; **the Megatank and the Piperunner count as vehicles** (the owner's ruling: Cassius's move and attack bonuses and Aurelia's vehicle penalty apply to both, and the Piperunner gets none of Aurelia's indirect bonus or range; `aw2dev co verify`, facet `vehicles`); "foot" is Infantry and Mech; "indirect" is Artillery, Rockets, Missiles and the
 Battleship; "naval" is every ship.
 
 ### 2.2 Balance sanity note (against AW2's own COs)

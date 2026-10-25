@@ -79,7 +79,7 @@ class Ctx:
         g.boot_to_teams()
         return g
 
-    def start(self, m, cos, humans=(1,), fog=False, weather="clear", power=True, visuals="off", capt=None, trace=None, env=None, record=False):
+    def start(self, m, cos, humans=(1,), fog=False, weather="clear", power=True, visuals="off", capt=None, trace=None, env=None, record=False, funds=None):
         """`trace`: a file of ROM addresses whose `trap` lines the runner prints (AW2_TRACE);
         `env`: environment variables for this console alone; `record`: record the console's sound from the first frame (the caller ends it with `e.audio_end`)."""
         save = os.path.join(self.out, "map.sav")
@@ -89,7 +89,7 @@ class Ctx:
             e.audio_start()
         g = Game(e, self.image)
         self.games.append(g)
-        g.setup(cos, humans=humans, fog=fog, weather=weather, power=power, visuals=visuals, capt=capt)
+        g.setup(cos, humans=humans, fog=fog, weather=weather, power=power, visuals=visuals, capt=capt, funds=funds)
         st = g.playst()
         self.log(f"battle started at frame {e.frame}: {st}")
         e.survey_arm(self.name)

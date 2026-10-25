@@ -9,6 +9,11 @@
   co portrait ingame CO                    start the real app on a boot checkpoint and photograph the CO page, CO select and HUD with the CO (phase 2 wiring needed)
   co balance [CO ...] [--vs Kanbei Hawke ...]   the CO's day-to-day, CO Power and Super Power averaged over a typical army, next to Dual Strike's own COs read from the .nds
   co check [CO ...]                        the CO data files: fields, stars and numbers inside AW2's design space, name plates, tag pairs
+  co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Crumb, Varro, Clone Andy) in real battles against the specification: day to day,
+                                           CO Power, Super Power (attack, defence, move, range, cost, income, funds, heal, the special rules), meters and star costs, Tag Powers, CPU use;
+                                           prints the pass / fail table (docs/dev/co-verify.md); with `--net` also plays each power through `net repeat`
+  co sheet hq                              the HQ of the Roman COs on the map: Versus, the tilted map (the real app), the missions (`hq_check.png`)
+  co sheet powers [CO ...] [--out DIR]     real-game pictures of each CO's powers (select card, CO page, HUD, activations, tag powers, effects) as `<co>_powers.png` and `all_cos_overview.png`
 """
 import sys
 from pathlib import Path
@@ -48,20 +53,47 @@ def register(sub):
     c = ps.add_parser("check", help="the CO data files")
     c.add_argument("co", nargs="*")
     c.set_defaults(fn=datacheck)
+    v = ps.add_parser("verify", help="every ability of the custom COs in real battles against the specification (pass / fail table)")
+    v.add_argument("co", nargs="*", help="klaus aurelia cassius livia crumb varro cloneandy (default: all)")
+    v.add_argument("--quick", action="store_true", help="one scenario per facet (the suite's smoke run)")
+    v.add_argument("--list", action="store_true", help="only list the scenarios")
+    v.add_argument("-j", "--jobs", type=int, default=4)
+    v.add_argument("--net", action="store_true", help="also run the online-determinism scenarios (`net repeat`, several minutes each)")
+    v.add_argument("--net-runs", type=int, default=3)
+    v.set_defaults(fn=verify)
+    sh = ps.add_parser("sheet", help="contact sheets of real-game pictures")
+    shs = sh.add_subparsers(dest="shcmd", required=True)
+    sp = shs.add_parser("powers", help="each CO's powers in the real game: `<co>_powers.png` per CO and `all_cos_overview.png`")
+    sp.add_argument("co", nargs="*")
+    sp.add_argument("--out")
+    sp.add_argument("--only", nargs="*", help="parts: page hud cop scop effect tag")
+    sp.add_argument("-j", "--jobs", type=int, default=3)
+    sp.set_defaults(fn=sheet_powers)
+    sq = shs.add_parser("hq", help="the HQ of the Roman COs on the map (Versus, the tilted map, the missions): `hq_check.png`")
+    sq.add_argument("--out")
+    sq.set_defaults(fn=sheet_hq)
 
 
 def _cos(names):
     from ..colib import data
     cos, _ = data.load_all()
-    return {k: v for k, v in cos.items() if not names or k in names and v.get("portrait", {}).get("source")}, cos
+    # (only COs with a picture of their own: a recolour-based CO (`portrait.base`) or a placeholder has no committed art to import, lint or show)
+    return {k: v for k, v in cos.items() if (not names or k in names) and v.get("portrait", {}).get("source")}, cos
 
 
 def pimport(a):
     from pathlib import Path
     import numpy as np
     from ..colib import importer as I
-    sel, _ = _cos(a.co)
+    from ..colib import recolour
+    sel, cos = _cos(a.co)
     bad = 0
+    # a recolour-based CO has no picture: its recolour is checked instead (the table, and its output on the donor's palette)
+    for co, d in cos.items():
+        if recolour.is_recolour(d) and (not a.co or co in a.co):
+            probs, summary = recolour.check(co, d)
+            util.say(f"{co}: {summary}" + ("; PROBLEMS " + "; ".join(probs) if probs else "") + " (nothing to import or compare: no committed art)")
+            bad += bool(probs)
     for co, d in sel.items():
         spec = {"source": d["portrait"]["source"]}
         if getattr(a, "pixelart", False):
@@ -84,6 +116,8 @@ def pimport(a):
 def pingame(a):
     from ..colib import ingame
     sel, _ = _cos(a.co)
+    if "cloneandy" in (a.co or []):
+        sel = dict(sel, cloneandy={})
     bad = 0
     for co in sel:
         d = cfg.work("co", "ingame", co)
@@ -91,6 +125,9 @@ def pingame(a):
         for old in d.glob("*.png"):
             old.unlink()
         got = ingame.photograph(co, d)
+        if co == "cloneandy":
+            util.say(f"{co}: photographed in the game ({got}); pictures in {d} (recolour of Andy's art: look at them)")
+            continue
         res = ingame.verify(co, d)
         for k, v in res.items():
             util.say(f"{co}: {k}: {'ok' if v else 'NOT SEEN'}")
@@ -147,3 +184,61 @@ def balance(a):
 def datacheck(a):
     from ..colib import data
     return data.check(a)
+
+
+def verify(a):
+    from ..colib import verify as V
+    rc = 0
+    if a.net:
+        from ..colib import verify_net as N
+        rc = N.run(a)
+    return V.verify(a) or rc
+
+
+def sheet_powers(a):
+    from ..colib import powersheet
+    import subprocess
+    cos = a.co or ["klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy"]
+    out = Path(a.out) if a.out else cfg.work("co_sheets")
+    raw = out / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    procs = []
+    code = (
+        "import sys; sys.path.insert(0, %r); from aw2test import copics; copics.capture(sys.argv[1], %r, tuple(sys.argv[2:]) or ('page', 'hud', 'cop', 'scop', 'effect', 'tag'))"
+        % (str(cfg.REPO / "tools" / "aw2test"), str(raw)))
+    pending = list(cos)
+    running = []
+    while pending or running:
+        while pending and len(running) < a.jobs:
+            co = pending.pop(0)
+            util.say(f"pictures: {co}")
+            running.append((co, subprocess.Popen([sys.executable, "-c", code, co] + (a.only or []), cwd=cfg.REPO)))
+        for co, p in list(running):
+            if p.poll() is not None:
+                running.remove((co, p))
+                if p.returncode:
+                    util.say(f"pictures of {co} failed ({p.returncode})")
+        import time
+        time.sleep(2)
+    for co in cos:
+        if (raw / co / "captions.json").exists():
+            powersheet.sheet(co, raw / co, out / f"{co}_powers.png")
+            util.say("wrote", out / f"{co}_powers.png")
+    powersheet.overview(raw, out / "all_cos_overview.png", cos)
+    util.say("wrote", out / "all_cos_overview.png")
+    return 0
+
+
+def sheet_hq(a):
+    from ..colib import powersheet, ingame
+    import subprocess
+    out = Path(a.out) if a.out else cfg.work("co_sheets")
+    raw = out / "hqraw"
+    raw.mkdir(parents=True, exist_ok=True)
+    code = "import sys; sys.path.insert(0, %r); from aw2test import copics; copics.capture_hq(%r)" % (str(cfg.REPO / "tools" / "aw2test"), str(raw))
+    subprocess.run([sys.executable, "-c", code], cwd=cfg.REPO, check=True)
+    for co in ("klaus", "aurelia", "cassius", "livia", "varro", "andy"):
+        ingame.photograph_hq(co, raw)
+    powersheet.hq_sheet(raw, out / "hq_check.png")
+    util.say("wrote", out / "hq_check.png")
+    return 0

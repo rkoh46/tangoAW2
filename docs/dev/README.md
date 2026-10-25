@@ -26,6 +26,8 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | File | What |
 |---|---|
 | [co-kit.md](co-kit.md) | custom COs as data files: `aw2dev co` (portraits composed from the ROMs' parts + our overlays, stars and powers checked against AW2's table, Tag Powers) |
+| [art-repal.md](art-repal.md) | palette replacement: `aw2dev art repal apply / extract / convert / preview / importsheet` (pictures onto a fixed palette in slot order, luma-weighted nearest colour; .gpl / .pal / PNG / `co:` / `skin:` / `army:` palettes; the CO importer's `match` key) |
+| [co-verify.md](co-verify.md) | `aw2dev co verify`: every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Varro, Crumb, Clone Andy) in real battles against the specification, pass / fail table, `co sheet powers` pictures |
 | [testing.md](testing.md) | what to run for which change; false-pass lessons; politeness rules |
 | [online-dev.md](online-dev.md) | `aw2dev net` tools, impairment, desync workflow, soak, the signalling mock, public-service politeness |
 | [architecture-online.md](architecture-online.md) | shared console, star topology, HostAgg, waiting view and allowlist, migration, rejoin, UNRANKED, sim_version rules |

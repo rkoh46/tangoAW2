@@ -1,0 +1,31 @@
+# Crumb, the Black Hole soldier promoted by Sturm (crate::crumb; docs/dev/co-kit.md). tangoAW2's own CO, numbers in crumb.rs; this file is his data for the kit (the HQ, `aw2dev co check`).
+id = "crumb"
+name = "Crumb"
+army = "black_hole"
+role = "a Black Hole soldier promoted by Sturm"
+theme = "co:adder"
+luck = [10, 10, 20]
+bio = "A Black Hole soldier promoted by Sturm. Keeps his troops fed and supplied."
+stars = { cop = 3, scop = 6 }
+# A placeholder for a picture of his own: Emerald Sun's HQ (army_skin.rs).
+hq = "emerald_sun"
+
+[d2d]
+name = "Rank and File"
+text = "My foot soldiers are sturdy, and anyone on a city or base gets fed."
+mods = [ { units = "foot", attack = 10, defence = 10 } ]
+
+[cop]
+name = "Ration Run"
+text = "Restores 1 HP to all units and fully resupplies them. Infantry and Mech move 1 space more."
+mods = [ { units = "foot", move = 1 } ]
+
+[scop]
+name = "Gerald's Blessing"
+text = "Restores 2 HP to all units. Infantry and Mech firepower rises by 30%, and luck improves for all units."
+mods = [ { units = "foot", attack = 30 } ]
+heal = 2
+
+[portrait]
+# his pictures are cut from AW2's Black Hole trooper at run time (crate::crumb_art); nothing is committed
+placeholder = true

@@ -34,16 +34,20 @@ def load_tests():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=("aw2", "ds", "both"), default="both")
-    ap.add_argument("-k", default="", help="only tests whose name contains this")
+    ap.add_argument("-k", default="", help="only tests whose name contains this (several, comma-separated: any of them)")
     ap.add_argument("-x", default="", help="leave out tests whose name contains this (ds_campaign_win_: the long pad-won missions)")
     ap.add_argument("-j", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     ap.add_argument("--list", action="store_true")
     ap.add_argument("-v", action="store_true", help="print each test's log")
     a = ap.parse_args()
 
-    # (-k NAME$ matches a name that ends with NAME: `-k es_review_m1$` is mission 1 alone, not 10..16)
-    want = (lambda n: n.endswith(a.k[:-1]) and a.k[:-1] in n) if a.k.endswith("$") else (lambda n: a.k in n)
-    tests = [t for t in load_tests() if want(t["name"]) and not (a.x and a.x in t["name"])]
+    # -k takes a comma-separated list; a key ending in $ matches a name that ends with it
+    # (`-k es_review_m1$` is mission 1 alone, not 10..16)
+    def match1(k, n):
+        return n.endswith(k[:-1]) if k.endswith("$") else k in n
+
+    keys = a.k.split(",")
+    tests = [t for t in load_tests() if any(match1(k, t["name"]) for k in keys) and not (a.x and a.x in t["name"])]
     modes = ("aw2", "ds") if a.mode == "both" else (a.mode,)
     if "ds" in modes and not os.path.exists(paths.ds_rom()):
         print(f"no Dual Strike ROM at {paths.ds_rom()} (set TANGOAW2_DS_ROM); running AW2 only")

@@ -2916,7 +2916,7 @@ original, in Black Hole's army colours.
 So Clone Andy is tangoAW2's tenth new CO (id 81, `co_new::CLONE_ANDY`), on
 **Dual Strike's Andy's data** for everything it has: portraits, face, HUD,
 mini portrait (all read as Andy's) and CO Power and Super CO Power (Hyper Repair / Hyper Upgrade, AW2's
-own power code, the names and texts from Dual Strike's record 2), numbers,
+own power code, the names from Dual Strike's record 2; the numbers are his own, below),
 quotes, victory quote, map theme (Andy's Dual Strike theme, converted like
 the others'), tag compatibility row and column. **tangoAW2's own**, made up,
 marked in code: his name "Clone Andy", his name graphic "Clone" (the
@@ -2932,6 +2932,13 @@ War Room CO lists and the Teams screen (`Teams list: 29 COs`), pickable
 (`clone_andy_is_pickable_in_versus`), absent without the pack
 (`clone_andy_absent_without_the_pack`), in the BH Campaign's roster, and the
 Select-skills data (`co_skills::COS` 29).
+
+**His numbers (tangoAW2's own, `cos/cloneandy.toml`, `co_new::clone_andy_bonus`).** Day to day +2% firepower and
++2% defence on every unit (also under his powers); Hyper Repair heals 2 HP with the game's own power boost
+(+10% firepower and +10% defence, which every power has: 112 / 112 in all); Hyper Upgrade heals 4 HP (Andy's 5;
+`es_co::HEAL4`) and gives +30% firepower and +20% defence on top of the boost, with no move bonus (Andy's has
++1): 142 / 132 in all. Stars 3 / 6 as Andy's. His CO page's day to day, CO Power and Super Power texts are
+tangoAW2's own (`CLONE_ANDY_D2D`, `CLONE_ANDY_COP`, `CLONE_ANDY_SCOP`). `aw2dev co verify cloneandy` plays them.
 
 **Tag.** Dual Strike has no tag data for a clone, so with any CO but Sturm
 his compatibility is Andy's own (his row and column of Dual Strike's table,

@@ -295,7 +295,7 @@ fn pal_of(b: &[u8]) -> [u16; 16] {
 /// alike or the grid and cells use word 4).
 const SELECT_MUG_WORD7: [u8; 4] = [11, 21, 23, 25];
 
-fn select_mug_tiles(ds: u8) -> Option<Vec<u8>> {
+fn select_mug_tiles(co: u8, ds: u8) -> Option<Vec<u8>> {
     let pack = crate::ds_pack::pack()?;
     if SELECT_MUG_WORD7.contains(&ds) {
         let rec = pack.arm9_at(0x0215_2B8C + 0x54 * (ds as u32 - 1), 0x54)?;
@@ -305,13 +305,18 @@ fn select_mug_tiles(ds: u8) -> Option<Vec<u8>> {
         let d = crate::ds_art::lz10(pack.file(&format!("syogun/{name}"))?)?;
         return d.get(..36 * 32).map(<[u8]>::to_vec);
     }
-    crate::ds_co_art::co_art(ds).map(|a| a.face[0].clone())
+    crate::ds_co_art::co_art_for(co, ds).map(|a| a.face[0].clone())
 }
 
 pub fn art_mug(ds: u8) -> Option<Arc<Mug>> {
-    let a = crate::ds_co_art::co_art(ds)?;
+    art_mug_for(u8::MAX, ds)
+}
+
+/// The mug of game CO `co` (its recolour, if it has one) from Dual Strike CO `ds`'s pictures.
+pub fn art_mug_for(co: u8, ds: u8) -> Option<Arc<Mug>> {
+    let a = crate::ds_co_art::co_art_for(co, ds)?;
     let (cell_x, strip_y) = crop_of(Some(ds));
-    Some(Arc::new(Mug { tiles: select_mug_tiles(ds)?, pal: pal_of(a.palette.get(..32)?), cell_x, strip_y }))
+    Some(Arc::new(Mug { tiles: select_mug_tiles(co, ds)?, pal: pal_of(a.palette.get(..32)?), cell_x, strip_y }))
 }
 
 pub fn art_name(ds: u8) -> Option<Arc<Name>> {
@@ -332,12 +337,12 @@ fn ds_pictures(co: u8) -> Option<(Arc<Mug>, Arc<Name>)> {
     static CACHE: OnceLock<Mutex<HashMap<u8, Option<(Arc<Mug>, Arc<Name>)>>>> = OnceLock::new();
     let ds = crate::tag::ds_id(co)?;
     let mut g = CACHE.get_or_init(Default::default).lock().ok()?;
-    // (only a found picture is kept: asked before the pack is loaded, it must be asked again)
-    if let Some(Some(p)) = g.get(&ds) {
+    // (only a found picture is kept: asked before the pack is loaded, it must be asked again; by CO, since a recoloured CO has its donor's id)
+    if let Some(Some(p)) = g.get(&co) {
         return Some(p.clone());
     }
-    let p = (art_mug(ds)?, art_name(ds)?);
-    g.insert(ds, Some(p.clone()));
+    let p = (art_mug_for(co, ds)?, art_name(ds)?);
+    g.insert(co, Some(p.clone()));
     Some(p)
 }
 
