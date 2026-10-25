@@ -171,7 +171,7 @@ def collect_texts(e, d, until, max_frames=40000, seen=None, snap=None, tick=None
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 12:
+        if t and stable == 12 and "Save current data?" not in t:       # (AW2 asks it after a mission's win: it needs its A, but it is not a scene)
             t1 = bhtext.clean(t)
             if not texts or texts[-1] != t1:
                 texts.append(t1)
@@ -478,7 +478,9 @@ def bh_act1_m2_foundry_waves_and_flow(ctx):
             ctx.check(len(g.units(army=2)) >= ge0 + 3 or len(wave) >= 3, f"Green Earth's first wave of three Tanks has come ({len(g.units(army=2))} units, was {ge0})")
             export(ctx, e.shot(os.path.join(ctx.out, "m2_day3")), "m2_day3_foundry_wakes")
         texts = win_and_collect(ctx, e, g, d)
-        ctx.eq(texts, exp["m02_post"] + exp["m02_map"], "the victory scene, then the world-map scene")
+        want = exp["m02_post"] + exp["m02_map"]
+        # (the world map goes on to the next mission's opening once Sturm's scene is over: only what the win shows is compared)
+        ctx.eq(texts[:len(want)], want, "the victory scene, then the world-map scene")
         ctx.eq(d.won() & 2, 2, "mission 2 won")
         ctx.eq(d.unlocked(), [bh.STURM, bh.VON_BOLT], "no new CO")
         ctx.check(next_flag_open(d, 1), f"mission 2 cleared, mission 3's flag open: {d.map_flags()[:4]}")

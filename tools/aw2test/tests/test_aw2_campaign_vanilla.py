@@ -39,11 +39,11 @@ FRAME_COUNT = 0x03004008
 # campaign session, left with Yes at LEAVE_AT in both). AW2's frame counts,
 # its menus' timers and music then match in the runs compared, with no
 # RAM written.
-NEW_AT = 1400
+NEW_AT = 1500      # (the chooser and its box take until about frame 1420: 1400 was a few frames short once the title's menu grew)
 NEW_AFTER_DS = 6000
 LEAVE_AT = 5400
 # The frame the first battle is won at (the reference's, two runs' later).
-WIN_AT = {1400: 6100, 6000: 10700}
+WIN_AT = {1500: 6200, 6000: 10700}
 
 
 def text_id(e):

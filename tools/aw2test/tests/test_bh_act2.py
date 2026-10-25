@@ -516,7 +516,7 @@ def settle_texts(ctx, e, d, frames=1500):
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 5 and (not texts or texts[-1] != t):
+        if t and stable == 5 and "Save current data?" not in t and (not texts or texts[-1] != t):
             texts.append(t.replace("\\x0f", " ").replace("\\r", " "))
         if d.scripts_running():
             quiet = 0
@@ -657,7 +657,8 @@ def bh_act2_m9_escort_all_three_home(ctx):
     act(ctx, e, g, d)
     victory, mapscene = a2.follow(ctx, e, d, "m9_three", shots=(0,))
     ctx.eq(victory, bhtext.shown("m09_all_home", "VON BOLT"), "the three-trucks scene (m09_all_home)")
-    ctx.eq(mapscene, bhtext.shown("m09_map", "VON BOLT"), "the world-map scene (m09_map)")
+    want = bhtext.shown("m09_map", "VON BOLT")
+    ctx.eq(mapscene[:len(want)], want, "the world-map scene (m09_map; the world map goes on to the next mission's opening once it is over)")
     ctx.eq((d.won() >> 8) & 1, 1, "M9 won")
     ctx.eq(d.map_flags()[9] & 1, 1, "M10 opens")
     e.close()
@@ -751,7 +752,7 @@ def bh_act2_m11_paratroopers(ctx):
 @test(modes=("ds",))
 def bh_act2_m8_two_fronts(ctx):
     """M8: the player picks two COs (main front, second front); Jess leads the main front's army and
-    Javier the second's; Auto CO is on at the start and Intel has General; the second front is the Gate of
+    Javier the second's; the player plays the second front's turns at the start (Intel > Auto CO off) and Intel has General; the second front is the Gate of
     Dusk (20x16) after the round; its win (a rout) joins its CO to the main CO as partner."""
     from aw2test import twofront as tf
     pair = [bh.STURM, bh.HAWKE] if not os.environ.get("ACT2_M8_PAIR") else [int(x) for x in os.environ["ACT2_M8_PAIR"].split(",")]
@@ -760,9 +761,10 @@ def bh_act2_m8_two_fronts(ctx):
     ctx.eq(g.player(2)["co"], bh.JESS, "Jess leads the main front's enemy")
     ctx.eq(e.u8(tf.SECOND_COS + 1), bh.JAVIER, "Javier leads the second front's enemy")
     ctx.eq(sorted([g.player(1)["co"], e.u8(tf.SECOND_COS)]), sorted(pair), "a CO of the player's own for each front")
-    ctx.eq(e.u8(tf.MANUAL), 0, "Auto CO is on at the start (no army's turns are manual)")
+    ctx.eq(e.u8(tf.MANUAL), 15, "Auto CO is off at the start: every army's second-front turns are the player's (Intel > Auto CO gives them to the computer)")
     ctx.check("General" in tf.intel(g)["names"], "Intel > General is there")
     a2.pic(ctx, e, "m8_main_front")
+    e.w8(tf.MANUAL, 0)     # (Intel > Auto CO on: the computer plays the second front's turns, so the rounds below come back to the player by themselves)
     seen = []
 
     def watch():
