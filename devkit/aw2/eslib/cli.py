@@ -29,6 +29,10 @@ def sheets(a):
     for k in keys:
         r = subprocess.run([sys.executable, str(run), "-k", k], env=env, cwd=cfg.REPO)
         rc = rc or r.returncode
+    if not a.mission:
+        # (the weather pictures for es_weather.png: the field of each weather mission in the game)
+        r = subprocess.run([sys.executable, str(run), "-k", "es_weather_m"], env=env, cwd=cfg.REPO)
+        rc = rc or r.returncode
     subprocess.run([sys.executable, str(cfg.REPO / "tools" / "aw2test" / "es_sheets.py"), str(raw), str(out)], check=False)
     util.say("sheets in", out)
     return rc

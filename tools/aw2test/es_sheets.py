@@ -73,5 +73,31 @@ def main(raw, out):
         print(act, len(tiles), "pictures", sheet.size)
 
 
+WEATHERS = {3: "rain (fog)", 5: "sandstorm, desert", 8: "rain (fog)", 9: "clear, wasteland", 10: "snow, fog", 11: "sandstorm, desert", 12: "snow", 13: "clear, wasteland"}
+
+
+def weather_sheet(raw, out):
+    """es_weather.png: the weather missions' fields in the game (weather_m<N>.png, 240 x 160, 2x), each labelled with its mission and weather."""
+    files = {int(m.group(1)): os.path.join(raw, f) for f in os.listdir(raw) for m in [re.fullmatch(r"weather_m(\d+)\.png", f)] if m}
+    if not files:
+        return
+    tiles = [labelled(Image.open(files[n]).convert("RGB"), f"MISSION {n} — {TITLES[n]}: {WEATHERS.get(n, '')}", 2, 18) for n in sorted(files)]
+    cols = 2
+    rows = [tiles[i:i + cols] for i in range(0, len(tiles), cols)]
+    width = max(sum(t.width + 10 for t in r) for r in rows)
+    height = sum(max(t.height for t in r) + 10 for r in rows)
+    sheet = Image.new("RGB", (width, height), (10, 10, 14))
+    y = 0
+    for r in rows:
+        x = 0
+        for t in r:
+            sheet.paste(t, (x, y))
+            x += t.width + 10
+        y += max(t.height for t in r) + 10
+    sheet.save(os.path.join(out, "es_weather.png"))
+    print("weather sheet", len(tiles), "pictures", sheet.size)
+
+
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2])
+    weather_sheet(sys.argv[1], sys.argv[2])

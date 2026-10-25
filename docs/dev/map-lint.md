@@ -157,3 +157,7 @@ the learned 4-neighbour key of TJ02 stays the check of what the game draws (the 
   The diagonal-neighbour variant (which flagged hand-made maps) is not used.
 - **DQ12:** a straight line of 11 or more mountains away from the map edge (AW2 and Dual Strike have one in about 5% of their maps). `Canvas.ragged` breaks such lines.
 
+## Armies and reachability (AR01 to AR03)
+- **AR01** two armies of a map wear the same colour; **AR02** an army has more than one HQ. Errors for the BH Campaign, Emerald Sun and Versus (0 hits in AW2's and Dual Strike's own maps; the BH Campaign has `bh30`, two HQs for one army, kept in `rules.KNOWN`; Versus none). The mission side is checked by `aw2dev campaign check` and the Rust test `no_two_armies_share_a_colour`.
+- **AR03** a missile silo or an airport must be reachable on foot from some HQ (a port or a Lander lets infantry cross water and land on any shore). AW2 breaks it in 12 of 179 maps, Dual Strike in 24 of 256, BH, Versus and Emerald Sun in none. A silo is AW2's own terrain (tile 0x180), so ES01 no longer counts it as a Black Hole invention.
+
