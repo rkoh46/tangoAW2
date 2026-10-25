@@ -225,7 +225,11 @@ def c_hud(run, **kw):
     for seat, never in ((0, "blue"), (1, "red")):
         # (a run with the army skin picked spends longer on the army page: its Rules page is still up at tick 2000)
         first = 2600 if os.environ.get("AW2DEV_SKIN") == "1" else 2000
-        recs = [x for x in run.shots(seat)[:-1] if (x.get("tick") or 0) >= first]
+        # (the battle's first state record: before it a window may still be on the Rules page, whose red-bordered boxes are no HUD; a
+        # window that got there later than the other, as a relaunched seat does, would be judged on them)
+        st = run.states(seat)
+        began = st[0]["ms"] if st else 0
+        recs = [x for x in run.shots(seat)[:-1] if (x.get("tick") or 0) >= first and x.get("ms", 0) >= began]
         wrong = []
         for x in recs:
             im = run.image(x["file"])
