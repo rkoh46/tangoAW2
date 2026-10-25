@@ -34,17 +34,17 @@ Tables found in the ROM and used:
 ## The rules (hits per source: how many maps of each trip it)
 | Rule | Level | What | AW2 (179 maps) | DS (256) | Versus (20) | BH (35) | ES (16) |
 |---|---|---|---|---|---|---|---|
-| RV01 | error | river ends dry against plain, wood, road, pipe or a building: a river runs from a source (map edge or mountain) to the sea | 4 | 3 | 4 | 0 | 0 |
+| RV01 | error | river ends dry against plain, wood, road, pipe or a building: a river runs from a source (map edge or mountain) to the sea | 4 | 3 | 0 | 0 | 0 |
 | RV02 | error | a single river cell with no river or water beside it | 0 | 0 | 0 | 0 | 0 |
-| RV03 | error | a river that reaches neither the sea or a lake nor the map edge | 4 | 5 | 1 | 0 | 0 |
+| RV03 | error | a river that reaches neither the sea or a lake nor the map edge | 4 | 5 | 0 | 0 | 0 |
 | RV05 | error | a river ends on land against a mountain: AW2 has no source or end tile, so a river must run from the map edge, the sea, a shoal or a lake to the map edge, the sea, a shoal or a lake | 3 | 2 | 0 | 0 | 0 |
-| RV04 | error | a road meets a river with no bridge (road on both sides of a river cell, or a road running into a river's end) | 1 | 0 | 1 | 0 | 0 |
+| RV04 | error | a road meets a river with no bridge (road on both sides of a river cell, or a road running into a river's end) | 1 | 0 | 0 | 0 | 0 |
 | BR01 | error | a bridge end meets water or a tile no unit can stand on, not ground | 0 | 1 | 0 | 0 | 0 |
 | BR02 | warn | a bridge end meets a mountain, a wood, a pipe or a structure: vehicles cannot cross | 35 | 43 | 0 | 0 | 0 |
 | BR03 | error | a bridge with no water beside it | 0 | 0 | 0 | 0 | 0 |
 | SE01 | error | a one-tile sea or reef with no bridge over it, not at the map edge (a puddle) | 2 | 11 | 0 | 0 | 0 |
 | SE02 | warn | shoal that touches no sea, reef or river | 1 | 2 | 0 | 0 | 0 |
-| SE03 | error | a sea cell is not drawn with the coast tile AW2's table gives for the land around it | 0 | 0 | 1 | 0 | 0 |
+| SE03 | error | a sea cell is not drawn with the coast tile AW2's table gives for the land around it | 0 | 0 | 0 | 0 | 0 |
 | TJ01 | error | two neighbouring tiles that no AW2 map places side by side (a broken join) | 0 | 107 | 0 | 0 | 0 |
 | TJ02 | error | a river, shoal, bridge or sea tile that no game map uses for these neighbours (wrong transition tile) | 0 | 0 | 0 | 0 | 0 |
 | TJ03 | warn | a mountain or the plain over it not drawn as the game draws it | 21 | 0 | 0 | 0 | 0 |
@@ -58,11 +58,11 @@ Tables found in the ROM and used:
 | UN04 | error | a unit off the map | 0 | 0 | 0 | 0 | 0 |
 | RC01 | error | a property or unit on land that no army or Lander can reach | 0 | 0 | 0 | 0 | 0 |
 | RC02 | error | an army cannot reach an enemy HQ it must take | 0 | 0 | 0 | 0 | 0 |
-| RC03 | error | an HQ or production property no unit can leave (no ground, or no sea for a port) | 0 | 7 | 1 | 0 | 0 |
+| RC03 | error | an HQ or production property no unit can leave (no ground, or no sea for a port) | 0 | 7 | 0 | 0 | 0 |
 | RC04 | error | a Lander with no beach or port to load or unload at | 0 | 0 | 0 | 0 | 0 |
 | GB01 | error | a tile id no game map uses (drawn as garbage) | 0 | 0 | 0 | 0 | 0 |
 | GB02 | error | a building or structure with part of its footprint missing or wrong | 0 | 2 | 0 | 0 | 0 |
-| DQ01 | warn | a long river with no bend: rivers wander | 8 | 9 | 3 | 13 | 0 |
+| DQ01 | warn | a long river with no bend: rivers wander | 8 | 9 | 3 | 12 | 0 |
 | DQ02 | warn | most mountain or wood patches are exact rectangles: drawn blocks, not terrain | 1 | 2 | 1 | 13 | 0 |
 | DQ03 | warn | blocks of parallel identical rows of mountains or woods: the procedural look | 1 | 2 | 0 | 5 | 0 |
 | DQ04 | warn | too little of the land is anything but plain: empty fields and decorative filler | 6 | 12 | 8 | 1 | 0 |
@@ -112,6 +112,14 @@ becomes a bridge on the road cell and runs on to the edge; a spring with no outl
 Before: bh07 (two aircraft on one cell), bh10 (a river from mountain to mountain with no outlet), bh19 (a river cut into four by three roads with no bridge, ending dry), bh21 (the same, twice, and a
 road crossing with no bridge), bh29 / bh30 (3- and 2-wide bridges drawn with the single-lane tile), bh31 (a river cut by a road), M20's Carrier spawned on a shoal. All fixed; the other 25 maps were clean.
 Limits: the linter reads a map as its tiles; mission-level data that is not a literal (computed spawn cells) is not checked, and fairness (distance, funds) is not a rule.
+
+## Versus maps, October 2026 pass
+Before: 25 errors in 5 maps. Crystal Isles' three ports sat one cell inland (RC03; now on each island's south shore); Dune Fork's river ended against the road (now it starts in a three-cell lake, the road bridging it); Cinder Flats' and Black Wastes' rivers
+ended against Crystals and woods (each now ends in a two-row lake, its shore three cells wide: the river's mouth on a straight shore, the shape the games' maps have); Pentagon Atoll's rivers were cut by one diagonal join each and two roads ran into them
+(joined, bridged or the road's end removed; the lagoon's east inlet moved one column so that the river enters it through the games' stub tile 0x11D and the straight 0x39 run). The map tool draws a straight east-west river run in the phase of the bend at either end
+(`map.py river_phase`: 0x58 -> 0x39 -> 0x7B, 0x78 -> 0x19 -> 0x5B), which tilecheck had refused for any river that turns north or south at its east end. `aw2dev maps lint --source versus` is in the suite now.
+Left as they are (warnings, a design call, not defects): DQ04 (little but plain) on Iron Crossing, Magma Crown, The Citadel, Obelisk Duel, Crystal Isles, Obelisk Plains, Black Rampart and The Colonel's Vault; DQ08 (a property far from any road) on Magma Crown,
+Crystal Isles and Obelisk Plains; DQ05 (a 6 x 6 empty plain, AW2's largest is 5) on Obelisk Plains; DQ01 (a river with no bend) on Rust Basin, Cinder Flats and Black Wastes; DQ02 (rectangular woods) on Pentagon Atoll.
 
 ## Design quality ("bad game design"): `maplint/design.py`
 The integrity rules ask whether a map is *broken*; these ask whether it looks machine-made or plays cramped. All are warnings (the Emerald Sun maps are held to them: a
