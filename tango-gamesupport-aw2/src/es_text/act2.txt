@@ -16,6 +16,10 @@ KLAUS: Then I will read it for you. / The Comet border guard will blow
 KLAUS: the three bridges after day nine. / Beyond the Sable stand the posts.
 KLAUS: Beyond them lies Yellow Comet. We cross / as conquerors, so we cross fast.
 KLAUS: Take all three. If the bridges / fall, the legion waits for thaw.
+NARRATION: Dry sand country, scrub and rock. / A sandstorm walks along the road.
+CASSIUS(h): A storm! Nothing keeps up with / my horses in it. Hate the grit!
+AURELIA: Dust scours the air, Prefect. Long / guns lose a cell of range. Mine too.
+KLAUS: The signal posts across the Sable / see no farther. Ride before it lifts.
 AURELIA: Dunmere is home. Our depot sits / at the forward crossroads.
 LIVIA: Which costs, for every day of / delay, four hundred measures
 LIVIA: of grain we do not have. I / shall not repeat the figure.
@@ -252,6 +256,10 @@ NARRATION: Ironhold, Orange Star. / A ring of crags on an open plain.
 KLAUS: Ironhold. Crags round Max's HQ, / the Brimwater canal, a causeway.
 KLAUS: Front gate in the west, rear gate / in the east. Two lanes, one causeway.
 KLAUS: Ironhold is the gate of Orange / Star. Take it and the frontier moves.
+NARRATION: Rain on the crags. A grey fog / lies along the plain.
+CASSIUS: Fog! My northern road is a ghost / road. Nobody will see me coming!
+KLAUS: Nor will you see them. The fog / covers both flanks. Keep to the road.
+LIVIA: The rain charges all armies the / same, Prefect. It is very fair.
 CASSIUS: Then I take the plain! A flank / run, by the northern road!
 KLAUS: No. You hold the northern road / and wait for the line.
 CASSIUS: Wait! I do not wait, old man! / I am the cavalry!

@@ -10,6 +10,9 @@ LIVIA: The bill of lading says grain. / The creditor's stamp is the usual.
 KLAUS: Then the barges are the road. / Whoever loads them, we meet.
 AURELIA: The depot is Kite Hill's plateau / airport. A long march from our landing.
 AURELIA: Take Kite Hill and you own every / approach. A river, three bridges.
+NARRATION: Kite Hill is dry desert highland. / Sand, scrub, and a hard blue sky.
+AURELIA: No storm, and the air is hot and / clear. Dust underfoot. I can work so.
+KLAUS: Clear air lets our wing see far / from the plateau. Use it well.
 KLAUS: A hill, a depot, a coast. Take / them and the northern shore falls.
 CASSIUS: Wings! You have an airport / and I have a bad feeling.
 CASSIUS: Nobody taught my horses to / climb a plateau at a gallop.
@@ -117,6 +120,10 @@ LIVIA: A free port in the north buys / its grain through this pass.
 KLAUS: Then we climb. Recons first. / Copters above the ridge line.
 AURELIA: Fog grounds the copters at / the third cloud. I counted.
 KLAUS: Then we climb on foot, and / learn the mountain's name.
+NARRATION: Snow begins to fall on the pass, / thin and steady. Winter has come.
+CASSIUS(s): Snow, too. At home we have / the decency to rain.
+AURELIA: Thin air and cold. Fuel burns twice / as fast. Count your tanks, all of you.
+KLAUS: Then we march short and slow. / Winter keeps its own schedule.
 KANBEI: Strangers on the Comet Road. / And in my fog.
 KANBEI: I am Kanbei, commander of / the Yellow Comet border.
 KANBEI: You are the green sun I read / of in Grimm's complaints.
@@ -229,6 +236,10 @@ LIVIA: A truck is dignified, Prefect. / It has a roof, and a ledger rail.
 AURELIA: The road winds through the Pinewood, / past a hamlet, a ford, a ruin.
 AURELIA: The ford is the knot. One bridge / over the river, mid-road.
 AURELIA: An APC stalled on the bridge / blocks all the others. Remember that.
+NARRATION: The pines gave out. Sand, scrub, / and a ruin by the ford. A storm blows.
+LIVIA: Grit in the engines of four grain / carriers. I have begun a column.
+AURELIA: Few trees, so little cover. The / ruin is only a ruin in sand.
+AURELIA: And the dust takes a cell of / range from my guns. Plan for that.
 KLAUS: Then the ford is the / hinge. Hold it, if you can.
 AURELIA: I can put guns on the east / bank. They will cover the crossing.
 KLAUS: Cassius, you screen the road / ahead of the convoy.
@@ -319,6 +330,10 @@ GRIT: Name's Grit. Pleased to meet ya. / HQ's out east. Don't mind the guns.
 GRIT: Every corridor between the rings is / covered. Every one. I counted.
 GRIT: Twice. Once with the eyes. Once / with the elbow.
 GRIT: If a Roman sneezes at three / thousand paces, I will say bless you.
+NARRATION: Snow is falling now, thick / across all three rings.
+AURELIA: A snowfall. The march slows and / fuel burns twice as fast.
+GRIT: Cold makes the barrels sing, ma'am. / Snow don't stop a shell. Just you.
+KLAUS: Then we climb in the snow and / let them count the minutes.
 LIVIA: A hobby, Commander. How / expensive is your ammunition?
 GRIT: Bout the price of a good / horse, ma'am. A shell a day.
 LIVIA: I see. I shall be pleased / to bill you for the delay.

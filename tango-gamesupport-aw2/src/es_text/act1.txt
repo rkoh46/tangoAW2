@@ -234,6 +234,10 @@ AURELIA: Gates north, west and east. The / keep has one gate, to the south.
 KLAUS: Drake's Battleship, offshore in / the north. Shells from the sea.
 AURELIA: Range is eleven. My Rockets / reach nine and a half, with luck.
 AURELIA: So I need the Recon to find / the guns, and the Bomber to kill them.
+NARRATION: Rain since before dawn. The sky / is slate, and the wall is a smudge.
+AURELIA: Rain is fog. Their gunners see / me and I cannot spot a single gun.
+LIVIA: Wet roads, wet powder, wet boots. / I shall add a line for umbrellas.
+KLAUS: Then the Recon goes first, and / slowly. We find the guns by hand.
 KLAUS: That is a plan.
 AURELIA: It is a start. A plan has / more steps, usually a ladder.
 KLAUS: This is not a promotion. It / is a ladder. Climb.
