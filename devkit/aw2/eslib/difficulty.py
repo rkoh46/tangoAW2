@@ -57,6 +57,8 @@ def static_score(n):
 
 def dynamic_score(runs):
     """runs: sim result rows of one mission (`campaign sim`)."""
+    # (a handicap run, `campaign sim --scale`, plays a weaker enemy: it measures something else and stays out of the score)
+    runs = [r for r in (runs or []) if r.get("scale", 100) == 100]
     if not runs:
         return None
     bot = [r for r in runs if r["player"] == "bot"]

@@ -25,6 +25,8 @@ class Score(unittest.TestCase):
         cpu = lambda r: {"player": "cpu", "result": r, "days": 9}
         self.assertLess(difficulty.dynamic_score([cpu("won")]), difficulty.dynamic_score([cpu("lost")]))
         self.assertIsNone(difficulty.dynamic_score([]))
+        # (a handicap run against a thinned enemy is not the mission's difficulty)
+        self.assertIsNone(difficulty.dynamic_score([{"player": "bot", "result": "won", "days": 9, "scale": 60}]))
 
     def test_every_unit_has_a_price(self):
         for k in range(1, 28):
