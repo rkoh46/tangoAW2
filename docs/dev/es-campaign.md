@@ -22,7 +22,7 @@ in a normal build; the flag turns it into a source of `campaign_model::SOURCES`)
 - **M16 is the hardest mission by a clear margin** (`aw2dev campaign difficulty --require-final`); M14 and M15 ramp up to it.
 - **An army stops at 50 units** (AW2: its production and a trigger's reinforcements stop there; the sim saw Varro, started at 50, build and receive nothing): no deployment above 40 (the Rust test `no_army_starts_with_more_than_40_units`, the python test, `campaign check`).
 - **The player is Emerald Sun in every mission**: its skin sits on army 1's colour, always one of AW2's four (Orange Star's mostly, Blue Moon's or Green Earth's where an enemy wears red) and never one an enemy or ally wears: a skin on colour 5 in a
-  game that is not five-army corrupted memory when the army bought a unit (found by the mission sim, test `no_army...` / `the_player_wears_a_colour_of_its_own`). Only one army wears it: Cassius's Second Legion (M4), Varro's Praetorians and
+  game that is not five-army once corrupted memory when the army bought a unit (found by the mission sim); the cause was the Dual Strike picture palettes' backup of colour 5 lying over the skin's table of figures in free ROM, fixed for every colour and army count (`aw2dev armyskin matrix`, `cargo test --lib rom_layout`), so the colour is now chosen for how it looks, not for safety (test `the_player_wears_a_colour_of_its_own`). Only one army wears it: Cassius's Second Legion (M4), Varro's Praetorians and
   the Accord's fleet wear the stand-in colours.
 - Every unit deployed starts at full HP, ammo and fuel (`es_boot_m*` checks it); beaches are generous (RC04); every mission's story scenes have a song (`tools/estext/lint.py`, `campaign scenes --campaign es`).
 

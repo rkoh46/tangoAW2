@@ -43,8 +43,8 @@ fn put_back(core: &mut Core, at: u32, ours: u32, aw2: u32) {
 /// smoke frames (4 tiles each), all in one run of ROM.
 const BLD_REGION: u32 = 0x080C_FFC4;
 const BLD_LEN: usize = 0x2300;
-const BLD_NEW: u32 = 0x09E8_0000;
-const BLD_SENTINEL: u32 = BLD_NEW + 0x2400;
+pub(crate) const BLD_NEW: u32 = 0x09E8_0000;
+pub(crate) const BLD_SENTINEL: u32 = BLD_NEW + 0x2400;
 const MAGIC: u32 = 0x4731_5344; // "DS1G"
 const SNOW: usize = 0xB80;
 const HQ: usize = 0x1700;
@@ -173,17 +173,17 @@ const LAB_TILE: usize = 0x90;
 pub const UNIT_POOLS: [u32; 2] = [0x0802_6194, 0x0802_66D8];
 pub const AW2_UNIT_SHEET: u32 = 0x0810_BE60;
 const UNIT_FRAME: usize = 0x6C * 32;
-const UNIT_NEW: u32 = 0x09EB_0000;
-const UNIT_SENTINEL: u32 = UNIT_NEW + 0x3000;
+pub(crate) const UNIT_NEW: u32 = 0x09EB_0000;
+pub(crate) const UNIT_SENTINEL: u32 = UNIT_NEW + 0x3000;
 const AW2_SLOTS: u32 = 0x0849_9608;
 /// Moving sheets (LZ77, literal) of the 24 original unit types.
-const MOVE_NEW: u32 = 0x09EC_0000;
+pub(crate) const MOVE_NEW: u32 = 0x09EC_0000;
 const MOVE_SIZE: u32 = 0x1000;
 /// (slot 31: the 24 types' and the 7 new units' sheets take 0..30; at 32 it was the HUD's first word)
-const MOVE_SENTINEL: u32 = MOVE_NEW + 31 * MOVE_SIZE;
+pub(crate) const MOVE_SENTINEL: u32 = MOVE_NEW + 31 * MOVE_SIZE;
 /// The other countries' moving Infantry and Mech (Blue Moon, Green Earth, Yellow Comet, Black Hole; Infantry then Mech).
-const MOVE_COUNTRY_NEW: u32 = 0x09F0_0000;
-const MOVE_COUNTRY_SENTINEL: u32 = MOVE_COUNTRY_NEW + 8 * MOVE_SIZE;
+pub(crate) const MOVE_COUNTRY_NEW: u32 = 0x09F0_0000;
+pub(crate) const MOVE_COUNTRY_SENTINEL: u32 = MOVE_COUNTRY_NEW + 8 * MOVE_SIZE;
 const AW2_MOVES: u32 = 0x0849_CD88;
 
 /// The sheet the game reads now (AW2's or ours).
@@ -370,9 +370,9 @@ static COUNTRY_MOVES: OnceLock<Option<Vec<Vec<u8>>>> = OnceLock::new();
 /// uses the same colour indices (1 digit, 2 icon, 15 outline).
 const HUD_REGION: u32 = 0x0810_E820;
 const HUD_POOL: u32 = 0x0802_619C;
-const HUD_NEW: u32 = 0x09EE_0000;
+pub(crate) const HUD_NEW: u32 = 0x09EE_0000;
 const HUD_LEN: usize = 0x1000;
-const HUD_SENTINEL: u32 = HUD_NEW + HUD_LEN as u32 + 4;
+pub(crate) const HUD_SENTINEL: u32 = HUD_NEW + HUD_LEN as u32 + 4;
 
 fn hud(aw2: &[u8]) -> Option<Vec<u8>> {
     let pack = crate::ds_pack::pack()?;
@@ -419,9 +419,9 @@ const PICTURES: [(u32, usize, usize, Option<u32>); 3] = [
     (0x080D_38AC, 0x1F00, 12, None),
     (0x080D_3268, 0x4700, 13, Some(0x080D_3EC4)),
 ];
-const PIC_NEW: u32 = 0x09EE_2000;
+pub(crate) const PIC_NEW: u32 = 0x09EE_2000;
 const PIC_SLOT: u32 = 0x1000;
-const PIC_SENTINEL: u32 = PIC_NEW + 3 * PIC_SLOT;
+pub(crate) const PIC_SENTINEL: u32 = PIC_NEW + 3 * PIC_SLOT;
 /// Words naming a picture: (address, which picture). The headers of the two
 /// maps that use the pad and the Fortress, and the volcano's pool word.
 const PIC_WORDS: [(u32, usize); 5] = [

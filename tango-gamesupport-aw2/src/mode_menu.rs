@@ -64,7 +64,7 @@ const DIV_REM: u32 = 0x0808_AAB0;
 const WHEEL_CODE: (u32, u32) = (0x0808_0F00, 0x0808_4C00);
 
 /// tangoAW2's wheel data in the ROM image's free space.
-const DATA: u32 = 0x08E4_0000;
+pub(crate) const DATA: u32 = 0x08E4_0000;
 const DATA_TABLE: u32 = DATA;
 const DATA_HELP: u32 = DATA + 0x10;
 const DATA_PALETTE: u32 = DATA + 0x40;
@@ -72,7 +72,7 @@ const DATA_HIGHLIGHT: u32 = DATA + 0x60;
 const DATA_OPTIONS: u32 = DATA + 0x80;
 const DATA_BIG: u32 = DATA + 0x100;
 const DATA_SMALL: u32 = DATA + 0x900;
-const SENTINEL: u32 = DATA + 0xFFC;
+pub(crate) const SENTINEL: u32 = DATA + 0xFFC;
 const MAGIC: u32 = 0x554E_454D; // "MENU"
 
 /// The wheel's proc (`ProcScr_MainMenuC1`), running while Select Mode is up.

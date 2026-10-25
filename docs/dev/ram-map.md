@@ -229,6 +229,13 @@ Original sources of AW2's layout: Xenesis' RAM notes (Wars World News), the Code
 | `0x0203F4E0` | Dual Strike arrows: `+0` = 1 gives AW2's own arrows on Teams/CO screens although DS graphics are on (`tag.rs` `ARROWS`) |
 | `0x0203C700+0xF0` | `ds_ai::SWITCHES` (bit 0 DS CPU off, 1 production, 2 powers) |
 
+## Free ROM (the image past the cartridge): who owns which range
+
+Not RAM, but the same rule: two owners must not share an address, and nothing but a test ever compared them. `tango-gamesupport-aw2/src/rom_layout.rs` (`regions()`) lists every range in `0x08800000..0x0A000000` with the constants of its owner;
+`cargo test -p tango-gamesupport-aw2 --lib rom_layout -- --nocapture` prints the table, fails on an overlap or on a range that leaves the image, and fails when any module's source names an address in that space that no range covers.
+Owners in address order: `ds_music` (songs, tables), `survival`, `mode_menu`, `online_menu`, `two_front`, `setup_phase`, `onyx`, the four `wasteland` looks (0x20000 apart, each filled to 0x18000), `skills_panel`'s backup, `ds_campaign`'s blob, `ds_worldmap`,
+`ds_music`'s story songs (from 0x09000000), `ds_versus` (table, names, maps), `five_map` (tangoAW2's maps), the Normal look, `ds_graphics` (buildings, unit sheet, moving sheets, HUD, pictures, the countries' sheets), `army_skin` (0x09FC0000..0x09FE0000).
+
 ## 6. Where the online/netplay state is (quick index)
 
 | What | Address | Module |

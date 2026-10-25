@@ -3,6 +3,7 @@
   armyskin preview [--colour N] [--skin FILE] [--fast] [--out PNG]   the skin's pictures next to AW2's own, at 8x, and its palettes
   armyskin check [--live] [--skin FILE] [--scenario S ...]            the data file, the palette's margins, every unit's recolouring; --live also walks the
                                                                       catalogue of army-coloured screens and fails on any left in the base army's colours
+  armyskin matrix [--quick] [--armies 2 3] [--colours 5] [--no-ds]    the skin on every colour in every army count (2..5): the skins' rooms in free ROM, the panel, the build menu, a battle
   armyskin catalogue                                                  the screens (scenarios) and what each shows
   armyskin options --dir DIR [--letters ACF] [--awbw DIR]            a sheet of soldier options (candidate files A.toml ...) to choose from
   armyskin scenario NAME [--ids 6,2] [--ds] [--out DIR]              run one scenario's harness script and keep its shots (for sheets)
@@ -67,6 +68,13 @@ def register(sub):
     a.add_argument("--out", help="the PNG (default devkit/work/armyskin/options.png)")
     a.add_argument("--no-tile", action="store_true", help="do not run the harness for a real plain map tile (a flat colour instead)")
     a.set_defaults(fn=run_options)
+    a = ps.add_parser("matrix", help="the skin on every colour (1..5) in every army count (2..5), with the Dual Strike pack: free-ROM rooms, panel, build menu, battle")
+    a.add_argument("--quick", action="store_true", help="four of the twenty (the skin on colour 5 in 2P and 5P, the others' lowest): for the suite")
+    a.add_argument("--armies", type=int, nargs="*", help="only these army counts")
+    a.add_argument("--colours", type=int, nargs="*", help="only these colours")
+    a.add_argument("--no-ds", action="store_true", help="without the Dual Strike pack (its backups are not written then)")
+    a.add_argument("--keep", action="store_true")
+    a.set_defaults(fn=run_matrix)
     a = ps.add_parser("catalogue", help="list the scenarios")
     a.set_defaults(fn=run_catalogue)
     a = ps.add_parser("scenario", help="run one scenario's script, keep the shots")
@@ -100,6 +108,18 @@ def run_check(a):
     for f in fails:
         print("FAIL", f)
     print(f"armyskin check done bad={len(fails)}")
+    return 1 if fails else 0
+
+
+def run_matrix(a):
+    from ..armyskinlib import matrix
+    util.check_fresh(util.example_bin("aw2_room_teams"), "aw2_room_teams")
+    pairs = list(matrix.QUICK) if a.quick else [(n, c) for n in (a.armies or matrix.COUNTS) for c in (a.colours or matrix.COLOURS)]
+    fails, rep = matrix.run(pairs, ds=not a.no_ds, keep=a.keep)
+    print("\n".join(rep))
+    for f in fails:
+        print("FAIL", f)
+    print(f"armyskin matrix done {len(pairs)} runs bad={len(fails)}")
     return 1 if fails else 0
 
 

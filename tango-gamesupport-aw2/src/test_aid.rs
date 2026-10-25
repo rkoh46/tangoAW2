@@ -23,6 +23,8 @@
 //! - `hp X Y N`: its hit points (1..100);
 //! - `kill X Y`: it is gone;
 //! - `capture X Y N`: the unit at the cell has N capture points already;
+//! - `colour ARMY C`: the army wears colour C (1..5): its player block's colour and its palette rows (what a campaign mission's colours do);
+//! - `skincolour C`: the first army skin sits on colour C (1..5) from now on (the state `army_skin::sync` installs it from);
 //! - `log TEXT`: a line in the log.
 //!
 //! Every command logs what it did (`test-aid: ...`). A rule fires once per match; a rollback past its tick lets it fire
@@ -299,6 +301,21 @@ pub fn run(core: &mut Core, tick: u32, cmd: &[String]) {
                 core.raw_write_16(r, -1, w);
             }
             log::info!("test-aid @{tick}: unit {id} capture points {}", a(3));
+        }
+        Some("colour") => {
+            let (army, colour) = (a(1), a(2).clamp(1, 5));
+            if army == 0 || army > 5 {
+                log::error!("test-aid @{tick}: colour: army {army}");
+                return;
+            }
+            core.raw_write_8(crate::five::players(core) + 0x3C * army + 0x1A, -1, colour as u8);
+            crate::pvp::force_slot_palettes(core, army - 1, colour as u8);
+            log::info!("test-aid @{tick}: army {army} wears colour {colour}");
+        }
+        Some("skincolour") => {
+            let colour = a(1).clamp(1, 5);
+            crate::army_skin::set_host_of(core, 0, colour as u8);
+            log::info!("test-aid @{tick}: the skin sits on colour {colour}");
         }
         Some("log") => log::info!("test-aid @{tick}: {}", cmd[1..].join(" ")),
         other => log::error!("test-aid @{tick}: unknown command {other:?}"),

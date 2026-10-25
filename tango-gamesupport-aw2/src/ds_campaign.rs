@@ -42,7 +42,7 @@ use crate::ds_campaign_data as data;
 /// 0x08D2FFFF) and Survival (0x08E00000..0x08E4FFFF), past the 8 MB
 /// cartridge (mGBA grows the image). A mark first, the blob from +0x100.
 pub const DATA: u32 = 0x08F0_0000;
-const DATA_END: u32 = crate::ds_worldmap::BASE;
+pub(crate) const DATA_END: u32 = crate::ds_worldmap::BASE;
 const ENTRY: u32 = 0x5C;
 const MAGIC_WORD: u32 = 0x4443_5344; // "DSCD"
 const MAGIC_AT: u32 = DATA;

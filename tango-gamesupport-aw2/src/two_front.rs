@@ -185,7 +185,7 @@ const KEY_L: u32 = 1 << 9;
 /// The ROM image's free space for this module (between Survival's
 /// 0x08E00000..0x08E4FFFF and the looks' 0x08E80000..).
 pub const ROM: u32 = 0x08E7_0000;
-const ROM_END: u32 = 0x08E7_4000;
+pub(crate) const ROM_END: u32 = 0x08E7_4000;
 const ROM_MAGIC: u32 = 0x5446_5232; // "2RFT"
 /// Magic ids for this module's stubs (r3 at crate::campaign_model::LANDING):
 /// `MAGIC | n`.

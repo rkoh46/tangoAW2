@@ -24,6 +24,8 @@ pub mod ds_art;
 pub mod ds_backdrop;
 pub mod ds_battle;
 pub mod ram_map;
+#[cfg(test)]
+mod rom_layout;
 pub mod fog_view;
 pub mod inspect;
 pub mod ai_debug;

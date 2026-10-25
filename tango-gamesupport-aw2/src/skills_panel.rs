@@ -697,10 +697,11 @@ const LAYERS: u16 = 0x1F00;
 const BG0_ONLY: u16 = 0x0100;
 const PAL_BUFFER: u32 = 0x0300_20C0;
 const PAL_RAM: u32 = 0x0500_0000;
-/// Where what the screen covers is kept while it is up (ROM image free space).
-const BACKUP: u32 = 0x08EF_0000;
-const CHARS_LEN: u32 = 0x4000;
-const MAP_LEN: u32 = 0x800;
+/// Where what the screen covers is kept while it is up (ROM image free space: 0x08EF8000.., above the fourth look of [`crate::wasteland`], which
+/// ends at 0x08EF8000, and below the Dual Strike Campaign's blob at 0x08F00000; it was at 0x08EF0000, inside that look: the Grand Bolt's tiles and rivers).
+pub(crate) const BACKUP: u32 = 0x08EF_8000;
+pub(crate) const CHARS_LEN: u32 = 0x4000;
+pub(crate) const MAP_LEN: u32 = 0x800;
 
 fn bg0(core: &Core) -> (u32, u32) {
     let c = core.raw_read_16(BG0CNT, -1) as u32;
@@ -790,7 +791,7 @@ mod tests {
         assert_eq!(board_xy(9, 0).0 + 16 + 4, 240);
         assert_eq!(board_xy(0, 5).1 + 16, HELP_Y);
         // The backup in the ROM image's free space (0x08EE0000..0x08EFFFFF).
-        assert!(BACKUP >= 0x08EE_0000 && BACKUP + CHARS_LEN + MAP_LEN + 0x400 <= 0x08F0_0000);
+        assert!(BACKUP >= 0x08EF_8000 && BACKUP + CHARS_LEN + MAP_LEN + 0x400 <= 0x08F0_0000);
     }
 
     /// With `TANGOAW2_DS_ROM`: every rank's skills, the tag skills with them

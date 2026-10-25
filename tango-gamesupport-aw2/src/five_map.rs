@@ -72,13 +72,13 @@ const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
 /// Each map's tiles and units: 4 KiB apiece, in one run from [`MAP_DATA`] in the ROM image's free space past the Dual Strike Versus maps
 /// (0x09C00000..0x09CFFFFF, crate::ds_versus): room for [`MAP_CAPACITY`] maps (0x09D00000..0x09D3FFFF; the free run goes on to the Dual
 /// Strike Normal look at 0x09E00000, so the capacity can grow to 256 by changing one constant).
-const MAP_DATA: u32 = 0x09D0_0000;
+pub(crate) const MAP_DATA: u32 = 0x09D0_0000;
 const MAP_DATA_SIZE: u32 = 0x1000;
 pub const MAP_CAPACITY: usize = 64;
 /// The moved map table ends before the next owner of free ROM (the design-map owner table, crate::design5).
 const MAP_TABLE_LIMIT: u32 = 0x0866_0000;
 
-fn map_data(k: usize) -> u32 {
+pub(crate) fn map_data(k: usize) -> u32 {
     MAP_DATA + MAP_DATA_SIZE * k as u32
 }
 

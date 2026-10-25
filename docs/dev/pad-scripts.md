@@ -154,6 +154,8 @@ WHEN:
 | `hp X Y N` | its hit points (clamped 1..100) |
 | `kill X Y` | removes the unit (record zeroed, both unit planes cleared) |
 | `capture X Y N` | the unit at the cell has N capture points (max 20) |
+| `colour ARMY C` | the army wears colour C (1..5): its player block's colour and palette rows (what a campaign mission's colours do); with `skincolour` the skin on a colour a map does not give |
+| `skincolour C` | the first army skin sits on colour C (1..5) from now on (`army_skin` state byte 0; `sync` installs it) |
 | `log TEXT` | a line in the log |
 
 Every command logs `test-aid @TICK: ...`. Unknown command: `test-aid @TICK: unknown command`. Constants: map RAM base 0x0201E450, units pointer at 0x08499594, 12-byte unit records, unit planes at map +0x12 and +0x51A, row table at map +0x417A (`test_aid.rs` top).
@@ -208,6 +210,7 @@ Time is in console ticks (frames). `until` and `waitfor` take MAX in units of 10
 | `dump NAME` | writes IWRAM and EWRAM to `/tmp/dump_NAME_i.bin` and `_e.bin` |
 | `vram NAME` | VRAM, palette and OAM to `<out>/NAME.vram` |
 | `hash` | prints an FNV hash of EWRAM (compare two runs) |
+| `skincheck` | the army skins' rooms in free ROM are sane (`army_skin::self_check`: the figure table's pointers, the backup lists); a problem prints and fails the run |
 | `fv` | prints the waiting-view state: who is watching, alive armies, decided, army, fog, main loop, phase, running procs, DISPCNT, menu |
 | `status` | prints the probe bits and the army-select RAM |
 | `sel` | per-seat army-select state: CO colour team partner field ready; plus the note byte |

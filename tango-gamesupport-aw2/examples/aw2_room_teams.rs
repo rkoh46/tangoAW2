@@ -20,6 +20,7 @@
 //!   poke ADDR HEX     write bytes (hex string) after a few idle frames
 //!   goto SEAT X Y     walk SEAT's cursor to the cell
 //!   hash              print a hash of the console's work RAM (compare two runs)
+//!   skincheck         the army skins' rooms in free ROM are sane (a bad figure table or backup list fails the run)
 //!   cos               print the Teams screen's CO list (index: id name)
 //!   checkpoint save NAME | load NAME   the console's state saved to / loaded from AW2_CKPT_DIR (default <out-dir>/checkpoints), in
 //!                     the AI debug channel's file format (tango-gamesupport-aw2 `ai_debug::checkpoint_save`): a script can
@@ -969,6 +970,15 @@ fn main() {
                 for (i, &co) in tango_gamesupport_aw2::tag_ui::teams_list(core).iter().enumerate() {
                     println!("co {i}: id {co} {}", tango_gamesupport_aw2::online_teams::co_label(core, co));
                 }
+            }
+            // skincheck: the army skins' rooms in free ROM are sane (army_skin::self_check); a problem fails the run
+            "skincheck" => {
+                let problems = tango_gamesupport_aw2::army_skin::self_check(link.core());
+                for p in &problems {
+                    println!("skincheck @{t}: {p}");
+                }
+                println!("skincheck @{t}: {}", if problems.is_empty() { "ok" } else { "FAIL" });
+                failed |= !problems.is_empty();
             }
             "hash" => {
                 let w = rd(&mut link, 0x0200_0000, 0x40000);
