@@ -50,7 +50,7 @@ def build():
         "Player funds 2000, start: ART3 ROCK2 RECON2 INF4 MECH2 TANK2 AA1; enemy: INF4 MECH2 TANK3 AA1 ART2 ROCK1 (hold) + BS1. "
         "Threat->answer: BS -> day-2 Bomber from the airport + ART/ROCK on the coast (indirect fire hits ships); Com Towers (+defence for Javier) -> ART/ROCK take the towers, "
         "which stand just inside the wall; enemy ART/ROCK behind the wall -> RECON spotting, fast capture of gates, MECH over the rock; enemy TANK -> player TANK/ART at the gates; enemy AA -> keep the Bomber away from it (it sits at (18,7)); "
-        "ground attackers over the wall are INF/MECH only."))
+        "ground attackers over the wall are INF/MECH only. A neutral missile silo M (5,13) stands beside the west approach road outside the wall: whoever fires it first hits 3 HP off every unit within 3 cells."))
     # sea and beach
     m.rect("~", 0, 0, W - 1, 1)
     m.rect(",", 0, 2, W - 1, 2)
@@ -84,6 +84,7 @@ def build():
     m.put("2", 16, 12).put("T", 10, 9).put("T", 22, 14).put("T", 16, 10).put("B", 20, 7).put("c", 9, 14).put("c", 23, 10)
     # player: HQ, airport, base, cities on the south shore
     m.put("1", 4, 22).put("A", 10, 22).put("B", 15, 22).put("C", 20, 22).put("C", 8, 19).put("C", 27, 21).put("c", 24, 18)
+    m.put("M", 5, 13)                                     # the neutral missile silo beside the west approach road, outside the wall
     tidy(m)
     # Aurelia's siege army: guns and rockets behind, recon on the roads, the line in front
     m.spread(1, {ART: 3, ROCK: 2}, (2, 21, 27, 23), seed=1, gap=2)
@@ -104,6 +105,7 @@ def build():
     m.note("gate3", 25, 12, "east gate (road from the east)")
     m.note("keep_gate", 16, 15, "gate of the inner keep ring, from the street y16")
     m.note("tower1", 10, 9, "Com Tower, west quarter"); m.note("tower2", 22, 14, "Com Tower, east quarter"); m.note("tower3", 16, 10, "Com Tower inside the keep")
+    m.note("silo", 5, 13, "neutral missile silo outside the wall beside the west approach road (6,13), reachable on foot from the legion's side; its blast (3-cell radius) reaches the west gate (7,12) and the west quarter")
     m.note("coast_road", 10, 3, "the coast road y3..4 under the Battleship")
     m.note("battleship", 16, 0, "Drake's Battleship (hold)")
     m.note("airport", 10, 22, "player airport"); m.note("bomber_cell", 11, 22, "day-2 Bomber reinforcement cell (free ground beside the airport)")
