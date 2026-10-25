@@ -122,7 +122,14 @@ def run(jobs=3, only=None, keep=False):
                 res.append(f"FAIL {k}\n" + "\n".join(t.stdout.splitlines()[-6:]))
         return res
 
-    work = [(es_music, "es_music"), (campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom"), (armyskin, "static"), (armyskin, "live")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
+    def co_verify(_):
+        # the custom COs' abilities against the specification (docs/dev/co-verify.md): the smoke run, one scenario per facet and CO (needs both ROMs and the built examples; skipped without)
+        if not cfg.aw2_rom().exists() or not cfg.ds_rom().exists() or not util.example_bin("aw2_script").exists():
+            return []
+        r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "co", "verify", "--quick", "-j", "2"], capture_output=True, text=True)
+        return [f"FAIL co verify\n" + "\n".join(l for l in r.stdout.splitlines() if "FAIL" in l)[:900] + r.stderr[-300:]] if r.returncode else []
+
+    work = [(co_verify, "co_verify"), (es_music, "es_music"), (campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom"), (armyskin, "static"), (armyskin, "live")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0

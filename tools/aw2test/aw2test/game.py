@@ -226,7 +226,7 @@ class Game:
     def weather_values(self):
         return WEATHER_VALUES
 
-    def set_rules(self, fog=False, weather="clear", power=True, visuals="off", capt=None):
+    def set_rules(self, fog=False, weather="clear", power=True, visuals="off", capt=None, funds=None):
         e = self.e
         items = self.rules_items()
         if len(items) < 7:
@@ -254,11 +254,32 @@ class Game:
                 e.wait(20)
             if e.u8(proc + ram.RULES_ITEM_VALUE) != wants[idx]:
                 raise NavError(f"rules item {RULE_ITEMS[idx]}: value {e.u8(proc + ram.RULES_ITEM_VALUE)}, wanted {wants[idx]}")
+        if funds is not None:
+            # The Funds rule's choice (item 2: 0..17; the funds per property and the starting funds): the pad steps it, so a few presses at most
+            self.set_rule_value(2, funds)
         if capt is not None:
             # The capture limit's choice (0 off), set directly: stepping
             # through up to 100 values with the pad takes too long.
             e.w8(self.rules_items()[4] + ram.RULES_ITEM_VALUE, capt)
             e.wait(4)
+
+    def set_rule_value(self, idx, value):
+        """Step Rules item `idx` with the pad to `value`."""
+        e = self.e
+        for _ in range(10):
+            cur = e.u8(self.teams_addr() + ram.RULES_CURSOR - ram.TEAMS)
+            if cur == idx:
+                break
+            e.press("RIGHT" if cur < idx else "LEFT", 6)
+            e.wait(20)
+        proc = self.rules_items()[idx]
+        count = e.u8(proc + ram.RULES_ITEM_COUNT)
+        for _ in range(count + 2):
+            if e.u8(proc + ram.RULES_ITEM_VALUE) == value:
+                return
+            e.press("DOWN", 6)
+            e.wait(20)
+        raise NavError(f"rules item {idx}: value {e.u8(proc + ram.RULES_ITEM_VALUE)}, wanted {value}")
 
     # The Rules screen's Skills row (tangoAW2's crate::versus_rules, with the
     # Dual Strike pack): the row the cursor is on (0 none, 1 Skills; the
@@ -306,12 +327,12 @@ class Game:
         if not e.wait_until(lambda: bool(self.procs()), 900, step=5):
             raise NavError("turn start never ran")
 
-    def setup(self, cos, humans=(1,), fog=False, weather="clear", power=True, visuals="off", capt=None):
+    def setup(self, cos, humans=(1,), fog=False, weather="clear", power=True, visuals="off", capt=None, funds=None):
         """Boot, open Versus -> Design Maps -> map 1, pick COs, rules, start."""
         self.boot_to_teams()
         self.set_teams(cos, set(humans))
         self.teams_to_rules()
-        self.set_rules(fog=fog, weather=weather, power=power, visuals=visuals, capt=capt)
+        self.set_rules(fog=fog, weather=weather, power=power, visuals=visuals, capt=capt, funds=funds)
         self.start_battle()
         self.wait_for_input()
 

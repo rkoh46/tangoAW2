@@ -386,6 +386,38 @@ SCEN = {"swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, 
 
 
 
+# ---- the custom COs' powers (aw2dev co verify --net): army 1's CO is poked in at the first idle moment (gPlayers + 0x3C + 0x1D in a 2P Versus game), its meter filled, its power played,
+# and the special rules exercised by an attack (Testudo's counter, Onager's splash, Triumph's second move); the two peers' hashes must agree (net repeat) ----
+CO_IDS = {"andy": 1, "kanbei": 6, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90}
+ARMY1_CO = "0x020232DD"
+PARTNER_REC = "0x0203F400"          # crate::tag::STATE: the army 1's partner: +0 CO, +1 phase, +2 uses, +4 the partner's meter
+
+
+def co_actions(co, power):
+    """The pokes and pad steps after the power that make the CO's special rule fire (empty for a CO whose power is numbers and funds only)."""
+    if co == "klaus":
+        return ["when army=1 day=1 idle do unit 1 tank 8 3", "when army=1 day=1 idle do unit 2 tank 10 3"], goto(8, 3) + A(30) + goto(9, 3) + A(60) + A(40) + A(300)
+    if co == "aurelia":
+        # (an Artillery made by the test aid has no ammo when no unit of its kind is on the map, so its Fire is greyed: Onager's splash is played by the harness' two-console tests; here the power alone)
+        return ["when army=1 day=1 idle do unit 1 tank 8 3", "when army=1 day=1 idle do unit 2 tank 10 3"], goto(8, 3) + A(30) + goto(9, 3) + A(60) + A(40) + A(300)
+    if co == "cassius":
+        return ["when army=1 day=1 idle do unit 1 tank 8 3", "when army=1 day=1 idle do unit 2 inf 10 3"], goto(8, 3) + A(30) + goto(9, 3) + A(60) + A(40) + A(300) + (sel_move(9, 3, 9, 5, 0, 60) if power == "scop" else [])
+    return ["when army=1 day=1 idle do unit 1 inf 8 3", "when army=1 day=1 idle do unit 2 inf 10 3"], []
+
+
+def co_scenario(co, power):
+    def sc(fog):
+        extra, steps = co_actions(co, power)
+        pokes = [f"when army=1 day=1 idle do poke {ARMY1_CO} {CO_IDS[co]:02X}", f"when army=1 day=1 idle do meter 1 {100 if power == 'cop' else 400}"] + extra
+        play = power_menu(8, 5, 2 if power == "cop" else 3) + steps
+        return pokes, [(0, play), (1, []), (0, []), (1, [])]
+    return sc
+
+
+def power_menu(cx, cy, down):
+    return goto(cx, cy) + Bk() + A(80) + dn(down) + A(800)
+
+
 MAP_BY_NAME = {"hq4": ("Four Corners", 4)}   # scenarios written for one of the game's own maps: the pick walks to its row
 BIG5_TAB = 1   # a 5P room has two tabs with the pack: "5P" and "5P Predeploy"; RIGHT once from the first shows the latter, whose first (only) map is Pentagon Atoll
 BIG5_DOWN = 0
@@ -689,3 +721,8 @@ def solo_pads(entry, body, run):
     lines = body.replace(";", "\n").split("\n") if isinstance(body, str) else list(body)
     pad = list(SOLO_ENTRY[entry]) + [("shot " + run + "/" + l.strip()[5:] + ".png") if l.strip().startswith("shot ") and "/" not in l else l.strip() for l in lines if l.strip()]
     return {0: pad + ["log SCRIPT END"]}
+
+
+for _co in CO_IDS:
+    SCEN[f"co_{_co}_cop"] = co_scenario(_co, "cop")
+    SCEN[f"co_{_co}_scop"] = co_scenario(_co, "scop")

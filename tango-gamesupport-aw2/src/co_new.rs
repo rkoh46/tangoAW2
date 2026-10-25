@@ -769,6 +769,12 @@ fn build(core: &Core) -> Option<Built> {
                     put32(&mut pres, o + 8, crate::es_co::each_unit(co, p as u8));
                 }
             }
+            if co == CLONE_ANDY {
+                // His powers are Andy's (Dual Strike's Andy under another name): Hyper Repair heals 2 HP and Hyper Upgrade 5, the unit effect of Andy's own row.
+                let andy = PRESENTATION_ROW as usize * ANDY as usize + 0x1C + 0x14 * p;
+                let effect = pres[andy + 8..andy + 12].to_vec();
+                pres[o + 8..o + 12].copy_from_slice(&effect);
+            }
         }
         let h = HUD_FACE as usize * co as usize;
         hud[h..h + HUD_FACE as usize].copy_from_slice(&art.hud[..HUD_FACE as usize]);

@@ -593,6 +593,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // command is yielded at once, out of turn, with the last army left ending its own turn (crate::proxy_seat::force_yield).
         // 26: tangoAW2's maps' data moved to one run at 0x09D00000, their text slots to a table of 73 (crate::five_map), and the Versus map table grew to 0x100 ids.
         // 27: Emerald Sun, a sixth army on one of AW2's colours: its colour in EWRAM, the Teams page's sixth choice, the ROM image's palettes and pictures (crate::army_skin).
+        // 28: custom COs checked against their specification (aw2dev co verify): Clone Andy's powers heal as Andy's do, the Emerald Sun COs' unit cost is 100% (Livia's 110%; it was doubled), Livia's income is 25% of what a property pays,
+        // and an Emerald Sun CO's tag pair with a CO the file does not list is 95% (crate::es_co::UNLISTED_PAIR).
         crate::inspect::SIM_VERSION
     }
 
