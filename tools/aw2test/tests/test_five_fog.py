@@ -431,7 +431,11 @@ def sonja_vignette(ctx, g, d, watch, shots):
     for (a, u), c in zip(picks, spots):
         if u is None:
             continue
-        g.goto(*c)
+        try:
+            g.goto(*c)
+        except NavError as ex:
+            ctx.log(f"vignette: {ex}")   # (the pictures only: a cell the cursor cannot stand on, e.g. under a script's hold, is left out)
+            continue
         e.wait(30)
         shots(f"hp_{NAMES[a].replace(' ', '_')}")
 
