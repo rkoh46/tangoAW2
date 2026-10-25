@@ -61,6 +61,81 @@
 
 use crate::ds_art::lz10;
 
+// --- Recolour-based COs (cos/<id>.toml `[portrait] base` + `[portrait.recolour]`) ------------------------------------------------
+
+/// The data files of the COs whose pictures are another CO's with a recoloured palette: (CO id, file).
+const RECOLOUR_FILES: [(u8, &str); 1] = [(crate::co_new::CLONE_ANDY, include_str!("../cos/cloneandy.toml"))];
+
+/// Palette entries replaced: index 1..15 to a BGR555 colour.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Recolour(pub [Option<u16>; 16]);
+
+impl Recolour {
+    /// Parses a CO file's `[portrait.recolour]` ("index" = "RRGGBB"); `None` if the file has no recolour. Index 0 (transparent) is not allowed.
+    pub fn parse(text: &str) -> Result<Option<Recolour>, String> {
+        let v: toml::Value = toml::from_str(text).map_err(|e| e.to_string())?;
+        let Some(t) = v.get("portrait").and_then(|p| p.get("recolour")).and_then(|r| r.as_table()) else { return Ok(None) };
+        let mut out = [None; 16];
+        for (k, c) in t {
+            let i: usize = k.parse().map_err(|_| format!("recolour index {k:?}"))?;
+            if !(1..16).contains(&i) {
+                return Err(format!("recolour index {i} is not 1..15"));
+            }
+            let h = c.as_str().filter(|h| h.len() == 6).ok_or_else(|| format!("recolour {k}: {c} is not \"RRGGBB\""))?;
+            let n = u32::from_str_radix(h, 16).map_err(|_| format!("recolour {k}: {h} is not hex"))?;
+            let (r, g, b) = ((n >> 16) & 255, (n >> 8) & 255, n & 255);
+            out[i] = Some((r >> 3 | (g >> 3) << 5 | (b >> 3) << 10) as u16);
+        }
+        Ok(Some(Recolour(out)))
+    }
+
+    /// Every colour scheme of a palette (16 BGR555 colours each, as bytes).
+    pub fn apply(&self, palette: &mut [u8]) {
+        for scheme in palette.chunks_exact_mut(32) {
+            for (i, c) in self.0.iter().enumerate() {
+                if let Some(c) = c {
+                    scheme[2 * i..2 * i + 2].copy_from_slice(&c.to_le_bytes());
+                }
+            }
+        }
+    }
+
+    pub fn apply16(&self, pal: &mut [u16; 16]) {
+        for (i, c) in self.0.iter().enumerate() {
+            if let Some(c) = c {
+                pal[i] = *c;
+            }
+        }
+    }
+}
+
+/// The recolour of CO `co` (None for a CO that wears its donor's palette as it is).
+pub fn recolour(co: u8) -> Option<&'static Recolour> {
+    static ALL: std::sync::OnceLock<Vec<(u8, Recolour)>> = std::sync::OnceLock::new();
+    ALL.get_or_init(|| RECOLOUR_FILES.iter().filter_map(|(co, text)| Some((*co, Recolour::parse(text).expect("a CO file's recolour")?))).collect())
+        .iter()
+        .find(|(c, _)| *c == co)
+        .map(|(_, r)| r)
+}
+
+/// [`co_art`] of Dual Strike CO `ds` for game CO `co`: with the CO's recolour applied to the palette.
+pub fn co_art_for(co: u8, ds_co: u8) -> Option<CoArt> {
+    let mut a = co_art(ds_co)?;
+    if let Some(r) = recolour(co) {
+        r.apply(&mut a.palette);
+    }
+    Some(a)
+}
+
+/// [`full_figure`] for game CO `co`, recoloured.
+pub fn full_figure_for(co: u8, ds_co: u8) -> Option<(Vec<u8>, [u16; 16])> {
+    let (px, mut pal) = full_figure(ds_co)?;
+    if let Some(r) = recolour(co) {
+        r.apply16(&mut pal);
+    }
+    Some((px, pal))
+}
+
 /// The Dual Strike COs AW2 does not have.
 pub const NEW_COS: [u8; 9] = [11, 12, 14, 20, 21, 22, 23, 24, 25];
 
@@ -212,6 +287,46 @@ pub fn full_figure(ds_co: u8) -> Option<(Vec<u8>, [u16; 16])> {
         }
     }
     Some((px, pal))
+}
+
+#[cfg(test)]
+mod recolour_tests {
+    use super::*;
+
+    fn lum(c: u16) -> u32 {
+        (c & 31) as u32 * 3 + ((c >> 5) & 31) as u32 * 6 + ((c >> 10) & 31) as u32
+    }
+
+    #[test]
+    fn clone_andys_file_is_a_black_and_blue_recolour_that_keeps_the_shading() {
+        let r = recolour(crate::co_new::CLONE_ANDY).expect("Clone Andy has a recolour");
+        // the skin (2..6): five different blues, darker down the ramp; the jacket and shirt (9, 10, 12) charcoal, jacket lighter than its shade and the shirt lightest
+        let blue = |c: u16| (c >> 10) & 31 > (c & 31) + 4;
+        let skin: Vec<u16> = (2..=6).map(|i| r.0[i].unwrap()).collect();
+        assert!(skin.iter().all(|&c| blue(c)), "{skin:?}");
+        assert!(skin.windows(2).all(|w| lum(w[0]) > lum(w[1])), "five tones, light to dark");
+        let (jacket, shade, shirt) = (r.0[9].unwrap(), r.0[10].unwrap(), r.0[12].unwrap());
+        for c in [jacket, shade, shirt] {
+            let (b, g, rr) = ((c >> 10) & 31, (c >> 5) & 31, c & 31);
+            assert!(b.abs_diff(rr) < 5 && g.abs_diff(rr) < 5 && lum(c) < lum(skin[4]) + 60, "charcoal: {c:04x}");
+        }
+        assert!(lum(shirt) > lum(jacket) && lum(jacket) > lum(shade));
+        // hair (7, 8), rim (1), buckle (11, 14), star (13) and the outline (15) are kept
+        for i in [0, 1, 7, 8, 11, 13, 14, 15] {
+            assert!(r.0[i].is_none(), "index {i}");
+        }
+        let mut pal = vec![0u8; 0x100];
+        r.apply(&mut pal);
+        assert!(pal.chunks(32).all(|s| s[2 * 9..2 * 9 + 2] == jacket.to_le_bytes()));
+        assert!(recolour(crate::co_new::CRUMB).is_none());
+    }
+
+    #[test]
+    fn bad_recolours_are_errors() {
+        assert!(Recolour::parse("[portrait.recolour]\n0 = \"FFFFFF\"").is_err());
+        assert!(Recolour::parse("[portrait.recolour]\n3 = \"nothex\"").is_err());
+        assert!(Recolour::parse("[portrait]\nbase = \"andy\"").unwrap().is_none());
+    }
 }
 
 #[cfg(test)]

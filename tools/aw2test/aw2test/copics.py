@@ -257,7 +257,7 @@ def tag_pictures(ctx, cap, act, par):
     install_tag_spec()
     a_id, b_id = cospec.co_id(act), cospec.co_id(par)
     a_name, b_name = act.split(":")[-1].capitalize(), par.split(":")[-1].capitalize()
-    pair = next(p for p in cospec.tags() if {p["a"], p["b"]} == {act, par})
+    pair = next((p for p in cospec.tags() if {p["a"], p["b"]} == {act, par}), None) or {"name": "Dual Strike", "compat": 100, "stars": 0}
     key = f"tag_{b_name.lower()}"
     label = f"Tag Power {pair['name']} ({a_name} + {b_name}, {pair['compat']}%, {pair['stars']} star{'s' if pair['stars'] != 1 else ''})"
     units = [(1, "infantry", 9, 10), (1, "tank", 10, 10), (1, "mech", 10, 12), (2, "tank", 14, 10), (2, "infantry", 14, 12)]
@@ -406,7 +406,7 @@ def effect_heal(ctx, cap, spec, which, key, label):
     g.e.close()
 
 
-NAMES = {"klaus": "Klaus", "aurelia": "Aurelia", "cassius": "Cassius", "livia": "Livia", "crumb": "Crumb", "varro": "Varro", "cloneandy": "Clone Andy"}
+NAMES = {"andy": "Andy", "klaus": "Klaus", "aurelia": "Aurelia", "cassius": "Cassius", "livia": "Livia", "crumb": "Crumb", "varro": "Varro", "cloneandy": "Clone Andy"}
 
 
 def capture(name, out, parts=("page", "hud", "cop", "scop", "effect", "tag")):
@@ -445,7 +445,9 @@ def capture(name, out, parts=("page", "hud", "cop", "scop", "effect", "tag")):
         elif name == "cloneandy":
             effect_heal(ctx, cap, spec, "power", "repair", "Hyper Repair heals 2 HP")
             effect_heal(ctx, cap, spec, "super", "upgrade", "Hyper Upgrade heals 5 HP")
-    if "tag" in parts:
+    if "tag" in parts and name == "andy":
+        tag_pictures(ctx, cap, "andy", "aw2:sturm")
+    elif "tag" in parts:
         for p in cospec.tags():
             for act, par in ((p["a"], p["b"]), (p["b"], p["a"])):
                 if act == name:

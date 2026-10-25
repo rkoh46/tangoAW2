@@ -183,9 +183,9 @@ fn face(core: &Core, co: u8) -> ([u8; 256], [u8; 32]) {
     let cache = CACHE.get_or_init(Default::default);
     let ds = crate::co_roster::ds_co(co).and_then(|d| {
         let mut g = cache.lock().ok()?;
-        g.entry(d)
+        g.entry(co)        // (by CO, not by Dual Strike id: Clone Andy wears Andy's picture in other colours)
             .or_insert_with(|| {
-                let a = crate::ds_co_art::co_art(d)?;
+                let a = crate::ds_co_art::co_art_for(co, d)?;
                 Some((a.hud.get(..256)?.try_into().ok()?, a.palette.get(..32)?.try_into().ok()?))
             })
             .clone()

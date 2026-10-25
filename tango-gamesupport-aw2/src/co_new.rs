@@ -726,7 +726,7 @@ fn build(core: &Core) -> Option<Built> {
         } else if let Some(a) = crate::es_cos::art(co) {
             a
         } else {
-            crate::ds_co_art::co_art(ds)?
+            crate::ds_co_art::co_art_for(co, ds)?
         };
         if co == CLONE_ANDY {
             // His name graphic reads "Clone", cut from AW2's own letters.

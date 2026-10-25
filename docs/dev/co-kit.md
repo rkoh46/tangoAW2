@@ -76,6 +76,15 @@ The four are CO ids 86..89 (`co_new::ES_FIRST`), filled like Clone Andy's row (A
 because the tables of the console are built from it (both peers of a match must agree) and their powers' rules are engine hooks (`es_co.rs`) that both peers must run alike. On: the Teams list, the CO select cards, the HUD, the dialogue
 boxes (Power quotes), the power and tag cut-ins, and the CO page show them.
 
+## Recolour-based COs (`[portrait] base` + `[portrait.recolour]`)
+A CO whose pictures are another CO's with other colours needs no picture of its own: `cos/<id>.toml` has `[portrait] base = "andy"` (the Dual Strike CO whose art it wears) and `[portrait.recolour]`, a table of
+palette index 1..15 to `"RRGGBB"`. Every picture of a CO is 4-bit indexed in one 16-colour palette (eight colour schemes, same roles), so replacing entries recolours the large art, mug, mini, HUD face, the
+select card, the CO page, the cut-ins, the dialogue boxes and the tag screen's figure at once; no pixel is drawn or edited and the shading survives because each ramp keeps its number of tones. Code:
+`ds_co_art::recolour(co)` / `co_art_for(co, ds)` / `full_figure_for(co, ds)` (the data files are `include_str!`'d in `RECOLOUR_FILES`; every consumer that used to ask for the donor's art by Dual Strike id asks by CO:
+`co_new`, `ds_coselect::art_mug_for`, `ds_hud::face`, `ds_co_page`, `tag_screens::figure`). Find the roles of the donor's indices by lighting each one on its large art. Clone Andy (`cos/cloneandy.toml`, base Andy):
+skin ramp 2..6 pale to mid blue (five tones), jacket 9 and its shade 10 and shirt 12 charcoal (three tones, the shirt lightest); hair 7 and 8, rim 1, buckle 11 and 14, star 13 and outline 15 are Andy's. No entry is shared between
+skin and anything else. Tests: `ds_co_art::recolour_tests`, `test_co.py::test_clone_andy_is_a_recolour_of_andy`; look: `aw2dev co portrait ingame cloneandy` and `cloneandy_recolour.png` (`aw2dev co sheet powers andy cloneandy`).
+
 ## Name plates
 `aw2dev co check` measures each name in AW2's text font against the widest plate (28 px, Von Bolt): Klaus 19, Livia 17, Aurelia 24, Cassius 27, all within. The 48 x 16 name graphic is our own set of letters:
 Klaus, Aurelia, Livia fit with room, Cassius fills all 48 columns. No plate needed the short form (`short = "Aurel"` / `"Cass"` in the CO files are for a plate that clips).

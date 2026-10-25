@@ -335,7 +335,7 @@ fn figure(core: &Core, co: u8) -> Option<Arc<Figure>> {
     if let Some(f) = cache.lock().unwrap().get(&co) {
         return f.clone();
     }
-    let f = match crate::tag::ds_id(co).and_then(crate::ds_co_art::full_figure) {
+    let f = match crate::tag::ds_id(co).and_then(|d| crate::ds_co_art::full_figure_for(co, d)) {
         Some((px, pal)) => Some(Figure { px, pal }),
         None => aw2_figure(core, co),
     }

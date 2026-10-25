@@ -104,6 +104,8 @@ def pimport(a):
 def pingame(a):
     from ..colib import ingame
     sel, _ = _cos(a.co)
+    if "cloneandy" in (a.co or []):
+        sel = dict(sel, cloneandy={})
     bad = 0
     for co in sel:
         d = cfg.work("co", "ingame", co)
@@ -111,6 +113,9 @@ def pingame(a):
         for old in d.glob("*.png"):
             old.unlink()
         got = ingame.photograph(co, d)
+        if co == "cloneandy":
+            util.say(f"{co}: photographed in the game ({got}); pictures in {d} (recolour of Andy's art: look at them)")
+            continue
         res = ingame.verify(co, d)
         for k, v in res.items():
             util.say(f"{co}: {k}: {'ok' if v else 'NOT SEEN'}")

@@ -94,7 +94,7 @@ def find_on(shot, co, need=0.93, patches=2, pic="face_normal"):
 # The Teams screen keeps the P1 card's place in this list at 0x02017C6C (found by diffing EWRAM while UP walked the list): the walk presses UP or DOWN until it is on the CO, so a press
 # a busy machine drops or doubles does not matter.
 # The game's own list of the Teams screen is at TEAMS_ORDER (CO ids, 0xFF-ended): the CO's place in it is read from there, since each new CO stands after the one it takes after.
-ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89}
+ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "cloneandy": 81}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
 TEAMS_ORDER = 0x0203FE80
 TEAMS_CURSOR = 0x02017C6C
 TEAMS_LEN = 34
@@ -175,8 +175,11 @@ def _photograph(co, out_dir):
         # the cut-in comes a moment after the quote: shoot fast, keep the frame with the most of the figure's own colours on the red
         import numpy as np
         from PIL import Image
-        mask, rgb = mug_rgb(co, "large")
-        own = {tuple(int(v) for v in c) for c in rgb[mask]}
+        try:
+            mask, rgb = mug_rgb(co, "large")
+            own = {tuple(int(v) for v in c) for c in rgb[mask]}
+        except FileNotFoundError:         # (a recolour of another CO's art: no committed art; the middle frame of the red cut-in stands in)
+            own = set()
         best, best_n, quote, quote_n = None, 0, None, 0
         for k in range(26):
             p = out / f"{co}_power{k}.png"
