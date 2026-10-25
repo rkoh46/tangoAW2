@@ -1328,7 +1328,10 @@ fn grid(core: &Core) -> Option<Grid> {
     let k = core.raw_read_16(proc + 0x52, -1) as usize % size + core.raw_read_32(proc + 0x5C, -1) as usize;
     let cur = *offered.get(k)?;
     // Every CO of the roster, Dual Strike's way: by country, a CO the screen does not offer locked.
-    let mut all: Vec<u8> = (0..19u8).chain(crate::co_new::all().map(|n| n.0)).collect();
+    // (the Emerald Sun five are no cells until they are in Versus: they would be locked cells nobody can reach)
+    let mut all: Vec<u8> = (0..19u8)
+        .chain(crate::co_new::all().map(|n| n.0).filter(|&c| crate::co_new::listed(c)))
+        .collect();
     for &c in &offered {
         if !all.contains(&c) {
             all.push(c);
