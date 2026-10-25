@@ -38,6 +38,9 @@ def register(sub):
     a.add_argument("--base", required=True)
     a.add_argument("--out", help="folder for the before/after pictures")
     a.set_defaults(fn=compare)
+    a = ms.add_parser("ports", help="every port of the maps (map, army, cell, the sea beside it) with its status (PT01): a table")
+    a.add_argument("--source", default="all", choices=["bh", "es", "versus", "all"])
+    a.set_defaults(fn=ports_table)
     a = ms.add_parser("render-check", help="the game's own pictures of maps against the drawings the games use for river, shoal, bridge and coast tiles (RN01)")
     a.add_argument("--source", default="es", choices=["es", "bh", "versus"], help="the maps to check (their pictures: --pictures)")
     a.add_argument("--pictures", metavar="DIR", help="the folder of m<N>_full.png pictures of the maps to check (default: es devkit/work/campaign/es/review_raw, bh devkit/work/maps/boot)")
@@ -197,6 +200,26 @@ def compare(a):
         sheet.save(out / f"{name}.png")
         print(f"{name}: {len(cells)} tiles changed, errors {sum(p.level == 'error' for p in po)} -> {sum(p.level == 'error' for p in pn)}")
     util.say(f"{changed} maps changed; pictures in {out}")
+    return 0
+
+
+def ports_table(a):
+    """The port audit: one row per port of the ES, BH and Versus maps: map, owner (army digit, N neutral), cell, the sea body beside it, and OK or the PT01 finding."""
+    load, rules, render = _lib()
+    rows, bad = [], 0
+    for s in (["bh", "es", "versus"] if a.source == "all" else [a.source]):
+        for m in _maps(load, s):
+            G = rules.Grid(m)
+            hits = {(p.x, p.y): p.msg for p in rules.lint(m, {"PT01"})}
+            lava = load.look_of(m.name) == 3
+            for x, y in G.cells("Pp"):
+                owner = G.T.owner(G.t[y][x])
+                rows.append((s, m.name, "N" if not owner else str(owner), (x, y), "lava" if lava else "sea", hits.get((x, y))))
+    print(f"{'src':7}{'map':16}{'army':5}{'cell':10}{'water':6}status")
+    for s, n, o, c, w, h in rows:
+        print(f"{s:7}{n:16}{o:5}{str(c):10}{w:6}{'OK' if not h else 'FIX: ' + h}")
+        bad += bool(h)
+    util.say(f"maps ports: {len(rows)} ports, {bad} lead nowhere")
     return 0
 
 

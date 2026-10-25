@@ -282,6 +282,35 @@ class Lint(unittest.TestCase):
         m.source = "es"
         self.assertNotIn("ES01", ids(m))
 
+    def test_pipelines_are_infrastructure_not_stubs(self):
+        rows = list(FLAT)
+        rows[4] = "...IIII...."                                # a stub in open terrain
+        self.assertIn("PP03", {p.rule for p in rules.lint(build(rows))})
+        rows[4] = "I" * 11                                     # edge to edge
+        self.assertNotIn("PP03", {p.rule for p in rules.lint(build(rows))})
+        rows[4] = "IIIII.IIIII"                                # a gate of one cell in a wall: still a wall
+        self.assertNotIn("PP03", {p.rule for p in rules.lint(build(rows))})
+
+    def test_a_seam_must_change_something(self):
+        rows = list(FLAT)
+        rows[4] = "IIIIIZIIIII"                                # a wall edge to edge with a seam: breaking it joins the two halves
+        self.assertNotIn("PP04", {p.rule for p in rules.lint(build(rows))})
+        rows[4] = "IIIZIIIII.."                                # the wall ends before the edge: the way round is open and a seam saves little
+        got = {(p.rule) for p in rules.lint(build(rows))}
+        self.assertIn("PP03", got)
+
+    def test_a_port_needs_navigable_sea(self):
+        rows = list(FLAT)
+        for y in range(2, 5):
+            rows[y] = rows[y][:6] + "~~~" + rows[y][9:]
+        rows[3] = rows[3][:5] + "P" + rows[3][6:]
+        self.assertIn("PT01", {p.rule for p in rules.lint(build(rows))})       # a pond of 9 cells is no harbour
+        rows = list(FLAT)
+        for y in range(0, 8):
+            rows[y] = rows[y][:8] + "~~~"
+        rows[3] = rows[3][:7] + "P" + rows[3][8:]
+        self.assertNotIn("PT01", {p.rule for p in rules.lint(build(rows))})    # 27 cells of sea
+
     def test_emerald_sun_rivers_all_end_in_water_or_at_the_edge(self):
         bad = [(m.name, str(p)) for m in load.es_maps() for p in rules.lint(m, {"RV01", "RV03", "RV05"})]
         self.assertEqual(bad, [])

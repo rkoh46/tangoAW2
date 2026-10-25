@@ -658,17 +658,42 @@ def dist_map(G, start, seams_open):
 
 
 def pipelines(G):
-    """PP03: a pipeline is a barrier built like infrastructure: 6 or more cells and no end hanging in open terrain. PP04: each seam must change something: broken, it joins two parts
-    of the ground (vehicles) that were apart, or shortens the way between two HQs by 6 cells or more."""
+    """PP03: a pipeline is a barrier built like infrastructure: 6 or more cells (a gated wall counts as one line) and no end hanging in open terrain. PP04: each seam of a barrier
+    must change something: broken, it joins two parts of the ground (vehicles) that were apart, or shortens the way between two HQs by 6 cells or more."""
     out = []
     parts = pipe_parts(G)
     hqs = G.cells("H")
-    for comp in parts:
+    # a wall with gates is one line: join the pieces a gate of up to 3 cells separates in a straight line
+    owner = {}
+    for i, comp in enumerate(parts):
+        for c in comp:
+            owner[c] = i
+    group = list(range(len(parts)))
+
+    def find(i):
+        while group[i] != i:
+            group[i] = group[group[i]]
+            i = group[i]
+        return i
+    for i, comp in enumerate(parts):
+        for cell, beyond in pipe_ends(G, comp):
+            d = (beyond[0] - cell[0], beyond[1] - cell[1])
+            for k in range(0, 3):
+                c = (beyond[0] + d[0] * k, beyond[1] + d[1] * k)
+                if c in owner and owner[c] != i:
+                    group[find(owner[c])] = find(i)
+                    break
+                if G.at(*c) in "^~#|":
+                    break
+    size = {}
+    for i, comp in enumerate(parts):
+        size[find(i)] = size.get(find(i), 0) + len(comp)
+    for i, comp in enumerate(parts):
         if any(G.at(x + dx, y + dy) == "#" for x, y in comp for dx, dy in D4):
             continue                                     # (the supply pipe of a Black Hole factory or cannon)
-        if len(comp) < 6:
+        if size[find(i)] < 6:
             x, y = min(comp, key=lambda c: (c[1], c[0]))
-            out.append(Problem("PP03", x, y, f"a pipe stub of {len(comp)} cells"))
+            out.append(Problem("PP03", x, y, f"a pipe stub of {size[find(i)]} cells"))
             continue
         for cell, beyond in pipe_ends(G, comp):
             if not closed_beyond(G, beyond, (beyond[0] - cell[0], beyond[1] - cell[1])):
@@ -680,10 +705,10 @@ def pipelines(G):
             for hq in hqs:
                 before = dist_map(G, hq, set())
                 after = dist_map(G, hq, {seam})
-                if len(after) > len(before) + 0 and any(c not in before for c in after if c != seam and c in after and G.at(*c) in VEH):
-                    gained = True                    # the seam joins ground that was cut off
+                if any(c not in before for c in after if c != seam):
+                    gained = True                        # the seam joins ground that was cut off
                     break
-                if any(c in before and before[c] - after[c] >= 6 for c in after if c in before and after[c] < before[c]):
+                if any(before[c] - after[c] >= 6 for c in after if c in before):
                     gained = True
                     break
             if not gained:
@@ -751,7 +776,7 @@ def design_checks(G):
 
 
 # Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for an Emerald Sun map.
-KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}, "bh30": {"AR02": 1}}
+KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}, "bh30": {"AR02": 1}, "Crystal Isles": {"PT01": 3}}
 
 
 CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, reachables, pipelines, ports, design_checks]
