@@ -75,6 +75,7 @@ def to_five_army_teams(ctx, g):
     e.wait(150)
     e.press("A", 8)
     e.wait(150)
+    saves.show_all_lists(e)
     if not g.press_until("LEFT", lambda: e.u8(MAP_TAB) == TAB_5P, tries=14, hold=8, settle=50):
         raise NavError(f"tab {TAB_5P} not reached ({e.u8(MAP_TAB)})")
     e.wait(30)

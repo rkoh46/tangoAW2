@@ -20,6 +20,7 @@ PROC_POOL = (0x0200D610, 0x0200E418)
 # Select Map's list: ids per row, the last row, the cursor row and first row shown.
 LIST_IDS = 0x0203DC24      # (the list's struct moved to 0x0203DC20 with room for 110 ids: crate::five_map::LIST)
 LIST_LAST = 0x0203DC93
+ORIGINAL_VIEW = 0x0203DB0E  # 1 while Select Map shows the game's own tabs (crate::online_maps::OFF_VIEW)
 LIST_ROW = 0x03005980
 LIST_TOP = 0x03005990         # + the tab: the first row shown
 SELECT_MAP_PROC = 0x08616C54
@@ -107,6 +108,14 @@ def back_to_select_mode(e, max_frames=3000):
 
 
 # -- Versus ---------------------------------------------------------------------------
+def show_all_lists(e):
+    """Select Map after Versus > New: offline Versus lists the maps by player count; L and R together (held past the combo's
+    delay) show the game's own tabs, Design Maps and the 5P tab among them (crate::online_maps::offline_before)."""
+    if e.u8(ORIGINAL_VIEW) == 0:   # (the view lives in the console: once on it stays on, L+R again would swap back)
+        e.press("L+R", 12)
+        e.wait(120)
+
+
 def versus_select_map(g, tab, map_id):
     """Select Mode's Versus > New > the tab, down to `map_id`, A: the Teams
     screen."""
@@ -117,6 +126,7 @@ def versus_select_map(g, tab, map_id):
     box_row(e, 1)
     e.press("A", 8)
     e.wait(150)
+    show_all_lists(e)
     if not g.press_until("LEFT", lambda: e.u8(MAP_TAB) == tab, tries=14, hold=8, settle=50):
         raise NavError(f"tab {tab} not reached (tab {e.u8(MAP_TAB)})")
     e.wait(40)

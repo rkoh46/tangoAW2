@@ -124,6 +124,8 @@ def select_map(ctx, name, save=None):
     e.wait(150)
     e.press("A", 8)
     e.wait(150)
+    e.press("L+R", 12)   # (offline Versus lists by player count: L and R show the game's own tabs)
+    e.wait(120)
     if not g.press_until("LEFT", lambda: e.u8(MAP_TAB) == tab, tries=12, hold=8, settle=50):
         raise NavError(f"tab {tab} not reached (tab {e.u8(MAP_TAB)})")
     e.wait(30)

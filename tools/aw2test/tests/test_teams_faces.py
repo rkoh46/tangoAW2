@@ -22,7 +22,7 @@ from aw2test.emu import Emu
 from aw2test.game import Game, NavError
 from aw2test.harness import test
 from aw2test.rom import lz10
-from aw2test import paths, ram
+from aw2test import paths, ram, saves
 
 OAM = 0x07000000
 OBJ_VRAM = 0x06010000
@@ -159,6 +159,7 @@ def to_teams(ctx, g, tab, detour):
     e.wait(150)
     e.press("A", 8)
     e.wait(150)
+    saves.show_all_lists(e)
     if not g.press_until("LEFT", lambda: e.u8(MAP_TAB) == tab, tries=14, hold=8, settle=50):
         raise NavError(f"tab {tab} not reached ({e.u8(MAP_TAB)})")
     e.wait(30)
