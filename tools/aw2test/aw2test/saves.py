@@ -18,8 +18,8 @@ DESIGN_ROOM = 2
 WHEELS = (0x08616A08, 0x08616A40)
 PROC_POOL = (0x0200D610, 0x0200E418)
 # Select Map's list: ids per row, the last row, the cursor row and first row shown.
-LIST_IDS = 0x02027F78
-LIST_LAST = 0x02027FAB
+LIST_IDS = 0x0203DC24      # (the list's struct moved to 0x0203DC20 with room for 110 ids: crate::five_map::LIST)
+LIST_LAST = 0x0203DC93
 LIST_ROW = 0x03005980
 LIST_TOP = 0x03005990         # + the tab: the first row shown
 SELECT_MAP_PROC = 0x08616C54

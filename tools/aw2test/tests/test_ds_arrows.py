@@ -15,7 +15,7 @@ from tests.test_ds_coselect import (BYTE_DRIVEN, CO_LIST, CO_TABLE_POOL, DS_GRAP
                                     to_five_army_teams, under_cursor, war_room_co_screen)
 
 PICKS = 0x030058D4
-WALK = 110  # frames a walk of the game's cursor to any CO may take (it takes ~9 a step)
+WALK = 220  # frames a walk of the game's cursor to any CO may take (a step takes ~9 frames, a pulse every other one: a wrap from the last country to the first and to a place in it takes about 150)
 
 
 def record_state(g, five):

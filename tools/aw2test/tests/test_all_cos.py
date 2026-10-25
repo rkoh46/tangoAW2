@@ -108,6 +108,7 @@ def play_and_save(ctx, co, label, save=None):
     won; the records in RAM and in the Flash the game saved; then the save
     booted again: the same records, and the War Room's SELECT MAP drawing them.
     Returns (the saved file, the map's id, the map's record row)."""
+    wr.set_ds(ctx.ds)
     e, g = boot(ctx, save)
     before = None
     wr.open_war_room(e)
@@ -129,16 +130,22 @@ def play_and_save(ctx, co, label, save=None):
     path = os.path.join(ctx.out, f"after_{label}")
     img = saves.flash(e, path)
     ctx.eq(img.problems(), [], f"{label}: the Flash image is one AW2 accepts")
-    prof = img.slot(0)
-    at = 0x48 + wr.ROW * (map_id - 0x6C)
-    ctx.eq(prof[at:at + wr.ROW], row, f"{label}: the profile in Flash holds the row")
-    ctx.eq(prof[0x48:0x2A0], e.read(wr.RECORDS, 30 * wr.ROW), f"{label}: all 30 maps' records in Flash are the game's")
+    if ctx.ds:
+        # (the pack's rows are at the end of slot 15: tests/test_save_integrity_modes.py)
+        from tests.test_save_integrity_modes import ds_war_room_row
+        ctx.eq(ds_war_room_row(img, map_id), row, f"{label}: the DS record in Flash holds the row")
+    else:
+        prof = img.slot(0)
+        at = 0x48 + wr.ROW * (map_id - 0x6C)
+        ctx.eq(prof[at:at + wr.ROW], row, f"{label}: the profile in Flash holds the row")
+        ctx.eq(prof[0x48:0x2A0], e.read(wr.RECORDS, 30 * wr.ROW), f"{label}: all 30 maps' records in Flash are the game's")
     e.shot(os.path.join(ctx.out, f"{label}_select_map"))
     e.close()
     # again from the saved game
     e2, g2 = boot(ctx, save=path + ".sav")
     saves.to_select_mode(e2)
-    ctx.eq(wr.rows(e2), got, f"{label}: booted from the save, the same records")
+    if not ctx.ds:
+        ctx.eq(wr.rows(e2), got, f"{label}: booted from the save, the same records")
     saves.wheel_to(e2, saves.WAR_ROOM)
     e2.press("A", 8)
     e2.wait(60)
@@ -146,6 +153,8 @@ def play_and_save(ctx, co, label, save=None):
     e2.press("A", 8)
     ctx.require(e2.wait_until(lambda: sv.running(e2, sv.SELECT_MAP_PROC), 600, step=10), f"{label}: SELECT MAP after the reload")
     e2.wait(120)
+    if ctx.ds:
+        ctx.eq(wr.rows(e2), got, f"{label}: booted from the save, the same records")
     e2.shot(os.path.join(ctx.out, f"{label}_select_map_reloaded"))
     e2.press("R", 8)
     e2.wait(90)
@@ -171,6 +180,7 @@ def war_room_new_record_joins_an_old_save(ctx):
     same map won with another CO (Crumb with the pack, Sturm without) adds its
     record beside it, and the first one is unchanged."""
     other = 82 if ctx.ds else 10
+    wr.set_ds(ctx.ds)
     path, map_id, first = play_and_save(ctx, 1, "andy")
     e, g = boot(ctx, path)
     wr.open_war_room(e)
@@ -185,8 +195,12 @@ def war_room_new_record_joins_an_old_save(ctx):
     ctx.check(any(row[k:k + 4] == old for k in range(0, 20, 4)), "Andy's record bytes are as they were")
     img = saves.flash(e, os.path.join(ctx.out, "after_two"))
     ctx.eq(img.problems(), [], "the Flash image is one AW2 accepts")
-    at = 0x48 + wr.ROW * (map_id - 0x6C)
-    ctx.eq(img.slot(0)[at:at + wr.ROW], row, "the profile in Flash holds both records")
+    if ctx.ds:
+        from tests.test_save_integrity_modes import ds_war_room_row
+        ctx.eq(ds_war_room_row(img, map_id), row, "the DS record in Flash holds both records")
+    else:
+        at = 0x48 + wr.ROW * (map_id - 0x6C)
+        ctx.eq(img.slot(0)[at:at + wr.ROW], row, "the profile in Flash holds both records")
 
 
 @test(modes=("ds",))
