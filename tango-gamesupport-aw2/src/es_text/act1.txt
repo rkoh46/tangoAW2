@@ -231,6 +231,11 @@ AURELIA: I have a list.
 AURELIA: The town is Javier's. A ragged / rock wall, towers, Com Towers.
 AURELIA: Every Com Tower he holds makes / his men sharper. His teeth first.
 AURELIA: Gates north, west and east. The / keep has one gate, to the south.
+AURELIA: One more thing. A missile silo / stands outside the wall, west road.
+AURELIA: Neutral. Whoever steps on it / fires it. One shot, three points
+AURELIA: to every unit around it. Javier's / men can step on it as well.
+KLAUS: Then whoever is first, fires.
+AURELIA: I want it for the west gate. / Let his wall guard stand thick.
 KLAUS: Drake's Battleship, offshore in / the north. Shells from the sea.
 AURELIA: Range is eleven. My Rockets / reach nine and a half, with luck.
 AURELIA: So I need the Recon to find / the guns, and the Bomber to kill them.

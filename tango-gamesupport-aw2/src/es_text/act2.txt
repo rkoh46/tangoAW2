@@ -19,6 +19,11 @@ KLAUS: Take all three. If the bridges / fall, the legion waits for thaw.
 NARRATION: Dry sand country, scrub and rock. / A sandstorm walks along the road.
 CASSIUS(h): A storm! Nothing keeps up with / my horses in it. Hate the grit!
 AURELIA: Dust scours the air, Prefect. Long / guns lose a cell of range. Mine too.
+AURELIA: Across the desert, past the river, / runs the Comet Pipe. A pipeline wall.
+AURELIA: North to south, two gates: the / Highwatch road and the Lowmere road.
+AURELIA: And a seam on the Crossways road. / One direct-fire hit breaks it open.
+CASSIUS: A shortcut! Break the seam and / my horses go straight through!
+AURELIA: The ruins in the middle hold a / silo. Neutral. Either side may fire it.
 KLAUS: The signal posts across the Sable / see no farther. Ride before it lifts.
 AURELIA: Dunmere is home. Our depot sits / at the forward crossroads.
 LIVIA: Which costs, for every day of / delay, four hundred measures
@@ -104,11 +109,16 @@ COLIN: Counterfeit! Bold of you to / pay in it, honestly.
 LIVIA: The coin is struck by the / Senate's mint. I can show you.
 HACHI: Show me a receipt. Rival or not, / I don't take receipts. Nails, yes.
 LIVIA: Then I shall show you what / I do accept. Legate, the map.
-KLAUS: The whole town is the target. / Sixteen properties, owned at once,
-KLAUS: at the end of any day by the / sixteenth. Capture, nothing else.
-KLAUS: Guildhall, north-west: Colin. Counting / House quarter, south-east: Hachi.
+KLAUS: The whole town is the target. / About thirty properties in all.
+KLAUS: Capture, nothing else. Sixteen owned / at once, at the end of any day by
+KLAUS: the sixteenth day. Guildhall, / north-west: Colin.
+KLAUS: Counting House quarter, south-east: / Hachi.
 KLAUS: Salt Row, south-west, is cut off by / the Mill Water. Two bridges.
-KLAUS: Nearly twenty neutral cities lie / between us. Take them, and the inlet.
+KLAUS: A dozen neutral cities lie between / us. Take them, and the inlet.
+AURELIA: The Mill Water is a canal, Legate. / Bridges, and a wall of sluice gates.
+KLAUS: A neutral missile silo stands on / the avenue toward the Guildhall.
+COLIN: Ooh, the silo! Mine, I think. / Wowee, I love that avenue!
+LIVIA: Stepping on it is not owning it, / Colin. Properties are my concern.
 LIVIA: The Senate's auditors arrive on / day seventeen. If I cannot show
 LIVIA: sixteen properties on my books, / the credit is withdrawn. All of it.
 COLIN: Ha! And we out-produce you / three to one! Look at my factories!
@@ -120,7 +130,7 @@ LIVIA: Your hours, your output and / your temper. I shall use all three.
 LIVIA: A tank is a debt with a gun / on it. I have settled larger.
 HACHI: Big talk, rival merchant. The deeds / are ours, and I don't discount.
 LIVIA: Gladly. Each capture is a deed / transferred, at the usual rate.
-HACHI: I'll haggle every one of 'em. / Come take your twenty cities, friend.
+HACHI: I'll haggle every one of 'em. / Come take your dozen cities, friend.
 KLAUS: Advance.
 
 == m06_day6
@@ -183,7 +193,10 @@ NARRATION: Isle Verdant ahead. A harbour / bay, an airport, a flagship.
 KLAUS: Isle Verdant commands the Roads. / Whoever holds its harbour holds them.
 KLAUS: The coast is ours. Now we take / the water, and the sea-lane north.
 AURELIA: The Twin Sisters are two atolls, / stepping stones from Cape Fidelis.
-AURELIA: Each holds a free airport. One / also holds a missile silo.
+AURELIA: Each holds a neutral airport. The / north one also holds a missile silo.
+AURELIA: Sand spits join them to our island / and to Isle Verdant. Infantry walk.
+AURELIA: The enemy walks to the south atoll / the same way. Reefs lie in the channels.
+KLAUS: Reefs are hazards for ships. Keep / the Cruisers in the open lanes.
 KLAUS: A silo is a single shot. It takes / three points from every unit around it.
 KLAUS: Friend and foe alike. We fire it / only when the enemy stands thickest.
 LIVIA: The Green Earth fleet is the / largest within two hundred leagues.
@@ -262,8 +275,11 @@ NARRATION: Ironhold, Orange Star. / A ring of crags on an open plain.
 KLAUS: Ironhold. Crags round Max's HQ, / the Brimwater canal, a causeway.
 KLAUS: Front gate in the west, rear gate / in the east. Two lanes, one causeway.
 KLAUS: Ironhold is the gate of Orange / Star. Take it and the frontier moves.
-AURELIA: A missile silo stands by the / causeway, Legate. In the middle.
+AURELIA: A missile silo stands by the / causeway, Legate. Neutral.
 KLAUS: One shot, three points from every / unit around it. Whoever fires it first.
+AURELIA: It sits at the causeway head, east / bank. Whoever steps on it fires.
+CASSIUS: I will ride onto it! Boom, and / they never see me coming!
+KLAUS: Ride onto it when the enemy is / thick, not before. Not for the noise.
 NARRATION: Rain on the crags. A grey fog / lies along the plain.
 CASSIUS: Fog! My northern road is a ghost / road. Nobody will see me coming!
 KLAUS: Nor will you see them. The fog / covers both flanks. Keep to the road.

@@ -239,6 +239,9 @@ LIVIA: A truck is dignified, Prefect. / It has a roof, and a ledger rail.
 AURELIA: The road winds through the Pinewood, / past a hamlet, a ford, a ruin.
 AURELIA: The ford is the knot. One bridge / over the river, mid-road.
 AURELIA: An APC stalled on the bridge / blocks all the others. Remember that.
+AURELIA: A pipeline runs beside the road in / the pinewood. A seam at its side.
+AURELIA: Break it and a south track opens, / past Flak's camp, to a second bridge
+AURELIA: over the Marrow. The ford is not / the only crossing. The convoy may.
 NARRATION: The pines gave out. Sand, scrub, / and a ruin by the ford. A storm blows.
 LIVIA: Grit in the engines of four grain / carriers. I have begun a column.
 AURELIA: Few trees, so little cover. The / ruin is only a ruin in sand.
@@ -320,6 +323,9 @@ NARRATION: The Iron Bastion, Blue Moon. / Snow to the knee, three rings high.
 AURELIA: Three rings, Legate. The / outer is smooth mountain.
 AURELIA: The middle is smooth mountain. / The inner, a mountain of mountain.
 AURELIA: The gaps are staggered. I have never / wanted to be a rock more than now.
+AURELIA: A pipe wall closes the first south / corridor between outer and middle.
+AURELIA: Break the seam and the south-west / lane opens for a flank. Foot can
+AURELIA: climb the rocks beside it. And a / silo guards the east approach.
 KLAUS: You are not a rock. You are / the one who knows rocks.
 KLAUS: It is a Tag. You hold the / hammer and I hold the line.
 OLAF: Wah-ha-ha! Visitors! Snow / and visitors! My two favourites!
