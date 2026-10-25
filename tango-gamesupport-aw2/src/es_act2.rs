@@ -53,7 +53,7 @@ fn es05() -> MissionDef {
 
 fn es06() -> MissionDef {
     let mut m = MissionDef::new("es06", "Tribute");
-    m.objective = "Own 14 properties at once by day 16.";
+    m.objective = "Own 16 properties at once by day 16.";
     m.map = MapSrc::Built("es06");
     m.armies = vec![
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(LIVIA)).funds(3000),
@@ -68,9 +68,9 @@ fn es06() -> MissionDef {
     m.recruits = vec![roster::LIVIA, roster::COLIN];
     m.triggers = vec![
         on_day(6, None, vec![Action::Scene(scene("m06_day6"))]),
-        after(Cond::PropertiesAtLeast { army: 1, n: 14 }, vec![Action::Win]),
+        after(Cond::PropertiesAtLeast { army: 1, n: 16 }, vec![Action::Win]),
         // The audit: day 17 begins and the tribute is not in hand (losing the square is the match's own defeat).
-        on_day(17, Some(Cond::Not(Box::new(Cond::PropertiesAtLeast { army: 1, n: 14 }))), vec![Action::Lose]),
+        on_day(17, Some(Cond::Not(Box::new(Cond::PropertiesAtLeast { army: 1, n: 16 }))), vec![Action::Lose]),
     ];
     m.flag = region::ACT2[1];
     m.stars = 2;
