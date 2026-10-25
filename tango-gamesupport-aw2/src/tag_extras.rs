@@ -461,7 +461,9 @@ pub fn quote(core: &mut Core) {
     let to = core.raw_read_8(SWAP_TO, -1);
     let line = ds_record_word(to, DS_TAG_IN[pick(core)]).and_then(ds_text).map(|t| clean(&t));
     // A CO Dual Strike lacks (AW2's Sturm): one of AW2's own power quotes.
-    let line = line.or_else(|| aw2_power_quote(core, to, pick(core)));
+    // (tangoAW2's own COs keep their tag-in line in the third quote slot of each set of three: crate::co_new::texts)
+    let k = if crate::co_new::is_own(to) { 2 + 3 * pick(core) } else { pick(core) };
+    let line = line.or_else(|| aw2_power_quote(core, to, k));
     let line = line.unwrap_or_else(|| b"It's my turn now!".to_vec());
     set_string(core, TAGIN_AT, &line);
     let cpu = core.gba_mut().cpu_mut();

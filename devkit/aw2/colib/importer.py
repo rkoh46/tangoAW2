@@ -194,6 +194,9 @@ def import_co(spec, root=None, painterly=False):
     if spec.get("pixelart"):
         from . import pixelart
         return pixelart.styled(spec, root / spec["source"])
+    if spec.get("illustration"):
+        from . import illustration
+        return illustration.styled(spec, root / spec["source"])
     src = Source(root / spec["source"], spec.get("bg_tolerance", 18))
     s = spec.get("scale", 0.1275)
     # --- the large picture: the source scaled by s, the top margin `top`, centred; what falls below 160 or outside 128 is cut
@@ -281,9 +284,16 @@ def import_co(spec, root=None, painterly=False):
     e = spec["eyes"]       # the two eyes' centres in the source: x1 y1 x2 y2
     ex, ey = round(((e[0] + e[2]) / 2 - fx) * k), round(((e[1] + e[3]) / 2 - fy) * k)
     im.eye = (ex, ey)
-    im.mini = _window(mug, ex - 16, ey - 10, 32, 24)
+    im.mini = mini_strip(mug, ey)
     im.hud = _window(mug, ex - 16, ey - 6, 32, 16)
     return im
+
+
+def mini_strip(face, ey):
+    """The "mini" is a 48 x 16 strip of the mug, the whole width and the 16 rows round the eyes (`ey`: the eye line): 12 tiles, the first 8 the left 32 x 16 in rows of four, the last 4 the right 16 x 16
+    in rows of two. It is what the battle scene's header draws (AW2's Sonja: the same layout; found by poking each tile of a CO's mini with a colour of its own and reading the header), and the two
+    sprites of the Teams page (a 32 x 16 and a 16 x 16)."""
+    return _window(face, 0, max(0, min(32, ey - 10)), 48, 16)
 
 
 def _window(a, x0, y0, w, h):
@@ -320,7 +330,7 @@ def all_expressions(im, spec):
 # --- the committed art: indexed PNGs ----------------------------------------------------------------------------------------------------------------------------------
 
 ART_DIR = cfg.REPO / "tango-gamesupport-aw2" / "art" / "cos"
-FILES = {"large": (128, 160), "face_normal": (48, 48), "face_happy": (48, 48), "face_sad": (48, 48), "face_angry": (48, 48), "mini": (32, 24), "hud": (32, 16)}
+FILES = {"large": (128, 160), "face_normal": (48, 48), "face_happy": (48, 48), "face_sad": (48, 48), "face_angry": (48, 48), "mini": (48, 16), "hud": (32, 16)}
 
 
 def _png(idx, palette):

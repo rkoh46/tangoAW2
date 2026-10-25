@@ -43,7 +43,7 @@ pub struct Pair {
 }
 
 /// Sturm's special pairs, in his TAG box's order.
-pub const PAIRS: [Pair; 7] = [
+pub const PAIRS: [Pair; 8] = [
     Pair {
         partner: 75, // Von Bolt
         compatibility: 125,
@@ -100,6 +100,14 @@ pub const PAIRS: [Pair; 7] = [
         sturm_first: [("Kneel. It is mine.", "Sir! Gerald agrees!"), ("Nothing is left behind.", "Not one boot, sir!")],
         partner_first: [("We did it, sir!", "Silence. It is mine."), ("Gerald won it, sir!", "The biscuit serves me.")],
     },
+    Pair {
+        partner: crate::co_new::ASUKA,
+        compatibility: 118,
+        stars: 2,
+        name: "Perfect Intel",
+        sturm_first: [("Nothing is hidden.", "As projected."), ("Report.", "Their line is open.")],
+        partner_first: [("Analysis complete.", "Acceptable."), ("As projected.", "Then it is done.")],
+    },
 ];
 
 /// Black Hole's other COs (AW2 ids: Kindle, Jugger, Koal): 105.
@@ -126,6 +134,11 @@ pub fn compatibility(a: u8, b: u8) -> Option<u8> {
         None if TEAMMATES.contains(&o) => TEAMMATE_COMPATIBILITY,
         None => OTHER_COMPATIBILITY,
     })
+}
+
+/// Asuka's compatibility with a CO she has no named pair with (Dual Strike has no record for her): 95, as Sturm's strangers.
+pub fn asuka_compatibility(a: u8, b: u8) -> Option<u8> {
+    (a == ASUKA || b == ASUKA).then_some(OTHER_COMPATIBILITY)
 }
 
 /// Sturm's special pair with the other CO, if they are one.
@@ -168,8 +181,9 @@ pub struct Duo {
 pub const SONJA: u8 = 7;
 /// AW2's Von Bolt.
 pub const VON_BOLT: u8 = 75;
+use crate::co_new::ASUKA;
 
-pub const DUOS: [Duo; 9] = [
+pub const DUOS: [Duo; 14] = [
 Duo {
     a: VON_BOLT,
     b: SONJA,
@@ -178,6 +192,52 @@ Duo {
     name: "Vault Breakers",
     a_first: [("Kehh! Count it twice!", "Counted. Twice."), ("Everything is mine!", "Fifty-fifty, Colonel.")],
     b_first: [("Overdrawn, dears.", "Kehh! Exquisite."), ("Audit complete.", "Keep the change.")],
+},
+// Asuka's pairs with Black Hole's COs (cos/tags.toml; the pair with Sturm is in PAIRS). VON_BOLT + SONJA above is the BH Campaign's prize; hers is the BH2 seed with the same name.
+Duo {
+    a: VON_BOLT,
+    b: ASUKA,
+    compatibility: 115,
+    stars: 2,
+    name: "Vault Breakers",
+    a_first: [("Kehh! Count it twice!", "Counted. Twice."), ("The vault is open!", "Inventory logged.")],
+    b_first: [("Audit complete.", "Kehh! Exquisite."), ("As projected.", "Keep the change.")],
+},
+Duo {
+    a: 14,
+    b: ASUKA,
+    compatibility: 120,
+    stars: 2,
+    name: "Black Eclipse",
+    a_first: [("The tide takes them.", "Predicted."), ("Nothing remains.", "Confirmed.")],
+    b_first: [("As projected.", "Hmph. Fine."), ("Their line is gone.", "Black Hole.")],
+},
+Duo {
+    a: 12,
+    b: ASUKA,
+    compatibility: 115,
+    stars: 2,
+    name: "Grand Design",
+    a_first: [("Ha! My plan works!", "Our plan."), ("Genius, right?", "Adequate.")],
+    b_first: [("Plan executed.", "Told you! Genius!"), ("As projected.", "Ha! Of course!")],
+},
+Duo {
+    a: 11,
+    b: ASUKA,
+    compatibility: 110,
+    stars: 1,
+    name: "Dead Reckoning",
+    a_first: [("Smashed 'em!", "Bearing correct."), ("Next target?", "Marked.")],
+    b_first: [("Target neutralised.", "Har! Boom!"), ("As projected.", "Har! Again!")],
+},
+Duo {
+    a: 13,
+    b: ASUKA,
+    compatibility: 110,
+    stars: 1,
+    name: "Quiet Knife",
+    a_first: [("Sss... swift.", "Silent."), ("Too slow, fools.", "Logged.")],
+    b_first: [("Their line fell.", "Sss. Neat."), ("As projected.", "Hssss.")],
 },
 // The Emerald Sun Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
 es_duo(KLAUS, AURELIA, 120, 2, "Siege of Iron", [("The wall falls.", "On schedule."), ("Hold, then breach.", "Stone, Legate.")], [("Wall's down. Legate?", "Well built."), ("Fetch the ladders.", "March.")]),
@@ -223,7 +283,7 @@ mod tests {
 
     #[test]
     fn table() {
-        assert_eq!(PAIRS.len(), 7);
+        assert_eq!(PAIRS.len(), 8);
         for p in &PAIRS {
             assert!((1..=3).contains(&p.stars));
             assert!(p.name.bytes().all(|c| c.is_ascii_alphabetic() || c == b' ' || c == b'\''));
@@ -233,5 +293,12 @@ mod tests {
         assert_eq!(compatibility(1, 2), None);
         assert_eq!(duo(SONJA, VON_BOLT).unwrap().name, "Vault Breakers");
         assert!(duo(SONJA, 1).is_none());
+        // Asuka: Vault Breakers with Von Bolt too (the BH2 seed), Black Eclipse with Hawke, Perfect Intel with Sturm, and 95 with a stranger
+        assert_eq!(duo(ASUKA, VON_BOLT).unwrap().name, "Vault Breakers");
+        assert_eq!(duo(14, ASUKA).unwrap().compatibility, 120);
+        assert_eq!(special(STURM, ASUKA).unwrap().name, "Perfect Intel");
+        assert_eq!(asuka_compatibility(ASUKA, 1), Some(95));
+        assert_eq!(asuka_compatibility(1, 2), None);
+        assert_eq!(duo_partners(ASUKA).len(), 5);
     }
 }

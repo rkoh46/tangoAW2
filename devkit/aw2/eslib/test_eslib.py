@@ -69,3 +69,30 @@ class WorldMap(unittest.TestCase):
         self.assertTrue(any("sea" in b for b in worldmap.problems(pts, sea)))
         land = [[(28, 26, 12)] * 480 for _ in range(240)]
         self.assertEqual(worldmap.problems(pts, land), [])
+
+
+class AsukaRule(unittest.TestCase):
+    """`campaign check` fails when the Emerald Sun Campaign names Asuka (she is in Versus, not in that campaign)."""
+
+    def test_the_real_campaign_does_not_name_her(self):
+        from aw2.eslib import cli
+        self.assertEqual(cli.asuka_rule(lambda ok, msg: None), 0)
+
+    def test_a_mention_fails(self):
+        import tempfile
+        from aw2.eslib import cli
+        with tempfile.TemporaryDirectory() as t:
+            src = Path(t) / "tango-gamesupport-aw2" / "src"
+            (src / "es_text").mkdir(parents=True)
+            (src / "es_act1.rs").write_text("let who = co_new::ASUKA;\n")
+            (src / "es_text" / "act1.txt").write_text("KLAUS: Hello.\nASUKA: no.\n")
+            (src / "es_cos.rs").write_text("(92, \"asuka\")\n")        # the portraits table may name her
+            (src / "es_text.rs").write_text("")
+            old, msgs = cli.cfg.REPO, []
+            cli.cfg.REPO = Path(t)
+            try:
+                self.assertEqual(cli.asuka_rule(lambda ok, msg: msgs.append((ok, msg))), 1)
+            finally:
+                cli.cfg.REPO = old
+            self.assertFalse(msgs[0][0])
+            self.assertIn("es_act1.rs:1", msgs[0][1])

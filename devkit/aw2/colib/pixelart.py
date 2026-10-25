@@ -255,7 +255,7 @@ def styled(spec, path):
     exm = round(((e[0] + e[2]) / 2 - mx0) * k)
     eym = round(((e[1] + e[3]) / 2 - my0) * k)
     im.eye = (exm, eym)
-    im.mini = I._window(face, exm - 16, eym - 10, 32, 24)
+    im.mini = I.mini_strip(face, eym)
     im.hud = I._window(face, exm - 16, eym - 6, 32, 16)
     # the framing file's coordinates for the expression edits are native cells of the (mirrored) grid; the mug square is `ms` cells at scale k
     im.spec = {**spec, "face": [mx0, my0, ms]}

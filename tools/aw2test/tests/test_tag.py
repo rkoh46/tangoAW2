@@ -1354,8 +1354,8 @@ def tag_sturm_pairs(ctx):
 
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
-    ctx.eq(names, b"Von Bolt\rHawke\rLash\rFlak\rAdder\rClone Andy\rCrumb", "Sturm's partners, tangoAW2's order (Kindle, Jugger, Koal: 105, no special pair, not listed)")
-    ctx.eq(stars, 3 + 2 + 2 + 1 + 1 + 2 + 2, "their stars")
+    ctx.eq(names, b"Von Bolt\rHawke\rLash\rFlak\rAdder\rClone Andy\rCrumb\rAsuka", "Sturm's partners, tangoAW2's order (Kindle, Jugger, Koal: 105, no special pair, not listed)")
+    ctx.eq(stars, 3 + 2 + 2 + 1 + 1 + 2 + 2, "their stars (the page scrolls: the first seven rows' stars are drawn, Asuka's, the eighth, is below)")
     ctx.shot(g, "sturm_tag_page")
     g = tag_battle(ctx, ["vonbolt", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, stars = tag_page(g)
@@ -1496,7 +1496,7 @@ def tag_clone_andy(ctx):
     ctx.check(names is UNLISTED or (b"Max" in names and b"Clone" not in names), f"Andy's own TAG page is Andy's ({names!r})")
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, _ = tag_page(g)
-    ctx.eq(names.split(b"\r")[-2:], [b"Clone Andy", b"Crumb"], "Sturm's TAG page lists Clone Andy and Crumb last")
+    ctx.eq(names.split(b"\r")[-3:], [b"Clone Andy", b"Crumb", b"Asuka"], "Sturm's TAG page lists Clone Andy, Crumb and Asuka last")
 
     # The Tag Power screen: the name's text and the 118%.
     g = tag_battle(ctx, ["sturm", "olaf"], ["cloneandy", None], units=[(1, "tank", 10, 4), (2, "tank", 20, 10)])
@@ -1656,7 +1656,7 @@ def tag_crumb(ctx):
     ctx.shot(g, "crumb_tag_page")
     g = tag_battle(ctx, ["sturm", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, _ = tag_page(g)
-    ctx.eq(names.split(b"\r")[-1], b"Crumb", "Sturm's TAG page lists Crumb last")
+    ctx.eq(names.split(b"\r")[-2], b"Crumb", "Sturm's TAG page lists Crumb before Asuka, last")
     g = tag_battle(ctx, ["clone" "andy", "olaf"], [None, None], units=[(1, "tank", 10, 4)])
     names, _ = tag_page(g)
     ctx.eq(names, b"Sturm", "Clone Andy's TAG page is unchanged")

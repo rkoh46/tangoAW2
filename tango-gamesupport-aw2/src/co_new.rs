@@ -95,6 +95,9 @@ fn turn_hue(c: u16, to: f32) -> u16 {
 /// Emerald Sun's COs start here (ids 86..=90: Klaus, Aurelia, Cassius, Livia, Varro; `crate::es_co`); the first four wear the project owner's portraits (`crate::es_cos`).
 pub const ES_FIRST: u8 = FIRST + 14;
 pub const ES_COUNT: u8 = 5;
+/// Asuka: Sonja after she defects to Black Hole, tangoAW2's own (`crate::asuka`, `docs/dev/asuka.md`). Id 92, after the Emerald Sun five and their dialogue's
+/// legionary face (91). A Black Hole CO of **every** list of this build (not an Emerald Sun one: no flag, not in that campaign).
+pub const ASUKA: u8 = FIRST + 20;
 
 /// The Dual Strike CO whose record fills the fields of Crumb's row nothing
 /// of his own is set for (Andy's neutral numbers, as Clone Andy's).
@@ -106,7 +109,7 @@ pub const CLONE_ANDY_NAME: &[u8] = b"Clone Andy";
 pub const CLONE_ANDY_BIO: &[u8] = b"Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up";
 
 pub fn is_new(co: u8) -> bool {
-    (FIRST..=CRUMB).contains(&co) || crate::es_co::is_es(co)
+    (FIRST..=CRUMB).contains(&co) || crate::es_co::is_es(co) || co == ASUKA
 }
 
 /// A new CO's Dual Strike id (Crumb has none).
@@ -118,6 +121,7 @@ pub fn ds_id(co: u8) -> Option<u8> {
 pub fn like(co: u8) -> u8 {
     match co {
         CRUMB => CRUMB_LIKE,
+        ASUKA => crate::asuka::LIKE,
         _ if crate::es_co::is_es(co) => crate::es_co::like(co),
         _ if is_new(co) => NEW[(co - FIRST) as usize].1,
         _ => co,
@@ -136,6 +140,7 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
         .map(|(k, &(ds, like))| (FIRST + k as u8, ds, like))
         .chain([(CRUMB, CRUMB_BASE, CRUMB_LIKE)])
         .chain(crate::es_co::ALL.iter().map(|&co| (co, CRUMB_BASE, crate::es_co::like(co))))
+        .chain([(ASUKA, crate::asuka::SONJA_DS, crate::asuka::LIKE)])
 }
 
 /// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): the Emerald Sun five are not, until the campaign is approved
@@ -147,7 +152,7 @@ pub fn listed(co: u8) -> bool {
 /// A CO of tangoAW2's own, with no Dual Strike record behind its pictures
 /// and texts (Clone Andy's are Andy's but for his name, bio and pair).
 pub fn is_own(co: u8) -> bool {
-    co == CLONE_ANDY || co == CRUMB || crate::es_co::is_es(co)
+    co == CLONE_ANDY || co == CRUMB || crate::es_co::is_es(co) || co == ASUKA
 }
 
 const BLACK_HOLE_STYLE: u8 = 4;
@@ -442,7 +447,10 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
     let clone = co == CLONE_ANDY;
     let crumb = co == CRUMB;
     let es = crate::es_co::is_es(co);
-    let name = if clone {
+    let asuka = co == ASUKA;
+    let name = if asuka {
+        crate::es_cos::name(co).unwrap_or_default()
+    } else if clone {
         CLONE_ANDY_NAME.to_vec()
     } else if crumb {
         crate::crumb::NAME.to_vec()
@@ -460,6 +468,8 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
             crate::crumb::text(which)
         } else if es {
             crate::es_co::text_of(co, which)
+        } else if asuka {
+            crate::es_cos::text(co, which)
         } else {
             None
         };
@@ -495,7 +505,7 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
         put(T_QUOTES + q, 0x3C + 4 * q as u32);
     }
     put(T_VICTORY, 0x28);
-    if crumb || es {
+    if crumb || es || asuka {
         put(T_DEFEAT, 0x28);
     }
     out
@@ -754,6 +764,10 @@ fn build(core: &Core) -> Option<Built> {
             put32(&mut pres, o + 4, COND_ALWAYS);
             put32(&mut pres, o + 8, EACH_NOTHING);
             put32(&mut pres, o + 12, ON_ACTIVATE);
+            if co == ASUKA {
+                // Hawke's powers' own presentation (the template row copied above: Black Wave's and Black Storm's effect and sparkle).
+                continue;
+            }
             if co == CRUMB {
                 // His powers' sparkle is Andy's (AW2's repair effect), the
                 // unit effect his own ([`crate::crumb::each_unit`]).
@@ -1047,8 +1061,8 @@ mod tests {
         let g = war_room_groups(&aw2).unwrap();
         assert_eq!(g.len(), 5);
         let all_ids: Vec<u8> = g.iter().flat_map(|x| x.0.clone()).collect();
-        assert_eq!(all_ids.len(), 19 + 11);
-        for co in (0..19).chain(FIRST..=CRUMB) {
+        assert_eq!(all_ids.len(), 19 + 12);
+        for co in (0..19).chain(FIRST..=CRUMB).chain([ASUKA]) {
             assert_eq!(all_ids.iter().filter(|&&c| c == co).count(), 1, "CO {co}");
         }
         assert_eq!(g[0].0, vec![1, 2, 4, 0, 15, 79, 80]);
@@ -1056,6 +1070,7 @@ mod tests {
         let at = |c: u8| bh.iter().position(|&x| x == c).unwrap();
         assert_eq!(at(CRUMB), at(CLONE_ANDY) + 1);
         assert_eq!(at(75), at(10) + 1, "Von Bolt after Sturm");
+        assert_eq!(at(ASUKA), at(14) + 1, "Asuka after Hawke, in Black Hole's group");
         assert!(war_room_table(&aw2).unwrap().len() <= 0x40);
     }
 

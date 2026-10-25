@@ -51,6 +51,8 @@ const COVERING_FIRE_SCRIPT: u32 = DATA; // 29 commands of 8 bytes
 const EX_MACHINA_FN: u32 = DATA + 0x200;
 const COVERING_FIRE_FN: u32 = DATA + 0x240;
 const URBAN_BLIGHT_FN: u32 = DATA + 0x280;
+const ASUKA_COP_FN: u32 = DATA + 0x2D0;
+const ASUKA_SCOP_FN: u32 = DATA + 0x320;
 const SENTINEL: u32 = DATA + 0x3FC;
 const MAGIC: u32 = 0x3843_5344; // "DSC8"
 
@@ -140,6 +142,50 @@ fn urban_blight_fn(gfx: u32, pal: u32) -> Vec<u8> {
     b
 }
 
+/// Asuka's Dark Intel / Event Horizon: Hawke's Black Wave / Black Storm (`sub_08044CF8`: `sub_08044D70(script, gfx, pal, army, hp, hp, -1, 0, proc)`, her units
+/// regain `hp` and the enemy's lose `hp`) with Drake's fuel flag on (his Tsunami and Typhoon call it with 1: every enemy unit's fuel halved, rounded down); the enemy's ammo is halved
+/// in [`mass_unit`]. `hp` 1 for the CO Power, 2 for the Super Power; `pal` is Hawke's palette for that power.
+fn asuka_fn(hp: u8, pal: u32) -> Vec<u8> {
+    // literal pool after 28 halfwords: script, gfx, pal, current army, sub_08044D70
+    const POOL: usize = 56;
+    let ldr = |rd: u16, at: usize, entry: usize| -> u16 { 0x4800 | rd << 8 | ((POOL + 4 * entry - ((at + 4) & !3)) / 4) as u16 };
+    let code: [u16; 28] = [
+        0xB530,                    // push {r4, r5, lr}
+        0xB085,                    // sub sp, #0x14
+        ldr(5, 4, 0),              // ldr r5, =script
+        ldr(1, 6, 1),              // ldr r1, =gfx
+        ldr(2, 8, 2),              // ldr r2, =pal
+        ldr(3, 10, 3),             // ldr r3, =current army
+        0x881B,                    // ldrh r3, [r3]
+        0x2400 | hp as u16,        // movs r4, #hp
+        0x9400,                    // str r4, [sp]       damage
+        0x2400 | hp as u16,        // movs r4, #hp
+        0x9401,                    // str r4, [sp, #4]   healing
+        0x2400,                    // movs r4, #0
+        0x3C01,                    // subs r4, #1        weather unchanged (-1)
+        0x9402,                    // str r4, [sp, #8]
+        0x2401,                    // movs r4, #1        halve the enemy's fuel (Drake's flag)
+        0x9403,                    // str r4, [sp, #0xc]
+        0x9004,                    // str r0, [sp, #0x10] the proc
+        0x1C28,                    // adds r0, r5, #0
+        ldr(4, 36, 4),             // ldr r4, =sub_08044D70
+        0x467D,                    // mov r5, pc
+        0x3505,                    // adds r5, #5 (return below, Thumb)
+        0x46AE,                    // mov lr, r5
+        0x4720,                    // bx r4
+        0xB005,                    // add sp, #0x14
+        0xBC30,                    // pop {r4, r5}
+        0xBC01,                    // pop {r0}
+        0x4700,                    // bx r0
+        0x46C0,                    // nop (the pool is word aligned)
+    ];
+    let mut b = halfwords(&code);
+    for w in [MASS_DAMAGE_SCRIPT, BLACK_WAVE_GFX, pal, CURRENT_ARMY, MASS_DAMAGE] {
+        b.extend_from_slice(&w.to_le_bytes());
+    }
+    b
+}
+
 fn covering_fire_script(core: &Core) -> Vec<u8> {
     let command = |k: u32| {
         let mut c = [0u8; 8];
@@ -167,6 +213,8 @@ pub fn power_assembly(co: u8, mode: u8) -> Option<u32> {
         (VON_BOLT, SCOP) => Some(EX_MACHINA_FN | 1),
         (RACHEL, SCOP) => Some(COVERING_FIRE_FN | 1),
         (KINDLE, COP) => Some(URBAN_BLIGHT_FN | 1),
+        (crate::co_new::ASUKA, COP) => Some(ASUKA_COP_FN | 1),
+        (crate::co_new::ASUKA, SCOP) => Some(ASUKA_SCOP_FN | 1),
         _ => None,
     }
 }
@@ -191,6 +239,8 @@ pub fn install(core: &mut Core) {
     core.raw_write_range(EX_MACHINA_FN, -1, &strike_fn(exm, THREE_HP));
     core.raw_write_range(COVERING_FIRE_FN, -1, &strike_fn(cf, THREE_HP));
     core.raw_write_range(URBAN_BLIGHT_FN, -1, &urban_blight_fn(gfx, pal));
+    core.raw_write_range(ASUKA_COP_FN, -1, &asuka_fn(1, 0x0811_3BA0));
+    core.raw_write_range(ASUKA_SCOP_FN, -1, &asuka_fn(2, 0x0811_3BC0));
     core.raw_write_32(SENTINEL, -1, MAGIC);
 }
 
@@ -255,6 +305,10 @@ fn owned(core: &Core, army: u32, kinds: &[u8]) -> i32 {
 pub(crate) fn activating(core: &Core, army: u32) -> (u8, u8) {
     let p = player(core, army);
     (core.raw_read_8(p + 0x1D, -1), core.raw_read_8(p + 0x1F, -1))
+}
+
+fn player_team(core: &Core, army: u32) -> u8 {
+    core.raw_read_8(player(core, army) + 0x2A, -1)
 }
 
 fn player(core: &Core, army: u32) -> u32 {
@@ -695,6 +749,19 @@ fn mass_unit(core: &mut Core) {
         return;
     }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+    if activating(core, army).0 == crate::co_new::ASUKA && activating(core, army).1 >= COP {
+        // Asuka: every enemy unit's ammo is halved, rounded down: 9 -> 4, 3 -> 1, 1 -> 0 (the fuel of Drake's flag does the same: 99 -> 49, 1 -> 0); units with no ammo stat have 0 and stay
+        let u = core.gba().cpu().gpr(4) as u32;
+        let a = army_of_index(core, u.wrapping_sub(core.raw_read_32(UNITS_POINTER, -1)) / UNIT);
+        if (1..=5).contains(&a) && a != army && player_team(core, a) != player_team(core, army) {
+            let w = core.raw_read_16(u + 4, -1);
+            let ammo = (w >> 7) & 0xF;
+            if ammo > 0 {
+                core.raw_write_16(u + 4, -1, (w & !(0xF << 7)) | (ammo >> 1) << 7);
+            }
+        }
+        return;
+    }
     if activating(core, army) != (KINDLE, COP) {
         return;
     }
@@ -984,6 +1051,8 @@ mod tests {
     fn code_sizes() {
         assert_eq!(strike_fn(0, 30).len(), 36);
         assert_eq!(urban_blight_fn(0, 0).len(), 72);
+        assert_eq!(asuka_fn(1, 0).len(), 76);
+        assert!(URBAN_BLIGHT_FN + 72 <= ASUKA_COP_FN && ASUKA_COP_FN + 76 <= ASUKA_SCOP_FN && ASUKA_SCOP_FN + 76 <= SENTINEL);
         assert!(COVERING_FIRE_SCRIPT + 8 * 29 <= EX_MACHINA_FN);
         assert!(URBAN_BLIGHT_FN + 72 <= SENTINEL);
     }

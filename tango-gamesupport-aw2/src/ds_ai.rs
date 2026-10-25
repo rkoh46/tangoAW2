@@ -294,7 +294,8 @@ impl Profile {
 pub(crate) fn template_of(co: u8) -> Option<u8> {
     let pack = crate::ds_pack::pack()?;
     let set = pack.arm9_at(SETS + SET, SET as usize)?;
-    let ds = crate::tag::ds_id(co).unwrap_or(0) as usize;
+    // (Asuka has no Dual Strike twin of her own: the computer plays her with Hawke's profile, whose powers she shares: Black Wave and Black Storm, always when the meter allows)
+    let ds = crate::tag::ds_id(co).or_else(|| (co == crate::co_new::ASUKA).then_some(15)).unwrap_or(0) as usize;
     set.get(1 + ds).copied().filter(|&t| t < TEMPLATE_COUNT)
 }
 

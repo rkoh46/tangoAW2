@@ -213,3 +213,115 @@ class Pixelart(unittest.TestCase):
             im = P.styled(spec, path)
         self.assertTrue(np.array_equal(im.faces["sad"], im.faces["normal"]))
         self.assertFalse(np.array_equal(im.faces["happy"], im.faces["normal"]))
+
+
+class Illustration(unittest.TestCase):
+    """The illustration route (`illustration.py`, Asuka's picture): a clean drawing on white is cut from its background, downscaled and quantised to one palette, never redrawn."""
+
+    @staticmethod
+    def drawing(w=360, h=560):
+        im = np.full((h, w, 3), 255, np.uint8)
+        im[40:520, 100:260] = (30, 26, 28)               # black cloth
+        im[60:150, 120:240] = (245, 205, 175)            # a head
+        im[90:100, 150:162] = (250, 248, 244)            # an off-white eye white inside the face: stays
+        im[200:300, 100:130] = 255                       # a gap of pure white enclosed by cloth (between an arm and the body)
+        im[200:300, 100:104] = (30, 26, 28)
+        im[380:420, 60:100] = (170, 40, 40)              # a red cuff at the side
+        return im
+
+    def spec(self, **kw):
+        return {"illustration": True, "scale": 0.25, "frame": [30, 20], "mug": [100, 50, 160], "eyes": [150, 100, 200, 100], **kw}
+
+    def run_import(self, im, **kw):
+        from . import illustration
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "d.png"
+            Image.fromarray(im).save(p)
+            return illustration.styled(self.spec(**kw), p)
+
+    def test_background_and_enclosed_white_gaps_go_but_off_white_detail_stays(self):
+        from . import illustration as L
+        im = self.drawing().astype(np.float32)
+        fg, bg = L.cut_background(im)
+        self.assertFalse(fg[5, 5])
+        self.assertTrue(fg[300, 200])
+        self.assertFalse(fg[250, 115], "the enclosed pure-white gap is background")
+        self.assertTrue(fg[95, 155], "the off-white eye white inside the face stays")
+        self.assertTrue(fg[60:150, 120:240].all())
+
+    def test_the_sizes_the_palette_and_the_outline(self):
+        im = self.run_import(self.drawing())
+        self.assertEqual(im.large.shape, (160, 128))
+        self.assertEqual(im.faces["normal"].shape, (48, 48))
+        self.assertEqual(im.mini.shape, (16, 48))
+        self.assertEqual(im.hud.shape, (16, 32))
+        self.assertEqual(len(im.palette), 16)
+        for kind in ("happy", "sad", "angry"):
+            self.assertTrue(np.array_equal(im.faces[kind], im.faces["normal"]), "no drawn expressions: the neutral face")
+        # an outline round the silhouette, and no coloured pixel against transparency
+        self.assertIn(15, set(np.unique(im.large)))
+        t = im.large == 0
+        near = np.zeros_like(t)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            near |= I.shift(t, dx, dy)
+        self.assertFalse((near & ~t & (im.large != 15)).any())
+
+    def test_the_white_halo_does_not_bleed_into_the_figures_colour(self):
+        d = self.drawing()
+        d[90:100, 150:162] = (245, 205, 175)                  # (no off-white eye white in this one)
+        im = self.run_import(d)
+        cols = [im.palette[v] for v in np.unique(im.large) if v]
+        self.assertFalse(any(min(c) > 230 for c in cols if c != (0, 0, 0)), f"no white in a figure with no white on it ({cols})")
+
+    def test_it_is_deterministic_and_flip_mirrors(self):
+        a, b = self.run_import(self.drawing()), self.run_import(self.drawing())
+        self.assertTrue(np.array_equal(a.large, b.large) and a.palette == b.palette)
+        one = self.drawing()
+        one[200:230, 240:260] = (40, 200, 60)                # a mark on the right edge
+        r = self.run_import(one)
+        m = self.run_import(one[:, ::-1].copy(), flip=True)
+        # flipping a mirrored picture gives the original back (the whole framing is mirrored with it)
+        self.assertEqual(r.large.shape, m.large.shape)
+        self.assertGreater(np.mean(r.large == m.large), 0.9)
+
+    def test_asuka_is_what_her_picture_gives_and_passes_the_lint(self):
+        cos, _ = data.load_all()
+        co = "asuka"
+        self.assertEqual(I.lint_art(co), [])
+        im = I.import_co({"source": cos[co]["portrait"]["source"]})
+        I.all_expressions(im, im.spec)
+        old, _pal = I.read_art(co)
+        for name, idx in I.pictures(im).items():
+            self.assertTrue(np.array_equal(old[name], idx), f"{co} {name}: `aw2dev co portrait import` and commit")
+
+    def test_asuka_is_a_black_hole_co_with_her_pairs_and_a_name_graphic(self):
+        cos, tags = data.load_all()
+        a = cos["asuka"]
+        self.assertEqual((a["army"], a["stars"]), ("black_hole", {"cop": 3, "scop": 9}))        # Eagle's meter, AW2's and Dual Strike's table
+        self.assertEqual((a["luck"], a["bad_luck"]), ([20, 20, 20], [0, 0, 0]))                # Nell's day-to-day luck, no bad luck
+        partners = {(p["b"] if p["a"] == "asuka" else p["a"]) for p in tags["pair"] if "asuka" in (p["a"], p["b"])}
+        self.assertTrue({"ds:vonbolt", "aw2:hawke", "aw2:sturm"} <= partners, partners)
+        g = namefont.name_grid("Asuka")
+        self.assertEqual(g.shape, (16, 48))
+        self.assertTrue((g[:, 0] == 0).all() and (g[:, 47] == 0).all())
+
+
+class Verify(unittest.TestCase):
+    """`co verify sonja`: the comparison finds any difference between two observation files."""
+
+    def test_diff_finds_changes_additions_and_losses(self):
+        from . import verify
+        ref = {"co_row": "a1", "texts": {"1": "aa", "2": "bb"}, "screens": {"x": "h1"}}
+        self.assertEqual(verify.diff(ref, json_copy(ref)), [])
+        now = json_copy(ref)
+        now["texts"]["2"] = "bc"
+        now["screens"]["y"] = "h2"
+        del now["co_row"]
+        out = " ".join(verify.diff(ref, now))
+        for want in ("/texts/2", "/screens/y: only in this build", "/co_row: only in reference"):
+            self.assertIn(want, out)
+
+
+def json_copy(x):
+    import json
+    return json.loads(json.dumps(x))

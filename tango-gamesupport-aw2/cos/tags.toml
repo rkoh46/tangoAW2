@@ -67,3 +67,52 @@ compat = 116
 stars = 2
 name = "Merchant Princes"
 why = "two treasurers comparing ledgers (after M6)"
+
+# Asuka's pairs with Black Hole's COs (Sturm's own with her is in sturm_pairs.rs `PAIRS`; the rest `DUOS`). Every other pair of hers is 95 like Sturm's strangers.
+[[pair]]
+a = "asuka"
+b = "ds:vonbolt"
+compat = 115
+stars = 2
+name = "Vault Breakers"
+why = "the BH2 seed pair: his greed opens the vault, her ledger counts what is inside"
+
+[[pair]]
+a = "asuka"
+b = "aw2:hawke"
+compat = 120
+stars = 2
+name = "Black Eclipse"
+why = "two waves of the same black tide: her intelligence finds the weak, his storm thins them"
+
+[[pair]]
+a = "asuka"
+b = "aw2:sturm"
+compat = 118
+stars = 2
+name = "Perfect Intel"
+why = "the commander's eyes: nothing on the board is hidden from him"
+
+[[pair]]
+a = "asuka"
+b = "aw2:lash"
+compat = 115
+stars = 2
+name = "Grand Design"
+why = "two analysts: her data, Lash's terrain tricks"
+
+[[pair]]
+a = "asuka"
+b = "aw2:flak"
+compat = 110
+stars = 1
+name = "Dead Reckoning"
+why = "she aims, he fires"
+
+[[pair]]
+a = "asuka"
+b = "aw2:adder"
+compat = 110
+stars = 1
+name = "Quiet Knife"
+why = "an informant and a striker who prefer not to be seen"

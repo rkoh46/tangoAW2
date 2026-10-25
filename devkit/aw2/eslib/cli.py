@@ -90,6 +90,24 @@ def difficulty_cmd(a):
     return 0
 
 
+def asuka_rule(say):
+    """The campaign's sources (Rust modules, dialogue texts, maps' data) never mention Asuka: no dialogue line, no roster entry, no mission army CO. -> number of failures."""
+    import re
+    from .. import cfg
+    src = cfg.REPO / "tango-gamesupport-aw2" / "src"
+    files = sorted(src.glob("es_*.rs")) + sorted((src / "es_text").glob("*")) + [src / "es_text.rs"]
+    pat = re.compile(r"asuka|co_new::ASUKA|ASUKA\b", re.I)
+    hits = []
+    for f in files:
+        if f.name in ("es_cos.rs", "es_music.rs") or not f.is_file():
+            continue          # the portraits' and the themes' tables are shared with the Versus COs (keyed by CO id, not the campaign)
+        for n, line in enumerate(f.read_text(errors="replace").splitlines(), 1):
+            if pat.search(line):
+                hits.append(f"{f.name}:{n}")
+    say(not hits, "Asuka is not in the Emerald Sun Campaign" + (f" (found at {', '.join(hits[:6])})" if hits else " (no mention in the campaign's modules, dialogue or rosters)"))
+    return 1 if hits else 0
+
+
 def check(a):
     """The static campaign check: the rules the user set for the Emerald Sun Campaign, failed loudly."""
     rc = 0
@@ -111,6 +129,8 @@ def check(a):
         if d["boxes"] < 20:
             say(False, f"{key}: only {d['boxes']} dialogue boxes")
             bad += 1
+    # Asuka (CO 92) is in Versus, War Room and Survival but NOT in the Emerald Sun Campaign (and reserved for the BH2 Campaign): nothing of the campaign may name her
+    bad += asuka_rule(say)
     # no mission but the two has an enemy army of Black Hole's colour
     for key, d in ms.items():
         foes = [a for a in d["armies"] if a["team"] != d["armies"][0]["team"] and a["colour"] == 5]

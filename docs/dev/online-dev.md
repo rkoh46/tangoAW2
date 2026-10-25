@@ -33,6 +33,7 @@ reuse scen kinds (`--kill`/`--stop` of `aw2dev live` also exist: `SEATS:WHEN`, `
 ```
 aw2dev net repeat                         # 2P Unranked with the Emerald Sun seat, 8 runs (the default story)
 aw2dev net repeat unranked --runs 12 --no-skin
+aw2dev net repeat asuka --no-skin           # both armies are Asuka (CO byte poked, scenarios.py s_asuka), her CO Power day 1 and Super Power day 2 with units of every HP: 8 runs, equal hashes
 aw2dev net repeat moveview --runs 6 --level mild --fog off
 ```
 `net sim` N times in a row on local signalling (the same options: `--level/--latency/--jitter/--loss/--event/--dump-frame/--fog/--players`), then

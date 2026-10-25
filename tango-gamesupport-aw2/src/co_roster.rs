@@ -82,7 +82,7 @@ const DS_IDS: [Option<u8>; AW2_COS as usize] = [
 ];
 
 pub fn ds_co(co: u8) -> Option<u8> {
-    DS_IDS.get(co as usize).copied().flatten().or_else(|| crate::co_new::ds_id(co))
+    DS_IDS.get(co as usize).copied().flatten().or_else(|| crate::co_new::ds_id(co)).or_else(|| (co == crate::co_new::ASUKA).then_some(crate::asuka::SONJA_DS))
 }
 
 /// The Dual Strike record a CO's table row is filled from (Crumb's: Andy's,
@@ -181,6 +181,10 @@ pub fn stat(co: u8, mode: u8, t: u8, field: usize) -> Option<i32> {
     }
     if field == FIREPOWER && mode > 0 {
         v += POWER_FIREPOWER;
+    }
+    if co == crate::co_new::ASUKA && matches!(field, FIREPOWER | DEFENCE) {
+        // her day to day: all her units +5% attack and +5% defence, on top of every power's numbers
+        v += crate::asuka::DAY_BONUS;
     }
     Some(v)
 }
@@ -391,8 +395,16 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     }
     row[0x34..0x36].copy_from_slice(&text_id(co, T_VICTORY).to_le_bytes());
     let neutral_stats = andy[0x38 + 0x24..0x38 + 0x44].to_vec();
-    let charts = andy[0x38 + 0x18..0x38 + 0x24].to_vec();
+    let andy_charts = andy[0x38 + 0x18..0x38 + 0x24].to_vec();
     for mode in 0..3u8 {
+        // Asuka's Black Insight: Sturm's movement, his row's three charts of each level as the pack has them (every terrain costs 1 for ground units, in every weather: the pack's
+        // weather no longer slows anyone, `build`)
+        let charts = if co == crate::co_new::ASUKA {
+            let at = 0x38 + 0x44 * mode as usize + 0x18;
+            rows[crate::asuka::MOVE_LIKE as usize][at..at + 12].to_vec()
+        } else {
+            andy_charts.clone()
+        };
         let b = block(ds, mode)?;
         let at = 0x38 + 0x44 * mode as usize;
         let name = match mode {
@@ -425,6 +437,11 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         }
         row[at + 0x18..at + 0x24].copy_from_slice(&charts);
         row[at + 0x24..at + 0x44].copy_from_slice(&neutral_stats);
+        if co == crate::co_new::ASUKA {
+            // Black Insight's luck: Nell's day-to-day maximum roll in every level (her powers do not raise it further), no bad luck
+            row[at + 0x0E..at + 0x10].copy_from_slice(&crate::asuka::LUCK.to_le_bytes());
+            row[at + 0x10..at + 0x12].copy_from_slice(&0i16.to_le_bytes());
+        }
         if co == crate::co_new::CRUMB {
             // His luck (Gerald's Blessing: up to 20%, no bad luck).
             row[at + 0x0E..at + 0x10].copy_from_slice(&crate::crumb::LUCK[mode as usize].to_le_bytes());
@@ -440,6 +457,10 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     if let Some(i) = crate::es_co::info(co) {
         row[0x0C..0x10].copy_from_slice(&i.stars.0.to_le_bytes());
         row[0x10..0x14].copy_from_slice(&i.stars.1.to_le_bytes());
+    }
+    if co == crate::co_new::ASUKA {
+        row[0x0C..0x10].copy_from_slice(&crate::asuka::STARS.0.to_le_bytes());
+        row[0x10..0x14].copy_from_slice(&crate::asuka::STARS.1.to_le_bytes());
     }
     if co == crate::co_new::CRUMB {
         // His meters: 3 stars for the CO Power, 6 in all for the Super Power.

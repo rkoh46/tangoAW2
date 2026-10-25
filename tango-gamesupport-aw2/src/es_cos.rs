@@ -9,11 +9,11 @@
 
 use std::sync::OnceLock;
 
-use crate::crumb_art::{body_files, decode, mini_place, Px};
+use crate::crumb_art::{body_files, decode, Px};
 use crate::ds_co_art::CoArt;
 
-/// The four, in id order: (file name, data file, the pictures).
-const IDS: [&str; 4] = ["klaus", "aurelia", "cassius", "livia"];
+/// The five with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`).
+const IDS: [(u8, &str); 5] = [(86, "klaus"), (87, "aurelia"), (88, "cassius"), (89, "livia"), (92, "asuka")];
 
 macro_rules! pics {
     ($co:literal) => {
@@ -45,20 +45,28 @@ struct Pics {
     crop: &'static str,
 }
 
-fn all() -> [Pics; 4] {
-    [pics!("klaus"), pics!("aurelia"), pics!("cassius"), pics!("livia")]
+fn all() -> [Pics; 5] {
+    [pics!("klaus"), pics!("aurelia"), pics!("cassius"), pics!("livia"), pics!("asuka")]
 }
 
-/// A CO's place among the four (0 Klaus .. 3 Livia).
+/// The data files of the five, in [`IDS`]' order.
+const DATA: [&str; 5] = [
+    include_str!("../cos/klaus.toml"),
+    include_str!("../cos/aurelia.toml"),
+    include_str!("../cos/cassius.toml"),
+    include_str!("../cos/livia.toml"),
+    include_str!("../cos/asuka.toml"),
+];
+
+/// A CO's place among the five (0 Klaus .. 3 Livia, 4 Asuka).
 pub fn index(co: u8) -> Option<usize> {
-    let k = co.checked_sub(crate::co_new::ES_FIRST)? as usize;
-    (k < IDS.len()).then_some(k)
+    IDS.iter().position(|i| i.0 == co)
 }
 
 /// The data file of CO `k` parsed.
 fn data(k: usize) -> Option<&'static toml::Value> {
     static D: OnceLock<Vec<toml::Value>> = OnceLock::new();
-    D.get_or_init(|| all().iter().map(|p| toml::from_str(p.data).expect("a CO data file")).collect()).get(k)
+    D.get_or_init(|| DATA.iter().map(|d| toml::from_str(d).expect("a CO data file")).collect()).get(k)
 }
 
 fn s(v: &toml::Value, path: &[&str]) -> Option<String> {
@@ -136,6 +144,9 @@ pub fn art(co: u8) -> Option<CoArt> {
         (f.w == 48 && f.h == 48).then(|| f.to_tiles(6, 6, |k| (k % 6, k / 6)))
     };
     let (mini, _) = px(p.mini)?;
+    if mini.w != 48 || mini.h != 16 {
+        return None;
+    }
     let (hud, _) = px(p.hud)?;
     let (name, _) = px(p.name)?;
     let (top, bottom) = body_files(&large);
@@ -147,7 +158,8 @@ pub fn art(co: u8) -> Option<CoArt> {
     }
     Some(CoArt {
         face: [face(p.faces[0])?, face(p.faces[1])?, face(p.faces[2])?],
-        mini: mini.to_tiles(4, 3, mini_place),
+        // the mini is a 48 x 16 strip: its 12 tiles are the left 32 x 16 in rows of four, then the right 16 x 16 in rows of two (the battle scene's header, AW2's own layout)
+        mini: mini.to_tiles(6, 2, |k| if k < 8 { (k % 4, k / 4) } else { (4 + (k - 8) % 2, (k - 8) / 2) }),
         hud: hud.to_tiles(4, 2, |k| (k % 4, k / 4)),
         body_top: top,
         body_bottom: bottom,
@@ -161,9 +173,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_four_have_art_texts_and_a_crop() {
-        for (k, id) in IDS.iter().enumerate() {
-            let co = crate::co_new::ES_FIRST + k as u8;
+    fn the_five_have_art_texts_and_a_crop() {
+        for &(co, id) in IDS.iter() {
             let a = art(co).unwrap_or_else(|| panic!("{id}: art"));
             assert_eq!(a.face[0].len(), crate::ds_co_art::FACE_LEN);
             assert_eq!(a.mini.len(), crate::ds_co_art::MINI_LEN);

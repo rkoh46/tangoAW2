@@ -53,7 +53,7 @@ def star_cost(uses):
 # stars, Tag Power name); Kindle, Jugger and Koal 105, anyone else 95.
 STURM_PAIRS = [("vonbolt", 125, 3, b"Black Apocalypse"), ("hawke", 120, 2, b"Storm Front"),
                ("lash", 115, 2, b"Mad Genius"), ("flak", 110, 1, b"Iron Fist"), ("adder", 110, 1, b"Viper's Nest"),
-               ("cloneandy", 118, 2, b"Perfect Copy"), ("crumb", 115, 2, b"No One Left Behind")]
+               ("cloneandy", 118, 2, b"Perfect Copy"), ("crumb", 115, 2, b"No One Left Behind"), ("asuka", 118, 2, b"Perfect Intel")]
 STURM_TEAMMATES = ("kindle", "jugger", "koal")
 
 
@@ -73,10 +73,29 @@ def sturm_compatibility(a, b):
 VAULT_BREAKERS = (romlib.co_id("vonbolt"), romlib.co_id("sonja"), 115, 2, b"Vault Breakers")
 
 
+# Asuka's pairs with Black Hole's COs (crate::sturm_pairs::DUOS, cos/tags.toml): partner -> (compatibility, stars, Tag Power name); anyone else 95.
+ASUKA_DUOS = {"vonbolt": (115, 2, b"Vault Breakers"), "hawke": (120, 2, b"Black Eclipse"), "lash": (115, 2, b"Grand Design"),
+              "flak": (110, 1, b"Dead Reckoning"), "adder": (110, 1, b"Quiet Knife")}
+
+
+def asuka_compatibility(a, b):
+    asuka = romlib.co_id("asuka")
+    if asuka not in (a, b):
+        return None
+    o = b if a == asuka else a
+    for name, v in ASUKA_DUOS.items():
+        if romlib.co_id(name) == o:
+            return v[0]
+    return 95
+
+
 def compatibility(ds, a, b):
     """Dual Strike's compatibility of the pair (CO record +0x84 + partner's
     id); with Sturm, tangoAW2's own (STURM_PAIRS)."""
     s = sturm_compatibility(a, b)
+    if s is not None:
+        return s
+    s = asuka_compatibility(a, b)
     if s is not None:
         return s
     if {a, b} == {VAULT_BREAKERS[0], VAULT_BREAKERS[1]}:

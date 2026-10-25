@@ -43,6 +43,8 @@ NEW_CO_NAMES = ["Jugger", "Koal", "Kindle", "Von Bolt", "Grimm", "Javier", "Sash
 NEW_CO_DS_IDS = [12, 14, 25, 11, 24, 23, 22, 20, 21, 2]   # (Clone Andy: Dual Strike's Andy; Crumb has none)
 CO_IDS = {n.lower(): i for i, n in enumerate(CO_NAMES)}
 CO_IDS.update({n.lower().replace(" ", ""): 72 + k for k, n in enumerate(NEW_CO_NAMES)})
+ASUKA = 92       # Sonja after she defects to Black Hole (crate::co_new::ASUKA), in every Versus list
+CO_IDS["asuka"] = ASUKA
 
 
 def co_name(co):
@@ -50,6 +52,8 @@ def co_name(co):
         return CO_NAMES[co]
     if 72 <= co < 72 + len(NEW_CO_NAMES):
         return NEW_CO_NAMES[co - 72]
+    if co == ASUKA:
+        return "Asuka"
     return f"CO {co}"
 
 TERRAIN_CLASSES = {
@@ -386,5 +390,6 @@ def lz10(b):
 
 # AW2 CO id -> Dual Strike CO id (Sturm, 10, has none).
 DS_CO_IDS = {72 + k: d for k, d in enumerate(NEW_CO_DS_IDS)}
+DS_CO_IDS[92] = 8       # Asuka's numbers are Sonja's Dual Strike block (crate::asuka)
 DS_CO_IDS |= {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10, 11: 26, 12: 13, 13: 27,
              14: 15, 15: 16, 16: 17, 17: 18, 18: 19}
