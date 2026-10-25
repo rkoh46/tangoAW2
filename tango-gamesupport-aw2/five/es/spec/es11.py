@@ -14,6 +14,11 @@ def build():
                      "Rockets and Artillery covering the ford and ruin (hold) -> Recon sees them, Tanks rush inside their minimum range, Artillery duels from the forest cover; "
                      "Infantry and Mechs wade the river (foot units cross it) to flank the ford; Anti-Air only for the AA tank the player owns (no enemy aircraft on this map). "
                      "Player start: APC4 RECON3 TANK3 MDT2 ART2 MECH2 INF2 AA1 (19 units), funds 3000, one base. Lash: INF3 TANK3 RECON2 ART1 MECH2 (11); Flak: MDT2 TANK2 INF3 ROCK1 (8). "
+                     "THE PIPELINE (the Marrow Pipe, y14, x11..20): runs beside the road's Pinewood stretch and shields the convoy's south flank; the south track (15,13)-(15,16)-(24,17) leaves the road through it at the SEAM (15,14): "
+                     "an escort unit (Tank, Recon, Md Tank, Mech, any direct fire) attacks the seam from (15,13) and the track opens: a SIDE ROUTE to a second, south bridge over the Marrow (25,17) and on by the south road (26,17)-(30,17)-(30,15)-(35,15) to the camp, "
+                     "avoiding the ford holders but passing Flak's camp; the main road is never blocked. "
+                     "SANDSTORM: indirect guns lose a cell (Artillery 2-3 becomes 2-2, Rockets 3-5 becomes 3-4): the player's answers are direct fire (Tanks, Md Tanks, Recons, Mechs) that close with the holders; the single AA only has to watch the camp. "
+                     "OASIS: pond (30,19) and ruined walls (28..32, 8..13). "
                      "Marauders advance; Flak's Md Tanks (24,8),(24,10), Rockets (26,11) and Lash's Artillery (25,7) hold the ford.")
     # ---- the western harbour: sea, a shoaled coast with bays, two ports ----
     coast = [3, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 3]
@@ -36,8 +41,14 @@ def build():
     m.road([(8, 9), (8, 5), (13, 5), (13, 7), (19, 7), (19, 8)])                # the hamlet road north of the Pinewood
     m.road([(35, 10), (36, 10)])
     m.road([(35, 10), (35, 6), (37, 6), (37, 4)]).road([(35, 10), (35, 15), (37, 15), (37, 17)])   # the branch roads to the two camps
-    m.road([(15, 13), (15, 16), (21, 16)])                                       # a track south of the Pinewood
     m.bridge(23, 10)                                                          # the ford
+    # ---- the side route: a south track through the Marrow Pipe's seam, a south bridge, a road to the camp road ----
+    m.road([(15, 13), (15, 17), (24, 17)])
+    m.bridge(25, 17)
+    m.road([(26, 17), (30, 17), (30, 15), (35, 15)])
+    m.pipe([(11, 14), (14, 14)]).pipe([(16, 14), (20, 14)])
+    m.put("Z", 15, 14)
+    m.puts("~", [(30, 19), (31, 19), (30, 20)]).puts(",", [(29, 19), (32, 19), (29, 20), (31, 20), (30, 18), (31, 18)])
     # ---- properties ----
     m.put("1", 7, 9).put("B", 8, 11).put("C", 8, 7).put("C", 8, 14).put("C", 6, 16)
     m.put("c", 12, 5).put("c", 17, 7).put("c", 16, 16).put("c", 20, 12).put("c", 21, 8)      # hamlets along the road
