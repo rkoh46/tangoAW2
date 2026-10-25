@@ -184,10 +184,11 @@ def pick_partners(ctx, on):
         e.press("START", 6)
         e.wait(20)
         if army == 0:
-            e.press("RIGHT", 6)
-            e.wait(14)
-            e.press("RIGHT", 6)
-            e.wait(14)
+            # (with the setting on the cursor has three cells an army, CO, partner and the P1 / CPU tab: the Teams record is the game's
+            # either way, the pad walks to the next army's CO with one more press)
+            for _ in range(3 if on else 2):
+                e.press("RIGHT", 6)
+                e.wait(14)
     for _ in range(3):
         e.press("DOWN", 6)
         e.wait(20)
