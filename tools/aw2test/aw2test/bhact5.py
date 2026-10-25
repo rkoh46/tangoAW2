@@ -196,10 +196,12 @@ def follow(ctx, e, d, label, shots=(0,), max_frames=30000):
     the split is where the battle was left."""
     texts, last, stable, n = [], None, 0, 0
     in_battle_texts = 0
+    asked_seen = False   # (after AW2's "Save current data" question only the map's scenes follow: an A on the idle map starts the next mission)
     while n < max_frames:
         t = d.text_shown()
         stable = stable + 1 if t and t == last else 0
         last = t
+        asked_seen = asked_seen or bool(t and "Save current data" in t)
         if t and stable == 5 and (not texts or texts[-1] != clean(t)):
             if d.in_battle():
                 in_battle_texts += 1
@@ -214,7 +216,7 @@ def follow(ctx, e, d, label, shots=(0,), max_frames=30000):
             e.wait(60)
             if d.world_map_up() and not d.scripts_running():
                 break
-        elif not d.scripts_running() and d.in_battle() is False:
+        elif not d.scripts_running() and d.in_battle() is False and not asked_seen:
             e.press("A", 4)
         e.wait(4)
         n += 4
