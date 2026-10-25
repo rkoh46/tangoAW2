@@ -44,7 +44,7 @@ unit 1 19 4 17
 unit 1 19 11 18
 unit 2 1 7 4 hold
 unit 2 1 15 4 hold
-unit 2 1 20 4 hold
+unit 2 1 20 4
 unit 2 1 20 12
 unit 2 1 15 14
 unit 2 2 12 8 hold
@@ -57,10 +57,10 @@ unit 2 9 22 17 hold
 unit 2 10 13 3 hold
 unit 2 10 24 16
 unit 2 14 10 4 hold
-unit 2 14 20 6 hold
+unit 2 14 20 6
 unit 2 14 18 17
 unit 2 15 11 5 hold
-unit 2 15 19 7 hold
+unit 2 15 19 7
 unit 2 16 14 5 hold
 unit 2 19 22 4
 unit 2 23 26 4 hold name=barge3

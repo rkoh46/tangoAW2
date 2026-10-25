@@ -34,7 +34,7 @@ fn es09() -> MissionDef {
     m.armies = vec![
         // (Orange Star's colour: Black Hole's is the enemy's in this mission)
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(5000),
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::ADDER, co::FLAK)).funds(10000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::ADDER, co::FLAK)).funds(8000),
     ];
     m.pool = leads();
     m.units = deployment("es09");

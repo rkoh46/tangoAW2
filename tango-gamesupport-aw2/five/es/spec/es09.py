@@ -75,9 +75,9 @@ def build():
     # garrison of the hill (hold): infantry in the gaps, guns behind
     for kind, x, y in ((INF, 7, 4), (INF, 15, 4), (MECH, 12, 8), (MIS, 11, 5), (ART, 13, 3), (AA, 10, 4), (FTR, 14, 5)):
         m.unit(2, kind, x, y, **H)
-    # the harbour guard
+    # the harbour guard (a mobile one: it sorties against the landing instead of sitting in its pits)
     for kind, x, y in ((AA, 20, 6), (BCO, 22, 4), (INF, 20, 4), (MIS, 19, 7)):
-        m.unit(2, kind, x, y, **H) if kind != BCO else m.unit(2, kind, x, y)
+        m.unit(2, kind, x, y)
     m.unit(2, LAN, 26, 9, hold=True, name="barge1").unit(2, LAN, 27, 7, hold=True, name="barge2").unit(2, LAN, 26, 4, hold=True, name="barge3")
     # the advancing column
     m.spread(2, {TANK: 3, MDT: 1, MECH: 1, INF: 2, ART: 1, AA: 1}, (15, 11, 24, 17), seed=4, gap=1)
