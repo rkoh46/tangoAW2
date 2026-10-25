@@ -1,4 +1,4 @@
-"""M10 The Quiet Pass (Act III): Comet Pass in the fog, a Yellow Comet province. Three winding roads and a goat track climb the massif to Kanbei's summit; Sonja watches from the east ridge."""
+"""M10 The Quiet Pass (Act III): Comet Pass in the fog, a Yellow Comet province. Three winding roads and a goat track climb the massif to Kanbei's summit; Sami watches from the east ridge."""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
@@ -7,21 +7,21 @@ from aw2.esmaplib import *
 def build():
     m = Canvas("es10", 34, 26)
     m.header(armies=3, colours=(BM, YC, OS), team=[1, 2, 2], objective=[1],
-             comment="M10 The Quiet Pass (FOG; province: Comet Pass, Yellow Comet's mountain march): the Aurean legion lands on the south plain, crosses the Quiet river at three bridges, "
+             comment="M10 The Quiet Pass (FOG; line-up: player Blue Moon, Kanbei Yellow Comet, Sami Orange Star; province: Comet Pass, Yellow Comet's mountain march): the Aurean legion lands on the south plain, crosses the Quiet river at three bridges, "
                      "climbs a pass road (west x7, centre x16, east x28) or the goat track (foot only, far west x1..3) through the massif (y5..13) and takes Kanbei's summit HQ '2' (16,2); "
-                     "Sonja's HQ '3' (31,3) sits in a pocket of the east ridge, off the east pass road. "
+                     "Sami's HQ '3' (31,3) sits in a pocket of the east ridge, off the east pass road. "
                      "Threat/answer: ambushes at the pass tops in the fog -> Recons (vision) and the B Copter/T Copter scout ahead, the APC and Infantry hold the bridge heads; "
                      "Tanks/Md Tanks at the pass tops (vehicles must use the roads) -> Mechs and Infantry on the goat track and over the mountains flank them, MDT and ART on the road below; "
-                     "Artillery + Rockets on the summit (hold) -> Recon sight, B Copter, Infantry/Mech over the mountains out of the roads' line; Sonja's Copter -> own AA. "
+                     "Artillery + Rockets on the summit (hold) -> Recon sight, B Copter, Infantry/Mech over the mountains out of the roads' line; Sami's Copter -> own AA. "
                      "Player start: INF4 MECH3 TANK2 MDT2 RECON3 ART2 BCO1 TCO1 AA1 APC1 (19 units), 1 base, funds 4000. "
-                     "Kanbei: INF4 MECH2 TANK3 MDT2 ART2 ROCK1 AA1 (15); MECH x2, ART x2 and ROCK hold on the summit. Sonja: INF2 RECON2 TANK2 BCO1 (7), INF hold the pocket. "
+                     "Kanbei: INF4 MECH2 TANK3 MDT2 ART2 ROCK1 AA1 (15); MECH x2, ART x2 and ROCK hold on the summit. Sami: INF2 RECON2 TANK2 BCO1 (7), INF hold the pocket. "
                      "Enemy about 1.2x the player's value.")
     # ---- the massif (y 5..13): blobs of mountain joined into a range with ragged edges ----
     for cx, cy, rx, ry, s in ((3, 9, 3, 5, 1), (10, 8, 3, 4, 2), (11, 12, 3, 2, 3), (20, 8, 4, 4, 4), (21, 12, 3, 2, 5), (30, 9, 3, 5, 6), (6, 12, 2, 2, 7), (15, 7, 2, 2, 8), (25, 7, 2, 3, 9), (13, 9, 2, 2, 14), (29, 13, 3, 2, 15)):
         m.blob("^", cx, cy, rx, ry, seed=s, wobble=0.3)
     # valleys inside the range: a meadow, a wooded dell
     m.blob(".", 12, 10, 1, 1, seed=16, wobble=0.1); m.blob("f", 4, 8, 1, 2, seed=17, only="^"); m.blob(".", 22, 9, 2, 1, seed=18, wobble=0.2); m.blob("f", 28, 8, 1, 2, seed=19, only="^")
-    # the summit crown and the east ridge (Sonja's pocket)
+    # the summit crown and the east ridge (Sami's pocket)
     m.blob("^", 16, 1, 6, 2, seed=10, wobble=0.25); m.blob(".", 16, 2, 4, 1, seed=11, wobble=0.1)
     m.blob("^", 31, 3, 4, 4, seed=12, wobble=0.2); m.blob(".", 31, 3, 2, 2, seed=13, wobble=0.1)
     m.rect(".", 26, 3, 29, 3, only="^")
@@ -40,7 +40,7 @@ def build():
     m.road([(16, 18), (16, 22)])
     m.road([(28, 18), (28, 22), (22, 22)])
     m.road([(28, 18), (28, 13), (26, 13), (26, 8), (24, 8), (24, 5), (24, 4), (19, 4)])      # east pass
-    m.road([(24, 5), (27, 5), (27, 3), (29, 3)])                                              # the spur to Sonja's pocket
+    m.road([(24, 5), (27, 5), (27, 3), (29, 3)])                                              # the spur to Sami's pocket
     m.road([(4, 21), (22, 22)]) if False else m.road([(7, 21), (16, 21), (16, 22)])
     m.put("=", *bw).put("=", *bc).put("=", *be)
     # the goat track: a foot-only strip of mountain far west, with a plain landing at each end
@@ -69,15 +69,15 @@ def build():
     m.units(2, INF, [(8, 4), (9, 5)]); m.unit(2, TANK, 11, 4)
     m.units(2, INF, [(23, 5), (24, 7)]); m.unit(2, MDT, 22, 4)
     m.unit(2, TANK, 17, 7); m.unit(2, TANK, 15, 10); m.unit(2, MDT, 18, 4)
-    # Sonja
+    # Sami
     m.units(3, INF, [(31, 2), (32, 4)], **H)
     m.units(3, TANK, [(30, 4), (29, 3)]); m.unit(3, RECON, 31, 5); m.unit(3, RECON, 27, 5); m.unit(3, BCO, 30, 2)
     m.note("hq1", 16, 23, "player HQ (south)").note("base1", 13, 22, "player base")
-    m.note("hq2", 16, 2, "Kanbei's summit HQ: the objective").note("hq3", 31, 3, "Sonja's HQ in the east-ridge pocket")
+    m.note("hq2", 16, 2, "Kanbei's summit HQ: the objective").note("hq3", 31, 3, "Sami's HQ in the east-ridge pocket")
     m.note("gorge", 0, 15, "river falling east: (0..10,15), (10..24,17), (24..33,19); bridges at (7,15) west, (16,17) centre, (28,19) east")
     m.note("pass_w", 7, 10, "west pass road (bridge (7,15) -> (7,4)), mountains either side").note("pass_c", 15, 9, "centre pass road (bridge (16,17) -> (16,4))")
-    m.note("pass_e", 26, 9, "east pass road (bridge (28,19) -> (24,4)), with a spur east to Sonja's pocket at (29,3)")
+    m.note("pass_e", 26, 9, "east pass road (bridge (28,19) -> (24,4)), with a spur east to Sami's pocket at (29,3)")
     m.note("goat_start", 1, 15, "goat track foot start (plain landing north of the gorge)").note("goat_end", 3, 4, "goat track top: plain landing in the north forest, west of Kanbei's ground")
     m.note("scene_day4", 17, 5, "Kanbei's honour scene (day 4): the summit road's top, by the central pass")
-    m.note("sonja_ridge", 31, 3, "east ridge mountains around Sonja's pocket x30..32, y2..4")
+    m.note("sonja_ridge", 31, 3, "east ridge mountains around Sami's pocket x30..32, y2..4")
     return m
