@@ -28,8 +28,9 @@ The owner's pictures are already pixel art, upscaled by a (fractional) factor an
 5. **The large art** 128 x 160 is a 64 x 80 cell frame (`frame = [x, y]`, or automatic: the head's top two rows from the top, centred on the upper body) scaled **2x by whole cells** (no resampling): head, shoulders
    and chest as AW2 frames its COs (waist-up, head 45 to 65 px, the cut at the waist or the hips). `flip = true` mirrors the grid so the CO faces right like AW2's (Cassius and Klaus are drawn facing left).
 6. **The mug** 48 x 48 is a 24 x 24 cell square of the head (`mug = [x, y]`) scaled 2x; the Teams mini 32 x 24 and the HUD face 32 x 16 are windows of it round the eyes (`eyes = [x1, y1, x2, y2]`).
-7. **Expressions** (`expression_native`) are edits **in whole cells** of the native mug (so they have the picture's pixel size): happy (closed arcs for eyes, a smile with teeth), sad (brows raised at the nose, a
-   frown), angry (brows lowered, a lid line, a flat mouth); the silhouette's outline and the cells against it are never touched. `mouth = [x, y]` is the centre of the mouth (below a moustache).
+7. **Expressions**: nothing is drawn or edited (the owner rejected the edited faces). Every expression slot the game uses (happy, sad, angry) shows the neutral mug, the picture's own. If the owner
+   supplies real expression pictures, `art-src/cos/<id>_<expression>.jpg|png` (`happy`, `sad`, `angry`; same grid, size and framing as `<id>_v5.jpg`) are picked up by the importer: the mug is cut from them with
+   the CO's palette. `eyes = [x1, y1, x2, y2]` is only used to place the Teams mini and the HUD face.
 8. **The name graphic** 48 x 16 is set in our own letters (`namefont.py`); `crop.toml` says where Versus' 24-pixel cell and the grid's 16-row strip start.
 Output: `art/cos/<id>/{large,face_normal,face_happy,face_sad,face_angry,mini,hud,name}.png` (4-bit indexed, index 0 transparent) and `crop.toml`; deterministic. The AW2 figures are 1:1 pixels and ours are 2x
 cells, so ours look chunkier beside Hawke's 1-px detail; that is the picture's own pixel size. The older painterly import (`importer.import_co` without `pixelart`) remains for pictures that are not pixel art.
@@ -78,5 +79,5 @@ boxes (Power quotes), the power and tag cut-ins, and the CO page show them.
 Klaus, Aurelia, Livia fit with room, Cassius fills all 48 columns. No plate needed the short form (`short = "Aurel"` / `"Cass"` in the CO files are for a plate that clips).
 
 ## Limits
-The supplied pictures are one expression each: the happy, sad and angry faces are edits of the eyes, brows and mouth (readable, but a drawn set would be better; ask the owner). The importer expects a bust on a
+The supplied pictures are one expression each: the happy, sad and angry slots show the neutral face (edited faces were rejected; real expression pictures from the owner are picked up as `art-src/cos/<id>_<expression>.*`). The importer expects a bust on a
 flat dark background; a different picture needs its own framing `.toml`: the scale, the mug's square, the eyes, the palette and the zones are decided by looking at the picture (`/tmp`-style overlays of the zones are easy to make: draw the polygons on the picture). The zone polygons are by eye, to a few source pixels. The portrait is palette scheme 0 repeated for the eight colour schemes the game offers (no recolour variants).

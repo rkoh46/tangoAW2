@@ -4,5 +4,4 @@ flip = true
 frame = [46, 14]
 mug = [66, 26]
 eyes = [73, 37, 83, 37]
-mouth = [78, 47]
 brow_index = 15

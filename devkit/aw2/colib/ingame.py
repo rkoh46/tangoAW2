@@ -93,9 +93,19 @@ def find_on(shot, co, need=0.93, patches=2, pic="face_normal"):
 # The Teams list (34 COs with the four): Klaus, Aurelia, Cassius and Livia stand at 27..30 (after Crumb, before Hawke; `co_new::build` puts a new CO after the one it takes after, Adder).
 # The Teams screen keeps the P1 card's place in this list at 0x02017C6C (found by diffing EWRAM while UP walked the list): the walk presses UP or DOWN until it is on the CO, so a press
 # a busy machine drops or doubles does not matter.
-TEAMS_INDEX = {"klaus": 27, "aurelia": 28, "cassius": 29, "livia": 30}
+# The game's own list of the Teams screen is at TEAMS_ORDER (CO ids, 0xFF-ended): the CO's place in it is read from there, since each new CO stands after the one it takes after.
+ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89}
+TEAMS_ORDER = 0x0203FE80
 TEAMS_CURSOR = 0x02017C6C
 TEAMS_LEN = 34
+
+
+def teams_index(d, co):
+    order = list(bytes.fromhex(d.peek(TEAMS_ORDER, 48)["hex"]))
+    order = order[: order.index(0xFF)] if 0xFF in order else order
+    global TEAMS_LEN
+    TEAMS_LEN = len(order)
+    return order.index(ES_IDS[co])
 
 
 def walk_to(d, index):
@@ -137,7 +147,7 @@ def _photograph(co, out_dir):
         d.press_until("A", {"phase": "select_map"}, 30)
         d.press_until("A", {"phase": "army_select"}, 30)
         time.sleep(2)
-        if not walk_to(d, TEAMS_INDEX[co]):
+        if not walk_to(d, teams_index(d, co)):
             util.die(f"the Teams screen did not reach {co}")
         time.sleep(0.8)
         app.shot(out / f"{co}_select.png")

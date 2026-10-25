@@ -146,7 +146,7 @@ black uniform with gold pauldrons, Livia the woman in the white robe with the re
 native pixel grid is found, the picture is resampled on the cell centres, the figure is framed waist-up like AW2's COs and scaled 2x by whole cells (facing right: Cassius and Klaus are mirrored), the palette is
 the picture's own 14 colours + the outline, and the mugs are the heads at 2x. The sheet is `co_portraits_v5.png` (source, the large art 1x and 2x beside Hawke, Kanbei and Sonja, the faces with expressions, the CO select
 row and the game's own screens). **In the game** with `TANGOAW2_ES_VERSUS=1` (the four are ids 86..89 with this campaign's powers): the CO select card, the HUD face, the Power's dialogue box and its cut-in (the large
-figure), and the CO page show them. The happy, sad and angry faces are edits of the neutral face's eyes, brows and mouth in whole cells; if the owner can supply expression variants they replace them.
+figure), and the CO page show them. The happy, sad and angry slots show the neutral face unedited (the edited faces were rejected); expression pictures from the owner (`art-src/cos/<id>_<expression>.*`) are used if they exist.
 
 ## 3. Who joins when
 
@@ -281,7 +281,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. Each CO has
 
 ## 10. Open questions for the user
 
-1. **Portraits:** is the picture-to-CO mapping right (Klaus / Aurelia / Cassius / Livia as in section 2.4)? Can the owner supply happy, sad and angry variants of each picture (the faces are edited from the neutral one now)?
+1. **Portraits:** is the picture-to-CO mapping right (Klaus / Aurelia / Cassius / Livia as in section 2.4)? Can the owner supply happy, sad and angry variants of each picture (the slots show the neutral face for now)?
 2. **Klaus's stars:** 4 / 8 (the doc's recommendation) or 4 / 9 as in your proposal? (8 is Kanbei's price plus one; 9 is Hawke's.)
 3. **Livia's income:** +25% (the doc's change; +10% with +10% unit cost buys nothing) or your +10% income?
 4. **Varro:** the final boss needs a CO that is not one of the four. Options: (a) a fifth Emerald Sun CO, boss only, built with the same kit (portrait options like the others); (b) Varro as a story-only

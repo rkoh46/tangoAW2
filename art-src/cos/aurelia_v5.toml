@@ -4,4 +4,3 @@ flip = false
 frame = [70, 31]
 mug = [87, 46]
 eyes = [94, 57, 104, 57]
-mouth = [100, 64]

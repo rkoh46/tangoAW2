@@ -1,5 +1,5 @@
 """Tests of the CO kit (run by `aw2dev test`): the data files are valid, the committed art is what the supplied pictures give and passes the lint, the lint catches bad art, the importer's
-steps (background cut, palette, outline, expressions) behave, the names fit. No ROM is needed."""
+steps (background cut, palette, outline, neutral expression faces) behave, the names fit. No ROM is needed."""
 import copy, tempfile, unittest
 from pathlib import Path
 import numpy as np
@@ -190,10 +190,26 @@ class Pixelart(unittest.TestCase):
         self.assertEqual(im.large.shape, (160, 128))
         self.assertEqual(im.faces["normal"].shape, (48, 48))
         for kind in ("happy", "sad", "angry"):
-            self.assertEqual(im.faces[kind].shape, (48, 48))
+            # no drawn or edited expressions: the neutral face is every expression slot's face
+            self.assertTrue(np.array_equal(im.faces[kind], im.faces["normal"]), kind)
         self.assertEqual(len(im.palette), 16)
         # every native cell is a 2 x 2 block (no blurry resampling)
         blocks = im.large.reshape(80, 2, 64, 2)
         self.assertTrue((blocks == blocks[:, :1, :, :1]).all())
         # the outline is index 15 against the cut background
         self.assertIn(15, set(np.unique(im.large)))
+
+    def test_a_real_expression_picture_is_used_when_the_owner_supplies_one(self):
+        from . import pixelart as P
+        nat, fg, big = self.sprite(4.0)
+        alt = nat.copy()
+        alt[18:22, 12:20] = (250, 60, 60)
+        bigalt = Image.fromarray(alt.astype(np.uint8)).resize(big.size, Image.NEAREST)
+        with tempfile.TemporaryDirectory() as t:
+            path = Path(t) / "x_v5.png"
+            big.save(path)
+            bigalt.save(Path(t) / "x_happy.png")
+            spec = {"pixelart": True, "flip": False, "frame": [2, 2], "mug": [8, 8], "eyes": [14, 14, 20, 14]}
+            im = P.styled(spec, path)
+        self.assertTrue(np.array_equal(im.faces["sad"], im.faces["normal"]))
+        self.assertFalse(np.array_equal(im.faces["happy"], im.faces["normal"]))

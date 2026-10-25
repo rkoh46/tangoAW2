@@ -307,116 +307,14 @@ def to_image(idx, palette, scale=1, bg=None):
     return im.resize((w * scale, h * scale), Image.NEAREST) if scale != 1 else im
 
 
-# --- expressions ----------------------------------------------------------------------------------------------------------------------------------------------------
-
-def _mug_xy(spec, x, y):
-    fx, fy, fs = spec["face"]
-    k = 48.0 / fs
-    return int(round((x - fx) * k)), int(round((y - fy) * k))
-
-
-def _skin_near(mug, cx, cy):
-    vals = []
-    for y in range(cy - 7, cy + 8):
-        for x in range(cx - 8, cx + 9):
-            if 0 <= y < 48 and 0 <= x < 48 and mug[y, x] not in (0, 1, 15):
-                vals.append(int(mug[y, x]))
-    # the commonest colour of the ring around the eye that is not the darkest few (hair, brows)
-    from collections import Counter
-    c = Counter(v for v in vals)
-    return c.most_common(1)[0][0] if c else 2
-
-
-PROTECT = None      # the pixels an expression edit must not touch: the silhouette's outline and what lies against it
-
-
-def _protect(mug):
-    t = mug == 0
-    near = np.zeros_like(t)
-    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-        near |= shift(t, dx, dy)
-    return near & ~t | (mug == 15) & near
-
-
-def _fill(mug, x0, y0, x1, y1, v, ref=None):
-    """Paint the box with skin: each column takes the colour just above the box (`ref` = "above") or below it, so the shading of the face runs on through the patch; `v` is the fallback."""
-    for x in range(max(0, x0), min(48, x1 + 1)):
-        for y in range(max(0, y0), min(48, y1 + 1)):
-            if mug[y, x] == 0 or (PROTECT is not None and PROTECT[y, x]):
-                continue
-            c = v
-            if ref:
-                yy = y0 - 1 if ref == "above" else y1 + 1
-                if 0 <= yy < 48 and mug[yy, x] not in (0, 1, 15):
-                    c = int(mug[yy, x])
-            mug[y, x] = c
-
-
-def _line(mug, pts, v, thick=1):
-    for (x, y) in pts:
-        for t in range(thick):
-            if 0 <= y + t < 48 and 0 <= x < 48 and mug[y + t, x] != 0 and not (PROTECT is not None and PROTECT[y + t, x]):
-                mug[y + t, x] = v
-
-
-def _slant(x0, y0, x1, y1):
-    n = max(abs(x1 - x0), 1)
-    return [(x0 + i, int(round(y0 + (y1 - y0) * i / n))) for i in range(n + 1)]
-
-
-def expression(mug, spec, kind):
-    """The mug with its eyes, brows and mouth edited: happy (closed, smiling eyes; a grin), sad (brows up at the nose; a frown), angry (brows down at the nose; narrowed eyes; gritted teeth).
-    The neutral face is the source's own."""
-    global PROTECT
-    PROTECT = _protect(mug)
-    m = mug.copy()
-    e = spec["eyes"]
-    (e1x, e1y), (e2x, e2y) = _mug_xy(spec, e[0], e[1]), _mug_xy(spec, e[2], e[3])
-    mx, my = _mug_xy(spec, *spec["mouth"])
-    skin1, skin2 = _skin_near(mug, e1x, e1y), _skin_near(mug, e2x, e2y)
-    dark = 15
-    hair_dark = spec.get("brow_index", 15)
-    eyes = ((e1x, e1y, skin1, 1), (e2x, e2y, skin2, -1))
-    if kind == "happy":
-        for (ex, ey, sk, side) in eyes:
-            _fill(m, ex - 4, ey - 2, ex + 4, ey + 2, sk, "below")
-            _line(m, [(ex - 3, ey + 1), (ex - 2, ey), (ex - 1, ey - 1), (ex, ey - 1), (ex + 1, ey - 1), (ex + 2, ey), (ex + 3, ey + 1)], dark)
-        _fill(m, mx - 6, my - 2, mx + 6, my + 3, _skin_near(mug, mx, my - 6), "above")
-        sk = _skin_near(mug, mx, my - 6)
-        _line(m, [(mx - 5, my - 1), (mx - 4, my), (mx - 3, my + 1), (mx - 2, my + 1), (mx - 1, my + 1), (mx, my + 1), (mx + 1, my + 1), (mx + 2, my + 1), (mx + 3, my + 1), (mx + 4, my), (mx + 5, my - 1)], dark)
-        _line(m, [(mx - 3, my + 2), (mx - 2, my + 2), (mx - 1, my + 2), (mx, my + 2), (mx + 1, my + 2), (mx + 2, my + 2), (mx + 3, my + 2)], 1)
-        _line(m, [(mx - 2, my + 3), (mx - 1, my + 3), (mx, my + 3), (mx + 1, my + 3), (mx + 2, my + 3)], dark)
-    elif kind in ("sad", "angry"):
-        for (ex, ey, sk, side) in eyes:
-            # the old brow goes (a band of skin above the eye), the new one is drawn
-            _fill(m, ex - 6, ey - 7, ex + 6, ey - 3, sk, "above")
-            inner_up = (-2 if kind == "sad" else 3)       # inner end of the brow: raised (sad) or lowered (angry), relative to the outer end
-            x_out, x_in = ex - 4 * side, ex + 4 * side
-            y_out, y_in = ey - 5, ey - 5 - inner_up if kind == "sad" else ey - 5 + 3
-            if kind == "sad":
-                y_out, y_in = ey - 4, ey - 7
-            else:
-                y_out, y_in = ey - 7, ey - 4
-            pts = _slant(min(x_out, x_in), y_out if x_out < x_in else y_in, max(x_out, x_in), y_in if x_out < x_in else y_out)
-            _line(m, pts, hair_dark, 2)
-            if kind == "angry":
-                _line(m, [(ex - 3, ey - 1), (ex - 2, ey - 1), (ex - 1, ey - 1), (ex, ey - 1), (ex + 1, ey - 1), (ex + 2, ey - 1), (ex + 3, ey - 1)], dark)
-        sk = _skin_near(mug, mx, my - 6)
-        _fill(m, mx - 6, my - 2, mx + 6, my + 3, sk, "above")
-        if kind == "sad":
-            _line(m, [(mx - 4, my + 2), (mx - 3, my + 1), (mx - 2, my), (mx - 1, my), (mx, my), (mx + 1, my), (mx + 2, my), (mx + 3, my + 1), (mx + 4, my + 2)], dark)
-        else:
-            _line(m, [(mx - 4 + i, my) for i in range(9)], dark)
-            _line(m, [(mx - 3 + i, my + 1) for i in range(7)], 1)
-            _line(m, [(mx - 4 + i, my + 2) for i in range(9)], dark)
-    return m
-
+# --- expressions --------------------------------------------------------------------------------------------------------------------------------------------------
 
 def all_expressions(im, spec):
-    mug = im.faces["normal"]
+    """Every expression slot the game uses (happy, sad, angry) that the importer did not get a real picture for shows the neutral face, the picture's own, unedited: nothing is drawn or edited
+    (the owner rejected the edited faces). Real expression pictures `art-src/cos/<id>_<expression>.*` are picked up by `pixelart.styled`."""
     for kind in ("happy", "sad", "angry"):
         if kind not in im.faces:
-            im.faces[kind] = expression(mug, spec, kind)
+            im.faces[kind] = im.faces["normal"].copy()
 
 
 # --- the committed art: indexed PNGs ----------------------------------------------------------------------------------------------------------------------------------

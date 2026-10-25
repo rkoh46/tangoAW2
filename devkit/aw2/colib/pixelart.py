@@ -222,7 +222,7 @@ def styled(spec, path):
         cx = int(round(np.where(band)[1].mean()))
         spec = {**spec, "frame": [cx - fw // 2, top - 2]}
     x0, y0 = spec["frame"]
-    for key in ("mug", "eyes", "mouth"):
+    for key in ("mug", "eyes"):
         if key not in spec:
             raise SystemExit(f"{path}: the framing file needs `{key}` (native cells of the picture; `aw2dev co portrait grid` numbers them)")
     mx0, my0 = spec["mug"]
@@ -259,112 +259,33 @@ def styled(spec, path):
     im.hud = I._window(face, exm - 16, eym - 6, 32, 16)
     # the framing file's coordinates for the expression edits are native cells of the (mirrored) grid; the mug square is `ms` cells at scale k
     im.spec = {**spec, "face": [mx0, my0, ms]}
+    # expressions: a real picture of the same CO (`<id>_<expression>.jpg|png` beside the source, drawn on the same grid and framing) or, by default, the neutral face unedited
     for kind in ("happy", "sad", "angry"):
-        im.faces[kind] = np.kron(expression_native(nface, spec, pal16, kind), np.ones((S, S), np.uint8))
+        other = _expression_picture(path, kind)
+        if other is None:
+            im.faces[kind] = face.copy()
+            continue
+        nat2 = native(np.array(Image.open(other).convert("RGB")), detect_grid(np.array(Image.open(other).convert("RGB"))))
+        if spec.get("flip"):
+            nat2 = nat2[:, ::-1].copy()
+        fg2, _ = cut_background(nat2, spec.get("bg_tolerance", 9.0))
+        fg2 = np.pad(keep_main(fg2), P, constant_values=False)
+        nat2 = np.pad(nat2, ((P, P), (P, P), (0, 0)), mode="edge")
+        f2 = ring(fg2, quantise(nat2, fg2, pal[:14]))
+        im.faces[kind] = np.kron(f2[mu], np.ones((S, S), np.uint8))
     return im
 
 
-# --- expressions at the native resolution (every edit is whole cells, so it has the picture's own pixel size) ---------------------------------------------------------------
-
-def _cheek(face, cx, cy, pal):
-    """The commonest skin-like index in the ring around (cx, cy): not the outline, not near-white, not darker than the middle of the palette's lightness."""
-    from collections import Counter
-    lum = {i: 0.299 * pal[i][0] + 0.587 * pal[i][1] + 0.114 * pal[i][2] for i in range(1, 16)}
-    c = Counter()
-    for y in range(cy - 3, cy + 4):
-        for x in range(cx - 4, cx + 5):
-            if 0 <= y < face.shape[0] and 0 <= x < face.shape[1]:
-                v = int(face[y, x])
-                if v and v != 15 and 110 < lum[v] < 235:
-                    c[v] += 1
-    return c.most_common(1)[0][0] if c else 2
-
-
-def _brow_index(face, cx, cy, pal, skin):
-    """The darkest non-outline index in the band just above the eye (the brow's own colour)."""
-    lum = lambda i: 0.299 * pal[i][0] + 0.587 * pal[i][1] + 0.114 * pal[i][2]
-    best = None
-    for y in range(cy - 4, cy - 1):
-        for x in range(cx - 3, cx + 4):
-            if 0 <= y < face.shape[0] and 0 <= x < face.shape[1]:
-                v = int(face[y, x])
-                if v and v != skin and (best is None or lum(v) < lum(best)):
-                    best = v
-    return best or 15
-
-
-def expression_native(face, spec, pal, kind):
-    """face: the mug in native cells (ms x ms). -> the same with the eyes, brows and mouth of `kind` (happy, sad, angry); the neutral face is the picture's own."""
-    f = face.copy()
-    mx0, my0 = spec["mug"]
-    e = spec["eyes"]
-    eyes = [(round(e[0] - mx0), round(e[1] - my0)), (round(e[2] - mx0), round(e[3] - my0))]
-    mx, my = round(spec["mouth"][0] - mx0), round(spec["mouth"][1] - my0)
-    h, w = f.shape
-    def inside(x, y):
-        return 0 <= x < w and 0 <= y < h and face[y, x] != 0 and face[y, x] != 15 or (0 <= x < w and 0 <= y < h and face[y, x] == 15 and False)
-
-    # the silhouette's outline and the cells against it stay as they are
-    tr = face == 0
-    near = np.zeros_like(tr)
-    near[1:, :] |= tr[:-1, :]
-    near[:-1, :] |= tr[1:, :]
-    near[:, 1:] |= tr[:, :-1]
-    near[:, :-1] |= tr[:, 1:]
-    prot = near
-
-    def put(x, y, v):
-        if 0 <= x < w and 0 <= y < h and f[y, x] != 0 and not prot[y, x]:
-            f[y, x] = v
-
-    skin = _cheek(face, (eyes[0][0] + eyes[1][0]) // 2, eyes[0][1] + 3, pal)
-    mskin = _cheek(face, mx, my - 3, pal)
-    brow = spec.get("brow_index") or _brow_index(face, eyes[0][0], eyes[0][1], pal, skin)
-    ink = 15
-    # which eye is nearer the face's middle: the inner end of each brow points to the other eye
-    for n, (ex, ey) in enumerate(eyes):
-        inner = 1 if n == 0 else -1      # the direction of the nose
-        if kind == "happy":
-            for y in range(ey - 1, ey + 2):
-                for x in range(ex - 2, ex + 3):
-                    put(x, y, skin)
-            for x, y in ((ex - 2, ey + 1), (ex - 1, ey), (ex, ey), (ex + 1, ey), (ex + 2, ey + 1)):
-                put(x, y, ink)
-        elif kind in ("sad", "angry"):
-            for y in range(ey - 3, ey - 1):
-                for x in range(ex - 3, ex + 4):
-                    if face[y, x] not in (0, 15) and face[y, x] != skin:
-                        put(x, y, skin)
-            if kind == "sad":      # the inner end of the brow is high
-                pts = [(ex - 2 * inner, ey - 2), (ex - inner, ey - 2), (ex, ey - 3), (ex + inner, ey - 3), (ex + 2 * inner, ey - 4)]
-            else:                  # the inner end is low
-                pts = [(ex - 2 * inner, ey - 4), (ex - inner, ey - 3), (ex, ey - 3), (ex + inner, ey - 2), (ex + 2 * inner, ey - 2)]
-            for x, y in pts:
-                put(x, y, brow)
-            if kind == "angry":
-                for x in range(ex - 2, ex + 3):
-                    put(x, ey - 1, ink)
-    if kind != "normal":
-        for y in range(my - 1, my + 2):
-            for x in range(mx - 3, mx + 4):
-                put(x, y, mskin)
-        if kind == "happy":
-            for x, y in ((mx - 3, my - 1), (mx - 2, my), (mx + 2, my), (mx + 3, my - 1)):
-                put(x, y, ink)
-            for x in range(mx - 1, mx + 2):
-                put(x, my, 1)
-                put(x, my + 1, ink)
-            put(mx - 2, my + 1, ink)
-            put(mx + 2, my + 1, ink)
-        elif kind == "sad":
-            for x, y in ((mx - 2, my + 1), (mx - 1, my), (mx, my), (mx + 1, my), (mx + 2, my + 1)):
-                put(x, y, ink)
-        else:
-            for x in range(mx - 2, mx + 3):
-                put(x, my, ink)
-            put(mx - 3, my + 1, ink)
-            put(mx + 3, my + 1, ink)
-    return f
+def _expression_picture(path, kind):
+    """art-src/cos/<id>_<kind>.jpg|png beside <id>_v5.jpg (the owner's own expression picture), or None."""
+    from pathlib import Path
+    path = Path(path)
+    stem = path.stem.rsplit("_", 1)[0]
+    for ext in (".png", ".jpg", ".jpeg"):
+        q = path.with_name(f"{stem}_{kind}{ext}")
+        if q.exists():
+            return q
+    return None
 
 
 def describe(path, flip=False, out=None):
