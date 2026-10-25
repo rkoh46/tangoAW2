@@ -5,6 +5,7 @@ import os
 from aw2test import bhact5 as a5
 from aw2test import bhcampaign as bh
 from aw2test import dscampaign as dc
+from aw2test.game import NavError
 from aw2test.harness import test
 
 GMAP = 0x0201E450
@@ -329,7 +330,10 @@ def bh_act5_m30_stage_two_is_the_same_army_under_andy(ctx):
     a5.calm(e, g, d)
     my_turn(e, g, d)
     ctx.log(f"before the second capture: {g.unit_at(33, 6)} army {g.current_army()} day {e.u16(0x03004080)}")
-    capture(e, g, d, 33, 6)
+    try:
+        capture(e, g, d, 33, 6)
+    except NavError:
+        pass   # (the winning capture ends in the results, not on an idle map)
     for _ in range(30):
         if e.u8(dc.LAST_RESULT):
             break
