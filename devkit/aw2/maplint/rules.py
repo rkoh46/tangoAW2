@@ -55,6 +55,9 @@ RULES = {
     "AR01": ("error", "two armies of the map wear the same colour (each army is its own nation: Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole)"),
     "AR02": ("error", "an army has more than one HQ"),
     "AR03": ("error", "a silo or an airport that no army's infantry can reach, or an airport whose footprint is wrong"),
+    "PP03": ("warn", "a pipeline that is a stub: an end hanging in open terrain (a pipeline ends at the map edge, the sea, mountains or a building) or fewer than 6 cells"),
+    "PP04": ("warn", "a pipe seam that changes nothing when broken: it neither joins two parts of the map nor shortens the way between the HQs by at least 6 cells"),
+    "PT01": ("error", "a port that leads nowhere: no navigable sea beside it (lava is not navigable), or a sea body too small for ships (a lake of a few cells)"),
     "DQ12": ("warn", "a long straight line of mountains away from the map edge: a drawn wall, not a range"),
     "DQ11": ("warn", "a map meant to be fair (Versus, or a `fair` line) with unequal properties per army"),
     "SP01": ("warn", "not enough room to fight: too many units for the walkable ground or for the frontage between the sides"),
@@ -547,7 +550,11 @@ def inventions(G):
         return []
     out = []
     # (a missile silo, tile 0x180, is AW2's own terrain, not an invention: it is fine in any mission)
-    tiles = [(x, y) for y in range(G.h) for x in range(G.w) if G.g[y][x] == "#" or 0x181 <= G.t[y][x] <= 0x1A9]
+    # (a volcano is a natural hazard, allowed anywhere: its rim and slope tiles 0x1A5..0x1A9 and the underlay inside their box)
+    vol = [(x, y) for y in range(G.h) for x in range(G.w) if 0x1A5 <= G.t[y][x] <= 0x1A9]
+    box = (min(c[0] for c in vol) - 1, min(c[1] for c in vol) - 1, max(c[0] for c in vol) + 1, max(c[1] for c in vol) + 1) if vol else None
+    in_vol = lambda x, y: box and box[0] <= x <= box[2] and box[1] <= y <= box[3] and (0x1A4 <= G.t[y][x] <= 0x1A9)
+    tiles = [(x, y) for y in range(G.h) for x in range(G.w) if (G.g[y][x] == "#" or 0x181 <= G.t[y][x] <= 0x1A9) and not in_vol(x, y)]
     if tiles and not G.m.meta.get("blackhole"):
         x, y = tiles[0]
         out.append(Problem("ES01", x, y, f"{len(tiles)} invention tiles on a map with no `blackhole` line (only the missions against Black Hole may have them)"))
@@ -588,6 +595,136 @@ def reachables(G):
     return out
 
 
+PIPE = set("IZ")
+VEH = set(".R=,HBCAPTMbcapt")
+
+
+def pipe_parts(G):
+    """The connected pipelines (4-connected cells of pipe or seam): [set of cells]."""
+    return G.comps(PIPE)
+
+
+def pipe_ends(G, comp):
+    """(cell, the cell beyond it) of every end of a pipeline (a cell with one pipe neighbour; the cell beyond lies opposite that neighbour)."""
+    out = []
+    for x, y in comp:
+        nb = [(dx, dy) for dx, dy in D4 if (x + dx, y + dy) in comp]
+        if len(nb) == 1:
+            dx, dy = nb[0]
+            out.append(((x, y), (x - dx, y - dy)))
+        elif len(nb) == 0:
+            out.append(((x, y), (x, y)))
+    return out
+
+
+def closed_beyond(G, c, back=None):
+    """Whether the pipeline stops properly at the cell `c` beyond its end: the map edge, a mountain, water or a river (a barrier ends there), a building or structure (a supply line ends
+    in the base or factory it feeds), or a GATE: a gap of up to 3 cells in the line with the wall resuming on the other side (`back` is the direction the line runs in)."""
+    x, y = c
+    if not (0 <= x < G.w and 0 <= y < G.h):
+        return True                                  # the map edge
+    if G.g[y][x] in "^~r,#-" or G.g[y][x] in "HBCAPTbcapt12345":
+        return True
+    if back:
+        for i in range(1, 4):
+            nx, ny = x + back[0] * i, y + back[1] * i
+            if G.at(nx, ny) in PIPE:
+                return True
+            if G.at(nx, ny) in "^~#|":
+                break
+    return False
+
+
+def supply_line(G, comp):
+    """A pipeline with an end in a building or structure feeds it (a base, a factory, a cannon): a supply line, not a barrier."""
+    for cell, beyond in pipe_ends(G, comp):
+        if 0 <= beyond[0] < G.w and 0 <= beyond[1] < G.h and (G.g[beyond[1]][beyond[0]] in "HBCAPTbcapt#" or any(G.at(cell[0] + dx, cell[1] + dy) in "BAbaHCc#" for dx, dy in D4)):
+            return True
+    return False
+
+
+def dist_map(G, start, seams_open):
+    """BFS over vehicle ground from `start` (a cell): {cell: steps}, seams passable when `seams_open` (a set of cells)."""
+    ok = lambda c: G.at(*c) in VEH or c in seams_open
+    d = {start: 0}
+    todo = [start]
+    for c in todo:
+        for dx, dy in D4:
+            n = (c[0] + dx, c[1] + dy)
+            if n not in d and ok(n):
+                d[n] = d[c] + 1
+                todo.append(n)
+    return d
+
+
+def pipelines(G):
+    """PP03: a pipeline is a barrier built like infrastructure: 6 or more cells and no end hanging in open terrain. PP04: each seam must change something: broken, it joins two parts
+    of the ground (vehicles) that were apart, or shortens the way between two HQs by 6 cells or more."""
+    out = []
+    parts = pipe_parts(G)
+    hqs = G.cells("H")
+    for comp in parts:
+        if any(G.at(x + dx, y + dy) == "#" for x, y in comp for dx, dy in D4):
+            continue                                     # (the supply pipe of a Black Hole factory or cannon)
+        if len(comp) < 6:
+            x, y = min(comp, key=lambda c: (c[1], c[0]))
+            out.append(Problem("PP03", x, y, f"a pipe stub of {len(comp)} cells"))
+            continue
+        for cell, beyond in pipe_ends(G, comp):
+            if not closed_beyond(G, beyond, (beyond[0] - cell[0], beyond[1] - cell[1])):
+                out.append(Problem("PP03", cell[0], cell[1], f"a pipeline ends in open terrain at {cell} (it must reach the map edge, the sea, mountains or a building)"))
+        for seam in [c for c in comp if G.g[c[1]][c[0]] == "Z"]:
+            if not hqs or supply_line(G, comp):
+                continue                                 # (a supply line's seam cuts the feed, it is not a gate of the map)
+            gained = False
+            for hq in hqs:
+                before = dist_map(G, hq, set())
+                after = dist_map(G, hq, {seam})
+                if len(after) > len(before) + 0 and any(c not in before for c in after if c != seam and c in after and G.at(*c) in VEH):
+                    gained = True                    # the seam joins ground that was cut off
+                    break
+                if any(c in before and before[c] - after[c] >= 6 for c in after if c in before and after[c] < before[c]):
+                    gained = True
+                    break
+            if not gained:
+                out.append(Problem("PP04", seam[0], seam[1], "breaking this seam changes nothing (no ground joined, no way shortened by 6 cells from an HQ)"))
+    return out
+
+
+SEA_MIN = 12
+
+
+def ports(G):
+    """PT01: every port (own or neutral) touches navigable sea of a body of 12 or more cells (AW2's smallest is 23, Dual Strike's 16), so a ship built there can leave. On a wasteland map
+    (Dual Strike's look 3) the water is drawn as lava, which no ship sails: a port there leads nowhere."""
+    out = []
+    cells = G.cells("Pp")
+    if not cells:
+        return out
+    lava = load.look_of(G.m.name) == 3
+    body = {}
+    for y in range(G.h):
+        for x in range(G.w):
+            if G.g[y][x] in "~r" and (x, y) not in body:
+                comp, todo = {(x, y)}, [(x, y)]
+                while todo:
+                    a, b = todo.pop()
+                    for dx, dy in D4:
+                        c = (a + dx, b + dy)
+                        if c not in comp and G.at(*c) in "~r,":
+                            comp.add(c)
+                            todo.append(c)
+                for c in comp:
+                    body[c] = len(comp)
+    for x, y in cells:
+        size = max([body.get((x + dx, y + dy), 0) for dx, dy in D4] + [0])
+        if lava and size:
+            out.append(Problem("PT01", x, y, "the port opens on lava (a wasteland map's water): no ship sails there"))
+        elif size < SEA_MIN:
+            out.append(Problem("PT01", x, y, f"the port's sea is a body of {size} cells (at least {SEA_MIN}: a ship built here must be able to leave)"))
+    return out
+
+
 def armies(G):
     """AR01 / AR02: every army its own colour, at most one HQ each."""
     out = []
@@ -617,7 +754,7 @@ def design_checks(G):
 KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}, "bh30": {"AR02": 1}}
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, reachables, design_checks]
+CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, reachables, pipelines, ports, design_checks]
 
 
 def lint(m, only=None):

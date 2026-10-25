@@ -79,7 +79,7 @@ def lint(a):
     report = {}
     for m in maps:
         probs = rules.lint(m, set(a.rule) if a.rule else None)
-        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source == "es" and p.rule.startswith(("DQ", "SP")))]
+        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source == "es" and (p.rule.startswith(("DQ", "SP")) or p.rule in ("PP03", "PP04")))]
         report[m.name] = [str(p) for p in probs]
         if not a.json:
             if probs:
@@ -99,7 +99,7 @@ def lint(a):
                 bad += 1
         if m.source == "es":
             # (the Emerald Sun maps are held to the design-quality rules too: DQ.. and SP.. findings fail, `--rule` or the map's own comment cannot waive them)
-            bad += sum(p.rule.startswith(("DQ", "SP")) for p in probs)
+            bad += sum(p.rule.startswith(("DQ", "SP")) or p.rule in ("PP03", "PP04") for p in probs)
         if out and (probs or m.source in ("bh", "es", "versus")):
             render.draw_map(m, probs).save(out / f"{m.name.replace(' ', '_')}.png")
     if a.json:

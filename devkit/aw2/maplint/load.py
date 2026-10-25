@@ -150,3 +150,19 @@ def versus_maps(rom=None):
         rows = mappy.tiles(m, edge)
         out.append(MapData(m["name"], "versus", rows, text=m["rows"], meta=m))
     return out
+
+
+def look_of(name):
+    """The Dual Strike look (0 normal, 1 snow, 2 desert, 3 wasteland) of an Emerald Sun or BH Campaign mission map, read from its Rust (`m.look = N;` inside `fn <name>()`); 0 for any other map."""
+    import re
+    if not hasattr(look_of, "cache"):
+        look_of.cache = {}
+        src = FIVE.parent / "src"
+        for f in sorted(src.glob("es_act*.rs")) + sorted(src.glob("bh_act*.rs")):
+            text = f.read_text()
+            fns = list(re.finditer(r"^(?:pub )?fn ((?:es|bh)\d\d\w*)\(", text, re.M))
+            for i, m in enumerate(fns):
+                body = text[m.start(): fns[i + 1].start() if i + 1 < len(fns) else len(text)]
+                mm = re.search(r"m\.look = (\d)", body)
+                look_of.cache[m.group(1)] = int(mm.group(1)) if mm else 0
+    return look_of.cache.get(name, 0)
