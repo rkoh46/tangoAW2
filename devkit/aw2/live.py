@@ -90,8 +90,10 @@ def _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch=None, ses=None
         now = time.time() - t0
         tick = _last_tick(run_dir / "state_s0.jsonl") if any("at_tick" in e for e in pending) else 0
         for e in pending:
-            if "at_log" in e and not e["_done"] and any(e["at_log"] in ses.log_text(k) for k in range(n)):
-                e["at_s"] = now          # (a marker the pad scripts log: `log AFTER_TURN_<r>` after turn r of the global turn list)
+            if "at_log" in e and not e["_done"] and not e.get("_seen") and any(e["at_log"] in ses.log_text(k) for k in range(n)):
+                # (a marker the pad scripts log: `log AFTER_TURN_<r>` after turn r of the global turn list; `@MARK+15`: 15 s after it)
+                e["at_s"] = now + e.get("delay", 0.0)
+                e["_seen"] = True
             if e["_done"] or not (("at_s" in e and now >= e["at_s"]) or ("at_tick" in e and tick >= e["at_tick"])):
                 continue
             e["_done"] = True
@@ -109,7 +111,8 @@ def _watch(spec, run_dir, names, logs, procs, app_exe, t0, launch=None, ses=None
                 os.kill(pid, signal.SIGCONT)
             elif act == "relaunch" and launch:
                 pf = run_dir / f"pad_s{k}_b.txt"
-                pf.write_text("\n".join(REJOIN_PAD) + "\n")
+                pad = REJOIN_PAD if spec.kind != "lobby" else REJOIN_PAD[:-2] + ["wait 200", "press B 8", "wait 30"] + scenarios.resume_turns(f"r{k}", 2)
+                pf.write_text("\n".join(pad) + "\n")
                 shutil.copy2(logs[k], run_dir / f"tango_s{k}_before.log")
                 procs[k] = launch(k, pf, "_b")
                 killed_set.discard(k)
@@ -205,6 +208,7 @@ def make_spec(name, fog="on", players=None, rounds=2, tag=None, hz=None, max_s=N
     """name: a scenario of scenarios.SCEN, or a flow: `lobby` (N seats, ROUNDS of end-turn) or `unranked` (matchmaking pair)."""
     kill = kill or os.environ.get("KILL")
     stop = stop or os.environ.get("STOP")
+    _ak = after_kill if after_kill is not None else int(os.environ.get("AFTER_KILL", 90))   # (a story with a rejoin needs minutes: AFTER_KILL=300)
     if name in scenarios.SCEN:
         n = players or scenarios.seats_of(name)
         if n != scenarios.seats_of(name):
@@ -217,18 +221,18 @@ def make_spec(name, fog="on", players=None, rounds=2, tag=None, hz=None, max_s=N
     if name == "lobby":
         n = players or 3
         return Spec("lobby", n, fog, lambda rd: scenarios.lobby_pads(n, rounds, rd, fog, sim, reveal=reveal, picks=scenarios.parse_picks(picks)), [], "lobby", tag or f"lobby{n}p", hz or 1, max_s,
-                    kill, stop, after_kill or 90, 2, profile_override)
+                    kill, stop, _ak, 2, profile_override)
     if name == "unranked":
         n = players or 2
-        return Spec("unranked", n, fog, scenarios.unranked_pads(n), [], "unranked", tag or "unranked", hz or 1, max_s, kill, stop, after_kill or 90, 2, profile_override)
+        return Spec("unranked", n, fog, scenarios.unranked_pads(n), [], "unranked", tag or "unranked", hz or 1, max_s, kill, stop, _ak, 2, profile_override)
     if name == "rules-lobby":
         n = players or 2
-        return Spec(name, n, fog, lambda rd: scenarios.rules_lobby_pads(n, rd), [], "lobby", tag or f"rules_lobby{n}p", hz or 1, max_s, kill, stop, after_kill or 90, 2, profile_override)
+        return Spec(name, n, fog, lambda rd: scenarios.rules_lobby_pads(n, rd), [], "lobby", tag or f"rules_lobby{n}p", hz or 1, max_s, kill, stop, _ak, 2, profile_override)
     if name == "rules-unranked":
         n = players or 2
-        return Spec(name, n, fog, lambda rd: scenarios.rules_unranked_pads(n, rd), [], "unranked", tag or "rules_unranked", hz or 1, max_s, kill, stop, after_kill or 90, 2, profile_override)
+        return Spec(name, n, fog, lambda rd: scenarios.rules_unranked_pads(n, rd), [], "unranked", tag or "rules_unranked", hz or 1, max_s, kill, stop, _ak, 2, profile_override)
     if name == "browse":
-        return Spec(name, 2, fog, lambda rd: scenarios.browse_pads(rd), [], "lobby", tag or "browse", hz or 1, max_s or 300, kill, stop, after_kill or 90, 2, profile_override)
+        return Spec(name, 2, fog, lambda rd: scenarios.browse_pads(rd), [], "lobby", tag or "browse", hz or 1, max_s or 300, kill, stop, _ak, 2, profile_override)
     if name == "solo":
         spec = Spec(name, 1, fog, lambda rd: scenarios.solo_pads(solo_entry, solo_pad, rd), [], "solo", tag or "solo", hz or 1, max_s or 200, kill, stop, 90, 2, profile_override)
         spec.boot_lobby = solo_entry == "lobby"
