@@ -11,6 +11,8 @@ bio = "Commander of the Emerald Sun cavalry and the Senate's favourite, who thin
 luck = [10, 10, 10]
 stars = { cop = 3, scop = 7 }
 
+# "vehicle" = the ground vehicles: Recon, APC, Tank, Md. Tank, Megatank, Neotank, Piperunner and Anti-Air (the Megatank and the Piperunner count as vehicles, not as indirect units: the owner's ruling; pinned by `aw2dev co verify` `vehicles`).
+
 [d2d]
 name = "Impetus"
 text = "My vehicles move 1 space more and hit 10% harder, but their armour is 10% thinner."

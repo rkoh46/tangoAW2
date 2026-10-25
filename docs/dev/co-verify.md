@@ -22,6 +22,7 @@ Andy": the two play the same fights and moves and must agree unit for unit.
 | `hooks` | Testudo (counter cut to 75%: damage number and forecast), Onager (splash 1 HP to the enemy units beside the target, never the last, never her own, diagonals or two cells away), Triumph (a Tank that attacked is not done, no Fire, one move, then done) | the rule's sentence in the data file |
 | `tag` | both meters full: the map menu offers Tag; the tag screen shows POWER n% (Dual Strike's digits cell by cell); the first half is the active CO's Super Power with the pair's firepower and luck (5 per star), then Change: the partner's; heal and funds of each half; Onager and Triumph inside a half; the TAG page lists the partners with their stars | `cos/tags.toml` |
 | `cpu` | the computer plays the CO with the power paid for: it uses it within three turns (CO Power and Super Power), its hurt units are healed; with a partner and both meters full it uses the Tag Power and both Super Powers run | |
+| `vehicles` | Megatank and Piperunner of Cassius and Aurelia against Andy's: move, base damage and the Piperunner's range at each power level | the vehicle bonus / penalty of the data file |
 | `cloneandy` | Andy and Clone Andy play the same fights and moves | each other |
 | `limits` | Cassius's Triumph for the computer and after suspend and continue: measured and reported as LIMIT lines | |
 | net (`--net`) | each CO's `co_<co>_cop` and `co_<co>_scop` through `aw2dev net repeat` (two real clients, the CO poked into army 1, the meter filled, the power and its special rule played) | the two peers' hashes equal, the scripts run to the end |
@@ -53,7 +54,7 @@ Give `cospec.py` its numbers (a `cos/<id>.toml`, or a function like `crumb()`), 
 needs its own `hooks` scenario (copy `hook_onager`) and a net scenario (`scenarios.co_actions`).
 
 ## Limits
-- The unit types: only AW2's nineteen (above). The Megatank and the Piperunner are "vehicle" in the engine but the spec's list does not name them; `cospec.AMBIGUOUS`.
+- The unit types: only AW2's nineteen play in the `stats` fights; the Megatank and the Piperunner (vehicles, the owner's ruling) are pinned by the `vehicles` facet by comparison with Andy.
 - Tag Powers are not played through `net repeat` (a pad script for the Tag, Change and End sequence stalled before the second half; the hashes were equal); the harness plays them (`tag`) and Aurelia's Onager and Cassius's Triumph rules are checked on two consoles (`es_*_is_deterministic`); the Aurelia net scenario plays the power only (a poked Artillery has no ammo).
 - Onager in fog (hidden units beside the target) is not played.
 - Cassius's Triumph: the computer's Cassius gets no extra move and a suspend and continue loses the extra-move bit (the Tank may fire again): reported as LIMIT lines (the `bugfix` branch is working on them).

@@ -835,3 +835,56 @@ def triumph_limits(ctx):
     else:
         ctx.log("LIMIT [cassius scop] after continue the Tank is done: its extra move is lost")
     return before, after
+
+
+# --- the Megatank and the Piperunner are vehicles (the user's answer): pinned by comparison with Andy, whose numbers on them are the game's own --------------------------------------
+
+def vehicle_probe(ctx, name, mode):
+    """Megatank (4) and Piperunner (9) of `name` at power level `mode`: the farthest cell each reaches on a road lane, the base damage of an attack on an Andy Tank (Piperunner from
+    distance 2), and whether the Piperunner's Fire reaches an enemy at distance 5 and at 6. Returns a dict."""
+    spec = cospec.get(name)
+    use_spec(ctx)
+    m = ctx.map()
+    for k, t in enumerate((4, 9)):
+        for x in range(3, 28):
+            m.terrain(x, 1 + 2 * k, "road" if t == 4 else "pipe")        # (the Piperunner moves on pipes only)
+        m.unit(1, t, 3, 1 + 2 * k)
+    m.unit(1, 4, 5, 9).unit(2, 5, 6, 9)                 # Megatank beside a Tank
+    m.unit(1, 9, 5, 12).unit(2, 5, 7, 12)               # Piperunner two cells from a Tank
+    m.unit(1, 9, 3, 15).unit(2, 1, 8, 15)               # an enemy at distance 5
+    m.unit(1, 9, 3, 19).unit(2, 1, 9, 19)               # an enemy at distance 6
+    g = ctx.start(m, [spec.id, "andy"], env=ENV)
+    if mode:
+        ctx.power(g, 1, POWER[mode])
+    out = {"reach": {}, "base": {}, "range": {}}
+    for k, t in enumerate((4, 9)):
+        reach = 0
+        for d in range(1, 16):
+            if probe_move(g, (3, 1 + 2 * k), (3 + d, 1 + 2 * k)):
+                reach = d
+            else:
+                break
+        out["reach"][t] = reach
+    for t, src, tgt in ((4, (5, 9), (6, 9)), (9, (5, 12), (7, 12))):
+        g.attack(src, src, tgt)
+        out["base"][t] = ctx.battle_records(g)[0]["base"]
+    for y, d in ((15, 5), (19, 6)):
+        names = g.action_menu_at(3, y)
+        out["range"][d] = any(n.lower().startswith("fire") and "(greyed)" not in n for n in names)
+    return out
+
+
+def pin_vehicles(ctx, name):
+    """Cassius's vehicle move and attack bonuses apply to the Megatank and the Piperunner as to a Tank; Aurelia's vehicle penalty applies to both, and neither gets her indirect bonus or her range."""
+    spec = cospec.get(name)
+    base = vehicle_probe(ctx, "andy", 0)
+    chk(ctx, f"{name} d2d", base["range"] == {5: True, 6: False}, f"Andy's Piperunner reaches 5 and not 6 (control): {base['range']}", "vehicles")
+    for mode in (0, 1, 2):
+        got = vehicle_probe(ctx, name, mode)
+        label = tag(name, mode)
+        for t in (4, 9):
+            want_move = base["reach"][t] + spec.bonus(mode, 5, 2)
+            chk(ctx, label, got["reach"][t] == want_move, f"{name_of(t)} moves {got['reach'][t]} (Andy {base['reach'][t]}, the vehicle bonus {spec.bonus(mode, 5, 2):+d})", "vehicles")
+            want_base = max(1, damage.div(base["base"][t] * (100 + spec.bonus(mode, 5, 0)), 100))
+            chk(ctx, label, got["base"][t] == want_base, f"{name_of(t)}'s base damage {got['base'][t]} (Andy {base['base'][t]}, a Tank's {spec.bonus(mode, 5, 0):+d}% -> {want_base})", "vehicles")
+        chk(ctx, label, got["range"] == {5: True, 6: False}, f"the Piperunner's range is Andy's (reaches 5 {got['range'][5]}, 6 {got['range'][6]})", "vehicles")

@@ -27,12 +27,12 @@ class Spec(unittest.TestCase):
         self.assertEqual((l.cost_percent(), l.income, l.tribute), (10, 25, (0, 200, 100)))
         self.assertEqual((l.bonus(2, 22, 2), l.bonus(2, 5, 2)), (2, 0))
 
-    def test_unnamed_unit_types_are_not_covered(self):
-        c = cospec.get("cassius")
-        self.assertFalse(c.covers(4) or c.covers(9))
-        with self.assertRaises(KeyError):
-            c.bonus(1, 4, 2)
-        self.assertTrue(cospec.get("klaus").covers(4))
+    def test_megatank_and_piperunner_are_vehicles_not_indirect(self):
+        c, a = cospec.get("cassius"), cospec.get("aurelia")
+        for t in (4, 9):
+            self.assertTrue(c.covers(t))
+            self.assertEqual((c.bonus(0, t, 2), c.bonus(2, t, 2), c.bonus(0, t, 0), c.bonus(2, t, 0)), (1, 2, 10, 60))
+            self.assertEqual((a.bonus(0, t, 0), a.bonus(2, t, 0), a.bonus(2, t, 3)), (-10, 0, 0))      # her vehicle penalty, no indirect bonus, no range
 
     def test_every_pair_of_the_four_and_the_cross_army_pairs_are_listed(self):
         pairs = {frozenset((p["a"], p["b"])): p for p in cospec.tags()}

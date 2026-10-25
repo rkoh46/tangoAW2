@@ -76,6 +76,8 @@ The four are CO ids 86..89 (`co_new::ES_FIRST`), filled like Clone Andy's row (A
 because the tables of the console are built from it (both peers of a match must agree) and their powers' rules are engine hooks (`es_co.rs`) that both peers must run alike. On: the Teams list, the CO select cards, the HUD, the dialogue
 boxes (Power quotes), the power and tag cut-ins, and the CO page show them.
 
+`vehicle` is Recon, APC, Tank, Md. Tank, Megatank, Neotank, Piperunner and Anti-Air (the Megatank and the Piperunner are vehicles, not indirect units: the owner's ruling, pinned by `co verify`'s `vehicles` facet); `indirect` is Artillery, Rockets, Missiles and the Battleship; `foot` Infantry and Mech; `naval` every ship.
+
 ## Recolour-based COs (`[portrait] base` + `[portrait.recolour]`)
 A CO whose pictures are another CO's with other colours needs no picture of its own: `cos/<id>.toml` has `[portrait] base = "andy"` (the Dual Strike CO whose art it wears) and `[portrait.recolour]`, a table of
 palette index 1..15 to `"RRGGBB"`. Every picture of a CO is 4-bit indexed in one 16-colour palette (eight colour schemes, same roles), so replacing entries recolours the large art, mug, mini, HUD face, the

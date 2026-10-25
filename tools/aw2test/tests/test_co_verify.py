@@ -154,3 +154,14 @@ meter("cloneandy")
 @test(modes=("ds",))
 def co_verify_limits_cassius(ctx):
     cv.triumph_limits(ctx)
+
+
+def pin(name):
+    def fn(ctx):
+        cv.pin_vehicles(ctx, name)
+    fn.__name__ = f"co_verify_vehicles_{name}"
+    test(modes=("ds",))(fn)
+
+
+for _n in ("cassius", "aurelia"):
+    pin(_n)

@@ -8,8 +8,8 @@ Sources, one per CO:
   Varro                           the table in the module doc of `crate::es_co` (he has no data file)
   Clone Andy                      Dual Strike's Andy (`crate::co_new`: "Dual Strike's Andy's data under another name"), read from the .nds
 
-A class word of a `mods` line means (docs/ES_CAMPAIGN.md 2.1): `foot` Infantry and Mech; `vehicle` the ground vehicles Recon, APC, Tank, Md. Tank, Neotank and Anti-Air
-(the Megatank and the Piperunner are not named either way: `AMBIGUOUS`); `indirect` Artillery, Rockets, Missiles and the Battleship; `artillery rockets` those two; `naval`
+A class word of a `mods` line means (docs/ES_CAMPAIGN.md 2.1): `foot` Infantry and Mech; `vehicle` the ground vehicles Recon, APC, Tank, Md. Tank, Megatank, Neotank, Piperunner and Anti-Air
+(the Megatank and the Piperunner count as vehicles, not as indirect units: the user's answer); `indirect` Artillery, Rockets, Missiles and the Battleship; `artillery rockets` those two; `naval`
 every ship; `all` everything. A power's mods are on top of the day-to-day ones (not on top of the CO Power's), and every power adds the game's own +10% firepower and +10% defence
 (AW2's power baseline, the Dual Strike pack's `temp_defence` and `stat`), which `bonus` adds for firepower and the game's player block adds for defence.
 """
@@ -24,8 +24,8 @@ IDS = {"andy": 1, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cas
 ES4 = ("klaus", "aurelia", "cassius", "livia")
 
 FOOT = {1, 2}
-VEHICLE = {3, 5, 6, 7, 8, 14}            # Md. Tank, Tank, Recon, APC, Neotank, Anti-Air (the ones docs/ES_CAMPAIGN.md 2.1 names)
-AMBIGUOUS = {4, 9}                       # Megatank, Piperunner: "vehicle" in the engine, not named by the spec
+VEHICLE = {3, 4, 5, 6, 7, 8, 9, 14}      # Md. Tank, Megatank, Tank, Recon, APC, Neotank, Piperunner, Anti-Air (docs/ES_CAMPAIGN.md 2.1; the Megatank and the Piperunner are vehicles: the user's answer)
+AMBIGUOUS = set()
 INDIRECT = {10, 11, 15, 21}              # Artillery, Rockets, Missiles, Battleship
 NAVAL = {18, 21, 22, 23, 24, 26}
 ALL = set(range(1, 27))
