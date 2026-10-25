@@ -8,7 +8,7 @@ from aw2.esmaplib import *
 def build():
     m = Canvas("es06", 30, 26)
     road = lambda pts: m.line("R", pts, over=".fR")
-    m.header(armies=3, colours=(OS, BM, BM), team=[1, 2, 2], objective=[1], comment=(
+    m.header(armies=3, colours=(GE, BM, OS), team=[1, 2, 2], objective=[1], comment=(
         "M6 Tribute (Aurelhaven): own 14 properties at once by the end of day 16 (a day-17 loss when not; HQ falls = defeat). "
         "Properties (26 in all): player HQ(15,13) B(13,15) B(17,11) A(15,16) P(3,11) P(3,14) C(15,10) C(12,13) = 8; "
         "Colin (army 2, NW Guildhall) HQ(2,2) B(5,2) B(2,5) B(6,5) A(8,3) = 5; Sasha (army 3, SE Counting House) HQ(27,23) B(24,23) B(27,20) B(22,21) A(24,18) = 5; "

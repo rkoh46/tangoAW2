@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es11", 40, 22)
-    m.header(armies=3, colours=(OS, YC, YC), team=[1, 2, 2], objective=[1],
+    m.header(armies=3, colours=(OS, YC, GE), team=[1, 2, 2], objective=[1],
              comment="M11 The Treasure Train (escort; province: the Marrow Road, a Yellow Comet borderland): the four APCs apc1..apc4 start at the harbour (6,9)..(6,12) and must reach the relay camp rectangle (35,9)-(38,11) at the east end; "
                      "the camp's city c (37,10) is neutral on the map and the mission gives it to the player. The road winds east across the Pinewood (x10..19), a hamlet, the Marrow river at ONE bridge (the ford, (23,9)) "
                      "and a ruin (x27..33). Lash's HQ 2 (37,3) is the NE camp, Flak's HQ 3 (37,18) the SE camp. "
@@ -67,4 +67,5 @@ def build():
     m.note("hq2", 37, 3, "Lash's HQ (NE camp), branch road (35,6)-(37,4)").note("hq3", 37, 18, "Flak's HQ (SE camp), branch road (35,15)-(37,17)")
     m.note("road", 7, 11, "the road from (7,11) bends through the Pinewood, the hamlet (21,8), the ford (23,10) and the ruin to the camp (35,10)")
     m.note("ford_holders", 24, 9, "enemy holds: Flak MDT (24,9),(24,11), Flak ROCK (26,12), Lash ART (25,8)")
+    m.desertify(keep=0.45, rocks=11, size=6, seed=11)                      # (the desert look: sparse scrub, rock outcrops, canyon walls)
     return m

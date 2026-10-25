@@ -218,6 +218,17 @@ mod tests {
         }
     }
 
+    /// Every army of a mission is its own nation: no two wear the same colour (the user's rule: two Blue Moon HQs were a bug).
+    #[test]
+    fn no_two_armies_share_a_colour() {
+        for m in &def().missions {
+            let mut seen = std::collections::BTreeSet::new();
+            for a in &m.armies {
+                assert!(seen.insert(a.colour), "{}: two armies wear colour {}", m.key, a.colour);
+            }
+        }
+    }
+
     /// The skin sits on army 1's colour: one of AW2's four, worn by no other army of the mission.
     #[test]
     fn the_player_wears_a_colour_of_its_own() {

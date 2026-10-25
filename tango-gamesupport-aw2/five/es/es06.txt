@@ -12,7 +12,7 @@
 # neutral_w: (8, 9) neutral city (8, 9)
 
 map es06
-armies 3 5 1 2 2
+armies 3 5 3 2 1
 team 1 2 2
 unit 1 1 18 9
 unit 1 1 12 11

@@ -129,6 +129,29 @@ def check(a):
             bad += 1
         slots.append(f"{key[2:]}:{names[pc][:2].upper()}")
     say(True, "the player (Emerald Sun skin) sits in the slot " + " ".join(slots))
+    # every army its own nation (colour), at most one HQ each (the maps: maps lint AR01 / AR02)
+    for key, d in ms.items():
+        cols = [a["colour"] for a in d["armies"]]
+        if len(set(cols)) != len(cols):
+            say(False, f"{key}: two armies share a colour {cols}")
+            bad += 1
+    say(True, "every army of every mission has its own colour")
+    # looks and weathers: the campaign's variety (desert and sandstorm, rain, snow) and the answer to every threat under their penalties
+    LOOK, WX = {0: "normal", 1: "snow", 2: "desert", 3: "wasteland"}, {0: "clear", 1: "snow", 2: "rain", 3: "sandstorm"}
+    say(True, "look/weather: " + " ".join(f"{k[2:]}:{LOOK[d['look']][:3]}/{WX[d['weather']][:4]}" for k, d in ms.items() if d["look"] or d["weather"]))
+    deserts = [k for k, d in ms.items() if d["look"] == 2]
+    ok = len(deserts) >= 2 and any(d["weather"] == 3 for d in ms.values()) and any(d["weather"] == 2 for d in ms.values()) and sum(d["weather"] == 1 for d in ms.values()) >= 2
+    say(ok, f"the variety: {len(deserts)} desert missions, sandstorm {[k for k, d in ms.items() if d['weather'] == 3]}, rain {[k for k, d in ms.items() if d['weather'] == 2]}, snow {[k for k, d in ms.items() if d['weather'] == 1]}")
+    bad += not ok
+    for key, d in ms.items():
+        if d["weather"] == 3:
+            # a sandstorm takes a cell off every long gun (never below 2): the player must not depend on long guns alone, and must have direct fire
+            mine = d["units"].get(1, {})
+            direct = sum(n for kind, n in mine.items() if kind in (1, 2, 3, 4, 5, 6, 8, 14, 16, 17, 19))
+            long_guns = sum(n for kind, n in mine.items() if kind in (10, 11, 15, 21))
+            good = direct >= 6 and direct > 2 * long_guns
+            say(good, f"{key}: under the sandstorm the player has {direct} direct-fire units and {long_guns} long guns")
+            bad += not good
     # the map files' colours are the Rust missions' (the maps are linted by them), and Black Hole's inventions belong to an enemy army of Black Hole's colour
     from aw2.maplint import load
     maps = {m.name: m for m in load.es_maps()}

@@ -12,7 +12,7 @@
 # flank_s_start: (18, 10) south flank branch point
 
 map es08
-armies 3 5 2 1 1
+armies 3 5 3 1 2
 team 1 2 2
 unit 1 1 7 7
 unit 1 1 11 13

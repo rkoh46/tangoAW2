@@ -282,6 +282,26 @@ class Canvas:
                         a += 1
         return self
 
+    def desertify(self, keep=0.35, rocks=6, size=5, seed=0):
+        """Dresses a map for the desert look: only `keep` of the woods stay (sparse scrub), and `rocks` outcrops of about `size` mountain cells (rock and canyon walls in the desert
+        tileset) are set on open plain away from roads, properties, rivers and units. Deterministic for `seed`."""
+        rnd = random.Random(f"{self.name}/d{seed}")
+        for y in range(self.h):
+            for x in range(self.w):
+                if self.g[y][x] == "f" and rnd.random() > keep:
+                    self.g[y][x] = "."
+        occupied = {(u["x"], u["y"]) for u in self.u}
+        placed, tries = 0, 0
+        while placed < rocks and tries < 400:
+            tries += 1
+            cx, cy = rnd.randrange(2, self.w - 2), rnd.randrange(2, self.h - 2)
+            near = [self.get(x, y) for x in range(cx - 2, cx + 3) for y in range(cy - 2, cy + 3)]
+            if any(c not in ".f^" for c in near) or any(abs(cx - ux) <= 2 and abs(cy - uy) <= 2 for ux, uy in occupied):
+                continue
+            self.cluster("^", cx, cy, size, seed=1000 * seed + tries)
+            placed += 1
+        return self
+
     def scatter(self, ch, box, p, seed=0, on="."):
         """`ch` on a share `p` of the cells of `box` (x0, y0, x1, y1) that hold one of `on`."""
         rnd = random.Random(f"{self.name}/s{seed}")

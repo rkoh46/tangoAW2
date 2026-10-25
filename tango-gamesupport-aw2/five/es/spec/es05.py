@@ -71,4 +71,5 @@ def build():
     m.note("post1", 27, 5, "signal post Highwatch beyond the north bridge").note("post2", 27, 12, "signal post Crossways beyond the middle bridge").note("post3", 27, 21, "signal post Lowmere beyond the south bridge")
     m.note("base1", 12, 11, "player's only base: the forward depot at the Dunmere crossroads")
     m.note("river", 16, 0, "the Sable, spring at the north edge, mouth at the south edge (23, 23)")
+    m.desertify(keep=0.6, rocks=14, size=6, seed=5)                      # (the desert look: sparse scrub, rock outcrops, canyon walls)
     return m

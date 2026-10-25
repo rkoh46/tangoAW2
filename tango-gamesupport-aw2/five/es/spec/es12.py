@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es12", 42, 30)
-    m.header(armies=3, colours=(OS, BM, BM), team=[1, 2, 2], objective=[1],
+    m.header(armies=3, colours=(GE, BM, OS), team=[1, 2, 2], objective=[1],
              comment="M12 Siege of Iron (tag, snow; province: the Iron Bastion, Blue Moon's fortress on the Frost March): the Aurean legion crosses the snowfield and takes Olaf's HQ 2 (17,13) in the heart of three rings of mountain walls "
                      "(outer about x4..30,y3..23; middle x9..25,y7..19; inner x12..22,y10..16); Grit's HQ 3 (37,13) sits on the east spur. "
                      "Gaps: outer SW (10,23) SE (24,23) and E (30,13); middle S (17,19) W (9,13) E (25,10); inner SW (13,16) SE (21,16) and N (17,10). "

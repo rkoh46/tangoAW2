@@ -6,7 +6,7 @@ from aw2.esmaplib import *
 
 def build():
     m = Canvas("es10", 34, 26)
-    m.header(armies=3, colours=(OS, YC, YC), team=[1, 2, 2], objective=[1],
+    m.header(armies=3, colours=(BM, YC, OS), team=[1, 2, 2], objective=[1],
              comment="M10 The Quiet Pass (FOG; province: Comet Pass, Yellow Comet's mountain march): the Aurean legion lands on the south plain, crosses the Quiet river at three bridges, "
                      "climbs a pass road (west x7, centre x16, east x28) or the goat track (foot only, far west x1..3) through the massif (y5..13) and takes Kanbei's summit HQ '2' (16,2); "
                      "Sonja's HQ '3' (31,3) sits in a pocket of the east ridge, off the east pass road. "

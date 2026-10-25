@@ -52,6 +52,9 @@ RULES = {
     "DQ09": ("warn", "an HQ in a pocket: little walkable ground around it"),
     "DQ10": ("warn", "a Lander with too few shore cells to unload on"),
     "RN01": ("error", "a river, shoal, bridge or coast tile drawn in the game's picture in a way none of the games' drawings of that tile and 4-neighbour class is (`aw2dev maps render-check`)"),
+    "AR01": ("error", "two armies of the map wear the same colour (each army is its own nation: Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole)"),
+    "AR02": ("error", "an army has more than one HQ"),
+    "AR03": ("error", "a silo or an airport that no army's infantry can reach, or an airport whose footprint is wrong"),
     "DQ12": ("warn", "a long straight line of mountains away from the map edge: a drawn wall, not a range"),
     "DQ11": ("warn", "a map meant to be fair (Versus, or a `fair` line) with unequal properties per army"),
     "SP01": ("warn", "not enough room to fight: too many units for the walkable ground or for the frontage between the sides"),
@@ -557,16 +560,36 @@ def inventions(G):
     return out
 
 
+def armies(G):
+    """AR01 / AR02: every army its own colour, at most one HQ each."""
+    out = []
+    cols = list(G.m.meta.get("colours") or [])
+    n = int(G.m.meta.get("armies") or len(cols) or 0)
+    cols = cols[:n]
+    for c in sorted({c for c in cols if cols.count(c) > 1}):
+        out.append(Problem("AR01", -1, -1, f"{cols.count(c)} armies wear colour {c} (colours {cols})"))
+    hq = {}
+    for y in range(G.h):
+        for x in range(G.w):
+            t = G.t[y][x]
+            if G.g[y][x] == "H" and G.T.owner(t):
+                hq.setdefault(G.T.owner(t), []).append((x, y))
+    for o, cells in hq.items():
+        if len(cells) > 1:
+            out.append(Problem("AR02", cells[1][0], cells[1][1], f"army {o} has {len(cells)} HQs at {cells}"))
+    return out
+
+
 def design_checks(G):
     from . import design
     return design.checks(G)
 
 
 # Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for an Emerald Sun map.
-KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}}
+KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}, "bh30": {"AR02": 1}}
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, design_checks]
+CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, design_checks]
 
 
 def lint(m, only=None):

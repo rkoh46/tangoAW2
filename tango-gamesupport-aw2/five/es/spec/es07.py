@@ -23,7 +23,7 @@ def build():
     m.set_rows(rows)
     m.beach(8, 2, 14, 20).beach(14, 2, 22, 8).beach(14, 15, 23, 21).beach(26, 2, 34, 20)
     road = lambda pts: m.line("R", pts, over=".fR")
-    m.header(armies=3, colours=(OS, GE, GE), team=[1, 2, 2], objective=[1], comment=(
+    m.header(armies=3, colours=(OS, GE, YC), team=[1, 2, 2], objective=[1], comment=(
         "M7 Mare Nostrum: sink the Warden flagship (Battleship 'flagship') and capture the harbour port (34, 12) of Isle Verdant (Verdant Roads). "
         "Start forces: player LAN2 CR2 BS1 SUB1 TCO2 BCO2 INF3 MECH2 (15 units), 2 ports + 1 airport + 1 base, funds 8000; "
         "Green Earth Drake (army 2) BS1 (flagship) CR2 SUB2 LAN1 INF2 (hold) (8) + Eagle (army 3) FTR3 BCO2 (5), ports + airport to build. "

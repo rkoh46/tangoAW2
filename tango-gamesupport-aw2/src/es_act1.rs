@@ -90,6 +90,8 @@ fn es03() -> MissionDef {
     let mut m = MissionDef::new("es03", "The Wall");
     m.objective = "Breach the wall and take the keep's HQ.";
     m.map = MapSrc::Built("es03");
+    m.look = 0; // normal
+    m.weather = Weather::Rain; // rain: the fog of rain hides the gunners on the wall
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(AURELIA)).funds(2000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).funds(6000),

@@ -25,6 +25,8 @@ fn es05() -> MissionDef {
     let mut m = MissionDef::new("es05", "Dust and Wheels");
     m.objective = "Take the three signal-posts by day 9, before the bridges are blown.";
     m.map = MapSrc::Built("es05");
+    m.look = 2; // desert
+    m.weather = Weather::Sandstorm; // the Comet Road in the desert, a sandstorm blowing (long guns lose a cell of range)
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(CASSIUS)).funds(3000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Pair(co::GRIMM, co::SENSEI)).funds(9000),
@@ -54,9 +56,9 @@ fn es06() -> MissionDef {
     m.objective = "Own 14 properties at once by day 16.";
     m.map = MapSrc::Built("es06");
     m.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(LIVIA)).funds(3000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(LIVIA)).funds(3000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(5000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(2).funds(5000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI)).team(2).funds(5000),
     ];
     m.units = deployment("es06");
     m.rank_days = 14;
@@ -88,7 +90,7 @@ fn es07() -> MissionDef {
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(8000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(10000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(8000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(8000),
     ];
     m.pool = leads();
     m.units = deployment("es07");
@@ -112,10 +114,12 @@ fn es08() -> MissionDef {
     let mut m = MissionDef::new("es08", "Hammer and Anvil");
     m.objective = "Defeat the Orange Star border force at Ironhold. Klaus and Cassius fight as a pair.";
     m.map = MapSrc::Built("es08");
+    m.look = 0; // normal
+    m.weather = Weather::Rain; // rain over Ironhold's crags (the fog of rain hides the flanking roads)
     m.armies = vec![
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(KLAUS, CASSIUS)).funds(4000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(KLAUS, CASSIUS)).funds(4000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX)).team(2).funds(9000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(7000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(2).funds(7000),
     ];
     m.units = deployment("es08");
     m.rank_days = 12;

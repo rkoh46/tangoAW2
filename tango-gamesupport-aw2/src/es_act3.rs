@@ -29,6 +29,8 @@ fn es09() -> MissionDef {
     let mut m = MissionDef::new("es09", "Grain Ships");
     m.objective = "Take the Kite Hill depot and sink the three grain barges before day 11.";
     m.map = MapSrc::Built("es09");
+    m.look = 2; // desert
+    m.weather = Weather::Clear; // Kite Hill's dry desert highland
     m.armies = vec![
         // (Orange Star's colour: Black Hole's is the enemy's in this mission)
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(5000),
@@ -58,11 +60,13 @@ fn es10() -> MissionDef {
     let mut m = MissionDef::new("es10", "The Quiet Pass");
     m.objective = "Climb the pass and take the summit HQ.";
     m.map = MapSrc::Built("es10");
+    m.look = 1; // snow
+    m.weather = Weather::Snow; // snow falls on the pass (snow look and snow weather)
     m.fog = true;
     m.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(4000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pick).funds(4000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(2).funds(6000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SONJA)).team(2).funds(3000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::SAMI)).team(2).funds(3000),
     ];
     m.pool = leads();
     m.units = deployment("es10");
@@ -91,10 +95,12 @@ fn es11() -> MissionDef {
     let mut m = MissionDef::new("es11", "The Treasure Train");
     m.objective = "Bring all four APCs to the relay camp. Lose none; the day limit is 14.";
     m.map = MapSrc::Built("es11");
+    m.look = 2; // desert
+    m.weather = Weather::Sandstorm; // the treasure road in the desert, a sandstorm blowing
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(3000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::LASH)).team(2).funds(5000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::FLAK)).team(2).funds(5000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::FLAK)).team(2).funds(5000),
     ];
     m.pool = leads();
     m.units = deployment("es11");
@@ -127,9 +133,9 @@ fn es12() -> MissionDef {
     m.look = 1; // snow
     m.weather = Weather::Snow;
     m.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(KLAUS, AURELIA)).funds(5000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(KLAUS, AURELIA)).funds(5000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(2).funds(7000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT)).team(2).funds(4000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).team(2).funds(4000),
     ];
     m.units = deployment("es12");
     m.rank_days = 16;

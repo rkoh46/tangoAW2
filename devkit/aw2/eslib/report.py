@@ -33,7 +33,7 @@ def missions():
         t, key = row[0], row[1]
         if t == "M":
             out[key] = {"key": key, "title": row[2], "day_limit": int(row[3]), "fog": bool(int(row[4])), "weather": int(row[5]), "n_armies": int(row[6]),
-                        "objective": row[7], "armies": [], "spawns": [], "props": [], "boxes": 0}
+                        "objective": row[7], "look": int(row[8]) if len(row) > 8 else 0, "armies": [], "spawns": [], "props": [], "boxes": 0}
         elif t == "A":
             out[key]["armies"].append({"n": int(row[2]), "colour": int(row[3]), "team": int(row[4]) or int(row[2]), "co": row[5], "funds": int(row[6])})
         elif t == "S":

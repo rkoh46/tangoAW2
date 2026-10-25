@@ -85,4 +85,5 @@ def build():
     m.note("black_cannon", 24, 19, "Black Cannon facing up over the bay's south shore; the south-east freight yard is Black Hole's")
     m.note("deathray", 20, 1, "Deathray on the top edge (x19..21,y0..2), covers the harbour road; far from the player")
     m.note("isle", 29, 3, "grain isle: neutral city on a sea-only islet").note("ports", 25, 9, "ports (25,9) and (25,4)")
+    m.desertify(keep=0.4, rocks=5, size=5, seed=9)                      # (the desert look: sparse scrub, rock outcrops, canyon walls)
     return m
