@@ -105,7 +105,7 @@ def ds_coselect_versus_two_armies(ctx):
     e.wait(10)
     off = shot(ctx, e, "versus2_off")
     e.w8(DS_GRAPHICS, 1)
-    for _ in range(4):  # the first army's tab (RIGHT: its partner cell, the next army's CO and partner): the cursor leaves the cards' headers clear
+    for _ in range(2):  # the first army's tab (RIGHT: its partner cell, the next army's CO and partner): the cursor leaves the cards' headers clear
         e.press("RIGHT", 6)
         e.wait(30)
     on = shot(ctx, e, "versus2_on")
@@ -116,14 +116,18 @@ def ds_coselect_versus_two_armies(ctx):
     for i, c in enumerate(colours):
         ctx.eq(shots.diff_count(emblem(on, 2, i), refs[c - 1], tol=2), 0, f"army {i + 1}'s emblem is {KEY_ARMY_COLOURS[c]}'s")
     # R and L change an army's colour: its card follows, every country's emblem in turn (Blue Moon is the other army's).
+    # (one press in a cycle puts the army's skin on, which draws the skin's own emblem: army_skin::teams_step)
     seen = set()
+    prev = e.u8(ram.TEAMS + ram.T_COLOURS)
     for _ in range(6):
         e.press("R", 6)
         e.wait(20)
         c = e.u8(ram.TEAMS + ram.T_COLOURS)
         seen.add(c)
         rows = shot(ctx, e, f"versus2_colour{c}")
-        ctx.eq(shots.diff_count(emblem(rows, 2, 0), refs[c - 1], tol=2), 0, f"army 1 as {KEY_ARMY_COLOURS[c]}: its emblem")
+        if not (prev == 5 and c == 1):   # (after Black Hole comes the skin, on the first free colour)
+            ctx.eq(shots.diff_count(emblem(rows, 2, 0), refs[c - 1], tol=2), 0, f"army 1 as {KEY_ARMY_COLOURS[c]}: its emblem")
+        prev = c
     ctx.eq(sorted(seen), [1, 3, 4, 5], "R went through the countries the other army has not, Black Hole included")
     # With the setting off again the console runs on as before.
     e.w8(DS_GRAPHICS, 0)
@@ -145,7 +149,7 @@ def ds_coselect_versus_five_armies(ctx):
     e.wait(10)
     shot(ctx, e, "versus5_off")
     e.w8(DS_GRAPHICS, 1)
-    for _ in range(10):  # the first army's tab
+    for _ in range(2):  # the first army's tab (three cells an army: CO, partner, tab; the cursor stands clear of the cards' headers on the third)
         e.press("RIGHT", 6)
         e.wait(30)
     on = shot(ctx, e, "versus5")
