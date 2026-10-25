@@ -41,7 +41,14 @@ fn after(cond: Cond, then: Vec<Action>) -> Trigger {
 }
 
 fn beaten(enemy: u8, hq: (u8, u8)) -> Cond {
-    Cond::Any(vec![Cond::ArmyUnitsAtMost { army: enemy, n: 1 }, Cond::OwnerAt { x: hq.0, y: hq.1, army: 1 }])
+    Cond::Any(vec![
+        Cond::ArmyUnitsAtMost { army: enemy, n: 1 },
+        Cond::OwnerAt {
+            x: hq.0,
+            y: hq.1,
+            army: 1,
+        },
+    ])
 }
 
 /// An army's CO meter set to `pct` of its first power's bar (AW2's units: `cop_cost`).
@@ -75,7 +82,9 @@ const VAR_FIRST_TURN_DONE: u32 = 0x0203_FD7E;
 
 /// The units of a built map, with the AI role `role(army, kind, x, y)` gives each (see the module doc).
 fn deploy(name: &str, role: fn(u8, u8, u8, u8) -> u8) -> Vec<UnitDef> {
-    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else { return Vec::new() };
+    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else {
+        return Vec::new();
+    };
     m.units
         .iter()
         .map(|u| {
@@ -155,12 +164,26 @@ fn bh29() -> MissionDef {
         on_day(
             5,
             None,
-            vec![Action::Custom(nell_power_day5), Action::Scene(crate::bh_text::scene("m29_day5"))],
+            vec![
+                Action::Custom(nell_power_day5),
+                Action::Scene(crate::bh_text::scene("m29_day5")),
+            ],
         ),
         // Day 8: Max's turn to hit.
-        on_day(8, None, vec![Action::Custom(nell_power_day5), Action::Scene(crate::bh_text::scene("m29_day8"))]),
+        on_day(
+            8,
+            None,
+            vec![
+                Action::Custom(nell_power_day5),
+                Action::Scene(crate::bh_text::scene("m29_day8")),
+            ],
+        ),
         // Day 10: Sami's infantry wave.
-        on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m29_day10")), Action::Spawn(wave)]),
+        on_day(
+            10,
+            None,
+            vec![Action::Scene(crate::bh_text::scene("m29_day10")), Action::Spawn(wave)],
+        ),
         on_day(16, None, vec![Action::Scene(crate::bh_text::scene("m29_day16"))]),
         after(beaten(2, (29, 25)), vec![Action::Win]),
     ];
@@ -179,7 +202,8 @@ fn role30(army: u8, kind: u8, x: u8, y: u8) -> u8 {
     // The minority that holds: the infantry on the wall tops beside the three gates and two in the Centre
     // Bailey (the keep's guard), a Neotank before the Inner gate, and the guns and Anti-Air.
     let wall_top = kind == unit::INFANTRY && y == 11;
-    let keep_guard = (kind == unit::INFANTRY && matches!((x, y), (13, 8) | (23, 8))) || (kind == unit::NEOTANK && (x, y) == (16, 8));
+    let keep_guard =
+        (kind == unit::INFANTRY && matches!((x, y), (13, 8) | (23, 8))) || (kind == unit::NEOTANK && (x, y) == (16, 8));
     match kind {
         _ if wall_top || keep_guard => 0,
         // Artillery and Missiles stay on the walls (role 0 still fires at what comes into reach); Anti-Air and Rockets follow the nearest enemy
@@ -376,10 +400,22 @@ fn bh30() -> MissionDef {
     m.triggers = vec![
         on_day(1, None, vec![Action::Custom(charge_nell_60)]),
         // Her meter stays under her first power's bar except on the power days; the treasury is capped each morning.
-        Trigger::new(When::AfterAction, Cond::Custom(always), vec![Action::Custom(clamp_nell)]).repeating(),
+        Trigger::new(
+            When::AfterAction,
+            Cond::Custom(always),
+            vec![Action::Custom(clamp_nell)],
+        )
+        .repeating(),
         // (at every army's turn start, Orange Star's too: its income comes at its own)
         Trigger::new(When::TurnStart, Cond::DayAtLeast(2), vec![Action::Custom(cap_treasury)]).repeating(),
-        on_day(1, Some(Cond::PlayerPair { a: co::STURM, b: co::CLONE_ANDY }), vec![Action::Scene(crate::bh_text::scene("m30_day1_sturm_clone"))]),
+        on_day(
+            1,
+            Some(Cond::PlayerPair {
+                a: co::STURM,
+                b: co::CLONE_ANDY,
+            }),
+            vec![Action::Scene(crate::bh_text::scene("m30_day1_sturm_clone"))],
+        ),
         // Day 5: Nell's first power, her Lucky Star (if she still leads).
         on_day(
             5,
@@ -394,25 +430,53 @@ fn bh30() -> MissionDef {
         on_day(7, None, vec![Action::Custom(release_md_tanks)]),
         on_day(11, None, vec![Action::Custom(release_megatanks)]),
         on_day(9, None, vec![Action::Custom(release_neotanks)]),
-        on_day(9, Some(Cond::Custom(nell_leads)), vec![Action::Custom(nell_super), Action::Scene(crate::bh_text::scene("m30_day9"))]),
+        on_day(
+            9,
+            Some(Cond::Custom(nell_leads)),
+            vec![
+                Action::Custom(nell_super),
+                Action::Scene(crate::bh_text::scene("m30_day9")),
+            ],
+        ),
         on_day(
             15,
             Some(Cond::Custom(nell_leads)),
-            vec![Action::Custom(nell_super_again), Action::Scene(crate::bh_text::scene("m30_day15"))],
+            vec![
+                Action::Custom(nell_super_again),
+                Action::Scene(crate::bh_text::scene("m30_day15")),
+            ],
         ),
         // The duel (once): day 10 in stage one, else the third day of stage two.
         on_day(
             10,
-            Some(Cond::All(vec![Cond::Custom(duel_not_done), Cond::Not(Box::new(Cond::OwnerAt { x: 18, y: 3, army: 1 })), Cond::Custom(clone_in_pair)])),
+            Some(Cond::All(vec![
+                Cond::Custom(duel_not_done),
+                Cond::Not(Box::new(Cond::OwnerAt { x: 18, y: 3, army: 1 })),
+                Cond::Custom(clone_in_pair),
+            ])),
             vec![Action::Custom(duel_done), Action::Scene(Scene::new(duel_clone_lines()))],
         ),
         on_day(
             10,
-            Some(Cond::All(vec![Cond::Custom(duel_not_done), Cond::Not(Box::new(Cond::OwnerAt { x: 18, y: 3, army: 1 })), Cond::Custom(no_clone_in_pair)])),
+            Some(Cond::All(vec![
+                Cond::Custom(duel_not_done),
+                Cond::Not(Box::new(Cond::OwnerAt { x: 18, y: 3, army: 1 })),
+                Cond::Custom(no_clone_in_pair),
+            ])),
             vec![Action::Custom(duel_done), Action::Scene(Scene::new(duel_plain_lines()))],
         ),
-        Trigger::new(When::TurnStart, Cond::Custom(duel_due_in_stage2_clone), vec![Action::Custom(duel_done), Action::Scene(Scene::new(duel_clone_lines()))]).repeating(),
-        Trigger::new(When::TurnStart, Cond::Custom(duel_due_in_stage2_plain), vec![Action::Custom(duel_done), Action::Scene(Scene::new(duel_plain_lines()))]).repeating(),
+        Trigger::new(
+            When::TurnStart,
+            Cond::Custom(duel_due_in_stage2_clone),
+            vec![Action::Custom(duel_done), Action::Scene(Scene::new(duel_clone_lines()))],
+        )
+        .repeating(),
+        Trigger::new(
+            When::TurnStart,
+            Cond::Custom(duel_due_in_stage2_plain),
+            vec![Action::Custom(duel_done), Action::Scene(Scene::new(duel_plain_lines()))],
+        )
+        .repeating(),
         // Stage one ends: the Great Hall falls. Nell yields, Andy takes the same army to the Rail Yard
         // (his meter, his powers), 10000 more funds, and the reserves stand on the platform.
         Trigger::new(
@@ -421,12 +485,24 @@ fn bh30() -> MissionDef {
             vec![
                 Action::Custom(record_fall),
                 Action::Scene(crate::bh_text::scene("m30_stage1_post")),
-                Action::TakeOver { army: 2, co: co::ANDY, meter_pct: 30 },
+                Action::TakeOver {
+                    army: 2,
+                    co: co::ANDY,
+                    meter_pct: 30,
+                },
                 Action::Spawn(rail_yard_reserves()),
                 Action::AddFunds { army: 2, funds: 10000 },
             ],
         ),
-        Trigger::new(When::TurnStart, Cond::Custom(s2_first_turn), vec![Action::Custom(first_turn_done), Action::Scene(crate::bh_text::scene("m30_s2_first"))]).repeating(),
+        Trigger::new(
+            When::TurnStart,
+            Cond::Custom(s2_first_turn),
+            vec![
+                Action::Custom(first_turn_done),
+                Action::Scene(crate::bh_text::scene("m30_s2_first")),
+            ],
+        )
+        .repeating(),
         // The match is won on the Rail Yard (its capture defeats the army) or by routing the army.
         after(beaten(2, (33, 6)), vec![Action::Win]),
     ];
@@ -448,7 +524,15 @@ pub fn missions() -> Vec<MissionDef> {
     // The day limit loses: the day after the last is the defeat.
     for m in v.iter_mut().filter(|m| m.key >= "bh29") {
         if m.day_limit > 0 {
-            let up = Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: m.day_limit + 1 }, vec![Action::Lose]).repeating();
+            let up = Trigger::new(
+                When::TurnStart,
+                Cond::EveryDays {
+                    n: 1000,
+                    from: m.day_limit + 1,
+                },
+                vec![Action::Lose],
+            )
+            .repeating();
             m.triggers.push(up);
         }
     }
@@ -460,8 +544,14 @@ fn dev_stub_bh28() -> MissionDef {
     let mut m = MissionDef::new("bh28", "Placeholder 28");
     m.objective = "Rout the Orange Star force.";
     m.map = MapSrc::Ascii(&["1.........", "..ff..c...", "....mm....", "...c..c...", ".........2"]);
-    m.armies = vec![ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)), ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL))];
-    m.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 3)];
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)),
+    ];
+    m.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 8, 3),
+    ];
     m.needs = Needs::Bonds(vec!["bh02"]);
     m.flag = region::ORANGE_STAR[3];
     m

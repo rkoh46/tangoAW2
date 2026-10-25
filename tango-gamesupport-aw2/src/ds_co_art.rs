@@ -114,7 +114,10 @@ pub fn co_art(ds_co: u8) -> Option<CoArt> {
         return None;
     }
     let pack = crate::ds_pack::pack()?;
-    let rec = pack.arm9_at(APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1), APPEARANCE_LEN as usize)?;
+    let rec = pack.arm9_at(
+        APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1),
+        APPEARANCE_LEN as usize,
+    )?;
     let word = |i: usize| u32::from_le_bytes(rec[4 * i..4 * i + 4].try_into().unwrap());
     // A `syogun/` file named by a word of the record, decompressed to `len`.
     let file = |i: usize, len: usize| -> Option<Vec<u8>> {
@@ -171,7 +174,10 @@ pub fn full_figure(ds_co: u8) -> Option<(Vec<u8>, [u16; 16])> {
         return None;
     }
     let pack = crate::ds_pack::pack()?;
-    let rec = pack.arm9_at(APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1), APPEARANCE_LEN as usize)?;
+    let rec = pack.arm9_at(
+        APPEARANCE + APPEARANCE_LEN * (ds_co as u32 - 1),
+        APPEARANCE_LEN as usize,
+    )?;
     let word = |i: usize| u32::from_le_bytes(rec[4 * i..4 * i + 4].try_into().unwrap());
     let file = |i: usize, len: usize| -> Option<Vec<u8>> {
         let name = pack.arm9_at(word(i), 4)?;
@@ -208,7 +214,13 @@ pub fn full_figure(ds_co: u8) -> Option<(Vec<u8>, [u16; 16])> {
         }
         let strip = 2 * rows * BLOCK;
         for s in 0..2 * rows {
-            put(&data[strip + 8 * TILE * s..strip + 8 * TILE * (s + 1)], 16, 32, 128, y0 + 32 * s);
+            put(
+                &data[strip + 8 * TILE * s..strip + 8 * TILE * (s + 1)],
+                16,
+                32,
+                128,
+                y0 + 32 * s,
+            );
         }
     }
     Some((px, pal))
@@ -227,8 +239,15 @@ mod tests {
         crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
         for id in 1..=27u8 {
             let (px, _) = full_figure(id).unwrap_or_else(|| panic!("CO {id}"));
-            let rows: Vec<usize> = (0..FIGURE_H).filter(|&y| px[FIGURE_W * y..FIGURE_W * (y + 1)].iter().any(|&v| v != 0)).collect();
-            assert!(rows[0] < 32 && *rows.last().unwrap() > 240, "CO {id}: rows {}..{}", rows[0], rows.last().unwrap());
+            let rows: Vec<usize> = (0..FIGURE_H)
+                .filter(|&y| px[FIGURE_W * y..FIGURE_W * (y + 1)].iter().any(|&v| v != 0))
+                .collect();
+            assert!(
+                rows[0] < 32 && *rows.last().unwrap() > 240,
+                "CO {id}: rows {}..{}",
+                rows[0],
+                rows.last().unwrap()
+            );
         }
     }
 
@@ -267,7 +286,9 @@ mod tests {
         let row = 0x084A_0090 + 0x44;
         let own = at(word(row + 8), 0x20);
         let andy = co_art(2).unwrap();
-        let same = (0..16).filter(|&i| own[2 * i..2 * i + 2] == andy.palette[2 * i..2 * i + 2]).count();
+        let same = (0..16)
+            .filter(|&i| own[2 * i..2 * i + 2] == andy.palette[2 * i..2 * i + 2])
+            .count();
         eprintln!("Andy scheme 0: {same}/16 colours as AW2's");
         assert!(same >= 14);
         let own_name = lz10(&aw2[(word(row + 4) - 0x0800_0000) as usize..]).unwrap();

@@ -58,7 +58,13 @@ pub fn describe(core: &Core, ewram: &[u8], iwram: &[u8]) -> Option<StateInfo> {
             if c == 0 {
                 break;
             }
-            name.push(if c == b'~' { '\'' } else if (32..127).contains(&c) { c as char } else { ' ' });
+            name.push(if c == b'~' {
+                '\''
+            } else if (32..127).contains(&c) {
+                c as char
+            } else {
+                ' '
+            });
         }
     }
     if name.trim().is_empty() {

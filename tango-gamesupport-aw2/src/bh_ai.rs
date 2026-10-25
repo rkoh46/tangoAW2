@@ -56,7 +56,9 @@ pub fn orders(units: Vec<UnitDef>, player: u8, armour: u8, holds: impl Fn(&UnitD
 
 /// The units of a built map's text file (the map's `hold` flag is AW2's role 1, "go for the HQ": [`orders`] replaces it).
 pub fn built_units(name: &str) -> Vec<UnitDef> {
-    let Some(m) = crate::custom_campaign::built_map(name) else { return Vec::new() };
+    let Some(m) = crate::custom_campaign::built_map(name) else {
+        return Vec::new();
+    };
     m.units
         .iter()
         .map(|u| {
@@ -124,7 +126,10 @@ mod tests {
             UnitDef::new(2, unit::TANK, 8, 5).stand(),
         ];
         let o = orders_at(v, 1, ATTACK, &[(6, 5)]);
-        assert_eq!(o.iter().map(|u| u.ai).collect::<Vec<_>>(), vec![0, CAPTURE, 0, ATTACK, STAND]);
+        assert_eq!(
+            o.iter().map(|u| u.ai).collect::<Vec<_>>(),
+            vec![0, CAPTURE, 0, ATTACK, STAND]
+        );
     }
 
     /// The audit of the whole campaign (docs/AW2.md, "AI roles"): the computer's armies are given orders, and only a minority holds.
@@ -140,10 +145,25 @@ mod tests {
             let held = foes.iter().filter(|u| u.ai == 0 || u.ai == STAND || u.freeze).count();
             assert!(!foes.is_empty(), "{}: no enemy units", m.key);
             if !DESIGNED.contains(&m.key) {
-                assert!(held * 10 <= foes.len() * 3, "{}: {held} of {} enemy units hold", m.key, foes.len());
+                assert!(
+                    held * 10 <= foes.len() * 3,
+                    "{}: {held} of {} enemy units hold",
+                    m.key,
+                    foes.len()
+                );
                 // (a held foot soldier is a garrison; the rest of the foot soldiers capture or march)
-                for u in foes.iter().filter(|u| matches!(u.kind, unit::INFANTRY | unit::MECH) && u.ai != 0 && u.ai != STAND) {
-                    assert!(u.ai == CAPTURE || u.ai == HQ || u.ai == 6, "{}: a foot soldier at ({}, {}) has role {}", m.key, u.x, u.y, u.ai);
+                for u in foes
+                    .iter()
+                    .filter(|u| matches!(u.kind, unit::INFANTRY | unit::MECH) && u.ai != 0 && u.ai != STAND)
+                {
+                    assert!(
+                        u.ai == CAPTURE || u.ai == HQ || u.ai == 6,
+                        "{}: a foot soldier at ({}, {}) has role {}",
+                        m.key,
+                        u.x,
+                        u.y,
+                        u.ai
+                    );
                 }
             }
         }
@@ -160,8 +180,18 @@ mod tests {
                     let Action::Spawn(v) = a else { continue };
                     for u in v.iter().filter(|u| u.army != player && u.name.is_none() && !u.freeze) {
                         match u.kind {
-                            unit::INFANTRY | unit::MECH => assert!(u.ai == CAPTURE || u.ai == STAND, "{}: a spawned foot soldier has orders (or stands until its stage), got {}", m.key, u.ai),
-                            unit::ARTILLERY | unit::ROCKETS | unit::MISSILES => assert!(u.ai == ATTACK || u.ai == STAND, "{}: spawned indirect fire has orders (or stands until its stage), got {}", m.key, u.ai),
+                            unit::INFANTRY | unit::MECH => assert!(
+                                u.ai == CAPTURE || u.ai == STAND,
+                                "{}: a spawned foot soldier has orders (or stands until its stage), got {}",
+                                m.key,
+                                u.ai
+                            ),
+                            unit::ARTILLERY | unit::ROCKETS | unit::MISSILES => assert!(
+                                u.ai == ATTACK || u.ai == STAND,
+                                "{}: spawned indirect fire has orders (or stands until its stage), got {}",
+                                m.key,
+                                u.ai
+                            ),
                             _ => {}
                         }
                     }

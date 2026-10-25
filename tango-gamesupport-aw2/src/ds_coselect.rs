@@ -63,7 +63,9 @@ fn pal16(b: &[u8], at: usize) -> Option<[u16; 16]> {
 
 /// A 4bpp tile's pixel.
 fn tile_px(tiles: &[u8], t: usize, x: usize, y: usize) -> u8 {
-    tiles.get(32 * t + 4 * y + x / 2).map_or(0, |b| (b >> (4 * (x & 1))) & 15)
+    tiles
+        .get(32 * t + 4 * y + x / 2)
+        .map_or(0, |b| (b >> (4 * (x & 1))) & 15)
 }
 
 /// The 240 x 160 picture, RGBA.
@@ -94,7 +96,15 @@ impl Canvas<'_> {
     fn sprite(&mut self, tiles: &[u8], first: usize, tw: usize, th: usize, x: i32, y: i32, pal: &[u16; 16]) {
         for ty in 0..th {
             for tx in 0..tw {
-                self.tile(tiles, first + ty * tw + tx, x + 8 * tx as i32, y + 8 * ty as i32, pal, (false, false), false);
+                self.tile(
+                    tiles,
+                    first + ty * tw + tx,
+                    x + 8 * tx as i32,
+                    y + 8 * ty as i32,
+                    pal,
+                    (false, false),
+                    false,
+                );
             }
         }
     }
@@ -201,7 +211,9 @@ fn art() -> Option<&'static Art> {
 
 /// The tilemap entry `i` of a map: (tile, flips).
 fn entry(map: &[u8], i: usize) -> (usize, (bool, bool)) {
-    let e = map.get(2 * i..2 * i + 2).map_or(0, |b| u16::from_le_bytes([b[0], b[1]]));
+    let e = map
+        .get(2 * i..2 * i + 2)
+        .map_or(0, |b| u16::from_le_bytes([b[0], b[1]]));
     ((e & 0x3FF) as usize, (e & 0x400 != 0, e & 0x800 != 0))
 }
 
@@ -260,7 +272,22 @@ pub struct Mug {
 
 /// Where Dual Strike's Versus cell starts in each CO's mug (pixels; measured in melonDS by cycling the P1 card through the
 /// COs and fitting each cell to the mug file): 16 unless listed (Dual Strike ids).
-const CELL_X: [(u8, usize); 14] = [(1, 8), (7, 8), (25, 8), (8, 24), (9, 24), (10, 24), (16, 24), (14, 21), (17, 21), (19, 20), (22, 19), (15, 10), (21, 10), (4, 16)];
+const CELL_X: [(u8, usize); 14] = [
+    (1, 8),
+    (7, 8),
+    (25, 8),
+    (8, 24),
+    (9, 24),
+    (10, 24),
+    (16, 24),
+    (14, 21),
+    (17, 21),
+    (19, 20),
+    (22, 19),
+    (15, 10),
+    (21, 10),
+    (4, 16),
+];
 /// The rows its grid strip (the CO screen's cells: 16 rows of the 48-pixel-wide mug) starts at: 16 unless listed.
 const STRIP_Y: [(u8, usize); 8] = [(16, 8), (6, 8), (23, 8), (25, 8), (26, 8), (27, 8), (12, 8), (14, 24)];
 
@@ -272,7 +299,10 @@ fn own_crop(co: u8) -> (usize, usize) {
     if let Some(c) = crate::es_cos::crop(co).filter(|_| crate::es_co::is_es(co)) {
         return c;
     }
-    OWN_CROPS.iter().find(|e| e.0 == co).map_or_else(|| crop_of(None), |e| (e.1, e.2))
+    OWN_CROPS
+        .iter()
+        .find(|e| e.0 == co)
+        .map_or_else(|| crop_of(None), |e| (e.1, e.2))
 }
 
 fn crop_of(ds: Option<u8>) -> (usize, usize) {
@@ -311,11 +341,18 @@ fn select_mug_tiles(ds: u8) -> Option<Vec<u8>> {
 pub fn art_mug(ds: u8) -> Option<Arc<Mug>> {
     let a = crate::ds_co_art::co_art(ds)?;
     let (cell_x, strip_y) = crop_of(Some(ds));
-    Some(Arc::new(Mug { tiles: select_mug_tiles(ds)?, pal: pal_of(a.palette.get(..32)?), cell_x, strip_y }))
+    Some(Arc::new(Mug {
+        tiles: select_mug_tiles(ds)?,
+        pal: pal_of(a.palette.get(..32)?),
+        cell_x,
+        strip_y,
+    }))
 }
 
 pub fn art_name(ds: u8) -> Option<Arc<Name>> {
-    Some(Arc::new(Name { tiles: crate::ds_co_art::co_art(ds)?.name }))
+    Some(Arc::new(Name {
+        tiles: crate::ds_co_art::co_art(ds)?.name,
+    }))
 }
 
 const PRESENTATION_POOL: u32 = 0x0803_9B7C;
@@ -323,7 +360,9 @@ const PRESENTATION_ROW: u32 = 0x44;
 
 /// A CO's row of the game's presentation table (AW2's, tangoAW2's with the new COs).
 fn row(core: &Core, co: u8) -> Option<u32> {
-    let row = core.raw_read_32(PRESENTATION_POOL, -1).checked_add(PRESENTATION_ROW * co as u32)?;
+    let row = core
+        .raw_read_32(PRESENTATION_POOL, -1)
+        .checked_add(PRESENTATION_ROW * co as u32)?;
     (0x0800_0000..0x0A00_0000).contains(&row).then_some(row)
 }
 
@@ -350,7 +389,12 @@ fn mug(core: &Core, co: u8) -> Option<Arc<Mug>> {
     let mut tiles = crate::invention_art::lz77(core, core.raw_read_32(row + 0x0C, -1));
     tiles.resize(36 * 32, 0);
     let (cell_x, strip_y) = own_crop(co);
-    Some(Arc::new(Mug { tiles, pal: pal_of(&crate::tag_ui::co_palette(core, co)), cell_x, strip_y }))
+    Some(Arc::new(Mug {
+        tiles,
+        pal: pal_of(&crate::tag_ui::co_palette(core, co)),
+        cell_x,
+        strip_y,
+    }))
 }
 
 /// A CO's mug as the real CO screens draw it (Dual Strike's for the COs it has, the game's own for the rest), as 36 tiles
@@ -395,7 +439,6 @@ fn name(core: &Core, co: u8) -> Option<Arc<Name>> {
     tiles.resize(12 * 32, 0);
     Some(Arc::new(Name { tiles }))
 }
-
 
 // --- Versus ---------------------------------------------------------------------------------------------
 
@@ -460,14 +503,24 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
     for (i, army) in armies.iter().take(5).enumerate() {
         let x = card_x(n, i);
         let c = (army.colour as usize).min(4);
-        let skinned = army.skin.map(|i| crate::army_skin::ds_row(i, &a.versus_pal[c], &a.versus_pal));
+        let skinned = army
+            .skin
+            .map(|i| crate::army_skin::ds_row(i, &a.versus_pal[c], &a.versus_pal));
         let pal = skinned.as_ref().unwrap_or(&a.versus_pal[c]);
         // The tab: a rounded box (tiles 1..4: corners 3, edges 4, sides 1, fill 2) with its label.
         let (bx, by) = (x + 8, TAB_Y);
         for r in 0..4usize {
             for col in 0..4usize {
                 let t = [[3, 4, 4, 3], [1, 2, 2, 1], [1, 2, 2, 1], [3, 4, 4, 3]][r][col];
-                cv.tile(&a.versus, t, bx + 8 * col as i32, by + 8 * r as i32, pal, (col == 3, r == 0), false);
+                cv.tile(
+                    &a.versus,
+                    t,
+                    bx + 8 * col as i32,
+                    by + 8 * r as i32,
+                    pal,
+                    (col == 3, r == 0),
+                    false,
+                );
             }
         }
         let label = match army.tab {
@@ -483,7 +536,15 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
                 if army.skin.is_some() && (2..4).contains(&col) {
                     continue; // (the skin's own emblem, below)
                 }
-                cv.tile(&a.versus, t, x + 8 * col as i32, CARD_Y + 8 * r as i32, pal, (col >= 4, false), false);
+                cv.tile(
+                    &a.versus,
+                    t,
+                    x + 8 * col as i32,
+                    CARD_Y + 8 * r as i32,
+                    pal,
+                    (col >= 4, false),
+                    false,
+                );
             }
         }
         if let Some(i) = army.skin {
@@ -491,7 +552,15 @@ pub fn draw_versus(a: &Art, cv: &mut Canvas, armies: &[VersusArmy], stop: Stop) 
         }
         for r in 0..6usize {
             for col in 0..6usize {
-                cv.tile(&a.versus, 41 + 6 * r + col, x + 8 * col as i32, CARD_Y + 16 + 8 * r as i32, pal, (false, false), false);
+                cv.tile(
+                    &a.versus,
+                    41 + 6 * r + col,
+                    x + 8 * col as i32,
+                    CARD_Y + 16 + 8 * r as i32,
+                    pal,
+                    (false, false),
+                    false,
+                );
             }
         }
         for col in 0..6 {
@@ -581,13 +650,76 @@ const CELL_COLUMNS: usize = 4;
 
 /// A card's tiles (of `ohashi/res_syogunselect_lang_E`: 8 wide), by row: the header's emblem pieces are filled in.
 const CARD_ROWS: [[(usize, bool); 8]; 7] = [
-    [(6, false), (7, false), (8, false), (0, false), (0, false), (8, true), (7, true), (6, true)],
-    [(9, false), (10, false), (11, false), (0, false), (0, false), (11, true), (10, true), (9, true)],
-    [(1, false), (2, false), (2, false), (2, false), (2, false), (74, false), (75, false), (1, true)],
-    [(1, false), (72, false), (73, false), (73, false), (73, false), (76, false), (77, false), (1, true)],
-    [(1, false), (2, false), (2, false), (2, false), (2, false), (78, false), (79, false), (1, true)],
-    [(1, false), (72, false), (73, false), (73, false), (73, false), (80, false), (81, false), (1, true)],
-    [(3, false), (4, false), (4, false), (4, false), (4, false), (4, true), (4, true), (3, true)],
+    [
+        (6, false),
+        (7, false),
+        (8, false),
+        (0, false),
+        (0, false),
+        (8, true),
+        (7, true),
+        (6, true),
+    ],
+    [
+        (9, false),
+        (10, false),
+        (11, false),
+        (0, false),
+        (0, false),
+        (11, true),
+        (10, true),
+        (9, true),
+    ],
+    [
+        (1, false),
+        (2, false),
+        (2, false),
+        (2, false),
+        (2, false),
+        (74, false),
+        (75, false),
+        (1, true),
+    ],
+    [
+        (1, false),
+        (72, false),
+        (73, false),
+        (73, false),
+        (73, false),
+        (76, false),
+        (77, false),
+        (1, true),
+    ],
+    [
+        (1, false),
+        (2, false),
+        (2, false),
+        (2, false),
+        (2, false),
+        (78, false),
+        (79, false),
+        (1, true),
+    ],
+    [
+        (1, false),
+        (72, false),
+        (73, false),
+        (73, false),
+        (73, false),
+        (80, false),
+        (81, false),
+        (1, true),
+    ],
+    [
+        (3, false),
+        (4, false),
+        (4, false),
+        (4, false),
+        (4, false),
+        (4, true),
+        (4, true),
+        (3, true),
+    ],
 ];
 
 /// A card's height with one plate, and with two (the foot is its last row).
@@ -628,14 +760,22 @@ fn skin_emblem(cv: &mut Canvas, skin: usize, x: i32, y: i32) {
 fn teams_skin_of_colour(core: &Core, colour: u8) -> Option<usize> {
     let five = crate::five::active(core);
     let colours = if five { TEAMS_FIVE + 0x98 } else { TEAMS + 0x0D };
-    (0..crate::tag_ui::armies(core)).find(|&k| core.raw_read_8(colours + k, -1).clamp(1, 5) - 1 == colour).and_then(|k| crate::army_skin::teams_skin(core, k))
+    (0..crate::tag_ui::armies(core))
+        .find(|&k| core.raw_read_8(colours + k, -1).clamp(1, 5) - 1 == colour)
+        .and_then(|k| crate::army_skin::teams_skin(core, k))
 }
 
 fn card(cv: &mut Canvas, a: &Art, x: i32, c: &Card, active: Option<bool>) {
-    let skinned = c.skin.map(|i| crate::army_skin::ds_row(i, &a.versus_pal[(c.colour as usize).min(4)], &a.versus_pal));
+    let skinned = c
+        .skin
+        .map(|i| crate::army_skin::ds_row(i, &a.versus_pal[(c.colour as usize).min(4)], &a.versus_pal));
     let pal = skinned.as_ref().unwrap_or(&a.versus_pal[(c.colour as usize).min(4)]);
     let e = 21 + 4 * (c.colour as usize).min(4);
-    let rows: Vec<usize> = if c.partner.is_some() { (0..7).collect() } else { vec![0, 1, 2, 3, 6] };
+    let rows: Vec<usize> = if c.partner.is_some() {
+        (0..7).collect()
+    } else {
+        vec![0, 1, 2, 3, 6]
+    };
     for (k, &r) in rows.iter().enumerate() {
         for (col, &(t, hf)) in CARD_ROWS[r].iter().enumerate() {
             let cx = x + 8 * col as i32;
@@ -654,10 +794,20 @@ fn card(cv: &mut Canvas, a: &Art, x: i32, c: &Card, active: Option<bool>) {
         skin_emblem(cv, i, x + 24, 0);
     }
     for (k, slot) in [Some(&c.main), c.partner.as_ref()].into_iter().enumerate() {
-        let Some(nm) = slot.and_then(|s| s.name.as_ref()) else { continue };
+        let Some(nm) = slot.and_then(|s| s.name.as_ref()) else {
+            continue;
+        };
         for col in 0..6usize {
             for h in 0..2usize {
-                cv.tile(&nm.tiles, 2 * col + h, x + 8 + 8 * col as i32, 16 + 16 * k as i32 + 8 * h as i32, &a.name_pal, (false, false), false);
+                cv.tile(
+                    &nm.tiles,
+                    2 * col + h,
+                    x + 8 + 8 * col as i32,
+                    16 + 16 * k as i32 + 8 * h as i32,
+                    &a.name_pal,
+                    (false, false),
+                    false,
+                );
             }
         }
     }
@@ -671,7 +821,11 @@ fn card(cv: &mut Canvas, a: &Art, x: i32, c: &Card, active: Option<bool>) {
 fn panel(cv: &mut Canvas, a: &Art, x: i32, y: i32, body: usize) {
     let pal = &a.versus_pal[0];
     let band = |r: usize, col: usize| -> (usize, bool) {
-        let (edge, fill, text0) = if r == 0 { ([6, 7, 8], 12, 82) } else { ([9, 10, 11], 13, 95) };
+        let (edge, fill, text0) = if r == 0 {
+            ([6, 7, 8], 12, 82)
+        } else {
+            ([9, 10, 11], 13, 95)
+        };
         match col {
             0..=2 => (edge[col], false),
             3 => (fill, false),
@@ -685,7 +839,15 @@ fn panel(cv: &mut Canvas, a: &Art, x: i32, y: i32, body: usize) {
     for r in 0..2usize {
         for col in 0..29usize {
             let (t, hf) = band(r, col);
-            cv.tile(&a.lang, t, x + 8 * col as i32, y + 8 * r as i32, pal, (hf, false), false);
+            cv.tile(
+                &a.lang,
+                t,
+                x + 8 * col as i32,
+                y + 8 * r as i32,
+                pal,
+                (hf, false),
+                false,
+            );
         }
     }
     for k in 0..body {
@@ -697,8 +859,20 @@ fn panel(cv: &mut Canvas, a: &Art, x: i32, y: i32, body: usize) {
                 _ => (1, true),
             };
             let crest = body >= 6 && k + 6 >= body && (21..=27).contains(&col);
-            let (t, hf) = if crest { (30 + 7 * (k + 6 - body) + (col - 21), false) } else { (t, hf) };
-            cv.tile(&a.lang, t, x + 8 * col as i32, y + 16 + 8 * k as i32, pal, (hf, false), !crest);
+            let (t, hf) = if crest {
+                (30 + 7 * (k + 6 - body) + (col - 21), false)
+            } else {
+                (t, hf)
+            };
+            cv.tile(
+                &a.lang,
+                t,
+                x + 8 * col as i32,
+                y + 16 + 8 * k as i32,
+                pal,
+                (hf, false),
+                !crest,
+            );
         }
     }
 }
@@ -788,18 +962,33 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
     let start = top + 16;
     let visible = (((H as i32 - start) / pitch) as usize).max(1);
     let cur_row = v.cursor / CELL_COLUMNS;
-    let first = cur_row.saturating_sub(visible.saturating_sub(1)).min(rows.saturating_sub(visible));
+    let first = cur_row
+        .saturating_sub(visible.saturating_sub(1))
+        .min(rows.saturating_sub(visible));
     for (k, c) in v.cells.iter().enumerate() {
         let (r, col) = (k / CELL_COLUMNS, k % CELL_COLUMNS);
         if r < first || r >= first + visible + 1 {
             continue;
         }
-        cell(cv, a, PANEL_X + 8 + 56 * col as i32, start + pitch * (r - first) as i32, c);
+        cell(
+            cv,
+            a,
+            PANEL_X + 8 + 56 * col as i32,
+            start + pitch * (r - first) as i32,
+            c,
+        );
     }
     if v.cursor < v.cells.len() {
         let (r, col) = (v.cursor / CELL_COLUMNS, v.cursor % CELL_COLUMNS);
         if r >= first {
-            corners(cv, a, PANEL_X + 8 + 56 * col as i32, start + pitch * (r - first) as i32, 48, 16);
+            corners(
+                cv,
+                a,
+                PANEL_X + 8 + 56 * col as i32,
+                start + pitch * (r - first) as i32,
+                48,
+                16,
+            );
         }
     }
 }
@@ -808,7 +997,13 @@ pub fn draw_pick(a: &Art, cv: &mut Canvas, v: &PickView) {
 pub fn render_cell(rgba: &mut [u8], ds: u8) -> bool {
     let Some(a) = art() else { return false };
     let Some(m) = art_mug(ds) else { return false };
-    let army = VersusArmy { colour: 0, skin: None, main: Some(m), partner: None, tab: Tab::Player(1) };
+    let army = VersusArmy {
+        colour: 0,
+        skin: None,
+        main: Some(m),
+        partner: None,
+        tab: Tab::Player(1),
+    };
     let mut full = vec![0u8; W * H * 4];
     draw_versus(a, &mut Canvas { rgba: &mut full }, &[army], Stop::None);
     let x0 = card_x(1, 0);
@@ -851,7 +1046,11 @@ fn versus_view(core: &Core) -> Option<(Vec<VersusArmy>, Stop)> {
         return None;
     }
     let n = crate::tag_ui::armies(core) as usize;
-    let (controllers, colours) = if five { (rec + 0x90, rec + 0x98) } else { (rec + 0x09, rec + 0x0D) };
+    let (controllers, colours) = if five {
+        (rec + 0x90, rec + 0x98)
+    } else {
+        (rec + 0x09, rec + 0x0D)
+    };
     let mut humans = 0u8;
     let mut armies = Vec::new();
     for k in 0..n {
@@ -867,7 +1066,13 @@ fn versus_view(core: &Core) -> Option<(Vec<VersusArmy>, Stop)> {
             0xFF => None,
             co => mug(core, co),
         };
-        armies.push(VersusArmy { colour, skin: crate::army_skin::teams_skin(core, k as u32), main, partner, tab });
+        armies.push(VersusArmy {
+            colour,
+            skin: crate::army_skin::teams_skin(core, k as u32),
+            main,
+            partner,
+            tab,
+        });
     }
     let cursor = core.raw_read_8(rec + 0x32, -1) as usize;
     let army = cursor / 2;
@@ -950,7 +1155,11 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
         // however many armies the mission has.
         for a in 0..n.min(armies) {
             // (a mission whose player is the fifth army, Black Hole, picks on army 1's place)
-            let colour = if five_pick && a == 0 { 4 } else { m.colours[a].clamp(1, 5) - 1 };
+            let colour = if five_pick && a == 0 {
+                4
+            } else {
+                m.colours[a].clamp(1, 5) - 1
+            };
             let (main, partner) = if a == 0 && lead.is_some() {
                 // The army leads with a fixed CO and picks only its partner.
                 if done == 0 {
@@ -958,7 +1167,12 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
                 } else {
                     flags.push((colour, picks[0], 2));
                 }
-                (Slot { name: lead.and_then(|c| name(core, c)) }, Some(slot(0, colour, true, true, &mut flags)))
+                (
+                    Slot {
+                        name: lead.and_then(|c| name(core, c)),
+                    },
+                    Some(slot(0, colour, true, true, &mut flags)),
+                )
             } else {
                 if a == done && done < n + k {
                     active = Some((a, false));
@@ -989,7 +1203,12 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
                 });
                 (main, partner)
             };
-            out.push(Card { colour, skin: crate::army_skin::teams_skin(core, a as u32), main, partner });
+            out.push(Card {
+                colour,
+                skin: crate::army_skin::teams_skin(core, a as u32),
+                main,
+                partner,
+            });
         }
         if n > 0 && !out.is_empty() {
             return (out, active, flags);
@@ -998,7 +1217,10 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
     // A battle on two fronts whose second front's CO the player picks: one card, the main front's CO on its first plate and
     // the second front's on its second (Dual Strike numbers them 1 and 2), each picked CO's face flagged with its number.
     if let Some(m) = crate::ds_campaign::mission_info(core) {
-        if m.two_front.as_ref().is_some_and(|tf| tf.cos[0] == crate::campaign_model::PICK) {
+        if m.two_front
+            .as_ref()
+            .is_some_and(|tf| tf.cos[0] == crate::campaign_model::PICK)
+        {
             let colour = m.colours[0].clamp(1, 5) - 1;
             for (j, &co) in picks.iter().enumerate().take(2) {
                 flags.push((colour, co, j as u8 + 1));
@@ -1013,7 +1235,16 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
                 }
             };
             let active = (done < 2).then_some((0, done == 1));
-            return (vec![Card { colour, skin: None, main: plate(0), partner: Some(plate(1)) }], active, flags);
+            return (
+                vec![Card {
+                    colour,
+                    skin: None,
+                    main: plate(0),
+                    partner: Some(plate(1)),
+                }],
+                active,
+                flags,
+            );
         }
     }
     // Survival's first map: one card, the run's CO on its first plate and its partner on the second (Dual Strike's
@@ -1033,7 +1264,16 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
             }
         };
         let active = (done < 2).then_some((0, done == 1));
-        return (vec![Card { colour, skin: None, main: plate(0), partner: Some(plate(1)) }], active, flags);
+        return (
+            vec![Card {
+                colour,
+                skin: None,
+                main: plate(0),
+                partner: Some(plate(1)),
+            }],
+            active,
+            flags,
+        );
     }
     // The War Room, AW2's campaign: one army, one CO; its colour its CO's country.
     let co = if done > 0 { picks[0] } else { cur };
@@ -1041,7 +1281,16 @@ fn cards(core: &Core, picks: &[u8], cur: u8, offered: &[u8]) -> (Vec<Card>, Opti
     if done > 0 {
         flags.push((colour, picks[0], 1));
     }
-    (vec![Card { colour, skin: None, main: pic(if done == 0 { cur } else { picks[0] }), partner: None }], (done == 0).then_some((0, false)), flags)
+    (
+        vec![Card {
+            colour,
+            skin: None,
+            main: pic(if done == 0 { cur } else { picks[0] }),
+            partner: None,
+        }],
+        (done == 0).then_some((0, false)),
+        flags,
+    )
 }
 
 /// The CO screen's proc and what it offers, with Dual Strike's grid of every CO (by country, then id; four to a row).
@@ -1056,12 +1305,16 @@ struct Grid {
 }
 
 fn grid(core: &Core) -> Option<Grid> {
-    let proc = (PROC_POOL.0..PROC_POOL.1).step_by(PROC_SIZE as usize).find(|&p| core.raw_read_32(p, -1) == CO_SELECT)?;
+    let proc = (PROC_POOL.0..PROC_POOL.1)
+        .step_by(PROC_SIZE as usize)
+        .find(|&p| core.raw_read_32(p, -1) == CO_SELECT)?;
     let groups = core.raw_read_32(CO_GROUPS, -1) as usize;
     if !(1..=5).contains(&groups) {
         return None;
     }
-    let sizes: Vec<usize> = (0..groups).map(|g| core.raw_read_8(GROUP_SIZES + g as u32, -1) as usize).collect();
+    let sizes: Vec<usize> = (0..groups)
+        .map(|g| core.raw_read_8(GROUP_SIZES + g as u32, -1) as usize)
+        .collect();
     let total: usize = sizes.iter().sum();
     if total == 0 || total > 63 {
         return None;
@@ -1082,7 +1335,14 @@ fn grid(core: &Core) -> Option<Grid> {
         }
     }
     all.sort_by_key(|&c| (country(core, c), c));
-    Some(Grid { proc, sizes, offered, group, cur, all })
+    Some(Grid {
+        proc,
+        sizes,
+        offered,
+        group,
+        cur,
+        all,
+    })
 }
 
 /// Dual Strike's arrows on the CO screen (see [`arrows`]): the cell the cursor is on although the game's cannot be (a locked CO:
@@ -1095,7 +1355,11 @@ const WALK_PULSE: u32 = crate::tag::ARROWS + 7;
 fn pick_view(core: &Core) -> Option<PickView> {
     let g = grid(core)?;
     let walk = core.raw_read_8(WALK_TO, -1);
-    let cur = if walk != 0 && g.offered.contains(&(walk - 1)) { walk - 1 } else { g.cur };
+    let cur = if walk != 0 && g.offered.contains(&(walk - 1)) {
+        walk - 1
+    } else {
+        g.cur
+    };
     let idx = (core.raw_read_16(g.proc + 0x64, -1) as usize).min(8);
     let picks: Vec<u8> = (0..idx).map(|j| core.raw_read_8(PICKS + j as u32, -1)).collect();
     let (cards, active, flags) = cards(core, &picks, cur, &g.offered);
@@ -1103,13 +1367,28 @@ fn pick_view(core: &Core) -> Option<PickView> {
         .all
         .iter()
         .map(|&c| {
-            let flag = flags.iter().find(|f| f.1 == c).map(|f| (f.0, f.2, teams_skin_of_colour(core, f.0)));
-            Cell { mug: g.offered.contains(&c).then(|| mug(core, c)).flatten(), flag }
+            let flag = flags
+                .iter()
+                .find(|f| f.1 == c)
+                .map(|f| (f.0, f.2, teams_skin_of_colour(core, f.0)));
+            Cell {
+                mug: g.offered.contains(&c).then(|| mug(core, c)).flatten(),
+                flag,
+            }
         })
         .collect();
     let locked = core.raw_read_8(LOCKED_CELL, -1) as usize;
-    let cursor = if locked != 0 && locked <= cells.len() { locked - 1 } else { g.all.iter().position(|&c| c == cur)? };
-    Some(PickView { cards, active, cells, cursor })
+    let cursor = if locked != 0 && locked <= cells.len() {
+        locked - 1
+    } else {
+        g.all.iter().position(|&c| c == cur)?
+    };
+    Some(PickView {
+        cards,
+        active,
+        cells,
+        cursor,
+    })
 }
 
 const KEY_A: u32 = 1;
@@ -1146,7 +1425,11 @@ fn grid_step(n: usize, cell: usize, dx: i32, dy: i32) -> usize {
 /// A does nothing there. All of it is in the game's RAM.
 pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
     let dpad = KEY_LEFT | KEY_RIGHT | KEY_UP | KEY_DOWN;
-    let grid = if on && !crate::ds_co_page::is_open() && !crate::skills_panel::is_open(core) { grid(core) } else { None };
+    let grid = if on && !crate::ds_co_page::is_open() && !crate::skills_panel::is_open(core) {
+        grid(core)
+    } else {
+        None
+    };
     let Some(g) = grid else {
         if core.raw_read_8(crate::ram_map::CO_SCREEN_PICKS.0, -1) != 0 {
             core.raw_write_8(crate::ram_map::CO_SCREEN_PICKS.0, -1, 0);
@@ -1240,7 +1523,11 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
     }
     let key = if g.group != want {
         let n = g.sizes.len();
-        if (want + n - g.group) % n <= n / 2 { KEY_DOWN } else { KEY_UP }
+        if (want + n - g.group) % n <= n / 2 {
+            KEY_DOWN
+        } else {
+            KEY_UP
+        }
     } else if (k - first + size - pos) % size <= size / 2 {
         KEY_RIGHT
     } else {
@@ -1291,8 +1578,14 @@ mod tests {
     #[test]
     fn one_to_four_name_cards_lie_wholly_on_the_screen() {
         for n in 1..=4usize {
-            let (first, last) = (card_left(n) + (CARD_W - CARD_SEEN) / 2, card_left(n) + card_pitch(n) * (n as i32 - 1) + (CARD_W + CARD_SEEN) / 2);
-            assert!(first >= 0 && last <= W as i32, "{n} cards: pictures from {first} to {last}");
+            let (first, last) = (
+                card_left(n) + (CARD_W - CARD_SEEN) / 2,
+                card_left(n) + card_pitch(n) * (n as i32 - 1) + (CARD_W + CARD_SEEN) / 2,
+            );
+            assert!(
+                first >= 0 && last <= W as i32,
+                "{n} cards: pictures from {first} to {last}"
+            );
             // centred, the pictures never over each other
             assert!((first - (W as i32 - last)).abs() <= 1, "{n} cards centred");
             assert!(n == 1 || card_pitch(n) >= CARD_SEEN, "{n} cards overlap");
@@ -1313,7 +1606,15 @@ mod tests {
         assert!(crate::ds_pack::offer_rom(&rom));
         let a = art().expect("art");
         assert_eq!(a.versus_pal.len(), 5);
-        let armies: Vec<VersusArmy> = (0..5).map(|c| VersusArmy { colour: c, skin: None, main: art_mug(2), partner: None, tab: Tab::Cpu }).collect();
+        let armies: Vec<VersusArmy> = (0..5)
+            .map(|c| VersusArmy {
+                colour: c,
+                skin: None,
+                main: art_mug(2),
+                partner: None,
+                tab: Tab::Cpu,
+            })
+            .collect();
         let mut buf = vec![0u8; W * H * 4];
         draw_versus(a, &mut Canvas { rgba: &mut buf }, &armies, Stop::None);
         // The fifth card's foot line is Black Hole's grey, the first's Orange Star's red.
@@ -1321,7 +1622,9 @@ mod tests {
         let foot = (CARD_Y + 64 + 3) as usize;
         let (first, last) = (at(4, foot), at(236, foot));
         assert!(first[0] > 200 && first[1] < 80, "Orange Star's card is red: {first:?}");
-        assert!((last[0] as i32 - last[1] as i32).abs() < 12 && (last[1] as i32 - last[2] as i32).abs() < 12, "Black Hole's is grey: {last:?}");
+        assert!(
+            (last[0] as i32 - last[1] as i32).abs() < 12 && (last[1] as i32 - last[2] as i32).abs() < 12,
+            "Black Hole's is grey: {last:?}"
+        );
     }
 }
-

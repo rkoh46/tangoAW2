@@ -413,7 +413,11 @@ impl BgLayer {
                 keep.iter().position(|&k| k == t).unwrap() as u16 | flips << 10
             })
             .collect();
-        BgLayer { tiles, map, ..self.clone() }
+        BgLayer {
+            tiles,
+            map,
+            ..self.clone()
+        }
     }
 }
 
@@ -497,7 +501,12 @@ impl Effect {
             for f in 0..self.clips[c].frames.len() {
                 while self.frame_tiles(c, f).0.len() / 32 > max {
                     let pieces = &self.clips[c].frames[f].pieces;
-                    let alone = (0..pieces.len()).rev().find(|&i| pieces.iter().enumerate().all(|(j, q)| j == i || q.tile != pieces[i].tile));
+                    let alone = (0..pieces.len()).rev().find(|&i| {
+                        pieces
+                            .iter()
+                            .enumerate()
+                            .all(|(j, q)| j == i || q.tile != pieces[i].tile)
+                    });
                     let Some(i) = alone else { break };
                     self.clips[c].frames[f].pieces.remove(i);
                     dropped += 1;
@@ -589,14 +598,23 @@ impl Effect {
             t.checked_sub(resolve(bg.start, &[], 0))?;
             return bg.blend.get(t.saturating_sub(self.landing(target)) as usize).copied();
         }
-        at(&bg.blend, t, resolve(bg.start, &self.clip_times(target, camera_y), self.landing(target))).copied()
+        at(
+            &bg.blend,
+            t,
+            resolve(bg.start, &self.clip_times(target, camera_y), self.landing(target)),
+        )
+        .copied()
     }
 
     /// The BG layer's scroll registers at `t`, the camera's top-left at map
     /// pixel `camera` (shake not added).
     pub fn scroll_at(&self, t: u32, target: (u8, u8), camera: (i32, i32)) -> Option<(i32, i32)> {
         let bg = self.bg.as_ref()?;
-        let k = t.checked_sub(resolve(bg.start, &self.clip_times(target, camera.1), self.landing(target)))? as i32;
+        let k = t.checked_sub(resolve(
+            bg.start,
+            &self.clip_times(target, camera.1),
+            self.landing(target),
+        ))? as i32;
         Some(match bg.placement {
             BgPlacement::OnTarget { x, y } => (
                 x as i32 - (16 * target.0 as i32 - camera.0),
@@ -784,7 +802,14 @@ pub fn effect(which: PowerEffect) -> Option<Effect> {
             // texture `bmap/08c`, palette `08d`) and the beam's fade (EVA
             // 16 to 0 over 80 frames, `0x020EB434`).
             let anim = Anim::parse(arm9(LASER_RINGS_ANIM, 0x400)?)?;
-            let rings = anim.clip("rings", 0, Start::Landed(LASER_HIT), Anchor::Bottom, Motion::Still, false)?;
+            let rings = anim.clip(
+                "rings",
+                0,
+                Start::Landed(LASER_HIT),
+                Anchor::Bottom,
+                Motion::Still,
+                false,
+            )?;
             let (tiles, clips) = linear_texture(&lz("bmap/08c")?, vec![rings])?;
             let beam = bg_layer(&lz("bmap/089")?, &lz("bmap/08a")?, palette("bmap/08b")?, true)?;
             // (a falling layer's blend starts where it is down: additive
@@ -798,7 +823,11 @@ pub fn effect(which: PowerEffect) -> Option<Effect> {
                 clips,
                 bg: Some(BgLayer {
                     start: Start::At(0),
-                    placement: BgPlacement::FallingOnTarget { x: 0x20, y: 0xB0, speed: 16 },
+                    placement: BgPlacement::FallingOnTarget {
+                        x: 0x20,
+                        y: 0xB0,
+                        speed: 16,
+                    },
                     blend,
                     ..beam
                 }),
@@ -1147,7 +1176,14 @@ mod tests {
         let target = (13, 3);
         assert_eq!(e.landing(target), 3);
         assert_eq!(e.clip_times(target, 0), vec![(5, 34)]);
-        assert_eq!((e.flash_at(4, target, 0), e.flash_at(5, target, 0), e.flash_at(8, target, 0)), (0, 4, 16));
+        assert_eq!(
+            (
+                e.flash_at(4, target, 0),
+                e.flash_at(5, target, 0),
+                e.flash_at(8, target, 0)
+            ),
+            (0, 4, 16)
+        );
         assert_eq!(e.blend_at(0, target, 0), Some((16, 16)));
         assert_eq!(e.blend_at(5, target, 0), Some((16, 16)));
         assert_eq!(e.blend_at(45, target, 0), Some((8, 16)));

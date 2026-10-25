@@ -92,7 +92,15 @@ mod tests {
         for gap in [1_000u64, 2_000, 4_900] {
             let mut w = SilenceWatch::new(0);
             // frames until 10 s, a gap, frames again
-            let rx = |t: u64| if t <= 10_000 { t } else if t < 10_000 + gap { 10_000 } else { t };
+            let rx = |t: u64| {
+                if t <= 10_000 {
+                    t
+                } else if t < 10_000 + gap {
+                    10_000
+                } else {
+                    t
+                }
+            };
             assert_eq!(first_lost(&mut w, 100, 40_000, rx), None, "gap {gap}");
         }
     }

@@ -112,13 +112,21 @@ fn glyphs(core: &Core) -> BTreeMap<char, Glyph> {
         }
         for (ch, p) in name.chars().zip(ps) {
             let x0 = p.iter().map(|q| q.0).min().unwrap_or(0);
-            out.entry(ch)
-                .or_insert_with(|| p.iter().map(|&(x, y)| ((x - x0, y), g[y as usize][x as usize])).collect());
+            out.entry(ch).or_insert_with(|| {
+                p.iter()
+                    .map(|&(x, y)| ((x - x0, y), g[y as usize][x as usize]))
+                    .collect()
+            });
         }
     }
     out.insert(
         'O',
-        mask(&["7...7", ".. ..", ".. ..", ".. ..", ".. ..", ".. ..", ".. ..", ".. ..", "7...7"], 3),
+        mask(
+            &[
+                "7...7", ".. ..", ".. ..", ".. ..", ".. ..", ".. ..", ".. ..", ".. ..", "7...7",
+            ],
+            3,
+        ),
     );
     out.insert('z', mask(&["....", "  . ", " .  ", "...."], 8));
     out

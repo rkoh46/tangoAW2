@@ -173,7 +173,9 @@ fn pals(b: &[u8]) -> Vec<[u16; 16]> {
 
 /// A 4bpp tile's pixel (x, y).
 fn tile_px(tiles: &[u8], k: usize, x: usize, y: usize) -> u8 {
-    tiles.get(32 * k + 4 * y + x / 2).map_or(0, |b| (b >> (4 * (x & 1))) & 15)
+    tiles
+        .get(32 * k + 4 * y + x / 2)
+        .map_or(0, |b| (b >> (4 * (x & 1))) & 15)
 }
 
 /// A Dual Strike BG layer: 4bpp tiles, a map `cols` entries wide, its
@@ -225,7 +227,12 @@ impl Font {
     fn load(name: &str, gw: usize, gh: usize) -> Option<Font> {
         let (b, tail) = blocks(crate::ds_pack::pack()?.file(name)?);
         let tiles: Vec<u8> = b.concat();
-        (tiles.len() >= 32 * (gw / 8) * (gh / 8) * 27).then_some(Font { tiles, gw, gh, pal: pal16(tail)? })
+        (tiles.len() >= 32 * (gw / 8) * (gh / 8) * 27).then_some(Font {
+            tiles,
+            gw,
+            gh,
+            pal: pal16(tail)?,
+        })
     }
 
     fn glyphs(&self) -> usize {
@@ -240,7 +247,9 @@ impl Font {
 
     /// The glyph's drawn columns (first, last), None if blank.
     fn extent(&self, g: usize) -> Option<(usize, usize)> {
-        let cols: Vec<usize> = (0..self.gw).filter(|&x| (0..self.gh).any(|y| self.px(g, x, y) != 0)).collect();
+        let cols: Vec<usize> = (0..self.gw)
+            .filter(|&x| (0..self.gh).any(|y| self.px(g, x, y) != 0))
+            .collect();
         Some((*cols.first()?, *cols.last()?))
     }
 }
@@ -266,27 +275,55 @@ fn load() -> Option<Art> {
     let (meter_tiles, n) = lz(raw)?;
     let p = (n + 3) & !3;
     let mp = pals(raw.get(p..p + 0xA0)?);
-    let meter = Meter { tiles: meter_tiles, pals: [mp[0], mp[1], mp[2], mp[3]], gradient: mp[4] };
+    let meter = Meter {
+        tiles: meter_tiles,
+        pals: [mp[0], mp[1], mp[2], mp[3]],
+        gradient: mp[4],
+    };
     let (bt, bn) = lz(raw.get(p + 0xA0..)?)?;
     let (bm, _) = lz(raw.get((p + 0xA0 + bn + 3) & !3..)?)?;
     if bt.len() != 0x4000 || bm.len() != 0x800 || meter.tiles.len() < 32 * (BOX_RIGHT + 8) {
         return None;
     }
-    let bokeh = Bg { tiles: bt, map: map16(&bm), cols: 32, pals: vec![pal16(&raw[raw.len() - 32..])?] };
+    let bokeh = Bg {
+        tiles: bt,
+        map: map16(&bm),
+        cols: 32,
+        pals: vec![pal16(&raw[raw.len() - 32..])?],
+    };
     let emblem = |name: &str| -> Option<Bg> {
         let (b, tail) = blocks(pack.file(name)?);
         let (tiles, map) = (b.first()?.clone(), b.get(1)?);
-        (map.len() == 0x1000).then(|| Bg { tiles, map: map16(map), cols: 32, pals: pals(tail) })
+        (map.len() == 0x1000).then(|| Bg {
+            tiles,
+            map: map16(map),
+            cols: 32,
+            pals: pals(tail),
+        })
     };
-    let emblems = [emblem("ohashi/res_tagbreak_union")?, emblem("ohashi/res_tagbreak_black")?, emblem("ohashi/res_tagbreak_mix")?];
+    let emblems = [
+        emblem("ohashi/res_tagbreak_union")?,
+        emblem("ohashi/res_tagbreak_black")?,
+        emblem("ohashi/res_tagbreak_mix")?,
+    ];
     // res_tagchange: the Tag Power's burst, a map for each screen.
     let (b, tail) = blocks(pack.file("ohashi/res_tagchange")?);
     let (tiles, top, bottom) = (b.first()?.clone(), b.get(1)?, b.get(2)?);
-    let tag_burst = Bg { tiles, map: [map16(top), map16(bottom)].concat(), cols: 32, pals: pals(tail.get(..96)?) };
+    let tag_burst = Bg {
+        tiles,
+        map: [map16(top), map16(bottom)].concat(),
+        cols: 32,
+        pals: pals(tail.get(..96)?),
+    };
     // res_syogunchange: CO SWAP's burst; after its three palettes a block
     // and the red's palette.
     let (b, tail) = blocks(pack.file("ohashi/res_syogunchange")?);
-    let swap_burst = Bg { tiles: b.first()?.clone(), map: map16(b.get(1)?), cols: 32, pals: pals(tail.get(..96)?) };
+    let swap_burst = Bg {
+        tiles: b.first()?.clone(),
+        map: map16(b.get(1)?),
+        cols: 32,
+        pals: pals(tail.get(..96)?),
+    };
     let red = pal16(tail.get(tail.len().checked_sub(32)?..)?)?[1];
     Some(Art {
         bokeh,
@@ -395,19 +432,26 @@ const SWAP_START: i32 = 157;
 /// Dual Strike's 13-step fade out of white or black (master brightness
 /// 14, 12 .. 0), and its 25-step fade into white (1 .. 16).
 const FADE_IN: [i8; 13] = [14, 12, 10, 9, 7, 6, 5, 4, 3, 2, 1, 1, 0];
-const FADE_OUT: [i8; 25] = [1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15, 16];
+const FADE_OUT: [i8; 25] = [
+    1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15, 16,
+];
 /// The map's brightening to white before the Tag Power's screen (257..288).
-const TAG_MAP_WHITE: [i8; 32] = [1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15, 16];
+const TAG_MAP_WHITE: [i8; 32] = [
+    1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15, 16,
+];
 /// The map's fade to black before CO SWAP (158..170).
 const SWAP_MAP_BLACK: [i8; 13] = [2, 4, 6, 7, 9, 10, 11, 12, 13, 14, 15, 15, 16];
 /// CO SWAP's fade in from black (177..201).
-const SWAP_IN: [i8; 25] = [15, 14, 13, 12, 11, 10, 9, 9, 8, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1, 1, 0];
+const SWAP_IN: [i8; 25] = [
+    15, 14, 13, 12, 11, 10, 9, 9, 8, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1, 1, 0,
+];
 /// The left CO's place above its stop (304..418; the right CO's is the
 /// same below).
 const TAG_SLIDE: [i8; 115] = [
-    -94, -93, -91, -90, -88, -87, -85, -84, -82, -81, -80, -78, -77, -76, -74, -73, -72, -70, -69, -68, -67, -65, -64, -63, -62, -60, -59, -58, -57, -56, -55,
-    -54, -52, -51, -50, -49, -48, -47, -46, -45, -44, -43, -42, -41, -40, -39, -38, -37, -36, -35, -34, -33, -32, -32, -31, -30, -29, -28, -27, -27, -26,
-    -25, -24, -24, -23, -22, -21, -21, -20, -19, -19, -18, -17, -17, -16, -15, -15, -14, -14, -13, -12, -12, -11, -11, -10, -10, -9, -9, -8, -8, -8, -7, -7,
+    -94, -93, -91, -90, -88, -87, -85, -84, -82, -81, -80, -78, -77, -76, -74, -73, -72, -70, -69, -68, -67, -65, -64,
+    -63, -62, -60, -59, -58, -57, -56, -55, -54, -52, -51, -50, -49, -48, -47, -46, -45, -44, -43, -42, -41, -40, -39,
+    -38, -37, -36, -35, -34, -33, -32, -32, -31, -30, -29, -28, -27, -27, -26, -25, -24, -24, -23, -22, -21, -21, -20,
+    -19, -19, -18, -17, -17, -16, -15, -15, -14, -14, -13, -12, -12, -11, -11, -10, -10, -9, -9, -8, -8, -8, -7, -7,
     -6, -6, -6, -5, -5, -4, -4, -4, -3, -3, -3, -3, -2, -2, -2, -2, -1, -1, -1, -1, -1, 0,
 ];
 /// The POWER box's place below its stop as it rises (373..383).
@@ -449,13 +493,17 @@ const POP: [i32; 8] = [128, 144, 163, 184, 204, 224, 240, 252];
 const DIGIT_POPS: [i32; 3] = [0, 3, 7];
 /// CO SWAP's letters, stretched from a line: the affine's vertical inverse
 /// (256 = full height) for their first 24 frames.
-const STRETCH: [i32; 24] = [4096, 1820, 1191, 897, 728, 618, 541, 481, 436, 402, 374, 352, 334, 318, 304, 293, 284, 277, 271, 266, 262, 259, 257, 256];
+const STRETCH: [i32; 24] = [
+    4096, 1820, 1191, 897, 728, 618, 541, 481, 436, 402, 374, 352, 334, 318, 304, 293, 284, 277, 271, 266, 262, 259,
+    257, 256,
+];
 /// The outgoing CO's place (Dual Strike's x, 209..294; the incoming CO's
 /// is 112 - it).
 const SWAP_X: [i16; 86] = [
-    -134, -124, -115, -106, -97, -88, -79, -71, -63, -55, -47, -39, -32, -24, -17, -10, -3, 3, 9, 16, 22, 27, 33, 38, 43, 48, 53, 58, 62, 67, 71, 75, 78, 82,
-    85, 88, 91, 94, 96, 99, 101, 103, 105, 106, 108, 109, 110, 111, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 113, 115, 116, 118,
-    121, 124, 127, 130, 134, 139, 144, 149, 154, 160, 166, 173, 180, 187, 195, 203, 212, 221, 230, 240,
+    -134, -124, -115, -106, -97, -88, -79, -71, -63, -55, -47, -39, -32, -24, -17, -10, -3, 3, 9, 16, 22, 27, 33, 38,
+    43, 48, 53, 58, 62, 67, 71, 75, 78, 82, 85, 88, 91, 94, 96, 99, 101, 103, 105, 106, 108, 109, 110, 111, 112, 112,
+    112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 113, 115, 116, 118, 121, 124, 127, 130, 134, 139, 144,
+    149, 154, 160, 166, 173, 180, 187, 195, 203, 212, 221, 230, 240,
 ];
 /// The thunder's three bolts (`SE_TAG_BREAK`).
 const BOLTS: [i32; 3] = [173, 209, 219];
@@ -590,7 +638,9 @@ fn set_name(font: &Font, text: &[u8]) -> Name {
     let mut cols: Vec<[u8; 32]> = Vec::new();
     let mut spans = Vec::new();
     for &c in text {
-        let g = glyph(c).filter(|&(g, _)| g < font.glyphs()).and_then(|(g, rows)| Some((g, rows, font.extent(g)?)));
+        let g = glyph(c)
+            .filter(|&(g, _)| g < font.glyphs())
+            .and_then(|(g, rows)| Some((g, rows, font.extent(g)?)));
         let Some((g, rows, (x0, x1))) = g else {
             if c == b' ' {
                 cols.extend((0..SPACE).map(|_| [0u8; 32]));
@@ -620,7 +670,10 @@ fn set_name(font: &Font, text: &[u8]) -> Name {
         }
     }
     let at = |x: usize| x * w / n;
-    let spans = spans.into_iter().map(|s| s.map(|(a, b)| (at(a), at(b).max(at(a) + 1)))).collect();
+    let spans = spans
+        .into_iter()
+        .map(|s| s.map(|(a, b)| (at(a), at(b).max(at(a) + 1))))
+        .collect();
     Name { w, px, spans }
 }
 
@@ -680,7 +733,11 @@ fn window(bg: &Bg, ox: usize, oy: usize, base: u16, limit: u16, pal: u8, opaque:
     for r in 0..ROWS {
         for c in 0..COLS {
             let (mr, mc) = (r + oy / 8, c + ox / 8);
-            let e = if mr < rows && mc < bg.cols { bg.map[bg.cols * mr + mc] } else { 0 };
+            let e = if mr < rows && mc < bg.cols {
+                bg.map[bg.cols * mr + mc]
+            } else {
+                0
+            };
             let (k, p) = (e & 0x3FF, e >> 12);
             let n = match index.get(&(k, p)) {
                 Some(&n) => n,
@@ -689,7 +746,10 @@ fn window(bg: &Bg, ox: usize, oy: usize, base: u16, limit: u16, pal: u8, opaque:
                     if n >= limit {
                         continue;
                     }
-                    let mut t: [u8; 32] = bg.tiles.get(32 * k as usize..32 * k as usize + 32).map_or([0u8; 32], |s| s.try_into().unwrap());
+                    let mut t: [u8; 32] = bg
+                        .tiles
+                        .get(32 * k as usize..32 * k as usize + 32)
+                        .map_or([0u8; 32], |s| s.try_into().unwrap());
                     if opaque {
                         let pl = bg.pals.get(p as usize).copied().unwrap_or([0x7FFF; 16]);
                         let white = (1..16).min_by_key(|&i| d2(rgb(pl[i]), [31, 31, 31])).unwrap() as u8;
@@ -706,7 +766,11 @@ fn window(bg: &Bg, ox: usize, oy: usize, base: u16, limit: u16, pal: u8, opaque:
             map[COLS * r + c] = n | (e & 0x0C00) | ((pal as u16 + p) << 12);
         }
     }
-    Static { tiles, map, pals: bg.pals.clone() }
+    Static {
+        tiles,
+        map,
+        pals: bg.pals.clone(),
+    }
 }
 
 /// The two COs' colours in one palette (for a tile they share): both
@@ -729,7 +793,11 @@ fn mix(a: &[u16; 16], b: &[u16; 16]) -> [u16; 16] {
             }
         }
         let (i, j) = (best.1, best.2);
-        cs[i] = [(cs[i][0] + cs[j][0]) / 2, (cs[i][1] + cs[j][1]) / 2, (cs[i][2] + cs[j][2]) / 2];
+        cs[i] = [
+            (cs[i][0] + cs[j][0]) / 2,
+            (cs[i][1] + cs[j][1]) / 2,
+            (cs[i][2] + cs[j][2]) / 2,
+        ];
         cs.remove(j);
     }
     let mut p = [0u16; 16];
@@ -766,7 +834,15 @@ fn make_still(core: &Core, s: &Screen) -> Option<Still> {
                 // screens' x 8.., y 64.. (the bokeh's map is the top
                 // screen's, 40 rows up; the emblem's circle is centred).
                 bokeh: Some(window(&art.bokeh, 8, 40, 1, STATIC_SECOND, PAL_BOKEH, false)),
-                emblem: Some(window(&art.emblems[side], 8, 112, STATIC_SECOND, STATIC_TILES, PAL_BACK, true)),
+                emblem: Some(window(
+                    &art.emblems[side],
+                    8,
+                    112,
+                    STATIC_SECOND,
+                    STATIC_TILES,
+                    PAL_BACK,
+                    true,
+                )),
                 burst: window(&art.tag_burst, 8, 64, STATIC_SECOND, STATIC_TILES, PAL_BACK, false),
                 name: Some(set_name(&art.tag_font, name)),
                 mix,
@@ -823,7 +899,12 @@ fn compose_tag(art: &Art, st: &Still, power: u8, f: i32) -> Shown {
                     let t = k + ty as usize * tw + tx as usize;
                     for yy in 0..8 {
                         for xx in 0..8 {
-                            text.set(x + 8 * tx + xx, y + 8 * ty + yy, PAL_BOX, tile_px(&m.tiles, t, xx as usize, yy as usize));
+                            text.set(
+                                x + 8 * tx + xx,
+                                y + 8 * ty + yy,
+                                PAL_BOX,
+                                tile_px(&m.tiles, t, xx as usize, yy as usize),
+                            );
                         }
                     }
                 }
@@ -848,7 +929,14 @@ fn compose_tag(art: &Art, st: &Still, power: u8, f: i32) -> Shown {
             let (x, y) = (bx - 1 + 12 * k as i32, by + 12);
             let age = f - (384 + power as i32 + 1 + DIGIT_POPS[k]);
             let base = DIGITS + 4 * d as usize;
-            let src = |u: i32, v: i32| tile_px(&m.tiles, base + (v / 8 * 2 + u / 8) as usize, (u % 8) as usize, (v % 8) as usize);
+            let src = |u: i32, v: i32| {
+                tile_px(
+                    &m.tiles,
+                    base + (v / 8 * 2 + u / 8) as usize,
+                    (u % 8) as usize,
+                    (v % 8) as usize,
+                )
+            };
             if (0..POP.len() as i32).contains(&age) {
                 let s = POP[age as usize];
                 text.scaled(16, 16, x + 8, y + 8, s, s, PAL_BOX, src);
@@ -905,7 +993,11 @@ fn compose_tag(art: &Art, st: &Still, power: u8, f: i32) -> Shown {
     pals[(PAL_BOX - 6) as usize] = boxp;
 
     // Brightness: in from white at 304, out to white from 655.
-    let bright = if f < 655 + sh { ramp(&FADE_IN, 304, f, 16) } else { ramp(&FADE_OUT, 655 + sh, f, 0) };
+    let bright = if f < 655 + sh {
+        ramp(&FADE_IN, 304, f, 16)
+    } else {
+        ramp(&FADE_OUT, 655 + sh, f, 0)
+    };
     // The emblem on white alone; then the bokeh blended in over it (Dual
     // Strike's EVA the bokeh's, EVB the emblem's); the bokeh alone; the
     // burst blended over everything.
@@ -919,7 +1011,16 @@ fn compose_tag(art: &Art, st: &Still, power: u8, f: i32) -> Shown {
     } else {
         (2, Some((BLEND_TAG_BURST, (f - 628 - sh).clamp(1, 16) as u8, 16)))
     };
-    Shown { text, cos, pals, backdrop: 0x7FFF, bright, back, bokeh: f >= 431, blend }
+    Shown {
+        text,
+        cos,
+        pals,
+        backdrop: 0x7FFF,
+        bright,
+        back,
+        bokeh: f >= 431,
+        blend,
+    }
 }
 
 /// The logo's letters (CO★SWAP: the font's 27th glyph is the star).
@@ -948,7 +1049,16 @@ fn compose_swap(art: &Art, st: &Still, f: i32) -> Shown {
         }
         let g = if c == b'*' { 26 } else { (c - b'A') as usize };
         let sy = STRETCH[(age as usize).min(STRETCH.len() - 1)];
-        text.scaled(16, 32, LOGO_X + 16 * k as i32 + 8, LOGO_Y + 16, 256, sy, PAL_FONT, |u, v| font.px(g, u as usize, v as usize));
+        text.scaled(
+            16,
+            32,
+            LOGO_X + 16 * k as i32 + 8,
+            LOGO_Y + 16,
+            256,
+            sy,
+            PAL_FONT,
+            |u, v| font.px(g, u as usize, v as usize),
+        );
     }
     let mut pals = [[0u16; 16]; 9];
     for (k, p) in st.burst.pals.iter().take(3).enumerate() {
@@ -960,9 +1070,26 @@ fn compose_swap(art: &Art, st: &Still, f: i32) -> Shown {
     }
     pals[(PAL_MIX - 6) as usize] = st.mix;
     pals[(PAL_FONT - 6) as usize] = font.pal;
-    let bright = if f < 295 { -ramp(&SWAP_IN, 177, f, 16) } else { ramp(&FADE_OUT, 295, f, 0) };
-    let (back, blend) = if f >= 268 { (2, Some((BLEND_SWAP_BURST, (f - 268).clamp(0, 16) as u8, 16))) } else { (0, None) };
-    Shown { text, cos, pals, backdrop: art.red, bright, back, bokeh: false, blend }
+    let bright = if f < 295 {
+        -ramp(&SWAP_IN, 177, f, 16)
+    } else {
+        ramp(&FADE_OUT, 295, f, 0)
+    };
+    let (back, blend) = if f >= 268 {
+        (2, Some((BLEND_SWAP_BURST, (f - 268).clamp(0, 16) as u8, 16)))
+    } else {
+        (0, None)
+    };
+    Shown {
+        text,
+        cos,
+        pals,
+        backdrop: art.red,
+        bright,
+        back,
+        bokeh: false,
+        blend,
+    }
 }
 
 // --- Tiles ------------------------------------------------------------------------------
@@ -970,7 +1097,14 @@ fn compose_swap(art: &Art, st: &Still, f: i32) -> Shown {
 /// A canvas in BG form, its tiles added to `tiles` (deduplicated, `index`;
 /// at most `limit`) and its map returned; a tile of several palettes takes
 /// `mix` (or the palette most of it is in), its colours the nearest there.
-fn to_tiles(cv: &Canvas, pals: &[[u16; 16]; 9], mix: Option<u8>, tiles: &mut Vec<u8>, index: &mut HashMap<[u8; 32], u16>, limit: usize) -> Vec<u16> {
+fn to_tiles(
+    cv: &Canvas,
+    pals: &[[u16; 16]; 9],
+    mix: Option<u8>,
+    tiles: &mut Vec<u8>,
+    index: &mut HashMap<[u8; 32], u16>,
+    limit: usize,
+) -> Vec<u16> {
     let mut map = vec![0u16; COLS * ROWS];
     for r in 0..ROWS {
         for c in 0..COLS {
@@ -994,7 +1128,11 @@ fn to_tiles(cv: &Canvas, pals: &[[u16; 16]; 9], mix: Option<u8>, tiles: &mut Vec
                     None => counts.push((p, 1)),
                 }
             }
-            let pal = if counts.len() > 1 { mix.unwrap_or_else(|| counts.iter().max_by_key(|e| e.1).unwrap().0) } else { counts[0].0 };
+            let pal = if counts.len() > 1 {
+                mix.unwrap_or_else(|| counts.iter().max_by_key(|e| e.1).unwrap().0)
+            } else {
+                counts[0].0
+            };
             let target = pals[(pal - 6) as usize];
             let mut t = [0u8; 32];
             for (i, &v) in px.iter().enumerate() {
@@ -1045,15 +1183,24 @@ const PAL_RAM: u32 = 0x0500_0000;
 /// offset every BG takes, BLDCNT, EVA, EVB, BLDY.
 const DISPCNT: u32 = 0x0300_30CC;
 const BGCNT: [u32; 4] = [0x0300_2B6C, 0x0300_1FE8, 0x0300_30B4, 0x0300_251C];
-const BGOFS: [u32; 8] = [0x0300_1FF8, 0x0300_1418, 0x0300_2B34, 0x0300_2F18, 0x0300_30A0, 0x0300_1400, 0x0300_200C, 0x0300_2000];
+const BGOFS: [u32; 8] = [
+    0x0300_1FF8,
+    0x0300_1418,
+    0x0300_2B34,
+    0x0300_2F18,
+    0x0300_30A0,
+    0x0300_1400,
+    0x0300_200C,
+    0x0300_2000,
+];
 const SHIFT: [u32; 2] = [0x0300_30D0, 0x0300_2B20];
 const BLDCNT: u32 = 0x0300_30E0;
 const EVA: u32 = 0x0300_2020;
 const EVB: u32 = 0x0300_2B28;
 const BLDY: u32 = 0x0300_1FFC;
 const SHADOWS: [u32; 19] = [
-    DISPCNT, BGCNT[0], BGCNT[1], BGCNT[2], BGCNT[3], BGOFS[0], BGOFS[1], BGOFS[2], BGOFS[3], BGOFS[4], BGOFS[5], BGOFS[6], BGOFS[7], SHIFT[0], SHIFT[1], BLDCNT,
-    EVA, EVB, BLDY,
+    DISPCNT, BGCNT[0], BGCNT[1], BGCNT[2], BGCNT[3], BGOFS[0], BGOFS[1], BGOFS[2], BGOFS[3], BGOFS[4], BGOFS[5],
+    BGOFS[6], BGOFS[7], SHIFT[0], SHIFT[1], BLDCNT, EVA, EVB, BLDY,
 ];
 const IO: u32 = 0x0400_0000;
 /// The layer and window bits (BG0..3, sprites, windows).
@@ -1143,7 +1290,12 @@ fn restore_shadows(core: &mut Core, ram: &Ram) {
         let v = saved(core, a);
         set16(core, IO + 8 + 2 * k as u32, v);
     }
-    let (c, a, b, y) = (saved(core, BLDCNT), saved(core, EVA), saved(core, EVB), saved(core, BLDY));
+    let (c, a, b, y) = (
+        saved(core, BLDCNT),
+        saved(core, EVA),
+        saved(core, EVB),
+        saved(core, BLDY),
+    );
     set16(core, IO + 0x50, c);
     set16(core, IO + 0x52, a | b << 8);
     set16(core, IO + 0x54, y);
@@ -1185,7 +1337,12 @@ fn give_back(core: &mut Core, ram: &Ram) {
     copy(core, BACKUP, VRAM, VRAM_LEN);
     copy(core, BACKUP_PAL, PAL_BUFFER, 0x200);
     copy(core, BACKUP_PAL + 0x200, PAL_RAM, 0x200);
-    for &a in [DISPCNT].iter().chain(BGCNT.iter()).chain(BGOFS.iter()).chain(SHIFT.iter()) {
+    for &a in [DISPCNT]
+        .iter()
+        .chain(BGCNT.iter())
+        .chain(BGOFS.iter())
+        .chain(SHIFT.iter())
+    {
         let v = saved(core, a);
         set16(core, a, v);
     }
@@ -1209,7 +1366,9 @@ pub fn hide(core: &mut Core, ram: &Ram) {
 fn faded(p: &[u16], bright: i8) -> Vec<u8> {
     let t = bright.unsigned_abs() as i32;
     let target = if bright > 0 { 31 } else { 0 };
-    p.iter().flat_map(|&c| bgr(rgb(c).map(|v| v + (target - v) * t / 16)).to_le_bytes()).collect()
+    p.iter()
+        .flat_map(|&c| bgr(rgb(c).map(|v| v + (target - v) * t / 16)).to_le_bytes())
+        .collect()
 }
 
 fn entries(m: &[u16]) -> Vec<u8> {
@@ -1272,7 +1431,12 @@ fn show(core: &mut Core, ram: &Ram, st: &Still, s: &Shown) {
     let cnt = |prio: u16, chars: u16, n: u16| prio | chars << 2 | (28 + n) << 8;
     let burst_up = s.back == 2;
     let cnts: [u16; 4] = if tag {
-        [cnt(0, 2, 0), cnt(if burst_up { 2 } else { 1 }, 2, 1), cnt(if burst_up { 3 } else { 2 }, 0, 2), cnt(if burst_up { 1 } else { 3 }, 0, 3)]
+        [
+            cnt(0, 2, 0),
+            cnt(if burst_up { 2 } else { 1 }, 2, 1),
+            cnt(if burst_up { 3 } else { 2 }, 0, 2),
+            cnt(if burst_up { 1 } else { 3 }, 0, 3),
+        ]
     } else {
         [cnt(0, 2, 0), cnt(1, 0, 1), cnt(2, 2, 2), cnt(3, 0, 3)]
     };
@@ -1333,7 +1497,13 @@ pub fn frame(core: &mut Core, ram: &Ram, s: &Screen, t: u16) -> (Option<u16>, bo
                 se(TagSe::MeterUp)
             } else if f >= 382 && (f - 382) % 2 == 0 && (f - 382) / 2 < p / 2 {
                 se(TagSe::Count)
-            } else if f >= start + 2 && (f - start - 2) % 4 == 0 && st.name.as_ref().is_some_and(|n| n.spans.get(letter as usize).is_some_and(|s| s.is_some())) {
+            } else if f >= start + 2
+                && (f - start - 2) % 4 == 0
+                && st
+                    .name
+                    .as_ref()
+                    .is_some_and(|n| n.spans.get(letter as usize).is_some_and(|s| s.is_some()))
+            {
                 se(TagSe::Letter)
             } else if f == 627 + sh {
                 se(TagSe::Burst)
@@ -1344,7 +1514,11 @@ pub fn frame(core: &mut Core, ram: &Ram, s: &Screen, t: u16) -> (Option<u16>, bo
                 // The map: dims, the bolts strike (crate::tag_thunder), then
                 // it whitens.
                 let dim = ((f - TAG_START) / 5).min(6) as u8;
-                let v = if f >= 257 { ramp(&TAG_MAP_WHITE, 257, f, 0) } else { -(dim as i8) };
+                let v = if f >= 257 {
+                    ramp(&TAG_MAP_WHITE, 257, f, 0)
+                } else {
+                    -(dim as i8)
+                };
                 give_back(core, ram);
                 if !crate::tag_thunder::frame(core, f, dim) {
                     map_brightness(core, v);
@@ -1442,14 +1616,31 @@ mod tests {
     fn everything_fits() {
         crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
         let art = art().expect("the screens' pictures");
-        let fits = |st: &Static, base: u16| st.map.iter().all(|&e| e & 0x3FF != 0) && st.tiles.len() / 32 + base as usize <= STATIC_TILES as usize;
+        let fits = |st: &Static, base: u16| {
+            st.map.iter().all(|&e| e & 0x3FF != 0) && st.tiles.len() / 32 + base as usize <= STATIC_TILES as usize
+        };
         assert!(fits(&window(&art.bokeh, 8, 40, 1, STATIC_SECOND, PAL_BOKEH, false), 1));
-        assert!(window(&art.bokeh, 8, 40, 1, STATIC_SECOND, PAL_BOKEH, false).tiles.len() / 32 < STATIC_SECOND as usize);
+        assert!(
+            window(&art.bokeh, 8, 40, 1, STATIC_SECOND, PAL_BOKEH, false)
+                .tiles
+                .len()
+                / 32
+                < STATIC_SECOND as usize
+        );
         for e in &art.emblems {
-            assert!(fits(&window(e, 8, 112, STATIC_SECOND, STATIC_TILES, PAL_BACK, true), STATIC_SECOND));
+            assert!(fits(
+                &window(e, 8, 112, STATIC_SECOND, STATIC_TILES, PAL_BACK, true),
+                STATIC_SECOND
+            ));
         }
-        assert!(fits(&window(&art.tag_burst, 8, 64, STATIC_SECOND, STATIC_TILES, PAL_BACK, false), STATIC_SECOND));
-        assert!(fits(&window(&art.swap_burst, 8, 8, 1, STATIC_TILES, PAL_BACK, false), 1));
+        assert!(fits(
+            &window(&art.tag_burst, 8, 64, STATIC_SECOND, STATIC_TILES, PAL_BACK, false),
+            STATIC_SECOND
+        ));
+        assert!(fits(
+            &window(&art.swap_burst, 8, 8, 1, STATIC_TILES, PAL_BACK, false),
+            1
+        ));
         let fig = |d: u8| {
             let (px, pal) = crate::ds_co_art::full_figure(d).unwrap();
             Arc::new(Figure { px, pal })
@@ -1457,7 +1648,15 @@ mod tests {
         let (andy, max) = (fig(2), fig(3));
         let st = Still {
             bokeh: Some(window(&art.bokeh, 8, 40, 1, STATIC_SECOND, PAL_BOKEH, false)),
-            emblem: Some(window(&art.emblems[0], 8, 112, STATIC_SECOND, STATIC_TILES, PAL_BACK, true)),
+            emblem: Some(window(
+                &art.emblems[0],
+                8,
+                112,
+                STATIC_SECOND,
+                STATIC_TILES,
+                PAL_BACK,
+                true,
+            )),
             burst: window(&art.tag_burst, 8, 64, STATIC_SECOND, STATIC_TILES, PAL_BACK, false),
             name: Some(set_name(&art.tag_font, b"Power Wrench")),
             mix: mix(&andy.pal, &max.pal),

@@ -7,10 +7,41 @@ pub const PLANS: &[(u16, &[(i16, i16, u8, u8, u16, u8, bool, bool)])] = &[
     (0x183, &[(0, -16, 16, 32, 136, 13, false, false)]),
     (0x184, &[(0, -16, 16, 32, 112, 13, false, false)]),
     (0x185, &[(0, -16, 16, 32, 120, 13, false, false)]),
-    (0x187, &[(-16, -16, 32, 32, 232, 13, false, false), (16, -16, 16, 32, 248, 13, false, false), (-16, 16, 32, 16, 256, 13, false, false), (16, 16, 16, 16, 264, 13, false, false)]),
-    (0x18a, &[(-16, -16, 32, 32, 989, 13, false, false), (16, -16, 16, 32, 1007, 13, false, false), (-16, 16, 32, 16, 1015, 13, false, false), (16, 16, 16, 16, 914, 13, false, false)]),
-    (0x18d, &[(-16, -32, 32, 64, 304, 13, false, false), (16, -32, 16, 32, 336, 13, false, false), (16, 0, 16, 32, 344, 13, false, false)]),
-    (0x190, &[(-16, -16, 32, 32, 268, 13, false, false), (16, -16, 16, 32, 284, 13, false, false), (-16, 16, 32, 16, 292, 13, false, false), (16, 16, 16, 16, 300, 13, false, false)]),
+    (
+        0x187,
+        &[
+            (-16, -16, 32, 32, 232, 13, false, false),
+            (16, -16, 16, 32, 248, 13, false, false),
+            (-16, 16, 32, 16, 256, 13, false, false),
+            (16, 16, 16, 16, 264, 13, false, false),
+        ],
+    ),
+    (
+        0x18a,
+        &[
+            (-16, -16, 32, 32, 989, 13, false, false),
+            (16, -16, 16, 32, 1007, 13, false, false),
+            (-16, 16, 32, 16, 1015, 13, false, false),
+            (16, 16, 16, 16, 914, 13, false, false),
+        ],
+    ),
+    (
+        0x18d,
+        &[
+            (-16, -32, 32, 64, 304, 13, false, false),
+            (16, -32, 16, 32, 336, 13, false, false),
+            (16, 0, 16, 32, 344, 13, false, false),
+        ],
+    ),
+    (
+        0x190,
+        &[
+            (-16, -16, 32, 32, 268, 13, false, false),
+            (16, -16, 16, 32, 284, 13, false, false),
+            (-16, 16, 32, 16, 292, 13, false, false),
+            (16, 16, 16, 16, 300, 13, false, false),
+        ],
+    ),
     // (the Black Crystal, tangoAW2's own: as the console draws it in Black Hole's missions)
     (0x192, &[(0, -16, 16, 32, 410, 13, false, false)]),
     (0x1a0, &[(0, 0, 16, 16, 160, 8, false, false)]),

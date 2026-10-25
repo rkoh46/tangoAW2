@@ -71,8 +71,13 @@ pub struct Row {
     help_text: &'static [u8],
 }
 
-pub const ROWS: [Row; 1] =
-    [Row { label: "Skills", diamond: 0xD5, value: crate::co_skills::VERSUS_RULE, help: 0x7302, help_text: b"Select ON to use the COs' skills.\0" }];
+pub const ROWS: [Row; 1] = [Row {
+    label: "Skills",
+    diamond: 0xD5,
+    value: crate::co_skills::VERSUS_RULE,
+    help: 0x7302,
+    help_text: b"Select ON to use the COs' skills.\0",
+}];
 const LAST: u8 = ROWS.len() as u8;
 
 /// Where each row goes from the Visuals row (its x, y).
@@ -295,7 +300,12 @@ fn sprite(core: &Core, id: u16) -> Option<(u32, u16)> {
     let bank = core.raw_read_8(pool + 4, -1) as u16;
     (0..n.min(31)).find_map(|k| {
         let e = pool + 8 + 4 * k;
-        (core.raw_read_16(e + 2, -1) == id).then(|| (layout(core, id), core.raw_read_16(e, -1).wrapping_add(bank.wrapping_sub(0x10) << 12)))
+        (core.raw_read_16(e + 2, -1) == id).then(|| {
+            (
+                layout(core, id),
+                core.raw_read_16(e, -1).wrapping_add(bank.wrapping_sub(0x10) << 12),
+            )
+        })
     })
 }
 
@@ -323,7 +333,10 @@ fn visuals(core: &Core) -> Option<(i32, i32)> {
     if !(0x0200_0000..0x0400_0000).contains(&obj) || core.raw_read_32(obj, -1) != RULE_SCRIPT {
         return None;
     }
-    Some((core.raw_read_16(obj + OBJ_X, -1) as i16 as i32, core.raw_read_16(obj + OBJ_Y, -1) as i16 as i32))
+    Some((
+        core.raw_read_16(obj + OBJ_X, -1) as i16 as i32,
+        core.raw_read_16(obj + OBJ_Y, -1) as i16 as i32,
+    ))
 }
 
 /// The rows are on screen: the Rules stage, its rows out (Visuals placed).
@@ -360,9 +373,18 @@ fn push_rows(core: &mut Core, layer: u32, vx: i32, vy: i32) {
         let (x, y) = (vx + PLACES[k].0, vy + PLACES[k].1);
         let selected = v == k + 1;
         if layer == 3 {
-            let Some((obj, oam2)) = sprite(core, row.diamond) else { continue };
+            let Some((obj, oam2)) = sprite(core, row.diamond) else {
+                continue;
+            };
             if selected {
-                push(core, 3, (x - 16) as u16 & 0x1FF, ((y - 16) as u16 & 0xFF) | 0x300, obj, oam2);
+                push(
+                    core,
+                    3,
+                    (x - 16) as u16 & 0x1FF,
+                    ((y - 16) as u16 & 0xFF) | 0x300,
+                    obj,
+                    oam2,
+                );
             } else {
                 push(core, 3, x as u16 & 0x1FF, y as u16 & 0xFF, obj, oam2);
             }
@@ -372,7 +394,14 @@ fn push_rows(core: &mut Core, layer: u32, vx: i32, vy: i32) {
         // words' pool).
         let bank = core.raw_read_8(POOLS + 0x88 * 5 + 4, -1) as u16;
         let label_obj = layout(core, 0xC1);
-        push(core, 0, x as u16 & 0x1FF, (y - 8) as u16 & 0xFF, label_obj, (LABEL_TILE + 8 * k as u32) as u16 | (bank.wrapping_sub(0x10) << 12));
+        push(
+            core,
+            0,
+            x as u16 & 0x1FF,
+            (y - 8) as u16 & 0xFF,
+            label_obj,
+            (LABEL_TILE + 8 * k as u32) as u16 | (bank.wrapping_sub(0x10) << 12),
+        );
         let word = if index(core, k) == 0 { 0xC8 } else { 0xCB };
         if let Some((obj, oam2)) = sprite(core, word) {
             push(core, 0, (x + 8) as u16 & 0x1FF, (y + 0xC) as u16 & 0xFF, obj, oam2);

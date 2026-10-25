@@ -57,5 +57,9 @@ pub fn effect_for(id: &str) -> &'static Effect {
 /// (hq2x...) as picked, the unfiltered picture as the pixel-scaling choice.
 pub fn effect_for_config(id: &str, pixel_scaling: &str) -> &'static Effect {
     let effect = effect_for(id);
-    if effect.id.is_empty() { scaler_for(pixel_scaling) } else { effect }
+    if effect.id.is_empty() {
+        scaler_for(pixel_scaling)
+    } else {
+        effect
+    }
 }

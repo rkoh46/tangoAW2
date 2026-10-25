@@ -154,7 +154,11 @@ pub fn behaviour(core: &Core, army: u32) -> u8 {
 
 pub fn set_behaviour(core: &mut Core, army: u32, b: u8) {
     if (1..=5).contains(&army) {
-        core.raw_write_8(BEHAVIOURS + army - 1, -1, if b == GENERAL { 0 } else { b.min(DEFENSE) + 1 });
+        core.raw_write_8(
+            BEHAVIOURS + army - 1,
+            -1,
+            if b == GENERAL { 0 } else { b.min(DEFENSE) + 1 },
+        );
     }
 }
 
@@ -385,8 +389,20 @@ pub(crate) struct Stats {
 
 pub(crate) fn stats(t: u8) -> Stats {
     match crate::roster::ds_record(t) {
-        Some(r) => Stats { group: r[0x1F], min_range: r[0x14], max_range: r[0x15], moves: r[0x10], category: r[0x22] },
-        None => Stats { group: 0, min_range: 0, max_range: 0, moves: 0, category: 0 },
+        Some(r) => Stats {
+            group: r[0x1F],
+            min_range: r[0x14],
+            max_range: r[0x15],
+            moves: r[0x10],
+            category: r[0x22],
+        },
+        None => Stats {
+            group: 0,
+            min_range: 0,
+            max_range: 0,
+            moves: 0,
+            category: 0,
+        },
     }
 }
 
@@ -622,7 +638,13 @@ impl Board {
     pub fn moves(&self, army: u32, t: u8) -> i32 {
         let base = stats(t).moves as i32;
         base + if self.abilities {
-            crate::co_roster::stat(self.co[army as usize % 6], self.mode[army as usize % 6], t, crate::co_roster::MOVE).unwrap_or(0)
+            crate::co_roster::stat(
+                self.co[army as usize % 6],
+                self.mode[army as usize % 6],
+                t,
+                crate::co_roster::MOVE,
+            )
+            .unwrap_or(0)
         } else {
             0
         }
@@ -632,7 +654,13 @@ impl Board {
     pub fn max_range(&self, army: u32, t: u8) -> i32 {
         let s = stats(t);
         let bonus = if self.abilities && s.max_range > 1 {
-            crate::co_roster::stat(self.co[army as usize % 6], self.mode[army as usize % 6], t, crate::co_roster::RANGE).unwrap_or(0)
+            crate::co_roster::stat(
+                self.co[army as usize % 6],
+                self.mode[army as usize % 6],
+                t,
+                crate::co_roster::RANGE,
+            )
+            .unwrap_or(0)
         } else {
             0
         };
@@ -723,8 +751,13 @@ impl Board {
         if !self.abilities {
             return 0;
         }
-        let co = if slot == 0 { Some(self.co[army as usize % 6]) } else { crate::tag::partner(core, army) };
-        co.and_then(|c| crate::co_roster::stat(c, mode, t, crate::co_roster::FIREPOWER)).unwrap_or(0)
+        let co = if slot == 0 {
+            Some(self.co[army as usize % 6])
+        } else {
+            crate::tag::partner(core, army)
+        };
+        co.and_then(|c| crate::co_roster::stat(c, mode, t, crate::co_roster::FIREPOWER))
+            .unwrap_or(0)
     }
 
     /// `Co_GetSlotChartDamage`: a weapon's chart value with the firepower.

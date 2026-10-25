@@ -42,12 +42,21 @@ fn after(cond: Cond, then: Vec<Action>) -> Trigger {
 /// death, is decided before a trigger can play the victory scene and earn the bond), or its HQ is the
 /// player's.
 fn beaten(enemy: u8, hq: (u8, u8)) -> Cond {
-    Cond::Any(vec![Cond::ArmyUnitsAtMost { army: enemy, n: 1 }, Cond::OwnerAt { x: hq.0, y: hq.1, army: 1 }])
+    Cond::Any(vec![
+        Cond::ArmyUnitsAtMost { army: enemy, n: 1 },
+        Cond::OwnerAt {
+            x: hq.0,
+            y: hq.1,
+            army: 1,
+        },
+    ])
 }
 
 /// The units of a built map's text file (its deployment), as the mission's own list.
 fn built_units(name: &str) -> Vec<UnitDef> {
-    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else { return Vec::new() };
+    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else {
+        return Vec::new();
+    };
     m.units
         .iter()
         .map(|u| {
@@ -63,7 +72,6 @@ fn built_units(name: &str) -> Vec<UnitDef> {
         .collect()
 }
 
-
 /// The player's lead CO is Sturm.
 fn lead_is_sturm(core: &mut Core) -> bool {
     crate::tag::army_co_of(core, 1) == co::STURM
@@ -72,8 +80,14 @@ fn lead_is_sturm(core: &mut Core) -> bool {
 /// A win that also earns the recruit's bond when `affinity` holds for the player's CO.
 fn win_with_bond(done: Cond, affinity: fn(&mut Core) -> bool, bond: u8) -> Vec<Trigger> {
     vec![
-        after(Cond::All(vec![done.clone(), Cond::Custom(affinity)]), vec![Action::EarnBond(bond), Action::Win]),
-        after(Cond::All(vec![done, Cond::Not(Box::new(Cond::Custom(affinity)))]), vec![Action::Win]),
+        after(
+            Cond::All(vec![done.clone(), Cond::Custom(affinity)]),
+            vec![Action::EarnBond(bond), Action::Win],
+        ),
+        after(
+            Cond::All(vec![done, Cond::Not(Box::new(Cond::Custom(affinity)))]),
+            vec![Action::Win],
+        ),
     ]
 }
 
@@ -95,7 +109,11 @@ fn cpu_roles(units: Vec<UnitDef>, holds: impl Fn(&UnitDef) -> bool) -> Vec<UnitD
                         unit::ARTILLERY | unit::ROCKETS | unit::MISSILES => 4,
                         _ => {
                             vehicles += 1;
-                            if vehicles % 3 == 0 { 1 } else { 4 }
+                            if vehicles % 3 == 0 {
+                                1
+                            } else {
+                                4
+                            }
                         }
                     }
                 };
@@ -133,7 +151,9 @@ fn bh17() -> MissionDef {
     m.map = MapSrc::Built("bh17");
     // Jugger's roles: his Md Tanks, Mech and field Infantry advance by the odds; the Missiles (fire from
     // behind), the Neotank (the HQ's anchor) and the two Infantry at the HQ hold.
-    m.units = cpu_roles(built_units("bh17"), |u| u.kind == unit::NEOTANK || (u.kind == unit::INFANTRY && u.x >= 21));
+    m.units = cpu_roles(built_units("bh17"), |u| {
+        u.kind == unit::NEOTANK || (u.kind == unit::INFANTRY && u.x >= 21)
+    });
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(9000),
         // Jugger in Blue Moon's colours; Grit, the sniper, babysits him.
@@ -152,8 +172,14 @@ fn bh17() -> MissionDef {
     ];
     // Jugger's bond: Hawke is in the player's pair (lead or partner).
     let jugger_down = beaten(2, (21, 9));
-    m.triggers.push(after(Cond::All(vec![jugger_down.clone(), Cond::PlayerHas(co::HAWKE)]), vec![Action::EarnBond(4), Action::Win]));
-    m.triggers.push(after(Cond::All(vec![jugger_down, Cond::Not(Box::new(Cond::PlayerHas(co::HAWKE)))]), vec![Action::Win]));
+    m.triggers.push(after(
+        Cond::All(vec![jugger_down.clone(), Cond::PlayerHas(co::HAWKE)]),
+        vec![Action::EarnBond(4), Action::Win],
+    ));
+    m.triggers.push(after(
+        Cond::All(vec![jugger_down, Cond::Not(Box::new(Cond::PlayerHas(co::HAWKE)))]),
+        vec![Action::Win],
+    ));
     m.recruits = vec![roster::JUGGER];
     m.needs = Needs::All(vec!["bh16"]);
     m.flag = FLAGS[0];
@@ -183,7 +209,11 @@ fn bh18() -> MissionDef {
         on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m18_day10"))]),
     ];
     // Win: rout Flak, or take the throne in the arena's heart. Flak's bond: Sturm leads.
-    m.triggers.extend(win_with_bond(Cond::Any(vec![beaten(2, (10, 1)), Cond::OwnerAt { x: 10, y: 10, army: 1 }]), lead_is_sturm, 5));
+    m.triggers.extend(win_with_bond(
+        Cond::Any(vec![beaten(2, (10, 1)), Cond::OwnerAt { x: 10, y: 10, army: 1 }]),
+        lead_is_sturm,
+        5,
+    ));
     m.recruits = vec![roster::FLAK];
     m.needs = Needs::All(vec!["bh17"]);
     m.flag = FLAGS[1];
@@ -227,8 +257,22 @@ fn bh19() -> MissionDef {
     m.triggers = vec![
         on_day(4, None, vec![Action::Scene(crate::bh_text::scene("m19_day4"))]),
         // Sasha's funds: +6000 on days 8 and 16.
-        on_day(8, None, vec![Action::AddFunds { army: 2, funds: 6000 }, Action::Scene(crate::bh_text::scene("m19_day8"))]),
-        on_day(16, None, vec![Action::AddFunds { army: 2, funds: 6000 }, Action::Scene(crate::bh_text::scene("m19_day16"))]),
+        on_day(
+            8,
+            None,
+            vec![
+                Action::AddFunds { army: 2, funds: 6000 },
+                Action::Scene(crate::bh_text::scene("m19_day8")),
+            ],
+        ),
+        on_day(
+            16,
+            None,
+            vec![
+                Action::AddFunds { army: 2, funds: 6000 },
+                Action::Scene(crate::bh_text::scene("m19_day16")),
+            ],
+        ),
         after(beaten(2, (29, 12)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh17"]);
@@ -282,7 +326,11 @@ fn bh20() -> MissionDef {
     m.after = crate::bh_text::chain(&["m20_map", "m20_sturm"]);
     // The sea front's winner reports to the main front as the tag partner (any CO the player picked).
     m.triggers = vec![
-        Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m20_front2_post"))]),
+        Trigger::new(
+            When::TurnStart,
+            Cond::Custom(second_front_won),
+            vec![Action::Scene(crate::bh_text::scene("m20_front2_post"))],
+        ),
         on_day(8, None, vec![Action::Scene(crate::bh_text::scene("m20_day8"))]),
         after(beaten(2, (23, 9)), vec![Action::Win]),
     ];
@@ -316,7 +364,10 @@ fn is_empty_gun(kind: u8) -> bool {
 /// How many of the six empty guns have been supplied: they hold ammunition again (a unit record's bits
 /// 7..10 of its word at +4 are its ammo).
 fn supplied(core: &mut Core) -> usize {
-    units_of(core, 1).iter().filter(|u| is_empty_gun(u.1) && (core.raw_read_16(u.0 + 4, -1) >> 7) & 0xF > 0).count()
+    units_of(core, 1)
+        .iter()
+        .filter(|u| is_empty_gun(u.1) && (core.raw_read_16(u.0 + 4, -1) >> 7) & 0xF > 0)
+        .count()
 }
 
 /// The resupply is under way: four of the six empty guns have shells again (the counter-attack opens).
@@ -336,8 +387,12 @@ fn bh21() -> MissionDef {
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(3000),
         // Max (Orange Star) and Grit (Blue Moon) are allies.
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX)).team(2).funds(9000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT)).team(2).funds(9000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX))
+            .team(2)
+            .funds(9000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT))
+            .team(2)
+            .funds(9000),
     ];
     m.fog = true;
     m.day_limit = 0;
@@ -417,12 +472,12 @@ fn bh21() -> MissionDef {
         // The supply is cut: the convoys' APCs are all gone before the guns were refilled.
         after(
             Cond::Custom(supply_cut),
-            vec![
-                Action::Scene(crate::bh_text::scene("m21_supply_cut")),
-                Action::Lose,
-            ],
+            vec![Action::Scene(crate::bh_text::scene("m21_supply_cut")), Action::Lose],
         ),
-        after(Cond::All(vec![beaten(2, (25, 16)), beaten(3, (25, 4))]), vec![Action::Win]),
+        after(
+            Cond::All(vec![beaten(2, (25, 16)), beaten(3, (25, 4))]),
+            vec![Action::Win],
+        ),
     ];
     m.needs = Needs::All(vec!["bh20"]);
     m.flag = FLAGS[4];
@@ -478,7 +533,15 @@ pub fn missions() -> Vec<MissionDef> {
     // The day limit loses: the day after the last is the defeat (the header's counter only shows it).
     for m in v.iter_mut().filter(|m| m.key >= "bh17") {
         if m.day_limit > 0 {
-            let up = Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: m.day_limit + 1 }, vec![Action::Lose]).repeating();
+            let up = Trigger::new(
+                When::TurnStart,
+                Cond::EveryDays {
+                    n: 1000,
+                    from: m.day_limit + 1,
+                },
+                vec![Action::Lose],
+            )
+            .repeating();
             m.triggers.push(up);
         }
     }
@@ -490,8 +553,14 @@ fn dev_stub_bh16() -> MissionDef {
     let mut m = MissionDef::new("bh16", "Placeholder Sixteen");
     m.objective = "Rout the Yellow Comet force.";
     m.map = MapSrc::Ascii(&["1.........", "..ff..c...", "....mm....", "...c..c...", ".........2"]);
-    m.armies = vec![ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)), ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KINDLE))];
-    m.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 3)];
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KINDLE)),
+    ];
+    m.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 8, 3),
+    ];
     m.needs = Needs::All(vec!["bh02"]);
     m.flag = region::YELLOW_COMET[5];
     m.stars = 3;

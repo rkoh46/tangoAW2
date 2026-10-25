@@ -42,7 +42,11 @@ pub fn b64(data: &[u8]) -> String {
         let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
         out.push(T[(n >> 18) as usize & 63] as char);
         out.push(T[(n >> 12) as usize & 63] as char);
-        out.push(if c.len() > 1 { T[(n >> 6) as usize & 63] as char } else { '=' });
+        out.push(if c.len() > 1 {
+            T[(n >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
         out.push(if c.len() > 2 { T[n as usize & 63] as char } else { '=' });
     }
     out
@@ -51,19 +55,26 @@ pub fn b64(data: &[u8]) -> String {
 /// Starts listening; returns a description of where (the port picked for `0`). The accept loop runs on its own thread.
 pub fn start(settings: Settings, app: Sender<AppCall>) -> std::io::Result<String> {
     let listen = settings.listen.clone();
-    let shared = Arc::new(Shared { settings, app: Mutex::new(app) });
+    let shared = Arc::new(Shared {
+        settings,
+        app: Mutex::new(app),
+    });
     if !listen.is_empty() && listen.bytes().all(|c| c.is_ascii_digit()) {
         let port: u16 = listen.parse().map_err(|_| std::io::Error::other("bad port"))?;
         let l = std::net::TcpListener::bind(("127.0.0.1", port))?;
         let at = format!("127.0.0.1:{}", l.local_addr()?.port());
-        std::thread::Builder::new().name("ai-debug-accept".into()).spawn(move || {
-            for c in l.incoming().flatten() {
-                let _ = c.set_nodelay(true);
-                let Ok(w) = c.try_clone() else { continue };
-                let sh = shared.clone();
-                let _ = std::thread::Builder::new().name("ai-debug-conn".into()).spawn(move || serve(sh, c, w));
-            }
-        })?;
+        std::thread::Builder::new()
+            .name("ai-debug-accept".into())
+            .spawn(move || {
+                for c in l.incoming().flatten() {
+                    let _ = c.set_nodelay(true);
+                    let Ok(w) = c.try_clone() else { continue };
+                    let sh = shared.clone();
+                    let _ = std::thread::Builder::new()
+                        .name("ai-debug-conn".into())
+                        .spawn(move || serve(sh, c, w));
+                }
+            })?;
         Ok(at)
     } else {
         #[cfg(unix)]
@@ -72,13 +83,17 @@ pub fn start(settings: Settings, app: Sender<AppCall>) -> std::io::Result<String
             let _ = std::fs::remove_file(&listen);
             let l = std::os::unix::net::UnixListener::bind(&listen)?;
             let _ = std::fs::set_permissions(&listen, std::fs::Permissions::from_mode(0o600));
-            std::thread::Builder::new().name("ai-debug-accept".into()).spawn(move || {
-                for c in l.incoming().flatten() {
-                    let Ok(w) = c.try_clone() else { continue };
-                    let sh = shared.clone();
-                    let _ = std::thread::Builder::new().name("ai-debug-conn".into()).spawn(move || serve(sh, c, w));
-                }
-            })?;
+            std::thread::Builder::new()
+                .name("ai-debug-accept".into())
+                .spawn(move || {
+                    for c in l.incoming().flatten() {
+                        let Ok(w) = c.try_clone() else { continue };
+                        let sh = shared.clone();
+                        let _ = std::thread::Builder::new()
+                            .name("ai-debug-conn".into())
+                            .spawn(move || serve(sh, c, w));
+                    }
+                })?;
             Ok(format!("unix:{listen}"))
         }
         #[cfg(not(unix))]
@@ -105,7 +120,10 @@ struct Conn {
 
 fn serve<R: Read + Send + 'static, W: Write + Send + 'static>(sh: Arc<Shared>, r: R, w: W) {
     let out: Out = Arc::new(Mutex::new(Box::new(w)));
-    let mut conn = Conn { authed: sh.settings.token.is_none(), sub: None };
+    let mut conn = Conn {
+        authed: sh.settings.token.is_none(),
+        sub: None,
+    };
     let mut rd = BufReader::new(r);
     loop {
         let mut line = String::new();
@@ -148,7 +166,9 @@ fn serve<R: Read + Send + 'static, W: Write + Send + 'static>(sh: Arc<Shared>, r
 fn num(v: &Value, key: &str) -> Option<u64> {
     match v.get(key)? {
         Value::Number(n) => n.as_u64(),
-        Value::String(s) => s.strip_prefix("0x").map_or_else(|| s.parse().ok(), |h| u64::from_str_radix(h, 16).ok()),
+        Value::String(s) => s
+            .strip_prefix("0x")
+            .map_or_else(|| s.parse().ok(), |h| u64::from_str_radix(h, 16).ok()),
         _ => None,
     }
 }
@@ -156,15 +176,27 @@ fn num(v: &Value, key: &str) -> Option<u64> {
 fn keys_of(req: &Value) -> Result<u32, String> {
     match req.get("keys") {
         Some(Value::String(s)) => inject::parse_keys(s),
-        Some(Value::Array(a)) => a.iter().map(|k| inject::parse_keys(k.as_str().unwrap_or(""))).try_fold(0, |x, k| k.map(|k| x | k)),
+        Some(Value::Array(a)) => a
+            .iter()
+            .map(|k| inject::parse_keys(k.as_str().unwrap_or("")))
+            .try_fold(0, |x, k| k.map(|k| x | k)),
         _ => Err("`keys` is required (\"A\", \"A+B\" or [\"A\",\"B\"])".into()),
     }
 }
 
 fn app_call(sh: &Shared, name: &str, args: Value, timeout: Duration) -> Result<Value, String> {
     let (tx, rx) = channel();
-    sh.app.lock().unwrap().send(AppCall { name: name.into(), args, reply: tx }).map_err(|_| "the app is gone".to_string())?;
-    rx.recv_timeout(timeout).map_err(|_| format!("the app did not answer `{name}`"))?
+    sh.app
+        .lock()
+        .unwrap()
+        .send(AppCall {
+            name: name.into(),
+            args,
+            reply: tx,
+        })
+        .map_err(|_| "the app is gone".to_string())?;
+    rx.recv_timeout(timeout)
+        .map_err(|_| format!("the app did not answer `{name}`"))?
 }
 
 fn need_session() -> Result<super::LocalInfo, String> {
@@ -188,15 +220,19 @@ fn state_value(fresh: bool) -> Result<Value, String> {
             }
             Ok(v)
         }
-        None => Ok(json!({"phase": "none", "screen": "none", "mode": "none", "local": {"session": super::local().session}})),
+        None => {
+            Ok(json!({"phase": "none", "screen": "none", "mode": "none", "local": {"session": super::local().session}}))
+        }
     }
 }
 
 fn pick_fields(v: Value, fields: Option<&Vec<Value>>) -> Value {
     match (v, fields) {
-        (Value::Object(m), Some(f)) => {
-            Value::Object(m.into_iter().filter(|(k, _)| f.iter().any(|x| x.as_str() == Some(k)) || k == "tick" || k == "frame").collect())
-        }
+        (Value::Object(m), Some(f)) => Value::Object(
+            m.into_iter()
+                .filter(|(k, _)| f.iter().any(|x| x.as_str() == Some(k)) || k == "tick" || k == "frame")
+                .collect(),
+        ),
         (v, _) => v,
     }
 }
@@ -242,7 +278,10 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
             let l = need_session()?;
             if let Some(seat) = num(req, "seat") {
                 if online && seat as usize != l.seat {
-                    return Err(format!("this window is seat {}: a client drives its own peer (give seat {} its own port)", l.seat, seat));
+                    return Err(format!(
+                        "this window is seat {}: a client drives its own peer (give seat {} its own port)",
+                        l.seat, seat
+                    ));
                 }
             }
             match cmd {
@@ -253,27 +292,39 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
                     let wait = req.get("wait").and_then(Value::as_bool).unwrap_or(true);
                     super::with_injector(|i| i.press(keys, frames, wait.then_some(tx)));
                     if wait {
-                        rx.recv_timeout(Duration::from_secs_f64(frames as f64 / 60.0 + 10.0)).map_err(|_| "the press did not finish (is the app polling?)".to_string())?;
+                        rx.recv_timeout(Duration::from_secs_f64(frames as f64 / 60.0 + 10.0))
+                            .map_err(|_| "the press did not finish (is the app polling?)".to_string())?;
                     }
-                    Ok(json!({"keys": keys, "frames": frames, "seat": l.seat, "note": "a seat that is waiting has its keys dropped by the console"}))
+                    Ok(
+                        json!({"keys": keys, "frames": frames, "seat": l.seat, "note": "a seat that is waiting has its keys dropped by the console"}),
+                    )
                 }
                 "hold" => {
                     super::with_injector(|i| i.hold(keys_of(req).unwrap_or(0)));
                     keys_of(req).map(|k| json!({"held": k}))
                 }
                 "release" => {
-                    let keys = if req.get("keys").is_some() { keys_of(req)? } else { u32::MAX };
+                    let keys = if req.get("keys").is_some() {
+                        keys_of(req)?
+                    } else {
+                        u32::MAX
+                    };
                     super::with_injector(|i| i.release(keys));
                     Ok(json!({}))
                 }
                 _ => {
-                    let (x, y) = (num(req, "x").ok_or("`x` is required")?, num(req, "y").ok_or("`y` is required")?);
+                    let (x, y) = (
+                        num(req, "x").ok_or("`x` is required")?,
+                        num(req, "y").ok_or("`y` is required")?,
+                    );
                     let secs = req.get("timeout").and_then(Value::as_f64).unwrap_or(30.0);
                     let (tx, rx) = channel();
                     super::with_injector(|i| i.goto(x as u16, y as u16, Duration::from_secs_f64(secs), Some(tx)));
                     match rx.recv_timeout(Duration::from_secs_f64(secs + 5.0)) {
                         Ok(inject::Outcome::Done) => Ok(json!({"x": x, "y": y})),
-                        Ok(inject::Outcome::TimedOut(cx, cy)) => Err(format!("the cursor stopped at ({cx},{cy}) (not on the map, or the keys are being dropped)")),
+                        Ok(inject::Outcome::TimedOut(cx, cy)) => Err(format!(
+                            "the cursor stopped at ({cx},{cy}) (not on the map, or the keys are being dropped)"
+                        )),
                         Err(_) => Err("goto did not finish".into()),
                     }
                 }
@@ -281,7 +332,12 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
         }
         "type" => {
             need_session()?;
-            app_call(sh, "type", json!({"text": req.get("text").and_then(Value::as_str).ok_or("`text` is required")?}), Duration::from_secs(5))
+            app_call(
+                sh,
+                "type",
+                json!({"text": req.get("text").and_then(Value::as_str).ok_or("`text` is required")?}),
+                Duration::from_secs(5),
+            )
         }
         "wait_until" => {
             let cond = req.get("cond").ok_or("`cond` is required")?;
@@ -311,7 +367,12 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
         }
         "screenshot" => {
             need_session()?;
-            let r = app_call(sh, "screenshot", json!({"raw": req.get("raw").and_then(Value::as_bool).unwrap_or(false)}), Duration::from_secs(10))?;
+            let r = app_call(
+                sh,
+                "screenshot",
+                json!({"raw": req.get("raw").and_then(Value::as_bool).unwrap_or(false)}),
+                Duration::from_secs(10),
+            )?;
             if let Some(path) = req.get("path").and_then(Value::as_str) {
                 let png = r["png_b64"].as_str().and_then(b64_decode).ok_or("no picture")?;
                 std::fs::write(path, &png).map_err(|e| format!("{path}: {e}"))?;
@@ -329,11 +390,16 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
         }
         "poke" => {
             let addr = num(req, "addr").ok_or("`addr` is required")? as u32;
-            let hex = req.get("hex").and_then(Value::as_str).ok_or("`hex` is required (bytes as hex)")?;
+            let hex = req
+                .get("hex")
+                .and_then(Value::as_str)
+                .ok_or("`hex` is required (bytes as hex)")?;
             if hex.len() % 2 != 0 || hex.len() > 0x20000 {
                 return Err("`hex` is an even number of hex digits".into());
             }
-            let bytes: Vec<u8> = (0..hex.len() / 2).map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).map_err(|_| "bad hex".to_string())).collect::<Result<_, _>>()?;
+            let bytes: Vec<u8> = (0..hex.len() / 2)
+                .map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).map_err(|_| "bad hex".to_string()))
+                .collect::<Result<_, _>>()?;
             if online {
                 let force = req.get("force_offline").and_then(Value::as_bool).unwrap_or(false);
                 if !(force && sh.settings.write_online) {
@@ -356,7 +422,9 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
             let name = req.get("name").and_then(Value::as_str).ok_or("`name` is required")?;
             super::ask_console(CoreReq::CheckpointLoad { name: name.into() }, Duration::from_secs(10))
         }
-        "checkpoint_list" => Ok(json!({"dir": super::checkpoint_dir().display().to_string(), "checkpoints": super::checkpoint_list(&super::checkpoint_dir())})),
+        "checkpoint_list" => Ok(
+            json!({"dir": super::checkpoint_dir().display().to_string(), "checkpoints": super::checkpoint_list(&super::checkpoint_dir())}),
+        ),
         "start_offline" => {
             if online {
                 return Err("a session is running".into());
@@ -365,7 +433,10 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
         }
         "inject" => {
             if !sh.settings.test_mode {
-                return Err("refused: `inject` needs the app started with TANGOAW2_AI_DEBUG_TEST=1 (offline/test use only)".into());
+                return Err(
+                    "refused: `inject` needs the app started with TANGOAW2_AI_DEBUG_TEST=1 (offline/test use only)"
+                        .into(),
+                );
             }
             app_call(sh, "inject", req.clone(), Duration::from_secs(5))
         }
@@ -376,34 +447,41 @@ fn handle(sh: &Arc<Shared>, conn: &mut Conn, out: &Out, req: &Value) -> Result<V
         "events" => {
             let after = num(req, "after").unwrap_or(0);
             let evs = super::events_after(after, 500);
-            Ok(json!({"events": evs.iter().map(|(id, e)| with_eid(e, *id)).collect::<Vec<_>>(), "last": super::last_event_id()}))
+            Ok(
+                json!({"events": evs.iter().map(|(id, e)| with_eid(e, *id)).collect::<Vec<_>>(), "last": super::last_event_id()}),
+            )
         }
         "subscribe" => {
             if let Some(old) = conn.sub.take() {
                 old.store(false, Ordering::Relaxed);
             }
-            let filter: Option<Vec<String>> = req.get("events").and_then(Value::as_array).map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect());
+            let filter: Option<Vec<String>> = req
+                .get("events")
+                .and_then(Value::as_array)
+                .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect());
             let from = num(req, "after").unwrap_or_else(super::last_event_id);
             let alive = Arc::new(AtomicBool::new(true));
             conn.sub = Some(alive.clone());
             let out = out.clone();
-            std::thread::Builder::new().name("ai-debug-events".into()).spawn(move || {
-                let mut last = from;
-                while alive.load(Ordering::Relaxed) {
-                    for (id, e) in super::events_after(last, 200) {
-                        last = id;
-                        let kind = e["event"].as_str().unwrap_or("");
-                        if filter.as_ref().is_some_and(|f| !f.iter().any(|k| k == kind)) {
-                            continue;
+            std::thread::Builder::new()
+                .name("ai-debug-events".into())
+                .spawn(move || {
+                    let mut last = from;
+                    while alive.load(Ordering::Relaxed) {
+                        for (id, e) in super::events_after(last, 200) {
+                            last = id;
+                            let kind = e["event"].as_str().unwrap_or("");
+                            if filter.as_ref().is_some_and(|f| !f.iter().any(|k| k == kind)) {
+                                continue;
+                            }
+                            if !send(&out, &with_eid(&e, id)) {
+                                return;
+                            }
                         }
-                        if !send(&out, &with_eid(&e, id)) {
-                            return;
-                        }
+                        super::wait_changed(Duration::from_millis(250));
                     }
-                    super::wait_changed(Duration::from_millis(250));
-                }
-            })
-            .map_err(|e| e.to_string())?;
+                })
+                .map_err(|e| e.to_string())?;
             Ok(json!({"subscribed": true, "from": from, "kinds": EVENT_KINDS}))
         }
         "unsubscribe" => {
@@ -454,12 +532,44 @@ fn b64_decode(s: &str) -> Option<Vec<u8>> {
 }
 
 pub const COMMANDS: [&str; 25] = [
-    "hello", "ping", "auth", "state", "press", "hold", "release", "type", "goto", "wait_until", "screenshot", "peek", "poke", "hash",
-    "proc_list", "log_tail", "checkpoint_save", "checkpoint_load", "checkpoint_list", "start_offline", "inject", "events", "subscribe",
-    "unsubscribe", "net",
+    "hello",
+    "ping",
+    "auth",
+    "state",
+    "press",
+    "hold",
+    "release",
+    "type",
+    "goto",
+    "wait_until",
+    "screenshot",
+    "peek",
+    "poke",
+    "hash",
+    "proc_list",
+    "log_tail",
+    "checkpoint_save",
+    "checkpoint_load",
+    "checkpoint_list",
+    "start_offline",
+    "inject",
+    "events",
+    "subscribe",
+    "unsubscribe",
+    "net",
 ];
 
-pub const EVENT_KINDS: [&str; 9] = ["scene", "turn", "act", "hash", "error", "rollback", "link", "migration", "rejoin"];
+pub const EVENT_KINDS: [&str; 9] = [
+    "scene",
+    "turn",
+    "act",
+    "hash",
+    "error",
+    "rollback",
+    "link",
+    "migration",
+    "rejoin",
+];
 
 #[cfg(test)]
 mod tests {
@@ -486,7 +596,13 @@ mod tests {
     fn a_client_talks_to_the_server_and_the_token_is_enforced() {
         let (tx, _rx) = channel();
         let at = start(
-            Settings { listen: "0".into(), token: Some("sekrit".into()), test_mode: false, write_online: false, app_version: "t".into() },
+            Settings {
+                listen: "0".into(),
+                token: Some("sekrit".into()),
+                test_mode: false,
+                write_online: false,
+                app_version: "t".into(),
+            },
             tx,
         )
         .unwrap();
@@ -497,13 +613,22 @@ mod tests {
         let a = ask(&mut r, &mut w, json!({"id": 1, "cmd": "state"}));
         assert_eq!(a["ok"], false);
         assert_eq!(a["id"], 1);
-        assert_eq!(ask(&mut r, &mut w, json!({"cmd": "auth", "token": "nope"}))["ok"], false);
-        assert_eq!(ask(&mut r, &mut w, json!({"cmd": "auth", "token": "sekrit"}))["ok"], true);
+        assert_eq!(
+            ask(&mut r, &mut w, json!({"cmd": "auth", "token": "nope"}))["ok"],
+            false
+        );
+        assert_eq!(
+            ask(&mut r, &mut w, json!({"cmd": "auth", "token": "sekrit"}))["ok"],
+            true
+        );
         let a = ask(&mut r, &mut w, json!({"id": "x", "cmd": "state"}));
         assert_eq!(a["ok"], true);
         assert_eq!(a["state"]["phase"], "none");
         // inject is refused outside test mode, peek needs a console
-        assert_eq!(ask(&mut r, &mut w, json!({"cmd": "inject", "op": "clear"}))["ok"], false);
+        assert_eq!(
+            ask(&mut r, &mut w, json!({"cmd": "inject", "op": "clear"}))["ok"],
+            false
+        );
         let a = ask(&mut r, &mut w, json!({"cmd": "bogus"}));
         assert!(a["error"].as_str().unwrap().contains("unknown"));
     }
@@ -511,7 +636,17 @@ mod tests {
     #[test]
     fn the_server_listens_on_loopback_only() {
         let (tx, _rx) = channel();
-        let at = start(Settings { listen: "0".into(), token: None, test_mode: false, write_online: false, app_version: String::new() }, tx).unwrap();
+        let at = start(
+            Settings {
+                listen: "0".into(),
+                token: None,
+                test_mode: false,
+                write_online: false,
+                app_version: String::new(),
+            },
+            tx,
+        )
+        .unwrap();
         assert!(at.starts_with("127.0.0.1:"), "{at}");
     }
 }

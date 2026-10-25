@@ -97,7 +97,9 @@ pub fn departed(core: &Core) -> u8 {
 /// begun without them; `None` while it is played by the whole room.
 pub fn seat_order(core: &Core) -> Option<Vec<usize>> {
     let m = core.raw_read_8(ROSTER_M, -1) as usize;
-    (2..=8).contains(&m).then(|| (0..m).map(|k| core.raw_read_8(ORDER + k as u32, -1) as usize).collect())
+    (2..=8)
+        .contains(&m)
+        .then(|| (0..m).map(|k| core.raw_read_8(ORDER + k as u32, -1) as usize).collect())
 }
 
 /// Only one player is left in the room: the match is over for it.
@@ -217,7 +219,11 @@ pub fn tick(core: &mut Core, keys: &mut [u32]) {
         make_roster(core, n);
     }
     crate::online::note_order(seat_order(core));
-    let back = if backing_out(core) { core.raw_read_8(BACK_T, -1).wrapping_add(1) } else { 0 };
+    let back = if backing_out(core) {
+        core.raw_read_8(BACK_T, -1).wrapping_add(1)
+    } else {
+        0
+    };
     if core.raw_read_8(BACK_T, -1) != back {
         core.raw_write_8(BACK_T, -1, back);
     }
@@ -357,7 +363,10 @@ fn menu_items(core: &Core) -> Option<Vec<u8>> {
     if core.raw_read_8(MENU_STATE, -1) != 4 || core.raw_read_8(MENU_ITEMS - 1, -1) != 0xFF {
         return None;
     }
-    let items: Vec<u8> = (0..8).map(|r| core.raw_read_8(MENU_ITEMS + r, -1)).take_while(|&i| i != 0xFF).collect();
+    let items: Vec<u8> = (0..8)
+        .map(|r| core.raw_read_8(MENU_ITEMS + r, -1))
+        .take_while(|&i| i != 0xFF)
+        .collect();
     (!items.is_empty()).then_some(items)
 }
 
@@ -395,7 +404,10 @@ fn nearest_open(core: &Core, cx: i32, cy: i32) -> Option<(i32, i32)> {
 /// What to tap now, or 0 to let the screen settle.
 fn decide(core: &mut Core, end_turn: bool) -> u32 {
     // Progress: whatever the screen shows changed since the last look (a stuck yield backs out after ten seconds).
-    let (cx, cy) = (core.raw_read_16(CURSOR, -1) as u32, core.raw_read_16(CURSOR + 2, -1) as u32);
+    let (cx, cy) = (
+        core.raw_read_16(CURSOR, -1) as u32,
+        core.raw_read_16(CURSOR + 2, -1) as u32,
+    );
     let sig = core.raw_read_8(MENU_STATE, -1) as u32
         | (core.raw_read_8(MENU_CURSOR, -1) as u32) << 8
         | cx << 12
@@ -504,7 +516,10 @@ mod tests {
                 for host in 0..n {
                     let a = roster_order(n, host, gone);
                     assert_eq!(a, roster_order(n, host, gone));
-                    assert!(a.iter().all(|&s| gone & (1 << s) == 0), "a seat that left is not played");
+                    assert!(
+                        a.iter().all(|&s| gone & (1 << s) == 0),
+                        "a seat that left is not played"
+                    );
                     assert_eq!(a.len(), n - (gone as u32).count_ones() as usize);
                     if gone & (1 << host) == 0 {
                         assert_eq!(a[0], host);

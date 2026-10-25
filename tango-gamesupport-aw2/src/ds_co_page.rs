@@ -73,7 +73,9 @@ fn page_proc(core: &Core) -> Option<u32> {
     if core.raw_read_32(MAIN_LOOP, -1) != CO_PAGE_LOOP {
         return None;
     }
-    (PROC_POOL.0..PROC_POOL.1).step_by(PROC_SIZE as usize).find(|&p| core.raw_read_32(p, -1) == CO_PAGE_PROC)
+    (PROC_POOL.0..PROC_POOL.1)
+        .step_by(PROC_SIZE as usize)
+        .find(|&p| core.raw_read_32(p, -1) == CO_PAGE_PROC)
 }
 
 // --- State --------------------------------------------------------------------------
@@ -94,7 +96,15 @@ struct State {
     wall_saved: Vec<(u32, Vec<u8>)>,
 }
 
-static STATE: Mutex<State> = Mutex::new(State { open: false, page: 0, saved: Vec::new(), built: None, layers: None, pal: Vec::new(), wall_saved: Vec::new() });
+static STATE: Mutex<State> = Mutex::new(State {
+    open: false,
+    page: 0,
+    saved: Vec::new(),
+    built: None,
+    layers: None,
+    pal: Vec::new(),
+    wall_saved: Vec::new(),
+});
 
 pub fn is_open() -> bool {
     STATE.lock().map(|s| s.open).unwrap_or(false)
@@ -184,7 +194,8 @@ const WHITE: u16 = 0x7FFF;
 /// The UI bank: Dual Strike's page colours (white, the strip's reds and
 /// blues, the text's ink and edge).
 const UI_PALETTE: [u16; 16] = [
-    WHITE, WHITE, 0x631F, 0x421F, 0x14BF, 0x7BDD, 0x7F18, 0x7E10, 0x7D08, 0x77BF, 0x0000, 0x4210, 0x779B, 0x6B38, 0x5AF8, 0x3E11,
+    WHITE, WHITE, 0x631F, 0x421F, 0x14BF, 0x7BDD, 0x7F18, 0x7E10, 0x7D08, 0x77BF, 0x0000, 0x4210, 0x779B, 0x6B38,
+    0x5AF8, 0x3E11,
 ];
 
 const fn rgb15(r: u16, g: u16, b: u16) -> u16 {
@@ -228,7 +239,12 @@ pub struct Canvas {
 
 impl Canvas {
     fn new() -> Self {
-        Canvas { px: vec![0; 240 * 160], bank: vec![UI; 30 * 20], owned: vec![false; 30 * 20], pals: vec![UI_PALETTE; 8] }
+        Canvas {
+            px: vec![0; 240 * 160],
+            bank: vec![UI; 30 * 20],
+            owned: vec![false; 30 * 20],
+            pals: vec![UI_PALETTE; 8],
+        }
     }
     fn put(&mut self, x: i32, y: i32, bank: u8, v: u8) {
         if (0..240).contains(&x) && (0..160).contains(&y) {
@@ -396,7 +412,10 @@ fn chart_for(co: u8, mode: u8) -> Vec<ChartUnit> {
 
 /// A text as plain ASCII words in single spaces.
 fn plain(t: &[u8]) -> String {
-    let s: String = t.iter().map(|&c| if (0x20..0x7F).contains(&c) { c as char } else { ' ' }).collect();
+    let s: String = t
+        .iter()
+        .map(|&c| if (0x20..0x7F).contains(&c) { c as char } else { ' ' })
+        .collect();
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
@@ -475,7 +494,11 @@ impl<'a> Flow<'a> {
         for word in text.split(' ').filter(|w| !w.is_empty()) {
             let x0 = self.left_at(y) + if first { 0 } else { indent };
             let r = self.right_at(y);
-            let longer = if line.is_empty() { word.to_string() } else { format!("{line} {word}") };
+            let longer = if line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{line} {word}")
+            };
             if !line.is_empty() && x0 + self.f.width(&longer) > r {
                 out.push((y, std::mem::replace(&mut line, word.to_string())));
                 y += self.pitch;
@@ -494,7 +517,9 @@ impl<'a> Flow<'a> {
     fn para(&mut self, cv: &mut Canvas, text: &str, indent: i32) -> bool {
         let lines = self.lines(text, indent, self.y);
         let end = lines.last().map(|l| l.0 + INK_ROWS as i32).unwrap_or(self.y);
-        let wide = lines.iter().any(|(y, l)| self.left_at(*y) + self.f.width(l) > self.right_at(*y));
+        let wide = lines
+            .iter()
+            .any(|(y, l)| self.left_at(*y) + self.f.width(l) > self.right_at(*y));
         if end > BOTTOM || wide {
             self.overflow = true;
             return false;
@@ -560,7 +585,9 @@ fn build_art() -> Option<Art> {
         pad,
         back_pal: pal16(pack.arm9_at(0x0213_8C68, 32)?),
         units: pack.arm9_at(UNIT_ICONS, 128 * UNIT_ICON_COUNT)?.to_vec(),
-        unit_pals: (0..5).map(|k| Some(pal16(pack.arm9_at(UNIT_PALETTES + 32 * k, 32)?))).collect::<Option<Vec<_>>>()?,
+        unit_pals: (0..5)
+            .map(|k| Some(pal16(pack.arm9_at(UNIT_PALETTES + 32 * k, 32)?)))
+            .collect::<Option<Vec<_>>>()?,
     })
 }
 
@@ -631,19 +658,41 @@ const ICON_NONE: usize = 14;
 /// The BACK button's centre letter (Dual Strike's circle: fill `d`, edge `e`,
 /// letter `7`), from column 10 and row 9 of the 32 x 32 button.
 const B_LETTER: [&str; 12] = [
-    "eeeeeeeeed", "e777777777", "e777777777", "e77dddd777", "e77dddde77", "e777eeee7d", "e77777777d", "e77dddd777", "e77dddde77",
-    "e777eeee77", "e777777777", "e77777777d",
+    "eeeeeeeeed",
+    "e777777777",
+    "e777777777",
+    "e77dddd777",
+    "e77dddde77",
+    "e777eeee7d",
+    "e77777777d",
+    "e77dddd777",
+    "e77dddde77",
+    "e777eeee77",
+    "e777777777",
+    "e77777777d",
 ];
 
 /// A small star (yellow, for the power rows and the tag partners).
-const STAR: [&str; 7] = ["...e...", "..ece..", "eecccee", ".eccce.", ".eccce.", ".ec.ce.", ".e...e."];
+const STAR: [&str; 7] = [
+    "...e...", "..ece..", "eecccee", ".eccce.", ".eccce.", ".ec.ce.", ".e...e.",
+];
 
 fn hex(c: char) -> u8 {
     c.to_digit(16).unwrap_or(0) as u8
 }
 
-const COUNTER: Obstacle = Obstacle { x: 184, y: 32, w: 56, h: 8 };
-const BACK_BOX: Obstacle = Obstacle { x: 208, y: 128, w: 32, h: 32 };
+const COUNTER: Obstacle = Obstacle {
+    x: 184,
+    y: 32,
+    w: 56,
+    h: 8,
+};
+const BACK_BOX: Obstacle = Obstacle {
+    x: 208,
+    y: 128,
+    w: 32,
+    h: 32,
+};
 
 /// Dual Strike's strip, tabs, face, counter and BACK button: what every page
 /// has. `page` is 0-based.
@@ -666,7 +715,12 @@ fn frame(cv: &mut Canvas, a: &Art, v: &View, page: usize) {
                 for x in 0..8 {
                     let v = (tile[4 * y as usize + x as usize / 2] >> (4 * (x & 1))) & 15;
                     // (the strip's own white: the wall shows around the strip, not through it)
-                    cv.put(8 + 8 * c as i32 + x, 8 * r as i32 + y, UI, if v == 0 && (1..27).contains(&c) { 1 } else { v });
+                    cv.put(
+                        8 + 8 * c as i32 + x,
+                        8 * r as i32 + y,
+                        UI,
+                        if v == 0 && (1..27).contains(&c) { 1 } else { v },
+                    );
                 }
             }
         }
@@ -788,7 +842,28 @@ struct Cfg {
     lead: i32,
 }
 
-const CFGS: [Cfg; 4] = [Cfg { pitch: 14, gap: 8, lead: 10 }, Cfg { pitch: 14, gap: 4, lead: 5 }, Cfg { pitch: 13, gap: 2, lead: 0 }, Cfg { pitch: 12, gap: 0, lead: 0 }];
+const CFGS: [Cfg; 4] = [
+    Cfg {
+        pitch: 14,
+        gap: 8,
+        lead: 10,
+    },
+    Cfg {
+        pitch: 14,
+        gap: 4,
+        lead: 5,
+    },
+    Cfg {
+        pitch: 13,
+        gap: 2,
+        lead: 0,
+    },
+    Cfg {
+        pitch: 12,
+        gap: 0,
+        lead: 0,
+    },
+];
 
 /// Page 1: the bio, Hit and Miss and the day to day text, over the page's full width.
 fn description(f: &Font, a: &Art, v: &View, page: usize, cfg: Cfg, bio: &[String], d2d: &[String]) -> Option<Canvas> {
@@ -796,7 +871,13 @@ fn description(f: &Font, a: &Art, v: &View, page: usize, cfg: Cfg, bio: &[String
     frame(&mut cv, a, v, page);
     // (Dual Strike's page has no picture of the CO in the text: it runs the full width under the strip, whose corner has the face)
     let obstacles = vec![COUNTER, BACK_BOX];
-    let mut fl = Flow { f, obstacles, y: TEXT_TOP, pitch: cfg.pitch, overflow: false };
+    let mut fl = Flow {
+        f,
+        obstacles,
+        y: TEXT_TOP,
+        pitch: cfg.pitch,
+        overflow: false,
+    };
     for (k, p) in bio.iter().enumerate() {
         if k == 1 {
             fl.y += cfg.lead;
@@ -816,7 +897,10 @@ fn description(f: &Font, a: &Art, v: &View, page: usize, cfg: Cfg, bio: &[String
 
 /// Shorter wordings, tried in turn while a text is too long.
 const SHORTER: [(&str, &str); 9] = [
-    ("Adept at making quick decisions, he stores up energy", "He stores up energy"),
+    (
+        "Adept at making quick decisions, he stores up energy",
+        "He stores up energy",
+    ),
     (" at a faster rate than", " faster than"),
     (" is greatly increased", " rises greatly"),
     (" is increased", " rises"),
@@ -902,7 +986,13 @@ fn page_powers(f: &Font, a: &Art, v: &View) -> Canvas {
         for (pitch, gap) in [(14, 4), (14, 2), (13, 2), (13, 0), (12, 0)] {
             let mut cv = Canvas::new();
             frame(&mut cv, a, v, 2);
-            let mut fl = Flow { f, obstacles: vec![COUNTER, BACK_BOX], y: 32, pitch, overflow: false };
+            let mut fl = Flow {
+                f,
+                obstacles: vec![COUNTER, BACK_BOX],
+                y: 32,
+                pitch,
+                overflow: false,
+            };
             let mut ok = true;
             for (k, (name, _, stars)) in blocks.iter().enumerate() {
                 if !name.is_empty() {
@@ -940,7 +1030,12 @@ fn page_powers(f: &Font, a: &Art, v: &View) -> Canvas {
 
 /// Page `page` (0..3) of the CO page for `v`; `None` without the pack.
 /// The INFO button (Dual Strike's, res_tpicon_lang_E's first 16 tiles) above BACK.
-const INFO_BOX: Obstacle = Obstacle { x: 208, y: 96, w: 32, h: 32 };
+const INFO_BOX: Obstacle = Obstacle {
+    x: 208,
+    y: 96,
+    w: 32,
+    h: 32,
+};
 
 fn info_button(cv: &mut Canvas, a: &Art) {
     cv.tiles(INFO_BOX.x, INFO_BOX.y, &a.pad[..32 * 16], 32, 32, BACK);
@@ -994,7 +1089,12 @@ pub fn rgba(cv: &Canvas) -> Vec<u8> {
                 Some(w) if i == 0 && y >= 32 => w.pix[240 * y + x],
                 _ => pals[b][i],
             };
-            out.extend_from_slice(&[((c & 31) * 255 / 31) as u8, (((c >> 5) & 31) * 255 / 31) as u8, (((c >> 10) & 31) * 255 / 31) as u8, 255]);
+            out.extend_from_slice(&[
+                ((c & 31) * 255 / 31) as u8,
+                (((c >> 5) & 31) * 255 / 31) as u8,
+                (((c >> 10) & 31) * 255 / 31) as u8,
+                255,
+            ]);
         }
     }
     out
@@ -1056,7 +1156,8 @@ fn body_of(top: &[u8], bottom: &[u8]) -> Vec<u8> {
             let Some(t) = data.get(32 * k..32 * k + 32) else { return };
             for y in 0..8 {
                 for x in 0..8 {
-                    px[128 * (y0 + 8 * (k / tw) + y) + x0 + 8 * (k % tw) + x] = (t[4 * y + x / 2] >> (4 * (x & 1))) & 15;
+                    px[128 * (y0 + 8 * (k / tw) + y) + x0 + 8 * (k % tw) + x] =
+                        (t[4 * y + x / 2] >> (4 * (x & 1))) & 15;
                 }
             }
         }
@@ -1074,7 +1175,9 @@ fn portrait_of(a: &crate::ds_co_art::CoArt) -> Portrait {
     let mut mug = vec![0u8; 48 * 16];
     // The strip shows the face's third and fourth tile rows (the eyes).
     for k in 0..12 {
-        let Some(t) = a.face[0].get(32 * (12 + k)..32 * (12 + k) + 32) else { break };
+        let Some(t) = a.face[0].get(32 * (12 + k)..32 * (12 + k) + 32) else {
+            break;
+        };
         for y in 0..8 {
             for x in 0..8 {
                 mug[48 * (8 * (k / 6) + y) + 8 * (k % 6) + x] = (t[4 * y + x / 2] >> (4 * (x & 1))) & 15;
@@ -1088,7 +1191,11 @@ fn portrait_of(a: &crate::ds_co_art::CoArt) -> Portrait {
             *v = 0;
         }
     }
-    Portrait { body: body_of(&a.body_top, &a.body_bottom), mug, pal: pal16(&a.palette) }
+    Portrait {
+        body: body_of(&a.body_top, &a.body_bottom),
+        mug,
+        pal: pal16(&a.palette),
+    }
 }
 
 /// The CO's pictures as the game's presentation table holds them (Sturm's,
@@ -1128,7 +1235,9 @@ fn string(t: Option<Vec<u8>>) -> String {
 /// record is Versus' own: the campaigns and the War Room leave it as it was, with a count that is not the battle's).
 fn battle_armies(core: &Core) -> u32 {
     let players = crate::five::players(core);
-    let n = (1..=5u32).take_while(|k| (1..=2).contains(&core.raw_read_8(players + 0x3C * k + 0x1B, -1))).count() as u32;
+    let n = (1..=5u32)
+        .take_while(|k| (1..=2).contains(&core.raw_read_8(players + 0x3C * k + 0x1B, -1)))
+        .count() as u32;
     n.max(1)
 }
 
@@ -1138,10 +1247,25 @@ fn battle_armies(core: &Core) -> u32 {
 pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
     use crate::co_new::{self, CLONE_ANDY, CRUMB};
     let ds = crate::co_roster::ds_co(co);
-    let name = co_new::ds_name(co).map(|n| plain(&n)).unwrap_or_else(|| if co == crate::sturm_pairs::STURM { "Sturm".into() } else { format!("CO {co}") });
-    let text = |off: u32| ds.and_then(|d| co_new::ds_text(co_new::record_ref(d, off))).unwrap_or_default();
-    let (mut bio, mut d2d, mut cop, mut scop, mut cop_name, mut scop_name) =
-        (text(0x04), text(0x08), text(0x0C), text(0x10), string(Some(text(0x120))), string(Some(text(0x1A0))));
+    let name = co_new::ds_name(co).map(|n| plain(&n)).unwrap_or_else(|| {
+        if co == crate::sturm_pairs::STURM {
+            "Sturm".into()
+        } else {
+            format!("CO {co}")
+        }
+    });
+    let text = |off: u32| {
+        ds.and_then(|d| co_new::ds_text(co_new::record_ref(d, off)))
+            .unwrap_or_default()
+    };
+    let (mut bio, mut d2d, mut cop, mut scop, mut cop_name, mut scop_name) = (
+        text(0x04),
+        text(0x08),
+        text(0x0C),
+        text(0x10),
+        string(Some(text(0x120))),
+        string(Some(text(0x1A0))),
+    );
     if co == CRUMB {
         bio = crate::crumb::BIO.to_vec();
         d2d = crate::crumb::DAY_TO_DAY.to_vec();
@@ -1190,7 +1314,10 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
     // (the army's colour, and the power the page's CO is in: a partner's page shows its day to day numbers)
     let (mut colour, mut mode, mut skin) = (0usize, 0u8, None);
     if let (Some(c), Some(army)) = (core, army) {
-        colour = (c.raw_read_8(crate::five::players(c) + 0x3C * army + 0x1A, -1).clamp(1, 5) - 1) as usize;
+        colour = (c
+            .raw_read_8(crate::five::players(c) + 0x3C * army + 0x1A, -1)
+            .clamp(1, 5)
+            - 1) as usize;
         skin = crate::army_skin::skin_on(c, colour as u8 + 1);
         let (active, m) = crate::co_roster::army_co(c, army);
         if active == co {
@@ -1206,7 +1333,10 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         let on_partner = c.raw_read_8(crate::tag_extras::STATE + 0x10, -1) == 1;
         for k in 1..=battle_armies(c) {
             let (active, partner) = (crate::tag::army_co_of(c, k), crate::tag::partner(c, k));
-            let mut pair = [Some(crate::custom_campaign::country(active)), partner.map(crate::custom_campaign::country)];
+            let mut pair = [
+                Some(crate::custom_campaign::country(active)),
+                partner.map(crate::custom_campaign::country),
+            ];
             if k == army {
                 if on_partner && partner.is_some() {
                     pair.swap(0, 1);
@@ -1329,7 +1459,10 @@ fn layer_of(cv: &Canvas) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
         p[white[b] as usize] = WHITE;
         p[0] = WHITE;
     }
-    let pal = pals.iter().flat_map(|p| p.iter().flat_map(|c| c.to_le_bytes())).collect();
+    let pal = pals
+        .iter()
+        .flat_map(|p| p.iter().flat_map(|c| c.to_le_bytes()))
+        .collect();
     if tiles.is_empty() {
         tiles.push([0u8; 32]);
     }
@@ -1411,14 +1544,33 @@ fn draw(core: &mut Core, st: &mut State, army: u32, co: u8) {
             use std::io::Write;
             if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
                 let skills: Vec<String> = view.skills.iter().map(|(id, n, _)| format!("{id}={n}")).collect();
-                let tabs: Vec<String> = view.tabs.iter().map(|p| p.iter().map(|c| c.map_or("-".to_string(), |c| c.to_string())).collect::<Vec<_>>().join("")).collect();
-                let _ = writeln!(f, "ds_co_page: co {co} page {} fitted {} skills {} tabs {} selected {}", st.page + 1, fallbacks() == before, skills.join(","), tabs.join(","), view.tab);
+                let tabs: Vec<String> = view
+                    .tabs
+                    .iter()
+                    .map(|p| {
+                        p.iter()
+                            .map(|c| c.map_or("-".to_string(), |c| c.to_string()))
+                            .collect::<Vec<_>>()
+                            .join("")
+                    })
+                    .collect();
+                let _ = writeln!(
+                    f,
+                    "ds_co_page: co {co} page {} fitted {} skills {} tabs {} selected {}",
+                    st.page + 1,
+                    fallbacks() == before,
+                    skills.join(","),
+                    tabs.join(","),
+                    view.tab
+                );
             }
         }
         let (tiles, tilemap, pal) = layer_of(&cv);
         st.built = Some((key, tiles, tilemap, pal));
     }
-    let Some((_, tiles, tilemap, pal)) = &st.built else { return };
+    let Some((_, tiles, tilemap, pal)) = &st.built else {
+        return;
+    };
     write_if_changed(core, chars, tiles);
     write_if_changed(core, map, tilemap);
     write_if_changed(core, PAL_BUFFER, pal);
@@ -1522,7 +1674,11 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
         Ok(s) => s,
         Err(e) => e.into_inner(),
     };
-    let proc = if on && crate::wasteland::ds_graphics(core) { page_proc(core) } else { None };
+    let proc = if on && crate::wasteland::ds_graphics(core) {
+        page_proc(core)
+    } else {
+        None
+    };
     let Some(proc) = proc else {
         if st.open {
             close(core, &mut st);
@@ -1584,7 +1740,10 @@ mod tests {
         assert_eq!(p, ["A young CO who tanks.", "Hit: Clubbin'", "Miss: Easy listening"]);
         // AW2's "Hits:" too, and plain text stays one paragraph.
         assert_eq!(paragraphs(b"Likes it.\rHits: Ramen\rMiss: Fondue").len(), 3);
-        assert_eq!(paragraphs(b"Restores 2 HP\rto all units."), ["Restores 2 HP to all units."]);
+        assert_eq!(
+            paragraphs(b"Restores 2 HP\rto all units."),
+            ["Restores 2 HP to all units."]
+        );
     }
 
     #[test]
@@ -1614,7 +1773,10 @@ mod tests {
             for col in 0..*n as i32 {
                 let (x0, x1) = (8 + 48 * col, 8 + 48 * col + 40);
                 for o in [INFO_BOX, BACK_BOX] {
-                    assert!(x1 <= o.x || x0 >= o.x + o.w || y + 16 <= o.y || y >= o.y + o.h, "row {row} column {col} under a button");
+                    assert!(
+                        x1 <= o.x || x0 >= o.x + o.w || y + 16 <= o.y || y >= o.y + o.h,
+                        "row {row} column {col} under a button"
+                    );
                 }
             }
         }
@@ -1630,17 +1792,25 @@ mod tests {
         let unit = |c: &[ChartUnit], icon: usize| *c.iter().find(|u| u.icon == icon).unwrap();
         // (icons: 24 Infantry, 1 Tank, 4 Artillery, 3 APC)
         let max = chart_for(2, 0);
-        assert_eq!((unit(&max, 24).attack, unit(&max, 1).attack, unit(&max, 4).range), (Some(0), Some(4), -1));
+        assert_eq!(
+            (unit(&max, 24).attack, unit(&max, 1).attack, unit(&max, 4).range),
+            (Some(0), Some(4), -1)
+        );
         assert_eq!(unit(&max, 3).attack, None, "an APC has no attack gauge");
         let grit = chart_for(5, 0);
-        assert_eq!((unit(&grit, 1).attack, unit(&grit, 4).attack, unit(&grit, 4).range), (Some(-4), Some(4), 1));
+        assert_eq!(
+            (unit(&grit, 1).attack, unit(&grit, 4).attack, unit(&grit, 4).range),
+            (Some(-4), Some(4), 1)
+        );
         // Jake (79): no range change on a day to day turn (Dual Strike's own page for him shows no "range" note, checked in the
         // clean game), +1 on the indirect units under his powers; a note is the CO's range stat, nothing else.
         let jake = (chart_for(79, 0), chart_for(79, 1));
         assert!(jake.0.iter().all(|u| u.range == 0), "Jake: no range notes day to day");
         assert_eq!(unit(&jake.1, 4).range, 1, "Jake's powers: artillery +1");
         let andy = chart_for(1, 0);
-        assert!(andy.iter().all(|u| u.attack.unwrap_or(0) == 0 && u.defence == 0 && u.range == 0));
+        assert!(andy
+            .iter()
+            .all(|u| u.attack.unwrap_or(0) == 0 && u.defence == 0 && u.range == 0));
         let wall = crate::ds_co_wall::wall().expect("the wall");
         assert!(wall.chars.len() / 32 <= crate::ds_co_wall::MAX_TILES);
     }
@@ -1654,7 +1824,15 @@ mod tests {
     fn every_co_page_fits() {
         crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
         let f = font().expect("font");
-        assert_eq!((f.w[b'A' as usize], f.w[b'I' as usize], f.w[b'i' as usize], f.w[b' ' as usize]), (5, 1, 1, 2));
+        assert_eq!(
+            (
+                f.w[b'A' as usize],
+                f.w[b'I' as usize],
+                f.w[b'i' as usize],
+                f.w[b' ' as usize]
+            ),
+            (5, 1, 1, 2)
+        );
         assert_eq!(f.width("A"), 5);
         let before = fallbacks();
         for co in (0..19u8).chain(72..81) {

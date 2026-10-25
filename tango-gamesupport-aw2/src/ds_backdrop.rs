@@ -49,7 +49,9 @@ fn file(name: u16) -> Option<Vec<u8>> {
 
 fn palette(name: u16, n: usize) -> Option<Vec<u16>> {
     let f = file(name)?;
-    (0..n).map(|i| Some(u16::from_le_bytes([*f.get(2 * i)?, *f.get(2 * i + 1)?]) & 0x7FFF)).collect()
+    (0..n)
+        .map(|i| Some(u16::from_le_bytes([*f.get(2 * i)?, *f.get(2 * i + 1)?]) & 0x7FFF))
+        .collect()
 }
 
 /// A linear 4bpp texture (rows of `w` texels, low nibble first).
@@ -106,19 +108,19 @@ fn rain(c: u16) -> u16 {
 /// Dual Strike's terrain ids) and, for an HQ, its army colour (1..5).
 fn group(class: u8, colour: u8) -> u8 {
     match class {
-        2 => 4,              // river
-        3 => 2,              // mountain
-        4 => 1,              // wood
-        5 => 3,              // road
-        6 | 17 | 18 | 22 => 8, // city, silos, Com Tower
-        7 | 19 => SEA,       // sea, reef
+        2 => 4,                       // river
+        3 => 2,                       // mountain
+        4 => 1,                       // wood
+        5 => 3,                       // road
+        6 | 17 | 18 | 22 => 8,        // city, silos, Com Tower
+        7 | 19 => SEA,                // sea, reef
         8 => 11 + colour.clamp(1, 5), // HQs, one per army
-        10 => 10,            // airport
-        11 => 11,            // port
-        12 => 7,             // bridge
-        13 => 6,             // shoal
-        14 | 20 => 9,        // base, lab
-        _ => PLAIN,          // plain, pipe, pipe seam, ...
+        10 => 10,                     // airport
+        11 => 11,                     // port
+        12 => 7,                      // bridge
+        13 => 6,                      // shoal
+        14 | 20 => 9,                 // base, lab
+        _ => PLAIN,                   // plain, pipe, pipe seam, ...
     }
 }
 
@@ -187,12 +189,23 @@ fn render(s: &Scene, xs: std::ops::Range<i64>, ys: std::ops::Range<i64>) -> Opti
     let sky_tiles = file(st)?;
     let sky_map = file(sm)?;
     let sky_pal = palette(sp, 64)?;
-    let pipe = if s.pipe { Some((Texture::load(PIPE_TEXTURE, 64)?, palette(PIPE_PALETTE, 16)?)) } else { None };
+    let pipe = if s.pipe {
+        Some((Texture::load(PIPE_TEXTURE, 64)?, palette(PIPE_PALETTE, 16)?))
+    } else {
+        None
+    };
     let right = s.half == 1;
-    let (gx, gu, hu) = if right { (-31.95, 15.70, 27.68) } else { (159.84, 335.25, 115.58) };
+    let (gx, gu, hu) = if right {
+        (-31.95, 15.70, 27.68)
+    } else {
+        (159.84, 335.25, 115.58)
+    };
     let sky_at = |x: i64, y: i64| -> u16 {
         let (x, y) = ((x + 128 * s.half as i64).rem_euclid(256), y.rem_euclid(256));
-        let e = u16::from_le_bytes([sky_map[(2 * ((y / 8) * 32 + x / 8)) as usize], sky_map[(2 * ((y / 8) * 32 + x / 8) + 1) as usize]]);
+        let e = u16::from_le_bytes([
+            sky_map[(2 * ((y / 8) * 32 + x / 8)) as usize],
+            sky_map[(2 * ((y / 8) * 32 + x / 8) + 1) as usize],
+        ]);
         let (mut px, mut py) = (x % 8, y % 8);
         if e & 0x400 != 0 {
             px = 7 - px;
@@ -310,14 +323,21 @@ fn median_cut(colours: &[(u16, u32)]) -> Vec<u16> {
         boxes.push(rest);
         boxes.sort_by_key(|b| b[0].0);
     }
-    let mut out: Vec<u16> = boxes.iter().map(|b| b.iter().max_by_key(|&&(c, n)| (n, c)).unwrap().0).collect();
+    let mut out: Vec<u16> = boxes
+        .iter()
+        .map(|b| b.iter().max_by_key(|&&(c, n)| (n, c)).unwrap().0)
+        .collect();
     out.sort_unstable();
     out.dedup();
     out
 }
 
 fn nearest(pal: &[u16], c: u16) -> (usize, u32) {
-    pal.iter().enumerate().map(|(i, &p)| (i, dist(p, c))).min_by_key(|&(i, d)| (d, i)).unwrap()
+    pal.iter()
+        .enumerate()
+        .map(|(i, &p)| (i, dist(p, c)))
+        .min_by_key(|&(i, d)| (d, i))
+        .unwrap()
 }
 
 fn convert(s: &Scene, side: usize) -> Option<Backdrop> {
@@ -379,7 +399,11 @@ fn convert(s: &Scene, side: usize) -> Option<Backdrop> {
             o[i + 1] = if s.rain { rain(c) } else { c };
         }
     }
-    Some(Backdrop { tiles, map, palettes: out })
+    Some(Backdrop {
+        tiles,
+        map,
+        palettes: out,
+    })
 }
 
 static CACHE: OnceLock<Mutex<HashMap<(Scene, usize), Option<&'static Backdrop>>>> = OnceLock::new();
@@ -388,7 +412,8 @@ static CACHE: OnceLock<Mutex<HashMap<(Scene, usize), Option<&'static Backdrop>>>
 pub fn backdrop(s: &Scene, side: usize) -> Option<&'static Backdrop> {
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut c = cache.lock().ok()?;
-    *c.entry((*s, side)).or_insert_with(|| convert(s, side).map(|b| &*Box::leak(Box::new(b))))
+    *c.entry((*s, side))
+        .or_insert_with(|| convert(s, side).map(|b| &*Box::leak(Box::new(b))))
 }
 
 // --- AW2's scene -------------------------------------------------------------------
@@ -528,20 +553,30 @@ fn load(core: &mut Core) {
         return;
     }
     let cpu = core.gba().cpu();
-    let (side, bg, tiles_at, map_at) = (cpu.gpr(0) as u32 & 0xFFFF, cpu.gpr(1) as u32 & 0xFFFF, cpu.gpr(2) as u32, cpu.gpr(3) as u32);
+    let (side, bg, tiles_at, map_at) = (
+        cpu.gpr(0) as u32 & 0xFFFF,
+        cpu.gpr(1) as u32 & 0xFFFF,
+        cpu.gpr(2) as u32,
+        cpu.gpr(3) as u32,
+    );
     let lr = cpu.gpr(14) as u32;
     if side > 1 {
         return;
     }
     let Some(scene) = scene_for(core, side, bg) else { return };
-    let Some(b) = backdrop(&scene, side as usize) else { return };
+    let Some(b) = backdrop(&scene, side as usize) else {
+        return;
+    };
     let data: Vec<u8> = b.tiles.iter().flatten().copied().collect();
     core.raw_write_range(tiles_at, -1, &data);
     let pal0 = FIRST_PAL[side as usize] as u16;
     let fill = b.map[0] + (pal0 << 12);
     let mut map = [fill; 32 * 32];
     for (k, &e) in b.map.iter().enumerate() {
-        let (c, r) = ((FIRST_COL[side as usize] + k as i64 % COLS).rem_euclid(32), k as i64 / COLS);
+        let (c, r) = (
+            (FIRST_COL[side as usize] + k as i64 % COLS).rem_euclid(32),
+            k as i64 / COLS,
+        );
         map[(r * 32 + c) as usize] = e + (pal0 << 12);
     }
     let bytes: Vec<u8> = map.iter().flat_map(|e| e.to_le_bytes()).collect();
@@ -557,7 +592,11 @@ fn load(core: &mut Core) {
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(CLASSES_IN, Box::new(classes)), (LAYERS, Box::new(layers)), (LOAD, Box::new(load))]
+    vec![
+        (CLASSES_IN, Box::new(classes)),
+        (LAYERS, Box::new(layers)),
+        (LOAD, Box::new(load)),
+    ]
 }
 
 #[cfg(test)]

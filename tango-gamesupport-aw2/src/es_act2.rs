@@ -55,8 +55,12 @@ fn es06() -> MissionDef {
     m.map = MapSrc::Built("es06");
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(LIVIA)).funds(3000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(5000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(2).funds(5000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN))
+            .team(2)
+            .funds(5000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA))
+            .team(2)
+            .funds(5000),
     ];
     m.units = deployment("es06");
     m.rank_days = 14;
@@ -68,7 +72,11 @@ fn es06() -> MissionDef {
         on_day(6, None, vec![Action::Scene(scene("m06_day6"))]),
         after(Cond::PropertiesAtLeast { army: 1, n: 14 }, vec![Action::Win]),
         // The audit: day 17 begins and the tribute is not in hand (losing the square is the match's own defeat).
-        on_day(17, Some(Cond::Not(Box::new(Cond::PropertiesAtLeast { army: 1, n: 14 }))), vec![Action::Lose]),
+        on_day(
+            17,
+            Some(Cond::Not(Box::new(Cond::PropertiesAtLeast { army: 1, n: 14 }))),
+            vec![Action::Lose],
+        ),
     ];
     m.flag = region::ACT2[1];
     m.stars = 2;
@@ -87,8 +95,12 @@ fn es07() -> MissionDef {
     m.map = MapSrc::Built("es07");
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(8000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(10000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(8000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE))
+            .team(2)
+            .funds(10000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE))
+            .team(2)
+            .funds(8000),
     ];
     m.pool = leads();
     m.units = deployment("es07");
@@ -98,7 +110,10 @@ fn es07() -> MissionDef {
     m.after = chain(&["m07_map"]);
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(scene("m07_day5"))]),
-        after(Cond::All(vec![Cond::UnitGone("flagship"), owns(HARBOUR.0, HARBOUR.1)]), vec![Action::Win]),
+        after(
+            Cond::All(vec![Cond::UnitGone("flagship"), owns(HARBOUR.0, HARBOUR.1)]),
+            vec![Action::Win],
+        ),
     ];
     m.flag = region::ACT2[2];
     m.stars = 3;
@@ -114,8 +129,12 @@ fn es08() -> MissionDef {
     m.map = MapSrc::Built("es08");
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(KLAUS, CASSIUS)).funds(4000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX)).team(2).funds(9000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(7000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX))
+            .team(2)
+            .funds(9000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE))
+            .team(2)
+            .funds(7000),
     ];
     m.units = deployment("es08");
     m.rank_days = 12;

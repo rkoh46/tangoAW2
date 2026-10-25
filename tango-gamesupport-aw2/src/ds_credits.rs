@@ -117,7 +117,11 @@ fn heading_lines(t: &str) -> Vec<String> {
         return vec![format!("*{t}*")];
     }
     let mid = t.len() / 2;
-    let split = t.char_indices().filter(|&(_, c)| c == ' ').map(|(i, _)| i).min_by_key(|&i| (i as i32 - mid as i32).abs());
+    let split = t
+        .char_indices()
+        .filter(|&(_, c)| c == ' ')
+        .map(|(i, _)| i)
+        .min_by_key(|&i| (i as i32 - mid as i32).abs());
     match split {
         Some(i) => vec![format!("*{}*", &t[..i]), format!("*{}*", &t[i + 1..])],
         None => vec![format!("*{t}*")],
@@ -219,7 +223,11 @@ pub fn build_sections_secret(core: &Core, sections: Vec<(Vec<Line>, u32, bool)>,
             page_at.push((built.add(&b), secret));
         }
     }
-    let mut list: Vec<u8> = page_at.iter().filter(|a| !a.1).flat_map(|a| a.0.to_le_bytes()).collect();
+    let mut list: Vec<u8> = page_at
+        .iter()
+        .filter(|a| !a.1)
+        .flat_map(|a| a.0.to_le_bytes())
+        .collect();
     list.extend_from_slice(&0u32.to_le_bytes());
     let page_list = built.add(&list);
     let secret_list = if page_at.iter().any(|a| a.1) {
@@ -247,7 +255,11 @@ pub fn build_sections_secret(core: &Core, sections: Vec<(Vec<Line>, u32, bool)>,
     }
     script.extend_from_slice(&[0u8; 8]);
     let staff_roll = built.add(&script);
-    Some(Credits { page_list, secret_list, staff_roll })
+    Some(Credits {
+        page_list,
+        secret_list,
+        staff_roll,
+    })
 }
 
 /// The roll's setup (`0x0806BB08`) starts its music, AW2's song 416, here
@@ -267,7 +279,13 @@ pub fn roll_song(core: &mut Core, session: bool) {
 /// session, at AW2's otherwise.
 pub fn tick(core: &mut Core, session: bool, credits: Option<&Credits>, secret: bool) {
     let want = match (session, credits) {
-        (true, Some(c)) => if secret { c.secret_list } else { c.page_list },
+        (true, Some(c)) => {
+            if secret {
+                c.secret_list
+            } else {
+                c.page_list
+            }
+        }
         _ => AW2_PAGES,
     };
     for at in PAGE_POOLS {
@@ -285,20 +303,38 @@ mod tests {
     #[test]
     fn headings_split_when_wide() {
         assert_eq!(heading_lines("PRODUCER"), vec!["*PRODUCER*"]);
-        assert_eq!(heading_lines("NORTH AMERICAN LOCALIZATION"), vec!["*NORTH AMERICAN*", "*LOCALIZATION*"]);
+        assert_eq!(
+            heading_lines("NORTH AMERICAN LOCALIZATION"),
+            vec!["*NORTH AMERICAN*", "*LOCALIZATION*"]
+        );
         assert_eq!(aw2_text("TIM O'LEARY"), "TIM O~LEARY");
     }
 
     #[test]
     fn pages_centre_and_overflow() {
         let l = |n: &str| Line::Name(n.to_string());
-        let p = pages(&[Line::Blank, Line::Heading("DIRECTOR".into()), l("A"), Line::Blank], 120);
+        let p = pages(
+            &[Line::Blank, Line::Heading("DIRECTOR".into()), l("A"), Line::Blank],
+            120,
+        );
         assert_eq!(p.len(), 1);
         assert_eq!(p[0].0.iter().map(|s| s.0).collect::<Vec<_>>(), vec![0, 0, 1, 2, 0, 0]);
-        let many = [Line::Heading("NORTH AMERICAN LOCALIZATION".into()), l("A"), l("B"), l("C"), l("D"), l("E")];
+        let many = [
+            Line::Heading("NORTH AMERICAN LOCALIZATION".into()),
+            l("A"),
+            l("B"),
+            l("C"),
+            l("D"),
+            l("E"),
+        ];
         let p = pages(&many, 120);
         assert_eq!(p.len(), 2);
         assert!(p.iter().all(|(s, _)| s.iter().filter(|r| r.0 == 1).count() == 2));
-        assert_eq!(p.iter().map(|(s, _)| s.iter().filter(|r| r.0 == 2).count()).sum::<usize>(), 5);
+        assert_eq!(
+            p.iter()
+                .map(|(s, _)| s.iter().filter(|r| r.0 == 2).count())
+                .sum::<usize>(),
+            5
+        );
     }
 }

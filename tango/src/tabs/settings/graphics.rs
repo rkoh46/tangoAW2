@@ -115,9 +115,15 @@ pub(super) fn settings_graphics<'a>(lang: &'a LanguageIdentifier, config: &'a co
                 Choice::new("sharp".to_string(), t!(lang, "settings-pixel-scaling-sharp")),
                 Choice::new("smooth".to_string(), t!(lang, "settings-pixel-scaling-smooth")),
             ];
-            let current = if config.pixel_scaling.is_empty() { "sharp" } else { config.pixel_scaling.as_str() };
+            let current = if config.pixel_scaling.is_empty() {
+                "sharp"
+            } else {
+                config.pixel_scaling.as_str()
+            };
             let selected = options.iter().find(|c| c.value == current).cloned();
-            widgets::picker(options, selected, |c: Choice<String>| Message::PixelScalingChanged(c.value))
+            widgets::picker(options, selected, |c: Choice<String>| {
+                Message::PixelScalingChanged(c.value)
+            })
         }),
         option_row(
             t!(lang, "settings-fractional-scaling"),

@@ -94,7 +94,12 @@ pub const GRACE_SECONDS: u32 = 15;
 
 fn pick_frames() -> u32 {
     static F: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
-    *F.get_or_init(|| std::env::var("TANGOAW2_PICK_SECONDS").ok().and_then(|v| v.parse::<u32>().ok()).map_or(PICK_FRAMES, |s| s * 60))
+    *F.get_or_init(|| {
+        std::env::var("TANGOAW2_PICK_SECONDS")
+            .ok()
+            .and_then(|v| v.parse::<u32>().ok())
+            .map_or(PICK_FRAMES, |s| s * 60)
+    })
 }
 const SEATS: u32 = STATE + 0x10;
 const SEAT_SIZE: u32 = 8;
@@ -118,12 +123,27 @@ const R_POWER: usize = 5;
 const R_VISUALS: usize = 6;
 /// The values the rows take (as the Rules screen's choices index them): fog off, weather clear, funds 1000 (the
 /// first choice), no turn limit, no capture limit, powers on, no visuals.
-const VALUES: [(usize, u8); 7] = [(R_FOG, 1), (R_WEATHER, 1), (R_FUNDS, 0), (R_TURN, 0), (R_CAPT, 0), (R_POWER, 0), (R_VISUALS, 0)];
+const VALUES: [(usize, u8); 7] = [
+    (R_FOG, 1),
+    (R_WEATHER, 1),
+    (R_FUNDS, 0),
+    (R_TURN, 0),
+    (R_CAPT, 0),
+    (R_POWER, 0),
+    (R_VISUALS, 0),
+];
 const RULES_RECORD: u32 = 0x0201_7C50;
 const RULES_RECORD_FIVE: u32 = 0x0203_0300;
 const ITEM_VALUE: u32 = 0x48;
 const ITEM_FN: u32 = 0x4C;
-const ITEM_FNS: [u32; 6] = [0x0806_4739, 0x0806_4775, 0x0806_47BD, 0x0806_486D, 0x0806_4919, 0x0806_49D1];
+const ITEM_FNS: [u32; 6] = [
+    0x0806_4739,
+    0x0806_4775,
+    0x0806_47BD,
+    0x0806_486D,
+    0x0806_4919,
+    0x0806_49D1,
+];
 const PROCS: (u32, u32) = (0x0300_1500, 0x0300_1F00);
 
 /// Set up for an UNRANKED match (or not), once, when the console starts.
@@ -235,7 +255,11 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         core.raw_write_8(BATTLED, -1, 1);
     }
     // A room's battle is over and the game is back at SELECT MAP: the seats propose again.
-    if !on(core) && core.raw_read_8(BATTLED, -1) == 1 && !crate::pvp::in_battle(core) && crate::survival_ui::selecting(core) {
+    if !on(core)
+        && core.raw_read_8(BATTLED, -1) == 1
+        && !crate::pvp::in_battle(core)
+        && crate::survival_ui::selecting(core)
+    {
         restart(core);
     }
     // The game left the list on the chosen map: it goes on to the armies.
@@ -289,7 +313,10 @@ fn commit_pick(core: &mut Core, who: usize, id: u8) -> bool {
     if count == n {
         // (the frame counter and the maps proposed, mixed)
         let t = core.raw_read_16(DRAW_T, -1);
-        let mix = (0..n).fold(t as usize, |a, k| a.wrapping_mul(31).wrapping_add(core.raw_read_8(seat(k) + S_MAP, -1) as usize));
+        let mix = (0..n).fold(t as usize, |a, k| {
+            a.wrapping_mul(31)
+                .wrapping_add(core.raw_read_8(seat(k) + S_MAP, -1) as usize)
+        });
         let from = mix % n;
         core.raw_write_8(PICK, -1, from as u8);
         let map = core.raw_read_8(seat(from) + S_MAP, -1);
@@ -377,7 +404,9 @@ fn slot_at(n: usize, from: usize, at: u16) -> usize {
 
 /// The drawn map is shown (the cycle is over and the game's cursor is on it): its name, picture and whose it is.
 pub fn revealed(core: &Core) -> bool {
-    phase(core) == 1 && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core)) && core.raw_read_8(SETTLED, -1) >= REVEAL_SETTLE
+    phase(core) == 1
+        && core.raw_read_16(CYC_T, -1) >= cycle_len(seats(core))
+        && core.raw_read_8(SETTLED, -1) >= REVEAL_SETTLE
 }
 
 /// The map the match is played on, once it is drawn (the Armies and Rules pages name it).
@@ -481,7 +510,11 @@ pub fn drive(core: &mut Core, keys: u32) -> u32 {
             return 0;
         }
         let hold = core.raw_read_16(HOLD_T, -1);
-        return if (hold >= REVEAL_FRAMES || core.raw_read_8(SKIP, -1) != 0) && hold % 12 < 4 { KEY_A } else { 0 };
+        return if (hold >= REVEAL_FRAMES || core.raw_read_8(SKIP, -1) != 0) && hold % 12 < 4 {
+            KEY_A
+        } else {
+            0
+        };
     }
     core.raw_write_8(SETTLED, -1, 0);
     if tab_of(core, target) != list_tab {
@@ -554,7 +587,9 @@ fn rules_rows(core: &Core) -> Option<[u32; 7]> {
         }
         *row = p;
     }
-    ITEM_FNS.contains(&core.raw_read_32(rows[0] + ITEM_FN, -1)).then_some(rows)
+    ITEM_FNS
+        .contains(&core.raw_read_32(rows[0] + ITEM_FN, -1))
+        .then_some(rows)
 }
 
 /// The Rules screen is up after the map was chosen (a test cue).
@@ -596,7 +631,11 @@ pub fn rules(core: &mut Core, keys: u32) -> u32 {
 /// A room's battle is played and the game is back at SELECT MAP: the seats propose again (the moment a room's roster may
 /// change, see [`crate::proxy_seat`]).
 pub fn back_from_battle(core: &Core) -> bool {
-    active(core) && !on(core) && core.raw_read_8(BATTLED, -1) == 1 && !crate::pvp::in_battle(core) && crate::survival_ui::selecting(core)
+    active(core)
+        && !on(core)
+        && core.raw_read_8(BATTLED, -1) == 1
+        && !crate::pvp::in_battle(core)
+        && crate::survival_ui::selecting(core)
 }
 
 /// The seats propose maps again (a battle was played, or a player left): everything but the draw's counter starts over.
@@ -659,7 +698,12 @@ pub fn private_view(scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) 
     let started = scratch.memory()[1] != 0;
     if std::env::var_os("AW2_PRIVATE_LOG").is_some() {
         let core = scratch.core();
-        eprintln!("private view seat {seat}: picking {} seats {} idle {} started {started}", picking(core), seats(core), crate::survival_ui::idle(core));
+        eprintln!(
+            "private view seat {seat}: picking {} seats {} idle {} started {started}",
+            picking(core),
+            seats(core),
+            crate::survival_ui::idle(core)
+        );
     }
     let shared: Vec<u8> = {
         let core = scratch.core();
@@ -672,7 +716,11 @@ pub fn private_view(scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) 
         b
     };
     let at = |off: u32| shared[(off - STATE) as usize];
-    let (round, mask, pick_t) = (at(ROUND), at(PICKED), u16::from_le_bytes([at(PICK_T), at(PICK_T + 1)]) as u32);
+    let (round, mask, pick_t) = (
+        at(ROUND),
+        at(PICKED),
+        u16::from_le_bytes([at(PICK_T), at(PICK_T + 1)]) as u32,
+    );
     let phys = scratch.physical_seat();
     let now = scratch.console_tick();
     // (a new round of picks, the seats proposing again after a player left or a battle: start over)
@@ -689,15 +737,24 @@ pub fn private_view(scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) 
     let mut prev_a = mem[1] >> 8 & 1 != 0;
     let (mut picked, mut since) = (mem[2] & 1 != 0, (mem[2] >> 1 & 0x7FFF) as u32);
     let last = (mem[2] >> 16) as u16;
-    let ticks = if had { (now as u16).wrapping_sub(last).clamp(1, 4) as usize } else { 1 };
+    let ticks = if had {
+        (now as u16).wrapping_sub(last).clamp(1, 4) as usize
+    } else {
+        1
+    };
     let (held, pressed) = private::take_keys(phys);
     for i in 0..ticks {
         let keys = if i == 0 { held | pressed } else { held };
         let a_edge = keys & KEY_A != 0 && !prev_a;
         prev_a = keys & KEY_A != 0;
         let core = scratch.core();
-        let (idle, last_row) = (crate::survival_ui::idle(core), core.raw_read_8(crate::five_map::LIST_LAST, -1) as u32);
-        let cursor_id = crate::online::list_cursor(core).filter(|&c| c < crate::five_map::LIST_CAP && c <= last_row).map(|c| core.raw_read_8(crate::online::LIST_IDS + c, -1));
+        let (idle, last_row) = (
+            crate::survival_ui::idle(core),
+            core.raw_read_8(crate::five_map::LIST_LAST, -1) as u32,
+        );
+        let cursor_id = crate::online::list_cursor(core)
+            .filter(|&c| c < crate::five_map::LIST_CAP && c <= last_row)
+            .map(|c| core.raw_read_8(crate::online::LIST_IDS + c, -1));
         let confirmed = mask & (1 << seat) != 0;
         if confirmed {
             picked = true;
@@ -715,7 +772,11 @@ pub fn private_view(scratch: &mut dyn tango_backend_mgba::Scratch, seat: usize) 
         }
         scratch.core_mut().raw_write_8(LOCAL_PICKED, -1, picked as u8);
         // (once picked there is no more browsing, and B and START are no way out of the picks)
-        let keys = if picked { 0 } else { keys & !(KEY_A | KEY_B | crate::online::KEY_START) };
+        let keys = if picked {
+            0
+        } else {
+            keys & !(KEY_A | KEY_B | crate::online::KEY_START)
+        };
         scratch.tick(keys);
         scratch.core_mut().raw_write_range(STATE, -1, &shared);
         scratch.core_mut().raw_write_8(LOCAL_PICKED, -1, picked as u8);
@@ -746,7 +807,9 @@ fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     let mine = has_picked(core, me) || core.raw_read_8(LOCAL_PICKED, -1) == 1;
     // (a seat whose pick is in the stream but not counted yet is shown as picked to itself)
     let made = (made + (mine && !has_picked(core, me)) as usize).min(n);
-    let left = pick_frames().saturating_sub(core.raw_read_16(PICK_T, -1) as u32).div_ceil(60);
+    let left = pick_frames()
+        .saturating_sub(core.raw_read_16(PICK_T, -1) as u32)
+        .div_ceil(60);
     let sea: Rgb = (139, 222, 230);
     // (the title's logo goes: the plate covers it, a margin of sea round the plate)
     cv.rect(0, 0, 140, 31, sea);
@@ -756,7 +819,10 @@ fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     cv.rect(x - 1, y - 1, w + 2, h + 2, (0, 0, 0));
     cv.rect(x, y, w, h, red);
     cv.rect(x + 2, y + 2, w - 4, h - 4, pink);
-    let waiting: Vec<String> = (0..n).filter(|&k| !has_picked(core, k) && (k != me || !mine)).map(room_name).collect();
+    let waiting: Vec<String> = (0..n)
+        .filter(|&k| !has_picked(core, k) && (k != me || !mine))
+        .map(room_name)
+        .collect();
     let line1 = if !mine {
         "Pick a map: press A".to_string()
     } else {
@@ -765,7 +831,10 @@ fn paint_picks(core: &Core, cv: &mut crate::online::Rgba<'_>) {
             [one] => fit(core, &format!("Waiting for {one}..."), w - 12),
             [one, more @ ..] => {
                 let tail = format!(" +{}", more.len());
-                format!("Waiting for {}{tail}", fit(core, one, w - 12 - text_width(core, &format!("Waiting for ..{tail}"))))
+                format!(
+                    "Waiting for {}{tail}",
+                    fit(core, one, w - 12 - text_width(core, &format!("Waiting for ..{tail}")))
+                )
             }
         }
     };
@@ -856,7 +925,10 @@ pub fn paint_rules_banner(core: &Core, rgba: &mut [u8]) {
     use crate::online::*;
     let lines: Vec<(String, Rgb)> = if on(core) {
         let left = rules_countdown(core.raw_read_16(RULES_T, -1));
-        vec![("Unranked rules".to_string(), PLATE_INK), (format!("Starting in {left}"), PLATE_GREY)]
+        vec![
+            ("Unranked rules".to_string(), PLATE_INK),
+            (format!("Starting in {left}"), PLATE_GREY),
+        ]
     } else {
         let n = room_players();
         let host = crate::proxy_seat::host_index(core, n);
@@ -864,7 +936,10 @@ pub fn paint_rules_banner(core: &Core, rgba: &mut [u8]) {
             return;
         }
         let who = fit(core, &room_name(host), 120);
-        vec![(format!("{who} is setting the rules"), PLATE_INK), ("The match starts when they go on.".to_string(), PLATE_GREY)]
+        vec![
+            (format!("{who} is setting the rules"), PLATE_INK),
+            ("The match starts when they go on.".to_string(), PLATE_GREY),
+        ]
     };
     let mut canvas = Rgba(rgba);
     let (x, y, w, h) = (4, 126, 232, 31);
@@ -891,10 +966,14 @@ pub fn paint_bar(core: &Core, rgba: &mut [u8]) {
     let pick = (core.raw_read_8(PICK, -1) as usize).min(seats(core) - 1);
     let map = map_name(core, core.raw_read_8(CHOSEN, -1));
     let who = room_name(pick);
-    let from = [format!("from {who} is played"), format!("from {} is played", fit(core, &who, 70)), "is played".to_string()]
-        .into_iter()
-        .find(|t| text_width(core, t) <= 144)
-        .unwrap_or_else(|| "is played".to_string());
+    let from = [
+        format!("from {who} is played"),
+        format!("from {} is played", fit(core, &who, 70)),
+        "is played".to_string(),
+    ]
+    .into_iter()
+    .find(|t| text_width(core, t) <= 144)
+    .unwrap_or_else(|| "is played".to_string());
     let mut lines = vec![(fit(core, &map, 144), PLATE_INK), (from, PLATE_GREY)];
     if crate::online::room_local_seat() == 0 {
         lines.push(("A: Go on".to_string(), PLATE_GREY));
@@ -924,7 +1003,13 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
     let from = (core.raw_read_8(PICK, -1) as usize).min(n - 1);
     let lit = (cyc > 0).then(|| slot_at(n, from, cyc - 1));
     // (the game's own look: a black edge, a red frame, a pink page with a line under each row, a lavender highlight)
-    let (red, pink, line, lav, grey): (Rgb, Rgb, Rgb, Rgb, Rgb) = ((246, 82, 57), (255, 238, 238), (255, 230, 213), (222, 205, 255), (131, 123, 115));
+    let (red, pink, line, lav, grey): (Rgb, Rgb, Rgb, Rgb, Rgb) = (
+        (246, 82, 57),
+        (255, 238, 238),
+        (255, 230, 213),
+        (222, 205, 255),
+        (131, 123, 115),
+    );
     // The plate where the title was.
     let (px, py, pw, ph) = (4, 2, 132, 27);
     audit::window(px, py, pw, ph);
@@ -935,13 +1020,24 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
         let left = (REVEAL_FRAMES.saturating_sub(core.raw_read_16(HOLD_T, -1)) as u32).div_ceil(60);
         (
             "The map is drawn".to_string(),
-            if room_local_seat() == 0 { format!("A: Start now  ({left})") } else { format!("Starting in {left}") },
+            if room_local_seat() == 0 {
+                format!("A: Start now  ({left})")
+            } else {
+                format!("Starting in {left}")
+            },
         )
     } else {
         ("Drawing the map...".to_string(), format!("{} proposals", n))
     };
     cv.text(core, px + (pw - text_width(core, &l1)) / 2, py + 2, &l1, grey, SHADE);
-    cv.text(core, px + (pw - text_width(core, &l2)) / 2, py + 12, &l2, (88, 72, 150), SHADE);
+    cv.text(
+        core,
+        px + (pw - text_width(core, &l2)) / 2,
+        py + 12,
+        &l2,
+        (88, 72, 150),
+        SHADE,
+    );
     // The proposals, two lines each (the gamertag, then the map).
     let (x, y, w, rh) = (2, 34, 84, 23);
     let h = 6 + rh * n as i32;
@@ -959,7 +1055,11 @@ fn mask(core: &Core, cv: &mut crate::online::Rgba<'_>) {
         let ink = if lit == Some(k) { (88, 72, 150) } else { grey };
         let who = fit(core, &room_name(k), w - 14);
         cv.text(core, x + 7, ry, &who, ink, SHADE);
-        let t = if shown && lit == Some(k) { fit(core, &map_name(core, map), w - 14) } else { "?????".to_string() };
+        let t = if shown && lit == Some(k) {
+            fit(core, &map_name(core, map), w - 14)
+        } else {
+            "?????".to_string()
+        };
         cv.text(core, x + w - 7 - text_width(core, &t), ry + 11, &t, ink, SHADE);
     }
 }

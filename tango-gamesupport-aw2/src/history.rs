@@ -263,7 +263,10 @@ fn moved(core: &mut Core, done: bool) {
         return;
     }
     let (x0, y0) = (core.raw_read_8(u + 2, -1) as i32, core.raw_read_8(u + 3, -1) as i32);
-    let (x1, y1) = (core.raw_read_16(DESTINATION, -1) as i16 as i32, core.raw_read_16(DESTINATION + 2, -1) as i16 as i32);
+    let (x1, y1) = (
+        core.raw_read_16(DESTINATION, -1) as i16 as i32,
+        core.raw_read_16(DESTINATION + 2, -1) as i16 as i32,
+    );
     if done {
         add(core, UNITS_MOVED, 1);
     }
@@ -275,7 +278,10 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (INCREMENT_DAY, Box::new(day_over)),
         (BOUGHT_PAID, Box::new(bought)),
         (DEFEAT_ARMY, Box::new(defeat_army)),
-        (CAPTURE_STEP, Box::new(|core: &mut Core| count_turn(core, CAPTURES_BEGUN))),
+        (
+            CAPTURE_STEP,
+            Box::new(|core: &mut Core| count_turn(core, CAPTURES_BEGUN)),
+        ),
         (SILO_LAUNCH, Box::new(|core: &mut Core| count_turn(core, SILOS))),
         (JOIN, Box::new(|core: &mut Core| count_turn(core, JOINS))),
         (LOAD, Box::new(|core: &mut Core| count_turn(core, LOADS))),
@@ -347,7 +353,9 @@ pub fn structure_destroyed(core: &mut Core) {
     if !is_on(core) || !humans_turn(core) {
         return;
     }
-    let Some((kind, obelisk)) = crate::battle_points::destroyed_structure(core) else { return };
+    let Some((kind, obelisk)) = crate::battle_points::destroyed_structure(core) else {
+        return;
+    };
     let index = match (kind, obelisk) {
         (_, true) => OBELISKS,
         (Some(crate::battle_points::CANNON), _) => BLACK_CANNONS,
@@ -387,7 +395,8 @@ pub fn battle_fought(core: &mut Core, attacker: u32, defender: u32) {
         if foe.hp_after <= 0 {
             let units = core.raw_read_32(0x0849_9594, -1);
             let cargo = [core.raw_read_8(foe.unit + 7, -1), core.raw_read_8(foe.unit + 8, -1)];
-            for u in std::iter::once(foe.unit).chain(cargo.iter().filter(|&&c| c != 0).map(|&c| units + 12 * c as u32)) {
+            for u in std::iter::once(foe.unit).chain(cargo.iter().filter(|&&c| c != 0).map(|&c| units + 12 * c as u32))
+            {
                 if let Some(d) = ds_type(core.raw_read_8(u, -1)) {
                     add(core, DESTROYED + d as u32, 1);
                 }
@@ -419,7 +428,10 @@ pub fn co_ranks(core: &mut Core) {
     if !is_on(core) {
         return;
     }
-    let total: u32 = (0..=18u8).chain(72..=82).map(|co| crate::co_skills::rank(core, co)).sum();
+    let total: u32 = (0..=18u8)
+        .chain(72..=82)
+        .map(|co| crate::co_skills::rank(core, co))
+        .sum();
     set(core, CO_RANKS, total);
 }
 
@@ -516,7 +528,12 @@ pub fn tabs() -> Option<&'static [Vec<Entry>; TABS]> {
                         counter,
                         unit,
                         thresholds: [ds.u32(a + 8)?, ds.u32(a + 12)?, ds.u32(a + 16)?],
-                        help: [ds.u32(a + 0x20)?, ds.u32(a + 0x24)?, ds.u32(a + 0x28)?, ds.u32(a + 0x2C)?],
+                        help: [
+                            ds.u32(a + 0x20)?,
+                            ds.u32(a + 0x24)?,
+                            ds.u32(a + 0x28)?,
+                            ds.u32(a + 0x2C)?,
+                        ],
                         time: ds.u32(a + 0x18)? == DRAW_TIME,
                     });
                 }

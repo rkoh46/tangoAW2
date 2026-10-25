@@ -49,7 +49,10 @@ fn d2(a: Rgb, b: Rgb) -> i32 {
 pub fn decode(tiles: &[u8], map: &[u8], palette: &[u8], bpp: u8) -> Option<Vec<Rgb>> {
     let tiles = crate::ds_art::lz10(tiles)?;
     let map = crate::ds_art::lz10(map)?;
-    let pal: Vec<Rgb> = palette.chunks(2).map(|c| rgb(u16::from_le_bytes([c[0], c.get(1).copied().unwrap_or(0)]))).collect();
+    let pal: Vec<Rgb> = palette
+        .chunks(2)
+        .map(|c| rgb(u16::from_le_bytes([c[0], c.get(1).copied().unwrap_or(0)])))
+        .collect();
     let mut out = vec![[0; 3]; 256 * 192];
     let size = if bpp == 8 { 64 } else { 32 };
     for i in 0..(32 * 24) {
@@ -113,7 +116,12 @@ fn kmeans(points: &[(Rgb, u32)], init: Vec<Rgb>, rounds: usize) -> Vec<Rgb> {
         }
         for (k, s) in sum.iter().enumerate() {
             if s[3] > 0 {
-                cent[k] = [(s[0] + s[3] / 2) / s[3], (s[1] + s[3] / 2) / s[3], (s[2] + s[3] / 2) / s[3]].map(|v| v as i32);
+                cent[k] = [
+                    (s[0] + s[3] / 2) / s[3],
+                    (s[1] + s[3] / 2) / s[3],
+                    (s[2] + s[3] / 2) / s[3],
+                ]
+                .map(|v| v as i32);
             }
         }
     }
@@ -128,7 +136,9 @@ fn spread(points: &[(Rgb, u32)], n: usize) -> Vec<Rgb> {
     if v.is_empty() {
         return vec![[0; 3]; n];
     }
-    (0..n).map(|k| v[((k * v.len()) / n + (v.len() / n) / 2).min(v.len() - 1)]).collect()
+    (0..n)
+        .map(|k| v[((k * v.len()) / n + (v.len() / n) / 2).min(v.len() - 1)])
+        .collect()
 }
 
 fn histogram(px: impl Iterator<Item = Rgb>) -> Vec<(Rgb, u32)> {
@@ -143,7 +153,9 @@ fn histogram(px: impl Iterator<Item = Rgb>) -> Vec<(Rgb, u32)> {
 pub fn fit(img: &[Rgb]) -> Picture {
     let cell = |c: usize| -> Vec<Rgb> {
         let (cx, cy) = (c % CELLS_X, c / CELLS_X);
-        (0..64).map(|i| img[WIDTH * (8 * cy + i / 8) + 8 * cx + i % 8]).collect()
+        (0..64)
+            .map(|i| img[WIDTH * (8 * cy + i / 8) + 8 * cx + i % 8])
+            .collect()
     };
     let cells: Vec<Vec<Rgb>> = (0..CELLS_X * CELLS_Y).map(cell).collect();
     // Groups by mean colour.
@@ -155,12 +167,25 @@ pub fn fit(img: &[Rgb]) -> Picture {
         })
         .collect();
     let gcent = kmeans(&means, spread(&means, PALETTES), 8);
-    let mut group: Vec<usize> = means.iter().map(|m| (0..PALETTES).min_by_key(|&k| d2(m.0, gcent[k])).unwrap()).collect();
+    let mut group: Vec<usize> = means
+        .iter()
+        .map(|m| (0..PALETTES).min_by_key(|&k| d2(m.0, gcent[k])).unwrap())
+        .collect();
     let mut pals: Vec<Vec<Rgb>> = vec![vec![[0; 3]; 15]; PALETTES];
-    let draw = |c: &Vec<Rgb>, pal: &Vec<Rgb>| -> i64 { c.iter().map(|&p| pal.iter().map(|&q| d2(p, q)).min().unwrap() as i64).sum() };
+    let draw = |c: &Vec<Rgb>, pal: &Vec<Rgb>| -> i64 {
+        c.iter()
+            .map(|&p| pal.iter().map(|&q| d2(p, q)).min().unwrap() as i64)
+            .sum()
+    };
     for _ in 0..4 {
         for (g, pal) in pals.iter_mut().enumerate() {
-            let h = histogram(cells.iter().zip(&group).filter(|(_, &k)| k == g).flat_map(|(c, _)| c.iter().copied()));
+            let h = histogram(
+                cells
+                    .iter()
+                    .zip(&group)
+                    .filter(|(_, &k)| k == g)
+                    .flat_map(|(c, _)| c.iter().copied()),
+            );
             if h.is_empty() {
                 continue;
             }
@@ -206,7 +231,11 @@ pub fn fit(img: &[Rgb]) -> Picture {
         palettes.push(0);
         palettes.extend(pal.iter().map(|&c| bgr(c)));
     }
-    Picture { tiles, tilemap, palettes }
+    Picture {
+        tiles,
+        tilemap,
+        palettes,
+    }
 }
 
 /// The narration's pictures: (text reference, tiles, map, palette, bits a
@@ -223,7 +252,9 @@ pub const NARRATION: [(u32, &str, &str, &str, u8, usize); 4] = [
 
 /// The narration pictures from the pack, in [`NARRATION`]'s order.
 pub fn narration_pictures() -> Vec<Option<Picture>> {
-    let Some(pack) = crate::ds_pack::pack() else { return Vec::new() };
+    let Some(pack) = crate::ds_pack::pack() else {
+        return Vec::new();
+    };
     NARRATION
         .iter()
         .map(|&(_, t, m, p, bpp, y0)| {

@@ -43,7 +43,9 @@ const SERVE_TIMEOUT: Duration = Duration::from_secs(5);
 /// those that are out of it, each by seat. The seats that left the match earlier (`gone`) are not there. Every peer of
 /// the room computes the same order from the same console state.
 pub fn successor_order(players: usize, host_seat: usize, seats_out: u8, gone: u8) -> Vec<usize> {
-    let mut left: Vec<usize> = (0..players.min(8)).filter(|&s| s != host_seat && gone & (1 << s) == 0).collect();
+    let mut left: Vec<usize> = (0..players.min(8))
+        .filter(|&s| s != host_seat && gone & (1 << s) == 0)
+        .collect();
     left.sort_by_key(|&s| (seats_out & (1 << s) != 0, s));
     left
 }
@@ -119,7 +121,13 @@ fn seat_words(players: usize, seat: usize, row: &MigrateRow) -> Vec<u16> {
 /// A peer's view of a tick from the words of every seat.
 fn view_of(seat: usize, words: &[u16]) -> [u16; 4] {
     let mut view = [0u16; 4];
-    for (k, w) in words.iter().enumerate().filter(|&(s, _)| s != seat).map(|(_, w)| w).enumerate() {
+    for (k, w) in words
+        .iter()
+        .enumerate()
+        .filter(|&(s, _)| s != seat)
+        .map(|(_, w)| w)
+        .enumerate()
+    {
         if let Some(v) = view.get_mut(k) {
             *v = *w;
         }
@@ -139,7 +147,10 @@ pub(super) fn plan(players: usize, peers: &[PeerState]) -> Result<Plan, String> 
             let words = seat_words(players, p.seat, row);
             match rows.get(&tick) {
                 Some(have) if *have != words => {
-                    return Err(format!("seat {} and another disagree about tick {tick}: {have:?} / {words:?}", p.seat));
+                    return Err(format!(
+                        "seat {} and another disagree about tick {tick}: {have:?} / {words:?}",
+                        p.seat
+                    ));
                 }
                 Some(_) => {}
                 None => {
@@ -310,7 +321,9 @@ async fn host_phase(h: &Arc<MigHandle>, rank: u8, old_host: usize, snapshot: &Sn
     let me = h.my_seat;
     let gone0 = h.end.gone.load(Ordering::Acquire);
     let out = h.end.seats_out.load(Ordering::Acquire);
-    let expected: Vec<usize> = (0..players).filter(|&s| s != me && s != old_host && gone0 & (1 << s) == 0).collect();
+    let expected: Vec<usize> = (0..players)
+        .filter(|&s| s != me && s != old_host && gone0 & (1 << s) == 0)
+        .collect();
     let living: Vec<usize> = expected.iter().copied().filter(|&s| out & (1 << s) == 0).collect();
     let session = tango_net_protocol::derive::derive_migration_session_id(&h.seed, rank);
     log::info!("pvp: host migration: hosting; expecting seats {expected:?} (still in the match: {living:?})");
@@ -412,7 +425,10 @@ async fn host_phase(h: &Arc<MigHandle>, rank: u8, old_host: usize, snapshot: &Sn
     }
     stop.cancel();
     if let Some(&missing) = living.iter().find(|&&s| !peers.iter().any(|p| p.0 == s)) {
-        return Err(PhaseEnd::Failed(format!("seat {missing} ({:?}) did not come", h.players.get(missing))));
+        return Err(PhaseEnd::Failed(format!(
+            "seat {missing} ({:?}) did not come",
+            h.players.get(missing)
+        )));
     }
     if peers.is_empty() {
         return Err(PhaseEnd::Failed("no guest came".into()));
@@ -420,12 +436,23 @@ async fn host_phase(h: &Arc<MigHandle>, rank: u8, old_host: usize, snapshot: &Sn
     peers.sort_by_key(|p| p.0);
 
     // Where the stream resumes, and what each peer lacks.
-    let mut states = vec![PeerState { seat: me, remote: snapshot.remote, tail: snapshot.tail.clone() }];
-    states.extend(peers.iter().map(|p| PeerState { seat: p.0, remote: p.2.remote, tail: p.2.tail.clone() }));
+    let mut states = vec![PeerState {
+        seat: me,
+        remote: snapshot.remote,
+        tail: snapshot.tail.clone(),
+    }];
+    states.extend(peers.iter().map(|p| PeerState {
+        seat: p.0,
+        remote: p.2.remote,
+        tail: p.2.tail.clone(),
+    }));
     let plan = plan(players, &states).map_err(PhaseEnd::Failed)?;
     for p in &peers {
         if p.2.local < plan.start {
-            return Err(PhaseEnd::Failed(format!("seat {} has played {} ticks, the stream is at {}", p.0, p.2.local, plan.start)));
+            return Err(PhaseEnd::Failed(format!(
+                "seat {} has played {} ticks, the stream is at {}",
+                p.0, p.2.local, plan.start
+            )));
         }
     }
     let mut gone = gone0 | (1 << old_host);
@@ -434,12 +461,21 @@ async fn host_phase(h: &Arc<MigHandle>, rank: u8, old_host: usize, snapshot: &Sn
             gone |= 1 << s;
         }
     }
-    let mine = plan.catchup.iter().find(|c| c.0 == me).map(|c| c.1.clone()).unwrap_or_default();
+    let mine = plan
+        .catchup
+        .iter()
+        .find(|c| c.0 == me)
+        .map(|c| c.1.clone())
+        .unwrap_or_default();
     log::info!(
         "pvp: host migration: the stream resumes at tick {} (this peer lacks {}, guests lack {:?}); gone {:#04x}",
         plan.start,
         mine.len(),
-        plan.catchup.iter().filter(|c| c.0 != me).map(|c| (c.0, c.1.len())).collect::<Vec<_>>(),
+        plan.catchup
+            .iter()
+            .filter(|c| c.0 != me)
+            .map(|c| (c.0, c.1.len()))
+            .collect::<Vec<_>>(),
         gone
     );
 
@@ -448,15 +484,23 @@ async fn host_phase(h: &Arc<MigHandle>, rank: u8, old_host: usize, snapshot: &Sn
     let mut senders: Vec<Option<tango_net::PvpSender>> = Vec::new();
     let mut in_matches = Vec::new();
     let non_host: Vec<usize> = (0..players).filter(|&s| s != me).collect();
-    let mut by_seat: std::collections::HashMap<usize, (Arc<tango_net::link::Link>, tango_net::PvpSender)> = Default::default();
+    let mut by_seat: std::collections::HashMap<usize, (Arc<tango_net::link::Link>, tango_net::PvpSender)> =
+        Default::default();
     for (seat, channels, _) in peers {
         let go = RoomMigrateGo {
             start: plan.start,
             host_seat: me as u8,
             gone,
-            catchup: plan.catchup.iter().find(|c| c.0 == seat).map(|c| c.1.clone()).unwrap_or_default(),
+            catchup: plan
+                .catchup
+                .iter()
+                .find(|c| c.0 == seat)
+                .map(|c| c.1.clone())
+                .unwrap_or_default(),
         };
-        let link = link_of(h, channels, Some(Packet::Room(RoomMsg::MigrateGo(go)))).await.map_err(PhaseEnd::Failed)?;
+        let link = link_of(h, channels, Some(Packet::Room(RoomMsg::MigrateGo(go))))
+            .await
+            .map_err(PhaseEnd::Failed)?;
         let sender = tango_net::PvpSender::new(link.in_match().clone());
         by_seat.insert(seat, (link, sender));
     }
@@ -518,7 +562,13 @@ async fn guest_phase(h: &Arc<MigHandle>, rank: u8, cand: usize, snapshot: &Snaps
             }
             Err(_) => continue,
         };
-        if channels.control.0.send_packet(&Packet::Room(RoomMsg::Migrate(hello.clone()))).await.is_err() {
+        if channels
+            .control
+            .0
+            .send_packet(&Packet::Room(RoomMsg::Migrate(hello.clone())))
+            .await
+            .is_err()
+        {
             continue;
         }
         let first = tango_platform::timeout(FIRST_WORDS, channels.control.1.receive()).await;
@@ -535,7 +585,10 @@ async fn guest_phase(h: &Arc<MigHandle>, rank: u8, cand: usize, snapshot: &Snaps
                 }
                 let link = link_of(h, channels, None).await.map_err(PhaseEnd::Failed)?;
                 let sender = tango_net::PvpSender::new(link.in_match().clone());
-                h.links_pending.lock().unwrap().replace(vec![(go.host_seat as usize, link.clone())]);
+                h.links_pending
+                    .lock()
+                    .unwrap()
+                    .replace(vec![(go.host_seat as usize, link.clone())]);
                 return Ok(Handover {
                     host_seat: go.host_seat as usize,
                     i_host: false,
@@ -584,11 +637,18 @@ async fn link_of(
         peer_dtls_fingerprint,
     } = channels;
     if let Some(p) = first {
-        sender.send_packet(&p).await.map_err(|e| format!("the link broke: {e}"))?;
+        sender
+            .send_packet(&p)
+            .await
+            .map_err(|e| format!("the link broke: {e}"))?;
     }
     let (tx, rx) = tokio::sync::oneshot::channel();
     let _ = tx.send(receiver);
-    let session_id = tango_net_protocol::derive::derive_reconnect_session_id(&h.seed, &local_dtls_fingerprint, &peer_dtls_fingerprint);
+    let session_id = tango_net_protocol::derive::derive_reconnect_session_id(
+        &h.seed,
+        &local_dtls_fingerprint,
+        &peer_dtls_fingerprint,
+    );
     let parts = tango_net::link::LinkParts {
         control_sender: Arc::new(tokio::sync::Mutex::new(sender)),
         control_receiver_rx: rx,
@@ -611,7 +671,8 @@ async fn link_of(
 
 /// Give the drive thread the new links, wait for it to take them, and start watching them.
 async fn install(h: &Arc<MigHandle>, handover: Handover, old_host: usize, t0: web_time::Instant) -> Result<(), String> {
-    let new_links: Vec<(usize, Arc<tango_net::link::Link>)> = h.links_pending.lock().unwrap().take().unwrap_or_default();
+    let new_links: Vec<(usize, Arc<tango_net::link::Link>)> =
+        h.links_pending.lock().unwrap().take().unwrap_or_default();
     let host_seat = handover.host_seat;
     let i_host = handover.i_host;
     let gone = handover.gone;
@@ -640,7 +701,11 @@ async fn install(h: &Arc<MigHandle>, handover: Handover, old_host: usize, t0: we
         clock: web_time::Instant::now(),
     });
     for (seat, link) in new_links {
-        let link_idx = if i_host { non_host.iter().position(|&s| s == seat).unwrap_or(0) } else { 0 };
+        let link_idx = if i_host {
+            non_host.iter().position(|&s| s == seat).unwrap_or(0)
+        } else {
+            0
+        };
         let in_match = link.in_match().clone();
         h.group.add();
         spawn_supervisor(SupervisorContext {
@@ -735,8 +800,16 @@ mod tests {
         };
         let tail = |seat: usize, remote: u32| (remote - 8..remote).map(|t| row_of(seat, t)).collect::<Vec<_>>();
         let peers = [
-            PeerState { seat: 1, remote: 10, tail: tail(1, 10) },
-            PeerState { seat: 2, remote: 12, tail: tail(2, 12) },
+            PeerState {
+                seat: 1,
+                remote: 10,
+                tail: tail(1, 10),
+            },
+            PeerState {
+                seat: 2,
+                remote: 12,
+                tail: tail(2, 12),
+            },
         ];
         let p = plan(3, &peers).unwrap();
         assert_eq!(p.start, 12);
@@ -746,7 +819,11 @@ mod tests {
         assert_eq!(lacks.len(), 2);
         for (i, v) in lacks.iter().enumerate() {
             let t = 10 + i as u32;
-            assert_eq!(v[..2], [word(t, 0), word(t, 2)], "seat 1 hears seats 0 and 2 for tick {t}");
+            assert_eq!(
+                v[..2],
+                [word(t, 0), word(t, 2)],
+                "seat 1 hears seats 0 and 2 for tick {t}"
+            );
         }
     }
 
@@ -761,9 +838,21 @@ mod tests {
         };
         let tail = |seat: usize, remote: u32| (remote - 5..remote).map(|t| row_of(seat, t)).collect::<Vec<_>>();
         let peers = [
-            PeerState { seat: 1, remote: 20, tail: tail(1, 20) },
-            PeerState { seat: 2, remote: 23, tail: tail(2, 23) },
-            PeerState { seat: 3, remote: 21, tail: tail(3, 21) },
+            PeerState {
+                seat: 1,
+                remote: 20,
+                tail: tail(1, 20),
+            },
+            PeerState {
+                seat: 2,
+                remote: 23,
+                tail: tail(2, 23),
+            },
+            PeerState {
+                seat: 3,
+                remote: 21,
+                tail: tail(3, 21),
+            },
         ];
         let p = plan(4, &peers).unwrap();
         assert_eq!(p.start, 23);
@@ -780,24 +869,48 @@ mod tests {
 
     #[test]
     fn peers_that_disagree_about_a_tick_are_caught() {
-        let a = PeerState { seat: 1, remote: 3, tail: vec![row(&[1, 2], 3); 3] };
+        let a = PeerState {
+            seat: 1,
+            remote: 3,
+            tail: vec![row(&[1, 2], 3); 3],
+        };
         // seat 2 says seat 1's word was different
-        let b = PeerState { seat: 2, remote: 3, tail: vec![row(&[1, 9], 2); 3] };
+        let b = PeerState {
+            seat: 2,
+            remote: 3,
+            tail: vec![row(&[1, 9], 2); 3],
+        };
         assert!(plan(3, &[a, b]).is_err());
     }
 
     #[test]
     fn a_row_nobody_has_cannot_be_given() {
-        let a = PeerState { seat: 1, remote: 3, tail: vec![] };
-        let b = PeerState { seat: 2, remote: 9, tail: vec![row(&[0, 0], 0); 2] };
+        let a = PeerState {
+            seat: 1,
+            remote: 3,
+            tail: vec![],
+        };
+        let b = PeerState {
+            seat: 2,
+            remote: 9,
+            tail: vec![row(&[0, 0], 0); 2],
+        };
         let e = plan(3, &[a, b]).unwrap_err();
         assert!(e.contains("nobody can give"), "{e}");
     }
 
     #[test]
     fn equal_streams_need_no_catch_up() {
-        let a = PeerState { seat: 1, remote: 50, tail: vec![] };
-        let b = PeerState { seat: 2, remote: 50, tail: vec![] };
+        let a = PeerState {
+            seat: 1,
+            remote: 50,
+            tail: vec![],
+        };
+        let b = PeerState {
+            seat: 2,
+            remote: 50,
+            tail: vec![],
+        };
         let p = plan(3, &[a, b]).unwrap();
         assert_eq!(p.start, 50);
         assert!(p.catchup.iter().all(|c| c.1.is_empty()));

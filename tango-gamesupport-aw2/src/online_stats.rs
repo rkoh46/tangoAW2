@@ -277,12 +277,27 @@ pub fn scroll(core: &mut Core, down: bool) {
 pub fn draw_tag(cv: &mut Rgba, core: &Core) {
     let tag = gamertag(core);
     let set = !tag.is_empty();
-    let s = if set { fit(core, &tag, 72) } else { "No gamertag".to_string() };
+    let s = if set {
+        fit(core, &tag, 72)
+    } else {
+        "No gamertag".to_string()
+    };
     let hint = "SELECT: Edit";
     let w = text_width(core, &s).max(text_width(core, hint));
     let x = W as i32 - w - 9;
     cv.plate(x - 5, 2, w + 10, 27);
-    cv.text(core, x + (w - text_width(core, &s)) / 2, 3, &s, if set { crate::online::PLATE_INK } else { crate::online::PLATE_GREY }, SHADE);
+    cv.text(
+        core,
+        x + (w - text_width(core, &s)) / 2,
+        3,
+        &s,
+        if set {
+            crate::online::PLATE_INK
+        } else {
+            crate::online::PLATE_GREY
+        },
+        SHADE,
+    );
     cv.text(core, x, 14, hint, crate::online::PLATE_GREY, SHADE);
 }
 
@@ -343,7 +358,15 @@ pub fn draw_stats(cv: &mut Rgba, core: &Core, panel: (i32, i32, i32, i32)) {
         cv.rect(x + w - 11, y + h - 5, 3, 1, BLUE);
         cv.rect(x + w - 10, y + h - 4, 1, 1, BLUE);
     }
-    bar(cv, core, if n > STATS_ROWS { "Up Down: Scroll  B: Back" } else { "B: Back" });
+    bar(
+        cv,
+        core,
+        if n > STATS_ROWS {
+            "Up Down: Scroll  B: Back"
+        } else {
+            "B: Back"
+        },
+    );
 }
 
 #[cfg(test)]

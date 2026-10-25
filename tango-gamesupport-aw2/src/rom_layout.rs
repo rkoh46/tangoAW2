@@ -18,34 +18,98 @@ pub(crate) fn regions() -> Vec<(u32, u32, String)> {
     add(crate::ds_music::BASE, 0x08E0_0000, "ds_music: songs and tables");
     // Survival: the table, the maps, the strings (its own test: the strings end before 0x08E40000).
     add(crate::survival::TABLE, 0x08E4_0000, "survival: table, maps, strings");
-    add(crate::mode_menu::DATA, crate::mode_menu::SENTINEL + 4, "mode_menu: the wheel's data");
-    add(crate::online_menu::TEXTS_AT, crate::online_menu::SENTINEL + 4, "online_menu: texts, wheels, sheet");
-    add(crate::two_front::ROM, crate::two_front::ROM_END, "two_front: code and menus");
+    add(
+        crate::mode_menu::DATA,
+        crate::mode_menu::SENTINEL + 4,
+        "mode_menu: the wheel's data",
+    );
+    add(
+        crate::online_menu::TEXTS_AT,
+        crate::online_menu::SENTINEL + 4,
+        "online_menu: texts, wheels, sheet",
+    );
+    add(
+        crate::two_front::ROM,
+        crate::two_front::ROM_END,
+        "two_front: code and menus",
+    );
     add(crate::setup_phase::ROM, crate::setup_phase::ROM_END, "setup_phase");
-    add(crate::onyx::ROM, crate::onyx::ROM_SENTINEL + 4, "onyx: Crystal Calamity's code");
+    add(
+        crate::onyx::ROM,
+        crate::onyx::ROM_SENTINEL + 4,
+        "onyx: Crystal Calamity's code",
+    );
     // One look a biome (Wasteland, Desert, Snow, the Grand Bolt's), each LOOK_SIZE apart and filled to its sentinel; the Normal look further on.
     for b in 1..=crate::wasteland::GRAND_BOLT_LOOK {
         let at = crate::wasteland::look_rom(b);
-        add(at, at + crate::wasteland::AT_SENTINEL + 4, &format!("wasteland: look {b}"));
+        add(
+            at,
+            at + crate::wasteland::AT_SENTINEL + 4,
+            &format!("wasteland: look {b}"),
+        );
     }
     let normal = crate::wasteland::look_rom(crate::wasteland::DS_NORMAL);
-    add(normal, normal + crate::wasteland::AT_SENTINEL + 4, "wasteland: the Normal look");
+    add(
+        normal,
+        normal + crate::wasteland::AT_SENTINEL + 4,
+        "wasteland: the Normal look",
+    );
     add(
         crate::skills_panel::BACKUP,
         crate::skills_panel::BACKUP + crate::skills_panel::CHARS_LEN + crate::skills_panel::MAP_LEN + 0x400,
         "skills_panel: the screen's backup",
     );
-    add(crate::ds_campaign::DATA, crate::ds_campaign::DATA_END, "ds_campaign: the campaign's blob");
+    add(
+        crate::ds_campaign::DATA,
+        crate::ds_campaign::DATA_END,
+        "ds_campaign: the campaign's blob",
+    );
     add(crate::ds_worldmap::BASE, crate::ds_worldmap::END, "ds_worldmap");
-    add(crate::ds_music::STORY_BASE, crate::ds_music::STORY_END, "ds_music: the story's songs");
-    add(crate::ds_versus::TABLE, crate::ds_versus::ROM_END_FOR_MAPS, "ds_versus: table, names, Dual Strike's maps");
-    add(crate::five_map::MAP_DATA, crate::five_map::map_data(crate::five_map::MAP_CAPACITY), "five_map: tangoAW2's maps");
-    add(crate::ds_graphics::BLD_NEW, crate::ds_graphics::BLD_SENTINEL + 4, "ds_graphics: buildings");
-    add(crate::ds_graphics::UNIT_NEW, crate::ds_graphics::UNIT_SENTINEL + 4, "ds_graphics: unit sheet");
-    add(crate::ds_graphics::MOVE_NEW, crate::ds_graphics::MOVE_SENTINEL + 4, "ds_graphics: moving sheets");
-    add(crate::ds_graphics::HUD_NEW, crate::ds_graphics::HUD_SENTINEL + 4, "ds_graphics: HUD");
-    add(crate::ds_graphics::PIC_NEW, crate::ds_graphics::PIC_SENTINEL + 4, "ds_graphics: pictures");
-    add(crate::ds_graphics::MOVE_COUNTRY_NEW, crate::ds_graphics::MOVE_COUNTRY_SENTINEL + 4, "ds_graphics: the countries' moving sheets");
+    add(
+        crate::ds_music::STORY_BASE,
+        crate::ds_music::STORY_END,
+        "ds_music: the story's songs",
+    );
+    add(
+        crate::ds_versus::TABLE,
+        crate::ds_versus::ROM_END_FOR_MAPS,
+        "ds_versus: table, names, Dual Strike's maps",
+    );
+    add(
+        crate::five_map::MAP_DATA,
+        crate::five_map::map_data(crate::five_map::MAP_CAPACITY),
+        "five_map: tangoAW2's maps",
+    );
+    add(
+        crate::ds_graphics::BLD_NEW,
+        crate::ds_graphics::BLD_SENTINEL + 4,
+        "ds_graphics: buildings",
+    );
+    add(
+        crate::ds_graphics::UNIT_NEW,
+        crate::ds_graphics::UNIT_SENTINEL + 4,
+        "ds_graphics: unit sheet",
+    );
+    add(
+        crate::ds_graphics::MOVE_NEW,
+        crate::ds_graphics::MOVE_SENTINEL + 4,
+        "ds_graphics: moving sheets",
+    );
+    add(
+        crate::ds_graphics::HUD_NEW,
+        crate::ds_graphics::HUD_SENTINEL + 4,
+        "ds_graphics: HUD",
+    );
+    add(
+        crate::ds_graphics::PIC_NEW,
+        crate::ds_graphics::PIC_SENTINEL + 4,
+        "ds_graphics: pictures",
+    );
+    add(
+        crate::ds_graphics::MOVE_COUNTRY_NEW,
+        crate::ds_graphics::MOVE_COUNTRY_SENTINEL + 4,
+        "ds_graphics: the countries' moving sheets",
+    );
     // The army skins: their own rooms (header, backups, figures, pictures; `army_skin::rooms` checks them against each other).
     for (start, end, name) in crate::army_skin::rooms() {
         add(start, end, &format!("army_skin: {name}"));
@@ -67,11 +131,23 @@ mod tests {
         for (s, e, n) in &r {
             println!("{s:#010x}..{e:#010x} {:>7} bytes  {n}", e - s);
             assert!(s < e, "{n}: empty or backwards ({s:#x}..{e:#x})");
-            assert!(FREE.contains(s) && *e <= FREE.end, "{n} ({s:#x}..{e:#x}) leaves the free space of the image");
+            assert!(
+                FREE.contains(s) && *e <= FREE.end,
+                "{n} ({s:#x}..{e:#x}) leaves the free space of the image"
+            );
         }
         for w in r.windows(2) {
             let (a, b) = (&w[0], &w[1]);
-            assert!(a.1 <= b.0, "{} ({:#x}..{:#x}) overlaps {} ({:#x}..{:#x})", a.2, a.0, a.1, b.2, b.0, b.1);
+            assert!(
+                a.1 <= b.0,
+                "{} ({:#x}..{:#x}) overlaps {} ({:#x}..{:#x})",
+                a.2,
+                a.0,
+                a.1,
+                b.2,
+                b.0,
+                b.1
+            );
         }
         // (the ranges are sorted by start: a range inside a later-starting one is caught by its neighbour)
     }
@@ -83,7 +159,10 @@ mod tests {
         let regions = regions();
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         let mut unlisted = Vec::new();
-        for entry in std::fs::read_dir(&dir).unwrap().chain(std::fs::read_dir(dir.join("ai_debug")).unwrap()) {
+        for entry in std::fs::read_dir(&dir)
+            .unwrap()
+            .chain(std::fs::read_dir(dir.join("ai_debug")).unwrap())
+        {
             let path = entry.unwrap().path();
             let name = path.file_name().unwrap().to_string_lossy().to_string();
             // (generated map data and texts hold tile ids, not addresses)
@@ -94,7 +173,10 @@ mod tests {
                 let code = line.split("//").next().unwrap();
                 let mut rest = code;
                 while let Some(i) = rest.find("0x0") {
-                    let lit: String = rest[i + 2..].chars().take_while(|c| c.is_ascii_hexdigit() || *c == '_').collect();
+                    let lit: String = rest[i + 2..]
+                        .chars()
+                        .take_while(|c| c.is_ascii_hexdigit() || *c == '_')
+                        .collect();
                     rest = &rest[i + 2..];
                     let digits: String = lit.chars().filter(|c| *c != '_').collect();
                     if digits.len() != 8 {
@@ -107,6 +189,10 @@ mod tests {
                 }
             }
         }
-        assert!(unlisted.is_empty(), "addresses in the image's free space that no range of rom_layout::regions covers:\n{}", unlisted.join("\n"));
+        assert!(
+            unlisted.is_empty(),
+            "addresses in the image's free space that no range of rom_layout::regions covers:\n{}",
+            unlisted.join("\n")
+        );
     }
 }

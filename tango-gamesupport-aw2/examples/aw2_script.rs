@@ -130,7 +130,13 @@ impl tango_backend_mgba::SharedGame for Traced {
     fn overlay(&self, core: &mgba::core::Core, mode: Option<(u8, u8)>, seat: usize, rgba: &mut [u8]) {
         tango_gamesupport_aw2::pvp::AW2E.overlay(core, mode, seat, rgba)
     }
-    fn overlay_hires(&self, core: &mgba::core::Core, mode: Option<(u8, u8)>, seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {
+    fn overlay_hires(
+        &self,
+        core: &mgba::core::Core,
+        mode: Option<(u8, u8)>,
+        seat: usize,
+        rgba: &mut Vec<u8>,
+    ) -> Option<(u32, u32)> {
         tango_gamesupport_aw2::pvp::AW2E.overlay_hires(core, mode, seat, rgba)
     }
     fn traps(&self) -> Vec<(u32, Box<dyn Fn(&mut mgba::core::Core)>)> {
@@ -287,8 +293,17 @@ fn main() {
                     {
                         let c = link.core(0);
                         let m = 0x0201_E450u32;
-                        let _ = writeln!(f, "@frame {} cam {} {} bg3 {} {} bg1 {} {}", *frame, c.raw_read_16(m + 4, -1) as i16, c.raw_read_16(m + 6, -1) as i16,
-                            c.raw_read_16(0x0400_001C, -1) & 511, c.raw_read_16(0x0400_001E, -1) & 511, c.raw_read_16(0x0400_0014, -1) & 511, c.raw_read_16(0x0400_0016, -1) & 511);
+                        let _ = writeln!(
+                            f,
+                            "@frame {} cam {} {} bg3 {} {} bg1 {} {}",
+                            *frame,
+                            c.raw_read_16(m + 4, -1) as i16,
+                            c.raw_read_16(m + 6, -1) as i16,
+                            c.raw_read_16(0x0400_001C, -1) & 511,
+                            c.raw_read_16(0x0400_001E, -1) & 511,
+                            c.raw_read_16(0x0400_0014, -1) & 511,
+                            c.raw_read_16(0x0400_0016, -1) & 511
+                        );
                     }
                     for i in 0..128u32 {
                         let c = link.core(0);
@@ -300,7 +315,20 @@ fn main() {
                         }
                         let x = (a1 & 0x1ff) as i32;
                         let x = if x >= 256 { x - 512 } else { x };
-                        let _ = writeln!(f, "{} {} {} {} {} {} {} {} {} {}", i, x, a0 & 255, a0 >> 14, a1 >> 14, (a0 >> 10) & 3, a2 & 0x3ff, a2 >> 12, (a2 >> 10) & 3, (a0 >> 8) & 1);
+                        let _ = writeln!(
+                            f,
+                            "{} {} {} {} {} {} {} {} {} {}",
+                            i,
+                            x,
+                            a0 & 255,
+                            a0 >> 14,
+                            a1 >> 14,
+                            (a0 >> 10) & 3,
+                            a2 & 0x3ff,
+                            a2 >> 12,
+                            (a2 >> 10) & 3,
+                            (a0 >> 8) & 1
+                        );
                     }
                 }
             }
@@ -347,7 +375,9 @@ fn main() {
             "tiltall" => {
                 // `tiltall 1 [DIR STRIDE]`: every frame's picture is made (and every STRIDE-th written to DIR)
                 TILTALL.store(parts[1] != "0", std::sync::atomic::Ordering::Relaxed);
-                *TILTDIR.lock().unwrap() = parts.get(2).map(|d| (d.to_string(), parts.get(3).map(|n| n.parse().unwrap()).unwrap_or(1u64)));
+                *TILTDIR.lock().unwrap() = parts
+                    .get(2)
+                    .map(|d| (d.to_string(), parts.get(3).map(|n| n.parse().unwrap()).unwrap_or(1u64)));
             }
             "wait" => run(&mut link, &sticky, &mut watch, &mut frame, 0, parts[1].parse().unwrap()),
             "goto" => {
@@ -396,7 +426,12 @@ fn main() {
                 for _ in 0..n {
                     sum += link.frame()[7] as u64;
                 }
-                println!("bench: {} us a picture ({} pictures, {})", t.elapsed().as_micros() / n as u128, n, sum);
+                println!(
+                    "bench: {} us a picture ({} pictures, {})",
+                    t.elapsed().as_micros() / n as u128,
+                    n,
+                    sum
+                );
             }
             "ground" => {
                 // `ground NAME`: the whole map's ground from game state (NAME.ppm).

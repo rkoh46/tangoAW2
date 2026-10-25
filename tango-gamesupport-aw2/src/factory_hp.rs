@@ -47,7 +47,8 @@ const INVENTIONS: u32 = 0x0202_8360;
 /// factory, [`crate::cpu_inventions`]).
 pub(crate) fn in_scope(core: &Core) -> bool {
     crate::ds_weather::is_on(core)
-        && ((crate::pvp::in_versus(core) && !crate::ds_campaign::active(core)) || crate::cpu_inventions::in_bh_campaign(core))
+        && ((crate::pvp::in_versus(core) && !crate::ds_campaign::active(core))
+            || crate::cpu_inventions::in_bh_campaign(core))
 }
 
 /// The factory's registration: its HP argument (`[sp + 4]`) is [`HP`].
@@ -149,7 +150,11 @@ fn panel_number(core: &mut Core) {
         cpu.set_thumb_pc(NUMBER_AFTER);
         return;
     }
-    let (x, y, hp) = (core.raw_read_32(frame, -1) as i32, core.raw_read_32(frame + 4, -1), core.raw_read_32(frame + 8, -1));
+    let (x, y, hp) = (
+        core.raw_read_32(frame, -1) as i32,
+        core.raw_read_32(frame + 4, -1),
+        core.raw_read_32(frame + 8, -1),
+    );
     let digit = hp / 10u32.pow(step) % 10;
     core.raw_write_32(frame + 12, -1, DRAWING | (step + 1));
     let cpu = core.gba_mut().cpu_mut();
@@ -163,7 +168,10 @@ fn panel_number(core: &mut Core) {
 
 /// The factory's entry in the invention list.
 fn entry(core: &Core) -> Option<u32> {
-    (0..16).map(|k| INVENTIONS + 8 * k).take_while(|&a| core.raw_read_16(a + 2, -1) & 0x3C0 != 0).find(|&a| (core.raw_read_16(a + 2, -1) as u32 >> 6) & 15 == FACTORY_KIND)
+    (0..16)
+        .map(|k| INVENTIONS + 8 * k)
+        .take_while(|&a| core.raw_read_16(a + 2, -1) & 0x3C0 != 0)
+        .find(|&a| (core.raw_read_16(a + 2, -1) as u32 >> 6) & 15 == FACTORY_KIND)
 }
 
 /// This battle's factory has been destroyed (Versus with the pack).
@@ -258,7 +266,11 @@ fn wreck_tiles(core: &Core) -> &'static [u8] {
 /// The wreck's tiles are in place in VRAM.
 fn wreck_loaded(core: &Core) -> bool {
     let want = wreck_tiles(core);
-    want.len() == WRECK_TILE_BYTES && want.chunks(4).enumerate().all(|(i, w)| core.raw_read_32(WRECK_TILES + 4 * i as u32, -1).to_le_bytes() == *w)
+    want.len() == WRECK_TILE_BYTES
+        && want
+            .chunks(4)
+            .enumerate()
+            .all(|(i, w)| core.raw_read_32(WRECK_TILES + 4 * i as u32, -1).to_le_bytes() == *w)
 }
 
 fn put_wreck_definition(core: &mut Core) {
@@ -305,7 +317,10 @@ pub fn tick(core: &mut Core, on: bool) {
     }
     let Some(a) = entry(core) else { return };
     let (x0, y0) = (core.raw_read_8(a, -1) as u32, core.raw_read_8(a + 1, -1) as u32);
-    let (w, h) = ((core.raw_read_8(a + 2, -1) & 7) as u32, ((core.raw_read_8(a + 2, -1) >> 3) & 7) as u32);
+    let (w, h) = (
+        (core.raw_read_8(a + 2, -1) & 7) as u32,
+        ((core.raw_read_8(a + 2, -1) >> 3) & 7) as u32,
+    );
     let (mw, mh) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
     for y in y0..(y0 + h).min(mh) {
         let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
@@ -345,14 +360,21 @@ fn pos(core: &Core, u: u32) -> (i32, i32) {
 fn aim(core: &Core) -> Option<(i32, i32)> {
     let a = entry(core).filter(|&a| core.raw_read_8(a + 4, -1) != 0)?;
     let height = (core.raw_read_8(a + 2, -1) as i32 >> 3) & 7;
-    Some((core.raw_read_8(a, -1) as i32 + 1, core.raw_read_8(a + 1, -1) as i32 + height - 1))
+    Some((
+        core.raw_read_8(a, -1) as i32 + 1,
+        core.raw_read_8(a + 1, -1) as i32 + height - 1,
+    ))
 }
 
 /// A hit's animation is playing.
 pub fn busy(core: &Core) -> bool {
     [(0x0300_1500u32, 0x0300_1F00u32), (0x0200_D610, 0x0200_E000)]
         .iter()
-        .any(|&(lo, hi)| (lo..hi).step_by(4).any(|a| HIT_SCRIPTS.contains(&core.raw_read_32(a, -1))))
+        .any(|&(lo, hi)| {
+            (lo..hi)
+                .step_by(4)
+                .any(|a| HIT_SCRIPTS.contains(&core.raw_read_32(a, -1)))
+        })
 }
 
 /// The army that owns the factory: the one in Black Hole's colour (5).
@@ -406,7 +428,9 @@ pub fn cpu_strikers(core: &Core, army: u32) -> Vec<u32> {
     if !in_scope(core) {
         return Vec::new();
     }
-    let (Some(target), Some(owner)) = (aim(core), owner(core)) else { return Vec::new() };
+    let (Some(target), Some(owner)) = (aim(core), owner(core)) else {
+        return Vec::new();
+    };
     let my_team = team(core, army);
     if my_team == team(core, owner) {
         return Vec::new();

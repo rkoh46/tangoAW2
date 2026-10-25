@@ -67,8 +67,10 @@ pub(crate) const TABLE_POINTERS: [(u32, u32); 37] = [
 /// `cmp rN, #0xBF` in the two loops: the game's, then the last id without
 /// the Dual Strike pack (0xC0), then with it (0xFD, past the Colonel's Vault at 0xF1 and the pool of new maps; a bound of 0xFF would never end (the id counter is a byte) and 0xFE is ds_versus::BATTLE_ID: the ids between, [`BIG_FIVE_ID`]'s among them,
 /// are Dual Strike content and walked only with the pack, [`show_maps`]).
-const TABLE_LOOPS: [(u32, u16, u16, u16); 2] =
-    [(0x0802_06C8, 0x29BF, 0x29C0, 0x29FD), (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CFD)];
+const TABLE_LOOPS: [(u32, u16, u16, u16); 2] = [
+    (0x0802_06C8, 0x29BF, 0x29C0, 0x29FD),
+    (0x0803_74B4, 0x2CBF, 0x2CC0, 0x2CFD),
+];
 /// Each map's tiles and units: 4 KiB apiece, in one run from [`MAP_DATA`] in the ROM image's free space past the Dual Strike Versus maps
 /// (0x09C00000..0x09CFFFFF, crate::ds_versus): room for [`MAP_CAPACITY`] maps (0x09D00000..0x09D3FFFF; the free run goes on to the Dual
 /// Strike Normal look at 0x09E00000, so the capacity can grow to 256 by changing one constant).
@@ -227,7 +229,10 @@ pub fn name_tab(core: &mut Core, tab: u32, players: usize, k: usize, text: &str)
     let id = TAB_TEXT as u32 + slot_k;
     let slot = TEXT_TABLE + 4 * id;
     if core.raw_read_32(slot, -1) != at {
-        let mut bytes = text.bytes().map(|b| if b == b'\'' { b'~' } else { b }).collect::<Vec<u8>>();
+        let mut bytes = text
+            .bytes()
+            .map(|b| if b == b'\'' { b'~' } else { b })
+            .collect::<Vec<u8>>();
         assert!(bytes.len() < 0x20);
         bytes.push(0);
         core.raw_write_range(at, -1, &bytes);
@@ -253,7 +258,6 @@ pub fn set_tab_title(core: &mut Core, tab: u32, id: u16) {
     }
 }
 
-
 // --- The map list's buffer ---------------------------------------------------------------------------------
 //
 // The game's SELECT MAP list keeps its rows in a small struct in EWRAM (0x02027F74: four bytes, the ids of up to 50
@@ -272,17 +276,68 @@ pub const LIST_BYTES: u32 = 8 + LIST_CAP;
 const OLD_LIST: u32 = 0x0202_7F74;
 /// Literal words that hold the struct's address (and its ids', +4).
 const LIST_LITERALS: [u32; 33] = [
-    0x0803_74DC, 0x0803_7504, 0x0803_7538, 0x0803_756C, 0x0803_75A0, 0x0803_7938, 0x0803_7C94, 0x0808_615C, 0x0808_6250, 0x0808_63C4,
-    0x0808_6544, 0x0808_6648, 0x0808_6ACC, 0x0808_6BA4, 0x0808_6C9C, 0x0808_6D50, 0x0808_6DB0, 0x0808_6EEC, 0x0808_6FA4, 0x0808_7140,
-    0x0808_71B0, 0x0808_7218, 0x0808_73AC, 0x0808_74C0, 0x0808_75A0, 0x0808_7668, 0x0808_7934, 0x0808_7B1C, 0x0808_7BFC, 0x081D_9414,
-    0x081D_9448, 0x0861_7A64, 0x0861_7CE8,
+    0x0803_74DC,
+    0x0803_7504,
+    0x0803_7538,
+    0x0803_756C,
+    0x0803_75A0,
+    0x0803_7938,
+    0x0803_7C94,
+    0x0808_615C,
+    0x0808_6250,
+    0x0808_63C4,
+    0x0808_6544,
+    0x0808_6648,
+    0x0808_6ACC,
+    0x0808_6BA4,
+    0x0808_6C9C,
+    0x0808_6D50,
+    0x0808_6DB0,
+    0x0808_6EEC,
+    0x0808_6FA4,
+    0x0808_7140,
+    0x0808_71B0,
+    0x0808_7218,
+    0x0808_73AC,
+    0x0808_74C0,
+    0x0808_75A0,
+    0x0808_7668,
+    0x0808_7934,
+    0x0808_7B1C,
+    0x0808_7BFC,
+    0x081D_9414,
+    0x081D_9448,
+    0x0861_7A64,
+    0x0861_7CE8,
 ];
 const LIST_IDS_LITERALS: [u32; 5] = [0x0803_74D8, 0x0803_7534, 0x0803_7568, 0x0803_759C, 0x0808_7C70];
 /// `adds rN, #0x36` (the cursor row) and `adds rN, #0x37` (the last row) on the struct's pointer.
-const LIST_CURSOR_SITES: [u32; 6] = [0x0803_74C0, 0x0803_74F4, 0x0803_7526, 0x0803_755A, 0x0803_758E, 0x0808_6126];
+const LIST_CURSOR_SITES: [u32; 6] = [
+    0x0803_74C0,
+    0x0803_74F4,
+    0x0803_7526,
+    0x0803_755A,
+    0x0803_758E,
+    0x0808_6126,
+];
 const LIST_LAST_SITES: [u32; 17] = [
-    0x0803_74C8, 0x0803_74FA, 0x0803_752C, 0x0803_7560, 0x0803_7594, 0x0808_6212, 0x0808_64FC, 0x0808_6600, 0x0808_6B3E, 0x0808_6C32,
-    0x0808_6CF2, 0x0808_718A, 0x0808_71CE, 0x0808_72F8, 0x0808_7362, 0x0808_7404, 0x0808_7476,
+    0x0803_74C8,
+    0x0803_74FA,
+    0x0803_752C,
+    0x0803_7560,
+    0x0803_7594,
+    0x0808_6212,
+    0x0808_64FC,
+    0x0808_6600,
+    0x0808_6B3E,
+    0x0808_6C32,
+    0x0808_6CF2,
+    0x0808_718A,
+    0x0808_71CE,
+    0x0808_72F8,
+    0x0808_7362,
+    0x0808_7404,
+    0x0808_7476,
 ];
 /// The Versus builder's `cmp r5, #0x31` (it stops when 50 maps are in).
 const LIST_BUILDER_STOP: u32 = 0x0803_74AA;
@@ -298,7 +353,10 @@ fn patch_list(core: &mut Core) {
             core.raw_write_32(at, -1, LIST_IDS);
         }
     }
-    for (sites, old, new) in [(&LIST_CURSOR_SITES[..], 0x36u16, (LIST_CAP + 4) as u16), (&LIST_LAST_SITES[..], 0x37, (LIST_CAP + 5) as u16)] {
+    for (sites, old, new) in [
+        (&LIST_CURSOR_SITES[..], 0x36u16, (LIST_CAP + 4) as u16),
+        (&LIST_LAST_SITES[..], 0x37, (LIST_CAP + 5) as u16),
+    ] {
         for &at in sites {
             let h = core.raw_read_16(at, -1);
             if h & 0xFF == old {
@@ -397,16 +455,19 @@ const MAP_SHOWN: u32 = 0x0803_CA54;
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     let mut v: Vec<(u32, Box<dyn Fn(&mut Core)>)> = Vec::new();
-    v.push((MAP_SHOWN, Box::new(|core: &mut Core| {
-        let id = core.gba().cpu().gpr(0) as u32;
-        let t = table(core);
-        if id >= 0xF0 && (t == crate::survival::TABLE || t == crate::ds_versus::TABLE) {
-            let cpu = core.gba_mut().cpu_mut();
-            cpu.set_gpr(0, 1);
-            let lr = cpu.gpr(14) as u32;
-            cpu.set_thumb_pc(lr & !1);
-        }
-    })));
+    v.push((
+        MAP_SHOWN,
+        Box::new(|core: &mut Core| {
+            let id = core.gba().cpu().gpr(0) as u32;
+            let t = table(core);
+            if id >= 0xF0 && (t == crate::survival::TABLE || t == crate::ds_versus::TABLE) {
+                let cpu = core.gba_mut().cpu_mut();
+                cpu.set_gpr(0, 1);
+                let lr = cpu.gpr(14) as u32;
+                cpu.set_thumb_pc(lr & !1);
+            }
+        }),
+    ));
     v
 }
 
@@ -485,15 +546,27 @@ mod tests {
         assert!(ptr0 >= 0x0862_0000 + 4 * 56 && ptr0 + 4 * TEXT_SLOTS as u32 <= 0x0862_0500);
         assert!(STRINGS >= 0x0862_2000 && STRINGS + 0x20 * TEXT_SLOTS as u32 <= 0x0862_C000);
         // the new-map pool is inside the table and past every id something else uses
-        assert!(*NEW_ID_POOL.end() < crate::ds_versus::BATTLE_ID && *NEW_ID_POOL.end() as u32 + 1 < MAP_IDS && *NEW_ID_POOL.start() > crate::five_map::VAULT_ID);
+        assert!(
+            *NEW_ID_POOL.end() < crate::ds_versus::BATTLE_ID
+                && *NEW_ID_POOL.end() as u32 + 1 < MAP_IDS
+                && *NEW_ID_POOL.start() > crate::five_map::VAULT_ID
+        );
         for (k, &id) in IDS.iter().enumerate() {
-            assert!(!NEW_ID_POOL.contains(&id) || MAPS[k].ds, "{} is in the new-map pool, so it is pack content", MAPS[k].name);
+            assert!(
+                !NEW_ID_POOL.contains(&id) || MAPS[k].ds,
+                "{} is in the new-map pool, so it is pack content",
+                MAPS[k].name
+            );
         }
         // The list loops' bound with the pack: a byte counter never passes 0xFF, so a bound of 0xFF never ends the walk (the list then fills with
         // the table over and over, 110 rows, and the tabs cannot be switched: the 5P room lost its "5P Predeploy" tab). It must also stay below
         // ds_versus::BATTLE_ID (0xFE), and reach every id of the pool.
         for (_, _, _, with) in TABLE_LOOPS {
-            assert!((with & 0xFF) < 0xFE && (with & 0xFF) as u8 >= *NEW_ID_POOL.end(), "loop bound {:#x}", with & 0xFF);
+            assert!(
+                (with & 0xFF) < 0xFE && (with & 0xFF) as u8 >= *NEW_ID_POOL.end(),
+                "loop bound {:#x}",
+                with & 0xFF
+            );
         }
         assert_eq!(map_of(BIG_FIVE_ID).map(|m| m.name), Some("Pentagon Atoll"));
         assert_eq!(map_of(VAULT_ID).map(|m| m.name), Some("The Colonel's Vault"));
@@ -515,11 +588,14 @@ mod tests {
         }
         assert_eq!(MAPS.iter().filter(|m| m.wasteland).count(), 4);
         for armies in 2..=5 {
-            assert_eq!(MAPS.iter().filter(|m| m.ds && m.armies == armies).count(), match armies {
-                2 => 3,
-                5 => 3,
-                _ => 2,
-            });
+            assert_eq!(
+                MAPS.iter().filter(|m| m.ds && m.armies == armies).count(),
+                match armies {
+                    2 => 3,
+                    5 => 3,
+                    _ => 2,
+                }
+            );
         }
         assert!(is_wasteland_map(0xC1) && !is_wasteland_map(0xC5) && !is_wasteland_map(0));
         assert!(is_five_map(0xC4) && is_five_map(0xC8) && !is_five_map(0xC3));
@@ -560,7 +636,9 @@ mod tests {
         for t in 0..w * h {
             let id = u16::from_le_bytes([bytes[2 + 2 * t], bytes[3 + 2 * t]]) as u32;
             // (production: base +1, airport +3, port +4 in each owner's five tiles, neutral's included)
-            if matches!(id, 0x1C0..=0x1D8 if matches!((id - 0x1C0) % 5, 1 | 3 | 4)) || matches!(id, 0x1B5 | 0x1B7 | 0x1B8) {
+            if matches!(id, 0x1C0..=0x1D8 if matches!((id - 0x1C0) % 5, 1 | 3 | 4))
+                || matches!(id, 0x1B5 | 0x1B7 | 0x1B8)
+            {
                 prod += 1;
             }
             let (army, hq) = match id {

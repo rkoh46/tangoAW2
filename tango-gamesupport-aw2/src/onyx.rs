@@ -242,20 +242,20 @@ fn launch_fn() -> Vec<u8> {
 
 fn laser_fn() -> Vec<u8> {
     let mut b = halfwords(&[
-        0xB500, // push {lr}
-        0x4806, // ldr r0, =LASER_SCRIPT
-        0x2103, // movs r1, #3
-        0x4B06, // ldr r3, =Proc_Start
-        0x467A, // mov r2, pc
-        0x3205, // adds r2, #5
-        0x4696, // mov lr, r2
-        0x4718, // bx r3
-        0x3064, // adds r0, #0x64
+        0xB500,                // push {lr}
+        0x4806,                // ldr r0, =LASER_SCRIPT
+        0x2103,                // movs r1, #3
+        0x4B06,                // ldr r3, =Proc_Start
+        0x467A,                // mov r2, pc
+        0x3205,                // adds r2, #5
+        0x4696,                // mov lr, r2
+        0x4718,                // bx r3
+        0x3064,                // adds r0, #0x64
         0x2100 | LASER_DAMAGE, // movs r1, #damage
-        0x8001, // strh r1, [r0]
-        0x2000, // movs r0, #0
-        0xBC02, // pop {r1}
-        0x4708, // bx r1
+        0x8001,                // strh r1, [r0]
+        0x2000,                // movs r0, #0
+        0xBC02,                // pop {r1}
+        0x4708,                // bx r1
     ]);
     b.extend(words(&[LASER_SCRIPT, PROC_START]));
     b
@@ -604,7 +604,9 @@ fn note_army(core: &mut Core) {
         return;
     }
     let p = crate::five::players(core);
-    let army = (1..=4u32).find(|&a| core.raw_read_8(p + PLAYER * a + COLOUR, -1) == BLACK_HOLE).unwrap_or(4);
+    let army = (1..=4u32)
+        .find(|&a| core.raw_read_8(p + PLAYER * a + COLOUR, -1) == BLACK_HOLE)
+        .unwrap_or(4);
     core.raw_write_8(ARMY, -1, army as u8);
 }
 
@@ -735,8 +737,12 @@ pub fn fire(core: &mut Core) -> bool {
 // --- The real-time list ----------------------------------------------------------------
 
 fn realtime_list(core: &Core) -> u32 {
-    let Some((mission, _)) = timed_mission(core) else { return 0 };
-    crate::ds_campaign::campaign(core).and_then(|c| c.model.built.missions.get(mission)).map_or(0, |m| m.realtime)
+    let Some((mission, _)) = timed_mission(core) else {
+        return 0;
+    };
+    crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.built.missions.get(mission))
+        .map_or(0, |m| m.realtime)
 }
 
 /// The battle map's frame: while the map waits, AW2's list runner tests the
@@ -788,7 +794,9 @@ fn next_in(core: &Core, spec: &crate::campaign_model::OnyxDef) -> u16 {
     let day = core.raw_read_16(DAY_ADDR, -1);
     let fired = core.raw_read_8(LAST_SHOT, -1) as u16 == day && day != 0;
     let from = if fired { day + 1 } else { day };
-    (from..from + spec.period.max(1) as u16 + 1).find(|&d| due(spec, d)).map_or(0, |d| d - day)
+    (from..from + spec.period.max(1) as u16 + 1)
+        .find(|&d| due(spec, d))
+        .map_or(0, |d| d - day)
 }
 
 const DAY_ADDR: u32 = 0x0300_4080;
@@ -797,7 +805,9 @@ const DAY_ADDR: u32 = 0x0300_4080;
 /// from the day before a shot.
 fn rev_tick(core: &mut Core) {
     animate(core);
-    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return };
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else {
+        return;
+    };
     let p = phase(core);
     if hits_left(core) > 0 && (p == CHARGING || p == WARNING) {
         let want = if next_in(core, &spec) <= 1 { WARNING } else { CHARGING };
@@ -815,7 +825,9 @@ fn rev_tick(core: &mut Core) {
 /// the satellite fires on Black Hole's turn on a shot's day, and a silo with
 /// one of the other team's foot soldiers on it launches at it.
 fn rev_frame(core: &mut Core) {
-    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return };
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else {
+        return;
+    };
     if hits_left(core) == 0 || core.raw_read_8(BUSY, -1) != 0 || !matches!(phase(core), CHARGING | WARNING) {
         return;
     }
@@ -875,7 +887,9 @@ fn foot_soldier_on_silo(core: &Core, bh: u8) -> Option<(u8, u8)> {
 /// unit near the Obelisk loses HP (never below 1), the Obelisk heals nothing
 /// for some turns, the player's COs lose a share of their meters.
 fn fall(core: &mut Core) {
-    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return };
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else {
+        return;
+    };
     let army = core.raw_read_8(ARMY, -1);
     let (ox, oy) = spec.obelisk;
     for (a, _, x, y) in crate::custom_campaign::units_of(core, army) {
@@ -918,8 +932,16 @@ pub fn heal_turn(core: &mut Core) {
 /// AW2 hides the box's tiles: the same frame on the screen.
 fn box_effects_off(core: &mut Core) {
     const DISPCNT_HIGH: u32 = 0x0300_30CD;
-    const WINDOW_BYTES: [u32; 8] =
-        [0x0300_2B40, 0x0300_2B4C, 0x0300_2EFC, 0x0300_2B44, 0x0300_2B68, 0x0300_24E4, 0x0300_2B30, 0x0300_20B8];
+    const WINDOW_BYTES: [u32; 8] = [
+        0x0300_2B40,
+        0x0300_2B4C,
+        0x0300_2EFC,
+        0x0300_2B44,
+        0x0300_2B68,
+        0x0300_24E4,
+        0x0300_2B30,
+        0x0300_20B8,
+    ];
     const WINDOW_HALVES: [u32; 2] = [0x0300_30A4, 0x0300_30DC];
     const BLEND: [u32; 4] = [0x0300_30E0, 0x0300_2020, 0x0300_2B28, 0x0300_1FFC];
     let d = core.raw_read_8(DISPCNT_HIGH, -1);
@@ -996,7 +1018,10 @@ pub fn launch(core: &mut Core) -> bool {
     if !on(core) || hits_left(core) == 0 {
         return false;
     }
-    let (x, y) = (core.raw_read_16(DESTINATION, -1) as u32, core.raw_read_16(DESTINATION + 2, -1) as u32);
+    let (x, y) = (
+        core.raw_read_16(DESTINATION, -1) as u32,
+        core.raw_read_16(DESTINATION + 2, -1) as u32,
+    );
     if tile_at(core, x, y) != SILO_TILE {
         return false;
     }
@@ -1042,7 +1067,14 @@ pub fn saved(core: &Core) -> [u8; SAVED_LEN] {
             DESTROYED | GONE => GONE,
             _ => CHARGING,
         };
-        b = [SAVED_REV_MARK, hits_left(core), p, core.raw_read_8(LAST_SHOT, -1), core.raw_read_8(OFFLINE, -1), 0];
+        b = [
+            SAVED_REV_MARK,
+            hits_left(core),
+            p,
+            core.raw_read_8(LAST_SHOT, -1),
+            core.raw_read_8(OFFLINE, -1),
+            0,
+        ];
     }
     if core.raw_read_8(ON, -1) == ON_ONYX {
         let c = charge(core).to_le_bytes();
@@ -1185,11 +1217,18 @@ fn frame_pieces(pack: &crate::ds_pack::Pack, anim: u32, frame: usize) -> Option<
 }
 
 fn build_art(pack: &crate::ds_pack::Pack, tiles: &[u8], pal: &[u8]) -> Option<Art> {
-    let colours: Vec<u16> = pal.chunks(2).take(16).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+    let colours: Vec<u16> = pal
+        .chunks(2)
+        .take(16)
+        .map(|c| u16::from_le_bytes([c[0], c[1]]))
+        .collect();
     // The whole picture (palette indices), from its pieces.
     let pieces = frame_pieces(pack, SAT_ANIM, 0)?;
     let (x0, y0) = (pieces.iter().map(|p| p.0).min()?, pieces.iter().map(|p| p.1).min()?);
-    let (x1, y1) = (pieces.iter().map(|p| p.0 + p.2 as i32).max()?, pieces.iter().map(|p| p.1 + p.3 as i32).max()?);
+    let (x1, y1) = (
+        pieces.iter().map(|p| p.0 + p.2 as i32).max()?,
+        pieces.iter().map(|p| p.1 + p.3 as i32).max()?,
+    );
     let (w, h) = ((x1 - x0) as usize, (y1 - y0) as usize);
     let mut big = vec![0u8; w * h];
     for &(px, py, pw, ph, first) in &pieces {
@@ -1227,13 +1266,22 @@ fn build_art(pack: &crate::ds_pack::Pack, tiles: &[u8], pal: &[u8]) -> Option<Ar
     }
     let (sw, sh) = (bx1 - bx0, by1 - by0);
     let scale = (sw as f32 / 32.0).max(sh as f32 / 32.0);
-    let (ow, oh) = (((sw as f32 / scale).round() as usize).min(32), ((sh as f32 / scale).round() as usize).min(32));
+    let (ow, oh) = (
+        ((sw as f32 / scale).round() as usize).min(32),
+        ((sh as f32 / scale).round() as usize).min(32),
+    );
     let (ox, oy) = ((32 - ow) / 2, (32 - oh) / 2);
     let mut small = vec![0u8; 32 * 32];
     for y in 0..oh {
         for x in 0..ow {
-            let (sx0, sx1) = ((x as f32 * scale) as usize, (((x + 1) as f32 * scale) as usize).max((x as f32 * scale) as usize + 1));
-            let (sy0, sy1) = ((y as f32 * scale) as usize, (((y + 1) as f32 * scale) as usize).max((y as f32 * scale) as usize + 1));
+            let (sx0, sx1) = (
+                (x as f32 * scale) as usize,
+                (((x + 1) as f32 * scale) as usize).max((x as f32 * scale) as usize + 1),
+            );
+            let (sy0, sy1) = (
+                (y as f32 * scale) as usize,
+                (((y + 1) as f32 * scale) as usize).max((y as f32 * scale) as usize + 1),
+            );
             let mut count = [0usize; 16];
             let mut n = 0;
             for yy in sy0..sy1.min(sh) {
@@ -1258,7 +1306,11 @@ fn build_art(pack: &crate::ds_pack::Pack, tiles: &[u8], pal: &[u8]) -> Option<Ar
     let white: u16 = 0x7FFF;
     let mut by_use: Vec<usize> = (1..16).filter(|&i| uses[i] > 0).collect();
     by_use.sort_by_key(|&i| std::cmp::Reverse(uses[i]));
-    let mut kept: Vec<u16> = by_use.iter().map(|&i| colours.get(i).copied().unwrap_or(0) & 0x7FFF).filter(|&c| dist(c, black) > 12 && dist(c, white) > 12).collect();
+    let mut kept: Vec<u16> = by_use
+        .iter()
+        .map(|&i| colours.get(i).copied().unwrap_or(0) & 0x7FFF)
+        .filter(|&c| dist(c, black) > 12 && dist(c, white) > 12)
+        .collect();
     kept.truncate(SAT_COLOURS);
     while kept.len() < SAT_COLOURS {
         kept.push(black);
@@ -1353,7 +1405,12 @@ fn satellite_now(core: &Core, art: &Art) -> Vec<u8> {
             let width = if t < 10 || t > FIRE_FRAMES as i32 - 20 { 1 } else { 3 };
             for y in 18..32 {
                 for dx in 0..width {
-                    put(&mut px, 15 + dx - width / 2, y, if dx == width / 2 { WHITE } else { PINK });
+                    put(
+                        &mut px,
+                        15 + dx - width / 2,
+                        y,
+                        if dx == width / 2 { WHITE } else { PINK },
+                    );
                 }
             }
         }
@@ -1368,7 +1425,16 @@ fn satellite_now(core: &Core, art: &Art) -> Vec<u8> {
             for dy in -r..=r {
                 for dx in -r..=r {
                     if dx * dx + dy * dy <= r * r {
-                        put(&mut px, 16 + dx, 12 + dy, if 3 * (dx * dx + dy * dy) <= r * r { WHITE } else { ORANGE });
+                        put(
+                            &mut px,
+                            16 + dx,
+                            12 + dy,
+                            if 3 * (dx * dx + dy * dy) <= r * r {
+                                WHITE
+                            } else {
+                                ORANGE
+                            },
+                        );
                     }
                 }
             }
@@ -1430,7 +1496,9 @@ fn font_draw(core: &Core, on: &mut [Vec<bool>], s: &str, x0: usize, y0: usize) -
 fn rev_text(core: &Core) -> Vec<u8> {
     let (w, h) = (8 * TEXT_TILES.len(), 32);
     let mut px = vec![0u8; w * h];
-    let Some(spec) = crate::ds_campaign::onyx_spec(core) else { return px };
+    let Some(spec) = crate::ds_campaign::onyx_spec(core) else {
+        return px;
+    };
     let n = next_in(core, &spec) as usize;
     let t = core.raw_read_16(ANIM, -1);
     let alarm = n <= 1 && hits_left(core) > 0;
@@ -1463,7 +1531,19 @@ fn rev_text(core: &Core) -> Vec<u8> {
                 if !(0..w as i32).contains(&xx) {
                     continue;
                 }
-                let v = if d == 2 { BLACK } else if d < 2 && k < left { if blink_pink { PINK } else { WHITE } } else if d < 2 { 0 } else { continue };
+                let v = if d == 2 {
+                    BLACK
+                } else if d < 2 && k < left {
+                    if blink_pink {
+                        PINK
+                    } else {
+                        WHITE
+                    }
+                } else if d < 2 {
+                    0
+                } else {
+                    continue;
+                };
                 if v != 0 {
                     px[yy as usize * w + xx as usize] = v;
                 }
@@ -1479,7 +1559,15 @@ fn rev_text(core: &Core) -> Vec<u8> {
             px[yy * w + xx] = if edge {
                 BLACK
             } else if xx - 2 < fill {
-                if alarm { if blink_pink { WHITE } else { PINK } } else { SAT_FIRST }
+                if alarm {
+                    if blink_pink {
+                        WHITE
+                    } else {
+                        PINK
+                    }
+                } else {
+                    SAT_FIRST
+                }
             } else {
                 BLACK
             };
@@ -1543,7 +1631,15 @@ fn text_now(core: &Core) -> Vec<u8> {
                 if !(0..w as i32).contains(&xx) {
                     continue;
                 }
-                let v = if d == 2 { BLACK } else if d < 2 && k < left { WHITE } else if d < 2 { 0 } else { continue };
+                let v = if d == 2 {
+                    BLACK
+                } else if d < 2 && k < left {
+                    WHITE
+                } else if d < 2 {
+                    0
+                } else {
+                    continue;
+                };
                 if v != 0 {
                     px[yy as usize * w + xx as usize] = v;
                 }
@@ -1561,7 +1657,13 @@ fn text_now(core: &Core) -> Vec<u8> {
             px[yy * w + xx] = if edge {
                 BLACK
             } else if xx - 2 < fill {
-                if warn && (t / 8) % 2 == 0 { WHITE } else if warn { PINK } else { SAT_FIRST }
+                if warn && (t / 8) % 2 == 0 {
+                    WHITE
+                } else if warn {
+                    PINK
+                } else {
+                    SAT_FIRST
+                }
             } else {
                 BLACK
             };
@@ -1571,7 +1673,11 @@ fn text_now(core: &Core) -> Vec<u8> {
 }
 
 fn shows(core: &Core) -> bool {
-    clock_on(core) && core.raw_read_32(MAIN_CALLBACK, -1) == MAP_CALLBACK && !crate::heal_effect::playing(core) && !match_over(core) && art().is_some()
+    clock_on(core)
+        && core.raw_read_32(MAIN_CALLBACK, -1) == MAP_CALLBACK
+        && !crate::heal_effect::playing(core)
+        && !match_over(core)
+        && art().is_some()
 }
 
 /// AW2's match end runs (its procs' scripts `0x084C327C`, and `0x084C3240`
@@ -1624,8 +1730,14 @@ fn panel_at(core: &mut Core, start: u32, at: u32) -> (i32, i32) {
     let right = (240 - PANEL_W - 2, PANEL_Y);
     let (mut x, y) = if side == 1 { left } else { right };
     let map = core.raw_read_32(MAP_POINTER, -1);
-    let (sx, sy) = (core.raw_read_16(map + 4, -1) as i16 as i32, core.raw_read_16(map + 6, -1) as i16 as i32);
-    let (cx, cy) = (core.raw_read_16(CURSOR_X, -1) as i32 * 16 - sx, core.raw_read_16(CURSOR_Y, -1) as i32 * 16 - sy);
+    let (sx, sy) = (
+        core.raw_read_16(map + 4, -1) as i16 as i32,
+        core.raw_read_16(map + 6, -1) as i16 as i32,
+    );
+    let (cx, cy) = (
+        core.raw_read_16(CURSOR_X, -1) as i32 * 16 - sx,
+        core.raw_read_16(CURSOR_Y, -1) as i32 * 16 - sy,
+    );
     if cx + 16 > x && cx < x + PANEL_W && cy + 16 > y && cy < y + 32 {
         x = if side == 1 { right.0 } else { left.0 };
     }
@@ -1648,7 +1760,11 @@ pub fn flush_sprites(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     // Palette 15's entries 5..15: the panel's colours.
     let colours: Vec<u8> = art.colours.iter().flat_map(|c| c.to_le_bytes()).collect();
     for base in [PAL_BUFFER, PAL_RAM] {
-        write_if_changed(core, base + 0x200 + 32 * PALETTE as u32 + 2 * FIRST_COLOUR as u32, &colours);
+        write_if_changed(
+            core,
+            base + 0x200 + 32 * PALETTE as u32 + 2 * FIRST_COLOUR as u32,
+            &colours,
+        );
     }
     let mut sprites: Vec<(i32, i32, u16, u16, u16)> = Vec::new();
     {
@@ -1777,7 +1893,9 @@ mod tests {
 
     #[test]
     fn the_satellite_converts() {
-        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else { return };
+        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else {
+            return;
+        };
         let Ok(rom) = std::fs::read(path) else { return };
         crate::ds_art::offer(&rom);
         let a = art().expect("the satellite's picture");

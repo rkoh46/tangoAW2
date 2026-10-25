@@ -42,7 +42,14 @@ fn after(cond: Cond, then: Vec<Action>) -> Trigger {
 /// death, is decided before a trigger can play the victory scene and earn the bond), or its HQ is the
 /// player's.
 fn beaten(enemy: u8, hq: (u8, u8)) -> Cond {
-    Cond::Any(vec![Cond::ArmyUnitsAtMost { army: enemy, n: 1 }, Cond::OwnerAt { x: hq.0, y: hq.1, army: 1 }])
+    Cond::Any(vec![
+        Cond::ArmyUnitsAtMost { army: enemy, n: 1 },
+        Cond::OwnerAt {
+            x: hq.0,
+            y: hq.1,
+            army: 1,
+        },
+    ])
 }
 
 /// An army's CO meter set to `pct` of its full meter (AW2's units: a CO Power's cost, `cop_cost`,
@@ -65,7 +72,9 @@ fn charge_army2_60(core: &mut Core) {
 
 /// The units of a built map's text file, for a second front (whose deployment is the front's own).
 fn built_units(name: &str) -> Vec<UnitDef> {
-    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else { return Vec::new() };
+    let Some(m) = crate::bh_map_data::MAPS.iter().find(|m| m.name == name) else {
+        return Vec::new();
+    };
     m.units
         .iter()
         .map(|u| {
@@ -134,7 +143,9 @@ fn garrison(key: &str) -> &'static [(u8, u8)] {
 
 fn apply_roles(v: &mut [MissionDef]) {
     for key in ROLE_MISSIONS {
-        let Some(m) = v.iter_mut().find(|m| m.key == key) else { continue };
+        let Some(m) = v.iter_mut().find(|m| m.key == key) else {
+            continue;
+        };
         let base = if m.units.is_empty() {
             match &m.map {
                 MapSrc::Built(n) => built_units(n),
@@ -186,11 +197,18 @@ fn bh04() -> MissionDef {
         // Hawke's Md Tank wedge arrives on day 4 if the Marshal's valley was not scouted.
         on_day(
             4,
-            Some(Cond::Not(Box::new(Cond::UnitsIn { army: 1, area: Rect::new(10, 0, 23, 17), at_least: 1 }))),
-            vec![Action::Scene(crate::bh_text::scene("m04_wedge")), Action::Spawn(vec![
-                UnitDef::new(2, unit::MD_TANK, 16, 8),
-                UnitDef::new(2, unit::MD_TANK, 16, 10),
-            ])],
+            Some(Cond::Not(Box::new(Cond::UnitsIn {
+                army: 1,
+                area: Rect::new(10, 0, 23, 17),
+                at_least: 1,
+            }))),
+            vec![
+                Action::Scene(crate::bh_text::scene("m04_wedge")),
+                Action::Spawn(vec![
+                    UnitDef::new(2, unit::MD_TANK, 16, 8),
+                    UnitDef::new(2, unit::MD_TANK, 16, 10),
+                ]),
+            ],
         ),
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m04_day5"))]),
         // Hawke's power is charged by day 6.
@@ -206,12 +224,13 @@ fn bh04() -> MissionDef {
     m
 }
 
-
 // --- M5 Night Raid -------------------------------------------------------------------
 
 /// Every parked aircraft of Green Earth (Fighters and Bombers) is destroyed.
 fn aircraft_destroyed(core: &mut Core) -> bool {
-    units_of(core, 2).iter().all(|u| u.1 != unit::FIGHTER && u.1 != unit::BOMBER)
+    units_of(core, 2)
+        .iter()
+        .all(|u| u.1 != unit::FIGHTER && u.1 != unit::BOMBER)
 }
 
 fn bh05() -> MissionDef {
@@ -259,7 +278,13 @@ fn bh05() -> MissionDef {
         ),
         on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m05_day6"))]),
         // Eight aircraft gone and the tower taken.
-        after(Cond::All(vec![Cond::Custom(aircraft_destroyed), Cond::OwnerAt { x: 19, y: 3, army: 1 }]), vec![Action::Win]),
+        after(
+            Cond::All(vec![
+                Cond::Custom(aircraft_destroyed),
+                Cond::OwnerAt { x: 19, y: 3, army: 1 },
+            ]),
+            vec![Action::Win],
+        ),
     ];
     m.needs = Needs::All(vec!["bh04"]);
     m.flag = FLAGS[1];
@@ -285,7 +310,12 @@ fn bh06() -> MissionDef {
     m.triggers = vec![
         on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m06_day5"))]),
         // The Carrier launches Fighters every third day from day 5 (from its isle's air).
-        Trigger::new(When::TurnStart, Cond::EveryDays { n: 3, from: 5 }, vec![Action::Spawn(vec![UnitDef::new(2, unit::FIGHTER, 24, 10)])]).repeating(),
+        Trigger::new(
+            When::TurnStart,
+            Cond::EveryDays { n: 3, from: 5 },
+            vec![Action::Spawn(vec![UnitDef::new(2, unit::FIGHTER, 24, 10)])],
+        )
+        .repeating(),
         on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m06_day12"))]),
         after(beaten(2, (28, 14)), vec![Action::Win]),
     ];
@@ -324,20 +354,35 @@ fn bh07() -> MissionDef {
     m.rank_days = 16;
     m.factory = F7.to_vec();
     // The port at (9, 20) is Black Hole's (the map tool owns a property by the nearest HQ).
-    m.props = vec![Prop { kind: PropKind::Port, owner: 1, x: 9, y: 20 }];
+    m.props = vec![Prop {
+        kind: PropKind::Port,
+        owner: 1,
+        x: 9,
+        y: 20,
+    }];
     m.intro = crate::bh_text::scene("m07_pre");
     m.victory = crate::bh_text::scene("m07_post");
     m.after = crate::bh_text::chain(&["m07_map", "m07_sturm"]);
     m.triggers = vec![
         on_day(6, None, vec![Action::Scene(crate::bh_text::scene("m07_day6"))]),
         // Eagle's funds: +5000 on day 10, a second Bomber on day 12.
-        on_day(10, None, vec![Action::Scene(crate::bh_text::scene("m07_day10")), Action::AddFunds { army: 2, funds: 5000 }]),
-        on_day(12, None, vec![Action::Scene(crate::bh_text::scene("m07_day12")), Action::Spawn(vec![UnitDef::new(2, unit::BOMBER, 26, 14)])]),
         on_day(
-            13,
+            10,
             None,
-            vec![Action::Scene(crate::bh_text::scene("m07_day13"))],
+            vec![
+                Action::Scene(crate::bh_text::scene("m07_day10")),
+                Action::AddFunds { army: 2, funds: 5000 },
+            ],
         ),
+        on_day(
+            12,
+            None,
+            vec![
+                Action::Scene(crate::bh_text::scene("m07_day12")),
+                Action::Spawn(vec![UnitDef::new(2, unit::BOMBER, 26, 14)]),
+            ],
+        ),
+        on_day(13, None, vec![Action::Scene(crate::bh_text::scene("m07_day13"))]),
         after(beaten(2, (25, 19)), vec![Action::Win]),
     ];
     m.needs = Needs::All(vec!["bh05"]);
@@ -404,7 +449,11 @@ fn bh08() -> MissionDef {
     m.victory = crate::bh_text::scene("m08_post");
     m.after = crate::bh_text::chain(&["m08_map", "m08_sturm"]);
     m.triggers = vec![
-        Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(crate::bh_text::scene("m08_front2_post"))]),
+        Trigger::new(
+            When::TurnStart,
+            Cond::Custom(second_front_won),
+            vec![Action::Scene(crate::bh_text::scene("m08_front2_post"))],
+        ),
         Trigger::new(
             When::TurnStart,
             Cond::Custom(second_front_lost),
@@ -456,7 +505,9 @@ fn trucks_lost(core: &mut Core) -> bool {
 
 /// A truck has passed the first bridge (x = 8): Javier's comms raise the alarm.
 fn alarm(core: &mut Core) -> bool {
-    VAULTS.iter().any(|n| unit_by_name(core, n).is_some_and(|(a, alive)| alive && core.raw_read_8(a + 2, -1) >= 8))
+    VAULTS
+        .iter()
+        .any(|n| unit_by_name(core, n).is_some_and(|(a, alive)| alive && core.raw_read_8(a + 2, -1) >= 8))
 }
 
 fn bh09() -> MissionDef {
@@ -488,17 +539,11 @@ fn bh09() -> MissionDef {
         ),
         after(
             Cond::Custom(all_three_home),
-            vec![
-                Action::Scene(crate::bh_text::scene("m09_all_home")),
-                Action::Win,
-            ],
+            vec![Action::Scene(crate::bh_text::scene("m09_all_home")), Action::Win],
         ),
         after(
             Cond::Custom(two_home_third_gone),
-            vec![
-                Action::Scene(crate::bh_text::scene("m09_two_home")),
-                Action::Win,
-            ],
+            vec![Action::Scene(crate::bh_text::scene("m09_two_home")), Action::Win],
         ),
         after(Cond::Custom(trucks_lost), vec![Action::Lose]),
     ];
@@ -549,8 +594,12 @@ fn bh11() -> MissionDef {
     m.look = 3; // the Wasteland look: ash and cinder
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::VON_BOLT, co::HAWKE)).funds(14000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(11000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(11000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER))
+            .team(2)
+            .funds(11000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI))
+            .team(2)
+            .funds(11000),
     ];
     m.day_limit = 0;
     m.rank_days = 16;
@@ -568,15 +617,21 @@ fn bh11() -> MissionDef {
     // marked a turn ahead, hitting any army's units there for 5 HP (never below 1).
     m.volcano = Some(VolcanoDef::new(3, 1, 5, &crate::campaign_model::ring(11, 6, 18, 13)).per_eruption(3));
     m.triggers = vec![
+        on_day(3, None, vec![Action::Scene(crate::bh_text::scene("m11_day3"))]),
         on_day(
-            3,
+            5,
             None,
-            vec![Action::Scene(crate::bh_text::scene("m11_day3"))],
+            vec![
+                Action::Scene(crate::bh_text::scene("m11_day5")),
+                Action::Spawn(paratroopers.clone()),
+            ],
         ),
-        on_day(5, None, vec![Action::Scene(crate::bh_text::scene("m11_day5")), Action::Spawn(paratroopers.clone())]),
         on_day(8, None, vec![Action::Scene(crate::bh_text::scene("m11_day8"))]),
         on_day(10, None, vec![Action::Spawn(paratroopers)]),
-        after(Cond::All(vec![beaten(2, (25, 3)), beaten(3, (25, 17))]), vec![Action::Win]),
+        after(
+            Cond::All(vec![beaten(2, (25, 3)), beaten(3, (25, 17))]),
+            vec![Action::Win],
+        ),
     ];
     m.needs = Needs::All(vec!["bh10"]);
     m.flag = FLAGS[7];
@@ -603,7 +658,15 @@ pub fn missions() -> Vec<MissionDef> {
     // The day limit loses: the day after the last is the defeat (the header's counter only shows it).
     for m in v.iter_mut().filter(|m| m.key >= "bh04") {
         if m.day_limit > 0 {
-            let up = Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: m.day_limit + 1 }, vec![Action::Lose]).repeating();
+            let up = Trigger::new(
+                When::TurnStart,
+                Cond::EveryDays {
+                    n: 1000,
+                    from: m.day_limit + 1,
+                },
+                vec![Action::Lose],
+            )
+            .repeating();
             m.triggers.push(up);
         }
     }
@@ -615,8 +678,14 @@ fn dev_stub_bh03() -> MissionDef {
     let mut m = MissionDef::new("bh03", "Placeholder Three");
     m.objective = "Rout the Green Earth force.";
     m.map = MapSrc::Ascii(&["1.........", "..ff..c...", "....mm....", "...c..c...", ".........2"]);
-    m.armies = vec![ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)), ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE))];
-    m.units = vec![UnitDef::new(1, unit::INFANTRY, 1, 1), UnitDef::new(2, unit::INFANTRY, 8, 3)];
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)),
+    ];
+    m.units = vec![
+        UnitDef::new(1, unit::INFANTRY, 1, 1),
+        UnitDef::new(2, unit::INFANTRY, 8, 3),
+    ];
     // (locked behind the bonds: with the placeholder campaign's last mission "bh02" won the campaign is over)
     m.needs = Needs::Bonds(vec!["bh02"]);
     m.flag = region::BLACK_HOLE[2];
@@ -629,7 +698,11 @@ mod tests {
     use crate::ds_campaign_data::wrap_dialogue;
 
     fn scenes(m: &MissionDef) -> Vec<(String, &Scene)> {
-        let mut v = vec![(format!("{} intro", m.key), &m.intro), (format!("{} victory", m.key), &m.victory), (format!("{} after", m.key), &m.after)];
+        let mut v = vec![
+            (format!("{} intro", m.key), &m.intro),
+            (format!("{} victory", m.key), &m.victory),
+            (format!("{} after", m.key), &m.after),
+        ];
         for (i, t) in m.triggers.iter().enumerate() {
             for a in &t.then {
                 if let Action::Scene(s) = a {
@@ -649,15 +722,32 @@ mod tests {
     #[test]
     fn every_map_is_built_and_every_mission_has_scenes_and_a_flag_in_green_earth() {
         for m in missions().iter().filter(|m| m.key >= "bh04") {
-            let MapSrc::Built(name) = &m.map else { panic!("{}: not a built map", m.key) };
-            assert!(crate::bh_map_data::MAPS.iter().any(|b| b.name == *name), "{}: map {name} is not built (five/bhmap.py)", m.key);
+            let MapSrc::Built(name) = &m.map else {
+                panic!("{}: not a built map", m.key)
+            };
+            assert!(
+                crate::bh_map_data::MAPS.iter().any(|b| b.name == *name),
+                "{}: map {name} is not built (five/bhmap.py)",
+                m.key
+            );
             if let Some(f) = &m.front2 {
-                let MapSrc::Built(n2) = &f.map else { panic!("{}: second front not built", m.key) };
-                assert!(crate::bh_map_data::MAPS.iter().any(|b| b.name == *n2), "{}: map {n2}", m.key);
+                let MapSrc::Built(n2) = &f.map else {
+                    panic!("{}: second front not built", m.key)
+                };
+                assert!(
+                    crate::bh_map_data::MAPS.iter().any(|b| b.name == *n2),
+                    "{}: map {n2}",
+                    m.key
+                );
             }
             assert!(!m.intro.is_empty() && !m.after.is_empty(), "{}: scenes", m.key);
             // AW2's Green Earth, the east land
-            assert!((300..=390).contains(&m.flag.0) && (85..=230).contains(&m.flag.1), "{}: flag {:?} off Green Earth", m.key, m.flag);
+            assert!(
+                (300..=390).contains(&m.flag.0) && (85..=230).contains(&m.flag.1),
+                "{}: flag {:?} off Green Earth",
+                m.key,
+                m.flag
+            );
         }
     }
 
@@ -669,7 +759,10 @@ mod tests {
         assert_eq!(get("bh07").needs, Needs::All(vec!["bh05"]));
         assert_eq!(get("bh08").needs, Needs::All(vec!["bh06", "bh07"]));
         assert_eq!(get("bh04").recruits, vec![roster::HAWKE]);
-        assert!(get("bh04").triggers.iter().any(|t| t.then.iter().any(|a| matches!(a, Action::EarnBond(1)))));
+        assert!(get("bh04")
+            .triggers
+            .iter()
+            .any(|t| t.then.iter().any(|a| matches!(a, Action::EarnBond(1)))));
     }
 
     /// Every line of every scene fits one box (two lines of AW2's 176 pixels).

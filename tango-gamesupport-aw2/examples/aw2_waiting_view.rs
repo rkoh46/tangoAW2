@@ -36,15 +36,33 @@ fn main() {
     let script = std::fs::read_to_string(&args[5]).expect("script");
     std::fs::create_dir_all(&out).ok();
     let shared = std::env::var_os("AW2_SHARED_ART").is_some();
-    let mt = (0u8, if shared { tango_gamesupport_aw2::ds_art::SHARED_ART } else { 0 } | tango_gamesupport_aw2::online::ONLINE_MATCH);
+    let mt = (
+        0u8,
+        if shared {
+            tango_gamesupport_aw2::ds_art::SHARED_ART
+        } else {
+            0
+        } | tango_gamesupport_aw2::online::ONLINE_MATCH,
+    );
     let rtc = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
     tango_gamesupport_aw2::ds_pack::pack();
     if std::env::var("AW2_TILT").is_ok_and(|v| v == "1") {
         tango_gamesupport_aw2::ds_graphics::set_enabled(true);
     }
-    let mut link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &tango_gamesupport_aw2::pvp::AW2E, Some(mt), None).expect("boot");
+    let mut link = tango_backend_mgba::SharedLink::boot(
+        &rom,
+        Some(&save),
+        Some(rtc),
+        &tango_gamesupport_aw2::pvp::AW2E,
+        Some(mt),
+        None,
+    )
+    .expect("boot");
     link.set_players(players);
-    let names: Vec<String> = ["Hostname", "Guest", "Nell", "Gamertag10", "Fifth"][..players].iter().map(|s| s.to_string()).collect();
+    let names: Vec<String> = ["Hostname", "Guest", "Nell", "Gamertag10", "Fifth"][..players]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     tango_gamesupport_aw2::online::set_room(names, 0);
     let mut seat = 0usize;
     let tick = |link: &mut tango_backend_mgba::SharedLink, seat: usize, k: u32| {
@@ -77,7 +95,16 @@ fn main() {
             let c = link.core();
             let mut b = [0u8; 0x60];
             c.raw_read_range(0x0203_CB00, -1, &mut b);
-            println!("sel: init {} done {} players {} | ready {:?} | on teams {} | armies {} map {:02x}", b[0], b[1], b[2], (0..3).map(|s| b[0x10 + 0x10 * s + 4]).collect::<Vec<_>>(), tango_gamesupport_aw2::pvp::on_teams_screen(c), c.raw_read_8(0x0201_7C58, -1), c.raw_read_8(0x0300_3FC2, -1));
+            println!(
+                "sel: init {} done {} players {} | ready {:?} | on teams {} | armies {} map {:02x}",
+                b[0],
+                b[1],
+                b[2],
+                (0..3).map(|s| b[0x10 + 0x10 * s + 4]).collect::<Vec<_>>(),
+                tango_gamesupport_aw2::pvp::on_teams_screen(c),
+                c.raw_read_8(0x0201_7C58, -1),
+                c.raw_read_8(0x0300_3FC2, -1)
+            );
         } else if tok == "rec" {
             let mut b = [0u8; 0x60];
             link.core().raw_read_range(0x0201_7C50, -1, &mut b);
@@ -87,9 +114,25 @@ fn main() {
                 tick(&mut link, seat, if i < 6 { 1 } else { 0 });
                 let c = link.core();
                 if i % 2 == 0 {
-                    let tasks: Vec<String> = (0x0300_1500u32..0x0300_1A00).step_by(4).filter_map(|a| { let v = c.raw_read_32(a, -1); ((0x0800_0000..0x0A00_0000).contains(&v) && v & 1 == 1).then(|| format!("{v:x}")) }).collect();
+                    let tasks: Vec<String> = (0x0300_1500u32..0x0300_1A00)
+                        .step_by(4)
+                        .filter_map(|a| {
+                            let v = c.raw_read_32(a, -1);
+                            ((0x0800_0000..0x0A00_0000).contains(&v) && v & 1 == 1).then(|| format!("{v:x}"))
+                        })
+                        .collect();
                     println!("tasks {tasks:?}");
-                    println!("{i}: init {} done {} pulse {} ready {} {} {} teams {} loop {:08x}", c.raw_read_8(0x0203_CB00, -1), c.raw_read_8(0x0203_CB01, -1), c.raw_read_8(0x0203_CB03, -1), c.raw_read_8(0x0203_CB14, -1), c.raw_read_8(0x0203_CB24, -1), c.raw_read_8(0x0203_CB34, -1), tango_gamesupport_aw2::pvp::on_teams_screen(c), c.raw_read_32(0x0300_0000, -1));
+                    println!(
+                        "{i}: init {} done {} pulse {} ready {} {} {} teams {} loop {:08x}",
+                        c.raw_read_8(0x0203_CB00, -1),
+                        c.raw_read_8(0x0203_CB01, -1),
+                        c.raw_read_8(0x0203_CB03, -1),
+                        c.raw_read_8(0x0203_CB14, -1),
+                        c.raw_read_8(0x0203_CB24, -1),
+                        c.raw_read_8(0x0203_CB34, -1),
+                        tango_gamesupport_aw2::pvp::on_teams_screen(c),
+                        c.raw_read_32(0x0300_0000, -1)
+                    );
                 }
             }
         } else if let Some(n) = tok.strip_prefix('w') {
@@ -98,8 +141,21 @@ fn main() {
             let (x, y) = xy.split_once(',').unwrap();
             let (x, y): (i32, i32) = (x.parse().unwrap(), y.parse().unwrap());
             for _ in 0..60 {
-                let (cx, cy) = (link.core().raw_read_8(CURSOR_X, -1) as i32, link.core().raw_read_8(CURSOR_Y, -1) as i32);
-                let key = if cx < x { 1 << 4 } else if cx > x { 1 << 5 } else if cy < y { 1 << 7 } else if cy > y { 1 << 6 } else { break };
+                let (cx, cy) = (
+                    link.core().raw_read_8(CURSOR_X, -1) as i32,
+                    link.core().raw_read_8(CURSOR_Y, -1) as i32,
+                );
+                let key = if cx < x {
+                    1 << 4
+                } else if cx > x {
+                    1 << 5
+                } else if cy < y {
+                    1 << 7
+                } else if cy > y {
+                    1 << 6
+                } else {
+                    break;
+                };
                 for _ in 0..4 {
                     tick(&mut link, seat, key);
                 }
@@ -126,5 +182,10 @@ fn main() {
         }
     }
     let c = link.core_mut();
-    println!("army {}, cursor {},{}", c.raw_read_8(0x0300_33EC, -1), c.raw_read_8(CURSOR_X, -1), c.raw_read_8(CURSOR_Y, -1));
+    println!(
+        "army {}, cursor {},{}",
+        c.raw_read_8(0x0300_33EC, -1),
+        c.raw_read_8(CURSOR_X, -1),
+        c.raw_read_8(CURSOR_Y, -1)
+    );
 }

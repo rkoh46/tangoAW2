@@ -134,7 +134,9 @@ pub fn owner(core: &Core) -> Option<u32> {
 /// The BH Campaign is being played (the factory can be destroyed there too;
 /// not with [`OFF`], the development byte, which is the campaign as it was).
 pub fn in_bh_campaign(core: &Core) -> bool {
-    crate::ds_campaign::active(core) && crate::ds_campaign::source(core) == BH_SOURCE && core.raw_read_8(DEV_OFF, -1) != OFF
+    crate::ds_campaign::active(core)
+        && crate::ds_campaign::source(core) == BH_SOURCE
+        && core.raw_read_8(DEV_OFF, -1) != OFF
 }
 
 /// The army moving now is on the team of the human who owns the inventions.
@@ -160,7 +162,11 @@ fn hp(core: &Core, u: u32) -> u32 {
 }
 
 fn bars(hp: u32) -> u32 {
-    if hp == 0 { 0 } else { (hp - 1) / 10 + 1 }
+    if hp == 0 {
+        0
+    } else {
+        (hp - 1) / 10 + 1
+    }
 }
 
 fn price(core: &Core, t: u8) -> u32 {
@@ -217,7 +223,11 @@ pub struct Target {
 }
 
 fn max_hp(kind: Kind) -> u32 {
-    if kind == Kind::Factory { crate::factory_hp::HP as u32 } else { 99 }
+    if kind == Kind::Factory {
+        crate::factory_hp::HP as u32
+    } else {
+        99
+    }
 }
 
 /// Every invention of the list a unit may attack and that still stands.
@@ -251,7 +261,15 @@ pub fn targets(core: &Core) -> Vec<Target> {
             }
             _ => continue,
         };
-        out.push(Target { entry: e, kind, at: (x, y), aim, hp, max_hp: max_hp(kind), facing });
+        out.push(Target {
+            entry: e,
+            kind,
+            at: (x, y),
+            aim,
+            hp,
+            max_hp: max_hp(kind),
+            facing,
+        });
     }
     out
 }
@@ -284,7 +302,11 @@ pub fn zone(core: &Core, t: &Target) -> Vec<(i32, i32)> {
     match t.kind {
         Kind::Cannon => {
             // (x + dx, y + dy) of the apex by facing: `0x0849F688` (down, up).
-            let apex = if t.facing == 1 { (t.at.0 + 1, t.at.1 - 1) } else { (t.at.0 + 1, t.at.1 + 2) };
+            let apex = if t.facing == 1 {
+                (t.at.0 + 1, t.at.1 - 1)
+            } else {
+                (t.at.0 + 1, t.at.1 + 2)
+            };
             cone(apex, if t.facing == 1 { 1 } else { 0 }, 10, w, h, &mut out);
         }
         Kind::Mini => {
@@ -361,8 +383,20 @@ pub fn worth(core: &Core, t: &Target, owner: u32) -> u32 {
     if let Some((x0, y0, x1, y1, range)) = reach {
         for v in units_of_team(core, owner, false) {
             let (ux, uy) = pos(core, v);
-            let dx = if ux < x0 { x0 - ux } else if ux > x1 { ux - x1 } else { 0 };
-            let dy = if uy < y0 { y0 - uy } else if uy > y1 { uy - y1 } else { 0 };
+            let dx = if ux < x0 {
+                x0 - ux
+            } else if ux > x1 {
+                ux - x1
+            } else {
+                0
+            };
+            let dy = if uy < y0 {
+                y0 - uy
+            } else if uy > y1 {
+                uy - y1
+            } else {
+                0
+            };
             if dx + dy <= range && hp(core, v) < 100 {
                 // (two bars a turn to units that are hurt)
                 extra += price(core, core.raw_read_8(v, -1)) * (100 - hp(core, v)).min(20) / 100;
@@ -390,7 +424,11 @@ fn structure_chart(core: &Core, u: u32) -> u32 {
     let t = core.raw_read_8(u, -1);
     let ammo = (core.raw_read_16(u + 4, -1) >> 7) & 0xF;
     let secondary = crate::roster::chart(t, 3, 1) as u32;
-    let primary = if ammo > 0 { crate::roster::chart(t, 3, 0) as u32 } else { 0 };
+    let primary = if ammo > 0 {
+        crate::roster::chart(t, 3, 0) as u32
+    } else {
+        0
+    };
     secondary.max(primary)
 }
 
@@ -430,7 +468,11 @@ fn unit_alternative(core: &Core, u: u32, hostile: &[u32]) -> u32 {
             continue;
         }
         let vt = core.raw_read_8(v, -1);
-        let c = (crate::roster::chart(t, vt, 1) as u32).max(if ammo > 0 { crate::roster::chart(t, vt, 0) as u32 } else { 0 });
+        let c = (crate::roster::chart(t, vt, 1) as u32).max(if ammo > 0 {
+            crate::roster::chart(t, vt, 0) as u32
+        } else {
+            0
+        });
         if c == 0 {
             continue;
         }
@@ -517,7 +559,10 @@ pub fn encode(core: &Core, u: u32, aim: (i32, i32)) -> u32 {
 /// The game's own structure attack by a queued strike, returning to `ret`.
 /// `false` when the unit or the target is gone.
 pub fn strike(core: &mut Core, value: u32, ret: u32) -> bool {
-    let (id, aim) = ((value & 0xFF), (((value >> 8) & 0xFF) as i32, ((value >> 16) & 0xFF) as i32));
+    let (id, aim) = (
+        (value & 0xFF),
+        (((value >> 8) & 0xFF) as i32, ((value >> 16) & 0xFF) as i32),
+    );
     let u = core.raw_read_32(UNITS_POINTER, -1) + UNIT * id;
     if core.raw_read_8(u, -1) == 0 || !targets(core).iter().any(|t| t.aim == aim) {
         return false;
@@ -603,11 +648,17 @@ pub fn goal_hook(core: &mut Core) {
     // (Dual Strike's threat-aware move, crate::ds_ai_move)
     crate::ds_ai_move::goal_hook(core);
     // (only for the unit the goal was made for, where this module is on)
-    if core.raw_read_8(GOAL, -1) == 0 || owner(core).is_none() || core.raw_read_32(CURRENT_UNIT, -1) != core.raw_read_32(GOAL_UNIT, -1) {
+    if core.raw_read_8(GOAL, -1) == 0
+        || owner(core).is_none()
+        || core.raw_read_32(CURRENT_UNIT, -1) != core.raw_read_32(GOAL_UNIT, -1)
+    {
         return;
     }
     core.raw_write_8(GOAL, -1, 0);
-    let (x, y) = (core.raw_read_8(GOAL + 1, -1) as u16, core.raw_read_8(GOAL + 2, -1) as u16);
+    let (x, y) = (
+        core.raw_read_8(GOAL + 1, -1) as u16,
+        core.raw_read_8(GOAL + 2, -1) as u16,
+    );
     let out = core.gba().cpu().gpr(4) as u32;
     core.raw_write_16(out, -1, x);
     core.raw_write_16(out + 2, -1, y);
@@ -640,7 +691,8 @@ fn role(core: &Core, u: u32) -> u8 {
 
 /// Movement points of a unit type.
 fn move_points(core: &Core, t: u8) -> i32 {
-    core.raw_read_8(crate::roster::table(core) + 0x5C * t as u32 + 0x0A, -1).max(1) as i32
+    core.raw_read_8(crate::roster::table(core) + 0x5C * t as u32 + 0x0A, -1)
+        .max(1) as i32
 }
 
 /// The cost of getting from `u`'s square to every square (-1: not at all):
@@ -727,8 +779,12 @@ fn goal_for(core: &mut Core, army: u32, owner: u32, u: u32) -> Option<(i32, i32)
     let cost = reach(core, army, u);
     let speed = move_points(core, t);
     // Zones of the firing inventions, for the danger of a square.
-    let zones: Vec<(usize, Vec<(i32, i32)>)> =
-        ts.iter().enumerate().filter(|(_, t)| t.kind.fires()).map(|(i, t)| (i, zone(core, t))).collect();
+    let zones: Vec<(usize, Vec<(i32, i32)>)> = ts
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| t.kind.fires())
+        .map(|(i, t)| (i, zone(core, t)))
+        .collect();
     let mut best: Option<(i64, (i32, i32), usize, i32)> = None;
     for (i, tg) in ts.iter().enumerate() {
         let gain = target_gain(core, tg, owner, dmg) as i64;
@@ -755,20 +811,29 @@ fn goal_for(core: &mut Core, army: u32, owner: u32, u: u32) -> Option<(i32, i32)
             let hits = zones.iter().filter(|(_, z)| z.contains(&c)).count() as i64;
             let loss = value * (hits * EXPOSED).min(100) / 100;
             let score = (gain - loss) * 10 / (10 + 6 * turns as i64);
-            if score > 0 && best.map_or(true, |(bs, bc, ..)| score > bs || (score == bs && (c.1, c.0) < (bc.1, bc.0))) {
+            if score > 0
+                && best.map_or(true, |(bs, bc, ..)| {
+                    score > bs || (score == bs && (c.1, c.0) < (bc.1, bc.0))
+                })
+            {
                 best = Some((score, c, i, turns));
             }
         }
     }
     let Some((_, goal, i, turns)) = best else {
         if crate::bh_factory::logging() {
-            crate::bh_factory::log(&format!("inv none: unit type {t} at {here:?}: no square worth the walk ({} targets)", ts.len()));
+            crate::bh_factory::log(&format!(
+                "inv none: unit type {t} at {here:?}: no square worth the walk ({} targets)",
+                ts.len()
+            ));
         }
         return None;
     };
     if goal != here && done >= cap {
         if crate::bh_factory::logging() {
-            crate::bh_factory::log(&format!("inv capped: unit type {t} at {here:?}: {done} of {cap} sent already"));
+            crate::bh_factory::log(&format!(
+                "inv capped: unit type {t} at {here:?}: {done} of {cap} sent already"
+            ));
         }
         return None;
     }
@@ -817,7 +882,10 @@ fn own_not_a_target(core: &mut Core) {
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(GOAL_HOOK, Box::new(goal_hook)), (FIND_FOUND, Box::new(own_not_a_target))]
+    vec![
+        (GOAL_HOOK, Box::new(goal_hook)),
+        (FIND_FOUND, Box::new(own_not_a_target)),
+    ]
 }
 
 #[cfg(test)]

@@ -217,7 +217,11 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
         let target = co_select(core)
             .filter(|_| pressed & KEY_SELECT != 0)
             .map(|(co, s)| (co, s, false))
-            .or_else(|| teams(core).filter(|_| pressed & KEY_SELECT != 0).map(|co| (co, Set::Versus(0), true)));
+            .or_else(|| {
+                teams(core)
+                    .filter(|_| pressed & KEY_SELECT != 0)
+                    .map(|co| (co, Set::Versus(0), true))
+            });
         if let Some((co, set, on_teams)) = target {
             crate::ds_campaign::skills_loaded(core);
             core.raw_write_8(OPEN, -1, 1);
@@ -374,7 +378,13 @@ fn build_art() -> Option<Art> {
             }
         }
     }
-    Some(Art { icon_pal, icons, ui_pal, banner, spot })
+    Some(Art {
+        icon_pal,
+        icons,
+        ui_pal,
+        banner,
+        spot,
+    })
 }
 
 fn art() -> Option<&'static Art> {
@@ -418,7 +428,10 @@ fn plain(t: &[u8]) -> String {
 }
 
 fn width(core: &Core, s: &str) -> usize {
-    s.bytes().map(|c| core.raw_read_8(WIDTHS + c as u32, -1) as usize + 1).sum::<usize>().saturating_sub(1)
+    s.bytes()
+        .map(|c| core.raw_read_8(WIDTHS + c as u32, -1) as usize + 1)
+        .sum::<usize>()
+        .saturating_sub(1)
 }
 
 // --- The canvas ----------------------------------------------------------------------
@@ -451,7 +464,10 @@ struct Canvas {
 
 impl Canvas {
     fn new() -> Self {
-        Canvas { px: vec![0; 240 * 160], pal: vec![UI; 30 * 20] }
+        Canvas {
+            px: vec![0; 240 * 160],
+            pal: vec![UI; 30 * 20],
+        }
     }
     fn put(&mut self, x: i32, y: i32, pal: u8, v: u8) {
         if (0..240).contains(&x) && (0..160).contains(&y) {
@@ -566,7 +582,11 @@ fn compose(core: &mut Core, a: &Art) -> Canvas {
         }
     }
     for col in 0..10 {
-        let label = if col == 9 { "X".to_string() } else { format!("{}", col + 1) };
+        let label = if col == 9 {
+            "X".to_string()
+        } else {
+            format!("{}", col + 1)
+        };
         let w = width(core, &label) as i32;
         let (bx, _) = board_xy(col, 0);
         cv.text(core, bx + 8 - w / 2, 32 - 4 + 1, &label, 11);
@@ -620,7 +640,11 @@ fn compose(core: &mut Core, a: &Art) -> Canvas {
         if let Some((rank, sname, desc)) = co_skills::info(id) {
             cv.picture(4, HELP_Y + 4, &a.icons[icon_of(id)], ICON);
             let x = cv.text(core, 24, HELP_Y + 1, &plain(&sname), LINE);
-            let r = if rank == 10 { "Rank X".to_string() } else { format!("Rank {rank}") };
+            let r = if rank == 10 {
+                "Rank X".to_string()
+            } else {
+                format!("Rank {rank}")
+            };
             cv.text(core, x + 6, HELP_Y + 1, &r, LINE);
             cv.text(core, 24, HELP_Y + 11, &plain(&desc), 158 - (HELP_Y as usize + 11));
         }
@@ -686,7 +710,10 @@ fn palettes(a: &Art) -> Vec<u8> {
         *c = f(*c & 31) | f((*c >> 5) & 31) << 5 | f((*c >> 10) & 31) << 10;
     }
     faded[FADED_DARK as usize] = 0x0421;
-    [ui, icon, faded].iter().flat_map(|p| p.iter().flat_map(|c| c.to_le_bytes())).collect()
+    [ui, icon, faded]
+        .iter()
+        .flat_map(|p| p.iter().flat_map(|c| c.to_le_bytes()))
+        .collect()
 }
 
 // --- On the screen -------------------------------------------------------------------
@@ -705,7 +732,10 @@ pub(crate) const MAP_LEN: u32 = 0x800;
 
 fn bg0(core: &Core) -> (u32, u32) {
     let c = core.raw_read_16(BG0CNT, -1) as u32;
-    (0x0600_0000 + 0x4000 * ((c >> 2) & 3), 0x0600_0000 + 0x800 * ((c >> 8) & 31))
+    (
+        0x0600_0000 + 0x4000 * ((c >> 2) & 3),
+        0x0600_0000 + 0x800 * ((c >> 8) & 31),
+    )
 }
 
 fn copy(core: &mut Core, from: u32, to: u32, len: u32) {
@@ -804,7 +834,11 @@ mod tests {
         for (col, ids) in b.iter().enumerate() {
             assert!(ids.len() <= 6, "rank {} has {} skills", col + 1, ids.len());
         }
-        assert!(b[2].contains(&co_skills::TEAMWORK) && b[5].contains(&co_skills::BODYGUARD) && b[8].contains(&co_skills::SYNERGY));
+        assert!(
+            b[2].contains(&co_skills::TEAMWORK)
+                && b[5].contains(&co_skills::BODYGUARD)
+                && b[8].contains(&co_skills::SYNERGY)
+        );
         assert_eq!(b.iter().map(|c| c.len()).sum::<usize>(), 43);
     }
 }

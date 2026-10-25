@@ -871,7 +871,10 @@ fn course_page(cv: &mut Canvas, core: &Core, a: &Art, k: Kind, champion: bool, p
         let n = if champion { stage % MAPS_PER_RUN } else { stage };
         (n, Some(n))
     } else if champion {
-        (sv::champion_record(core, k).map_or(0, |n| (n as usize).min(MAPS_PER_RUN)), None)
+        (
+            sv::champion_record(core, k).map_or(0, |n| (n as usize).min(MAPS_PER_RUN)),
+            None,
+        )
     } else {
         (0, None)
     };
@@ -963,14 +966,33 @@ fn records_page(cv: &mut Canvas, core: &Core, a: &Art) {
     }
     right_text(cv, core, x + w - 10, y + 20, "Used");
     // The three basic courses, then the three Champion courses.
-    for (i, (k, champion)) in Kind::ALL.iter().map(|&k| (k, false)).chain(Kind::ALL.iter().map(|&k| (k, true))).enumerate() {
+    for (i, (k, champion)) in Kind::ALL
+        .iter()
+        .map(|&k| (k, false))
+        .chain(Kind::ALL.iter().map(|&k| (k, true)))
+        .enumerate()
+    {
         let ry = y + 36 + 12 * i as i32;
         cv.rect(x + 10, ry - 2, w - 20, 1, LIGHT_GRAY);
-        cv.text(core, x + 10, ry, if champion { k.champion_name() } else { k.name() }, INK, SHADE);
+        cv.text(
+            core,
+            x + 10,
+            ry,
+            if champion { k.champion_name() } else { k.name() },
+            INK,
+            SHADE,
+        );
         if champion {
             match sv::champion_record(core, k) {
                 Some(n) => {
-                    cv.text(core, x + 100, ry, &format!("{}", maps::rank_letter(maps::champion_rank(n))), INK, SHADE);
+                    cv.text(
+                        core,
+                        x + 100,
+                        ry,
+                        &format!("{}", maps::rank_letter(maps::champion_rank(n))),
+                        INK,
+                        SHADE,
+                    );
                     right_text(cv, core, x + w - 10, ry, &format!("{} {}", n, words().maps));
                 }
                 None => {
@@ -1076,7 +1098,11 @@ pub(crate) fn hash(bytes: &[u8]) -> u32 {
 fn page(core: &Core) -> Option<(Kind, bool, u8, u8, u32)> {
     // A run saved halfway is shown as between its maps (the list under it
     // is the courses', for a new run).
-    let phase = if sv::suspended(core) { sv::BETWEEN } else { core.raw_read_8(sv::PHASE, -1) };
+    let phase = if sv::suspended(core) {
+        sv::BETWEEN
+    } else {
+        core.raw_read_8(sv::PHASE, -1)
+    };
     let (k, champion) = if phase == sv::CHOOSING {
         kind_on_list(core)?
     } else {
@@ -1147,7 +1173,11 @@ pub fn tick(core: &mut Core, keys: u32, prev: u32) -> u32 {
             -1,
             if phase == sv::BETWEEN {
                 // A Champion course starts its list over every eleven maps.
-                if champion { stage % MAPS_PER_RUN as u8 } else { stage.min(MAPS_PER_RUN as u8 - 1) }
+                if champion {
+                    stage % MAPS_PER_RUN as u8
+                } else {
+                    stage.min(MAPS_PER_RUN as u8 - 1)
+                }
             } else {
                 0
             },
@@ -1254,9 +1284,12 @@ pub fn hud(core: &mut Core, at: u32, end: u32, lines: &[String], corner: Option<
         return at;
     }
     let mut at = at;
-    let face = crate::tag_ui::PANEL_FACE_TILE as u16..(crate::tag_ui::PANEL_FACE_TILE + crate::tag_ui::PANEL_FACE_TILES) as u16;
+    let face = crate::tag_ui::PANEL_FACE_TILE as u16
+        ..(crate::tag_ui::PANEL_FACE_TILE + crate::tag_ui::PANEL_FACE_TILES) as u16;
     let paired = crate::tag::any(core);
-    let mut pairs = crate::two_front::free_tile_pairs().into_iter().filter(|t| !(paired && face.contains(t)));
+    let mut pairs = crate::two_front::free_tile_pairs()
+        .into_iter()
+        .filter(|t| !(paired && face.contains(t)));
     for (i, s) in lines.iter().enumerate() {
         let cols = crate::two_front::outlined(core, s);
         let x = match corner {

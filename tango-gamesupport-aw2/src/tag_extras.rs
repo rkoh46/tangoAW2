@@ -160,7 +160,11 @@ pub fn install(core: &mut Core) {
     if head[..] != TAG_HEADER[..] {
         core.raw_write_range(TAGHEAD_AT, -1, TAG_HEADER);
     }
-    for (id, at) in [(TEXT_TAGIN, TAGIN_AT), (TEXT_VICTORY, VICTORY_AT), (TEXT_TAGBOX, TAGBOX_AT)] {
+    for (id, at) in [
+        (TEXT_TAGIN, TAGIN_AT),
+        (TEXT_VICTORY, VICTORY_AT),
+        (TEXT_TAGBOX, TAGBOX_AT),
+    ] {
         let entry = TEXT_TABLE + 4 * id as u32;
         if core.raw_read_32(entry, -1) != at {
             core.raw_write_32(entry, -1, at);
@@ -215,7 +219,10 @@ pub fn pair_texts(a: u8, b: u8) -> Option<(Vec<u8>, [Vec<u8>; 4])> {
 /// Dual Strike's text, its pauses kept, for AW2's boxes (its own codes:
 /// `\r` a line break, 0x0E a pause, as AW2's quotes).
 fn clean(t: &[u8]) -> Vec<u8> {
-    t.iter().copied().filter(|&c| c == b'\r' || c == 0x0E || (0x20..0x7F).contains(&c)).collect()
+    t.iter()
+        .copied()
+        .filter(|&c| c == b'\r' || c == 0x0E || (0x20..0x7F).contains(&c))
+        .collect()
 }
 
 /// A line of text as one line (its breaks and pauses spaces / gone).
@@ -283,7 +290,11 @@ pub fn screen_up(core: &Core) -> bool {
 }
 
 fn screen_ram() -> crate::tag_screens::Ram {
-    crate::tag_screens::Ram { up: SCREEN_UP, kept: SCREEN_KEPT, back: SCREEN_BACK }
+    crate::tag_screens::Ram {
+        up: SCREEN_UP,
+        kept: SCREEN_KEPT,
+        back: SCREEN_BACK,
+    }
 }
 
 /// The screen of `kind` now: the Tag Power's (the army's pair, its power's
@@ -294,10 +305,15 @@ fn screen_of(core: &Core, kind: u8) -> Option<crate::tag_screens::Screen> {
     if kind == 1 {
         let a = tag::army_co_of(core, army);
         let b = tag::partner(core, army)?;
-        let name = pair_texts(a, b).map(|(n, _)| flat(&n)).unwrap_or_else(|| b"Dual Strike".to_vec());
+        let name = pair_texts(a, b)
+            .map(|(n, _)| flat(&n))
+            .unwrap_or_else(|| b"Dual Strike".to_vec());
         Some(crate::tag_screens::Screen::Tag(a, b, name, tag::compatibility(a, b)))
     } else {
-        Some(crate::tag_screens::Screen::Swap(core.raw_read_8(SWAP_FROM, -1), core.raw_read_8(SWAP_TO, -1)))
+        Some(crate::tag_screens::Screen::Swap(
+            core.raw_read_8(SWAP_FROM, -1),
+            core.raw_read_8(SWAP_TO, -1),
+        ))
     }
 }
 
@@ -459,7 +475,9 @@ fn aw2_power_quote(core: &Core, co: u8, k: usize) -> Option<Vec<u8>> {
 /// The script's quote: the incoming CO's tag-in line in AW2's quote box.
 pub fn quote(core: &mut Core) {
     let to = core.raw_read_8(SWAP_TO, -1);
-    let line = ds_record_word(to, DS_TAG_IN[pick(core)]).and_then(ds_text).map(|t| clean(&t));
+    let line = ds_record_word(to, DS_TAG_IN[pick(core)])
+        .and_then(ds_text)
+        .map(|t| clean(&t));
     // A CO Dual Strike lacks (AW2's Sturm): one of AW2's own power quotes.
     let line = line.or_else(|| aw2_power_quote(core, to, pick(core)));
     let line = line.unwrap_or_else(|| b"It's my turn now!".to_vec());
@@ -501,7 +519,11 @@ pub fn compose_victory(partner_name: &[u8], lines: &[Vec<u8>; 4], first: usize, 
     use crate::co_new::{quote_lines, quote_text, wrap_quote, QUOTE_LINES};
     let exchange = |k: usize| {
         let a = quote_text(&lines[k]);
-        let b = format!("{}: {}", String::from_utf8_lossy(partner_name), quote_text(&lines[k + 1]));
+        let b = format!(
+            "{}: {}",
+            String::from_utf8_lossy(partner_name),
+            quote_text(&lines[k + 1])
+        );
         (quote_lines(&a, widths), quote_lines(&b, widths))
     };
     let first = 2 * (first % 2);
@@ -535,7 +557,9 @@ fn victory_quote(core: &mut Core) {
         return;
     }
     let co = core.gba().cpu().gpr(0) as u8;
-    let Some(army) = (1..=5u32).find(|&a| tag::army_co_of(core, a) == co && tag::partner(core, a).is_some()) else { return };
+    let Some(army) = (1..=5u32).find(|&a| tag::army_co_of(core, a) == co && tag::partner(core, a).is_some()) else {
+        return;
+    };
     let Some(b) = tag::partner(core, army) else { return };
     let Some((_, lines)) = pair_texts(co, b) else { return };
     let widths: Vec<u8> = (0..256u32).map(|c| core.raw_read_8(WIDTHS + c, -1)).collect();
@@ -706,7 +730,11 @@ pub fn partners_of(core: &Core, co: u8) -> Vec<(u8, u8)> {
         return crate::sturm_pairs::partners();
     }
     // (Clone Andy has none of Andy's special pairs, crate::sturm_pairs)
-    let mut out = if co == crate::co_new::CLONE_ANDY { Vec::new() } else { ds_partners(co) };
+    let mut out = if co == crate::co_new::CLONE_ANDY {
+        Vec::new()
+    } else {
+        ds_partners(co)
+    };
     for (p, stars) in crate::sturm_pairs::duo_partners(co) {
         out.retain(|e| e.0 != p);
         out.push((p, stars));
@@ -719,8 +747,12 @@ pub fn partners_of(core: &Core, co: u8) -> Vec<(u8, u8)> {
 
 fn ds_partners(co: u8) -> Vec<(u8, u8)> {
     let Some(d) = tag::ds_id(co) else { return Vec::new() };
-    let Some(pack) = crate::ds_pack::pack() else { return Vec::new() };
-    let Some(list) = pack.arm9_at(DS_RECORDS + DS_RECORD * d as u32 + 0x6C, 0x18) else { return Vec::new() };
+    let Some(pack) = crate::ds_pack::pack() else {
+        return Vec::new();
+    };
+    let Some(list) = pack.arm9_at(DS_RECORDS + DS_RECORD * d as u32 + 0x6C, 0x18) else {
+        return Vec::new();
+    };
     let mut out = Vec::new();
     for e in list.chunks(8) {
         if e[0] == 0 {
@@ -779,7 +811,15 @@ pub const STARS_X: i32 = 64;
 /// The stars' OBJ palette (unused on the CO page; saved and put back):
 /// AW2's panel star colours at their tiles' indices 9..15.
 const STAR_PALETTE: u16 = 12;
-const STAR_COLOURS: [(usize, u16); 7] = [(9, 0x0000), (10, 0x5FFF), (11, 0x027F), (12, 0x77DC), (13, 0x6B39), (14, 0x35F1), (15, 0x0000)];
+const STAR_COLOURS: [(usize, u16); 7] = [
+    (9, 0x0000),
+    (10, 0x5FFF),
+    (11, 0x027F),
+    (12, 0x77DC),
+    (13, 0x6B39),
+    (14, 0x35F1),
+    (15, 0x0000),
+];
 const SAVED_STAR_PALETTE: u32 = STATE + 0xB0;
 const OBJ_PALETTES: u32 = 0x200;
 
@@ -863,7 +903,10 @@ mod tests {
 
     #[test]
     fn layout() {
-        assert!(STATE >= tag::STATE_END && STATE_END <= 0x0203_F600, "between the tag pairs and the DS Campaign's records");
+        assert!(
+            STATE >= tag::STATE_END && STATE_END <= 0x0203_F600,
+            "between the tag pairs and the DS Campaign's records"
+        );
         assert!(STATE >= crate::two_front::STORE_END, "clear of the stored front");
         assert!(SAVED_STAR_PALETTE + 32 <= SCREEN_UP);
         assert!(SAVED_STARS + 64 <= STATE_END);
@@ -881,8 +924,15 @@ mod pack_tests {
     #[test]
     #[ignore]
     fn victory_exchanges_fit_the_box() {
-        let widths = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").unwrap()).unwrap()[(crate::co_new::FONT_WIDTHS - 0x0800_0000) as usize..][..256].to_vec();
-        let px = |l: &str| l.bytes().map(|c| widths[c as usize] as u32 + 1).sum::<u32>().saturating_sub(1);
+        let widths = std::fs::read(std::env::var("TANGOAW2_AW2_ROM").unwrap()).unwrap()
+            [(crate::co_new::FONT_WIDTHS - 0x0800_0000) as usize..][..256]
+            .to_vec();
+        let px = |l: &str| {
+            l.bytes()
+                .map(|c| widths[c as usize] as u32 + 1)
+                .sum::<u32>()
+                .saturating_sub(1)
+        };
         let mut n = 0;
         for a in 0..crate::co_new::FIRST + 11 {
             for b in 0..crate::co_new::FIRST + 11 {

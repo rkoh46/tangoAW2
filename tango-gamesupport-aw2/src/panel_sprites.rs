@@ -35,13 +35,19 @@ const DISPCNT: u32 = 0x0400_0000;
 /// The game's sprites behind BG2 taken out of the drawn panel's window.
 /// Returns the end of the list.
 pub fn under_window(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
-    let Some((left, top, right, bottom)) = crate::two_front::drawn_panel(core) else { return at };
+    let Some((left, top, right, bottom)) = crate::two_front::drawn_panel(core) else {
+        return at;
+    };
     let bg2 = core.raw_read_16(BG2CNT, -1) & 3;
     let one_d = core.raw_read_16(DISPCNT, -1) & (1 << 6) != 0;
     let game_end = at;
     let mut s = start;
     while s + 8 <= game_end {
-        let (a0, a1, a2) = (core.raw_read_16(s, -1), core.raw_read_16(s + 2, -1), core.raw_read_16(s + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(s, -1),
+            core.raw_read_16(s + 2, -1),
+            core.raw_read_16(s + 4, -1),
+        );
         let entry = s;
         s += 8;
         // Shown, regular (not affine), behind BG2.
@@ -83,7 +89,11 @@ pub fn under_window(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
             }
             core.raw_write_16(at, -1, (a0 & !(0xC000 | 0x3FF)) | (shape << 14) | (ry as u16 & 0xFF));
             core.raw_write_16(at + 2, -1, (a1 & !0xC000) | (size << 14));
-            core.raw_write_16(at + 4, -1, (a2 & !0x3FF) | (((a2 & 0x3FF) + per_row * r as u16) & 0x3FF));
+            core.raw_write_16(
+                at + 4,
+                -1,
+                (a2 & !0x3FF) | (((a2 & 0x3FF) + per_row * r as u16) & 0x3FF),
+            );
             core.raw_write_16(at + 6, -1, 0);
             at += 8;
         }
@@ -100,7 +110,11 @@ pub fn tiles_taken(core: &Core, start: u32, at: u32) -> bool {
     let ours: Vec<(u16, u16)> = crate::two_front::line_tiles().into_iter().map(|t| (t, t + 2)).collect();
     let mut s = start;
     while s + 8 <= at {
-        let (a0, a1, a2) = (core.raw_read_16(s, -1), core.raw_read_16(s + 2, -1), core.raw_read_16(s + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(s, -1),
+            core.raw_read_16(s + 2, -1),
+            core.raw_read_16(s + 4, -1),
+        );
         s += 8;
         // (hidden, or parked below the screen)
         if a0 & 0x300 == 0x200 || (160..192).contains(&(a0 & 0xFF)) {

@@ -357,9 +357,14 @@ pub fn compatibility(a: u8, b: u8) -> u8 {
             return d.compatibility;
         }
     }
-    let (Some(da), Some(db)) = (ds_id(a), ds_id(b)) else { return 100 };
+    let (Some(da), Some(db)) = (ds_id(a), ds_id(b)) else {
+        return 100;
+    };
     crate::ds_pack::pack()
-        .and_then(|p| p.arm9_at(0x0215_360C + 0x220 * da as u32 + 0x84 + db as u32, 1).map(|b| b[0]))
+        .and_then(|p| {
+            p.arm9_at(0x0215_360C + 0x220 * da as u32 + 0x84 + db as u32, 1)
+                .map(|b| b[0])
+        })
         .unwrap_or(100)
 }
 
@@ -403,7 +408,11 @@ pub fn aw2_co(d: u8) -> Option<u8> {
 
 /// A CO's Dual Strike id (AW2's COs and the new ones).
 pub fn ds_id(co: u8) -> Option<u8> {
-    crate::co_new::ds_id(co).or_else(|| (co < crate::co_roster::AW2_COS).then(|| crate::co_roster::ds_co(co)).flatten())
+    crate::co_new::ds_id(co).or_else(|| {
+        (co < crate::co_roster::AW2_COS)
+            .then(|| crate::co_roster::ds_co(co))
+            .flatten()
+    })
 }
 
 /// The firepower (percentage points) a Tag Power gives army `army` now:
@@ -508,7 +517,11 @@ pub fn swap(core: &mut Core, army: u32) {
     let p = player(core, army);
     let r = rec(army);
     let a = core.raw_read_8(p + PL_CO, -1);
-    let (ac, au, aa) = (core.raw_read_32(p + PL_CHARGE, -1), core.raw_read_8(p + PL_USES, -1), core.raw_read_8(p + PL_ANNOUNCE, -1));
+    let (ac, au, aa) = (
+        core.raw_read_32(p + PL_CHARGE, -1),
+        core.raw_read_8(p + PL_USES, -1),
+        core.raw_read_8(p + PL_ANNOUNCE, -1),
+    );
     core.raw_write_8(p + PL_CO, -1, b);
     core.raw_write_32(p + PL_CHARGE, -1, partner_charge(core, army));
     core.raw_write_8(p + PL_USES, -1, partner_uses(core, army));
@@ -616,7 +629,9 @@ pub(crate) fn ds_partner_picks(core: &Core) -> (u32, u32) {
     if crate::survival::picks_partner(core) {
         return (1, 1);
     }
-    let Some(m) = crate::ds_campaign::mission_info(core) else { return (0, 0) };
+    let Some(m) = crate::ds_campaign::mission_info(core) else {
+        return (0, 0);
+    };
     if m.two_front.is_some() {
         return (0, 0);
     }
@@ -668,7 +683,10 @@ pub fn set_cos(core: &mut Core) {
     }
     // A five-army mission whose player picks: the pick of army 1's place is army 5's (and its
     // partner's); army 1 keeps its own, fixed CO.
-    if let Some(ally) = crate::ds_campaign::mission_info(core).and_then(|m| m.native.as_ref()).and_then(|n| n.five_pick) {
+    if let Some(ally) = crate::ds_campaign::mission_info(core)
+        .and_then(|m| m.native.as_ref())
+        .and_then(|n| n.five_pick)
+    {
         let main = core.raw_read_8(src, -1);
         let partner = if k > 0 { core.raw_read_8(src + n, -1) } else { 0xFF };
         crate::five::set_army5_co(core, main);
@@ -679,7 +697,10 @@ pub fn set_cos(core: &mut Core) {
         return;
     }
     // A mission whose player leads with a fixed CO and picks the partner: the single pick is the partner.
-    if let Some(lead) = crate::ds_campaign::mission_info(core).and_then(|m| m.native.as_ref()).and_then(|n| n.lead_lock) {
+    if let Some(lead) = crate::ds_campaign::mission_info(core)
+        .and_then(|m| m.native.as_ref())
+        .and_then(|n| n.lead_lock)
+    {
         let pick = core.raw_read_8(src, -1);
         core.raw_write_8(src, -1, lead);
         set_pending(core, 1, lead, pick);
@@ -711,7 +732,10 @@ fn co_screen_partners(core: &mut Core) {
     if !(crate::ds_campaign::active(core) && crate::ds_campaign::is_ds(core)) && !crate::survival::picks_partner(core) {
         return;
     }
-    let Some(proc) = (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT) else {
+    let Some(proc) = (PROC_POOL.0..PROC_POOL.1)
+        .step_by(0x6C)
+        .find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT)
+    else {
         return;
     };
     let (n, k) = ds_partner_picks(core);
@@ -756,7 +780,10 @@ pub fn co_screen_flush(core: &mut Core, start: u32, at: u32) {
     if !is_on(core) || !partner_screen(core) {
         return;
     }
-    let Some(proc) = (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT) else {
+    let Some(proc) = (PROC_POOL.0..PROC_POOL.1)
+        .step_by(0x6C)
+        .find(|&p| core.raw_read_32(p, -1) == CO_SELECT_SCRIPT)
+    else {
         return;
     };
     let (n, k) = ds_partner_picks(core);
@@ -767,9 +794,18 @@ pub fn co_screen_flush(core: &mut Core, start: u32, at: u32) {
     let mut emblems: [Option<(u32, u16)>; 5] = [None; 5];
     let mut e = start;
     while e + 8 <= at {
-        let (a0, a1, a2) = (core.raw_read_16(e, -1), core.raw_read_16(e + 2, -1), core.raw_read_16(e + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(e, -1),
+            core.raw_read_16(e + 2, -1),
+            core.raw_read_16(e + 4, -1),
+        );
         let y = a0 & 0xFF;
-        if square16(a0, a1) && a1 & 0x1FF == BOX_EMBLEM_X && a2 >> 12 == BOX_EMBLEM_PAL && y >= BOX_EMBLEM_Y && (y - BOX_EMBLEM_Y) % 16 == 0 {
+        if square16(a0, a1)
+            && a1 & 0x1FF == BOX_EMBLEM_X
+            && a2 >> 12 == BOX_EMBLEM_PAL
+            && y >= BOX_EMBLEM_Y
+            && (y - BOX_EMBLEM_Y) % 16 == 0
+        {
             let row = ((y - BOX_EMBLEM_Y) / 16) as usize;
             if row < 5 {
                 emblems[row] = Some((e, a2));
@@ -784,11 +820,19 @@ pub fn co_screen_flush(core: &mut Core, start: u32, at: u32) {
     }
     let pick = core.raw_read_16(proc + 0x64, -1) as u32;
     if (n..n + k).contains(&pick) {
-        let base = if crate::survival::picks_partner(core) { WAR_ROOM_BADGE_TILE } else { BADGE_TILE };
+        let base = if crate::survival::picks_partner(core) {
+            WAR_ROOM_BADGE_TILE
+        } else {
+            BADGE_TILE
+        };
         let (from, to) = (base + 4 * pick as u16, base + 4 * (pick - n) as u16);
         let mut e = start;
         while e + 8 <= at {
-            let (a0, a1, a2) = (core.raw_read_16(e, -1), core.raw_read_16(e + 2, -1), core.raw_read_16(e + 4, -1));
+            let (a0, a1, a2) = (
+                core.raw_read_16(e, -1),
+                core.raw_read_16(e + 2, -1),
+                core.raw_read_16(e + 4, -1),
+            );
             if square16(a0, a1) && a2 >> 12 == BADGE_PAL && a2 & 0x3FF == from {
                 core.raw_write_16(e + 4, -1, (a2 & !0x3FF) | to);
             }
@@ -930,7 +974,11 @@ fn shown_items(core: &Core) -> u32 {
     let mut n = 4; // CO, Intel, Options, End or Change
     let powers = core.raw_read_8(POWERS_ON, -1) != 0 && core.raw_read_8(player(core, army) + PL_MODE, -1) == 0;
     let p = player(core, army);
-    let (co, uses, charge) = (army_co(core, army), core.raw_read_8(p + PL_USES, -1), core.raw_read_32(p + PL_CHARGE, -1));
+    let (co, uses, charge) = (
+        army_co(core, army),
+        core.raw_read_8(p + PL_USES, -1),
+        core.raw_read_32(p + PL_CHARGE, -1),
+    );
     if powers && charge >= cop_cost(core, co, uses) && cop_cost(core, co, uses) != 0 {
         n += 1;
     }
@@ -1296,7 +1344,9 @@ pub fn saved(core: &Core) -> Vec<u8> {
 /// A suspended game continued: its pairs (none from a game saved without).
 pub fn restore(core: &mut Core, b: Option<&[u8]>) {
     clear_pairs(core);
-    let Some(b) = b.filter(|b| b.len() == SAVED_LEN) else { return };
+    let Some(b) = b.filter(|b| b.len() == SAVED_LEN) else {
+        return;
+    };
     for a in 1..=ARMIES {
         let o = SAVED_REC * (a as usize - 1);
         let r = &b[o..o + SAVED_REC];
@@ -1321,7 +1371,10 @@ mod tests {
         assert!(STATE + REC * ARMIES <= TEAMS_PARTNER);
         assert!(PENDING + 2 * ARMIES <= UI);
         assert!(UI + 0x10 <= STATE + 0xFC);
-        assert!(STATE >= 0x0203_F400 && STATE_END <= 0x0203_F600, "below the DS Campaign's records");
+        assert!(
+            STATE >= 0x0203_F400 && STATE_END <= 0x0203_F600,
+            "below the DS Campaign's records"
+        );
     }
 
     #[test]

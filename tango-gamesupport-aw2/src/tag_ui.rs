@@ -153,7 +153,15 @@ const STAR_TILE: u32 = 0x150;
 const STAR_SOURCES: [u32; 2] = [0x0810_2C24, 0x0810_2C64];
 /// The stars' colours (their tiles' indices 9..15) in the empty slot's
 /// palette: AW2's panel colours for them.
-const STAR_COLOURS: [(usize, u16); 7] = [(9, 0x0000), (10, 0x5FFF), (11, 0x027F), (12, 0x77DC), (13, 0x6B39), (14, 0x35F1), (15, 0x0000)];
+const STAR_COLOURS: [(usize, u16); 7] = [
+    (9, 0x0000),
+    (10, 0x5FFF),
+    (11, 0x027F),
+    (12, 0x77DC),
+    (13, 0x6B39),
+    (14, 0x35F1),
+    (15, 0x0000),
+];
 const BOX_TILES: u32 = 16;
 const PARTNER_PALS: [u32; 5] = [5, 6, 7, 8, 12];
 const NONE_PAL: u32 = 13;
@@ -168,7 +176,9 @@ const KEY_LEFT: u32 = 1 << 5;
 /// The Teams stage of Versus' Teams/Rules screen (record +0x30: 1 Teams,
 /// 0 Rules).
 fn teams_on(core: &Core, ds: bool) -> bool {
-    ds && crate::pvp::in_versus(core) && crate::pvp::on_teams_screen(core) && core.raw_read_8(record(core) + 0x30, -1) == 1
+    ds && crate::pvp::in_versus(core)
+        && crate::pvp::on_teams_screen(core)
+        && core.raw_read_8(record(core) + 0x30, -1) == 1
 }
 
 /// On an army's CO stop (the record's state as crate::skills_panel reads it).
@@ -196,7 +206,8 @@ pub fn teams_list(core: &Core) -> Vec<u8> {
 
 pub(crate) fn army_main(core: &Core, army: u32) -> Option<u8> {
     let list = teams_list(core);
-    list.get(core.raw_read_8(co_index_at(core) + army, -1) as usize).copied()
+    list.get(core.raw_read_8(co_index_at(core) + army, -1) as usize)
+        .copied()
 }
 
 /// AW2's "Choose a CO." (text 0x9DC), the Teams screen's help line on a
@@ -210,7 +221,11 @@ fn help_line(core: &mut Core, ds: bool) {
     let entry = TEXT_TABLE + 4 * CHOOSE_CO;
     let aw2 = *CHOOSE_CO_AW2.get_or_init(|| core.raw_read_32(entry, -1));
     // Versus only uses it on the Teams screen (set before the screen draws it).
-    let want = if ds && crate::pvp::in_versus(core) { tag::CHOOSE_CO_AT } else { aw2 };
+    let want = if ds && crate::pvp::in_versus(core) {
+        tag::CHOOSE_CO_AT
+    } else {
+        aw2
+    };
     if core.raw_read_32(entry, -1) != want {
         core.raw_write_32(entry, -1, want);
     }
@@ -239,7 +254,11 @@ pub fn teams_tick(core: &mut Core, ds: bool, remap: bool, keys: u32, prev: u32) 
     }
     let pressed = keys & !prev;
     let armies = armies(core);
-    let keys = if remap { ds_arrows(core, keys, pressed, armies) } else { keys };
+    let keys = if remap {
+        ds_arrows(core, keys, pressed, armies)
+    } else {
+        keys
+    };
     let stop = co_stop(core).filter(|&a| a < armies);
     let mut editing = core.raw_read_8(EDITING, -1);
     if editing != NONE && stop != Some(editing as u32) {
@@ -290,7 +309,10 @@ const REPEAT_DIR: u32 = tag::ARROWS + 4;
 /// `mask` is the arrows the screen uses.
 pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32) -> u32 {
     let held = held & mask;
-    let dir = [KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN].into_iter().find(|&d| held & d != 0).unwrap_or(0);
+    let dir = [KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN]
+        .into_iter()
+        .find(|&d| held & d != 0)
+        .unwrap_or(0);
     let last = core.raw_read_8(REPEAT_DIR, -1) as u32;
     if dir == 0 {
         if last != 0 {
@@ -313,7 +335,11 @@ pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32) -> u32
         (false, n)
     };
     core.raw_write_8(REPEAT_HELD, -1, n);
-    if fire { dir } else { 0 }
+    if fire {
+        dir
+    } else {
+        0
+    }
 }
 
 /// The cells in order, army by army: its CO, its partner, its P1 / CPU tab (the order is the players' choice: Dual Strike
@@ -345,7 +371,11 @@ fn ds_arrows(core: &mut Core, keys: u32, pressed: u32, armies: u32) -> u32 {
         return out;
     }
     let editing = core.raw_read_8(EDITING, -1);
-    let here = if c % 2 == 1 { 3 * (c / 2) + 2 } else { 3 * (c / 2) + (editing as u32 == c / 2) as u32 };
+    let here = if c % 2 == 1 {
+        3 * (c / 2) + 2
+    } else {
+        3 * (c / 2) + (editing as u32 == c / 2) as u32
+    };
     let target = core.raw_read_8(CELL_TARGET, -1) as u32;
     let mut v = if target != 0 { target - 1 } else { here };
     if fire != 0 {
@@ -369,7 +399,11 @@ fn ds_arrows(core: &mut Core, keys: u32, pressed: u32, armies: u32) -> u32 {
     let pulse = core.raw_read_8(CELL_PULSE, -1);
     core.raw_write_8(CELL_PULSE, -1, 1 - pulse.min(1));
     if pulse == 0 && idle {
-        let key = if (t + ring - c) % ring <= armies { KEY_RIGHT } else { KEY_LEFT };
+        let key = if (t + ring - c) % ring <= armies {
+            KEY_RIGHT
+        } else {
+            KEY_LEFT
+        };
         core.raw_write_16(tag::INJECTED, -1, key as u16);
         out |= key;
     }
@@ -413,8 +447,17 @@ fn restore(core: &mut Core) {
 fn emblem(core: &Core, start: u32, at: u32, fx: i32, fy: i32) -> Option<u16> {
     let mut e = start;
     while e + 8 <= at {
-        let (a0, a1, a2) = (core.raw_read_16(e, -1), core.raw_read_16(e + 2, -1), core.raw_read_16(e + 4, -1));
-        if (a0 >> 14) == 0 && (a1 >> 14) == 1 && a2 >> 12 == 9 && (a1 & 0x1FF) as i32 == fx + 2 && (a0 & 0xFF) as i32 == fy + 32 {
+        let (a0, a1, a2) = (
+            core.raw_read_16(e, -1),
+            core.raw_read_16(e + 2, -1),
+            core.raw_read_16(e + 4, -1),
+        );
+        if (a0 >> 14) == 0
+            && (a1 >> 14) == 1
+            && a2 >> 12 == 9
+            && (a1 & 0x1FF) as i32 == fx + 2
+            && (a0 & 0xFF) as i32 == fy + 32
+        {
             return Some(a2);
         }
         e += 8;
@@ -493,7 +536,11 @@ fn partner_box(core: &Core, co: u8) -> (Vec<u8>, [u8; 32]) {
                 dark
             } else {
                 let v = face((x - 1) * 48 / 30, (y - 1) * 48 / 30);
-                if v == 0 { light } else { v }
+                if v == 0 {
+                    light
+                } else {
+                    v
+                }
             };
         }
     }
@@ -508,7 +555,13 @@ fn none_box(_core: &Core) -> Vec<u8> {
         for x in 0..BOX_W {
             let edge = y == 0 || y == BOX_H - 1 || x == 0 || x == BOX_W - 1;
             let inner = y == 1 || y == BOX_H - 2 || x == 1 || x == BOX_W - 2;
-            px[y * BOX_W + x] = if edge { 3 } else if inner { 2 } else { 1 };
+            px[y * BOX_W + x] = if edge {
+                3
+            } else if inner {
+                2
+            } else {
+                1
+            };
         }
     }
     tiles_of(&px, BOX_W, 32)
@@ -585,7 +638,9 @@ fn teams_flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
     }
     write_palette(core, NONE_PAL, &p);
     for a in 0..armies {
-        let Some((_, fx, fy)) = find(core, start, at, FACE_TILE + FACE_STRIDE * a as u16, true) else { continue };
+        let Some((_, fx, fy)) = find(core, start, at, FACE_TILE + FACE_STRIDE * a as u16, true) else {
+            continue;
+        };
         let tile = TEAMS_TILE + BOX_TILES * a;
         let pal = match partner_of(core, a) {
             Some(p) => {
@@ -619,7 +674,13 @@ fn teams_flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
             // Strike's TAG box shows them.
             for k in 0..stars as u16 {
                 let t = STAR_TILE as u16 + 1;
-                put(core, at, (y + 21) as u16 & 0xFF, (x + 2 + 7 * k as i32) as u16 & 0x1FF, t | (NONE_PAL as u16) << 12);
+                put(
+                    core,
+                    at,
+                    (y + 21) as u16 & 0xFF,
+                    (x + 2 + 7 * k as i32) as u16 & 0x1FF,
+                    t | (NONE_PAL as u16) << 12,
+                );
                 core.raw_write_16(at + 6, -1, 0);
                 at += 8;
             }
@@ -636,7 +697,13 @@ fn teams_flush(core: &mut Core, start: u32, mut at: u32, end: u32) -> u32 {
                 at += 8;
             }
         }
-        put(core, at, y as u16 & 0xFF, (x as u16 & 0x1FF) | size(2), tile as u16 | (pal as u16) << 12);
+        put(
+            core,
+            at,
+            y as u16 & 0xFF,
+            (x as u16 & 0x1FF) | size(2),
+            tile as u16 | (pal as u16) << 12,
+        );
         core.raw_write_16(at + 6, -1, 0);
         at += 8;
         if editing as u32 == a {
@@ -719,9 +786,14 @@ pub(crate) fn dialogue_up(core: &Core) -> bool {
     const BOX_PROC: u32 = 0x0801_4401;
     let mut b = [0u8; LEN];
     core.raw_read_range(AREA, -1, &mut b);
-    let words: Vec<u32> = b.chunks_exact(4).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]])).collect();
+    let words: Vec<u32> = b
+        .chunks_exact(4)
+        .map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]))
+        .collect();
     let script = |w: u32| (0x0840_0000..0x0870_0000).contains(&w);
-    words.windows(3).any(|w| script(w[0]) && script(w[1]) && w[2] == BOX_PROC)
+    words
+        .windows(3)
+        .any(|w| script(w[0]) && script(w[1]) && w[2] == BOX_PROC)
 }
 
 pub(crate) fn build_menu_up(core: &Core) -> bool {
@@ -730,11 +802,16 @@ pub(crate) fn build_menu_up(core: &Core) -> bool {
     const PROCS: [u32; 2] = [0x0802_DA19, 0x0803_A441];
     let mut b = [0u8; LEN];
     core.raw_read_range(AREA, -1, &mut b);
-    let words: Vec<u32> = b.chunks_exact(4).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]])).collect();
+    let words: Vec<u32> = b
+        .chunks_exact(4)
+        .map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]))
+        .collect();
     // A proc: two script pointers, then the function (a finished proc
     // keeps its function word but its scripts are cleared).
     let script = |w: u32| (0x0840_0000..0x0870_0000).contains(&w);
-    words.windows(3).any(|w| script(w[0]) && script(w[1]) && PROCS.contains(&w[2]))
+    words
+        .windows(3)
+        .any(|w| script(w[0]) && script(w[1]) && PROCS.contains(&w[2]))
 }
 
 fn panel_flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
@@ -764,7 +841,9 @@ fn panel_flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         return at;
     }
     // The header must be in this frame's list (the panel drawn).
-    let Some((header, _, _)) = find(core, start, at, HEADER_TILE, true) else { return at };
+    let Some((header, _, _)) = find(core, start, at, HEADER_TILE, true) else {
+        return at;
+    };
     let header_a2 = core.raw_read_16(header + 4, -1);
     let base = header_a2 & 0x3FF;
     let pal = header_a2 & 0xF000;
@@ -797,7 +876,11 @@ fn panel_flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     if !crate::heal_effect::playing(core) {
         write_tiles(core, PANEL_FACE_TILE, &hud_face(core, b));
         write_palette(core, PANEL_PAL, &co_palette(core, b));
-        sprites.push([((y + STRIP_FACE_Y) as u16 & 0xFF) | WIDE, ((x + 2) as u16 & 0x1FF) | size(2), PANEL_FACE_TILE as u16 | (PANEL_PAL as u16) << 12]);
+        sprites.push([
+            ((y + STRIP_FACE_Y) as u16 & 0xFF) | WIDE,
+            ((x + 2) as u16 & 0x1FF) | size(2),
+            PANEL_FACE_TILE as u16 | (PANEL_PAL as u16) << 12,
+        ]);
     }
     // The strip: the header's own plate rows (its tiles, its colours), the
     // lower half mirrored over the upper: rounded at both right corners.

@@ -174,7 +174,9 @@ fn unhex(s: &str) -> Option<Vec<u8>> {
     if s.len() % 2 != 0 || !s.is_ascii() {
         return None;
     }
-    (0..s.len() / 2).map(|k| u8::from_str_radix(&s[2 * k..2 * k + 2], 16).ok()).collect()
+    (0..s.len() / 2)
+        .map(|k| u8::from_str_radix(&s[2 * k..2 * k + 2], 16).ok())
+        .collect()
 }
 
 fn event_id(pubkey: &str, created_at: u64, kind: u64, tags: &Value, content: &str) -> [u8; 32] {
@@ -188,9 +190,16 @@ pub fn make_event(key: &SigningKey, code: &str, lobby: Option<&Lobby>, created_a
     let content = lobby.map_or_else(|| json!({"x": 1}).to_string(), |l| l.encode());
     // (gone a little after a few refreshes would have been; a closing event only has to outlive being read)
     let expiry = created_at + if lobby.is_some() { TTL + 30 } else { 120 };
-    let tags = json!([["d", code.to_ascii_uppercase()], ["t", TAG], ["expiration", expiry.to_string()]]);
+    let tags = json!([
+        ["d", code.to_ascii_uppercase()],
+        ["t", TAG],
+        ["expiration", expiry.to_string()]
+    ]);
     let id = event_id(&pubkey, created_at, KIND, &tags, &content);
-    let sig = key.sign_raw(&id, &rand::random::<[u8; 32]>()).map(|s| hex(&s.to_bytes())).unwrap_or_default();
+    let sig = key
+        .sign_raw(&id, &rand::random::<[u8; 32]>())
+        .map(|s| hex(&s.to_bytes()))
+        .unwrap_or_default();
     json!({"id": hex(&id), "pubkey": pubkey, "created_at": created_at, "kind": KIND, "tags": tags, "content": content, "sig": sig})
 }
 
@@ -340,7 +349,11 @@ impl Relay {
 
     /// This relay's task failed (never answered, or was told to stop).
     fn failed(&self, why: &str) {
-        let n = if tango_net::endpoints::is_stop_signal(why) { 2 } else { 1 };
+        let n = if tango_net::endpoints::is_stop_signal(why) {
+            2
+        } else {
+            1
+        };
         self.fails.fetch_add(n, Ordering::Relaxed);
         tango_net::endpoints::record_fail(&self.url, why);
     }
@@ -390,10 +403,22 @@ fn describe(relays: &[Arc<Relay>]) -> String {
             } else {
                 "down"
             };
-            let ok = if a != 0 { format!("/answered {}s ago", t.saturating_sub(a)) } else { String::new() };
+            let ok = if a != 0 {
+                format!("/answered {}s ago", t.saturating_sub(a))
+            } else {
+                String::new()
+            };
             let note = r.note.lock().unwrap().clone();
-            let note = if note.is_empty() { String::new() } else { format!(" ({note})") };
-            format!("{}={state}{ok} ev{}{note}", r.url.trim_start_matches("wss://"), r.events.load(Ordering::Relaxed))
+            let note = if note.is_empty() {
+                String::new()
+            } else {
+                format!(" ({note})")
+            };
+            format!(
+                "{}={state}{ok} ev{}{note}",
+                r.url.trim_start_matches("wss://"),
+                r.events.load(Ordering::Relaxed)
+            )
         })
         .collect::<Vec<_>>()
         .join(", ")
@@ -427,7 +452,11 @@ fn keep_running(
             begin(r, t);
         }
     };
-    let usable = |r: &Arc<Relay>| !r.active.load(Ordering::Relaxed) && r.fails.load(Ordering::Relaxed) == 0 && !tango_net::endpoints::blocked(&r.url);
+    let usable = |r: &Arc<Relay>| {
+        !r.active.load(Ordering::Relaxed)
+            && r.fails.load(Ordering::Relaxed) == 0
+            && !tango_net::endpoints::blocked(&r.url)
+    };
     // The relays to start now, in the plan's order as it stands (a relay found dead changes the anchors, so the plan
     // is made again at each swap: clients that saw the same relay fail converge on the same anchors).
     let next = {
@@ -447,7 +476,10 @@ fn keep_running(
     }
     tokio::spawn(async move {
         while nap(&cancel, Duration::from_secs(6)).await {
-            for r in infos.iter().filter(|r| r.active.load(Ordering::Relaxed) && r.fails.load(Ordering::Relaxed) >= 2) {
+            for r in infos
+                .iter()
+                .filter(|r| r.active.load(Ordering::Relaxed) && r.fails.load(Ordering::Relaxed) >= 2)
+            {
                 log::info!("lobby: {} keeps failing; swapped for a spare", r.url);
                 if let Some(t) = r.stop.lock().unwrap().take() {
                     t.cancel();
@@ -485,7 +517,10 @@ impl Browse {
         let cancel = CancellationToken::new();
         let pool: Vec<String> = relays.iter().map(|s| s.to_string()).collect();
         let plan = tango_net::endpoints::plan_now(&pool, None);
-        log::info!("online: lobby list plan {}", plan.iter().take(MAX_BROWSE).cloned().collect::<Vec<_>>().join(", "));
+        log::info!(
+            "online: lobby list plan {}",
+            plan.iter().take(MAX_BROWSE).cloned().collect::<Vec<_>>().join(", ")
+        );
         let infos: Vec<Arc<Relay>> = plan.iter().map(|u| Relay::new(u)).collect();
         let begin: Arc<dyn Fn(&Arc<Relay>, CancellationToken) + Send + Sync> = {
             let heard = heard.clone();
@@ -494,7 +529,8 @@ impl Browse {
                 tokio::spawn(async move { browse_relay(r, heard, t).await });
             })
         };
-        let replan: Arc<dyn Fn() -> Vec<String> + Send + Sync> = Arc::new(move || tango_net::endpoints::plan_now(&pool, None));
+        let replan: Arc<dyn Fn() -> Vec<String> + Send + Sync> =
+            Arc::new(move || tango_net::endpoints::plan_now(&pool, None));
         keep_running(infos.clone(), MAX_BROWSE, cancel.clone(), begin, replan);
         spawn_status_log("list", infos.clone(), cancel.clone());
         Browse {
@@ -698,7 +734,10 @@ impl Announcer {
         let key = Arc::new(new_key());
         let pool: Vec<String> = relays.iter().map(|s| s.to_string()).collect();
         let plan = tango_net::endpoints::plan_now(&pool, Some(&lobby.code));
-        log::info!("online: lobby announce plan {}", plan.iter().take(MAX_ANNOUNCE).cloned().collect::<Vec<_>>().join(", "));
+        log::info!(
+            "online: lobby announce plan {}",
+            plan.iter().take(MAX_ANNOUNCE).cloned().collect::<Vec<_>>().join(", ")
+        );
         let lobby = Arc::new(Mutex::new(lobby));
         let cancel = CancellationToken::new();
         let infos: Vec<Arc<Relay>> = plan.iter().map(|u| Relay::new(u)).collect();
@@ -899,7 +938,11 @@ mod tests {
         let mut l = lobby("AB12CD");
         l.host = "Very\u{1}long name\u{e9} indeed".into();
         let d = Lobby::decode(&l.encode()).unwrap().unwrap();
-        assert!(d.host.len() <= 12 && d.host.chars().all(|c| c.is_ascii() && !c.is_ascii_control()), "{}", d.host);
+        assert!(
+            d.host.len() <= 12 && d.host.chars().all(|c| c.is_ascii() && !c.is_ascii_control()),
+            "{}",
+            d.host
+        );
         for bad in [
             "nope",
             "{}",
@@ -912,7 +955,9 @@ mod tests {
             assert!(Lobby::decode(bad).is_err(), "{bad}");
         }
         // (the host's name may be empty: the screen then says Player)
-        let e = Lobby::decode(r#"{"c":"ab12cd","h":"","n":1,"m":5,"v":"1"}"#).unwrap().unwrap();
+        let e = Lobby::decode(r#"{"c":"ab12cd","h":"","n":1,"m":5,"v":"1"}"#)
+            .unwrap()
+            .unwrap();
         assert_eq!((e.code.as_str(), e.host.as_str()), ("AB12CD", "Player"));
     }
 
@@ -924,13 +969,22 @@ mod tests {
         let d = Lobby::decode(&l.encode()).unwrap().unwrap();
         assert_eq!(d.name, "Big Pent Room");
         // 0.8.4's announcement has no name: the host's gamertag is listed
-        let old = Lobby::decode(r#"{"c":"AB12CD","h":"Ann Lee","n":1,"m":5,"v":"0.8.4"}"#).unwrap().unwrap();
+        let old = Lobby::decode(r#"{"c":"AB12CD","h":"Ann Lee","n":1,"m":5,"v":"0.8.4"}"#)
+            .unwrap()
+            .unwrap();
         assert_eq!((old.name.as_str(), old.host.as_str()), ("Ann Lee", "Ann Lee"));
         // an all-space name is no name
-        let blank = Lobby::decode(r#"{"c":"AB12CD","h":"Bo","r":"    ","n":1,"m":5,"v":"1"}"#).unwrap().unwrap();
+        let blank = Lobby::decode(r#"{"c":"AB12CD","h":"Bo","r":"    ","n":1,"m":5,"v":"1"}"#)
+            .unwrap()
+            .unwrap();
         assert_eq!(blank.name, "Bo");
         // never more than 18 characters, never anything to hurt the screen
-        let long = Lobby::decode(&format!(r#"{{"c":"AB12CD","h":"Bo","r":"{}\u0001é","n":1,"m":5,"v":"1"}}"#, "x".repeat(40))).unwrap().unwrap();
+        let long = Lobby::decode(&format!(
+            r#"{{"c":"AB12CD","h":"Bo","r":"{}\u0001é","n":1,"m":5,"v":"1"}}"#,
+            "x".repeat(40)
+        ))
+        .unwrap()
+        .unwrap();
         assert_eq!(long.name.len(), 18);
         assert_eq!(clean_text("  a   b  ", 12), "a b");
         assert_eq!(clean_text("abc def", 4), "abc");
@@ -945,7 +999,11 @@ mod tests {
         assert_eq!(author, hex(&key.verifying_key().to_bytes()));
         assert_eq!(l, Some(lobby("AB12CD")));
         // The tags carry an expiration.
-        assert!(ev["tags"].to_string().contains("\"expiration\",\"1090\""), "{}", ev["tags"]);
+        assert!(
+            ev["tags"].to_string().contains("\"expiration\",\"1090\""),
+            "{}",
+            ev["tags"]
+        );
         // Tampering with any part is refused.
         let mut e2 = ev.clone();
         e2["content"] = json!(lobby("AB12CD").encode().replace("Rkoh", "Evil"));
@@ -993,7 +1051,11 @@ mod tests {
         // A lobby that closed is not listed, even though an older event of it arrives afterwards.
         hear(&mut h, &k2, None, "BBBBBB", 113);
         hear(&mut h, &k2, Some(&lobby("BBBBBB")), "BBBBBB", 112);
-        let codes: Vec<_> = h.listings(115, &compat()).iter().map(|l| l.lobby.code.clone()).collect();
+        let codes: Vec<_> = h
+            .listings(115, &compat())
+            .iter()
+            .map(|l| l.lobby.code.clone())
+            .collect();
         assert_eq!(codes, ["AAAAAA"]);
         // (a clock far ahead is not believed)
         hear(&mut h, &k2, Some(&lobby("CCCCCC")), "CCCCCC", 500);
@@ -1011,7 +1073,11 @@ mod tests {
         nopack.pack = false;
         hear(&mut h, &k, Some(&nopack), "BBBBBB", 100);
         hear(&mut h, &k, Some(&lobby("CCCCCC")), "CCCCCC", 100);
-        let codes: Vec<_> = h.listings(101, &compat()).iter().map(|l| l.lobby.code.clone()).collect();
+        let codes: Vec<_> = h
+            .listings(101, &compat())
+            .iter()
+            .map(|l| l.lobby.code.clone())
+            .collect();
         assert_eq!(codes, ["CCCCCC"]);
     }
 

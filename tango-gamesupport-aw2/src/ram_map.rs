@@ -123,9 +123,21 @@ pub const TIME_SHARED: &[(&str, &str, &str)] = &[
         "Teams screen: borrowed tiles while partners show",
         "the Teams screen is before a battle; a front is stored only during a two-front battle",
     ),
-    ("two fronts: the front off the screen", "Rules screen: borrowed label tiles", "the Rules screen is before a battle"),
-    ("two fronts: the front off the screen", "Versus rules: saved label tiles", "Versus rules are set before a Versus battle (on one front or two)"),
-    ("Teams screen: borrowed tiles while partners show", "Versus rules: saved label tiles", "two screens, never shown together"),
+    (
+        "two fronts: the front off the screen",
+        "Rules screen: borrowed label tiles",
+        "the Rules screen is before a battle",
+    ),
+    (
+        "two fronts: the front off the screen",
+        "Versus rules: saved label tiles",
+        "Versus rules are set before a Versus battle (on one front or two)",
+    ),
+    (
+        "Teams screen: borrowed tiles while partners show",
+        "Versus rules: saved label tiles",
+        "two screens, never shown together",
+    ),
     (
         "War Room records on Dual Strike's maps (crate::ds_versus::ROWS)",
         "two fronts: the front off the screen",
@@ -154,12 +166,22 @@ mod tests {
 
     #[test]
     fn regions_do_not_overlap() {
-        let shared = |a: &str, b: &str| TIME_SHARED.iter().any(|&(x, y, _)| (x == a && y == b) || (x == b && y == a));
+        let shared = |a: &str, b: &str| {
+            TIME_SHARED
+                .iter()
+                .any(|&(x, y, _)| (x == a && y == b) || (x == b && y == a))
+        };
         let mut clashes = Vec::new();
         for (i, &(na, a)) in REGIONS.iter().enumerate() {
             for &(nb, b) in &REGIONS[i + 1..] {
                 if overlaps(a, b) && !shared(na, nb) {
-                    clashes.push(format!("{na} {:#x}..{:#x} and {nb} {:#x}..{:#x}", a.0, a.0 + a.1, b.0, b.0 + b.1));
+                    clashes.push(format!(
+                        "{na} {:#x}..{:#x} and {nb} {:#x}..{:#x}",
+                        a.0,
+                        a.0 + a.1,
+                        b.0,
+                        b.0 + b.1
+                    ));
                 }
             }
         }
@@ -172,14 +194,26 @@ mod tests {
         assert_eq!(crate::ds_battle::MAP_PALS, BATTLE_MAP_PALETTES.0);
         assert_eq!(find("CO skills").0, crate::co_skills::DATA);
         assert!(find("CO skills").0 + find("CO skills").1 >= crate::co_skills::DATA + crate::co_skills::DATA_LEN);
-        assert_eq!(find("two fronts: the front off").0 + find("two fronts: the front off").1, crate::two_front::STORE_END);
+        assert_eq!(
+            find("two fronts: the front off").0 + find("two fronts: the front off").1,
+            crate::two_front::STORE_END
+        );
         assert_eq!(find("tag pairs").0, crate::tag::STATE);
         assert_eq!(find("tag pairs").0 + find("tag pairs").1, crate::tag::STATE_END);
         assert_eq!(find("DS Campaign's records").0, crate::ds_campaign::RECORDS);
         assert_eq!(find("Survival").0, crate::survival::STATE);
-        assert_eq!(find("Tag Power's thunder"), (crate::tag_thunder::STATE, crate::tag_thunder::STATE_LEN));
-        assert_eq!(find("power music"), (crate::power_music::ARMY, crate::power_music::ARMY_LEN));
-        assert_eq!(BATTLE_POINTS, (crate::battle_points::STATE, crate::battle_points::STATE_LEN));
+        assert_eq!(
+            find("Tag Power's thunder"),
+            (crate::tag_thunder::STATE, crate::tag_thunder::STATE_LEN)
+        );
+        assert_eq!(
+            find("power music"),
+            (crate::power_music::ARMY, crate::power_music::ARMY_LEN)
+        );
+        assert_eq!(
+            BATTLE_POINTS,
+            (crate::battle_points::STATE, crate::battle_points::STATE_LEN)
+        );
         assert_eq!(HISTORY, (crate::history::RECORD, crate::history::SAVED_LEN));
         assert_eq!(HISTORY_SCREEN, (crate::history_ui::STATE, crate::history_ui::STATE_LEN));
         assert_eq!(find("Dual Strike's Versus").0, crate::ds_versus::STATE);
@@ -196,10 +230,16 @@ mod tests {
     #[test]
     fn regions_are_in_ewram() {
         for &(n, (a, l)) in REGIONS {
-            assert!(a >= 0x0200_0000 && a + l <= 0x0204_0000, "{n}: {a:#x}+{l:#x} is outside EWRAM");
+            assert!(
+                a >= 0x0200_0000 && a + l <= 0x0204_0000,
+                "{n}: {a:#x}+{l:#x} is outside EWRAM"
+            );
         }
-        let t = REGIONS.iter().find(|r| r.0.starts_with("five armies: the AI's threat")).unwrap().1;
+        let t = REGIONS
+            .iter()
+            .find(|r| r.0.starts_with("five armies: the AI's threat"))
+            .unwrap()
+            .1;
         assert_eq!(t.0 + t.1, 0x0203_4C00);
     }
 }
-

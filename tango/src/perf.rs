@@ -46,7 +46,10 @@ pub fn ui_redraw() {
     let Ok(mut last) = LAST.lock() else { return };
     let (start, prev) = last.get_or_insert((now, None));
     if let Some(prev) = *prev {
-        UI_GAP_MAX_US.fetch_max(now.duration_since(prev).as_micros().min(u32::MAX as u128) as u32, Relaxed);
+        UI_GAP_MAX_US.fetch_max(
+            now.duration_since(prev).as_micros().min(u32::MAX as u128) as u32,
+            Relaxed,
+        );
     }
     *prev = Some(now);
     let elapsed = now.duration_since(*start);

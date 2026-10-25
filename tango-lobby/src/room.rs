@@ -433,7 +433,11 @@ impl Room {
             waiting_for,
             resuming: g.params.resume.is_some(),
             said_leave: g.said_leave,
-            name: if g.host { g.params.name.clone() } else { g.room_name.clone() },
+            name: if g.host {
+                g.params.name.clone()
+            } else {
+                g.room_name.clone()
+            },
         }
     }
 
@@ -497,7 +501,11 @@ fn start_room(inner: &Arc<Mutex<Inner>>, cancel: &CancellationToken) {
     let (inner, cancel) = (inner.clone(), cancel.clone());
     {
         let mut g = inner.lock().unwrap();
-        let complete = g.params.resume.as_ref().is_none_or(|r| g.peers.len() + 1 == r.players.len());
+        let complete = g
+            .params
+            .resume
+            .as_ref()
+            .is_none_or(|r| g.peers.len() + 1 == r.players.len());
         if !g.host || g.started || g.peers.is_empty() || !g.peers.iter().all(|p| p.ready) || !complete {
             return;
         }
@@ -562,7 +570,9 @@ fn broadcast_roster(inner: &Arc<Mutex<Inner>>) {
         let g = inner.lock().unwrap();
         (
             roster_of(&g),
-            (0..g.peers.len()).map(|k| (peer_seat(&g, k), g.peers[k].sender.clone())).collect(),
+            (0..g.peers.len())
+                .map(|k| (peer_seat(&g, k), g.peers[k].sender.clone()))
+                .collect(),
             g.params.name.clone(),
         )
     };
@@ -578,7 +588,10 @@ fn broadcast_roster(inner: &Arc<Mutex<Inner>>) {
     }
 }
 
-fn game_differs(host: &Option<tango_net_protocol::control::GameInfo>, guest: &Option<tango_net_protocol::control::GameInfo>) -> Option<String> {
+fn game_differs(
+    host: &Option<tango_net_protocol::control::GameInfo>,
+    guest: &Option<tango_net_protocol::control::GameInfo>,
+) -> Option<String> {
     match (host, guest) {
         (Some(h), Some(g)) => {
             if h.family_and_variant != g.family_and_variant || h.patch != g.patch {
@@ -663,18 +676,18 @@ async fn host_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
                     return;
                 }
                 tokio::select! {
-                    _ = cancel.cancelled() => return,
-            _ = dial.cancelled() => return,
-                    _ = tango_platform::sleep(Duration::from_secs(1)) => {}
-                }
+                        _ = cancel.cancelled() => return,
+                _ = dial.cancelled() => return,
+                        _ = tango_platform::sleep(Duration::from_secs(1)) => {}
+                    }
             }
             Err(e) => {
                 log::warn!("room: a guest did not come through: {e}");
                 tokio::select! {
-                    _ = cancel.cancelled() => return,
-            _ = dial.cancelled() => return,
-                    _ = tango_platform::sleep(Duration::from_millis(500)) => {}
-                }
+                        _ = cancel.cancelled() => return,
+                _ = dial.cancelled() => return,
+                        _ = tango_platform::sleep(Duration::from_millis(500)) => {}
+                    }
             }
         }
     }
@@ -725,7 +738,14 @@ async fn serve_guest(inner: Arc<Mutex<Inner>>, cancel: CancellationToken, channe
     let nickname: String = join.nickname.chars().filter(|c| !c.is_control()).take(12).collect();
     // Let in, or turn away.
     let resume_seat: Option<u8>;
-    let verdict: Result<(u64, CancellationToken, tokio::sync::oneshot::Sender<tango_net::Receiver>), (RejectReason, String)> = {
+    let verdict: Result<
+        (
+            u64,
+            CancellationToken,
+            tokio::sync::oneshot::Sender<tango_net::Receiver>,
+        ),
+        (RejectReason, String),
+    > = {
         let mut g = inner.lock().unwrap();
         if g.started {
             Err((RejectReason::Started, "The match has already started.".into()))
@@ -1022,7 +1042,10 @@ async fn host_start(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
         }
     }
     // Hand the links over.
-    let (handoffs, mut backs): (Vec<CancellationToken>, Vec<tokio::sync::oneshot::Receiver<tango_net::Receiver>>) = {
+    let (handoffs, mut backs): (
+        Vec<CancellationToken>,
+        Vec<tokio::sync::oneshot::Receiver<tango_net::Receiver>>,
+    ) = {
         let mut g = inner.lock().unwrap();
         let h = g.peers.iter().map(|p| p.handoff.clone()).collect();
         let b = g.peers.iter_mut().filter_map(|p| p.receiver_back.take()).collect();
@@ -1107,7 +1130,11 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             g.params.join_seconds,
         )
     };
-    let look_for = if join_seconds == 0 { GUEST_DEADLINE } else { Duration::from_secs(join_seconds as u64) };
+    let look_for = if join_seconds == 0 {
+        GUEST_DEADLINE
+    } else {
+        Duration::from_secs(join_seconds as u64)
+    };
     let deadline = web_time::Instant::now() + look_for;
     // Looking for the host.
     let (channels, welcome) = loop {
@@ -1155,12 +1182,20 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             let mut g = inner.lock().unwrap();
             g.message = "Connected: joining...".into();
         }
-        if channels.control.0.send_packet(&Packet::Room(RoomMsg::Join(join.clone()))).await.is_err() {
+        if channels
+            .control
+            .0
+            .send_packet(&Packet::Room(RoomMsg::Join(join.clone())))
+            .await
+            .is_err()
+        {
             continue;
         }
         let first = tango_platform::timeout(FIRST_WORDS, channels.control.1.receive()).await;
         match first {
-            Ok(Ok(Packet::Room(RoomMsg::Welcome(w)))) | Ok(Ok(Packet::Room(RoomMsg::Roster(w)))) => break (channels, w),
+            Ok(Ok(Packet::Room(RoomMsg::Welcome(w)))) | Ok(Ok(Packet::Room(RoomMsg::Roster(w)))) => {
+                break (channels, w)
+            }
             Ok(Ok(Packet::Room(RoomMsg::Reject(r)))) => {
                 if r.reason == RejectReason::NotTheHost {
                     // (another guest: try again)
@@ -1172,10 +1207,14 @@ async fn guest_main(inner: Arc<Mutex<Inner>>, cancel: CancellationToken) {
             }
             // The other one is a guest looking for the host too: let go and look again.
             Ok(Ok(Packet::Room(RoomMsg::Join(_)))) => {
-                let _ = channels.control.0.send_packet(&Packet::Room(RoomMsg::Reject(RoomReject {
-                    reason: RejectReason::NotTheHost,
-                    text: String::new(),
-                }))).await;
+                let _ = channels
+                    .control
+                    .0
+                    .send_packet(&Packet::Room(RoomMsg::Reject(RoomReject {
+                        reason: RejectReason::NotTheHost,
+                        text: String::new(),
+                    })))
+                    .await;
                 tango_platform::sleep(Duration::from_millis(300 + rand::random::<u64>() % 700)).await;
                 continue;
             }
@@ -1379,7 +1418,10 @@ mod text_tests {
     #[test]
     fn messages_fit_the_game_mailbox() {
         let mut seen = 0;
-        for (file, src) in [("room.rs", include_str!("room.rs")), ("unranked.rs", include_str!("unranked.rs"))] {
+        for (file, src) in [
+            ("room.rs", include_str!("room.rs")),
+            ("unranked.rs", include_str!("unranked.rs")),
+        ] {
             let body = src.split("mod text_tests").next().unwrap();
             let mut in_texts = false;
             for line in body.lines() {
@@ -1389,15 +1431,22 @@ mod text_tests {
                 if line.starts_with("async fn ") || line.starts_with("// ---") {
                     in_texts = false;
                 }
-                let is_text = in_texts || line.contains("fail(&inner,") || line.contains("RejectReason::") && line.contains("Err((")
+                let is_text = in_texts
+                    || line.contains("fail(&inner,")
+                    || line.contains("RejectReason::") && line.contains("Err((")
                     || line.contains("g.message = ");
                 if !is_text || line.trim_start().starts_with("//") || line.contains("log::") {
                     continue;
                 }
                 for l in literals(line) {
-                    if l.chars().next().is_some_and(|c| c.is_ascii_uppercase()) && l.contains(' ') && !l.contains("{}") {
+                    if l.chars().next().is_some_and(|c| c.is_ascii_uppercase()) && l.contains(' ') && !l.contains("{}")
+                    {
                         seen += 1;
-                        assert!(l.len() <= MESSAGE_CHARS, "{file}: {} chars, the console shows {MESSAGE_CHARS}: {l}", l.len());
+                        assert!(
+                            l.len() <= MESSAGE_CHARS,
+                            "{file}: {} chars, the console shows {MESSAGE_CHARS}: {l}",
+                            l.len()
+                        );
                     }
                 }
             }

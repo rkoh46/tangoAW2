@@ -82,20 +82,20 @@ fn halfwords(h: &[u16]) -> Vec<u8> {
 /// here).
 pub(crate) fn strike_fn(script: u32, damage: u16) -> Vec<u8> {
     let mut b = halfwords(&[
-        0xB500, // push {lr}
-        0x1C01, // adds r1, r0, #0
-        0x4805, // ldr r0, =script
-        0x4A06, // ldr r2, =Proc_StartBlocking
-        0x467B, // mov r3, pc
-        0x3307, // adds r3, #7 (return below, Thumb)
-        0x469E, // mov lr, r3
-        0x4710, // bx r2
-        0x46C0, // nop
-        0x3064, // adds r0, #0x64
+        0xB500,                   // push {lr}
+        0x1C01,                   // adds r1, r0, #0
+        0x4805,                   // ldr r0, =script
+        0x4A06,                   // ldr r2, =Proc_StartBlocking
+        0x467B,                   // mov r3, pc
+        0x3307,                   // adds r3, #7 (return below, Thumb)
+        0x469E,                   // mov lr, r3
+        0x4710,                   // bx r2
+        0x46C0,                   // nop
+        0x3064,                   // adds r0, #0x64
         0x2100 | (damage & 0xFF), // movs r1, #damage
-        0x8001, // strh r1, [r0]
-        0xBC01, // pop {r0}
-        0x4700, // bx r0
+        0x8001,                   // strh r1, [r0]
+        0xBC01,                   // pop {r0}
+        0x4700,                   // bx r0
     ]);
     b.extend_from_slice(&script.to_le_bytes());
     b.extend_from_slice(&PROC_START_BLOCKING.to_le_bytes());
@@ -301,7 +301,11 @@ fn high_society(core: &Core, army: u32) -> i32 {
     }
 }
 fn count_high_society(core: &mut Core, army: u32, mode: u8) {
-    let v = if army_co(core, army).0 == KINDLE && mode == SCOP { 1 + 3 * owned(core, army, &PROPERTIES) as u16 } else { 0 };
+    let v = if army_co(core, army).0 == KINDLE && mode == SCOP {
+        1 + 3 * owned(core, army, &PROPERTIES) as u16
+    } else {
+        0
+    };
     core.raw_write_16(HIGH_SOCIETY + 2 * (army - 1), -1, v);
 }
 
@@ -565,7 +569,11 @@ fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, 
     if c != 0 && team(army_of_index(core, c)) != mine {
         enemy += 1;
     }
-    if enemy == 0 { NO_SITE } else { enemy - own_weight * own }
+    if enemy == 0 {
+        NO_SITE
+    } else {
+        enemy - own_weight * own
+    }
 }
 
 /// `Strike_FindBestSite` for `army`.
@@ -604,7 +612,11 @@ fn strike_pick(core: &mut Core) {
         let s = core.raw_read_32(RNG, -1).wrapping_mul(4);
         let r = s.wrapping_add(2).wrapping_mul(s.wrapping_add(3)) >> 2;
         core.raw_write_32(RNG, -1, r);
-        let kind = if r % 2 == 0 { StrikeScore::Funds } else { StrikeScore::Hp };
+        let kind = if r % 2 == 0 {
+            StrikeScore::Funds
+        } else {
+            StrikeScore::Hp
+        };
         strike_best_site(core, army, kind, 2)
     } else {
         let k = core.raw_read_8(STRIKE + 2, -1);
@@ -637,8 +649,12 @@ fn strike_pick(core: &mut Core) {
 }
 
 fn strike_square_set(core: &Core) -> Option<(i32, i32)> {
-    (is_on(core) && core.raw_read_8(STRIKE + 3, -1) != 0)
-        .then(|| (core.raw_read_8(STRIKE + 4, -1) as i32, core.raw_read_8(STRIKE + 5, -1) as i32))
+    (is_on(core) && core.raw_read_8(STRIKE + 3, -1) != 0).then(|| {
+        (
+            core.raw_read_8(STRIKE + 4, -1) as i32,
+            core.raw_read_8(STRIKE + 5, -1) as i32,
+        )
+    })
 }
 
 /// A strike's target square: the site from here, else the square of the
@@ -744,7 +760,9 @@ fn activate(core: &mut Core) {
     let funds = core.raw_read_32(player(core, army), -1);
     let pct = (funds / 500).min(100);
     let cut = |full: u32| full / METER_SCALE * pct / 100 * METER_SCALE;
-    let team: Vec<u8> = (0..=5u32).map(|a| core.raw_read_8(player(core, a) + 0x2A, -1)).collect();
+    let team: Vec<u8> = (0..=5u32)
+        .map(|a| core.raw_read_8(player(core, a) + 0x2A, -1))
+        .collect();
     for enemy in 1..=5u32 {
         if enemy == army || team[enemy as usize] == team[army as usize] || !crate::co_roster::in_game(core, enemy) {
             continue;
@@ -857,7 +875,11 @@ const BATTLE_ATTACKER: u32 = 0x0300_13D0;
 const BATTLE_DEFENDER: u32 = 0x0300_13B0;
 const MAX_FUNDS: u32 = 999_999;
 fn bars(hp: i32) -> i32 {
-    if hp > 0 { (hp - 1) / 10 + 1 } else { 0 }
+    if hp > 0 {
+        (hp - 1) / 10 + 1
+    } else {
+        0
+    }
 }
 fn after_battle(core: &mut Core) {
     if is_on(core) {
@@ -936,7 +958,10 @@ fn war_bonds(core: &mut Core) {
     let units = core.raw_read_32(UNITS_POINTER, -1);
     let att = core.raw_read_32(SELECTED_UNIT, -1);
     let dfd = units + UNIT * d;
-    let sides = [(att, BATTLE_ATTACKER, dfd, BATTLE_DEFENDER), (dfd, BATTLE_DEFENDER, att, BATTLE_ATTACKER)];
+    let sides = [
+        (att, BATTLE_ATTACKER, dfd, BATTLE_DEFENDER),
+        (dfd, BATTLE_DEFENDER, att, BATTLE_ATTACKER),
+    ];
     for (own, _, foe, foe_record) in sides {
         let army = army_of_index(core, own.wrapping_sub(units) / UNIT);
         let bonds = army_co(core, army) == (SASHA, SCOP);

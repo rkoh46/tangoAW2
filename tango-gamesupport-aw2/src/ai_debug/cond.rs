@@ -41,8 +41,16 @@ fn test(have: Option<&Value>, op: &str, want: &Value) -> Result<bool, String> {
         "gte" => cmp(|a, b| a >= b),
         "lt" => cmp(|a, b| a < b),
         "lte" => cmp(|a, b| a <= b),
-        "in" => want.as_array().ok_or("`in` needs an array")?.iter().any(|w| Some(w) == have),
-        "nin" => !want.as_array().ok_or("`nin` needs an array")?.iter().any(|w| Some(w) == have),
+        "in" => want
+            .as_array()
+            .ok_or("`in` needs an array")?
+            .iter()
+            .any(|w| Some(w) == have),
+        "nin" => !want
+            .as_array()
+            .ok_or("`nin` needs an array")?
+            .iter()
+            .any(|w| Some(w) == have),
         "contains" => match have {
             Some(Value::String(s)) => want.as_str().is_some_and(|w| s.contains(w)),
             Some(Value::Array(a)) => a.iter().any(|x| x == want),
@@ -57,7 +65,8 @@ fn unit_at(state: &Value, cell: &Value) -> Result<bool, String> {
     let c = cell.as_array().filter(|c| c.len() == 2).ok_or("a cell is [x, y]")?;
     let (x, y) = (c[0].as_i64(), c[1].as_i64());
     Ok(state["units"].as_array().is_some_and(|us| {
-        us.iter().any(|u| u["x"].as_i64() == x && u["y"].as_i64() == y && u["carried"] != Value::Bool(true))
+        us.iter()
+            .any(|u| u["x"].as_i64() == x && u["y"].as_i64() == y && u["carried"] != Value::Bool(true))
     }))
 }
 

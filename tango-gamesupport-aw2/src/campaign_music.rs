@@ -29,24 +29,87 @@ pub const MISSION_CARD_AW2: u16 = 404;
 
 /// The roles the BH Campaign's scenes use, by name (`@SONG name` in `bh_text/*.txt`): (name, track, what it is for).
 pub const NAMED: &[(&str, Track, &str)] = &[
-    ("opening", Track::Ds { seq: 0x29, like: PROLOGUE_AW2 }, "the campaign's opening (Dual Strike's BGM_OPENING1; AW2's prologue song without the pack)"),
-    ("enemy1", Track::Ds { seq: 0x16, like: 411 }, "Black Hole's officers' scene: grim briefing (BGM_ENEMY_EVENT1; AW2 411)"),
-    ("enemy2", Track::Ds { seq: 0x17, like: 411 }, "Black Hole scene, restless (BGM_ENEMY_EVENT2; AW2 411)"),
-    ("ally1", Track::Ds { seq: 0x19, like: 413 }, "the Accord's scene: council, resolve (BGM_ALLY_EVENT1; AW2 413)"),
-    ("ally2", Track::Ds { seq: 0x1A, like: 413 }, "the Accord's scene, warmer (BGM_ALLY_EVENT2; AW2 413)"),
-    ("entry", Track::Ds { seq: 0x2C, like: 413 }, "an arrival, someone steps onto the stage (BGM_ALLY_ENTRY1; AW2 413)"),
-    ("pinch", Track::Ds { seq: 0x2D, like: 25 }, "a crisis: the line is breaking (BGM_EVENT_PINCH1; AW2 25, the song of Orange Star's surrender scenes)"),
-    ("hagevolt", Track::Ds { seq: 0x23, like: 220 }, "Von Bolt's own scene: ledger, greed, old menace (BGM_HAGEVOLT_EVENT1; AW2 220)"),
-    ("red", Track::Ds { seq: 0x3D, like: 411 }, "an event of the red side (BGM_EVENT_RED1; AW2 411)"),
-    ("blue", Track::Ds { seq: 0x3E, like: 413 }, "an event of the blue side (BGM_EVENT_BLUE1; AW2 413)"),
-    ("sturm", Track::Aw2(220), "Sturm's scene: the citadel, menace and claim (AW2's song at Sturm's citadel)"),
+    (
+        "opening",
+        Track::Ds {
+            seq: 0x29,
+            like: PROLOGUE_AW2,
+        },
+        "the campaign's opening (Dual Strike's BGM_OPENING1; AW2's prologue song without the pack)",
+    ),
+    (
+        "enemy1",
+        Track::Ds { seq: 0x16, like: 411 },
+        "Black Hole's officers' scene: grim briefing (BGM_ENEMY_EVENT1; AW2 411)",
+    ),
+    (
+        "enemy2",
+        Track::Ds { seq: 0x17, like: 411 },
+        "Black Hole scene, restless (BGM_ENEMY_EVENT2; AW2 411)",
+    ),
+    (
+        "ally1",
+        Track::Ds { seq: 0x19, like: 413 },
+        "the Accord's scene: council, resolve (BGM_ALLY_EVENT1; AW2 413)",
+    ),
+    (
+        "ally2",
+        Track::Ds { seq: 0x1A, like: 413 },
+        "the Accord's scene, warmer (BGM_ALLY_EVENT2; AW2 413)",
+    ),
+    (
+        "entry",
+        Track::Ds { seq: 0x2C, like: 413 },
+        "an arrival, someone steps onto the stage (BGM_ALLY_ENTRY1; AW2 413)",
+    ),
+    (
+        "pinch",
+        Track::Ds { seq: 0x2D, like: 25 },
+        "a crisis: the line is breaking (BGM_EVENT_PINCH1; AW2 25, the song of Orange Star's surrender scenes)",
+    ),
+    (
+        "hagevolt",
+        Track::Ds { seq: 0x23, like: 220 },
+        "Von Bolt's own scene: ledger, greed, old menace (BGM_HAGEVOLT_EVENT1; AW2 220)",
+    ),
+    (
+        "red",
+        Track::Ds { seq: 0x3D, like: 411 },
+        "an event of the red side (BGM_EVENT_RED1; AW2 411)",
+    ),
+    (
+        "blue",
+        Track::Ds { seq: 0x3E, like: 413 },
+        "an event of the blue side (BGM_EVENT_BLUE1; AW2 413)",
+    ),
+    (
+        "sturm",
+        Track::Aw2(220),
+        "Sturm's scene: the citadel, menace and claim (AW2's song at Sturm's citadel)",
+    ),
     ("sturm_theme", Track::Co(10), "Sturm's own CO theme (AW2 219)"),
     ("doom", Track::Aw2(409), "Sturm's last words in AW2: the climax"),
-    ("final", Track::Aw2(420), "AW2's last push: 'the enemy is weakening, attack the platform!'"),
+    (
+        "final",
+        Track::Aw2(420),
+        "AW2's last push: 'the enemy is weakening, attack the platform!'",
+    ),
     ("world_map", Track::Aw2(WORLD_MAP_AW2), "AW2's world map"),
-    ("prologue", Track::Aw2(PROLOGUE_AW2), "AW2's prologue (Sturm and Hawke on the Black Hole map)"),
-    ("ending1", Track::Ds { seq: 0x36, like: 420 }, "the ending (BGM_NML_ENDING1)"),
-    ("ending2", Track::Ds { seq: 0x37, like: 420 }, "the secret ending (BGM_NML_ENDING2)"),
+    (
+        "prologue",
+        Track::Aw2(PROLOGUE_AW2),
+        "AW2's prologue (Sturm and Hawke on the Black Hole map)",
+    ),
+    (
+        "ending1",
+        Track::Ds { seq: 0x36, like: 420 },
+        "the ending (BGM_NML_ENDING1)",
+    ),
+    (
+        "ending2",
+        Track::Ds { seq: 0x37, like: 420 },
+        "the secret ending (BGM_NML_ENDING2)",
+    ),
 ];
 
 /// The world map's song: AW2's own on AW2's map (what the game itself plays when a mission returns to the map), Dual Strike's on Omega Land.
@@ -88,13 +151,19 @@ impl Track {
             Track::Aw2(s) => s,
             Track::Ds { seq, like } => crate::ds_music::story_song(seq).unwrap_or(like),
             Track::Co(co) if co < AW2_COS => core.raw_read_16(CO_TABLE + CO_ROW * co as u32 + 4, -1),
-            Track::Co(co) => crate::ds_music::song(co).unwrap_or_else(|| core.raw_read_16(CO_TABLE + CO_ROW * crate::co_new::like(co) as u32 + 4, -1)),
+            Track::Co(co) => crate::ds_music::song(co)
+                .unwrap_or_else(|| core.raw_read_16(CO_TABLE + CO_ROW * crate::co_new::like(co) as u32 + 4, -1)),
         }
     }
 
     /// The same without a core (the song table of AW2 is read from `rom`): for tools that list the scenes.
     pub fn resolve_rom(self, rom: &[u8]) -> u16 {
-        let read = |co: u8| u16::from_le_bytes([rom[(CO_TABLE - 0x0800_0000 + CO_ROW * co as u32 + 4) as usize], rom[(CO_TABLE - 0x0800_0000 + CO_ROW * co as u32 + 5) as usize]]);
+        let read = |co: u8| {
+            u16::from_le_bytes([
+                rom[(CO_TABLE - 0x0800_0000 + CO_ROW * co as u32 + 4) as usize],
+                rom[(CO_TABLE - 0x0800_0000 + CO_ROW * co as u32 + 5) as usize],
+            ])
+        };
         match self {
             Track::Aw2(s) => s,
             Track::Ds { seq, like } => crate::ds_music::story_song(seq).unwrap_or(like),

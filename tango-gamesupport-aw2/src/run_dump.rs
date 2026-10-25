@@ -35,7 +35,10 @@ fn enabled() -> Option<&'static (std::path::PathBuf, u32)> {
     ENABLED
         .get_or_init(|| {
             let dir = std::env::var("TANGOAW2_RUN_DIR").ok()?;
-            let seat = std::env::var("TANGOAW2_RUN_SEAT").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+            let seat = std::env::var("TANGOAW2_RUN_SEAT")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0);
             Some((std::path::PathBuf::from(dir), seat))
         })
         .as_ref()
@@ -75,13 +78,29 @@ pub fn tick(core: &Core, keys: u32) {
             .append(true)
             .open(dir.join(format!("state_s{seat}.jsonl")))
             .expect("run dump file");
-        Dump { file, tick: 0, last_units: Default::default(), last_owner: Default::default(), last_powers: [0; 6], last_alive: [true; 6], last_hash_frame: 0, prev_fc: 0, last_carried: Default::default(), ready: false }
+        Dump {
+            file,
+            tick: 0,
+            last_units: Default::default(),
+            last_owner: Default::default(),
+            last_powers: [0; 6],
+            last_alive: [true; 6],
+            last_hash_frame: 0,
+            prev_fc: 0,
+            last_carried: Default::default(),
+            ready: false,
+        }
     });
     d.tick += 1;
     TICKS.store(d.tick, std::sync::atomic::Ordering::Relaxed);
     // (every non-zero joypad word the console takes, with its tick: proof of what reached the game)
     if keys != 0 {
-        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"keys\",\"word\":{keys}}}", ms(), d.tick);
+        let _ = writeln!(
+            d.file,
+            "{{\"ms\":{},\"tick\":{},\"k\":\"keys\",\"word\":{keys}}}",
+            ms(),
+            d.tick
+        );
     }
     // (the console's state hash at every 60th frame of its own count: peers that play the same match agree at the same frame)
     let fc = core.frame_counter();
@@ -111,19 +130,35 @@ pub fn tick(core: &Core, keys: u32) {
             h = (h ^ *b as u64).wrapping_mul(0x100000001b3);
         }
         // (the Visuals rule's three copies: the host's choice is shared by every peer; logged so a divergence would show)
-        let vis = [core.raw_read_8(0x0200_C42E, -1), core.raw_read_8(0x0201_7C52, -1), core.raw_read_8(0x0201_7CDA, -1)];
+        let vis = [
+            core.raw_read_8(0x0200_C42E, -1),
+            core.raw_read_8(0x0201_7C52, -1),
+            core.raw_read_8(0x0201_7CDA, -1),
+        ];
         // (test aid: TANGOAW2_HASH_PARTS=1 adds a short hash of every 4 KB of IWRAM then EWRAM, to find where two peers differ)
         let parts = if std::env::var_os("TANGOAW2_HASH_PARTS").is_some() {
             let hs: Vec<String> = iw
                 .chunks(0x1000)
                 .chain(ew.chunks(0x1000))
-                .map(|c| format!("{:04x}", (c.iter().fold(0xcbf29ce484222325u64, |h, b| (h ^ *b as u64).wrapping_mul(0x100000001b3)) >> 24) as u16))
+                .map(|c| {
+                    format!(
+                        "{:04x}",
+                        (c.iter().fold(0xcbf29ce484222325u64, |h, b| (h ^ *b as u64)
+                            .wrapping_mul(0x100000001b3))
+                            >> 24) as u16
+                    )
+                })
                 .collect();
             format!(",\"parts\":\"{}\"", hs.join(""))
         } else {
             String::new()
         };
-        let _ = writeln!(d.file, "{{\"ms\":{},\"tick\":{},\"k\":\"hash\",\"frame\":{fc},\"h\":\"{h:016x}\",\"visuals\":{vis:?}{parts}}}", ms(), d.tick);
+        let _ = writeln!(
+            d.file,
+            "{{\"ms\":{},\"tick\":{},\"k\":\"hash\",\"frame\":{fc},\"h\":\"{h:016x}\",\"visuals\":{vis:?}{parts}}}",
+            ms(),
+            d.tick
+        );
     }
     if d.tick % 6 != 0 {
         return;
@@ -137,7 +172,11 @@ pub fn tick(core: &Core, keys: u32) {
     let n = crate::online::room_players().max(2);
     let me = crate::online::room_local_seat();
     let army = snap.active_army;
-    let mover = if (1..=5).contains(&army) { crate::pvp::seat_of_n(army, n) as i32 } else { -1 };
+    let mover = if (1..=5).contains(&army) {
+        crate::pvp::seat_of_n(army, n) as i32
+    } else {
+        -1
+    };
     let armies = snap.armies.len() as u8;
     let funds: Vec<u32> = snap.armies.iter().map(|a| a.funds).collect();
     let now = ms();
@@ -173,7 +212,9 @@ pub fn tick(core: &Core, keys: u32) {
         for (id, &(kind, a, x, y, hp)) in &units {
             match d.last_units.get(id) {
                 None if d.last_carried.contains_key(id) => {}
-                None => acts.push(format!("\"what\":\"build\",\"actor\":{a},\"unit\":{kind},\"to\":[{x},{y}],\"hp\":[0,{hp}]")),
+                None => acts.push(format!(
+                    "\"what\":\"build\",\"actor\":{a},\"unit\":{kind},\"to\":[{x},{y}],\"hp\":[0,{hp}]"
+                )),
                 Some(&(_, _, ox, oy, ohp)) => {
                     if (ox, oy) != (x, y) {
                         acts.push(format!("\"what\":\"move\",\"actor\":{a},\"unit\":{kind},\"from\":[{ox},{oy}],\"to\":[{x},{y}],\"hp\":[{ohp},{hp}]"));
@@ -195,13 +236,19 @@ pub fn tick(core: &Core, keys: u32) {
         }
         for (id, &(kind, a, x, y, hp)) in &d.last_units {
             if !units.contains_key(id) && !carried.contains_key(id) {
-                acts.push(format!("\"what\":\"kill\",\"actor\":{army},\"unit\":{kind},\"owner\":{a},\"to\":[{x},{y}],\"hp\":[{hp},0]"));
+                acts.push(format!(
+                    "\"what\":\"kill\",\"actor\":{army},\"unit\":{kind},\"owner\":{a},\"to\":[{x},{y}],\"hp\":[{hp},0]"
+                ));
             }
         }
         for (&cell, &o) in &owners {
             if let Some(&old) = d.last_owner.get(&cell) {
                 if old != o {
-                    acts.push(format!("\"what\":\"capture\",\"actor\":{o},\"to\":[{},{}],\"from_owner\":{old}", cell % 64, cell / 64));
+                    acts.push(format!(
+                        "\"what\":\"capture\",\"actor\":{o},\"to\":[{},{}],\"from_owner\":{old}",
+                        cell % 64,
+                        cell / 64
+                    ));
                 }
             }
         }
@@ -232,12 +279,22 @@ pub fn tick(core: &Core, keys: u32) {
         let plane: String = match (mover == me as i32, crate::fog_view::seat_vision(me)) {
             (false, Some((vw, vh, cells))) if vw as u32 == w && vh as u32 == h => (0..h)
                 .flat_map(|y| (0..w).map(move |x| (x, y)))
-                .map(|(x, y)| if cells.get((y * w + x) as usize).copied().unwrap_or(false) { '1' } else { '0' })
+                .map(|(x, y)| {
+                    if cells.get((y * w + x) as usize).copied().unwrap_or(false) {
+                        '1'
+                    } else {
+                        '0'
+                    }
+                })
                 .collect(),
             _ => crate::inspect::seen_plane(core, w, h),
         };
         for a in acts {
-            let _ = writeln!(d.file, "{{\"ms\":{now},\"tick\":{},\"k\":\"act\",{a},\"seat\":{me},\"army\":{army}}}", d.tick);
+            let _ = writeln!(
+                d.file,
+                "{{\"ms\":{now},\"tick\":{},\"k\":\"act\",{a},\"seat\":{me},\"army\":{army}}}",
+                d.tick
+            );
         }
         let _ = writeln!(d.file, "{{\"ms\":{now},\"tick\":{},\"k\":\"seen\",\"army\":{army},\"of_seat\":{me},\"w\":{w},\"h\":{h},\"cells\":\"{plane}\"}}", d.tick);
         let _ = d.file.flush();

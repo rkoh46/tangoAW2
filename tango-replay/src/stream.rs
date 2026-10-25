@@ -165,7 +165,11 @@ impl<W: std::io::Write> Writer<W> {
         for k in 1..self.state.len() {
             let e = inputs[1].extra;
             let a = Input::keys(e[2 * k - 2]);
-            let b = if 2 * k - 1 < 3 { Input::keys(e[2 * k - 1]) } else { Input::default() };
+            let b = if 2 * k - 1 < 3 {
+                Input::keys(e[2 * k - 1])
+            } else {
+                Input::default()
+            };
             self.push_pair(k, [a, b])?;
         }
         Ok(())
@@ -246,57 +250,57 @@ impl Stream {
         'stream: loop {
             let mut row = [Input::default(); 2];
             for (k, state) in states.iter_mut().enumerate() {
-            let tag = match read_u8(&mut r) {
-                Ok(tag) => tag,
-                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break 'stream,
-                Err(e) => return Err(e),
-            };
-            if tag == END_OF_STREAM {
-                // (a sentinel inside a tick is a truncated tick)
-                is_complete = k == 0;
-                break 'stream;
-            }
-
-            let mut pair = [Input::default(); 2];
-            for (which, (input, state)) in pair.iter_mut().zip(state.iter_mut()).enumerate() {
-                let (key_repeat, touch_down, touch_repeat) = [
-                    (P0_KEY_REPEAT, P0_TOUCH_DOWN, P0_TOUCH_REPEAT),
-                    (P1_KEY_REPEAT, P1_TOUCH_DOWN, P1_TOUCH_REPEAT),
-                ][which];
-                input.keys = if tag & key_repeat != 0 {
-                    state.keys
-                } else {
-                    let Some(hi) = read_u8_opt(&mut r)? else {
-                        break 'stream;
-                    };
-                    let Some(lo) = read_u8_opt(&mut r)? else {
-                        break 'stream;
-                    };
-                    (((hi & KEYS_HI) as u16) << 8) | lo as u16
+                let tag = match read_u8(&mut r) {
+                    Ok(tag) => tag,
+                    Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break 'stream,
+                    Err(e) => return Err(e),
                 };
-                input.touch = if tag & touch_down == 0 {
-                    None
-                } else if tag & touch_repeat != 0 {
-                    Some(state.touch)
-                } else {
-                    let Some(x) = read_u8_opt(&mut r)? else {
-                        break 'stream;
-                    };
-                    let Some(y) = read_u8_opt(&mut r)? else {
-                        break 'stream;
-                    };
-                    Some((x, y))
-                };
-                state.advance(*input);
-            }
-            if k == 0 {
-                row = pair;
-            } else {
-                row[1].extra[2 * k - 2] = pair[0].keys;
-                if 2 * k - 1 < 3 {
-                    row[1].extra[2 * k - 1] = pair[1].keys;
+                if tag == END_OF_STREAM {
+                    // (a sentinel inside a tick is a truncated tick)
+                    is_complete = k == 0;
+                    break 'stream;
                 }
-            }
+
+                let mut pair = [Input::default(); 2];
+                for (which, (input, state)) in pair.iter_mut().zip(state.iter_mut()).enumerate() {
+                    let (key_repeat, touch_down, touch_repeat) = [
+                        (P0_KEY_REPEAT, P0_TOUCH_DOWN, P0_TOUCH_REPEAT),
+                        (P1_KEY_REPEAT, P1_TOUCH_DOWN, P1_TOUCH_REPEAT),
+                    ][which];
+                    input.keys = if tag & key_repeat != 0 {
+                        state.keys
+                    } else {
+                        let Some(hi) = read_u8_opt(&mut r)? else {
+                            break 'stream;
+                        };
+                        let Some(lo) = read_u8_opt(&mut r)? else {
+                            break 'stream;
+                        };
+                        (((hi & KEYS_HI) as u16) << 8) | lo as u16
+                    };
+                    input.touch = if tag & touch_down == 0 {
+                        None
+                    } else if tag & touch_repeat != 0 {
+                        Some(state.touch)
+                    } else {
+                        let Some(x) = read_u8_opt(&mut r)? else {
+                            break 'stream;
+                        };
+                        let Some(y) = read_u8_opt(&mut r)? else {
+                            break 'stream;
+                        };
+                        Some((x, y))
+                    };
+                    state.advance(*input);
+                }
+                if k == 0 {
+                    row = pair;
+                } else {
+                    row[1].extra[2 * k - 2] = pair[0].keys;
+                    if 2 * k - 1 < 3 {
+                        row[1].extra[2 * k - 1] = pair[1].keys;
+                    }
+                }
             }
             inputs.push(row);
         }

@@ -2,8 +2,13 @@
 fn main() {
     let out = std::env::args().nth(1).unwrap();
     let p = tango_gamesupport_aw2::ds_pack::pack().expect("pack");
-    let pal_file = p.file("bmap/046").map(|f| tango_gamesupport_aw2::ds_art::lz10(f).unwrap_or_else(|| f.to_vec())).unwrap();
-    let pal: Vec<u16> = (0..16).map(|i| u16::from_le_bytes([pal_file[2 * i], pal_file[2 * i + 1]])).collect();
+    let pal_file = p
+        .file("bmap/046")
+        .map(|f| tango_gamesupport_aw2::ds_art::lz10(f).unwrap_or_else(|| f.to_vec()))
+        .unwrap();
+    let pal: Vec<u16> = (0..16)
+        .map(|i| u16::from_le_bytes([pal_file[2 * i], pal_file[2 * i + 1]]))
+        .collect();
     let names = ["001", "002", "01f", "020", "021", "022", "023", "024", "025", "026"];
     let mut img = vec![255u8; 3 * 32 * 32 * names.len() * 3];
     let w = 32 * names.len();

@@ -58,7 +58,13 @@ pub fn index(co: u8) -> Option<usize> {
 /// The data file of CO `k` parsed.
 fn data(k: usize) -> Option<&'static toml::Value> {
     static D: OnceLock<Vec<toml::Value>> = OnceLock::new();
-    D.get_or_init(|| all().iter().map(|p| toml::from_str(p.data).expect("a CO data file")).collect()).get(k)
+    D.get_or_init(|| {
+        all()
+            .iter()
+            .map(|p| toml::from_str(p.data).expect("a CO data file"))
+            .collect()
+    })
+    .get(k)
 }
 
 fn s(v: &toml::Value, path: &[&str]) -> Option<String> {
@@ -74,7 +80,11 @@ fn quote(v: &toml::Value, path: &[&str]) -> Option<String> {
     for p in path {
         v = v.get(p)?;
     }
-    let lines: Vec<String> = v.as_array()?.iter().filter_map(|l| l.as_str().map(str::to_string)).collect();
+    let lines: Vec<String> = v
+        .as_array()?
+        .iter()
+        .filter_map(|l| l.as_str().map(str::to_string))
+        .collect();
     Some(lines.join("\r"))
 }
 
@@ -116,7 +126,10 @@ pub fn text(co: u8, which: u16) -> Option<Vec<u8>> {
 pub fn crop(co: u8) -> Option<(usize, usize)> {
     let p = all().into_iter().nth(index(co)?)?;
     let v: toml::Value = toml::from_str(p.crop).ok()?;
-    Some((v.get("cell_x")?.as_integer()? as usize, v.get("strip_y")?.as_integer()? as usize))
+    Some((
+        v.get("cell_x")?.as_integer()? as usize,
+        v.get("strip_y")?.as_integer()? as usize,
+    ))
 }
 
 fn px(bytes: &[u8]) -> Option<(Px, Vec<u16>)> {

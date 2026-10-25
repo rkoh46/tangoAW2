@@ -150,7 +150,8 @@ pub fn active(core: &Core) -> bool {
 /// `MapState_TurnStart`: day 1's first turn start of a mission with a
 /// Setup phase goes to the map's cursor instead.
 fn turn_start(core: &mut Core) {
-    if core.raw_read_8(SETUP, -1) != PENDING || !crate::ds_campaign::active(core) || crate::two_front::rebuilding(core) {
+    if core.raw_read_8(SETUP, -1) != PENDING || !crate::ds_campaign::active(core) || crate::two_front::rebuilding(core)
+    {
         return;
     }
     if core.raw_read_16(DAY, -1) != 1 || core.raw_read_16(CURRENT_ARMY, -1) != 1 {

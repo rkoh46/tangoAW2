@@ -76,18 +76,29 @@ fn file(path: &str) -> Option<Vec<u8>> {
 pub fn army(ds_id: u8, army: usize) -> Option<Army> {
     let row = DS_TABLE + DS_ROW * ds_id as u32;
     let layout_at = word(row + 4 * army as u32)?;
-    let count = u16::from_le_bytes(crate::ds_pack::pack()?.overlay_at(0, OVERLAY_BASE, layout_at, 2)?.try_into().ok()?);
+    let count = u16::from_le_bytes(
+        crate::ds_pack::pack()?
+            .overlay_at(0, OVERLAY_BASE, layout_at, 2)?
+            .try_into()
+            .ok()?,
+    );
     if count == 0 || count as usize > MAX_SPRITES {
         return None;
     }
-    let layout = crate::ds_pack::pack()?.overlay_at(0, OVERLAY_BASE, layout_at, 2 + 6 * count as usize)?.to_vec();
+    let layout = crate::ds_pack::pack()?
+        .overlay_at(0, OVERLAY_BASE, layout_at, 2 + 6 * count as usize)?
+        .to_vec();
     let picture = file(&format!("xinfo/{}", name(word(row + 4 * (5 + army as u32))?)?))?;
     if picture.is_empty() || picture.len() > PICTURE_MAX || picture.len() % 32 != 0 {
         return None;
     }
     let pal = crate::ds_pack::pack()?.file(&format!("battle/{}", name(word(row + 4 * (10 + army as u32))?)?))?;
     let palette: [u8; PALETTE] = pal.get(..PALETTE)?.try_into().ok()?;
-    Some(Army { layout, picture, palette })
+    Some(Army {
+        layout,
+        picture,
+        palette,
+    })
 }
 
 /// Writes every new unit's pictures, layouts and palettes to [`DATA`] and

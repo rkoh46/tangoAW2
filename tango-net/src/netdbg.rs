@@ -41,7 +41,11 @@ pub fn test_mode() -> bool {
 /// What the wrapper applies now: (latency ms, jitter ms, loss %) when a runtime setting was made.
 pub fn current() -> Option<(u32, u32, f32)> {
     (OVERRIDE.load(Ordering::Relaxed) != 0).then(|| {
-        (LATENCY_MS.load(Ordering::Relaxed), JITTER_MS.load(Ordering::Relaxed), LOSS_X100.load(Ordering::Relaxed) as f32 / 100.0)
+        (
+            LATENCY_MS.load(Ordering::Relaxed),
+            JITTER_MS.load(Ordering::Relaxed),
+            LOSS_X100.load(Ordering::Relaxed) as f32 / 100.0,
+        )
     })
 }
 

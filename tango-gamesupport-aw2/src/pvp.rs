@@ -210,7 +210,10 @@ pub(crate) fn sprite_source(core: &Core, id: u32, group: u32) -> u32 {
 /// (None: transparent). For menus that show the emblem without the sprite engine.
 pub(crate) fn emblem_pixels(core: &Core, colour: u32) -> Option<(usize, usize, Vec<Option<(u8, u8, u8)>>)> {
     let id = EMBLEM_BASE_ID + colour;
-    let (tw, th) = (core.raw_read_8(SPRITE_SIZES + id * 4, -1) as usize, core.raw_read_8(SPRITE_SIZES + id * 4 + 1, -1) as usize);
+    let (tw, th) = (
+        core.raw_read_8(SPRITE_SIZES + id * 4, -1) as usize,
+        core.raw_read_8(SPRITE_SIZES + id * 4 + 1, -1) as usize,
+    );
     if tw == 0 || th == 0 || tw > 4 || th > 4 {
         return None;
     }
@@ -231,7 +234,8 @@ pub(crate) fn emblem_pixels(core: &Core, colour: u32) -> Option<(usize, usize, V
                     let b = tiles[(ty * tw + tx) * 32 + y * 4 + x / 2];
                     let v = ((b >> (4 * (x & 1))) & 15) as usize;
                     if v != 0 {
-                        out[(ty * 8 + y) * tw * 8 + tx * 8 + x] = Some(crate::online::bgr(u16::from_le_bytes([pal[2 * v], pal[2 * v + 1]])));
+                        out[(ty * 8 + y) * tw * 8 + tx * 8 + x] =
+                            Some(crate::online::bgr(u16::from_le_bytes([pal[2 * v], pal[2 * v + 1]])));
                     }
                 }
             }
@@ -529,7 +533,11 @@ pub(crate) fn track_menu(core: &mut Core) {
     }
     // (and the item the cursor is on: the one chosen when the menu closes)
     let row = core.raw_read_8(MAP_MENU_CURSOR, -1) as u32;
-    let item = if row < 8 { core.raw_read_8(MAP_MENU_ITEMS + row, -1) } else { 0xFF };
+    let item = if row < 8 {
+        core.raw_read_8(MAP_MENU_ITEMS + row, -1)
+    } else {
+        0xFF
+    };
     if item != 0xFF && core.raw_read_8(END_ROW + 1, -1) != item {
         core.raw_write_8(END_ROW + 1, -1, item);
     }
@@ -557,10 +565,12 @@ pub(crate) fn current_defeated(core: &Core) -> bool {
 }
 
 pub(crate) fn turn_ended(core: &Core) -> bool {
-    current_defeated(core) || crate::tag::ended_by_change(core) || core.raw_read_8(MAP_MENU_STATE, -1) == 5 && {
-        let end = core.raw_read_8(END_ROW, -1);
-        end != 0 && core.raw_read_8(MAP_MENU_CURSOR, -1) + 1 == end
-    }
+    current_defeated(core)
+        || crate::tag::ended_by_change(core)
+        || core.raw_read_8(MAP_MENU_STATE, -1) == 5 && {
+            let end = core.raw_read_8(END_ROW, -1);
+            end != 0 && core.raw_read_8(MAP_MENU_CURSOR, -1) + 1 == end
+        }
 }
 
 fn set_bit0(core: &mut Core, at: u32) {
@@ -610,12 +620,27 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         let mut t = crate::factory::traps();
         // (test aid: `AW2_TRAP_LOG=1` logs the calls of the candidate camera routines, to find who scrolls the map)
         if std::env::var_os("AW2_TRAP_LOG").is_some() {
-            for f in [0x0800_0E0Au32, 0x0802_4A42, 0x0802_8D52, 0x0803_7AA6, 0x0806_A94A, 0x0802_9038] {
+            for f in [
+                0x0800_0E0Au32,
+                0x0802_4A42,
+                0x0802_8D52,
+                0x0803_7AA6,
+                0x0806_A94A,
+                0x0802_9038,
+            ] {
                 t.push((
                     f,
                     Box::new(move |core: &mut Core| {
                         let c = core.gba().cpu();
-                        eprintln!("trap {f:08x} scratch {} r0 {:x} r1 {:x} r2 {:x} r3 {:x} lr {:x}", tango_backend_mgba::shared::in_scratch(), c.gpr(0), c.gpr(1), c.gpr(2), c.gpr(3), c.gpr(14));
+                        eprintln!(
+                            "trap {f:08x} scratch {} r0 {:x} r1 {:x} r2 {:x} r3 {:x} lr {:x}",
+                            tango_backend_mgba::shared::in_scratch(),
+                            c.gpr(0),
+                            c.gpr(1),
+                            c.gpr(2),
+                            c.gpr(3),
+                            c.gpr(14)
+                        );
                     }),
                 ));
             }
@@ -644,7 +669,13 @@ impl tango_backend_mgba::SharedGame for Aw2 {
 
     /// The tilted map at a higher resolution (see [`crate::ds_tilt::apply_scaled`]); the rest of the overlays are
     /// drawn on the console's own grid and carried up by whole pixels.
-    fn overlay_hires(&self, core: &Core, _mode: Option<(u8, u8)>, _seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {
+    fn overlay_hires(
+        &self,
+        core: &Core,
+        _mode: Option<(u8, u8)>,
+        _seat: usize,
+        rgba: &mut Vec<u8>,
+    ) -> Option<(u32, u32)> {
         let ss = crate::ds_tilt::adaptive_scale();
         if ss <= 1 || !crate::ds_tilt::enabled() || rgba.len() != 240 * 160 * 4 {
             return None;
@@ -763,7 +794,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             return false;
         }
         let current = core.raw_read_8(CURRENT_PLAYER, -1);
-        if !((in_battle(core) || crate::fog_view::between_screens_view(core)) && (1..=5).contains(&current) && seat_of_n(current, crate::online::room_players()) != seat) {
+        if !((in_battle(core) || crate::fog_view::between_screens_view(core))
+            && (1..=5).contains(&current)
+            && seat_of_n(current, crate::online::room_players()) != seat)
+        {
             return false;
         }
         // (the hand-off screen, and without fog the turn's banners and animations: the console's own picture, the same
@@ -827,7 +861,14 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             let p = crate::fog_view::procs(core);
             let mut last = LAST.lock().unwrap();
             if *last != p {
-                log::info!("consoleprocs {:x?} loop {:08x} menu {} chosen {:?} ended {}", p, core.raw_read_32(0x0300_0000, -1), core.raw_read_8(MAP_MENU_STATE, -1), chosen_item(core), turn_ended(core));
+                log::info!(
+                    "consoleprocs {:x?} loop {:08x} menu {} chosen {:?} ended {}",
+                    p,
+                    core.raw_read_32(0x0300_0000, -1),
+                    core.raw_read_8(MAP_MENU_STATE, -1),
+                    chosen_item(core),
+                    turn_ended(core)
+                );
                 *last = p;
             }
         }
@@ -865,7 +906,11 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::five_map::show_maps(core, ds_features, ds, crate::survival::last_listed_id(core));
         crate::online_maps::retab(core);
         crate::online_maps::offline_retab(core);
-        crate::mode_menu::tick(core, ds && ds_features && mode.is_none(), crate::survival::TEXT_BASE + crate::survival::T_HELP);
+        crate::mode_menu::tick(
+            core,
+            ds && ds_features && mode.is_none(),
+            crate::survival::TEXT_BASE + crate::survival::T_HELP,
+        );
         // LINK is ONLINE, played alone (crate::online_menu).
         crate::online_menu::patch(core, mode.is_none());
         crate::design_bar::patch_rom(core, ds_features, ds);
@@ -1023,7 +1068,6 @@ mod tests {
         assert_eq!([1, 2, 3, 4].map(seat_of), [0, 1, 0, 1]);
     }
 }
-
 
 /// The game's soft reset is A + B + START + SELECT held together (and any seat can hold it): online it must reach the
 /// shared console from no seat at all, or one player could reset the match for everybody. START and SELECT are dropped

@@ -62,7 +62,15 @@ fn parse(text: &str) -> Vec<Rule> {
             log::error!("test-aid: line {}: no `do`: {line:?}", no + 1);
             continue;
         };
-        let mut rule = Rule { at: None, army: None, day: None, idle: false, gap: 0, from_tick: 0, cmd: cmd.split_whitespace().map(str::to_string).collect() };
+        let mut rule = Rule {
+            at: None,
+            army: None,
+            day: None,
+            idle: false,
+            gap: 0,
+            from_tick: 0,
+            cmd: cmd.split_whitespace().map(str::to_string).collect(),
+        };
         let mut words = when.split_whitespace();
         match words.next() {
             Some("at") => rule.at = words.next().and_then(|v| v.parse().ok()),
@@ -84,7 +92,10 @@ fn parse(text: &str) -> Vec<Rule> {
                     }
                 }
             }
-            _ => log::error!("test-aid: line {}: starts with neither `at` nor `when`: {line:?}", no + 1),
+            _ => log::error!(
+                "test-aid: line {}: starts with neither `at` nor `when`: {line:?}",
+                no + 1
+            ),
         }
         rules.push(rule);
     }
@@ -124,7 +135,9 @@ pub fn apply(core: &mut Core, tick: u32) {
         *fired = vec![None; rules.len()];
     }
     // (a tick simulated again after a rollback: whatever fired at or after it fires afresh, so drop it and look anew)
-    let redo: Vec<usize> = (0..rules.len()).filter(|&i| fired[i].is_some_and(|t| t >= tick)).collect();
+    let redo: Vec<usize> = (0..rules.len())
+        .filter(|&i| fired[i].is_some_and(|t| t >= tick))
+        .collect();
     for i in redo {
         fired[i] = None;
     }
@@ -151,7 +164,8 @@ pub fn apply(core: &mut Core, tick: u32) {
 
 fn num(s: Option<&String>) -> u32 {
     let s = s.map_or("0", |s| s.as_str());
-    s.strip_prefix("0x").map_or_else(|| s.parse().unwrap_or(0), |h| u32::from_str_radix(h, 16).unwrap_or(0))
+    s.strip_prefix("0x")
+        .map_or_else(|| s.parse().unwrap_or(0), |h| u32::from_str_radix(h, 16).unwrap_or(0))
 }
 
 fn kind_of(s: &str) -> u32 {
@@ -204,7 +218,9 @@ pub fn run(core: &mut Core, tick: u32, cmd: &[String]) {
     match cmd.first().map(String::as_str) {
         Some("poke") => {
             let hex = cmd.get(2).map_or("", |s| s.as_str());
-            let bytes: Vec<u8> = (0..hex.len() / 2).filter_map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).ok()).collect();
+            let bytes: Vec<u8> = (0..hex.len() / 2)
+                .filter_map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).ok())
+                .collect();
             core.raw_write_range(a(1), -1, &bytes);
             log::info!("test-aid @{tick}: poke {:08x} {hex}", a(1));
         }
@@ -225,12 +241,17 @@ pub fn run(core: &mut Core, tick: u32, cmd: &[String]) {
                 log::error!("test-aid @{tick}: unit: ({x},{y}) is occupied");
                 return;
             }
-            let Some(id) = (1..stride).map(|s| (army - 1) * stride + s).find(|&id| core.raw_read_8(record(core, id), -1) == 0) else {
+            let Some(id) = (1..stride)
+                .map(|s| (army - 1) * stride + s)
+                .find(|&id| core.raw_read_8(record(core, id), -1) == 0)
+            else {
                 log::error!("test-aid @{tick}: unit: army {army} has no free slot");
                 return;
             };
             // a copy of a unit of the kind anywhere (its ammo and fuel are the kind's), else a foot soldier's
-            let template = (1..255).map(|i| record(core, i)).find(|&r| core.raw_read_8(r, -1) as u32 == kind);
+            let template = (1..255)
+                .map(|i| record(core, i))
+                .find(|&r| core.raw_read_8(r, -1) as u32 == kind);
             let mut rec = [0u8; 12];
             match template {
                 Some(t) => core.raw_read_range(t, -1, &mut rec),
@@ -250,7 +271,11 @@ pub fn run(core: &mut Core, tick: u32, cmd: &[String]) {
         Some("move") => {
             let (id, x2, y2) = (unit_id_at(core, a(1), a(2)), a(3), a(4));
             if id == 0 || unit_id_at(core, x2, y2) != 0 {
-                log::error!("test-aid @{tick}: move: no unit at ({},{}) or ({x2},{y2}) occupied", a(1), a(2));
+                log::error!(
+                    "test-aid @{tick}: move: no unit at ({},{}) or ({x2},{y2}) occupied",
+                    a(1),
+                    a(2)
+                );
                 return;
             }
             set_cell(core, a(1), a(2), 0);

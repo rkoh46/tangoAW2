@@ -153,8 +153,24 @@ const AW2_TILEMAP: u32 = 0x081D_0BAC;
 const PALETTE_POOLS: [u32; 3] = [0x0807_5C94, 0x0807_5E08, 0x0807_69BC];
 const AW2_PALETTE: u32 = 0x081D_1504;
 const MISSION_POOLS: [u32; 18] = [
-    0x0806_1890, 0x0806_190C, 0x0807_47EC, 0x0807_4A24, 0x0807_4A98, 0x0807_5920, 0x0807_59C8, 0x0807_6C3C, 0x0807_6C60,
-    0x0807_6FF4, 0x0807_72F8, 0x0807_73A0, 0x0807_7DD8, 0x0807_7ED4, 0x0807_7F18, 0x0807_7F68, 0x0807_7FD8, 0x0807_8234,
+    0x0806_1890,
+    0x0806_190C,
+    0x0807_47EC,
+    0x0807_4A24,
+    0x0807_4A98,
+    0x0807_5920,
+    0x0807_59C8,
+    0x0807_6C3C,
+    0x0807_6C60,
+    0x0807_6FF4,
+    0x0807_72F8,
+    0x0807_73A0,
+    0x0807_7DD8,
+    0x0807_7ED4,
+    0x0807_7F18,
+    0x0807_7F68,
+    0x0807_7FD8,
+    0x0807_8234,
 ];
 const AW2_MISSION_TABLE: u32 = 0x0861_5194;
 const REVEAL_POOLS: [u32; 2] = [0x0807_6C14, 0x0807_8350];
@@ -261,12 +277,21 @@ fn build() -> Option<WorldMap> {
                 break;
             }
             if rid & 0xFFFF == id {
-                found = Some((i16::from_le_bytes([r[4], r[5]]), i16::from_le_bytes([r[6], r[7]]), (rid >> 16) as u16));
+                found = Some((
+                    i16::from_le_bytes([r[4], r[5]]),
+                    i16::from_le_bytes([r[6], r[7]]),
+                    (rid >> 16) as u16,
+                ));
             }
         }
         points.push(found?);
     }
-    Some(WorldMap { tiles, tilemap, palette, points })
+    Some(WorldMap {
+        tiles,
+        tilemap,
+        palette,
+        points,
+    })
 }
 
 /// How much more a tile's shade (its four 4x4 means) counts than its detail
@@ -473,7 +498,10 @@ pub fn fit(cells: &[(Pixels, u8)], colours: &[u16], max_tiles: usize, first_pal:
                 let best = (1..16u8)
                     .min_by_key(|&k| {
                         let c = col(p, k);
-                        members[r].iter().map(|&u| near(c, col(p, uniq[u].0[i])) as i64 * cells_of[u] as i64).sum::<i64>()
+                        members[r]
+                            .iter()
+                            .map(|&u| near(c, col(p, uniq[u].0[i])) as i64 * cells_of[u] as i64)
+                            .sum::<i64>()
                     })
                     .unwrap();
                 pats[r][i] = best;
@@ -539,7 +567,14 @@ fn installed(core: &Core) -> bool {
 }
 
 /// Writes the world map's art and tables into the ROM image (once).
-pub fn install(core: &mut Core, source: usize, model: &crate::campaign_model::Model, cos_pick: &[bool], co_setup: u32, info_texts: &[u16]) -> bool {
+pub fn install(
+    core: &mut Core,
+    source: usize,
+    model: &crate::campaign_model::Model,
+    cos_pick: &[bool],
+    co_setup: u32,
+    info_texts: &[u16],
+) -> bool {
     let after_win = &model.built.story.after_win;
     let omega_art = model.source.art == crate::campaign_model::WorldArt::OmegaLand;
     if installed(core) && core.raw_read_8(TABLE_OWNER, -1) == source as u8 + 1 {
@@ -558,17 +593,44 @@ pub fn install(core: &mut Core, source: usize, model: &crate::campaign_model::Mo
     // The missions.
     let points: Vec<(i16, i16, u16, u8, u8)> = if omega_art {
         let Some(w) = world_map() else { return false };
-        w.points.iter().enumerate().map(|(i, &(x, y, f))| (x, y, f, stars(i).0, stars(i).1)).collect()
+        w.points
+            .iter()
+            .enumerate()
+            .map(|(i, &(x, y, f))| (x, y, f, stars(i).0, stars(i).1))
+            .collect()
     } else {
         let Some(c) = model.custom.as_ref() else { return false };
-        c.points.iter().map(|p| (p.x, p.y, if p.style & 8 != 0 { 2 } else if p.style & 4 != 0 { 1 } else { 0 }, p.stars, p.stars)).collect()
+        c.points
+            .iter()
+            .map(|p| {
+                (
+                    p.x,
+                    p.y,
+                    if p.style & 8 != 0 {
+                        2
+                    } else if p.style & 4 != 0 {
+                        1
+                    } else {
+                        0
+                    },
+                    p.stars,
+                    p.stars,
+                )
+            })
+            .collect()
     };
     let mut table = vec![0u8; (MISSION_RECORD * AW2_MISSIONS) as usize];
     for (i, &(x, y, flags, normal, hard)) in points.iter().enumerate().take(AW2_MISSIONS as usize) {
         let r = &mut table[i * MISSION_RECORD as usize..(i + 1) * MISSION_RECORD as usize];
         r[0..2].copy_from_slice(&(crate::ds_campaign_data::MAP_ID as u16).to_le_bytes());
         // Marker style: Dual Strike's lab missions and its last stand out.
-        r[2] = if flags & 2 != 0 { 8 } else if flags & 1 != 0 { 4 } else { 0 };
+        r[2] = if flags & 2 != 0 {
+            8
+        } else if flags & 1 != 0 {
+            4
+        } else {
+            0
+        };
         // The stars beside LEVEL (Normal, Hard): [`stars`].
         r[3] = normal;
         r[4] = hard;
@@ -707,7 +769,10 @@ pub fn flush_sprites(core: &mut Core, mut at: u32, end: u32) -> u32 {
         return at;
     }
     let points = points(core);
-    let (cam_x, cam_y) = (core.raw_read_16(S_CAMERA_X, -1) as i16 as i32, core.raw_read_16(S_CAMERA_Y, -1) as i16 as i32);
+    let (cam_x, cam_y) = (
+        core.raw_read_16(S_CAMERA_X, -1) as i16 as i32,
+        core.raw_read_16(S_CAMERA_Y, -1) as i16 as i32,
+    );
     // AW2's own marker list holds 16 missions: in Free Play every mission is shown, so the open ones past the
     // sixteenth (the secret M31) get no marker of the game's: their flag is drawn here too.
     let listed: Vec<u16> = (0..16u32)
@@ -864,7 +929,11 @@ pub fn write_state(core: &mut Core, available: &[u8], won: &[u8], focus: u8) {
 pub fn point_at(core: &mut Core, m: u8) {
     let (x, y) = points(core).get(m as usize).copied().unwrap_or((240, 120));
     // (AW2's picture is 432 x 256: its camera stops at 192 x 96)
-    let (max_x, max_y) = if omega(core) { (MAP_WIDTH - 240, MAP_HEIGHT - 160) } else { (192, 96) };
+    let (max_x, max_y) = if omega(core) {
+        (MAP_WIDTH - 240, MAP_HEIGHT - 160)
+    } else {
+        (192, 96)
+    };
     let cam_x = (x as i32 - 120).clamp(0, max_x);
     let cam_y = (y as i32 - 80).clamp(0, max_y);
     core.raw_write_16(S_CAMERA_X, -1, cam_x as u16);
@@ -879,7 +948,9 @@ fn points(core: &Core) -> Vec<(i16, i16)> {
     match crate::ds_campaign::campaign(core) {
         Some(c) => match &c.model.custom {
             Some(custom) => custom.points.iter().map(|p| (p.x, p.y)).collect(),
-            None => world_map().map(|w| w.points.iter().map(|p| (p.0, p.1)).collect()).unwrap_or_default(),
+            None => world_map()
+                .map(|w| w.points.iter().map(|p| (p.0, p.1)).collect())
+                .unwrap_or_default(),
         },
         None => Vec::new(),
     }
@@ -966,9 +1037,30 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
                 }
             }),
         ),
-        (BONUS, Box::new(|core: &mut Core| if crate::ds_campaign::active(core) { ret(core) })),
-        (ALTERNATIVES, Box::new(|core: &mut Core| if crate::ds_campaign::active(core) { ret(core) })),
-        (NATION_PANEL, Box::new(|core: &mut Core| if crate::ds_campaign::active(core) { ret(core) })),
+        (
+            BONUS,
+            Box::new(|core: &mut Core| {
+                if crate::ds_campaign::active(core) {
+                    ret(core)
+                }
+            }),
+        ),
+        (
+            ALTERNATIVES,
+            Box::new(|core: &mut Core| {
+                if crate::ds_campaign::active(core) {
+                    ret(core)
+                }
+            }),
+        ),
+        (
+            NATION_PANEL,
+            Box::new(|core: &mut Core| {
+                if crate::ds_campaign::active(core) {
+                    ret(core)
+                }
+            }),
+        ),
         (PROFILE_SERIALIZED, Box::new(profile_serialized)),
         (PANEL_ARMY_COLOUR, Box::new(panel_army)),
     ];
@@ -976,9 +1068,18 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         t.push((at, Box::new(move |core: &mut Core| camera_clamp(core, past, reg, max))));
     }
     t.push((CURSOR_X_LIMIT, Box::new(cursor_x_limit)));
-    t.push((CAMERA_X_TEST.0, Box::new(|core: &mut Core| limit_test(core, CAMERA_X_TEST, MAP_WIDTH - 240, false))));
-    t.push((CURSOR_Y_TEST.0, Box::new(|core: &mut Core| limit_test(core, CURSOR_Y_TEST, MAP_HEIGHT - 17, true))));
-    t.push((CAMERA_Y_TEST.0, Box::new(|core: &mut Core| limit_test(core, CAMERA_Y_TEST, MAP_HEIGHT - 160, false))));
+    t.push((
+        CAMERA_X_TEST.0,
+        Box::new(|core: &mut Core| limit_test(core, CAMERA_X_TEST, MAP_WIDTH - 240, false)),
+    ));
+    t.push((
+        CURSOR_Y_TEST.0,
+        Box::new(|core: &mut Core| limit_test(core, CURSOR_Y_TEST, MAP_HEIGHT - 17, true)),
+    ));
+    t.push((
+        CAMERA_Y_TEST.0,
+        Box::new(|core: &mut Core| limit_test(core, CAMERA_Y_TEST, MAP_HEIGHT - 160, false)),
+    ));
     t
 }
 

@@ -149,7 +149,11 @@ pub fn patch_rom(core: &mut Core, with_obelisk: bool, with_wasteland: bool) {
             core.raw_write_16(at, -1, (op & 0xFF00) | want as u16);
         }
     }
-    let template = if with_wasteland { crate::roster::UNIT_BAR } else { UNIT_TEMPLATE };
+    let template = if with_wasteland {
+        crate::roster::UNIT_BAR
+    } else {
+        UNIT_TEMPLATE
+    };
     if core.raw_read_32(UNIT_TEMPLATE_POINTER, -1) != template {
         core.raw_write_32(UNIT_TEMPLATE_POINTER, -1, template);
     }

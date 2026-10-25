@@ -128,7 +128,13 @@ pub fn bonus(core: &Core) -> u32 {
             *s += core.raw_read_8(STATE + KINDS * (a - 1) + k as u32, -1) as u32;
         }
     }
-    let mut total: u32 = sums.iter().zip(VALUE).enumerate().filter(|(k, _)| *k != OOZIUM as usize).map(|(_, (n, v))| n * v).sum();
+    let mut total: u32 = sums
+        .iter()
+        .zip(VALUE)
+        .enumerate()
+        .filter(|(k, _)| *k != OOZIUM as usize)
+        .map(|(_, (n, v))| n * v)
+        .sum();
     total += (sums[OOZIUM as usize] * VALUE[OOZIUM as usize]).min(OOZIUM_CAP);
     if crate::ds_campaign::active(core)
         && crate::ds_campaign::is_ds(core)
@@ -178,7 +184,10 @@ pub fn fight(core: &Core, attacker: u32, defender: u32) -> [Side; 2] {
         army: crate::five::army_of_index(core, unit.wrapping_sub(units) / UNIT),
         hp_after: core.raw_read_16(record + 8, -1) as i16 as i32,
     };
-    [side(attacker, BATTLE_ATTACKER), side(units + UNIT * defender, BATTLE_DEFENDER)]
+    [
+        side(attacker, BATTLE_ATTACKER),
+        side(units + UNIT * defender, BATTLE_DEFENDER),
+    ]
 }
 
 /// A unit battle was fought (crate::co_powers' trap): an Oozium destroyed counts for the other side's army
@@ -202,7 +211,10 @@ pub fn destroyed_structure(core: &Core) -> Option<(Option<u32>, bool)> {
     let kind = core.raw_read_16(proc + 0x64, -1);
     let entry = core.raw_read_32(proc + 0x4C, -1);
     let ours = || {
-        (0x0200_0000..0x0400_0000).contains(&entry).then(|| crate::obelisk::structure(core, entry)).flatten()
+        (0x0200_0000..0x0400_0000)
+            .contains(&entry)
+            .then(|| crate::obelisk::structure(core, entry))
+            .flatten()
     };
     use crate::obelisk::Structure;
     Some(match kind {
@@ -318,7 +330,11 @@ pub fn results(core: &mut Core) {
     if mode == VERSUS && !survival {
         total = 0;
     }
-    let prev = if mode == CAMPAIGN { previous_best(core, hard).min(total) } else { 0 };
+    let prev = if mode == CAMPAIGN {
+        previous_best(core, hard).min(total)
+    } else {
+        0
+    };
     core.raw_write_16(LAST_BONUS, -1, if total == 0 { 0 } else { bonus.min(0xFFFF) as u16 });
     // AW2's campaign plays as AW2's own (and saves nothing more) until the player has set skills for some CO.
     let aw2_campaign_plain = mode == CAMPAIGN && !ds_session && !crate::co_skills::any_set(core);

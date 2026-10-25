@@ -114,7 +114,10 @@ pub(super) struct SupGroup {
 
 impl SupGroup {
     pub(super) fn new(done: tokio_util::sync::CancellationToken) -> Self {
-        SupGroup { n: Default::default(), done }
+        SupGroup {
+            n: Default::default(),
+            done,
+        }
     }
     pub(super) fn add(&self) {
         self.n.fetch_add(1, Ordering::AcqRel);
@@ -171,7 +174,10 @@ pub(super) struct Pauses {
 
 impl Pauses {
     pub(super) fn new(gate: Arc<crate::PauseGate>) -> Self {
-        Pauses { n: Default::default(), gate }
+        Pauses {
+            n: Default::default(),
+            gate,
+        }
     }
     pub(super) fn enter(&self) {
         *self.n.lock().unwrap() += 1;
@@ -206,7 +212,10 @@ impl RoomCtx {
     /// The seat of the peer on link `idx`.
     pub(crate) fn seat_of_link(&self, idx: usize) -> usize {
         if self.is_host {
-            (0..self.players.len()).filter(|&s| s != self.host_seat).nth(idx).unwrap_or(0)
+            (0..self.players.len())
+                .filter(|&s| s != self.host_seat)
+                .nth(idx)
+                .unwrap_or(0)
         } else {
             self.host_seat
         }
@@ -337,7 +346,10 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         let clock = room.as_ref().map(|r| r.clock);
         let rx_tag = || clock.map(|c| (last_rx.clone(), c));
         let peer_seat = peer_seat as u8;
-        let peer_name = room.as_ref().and_then(|r| r.players.get(peer_seat as usize).cloned()).unwrap_or_default();
+        let peer_name = room
+            .as_ref()
+            .and_then(|r| r.players.get(peer_seat as usize).cloned())
+            .unwrap_or_default();
         let quiet = match room.as_ref() {
             Some(r) if r.is_host => STALL_QUIET_HOST,
             Some(_) => STALL_QUIET_GUEST,
@@ -345,12 +357,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         };
         // The other guests' links (a room's host): who to tell what it waits for.
         let others: Vec<Arc<tango_net::link::Link>> = match room.as_ref() {
-            Some(r) if r.is_host => r
-                .links
-                .iter()
-                .filter(|l| !Arc::ptr_eq(l, &link))
-                .cloned()
-                .collect(),
+            Some(r) if r.is_host => r.links.iter().filter(|l| !Arc::ptr_eq(l, &link)).cloned().collect(),
             _ => Vec::new(),
         };
         let notice_wake = link.notice_wake();
@@ -363,8 +370,10 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
         let begin_hold = |timeout: std::time::Duration| -> tokio_util::sync::CancellationToken {
             end.hold_add(peer_seat, peer_name.clone(), web_time::Instant::now() + timeout);
             // (a room's guest waiting for its host: the box says the room goes on without it, not that the match is saved)
-            end.host_wait
-                .store(mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() >= 2), Ordering::Release);
+            end.host_wait.store(
+                mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() >= 2),
+                Ordering::Release,
+            );
             pauses.enter();
             wake.notify_one();
             // A room's host tells the other guests who the match waits for, about once a second.
@@ -438,7 +447,9 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // The silence watch (a room): first the peer's frames stopping, then (box up) their coming back or the
             // window for that running out.
             let silence_watch = async {
-                let Some(c) = clock else { return std::future::pending::<Trip>().await };
+                let Some(c) = clock else {
+                    return std::future::pending::<Trip>().await;
+                };
                 match silent.as_ref() {
                     None => {
                         let sw = silence.as_mut().expect("a room has its silence watch");
@@ -506,7 +517,11 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                     use tango_net_protocol::control::RoomMsg;
                     match msg {
                         RoomMsg::Hold(h) => {
-                            end.hold_add(h.seat, h.name, web_time::Instant::now() + std::time::Duration::from_millis(h.left_ms as u64));
+                            end.hold_add(
+                                h.seat,
+                                h.name,
+                                web_time::Instant::now() + std::time::Duration::from_millis(h.left_ms as u64),
+                            );
                             if notice_held.insert(h.seat) {
                                 pauses.enter();
                             }
@@ -553,8 +568,7 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // quiet starts the migration at once. A host that is still playing and tells us it is leaving does the same
             // (its army is yielded by the console, see `migrate`); one that is simply lost gets the reconnect window
             // below first and the migration after it.
-            let host_link = mig.is_some()
-                && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() >= 2);
+            let host_link = mig.is_some() && room.as_ref().is_some_and(|r| !r.is_host && r.players.len() >= 2);
             let host_out = super::is_out(end.seats_out.load(Ordering::Acquire), peer_seat);
             if host_link
                 && matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled | Trip::Silent)
@@ -565,7 +579,11 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             {
                 log::info!(
                     "pvp: the host {peer_name:?} is gone{}: the room goes on without it",
-                    if host_out { " after being out of the match" } else { " (it left)" }
+                    if host_out {
+                        " after being out of the match"
+                    } else {
+                        " (it left)"
+                    }
                 );
                 let m = mig.clone().expect("a host link has its migration");
                 // (the migration holds the match from here; what this supervisor held is let go after)
@@ -617,14 +635,20 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             // A room's host whose guest drops while a battle is on: the guest gets the reconnect window like a host that is still
             // playing; when it runs out (or the guest said it is leaving, or there is nothing to rebuild) the guest's armies
             // yield, driven by the console, and the match goes on without it: no save, no end.
-            let ended = completed.load(Ordering::Acquire) || end.remote_ended.load(Ordering::Acquire) || end.aborted.load(Ordering::Acquire);
+            let ended = completed.load(Ordering::Acquire)
+                || end.remote_ended.load(Ordering::Acquire)
+                || end.aborted.load(Ordering::Acquire);
             let yieldable = !ended
                 && matches!(trip, Trip::PeerQuit | Trip::Closed | Trip::Stalled | Trip::Silent)
                 && end.yieldable(room.as_ref().is_some_and(|r| r.is_host));
             if yieldable && (matches!(trip, Trip::PeerQuit) || !link.can_reconnect()) {
                 log::info!(
                     "pvp: {peer_name:?} {}: its army yields, the match goes on without it",
-                    if matches!(trip, Trip::PeerQuit) { "left" } else { "is gone for good" }
+                    if matches!(trip, Trip::PeerQuit) {
+                        "left"
+                    } else {
+                        "is gone for good"
+                    }
                 );
                 if let Some(s) = silent.take() {
                     s.announce_stop.cancel();
@@ -683,7 +707,12 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 let timeout = link.reconnect_timeout().unwrap_or_default();
                 let announce_stop = begin_hold(timeout);
                 let now = web_time::Instant::now();
-                silent = Some(SilentHold { lost_ms, since: now, deadline: now + timeout, announce_stop });
+                silent = Some(SilentHold {
+                    lost_ms,
+                    since: now,
+                    deadline: now + timeout,
+                    announce_stop,
+                });
                 continue;
             }
 
@@ -701,7 +730,10 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             watch = None;
             let (timeout, announce_stop) = match silent.take() {
                 // (the box has been up since the peer went quiet: the grace runs on from there)
-                Some(sh) => (sh.deadline.saturating_duration_since(web_time::Instant::now()), sh.announce_stop),
+                Some(sh) => (
+                    sh.deadline.saturating_duration_since(web_time::Instant::now()),
+                    sh.announce_stop,
+                ),
                 None => {
                     let timeout = link.reconnect_timeout().unwrap_or_default();
                     let stop = begin_hold(timeout);
@@ -770,7 +802,11 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             };
             // UNRANKED: a returning player is being let in when the window runs out: the wait goes on a little (the app
             // replaces this session as soon as the player is in), unless it gave up.
-            if !restored && (host_link || yieldable) && !end.give_up.is_cancelled() && end.rejoin_busy.load(Ordering::Acquire) {
+            if !restored
+                && (host_link || yieldable)
+                && !end.give_up.is_cancelled()
+                && end.rejoin_busy.load(Ordering::Acquire)
+            {
                 log::info!("pvp: the window is over but {peer_name:?} is being let back in: waiting for it");
                 let until = web_time::Instant::now() + REJOIN_EXTRA;
                 while web_time::Instant::now() < until
@@ -786,7 +822,13 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
             end.hold_remove(peer_seat);
             end.host_wait.store(false, Ordering::Release);
 
-            if !restored && host_link && !cancel.is_cancelled() && !completed.load(Ordering::Acquire) && !end.remote_ended.load(Ordering::Acquire) && !end.aborted.load(Ordering::Acquire) {
+            if !restored
+                && host_link
+                && !cancel.is_cancelled()
+                && !completed.load(Ordering::Acquire)
+                && !end.remote_ended.load(Ordering::Acquire)
+                && !end.aborted.load(Ordering::Acquire)
+            {
                 // The host did not come back within its window: the room goes on without it, its army yielded.
                 log::info!("pvp: the host {peer_name:?} did not come back: the room goes on without it");
                 let m = mig.clone().expect("a host link has its migration");
@@ -800,7 +842,13 @@ pub(super) fn spawn_supervisor(ctx: SupervisorContext) {
                 group.finish();
                 return;
             }
-            if !restored && yieldable && !cancel.is_cancelled() && !completed.load(Ordering::Acquire) && !end.remote_ended.load(Ordering::Acquire) && !end.aborted.load(Ordering::Acquire) {
+            if !restored
+                && yieldable
+                && !cancel.is_cancelled()
+                && !completed.load(Ordering::Acquire)
+                && !end.remote_ended.load(Ordering::Acquire)
+                && !end.aborted.load(Ordering::Acquire)
+            {
                 log::info!("pvp: {peer_name:?} did not come back: its army yields, the match goes on without it");
                 seat_yields(&end, &wake, &others, peer_seat, &link).await;
                 pauses.leave();
@@ -888,7 +936,13 @@ enum RoomMsgOut {
 /// A guest's player is gone while a battle is on and does not come back: the host marks the seat gone (its words are idle from
 /// the next tick and the console is told to yield its armies, see `driver::HostAgg`), lets the others go on (they were told to
 /// wait for it) and says who is gone, so that they all know who is left should the host leave.
-async fn seat_yields(end: &EndState, wake: &tokio::sync::Notify, others: &[Arc<tango_net::link::Link>], seat: u8, link: &Arc<tango_net::link::Link>) {
+async fn seat_yields(
+    end: &EndState,
+    wake: &tokio::sync::Notify,
+    others: &[Arc<tango_net::link::Link>],
+    seat: u8,
+    link: &Arc<tango_net::link::Link>,
+) {
     end.given_up.lock().unwrap().push(link.clone());
     end.note_gone(seat);
     wake.notify_one();

@@ -63,7 +63,10 @@ impl Meter {
         let co = core.raw_read_8(p + 0x1D, -1);
         let uses = core.raw_read_8(p + 0x25, -1);
         let partner = crate::tag::partner(core, army).map(|b| {
-            (crate::tag::partner_charge(core, army), crate::tag::scop_cost(core, b, crate::tag::partner_uses(core, army)))
+            (
+                crate::tag::partner_charge(core, army),
+                crate::tag::scop_cost(core, b, crate::tag::partner_uses(core, army)),
+            )
         });
         Meter {
             charge: core.raw_read_32(p + 0x20, -1),
@@ -79,7 +82,11 @@ impl Meter {
 
     /// AW2's `0x0804423C`: a CO without a CO Power is ready for it when its Super is.
     fn power_ready(&self) -> bool {
-        if self.cop == 0 { self.super_ready() } else { self.charge >= self.cop }
+        if self.cop == 0 {
+            self.super_ready()
+        } else {
+            self.charge >= self.cop
+        }
     }
 
     fn partner_super_ready(&self) -> bool {
@@ -114,7 +121,9 @@ fn hook(core: &Core, b: &Board, army: u32, h: Hook, k: u8, first: bool, last: bo
             let own = core.raw_read_32(crate::five::players(core) + 0x3C * army + 0x20, -1);
             funds(core, army) >= 30000
                 && (1..=5u32).any(|a| {
-                    b.playing[a as usize] && !b.same_team(a, army) && core.raw_read_32(crate::five::players(core) + 0x3C * a + 0x20, -1) > own
+                    b.playing[a as usize]
+                        && !b.same_team(a, army)
+                        && core.raw_read_32(crate::five::players(core) + 0x3C * a + 0x20, -1) > own
                 })
         }
         Hook::Drake => fog || !(k == 2 && first),
@@ -124,26 +133,47 @@ fn hook(core: &Core, b: &Board, army: u32, h: Hook, k: u8, first: bool, last: bo
         Hook::Hachi => {
             owns_factory(b, army)
                 || (k == 2
-                    && (first
-                        || (0..b.class.len()).any(|i| b.class[i] == C_CITY && b.owns(i, army) && b.at[i] == 0)))
+                    && (first || (0..b.class.len()).any(|i| b.class[i] == C_CITY && b.owns(i, army) && b.at[i] == 0)))
         }
         Hook::Kindle => {
             if k == 2 {
                 return first;
             }
-            let foes: Vec<&Unit> =
-                b.units.iter().filter(|u| b.playing[u.army as usize % 6] && !b.same_team(u.army, army) && u.t != OOZIUM && !u.carried()).collect();
-            let on = foes.iter().filter(|u| PROPERTIES.contains(&b.class[b.idx(u.x, u.y)])).count();
+            let foes: Vec<&Unit> = b
+                .units
+                .iter()
+                .filter(|u| {
+                    b.playing[u.army as usize % 6] && !b.same_team(u.army, army) && u.t != OOZIUM && !u.carried()
+                })
+                .collect();
+            let on = foes
+                .iter()
+                .filter(|u| PROPERTIES.contains(&b.class[b.idx(u.x, u.y)]))
+                .count();
             on != 0 && (on * 5 >= foes.len() || on >= 5)
         }
     }
 }
 
 /// `AiPlayer_TryUsePower` for army `army` with CO `co` at a check (`first`, `last`) with this `roll` (0..99).
-pub(crate) fn decide(core: &Core, b: &Board, army: u32, co: u8, prof: &Profile, m: &Meter, roll: u32, first: bool, last: bool) -> (Choice, &'static str) {
+pub(crate) fn decide(
+    core: &Core,
+    b: &Board,
+    army: u32,
+    co: u8,
+    prof: &Profile,
+    m: &Meter,
+    roll: u32,
+    first: bool,
+    last: bool,
+) -> (Choice, &'static str) {
     let h = |k: u8| hook(core, b, army, prof.hook, k, first, last);
     if m.partner.is_some() && m.super_ready() && m.partner_super_ready() {
-        return if h(2) { (Choice::Super, "tag power") } else { (Choice::Nothing, "tag power: not now") };
+        return if h(2) {
+            (Choice::Super, "tag power")
+        } else {
+            (Choice::Nothing, "tag power: not now")
+        };
     }
     if crate::tag::ds_id(co) == Some(17) && m.power_ready() && h(1) {
         return (Choice::Power, "Colin's CO Power");
@@ -167,7 +197,11 @@ pub(crate) fn decide(core: &Core, b: &Board, army: u32, co: u8, prof: &Profile, 
     if m.partner_super_ready() {
         return (Choice::Nothing, "power: the partner's Super is ready");
     }
-    let (gap, chance) = if m.partner.is_some() { (prof.power[2], prof.power[3]) } else { (prof.power[0], prof.power[1]) };
+    let (gap, chance) = if m.partner.is_some() {
+        (prof.power[2], prof.power[3])
+    } else {
+        (prof.power[0], prof.power[1])
+    };
     let threshold = m.cop as i64 + (m.scop as i64 - m.cop as i64) * gap as i64 / 100;
     if (m.charge as i64) > threshold {
         return (Choice::Nothing, "power: saving for the Super");
@@ -175,7 +209,11 @@ pub(crate) fn decide(core: &Core, b: &Board, army: u32, co: u8, prof: &Profile, 
     if roll >= chance as u32 {
         return (Choice::Nothing, "power: the roll");
     }
-    if h(1) { (Choice::Power, "power") } else { (Choice::Nothing, "power: not now") }
+    if h(1) {
+        (Choice::Power, "power")
+    } else {
+        (Choice::Nothing, "power: not now")
+    }
 }
 
 /// Dual Strike decides this army's power (so [`crate::tag`]'s own rule for AW2's CPU stands aside).
@@ -202,8 +240,15 @@ fn decide_trap(core: &mut Core) {
         let r = roll(core, army, Roll::Power, pass, 100);
         let (choice, why) = decide(core, &b, army, co, &prof, &m, r, first, last);
         if logging() && (choice != Choice::Nothing || m.power_ready()) {
-            let foes: Vec<&Unit> = b.units.iter().filter(|u| b.playing[u.army as usize % 6] && !b.same_team(u.army, army) && !u.carried()).collect();
-            let on = foes.iter().filter(|u| PROPERTIES.contains(&b.class[b.idx(u.x, u.y)])).count();
+            let foes: Vec<&Unit> = b
+                .units
+                .iter()
+                .filter(|u| b.playing[u.army as usize % 6] && !b.same_team(u.army, army) && !u.carried())
+                .collect();
+            let on = foes
+                .iter()
+                .filter(|u| PROPERTIES.contains(&b.class[b.idx(u.x, u.y)]))
+                .count();
             log(&format!(
                 "dsai power day {} army {army} co {co} template {} hook {:?} pass {pass} meter {}/{}/{} partner {:?} roll {r}: {choice:?} ({why}; enemies {} on properties {on})",
                 b.day, prof.template, prof.hook, m.charge, m.cop, m.scop, m.partner, foes.len()
@@ -224,7 +269,9 @@ fn decide_trap(core: &mut Core) {
         if to == SUPER && profile(co).is_some_and(|p| p.hook == Hook::Last) {
             core.raw_write_32(PASS, -1, 1);
             if logging() {
-                log(&format!("dsai power army {army}: Lightning Strike, the passes run again"));
+                log(&format!(
+                    "dsai power army {army}: Lightning Strike, the passes run again"
+                ));
             }
         }
     }

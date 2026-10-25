@@ -42,7 +42,10 @@ fn ds_colours() -> Option<&'static [u8; 32]> {
     static C: std::sync::OnceLock<Option<[u8; 32]>> = std::sync::OnceLock::new();
     C.get_or_init(|| {
         let pal = crate::ds_pack::pack()?.file(DS_PALETTES)?;
-        let mut c: [u8; 32] = pal.get(32 * DS_VOLCANO_PALETTE..32 * DS_VOLCANO_PALETTE + 32)?.try_into().ok()?;
+        let mut c: [u8; 32] = pal
+            .get(32 * DS_VOLCANO_PALETTE..32 * DS_VOLCANO_PALETTE + 32)?
+            .try_into()
+            .ok()?;
         c[0..2].copy_from_slice(&AW2_CLEAR.to_le_bytes());
         Some(c)
     })

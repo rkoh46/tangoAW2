@@ -27,13 +27,15 @@ pub(super) struct PrimingCopy {
 
 pub(super) fn priming_copy(lang: &LanguageIdentifier, state: &State) -> Option<PrimingCopy> {
     // Test aid: `TANGOAW2_PRIMING_DEBUG=match|peer|replay|failed` holds that notice over any session (screenshots).
-    let debug = std::env::var("TANGOAW2_PRIMING_DEBUG").ok().and_then(|v| match v.as_str() {
-        "match" => Some(Priming::Match),
-        "peer" => Some(Priming::Peer),
-        "replay" => Some(Priming::Playback),
-        "failed" => Some(Priming::Failed("The game never reached its battle.".to_string())),
-        _ => None,
-    });
+    let debug = std::env::var("TANGOAW2_PRIMING_DEBUG")
+        .ok()
+        .and_then(|v| match v.as_str() {
+            "match" => Some(Priming::Match),
+            "peer" => Some(Priming::Peer),
+            "replay" => Some(Priming::Playback),
+            "failed" => Some(Priming::Failed("The game never reached its battle.".to_string())),
+            _ => None,
+        });
     let (title, detail) = match debug.or_else(|| state.prime_wait())? {
         Priming::Match => (
             t!(lang, "playback-priming-match"),

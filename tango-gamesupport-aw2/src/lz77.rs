@@ -11,7 +11,12 @@ const MIN_DISP: usize = 2;
 const MAX_DISP: usize = 4096;
 
 pub fn compress(data: &[u8]) -> Vec<u8> {
-    let mut out = vec![0x10, data.len() as u8, (data.len() >> 8) as u8, (data.len() >> 16) as u8];
+    let mut out = vec![
+        0x10,
+        data.len() as u8,
+        (data.len() >> 8) as u8,
+        (data.len() >> 16) as u8,
+    ];
     let mut p = 0;
     while p < data.len() {
         let flag_at = out.len();

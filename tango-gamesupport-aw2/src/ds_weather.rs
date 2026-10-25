@@ -129,7 +129,11 @@ pub fn fuel_rate(core: &Core, army: u32) -> u32 {
         return 1;
     }
     let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
-    if core.raw_read_8(CO_ABILITIES, -1) != 0 && co == OLAF { 1 } else { 2 }
+    if core.raw_read_8(CO_ABILITIES, -1) != 0 && co == OLAF {
+        1
+    } else {
+        2
+    }
 }
 
 fn unit_army(core: &Core, unit: u32) -> u32 {
@@ -154,7 +158,11 @@ fn move_fuel(core: &mut Core) {
     }
     let cpu = core.gba().cpu();
     let (unit, amount) = (cpu.gpr(0) as u32, cpu.gpr(1) as u32 & 0xFF);
-    let v = if core.raw_read_8(unit, -1) == crate::roster::OOZIUM { 0 } else { (amount * fuel_rate(core, unit_army(core, unit))).min(0xFF) };
+    let v = if core.raw_read_8(unit, -1) == crate::roster::OOZIUM {
+        0
+    } else {
+        (amount * fuel_rate(core, unit_army(core, unit))).min(0xFF)
+    };
     if v != amount {
         core.gba_mut().cpu_mut().set_gpr(1, v as i32);
     }

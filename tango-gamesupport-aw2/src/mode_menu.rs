@@ -146,7 +146,10 @@ fn scan(core: &Core) -> Built {
             }
         }
     }
-    Built { divrem_sites, table_pools }
+    Built {
+        divrem_sites,
+        table_pools,
+    }
 }
 
 // --- The label art -----------------------------------------------------------
@@ -207,18 +210,20 @@ fn to_tiles(px: &[Vec<u8>], h_tiles: usize, sw: usize) -> Vec<u8> {
 /// and last column), on Campaign's plate. Letter colours (5..12) follow the
 /// 16-pixel column bands every big label has.
 const BIG_LETTERS: [(u32, usize, usize); 8] = [
-    (3, 27, 37), // S of DESIGN ROOM
+    (3, 27, 37),  // S of DESIGN ROOM
     (1, 84, 101), // U of VERSUS
-    (3, 75, 85), // R of DESIGN ROOM
-    (1, 6, 24), // V of VERSUS
-    (3, 39, 45), // I of DESIGN ROOM
-    (1, 6, 24), // V
-    (2, 87, 99), // A of BATTLEMAPS
-    (2, 51, 60), // L of BATTLEMAPS
+    (3, 75, 85),  // R of DESIGN ROOM
+    (1, 6, 24),   // V of VERSUS
+    (3, 39, 45),  // I of DESIGN ROOM
+    (1, 6, 24),   // V
+    (2, 87, 99),  // A of BATTLEMAPS
+    (2, 51, 60),  // L of BATTLEMAPS
 ];
 
 fn big(core: &Core) -> Option<Vec<u8>> {
-    let src: Vec<Vec<Vec<u8>>> = (0..4).map(|i| label(core, i, 0).map(|d| to_pixels(&d, 4, 8))).collect::<Option<_>>()?;
+    let src: Vec<Vec<Vec<u8>>> = (0..4)
+        .map(|i| label(core, i, 0).map(|d| to_pixels(&d, 4, 8)))
+        .collect::<Option<_>>()?;
     let mut out = src[0].clone();
     for row in out.iter_mut().take(22).skip(2) {
         for v in row.iter_mut().take(124).skip(4) {
@@ -250,7 +255,9 @@ fn cells(px: &[Vec<u8>]) -> Vec<(usize, usize)> {
     let dark = |x: usize| rows.clone().all(|y| px[y][x] == 1);
     let light = |x: usize| rows.clone().all(|y| px[y][x] == 5);
     let boxed: Vec<usize> = (4..124).filter(|&x| !light(x)).collect();
-    let (Some(&lo), Some(&hi)) = (boxed.first(), boxed.last()) else { return Vec::new() };
+    let (Some(&lo), Some(&hi)) = (boxed.first(), boxed.last()) else {
+        return Vec::new();
+    };
     let mut out = Vec::new();
     let mut start = None;
     for x in lo..=hi + 1 {
@@ -276,8 +283,16 @@ fn small(core: &Core) -> Option<Vec<u8>> {
         return None;
     }
     // S U R V I V A L
-    let letters: [(&Vec<Vec<u8>>, (usize, usize)); 8] =
-        [(&versus, v[3]), (&versus, v[4]), (&versus, v[2]), (&versus, v[0]), (&campaign, c[5]), (&versus, v[0]), (&campaign, c[1]), (&link, l[0])];
+    let letters: [(&Vec<Vec<u8>>, (usize, usize)); 8] = [
+        (&versus, v[3]),
+        (&versus, v[4]),
+        (&versus, v[2]),
+        (&versus, v[0]),
+        (&campaign, c[5]),
+        (&versus, v[0]),
+        (&campaign, c[1]),
+        (&link, l[0]),
+    ];
     let mut out = campaign.clone();
     for row in out.iter_mut().take(11).skip(4) {
         for v in row.iter_mut().take(124).skip(4) {
@@ -334,7 +349,9 @@ fn install(core: &mut Core, help_text: u16) -> bool {
     if installed(core) {
         return true;
     }
-    let (Some(big), Some(small)) = (big(core), small(core)) else { return false };
+    let (Some(big), Some(small)) = (big(core), small(core)) else {
+        return false;
+    };
     core.raw_write_range(DATA_TABLE, -1, &TABLE);
     // Help lines: positions 0..5, ours, then the Sound Room's and Hard
     // Campaign's.
@@ -380,11 +397,17 @@ pub fn item(core: &Core, position: u32) -> u8 {
 
 /// Whether the wheel has seven entries now (the patches are in).
 pub fn active(core: &Core) -> bool {
-    BUILT.get().is_some_and(|b| b.table_pools.first().is_some_and(|&p| core.raw_read_32(p, -1) == DATA_TABLE))
+    BUILT.get().is_some_and(|b| {
+        b.table_pools
+            .first()
+            .is_some_and(|&p| core.raw_read_32(p, -1) == DATA_TABLE)
+    })
 }
 
 fn running(core: &Core) -> bool {
-    (PROCS..PROCS_END).step_by(PROC_SIZE as usize).any(|p| core.raw_read_32(p, -1) == MAIN_MENU)
+    (PROCS..PROCS_END)
+        .step_by(PROC_SIZE as usize)
+        .any(|p| core.raw_read_32(p, -1) == MAIN_MENU)
 }
 
 /// Every frame: the wheel gets the entry with the pack on (offline), and

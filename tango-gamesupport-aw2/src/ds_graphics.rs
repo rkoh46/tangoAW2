@@ -100,9 +100,8 @@ fn buildings(aw2: &[u8]) -> Option<Vec<u8>> {
     let sh = &crate::com_tower::SHADES;
     let mut out = aw2.to_vec();
     for base in [0, SNOW] {
-        let mut put = |tile: usize, bytes: &[u8]| {
-            out[base + at(tile)..base + at(tile) + bytes.len()].copy_from_slice(bytes)
-        };
+        let mut put =
+            |tile: usize, bytes: &[u8]| out[base + at(tile)..base + at(tile) + bytes.len()].copy_from_slice(bytes);
         put(72, &cell(&sprites, 1, sh));
         put(80, &cell(&sprites, 6, sh));
         put(88, &cell(&sprites, 7, sh));
@@ -165,7 +164,6 @@ fn building_tick(core: &mut Core, on: bool) {
 /// The OBJ tile of the Lab's picture in the building sheet (OBJ tiles 0x90..0x97).
 const LAB_TILE: usize = 0x90;
 
-
 // --- Units ---------------------------------------------------------------------
 
 /// The idle sheet getters (`sub_08026190` and its twin): three frames of 27
@@ -218,7 +216,12 @@ static NEW_MOVES: OnceLock<Option<Vec<Vec<u8>>>> = OnceLock::new();
 static MOVES: OnceLock<Option<Vec<Vec<u8>>>> = OnceLock::new();
 
 fn lz_literal(data: &[u8]) -> Vec<u8> {
-    let mut out = vec![0x10, data.len() as u8, (data.len() >> 8) as u8, (data.len() >> 16) as u8];
+    let mut out = vec![
+        0x10,
+        data.len() as u8,
+        (data.len() >> 8) as u8,
+        (data.len() >> 16) as u8,
+    ];
     for block in data.chunks(8) {
         out.push(0);
         out.extend_from_slice(block);
@@ -253,7 +256,10 @@ fn unit_tick(core: &mut Core, on: bool) {
                     let mut now = [0u8; 128];
                     core.raw_read_range(at, -1, &mut now);
                     if now == v[i] {
-                        if let Some(o) = crate::ds_unit_art::map_tiles(crate::roster::ds_id(crate::roster::new_units()[i % n].0).unwrap_or(0), i / n) {
+                        if let Some(o) = crate::ds_unit_art::map_tiles(
+                            crate::roster::ds_id(crate::roster::new_units()[i % n].0).unwrap_or(0),
+                            i / n,
+                        ) {
                             core.raw_write_range(at, -1, &o);
                         }
                     }
@@ -262,7 +268,12 @@ fn unit_tick(core: &mut Core, on: bool) {
             for t in 1..=24u32 {
                 for c in 0..5u32 {
                     let orig = core.raw_read_32(AW2_MOVES + 36 * t + 4 * c, -1);
-                    put_back(core, crate::roster::move_pointer(t, c), MOVE_NEW + MOVE_SIZE * (t - 1), orig);
+                    put_back(
+                        core,
+                        crate::roster::move_pointer(t, c),
+                        MOVE_NEW + MOVE_SIZE * (t - 1),
+                        orig,
+                    );
                 }
             }
         }
@@ -304,7 +315,9 @@ fn unit_tick(core: &mut Core, on: bool) {
     }
     let moves_new = NEW_MOVES.get_or_init(|| {
         news.iter()
-            .map(|&(id, like)| crate::ds_unit_art::move_sheet_ds(crate::roster::ds_id(id)?, like).map(|s| lz_literal(&s)))
+            .map(|&(id, like)| {
+                crate::ds_unit_art::move_sheet_ds(crate::roster::ds_id(id)?, like).map(|s| lz_literal(&s))
+            })
             .collect::<Option<Vec<_>>>()
     });
     if let Some(m) = moves_new {
@@ -355,7 +368,11 @@ fn unit_tick(core: &mut Core, on: bool) {
         for c in 1..=4u32 {
             for t in 1..=2u32 {
                 let k = 2 * (c - 1) + (t - 1);
-                switch32(core, crate::roster::move_pointer(t, c), MOVE_COUNTRY_NEW + MOVE_SIZE * k);
+                switch32(
+                    core,
+                    crate::roster::move_pointer(t, c),
+                    MOVE_COUNTRY_NEW + MOVE_SIZE * k,
+                );
             }
         }
     }
@@ -469,7 +486,11 @@ fn pictures(core: &Core) -> Option<Vec<Vec<u8>>> {
         let aw2 = palette_at(core, aw2_pal.unwrap_or(AW2_BLACK_HOLE));
         // The Volcano's indices are AW2's own (Dual Strike's palette is AW2's
         // with the greens made yellow-green, `crate::volcano`).
-        let map = if sub == 13 { std::array::from_fn(|i| i as u8) } else { nearest_map(&ds, &aw2) };
+        let map = if sub == 13 {
+            std::array::from_fn(|i| i as u8)
+        } else {
+            nearest_map(&ds, &aw2)
+        };
         let bmp: Vec<u8> = sprites
             .get(at..at + 0x800)?
             .iter()
@@ -503,7 +524,10 @@ pub fn structure_picture(core: &Core, aw2: u32) -> u32 {
     if !ds_graphics(core) || core.raw_read_32(PIC_SENTINEL, -1) != MAGIC {
         return aw2;
     }
-    PICTURES.iter().position(|p| p.0 == aw2).map_or(aw2, |k| PIC_NEW + PIC_SLOT * k as u32)
+    PICTURES
+        .iter()
+        .position(|p| p.0 == aw2)
+        .map_or(aw2, |k| PIC_NEW + PIC_SLOT * k as u32)
 }
 
 fn picture_tick(core: &mut Core, on: bool) {

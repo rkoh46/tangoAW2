@@ -38,8 +38,16 @@ fn count_hold(core: &mut Core) {
     if last == day {
         return;
     }
-    let before = if last != 0 && last + 1 == day { core.raw_read_8(STATE, -1) } else { 0 };
-    let n = if owner_at(core, OFFICE.0, OFFICE.1) == army { before.saturating_add(1) } else { 0 };
+    let before = if last != 0 && last + 1 == day {
+        core.raw_read_8(STATE, -1)
+    } else {
+        0
+    };
+    let n = if owner_at(core, OFFICE.0, OFFICE.1) == army {
+        before.saturating_add(1)
+    } else {
+        0
+    };
     core.raw_write_8(STATE, -1, n);
     core.raw_write_8(STATE + 1, -1, day);
 }
@@ -106,12 +114,36 @@ fn es14() -> MissionDef {
     m.victory = scene("m14_post");
     m.after = chain(&["m14_map"]);
     m.triggers = vec![
-        on_day(4, None, vec![Action::Scene(scene("m14_day4")), Action::Custom(cassius_changes_sides)]),
+        on_day(
+            4,
+            None,
+            vec![Action::Scene(scene("m14_day4")), Action::Custom(cassius_changes_sides)],
+        ),
         // The legion's convoy reaches the camp road on days 5 and 8, and the Consul's reserves march in from the camp's east road.
         on_day(5, None, vec![Action::Spawn(wave(1, unit::MD_TANK, &LEGION[0..2]))]),
-        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &LEGION[2..3]), wave(1, unit::MD_TANK, &LEGION[3..4])].concat())]),
+        on_day(
+            8,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(1, unit::NEOTANK, &LEGION[2..3]),
+                    wave(1, unit::MD_TANK, &LEGION[3..4]),
+                ]
+                .concat(),
+            )],
+        ),
         on_day(5, None, vec![Action::Spawn(wave(2, unit::MD_TANK, &RESERVE[0..2]))]),
-        on_day(8, None, vec![Action::Spawn([wave(2, unit::NEOTANK, &RESERVE[2..3]), wave(2, unit::MD_TANK, &RESERVE[3..4])].concat())]),
+        on_day(
+            8,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(2, unit::NEOTANK, &RESERVE[2..3]),
+                    wave(2, unit::MD_TANK, &RESERVE[3..4]),
+                ]
+                .concat(),
+            )],
+        ),
         // The Consul's second line (the ramp towards Stormhold): Tanks on day 3, Md Tanks on day 6.
         on_day(3, None, vec![Action::Spawn(wave(2, unit::TANK, &RESERVE[0..2]))]),
         on_day(6, None, vec![Action::Spawn(wave(2, unit::MD_TANK, &RESERVE[2..4]))]),
@@ -136,8 +168,12 @@ fn es15() -> MissionDef {
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPair).funds(10000),
         // The Accord's strait fleet: Drake's ships and the fort, and Sensei's air wing, allied (the same team).
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(14000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(12000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE))
+            .team(2)
+            .funds(14000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI))
+            .team(2)
+            .funds(12000),
     ];
     m.pool = everyone();
     m.units = deployment("es15");
@@ -150,16 +186,39 @@ fn es15() -> MissionDef {
         on_day(6, None, vec![Action::Scene(scene("m15_day6"))]),
         // The Accord's reinforcements come in from the north sea (the strait's open water along the top edge): Drake's ships and Sensei's air wing.
         on_day(3, None, vec![Action::Spawn(wave(2, unit::CRUISER, &STRAIT[0..1]))]),
-        on_day(5, None, vec![Action::Spawn([wave(2, unit::BATTLESHIP, &STRAIT[1..2]), wave(3, unit::FIGHTER, &STRAIT[2..4])].concat())]),
-        on_day(8, None, vec![Action::Spawn([wave(2, unit::BATTLESHIP, &STRAIT[4..5]), wave(3, unit::BOMBER, &STRAIT[5..6]), wave(3, unit::B_COPTER, &STRAIT[6..7])].concat())]),
-        after(Cond::All(vec![Cond::UnitGone("flagship"), owns(HARBOUR.0, HARBOUR.1)]), vec![Action::Win]),
+        on_day(
+            5,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(2, unit::BATTLESHIP, &STRAIT[1..2]),
+                    wave(3, unit::FIGHTER, &STRAIT[2..4]),
+                ]
+                .concat(),
+            )],
+        ),
+        on_day(
+            8,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(2, unit::BATTLESHIP, &STRAIT[4..5]),
+                    wave(3, unit::BOMBER, &STRAIT[5..6]),
+                    wave(3, unit::B_COPTER, &STRAIT[6..7]),
+                ]
+                .concat(),
+            )],
+        ),
+        after(
+            Cond::All(vec![Cond::UnitGone("flagship"), owns(HARBOUR.0, HARBOUR.1)]),
+            vec![Action::Win],
+        ),
     ];
     m.flag = region::ACT4[2];
     m.stars = 4;
     m.needs = Needs::All(vec!["es14"]);
     m
 }
-
 
 // --- M16 Sol Invictus --------------------------------------------------------------------------
 
@@ -179,7 +238,18 @@ fn charge_defenders(core: &mut Core) {
 }
 
 /// Eagle's air wing's reserve cells along the north airfield (`five/es/spec/es16.py`).
-const AIRFIELD: [(u8, u8); 10] = [(27, 0), (28, 0), (29, 0), (30, 0), (31, 0), (32, 0), (33, 0), (34, 0), (32, 1), (33, 1)];
+const AIRFIELD: [(u8, u8); 10] = [
+    (27, 0),
+    (28, 0),
+    (29, 0),
+    (30, 0),
+    (31, 0),
+    (32, 0),
+    (33, 0),
+    (34, 0),
+    (32, 1),
+    (33, 1),
+];
 /// Hachi's reserves come out of the south gate and the west gate.
 const SOUTH_GATE: [(u8, u8); 5] = [(33, 13), (34, 13), (36, 13), (36, 14), (35, 15)];
 const WEST_GATE: [(u8, u8); 6] = [(27, 9), (28, 9), (26, 10), (28, 10), (27, 11), (28, 11)];
@@ -193,8 +263,12 @@ fn es16() -> MissionDef {
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(15000),
         // The Allied last stand: Eagle's air wing and Hachi's deep stores, allies with real production.
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(13000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI)).team(2).funds(13000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE))
+            .team(2)
+            .funds(13000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::HACHI))
+            .team(2)
+            .funds(13000),
     ];
     m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
     m.units = crate::es_campaign::deployment("es16");
@@ -202,27 +276,121 @@ fn es16() -> MissionDef {
     m.intro = scene("m16_pre");
     m.victory = chain(&["m16_post", "m16_post2"]);
     m.after = chain(&["m16_map", "m16_epilogue", "m16_epilogue2"]);
-    let units_in = |x0, y0, x1, y1| Cond::UnitsIn { army: 1, area: Rect::new(x0, y0, x1, y1), at_least: 1 };
+    let units_in = |x0, y0, x1, y1| Cond::UnitsIn {
+        army: 1,
+        area: Rect::new(x0, y0, x1, y1),
+        at_least: 1,
+    };
     m.triggers = vec![
         // The approaches: a unit at the walls of the plateau; inside the city.
-        Trigger::new(When::AfterAction, units_in(22, 5, 33, 17), vec![Action::Scene(scene("m16_phase2"))]),
-        Trigger::new(When::AfterAction, units_in(30, 6, 39, 14), vec![Action::Scene(scene("m16_phase3"))]),
+        Trigger::new(
+            When::AfterAction,
+            units_in(22, 5, 33, 17),
+            vec![Action::Scene(scene("m16_phase2"))],
+        ),
+        Trigger::new(
+            When::AfterAction,
+            units_in(30, 6, 39, 14),
+            vec![Action::Scene(scene("m16_phase3"))],
+        ),
         // Day 6: the defenders' meters are full and Eagle's air wing comes in from the north.
-        on_day(6, None, vec![Action::Scene(scene("m16_reserves")), Action::Custom(charge_defenders), Action::Spawn(
-            [wave(2, unit::FIGHTER, &AIRFIELD[0..3]), wave(2, unit::BOMBER, &AIRFIELD[3..5]), wave(2, unit::B_COPTER, &AIRFIELD[5..6])].concat())]),
+        on_day(
+            6,
+            None,
+            vec![
+                Action::Scene(scene("m16_reserves")),
+                Action::Custom(charge_defenders),
+                Action::Spawn(
+                    [
+                        wave(2, unit::FIGHTER, &AIRFIELD[0..3]),
+                        wave(2, unit::BOMBER, &AIRFIELD[3..5]),
+                        wave(2, unit::B_COPTER, &AIRFIELD[5..6]),
+                    ]
+                    .concat(),
+                ),
+            ],
+        ),
         // Hachi's reserves: armour out of the south gate and the west gate, foot behind it.
-        on_day(3, None, vec![Action::Spawn([wave(3, unit::MD_TANK, &SOUTH_GATE[0..1]), wave(3, unit::TANK, &SOUTH_GATE[1..2])].concat())]),
-        on_day(5, None, vec![Action::Spawn([wave(3, unit::NEOTANK, &WEST_GATE[0..1]), wave(3, unit::MD_TANK, &WEST_GATE[1..2])].concat())]),
-        on_day(7, None, vec![Action::Spawn([wave(3, unit::MD_TANK, &SOUTH_GATE[2..3]), wave(3, unit::NEOTANK, &SOUTH_GATE[3..4])].concat())]),
-        on_day(9, None, vec![Action::Spawn(wave(2, unit::FIGHTER, &AIRFIELD[6..7])),
-                             Action::Spawn(wave(3, unit::INFANTRY, &WEST_GATE[2..5]))]),
+        on_day(
+            3,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(3, unit::MD_TANK, &SOUTH_GATE[0..1]),
+                    wave(3, unit::TANK, &SOUTH_GATE[1..2]),
+                ]
+                .concat(),
+            )],
+        ),
+        on_day(
+            5,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(3, unit::NEOTANK, &WEST_GATE[0..1]),
+                    wave(3, unit::MD_TANK, &WEST_GATE[1..2]),
+                ]
+                .concat(),
+            )],
+        ),
+        on_day(
+            7,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(3, unit::MD_TANK, &SOUTH_GATE[2..3]),
+                    wave(3, unit::NEOTANK, &SOUTH_GATE[3..4]),
+                ]
+                .concat(),
+            )],
+        ),
+        on_day(
+            9,
+            None,
+            vec![
+                Action::Spawn(wave(2, unit::FIGHTER, &AIRFIELD[6..7])),
+                Action::Spawn(wave(3, unit::INFANTRY, &WEST_GATE[2..5])),
+            ],
+        ),
         // The last stand's second wave (the ramp ends here): Hachi's Neotanks on day 6, Eagle's Fighters on day 8, Md Tanks again out of the south gate on day 10.
-        on_day(6, None, vec![Action::Spawn([wave(3, unit::NEOTANK, &SOUTH_GATE[4..5]), wave(3, unit::NEOTANK, &WEST_GATE[5..6])].concat())]),
+        on_day(
+            6,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(3, unit::NEOTANK, &SOUTH_GATE[4..5]),
+                    wave(3, unit::NEOTANK, &WEST_GATE[5..6]),
+                ]
+                .concat(),
+            )],
+        ),
         on_day(8, None, vec![Action::Spawn(wave(2, unit::FIGHTER, &AIRFIELD[7..9]))]),
         on_day(10, None, vec![Action::Spawn(wave(3, unit::MD_TANK, &SOUTH_GATE[0..2]))]),
         // The legion's own reinforcements: the Quaestor's second convoy, on days 4 and 8.
-        on_day(4, None, vec![Action::Spawn([wave(1, unit::ANTI_AIR, &CAMP[0..1]), wave(1, unit::MD_TANK, &CAMP[1..2]), wave(1, unit::ARTILLERY, &CAMP[2..3])].concat())]),
-        on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),
+        on_day(
+            4,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(1, unit::ANTI_AIR, &CAMP[0..1]),
+                    wave(1, unit::MD_TANK, &CAMP[1..2]),
+                    wave(1, unit::ARTILLERY, &CAMP[2..3]),
+                ]
+                .concat(),
+            )],
+        ),
+        on_day(
+            8,
+            None,
+            vec![Action::Spawn(
+                [
+                    wave(1, unit::NEOTANK, &CAMP[3..4]),
+                    wave(1, unit::MISSILES, &CAMP[4..5]),
+                    wave(1, unit::MD_TANK, &CAMP[5..6]),
+                ]
+                .concat(),
+            )],
+        ),
     ];
     m.flag = region::ACT4[3];
     m.stars = 5;

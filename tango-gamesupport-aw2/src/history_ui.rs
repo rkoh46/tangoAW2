@@ -122,17 +122,48 @@ const TAB_NAMES: [&str; 4] = ["General", "Built", "Destroyed", "Objects"];
 
 /// Unit names by Dual Strike's type (1..26).
 const UNIT_NAMES: [&str; 27] = [
-    "-", "Infantry", "Mech", "Md Tank", "Megatank", "Tank", "Recon", "APC", "Neotank", "Piperunner", "Artillery",
-    "Rockets", "Stealth", "Black Bomb", "Anti-Air", "Missiles", "Fighter", "Bomber", "Black Boat", "B Copter",
-    "T Copter", "Battleship", "Cruiser", "Lander", "Sub", "Carrier", "Oozium",
+    "-",
+    "Infantry",
+    "Mech",
+    "Md Tank",
+    "Megatank",
+    "Tank",
+    "Recon",
+    "APC",
+    "Neotank",
+    "Piperunner",
+    "Artillery",
+    "Rockets",
+    "Stealth",
+    "Black Bomb",
+    "Anti-Air",
+    "Missiles",
+    "Fighter",
+    "Bomber",
+    "Black Boat",
+    "B Copter",
+    "T Copter",
+    "Battleship",
+    "Cruiser",
+    "Lander",
+    "Sub",
+    "Carrier",
+    "Oozium",
 ];
 
 /// Dual Strike's text (its History's labels and help), in the characters AW2's font has.
 fn ds_text(id: u32) -> String {
-    let Some(pack) = crate::ds_pack::pack() else { return String::new() };
-    let Some(ds) = crate::ds_campaign_data::Ds::from_pack(pack) else { return String::new() };
+    let Some(pack) = crate::ds_pack::pack() else {
+        return String::new();
+    };
+    let Some(ds) = crate::ds_campaign_data::Ds::from_pack(pack) else {
+        return String::new();
+    };
     let t = ds.text(id).unwrap_or_default();
-    let s: String = t.iter().map(|&c| if (0x20..0x7F).contains(&c) { c as char } else { ' ' }).collect();
+    let s: String = t
+        .iter()
+        .map(|&c| if (0x20..0x7F).contains(&c) { c as char } else { ' ' })
+        .collect();
     // (the play time is this game's)
     s.trim().replace("Advance Wars: Dual Strike", "Advance Wars")
 }
@@ -172,7 +203,11 @@ fn wrap(core: &Core, s: &str, width: i32) -> Vec<String> {
     let mut lines = Vec::new();
     let mut line = String::new();
     for w in s.split_whitespace() {
-        let next = if line.is_empty() { w.to_string() } else { format!("{line} {w}") };
+        let next = if line.is_empty() {
+            w.to_string()
+        } else {
+            format!("{line} {w}")
+        };
         if ui::text_width(core, &next) > width && !line.is_empty() {
             lines.push(std::mem::replace(&mut line, w.to_string()));
         } else {
@@ -251,7 +286,14 @@ fn draw(core: &mut Core, a: &Art, tab: usize, top: usize, row: usize, column: us
         cv.rect(x, 31, 55, 12, if on { ui::WHITE } else { ui::LIGHT_GRAY });
         cv.rect(x, 31, 55, 2, if on { ui::RED } else { ui::GRAY });
         let tw = ui::text_width(core, name);
-        cv.text(core, x + (55 - tw) / 2, 32, name, if on { ui::INK } else { ui::GRAY_INK }, ui::SHADE);
+        cv.text(
+            core,
+            x + (55 - tw) / 2,
+            32,
+            name,
+            if on { ui::INK } else { ui::GRAY_INK },
+            ui::SHADE,
+        );
     }
     // The rows.
     let (x, y, w, h) = WIN;
@@ -273,11 +315,25 @@ fn draw(core: &mut Core, a: &Art, tab: usize, top: usize, row: usize, column: us
         }
         cv.text(core, lx, ry + 3, &l, ui::INK, ui::SHADE);
         let v = value_text(core, e);
-        cv.text(core, VALUE_RIGHT - ui::text_width(core, &v), ry + 3, &v, ui::INK, ui::SHADE);
+        cv.text(
+            core,
+            VALUE_RIGHT - ui::text_width(core, &v),
+            ry + 3,
+            &v,
+            ui::INK,
+            ui::SHADE,
+        );
         let got = history::medals(core, e);
         for k in 0..3 {
             let mg = if here { f.cursor } else { f.white };
-            medal_cell(&mut cv, MEDAL_X + 16 * k as i32, ry, k < got, mg, here && column == k + 1);
+            medal_cell(
+                &mut cv,
+                MEDAL_X + 16 * k as i32,
+                ry,
+                k < got,
+                mg,
+                here && column == k + 1,
+            );
         }
         // (the separator under the medals, in their bank)
         for k in 0..3 {
@@ -339,7 +395,11 @@ pub(crate) fn tick(core: &mut Core, a: &Art, keys: u32, prev: u32) -> u32 {
         return keys & !0x3FF;
     }
     if pressed & (ui::KEY_R | ui::KEY_L) != 0 {
-        tab = if pressed & ui::KEY_R != 0 { (tab + 1) % 4 } else { (tab + 3) % 4 };
+        tab = if pressed & ui::KEY_R != 0 {
+            (tab + 1) % 4
+        } else {
+            (tab + 3) % 4
+        };
         (row, top) = (0, 0);
     }
     let n = tabs[tab].len().max(1);

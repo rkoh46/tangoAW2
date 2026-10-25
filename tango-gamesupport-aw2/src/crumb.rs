@@ -72,8 +72,10 @@ pub const NAME: &[u8] = b"Crumb";
 /// description.)
 pub const BIO: &[u8] = b"A Black Hole soldier promoted by Sturm. Keeps his troops fed and supplied.\rHit: Biscuits\rMiss: Being left behind";
 pub const DAY_TO_DAY: &[u8] = b"My foot soldiers are sturdy, and anyone on a city or base gets fed.";
-pub const COP_PAGE: &[u8] = b"Restores 1 HP to all units and fully resupplies them. Infantry and Mech move 1 space more.";
-pub const SCOP_PAGE: &[u8] = b"Restores 2 HP to all units. Infantry and Mech firepower rises by 30%, and luck improves for all units.";
+pub const COP_PAGE: &[u8] =
+    b"Restores 1 HP to all units and fully resupplies them. Infantry and Mech move 1 space more.";
+pub const SCOP_PAGE: &[u8] =
+    b"Restores 2 HP to all units. Infantry and Mech firepower rises by 30%, and luck improves for all units.";
 pub const COP_NAME: &[u8] = b"Ration Run";
 pub const SCOP_NAME: &[u8] = b"Gerald's Blessing";
 /// The six power quotes the game picks from ([`crate::co_new::T_QUOTES`]):
@@ -150,7 +152,11 @@ pub(crate) struct Asm {
 
 impl Asm {
     pub(crate) fn new() -> Asm {
-        Asm { code: Vec::new(), lits: Vec::new(), fixups: Vec::new() }
+        Asm {
+            code: Vec::new(),
+            lits: Vec::new(),
+            fixups: Vec::new(),
+        }
     }
     pub(crate) fn op(&mut self, h: u16) {
         self.code.push(h);
@@ -315,7 +321,9 @@ pub fn tag_second_half(core: &mut Core, army: u32) {
     }
     clear(core);
     let a = crate::tag::army_co_of(core, army);
-    let Some(b) = crate::tag::partner(core, army) else { return };
+    let Some(b) = crate::tag::partner(core, army) else {
+        return;
+    };
     if (a == STURM && b == CRUMB) || (a == CRUMB && b == STURM) {
         core.raw_write_8(ARMY, -1, army as u8);
         core.raw_write_8(PHASE, -1, 1);
@@ -425,7 +433,11 @@ fn quote_pick(core: &mut Core) {
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(PROPERTY_PASS, Box::new(property_pass)), (QUOTE_PICK, Box::new(quote_pick)), (PAY_FOR_POWER, Box::new(power_paid))]
+    vec![
+        (PROPERTY_PASS, Box::new(property_pass)),
+        (QUOTE_PICK, Box::new(quote_pick)),
+        (PAY_FOR_POWER, Box::new(power_paid)),
+    ]
 }
 
 #[cfg(test)]
@@ -437,14 +449,24 @@ mod tests {
         use crate::co_roster::{DEFENCE, FIREPOWER, MOVE, RANGE};
         // Rank and File: Infantry and Mech +10% / +10%, nothing else.
         for t in [INFANTRY, MECH] {
-            assert_eq!((bonus(0, t, FIREPOWER), bonus(0, t, DEFENCE), bonus(0, t, MOVE)), (10, 10, 0));
+            assert_eq!(
+                (bonus(0, t, FIREPOWER), bonus(0, t, DEFENCE), bonus(0, t, MOVE)),
+                (10, 10, 0)
+            );
             assert_eq!(bonus(1, t, MOVE), 1, "Ration Run: +1 move");
-            assert_eq!(bonus(2, t, FIREPOWER), 40, "Gerald's Blessing: +30% on top of Rank and File");
+            assert_eq!(
+                bonus(2, t, FIREPOWER),
+                40,
+                "Gerald's Blessing: +30% on top of Rank and File"
+            );
             assert_eq!(bonus(2, t, MOVE), 0);
             assert_eq!(bonus(0, t, RANGE), 0);
         }
         for t in [3, 5, 12, 20] {
-            assert_eq!((bonus(2, t, FIREPOWER), bonus(0, t, DEFENCE), bonus(1, t, MOVE)), (0, 0, 0));
+            assert_eq!(
+                (bonus(2, t, FIREPOWER), bonus(0, t, DEFENCE), bonus(1, t, MOVE)),
+                (0, 0, 0)
+            );
         }
         assert_eq!(LUCK, [10, 10, 20]);
     }
@@ -461,7 +483,17 @@ mod tests {
     #[test]
     fn texts_exist() {
         use crate::co_new::*;
-        for w in [T_NAME, T_BIO, T_D2D, T_COP, T_SCOP, T_COP_NAME, T_SCOP_NAME, T_VICTORY, T_DEFEAT] {
+        for w in [
+            T_NAME,
+            T_BIO,
+            T_D2D,
+            T_COP,
+            T_SCOP,
+            T_COP_NAME,
+            T_SCOP_NAME,
+            T_VICTORY,
+            T_DEFEAT,
+        ] {
             assert!(text(w).is_some(), "{w}");
         }
         for q in 0..6 {

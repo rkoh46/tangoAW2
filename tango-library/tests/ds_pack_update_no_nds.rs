@@ -30,6 +30,9 @@ fn an_older_pack_without_the_nds_is_used_and_said_to_be_old() {
     if old_version < 6 {
         assert!(ds_music::tag_se(ds_music::TagSe::Thunder).is_none());
     }
-    assert!(ds_music::power_song(ds_music::PowerSong::Super, true).is_none(), "AW2's power music");
+    assert!(
+        ds_music::power_song(ds_music::PowerSong::Super, true).is_none(),
+        "AW2's power music"
+    );
     let _ = std::fs::remove_dir_all(&dir);
 }

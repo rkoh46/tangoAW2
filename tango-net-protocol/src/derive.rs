@@ -150,7 +150,10 @@ mod tests {
         assert_ne!(derive_migration_session_id(&a, 0), derive_migration_session_id(&a, 1));
         assert_ne!(derive_migration_session_id(&a, 0), derive_migration_session_id(&b, 0));
         assert_eq!(derive_migration_session_id(&a, 1), derive_migration_session_id(&a, 1));
-        assert_ne!(derive_migration_session_id(&a, 0), derive_reconnect_session_id(&a, &[], &[]));
+        assert_ne!(
+            derive_migration_session_id(&a, 0),
+            derive_reconnect_session_id(&a, &[], &[])
+        );
     }
 
     #[test]

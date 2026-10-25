@@ -60,7 +60,9 @@ fn last_id(table: u32) -> u32 {
 /// How many armies a map has (a 5-army map says 4 in its header: the fifth is tangoAW2's).
 fn armies_of(core: &Core, table: u32, id: u32) -> u8 {
     let n = core.raw_read_8(table + 0x5C * id + 0x18, -1);
-    let ours = id < 0x100 && crate::five_map::is_five_map(id as u8) && !(table == crate::ds_versus::TABLE && crate::ds_versus::replaced(id as u8));
+    let ours = id < 0x100
+        && crate::five_map::is_five_map(id as u8)
+        && !(table == crate::ds_versus::TABLE && crate::ds_versus::replaced(id as u8));
     if ours {
         5
     } else {
@@ -201,7 +203,11 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
     core.raw_read_range(TERRAIN_CLASSES, -1, &mut classes);
     // The armies' colours by slot (the header's +0x40..).
     let colour = |slot: u8| -> u8 {
-        let c = if slot <= 4 { core.raw_read_8(h + 0x40 + slot as u32 - 1, -1) } else { 5 };
+        let c = if slot <= 4 {
+            core.raw_read_8(h + 0x40 + slot as u32 - 1, -1)
+        } else {
+            5
+        };
         if (1..=5).contains(&c) {
             c
         } else {
@@ -244,8 +250,25 @@ fn info(core: &Core, id: u8) -> Option<Arc<Info>> {
         })
         .collect();
     let units = core.raw_read_32(h + 0x34, -1);
-    let (unit_owners, placed) = if rom(units) && core.raw_read_8(units, -1) == 0xFE { unit_owners(core, units) } else { (0, 0) };
-    let info = Arc::new(Info { name: name_of(core, text), w, h: ht, props, bases, owners, hqs, airports, ports, placed, unit_owners, cells });
+    let (unit_owners, placed) = if rom(units) && core.raw_read_8(units, -1) == 0xFE {
+        unit_owners(core, units)
+    } else {
+        (0, 0)
+    };
+    let info = Arc::new(Info {
+        name: name_of(core, text),
+        w,
+        h: ht,
+        props,
+        bases,
+        owners,
+        hqs,
+        airports,
+        ports,
+        placed,
+        unit_owners,
+        cells,
+    });
     caches().lock().unwrap().insert(key, info.clone());
     Some(info)
 }
@@ -304,7 +327,9 @@ fn source_of(core: &Core, table: u32, id: u8) -> &'static str {
     }
     if dual {
         return match crate::ds_versus::map_of(core, id) {
-            Some(e) if e.case == crate::ds_maps::CASE_WAR_ROOM || e.case == crate::ds_maps::CASE_WAR_ROOM_SECOND => "DS War Room",
+            Some(e) if e.case == crate::ds_maps::CASE_WAR_ROOM || e.case == crate::ds_maps::CASE_WAR_ROOM_SECOND => {
+                "DS War Room"
+            }
             _ => "DS Versus",
         };
     }
@@ -350,7 +375,9 @@ pub fn audit(core: &Core) -> Vec<AuditRow> {
             airports: i.airports,
             ports: i.ports,
             placed: i.placed,
-            needs_pack: source.starts_with("DS ") || crate::five_map::map_of(id as u8).is_some_and(|m| source == "tangoAW2" && crate::five_map::needs_pack(m)),
+            needs_pack: source.starts_with("DS ")
+                || crate::five_map::map_of(id as u8)
+                    .is_some_and(|m| source == "tangoAW2" && crate::five_map::needs_pack(m)),
             header: armies_of(core, table, id),
         });
     }
@@ -364,7 +391,16 @@ pub fn list(core: &Core, armies: usize, predeployed: bool) -> Vec<MapEntry> {
     ids.into_iter()
         .filter_map(|id| {
             let i = info(core, id)?;
-            Some(MapEntry { id, name: i.name.clone(), w: i.w, h: i.h, props: i.props, bases: i.bases, armies: armies as u8, predeployed })
+            Some(MapEntry {
+                id,
+                name: i.name.clone(),
+                w: i.w,
+                h: i.h,
+                props: i.props,
+                bases: i.bases,
+                armies: armies as u8,
+                predeployed,
+            })
         })
         .collect()
 }
@@ -416,8 +452,14 @@ pub fn preview(core: &Core, id: u8, max_w: usize, max_h: usize) -> Option<Arc<Pr
                     count[i.cells[y * w + x] as usize] += 1;
                 }
             }
-            let prop = (K_NEUTRAL as usize..KINDS).filter(|&k| count[k] > 0).max_by_key(|&k| count[k]);
-            let k = prop.unwrap_or_else(|| (0..K_NEUTRAL as usize).max_by_key(|&k| (count[k], std::cmp::Reverse(k))).unwrap_or(0));
+            let prop = (K_NEUTRAL as usize..KINDS)
+                .filter(|&k| count[k] > 0)
+                .max_by_key(|&k| count[k]);
+            let k = prop.unwrap_or_else(|| {
+                (0..K_NEUTRAL as usize)
+                    .max_by_key(|&k| (count[k], std::cmp::Reverse(k)))
+                    .unwrap_or(0)
+            });
             pixels.push(kind_rgb(k as u8));
         }
     }
@@ -429,7 +471,9 @@ pub fn preview(core: &Core, id: u8, max_w: usize, max_h: usize) -> Option<Arc<Pr
 /// The map's picture centred in the box (x, y, w, h) of the canvas.
 #[allow(dead_code)]
 pub(crate) fn draw_preview(core: &Core, cv: &mut Rgba<'_>, id: u8, x: i32, y: i32, w: i32, h: i32) {
-    let Some(p) = preview(core, id, w.max(1) as usize, h.max(1) as usize) else { return };
+    let Some(p) = preview(core, id, w.max(1) as usize, h.max(1) as usize) else {
+        return;
+    };
     let (ox, oy) = (x + (w - p.w as i32) / 2, y + (h - p.h as i32) / 2);
     for py in 0..p.h {
         for px in 0..p.w {
@@ -629,7 +673,11 @@ fn offline_apply(core: &mut Core) {
     let table = crate::five_map::table(core);
     if core.raw_read_8(OFF_ON, -1) != 1 {
         for id in 0..=0xFFu32 {
-            let tab = if id <= last_id(table) { core.raw_read_16(table + 0x5C * id + 0x1A, -1) } else { 0x7F };
+            let tab = if id <= last_id(table) {
+                core.raw_read_16(table + 0x5C * id + 0x1A, -1)
+            } else {
+                0x7F
+            };
             core.raw_write_8(OFF_SHADOW + id, -1, tab.min(0xFF) as u8);
         }
         core.raw_write_32(OFF_TABLE, -1, table);
@@ -688,7 +736,11 @@ pub fn draw_hint(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != W * H * 4 || !offline_versus(core) || !crate::survival_ui::selecting(core) {
         return;
     }
-    let mut lines = vec![if original_view(core) { "L+R: Filter by players" } else { "L+R: Show all lists" }];
+    let mut lines = vec![if original_view(core) {
+        "L+R: Filter by players"
+    } else {
+        "L+R: Show all lists"
+    }];
     if crate::ds_versus::wants_select(core) {
         lines.insert(0, "SELECT: Second map");
     }
@@ -740,17 +792,28 @@ pub fn idle(core: &Core) -> bool {
 
 /// Test aid (the offline tab check): the list on screen as text: the tab of its first map, the cursor and the ids.
 pub fn probe(core: &Core) -> String {
-    let ids: Vec<u8> = (0..0x100).map(|k| core.raw_read_8(crate::online::LIST_IDS + k, -1)).collect();
+    let ids: Vec<u8> = (0..0x100)
+        .map(|k| core.raw_read_8(crate::online::LIST_IDS + k, -1))
+        .collect();
     let table = crate::five_map::table(core);
-    format!("tab-of-first {} cursor {:?} ids {:?}", core.raw_read_16(table + 0x5C * ids[0] as u32 + 0x1A, -1), crate::online::list_cursor(core), ids)
+    format!(
+        "tab-of-first {} cursor {:?} ids {:?}",
+        core.raw_read_16(table + 0x5C * ids[0] as u32 + 0x1A, -1),
+        crate::online::list_cursor(core),
+        ids
+    )
 }
 
 /// Test aid: the ids of the rows of the list on screen, and the tab of the first.
 pub fn list_rows(core: &Core) -> (u16, Vec<u8>) {
     let n = core.raw_read_8(crate::five_map::LIST_LAST, -1) as usize + 1;
-    let ids: Vec<u8> = (0..n.min(crate::five_map::LIST_CAP as usize)).map(|k| core.raw_read_8(crate::five_map::LIST_IDS + k as u32, -1)).collect();
+    let ids: Vec<u8> = (0..n.min(crate::five_map::LIST_CAP as usize))
+        .map(|k| core.raw_read_8(crate::five_map::LIST_IDS + k as u32, -1))
+        .collect();
     let table = crate::five_map::table(core);
-    let tab = ids.first().map_or(0, |&i| core.raw_read_16(table + 0x5C * i as u32 + 0x1A, -1));
+    let tab = ids
+        .first()
+        .map_or(0, |&i| core.raw_read_16(table + 0x5C * i as u32 + 0x1A, -1));
     (tab, ids)
 }
 

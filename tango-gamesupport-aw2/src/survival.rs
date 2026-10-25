@@ -93,7 +93,7 @@ const TEXT_TABLE: u32 = 0x0861_0A38;
 pub const TEXT_BASE: u16 = 0x7172;
 pub const T_HELP: u16 = 0;
 const T_KINDS: u16 = 1; // three
-// 4: spare
+                        // 4: spare
 const T_MAPS: u16 = 5; // 33
 const T_CHAMPIONS: u16 = 38; // three
 
@@ -209,7 +209,9 @@ pub fn on(core: &Core) -> bool {
 
 /// A Survival map is being played.
 pub(crate) fn playing(core: &Core) -> bool {
-    core.raw_read_8(ON, -1) == 1 && core.raw_read_8(PHASE, -1) == PLAYING && is_survival_map(core.raw_read_8(MAP_ID, -1))
+    core.raw_read_8(ON, -1) == 1
+        && core.raw_read_8(PHASE, -1) == PLAYING
+        && is_survival_map(core.raw_read_8(MAP_ID, -1))
 }
 
 /// SELECT MAP shows a run saved halfway.
@@ -331,7 +333,10 @@ fn build() -> Option<Built> {
         assert!(lz.len() + units.len() <= MAP_DATA_SIZE as usize, "{}", map.name);
         let units_at = at + lz.len() as u32;
         let id = MAPS_FROM + k as u8;
-        writes.push((TABLE + 0x5C * id as u32, header(map, at, units_at, T_MAPS + k as u16).to_vec()));
+        writes.push((
+            TABLE + 0x5C * id as u32,
+            header(map, at, units_at, T_MAPS + k as u16).to_vec(),
+        ));
         writes.push((at, lz));
         writes.push((units_at, units));
         names.push((id, T_MAPS + k as u16));
@@ -343,12 +348,18 @@ fn build() -> Option<Built> {
         let (lz, _) = map_blobs(&s.maps[first]);
         let units_at = at + lz.len() as u32;
         let name = T_KINDS + entry_index(k) as u16;
-        writes.push((TABLE + 0x5C * id as u32, header(&s.maps[first], at, units_at, name).to_vec()));
+        writes.push((
+            TABLE + 0x5C * id as u32,
+            header(&s.maps[first], at, units_at, name).to_vec(),
+        ));
         names.push((id, name));
         // The Champion course starts on the same map.
         let id = CHAMPION_IDS[entry_index(k)];
         let name = T_CHAMPIONS + entry_index(k) as u16;
-        writes.push((TABLE + 0x5C * id as u32, header(&s.maps[first], at, units_at, name).to_vec()));
+        writes.push((
+            TABLE + 0x5C * id as u32,
+            header(&s.maps[first], at, units_at, name).to_vec(),
+        ));
         names.push((id, name));
     }
     Some(Built { writes, names })
@@ -388,7 +399,9 @@ fn installed(core: &Core) -> bool {
 }
 
 fn install(core: &mut Core) -> bool {
-    let Some(built) = BUILT.get_or_init(build).as_ref() else { return false };
+    let Some(built) = BUILT.get_or_init(build).as_ref() else {
+        return false;
+    };
     if !installed(core) {
         // The map table as crate::five_map leaves it (ids 0..0xC8), with room.
         let mut table = vec![0u8; (crate::five_map::ENTRY * crate::five_map::MAP_IDS) as usize];
@@ -471,7 +484,9 @@ fn set8(core: &mut Core, at: u32, v: u8) {
 
 /// The tabs and names of our maps, as the run stands.
 fn list(core: &mut Core) {
-    let Some(built) = BUILT.get().and_then(|b| b.as_ref()) else { return };
+    let Some(built) = BUILT.get().and_then(|b| b.as_ref()) else {
+        return;
+    };
     let on = core.raw_read_8(ON, -1) == 1;
     let phase = core.raw_read_8(PHASE, -1);
     let stage = core.raw_read_8(STAGE, -1) as usize;
@@ -538,7 +553,11 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
     set8(core, WAR_ROOM_TAB, if on { TAB as u8 } else { WAR_ROOM_TAB_GAME });
     // (the War Room on Dual Strike's maps has rows of its own, crate::ds_versus; the insert's search and store
     // read the table through one more word)
-    let rows = if on { ROWS.wrapping_sub(ROW * (FIRST_ID as u32 - 0x6C)) } else { crate::ds_versus::record_rows(core) };
+    let rows = if on {
+        ROWS.wrapping_sub(ROW * (FIRST_ID as u32 - 0x6C))
+    } else {
+        crate::ds_versus::record_rows(core)
+    };
     for at in RECORD_POOLS.into_iter().chain([crate::ds_versus::INSERT_POOL]) {
         if core.raw_read_32(at, -1) != rows {
             core.raw_write_32(at, -1, rows);
@@ -546,7 +565,11 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
     }
     list(core);
     // SELECT MAP in Dual Strike's look (crate::survival_ui).
-    keys = if on { crate::survival_ui::tick(core, keys, prev) } else { crate::survival_ui::off(core, keys) };
+    keys = if on {
+        crate::survival_ui::tick(core, keys, prev)
+    } else {
+        crate::survival_ui::off(core, keys)
+    };
     if !on {
         return keys;
     }
@@ -626,7 +649,11 @@ pub fn map_start(core: &mut Core) {
             return;
         }
         let Some(s) = maps::survival() else { return };
-        let budget = if champion { s.run(k).champion_budget } else { s.run(k).budget };
+        let budget = if champion {
+            s.run(k).champion_budget
+        } else {
+            s.run(k).budget
+        };
         core.raw_write_8(KIND, -1, k as u8);
         core.raw_write_8(CHAMPION, -1, champion as u8);
         core.raw_write_8(STAGE, -1, 0);
@@ -637,7 +664,9 @@ pub fn map_start(core: &mut Core) {
         core.raw_write_8(CO, -1, co);
         // The partner picked on the CO screen (crate::tag::set_cos made it
         // the pair pending for this map start).
-        let partner = crate::tag::pending(core, 1).filter(|&(a, b)| a == co && b != co).map_or(NO_PARTNER, |(_, b)| b);
+        let partner = crate::tag::pending(core, 1)
+            .filter(|&(a, b)| a == co && b != co)
+            .map_or(NO_PARTNER, |(_, b)| b);
         core.raw_write_8(PARTNER, -1, partner);
         // A new run: a run saved halfway is given up.
         crate::suspend::drop_mid(core, crate::suspend::SURVIVAL_SLOT);
@@ -838,7 +867,10 @@ pub(crate) fn picks_partner(core: &Core) -> bool {
 /// ([`crate::suspend::survival_save_fits`]).
 const SAVE_ITEM: u32 = 0x0802_C646;
 fn save_item(core: &mut Core) {
-    if core.raw_read_8(ON, -1) == 1 && core.raw_read_8(PHASE, -1) == PLAYING && !crate::suspend::survival_save_fits(core) {
+    if core.raw_read_8(ON, -1) == 1
+        && core.raw_read_8(PHASE, -1) == PLAYING
+        && !crate::suspend::survival_save_fits(core)
+    {
         let cpu = core.gba_mut().cpu_mut();
         cpu.set_gpr(0, 1);
         let lr = cpu.gpr(14) as u32;
@@ -898,7 +930,11 @@ fn load_run(core: &mut Core, b: &crate::suspend::SurvivalRun) {
     core.raw_write_8(PARTNER, -1, b[7]);
     core.raw_write_8(OUT_SET, -1, b[8]);
     for (k, at) in [LEFT, BUDGET, POINTS, TIME, FUNDS_CAP].into_iter().enumerate() {
-        core.raw_write_32(at, -1, u32::from_le_bytes(b[0x0C + 4 * k..0x10 + 4 * k].try_into().unwrap()));
+        core.raw_write_32(
+            at,
+            -1,
+            u32::from_le_bytes(b[0x0C + 4 * k..0x10 + 4 * k].try_into().unwrap()),
+        );
     }
     core.raw_write_16(LAST_SCORE, -1, u16::from_le_bytes([b[0x20], b[0x21]]));
 }
@@ -1075,7 +1111,10 @@ impl Records {
             MAGIC_V2 => {
                 let mut bytes = [0u8; PROFILE_RECORDS_LEN - 1];
                 bytes.copy_from_slice(&b[1..]);
-                let mut s = BitStream { bytes: &mut bytes, at: 0 };
+                let mut s = BitStream {
+                    bytes: &mut bytes,
+                    at: 0,
+                };
                 for k in 0..3 {
                     let co = s.get(7) as u8;
                     let left = s.get(LEFT_BITS[k]);
@@ -1095,7 +1134,10 @@ impl Records {
     pub fn encode(&self) -> [u8; PROFILE_RECORDS_LEN] {
         let mut out = [0u8; PROFILE_RECORDS_LEN];
         out[0] = MAGIC_V2;
-        let mut s = BitStream { bytes: &mut out[1..], at: 0 };
+        let mut s = BitStream {
+            bytes: &mut out[1..],
+            at: 0,
+        };
         for k in 0..3 {
             let (co, left) = self.basic[k].unwrap_or((0, 0));
             s.put(co as u32 & 0x7F, 7);
@@ -1204,13 +1246,21 @@ fn hud(core: &mut Core, at: u32, end: u32) -> u32 {
         Kind::Time => clock(now),
     };
     // A Champion course has no last map: the count only.
-    let first = if champion_now(core) { format!("Map {}", stage) } else { format!("Map {}/{}", stage, MAPS_PER_RUN) };
+    let first = if champion_now(core) {
+        format!("Map {}", stage)
+    } else {
+        format!("Map {}/{}", stage, MAPS_PER_RUN)
+    };
     // With Dual Strike's CO panel up its funds are the budget (Money): shown
     // there, once; the lines keep to the corner it leaves free.
     let corner = crate::ds_hud::panel_corner(core);
     // Dual Strike's menu puts its B CANCEL tag at the top centre: the header
     // steps aside to the left corner while one is open.
-    let side = if corner.is_none() && crate::ds_menus::tag_shown(core) { Some(false) } else { corner };
+    let side = if corner.is_none() && crate::ds_menus::tag_shown(core) {
+        Some(false)
+    } else {
+        corner
+    };
     let lines: Vec<String> = if corner.is_some() && k == Kind::Money {
         vec![first]
     } else {
@@ -1251,7 +1301,10 @@ mod tests {
         assert!(text_slot(T_MAPS + 33) < 0x0862_E000);
         assert!(text_slot(T_CHAMPIONS + 3) < 0x0862_E000);
         assert!(T_CHAMPIONS >= T_MAPS + 33);
-        assert!(STRINGS + STRING_SIZE * (T_CHAMPIONS as u32 + 3) <= 0x08E4_0000, "strings end before the wheel's data");
+        assert!(
+            STRINGS + STRING_SIZE * (T_CHAMPIONS as u32 + 3) <= 0x08E4_0000,
+            "strings end before the wheel's data"
+        );
         // The Champion entries sit after the 33 maps, below the campaigns'.
         assert_eq!(CHAMPION_IDS[0], MAPS_FROM + 33);
         assert_eq!(CHAMPION_IDS[2] + 1, crate::campaign_model::MAP_ID);

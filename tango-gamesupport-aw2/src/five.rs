@@ -216,7 +216,11 @@ fn army(x: u32) -> u32 {
 /// The army (1..5) of a unit by its index in the unit table: 64 ids an
 /// army, 51 in a five-army game.
 pub fn army_of_index(core: &Core, index: u32) -> u32 {
-    if active(core) { index / 51 + 1 } else { index / 64 + 1 }
+    if active(core) {
+        index / 51 + 1
+    } else {
+        index / 64 + 1
+    }
 }
 
 // ---------- switching ----------
@@ -310,7 +314,8 @@ pub fn is_five_design(core: &Core, id: u8) -> bool {
         return false;
     }
     let entry = DESIGN_CACHE + DESIGN_CACHE_ENTRY * (id - 0xB4) as u32;
-    core.raw_read_8(entry + DESIGN_CACHE_MARK, -1) == DESIGN_FIVE && core.raw_read_8(entry + DESIGN_CACHE_ARMIES, -1) == 4
+    core.raw_read_8(entry + DESIGN_CACHE_MARK, -1) == DESIGN_FIVE
+        && core.raw_read_8(entry + DESIGN_CACHE_ARMIES, -1) == 4
 }
 
 /// The map list stores the picked map (sub_0803BCD0(mapID)): start or end a
@@ -429,7 +434,10 @@ fn install_data(core: &mut Core) {
     // purple (its units' hue), on Blue Moon's brightness steps.
     let mut banner = [0u8; 0x20];
     core.raw_read_range(BANNER_PALETTES + 0x20, -1, &mut banner);
-    for (i, (r, g, b)) in [(13u16, 6u16, 22u16), (11, 5, 18), (8, 4, 14), (5, 2, 9), (3, 1, 5)].iter().enumerate() {
+    for (i, (r, g, b)) in [(13u16, 6u16, 22u16), (11, 5, 18), (8, 4, 14), (5, 2, 9), (3, 1, 5)]
+        .iter()
+        .enumerate()
+    {
         let c = r | g << 5 | b << 10;
         banner[2 + 2 * i..4 + 2 * i].copy_from_slice(&c.to_le_bytes());
     }

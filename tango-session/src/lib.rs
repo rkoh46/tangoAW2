@@ -180,7 +180,10 @@ pub struct Framebuffer(std::sync::Mutex<Vec<u8>>, usize);
 impl Framebuffer {
     /// A surface for `layout`'s screens, black until the first frame.
     pub fn new(layout: &tango_match::ScreenLayout) -> std::sync::Arc<Self> {
-        std::sync::Arc::new(Self(std::sync::Mutex::new(vec![0u8; layout.buffer_len()]), layout.buffer_len()))
+        std::sync::Arc::new(Self(
+            std::sync::Mutex::new(vec![0u8; layout.buffer_len()]),
+            layout.buffer_len(),
+        ))
     }
 
     /// Emu side: put this frame up. A wrong-sized `pixels` is ignored

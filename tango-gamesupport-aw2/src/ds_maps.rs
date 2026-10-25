@@ -143,7 +143,7 @@ impl Map {
 /// Dual Strike's tile -> tangoAW2's.
 pub fn convert_tile(t: u16) -> u16 {
     match t {
-        0x1A1 => 0x192,                     // Black Crystal
+        0x1A1 => 0x192, // Black Crystal
         // Dual Strike's other two mountains: AW2's mountain, as the DS
         // Campaign's maps (crate::ds_campaign_data).
         0x146 | 0x147 => 0x022,
@@ -206,7 +206,9 @@ impl<'a> Reader<'a> {
 
     /// A map's header (None past the table).
     pub fn header(&self, id: u16) -> Option<&'a [u8]> {
-        (id < IDS).then(|| self.ov(HEADERS + HEADER * id as u32, HEADER as usize)).flatten()
+        (id < IDS)
+            .then(|| self.ov(HEADERS + HEADER * id as u32, HEADER as usize))
+            .flatten()
     }
 
     /// The map with Dual Strike id `id`, converted. None for an id without
@@ -219,10 +221,18 @@ impl<'a> Reader<'a> {
         let tiles_at = w32(0x44);
         let head = self.ov(tiles_at, 4)?;
         let len = (u32::from_le_bytes(head.try_into().unwrap()) >> 8) as usize;
-        let raw = crate::ds_art::lz10(self.ov(tiles_at, len * 9 / 8 + 16).or_else(|| self.ov(tiles_at, len + 4))?)?;
+        let raw = crate::ds_art::lz10(
+            self.ov(tiles_at, len * 9 / 8 + 16)
+                .or_else(|| self.ov(tiles_at, len + 4))?,
+        )?;
         let (w, ht) = (raw[0], raw[1]);
         let tiles: Vec<u16> = (0..w as usize * ht as usize)
-            .map(|k| Some(convert_tile(u16::from_le_bytes([*raw.get(2 + 2 * k)?, *raw.get(3 + 2 * k)?]))))
+            .map(|k| {
+                Some(convert_tile(u16::from_le_bytes([
+                    *raw.get(2 + 2 * k)?,
+                    *raw.get(3 + 2 * k)?,
+                ])))
+            })
             .collect::<Option<_>>()?;
         let mut units = Vec::new();
         let mut p = w32(0x4C);
@@ -235,7 +245,15 @@ impl<'a> Reader<'a> {
                 0xFE => army = r[1],
                 _ => {
                     if let Some(kind) = convert_unit(r[2]) {
-                        units.push(Unit { army, x: r[0], y: r[1], kind, hp: r[4], ammo: r[5], fuel: r[6] });
+                        units.push(Unit {
+                            army,
+                            x: r[0],
+                            y: r[1],
+                            kind,
+                            hp: r[4],
+                            ammo: r[5],
+                            fuel: r[6],
+                        });
                     }
                 }
             }
@@ -343,17 +361,25 @@ mod tests {
     /// maps read as Dual Strike has them.
     #[test]
     fn maps_from_the_rom() {
-        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else { return };
+        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else {
+            return;
+        };
         let Ok(buf) = std::fs::read(path) else { return };
         crate::ds_art::offer(&buf);
         let m = |id| read(id).unwrap_or_else(|| panic!("map {id:#x}"));
         let bean = m(0x01);
-        assert_eq!((bean.name.as_str(), bean.width, bean.height, bean.armies, bean.case), ("Bean Island", 16, 15, 2, 2));
+        assert_eq!(
+            (bean.name.as_str(), bean.width, bean.height, bean.armies, bean.case),
+            ("Bean Island", 16, 15, 2, 2)
+        );
         assert_eq!(bean.colours, [1, 2, 3, 4]);
         assert!(bean.units.is_empty() && bean.picks == [false; 4] && bean.cos[1] == (None, None));
         // Pre-deployed: Crater Reef, 28 units an army.
         let reef = m(0x47);
-        assert_eq!((reef.name.as_str(), reef.armies, reef.units.len()), ("Crater Reef", 4, 112));
+        assert_eq!(
+            (reef.name.as_str(), reef.armies, reef.units.len()),
+            ("Crater Reef", 4, 112)
+        );
         // Dark City's snow, Clover Pond's Wasteland and sandstorm.
         assert_eq!(m(0x88).weather, 1);
         let clover = m(0x89);
@@ -361,7 +387,10 @@ mod tests {
         // The War Room: Spann Island, Andy; Lost Basin's teams; Whiplash's
         // second map and colours; Watery Downs' Black Hole army.
         let spann = m(0x8B);
-        assert_eq!((spann.name.as_str(), spann.case, spann.picks[0]), ("Spann Island", CASE_WAR_ROOM, true));
+        assert_eq!(
+            (spann.name.as_str(), spann.case, spann.picks[0]),
+            ("Spann Island", CASE_WAR_ROOM, true)
+        );
         assert_eq!(spann.cos[1].0, convert_co(2)); // Andy (Dual Strike id 2)
         assert_eq!(m(0x9B).teams[..3], [1, 2, 2]);
         let whiplash = m(0xB3);
@@ -372,7 +401,11 @@ mod tests {
         // tile ids, 51 units an army.
         for id in 1..=0xBB {
             let map = m(id);
-            assert!(map.width as usize * map.height as usize <= 0x508 && map.height <= 40, "{}", map.name);
+            assert!(
+                map.width as usize * map.height as usize <= 0x508 && map.height <= 40,
+                "{}",
+                map.name
+            );
             assert!(map.tiles.iter().all(|&t| t < 0x200), "{}", map.name);
             for a in 1..=4 {
                 assert!(map.units.iter().filter(|u| u.army == a).count() <= 50, "{}", map.name);

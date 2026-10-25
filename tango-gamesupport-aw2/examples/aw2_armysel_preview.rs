@@ -54,7 +54,8 @@ fn main() {
     let core = link.core_mut();
     let list = tango_gamesupport_aw2::tag_ui::teams_list(core);
     let find = |core: &mgba::core::Core, name: &str| {
-        list.iter().position(|&c| tango_gamesupport_aw2::online_teams::co_label(core, c) == name)
+        list.iter()
+            .position(|&c| tango_gamesupport_aw2::online_teams::co_label(core, c) == name)
     };
     for (i, &c) in list.iter().enumerate() {
         println!("{i}: {}", tango_gamesupport_aw2::online_teams::co_label(core, c));
@@ -84,7 +85,8 @@ fn main() {
         (5, 3, 3, [false, true, false, false, false], "5_partner"),
         (5, 0, 4, [false, false, false, false, false], "5_ready"),
     ];
-    let mut cases: Vec<(usize, usize, u8, [bool; 5], String)> = cases.iter().map(|c| (c.0, c.1, c.2, c.3, c.4.to_string())).collect();
+    let mut cases: Vec<(usize, usize, u8, [bool; 5], String)> =
+        cases.iter().map(|c| (c.0, c.1, c.2, c.3, c.4.to_string())).collect();
     // Row fit: every seat focused on every field, 3 to 5 seats, 10-letter gamertags.
     for n in 3..=5usize {
         for k in 0..n {
@@ -120,7 +122,11 @@ fn main() {
         }
         core.raw_write_range(tango_gamesupport_aw2::online_teams::SEL, -1, &ram);
         tango_gamesupport_aw2::online::set_room(names[..n].iter().map(|s| s.to_string()).collect(), local);
-        core.raw_write_8(tango_gamesupport_aw2::ds_weather::DS_ON, -1, if tag.contains("notag") { 0 } else { 1 });
+        core.raw_write_8(
+            tango_gamesupport_aw2::ds_weather::DS_ON,
+            -1,
+            if tag.contains("notag") { 0 } else { 1 },
+        );
         let mut rgba = vec![0u8; 240 * 160 * 4];
         tango_gamesupport_aw2::online_teams::draw(core, &mut rgba);
         let mut ppm = b"P6\n240 160\n255\n".to_vec();

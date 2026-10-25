@@ -43,7 +43,10 @@ mod on {
         /// Starts the channel when asked to (see the module docs).
         pub fn start(config: &crate::config::Config) -> Self {
             let boot_ckpt = std::env::var("TANGOAW2_BOOT_CHECKPOINT").ok().filter(|s| !s.is_empty());
-            let listen = std::env::var("TANGOAW2_AI_DEBUG").ok().or_else(|| config.ai_debug.clone()).filter(|s| !s.is_empty());
+            let listen = std::env::var("TANGOAW2_AI_DEBUG")
+                .ok()
+                .or_else(|| config.ai_debug.clone())
+                .filter(|s| !s.is_empty());
             if listen.is_none() && boot_ckpt.is_none() {
                 return Self::default();
             }
@@ -63,10 +66,17 @@ mod on {
             let test = settings.test_mode;
             match dbg::server::start(settings, tx) {
                 Ok(at) => {
-                    log::warn!("ai-debug: channel ON at {at} (loopback only, token {}, fault injection {})", if token { "required" } else { "none" }, if test { "ALLOWED" } else { "off" });
+                    log::warn!(
+                        "ai-debug: channel ON at {at} (loopback only, token {}, fault injection {})",
+                        if token { "required" } else { "none" },
+                        if test { "ALLOWED" } else { "off" }
+                    );
                     // (the line a tool reads to find the port)
                     println!("AI_DEBUG_LISTENING {at}");
-                    Self { rx: Some(Mutex::new(rx)), prev: None }
+                    Self {
+                        rx: Some(Mutex::new(rx)),
+                        prev: None,
+                    }
                 }
                 Err(e) => {
                     log::error!("ai-debug: cannot listen: {e}");
@@ -83,7 +93,11 @@ mod on {
     /// The `state.link` object (and the source of the network events).
     fn net_json(r: &tango_session::pvp::NetReport) -> Value {
         let (lat, jit, loss, drop_left, freeze_left) = tango_net::netdbg::status();
-        let ratio = if r.frames_sent > 0 { r.resends as f64 / r.frames_sent as f64 } else { 0.0 };
+        let ratio = if r.frames_sent > 0 {
+            r.resends as f64 / r.frames_sent as f64
+        } else {
+            0.0
+        };
         json!({
             "players": r.players,
             "local_player": r.local_player,
@@ -131,7 +145,10 @@ mod on {
                 return iced::Task::none();
             }
             let mut tasks: Vec<iced::Task<Message>> = Vec::new();
-            let solo = self.session.active_as::<crate::session::singleplayer::SinglePlayerSession>().is_some();
+            let solo = self
+                .session
+                .active_as::<crate::session::singleplayer::SinglePlayerSession>()
+                .is_some();
             let pvp = self.session.active_as::<crate::session::pvp::PvpSession>();
             let report = pvp.map(|p| p.net_report());
             let depth_max = pvp.map_or(0, |p| p.take_depth_max());
@@ -145,16 +162,25 @@ mod on {
                 "none"
             };
             dbg::set_local(
-                dbg::LocalInfo { session: session.into(), seat: tango_library::online::room_local_seat() },
+                dbg::LocalInfo {
+                    session: session.into(),
+                    seat: tango_library::online::room_local_seat(),
+                },
                 report.as_ref().map_or(Value::Null, net_json),
             );
             if let Some(r) = report.as_ref() {
                 if depth_max > 0 {
-                    dbg::push_event(json!({"event": "rollback", "max_depth": depth_max, "count": r.rollbacks, "ticks_resimulated": r.rolled_ticks}));
+                    dbg::push_event(
+                        json!({"event": "rollback", "max_depth": depth_max, "count": r.rollbacks, "ticks_resimulated": r.rolled_ticks}),
+                    );
                 }
                 let now = Prev {
                     health: r.links.iter().map(|l| (l.health, l.given_up)).collect(),
-                    route: r.links.iter().map(|l| l.route.as_ref().map(|x| format!("{}->{}", x.local_type, x.remote_type))).collect(),
+                    route: r
+                        .links
+                        .iter()
+                        .map(|l| l.route.as_ref().map(|x| format!("{}->{}", x.local_type, x.remote_type)))
+                        .collect(),
                     reconnecting: r.reconnecting,
                     remote_disconnected: r.remote_disconnected,
                     host_seat: r.host_seat,
@@ -166,19 +192,32 @@ mod on {
                 };
                 if let Some(prev) = self.ai.prev.as_ref() {
                     if prev != &now {
-                        if prev.health != now.health || prev.route != now.route || prev.reconnecting != now.reconnecting
-                            || prev.remote_disconnected != now.remote_disconnected || prev.booting != now.booting || prev.waiting_for_peer != now.waiting_for_peer
+                        if prev.health != now.health
+                            || prev.route != now.route
+                            || prev.reconnecting != now.reconnecting
+                            || prev.remote_disconnected != now.remote_disconnected
+                            || prev.booting != now.booting
+                            || prev.waiting_for_peer != now.waiting_for_peer
                         {
-                            dbg::push_event(json!({"event": "link", "reconnecting": now.reconnecting, "remote_disconnected": now.remote_disconnected,
+                            dbg::push_event(
+                                json!({"event": "link", "reconnecting": now.reconnecting, "remote_disconnected": now.remote_disconnected,
                                 "booting": now.booting, "waiting_for_peer": now.waiting_for_peer,
-                                "links": net_json(r)["links"]}));
+                                "links": net_json(r)["links"]}),
+                            );
                         }
-                        if prev.host_seat != now.host_seat || prev.migrations != now.migrations || prev.migrating != now.migrating {
-                            dbg::push_event(json!({"event": "migration", "host_seat": now.host_seat, "migrations": now.migrations,
-                                "migrating": now.migrating.as_ref().map(|(n, me)| json!({"successor": n, "is_me": me}))}));
+                        if prev.host_seat != now.host_seat
+                            || prev.migrations != now.migrations
+                            || prev.migrating != now.migrating
+                        {
+                            dbg::push_event(
+                                json!({"event": "migration", "host_seat": now.host_seat, "migrations": now.migrations,
+                                "migrating": now.migrating.as_ref().map(|(n, me)| json!({"successor": n, "is_me": me}))}),
+                            );
                         }
                         if prev.holds != now.holds {
-                            dbg::push_event(json!({"event": "rejoin", "holds": r.rejoin_holds.iter().map(|(seat, n, s)| json!({"seat": seat, "name": n, "seconds_left": s})).collect::<Vec<_>>()}));
+                            dbg::push_event(
+                                json!({"event": "rejoin", "holds": r.rejoin_holds.iter().map(|(seat, n, s)| json!({"seat": seat, "name": n, "seconds_left": s})).collect::<Vec<_>>()}),
+                            );
                         }
                     }
                 }
@@ -193,7 +232,10 @@ mod on {
             // a checkpoint to boot into: once the first offline session is up
             if solo && dbg::boot_checkpoint_pending() {
                 if let Some(name) = dbg::take_boot_checkpoint() {
-                    match dbg::ask_console(dbg::CoreReq::CheckpointLoad { name: name.clone() }, std::time::Duration::from_secs(5)) {
+                    match dbg::ask_console(
+                        dbg::CoreReq::CheckpointLoad { name: name.clone() },
+                        std::time::Duration::from_secs(5),
+                    ) {
                         Ok(v) => log::info!("ai-debug: booted into checkpoint {name}: hash match {}", v["match"]),
                         Err(e) => log::error!("ai-debug: boot checkpoint {name}: {e}"),
                     }
@@ -212,7 +254,9 @@ mod on {
                     "screenshot" => self.ai_screenshot(),
                     "type" => self.ai_type(call.args["text"].as_str().unwrap_or("")),
                     "start_offline" => {
-                        tasks.push(iced::Task::done(Message::Play(crate::tabs::play::Message::PlayOfflinePressed)));
+                        tasks.push(iced::Task::done(Message::Play(
+                            crate::tabs::play::Message::PlayOfflinePressed,
+                        )));
                         Ok(json!({"starting": true}))
                     }
                     "inject" => ai_inject(&call.args),
@@ -234,14 +278,18 @@ mod on {
             }
             let img = image::RgbaImage::from_raw(w, h, rgba).ok_or("the frame is not (yet) w x h")?;
             let mut png = Vec::new();
-            img.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).map_err(|e| e.to_string())?;
+            img.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
+                .map_err(|e| e.to_string())?;
             Ok(json!({"width": w, "height": h, "png_b64": dbg::server::b64(&png),
                       "what": "the session's own window picture (the game frame only)",
                       "raw_console_frame": false}))
         }
 
         fn ai_type(&self, text: &str) -> Result<Value, String> {
-            let solo = self.session.active_as::<crate::session::singleplayer::SinglePlayerSession>().ok_or("typing works in an offline session (the in-game lobby's entry pages)")?;
+            let solo = self
+                .session
+                .active_as::<crate::session::singleplayer::SinglePlayerSession>()
+                .ok_or("typing works in an offline session (the in-game lobby's entry pages)")?;
             let mut read = |a: u32, b: &mut [u8]| {
                 solo.peek(a, b);
             };
@@ -262,7 +310,11 @@ mod on {
         }
         let f = |k: &str| a[k].as_f64();
         match a["op"].as_str().unwrap_or("") {
-            "latency" => n::set_link(f("latency_ms").unwrap_or(0.0) as u32, f("jitter_ms").unwrap_or(0.0) as u32, f("loss_pct").unwrap_or(0.0) as f32),
+            "latency" => n::set_link(
+                f("latency_ms").unwrap_or(0.0) as u32,
+                f("jitter_ms").unwrap_or(0.0) as u32,
+                f("loss_pct").unwrap_or(0.0) as f32,
+            ),
             "drop" => n::drop_for(f("seconds").ok_or("`seconds` is required")?),
             "freeze" => n::freeze_for(f("seconds").ok_or("`seconds` is required")?),
             "clear" => n::clear(),
@@ -271,8 +323,10 @@ mod on {
         }
         log::warn!("ai-debug: inject {a}");
         let (latency_ms, jitter_ms, loss_pct, drop_left_s, freeze_left_s) = n::status();
-        Ok(json!({"latency_ms": latency_ms, "jitter_ms": jitter_ms, "loss_pct": loss_pct, "drop_left_s": drop_left_s, "freeze_left_s": freeze_left_s,
-                  "note": "affects what THIS peer sends; the other peer sees a slow, lossy or silent link"}))
+        Ok(
+            json!({"latency_ms": latency_ms, "jitter_ms": jitter_ms, "loss_pct": loss_pct, "drop_left_s": drop_left_s, "freeze_left_s": freeze_left_s,
+                  "note": "affects what THIS peer sends; the other peer sees a slow, lossy or silent link"}),
+        )
     }
 }
 

@@ -29,17 +29,17 @@ pub mod channel;
 pub mod connect;
 pub mod control;
 pub mod data;
-pub mod endpoints;
-/// Debug aid: `TANGOAW2_NET_IMPAIR` delays and drops what this side sends (see the module).
-#[cfg(not(target_arch = "wasm32"))]
-pub mod impair;
-pub mod netdbg;
 /// Signaling-free direct play, over a UDP socket this side owns. Native
 /// by nature: a browser has no UDP, and its peer connections come from
 /// the page's own signaling.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod direct_rtc;
+pub mod endpoints;
+/// Debug aid: `TANGOAW2_NET_IMPAIR` delays and drops what this side sends (see the module).
+#[cfg(not(target_arch = "wasm32"))]
+pub mod impair;
 pub mod link;
+pub mod netdbg;
 
 pub use connect::{open_channels, ConnectError};
 pub use control::{negotiate, NegotiationError, Receiver, Sender};
@@ -131,7 +131,12 @@ impl LatencyCounter {
         if self.marks.len() < 2 {
             return std::time::Duration::ZERO;
         }
-        let total: f64 = self.marks.iter().zip(self.marks.iter().skip(1)).map(|(a, b)| (b.as_secs_f64() - a.as_secs_f64()).abs()).sum();
+        let total: f64 = self
+            .marks
+            .iter()
+            .zip(self.marks.iter().skip(1))
+            .map(|(a, b)| (b.as_secs_f64() - a.as_secs_f64()).abs())
+            .sum();
         std::time::Duration::from_secs_f64(total / (self.marks.len() - 1) as f64)
     }
 }

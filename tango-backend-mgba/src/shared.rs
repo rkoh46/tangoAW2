@@ -105,7 +105,10 @@ impl Scratch for ScratchConsole<'_> {
     fn tick(&mut self, keys: u32) -> bool {
         IN_SCRATCH.with(|c| c.set(true));
         self.ticked = true;
-        let word = self.game.before_tick(self.link.core_mut(0), self.mode, keys & JOYFLAGS_MASK) & JOYFLAGS_MASK;
+        let word = self
+            .game
+            .before_tick(self.link.core_mut(0), self.mode, keys & JOYFLAGS_MASK)
+            & JOYFLAGS_MASK;
         let ok = self.link.try_tick(&[word]).is_ok();
         IN_SCRATCH.with(|c| c.set(false));
         ok
@@ -264,7 +267,13 @@ pub trait SharedGame: Sync {
     /// console's 240x160 picture, and on `Some((w, h))` it has been replaced by the finished `w` x `h` one (a whole
     /// multiple of 240x160), every overlay included. `None` (the default) leaves `rgba` untouched and the host
     /// calls [`overlay`](Self::overlay) as before. Presentation only, like it.
-    fn overlay_hires(&self, core: &mgba::core::Core, mode: Option<(u8, u8)>, seat: usize, rgba: &mut Vec<u8>) -> Option<(u32, u32)> {
+    fn overlay_hires(
+        &self,
+        core: &mgba::core::Core,
+        mode: Option<(u8, u8)>,
+        seat: usize,
+        rgba: &mut Vec<u8>,
+    ) -> Option<(u32, u32)> {
         let _ = (core, mode, seat, rgba);
         None
     }
@@ -320,7 +329,6 @@ pub trait SharedGame: Sync {
         let _ = core;
         0
     }
-
 
     /// A room whose players have left plays on without their seats: the session's seats (`players` of them) that the game
     /// is played by from now, as the physical seat of each in the game's order. The game's hooks ([`merge`](Self::merge),
@@ -666,7 +674,11 @@ impl SharedLink {
                 own_audio = Some(v);
             }
             if shown {
-                frame = if scratch.console_pick { self.console_frame.as_ref().map(|(f, _)| f.clone()) } else { scratch.frame() };
+                frame = if scratch.console_pick {
+                    self.console_frame.as_ref().map(|(f, _)| f.clone())
+                } else {
+                    scratch.frame()
+                };
                 // (a picture caught in a screen fade, forced blank or black is no picture: the last good one stays)
                 if frame.as_ref().is_some_and(|f| dark(f)) {
                     frame = None;
@@ -824,11 +836,14 @@ impl tango_match::Link for SharedLink {
         let out = self.game.seats_out(self.inner.core(0));
         match self.order() {
             // (the session counts the room's own seats)
-            Some(order) => order.iter().enumerate().filter(|&(c, _)| out & (1 << c) != 0).fold(0u8, |a, (_, &p)| a | (1 << p)),
+            Some(order) => order
+                .iter()
+                .enumerate()
+                .filter(|&(c, _)| out & (1 << c) != 0)
+                .fold(0u8, |a, (_, &p)| a | (1 << p)),
             None => out,
         }
     }
-
 }
 
 struct SharedSide<'a> {
@@ -857,7 +872,17 @@ impl SharedSide<'_> {
             if let Some(f) = self.link.watching_frame(self.player) {
                 if debug_view() && self.link.tick % 30 == 0 {
                     let held = self.link.watched_at[self.player].is_none_or(|at| at != self.link.tick);
-                    log::info!("view-debug seat {} tick {}: watching, {} {}", self.player, self.link.tick, if held { "cached or held picture" } else { "scratch picture" }, self.link.game.view_debug(self.link.inner.core(0)));
+                    log::info!(
+                        "view-debug seat {} tick {}: watching, {} {}",
+                        self.player,
+                        self.link.tick,
+                        if held {
+                            "cached or held picture"
+                        } else {
+                            "scratch picture"
+                        },
+                        self.link.game.view_debug(self.link.inner.core(0))
+                    );
                 }
                 // (the notices that belong to every window, such as the reconnect box, are drawn over a watching seat's picture too)
                 let mut f = f;
@@ -873,14 +898,25 @@ impl SharedSide<'_> {
         }
         if debug_view() && self.conceal && self.link.tick % 30 == 0 {
             let w = self.link.game.watching(self.link.inner.core(0), gseat);
-            log::info!("view-debug seat {} tick {}: {} the console's own picture {}", self.player, self.link.tick, if w { "WATCHING BUT" } else { "not watching:" }, self.link.game.view_debug(self.link.inner.core(0)));
+            log::info!(
+                "view-debug seat {} tick {}: {} the console's own picture {}",
+                self.player,
+                self.link.tick,
+                if w { "WATCHING BUT" } else { "not watching:" },
+                self.link.game.view_debug(self.link.inner.core(0))
+            );
         }
         let mut frame = match self.link.console_frame.as_ref().filter(|(_, at)| *at == self.link.tick) {
             Some((f, _)) => f.clone(),
             None => self.link.inner.video_buffer(0).map(to_rgba)?,
         };
         let core = self.link.inner.core(0);
-        if self.link.game.overlay_hires(core, self.link.mode, gseat, &mut frame).is_none() {
+        if self
+            .link
+            .game
+            .overlay_hires(core, self.link.mode, gseat, &mut frame)
+            .is_none()
+        {
             self.link.game.overlay(core, self.link.mode, gseat, &mut frame);
         }
         // The seat's own turn: until the first picture of the next waiting turn is made, its window keeps a clean picture of
@@ -968,7 +1004,6 @@ impl Side for SharedSide<'_> {
     }
 }
 
-
 /// A shared-console game as the engine-neutral backend its registration
 /// holds.
 pub struct SharedBackend {
@@ -1028,7 +1063,11 @@ impl tango_match::Backend for SharedBackend {
     }
 
     /// A suspended match resumed: the same console, started from the stored state.
-    fn start_resumed(&self, config: tango_match::StartConfig, state: &[u8]) -> Result<tango_match::Match, tango_match::Error> {
+    fn start_resumed(
+        &self,
+        config: tango_match::StartConfig,
+        state: &[u8],
+    ) -> Result<tango_match::Match, tango_match::Error> {
         let mut link = SharedLink::boot_resumed(
             config.roms[0],
             config.saves[0],
@@ -1174,8 +1213,15 @@ mod tests {
         }
         assert_eq!(looked.console_loads, 0, "a picture loaded the match's console");
         let (a, b) = (looked.inner.save().unwrap(), alone.inner.save().unwrap());
-        assert_eq!(a.digest(), b.digest(), "the console that was looked at runs differently");
-        assert_eq!(looked.inner.core(0).frame_counter(), alone.inner.core(0).frame_counter());
+        assert_eq!(
+            a.digest(),
+            b.digest(),
+            "the console that was looked at runs differently"
+        );
+        assert_eq!(
+            looked.inner.core(0).frame_counter(),
+            alone.inner.core(0).frame_counter()
+        );
         // (the scratch machine did run: it is a second console)
         assert!(looked.scratch.core(0).frame_counter() > 0);
     }

@@ -79,7 +79,9 @@ pub(crate) fn alive(core: &Core, army: u8) -> bool {
 
 /// The armies still in the match (for the tools).
 pub fn alive_armies(core: &Core) -> Vec<u8> {
-    (1..=crate::five::armies(core).clamp(2, 5)).filter(|&a| alive(core, a)).collect()
+    (1..=crate::five::armies(core).clamp(2, 5))
+        .filter(|&a| alive(core, a))
+        .collect()
 }
 
 /// The match is decided: at most one army is left (the others yielded or were beaten). Whatever the console shows from

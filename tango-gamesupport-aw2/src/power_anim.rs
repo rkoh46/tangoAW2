@@ -139,7 +139,14 @@ fn art() -> Option<&'static Art> {
         if urban_map.len() > URBAN_MAP_MAX || ubg.tiles.len() > 32 * BG_TILES {
             return None;
         }
-        Some(Art { exm, cf, bolt, urban_tiles: ubg.tiles, urban_map, urban_palette: ubg.palette })
+        Some(Art {
+            exm,
+            cf,
+            bolt,
+            urban_tiles: ubg.tiles,
+            urban_map,
+            urban_palette: ubg.palette,
+        })
     })
     .as_ref()
 }
@@ -226,7 +233,9 @@ const BLDCNT: u32 = 0x0300_30E0;
 const EVA: u32 = 0x0300_2020;
 const EVB: u32 = 0x0300_2B28;
 const BLDY: u32 = 0x0300_1FFC;
-const SHADOWS: [u32; 10] = [DISPCNT, BG0CNT, BG0HOFS, BG0VOFS, SHIFT_X, SHIFT_Y, BLDCNT, EVA, EVB, BLDY];
+const SHADOWS: [u32; 10] = [
+    DISPCNT, BG0CNT, BG0HOFS, BG0VOFS, SHIFT_X, SHIFT_Y, BLDCNT, EVA, EVB, BLDY,
+];
 
 const PAL_BUFFER: u32 = 0x0300_20C0;
 const PAL_RAM: u32 = 0x0500_0000;
@@ -263,7 +272,10 @@ const SCREEN_H: i32 = 160;
 
 fn camera(core: &Core) -> (i32, i32) {
     let m = core.raw_read_32(MAP_POINTER, -1);
-    (core.raw_read_16(m + 4, -1) as i16 as i32, core.raw_read_16(m + 6, -1) as i16 as i32)
+    (
+        core.raw_read_16(m + 4, -1) as i16 as i32,
+        core.raw_read_16(m + 6, -1) as i16 as i32,
+    )
 }
 
 fn write_if_changed(core: &mut Core, at: u32, bytes: &[u8]) {
@@ -505,7 +517,11 @@ fn show_bolt(core: &mut Core, bolt: &BgLayer, hofs: i32, vofs: i32) {
     for (k, &m) in bolt.map.iter().enumerate() {
         let (x, y) = (8 * (k % 32) as i32 - hofs, 8 * (k / 32) as i32 - vofs);
         let off = x + 8 <= -8 || x >= SCREEN_W + 8 || y + 8 <= -8 || y >= SCREEN_H + 8;
-        let e = if off || m & 0x3FF == 0 { 0 } else { (m & 0xFFF) + first | (BG_PALETTE as u16) << 12 };
+        let e = if off || m & 0x3FF == 0 {
+            0
+        } else {
+            (m & 0xFFF) + first | (BG_PALETTE as u16) << 12
+        };
         map.extend_from_slice(&e.to_le_bytes());
     }
     write_bg0_map(core, &map);

@@ -224,10 +224,7 @@ fn split(dc: datachannel_wrapper::DataChannel, reliable: bool) -> (Box<dyn Packe
     let sink = super::impair::wrap(sink, reliable);
     #[cfg(target_arch = "wasm32")]
     let _ = reliable;
-    (
-        sink,
-        Box::new(DataChannelStream { inner: dc_rx }),
-    )
+    (sink, Box::new(DataChannelStream { inner: dc_rx }))
 }
 
 /// Pair a `DataChannel` into the control plane's typed-`Packet`

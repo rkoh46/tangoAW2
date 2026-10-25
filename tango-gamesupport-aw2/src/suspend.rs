@@ -97,7 +97,8 @@ pub const TAG_LEN: u32 = 8 + 4 + crate::tag::SAVED_LEN as u32 + crate::es_co::MO
 fn block_hash(core: &Core) -> u32 {
     let mut b = vec![0u8; 0xDAC];
     core.raw_read_range(BLOCK, -1, &mut b);
-    b.iter().fold(0x811C_9DC5u32, |h, &x| (h ^ x as u32).wrapping_mul(0x0100_0193))
+    b.iter()
+        .fold(0x811C_9DC5u32, |h, &x| (h ^ x as u32).wrapping_mul(0x0100_0193))
 }
 
 fn tag_tail_ok(core: &Core) -> bool {
@@ -234,7 +235,11 @@ fn save_write(core: &mut Core) {
     b[3] = VERSION;
     b[4..8].copy_from_slice(&core.raw_read_32(crate::ds_campaign::COUNTDOWN, -1).to_le_bytes());
     core.raw_read_range(crate::ds_campaign::FLAGS, -1, &mut b[8..24]);
-    core.raw_read_range(crate::ds_campaign_rules::MTE_TOLD, -1, &mut b[24..24 + DS_MTE_LEN as usize]);
+    core.raw_read_range(
+        crate::ds_campaign_rules::MTE_TOLD,
+        -1,
+        &mut b[24..24 + DS_MTE_LEN as usize],
+    );
     b[24 + DS_MTE_LEN as usize..].copy_from_slice(&crate::onyx::saved(core));
     core.raw_write_range(DS_AT, -1, &b);
     core.gba_mut().cpu_mut().set_gpr(0, slot as i32);
@@ -245,7 +250,9 @@ fn save_write(core: &mut Core) {
         let mut t = FRONTS_MARK.to_le_bytes().to_vec();
         t.extend_from_slice(&fronts);
         core.raw_write_range(BLOCK + BLOCK_SIZE, -1, &t);
-        core.gba_mut().cpu_mut().set_gpr(2, (BLOCK_SIZE + t.len() as u32) as i32);
+        core.gba_mut()
+            .cpu_mut()
+            .set_gpr(2, (BLOCK_SIZE + t.len() as u32) as i32);
     }
 }
 
@@ -262,7 +269,11 @@ fn applied_ds(core: &mut Core) {
     }
     let mut b = vec![0u8; DS_LEN as usize];
     core.raw_read_range(DS_AT, -1, &mut b);
-    core.raw_write_32(crate::ds_campaign::COUNTDOWN, -1, u32::from_le_bytes(b[4..8].try_into().unwrap()));
+    core.raw_write_32(
+        crate::ds_campaign::COUNTDOWN,
+        -1,
+        u32::from_le_bytes(b[4..8].try_into().unwrap()),
+    );
     core.raw_write_range(crate::ds_campaign::FLAGS, -1, &b[8..24]);
     core.raw_write_range(crate::ds_campaign_rules::MTE_TOLD, -1, &b[24..24 + DS_MTE_LEN as usize]);
     crate::onyx::restore(core, &b[24 + DS_MTE_LEN as usize..]);
@@ -280,7 +291,9 @@ fn applied_ds(core: &mut Core) {
 fn mid_sector(core: &Core, slot: u8) -> Option<u32> {
     // (its first part: a two-front battle's takes two sectors; the sector's
     // +0x0C is part << 4 | parts - 1)
-    (0..16).find(|&i| core.raw_read_8(DIRECTORY + i, -1) == slot && core.raw_read_8(FLASH + 0x1000 * i + 0x0C, -1) >> 4 == 0)
+    (0..16).find(|&i| {
+        core.raw_read_8(DIRECTORY + i, -1) == slot && core.raw_read_8(FLASH + 0x1000 * i + 0x0C, -1) >> 4 == 0
+    })
 }
 
 /// The top three bits of a saved mission byte name the campaign when it is neither the DS Campaign's nor the BH Campaign's (those keep 0: their old
@@ -460,7 +473,9 @@ pub const WAR_ROOM_CONTINUE: u32 = 0x0803_B904;
 /// has gone.
 const WAR_ROOM_NEW: u32 = 0x0803_BA00;
 fn war_room_continue(core: &mut Core) {
-    let Some(resume) = crate::survival::continue_now(core) else { return };
+    let Some(resume) = crate::survival::continue_now(core) else {
+        return;
+    };
     let cpu = core.gba_mut().cpu_mut();
     if resume {
         cpu.set_gpr(0, SURVIVAL_SLOT as i32);
@@ -474,19 +489,28 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
         (CAPTURED, Box::new(captured)),
         (LOADED, Box::new(loaded)),
-        (APPLIED, Box::new(|core: &mut Core| {
-            applied_survival(core);
-            applied(core);
-            applied_ds(core);
-        })),
-        (SAVE_START, Box::new(|core: &mut Core| {
-            save_start(core);
-            survival_save_start(core);
-        })),
-        (SAVE_WRITE, Box::new(|core: &mut Core| {
-            save_write(core);
-            survival_save_write(core);
-        })),
+        (
+            APPLIED,
+            Box::new(|core: &mut Core| {
+                applied_survival(core);
+                applied(core);
+                applied_ds(core);
+            }),
+        ),
+        (
+            SAVE_START,
+            Box::new(|core: &mut Core| {
+                save_start(core);
+                survival_save_start(core);
+            }),
+        ),
+        (
+            SAVE_WRITE,
+            Box::new(|core: &mut Core| {
+                save_write(core);
+                survival_save_write(core);
+            }),
+        ),
         (WAR_ROOM_CONTINUE, Box::new(war_room_continue)),
     ]
 }

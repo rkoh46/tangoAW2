@@ -103,16 +103,51 @@ fn key_bits(s: &str) -> u32 {
 
 /// The names `until` and `seek` understand (`tango_library::online::condition`).
 const CONDS: [&str; 36] = [
-    "always", "mapup", "mypick", "chosen", "pickturn", "rules",
-    "onmenu", "selectmode", "selectmap", "teams", "battle", "versus", "nav", "turnended", "myturn", "banner", "acting", "over", "reconnect", "cursor", "level", "army",
-    "maparmies", "status", "players", "ready", "menu", "cx", "cy", "cxlt", "cxgt", "cylt", "cygt", "idle", "onend", "!",
+    "always",
+    "mapup",
+    "mypick",
+    "chosen",
+    "pickturn",
+    "rules",
+    "onmenu",
+    "selectmode",
+    "selectmap",
+    "teams",
+    "battle",
+    "versus",
+    "nav",
+    "turnended",
+    "myturn",
+    "banner",
+    "acting",
+    "over",
+    "reconnect",
+    "cursor",
+    "level",
+    "army",
+    "maparmies",
+    "status",
+    "players",
+    "ready",
+    "menu",
+    "cx",
+    "cy",
+    "cxlt",
+    "cxgt",
+    "cylt",
+    "cygt",
+    "idle",
+    "onend",
+    "!",
 ];
 
 fn cond_ok(c: &str) -> bool {
     // (`a|b` holds when either does)
     c.split('|').all(|c| {
         let c = c.trim_start_matches('!');
-        let name = c.split_once('=').map_or(c, |(n, v)| if v.parse::<u32>().is_ok() { n } else { "?" });
+        let name = c
+            .split_once('=')
+            .map_or(c, |(n, v)| if v.parse::<u32>().is_ok() { n } else { "?" });
         CONDS.contains(&name)
     })
 }
@@ -164,7 +199,8 @@ fn expand_macros(text: &str) -> String {
 
 fn keys_ok(k: &str) -> bool {
     k.split('+').all(|k| {
-        ["A", "B", "SELECT", "START", "RIGHT", "LEFT", "UP", "DOWN", "R", "L"].contains(&k.to_ascii_uppercase().as_str())
+        ["A", "B", "SELECT", "START", "RIGHT", "LEFT", "UP", "DOWN", "R", "L"]
+            .contains(&k.to_ascii_uppercase().as_str())
     })
 }
 
@@ -221,11 +257,13 @@ fn parse_script(text: &str) -> Result<Vec<Vec<Op>>, String> {
             }
             ["label", name] => ops.push(Op::Label(name.to_string())),
             ["jumpif", cond, name] if cond_ok(cond) => ops.push(Op::JumpIf(cond.to_string(), name.to_string())),
-            ["goto", x, y, rest @ ..] if rest.len() <= 1 => match (x.parse(), y.parse(), rest.first().map(|s| s.parse::<f64>())) {
-                (Ok(x), Ok(y), None) => ops.push(Op::Goto(x, y, 40.0)),
-                (Ok(x), Ok(y), Some(Ok(secs))) => ops.push(Op::Goto(x, y, secs)),
-                _ => return bad("goto needs a cell and optionally seconds"),
-            },
+            ["goto", x, y, rest @ ..] if rest.len() <= 1 => {
+                match (x.parse(), y.parse(), rest.first().map(|s| s.parse::<f64>())) {
+                    (Ok(x), Ok(y), None) => ops.push(Op::Goto(x, y, 40.0)),
+                    (Ok(x), Ok(y), Some(Ok(secs))) => ops.push(Op::Goto(x, y, secs)),
+                    _ => return bad("goto needs a cell and optionally seconds"),
+                }
+            }
             ["shot", path] => ops.push(Op::Shot(PathBuf::from(path))),
             ["log", rest @ ..] => ops.push(Op::Log(rest.join(" "))),
             ["type", text] => ops.push(Op::Type(text.replace('_', " "))),
@@ -284,8 +322,14 @@ impl DebugAids {
     /// shared wall clock) and enables the steady frames.
     fn run_from_env() -> Option<RunDir> {
         let dir = PathBuf::from(std::env::var("TANGOAW2_RUN_DIR").ok()?);
-        let seat: u32 = std::env::var("TANGOAW2_RUN_SEAT").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
-        let hz: f64 = std::env::var("TANGOAW2_RUN_SHOT_HZ").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
+        let seat: u32 = std::env::var("TANGOAW2_RUN_SEAT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0);
+        let hz: f64 = std::env::var("TANGOAW2_RUN_SHOT_HZ")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(1.0);
         let _ = std::fs::create_dir_all(&dir);
         let now_ms = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -299,12 +343,21 @@ impl DebugAids {
                 std::process::id()
             ),
         );
-        Some(RunDir { dir, seat, every: 1.0 / hz.max(0.1), next: 0.0, n: 0 })
+        Some(RunDir {
+            dir,
+            seat,
+            every: 1.0 / hz.max(0.1),
+            next: 0.0,
+            n: 0,
+        })
     }
 
     /// How often a test run's steady frames are due, when they are asked for above 1 Hz (the 1 Hz Discord tick serves the rest).
     pub fn run_shot_every(&self) -> Option<std::time::Duration> {
-        self.run.as_ref().filter(|r| r.every < 0.99).map(|r| std::time::Duration::from_secs_f64(r.every / 2.0))
+        self.run
+            .as_ref()
+            .filter(|r| r.every < 0.99)
+            .map(|r| std::time::Duration::from_secs_f64(r.every / 2.0))
     }
 
     pub fn has_pad(&self) -> bool {
@@ -319,11 +372,21 @@ impl DebugAids {
                 r.next = now + r.every;
                 r.n += 1;
                 // (the sidecar: each picture's wall clock and the console's tick, to line the windows up)
-                let ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis());
+                let ms = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(0, |d| d.as_millis());
                 let name = format!("s{}_{:04}.png", r.seat, r.n);
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(r.dir.join(format!("shots_s{}.jsonl", r.seat))) {
+                if let Ok(mut f) = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(r.dir.join(format!("shots_s{}.jsonl", r.seat)))
+                {
                     use std::io::Write;
-                    let _ = writeln!(f, "{{\"file\":\"{name}\",\"ms\":{ms},\"tick\":{}}}", tango_library::online::run_ticks());
+                    let _ = writeln!(
+                        f,
+                        "{{\"file\":\"{name}\",\"ms\":{ms},\"tick\":{}}}",
+                        tango_library::online::run_ticks()
+                    );
                 }
                 return Some((r.dir.join(name), false));
             }
@@ -469,7 +532,11 @@ impl DebugAids {
                         break;
                     } else {
                         let k = if !at_x {
-                            if cond(&format!("cxlt={x}")) { key_bits("RIGHT") } else { key_bits("LEFT") }
+                            if cond(&format!("cxlt={x}")) {
+                                key_bits("RIGHT")
+                            } else {
+                                key_bits("LEFT")
+                            }
                         } else if cond(&format!("cylt={y}")) {
                             key_bits("DOWN")
                         } else {
@@ -538,13 +605,21 @@ mod tests {
 
     #[test]
     fn a_good_script_parses() {
-        let t = "wait 5\npress A 8\nuntil battle 90\nseek A !turnended\nuntil army=2\nshot /x.png\nsession\nlog hi\n# c\n";
+        let t =
+            "wait 5\npress A 8\nuntil battle 90\nseek A !turnended\nuntil army=2\nshot /x.png\nsession\nlog hi\n# c\n";
         assert_eq!(parse_script(t).unwrap().len(), 2);
     }
 
     #[test]
     fn a_bad_line_is_an_error() {
-        for t in ["wait x", "press Q 4", "until nonsense", "until army=x", "seek A battle 1 2", "frobnicate"] {
+        for t in [
+            "wait x",
+            "press Q 4",
+            "until nonsense",
+            "until army=x",
+            "seek A battle 1 2",
+            "frobnicate",
+        ] {
             assert!(parse_script(t).is_err(), "{t}");
         }
     }

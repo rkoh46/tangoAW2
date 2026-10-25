@@ -150,7 +150,13 @@ pub struct VolcanoDef {
 
 impl VolcanoDef {
     pub fn new(first: u8, interval: u8, damage: u8, cells: &[(u8, u8)]) -> VolcanoDef {
-        VolcanoDef { first, interval, damage, cells: cells.to_vec(), per_eruption: 0 }
+        VolcanoDef {
+            first,
+            interval,
+            damage,
+            cells: cells.to_vec(),
+            per_eruption: 0,
+        }
     }
 
     /// Each eruption hits `n` of the cells (a ring's cells, in order round it: they are spread round the ring).
@@ -190,7 +196,17 @@ impl OnyxDef {
     /// The design's numbers: 4 hits, day 5 and every 5th day, 4 cells, 3 HP,
     /// 3 turns, 30%.
     pub const fn new(obelisk: (u8, u8)) -> OnyxDef {
-        OnyxDef { hits: 4, first: 5, period: 5, silo_day: 3, obelisk, radius: 4, debris_hp: 3, offline_turns: 3, meters: 30 }
+        OnyxDef {
+            hits: 4,
+            first: 5,
+            period: 5,
+            silo_day: 3,
+            obelisk,
+            radius: 4,
+            debris_hp: 3,
+            offline_turns: 3,
+            meters: 30,
+        }
     }
 }
 
@@ -542,7 +558,6 @@ pub fn stub(id: u32) -> [u8; 16] {
 pub const TEXT_FIRST: u16 = 0x7400;
 pub const TEXT_LAST: u16 = 0x7FFF;
 pub const TEXT_TABLE: u32 = 0x0861_0A38;
-
 
 #[cfg(test)]
 mod volcano_tests {

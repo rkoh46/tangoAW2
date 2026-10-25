@@ -281,7 +281,13 @@ fn build() -> Option<Built> {
         if map.armies == 2 && ds_id <= LAST_VERSUS {
             let k = (t - TEXT_BASE) as u32;
             let marked = STRINGS + STRING_SIZE * (TEXT_IDS as u32 + names.len() as u32);
-            names.push((id, TEXT_TABLE + 4 * t as u32, STRINGS + STRING_SIZE * k, marked, map.name.clone()));
+            names.push((
+                id,
+                TEXT_TABLE + 4 * t as u32,
+                STRINGS + STRING_SIZE * k,
+                marked,
+                map.name.clone(),
+            ));
         }
         let mut e = entry(id, &map);
         if let Some(second) = map.second {
@@ -294,7 +300,12 @@ fn build() -> Option<Built> {
         }
         entries.push(e);
     }
-    Some(Built { writes, names, entries, seconds })
+    Some(Built {
+        writes,
+        names,
+        entries,
+        seconds,
+    })
 }
 
 fn installed(core: &Core) -> bool {
@@ -317,7 +328,11 @@ fn install(core: &mut Core) -> bool {
         }
         // The names marked as the second front: "2:" and the name, cut to the longest name's width in the list's
         // font (its widths, `0x084C36E4`).
-        let width = |core: &Core, s: &str| s.bytes().map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as u32).sum::<u32>();
+        let width = |core: &Core, s: &str| {
+            s.bytes()
+                .map(|c| core.raw_read_8(FONT_WIDTHS + c as u32, -1) as u32)
+                .sum::<u32>()
+        };
         let room = b.names.iter().map(|n| width(core, &n.4)).max().unwrap_or(0);
         for (_, _, _, marked, name) in &b.names {
             let mut m = format!("2:{name}");
@@ -357,7 +372,9 @@ pub fn replaced(id: u8) -> bool {
 /// game continued from a save made on AW2's table.
 fn wanted(core: &Core, on: bool) -> bool {
     let mode = core.raw_read_8(TITLE_MODE, -1);
-    on && (VERSUS.contains(&mode) || WAR_ROOM.contains(&mode)) && !crate::survival::on(core) && core.raw_read_8(TABLE_FLAG, -1) != FORCED_AW2
+    on && (VERSUS.contains(&mode) || WAR_ROOM.contains(&mode))
+        && !crate::survival::on(core)
+        && core.raw_read_8(TABLE_FLAG, -1) != FORCED_AW2
 }
 
 /// Every frame, from [`crate::survival::tick_tables`] (`on`: the pack's features, Survival's table installed):
@@ -490,12 +507,15 @@ const LIST_TAB: u32 = 0x0300_596C;
 const KEY_SELECT: u32 = 1 << 2;
 
 fn list_up(core: &Core) -> bool {
-    (PROC_POOL.0..PROC_POOL.1).step_by(0x6C).any(|p| core.raw_read_32(p, -1) == SELECT_MAP && core.raw_read_32(p + 0x10, -1) == SELECT_MAP_IDLE | 1)
+    (PROC_POOL.0..PROC_POOL.1)
+        .step_by(0x6C)
+        .any(|p| core.raw_read_32(p, -1) == SELECT_MAP && core.raw_read_32(p + 0x10, -1) == SELECT_MAP_IDLE | 1)
 }
 
 /// The map the Versus list's cursor is on.
 fn highlighted(core: &Core) -> Option<u8> {
-    let k = core.raw_read_8(LIST_ROW, -1) as u32 + core.raw_read_8(LIST_TOP + core.raw_read_8(LIST_TAB, -1) as u32, -1) as u32;
+    let k = core.raw_read_8(LIST_ROW, -1) as u32
+        + core.raw_read_8(LIST_TOP + core.raw_read_8(LIST_TAB, -1) as u32, -1) as u32;
     (k <= core.raw_read_8(LIST_LAST, -1) as u32).then(|| core.raw_read_8(LIST_IDS + k, -1))
 }
 
@@ -539,7 +559,11 @@ fn list_idle(core: &mut Core) {
         return;
     }
     core.raw_write_8(REDRAW, -1, 0);
-    let args = [core.raw_read_8(LIST_ARGS, -1), core.raw_read_8(LIST_ARGS + 1, -1), core.raw_read_8(LIST_ARGS + 2, -1)];
+    let args = [
+        core.raw_read_8(LIST_ARGS, -1),
+        core.raw_read_8(LIST_ARGS + 1, -1),
+        core.raw_read_8(LIST_ARGS + 2, -1),
+    ];
     if args[1] == 0 || !in_use(core) {
         return;
     }
@@ -566,7 +590,13 @@ fn set_map_id(core: &mut Core) {
         None
     } else if WAR_ROOM.contains(&mode) && pair.is_some() {
         Some((FRONTS_WAR_ROOM, pair.unwrap_or(0) as u8))
-    } else if VERSUS.contains(&mode) && core.raw_read_8(TWO_ALLOWED, -1) == 1 && mark != 0 && mark != id && two_player(id) && two_player(mark) {
+    } else if VERSUS.contains(&mode)
+        && core.raw_read_8(TWO_ALLOWED, -1) == 1
+        && mark != 0
+        && mark != id
+        && two_player(id)
+        && two_player(mark)
+    {
         Some((FRONTS_VERSUS, mark))
     } else {
         None
@@ -660,13 +690,20 @@ fn war_room_fronts() -> &'static [crate::campaign_model::TwoFront] {
 
 /// The two-front battle being played or set up (on [`BATTLE_ID`]): its main front and description
 /// (crate::two_front's gate).
-pub fn two_fronts(core: &Core) -> Option<(&'static crate::campaign_model::MissionInfo, &'static crate::campaign_model::TwoFront)> {
+pub fn two_fronts(
+    core: &Core,
+) -> Option<(
+    &'static crate::campaign_model::MissionInfo,
+    &'static crate::campaign_model::TwoFront,
+)> {
     if core.raw_read_8(MAP_ID, -1) != BATTLE_ID || !in_use(core) {
         return None;
     }
     match core.raw_read_8(FRONTS, -1) {
         FRONTS_VERSUS => Some((main_front(), versus_fronts())),
-        FRONTS_WAR_ROOM => war_room_fronts().get(core.raw_read_8(SECOND_ID, -1) as usize).map(|f| (main_front(), f)),
+        FRONTS_WAR_ROOM => war_room_fronts()
+            .get(core.raw_read_8(SECOND_ID, -1) as usize)
+            .map(|f| (main_front(), f)),
         _ => None,
     }
 }
@@ -679,7 +716,10 @@ fn front(core: &Core, index: u8) -> Option<(u32, &'static Entry)> {
     let e = b.entries.iter().find(|e| e.id == main)?;
     match (index, core.raw_read_8(FRONTS, -1)) {
         (0, _) => Some((TABLE + ENTRY * main as u32, e)),
-        (_, FRONTS_VERSUS) => Some((TABLE + ENTRY * second as u32, b.entries.iter().find(|e| e.id == second)?)),
+        (_, FRONTS_VERSUS) => Some((
+            TABLE + ENTRY * second as u32,
+            b.entries.iter().find(|e| e.id == second)?,
+        )),
         (_, FRONTS_WAR_ROOM) => {
             let (_, at) = e.second?;
             Some((at, b.seconds.get(second as usize)?))
@@ -757,7 +797,9 @@ pub fn record_rows(core: &Core) -> u32 {
 
 /// The War Room's maps in record order (the order of the rows in Flash).
 fn war_room_ids() -> impl Iterator<Item = u8> {
-    (FIRST_WAR_ROOM..=0xB3).map(|i| i as u8).chain(MOVED.iter().map(|m| m.1))
+    (FIRST_WAR_ROOM..=0xB3)
+        .map(|i| i as u8)
+        .chain(MOVED.iter().map(|m| m.1))
 }
 
 fn row_at(id: u8) -> u32 {
@@ -922,24 +964,35 @@ mod tests {
         for id in MOVED.iter().map(|m| m.1).chain(HIDDEN) {
             assert!(crate::five_map::is_ds_map(id) && !crate::five_map::is_five_map(id));
         }
-        assert!(RECORDS_TAIL_LEN + 0x20 + crate::ds_campaign::RECORDS_SIZE as usize + crate::co_skills::DATA_LEN as usize <= 0xFAD);
+        assert!(
+            RECORDS_TAIL_LEN + 0x20 + crate::ds_campaign::RECORDS_SIZE as usize + crate::co_skills::DATA_LEN as usize
+                <= 0xFAD
+        );
     }
 
     /// With a Dual Strike ROM (TANGOAW2_DS_ROM): Dual Strike's ids, tabs, the War Room's two-front battles.
     #[test]
     fn table_from_the_rom() {
-        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else { return };
+        let Some(path) = std::env::var_os("TANGOAW2_DS_ROM") else {
+            return;
+        };
         let Ok(buf) = std::fs::read(path) else { return };
         crate::ds_art::offer(&buf);
         let b = built().expect("table");
         assert_eq!(b.entries.len(), 0xB6);
         let tab = |c| b.entries.iter().filter(|e| e.case == c).count();
-        assert_eq!([tab(2), tab(3), tab(4), tab(5), tab(6), tab(7)], [17, 27, 31, 27, 36, 44]);
+        assert_eq!(
+            [tab(2), tab(3), tab(4), tab(5), tab(6), tab(7)],
+            [17, 27, 31, 27, 36, 44]
+        );
         assert_eq!(b.seconds.len(), 5);
         let e = |id: u8| b.entries.iter().find(|e| e.id == id).unwrap();
         assert_eq!(e(0x01).name, "Bean Island");
         assert_eq!(e(0x8B).name, "Spann Island");
-        assert_eq!((e(0xC1).name.as_str(), e(0xC1).second.map(|s| s.0)), ("Silo Nation", Some(0xB9)));
+        assert_eq!(
+            (e(0xC1).name.as_str(), e(0xC1).second.map(|s| s.0)),
+            ("Silo Nation", Some(0xB9))
+        );
         assert_eq!(e(0xC3).name, "Helix Peninsula");
         assert_eq!(e(0xB2).second.map(|s| s.0), Some(0xB7));
         assert_eq!(b.entries.iter().filter(|e| e.second.is_some()).count(), 5);

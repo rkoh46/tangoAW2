@@ -50,7 +50,15 @@ fn main() {
     mailbox::boot_to_lobby();
     let save = vec![0xffu8; tango_gamesupport_aw2::SAVE_SIZE];
     let rtc = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
-    let link = tango_backend_mgba::SharedLink::boot(&rom, Some(&save), Some(rtc), &tango_gamesupport_aw2::pvp::AW2E, None, None).expect("boot");
+    let link = tango_backend_mgba::SharedLink::boot(
+        &rom,
+        Some(&save),
+        Some(rtc),
+        &tango_gamesupport_aw2::pvp::AW2E,
+        None,
+        None,
+    )
+    .expect("boot");
     let mut c = Ctx { link, out, problems: 0 };
     let mut t = 0;
     while t < 3000 && tango_gamesupport_aw2::online_menu::cursor(c.link.core()).is_none() {
@@ -61,8 +69,21 @@ fn main() {
         c.link.tick([HostInput::keys(0), HostInput::keys(0)]);
     }
     let names5 = ["WWWWWWWWWWWW", "Gamertag10", "Nell", "WWWWWWWWWW", "Fifth"];
-    let kinds = [(0, 0), (LINK_RELAY, 255), (LINK_DIRECT, 23), (LINK_RELAY, 140), (LINK_DIRECT, 7)];
-    let cases = [("WWWWWWWWWWWW", 57u32), ("WWWWWWWWWW", 38), ("Guest", 9), ("Gamertag10", 57), ("iiiiiiiiiiii", 38), ("MMMMMMMMMMMM", 9)];
+    let kinds = [
+        (0, 0),
+        (LINK_RELAY, 255),
+        (LINK_DIRECT, 23),
+        (LINK_RELAY, 140),
+        (LINK_DIRECT, 7),
+    ];
+    let cases = [
+        ("WWWWWWWWWWWW", 57u32),
+        ("WWWWWWWWWW", 38),
+        ("Guest", 9),
+        ("Gamertag10", 57),
+        ("iiiiiiiiiiii", 38),
+        ("MMMMMMMMMMMM", 9),
+    ];
     for n in 2..=5usize {
         for (k, (name, secs)) in cases.iter().enumerate() {
             let core = c.link.core_mut();
@@ -117,9 +138,15 @@ fn main() {
             }
             c.problems += bad.len();
         };
-        for (k, (name, you)) in [("Guest", false), ("WWWWWWWWWWWW", false), ("iiiiiiiiiiii", false), ("You", true), ("MMMMMMMMMMMM", false)]
-            .iter()
-            .enumerate()
+        for (k, (name, you)) in [
+            ("Guest", false),
+            ("WWWWWWWWWWWW", false),
+            ("iiiiiiiiiiii", false),
+            ("You", true),
+            ("MMMMMMMMMMMM", false),
+        ]
+        .iter()
+        .enumerate()
         {
             tango_gamesupport::hold::set_migration(Some((name.to_string(), *you)));
             render(&mut c, format!("migration_{n}p_{k}"));

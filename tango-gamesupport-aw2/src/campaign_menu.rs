@@ -66,11 +66,15 @@ const KEY_UP: u32 = 1 << 6;
 const KEY_DOWN: u32 = 1 << 7;
 
 fn proc_with(core: &Core, script: u32) -> Option<u32> {
-    (PROCS..PROCS_END).step_by(PROC_SIZE as usize).find(|&p| core.raw_read_32(p, -1) == script)
+    (PROCS..PROCS_END)
+        .step_by(PROC_SIZE as usize)
+        .find(|&p| core.raw_read_32(p, -1) == script)
 }
 
 fn wheel(core: &Core) -> Option<u32> {
-    (PROCS..PROCS_END).step_by(PROC_SIZE as usize).find(|&p| WHEELS.contains(&core.raw_read_32(p, -1)))
+    (PROCS..PROCS_END)
+        .step_by(PROC_SIZE as usize)
+        .find(|&p| WHEELS.contains(&core.raw_read_32(p, -1)))
 }
 
 /// The wheel's open item box (Continue / New), when one is open: its cursor (6 the top row, 7 the bottom).
@@ -89,7 +93,11 @@ pub fn on_select_mode(core: &Core) -> bool {
 pub fn wheel_info(core: &Core) -> Option<(u16, u8, bool)> {
     let p = wheel(core)?;
     let index = core.raw_read_16(p + W_INDEX, -1);
-    Some((index, crate::mode_menu::item(core, index as u32), (core.raw_read_16(p + W_BOX, -1) as i16) > 0))
+    Some((
+        index,
+        crate::mode_menu::item(core, index as u32),
+        (core.raw_read_16(p + W_BOX, -1) as i16) > 0,
+    ))
 }
 
 /// The carousel wheel proc, with Campaign's box open.
@@ -103,7 +111,9 @@ fn campaign_box(core: &Core) -> Option<u32> {
 
 /// Whether the chooser (AW2 / DS, or Normal / Hard) is showing.
 pub fn chooser(core: &Core) -> bool {
-    crate::ds_weather::is_on(core) && campaign_box(core).is_some() && matches!(core.raw_read_8(LEVEL, -1), 0 | 3 | NOTICE)
+    crate::ds_weather::is_on(core)
+        && campaign_box(core).is_some()
+        && matches!(core.raw_read_8(LEVEL, -1), 0 | 3 | NOTICE)
 }
 
 /// The Normal / Hard choice's row (0 Normal, 1 Hard).
@@ -120,12 +130,17 @@ fn on_placeholder(core: &Core) -> bool {
     if !crate::ds_weather::is_on(core) || campaign_box(core).is_none() || core.raw_read_8(LEVEL, -1) != 0 {
         return false;
     }
-    let sources = crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).count();
+    let sources = crate::campaign_model::SOURCES
+        .iter()
+        .filter(|s| (s.available)(core))
+        .count();
     core.raw_read_8(CHOICE, -1) as usize > sources
 }
 
 fn help_lines(core: &mut Core) {
-    let ds = (core.raw_read_8(LEVEL, -1) == 3).then(|| crate::ds_campaign::campaign(core).map(|c| c.help)).flatten();
+    let ds = (core.raw_read_8(LEVEL, -1) == 3)
+        .then(|| crate::ds_campaign::campaign(core).map(|c| c.help))
+        .flatten();
     for (k, &at) in HELP_WORDS.iter().enumerate() {
         let want = ds.map_or(AW2_HELP[k], |h| h[k]);
         if core.raw_read_32(at, -1) != want {
@@ -142,7 +157,12 @@ fn help_lines(core: &mut Core) {
 /// 1), on another that campaign's box (level 2).
 pub fn entries(core: &Core) -> Vec<&'static str> {
     let mut v = vec![LABELS[0]];
-    v.extend(crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).map(|s| s.label));
+    v.extend(
+        crate::campaign_model::SOURCES
+            .iter()
+            .filter(|s| (s.available)(core))
+            .map(|s| s.label),
+    );
     // The campaigns still to come, shown but not playable: BH2 directly under the BH Campaign, Emerald Sun last.
     if crate::ds_weather::is_on(core) {
         v.extend(coming(core).iter().map(|c| c.label));
@@ -157,11 +177,23 @@ pub struct Coming {
 }
 
 /// The placeholders, in the sub-menu's order after the sources (BH2 under the BH Campaign, Emerald Sun at the bottom).
-pub const COMING: [Coming; 2] = [Coming { label: "BH2 CAMPAIGN", title: "BH2 Campaign" }, Coming { label: "EMERALD SUN", title: "Emerald Sun Campaign" }];
+pub const COMING: [Coming; 2] = [
+    Coming {
+        label: "BH2 CAMPAIGN",
+        title: "BH2 Campaign",
+    },
+    Coming {
+        label: "EMERALD SUN",
+        title: "Emerald Sun Campaign",
+    },
+];
 
 /// The placeholders still shown: Emerald Sun's goes once it is a source (the development flag, [`crate::es_campaign::dev_flag`]).
 pub fn coming(core: &Core) -> Vec<&'static Coming> {
-    COMING.iter().filter(|c| !(c.label == "EMERALD SUN" && crate::es_campaign::available(core))).collect()
+    COMING
+        .iter()
+        .filter(|c| !(c.label == "EMERALD SUN" && crate::es_campaign::available(core)))
+        .collect()
 }
 
 /// The sub-menu level of the "Coming soon" box.
@@ -172,8 +204,13 @@ pub fn notice(core: &Core) -> Option<usize> {
     if !crate::ds_weather::is_on(core) || campaign_box(core).is_none() || core.raw_read_8(LEVEL, -1) != NOTICE {
         return None;
     }
-    let sources = crate::campaign_model::SOURCES.iter().filter(|s| (s.available)(core)).count();
-    (core.raw_read_8(CHOICE, -1) as usize).checked_sub(1 + sources).filter(|&k| k < coming(core).len())
+    let sources = crate::campaign_model::SOURCES
+        .iter()
+        .filter(|s| (s.available)(core))
+        .count();
+    (core.raw_read_8(CHOICE, -1) as usize)
+        .checked_sub(1 + sources)
+        .filter(|&k| k < coming(core).len())
 }
 
 static NOTICE_FACE: std::sync::Mutex<Option<(Vec<u8>, [u8; 32])>> = std::sync::Mutex::new(None);
@@ -230,7 +267,12 @@ pub fn draw_notice(core: &Core, rgba: &mut [u8]) {
 /// The source (an index of `SOURCES`) the chooser's entry `choice` is
 /// (entry 0 is AW2's own campaign).
 fn source_of(core: &Core, choice: usize) -> Option<usize> {
-    crate::campaign_model::SOURCES.iter().enumerate().filter(|(_, s)| (s.available)(core)).nth(choice.checked_sub(1)?).map(|(i, _)| i)
+    crate::campaign_model::SOURCES
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| (s.available)(core))
+        .nth(choice.checked_sub(1)?)
+        .map(|(i, _)| i)
 }
 
 /// The chooser's first entry shown (EWRAM, crate::ds_campaign's block).
@@ -256,7 +298,10 @@ pub const ROWS: usize = 3;
 /// The labels showing and the highlighted row.
 fn shown(core: &Core) -> ([&'static str; ROWS], usize) {
     if core.raw_read_8(LEVEL, -1) == 3 {
-        return ([DIFFICULTY_LABELS[0], DIFFICULTY_LABELS[1], ""], core.raw_read_8(DIFFICULTY, -1) as usize & 1);
+        return (
+            [DIFFICULTY_LABELS[0], DIFFICULTY_LABELS[1], ""],
+            core.raw_read_8(DIFFICULTY, -1) as usize & 1,
+        );
     }
     let all = entries(core);
     let n = all.len();
@@ -315,7 +360,11 @@ fn tick_menu(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
                     core.raw_write_8(crate::ds_campaign::SOURCE, -1, s as u8);
                 }
                 core.raw_write_8(LEVEL, -1, if choice == 0 { 1 } else { 2 });
-                let has = if choice == 0 { core.raw_read_8(0x0300_3F31, -1) != 0 } else { crate::ds_campaign::has_save(core) };
+                let has = if choice == 0 {
+                    core.raw_read_8(0x0300_3F31, -1) != 0
+                } else {
+                    crate::ds_campaign::has_save(core)
+                };
                 core.raw_write_16(p + W_CURSOR, -1, if has { ROW0 } else { ROW0 + 1 });
             }
             keys &= !(KEY_UP | KEY_DOWN | KEY_A);
@@ -405,24 +454,58 @@ pub fn save_flag(core: &mut Core) {
 /// 5x10 glyphs, '#' the text colour.
 fn glyph(c: char) -> &'static [&'static str] {
     match c {
-        'A' => &[".###.", "#####", "##.##", "##.##", "##.##", "#####", "#####", "##.##", "##.##", "##.##"],
-        'B' => &["####.", "#####", "##.##", "##.##", "####.", "#####", "##.##", "##.##", "#####", "####."],
-        'W' => &["#...#", "#...#", "#...#", "#.#.#", "#.#.#", "#.#.#", "#####", "#####", "##.##", "#...#"],
-        '2' => &[".###.", "#####", "##.##", "...##", "..###", ".###.", "###..", "##...", "#####", "#####"],
-        'C' => &[".###.", "#####", "##.##", "##...", "##...", "##...", "##...", "##.##", "#####", ".###."],
-        'M' => &["#...#", "##.##", "#####", "#####", "#.#.#", "#.#.#", "#...#", "#...#", "#...#", "#...#"],
-        'P' => &["####.", "#####", "##.##", "##.##", "#####", "####.", "##...", "##...", "##...", "##..."],
+        'A' => &[
+            ".###.", "#####", "##.##", "##.##", "##.##", "#####", "#####", "##.##", "##.##", "##.##",
+        ],
+        'B' => &[
+            "####.", "#####", "##.##", "##.##", "####.", "#####", "##.##", "##.##", "#####", "####.",
+        ],
+        'W' => &[
+            "#...#", "#...#", "#...#", "#.#.#", "#.#.#", "#.#.#", "#####", "#####", "##.##", "#...#",
+        ],
+        '2' => &[
+            ".###.", "#####", "##.##", "...##", "..###", ".###.", "###..", "##...", "#####", "#####",
+        ],
+        'C' => &[
+            ".###.", "#####", "##.##", "##...", "##...", "##...", "##...", "##.##", "#####", ".###.",
+        ],
+        'M' => &[
+            "#...#", "##.##", "#####", "#####", "#.#.#", "#.#.#", "#...#", "#...#", "#...#", "#...#",
+        ],
+        'P' => &[
+            "####.", "#####", "##.##", "##.##", "#####", "####.", "##...", "##...", "##...", "##...",
+        ],
         'I' => &["##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
-        'G' => &[".####", "#####", "##...", "##...", "##.##", "##.##", "##.##", "##.##", "#####", ".####"],
-        'N' => &["#...#", "##..#", "###.#", "#####", "#.###", "#..##", "#...#", "#...#", "#...#", "#...#"],
-        'D' => &["####.", "#####", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", "####."],
-        'S' => &[".####", "#####", "##...", "##...", "####.", ".####", "...##", "...##", "#####", "####."],
-        'O' => &[".###.", "#####", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", ".###."],
-        'R' => &["####.", "#####", "##.##", "##.##", "#####", "####.", "##.##", "##.##", "##.##", "##.##"],
-        'L' => &["##...", "##...", "##...", "##...", "##...", "##...", "##...", "##...", "#####", "#####"],
-        'E' => &["#####", "#####", "##...", "##...", "####.", "####.", "##...", "##...", "#####", "#####"],
-        'U' => &["##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", ".###."],
-        'H' => &["##.##", "##.##", "##.##", "##.##", "#####", "#####", "##.##", "##.##", "##.##", "##.##"],
+        'G' => &[
+            ".####", "#####", "##...", "##...", "##.##", "##.##", "##.##", "##.##", "#####", ".####",
+        ],
+        'N' => &[
+            "#...#", "##..#", "###.#", "#####", "#.###", "#..##", "#...#", "#...#", "#...#", "#...#",
+        ],
+        'D' => &[
+            "####.", "#####", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", "####.",
+        ],
+        'S' => &[
+            ".####", "#####", "##...", "##...", "####.", ".####", "...##", "...##", "#####", "####.",
+        ],
+        'O' => &[
+            ".###.", "#####", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", ".###.",
+        ],
+        'R' => &[
+            "####.", "#####", "##.##", "##.##", "#####", "####.", "##.##", "##.##", "##.##", "##.##",
+        ],
+        'L' => &[
+            "##...", "##...", "##...", "##...", "##...", "##...", "##...", "##...", "#####", "#####",
+        ],
+        'E' => &[
+            "#####", "#####", "##...", "##...", "####.", "####.", "##...", "##...", "#####", "#####",
+        ],
+        'U' => &[
+            "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", ".###.",
+        ],
+        'H' => &[
+            "##.##", "##.##", "##.##", "##.##", "#####", "#####", "##.##", "##.##", "##.##", "##.##",
+        ],
         _ => &["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
     }
 }
@@ -520,7 +603,11 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
             s += 8;
         }
         let (Some(w), Some(q)) = (wide, square) else { continue };
-        let (a0, a1, a2) = (core.raw_read_16(w, -1), core.raw_read_16(w + 2, -1), core.raw_read_16(w + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(w, -1),
+            core.raw_read_16(w + 2, -1),
+            core.raw_read_16(w + 4, -1),
+        );
         // The box is shown through a window from x 144 (the game's labels' x):
         // the wider label grows to the right.
         let (x, y) = ((a1 & 0x1FF) as i32, a0 & 0xFF);
@@ -571,7 +658,11 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     let row = shown(core).1 as u16;
     let mut s = start;
     while s < at {
-        let (a0, a1, a2) = (core.raw_read_16(s, -1), core.raw_read_16(s + 2, -1), core.raw_read_16(s + 4, -1));
+        let (a0, a1, a2) = (
+            core.raw_read_16(s, -1),
+            core.raw_read_16(s + 2, -1),
+            core.raw_read_16(s + 4, -1),
+        );
         let x = a1 & 0x1FF;
         if a2 & 0x3FF == ARROW_TILE && (176..=208).contains(&x) {
             core.raw_write_16(s, -1, (a0 & !0xFF) | (ARROW_Y + 16 * row));
@@ -609,7 +700,13 @@ mod tests {
     #[test]
     fn labels_fit() {
         let sources = crate::campaign_model::SOURCES.iter().map(|s| s.label);
-        for t in LABELS.iter().copied().chain(DIFFICULTY_LABELS).chain(sources).chain(COMING.iter().map(|c| c.label)) {
+        for t in LABELS
+            .iter()
+            .copied()
+            .chain(DIFFICULTY_LABELS)
+            .chain(sources)
+            .chain(COMING.iter().map(|c| c.label))
+        {
             let w: usize = t.chars().map(|c| glyph(c)[0].len() + 1).sum::<usize>() - 1;
             assert!(w + 6 <= LABEL_W, "{t}");
             assert_eq!(label_tiles(t).len(), LABEL_TILES as usize * 32);

@@ -3,8 +3,8 @@
 // Foundations.
 mod config;
 mod i18n;
-mod perf; // frame-rate counters
 mod library; // tango-library bound to the native filesystem + HTTP, plus desktop-only jobs
+mod perf; // frame-rate counters
 mod platform; // host-machine glue: SDL input, CPAL audio, video, crash capture
 mod ui; // look-and-feel toolkit: widgets, style, theme, animation
 
@@ -246,7 +246,11 @@ fn run_app() -> iced::Result {
     }
     #[cfg(target_os = "ios")]
     platform::ios::init_logging();
-    log::info!("tangoAW2 {} build {}", env!("CARGO_PKG_VERSION"), env!("TANGOAW2_BUILD"));
+    log::info!(
+        "tangoAW2 {} build {}",
+        env!("CARGO_PKG_VERSION"),
+        env!("TANGOAW2_BUILD")
+    );
 
     // Catch native crashes (segfaults, SEH violations, Mach
     // EXC_BAD_ACCESS) from mgba / datachannel / wgpu C code. Connect to

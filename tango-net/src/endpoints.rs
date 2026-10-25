@@ -101,7 +101,9 @@ fn env_list(name: &str) -> Vec<String> {
 
 /// Test aid: whether `TANGOAW2_BLOCK_ENDPOINTS` names this endpoint (it then fails as if unreachable).
 pub fn test_blocked(endpoint: &str) -> bool {
-    env_list("TANGOAW2_BLOCK_ENDPOINTS").iter().any(|b| endpoint.contains(b.as_str()))
+    env_list("TANGOAW2_BLOCK_ENDPOINTS")
+        .iter()
+        .any(|b| endpoint.contains(b.as_str()))
 }
 
 /// The pool for a kind, then the player's extras (hidden env setting).
@@ -155,8 +157,24 @@ pub fn is_stop_signal(text: &str) -> bool {
     let w = text.to_ascii_lowercase();
     w.starts_with("rate")
         || [
-            "blocked", "rate-limit", "rate limit", "ratelimit", "too many", "slow down", "429", "403", "forbidden",
-            "banned", "restricted", "payment", "paid", "auth-required", "pow:", "not allowed", "quota", "486",
+            "blocked",
+            "rate-limit",
+            "rate limit",
+            "ratelimit",
+            "too many",
+            "slow down",
+            "429",
+            "403",
+            "forbidden",
+            "banned",
+            "restricted",
+            "payment",
+            "paid",
+            "auth-required",
+            "pow:",
+            "not allowed",
+            "quota",
+            "486",
         ]
         .iter()
         .any(|k| w.contains(k))
@@ -187,7 +205,13 @@ pub struct Health {
 impl Health {
     pub fn ok(&mut self, key: &str, now: u64, rtt_ms: u32) {
         let e = self.map.entry(key.to_string()).or_default();
-        *e = Entry { fails: 0, until: 0, ok_at: now, rtt_ms, long: false };
+        *e = Entry {
+            fails: 0,
+            until: 0,
+            ok_at: now,
+            rtt_ms,
+            long: false,
+        };
         self.dirty = true;
     }
 
@@ -278,10 +302,14 @@ impl Health {
         let mut out: Vec<String> = Vec::new();
         let mut good = std::mem::take(&mut tiers[0]);
         good.sort_by_key(|k| self.map.get(k.as_str()).map_or(u32::MAX, |e| e.rtt_ms));
-        let best = good.first().and_then(|k| self.map.get(k.as_str())).map_or(0, |e| e.rtt_ms);
+        let best = good
+            .first()
+            .and_then(|k| self.map.get(k.as_str()))
+            .map_or(0, |e| e.rtt_ms);
         let cut = (best * 2).max(100);
-        let (mut near, mut far): (Vec<&String>, Vec<&String>) =
-            good.into_iter().partition(|k| self.map.get(k.as_str()).is_some_and(|e| e.rtt_ms <= cut));
+        let (mut near, mut far): (Vec<&String>, Vec<&String>) = good
+            .into_iter()
+            .partition(|k| self.map.get(k.as_str()).is_some_and(|e| e.rtt_ms <= cut));
         shuffle(&mut near, rng);
         shuffle(&mut far, rng);
         out.extend(near.into_iter().chain(far).cloned());
@@ -301,7 +329,10 @@ impl Health {
         keys.iter()
             .map(|k| {
                 let e = &self.map[*k];
-                format!("{k}\t{}\t{}\t{}\t{}\t{}\n", e.fails, e.until, e.ok_at, e.rtt_ms, e.long as u8)
+                format!(
+                    "{k}\t{}\t{}\t{}\t{}\t{}\n",
+                    e.fails, e.until, e.ok_at, e.rtt_ms, e.long as u8
+                )
             })
             .collect()
     }
@@ -314,7 +345,16 @@ impl Health {
                 if let (Ok(fails), Ok(until), Ok(ok_at), Ok(rtt_ms)) =
                     (f[1].parse(), f[2].parse(), f[3].parse(), f[4].parse())
                 {
-                    h.map.insert(f[0].to_string(), Entry { fails, until, ok_at, rtt_ms, long: f[5] == "1" });
+                    h.map.insert(
+                        f[0].to_string(),
+                        Entry {
+                            fails,
+                            until,
+                            ok_at,
+                            rtt_ms,
+                            long: f[5] == "1",
+                        },
+                    );
                 }
             }
         }
@@ -333,7 +373,12 @@ static GLOBAL: Mutex<Option<Global>> = Mutex::new(None);
 
 fn with_global<R>(f: impl FnOnce(&mut Global) -> R) -> R {
     let mut g = GLOBAL.lock().unwrap_or_else(|e| e.into_inner());
-    let g = g.get_or_insert_with(|| Global { health: Health::default(), path: None, saved: 0, last_turn: None });
+    let g = g.get_or_insert_with(|| Global {
+        health: Health::default(),
+        path: None,
+        saved: 0,
+        last_turn: None,
+    });
     f(g)
 }
 
@@ -385,7 +430,10 @@ pub fn record_fail(key: &str, why: &str) {
     with_global(|g| {
         g.health.fail_because(key, now, unit(), why);
         let e = g.health.get(key).cloned().unwrap_or_default();
-        log::info!("online: {key} failed ({why}); left alone for {} s", e.until.saturating_sub(now));
+        log::info!(
+            "online: {key} failed ({why}); left alone for {} s",
+            e.until.saturating_sub(now)
+        );
         maybe_save(g, now)
     });
 }
@@ -546,7 +594,12 @@ pub async fn stun_probe(host_port: &str) -> Option<u32> {
 #[cfg(not(target_arch = "wasm32"))]
 pub async fn check_stun() {
     let now = unix_now();
-    let mut stale: Vec<String> = with_global(|g| stun_pool().into_iter().filter(|p| g.health.needs_check(p, now)).collect());
+    let mut stale: Vec<String> = with_global(|g| {
+        stun_pool()
+            .into_iter()
+            .filter(|p| g.health.needs_check(p, now))
+            .collect()
+    });
     for i in (1..stale.len()).rev() {
         let j = ((unit() * (i + 1) as f64) as usize).min(i);
         stale.swap(i, j);
@@ -568,7 +621,8 @@ pub async fn check_stun() {
 
 /// FNV-1a, stable across platforms.
 fn fnv(s: &str) -> u64 {
-    s.bytes().fold(0xcbf29ce484222325, |h, b| (h ^ b as u64).wrapping_mul(0x100000001b3))
+    s.bytes()
+        .fold(0xcbf29ce484222325, |h, b| (h ^ b as u64).wrapping_mul(0x100000001b3))
 }
 
 /// The two *anchor* relays of the moment: the same for every client for 6 hours (by a hash of the relay and the time
@@ -586,7 +640,13 @@ pub fn anchors(pool: &[String], h: &Health, now: u64) -> Vec<String> {
 /// picks one more relay deterministically from the rest, so the same room is found on the same relay by anyone who
 /// knows it); a browser passes None. The anchors lead (a host both, a browser one at random), then the rest of the
 /// pool by health, shuffled among the equally good. Entries beyond `want` are the spares, in order.
-pub fn nostr_plan(pool: &[String], room_code: Option<&str>, h: &Health, now: u64, rng: &mut impl FnMut() -> f64) -> Vec<String> {
+pub fn nostr_plan(
+    pool: &[String],
+    room_code: Option<&str>,
+    h: &Health,
+    now: u64,
+    rng: &mut impl FnMut() -> f64,
+) -> Vec<String> {
     let anc = anchors(pool, h, now);
     let mut plan: Vec<String> = Vec::new();
     match room_code {
@@ -624,9 +684,9 @@ pub fn plan_now(pool: &[String], room_code: Option<&str>) -> Vec<String> {
 
 /// A refresh interval for a host's announcement: 15-20 s.
 pub fn refresh_interval() -> std::time::Duration {
-    std::time::Duration::from_secs(REFRESH_BASE_SECS) + std::time::Duration::from_secs_f64(unit() * REFRESH_JITTER_SECS as f64)
+    std::time::Duration::from_secs(REFRESH_BASE_SECS)
+        + std::time::Duration::from_secs_f64(unit() * REFRESH_JITTER_SECS as f64)
 }
-
 
 // --- The Connection page ------------------------------------------------------------------------------------------
 
@@ -658,17 +718,29 @@ pub struct Summary {
 /// What a Connection page says, from the health table. `lobby_live` is (relays answering, relays in use) when the
 /// lobby list is running now (the live connections are better than the table), `turn_host` the TURN server named by
 /// the last signalling hello (None before any dial).
-pub fn summarize(h: &Health, now: u64, signaling: &[String], lobby_live: Option<(usize, usize)>, turn_host: Option<&str>) -> Summary {
+pub fn summarize(
+    h: &Health,
+    now: u64,
+    signaling: &[String],
+    lobby_live: Option<(usize, usize)>,
+    turn_host: Option<&str>,
+) -> Summary {
     let good = |k: &str| h.get(k).is_some_and(|e| e.fails == 0 && e.ok_at > 0);
     let bad = |k: &str| h.blocked(k, now) || h.get(k).is_some_and(|e| e.fails > 0);
     // Matchmaking
     let sig_ok = signaling.iter().find(|s| good(s));
     let (mm, mm_tone, sig_down) = if let Some(s) = sig_ok {
         let name = s.trim_start_matches("wss://").trim_start_matches("ws://");
-        let name = name.split('.').find(|p| !matches!(*p, "matchmaking" | "www")).unwrap_or(name);
+        let name = name
+            .split('.')
+            .find(|p| !matches!(*p, "matchmaking" | "www"))
+            .unwrap_or(name);
         let name = if name == "tango" { "Tango" } else { name };
         (format!("OK ({name})"), Tone::Good, false)
-    } else if signaling.iter().any(|s| !h.long_blocked(s, now)) && signaling.iter().any(|s| bad(s)) && signaling.len() > 1 {
+    } else if signaling.iter().any(|s| !h.long_blocked(s, now))
+        && signaling.iter().any(|s| bad(s))
+        && signaling.len() > 1
+    {
         ("Trying next...".to_string(), Tone::Middling, false)
     } else if signaling.iter().any(|s| bad(s)) {
         ("Unreachable".to_string(), Tone::Bad, true)
@@ -677,8 +749,19 @@ pub fn summarize(h: &Health, now: u64, signaling: &[String], lobby_live: Option<
     };
     // Lobby relays
     let pool = nostr_pool();
-    let (n, m) = lobby_live.unwrap_or_else(|| (pool.iter().filter(|p| good(p)).count().min(NOSTR_MAX_BROWSE), NOSTR_MAX_BROWSE));
-    let lobby_tone = if n >= 2 { Tone::Good } else if n == 1 { Tone::Middling } else { Tone::Bad };
+    let (n, m) = lobby_live.unwrap_or_else(|| {
+        (
+            pool.iter().filter(|p| good(p)).count().min(NOSTR_MAX_BROWSE),
+            NOSTR_MAX_BROWSE,
+        )
+    });
+    let lobby_tone = if n >= 2 {
+        Tone::Good
+    } else if n == 1 {
+        Tone::Middling
+    } else {
+        Tone::Bad
+    };
     // STUN
     let stuns = stun_pool();
     let stun_ok = stuns.iter().filter(|p| good(p)).count();
@@ -697,7 +780,14 @@ pub fn summarize(h: &Health, now: u64, signaling: &[String], lobby_live: Option<
         None => ("OK (Tango)".to_string(), Tone::Good),
     };
     // Last check
-    let last = signaling.iter().chain(stuns.iter()).chain(pool.iter()).filter_map(|k| h.get(k)).map(|e| e.ok_at).max().unwrap_or(0);
+    let last = signaling
+        .iter()
+        .chain(stuns.iter())
+        .chain(pool.iter())
+        .filter_map(|k| h.get(k))
+        .map(|e| e.ok_at)
+        .max()
+        .unwrap_or(0);
     let last_text = if last == 0 {
         "never".to_string()
     } else {
@@ -707,7 +797,8 @@ pub fn summarize(h: &Health, now: u64, signaling: &[String], lobby_live: Option<
             k => format!("{k} min ago"),
         }
     };
-    let nothing_known = sig_ok.is_none() && !sig_down && stun_ok == 0 && !stun_any_bad && lobby_live.is_none() && n == 0;
+    let nothing_known =
+        sig_ok.is_none() && !sig_down && stun_ok == 0 && !stun_any_bad && lobby_live.is_none() && n == 0;
     let overall = if nothing_known {
         Overall::Checking
     } else if sig_ok.is_some() && n >= 2 {
@@ -749,9 +840,16 @@ pub async fn signaling_check(url: &str) {
         return;
     }
     let started = std::time::Instant::now();
-    let full = format!("{}/?session_id=tangoaw2-check-{:016x}&protocol_version={:x}", url.trim_end_matches('/'), rand::random::<u64>(), tango_net_protocol::PROTOCOL_VERSION);
+    let full = format!(
+        "{}/?session_id=tangoaw2-check-{:016x}&protocol_version={:x}",
+        url.trim_end_matches('/'),
+        rand::random::<u64>(),
+        tango_net_protocol::PROTOCOL_VERSION
+    );
     let r = tango_platform::timeout(std::time::Duration::from_secs(SIGNALING_TIMEOUT_SECS), async {
-        let (mut ws, _) = tokio_tungstenite::connect_async(full.as_str()).await.map_err(|e| e.to_string())?;
+        let (mut ws, _) = tokio_tungstenite::connect_async(full.as_str())
+            .await
+            .map_err(|e| e.to_string())?;
         let first = ws.next().await;
         let _ = futures::SinkExt::close(&mut ws).await;
         match first {
@@ -938,8 +1036,9 @@ mod tests {
         let b = nostr_plan(&p, Some("abcdef"), &h, now, &mut seq());
         assert_eq!(a[2], b[2]);
         // the browser's first relay varies between sessions (load spreads over both anchors)
-        let firsts: std::collections::HashSet<_> =
-            (0..40).map(|_| nostr_plan(&p, None, &h, now, &mut rng)[0].clone()).collect();
+        let firsts: std::collections::HashSet<_> = (0..40)
+            .map(|_| nostr_plan(&p, None, &h, now, &mut rng)[0].clone())
+            .collect();
         assert_eq!(firsts.len(), 2);
     }
 
@@ -1002,19 +1101,28 @@ mod tests {
         let stuns: Vec<_> = out.iter().filter(|u| u.starts_with("stun:")).collect();
         assert!(stuns.len() == STUN_PER_SESSION, "{out:?}");
         assert!(out.iter().any(|u| u.starts_with("turn:user:pw@turn.cloudflare.com")));
-        assert!(out.iter().position(|u| u.starts_with("stun:")).unwrap() < out.iter().position(|u| u.starts_with("turn:")).unwrap());
+        assert!(
+            out.iter().position(|u| u.starts_with("stun:")).unwrap()
+                < out.iter().position(|u| u.starts_with("turn:")).unwrap()
+        );
         // relay-only: no STUN; never-relay: no TURN
-        assert!(ice_urls(hello.clone(), Some(true)).iter().all(|u| !u.starts_with("stun:")));
+        assert!(ice_urls(hello.clone(), Some(true))
+            .iter()
+            .all(|u| !u.starts_with("stun:")));
         assert!(ice_urls(hello, Some(false)).iter().all(|u| !u.starts_with("turn:")));
         // load spreads: over many sessions more than one STUN server leads
-        let leads: std::collections::HashSet<_> =
-            (0..60).map(|_| ice_urls(vec![], None).into_iter().next().unwrap()).collect();
+        let leads: std::collections::HashSet<_> = (0..60)
+            .map(|_| ice_urls(vec![], None).into_iter().next().unwrap())
+            .collect();
         assert!(leads.len() > 1, "{leads:?}");
     }
 
     #[test]
     fn urls_of_a_stun_or_turn_server() {
         assert_eq!(url_host("stun:stun.cloudflare.com:3478"), "stun.cloudflare.com:3478");
-        assert_eq!(url_host("turn:user:pw@turn.cloudflare.com:3478?transport=udp"), "turn.cloudflare.com:3478");
+        assert_eq!(
+            url_host("turn:user:pw@turn.cloudflare.com:3478?transport=udp"),
+            "turn.cloudflare.com:3478"
+        );
     }
 }

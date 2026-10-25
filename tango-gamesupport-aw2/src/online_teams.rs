@@ -121,7 +121,9 @@ fn record(core: &Core) -> Record {
 /// The Teams record's controller byte of each army (1 = human, 0 = the computer), for the test log.
 pub fn controller_bytes(core: &Core) -> Vec<u8> {
     let rec = record(core);
-    (0..rec.armies.min(5)).map(|a| core.raw_read_8(rec.controller + a, -1)).collect()
+    (0..rec.armies.min(5))
+        .map(|a| core.raw_read_8(rec.controller + a, -1))
+        .collect()
 }
 
 fn tags(core: &Core) -> bool {
@@ -167,7 +169,15 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
             let co = core.raw_read_8(rec.co + a, -1);
             let colour = core.raw_read_8(rec.colour + a, -1);
             core.raw_write_8(seat(s) + S_CO, -1, co);
-            core.raw_write_8(seat(s) + S_COLOUR, -1, if (1..=5).contains(&colour) { colour } else { COLOURS[s % 5] });
+            core.raw_write_8(
+                seat(s) + S_COLOUR,
+                -1,
+                if (1..=5).contains(&colour) {
+                    colour
+                } else {
+                    COLOURS[s % 5]
+                },
+            );
             core.raw_write_8(seat(s) + S_PARTNER, -1, NONE);
             // (every seat its own team: a free-for-all unless the players choose teams)
             core.raw_write_8(seat(s) + S_TEAM, -1, s as u8);
@@ -179,7 +189,10 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         for s in 1..n {
             let c = core.raw_read_8(seat(s) + S_COLOUR, -1);
             if (0..s).any(|o| core.raw_read_8(seat(o) + S_COLOUR, -1) == c) {
-                let free = COLOURS.iter().copied().find(|c| !(0..s).any(|o| core.raw_read_8(seat(o) + S_COLOUR, -1) == *c));
+                let free = COLOURS
+                    .iter()
+                    .copied()
+                    .find(|c| !(0..s).any(|o| core.raw_read_8(seat(o) + S_COLOUR, -1) == *c));
                 if let Some(free) = free {
                     core.raw_write_8(seat(s) + S_COLOUR, -1, free);
                 }
@@ -280,7 +293,11 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
                     core.raw_write_8(seat(s) + S_COLOUR, -1, c);
                 }
                 F_TEAM => {
-                    let who = if s == 0 { core.raw_read_8(seat(0) + S_TARGET, -1) as usize % n } else { s };
+                    let who = if s == 0 {
+                        core.raw_read_8(seat(0) + S_TARGET, -1) as usize % n
+                    } else {
+                        s
+                    };
                     let cur = core.raw_read_8(seat(who) + S_TEAM, -1) as isize;
                     core.raw_write_8(seat(who) + S_TEAM, -1, (cur + step).rem_euclid(TEAMS as isize) as u8);
                     // (a seat whose team the host changed has to say READY again)
@@ -333,7 +350,12 @@ fn publish(core: &Core, n: usize) {
     } else if crate::online::in_room_match(core) && crate::pvp::in_versus(core) && crate::pvp::in_battle(core) {
         let block = |a: u32| crate::five::players(core) + 0x3C * a;
         let picks = (0..n as u32)
-            .map(|s| (core.raw_read_8(block(s + 1) + BLOCK_TEAM, -1), core.raw_read_8(block(s + 1) + BLOCK_COLOUR, -1)))
+            .map(|s| {
+                (
+                    core.raw_read_8(block(s + 1) + BLOCK_TEAM, -1),
+                    core.raw_read_8(block(s + 1) + BLOCK_COLOUR, -1),
+                )
+            })
             .collect();
         crate::online::set_picks(picks);
     }
@@ -388,7 +410,9 @@ type Rgb = (u8, u8, u8);
 
 fn colour_rgb(c: u8) -> Rgb {
     match c {
-        c if c >= crate::army_skin::SKIN => crate::army_skin::swatch((c - crate::army_skin::SKIN) as usize % crate::army_skin::skins().len()),
+        c if c >= crate::army_skin::SKIN => {
+            crate::army_skin::swatch((c - crate::army_skin::SKIN) as usize % crate::army_skin::skins().len())
+        }
         1 => (232, 56, 40),
         2 => (56, 96, 216),
         3 => (48, 168, 72),
@@ -402,15 +426,19 @@ fn colour_rgb(c: u8) -> Rgb {
 type FaceCache = std::collections::HashMap<u8, (Vec<u8>, [u8; 32], bool)>;
 
 fn faces() -> &'static std::sync::Mutex<FaceCache> {
-    static F: std::sync::OnceLock<std::sync::Mutex<FaceCache>> =
-        std::sync::OnceLock::new();
+    static F: std::sync::OnceLock<std::sync::Mutex<FaceCache>> = std::sync::OnceLock::new();
     F.get_or_init(Default::default)
 }
 
 /// A CO's name as the game writes it.
 pub fn co_label(core: &Core, co: u8) -> String {
-    let name = crate::co_new::ds_name(co).filter(|n| !n.is_empty()).unwrap_or_else(|| crate::tag_extras::co_name(core, co));
-    name.iter().filter(|&&c| (0x20..0x7F).contains(&c)).map(|&c| c as char).collect()
+    let name = crate::co_new::ds_name(co)
+        .filter(|n| !n.is_empty())
+        .unwrap_or_else(|| crate::tag_extras::co_name(core, co));
+    name.iter()
+        .filter(|&&c| (0x20..0x7F).contains(&c))
+        .map(|&c| c as char)
+        .collect()
 }
 
 /// `text` with selection arrows, cut down so it (and the highlight round it) never passes `max_w` pixels: "< text >",
@@ -485,7 +513,11 @@ pub fn seat_teams(core: &Core) -> Option<Vec<u8>> {
     if !(active(core) || done(core)) {
         return None;
     }
-    Some((0..players(core)).map(|s| core.raw_read_8(seat(s) + S_TEAM, -1)).collect())
+    Some(
+        (0..players(core))
+            .map(|s| core.raw_read_8(seat(s) + S_TEAM, -1))
+            .collect(),
+    )
 }
 
 /// The seats' (team, colour) while the choices are being made.
@@ -518,14 +550,28 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
         None => "SELECT YOUR ARMY".to_string(),
     };
     let w = crate::online::text_width(core, title);
-    cv.text(core, (crate::online::W as i32 - w) / 2, 2, title, crate::online::WHITE, crate::online::GRAY_INK);
+    cv.text(
+        core,
+        (crate::online::W as i32 - w) / 2,
+        2,
+        title,
+        crate::online::WHITE,
+        crate::online::GRAY_INK,
+    );
     // The column headings: a strip under the title, over the fields' boxes.
     let two = n == 2;
     let (colour_x, team_x, partner_x) = columns(tag_on, two);
     cv.rect(0, 15, crate::online::W as i32, 11, crate::online::LIGHT_GRAY);
     let heading = |cv: &mut crate::online::Rgba<'_>, x: i32, t: &str| {
         let w = crate::online::text_width(core, t);
-        cv.text(core, x + 14 - w / 2, 15, t, crate::online::GRAY_INK, crate::online::SHADE);
+        cv.text(
+            core,
+            x + 14 - w / 2,
+            15,
+            t,
+            crate::online::GRAY_INK,
+            crate::online::SHADE,
+        );
     };
     cv.text(core, 8, 15, "Player", crate::online::GRAY_INK, crate::online::SHADE);
     heading(cv, colour_x, "Colour");
@@ -572,18 +618,44 @@ fn columns(tag_on: bool, two: bool) -> (i32, i32, i32) {
     if two {
         // (no team column with two players)
         (116, 0, 148)
-    } else if tag_on { (102, 130, 158) } else { (116, 148, 0) }
+    } else if tag_on {
+        (102, 130, 158)
+    } else {
+        (116, 148, 0)
+    }
 }
 
 /// The width of a field's box (the choice between its two arrows).
 const BOX_W: i32 = 28;
 
 /// A field's box at x: its choice (drawn by `content` at x + 7), between arrows on yellow when it is being changed.
-fn field_box(core: &Core, cv: &mut crate::online::Rgba<'_>, x: i32, y: i32, h: i32, on: bool, content: impl FnOnce(&mut crate::online::Rgba<'_>, i32)) {
+fn field_box(
+    core: &Core,
+    cv: &mut crate::online::Rgba<'_>,
+    x: i32,
+    y: i32,
+    h: i32,
+    on: bool,
+    content: impl FnOnce(&mut crate::online::Rgba<'_>, i32),
+) {
     if on {
         cv.rect(x, y + 1, BOX_W, h - 2, crate::online::YELLOW);
-        cv.text(core, x + 1, y + h / 2 - 5, "<", crate::online::INK, crate::online::SHADE);
-        cv.text(core, x + BOX_W - 6, y + h / 2 - 5, ">", crate::online::INK, crate::online::SHADE);
+        cv.text(
+            core,
+            x + 1,
+            y + h / 2 - 5,
+            "<",
+            crate::online::INK,
+            crate::online::SHADE,
+        );
+        cv.text(
+            core,
+            x + BOX_W - 6,
+            y + h / 2 - 5,
+            ">",
+            crate::online::INK,
+            crate::online::SHADE,
+        );
     }
     content(cv, x + 7);
 }
@@ -591,7 +663,17 @@ fn field_box(core: &Core, cv: &mut crate::online::Rgba<'_>, x: i32, y: i32, h: i
 /// One seat's row: face, gamertag over CO, then the colour chip, team letter, partner (with tag pairs) and the READY
 /// badge, each in its own box (presentation only). The row of 2 or 3 seats is taller; the fields are the same.
 #[allow(clippy::too_many_arguments)]
-fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh: i32, list: &[u8], tag_on: bool, local: usize, n: usize) {
+fn draw_row(
+    core: &Core,
+    cv: &mut crate::online::Rgba<'_>,
+    s: usize,
+    y: i32,
+    rh: i32,
+    list: &[u8],
+    tag_on: bool,
+    local: usize,
+    n: usize,
+) {
     let co = list.get(core.raw_read_8(seat(s) + S_CO, -1) as usize).copied();
     let colour = core.raw_read_8(seat(s) + S_COLOUR, -1);
     let team = core.raw_read_8(seat(s) + S_TEAM, -1);
@@ -604,14 +686,29 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
     let host_field = core.raw_read_8(seat(0) + S_FIELD, -1);
     let host_ready = core.raw_read_8(seat(0) + S_READY, -1) == 1;
     let target = core.raw_read_8(seat(0) + S_TARGET, -1) as usize % n;
-    let team_on = n > 2 && if local == 0 { host_field == F_TEAM && !host_ready && target == s } else { sel(F_TEAM) };
+    let team_on = n > 2
+        && if local == 0 {
+            host_field == F_TEAM && !host_ready && target == s
+        } else {
+            sel(F_TEAM)
+        };
     // (five rows share their frame lines: one more pixel for the name and the CO under it)
     let h = if n >= 5 { rh - 1 } else { rh - 2 };
     let ink = crate::online::INK;
     let shade = crate::online::SHADE;
     // The row's window: a thin frame, cream for the player's own.
     cv.rect(1, y - 1, 238, h + 2, ink);
-    cv.rect(2, y, 236, h, if mine { crate::online::CREAM } else { crate::online::WHITE });
+    cv.rect(
+        2,
+        y,
+        236,
+        h,
+        if mine {
+            crate::online::CREAM
+        } else {
+            crate::online::WHITE
+        },
+    );
     cv.rect(2, y, 4, h, colour_rgb(colour));
     let big = n <= 3;
     // (with the partner column, the face is the small one: a 10-letter gamertag needs the room)
@@ -644,17 +741,33 @@ fn draw_row(core: &Core, cv: &mut crate::online::Rgba<'_>, s: usize, y: i32, rh:
     });
     // Team: its letter on a plate like READY's.
     if n > 2 {
-    field_box(core, cv, team_x, y, h, team_on, |cv, x| {
-        let ph = (h - 8).min(16);
-        let py = y + (h - ph) / 2;
-        cv.rect(x - 1, py - 1, 16, ph + 2, ink);
-        cv.rect(x, py, 14, ph, crate::online::BLUE);
-        // (letters count the teams in use, A, B, ...: A, A, C, C reads A, A, B, B; the team being changed shows its own)
-        let shown = if team_on { team } else { compact_team(&(0..n).map(|k| core.raw_read_8(seat(k) + S_TEAM, -1)).collect::<Vec<_>>(), team) };
-        let l = team_letter(shown).to_string();
-        let lw = crate::online::text_width(core, &l);
-        cv.text(core, x + (14 - lw) / 2, py + (ph - 11) / 2, &l, crate::online::WHITE, crate::online::BLUE);
-    });
+        field_box(core, cv, team_x, y, h, team_on, |cv, x| {
+            let ph = (h - 8).min(16);
+            let py = y + (h - ph) / 2;
+            cv.rect(x - 1, py - 1, 16, ph + 2, ink);
+            cv.rect(x, py, 14, ph, crate::online::BLUE);
+            // (letters count the teams in use, A, B, ...: A, A, C, C reads A, A, B, B; the team being changed shows its own)
+            let shown = if team_on {
+                team
+            } else {
+                compact_team(
+                    &(0..n)
+                        .map(|k| core.raw_read_8(seat(k) + S_TEAM, -1))
+                        .collect::<Vec<_>>(),
+                    team,
+                )
+            };
+            let l = team_letter(shown).to_string();
+            let lw = crate::online::text_width(core, &l);
+            cv.text(
+                core,
+                x + (14 - lw) / 2,
+                py + (ph - 11) / 2,
+                &l,
+                crate::online::WHITE,
+                crate::online::BLUE,
+            );
+        });
     }
     // Partner: a small face, "-" for none.
     if tag_on {

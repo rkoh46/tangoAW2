@@ -44,18 +44,54 @@ const ANDY: u8 = 1;
 /// Every ROM word holding the table's address, with the offset it adds
 /// (a full-ROM scan finds these 48 and no others).
 const POOL: [(u32, u32); 48] = [
-    (0x0800_0A38, 0x0), (0x0800_8A5C, 0x0), (0x0800_8C20, 0x0), (0x0801_F8E4, 0x0),
-    (0x0803_8834, 0x50), (0x0803_88E0, 0x0), (0x0803_8E64, 0x0), (0x0803_990C, 0x0),
-    (0x0803_9980, 0x0), (0x0803_9F50, 0x0), (0x0804_1F24, 0x0), (0x0804_2DDC, 0x0),
-    (0x0804_2E28, 0x0), (0x0804_2E58, 0x0), (0x0804_2EB0, 0x0), (0x0804_2F08, 0x0),
-    (0x0804_2F54, 0x0), (0x0804_2F9C, 0x0), (0x0804_2FF0, 0x0), (0x0804_3044, 0x0),
-    (0x0804_30F4, 0x0), (0x0804_30FC, 0x5C), (0x0804_3164, 0x0), (0x0804_316C, 0x5C),
-    (0x0804_31D4, 0x0), (0x0804_31DC, 0x5C), (0x0804_3244, 0x0), (0x0804_324C, 0x5C),
-    (0x0804_329C, 0x0), (0x0804_32D4, 0x0), (0x0804_3DA4, 0x0), (0x0804_4200, 0x0),
-    (0x0804_4234, 0x0), (0x0804_4B94, 0x0), (0x0804_6854, 0x50), (0x0804_6864, 0x0),
-    (0x0804_6C3C, 0x0), (0x0805_BB80, 0x0), (0x0805_BC68, 0x0), (0x0805_BDC8, 0x0),
-    (0x0805_DBD8, 0x0), (0x0805_DC98, 0x0), (0x0806_876C, 0x0), (0x0806_88A4, 0x0),
-    (0x0807_A85C, 0x0), (0x0807_FAD0, 0x0), (0x0808_06A0, 0x0), (0x0808_53AC, 0x0),
+    (0x0800_0A38, 0x0),
+    (0x0800_8A5C, 0x0),
+    (0x0800_8C20, 0x0),
+    (0x0801_F8E4, 0x0),
+    (0x0803_8834, 0x50),
+    (0x0803_88E0, 0x0),
+    (0x0803_8E64, 0x0),
+    (0x0803_990C, 0x0),
+    (0x0803_9980, 0x0),
+    (0x0803_9F50, 0x0),
+    (0x0804_1F24, 0x0),
+    (0x0804_2DDC, 0x0),
+    (0x0804_2E28, 0x0),
+    (0x0804_2E58, 0x0),
+    (0x0804_2EB0, 0x0),
+    (0x0804_2F08, 0x0),
+    (0x0804_2F54, 0x0),
+    (0x0804_2F9C, 0x0),
+    (0x0804_2FF0, 0x0),
+    (0x0804_3044, 0x0),
+    (0x0804_30F4, 0x0),
+    (0x0804_30FC, 0x5C),
+    (0x0804_3164, 0x0),
+    (0x0804_316C, 0x5C),
+    (0x0804_31D4, 0x0),
+    (0x0804_31DC, 0x5C),
+    (0x0804_3244, 0x0),
+    (0x0804_324C, 0x5C),
+    (0x0804_329C, 0x0),
+    (0x0804_32D4, 0x0),
+    (0x0804_3DA4, 0x0),
+    (0x0804_4200, 0x0),
+    (0x0804_4234, 0x0),
+    (0x0804_4B94, 0x0),
+    (0x0804_6854, 0x50),
+    (0x0804_6864, 0x0),
+    (0x0804_6C3C, 0x0),
+    (0x0805_BB80, 0x0),
+    (0x0805_BC68, 0x0),
+    (0x0805_BDC8, 0x0),
+    (0x0805_DBD8, 0x0),
+    (0x0805_DC98, 0x0),
+    (0x0806_876C, 0x0),
+    (0x0806_88A4, 0x0),
+    (0x0807_A85C, 0x0),
+    (0x0807_FAD0, 0x0),
+    (0x0808_06A0, 0x0),
+    (0x0808_53AC, 0x0),
 ];
 
 /// Dual Strike's id for each AW2 CO (Sturm has none).
@@ -82,7 +118,11 @@ const DS_IDS: [Option<u8>; AW2_COS as usize] = [
 ];
 
 pub fn ds_co(co: u8) -> Option<u8> {
-    DS_IDS.get(co as usize).copied().flatten().or_else(|| crate::co_new::ds_id(co))
+    DS_IDS
+        .get(co as usize)
+        .copied()
+        .flatten()
+        .or_else(|| crate::co_new::ds_id(co))
 }
 
 /// The Dual Strike record a CO's table row is filled from (Crumb's: Andy's,
@@ -204,7 +244,10 @@ fn abilities_on(core: &Core) -> bool {
 /// A block's i16 for an army's CO, or `default` (Sturm, no pack).
 fn army_field(core: &Core, army: u32, o: usize, default: i32) -> i32 {
     let (co, mode) = army_co(core, army);
-    ds_co(co).and_then(|ds| block(ds, mode)).map(|b| i16_at(b, o) as i32).unwrap_or(default)
+    ds_co(co)
+        .and_then(|ds| block(ds, mode))
+        .map(|b| i16_at(b, o) as i32)
+        .unwrap_or(default)
 }
 
 /// Firepower % per Com Tower the army owns.
@@ -234,7 +277,11 @@ pub fn terrain_firepower(core: &Core, army: u32, terrain: u8) -> i32 {
 /// `Player_GetCoRepairBonus`: its power block's `repairBonus`, +0x1A;
 /// Rachel's 1), with CO abilities on.
 pub fn repair_bonus(core: &Core, army: u32) -> i32 {
-    if abilities_on(core) { army_field(core, army, 0x1A, 0) } else { 0 }
+    if abilities_on(core) {
+        army_field(core, army, 0x1A, 0)
+    } else {
+        0
+    }
 }
 
 /// Terrain stars the army's enemies lose (Sonja).
@@ -246,7 +293,10 @@ pub fn enemy_terrain_cut(core: &Core, army: u32) -> i32 {
 /// skill byte `byte` (+0x08 + byte; [`SKILLS`]), with CO abilities on.
 pub fn has_ds_skill(core: &Core, army: u32, byte: usize, bit: u8) -> bool {
     let (co, mode) = army_co(core, army);
-    abilities_on(core) && ds_co(co).and_then(|ds| block(ds, mode)).is_some_and(|b| b[0x08 + byte] & bit != 0)
+    abilities_on(core)
+        && ds_co(co)
+            .and_then(|ds| block(ds, mode))
+            .is_some_and(|b| b[0x08 + byte] & bit != 0)
 }
 
 /// Lash's day to day (Dual Strike's `SKILL_TERRAIN_FIREPOWER`, block +0x09
@@ -283,9 +333,17 @@ pub fn terrain_cut_against(core: &Core, army: u32) -> i32 {
 /// +0x06 as `sub_08024A2C` sets it): less the enemies' cuts, not below 0,
 /// then doubled in Lash's Super Power. The cuts count with CO abilities on.
 pub fn ds_terrain_stars(core: &Core, army: u32, raw: i32) -> i32 {
-    let cut = if abilities_on(core) { terrain_cut_against(core, army) } else { 0 };
+    let cut = if abilities_on(core) {
+        terrain_cut_against(core, army)
+    } else {
+        0
+    };
     let d = (raw - cut).max(0);
-    if double_terrain_stars(core, army) { 2 * d } else { d }
+    if double_terrain_stars(core, army) {
+        2 * d
+    } else {
+        d
+    }
 }
 
 // --- The table ----------------------------------------------------------------
@@ -313,7 +371,14 @@ fn build(core: &Core) -> Option<Vec<u8>> {
                 let b = block(ds, mode)?;
                 let at = 0x38 + 0x44 * mode as usize;
                 // vision, luck, bad luck, counter, cost, capture
-                for (aw2, dso) in [(0x0C, 0x18), (0x0E, 0x1C), (0x10, 0x1E), (0x12, 0x20), (0x14, 0x22), (0x16, 0x24)] {
+                for (aw2, dso) in [
+                    (0x0C, 0x18),
+                    (0x0E, 0x1C),
+                    (0x10, 0x1E),
+                    (0x12, 0x20),
+                    (0x14, 0x22),
+                    (0x16, 0x24),
+                ] {
                     row[at + aw2..at + aw2 + 2].copy_from_slice(&b[dso..dso + 2]);
                 }
             }
@@ -420,7 +485,14 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
             }
         }
         row[at + 8..at + 12].copy_from_slice(&abilities.to_le_bytes());
-        for (aw2, dso) in [(0x0C, 0x18), (0x0E, 0x1C), (0x10, 0x1E), (0x12, 0x20), (0x14, 0x22), (0x16, 0x24)] {
+        for (aw2, dso) in [
+            (0x0C, 0x18),
+            (0x0E, 0x1C),
+            (0x10, 0x1E),
+            (0x12, 0x20),
+            (0x14, 0x22),
+            (0x16, 0x24),
+        ] {
             row[at + aw2..at + aw2 + 2].copy_from_slice(&b[dso..dso + 2]);
         }
         row[at + 0x18..at + 0x24].copy_from_slice(&charts);
@@ -523,7 +595,11 @@ fn defence_army(core: &mut Core) {
     if is_on(core) {
         let cpu = core.gba().cpu();
         let (army, t) = (cpu.gpr(0) as u8, cpu.gpr(1) as u8);
-        let v = if t == crate::roster::OOZIUM { army | DEFENCE_OOZIUM } else { army };
+        let v = if t == crate::roster::OOZIUM {
+            army | DEFENCE_OOZIUM
+        } else {
+            army
+        };
         core.raw_write_8(DEFENCE_SIDE, -1, v);
         core.raw_write_8(DEFENCE_TYPE, -1, t);
     }

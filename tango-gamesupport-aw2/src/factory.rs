@@ -54,7 +54,10 @@ fn on_design_map(core: &Core) -> bool {
 /// The table a design map or campaign mission spawns from: a custom
 /// campaign's mission with a schedule of its own has it, else Factory Blues'.
 fn table_for(core: &Core) -> u32 {
-    crate::ds_campaign::active(core).then(|| crate::custom_campaign::factory_table(core)).flatten().unwrap_or(FACTORY_BLUES_TABLE)
+    crate::ds_campaign::active(core)
+        .then(|| crate::custom_campaign::factory_table(core))
+        .flatten()
+        .unwrap_or(FACTORY_BLUES_TABLE)
 }
 
 fn after_ai_table_stored(core: &mut Core) {
@@ -132,7 +135,10 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (crate::design_bar::ICON_LOADED, Box::new(crate::design_bar::icon_loaded)),
         (crate::design_bar::BAR_NAME, Box::new(crate::design_bar::bar_name)),
         (crate::design_bar::IS_PROPERTY, Box::new(crate::design_bar::is_property)),
-        (crate::design_bar::OWNER_CHANGED, Box::new(crate::design_bar::owner_changed)),
+        (
+            crate::design_bar::OWNER_CHANGED,
+            Box::new(crate::design_bar::owner_changed),
+        ),
         (
             crate::design_bar::ICON_PALETTE,
             Box::new(crate::design_bar::icon_palette),
@@ -200,7 +206,11 @@ mod trap_tests {
         for (at, _) in super::traps() {
             *seen.entry(at).or_insert(0) += 1;
         }
-        let twice: Vec<String> = seen.iter().filter(|(_, n)| **n > 1).map(|(a, _)| format!("{a:08x}")).collect();
+        let twice: Vec<String> = seen
+            .iter()
+            .filter(|(_, n)| **n > 1)
+            .map(|(a, _)| format!("{a:08x}"))
+            .collect();
         assert!(twice.is_empty(), "trapped twice: {twice:?}");
     }
 }
