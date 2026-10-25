@@ -556,12 +556,12 @@ pub fn install(core: &mut Core, source: usize, model: &crate::campaign_model::Mo
         core.raw_write_32(ART_MARK, -1, MAGIC);
     }
     // The missions.
-    let points: Vec<(i16, i16, u16, u8, u8)> = if omega_art {
+    // (a custom campaign's own points, on either art; the DS Campaign's are Dual Strike's)
+    let points: Vec<(i16, i16, u16, u8, u8)> = if let Some(c) = model.custom.as_ref() {
+        c.points.iter().map(|p| (p.x, p.y, if p.style & 8 != 0 { 2 } else if p.style & 4 != 0 { 1 } else { 0 }, p.stars, p.stars)).collect()
+    } else {
         let Some(w) = world_map() else { return false };
         w.points.iter().enumerate().map(|(i, &(x, y, f))| (x, y, f, stars(i).0, stars(i).1)).collect()
-    } else {
-        let Some(c) = model.custom.as_ref() else { return false };
-        c.points.iter().map(|p| (p.x, p.y, if p.style & 8 != 0 { 2 } else if p.style & 4 != 0 { 1 } else { 0 }, p.stars, p.stars)).collect()
     };
     let mut table = vec![0u8; (MISSION_RECORD * AW2_MISSIONS) as usize];
     for (i, &(x, y, flags, normal, hard)) in points.iter().enumerate().take(AW2_MISSIONS as usize) {
@@ -864,7 +864,8 @@ pub fn write_state(core: &mut Core, available: &[u8], won: &[u8], focus: u8) {
 pub fn point_at(core: &mut Core, m: u8) {
     let (x, y) = points(core).get(m as usize).copied().unwrap_or((240, 120));
     // (AW2's picture is 432 x 256: its camera stops at 192 x 96)
-    let (max_x, max_y) = if omega(core) { (MAP_WIDTH - 240, MAP_HEIGHT - 160) } else { (192, 96) };
+    // (by the campaign's source, not `omega`: Continue places the cursor before the session is marked active, and a flag past x = 432 needs Omega Land's camera)
+    let (max_x, max_y) = if crate::ds_campaign::art(core) == crate::campaign_model::WorldArt::OmegaLand { (MAP_WIDTH - 240, MAP_HEIGHT - 160) } else { (192, 96) };
     let cam_x = (x as i32 - 120).clamp(0, max_x);
     let cam_y = (y as i32 - 80).clamp(0, max_y);
     core.raw_write_16(S_CAMERA_X, -1, cam_x as u16);

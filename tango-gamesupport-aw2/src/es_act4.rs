@@ -212,6 +212,7 @@ fn es16() -> MissionDef {
         on_day(8, None, vec![Action::Spawn([wave(1, unit::NEOTANK, &CAMP[3..4]), wave(1, unit::MISSILES, &CAMP[4..5]), wave(1, unit::MD_TANK, &CAMP[5..6])].concat())]),
     ];
     m.flag = region::ACT4[3];
+    m.style = 8; // the last mission's marker
     m.stars = 5;
     m.needs = Needs::All(vec!["es15"]);
     m

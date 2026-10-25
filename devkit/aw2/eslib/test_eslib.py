@@ -51,3 +51,21 @@ class Campaign(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WorldMap(unittest.TestCase):
+    def test_the_shipped_flags_are_in_order_on_land_and_apart(self):
+        from aw2.eslib import worldmap
+        self.assertEqual(worldmap.problems(worldmap.nodes(), worldmap.picture(), worldmap.needs()), [])
+
+    def test_bad_flags_are_caught(self):
+        from aw2.eslib import worldmap
+        pts = [(20 + 25 * k, 100) for k in range(16)]
+        self.assertEqual(worldmap.problems(pts), [])
+        self.assertTrue(any("outside" in b for b in worldmap.problems(pts[:15] + [(470, 100)])))
+        self.assertTrue(any("apart" in b for b in worldmap.problems(pts[:15] + [(pts[14][0] + 5, 100)])))
+        self.assertTrue(any("needs" in b for b in worldmap.problems(pts, needed={"es01": ["Start"], "es02": ["es01"], "es03": ["es01"]})))
+        sea = [[(2, 10, 28)] * 480 for _ in range(240)]            # an all-blue picture
+        self.assertTrue(any("sea" in b for b in worldmap.problems(pts, sea)))
+        land = [[(28, 26, 12)] * 480 for _ in range(240)]
+        self.assertEqual(worldmap.problems(pts, land), [])

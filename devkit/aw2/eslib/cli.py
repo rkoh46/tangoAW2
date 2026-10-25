@@ -147,5 +147,14 @@ def check(a):
                 bad += 1
             else:
                 say(True, f"{key}: the inventions belong to army {owner[0]['n']} (Black Hole)")
+    # the world map: Omega Land with the sixteen flags in story order, each on land and apart from the others
+    from . import worldmap
+    pic = worldmap.picture()
+    pts = worldmap.nodes()
+    wm = worldmap.problems(pts, pic, worldmap.needs())
+    for w in wm:
+        say(False, "world map: " + w)
+    bad += len(wm)
+    say(not wm, f"world map: 16 flags on Omega Land{'' if pic is not None else ' (no Dual Strike ROM: the land test is skipped)'}, in story order, each opened by the one before")
     say(bad == 0, f"campaign check: {bad} problems")
     return 1 if bad else 0

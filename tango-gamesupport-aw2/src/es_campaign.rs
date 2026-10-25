@@ -98,13 +98,14 @@ pub fn reload_palettes(core: &mut Core, changed: &[(u32, u8)]) {
     }
 }
 
-/// The world map's flags (map pixels on AW2's own map, 432 x 256): the legion's march from Green Earth's south coast round the continent, then
-/// the home sea and Port Aurelium at the south edge.
+/// The world map's flags: map pixels on Dual Strike's Omega Land (480 x 240), the legion's conquest spreading from Aurea's home island (the south-west corner, off the nodes)
+/// across the sea to Green Earth's south coast, then through the middle of the continent, over the sea to the Comet and Blue Moon lands in the east, up to the northern isle
+/// and the straits, and last to Stormhold's plateau in the north. The order is the story's (`docs/ES_CAMPAIGN.md` section 4); every node is on land (`aw2dev campaign check`).
 pub mod region {
-    pub const ACT1: [(i16, i16); 4] = [(350, 95), (372, 118), (332, 135), (345, 160)];
-    pub const ACT2: [(i16, i16); 4] = [(290, 57), (205, 200), (340, 215), (115, 175)];
-    pub const ACT3: [(i16, i16); 4] = [(160, 30), (250, 80), (275, 100), (190, 170)];
-    pub const ACT4: [(i16, i16); 4] = [(240, 140), (300, 238), (262, 226), (230, 244)];
+    pub const ACT1: [(i16, i16); 4] = [(214, 176), (190, 163), (155, 135), (200, 108)];
+    pub const ACT2: [(i16, i16); 4] = [(262, 112), (270, 155), (332, 137), (385, 148)];
+    pub const ACT3: [(i16, i16); 4] = [(340, 215), (400, 100), (410, 135), (445, 122)];
+    pub const ACT4: [(i16, i16); 4] = [(420, 178), (250, 22), (181, 57), (150, 28)];
 }
 
 /// The campaign.

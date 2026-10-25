@@ -59,6 +59,24 @@ Pictures are placeholders (Dual Strike donors); the portrait work is the branch 
 it plays on the CO's turn and in a scene that says `@SONG co:klaus` (M1 and M2 pre: Klaus; M3 pre: Aurelia; M4 post, M5 pre, M11 map: Cassius; M6 pre: Livia; M5 map, M14 pre: Varro).
 The five are listed in Versus only with `TANGOAW2_ES_VERSUS` (a development aid).
 
+## The world map (Dual Strike's Omega Land)
+The Emerald Sun Campaign shows **Dual Strike's overworld**, like the DS Campaign: its source has `art: WorldArt::OmegaLand` (`campaign_model::SOURCES`). The map picture is converted from the player's .nds at run time
+(`ds_worldmap.rs`: 480 x 240, tile-fitted onto AW2's map layer), AW2's own world-map procs draw the flags, the cursor and the LEVEL panel on it, and the DS Campaign's song plays on it. What is Emerald Sun's:
+- **The 16 flags** are `es_campaign::region` (map pixels on Omega Land) in story order: Act I the south and west of the central island (M1 Landfall at Cape Astra on its south coast, M2 the ridge, M3 the Wall, M4 the Mistvale),
+  Act II the centre and the east coast and the isle (M5 Dust and Wheels, M6 Tribute, M7 Mare Nostrum on the small island, M8 Ironhold on the eastern continent's coast), Act III the eastern continent (M9 the south
+  peninsula, M10 Comet Pass, M11 the treasure road, M12 the snowfield bastion), Act IV the Free Port (M13), the northern isle (M14 Castra Maxima), the straits (M15) and the plateau of **Stormhold** (M16, the last mission's
+  marker style). **Aurea's home island** is the south-west island (off the nodes: the legion sails from it). Every flag is on land and the flags are apart: `aw2dev campaign check` reads the picture from the .nds and the
+  flags from the Rust and fails a flag in the sea, outside the cursor's limits, closer than 16 px to another, or a mission not opened by the one before (`eslib/worldmap.py`).
+- **States**, as AW2's procs draw them: not shown (a locked mission has no flag), the open flag (AW2's white pennant, the cursor on it with the LEVEL panel), the cleared flag (AW2's starred flag: Omega Land's picture has no
+  parts to repaint in a nation's colour, so the DS port keeps the starred flag on a won mission's point, `ds_worldmap::flush_sprites`), the last mission's marker (blue pennant). The campaign has no secret or optional mission, so no
+  other markers; DS's map has no route lines and none are drawn.
+- **Progression** is the BH engine's: a win opens the next mission (the campaign is one chain: each `m.needs` is the mission before), the map comes back with the new flag appearing and the cursor moving to it, a cleared flag can be
+  picked again (replay; the record does not change), and the record (slot 11) and Continue restore the same map. `ds_worldmap::install` takes a custom campaign's own flags on Omega Land (before it, the 28 Dual Strike points were used
+  by index), and `point_at` takes the camera's limits from the campaign's art (a flag east of x = 432 needs Omega Land's camera, also on Continue).
+- **Tests**: `python3 tools/aw2test/run.py -k es_world_map` (the map at the start, mid-campaign and before M16 stitched from real screenshots: `AW2TEST_REVIEW_DIR` gets `es_world_map_<stage>.png`; and replaying a cleared mission),
+  `-k es_progression` (**all 16 steps**: enter each mission through its CO screens, win it (test aid), assert the cleared and open flags, the cursor on the next flag, the record in Flash (won mask, unlocked COs), a save and Continue after
+  M4, M8, M12 and M16's neighbour, then the epilogue, the staff roll and Select Mode; pictures of the unlock moments `es_unlock_<n>_before / _after / _after2`).
+
 ## Saves
 The record is Flash slot 11 ("AWEC"). A mission saved halfway shares the BH Campaign's slot 12: the saved mission byte carries the campaign in its top three bits (`suspend::source_tag`; the DS and BH Campaigns keep 0, so their old saves stay valid), `saved_mission_of` / `drop_mid_of` only see their own campaign's save, so one slot serves both (a saved BH mission is replaced by an ES one and the other way round). That keeps the Flash at fourteen of its sixteen sectors with every slot in use; see docs/AW2.md "Saves" before adding another slot.
 

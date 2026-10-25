@@ -285,7 +285,7 @@ pub static SOURCES: [Source; 3] = [
         save_slot: 11,
         mid_slot: 12, // (shared with the BH Campaign's: a saved mission names its campaign, `suspend::source_tag`)
         progress_magic: 0x4345_5741, // "AWEC"
-        art: WorldArt::Aw2,
+        art: WorldArt::OmegaLand,
         has_hard: false,
     },
 ];

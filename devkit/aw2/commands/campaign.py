@@ -6,6 +6,7 @@
                                             photograph the chooser at each entry (AW2, DS, BH, BH2 and Emerald Sun placeholders) and the "Coming soon" boxes
   campaign sheets | sim | difficulty | check | dialogue   the Emerald Sun Campaign (docs/dev/es-campaign.md): review pictures, the mission sim, the difficulty score,
                                             the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`
+  campaign worldmap [--out PNG] [--no-run]  the world-map tests with pictures, then es_world_map.png: the map at three stages with the nodes labelled, the flag states, the unlock moments
   campaign trace [--mission N ...]          play the missions in the offline harness (CO screen, card, intro, forced win, victory, results, map scenes) and
                                             sample every 20 frames: song, fade, text, screen, the sound's loudness; prints scene -> song and flags silent gaps
 """
@@ -48,6 +49,10 @@ def register(sub):
     a.set_defaults(fn=lambda a: subprocess.run([sys.executable, str(cfg.REPO / "tools" / "estext" / "render.py")] + ([a.out] if a.out else [])).returncode)
     a = cs.add_parser("check", help="the Emerald Sun Campaign's static rules (inventions only in the Black Hole missions, unit caps, dialogue)")
     a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).check(a))
+    a = cs.add_parser("worldmap", help="the Emerald Sun world map on Omega Land: runs the map and progression tests with pictures and writes es_world_map.png (the map at three stages with the nodes labelled, the flag states, the unlock moments)")
+    a.add_argument("--out")
+    a.add_argument("--no-run", action="store_true", help="only compose the sheet from the last run's pictures")
+    a.set_defaults(fn=worldmap)
     a = cs.add_parser("trace", help="play missions in the harness and trace song / fade / silence")
     a.add_argument("--mission", nargs="*", type=int, default=[1])
     a.add_argument("--out")
@@ -155,6 +160,28 @@ def menu(a):
         subprocess.run(["pkill", "-9", "-f", str(app)])
     util.say("pictures in", out)
     return bad
+
+
+def worldmap(a):
+    """aw2dev campaign worldmap: the world-map tests (`-k es_world_map`, `-k es_progression`) with AW2TEST_REVIEW_DIR set, then the sheet."""
+    from ..eslib import worldmap as wm
+    review = cfg.work("campaign", "es", "worldmap")
+    if not a.no_run:
+        import shutil
+        shutil.rmtree(review, ignore_errors=True)
+        review.mkdir(parents=True)
+        run = cfg.REPO / "tools" / "aw2test" / "run.py"
+        sys.path.insert(0, str(cfg.REPO / "tools" / "aw2test"))
+        from .maps import _bases
+        _bases()
+        for k in ("es_world_map_stages", "es_progression"):
+            rc = subprocess.run([sys.executable, str(run), "--mode", "ds", "-k", k], env={**os.environ, "AW2TEST_REVIEW_DIR": str(review)}).returncode
+            if rc:
+                util.die(f"{k} failed")
+    out = Path(a.out) if a.out else review / "es_world_map.png"
+    wm.sheet(review, cfg.REPO / "tools" / "aw2test" / "out" / "ds", out)
+    util.say("wrote", out)
+    return 0
 
 
 def trace(a):

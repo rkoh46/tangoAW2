@@ -190,6 +190,26 @@ ammo and fuel. Day limits only where the clock is the mission.
 **Naval and air.** M1 (landing), M7 (fleet), M15 (fleet and air), M9 (air), M13 (a harbour map with ships), M16 (harbour phase); fog M4, M10; siege M3, M12; cavalry M5 (and M11's escort screen); economy M6;
 defensive testudo M2 (and M14's quay); tag M8, M12, M15 (and the partner picks of M13, M16); multi-army M13; final boss M16.
 
+### 4.1 The world map: Dual Strike's Omega Land
+
+The campaign's world map is **Dual Strike's overworld** (the DS Campaign's own, read from the player's .nds), not AW2's Wars World. The legion sails from **Aurea's home island** (the south-west island, off the
+nodes), lands at Cape Astra and spreads over the map in story order; the finale is the plateau of **Stormhold** in the north. The nodes (map pixels on the 480 x 240 map, `es_campaign::region`):
+
+| M | Node | | M | Node |
+|---|---|---|---|---|
+| 1 Landfall | (214, 176) south coast of the central island | | 9 Grain Ships | (340, 215) the eastern continent's south peninsula |
+| 2 Testudo | (190, 163) the dune ridge | | 10 The Quiet Pass | (400, 100) Comet Pass, the northern mountains |
+| 3 The Wall | (155, 135) inland west | | 11 The Treasure Train | (410, 135) the eastern road |
+| 4 The Second Legion | (200, 108) the Mistvale | | 12 Siege of Iron | (445, 122) the snowfield bastion |
+| 5 Dust and Wheels | (262, 112) the Comet border plains | | 13 The Free Port | (420, 178) the bay |
+| 6 Tribute | (270, 155) the market coast | | 14 Varro's Gambit | (250, 22) Castra Maxima on the northern isle |
+| 7 Mare Nostrum | (332, 137) Isle Verdant | | 15 Pax Romana | (181, 57) the straits' shore |
+| 8 Hammer and Anvil | (385, 148) Ironhold | | 16 Sol Invictus | (150, 28) **Stormhold** (last-mission marker) |
+
+The campaign is one chain (each mission opens the next); the outline has no choice of order, so the map has no branch. A won mission keeps a starred flag; a cleared one can be replayed. Dual Strike's map has no parts to
+repaint in a nation's colour and no route lines, so the conquest shows as the string of starred flags spreading across the map. See `docs/dev/es-campaign.md` "The world map".
+
+
 ## 5. Scenes and how much is said
 
 Per mission: a **pre** scene (the briefing and the stakes, 14 to 25 boxes), **mid-battle** scenes (3 to 8 boxes each), a **post** scene (14 to 25), and a **map** scene on the world map after the win (10 to 16).
