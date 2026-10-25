@@ -6,12 +6,14 @@
 @SONG ally2
 NARRATION: Kite Hill, the northern coast. / Ten days until the tide.
 LIVIA: Three barges in the east bay by / a grain isle. They sail on day eleven.
+LIVIA: The bay glows red, Legate. I will / not guess what the water is.
 LIVIA: The bill of lading says grain. / The creditor's stamp is the usual.
 KLAUS: Then the barges are the road. / Whoever loads them, we meet.
 AURELIA: The depot is Kite Hill's plateau / airport. A long march from our landing.
-AURELIA: Take Kite Hill and you own every / approach. A river, three bridges.
-NARRATION: Kite Hill is dry desert highland. / Sand, scrub, and a hard blue sky.
-AURELIA: No storm, and the air is hot and / clear. Dust underfoot. I can work so.
+AURELIA: Take Kite Hill and you own every / approach. One river, three bridges.
+NARRATION: Kite Hill is scorched wasteland. / Ash, cinders, ruins, rough rock.
+AURELIA: Cinders underfoot, ruins for cover, / rock that rings. I can work so.
+AURELIA: The river runs red and glowing, / like lava. Do not wade it.
 KLAUS: Clear air lets our wing see far / from the plateau. Use it well.
 KLAUS: A hill, a depot, a coast. Take / them and the northern shore falls.
 CASSIUS: Wings! You have an airport / and I have a bad feeling.
@@ -24,6 +26,12 @@ AURELIA: If the sky is theirs, we / are standing on stone.
 KLAUS: Then we fight the ground / first and the sky second.
 AURELIA: Bombs have a trajectory too. / Give me the angle and a map.
 AURELIA: A bomber is only a very / expensive, very hurried shell.
+AURELIA: Now look at the freight yard. / A pipeline runs straight across it.
+AURELIA: One seam in the pipe. One hit / on the seam and the yard opens.
+AURELIA: A Black Hole Piperunner guards it. / Fast, armoured, runs through the pipes.
+AURELIA: The base beside the pipe builds / more. Rockets and Tanks answer.
+AURELIA: Bombers answer it from above. / Pick the answer, Legate.
+KLAUS: Break the seam early, Engineer, / before the second one rolls.
 KLAUS: You will have both. And / remember: these are not raiders.
 KLAUS: Black Hole's HQ, ports and inventions / lie east. It sells to whoever pays.
 LIVIA: I offered. They declined, / politely, and in advance.
