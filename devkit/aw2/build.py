@@ -70,4 +70,8 @@ def test(args):
     for pkg in (["tango-gamesupport-aw2", "tango-session", "tango-match"] if not args.package else args.package):
         r = util.run(["cargo", "test", "--release", "-p", pkg, "--lib"], env=env, cwd=cfg.REPO, check=False)
         rc |= r.returncode
+        if getattr(args, "debug", False):
+            # (release builds do not check integer overflow: a test that overflows only fails here)
+            r = util.run(["cargo", "test", "-p", pkg, "--lib"], env=env, cwd=cfg.REPO, check=False)
+            rc |= r.returncode
     return 1 if rc else 0

@@ -5,7 +5,7 @@ All commands are `aw2dev <cmd>` (repo root shim, `devkit/aw2dev`). Paths and ROM
 
 | You changed | Run | Pass means |
 |---|---|---|
-| Rust logic in `tango-gamesupport-aw2`, `tango-session`, `tango-match` | `aw2dev test` | lib tests green |
+| Rust logic in `tango-gamesupport-aw2`, `tango-session`, `tango-match` | `aw2dev test` (`--debug` adds the dev profile, where integer overflow panics: `lz77_round_trips` overflowed a u32 there and passed in release for months) | lib tests green |
 | `fog_view.rs`, `pvp.rs` (`watching`, `view_as`), `result_view.rs`, anything the waiting windows draw | `aw2dev build --all`, `aw2dev suite` (about 10 min), then `aw2dev live moveview --fog on` and `--fog off` + `aw2dev check latest` + `aw2dev sheet latest --around 0 --kind move --strip` and LOOK | suite prints `suite done bad=0`; checks PASS; strips look right |
 | a new scene/menu the mover sees (waiting-view allowlist) | skill `aw2-waiting-view`: harness leak scripts (`aw2dev harness aw2_waiting_leak_3p --leak`), suite, `aw2dev check --leak` | no leaked UI on waiting windows |
 | graphics: tiles, fonts, palettes, text drawn by hooks | `aw2dev gfx check` (catalogue in devkit/gfx/catalogue.toml; also run by the suite), `aw2dev check RUN --gfx`; skill `aw2-gfx-debug` | no findings |
