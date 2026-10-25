@@ -1,4 +1,4 @@
-"""M12 Siege of Iron (Act III, tag mission, snow): the Iron Bastion of the Blue Moon marches, Olaf's HQ inside three rings of mountain walls, Grit's guns in the corridors and his HQ on the east spur."""
+"""M12 Siege of Iron (Act III, tag mission, snow): the Iron Bastion of the Blue Moon marches, Olaf's HQ inside three rings of mountain walls, Andy's guns in the corridors and his HQ on the east spur."""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
@@ -8,14 +8,14 @@ def build():
     m = Canvas("es12", 42, 30)
     m.header(armies=3, colours=(GE, BM, OS), team=[1, 2, 2], objective=[1],
              comment="M12 Siege of Iron (tag, snow; province: the Iron Bastion, Blue Moon's fortress on the Frost March): the Aurean legion crosses the snowfield and takes Olaf's HQ 2 (17,13) in the heart of three rings of mountain walls "
-                     "(outer about x4..30,y3..23; middle x9..25,y7..19; inner x12..22,y10..16); Grit's HQ 3 (37,13) sits on the east spur. "
+                     "(outer about x4..30,y3..23; middle x9..25,y7..19; inner x12..22,y10..16); Andy's HQ 3 (37,13) sits on the east spur. "
                      "Gaps: outer SW (10,23) SE (24,23) and E (30,13); middle S (17,19) W (9,13) E (25,10); inner SW (13,16) SE (21,16) and N (17,10). "
                      "The gaps never line up: every ring forces a zigzag along a 3-4 cell corridor under the guns. "
-                     "Threat/answer: Grit's Artillery and Rockets (hold) in the corridors -> Aurelia's extra range, Recons to find them, Bombers from the airport (20,27) (the Missiles (17,5) and AA are far from the south corridor: "
+                     "Threat/answer: Andy's Artillery and Rockets (hold) in the corridors -> Aurelia's extra range, Recons to find them, Bombers from the airport (20,27) (the Missiles (17,5) and AA are far from the south corridor: "
                      "strike the guns there first), Mechs and Infantry over the mountains straight to the guns; Olaf's Tanks and Md Tanks pour out of the gaps -> "
                      "Tanks/Md Tanks and Artillery hold the gaps, Rockets/Artillery fire at the choke; Olaf's AA vs the Bomber -> use Artillery on it or Bombers where it cannot reach. "
-                     "Player start: ART3 ROCK2 RECON3 INF4 MECH3 TANK3 MDT2 AA1 BMB1 (22 units), HQ (17,27), base (13,27), airport (20,27), funds 5000. "
-                     "Olaf: INF4 + MECH2 hold the inner ring, MDT3 TANK3 AA1 advance, ART1 holds; Grit: ART4 ROCK2 MIS1 hold, INF2 MECH1 hold at the spur (24 units, about 1.3x).")
+                     "Line-up: player Green Earth (Klaus + Aurelia), Olaf Blue Moon, Andy Orange Star. PIPE WALL x13 y20..24 (pipes (13,20) (13,21) (13,23) (13,24), seam (13,22)) closes the south corridor between the outer SW gap and the middle S gap for vehicles: foot can cross the mountains (12..16,20) beside it; break the seam with an attack to open the lane; otherwise the SE gap (24,22) route and the west corridor stay open. Neutral missile silo (28,14) on the outer E approach by road x27. Player start: ART3 ROCK2 RECON3 INF4 MECH3 TANK3 MDT2 AA1 BMB1 (22 units), HQ (17,27), base (13,27), airport (20,27), funds 5000. "
+                     "Olaf: INF4 + MECH2 hold the inner ring, MDT3 TANK3 AA1 advance, ART1 holds; Andy: ART4 ROCK2 MIS1 hold, INF2 MECH1 hold at the spur (24 units, about 1.3x).")
     cx, cy = 17, 12
     import math, random
 
@@ -39,7 +39,7 @@ def build():
     for x0, y0, x1, y1 in ((10, 21, 11, 25), (23, 21, 24, 25), (29, 12, 34, 13), (17, 18, 18, 21), (4, 12, 9, 13), (25, 9, 29, 10),
                            (13, 15, 14, 19), (20, 15, 21, 19), (17, 6, 18, 10)):
         m.rect(".", x0, y0, x1, y1, only="^")
-    # the east spur: walls of mountain around Grit's pocket
+    # the east spur: walls of mountain around Andy's pocket
     m.blob("^", 37, 12, 5, 6, seed=7, wobble=0.15); m.blob(".", 37, 12, 3, 4, seed=8, wobble=0.1)
     m.rect(".", 31, 12, 35, 13, only="^").rect(".", 37, 16, 37, 20, only="^")
     # the snowfield: drifts of wood and rocky outcrops
@@ -60,13 +60,17 @@ def build():
     m.put("2", 17, 12).put("B", 15, 11).put("B", 19, 13).put("C", 10, 9).put("C", 24, 17).put("c", 6, 6).put("c", 28, 8).put("C", 12, 19).put("C", 22, 6)
     m.put("3", 37, 12).put("C", 36, 10).put("C", 38, 14)
     m.rect(".", 35, 10, 39, 14, only="^").put("3", 37, 12)
+    # the pipe wall across the first south corridor (x13, y20..24: it closes the lane between the outer SW gap and the middle S gap); ONE seam (13,22) opens it
+    m.puts("I", [(13, 20), (13, 21), (13, 23), (13, 24)]).put("Z", 13, 22)
+    # the neutral missile silo on the east approach (outer E gap), by the road x27
+    m.put("M", 28, 14)
     # ---- units ----
     H = dict(hold=True)
     m.spread(1, {BMB: 1}, (18, 26, 22, 28), seed=1, gap=0)
     m.spread(1, {ART: 3, ROCK: 2, MDT: 2, AA: 1}, (8, 25, 26, 28), seed=2, gap=1)
     m.spread(1, {RECON: 3, TANK: 3}, (5, 23, 30, 26), seed=3, gap=1)
     m.spread(1, {INF: 4, MECH: 3}, (4, 24, 30, 28), seed=4, gap=1)
-    # Olaf: the inner ring (hold), the corridors (advance); Grit's guns (hold) in the corridors
+    # Olaf: the inner ring (hold), the corridors (advance); Andy's guns (hold) in the corridors
     for kind, x, y in ((INF, 15, 11), (INF, 19, 11), (INF, 16, 15), (INF, 19, 15), (MECH, 14, 13), (MECH, 20, 12), (ART, 17, 12)):
         m.unit(2, kind, x, y, **H)
     m.spread(2, {MDT: 3, TANK: 3, AA: 1}, (6, 8, 28, 21), seed=5, gap=2)
@@ -81,12 +85,13 @@ def build():
     for kind, x, y in ((ART, 7, 20), (ART, 27, 19), (ART, 6, 9), (ART, 26, 7), (ROCK, 13, 21), (ROCK, 22, 21), (MIS, 17, 6), (INF, 36, 11), (INF, 38, 11), (MECH, 37, 14)):
         m.unit(3, kind, *near(x, y), **H)
     m.note("hq1", 17, 27, "player HQ; base (13,27), airport (20,27) (BMB production)").note("hq2", 17, 13, "Olaf's HQ in the inner ring: the final objective")
-    m.note("hq3", 37, 13, "Grit's HQ on the east spur (a second objective)")
+    m.note("hq3", 37, 13, "Andy's HQ on the east spur (a second objective)")
     m.note("ring_outer", 4, 3, "outer ring about x4..30,y3..23; gaps (10,23) (24,23) (30,13)")
     m.note("ring_middle", 9, 7, "middle ring about x9..25,y7..19; gaps (17,19) (9,13) (25,10)")
     m.note("ring_inner", 12, 10, "inner ring about x12..22,y10..16; gaps (13,16) (21,16) (17,10)")
     m.note("spur", 32, 8, "east spur mountains about x32..42,y7..19; pocket around (37,13); entries (37,19) south and (32,13) west")
-    m.note("guns", 7, 20, "Grit's guns (hold): ART (7,20) SW, (27,20) SE, (6,9) NW, (26,8) NE corridors; ROCK in the south corridor near (13,21) and (22,21); MIS (17,6) north")
+    m.note("guns", 7, 20, "Andy's guns (hold): ART (7,20) SW, (27,20) SE, (6,9) NW, (26,8) NE corridors; ROCK in the south corridor near (13,21) and (22,21); MIS (17,6) north")
+    m.note("pipe_wall", 13, 22, "pipe wall x13 y20..24, seam Z at (13,22): attack the seam to open the SW lane to the middle ring").note("silo", 28, 14, "neutral missile silo on the east approach (outer E gap)")
     m.note("airport", 20, 27, "player airport: Bombers")
     m.ragged("^", 6, seed=1).ragged("^", 6, seed=2)               # (no drawn wall of mountains: lint DQ12)
     return m
