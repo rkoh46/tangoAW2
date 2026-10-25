@@ -34,6 +34,7 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [pad-scripts.md](pad-scripts.md) | `TANGOAW2_PAD_SCRIPT` cues/ops, `TANGOAW2_TEST_POKE`, the harness script language |
 | [env-aids.md](env-aids.md) | every `TANGOAW2_*` / `AW2_*` environment aid |
 | [maps.md](maps.md) | map format and pipeline, ids and slots, the pre-deployed rule, how to add a map |
+| [map-design.md](map-design.md) | `aw2dev maps study`: the map-design principles measured on AWBW's Hall of Fame against AW2, Dual Strike and our campaigns; the rules MD01..MD08 |
 | [map-lint.md](map-lint.md) | `aw2dev maps lint`: rivers, bridges, puddles, joins, units, reachability; what AW2 and Dual Strike allow; before / after pictures |
 | [campaign-scenes.md](campaign-scenes.md) | `aw2dev campaign` / `aw2dev sound`: how AW2 presents story scenes, the BH Campaign's prologue card, songs per scene, Sturm's scenes |
 | [es-campaign.md](es-campaign.md) | the Emerald Sun Campaign: files, rules, the kit (`maps gen`, `campaign sheets / sim / difficulty / check`, the dialogue lint), the five COs |

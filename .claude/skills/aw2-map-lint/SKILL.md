@@ -21,4 +21,6 @@ Read docs/dev/map-lint.md (rules, what the games allow, how to fix each).
 8. Rivers (RV05): both ends of every river must reach the map edge, the sea, a shoal or a lake, never a mountain or any land (AW2 has no source tile). Give a river a source with `Canvas.lake(cx, cy, n, seed, river_end=(x, y))`
    (the cell beyond the river's last cell; the lake's shore must be straight where the river enters) or run it to the edge. `bh10` and `bh31` break it and are in `rules.KNOWN` (not to be changed without the user's approval).
 9. Look at every rebuilt map at 2x in the game's own picture (`aw2dev campaign sheets`, then `aw2dev maps render-check`): the lint was green once while rivers still ended mid-land and mountain lines still marched.
-
+10. Design principles (docs/dev/map-design.md): `./aw2dev maps study <awbw-folder> --source es --rows` measures our maps against AWBW's Hall of Fame (properties per 100 land cells, the farthest
+   ground from a property, approach roads, corridors, base safety, the middle, plain share, river runs, roads to properties). The rules MD01..MD08 fail an Emerald Sun map: add properties
+   (neutral cities in the middle, forward bases), break open fields with small woods and hills, bridge long rivers, give every fortress two or more gates. AWBW grids and pictures stay in a scratchpad.

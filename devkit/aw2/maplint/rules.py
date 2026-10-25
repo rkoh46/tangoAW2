@@ -61,6 +61,14 @@ RULES = {
     "DQ12": ("warn", "a long straight line of mountains away from the map edge: a drawn wall, not a range"),
     "DQ11": ("warn", "a map meant to be fair (Versus, or a `fair` line) with unequal properties per army"),
     "SP01": ("warn", "not enough room to fight: too many units for the walkable ground or for the frontage between the sides"),
+    "MD01": ("warn", "too few properties for the land: under 5 per 100 land cells (the design principles, docs/dev/map-design.md)"),
+    "MD02": ("warn", "a dead corner: ground more than 6 cells from every property"),
+    "MD03": ("warn", "the only way between two sides is one corridor under 6 cells wide"),
+    "MD04": ("warn", "a base or HQ an enemy infantry can capture from day 1 (reaches it in under 2 days, or an enemy foot soldier starts in reach)"),
+    "MD05": ("warn", "nothing to contest: no property in the middle between two sides"),
+    "MD06": ("warn", "open field: more than 53% of the land is plain"),
+    "MD07": ("warn", "a river of more than 10 cells with no bridge or ford"),
+    "MD08": ("warn", "roads lead nowhere worth going: under half the properties have a road within 2 cells"),
     "ES01": ("error", "Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line)"),
 }
 
@@ -771,8 +779,8 @@ def armies(G):
 
 
 def design_checks(G):
-    from . import design
-    return design.checks(G)
+    from . import design, principles
+    return design.checks(G) + principles.checks(G)
 
 
 # Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for an Emerald Sun map.

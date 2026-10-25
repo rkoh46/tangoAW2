@@ -8,6 +8,8 @@
   maps rules [--md]                every rule with its hits in AW2's own maps, Dual Strike's, tangoAW2's Versus maps and the BH Campaign's (what the games allow)
   maps compare --base REV [--out DIR]   BH maps at git REV against the working tree: changed cells and before/after pictures
   maps boot [--mission N ...]      enter BH missions in the offline harness and photograph them (tools/aw2test bh_review_m*); the real game's map picture
+  maps study [DIR] [--source es bh aw2 ds versus] [--png DIR] [--json FILE]
+                                   design statistics (docs/dev/map-design.md): AWBW grids in DIR (never committed) and/or our own maps; per map and per set
 """
 import collections, json, os, re, subprocess, sys, tempfile
 from pathlib import Path
@@ -46,6 +48,14 @@ def register(sub):
     a.add_argument("--pictures", metavar="DIR", help="the folder of m<N>_full.png pictures of the maps to check (default: es devkit/work/campaign/es/review_raw, bh devkit/work/maps/boot)")
     a.add_argument("--corpus", metavar="DIR", nargs="*", help="the reference pictures (default: devkit/work/maps/boot, the BH Campaign's, and the other maps of the check itself)")
     a.set_defaults(fn=render_check)
+    a = ms.add_parser("study", help="design statistics per map and per set: AWBW grids from a folder and/or our maps (docs/dev/map-design.md)")
+    a.add_argument("dir", nargs="?", help="a folder of AWBW study files (`# <id> players=N size=WxH ...` + CSV rows of AWBW terrain ids)")
+    a.add_argument("--source", nargs="*", default=[], choices=["es", "bh", "aw2", "ds", "versus"], help="our maps to study too")
+    a.add_argument("--map", nargs="*", help="only these map names")
+    a.add_argument("--png", metavar="DIR", help="a picture of each map (our colours) here: keep AWBW pictures in a scratchpad")
+    a.add_argument("--json", metavar="FILE", help="write every row and the summaries as JSON")
+    a.add_argument("--rows", action="store_true", help="print one line per map (default: the summaries only)")
+    a.set_defaults(fn=study)
     a = ms.add_parser("boot", help="enter BH missions in the offline harness and keep the map pictures")
     a.add_argument("--mission", nargs="*", type=int)
     a.add_argument("--out")
@@ -82,7 +92,7 @@ def lint(a):
     report = {}
     for m in maps:
         probs = rules.lint(m, set(a.rule) if a.rule else None)
-        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source == "es" and (p.rule.startswith(("DQ", "SP")) or p.rule in ("PP03", "PP04")))]
+        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source == "es" and (p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04")))]
         report[m.name] = [str(p) for p in probs]
         if not a.json:
             if probs:
@@ -102,7 +112,7 @@ def lint(a):
                 bad += 1
         if m.source == "es":
             # (the Emerald Sun maps are held to the design-quality rules too: DQ.. and SP.. findings fail, `--rule` or the map's own comment cannot waive them)
-            bad += sum(p.rule.startswith(("DQ", "SP")) or p.rule in ("PP03", "PP04") for p in probs)
+            bad += sum(p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04") for p in probs)
         if out and (probs or m.source in ("bh", "es", "versus")):
             render.draw_map(m, probs).save(out / f"{m.name.replace(' ', '_')}.png")
     if a.json:
@@ -266,6 +276,85 @@ def boot(a):
         rc = rc or r.returncode
     util.say(f"pictures in {out}")
     return rc
+
+
+STUDY_COLS = [("props_per100", "prop/100"), ("prop_spacing", "spc"), ("funds_day1", "funds"), ("funds_sym", "sym"), ("hq_dist", "hqd"), ("base_dist", "based"),
+              ("base_inf_days", "infd"), ("lanes", "lanes"), ("road_lanes", "roads"), ("front_width", "front"), ("choke", "choke"), ("mid_cover", "cover"), ("forward_bases", "fwdB"),
+              ("t_plain", "plain"), ("t_wood", "wood"), ("t_mountain", "mtn"), ("t_road", "road"), ("t_sea", "sea"), ("beach_share", "beach"), ("dead_share", "dead"),
+              ("contested_centre", "ctr")]
+
+
+def _fmt(v):
+    if v is None:
+        return "-"
+    if isinstance(v, bool):
+        return "y" if v else "n"
+    if isinstance(v, float):
+        return f"{v:.2f}".rstrip("0").rstrip(".") if abs(v) < 100 else f"{v:.0f}"
+    return str(v)
+
+
+def study(a):
+    """The design study (maplint/study.py): measure each map, print the sets' medians and spreads, optionally pictures and JSON."""
+    load, rules, render = _lib()
+    from ..maplint import study as st
+    sets = {}
+    if a.dir:
+        d = Path(a.dir)
+        if not d.is_dir():
+            util.die(f"no such folder: {d}")
+        sms = st.load_dir(d)
+        for sm in sms:
+            n = sm.meta.get("players", 2)
+            sets.setdefault("awbw_2p" if n == 2 else f"awbw_{n}p", []).append(sm)
+    for s in a.source:
+        sets[s] = [st.from_mapdata(m) for m in _maps(load, s)]
+    if not sets:
+        util.die("nothing to study: give a folder of AWBW grids and/or --source")
+    if a.map:
+        sets = {k: [sm for sm in v if sm.name in a.map or sm.meta.get("title") in a.map] for k, v in sets.items()}
+    out = Path(a.png) if a.png else None
+    if out:
+        out.mkdir(parents=True, exist_ok=True)
+    rows, summ = {}, {}
+    for k, sms in sets.items():
+        rows[k] = []
+        for sm in sms:
+            r = st.measure(sm)
+            r["name"], r["title"] = sm.name, sm.meta.get("title", sm.name)
+            rows[k].append(r)
+            if out:
+                notes = [f"{r['title']}"] + [f"{lab}: {_fmt(r.get(key))}" for key, lab in STUDY_COLS]
+                st.draw(sm, title=f"{r['title']} ({sm.name}) {sm.w}x{sm.h}", notes=notes).save(out / f"{k}_{sm.name}.png")
+        summ[k] = st.summary(rows[k])
+    if a.rows:
+        print(f"{'set':8}{'map':24}" + "".join(f"{lab:>7}" for _, lab in STUDY_COLS))
+        for k, rs in rows.items():
+            for r in rs:
+                print(f"{k[:8]:8}{r['title'][:23]:24}" + "".join(f"{_fmt(r.get(key)):>7}" for key, _ in STUDY_COLS))
+    keys = st.KEYS + st.FLAGS + ["has_tower", "has_silo", "has_pipe", "has_airport", "has_port", "has_river", "has_lab", "flank_lanes", "forward_base"]
+    print(f"\n{'measure (p10 / median / p90; flags: share of maps)':28}" + "".join(f"{k + f' ({len(rows[k])})':>22}" for k in rows))
+    for key in keys:
+        cells = []
+        for k in rows:
+            v = summ[k].get(key)
+            cells.append("-" if v is None else (" / ".join(_fmt(x) for x in v) if isinstance(v, tuple) else _fmt(v)))
+        print(f"{key:28}" + "".join(f"{c:>22}" for c in cells))
+    # the design-principle rules (maplint/principles.py) on every set: how many maps trip each
+    from ..maplint import principles
+    hits = {k: collections.Counter() for k in rows}
+    for k, sms in sets.items():
+        for sm in sms:
+            for r in sorted({p.rule for p in principles.check_study(sm)}):
+                hits[k][r] += 1
+    print(f"\n{'rule (maps that trip it)':28}" + "".join(f"{k + f' ({len(rows[k])})':>22}" for k in rows))
+    for r in sorted(rules.RULES):
+        if r.startswith("MD"):
+            print(f"{r:28}" + "".join(f"{hits[k][r]:>22}" for k in rows))
+    if a.json:
+        Path(a.json).write_text(json.dumps({"rows": rows, "summary": summ, "md_hits": hits}, indent=1, default=str))
+    util.say(f"maps study: {sum(len(v) for v in rows.values())} maps" + (f"; pictures in {out}" if out else ""))
+    return 0
 
 
 def _bases():

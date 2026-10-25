@@ -4,7 +4,7 @@ description: Build, check and balance the Emerald Sun Campaign (16 missions): ma
 ---
 
 Read docs/dev/es-campaign.md and docs/ES_CAMPAIGN.md. Standing rules: one battlefield (no two-front), Black Hole inventions only in M9 and M13, M16 clearly the hardest, no army above 56 start units, nothing pushed or released without the user.
-1. **Map**: edit `tango-gamesupport-aw2/five/es/spec/es01.py (one a mission, es01 .. es16)` (never the generated txt), `./aw2dev maps gen --no-build --map esNN`, `./aw2dev maps lint --source es --map esNN --warn` and LOOK at `devkit/work/maps/lint/es/ (one picture a map)`; then `./aw2dev maps gen` (builds `src/es_map_data.rs`).
+1. **Map** (design: docs/dev/map-design.md, the principles MD01..MD08 and the per-mission design note in the spec's docstring): edit `tango-gamesupport-aw2/five/es/spec/es01.py (one a mission, es01 .. es16)` (never the generated txt), `./aw2dev maps gen --no-build --map esNN`, `./aw2dev maps lint --source es --map esNN --warn` and LOOK at `devkit/work/maps/lint/es/ (one picture a map)`; then `./aw2dev maps gen` (builds `src/es_map_data.rs`).
 2. **Mission**: `src/es_act1.rs` .. `es_act4.rs` (`MissionDef`s; `on_day`, `after`, `deployment` helpers in `es_campaign.rs`); dialogue `src/es_text/act1.txt` .. `act4.txt` (`python3 tools/estext/lint.py`), a new key must be asked for by the code and defined in a file.
 3. `./aw2dev build --examples`, then `python3 tools/aw2test/run.py -k es_boot_m` (every mission boots), `./aw2dev campaign scenes --campaign es` (every story scene has a song).
 4. Look: `./aw2dev campaign sheets` -> `devkit/work/campaign/es/sheets/` (MISSION N - Title, fog off and fogged, a contact sheet per act).

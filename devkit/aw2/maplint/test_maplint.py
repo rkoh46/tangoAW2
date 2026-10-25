@@ -22,11 +22,11 @@ def build(rows, units=()):
     return load.MapData("t", "bh", mappy.tiles(m, edge), units=list(units), text=rows, meta=m)
 
 
-DESIGN = ("DQ", "SP")
+DESIGN = ("DQ", "SP", "MD")
 
 
 def ids(m, design=False):
-    """The rules a map trips (the integrity rules; `design=True`: only the design-quality rules, DQ.. and SP..)."""
+    """The rules a map trips (the integrity rules; `design=True`: only the design-quality rules, DQ.., SP.. and the principles MD..)."""
     return {p.rule for p in rules.lint(m) if p.rule.startswith(DESIGN) == design}
 
 
@@ -118,7 +118,8 @@ class Lint(unittest.TestCase):
         return build(["".join(r) for r in rows], units)
 
     def test_design_clean_control(self):
-        self.assertEqual(ids(self.wide(), design=True), set())
+        # (an empty field with two HQs: the principle rules MD.. rightly call it sparse; they have their own planted maps in test_study.py)
+        self.assertEqual({r for r in ids(self.wide(), design=True) if not r.startswith("MD")}, set())
 
     def test_dq01_straight_river(self):
         def river(rows):
