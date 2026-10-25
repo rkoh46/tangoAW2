@@ -48,6 +48,31 @@ class Merge(unittest.TestCase):
             shutil.rmtree(tmp)
 
 
+class RiverPhase(unittest.TestCase):
+    """A straight east-west river run is drawn in the phase of the bend it leaves (the games' 0x58 -> 0x39 -> 0x7B and 0x78 -> 0x19 -> 0x5B):
+    bh31's river that turns east to its bridge and the shoal was refused by tilecheck while the generator drew every straight 0x19."""
+
+    @staticmethod
+    def phase(rows, x, y):
+        ch = lambda X, Y: rows[Y][X] if 0 <= Y < len(rows) and 0 <= X < len(rows[0]) else '~'
+        return mappy.river_phase(ch, x, y)
+
+    def test_a_run_after_the_bend_from_the_south_is_0x39(self):
+        rows = ['^^^^^^', '^--=,~', '^-.^^^', '^-^^^^']
+        self.assertEqual(self.phase(rows, 2, 1), 0x39)
+
+    def test_a_run_before_the_bend_to_the_north_is_0x39(self):
+        # (a river from the lagoon on the west runs east and turns north: 0x39 .. 0x7B)
+        self.assertEqual(self.phase(['~--^', '^^-^'][::-1], 1, 1), 0x39)
+
+    def test_a_run_from_the_edge_or_a_bridge_stays_0x19(self):
+        self.assertEqual(self.phase(['------'], 3, 0), 0x19)
+        self.assertEqual(self.phase(['^=--=^'], 2, 0), 0x19)
+
+    def test_a_run_after_the_bend_from_the_north_stays_0x19(self):
+        self.assertEqual(self.phase(['^-^^^^', '^--=,~'], 2, 1), 0x19)
+
+
 class Ids(unittest.TestCase):
     def setUp(self):
         self.maps = mappy.parse(os.path.join(HERE, 'maps.txt'))

@@ -34,7 +34,7 @@ def credit_sections():
     body = body[:body.index("\n}\n")]
     q = r'"((?:[^"\\]|\\.)*)"'
     out = []
-    for m in re.finditer(r'sec\(' + q + r',\s*&\[(.*?)\],\s*(true|false)\)', body, re.S):
+    for m in re.finditer(r'sec\(\s*' + q + r',\s*&\[(.*?)\],\s*(true|false),?\s*\)', body, re.S):
         names = [n.replace('\\"', '"') for n in re.findall(q, m.group(2))]
         out.append((m.group(1), names, m.group(3) == "true"))
     return out
@@ -130,7 +130,7 @@ def bh_campaign_menu_entry(ctx):
 def follow_prologue(ctx, e, d, label):
     """From the start: the prologue's pages (each shown in full once, A through
     them) until the world map takes the pad. Returns the texts seen."""
-    texts, last, stable = [], None, 0
+    texts, last, stable, idle = [], None, 0, 0
     for _ in range(2000):
         if d.world_map_up() and e.u8(dc.WM_STATE + 0x10) and not d.scripts_running():
             break
@@ -144,6 +144,11 @@ def follow_prologue(ctx, e, d, label):
         if d.scripts_running() and stable >= 12:
             e.press("A", 4)
             stable = 0
+        # (AW2's own PROLOGUE card first types its line of its own, which waits for A: no text box, no script running)
+        idle = idle + 1 if not t else 0
+        if idle >= 40:
+            e.press("A", 4)
+            idle = 0
         e.wait(4)
     return texts
 

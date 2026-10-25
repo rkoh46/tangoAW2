@@ -219,6 +219,8 @@ def bh_factory_smart_fog_is_fair(ctx):
     lines = smart_log(ctx, r, 3)
     n = count(sp, (ANTI_AIR, MISSILES))
     ctx.log(f"Anti-Air/Missiles with fog: {n} of {len(sp)}")
+    # (the decisions' log also has the computer's own "dsai move" lines: the factory's are the ones with a foe count)
+    lines = [l for l in lines if " foes " in l]
     ctx.check(lines and all(" foes 0 " in l or " foes 1 " in l for l in lines[:3]), "only the spare infantry is counted, not the air army Black Hole cannot see")
     ctx.check(n <= 1, f"the unseen air army is not answered ({n})")
 

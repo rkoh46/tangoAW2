@@ -101,7 +101,7 @@ def draw(emit):
         "~~~r~~.f..^...",
         "~~~~~~P..^.c..",
         "~,,,,,..fC....",
-        "~.....^.B....f",
+        "~.....^.B....~",
         "~..1RRRRRRRRRR",
         "~,f....R...I..",
         "~.C....R..BZ..",
@@ -119,12 +119,13 @@ def draw(emit):
         "~.........~~~~",
         "~...f.....~r~~",
         "~~~~~~~~~~~~~~",
-    ], "~X.t.R------ZBR3BAP~~~")
+    ], "~X.t~=------ZBR3BAP~~~")
     emit('Dune Fork', {1: ARMY, 2: ARMY, 3: ARMY}, g, armies=3, tab=5, colours=(1, 2, 3), look='wasteland')
 
     # Cinder Flats (4P, 29x29): four corners inside a sea ring; rivers run
     # from four bays towards a Black Obelisk ringed by Crystals and four Com
-    # Towers.
+    # Towers; each ends in a lake (two rows deep, its shore three cells wide: the river's mouth is then on a straight shore, the shape the games' maps have) short of its Crystal (a river that
+    # stops on land is a cut-off end: aw2dev maps lint RV01).
     g = mirror_xy([
         "~~~~~~~~~~~~~~~",
         "~.f..^.c..~~~~~",
@@ -135,12 +136,12 @@ def draw(emit):
         "~..^...R.....^-",
         "~..A...RRRRRRR=",
         "~....fCR.^....-",
-        "~.P....R..fB..-",
-        "~~~~,C.R.IIZII-",
+        "~.P....R..fB.~~",
+        "~~~~,C.R.IIZI~~",
         "~~~~,..R.f....X",
         "~~~r,..R.c^.t..",
-        "~~~~~f.R.....##",
-        "~~~~---=---X.#O",
+        "~~~~~f.R.~~..##",
+        "~~~~---=-~~X.#O",
     ])
     emit('Cinder Flats', {a: ARMY for a in range(1, 5)}, g, armies=4, tab=6, colours=(1, 2, 3, 4), look='wasteland')
 
@@ -158,8 +159,8 @@ def draw(emit):
         ".A.R.I.RC.-..^t",
         "...RBZ.R.f-....",
         "f..R.I.RRR=RRRR",
-        ".C.R.I.R..-.^..",
-        ".^.R.Z.R..f..##",
+        ".C.R.I.R..~.^..",
+        ".^.R.Z.R..~..##",
         ".C.R.I.R.c...#n",
         "~~,R.I.R...N.##",
         "~~,R...R.f..X..",

@@ -96,8 +96,21 @@ def run(jobs=3, only=None, keep=False):
         # the BH Campaign's maps have no map-integrity error (docs/dev/map-lint.md); skipped without the AW2 ROM
         if not cfg.aw2_rom().exists():
             return []
-        r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "maps", "lint", "--no-png"], capture_output=True, text=True)
-        return [f"FAIL maps lint\n" + "\n".join(l for l in r.stdout.splitlines() if "error" in l)[:600]] if r.returncode else []
+        res = []
+        for src in ("bh", "versus", "es"):
+            r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "maps", "lint", "--source", src, "--no-png"], capture_output=True, text=True)
+            if r.returncode:
+                res.append(f"FAIL maps lint {src}\n" + "\n".join(l for l in r.stdout.splitlines() if "error" in l)[:600])
+        return res
+
+    def skin_matrix(_):
+        # the skin on a colour in an army count it once corrupted (colour 5 with the Dual Strike pack: the pack's backup lay over the skin's figure table), four of the
+        # twenty (docs/dev/army-packs.md); needs both ROMs and the built examples
+        if not cfg.aw2_rom().exists() or not cfg.ds_rom().exists() or not util.example_bin("aw2_room_teams").exists():
+            return []
+        from .armyskinlib import matrix
+        fails, _ = matrix.run(list(matrix.QUICK), ds=True, out=out / "skin_matrix")
+        return [f"FAIL armyskin matrix: {f}" for f in fails]
 
     def campaign_scenes(_):
         # every BH story scene names a song (docs/dev/campaign-scenes.md); needs the harness examples and the ROMs
@@ -129,7 +142,7 @@ def run(jobs=3, only=None, keep=False):
         r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "co", "verify", "--quick", "-j", "2"], capture_output=True, text=True)
         return [f"FAIL co verify\n" + "\n".join(l for l in r.stdout.splitlines() if "FAIL" in l)[:900] + r.stderr[-300:]] if r.returncode else []
 
-    work = [(co_verify, "co_verify"), (es_music, "es_music"), (campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom"), (armyskin, "static"), (armyskin, "live")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
+    work = [(co_verify, "co_verify"), (es_music, "es_music"), (campaign_scenes, "campaign_scenes"), (maps_lint, "maps_lint"), (aidebug_rom, "aidebug_rom"), (armyskin, "static"), (armyskin, "live"), (skin_matrix, "skin_matrix")] + [(plain, s) for s in PLAIN] + [(leak, s) for s in LEAK] + [(cam, s) for s in CAM] + [(pic, n) for n in (2, 3, 4, 5)] + [(lambda _: hud(), None)] + [(gfx, n) for n in gfx_names()]   # (graphics catalogue: text, tile, palette and golden checks of key screens; golden images are optional)
     if only:
         work = [w for w in work if any(o in str(w[1]) for o in only)]
     bad = 0

@@ -202,6 +202,22 @@ def water_tile(c, around):
     return SHOAL[key]
 
 
+def river_phase(ch, x, y):
+    """The tile of a straight east-west river cell. The games draw a straight run in one of two phases: 0x19 between the bends 0x78 (river from
+    the north turning east) and 0x5B (turning south), and 0x39 between 0x58 (from the south turning east) and 0x7B (turning north): the bend at
+    either end of the run decides (0x19 where neither end is a bend: a bridge, the map edge or the sea)."""
+    wet = lambda X, Y: ch(X, Y) in '-='
+    X0 = x - 1
+    while ch(X0, y) == '-' and not wet(X0, y - 1) and not wet(X0, y + 1):
+        X0 -= 1
+    X1 = x + 1
+    while ch(X1, y) == '-' and not wet(X1, y - 1) and not wet(X1, y + 1):
+        X1 += 1
+    west_from_south = ch(X0, y) == '-' and wet(X0 + 1, y) and wet(X0, y + 1) and not wet(X0, y - 1) and not wet(X0 - 1, y)
+    east_to_north = ch(X1, y) == '-' and wet(X1 - 1, y) and wet(X1, y - 1) and not wet(X1, y + 1) and not wet(X1 + 1, y)
+    return 0x39 if west_from_south or east_to_north else 0x19
+
+
 def grid(m):
     """The map's rows, size, a cell reader (off the map: sea), its HQs and
     who owns a cell (the army whose HQ is nearest)."""
@@ -309,6 +325,8 @@ def lay(m, edge):
                     tiles[y][x] = PIPE[link]
             elif c in '-=,':
                 tiles[y][x] = water_tile(c, look(x, y))
+                if tiles[y][x] == 0x19 and c == '-':
+                    tiles[y][x] = river_phase(ch, x, y)
             elif c in '12345':
                 tiles[y][x] = PROPS['H'][int(c)]
                 counts[int(c)] += 1

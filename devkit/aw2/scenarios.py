@@ -467,10 +467,10 @@ def freeze_safe(lines):
         t = l.strip()
         if t == "endturn":
             n += 1
-            for x in ["press B 6", "press B 6", "until acting 10"]:
+            for x in ["press B 6", "press B 6", "until acting 90"]:
                 step(x)
             for _ in range(3):
-                for x in ["until acting 30", "press A 8", "wait 20", "seek DOWN onend 30", "press A 8", "until !myturn 30", f"jumpif !myturn fet{n}", "press B 6", "press B 6", "press B 6"]:
+                for x in ["until acting 90", "press A 8", "wait 20", "seek DOWN onend 30", "press A 8", "until !myturn 30", f"jumpif !myturn fet{n}", "press B 6", "press B 6", "press B 6"]:
                     step(x)
             out.append(f"label fet{n}")
         elif t == "onbanner":
@@ -601,6 +601,18 @@ class Pads:
 MOVES = {0: ["DOWN"] * 3, 1: ["RIGHT", "DOWN"], 2: ["LEFT"] + ["DOWN"] * 5, 3: ["RIGHT", "DOWN"], 4: ["DOWN"] * 2}
 
 
+def resume_turns(tag, rounds):
+    """State-driven turns for a seat that was let back in: the banner (A), then its turn (acting, myturn) played and ended, `rounds` times."""
+    s = []
+    for r in range(rounds):
+        s += ["until banner|acting|myturn|over 120", f"jumpif over rz{tag}", f"label w{tag}_{r}", "until banner|acting|myturn 90", f"jumpif !banner a{tag}_{r}",
+              "seek A !banner 8", f"jump w{tag}_{r}", f"label a{tag}_{r}", "endturn"]
+    return freeze_safe(s + [f"label rz{tag}", "log SCRIPT END"])
+
+
+REJOIN_STORY = False   # a seat is killed and let back in (aw2dev net sim --event ...:kill:..): the survivors' scripts have a part for the resumed session
+
+
 def lobby_pads(n, rounds, run, fog="on", sim=False, pick_down=0, tab=0, no_pick=None, reveal=False, picks=None):
     run = str(run)
 
@@ -642,7 +654,18 @@ def lobby_pads(n, rounds, run, fog="on", sim=False, pick_down=0, tab=0, no_pick=
     def turns(k):
         s = []
         for r in range(rounds):
-            s += ["until banner|acting|over 60", f"jumpif over done{k}", f"jumpif !banner nb{k}_{r}", "onbanner", f"label nb{k}_{r}", "until acting 20", "endturn"]
+            if REJOIN_STORY and r == 1:
+                # A match cut short and started again when everyone is back is a new session of the console: the pad script goes on in its next
+                # part (debug_aids' `session`), and the first part idles here until then. (The state the seats resume from is the newest settled one,
+                # a little before the kill: the turn they were in is played again, which the state-driven waits below do.)
+                # (the End menu or its question may be open again, from the state: B closes either)
+                s += ["wait 36000", "session", "wait 200", "press B 8", "wait 30", "press B 8", "wait 30"]
+            # (the waits are long enough for a seat killed and let back in: the match is paused ~35 s, a console's script that gave up meanwhile
+            # leaves the NEXT TURN banner waiting for its A)
+            s += ["until banner|acting|myturn|over 120", f"jumpif over done{k}", f"jumpif !banner nb{k}_{r}", "onbanner", f"label nb{k}_{r}",
+                  # (a banner again: the seat let back in resumes from the match's newest settled state, from before this script's A: press it again)
+                  f"label w{k}_{r}", "until banner|acting|myturn 90", f"jumpif !banner a{k}_{r}", "seek A !banner 8", f"jump w{k}_{r}", f"label a{k}_{r}",
+                  "endturn", f"log AFTER_TURN_{r}"]
         s += [f"label done{k}", "log SCRIPT END"]
         return s
 

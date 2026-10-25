@@ -50,8 +50,8 @@ DAY = 0x03004080
 BIOME = 0x03004493
 WEATHER_MODE = 0x03003FED
 WEATHER_DEFAULT = 0x03003FEF
-LIST_IDS = 0x02027F78
-LIST_LAST = 0x02027FAB
+LIST_IDS = 0x0203DC24      # (the list's struct moved to 0x0203DC20 with room for 110 ids: crate::five_map::LIST)
+LIST_LAST = 0x0203DC93
 
 MAPS = 0x022DBDB0
 TEXT = 0x02306954
@@ -119,7 +119,7 @@ class Survival:
             p += 13
         return {
             "name": self.text(self.u16(e + 0x2C)), "w": w, "h": h, "tiles": tiles, "units": units,
-            "armies": self.u8(e + 0x3C), "colours": [self.u8(e + k) for k in range(1, 5)],
+            "armies": self.u8(e + 0x3C), "colours": [self.u8(e + 0xA0 + k) for k in range(1, 5)],   # (MAPS is header 0 + 0x88 and e the previous map's: its tiles are read at +0x5C = the next header's +0x44; the colours of this map are one header on)
             "look": self.u8(e + 0x32), "weather": self.u8(e + 0x33), "fog": self.u8(e + 0x34),
             "cos": (self.u8(e + 0x70), self.u8(e + 0x72)),
             "structure": self.structure_file(e),
@@ -522,7 +522,7 @@ def course_text(kind, budget_text, ds=None):
 
 
 # The budget on the battle map (survival_ui.rs's hud, as two_front's text is drawn):
-HUD_TILES = [(0x1F9, 17), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)]
+HUD_TILES = [(0x1F9, 17), (0x26A, 20), (0x2D2, 9), (0x2E4, 4), (0x2EC, 4), (0x2F4, 4), (0x2FC, 4), (0x309, 9)]
 HUD_WHITE = 6
 FONT_TOP, FONT_ROWS = 2, 14
 

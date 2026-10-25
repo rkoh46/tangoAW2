@@ -461,7 +461,12 @@ TESTS = []
 
 def test(name=None, modes=("aw2", "ds"), netplay=False):
     def deco(fn):
-        TESTS.append({"name": name or fn.__name__, "fn": fn, "modes": modes, "netplay": netplay})
+        # A test module imported by another test module (`import test_bh_review as r`) registers its tests a second time under another
+        # module name: the same test twice, in parallel, in one output folder (a race: a half-written screenshot failed `bh_review_m10`).
+        here = (fn.__code__.co_filename, fn.__code__.co_firstlineno)
+        key = name or fn.__name__
+        if not any(t["name"] == key and t.get("where") == here for t in TESTS):
+            TESTS.append({"name": key, "fn": fn, "modes": modes, "netplay": netplay, "where": here})
         return fn
     return deco
 

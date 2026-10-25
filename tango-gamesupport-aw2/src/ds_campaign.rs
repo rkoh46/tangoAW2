@@ -42,7 +42,7 @@ use crate::ds_campaign_data as data;
 /// 0x08D2FFFF) and Survival (0x08E00000..0x08E4FFFF), past the 8 MB
 /// cartridge (mGBA grows the image). A mark first, the blob from +0x100.
 pub const DATA: u32 = 0x08F0_0000;
-const DATA_END: u32 = crate::ds_worldmap::BASE;
+pub(crate) const DATA_END: u32 = crate::ds_worldmap::BASE;
 const ENTRY: u32 = 0x5C;
 const MAGIC_WORD: u32 = 0x4443_5344; // "DSCD"
 const MAGIC_AT: u32 = DATA;
@@ -1253,6 +1253,10 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         ),
         (MISSION_NUMBER, Box::new(mission_number)),
         (crate::ds_worldmap::SAVE_PROMPT, Box::new(save_prompt)),
+        (
+            crate::suspend::AFTER_MARK_CLEAR,
+            Box::new(crate::suspend::keep_aw2_mark),
+        ),
         (SAVE_GAME, Box::new(save_game)),
         (BEST_SCORE, Box::new(best_score)),
         (SCRIPT_END_MATCH, Box::new(script_end_match)),
@@ -1498,6 +1502,7 @@ fn best_score(core: &mut Core) {
 /// AW2's save prompt after a mission (`SaveScreenCampaign_StartMessage`): in a DS or BH session AW2 asks as it does
 /// in its own campaign ("Save current data?"), and a Yes saves the session's own record ([`save_game`]).
 fn save_prompt(core: &mut Core) {
+    crate::suspend::note_aw2_mark(core);
     if active(core) {
         PROMPTED.store(true, std::sync::atomic::Ordering::Relaxed);
     }

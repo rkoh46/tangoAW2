@@ -147,5 +147,7 @@ def ds_tilt_units_wear_dual_strikes_pictures(ctx):
     inside = [l for l in lines if "unit art" in l and "record" not in l]
     beyond = [l for l in lines if "unit art" in l and "record" in l]
     ctx.log(f"{len(inside)} in the window, {len(beyond)} from records")
-    ctx.check(len(inside) >= 6, f"units in the window are Dual Strike's pictures ({len(inside)} draws)")
-    ctx.check(len(beyond) >= 6, f"and so are the ones beyond it ({len(beyond)} draws)")
+    # (every unit is drawn from its record, the window's too: a unit crossing the window's edge keeps its picture,
+    # ds_tilt::debug_check_console_units brings the console's plane back for comparison)
+    ctx.check(len(beyond) >= 12, f"units in the window and beyond it are Dual Strike's pictures, drawn from their records ({len(beyond)} draws)")
+    ctx.check(not inside, f"none is drawn from the console's plane ({len(inside)} draws)")

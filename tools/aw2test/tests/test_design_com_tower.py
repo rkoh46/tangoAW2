@@ -148,7 +148,8 @@ def run(ctx, five, wasteland):
         ctx.shot(g, f"battle_owner{o}")
     # Army 1 attacks army 2's tank: both sides +10% (the calculator counts
     # each army's towers, ctx.side); army 2 is a CPU with its own tower.
-    ctx.attack(g, tanks[1], tanks[1], tanks[2], expect_base=55)
+    # (with the pack the tower's firepower is in the base damage, Dual Strike's one sum: 55 x 110 / 100)
+    ctx.attack(g, tanks[1], tanks[1], tanks[2], expect_base=60)
     # The CPUs play their turns on the design and hand back to army 1.
     g.end_turn(human=1)
     ctx.check(not g.battle_over(), "the battle goes on after the CPUs' turns")

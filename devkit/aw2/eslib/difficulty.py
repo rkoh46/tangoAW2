@@ -64,8 +64,11 @@ def dynamic_score(runs):
     bot = [r for r in runs if r["player"] == "bot"]
     cpu = [r for r in runs if r["player"] == "cpu"]
     parts = []
-    if cpu:
-        win = sum(1 for r in cpu if r["result"] == "won") / len(cpu)
+    # (a run that ends with no winner by its last day, "none", says nothing about the player's side: the computer playing both armies is slow, and a mission
+    # it cannot finish would otherwise read as the hardest there is: only decisive runs count)
+    decisive = [r for r in cpu if r["result"] in ("won", "lost")]
+    if decisive:
+        win = sum(1 for r in decisive if r["result"] == "won") / len(decisive)
         parts.append(100 * (1 - win))
     if bot:
         won = [r for r in bot if r["result"] == "won"]
@@ -73,7 +76,7 @@ def dynamic_score(runs):
             parts.append(min(sum(r["days"] for r in won) / len(won) / 20, 1) * 100)
         else:
             parts.append(100)
-    return round(sum(parts) / len(parts), 1)
+    return round(sum(parts) / len(parts), 1) if parts else None
 
 
 def load_runs(path):

@@ -26,12 +26,16 @@ RESULT_SCENARIOS = ("yield", "hq3", "hq3k", "hq3p", "g2k", "g4k")
 
 
 def parse_event(s):
-    """'30:stop:1:10' (seconds), 't900:kill:2' (tick), '@AFTER_TURN_0:stop:1:10' (after a marker the pads log): AT:ACTION:SEAT[:ARG]; actions kill stop cont relaunch."""
+    """'30:stop:1:10' (seconds), 't900:kill:2' (tick), '@AFTER_TURN_0:stop:1:10' (after a marker the pads log; '@AFTER_TURN_0+15:relaunch:2' 15 s after it): AT:ACTION:SEAT[:ARG]; actions kill stop cont relaunch."""
     p = s.split(":")
     at, act, seat = p[0], p[1], int(p[2])
     e = {"action": act, "seat": seat}
     if at.startswith("@"):
-        e["at_log"] = at[1:]          # when a pad script has logged this text (scenarios log AFTER_TURN_<r> after each turn): freezes in a quiet moment
+        mark, _, delay = at[1:].partition("+")
+        e["at_log"] = mark
+        if delay:
+            e["delay"] = float(delay)   # (`@AFTER_TURN_0+15`: 15 s after the marker: a kill and its relaunch in one story)
+        # when a pad script has logged this text (scenarios log AFTER_TURN_<r> after each turn): freezes in a quiet moment
     elif at.startswith("t"):
         e["at_tick"] = int(at[1:])
     else:
@@ -60,6 +64,7 @@ def sim_spec(a):
     n = a.players
     spec = live.make_spec(a.scenario, a.fog, n, a.rounds, a.tag or f"net_{a.scenario}", a.hz, a.max_s, None, None, None, {})
     spec.events = [parse_event(e) for e in (a.event or [])]
+    scenarios.REJOIN_STORY = any(e["action"] == "relaunch" for e in spec.events)
     spec.impair = impair_for(spec.n, getattr(a, "level", None), a.latency, a.jitter, a.loss, a.impair)
     if a.reorder and spec.impair:
         spec.impair = {k: (lambda p: f"{p[0]},{max(int(p[1]), int(p[0]))},{p[2]}")(v.split(",")) for k, v in spec.impair.items()}

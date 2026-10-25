@@ -59,7 +59,7 @@ const TABLE_OWNER: u32 = BASE + 0xB904;
 /// the tables).
 const ART_MARK: u32 = BASE + 0xB908;
 #[cfg(test)]
-const END: u32 = BASE + 0x10000;
+pub(crate) const END: u32 = BASE + 0x10000;
 
 /// AW2's world map state (camera, cursor, mission, flags per mission,
 /// markers): 0xFC bytes, as its profile saves them.

@@ -68,6 +68,7 @@ def design_tab_ids(e):
     saves.box_row(e, 1)
     e.press("A", 8)
     e.wait(150)
+    saves.show_all_lists(e)
     out = {}
     for _ in range(14):
         t = e.u8(MAP_TAB)
@@ -154,10 +155,12 @@ def design_room_map_is_in_versus_list(ctx):
 @test()
 def design_room_black_hole_against_one_army_is_listed(ctx):
     """Orange Star against Black Hole alone: Play OK, army count 2, listed and
-    played, with a reboot between."""
+    played, with a reboot between. (Five-army mode needs all five HQs, design5::save_record: with fewer the mark is
+    0, Black Hole's property becomes a neutral one and its units are taken off, so the battle has Orange Star's only.)"""
     e, g, ed, units, img = save_design(ctx, "bh1", 1, [1, 5])
+    units = {at: u for at, u in units.items() if u[0] != 5}
     rec = img.slot(DESIGN[1])
-    ctx.eq(rec[0x4C4], 5, "the five-army mark")
+    ctx.eq(rec[0x4C4], 0, "no five-army mark (the map has two HQs)")
     ctx.eq(rec[0x4C3], 2, "the saved record's army count (Black Hole's HQ counts)")
     e.close()
     e, g = boot(ctx, img.path)

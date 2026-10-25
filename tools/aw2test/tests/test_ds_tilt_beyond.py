@@ -224,7 +224,9 @@ def inside_scene(ctx):
                 e.w8(a + 6, 2)
             if x % 3 == 1:
                 e.w16(a + 4, e.u16(a + 4) & ~0x780)
-            if x % 4 == 0:
+            if u["type"] in (1, 2) and x % 2 == 1:
+                # (capture points: only Infantry and Mech capture, on another unit the bits are the campaign's tag, which the
+                # records' rule leaves out, ds_tilt::RamUnit::entries)
                 e.w16(a + 4, e.u16(a + 4) | (10 << 11))
             if x % 5 == 0:
                 e.w8(a + 7, 5)

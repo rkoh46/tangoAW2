@@ -961,6 +961,55 @@ fn init(core: &mut Core) {
     }
 }
 
+/// What is wrong with the skins' rooms in free ROM right now (empty when all is well): a skin's table of battle figures and portraits must hold pointers
+/// that start a LZ77 stream in its own room (anything else would have the game decompress over its memory: the build menu, the unit panel and the
+/// battle scene read it), and a colour's backup list must be a list of whole entries inside its room. Used by the harness (`skincheck`), the AI debug
+/// channel and the army kit's matrix (`aw2dev armyskin matrix`).
+pub fn self_check(core: &Core) -> Vec<String> {
+    let mut problems = Vec::new();
+    if core.raw_read_32(DATA, -1) != MAGIC {
+        return problems;
+    }
+    for i in 0..skins().len() {
+        if core.raw_read_32(art_mark(i), -1) != MAGIC {
+            continue;
+        }
+        let table = fig_at(i);
+        for w in 0..6u32 {
+            let at = core.raw_read_32(table + 4 * w, -1);
+            if at == 0 {
+                continue;
+            }
+            let room = table + FIG_DATA..table + FIG_LIMIT as u32;
+            if at % 4 != 0 || !room.contains(&at) || core.raw_read_8(at, -1) != 0x10 {
+                problems.push(format!(
+                    "skin {i}: the figure table's word {w} is {at:#010x}, not a LZ77 stream in its room"
+                ));
+            }
+        }
+    }
+    for (base, max, what) in (1..=5u8)
+        .map(|c| (backup(c), BACKUP_MAX, format!("backup {c}")))
+        .chain((1..=5u8).map(|c| (ds_backup(c), DS_BACKUP_MAX, format!("Dual Strike backup {c}"))))
+    {
+        let mut at = base;
+        loop {
+            let (addr, len) = (core.raw_read_32(at, -1), core.raw_read_32(at + 4, -1) as usize);
+            if addr == 0 {
+                break;
+            }
+            if len == 0 || (at - base) as usize + 8 + len > max || !(0x0800_0000..0x0A00_0000).contains(&addr) {
+                problems.push(format!(
+                    "{what}: an entry at {at:#010x} holds address {addr:#010x}, length {len:#x}"
+                ));
+                break;
+            }
+            at += 8 + ((len as u32 + 3) & !3);
+        }
+    }
+    problems
+}
+
 /// Every skin's pictures, texts and slot lists into free ROM (once).
 fn ensure_art(core: &mut Core) {
     for (i, sk) in skins().iter().enumerate() {
@@ -2046,6 +2095,26 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     t
 }
 
+/// Every room the skins use in free ROM, as (start, end, name): the header, the colours' backups of what a skin patches (and the Dual Strike pack's picture
+/// palettes'), each skin's figures and portraits, each skin's pictures and texts. `crate::rom_layout` puts them beside every other user of free ROM.
+#[cfg(test)]
+pub(crate) fn rooms() -> Vec<(u32, u32, String)> {
+    let mut rooms: Vec<(u32, u32, String)> = vec![(DATA, DATA + 0x100, "header".into())];
+    for c in 1..=5u8 {
+        rooms.push((backup(c), backup(c) + BACKUP_MAX as u32, format!("backup {c}")));
+        rooms.push((
+            ds_backup(c),
+            ds_backup(c) + DS_BACKUP_MAX as u32,
+            format!("Dual Strike backup {c}"),
+        ));
+    }
+    for k in 0..MAX_SKINS {
+        rooms.push((fig_at(k), fig_at(k) + FIG_LIMIT as u32, format!("figures {k}")));
+        rooms.push((art_at(k), art_at(k) + 0x4000, format!("art {k}")));
+    }
+    rooms
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -2062,22 +2131,10 @@ mod tests {
     use super::*;
 
     /// The rooms of the skins' free ROM never overlap (the Dual Strike backup of colour 5 once sat on the first skin's table of figures: a build menu
-    /// portrait made the game decompress a palette over its memory).
+    /// portrait made the game decompress a palette over its memory). (`crate::rom_layout` checks them against every other user of free ROM.)
     #[test]
     fn the_rooms_in_free_rom_are_apart() {
-        let mut rooms: Vec<(u32, u32, String)> = vec![(DATA, DATA + 0x100, "header".into())];
-        for c in 1..=5u8 {
-            rooms.push((backup(c), backup(c) + BACKUP_MAX as u32, format!("backup {c}")));
-            rooms.push((
-                ds_backup(c),
-                ds_backup(c) + DS_BACKUP_MAX as u32,
-                format!("Dual Strike backup {c}"),
-            ));
-        }
-        for k in 0..MAX_SKINS {
-            rooms.push((fig_at(k), fig_at(k) + FIG_LIMIT as u32, format!("figures {k}")));
-            rooms.push((art_at(k), art_at(k) + 0x4000, format!("art {k}")));
-        }
+        let rooms = rooms();
         for (i, a) in rooms.iter().enumerate() {
             for b in &rooms[i + 1..] {
                 assert!(
@@ -2092,6 +2149,11 @@ mod tests {
                 );
             }
         }
+        // (the last room ends where the ROM image's free space does)
+        assert!(
+            rooms.iter().all(|r| r.1 <= DATA + 0x2_0000),
+            "a room passes the end of the image's free space"
+        );
     }
 
     /// Dual Strike's screens ask the skin for their palettes: the entries the armies differ in take the ramp by brightness, the rest stay.
@@ -2128,7 +2190,7 @@ mod tests {
         for i in 0..2000u32 {
             data.push(((i / 7) % 5) as u8 * 3 + (i % 3 == 0) as u8);
         }
-        data.extend((0..300u32).map(|i| (i * 2654435761u32 >> 24) as u8));
+        data.extend((0..300u32).map(|i| i.wrapping_mul(2654435761u32).wrapping_shr(24) as u8));
         let packed = lz77_compress(&data);
         assert!(packed.len() < data.len());
         assert_eq!(lz77_decode(&Mem(packed), 0), data);
@@ -2209,6 +2271,12 @@ mod tests {
         for host in 1..=5u8 {
             let plan = plan(&rom, skin, 0, host);
             assert!(plan.len() >= 20, "colour {host}: {} writes", plan.len());
+            // (the backup list holds each write's address, length and original bytes: `apply_backup` stops at the room's end and logs "backup area full")
+            let list: usize = plan.iter().map(|p| 8 + ((p.data.len() + 3) & !3)).sum::<usize>() + 8;
+            assert!(
+                list <= BACKUP_MAX,
+                "colour {host}: the backup list needs {list:#x} bytes of {BACKUP_MAX:#x}"
+            );
             let mut spans: Vec<(u32, u32)> = plan.iter().map(|p| (p.addr, p.addr + p.data.len() as u32)).collect();
             spans.sort();
             for w in spans.windows(2) {

@@ -145,6 +145,11 @@ class DesignMap:
             if u:
                 armies.add(5 if u & 0xE0 == 0xE0 else (u >> 6) + 1)
         p[0x4C3] = max(hqs, len(armies))
+        # A five-army map (the first colour byte 5: crate::five::DESIGN_FIVE) is saved by tangoAW2's Design Room with the game's own army count, 4
+        # (`design5::save_record`), and is five-army only then (`five::is_five_design` asks for the mark and 4): a record that said 5 armies played
+        # as a four-army game with five armies on the Teams screen ("map has 5 armies", "Rules screen did not open").
+        if self.colours[0] == 5:
+            p[0x4C3] = min(p[0x4C3], 4)
         p[0x4C4:0x4C9] = bytes(self.colours)
         p[0x4C9] = sum(counts)
         p[0x4CA] = max(counts[1:6]) + 1

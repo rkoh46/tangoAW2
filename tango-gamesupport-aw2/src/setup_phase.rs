@@ -61,7 +61,7 @@ const LIST_END: u32 = 7;
 /// ROM (free space after crate::two_front's): the mark, the stubs, the
 /// script, the menu, the label.
 pub const ROM: u32 = 0x08E7_4000;
-const ROM_END: u32 = 0x08E7_4400;
+pub(crate) const ROM_END: u32 = 0x08E7_4400;
 const ROM_MAGIC: u32 = 0x5055_5453; // "STUP"
 /// Magic ids of this module's stubs (r3 at crate::campaign_model::LANDING).
 pub const MAGIC: u32 = 0x2E00_0000;

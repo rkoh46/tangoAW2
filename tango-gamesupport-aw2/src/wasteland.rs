@@ -306,8 +306,8 @@ pub fn derive(core: &Core, b: u8) -> Option<Built> {
 /// Each look's data in the ROM image's free space (past the music):
 /// metatiles, tiles (LZ77), sea frames, river frames, the clear, rain,
 /// snow and sandstorm sets.
-const LOOK_DATA: u32 = 0x08E8_0000;
-const LOOK_SIZE: u32 = 0x2_0000;
+pub(crate) const LOOK_DATA: u32 = 0x08E8_0000;
+pub(crate) const LOOK_SIZE: u32 = 0x2_0000;
 const AT_METATILES: u32 = 0;
 const AT_TILES: u32 = 0x2000;
 const AT_SEA: u32 = 0x9000;
@@ -318,7 +318,7 @@ const AT_SNOW: u32 = AT_CLEAR + 0x200;
 const AT_SAND: u32 = AT_CLEAR + 0x300;
 /// How many free tiles the look has for composites (for tests and the doc).
 const AT_POOL: u32 = 0x1_7FF8;
-const AT_SENTINEL: u32 = 0x1_7FFC;
+pub(crate) const AT_SENTINEL: u32 = 0x1_7FFC;
 const LOOK_MAGIC: u32 = 0x4B4C_5344; // "DSLK"
 
 pub fn look_rom(b: u8) -> u32 {

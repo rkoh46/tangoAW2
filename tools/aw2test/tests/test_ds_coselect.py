@@ -75,6 +75,7 @@ def to_five_army_teams(ctx, g):
     e.wait(150)
     e.press("A", 8)
     e.wait(150)
+    saves.show_all_lists(e)
     if not g.press_until("LEFT", lambda: e.u8(MAP_TAB) == TAB_5P, tries=14, hold=8, settle=50):
         raise NavError(f"tab {TAB_5P} not reached ({e.u8(MAP_TAB)})")
     e.wait(30)
@@ -104,7 +105,7 @@ def ds_coselect_versus_two_armies(ctx):
     e.wait(10)
     off = shot(ctx, e, "versus2_off")
     e.w8(DS_GRAPHICS, 1)
-    for _ in range(4):  # the first army's tab (RIGHT: its partner cell, the next army's CO and partner): the cursor leaves the cards' headers clear
+    for _ in range(2):  # the first army's tab (RIGHT: its partner cell, the next army's CO and partner): the cursor leaves the cards' headers clear
         e.press("RIGHT", 6)
         e.wait(30)
     on = shot(ctx, e, "versus2_on")
@@ -115,14 +116,18 @@ def ds_coselect_versus_two_armies(ctx):
     for i, c in enumerate(colours):
         ctx.eq(shots.diff_count(emblem(on, 2, i), refs[c - 1], tol=2), 0, f"army {i + 1}'s emblem is {KEY_ARMY_COLOURS[c]}'s")
     # R and L change an army's colour: its card follows, every country's emblem in turn (Blue Moon is the other army's).
+    # (one press in a cycle puts the army's skin on, which draws the skin's own emblem: army_skin::teams_step)
     seen = set()
+    prev = e.u8(ram.TEAMS + ram.T_COLOURS)
     for _ in range(6):
         e.press("R", 6)
         e.wait(20)
         c = e.u8(ram.TEAMS + ram.T_COLOURS)
         seen.add(c)
         rows = shot(ctx, e, f"versus2_colour{c}")
-        ctx.eq(shots.diff_count(emblem(rows, 2, 0), refs[c - 1], tol=2), 0, f"army 1 as {KEY_ARMY_COLOURS[c]}: its emblem")
+        if not (prev == 5 and c == 1):   # (after Black Hole comes the skin, on the first free colour)
+            ctx.eq(shots.diff_count(emblem(rows, 2, 0), refs[c - 1], tol=2), 0, f"army 1 as {KEY_ARMY_COLOURS[c]}: its emblem")
+        prev = c
     ctx.eq(sorted(seen), [1, 3, 4, 5], "R went through the countries the other army has not, Black Hole included")
     # With the setting off again the console runs on as before.
     e.w8(DS_GRAPHICS, 0)
@@ -144,7 +149,7 @@ def ds_coselect_versus_five_armies(ctx):
     e.wait(10)
     shot(ctx, e, "versus5_off")
     e.w8(DS_GRAPHICS, 1)
-    for _ in range(10):  # the first army's tab
+    for _ in range(2):  # the first army's tab (three cells an army: CO, partner, tab; the cursor stands clear of the cards' headers on the third)
         e.press("RIGHT", 6)
         e.wait(30)
     on = shot(ctx, e, "versus5")
@@ -179,10 +184,11 @@ def pick_partners(ctx, on):
         e.press("START", 6)
         e.wait(20)
         if army == 0:
-            e.press("RIGHT", 6)
-            e.wait(14)
-            e.press("RIGHT", 6)
-            e.wait(14)
+            # (with the setting on the cursor has three cells an army, CO, partner and the P1 / CPU tab: the Teams record is the game's
+            # either way, the pad walks to the next army's CO with one more press)
+            for _ in range(3 if on else 2):
+                e.press("RIGHT", 6)
+                e.wait(14)
     for _ in range(3):
         e.press("DOWN", 6)
         e.wait(20)

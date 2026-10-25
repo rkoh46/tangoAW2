@@ -784,7 +784,7 @@ def design_checks(G):
 
 
 # Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for an Emerald Sun map.
-KNOWN = {"bh10": {"RV05": 1}, "bh31": {"RV05": 1}, "bh30": {"AR02": 1}, "Crystal Isles": {"PT01": 3}}
+KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
 CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, reachables, pipelines, ports, design_checks]

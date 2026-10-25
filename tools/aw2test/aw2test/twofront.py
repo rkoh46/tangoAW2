@@ -195,6 +195,9 @@ def end_round(e, d, ctx=None, label=None, each=None):
         if each:
             each()
 
+    # The BH Campaign's two-front missions start with the player playing their army's second-front turns (Intel > Auto CO off, `MANUAL` all set since
+    # d0573bc05); a round driven by the test aid ends them: the computer plays them (Auto CO on).
+    e.w8(MANUAL, 0)
     d.end_turn()
     e.wait(30)
     if not until(e, d, lambda: player_turn(e) or e.u8(dc.LAST_RESULT) != 0, each=watch):

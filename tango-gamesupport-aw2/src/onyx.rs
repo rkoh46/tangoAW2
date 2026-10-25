@@ -164,7 +164,7 @@ fn events_running(core: &Core) -> bool {
 
 // --- ROM (free: 0x08E75000.., past the Setup phase's) ------------------------------
 
-const ROM: u32 = 0x08E7_5000;
+pub(crate) const ROM: u32 = 0x08E7_5000;
 /// Launch on Crystal Calamity's map (in place of `sub_0802D0A4`'s body):
 /// `Proc_Start(LAUNCH_SCRIPT, 3)`, then the menu's close (`sub_0801A168`).
 const LAUNCH_FN: u32 = ROM + 0x40;
@@ -198,7 +198,7 @@ const LASER_SCRIPT: u32 = ROM + 0x200;
 /// The reversed Onyx's silo launch: a proc that needs no unit.
 const AUTO_FN: u32 = ROM + 0x2A0;
 const AUTO_SCRIPT: u32 = ROM + 0x2D0;
-const ROM_SENTINEL: u32 = ROM + 0x3FC;
+pub(crate) const ROM_SENTINEL: u32 = ROM + 0x3FC;
 const ROM_MAGIC: u32 = 0x4F59_4E50; // "ONYP" (bump when the code changes)
 
 fn halfwords(h: &[u16]) -> Vec<u8> {

@@ -49,11 +49,11 @@ tango-signaling.workspace = true
 k256 = { version = "0.13", default-features = false, features = ["schnorr", "std"] }
 serde_json.workspace = true
 sha2 = "0.10"
-tokio-tungstenite = { version = "0.16", features = ["rustls-tls-webpki-roots"] }
+tokio-tungstenite.workspace = true
 tokio = { workspace = true, features = ["net", "rt", "time"] }
 
 [dev-dependencies]
-env_logger = "0.9"
+env_logger.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 
 [lints]

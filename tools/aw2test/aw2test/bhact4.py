@@ -36,7 +36,8 @@ def expect_scene(ctx, got, keys, lead, partner, label, bonds=()):
     want = []
     for k in keys:
         want += bhtext.shown(k, CO_NAMES.get(lead), CO_NAMES.get(partner), bonds)
-    a, b = _flat(got), _flat(want)
+    # (AW2 asks "Save current data" after a mission's win: not a scene)
+    a, b = _flat([t for t in got if "Save current data" not in t]), _flat(want)
     if a == b:
         ctx.check(True, f"{label}: the dialogue is {'+'.join(keys)} ({len(want)} texts)")
         return
@@ -121,7 +122,7 @@ def intro(ctx, e, d, label, shots=(0,), max_frames=40000):
         t = text_shown(d)
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 5 and (not texts or texts[-1] != clean(t)):
+        if t and stable == 5 and "Save current data" not in t and (not texts or texts[-1] != clean(t)):
             texts.append(clean(t))
             if len(texts) - 1 in shots:
                 e.wait(60)
@@ -234,10 +235,12 @@ def follow(ctx, e, d, label, shots=(0,), max_frames=30000):
     the split is where the battle was left."""
     texts, last, stable, n = [], None, 0, 0
     in_battle_texts = 0
+    asked_seen = False   # (after AW2's "Save current data" question only the map's scenes follow: an A on the idle map starts the next mission)
     while n < max_frames:
         t = text_shown(d)
         stable = stable + 1 if t and t == last else 0
         last = t
+        asked_seen = asked_seen or bool(t and "Save current data" in t)
         if t and stable == 5 and (not texts or texts[-1] != clean(t)):
             if d.in_battle():
                 in_battle_texts += 1
@@ -252,11 +255,17 @@ def follow(ctx, e, d, label, shots=(0,), max_frames=30000):
             e.wait(60)
             if d.world_map_up() and not d.scripts_running():
                 break
-        elif not d.scripts_running() and d.in_battle() is False:
+        elif not d.scripts_running() and d.in_battle() is False and not asked_seen:
             e.press("A", 4)
         e.wait(4)
         n += 4
-    return texts[:in_battle_texts], texts[in_battle_texts:]
+    # (AW2 asks "Save current data" after a win: not a scene, and it ends the victory scene in the battle)
+    # The question ends the victory scene whichever state the battle is in when the map scene's first box shows.
+    save = lambda ts: [t for t in ts if "Save current data" not in t]
+    asked = next((i for i, t in enumerate(texts) if "Save current data" in t), None)
+    if asked is not None:
+        return save(texts[:asked]), save(texts[asked + 1:])
+    return save(texts[:in_battle_texts]), save(texts[in_battle_texts:])
 
 
 def win(ctx, e, d, label, shots=(0,)):
@@ -368,7 +377,7 @@ def boxes(e, d, frames=1500):
         t = text_shown(d)
         stable = stable + 1 if t and t == last else 0
         last = t
-        if t and stable == 5 and (not texts or texts[-1] != clean(t)):
+        if t and stable == 5 and "Save current data" not in t and (not texts or texts[-1] != clean(t)):
             texts.append(clean(t))
         if d.scripts_running():
             quiet = 0

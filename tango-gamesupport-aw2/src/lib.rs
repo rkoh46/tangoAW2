@@ -131,6 +131,8 @@ pub mod pvp;
 pub mod ram_map;
 pub mod result_view;
 pub mod resume_info;
+#[cfg(test)]
+mod rom_layout;
 pub mod roster;
 pub mod run_dump;
 pub mod sandstorm;

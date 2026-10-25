@@ -37,7 +37,7 @@ COUNTDOWN = 0x0203FD18
 FULL = 36000
 CHARGING, WARNING, FIRING, HIT, DESTROYED, GONE = 1, 2, 3, 4, 5, 0
 # The panel's sprites: the satellite (OBJ tile 0x1F9, palette 15).
-SAT_TILE = 0x1F9
+SAT_TILE = 0x25A   # (crate::onyx::SAT_TILE: it drew over the arrow's corner piece at 0x1F9)
 OAM = 0x07000000
 # The map's nine missile silos (tile 0x180; spent: 0x1A0), Dual Strike's.
 SILOS = [(6, 2), (18, 10), (19, 11), (18, 12), (3, 16), (1, 18), (3, 19), (11, 19), (7, 20)]

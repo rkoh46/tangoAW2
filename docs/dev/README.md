@@ -8,6 +8,7 @@ session scratchpad.
 ```
 ./aw2dev build --all                 # tango + harness examples (PATH to cargo is set for you)
 ./aw2dev test                        # lib tests
+./aw2dev ci                          # what the GitHub checks workflow runs: cargo machete, workspace conventions, rustfmt, the test steps
 ./aw2dev suite                       # offline waiting-view suite, must end `suite done bad=0`
 ./aw2dev net sim moveview            # 2 real clients, local signalling mock, verdict: stall / hash / leak / result
 ./aw2dev net repeat                  # 2P Unranked with Emerald Sun, 8 runs: `8 of 8 runs with equal hashes` (a timing race passes single runs by chance)

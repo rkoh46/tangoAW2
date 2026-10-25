@@ -317,6 +317,9 @@ class Lint(unittest.TestCase):
         self.assertEqual(bad, [])
 
     def test_bh_campaign_maps_are_clean(self):
+        # (bh10 and bh31 once were excused, with a river cut off against a mountain; their rivers now run to the edge and the sea. Only bh30's second
+        # Black Hole HQ (AR02, a stage map the user has not approved changing) is excused now)
+        self.assertEqual(rules.KNOWN, {"bh30": {"AR02": 1}})
         bad = [(m.name, str(p)) for m in load.bh_maps() for p in rules.lint(m) if p.level == "error" and p.rule not in rules.KNOWN.get(m.name, {})]
         self.assertEqual(bad, [])
 

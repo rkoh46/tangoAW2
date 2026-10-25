@@ -218,9 +218,34 @@ def clean(t):
     return re.sub(r" +", " ", t.replace("\x0f", " ").replace("\r", " ").replace("\x0e", "")).strip()
 
 
+_TAILS = None
+
+
+def tails():
+    """{scene key: the Sturm scene that follows it}: a mission's `after` chain (`m.after = chain(&["m01_map", "m01_sturm"])` in `bh_act*.rs`) ends in the
+    scene of Sturm's aftermath; a test that reads "the victory, then the world-map scene" (and the war room's) reads that too, as the last scene of the
+    chain it names (the map's, or the war room's where the chain has one)."""
+    global _TAILS
+    if _TAILS is None:
+        _TAILS = {}
+        src = os.path.join(paths.REPO, "tango-gamesupport-aw2", "src")
+        for f in sorted(os.listdir(src)):
+            if not (f.startswith("bh_act") and f.endswith(".rs")):
+                continue
+            for m in re.finditer(r'm\.after = crate::bh_text::chain\(&\[([^\]]*)\]\)', open(os.path.join(src, f)).read()):
+                keys = re.findall(r'"([^"]+)"', m.group(1))
+                if len(keys) >= 2 and keys[-1].endswith("_sturm"):
+                    _TAILS[keys[-2]] = keys[-1]
+    return _TAILS
+
+
 def shown(key, lead=None, partner=None, bonds=()):
-    """What a test that collects `text_shown()` (cleaned) sees for the scene."""
-    return [clean(t) for t in scene(key, lead, partner, bonds)]
+    """What a test that collects `text_shown()` (cleaned) sees for the scene (a mission's last scene before Sturm's aftermath includes that scene)."""
+    out = [clean(t) for t in scene(key, lead, partner, bonds)]
+    tail = tails().get(key)
+    if tail:
+        out += [clean(t) for t in scene(tail, lead, partner, bonds)]
+    return out
 
 
 def boxes(key, lead=None, partner=None, bonds=()):

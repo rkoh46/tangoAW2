@@ -17,6 +17,7 @@ def build_parser():
 
     s = sub.add_parser("test", help="cargo test --lib for the gamesupport, session and match crates")
     s.add_argument("package", nargs="*")
+    s.add_argument("--debug", action="store_true", help="the cargo tests in the dev profile too (overflow checks on: `army_skin::lz77_round_trips` overflowed u32 there and nowhere else)")
     s.set_defaults(fn=build.test)
 
     s = sub.add_parser("harness", help="run one offline harness script (aw2_room_teams)")

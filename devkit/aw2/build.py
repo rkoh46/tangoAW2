@@ -70,6 +70,11 @@ def test(args):
         # the online tools' tests (`net desync` tells a stack-only timing skew from a real state desync; `net repeat` is registered)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_net"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode
+        # `aw2dev ci`'s reader of the checks workflow, the workspace conventions it holds, tango-library's feature gates
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_ci"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_wait"], cwd=cfg.DEVKIT, check=False)   # `aw2dev wait`
+        rc |= r.returncode
         from .commands import kit as _kit
         import argparse as _ap
         rc |= _kit.check(_ap.Namespace(strict=False))      # docs, skills and tests must not point at missing commands or files
@@ -79,4 +84,8 @@ def test(args):
     for pkg in (["tango-gamesupport-aw2", "tango-session", "tango-match"] if not args.package else args.package):
         r = util.run(["cargo", "test", "--release", "-p", pkg, "--lib"], env=env, cwd=cfg.REPO, check=False)
         rc |= r.returncode
+        if getattr(args, "debug", False):
+            # (release builds do not check integer overflow: a test that overflows only fails here)
+            r = util.run(["cargo", "test", "-p", pkg, "--lib"], env=env, cwd=cfg.REPO, check=False)
+            rc |= r.returncode
     return 1 if rc else 0

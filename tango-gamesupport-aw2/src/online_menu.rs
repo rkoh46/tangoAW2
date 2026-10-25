@@ -55,12 +55,12 @@ const WHEEL_LINK_BIG: u32 = 0x0823_CB14;
 const WHEEL_LINK_SMALL: u32 = 0x0823_D768;
 
 /// tangoAW2's data in free ROM (0x08E50000..0x08E5FFFF).
-const TEXTS_AT: u32 = 0x08E5_0000;
+pub(crate) const TEXTS_AT: u32 = 0x08E5_0000;
 const TEXT_SIZE: u32 = 0x40;
 pub const WHEEL_BIG_AT: u32 = 0x08E5_0400;
 pub const WHEEL_SMALL_AT: u32 = 0x08E5_0E00;
 const SHEET_AT: u32 = 0x08E5_1400;
-const SENTINEL: u32 = 0x08E5_FFFC;
+pub(crate) const SENTINEL: u32 = 0x08E5_FFFC;
 const MAGIC: u32 = 0x4E4C_4E4F; // "ONLN"
 
 /// OBJ VRAM's label slots by item (big, small) and the title's tiles.

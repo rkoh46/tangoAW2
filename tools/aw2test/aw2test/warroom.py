@@ -135,9 +135,31 @@ def start_battle(e, g):
     g.wait_for_input()
 
 
+# With the Dual Strike pack the War Room lists Dual Strike's 44 maps (ids 0x8B..0xB3, then 0xC1..0xC3) and keeps their rows of its own in RAM
+# (crate::ds_versus::ROWS), saved at the end of slot 15: AW2's rows at RECORDS stay empty. A test calls `set_ds(ctx.ds)`.
+import threading
+_tl = threading.local()     # (the tests of both modes run in threads of one process)
+
+
+def set_ds(on):
+    _tl.ds = bool(on)
+
+
+def is_ds():
+    return getattr(_tl, 'ds', False)
+
+
+DS_ROWS = 0x0203E500
+DS_IDS = list(range(0x8B, 0xB4)) + [0xC1, 0xC2, 0xC3]
+
+
+def row_at(map_id):
+    return DS_ROWS + ROW * DS_IDS.index(map_id) if is_ds() else RECORDS + ROW * (map_id - 0x6C)
+
+
 def record_row(e, map_id):
     """A map's five War Room records as (CO, score12, rank12) from the profile in RAM."""
-    b = e.read(RECORDS + ROW * (map_id - 0x6C), ROW)
+    b = e.read(row_at(map_id), ROW)
     out = []
     for k in range(5):
         v = int.from_bytes(b[4 * k:4 * k + 4], "little")
@@ -164,5 +186,8 @@ def win_map(e, g):
 
 def rows(e):
     """Every map's raw record row from the profile in RAM: {map id: 20 bytes} for the played ones."""
+    if is_ds():
+        b = e.read(DS_ROWS, len(DS_IDS) * ROW)
+        return {DS_IDS[k]: b[ROW * k:ROW * (k + 1)] for k in range(len(DS_IDS)) if any(b[ROW * k:ROW * (k + 1)])}
     b = e.read(RECORDS, 30 * ROW)
     return {0x6C + k: b[ROW * k:ROW * (k + 1)] for k in range(30) if any(b[ROW * k:ROW * (k + 1)])}

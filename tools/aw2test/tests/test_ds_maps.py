@@ -78,14 +78,7 @@ def built(name):
     for m in mappy.parse(os.path.join(FIVE, "maps.txt")):
         if m["name"] == name:
             lz, units, (w, h), _ = mappy.build(m, mappy.sea_edges(rom))
-            raw = bytearray()
-            n = struct.unpack_from("<I", lz, 0)[0] >> 8
-            p = 4
-            while len(raw) < n:
-                p += 1  # literal blocks only
-                raw += lz[p:p + 8]
-                p += 8
-            raw = bytes(raw[:n])
+            raw = romlib.lz10(lz)    # (five/map.py compresses: a map with repeats is not all literal blocks)
             tiles = [struct.unpack_from("<H", raw, 2 + 2 * k)[0] for k in range(w * h)]
             out, army = [], 0
             for k in range(0, len(units), 12):
@@ -124,6 +117,8 @@ def select_map(ctx, name, save=None):
     e.wait(150)
     e.press("A", 8)
     e.wait(150)
+    e.press("L+R", 12)   # (offline Versus lists by player count: L and R show the game's own tabs)
+    e.wait(120)
     if not g.press_until("LEFT", lambda: e.u8(MAP_TAB) == tab, tries=12, hold=8, settle=50):
         raise NavError(f"tab {tab} not reached (tab {e.u8(MAP_TAB)})")
     e.wait(30)

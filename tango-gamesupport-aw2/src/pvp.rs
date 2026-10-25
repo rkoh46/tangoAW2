@@ -607,7 +607,9 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // an Emerald Sun CO's tag pair with a CO the file does not list is 95% (crate::es_co::UNLISTED_PAIR), and an army shows the HQ its CO's data file names (crate::army_skin::hq_style: the Roman COs' Emerald Sun HQ).
         // 29: Clone Andy's own numbers (crate::co_new::clone_andy_bonus): day to day +2% firepower and defence on every unit, Hyper Upgrade +30% / +20% with no move bonus, healing 4 HP (crate::es_co::HEAL4).
         // 28 (asuka branch, merged as 30): Asuka (CO 92, crate::asuka) joins the roster in every Versus list: the CO table, the Teams order and the texts the pack writes are 92 rows long and her powers are Black Wave / Black Storm with Sonja's vision, hidden HP and strike-first (a merge with another bump must take the next free number).
-        // 30: the cotest (29) and asuka (28) branches merged: Clone Andy's numbers, the HQ that follows the CO, Asuka (CO 92) in every Versus list.
+        // 28 (bugfix branch, merged as 30): the Dual Strike picture palettes' backups moved below the skins' figures (a skin on colour 5 with the pack no longer corrupts the build menu), the skills screen's backup in free ROM moved above the fourth
+        // look, Cassius's Triumph (the computer's too, ended by a Tag Power's Change, kept by a suspended game) and the offline map list's view in the console's memory.
+        // 30: the cotest (29), asuka (28) and bugfix (28) branches merged: Clone Andy's numbers, the HQ that follows the CO, Asuka (CO 92) in every Versus list, the palette backups' new place, Triumph, the map-list view in console memory.
         crate::inspect::SIM_VERSION
     }
 
