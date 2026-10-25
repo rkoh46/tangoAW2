@@ -29,8 +29,8 @@ fn es09() -> MissionDef {
     let mut m = MissionDef::new("es09", "Grain Ships");
     m.objective = "Take the Kite Hill depot and sink the three grain barges before day 11.";
     m.map = MapSrc::Built("es09");
-    m.look = 2; // desert
-    m.weather = Weather::Clear; // Kite Hill's dry desert highland
+    m.look = 3; // wasteland (the bay is lava)
+    m.weather = Weather::Clear; // Black Hole's scorched wasteland
     m.armies = vec![
         // (Orange Star's colour: Black Hole's is the enemy's in this mission)
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(5000),

@@ -9,13 +9,13 @@ def build():
     m.header(armies=2, colours=(OS, BH), objective=[1], blackhole=True,
              comment="M9 Grain Ships (province: Kite Hill and the HOBB freight yards, Black Hole's harbour): the Aurean legion lands on the south-west road, crosses the Kite river and takes the "
                      "depot airport on the plateau (depot) and sinks the three HOBB barges (barge1..3) moored in the bay by day 10. "
-                     "Two approaches: north over the three bridges and up the hill's gaps, or east along the south road through the freight yard and the Black Cannon's shadow. "
+                     "Wasteland look (lava bay). The HOBB pipeline (pipe wall x22, y16..21, seam at (22,19)) walls off the south-east freight yard and the Black Cannon: break the seam (attack it) to open a flank. Two approaches: north over the three bridges and up the hill's gaps, or east along the south road through the freight yard and the Black Cannon's shadow. "
                      "Threat/answer: minicannons (W/E/S on the depot's gaps), Black Cannon and Deathray shoot ground and sea only -> Fighters/Bombers/B Copters ignore them, Artillery outranges the minicannons; "
                      "enemy AA tanks and Missiles -> player Fighters strike first, own AA and Missiles escort, woods and river banks give cover; enemy Fighter/B Copter -> own Fighters and AA; "
-                     "enemy Tanks/Md Tank -> Tanks/Artillery/Mechs at the bridges; Black Crystals heal BH units: kill what stands on them with Bombers. Barges (Landers on the sea): Bombers, Fighters, B Copters, "
+                     "enemy Tanks/Md Tank/Piperunner (a strong ground unit that starts on the pipeline and its base builds more) -> Rockets/Tanks/Artillery and Bombers, Mechs at the bridges; Black Crystals heal BH units: kill what stands on them with Bombers. Barges (Landers on the sea): Bombers, Fighters, B Copters, "
                      "or Artillery/Tanks from the shore. "
-                     "Player start: FTR3 BMB3 BCO2 AA2 MIS2 ART2 TANK3 MECH2 INF3 (22 units), funds 5000. "
-                     "Black Hole start: INF5 MECH2 TANK3 MDT1 AA3 MIS2 ART2 FTR1 BCO1 + 3 barges (Landers) = 23 units, about 1.2x the player's ground value. All inventions are Black Hole's.")
+                     "Player start: FTR3 BMB3 BCO2 AA2 MIS2 ART2 ROCKETS1 TANK3 MECH2 INF3 (23 units), funds 5000. "
+                     "Black Hole start: INF5 MECH2 TANK3 MDT1 AA3 MIS2 ART2 FTR1 BCO1 + 3 barges (Landers) + 1 Piperunner on the pipeline = 24 units, about 1.2x the player's ground value. All inventions are Black Hole's.")
     # ---- the bay (east, open sea to the edge) with a lighthouse isle; the coast: first sea column of each row ----
     coast = [24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 27, 28, 28, 28, 28, 28, 28, 28]
     for y, x0 in enumerate(coast):
@@ -60,11 +60,17 @@ def build():
     m.put("n", 24, 19).put("D", 20, 1)                               # the Black Cannon over the bay's south shore, the Deathray on the top edge
     m.beach(22, 0, 31, 21)
     m.put("P", 25, 9).put("P", 25, 4)                                # the HOBB harbour (sea beside each)
+    # ---- the pipeline ----
+    # the HOBB pipeline: a wall of pipe from the south edge up to the south road, across Black Hole's freight yard; the seam (22,19) is the breakable gate
+    m.pipe([(22, 16), (22, 21)]).put("Z", 22, 19)
+    m.put("B", 23, 17)                                               # Black Hole's pipe base: connected to the pipeline, it builds Piperunners
+
     # ---- units ----
+    m.unit(2, PIPER, 22, 17, hold=True)                              # the pipeline's Piperunner
     P = (0, 14, 12, 21)
     m.spread(1, {FTR: 3, BMB: 3}, (3, 17, 12, 21), seed=1, gap=0)
     m.spread(1, {BCO: 2, AA: 2, MIS: 2}, (3, 13, 12, 19), seed=2, gap=1)
-    m.spread(1, {ART: 2, TANK: 3, MECH: 2, INF: 3}, (3, 12, 16, 18), seed=3, gap=1)
+    m.spread(1, {ART: 2, ROCK: 1, TANK: 3, MECH: 2, INF: 3}, (3, 12, 16, 18), seed=3, gap=1)
     H = dict(hold=True)
     # garrison of the hill (hold): infantry in the gaps, guns behind
     for kind, x, y in ((INF, 7, 4), (INF, 15, 4), (MECH, 12, 8), (MIS, 11, 5), (ART, 13, 3), (AA, 10, 4), (FTR, 14, 5)):
@@ -85,5 +91,8 @@ def build():
     m.note("black_cannon", 24, 19, "Black Cannon facing up over the bay's south shore; the south-east freight yard is Black Hole's")
     m.note("deathray", 20, 1, "Deathray on the top edge (x19..21,y0..2), covers the harbour road; far from the player")
     m.note("isle", 29, 3, "grain isle: neutral city on a sea-only islet").note("ports", 25, 9, "ports (25,9) and (25,4)")
-    m.desertify(keep=0.4, rocks=5, size=5, seed=9)                      # (the desert look: sparse scrub, rock outcrops, canyon walls)
+    # ---- wasteland (look 3): ruins, rough ground; the bay is lava ----
+    m.puts("c", [(16, 19), (10, 13), (17, 9)])                           # more ruins (neutral cities in the wasteland)
+    m.put("r", 29, 13).put("r", 30, 14).put("r", 29, 17).put("r", 31, 11)        # reefs (lava rocks) in the bay
+    m.desertify(keep=0.15, rocks=9, size=5, seed=9)                  # (the wasteland look: sparse scrub, rock outcrops)
     return m
