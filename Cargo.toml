@@ -50,6 +50,7 @@ clap = { version = "4", features = ["derive"] }
 crc32fast = "1"
 datachannel-wrapper = { git = "https://github.com/tangobattle/datachannel-wrapper" }
 encoder-facade = { git = "https://github.com/tangobattle/encoder-facade" }
+env_logger = "0.9"
 fluent-templates = "0.14"
 futures = "0.3"
 gamepad-facade = { git = "https://github.com/tangobattle/gamepad-facade", default-features = false }
@@ -82,6 +83,7 @@ tango-patch = { git = "https://github.com/tangobattle/tango-patch" }
 tango-signaling = { git = "https://github.com/tangobattle/tango-signaling" }
 thiserror = "1"
 tokio = "1"
+tokio-tungstenite = { version = "0.16", features = ["rustls-tls-webpki-roots"] }
 tokio-util = "0.7"
 unic-langid = { version = "0.9", features = ["likelysubtags"] }
 walkdir = "2"

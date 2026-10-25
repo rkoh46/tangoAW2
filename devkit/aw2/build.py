@@ -58,6 +58,9 @@ def test(args):
         # the online tools' tests (`net desync` tells a stack-only timing skew from a real state desync; `net repeat` is registered)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_net"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode
+        # `aw2dev ci`'s reader of the checks workflow, the workspace conventions it holds, tango-library's feature gates
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_ci"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         from .commands import kit as _kit
         import argparse as _ap
         rc |= _kit.check(_ap.Namespace(strict=False))      # docs, skills and tests must not point at missing commands or files

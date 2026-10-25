@@ -6390,7 +6390,6 @@ name = "tango-signaling"
 version = "0.1.0"
 dependencies = [
  "datachannel-wrapper",
- "futures",
  "futures-util",
  "gloo-timers",
  "http 0.2.12",

@@ -91,7 +91,7 @@ tango-ui = { path = "../tango-ui" }
 encoder-facade.workspace = true
 directories-next = "2"
 log.workspace = true
-env_logger = "0.9"
+env_logger.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 

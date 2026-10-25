@@ -23,7 +23,7 @@ web-time.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true, features = ["net", "rt-multi-thread", "time"] }
 tokio-util = { workspace = true, features = ["rt"] }
-tokio-tungstenite = { version = "0.16", features = ["rustls-tls-webpki-roots"] }
+tokio-tungstenite.workspace = true
 
 [lints]
 workspace = true

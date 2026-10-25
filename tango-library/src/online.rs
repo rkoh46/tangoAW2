@@ -111,27 +111,57 @@ pub fn set_room(names: Vec<String>, local_seat: usize) {
     tango_gamesupport_aw2::online::set_room(names, local_seat)
 }
 
-/// The room's player count, the name of a seat and this peer's seat (for the status bar).
+/// The room's player count, the name of a seat and this peer's seat (for the status bar). Without a game registered there is no room: 0, no names, seat 0.
+#[cfg(feature = "gamesupport-aw2")]
 pub fn room_players() -> usize {
     tango_gamesupport_aw2::online::room_players()
 }
+#[cfg(not(feature = "gamesupport-aw2"))]
+pub fn room_players() -> usize {
+    0
+}
 /// Each seat's (team 0..=4, army colour code 1..=5), once the room's match has them.
+#[cfg(feature = "gamesupport-aw2")]
 pub fn room_picks() -> Vec<(u8, u8)> {
     tango_gamesupport_aw2::online::room_picks()
 }
+#[cfg(not(feature = "gamesupport-aw2"))]
+pub fn room_picks() -> Vec<(u8, u8)> {
+    Vec::new()
+}
 /// The colour (RGB) of the army skin (Emerald Sun) when it sits on army colour `code` (1..=5) in this match, for the
 /// legends: `None` for the five armies' own colours.
+#[cfg(feature = "gamesupport-aw2")]
 pub fn skin_accent(code: u8) -> Option<(u8, u8, u8)> {
     tango_gamesupport_aw2::army_skin::present_skin(code).map(tango_gamesupport_aw2::army_skin::swatch)
 }
+#[cfg(not(feature = "gamesupport-aw2"))]
+pub fn skin_accent(_code: u8) -> Option<(u8, u8, u8)> {
+    None
+}
+#[cfg(feature = "gamesupport-aw2")]
 pub fn room_named() -> usize {
     tango_gamesupport_aw2::online::room_named()
 }
+#[cfg(not(feature = "gamesupport-aw2"))]
+pub fn room_named() -> usize {
+    0
+}
+#[cfg(feature = "gamesupport-aw2")]
 pub fn room_name(seat: usize) -> String {
     tango_gamesupport_aw2::online::room_name(seat)
 }
+#[cfg(not(feature = "gamesupport-aw2"))]
+pub fn room_name(_seat: usize) -> String {
+    String::new()
+}
+#[cfg(feature = "gamesupport-aw2")]
 pub fn room_local_seat() -> usize {
     tango_gamesupport_aw2::online::room_local_seat()
+}
+#[cfg(not(feature = "gamesupport-aw2"))]
+pub fn room_local_seat() -> usize {
+    0
 }
 
 #[cfg(feature = "gamesupport-aw2")]
