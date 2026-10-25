@@ -3,6 +3,20 @@
   sound list [--source aw2|ds|roles]   aw2: AW2's own song ids with what the ROM does with them (CO themes, event-script uses, scene roles);
                                        ds: Dual Strike's sequences by name (BGM_* / SE_*) from the .nds' sound archive, with the ones the pack converts;
                                        roles: the names a scene's `@SONG` may use (src/campaign_music.rs)
+
+The Emerald Sun COs' own themes (docs/dev/music-kit.md, skill aw2-add-music): songs as text in tango-gamesupport-aw2/music/es/*.m4t,
+compiled to AW2's sound engine (MP2K) data by src/es_music.rs and played with AW2's own voices.
+  sound compose [--song N ..] [--dir D]   compile the song files and check the rules (loop 45..90 s, at most 8 notes at once, 8 tracks, size);
+                                          exit 1 on an error or a rule broken. Needs `aw2dev build --examples`
+  sound render [--song N ..] [--out D] [--seconds S] [--dir D]
+                                          play each theme in the game (the harness: the CO's turn in a battle), record its audio output to <out>/<name>.wav
+                                          (default devkit/work/music/), then loopcheck + levels + a picture (<name>.png); --dir plays song files from another
+                                          folder without a rebuild (TANGOAW2_ES_MUSIC); an AW2 CO's name (kanbei) records AW2's own theme
+  sound loopcheck WAV [--song N]          the loop seams of a recording: period error, click and gap at each seam, how alike the passes are
+  sound levels [WAV ..] [--ref]           loudness (RMS dBFS), peak, spread and band balance of recordings next to AW2's own themes (--ref records them first)
+  sound voices [--group A|B] [--program N ..] [--sheet PNG]
+                                          AW2's voice entries (type, sample length, loop, the pitch it sounds at key 60 = the `shift` a song needs) with a picture sheet
+  sound dump SONG_ID                      AW2's own song as text (tracks with notes, voices, loops): how its themes are written
 """
 import re, struct
 from .. import cfg
@@ -14,6 +28,8 @@ def register(sub):
     a = ss.add_parser("list", help="list songs")
     a.add_argument("--source", default="roles", choices=["aw2", "ds", "roles"])
     a.set_defaults(fn=lst)
+    from ..musiclib import tools
+    tools.register(ss)
 
 
 CO = ["Nell", "Andy", "Max", "Olaf", "Sami", "Grit", "Kanbei", "Sonja", "Eagle", "Drake", "Sturm", "Flak", "Lash", "Adder", "Hawke", "Hachi", "Colin", "Jess", "Sensei"]

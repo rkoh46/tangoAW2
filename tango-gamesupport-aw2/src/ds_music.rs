@@ -863,30 +863,30 @@ fn adsr(r: &Region) -> [u8; 4] {
 // --- MP2K ------------------------------------------------------------------------
 
 /// Note and wait lengths MP2K has commands for (`N01..N96`, `W01..W96`).
-const LENGTHS: [u32; 48] = [
+pub(crate) const LENGTHS: [u32; 48] = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 30, 32, 36, 40, 42, 44, 48, 52, 54, 56, 60,
     64, 66, 68, 72, 76, 78, 80, 84, 88, 90, 92, 96,
 ];
-const WAIT: u8 = 0x80; // W00; W(LENGTHS[i]) is 0x81 + i
-const NOTE: u8 = 0xD0; // N(LENGTHS[i]) is 0xD0 + i
-const FINE: u8 = 0xB1;
-const GOTO: u8 = 0xB2;
-const TEMPO: u8 = 0xBB;
-const KEYSH: u8 = 0xBC;
-const VOICE: u8 = 0xBD;
-const VOL: u8 = 0xBE;
-const PAN: u8 = 0xBF;
-const BEND: u8 = 0xC0;
-const BENDR: u8 = 0xC1;
-const LFOS: u8 = 0xC2;
-const LFODL: u8 = 0xC3;
-const MOD: u8 = 0xC4;
-const MODT: u8 = 0xC5;
-const EOT: u8 = 0xCE;
-const TIE: u8 = 0xCF;
+pub(crate) const WAIT: u8 = 0x80; // W00; W(LENGTHS[i]) is 0x81 + i
+pub(crate) const NOTE: u8 = 0xD0; // N(LENGTHS[i]) is 0xD0 + i
+pub(crate) const FINE: u8 = 0xB1;
+pub(crate) const GOTO: u8 = 0xB2;
+pub(crate) const TEMPO: u8 = 0xBB;
+pub(crate) const KEYSH: u8 = 0xBC;
+pub(crate) const VOICE: u8 = 0xBD;
+pub(crate) const VOL: u8 = 0xBE;
+pub(crate) const PAN: u8 = 0xBF;
+pub(crate) const BEND: u8 = 0xC0;
+pub(crate) const BENDR: u8 = 0xC1;
+pub(crate) const LFOS: u8 = 0xC2;
+pub(crate) const LFODL: u8 = 0xC3;
+pub(crate) const MOD: u8 = 0xC4;
+pub(crate) const MODT: u8 = 0xC5;
+pub(crate) const EOT: u8 = 0xCE;
+pub(crate) const TIE: u8 = 0xCF;
 
 /// Waits for `ticks`.
-fn waits(out: &mut Vec<u8>, mut ticks: u32) {
+pub(crate) fn waits(out: &mut Vec<u8>, mut ticks: u32) {
     while ticks > 0 {
         let i = LENGTHS.iter().rposition(|&l| l <= ticks).unwrap();
         out.push(WAIT + 1 + i as u8);
@@ -896,7 +896,7 @@ fn waits(out: &mut Vec<u8>, mut ticks: u32) {
 
 /// A note of `len` ticks: `Nxx key vel [extra]`, or `None` if longer than
 /// MP2K's longest (then it is tied).
-fn note(key: u8, vel: u8, len: u32) -> Option<Vec<u8>> {
+pub(crate) fn note(key: u8, vel: u8, len: u32) -> Option<Vec<u8>> {
     let len = len.max(1);
     let i = LENGTHS.iter().rposition(|&l| l <= len)?;
     let extra = len - LENGTHS[i];
@@ -1244,6 +1244,17 @@ pub struct Music {
     /// The power themes ([`POWER_SONGS`]) the pack has: (sequence id, song
     /// id).
     pub power: Vec<(u16, u16)>,
+    /// The Emerald Sun COs' own themes ([`crate::es_music`]), last in the song table.
+    pub es: Vec<EsSong>,
+}
+
+/// One of the Emerald Sun COs' themes in the music's ROM: its song id and the voice group to fill from AW2's own ([`install`]).
+pub struct EsSong {
+    pub co: u8,
+    pub song: u16,
+    pub header: u32,
+    pub group_at: u32,
+    pub voices: Vec<crate::es_music::VoiceRef>,
 }
 
 struct Blob {
@@ -1326,7 +1337,15 @@ fn build() -> Option<Music> {
     let table_at = TABLE;
     // The staff roll's stream, a song after the others.
     let roll = pack.file(STAFF_ROLL_STREAM).and_then(stream);
-    blob.bytes.resize((TABLE - BASE) as usize + 8 * (AW2_SONGS as usize + distinct.len() + roll.is_some() as usize), 0);
+    // The Emerald Sun COs' themes (crate::es_music), the table's last rows; a song that does not compile is left out (the CO plays its like CO's).
+    let es_list = match crate::es_music::compile_all() {
+        Ok(l) => l,
+        Err(e) => {
+            log::error!("the Emerald Sun themes: {e}");
+            Vec::new()
+        }
+    };
+    blob.bytes.resize((TABLE - BASE) as usize + 8 * (AW2_SONGS as usize + distinct.len() + roll.is_some() as usize + es_list.len()), 0);
     let mut headers = Vec::new();
     let mut waves: HashMap<(u16, u16), u32> = HashMap::new();
     let silent = {
@@ -1538,6 +1557,32 @@ fn build() -> Option<Music> {
         blob.bytes[e + 6..e + 8].copy_from_slice(&PLAYER.to_le_bytes());
         staff_roll = Some(FIRST_SONG + n as u16);
     }
+    // The Emerald Sun themes: a voice group (filled from the ROM's own at install), the tracks with their loops' addresses, the header and its row.
+    let mut es = Vec::new();
+    let es_row = distinct.len() + roll_n;
+    for (k, (co, c)) in es_list.iter().enumerate() {
+        let group_at = story_blob.put(&vec![0u8; 12 * c.voices.len()]);
+        let mut track_at = Vec::new();
+        for t in &c.tracks {
+            let mut bytes = t.bytes.clone();
+            story_blob.align();
+            let at = story_blob.at();
+            bytes[t.goto..t.goto + 4].copy_from_slice(&(at + t.label as u32).to_le_bytes());
+            story_blob.put(&bytes);
+            track_at.push(at);
+        }
+        let mut header = vec![track_at.len() as u8, 0, c.priority, c.reverb];
+        header.extend_from_slice(&group_at.to_le_bytes());
+        for a in &track_at {
+            header.extend_from_slice(&a.to_le_bytes());
+        }
+        let header_at = story_blob.put(&header);
+        let e = (table_at - BASE) as usize + 8 * (AW2_SONGS as usize + es_row + k);
+        blob.bytes[e..e + 4].copy_from_slice(&header_at.to_le_bytes());
+        blob.bytes[e + 4..e + 6].copy_from_slice(&PLAYER.to_le_bytes());
+        blob.bytes[e + 6..e + 8].copy_from_slice(&PLAYER.to_le_bytes());
+        es.push(EsSong { co: *co, song: FIRST_SONG + (es_row + k) as u16, header: header_at, group_at, voices: c.voices.clone() });
+    }
     blob.bytes[0..4].copy_from_slice(&MAGIC.to_le_bytes());
     let song_of = |id: u16, from: usize| FIRST_SONG + (from + distinct[from..].iter().position(|&d| d == id).unwrap()) as u16;
     let songs = ids.iter().map(|&id| song_of(id, 0)).collect();
@@ -1551,7 +1596,7 @@ fn build() -> Option<Music> {
     }
     let power = power_ids.iter().map(|&id| (id, FIRST_SONG + table_index(tag_end + distinct[tag_end..].iter().position(|&d| d == id).unwrap()) as u16)).collect();
     debug_assert!(STORY_BASE as usize + story_blob.bytes.len() <= STORY_END as usize, "the story's songs pass {STORY_END:#x}");
-    Some(Music { blob: blob.bytes, story_blob: story_blob.bytes, songs, headers, heal_se, story, staff_roll, tag_se, power })
+    Some(Music { blob: blob.bytes, story_blob: story_blob.bytes, songs, headers, heal_se, story, staff_roll, tag_se, power, es })
 }
 
 static BUILT: OnceLock<Option<Music>> = OnceLock::new();
@@ -1574,6 +1619,9 @@ pub fn staff_roll_song() -> Option<u16> {
 
 /// The song a new CO's turn plays, with the pack.
 pub fn song(co: u8) -> Option<u16> {
+    if let Some(e) = music()?.es.iter().find(|e| e.co == co) {
+        return Some(e.song);
+    }
     let i = crate::co_new::NEW.iter().position(|&(ds, _)| Some(ds) == crate::co_new::ds_id(co))?;
     music()?.songs.get(i).copied()
 }
@@ -1613,6 +1661,14 @@ fn install(core: &mut Core) -> bool {
     core.raw_write_range(BASE + rest as u32, -1, &m.blob[rest..]);
     if !m.story_blob.is_empty() {
         core.raw_write_range(STORY_BASE, -1, &m.story_blob);
+    }
+    // The Emerald Sun themes' voice groups: AW2's own voices (their samples stay where the ROM has them), copied into slots.
+    for e in &m.es {
+        for (slot, v) in e.voices.iter().enumerate() {
+            let mut b = [0u8; 12];
+            core.raw_read_range(v.group + 12 * v.index as u32, -1, &mut b);
+            core.raw_write_range(e.group_at + 12 * slot as u32, -1, &b);
+        }
     }
     core.raw_write_32(BASE, -1, MAGIC);
     true
@@ -1822,5 +1878,47 @@ mod pack_tests {
         assert_eq!(power_song(PowerSong::CoPower, true), Some(m.power[0].1));
         eprintln!("the story's songs end at {:#010x}", STORY_BASE as usize + m.story_blob.len());
         assert!(STORY_BASE as usize + m.story_blob.len() <= STORY_END as usize);
+    }
+
+    /// The Emerald Sun themes' room (crate::es_music): the last rows of the song table, their data after the power themes in the story's ROM range, every
+    /// piece (voice group, track, header) inside [`STORY_BASE`]..[`STORY_END`] and none over another, the voice groups filled at install from AW2's own
+    /// (needs `TANGOAW2_DS_ROM`): `cargo test -p tango-gamesupport-aw2 ds_music -- --ignored`.
+    #[test]
+    #[ignore]
+    fn es_themes_fit() {
+        crate::ds_pack::pack().expect("TANGOAW2_DS_ROM");
+        let m = music().expect("music");
+        assert_eq!(m.es.len(), crate::es_music::SOURCES.len(), "every theme compiled");
+        let end = STORY_BASE + m.story_blob.len() as u32;
+        assert!(end <= STORY_END, "the story's songs end at {end:#x}, past {STORY_END:#x} (the maps' table)");
+        let last_power = m.power.iter().map(|p| p.1).max().expect("the power themes");
+        let mut ranges: Vec<(u32, u32, String)> = Vec::new();
+        for (e, (_, c)) in m.es.iter().zip(crate::es_music::compile_all().unwrap()) {
+            assert!(e.song > last_power, "{}: song {} after the power themes ({last_power}), so every earlier id keeps its number", e.co, e.song);
+            let h = (e.header - STORY_BASE) as usize;
+            let n = m.story_blob[h] as usize;
+            assert_eq!(n, c.tracks.len());
+            ranges.push((e.header, e.header + 8 + 4 * n as u32, format!("{} header", e.co)));
+            ranges.push((e.group_at, e.group_at + 12 * e.voices.len() as u32, format!("{} voices", e.co)));
+            for (k, t) in c.tracks.iter().enumerate() {
+                let at = u32_at(&m.story_blob, h + 8 + 4 * k).unwrap();
+                ranges.push((at, at + t.bytes.len() as u32, format!("{} track {k}", e.co)));
+                // the loop's GOTO points at the track's own label
+                let goto = (at - STORY_BASE) as usize + t.goto;
+                assert_eq!(u32_at(&m.story_blob, goto), Some(at + t.label as u32));
+            }
+        }
+        for (i, a) in ranges.iter().enumerate() {
+            assert!(a.0 >= STORY_BASE && a.1 <= end, "{} ({:#x}..{:#x}) outside the story's data", a.2, a.0, a.1);
+            for b in &ranges[i + 1..] {
+                assert!(a.1 <= b.0 || b.1 <= a.0, "{} ({:#x}..{:#x}) overlaps {} ({:#x}..{:#x})", a.2, a.0, a.1, b.2, b.0, b.1);
+            }
+        }
+        // The rows: the table's last five entries, on the themes' player.
+        for e in &m.es {
+            let row = (TABLE - BASE) as usize + 8 * e.song as usize;
+            assert_eq!(u32_at(&m.blob, row), Some(e.header));
+            assert_eq!(u16_at(&m.blob, row + 4), Some(PLAYER));
+        }
     }
 }

@@ -17,7 +17,7 @@ How the BH Campaign presents its story the way AW2's Normal campaign does, and t
 - **Prologue**: a new campaign runs AW2's own prologue proc (`0x08616FD4`: the PROLOGUE card, song 425, the fades) with the campaign's narration as its event script (the pool word `0x0808A880`,
   `ds_campaign::prologue_pool`; the proc is started by `start_new_proc` when nothing is won and the flag `0x9E` is unset), then the world map (424, the same song the game plays on every return).
 - **Every story scene has a song**: `== key` then `@SONG name` in `bh_text/*.txt`. Names: `aw2dev sound list` (roles `opening enemy1 enemy2 ally1 ally2 entry pinch hagevolt red blue sturm doom final
-  ending1 ending2`, `aw2:<id>`, `co:<name>` = that CO's theme). `tools/bhtext/lint.py` and the Rust test `every_story_scene_has_a_song` fail a pre / post / map / warroom / sturm / ... scene without one.
+  ending1 ending2`, `aw2:<id>`, `co:<name>` = that CO's theme; the Emerald Sun COs' own themes are `co:klaus`, `co:aurelia`, `co:cassius`, `co:livia`, `co:varro`: docs/dev/music-kit.md). `tools/bhtext/lint.py` and the Rust test `every_story_scene_has_a_song` fail a pre / post / map / warroom / sturm / ... scene without one.
   The mid-battle day scenes keep the battle's music on purpose.
 - Fades: a scene on a battle map starts its song with op 0x41 and ends with 0x42 (the CO's theme returns with the turn); a scene on the world map ends with 0x41 of the map's song; scenes chained
   with `bh_text::chain(&["m03_map", "m03_warroom", "m03_sturm"])` hand over from song to song with 0x41 (`Scene::then`).

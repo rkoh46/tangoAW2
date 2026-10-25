@@ -81,6 +81,7 @@ pub mod es_act2;
 pub mod es_act3;
 pub mod es_act4;
 pub mod es_co;
+pub mod es_music;
 pub mod es_map_data;
 pub mod es_text;
 pub mod crumb_art;

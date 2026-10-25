@@ -55,7 +55,8 @@ from Aurelia's army in her Super Power costs every enemy unit orthogonally next 
 `orrs` (trap `0x08042532`, the battle's return addresses only), its bit is set in `es_co::MOVED_AFTER_ATTACK` (`0x0203C980`, one bit a unit slot, +0x28 the army of the last tick, registered in `ram_map`), the two Fire rows'
 show tests (`0x0802CA78`, `0x0802CB20`) hide Fire for such a unit, any ordinary end of its action clears the bit, and the bits are cleared when the turn changes hands. The computer's Cassius gets no extra
 move (its unit loop would fire the unit again). All three are pure functions of emulated memory (no statics, no host state), so both peers and any rollback agree.
-Pictures are placeholders (Dual Strike donors); the portrait work is the branch `escampaign`.
+Pictures are placeholders (Dual Strike donors); the portrait work is the branch `escampaign`. **Each of the five has a theme of its own** (`music/es/*.m4t`, compiled by `es_music.rs`, played with AW2's own instruments: `docs/dev/music-kit.md`, `aw2dev sound`);
+it plays on the CO's turn and in a scene that says `@SONG co:klaus` (M1 and M2 pre: Klaus; M3 pre: Aurelia; M4 post, M5 pre, M11 map: Cassius; M6 pre: Livia; M5 map, M14 pre: Varro).
 The five are listed in Versus only with `TANGOAW2_ES_VERSUS` (a development aid).
 
 ## Saves

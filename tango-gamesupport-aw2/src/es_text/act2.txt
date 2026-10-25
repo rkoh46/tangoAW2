@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------- M5 Dust and Wheels (Cassius leads; enemy Grimm and Sensei)
 
 == m05_pre
-@SONG entry
+@SONG co:cassius
 NARRATION: The Comet Road, Yellow Comet. / Day one of nine.
 NARRATION: Three bridges over the Sable. / Posts: Highwatch, Crossways, Lowmere.
 KLAUS: Prefect Cassius. The legion / has rested. The road is yours.
@@ -67,7 +67,7 @@ CASSIUS(h): HA! That is the best / sentence you have ever said!
 KLAUS: It is the only one. Do not / wear it out.
 
 == m05_map
-@SONG enemy1
+@SONG co:varro
 NARRATION: Fort Amberlea's road, past the / Sable. A dispatch from the Senate.
 LIVIA: A reply, Legate. It came / in half the usual time.
 KLAUS: "The Consul Varro to the / Legate Klaus, greeting. The Senate
@@ -88,7 +88,7 @@ KLAUS: Write the figure down. We / will ask again, in person.
 # ---------------------------------------------------------------- M6 Tribute (Livia leads; enemy Colin and Sasha)
 
 == m06_pre
-@SONG aw2:423
+@SONG co:livia
 NARRATION: The market town of Aurelhaven, / Blue Moon. Sixteen days.
 KLAUS: Quaestor. You asked for me. / I would rather be at the front.
 LIVIA: I asked you to be silent, / Legate. It will be difficult.

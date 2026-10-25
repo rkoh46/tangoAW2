@@ -52,6 +52,9 @@ def test(args):
         for mod in ("aw2.esmaplib.test_esmaplib", "aw2.eslib.test_eslib"):
             r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", mod], cwd=cfg.DEVKIT, check=False)
             rc |= r.returncode
+        # the music kit's tests (the M4A reader, the song compiler's bytes read back by it, pitch / loop-seam / level analysis, the rules)
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.musiclib.test_musiclib"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         # the online tools' tests (`net desync` tells a stack-only timing skew from a real state desync; `net repeat` is registered)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_net"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode

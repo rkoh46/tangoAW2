@@ -1,0 +1,117 @@
+; Varro, imperator of the Emerald Sun's praetorians, the boss: "Imperium Tenebrarum", a slow, dark imperial theme in C minor.
+; Original composition for tangoAW2. Low horns speak a short phrase over a pedal and a heartbeat of timpani; a flat second
+; (the Db chord) and a long dominant keep it from ever settling; a trumpet answers in the middle section.
+;
+; Form: two bars of heartbeat, then the loop: the horns (A), the trumpet's answer over tremolo strings (B), and the horns
+; with everything (A2). 24 bars at 84 beats a minute: about 69 s.
+song varro
+tempo 84
+meter 4/4
+reverb 173
+priority 0
+
+inst horns   = A.111 shift=-12      ; low brass
+inst trumpet = A.56  shift=-12
+inst strings = A.48                 ; tremolo
+inst bass    = A.34  shift=24
+inst timp    = A.47  shift=24
+inst kit     = A.120
+inst pad     = A.26                 ; a slow, swelling pad
+
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49 crash2=57
+
+track 1 inst=horns   vol=82 pan=-6  vel=112 gate=92 gain=1.3
+track 2 inst=trumpet vol=72 pan=14  vel=108 gate=90 gain=1.4
+track 3 inst=strings vol=54 pan=22  vel=88  gate=100 gain=1.9
+track 4 inst=bass    vol=84 pan=0   vel=118 gate=95 gain=0.85
+track 5 inst=timp    vol=82 pan=0   vel=122 gate=95 gain=0.8
+track 6 inst=kit     vol=68 pan=0   vel=108 gate=100 gain=1.3
+track 7 inst=pad     vol=46 pan=-20 vel=90  gate=100 gain=0.45
+
+; ---- the horns' phrase: Cm Cm Ab G | Cm Fm Db G ----
+def thA:
+  | C4/4. D4/8 Eb4/2 |
+  | G3/4. Ab3/8 G3/2 |
+  | Ab3/4. Bb3/8 C4/2 |
+  | B3/4. C4/8 D4/2 |
+  | C4/4. D4/8 Eb4/4 F4/4 |
+  | Ab4/2 G4/4 F4/4 |
+  | F4/4. Eb4/8 Db4/2 |
+  | D4/4 B3/4 G3/2 |
+end
+; ---- the trumpet's answer: Cm Ab Fm G | Cm Db G G ----
+def thB:
+  | G4/4. G4/8 C5/2 |
+  | Eb5/4. C5/8 Ab4/2 |
+  | F5/4. Eb5/8 C5/2 |
+  | D5/4 B4/4 G4/4 D5/4 |
+  | G4/4. G4/8 C5/4 Eb5/4 |
+  | F5/4. Eb5/8 Db5/4 C5/4 |
+  | B4/2 D5/2 |
+  | G4/1 |
+end
+; ---- tremolo of the power chord (Cm written; Ab is -4, Fm -7, Db -11, G -5) ----
+def trm:
+  | C4/16 G4/16 C4/16 G4/16 C4/16 G4/16 C4/16 G4/16 C4/16 G4/16 C4/16 G4/16 C4/16 G4/16 C4/16 G4/16 |
+end
+; ---- the heartbeat (timpani on the root, C written) and the pedal (the bass) ----
+def hb:
+  | C2/4 r/4 C2/8 C2/8 r/4 |
+end
+def pedal:
+  | C2/1 |
+end
+; ---- drums: a crash with the downbeat of every other bar, slow toms ----
+def kd:
+  | crash2/2 r/4 tom2/4 |
+end
+def kd2:
+  | kick/2 r/4 tom2/4 |
+end
+def kdd:
+  | crash/4 r/4 tom1/8 tom1/8 tom2/4 |
+end
+def pumpc:
+  | C2/8 C2/8 C3/8 C2/8 C2/8 C2/8 C3/8 C2/8 |
+end
+; ---- the pad: held fifths ----
+def padA:
+  | G3/1 | G3/1 | C4/1 | B3/1 | G3/1 | Ab3/1 | F4/1 | D4/1 |
+end
+
+section intro bars=2
+  5: {vol 82} | C2/4 r/4 C2/4 r/4 | C2/4 r/4 C2/8 C2/8 r/4 |
+  4: | r/1 | C2/1 |
+  7: {vol 30>46/192} | G3/1 | G3/1 |
+end
+
+; ---- A: the horns ----
+section A bars=8
+  1: {vol 82} @thA
+  4: {vol 84} @pedal @pedal | Ab1/1 | G1/1 | C2/1 | F1/1 | Db2/1 | G1/1 |
+  5: @hb @hb @hb-4 @hb-5 @hb @hb-7 @hb+1 @hb-5
+  6: {vol 66} @kd @kd2 @kd @kd2 @kd @kd2 @kdd @kd2
+  7: {vol 46} @padA
+end
+
+; ---- B: the trumpet answers over the strings ----
+section B bars=8
+  2: {vol 72} @thB
+  3: {vol 54} @trm @trm-4 @trm-7 @trm-5 @trm @trm-11 @trm-5 @trm-5
+  4: {vol 84} @pedal | Ab1/1 | F1/1 | G1/1 | C2/1 | Db2/1 | G1/1 | G1/1 |
+  5: @hb @hb-4 @hb-7 @hb-5 @hb @hb+1 @hb-5 @hb-5
+  6: {vol 68} @kd @kd2 @kd @kd2 @kd @kd2 @kd @kdd
+  7: {vol 50} @padA
+end
+
+; ---- A2: the horns again, the trumpet above them, the machine turning ----
+section A2 bars=8
+  1: {vol 86} @thA
+  2: {vol 64} @thB
+  3: {vol 58} @trm @trm @trm-4 @trm-5 @trm @trm-7 @trm-11 @trm-5
+  4: {vol 86} @pumpc @pumpc @pumpc-4 @pumpc-5 @pumpc @pumpc-7 @pumpc+1 @pumpc-5
+  5: @hb @hb @hb-4 @hb-5 @hb @hb-7 @hb+1 @hb-5
+  6: {vol 72} @kd @kd2 @kd @kd2 @kd @kd2 @kdd @kdd
+end
+
+form intro loop A B A2

@@ -22,7 +22,7 @@ NARRATION: They marched because / the bread stopped.
 # ---------------------------------------------------------------- M1 Landfall (Klaus; enemy Jess)
 
 == m01_pre
-@SONG ally2
+@SONG co:klaus
 NARRATION: Cape Astra, Green Earth. / Forty days out of Aurelium.
 LIVIA: The sea is flat, Legate. / That is the only good news.
 KLAUS: Then take it. We will have / little enough of the other kind.
@@ -127,7 +127,7 @@ KLAUS: I find it a crime scene. / Put that in the second paragraph.
 # ---------------------------------------------------------------- M2 Testudo (Klaus; enemy Eagle and Jess)
 
 == m02_pre
-@SONG ally2
+@SONG co:klaus
 NARRATION: The Dune Road ridge. / Eight days to hold.
 AURELIA: Radio check. Can you hear / the saw? That is the causeway.
 KLAUS: I can hear it. Barely.
@@ -214,7 +214,7 @@ SOLDIER GE: ...I'll try, sir. Thank you / for the bread.
 # ---------------------------------------------------------------- M3 The Wall (Aurelia; enemy Javier, Drake's coast guns)
 
 == m03_pre
-@SONG entry
+@SONG co:aurelia
 NARRATION: Muro Alto, a walled town. / Rock, towers, and a keep.
 KLAUS: Muro Alto is the gate of the next / province. Take it and the road opens.
 KLAUS: Aurelia. The wall is yours. / I take the main body round
@@ -354,7 +354,7 @@ KLAUS: So the Senate wishes one of / us to lose. And so it waits.
 CASSIUS: ...Then we fight on. And / we remember who wrote this.
 
 == m04_post | KLAUS, AURELIA
-@SONG entry
+@SONG co:cassius
 CASSIUS(s): That is the fog lifting. / I can see your face, now.
 CASSIUS: You have beaten me, old man. / My legion is in your hands.
 KLAUS: Your legion is in your hands, / Cassius. I took only the camp.
