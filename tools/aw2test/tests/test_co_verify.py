@@ -1,10 +1,10 @@
-"""`aw2dev co verify`: every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Varro, Crumb) in real battles, compared with the specification (aw2test.cospec).
+"""`aw2dev co verify`: every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Varro, Crumb, Clone Andy) in real battles, compared with the specification (aw2test.cospec).
 Test names: `co_verify_<facet>_<co>[_<mode>]`; every check is tagged `[<co> <ability>]` (aw2test.coverify). Run: `aw2dev co verify [CO ...]`."""
 
 from aw2test import coverify as cv
 from aw2test.harness import test
 
-NAMES = ("klaus", "aurelia", "cassius", "livia", "crumb", "varro")
+NAMES = ("klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy")
 
 
 def stats(name, mode):
@@ -118,7 +118,7 @@ def cpu(name, which):
     test(modes=("ds",))(fn)
 
 
-for _n in NAMES + ("cloneandy",):
+for _n in NAMES:
     cpu(_n, "power")
     cpu(_n, "super")
 
@@ -147,8 +147,6 @@ def clone(mode):
 
 for _m in (0, 1, 2):
     clone(_m)
-economy("cloneandy")
-meter("cloneandy")
 
 
 @test(modes=("ds",))
@@ -174,7 +172,7 @@ def hq(name):
     test(modes=("ds",))(fn)
 
 
-for _n in NAMES + ("cloneandy",):
+for _n in NAMES:
     hq(_n)
 
 

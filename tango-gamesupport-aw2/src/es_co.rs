@@ -269,8 +269,10 @@ pub fn tribute(co: u8, power: u8) -> i32 {
 /// Free ROM in `co_new`'s data area (+0x2400, after the body pictures' pairs, before the HUD faces).
 const ROM: u32 = 0x0874_2400;
 const HEAL3: u32 = ROM;
+/// Clone Andy's Hyper Upgrade unit effect: heal 4 HP, for free (`crate::co_new`'s presentation row).
+pub const HEAL4: u32 = ROM + 0x100;
 const SENTINEL: u32 = ROM + 0x3FC;
-const MAGIC: u32 = 0x4553_434F; // "ESCO"
+const MAGIC: u32 = 0x4553_4331; // "1CSE"
 /// AW2's `RepairUnit(unit, hp, pay)`, Thumb.
 const REPAIR: u32 = 0x0802_9AF9;
 /// Andy's CO Power unit effect: `RepairUnit(unit, 2, 0)`.
@@ -280,9 +282,14 @@ const NOTHING: u32 = 0x0804_4531;
 
 /// Legio Aeterna's unit effect: heal 3 HP, for free.
 fn heal3() -> Vec<u8> {
+    heal(3)
+}
+
+/// A power's unit effect: `RepairUnit(unit, hp, 0)`, for free.
+fn heal(hp: u8) -> Vec<u8> {
     let mut a = crate::crumb::Asm::new();
     a.op(0xB530); // push {r4, r5, lr}
-    a.op(0x2103); // movs r1, #3
+    a.op(0x2100 | hp as u16); // movs r1, #hp
     a.op(0x2200); // movs r2, #0
     a.call(REPAIR);
     a.op(0xBC30); // pop {r4, r5}
@@ -296,6 +303,7 @@ pub fn install(core: &mut Core) {
         return;
     }
     core.raw_write_range(HEAL3, -1, &heal3());
+    core.raw_write_range(HEAL4, -1, &heal(4));
     core.raw_write_32(SENTINEL, -1, MAGIC);
 }
 
@@ -670,6 +678,8 @@ mod tests {
         assert!(text(KLAUS, 15).is_none());
         let c = heal3();
         assert!(c.len() <= 0x100 && c.len() % 4 == 0);
+        assert_eq!(heal(4).len(), c.len());
+        assert_eq!(heal(4)[2], 4, "movs r1, #4");
         assert!(!is_es(crate::co_new::CRUMB) && is_es(KLAUS) && is_es(VARRO) && !is_es(LEGIONARY_FACE));
     }
 }

@@ -1,4 +1,5 @@
-# Clone Andy, Black Hole's copy of Andy (docs/dev/co-kit.md, "Recolour-based COs"). He is Dual Strike's Andy under another name (`crate::co_new`): his numbers, powers and quotes are Andy's, and
+# Clone Andy, Black Hole's copy of Andy (docs/dev/co-kit.md, "Recolour-based COs"). He is Dual Strike's Andy under another name (`crate::co_new`): his power names and quotes are Andy's,
+# his numbers his own (`crate::co_new::clone_andy_bonus`, which `co_new`'s test checks against this file; `aw2dev co verify cloneandy` plays them), and
 # his pictures are Andy's with the PALETTE recoloured: nothing is drawn or edited, only the 16 colours every picture of him is indexed in (the large art, mug, mini, HUD face, name plate's CO palette,
 # the tag screen's figure) change, so the shading reads as it does on Andy.
 id = "cloneandy"
@@ -16,19 +17,24 @@ hq = "default"
 
 [d2d]
 name = "Andy's own"
-text = "No real weaknesses. Proficient with air, sea, and land units. Ready to fight wherever and whenever."
-mods = []
+text = "Andy, copied and tuned a little. All units have 2% more firepower and 2% more defence."
+mods = [{ units = "all", attack = 2, defence = 2 }]
 
+# Every power adds the game's own +10% firepower and +10% defence (co_roster::stat, AW2's power procedure): that is Hyper Repair's boost, so its mods are
+# empty (listing it here would count it twice). In all: 112% firepower, 112% defence.
 [cop]
 name = "Hyper Repair"
-text = "Restores two HP to all units."
+text = "Restores two HP to all units. Firepower and defence rise by 10%."
+heal = 2
 mods = []
 
+# Unlike Andy's Hyper Upgrade (+20% firepower, +1 move, 5 HP): +30% firepower and +20% defence on every unit, no move bonus, 4 HP, on top of the power's
+# +10 / +10 and the day to day: 142% firepower, 132% defence.
 [scop]
 name = "Hyper Upgrade"
-text = "Restores five HP to all units. Firepower rises, and unit movement increases by one space."
-heal = 5
-mods = []
+text = "Restores four HP to all units. Firepower rises by 40% and defence by 30%."
+heal = 4
+mods = [{ units = "all", attack = 30, defence = 20 }]
 
 [portrait]
 # The picture is Dual Strike's Andy (palette scheme 0 .. 7, the same colour roles in each): `base` names it, `recolour` replaces palette entries (index = "RRGGBB"). Andy's roles

@@ -51,6 +51,18 @@ def crumb_bonus(mode, unit_type, which):
     return v
 
 
+CLONE_ANDY = 81
+
+
+def clone_andy_bonus(mode, unit_type, which):
+    """Clone Andy's own numbers (crate::co_new::clone_andy_bonus) on every unit: +2 firepower and defence at every level, Hyper Upgrade +30 / +20 (no move),
+    with the +10% firepower every power adds."""
+    v = {0: 2 + (30 if mode == 2 else 0), 1: 2 + (20 if mode == 2 else 0)}.get(which, 0)
+    if which == 0 and mode > 0:
+        v += 10
+    return v
+
+
 # The Emerald Sun COs (crate::es_co, ids 86..90): the same numbers in Python, for the calculator.
 KLAUS, AURELIA, CASSIUS, LIVIA, VARRO = 86, 87, 88, 89, 90
 ES_LUCK = {KLAUS: (10, 10, 10), AURELIA: (10, 10, 10), CASSIUS: (10, 10, 10), LIVIA: (10, 10, 10), VARRO: (10, 10, 20)}
@@ -116,6 +128,8 @@ class Rules:
             return 0  # no CO changes an Oozium (Dual Strike: its class, 6, gets 0)
         if self.chart is not None and co == CRUMB:
             return crumb_bonus(mode, unit_type, which)
+        if self.chart is not None and co == CLONE_ANDY:
+            return clone_andy_bonus(mode, unit_type, which)
         if self.chart is not None and KLAUS <= co <= VARRO:
             return es_bonus(co, mode, unit_type, which)
         if self.chart is not None:

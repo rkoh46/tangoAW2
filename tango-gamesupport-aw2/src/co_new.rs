@@ -104,6 +104,29 @@ pub const CLONE_ANDY_NAME: &[u8] = b"Clone Andy";
 /// His CO page's bio, **tangoAW2's own**, in AW2's terse voice (Dual Strike
 /// has none for the clone): wrapped to the page like Dual Strike's.
 pub const CLONE_ANDY_BIO: &[u8] = b"Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up";
+/// His numbers (`cos/cloneandy.toml`), on every unit: day to day ("Andy's own") +2% firepower and
+/// +2% defence, at every power level; Hyper Repair nothing of its own; Hyper Upgrade +30% firepower
+/// and +20% defence, no move (Andy's gives +1). Every power's +10% firepower ([`crate::co_roster::stat`]) and +10%
+/// defence (AW2's power procedure, the player's +0x28) are the game's own and come on top, so in all:
+/// day to day 102 / 102, Hyper Repair 112 / 112, Hyper Upgrade 142 / 132.
+pub const CLONE_ANDY_EDGE: i32 = 2;
+pub const CLONE_ANDY_UPGRADE: (i32, i32, i32) = (30, 20, 0);
+
+/// Clone Andy's firepower, defence, move or range points at power level `mode` (all units alike).
+pub fn clone_andy_bonus(mode: u8, field: usize) -> i32 {
+    use crate::co_roster::{DEFENCE, FIREPOWER, MOVE};
+    let (fp, df, mv) = if mode == 2 { CLONE_ANDY_UPGRADE } else { (0, 0, 0) };
+    match field {
+        FIREPOWER => CLONE_ANDY_EDGE + fp,
+        DEFENCE => CLONE_ANDY_EDGE + df,
+        MOVE => mv,
+        _ => 0,
+    }
+}
+/// His CO page's day to day and CO Power, tangoAW2's own (the Super Power's is Andy's).
+pub const CLONE_ANDY_D2D: &[u8] = b"Andy, copied and tuned a little. All units have 2% more firepower and 2% more defence.";
+pub const CLONE_ANDY_COP: &[u8] = b"Restores two HP to all units. Firepower and defence rise by 10%.";
+pub const CLONE_ANDY_SCOP: &[u8] = b"Restores four HP to all units. Firepower rises by 40% and defence by 30%.";
 
 pub fn is_new(co: u8) -> bool {
     (FIRST..=CRUMB).contains(&co) || crate::es_co::is_es(co)
@@ -277,6 +300,9 @@ fn clone_text(which: u16, _name: &[u8]) -> Option<Vec<u8>> {
     match which {
         T_NAME => Some(CLONE_ANDY_NAME.to_vec()),
         T_BIO => Some(CLONE_ANDY_BIO.to_vec()),
+        T_D2D => Some(CLONE_ANDY_D2D.to_vec()),
+        T_COP => Some(CLONE_ANDY_COP.to_vec()),
+        T_SCOP => Some(CLONE_ANDY_SCOP.to_vec()),
         _ => None,
     }
 }
@@ -770,10 +796,13 @@ fn build(core: &Core) -> Option<Built> {
                 }
             }
             if co == CLONE_ANDY {
-                // His powers are Andy's (Dual Strike's Andy under another name): Hyper Repair heals 2 HP and Hyper Upgrade 5, the unit effect of Andy's own row.
+                // Hyper Repair is Andy's (the unit effect of Andy's own row: 2 HP); Hyper Upgrade heals 4 HP (crate::es_co::HEAL4), not Andy's 5.
                 let andy = PRESENTATION_ROW as usize * ANDY as usize + 0x1C + 0x14 * p;
                 let effect = pres[andy + 8..andy + 12].to_vec();
                 pres[o + 8..o + 12].copy_from_slice(&effect);
+                if p == 1 {
+                    put32(&mut pres, o + 8, crate::es_co::HEAL4 | 1);
+                }
             }
         }
         let h = HUD_FACE as usize * co as usize;
@@ -1082,6 +1111,36 @@ mod tests {
         assert!(TEXT_TABLE + 4 * text_id(ES_FIRST + ES_COUNT - 1, TEXTS_PER_CO) as u32 <= 0x0863_0000);
         assert!(TEXT_TABLE + 4 * text_id(CRUMB, TEXTS_PER_CO) as u32 <= 0x0863_0000);
         assert!(HUD + HUD_FACE * ROOM <= DOSSIER && PRESENTATION + PRESENTATION_ROW * ROOM <= BODY_PAIRS);
+    }
+
+    /// Clone Andy's numbers are his data file's: day to day +2 / +2 on every unit, no power mods of his
+    /// own (the game's +10 / +10 of a power and Andy's Hyper Upgrade are not in the file's power mods).
+    #[test]
+    fn clone_andy_matches_his_data_file() {
+        let d: toml::Value = toml::from_str(include_str!("../cos/cloneandy.toml")).unwrap();
+        let mods = d["d2d"]["mods"].as_array().unwrap();
+        assert_eq!(mods.len(), 1);
+        assert_eq!(mods[0]["units"].as_str(), Some("all"));
+        assert_eq!(mods[0]["attack"].as_integer(), Some(CLONE_ANDY_EDGE as i64));
+        assert_eq!(mods[0]["defence"].as_integer(), Some(CLONE_ANDY_EDGE as i64));
+        assert!(d["cop"]["mods"].as_array().unwrap().is_empty());
+        assert_eq!(d["cop"]["heal"].as_integer(), Some(2));
+        assert_eq!(d["scop"]["heal"].as_integer(), Some(4));
+        let up = d["scop"]["mods"].as_array().unwrap();
+        assert_eq!(up.len(), 1);
+        assert_eq!(up[0]["units"].as_str(), Some("all"));
+        let (fp, df, mv) = CLONE_ANDY_UPGRADE;
+        assert_eq!((up[0]["attack"].as_integer(), up[0]["defence"].as_integer(), up[0].get("move").and_then(|m| m.as_integer()).unwrap_or(0)), (Some(fp as i64), Some(df as i64), mv as i64));
+        use crate::co_roster::{DEFENCE, FIREPOWER, MOVE, RANGE};
+        assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, FIREPOWER)), [2, 2, 32]);
+        assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, DEFENCE)), [2, 2, 22]);
+        assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, MOVE)), [0, 0, 0], "no move bonus (Andy's Hyper Upgrade has +1)");
+        assert_eq!([0u8, 1, 2].map(|m| clone_andy_bonus(m, RANGE)), [0, 0, 0]);
+        assert_eq!(d["scop"]["text"].as_str().unwrap().as_bytes(), CLONE_ANDY_SCOP);
+        assert_eq!(d["stars"]["cop"].as_integer(), Some(3));
+        assert_eq!(d["stars"]["scop"].as_integer(), Some(6));
+        assert_eq!(d["d2d"]["text"].as_str().unwrap().as_bytes(), CLONE_ANDY_D2D);
+        assert_eq!(d["cop"]["text"].as_str().unwrap().as_bytes(), CLONE_ANDY_COP);
     }
 }
 

@@ -368,12 +368,12 @@ _TAG_PATCHED = []
 
 def install_tag_spec():
     """The harness's `tag.compatibility` (Dual Strike's table, Sturm's, Vault Breakers) learns the Emerald Sun pairs from the data file `cos/tags.toml`: a pair with one of the custom
-    COs is the file's number, every unlisted one 95 (the file's header: "Every unlisted pair is 95") -- or the neutral 100 for Crumb, whose documented rule it is."""
+    COs is the file's number, every unlisted one 95 (the file's header: "Every unlisted pair is 95") -- or the neutral 100 for Crumb, whose documented rule it is, and Andy's own for Clone Andy (crate::tag)."""
     from . import tag
     if _TAG_PATCHED:
         return
     table = {frozenset((cospec.co_id(p["a"]), cospec.co_id(p["b"]))): p["compat"] for p in cospec.tags()}
-    custom = {s.id for s in cospec.all_specs().values() if s.name != "crumb" and s.name != "varro"}
+    custom = {s.id for s in cospec.all_specs().values() if s.name not in ("crumb", "varro", "cloneandy")}
     unlisted = cospec.UNLISTED_COMPAT
     orig = tag.compatibility
 
@@ -723,7 +723,7 @@ def cpu_tag(ctx, act, par):
     return g
 
 
-# --- Clone Andy: the same as Andy -------------------------------------------------------------------------------------------------------------
+# --- Clone Andy beside Andy: the before / after of his own numbers --------------------------------------------------------------------------
 
 def measure_moves(g, lanes, bases):
     """The farthest cell each lane's unit can reach (scanning from its base move up, at most 4 more)."""
@@ -740,8 +740,9 @@ def measure_moves(g, lanes, bases):
 
 
 def clone_vs_andy(ctx, mode):
-    """Clone Andy and Andy play the same fights (every unit class, both sides) and the same moves at power level `mode`: base damage, total defence, weapon and the farthest move are
-    equal unit for unit."""
+    """Andy (before) and Clone Andy (after) play the same fights (every unit class, both sides) and the same moves at power level `mode`. Each fight's numbers are logged
+    side by side (`before/after` lines: base damage and defence) and checked: his attacks hit at least as hard with the target's defence unchanged, his units' defence is Andy's plus
+    the specification's difference (cos/cloneandy.toml, the power's own +10 being the same for both), and every unit moves as far as Andy's less Andy's own Super Power move (+1)."""
     results = {}
     for name in ("andy", "cloneandy"):
         ctx.rows = []
@@ -764,8 +765,29 @@ def clone_vs_andy(ctx, mode):
         g.e.close()
     (ra, ma), (rc, mc) = results["andy"], results["cloneandy"]
     label = f"cloneandy {LEVEL[mode]}"
-    chk(ctx, label, len(ra) == len(rc) and ra == rc, f"{len(rc)} fights (both sides) have the same base damage, defence and weapon as Andy's" + ("" if ra == rc else f": first difference {next((a, c) for a, c in zip(ra, rc) if a != c)}"), "fights")
-    chk(ctx, label, ma == mc, f"moves equal Andy's: {mc}" + ("" if ma == mc else f" (Andy {ma})"), "move")
+    spec = cospec.get("cloneandy")
+    chk(ctx, label, len(ra) == len(rc) and all(a["detail"] == c["detail"] for a, c in zip(ra, rc)), f"{len(rc)} fights, the same as Andy's", "fights")
+    for a, c in zip(ra, rc):
+        ctx.log(f"before/after [{label}] {c['detail']}: base damage Andy {a['base']} -> Clone Andy {c['base']}, defence {a['defence']} -> {c['defence']}")
+        if " attacks " in c["detail"]:
+            ok = c["base"] >= a["base"] and c["defence"] == a["defence"]
+            chk(ctx, label, ok, f"{c['detail']}: base damage {a['base']} -> {c['base']}, the target's defence {c['defence']} as against Andy", "vs andy")
+        else:
+            want = a["defence"] + spec.sum(mode, _type_of(c["detail"]), "defence")
+            ok = c["defence"] == want and c["base"] <= a["base"]
+            chk(ctx, label, ok, f"{c['detail']}: defence {a['defence']} -> {c['defence']} (specification {want}), damage taken {a['base']} -> {c['base']}", "vs andy")
+    want_moves = {t: ma[t] - (1 if mode == 2 else 0) for t in ma}
+    chk(ctx, label, mc == want_moves, f"moves are Andy's{' less his Hyper Upgrade +1' if mode == 2 else ''}: {mc}" + ("" if mc == want_moves else f" (want {want_moves})"), "move")
+
+
+def _type_of(detail):
+    """The unit type a fight's detail line starts with ("Tank defends against B Copter")."""
+    best = None
+    for t in range(1, 27):
+        n = name_of(t)
+        if n and detail.startswith(n + " ") and (best is None or len(n) > len(name_of(best))):
+            best = t
+    return best
 
 
 # --- Cassius's Triumph: where its rule stops (reported as LIMIT lines, not failures: docs/dev/co-verify.md) ---------------------------------------

@@ -6,7 +6,7 @@ Sources, one per CO:
                                   `docs/ES_CAMPAIGN.md` section 2.1 (which units a class word means); Tag Powers: `cos/tags.toml`
   Crumb                           `crate::crumb` module doc (docs/BH_CAMPAIGN.md 3.9, 4.7c): Rank and File, Ration Run, Gerald's Blessing; Tag Power with Sturm: 115%, 2 stars
   Varro                           the table in the module doc of `crate::es_co` (he has no data file)
-  Clone Andy                      Dual Strike's Andy (`crate::co_new`: "Dual Strike's Andy's data under another name"), read from the .nds
+  Clone Andy                      `cos/cloneandy.toml` (his own numbers; Andy's power names; Tag Power with Sturm: 118%, 2 stars)
 
 A class word of a `mods` line means (docs/ES_CAMPAIGN.md 2.1): `foot` Infantry and Mech; `vehicle` the ground vehicles Recon, APC, Tank, Md. Tank, Megatank, Neotank, Piperunner and Anti-Air
 (the Megatank and the Piperunner count as vehicles, not as indirect units: the user's answer); `indirect` Artillery, Rockets, Missiles and the Battleship; `artillery rockets` those two; `naval`
@@ -80,7 +80,7 @@ def _from_toml(name):
     mods = lambda sec: [dict(m) for m in d.get(sec, {}).get("mods", [])]
     stars = (d["stars"]["cop"], d["stars"]["scop"])
     luck = tuple(d.get("luck", [10, 10, 10]))
-    heal = (0, 0, d.get("scop", {}).get("heal", 0))
+    heal = (0, d.get("cop", {}).get("heal", 0), d.get("scop", {}).get("heal", 0))
     tribute = (0, d.get("cop", {}).get("tribute", 0), d.get("scop", {}).get("tribute", 0))
     return Spec(name, stars, mods("d2d"), mods("cop"), mods("scop"), luck=luck, heal=heal, income=d.get("d2d", {}).get("income", 0), tribute=tribute,
                 power_names=(d["cop"]["name"], d["scop"]["name"]), source=f"cos/{name}.toml")
@@ -107,8 +107,8 @@ def andy():
 
 
 def cloneandy():
-    """Clone Andy is Dual Strike's Andy under another name (crate::co_new): the specification is "same as Andy" -- verified by playing both."""
-    return Spec("cloneandy", (3, 6), [], [], [], heal=(0, 2, 5), power_names=("Hyper Repair", "Hyper Upgrade"), source="crate::co_new: Dual Strike's Andy")
+    """Clone Andy (cos/cloneandy.toml): day to day +2 / +2 on every unit; Hyper Repair heals 2 (the power's +10 / +10 is the game's); Hyper Upgrade heals 4, +30 / +20, no move."""
+    return _from_toml("cloneandy")
 
 
 def get(name):
@@ -126,7 +126,7 @@ def get(name):
 
 
 def all_specs():
-    return {n: get(n) for n in (*ES4, "crumb", "varro")}
+    return {n: get(n) for n in (*ES4, "crumb", "varro", "cloneandy")}
 
 
 # --- Tag Powers (cos/tags.toml) ---------------------------------------------------------------------------------------------------------------

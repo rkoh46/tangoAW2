@@ -9,8 +9,9 @@ The COs: Klaus, Aurelia, Cassius, Livia (Emerald Sun), Varro (boss only), Crumb 
 `TANGOAW2_ES_VERSUS=1`) and compared with the SPECIFICATION, never with the engine's own tables** (`es_co::bonus`, `crumb::bonus`) and not with `damage.es_bonus` (the Python mirror of the
 engine, still used by the older tests). `cospec.py` reads the data files `cos/<id>.toml` (`mods`, `income`, `tribute`, `heal`, `stars`, `luck`), `cos/tags.toml`, and for Crumb and Varro the numbers in
 `crumb.rs` / `es_co.rs`'s module docs (they have no data file). A class word of a `mods` line means (docs/ES_CAMPAIGN.md 2.1): `foot` Infantry and Mech; `vehicle` Recon, APC, Tank, Md. Tank, Neotank and
-Anti-Air; `indirect` Artillery, Rockets, Missiles, Battleship; `naval` every ship. Every power adds the game's own +10% firepower and +10% defence on top of its `mods`. Clone Andy's specification is "same as
-Andy": the two play the same fights and moves and must agree unit for unit.
+Anti-Air; `indirect` Artillery, Rockets, Missiles, Battleship; `naval` every ship. Every power adds the game's own +10% firepower and +10% defence on top of its `mods`. Clone Andy's specification is his data file
+(`cos/cloneandy.toml`: day to day +2 / +2 on every unit, Hyper Repair heal 2 and nothing of its own, Hyper Upgrade heal 4, +30 / +20, no move bonus: 102/102, 112/112, 142/132 in all), played like the others,
+and the `cloneandy` facet plays him beside Andy as a before / after.
 
 | Facet (test names `co_verify_<facet>_<co>[_<level>]`) | What is played | Compared with |
 |---|---|---|
@@ -24,7 +25,7 @@ Andy": the two play the same fights and moves and must agree unit for unit.
 | `cpu` | the computer plays the CO with the power paid for: it uses it within three turns (CO Power and Super Power), its hurt units are healed; with a partner and both meters full it uses the Tag Power and both Super Powers run | |
 | `hq` | the HQ of each CO's army on the map: a Versus game per CO, the pairs (the lead decides) and each Emerald Sun mission (M1..M16): the OBJ tiles hold the Emerald Sun HQ picture (`army_skin::hq_art`) once for every army whose CO's data file says `hq = "emerald_sun"` or that wears the skin, and not otherwise; `aw2dev campaign check --hq` runs the missions | `hq` of `cos/<id>.toml` |
 | `vehicles` | Megatank and Piperunner of Cassius and Aurelia against Andy's: move, base damage and the Piperunner's range at each power level | the vehicle bonus / penalty of the data file |
-| `cloneandy` | Andy and Clone Andy play the same fights and moves | each other |
+| `cloneandy` | Andy (before) and Clone Andy (after) play the same fights and moves; `before/after` log lines give each fight's base damage and defence for both | his attacks at least Andy's with the target's defence unchanged, his defence Andy's + the file's difference, his moves Andy's (less Andy's Hyper Upgrade +1) |
 | `limits` | Cassius's Triumph for the computer and after suspend and continue: measured and reported as LIMIT lines | |
 | net (`--net`) | each CO's `co_<co>_cop` and `co_<co>_scop` through `aw2dev net repeat` (two real clients, the CO poked into army 1, the meter filled, the power and its special rule played) | the two peers' hashes equal, the scripts run to the end |
 

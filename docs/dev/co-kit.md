@@ -73,7 +73,7 @@ Pass means exit 0. `aw2dev test` runs `aw2.colib.test_co` (valid files, six pair
 importer's steps). Rust: `cargo test -p tango-gamesupport-aw2 --lib es_cos` (the PNGs become AW2's tile formats, every text slot exists).
 
 ## In the game (`es_cos.rs`, `co_new.rs`)
-The four are CO ids 86..89 (`co_new::ES_FIRST`), filled like Clone Andy's row (Andy's numbers) with their own art, name graphic, texts and quotes: **in the campaign always, in Versus only with `TANGOAW2_ES_VERSUS=1`** (docs/dev/env-aids.md),
+The four are CO ids 86..89 (`co_new::ES_FIRST`), filled like Clone Andy's row (Andy's row; Clone Andy's own numbers are `co_new::clone_andy_bonus`, checked against `cos/cloneandy.toml` by a unit test) with their own art, name graphic, texts and quotes: **in the campaign always, in Versus only with `TANGOAW2_ES_VERSUS=1`** (docs/dev/env-aids.md),
 because the tables of the console are built from it (both peers of a match must agree) and their powers' rules are engine hooks (`es_co.rs`) that both peers must run alike. On: the Teams list, the CO select cards, the HUD, the dialogue
 boxes (Power quotes), the power and tag cut-ins, and the CO page show them.
 

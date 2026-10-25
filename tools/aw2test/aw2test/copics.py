@@ -331,6 +331,28 @@ def effect_klaus(ctx, cap):
     return out
 
 
+def effect_cloneandy(ctx, cap):
+    """Before / after: the same Tank-on-Tank fight by Andy, by Clone Andy day to day (+2%) and in his Hyper Upgrade (+30% firepower over the power's +10%, +2% under it)."""
+    out = {}
+    for key, co, power, who in (("effect_tank_andy_before", "andy", None, "Andy (before)"), ("effect_tank_clone", 81, None, "Clone Andy, day to day"),
+                                ("effect_tank_clone_repair", 81, "power", "Clone Andy, Hyper Repair"), ("effect_tank_clone_upgrade", 81, "super", "Clone Andy, Hyper Upgrade")):
+        m = showcase(ctx, [(1, "tank", 10, 10), (2, "tank", 11, 10), (1, "infantry", 9, 10), (2, "infantry", 14, 12)])
+        g = ctx.start(m, [co, "andy"], env=ENV)
+        if power:
+            ctx.power(g, 1, power)
+        look(g)
+        r = ctx.attack(g, (10, 10), (10, 10), (11, 10))
+        a0, d0 = r["before"]
+        a1, d1 = r["after"]
+        base = r["first"].base
+        counter = r["counter"].base if r["counter"] else 0
+        out[key] = (base, counter)
+        look(g)
+        cap.shot(g, key, f"{who}: Tank hits Andy's Tank, base damage {base}% ({d0['hp']} -> {d1['hp']} HP); the counter's base damage {counter}% ({a0['hp']} -> {a1['hp']} HP)")
+        g.e.close()
+    return out
+
+
 def effect_aurelia(ctx, cap):
     """Onager: an Artillery hit; the enemy units beside the target lose 1 HP, never the last."""
     TARGET = (13, 10)
@@ -444,7 +466,8 @@ def capture(name, out, parts=("page", "hud", "cop", "scop", "effect", "tag")):
             effect_heal(ctx, cap, spec, "super", "sol", "Sol Invictus heals 2 HP")
         elif name == "cloneandy":
             effect_heal(ctx, cap, spec, "power", "repair", "Hyper Repair heals 2 HP")
-            effect_heal(ctx, cap, spec, "super", "upgrade", "Hyper Upgrade heals 5 HP")
+            effect_heal(ctx, cap, spec, "super", "upgrade", "Hyper Upgrade heals 4 HP")
+            effect_cloneandy(ctx, cap)
     if "tag" in parts and name == "andy":
         tag_pictures(ctx, cap, "andy", "aw2:sturm")
     elif "tag" in parts:

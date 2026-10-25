@@ -45,8 +45,8 @@ def clone_andy_absent_without_the_pack(ctx):
 @test(modes=("ds",))
 def clone_andy_is_pickable_in_versus(ctx):
     """With the pack Clone Andy is on the Teams list, can be picked, plays a
-    battle with Dual Strike's Andy's numbers against the damage calculator
-    (his CO table row, checked in the patched image), and the game names him."""
+    battle with his own numbers against the damage calculator (Andy's CO
+    table row, his +2% day to day: cos/cloneandy.toml), and the game names him."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
     g = ctx.start(m, ["cloneandy", "jugger"])
@@ -54,7 +54,7 @@ def clone_andy_is_pickable_in_versus(ctx):
     e = g.e
     ctx.shot(g, "clone_andy_map")
     r = ctx.attack(g, (10, 6), (10, 6), (11, 6))
-    ctx.eq(r["first"].base, 55, "his tank's base damage as Andy's (no bonus on a tank)")
+    ctx.eq(r["first"].base, 56, "his tank's base damage: Andy's 55 with his +2% (55 x 102%)")
     # his name text (the CO table's row +0x00 is a text id)
     row = e.u32(0x086A_0000 + 0x104 * 81)
     p = e.u32(0x08610A38 + 4 * row)
