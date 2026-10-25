@@ -172,6 +172,40 @@ def changed(a, b, tol=24):
     return {(x, y) for y in range(160) for x in range(240) if sum(abs(p - q) for p, q in zip(pa[x, y][:3], pb[x, y][:3])) > tol}
 
 
+def ring_cluster(diff, gap=3):
+    """The cluster of changed pixels that is the ring (about 30 pixels across, in pieces within `gap` of each other), not the damage forecast's
+    bobbing arrow or the panels' changes elsewhere on the picture."""
+    left, groups = set(diff), []
+    while left:
+        seed = left.pop()
+        group, todo = {seed}, [seed]
+        while todo:
+            x, y = todo.pop()
+            near_ = [p for p in left if abs(p[0] - x) <= gap and abs(p[1] - y) <= gap]
+            for p in near_:
+                left.discard(p)
+                group.add(p)
+                todo.append(p)
+        groups.append(group)
+
+    def misfit(g):
+        w = max(x for x, _ in g) - min(x for x, _ in g) + 1
+        h = max(y for _, y in g) - min(y for _, y in g) + 1
+        return abs(w - 30) + abs(h - 30) + (100 if len(g) < 40 else 0)
+    return min(groups, key=misfit) if groups else set()
+
+
+def ring_pixels(a, b, flat):
+    """The ring's pixels in picture `a` (`b` its twin with the game's crosshair parked)."""
+    if flat:
+        return ring_cluster(changed(a, b))
+    # (parked, the tilted map shows its move range and is dimmed: the two pictures differ everywhere. The ring is the cluster of white and navy
+    # pixels about 30 across)
+    pa = a.load()
+    return ring_cluster({(x, y) for y in range(160) for x in range(240)
+                         if min(pa[x, y][:3]) >= 238 or close(pa[x, y][:3], (49, 98, 148), 40)}, gap=2)
+
+
 def checks_for(ctx, g, name, flat, art):
     """Takes the picture with the crosshair and the same one with its sprites parked (the overlay then has nothing to
     redo: on the tilted map the picture without the ring, on the flat one the console's own with AW2's);
@@ -185,7 +219,7 @@ def checks_for(ctx, g, name, flat, art):
         g.e.shot(os.path.join(ctx.out, "warm"))
     b = Image.open(ctx.shot(g, name + "_parked")).convert("RGB")
     save_picture(b, name + "_parked")
-    diff = changed(a, b)
+    diff = ring_pixels(a, b, flat)
     ctx.require(len(diff) >= 40, f"{name}: the ring is drawn ({len(diff)} pixels differ from the picture without it)")
     cx = (min(x for x, _ in diff) + max(x for x, _ in diff)) / 2
     cy = (min(y for _, y in diff) + max(y for _, y in diff)) / 2
@@ -274,7 +308,7 @@ def ds_crosshair_animates(ctx):
         for _ in range(3):
             g.e.shot(os.path.join(ctx.out, "warm"))
         b = Image.open(ctx.shot(g, "frame_parked")).convert("RGB")
-        diff = changed(a, b)
+        diff = ring_pixels(a, b, not tilt)
         cx = (min(x for x, _ in diff) + max(x for x, _ in diff)) / 2 + 0.5
         cy = (min(y for _, y in diff) + max(y for _, y in diff)) / 2 + 0.5
         r0 = fit(a, art, (cx, cy))[2]
