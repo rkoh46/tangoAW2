@@ -28,7 +28,7 @@ tag_prefix = "v"
 ipa_name = "tangoaw2-{version}-ios.ipa"
 # new files matching these are game files unless allowlisted in devkit/release_allow.txt
 forbidden = ["*.gba", "*.nds", "*.sav", "*.srl", "*.png", "tools/aw2test/out*"]
-allowed_dirs = ["docs/screenshots/"]
+allowed_dirs = ["docs/screenshots/", "tango-gamesupport-aw2/art/cos/"]   # art/cos: the project owner's own CO portraits (CREDITS.md), not game files
 
 [clean]
 keep_worktrees = ["~/tangoAW2", "~/tangoAW2-hires"]
