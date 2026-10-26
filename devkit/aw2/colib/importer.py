@@ -396,6 +396,65 @@ def _is_pixelart(co):
         return False
 
 
+def _framing(co):
+    import tomllib
+    try:
+        d = tomllib.loads((cfg.REPO / "tango-gamesupport-aw2" / "cos" / f"{co}.toml").read_text())
+        return tomllib.loads((cfg.REPO / d["portrait"]["source"]).with_suffix(".toml").read_text())
+    except Exception:
+        return {}
+
+
+def fringe_problems(co, pics, pal, light=70.0, chroma=15.0):
+    """A picture imported with `fringe = "light"` has no white halo: no figure pixel on the outer edge (next to the outline, so next to the empty side) is light (Lab L above `light`) and nearly colourless
+    (chroma under `chroma`), unless it is listed in the framing file's `edge_protect` ([[x, y], ...] pixels of the large art). -> list of problems."""
+    spec = _framing(co)
+    if spec.get("fringe") != "light":
+        return []
+    keep = {tuple(p) for p in spec.get("edge_protect", [])}
+    bad = []
+    lab = to_lab(np.array(pal, float))
+    lt, ch = lab[:, 0], np.hypot(lab[:, 1], lab[:, 2])
+    for name in ("large", "face_normal"):
+        a = pics[name]
+        o = a == 15
+        ins = np.zeros_like(o)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dx or dy:
+                    ins |= shift(o, dx, dy)
+        m = ins & ~o & (a != 0) & (lt[a] > light) & (ch[a] < chroma)
+        pts = [(int(x), int(y)) for y, x in zip(*np.where(m)) if name != "large" or (int(x), int(y)) not in keep]
+        if pts:
+            bad.append(f"{name}: {len(pts)} light, colourless pixels on the outer edge (a white halo): {pts[:6]}")
+    return bad
+
+
+def ramp_shades(src_rgb, out_idx, pal, dark_l=35.0, dark_c=14.0, bin_l=5.0, min_cells=20):
+    """(source shades, output shades) of the dark, nearly colourless cells (the uniform): the source's distinct tones (Lab L in bins of `bin_l`, each with at least `min_cells` cells) and the number of
+    distinct palette entries those cells take in the output."""
+    lab = to_lab(src_rgb.astype(float))
+    m = (lab[..., 0] < dark_l) & (np.hypot(lab[..., 1], lab[..., 2]) < dark_c) & (out_idx != 0) & (out_idx != 15)
+    bins = np.bincount((lab[..., 0][m] // bin_l).astype(int))
+    return int((bins >= min_cells).sum()), int(len(np.unique(out_idx[m])))
+
+
+def ramp_problems(co, pics, pal):
+    """A picture imported with `dark_ramp` keeps the uniform's shades: its dark cells take at least min(4, the source's distinct dark shades) different palette entries. -> list of problems."""
+    spec = _framing(co)
+    if not spec.get("dark_ramp"):
+        return []
+    import tomllib
+    d = tomllib.loads((cfg.REPO / "tango-gamesupport-aw2" / "cos" / f"{co}.toml").read_text())
+    im = import_co({"source": d["portrait"]["source"], **{k: v for k, v in d["portrait"].items() if k != "source"}})
+    bad = []
+    for name, src in (("large", im.src["large"]),):
+        have, got = ramp_shades(src, pics[name], pal)
+        if got < min(4, have):
+            bad.append(f"{name}: the uniform has {got} distinct shades, the source has {have} (at least {min(4, have)} wanted): the dark ramp is merged")
+    return bad
+
+
 def lightness_problems(co, pics, pal, lo=0.3, hi=0.8):
     """A direct pixel-art import keeps every pixel's lightness class: no source pixel above `hi` (Lab lightness 0..1) takes a palette colour below `lo`, and none below `lo` one above `hi` (an eye white
     gone black, a black gone white). The source cells are re-read through the importer (`Imported.src`: the figure's native colours at the output's resolution). -> list of problems."""
@@ -521,7 +580,11 @@ def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
                 # a direct pixel-art import keeps the picture's own blacks, which may sit close to the outline colour: that blend is not checked for it
                 bad += outline_problems(name, a, pal, blend=not _is_pixelart(co))
             limit = max_specks_large if name == "large" else max_specks_small
+            if name == "large" and _framing(co).get("max_specks"):
+                limit = int(_framing(co)["max_specks"])      # a picture with a dark ramp keeps its folds' single cells
             if specks > limit:
                 bad.append(f"{name}: {specks} isolated pixels (at most {limit})")
     bad += lightness_problems(co, pics, pal)
+    bad += fringe_problems(co, pics, pal)
+    bad += ramp_problems(co, pics, pal)
     return bad

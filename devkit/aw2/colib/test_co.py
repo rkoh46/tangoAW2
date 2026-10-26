@@ -190,6 +190,75 @@ class Pixelart(unittest.TestCase):
         self.assertFalse(fg[:4].any())
         self.assertFalse(fg[:, :4].any())
 
+    def halo_figure(self):
+        nat = np.zeros((30, 20, 3)) + 255                 # white background
+        nat[6:24, 6:14] = (30, 24, 34)                    # a dark figure
+        nat[5, 6:14] = (200, 200, 198)                    # a light grey halo cell row above it, one blended cell on its left side
+        nat[6:24, 5] = (120, 118, 116)
+        nat[10:12, 8:10] = (250, 250, 250)                # an eye white inside, ringed by dark cells
+        nat[18:20, 6:8] = (245, 245, 243)                 # a light cell on the figure's edge column, behind the halo: not reachable once the dark ring exists
+        nat[18:20, 5] = (30, 24, 34)
+        return nat
+
+    def test_a_white_halo_goes_and_the_figures_own_light_cells_stay(self):
+        from . import pixelart as P
+        nat = self.halo_figure()
+        plain, _ = P.cut_background(nat, tol=9.0)
+        self.assertTrue(plain[5, 6:14].all() and plain[6:18, 5].all())        # without the option the halo is kept
+        fg, _ = P.cut_background(nat, tol=9.0, fringe_mode="light", light_l=45.0)
+        self.assertFalse(fg[5, 6:14].any())
+        self.assertFalse(fg[6:18, 5].any())
+        self.assertTrue(fg[10:12, 8:10].all())                                # the eye white is enclosed by dark: never reached
+        self.assertTrue(fg[6:24, 6:14].sum() >= 8 * 18 - 4 and fg[7:23, 8:13].all())
+
+    def test_the_halo_lint_catches_a_light_edge_pixel_and_honours_the_protect_list(self):
+        pal = [(0, 0, 0), (200, 200, 198), (30, 24, 34)] + [(30, 24, 34)] * 12 + [(0, 0, 0)]
+        a = np.zeros((10, 10), np.uint8)
+        a[2:8, 2:8] = 2
+        a[1, 2:8] = a[8, 2:8] = a[2:8, 1] = a[2:8, 8] = 15
+        a[2, 4] = 1                                   # a light pixel right inside the outline
+        pics = {"large": a, "face_normal": a.copy()}
+        pics["face_normal"][2, 4] = 2
+        old = I._framing
+        try:
+            I._framing = lambda co: {"fringe": "light"}
+            self.assertTrue(any("white halo" in b for b in I.fringe_problems("x", pics, pal)))
+            I._framing = lambda co: {"fringe": "light", "edge_protect": [[4, 2]]}
+            self.assertEqual(I.fringe_problems("x", pics, pal), [])
+            I._framing = lambda co: {}
+            self.assertEqual(I.fringe_problems("x", pics, pal), [])
+        finally:
+            I._framing = old
+
+    def ramp_picture(self):
+        rng = np.random.default_rng(2)
+        tones = [(4, 4, 4), (20, 20, 20), (30, 30, 30), (44, 44, 46), (60, 60, 60)]
+        counts = [3000, 600, 200, 80, 40]                      # near-black dominates; the highlights are few
+        px = np.concatenate([np.tile(t, (n, 1)) for t, n in zip(tones, counts)]).astype(float)
+        cols = [(255, 214, 173), (247, 247, 247), (148, 25, 33), (123, 123, 132), (214, 173, 107)]
+        extra = [(165, 99, 66), (107, 74, 49), (90, 8, 16), (189, 140, 107), (230, 189, 148), (82, 100, 160)]
+        px = np.concatenate([px, np.array([c for c in cols + extra for _ in range(300)], float)])
+        return px, cols
+
+    def test_a_dark_ramp_keeps_the_uniforms_shades(self):
+        from . import pixelart as P
+        px, cols = self.ramp_picture()
+        w = np.ones(len(px))
+        pal = P.palette_for(px, w, outline=(0, 0, 0), protect=[np.array(c, float) for c in cols], dark_k=5)
+        dark = [c for c in pal[:14] if max(c) < 70]
+        self.assertGreaterEqual(len(set(dark)), 4, dark)
+
+    def test_the_ramp_lint_counts_the_shades_of_the_uniform(self):
+        px, _ = self.ramp_picture()
+        src = px[:3920].reshape(40, 98, 3)
+        pal = [(0, 0, 0)] * 16
+        out = np.ones((40, 98), np.uint8)                        # one entry for the whole uniform: merged
+        have, got = I.ramp_shades(src, out, pal)
+        self.assertGreaterEqual(have, 4)
+        self.assertEqual(got, 1)
+        out2 = np.digitize(src[..., 0], [10, 25, 37, 52]).astype(np.uint8) + 1
+        self.assertEqual(I.ramp_shades(src, out2, pal)[1], 5)
+
     def test_the_import_is_cell_for_cell_at_2x_with_an_outline(self):
         from . import pixelart as P
         nat, fg, big = self.sprite(4.0)

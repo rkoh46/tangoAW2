@@ -5,6 +5,13 @@ match = "luma"
 flip = false
 outline_diagonal = true
 hole_min = 30
+# The white background's leftovers on her outer edge (light grey and near-white cells from the picture's anti-aliasing) go: the background grows from the outside through colourless cells lighter than Lab L 38 (the blended greys included). Cells enclosed by her (eye whites, buckle, badge) are never reached.
+fringe = "light"
+# The uniform's dark ramp (near-black, folds, pleats, sleeve and cap highlights) gets 5 palette entries of its own, so it is not merged into one black.
+dark_ramp = 5
+dark_ramp_c = 6
+max_specks = 800
+fringe_l = 38
 outline = [0, 0, 0]
 bg_tolerance = 40
 large_scale = 1

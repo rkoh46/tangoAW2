@@ -97,7 +97,7 @@ def native(rgb, grid, inner=0.5):
     return out
 
 
-def cut_background(nat, tol=9.0, rim=2, hole_min=0, hole_tol=14.0, peel=0):
+def cut_background(nat, tol=9.0, rim=2, hole_min=0, hole_tol=14.0, peel=0, fringe_mode=None, light_l=75.0, light_c=12.0):
     """The figure's mask: what the border's flood fill (over native pixels within `tol` of the background colour) does not reach. -> bool array (rows, cols)."""
     h, w, _ = nat.shape
     edge = np.concatenate([nat[:rim].reshape(-1, 3), nat[-rim:].reshape(-1, 3), nat[:, :rim].reshape(-1, 3), nat[:, -rim:].reshape(-1, 3)])
@@ -151,7 +151,27 @@ def cut_background(nat, tol=9.0, rim=2, hole_min=0, hole_tol=14.0, peel=0):
         touch[:, 1:] |= t[:, :-1]
         touch[:, :-1] |= t[:, 1:]
         fg = fg & ~(touch & fringe)
+    if fringe_mode == "light":
+        fg = remove_light_fringe(nat, fg, light_l, light_c)
     return fg, bg
+
+
+def remove_light_fringe(nat, fg, light_l=75.0, light_c=12.0):
+    """The white background's leftovers along the outer edge (anti-aliasing, JPEG softening): grow the background from the outside through cells that are light (Lab L above `light_l`) and nearly colourless (chroma under `light_c`).
+    Only cells connected to the outside through such cells go; a light cell inside the figure (an eye white, a highlight, a buckle) has a darker or coloured ring around it and is never reached. Her other pixels are untouched."""
+    from .importer import to_lab
+    lab = to_lab(nat.astype(float))
+    like = (lab[..., 0] > light_l) & (np.hypot(lab[..., 1], lab[..., 2]) < light_c)
+    h, w = fg.shape
+    out = ~fg
+    st = [(y, x) for y, x in zip(*np.where(out))]
+    while st:
+        y, x = st.pop()
+        for yy, xx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+            if 0 <= yy < h and 0 <= xx < w and not out[yy, xx] and like[yy, xx]:
+                out[yy, xx] = True
+                st.append((yy, xx))
+    return ~out
 
 
 def keep_main(fg, min_size=12):
@@ -190,13 +210,31 @@ def _dilate(m):
     return out
 
 
-def palette_for(pixels_rgb, weights, k=14, outline=(32, 24, 32), protect=(), radius=8.0):
+def palette_for(pixels_rgb, weights, k=14, outline=(32, 24, 32), protect=(), radius=8.0, dark_k=0, dark_l=35.0, dark_c=14.0):
     """k colours of the native pixels (weighted k-means in Lab; JPEG near-duplicates merge), plus the fixed outline colour. -> list of 15 RGB, lightest first, the outline last.
     `protect`: colours read from her own native cells (the eye whites, the iris, the skin, the gold, the tie): each is a palette entry of its own, and the native pixels within `radius` Lab of one
     are not left to the clustering (a few eye-white cells would otherwise be outvoted by thousands of black ones and merge into the dark)."""
     from . import importer as I
     prot = [tuple(int(v) for v in I.snap555(np.array(c, float))) for c in protect]
     lab = I.to_lab(pixels_rgb.astype(float))
+    ramp = []
+    if dark_k:
+        # the uniform's dark ramp (shadow, fold, pleat, sleeve highlight) clustered on its own, so the thousands of near-black cells do not take every dark entry: `dark_k` entries for the cells that are dark and nearly colourless
+        dk = (lab[:, 0] < dark_l) & (np.hypot(lab[:, 1], lab[:, 2]) < dark_c)
+        if dk.sum() > dark_k:
+            # each distinct tone counts by the log of its cells, so the faint highlights are not outvoted by the black
+            u, inv = np.unique(lab[dk].round(0), axis=0, return_inverse=True)
+            cnt = np.bincount(inv.ravel(), weights=weights[dk].astype(float))
+            rc = I.kmeans(u, np.log1p(cnt), dark_k, iters=40, seed=5)
+            # each entry is the weighted mean of her own cells in the cluster (not the Lab centre re-converted: at these lightnesses that drifts in hue)
+            sub, subw = pixels_rgb[dk].astype(float), weights[dk].astype(float)
+            own = ((lab[dk][:, None, :] - rc[None]) ** 2).sum(2).argmin(1)
+            ramp = []
+            for c in range(len(rc)):
+                if (own == c).any():
+                    ramp.append(tuple(int(v) for v in I.snap555(np.average(sub[own == c], axis=0, weights=subw[own == c]))))
+            lab, weights = lab[~dk], weights[~dk]
+            k -= len(ramp)
     if prot:
         pl = I.to_lab(np.array(protect, float))
         free = ((lab[:, None, :] - pl[None]) ** 2).sum(2).min(1) ** 0.5 >= radius
@@ -212,7 +250,7 @@ def palette_for(pixels_rgb, weights, k=14, outline=(32, 24, 32), protect=(), rad
     d = ((cent - olab) ** 2).sum(1) ** 0.5
     j = int(d.argmin())
     keep = [i for i in range(len(cent)) if i != j] if d[j] < 14 else list(range(len(cent)))[:k]
-    cols = prot + [tuple(int(v) for v in rgb[i]) for i in keep]
+    cols = prot + ramp + [tuple(int(v) for v in rgb[i]) for i in keep]
     lum = [0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] for c in cols]
     cols = [cols[i] for i in np.argsort(lum)[::-1]][:14]
     # a palette needs 14 entries before the outline; pad with the darkest if the clustering found fewer
@@ -303,7 +341,7 @@ def styled(spec, path):
     nat = native(img, grid)
     if spec.get("flip"):
         nat = nat[:, ::-1].copy()
-    fg, bg = cut_background(nat, spec.get("bg_tolerance", 9.0), hole_min=spec.get("hole_min", 0), hole_tol=spec.get("hole_tolerance", 14.0), peel=spec.get("peel", 0))
+    fg, bg = cut_background(nat, spec.get("bg_tolerance", 9.0), hole_min=spec.get("hole_min", 0), hole_tol=spec.get("hole_tolerance", 14.0), peel=spec.get("peel", 0), fringe_mode=spec.get("fringe"), light_l=spec.get("fringe_l", 75.0), light_c=spec.get("fringe_c", 12.0))
     fg = keep_main(fg)
     S = int(spec.get("large_scale", 2))        # cells to output pixels: 2 for the 5 px-cell pictures, 1 for a picture whose head is more than 30 cells
     fw, fh = 128 // S, 160 // S
@@ -333,7 +371,7 @@ def styled(spec, path):
     wt = np.concatenate([np.ones(fg[fr].sum()), np.full(fg[mu].sum(), spec.get("face_weight", 3.0))])
     # colours guaranteed a palette entry: groups of native cells (`protect = [[[x, y], ...], ...]`, in the cells of the grid after `flip`), each group's mean colour
     protect = [np.mean([nat[y + P, x + P] for x, y in grp], axis=0) for grp in spec.get("protect", [])]
-    pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))), protect=protect)
+    pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))), protect=protect, dark_k=int(spec.get("dark_ramp", 0)), dark_l=float(spec.get("dark_ramp_l", 35.0)), dark_c=float(spec.get("dark_ramp_c", 14.0)))
     full = quantise(nat, fg, pal[:14], spec.get("match", "luma"))      # art repal hook: the framing file's `match`
     if spec.get("despeckle"):
         full = despeckle_dark(full, pal[:14], int(spec["despeckle"]))
