@@ -23,7 +23,7 @@ mods = [ { units = "all", attack = 10, defence = 10 }, { units = "foot", attack 
 
 [cop]
 name = "Testudo"
-text = "All units take 20% less damage, and my Infantry and Mech move 1 space more. Counterattacks against my attacks are weaker."
+text = "All units take 20% less damage; Infantry and Mech move 1 more. Counterattacks are weaker."
 mods = [ { units = "all", defence = 20 }, { units = "foot", move = 1 } ]
 rules = [ "enemy counterattacks against Klaus's attacks deal 25% less damage" ]
 quote = ["Shields up! Close ranks,", "and not one step back!"]

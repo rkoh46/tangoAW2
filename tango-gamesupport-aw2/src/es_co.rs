@@ -69,7 +69,7 @@ pub const INFO: [Info; 5] = [
         name: "Klaus",
         bio: "Legate of the Emerald Sun, sent across the sea to find who starved his homeland. Stern, fair, tireless. Hit: Discipline Miss: Being doubted",
         d2d: "My legions fight and hold a little better. Infantry and Mech fight best of all.",
-        cop: "All units take 20% less damage on top, and my Infantry and Mech move 1 space more. Counterattacks against my attacks are weaker.",
+        cop: "All units take 20% less damage; Infantry and Mech move 1 more. Counterattacks are weaker.",
         scop: "All units recover 3 HP, move 1 space more and attack 20% harder. Infantry and Mech gain 40% attack and defence on top.",
         cop_name: "Testudo",
         scop_name: "Legio Aeterna",
