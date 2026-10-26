@@ -1,167 +1,81 @@
-; Asuka, "Defector's March" (A). An original composition: E minor with a flat second, 120 bpm. Intro 4 bars, loop 32 bars (64 s). Every note is ours; the voices are AW2's instruments.
-; Chords: Em, F, D, B (a dark, heroic turn: the flat second, then the dominant). Contrasting section: C, D, Em, B.
+; Asuka's theme, take T1 "Iron Verdict": guitar-driven rock in E minor with the flat second, 120 bpm. Original notes, no rom lines.
 song asuka
 tempo 120
 meter 4/4
 reverb 173
 priority 0
 
-inst bass = A.97  shift=24
-inst lead = A.27  shift=12
-inst pad  = A.111 shift=-12
-inst brs  = A.56  shift=-12
+inst rg   = B.10 shift=20   ; distortion guitar (power chords, sustained)
+inst rgm  = B.11 shift=20   ; palm-muted guitar (the chugs)
+inst lead = A.38 shift=12   ; overdriven lead guitar
+inst gtr  = A.27 shift=12   ; plucked guitar (arpeggios)
+inst bass = A.97 shift=24   ; fuzz bass
+inst brass = A.56 shift=-12 ; stabs
 inst kit  = A.120
+inst timp = A.47 shift=24
 hit kick=36 rim=37 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
 
-track 1 inst=bass vol=100 pan=0   vel=118 gate=55 gain=0.95
-track 2 inst=brs  vol=84  pan=8   vel=108 gate=88 gain=1.51
-track 3 inst=lead vol=90  pan=-8  vel=116 gate=85 gain=0.9
-track 4 inst=pad  vol=64  pan=-12 vel=100 gate=95 gain=0.54
-track 5 inst=kit  vol=72  pan=0   vel=108 gate=100 gain=0.5
-track 6 inst=brs  vol=80  pan=-6  vel=104 gate=90 gain=1.2
+track 1 inst=rg    vol=127 pan=-18 vel=124 gate=88 gain=1.0
+track 2 inst=bass  vol=100 pan=0   vel=118 gate=78 gain=0.75
+track 3 inst=lead  vol=110 pan=8   vel=118 gate=96 gain=0.85 bendr=12 lfos=40 lfodl=12
+track 4 inst=gtr   vol=84  pan=-8  vel=108 gate=80 gain=0.85
+track 5 inst=kit   vol=74  pan=0   vel=108 gate=100 gain=0.56
+track 6 inst=timp  vol=84  pan=0   vel=118 gate=92 gain=1.4
+track 7 inst=brass vol=84  pan=10  vel=110 gate=88 gain=1.4
 
-def rs:
-  | r/1 |
-end
-
-; the bass groove: sixteenth stabs, minor (gm, rooted on E1) and major (gM, with the major third)
-def gm:
-  | E1/16 E1/16 r/16 E2/16 r/16 E1/16 E1/16 r/16 F1/16 E1/16 r/16 E2/16 G1/16 r/16 B1/16 A1/16 |
-end
-def gM:
-  | E1/16 E1/16 r/16 E2/16 r/16 E1/16 E1/16 r/16 F1/16 E1/16 r/16 E2/16 G#1/16 r/16 B1/16 A1/16 |
-end
-def gt:
-  | E1/16 E1/16 r/16 E2/16 r/16 E1/16 F1/16 r/16 B1/16 r/16 B1/16 r/16 E2/16 D2/16 B1/16 G1/16 |
-end
-def gp:
-  | E1/8 E1/8 E1/8 E1/8 E1/8 E1/8 E1/8 E1/8 |
-end
-
-; four-chord bass loops: Em F D B, and C D Em B
-def bP:
-  @gm @gM+1 @gM+10 @gM+7
-end
-def bPt:
-  @gm @gM+1 @gM+10 @gt+7
-end
-def bQ:
-  @gM+8 @gM+10 @gm @gM+7
-end
-
-; the call (brass): phrase one and two, the contrasting tune, all at the sounding pitch
-def p1:
-  | E4/8 B4/4 B4/8 G5/4 F#5/8 E5/8 | A4/4 C5/4 F5/4 E5/8 C5/8 | D5/4. A4/8 D5/4 F#5/4 | D#5/4 F#5/4 E5/4 D#5/4 |
-end
-def p2:
-  | E4/8 B4/4 B4/8 A4/4 G4/8 B4/8 | A4/4 C5/4 F5/4 G5/4 | D5/4. A4/8 F#5/4 A4/4 | B4/4 D#5/4 F#5/2 |
-end
-def tq:
-  | G4/8 C5/8 E5/4 G5/4 E5/4 | F#5/4. D5/8 A4/2 | G4/4 B4/4 E5/4 D5/4 | D#5/4 F#5/4 B4/2 |
-  | G4/8 C5/8 E5/4 G5/2 | F#5/4. E5/8 D5/2 | B4/4 E5/4 G5/4 F#5/4 | E5/4 D#5/4 B4/2 |
-end
-def hold:
-  | E4/1 | F4/1 | D4/1 | B3/1 |
-end
-
-; the answer (plucked guitar): sixteenth arpeggios on each chord, minor (am) and major (aM, rooted on E4), and a chromatic run
-def am:
-  | E4/16 G4/16 B4/16 G4/16 E4/16 G4/16 B4/16 C5/16 B4/16 G4/16 E4/16 G4/16 B4/16 C5/16 B4/16 G4/16 |
-end
-def aM:
-  | E4/16 G#4/16 B4/16 G#4/16 E4/16 G#4/16 B4/16 C#5/16 B4/16 G#4/16 E4/16 G#4/16 B4/16 C#5/16 B4/16 G#4/16 |
-end
-def run:
-  | E4/16 F4/16 F#4/16 G4/16 G#4/16 A4/16 A#4/16 B4/16 C5/16 B4/16 A#4/16 A4/16 G#4/16 G4/16 F#4/16 F4/16 |
-end
-def aE:
-  @am @aM+1 @aM-2 @aM-5
-end
-def aEr:
-  @am @aM+1 @aM-2 @run-5
-end
-def aQ:
-  @aM-4 @aM-2 @am @aM-5
-end
-
-; pads (horn)
-def pE:
-  | [E3 B3]/1 |
-end
-def pF:
-  | [F3 C4]/1 |
-end
-def pD:
-  | [D3 A3]/1 |
-end
-def pB:
-  | [B2 F#3]/1 |
-end
-def pC:
-  | [C3 G3]/1 |
-end
-
-; the kit: a groove on the sixteenth grid, the crash bar, a fill
-def kd:
-  | kick/16 hat/16 hat/16 hat/16 snare/16 hat/16 hat/16 kick/16 hat/16 kick/16 hat/16 hat/16 snare/16 hat/16 hat/16 snare/16 |
-end
-def kc:
-  | crash/16 hat/16 hat/16 hat/16 snare/16 hat/16 hat/16 kick/16 hat/16 kick/16 hat/16 hat/16 snare/16 hat/16 hat/16 snare/16 |
-end
-def kf:
-  | kick/16 hat/16 snare/16 hat/16 snare/16 snare/16 tom1/16 tom1/16 tom2/16 tom2/16 tom3/16 tom3/16 snare/16 snare/16 snare/16 snare/16 |
-end
-def kA:
-  @kc @kd @kd @kd @kd @kd @kd @kf
-end
-def kB:
-  @kc @kd @kd @kd @kd @kd @kd @kf
-end
-
-; stack: the call an octave and two octaves down
 section I bars=4
-  1: @bP
-  2: @rs*4
-  3: @aE
-  4: @rs*4
-  5: @kc @kd @kd @kf
-  6: @rs*4
+  1: | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [G2 D3]/#12 {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 E2/#6 {inst rg} {vol 127} {gate 88} [A2 E3]/#12 {inst rgm} {vol 78} {gate 100} [G2 D3]/#6 E2/#6 r/#6 E3/#6 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [B2 F#3]/#12 r/#6 {inst rgm} {vol 78} {gate 100} B2/#6 B2/#6 Bb2/#6 A2/#6 G#2/#6 G2/#6 F#2/#6 F2/#6 E2/#6 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [G2 D3]/#12 {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 E2/#6 {inst rg} {vol 127} {gate 88} [A2 E3]/#12 {inst rgm} {vol 78} {gate 100} [G2 D3]/#6 E2/#6 r/#6 E3/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#12> r/#6 {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 B2/#6 B2/#6 r/#6 B2/#6 Bb2/#6 A2/#6 G#2/#6 G2/#6 F#2/#6 F2/#6 E2/#6 |
+  2: | E2/#6' E2/#6' r/#6 E2/#6' G2/#12 E2/#6' r/#6 E2/#6' E2/#6' A2/#12 G2/#6' E2/#6' r/#6 E3/#6' | | E2/#6' E2/#6' r/#6 E2/#6' B2/#12 r/#6 B2/#6' B2/#6' Bb2/#6' A2/#6' G#2/#6' G2/#6' F#2/#6' F2/#6' E2/#6' | | E2/#6' E2/#6' r/#6 E2/#6' G2/#12 E2/#6' r/#6 E2/#6' E2/#6' A2/#12 G2/#6' E2/#6' r/#6 E3/#6' | | B2/#12> r/#6 B2/#6' r/#6 B2/#6' B2/#6' r/#6 B2/#6' Bb2/#6' A2/#6' G#2/#6' G2/#6' F#2/#6' F2/#6' E2/#6' |
+  3: | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+  4: | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+  5: | r/#96 | | r/#96 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 hat/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 tom1/#6 tom1/#6 tom2/#6 tom2/#6 tom3/#6 tom3/#6 snare/#6 snare/#6 |
+  6: | r/#96 | | r/#96 | | E2/#24 r/#24 E2/#24 r/#24 | | E2/#24 r/#12 E2/#12 E2/#24 r/#24 |
+  7: | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+end
+section V bars=8
+  1: | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [G2 D3]/#12 {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 E2/#6 {inst rg} {vol 127} {gate 88} [A2 E3]/#12 {inst rgm} {vol 78} {gate 100} [G2 D3]/#6 E2/#6 r/#6 E3/#6 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [B2 F#3]/#12 r/#6 {inst rgm} {vol 78} {gate 100} B2/#6 B2/#6 Bb2/#6 A2/#6 G#2/#6 G2/#6 F#2/#6 F2/#6 E2/#6 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [G2 D3]/#12 {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 E2/#6 {inst rg} {vol 127} {gate 88} [A2 E3]/#12 {inst rgm} {vol 78} {gate 100} [G2 D3]/#6 E2/#6 r/#6 E3/#6 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [B2 F#3]/#12 r/#6 {inst rgm} {vol 78} {gate 100} B2/#6 B2/#6 Bb2/#6 A2/#6 G#2/#6 G2/#6 F#2/#6 F2/#6 E2/#6 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [G2 D3]/#12 {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 E2/#6 {inst rg} {vol 127} {gate 88} [A2 E3]/#12 {inst rgm} {vol 78} {gate 100} [G2 D3]/#6 E2/#6 r/#6 E3/#6 | | {inst rgm} {vol 78} {gate 100} F2/#6 F2/#6 r/#6 F2/#6 {inst rg} {vol 127} {gate 88} [A2 E3]/#12 {inst rgm} {vol 78} {gate 100} F2/#6 r/#6 F2/#6 F2/#6 {inst rg} {vol 127} {gate 88} [C3 G3]/#12 {inst rgm} {vol 78} {gate 100} [A2 E3]/#6 F2/#6 r/#6 F3/#6 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 {inst rg} {vol 127} {gate 88} [G2 D3]/#12 {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 B2/#6 B2/#6 r/#6 B2/#6 {inst rg} {vol 127} {gate 88} [D3 A3]/#12 {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#12> r/#6 {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 B2/#6 B2/#6 r/#6 B2/#6 Bb2/#6 A2/#6 G#2/#6 G2/#6 F#2/#6 F2/#6 E2/#6 |
+  2: | E2/#6' E2/#6' r/#6 E2/#6' G2/#12 E2/#6' r/#6 E2/#6' E2/#6' A2/#12 G2/#6' E2/#6' r/#6 E3/#6' | | E2/#6' E2/#6' r/#6 E2/#6' B2/#12 r/#6 B2/#6' B2/#6' Bb2/#6' A2/#6' G#2/#6' G2/#6' F#2/#6' F2/#6' E2/#6' | | E2/#6' E2/#6' r/#6 E2/#6' G2/#12 E2/#6' r/#6 E2/#6' E2/#6' A2/#12 G2/#6' E2/#6' r/#6 E3/#6' | | E2/#6' E2/#6' r/#6 E2/#6' B2/#12 r/#6 B2/#6' B2/#6' Bb2/#6' A2/#6' G#2/#6' G2/#6' F#2/#6' F2/#6' E2/#6' | | E2/#6' E2/#6' r/#6 E2/#6' G2/#12 E2/#6' r/#6 E2/#6' E2/#6' A2/#12 G2/#6' E2/#6' r/#6 E3/#6' | | F2/#6' F2/#6' r/#6 F2/#6' A2/#12 F2/#6' r/#6 F2/#6' F2/#6' C3/#12 A2/#6' F2/#6' r/#6 F3/#6' | | E2/#6' E2/#6' r/#6 E2/#6' G2/#12 E2/#6' r/#6 B2/#6' B2/#6' r/#6 B2/#6' D3/#12 B2/#6' r/#6 | | B2/#12> r/#6 B2/#6' r/#6 B2/#6' B2/#6' r/#6 B2/#6' Bb2/#6' A2/#6' G#2/#6' G2/#6' F#2/#6' F2/#6' E2/#6' |
+  3: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+  4: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | E3/#6' E3/#6' r/#6 E3/#6' G3/#12 E3/#6' r/#6 E3/#6' E3/#6' A3/#12 G3/#6' E3/#6' r/#6 E4/#6' | | F3/#6' F3/#6' r/#6 F3/#6' A3/#12 F3/#6' r/#6 F3/#6' F3/#6' C4/#12 A3/#6' F3/#6' r/#6 F4/#6' | | E3/#6' E3/#6' r/#6 E3/#6' G3/#12 E3/#6' r/#6 B3/#6' B3/#6' r/#6 B3/#6' D4/#12 B3/#6' r/#6 | | B3/#12> r/#6 B3/#6' r/#6 B3/#6' B3/#6' r/#6 B3/#6' A#3/#6' A3/#6' G#3/#6' G3/#6' F#3/#6' F3/#6' E3/#6' |
+  5: | crash/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 hat/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 hat/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 hat/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 tom1/#6 tom1/#6 tom2/#6 tom2/#6 tom3/#6 tom3/#6 snare/#6 snare/#6 | | crash/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 hat/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 hat/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 kick/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 kick/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 kick/#6 | | kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 r/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 snare/#6 snare/#6 snare/#6 |
+  6: | E2/#24 r/#24 E2/#24 r/#24 | | E2/#24 r/#24 E2/#24 r/#24 | | E2/#24 r/#24 E2/#24 r/#24 | | E2/#24 r/#12 E2/#12 E2/#24 r/#24 | | E2/#24 r/#24 E2/#24 r/#24 | | E2/#24 r/#24 E2/#24 r/#24 | | E2/#24 r/#24 E2/#24 r/#24 | | E2/#24 r/#12 E2/#12 E2/#24 r/#24 |
+  7: | E4/#24> r/#72 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+end
+section H bars=8
+  1: | {inst rg} {vol 127} {gate 88} [E2 B2]/#12> {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6> r/#6 E2/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [E2 B2]/#12> {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6> r/#6 E2/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [C3 G3]/#12> {inst rgm} {vol 78} {gate 100} C3/#6 C3/#6 r/#6 C3/#6 C3/#6 r/#6 [C3 G3]/#6> r/#6 C3/#6 C3/#6 C3/#6 r/#6 [C3 G3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [D3 A3]/#12> {inst rgm} {vol 78} {gate 100} D3/#6 D3/#6 r/#6 D3/#6 D3/#6 r/#6 [D3 A3]/#6> r/#6 D3/#6 D3/#6 D3/#6 r/#6 [D3 A3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [E2 B2]/#12> {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6> r/#6 E2/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [F2 C3]/#12> {inst rgm} {vol 78} {gate 100} F2/#6 F2/#6 r/#6 F2/#6 F2/#6 r/#6 [F2 C3]/#6> r/#6 F2/#6 F2/#6 F2/#6 r/#6 [F2 C3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#12> {inst rgm} {vol 78} {gate 100} B2/#6 B2/#6 r/#6 B2/#6 B2/#6 r/#6 [B2 F#3]/#6> r/#6 B2/#6 B2/#6 B2/#6 r/#6 [B2 F#3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#12> {inst rgm} {vol 78} {gate 100} B2/#6 B2/#6 r/#6 B2/#6 B2/#6 r/#6 [B2 F#3]/#6> r/#6 B2/#6 B2/#6 B2/#6 r/#6 [B2 F#3]/#6 r/#6 |
+  2: | E2/#12 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' E2/#6' r/#6 E2/#6' r/#6 | | E2/#12 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' E2/#6' r/#6 E2/#6' r/#6 | | C3/#12 C3/#6' C3/#6' r/#6 C3/#6' C3/#6' r/#6 C3/#6' r/#6 C3/#6' C3/#6' C3/#6' r/#6 C3/#6' r/#6 | | D3/#12 D3/#6' D3/#6' r/#6 D3/#6' D3/#6' r/#6 D3/#6' r/#6 D3/#6' D3/#6' D3/#6' r/#6 D3/#6' r/#6 | | E2/#12 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' E2/#6' r/#6 E2/#6' r/#6 | | F2/#12 F2/#6' F2/#6' r/#6 F2/#6' F2/#6' r/#6 F2/#6' r/#6 F2/#6' F2/#6' F2/#6' r/#6 F2/#6' r/#6 | | B2/#12 B2/#6' B2/#6' r/#6 B2/#6' B2/#6' r/#6 B2/#6' r/#6 B2/#6' B2/#6' B2/#6' r/#6 B2/#6' r/#6 | | B2/#12 B2/#6' B2/#6' r/#6 B2/#6' B2/#6' r/#6 B2/#6' r/#6 B2/#6' B2/#6' B2/#6' r/#6 B2/#6' r/#6 |
+  3: | B3/#18 E4/#18 G4/#12 B4/#24 A4/#6 G4/#6 E4/#6 r/#6 | | G4/#24 E4/#24 D4/#6 E4/#6 G4/#12 {bend 0>5/12} B4/#24 {bend 0} | | C5/#24 G4/#12 E4/#12 G4/#12 C5/#12 E5/#24 | | D5/#24 A4/#24 F#4/#6 A4/#6 D5/#12 C5/#12 B4/#12 | | B4/#18 {bend -10>0/10} E5/#18 {bend 0} G5/#18 E5/#18 B4/#24 | | F5/#18 E5/#18 C5/#12 A4/#18 F4/#12 A4/#6 C5/#12 | | F#4/#12 B4/#12 D#5/#24 E5/#12 D#5/#12 B4/#24 | | B4/#48 {bend -5>0/10} D#5/#12 {bend 0} E5/#12 {mod 14} D#5/#24 {mod 0} |
+  4: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | B3/#6' D#4/#6' F#4/#6' B4/#6' F#4/#6' D#4/#6' F#4/#6' B4/#6' B3/#6' D#4/#6' F#4/#6' B4/#6' F#4/#6' D#4/#6' F#4/#6' B4/#6' | | B3/#6' D#4/#6' F#4/#6' B4/#6' F#4/#6' D#4/#6' F#4/#6' B4/#6' B3/#6' D#4/#6' F#4/#6' B4/#6' F#4/#6' D#4/#6' F#4/#6' B4/#6' |
+  5: | crash/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | crash/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 r/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 snare/#6 snare/#6 snare/#6 |
+  6: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+  7: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+end
+section BD bars=4
+  1: | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#18 | | {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#18 | | {inst rgm} {vol 78} {gate 100} F2/#6 F2/#6 r/#6 F2/#6 F2/#6 r/#6 F2/#6 r/#6 F2/#6 F2/#6 r/#6 F2/#6 F2/#6 r/#18 | | {inst rgm} {vol 78} {gate 100} [B2 F#3]/#6> r/#12 B2/#6 r/#6 B2/#6 r/#12 [B2 F#3]/#6> r/#12 B2/#6 r/#6 B2/#6 B2/#6 B2/#6 |
+  2: | E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#18 | | E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#18 | | F2/#6' F2/#6' r/#6 F2/#6' F2/#6' r/#6 F2/#6' r/#6 F2/#6' F2/#6' r/#6 F2/#6' F2/#6' r/#18 | | B2/#6'> r/#12 B2/#6' r/#6 B2/#6' r/#12 B2/#6'> r/#12 B2/#6' r/#6 B2/#6' B2/#6' B2/#6' |
+  3: | r/#96 | | r/#96 | | r/#96 | | E4/#6 F4/#6 F#4/#6 G4/#6 G#4/#6 A4/#6 A#4/#6 B4/#6 C5/#6 C#5/#6 D5/#6 D#5/#6 E5/#24 |
+  4: | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+  5: | kick/#6 r/#12 kick/#6 kick/#6 r/#18 kick/#6 r/#12 kick/#6 kick/#6 r/#18 | | kick/#6 r/#12 kick/#6 kick/#6 r/#18 kick/#6 r/#12 kick/#6 kick/#6 r/#18 | | kick/#6 r/#12 kick/#6 kick/#6 r/#18 kick/#6 r/#12 kick/#6 kick/#6 r/#12 kick/#6 | | snare/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 snare/#6 snare/#6 snare/#6 snare/#6 snare/#6 snare/#6 |
+  6: | r/#96 | | r/#96 | | E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 | | E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 E2/#12 |
+  7: | r/#96 | | r/#96 | | F3/#24> r/#24 F3/#24> r/#24 | | r/#96 |
+end
+section SO bars=8
+  1: | {inst rg} {vol 127} {gate 88} [E2 B2]/#24> {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 r/#6 {inst rg} {vol 127} {gate 88} [E2 B2]/#24> {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [E2 B2]/#24> {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 r/#6 {inst rg} {vol 127} {gate 88} [E2 B2]/#24> {inst rgm} {vol 78} {gate 100} E2/#6 r/#6 E2/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [C3 G3]/#24> {inst rgm} {vol 78} {gate 100} C3/#6 r/#6 C3/#6 r/#6 {inst rg} {vol 127} {gate 88} [C3 G3]/#24> {inst rgm} {vol 78} {gate 100} C3/#6 r/#6 C3/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [D3 A3]/#24> {inst rgm} {vol 78} {gate 100} D3/#6 r/#6 D3/#6 r/#6 {inst rg} {vol 127} {gate 88} [D3 A3]/#24> {inst rgm} {vol 78} {gate 100} D3/#6 r/#6 D3/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [A2 E3]/#24> {inst rgm} {vol 78} {gate 100} A2/#6 r/#6 A2/#6 r/#6 {inst rg} {vol 127} {gate 88} [A2 E3]/#24> {inst rgm} {vol 78} {gate 100} A2/#6 r/#6 A2/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [F2 C3]/#24> {inst rgm} {vol 78} {gate 100} F2/#6 r/#6 F2/#6 r/#6 {inst rg} {vol 127} {gate 88} [F2 C3]/#24> {inst rgm} {vol 78} {gate 100} F2/#6 r/#6 F2/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#24> {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 B2/#6 r/#6 {inst rg} {vol 127} {gate 88} [B2 F#3]/#24> {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 B2/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#24> {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 B2/#6 r/#6 {inst rg} {vol 127} {gate 88} [B2 F#3]/#24> {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 B2/#6 r/#6 |
+  2: | E2/#24> E2/#6' r/#6 E2/#6' r/#6 E2/#24> E2/#6' r/#6 E2/#6' r/#6 | | E2/#24> E2/#6' r/#6 E2/#6' r/#6 E2/#24> E2/#6' r/#6 E2/#6' r/#6 | | C3/#24> C3/#6' r/#6 C3/#6' r/#6 C3/#24> C3/#6' r/#6 C3/#6' r/#6 | | D3/#24> D3/#6' r/#6 D3/#6' r/#6 D3/#24> D3/#6' r/#6 D3/#6' r/#6 | | A2/#24> A2/#6' r/#6 A2/#6' r/#6 A2/#24> A2/#6' r/#6 A2/#6' r/#6 | | F2/#24> F2/#6' r/#6 F2/#6' r/#6 F2/#24> F2/#6' r/#6 F2/#6' r/#6 | | B2/#24> B2/#6' r/#6 B2/#6' r/#6 B2/#24> B2/#6' r/#6 B2/#6' r/#6 | | B2/#24> B2/#6' r/#6 B2/#6' r/#6 B2/#24> B2/#6' r/#6 B2/#6' r/#6 |
+  3: | E5/#12 D5/#6 B4/#6 A4/#6 B4/#6 D5/#6 B4/#6 G4/#6 A4/#6 B4/#6 G4/#6 E4/#6 G4/#6 A4/#6 B4/#6 | | {bend 10>0/12} E5/#48 {bend 0} D5/#12 B4/#12 G4/#12 E4/#12 | | C4/#6 E4/#6 G4/#6 C5/#6 E5/#6 C5/#6 G4/#6 E4/#6 C4/#6 E4/#6 G4/#6 C5/#6 E5/#24 | | D4/#6 F#4/#6 A4/#6 D5/#6 A4/#6 F#4/#6 D4/#6 F#4/#6 A4/#6 D5/#6 C5/#6 B4/#6 A4/#6 F#4/#6 D4/#12 | | r/#96 | | r/#96 | | B4/#12 D#5/#12 F#5/#24 E5/#12 D#5/#12 B4/#12 A4/#12 | | F#5/#24 E5/#6 D#5/#6 B4/#12 G#4/#24 {bend 0>-52/22} E4/#24 {bend 0} |
+  4: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | A3/#6' C4/#6' E4/#6' A4/#6' C5/#6' A4/#6' E4/#6' C4/#6' A3/#6' C4/#6' E4/#6' A4/#6' C5/#6' E5/#6' C5/#6' A4/#6' | | F3/#6' A3/#6' C4/#6' F4/#6' A4/#6' C5/#6' A4/#6' F4/#6' C4/#6' A3/#6' C4/#6' F4/#6' A4/#6' C5/#6' F5/#6' C5/#6' | | r/#96 | | r/#96 |
+  5: | crash/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 r/#6 hat/#6 kick/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 kick/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 kick/#6 | | kick/#6 r/#6 hat/#6 kick/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 kick/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 r/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 snare/#6 snare/#6 snare/#6 |
+  6: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+  7: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+end
+section F bars=8
+  1: | {inst rg} {vol 127} {gate 88} [E2 B2]/#12> {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6> r/#6 E2/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [E2 B2]/#12> {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6> r/#6 E2/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [C3 G3]/#12> {inst rgm} {vol 78} {gate 100} C3/#6 C3/#6 r/#6 C3/#6 C3/#6 r/#6 [C3 G3]/#6> r/#6 C3/#6 C3/#6 C3/#6 r/#6 [C3 G3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [D3 A3]/#12> {inst rgm} {vol 78} {gate 100} D3/#6 D3/#6 r/#6 D3/#6 D3/#6 r/#6 [D3 A3]/#6> r/#6 D3/#6 D3/#6 D3/#6 r/#6 [D3 A3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [E2 B2]/#12> {inst rgm} {vol 78} {gate 100} E2/#6 E2/#6 r/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6> r/#6 E2/#6 E2/#6 E2/#6 r/#6 [E2 B2]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [F2 C3]/#12> {inst rgm} {vol 78} {gate 100} F2/#6 F2/#6 r/#6 F2/#6 F2/#6 r/#6 [F2 C3]/#6> r/#6 F2/#6 F2/#6 F2/#6 r/#6 [F2 C3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#12> {inst rgm} {vol 78} {gate 100} B2/#6 B2/#6 r/#6 B2/#6 B2/#6 r/#6 [B2 F#3]/#6> r/#6 B2/#6 B2/#6 B2/#6 r/#6 [B2 F#3]/#6 r/#6 | | {inst rg} {vol 127} {gate 88} [B2 F#3]/#12> r/#6 {inst rgm} {vol 78} {gate 100} B2/#6 r/#6 B2/#6 B2/#6 r/#6 B2/#6 Bb2/#6 A2/#6 G#2/#6 G2/#6 F#2/#6 F2/#6 E2/#6 |
+  2: | E2/#12 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' E2/#6' r/#6 E2/#6' r/#6 | | E2/#12 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' E2/#6' r/#6 E2/#6' r/#6 | | C3/#12 C3/#6' C3/#6' r/#6 C3/#6' C3/#6' r/#6 C3/#6' r/#6 C3/#6' C3/#6' C3/#6' r/#6 C3/#6' r/#6 | | D3/#12 D3/#6' D3/#6' r/#6 D3/#6' D3/#6' r/#6 D3/#6' r/#6 D3/#6' D3/#6' D3/#6' r/#6 D3/#6' r/#6 | | E2/#12 E2/#6' E2/#6' r/#6 E2/#6' E2/#6' r/#6 E2/#6' r/#6 E2/#6' E2/#6' E2/#6' r/#6 E2/#6' r/#6 | | F2/#12 F2/#6' F2/#6' r/#6 F2/#6' F2/#6' r/#6 F2/#6' r/#6 F2/#6' F2/#6' F2/#6' r/#6 F2/#6' r/#6 | | B2/#12 B2/#6' B2/#6' r/#6 B2/#6' B2/#6' r/#6 B2/#6' r/#6 B2/#6' B2/#6' B2/#6' r/#6 B2/#6' r/#6 | | B2/#12> r/#6 B2/#6' r/#6 B2/#6' B2/#6' r/#6 B2/#6' Bb2/#6' A2/#6' G#2/#6' G2/#6' F#2/#6' F2/#6' E2/#6' |
+  3: | B3/#18 E4/#18 G4/#12 B4/#24 A4/#6 G4/#6 E4/#6 r/#6 | | G4/#24 E4/#24 D4/#6 E4/#6 G4/#12 {bend 0>5/12} B4/#24 {bend 0} | | C5/#24 G4/#12 E4/#12 G4/#12 C5/#12 E5/#24 | | D5/#24 A4/#24 F#4/#6 A4/#6 D5/#12 C5/#12 B4/#12 | | B4/#18 {bend -10>0/10} E5/#18 {bend 0} G5/#18 E5/#18 B4/#24 | | F5/#18 E5/#18 C5/#12 A4/#18 F4/#12 A4/#6 C5/#12 | | F#4/#12 B4/#12 D#5/#24 E5/#12 D#5/#12 B4/#24 | | D#5/#24 B4/#24 B4/#6 Bb4/#6 A4/#6 G#4/#6 G4/#6 F#4/#6 F4/#6 E4/#6 |
+  4: | E4/#6' G4/#6' B4/#6' E5/#6' B4/#6' G4/#6' B4/#6' E5/#6' E4/#6' G4/#6' B4/#6' E5/#6' B4/#6' G4/#6' B4/#6' E5/#6' | | E4/#6' G4/#6' B4/#6' E5/#6' B4/#6' G4/#6' B4/#6' E5/#6' E4/#6' G4/#6' B4/#6' E5/#6' B4/#6' G4/#6' B4/#6' E5/#6' | | C4/#6' E4/#6' G4/#6' C5/#6' G4/#6' E4/#6' G4/#6' C5/#6' C4/#6' E4/#6' G4/#6' C5/#6' G4/#6' E4/#6' G4/#6' C5/#6' | | D4/#6' F#4/#6' A4/#6' D5/#6' A4/#6' F#4/#6' A4/#6' D5/#6' D4/#6' F#4/#6' A4/#6' D5/#6' A4/#6' F#4/#6' A4/#6' D5/#6' | | E4/#6' G4/#6' B4/#6' E5/#6' B4/#6' G4/#6' B4/#6' E5/#6' E4/#6' G4/#6' B4/#6' E5/#6' B4/#6' G4/#6' B4/#6' E5/#6' | | F4/#6' A4/#6' C5/#6' F5/#6' C5/#6' A4/#6' C5/#6' F5/#6' F4/#6' A4/#6' C5/#6' F5/#6' C5/#6' A4/#6' C5/#6' F5/#6' | | B3/#6' D#4/#6' F#4/#6' B4/#6' F#4/#6' D#4/#6' F#4/#6' B4/#6' B3/#6' D#4/#6' F#4/#6' B4/#6' F#4/#6' D#4/#6' F#4/#6' B4/#6' | | r/#96 |
+  5: | crash/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | crash/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 kick/#6 hat/#6 hat/#6 kick/#6 snare/#6 hat/#6 hat/#6 kick/#6 | | kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 r/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 kick/#6 snare/#6 snare/#6 snare/#6 snare/#6 |
+  6: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
+  7: | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 | | r/#96 |
 end
 
-section A bars=8
-  1: @bP @bPt
-  2: @p1 @hold
-  3: @rs*4 @aE
-  4: @rs*4 @pE @pF @pD @pB
-  5: @kA
-  6: @rs*8
-end
-
-section A2 bars=8
-  1: @bP @bPt
-  2: @p2 @hold
-  3: @rs*4 @aEr
-  4: @pE @pF @pD @pB @pE @pF @pD @pB
-  5: @kA
-  6: @rs*8
-end
-
-section B bars=8
-  1: @bQ @bQ
-  2: @tq
-  3: @aQ @aQ
-  4: @pC @pD @pE @pB @pC @pD @pE @pB
-  5: @kB
-  6: @rs*8
-end
-
-section C bars=8
-  1: @bP @bPt
-  2: @p1 @p2
-  3: @rs*4 @aE
-  4: @p1-24 @p2-24
-  5: @kA
-  6: @p1-12 @p2-12
-end
-
-form I loop A A2 B C
+form I loop V H BD SO F
