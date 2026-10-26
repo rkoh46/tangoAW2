@@ -20,7 +20,7 @@ import tomllib
 REPO = pathlib.Path(__file__).resolve().parents[3]
 COS_DIR = REPO / "tango-gamesupport-aw2" / "cos"
 
-IDS = {"andy": 1, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90}
+IDS = {"andy": 1, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92}
 ES4 = ("klaus", "aurelia", "cassius", "livia")
 
 FOOT = {1, 2}
@@ -140,7 +140,9 @@ def tags():
     return pairs
 
 
-AW2_IDS = {"andy": 1, "kanbei": 6, "colin": 16, "sturm": 10}
+AW2_IDS = {"andy": 1, "kanbei": 6, "colin": 16, "sturm": 10, "flak": 11, "lash": 12, "adder": 13, "hawke": 14}
+# Dual Strike COs tags.toml names by `ds:` (Asuka's pairs): their AW2 ids in the pack (crate::sturm_pairs::VON_BOLT).
+DS_IDS = {"vonbolt": 75}
 # Pairs with no entry in tags.toml: the file says "Every unlisted pair is 95" (its header and docs/ES_CAMPAIGN.md 2.3).
 UNLISTED_COMPAT = 95
 UNLISTED_PAIRS = [("klaus", "aw2:colin"), ("klaus", "aw2:andy"), ("aurelia", "aw2:kanbei"), ("cassius", "aw2:colin"), ("livia", "aw2:kanbei")]
@@ -150,6 +152,8 @@ def co_id(ref):
     """A tags.toml reference to the game's CO id."""
     if ref.startswith("aw2:"):
         return AW2_IDS[ref[4:]]
+    if ref.startswith("ds:"):
+        return DS_IDS[ref[3:]]
     return IDS[ref]
 
 
