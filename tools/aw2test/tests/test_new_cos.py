@@ -23,7 +23,7 @@ def new_cos_on_the_teams_list(ctx):
     ctx.log(f"Teams list: {[romlib.co_name(c) for c in lst]}")
     for name in NEW:
         ctx.check(romlib.co_id(name) in lst, f"{name} on the Teams list")
-    ctx.eq(len(lst), 31, "31 COs (AW2's 19, Dual Strike's nine, Clone Andy, Crumb and Asuka)")
+    ctx.eq(len(lst), 35, "35 COs (AW2's 19, Dual Strike's nine, Clone Andy, Crumb, Asuka and the Emerald Sun four)")
     ctx.check(romlib.co_id("asuka") in lst and order_of(lst, "Asuka") == order_of(lst, "Hawke") + 1, "Asuka right after Hawke, among Black Hole's")
     ctx.check(romlib.co_id("crumb") in lst and order_of(lst, "Crumb") == order_of(lst, "Clone Andy") + 1, "Crumb right after Clone Andy")
     ctx.check(order_of(lst, "Clone Andy") > order_of(lst, "Adder"), "Clone Andy after Adder, among Black Hole's")

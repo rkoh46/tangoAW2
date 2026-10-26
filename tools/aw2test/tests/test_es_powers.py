@@ -12,7 +12,7 @@ from aw2test.game import Game, NavError
 from aw2test.harness import test
 from tests.test_crumb import set_unit
 
-ENV = {"TANGOAW2_ES_VERSUS": "1"}
+ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
 KLAUS, AURELIA, CASSIUS = 86, 87, 88
 FLAG_DONE = 0x01
 EWRAM_SPAN = (0x02000000, 0x40000)

@@ -13,7 +13,7 @@ from aw2test import paths
 from aw2test.harness import test
 from tests.test_co_music import BGM, SONG, channels, header_of, playing, row_song, wait_song
 
-ENV = {"TANGOAW2_ES_VERSUS": "1"}
+ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
 COS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92}
 FIRST_SONG = 505
 STORY = (0x09000000, 0x09C00000)

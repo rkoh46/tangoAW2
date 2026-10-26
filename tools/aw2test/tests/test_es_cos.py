@@ -1,11 +1,10 @@
-"""The Emerald Sun Campaign's five COs (crate::es_co, ids 86..90) in Versus (TANGOAW2_ES_VERSUS lists them): their rows, texts and meters; the numbers of each
+"""The Emerald Sun Campaign's five COs (crate::es_co, ids 86..90; Versus lists the four but Varro): their rows, texts and meters; the numbers of each
 day to day and power in fights against the calculator (aw2test.damage.es_bonus); Klaus's heal and move, Livia's funds; the Tag pairs."""
 
 from aw2test import rom as romlib
 from aw2test.harness import test
 from tests.test_crumb import set_unit, text, can_move, TABLE
 
-ENV = {"TANGOAW2_ES_VERSUS": "1"}
 KLAUS, AURELIA, CASSIUS, LIVIA, VARRO = 86, 87, 88, 89, 90
 NAMES = {KLAUS: b"Klaus", AURELIA: b"Aurelia", CASSIUS: b"Cassius", LIVIA: b"Livia", VARRO: b"Varro"}
 STARS = {KLAUS: (4, 8), AURELIA: (3, 7), CASSIUS: (3, 7), LIVIA: (3, 6), VARRO: (4, 8)}
@@ -14,14 +13,15 @@ SCOP_NAMES = {KLAUS: b"Legio Aeterna", AURELIA: b"Onager", CASSIUS: b"Triumph", 
 
 
 @test(modes=("ds",))
-def es_cos_are_on_the_teams_list_with_the_flag(ctx):
+def es_cos_are_on_the_teams_list(ctx):
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.boot_teams(m, env=ENV)
+    g = ctx.boot_teams(m)
     lst = g.teams()["co_list"]
     ctx.log(f"Teams list: {[romlib.co_name(c) for c in lst]}")
-    for co in NAMES:
-        ctx.check(co in lst, f"{NAMES[co].decode()} is on the Teams list (with the development flag)")
+    for co in (KLAUS, AURELIA, CASSIUS, LIVIA):
+        ctx.check(co in lst, f"{NAMES[co].decode()} is on the Teams list")
+    ctx.check(VARRO not in lst, "Varro is not on the Teams list")
 
 
 @test(modes=("ds",))
@@ -45,17 +45,20 @@ def es_cos_rows_texts_and_meters(ctx):
 def es_cos_absent_without_the_pack_and_the_flag(ctx):
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.boot_teams(m, env=ENV)
+    g = ctx.boot_teams(m)
     ctx.eq(len(g.teams()["co_list"]), 19, "AW2's 19 COs without the pack")
 
 
 @test(modes=("ds",))
-def es_cos_stay_out_of_versus_without_the_flag(ctx):
+def varro_stays_out_of_versus(ctx):
+    """Varro (the boss, a placeholder face) is on no Teams, War Room or Survival list; the four others are."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
     g = ctx.boot_teams(m)
     lst = g.teams()["co_list"]
-    ctx.check(not any(c in lst for c in NAMES), "no Emerald Sun CO on the Teams list until the campaign is approved")
+    ctx.check(VARRO not in lst, "Varro is not on the Teams list")
+    ctx.check(all(c in lst for c in (KLAUS, AURELIA, CASSIUS, LIVIA)), "the four others are")
+    # (the War Room's and Survival's lists, Varro absent: test_all_cos checks every CO once)
 
 
 @test(modes=("ds",))
