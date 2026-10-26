@@ -1,0 +1,167 @@
+; Asuka, "Defector's March" (A). An original composition: E minor with a flat second, 120 bpm. Intro 4 bars, loop 32 bars (64 s). Every note is ours; the voices are AW2's instruments.
+; Chords: Em, F, D, B (a dark, heroic turn: the flat second, then the dominant). Contrasting section: C, D, Em, B.
+song asuka
+tempo 120
+meter 4/4
+reverb 173
+priority 0
+
+inst bass = A.97  shift=24
+inst lead = A.27  shift=12
+inst pad  = A.111 shift=-12
+inst brs  = A.56  shift=-12
+inst kit  = A.120
+hit kick=36 rim=37 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=bass vol=100 pan=0   vel=118 gate=55 gain=0.95
+track 2 inst=brs  vol=84  pan=8   vel=108 gate=88 gain=1.51
+track 3 inst=lead vol=90  pan=-8  vel=116 gate=85 gain=0.9
+track 4 inst=pad  vol=64  pan=-12 vel=100 gate=95 gain=0.54
+track 5 inst=kit  vol=72  pan=0   vel=108 gate=100 gain=0.5
+track 6 inst=brs  vol=80  pan=-6  vel=104 gate=90 gain=1.2
+
+def rs:
+  | r/1 |
+end
+
+; the bass groove: sixteenth stabs, minor (gm, rooted on E1) and major (gM, with the major third)
+def gm:
+  | E1/16 E1/16 r/16 E2/16 r/16 E1/16 E1/16 r/16 F1/16 E1/16 r/16 E2/16 G1/16 r/16 B1/16 A1/16 |
+end
+def gM:
+  | E1/16 E1/16 r/16 E2/16 r/16 E1/16 E1/16 r/16 F1/16 E1/16 r/16 E2/16 G#1/16 r/16 B1/16 A1/16 |
+end
+def gt:
+  | E1/16 E1/16 r/16 E2/16 r/16 E1/16 F1/16 r/16 B1/16 r/16 B1/16 r/16 E2/16 D2/16 B1/16 G1/16 |
+end
+def gp:
+  | E1/8 E1/8 E1/8 E1/8 E1/8 E1/8 E1/8 E1/8 |
+end
+
+; four-chord bass loops: Em F D B, and C D Em B
+def bP:
+  @gm @gM+1 @gM+10 @gM+7
+end
+def bPt:
+  @gm @gM+1 @gM+10 @gt+7
+end
+def bQ:
+  @gM+8 @gM+10 @gm @gM+7
+end
+
+; the call (brass): phrase one and two, the contrasting tune, all at the sounding pitch
+def p1:
+  | E4/8 B4/4 B4/8 G5/4 F#5/8 E5/8 | A4/4 C5/4 F5/4 E5/8 C5/8 | D5/4. A4/8 D5/4 F#5/4 | D#5/4 F#5/4 E5/4 D#5/4 |
+end
+def p2:
+  | E4/8 B4/4 B4/8 A4/4 G4/8 B4/8 | A4/4 C5/4 F5/4 G5/4 | D5/4. A4/8 F#5/4 A4/4 | B4/4 D#5/4 F#5/2 |
+end
+def tq:
+  | G4/8 C5/8 E5/4 G5/4 E5/4 | F#5/4. D5/8 A4/2 | G4/4 B4/4 E5/4 D5/4 | D#5/4 F#5/4 B4/2 |
+  | G4/8 C5/8 E5/4 G5/2 | F#5/4. E5/8 D5/2 | B4/4 E5/4 G5/4 F#5/4 | E5/4 D#5/4 B4/2 |
+end
+def hold:
+  | E4/1 | F4/1 | D4/1 | B3/1 |
+end
+
+; the answer (plucked guitar): sixteenth arpeggios on each chord, minor (am) and major (aM, rooted on E4), and a chromatic run
+def am:
+  | E4/16 G4/16 B4/16 G4/16 E4/16 G4/16 B4/16 C5/16 B4/16 G4/16 E4/16 G4/16 B4/16 C5/16 B4/16 G4/16 |
+end
+def aM:
+  | E4/16 G#4/16 B4/16 G#4/16 E4/16 G#4/16 B4/16 C#5/16 B4/16 G#4/16 E4/16 G#4/16 B4/16 C#5/16 B4/16 G#4/16 |
+end
+def run:
+  | E4/16 F4/16 F#4/16 G4/16 G#4/16 A4/16 A#4/16 B4/16 C5/16 B4/16 A#4/16 A4/16 G#4/16 G4/16 F#4/16 F4/16 |
+end
+def aE:
+  @am @aM+1 @aM-2 @aM-5
+end
+def aEr:
+  @am @aM+1 @aM-2 @run-5
+end
+def aQ:
+  @aM-4 @aM-2 @am @aM-5
+end
+
+; pads (horn)
+def pE:
+  | [E3 B3]/1 |
+end
+def pF:
+  | [F3 C4]/1 |
+end
+def pD:
+  | [D3 A3]/1 |
+end
+def pB:
+  | [B2 F#3]/1 |
+end
+def pC:
+  | [C3 G3]/1 |
+end
+
+; the kit: a groove on the sixteenth grid, the crash bar, a fill
+def kd:
+  | kick/16 hat/16 hat/16 hat/16 snare/16 hat/16 hat/16 kick/16 hat/16 kick/16 hat/16 hat/16 snare/16 hat/16 hat/16 snare/16 |
+end
+def kc:
+  | crash/16 hat/16 hat/16 hat/16 snare/16 hat/16 hat/16 kick/16 hat/16 kick/16 hat/16 hat/16 snare/16 hat/16 hat/16 snare/16 |
+end
+def kf:
+  | kick/16 hat/16 snare/16 hat/16 snare/16 snare/16 tom1/16 tom1/16 tom2/16 tom2/16 tom3/16 tom3/16 snare/16 snare/16 snare/16 snare/16 |
+end
+def kA:
+  @kc @kd @kd @kd @kd @kd @kd @kf
+end
+def kB:
+  @kc @kd @kd @kd @kd @kd @kd @kf
+end
+
+; stack: the call an octave and two octaves down
+section I bars=4
+  1: @bP
+  2: @rs*4
+  3: @aE
+  4: @rs*4
+  5: @kc @kd @kd @kf
+  6: @rs*4
+end
+
+section A bars=8
+  1: @bP @bPt
+  2: @p1 @hold
+  3: @rs*4 @aE
+  4: @rs*4 @pE @pF @pD @pB
+  5: @kA
+  6: @rs*8
+end
+
+section A2 bars=8
+  1: @bP @bPt
+  2: @p2 @hold
+  3: @rs*4 @aEr
+  4: @pE @pF @pD @pB @pE @pF @pD @pB
+  5: @kA
+  6: @rs*8
+end
+
+section B bars=8
+  1: @bQ @bQ
+  2: @tq
+  3: @aQ @aQ
+  4: @pC @pD @pE @pB @pC @pD @pE @pB
+  5: @kB
+  6: @rs*8
+end
+
+section C bars=8
+  1: @bP @bPt
+  2: @p1 @p2
+  3: @rs*4 @aE
+  4: @p1-24 @p2-24
+  5: @kA
+  6: @p1-12 @p2-12
+end
+
+form I loop A A2 B C
