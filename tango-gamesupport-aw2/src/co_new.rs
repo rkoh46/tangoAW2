@@ -1182,10 +1182,13 @@ mod tests {
         let g = war_room_groups(&aw2).unwrap();
         assert_eq!(g.len(), 5);
         let all_ids: Vec<u8> = g.iter().flat_map(|x| x.0.clone()).collect();
-        assert_eq!(all_ids.len(), 19 + 12);
-        for co in (0..19).chain(FIRST..=CRUMB).chain([ASUKA]) {
+        // 19 of AW2's, 12 of Dual Strike's and tangoAW2's own, Asuka, and the four Emerald Sun COs (Varro, the boss, is not listed).
+        assert_eq!(all_ids.len(), 19 + 12 + 4);
+        let es = [crate::es_co::KLAUS, crate::es_co::AURELIA, crate::es_co::CASSIUS, crate::es_co::LIVIA];
+        for co in (0..19).chain(FIRST..=CRUMB).chain([ASUKA]).chain(es) {
             assert_eq!(all_ids.iter().filter(|&&c| c == co).count(), 1, "CO {co}");
         }
+        assert!(!all_ids.contains(&crate::es_co::VARRO), "Varro is not in Versus");
         assert_eq!(g[0].0, vec![1, 2, 4, 0, 15, 79, 80]);
         let bh = &g[4].0;
         let at = |c: u8| bh.iter().position(|&x| x == c).unwrap();
