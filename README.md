@@ -28,6 +28,9 @@ it plays with on-screen buttons or a controller at 60 to 120 Hz, sideways
 fitted between the buttons or stretched (Settings > Graphics), and online with
 desktop players).
 
+Found a bug or have an idea? [Open an issue](https://github.com/rkoh46/tangoAW2/issues/new/choose)
+(press F8 in the game right after a problem to save a report to attach).
+
 ## First run
 
 1. Open tangoAW2 (it creates the `roms`, `saves` and `replays` folders).

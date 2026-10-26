@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in tangoAW2 doesn't work right (a crash, a wrong rule, a graphics glitch, an online problem).
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please don't attach ROMs or save files: tangoAW2 never shares them, and neither should issues.
+  - type: input
+    id: version
+    attributes:
+      label: tangoAW2 version
+      description: Shown on the title screen (e.g. 0.8.8).
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [macOS, Windows, Linux, iPhone / iPad]
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Where did it happen?
+      options: [Online (Unranked), Online (Lobby), Offline Versus, AW2 Campaign, DS Campaign, BH Campaign, Emerald Sun Campaign, War Room / Survival, Menus, Other]
+    validations:
+      required: true
+  - type: checkboxes
+    id: pack
+    attributes:
+      label: ROMs
+      options:
+        - label: The Dual Strike ROM (DS pack) is installed
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Start ...\n2. Pick ...\n3. ..."
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log or F8 report
+      description: |
+        Press F8 in the game right after the problem to save a report (with a screenshot). Logs are in Documents/TangoAW2/logs. Attach the newest log or the F8 report folder (zipped). They contain no ROM data.
+  - type: textarea
+    id: shots
+    attributes:
+      label: Screenshots or video
