@@ -1,153 +1,207 @@
-; Asuka, Black Hole's intelligence chief: "Umbra Protocol" (remix A), a cold, sinister theme in A harmonic minor with the tritone (Eb) and the flat second (Bb) pulling against the tonic.
-; Original composition for tangoAW2. Low horns speak a slow, chromatically falling phrase over a timpani heartbeat; the clock of the first theme is kept but muted and low, its last tick of every bar
-; a tritone; the strings hold the flat second (Bb against the A below); a muted trumpet answers in the second section, the bass walks down the chromatic scale in the last, and a crash stings the loop shut.
+; Asuka, Black Hole's intelligence chief: "Cipher Command", a brass-led anthem in D minor at 152 beats a minute.
+; Original composition for tangoAW2. A relentless pick-bass ostinato (eighths with an octave jump and a sixteenth pickup into every bar) under a four-bar brass hook that is called, then
+; answered by power-chord stabs; her clockwork is a fast plucked arpeggio ticking through everything. The hook comes back with strings doubling it, and once more a whole step higher
+; before an A major turn drops it back into the loop.
 ;
-; Form: two bars of heartbeat and clock, then the loop: the horns (A), the trumpet's answer (B), the horns with the eerie high flute (A2) and the descent (C). 32 bars at 100 beats a minute: about 77 s.
+; Form: a two-bar intro hit, then the loop: A (the hook twice, climbing), B (call and response over a rising bass), BR (the breakdown: the clock, strings, a heartbeat, a snare build),
+; R (the big return of the hook with everything), C (the hook up a whole step, then the turn). 40 bars: about 63 s.
 song asuka
-tempo 100
+tempo 152
 meter 4/4
 reverb 173
 priority 0
 
-inst horns   = A.111 shift=-12      ; low brass, the voice of the file
-inst pluck   = A.117 shift=0        ; the clock, muted
-inst strings = A.48                 ; the cluster
+inst lead    = A.56  shift=-12      ; bright brass, the hook
+inst stab    = A.111 shift=-12      ; rich brass, the power-chord stabs
+inst strings = A.48                 ; sawtooth strings: the double and the pad
 inst bass    = A.36  shift=24       ; pick bass
-inst trumpet = A.56  shift=-12      ; muted by its velocity
+inst clock   = A.117 shift=0        ; the plucked clockwork
 inst kit     = A.120
-inst timp    = A.47  shift=24       ; the heartbeat
-inst flute   = A.77  shift=-12      ; the eerie high voice
+inst timp    = A.47  shift=24
 
 hit kick=36 rim=37 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
 
-track 1 inst=horns   vol=84 pan=-6  vel=110 gate=92 gain=1.15
-track 2 inst=pluck   vol=52 pan=18  vel=76  gate=50 gain=2.4
-track 3 inst=strings vol=48 pan=-22 vel=84  gate=100 gain=1.6
-track 4 inst=bass    vol=86 pan=0   vel=114 gate=92 gain=0.85
-track 5 inst=trumpet vol=64 pan=14  vel=96  gate=60 gain=1.9
-track 6 inst=kit     vol=62 pan=0   vel=100 gate=100 gain=1.2
-track 7 inst=timp    vol=80 pan=0   vel=118 gate=95 gain=0.8
-track 8 inst=flute   vol=56 pan=24  vel=84  gate=90 gain=1.2
+track 1 inst=lead    vol=86 pan=0   vel=112 gate=88 gain=1.45
+track 2 inst=stab    vol=70 pan=-14 vel=112 gate=70 gain=1.5
+track 3 inst=strings vol=60 pan=18  vel=100 gate=90 gain=2.2
+track 4 inst=bass    vol=86 pan=0   vel=118 gate=78 gain=1.2
+track 5 inst=clock   vol=56 pan=20  vel=96  gate=60 gain=1.4
+track 6 inst=kit     vol=72 pan=0   vel=108 gate=100 gain=0.8
+track 7 inst=timp    vol=78 pan=0   vel=120 gate=92 gain=0.7
 
-; ---- the horns: Am Am Bb E | Am F Eb E (the Eb is the tritone) ----
-def thA:
-  | A3/2. Bb3/4 |
-  | A3/4. G#3/8 A3/4 E3/4 |
-  | D4/2. C#4/4 |
-  | C4/4 B3/4 G#3/2 |
-  | A3/4. A3/8 C4/4 E4/4 |
-  | F4/2. E4/4 |
-  | Eb4/4. D4/8 Eb4/4 A3/4 |
-  | E4/4. D#4/8 D4/4 B3/4 |
+; ---- the hook (Dm | Bb | Gm | A), twice, the second time climbing ----
+def hk1a:
+  | r/8 D5/8 D5/8 F5/8 A5/4. G5/8 |
+  | F5/8 F5/8 D5/8 F5/8 Bb5/2 |
 end
-; ---- the trumpet's answer, high and muted: Dm Dm Bb E | Dm Bb E E ----
-def thB:
-  | r/4 A4/4 D5/2 |
-  | C5/4. Bb4/8 A4/2 |
-  | D5/4 Bb4/4 F4/2 |
-  | G#4/4 B4/4 E5/2 |
-  | r/4 A4/4 D5/2 |
-  | F5/4. E5/8 D5/4 Bb4/4 |
-  | B4/4 G#4/4 E4/4 B4/4 |
-  | Bb4/2 A4/2 |
+def hk1b:
+  | G5/8 G5/8 Bb5/8 G5/8 D5/4. F5/8 |
+  | E5/8 E5/8 C#5/8 E5/8 A5/2 |
 end
-; ---- the descent: Am G F E | Eb D C# E ----
-def thC:
-  | A3/4 C4/4 E4/2 |
-  | G3/4 B3/4 D4/2 |
-  | F3/4 A3/4 C4/2 |
-  | E3/4 G#3/4 B3/2 |
-  | Eb4/4. D4/8 Eb4/4 Bb3/4 |
-  | D4/4. C4/8 D4/4 A3/4 |
-  | C#4/4. B3/8 C#4/4 G#3/4 |
-  | E4/1 |
+def hk2a:
+  | r/8 D5/8 D5/8 F5/8 A5/4. C6/8 |
+  | D6/8 D6/8 C6/8 Bb5/8 F5/2 |
 end
-; ---- the eerie flute, high, a long line a compound fifth above the horns ----
-def flA:
-  | E5/1 |
-  | Eb5/2 D5/2 |
-  | F5/1 |
-  | B4/2 G#4/2 |
-  | C6/1 |
-  | A5/2 Bb5/2 |
-  | G5/2 Eb5/2 |
-  | E5/1 |
+def hk2b:
+  | G5/8 Bb5/8 D6/8 Bb5/8 G5/4. A5/8 |
+  | C#6/8 C#6/8 A5/8 E5/8 A5/2 |
 end
-; ---- the clock (Am written): a tick every eighth, the last one the tritone ----
-def ost:
-  | A3/8 E4/8 A3/8 E4/8 A3/8 E4/8 A3/8 Eb4/8 |
+; the bar over A that turns the loop round (the last of hk1b), and the bar over B (the same, a step up) that leads to it
+def hk4:
+  | E5/8 E5/8 C#5/8 E5/8 A5/2 |
 end
-; ---- the bass (A written) ----
+def turn:
+  | F#5/8 F#5/8 D#5/8 F#5/8 B5/2 |
+end
+; ---- the call, a half bar of the lead (B), each chord on its own pitch ----
+def c1:
+  | G5/8 G5/8 Bb5/4 r/2 |
+end
+def c2:
+  | Bb5/8 Bb5/8 D6/4 r/2 |
+end
+def c3:
+  | D5/8 D5/8 F5/4 r/2 |
+end
+def c4:
+  | F5/8 F5/8 Bb5/4 r/2 |
+end
+def c5:
+  | E5/8 E5/8 G5/4 r/2 |
+end
+def c6:
+  | G5/8 G5/8 C6/4 r/2 |
+end
+def c7:
+  | E5/8 E5/8 A5/4 r/2 |
+end
+def c8:
+  | A5/8 A5/8 C#6/4 r/2 |
+end
+
+; ---- the stabs: power chords (D written), answering on the second half of a bar ----
+def st1:
+  | r/2 [D4 A4]/8 r/8 [D4 A4]/4 |
+end
+def st2:
+  | r/2 [D4 A4]/8 [D4 A4]/8 r/8 [D4 A4]/8 |
+end
+def stx:
+  | [D4 A4]/16 r/16 [D4 A4]/16 r/16 [D4 A4]/16 r/16 [D4 A4]/16 r/16 [D4 A4]/16 r/16 [D4 A4]/16 r/16 [D4 A4]/16 r/16 [D4 A4]/16 r/16 |
+end
+
+; ---- the bass ostinato (D written; Bb is -4, Gm -7, A -5, C -2, Em +2, B -3) ----
 def bs:
-  | A1/4 r/8 A1/8 A1/4 r/4 |
+  | D2/8 D2/8 D3/8 D2/8 D2/8 D2/8 D3/8 D2/16 D2/16 |
 end
-def bsw:
-  | A1/4 A1/4 A1/4 A1/4 |
+; ---- the clock: a fast plucked arpeggio, minor and major shapes (D written) ----
+def arm:
+  | D4/16 F4/16 A4/16 D5/16 F5/16 D5/16 A4/16 F4/16 D4/16 F4/16 A4/16 D5/16 F5/16 D5/16 A4/16 F4/16 |
 end
-; ---- the heartbeat (A written) ----
+def arM:
+  | D4/16 F#4/16 A4/16 D5/16 F#5/16 D5/16 A4/16 F#4/16 D4/16 F#4/16 A4/16 D5/16 F#5/16 D5/16 A4/16 F#4/16 |
+end
+def tk:
+  | A5/8 r/8 A5/8 r/8 A5/8 r/8 A5/8 r/8 |
+end
+def tk2:
+  | A5/16 A5/16 r/16 A5/16 A5/16 A5/16 r/16 A5/16 A5/16 A5/16 r/16 A5/16 A5/16 A5/16 A5/16 A5/16 |
+end
+; ---- strings: chopped fifths on the offbeats, and a pad (D written) ----
+def chop:
+  | r/8 A3/8' r/8 A3/8' r/8 A3/8' r/8 A3/8' |
+end
+def pad:
+  | A3/1 |
+end
+; ---- timpani: the pulse ----
+def tp:
+  | D2/4 r/4 D2/4 r/4 |
+end
 def hb:
-  | A1/8 A1/8 r/4 A1/8 A1/8 r/4 |
-end
-; ---- the strings: the flat second above A, and in the last section the tritone ----
-def clu:
-  | Bb3/1 |
-end
-def tri:
-  | Eb4/1 |
+  | D2/4 D2/4 D2/4 D2/4 |
 end
 ; ---- drums ----
-def kd:
-  | r/2 tom1/4 r/4 |
+def g:
+  | kick/8 hat/16 hat/16 snare/8 hat/16 hat/16 kick/8 kick/16 hat/16 snare/8 hat/16 hat/16 |
 end
-def kdr:
-  | r/2 tom1/4 tom2/8 tom3/8 |
+def go:
+  | kick/8 hat/16 hat/16 snare/8 ohat/16 hat/16 kick/8 kick/16 hat/16 snare/8 hat/16 ohat/16 |
 end
-def kdc:
-  | kick/4 r/4 snare/4 r/4 |
+def gc:
+  | crash/8 hat/16 hat/16 snare/8 hat/16 hat/16 kick/8 kick/16 hat/16 snare/8 hat/16 hat/16 |
 end
-def kde:
-  | kick/4 snare/8 snare/8 snare/8 snare/8 snare/8 snare/8 |
+def fl:
+  | kick/8 hat/16 hat/16 snare/8 hat/16 hat/16 snare/16 snare/16 tom1/16 tom1/16 tom2/16 tom2/16 tom3/16 tom3/16 |
+end
+def fr:
+  | snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 snare/16 |
+end
+def h8:
+  | hat/8 hat/8 hat/8 hat/8 hat/8 hat/8 hat/8 hat/8 |
+end
+def q4:
+  | kick/4 hat/8 hat/8 kick/4 hat/8 hat/8 |
+end
+def s8:
+  | snare/8 snare/8 snare/8 snare/8 snare/8 snare/8 snare/8 snare/8 |
+end
+
+def rs:
+  | r/1 |
 end
 
 section intro bars=2
-  7: @hb @hb
-  2: {vol 40>60/192} @ost @ost
+  2: | [D3 A3 D4]/4 r/4 [D3 A3 D4]/8 [D3 A3 D4]/8 r/4 | r/1 |
+  4: | D2/4 r/4 D2/8 D2/8 r/4 | @bs |
+  7: | D2/4 r/4 D2/8 D2/8 r/4 | r/1 |
+  6: | crash/4 r/4 snare/8 snare/8 r/4 | kick/8 hat/16 hat/16 snare/8 hat/16 hat/16 snare/16 snare/16 snare/16 snare/16 tom1/16 tom1/16 tom2/16 tom2/16 |
+  5: @rs @arm
 end
 
 section A bars=8
-  1: {vol 84} @thA
-  2: @ost @ost @ost+1 @ost+7 @ost @ost-4 @ost+6 @ost+7
-  3: {vol 46} @clu @clu @clu+1 @clu+7 @clu @clu-4 @clu+6 @clu+7
-  4: {vol 86} @bs @bs @bs+1 @bs+7 @bs @bs-4 @bs+6 @bs+7
-  7: @hb @hb @hb @hb @hb @hb @hb @hb
-  6: {vol 56} @kd @kd @kd @kd @kd @kd @kd @kdr
+  1: {vol 86} @hk1a @hk1b @hk2a @hk2b
+  2: @rs @st1-4 @rs @st1-5 @rs @st1-4 @rs @st2-5
+  4: @bs @bs-4 @bs-7 @bs-5 @bs @bs-4 @bs-7 @bs-5
+  5: @arm @arM-4 @arm-7 @arM-5 @arm @arM-4 @arm-7 @arM-5
+  6: {vol 72} @gc @go @g @fl @g @go @g @fr
 end
 
 section B bars=8
-  5: {vol 66} @thB
-  2: @ost+5 @ost+5 @ost+1 @ost+7 @ost+5 @ost+1 @ost+7 @ost+7
-  3: {vol 50} @clu+5 @clu+5 @clu+1 @clu+7 @clu+5 @clu+1 @clu+7 @clu+7
-  4: {vol 86} @bs+5 @bs+5 @bs+1 @bs+7 @bs+5 @bs+1 @bs+7 @bs+7
-  7: @hb @hb @hb @hb @hb @hb @hb @hb
-  6: {vol 60} @kd @kd @kd @kd @kd @kd @kd @kdr
+  1: {vol 86} @c1 @c2 @c3 @c4 @c5 @c6 @c7 @c8
+  2: {vol 74} @st2-7 @st2-7 @st2-4 @st2-4 @st2-2 @st2-2 @st2-5 @st2-5
+  3: {vol 56} @chop-7 @chop-7 @chop-4 @chop-4 @chop-2 @chop-2 @chop-5 @chop-5
+  4: @bs-7 @bs-7 @bs-4 @bs-4 @bs-2 @bs-2 @bs-5 @bs-5
+  5: @arm-7 @arm-7 @arM-4 @arM-4 @arM-2 @arM-2 @arM-5 @arM-5
+  6: {vol 74} @g @go @g @fl @g @go @g @fr
 end
 
-section A2 bars=8
-  1: {vol 84} @thA
-  8: @flA
-  2: @ost @ost @ost+1 @ost+7 @ost @ost-4 @ost+6 @ost+7
-  4: {vol 88} @bsw @bsw @bsw+1 @bsw+7 @bsw @bsw-4 @bsw+6 @bsw+7
-  7: @hb @hb @hb @hb @hb @hb @hb @hb
-  6: {vol 64} @kd @kd @kd @kd @kd @kdc @kdc @kdr
+section BR bars=8
+  3: {vol 46} @pad @pad @pad-4 @pad-4 @chop-7 @chop-7 @chop-5 @chop-5
+  5: {vol 50} @tk @tk @tk @tk @tk2 @tk2 @arm-7 @arM-5
+  7: {vol 70} @hb @hb @hb-4 @hb-4 @hb-7 @hb-7 @rs @rs
+  4: {vol 80} @rs r/1 @rs r/1 @bs-7 @bs-7 @bs-5 @bs-5
+  2: {vol 78} @rs r/1 @rs r/1 @rs r/1 @stx-5 @stx-5
+  6: {vol 56} @h8 @h8 @h8 @h8 @q4 @q4 @s8 @fr
+end
+
+section R bars=8
+  1: {vol 90} @hk1a @hk1b @hk2a @hk2b
+  2: @rs @st1-4 @rs @st1-5 @rs r/1 @rs @rs
+  3: {vol 62} @rs r/1 @rs r/1 @hk2a-12 @hk2b-12
+  4: {vol 88} @bs @bs-4 @bs-7 @bs-5 @bs @bs-4 @bs-7 @bs-5
+  5: @arm @arM-4 @arm-7 @arM-5 @arm @arM-4 @arm-7 @arM-5
+  7: {vol 80} @rs r/1 @rs r/1 @tp @tp-4 @tp-7 @tp-5
+  6: {vol 78} @gc @go @g @fl @gc @go @g @fr
 end
 
 section C bars=8
-  1: {vol 90} @thC
-  2: @ost @ost-2 @ost-4 @ost-5 @ost+6 @ost+5 @ost+4 @ost+7
-  3: {vol 52} @tri @tri-2 @tri-4 @tri-5 @tri+6 @tri+5 @tri+4 @tri+7
-  4: {vol 90} @bsw @bsw-2 @bsw-4 @bsw-5 @bsw+6 @bsw+5 @bsw+4 @bsw+7
-  7: @hb @hb @hb @hb @hb @hb @hb @hb
-  6: {vol 66} @kdc @kdc @kdc @kdc @kdc @kdc @kdc @kde
+  1: {vol 92} @hk1a+2 @hk1b+2 @hk1a+2 @turn @hk4
+  3: {vol 64} @hk1a-10 @hk1b-10 @hk1a-10 @turn-12 @hk4-12
+  4: {vol 90} @bs+2 @bs-2 @bs-5 @bs-3 @bs+2 @bs-2 @bs-3 @bs-5
+  5: @arm+2 @arM-2 @arm-5 @arM-3 @arm+2 @arM-2 @arM-3 @arM-5
+  7: {vol 82} @tp+2 @tp-2 @tp-5 @tp-3 @tp+2 @tp-2 @tp-3 @tp-5
+  6: {vol 80} @gc @go @g @fl @g @go @g @fr
 end
 
-form intro loop A B A2 C
+form intro loop A B BR R C

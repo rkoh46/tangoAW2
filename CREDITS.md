@@ -3,7 +3,7 @@
 ## tangoAW2
 
 - Emerald Sun's four COs (Klaus, Aurelia, Cassius, Livia): portrait art provided by the project owner (`art-src/cos/`, converted to the game's formats in `tango-gamesupport-aw2/art/cos/`).
-- Asuka (Sonja after she defects to Black Hole): portrait art provided by the project owner (`art-src/cos/asuka_v1.jpg`, a clean illustration imported by `aw2dev co portrait import` with the illustration mode: background cut, Lanczos / area downscale, one palette; nothing redrawn). Her theme "Umbra Protocol" (`music/es/asuka.m4t`) is original to tangoAW2.
+- Asuka (Sonja after she defects to Black Hole): portrait art provided by the project owner (`art-src/cos/asuka_v1.jpg`, a clean illustration imported by `aw2dev co portrait import` with the illustration mode: background cut, Lanczos / area downscale, one palette; nothing redrawn). Her theme "Cipher Command" (`music/es/asuka.m4t`) is original to tangoAW2.
   The name graphics are set in letters drawn for this project (`devkit/aw2/colib/namefont.py`).
 - Palette replacement (aw2dev art repal) follows the method of PalReplacer by Hendrik Iben (2012, MIT): weighted nearest-colour mapping onto a fixed palette in slot order.
   Nothing of the jar is copied (`devkit/aw2/artlib/repal.py` is our own code).
