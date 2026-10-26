@@ -103,7 +103,7 @@ sprites are the same two blocks: a 32 x 16 and a 16 x 16). (2) the **Power cut-i
 **Her HQ is Black Hole's whatever colour slot she plays in**: the game draws an army's HQ by the CO's country (her row's property style, 4, like Hawke's and Lash's); `asuka_pics_hq_follows_the_co` checks the HQ picture of
 army 1 (Orange Star's slot) is drawn exactly as Hawke's and not as Andy's or Sonja's.
 **Sonja is untouched**: Asuka has her own id, picture words, palette, name graphic, texts, power words and theme; every table she is added to is a copy with her row appended (`co_new::build`, `co_roster::build`);
-`aw2dev co verify sonja` compares Sonja's rows, texts, pictures, numbers and tag page with the v0.8.7 build (docs/dev/co-kit.md).
+`aw2dev co verify sonja` compares Sonja's rows, texts, pictures, numbers and tag page with the v0.8.7 build (docs/dev/co-kit.md). Her screens are compared by what is hers (HUD face without the cursor, her Super Power figure normalised to its bounding box, her quote boxes), not by whole-frame hashes: the current build's animation phase is a frame or two off v0.8.7's (cursor blink, idle frames, fire), which changed six whole-frame hashes while every Sonja pixel stayed identical. `AW2TEST_KEEP_FRAMES=1 aw2dev co verify sonja` keeps the BMPs in devkit/work/baseline/frames_reference and frames_current.
 
 ## Where she is
 In **this build, for everyone** (no playtest flag, unlike the Emerald Sun five): Versus' Teams list (after Hawke, Black Hole's group), the tag partner pick, the War Room and Survival / Champion CO screens, the DS-style

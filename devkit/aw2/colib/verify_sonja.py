@@ -31,6 +31,13 @@ def run_once(label, examples_dir):
     if not path.exists():
         util.die(f"{label}: the observation test did not run:\n{r.stdout[-1500:]}")
     data = json.loads(path.read_text())
+    if os.environ.get("AW2TEST_KEEP_FRAMES"):
+        import shutil
+        keep = BASE / f"frames_{label}"
+        shutil.rmtree(keep, ignore_errors=True)
+        keep.mkdir(parents=True)
+        for f in path.parent.glob("s_*.bmp"):
+            shutil.copy(f, keep / f.name)
     dst = BASE / f"sonja_{label}.json"
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_text(json.dumps(data, indent=1, sort_keys=True))

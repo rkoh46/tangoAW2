@@ -40,6 +40,46 @@ def frame_hash(ctx, g, name):
     return h(open(p, "rb").read())
 
 
+def px(path):
+    from PIL import Image
+    return Image.open(path).convert("RGB")
+
+
+def hash_pixels(pairs):
+    return h(b"".join(bytes((x >> 8, x & 255, y)) + bytes(c) for x, y, c in pairs))
+
+
+def battle_pixels(path):
+    """The battle's first frame without the map cursor (the top-left 32 x 32 pixels): the cursor blinks and AW2's frame phase is not Sonja's; her HUD face, the HQ card and the map are kept."""
+    im = px(path)
+    return hash_pixels((x, y, im.getpixel((x, y))) for y in range(160) for x in range(240) if not (x < 32 and y < 32))
+
+
+def figure_pixels(path):
+    """Sonja's figure on a Super Power cut-in frame, normalised to its own bounding box: her uniform's greens and the black of her bag, boots and outline (the fire behind her is red, orange and
+    yellow). Returns (pixel count, hash); the frame where she is fully in view has the most pixels, and the hash does not depend on the fire's phase or on how far she has slid in at that frame."""
+    im = px(path)
+    pts = []
+    for y in range(160):
+        for x in range(100, 240):
+            r, g, b = im.getpixel((x, y))
+            if (g > r + 20 and g > b + 20) or max(r, g, b) < 60:
+                pts.append((x, y, (r, g, b)))
+    if not pts:
+        return 0, ""
+    x0 = min(p[0] for p in pts)
+    y0 = min(p[1] for p in pts)
+    return len(pts), hash_pixels((x - x0, y - y0, c) for x, y, c in pts)
+
+
+def dialog_pixels(path):
+    """Her quote box (face and text) on the frame where AW2 draws it: the bottom 24 rows with the box's pink-white background."""
+    im = px(path)
+    box = [(x, y, im.getpixel((x, y))) for y in range(136, 160) for x in range(240)]
+    pink = sum(1 for _, _, c in box if c[0] > 230 and c[1] > 210 and c[2] > 210)
+    return (hash_pixels(box) if pink > 2000 else None), pink
+
+
 @test(modes=("ds",))
 def sonja_untouched(ctx):
     obs = {}
@@ -148,16 +188,31 @@ def sonja_untouched(ctx):
     m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10)
     gs = ctx.start(m, ["sonja", "andy"])
     gs.e.wait(30)
-    screens["battle_first_frame"] = frame_hash(ctx, gs, "s_battle")
+    # The frames are hashed whole only where AW2's own animation phase cannot enter. The cursor's blink, a unit's idle frame, the fire's phase and how far she has slid in depend on the frame
+    # the console is on when the shot is taken (the current build is a frame or two off the v0.8.7 build's phase: checked, the pixels that differ are the cursor, the infantry's idle frame
+    # and the fire: not Sonja's), so those are compared by what is Sonja's: her HUD face (battle frame minus the cursor), her figure (normalised to its bounding box, from the frame where
+    # she is fully in view) and her quote box. AW2TEST_KEEP_FRAMES=1 keeps the BMPs (`co verify sonja` copies them beside the JSON).
+    screens["battle_first_frame"] = battle_pixels(ctx.shot(gs, "s_battle"))
     for which in ("power", "super"):
         gs = ctx.start(m, ["sonja", "andy"])
         gs.charge_power(1, which)
         gs.open_map_menu()
         gs.choose("Super" if which == "super" else "Power", gs.MAP_MENU)
+        best, dialogs = (0, ""), set()
         for k in range(100):
             gs.e.wait(4)
             if k % 10 == 5:
-                screens[f"{which}_frame{k}"] = frame_hash(ctx, gs, f"s_{which}_{k}")
+                if which == "super":
+                    path = ctx.shot(gs, f"s_{which}_{k}")
+                    best = max(best, figure_pixels(path), key=lambda t: t[0])
+                    d, _ = dialog_pixels(path)
+                    if d:
+                        dialogs.add(d)
+                else:
+                    screens[f"{which}_frame{k}"] = frame_hash(ctx, gs, f"s_{which}_{k}")
+        if which == "super":
+            screens["super_figure"] = {"pixels": best[0], "hash": best[1]}
+            screens["super_quote_boxes"] = sorted(dialogs)
     gc = ctx.start(m, ["sonja", "andy"])
     gc.open_map_menu()
     gc.choose("CO", gc.MAP_MENU)
