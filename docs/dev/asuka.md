@@ -6,6 +6,13 @@ Code `tango-gamesupport-aw2/src/asuka.rs` (constants and the design in its heade
 the +5%, the stars), `co_powers.rs` (`asuka_fn`, the ammo halving in `mass_unit`), `es_cos.rs` (her art and texts, the table of the Emerald Sun portraits), `ds_co_page.rs` (CO page), `sturm_pairs.rs` (her pairs), `es_music.rs` (`SOURCES`: her theme),
 `ds_ai.rs` (the CPU plays her with Hawke's profile). Data `cos/asuka.toml`, `cos/tags.toml`, art `art/cos/asuka/`, song `music/es/asuka.m4t`.
 
+## Her theme
+`music/es/asuka.m4t`, **"Umbra Protocol"** (the remix of the first theme "Cold Reckoning", made darker because she is Black Hole): A harmonic minor with the tritone (Eb) and the flat second (Bb) pulling against the tonic, 100 bpm, 2 intro bars + 32 bars (77 s loop), 6 notes at most.
+Identity kept: the ticking clockwork ostinato (a plucked eighth-note clock, now muted and low; the last tick of every bar is the tritone) and the cold, exact voice. Black Hole's menace, studied in AW2's Sturm (60), Hawke (65), Lash (68), Flak and Adder (50)
+themes (slow tempos, heavy toms and timpani, long low brass, bent notes): a timpani heartbeat, low horns speaking a slow chromatically falling phrase, strings holding the flat second (the tritone in the last section), a muted trumpet answering high,
+a high eerie flute over the repeat, and a bass that walks down the chromatic scale in the last section; a crash stings the loop shut. Form: intro, A (horns), B (trumpet's answer), A2 (horns + flute), C (the descent). Levels RMS -20.6 dBFS, peak -3.7, seams click 0.9x / gap 1.1x, correlation 0.95;
+`pitchcheck` within 0.3 semitone. Two other takes were made and kept out of the build ("Singularity", B Locrian, 72 bpm; "Black Ledger", E octatonic, 104 bpm); swapping is one file.
+
 ## Art, HQ
 **The project owner's own picture** (`art-src/cos/asuka_v1.jpg`, framing `asuka_v1.toml`): a clean illustration, imported by the illustration mode of `aw2dev co portrait import` (docs/dev/co-kit.md, "The illustration
 import"): white background cut (also the gaps between arm and body), Lanczos / area downscale from the figure's own pixels, one palette of 15 colours + transparent (three of the 14 kept for the black cloth and hair), AW2's

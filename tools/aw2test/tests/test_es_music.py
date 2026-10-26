@@ -129,6 +129,8 @@ def es_theme_plays_on_the_cos_turn_and_loops(ctx):
     out = os.environ.get("AW2TEST_MUSIC_OUT") or ctx.out
     os.makedirs(out, exist_ok=True)
     for name, co in COS.items():
+        if name == "varro":
+            continue  # the boss is not in Versus' CO lists (co_new::listed), so no battle can start with him; his song is checked by the registered / intact tests
         g = battle(ctx, co)
         e = g.e
         song = row_song(e, co)
