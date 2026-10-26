@@ -190,10 +190,18 @@ def _dilate(m):
     return out
 
 
-def palette_for(pixels_rgb, weights, k=14, outline=(32, 24, 32)):
-    """k colours of the native pixels (weighted k-means in Lab; JPEG near-duplicates merge), plus the fixed outline colour. -> list of 15 RGB, lightest first, the outline last."""
+def palette_for(pixels_rgb, weights, k=14, outline=(32, 24, 32), protect=(), radius=8.0):
+    """k colours of the native pixels (weighted k-means in Lab; JPEG near-duplicates merge), plus the fixed outline colour. -> list of 15 RGB, lightest first, the outline last.
+    `protect`: colours read from her own native cells (the eye whites, the iris, the skin, the gold, the tie): each is a palette entry of its own, and the native pixels within `radius` Lab of one
+    are not left to the clustering (a few eye-white cells would otherwise be outvoted by thousands of black ones and merge into the dark)."""
     from . import importer as I
+    prot = [tuple(int(v) for v in I.snap555(np.array(c, float))) for c in protect]
     lab = I.to_lab(pixels_rgb.astype(float))
+    if prot:
+        pl = I.to_lab(np.array(protect, float))
+        free = ((lab[:, None, :] - pl[None]) ** 2).sum(2).min(1) ** 0.5 >= radius
+        lab, weights = lab[free], weights[free]
+        k -= len(prot)
     if len(np.unique(lab.round(1), axis=0)) <= k + 1:
         # fewer colours than clusters (a tiny or flat picture): the colours themselves
         cent = np.unique(lab.round(1), axis=0)
@@ -204,7 +212,7 @@ def palette_for(pixels_rgb, weights, k=14, outline=(32, 24, 32)):
     d = ((cent - olab) ** 2).sum(1) ** 0.5
     j = int(d.argmin())
     keep = [i for i in range(len(cent)) if i != j] if d[j] < 14 else list(range(len(cent)))[:k]
-    cols = [tuple(int(v) for v in rgb[i]) for i in keep]
+    cols = prot + [tuple(int(v) for v in rgb[i]) for i in keep]
     lum = [0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] for c in cols]
     cols = [cols[i] for i in np.argsort(lum)[::-1]][:14]
     # a palette needs 14 entries before the outline; pad with the darkest if the clustering found fewer
@@ -323,7 +331,9 @@ def styled(spec, path):
     mu = (slice(my0 + P, my0 + P + ms), slice(mx0 + P, mx0 + P + ms))
     px = np.concatenate([nat[fr][fg[fr]], nat[mu][fg[mu]]])
     wt = np.concatenate([np.ones(fg[fr].sum()), np.full(fg[mu].sum(), spec.get("face_weight", 3.0))])
-    pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))))
+    # colours guaranteed a palette entry: groups of native cells (`protect = [[[x, y], ...], ...]`, in the cells of the grid after `flip`), each group's mean colour
+    protect = [np.mean([nat[y + P, x + P] for x, y in grp], axis=0) for grp in spec.get("protect", [])]
+    pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))), protect=protect)
     full = quantise(nat, fg, pal[:14], spec.get("match", "luma"))      # art repal hook: the framing file's `match`
     if spec.get("despeckle"):
         full = despeckle_dark(full, pal[:14], int(spec["despeckle"]))
@@ -337,6 +347,7 @@ def styled(spec, path):
     im = I.Imported()
     im.spec = spec
     im.palette = pal16
+    im.src = {"large": np.kron(nat[fr], np.ones((S, S, 1))), "face": np.kron(nat[mu], np.ones((MS, MS, 1)))}      # her native colours at the output's resolution (the lightness lint)
     im.large = L
     im.faces["normal"] = face
     e = spec["eyes"]

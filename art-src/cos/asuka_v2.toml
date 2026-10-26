@@ -1,15 +1,22 @@
-# Asuka, imported faithfully from asuka_v2.png (the owner's pixel art on a white background, native cells of about 7 px). Coordinates are native cells of the mirrored grid (`flip`).
-# The picture draws her looking to the left of the picture before the flip; the owner asked for the mirror (so she looks away from where AW2's COs face, see docs/dev/asuka.md).
+# Asuka, imported directly from asuka_v2.png (the owner's pixel art on a white background, native cells of about 7 px). Coordinates are native cells of the picture as it is: she faces right, like AW2's COs.
+# A direct import: the native grid, the cell-centre resample, white cut to transparent, whole-cell framing, 15 colours. No peeling, despeckling or stray-cell removal: nothing changes her pixels (hole_min only clears the large enclosed pockets of white between her arm and body and behind her neck). The outline is only added outside the figure (diagonal corners too, so it is unbroken: the lint asks for that).
 pixelart = true
 match = "luma"
-flip = true
+flip = false
+outline_diagonal = true
+hole_min = 30
+outline = [0, 0, 0]
 bg_tolerance = 40
 large_scale = 1
-frame = [6, -6]
+frame = [45, -6]
 mug_scale = 1
-mug = [55, -2]
-eyes = [68, 26, 80, 28]
-hole_min = 3
-outline_diagonal = true
-peel = 3
-despeckle = 2
+mug = [76, -2]
+eyes = [100, 26, 118, 28]
+# Colours her palette must keep an entry for (groups of native cells, the mean of each): the eye white, the grey iris, the skin, the gold badge, the red tie.
+protect = [
+  [[102, 25], [103, 25], [103, 26], [103, 24], [104, 24]],
+  [[102, 23], [103, 23]],
+  [[105, 28], [107, 28], [108, 28], [108, 27], [109, 27]],
+  [[111, 5], [112, 5], [110, 6], [113, 6], [110, 7], [113, 7]],
+  [[104, 60], [105, 61], [106, 62], [105, 62], [104, 61]],
+]

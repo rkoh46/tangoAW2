@@ -385,7 +385,42 @@ def _is_illustration(co):
         return False
 
 
-def outline_problems(name, a, pal):
+def _is_pixelart(co):
+    """Whether the CO's picture is a direct pixel-art import (`pixelart = true` in its framing file)."""
+    import tomllib
+    try:
+        d = tomllib.loads((cfg.REPO / "tango-gamesupport-aw2" / "cos" / f"{co}.toml").read_text())
+        side = (cfg.REPO / d["portrait"]["source"]).with_suffix(".toml")
+        return bool(tomllib.loads(side.read_text()).get("pixelart"))
+    except Exception:
+        return False
+
+
+def lightness_problems(co, pics, pal, lo=0.3, hi=0.8):
+    """A direct pixel-art import keeps every pixel's lightness class: no source pixel above `hi` (Lab lightness 0..1) takes a palette colour below `lo`, and none below `lo` one above `hi` (an eye white
+    gone black, a black gone white). The source cells are re-read through the importer (`Imported.src`: the figure's native colours at the output's resolution). -> list of problems."""
+    import tomllib
+    if not _is_pixelart(co):
+        return []
+    d = tomllib.loads((cfg.REPO / "tango-gamesupport-aw2" / "cos" / f"{co}.toml").read_text())
+    im = import_co({"source": d["portrait"]["source"], **{k: v for k, v in d["portrait"].items() if k != "source"}})
+    bad = []
+    pl = to_lab(np.array(pal, float))[:, 0] / 100
+    for name, src in (("large", im.src["large"]), ("face_normal", im.src["face"])):
+        a = pics[name]
+        m = (a != 0) & (a != 15)      # the added outline sits outside her pixels
+        ls = to_lab(src.astype(float))[..., 0] / 100
+        la = pl[a]
+        white = int((m & (ls > hi) & (la < lo)).sum())
+        black = int((m & (ls < lo) & (la > hi)).sum())
+        if white:
+            bad.append(f"{name}: {white} source pixels lighter than {hi} take a palette colour darker than {lo} (a white gone dark)")
+        if black:
+            bad.append(f"{name}: {black} source pixels darker than {lo} take a palette colour lighter than {hi}")
+    return bad
+
+
+def outline_problems(name, a, pal, blend=True):
     """The outline of an illustration import against Kanbei's (AW2's own figures): continuous in 8-connectivity (no opaque pixel that is not outline touches a transparent one, corners included), one pixel
     wide (every outline pixel touching the empty side is a single layer: no empty pixel is two layers deep in outline), outline colour only (index 15), no fringe (the darkest other tone of the palette is clearly
     lighter than the outline, so the uniform's black does not blend into it), and the outline colour is hardly used inside the figure (at most 3% of its pixels)."""
@@ -422,7 +457,7 @@ def outline_problems(name, a, pal):
     interior = inner & ~near8
     if figure.sum() and interior.sum() > 0.03 * opaque.sum():
         bad.append(f"{name}: {int(interior.sum())} outline-coloured pixels inside the figure (more than 3%): the uniform's black blends into the outline")
-    if pal is not None:
+    if pal is not None and blend:
         lab = lambda c: to_lab(np.array([c], float))[0]
         o = lab(pal[15])
         used = sorted(set(np.unique(a).tolist()) - {0, 15})
@@ -483,8 +518,10 @@ def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
                     if v not in nb:
                         specks += 1
             if illus:
-                bad += outline_problems(name, a, pal)
+                # a direct pixel-art import keeps the picture's own blacks, which may sit close to the outline colour: that blend is not checked for it
+                bad += outline_problems(name, a, pal, blend=not _is_pixelart(co))
             limit = max_specks_large if name == "large" else max_specks_small
             if specks > limit:
                 bad.append(f"{name}: {specks} isolated pixels (at most {limit})")
+    bad += lightness_problems(co, pics, pal)
     return bad

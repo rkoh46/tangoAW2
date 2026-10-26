@@ -374,5 +374,12 @@ class OutlineLint(unittest.TestCase):
         pal[3] = (34, 26, 34)
         self.assertTrue(any("blends in" in b for b in I.outline_problems("large", a, pal)))
 
+    def test_the_lightness_lint_catches_a_white_gone_dark(self):
+        pics, pal = I.read_art("asuka")
+        self.assertEqual(I.lightness_problems("asuka", pics, pal), [])
+        pal = [tuple(c) for c in pal]
+        pal[1] = (16, 16, 16)                    # the eye whites' entry (the lightest) darkened
+        self.assertTrue(any("darker than" in b for b in I.lightness_problems("asuka", pics, pal)))
+
     def test_asuka_has_a_continuous_outline_apart_from_kanbeis_standard(self):
         self.assertEqual(I.lint_art("asuka"), [])
