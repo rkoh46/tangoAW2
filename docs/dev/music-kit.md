@@ -1,4 +1,4 @@
-# Music kit: our own songs for AW2's sound engine (`aw2dev sound compose | render | loopcheck | levels | stems | pitchcheck | voices | dump`)
+# Music kit: our own songs for AW2's sound engine (`aw2dev sound compose | render | loopcheck | levels | stems | pitchcheck | similar | voices | dump`)
 
 How the Emerald Sun COs got **themes of their own**: songs written as text in this repository, compiled to song data for AW2's own sound engine (MP2K, "Sappy"), played with AW2's own
 instruments. Nothing from the game is stored: the instruments (voice entries and their samples) are read from the player's ROM at run time. Skill: `aw2-add-music`.
@@ -11,10 +11,10 @@ Code: `tango-gamesupport-aw2/src/es_music.rs` (parser + compiler), `src/ds_music
 | Aurelia (87) | `aurelia.m4t` "Opus Machinae" | A minor, 128 bpm, 32 bars, 60 s | brass 56/111, plucked ostinato 27, koto 117, pick bass 36, strings 48, kit 120 | an engine: a tresillo ostinato of sixteenths under punchy brass, a bridge for strings and a high pluck, a climbing push with snare rolls |
 | Cassius (88) | `cassius.m4t` "Equitatus" | G, 144 bpm, 32 bars, 54 s | horns 56/111, strings 48, bass 34, timpani 47, flute 77, kit 120 | a cavalry gallop (an eighth and two sixteenths every beat), a bugle call, swaggering horns, the charge |
 | Livia (89) | `livia.m4t` "Aerarium" | B minor / D, 3/4, 104 bpm, 32 bars, 56 s | flute 23, clarinet 71, harp 117, bass 34, strings 48, small pluck 29, kit 120 | an elegant waltz: harp turns, a refined flute line, a clarinet answer, drums that only count the beat, a chromatic step for the intrigue |
-| Asuka (92, Versus for everyone) | `asuka.m4t` "Fingers of Fate" | E harmonic minor, 124 bpm, 32 bars, 62 s | plucked guitar 27 (the fingered lead), horn 111 (pads), pick bass 36, brass 56 (the contrasting tune), kit 120; **Sonja's tune quoted from the ROM** (`rom` lines, below) | a dark rock theme: a fingered sixteenth lead with arpeggio sequences, a contrasting section in G, and her old self's hook, darkened, answered by the lead and stacked low under it; RMS -19.5 dBFS |
+| Asuka (92, Versus for everyone) | `asuka.m4t` "Defector's March" | E minor with a flat second, 120 bpm, 32 bars, 64 s | fuzz bass 97 (chopped sixteenths), brass 56 (the call and the stack), plucked guitar 27 (the answering lead), horn 111 (pads and the lowest stack), kit 120 | an original dark-but-heroic rock march: a sixteenth bass groove over Em F D B, a brass call that answers itself through a flat second and a leading tone, a guitar answer, a contrasting section (C D Em B), and a last section with the call stacked in three octaves; RMS -19.3 dBFS; no `rom` lines, `sound similar` against Sonja's and Sturm's songs: longest matching interval run 5 and 0 notes |
 | Varro (90, boss only) | `varro.m4t` "Imperium Tenebrarum" | C minor, 84 bpm, 24 bars, 69 s | horns 111, trumpet 56, strings 48, bass 34, timpani 47, pad 26, kit 120 | slow and dark: low horns over a pedal and a heartbeat, a flat second, a long dominant, a trumpet's answer |
 
-All but Asuka's are original (no existing tune); Asuka's quotes Sonja's theme out of the player's ROM at run time ("Quoting AW2's songs", below, and docs/dev/asuka.md); the voices are AW2's own, so they sound like AW2's themes (same reverb 173, priority 0, the CO themes' music player with 8 tracks and 8 mixed channels).
+Every theme is original (no existing tune, no `rom` reference; `aw2dev sound similar` checks it, "Originality", below). Asuka's was once a mix with Sonja's and Sturm's songs read from the ROM; those mixes stay in `music/es/alt/` as examples of the `rom` feature (docs/dev/asuka.md); the voices are AW2's own, so they sound like AW2's themes (same reverb 173, priority 0, the CO themes' music player with 8 tracks and 8 mixed channels).
 
 ## The pipeline
 1. **Text song** (`music/es/<name>.m4t`) -> `es_music::compile` (parse, expand patterns, check every bar adds up and every track fills its section, write the loop) -> **MP2K track bytes** (one stream a track:
@@ -63,8 +63,8 @@ AW2's voices have no release (envelope 255,0,255,0): a note ends when its length
 The sound is chosen by the numbers (spectrum, envelope, pitch) and by the role AW2 gives the program in its own themes (`aw2dev sound dump 211` prints Kanbei's tracks): **the choice has not been heard by an ear**;
 an instrument is one `inst` line, so swapping it is a one-line change. `aw2dev sound voices --sheet out.png` draws every sample's waveform and spectrogram.
 
-## Quoting AW2's songs (`rom`): nothing of them in the repository
-AW2's own songs are Nintendo's and Intelligent Systems' music. **Their notes must never be written into this repository** (no transcription into an `.m4t`, no copied note table, no note names of a melody in a document or a test, no WAV: it is public). A song of ours can still quote one the way the game does everything else of AW2's: it names the stretch and the game reads it from the player's ROM when it builds the song.
+## Quoting AW2's songs (`rom`): nothing of them in the repository (a kit feature; no shipped song uses it)
+The game's themes do not quote anything any more (`no_shipped_theme_references_aw2_songs`; `install_quotes` only runs for a song with `rom` lines, so for none that ships); the examples in `music/es/alt/{ns,ns2,ss,ss3}/` do. AW2's own songs are Nintendo's and Intelligent Systems' music. **Their notes must never be written into this repository** (no transcription into an `.m4t`, no copied note table, no note names of a melody in a document or a test, no WAV: it is public). A song of ours can still quote one the way the game does everything else of AW2's: it names the stretch and the game reads it from the player's ROM when it builds the song.
 ```
 rom hook song=212 track=0 bars=7-10 transpose=-12 srcshift=-12 lower=G#,C# peak=84 inst=low   ; a name and its parameters
 section A2 bars=8
@@ -90,6 +90,15 @@ Measured on the game's own output while finding why Asuka's Sturm + Sonja mix (a
 - **Grit**: a sample played far below its recorded key is crunchy (the mixer repeats samples instead of interpolating them). `audio.grit` is the median harmonic-to-noise ratio of the steady notes. A calibration (one whole note each on E1 .. B4, the game's output): brass **56** 20 to 23 dB from E1 to B4; strings 48 10 to 18 dB; horn **111** 15 to 17 dB from E2 to B3 but **7 dB on E1 and B1** (34 to 44 semitones under its recorded key). Rule: keep a low stack on 56, or on 111 no lower than E2; a fuzz voice such as Sturm's bass 97 reads 3 dB by design, a drum kit reads nonsense.
 - **Harmony**: a quote must agree with the backing's chords. Check a chroma (pitch classes per half second) of the quote's solo stem against the others before lowering notes ("darkening") a tune: Sturm's lead holds an E major chord (E G# B), so a quote lowered to G natural sat a sustained semitone from his G#.
 
+## Originality (`aw2dev sound similar`)
+A song of ours must not be a copy of one of AW2's. `similar FILE.m4t --against rom:212,rom:219` compiles the file, takes each pitched track's melodic line (the top note of a chord; drum voices left out) and the same for every track of the named AW2 songs
+(read from the player's ROM **for the comparison only**: nothing is written down), and scores every pair of tracks (`devkit/aw2/musiclib/similar.py`):
+- **run**: the longest run of notes with exactly the same intervals (transposition does not matter). Only runs with 3 or more distinct pitches count (a repeated note is in every song). Fails at **6 notes**.
+- **contour**: the longest run with the same gaps between onsets (6-tick steps) and the same up / down / same steps, with two kinds of gap and two kinds of step. Fails at **8 notes**.
+- **bars**: the share of our bars (4 or more notes) with the same onset pattern (Jaccard 0.9 on the sixteenth grid) and the same intervals as one of their bars. Fails at **20%**.
+A file with a `rom` line fails by itself. Default `--against` is Sonja's 212 and Sturm's 219; `m4t:FILE` compares with another of our songs. Checked: the old SS3 mix fails (a 61-note run, 100% of the bars), the old NS theme fails on its quote (9 and 19 notes); the shipped Asuka passes
+(longest run 5 and 0 notes, contour 0, bars 0%). A short bass figure can match by chance (a root, a third, a fifth): the tool names the pair and the fix is to change the figure. Tests: `test_musiclib.py` `Similar` (made-up melodies), and the shipped files in the suite's music group.
+
 ## The commands
 | Command | What |
 |---|---|
@@ -100,6 +109,7 @@ Measured on the game's own output while finding why Asuka's Sturm + Sonja mix (a
 | `aw2dev sound stems SONG` | renders each track alone and prints its loudness against the mix: the lead must lead; tune with `gain=`; also each track's **grit** (harmonic-to-noise ratio of its steady notes; to compare one voice with another) and the mix's peak against full scale (see "Grit and headroom") |
 | `aw2dev sound pitchcheck` | one calibration song of every instrument the songs use on C3 G3 C4 G4 C5, played in the game and measured: the `shift` of an instrument is right when the error is under 0.35 semitone |
 | `aw2dev sound voices [--group A\|B] [--program N ..] [--sheet PNG]` | AW2's voice entries: type, sample length, loop, two guesses at the `shift` (spectrum and autocorrelation; `pitchcheck` decides), a picture sheet |
+| `aw2dev sound similar FILE.m4t [--against rom:212,rom:219]` | the originality check (below) |
 | `aw2dev sound dump SONG_ID [--track N]` | AW2's own song as text: how its themes are written |
 Edit a song and hear it **without a rebuild**: `TANGOAW2_ES_MUSIC=<dir>` (or `--dir`) makes the game read `<dir>/<name>.m4t` (a development aid, `env-aids.md`; the built-in text is what ships).
 

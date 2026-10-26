@@ -8,7 +8,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from aw2 import cfg, util                                   # noqa: E402
 from aw2.musiclib import tools as sound_music               # noqa: E402
-from aw2.musiclib import audio, m4a, pitch                  # noqa: E402
+from aw2.musiclib import audio, m4a, pitch, similar                  # noqa: E402
 
 try:
     EXE = util.example_bin("aw2_es_music")
@@ -78,6 +78,47 @@ class Converter(unittest.TestCase):
                         self.assertEqual(tempos[0], j["bpm"])
                     self.assertEqual(ev[0][1] if ev[0][1] != "TEMPO" else ev[1][1], "VOICE")
                 self.assertEqual(notes, j["notes"], f"{j['name']}: the notes read back")
+
+
+class Similar(unittest.TestCase):
+    """`aw2dev sound similar`: the originality check (made-up melodies only; no note of AW2's songs is written here)."""
+    A = [60, 63, 67, 65, 62, 70, 58, 61, 66]
+    B = [60, 61, 69, 64, 71, 59, 66, 57, 68]
+
+    def ln(self, keys, gap=12, shift=0):
+        return similar.line([(i * gap, k + shift) for i, k in enumerate(keys)])
+
+    def test_a_transposed_copy_fails_on_the_interval_run(self):
+        s = similar.compare(self.ln(self.A, 12, 7), self.ln([50] + self.A + [52], 6))
+        self.assertGreaterEqual(s["run"], similar.RUN_NOTES)
+        self.assertTrue(similar.verdict(s))
+
+    def test_the_same_rhythm_and_contour_with_other_intervals_fails_on_contour(self):
+        steps = [1, 2, -1, 3, -2, 1, 1, -3, 2, 1, -1]
+        gaps = [6, 12, 6, 6, 12, 6, 18, 6, 12, 6, 6, 12]
+        def build(mult):
+            t, k, out = 0, 60, [(0, 60)]
+            for st, g in zip(steps, gaps):
+                t += g
+                k += st * mult
+                out.append((t, k))
+            return similar.line(out)
+        s = similar.compare(build(1), build(2))
+        self.assertGreaterEqual(s["contour"], similar.CONTOUR_NOTES)
+        self.assertEqual(s["run"], 0)
+
+    def test_different_melodies_and_a_rattle_pass(self):
+        s = similar.compare(self.ln(self.A), self.ln(self.B))
+        self.assertEqual(similar.verdict(s), [])
+        rattle = similar.line([(i * 6, 40) for i in range(40)])
+        self.assertEqual(similar.verdict(similar.compare(rattle, rattle)), [])      # a repeated note is in every song
+
+    def test_whole_bars_that_match_fail(self):
+        bar = [(0, 60), (12, 63), (24, 67), (36, 62), (48, 70)]
+        ours = similar.line([(b * 96 + t, k) for b in range(4) for t, k in bar])
+        theirs = similar.line([(b * 96 + t, k + 5) for b in range(4) for t, k in bar])
+        self.assertEqual(similar.bar_share(ours, theirs), 1.0)
+        self.assertTrue(similar.verdict(similar.compare(ours, theirs)))
 
 
 class Rules(unittest.TestCase):

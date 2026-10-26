@@ -1735,6 +1735,17 @@ form loop A
             assert!(a.peak_voices <= MAX_VOICES, "{}", s.name);
             assert!(a.voices.len() <= if a.needs_rom { REF_VOICE_CAP } else { 128 });
         }
-        assert!(quoting >= 1, "Asuka's theme quotes Sonja's");
+        assert_eq!(quoting, 0, "no shipped theme reads AW2's songs");
+    }
+
+    /// Every shipped theme is original: no `rom` reference to a song of AW2's (the feature stays for the kit's examples in `music/es/alt/`).
+    #[test]
+    fn no_shipped_theme_references_aw2_songs() {
+        for s in SOURCES.iter() {
+            for l in s.text.lines() {
+                assert!(!l.split(';').next().unwrap().trim_start().starts_with("rom "), "{}: {l}", s.name);
+            }
+            assert!(!compile(s.text).unwrap().needs_rom, "{}", s.name);
+        }
     }
 }

@@ -9,6 +9,91 @@ MUSIC_DIR = cfg.REPO / "tango-gamesupport-aw2" / "music" / "es"
 RULES = dict(loop_min=45.0, loop_max=90.0, peak_voices=6, tracks=8, bytes=48 * 1024)
 
 
+def song_lines(path, rom_for_refs=False):
+    """Our song's melodic lines {track: [(tick, key)]} (first pass, drum voices left out), from the compiler's own bytes."""
+    import re, tempfile
+    from . import m4a
+    text = Path(path).read_text()
+    name = re.search(r"^\s*song\s+(\w+)", text, re.M).group(1)
+    with tempfile.TemporaryDirectory() as d:
+        src, out = Path(d) / "src", Path(d) / "out"
+        src.mkdir()
+        (src / f"{name}.m4t").write_text(text)
+        rc, songs, err = run_tool(src, ["--dump", str(out)])
+        if rc:
+            util.die(f"{path}: {err}")
+        j = [x for x in songs if x["name"] == name][0]
+        lines = {}
+        for t, tr in enumerate(j["tracks"]):
+            b = bytearray((out / f"{name}.{t}.bin").read_bytes())
+            b[-4:] = (0x08000000 + tr["label"]).to_bytes(4, "little")
+            ev, *_ = m4a.run(m4a.Rom(bytes(b) + bytes(16)), 0x08000000)
+            drum, notes = False, []
+            for e in ev:
+                if e[1] == "VOICE":
+                    drum = j["voices"][e[2]][1] in (120, 127)
+                elif e[1] == "NOTE" and not drum:
+                    notes.append((e[0], e[2]))
+            if notes:
+                lines[t + 1] = notes
+    return lines
+
+
+def rom_song_lines(rom, sid):
+    """AW2 song `sid`'s melodic lines {track: [(tick, key)]} (first pass; tracks and drum voices as the ROM has them). For comparison only."""
+    from . import m4a
+    s = rom.song(sid)
+    lines = {}
+    for t, p in enumerate(s["track_ptrs"]):
+        ev, *_ = m4a.run(rom, p)
+        drum, notes = False, []
+        for e in ev:
+            if e[1] == "VOICE":
+                drum = rom.voice(s["group"], e[2])["type"] in (0x40, 0x80)
+            elif e[1] == "NOTE" and not drum:
+                notes.append((e[0], e[2]))
+        if notes:
+            lines[t] = notes
+    return lines
+
+
+def similar(a):
+    from . import m4a, similar as sim
+    ours = {t: sim.line(n) for t, n in song_lines(a.file).items()}
+    text = Path(a.file).read_text()
+    refs = [l for l in text.splitlines() if l.split(";")[0].strip().startswith("rom ")]
+    against = {}
+    rom = None
+    for spec in a.against.split(","):
+        kind, _, what = spec.partition(":")
+        if kind == "rom":
+            rom = rom or m4a.Rom(cfg.aw2_rom().read_bytes())
+            against[spec] = {t: sim.line(n) for t, n in rom_song_lines(rom, int(what)).items()}
+        elif kind == "m4t":
+            against[spec] = {t: sim.line(n) for t, n in song_lines(what).items()}
+        else:
+            util.die(f"--against {spec}: use rom:<id> or m4t:<file>")
+    print(f"{a.file}: {len(ours)} melodic tracks, {len(refs)} `rom` lines" + ("  FAIL: an original song has no rom references" if refs else ""))
+    print(f"{'against':9} {'ours':>4} {'theirs':>6}  {'run':>4} {'contour':>7} {'bars':>6}  verdict")
+    bad = len(refs)
+    worst = {}
+    for spec, tracks in against.items():
+        w = dict(run=0, contour=0, bars=0.0)
+        for t, ln in ours.items():
+            for u, other in tracks.items():
+                s = sim.compare(ln, other)
+                for k in w:
+                    w[k] = max(w[k], s[k])
+                why = sim.verdict(s)
+                if why or s["run"] >= sim.RUN_NOTES - 1:
+                    print(f"{spec:9} {t:4} {u:6}  {s['run']:4} {s['contour']:7} {s['bars']:6.0%}  " + ("FAIL: " + "; ".join(why) if why else "ok"))
+                bad += bool(why)
+        worst[spec] = w
+        print(f"{spec:9} worst over all track pairs: longest interval run {w['run']} notes (fails at {sim.RUN_NOTES}), rhythm+contour run {w['contour']} (fails at {sim.CONTOUR_NOTES}), bars matched {w['bars']:.0%} (fails at {sim.BAR_SHARE:.0%})")
+    print(f"similar done bad={bad}")
+    return 1 if bad else 0
+
+
 def register(ss):
     a = ss.add_parser("compose", help="compile the Emerald Sun song files and check the rules (docs/dev/music-kit.md)")
     a.add_argument("--song", nargs="*")
@@ -45,6 +130,10 @@ def register(ss):
     a.add_argument("--program", type=int, nargs="*")
     a.add_argument("--sheet")
     a.set_defaults(fn=voices)
+    a = ss.add_parser("similar", help="originality check: compare a song file's melodies (intervals, rhythm, contour) with AW2's songs, read from the ROM for the comparison only")
+    a.add_argument("file", help="the .m4t to check")
+    a.add_argument("--against", default="rom:212,rom:219", help="comma list of rom:<AW2 song id> (default Sonja's 212 and Sturm's 219) or m4t:<file>")
+    a.set_defaults(fn=similar)
     a = ss.add_parser("dump", help="AW2's own song as text")
     a.add_argument("song", type=int)
     a.add_argument("--track", type=int)
