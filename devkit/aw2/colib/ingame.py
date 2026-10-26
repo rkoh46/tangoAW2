@@ -1,4 +1,4 @@
-"""The real app, offline, with the Dual Strike pack and the Emerald Sun COs on (`TANGOAW2_ES_VERSUS=1`), driven through the AI debug channel: `aw2dev co portrait ingame` photographs a CO on the
+"""The real app, offline, with the Dual Strike pack and the Emerald Sun COs on (`TANGOAW2_ES_VARRO=1`), driven through the AI debug channel: `aw2dev co portrait ingame` photographs a CO on the
 game's own screens (CO select, CO page, HUD, dialogue) for the review sheet."""
 import json, os, subprocess, sys, time
 from pathlib import Path
@@ -15,7 +15,7 @@ class App:
         conf.update({"ds_graphics": True, "ds_tilt": tilt})
         cj.write_text(json.dumps(conf, indent=2))
         self.app = profiles.test_app(binary)
-        env = dict(os.environ, TANGOAW2_PROFILE=str(profiles.profile_dir("skinds")), TANGOAW2_AI_DEBUG="0", AW2DEV_LOOK="1", TANGOAW2_ES_VERSUS="1")
+        env = dict(os.environ, TANGOAW2_PROFILE=str(profiles.profile_dir("skinds")), TANGOAW2_AI_DEBUG="0", AW2DEV_LOOK="1", TANGOAW2_ES_VARRO="1")
         env.update(extra_env or {})
         self.proc = subprocess.Popen([str(self.app)], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cfg.REPO)
         addr, t0 = None, time.time()

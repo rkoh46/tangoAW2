@@ -181,9 +181,11 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
 }
 
 /// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): the Emerald Sun five are not, until the campaign is approved
-/// ([`crate::es_co::in_versus`]).
+/// ([`crate::es_co::in_versus`]). Varro, the campaign's boss, is on no list, except for the harness: `TANGOAW2_ES_VARRO` (a test aid, both
+/// peers must agree) lists him so the CO checkers can pick him in Versus.
 pub fn listed(co: u8) -> bool {
-    !crate::es_co::is_es(co) || (crate::es_co::in_versus() && co != crate::es_co::VARRO)
+    !crate::es_co::is_es(co)
+        || (crate::es_co::in_versus() && (co != crate::es_co::VARRO || std::env::var_os("TANGOAW2_ES_VARRO").is_some()))
 }
 
 /// A CO of tangoAW2's own, with no Dual Strike record behind its pictures

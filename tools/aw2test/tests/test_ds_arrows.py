@@ -172,7 +172,7 @@ def ds_coselect_arrows_off_and_online_keep_aw2(ctx):
 # --- The CO screen's grid ----------------------------------------------------------------------------------
 
 COLUMNS = 4
-NEW_COS = list(range(72, 83)) + [92]  # tangoAW2's new COs (crate::co_new): in the grid even where the screen does not offer them
+NEW_COS = list(range(72, 83)) + [86, 87, 88, 89, 92]  # tangoAW2's new COs (crate::co_new; the Emerald Sun four are listed, Varro is not): in the grid even where the screen does not offer them
 
 
 def country(e, co):

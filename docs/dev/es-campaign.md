@@ -1,8 +1,7 @@
 # The Emerald Sun Campaign: building and checking it (`aw2dev maps gen`, `aw2dev campaign sheets | sim | difficulty | check`)
 
 Sixteen missions played as Emerald Sun, the second custom campaign on the BH Campaign's engine. The story and the approved design are `docs/ES_CAMPAIGN.md`; this file is how it is built
-and how every part is checked. Skill: `aw2-es-campaign`. Status: playable behind the development flag `TANGOAW2_ES_CAMPAIGN` (the Campaign sub-menu still says "Coming soon"
-in a normal build; the flag turns it into a source of `campaign_model::SOURCES`); nothing is pushed or released until the user approves.
+and how every part is checked. Skill: `aw2-es-campaign`. Status: playable in every build (`es_campaign::dev_flag()` is true: the Campaign sub-menu lists it as a source of `campaign_model::SOURCES`, no "Coming soon" box); nothing is pushed or released until the user approves.
 
 ## Files
 | What | Where |

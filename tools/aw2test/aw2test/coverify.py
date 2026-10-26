@@ -9,7 +9,7 @@ from . import cospec, damage
 from . import rom as romlib
 from .game import NavError
 
-ENV = {"TANGOAW2_ES_VERSUS": "1"}
+ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
 LEVEL = {0: "d2d", 1: "cop", 2: "scop"}
 POWER = {1: "power", 2: "super"}
 
