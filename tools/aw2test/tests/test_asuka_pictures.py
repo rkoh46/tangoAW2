@@ -139,7 +139,7 @@ def quote_extent(path):
 def expected_quote(which):
     import tomllib
     from aw2.gfxlib import font
-    d = tomllib.loads(open("/Users/danielc/tangoAW2-asuka/tango-gamesupport-aw2/cos/asuka.toml").read())
+    d = tomllib.loads(open(os.path.join(os.path.dirname(__file__), "..", "..", "..", "tango-gamesupport-aw2", "cos", "asuka.toml")).read())
     f = font.load()
     lines = d["scop" if which == "super" else "cop"]["quote"]
     return lines, [sum(f[c][0] for c in l if c in f) + len(l) - 1 for l in lines]

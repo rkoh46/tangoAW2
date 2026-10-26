@@ -97,7 +97,7 @@ def native(rgb, grid, inner=0.5):
     return out
 
 
-def cut_background(nat, tol=9.0, rim=2):
+def cut_background(nat, tol=9.0, rim=2, hole_min=0, hole_tol=14.0, peel=0):
     """The figure's mask: what the border's flood fill (over native pixels within `tol` of the background colour) does not reach. -> bool array (rows, cols)."""
     h, w, _ = nat.shape
     edge = np.concatenate([nat[:rim].reshape(-1, 3), nat[-rim:].reshape(-1, 3), nat[:, :rim].reshape(-1, 3), nat[:, -rim:].reshape(-1, 3)])
@@ -115,6 +115,42 @@ def cut_background(nat, tol=9.0, rim=2):
                 seen[yy, xx] = True
                 st.append((yy, xx))
     fg = ~seen
+    if hole_min:
+        # enclosed gaps of the pure background colour (between an arm and the body, hair and neck) are background too; their pale fringe goes with them
+        pure = np.abs(nat - bg).max(2) < hole_tol
+        todo = pure & fg
+        done = np.zeros((h, w), bool)
+        for y0, x0 in zip(*np.where(todo)):
+            if done[y0, x0]:
+                continue
+            comp, st = [(y0, x0)], [(y0, x0)]
+            done[y0, x0] = True
+            while st:
+                y, x = st.pop()
+                for yy, xx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                    if 0 <= yy < h and 0 <= xx < w and todo[yy, xx] and not done[yy, xx]:
+                        done[yy, xx] = True
+                        comp.append((yy, xx))
+                        st.append((yy, xx))
+            if len(comp) >= hole_min:
+                for y, x in comp:
+                    fg[y, x] = False
+                    for dy in (-1, 0, 1):
+                        for dx in (-1, 0, 1):
+                            yy, xx = y + dy, x + dx
+                            if 0 <= yy < h and 0 <= xx < w and fg[yy, xx] and np.abs(nat[yy, xx] - bg).max() < tol:
+                                fg[yy, xx] = False
+    # the pale grey fringe where a dark edge was blended with the white: boundary cells that are light and nearly colourless (skin and the gold are not) go, `peel` rounds
+    sat = nat.max(2) - nat.min(2)
+    fringe = (nat.min(2) > 120) & (sat < 28)
+    for _ in range(peel):
+        t = ~fg
+        touch = np.zeros_like(fg)
+        touch[1:] |= t[:-1]
+        touch[:-1] |= t[1:]
+        touch[:, 1:] |= t[:, :-1]
+        touch[:, :-1] |= t[:, 1:]
+        fg = fg & ~(touch & fringe)
     return fg, bg
 
 
@@ -194,7 +230,7 @@ def quantise(nat, fg, pal, match="lab"):
     return np.where(fg, idx, 0).astype(np.uint8)
 
 
-def ring(fg, idx, sides=(True, True, True, True)):
+def ring(fg, idx, sides=(True, True, True, True), diagonal=False):
     """The outline (index 15) one native cell wide around the figure, on the sides given (left, right, top, bottom)."""
     out = idx.copy()
     h, w = fg.shape
@@ -207,8 +243,49 @@ def ring(fg, idx, sides=(True, True, True, True)):
         edge[1:, :] |= fg[:-1, :]
     if sides[3]:
         edge[:-1, :] |= fg[1:, :]
+    if diagonal:
+        # corners too: no figure cell touches the empty side without the outline between (an unbroken outline in 8-connectivity, Kanbei's standard)
+        for dy in (-1, 1):
+            for dx in (-1, 1):
+                sh = np.zeros_like(fg)
+                sh[max(dy, 0):h + min(dy, 0), max(dx, 0):w + min(dx, 0)] = fg[max(-dy, 0):h + min(-dy, 0), max(-dx, 0):w + min(-dx, 0)]
+                edge |= sh
     out[edge & ~fg] = 15
     return out
+
+
+def despeckle_dark(idx, pal, passes=2, luma=70):
+    """The JPEG's noise on black cloth and hair: a cell whose colour no 4-neighbour shares, itself dark and with only dark neighbours, takes their commonest colour. Eyes, the badge, the buckle (light or next to light cells) stay."""
+    lum = np.array([0.3 * r + 0.59 * g + 0.11 * b for r, g, b in pal])
+    idx = idx.copy()
+    h, w = idx.shape
+    for _ in range(passes):
+        out = idx.copy()
+        for y in range(1, h - 1):
+            for x in range(1, w - 1):
+                v = idx[y, x]
+                if v == 0 or v == 15:
+                    continue
+                nb = [idx[y - 1, x], idx[y + 1, x], idx[y, x - 1], idx[y, x + 1]]
+                if v in nb or any(n in (0, 15) for n in nb):
+                    continue
+                if lum[v - 1] < luma + 20 and all(lum[n - 1] < luma for n in nb):
+                    out[y, x] = max(set(nb), key=nb.count)
+        idx = out
+    return idx
+
+
+def drop_orphan_outline(a):
+    """An outline cell whose 8 neighbours hold no figure colour (the window cut the figure away beside it) is empty."""
+    a = a.copy()
+    h, w = a.shape
+    for y in range(h):
+        for x in range(w):
+            if a[y, x] == 15:
+                nb = [a[yy, xx] for yy in range(max(y - 1, 0), min(y + 2, h)) for xx in range(max(x - 1, 0), min(x + 2, w)) if (yy, xx) != (y, x)]
+                if not any(v not in (0, 15) for v in nb):
+                    a[y, x] = 0
+    return a
 
 
 def styled(spec, path):
@@ -218,9 +295,9 @@ def styled(spec, path):
     nat = native(img, grid)
     if spec.get("flip"):
         nat = nat[:, ::-1].copy()
-    fg, bg = cut_background(nat, spec.get("bg_tolerance", 9.0))
+    fg, bg = cut_background(nat, spec.get("bg_tolerance", 9.0), hole_min=spec.get("hole_min", 0), hole_tol=spec.get("hole_tolerance", 14.0), peel=spec.get("peel", 0))
     fg = keep_main(fg)
-    S = 2
+    S = int(spec.get("large_scale", 2))        # cells to output pixels: 2 for the 5 px-cell pictures, 1 for a picture whose head is more than 30 cells
     fw, fh = 128 // S, 160 // S
     if "frame" not in spec:
         # auto framing: the head's top near the top of the 160-row frame (AW2's top margin is a few pixels), the frame centred on the upper body's mass
@@ -234,7 +311,9 @@ def styled(spec, path):
         if key not in spec:
             raise SystemExit(f"{path}: the framing file needs `{key}` (native cells of the picture; `aw2dev co portrait grid` numbers them)")
     mx0, my0 = spec["mug"]
-    ms = 48 // S
+    # the mug's own scale: 2 (a 24-cell square, the default of the 5 px-cell pictures) or 1 (a 48-cell square: a picture drawn with finer cells, whose whole head is more than 24 of them)
+    MS = int(spec.get("mug_scale", S))
+    ms = 48 // MS
     pad = lambda a, ys, xs: a[ys, xs]
     # a frame may reach past the picture (a short figure, a face near an edge): pad with background cells
     P = 64
@@ -246,13 +325,15 @@ def styled(spec, path):
     wt = np.concatenate([np.ones(fg[fr].sum()), np.full(fg[mu].sum(), spec.get("face_weight", 3.0))])
     pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))))
     full = quantise(nat, fg, pal[:14], spec.get("match", "luma"))      # art repal hook: the framing file's `match`
-    full = ring(fg, full)
+    if spec.get("despeckle"):
+        full = despeckle_dark(full, pal[:14], int(spec["despeckle"]))
+    full = ring(fg, full, diagonal=bool(spec.get("outline_diagonal")))
     # the ring is index 15; nothing else uses index 15 (the palette has 14 clusters, indexes 1..14)
     pal16 = [(0, 0, 0)] + pal[:14] + [pal[14]]
     ex = lambda a, sl: np.kron(a[sl], np.ones((S, S), np.uint8))
     L = ex(full, fr)
-    nface = full[mu].copy()
-    face = np.kron(nface, np.ones((S, S), np.uint8))
+    nface = drop_orphan_outline(full[mu])
+    face = np.kron(nface, np.ones((MS, MS), np.uint8))
     im = I.Imported()
     im.spec = spec
     im.palette = pal16
@@ -279,8 +360,8 @@ def styled(spec, path):
         fg2, _ = cut_background(nat2, spec.get("bg_tolerance", 9.0))
         fg2 = np.pad(keep_main(fg2), P, constant_values=False)
         nat2 = np.pad(nat2, ((P, P), (P, P), (0, 0)), mode="edge")
-        f2 = ring(fg2, quantise(nat2, fg2, pal[:14], spec.get("match", "luma")))      # art repal hook
-        im.faces[kind] = np.kron(f2[mu], np.ones((S, S), np.uint8))
+        f2 = ring(fg2, quantise(nat2, fg2, pal[:14], spec.get("match", "luma")), diagonal=bool(spec.get("outline_diagonal")))      # art repal hook
+        im.faces[kind] = np.kron(drop_orphan_outline(f2[mu]), np.ones((MS, MS), np.uint8))
     return im
 
 

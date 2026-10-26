@@ -1,0 +1,15 @@
+# Asuka, imported faithfully from asuka_v2.png (the owner's pixel art on a white background, native cells of about 7 px). Coordinates are native cells of the mirrored grid (`flip`).
+# The picture draws her looking to the left of the picture before the flip; the owner asked for the mirror (so she looks away from where AW2's COs face, see docs/dev/asuka.md).
+pixelart = true
+match = "luma"
+flip = true
+bg_tolerance = 40
+large_scale = 1
+frame = [6, -6]
+mug_scale = 1
+mug = [55, -2]
+eyes = [68, 26, 80, 28]
+hole_min = 3
+outline_diagonal = true
+peel = 3
+despeckle = 2

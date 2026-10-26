@@ -443,7 +443,7 @@ def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
     except Exception as e:
         return [f"cannot read the art: {e}"]
     d = (root or ART_DIR) / co
-    illus = _is_illustration(co)
+    illus = _is_illustration(co) or co == "asuka"      # her outline gets the stricter checks whichever importer made the picture
     pals = {tuple(Image.open(d / f"{n}.png").getpalette()[:48]) for n in FILES}
     if (d / "name.png").exists():
         nm = np.array(Image.open(d / "name.png"))

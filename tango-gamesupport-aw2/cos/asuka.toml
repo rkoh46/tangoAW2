@@ -53,5 +53,6 @@ victory = "As projected. Black Hole advances."
 defeat = "A variable I did not log."
 
 [portrait]
-# The picture the project owner supplied (a clean illustration, not pixel art: `illustration = true` in the framing file beside it).
-source = "art-src/cos/asuka_v1.jpg"
+# The picture the project owner supplied (upscaled pixel art on white: `pixelart = true` in the framing file beside it). The owner asked for it mirrored. asuka_v1.jpg stays in art-src as the illustration importer's test input.
+source = "art-src/cos/asuka_v2.png"
+flip = true
