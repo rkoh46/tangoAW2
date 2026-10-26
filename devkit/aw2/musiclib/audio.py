@@ -41,8 +41,33 @@ def levels(x, rate, skip=0.0):
     tot = sp.sum() + 1e-12
     bands = [sp[fr < 250].sum() / tot, sp[(fr >= 250) & (fr < 2000)].sum() / tot, sp[(fr >= 2000)].sum() / tot]
     cen = float((sp * fr).sum() / tot)
-    return dict(rms_db=db(rms), peak_db=db(np.abs(x).max()), sec_p10_db=db(np.percentile(secs, 10)), sec_p50_db=db(np.percentile(secs, 50)),
+    return dict(rms_db=db(rms), peak_db=db(np.abs(x).max()), clipped=int((np.abs(x) >= 0.99).sum()), sec_p10_db=db(np.percentile(secs, 10)), sec_p50_db=db(np.percentile(secs, 50)),
                 sec_p90_db=db(np.percentile(secs, 90)), low=float(bands[0]), mid=float(bands[1]), high=float(bands[2]), centroid=cen, seconds=len(x) / rate)
+
+
+def grit(x, rate, win=0.4, min_conf=0.7):
+    """How clean a recording of one voice sounds: the median harmonic-to-noise ratio in dB over its steady, pitched 0.4 s windows (None if there are none).
+    Measured on the game's own output (docs/dev/music-kit.md, "Grit"): AW2's brass 56 stays at 20 dB or more from E1 to B4, the horn 111 falls from 15 dB at E2 to 7 dB at E1 (a sample played
+    three octaves below its recorded key is crunchy). Compare a voice with the same voice an octave up; a fuzz voice (Sturm's bass 97 reads 3 dB) is crunchy by design."""
+    from .pitch import f0
+    n = int(win * rate)
+    vals = []
+    for i in range(0, len(x) - n, n):
+        seg = np.asarray(x[i:i + n], dtype=float)
+        if np.sqrt(np.mean(seg ** 2)) < 10 ** (-45 / 20):
+            continue
+        hz, conf = f0(seg, rate, 30.0, 1500.0)
+        if hz <= 0 or conf < min_conf:
+            continue
+        sp = np.abs(np.fft.rfft(seg * np.hanning(n))) ** 2
+        fr = np.fft.rfftfreq(n, 1 / rate)
+        band = (fr > 30) & (fr < 9000)
+        harm = np.zeros(len(fr), bool)
+        for k in range(1, int(9000 / hz) + 1):
+            harm |= np.abs(fr - k * hz) < max(hz * 0.04, 3.0)
+        h, o = sp[band & harm].sum(), sp[band & ~harm].sum()
+        vals.append(10 * np.log10((h + 1e-20) / (o + 1e-20)))
+    return float(np.median(vals)) if vals else None
 
 
 def envelope(x, rate, hop=0.01):

@@ -120,6 +120,16 @@ class Audio(unittest.TestCase):
         self.assertAlmostEqual(lv["rms_db"], 20 * np.log10(np.sqrt(np.mean(x ** 2))), delta=0.01)
         self.assertLess(lv["peak_db"], 0)
 
+    def test_grit_tells_a_clean_tone_from_a_crunchy_one_and_clipping_is_counted(self):
+        rng = np.random.default_rng(1)
+        clean = self.tone(165.0, 3.0)
+        crunchy = clean + rng.normal(0, 0.12, len(clean))
+        self.assertGreater(audio.grit(clean, self.rate), 20)
+        self.assertLess(audio.grit(crunchy, self.rate), 10)
+        self.assertIsNone(audio.grit(np.zeros(self.rate), self.rate))
+        self.assertEqual(audio.levels(clean, self.rate)["clipped"], 0)
+        self.assertGreater(audio.levels(np.clip(clean * 4, -1, 1), self.rate)["clipped"], 100)
+
     def seamed(self, click=False, gap=False):
         """A repeating 4 s pattern (a loop) of beats, three passes after a 2 s intro."""
         r = self.rate

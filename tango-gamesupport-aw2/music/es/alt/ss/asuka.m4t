@@ -1,4 +1,4 @@
-; Asuka, SS: Sturm's engine with Sonja's tune over it, E, 120 bpm. NOTHING of either theme is in this file: the `rom` lines name stretches of AW2's songs 219 (Sturm) and 212
+; Asuka, SS2: Sturm's engine with Sonja's tune over it, E, 120 bpm. NOTHING of either theme is in this file: the `rom` lines name stretches of AW2's songs 219 (Sturm) and 212
 ; (Sonja), which the game reads from the player's ROM when it builds the song. Intro 4 bars, loop 24 bars (48 s).
 song asuka
 tempo 120
@@ -10,14 +10,13 @@ inst b97  = A.97  shift=0
 inst b96  = A.96  shift=0
 inst kit  = A.120
 inst lead = A.56  shift=-12
-inst horn = A.111 shift=-12
 
 track 1 inst=b97  vol=100 pan=0 vel=100 gain=0.75
 track 2 inst=b96  vol=100 pan=0 vel=100 gain=1.0
 track 3 inst=kit  vol=100 pan=0 vel=100 gain=0.8
 track 4 inst=kit  vol=100 pan=0 vel=100 gain=1.0
 track 5 inst=kit  vol=100 pan=0 vel=100 gain=1.0
-track 6 inst=lead vol=84 pan=-8 vel=108 gate=88 gain=1.51
+track 6 inst=lead vol=84 pan=-8 vel=108 gate=88 gain=1.45
 
 ; Sturm (song 219): bass track 3, root and fifth track 4, kit track 2, toms track 5, lead track 0, by the bars of his song
 rom bI song=219 track=3 bars=1-4 raw
@@ -40,10 +39,12 @@ rom lA song=219 track=0 bars=9-12 raw
 rom lB song=219 track=0 bars=17-20 raw
 rom lC song=219 track=0 bars=21-28 raw
 
-; Sonja (song 212, track 0, her tune): darkened (G# and C# lowered one semitone), an octave down, on brass; the stack in C two octaves down on horn
+; Sonja (song 212, track 0, her tune), an octave down on brass. In the first two sections (his lead rests while she plays) G# and C# are lowered a semitone (darkened); in the third his
+; lead holds an E major chord (E G# B), so the stack under it keeps her own notes: a lowered G against his G# was a sustained minor second. The stack is on the same brass 56 two octaves down:
+; the horn 111 is crunchy below E2 (harmonic-to-noise 7 dB at E1 against 20 dB for the brass; docs/dev/music-kit.md, "Grit").
 rom q1 song=212 track=0 bars=7-10 transpose=-12 srcshift=-12 lower=G#,C# peak=84
 rom q2 song=212 track=0 bars=11-14 transpose=-12 srcshift=-12 lower=G#,C# peak=84
-rom qlow song=212 track=0 bars=7-14 transpose=-24 srcshift=-12 lower=G#,C# inst=horn peak=84
+rom qlow song=212 track=0 bars=7-14 transpose=-24 srcshift=-12 peak=84
 
 def rs:
   | r/1 |

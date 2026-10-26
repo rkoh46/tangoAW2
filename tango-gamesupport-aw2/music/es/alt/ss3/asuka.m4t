@@ -1,0 +1,84 @@
+; Asuka, SS3: Sturm's engine with Sonja's tune over it, E, 120 bpm. NOTHING of either theme is in this file: the `rom` lines name stretches of AW2's songs 219 (Sturm) and 212
+; (Sonja), which the game reads from the player's ROM when it builds the song. Intro 4 bars, loop 24 bars (48 s).
+song asuka
+tempo 120
+meter 4/4
+reverb 173
+priority 0
+
+inst b97  = A.97  shift=0
+inst b96  = A.96  shift=0
+inst kit  = A.120
+inst lead = A.56  shift=-12
+
+track 1 inst=b97  vol=100 pan=0 vel=100 gain=0.75
+track 2 inst=b96  vol=100 pan=0 vel=100 gain=1.0
+track 3 inst=kit  vol=100 pan=0 vel=100 gain=0.8
+track 4 inst=kit  vol=100 pan=0 vel=100 gain=1.0
+track 5 inst=kit  vol=100 pan=0 vel=100 gain=1.0
+track 6 inst=lead vol=84 pan=-8 vel=108 gate=88 gain=1.45
+
+; Sturm (song 219): bass track 3, root and fifth track 4, kit track 2, toms track 5, lead track 0, by the bars of his song
+rom bI song=219 track=3 bars=1-4 raw
+rom bA song=219 track=3 bars=5-12 raw
+rom bB song=219 track=3 bars=13-20 raw
+rom bC song=219 track=3 bars=21-28 raw
+rom cI song=219 track=4 bars=1-4 raw
+rom cA song=219 track=4 bars=5-12 raw
+rom cB song=219 track=4 bars=13-20 raw
+rom cC song=219 track=4 bars=21-28 raw
+rom kI song=219 track=2 bars=1-4 raw
+rom kA song=219 track=2 bars=5-12 raw
+rom kB song=219 track=2 bars=13-20 raw
+rom kC song=219 track=2 bars=21-28 raw
+rom tI song=219 track=5 bars=1-4 raw
+rom tA song=219 track=5 bars=5-12 raw
+rom tB song=219 track=5 bars=13-20 raw
+rom tC song=219 track=5 bars=21-28 raw
+rom lA song=219 track=0 bars=9-12 raw
+rom lB song=219 track=0 bars=17-20 raw
+rom lC song=219 track=0 bars=21-28 raw
+
+; Sonja (song 212, track 0, her tune), an octave down on brass, in her own notes (nothing lowered): his lead holds an E major chord (E G# B) and her tune is in that major key. The stack is on the same brass 56 two octaves down:
+; the horn 111 is crunchy below E2 (harmonic-to-noise 7 dB at E1 against 20 dB for the brass; docs/dev/music-kit.md, "Grit").
+rom q1 song=212 track=0 bars=7-10 transpose=-12 srcshift=-12 peak=84
+rom q2 song=212 track=0 bars=11-14 transpose=-12 srcshift=-12 peak=84
+rom qlow song=212 track=0 bars=7-14 transpose=-24 srcshift=-12 peak=84
+
+def rs:
+  | r/1 |
+end
+
+section I bars=4
+  1: @rom:bI
+  2: @rom:cI
+  3: @rom:kI
+  4: @rom:tI
+  5: @rs*4
+  6: @rs*4
+end
+section A bars=8
+  1: @rom:bA
+  2: @rom:cA
+  3: @rom:kA
+  4: @rom:tA
+  5: @rs*4 @rom:lA
+  6: @rom:q1 @rs*4
+end
+section B bars=8
+  1: @rom:bB
+  2: @rom:cB
+  3: @rom:kB
+  4: @rom:tB
+  5: @rs*4 @rom:lB
+  6: @rom:q2 @rs*4
+end
+section C bars=8
+  1: @rom:bC
+  2: @rom:cC
+  3: @rom:kC
+  4: @rom:tC
+  5: @rom:lC
+  6: @rom:qlow
+end
+form I loop A B C

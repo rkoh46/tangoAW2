@@ -209,7 +209,7 @@ def analyse(wav, j, png):
     from . import audio
     rate, x, st = audio.load(wav)
     lv = audio.levels(x, rate, skip=j["intro_s"] if j else 0)
-    print(f"{wav.name}: {len(x) / rate:.1f} s  RMS {lv['rms_db']:.1f} dBFS  peak {lv['peak_db']:.1f}  spread(1 s) {lv['sec_p10_db']:.1f}/{lv['sec_p50_db']:.1f}/{lv['sec_p90_db']:.1f}  "
+    print(f"{wav.name}: {len(x) / rate:.1f} s  RMS {lv['rms_db']:.1f} dBFS  peak {lv['peak_db']:.1f}{'  CLIPPED ' + str(lv['clipped']) + ' samples' if lv['clipped'] else ''}  spread(1 s) {lv['sec_p10_db']:.1f}/{lv['sec_p50_db']:.1f}/{lv['sec_p90_db']:.1f}  "
           f"low/mid/high {lv['low']:.2f}/{lv['mid']:.2f}/{lv['high']:.2f}  centroid {lv['centroid']:.0f} Hz")
     bad = 0
     marks = []
@@ -429,9 +429,14 @@ def stems(a):
         if _runpy(env, ["es_music_render"]):
             return 1
         rate, x, _ = audio.load(sub / f"{a.song}.wav")
-        rows.append((nm, audio.levels(x, rate, skip=j["intro_s"] + 1)["rms_db"]))
+        seg = x[int((j["intro_s"] + 1) * rate):]
+        rows.append((nm, audio.levels(x, rate, skip=j["intro_s"] + 1)["rms_db"], audio.grit(seg, rate), audio.levels(x, rate, skip=j["intro_s"] + 1)["peak_db"]))
     full = rows[0][1]
     print(f"{a.song}: the whole mix {full:.1f} dBFS; each track alone (RMS over {a.seconds:.0f} s of the loop):")
-    for nm, v in rows[1:]:
-        print(f"  track {nm}: {v:6.1f} dBFS ({v - full:+5.1f} dB against the mix)")
+    print("  (grit = harmonic-to-noise ratio of a track's steady notes, to compare one voice with another: AW2's brass 56 reads 20 dB or more, a clean voice 12 to 18; a fuzz voice or a sample played far below its recorded key reads low; a drum kit reads nonsense)")
+    for nm, v, g, pk in rows[1:]:
+        gs = "no steady pitch" if g is None else f"grit {g:5.1f} dB"
+        print(f"  track {nm}: {v:6.1f} dBFS ({v - full:+5.1f} dB against the mix)  peak {pk:5.1f}  {gs}")
+    pk = rows[0][3]
+    print(f"  the mix peaks at {pk:.1f} dBFS" + ("  CHECK: near full scale, the mixer may clip" if pk > -1.0 else " (headroom ok)"))
     return 0
