@@ -11,10 +11,10 @@ Code: `tango-gamesupport-aw2/src/es_music.rs` (parser + compiler), `src/ds_music
 | Aurelia (87) | `aurelia.m4t` "Opus Machinae" | A minor, 128 bpm, 32 bars, 60 s | brass 56/111, plucked ostinato 27, koto 117, pick bass 36, strings 48, kit 120 | an engine: a tresillo ostinato of sixteenths under punchy brass, a bridge for strings and a high pluck, a climbing push with snare rolls |
 | Cassius (88) | `cassius.m4t` "Equitatus" | G, 144 bpm, 32 bars, 54 s | horns 56/111, strings 48, bass 34, timpani 47, flute 77, kit 120 | a cavalry gallop (an eighth and two sixteenths every beat), a bugle call, swaggering horns, the charge |
 | Livia (89) | `livia.m4t` "Aerarium" | B minor / D, 3/4, 104 bpm, 32 bars, 56 s | flute 23, clarinet 71, harp 117, bass 34, strings 48, small pluck 29, kit 120 | an elegant waltz: harp turns, a refined flute line, a clarinet answer, drums that only count the beat, a chromatic step for the intrigue |
-| Asuka (92, Versus for everyone) | `asuka.m4t` "Cold Iron Fingers" | E minor / harmonic minor, 120 bpm, 32 bars, 64 s | pick bass 36 and plucked guitar 27 (the riff, in unison), brass 56 (the tune), fingered plucked lead 27, horn 111, timpani 47, kit 120 | a dark rock theme from two sketches: a riff with a chromatic drop (B Bb A) and a brass tune, a fingered sixteenth lead over the riff, a riff-only breakdown, a return where brass and lead trade phrases, a chromatic turnaround; RMS -19.8 dBFS |
+| Asuka (92, Versus for everyone) | `asuka.m4t` "Fingers of Fate" | E harmonic minor, 124 bpm, 32 bars, 62 s | plucked guitar 27 (the fingered lead), horn 111 (pads), pick bass 36, brass 56 (the contrasting tune), kit 120; **Sonja's tune quoted from the ROM** (`rom` lines, below) | a dark rock theme: a fingered sixteenth lead with arpeggio sequences, a contrasting section in G, and her old self's hook, darkened, answered by the lead and stacked low under it; RMS -19.5 dBFS |
 | Varro (90, boss only) | `varro.m4t` "Imperium Tenebrarum" | C minor, 84 bpm, 24 bars, 69 s | horns 111, trumpet 56, strings 48, bass 34, timpani 47, pad 26, kit 120 | slow and dark: low horns over a pedal and a heartbeat, a flat second, a long dominant, a trumpet's answer |
 
-All five are original (no existing tune); the voices are AW2's own, so they sound like AW2's themes (same reverb 173, priority 0, the CO themes' music player with 8 tracks and 8 mixed channels).
+All but Asuka's are original (no existing tune); Asuka's quotes Sonja's theme out of the player's ROM at run time ("Quoting AW2's songs", below, and docs/dev/asuka.md); the voices are AW2's own, so they sound like AW2's themes (same reverb 173, priority 0, the CO themes' music player with 8 tracks and 8 mixed channels).
 
 ## The pipeline
 1. **Text song** (`music/es/<name>.m4t`) -> `es_music::compile` (parse, expand patterns, check every bar adds up and every track fills its section, write the loop) -> **MP2K track bytes** (one stream a track:
@@ -63,10 +63,31 @@ AW2's voices have no release (envelope 255,0,255,0): a note ends when its length
 The sound is chosen by the numbers (spectrum, envelope, pitch) and by the role AW2 gives the program in its own themes (`aw2dev sound dump 211` prints Kanbei's tracks): **the choice has not been heard by an ear**;
 an instrument is one `inst` line, so swapping it is a one-line change. `aw2dev sound voices --sheet out.png` draws every sample's waveform and spectrogram.
 
+## Quoting AW2's songs (`rom`): nothing of them in the repository
+AW2's own songs are Nintendo's and Intelligent Systems' music. **Their notes must never be written into this repository** (no transcription into an `.m4t`, no copied note table, no note names of a melody in a document or a test, no WAV: it is public). A song of ours can still quote one the way the game does everything else of AW2's: it names the stretch and the game reads it from the player's ROM when it builds the song.
+```
+rom hook song=212 track=0 bars=7-10 transpose=-12 srcshift=-12 lower=G#,C# peak=84 inst=low   ; a name and its parameters
+section A2 bars=8
+  5: @rom:hook @rs*4          ; plays it here: (b - a + 1) bars of the source (96 ticks each)
+```
+| Option | Meaning |
+|---|---|
+| `song=` `track=` `bars=a-b` | AW2's song id (0..504; `aw2dev sound list --source aw2`), its track (0-based, `sound dump N`), the source bars to copy (1-based; `barticks=` if a bar is not 96 ticks) |
+| `transpose=` `srcshift=` | semitones to move the **sounding** pitch; the `shift` of the source's voice (`sound voices`) so its sounding pitch is known; the target voice's own `shift` is added |
+| `lower=G#,C#` | lower those pitch classes by a semitone after transposing (a major tune made minor: a "darkened" quote) |
+| `inst=` | play it on one of our `inst`s and then go back to the track's voice; without it, the track's current voice |
+| `gain=` `peak=` | a factor on the source's own volumes; `peak=84` first brings the loudest of them to 84 (the quote is as loud as we say, before the track's `gain=`) |
+| `tempo=` | the source's tempo, to keep its real speed (ticks scaled by ours / it; must give whole bars); left out, ticks are copied and the quote plays at **our** tempo |
+| `raw` | keys, volumes, pans and the source's own voices unchanged (a drum kit or a bass of AW2's, as it is) |
+The reference starts on a bar line and is a whole number of our bars. The game copies the notes (tied notes get their length), the volume, bend and vibrato commands and, with `raw`, pan and voice; the source's patterns and repeats are expanded as the sound engine does (`src/es_rom.rs`), and only its first pass is read.
+**Build**: `ds_music::build` lays the song out with room for it (`REF_TRACK_CAP`, 4 KiB a quoting track, and 40 voice slots; a track that does not fit is an error), and `install_quotes` compiles it again with the ROM the game is running (`es_music::compile_with`) and writes the bytes (loop labels, the voice entries from AW2's groups) on the first tick of the music. **Without a ROM** (`es_music::compile`, the CI tests, `sound compose` without a ROM) a reference is only checked and plays silence of the right length.
+**Determinism**: the ROM is the same on every peer (the game already relies on that) and the reader and compiler are pure functions of it, so peers build identical bytes. Tests: the `es_music` unit tests (a made-up ROM: the transposed, lowered notes; the same bytes twice; `raw`; the errors), `the_real_rom_builds_every_quoting_song_the_same_twice` (`-- --ignored`, the real ROM) and `es_themes_are_registered` (the running game holds the compiler's bytes, built with the ROM).
+**The source is only read.** Asuka's song has its own table row and data at the end of the table; AW2's rows and bytes (Sonja's 212, Sturm's 219) are never written. `aw2dev co verify sonja` (group `music` of `test_sonja_untouched.py`) compares the song table row, header, voice group and every track's bytes of both with v0.8.7's.
+
 ## The commands
 | Command | What |
 |---|---|
-| `aw2dev sound compose [--song N] [--dir D]` | compile the files, print each song's length, notes, **most notes at once** (AW2's own CO themes never sound more than 6 at once, measured on all 19, which leaves the 8 mixed channels two for sound effects; ours keep to 6 and `compose` fails above), tracks, bytes; the rules: loop 45..90 s, at most 8 tracks, 48 KiB |
+| `aw2dev sound compose [--song N] [--dir D]` | compile the files (with the ROM, so `rom` references are read), print each song's length, notes, **most notes at once** (AW2's own CO themes never sound more than 6 at once, measured on all 19, which leaves the 8 mixed channels two for sound effects; ours keep to 6 and `compose` fails above), tracks, bytes; the rules: loop 45..90 s, at most 8 tracks, 48 KiB |
 | `aw2dev sound render [--song N] [--out D] [--dir D] [--seconds S]` | plays each theme in the game (a Versus battle, the CO's turn; the console is recorded from its first frame and cut where the **song** began, read from the music player's tick clock) and writes `<out>/<name>.wav` (default `devkit/work/music/`), then `loopcheck` and `levels`, a picture `<name>.png` (waveform + spectrogram, the seams marked) and `<name>_seams.png` (the signal 0.8 s round each seam). An AW2 CO's name (`kanbei`) records AW2's own theme |
 | `aw2dev sound loopcheck WAV [--song N]` | the seams: the period error (ms), the **click** (the largest sample step within 30 ms of the seam over the 99.9th percentile elsewhere: far above 1 is a click), the **gap** (the quietest 20 ms next to it over the 10th percentile of such dips elsewhere: far below 1 is a silence), how alike the passes are (envelope correlation) |
 | `aw2dev sound levels [WAV ..] [--ref]` | RMS, peak, the one-second spread and the band balance of recordings next to **AW2's own themes** (ten of them, recorded once into `devkit/work/music/ref`); a theme more than 1.5 dB outside their range fails |

@@ -22,8 +22,8 @@ AW2_ROM = 0x08000000
 
 
 def info(dump=None):
-    """The compiler's report on every song (the example aw2_es_music; TANGOAW2_ES_MUSIC picks another folder of song files); `dump`: a folder for each track's bytes."""
-    r = subprocess.run([paths.runner("aw2_es_music")] + (["--dump", dump] if dump else []), capture_output=True, text=True, env=dict(os.environ))
+    """The compiler's report on every song, its `rom` references read from the AW2 ROM as the game reads them (the example aw2_es_music; TANGOAW2_ES_MUSIC picks another folder of song files); `dump`: a folder for each track's bytes."""
+    r = subprocess.run([paths.runner("aw2_es_music"), "--rom", paths.aw2_rom()] + (["--dump", dump] if dump else []), capture_output=True, text=True, env=dict(os.environ))
     if r.returncode != 0:
         raise AssertionError(r.stderr.strip() or "aw2_es_music failed")
     return {j["name"]: j for j in map(json.loads, r.stdout.splitlines())}
@@ -103,7 +103,7 @@ def es_themes_are_registered(ctx):
             ctx.eq(e.u8(end - 5), 0xB2, f"{name}: track {t} ends in GOTO")
             lab = e.u32(end - 4)
             ctx.eq(lab, p + songs[name]["tracks"][t]["label"], f"{name}: track {t}'s loop label")
-            ranges.append((p, end, f"{name} track {t}"))
+            ranges.append((p, p + songs[name]["tracks"][t]["room"], f"{name} track {t}"))
             # nothing else wrote over it: the game holds the compiler's bytes (but the GOTO's address)
             want = open(os.path.join(dump, f"{name}.{t}.bin"), "rb").read()
             got = bytes(e.u8(p + k) for k in range(len(want) - 4))

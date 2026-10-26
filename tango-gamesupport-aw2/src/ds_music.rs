@@ -1334,6 +1334,10 @@ pub struct EsSong {
     pub header: u32,
     pub group_at: u32,
     pub voices: Vec<crate::es_music::VoiceRef>,
+    /// Where each track starts and the room it has (a song that quotes the ROM is completed at [`install`], see [`install_quotes`]).
+    pub tracks: Vec<(u32, usize)>,
+    /// The song quotes AW2's songs from the ROM.
+    pub quotes: bool,
 }
 
 struct Blob {
@@ -1678,15 +1682,18 @@ fn build() -> Option<Music> {
     let mut es = Vec::new();
     let es_row = distinct.len() + roll_n;
     for (k, (co, c)) in es_list.iter().enumerate() {
-        let group_at = story_blob.put(&vec![0u8; 12 * c.voices.len()]);
+        let group_at = story_blob.put(&vec![0u8; 12 * c.voice_room()]);
         let mut track_at = Vec::new();
+        let mut track_room = Vec::new();
         for t in &c.tracks {
             let mut bytes = t.bytes.clone();
             story_blob.align();
             let at = story_blob.at();
             bytes[t.goto..t.goto + 4].copy_from_slice(&(at + t.label as u32).to_le_bytes());
+            bytes.resize(t.room, 0);
             story_blob.put(&bytes);
             track_at.push(at);
+            track_room.push((at, t.room));
         }
         let mut header = vec![track_at.len() as u8, 0, c.priority, c.reverb];
         header.extend_from_slice(&group_at.to_le_bytes());
@@ -1704,6 +1711,8 @@ fn build() -> Option<Music> {
             header: header_at,
             group_at,
             voices: c.voices.clone(),
+            tracks: track_room,
+            quotes: c.needs_rom,
         });
     }
     blob.bytes[0..4].copy_from_slice(&MAGIC.to_le_bytes());
@@ -1821,8 +1830,60 @@ fn install(core: &mut Core) -> bool {
             core.raw_write_range(e.group_at + 12 * slot as u32, -1, &b);
         }
     }
+    install_quotes(core, &m.es);
     core.raw_write_32(BASE, -1, MAGIC);
     true
+}
+
+/// The songs of ours that quote AW2's songs (`rom` lines, [`crate::es_music`]): read the stretches out of the ROM this game is running and write the finished tracks and voices
+/// into the room [`build`] kept for them. The ROM is the same on every peer, so every peer writes the same bytes. A song that does not build (a bad reference, more bytes than the
+/// room) keeps the silence it was laid out with, and says so in the log.
+fn install_quotes(core: &mut Core, es: &[EsSong]) {
+    for e in es.iter().filter(|e| e.quotes) {
+        let Some(src) = crate::es_music::source(e.co) else {
+            continue;
+        };
+        let text = crate::es_music::text(src);
+        let compiled = {
+            let read = |addr: u32, out: &mut [u8]| core.raw_read_range(addr, -1, out);
+            let view = crate::es_rom::RomView::new(&read);
+            crate::es_music::compile_with(&text, Some(&view))
+        };
+        let c = match compiled {
+            Ok(c)
+                if c.tracks.len() == e.tracks.len()
+                    && c.voices.len() <= e.voices.len().max(crate::es_music::REF_VOICE_CAP) =>
+            {
+                c
+            }
+            Ok(_) => {
+                log::error!(
+                    "{}: the theme quoting the ROM has another shape than the one laid out",
+                    src.name
+                );
+                continue;
+            }
+            Err(err) => {
+                log::error!("{}: the theme quoting the ROM: {err}", src.name);
+                continue;
+            }
+        };
+        for (t, &(at, room)) in c.tracks.iter().zip(&e.tracks) {
+            if t.bytes.len() > room {
+                log::error!("{}: a track of {} bytes, room for {room}", src.name, t.bytes.len());
+                continue;
+            }
+            let mut bytes = t.bytes.clone();
+            bytes[t.goto..t.goto + 4].copy_from_slice(&(at + t.label as u32).to_le_bytes());
+            bytes.resize(room, 0);
+            core.raw_write_range(at, -1, &bytes);
+        }
+        for (slot, v) in c.voices.iter().enumerate() {
+            let mut b = [0u8; 12];
+            core.raw_read_range(v.group + 12 * v.index as u32, -1, &mut b);
+            core.raw_write_range(e.group_at + 12 * slot as u32, -1, &b);
+        }
+    }
 }
 
 /// The sound engine's state (`SoundInfo`, the address at `0x03007FF0`):
@@ -2096,12 +2157,12 @@ mod pack_tests {
             ranges.push((e.header, e.header + 8 + 4 * n as u32, format!("{} header", e.co)));
             ranges.push((
                 e.group_at,
-                e.group_at + 12 * e.voices.len() as u32,
+                e.group_at + 12 * c.voice_room() as u32,
                 format!("{} voices", e.co),
             ));
             for (k, t) in c.tracks.iter().enumerate() {
                 let at = u32_at(&m.story_blob, h + 8 + 4 * k).unwrap();
-                ranges.push((at, at + t.bytes.len() as u32, format!("{} track {k}", e.co)));
+                ranges.push((at, at + t.room as u32, format!("{} track {k}", e.co)));
                 // the loop's GOTO points at the track's own label
                 let goto = (at - STORY_BASE) as usize + t.goto;
                 assert_eq!(u32_at(&m.story_blob, goto), Some(at + t.label as u32));

@@ -174,7 +174,7 @@ def run(rom, ptr, limit=400000):
             a = tgt
         elif c == 0xB4:
             if not stack:
-                break
+                continue                      # the engine ignores a PEND outside a pattern: the bytes after it play on
             f = stack[-1]
             f[1] -= 1
             if f[1] > 0:

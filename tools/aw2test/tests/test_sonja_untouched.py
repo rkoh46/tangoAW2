@@ -12,6 +12,7 @@ from aw2test import damage, rom as romlib, tag
 from aw2test.harness import test
 from tests.test_fog import seen
 from tests.test_tag import tag_battle, tag_page_of
+from tests.test_co_music import SONG_TABLE_POOL, header_of
 
 SONJA = 7
 TEXT_TABLE = 0x08610A38
@@ -51,6 +52,21 @@ def sonja_untouched(ctx):
     obs["co_row"] = h(raw)
     obs["co_row_fields"] = {"stars": [e.u32(row + 0x0C), e.u32(row + 0x10)], "music": e.u16(row + 4),
                             "modes": [[e.u16(row + 0x38 + 0x44 * k + o) for o in (0x0C, 0x0E, 0x10, 0x12, 0x14, 0x16)] + [e.u32(row + 0x38 + 0x44 * k + 4), e.u32(row + 0x38 + 0x44 * k + 8)] for k in range(3)]}
+    # her music, and Sturm's: Asuka's theme quotes both from the ROM at run time and must only read them. Everything of each song as the console holds it: the song table's row, the header, the
+    # voice group's 128 entries and every track's bytes (the stretch from the first track to the end of the header)
+    table = e.u32(SONG_TABLE_POOL)
+    music = {}
+    for name, sid in (("sonja", e.u16(row + 4)), ("sturm", 219)):
+        hd = header_of(e, sid)
+        n = e.u8(hd)
+        ptrs = [e.u32(hd + 8 + 4 * k) for k in range(n)]
+        lo = min(ptrs + [hd])
+        hi = max(ptrs + [hd]) + 0x1000 if hd < max(ptrs) else hd + 8 + 4 * n
+        group = e.u32(hd + 4)
+        music[name] = {"song": sid, "table_row": h(e.read(table + 8 * sid, 8)), "header": h(e.read(hd, 8 + 4 * n)),
+                       "voices": h(e.read(group, 12 * 128)), "tracks": h(e.read(lo, hi - lo)),
+                       "track_count": n, "track_offsets": [p - lo for p in ptrs], "header_offset": hd - lo}
+    obs["music"] = music
     # presentation row: the words and the bytes they point to
     pres = e.u32(0x08043AF8)
     prow = pres + 0x44 * SONJA

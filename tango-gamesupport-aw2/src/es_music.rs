@@ -29,13 +29,32 @@
 //! chord, `kick/8` a drum hit, a trailing `'` staccato, `_` legato, `>` accent, `!90` velocity, `{vol 90}` `{vol 60>100/48}` (a ramp over 48 ticks) `{pan -20}`
 //! `{inst harp}` `{bend 8}` `{mod 6}` `{gate 70}` `{tempo 120}` (first track only), `|` a bar line (checked).
 //!
+//! ## Quoting AW2's own songs (`rom`), without storing a note of them
+//! AW2's songs are Nintendo's and Intelligent Systems': none of their notes may be written into this repository. A song of ours can still *quote* one: a
+//! `rom` line names a stretch of an AW2 song by its id, track and bars, with what to do to it, and `@rom:NAME` in a section's track line plays it there.
+//! ```text
+//! rom hook song=212 track=0 bars=7-14 transpose=-12 srcshift=-12 lower=G#,C# inst=low gain=1.0
+//! section A2 bars=8
+//!   5: @rom:hook               ; eight bars of our meter (the source's bars, 96 ticks each)
+//! ```
+//! Options: `song=` (0..504) `track=` `bars=a-b` (source bars, 1-based, `barticks=` a bar's ticks, default 96); `transpose=` semitones of the **sounding** pitch;
+//! `srcshift=` the `shift` of the source's voice (so the sounding pitch is known; `aw2dev sound voices` lists them); `lower=G#,C#` lowers those pitch classes by a semitone
+//! after the transposition (a major tune made minor); `inst=` plays it on one of our `inst`s (the track's own voice if left out) and then goes back to the track's; `gain=` a factor
+//! on the source's volumes, `peak=` brings the loudest of them to that number first; `tempo=` the source's tempo in beats a minute, to keep its speed in real time (the ticks are scaled by our tempo / it; left out, the ticks are copied
+//! and the stretch plays at **our** tempo); `raw` copies keys, volumes, pans and the source's own voices unchanged (a drum track, a bass: for the game's own sounds as they are).
+//! The game reads the events out of the ROM it is running when it builds the song ([`compile_with`]); the file holds only these references. Without a ROM ([`compile`], the tools,
+//! CI) the reference is checked for syntax and is silence of the right length.
+//!
 //! Dev aid: with `TANGOAW2_ES_MUSIC=<dir>` the songs are read from `<dir>/<name>.m4t` instead of the built-in text (so a song can be rewritten and heard
 //! without a rebuild; both peers of a match must not differ, as with the other `TANGOAW2_ES_*` aids).
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 
+use std::cell::RefCell;
+
 use crate::ds_music::{note, waits, BEND, BENDR, EOT, GOTO, KEYSH, LFODL, LFOS, MOD, PAN, TEMPO, TIE, VOICE, VOL};
+use crate::es_rom::{self, RomView, Src};
 
 pub const TICKS_PER_BEAT: u32 = 24;
 /// The GBA's frame rate: 16777216 / 280896.
@@ -50,6 +69,10 @@ pub const GROUP_A: u32 = 0x0824_0FB0;
 pub const GROUP_B: u32 = 0x0824_15C8;
 /// The most bytes a compiled song may take (tracks together), so the free ROM planned for the songs is enough.
 pub const MAX_BYTES: usize = 48 * 1024;
+/// A track that quotes the ROM is built when the game starts and its size depends on the ROM's bytes: the room kept for it in the song's data (the game checks the bytes fit).
+pub const REF_TRACK_CAP: usize = 4096;
+/// The voice slots kept for a song that quotes the ROM (it may use the source's own voices).
+pub const REF_VOICE_CAP: usize = 40;
 /// The default key range of a note.
 const LOW: i32 = 12;
 
@@ -123,6 +146,8 @@ pub struct TrackBytes {
     pub bytes: Vec<u8>,
     pub label: usize,
     pub goto: usize,
+    /// The room this track takes in the song's data: [`REF_TRACK_CAP`] for a track that quotes the ROM (its bytes are only known when the ROM is read), else `bytes.len()`.
+    pub room: usize,
 }
 
 /// A song as the engine needs it.
@@ -145,9 +170,19 @@ pub struct Compiled {
     /// The tick the most notes first sound at once.
     pub peak_at: u32,
     pub notes: usize,
+    /// The song quotes AW2's songs (`rom` references): its tracks are only complete when compiled with the ROM ([`compile_with`]).
+    pub needs_rom: bool,
 }
 
 impl Compiled {
+    /// Voice slots to keep room for in the song's data.
+    pub fn voice_room(&self) -> usize {
+        if self.needs_rom {
+            REF_VOICE_CAP.max(self.voices.len())
+        } else {
+            self.voices.len()
+        }
+    }
     /// Real time of `ticks`: the engine runs a frame of the GBA's 59.7275 Hz at tempo/150 of a tick per beat-minute (a nominal 150 would be one tick a frame).
     pub fn seconds(&self, ticks: u32) -> f64 {
         ticks as f64 * 150.0 / (GBA_FPS * self.bpm as f64)
@@ -201,6 +236,29 @@ struct Parsed {
     sections: HashMap<String, Section>,
     form: Vec<(String, u32)>,
     loop_at: Option<usize>,
+    /// The `rom` references by name.
+    refs: HashMap<String, RomRef>,
+    /// Voices a reference with `raw` brought in from its source song, after the `inst`s (slot = insts.len() + index).
+    extra: RefCell<Vec<VoiceRef>>,
+}
+
+/// A `rom` line: a stretch of one of AW2's songs, and what to do to it.
+#[derive(Clone, Debug)]
+struct RomRef {
+    song: u16,
+    track: usize,
+    from: u32,
+    to: u32,
+    bar_ticks: u32,
+    transpose: i32,
+    src_shift: i32,
+    lower: Vec<i32>,
+    inst: Option<String>,
+    gain: f64,
+    /// The source's loudest VOLUME in the stretch is brought to this (before the track's `gain=`), so the quote is as loud as we say whatever the source's own level was.
+    peak: Option<f64>,
+    tempo: Option<u32>,
+    raw: bool,
 }
 
 fn err<T>(line: usize, msg: impl std::fmt::Display) -> Result<T, String> {
@@ -266,6 +324,8 @@ fn parse(text: &str) -> Result<Parsed, String> {
         sections: HashMap::new(),
         form: Vec::new(),
         loop_at: None,
+        refs: HashMap::new(),
+        extra: RefCell::new(Vec::new()),
     };
     enum Mode {
         None,
@@ -377,6 +437,77 @@ fn parse(text: &str) -> Result<Parsed, String> {
                     },
                     shift,
                 ));
+            }
+            "rom" => {
+                let name = rest
+                    .first()
+                    .ok_or(format!("line {ln}: rom NAME song=N track=N bars=A-B ..."))?;
+                let mut r = RomRef {
+                    song: u16::MAX,
+                    track: usize::MAX,
+                    from: 0,
+                    to: 0,
+                    bar_ticks: 96,
+                    transpose: 0,
+                    src_shift: 0,
+                    lower: Vec::new(),
+                    inst: None,
+                    gain: 1.0,
+                    peak: None,
+                    tempo: None,
+                    raw: false,
+                };
+                for kv in &rest[1..] {
+                    if *kv == "raw" {
+                        r.raw = true;
+                        continue;
+                    }
+                    let (k, v) = kv
+                        .split_once('=')
+                        .ok_or(format!("line {ln}: rom options are key=value (or `raw`)"))?;
+                    match k {
+                        "song" => r.song = parse_int(v, ln, k)?.clamp(0, 65535) as u16,
+                        "track" => r.track = parse_int(v, ln, k)?.max(0) as usize,
+                        "bars" => {
+                            let (a, b) = v.split_once('-').unwrap_or((v, v));
+                            r.from = parse_int(a, ln, k)?.max(0) as u32;
+                            r.to = parse_int(b, ln, k)?.max(0) as u32;
+                        }
+                        "barticks" => r.bar_ticks = parse_int(v, ln, k)?.max(1) as u32,
+                        "transpose" => r.transpose = parse_int(v, ln, k)?,
+                        "srcshift" => r.src_shift = parse_int(v, ln, k)?,
+                        "lower" => {
+                            for pc in v.split(',') {
+                                let key = key_of(&format!("{pc}4"))
+                                    .ok_or(format!("line {ln}: lower: '{pc}' is not a pitch class"))?;
+                                r.lower.push(key.rem_euclid(12));
+                            }
+                        }
+                        "inst" => r.inst = Some(v.to_string()),
+                        "gain" => {
+                            r.gain = v
+                                .parse::<f64>()
+                                .map_err(|_| format!("line {ln}: gain: '{v}' is not a number"))?
+                        }
+                        "peak" => {
+                            r.peak = Some(
+                                v.parse::<f64>()
+                                    .map_err(|_| format!("line {ln}: peak: '{v}' is not a number"))?,
+                            )
+                        }
+                        "tempo" => r.tempo = Some(parse_int(v, ln, k)?.max(1) as u32),
+                        _ => return err(ln, format!("unknown rom option '{k}'")),
+                    }
+                }
+                if r.song == u16::MAX || r.track == usize::MAX || r.from == 0 || r.to < r.from {
+                    return err(ln, "rom needs song=N track=N bars=A-B (source bars from 1)");
+                }
+                if r.song as u32 >= es_rom::SONGS {
+                    return err(ln, format!("rom: AW2 has songs 0..{}", es_rom::SONGS - 1));
+                }
+                if p.refs.insert(name.to_string(), r).is_some() {
+                    return err(ln, format!("rom {name} twice"));
+                }
             }
             "hit" => {
                 for h in rest {
@@ -525,6 +656,12 @@ struct Eval<'a> {
     dur: u32,
     /// The current voice's shift: a note's key is the sounding pitch plus this (AW2's samples are recorded at different octaves).
     shift: i32,
+    /// The slot of the voice now selected.
+    slot: i32,
+    /// The ROM the `rom` references read, if there is one.
+    rom: Option<&'a RomView<'a>>,
+    /// A `rom` reference was played in this track.
+    used_ref: bool,
 }
 
 fn tokens(text: &str) -> Result<Vec<String>, String> {
@@ -622,6 +759,9 @@ impl<'a> Eval<'a> {
             gate: track.gate,
             dur: 24,
             shift,
+            slot: p.insts.iter().position(|i| i.0 == track.inst).map_or(0, |i| i as i32),
+            rom: None,
+            used_ref: false,
         }
     }
 
@@ -661,6 +801,9 @@ impl<'a> Eval<'a> {
                 self.bar_start = self.tick;
             }
             return Ok(());
+        }
+        if let Some(m) = tok.strip_prefix("@rom:") {
+            return self.rom_ref(m);
         }
         if let Some(m) = tok.strip_prefix('@') {
             let (mut name, mut tr, mut times) = (m, 0i32, 1u32);
@@ -753,6 +896,211 @@ impl<'a> Eval<'a> {
         Ok(())
     }
 
+    /// `@rom:NAME`: the stretch of AW2's song, read from the ROM now (or silence of its length without one).
+    fn rom_ref(&mut self, name: &str) -> Result<(), String> {
+        let r = self
+            .p
+            .refs
+            .get(name)
+            .ok_or(format!("no `rom {name}` line for @rom:{name}"))?
+            .clone();
+        self.used_ref = true;
+        if self.tick != self.bar_start {
+            return Err(format!("@rom:{name} must start on a bar line"));
+        }
+        let bar = self.p.bar_ticks;
+        let (ws, we) = ((r.from - 1) * r.bar_ticks, r.to * r.bar_ticks);
+        let bpm = self.p.bpm;
+        let scale = |t: u32| -> u32 {
+            match r.tempo {
+                Some(b) => ((t as u64 * bpm as u64 + b as u64 / 2) / b as u64) as u32,
+                None => t,
+            }
+        };
+        let total = scale(we - ws);
+        if total % bar != 0 {
+            return Err(format!(
+                "@rom:{name} is {total} ticks, not whole bars of this song ({bar} ticks)"
+            ));
+        }
+        let start = self.tick;
+        if let Some(rom) = self.rom {
+            self.rom_events(rom, &r, name, start, ws, we, &scale)?;
+        }
+        self.tick += total;
+        self.bars += total / bar;
+        self.bar_start = self.tick;
+        Ok(())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn rom_events(
+        &mut self,
+        rom: &RomView,
+        r: &RomRef,
+        name: &str,
+        start: u32,
+        ws: u32,
+        we: u32,
+        scale: &dyn Fn(u32) -> u32,
+    ) -> Result<(), String> {
+        let src = es_rom::decode(rom, r.song, r.track, we).map_err(|e| format!("rom {name}: {e}"))?;
+        let group = es_rom::song_group(rom, r.song).map_err(|e| format!("rom {name}: {e}"))?;
+        let at = |t: u32| start + scale(t - ws);
+        // the loudest volume in force in the stretch: the one at its start and every change inside
+        let vols: Vec<(u32, u8)> = src
+            .iter()
+            .filter_map(|(t, e)| {
+                if let Src::Ctl(0xBE, v) = e {
+                    Some((*t, *v))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let at_start = vols.iter().filter(|(t, _)| *t < ws).last().map(|x| x.1).unwrap_or(0);
+        let vmax = vols
+            .iter()
+            .filter(|(t, _)| *t >= ws && *t < we)
+            .map(|x| x.1)
+            .chain([at_start])
+            .max()
+            .unwrap_or(0);
+        let norm = match r.peak {
+            Some(p) if vmax > 0 => p / vmax as f64,
+            _ => 1.0,
+        };
+        let vol = |v: u8| ((v as f64 * norm * r.gain * self.track.gain).round() as i32).clamp(0, 127);
+        // the instrument it is played on
+        let (dst_shift, back) = match &r.inst {
+            Some(n) if !r.raw => {
+                let slot = self
+                    .p
+                    .insts
+                    .iter()
+                    .position(|(x, _, _)| x == n)
+                    .ok_or(format!("rom {name}: no inst '{n}'"))?;
+                let back = (self.slot, self.shift);
+                self.slot = slot as i32;
+                self.shift = self.p.insts[slot].2;
+                self.evs.push((start, Ev::Ctl(Ctl::Voice, slot as i32)));
+                (self.shift, Some(back))
+            }
+            _ => (self.shift, None),
+        };
+        let slot_of = |program: u8| -> i32 {
+            let v = VoiceRef { group, index: program };
+            if let Some(i) = self.p.insts.iter().position(|(_, x, _)| *x == v) {
+                return i as i32;
+            }
+            let mut extra = self.p.extra.borrow_mut();
+            let i = match extra.iter().position(|x| *x == v) {
+                Some(i) => i,
+                None => {
+                    extra.push(v);
+                    extra.len() - 1
+                }
+            };
+            (self.p.insts.len() + i) as i32
+        };
+        let key_of_src = |key: u8, keysh: i32| -> Result<u8, String> {
+            let k = key as i32 + keysh;
+            let out = if r.raw {
+                k
+            } else {
+                let mut s = k - r.src_shift + r.transpose;
+                if r.lower.contains(&s.rem_euclid(12)) {
+                    s -= 1;
+                }
+                s + dst_shift
+            };
+            if !(LOW..128).contains(&out) {
+                return Err(format!("rom {name}: key {out} out of range (from source key {key})"));
+            }
+            Ok(out as u8)
+        };
+        // The controllers' values at the start of the stretch, then the changes inside it.
+        let mut state: Vec<(u8, u8)> = Vec::new();
+        let mut keysh = 0i32;
+        let mut ties: Vec<(u32, u8, u8)> = Vec::new();
+        let mut inside: Vec<(u32, Src)> = Vec::new();
+        for (t, e) in &src {
+            if *t < ws {
+                if let Src::Ctl(c, v) = e {
+                    if *c == 0xBC {
+                        keysh = *v as i8 as i32;
+                    }
+                    match state.iter_mut().find(|s| s.0 == *c) {
+                        Some(s) => s.1 = *v,
+                        None => state.push((*c, *v)),
+                    }
+                }
+            } else if *t < we {
+                inside.push((*t, *e));
+            }
+        }
+        let ctl = |c: u8, v: u8, evs: &mut Vec<(u32, Ev)>, t: u32| {
+            let ev = match c {
+                0xBE => Some(Ev::Ctl(Ctl::Vol, vol(v))),
+                0xBF if r.raw => Some(Ev::Ctl(Ctl::Pan, v as i32)),
+                0xBD if r.raw => Some(Ev::Ctl(Ctl::Voice, slot_of(v))),
+                0xC0 => Some(Ev::Ctl(Ctl::Bend, v as i32)),
+                0xC1 => Some(Ev::Ctl(Ctl::BendR, v as i32)),
+                0xC2 => Some(Ev::Ctl(Ctl::LfoS, v as i32)),
+                0xC3 => Some(Ev::Ctl(Ctl::LfoDl, v as i32)),
+                0xC4 => Some(Ev::Ctl(Ctl::Mod, v as i32)),
+                _ => None,
+            };
+            if let Some(ev) = ev {
+                evs.push((t, ev));
+            }
+        };
+        for (c, v) in &state {
+            ctl(*c, *v, &mut self.evs, start);
+        }
+        let mut push_note =
+            |evs: &mut Vec<(u32, Ev)>, t: u32, key: u8, vel: u8, end: u32, keysh: i32| -> Result<(), String> {
+                let a = at(t);
+                let b = start + scale(end.min(we) - ws);
+                evs.push((
+                    a,
+                    Ev::Note {
+                        key: key_of_src(key, keysh)?,
+                        vel: vel.clamp(1, 127),
+                        len: b.saturating_sub(a).max(1),
+                    },
+                ));
+                Ok(())
+            };
+        for (t, e) in &inside {
+            match *e {
+                Src::Ctl(c, v) => {
+                    if c == 0xBC {
+                        keysh = v as i8 as i32;
+                    }
+                    ctl(c, v, &mut self.evs, at(*t));
+                }
+                Src::Note { key, vel, len: Some(l) } => push_note(&mut self.evs, *t, key, vel, *t + l, keysh)?,
+                Src::Note { key, vel, len: None } => ties.push((*t, key, vel)),
+                Src::Eot(key) => {
+                    if let Some(i) = ties.iter().position(|x| x.1 == key) {
+                        let (t0, k, v) = ties.remove(i);
+                        push_note(&mut self.evs, t0, k, v, *t, keysh)?;
+                    }
+                }
+            }
+        }
+        for (t0, k, v) in ties {
+            push_note(&mut self.evs, t0, k, v, we, keysh)?;
+        }
+        if let Some((slot, shift)) = back {
+            self.slot = slot;
+            self.shift = shift;
+            self.evs.push((start + scale(we - ws), Ev::Ctl(Ctl::Voice, slot)));
+        }
+        Ok(())
+    }
+
     fn control(&mut self, c: &str) -> Result<(), String> {
         let mut w = c.split_whitespace();
         let name = w.next().ok_or("empty {}")?;
@@ -782,6 +1130,7 @@ impl<'a> Eval<'a> {
                     .position(|(n, _, _)| n == arg)
                     .ok_or(format!("no inst '{arg}'"))?;
                 self.shift = self.p.insts[slot].2;
+                self.slot = slot as i32;
                 self.evs.push((self.tick, Ev::Ctl(Ctl::Voice, slot as i32)));
                 return Ok(());
             }
@@ -919,6 +1268,9 @@ fn write_track(
     with_eot.sort_by_key(|(t, e)| (*t, e.order()));
     for (t, e) in with_eot {
         if t >= end {
+            if matches!(e, Ev::Ctl(..)) {
+                continue; // (a reference giving the voice back at the song's end: every pass starts from the state block anyway)
+            }
             return Err(format!(
                 "track {}: an event at tick {t} lies past the end ({end})",
                 spec.n
@@ -967,14 +1319,20 @@ fn write_track(
     let goto = out.len();
     out.extend([0u8; 4]);
     Ok(TrackBytes {
+        room: out.len(),
         bytes: out,
         label: label.unwrap(),
         goto,
     })
 }
 
-/// Compile a song file's text.
+/// Compile a song file's text without a ROM: its `rom` references are checked and play silence (see [`compile_with`]).
 pub fn compile(text: &str) -> Result<Compiled, String> {
+    compile_with(text, None)
+}
+
+/// Compile a song file's text; with the ROM the game is running, the `rom` references are read out of it (the events of AW2's song, transposed and re-voiced).
+pub fn compile_with(text: &str, rom: Option<&RomView>) -> Result<Compiled, String> {
     let p = parse(text)?;
     if p.insts.is_empty() {
         return Err("no `inst`".into());
@@ -1009,6 +1367,7 @@ pub fn compile(text: &str) -> Result<Compiled, String> {
     let mut compiled_tracks = Vec::new();
     let mut all_notes: Vec<(u32, u32)> = Vec::new();
     let mut notes = 0usize;
+    let mut needs_rom = false;
     for (ti, spec) in p.tracks.iter().enumerate() {
         let slot = if spec.inst.is_empty() {
             0
@@ -1019,10 +1378,12 @@ pub fn compile(text: &str) -> Result<Compiled, String> {
                 .ok_or(format!("track {}: no inst '{}'", spec.n, spec.inst))? as i32
         };
         let mut evs: Vec<(u32, Ev)> = Vec::new();
+        let mut track_ref = false;
         for (name, start, len) in &starts {
             let sec = &p.sections[name];
             let Some(text) = sec.lines.get(&spec.n) else { continue };
             let mut ev = Eval::new(&p, spec, ti == 0, *start);
+            ev.rom = rom;
             ev.run(text, 0, 0)
                 .map_err(|e| format!("section {name} (tick {start}), track {}: {e}", spec.n))?;
             if ev.tick != start + len {
@@ -1035,18 +1396,32 @@ pub fn compile(text: &str) -> Result<Compiled, String> {
                     len / p.bar_ticks
                 ));
             }
+            track_ref |= ev.used_ref;
             evs.extend(ev.evs);
         }
+        needs_rom |= track_ref;
         for (t, e) in &evs {
             if let Ev::Note { len, .. } = e {
                 notes += 1;
                 all_notes.push((*t, t + len));
             }
         }
-        compiled_tracks.push(write_track(spec, slot, ti == 0, p.bpm, &evs, loop_tick, end)?);
+        let mut tb = write_track(spec, slot, ti == 0, p.bpm, &evs, loop_tick, end)?;
+        if track_ref {
+            if tb.bytes.len() > REF_TRACK_CAP {
+                return Err(format!(
+                    "track {}: {} bytes, the room for a track that quotes the ROM is {REF_TRACK_CAP}",
+                    spec.n,
+                    tb.bytes.len()
+                ));
+            }
+            tb.room = REF_TRACK_CAP;
+        }
+        compiled_tracks.push(tb);
     }
     // Voices actually in the group: every inst is a slot.
-    let voices: Vec<VoiceRef> = p.insts.iter().map(|(_, v, _)| *v).collect();
+    let mut voices: Vec<VoiceRef> = p.insts.iter().map(|(_, v, _)| *v).collect();
+    voices.extend(p.extra.borrow().iter().copied());
     // Polyphony.
     let mut marks: Vec<(u32, i32)> = Vec::new();
     for (a, b) in &all_notes {
@@ -1075,7 +1450,14 @@ pub fn compile(text: &str) -> Result<Compiled, String> {
         peak_voices: peak as usize,
         peak_at,
         notes,
+        needs_rom,
     };
+    if c.voices.len() > if needs_rom { REF_VOICE_CAP } else { 128 } {
+        return Err(format!(
+            "{} voices (the room for a song that quotes the ROM is {REF_VOICE_CAP})",
+            c.voices.len()
+        ));
+    }
     if c.bytes() > MAX_BYTES {
         return Err(format!("{} bytes of tracks (at most {MAX_BYTES})", c.bytes()));
     }
@@ -1239,5 +1621,120 @@ form A loop A A
                 assert_ne!(all[i], all[j]);
             }
         }
+    }
+
+    // --- `rom` references (a made-up ROM: nothing of the game is in the tests) ---
+
+    const QUOTE: &str = "
+song q
+tempo 120
+meter 4/4
+inst lead = A.56
+hit kick=36
+track 1 inst=lead vol=90 pan=0
+track 2 inst=lead vol=90 pan=0
+rom q song=3 track=0 bars=1-1 transpose=-12 lower=E
+section A bars=2
+  1: @rom:q @rom:q
+  2: | r/1 | r/1 |
+end
+form loop A
+";
+
+    fn with_fake<R>(f: impl FnOnce(&RomView) -> R) -> R {
+        let img = crate::es_rom::fake_rom();
+        RomView::bytes(&img).with(f)
+    }
+
+    #[test]
+    fn a_reference_without_a_rom_is_silence_of_the_right_length() {
+        let c = compile(QUOTE).unwrap();
+        assert!(c.needs_rom);
+        assert_eq!(c.loop_ticks, 192);
+        assert_eq!(c.notes, 0);
+        assert_eq!(c.tracks[0].room, REF_TRACK_CAP);
+        assert_eq!(c.tracks[1].room, c.tracks[1].bytes.len());
+    }
+
+    #[test]
+    fn a_reference_copies_the_sources_notes_transposed_and_darkened() {
+        let c = with_fake(|v| compile_with(QUOTE, Some(v))).unwrap();
+        // the source bar 1: E4 at 0, G4 at 24, E4 at 48, G4 at 72 (a pattern twice), all v110 and 24 ticks; transposed an octave down, E lowered to Eb
+        let b = &c.tracks[0].bytes;
+        let note = |key: u8| vec![NOTE_24, key, 110];
+        let has = |n: Vec<u8>| b.windows(3).any(|w| w == n.as_slice());
+        assert!(has(note(51)), "E4 -> Eb3 (51): {b:?}");
+        assert!(has(note(55)), "G4 -> G3 (55)");
+        assert!(!has(note(52)) && !has(note(64)), "no unlowered E");
+        assert_eq!(c.notes, 8, "four notes a bar, two bars");
+        // the source's VOL 90 is there too (it is the stretch's volume at its start)
+        assert!(b.windows(2).any(|w| w == [crate::ds_music::VOL, 90]));
+    }
+
+    const NOTE_24: u8 = crate::ds_music::NOTE + 23;
+
+    #[test]
+    fn the_same_rom_gives_the_same_song() {
+        let a = with_fake(|v| compile_with(QUOTE, Some(v))).unwrap();
+        let b = with_fake(|v| compile_with(QUOTE, Some(v))).unwrap();
+        for (x, y) in a.tracks.iter().zip(&b.tracks) {
+            assert_eq!(x.bytes, y.bytes);
+            assert_eq!((x.label, x.goto), (y.label, y.goto));
+        }
+        assert_eq!(a.voices, b.voices);
+    }
+
+    #[test]
+    fn raw_keeps_keys_and_brings_the_sources_voice() {
+        let t = QUOTE.replace("transpose=-12 lower=E", "raw");
+        let c = with_fake(|v| compile_with(&t, Some(v))).unwrap();
+        assert!(c.tracks[0].bytes.windows(3).any(|w| w == [NOTE_24, 64, 110]));
+    }
+
+    #[test]
+    fn bad_references_are_errors() {
+        assert!(compile(&QUOTE.replace("@rom:q @rom:q", "@rom:nope @rom:q"))
+            .unwrap_err()
+            .contains("nope"));
+        assert!(compile(&QUOTE.replace("bars=1-1", "bars=3-2")).is_err());
+        assert!(compile(&QUOTE.replace("song=3", "song=900")).is_err());
+        assert!(compile(&QUOTE.replace("lower=E", "lower=H")).is_err());
+        assert!(compile(&QUOTE.replace("transpose=-12", "wobble=1")).is_err());
+        // not a whole number of bars of this song
+        assert!(compile(&QUOTE.replace("transpose=-12", "tempo=100"))
+            .unwrap_err()
+            .contains("bars"));
+        // a song or track the ROM does not have
+        assert!(with_fake(|v| compile_with(&QUOTE.replace("song=3", "song=4"), Some(v))).is_err());
+        assert!(with_fake(|v| compile_with(&QUOTE.replace("track=0", "track=2"), Some(v))).is_err());
+    }
+
+    /// With the player's real AW2 ROM (`AW2TEST_ROM`, default the ROMs folder): every song that quotes it builds, twice the same, within the room the game keeps, and the
+    /// quoted notes are the source's notes moved by exactly the written transposition. `cargo test -p tango-gamesupport-aw2 es_music -- --ignored`.
+    #[test]
+    #[ignore]
+    fn the_real_rom_builds_every_quoting_song_the_same_twice() {
+        let path = std::env::var("AW2TEST_ROM").unwrap_or_else(|_| {
+            format!(
+                "{}/Documents/TangoAW2/roms/Advance_wars_2.gba",
+                std::env::var("HOME").unwrap()
+            )
+        });
+        let img = std::fs::read(path).expect("the AW2 ROM");
+        let mut quoting = 0;
+        for s in SOURCES.iter() {
+            let (a, b) = RomView::bytes(&img).with(|v| (compile_with(s.text, Some(v)), compile_with(s.text, Some(v))));
+            let (a, b) = (a.unwrap(), b.unwrap());
+            if a.needs_rom {
+                quoting += 1;
+            }
+            for (x, y) in a.tracks.iter().zip(&b.tracks) {
+                assert_eq!(x.bytes, y.bytes, "{}", s.name);
+                assert!(x.bytes.len() <= x.room);
+            }
+            assert!(a.peak_voices <= MAX_VOICES, "{}", s.name);
+            assert!(a.voices.len() <= if a.needs_rom { REF_VOICE_CAP } else { 128 });
+        }
+        assert!(quoting >= 1, "Asuka's theme quotes Sonja's");
     }
 }

@@ -68,11 +68,21 @@ def tool(dirpath=None):
     return b
 
 
+def rom_args():
+    """`--rom FILE`: the player's AW2 cartridge, so a song's `rom` references (stretches of AW2's own songs) are read as the game reads them; without it they are only checked."""
+    try:
+        return ["--rom", str(cfg.aw2_rom())]
+    except SystemExit:
+        return []
+    except Exception:
+        return []
+
+
 def run_tool(dirpath=None, files=()):
     env = dict(os.environ)
     if dirpath:
         env["TANGOAW2_ES_MUSIC"] = str(Path(dirpath).resolve())
-    r = subprocess.run([str(tool(dirpath)), *files], capture_output=True, text=True, env=env)
+    r = subprocess.run([str(tool(dirpath)), *rom_args(), *files], capture_output=True, text=True, env=env)
     return r.returncode, [json.loads(l) for l in r.stdout.splitlines()], r.stderr.strip()
 
 
@@ -97,7 +107,7 @@ def crowded(j, dirpath, limit):
         env = dict(os.environ)
         if dirpath:
             env["TANGOAW2_ES_MUSIC"] = str(Path(dirpath).resolve())
-        subprocess.run([str(tool(dirpath)), "--dump", d], capture_output=True, text=True, env=env)
+        subprocess.run([str(tool(dirpath)), *rom_args(), "--dump", d], capture_output=True, text=True, env=env)
         marks = []
         total = j["intro_ticks"] + j["loop_ticks"]
         for t, tr in enumerate(j["tracks"]):

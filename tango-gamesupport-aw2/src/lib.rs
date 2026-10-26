@@ -91,6 +91,7 @@ pub mod es_co;
 pub mod es_cos;
 pub mod es_map_data;
 pub mod es_music;
+pub mod es_rom;
 pub mod es_text;
 pub mod factory;
 pub mod factory_hp;
