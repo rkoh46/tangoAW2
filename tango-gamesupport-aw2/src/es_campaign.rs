@@ -43,9 +43,10 @@ pub fn leads() -> Vec<u8> {
 /// The campaign's source index in [`crate::campaign_model::SOURCES`].
 pub const SOURCE: usize = 2;
 
-/// The development flag: the campaign is playable (and the menu's "Coming soon" entry is replaced) when it is set.
+/// The campaign is released (0.8.8): playable in every build, the menu's "Coming soon" entry replaced. Kept as a function so a
+/// later campaign can reuse the gate.
 pub fn dev_flag() -> bool {
-    cfg!(feature = "playtest") || std::env::var_os("TANGOAW2_ES_CAMPAIGN").is_some()
+    true
 }
 
 /// The campaign's own EWRAM (registered in `ram_map.rs`): +0 a mission's hold counter (M13: turns the player has held the Harbour Office).

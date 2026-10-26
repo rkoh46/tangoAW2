@@ -183,7 +183,7 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
 /// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): the Emerald Sun five are not, until the campaign is approved
 /// ([`crate::es_co::in_versus`]).
 pub fn listed(co: u8) -> bool {
-    !crate::es_co::is_es(co) || crate::es_co::in_versus()
+    !crate::es_co::is_es(co) || (crate::es_co::in_versus() && co != crate::es_co::VARRO)
 }
 
 /// A CO of tangoAW2's own, with no Dual Strike record behind its pictures

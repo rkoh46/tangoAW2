@@ -34,9 +34,10 @@ pub fn is_es(co: u8) -> bool {
     (KLAUS..=VARRO).contains(&co)
 }
 
-/// Whether the five are in Versus' CO lists. Until the campaign is approved they are not (nobody should see placeholder faces in a Versus room): a development aid.
+/// Whether the Emerald Sun COs are in Versus' CO lists: released with the campaign (0.8.8). Varro, the campaign's boss with a
+/// placeholder face, stays out of Versus ([`crate::co_new::listed`]).
 pub fn in_versus() -> bool {
-    cfg!(feature = "playtest") || std::env::var_os("TANGOAW2_ES_VERSUS").is_some()
+    true
 }
 
 /// A CO's text, numbers and borrowed look.
