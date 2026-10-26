@@ -50,7 +50,11 @@ def aw2_uses(rom):
 
 def roles():
     src = (cfg.REPO / "tango-gamesupport-aw2" / "src" / "campaign_music.rs").read_text()
-    return re.findall(r'\("(\w+)",\s*(Track::[^\n]*?),\s*"([^"]*)"\),', src)
+    # (an entry is one line or, as rustfmt lays the longer ones out, a tuple over several lines: the Track is given back on one line)
+    body = src[src.index("pub const NAMED"):]
+    body = body[:body.index("\n];")]
+    return [(n, " ".join(t.split()).replace("{ ", "{ ").replace(", }", " }"), d)
+            for n, t, d in re.findall(r'\(\s*"(\w+)",\s*(Track::.*?),\s*"([^"]*)",?\s*\),', body, re.S)]
 
 
 def ds_names(path):

@@ -32,7 +32,7 @@ NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOA
 CONTRACTION = re.compile(r"\b\w+(n't|'ll|'re|'ve|'m|'d)\b|\b(I|it|that|there|what|he|she|let|here|who)'s\b", re.I)
 
 # the songs a scene may name (`@SONG`): the roles of src/campaign_music.rs NAMED, `aw2:<id>`, `co:<name>`
-SONG_NAMES = set(re.findall(r'^\s*\("(\w+)",\s*Track::', open(os.path.join(SRC, "campaign_music.rs")).read(), re.M))
+SONG_NAMES = set(re.findall(r'^\s*\(\s*"(\w+)",\s*Track::', open(os.path.join(SRC, "campaign_music.rs")).read(), re.M))
 # scenes that must have one: the story scenes (intro, victory, the world map's), not the mid-battle day triggers
 NEEDS_SONG = re.compile(r"m\d\d_(pre|post|map|warroom|sturm|alarm|promotion|defect|kanbei|epilogue|all_home|two_home)|prologue")
 songs = set()
