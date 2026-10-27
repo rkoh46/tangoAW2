@@ -806,6 +806,8 @@ fn page_text(core: &mut Core) {
 
 /// The TAG page's stars (at the sprite flush): after each partner's name
 /// its rating's full stars.
+/// The main loop while the CO page is up (`pvp::CO_PAGE_LOOP`).
+const CO_PAGE_LOOP: u32 = 0x0804_3591;
 const STAR_TILE: u32 = 0x320;
 const STAR_SOURCES: [u32; 2] = [0x0810_2C24, 0x0810_2C64];
 const OBJ_VRAM: u32 = 0x0601_0000;
@@ -833,7 +835,9 @@ pub fn flush(core: &mut Core, at: u32, end: u32) -> u32 {
     if !crate::ds_weather::is_on(core) {
         return at;
     }
-    let on = core.raw_read_8(TAG_PAGE, -1) == 1;
+    // (the page's flag is only cleared when the CO menu is opened again, so the stars went on being drawn over the map after the page closed: they are the page's
+    // while the game's main loop is the CO page's)
+    let on = core.raw_read_8(TAG_PAGE, -1) == 1 && core.raw_read_32(0x0300_0000, -1) == CO_PAGE_LOOP;
     let borrowed = core.raw_read_8(STARS_BORROWED, -1) == 1;
     if !on {
         if borrowed {
