@@ -14,7 +14,7 @@ from aw2test.harness import test
 from tests.test_co_music import BGM, SONG, channels, header_of, playing, row_song, wait_song
 
 ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
-COS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92}
+COS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "crumb": 82}
 FIRST_SONG = 505
 STORY = (0x09000000, 0x09C00000)
 DS_NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
@@ -108,7 +108,7 @@ def es_themes_are_registered(ctx):
             want = open(os.path.join(dump, f"{name}.{t}.bin"), "rb").read()
             got = bytes(e.u8(p + k) for k in range(len(want) - 4))
             ctx.check(got == want[:-4], f"{name}: track {t}'s {len(want)} bytes are the compiler's")
-    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (the five Emerald Sun COs and Asuka)")
+    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (the five Emerald Sun COs, Asuka and Crumb)")
     # the room: every piece inside the story's range, none over another
     for i, a in enumerate(ranges):
         ctx.check(STORY[0] <= a[0] and a[1] <= STORY[1], f"{a[2]} {a[0]:08x}..{a[1]:08x} is in the story's range")

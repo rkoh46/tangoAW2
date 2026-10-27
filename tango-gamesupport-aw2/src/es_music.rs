@@ -84,7 +84,7 @@ pub struct Source {
     pub text: &'static str,
 }
 
-pub const SOURCES: [Source; 6] = [
+pub const SOURCES: [Source; 7] = [
     Source {
         co: 86,
         name: "klaus",
@@ -115,6 +115,12 @@ pub const SOURCES: [Source; 6] = [
         co: 92,
         name: "asuka",
         text: include_str!("../music/es/asuka.m4t"),
+    },
+    // Crumb (CO 82, crate::crumb): Black Hole's own soldier, his theme is in Versus like him.
+    Source {
+        co: crate::co_new::CRUMB,
+        name: "crumb",
+        text: include_str!("../music/es/crumb.m4t"),
     },
 ];
 
@@ -1604,7 +1610,7 @@ form A loop A A
     #[test]
     fn songs_are_the_new_cos_and_distinct() {
         let cos: Vec<u8> = SOURCES.iter().map(|s| s.co).collect();
-        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92], "the five Emerald Sun COs and Asuka");
+        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92, 82], "the five Emerald Sun COs, Asuka and Crumb");
         let all: Vec<Vec<u8>> = SOURCES
             .iter()
             .map(|s| {
