@@ -9,9 +9,13 @@ No game is included: you need your own dump of the USA cartridge.
 
 <table>
 <tr>
-<td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 version badge"></td>
+<td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 version badge (v0.8.9)"></td>
+<td><img src="docs/screenshots/es-campaign-story.png" width="240" alt="Klaus briefing the legion on the beach in the Emerald Sun Campaign"></td>
+<td><img src="docs/screenshots/es-versus.png" width="240" alt="A Versus battle: Emerald Sun's plumed legionaries and domed HQ against Black Hole"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/asuka-co.png" width="240" alt="Asuka's Intel power cut-in"></td>
 <td><img src="docs/screenshots/bh-story.png" width="240" alt="Sturm offering Von Bolt a place at his side in the BH Campaign"></td>
-<td><img src="docs/screenshots/black-hole-versus.png" width="240" alt="A Versus battle"></td>
 </tr>
 </table>
 
@@ -65,7 +69,9 @@ your army and kept in your settings).
 - **Emerald Sun**, a sixth army (a pale emerald-grey one with
   masked, red-plumed legionaries and a domed HQ), is a sixth choice next to the five armies'
   colours on SELECT YOUR ARMY, online and offline: any seat on any map can be
-  Emerald Sun, with any combination of the others.
+  Emerald Sun, with any combination of the others. Its four Roman COs
+  (Klaus, Aurelia, Cassius, Livia) are in Versus, and its 16-mission Campaign is
+  on Select Mode's Campaign list (Dual Strike pack).
 - Maps that need the Dual Strike pack (its units or art, such as the 5-army
   **Pentagon Atoll**) are offered only when every player has the pack.
 - Only the army whose turn it is can be moved; the others watch the turn
