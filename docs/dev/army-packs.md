@@ -68,7 +68,7 @@ By **army** (AW2 draws these by the country of the army's CO, `sub_08042DE0`, no
 | the capture box (soldier and building) | `sub_08041128` (soldier: 16x32, four frames, LZ77 by country `0x0849FD6C[country]` to `0x06014940`, OBJ palette bank 4) and `sub_0804103c` (property: 32x64 by terrain class, queued copy to OBJ bank 5): both take their palette from the row `0x081213F4 + 32 * colour` | the row is in `TABLES` ("capture box", `Kind::Hue`): every property and the soldier wear the skin's colours, as the capturer and as the old owner. Traps `CAPTURE_SOLDIER_END` (the skin's Green Earth soldier with the `[capture]` plume of the skin file laid on each frame, the crest in palette entries 2 and 3), `CAPTURE_PROPERTY_COPY` and `CAPTURE_PROPERTY_END` (an HQ owned by a skinned army: the map HQ at twice the size, its gold in entry 13). Art in free ROM at `art_at + 0x600` and `+ 0xA00` (`capture_blobs`). Scenarios `capture`, `capture_from_es_<kind>`, `capture_from_bh_<kind>` |
 | HQ | art per country at `0x080D16C4` / `0x080D1BC4` (snow), loaded by `sub_0803F5E4` | trap at its end (`0x0803F698`) puts the skin's 16x32 art into the army's tiles (and army 5's lab tiles in a five-army game) |
 
-Crumb (CO 82, Dual Strike pack) uses the **first skin's HQ** as a placeholder for one of his own (`hq_skin`).
+Crumb (CO 82, Dual Strike pack) is Black Hole's: Black Hole's HQ tower and units (he used the first skin's HQ as a placeholder until 0.8.10).
 
 Still the colour's: the CO's national emblem on the CO page (it is the CO's country, not the army), the terrain.
 
@@ -209,7 +209,7 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 
 ## The HQ follows the CO (`hq = "<skin id>"` in `cos/<id>.toml`)
 An army shows a skin's HQ picture (the domed tower, `[hq] rows` of `skins/<id>.toml`) when it wears the skin **or** when its CO's data file says `hq = "<skin id>"` (`army_skin::hq_style`, `hq_skin`, put into OBJ VRAM at the end of the game's HQ loader,
-`hq_loaded`). Klaus, Aurelia, Cassius, Livia, Varro and (a placeholder) Crumb have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
+`hq_loaded`). Klaus, Aurelia, Cassius, Livia and Varro have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
 The picture is indexed in the building palette, so it is drawn in the **army's own building colours** (red for Orange Star, a Black Hole army's purple, the skin's green on the skin's army). Without this the HQ came from the country
 of the CO the data was based on (Klaus: Kanbei's, Yellow Comet's pale-green tower). `aw2dev co verify` (facet `hq`), `aw2dev campaign check --hq` and `aw2dev co sheet hq` check and show it. Not covered: the cursor's info panel
 draws its own small HQ icon, which stays the game's.

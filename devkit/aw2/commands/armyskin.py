@@ -229,7 +229,7 @@ def run_sheet(a):
     sh.grid(screens, 4, 3, caption="Emerald Sun on Orange Star's colour against Blue Moon (2 armies; harness frames of the game, 240x160 at 3x)").save(out / "05_screens.png")
     if ds_dirs:
         ds = [("DS units on the map", sh.shot(ds_dirs, "dsunits", "ds_parade")), ("build menu: Megatank", sh.shot(ds_dirs, "dsunits", "ds_build")),
-              ("battle scene: Megatank", sh.shot(ds_dirs, "dsunits", "ds_scene2")), ("Crumb leads: his HQ (placeholder)", sh.shot(ds_dirs, "crumb", "crumb_hq"))]
+              ("battle scene: Megatank", sh.shot(ds_dirs, "dsunits", "ds_scene2")), ("Crumb leads: Black Hole's HQ", sh.shot(ds_dirs, "crumb", "crumb_hq"))]
         sh.grid(ds, 2, 3, caption="With the Dual Strike pack").save(out / "06_dual_strike.png")
         if tilt_pics:
             sh.tilt_sheet(tilt_pics).save(out / "07_tilt.png")

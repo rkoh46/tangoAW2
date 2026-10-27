@@ -44,7 +44,7 @@ fn applied_at(colour: u8) -> u32 {
 fn ds_applied_at(colour: u8) -> u32 {
     DATA + 0x20 + colour as u32
 }
-/// Set (per skin) once its pictures and texts are in free ROM (they follow the army, not the colour, and Crumb uses the
+/// Set (per skin) once its pictures and texts are in free ROM (they follow the army, not the colour, and the Roman COs use the
 /// first skin's HQ with no skin on).
 fn art_mark(skin: usize) -> u32 {
     DATA + 0x40 + 4 * skin as u32
@@ -230,7 +230,7 @@ pub fn skin(i: usize) -> &'static Skin {
     &skins()[i]
 }
 
-/// Emerald Sun, the first (the HQ of the Roman COs and Crumb's placeholder).
+/// Emerald Sun, the first (the HQ of the Roman COs).
 pub fn emerald_sun() -> &'static Skin {
     skin(0)
 }
@@ -2217,8 +2217,7 @@ pub fn hq_style(co: u8) -> Option<&'static str> {
     .and_then(|(_, h)| h.as_deref())
 }
 
-/// The skin whose HQ army `army` has: the one it wears, else the one its CO's data file names (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro, and Crumb as a
-/// placeholder for a picture of his own); the picture takes the army's own building colours.
+/// The skin whose HQ army `army` has: the one it wears, else the one its CO's data file names (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro); the picture takes the army's own building colours.
 fn hq_skin(core: &Core, army: u32) -> Option<usize> {
     let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
     skin_of_army(core, army).or_else(|| {
@@ -2341,10 +2340,11 @@ mod tests {
     #[test]
     fn the_cos_data_files_name_their_hq() {
         use crate::es_co::*;
-        for co in [KLAUS, AURELIA, CASSIUS, LIVIA, VARRO, crate::co_new::CRUMB] {
+        for co in [KLAUS, AURELIA, CASSIUS, LIVIA, VARRO] {
             assert_eq!(super::hq_style(co), Some("emerald_sun"), "{co}");
         }
         assert_eq!(super::hq_style(crate::co_new::CLONE_ANDY), None);
+        assert_eq!(super::hq_style(crate::co_new::CRUMB), None, "Crumb is Black Hole's: its HQ and units");
         assert_eq!(super::hq_style(1), None);
         assert!(super::skins().iter().any(|s| s.id == "emerald_sun"));
     }

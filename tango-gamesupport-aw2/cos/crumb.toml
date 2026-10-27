@@ -7,8 +7,6 @@ theme = "co:adder"
 luck = [10, 10, 20]
 bio = "A Black Hole soldier promoted by Sturm. Keeps his troops fed and supplied."
 stars = { cop = 3, scop = 6 }
-# A placeholder for a picture of his own: Emerald Sun's HQ (army_skin.rs).
-hq = "emerald_sun"
 
 [d2d]
 name = "Rank and File"

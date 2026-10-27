@@ -246,7 +246,7 @@ def dsunits():
 
 # Crumb is index 26 of the Teams screen's CO list with the Dual Strike pack (`aw2dev harness --ds` with the `cos` command lists it); seat 0's CO is
 # the first byte of its selector (0x0203CB10). His HQ is the skin's, a placeholder for one of his own.
-@scenario("crumb", [1, 2], "Crumb leads Orange Star (no skin on): his HQ is Emerald Sun's, the placeholder (with the Dual Strike pack)", ["crumb_hq", "crumb_map"], ds=True, extra="poke 0203CB10 1a\n", sheet_only=True)   # (no skin on: Orange Star's own colours are right there)
+@scenario("crumb", [1, 2], "Crumb leads Orange Star (no skin on): his HQ is Black Hole's tower (with the Dual Strike pack)", ["crumb_hq", "crumb_map"], ds=True, extra="poke 0203CB10 1a\n", sheet_only=True)   # (no skin on: Orange Star's own colours are right there)
 def crumb():
     return "goto 0 1 7\nwait 40\nshot crumb_hq 0\ngoto 0 8 5\nwait 30\nshot crumb_map 0\n"
 
