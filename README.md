@@ -14,7 +14,7 @@ No game is included: you need your own dump of the USA cartridge.
 <td><img src="docs/screenshots/es-versus.png" width="240" alt="A Versus battle: Emerald Sun's plumed legionaries and domed HQ against Black Hole"></td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/asuka-co.png" width="240" alt="Asuka's Intel power cut-in"></td>
+<td><img src="docs/screenshots/asuka-co.png" width="240" alt="Asuka's Dark Intel power cut-in"></td>
 <td><img src="docs/screenshots/bh-story.png" width="240" alt="Sturm offering Von Bolt a place at his side in the BH Campaign"></td>
 </tr>
 </table>
