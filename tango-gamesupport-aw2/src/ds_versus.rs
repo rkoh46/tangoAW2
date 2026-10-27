@@ -708,6 +708,11 @@ pub fn two_fronts(
     }
 }
 
+/// A Versus battle on two fronts (its armies keep the colours and teams they were given on the Teams screen on both fronts; the War Room's pairs have their own).
+pub fn versus_battle(core: &Core) -> bool {
+    core.raw_read_8(MAP_ID, -1) == BATTLE_ID && in_use(core) && core.raw_read_8(FRONTS, -1) == FRONTS_VERSUS
+}
+
 /// A front's map: 0 the main front, 1 the second (its header's address, and what is needed of it).
 fn front(core: &Core, index: u8) -> Option<(u32, &'static Entry)> {
     let b = built()?;

@@ -1438,10 +1438,14 @@ fn setup_second(core: &mut Core, b: &Battle) {
             Some(info) if crate::ds_versus::two_fronts(core).is_none() => info.armies,
             _ => h[0x18],
         };
+    // (a Versus battle's second front keeps the colours and teams its armies were given on the Teams screen: the first front's, still in gPlaySt)
+    let versus = crate::ds_versus::versus_battle(core);
     for k in 0..4u32 {
         let present = k < armies as u32;
-        core.raw_write_8(COLOURS + 1 + k, -1, h[0x40 + k as usize]);
-        core.raw_write_8(TEAMS + 1 + k, -1, h[0x44 + k as usize]);
+        if !versus {
+            core.raw_write_8(COLOURS + 1 + k, -1, h[0x40 + k as usize]);
+            core.raw_write_8(TEAMS + 1 + k, -1, h[0x44 + k as usize]);
+        }
         let co = core.raw_read_8(SECOND_COS + k, -1);
         core.raw_write_8(COS + 1 + k, -1, if present { co } else { 0 });
         let ctl = if present { second_controller(core, b, k + 1) } else { 0 };
@@ -1668,7 +1672,11 @@ fn controllers(core: &mut Core, b: &Battle) {
         crate::co_skills::set(core, a, &[]);
         // Its colours and teams: the front's own (the campaign's start would
         // colour an army by its CO's country).
-        if let Some(h) = h {
+        if crate::ds_versus::versus_battle(core) {
+            // (Versus: the first front's, kept in gPlaySt)
+            core.raw_write_8(p + PLAYER * a + 0x1A, -1, core.raw_read_8(COLOURS + a, -1));
+            core.raw_write_8(p + PLAYER * a + 0x2A, -1, core.raw_read_8(TEAMS + a, -1));
+        } else if let Some(h) = h {
             core.raw_write_8(p + PLAYER * a + 0x1A, -1, h[0x40 + a as usize - 1]);
             core.raw_write_8(p + PLAYER * a + 0x2A, -1, h[0x44 + a as usize - 1]);
         }
