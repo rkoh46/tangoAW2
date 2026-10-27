@@ -39,10 +39,10 @@ def redraw(cell):
 SCENARIOS = {}
 
 
-def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None, look=False, sheet_only=False, crest=None):
+def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None, look=False, sheet_only=False, crest=None, no_plume=False, keep_other=False, crest_boxes=None):
     """`crest`: {shot: at least this many pixels of the skin's crest red} (the plume of the battle figures and the portraits); `look`: the shots are the real app's pictures with the Dual Strike tilt (`look.py`), not harness frames; `sheet_only`: left out of `check --live`."""
     def wrap(fn):
-        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, look=look, sheet_only=sheet_only, crest=crest or {}, body=fn)
+        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, look=look, sheet_only=sheet_only, crest=crest or {}, no_plume=no_plume, keep_other=keep_other, crest_boxes=crest_boxes or {}, body=fn)
         return fn
     return wrap
 
@@ -90,6 +90,38 @@ def battle():
     )
 
 
+TERRAIN = {"plains": 1, "mountain": 3, "wood": 4, "city": 6}
+
+
+def _battle_pair(att, dfn, att_terrain, dfn_terrain):
+    """Army 1 (at 8,4) attacks army 2 (at 7,4), each on its terrain (the scene's background and the figures' loading differ by terrain)."""
+    return (
+        f"aid unit 1 {att} 8 4\naid unit 2 {dfn} 7 4\n"
+        + f"terrain 8 4 {TERRAIN[att_terrain]}\nterrain 7 4 {TERRAIN[dfn_terrain]}\n"
+        + redraw((8, 4))
+        + "press 0 A\nwait 30\npress 0 A\nwait 30\npress 0 A\nwait 20\npress 0 A\nwait 40\nshot scene1 0\nwait 60\nshot scene2 0\nwait 60\nshot scene3 0\n"
+    )
+
+
+# every pairing: who attacks (the skin's army, or Black Hole against it), the units and the two terrains: only the skin's own soldiers wear the plumed helmet
+BATTLES = []
+for _who, _ids in (("es", [6, 5]), ("bh", [5, 6])):
+    for _att, _dfn, _ta, _td in (
+        ("inf", "inf", "plains", "plains"),
+        ("inf", "inf", "mountain", "city"),
+        ("inf", "inf", "city", "mountain"),
+        ("inf", "inf", "wood", "plains"),
+        ("mech", "inf", "plains", "plains"),
+        ("inf", "mech", "plains", "plains"),
+    ):
+        _name = f"bt_{_who}_{_att}_{_dfn}_{_ta}_{_td}"
+        BATTLES.append(_name)
+        _text = f"a battle scene, {'the skin attacks Black Hole' if _who == 'es' else 'Black Hole attacks the skin'}: {_att} on {_ta} against {_dfn} on {_td}; only the skin's soldiers wear the plumed helmet (the user's leak: Black Hole's wore it)"
+        scenario(_name, _ids, _text, ["scene1", "scene2", "scene3"], no_plume=True, crest={"scene2": 40, "scene3": 40})(
+            lambda a=_att, d=_dfn, ta=_ta, td=_td: _battle_pair(a, d, ta, td)
+        )
+
+
 @scenario("battle_mech", [6, 2], "a Mech attacking a Tank: the bazooka frames of the battle scene", ["scene1", "scene2", "scene3"], crest={"scene1": 15, "scene2": 80, "scene3": 80})
 def battle_mech():
     return (
@@ -108,13 +140,45 @@ def power():
     )
 
 
-@scenario("capture", [6, 2], "an Infantry capturing a city (the capture animation and the flag)", ["capture1", "capture2", "capture3"])
-def capture():
+@scenario("copage", [6, 2], "the CO page (map menu > CO) of the skin's army, unit chart: Infantry and Mech are the skin's soldiers (the chart copies only the game's own slots to VRAM; the skin's slots 52+ were garbage)", ["chart"], crest={"chart": 8}, crest_boxes={"chart": [((16, 38, 40, 60), 4), ((64, 38, 90, 60), 4)]})
+def copage():
+    return (
+        "aid unit 1 inf 8 4\naid unit 1 mech 9 4\naid unit 2 inf 7 4\n"
+        + redraw((5, 2))
+        + "press 0 A\nwait 30\nshot menu 0\npress 0 A\nwait 90\nshot page1 0\n"
+        + "press 0 DOWN\nwait 60\npress 0 DOWN\nwait 60\npress 0 DOWN\nwait 60\nshot page4 0\npress 0 DOWN\nwait 60\nshot chart 0\n"
+    )
+
+
+PROPERTIES = {"city": 6, "hq": 8, "airport": 10, "port": 11, "base": 14, "lab": 20}
+
+
+def _capture(kind, owner):
+    """Army 1's Infantry (8,4) captures the property under it (`kind`, owned by army `owner`, 0 neutral): the capture box shows the capturer's soldier and the
+    property in its owner's colours. (An HQ is taken in one go with the points set: the box shows before the victory.)"""
     return (
         "aid unit 1 inf 8 4\n"
+        + (f"aid capture 8 4 10\n" if kind == "hq" else "")
+        + f"terrain 8 4 {PROPERTIES[kind]} {owner}\n"
         + redraw((8, 4))
-        + "press 0 A\nwait 20\npress 0 A\nwait 20\npress 0 DOWN\nwait 5\npress 0 A\nwait 8\nshot capture1 0\nwait 12\nshot capture2 0\nwait 20\nshot capture3 0\n"
+        + "press 0 A\nwait 20\npress 0 A\nwait 20\npress 0 A\nwait 14\nshot capture1 0\nwait 20\nshot capture2 0\nwait 40\nshot capture3 0\n"
     )
+
+
+@scenario("capture", [6, 2], "the skin's Infantry captures a neutral city: the capture box's soldier and city wear the skin's colours", ["capture1", "capture2", "capture3"])
+def capture():
+    return _capture("city", 0)
+
+
+CAPTURES = []
+for _kind in PROPERTIES:
+    for _dir, _ids, _text in (
+        ("from_es", [5, 6], "Black Hole's Infantry captures the skin's {k}: the box's {k} is the skin's (its old owner) and the soldier is Black Hole's"),
+        ("from_bh", [6, 5], "the skin's Infantry captures Black Hole's {k}: the box shows the skin's soldier and Black Hole's {k}"),
+    ):
+        _name = f"capture_{_dir}_{_kind}"
+        CAPTURES.append(_name)
+        scenario(_name, _ids, _text.format(k=_kind), ["capture1", "capture2", "capture3"], keep_other=True)(lambda k=_kind: _capture(k, 2))
 
 
 @scenario("turn", [6, 2], "ending the turn: the NEXT TURN hand-off and the DAY banner of the next army", ["endturn", "nextturn", "day"])

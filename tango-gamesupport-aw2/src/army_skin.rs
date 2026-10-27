@@ -116,6 +116,8 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("table 85A9BBC", 0x085A_9BBC, 5, 1, Kind::Hue),
     ("table 85AC8BC", 0x085A_C8BC, 5, 1, Kind::Hue),
     ("turn banner", 0x080A_1238, 4, 1, Kind::Banner),
+    // the capture box's soldier and building (`sub_08041128`, `sub_0804103c`: palette row `0x081213F4 + 32 * colour`, the army's colour)
+    ("capture box", 0x0812_1414, 5, 1, Kind::Hue),
 ];
 
 /// Black Hole's own copies where the game's table has four (see `crate::five`, `crate::co_new`): (name, address, rows,
@@ -1668,6 +1670,8 @@ fn figure_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
 /// get the skin's sheet in its place.
 const FIG_LOAD: u32 = 0x0805_68E2;
 const SIDE_UNITS: u32 = 0x0300_4528;
+/// (One byte per side: the first version read halfwords, so the second side's colour was always taken from the next word's zero, colour 1: whenever the skin sat on
+/// colour 1 the other side's soldiers got the skin's helmet too.)
 const SIDE_COLOURS: u32 = 0x0300_4500;
 
 fn fig_sheet(core: &mut Core) {
@@ -1687,7 +1691,7 @@ fn fig_sheet(core: &mut Core) {
     if !(1..=2).contains(&ty) {
         return;
     }
-    let colour = core.raw_read_16(SIDE_COLOURS + 2 * side, -1) as u8 + 1;
+    let colour = core.raw_read_8(SIDE_COLOURS + side, -1) + 1;
     let Some(skin) = skin_installed_on(core, colour) else {
         return;
     };
@@ -1940,10 +1944,38 @@ fn unit_slot(core: &mut Core) {
     }
 }
 
+/// The CO page's unit chart (`sub_08085950`) queues a copy of the sheet's `0x6C` tiles (slots 0..26) to OBJ VRAM at `CHART_SHEET` and draws
+/// every unit by its slot, so a skinned army's Infantry and Mech (slots 52 and up, past that copy) were drawn from whatever lay there:
+/// fragments. While the page is up the skins' first idle frames are kept in their slots there.
+const CO_PAGE_LOOP: u32 = 0x0804_3591;
+const CHART_SHEET: u32 = 0x0601_2000;
+
+fn sync_chart_art(core: &mut Core) {
+    for i in 0..skins().len() {
+        if core.raw_read_32(art_mark(i), -1) != MAGIC || !(1..=5u8).any(|c| applied_on(core, c) == Some(i)) {
+            continue;
+        }
+        for unit in [1u8, 2] {
+            let mut want = [0u8; 128];
+            core.raw_read_range(map_art(i, unit, 0), -1, &mut want);
+            let at = CHART_SHEET + SLOT_BYTES * slot_of(i, unit) as u32;
+            let mut have = [0u8; 128];
+            core.raw_read_range(at, -1, &mut have);
+            if have != want {
+                core.raw_write_range(at, -1, &want);
+            }
+        }
+    }
+}
+
 /// On the battle map the game copies one of the sheet's three idle frames to the VRAM sheet; the skins' slots,
 /// past the sheet, follow it (found by comparing, as `crate::roster` does for Dual Strike's units).
 pub fn sync_map_art(core: &mut Core) {
     if (1..=5u8).all(|c| applied_on(core, c).is_none()) {
+        return;
+    }
+    if core.raw_read_32(0x0300_0000, -1) == CO_PAGE_LOOP {
+        sync_chart_art(core);
         return;
     }
     const FRAME: u32 = 0x6C * 32;

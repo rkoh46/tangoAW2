@@ -261,6 +261,7 @@ AW2 sound ids not listed here have not been catalogued in the code; to find one,
 
 | Address | What | Used by |
 |---|---|---|
+| `0x08085950` / `0x08041128`, `0x0804103c` | the CO page chart's sheet copy to OBJ VRAM `0x06012000` / the capture box's soldier and building (palette row `0x081213F4 + 32 * colour`) | `army_skin::sync_chart_art`, `TABLES` |
 | `0x080261A4` (trap at `0x080261A6`, load at `0x080261BA`) | `sub_080261A4(army, type)`: a map unit's sprite slot by the country of the army's CO (`sub_08042DE0`); the skin's Infantry and Mech take their own slot | `army_skin::unit_slot` |
 | `0x08035B3C` (trap `0x08035B40`, load `0x08035B5C`) | `sub_08035B3C(unit)`: the moving unit's sheet by (type, country) from the table `0x0849CD88` (9 words a type: five countries' sheets, the animation, 3 words) | `army_skin::moving_sheet` |
 | `0x0803F5E4` (trap at its end `0x0803F698`) | `sub_0803F5E4(weather, base)`: loads the building sheet and each army's HQ art (by country) into OBJ VRAM at tiles `base + 0x5C + 8 (army - 1)` | `army_skin::hq_loaded` |

@@ -263,7 +263,8 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             variants = {"skin": sc["ids"]}
         else:
             ids = sc["ids"]
-            variants = {"base": [1] + ids[1:], "other": [3] + ids[1:], "skin": ids}
+            k = ids.index(6) if 6 in ids else 0   # (the skin's seat; the base and other runs put Orange Star / Green Earth there)
+            variants = {"base": ids[:k] + [1] + ids[k + 1:], "other": ids[:k] + [3] + ids[k + 1:], "skin": ids}
         for v, ids in variants.items():
             d = out / f"{n}_{v}"
             d.mkdir(parents=True, exist_ok=True)
@@ -298,6 +299,28 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
                 rep.append(f"  {n}/{shot}: {reds} pixels of the skin's crest red (needs >= {need})")
                 if reds < need:
                     fails.append(f"{n}/{shot}: only {reds} pixels of the skin's crest red (>= {need}): the helmet is missing")
+            for box, need_px in ([] if ds else sc.get("crest_boxes", {}).get(shot, [])):   # (AW2's own CO page; with the pack the page is Dual Strike's, its pictures from the pack)
+                # a region (the unit chart's Infantry and Mech cells) must hold the skin's plume
+                from PIL import Image as _Img
+                px = _Img.open(runs["skin"] / f).convert("RGB").crop(box).getdata()
+                got = sum(1 for r, g, b in px if r > 150 and g < 100 and b < 100 and r - g > 80)
+                rep.append(f"  {n}/{shot}: {got} pixels of the skin's crest red in {box} (needs >= {need_px})")
+                if got < need_px:
+                    fails.append(f"{n}/{shot}: only {got} pixels of the skin's crest red in {box} (>= {need_px}): that cell's picture is wrong")
+            if sc.get("keep_other"):
+                # the other army's own pictures keep its colours: what the runs without the skin both show is still there with it (a third at least)
+                shared = {c: min(base[c], other[c]) for c in base if c in other and min(base[c], other[c]) >= tolerance}
+                gone = {c: k for c, k in shared.items() if skin.get(c, 0) < k // 3}
+                rep.append(f"  {n}/{shot}: {len(shared)} colours the other army shows with or without the skin, {len(gone)} lost")
+                if gone:
+                    fails.append(f"{n}/{shot}: the other army lost colours it had without the skin: {sorted(gone.items(), key=lambda x: -x[1])[:4]}")
+            if sc.get("no_plume"):
+                # the plume (palette entries 14 and 15 of the battle scene's unit palette, the same for every army) is only the skin's side's: the other side's soldiers must not show it
+                # (as many pixels of those two colours as the same battle without the skin has, none more: the HUD may use them)
+                mine, theirs = _plume(runs["skin"] / f), _plume(runs["base"] / f)
+                rep.append(f"  {n}/{shot}: {mine} pixels of AW2's plume colours (the same battle without the skin: {theirs})")
+                if mine > theirs + 2:
+                    fails.append(f"{n}/{shot}: {mine} pixels of AW2's plume colours, {theirs} without the skin: the other army's soldiers wear the skin's helmet")
             rep.append(f"  {n}/{shot}: {len(forb)} colours only the base army had, {sum(left.values())} pixels of them left in the skin's shot" + (f"  {sorted(left.items(), key=lambda x: -x[1])[:3]}" if left else ""))
             if left:
                 fails.append(f"{n}/{shot}: base army colours left: {sorted(left.items(), key=lambda x: -x[1])[:4]}")
@@ -305,6 +328,16 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
         import shutil
         shutil.rmtree(out, ignore_errors=True)
     return fails, rep
+
+
+PLUME = [(139, 238, 172), (0, 106, 139)]   # AW2's unit palette entries 14 and 15 (unused by the soldiers; the skin's helmet puts its plume there)
+
+
+def _plume(path):
+    """Pixels of a frame that are (within a few levels) one of the plume colours the helmet patch draws with."""
+    from PIL import Image
+    im = Image.open(path).convert("RGB")
+    return sum(1 for px in im.getdata() if any(max(abs(px[i] - c[i]) for i in range(3)) <= 8 for c in PLUME))
 
 
 # ---------------------------------------------------------------------------------------------------------------- originality

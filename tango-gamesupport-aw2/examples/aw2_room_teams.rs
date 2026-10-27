@@ -18,6 +18,7 @@
 //!   rec               print the Teams record's teams and the battle's player blocks' teams, colours
 //!   peek ADDR LEN     print bytes
 //!   poke ADDR HEX     write bytes (hex string) after a few idle frames
+//!   terrain X Y CLASS [ARMY]  the cell's terrain class (1 plains, 3 mountain, 4 wood, 5 road, 6 city); the owner stays, or is ARMY (0 neutral)
 //!   goto SEAT X Y     walk SEAT's cursor to the cell
 //!   hash              print a hash of the console's work RAM (compare two runs)
 //!   skincheck         the army skins' rooms in free ROM are sane (a bad figure table or backup list fails the run)
@@ -1136,6 +1137,16 @@ fn main() {
                     .map(|i| u8::from_str_radix(&p[2][2 * i..2 * i + 2], 16).unwrap())
                     .collect();
                 link.poke(parse(p[1]), &bytes);
+            }
+            "terrain" => {
+                // terrain X Y CLASS: the cell's terrain class (low 5 bits; AW2: 1 plains, 3 mountain, 4 wood, 5 road, 6 city), its owner bits kept
+                let (x, y, class): (u32, u32, u8) = (p[1].parse().unwrap(), p[2].parse().unwrap(), p[3].parse().unwrap());
+                let owner: Option<u8> = p.get(4).map(|o| o.parse().unwrap());
+                let row = rd(&mut link, 0x0201_E450 + 0x417A + 2 * y, 2);
+                let at = 0x0201_E450 + 0x1432 + (row[0] as u32 | (row[1] as u32) << 8) + x;
+                let old = rd(&mut link, at, 1)[0];
+                let keep = if owner.is_some() { 0 } else { old & 0xE0 };
+                link.poke(at, &[keep | owner.map_or(0, |o| o << 5) | class]);
             }
             "goto" => {
                 let seat: usize = p[1].parse().unwrap();
