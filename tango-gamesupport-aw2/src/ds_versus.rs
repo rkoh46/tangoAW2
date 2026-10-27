@@ -506,7 +506,7 @@ const LIST_TOP: u32 = 0x0300_5990;
 const LIST_TAB: u32 = 0x0300_596C;
 const KEY_SELECT: u32 = 1 << 2;
 
-fn list_up(core: &Core) -> bool {
+pub(crate) fn list_up(core: &Core) -> bool {
     (PROC_POOL.0..PROC_POOL.1)
         .step_by(0x6C)
         .any(|p| core.raw_read_32(p, -1) == SELECT_MAP && core.raw_read_32(p + 0x10, -1) == SELECT_MAP_IDLE | 1)

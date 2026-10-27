@@ -1261,6 +1261,20 @@ pub fn teams_frame(core: &mut Core) {
     }
 }
 
+/// Back on the map list (the Teams screen left backwards, or Versus entered again): no skin is chosen any more. Before this the choice stayed, so the
+/// list and the next Teams screen kept the skin's colours and the next match's first army wore it with whatever CO it was given.
+pub fn reset_choice(core: &mut Core) {
+    core.raw_write_8(SEEN, -1, 0);
+    if core.raw_read_8(IDENT, -1) | core.raw_read_8(IDENT + 1, -1) | core.raw_read_8(IDENT + 2, -1) | core.raw_read_8(IDENT + 3, -1) | core.raw_read_8(IDENT + 4, -1) != 0 {
+        core.raw_write_range(IDENT, -1, &[0u8; 5]);
+    }
+    for i in 0..MAX_SKINS {
+        if host_of(core, i) != 0 {
+            set_host_of(core, i, 0);
+        }
+    }
+}
+
 pub fn teams_left(core: &mut Core) {
     core.raw_write_8(SEEN, -1, 0);
 }

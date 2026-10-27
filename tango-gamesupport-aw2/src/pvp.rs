@@ -610,6 +610,8 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 28 (bugfix branch, merged as 30): the Dual Strike picture palettes' backups moved below the skins' figures (a skin on colour 5 with the pack no longer corrupts the build menu), the skills screen's backup in free ROM moved above the fourth
         // look, Cassius's Triumph (the computer's too, ended by a Tag Power's Change, kept by a suspended game) and the offline map list's view in the console's memory.
         // 30: the cotest (29), asuka (28) and bugfix (28) branches merged: Clone Andy's numbers, the HQ that follows the CO, Asuka (CO 92) in every Versus list, the palette backups' new place, Triumph, the map-list view in console memory.
+        // 31: the Emerald Sun army choice is taken back when the map list is up (crate::army_skin::reset_choice: it used to stay after backing out of the Teams screen),
+        // the capture box's palette row follows the army's colour (the skin's too) and a Versus second front keeps the first front's colours, teams and skin.
         crate::inspect::SIM_VERSION
     }
 
@@ -990,6 +992,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         if in_battle(core) {
             core.raw_write_8(DESIGN_PRESET_DONE, -1, 0);
             crate::army_skin::teams_left(core);
+        }
+        // The map list is up (Versus entered, or the Teams screen left backwards): no skin is chosen.
+        if in_versus(core) && !in_battle(core) && crate::ds_versus::list_up(core) {
+            crate::army_skin::reset_choice(core);
         }
         // Dual Strike's Survival (offline: its War Room is single-player).
         keys = crate::survival::tick(core, ds && mode.is_none(), keys, prev);
