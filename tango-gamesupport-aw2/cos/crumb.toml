@@ -3,7 +3,7 @@ id = "crumb"
 name = "Crumb"
 army = "black_hole"
 role = "a Black Hole soldier promoted by Sturm"
-theme = "co:adder"
+theme = "own:crumb"
 luck = [10, 10, 20]
 bio = "A Black Hole soldier promoted by Sturm. Keeps his troops fed and supplied."
 stars = { cop = 3, scop = 6 }
