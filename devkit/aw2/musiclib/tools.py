@@ -94,6 +94,31 @@ def similar(a):
     return 1 if bad else 0
 
 
+def study_cmd(a):
+    from . import m4a, study
+    rom = m4a.Rom(cfg.aw2_rom().read_bytes())
+    aw2, ours = [], []
+    for sid in a.ids:
+        sd = study.study(rom, sid)
+        aw2.append(sd)
+        print(study.report(sd))
+    for spec in a.ours or []:
+        d, n, k, *rest = spec.split(":")
+        sd = study.song_data_compiled(d, n, {int(x) for x in k.split(",")}, *(int(x) for x in rest))
+        sd["id"] = f"ours {Path(d).name}"
+        ours.append(sd)
+        print(study.report(sd))
+    fmt = lambda r: {k: (round(v, 2) if isinstance(v, float) else v) for k, v in r.items()}
+    if aw2 and (a.summary or len(aw2) > 1):
+        avg, rows = study.averages(aw2)
+        print("AVERAGES over", len(aw2), "AW2 songs:", fmt(avg))
+    if ours:
+        _, rows = study.averages(ours)
+        for sd, r in zip(ours, rows):
+            print("OURS", sd["id"], fmt(r))
+    return 0
+
+
 def register(ss):
     a = ss.add_parser("compose", help="compile the Emerald Sun song files and check the rules (docs/dev/music-kit.md)")
     a.add_argument("--song", nargs="*")
@@ -134,6 +159,11 @@ def register(ss):
     a.add_argument("file", help="the .m4t to check")
     a.add_argument("--against", default="rom:212,rom:219", help="comma list of rom:<AW2 song id> (default Sonja's 212 and Sturm's 219) or m4t:<file>")
     a.set_defaults(fn=similar)
+    a = ss.add_parser("study", help="style statistics of AW2's own songs (tempo, loop, voices, density, rhythm, ranges, mix, phrases, chord roots): numbers only, read from the ROM")
+    a.add_argument("ids", type=int, nargs="+", help="AW2 song ids (CO themes: 209 Andy, 210 Max, 217 Sami, 219 Sturm, ...)")
+    a.add_argument("--summary", action="store_true", help="also print the averages over the songs")
+    a.add_argument("--ours", nargs="*", metavar="DIR:NAME:KITS", help="also study songs of ours: DIR:NAME:KITS[:LEAD:BASS] (track numbers 0-based, KITS a comma list), e.g. work/dirA:varro:4,5:0:3")
+    a.set_defaults(fn=study_cmd)
     a = ss.add_parser("dump", help="AW2's own song as text")
     a.add_argument("song", type=int)
     a.add_argument("--track", type=int)
