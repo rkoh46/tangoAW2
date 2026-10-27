@@ -39,10 +39,10 @@ def redraw(cell):
 SCENARIOS = {}
 
 
-def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None, look=False, sheet_only=False, crest=None, no_plume=False, keep_other=False, crest_boxes=None):
+def scenario(name, ids, what, shots, seats_five=False, fog=False, ds=False, extra="", compare=None, look=False, sheet_only=False, crest=None, no_plume=False, keep_other=False, crest_boxes=None, gold=None):
     """`crest`: {shot: at least this many pixels of the skin's crest red} (the plume of the battle figures and the portraits); `look`: the shots are the real app's pictures with the Dual Strike tilt (`look.py`), not harness frames; `sheet_only`: left out of `check --live`."""
     def wrap(fn):
-        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, look=look, sheet_only=sheet_only, crest=crest or {}, no_plume=no_plume, keep_other=keep_other, crest_boxes=crest_boxes or {}, body=fn)
+        SCENARIOS[name] = dict(ids=ids, what=what, shots=shots, five=seats_five, fog=fog, ds=ds, extra=extra, compare=compare, look=look, sheet_only=sheet_only, crest=crest or {}, no_plume=no_plume, keep_other=keep_other, crest_boxes=crest_boxes or {}, gold=gold or {}, body=fn)
         return fn
     return wrap
 
@@ -165,7 +165,7 @@ def _capture(kind, owner):
     )
 
 
-@scenario("capture", [6, 2], "the skin's Infantry captures a neutral city: the capture box's soldier and city wear the skin's colours", ["capture1", "capture2", "capture3"])
+@scenario("capture", [6, 2], "the skin's Infantry captures a neutral city: the capture box's soldier and city wear the skin's colours", ["capture1", "capture2", "capture3"], crest={"capture1": 6, "capture3": 6})
 def capture():
     return _capture("city", 0)
 
@@ -178,7 +178,12 @@ for _kind in PROPERTIES:
     ):
         _name = f"capture_{_dir}_{_kind}"
         CAPTURES.append(_name)
-        scenario(_name, _ids, _text.format(k=_kind), ["capture1", "capture2", "capture3"], keep_other=True)(lambda k=_kind: _capture(k, 2))
+        _extra = {}
+        if _dir == "from_bh":
+            _extra["crest"] = {"capture1": 6, "capture3": 6}   # the skin's soldier wears the plume
+        if _dir == "from_es" and _kind == "hq":
+            _extra["gold"] = {"capture1": 3, "capture3": 3}    # the skin's domed HQ has its gold
+        scenario(_name, _ids, _text.format(k=_kind), ["capture1", "capture2", "capture3"], keep_other=True, **_extra)(lambda k=_kind: _capture(k, 2))
 
 
 @scenario("turn", [6, 2], "ending the turn: the NEXT TURN hand-off and the DAY banner of the next army", ["endturn", "nextturn", "day"])

@@ -253,6 +253,18 @@ rows = [
   "..7ccdd7........",
 ]
 
+# ---- The capture box's soldier: the front view's plume (the Infantry's front patch above, its fin and the crest down the helmet) on the box's 16x32 figure, four frames ----
+# Hex digits are the capture palette's entries: 2 the crest red, f the outline, b c 5 the helmet's light, mid and dark; the plume is anchored on the left outline of the helmet's top row.
+[capture]
+anchor = [3, 2]
+rows = [
+  ".....22.....",
+  ".....22.....",
+  "...fb22cf...",
+  "..fbc22c5f..",
+  "..fcc2255f..",
+]
+
 # ---- The HQ: a tall domed tower on a facade with gold windows and an arched door, a dark outline all round, light from the top left (a lit left, a shaded right).
 # 16x32, `.` clear, hex digits are the building palette's indices (1 white, 2..5 the buildings' ramp light to dark, d cream, e the skin's gold).
 # Built to AW2's HQ rules (`aw2dev armyskin check` measures them).

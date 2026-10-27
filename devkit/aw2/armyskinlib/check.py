@@ -299,6 +299,14 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
                 rep.append(f"  {n}/{shot}: {reds} pixels of the skin's crest red (needs >= {need})")
                 if reds < need:
                     fails.append(f"{n}/{shot}: only {reds} pixels of the skin's crest red (>= {need}): the helmet is missing")
+            gold_need = sc.get("gold", {}).get(shot)
+            if gold_need:
+                # the skin's gold (the domed HQ's windows and finial) must be in the picture
+                from PIL import Image as _Img2
+                gold = sum(1 for r, g, b in _Img2.open(runs["skin"] / f).convert("RGB").getdata() if abs(r - 232) < 12 and abs(g - 194) < 12 and abs(b - 90) < 16)
+                rep.append(f"  {n}/{shot}: {gold} pixels of the skin's gold (needs >= {gold_need})")
+                if gold < gold_need:
+                    fails.append(f"{n}/{shot}: only {gold} pixels of the skin's gold (>= {gold_need}): the box's HQ is not the skin's")
             for box, need_px in ([] if ds else sc.get("crest_boxes", {}).get(shot, [])):   # (AW2's own CO page; with the pack the page is Dual Strike's, its pictures from the pack)
                 # a region (the unit chart's Infantry and Mech cells) must hold the skin's plume
                 from PIL import Image as _Img

@@ -157,6 +157,8 @@ pub struct Skin {
     /// The helmet drawn over the Infantry's and the Mech's battle-scene figures (`[battle.infantry]`, `[battle.mech]`) and over their portraits (`[portrait.infantry]`, `[portrait.mech]`).
     pub battle: [Option<FigPatch>; 2],
     pub portrait: [Option<FigPatch>; 2],
+    /// The plume laid on the capture box's soldier (`[capture]`).
+    pub capture: Option<CapturePatch>,
     /// The HQ's picture: 32 rows of 16 characters, `.` clear, a hex digit the building palette's index.
     pub hq: Vec<String>,
     /// The emblem: 16 rows of 16; `1` white, `2` shadow, `a`, `b`, `c` the dark, mid and light colour of the emblem
@@ -173,6 +175,15 @@ pub struct FigPatch {
     pub dome: (usize, usize),
     pub x: i32,
     pub y: i32,
+    pub rows: Vec<String>,
+}
+
+/// The capture box's soldier (a 16 x 32 picture, four frames, the capture palette's entries): `rows` (`.` keeps the pixel, `_` clears it, a hex digit is the
+/// palette's entry: 2 and 3 the skin's crest and its dark, b c 5 the helmet's light, mid and dark, f the outline) are laid on each frame so that `anchor` (a point of
+/// `rows`) lies on the left outline of the helmet's top row (found in the frame).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CapturePatch {
+    pub anchor: (usize, usize),
     pub rows: Vec<String>,
 }
 
@@ -360,6 +371,20 @@ impl Skin {
             mech: unit("mech")?,
             battle: [fig("battle", "infantry")?, fig("battle", "mech")?],
             portrait: [fig("portrait", "infantry")?, fig("portrait", "mech")?],
+            capture: match v.get("capture") {
+                Some(c) => {
+                    let a: Vec<usize> = c
+                        .get("anchor")
+                        .and_then(|x| x.as_array())
+                        .map(|a| a.iter().filter_map(|f| f.as_integer()).map(|f| f as usize).collect())
+                        .unwrap_or_default();
+                    Some(CapturePatch {
+                        anchor: (a.first().copied().unwrap_or(0), a.get(1).copied().unwrap_or(0)),
+                        rows: strings(c.get("rows"), "capture.rows")?,
+                    })
+                }
+                None => None,
+            },
             hq: strings(v.get("hq").and_then(|h| h.get("rows")), "hq.rows")?,
             emblem: strings(v.get("emblem").and_then(|h| h.get("rows")), "emblem.rows")?,
         })
@@ -802,6 +827,7 @@ pub fn blobs(rom: &dyn Rom, skin: &Skin, idx: usize) -> Vec<Patch> {
             });
         }
     }
+    capture_blobs(rom, skin, idx, &mut out);
     out
 }
 
@@ -1680,6 +1706,141 @@ fn figure_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
     });
 }
 
+// ---------- the capture box ----------
+
+/// The capture box (`sub_08041128`, `sub_0804103c`): its soldier is a 16 x 32 picture of four frames, LZ77 by the capturing army's country
+/// (`0x0849FD6C[country]`) decompressed to OBJ VRAM `0x06014940`, in the palette row `0x081213F4 + 32 * colour` (bank 4); its property is a 32 x 64 picture
+/// by terrain class, copied (queued) from ROM to OBJ tile `r6` in bank 5 from the same row. For a skinned colour the soldier is the skin's (Green Earth's, the
+/// plume laid on, the plume in palette entries 2 and 3, which no soldier uses) and an HQ is the skin's, the map HQ's art at twice the size (its gold in entry 13, which no
+/// property uses).
+const CAPTURE_SOLDIERS: u32 = 0x0849_FD6C;
+const CAPTURE_VRAM: u32 = 0x0601_4940;
+const CAPTURE_PALETTES: u32 = 0x0812_13F4;
+const CAPTURE_SOLDIER_END: u32 = 0x0804_116A;
+const CAPTURE_PROPERTY_COPY: u32 = 0x0804_10F8;
+const CAPTURE_PROPERTY_END: u32 = 0x0804_1112;
+const HQ_CLASS: u32 = 8;
+const PAL_BUFFER_ADDR: u32 = 0x0300_20C0;
+const PAL_RAM_ADDR: u32 = 0x0500_0000;
+const BOX_GOLD_ENTRY: usize = 13;
+
+fn capture_soldier_at(skin: usize) -> u32 {
+    art_at(skin) + 0x600
+}
+fn capture_hq_at(skin: usize) -> u32 {
+    art_at(skin) + 0xA00
+}
+
+/// The skin's capture soldier: Green Earth's four frames with the plume laid on each.
+pub fn capture_soldier(rom: &dyn Rom, skin: &Skin) -> Option<Vec<u8>> {
+    let p = skin.capture.as_ref()?;
+    let src = u32_at(rom, CAPTURE_SOLDIERS + 4 * FIG_BASE_COUNTRY);
+    let mut data = lz77_decode(rom, src);
+    data.resize(1024, 0);
+    for f in 0..4 {
+        let mut g = tiles_to_grid(&data[256 * f..256 * f + 256], 2);
+        // the helmet's top row: the first with three pixels of the army's entries (5, 11, 12, 14); its left end is the outline
+        let top = (0..32).find(|&y| (0..16).filter(|&x| matches!(g[y * 16 + x], 5 | 11 | 12 | 14)).count() >= 3);
+        let Some(y0) = top else { continue };
+        let Some(x0) = (0..16).find(|&x| g[y0 * 16 + x] != 0) else { continue };
+        for (dy, row) in p.rows.iter().enumerate() {
+            for (dx, c) in row.chars().enumerate() {
+                let (x, y) = (x0 as i32 + dx as i32 - p.anchor.0 as i32, y0 as i32 + dy as i32 - p.anchor.1 as i32);
+                if c == '.' || !(0..16).contains(&x) || !(0..32).contains(&y) {
+                    continue;
+                }
+                g[y as usize * 16 + x as usize] = if c == '_' { 0 } else { digit(c).unwrap_or(0) };
+            }
+        }
+        data[256 * f..256 * f + 256].copy_from_slice(&grid_to_tiles(&g, 2));
+    }
+    Some(data)
+}
+
+/// The skin's HQ for the capture box: the map HQ at twice the size (32 x 64), the gold in entry 13 and the cream in white.
+pub fn capture_hq(skin: &Skin) -> Option<Vec<u8>> {
+    let g = skin.hq_grid()?;
+    let mut big = vec![0u8; 32 * 64];
+    for y in 0..64 {
+        for x in 0..32 {
+            big[y * 32 + x] = match g[(y / 2) * 16 + x / 2] {
+                14 => BOX_GOLD_ENTRY as u8,
+                13 => 1,
+                v => v,
+            };
+        }
+    }
+    Some(grid_to_tiles(&big, 4))
+}
+
+fn capture_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
+    if let Some(d) = capture_soldier(rom, skin) {
+        out.push(Patch { what: "capture box soldier".to_string(), addr: capture_soldier_at(idx), data: d });
+    }
+    if let Some(d) = capture_hq(skin) {
+        out.push(Patch { what: "capture box HQ".to_string(), addr: capture_hq_at(idx), data: d });
+    }
+}
+
+fn write_obj_palette_entries(core: &mut Core, bank: u32, entries: &[(usize, u16)]) {
+    for base in [PAL_BUFFER_ADDR, PAL_RAM_ADDR] {
+        for &(i, c) in entries {
+            core.raw_write_16(base + 0x200 + 32 * bank + 2 * i as u32, -1, c);
+        }
+    }
+}
+
+/// End of the soldier's loader (`r4` the palette row's address): the skin's soldier over the decompressed one.
+fn capture_soldier_loaded(core: &mut Core) {
+    let r4 = core.gba().cpu().gpr(4) as u32;
+    let colour = r4.wrapping_sub(CAPTURE_PALETTES) / 32;
+    if r4 < CAPTURE_PALETTES || !(1..=5).contains(&colour) {
+        return;
+    }
+    let Some(i) = skin_installed_on(core, colour as u8) else { return };
+    if skin(i).capture.is_none() || core.raw_read_32(art_mark(i), -1) != MAGIC {
+        return;
+    }
+    let mut tiles = vec![0u8; 1024];
+    core.raw_read_range(capture_soldier_at(i), -1, &mut tiles);
+    core.raw_write_range(CAPTURE_VRAM, -1, &tiles);
+    let s = skin(i);
+    write_obj_palette_entries(core, 4, &[(2, s.crest), (3, s.crest_dark)]);
+}
+
+/// The property's copy (`r3` the source, `r4` the owner's colour, `r5` the terrain class): an HQ of a skinned army is the skin's.
+fn capture_property_copy(core: &mut Core) {
+    let (r4, r5) = {
+        let c = core.gba().cpu();
+        (c.gpr(4) as u32, c.gpr(5) as u32)
+    };
+    if r5 != HQ_CLASS || !(1..=5).contains(&r4) {
+        return;
+    }
+    let Some(i) = skin_installed_on(core, r4 as u8) else { return };
+    if skin(i).hq_grid().is_none() || core.raw_read_32(art_mark(i), -1) != MAGIC {
+        return;
+    }
+    core.gba_mut().cpu_mut().set_gpr(3, capture_hq_at(i) as i32);
+}
+
+/// End of the property's loader (`r4` the colour, `r5` the class, `r7` the palette bank): the HQ's gold.
+fn capture_property_loaded(core: &mut Core) {
+    let (r4, r5, r7) = {
+        let c = core.gba().cpu();
+        (c.gpr(4) as u32, c.gpr(5) as u32, c.gpr(7) as u32)
+    };
+    if r5 != HQ_CLASS || !(1..=5).contains(&r4) {
+        return;
+    }
+    let Some(i) = skin_installed_on(core, r4 as u8) else { return };
+    if skin(i).hq_grid().is_none() || core.raw_read_32(art_mark(i), -1) != MAGIC {
+        return;
+    }
+    let gold = skin(i).gold;
+    write_obj_palette_entries(core, r7, &[(BOX_GOLD_ENTRY, gold)]);
+}
+
 /// The scene decompresses a figure sheet (`r0`) for a side (the loop's counter at `sp + 0x20`): a skinned army's soldiers (Infantry and Mech)
 /// get the skin's sheet in its place.
 const FIG_LOAD: u32 = 0x0805_68E2;
@@ -2118,6 +2279,9 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (HQ_LOADER_END, Box::new(hq_loaded)),
         (FIG_LOAD, Box::new(fig_sheet)),
         (PORTRAIT_LOAD, Box::new(portrait_blob)),
+        (CAPTURE_SOLDIER_END, Box::new(capture_soldier_loaded)),
+        (CAPTURE_PROPERTY_COPY, Box::new(capture_property_copy)),
+        (CAPTURE_PROPERTY_END, Box::new(capture_property_loaded)),
     ];
     // `AW2_PAL_LOG=1`: every palette the game loads, with its source (to find what an army's colour reaches).
     if std::env::var_os("AW2_LZ_LOG").is_some() {
@@ -2163,6 +2327,17 @@ pub(crate) fn rooms() -> Vec<(u32, u32, String)> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_capture_box_art_fits_its_pictures() {
+        // the soldier: 4 frames of 16 x 32 (1024 bytes) and the HQ 32 x 64 (1024 bytes), the plume inside the rows laid on
+        let sk = emerald_sun();
+        let p = sk.capture.as_ref().expect("a [capture] plume");
+        assert!(p.rows.iter().all(|r| r.chars().count() == p.rows[0].chars().count()));
+        assert!(p.anchor.1 < p.rows.len() && p.anchor.0 < p.rows[0].chars().count());
+        assert_eq!(capture_hq(sk).expect("an HQ").len(), 1024);
+        assert!(capture_soldier_at(0) + 0x400 <= capture_hq_at(0) && capture_hq_at(0) + 0x400 <= art_at(0) + 0x1000, "the box's pictures stay between the HQ and the moving sheets");
+    }
+
     #[test]
     fn the_cos_data_files_name_their_hq() {
         use crate::es_co::*;
