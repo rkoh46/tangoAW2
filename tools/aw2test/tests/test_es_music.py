@@ -14,7 +14,7 @@ from aw2test.harness import test
 from tests.test_co_music import BGM, SONG, channels, header_of, playing, row_song, wait_song
 
 ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
-COS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "crumb": 82}
+COS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "crumb": 82, "cloneandy": 81}
 FIRST_SONG = 505
 STORY = (0x09000000, 0x09C00000)
 DS_NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
@@ -108,7 +108,7 @@ def es_themes_are_registered(ctx):
             want = open(os.path.join(dump, f"{name}.{t}.bin"), "rb").read()
             got = bytes(e.u8(p + k) for k in range(len(want) - 4))
             ctx.check(got == want[:-4], f"{name}: track {t}'s {len(want)} bytes are the compiler's")
-    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (the five Emerald Sun COs, Asuka and Crumb)")
+    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (the five Emerald Sun COs, Asuka, Crumb and Clone Andy)")
     # the room: every piece inside the story's range, none over another
     for i, a in enumerate(ranges):
         ctx.check(STORY[0] <= a[0] and a[1] <= STORY[1], f"{a[2]} {a[0]:08x}..{a[1]:08x} is in the story's range")
@@ -116,8 +116,8 @@ def es_themes_are_registered(ctx):
             ctx.check(a[1] <= b[0] or b[1] <= a[0], f"{a[2]} and {b[2]} do not overlap")
     ctx.check(all(i >= FIRST_SONG for i in ids.values()), "after AW2's 505")
     # The Dual Strike COs keep songs 505..514, AW2's keep their own.
-    ds = sorted(row_song(e, c) for c in DS_NEW)
-    ctx.eq(ds, list(range(FIRST_SONG, FIRST_SONG + 10)), "the ten Dual Strike themes keep ids 505..514")
+    ds = sorted(row_song(e, c) for c in DS_NEW if c != "cloneandy")
+    ctx.eq(ds, list(range(FIRST_SONG, FIRST_SONG + 9)), "the nine Dual Strike themes still used keep ids 505..513 (Clone Andy's own, 514, is built and unused; his row plays his own song)")
     for s in (1, 200, 219, 412, 503):
         ctx.eq(header_of(e, s), e.u32(0x0824238C + 8 * s), f"song {s} is AW2's")
 

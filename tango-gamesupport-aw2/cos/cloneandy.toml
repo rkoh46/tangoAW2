@@ -7,7 +7,7 @@ name = "Clone"          # (the name plate graphic reads "Clone", cut from AW2's 
 full_name = "Clone Andy"
 army = "black_hole"
 role = "Black Hole's copy of Andy, made to fight for it"
-theme = "co:adder"
+theme = "own:cloneandy"
 luck = [10, 10, 10]
 bio = "Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up"
 stars = { cop = 3, scop = 6 }

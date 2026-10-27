@@ -84,7 +84,7 @@ pub struct Source {
     pub text: &'static str,
 }
 
-pub const SOURCES: [Source; 7] = [
+pub const SOURCES: [Source; 8] = [
     Source {
         co: 86,
         name: "klaus",
@@ -121,6 +121,12 @@ pub const SOURCES: [Source; 7] = [
         co: crate::co_new::CRUMB,
         name: "crumb",
         text: include_str!("../music/es/crumb.m4t"),
+    },
+    // Clone Andy (CO 81, crate::co_new): Black Hole's copy has a theme of his own, not Andy's; his Dual Strike theme is built but no row uses it.
+    Source {
+        co: crate::co_new::CLONE_ANDY,
+        name: "cloneandy",
+        text: include_str!("../music/es/cloneandy.m4t"),
     },
 ];
 
@@ -1610,7 +1616,7 @@ form A loop A A
     #[test]
     fn songs_are_the_new_cos_and_distinct() {
         let cos: Vec<u8> = SOURCES.iter().map(|s| s.co).collect();
-        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92, 82], "the five Emerald Sun COs, Asuka and Crumb");
+        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92, 82, 81], "the five Emerald Sun COs, Asuka, Crumb and Clone Andy");
         let all: Vec<Vec<u8>> = SOURCES
             .iter()
             .map(|s| {
