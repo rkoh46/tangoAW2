@@ -48,6 +48,7 @@ of 13 px). The pixel-art importer (`pixelart.py`) got four options for it, all i
   the cigarette hand on the left) and her **head faces forward, eyes toward the viewer** with the nose and the face's shadow side turned slightly to the right: she reads as facing right, like Kanbei and Asuka.
 - Tests: `aw2.colib.test_co.AriaArt` (the committed art equals a fresh import, lint, lightness and fringe lints, the palette keeps blue / white / two skin tones / a three-orange coat, the checker flatten),
   `co portrait lint`, `co portrait ingame aria`, `tests/test_aria_pictures.py` and the review sheet.
+- `aw2dev co sheet vengeance` (test_aria_compare.py) writes the game's own damage forecasts for 7 matchups at 10 / 8 / 5 HP for Andy, Aria and Aria in Build Anew (the table, cross-checked against the damage formula) and the forecast boxes side by side.
 - `co portrait ingame` learned CO Powers: with no CO Power it fills the meter past a Super Power's price and picks "Super" in the map menu; the cut-in of a Super Power comes about 6 s after the quote, so it
   photographs 56 frames; the quote frame is the one with the most text typed.
 

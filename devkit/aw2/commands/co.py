@@ -81,6 +81,9 @@ def register(sub):
     sq = shs.add_parser("hq", help="the HQ of the Roman COs on the map (Versus, the tilted map, the missions): `hq_check.png`")
     sq.add_argument("--out")
     sq.set_defaults(fn=sheet_hq)
+    sv = shs.add_parser("vengeance", help="Aria's Vengeance in the game's own damage forecasts: the table (.md) and the forecast boxes side by side (.png)")
+    sv.add_argument("--out", help="base path without extension (default devkit/work/co/vengeance_compare)")
+    sv.set_defaults(fn=sheet_vengeance)
 
 
 def _cos(names):
@@ -230,6 +233,19 @@ def verify(a):
         from ..colib import verify_net as N
         rc = N.run(a)
     return V.verify(a) or rc
+
+
+def sheet_vengeance(a):
+    from ..colib import vengeance_sheet as V
+    ok, tail = V.run_test()
+    if not ok:
+        util.say("the forecast test failed:\n" + tail)
+        return 1
+    base = Path(a.out) if a.out else cfg.work("co", "vengeance_compare")
+    base.parent.mkdir(parents=True, exist_ok=True)
+    V.build(str(base) + ".png", str(base) + ".md")
+    util.say("wrote", str(base) + ".png and .md")
+    return 0
 
 
 def sheet_powers(a):
