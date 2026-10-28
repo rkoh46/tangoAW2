@@ -5,7 +5,7 @@
 == m20_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:max
 NARRATION: Orange Star's border plains. / Banners of four colours on one road.
-MAX: Hey! Black Hole! You look / thirsty! Have a knuckle sandwich!
+MAX: Hey! Black Hole! You look / hungry! Lunch is served! Fist first!
 SAMI: Roger. Hold the plains, grunts. / Nobody crosses that road.
 ASUKA: Max. Sami. You have until / dawn.
 MAX: Until dawn for what? I don't / negotiate. I punch.
@@ -388,7 +388,7 @@ HACHI: I'll tell Aria you've got / the key. She'll want a word.
 HACHI: She'll be loud. Don't take / it personal.
 ASUKA: I look forward to it, Hachi.
 JAKE: Yo, that was wild. Neotanks! / Respect, black lady.
-JAKE: But we're comin' back. Big / time. Whassup now?
+JAKE: But we're comin' back. Big / time. How's that for service?
 CRUMB CO: I'm sorry about the cellar, / Mr Hachi.
 HACHI: Kid. Don't be. Keep it. It's / a good basement.
 HACHI: And kid. Whoever wrote that / journal, he's proud of you.
@@ -451,7 +451,7 @@ ADDER(s): My wing. My lovely, / lovely wing. Grounded by a book.
 RACHEL: Rule seven: an air force is / only as good as its fields.
 ADDER: I concede the point. Their / answer is real. I dislike it.
 ADDER: It is also excellent. Photograph / the flak. Now.
-JAKE: Yo, good flyin', pretty boy. / Whassup? You were smooth.
+JAKE: Yo, good flyin', pretty boy. / You were smooth up there.
 ADDER: Pretty! Say it twice!
 JAKE: Pretty. Pretty boy.
 RACHEL: Rule: never admire the / enemy.
@@ -594,7 +594,12 @@ ARIA: I expect you to be angry. At / her. Not at each other.
 KANBEI: Kanbei was angry at himself. / It is a waste of anger.
 ARIA: Then aim it, Emperor. Her name / is Asuka. Remember it.
 JESS: She is polite. She files. She / does not lie.
-ARIA: That's the worst kind of / enemy. She makes you doubt yourself.
+ARIA: She writes tiny and wastes no / margin. I compared the letters.
+ARIA: It's Sonja's hand. Yellow / Comet's daughter, in a black coat.
+KANBEI: ...Kanbei knew. Kanbei kept / silent. It was not betrayal.
+KANBEI: It was a father. Be angry at / her, if you must. Not at him.
+ARIA: I'm angry at everyone. Fine. / She is the worst kind of enemy.
+ARIA: She makes you doubt yourself.
 EAGLE: So we're going to hate her / cleanly?
 ARIA: Hate whoever you like. Fight / her at the Citadel.
 ARIA: The Last Citadel. Orange Star's / heart. Every colour. Every unit.
@@ -626,3 +631,23 @@ JAKE: Cool. Cool cool cool. Got any / grenades?
 HACHI: Discount grenade. "As is". / Seven coins.
 JAKE: Yo, it's got a tag. It says / "as is"!
 HACHI: Everything's as is, kid. It's / a clearance rack.
+
+== m25_staff
+@SONG enemy1
+NARRATION: Black Hole's eastern HQ. Dusk. / A key on the table. A machine below.
+ASUKA: The train is ours. The key is / ours. The Allies know both.
+HAWKE: They will come. The only / question is where, and in what order.
+ASUKA: The depot first. The HQ second. / The Obelisk last. Always the door.
+VON BOLT: Kehh... my vault will / empty before they reach it.
+ASUKA: Then save the truth for the / day it does, Colonel.
+VON BOLT: Truth! I never keep any. / It costs too much to store.
+JUGGER: THE KEY. THE MACHINE. THE / BOY. THREE ASSETS. ONE DOOR.
+LASH: Ooh, a seal machine! Can I / sit on it? Just once? Heehee!
+LASH: ...It has no handle. How do / you turn it on?
+KOAL: Four roads to the Obelisk. All / bad. I will repave them tonight.
+KINDLE: Darlings, what a finale! / Everything converges on a door.
+ADDER: A door! A stage! A star to / walk through it! I volunteer!
+FLAK: Flak guards boy. Boy has key. / Flak guards key. Simple.
+CLONE ANDY: Okay. I'll keep watch. / I'm good at watching. It's roomy.
+CRUMB CO: Ma'am? What happens if I / turn the key? Really?
+ASUKA: Nobody knows, Commander. That / is why you decide, and not me.

@@ -502,6 +502,29 @@ MORTAR: Soup. Eat.
 CRUMB CO(h): ...Thank you, Sergeant.
 WICK: Is it all right if I cry? / Just a little?
 MORTAR: Yes. All of us.
+@IF ASUKA
+ASUKA: Issue number one. I will / remember the number.
+@IF CRUMB CO
+CRUMB CO: Gerald says thank you. He / waited a very long time to hear it.
+@IF HAWKE
+HAWKE: I searched that registry myself. / I am ashamed to have missed a page.
+@IF KOAL
+KOAL: Hobb. A man who builds and signs / nothing. I would have liked him.
+@IF KINDLE
+KINDLE: The role of a lifetime, and no / applause. I applaud. Thrice.
+@IF JUGGER
+JUGGER: HOBB, PHILIP: LOGGED. GRANDSON: / LOGGED. SENTIMENT: LEAKING.
+@IF FLAK
+FLAK: Crumb has grandpa. Flak has / mama. Mama cooks. Flak understands.
+@IF LASH
+LASH: His grandpa built a door and / nobody told him. That's so sad.
+@IF ADDER
+ADDER: A biscuit, a journal, a destiny. / Hush. I am moved. Photograph it.
+@IF VON BOLT
+VON BOLT: Hobb! Kehh... I inherited / his shelf! He never wrote me a letter!
+@IF CLONE ANDY
+CLONE ANDY: Okay. Crumb is the last / Hobb. I am the only Andy. We match.
+@END
 
 == m19_map
 @SONG enemy1
@@ -546,3 +569,22 @@ LASH: Hi, Colin! I'm aiming at / your pier! Don't take it personally!
 COLIN: I-it's very personal! It's / MY pier!
 LASH: Heehee! I like him! Can I / keep him?
 SASHA: You may not keep my brother.
+
+== m19_staff
+@SONG enemy1
+NARRATION: The flagship's chart room. / North-east lies Orange Star.
+ASUKA: Blue Moon is closed. The Accord / is cracking. Orange Star is last.
+ASUKA: I intend to split it further. / Then take what remains.
+HAWKE: A divided house. I am almost / sorry for the occupants.
+VON BOLT: Divide and conquer! Kehh-heh! / My favourite. Divide, then bill.
+LASH: Lab 7 is in Orange Star. I / HELPED build it. Can I go home?
+ASUKA: Clone Andy goes. Doctor, you / assist by radio.
+CLONE ANDY: Okay. Okay! I'm going / home. Kind of. It's a little scary.
+ASUKA: I know. I shall be with you. / In writing.
+JUGGER: ORANGE STAR: LOGGED. ASSETS: / ONE TOWER. ONE LAB. ONE DEPOT.
+KOAL: The rail east is the only / road. Everything depends on it.
+KINDLE: A sky full of orange, darlings! / How cheerful. How tedious.
+ADDER: The sky. Finally. My stage. / I shall take it. With flair.
+FLAK: Flak hits Max! Max is big! / Flak likes big!
+CRUMB CO: Ma'am. The crate. It hums / every night now. At the same hour.
+ASUKA: Yes. I have noticed. It is / counting something down.

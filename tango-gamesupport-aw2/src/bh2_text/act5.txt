@@ -6,7 +6,7 @@
 @SONG co:max
 NARRATION: Black Hole's eastern HQ. A / grey fort on a snowy plateau.
 NARRATION: Max and Sami hit the gate. / The whole garrison is on the wall.
-MAX: Hey! Black Hole! Remember me? / Knuckle sandwich, delivered!
+MAX: Hey! Black Hole! Remember me? / Lunch, delivered! Fist first!
 SAMI: Roger. Surrender the key and / the boy. No one else gets hurt.
 HAWKE: Commander Sami. You will find / the boy has an opinion.
 SAMI: Marshal Hawke. Of all the / traitors in the world.
@@ -69,7 +69,7 @@ SAMI: A plan that agrees with / itself, Max.
 MAX: ...Pathetic. I mean, wow.
 SAMI: Commander Asuka. We will be / at the Gate of Colours.
 ASUKA: I look forward to it, Sami.
-SAMI: Roger. So do I. Move out, / grunts.
+SAMI: Roger. So do I. Fall back, / grunts.
 MAX: Hey! Marshal! Next time bring / a bigger coat!
 HAWKE: I will bring two.
 MAX: Ha! I like him! Don't tell / Sami!
@@ -213,7 +213,7 @@ STURM: Drake. Grit. You came to close / what you cannot understand.
 STURM: I do not blame you. I forgive / nothing. Defend the shore.
 DRAKE: Dude. He's scary.
 GRIT: Ayup. Reckon he means it.
-ASUKA: Hold the shore. Nine days.
+ASUKA: Hold the shore until Commander / Hobb reaches the door.
 
 == m28_day3
 DRAKE: Okay! They've got walls! / Why do they always have walls?
@@ -299,7 +299,7 @@ ASUKA: Black Hole. Sturm is gone. / The founder is past the door.
 ASUKA: I do not claim his chair. I / claim the work. We finish it.
 HAWKE: The army hears you, Asuka. / It is also taking notes.
 ANDY: Okay! Black Hole lady! You're / not coming through! I won't let you!
-MAX: Hey! Knuckle sandwich, Black / Hole! Today you lose!
+MAX: Hey! Lunch is served, Black / Hole! Fist first! You lose!
 SAMI: Roger. Hold the walls, grunts. / Nobody opens that gate.
 ASUKA: Andy. Hand me the Citadel's / seal, and nobody else dies.
 ANDY: Never! You'll have to take / the citadel!
@@ -365,7 +365,7 @@ ANDY: Because Nell asked me to.
 ASUKA: Andy. Hold your head high. / You held longer than the numbers.
 ANDY: Don't pity me, Black Hole lady. / ...Okay. Thanks.
 MAX: Hey! We fall back too! But / we're coming back! For a real fight!
-SAMI: Roger. The Citadel. Move out.
+SAMI: Roger. The Citadel. Fall back.
 HAWKE: A gate lost, a citadel gained. / Fighting retreats always end in a keep.
 ASUKA: They will give us everything / they have. All four colours.
 HAWKE: Naturally. It is the only / strategy their ledger permits.

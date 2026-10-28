@@ -584,6 +584,29 @@ ASUKA: Iron leaves heavy and returns / in silence. Thank you, Captain.
 DRAKE: I never asked. First rule of / piracy: don't ask who pays you.
 DRAKE: Second rule: don't ask why / they don't want you to ask.
 ASUKA: That second rule is the / Accord's whole constitution.
+@IF ASUKA
+ASUKA: A toll that scrubbed no reef. / Every lie in this war has a receipt.
+@IF CRUMB CO
+CRUMB CO: Captain Drake, do reefs get / lonely? Gerald wonders.
+@IF HAWKE
+HAWKE: A tax on the sea. The oldest / gambit. The Accord forgot the disguise.
+@IF KOAL
+KOAL: Lane upkeep. I paved two thousand / miles. Nobody paid me a toll.
+@IF KINDLE
+KINDLE: A grey coat and an envelope? / Darlings, the Accord had costumes.
+@IF JUGGER
+JUGGER: TOLL: FALSE. REEFS: UNSCRUBBED. / OUTRAGE VOLTAGE: RISING.
+@IF FLAK
+FLAK: Flak scrubbed reef once. Reef / was a boat. Sorry, boat.
+@IF LASH
+LASH: Fake maintenance! Ooh, so where / is the REAL maintenance? Heehee!
+@IF ADDER
+ADDER: Envelopes with keyhole seals! / I adore a theatrical flap.
+@IF VON BOLT
+VON BOLT: Kehh! Vindicated! I SAID / he never scrubbed a reef! In writing!
+@IF CLONE ANDY
+CLONE ANDY: Okay. Somebody lied to a / nice pirate. I will apologise to him.
+@END
 DRAKE: ...Can I keep the boardwalk?
 ASUKA: You may keep the boardwalk.
 DRAKE: Best surrender ever.
@@ -683,3 +706,21 @@ EAGLE: Who IS this A.? I want to / hate her cleanly.
 HACHI: Whoever it is, they paid for / these chairs. Nice chairs.
 SAMI: Roger. We hold the east, one / colour at a time. Until Nell is free.
 NARRATION: On the cushion of the empty / chair, the gavel waits.
+
+== m08_staff
+@SONG enemy1
+NARRATION: The flagship's chart room. / East lies the Comet Chain.
+ASUKA: Green Earth is closed. The / Chain is next. Its walls are paper.
+ASUKA: Its pride is not. Kanbei will / meet us at his Table.
+HAWKE: Honour is the hardest wall to / audit. I recommend patience.
+VON BOLT: Honour! Kehh... does it have / a price? Everything does!
+KOAL: Eleven bridges run the length / of the Chain. I will pave all eleven.
+KINDLE: And I shall accompany him, / darling. Someone must make bridges fun.
+KOAL: Someone must stay in her lane.
+JUGGER: ROSTER: KOAL PLUS KINDLE. / ODDS OF ARGUMENT: 100 PERCENT.
+FLAK: Flak hits what boss says. Flak / ate a lantern once. Tasty!
+LASH: Ooh, lanterns! Do they explode? / I will check! Heehee!
+ADDER: A festival! Banners, an / audience, a stage. Which hotel?
+CLONE ANDY: Okay! A festival! New / names! Lantern. Lamp. Lumin-... okay!
+CRUMB CO: Ma'am! I'm staying with the / crate. Gerald says he's got it.
+ASUKA: Understood. The crate stays warm. / The Chain falls cold.

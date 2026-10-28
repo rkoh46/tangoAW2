@@ -6,7 +6,7 @@
 @SONG ending1
 NARRATION: The Last Citadel. The Great / Hall. Dawn. Four banners hang as one.
 ARIA: The Accord's seal. Orange Star's / gold, with all four marks on it.
-ARIA: Thirty years old. It is heavier / than it looks.
+ARIA: It has hung in this hall since / the fence. It is heavier than it looks.
 NELL: We held it for the Accord. The / Accord is gone. It was always paper.
 ARIA: Take it. Not for Sturm. He's / gone. Take it for the work.
 ASUKA: I accept it as a trustee. Not / as a prize.
@@ -146,7 +146,7 @@ KLAUS: Fire when ready. Only the / walls. Not the depot.
 AURELIA: Understood. The walls are / gorgeous. They will fall beautifully.
 CRUMB CO: Ma'am Aurelia? Do you / want a biscuit while you work?
 AURELIA: ...Do I? Yes. Thank you. / Oh. Oh, it's hard.
-CRUMB CO: It's from my grandpa. It's / thirty years old!
+CRUMB CO: It's from my grandpa. It's / very, very old!
 AURELIA: ...That's quite a good / biscuit, actually.
 
 == m32_day7

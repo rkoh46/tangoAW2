@@ -179,7 +179,7 @@ GRIMM: Har! Pretty rocks! A glowing / punching bag!
 GRIMM: Hey, black lady! You plan, I / punch. We should never meet!
 ASUKA: We are meeting, Grimm.
 GRIMM: Then you better bring snacks! / I can't punch on an empty stomach!
-GRIMM: Pencil necks, hold the / coast! Lightning Grimm is coming!
+GRIMM: Pencil necks, hold the / coast! Grimm is coming!
 @IF ASUKA
 ASUKA: Crystals burn for whoever / holds them. I shall hold them well.
 @IF CRUMB CO
@@ -227,6 +227,29 @@ ASUKA: I know the weave. Thank / you, Grimm.
 GRIMM: Don't thank me! Fight me / again! In a week!
 ASUKA: In a week, you will have / rested. I will ask nicely.
 GRIMM: Deal! Har!
+@IF ASUKA
+ASUKA: He punched a crystal for two / hours. I respect stamina.
+@IF CRUMB CO
+CRUMB CO: Mr Grimm, would you like a / biscuit? Gerald says it helps knuckles.
+@IF HAWKE
+HAWKE: He mistook strength for / strategy. I shall write him a footnote.
+@IF KOAL
+KOAL: He broke three crystals and a / road. I will bill him for the road.
+@IF KINDLE
+KINDLE: A man who punches light? / Darling, an honest critic at last.
+@IF JUGGER
+JUGGER: OPPONENT: GRIMM. THREAT: / PHYSICAL. HIS HUGS: ALSO A THREAT.
+@IF FLAK
+FLAK: Grimm hit Flak. Flak hit Grimm. / Flak likes Grimm.
+@IF LASH
+LASH: Ooh! His knuckles glow! Can I / study them? Heehee!
+@IF ADDER
+ADDER: That jaw. Those fists. A poster / waiting. Hold still, Grimm.
+@IF VON BOLT
+VON BOLT: Kehh... a man who breaks / crystals breaks inventory. Send a bill.
+@IF CLONE ANDY
+CLONE ANDY: Okay! Good fight, Grimm! / I can fix any-- ...your knuckles!
+@END
 
 == m11_map
 @SONG enemy2
@@ -342,7 +365,7 @@ KANBEI: There is every need. It is / what honour looks like, from outside.
 ASUKA: Then I will give you the / battle you want. And no less.
 KANBEI: Kanbei asks no more.
 GRIMM: Har! The other tide's mine! / Whoever's on the radio... hi!
-GRIMM: I'm Lightning Grimm! I punch / islands! Bring a snack!
+GRIMM: I'm Grimm! I punch / islands! Bring a snack!
 ASUKA: The east tide goes to the CO / on the radio. Keep Grimm off the strait.
 @IF ASUKA
 ASUKA: Two tides, two lessons. I shall / teach both by the clock.
@@ -461,3 +484,23 @@ GRIMM: Har! You two fight like a / married road!
 KOAL: ...A married road.
 KINDLE: Darling, he said "married". / Do not blush.
 KOAL: I am not blushing. It is the / wind. Mind the lane.
+
+== m13_staff
+@SONG enemy1
+NARRATION: The flagship's chart room. / North lies Blue Moon, under snow.
+ASUKA: Yellow Comet is closed. Blue / Moon holds the iron, and the secret.
+HAWKE: Iron Gate Pass is a single / door. I would like to knock on it.
+ASUKA: You shall, Marshal.
+JUGGER: BLUE MOON WIRE: LOCATED. / SIXTEEN SEAMS. I REQUEST THE TASK.
+ASUKA: Granted, Jugger. Read what / flows. Cut it after.
+LASH: Ooh! Sasha's lab island! Lot / 42! Can I have it? Please?
+ASUKA: You may, Doctor. Carefully.
+LASH: Carefully! Always! ...Mostly.
+FLAK: Flak hits harbours. Harbours / have fish. Flak likes fish.
+KOAL: A rail with no road beside it. / I disapprove. I will survey it.
+KINDLE: Snow, darlings? My costume / will be ruined. I must buy another.
+VON BOLT: Buy another! Kehh... on / whose coin? Mine? NO.
+ADDER: Snow on a cape is a crime. I / request an umbrella and a valet.
+CLONE ANDY: Okay! Snow! I'll bring / a heater! I can fix any-- ...heater!
+CRUMB CO: Ma'am, I'll send soup. Hot. / In a flask. Gerald says no lumps.
+ASUKA: Thank you, Commander. Blue Moon / will be cold. We shall be efficient.
