@@ -2457,6 +2457,31 @@ pub fn units_of(core: &Core, army: u8) -> Vec<(u32, u8, u8, u8)> {
         .collect()
 }
 
+/// A line falls back: until `room` more units fit under the 50-unit cap, the army's units farthest from `near` retire (a unit that carries or is carried stays: only
+/// units standing on the map alone go). A gauntlet's next commander (M25) brings a full wave whatever the old line left behind.
+pub fn make_room(core: &mut Core, army: u8, room: usize, near: (u8, u8)) {
+    let mut units = units_of(core, army);
+    if units.len() + room <= 50 {
+        return;
+    }
+    let mut drop = units.len() + room - 50;
+    let base = core.raw_read_32(UNITS_PTR, -1);
+    units.sort_by_key(|&(_, _, x, y)| std::cmp::Reverse((x as i32 - near.0 as i32).abs() + (y as i32 - near.1 as i32).abs()));
+    for (a, _, x, y) in units {
+        if drop == 0 {
+            break;
+        }
+        let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+        let id = (a - base) / UNIT;
+        let alone = core.raw_read_8(a + 7, -1) == 0 && core.raw_read_8(a + 8, -1) == 0 && core.raw_read_8(MAP + 0x12 + row + x as u32, -1) as u32 == id;
+        if alone {
+            core.raw_write_8(a, -1, 0);
+            core.raw_write_8(MAP + 0x12 + row + x as u32, -1, 0);
+            drop -= 1;
+        }
+    }
+}
+
 /// The day.
 pub fn day(core: &Core) -> u16 {
     core.raw_read_16(DAY, -1)

@@ -150,8 +150,8 @@ These apply to all 26 missions, not just Act I:
 | 22 | Normal (sea fortress) | Rain |
 | 23 | Wasteland | Changing storm weather |
 | 24 | Desert | Clear |
-| 25 | Normal (citadel), huge | Clear, then weather with each commander (Olaf's snow) |
-| 26 | Normal (Black Hole's island) | Clear |
+| 25 | Normal (citadel), huge, no fog | Clear, then weather with each commander (Olaf's snow) |
+| 26 | Desert (Black Hole's island) | Clear |
 
 ## 5. Ending and credits
 

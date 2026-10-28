@@ -14,7 +14,7 @@ SKIP = {"bh2_04b"}                      # the sky front has no land
 
 
 def _rows(path):
-    return [l.rstrip("\n") for l in open(path) if l.strip() and not l.startswith(("#", "unit", "map", "armies", "team", "objective", "blackhole", "nohq", "owners", "split"))]
+    return [l.rstrip("\n") for l in open(path) if l.strip() and not l.startswith(("#", "unit", "map", "armies", "team", "objective", "blackhole", "nohq", "owners", "split", "zone"))]
 
 
 def _grid(rows, chars, gw=24, gh=16):

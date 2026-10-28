@@ -245,7 +245,12 @@ def grid(m):
 
     split = m.get('split')
 
+    zones = m.get('zones') or []
+
     def owner(x, y):
+        for a_, x0, y0, x1, y1 in zones:
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                return a_
         if split:
             # `split y 14` / `split x 20`: the first HQ's army owns what lies up to that row (column), the second's the rest
             first, second = sorted(hqs)[:2]

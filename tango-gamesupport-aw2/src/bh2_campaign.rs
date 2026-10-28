@@ -683,7 +683,7 @@ fn bh2_23() -> MissionDef {
 /// M24 The Gate of Colours: a free pair against Andy and Max + Sami, two allied armies (three armies), on the desert delta.
 fn bh2_24() -> MissionDef {
     let mut m = MissionDef::new("bh2_24", "The Gate of Colours");
-    m.objective = "Cross the three rivers and take both Allied HQs.";
+    m.objective = "Cross the three rivers and take both Allied HQs. The island in the south (four silos, an airport) falls to a Lander.";
     m.map = MapSrc::Built("bh2_24");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
@@ -710,8 +710,8 @@ const ARIA_CO: u8 = co::MAX;
 
 /// Each stage's fresh troops (cells in the stage's zone, free of start units): (kind, cell).
 const OLAF_WAVE: [(u8, (u8, u8)); 18] = [
-    (unit::MD_TANK, (16, 5)),
-    (unit::MD_TANK, (16, 8)),
+    (unit::MD_TANK, (15, 5)),
+    (unit::MD_TANK, (15, 8)),
     (unit::NEOTANK, (17, 13)),
     (unit::ROCKETS, (18, 0)),
     (unit::MD_TANK, (21, 0)),
@@ -723,10 +723,10 @@ const OLAF_WAVE: [(u8, (u8, u8)); 18] = [
     (unit::INFANTRY, (27, 1)),
     (unit::NEOTANK, (27, 13)),
     (unit::MD_TANK, (30, 1)),
-    (unit::ARTILLERY, (31, 13)),
+    (unit::ARTILLERY, (30, 13)),
     // Olaf's fleet on the riverland's lakes
     (unit::BATTLESHIP, (18, 5)),
-    (unit::CRUISER, (29, 5)),
+    (unit::CRUISER, (28, 5)),
     (unit::CRUISER, (19, 7)),
     (unit::SUB, (29, 9)),
 ];
@@ -757,7 +757,7 @@ const EAGLE_WAVE: [(u8, (u8, u8)); 11] = [
 const ARIA_WAVE: [(u8, (u8, u8)); 8] = [
     (unit::NEOTANK, (15, 17)),
     (unit::MD_TANK, (15, 19)),
-    (unit::MEGATANK, (15, 22)),
+    (unit::MEGATANK, (13, 22)),
     (unit::ROCKETS, (20, 27)),
     (unit::NEOTANK, (21, 22)),
     (unit::FIGHTER, (22, 27)),
@@ -775,7 +775,7 @@ fn owned(c: (u8, u8)) -> Cond {
 
 /// The next line: when the player holds this stage's HQ (and every line before it has fallen: a stage's HQ taken out of order moves nothing), the same army goes on
 /// under the next commander with fresh troops and funds.
-fn takeover(hq: (u8, u8), before: &[(u8, u8)], co_next: u8, funds: i32, wave: &[(u8, (u8, u8))]) -> Trigger {
+fn takeover(hq: (u8, u8), before: &[(u8, u8)], co_next: u8, funds: i32, wave: &[(u8, (u8, u8))], room: fn(&mut Core)) -> Trigger {
     let mut all = vec![owned(hq)];
     all.extend(before.iter().map(|&c| owned(c)));
     Trigger::new(
@@ -788,6 +788,7 @@ fn takeover(hq: (u8, u8), before: &[(u8, u8)], co_next: u8, funds: i32, wave: &[
                 meter_pct: 40,
             },
             Action::AddFunds { army: 2, funds },
+            Action::Custom(room), // (the old line's farthest units retire, so the whole wave fits under the 50-unit cap)
             stage(wave),
         ],
     )
@@ -803,15 +804,14 @@ fn bh2_25() -> MissionDef {
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(30000),
     ];
     m.units = deployment("bh2_25");
-    m.fog = true;
     m.rank_days = 40;
     m.held_hq = Some(M25_NELL);
     m.held_more = vec![M25_OLAF, M25_KANBEI, M25_EAGLE];
     m.triggers = vec![
-        takeover(M25_NELL, &[], co::OLAF, 20000, &OLAF_WAVE),
-        takeover(M25_OLAF, &[M25_NELL], co::KANBEI, 22000, &KANBEI_WAVE),
-        takeover(M25_KANBEI, &[M25_NELL, M25_OLAF], co::EAGLE, 24000, &EAGLE_WAVE),
-        takeover(M25_EAGLE, &[M25_NELL, M25_OLAF, M25_KANBEI], ARIA_CO, 30000, &ARIA_WAVE),
+        takeover(M25_NELL, &[], co::OLAF, 20000, &OLAF_WAVE, |c| make_room(c, 2, OLAF_WAVE.len(), M25_OLAF)),
+        takeover(M25_OLAF, &[M25_NELL], co::KANBEI, 22000, &KANBEI_WAVE, |c| make_room(c, 2, KANBEI_WAVE.len(), M25_KANBEI)),
+        takeover(M25_KANBEI, &[M25_NELL, M25_OLAF], co::EAGLE, 24000, &EAGLE_WAVE, |c| make_room(c, 2, EAGLE_WAVE.len(), M25_EAGLE)),
+        takeover(M25_EAGLE, &[M25_NELL, M25_OLAF, M25_KANBEI], ARIA_CO, 30000, &ARIA_WAVE, |c| make_room(c, 2, ARIA_WAVE.len(), M25_ARIA)),
         // Aria's HQ is the last: its capture wins
         after(Cond::All(vec![owned(M25_ARIA), owned(M25_EAGLE)]), vec![Action::Win]),
     ];
@@ -837,6 +837,7 @@ fn bh2_26() -> MissionDef {
     ];
     m.units = deployment("bh2_26");
     m.skin = Some((2, 0)); // the legion wears the Emerald Sun skin (skin 0), on the colour the mission gives army 2
+    m.look = 2; // the Desert look: Black Hole's own sunburnt island (its sea stays water; and M26 is no look twin of M25)
     m.rank_days = 20;
     let at = |kind: u8, c: (u8, u8)| UnitDef::new(2, kind, c.0, c.1).attack();
     m.triggers = vec![

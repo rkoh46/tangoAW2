@@ -7,7 +7,7 @@ the factory never spawns or a pick breaks the rules the owner set:
 - foot soldiers (Infantry, Mech) only to capture (a target property to reach) or to block (an enemy beside the factory);
 - indirect fire (Artillery, Rockets, Missiles) only with a safe backline (no foe near the factory, none adjacent);
 - a varied mix (at least three types in six or more spawns, no type more than 60% of them);
-- never a Piperunner or an Oozium (nor Black Boat, Carrier, ships on this landlocked factory).
+- never a Piperunner, an Oozium, a Black Boat or a Carrier; ships only where the factory has a water door (M22), and then only when the field gives a reason.
 The volcano's eruptions are read from the hazard cells' RAM (`hazard.rs`, 0x0203F708: the cells the eruption takes now, 0xFFFF ends the list): the first eruption is day 3, one each day after."""
 
 import os
@@ -25,7 +25,8 @@ NAMES = ["-", "Infantry", "Mech", "Md Tank", "Megatank", "Tank", "Recon", "APC",
 AIR = {"Fighter", "Bomber", "B Copter", "T Copter", "Stealth", "Black Bomb"}
 FOOT = {"Infantry", "Mech"}
 INDIRECT = {"Artillery", "Rockets", "Missiles"}
-NEVER = {"Piperunner", "Oozium", "Black Boat", "Carrier", "Battleship", "Cruiser", "Lander", "Sub"}
+NEVER = {"Piperunner", "Oozium", "Black Boat", "Carrier"}
+SHIPS = {"Battleship", "Cruiser", "Lander", "Sub"}
 LINE = re.compile(r"day (\d+) army (\d+) slot (\d+) table (.+?) -> (.+?) at \((\d+),(\d+)\) score (-?\d+) \| (.*?) \| pool (.*?) \| then (.*?) \| (foes .*?) \| \d+ us")
 FIELD = re.compile(r"foes (\d+) \(\+(\d+) unseen\) near (\S+) threat (\S+) air (\d+)% armour (\d+)% reach (\S+) adj (\d+) \| own (.*?) \| to target (.*?) / foe (.*)")
 
@@ -44,12 +45,17 @@ def parse(lines):
     return spawns
 
 
-def verdict(s):
+def verdict(s, naval=False):
     """(ok, reason) for one spawn: the field's reason for the pick, or the rule it breaks."""
     u = s["unit"]
     air_seen = s["air"] > 0
     if u in NEVER:
         return False, f"{u} is never built by this factory"
+    if u in SHIPS:
+        if not naval:
+            return False, f"{u}: this factory stands inland, no ships"
+        fleet = "enemy fleet in sight" in s["why"]
+        return fleet, f"{u}: a ship from the water door, for an enemy fleet in sight ({s['why']})" if fleet else f"{u} with no enemy fleet in sight to justify it ({s['why']})"
     if u == "Anti-Air":
         return (air_seen, f"Anti-Air: the enemy shows {s['air']}% air" if air_seen else "Anti-Air with no air in sight")
     if u in AIR:
@@ -67,7 +73,8 @@ def verdict(s):
     return True, f"{u}: the best counter / traveller of the field ({s['why'].split(';')[0]})"
 
 
-def factory_and_volcano(ctx, n, title, volcano=True):
+def factory_and_volcano(ctx, n, title, volcano=True, naval=False, days=None):
+    days = days or DAYS
     save = os.path.join(ctx.out, f"m{n}.sav")
     shutil.copy(paths.base_save(), save)
     e, g, d = b2.enter(ctx, n, env={"TANGOAW2_BH_LOG_ALL": "1"}, save=save)
@@ -81,20 +88,21 @@ def factory_and_volcano(ctx, n, title, volcano=True):
             first = e.u16(CELLS)
             erupted[day] = [(e.u16(CELLS + 4 * k), e.u16(CELLS + 4 * k + 2)) for k in range(12) if e.u16(CELLS + 4 * k) != 0xFFFF][:12] if first != 0xFFFF else []
 
-    r = d.play(max_days=DAYS, log=log)
+    r = d.play(max_days=days, log=log)
     ctx.log(f"M{n} played: {r}")
     spawns = [s for s in parse(e.decisions()) if s["army"] == 1]
     out = [f"Black Factory (M{n} {title}): every spawn, with the field's reason", ""]
     bad = []
     for s in spawns:
-        ok, why = verdict(s)
+        ok, why = verdict(s, naval)
         out.append(f"day {s['day']:>2} slot {s['slot']} table {s['table']:<10} -> {s['unit']:<10} at {s['at']}  {'ok ' if ok else 'BAD'}  {why}")
         out.append(f"        field: {s['field']}")
         if not ok:
             bad.append((s, why))
     types = [s["unit"] for s in spawns]
     out += ["", f"{len(spawns)} spawns, types: " + ", ".join(f"{t} x{types.count(t)}" for t in sorted(set(types)))]
-    out += ["", f"M{n}'s volcano: eruptions (the hazard cells written at each day's start): " + "; ".join(f"day {k}: {len(v)} cells" for k, v in sorted(erupted.items()))]
+    if volcano:
+        out += ["", f"M{n}'s volcano: eruptions (the hazard cells written at each day's start): " + "; ".join(f"day {k}: {len(v)} cells" for k, v in sorted(erupted.items()))]
     text = "\n".join(out)
     open(os.path.join(ctx.out, "factory_spawn_log.txt"), "w").write(text)
     rv = os.environ.get("AW2TEST_REVIEW_DIR")
@@ -103,12 +111,14 @@ def factory_and_volcano(ctx, n, title, volcano=True):
         shutil.copy(os.path.join(ctx.out, "factory_spawn_log.txt"), os.path.join(rv, f"factory_spawn_log_m{n}.txt" if n != 3 else "factory_spawn_log.txt"))
     ctx.log(text)
     ctx.check(len(spawns) >= 3, f"the Black Factory spawns ({len(spawns)} spawns in {DAYS} days)")
+    if naval:
+        ctx.check(any(s["unit"] in SHIPS for s in spawns), "the water door gives at least one justified naval spawn: " + ", ".join(f"day {s['day']} {s['unit']} at {s['at']}" for s in spawns if s["unit"] in SHIPS))
     ctx.check(not bad, f"every pick has a reason the field gives: {[(s['day'], s['unit'], w) for s, w in bad]}")
     if len(spawns) >= 6:
         ctx.check(len(set(types)) >= 3, f"a varied mix ({sorted(set(types))})")
         ctx.check(max(types.count(t) for t in set(types)) <= 0.6 * len(types), "no type is more than 60% of the spawns")
     if volcano:
-        ctx.check(all(erupted.get(k) for k in erupted if 4 <= k <= DAYS) and any(erupted.get(k) for k in erupted), f"the volcano erupts (cells by day: { {k: len(v) for k, v in erupted.items()} })")
+        ctx.check(all(erupted.get(k) for k in erupted if 4 <= k <= days) and any(erupted.get(k) for k in erupted), f"the volcano erupts (cells by day: { {k: len(v) for k, v in erupted.items()} })")
     e.close()
 
 
@@ -125,4 +135,4 @@ def bh2_m14_factory_and_volcano(ctx):
 @test(name="bh2_m22_factory_and_deathray", modes=("ds",))
 def bh2_m22_factory_and_deathray(ctx):
     """M22 Von Bolt's Note: the foundry's Black Factory spawns and is smart (the same rules as M3 and M14); the Deathray stands at the top edge and hurts nobody on day 1 (the review's first-turn check, `bh2_review_m22`)."""
-    factory_and_volcano(ctx, 22, "Von Bolt's Note", volcano=False)
+    factory_and_volcano(ctx, 22, "Von Bolt's Note", volcano=False, naval=True, days=max(DAYS, 12))

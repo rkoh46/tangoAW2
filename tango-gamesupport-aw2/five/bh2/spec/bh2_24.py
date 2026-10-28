@@ -23,15 +23,18 @@ def build():
     B, b = {}, 22
     for x in range(W):
         if x % 4 == 0:
-            b = max(20, min(23, b + rnd.choice([-1, 0, 1])))
+            b = max(17, min(19, b + rnd.choice([-1, 0, 1])))
         B[x] = b
     for r in (12, 21, 31):                                       # the mouths stand on straight shores
         for x in range(r - 2, r + 3):
             B[x] = B[r + 1]
     for x in range(W):
         m.rect(".", x, 0, x, B[x])
-    m.rect("~", 0, 20, 0, H - 1); m.rect("~", W - 1, 20, W - 1, H - 1)
-    land_rows(m, {25: (16, 18), 26: (15, 19), 27: (16, 18)})                  # a sandbar islet between the first two mouths
+    m.rect("~", 0, 18, 0, H - 1); m.rect("~", W - 1, 18, W - 1, H - 1)
+    # the south island, : a hooked crescent round a lagoon (a V-shaped inlet from the north: a Lander's beach and the island's port), two arms with the silos at their tips
+    for y, spans in {23: ((14, 17), (22, 27)), 24: ((12, 19), (21, 28)), 25: ((11, 17), (23, 29)), 26: ((12, 28),), 27: ((13, 16), (19, 26))}.items():
+        for x0, x1 in spans:
+            m.rect(".", x0, y, x1, y)
     m.river([(12, 0), (12, 8), (13, 8), (13, B[13])]); m.river([(22, 0), (22, 10), (21, 10), (21, B[21])]); m.river([(32, 0), (32, 7), (31, 7), (31, B[31])])
     S = lambda x, y: snap(m, x, y)
     belt(m, "^", [(3, 4), (8, 5)], width=1, seed=1); belt(m, "^", [(3, 17), (8, 16)], width=1, seed=2); belt(m, "^", [(15, 10), (19, 11)], width=1, seed=3); belt(m, "^", [(15, 17), (19, 15)], width=1, seed=4)
@@ -41,10 +44,10 @@ def build():
         m.cluster(ch, cx, cy, n * 3, seed=60 + i)
     m.header(armies=3, colours=(BH, OS, BM), team=(1, 2, 2), objective=[1], comment=(
         "M24 The Gate of Colours (desert look, clear): a free pair (Black Hole, HQ 1 (5,12), the west bank) against Andy (Orange Star army 2, HQ 2 (17,12), the middle bank with the outer capital) and Max + Sami (army 3 in Blue Moon's colours, HQ 3 (38,12), the east): the two enemy armies are allied. "
-        "Three rivers (x 12, 22, 31) from the north edge to the desert sea; bridges (12,4) (13,14) (22,5) (21,16) (32,4) (31,15). Com Towers (26,8) and (27,19), missile silo (17,26). "
+        "Three rivers (x 12, 22, 31) from the north edge to the desert sea; bridges (12,4) (13,14) (22,5) (21,16) (32,4) (31,15). Com Towers (26,8) and (27,16); the south island (x 11..29, rows 23..27, joined to nothing: ships and Landers only) holds four missile silos (13,24) (16,26) (23,24) (27,26), a neutral airport (25,25), a neutral port (19,24) on its lagoon and cities (14,25) and (27,24). "
         "Player: INF5 MECH2 TANK4 MDT2 ART3 ROCK1 RECON1 CR1 SUB1; Andy: INF5 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1 CR1 SUB1; Max + Sami: INF5 MECH3 TANK5 MDT2 ART3 ROCK2 RECON1 CR1 SUB1."))
-    m.put("1", 5, 12).put("2", 17, 13).put("3", 38, 12).put("t", 26, 8).put("t", 27, 19).put("M", 17, 26)
-    PORTS = [snap_coast(m, 6, 19), snap_coast(m, 17, 20), snap_coast(m, 37, 20)]
+    m.put("1", 5, 12).put("2", 17, 13).put("3", 38, 12).put("t", 26, 8).put("t", 27, 16).put("M", 13, 24).put("M", 16, 26).put("M", 23, 24).put("M", 27, 26).put("p", 19, 24).put("a", 25, 25).put("c", 14, 25).put("c", 27, 24)
+    PORTS = [snap_coast(m, 6, 17), snap_coast(m, 17, 18), snap_coast(m, 37, 18)]
     for (x, y) in PORTS:
         m.put("P", x, y)
     route(m, [S(6, 11), S(9, 8), (10, 4), (12, 4, "="), (14, 4), S(17, 6), S(20, 5), (22, 5, "="), (24, 5), S(27, 6), S(30, 5), (32, 4, "="), (34, 4), S(36, 7), S(38, 11)], seed=21, wander=0.8)
@@ -56,7 +59,9 @@ def build():
     route(m, [S(26, 8), S(25, 8)], seed=37) if False else None
     route(m, [S(28, 11), S(30, 11), (31, 11, "="), (33, 11), S(35, 11)], seed=50); route(m, [S(18, 13), S(20, 13), (21, 13, "="), (23, 13), S(25, 12)], seed=51)
     thin_roads(m); fix_rungs(m)
-    for args in [(5, 12, "BBC"), (8, 15, "BC"), (7, 9, "BC"), (3, 13, "C"), (10, 4, "C"), (11, 15, "C"), (17, 13, "BBC"), (14, 4, "C"), (16, 9, "CC"), (17, 15, "BC"), (15, 14, "C"), (20, 5, "CC"), (19, 16, "C"), (24, 5, "bc"), (23, 16, "bc"), (26, 8, "c"), (27, 19, "c"),
+    for c in [(14, 17), (15, 17), (14, 19), (15, 19)]:                       # (road stubs that end at the first river: no crossing there)
+        if m.get(*c) in "R": m.put(".", *c)
+    for args in [(5, 12, "BBC"), (8, 15, "BC"), (7, 9, "BC"), (3, 13, "C"), (10, 4, "C"), (11, 15, "C"), (17, 13, "BBC"), (14, 4, "C"), (16, 9, "CC"), (17, 15, "BC"), (15, 14, "C"), (20, 5, "CC"), (19, 16, "C"), (24, 5, "bc"), (23, 16, "bc"), (26, 8, "c"), (27, 16, "c"),
                  (38, 12, "BBC"), (34, 4, "BC"), (33, 15, "BC"), (36, 7, "C"), (36, 14, "C"), (30, 5, "bc"), (29, 15, "bc"), (27, 6, "c"), (27, 16, "c"), (41, 8, "c"), (41, 16, "c"), (4, 4, "cc"), (40, 3, "cc"), (10, 19, "c"), (26, 21, "c")]:
         try:
             town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
@@ -75,11 +80,12 @@ def build():
         if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2)):
             m.put("r", x, y)
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.spread(1, {INF: 5, MECH: 2, TANK: 4, MDT: 2, ART: 3, ROCK: 1, RECON: 1}, (1, 5, 10, 19), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 5, MECH: 3, TANK: 5, MDT: 3, ART: 3, ROCK: 2, RECON: 1}, (14, 5, 21, 19), seed=2, gap=0, avoid=av)
-    m.spread(3, {INF: 5, MECH: 3, TANK: 5, MDT: 2, ART: 3, ROCK: 2, RECON: 1}, (33, 5, 42, 19), seed=3, gap=0, avoid=av)
-    for army, p, box in ((1, PORTS[0], (2, 20, 11, 27)), (2, PORTS[1], (13, 20, 22, 27)), (3, PORTS[2], (32, 20, 42, 27))):
+    m.spread(1, {INF: 5, MECH: 2, TANK: 4, MDT: 2, ART: 3, ROCK: 1, RECON: 1}, (1, 5, 10, 16), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 5, MECH: 3, TANK: 5, MDT: 3, ART: 3, ROCK: 2, RECON: 1}, (14, 5, 21, 16), seed=2, gap=0, avoid=av)
+    m.spread(3, {INF: 5, MECH: 3, TANK: 5, MDT: 2, ART: 3, ROCK: 2, RECON: 1}, (33, 5, 42, 16), seed=3, gap=0, avoid=av)
+    for army, p, box in ((1, PORTS[0], (2, 20, 10, 27)), (2, PORTS[1], (13, 20, 22, 22)), (3, PORTS[2], (32, 20, 42, 27))):
         for k_, (x, y) in zip([CR, SUB], m.sea_near(p[0], p[1] + 2, 2, box=box, deep=False)):
             m.unit(army, k_, x, y)
+    m.unit(1, LAN, 9, 23)                                      # (a Lander at the island's west shore: the player's way to the silos)
     m.note("hq", 5, 12, "Black Hole's HQ"); m.note("enemy_hq", 17, 13, "Andy's HQ (objective)"); m.note("enemy_hq3", 38, 12, "Max + Sami's HQ (objective)")
     return m

@@ -14,6 +14,7 @@ lines more, before a map's rows:
 
     team 1 2 1 1 2          the armies' teams (default: every army its own)
     split y 14              two-army maps: the first HQ's army owns the properties up to row 14, the second's the rest
+    zone 2 16 0 45 27       (BH2) an army owns every property inside this box (army x0 y0 x1 y1), before the nearest-HQ rule: a gauntlet's later HQs read as the Allies'
     owners 1 2              the armies whose HQs decide who owns each property (the nearest;
                             default: every HQ), so a team-mate's second-stage HQ takes none
     nohq                    open ground with no HQ at all (a sky front)
@@ -110,6 +111,9 @@ def parse(paths):
             if cur and s.startswith('split '):
                 f = s.split()
                 extra[cur]['split'] = (f[1], int(f[2]))
+                continue
+            if cur and s.startswith('zone '):
+                extra[cur].setdefault('zones', []).append(tuple(int(x) for x in s.split()[1:]))
                 continue
             if cur and s.startswith('owners '):
                 extra[cur]['owners'] = [int(x) for x in s.split()[1:]]

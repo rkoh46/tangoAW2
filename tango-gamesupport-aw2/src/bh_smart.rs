@@ -559,7 +559,8 @@ pub fn choose(
         .into_iter()
         .filter(|o| match o.0 {
             16 => air_w > 0 && aa_hard_near < 2,
-            17 => aa_near == 0 && aa_all < 2,
+            // (BH2: nor a Bomber while the field shows no enemy air)
+            17 => aa_near == 0 && aa_all < 2 && (!bh2 || air_w > 0),
             // (BH2: no Black Boat from a Black Factory: the field's "hurt units to repair" would otherwise put a boat on land-locked doors)
             18 => !bh2,
             // (BH2: a B Copter is built only while the field shows enemy air, as the Fighter and the Anti-Air are)
@@ -796,6 +797,13 @@ pub fn choose(
         }
         if matches!(t, 21 | 22 | 24) && f.engage(&cost, &f.targets).is_none() {
             parts.push(("no naval target to reach".to_string(), -25));
+        }
+        // (BH2: a ship from a factory with a water door is built for an enemy fleet it can reach, and says so)
+        if bh2 && matches!(t, 21 | 22 | 24) && f.engage(&cost, &f.targets).is_some() {
+            let fleet = f.foes.iter().filter(|s| matches!(s.t, 21 | 22 | 24 | CARRIER)).count() as i32;
+            if fleet >= 1 {
+                parts.push((format!("enemy fleet in sight ({fleet} ships)"), (fleet * 14).min(42)));
+            }
         }
 
         // Foot soldiers only to capture something nobody is capturing.

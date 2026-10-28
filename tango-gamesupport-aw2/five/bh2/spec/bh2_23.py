@@ -44,9 +44,9 @@ def build():
         m.cluster(ch, cx, cy, n * 3, seed=60 + i)
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
         "M23 Where the Map Ends (Wasteland look, sandstorm): Asuka + Crumb (forced pair, Black Hole, HQ 1 (7,13), the west wing) against one army under Drake + Grit (HQ 2 (40,13), the east wing). A lava zigzag canyon (three cells wide: centre column 28, then 22, then 16, with a jog between) with bridges at rows 5, 12 and 19. "
-        "The Black Obelisk (O) at (4,13) in the west; Com Towers (16,7) and (16,19). Hold nine days: the mission is won on day 10; waves land on the mark_wave cells. Player: INF4 MECH2 TANK3 MDT1 ART2 RECON1 AA2 BCO3 FTR3; Drake + Grit: INF4 MECH2 TANK3 MDT1 ART2 AA1 FTR3 BMB2 BCO3 STEALTH2."))
+        "The Black Obelisk (O) at (12,13) in the west wing, between the HQ and the canyon; Com Towers (16,7) and (16,19). Hold nine days: the mission is won on day 10; waves land on the mark_wave cells. Player: INF4 MECH2 TANK3 MDT1 ART2 RECON1 AA2 BCO3 FTR3; Drake + Grit: INF4 MECH2 TANK3 MDT1 ART2 AA1 FTR3 BMB2 BCO3 STEALTH2."))
     m.put("1", 7, 13).put("2", 40, 13).put("t", 16, 7).put("t", 16, 19)
-    m.stamp("O", 4, 13)
+    m.stamp("O", 12, 13)
     for by in (5, 12, 19):
         c = CY(by)
         route(m, [S(7, 13), S(c - 6, by), (c - 2, by)], seed=by, wander=0.6) if by != 12 else route(m, [S(8, 13), S(c - 6, by), (c - 2, by)], seed=by, wander=0.6)
@@ -74,7 +74,7 @@ def build():
     m.spread(1, {BCO: 3, FTR: 3}, (1, 3, 14, 22), seed=2, gap=1, avoid=av)
     m.spread(2, {INF: 4, MECH: 2, TANK: 3, MDT: 1, ART: 2, AA: 1}, (32, 5, 42, 20), seed=3, gap=0, avoid=av)
     m.spread(2, {FTR: 3, BMB: 2, BCO: 3, STEALTH: 2}, (32, 3, 42, 22), seed=4, gap=1, avoid=av)
-    m.note("hq", 7, 13, "Asuka + Crumb's HQ"); m.note("enemy_hq", 40, 13, "Drake + Grit's HQ"); m.note("obelisk", 4, 13, "Black Hole's Black Obelisk: hold it nine days")
+    m.note("hq", 7, 13, "Asuka + Crumb's HQ"); m.note("enemy_hq", 40, 13, "Drake + Grit's HQ"); m.note("obelisk", 12, 13, "Black Hole's Black Obelisk: hold it nine days")
     for i, (x, y) in enumerate(WAVES):
         m.note(f"mark_wave{i + 1}", x, y, "reinforcement wave lands here")
     return m

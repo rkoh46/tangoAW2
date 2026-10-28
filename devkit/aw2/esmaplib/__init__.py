@@ -44,7 +44,7 @@ class Canvas:
         self.dir = FIVE_DIR / self.campaign
         self.g = [[fill] * w for _ in range(h)]
         self.u = []                       # unit dicts
-        self.hdr = {"armies": 2, "colours": (5, 3), "tab": 3, "team": None, "objective": [1], "owners": None, "split": None, "blackhole": False, "nohq": False,
+        self.hdr = {"armies": 2, "colours": (5, 3), "tab": 3, "team": None, "objective": [1], "owners": None, "split": None, "zones": None, "blackhole": False, "nohq": False,
                     "comment": ""}
         self.notes = []                   # (key, x, y, text): named places, printed with the map and written as comments
         self.reserved = set()             # cells `spread` leaves free (a mission's reinforcement cells: `reserve`)
@@ -383,9 +383,14 @@ class Canvas:
         owning = self.hdr.get("owners") or sorted(hq)
         split = self.hdr.get("split")
 
+        zones = self.hdr.get("zones") or []
+
         def owner(x, y):
             if not hq:
                 return 0
+            for a_, x0, y0, x1, y1 in zones:
+                if x0 <= x <= x1 and y0 <= y <= y1:
+                    return a_
             if split:
                 first, second = sorted(hq)[:2]
                 return first if (y if split[0] == "y" else x) <= split[1] else second
@@ -609,6 +614,8 @@ class Canvas:
             out.append("owners " + " ".join(str(a) for a in h["owners"]))
         if h["split"]:
             out.append(f"split {h['split'][0]} {h['split'][1]}")
+        for z in h.get("zones") or []:
+            out.append("zone " + " ".join(str(v) for v in z))
         if h["objective"] != [1]:
             out.append("objective " + " ".join(str(a) for a in h["objective"]))
         if h["blackhole"]:

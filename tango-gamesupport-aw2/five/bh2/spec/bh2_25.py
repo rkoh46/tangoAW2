@@ -25,10 +25,14 @@ def build():
     m = Canvas("bh2_25", W, H)
     S = lambda x, y: snap(m, x, y)
     # --- zone 2: the frozen riverland: a big lake with Olaf's island, smaller lakes, reef shoals
-    m.blob("~", 24, 6, 8, 5, seed=1, wobble=0.12); m.blob(".", 24, 6, 2, 2, seed=2, wobble=0.1); m.rect(".", 24, 1, 24, 4); m.rect(".", 24, 8, 24, 11)       # (Olaf's island: a causeway north and south)
-    m.blob("~", 19, 11, 3, 2, seed=3, wobble=0.25); m.blob("~", 29, 11, 2, 2, seed=4, wobble=0.25); m.blob("~", 17, 3, 2, 2, seed=5, wobble=0.25)
+    # (the big lake is four overlapping lobes, a long bay to the south-east and a narrow arm to the north-west; the small lakes are three different sizes)
+    m.blob("~", 23, 6, 6, 4, seed=11, wobble=0.35); m.blob("~", 28, 8, 4, 3, seed=12, wobble=0.4); m.blob("~", 20, 3, 3, 2, seed=13, wobble=0.4); m.blob("~", 27, 3, 2, 2, seed=14, wobble=0.4)
+    m.blob(".", 24, 6, 2, 2, seed=2, wobble=0.1); m.rect(".", 24, 1, 24, 4); m.rect(".", 24, 8, 24, 11)       # (Olaf's island: a causeway north and south)
+    m.blob("~", 18, 11, 4, 2, seed=3, wobble=0.35); m.blob("~", 30, 12, 2, 1, seed=4, wobble=0.3); m.blob("~", 16, 3, 1, 3, seed=5, wobble=0.3)
     # --- zone 5: the moat round Aria's keep
-    m.blob("~", 22, 21, 7, 5, seed=6, wobble=0.1); m.blob(".", 22, 21, 2, 2, seed=7, wobble=0.1); m.rect(".", 22, 15, 22, 19); m.rect(".", 22, 23, 22, 26)     # (the keep: a causeway north and south)
+    # (an irregular moat: a main pool, a wide eastern bay, a western inlet and a southern lobe)
+    m.blob("~", 22, 21, 6, 5, seed=6, wobble=0.3); m.blob("~", 27, 19, 3, 3, seed=21, wobble=0.4); m.blob("~", 17, 22, 3, 3, seed=22, wobble=0.4); m.blob("~", 24, 25, 3, 2, seed=23, wobble=0.4); m.blob("~", 20, 16, 2, 1, seed=24, wobble=0.3)
+    m.blob(".", 22, 21, 2, 2, seed=7, wobble=0.1); m.rect(".", 22, 15, 22, 19); m.rect(".", 22, 23, 22, 26)     # (the keep: a causeway north and south)
     # --- zone 1: Nell's wall: a square with a gatehouse on the west side and three seam gates
     m.pipe([(2, 9), (2, 5), (14, 5), (14, 15), (2, 15), (2, 12)]); m.put("Z", 8, 5).put("Z", 14, 10).put("Z", 8, 15)
     m.put("C", 2, 10).put("C", 2, 11)
@@ -52,8 +56,8 @@ def build():
     belt(m, "^", [(14, 15), (17, 17)], width=1, seed=50); belt(m, "^", [(28, 16), (30, 18)], width=1, seed=51); belt(m, "f", [(14, 24), (18, 26)], width=1, seed=52); belt(m, "f", [(26, 25), (30, 24)], width=1, seed=53)
     belt(m, "^", [(1, 19), (5, 18)], width=1, seed=54); belt(m, "f", [(6, 22), (10, 24)], width=1, seed=55); belt(m, "f", [(2, 25), (7, 26)], width=1, seed=57)
     belt(m, "^", [(16, 8), (17, 13)], width=1, seed=58); belt(m, "^", [(30, 6), (31, 13)], width=1, seed=59)
-    m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
-        "M25 The Last Accord (normal look, fog, 46 x 28 = 1288 cells, no time limit): Asuka + a free tag partner (Black Hole, HQ 1 (4,23), south-west) against one Orange Star army: Nell holds the walled citadel (HQ 2 (8,10)); each broken line is a TakeOver from a new held HQ (Q): Olaf (24,6) on an island in the riverland, "
+    m.header(armies=2, colours=(BH, OS), objective=[1], zones=[(2, 13, 14, 45, 27), (2, 16, 0, 45, 13)], comment=(
+        "M25 The Last Accord (normal look, no fog, 46 x 28 = 1288 cells, no time limit): Asuka + a free tag partner (Black Hole, HQ 1 (4,23), south-west) against one Orange Star army: Nell holds the walled citadel (HQ 2 (8,10)); each broken line is a TakeOver from a new held HQ (Q): Olaf (24,6) on an island in the riverland, "
         "Kanbei (39,6) in the fortress hills, Eagle (38,20) among the airfields and Aria (22,21) in the moated keep, whose HQ is the last. Com Tower (7,8), (28,14) and (33,21); missile silo (6,13); Black Crystals by Black Hole's HQ. "
         "Player: INF6 MECH3 TANK6 MDT3 ART4 ROCK2 RECON1 AA3 APC2 FTR3 BCO2; Nell: INF5 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1 AA1 FTR1."))
     m.put("1", 4, 23).put("2", *HQS["2"]).put("Q", *HQS["Q1"]).put("Q", *HQS["Q2"]).put("Q", *HQS["Q3"]).put("Q", *HQS["Q4"])

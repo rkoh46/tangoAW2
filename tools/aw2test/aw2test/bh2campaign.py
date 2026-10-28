@@ -22,7 +22,7 @@ TITLES = {1: "Black Insight", 2: "The Quartermaster's Crate", 3: "Iron Ledger", 
           11: "Cold Wire", 12: "Lot 42", 13: "Whiteout Harbour", 14: "Thirty Years of Iron",
           15: "Every Colour", 16: "The East Tower", 17: "Echo, Again", 18: "The Door Is Open", 19: "Skyfall", 20: "The Rail East",
           21: "The Second Folder", 22: "Von Bolt's Note", 23: "Where the Map Ends", 24: "The Gate of Colours", 25: "The Last Accord", 26: "Through the Door"}
-FOG = {1, 6, 10, 12, 13, 17, 20, 25}
+FOG = {1, 6, 10, 12, 13, 17, 20}
 FRONT2 = {4, 10, 20}
 # The COs a test player picks (none: a fixed army or pair), in the order the CO screens ask.
 PICKS = {3: [ASUKA], 4: [ASUKA], 6: [ASUKA], 8: [ASUKA], 10: [ASUKA], 12: [ASUKA], 14: [ASUKA, CRUMB], 15: [ASUKA, CRUMB], 16: [ASUKA], 20: [ASUKA, CRUMB], 22: [ASUKA], 24: [ASUKA, CRUMB], 25: [CRUMB], 26: [ASUKA, CRUMB]}      # (M10: front 1 is Asuka's; the pick is front 2's)
