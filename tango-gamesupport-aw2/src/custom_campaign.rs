@@ -1750,9 +1750,9 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
             .iter()
             .enumerate()
             .map(|(i, m)| {
-                // (a picture world map: the picture's own flag places, in order)
+                // (a picture world map: the picture's own flag places, in order; the BH2 Campaign's flags are its own, `world_picture::BH2_FLAGS`)
                 let flag = match cx.art.picture() {
-                    Some(p) if !p.slots.is_empty() => {
+                    Some(p) if !p.slots.is_empty() && def.source != crate::bh2_campaign::SOURCE => {
                         let s = p.slots[i % p.slots.len()];
                         (s.1, s.2)
                     }
