@@ -208,7 +208,7 @@ fn shown_move(core: &mut Core) {
 // --- Olaf's snow --------------------------------------------------------
 
 /// A power's weather (`sub_08035144(weather)`: Olaf's Blizzard and Winter
-/// Fury bring snow, Drake's Typhoon rain). Dual Strike's power snow lasts
+/// Fury bring snow, Drake's Typhoon rain, and so do Asuka's powers: rain until her next turn, like Drake's). Dual Strike's power snow lasts
 /// two days (`Weather_SetDays`: 2 for `WEATHER_POWER_SNOW`, 1 for any
 /// other), AW2's one: AW2 ends a weather when every army has ended a turn
 /// since it began (`sub_08035080`: each army's turn-end count, at
@@ -218,11 +218,8 @@ const POWER_WEATHER: u32 = 0x0803_5144;
 const POWER_SNOW: u32 = crate::ram_map::POWER_SNOW.0;
 fn power_weather(core: &mut Core) {
     if is_on(core) {
-        let weather = core.gba().cpu().gpr(0) as u8;
-        let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-        // Olaf's snow and Asuka's rain (Dark Intel and Event Horizon) last two rounds, Drake's one
-        let long = weather == SNOW || (weather == RAIN && crate::co_powers::activating(core, army).0 == crate::co_new::ASUKA);
-        core.raw_write_8(POWER_SNOW, -1, long as u8);
+        let snow = core.gba().cpu().gpr(0) as u8 == SNOW;
+        core.raw_write_8(POWER_SNOW, -1, snow as u8);
     }
 }
 

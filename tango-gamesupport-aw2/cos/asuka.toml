@@ -26,10 +26,10 @@ terrain_cut = 1
 
 [cop]
 name = "Dark Intel"
-text = "Rain falls for 2 turns. Sees into woods and reefs, and vision rises by 2. Enemy cover drops 2 stars; enemy ammo and fuel halve."
+text = "Rain falls until her next turn. Vision +2, sees into woods and reefs. Enemy cover -2 stars; ammo and fuel halve."
 mods = []
 halve_enemy_ammo_fuel = true
-rain_rounds = 2          # AW2's rain (fog of war) for two rounds, then the weather returns (crate::ds_weather::power_weather)
+rain_until_next_turn = true          # AW2's rain (fog of war) from the power until her next turn, then the weather returns
 vision = 2
 terrain_cut = 2
 quote = ["I have read your", "every move. Observe."]
@@ -39,7 +39,7 @@ name = "Event Horizon"
 text = "As Dark Intel, but enemy cover drops 3 stars and all enemy units suffer 1 HP of damage."
 mods = []
 halve_enemy_ammo_fuel = true
-rain_rounds = 2
+rain_until_next_turn = true
 vision = 2
 terrain_cut = 3
 hp_enemy = 1

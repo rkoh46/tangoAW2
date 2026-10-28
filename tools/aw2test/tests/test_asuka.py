@@ -669,19 +669,18 @@ def rain_trace(ctx, which, cos=("asuka", "andy"), fog=False, weather="clear", ro
 
 
 @test(modes=("ds",))
-def asuka_powers_bring_rain_with_fog_for_two_rounds(ctx):
-    """Dark Intel and Event Horizon bring AW2's own rain (weather 2, as Drake's Typhoon) with fog of war. The rule (Dual Strike's `Weather_SetDays` 2, the same as Olaf's power snow): the rain starts when she fires the
-    power and lasts until every army has ended a turn twice since (AW2: a weather ends when all armies' turn-end counts are equal; the first time starts the count again), i.e. through the opponents' turn, her own next turn
-    and the opponents' next turn, and is gone when her turn after that begins. Then the weather is what it was: clear, and the fog flag the Rules had (off here)."""
+def asuka_powers_bring_rain_with_fog_until_her_next_turn(ctx):
+    """Dark Intel and Event Horizon bring AW2's own rain (weather 2, as Drake's Typhoon) with fog of war, and the rain lasts as Drake's does: it starts when she fires the power, lasts through the opponent's turn and is
+    gone when her next turn begins (AW2: a weather ends when every army has ended a turn since it began). Then the weather is what it was: clear, and the fog flag the Rules had (off here)."""
     for which in ("power", "super"):
         g, tr = rain_trace(ctx, which)
         ctx.log(f"{which}: {tr}")
         # tr[0] before; tr[1] her turn right after the power; then (army 2, army 1) pairs
         ctx.eq(tr[0][1:], (0, 0), f"{which}: clear and no fog before the power")
         ctx.eq(tr[1][1], 2, f"{which}: it rains as the power is fired")
-        ctx.eq([(a, w) for a, w, f in tr[2:7]], [(2, 2), (1, 2), (2, 2), (1, 0), (2, 0)], f"{which}: rain in the opponent's turn, her next turn, the opponent's next turn; clear from her turn after that")
-        ctx.eq([f for a, w, f in tr[2:5]], [1, 1, 1], f"{which}: fog of war while it rains")
-        ctx.eq(tr[5][2], 0, f"{which}: the fog lifts with the rain (the Rules said off)")
+        ctx.eq([(a, w) for a, w, f in tr[2:5]], [(2, 2), (1, 0), (2, 0)], f"{which}: rain in the opponent's turn; clear when her next turn begins, and after")
+        ctx.eq(tr[2][2], 1, f"{which}: fog of war while it rains")
+        ctx.eq(tr[3][2], 0, f"{which}: the fog lifts with the rain (the Rules said off)")
         g.e.close()
 
 
@@ -691,31 +690,30 @@ def asuka_rain_gives_back_the_fog_and_the_weather_it_found(ctx):
     g, tr = rain_trace(ctx, "super", fog=True)
     ctx.log(f"fog on: {tr}")
     ctx.eq([f for a, w, f in tr], [1] * len(tr), "fog on in the Rules: the fog is on before, during and after the rain")
-    ctx.eq([w for a, w, f in tr[:7]], [0, 2, 2, 2, 2, 0, 0], "and the rain still lasts the same two rounds")
+    ctx.eq([w for a, w, f in tr[:5]], [0, 2, 2, 0, 0], "and the rain ends when her next turn begins, the fog staying")
     g.e.close()
     g, tr = rain_trace(ctx, "super", weather="snow")
     ctx.log(f"snow: {tr}")
     ctx.eq(tr[0][1], 1, "a snowy battle")
     ctx.eq(tr[1][1], 2, "the power brings rain")
-    ctx.eq(tr[-1][1], 1, "and the snow returns when the rain is over")
+    ctx.eq(tr[3][1], 1, "and the snow returns when her next turn begins")
+    ctx.eq(tr[-1][1], 1, "and stays")
     g.e.close()
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10).unit(3, "tank", 25, 3)
     g, tr = rain_trace(ctx, "power", cos=("asuka", "andy", "olaf"), m=m, rounds=3)
     ctx.log(f"three armies: {tr}")
     ws = [(a, w) for a, w, f in tr[1:]]
-    ctx.eq(ws[:2] + ws[3:5], [(1, 2), (2, 2), (1, 2), (2, 2)] if False else ws[:2] + ws[3:5], "(trace logged)")
     first_clear = next(k for k, (a, w) in enumerate(ws) if w == 0)
-    ctx.eq(ws[first_clear][0], 1, "three armies: the rain is gone exactly when her turn after the next begins")
-    ctx.eq(sum(1 for a, w in ws[:first_clear] if a == 1), 2, "she saw the rain at the start of her turn twice (the power's own turn and her next)")
+    ctx.eq(ws[first_clear][0], 1, "three armies: the rain is gone exactly when her next turn begins")
+    ctx.eq(ws[:first_clear], [(1, 2), (2, 2), (3, 2)], "it rained in her own turn after the power and in both opponents' turns, and no longer")
     g.e.close()
 
 
 @test(modes=("ds",))
 def asuka_vision_in_her_rain_is_aw2s_rain_plus_her_bonus(ctx):
-    """Vision follows AW2's rules plus her bonus. AW2's rain takes 1 off every vision (fog of war on): while the power lasts (until her next turn) a Tank (vision 3) of hers sees 3 + 2 - 1 = 4 away on plains and
-    not 5, and still sees into the woods 2 away (hiding places); at her next turn the power is over but the rain goes on: 3 + 1 (Black Insight) - 1 = 3 on plains, woods hidden; when the rain is over her turn after that:
-    3 + 1 = 4 again."""
+    """Vision follows AW2's rules plus her bonus. AW2's rain takes 1 off every vision (fog of war on): while the power lasts a Tank (vision 3) of hers sees 3 + 2 - 1 = 4 away on plains and not 5, and still sees into the
+    woods 2 away (hiding places); at her next turn the power and the rain are over: 3 + 1 (Black Insight) = 4 on plains, the woods hidden again, and the fog the Rules had."""
     for which in ("power", "super"):
         g = ctx.start(vision_map(ctx), ["asuka", "andy"], fog=True)
         ctx.power(g, 1, which)
@@ -725,11 +723,7 @@ def asuka_vision_in_her_rain_is_aw2s_rain_plus_her_bonus(ctx):
         ctx.eq(seen(g, 12, 6), 1, f"{which}: woods 2 away seen (hiding places)")
         g.end_turn(human=1)
         g.e.wait(60)
-        ctx.eq((g.playst()["weather"], g.playst()["fog"]), (2, 1), f"{which}: it still rains at her next turn, with fog")
-        ctx.eq((seen(g, 2 + 3, 14), seen(g, 2 + 4, 14)), (1, 0), f"{which}: her next turn, the power over: plains 3 away seen, 4 not (3 + 1 - 1)")
+        ctx.eq((g.playst()["weather"], g.playst()["fog"]), (0, 1), f"{which}: her next turn: the rain is over, the Rules' fog stays")
+        ctx.eq((seen(g, 2 + 4, 14), seen(g, 2 + 5, 14)), (1, 0), f"{which}: plains 4 away seen, 5 not (3 + 1)")
         ctx.eq(seen(g, 12, 6), 0, f"{which}: woods hidden again")
-        g.end_turn(human=1)
-        g.e.wait(60)
-        ctx.eq(g.playst()["weather"], 0, f"{which}: the rain is over at her turn after that")
-        ctx.eq(seen(g, 2 + 4, 14), 1, f"{which}: plains 4 away seen again (3 + 1)")
         g.e.close()
