@@ -59,7 +59,7 @@ def crumb_is_pickable_in_versus(ctx):
     lst = g.teams()["co_list"]
     names = [romlib.co_name(c) for c in lst]
     ctx.log(f"Teams list: {names}")
-    ctx.eq(len(lst), 35, "35 COs (AW2's 19, Dual Strike's nine, Clone Andy, Crumb, Asuka, the Emerald Sun four)")
+    ctx.eq(len(lst), 36, "36 COs (AW2's 19, Dual Strike's nine, Clone Andy, Crumb, Asuka, Aria, the Emerald Sun four)")
     ctx.eq(names.index("Asuka"), names.index("Hawke") + 1, "Asuka right after Hawke")
     ctx.check(CRUMB in lst, "Crumb on the Teams list")
     ctx.eq(names.index("Crumb"), names.index("Clone Andy") + 1, "Crumb right after Clone Andy")

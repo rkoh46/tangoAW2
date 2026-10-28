@@ -209,6 +209,9 @@ pub fn stat(co: u8, mode: u8, t: u8, field: usize) -> Option<i32> {
         v += crate::crumb::bonus(mode, t, field);
     } else if crate::es_co::is_es(co) {
         v += crate::es_co::bonus(co, mode, t, field);
+    } else if co == crate::co_new::ARIA {
+        // Her numbers are her own (crate::aria): no Dual Strike block.
+        v += crate::aria::bonus(mode, field);
     } else if co == crate::co_new::CLONE_ANDY {
         // His numbers are his own (crate::co_new::clone_andy_bonus), not Andy's block.
         v += crate::co_new::clone_andy_bonus(mode, field);
@@ -445,10 +448,19 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         row[0x15] = 4;
         row[0x16] = 5;
     }
+    if co == crate::co_new::ARIA {
+        // ... except Aria: Orange Star's own colours, style and HQ (her row's country, like Nell's).
+        row[0x15] = like[0x15];
+        row[0x16] = like[0x16];
+    }
     // The CPU's power settings: AW2's usual (a CO Power once the meter is
     // within 25% of it, 95% of the time), or none for a CO without one
     // (Von Bolt, as Sturm).
-    if r[0x1C] == 0 {
+    if co == crate::co_new::ARIA {
+        // (Aria has no CO Power: Sturm's settings, who has none either)
+        let sturm = &rows[crate::aria::NO_COP_LIKE as usize];
+        row[0x17..0x19].copy_from_slice(&sturm[0x17..0x19]);
+    } else if r[0x1C] == 0 {
         row[0x17..0x19].copy_from_slice(&like[0x17..0x19]);
     } else {
         row[0x17] = CPU_POWER_THRESHOLD;
@@ -468,7 +480,7 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     for mode in 0..3u8 {
         // Asuka's Black Insight: Sturm's movement, his row's three charts of each level as the pack has them (every terrain costs 1 for ground units, in every weather: the pack's
         // weather no longer slows anyone, `build`)
-        let charts = if co == crate::co_new::ASUKA {
+        let charts = if co == crate::co_new::ASUKA || co == crate::co_new::ARIA {
             let at = 0x38 + 0x44 * mode as usize + 0x18;
             rows[crate::asuka::MOVE_LIKE as usize][at..at + 12].to_vec()
         } else {
@@ -486,7 +498,7 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         // Upgrade, the row Dual Strike's record names for them)
         let power = if co == crate::co_new::CLONE_ANDY {
             u32::from_le_bytes(andy[at + 4..at + 8].try_into().unwrap())
-        } else if co == crate::co_new::CRUMB || crate::es_co::is_es(co) {
+        } else if co == crate::co_new::CRUMB || crate::es_co::is_es(co) || co == crate::co_new::ARIA {
             // (AW2's usual power procedure: the sparkle; the effect on the
             // units is the presentation row's, crate::crumb, crate::es_co)
             DEFAULT_POWER
@@ -513,8 +525,8 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         }
         row[at + 0x18..at + 0x24].copy_from_slice(&charts);
         row[at + 0x24..at + 0x44].copy_from_slice(&neutral_stats);
-        if co == crate::co_new::ASUKA {
-            // Black Insight's luck: Nell's day-to-day maximum roll in every level (her powers do not raise it further), no bad luck
+        if co == crate::co_new::ASUKA || co == crate::co_new::ARIA {
+            // Black Insight's (and Common Cause's) luck: Nell's day-to-day maximum roll in every level (her powers do not raise it further), no bad luck
             row[at + 0x0E..at + 0x10].copy_from_slice(&crate::asuka::LUCK.to_le_bytes());
             row[at + 0x10..at + 0x12].copy_from_slice(&0i16.to_le_bytes());
         }
@@ -533,6 +545,11 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     if let Some(i) = crate::es_co::info(co) {
         row[0x0C..0x10].copy_from_slice(&i.stars.0.to_le_bytes());
         row[0x10..0x14].copy_from_slice(&i.stars.1.to_le_bytes());
+    }
+    if co == crate::co_new::ARIA {
+        // No CO Power (0 stars, as Sturm's row), a Super Power of 7.
+        row[0x0C..0x10].copy_from_slice(&crate::aria::STARS.0.to_le_bytes());
+        row[0x10..0x14].copy_from_slice(&crate::aria::STARS.1.to_le_bytes());
     }
     if co == crate::co_new::ASUKA {
         row[0x0C..0x10].copy_from_slice(&crate::asuka::STARS.0.to_le_bytes());

@@ -89,6 +89,21 @@ def asuka_compatibility(a, b):
     return 95
 
 
+# Aria's pair (crate::sturm_pairs::DUOS, cos/tags.toml): Nell -> (compatibility, stars, Tag Power name); anyone else 95.
+ARIA_DUOS = {"nell": (115, 2, b"Sisters' Accord")}
+
+
+def aria_compatibility(a, b):
+    aria = romlib.co_id("aria")
+    if aria not in (a, b):
+        return None
+    o = b if a == aria else a
+    for name, v in ARIA_DUOS.items():
+        if romlib.co_id(name) == o:
+            return v[0]
+    return 95
+
+
 def compatibility(ds, a, b):
     """Dual Strike's compatibility of the pair (CO record +0x84 + partner's
     id); with Sturm, tangoAW2's own (STURM_PAIRS)."""
@@ -96,6 +111,9 @@ def compatibility(ds, a, b):
     if s is not None:
         return s
     s = asuka_compatibility(a, b)
+    if s is not None:
+        return s
+    s = aria_compatibility(a, b)
     if s is not None:
         return s
     if {a, b} == {VAULT_BREAKERS[0], VAULT_BREAKERS[1]}:

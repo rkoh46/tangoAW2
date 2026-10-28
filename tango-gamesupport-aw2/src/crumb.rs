@@ -241,7 +241,7 @@ fn has_own_quotes(core: &Core, army: u32) -> bool {
         return false;
     }
     let co = crate::co_roster::army_co(core, army).0;
-    co == CRUMB || crate::es_co::is_es(co) || co == crate::co_new::ASUKA
+    co == CRUMB || crate::es_co::is_es(co) || co == crate::co_new::ASUKA || co == crate::co_new::ARIA
 }
 
 fn abilities_on(core: &Core) -> bool {
@@ -414,6 +414,7 @@ fn power_paid(core: &mut Core) {
         return;
     }
     crate::es_co::power_paid(core);
+    crate::aria::power_paid(core);
     let mode = core.gba().cpu().gpr(1) as u8;
     core.raw_write_8(POWER_MODE, -1, mode);
 }

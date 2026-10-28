@@ -12,13 +12,14 @@ use std::sync::OnceLock;
 use crate::crumb_art::{body_files, decode, Px};
 use crate::ds_co_art::CoArt;
 
-/// The five with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`).
-const IDS: [(u8, &str); 5] = [
+/// The six with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`); Aria (93), an Orange Star CO in every list (`crate::aria`).
+const IDS: [(u8, &str); 6] = [
     (86, "klaus"),
     (87, "aurelia"),
     (88, "cassius"),
     (89, "livia"),
     (92, "asuka"),
+    (93, "aria"),
 ];
 
 macro_rules! pics {
@@ -51,26 +52,28 @@ struct Pics {
     crop: &'static str,
 }
 
-fn all() -> [Pics; 5] {
+fn all() -> [Pics; 6] {
     [
         pics!("klaus"),
         pics!("aurelia"),
         pics!("cassius"),
         pics!("livia"),
         pics!("asuka"),
+        pics!("aria"),
     ]
 }
 
 /// The data files of the five, in [`IDS`]' order.
-const DATA: [&str; 5] = [
+const DATA: [&str; 6] = [
     include_str!("../cos/klaus.toml"),
     include_str!("../cos/aurelia.toml"),
     include_str!("../cos/cassius.toml"),
     include_str!("../cos/livia.toml"),
     include_str!("../cos/asuka.toml"),
+    include_str!("../cos/aria.toml"),
 ];
 
-/// A CO's place among the five (0 Klaus .. 3 Livia, 4 Asuka).
+/// A CO's place among the five (0 Klaus .. 3 Livia, 4 Asuka, 5 Aria).
 pub fn index(co: u8) -> Option<usize> {
     IDS.iter().position(|i| i.0 == co)
 }
@@ -130,7 +133,7 @@ pub fn text(co: u8, which: u16) -> Option<Vec<u8>> {
         T_SCOP_NAME => s(v, &["scop", "name"])?,
         // the six power quotes: the CO Power's, the Super Power's and the Tag Power's, each twice
         w if (T_QUOTES..T_QUOTES + 6).contains(&w) => match (w - T_QUOTES) % 3 {
-            0 => quote(v, &["cop", "quote"])?,
+            0 => quote(v, &["cop", "quote"]).or_else(|| quote(v, &["scop", "quote"]))?, // (no CO Power: Aria says her Super Power's line in both slots)
             1 => quote(v, &["scop", "quote"])?,
             _ => quote(v, &["lines", "tag_in"])?,
         },

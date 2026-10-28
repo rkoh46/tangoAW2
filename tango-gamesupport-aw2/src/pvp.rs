@@ -613,6 +613,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 31: the Emerald Sun army choice is taken back when the map list is up (crate::army_skin::reset_choice: it used to stay after backing out of the Teams screen),
         // the capture box's palette row follows the army's colour (the skin's too) and a Versus second front keeps the first front's colours, teams and skin.
         // 32: Crumb's and Clone Andy's own themes are songs in the ROM image (crate::es_music), and Crumb's HQ is Black Hole's again (no hq style in cos/crumb.toml).
+        // 33: Aria (CO 93, crate::aria), an Orange Star CO in every Versus list with only a Super Power: the CO table, the Teams order, the texts and the pictures are 93 rows long, her Super Power heals 3 HP, adds +1 move and pays one day's income at once (the trap on PayForPower).
         crate::inspect::SIM_VERSION
     }
 

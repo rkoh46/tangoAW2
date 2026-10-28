@@ -20,8 +20,9 @@ import tomllib
 REPO = pathlib.Path(__file__).resolve().parents[3]
 COS_DIR = REPO / "tango-gamesupport-aw2" / "cos"
 
-IDS = {"andy": 1, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92}
+IDS = {"andy": 1, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "aria": 93}
 ES4 = ("klaus", "aurelia", "cassius", "livia")
+TOML_COS = ES4 + ("aria",)      # (Aria: an Orange Star CO with only a Super Power, cos/aria.toml)
 
 FOOT = {1, 2}
 VEHICLE = {3, 4, 5, 6, 7, 8, 9, 14}      # Md. Tank, Megatank, Tank, Recon, APC, Neotank, Piperunner, Anti-Air (docs/ES_CAMPAIGN.md 2.1; the Megatank and the Piperunner are vehicles: the user's answer)
@@ -36,8 +37,9 @@ CLASSES = {"all": ALL, "foot": FOOT, "vehicle": VEHICLE, "indirect": INDIRECT, "
 class Spec:
     """One CO's numbers: `mods[level]` is a list of {units, attack, defence, move, range, cost}; `luck[level]`; `heal[level]`; `income` percent; `tribute[level]` funds a property."""
 
-    def __init__(self, name, stars, d2d, cop, scop, luck=(10, 10, 10), heal=(0, 0, 0), income=0, tribute=(0, 0, 0), power_names=("", ""), source=""):
+    def __init__(self, name, stars, d2d, cop, scop, luck=(10, 10, 10), heal=(0, 0, 0), income=0, tribute=(0, 0, 0), power_names=("", ""), source="", income_grant=False):
         self.name, self.stars, self.luck, self.heal, self.income, self.tribute, self.source = name, stars, tuple(luck), tuple(heal), income, tuple(tribute), source
+        self.income_grant = income_grant      # the Super Power pays one day's income at once (Aria): the Funds rule x the properties that earn
         self.mods = (d2d, cop, scop)
         self.power_names = power_names
 
@@ -63,6 +65,15 @@ class Spec:
             v += 10
         return v
 
+    @property
+    def has_cop(self):
+        """A CO Power exists (a CO with only a Super Power, as Aria, has 0 stars for it)."""
+        return self.stars[0] > 0
+
+    def funds(self, mode, props, fpp=1000):
+        """Funds a power collects when used: `tribute` a property that earns, and for `income_grant` (Aria's Build Anew) one day's income at once: the Funds rule's value x the properties that earn."""
+        return self.tribute[mode] * props + (fpp * props if self.income_grant and mode == 2 else 0)
+
     def covers(self, t):
         return t not in AMBIGUOUS or not any(m["units"] == "vehicle" for lvl in self.mods for m in lvl)
 
@@ -83,7 +94,7 @@ def _from_toml(name):
     heal = (0, d.get("cop", {}).get("heal", 0), d.get("scop", {}).get("heal", 0))
     tribute = (0, d.get("cop", {}).get("tribute", 0), d.get("scop", {}).get("tribute", 0))
     return Spec(name, stars, mods("d2d"), mods("cop"), mods("scop"), luck=luck, heal=heal, income=d.get("d2d", {}).get("income", 0), tribute=tribute,
-                power_names=(d["cop"]["name"], d["scop"]["name"]), source=f"cos/{name}.toml")
+                power_names=(d.get("cop", {}).get("name", ""), d["scop"]["name"]), source=f"cos/{name}.toml", income_grant=bool(d.get("scop", {}).get("income_grant")))
 
 
 def crumb():
@@ -116,7 +127,7 @@ def get(name):
         return cloneandy()
     if name == "andy":
         return andy()
-    if name in ES4:
+    if name in TOML_COS:
         return _from_toml(name)
     if name == "crumb":
         return crumb()
@@ -126,7 +137,7 @@ def get(name):
 
 
 def all_specs():
-    return {n: get(n) for n in (*ES4, "crumb", "varro", "cloneandy")}
+    return {n: get(n) for n in (*TOML_COS, "crumb", "varro", "cloneandy")}
 
 
 # --- Tag Powers (cos/tags.toml) ---------------------------------------------------------------------------------------------------------------
@@ -140,12 +151,12 @@ def tags():
     return pairs
 
 
-AW2_IDS = {"andy": 1, "kanbei": 6, "colin": 16, "sturm": 10, "flak": 11, "lash": 12, "adder": 13, "hawke": 14}
+AW2_IDS = {"nell": 0, "andy": 1, "max": 2, "kanbei": 6, "colin": 16, "sturm": 10, "flak": 11, "lash": 12, "adder": 13, "hawke": 14}
 # Dual Strike COs tags.toml names by `ds:` (Asuka's pairs): their AW2 ids in the pack (crate::sturm_pairs::VON_BOLT).
 DS_IDS = {"vonbolt": 75}
 # Pairs with no entry in tags.toml: the file says "Every unlisted pair is 95" (its header and docs/ES_CAMPAIGN.md 2.3).
 UNLISTED_COMPAT = 95
-UNLISTED_PAIRS = [("klaus", "aw2:colin"), ("klaus", "aw2:andy"), ("aurelia", "aw2:kanbei"), ("cassius", "aw2:colin"), ("livia", "aw2:kanbei")]
+UNLISTED_PAIRS = [("klaus", "aw2:colin"), ("klaus", "aw2:andy"), ("aurelia", "aw2:kanbei"), ("cassius", "aw2:colin"), ("livia", "aw2:kanbei"), ("aria", "aw2:max")]
 
 
 def co_id(ref):

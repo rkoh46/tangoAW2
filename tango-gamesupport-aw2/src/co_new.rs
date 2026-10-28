@@ -107,6 +107,8 @@ pub const ES_COUNT: u8 = 5;
 /// Asuka: Sonja after she defects to Black Hole, tangoAW2's own (`crate::asuka`, `docs/dev/asuka.md`). Id 92, after the Emerald Sun five and their dialogue's
 /// legionary face (91). A Black Hole CO of **every** list of this build (not an Emerald Sun one: no flag, not in that campaign).
 pub const ASUKA: u8 = FIRST + 20;
+/// Aria: Nell's sister, Commander of the New Accord, an Orange Star CO of tangoAW2's own (`crate::aria`, `docs/dev/aria.md`). Id 93, in every list of this build; a CO with only a Super Power.
+pub const ARIA: u8 = FIRST + 21;
 
 /// The Dual Strike CO whose record fills the fields of Crumb's row nothing
 /// of his own is set for (Andy's neutral numbers, as Clone Andy's).
@@ -142,7 +144,7 @@ pub const CLONE_ANDY_COP: &[u8] = b"Restores two HP to all units. Firepower and 
 pub const CLONE_ANDY_SCOP: &[u8] = b"Restores four HP to all units. Firepower rises by 40% and defence by 30%.";
 
 pub fn is_new(co: u8) -> bool {
-    (FIRST..=CRUMB).contains(&co) || crate::es_co::is_es(co) || co == ASUKA
+    (FIRST..=CRUMB).contains(&co) || crate::es_co::is_es(co) || co == ASUKA || co == ARIA
 }
 
 /// A new CO's Dual Strike id (Crumb has none).
@@ -155,6 +157,7 @@ pub fn like(co: u8) -> u8 {
     match co {
         CRUMB => CRUMB_LIKE,
         ASUKA => crate::asuka::LIKE,
+        ARIA => crate::aria::LIKE,
         _ if crate::es_co::is_es(co) => crate::es_co::like(co),
         _ if is_new(co) => NEW[(co - FIRST) as usize].1,
         _ => co,
@@ -178,6 +181,7 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
                 .map(|&co| (co, CRUMB_BASE, crate::es_co::like(co))),
         )
         .chain([(ASUKA, crate::asuka::SONJA_DS, crate::asuka::LIKE)])
+        .chain([(ARIA, CRUMB_BASE, crate::aria::LIKE)])
 }
 
 /// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): the Emerald Sun five are not, until the campaign is approved
@@ -191,7 +195,7 @@ pub fn listed(co: u8) -> bool {
 /// A CO of tangoAW2's own, with no Dual Strike record behind its pictures
 /// and texts (Clone Andy's are Andy's but for his name, bio and pair).
 pub fn is_own(co: u8) -> bool {
-    co == CLONE_ANDY || co == CRUMB || crate::es_co::is_es(co) || co == ASUKA
+    co == CLONE_ANDY || co == CRUMB || crate::es_co::is_es(co) || co == ASUKA || co == ARIA
 }
 
 const BLACK_HOLE_STYLE: u8 = 4;
@@ -522,7 +526,7 @@ fn texts(co: u8, ds: u8, widths: &[u8]) -> Vec<(u16, Vec<u8>)> {
     let clone = co == CLONE_ANDY;
     let crumb = co == CRUMB;
     let es = crate::es_co::is_es(co);
-    let asuka = co == ASUKA;
+    let asuka = co == ASUKA || co == ARIA; // (their words are in the data files: `es_cos::text`)
     let name = if asuka {
         crate::es_cos::name(co).unwrap_or_default()
     } else if clone {
@@ -870,7 +874,7 @@ fn build(core: &Core) -> Option<Built> {
             } else if let Some((anim, pal)) = power_effect(core, ds, p as u32) {
                 pres[o] = anim;
                 pres[o + 1] = pal;
-                if crate::es_co::is_es(co) {
+                if crate::es_co::is_es(co) || co == ARIA {
                     put32(&mut pres, o + 8, crate::es_co::each_unit(co, p as u8));
                 }
             }
@@ -892,7 +896,9 @@ fn build(core: &Core) -> Option<Built> {
         }
         let ds_style = crate::ds_pack::pack()?.arm9_at(0x0215_360C + 0x220 * ds as u32 + 0x25, 1)?[0];
         // (Clone Andy and Crumb fight in Black Hole's style)
-        style[co as usize] = if is_own(co) {
+        style[co as usize] = if co == ARIA {
+            0 // Orange Star's battle style
+        } else if is_own(co) {
             BLACK_HOLE_STYLE
         } else {
             ds_style.min(BLACK_HOLE_STYLE)
@@ -1184,14 +1190,14 @@ mod tests {
         let g = war_room_groups(&aw2).unwrap();
         assert_eq!(g.len(), 5);
         let all_ids: Vec<u8> = g.iter().flat_map(|x| x.0.clone()).collect();
-        // 19 of AW2's, 12 of Dual Strike's and tangoAW2's own, Asuka, and the four Emerald Sun COs (Varro, the boss, is not listed).
-        assert_eq!(all_ids.len(), 19 + 12 + 4);
+        // 19 of AW2's, 13 of Dual Strike's and tangoAW2's own, Asuka, Aria, and the four Emerald Sun COs (Varro, the boss, is not listed).
+        assert_eq!(all_ids.len(), 19 + 13 + 4);
         let es = [crate::es_co::KLAUS, crate::es_co::AURELIA, crate::es_co::CASSIUS, crate::es_co::LIVIA];
-        for co in (0..19).chain(FIRST..=CRUMB).chain([ASUKA]).chain(es) {
+        for co in (0..19).chain(FIRST..=CRUMB).chain([ASUKA, ARIA]).chain(es) {
             assert_eq!(all_ids.iter().filter(|&&c| c == co).count(), 1, "CO {co}");
         }
         assert!(!all_ids.contains(&crate::es_co::VARRO), "Varro is not in Versus");
-        assert_eq!(g[0].0, vec![1, 2, 4, 0, 15, 79, 80]);
+        assert_eq!(g[0].0, vec![1, 2, 4, 0, ARIA, 15, 79, 80], "Aria after Nell, in Orange Star's group");
         let bh = &g[4].0;
         let at = |c: u8| bh.iter().position(|&x| x == c).unwrap();
         assert_eq!(at(CRUMB), at(CLONE_ANDY) + 1);

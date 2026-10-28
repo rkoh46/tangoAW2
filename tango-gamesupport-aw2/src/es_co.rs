@@ -313,6 +313,7 @@ pub fn each_unit(co: u8, power: u8) -> u32 {
     match (co, power) {
         (KLAUS, 1) => HEAL3 | 1,
         (VARRO, 1) => HEAL2,
+        (crate::co_new::ARIA, 1) => HEAL3 | 1,
         _ => NOTHING,
     }
 }

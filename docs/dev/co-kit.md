@@ -111,6 +111,10 @@ Klaus, Aurelia, Livia fit with room, Cassius fills all 48 columns. No plate need
 ## Asuka
 CO 92 (`crate::asuka`, docs/dev/asuka.md): the first CO of the kit that is in **every** Versus list (no playtest flag), a Black Hole CO whose numbers are Sonja's, whose powers add Hawke's HP swing and Drake's halving, and whose picture is the owner's illustration (imported by the illustration mode above). Her data file carries the optional keys `vision`, `hidden_hp`, `terrain_cut`, `strike_first`, `hp_own`, `hp_enemy` (checked by `co check`; the numbers themselves live in the game's tables).
 
+## Aria
+CO 93 (`crate::aria`, docs/dev/aria.md): an Orange Star CO in every Versus list with **only a Super Power** (`stars = { cop = 0, scop = 7 }`: the data file needs no `[cop]` mods and quote; the CO page says she has none) and a picture on a **baked-in checkerboard
+background**: the pixel-art mode's `checker`, `checker_seeds`, `grid_hint`, `erase`, `mug_erase`, `fringe_skip`, `bg_seeds`, `face_edge_protect` options (aria.md). Her data file carries `income_grant = true` (the Super Power pays one day's income at once).
+
 ## Limits
 The supplied pictures are one expression each: the happy, sad and angry slots show the neutral face (edited faces were rejected; real expression pictures from the owner are picked up as `art-src/cos/<id>_<expression>.*`). The importer expects a bust on a
 flat dark background; a different picture needs its own framing `.toml`: the scale, the mug's square, the eyes, the palette and the zones are decided by looking at the picture (`/tmp`-style overlays of the zones are easy to make: draw the polygons on the picture). The zone polygons are by eye, to a few source pixels. The portrait is palette scheme 0 repeated for the eight colour schemes the game offers (no recolour variants).

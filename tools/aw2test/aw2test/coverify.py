@@ -294,7 +294,7 @@ def economy(ctx, name, fpp=1000):
         set_unit(g, u["x"], u["y"], hp=45)
     for u in g.units(2):
         set_unit(g, u["x"], u["y"], hp=45)
-    for mode in (1, 2):
+    for mode in ((1, 2) if spec.has_cop else (2,)):
         label = tag(name, mode)
         before = {u["id"]: u for u in g.units()}
         f0 = funds(g)
@@ -302,8 +302,8 @@ def economy(ctx, name, fpp=1000):
         g.power(POWER[mode])
         after = {u["id"]: u for u in g.units()}
         got = funds(g) - f0
-        want = spec.tribute[mode] * props
-        chk(ctx, label, got == want, f"funds collected {got} (specification {spec.tribute[mode]} x {props} properties = {want})", "power funds")
+        want = spec.funds(mode, props, fpp)
+        chk(ctx, label, got == want, f"funds collected {got} (specification {spec.tribute[mode]} x {props} properties" + (f" + one day's income {fpp} x {props}" if spec.income_grant and mode == 2 else "") + f" = {want})", "power funds")
         ctx.expect_hp_change(before, after, {1: spec.heal[mode] * 10}, f"{label}: heal {spec.heal[mode]} HP", repair=True)
         mine_ok = all(after[i]["hp"] == before[i]["hp"] for i in before if before[i]["army"] == 2)
         chk(ctx, label, mine_ok, "the enemy's units are not healed", "heal")
@@ -350,12 +350,17 @@ def meter(ctx, name):
 
     for uses in (0, 1):
         pc, sc = power_star_cost(uses) * spec.stars[0], power_star_cost(uses) * spec.stars[1]
-        for charge, want in ((pc - 1, (False, False)), (pc, (True, False)), (sc - 1, (True, False)), (sc, (True, True))):
+        if spec.has_cop:
+            steps = ((pc - 1, (False, False)), (pc, (True, False)), (sc - 1, (True, False)), (sc, (True, True)))
+        else:
+            # no CO Power (Aria, as Sturm): the menu never offers "Power", whatever the meter; "Super" at exactly the Super Power's cost
+            steps = ((0, (False, False)), (sc // 2, (False, False)), (sc - 1, (False, False)), (sc, (False, True)))
+        for charge, want in steps:
             got = offered(charge)
-            lab = f"{name} {'cop' if charge < sc - 1 or charge == pc else 'scop'}"
+            lab = f"{name} {'cop' if spec.has_cop and (charge < sc - 1 or charge == pc) else 'scop'}"
             chk(ctx, lab, got == want, f"after {uses} power(s): meter {charge} of {pc} / {sc} -> Power {got[0]}, Super {got[1]} (want {want[0]}, {want[1]})", "meter threshold")
         if uses == 0:
-            ctx.power(g, 1, "power")
+            ctx.power(g, 1, "power" if spec.has_cop else "super")
             g.end_turn(human=1)
             g.e.w32(addr, 0)
     return g
@@ -488,7 +493,7 @@ def tag_pair(ctx, act, par):
         want_hp = _heal(45, s1.heal[2])
         chk(ctx, label, hp == want_hp, f"first half: {a_name}'s Super Power healed 45 -> {hp} (specification: {s1.heal[2]} HP -> {want_hp})", "heal")
         got = funds(g) - f0
-        chk(ctx, label, got == s1.tribute[2] * props, f"first half: funds collected {got} (specification {s1.tribute[2]} x {props})", "funds")
+        chk(ctx, label, got == s1.funds(2, props), f"first half: funds collected {got} (specification {s1.funds(2, props)}: {s1.tribute[2]} x {props} a property" + (", one day's income" if s1.income_grant else "") + ")", "funds")
     fight(ctx, label, f"first half {a_name}", g, (10, 10), (10, 10), (11, 10))
     special_hook(ctx, g, a_name, label, "first half", (10, 10), (6, 14), (9, 14), [(9, 13), (10, 14)])
     # the second half: Change, the partner's Super Power
@@ -507,7 +512,7 @@ def tag_pair(ctx, act, par):
         want_hp = _heal(45, s2.heal[2])
         chk(ctx, label, hp == want_hp, f"second half: {b_name}'s Super Power healed 45 -> {hp} (specification: {s2.heal[2]} HP -> {want_hp})", "heal")
         got = funds(g) - f1
-        chk(ctx, label, got == s2.tribute[2] * props, f"second half: funds collected {got} (specification {s2.tribute[2]} x {props})", "funds")
+        chk(ctx, label, got == s2.funds(2, props), f"second half: funds collected {got} (specification {s2.funds(2, props)}: {s2.tribute[2]} x {props} a property" + (", one day's income" if s2.income_grant else "") + ")", "funds")
     fight(ctx, label, f"second half {b_name}", g, (10, 12), (10, 12), (11, 12))
     special_hook(ctx, g, b_name, label, "second half", (10, 12), (6, 18), (9, 18), [(9, 17), (10, 18)])
     return g

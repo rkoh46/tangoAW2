@@ -363,6 +363,9 @@ pub fn compatibility(a: u8, b: u8) -> u8 {
         if let Some(c) = crate::sturm_pairs::asuka_compatibility(a, b) {
             return c;
         }
+        if let Some(c) = crate::sturm_pairs::aria_compatibility(a, b) {
+            return c;
+        }
     }
     let (Some(da), Some(db)) = (ds_id(a), ds_id(b)) else {
         return 100;

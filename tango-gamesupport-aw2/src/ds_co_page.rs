@@ -1282,7 +1282,7 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         scop = t(co_new::T_SCOP);
         cop_name = string(Some(t(co_new::T_COP_NAME)));
         scop_name = string(Some(t(co_new::T_SCOP_NAME)));
-    } else if co == co_new::ASUKA {
+    } else if co == co_new::ASUKA || co == co_new::ARIA {
         // (Asuka's own words, cos/asuka.toml: her numbers are Sonja's, her texts are not)
         let t = |w: u16| crate::es_cos::text(co, w).unwrap_or_default();
         bio = t(co_new::T_BIO);

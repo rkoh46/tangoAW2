@@ -11,7 +11,7 @@
   co balance [CO ...] [--vs Kanbei Hawke ...]   the CO's day-to-day, CO Power and Super Power averaged over a typical army, next to Dual Strike's own COs read from the .nds
   co verify sonja [--build-baseline]       Sonja's rows, pictures, texts, numbers, Tag page and screens against the v0.8.7 build: any difference fails
   co check [CO ...]                        the CO data files: fields, stars and numbers inside AW2's design space, name plates, tag pairs
-  co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Crumb, Varro, Clone Andy, Asuka) in real battles against the specification: day to day,
+  co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Crumb, Varro, Clone Andy, Asuka, Aria) in real battles against the specification: day to day,
                                            CO Power, Super Power (attack, defence, move, range, cost, income, funds, heal, the special rules), meters and star costs, Tag Powers, CPU use;
                                            prints the pass / fail table (docs/dev/co-verify.md); with `--net` also plays each power through `net repeat`
   co sheet hq                              the HQ of the Roman COs on the map: Versus, the tilted map (the real app), the missions (`hq_check.png`)
@@ -62,7 +62,7 @@ def register(sub):
     c.add_argument("co", nargs="*")
     c.set_defaults(fn=datacheck)
     v = ps.add_parser("verify", help="every ability of the custom COs in real battles against the specification (pass / fail table)")
-    v.add_argument("co", nargs="*", help="klaus aurelia cassius livia crumb varro cloneandy asuka (default: all); `verify sonja` compares Sonja with the v0.8.7 build instead")
+    v.add_argument("co", nargs="*", help="klaus aurelia cassius livia crumb varro cloneandy asuka aria (default: all); `verify sonja` compares Sonja with the v0.8.7 build instead")
     v.add_argument("--build-baseline", action="store_true", help="(verify sonja) build the reference (v0.8.7) examples into devkit/work/baseline first (once)")
     v.add_argument("--quick", action="store_true", help="one scenario per facet (the suite's smoke run)")
     v.add_argument("--list", action="store_true", help="only list the scenarios")
@@ -180,7 +180,7 @@ def psheet(a):
 def ppowers(a):
     from ..colib import powers_sheet as P
     if not a.no_run:
-        ok, tail = P.run_tests()
+        ok, tail = P.run_tests(a.co)
         if not ok:
             util.say("the picture tests failed:\n" + tail)
             return 1

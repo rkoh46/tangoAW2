@@ -174,6 +174,11 @@ pub fn asuka_compatibility(a: u8, b: u8) -> Option<u8> {
     (a == ASUKA || b == ASUKA).then_some(OTHER_COMPATIBILITY)
 }
 
+/// Aria's compatibility with a CO she has no named pair with: 95 (Dual Strike has no record for her), as Asuka's.
+pub fn aria_compatibility(a: u8, b: u8) -> Option<u8> {
+    (a == ARIA || b == ARIA).then_some(OTHER_COMPATIBILITY)
+}
+
 /// Sturm's special pair with the other CO, if they are one.
 pub fn special(a: u8, b: u8) -> Option<&'static Pair> {
     let o = other(a, b)?;
@@ -210,13 +215,15 @@ pub struct Duo {
     pub b_first: [(&'static str, &'static str); 2],
 }
 
+/// AW2's Nell (Orange Star's, id 0): Aria's sister.
+pub const NELL: u8 = 0;
 /// AW2's Sonja.
 pub const SONJA: u8 = 7;
 /// AW2's Von Bolt.
 pub const VON_BOLT: u8 = 75;
-use crate::co_new::ASUKA;
+use crate::co_new::{ARIA, ASUKA};
 
-pub const DUOS: [Duo; 14] = [
+pub const DUOS: [Duo; 15] = [
     Duo {
         a: VON_BOLT,
         b: SONJA,
@@ -289,6 +296,16 @@ pub const DUOS: [Duo; 14] = [
         name: "Quiet Knife",
         a_first: [("Sss... swift.", "Silent."), ("Too slow, fools.", "Logged.")],
         b_first: [("Their line fell.", "Sss. Neat."), ("As projected.", "Hssss.")],
+    },
+    // Aria's pair with her sister (AW2's Nell, id 0): Sisters' Accord (cos/tags.toml). Every other pair of hers is 95 (`aria_compatibility`).
+    Duo {
+        a: NELL,
+        b: ARIA,
+        compatibility: 115,
+        stars: 2,
+        name: "Sisters' Accord",
+        a_first: [("Together, sis!", "Always."), ("Orange Star forever!", "The Accord holds.")],
+        b_first: [("The Accord holds.", "Together, sis!"), ("Stand with me.", "Always, Aria.")],
     },
     // The Emerald Sun Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
     es_duo(
@@ -465,6 +482,8 @@ mod tests {
                 "aw2:kanbei" => KANBEI,
                 "aw2:colin" => COLIN,
                 "asuka" => ASUKA,
+                "aria" => ARIA,
+                "aw2:nell" => NELL,
                 "ds:vonbolt" => VON_BOLT,
                 "aw2:sturm" => STURM,
                 "aw2:flak" => 11,
@@ -498,7 +517,7 @@ mod tests {
             assert_eq!(compat as u32, field("compat").parse::<u32>().unwrap(), "{name}");
             assert_eq!(stars as u32, field("stars").parse::<u32>().unwrap(), "{name}");
             assert_eq!(name, field("name").trim_matches('"'));
-            if a != ASUKA && b != ASUKA {
+            if a != ASUKA && b != ASUKA && a != ARIA && b != ARIA {
                 n += 1;
             }
         }
@@ -533,5 +552,10 @@ mod tests {
         assert_eq!(asuka_compatibility(ASUKA, 1), Some(95));
         assert_eq!(asuka_compatibility(1, 2), None);
         assert_eq!(duo_partners(ASUKA).len(), 5);
+        // Aria: Sisters' Accord with Nell, 115, two stars; 95 with anyone else
+        let d = duo(NELL, ARIA).unwrap();
+        assert_eq!((d.name, d.compatibility, d.stars), ("Sisters' Accord", 115, 2));
+        assert_eq!(aria_compatibility(ARIA, 1), Some(95));
+        assert_eq!(duo_partners(ARIA).len(), 1);
     }
 }

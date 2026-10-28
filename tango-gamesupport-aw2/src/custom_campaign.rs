@@ -3033,6 +3033,9 @@ pub fn roster_index(model: &Model, co: u8) -> Option<usize> {
 /// A CO's country as the CO screen's tabs number them (0 Orange Star, 1
 /// Blue Moon, 2 Green Earth, 3 Yellow Comet, 4 Black Hole).
 pub fn country(co: u8) -> u8 {
+    if co == crate::co_new::ARIA {
+        return 0; // Orange Star's
+    }
     if crate::co_new::is_own(co) {
         return 4;
     }

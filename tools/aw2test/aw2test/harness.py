@@ -174,6 +174,10 @@ class Ctx:
         if asuka in pair:
             o = (pair - {asuka} or {asuka}).pop()
             return next((v[1] for name, v in tag.ASUKA_DUOS.items() if romlib.co_id(name) == o), 0)
+        aria = romlib.co_id("aria")
+        if aria in pair:
+            o = (pair - {aria} or {aria}).pop()
+            return next((v[1] for name, v in tag.ARIA_DUOS.items() if romlib.co_id(name) == o), 0)
         if romlib.co_id("cloneandy") in pair:
             return 0
         if not hasattr(self, "_ds"):

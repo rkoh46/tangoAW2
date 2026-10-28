@@ -51,6 +51,18 @@ def crumb_bonus(mode, unit_type, which):
     return v
 
 
+ARIA = 93
+
+
+def aria_bonus(mode, which):
+    """Aria's own numbers (crate::aria::bonus) on every unit: day to day +3% firepower and +10% defence, the Super Power (mode 2; she has no CO Power) +20% / +30% and +1 move on top, with the +10% firepower
+    every power adds."""
+    v = {0: 3 + (20 if mode == 2 else 0), 1: 10 + (30 if mode == 2 else 0), 2: 1 if mode == 2 else 0}.get(which, 0)
+    if which == 0 and mode > 0:
+        v += 10
+    return v
+
+
 CLONE_ANDY = 81
 
 
@@ -138,6 +150,9 @@ class Rules:
                 if co == 92 and which in (0, 1):
                     v += 5          # Asuka's day to day: +5% attack and defence (crate::asuka::DAY_BONUS)
                 return v
+        if self.chart is not None and co == ARIA:
+            # Aria (crate::aria): her own numbers, +3 / +10 day to day, +20 / +30 and +1 move in the Super Power (on top of the power's own +10), luck and movement as Asuka's
+            return aria_bonus(mode, which)
         return romlib.co_stat(self.image, co, mode, unit_type, which)
 
     def co_mode(self, co, mode):
@@ -153,6 +168,12 @@ class Rules:
         if KLAUS <= co <= VARRO and self.chart is not None:
             # (the Emerald Sun five: their own luck, no bad luck, Andy's counter, no skills)
             m["luck"], m["neg_luck"] = ES_LUCK[co][min(mode, 2)], 0
+            m["counter"] = self.chart.co_field(81, mode, 0x20)
+            m["abilities"] = 0
+            return m
+        if co == ARIA and self.chart is not None:
+            # (Aria: Nell's luck, no bad luck, Andy's counter, no skills: crate::aria)
+            m["luck"], m["neg_luck"] = 20, 0
             m["counter"] = self.chart.co_field(81, mode, 0x20)
             m["abilities"] = 0
             return m

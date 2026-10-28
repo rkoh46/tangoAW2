@@ -1,0 +1,45 @@
+# Aria, imported directly from aria_v1.jpg (the owner's pixel art, 838 x 2000, native cells of 7 px: 118 x 279). Coordinates are native cells of the picture as it is (flip = false: AW2's COs face right, and so does she).
+pixelart = true
+match = "lab"
+flip = false
+# The picture's "transparent" background is a checkerboard baked into the JPEG (light grey and white squares): the light, colourless pixels connected to the border become one flat white before the grid is found
+# (`checker`); `checker_seeds` floods the one pocket of it enclosed by her right arm and coat (picture pixels).
+checker = true
+checker_seeds = [[560, 700], [565, 650], [555, 740], [575, 690], [545, 720]]
+# The squares' edges are strong in the edge profile; the cell's own period is 7 px (the strongest FFT peak of the vertical profile is a different one).
+grid_hint = [7.0, 7.1]
+# Her cigarette's smoke wisps (faint grey noise above the cigarette) are not her: native cells x 16..25, y 36..52.
+erase = [[16, 36, 25, 52]]
+# the white edge cells the JPEG leaves between the coat and the background (light grey, colourless) go; her cigarette's white paper (x 16..33, y 53..58) is kept.
+fringe = "light"
+fringe_l = 40
+fringe_c = 20
+fringe_skip = [[16, 53, 33, 58]]
+# the pocket of the checkerboard between her right arm and coat is flooded from a native cell inside it.
+bg_seeds = [[80, 98]]
+outline_diagonal = true
+outline = [0, 0, 0]
+bg_tolerance = 40
+large_scale = 1
+frame = [-6, -2]
+mug_scale = 1
+mug = [33, 11]
+# her cigarette's ember falls into the mug's lower left corner: not part of the face (native cells x 26..38, y 50..59).
+mug_erase = [[26, 50, 38, 59]]
+eyes = [46, 34, 64, 41]
+# (her head is 54 cells wide, more than the 48-cell mug: the square keeps the face and cuts a little hair at both sides)
+# Colours her palette must keep an entry for (groups of native cells, the mean of each): the blue irises, the eye whites, the face's skin, the leg's shadowed skin, the beauty mark under her right eye, the coat's middle and dark orange (so its ramp keeps three shades with the light one; the gold buttons and star take the hair's gold).
+protect = [
+  [[60, 38], [62, 38], [61, 39], [62, 39], [48, 40], [49, 40], [50, 40], [49, 41]],
+  [[48, 38], [47, 40], [47, 41], [48, 41], [59, 37], [58, 38], [59, 38], [58, 39], [59, 39], [60, 39]],
+  [[57, 46], [54, 28], [56, 44]],
+  [[45, 152], [44, 152], [46, 152]],
+  [[74, 136], [74, 139], [75, 141], [75, 138], [74, 133], [73, 136], [75, 140]],
+  [[43, 135], [42, 130], [33, 97], [86, 136], [46, 138], [32, 132], [35, 101]],
+  [[63, 41], [63, 42]],
+]
+max_specks = 800
+# her cigarette's white paper, a knuckle's highlight and the shirt collar are light and colourless by nature, on the outer edge (pixels of the large art):
+edge_protect = [[33, 56], [26, 57], [27, 57], [28, 57], [29, 57], [30, 57], [31, 59], [30, 60], [60, 60]]
+# (the same in the face squares: the shirt collar at the mug's foot is white by nature)
+face_edge_protect = [[21, 47]]
