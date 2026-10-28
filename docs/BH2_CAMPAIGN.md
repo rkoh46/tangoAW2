@@ -40,7 +40,7 @@ BH1 ended with Andy's broadcast: **"ALL COLOURS EAST. THE FENCE IS DOWN. BUILD A
 
 **Black Hole:** Asuka is the **lead commander of the invasion** and the story's voice. As in BH1, you pick any Black Hole CO in most missions, and some missions force a CO where the story or a rivalry needs one (about 14 forced, 12 free). The other twelve all get story missions as her second front, her tag partner, or a solo detachment she commands by radio:
 - Sturm, Von Bolt, Hawke, Koal, Kindle, Jugger, Flak, Lash, Adder, Clone Andy and Crumb.
-- Sturm commands in the prologue and leaves through the door in M23. He is not playable in BH2's story missions; he is in Free Play afterwards.
+- Sturm commands in the prologue, fights beside Asuka in **M5 (forced Sturm + Asuka)** and leaves through the door in M23. He is in Free Play afterwards.
 
 **The Allies, all 18 present:** Andy, Max, Sami, Nell, Hachi, Jake, Rachel, Olaf, Grit, Colin, Sasha, Kanbei, Sensei, Grimm, Eagle, Drake, Jess and Javier.
 
@@ -56,7 +56,7 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | 2 | The Quartermaster's Crate | Black Hole's island, the depot | **Forced:** Asuka + Crumb (Tag) | Jess | Defend the depot convoy; the crate travels with you. |
 | 3 | Iron Ledger | Green Earth south | Free pick | Javier + Jess | **BF**: you seize an old Accord foundry. The ledger and its symbol are found. |
 | 4 | Talons | Green Earth sea and sky | Front 1: free pick. Front 2: **forced** Hawke | Front 1: Drake. Front 2: Eagle | **2F #1.** Hawke vs Eagle in a sky front. Your Lasers and minicannons hold the island. |
-| 5 | Evergreen in Exile | Green Earth's exile capital | Free pair | Eagle + Javier | Big map. Ends Act I. Allied war room afterwards. |
+| 5 | Evergreen in Exile | Green Earth's exile capital | **Forced:** Sturm + Asuka (Tag, "Perfect Intel") | Eagle + Javier | Big map. Ends Act I. Sturm comes to the front to watch his new commander work: his last battle before the door, and the one time you play him in BH2. Allied war room afterwards. |
 | **Act II** | **Comet Chain** | Yellow Comet's eastern islands | | | |
 | 6 | Paper Lanterns | Yellow Comet night islands | Free pick | Sensei | Rain and fog. Night intel raid on the B Copter fleet. |
 | 7 | Comet Highway | Yellow Comet's long island | **Forced:** Koal + Kindle (Tag) | Grimm + Sensei | A road race across a chain of bridges. |
