@@ -54,6 +54,7 @@ RULES = {
     "RN01": ("error", "a river, shoal, bridge or coast tile drawn in the game's picture in a way none of the games' drawings of that tile and 4-neighbour class is (`aw2dev maps render-check`)"),
     "AR01": ("error", "two armies of the map wear the same colour (each army is its own nation: Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole)"),
     "AR02": ("error", "an army has more than one HQ"),
+    "IV01": ("error", "BH2: an invention (Deathray, Black Cannon, minicannon, Laser, Black Crystal, Black Obelisk, Black Factory) that is not on Black Hole's side: inventions are Black Hole's alone"),
     "AR03": ("error", "a silo or an airport that no army's infantry can reach, or an airport whose footprint is wrong"),
     "PP03": ("warn", "a pipeline that is a stub: an end hanging in open terrain (a pipeline ends at the map edge, the sea, mountains or a building) or fewer than 6 cells"),
     "PP04": ("warn", "a pipe seam that changes nothing when broken: it neither joins two parts of the map nor shortens the way between the HQs by at least 6 cells"),
@@ -577,6 +578,32 @@ def inventions(G):
     return out
 
 
+def black_hole_inventions(G):
+    """IV01 (BH2 maps): every invention stands nearer to Black Hole's HQ than to any other army's (the owner's rule: the Allies never own one).
+    The anchors are the text rows' invention characters; the Deathray (D) must also be on the top edge rows (it fires down)."""
+    if G.m.source != "bh2" or not G.m.text:
+        return []
+    cols = list(G.m.meta.get("colours") or [])[: int(G.m.meta.get("armies") or 0)]
+    bh = [i + 1 for i, c in enumerate(cols) if c == 5]
+    hqs = [(x, y, G.T.owner(G.t[y][x])) for y in range(G.h) for x in range(G.w) if G.g[y][x] == "H" and G.T.owner(G.t[y][x])]
+    out = []
+    for y in range(G.h):
+        for x in range(G.w):
+            ch = G.m.text[y][x]
+            if ch not in "SNWELvnFDXO":
+                continue
+            if not bh:
+                out.append(Problem("IV01", x, y, "an invention on a map where Black Hole fields no army"))
+                continue
+            if hqs:
+                near = min(hqs, key=lambda h: (abs(h[0] - x) + abs(h[1] - y), h[2]))
+                if near[2] not in bh:
+                    out.append(Problem("IV01", x, y, f"invention {ch!r} is nearest army {near[2]}'s HQ, not Black Hole's"))
+            if ch == "D" and y > 3:
+                out.append(Problem("IV01", x, y, "a Deathray fires down: it belongs at the top edge of the map"))
+    return out
+
+
 def reachables(G):
     """AR03: a missile silo and an airport must be reachable on foot from some army's HQ (infantry capture the airport, a foot soldier on the silo launches it): a flood from the HQs over
     every cell a foot soldier can stand on (plain, wood, mountain, road, bridge, shoal, river ford, property, silo). Reported once per cell."""
@@ -774,6 +801,9 @@ def armies(G):
             if G.g[y][x] == "H" and G.T.owner(t):
                 hq.setdefault(G.T.owner(t), []).append((x, y))
     for o, cells in hq.items():
+        # (BH2: a `Q` in the text rows is a held second HQ, as BH1's M30 has: the main HQ's capture defeats nobody and a new CO leads from it; one per army)
+        if G.m.source == "bh2" and G.m.text:
+            cells = [c for c in cells if G.m.text[c[1]][c[0]] != "Q"]
         if len(cells) > 1:
             out.append(Problem("AR02", cells[1][0], cells[1][1], f"army {o} has {len(cells)} HQs at {cells}"))
     return out
@@ -788,7 +818,7 @@ def design_checks(G):
 KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, armies, reachables, pipelines, ports, design_checks]
+CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, design_checks]
 
 
 def lint(m, only=None):
