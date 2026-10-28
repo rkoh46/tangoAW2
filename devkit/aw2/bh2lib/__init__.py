@@ -17,6 +17,10 @@ MISSIONS = {
     8: ("bh2_08", "Black Lanterns"),
     9: ("bh2_09", "The Table"),
     10: ("bh2_10", "Two Tides"),
+    11: ("bh2_11", "Cold Wire"),
+    12: ("bh2_12", "Lot 42"),
+    13: ("bh2_13", "Whiteout Harbour"),
+    14: ("bh2_14", "Thirty Years of Iron"),
 }
 FRONT2 = {4: "bh2_04b", 10: "bh2_10b"}          # a two-front mission's second map
 
@@ -56,7 +60,7 @@ def check_flags():
     from ..worldmaplib import tool
     m, _ = tool.load("bh2")
     out = []
-    home = {1: 5, 2: 5, 26: 5, 3: 3, 4: 3, 5: 3, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4}
+    home = {1: 5, 2: 5, 26: 5, 3: 3, 4: 3, 5: 3, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4, 11: 2, 12: 2, 13: 2, 14: 2}
     seen = set()
     for mission, region, x, y in flags():
         seen.add(mission)

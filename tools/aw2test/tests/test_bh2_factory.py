@@ -1,4 +1,4 @@
-"""BH2 M3 Iron Ledger (development build, crate::bh2_campaign): Black Hole's Black Factory spawns and is smart, and Mount Ember erupts (`-k bh2_m3_`).
+"""BH2 M3 Iron Ledger and M14 Thirty Years of Iron (development build, crate::bh2_campaign): Black Hole's Black Factory spawns and is smart, and the volcano erupts (`-k bh2_m3_`, `-k bh2_m14_`).
 
 The mission is entered through its CO screen (Asuka), the test player (aw2test.bot) plays Black Hole's army for AW2TEST_BH2_DAYS days (default 8) with the factory's full decision log on
 (TANGOAW2_BH_LOG_ALL); every spawn is written to `factory_spawn_log.txt` (in the test's folder and, with AW2TEST_REVIEW_DIR, there) with the reason the field gives for it, and the test fails when
@@ -64,11 +64,10 @@ def verdict(s):
     return True, f"{u}: the best counter / traveller of the field ({s['why'].split(';')[0]})"
 
 
-@test(name="bh2_m3_factory_and_volcano", modes=("ds",))
-def bh2_m3_factory_and_volcano(ctx):
-    save = os.path.join(ctx.out, "m3.sav")
+def factory_and_volcano(ctx, n, title):
+    save = os.path.join(ctx.out, f"m{n}.sav")
     shutil.copy(paths.base_save(), save)
-    e, g, d = b2.enter(ctx, 3, env={"TANGOAW2_BH_LOG_ALL": "1"}, save=save)
+    e, g, d = b2.enter(ctx, n, env={"TANGOAW2_BH_LOG_ALL": "1"}, save=save)
     erupted = {}
 
     def log(msg):
@@ -80,9 +79,9 @@ def bh2_m3_factory_and_volcano(ctx):
             erupted[day] = [(e.u16(CELLS + 4 * k), e.u16(CELLS + 4 * k + 2)) for k in range(12) if e.u16(CELLS + 4 * k) != 0xFFFF][:12] if first != 0xFFFF else []
 
     r = d.play(max_days=DAYS, log=log)
-    ctx.log(f"M3 played: {r}")
+    ctx.log(f"M{n} played: {r}")
     spawns = [s for s in parse(e.decisions()) if s["army"] == 1]
-    out = ["Black Factory (M3 Iron Ledger): every spawn, with the field's reason", ""]
+    out = [f"Black Factory (M{n} {title}): every spawn, with the field's reason", ""]
     bad = []
     for s in spawns:
         ok, why = verdict(s)
@@ -92,18 +91,28 @@ def bh2_m3_factory_and_volcano(ctx):
             bad.append((s, why))
     types = [s["unit"] for s in spawns]
     out += ["", f"{len(spawns)} spawns, types: " + ", ".join(f"{t} x{types.count(t)}" for t in sorted(set(types)))]
-    out += ["", "Mount Ember's eruptions (the hazard cells written at each day's start): " + "; ".join(f"day {k}: {len(v)} cells" for k, v in sorted(erupted.items()))]
+    out += ["", f"M{n}'s volcano: eruptions (the hazard cells written at each day's start): " + "; ".join(f"day {k}: {len(v)} cells" for k, v in sorted(erupted.items()))]
     text = "\n".join(out)
     open(os.path.join(ctx.out, "factory_spawn_log.txt"), "w").write(text)
     rv = os.environ.get("AW2TEST_REVIEW_DIR")
     if rv:
         os.makedirs(rv, exist_ok=True)
-        shutil.copy(os.path.join(ctx.out, "factory_spawn_log.txt"), os.path.join(rv, "factory_spawn_log.txt"))
+        shutil.copy(os.path.join(ctx.out, "factory_spawn_log.txt"), os.path.join(rv, f"factory_spawn_log_m{n}.txt" if n != 3 else "factory_spawn_log.txt"))
     ctx.log(text)
     ctx.check(len(spawns) >= 3, f"the Black Factory spawns ({len(spawns)} spawns in {DAYS} days)")
     ctx.check(not bad, f"every pick has a reason the field gives: {[(s['day'], s['unit'], w) for s, w in bad]}")
     if len(spawns) >= 6:
         ctx.check(len(set(types)) >= 3, f"a varied mix ({sorted(set(types))})")
         ctx.check(max(types.count(t) for t in set(types)) <= 0.6 * len(types), "no type is more than 60% of the spawns")
-    ctx.check(all(erupted.get(k) for k in erupted if 4 <= k <= DAYS) and any(erupted.get(k) for k in erupted), f"Mount Ember erupts (cells by day: { {k: len(v) for k, v in erupted.items()} })")
+    ctx.check(all(erupted.get(k) for k in erupted if 4 <= k <= DAYS) and any(erupted.get(k) for k in erupted), f"the volcano erupts (cells by day: { {k: len(v) for k, v in erupted.items()} })")
     e.close()
+
+
+@test(name="bh2_m3_factory_and_volcano", modes=("ds",))
+def bh2_m3_factory_and_volcano(ctx):
+    factory_and_volcano(ctx, 3, "Iron Ledger")
+
+
+@test(name="bh2_m14_factory_and_volcano", modes=("ds",))
+def bh2_m14_factory_and_volcano(ctx):
+    factory_and_volcano(ctx, 14, "Thirty Years of Iron")

@@ -62,6 +62,17 @@ the ROM is read at run time for tile choices and the lint.
 The plan's M8 weather (clear) is rain, because M8 and M9 are both the normal look and a neighbour must differ in look or weather. Rain forces fog in the DS rules (`ds_weather::tick`): `aw2dev maps boot` clears `NEXT_WEATHER` before lifting fog for the fog-off picture. The second front of M10 is shown in the harness by the other-front view; its fog-off picture could not be taken (the fog stays), so the sheet shows front 2 fogged only.
 Act II pictures: `aw2dev bh2 pictures --act 2` (+ `worldmap_flags_act2.png`), `aw2dev bh2 sheets --act 2` (`act2_game_sheet.png`). Flags M6..M10 are inside Yellow Comet (`BH2_FLAGS`).
 
+## Act III
+| M | Map | Size | Armies | Features |
+|---|---|---|---|---|
+| 11 Cold Wire | bh2_11 | 42 x 30 | forced Jugger vs Grit; snow look, snow weather | two pipe walls (x 12 and x 29) with four seam gates and a crossbar, a zig-zag open way round their ends, frozen coasts, two Com Towers + silo; no sea fighting |
+| 12 Lot 42 | bh2_12 | 40 x 30 | forced Lash + a free partner (`PickPartner`) vs Sasha + Colin (one army); snow look, fog | lab island with Blue Moon's wall (pipe + seam gate), a **Black Obelisk** on the west headland, a pond-fed river with two bridges, ports in bays, reefs, a southern isle (Com Tower, silo) reached by Landers only |
+| 13 Whiteout Harbour | bh2_13 | 40 x 30 | forced Flak vs Olaf; snow look, snow weather + fog | a fjord with Olaf's three ports on the northern coast, Black Hole's island across a five-row channel with reefs, no land link (Landers and fleets), a pond-fed river with a bridge, Fighter airport |
+| 14 Thirty Years of Iron | bh2_14 | 46 x 28 | `PickPair` vs Olaf + Grit (one army); wasteland look | the foundry valley between two ridges and lava bays; the player's **Black Factory** by the HQ (`F14` table, smart spawner), Mount Cinder (volcano, ring road, eruptions from day 3), a pipe wall with a seam gate, the biggest enemy army and two airports |
+
+Looks: M11 snow + snow, M12 snow + fog, M13 snow + snow weather + fog (the engine's heaviest: its only snow weather is `Snow`; the fog makes the whiteout and tells M13 from M11), M14 wasteland. The Black Factory proof for M14 is `tools/aw2test/tests/test_bh2_factory.py` (`-k bh2_m14_`): it logs every spawn with the field's reason (`factory_spawn_log_m14.txt`) and reads the eruptions.
+Act III pictures: `aw2dev bh2 pictures --act 3`, `aw2dev bh2 sheets --act 3`. Flags M11..M14 are inside Blue Moon.
+
 (The sizes and counts in `aw2dev bh2 features` are the live numbers.)
 
 ## Designed, not generated (the quality pass)

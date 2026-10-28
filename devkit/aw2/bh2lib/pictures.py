@@ -9,7 +9,7 @@ from ..maplint.render import COL, UNIT_INITIAL, font
 from ..maplint.terrain import terrain, PROP_KIND
 from . import COLOUR, COLOUR_NAME, FRONT2, MISSIONS, flags, maps
 
-ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain")}           # act -> (first mission, last mission, title)
+ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain"), 3: (11, 14, "Iron North")}           # act -> (first mission, last mission, title)
 FRONT2_LABEL = {4: "front 2 (sky)", 10: "front 2 (Grimm's isles)"}
 
 CELL = 22
@@ -167,7 +167,7 @@ def draw(m, mission, title, fog=False, cell=CELL, subtitle=""):
     return img
 
 
-def write_all(out_dir, with_fog=(1, 6, 10)):
+def write_all(out_dir, with_fog=(1, 6, 10, 12, 13)):
     """m01.png .. (full map, fog OFF, labelled), the fog views listed in `with_fog`, one contact sheet an act (`act1_sheet.png`, `act2_sheet.png`). Returns the paths."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -248,7 +248,7 @@ def world_flags(out, act=None):
         lab = f"M{mission}"
         d.rectangle([cx + 28, cy - 38, cx + 28 + 17 * len(lab) + 6, cy - 14], fill=(20, 20, 30))
         d.text((cx + 32, cy - 36), lab, fill=(250, 235, 120), font=_title_font(20))
-    names = {3: ("Green Earth", (96, 150)), 5: ("Black Hole's island", (14, 236)), 4: ("Yellow Comet", (188, 150))}
+    names = {3: ("Green Earth", (96, 150)), 5: ("Black Hole's island", (14, 236)), 4: ("Yellow Comet", (188, 150)), 2: ("Blue Moon", (120, 40))}
     if act:
         for nid, (label, (nx, ny)) in names.items():
             if any(f[1] == nid for f in shown):

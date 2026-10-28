@@ -359,6 +359,103 @@ fn bh2_10() -> MissionDef {
     m
 }
 
+/// M11 Cold Wire: Jugger (forced) against Grit on Blue Moon's snowbound border; the pipe walls' seams are the short cuts. A straight battle.
+fn bh2_11() -> MissionDef {
+    let mut m = MissionDef::new("bh2_11", "Cold Wire");
+    m.objective = "Cut the Allied wire: break the walls' seams and take Grit's HQ.";
+    m.map = MapSrc::Built("bh2_11");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::JUGGER)).funds(10000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT)).funds(16000),
+    ];
+    m.units = deployment("bh2_11");
+    m.look = 1; // the Snow look
+    m.weather = Weather::Snow;
+    m.rank_days = 16;
+    m.flag = flag(11);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_10"]);
+    m
+}
+
+/// M12 Lot 42: Lash (forced) with a free tag partner against one Blue Moon army under Sasha + Colin, on the lab island; Black Hole's Black Obelisk (snow, fog).
+fn bh2_12() -> MissionDef {
+    let mut m = MissionDef::new("bh2_12", "Lot 42");
+    m.objective = "Take the lab island's HQ; the Obelisk stands with you.";
+    m.map = MapSrc::Built("bh2_12");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(co::LASH)).funds(10000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(co::SASHA, co::COLIN)).funds(20000),
+    ];
+    m.units = deployment("bh2_12");
+    m.look = 1;
+    m.fog = true;
+    m.rank_days = 18;
+    m.flag = flag(12);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_11"]);
+    m
+}
+
+/// M13 Whiteout Harbour: Flak (forced) against Olaf, a naval and ground mix in the heaviest snow (snow weather and fog).
+fn bh2_13() -> MissionDef {
+    let mut m = MissionDef::new("bh2_13", "Whiteout Harbour");
+    m.objective = "Land on Olaf's coast and take his HQ.";
+    m.map = MapSrc::Built("bh2_13");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::FLAK)).funds(10000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).funds(18000),
+    ];
+    m.units = deployment("bh2_13");
+    m.look = 1;
+    m.weather = Weather::Snow;
+    m.fog = true; // the whiteout: snow and fog together (M12 is fog alone, M11 snow alone)
+    m.rank_days = 18;
+    m.flag = flag(13);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_12"]);
+    m
+}
+
+/// Factory table of M14 (day, the three doors' slots; 0 none): heavier than M3's, with a Neotank slot and the Anti-Air slots for the days Blue Moon's Fighters come.
+const F14: [(u8, [u8; 3]); 14] = [
+    (2, [0, unit::TANK, 0]),
+    (3, [unit::INFANTRY, 0, unit::INFANTRY]),
+    (4, [0, unit::MD_TANK, 0]),
+    (5, [unit::TANK, 0, unit::TANK]),
+    (6, [0, unit::ARTILLERY, 0]),
+    (7, [unit::MECH, 0, unit::MECH]),
+    (8, [0, unit::MD_TANK, unit::ANTI_AIR]),
+    (9, [unit::TANK, 0, unit::TANK]),
+    (10, [unit::INFANTRY, unit::MD_TANK, unit::INFANTRY]),
+    (11, [0, unit::NEOTANK, 0]),
+    (12, [unit::MECH, 0, unit::ROCKETS]),
+    (13, [0, unit::MD_TANK, 0]),
+    (14, [unit::TANK, 0, unit::TANK]),
+    (16, [unit::INFANTRY, unit::NEOTANK, unit::ANTI_AIR]),
+];
+
+/// M14 Thirty Years of Iron: a free pair with Black Hole's Black Factory (the foundry) against one Blue Moon army under Olaf + Grit; Mount Cinder erupts (Wasteland look). Ends Act III.
+fn bh2_14() -> MissionDef {
+    let mut m = MissionDef::new("bh2_14", "Thirty Years of Iron");
+    m.objective = "Hold the foundry and take the Blue Moon HQ.";
+    m.map = MapSrc::Built("bh2_14");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(12000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(co::OLAF, co::GRIT)).funds(26000),
+    ];
+    m.units = deployment("bh2_14");
+    m.look = 3; // the Wasteland look
+    m.rank_days = 20;
+    m.factory = F14.to_vec();
+    // Mount Cinder: from day 3 it erupts every day on 3 of the cells of the ring road round it (5 HP, any army's units, never below 1).
+    m.volcano = Some(VolcanoDef::new(3, 1, 5, &ring(20, 10, 27, 17)).per_eruption(3));
+    m.flag = flag(14);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_13"]);
+    m
+}
+
 /// The campaign.
 pub fn def() -> CampaignDef {
     let mut missions = vec![
@@ -372,6 +469,10 @@ pub fn def() -> CampaignDef {
         bh2_08(),
         bh2_09(),
         bh2_10(),
+        bh2_11(),
+        bh2_12(),
+        bh2_13(),
+        bh2_14(),
     ];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
@@ -381,7 +482,7 @@ pub fn def() -> CampaignDef {
         prologue_song: None,
         credits: Vec::new(),
         missions,
-        final_mission: "bh2_10",
+        final_mission: "bh2_14",
         bonds: Vec::new(),
         extra_bonds: 0,
         secret_mission: "",
@@ -406,7 +507,7 @@ mod tests {
     #[test]
     fn act_one_has_five_missions_and_a_second_front_for_m4() {
         let d = def();
-        assert_eq!(d.missions.len(), 10);
+        assert_eq!(d.missions.len(), 14);
         assert!(d.missions[3].front2.as_ref().is_some_and(|f| f.sky));
         assert!(d.missions[4].held_hq.is_some());
     }
@@ -414,13 +515,23 @@ mod tests {
     #[test]
     fn act_two_has_five_missions_and_a_second_front_for_m10() {
         let d = def();
-        assert!(d.missions[5..].iter().map(|m| m.key).eq(["bh2_06", "bh2_07", "bh2_08", "bh2_09", "bh2_10"]));
+        assert!(d.missions[5..10].iter().map(|m| m.key).eq(["bh2_06", "bh2_07", "bh2_08", "bh2_09", "bh2_10"]));
         let f = d.missions[9].front2.as_ref().expect("M10's second front");
         assert!(!f.sky && matches!(f.map, MapSrc::Built("bh2_10b")));
         assert_eq!(d.missions[9].look, 3);
         // M9's scripted fight: the airlift at half strength, the surrender; M9 has no time limit
         assert_eq!(d.missions[8].triggers.len(), 2);
         assert_eq!(d.missions[8].day_limit, 0);
+    }
+
+    #[test]
+    fn act_three_has_four_missions_with_the_factory_in_m14() {
+        let d = def();
+        assert!(d.missions[10..].iter().map(|m| m.key).eq(["bh2_11", "bh2_12", "bh2_13", "bh2_14"]));
+        assert!(d.missions[13].factory.len() == 14 && d.missions[13].volcano.is_some());
+        assert_eq!(d.missions[13].look, 3);
+        assert!(d.missions[10..13].iter().all(|m| m.look == 1), "M11 to M13 are the snow look");
+        assert_eq!(d.final_mission, "bh2_14");
     }
 
     /// M9's half-strength number is half of Kanbei's start, and the airlift's cells are free of start units.
