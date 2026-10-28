@@ -9,8 +9,9 @@ from ..maplint.render import COL, UNIT_INITIAL, font
 from ..maplint.terrain import terrain, PROP_KIND
 from . import COLOUR, COLOUR_NAME, FRONT2, MISSIONS, flags, maps
 
-ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain"), 3: (11, 14, "Iron North")}           # act -> (first mission, last mission, title)
-FRONT2_LABEL = {4: "front 2 (sky)", 10: "front 2 (Grimm's isles)"}
+ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain"), 3: (11, 14, "Iron North"), 4: (15, 20, "The Accord Breaks")}           # act -> (first mission, last mission, title)
+ROMAN = {1: "I", 2: "II", 3: "III", 4: "IV"}
+FRONT2_LABEL = {4: "front 2 (sky)", 10: "front 2 (Grimm's isles)", 20: "front 2 (the rail yard)"}
 
 CELL = 22
 DASH = "—"
@@ -167,7 +168,7 @@ def draw(m, mission, title, fog=False, cell=CELL, subtitle=""):
     return img
 
 
-def write_all(out_dir, with_fog=(1, 6, 10, 12, 13)):
+def write_all(out_dir, with_fog=(1, 6, 10, 12, 13, 17, 20)):
     """m01.png .. (full map, fog OFF, labelled), the fog views listed in `with_fog`, one contact sheet an act (`act1_sheet.png`, `act2_sheet.png`). Returns the paths."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -219,7 +220,7 @@ def contact_sheet(thumbs, width=2200, act=1):
     sheet = Image.new("RGB", (width, hh), (12, 12, 16))
     d = ImageDraw.Draw(sheet)
     lo, hi, name = ACTS[act]
-    d.text((14, 10), f"BH2 Campaign {DASH} Act {'I' * act if act < 4 else act}: {name} (missions {lo} to {hi})", fill=(250, 235, 120), font=_title_font(30))
+    d.text((14, 10), f"BH2 Campaign {DASH} Act {ROMAN[act]}: {name} (missions {lo} to {hi})", fill=(250, 235, 120), font=_title_font(30))
     y = 56
     for r in rows:
         x = 6
@@ -248,7 +249,7 @@ def world_flags(out, act=None):
         lab = f"M{mission}"
         d.rectangle([cx + 28, cy - 38, cx + 28 + 17 * len(lab) + 6, cy - 14], fill=(20, 20, 30))
         d.text((cx + 32, cy - 36), lab, fill=(250, 235, 120), font=_title_font(20))
-    names = {3: ("Green Earth", (96, 150)), 5: ("Black Hole's island", (14, 236)), 4: ("Yellow Comet", (188, 150)), 2: ("Blue Moon", (120, 40))}
+    names = {3: ("Green Earth", (96, 150)), 5: ("Black Hole's island", (14, 236)), 4: ("Yellow Comet", (188, 150)), 2: ("Blue Moon", (120, 40)), 1: ("Orange Star", (30, 30))}
     if act:
         for nid, (label, (nx, ny)) in names.items():
             if any(f[1] == nid for f in shown):
@@ -263,7 +264,7 @@ def world_flags(out, act=None):
         base = base.crop(box)
     canvas = Image.new("RGB", (base.size[0], base.size[1] + 50), (22, 22, 28))
     canvas.paste(base, (0, 50))
-    title = f"BH2 world map {DASH} flags of M1 to M5 (M26 secret)" if not act else f"BH2 world map {DASH} flags of M{ACTS[act][0]} to M{ACTS[act][1]} (Act {'I' * act})"
+    title = f"BH2 world map {DASH} flags of M1 to M5 (M26 secret)" if not act else f"BH2 world map {DASH} flags of M{ACTS[act][0]} to M{ACTS[act][1]} (Act {ROMAN[act]})"
     ImageDraw.Draw(canvas).text((10, 10), title, fill=(250, 235, 120), font=_title_font(24))
     canvas.save(out)
     return out
@@ -312,7 +313,7 @@ def game_sheets(raw, out, scale=3, acts=None):
         W = sum(max(t.width for t in col) for col in zip(*[r + [Image.new("RGB", (1, 1))] * (cols - len(r)) for r in rows])) + 8 * (cols + 1)
         H = sum(max(t.height for t in r) + 8 for r in rows) + 60
         sheet = Image.new("RGB", (W, H), (12, 12, 16))
-        ImageDraw.Draw(sheet).text((10, 8), f"BH2 Campaign {DASH} Act {'I' * act}: {ACTS[act][2]} (the game's own pictures)", fill=(250, 235, 120), font=_title_font(30))
+        ImageDraw.Draw(sheet).text((10, 8), f"BH2 Campaign {DASH} Act {ROMAN[act]}: {ACTS[act][2]} (the game's own pictures)", fill=(250, 235, 120), font=_title_font(30))
         y = 52
         for r in rows:
             x = 8

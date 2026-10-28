@@ -73,6 +73,19 @@ Act II pictures: `aw2dev bh2 pictures --act 2` (+ `worldmap_flags_act2.png`), `a
 Looks: M11 snow + snow, M12 snow + fog, M13 snow + snow weather + fog (the engine's heaviest: its only snow weather is `Snow`; the fog makes the whiteout and tells M13 from M11), M14 wasteland. The Black Factory proof for M14 is `tools/aw2test/tests/test_bh2_factory.py` (`-k bh2_m14_`): it logs every spawn with the field's reason (`factory_spawn_log_m14.txt`) and reads the eruptions.
 Act III pictures: `aw2dev bh2 pictures --act 3`, `aw2dev bh2 sheets --act 3`. Flags M11..M14 are inside Blue Moon.
 
+## Act IV
+| M | Map | Size | Armies | Features |
+|---|---|---|---|---|
+| 15 Every Colour | bh2_15 | 46 x 26 | free pair vs Max + Sami (one Orange Star army); normal, clear | border plains, two rivers (one from a hill pond, one from the north coast) with three bridges each and three highways, 2 Com Towers + silo, ports and reefs |
+| 16 The East Tower | bh2_16 | 42 x 30 | free pick vs Andy + Rachel; normal, rain | castle on a sea bluff: a U of pipe wall ending in the sea with 3 seam gates, the East Tower (a Com Tower), a harbour bay (the Landers' flank), a pond-fed river with 3 bridges; no scripted escape |
+| 17 Echo, Again | bh2_17 | 42 x 30 | forced Clone Andy vs Andy; wasteland, fog | drawn as a near mirror (west half copied east by `mirror_x`), then made different on purpose: the clone's half is a ruin (collapsed lab wall with a seam gate, rubble), Andy's has a lava bay and more woods; a river from lava to lava with bridges at rows 7, 14, 21 |
+| 18 The Door Is Open | bh2_18 | 40 x 28 | forced Asuka + Crumb vs Hachi + Jake; normal, clear | Black Hole's depot under attack; scripted: Crumb (the named APC `crumb`, starting at the quay) reaches the crate tile `mark_crate` (8,12), then 4 Neotanks appear on the `mark_neo*` cells (Rust `M18_CRATE`, `M18_NEO`); Crumb lost is the mission lost |
+| 19 Skyfall | bh2_19 | 44 x 26 | forced Adder vs Rachel + Jake; desert, clear | the air war: Adder's wing from 2 airports against Allied airports, an Anti-Air and Missile belt and Fighters; wadi with 3 bridges, ports, Com Tower, silo |
+| 20 The Rail East | bh2_20 + bh2_20b | 44 x 24 and 34 x 24 | front 1 free pick vs Andy (normal, fog), front 2 free pick vs Hachi (sandstorm) | the rail trunk through station towns across a river; front 2 is the rail yard split by a pipe embankment with two seam gates |
+
+M18's flag is on Black Hole's own island (the depot); M15..M17, M19, M20 are inside Orange Star. Looks: M15 normal, M16 rain, M17 wasteland + fog, M18 normal, M19 desert, M20 normal + fog (M18 and M20 would otherwise be the same look two missions apart).
+Lessons: a pipe wall that ends at the sea must not have a shoal at its end (a foot soldier walks round the wall's tip over the beach: reset that cell to sea); a mirror (`mirror_x`) leaves buildings on the river's way (clear them before drawing it); a road that meets a base beside a three-way knot draws a tile the games lack (TJ01 `0x0C1 above 0x0E1`: break the knot).
+
 (The sizes and counts in `aw2dev bh2 features` are the live numbers.)
 
 ## Designed, not generated (the quality pass)

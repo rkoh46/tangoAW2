@@ -456,6 +456,139 @@ fn bh2_14() -> MissionDef {
     m
 }
 
+/// M15 Every Colour: a free pair against one Orange Star army under Max + Sami on the border plains (normal look, clear).
+fn bh2_15() -> MissionDef {
+    let mut m = MissionDef::new("bh2_15", "Every Colour");
+    m.objective = "Cross both rivers and take the Orange Star HQ.";
+    m.map = MapSrc::Built("bh2_15");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(12000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::MAX, co::SAMI)).funds(20000),
+    ];
+    m.units = deployment("bh2_15");
+    m.rank_days = 16;
+    m.flag = flag(15);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_14"]);
+    m
+}
+
+/// M16 The East Tower: a free pick against Andy + Rachel, a castle assault in the rain; no scripted escape.
+fn bh2_16() -> MissionDef {
+    let mut m = MissionDef::new("bh2_16", "The East Tower");
+    m.objective = "Break the castle wall's gates and take the keep's HQ.";
+    m.map = MapSrc::Built("bh2_16");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::ANDY, co::RACHEL)).funds(20000),
+    ];
+    m.units = deployment("bh2_16");
+    m.weather = Weather::Rain;
+    m.rank_days = 18;
+    m.flag = flag(16);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_15"]);
+    m
+}
+
+/// M17 Echo, Again: Clone Andy (forced) against Andy among the Lab 7 ruins (Wasteland look, fog).
+fn bh2_17() -> MissionDef {
+    let mut m = MissionDef::new("bh2_17", "Echo, Again");
+    m.objective = "Cross the river and defeat Andy.";
+    m.map = MapSrc::Built("bh2_17");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::CLONE_ANDY)).funds(10000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).funds(10000),
+    ];
+    m.units = deployment("bh2_17");
+    m.look = 3;
+    m.fog = true;
+    m.rank_days = 16;
+    m.flag = flag(17);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_16"]);
+    m
+}
+
+/// M18's crate tile (the yard, `mark_crate`) and the reserve's Neotanks (`mark_neo*`).
+const M18_CRATE: (u8, u8) = (8, 12);
+const M18_NEO: [(u8, u8); 4] = [(7, 9), (9, 10), (7, 15), (9, 14)];
+
+/// M18 The Door Is Open: Asuka + Crumb defend the depot; when Crumb (the named APC) reaches the crate tile the reserve's Neotanks appear; Crumb lost is the mission lost.
+fn bh2_18() -> MissionDef {
+    let mut m = MissionDef::new("bh2_18", "The Door Is Open");
+    m.objective = "Defend the depot until Crumb reaches the crate.";
+    m.map = MapSrc::Built("bh2_18");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(crate::co_new::ASUKA, co::CRUMB)).funds(10000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::HACHI, co::JAKE)).funds(18000),
+    ];
+    m.units = deployment("bh2_18");
+    m.rank_days = 16;
+    m.triggers = vec![
+        after(
+            Cond::UnitAt {
+                name: "crumb",
+                x: M18_CRATE.0,
+                y: M18_CRATE.1,
+            },
+            vec![Action::Spawn(wave(1, unit::NEOTANK, &M18_NEO))],
+        ),
+        after(Cond::UnitGone("crumb"), vec![Action::Lose]),
+    ];
+    m.flag = flag(18);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_17"]);
+    m
+}
+
+/// M19 Skyfall: Adder (forced) against Rachel + Jake on the desert coast; the air war against the Allies' Anti-Air belt (desert look, clear).
+fn bh2_19() -> MissionDef {
+    let mut m = MissionDef::new("bh2_19", "Skyfall");
+    m.objective = "Win the air war and take the Allied HQ.";
+    m.map = MapSrc::Built("bh2_19");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::ADDER)).funds(14000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::RACHEL, co::JAKE)).funds(20000),
+    ];
+    m.units = deployment("bh2_19");
+    m.look = 2; // the Desert look
+    m.rank_days = 18;
+    m.flag = flag(19);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_18"]);
+    m
+}
+
+/// M20 The Rail East: two fronts. Front 1, a free pick against Andy on the rail corridor (fog); front 2, a free pick against Hachi in the rail yard in a sandstorm. Ends Act IV.
+fn bh2_20() -> MissionDef {
+    let mut m = MissionDef::new("bh2_20", "The Rail East");
+    m.objective = "Take Andy's terminus; the second front takes Hachi's yard.";
+    m.map = MapSrc::Built("bh2_20");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).funds(18000),
+    ];
+    m.units = deployment("bh2_20");
+    m.fog = true; // (M18 and M20 are both the normal look and clear: fog tells them apart)
+    m.rank_days = 18;
+    m.front2 = Some(FrontDef {
+        map: MapSrc::Built("bh2_20b"),
+        props: Vec::new(),
+        structures: Vec::new(),
+        units: crate::bh_ai::built_units("bh2_20b"),
+        cos: [CoSpec::Pick, CoSpec::Fixed(co::HACHI), CoSpec::None, CoSpec::None],
+        send: SendRule::Ground,
+        sky: false,
+        weather: Weather::Sandstorm,
+        fog: true,
+    });
+    m.flag = flag(20);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_19"]);
+    m
+}
+
 /// The campaign.
 pub fn def() -> CampaignDef {
     let mut missions = vec![
@@ -473,6 +606,12 @@ pub fn def() -> CampaignDef {
         bh2_12(),
         bh2_13(),
         bh2_14(),
+        bh2_15(),
+        bh2_16(),
+        bh2_17(),
+        bh2_18(),
+        bh2_19(),
+        bh2_20(),
     ];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
@@ -482,7 +621,7 @@ pub fn def() -> CampaignDef {
         prologue_song: None,
         credits: Vec::new(),
         missions,
-        final_mission: "bh2_14",
+        final_mission: "bh2_20",
         bonds: Vec::new(),
         extra_bonds: 0,
         secret_mission: "",
@@ -507,7 +646,7 @@ mod tests {
     #[test]
     fn act_one_has_five_missions_and_a_second_front_for_m4() {
         let d = def();
-        assert_eq!(d.missions.len(), 14);
+        assert_eq!(d.missions.len(), 20);
         assert!(d.missions[3].front2.as_ref().is_some_and(|f| f.sky));
         assert!(d.missions[4].held_hq.is_some());
     }
@@ -527,11 +666,34 @@ mod tests {
     #[test]
     fn act_three_has_four_missions_with_the_factory_in_m14() {
         let d = def();
-        assert!(d.missions[10..].iter().map(|m| m.key).eq(["bh2_11", "bh2_12", "bh2_13", "bh2_14"]));
+        assert!(d.missions[10..14].iter().map(|m| m.key).eq(["bh2_11", "bh2_12", "bh2_13", "bh2_14"]));
         assert!(d.missions[13].factory.len() == 14 && d.missions[13].volcano.is_some());
         assert_eq!(d.missions[13].look, 3);
         assert!(d.missions[10..13].iter().all(|m| m.look == 1), "M11 to M13 are the snow look");
-        assert_eq!(d.final_mission, "bh2_14");
+        assert_eq!(d.final_mission, "bh2_20");
+    }
+
+    #[test]
+    fn act_four_has_six_missions_a_scripted_depot_and_a_second_front_for_m20() {
+        let d = def();
+        assert!(d.missions[14..].iter().map(|m| m.key).eq(["bh2_15", "bh2_16", "bh2_17", "bh2_18", "bh2_19", "bh2_20"]));
+        assert_eq!(d.missions[16].look, 3);
+        assert_eq!(d.missions[18].look, 2);
+        let f = d.missions[19].front2.as_ref().expect("M20's second front");
+        assert!(!f.sky && matches!(f.weather, Weather::Sandstorm) && matches!(f.map, MapSrc::Built("bh2_20b")));
+        assert_eq!(d.missions[17].triggers.len(), 2);
+    }
+
+    /// M18: the crate tile and the Neotank cells are the map's `mark_` notes' cells, free of start units, on ground; Crumb is the named APC of Black Hole.
+    #[test]
+    fn m18_crate_and_reserve_cells_are_free_and_crumb_is_named() {
+        let m = built_map("bh2_18").expect("bh2_18");
+        for &(x, y) in std::iter::once(&M18_CRATE).chain(M18_NEO.iter()) {
+            assert!(!m.units.iter().any(|u| (u.x, u.y) == (x, y)), "a unit starts on ({x}, {y})");
+        }
+        let c = m.units.iter().find(|u| u.name == "crumb").expect("crumb");
+        assert_eq!((c.army, c.kind), (1, 7), "Crumb is Black Hole's APC");
+        assert!(c.x > M18_CRATE.0 + 10, "Crumb starts by the quay, far from the crate");
     }
 
     /// M9's half-strength number is half of Kanbei's start, and the airlift's cells are free of start units.

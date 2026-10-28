@@ -33,7 +33,7 @@ def pictures(a):
     out = a.out or cfg.work("bh2", "maps")
     paths = pics.write_all(out)
     paths.append(pics.world_flags(f"{out}/worldmap_flags.png"))
-    for act in ([a.act] if a.act else [2, 3]):
+    for act in ([a.act] if a.act else [2, 3, 4]):
         paths.append(pics.world_flags(f"{out}/worldmap_flags_act{act}.png", act=act))
     for p in paths:
         util.say(f"picture: {p}")

@@ -37,6 +37,12 @@ pub const BH2_FLAGS: &[(u8, u8, i16, i16)] = &[
     (12, 2, 198, 46),
     (13, 2, 112, 76),
     (14, 2, 168, 22),
+    (15, 1, 100, 44),
+    (16, 1, 106, 56),
+    (17, 1, 60, 48),
+    (18, 5, 28, 198),
+    (19, 1, 60, 80),
+    (20, 1, 90, 72),
     (26, 5, 30, 222),
 ];
 
@@ -227,9 +233,9 @@ mod tests {
             assert_eq!(m.region_at(x as i32, y as i32), region, "M{mission}'s flag at ({x}, {y}) is not inside {}", REGION_NAMES[region as usize]);
             assert!(region != 0, "M{mission}'s flag is on the sea");
         }
-        // the owner's plan: M1, M2 and M26 on Black Hole's island, M3 to M5 in Green Earth, M6 to M10 in Yellow Comet, M11 to M14 in Blue Moon
+        // the owner's plan: M1, M2 and M26 on Black Hole's island, M3 to M5 in Green Earth, M6 to M10 in Yellow Comet, M11 to M14 in Blue Moon, M15 to M20 in Orange Star (M18 on Black Hole's own island)
         for &(mission, region, ..) in BH2_FLAGS {
-            let want = if matches!(mission, 1 | 2 | 26) { BLACK_HOLE_REGION } else if mission >= 11 { 2 } else if mission >= 6 { 4 } else { 3 };
+            let want = if matches!(mission, 1 | 2 | 18 | 26) { BLACK_HOLE_REGION } else if mission >= 15 { 1 } else if mission >= 11 { 2 } else if mission >= 6 { 4 } else { 3 };
             assert_eq!(region, want, "M{mission}");
         }
     }
