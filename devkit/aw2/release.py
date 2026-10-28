@@ -135,7 +135,7 @@ def release(args):
     push_branches = " ".join(f"HEAD:{b}" for b in R("push_branches"))
     steps = [
         ("bump", f"set version = \"{version}\" in tango/Cargo.toml and the tango entry of Cargo.lock; commit 'Version {version}'", lambda: bump(version)),
-        ("build", "cargo build --profile release-dist --bin tango", lambda: buildmod.build(_A(release=True))),
+        ("build", "cargo build --profile release-dist --bin tango, plus the harness examples (the version bump makes them stale for the tests)", lambda: buildmod.build(_A(release=True, examples=True))),
         ("tests", "cargo test --lib: tango-gamesupport-aw2, tango-session, tango-match", lambda: _chk(buildmod.test(_A(package=None)), "tests")),
         ("install-mac", f"copy release-dist into {cfg.path('paths', 'app')}, plutil version {version}, ad-hoc codesign (a running app is left open)", lambda: _chk(install.install(_A()), "install-mac")),
         ("ipa", f"DEVELOPER_DIR={dd} ./ios/build.sh -> dist/{ipa}, copied to {cfg.path('paths', 'downloads')}", lambda: _ipa(ipa)),
