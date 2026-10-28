@@ -17,11 +17,12 @@ P_UNLOCKED = dc.PROGRESS + 0x0D
 ENV = {"TANGOAW2_BH2_CAMPAIGN": "1"}
 
 ASUKA, CRUMB, HAWKE, STURM = 92, 82, 14, 10          # AW2 CO ids (crate::co_new, the BH roster)
-TITLES = {1: "Black Insight", 2: "The Quartermaster's Crate", 3: "Iron Ledger", 4: "Talons", 5: "Evergreen in Exile"}
-FOG = {1}
-FRONT2 = {4}
+TITLES = {1: "Black Insight", 2: "The Quartermaster's Crate", 3: "Iron Ledger", 4: "Talons", 5: "Evergreen in Exile",
+          6: "Paper Lanterns", 7: "Comet Highway", 8: "Black Lanterns", 9: "The Table", 10: "Two Tides"}
+FOG = {1, 6, 10}
+FRONT2 = {4, 10}
 # The COs a test player picks (none: a fixed army or pair), in the order the CO screens ask.
-PICKS = {3: [ASUKA], 4: [ASUKA]}
+PICKS = {3: [ASUKA], 4: [ASUKA], 6: [ASUKA], 8: [ASUKA], 10: [ASUKA]}      # (M10: front 1 is Asuka's; the pick is front 2's)
 ROSTER_BITS = 0xFFF               # every officer is open in the development build
 
 

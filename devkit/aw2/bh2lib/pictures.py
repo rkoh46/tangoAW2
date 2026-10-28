@@ -9,6 +9,9 @@ from ..maplint.render import COL, UNIT_INITIAL, font
 from ..maplint.terrain import terrain, PROP_KIND
 from . import COLOUR, COLOUR_NAME, FRONT2, MISSIONS, flags, maps
 
+ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain")}           # act -> (first mission, last mission, title)
+FRONT2_LABEL = {4: "front 2 (sky)", 10: "front 2 (Grimm's isles)"}
+
 CELL = 22
 DASH = "—"
 VISION = {1: 2, 2: 2, 3: 3, 4: 3, 5: 3, 6: 5, 7: 2, 8: 3, 9: 3, 10: 3, 11: 3, 12: 4, 13: 4, 14: 3, 15: 4, 16: 5, 17: 4, 18: 3, 19: 3, 20: 3, 21: 3, 22: 5, 23: 2, 24: 5, 26: 4}
@@ -164,19 +167,19 @@ def draw(m, mission, title, fog=False, cell=CELL, subtitle=""):
     return img
 
 
-def write_all(out_dir, with_fog=(1,)):
-    """m01.png .. m05.png (full map, fog OFF, labelled), the fog views listed in `with_fog`, the contact sheet. Returns the paths."""
+def write_all(out_dir, with_fog=(1, 6, 10)):
+    """m01.png .. (full map, fog OFF, labelled), the fog views listed in `with_fog`, one contact sheet an act (`act1_sheet.png`, `act2_sheet.png`). Returns the paths."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     ms = maps()
-    paths, thumbs = [], []
+    paths, thumbs = [], {}
     for n, (name, title) in sorted(MISSIONS.items()):
         if name not in ms:
             continue
         subs = [name] + ([FRONT2[n]] if n in FRONT2 and FRONT2[n] in ms else [])
         imgs = []
         for i, nm in enumerate(subs):
-            sub = "" if len(subs) == 1 else ("front 1" if i == 0 else "front 2 (sky)")
+            sub = "" if len(subs) == 1 else ("front 1" if i == 0 else FRONT2_LABEL.get(n, "front 2"))
             imgs.append(draw(ms[nm], n, title if len(subs) == 1 else f"{title} {DASH} {sub}", subtitle=sub))
         if len(imgs) == 1:
             img = imgs[0]
@@ -187,19 +190,24 @@ def write_all(out_dir, with_fog=(1,)):
             for i in imgs:
                 img.paste(i, (0, y)); y += i.size[1]
         p = out / f"m{n:02d}.png"
-        img.save(p); paths.append(p); thumbs.append((n, title, img))
+        img.save(p); paths.append(p)
+        act = next(a for a, (lo, hi, _) in ACTS.items() if lo <= n <= hi)
+        thumbs.setdefault(act, []).append((n, title, img))
         if n in with_fog:
-            fi = draw(ms[name], n, title, fog=True)
+            fi = draw(ms[name], n, title if len(subs) == 1 else f"{title} {DASH} front 1", fog=True)
             fp = out / f"m{n:02d}_fog.png"
             fi.save(fp); paths.append(fp)
-    if thumbs:
-        sheet = contact_sheet(thumbs)
-        sp = out / "act1_sheet.png"
-        sheet.save(sp); paths.append(sp)
+            if len(subs) > 1:                    # (a fogged two-front mission: the second front's view too)
+                f2 = draw(ms[subs[1]], n, f"{title} {DASH} {FRONT2_LABEL.get(n, 'front 2')}", fog=True)
+                f2p = out / f"m{n:02d}_front2_fog.png"
+                f2.save(f2p); paths.append(f2p)
+    for act, th in sorted(thumbs.items()):
+        sp = out / f"act{act}_sheet.png"
+        contact_sheet(th, act=act).save(sp); paths.append(sp)
     return paths
 
 
-def contact_sheet(thumbs, width=2200):
+def contact_sheet(thumbs, width=2200, act=1):
     cols = 2
     tw = width // cols - 12
     tiles = []
@@ -210,7 +218,8 @@ def contact_sheet(thumbs, width=2200):
     hh = sum(max(t.size[1] for t in r) + 10 for r in rows) + 60
     sheet = Image.new("RGB", (width, hh), (12, 12, 16))
     d = ImageDraw.Draw(sheet)
-    d.text((14, 10), f"BH2 Campaign {DASH} Act I: Landfall (missions 1 to 5)", fill=(250, 235, 120), font=_title_font(30))
+    lo, hi, name = ACTS[act]
+    d.text((14, 10), f"BH2 Campaign {DASH} Act {'I' * act if act < 4 else act}: {name} (missions {lo} to {hi})", fill=(250, 235, 120), font=_title_font(30))
     y = 56
     for r in rows:
         x = 6
@@ -220,8 +229,8 @@ def contact_sheet(thumbs, width=2200):
     return sheet
 
 
-def world_flags(out):
-    """The BH2 picture world map as the GBA draws it, scaled up, with the mission flags (number labels) and the nation names."""
+def world_flags(out, act=None):
+    """The BH2 picture world map as the GBA draws it, scaled up, with the mission flags (number labels) and the nation names. `act`: only that act's flags, the map cropped round them."""
     import numpy as np
     from ..worldmaplib import tool, convert
     m, c = tool.load("bh2")
@@ -229,7 +238,8 @@ def world_flags(out):
     base = Image.fromarray(convert.render(m)).resize((m.width * sc, m.height * sc), Image.NEAREST)
     d = ImageDraw.Draw(base)
     ft = _title_font(22)
-    for mission, region, x, y in flags():
+    shown = [f for f in flags() if act is None or ACTS[act][0] <= f[0] <= ACTS[act][1]]
+    for mission, region, x, y in shown:
         cx, cy = x * sc + sc // 2, y * sc + sc // 2
         col = (140, 60, 190) if region == 5 else (30, 30, 30)
         d.line([cx, cy, cx, cy - 34], fill=(20, 20, 20), width=3)
@@ -238,12 +248,23 @@ def world_flags(out):
         lab = f"M{mission}"
         d.rectangle([cx + 28, cy - 38, cx + 28 + 17 * len(lab) + 6, cy - 14], fill=(20, 20, 30))
         d.text((cx + 32, cy - 36), lab, fill=(250, 235, 120), font=_title_font(20))
-    names = {3: ("Green Earth", (96, 150)), 5: ("Black Hole's island", (14, 236))}
+    names = {3: ("Green Earth", (96, 150)), 5: ("Black Hole's island", (14, 236)), 4: ("Yellow Comet", (188, 150))}
+    if act:
+        for nid, (label, (nx, ny)) in names.items():
+            if any(f[1] == nid for f in shown):
+                ft2 = _title_font(24)
+                d.rectangle([nx * sc - 4, ny * sc - 2, nx * sc + 13 * len(label) + 10, ny * sc + 28], fill=(20, 20, 30))
+                d.text((nx * sc, ny * sc), label, fill=(240, 240, 240), font=ft2)
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    if act:
+        xs, ys = [f[2] for f in shown], [f[3] for f in shown]
+        box = (max(0, (min(xs) - 100) * sc), max(0, (min(ys) - 60) * sc), min(base.size[0], (max(xs) + 21) * sc), min(base.size[1], (max(ys) + 40) * sc))
+        base = base.crop(box)
     canvas = Image.new("RGB", (base.size[0], base.size[1] + 50), (22, 22, 28))
     canvas.paste(base, (0, 50))
-    ImageDraw.Draw(canvas).text((10, 10), f"BH2 world map {DASH} flags of M1 to M5 (M26 secret)", fill=(250, 235, 120), font=_title_font(24))
+    title = f"BH2 world map {DASH} flags of M1 to M5 (M26 secret)" if not act else f"BH2 world map {DASH} flags of M{ACTS[act][0]} to M{ACTS[act][1]} (Act {'I' * act})"
+    ImageDraw.Draw(canvas).text((10, 10), title, fill=(250, 235, 120), font=_title_font(24))
     canvas.save(out)
     return out
 
@@ -259,41 +280,45 @@ def _labelled(im, text, scale, size):
     return out
 
 
-def game_sheets(raw, out, scale=3):
+def game_sheets(raw, out, scale=3, acts=None):
     """From the harness's pictures of the game itself (`aw2dev maps boot --campaign bh2`: m<N>_full / fogon / fogoff / front2.png, 16 pixels a cell) the review set: `m0N.png`
-    (the full map, fog off, "MISSION N - Title" burned in), `m01_fog.png`, `m04_front2.png` and `act1_game_sheet.png`. Returns the paths."""
+    (the full map, fog off, "MISSION N - Title" burned in), `m0N_fog.png` (fogged missions), `m0N_front2.png` (two-front missions) and one `act<A>_game_sheet.png` an act with pictures. Returns the paths."""
     raw, out = Path(raw), Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    paths, tiles = [], []
+    paths, tiles = [], {}
     for n, (name, title) in sorted(MISSIONS.items()):
         main = next((raw / f"m{n}_{v}.png" for v in ("full", "fogoff") if (raw / f"m{n}_{v}.png").exists()), None)
         if main is None:
+            continue
+        act = next(a for a, (lo, hi, _) in ACTS.items() if lo <= n <= hi)
+        if acts and act not in acts:
             continue
         im = Image.open(main).convert("RGB")
         big = _labelled(im, f"MISSION {n} {DASH} {title}" + ("  (front 1)" if n in FRONT2 else "") + "  (the game's own picture, fog off)", scale, 26)
         p = out / f"m{n:02d}.png"
         big.save(p); paths.append(p)
-        tiles.append(_labelled(im, f"MISSION {n} {DASH} {title}" + ("  (front 1)" if n in FRONT2 else ""), 1, 15))
-        for view, fname, label in (("fogon", f"m{n:02d}_fog.png", "fog of war: the player's view"), ("front2", f"m{n:02d}_front2.png", "front 2, the sky")):
+        tiles.setdefault(act, []).append(_labelled(im, f"MISSION {n} {DASH} {title}" + ("  (front 1)" if n in FRONT2 else ""), 1, 15))
+        for view, fname, label in (("fogon", f"m{n:02d}_fog.png", "fog of war: the player's view"), ("front2", f"m{n:02d}_front2.png", FRONT2_LABEL.get(n, "front 2")),
+                                   ("front2fog", f"m{n:02d}_front2_fog.png", "front 2, fog of war: the player's view")):
             f = raw / f"m{n}_{view}.png"
             if f.exists():
                 im2 = Image.open(f).convert("RGB")
                 q = out / fname
                 _labelled(im2, f"MISSION {n} {DASH} {title}  ({label})", scale, 26).save(q); paths.append(q)
-                tiles.append(_labelled(im2, f"MISSION {n} {DASH} {title}  ({label})", 1, 15))
-    if tiles:
+                tiles[act].append(_labelled(im2, f"MISSION {n} {DASH} {title}  ({label})", 1, 15))
+    for act, ts in sorted(tiles.items()):
         cols = 2
-        rows = [tiles[i:i + cols] for i in range(0, len(tiles), cols)]
+        rows = [ts[i:i + cols] for i in range(0, len(ts), cols)]
         W = sum(max(t.width for t in col) for col in zip(*[r + [Image.new("RGB", (1, 1))] * (cols - len(r)) for r in rows])) + 8 * (cols + 1)
         H = sum(max(t.height for t in r) + 8 for r in rows) + 60
         sheet = Image.new("RGB", (W, H), (12, 12, 16))
-        ImageDraw.Draw(sheet).text((10, 8), f"BH2 Campaign {DASH} Act I (the game's own pictures)", fill=(250, 235, 120), font=_title_font(30))
+        ImageDraw.Draw(sheet).text((10, 8), f"BH2 Campaign {DASH} Act {'I' * act}: {ACTS[act][2]} (the game's own pictures)", fill=(250, 235, 120), font=_title_font(30))
         y = 52
         for r in rows:
             x = 8
             for t in r:
                 sheet.paste(t, (x, y)); x += max(t.width, 360) + 8
             y += max(t.height for t in r) + 8
-        sp = out / "act1_game_sheet.png"
+        sp = out / f"act{act}_game_sheet.png"
         sheet.save(sp); paths.append(sp)
     return paths

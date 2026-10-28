@@ -133,7 +133,7 @@ These apply to all 26 missions, not just Act I:
 | 5 | Wasteland | Clear |
 | 6 | Normal | Rain + fog |
 | 7 | Desert | Sandstorm |
-| 8 | Normal | Clear |
+| 8 | Normal | Rain (built: M9 is also normal and clear) |
 | 9 | Normal | Clear |
 | 10 | Wasteland (split isles) | Fog |
 | 11 | Snow | Snow |

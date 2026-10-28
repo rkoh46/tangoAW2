@@ -1,7 +1,7 @@
 """aw2dev bh2: the BH2 Campaign's map kit (docs/dev/bh2-maps.md, skill aw2-add-campaign).
 
   bh2 pictures [--out DIR]    m01.png .. (full map, fog off, units and labels, "MISSION N - Title" burned in), the fog views, act1_sheet.png, worldmap_flags.png
-  bh2 sheets [--raw DIR] [--out DIR]  label the game's own pictures (`aw2dev maps boot --campaign bh2`): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png
+  bh2 sheets [--raw DIR] [--out DIR]  label the game's own pictures (`aw2dev maps boot --campaign bh2`): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png, act2_game_sheet.png
   bh2 features                the feature coverage table (properties, terrain, inventions per map) and what no map uses yet
   bh2 check                   the world-map flag check (every mission flag on land inside its nation) and the pipeline checks (specs up to date, lint clean)
 Maps: `aw2dev maps gen --campaign bh2`, `aw2dev maps lint --source bh2`.
@@ -14,9 +14,11 @@ def register(sub):
     ps = p.add_subparsers(dest="bh2cmd", required=True)
     a = ps.add_parser("pictures", help="review pictures of the BH2 maps and the world map with the flags")
     a.add_argument("--out", help="folder (default devkit/work/bh2/maps)")
+    a.add_argument("--act", type=int, help="also write worldmap_flags_act<N>.png (that act's flags only)")
     a.set_defaults(fn=pictures)
-    a = ps.add_parser("sheets", help="label the game's own pictures (aw2dev maps boot --campaign bh2): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png")
+    a = ps.add_parser("sheets", help="label the game's own pictures (aw2dev maps boot --campaign bh2): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png, act2_game_sheet.png")
     a.add_argument("--raw", help="the harness's pictures (default devkit/work/campaign/bh2/review_raw)")
+    a.add_argument("--act", type=int, nargs="*", help="only these acts' missions (default: every mission with a picture)")
     a.add_argument("--out", help="folder (default devkit/work/bh2/game)")
     a.set_defaults(fn=sheets)
     a = ps.add_parser("features", help="which properties, terrain and inventions each BH2 map uses")
@@ -31,6 +33,8 @@ def pictures(a):
     out = a.out or cfg.work("bh2", "maps")
     paths = pics.write_all(out)
     paths.append(pics.world_flags(f"{out}/worldmap_flags.png"))
+    for act in ([a.act] if a.act else [2]):
+        paths.append(pics.world_flags(f"{out}/worldmap_flags_act{act}.png", act=act))
     for p in paths:
         util.say(f"picture: {p}")
     return 0
@@ -39,7 +43,7 @@ def pictures(a):
 def sheets(a):
     from ..bh2lib import pictures as pics
     raw = a.raw or cfg.work("campaign", "bh2", "review_raw")
-    paths = pics.game_sheets(raw, a.out or cfg.work("bh2", "game"))
+    paths = pics.game_sheets(raw, a.out or cfg.work("bh2", "game"), acts=a.act)
     for p in paths:
         util.say(f"picture: {p}")
     return 0 if paths else 1

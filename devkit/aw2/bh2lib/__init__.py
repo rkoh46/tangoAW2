@@ -12,8 +12,13 @@ MISSIONS = {
     3: ("bh2_03", "Iron Ledger"),
     4: ("bh2_04", "Talons"),
     5: ("bh2_05", "Evergreen in Exile"),
+    6: ("bh2_06", "Paper Lanterns"),
+    7: ("bh2_07", "Comet Highway"),
+    8: ("bh2_08", "Black Lanterns"),
+    9: ("bh2_09", "The Table"),
+    10: ("bh2_10", "Two Tides"),
 }
-FRONT2 = {4: "bh2_04b"}          # a two-front mission's second map
+FRONT2 = {4: "bh2_04b", 10: "bh2_10b"}          # a two-front mission's second map
 
 # game colour id -> RGB (1 Orange Star, 2 Blue Moon, 3 Green Earth, 4 Yellow Comet, 5 Black Hole)
 COLOUR = {1: (240, 130, 30), 2: (60, 110, 240), 3: (50, 170, 70), 4: (240, 210, 40), 5: (140, 60, 190)}
@@ -47,11 +52,11 @@ def flags():
 
 
 def check_flags():
-    """Problems (a list of strings): a flag on the sea or outside its nation's mask. The plan: M1, M2 and M26 on Black Hole's island, M3..M5 in Green Earth."""
+    """Problems (a list of strings): a flag on the sea or outside its nation's mask. The plan: M1, M2 and M26 on Black Hole's island, M3..M5 in Green Earth, M6..M10 in Yellow Comet."""
     from ..worldmaplib import tool
     m, _ = tool.load("bh2")
     out = []
-    home = {1: 5, 2: 5, 26: 5, 3: 3, 4: 3, 5: 3}
+    home = {1: 5, 2: 5, 26: 5, 3: 3, 4: 3, 5: 3, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4}
     seen = set()
     for mission, region, x, y in flags():
         seen.add(mission)

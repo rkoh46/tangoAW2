@@ -50,6 +50,18 @@ the ROM is read at run time for tile choices and the lint.
 | 4 Talons | bh2_04 + bh2_04b | 36 x 26 and 22 x 16 | front 1: Black Hole (free pick) vs Drake; front 2: Hawke (forced) vs Eagle | archipelago: Black Hole's Lasers (one on the islet in the middle of the map) and minicannons, an islet with a neutral port and a missile silo, beaches north and south; the sky front is open air with 11 against 13 aircraft |
 | 5 Evergreen in Exile | bh2_05 | 40 x 32 | Black Hole (forced Sturm + Asuka) vs the Allies (Javier, then Eagle from the second HQ) | 4 airports, 15 bases, a pipe wall with two seam gates and the long open east road, two Com Towers either side of the river, Black Crystals by Black Hole's HQ; a held second HQ `Q` in the airport district |
 
+## Act II
+| M | Map | Size | Armies | Features |
+|---|---|---|---|---|
+| 6 Paper Lanterns | bh2_06 | 40 x 28 | Black Hole (free pick) vs Sensei; rain + fog | three islands (Lantern Cove, Lantern Isle, Roost) and Lamp Isle, two sea bridges, reefs, 4 ports, 3 airports (Sensei's B Copter fleet parked on his heliports), Com Tower, silo |
+| 7 Comet Highway | bh2_07 | 48 x 26 | forced Koal + Kindle vs one army under Grimm + Sensei; desert + sandstorm | one long island, four rivers coast to coast (lake-less, mouths both shores) with a north and a south bridge each (8 bridges), two Com Towers + silo in the middle reach, ports on both coasts. Landers would be useless (RC04), so none |
+| 8 Black Lanterns | bh2_08 | 40 x 30 | Black Hole (free pick) vs Grimm; rain | bay coast, river from the south edge to the bay's beach with 3 bridges, 3 Black Crystals, lantern islet with a neutral port, Grimm's airport (Fighters, Bombers) and the biggest army of the act |
+| 9 The Table | bh2_09 | 42 x 30 | forced Asuka vs Kanbei + Sensei (one army); normal, no time limit | pipe wall coast to coast with 3 seam gates, 2 Black Cannons (`n`) shelling the field in front of it, mesa with a harbour bay; scripted: airlift at half strength (`mark_air*`, `mark_inf*` cells, `bh2_campaign.rs` `M9_AIR`, `M9_INF`, `M9_HALF`), Kanbei yields when his last tank falls |
+| 10 Two Tides | bh2_10 + bh2_10b | 40 x 30 and 32 x 26 | front 1 forced Asuka vs Kanbei, front 2 free pick vs Grimm; wasteland + fog | two lava tides pinch the island (waist) and leave a belt; isles on long bridges (silo, Com Tower). No sea (lava): no ports, no ships. Armies are small (SP01: the waist is the frontage) |
+
+The plan's M8 weather (clear) is rain, because M8 and M9 are both the normal look and a neighbour must differ in look or weather. Rain forces fog in the DS rules (`ds_weather::tick`): `aw2dev maps boot` clears `NEXT_WEATHER` before lifting fog for the fog-off picture. The second front of M10 is shown in the harness by the other-front view; its fog-off picture could not be taken (the fog stays), so the sheet shows front 2 fogged only.
+Act II pictures: `aw2dev bh2 pictures --act 2` (+ `worldmap_flags_act2.png`), `aw2dev bh2 sheets --act 2` (`act2_game_sheet.png`). Flags M6..M10 are inside Yellow Comet (`BH2_FLAGS`).
+
 (The sizes and counts in `aw2dev bh2 features` are the live numbers.)
 
 ## Designed, not generated (the quality pass)
