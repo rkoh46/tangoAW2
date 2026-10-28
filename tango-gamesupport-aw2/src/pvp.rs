@@ -612,6 +612,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 30: the cotest (29), asuka (28) and bugfix (28) branches merged: Clone Andy's numbers, the HQ that follows the CO, Asuka (CO 92) in every Versus list, the palette backups' new place, Triumph, the map-list view in console memory.
         // 31: the Emerald Sun army choice is taken back when the map list is up (crate::army_skin::reset_choice: it used to stay after backing out of the Teams screen),
         // the capture box's palette row follows the army's colour (the skin's too) and a Versus second front keeps the first front's colours, teams and skin.
+        // 32: Crumb's and Clone Andy's own themes are songs in the ROM image (crate::es_music), and Crumb's HQ is Black Hole's again (no hq style in cos/crumb.toml).
         crate::inspect::SIM_VERSION
     }
 

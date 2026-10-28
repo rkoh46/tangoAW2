@@ -149,7 +149,7 @@ The console shows one result screen: VICTORY! whenever a human army is alive. Fo
 
 ## 12. sim_version: when it must change
 
-Value: `u32 = (0x5a00 << 16) | 30` (`shared.rs` `SHARED_SIM_VERSION` | `pvp.rs` `Aw2::sim_version`, the number is `inspect::SIM_VERSION`). It is compared for **equality** by: the room (`tango-lobby/src/room.rs` `game_differs`: "Your tangoAW2 is older..."), the generic lobby (`compat.rs` `Verdict::SimVersionTooOld/TooNew`), the UNRANKED pool id, replay loading (`tango-library/src/game.rs` `find_for_replay_side`: old recordings are refused) and a saved match.
+Value: `u32 = (0x5a00 << 16) | 32` (`shared.rs` `SHARED_SIM_VERSION` | `pvp.rs` `Aw2::sim_version`, the number is `inspect::SIM_VERSION`). It is compared for **equality** by: the room (`tango-lobby/src/room.rs` `game_differs`: "Your tangoAW2 is older..."), the generic lobby (`compat.rs` `Verdict::SimVersionTooOld/TooNew`), the UNRANKED pool id, replay loading (`tango-library/src/game.rs` `find_for_replay_side`: old recordings are refused) and a saved match.
 
 Bump the game half (`pvp.rs`) when the same inputs would give a different console state or a different rollback-visible behaviour. In practice, change it for any edit to:
 - anything run inside the simulation: `before_tick` and every module it calls (patches, `tick` functions, `five::sync`, `online::before`, `unranked::tick`, `online_teams::tick`, `proxy_seat::tick`), `merge` / `seat_keys` / `proxy_keys`, `traps` (the closures write RAM/regs), ROM patches written into the image, boot walk timing (`boot_more`);
