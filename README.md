@@ -147,6 +147,10 @@ GPL-3.0-or-later, like Tango. See [LICENSE](LICENSE) and
 [CREDITS.md](CREDITS.md). Advance Wars is a trademark of Nintendo.
 tangoAW2 is not affiliated with Nintendo or Intelligent Systems.
 
-Crumb art by the tangoAW2 author (rkoh), original: `tango-gamesupport-aw2/art/crumb/`.
-It is the only art in the repository; every other picture is converted at
-run time from the player's own ROMs.
+The new COs' portraits (Crumb, Asuka, Klaus, Aurelia, Cassius, Livia), the
+Emerald Sun army's art and tangoAW2's own songs are original work of this
+project; see [CREDITS.md](CREDITS.md). Everything else you see and hear comes
+from the player's own ROMs at run time; nothing from the games is in the
+repository.
+
+Want to build your own mod on tangoAW2? See [FORKING.md](FORKING.md).
