@@ -362,6 +362,25 @@ def write_art(co, im, root=None, name=None):
     return d
 
 
+def name_plate_png(name):
+    """The 48 x 16 name graphic of `name` as a PIL image (the fixed name palette, our letters)."""
+    from . import namefont
+    return _png(namefont.name_grid(name), [(0, 0, 0)] + namefont.name_rgb()[1:])
+
+
+def write_name_plate(co, name, root=None):
+    """A CO with a placeholder face (Varro) still has his own name plate: art/cos/<co>/name.png only."""
+    d = (root or ART_DIR) / co
+    d.mkdir(parents=True, exist_ok=True)
+    name_plate_png(name).save(d / "name.png", optimize=True, transparency=0, bits=4)
+    return d
+
+
+def name_plate_same(co, name, root=None):
+    p = (root or ART_DIR) / co / "name.png"
+    return p.exists() and np.array_equal(np.array(Image.open(p)), np.array(name_plate_png(name)))
+
+
 def read_art(co, root=None):
     """-> ({name: indexes}, palette) from the committed PNGs."""
     d = (root or ART_DIR) / co
@@ -407,11 +426,12 @@ def _framing(co):
 
 def fringe_problems(co, pics, pal, light=70.0, chroma=15.0):
     """A picture imported with `fringe = "light"` has no white halo: no figure pixel on the outer edge (next to the outline, so next to the empty side) is light (Lab L above `light`) and nearly colourless
-    (chroma under `chroma`), unless it is listed in the framing file's `edge_protect` ([[x, y], ...] pixels of the large art). -> list of problems."""
+    (chroma under `chroma`), unless it is listed in the framing file's `edge_protect` ([[x, y], ...] pixels of the large art; `face_edge_protect` for the faces). -> list of problems."""
     spec = _framing(co)
     if spec.get("fringe") != "light":
         return []
     keep = {tuple(p) for p in spec.get("edge_protect", [])}
+    keep_face = {tuple(p) for p in spec.get("face_edge_protect", [])}
     bad = []
     lab = to_lab(np.array(pal, float))
     lt, ch = lab[:, 0], np.hypot(lab[:, 1], lab[:, 2])
@@ -424,7 +444,7 @@ def fringe_problems(co, pics, pal, light=70.0, chroma=15.0):
                 if dx or dy:
                     ins |= shift(o, dx, dy)
         m = ins & ~o & (a != 0) & (lt[a] > light) & (ch[a] < chroma)
-        pts = [(int(x), int(y)) for y, x in zip(*np.where(m)) if name != "large" or (int(x), int(y)) not in keep]
+        pts = [(int(x), int(y)) for y, x in zip(*np.where(m)) if (int(x), int(y)) not in (keep if name == "large" else keep_face)]
         if pts:
             bad.append(f"{name}: {len(pts)} light, colourless pixels on the outer edge (a white halo): {pts[:6]}")
     return bad

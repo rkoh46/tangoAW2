@@ -6,7 +6,7 @@ role = "Emerald Sun's senator and treasurer"
 
 full_name = "Livia Valeria"
 theme = "co:colin"
-bio = "Senator and quaestor of the Emerald Sun. She keeps the army's purse and the Senate's secrets. Hit: Accounts. Miss: Mud."
+bio = "Senator and treasurer of the Emerald Sun. She wins wars with ledgers, not swords. Hit: Accounts Miss: Mud"
 luck = [10, 10, 10]
 stars = { cop = 3, scop = 6 }
 
@@ -16,19 +16,19 @@ hq = "emerald_sun"
 
 [d2d]
 name = "Ledger"
-text = "My properties yield 25% more funds, but my units cost 10% more."
+text = "Properties yield 25% more funds, but units cost 10% more."
 mods = [ { units = "all", cost = 10 } ]
 income = 25
 
 [cop]
 name = "Tribute"
-text = "I collect 200 funds for every property I own."
+text = "Collects 200 funds for every property owned."
 tribute = 200
 quote = ["Thank you for your", "generous contribution."]
 
 [scop]
 name = "Mare Nostrum"
-text = "Naval units move 2 spaces more and attack 30% harder. I also collect 100 funds for every property I own."
+text = "Naval units move 2 spaces more, and their firepower rises by 30%. Collects 100 funds for every property owned."
 mods = [ { units = "naval", move = 2, attack = 30 } ]
 tribute = 100
 quote = ["The sea is ours. Again.", "Send the fleet!"]

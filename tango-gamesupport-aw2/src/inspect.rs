@@ -38,7 +38,7 @@ const MAP_MENU_ITEMS: u32 = 0x0300_14A1;
 const SELECTED_UNIT: u32 = 0x0300_40D8;
 
 /// The online protocol version the shared console speaks (`SharedGame::sim_version`): peers with another do not match.
-pub const SIM_VERSION: u16 = 32;
+pub const SIM_VERSION: u16 = 33;
 
 pub const MOVED: u8 = 0x01;
 pub const CARRIED: u8 = 0x08;

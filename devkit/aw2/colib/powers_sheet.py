@@ -27,8 +27,20 @@ def ingame(co, name):
     return Image.open(p).convert("RGB") if p.exists() else None
 
 
+def aria_rows(co):
+    """Aria's sheet: her screens, the Super Power's quote box and cut-in (the name half typed and whole), before / after, the battle header, the CO grid and her Orange Star HQ (tests/test_aria_pictures.py)."""
+    act, bh, grid, hq = "aria_pics_build_anew_activation", "aria_pics_battle_header", "aria_pics_co_select_grid", "aria_pics_hq_is_orange_stars"
+    return [
+        ("Her screens", [("CO select card (Versus Teams)", ingame(co, "select")), ("HUD (face, meter with a Super Power mark only)", ingame(co, "hud")), ("CO page (her own text)", ingame(co, "page")), ("Power cut-in (large art)", ingame(co, "figure"))]),
+        ("Super Power: Build Anew (no CO Power)", [("before: Infantry at 45", frame(act, "scop_before")), ("quote box", frame(act, "scop_quote")), ("cut-in, name half typed", frame(act, "scop_cutin_mid")), ("cut-in, whole name", frame(act, "scop_cutin")), ("after: +3 HP, a day's income", frame(act, "scop_after"))]),
+        ("Battle scene header, CO grid, HQ", [("battle scene: her mini in the header", frame(bh, "bh_header")), ("War Room grid, cursor on Aria", frame(grid, "grid_aria")), ("Orange Star HQ (as Nell's)", frame(hq, "hq_aria")), ("Nell's HQ", frame(hq, "hq_nell"))]),
+    ]
+
+
 def rows(co):
     """[(row title, [(caption, image)])]: what each picture shows is said in its caption."""
+    if co == "aria":
+        return aria_rows(co)
     cop, scop = "asuka_pics_cop_activation", "asuka_pics_scop_activation"
     bar, tagt, cb, fog = "asuka_pics_power_bar", "asuka_pics_tag_power_with_von_bolt", "asuka_pics_counter_break", "asuka_pics_fog_view"
     grid = "asuka_pics_co_select_grid"
@@ -71,7 +83,7 @@ def sheet(co, scale=2):
     return img
 
 
-def run_tests():
+def run_tests(co="asuka"):
     run = cfg.REPO / "tools" / "aw2test" / "run.py"
-    r = subprocess.run([sys.executable, str(run), "--mode", "ds", "-k", "asuka_pics"], cwd=cfg.REPO, capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(run), "--mode", "ds", "-k", f"{co}_pics"], cwd=cfg.REPO, capture_output=True, text=True)
     return r.returncode == 0, r.stdout[-2000:]

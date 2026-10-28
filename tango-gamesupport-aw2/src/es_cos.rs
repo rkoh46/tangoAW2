@@ -12,13 +12,14 @@ use std::sync::OnceLock;
 use crate::crumb_art::{body_files, decode, Px};
 use crate::ds_co_art::CoArt;
 
-/// The five with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`).
-const IDS: [(u8, &str); 5] = [
+/// The six with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`); Aria (93), an Orange Star CO in every list (`crate::aria`).
+const IDS: [(u8, &str); 6] = [
     (86, "klaus"),
     (87, "aurelia"),
     (88, "cassius"),
     (89, "livia"),
     (92, "asuka"),
+    (93, "aria"),
 ];
 
 macro_rules! pics {
@@ -51,26 +52,28 @@ struct Pics {
     crop: &'static str,
 }
 
-fn all() -> [Pics; 5] {
+fn all() -> [Pics; 6] {
     [
         pics!("klaus"),
         pics!("aurelia"),
         pics!("cassius"),
         pics!("livia"),
         pics!("asuka"),
+        pics!("aria"),
     ]
 }
 
 /// The data files of the five, in [`IDS`]' order.
-const DATA: [&str; 5] = [
+const DATA: [&str; 6] = [
     include_str!("../cos/klaus.toml"),
     include_str!("../cos/aurelia.toml"),
     include_str!("../cos/cassius.toml"),
     include_str!("../cos/livia.toml"),
     include_str!("../cos/asuka.toml"),
+    include_str!("../cos/aria.toml"),
 ];
 
-/// A CO's place among the five (0 Klaus .. 3 Livia, 4 Asuka).
+/// A CO's place among the five (0 Klaus .. 3 Livia, 4 Asuka, 5 Aria).
 pub fn index(co: u8) -> Option<usize> {
     IDS.iter().position(|i| i.0 == co)
 }
@@ -130,7 +133,7 @@ pub fn text(co: u8, which: u16) -> Option<Vec<u8>> {
         T_SCOP_NAME => s(v, &["scop", "name"])?,
         // the six power quotes: the CO Power's, the Super Power's and the Tag Power's, each twice
         w if (T_QUOTES..T_QUOTES + 6).contains(&w) => match (w - T_QUOTES) % 3 {
-            0 => quote(v, &["cop", "quote"])?,
+            0 => quote(v, &["cop", "quote"]).or_else(|| quote(v, &["scop", "quote"]))?, // (no CO Power: Aria says her Super Power's line in both slots)
             1 => quote(v, &["scop", "quote"])?,
             _ => quote(v, &["lines", "tag_in"])?,
         },
@@ -153,6 +156,15 @@ pub fn crop(co: u8) -> Option<(usize, usize)> {
 
 fn px(bytes: &[u8]) -> Option<(Px, Vec<u16>)> {
     decode(bytes)
+}
+
+/// Varro's own name plate (his face is still a donor's): the 48 x 16 name graphic of `art/cos/varro/name.png`, in AW2's name tiles; None for any other CO.
+pub fn name_plate(co: u8) -> Option<Vec<u8>> {
+    if co != crate::es_co::VARRO {
+        return None;
+    }
+    let (name, _) = px(include_bytes!("../art/cos/varro/name.png"))?;
+    (name.w == 48 && name.h == 16).then(|| name.to_tiles(6, 2, |k| (k / 2, k % 2)))
 }
 
 /// A CO's pictures in AW2's formats: the figure as the body's two files, the normal, happy and sad faces (the third slot of AW2's three is the defeat face; the angry
@@ -220,5 +232,7 @@ mod tests {
             assert!(name(co).is_some());
         }
         assert_eq!(name(crate::co_new::ES_FIRST), Some(b"Klaus".to_vec()));
+        assert_eq!(name_plate(crate::es_co::VARRO).map(|n| n.len()), Some(crate::ds_co_art::NAME_LEN), "Varro has a name plate of his own");
+        assert!(name_plate(crate::es_co::KLAUS).is_none());
     }
 }

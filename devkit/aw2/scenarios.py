@@ -401,7 +401,7 @@ SCEN = {"asuka": s_asuka, "swap": s_swap, "tagpower": s_tagpower, "super": s_sup
 
 # ---- the custom COs' powers (aw2dev co verify --net): army 1's CO is poked in at the first idle moment (gPlayers + 0x3C + 0x1D in a 2P Versus game), its meter filled, its power played,
 # and the special rules exercised by an attack (Testudo's counter, Onager's splash, Triumph's second move); the two peers' hashes must agree (net repeat) ----
-CO_IDS = {"andy": 1, "kanbei": 6, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90}
+CO_IDS = {"andy": 1, "kanbei": 6, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "aria": 93}
 ARMY1_CO = "0x020232DD"
 PARTNER_REC = "0x0203F400"          # crate::tag::STATE: the army 1's partner: +0 CO, +1 phase, +2 uses, +4 the partner's meter
 
@@ -422,7 +422,7 @@ def co_scenario(co, power):
     def sc(fog):
         extra, steps = co_actions(co, power)
         pokes = [f"when army=1 day=1 idle do poke {ARMY1_CO} {CO_IDS[co]:02X}", f"when army=1 day=1 idle do meter 1 {100 if power == 'cop' else 400}"] + extra
-        play = power_menu(8, 5, 2 if power == "cop" else 3) + steps
+        play = power_menu(8, 5, 2 if power == "cop" else (2 if co == "aria" else 3)) + steps      # (Aria has no Power entry: Super is the third row)
         return pokes, [(0, play), (1, []), (0, []), (1, [])]
     return sc
 
@@ -760,5 +760,6 @@ def solo_pads(entry, body, run):
 
 
 for _co in CO_IDS:
-    SCEN[f"co_{_co}_cop"] = co_scenario(_co, "cop")
+    if _co != "aria":          # (Aria has only a Super Power)
+        SCEN[f"co_{_co}_cop"] = co_scenario(_co, "cop")
     SCEN[f"co_{_co}_scop"] = co_scenario(_co, "scop")

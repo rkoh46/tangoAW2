@@ -11,7 +11,7 @@
   co balance [CO ...] [--vs Kanbei Hawke ...]   the CO's day-to-day, CO Power and Super Power averaged over a typical army, next to Dual Strike's own COs read from the .nds
   co verify sonja [--build-baseline]       Sonja's rows, pictures, texts, numbers, Tag page and screens against the v0.8.7 build: any difference fails
   co check [CO ...]                        the CO data files: fields, stars and numbers inside AW2's design space, name plates, tag pairs
-  co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Crumb, Varro, Clone Andy, Asuka) in real battles against the specification: day to day,
+  co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Crumb, Varro, Clone Andy, Asuka, Aria) in real battles against the specification: day to day,
                                            CO Power, Super Power (attack, defence, move, range, cost, income, funds, heal, the special rules), meters and star costs, Tag Powers, CPU use;
                                            prints the pass / fail table (docs/dev/co-verify.md); with `--net` also plays each power through `net repeat`
   co sheet hq                              the HQ of the Roman COs on the map: Versus, the tilted map (the real app), the missions (`hq_check.png`)
@@ -62,7 +62,7 @@ def register(sub):
     c.add_argument("co", nargs="*")
     c.set_defaults(fn=datacheck)
     v = ps.add_parser("verify", help="every ability of the custom COs in real battles against the specification (pass / fail table)")
-    v.add_argument("co", nargs="*", help="klaus aurelia cassius livia crumb varro cloneandy asuka (default: all); `verify sonja` compares Sonja with the v0.8.7 build instead")
+    v.add_argument("co", nargs="*", help="klaus aurelia cassius livia crumb varro cloneandy asuka aria (default: all); `verify sonja` compares Sonja with the v0.8.7 build instead")
     v.add_argument("--build-baseline", action="store_true", help="(verify sonja) build the reference (v0.8.7) examples into devkit/work/baseline first (once)")
     v.add_argument("--quick", action="store_true", help="one scenario per facet (the suite's smoke run)")
     v.add_argument("--list", action="store_true", help="only list the scenarios")
@@ -81,6 +81,9 @@ def register(sub):
     sq = shs.add_parser("hq", help="the HQ of the Roman COs on the map (Versus, the tilted map, the missions): `hq_check.png`")
     sq.add_argument("--out")
     sq.set_defaults(fn=sheet_hq)
+    sv = shs.add_parser("vengeance", help="Aria's Vengeance in the game's own damage forecasts: the table (.md) and the forecast boxes side by side (.png)")
+    sv.add_argument("--out", help="base path without extension (default devkit/work/co/vengeance_compare)")
+    sv.set_defaults(fn=sheet_vengeance)
 
 
 def _cos(names):
@@ -103,6 +106,15 @@ def pimport(a):
             probs, summary = recolour.check(co, d)
             util.say(f"{co}: {summary}" + ("; PROBLEMS " + "; ".join(probs) if probs else "") + " (nothing to import or compare: no committed art)")
             bad += bool(probs)
+    for co, d in cos.items():
+        if d.get("portrait", {}).get("name_plate") and (not a.co or co in a.co):
+            # a placeholder face with a name plate of its own (Varro): only name.png
+            if a.check:
+                same = I.name_plate_same(co, d["name"])
+                util.say(f"{co}: {'the committed name plate is what the letters give' if same else 'DIFFERENT from the committed name plate'}")
+                bad += not same
+            else:
+                util.say(f"{co}: wrote {I.write_name_plate(co, d['name']).relative_to(cfg.REPO)}/name.png (name plate only)")
     for co, d in sel.items():
         spec = {"source": d["portrait"]["source"]}
         if getattr(a, "pixelart", False):
@@ -180,7 +192,7 @@ def psheet(a):
 def ppowers(a):
     from ..colib import powers_sheet as P
     if not a.no_run:
-        ok, tail = P.run_tests()
+        ok, tail = P.run_tests(a.co)
         if not ok:
             util.say("the picture tests failed:\n" + tail)
             return 1
@@ -221,6 +233,19 @@ def verify(a):
         from ..colib import verify_net as N
         rc = N.run(a)
     return V.verify(a) or rc
+
+
+def sheet_vengeance(a):
+    from ..colib import vengeance_sheet as V
+    ok, tail = V.run_test()
+    if not ok:
+        util.say("the forecast test failed:\n" + tail)
+        return 1
+    base = Path(a.out) if a.out else cfg.work("co", "vengeance_compare")
+    base.parent.mkdir(parents=True, exist_ok=True)
+    V.build(str(base) + ".png", str(base) + ".md")
+    util.say("wrote", str(base) + ".png and .md")
+    return 0
 
 
 def sheet_powers(a):

@@ -43,6 +43,7 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [worldmap.md](worldmap.md) | `aw2dev worldmap convert / preview / check`: the picture world map (`WorldArt::Picture`): the owner's picture to GBA tiles, nine palettes, region masks per nation, conquest re-tint, budgets, the live harness test |
 | [campaign-scenes.md](campaign-scenes.md) | `aw2dev campaign` / `aw2dev sound`: how AW2 presents story scenes, the BH Campaign's prologue card, songs per scene, Sturm's scenes |
 | [es-campaign.md](es-campaign.md) | the Emerald Sun Campaign: files, rules, the kit (`maps gen`, `campaign sheets / sim / difficulty / check`, the dialogue lint), the five COs |
+| [aria.md](aria.md) | Aria, CO 93: Nell's sister, an Orange Star CO with only a Super Power (Build Anew), the checkerboard-background pixel-art import, how she was verified |
 | [asuka.md](asuka.md) | Asuka, CO 92: Sonja's kit with Hawke's Black Wave / Black Storm, 4 / 8 stars, where she is (every Versus list, not the Emerald Sun Campaign), how she was verified |
 | [music-kit.md](music-kit.md) | the Emerald Sun COs' own themes: songs as text compiled to AW2's sound engine, played with AW2's own voices; `aw2dev sound compose / render / loopcheck / levels / stems / pitchcheck / voices / dump` |
 | [ds-pack.md](ds-pack.md) | how Dual Strike content is converted and gated |

@@ -73,11 +73,26 @@ def _cream_box(a):
     return sub.size > 60 * 40 and sub.mean() > 0.5
 
 
+POWER_QUOTE_MS = 12_000      # a power's quote box is typed out letter by letter on every window BEFORE the power's act is logged (about 5 to 10 s earlier with the menu and the box's slide): allowed too
+
+
+def quiet_windows(acts, allow_ms=2500):
+    """[(from_ms, to_ms)] around the acts every window may legitimately show: a battle scene, narration, a capture (+-allow_ms) and a CO power (its quote box and cut-in: POWER_QUOTE_MS before the act, allow_ms after).
+    `net repeat asuka` / `net repeat super` once reported FAIL with equal hashes because the quote box of a power, on the waiting window 5 to 10 s before the logged act, was taken for a leaked dialog."""
+    out = []
+    for a in acts:
+        if a["what"] == "power":
+            out.append((a["ms"] - POWER_QUOTE_MS, a["ms"] + allow_ms))
+        elif a["what"] in ("attack", "eliminated", "kill", "capture"):
+            out.append((a["ms"] - allow_ms, a["ms"] + allow_ms))
+    return out
+
+
 def c_leak(run, allow_ms=2500, **kw):
     acts = run.acts()
     t0 = run.t0()
     # allowed on every window: battle scene, CO power cut-in, narration boxes (elimination), captures seen: stay quiet around those acts
-    quiet = [(a["ms"] - allow_ms, a["ms"] + allow_ms) for a in acts if a["what"] in ("attack", "power", "eliminated", "kill", "capture")]
+    quiet = quiet_windows(acts, allow_ms)
     # AW2's own reconnect box shows on every other window while a peer is frozen, dropped or rejoining (scripted events): not a leak
     try:
         sm = json.loads((run.dir / "summary.json").read_text())

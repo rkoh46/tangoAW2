@@ -377,13 +377,83 @@ class Illustration(unittest.TestCase):
     def test_asuka_is_a_black_hole_co_with_her_pairs_and_a_name_graphic(self):
         cos, tags = data.load_all()
         a = cos["asuka"]
-        self.assertEqual((a["army"], a["stars"]), ("black_hole", {"cop": 3, "scop": 9}))        # Eagle's meter, AW2's and Dual Strike's table
+        self.assertEqual((a["army"], a["stars"]), ("black_hole", {"cop": 4, "scop": 8}))        # the normal cost
         self.assertEqual((a["luck"], a["bad_luck"]), ([20, 20, 20], [0, 0, 0]))                # Nell's day-to-day luck, no bad luck
         partners = {(p["b"] if p["a"] == "asuka" else p["a"]) for p in tags["pair"] if "asuka" in (p["a"], p["b"])}
         self.assertTrue({"ds:vonbolt", "aw2:hawke", "aw2:sturm"} <= partners, partners)
         g = namefont.name_grid("Asuka")
         self.assertEqual(g.shape, (16, 48))
         self.assertTrue((g[:, 0] == 0).all() and (g[:, 47] == 0).all())
+
+
+class AriaArt(unittest.TestCase):
+    """Aria (cos/aria.toml, art-src/cos/aria_v1.*): the owner's pixel art on a baked-in checkerboard, a direct import."""
+
+    def test_aria_is_what_her_picture_gives_and_passes_the_lint(self):
+        cos, _ = data.load_all()
+        co = "aria"
+        self.assertEqual(I.lint_art(co), [])
+        im = I.import_co({"source": cos[co]["portrait"]["source"], **{k: v for k, v in cos[co]["portrait"].items() if k != "source"}})
+        I.all_expressions(im, im.spec)
+        old, _pal = I.read_art(co)
+        for name, idx in I.pictures(im).items():
+            self.assertTrue(np.array_equal(old[name], idx), f"{co} {name}: `aw2dev co portrait import` and commit")
+        pics, pal = I.read_art(co)
+        self.assertEqual(I.lightness_problems(co, pics, pal), [])
+        self.assertEqual(I.fringe_problems(co, pics, pal), [])
+
+    def test_the_checkerboard_is_gone_and_her_colours_are_kept(self):
+        pics, pal = I.read_art("aria")
+        pal = [tuple(c) for c in pal]
+        large = pics["large"]
+        lab = I.to_lab(np.array(pal, float))
+        # no pixel but the outline is a light, colourless checkerboard grey or white next to transparency (the lint's rule), and the blue irises, the eye whites, two skin tones and the white shirt are in the palette
+        blues = [i for i, c in enumerate(pal) if c[2] > c[0] + 40]
+        self.assertTrue(blues, "a blue entry for the irises")
+        self.assertTrue(any(np.isin(pics["face_normal"], blues).ravel()), "blue in the face")
+        whites = [i for i, c in enumerate(pal) if min(c) > 235]
+        self.assertTrue(whites, "an eye-white / shirt-white entry")
+        skins = [i for i, c in enumerate(pal) if c[0] > 200 and 120 < c[1] < 220 and 80 < c[2] < 190 and c[0] - c[2] > 30]
+        self.assertGreaterEqual(len(skins), 2, "two or more skin tones")
+        oranges = [i for i, c in enumerate(pal) if c[0] > 180 and 70 < c[1] < 140 and c[2] < 60]
+        used = {i for i in oranges if (large == i).sum() > 100}
+        self.assertGreaterEqual(len(used), 3, "the coat keeps a ramp of at least three oranges")
+
+    def test_the_checker_flatten_makes_the_background_one_colour(self):
+        from . import pixelart as P
+        img = np.full((60, 60, 3), 255, np.uint8)
+        img[::2, ::2] = 233
+        img[20:40, 20:40] = (200, 100, 30)
+        img[28:32, 28:32] = (255, 255, 255)          # a white spot inside the figure: never reached
+        out = P.flatten_checker(img)
+        self.assertTrue((out[0:10, 0:10] == 255).all())
+        self.assertTrue((out[20:40, 20:40][:8, :8] == (200, 100, 30)).all())
+        self.assertTrue((out[28:32, 28:32] == 255).all())
+        # an enclosed pocket of checker is flooded from its seed
+        img2 = img.copy()
+        img2[10:18, 10:18] = (200, 100, 30)
+        img2[12:16, 12:16] = 233                      # an enclosed pocket
+        self.assertTrue((P.flatten_checker(img2)[12:16, 12:16] == 233).all())
+        self.assertTrue((P.flatten_checker(img2, seeds=[[13, 13]])[12:16, 12:16] == 255).all())
+
+    def test_aria_is_an_orange_star_co_with_only_a_super_power(self):
+        cos, tags = data.load_all()
+        a = cos["aria"]
+        self.assertEqual((a["army"], a["stars"], a["hq"]), ("orange_star", {"cop": 0, "scop": 7}, "default"))
+        self.assertEqual(a["d2d"]["vengeance"], {"hp": 8, "attack": 25})
+        self.assertEqual(a["d2d"]["mods"], [])
+        self.assertEqual(a["scop"]["mods"], [{"units": "all", "attack": 20}])
+        self.assertEqual(a["scop"]["heal"], 3)
+        self.assertNotIn("movement", a)
+        self.assertNotIn("quote", a["cop"], "no CO Power, no quote set for it")
+        self.assertEqual([m for m in data.problems(cos, tags) if m.startswith("aria")], [])
+        pair = next(p for p in tags["pair"] if "aria" in (p["a"], p["b"]))
+        self.assertEqual((pair["name"], pair["compat"], pair["stars"]), ("Sisters' Accord", 115, 2))
+        bad = copy.deepcopy(a)
+        del bad["scop"]
+        self.assertIn("aria: missing scop", " ".join(data.problems({**cos, "aria": bad}, tags)))
+        g = namefont.name_grid("Aria")
+        self.assertEqual(g.shape, (16, 48))
 
 
 class Verify(unittest.TestCase):

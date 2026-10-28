@@ -301,6 +301,8 @@ pub(crate) fn template_of(co: u8) -> Option<u8> {
     // (Asuka has no Dual Strike twin of her own: the computer plays her with Hawke's profile, whose powers she shares: Black Wave and Black Storm, always when the meter allows)
     let ds = crate::tag::ds_id(co)
         .or_else(|| (co == crate::co_new::ASUKA).then_some(15))
+        // (Aria has no CO Power: the computer plays her with Von Bolt's profile, a Super Power as soon as the meter allows)
+        .or_else(|| (co == crate::co_new::ARIA).then_some(crate::aria::AI_LIKE))
         .unwrap_or(0) as usize;
     set.get(1 + ds).copied().filter(|&t| t < TEMPLATE_COUNT)
 }

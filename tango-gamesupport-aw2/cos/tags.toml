@@ -116,3 +116,12 @@ compat = 110
 stars = 1
 name = "Quiet Knife"
 why = "an informant and a striker who prefer not to be seen"
+
+# Aria's pair with her sister (AW2's Nell). Every other pair of hers is 95, like Asuka's.
+[[pair]]
+a = "aw2:nell"
+b = "aria"
+compat = 115
+stars = 2
+name = "Sisters' Accord"
+why = "two sisters of the New Accord: Nell's grit, Aria's rebuilding"
