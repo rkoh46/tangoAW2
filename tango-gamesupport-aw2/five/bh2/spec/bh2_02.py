@@ -7,7 +7,7 @@ the north-east (her HQ and bases) and hold the east road.
   the south road (bridge (16,16)). The south road is the escape route: longer, through woods and hills, and it joins the quay road below Jess's reach.
 - Where the fight happens: the halfway bridge and the Com Tower in the central massif (20,12), reached by a spur road: whoever holds it hits harder; then the
   east road x26 down to the quay.
-- Properties: the depot's bases build the escorts; villages every few cells on the three roads; the quay's port is neutral: the objective, not a prize.
+- Properties: the depot's bases build the escorts; villages every few cells on the three roads; the quay's port is neutral: the objective (the crate's destination), not a prize; about half the villages are neutral on both sides, so each army has capturing to do.
 - Threats and answers: Jess has no ships or aircraft (so no Anti-Air for anyone): her Tanks and Recon rush the truck -> Black Hole's Tanks, Mechs and artillery
   in the middle, Infantry screens on the bridges; she can bring Tanks by the north road -> the escort has a second line on the south road.
 """
@@ -55,9 +55,9 @@ def build():
     route(m, [(4, 12), (6, 12)], seed=6)
     thin_roads(m)
     # towns at the junctions and bridgeheads; a village in the north-west corner
-    town(m, 10, 9, "CC", seed=1); town(m, 10, 15, "CB", seed=2); town(m, 17, 9, "CC", seed=4); town(m, 22, 8, "CCb", seed=5); town(m, 21, 17, "CC", seed=6)
-    town(m, 26, 12, "C", seed=7); town(m, 26, 16, "CC", seed=8); town(m, 13, 9, "C", seed=9); town(m, 18, 17, "C", seed=11); town(m, 23, 6, "C", seed=10)
-    town(m, 4, 4, "CC", seed=12, roadside=False); town(m, 12, 3, "CC", seed=13, roadside=False)
+    town(m, 10, 9, "cc", seed=1); town(m, 10, 15, "CB", seed=2); town(m, 17, 9, "cc", seed=4); town(m, 22, 8, "Cc", seed=5); town(m, 21, 17, "cc", seed=6)
+    town(m, 26, 12, "c", seed=7); town(m, 26, 16, "Cc", seed=8); town(m, 13, 9, "c", seed=9); town(m, 18, 17, "c", seed=11); town(m, 23, 6, "C", seed=10)
+    town(m, 4, 4, "cC", seed=12, roadside=False); town(m, 12, 3, "cc", seed=13, roadside=False)   # (neutral villages on both sides: capturing for each army)
     m.unit(1, APC, 6, 12, name="crate")
     m.units(1, INF, [(5, 11), (5, 13), (7, 10), (7, 14)]).units(1, MECH, [(9, 9), (9, 16)]).units(1, TANK, [(9, 12), (10, 10), (10, 14)])
     m.unit(1, ART, 4, 12).unit(1, RECON, 11, 12)

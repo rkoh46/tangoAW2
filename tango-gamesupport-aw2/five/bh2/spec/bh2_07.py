@@ -45,12 +45,13 @@ def build():
         m.cluster("f", cx, cy, n * 2, seed=50 + i)
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
         "M7 Drake's Harbour (desert look, clear): a free pick (Black Hole, HQ 1 (8,21), the hooked south-west island) against Drake (Green Earth, HQ 2 (23,3), inland on the north coast). The harbour bay (x 17..29) has three ports; a reef-strewn channel separates the island from the north. "
-        "Player: INF4 MECH2 TANK3 MDT2 ART2 ROCK1 RECON1 APC1 LAN3 CR2 SUB1 BS1; Drake: INF5 MECH3 TANK4 MDT2 ART3 ROCK2 AA2 RECON1 BS1 CR2 SUB1."))
+        "Player: INF4 MECH2 TANK3 MDT2 ART2 ROCK1 RECON1 APC1 LAN3 CR2 SUB1 BS1; two silos (11,19) (4,20), a neutral airport (12,18) and a second port (north coast) on the left island; Drake: INF5 MECH3 TANK4 MDT2 ART3 ROCK2 AA2 RECON1 BS1 CR2 SUB1."))
     m.put("1", 8, 21).put("2", 23, 3)
-    PORTS = [snap_coast(m, 8, 24), snap_coast(m, 16, 9), snap_coast(m, 30, 9), snap_coast(m, 23, 6)]
+    PORTS = [snap_coast(m, 8, 24), snap_coast(m, 16, 9), snap_coast(m, 30, 9), snap_coast(m, 23, 6), snap_coast(m, 8, 17)]
     for (x, y) in PORTS:
         m.put("P", x, y)
-    route(m, [S(8, 20), S(7, 22), S(PORTS[0][0], PORTS[0][1] - 1)], seed=1); route(m, [S(5, 19), S(10, 19), S(12, 23)], seed=2)
+    m.put("M", 11, 19).put("M", 4, 20).put("a", 12, 18)                      # (the left island's prizes: two missile silos and a neutral airport)
+    route(m, [S(8, 20), S(7, 22), S(PORTS[0][0], PORTS[0][1] - 1)], seed=1); route(m, [S(8, 20), S(10, 19), S(12, 18)], seed=21); route(m, [S(7, 20), S(5, 20)], seed=22); route(m, [S(7, 19), S(PORTS[4][0], PORTS[4][1] + 1)], seed=23); route(m, [S(5, 19), S(10, 19), S(12, 23)], seed=2)
     route(m, [S(23, 4), S(19, 5), S(PORTS[1][0] - 1, PORTS[1][1] - 1), S(PORTS[1][0], PORTS[1][1] - 1)], seed=3); route(m, [S(23, 4), S(27, 5), S(PORTS[2][0] + 1, PORTS[2][1] - 1), S(PORTS[2][0], PORTS[2][1] - 1)], seed=4)
     route(m, [S(3, 8), S(10, 9), S(16, 8), S(23, 5), S(31, 8), S(37, 9)], seed=5, wander=0.7); route(m, [S(23, 4), S(23, 2), S(18, 2)], seed=6); route(m, [S(9, 4), S(14, 4), S(22, 3)], seed=7)
     route(m, [S(PORTS[3][0], PORTS[3][1] - 1), S(23, 4)], seed=8)

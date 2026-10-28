@@ -39,12 +39,12 @@ def build():
     belt(m, "f", [(25, 8), (27, 11)], width=1, seed=12); belt(m, "f", [(31, 7), (33, 9)], width=1, seed=13); belt(m, "f", [(28, 15), (30, 17)], width=1, seed=14)
     belt(m, "f", [(25, 4), (27, 3)], width=1, seed=15); belt(m, "f", [(18, 14), (20, 14)], width=1, seed=16)
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
-        "M4 Talons, front 1: Black Hole's fortress island (west, HQ 1 (6,15)) against Drake's island (east, HQ 2 (29,8)) across the strait; the islet (19,12) holds a neutral port and a missile silo. "
-        "Black Hole's inventions (its side only): Lasers (19,13) on the islet in the middle of the map and (13,16), minicannons facing east (14,12) (14,14), south (11,20), north (6,6). Player: free CO pick. Player: CR3 BB2 SUB2 LAN3 INF5 MECH3 TANK3 ART3 AA2 RECON1 APC1; "
+        "M4 Talons, front 1: Black Hole's fortress island (west, HQ 1 (6,15)) against Drake's island (east, HQ 2 (29,8)) across the strait; the islet (19,12) holds a neutral port (21,14) and a missile silo. "
+        "Black Hole's inventions (its side only): Lasers (17,12) on the islet in the middle of the map and (11,9) (their rows and columns cross no Black Hole property: rule IV03), minicannons facing east (14,12) (14,14), south (11,20), north (6,6). Player: free CO pick. Player: CR3 BB2 SUB2 LAN3 INF5 MECH3 TANK3 ART3 AA2 RECON1 APC1; "
         "Drake: BB3 CR3 SUB2 LAN3 INF5 MECH3 TANK3 ART2 AA2 RECON1 FTR2 BMB1."))
     m.put("1", 6, 15).put("2", 29, 8)
     m.puts("P", [(7, 20), (13, 20)]).put("A", 6, 13).put("P", 24, 8).put("P", 27, 18).put("A", 33, 10)
-    m.put("p", 21, 13).put("M", 20, 11)
+    m.put("p", 21, 14).put("M", 20, 11)
     # --- roads that follow the land
     route(m, [(7, 19), (7, 17), (6, 15), (6, 13), (8, 11), (10, 9), (8, 7)], seed=1); route(m, [(6, 15), (9, 15), (12, 13), (12, 11)], seed=2)
     route(m, [(7, 19), (11, 19), (13, 19)], seed=3); route(m, [(8, 7), (6, 7)], seed=4); route(m, [(9, 15), (11, 17), (11, 19)], seed=5)
@@ -57,9 +57,9 @@ def build():
     town(m, 6, 15, "BBC", seed=1); town(m, 7, 18, "CC", seed=2); town(m, 13, 19, "BC", seed=3); town(m, 9, 10, "CC", seed=4); town(m, 6, 8, "C", seed=5); town(m, 11, 14, "C", seed=6)
     town(m, 28, 8, "BCC", seed=7, radius=3); town(m, 31, 10, "BC", seed=8); town(m, 29, 15, "CC", seed=9); town(m, 26, 8, "C", seed=10); town(m, 32, 4, "Cb", seed=11)
     town(m, 28, 17, "BC", seed=12); town(m, 25, 11, "C", seed=13)
-    town(m, 19, 12, "Cb", seed=14); town(m, 18, 4, "CC", seed=15); town(m, 20, 21, "CC", seed=16); town(m, 21, 12, "C", seed=17)
+    town(m, 19, 12, "Cc", seed=14); town(m, 18, 4, "CC", seed=15); town(m, 20, 21, "CC", seed=16); town(m, 21, 12, "C", seed=17)
     # --- Black Hole's inventions: Lasers and minicannons on the east coast and the south and north coasts
-    m.stamp("L", 19, 13).stamp("L", 13, 16).stamp("E", 14, 12).stamp("E", 14, 14).stamp("S", 11, 20).stamp("N", 6, 6)
+    m.stamp("L", 17, 12).stamp("L", 11, 9).stamp("E", 14, 12).stamp("E", 14, 14).stamp("S", 11, 20).stamp("N", 6, 6)
     # --- beaches: long, one cell wide, on the north- and south-facing coasts of every island (AW2 draws no long vertical beach); the ports' cells left open
     shore(m, 1, (3, 5, 13, 5), dirs="NS"); shore(m, 1, (3, 21, 13, 21), dirs="NS"); shore(m, 1, (16, 9, 22, 9), dirs="NS"); shore(m, 1, (16, 16, 22, 16), dirs="NS")
     shore(m, 1, (15, 2, 21, 2), dirs="NS"); shore(m, 1, (15, 6, 21, 6), dirs="NS"); shore(m, 1, (15, 19, 25, 19), dirs="NS"); shore(m, 1, (15, 24, 25, 24), dirs="NS")
@@ -79,7 +79,6 @@ def build():
         m.unit(2, k, x, y)
     m.units(2, SUB, m.sea_near(21, 17, 2)); m.units(2, LAN, m.sea_near(30, 20, 3, box=(24, 19, 34, 22), deep=False))
     m.spread(2, {INF: 5, MECH: 3, TANK: 3, ART: 2, AA: 2, RECON: 1, FTR: 2, BMB: 1}, (24, 3, 34, 17), seed=2, gap=0, avoid="~r=-^IZ#12345QBCPTbcpt")
-    m.stamp("L", 19, 13) if False else None
     clear_fire_lines(m)                    # (nothing may stand in a firing line at the start: the first shot hits nothing)
     m.note("hq", 6, 15, "Black Hole's HQ"); m.note("enemy_hq", 29, 8, "Drake's HQ (objective)"); m.note("islet", 19, 12, "the islet: neutral port, village, missile silo")
     return m

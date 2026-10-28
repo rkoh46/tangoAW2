@@ -112,6 +112,12 @@ class Lint(unittest.TestCase):
             bad = [str(p) for p in probs if p.level == "error" or p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04")]
             self.assertEqual(bad, [], m.name)
 
+    def test_no_laser_fires_across_its_own_property(self):
+        """IV03: a Laser's row and column touch no property of Black Hole's own army (M4's middle Laser once shot its own airport)."""
+        for m in self.maps:
+            self.assertEqual([str(p) for p in self.rules.lint(m) if p.rule == "IV03"], [], m.name)
+        self.assertIn("IV03", self.rules.RULES)
+
     def test_inventions_are_black_holes_alone(self):
         n = sum(1 for m in self.maps for row in m.text for c in row if c in "SNWELvnFXO")
         self.assertGreater(n, 0)

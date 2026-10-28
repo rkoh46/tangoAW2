@@ -58,6 +58,7 @@ RULES = {
     "AR03": ("error", "a silo or an airport that no army's infantry can reach, or an airport whose footprint is wrong"),
     "PP03": ("warn", "a pipeline that is a stub: an end hanging in open terrain (a pipeline ends at the map edge, the sea, mountains or a building) or fewer than 6 cells"),
     "PP04": ("warn", "a pipe seam that changes nothing when broken: it neither joins two parts of the map nor shortens the way between the HQs by at least 6 cells"),
+    "IV03": ("error", "BH2 maps: a Laser's row or column crosses a property of its owner (Black Hole): the Laser would shoot its own airport, port or city; place it so its four lines touch none"),
     "IV02": ("error", "BH2 maps: a unit of either army stands in an invention's firing zone at the start (a Laser's row and column, a minicannon's four cells, a Black Cannon's cone, the Deathray's columns): the first turn's shot must hit nothing"),
     "PT02": ("error", "BH2 maps: a port whose door is not open sea a ship can use: it touches no sea cell (shoal and reef are not water for ships), or its sea is a sealed pond, or the way out of its door is walled by reef"),
     "HQ01": ("error", "BH2 maps: an army has one HQ: a second HQ tile (Q) of the same army is a held take-over HQ, which the owner would rather not have: give each army its own colour and HQ instead"),
@@ -834,6 +835,29 @@ def day_one_fire(G):
     return out
 
 
+def laser_own_property(G):
+    """IV03 (BH2 maps): a Laser's whole row and column touch no property of Black Hole's own army (nor its HQ)."""
+    if G.m.source != "bh2" or not G.m.text:
+        return []
+    from . import zones
+    cols = list(G.m.meta.get("colours", ()))
+    if 5 not in cols:
+        return []
+    bh = cols.index(5) + 1
+    out, seen = [], set()
+    for y, row in enumerate(G.m.text):
+        for x, ch in enumerate(row):
+            if ch != "L":
+                continue
+            for (a, b) in sorted(zones.zone("L", x, y, G.w, G.h)):
+                if (a, b) == (x, y):
+                    continue
+                if G.T.owner(G.t[b][a]) == bh and (a, b, x, y) not in seen:
+                    seen.add((a, b, x, y))
+                    out.append(Problem("IV03", a, b, f"the Laser at ({x}, {y}) fires across Black Hole's own property at ({a}, {b})"))
+    return out
+
+
 def _unit_name(kind):
     return _bh().UNIT_NAMES.get(kind, f"unit {kind}")
 
@@ -897,7 +921,7 @@ def design_checks(G):
 KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
-CHECKS = [one_hq, river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, design_checks]
+CHECKS = [one_hq, laser_own_property, river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, design_checks]
 
 
 def lint(m, only=None):

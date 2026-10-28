@@ -42,10 +42,11 @@ def build():
     m.stamp("O", *OB)                                  # the Black Obelisk stands in the neck of the peninsula, on Black Hole's side of the middle
     S = lambda x, y: snap(m, x, y)
     m.pipe([(27, 6), (27, 11)]); m.put("Z", 27, 8); m.put("^", 27, 12).put("^", 26, 12).put("^", 28, 12)           # the lab wall: from the peninsula's north coast to a knot of cliffs
-    # ports: Black Hole's on the north bay's south shore and in the south bay; Blue Moon's on the peninsula's south coast; a neutral one on the north bay
+    # ports: Black Hole's in the south bay, Blue Moon's on the peninsula's south coast; the north bay has none (a ship built there would have nowhere to go): a Com Tower stands on its shore
     PC = lambda x, y: snap_coast(m, x, y)
-    PORTS = [PC(8, 9), PC(9, 21), PC(31, 22), PC(14, 8)]
-    m.put("P", *PORTS[0]).put("P", *PORTS[1]).put("P", *PORTS[2]).put("p", *PORTS[3])
+    PORTS = [PC(9, 21), PC(31, 22)]
+    m.put("P", *PORTS[0]).put("P", *PORTS[1])
+    m.put("t", *PC(14, 8))                               # (a Com Tower on the north bay's shore, where the useless north ports were)
     route(m, [S(8, 15), S(12, 12), S(16, 12), (22, 12), S(24, 12)], seed=1, wander=1.1); route(m, [(22, 12), S(25, 9), S(26, 7)], seed=2)
     route(m, [S(28, 7), S(30, 7), (29, 9)], seed=3); route(m, [S(24, 13), S(28, 13), (29, 11), (31, 11, "="), (33, 11), S(34, 12), S(33, 13)], seed=4)
     route(m, [S(8, 15), S(12, 16), S(17, 16), (22, 16), S(26, 16), S(29, 17), S(31, 19), (32, 19, "="), S(33, 20), S(33, 21)], seed=5, wander=1.1)
