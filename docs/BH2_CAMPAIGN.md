@@ -127,9 +127,9 @@ The owner's AW1-style picture is imported pixel by pixel as a new interactive wo
 
 ## 9. The new Orange Star CO (concept for review)
 
-**Aria, Commander of the New Accord.** Aria is the first officer raised east of the fence: Nell's protégée, who rebuilt the Allied army while Nell was a prisoner. She wrote the words of Andy's broadcast, "BUILD ANEW", and believes in the Accord's ideal even after Asuka's ledger exposed its lie. She is Asuka's mirror: what Sonja might have become if she had stayed. She appears in Act IV scenes (planning Nell's rescue in M16, the war room after M20), so M25's reveal is earned.
+**Aria, Commander of the New Accord.** Aria is **Nell's sister** (owner, 2026-10-28) and the first officer raised east of the fence. She rebuilt the Allied army while Nell was a prisoner. She wrote the words of Andy's broadcast, "BUILD ANEW", and believes in the Accord's ideal even after Asuka's ledger exposed its lie. She is Asuka's mirror: what Sonja might have become if she had stayed. She appears in Act IV scenes (planning Nell's rescue in M16, the war room after M20), so M25's reveal is earned.
 - **Day to day, "Common Cause":** her units are +10% defence, and +10% more next to another of her units.
 - **CO Power, "Rally":** all units heal 1 HP and move 1 more space.
 - **Super CO Power, "Build Anew":** all units heal 3 HP and gain +20% attack and +30% defence. Every city and HQ she owns produces funds twice that day.
 - **Theme:** an Orange Star hero theme of her own: bright, determined, the last stand.
-- **Name, look and gender are open:** your art decides.
+- **Nell's sister (decided).** Her look comes from the owner's art.
