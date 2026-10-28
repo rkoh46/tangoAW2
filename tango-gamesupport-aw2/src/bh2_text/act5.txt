@@ -89,6 +89,9 @@ WICK: Is it all right if I say / I think they are getting along?
 MORTAR: Wick. They are the two most / suspicious people on the continent.
 WICK: Yes, Sergeant. That's what / I mean.
 MORTAR: ...Fine. It is the best / we can hope for.
+KOAL: The eastern road is repaired. / The gate hinges are not. Mind them.
+KINDLE: Darling Koal, was that / flirtation?
+KOAL: It was a hinge report.
 
 # ---------------------------------------------------------------- M27 Von Bolt's Note (Von Bolt + a FREE partner fixed; enemy Jess + Colin; a sea fortress, a Black Factory)
 
@@ -193,6 +196,8 @@ CRUMB CO: Is that bad?
 ASUKA: It is the beginning. A man who / has nothing to protect is dangerous.
 CRUMB CO: Is he dangerous?
 ASUKA: He is happy. In him, it is / the same thing.
+FLAK: Flak gave old man sandwich. / Old man cried. Flak confused.
+VON BOLT: Kehh... I am poor. And I / feel FANTASTIC. Write that down.
 
 # ---------------------------------------------------------------- M28 Where the Map Ends (Asuka + Crumb fixed; enemy Drake + Grit; the Obelisk; nine days)
 
@@ -411,9 +416,6 @@ ARIA: Nell. You don't have to.
 NELL: Yes, I do. Someone has to / be sorry first, in public.
 ARIA: ...Then you're the first. I'll / be the last.
 HACHI: I'll hold the kitchen, kids. / Free of charge.
-JESS: Tanks first. Paperwork after. / I am staying.
-DRAKE: Dude, I'm on the harbour. / Somebody has to be.
-SENSEI: Easy, youngsters. I'll be / at the back, with my knees.
 ARIA: Four lines. Four commanders. / Then me. Build anew.
 NARRATION: Nell touches her sister's / sleeve. Aria does not move away.
 
@@ -551,6 +553,9 @@ ASUKA: Yes. Orange Star, Blue Moon, / Yellow Comet, Green Earth.
 WICK: Is it all right if I think / they're good people?
 ASUKA: They are, Private. It is why / we must do this properly.
 ASUKA: Prepare the army. Whoever / waits in the keep, I will meet her.
+ADDER: Marshal, I shall lead the / charge. In my best cape.
+HAWKE: You will lead from behind it.
+CLONE ANDY: Okay! I'll hold your cape. / I'm good at holding things.
 
 # ---------------------------------------------------------------- M31 The Last Citadel (Asuka + a FREE partner fixed; enemy Aria; the final battle)
 

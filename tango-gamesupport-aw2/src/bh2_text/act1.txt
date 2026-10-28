@@ -264,13 +264,10 @@ ASUKA: That is the question. And / I mean to turn it.
 CRUMB CO: Sergeant, the crate hummed / when she read the ledger.
 MORTAR: Crumb. It hums at everything.
 CRUMB CO(s): Not like that. It hummed / her voice. Like a bell.
-KINDLE: Darlings, the volcano was / divine. Who lit it?
-LASH: Nobody! It does that! But I / wish I'd taken the credit!
 VON BOLT: First pick of the vault! / Kehh-heh! Where is the gold?
 JUGGER: VAULT CONTENTS: ONE LEDGER. / ONE BOX OF PENCILS. NO GOLD.
 VON BOLT: ...Pencils? Pencils are / second pick. Fine. I'll take them.
-ASUKA: Commander Hobb. The crate / answers to Lord Sturm.
-ASUKA: It listens to you. I would / like to know the difference.
+ASUKA: Commander Hobb. It listens to / you. I would like to know why.
 CRUMB CO: Me too, ma'am. Gerald does / not know. He is very quiet.
 
 # ---------------------------------------------------------------- M4 Talons (TWO FRONTS: front 1 FREE vs Drake at sea; front 2 Hawke vs Eagle in the sky)
@@ -366,6 +363,9 @@ MORTAR: It is a grade, Crumb.
 CRUMB CO: He said it to the General. / Gerald thinks they are friends.
 WICK: Is it all right if I think / they are about to hit each other?
 MORTAR: Yes. Stand back.
+KINDLE: Darling Marshal, Eagle has / a lovely baritone. Would he audition?
+HAWKE: He auditions daily. Loudly.
+ADDER: A baritone in a bomber. What / a waste of a good profile.
 
 # ---------------------------------------------------------------- M5 Evergreen in Exile (Sturm + Asuka fixed; enemy Javier + Eagle, Grit's Blue Moon column)
 
@@ -437,9 +437,7 @@ ASUKA: The General has heard. And / agrees, Private. It was weather.
 ASUKA: Now we must be the climate.
 VON BOLT: Evergreen's treasury! The / harbour ledgers! Second pick!
 JUGGER: EXILE CAPITAL: FALLEN. NEW / CAPITAL: WE ARE. QUERY: WHERE.
-KINDLE: Darlings, a capital with / balconies! Hand me the nearest!
 FLAK: Flak ate exile's feast. Good / feast. Flak sorry. Not sorry.
-CLONE ANDY: Okay! Another flag! I'm / collecting! One for each name!
 
 # ---------------------------------------------------------------- M6 Forest of Spears (FREE; enemy Javier, then Eagle takes command when the Com Towers fall)
 
@@ -511,17 +509,14 @@ ASUKA: Neither, Sir Javier. A clerk.
 
 == m06_map
 @SONG enemy2
-MORTAR: The towers will take a week / to cool. Wick, count the wire.
-WICK: Is it all right if I count / out loud? I count better aloud.
-MORTAR: ...Fine. Count out loud.
-WICK: One. Two. ...Sergeant, one / of them is humming.
-LASH: Ooh! Which one? Lemme see! / Heehee! It hums in B-flat!
+WICK: Is it all right if I count out / loud? One of the towers is humming.
+MORTAR: Which one?
+WICK: The one next to the crate.
+LASH: Ooh! Lemme see! It hums in / B-flat! Heehee!
 ADDER: Doctor, you are standing in / my light. Move your toys.
-LASH: You are standing in my / toys, Mr Hair!
+LASH: You are standing in my toys, / Mr Hair!
 KOAL: Both of you are standing on / my road. Move.
-ASUKA: Wick. Which one hums?
-WICK: The one next to the crate, ma'am.
-ASUKA: Of course it is.
+ASUKA: Of course it hums. Count / them again, Private.
 
 # ---------------------------------------------------------------- M7 Drake's Harbour (FREE; enemy Drake)
 
@@ -680,14 +675,11 @@ CRUMB CO: Ma'am, I've decided. As / Quartermaster. The crate goes home.
 ASUKA: Home?
 CRUMB CO: The depot. The island. It's / the safest roof Black Hole owns.
 CRUMB CO: It hums when the sea gets / loud. I think it hates the sea.
-MORTAR: Crumb is right. The depot has / walls two metres thick.
 ASUKA: Granted, Commander. But you / go with it. I want it watched.
 CRUMB CO(h): Yes, ma'am! Gerald will / keep the crate company!
 KOAL: Mind the stairs. A crate that / hums is a crate that shifts.
-CRUMB CO: Thank you, Mr Koal! I will / mind the lane!
 WICK: Is it all right if I come? / I'm scared of the dark.
 MORTAR: Wick. Lights are on.
-WICK: ...It's scared of the dark. / I'm scared of its being scared.
 
 == m08_warroom
 @SONG ally1
@@ -700,10 +692,8 @@ KANBEI: Asuka. ...Kanbei knows that / word.
 SENSEI: Kanbei? You went pale.
 KANBEI: A word from a lullaby. It / is nothing. Kanbei is tired.
 OLAF: Ha! We fear a lullaby?! Blue / Moon fears nothing!
-GRIT: Reckon some of us oughta. Ayup. / She cut the Line in a day.
 RACHEL: A new letter. "A." again. Same / neat hand. "Common cause. Build anew."
 EAGLE: Who IS this A.? I want to / hate her cleanly.
-HACHI: Whoever it is, they paid for / these chairs. Nice chairs.
 SAMI: Roger. We hold the east, one / colour at a time. Until Nell is free.
 NARRATION: On the cushion of the empty / chair, the gavel waits.
 
@@ -721,10 +711,7 @@ KOAL: Eleven bridges run the length / of the Chain. I will pave all eleven.
 KINDLE: And I shall accompany him, / darling. Someone must make bridges fun.
 KOAL: Someone must stay in her lane.
 JUGGER: ROSTER: KOAL PLUS KINDLE. / ODDS OF ARGUMENT: 100 PERCENT.
-FLAK: Flak hits what boss says. Flak / ate a lantern once. Tasty!
 LASH: Ooh, lanterns! Do they explode? / I will check! Heehee!
 ADDER: A festival! Banners, an / audience, a stage. Which hotel?
-CLONE ANDY: Okay! A festival! New / names! Lantern. Lamp. Lumin-... okay!
 CRUMB CO: Ma'am! I'm staying with the / crate. Gerald says he's got it.
-ASUKA: Understood. The crate stays warm. / The Chain falls cold.
 

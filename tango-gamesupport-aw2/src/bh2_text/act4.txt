@@ -109,6 +109,9 @@ WICK: Is it all right if I say / I feel sorry for them?
 ASUKA: You may feel what you like, / Private. Just keep your rifle clean.
 WICK: ...Yes, ma'am. Is it all right / if I feel sorry for us too?
 ASUKA: Yes. That is the correct / ratio.
+VON BOLT: A leak! Free of charge! / Kehh... who undercut me?!
+ASUKA: I did, Colonel. For effect.
+VON BOLT: For EFFECT?! I charge for / effect!
 
 # ---------------------------------------------------------------- M21 The East Tower (FREE; enemy Andy + Rachel; Andy's commandos free Nell)
 
@@ -206,6 +209,8 @@ MORTAR: Wick.
 WICK: ...I'm glad she got out.
 MORTAR: ...Fine. So am I.
 ASUKA: You are both correct, / gentlemen. It was the point.
+LASH: The tower's alarm played a / lullaby! They hummed along! Heehee!
+JUGGER: SENTIMENT: DETECTED. SOURCE: / A HUMMING ENEMY. LOGGED.
 
 # ---------------------------------------------------------------- M22 Echo, Again (Clone Andy fixed; enemy Andy; Lab 7's project 17)
 
@@ -287,6 +292,9 @@ CRUMB CO: Gerald is crying. A little. / Biscuits can.
 MORTAR: Crumb. They cannot.
 CRUMB CO: Sergeant, you're crying / too.
 MORTAR: It is the fog.
+LASH: I'm going to fix the other / sixteen projects. Gently.
+JUGGER: VOLUNTEER: LOGGED. I WILL / CARRY THE CABLES.
+LASH: Aww. Jugger. Heehee. Okay.
 
 # ---------------------------------------------------------------- M23 The Door Is Open (Asuka + Crumb fixed; enemy Hachi + Jake at Black Hole's island depot)
 
@@ -484,6 +492,9 @@ ASUKA: There is no press, Sergeant.
 MORTAR: He says to produce one.
 WICK: Is it all right if I'm / the press?
 ASUKA: Yes, Private. Take notes. He / will want to be quoted.
+KINDLE: Darling Adder! I shall be / the press. I will say: adequate.
+ADDER: Adequate! Madam, I will sue.
+KINDLE: Sue me, darling. I am / very good at being sued.
 
 # ---------------------------------------------------------------- M25 The Rail East (TWO FRONTS, both FREE: front 1 vs Andy, front 2 vs Hachi; the heavy train)
 
@@ -602,11 +613,9 @@ ARIA: She writes tiny and wastes no / margin. I compared the letters.
 ARIA: It's Sonja's hand. Yellow / Comet's daughter, in a black coat.
 KANBEI: ...Kanbei knew. Kanbei kept / silent. It was not betrayal.
 KANBEI: It was a father. Be angry at / her, if you must. Not at him.
-JESS: She is polite. She files. She / does not lie.
 ARIA: That is the worst kind of / enemy. She makes you doubt yourself.
 ARIA: We fight her at the Last / Citadel. Every colour. Every unit.
 HACHI: A last stand! I'll hold the / market, kid. Free of charge.
-JAKE: Yo, I'll hold the door. And / the other door.
 NELL: Aria. I'm so proud of you.
 ARIA: Don't be proud, Nell. Be / angry. For both of us.
 
@@ -644,12 +653,9 @@ VON BOLT: Kehh... my vault will / empty before they reach it.
 ASUKA: Then save the truth for the / day it does, Colonel.
 VON BOLT: Truth! I never keep any. / It costs too much to store.
 JUGGER: THE KEY. THE MACHINE. THE / BOY. THREE ASSETS. ONE DOOR.
-LASH: Ooh, a seal machine! Can I / sit on it? Just once? Heehee!
-LASH: ...It has no handle. How do / you turn it on?
-KOAL: Four roads to the Obelisk. All / bad. I will repave them tonight.
+LASH: Ooh, a seal machine! ...It has / no handle. How do you turn it on?
 KINDLE: Darlings, what a finale! / Everything converges on a door.
-ADDER: A door! A stage! A star to / walk through it! I volunteer!
 FLAK: Flak guards boy. Boy has key. / Flak guards key. Simple.
-CLONE ANDY: Okay. I'll keep watch. / I'm good at watching. It's roomy.
 CRUMB CO: Ma'am? What happens if I / turn the key? Really?
 ASUKA: Nobody knows, Commander. That / is why you decide, and not me.
+

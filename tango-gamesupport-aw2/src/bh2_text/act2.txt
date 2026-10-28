@@ -253,8 +253,6 @@ CLONE ANDY: Okay! Good fight, Grimm! / I can fix any-- ...your knuckles!
 
 == m11_map
 @SONG enemy2
-MORTAR: Ma'am. The coast is yours. / The crystals are humming.
-ASUKA: Everything is humming this / season, Sergeant.
 JUGGER: CRYSTAL HUM: 124 HERTZ. CRATE / HUM: 124 HERTZ. DEDUCTION: SAME.
 LASH: Same?! Ooh! Same! Can I take / one apart? Just a little one?
 JUGGER: NEGATIVE. LASH: HANDS OFF. / CRYSTAL: NOT A TOY. UNDERSTOOD?
@@ -436,24 +434,24 @@ CRUMB CO: I know, ma'am! I heard it / hum on the radio! Over the radio!
 ASUKA: A crate that hums by radio. / Perhaps it listens to more than Sturm.
 CRUMB CO(s): Ma'am, I think it likes you.
 ASUKA: Then it has taste. Continue / the log.
+JUGGER: KANBEI: ENEMY. TREATED WITH / HONOUR. QUERY: IS THIS COMMON.
+ASUKA: It is rare, Jugger. Log it / as rare.
+FLAK: Flak liked Emperor. Emperor / shared tea. Flak shared soup.
 
 == m13_warroom
 @SONG ally1
 NARRATION: The Allied table, in the / east. The empty chair. The gavel.
-KANBEI: Kanbei yields the Chain. / The Emperor is unhurt.
+KANBEI: Kanbei yields the Chain. The / Emperor is unhurt.
 SENSEI: His pride is hurt. I have / examined it. It will mend.
-GRIMM: Har! I lost! But I punched / a lot of ocean!
 JESS: Yellow Comet is down. Green / Earth is down. Who is next?
 OLAF: Blue Moon! Olaf will hold the / border with ice and honour!
-GRIT: Olaf. She cut the Line in a / day. Honour is cold comfort.
-HACHI: I have good news, kids. I / sell maps. And I know where
-HACHI: the next big sale is. Orange / Star's capital. She'll hit us last.
+GRIT: Reckon honour is cold comfort, / Olaf. She cut the Line in a day.
 ANDY: Okay. I'm done sitting. I / want to go to the tower. For Nell.
-MAX: Big man says go! The tower / has four guards and a window!
-SAMI: Roger. We plan it. We do not / run at it.
+MAX: Big man says go! The tower has / four guards and a window!
 RACHEL: A new letter from "A." again. / It says: "Be patient. I come soon."
-JESS: I keep wondering why a clerk / writes like she has all the time
-JESS: in the world. And then I look / at the Calder Foundry ledger.
+JAVIER: Hark! Whoever writes so / neatly, I should like to challenge!
+JESS: I keep wondering why a clerk / writes like she has all the time.
+JESS: And then I look at the Calder / Foundry ledger.
 KANBEI: Jess. What ledger?
 JESS: ...Later, Emperor. When the / table is smaller.
 NARRATION: Kanbei looks at the seventh / chair. It is still set.
@@ -495,18 +493,11 @@ ASUKA: He is not yours, Lord Sturm. / He is a witness. I need him standing.
 STURM: ...Noted. Do not make a / habit of correcting me.
 ASUKA: I make a habit of being right. / It is cheaper.
 HAWKE: Iron Gate Pass is a single / door. I would like to knock on it.
-ASUKA: You shall, Marshal.
 JUGGER: BLUE MOON WIRE: LOCATED. / SIXTEEN SEAMS. I REQUEST THE TASK.
-ASUKA: Granted, Jugger. Read what / flows. Cut it after.
 LASH: Ooh! Sasha's lab island! Lot / 42! Can I have it? Please?
 ASUKA: You may, Doctor. Carefully.
-LASH: Carefully! Always! ...Mostly.
 FLAK: Flak hits harbours. Harbours / have fish. Flak likes fish.
-KOAL: A rail with no road beside it. / I disapprove. I will survey it.
 KINDLE: Snow, darlings? My costume / will be ruined. I must buy another.
 VON BOLT: Buy another! Kehh... on / whose coin? Mine? NO.
-ADDER: Snow on a cape is a crime. I / request an umbrella and a valet.
-CLONE ANDY: Okay! Snow! I'll bring / a heater! I can fix any-- ...heater!
 CRUMB CO: Ma'am, I'll send soup. Hot. / In a flask. Gerald says no lumps.
-ASUKA: Thank you, Commander. Blue Moon / will be cold. We shall be efficient.
 

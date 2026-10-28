@@ -399,6 +399,9 @@ CRUMB CO: He drew a bowl. It's a / very nice bowl.
 MORTAR: Crumb. He drew a bowl because / he cannot write.
 CRUMB CO: He drew a bowl because / he is my friend, Sergeant.
 MORTAR: ...Yes. That too.
+KOAL: The harbour has three quays and / no camber. I will repave tomorrow.
+FLAK: Flak not break quay. Flak / break boats. Boats are not quay.
+KOAL: A distinction. I agree.
 
 # ---------------------------------------------------------------- M19 Thirty Years of Iron (FREE PAIR; enemy Olaf + Grit; a Black Factory is yours)
 
@@ -543,7 +546,6 @@ OLAF: Friends. Blue Moon read the / ledger. Four seals. One door.
 JESS: Green Earth read it too. I / signed the stamps. Blind.
 KANBEI: Kanbei's seal. On a paper he / did not read. It is a shame.
 HACHI: Everyone sold it, kids. And / everyone got paid. I told you.
-RACHEL: By the book, we should tell / Nell first.
 SAMI: Roger. But Nell is in a / tower. And the book is open.
 MAX: Pathetic! Our own nations! / Selling us a door! Big man's angry!
 SASHA: Colin and I will testify. / Lot 42 was sold. We sold it.
@@ -576,7 +578,6 @@ NARRATION: The flagship's chart room. / North-east lies Orange Star.
 STURM: The orange flag in my hall. / Is it still standing.
 ASUKA: It stands, Lord Sturm. The tower / holds its prisoner. She reads my ledger.
 STURM: Then let her read. And let her / learn what it costs to read.
-ASUKA: I intend to split the Accord / further. Then take what remains.
 HAWKE: A divided house. I am almost / sorry for the occupants.
 VON BOLT: Divide and conquer! Kehh-heh! / My favourite. Divide, then bill.
 LASH: Lab 7 is in Orange Star. I / HELPED build it. Can I go home?
@@ -584,10 +585,7 @@ ASUKA: Clone Andy goes. Doctor, you / assist by radio.
 CLONE ANDY: Okay. Okay! I'm going / home. Kind of. It's a little scary.
 ASUKA: I know. I shall be with you. / In writing.
 JUGGER: ORANGE STAR: LOGGED. ASSETS: / ONE TOWER. ONE LAB. ONE DEPOT.
-KOAL: The rail east is the only / road. Everything depends on it.
-KINDLE: A sky full of orange, darlings! / How cheerful. How tedious.
 ADDER: The sky. Finally. My stage. / I shall take it. With flair.
-FLAK: Flak hits Max! Max is big! / Flak likes big!
 CRUMB CO: Ma'am. The crate. It hums / every night now. At the same hour.
 ASUKA: Yes. I have noticed. It is / counting something down.
 
