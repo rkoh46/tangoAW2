@@ -47,12 +47,13 @@ def build():
     m.puts("B", [(23, 4), (27, 5)]).puts("C", [(24, 2), (27, 3), (22, 3)])                       # Jess's fort
     # --- roads that follow the land: one main road from the depot over the halfway bridge (15,9) to the depot town, a south branch over the escape bridge (16,16), a north branch to Jess's fort and
     # the Com Tower's spur; open country between them (bridges at (15,9) and (16,16))
-    route(m, [(6, 12), (8, 11), (10, 9), (13, 9), (15, 9, "="), (20, 8), (25, 10), (26, 14), (26, 18)], seed=1, wander=0.5)
+    route(m, [(6, 12), (8, 11), (10, 9), (13, 9), (15, 9, "="), (20, 8), (25, 10), (26, 14), (26, 17), (26, 18)], seed=1, wander=0.5)
     route(m, [(8, 12), (9, 15), (13, 16), (16, 16, "="), (20, 17), (25, 17)], seed=2, wander=0.5)
     route(m, [(22, 8), (23, 5), (25, 4)], seed=3, wander=0.5)
     route(m, [(20, 8), (20, 11)], seed=5)
     route(m, [(4, 12), (6, 12)], seed=6)
     thin_roads(m)
+    m.put("c", 26, 19)                                        # (the road ends at the goal tile: a truck drives straight in)
     # towns at the junctions and bridgeheads; a village in the north-west corner
     town(m, 10, 9, "cc", seed=1); town(m, 10, 15, "CB", seed=2); town(m, 17, 9, "cc", seed=4); town(m, 22, 8, "Cc", seed=5); town(m, 21, 17, "cc", seed=6)
     town(m, 26, 12, "c", seed=7); town(m, 26, 16, "Cc", seed=8); town(m, 13, 9, "c", seed=9); town(m, 18, 17, "c", seed=11); town(m, 23, 6, "C", seed=10)

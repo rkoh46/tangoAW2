@@ -52,11 +52,11 @@ unit 2 10 26 7 hold
 ..C...RRRff....-..^^R^^..fR...
 ...1RRR.Rf.ff..--.^^t^^^.cRff.
 ........RR..ff.f-.^^^^^..fR.f.
-..fffB..BR.ff.ff-..^......Rfff
-..ffC...CRRR....-...cc.f.cRRf.
-...fff.....RRRRR=RRRRRRRfffRff
-....f.....^^....-.c^R.^RRR^RC.
-..^.^^^...^^^fff-.^^^^...^RR..
+..fffB..BR.ff.ff-..^......Rcff
+..ffC...CRRR....-...cc.f.CRff.
+...fff.....RRRRR=RRRRRRRffRfff
+....f.....^^....-.c^R.^RRRRf..
+..^.^^^...^^^fff-.^^^^...^R...
 .^^.^^^...^...f.-..ff^f..^c^^^
 ...^^^^^..^.....-..fffff.c.c^.
 .^.^^^^...^^....-f..ffff..c^..
